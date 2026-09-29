@@ -7,8 +7,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@game/shared": "workspace:*",
-    "@game/data": "workspace:*"
+    "@game/shared": "*",
+    "@game/data": "*"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",

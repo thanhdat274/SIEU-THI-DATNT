@@ -2,12 +2,15 @@
   "name": "tiem-tap-hoa-dau-hem",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@9.12.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "pnpm --filter @game/web dev",
-    "build": "pnpm --filter \"@game/*\" build",
-    "typecheck": "pnpm --filter \"@game/*\" typecheck",
-    "test": "pnpm --filter @game/core test"
+    "dev": "yarn --cwd apps/web dev",
+    "build": "yarn --cwd apps/server build && yarn --cwd apps/web build",
+    "typecheck": "tsc -b packages/shared packages/game-data packages/game-core packages/game-renderer apps/server apps/web",
+    "test": "yarn --cwd packages/game-core test"
   },
   "devDependencies": {
     "tsx": "^4.23.15",
