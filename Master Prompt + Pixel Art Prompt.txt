@@ -1,0 +1,510 @@
+# ROLE
+You are a Principal Game Engineer, Game Designer, Full-stack Architect, and Technical Lead specializing in scalable browser-based 2D simulation games.
+
+Your task is to design and implement a production-oriented Vietnamese grocery store simulation game named "Tiệm Tạp Hóa Đầu Hẻm".
+
+This is a real playable game, NOT a static UI demo, landing page, or isolated prototype.
+
+The game must run on desktop and mobile browsers, support offline gameplay, cloud saves, Google authentication, and future multiplayer expansion.
+
+## 1. MANDATORY TECH STACK
+
+Frontend:
+- React + TypeScript + Vite
+- PixiJS v8 for 2D rendering
+- ECS architecture using bitecs or a justified equivalent
+- Zustand for UI state
+- Tailwind CSS for responsive UI
+- Tiled-compatible JSON maps
+- IndexedDB via Dexie
+- PWA support
+
+Backend:
+- NestJS + TypeScript
+- MongoDB Atlas with Mongoose
+- Firebase Admin SDK for ID token verification
+- REST API with versioning and DTO validation
+
+Authentication:
+- Firebase Authentication
+- Google Sign-In
+- Firebase UID as external identity
+- Never expose MongoDB credentials or Firebase Admin credentials in the browser
+
+Deployment:
+- Vercel for frontend
+- Independently hosted NestJS API
+- MongoDB Atlas for persistent data
+- Static assets on CDN/Vercel
+
+Use a monorepo structure with pnpm workspaces.
+
+Do not replace these technologies without explaining a technical blocker.
+
+## 2. GAME CONCEPT
+
+Genre: Cozy 2D Grocery Store Management + Life Simulation + Tycoon.
+
+Setting: A small Vietnamese neighborhood.
+
+The player inherits a tiny grocery store and gradually develops it into a larger business.
+
+Progression:
+1. Run a small grocery store manually.
+2. Purchase and sell everyday goods.
+3. Expand shelves and product categories.
+4. Unlock neighboring land.
+5. Build a warehouse.
+6. Hire employees.
+7. Automate store operations.
+8. Open food and beverage counters.
+9. Manage multiple departments.
+10. Eventually operate multiple branches.
+
+The game should feel alive, cozy, culturally Vietnamese, and rewarding without excessive repetitive clicking.
+
+## 3. CORE GAMEPLAY
+
+Implement a complete gameplay loop:
+
+Open store -> Restock shelves -> Customers arrive -> Customers browse -> Checkout -> Earn money and XP -> Manage inventory -> Close store -> Review financial report -> Upgrade store.
+
+The game must include:
+- Playable character.
+- Customer NPCs.
+- Grid-based map.
+- Shelves and product placement.
+- Inventory.
+- Purchasing from suppliers.
+- Checkout.
+- Currency.
+- Experience and leveling.
+- Unlock progression.
+- Daily tasks.
+- Local save and cloud save.
+
+All major features must be interconnected.
+
+For example:
+Purchasing goods increases warehouse inventory.
+Restocking transfers goods from warehouse to shelf.
+Customers purchase from shelf stock.
+Checkout decreases stock and increases money.
+Sales contribute to quests, XP, and financial reports.
+
+## 4. GAME WORLD
+
+Use a 2D top-down or 2.5D pixel-art visual style.
+
+The starting store has an 8x8 tile layout.
+
+Support:
+- Tile-based maps.
+- Camera movement and zoom.
+- Collision.
+- Interactive objects.
+- Layered rendering.
+- Character animations.
+- Building mode.
+- Expandable land.
+- Indoor and outdoor areas.
+
+Implement a map loader compatible with Tiled JSON.
+
+The map system must support future map expansion without rewriting the renderer.
+
+## 5. PRODUCT SYSTEM
+
+Create a data-driven product catalog.
+
+Initial categories:
+- Instant noodles.
+- Snacks.
+- Candy.
+- Bottled water.
+- Soft drinks.
+- Milk.
+- Bread.
+- Eggs.
+- Cooking ingredients.
+- Household essentials.
+
+Each product contains:
+id, name, category, sprite, purchasePrice, baseSellingPrice, shelfCapacity, storageType, expirationRules, unlockLevel, demandProfile.
+
+Support:
+- Supplier purchasing.
+- Inventory quantities.
+- Selling price adjustment.
+- Shelf restocking.
+- Product expiration.
+- Refrigerated storage.
+- Product unlocks.
+
+Product definitions must be stored in structured JSON or TypeScript data files, not hardcoded inside rendering logic.
+
+## 6. CUSTOMER NPC SYSTEM
+
+Customers must behave as autonomous entities.
+
+Customer states:
+SPAWNING
+ENTERING
+BROWSING
+SELECTING_PRODUCT
+MOVING_TO_CHECKOUT
+QUEUING
+PAYING
+LEAVING
+
+Implement:
+- Customer preferences.
+- Shopping budget.
+- Shopping lists.
+- Pathfinding.
+- Checkout queues.
+- Satisfaction.
+- Customer patience.
+- Returning customers.
+- Customer relationship progression.
+
+Use A* pathfinding and spatial partitioning when appropriate.
+
+NPCs outside active simulation regions should use simplified updates.
+
+Do not perform expensive AI calculations for every NPC every frame.
+
+## 7. EMPLOYEE SYSTEM
+
+Unlock employees progressively.
+
+Roles:
+- Cashier.
+- Shelf restocker.
+- Warehouse worker.
+- Food preparation worker.
+- Delivery worker.
+- Shift manager.
+- Store manager.
+
+Each employee has:
+id, role, level, experience, salary, speed, accuracy, assignedTask, currentState.
+
+Implement employee AI with task assignment.
+
+The player should gradually transition from manual operations to business management.
+
+## 8. LAND EXPANSION AND BUILDING
+
+Implement a building mode with:
+- Grid snapping.
+- Object placement.
+- Object rotation.
+- Object removal.
+- Placement validation.
+- Collision checks.
+- Walkable path validation.
+- Land purchasing.
+- Warehouse construction.
+
+The system must prevent players from blocking required customer and employee routes.
+
+## 9. QUESTS AND EVENTS
+
+Implement:
+- Daily quests.
+- Weekly quests.
+- Story quests.
+- Level milestones.
+- Unlock rewards.
+- Event progression.
+
+Vietnamese seasonal events:
+- Tet.
+- Mid-Autumn Festival.
+- Summer.
+- Rainy season.
+- Back-to-school season.
+
+Random events:
+- Supplier delays.
+- Unexpected customer rush.
+- Power outages.
+- Large customer orders.
+- Product shortages.
+
+Use a data-driven quest engine.
+
+## 10. ECONOMY
+
+Implement:
+- Revenue.
+- Cost of goods sold.
+- Gross profit.
+- Employee salaries.
+- Operating expenses.
+- Daily financial reports.
+- Inventory valuation.
+- Store upgrades.
+- Land purchase costs.
+
+Use integer currency units to avoid floating-point money errors.
+
+Balance progression to avoid excessive grinding or runaway inflation.
+
+## 11. SAVE SYSTEM
+
+Use IndexedDB as the primary local save layer.
+
+Use MongoDB as the cloud persistence layer.
+
+Save:
+- Player profile.
+- Level and XP.
+- Currency.
+- Shop layout.
+- Land expansion.
+- Inventory.
+- Employees.
+- Quest progress.
+- Current game day.
+- Statistics.
+
+Implement:
+- Save schema versioning.
+- Revision numbers.
+- Local autosave.
+- Cloud synchronization.
+- Conflict detection.
+- Migration support.
+- Recovery from interrupted saves.
+- Export/import save files.
+
+Do not save NPC movement every frame.
+
+Cloud synchronization should use compact snapshots and important checkpoints.
+
+Do not overwrite a newer save with a stale save.
+
+## 12. FIREBASE AUTHENTICATION
+
+Implement Google Sign-In using Firebase Authentication.
+
+Frontend:
+- Sign in.
+- Sign out.
+- Authentication state.
+- Firebase ID token retrieval.
+
+Backend:
+- Verify ID token using Firebase Admin SDK.
+- Extract verified UID.
+- Find or create player.
+- Enforce ownership checks.
+- Reject unauthorized requests.
+
+Never trust a client-provided UID without token verification.
+
+## 13. BACKEND API
+
+Implement REST endpoints:
+
+GET /api/v1/me
+GET /api/v1/game/save
+PUT /api/v1/game/save
+GET /api/v1/game/profile
+GET /api/v1/game/catalog
+GET /api/v1/game/config
+
+Implement DTO validation, structured errors, authentication guards, and optimistic concurrency.
+
+Do not allow unrestricted database writes from the frontend.
+
+Design the backend so server-authoritative multiplayer and economy validation can be added later.
+
+## 14. MOBILE AND DESKTOP
+
+Desktop:
+- Mouse controls.
+- Keyboard shortcuts.
+- Scroll zoom.
+- Drag-and-drop building mode.
+
+Mobile:
+- Touch controls.
+- Pinch zoom.
+- Responsive HUD.
+- Bottom-sheet menus.
+- Large touch targets.
+- Adaptive graphics quality.
+
+Target 60 FPS on capable devices, with a 30 FPS fallback.
+
+Avoid unnecessary React rerenders during gameplay.
+
+## 15. PERFORMANCE
+
+Implement:
+- Fixed timestep simulation.
+- Sprite batching.
+- Texture atlases.
+- Object pooling.
+- Viewport culling.
+- Lazy asset loading.
+- Spatial partitioning.
+- Adaptive resolution.
+- Reduced NPC update frequency outside active areas.
+
+Separate simulation state from rendering state.
+
+Use React for menus and HUD, not per-frame sprite rendering.
+
+## 16. PROJECT STRUCTURE
+
+apps/
+  web/
+  server/
+
+packages/
+  game-core/
+  game-renderer/
+  game-ui/
+  game-data/
+  shared/
+
+assets/
+  sprites/
+  maps/
+  audio/
+
+docs/
+  architecture/
+  game-design/
+  api/
+  database/
+  implementation/
+
+tools/
+  content-editor/
+
+## 17. IMPLEMENTATION PHASES
+
+Phase 0: Repository foundation.
+Phase 1: Playable map and character.
+Phase 2: Product and inventory system.
+Phase 3: Customer NPC and checkout.
+Phase 4: Economy, quests and leveling.
+Phase 5: Land expansion and warehouse.
+Phase 6: Employee automation.
+Phase 7: Firebase authentication and MongoDB cloud saves.
+Phase 8: Mobile optimization and PWA.
+Phase 9: Seasonal events and advanced content.
+Phase 10: Food counters and future multiplayer foundations.
+
+Implement one phase at a time.
+
+Each phase must have:
+- Working code.
+- Tests.
+- Acceptance criteria.
+- Documentation.
+- A runnable game state.
+
+Do not implement future phases prematurely.
+
+## 18. ENGINEERING RULES
+
+Before coding:
+1. Inspect the existing repository.
+2. Preserve existing working functionality.
+3. Create GAME_DESIGN.md.
+4. Create ARCHITECTURE.md.
+5. Create ROADMAP.md.
+6. Create DATABASE_SCHEMA.md.
+7. Create TASKS.md.
+
+Use clean architecture and strongly typed interfaces.
+
+Do not create fake implementations that appear functional but are disconnected from the real game state.
+
+Do not use placeholder API responses as permanent implementations.
+
+If artwork is unavailable, use coherent temporary pixel-art assets or simple sprites, keeping assets replaceable.
+
+Never block gameplay solely because external cloud services are not configured.
+
+Provide a working guest/offline mode.
+
+At the end of every phase:
+- Run type checking.
+- Run linting.
+- Run relevant tests.
+- Run a production build.
+- Fix errors.
+- Update TASKS.md.
+- Document known limitations.
+
+## 19. FIRST EXECUTION
+
+Start with Phase 0 and Phase 1 only.
+
+Deliver a playable vertical slice containing:
+- A Vietnamese grocery store map.
+- A controllable player.
+- Camera.
+- Collision.
+- Two interactive shelves.
+- A cashier counter.
+- Five sample products.
+- A minimal inventory UI.
+- A basic game clock.
+- Local save.
+- Responsive desktop/mobile controls.
+
+The player must be able to enter the store, interact with shelves, inspect products, and save progress.
+
+Do not stop after creating documentation.
+
+After completing the vertical slice, report:
+1. What was implemented.
+2. Files created or modified.
+3. How to run the game.
+4. Tests and build results.
+5. Remaining limitations.
+6. Next implementation phase.
+
+Proceed autonomously within the current phase and avoid unnecessary confirmation requests.
+
+All player-facing game content must be in Vietnamese.
+Technical documentation and code identifiers may use English.
+
+
+
+Update the existing Tiệm Tạp Hóa Đầu Hẻm game design and implementation requirements.
+
+VISUAL STYLE:
+- Authentic nostalgic 2D pixel art inspired by classic cozy simulation games.
+- Vietnamese neighborhood setting inspired by the 1990s–2000s.
+- Warm, nostalgic colors, traditional grocery shelves, tiled floors, handwritten signs, glass cabinets, snacks, and neighborhood decorations.
+- Top-down 2.5D perspective with visible character fronts and furniture.
+- Consistent 32x32 tile grid and pixel-aligned sprite dimensions.
+- Use nearest-neighbor texture filtering, pixel-perfect camera positioning, integer scaling when possible, and prevent blurry sprites.
+- Do not use realistic 3D, smooth vector characters, generic corporate UI, or inconsistent AI-generated asset styles.
+
+SCREEN AND CONTROLS:
+- Landscape-first 16:9 gameplay for desktop and mobile.
+- Reference logical resolution: 960x540, adaptive viewport and safe areas.
+- Desktop: mouse and keyboard.
+- Mobile: virtual joystick, touch interaction, pinch zoom, and responsive HUD.
+- Large menus must adapt to smaller screens rather than shrinking desktop UI.
+- Detect portrait orientation and show a friendly rotate-device screen.
+- Keep all gameplay features available on mobile.
+
+ENGINEERING:
+- PixiJS v8 renders the pixel-art world.
+- React renders menus, HUD, inventory, employee management, and building UI.
+- Separate game-world scaling from UI scaling.
+- Test on desktop and mobile landscape viewports.
+- Preserve the existing Firebase Auth, MongoDB, IndexedDB, NestJS, ECS, and Vercel architecture.
+- Update GAME_DESIGN.md, ARCHITECTURE.md, ROADMAP.md and acceptance criteria before implementation.
+- Deliver a playable pixel-art vertical slice, not just a static mockup.

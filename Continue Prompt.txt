@@ -1,0 +1,153 @@
+
+# CONTINUE GAME DEVELOPMENT
+
+You are continuing development of the existing
+"Tiệm Tạp Hóa Đầu Hẻm" game.
+
+## 1. RESTORE PROJECT CONTEXT
+
+Read the following files first:
+
+- GAME_DESIGN.md
+- ARCHITECTURE.md
+- ROADMAP.md
+- TASKS.md
+
+Inspect the existing source code and Git status.
+
+Identify:
+- Completed features.
+- Current implementation phase.
+- Incomplete tasks.
+- Existing bugs.
+- Technical dependencies.
+- Previously established architectural decisions.
+
+Do not assume documentation is accurate without
+checking the actual implementation.
+
+## 2. CONTINUE IMPLEMENTATION
+
+Continue the current incomplete phase.
+
+If the current phase is complete, proceed to
+the next incomplete phase in ROADMAP.md.
+
+Prioritize completing functional gameplay
+over adding decorative or disconnected features.
+
+Do not rewrite completed modules unnecessarily.
+
+Preserve existing functionality.
+
+## 3. MANDATORY TECH STACK
+
+Maintain the established architecture:
+
+- PixiJS v8
+- React + TypeScript
+- ECS
+- NestJS
+- MongoDB Atlas
+- Firebase Authentication
+- IndexedDB
+- Vite + PWA
+
+Do not replace technologies without a
+documented technical reason.
+
+## 4. VISUAL REQUIREMENTS
+
+Preserve the established visual identity:
+
+- Nostalgic Vietnamese Pixel Art.
+- Landscape-first 16:9.
+- Desktop and mobile compatibility.
+- Top-down 2.5D perspective.
+- Consistent pixel dimensions.
+- Nearest-neighbor texture filtering.
+- Pixel-perfect rendering.
+- Responsive mobile controls.
+
+Do not introduce inconsistent visual styles.
+
+## 5. GAMEPLAY INTEGRITY
+
+All implemented features must be connected
+to the actual game simulation.
+
+Examples:
+
+Purchasing products updates inventory.
+
+Restocking transfers warehouse inventory
+to shelf inventory.
+
+Customer purchases reduce shelf stock.
+
+Checkout updates currency and XP.
+
+Employee actions affect real game state.
+
+Quests track actual gameplay events.
+
+Save/load restores the correct game state.
+
+Do not create fake or disconnected gameplay.
+
+## 6. QUALITY CONTROL
+
+After implementation:
+
+- Run TypeScript type checking.
+- Run linting.
+- Run relevant unit tests.
+- Run integration tests where applicable.
+- Run production build.
+- Fix introduced regressions.
+- Verify save/load functionality.
+- Verify desktop and mobile compatibility.
+
+Do not claim tests passed unless executed.
+
+## 7. UPDATE DOCUMENTATION
+
+Update:
+
+- TASKS.md
+- ROADMAP.md
+- Relevant technical documentation.
+
+Mark completed tasks accurately.
+
+Document unfinished work and known issues.
+
+## 8. CONTINUITY
+
+Before finishing the session:
+
+Record:
+- Current phase.
+- Completed work.
+- Remaining tasks.
+- Known issues.
+- Next implementation steps.
+
+Ensure the next AI session can continue
+without repeating completed work.
+
+## 9. EXECUTION RULE
+
+Proceed autonomously within the current phase.
+
+Do not stop after reading documentation.
+
+Implement, test, fix, and document.
+
+If blocked by missing credentials or external
+services, continue with guest/offline mode
+without introducing insecure shortcuts.
+
+Do not overwrite existing user data.
+
+Begin now.
