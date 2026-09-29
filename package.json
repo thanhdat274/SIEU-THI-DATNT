@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "yarn --cwd apps/web dev",
+    "start": "yarn --cwd apps/web dev",
     "build": "yarn --cwd apps/server build && yarn --cwd apps/web build",
     "typecheck": "tsc -b packages/shared packages/game-data packages/game-core packages/game-renderer apps/server apps/web",
     "test": "yarn --cwd packages/game-core test"
