@@ -1,8 +1,9 @@
-import { Texture, TextureSource } from 'pixi.js';
+import { Texture } from 'pixi.js';
 
 /**
  * Procedural Pixel Art Generator for "Tiệm Tạp Hóa Đầu Hẻm"
- * Produces crisp, authentic 90s Vietnamese textures at 32x32 resolution with nearest-neighbor scaling.
+ * Highly authentic 2D pixel art inspired by Stardew Valley and cozy simulation games.
+ * 32x32 tiles, nearest-neighbor scaling, warm nostalgic colors.
  */
 
 function createCanvas(width: number, height: number): HTMLCanvasElement {
@@ -37,6 +38,8 @@ export class PixelTextureFactory {
 
   private createCanvasForKey(key: string): HTMLCanvasElement {
     switch (key) {
+      case 'tile_store_floor':
+        return this.createStoreFloorTile();
       case 'tile_encaustic':
         return this.createEncausticTile();
       case 'tile_sidewalk':
@@ -47,10 +50,18 @@ export class PixelTextureFactory {
         return this.createYellowWallTile();
       case 'tile_signboard':
         return this.createSignboardTexture();
+      case 'tile_plant_pot':
+        return this.createPlantPotTexture();
+      case 'tile_shopping_baskets':
+        return this.createBasketsTexture();
       case 'fixture_shelf_wooden':
-        return this.createWoodenShelfTexture();
+        return this.createDetailedShelfTexture();
       case 'fixture_cashier':
-        return this.createCashierTexture();
+        return this.createDetailedCashierTexture();
+      case 'fixture_refrigerator':
+        return this.createRefrigeratorTexture();
+      case 'bubble_question':
+        return this.createQuestionBubbleTexture();
       case 'player_down':
         return this.createPlayerTexture('down');
       case 'player_up':
@@ -75,135 +86,147 @@ export class PixelTextureFactory {
   }
 
   /**
-   * Classic Vietnamese flower encaustic floor tile (Gạch bông hoa văn cổ điển)
+   * Supermarket / Grocery floor tile (Matching user reference image)
+   * Warm beige/cream tile with soft grid grout
+   */
+  private createStoreFloorTile(): HTMLCanvasElement {
+    const canvas = createCanvas(32, 32);
+    const ctx = canvas.getContext('2d')!;
+
+    // Soft warm tile base
+    ctx.fillStyle = '#eee5d6';
+    ctx.fillRect(0, 0, 32, 32);
+
+    // Subtle marble/grit variation
+    ctx.fillStyle = '#e5dbcb';
+    ctx.fillRect(4, 6, 8, 8);
+    ctx.fillRect(18, 16, 10, 10);
+    ctx.fillStyle = '#f5ede0';
+    ctx.fillRect(14, 4, 12, 6);
+    ctx.fillRect(2, 20, 8, 8);
+
+    // Grout lines (Crisp 1px pixel border)
+    ctx.fillStyle = '#d5c8b5';
+    ctx.fillRect(0, 0, 32, 1);
+    ctx.fillRect(0, 0, 1, 32);
+
+    return canvas;
+  }
+
+  /**
+   * Vietnamese flower encaustic floor tile (Gạch bông cổ điển cho cửa ra vào)
    */
   private createEncausticTile(): HTMLCanvasElement {
     const canvas = createCanvas(32, 32);
     const ctx = canvas.getContext('2d')!;
 
-    // Creamy white background
     ctx.fillStyle = '#f4ecd8';
     ctx.fillRect(0, 0, 32, 32);
 
-    // Dark teal floral pattern
     ctx.fillStyle = '#2d6a4f';
-    // Center diamond
     ctx.fillRect(14, 14, 4, 4);
+    ctx.fillRect(2, 2, 5, 5);
+    ctx.fillRect(25, 2, 5, 5);
+    ctx.fillRect(2, 25, 5, 5);
+    ctx.fillRect(25, 25, 5, 5);
 
-    // Corner petals
-    ctx.fillRect(2, 2, 6, 6);
-    ctx.fillRect(24, 2, 6, 6);
-    ctx.fillRect(2, 24, 6, 6);
-    ctx.fillRect(24, 24, 6, 6);
-
-    // Mustard yellow accents
     ctx.fillStyle = '#d4a373';
     ctx.fillRect(12, 4, 8, 2);
     ctx.fillRect(12, 26, 8, 2);
     ctx.fillRect(4, 12, 2, 8);
     ctx.fillRect(26, 12, 2, 8);
 
-    // Subtle grout line
-    ctx.strokeStyle = '#c4b59f';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0.5, 0.5, 31, 31);
+    ctx.fillStyle = '#c4b59f';
+    ctx.fillRect(0, 0, 32, 1);
+    ctx.fillRect(0, 0, 1, 32);
 
     return canvas;
   }
 
   /**
-   * Sidewalk pavement (Vỉa hè xi măng / lát đá ngõ phố)
+   * Sidewalk pavement (Vỉa hè xi măng / ngõ phố)
    */
   private createSidewalkTile(): HTMLCanvasElement {
     const canvas = createCanvas(32, 32);
     const ctx = canvas.getContext('2d')!;
 
-    ctx.fillStyle = '#b8b2a6';
+    ctx.fillStyle = '#c7beaf';
     ctx.fillRect(0, 0, 32, 32);
 
-    // Diagonal texture accents
-    ctx.fillStyle = '#a69f92';
+    ctx.fillStyle = '#b5ab9c';
     for (let i = 0; i < 32; i += 8) {
       ctx.fillRect(i, 0, 1, 32);
       ctx.fillRect(0, i, 32, 1);
     }
 
-    ctx.fillStyle = '#8f887b';
-    ctx.fillRect(4, 8, 2, 2);
-    ctx.fillRect(18, 20, 2, 2);
-    ctx.fillRect(26, 10, 2, 2);
+    ctx.fillStyle = '#9c9284';
+    ctx.fillRect(6, 10, 2, 2);
+    ctx.fillRect(22, 22, 2, 2);
 
     return canvas;
   }
 
   /**
-   * Street asphalt (Đường hẻm bê tông)
+   * Street asphalt
    */
   private createStreetTile(): HTMLCanvasElement {
     const canvas = createCanvas(32, 32);
     const ctx = canvas.getContext('2d')!;
 
-    ctx.fillStyle = '#6c757d';
+    ctx.fillStyle = '#7a8288';
     ctx.fillRect(0, 0, 32, 32);
 
-    // Gravel noise
-    ctx.fillStyle = '#5a6268';
-    ctx.fillRect(6, 4, 3, 2);
-    ctx.fillRect(20, 14, 4, 2);
-    ctx.fillRect(10, 24, 3, 2);
-    ctx.fillRect(26, 26, 2, 2);
-
-    ctx.fillStyle = '#7d858c';
-    ctx.fillRect(14, 8, 2, 2);
-    ctx.fillRect(4, 18, 2, 2);
+    ctx.fillStyle = '#656c72';
+    ctx.fillRect(8, 6, 4, 2);
+    ctx.fillRect(20, 18, 5, 2);
+    ctx.fillRect(6, 24, 3, 2);
 
     return canvas;
   }
 
   /**
-   * Yellow plaster colonial wall (Tường vôi vàng truyền thống)
+   * Yellow plaster colonial wall
    */
   private createYellowWallTile(): HTMLCanvasElement {
     const canvas = createCanvas(32, 32);
     const ctx = canvas.getContext('2d')!;
 
-    // Rich vintage golden yellow
-    ctx.fillStyle = '#e9c46a';
+    ctx.fillStyle = '#f0cf75';
     ctx.fillRect(0, 0, 32, 32);
 
-    // Weathered plaster stains
-    ctx.fillStyle = '#d4a34b';
+    ctx.fillStyle = '#ddb455';
     ctx.fillRect(2, 6, 8, 4);
     ctx.fillRect(18, 14, 10, 5);
 
-    // Bottom dark moisture base
+    // Weathered water stain base
     ctx.fillStyle = '#52796f';
     ctx.fillRect(0, 26, 32, 6);
 
-    // Top trim / cornice
+    // Wooden border trim
     ctx.fillStyle = '#b0893b';
     ctx.fillRect(0, 0, 32, 3);
+    ctx.fillRect(0, 25, 32, 1);
 
     return canvas;
   }
 
   /**
-   * Grocery Store Signboard (Bảng hiệu "TIỆM TẠP HÓA ĐẦU HẺM")
+   * Signboard "TIỆM TẠP HÓA ĐẦU HẺM" (128x32)
    */
   private createSignboardTexture(): HTMLCanvasElement {
     const canvas = createCanvas(128, 32);
     const ctx = canvas.getContext('2d')!;
 
-    // Red lacquered wooden board
-    ctx.fillStyle = '#b7094c';
+    // Red lacquer board
+    ctx.fillStyle = '#9e1a2b';
     ctx.fillRect(0, 0, 128, 32);
 
-    // Golden frame
-    ctx.strokeStyle = '#ffd166';
+    // Gold carved frame
+    ctx.strokeStyle = '#f4a261';
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, 126, 30);
 
-    // Vietnamese handwritten style text
+    // Vietnamese handwritten lettering
     ctx.fillStyle = '#fff3b0';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
@@ -214,159 +237,316 @@ export class PixelTextureFactory {
   }
 
   /**
-   * Wooden Grocery Shelf (2x1 tiles = 64x32)
+   * Potted plant for decoration (as seen in the reference image)
    */
-  private createWoodenShelfTexture(): HTMLCanvasElement {
-    const canvas = createCanvas(64, 32);
+  private createPlantPotTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(32, 32);
     const ctx = canvas.getContext('2d')!;
 
-    // Wood frame
-    ctx.fillStyle = '#8b5a2b';
-    ctx.fillRect(0, 0, 64, 32);
+    // Clay pot
+    ctx.fillStyle = '#9c5932';
+    ctx.fillRect(8, 18, 16, 12);
+    ctx.fillStyle = '#7a3e1b';
+    ctx.fillRect(6, 16, 20, 4);
 
-    // Inner shelf tiers
-    ctx.fillStyle = '#a06535';
-    ctx.fillRect(4, 4, 56, 10);
-    ctx.fillRect(4, 18, 56, 10);
-
-    // Shelf dividers & borders
-    ctx.fillStyle = '#5c3818';
-    ctx.fillRect(0, 0, 64, 2);
-    ctx.fillRect(0, 15, 64, 2);
-    ctx.fillRect(0, 30, 64, 2);
-    ctx.fillRect(0, 0, 3, 32);
-    ctx.fillRect(61, 0, 3, 32);
-    ctx.fillRect(31, 2, 2, 28);
-
-    // Shelved items details (red & green packages)
-    ctx.fillStyle = '#e63946';
-    ctx.fillRect(6, 6, 8, 7);
-    ctx.fillRect(16, 6, 8, 7);
-    ctx.fillRect(36, 6, 8, 7);
-    ctx.fillRect(46, 6, 8, 7);
-
-    ctx.fillStyle = '#2a9d8f';
-    ctx.fillRect(8, 20, 6, 8);
-    ctx.fillRect(18, 20, 6, 8);
-    ctx.fillRect(38, 20, 6, 8);
-    ctx.fillRect(48, 20, 6, 8);
-
-    return canvas;
-  }
-
-  /**
-   * Cashier counter with register and cash drawer (64x32)
-   */
-  private createCashierTexture(): HTMLCanvasElement {
-    const canvas = createCanvas(64, 32);
-    const ctx = canvas.getContext('2d')!;
-
-    // Dark polished wood countertop
-    ctx.fillStyle = '#6f4e37';
-    ctx.fillRect(0, 0, 64, 32);
-
-    ctx.fillStyle = '#966f50';
-    ctx.fillRect(2, 2, 60, 14);
-
-    // Cashier Register / Calculator
-    ctx.fillStyle = '#343a40';
-    ctx.fillRect(8, 5, 16, 12);
-
-    // Register screen & keys
-    ctx.fillStyle = '#52b788';
-    ctx.fillRect(10, 7, 12, 4);
-    ctx.fillStyle = '#adb5bd';
-    ctx.fillRect(10, 12, 12, 3);
-
-    // Wooden Cash box / Drawer on the right
-    ctx.fillStyle = '#583101';
-    ctx.fillRect(36, 6, 22, 18);
-    ctx.fillStyle = '#dda15e';
-    ctx.fillRect(38, 8, 18, 6);
-    // Keyhole / lock
-    ctx.fillStyle = '#ffb703';
-    ctx.fillRect(46, 16, 2, 4);
-
-    // Bottom drawers
-    ctx.fillStyle = '#4a2c13';
-    ctx.fillRect(2, 20, 60, 10);
-    ctx.fillStyle = '#d4a373';
-    ctx.fillRect(14, 24, 8, 2);
-    ctx.fillRect(42, 24, 8, 2);
-
-    return canvas;
-  }
-
-  /**
-   * Player Character Sprite (Cô Năm / Chủ Tiệm)
-   */
-  private createPlayerTexture(direction: 'down' | 'up' | 'left' | 'right'): HTMLCanvasElement {
-    const canvas = createCanvas(32, 40);
-    const ctx = canvas.getContext('2d')!;
-
-    // Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    // Green bush foliage
+    ctx.fillStyle = '#2d6a4f';
     ctx.beginPath();
-    ctx.ellipse(16, 36, 10, 4, 0, 0, Math.PI * 2);
+    ctx.arc(16, 12, 10, 0, Math.PI * 2);
     ctx.fill();
 
-    // Hair
-    ctx.fillStyle = '#212529';
-    if (direction === 'up') {
-      ctx.fillRect(10, 2, 12, 12);
-      ctx.fillRect(8, 4, 16, 8);
-    } else {
-      ctx.fillRect(10, 2, 12, 6);
-      ctx.fillRect(8, 4, 16, 6);
+    // Highlight
+    ctx.fillStyle = '#52b788';
+    ctx.fillRect(13, 6, 6, 6);
+
+    return canvas;
+  }
+
+  /**
+   * Stack of shopping baskets (as seen in the reference image)
+   */
+  private createBasketsTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(32, 32);
+    const ctx = canvas.getContext('2d')!;
+
+    // Stacking metal/plastic blue baskets
+    for (let y = 14; y < 28; y += 4) {
+      ctx.fillStyle = '#1d3557';
+      ctx.fillRect(6, y, 20, 6);
+      ctx.fillStyle = '#457b9d';
+      ctx.fillRect(8, y + 1, 16, 2);
+      ctx.fillStyle = '#e63946'; // handle
+      ctx.fillRect(14, y - 2, 4, 2);
     }
 
-    // Face / Skin
-    ctx.fillStyle = '#ffd1a4';
-    ctx.fillRect(11, 8, 10, 8);
+    return canvas;
+  }
+
+  /**
+   * Detailed Store Shelf (64x36) matching the reference image
+   * Visible snack packages, drinks, cans, crisp metal/wood tier dividers
+   */
+  private createDetailedShelfTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(64, 38);
+    const ctx = canvas.getContext('2d')!;
+
+    // Shelf frame (Dark steel/wood)
+    ctx.fillStyle = '#495057';
+    ctx.fillRect(2, 2, 60, 34);
+
+    // Shelf tiers (2 levels)
+    ctx.fillStyle = '#6c757d';
+    ctx.fillRect(4, 4, 56, 14);
+    ctx.fillRect(4, 20, 56, 14);
+
+    // Tier shelf ledges
+    ctx.fillStyle = '#ced4da';
+    ctx.fillRect(2, 16, 60, 3);
+    ctx.fillRect(2, 32, 60, 3);
+
+    // Products on Top Tier (Colorful instant noodle boxes & snacks)
+    // Red packages (Hảo Hảo)
+    ctx.fillStyle = '#d90429';
+    ctx.fillRect(6, 6, 9, 10);
+    ctx.fillRect(17, 6, 9, 10);
+    ctx.fillStyle = '#ffb703';
+    ctx.fillRect(8, 9, 5, 4);
+    ctx.fillRect(19, 9, 5, 4);
+
+    // Green packages
+    ctx.fillStyle = '#2a9d8f';
+    ctx.fillRect(28, 6, 9, 10);
+    ctx.fillRect(39, 6, 9, 10);
+
+    // Yellow boxes
+    ctx.fillStyle = '#f4a261';
+    ctx.fillRect(50, 6, 8, 10);
+
+    // Products on Bottom Tier (Drinks & Bottles)
+    // Brown soda bottles
+    ctx.fillStyle = '#582f0e';
+    ctx.fillRect(6, 22, 6, 10);
+    ctx.fillRect(14, 22, 6, 10);
+    ctx.fillStyle = '#52b788'; // caps
+    ctx.fillRect(7, 21, 4, 2);
+    ctx.fillRect(15, 21, 4, 2);
+
+    // Pink candy packs (Big Babol)
+    ctx.fillStyle = '#f72585';
+    ctx.fillRect(23, 24, 8, 8);
+    ctx.fillRect(33, 24, 8, 8);
+
+    // Tin cans (Ông Thọ)
+    ctx.fillStyle = '#e9ecef';
+    ctx.fillRect(43, 23, 7, 9);
+    ctx.fillRect(52, 23, 7, 9);
+    ctx.fillStyle = '#c1121f';
+    ctx.fillRect(43, 26, 7, 4);
+    ctx.fillRect(52, 26, 7, 4);
+
+    // Side pillars
+    ctx.fillStyle = '#343a40';
+    ctx.fillRect(0, 0, 3, 38);
+    ctx.fillRect(61, 0, 3, 38);
+
+    return canvas;
+  }
+
+  /**
+   * Cashier Checkout Counter (64x36) matching reference image
+   * Includes computer screen, keyboard, scanner, and cash box
+   */
+  private createDetailedCashierTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(64, 38);
+    const ctx = canvas.getContext('2d')!;
+
+    // Modern / vintage grey & wood counter
+    ctx.fillStyle = '#adb5bd';
+    ctx.fillRect(0, 6, 64, 30);
+
+    // Countertop
+    ctx.fillStyle = '#dee2e6';
+    ctx.fillRect(0, 6, 64, 12);
+    ctx.fillStyle = '#495057';
+    ctx.fillRect(0, 16, 64, 2);
+
+    // Register terminal / Screen on left
+    ctx.fillStyle = '#212529';
+    ctx.fillRect(8, 2, 16, 12);
+    ctx.fillStyle = '#38b000'; // green retro pos screen
+    ctx.fillRect(10, 4, 12, 6);
+    ctx.fillStyle = '#6c757d'; // stand
+    ctx.fillRect(14, 14, 4, 4);
+
+    // Keyboard / keypad
+    ctx.fillStyle = '#495057';
+    ctx.fillRect(8, 14, 12, 4);
+
+    // Wooden Cash Box on right
+    ctx.fillStyle = '#6f4e37';
+    ctx.fillRect(36, 8, 22, 18);
+    ctx.fillStyle = '#966f50';
+    ctx.fillRect(38, 10, 18, 6);
+    // Keyhole
+    ctx.fillStyle = '#ffb703';
+    ctx.fillRect(46, 18, 2, 3);
+
+    // Bottom drawers
+    ctx.fillStyle = '#6c757d';
+    ctx.fillRect(2, 22, 60, 12);
+    ctx.fillStyle = '#f8f9fa';
+    ctx.fillRect(14, 26, 10, 2);
+    ctx.fillRect(38, 26, 10, 2);
+
+    return canvas;
+  }
+
+  /**
+   * Cute Stardew-style Question Bubble (?)
+   */
+  private createRefrigeratorTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(32, 38);
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#3d5456';
+    ctx.fillRect(0, 2, 32, 36);
+    ctx.fillStyle = '#d7e3e5';
+    ctx.fillRect(2, 0, 28, 35);
+    ctx.fillStyle = '#6c8f91';
+    ctx.fillRect(5, 4, 22, 23);
+    ctx.fillStyle = '#a9d6d8';
+    ctx.fillRect(7, 6, 18, 19);
+    ctx.fillStyle = '#f4ecd8';
+    ctx.fillRect(9, 12, 5, 9);
+    ctx.fillRect(18, 12, 5, 9);
+    ctx.fillStyle = '#c1121f';
+    ctx.fillRect(9, 9, 5, 3);
+    ctx.fillStyle = '#287c84';
+    ctx.fillRect(18, 9, 5, 3);
+    ctx.fillStyle = '#455c5e';
+    ctx.fillRect(3, 29, 26, 4);
+    return canvas;
+  }
+
+  private createQuestionBubbleTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(24, 24);
+    const ctx = canvas.getContext('2d')!;
+
+    // Circle bubble background
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(12, 11, 9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dark border
+    ctx.strokeStyle = '#2b2d42';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Bubble pointer at bottom
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(9, 18);
+    ctx.lineTo(12, 23);
+    ctx.lineTo(15, 18);
+    ctx.fill();
+
+    // Blue Question Mark
+    ctx.fillStyle = '#3a86ff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('?', 12, 11);
+
+    return canvas;
+  }
+
+  /**
+   * Chibi RPG Player Character (Stardew Valley aesthetic)
+   */
+  private createPlayerTexture(direction: 'down' | 'up' | 'left' | 'right'): HTMLCanvasElement {
+    const canvas = createCanvas(32, 36);
+    const ctx = canvas.getContext('2d')!;
+
+    // Shadow under feet
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+    ctx.beginPath();
+    ctx.ellipse(16, 33, 9, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hair (warm chestnut brown)
+    ctx.fillStyle = '#5c3d2e';
+    if (direction === 'up') {
+      ctx.fillRect(9, 2, 14, 12);
+      ctx.fillRect(7, 5, 18, 8);
+    } else {
+      ctx.fillRect(9, 2, 14, 7);
+      ctx.fillRect(7, 4, 18, 6);
+      // Bangs
+      ctx.fillRect(10, 8, 4, 2);
+      ctx.fillRect(18, 8, 4, 2);
+    }
+
+    // Face / Skin (soft warm peach)
+    ctx.fillStyle = '#ffdfba';
+    ctx.fillRect(10, 8, 12, 9);
 
     if (direction === 'down') {
-      // Eyes & smile
-      ctx.fillStyle = '#212529';
-      ctx.fillRect(13, 11, 2, 2);
-      ctx.fillRect(17, 11, 2, 2);
-      ctx.fillStyle = '#e76f51';
-      ctx.fillRect(14, 14, 4, 1);
+      // Cute anime pixel eyes
+      ctx.fillStyle = '#2b2d42';
+      ctx.fillRect(12, 11, 2, 3);
+      ctx.fillRect(18, 11, 2, 3);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(12, 11, 1, 1);
+      ctx.fillRect(18, 11, 1, 1);
+
+      // Blush
+      ctx.fillStyle = 'rgba(239, 71, 111, 0.45)';
+      ctx.fillRect(10, 14, 3, 2);
+      ctx.fillRect(19, 14, 3, 2);
+
+      // Smile
+      ctx.fillStyle = '#d90429';
+      ctx.fillRect(14, 15, 4, 1);
     } else if (direction === 'left') {
-      ctx.fillStyle = '#212529';
-      ctx.fillRect(12, 11, 2, 2);
+      ctx.fillStyle = '#2b2d42';
+      ctx.fillRect(11, 11, 2, 3);
+      ctx.fillStyle = 'rgba(239, 71, 111, 0.45)';
+      ctx.fillRect(10, 14, 3, 2);
     } else if (direction === 'right') {
-      ctx.fillStyle = '#212529';
-      ctx.fillRect(18, 11, 2, 2);
+      ctx.fillStyle = '#2b2d42';
+      ctx.fillRect(19, 11, 2, 3);
+      ctx.fillStyle = 'rgba(239, 71, 111, 0.45)';
+      ctx.fillRect(19, 14, 3, 2);
     }
 
-    // Shirt (Vintage teal polo / blouse)
-    ctx.fillStyle = '#1d3557';
-    ctx.fillRect(9, 16, 14, 12);
+    // Shirt (Classic cozy burgundy jacket or blue shirt)
+    ctx.fillStyle = '#b7094c';
+    ctx.fillRect(9, 17, 14, 9);
 
-    // Collar / Apron (Yellow-cream)
-    ctx.fillStyle = '#f1faee';
-    ctx.fillRect(12, 16, 8, 8);
+    // Inner collar (White tee)
+    ctx.fillStyle = '#f8f9fa';
+    ctx.fillRect(13, 17, 6, 4);
 
     // Hands
-    ctx.fillStyle = '#ffd1a4';
+    ctx.fillStyle = '#ffdfba';
     if (direction === 'left') {
-      ctx.fillRect(7, 20, 3, 5);
+      ctx.fillRect(7, 21, 3, 4);
     } else if (direction === 'right') {
-      ctx.fillRect(22, 20, 3, 5);
+      ctx.fillRect(22, 21, 3, 4);
     } else {
-      ctx.fillRect(6, 20, 3, 5);
-      ctx.fillRect(23, 20, 3, 5);
+      ctx.fillRect(6, 21, 3, 4);
+      ctx.fillRect(23, 21, 3, 4);
     }
 
-    // Pants (Dark navy / black trousers)
-    ctx.fillStyle = '#2b2d42';
-    ctx.fillRect(11, 28, 4, 8);
-    ctx.fillRect(17, 28, 4, 8);
+    // Pants (Dark blue jeans)
+    ctx.fillStyle = '#1d3557';
+    ctx.fillRect(11, 26, 4, 6);
+    ctx.fillRect(17, 26, 4, 6);
 
-    // Sandals / Shoes (Dép lào / dép tổ ong)
-    ctx.fillStyle = '#8d99ae';
-    ctx.fillRect(10, 36, 5, 2);
-    ctx.fillRect(17, 36, 5, 2);
+    // Shoes (Tan boots)
+    ctx.fillStyle = '#8b5a2b';
+    ctx.fillRect(10, 32, 5, 2);
+    ctx.fillRect(17, 32, 5, 2);
 
     return canvas;
   }
@@ -376,16 +556,12 @@ export class PixelTextureFactory {
   private createHaoHaoTexture(): HTMLCanvasElement {
     const canvas = createCanvas(28, 28);
     const ctx = canvas.getContext('2d')!;
-    // Iconic Red Hảo Hảo packaging
     ctx.fillStyle = '#d90429';
     ctx.fillRect(2, 4, 24, 20);
-    // Yellow banner
     ctx.fillStyle = '#ffb703';
     ctx.fillRect(4, 9, 20, 7);
-    // Shrimp pink illustration
     ctx.fillStyle = '#fb8500';
     ctx.fillRect(10, 17, 8, 5);
-    // Dark outline
     ctx.strokeStyle = '#590d22';
     ctx.lineWidth = 1;
     ctx.strokeRect(2.5, 4.5, 23, 19);
@@ -395,15 +571,11 @@ export class PixelTextureFactory {
   private createXaXiTexture(): HTMLCanvasElement {
     const canvas = createCanvas(28, 28);
     const ctx = canvas.getContext('2d')!;
-    // Brown glass bottle body
     ctx.fillStyle = '#582f0e';
     ctx.fillRect(10, 10, 8, 16);
-    // Neck
     ctx.fillRect(12, 4, 4, 6);
-    // Green cap
     ctx.fillStyle = '#2d6a4f';
     ctx.fillRect(11, 2, 6, 3);
-    // White/green label
     ctx.fillStyle = '#f4ecd8';
     ctx.fillRect(10, 14, 8, 7);
     ctx.fillStyle = '#1b4332';
@@ -414,15 +586,12 @@ export class PixelTextureFactory {
   private createBigBabolTexture(): HTMLCanvasElement {
     const canvas = createCanvas(28, 28);
     const ctx = canvas.getContext('2d')!;
-    // Hot pink watermelon wrapper
     ctx.fillStyle = '#f72585';
     ctx.fillRect(3, 8, 22, 12);
-    // Green border like watermelon rind
     ctx.fillStyle = '#4cc9f0';
     ctx.fillRect(3, 8, 22, 2);
     ctx.fillStyle = '#70e000';
     ctx.fillRect(3, 18, 22, 2);
-    // Bubble
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(11, 12, 6, 4);
     return canvas;
@@ -431,16 +600,12 @@ export class PixelTextureFactory {
   private createSuaOngThoTexture(): HTMLCanvasElement {
     const canvas = createCanvas(28, 28);
     const ctx = canvas.getContext('2d')!;
-    // Can body
     ctx.fillStyle = '#e5e5e5';
     ctx.fillRect(6, 4, 16, 20);
-    // Red label band
     ctx.fillStyle = '#c1121f';
     ctx.fillRect(6, 8, 16, 12);
-    // Yellow star / icon
     ctx.fillStyle = '#ffd166';
     ctx.fillRect(11, 11, 6, 6);
-    // Tin rim
     ctx.fillStyle = '#adb5bd';
     ctx.fillRect(5, 3, 18, 2);
     ctx.fillRect(5, 23, 18, 2);
@@ -450,13 +615,10 @@ export class PixelTextureFactory {
   private createBanhMiQueTexture(): HTMLCanvasElement {
     const canvas = createCanvas(28, 28);
     const ctx = canvas.getContext('2d')!;
-    // Golden crispy baguette stick
     ctx.fillStyle = '#e09f3e';
     ctx.fillRect(4, 11, 20, 6);
-    // Baked crust edges
     ctx.fillStyle = '#9e2a2b';
     ctx.fillRect(3, 12, 22, 2);
-    // Pate filling hint
     ctx.fillStyle = '#540b0e';
     ctx.fillRect(8, 14, 12, 2);
     return canvas;

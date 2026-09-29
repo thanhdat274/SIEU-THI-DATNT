@@ -5,6 +5,7 @@
 export const TILE_SIZE = 32;
 export const REFERENCE_WIDTH = 960;
 export const REFERENCE_HEIGHT = 540;
+export const COLD_WAREHOUSE_CAPACITY = 40;
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -49,6 +50,20 @@ export interface Product {
 export interface InventoryItem {
   productId: string;
   quantity: number;
+  lots?: StockLot[];
+}
+
+export interface StockLot {
+  quantity: number;
+  expiresOnDay: number;
+}
+
+export interface SupplierOrder {
+  id: string;
+  productId: string;
+  quantity: number;
+  unitCost: number;
+  arrivalDay: number;
 }
 
 export type FixtureType = 'shelf_wooden' | 'shelf_glass' | 'cashier_counter' | 'refrigerator';
@@ -63,6 +78,7 @@ export interface StoreFixture {
   rotation: 0 | 90 | 180 | 270;
   assignedProductId?: string;
   currentStock: number;
+  stockLots?: StockLot[];
   maxCapacity: number;
   label: string;
 }
@@ -102,10 +118,12 @@ export interface SaveGameData {
   worldTime: WorldTime;
   storeLayout: StoreLayout;
   inventory: InventoryItem[];
+  pendingOrders?: SupplierOrder[];
   statistics: {
     totalRevenue: number;
     totalCustomersServed: number;
     totalDaysPassed: number;
+    totalSpoiled?: number;
   };
 }
 

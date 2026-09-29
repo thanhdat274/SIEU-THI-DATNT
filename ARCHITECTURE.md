@@ -84,10 +84,19 @@ SIEU-THI-DATNT/
 1. Game luôn khởi động và tải trạng thái từ IndexedDB trước tiên (Zero cloud dependency để bắt đầu chơi).
 2. Nếu chưa có save game, tạo save game mới với bố cục mặc định:
    - Cửa hàng 8x8
-   - Tiền vốn khởi đầu: 100,000 đ
+   - Tiền vốn khởi đầu: 150,000 đ
    - 2 kệ hàng gỗ
    - 1 bàn thu ngân
    - Túi đồ có sẵn các gói hàng mẫu để bày thử.
 3. Khi người chơi đăng nhập Google qua Firebase Auth:
    - Đồng bộ save local lên Cloud MongoDB.
    - So sánh `revision` và `updatedAt` để phát hiện xung đột, đảm bảo không ghi đè dữ liệu mới hơn.
+
+## 3. TRẠNG THÁI MÃ NGUỒN ĐÃ KIỂM TRA
+
+- Frontend hiện chạy được ở chế độ offline. Core dùng các lớp mô phỏng và cấu trúc dữ liệu riêng; ECS bằng bitecs chưa được triển khai.
+- Bản đồ đang sinh bằng TypeScript; bộ nạp Tiled JSON chưa có.
+- `apps/server` hiện là hợp đồng API dạng lớp TypeScript, chưa khởi chạy NestJS, chưa có Firebase Admin hoặc MongoDB.
+- Dexie là nơi lưu thực tế. Bản lưu gồm tiền, giờ, kho, kệ, thống kê bán hàng và đơn nhà phân phối chờ giao. Mỗi lần ghi tăng revision một lần và từ chối revision cũ.
+- Đặt hàng trừ tiền ngay, giao vào kho sáng hôm sau. Bán hàng thủ công tại quầy lấy từ tồn kệ và cộng tiền/XP/doanh thu. NPC tự mua hàng chưa có.
+- Cloud sync, Firebase Auth, PWA, lô hàng có hạn dùng và tủ mát còn trong roadmap. Không nên coi sơ đồ kiến trúc ở trên là tính năng đã hoàn thành.

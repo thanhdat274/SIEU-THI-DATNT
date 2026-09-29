@@ -55,7 +55,21 @@ export const INITIAL_FIXTURES: StoreFixture[] = [
     maxCapacity: 0,
     label: 'Bàn Thu Ngân & Hòm Tiền Lẻ',
   },
+  {
+    id: 'refrigerator_small',
+    type: 'refrigerator',
+    tileX: 11,
+    tileY: 7,
+    widthTiles: 1,
+    heightTiles: 1,
+    rotation: 0,
+    currentStock: 0,
+    maxCapacity: 12,
+    label: 'Tủ mát nhỏ',
+  },
 ];
+
+export const INITIAL_REFRIGERATOR = INITIAL_FIXTURES.find((fixture) => fixture.type === 'refrigerator')!;
 
 /**
  * Generate starter map matrix (20 columns x 16 rows)
@@ -117,19 +131,6 @@ export function generateStarterTileMap(): GameTileMap {
     }
   }
 
-  // Register fixture collisions
-  for (const fix of INITIAL_FIXTURES) {
-    for (let dy = 0; dy < fix.heightTiles; dy++) {
-      for (let dx = 0; dx < fix.widthTiles; dx++) {
-        const tx = fix.tileX + dx;
-        const ty = fix.tileY + dy;
-        if (tx >= 0 && tx < MAP_WIDTH && ty >= 0 && ty < MAP_HEIGHT) {
-          collisionLayer[ty * MAP_WIDTH + tx] = true;
-        }
-      }
-    }
-  }
-
   return {
     width: MAP_WIDTH,
     height: MAP_HEIGHT,
@@ -159,7 +160,7 @@ export function generateStarterTileMap(): GameTileMap {
 
 export const DEFAULT_INITIAL_SAVE: SaveGameData = {
   id: 'local_save_default',
-  schemaVersion: 1,
+  schemaVersion: 2,
   revision: 1,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),

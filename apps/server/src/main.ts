@@ -1,4 +1,4 @@
-import { STARTER_PRODUCTS } from '@game/data';
+import { ALL_PRODUCTS } from '@game/data';
 import { SaveGameData, Product } from '@game/shared';
 
 /**
@@ -25,7 +25,7 @@ export class GameApiController {
     return {
       statusCode: 200,
       message: 'Lấy danh mục hàng hóa thành công',
-      data: STARTER_PRODUCTS,
+      data: ALL_PRODUCTS,
       timestamp: new Date().toISOString(),
     };
   }

@@ -33,6 +33,7 @@ export class PixiGameViewport {
 
   private isInitialized: boolean = false;
   private animTimer: number = 0;
+  private accumulatedTime: number = 0;
 
   constructor(options: PixiGameViewportOptions) {
     this.canvas = options.canvas;
@@ -112,7 +113,7 @@ export class PixiGameViewport {
           const tileId = groundLayerData[y * width + x];
           let textureKey = 'tile_sidewalk';
 
-          if (tileId === 3) textureKey = 'tile_encaustic';
+          if (tileId === 3) textureKey = 'tile_store_floor';
           else if (tileId === 1) textureKey = 'tile_street';
           else if (tileId === 2) textureKey = 'tile_sidewalk';
 
@@ -124,7 +125,7 @@ export class PixiGameViewport {
       }
     }
 
-    // Wall Layer
+    // Wall Layer & Shop decorations
     if (wallLayerData) {
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
@@ -145,6 +146,22 @@ export class PixiGameViewport {
         }
       }
     }
+
+    // Add entrance decorations matching reference image (baskets and potted plants)
+    const plant1 = new Sprite(this.textures.getTexture('tile_plant_pot'));
+    plant1.x = 6 * TILE_SIZE;
+    plant1.y = 10 * TILE_SIZE;
+    this.entitiesLayer.addChild(plant1);
+
+    const plant2 = new Sprite(this.textures.getTexture('tile_plant_pot'));
+    plant2.x = 13 * TILE_SIZE;
+    plant2.y = 10 * TILE_SIZE;
+    this.entitiesLayer.addChild(plant2);
+
+    const baskets = new Sprite(this.textures.getTexture('tile_shopping_baskets'));
+    baskets.x = 7 * TILE_SIZE;
+    baskets.y = 10 * TILE_SIZE;
+    this.entitiesLayer.addChild(baskets);
   }
 
   private buildFixtures(): void {
@@ -157,23 +174,31 @@ export class PixiGameViewport {
       let textureKey = 'fixture_shelf_wooden';
       if (fix.type === 'cashier_counter') {
         textureKey = 'fixture_cashier';
+      } else if (fix.type === 'refrigerator') {
+        textureKey = 'fixture_refrigerator';
       }
 
       const sprite = new Sprite(this.textures.getTexture(textureKey));
       container.addChild(sprite);
 
-      // Stock indicator badge if it's a shelf
+      // Pill stock badge under shelf (Matching user reference image!)
+      const badgeBg = new Graphics();
+      badgeBg.roundRect(14, 34, 36, 12, 3);
+      badgeBg.fill({ color: 0xeadcc9, alpha: 0.95 });
+      badgeBg.stroke({ color: 0xbfa993, width: 1 });
+      container.addChild(badgeBg);
+
       const style = new TextStyle({
-        fontFamily: 'monospace',
+        fontFamily: '"Courier New", Courier, monospace',
         fontSize: 9,
         fontWeight: 'bold',
-        fill: 0xffffff,
-        stroke: { color: 0x000000, width: 2 },
+        fill: 0x43382f,
       });
 
       const stockText = new Text({ text: '', style });
-      stockText.x = 4;
-      stockText.y = 2;
+      stockText.anchor.set(0.5);
+      stockText.x = 32;
+      stockText.y = 40;
       container.addChild(stockText);
 
       this.entitiesLayer.addChild(container);
@@ -190,21 +215,29 @@ export class PixiGameViewport {
   private buildInteractionBubble(): void {
     this.interactionBubble = new Container();
 
+    // Cute Question Bubble (?) Sprite from reference image
+    const questionSprite = new Sprite(this.textures.getTexture('bubble_question'));
+    questionSprite.anchor.set(0.5, 1.0);
+    questionSprite.y = -6;
+    this.interactionBubble.addChild(questionSprite);
+
+    // Pill badge for button hint
     const bg = new Graphics();
-    bg.roundRect(-45, -14, 90, 24, 6);
-    bg.fill({ color: 0xffb703, alpha: 0.95 });
-    bg.stroke({ color: 0x582f0e, width: 2 });
+    bg.roundRect(-46, -34, 92, 22, 5);
+    bg.fill({ color: 0xfcf4dc, alpha: 0.96 });
+    bg.stroke({ color: 0x8b5a2b, width: 2 });
     this.interactionBubble.addChild(bg);
 
     const style = new TextStyle({
-      fontFamily: 'sans-serif',
-      fontSize: 11,
+      fontFamily: '"Courier New", Courier, monospace',
+      fontSize: 10,
       fontWeight: 'bold',
-      fill: 0x2b2d42,
+      fill: 0x38200e,
     });
 
-    const text = new Text({ text: '💬 [E] Xem kệ', style });
+    const text = new Text({ text: '[E] Xem kệ', style });
     text.anchor.set(0.5);
+    text.y = -23;
     this.interactionBubble.addChild(text);
 
     this.interactionBubble.visible = false;
@@ -212,11 +245,18 @@ export class PixiGameViewport {
   }
 
   private renderTick = (): void => {
-    const dt = 1 / 60; // Fixed timestep delta
-    this.animTimer += dt;
+    const elapsed = Math.min(this.app.ticker.deltaMS / 1000, 0.25);
+    const dt = 1 / 60;
+    this.animTimer += elapsed;
+    this.accumulatedTime += elapsed;
 
-    // 1. Advance simulation
-    this.simulation.update(dt);
+    // Fixed simulation steps independent of monitor refresh rate.
+    let steps = 0;
+    while (this.accumulatedTime >= dt && steps < 15) {
+      this.simulation.update(dt);
+      this.accumulatedTime -= dt;
+      steps++;
+    }
 
     const playerData = this.simulation.getPlayerData();
     const isMoving = this.simulation.getIsMoving();
@@ -265,11 +305,11 @@ export class PixiGameViewport {
       this.interactionBubble.x = fixCenterX;
       this.interactionBubble.y = fixTopY - 14 + bubbleFloat;
 
-      const textNode = this.interactionBubble.children[1] as Text;
+      const textNode = this.interactionBubble.children[2] as Text;
       if (activeFixture.type === 'cashier_counter') {
-        textNode.text = '💰 [E] Thu ngân';
+        textNode.text = '[E] Bàn Thu Ngân';
       } else {
-        textNode.text = '📦 [E] Xem kệ';
+        textNode.text = '[E] Xem Kệ Hàng';
       }
     } else {
       this.interactionBubble.visible = false;

@@ -37,4 +37,20 @@
 - [x] **Kiểm thử & Đóng gói sản phẩm**:
   - [x] Chạy kiểm tra kiểu TypeScript (`tsc`).
   - [x] Chạy kiểm tra bộ build sản phẩm (`pnpm build`).
-  - [x] Đảm bảo ứng dụng chạy mượt mà 60 FPS, không lỗi console.
+  - [ ] Đo FPS và kiểm tra console trên trình duyệt desktop/mobile thật.
+
+---
+
+## ĐỢT RÀ SOÁT HIỆN TẠI
+- [x] Sửa race khởi tạo Pixi trong React StrictMode: lượt dọn dẹp cũ không còn phá canvas của lượt mới; hiển thị lỗi khởi động và nút tải lại nếu dựng bản đồ thất bại.
+- [x] Sửa đồng hồ HUD cập nhật mỗi phút và vòng mô phỏng cố định theo thời gian thực, không theo số khung hình.
+- [x] Sửa lưu IndexedDB: revision chỉ tăng một lần, ghi tuần tự và từ chối bản lưu cũ.
+- [x] Đặt hàng nhà phân phối bằng tiền thật; đơn chờ được lưu và giao vào kho sáng ngày kế.
+- [x] Bán từng món từ tồn kệ tại quầy; cộng tiền, XP, doanh thu và lưu thống kê.
+- [x] Kiểm thử nghiệp vụ đặt hàng, giao hàng, bán hàng và khôi phục dữ liệu.
+- [ ] Mở rộng danh mục lên 30+ sản phẩm và đủ 10 nhóm.
+- [ ] Quản lý hạn sử dụng theo lô và tủ mát. Hiện hàng chưa hỏng theo thời gian.
+- [ ] Khách NPC tự đi lại, chọn hàng và xếp hàng; thao tác bán ở quầy hiện do người chơi thực hiện.
+- [ ] Báo cáo tài chính theo ngày, nhiệm vụ và mở khóa cấp độ.
+- [ ] Kiểm thử trực quan trên desktop và mobile, đo FPS.
+- [ ] Thiết lập lint script và chạy lint; dự án hiện chưa có cấu hình lint.

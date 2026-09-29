@@ -3,92 +3,119 @@ import { useGameStore } from '../store/useGameStore';
 
 interface HUDProps {
   onToggleStoreStatus?: () => void;
+  onOpenSupplier: () => void;
+  gameSpeed?: number;
+  onToggleGameSpeed?: () => void;
 }
 
-export const HUD: React.FC<HUDProps> = ({ onToggleStoreStatus }) => {
+export const HUD: React.FC<HUDProps> = ({
+  onToggleStoreStatus,
+  onOpenSupplier,
+  gameSpeed = 1,
+  onToggleGameSpeed,
+}) => {
   const { player, worldTime, timeString, toggleInventoryModal, toggleSaveModal } = useGameStore();
 
-  const xpPercentage = Math.min(
-    100,
-    Math.round((player.experience / player.experienceToNextLevel) * 100)
-  );
-
   return (
-    <header className="absolute top-0 left-0 right-0 z-30 pointer-events-none p-2 sm:p-3 flex flex-wrap justify-between items-start gap-2">
-      {/* Left: Player Profile & Level */}
-      <div className="pointer-events-auto bg-[#2b1e16]/90 border-2 border-[#d4a373] rounded-lg px-3 py-1.5 shadow-lg backdrop-blur-sm flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-[#583101] border-2 border-[#ffd166] flex items-center justify-center text-xl shadow-inner">
-          🏪
+    <header className="absolute top-0 left-0 right-0 z-30 pointer-events-none p-1.5 sm:p-2.5">
+      <div className="pointer-events-auto bg-[#e5d5be] border-2 border-[#8c745d] rounded-lg shadow-md px-2.5 py-1.5 flex flex-wrap justify-between items-center gap-2 select-none">
+        {/* Left: Date, Time & Current Store Event */}
+        <div className="flex items-center gap-2.5">
+          <div className="flex flex-col">
+            <div className="text-xs sm:text-sm font-bold text-[#3d2b1f] font-mono tracking-wide flex items-center gap-1.5">
+              <span>Ngày {worldTime.day}</span>
+              <span className="text-[#8c745d]">·</span>
+              <span className="font-extrabold">{timeString}</span>
+            </div>
+            <div className="text-[10px] text-[#6d5543] font-medium flex items-center gap-1">
+              <span>🍲</span>
+              <span>Bữa ăn gia đình · Ca sáng</span>
+            </div>
+          </div>
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-[#ffd166] tracking-wide">
-              {player.name}
+
+        {/* Center: Stat Badges matching reference photo */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-bold font-mono">
+          {/* Customers Inside / Capacity */}
+          <div className="bg-[#f5ece0] border border-[#a89078] px-2 py-1 rounded flex items-center gap-1 text-[#3d2b1f] shadow-xs">
+            <span>👤</span>
+            <span>0/12</span>
+          </div>
+
+          {/* Money in VND */}
+          <div className="bg-[#f5ece0] border border-[#a89078] px-2.5 py-1 rounded flex items-center gap-1.5 text-[#b07d18] shadow-xs">
+            <span className="w-4 h-4 rounded-full bg-[#f4a261] border border-[#d48b28] text-[10px] flex items-center justify-center text-white font-bold">
+              đ
             </span>
-            <span className="bg-[#b7094c] text-white text-[10px] font-bold px-1.5 py-0.5 rounded border border-[#ffd166]/50">
-              Cấp {player.level}
+            <span className="font-extrabold text-[#7c560d]">
+              {player.money.toLocaleString('vi-VN')}
             </span>
           </div>
-          {/* XP Bar */}
-          <div className="w-28 sm:w-36 bg-[#1b1c1e] h-2 rounded-full overflow-hidden border border-[#d4a373]/50 mt-1">
-            <div
-              className="bg-gradient-to-r from-[#2a9d8f] to-[#e76f51] h-full transition-all duration-300"
-              style={{ width: `${xpPercentage}%` }}
-            />
+
+          {/* Heart / Reputation */}
+          <div className="bg-[#f5ece0] border border-[#a89078] px-2 py-1 rounded flex items-center gap-1 text-[#b7094c] shadow-xs">
+            <span>❤️</span>
+            <span className="font-extrabold">{player.reputation || 95}</span>
           </div>
         </div>
-      </div>
 
-      {/* Center: Clock & Shop Status */}
-      <div className="pointer-events-auto bg-[#2b1e16]/90 border-2 border-[#d4a373] rounded-lg px-4 py-1.5 shadow-lg backdrop-blur-sm flex items-center gap-3 text-center">
-        <div>
-          <div className="text-[11px] text-[#f4ecd8]/70 font-medium">
-            Ngày {worldTime.day}
-          </div>
-          <div className="text-lg font-mono font-bold text-[#ffd166] tracking-wider">
-            {timeString}
-          </div>
+        {/* Right: Stardew Valley & Reference Style Action Buttons */}
+        <div className="flex items-center gap-1 sm:gap-1.5 text-xs font-bold">
+          {/* Quản lí (Inventory/Ledger) */}
+          <button
+            onClick={toggleInventoryModal}
+            className="bg-[#d4b998] hover:bg-[#c4a682] active:translate-y-0.5 text-[#3d2b1f] border border-[#8c745d] rounded px-2.5 py-1 flex items-center gap-1 shadow-xs transition-transform"
+            title="Mở sổ quản lí hàng hóa [Tab / I]"
+          >
+            <span>🛒</span>
+            <span className="hidden md:inline">Quản lí</span>
+          </button>
+
+          {/* Nhập hàng (Supplier) */}
+          <button
+            onClick={onOpenSupplier}
+            className="bg-[#d4b998] hover:bg-[#c4a682] active:translate-y-0.5 text-[#3d2b1f] border border-[#8c745d] rounded px-2 py-1 flex items-center gap-1 shadow-xs transition-transform"
+            title="Đặt hàng đại lý giao đến tiệm"
+          >
+            <span>🚚</span>
+            <span className="hidden sm:inline">Nhập hàng</span>
+          </button>
+
+          {/* Game Speed Toggle: 1x / 2x */}
+          <button
+            onClick={onToggleGameSpeed}
+            className="bg-[#d4b998] hover:bg-[#c4a682] active:translate-y-0.5 text-[#3d2b1f] border border-[#8c745d] rounded px-2 py-1 flex items-center gap-1 shadow-xs transition-transform font-mono"
+            title="Đổi tốc độ thời gian"
+          >
+            <span>▶</span>
+            <span>{gameSpeed}x</span>
+          </button>
+
+          {/* Store Open/Close Button */}
+          <button
+            onClick={onToggleStoreStatus}
+            className={`border rounded px-2.5 py-1 flex items-center gap-1 shadow-xs transition-all active:translate-y-0.5 ${
+              worldTime.isStoreOpen
+                ? 'bg-[#e29578] hover:bg-[#d47f60] text-[#4a180d] border-[#b06145]'
+                : 'bg-[#83c5be] hover:bg-[#68aba4] text-[#0d3b38] border-[#4d8f88]'
+            }`}
+            title="Mở hoặc đóng cửa tiệm đón khách"
+          >
+            <span>{worldTime.isStoreOpen ? '✖' : '✔'}</span>
+            <span className="hidden sm:inline">
+              {worldTime.isStoreOpen ? 'Đóng cửa' : 'Mở cửa'}
+            </span>
+          </button>
+
+          {/* Save Game Button */}
+          <button
+            onClick={toggleSaveModal}
+            className="bg-[#d4b998] hover:bg-[#c4a682] active:translate-y-0.5 text-[#3d2b1f] border border-[#8c745d] rounded px-2 py-1 flex items-center gap-1 shadow-xs transition-transform"
+            title="Lưu tiến trình vào máy"
+          >
+            <span>💾</span>
+          </button>
         </div>
-        <button
-          onClick={onToggleStoreStatus}
-          className={`text-[11px] font-bold px-2 py-1 rounded transition-colors border ${
-            worldTime.isStoreOpen
-              ? 'bg-[#2d6a4f] text-white border-[#52b788] hover:bg-[#1b4332]'
-              : 'bg-[#9e2a2b] text-white border-[#e63946] hover:bg-[#540b0e]'
-          }`}
-          title="Nhấn để đổi trạng thái mở/đóng tiệm"
-        >
-          {worldTime.isStoreOpen ? 'ĐANG MỞ CỬA' : 'ĐÃ ĐÓNG CỬA'}
-        </button>
-      </div>
-
-      {/* Right: Currency & Action Buttons */}
-      <div className="pointer-events-auto flex items-center gap-2">
-        {/* Money badge */}
-        <div className="bg-[#2b1e16]/90 border-2 border-[#d4a373] rounded-lg px-3 py-1.5 shadow-lg backdrop-blur-sm flex items-center gap-2">
-          <span className="text-lg">🪙</span>
-          <span className="text-base sm:text-lg font-mono font-bold text-[#ffd166]">
-            {player.money.toLocaleString('vi-VN')} đ
-          </span>
-        </div>
-
-        {/* Inventory button */}
-        <button
-          onClick={toggleInventoryModal}
-          className="bg-[#8b5a2b] hover:bg-[#a06535] active:translate-y-0.5 text-white border-2 border-[#ffd166] rounded-lg px-3 py-2 shadow-lg flex items-center gap-1.5 text-xs sm:text-sm font-bold transition-all"
-        >
-          <span>📦</span>
-          <span className="hidden sm:inline">Túi hàng [I]</span>
-        </button>
-
-        {/* Save button */}
-        <button
-          onClick={toggleSaveModal}
-          className="bg-[#2d6a4f] hover:bg-[#1b4332] active:translate-y-0.5 text-white border-2 border-[#ffd166] rounded-lg px-3 py-2 shadow-lg flex items-center gap-1.5 text-xs sm:text-sm font-bold transition-all"
-        >
-          <span>💾</span>
-          <span className="hidden sm:inline">Lưu game</span>
-        </button>
       </div>
     </header>
   );

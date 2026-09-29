@@ -50,15 +50,16 @@ export async function loadOrCreateSave(): Promise<SaveGameData> {
 /**
  * Persist active save state to IndexedDB
  */
-export async function persistSave(saveData: SaveGameData): Promise<void> {
-  const updated: SaveGameData = {
-    ...saveData,
-    id: SAVE_STORAGE_KEY,
-    updatedAt: new Date().toISOString(),
-    revision: (saveData.revision || 1) + 1,
-  };
-
-  await db.saves.put(updated);
+export async function persistSave(saveData: SaveGameData): Promise<SaveGameData> {
+  const updated: SaveGameData = { ...saveData, id: SAVE_STORAGE_KEY, updatedAt: new Date().toISOString() };
+  await db.transaction('rw', db.saves, async () => {
+    const existing = await db.saves.get(SAVE_STORAGE_KEY);
+    if (existing && updated.revision !== existing.revision + 1) {
+      throw new Error('Bản lưu đã thay đổi. Vui lòng tải lại trò chơi trước khi lưu.');
+    }
+    await db.saves.put(updated);
+  });
+  return updated;
 }
 
 /**

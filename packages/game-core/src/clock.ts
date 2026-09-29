@@ -4,10 +4,12 @@ export class GameClock {
   private time: WorldTime;
   private accumulatedSeconds: number = 0;
   private onDayChanged?: (newDay: number) => void;
+  private onTimeChanged?: () => void;
 
-  constructor(initialTime: WorldTime, onDayChanged?: (newDay: number) => void) {
+  constructor(initialTime: WorldTime, onDayChanged?: (newDay: number) => void, onTimeChanged?: () => void) {
     this.time = { ...initialTime };
     this.onDayChanged = onDayChanged;
+    this.onTimeChanged = onTimeChanged;
   }
 
   public getTime(): WorldTime {
@@ -16,11 +18,17 @@ export class GameClock {
 
   public setTime(newTime: WorldTime): void {
     this.time = { ...newTime };
+    this.accumulatedSeconds = 0;
+    this.onTimeChanged?.();
   }
 
   public toggleStoreStatus(): boolean {
     this.time.isStoreOpen = !this.time.isStoreOpen;
     return this.time.isStoreOpen;
+  }
+
+  public setTimeScale(scale: number): void {
+    this.time.timeScale = scale;
   }
 
   public update(dt: number): void {
@@ -51,6 +59,7 @@ export class GameClock {
         this.advanceToNextDay();
       }
     }
+    this.onTimeChanged?.();
   }
 
   public advanceToNextDay(): void {
@@ -60,6 +69,7 @@ export class GameClock {
     if (this.onDayChanged) {
       this.onDayChanged(this.time.day);
     }
+    this.onTimeChanged?.();
   }
 
   public formatTimeString(): string {

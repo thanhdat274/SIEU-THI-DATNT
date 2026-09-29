@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { generateStarterTileMap, PRODUCT_MAP } from '@game/data';
 import { InputManager, GameSimulation } from '@game/core';
 import { PixiGameViewport } from '@game/renderer';
-import { SaveGameData, StoreFixture } from '@game/shared';
+import { SaveGameData, SupplierOrder } from '@game/shared';
 
 import { loadOrCreateSave, persistSave, resetSaveToDefault } from './db';
 import { useGameStore } from './store/useGameStore';
@@ -14,16 +14,26 @@ import { SaveModal } from './components/SaveModal';
 import { VirtualJoystick } from './components/VirtualJoystick';
 import { RotateOverlay } from './components/RotateOverlay';
 import { ToastContainer } from './components/ToastContainer';
+import { SupplierModal } from './components/SupplierModal';
+import { BottomBar } from './components/BottomBar';
 
 export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simulationRef = useRef<GameSimulation | null>(null);
   const inputManagerRef = useRef<InputManager | null>(null);
   const viewportRef = useRef<PixiGameViewport | null>(null);
+  const revisionRef = useRef(1);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const initializationRef = useRef<Promise<void>>(Promise.resolve());
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [startupError, setStartupError] = useState<string>('');
   const [lastSavedTime, setLastSavedTime] = useState<string>('');
   const [currentRevision, setCurrentRevision] = useState<number>(1);
+  const [pendingOrders, setPendingOrders] = useState<SupplierOrder[]>([]);
+  const [statistics, setStatistics] = useState<SaveGameData['statistics']>({ totalRevenue: 0, totalCustomersServed: 0, totalDaysPassed: 0 });
+  const [isSupplierOpen, setSupplierOpen] = useState(false);
+  const [gameSpeed, setGameSpeed] = useState<number>(1);
 
   const {
     player,
@@ -51,36 +61,44 @@ export const App: React.FC = () => {
     setWorldTime(time, sim.getClock().formatTimeString());
     setInventory(sim.getInventory());
     setFixtures(sim.getFixtures());
+    setPendingOrders(sim.getPendingOrders());
+    setStatistics(sim.getStatistics());
     setNearbyFixture(sim.getActiveFixture());
   }, [setPlayerData, setWorldTime, setInventory, setFixtures, setNearbyFixture]);
 
   // Save progress to Dexie
   const handleSaveGame = useCallback(async (isManual: boolean = false) => {
     if (!simulationRef.current) return;
-    try {
-      const exportData = simulationRef.current.exportSaveData('local_save_default', currentRevision);
-      await persistSave(exportData);
-      setLastSavedTime(exportData.updatedAt);
-      setCurrentRevision(exportData.revision);
-      if (isManual) {
-        addToast('Đã lưu tiến trình thành công vào máy!', 'success');
+    saveQueueRef.current = saveQueueRef.current.catch(() => {}).then(async () => {
+      try {
+        if (!simulationRef.current) return;
+        const exportData = simulationRef.current.exportSaveData('local_save_default', revisionRef.current);
+        const saved = await persistSave(exportData);
+        revisionRef.current = saved.revision;
+        setLastSavedTime(saved.updatedAt);
+        setCurrentRevision(saved.revision);
+        if (isManual) addToast('Đã lưu tiến trình thành công vào máy!', 'success');
+      } catch (err) {
+        console.error('Save error:', err);
+        addToast(err instanceof Error ? err.message : 'Lỗi khi lưu dữ liệu!', 'warn');
       }
-    } catch (err) {
-      console.error('Save error:', err);
-      addToast('Lỗi khi lưu dữ liệu!', 'warn');
-    }
-  }, [currentRevision, addToast]);
+    });
+    await saveQueueRef.current;
+  }, [addToast]);
 
   // Reset progress
   const handleResetGame = useCallback(async () => {
     try {
+      await saveQueueRef.current;
       const freshSave = await resetSaveToDefault();
       if (simulationRef.current) {
         simulationRef.current.importSaveData(freshSave);
         syncFromSimulation(simulationRef.current);
       }
       setCurrentRevision(freshSave.revision);
+      revisionRef.current = freshSave.revision;
       setLastSavedTime(freshSave.updatedAt);
+      setGameSpeed(Math.max(1, freshSave.worldTime.timeScale / 60));
       addToast('Đã khởi tạo lại tiệm mới thành công!', 'info');
     } catch (err) {
       console.error('Reset error:', err);
@@ -89,6 +107,21 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     let isCancelled = false;
+    let initialized = false;
+    let disposed = false;
+    let ownedInput: InputManager | null = null;
+    let ownedViewport: PixiGameViewport | null = null;
+    let ownedSimulation: GameSimulation | null = null;
+
+    const dispose = () => {
+      if (disposed) return;
+      disposed = true;
+      ownedInput?.detachListeners();
+      ownedViewport?.destroy();
+      if (inputManagerRef.current === ownedInput) inputManagerRef.current = null;
+      if (viewportRef.current === ownedViewport) viewportRef.current = null;
+      if (simulationRef.current === ownedSimulation) simulationRef.current = null;
+    };
 
     async function initGame() {
       if (!canvasRef.current) return;
@@ -98,11 +131,14 @@ export const App: React.FC = () => {
       if (isCancelled) return;
 
       setCurrentRevision(initialSave.revision);
+      revisionRef.current = initialSave.revision;
       setLastSavedTime(initialSave.updatedAt);
+      setGameSpeed(Math.max(1, initialSave.worldTime.timeScale / 60));
 
       // 2. Setup inputs
       const inputManager = new InputManager();
       inputManager.attachListeners();
+      ownedInput = inputManager;
       inputManagerRef.current = inputManager;
 
       // 3. Setup map
@@ -123,12 +159,22 @@ export const App: React.FC = () => {
           addToast(`Bình minh Ngày ${newDay}! Chúc tiệm một ngày buôn bán đắt hàng! ☀️`, 'success');
           handleSaveGame(false);
         },
+        onStockExpired: (quantity) => {
+          addToast(`${quantity} món hàng đã quá hạn và được loại khỏi kho/kệ.`, 'warn');
+        },
+        onTimeChanged: () => {
+          if (simulationRef.current) {
+            const sim = simulationRef.current;
+            setWorldTime(sim.getTime(), sim.getClock().formatTimeString());
+          }
+        },
         onStateChanged: () => {
           if (simulationRef.current) {
             syncFromSimulation(simulationRef.current);
           }
         },
       });
+      ownedSimulation = simulation;
       simulationRef.current = simulation;
 
       // Sync initial state
@@ -140,19 +186,30 @@ export const App: React.FC = () => {
         tileMap,
         simulation,
       });
+      ownedViewport = viewport;
 
       await viewport.initialize();
-      if (isCancelled) {
-        viewport.destroy();
-        return;
-      }
+      if (isCancelled) return;
 
       viewportRef.current = viewport;
+      initialized = true;
       setIsLoading(false);
       addToast('Chào mừng bạn đến với Tiệm Tạp Hóa Đầu Hẻm! 🇻🇳', 'info');
     }
 
-    initGame();
+    // React StrictMode can mount, clean up, and mount again while Pixi is still
+    // initializing. Serialize those passes so an old pass cannot destroy the
+    // WebGL context used by the current pass.
+    const previous = initializationRef.current;
+    initializationRef.current = previous.catch(() => {}).then(initGame).catch((error) => {
+      dispose();
+      if (!isCancelled) {
+        console.error('Game startup error:', error);
+        setStartupError('Không thể mở bản đồ. Hãy tải lại trang để thử lại.');
+      }
+    }).finally(() => {
+      if (isCancelled) dispose();
+    });
 
     // Auto-save timer every 30 seconds
     const autoSaveInterval = setInterval(() => {
@@ -171,12 +228,7 @@ export const App: React.FC = () => {
       isCancelled = true;
       clearInterval(autoSaveInterval);
       window.removeEventListener('keydown', handleGlobalKeyDown);
-      if (inputManagerRef.current) {
-        inputManagerRef.current.detachListeners();
-      }
-      if (viewportRef.current) {
-        viewportRef.current.destroy();
-      }
+      if (initialized) dispose();
     };
   }, [addToast, closeAllModals, handleSaveGame, openFixtureModal, setNearbyFixture, syncFromSimulation]);
 
@@ -213,8 +265,15 @@ export const App: React.FC = () => {
     simulationRef.current.getClock().advanceToNextDay();
     syncFromSimulation(simulationRef.current);
     closeFixtureModal();
-    addToast('Đã chuyển sang ngày mới! 🌅', 'success');
-    handleSaveGame(false);
+  };
+
+  const handleToggleGameSpeed = () => {
+    const nextSpeed = gameSpeed === 1 ? 2 : 1;
+    setGameSpeed(nextSpeed);
+    if (simulationRef.current) {
+      simulationRef.current.getClock().setTimeScale(nextSpeed === 1 ? 60 : 120);
+    }
+    addToast(`Tốc độ thời gian: ${nextSpeed}x`, 'info');
   };
 
   const handleMobileJoystickMove = (x: number, y: number) => {
@@ -229,6 +288,28 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleSupplierOrder = (productId: string, quantity: number) => {
+    const sim = simulationRef.current;
+    if (!sim) return;
+    if (sim.orderFromSupplier(productId, quantity)) {
+      syncFromSimulation(sim);
+      addToast('Đã đặt hàng. Nhà phân phối sẽ giao vào sáng mai!', 'success');
+    } else {
+      addToast('Không thể đặt hàng: kiểm tra số tiền hoặc cấp độ.', 'warn');
+    }
+  };
+
+  const handleCheckout = (fixtureId: string) => {
+    const sim = simulationRef.current;
+    if (!sim) return;
+    if (sim.checkoutShelf(fixtureId)) {
+      syncFromSimulation(sim);
+      addToast('Đã bán một món hàng và nhận tiền, kinh nghiệm!', 'success');
+    } else {
+      addToast('Không thể bán: tiệm đang đóng cửa hoặc kệ đã hết hàng.', 'warn');
+    }
+  };
+
   return (
     <div className="relative w-full h-full overflow-hidden bg-retro-dark select-none touch-none">
       {/* PixiJS Canvas */}
@@ -239,18 +320,27 @@ export const App: React.FC = () => {
         <div className="absolute inset-0 z-50 bg-[#1b1c1e] text-[#ffd166] flex flex-col items-center justify-center p-4">
           <div className="text-4xl animate-bounce mb-3">🏪</div>
           <h1 className="text-xl font-bold tracking-wider mb-2">TIỆM TẠP HÓA ĐẦU HẺM</h1>
-          <p className="text-xs text-[#faedcd]/70 font-mono">Đang tải cửa tiệm & chuẩn bị hàng hóa...</p>
+          <p className="text-xs text-[#faedcd]/70 font-mono">{startupError || 'Đang tải cửa tiệm & chuẩn bị hàng hóa...'}</p>
+          {startupError && <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 rounded bg-[#8b5a2b]">Tải lại game</button>}
         </div>
       )}
 
       {/* Top HUD */}
-      {!isLoading && <HUD onToggleStoreStatus={handleToggleStoreStatus} />}
+      {!isLoading && (
+        <HUD
+          onToggleStoreStatus={handleToggleStoreStatus}
+          onOpenSupplier={() => setSupplierOpen(true)}
+          gameSpeed={gameSpeed}
+          onToggleGameSpeed={handleToggleGameSpeed}
+        />
+      )}
 
       {/* Modals */}
       {activeFixtureModal && activeFixtureModal.type !== 'cashier_counter' && (
         <ShelfModal
           fixture={activeFixtureModal}
           inventory={inventory}
+          currentDay={worldTime.day}
           onRestock={handleRestock}
           onUnstock={handleUnstock}
           onClose={closeFixtureModal}
@@ -262,6 +352,9 @@ export const App: React.FC = () => {
           fixture={activeFixtureModal}
           player={player}
           worldTime={worldTime}
+          shelves={fixtures.filter((fixture) => fixture.type !== 'cashier_counter')}
+          statistics={statistics}
+          onCheckout={handleCheckout}
           onToggleStoreStatus={handleToggleStoreStatus}
           onAdvanceDay={handleAdvanceDay}
           onClose={closeFixtureModal}
@@ -269,7 +362,7 @@ export const App: React.FC = () => {
       )}
 
       {isInventoryModalOpen && (
-        <InventoryModal inventory={inventory} onClose={closeAllModals} />
+        <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals} />
       )}
 
       {isSaveModalOpen && (
@@ -282,6 +375,10 @@ export const App: React.FC = () => {
         />
       )}
 
+      {isSupplierOpen && (
+        <SupplierModal player={player} pendingOrders={pendingOrders} inventory={inventory} onOrder={handleSupplierOrder} onClose={() => setSupplierOpen(false)} />
+      )}
+
       {/* Mobile Touch Controls & Virtual Joystick */}
       {!isLoading && (
         <VirtualJoystick
@@ -292,6 +389,9 @@ export const App: React.FC = () => {
 
       {/* Rotate Device Screen (For Portrait Viewports) */}
       <RotateOverlay />
+
+      {/* Bottom Hint Bar (matching reference image) */}
+      {!isLoading && <BottomBar />}
 
       {/* Cozy Notifications */}
       <ToastContainer />

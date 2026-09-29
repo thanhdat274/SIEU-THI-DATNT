@@ -1,6 +1,6 @@
 # LỘ TRÌNH PHÁT TRIỂN (DEVELOPMENT ROADMAP)
 
-## 📌 GIAI ĐOẠN HIỆN TẠI: PHASE 0 & PHASE 1 (VERTICAL SLICE)
+## 📌 GIAI ĐOẠN HIỆN TẠI: PHASE 2 (SẢN PHẨM & KHO HÀNG)
 
 ---
 
@@ -30,7 +30,7 @@
 
 ### [ ] GIAI ĐOẠN 2: HỆ THỐNG SẢN PHẨM & KHO HÀNG NÂNG CAO (PRODUCT & INVENTORY)
 - [ ] Mở rộng danh mục lên 30+ sản phẩm đặc trưng Việt Nam theo 10 phân loại.
-- [ ] Hệ thống đặt hàng nhà phân phối (Supplier Purchasing) và thời gian giao hàng.
+- [x] Đặt hàng nhà phân phối, trừ tiền và giao hàng vào kho sáng hôm sau; đơn chờ được lưu/tải.
 - [ ] Cơ chế hạn sử dụng và bảo quản tủ mát.
 
 ---
@@ -39,6 +39,7 @@
 - [ ] Thuật toán tìm đường A* (A-Star Pathfinding) cho NPC.
 - [ ] Máy trạng thái khách hàng: Đi vào -> Chọn hàng -> Xếp hàng thanh toán -> Rời tiệm.
 - [ ] Cơ chế kiên nhẫn và độ hài lòng của khách trong xóm.
+- [x] Bán hàng thủ công tại quầy từ tồn kệ; cập nhật tiền, XP và doanh thu.
 
 ---
 
