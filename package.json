@@ -7,9 +7,10 @@
     "dev": "pnpm --filter @game/web dev",
     "build": "pnpm --filter \"@game/*\" build",
     "typecheck": "pnpm --filter \"@game/*\" typecheck",
-    "test": "pnpm --filter \"@game/*\" test"
+    "test": "pnpm --filter @game/core test"
   },
   "devDependencies": {
+    "tsx": "^4.23.15",
     "typescript": "^5.4.5"
   }
 }

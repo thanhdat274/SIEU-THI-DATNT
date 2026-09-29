@@ -4,6 +4,8 @@ import { GameSimulation } from './simulation';
 import { CollisionSystem } from './collision';
 import { GameClock } from './clock';
 
+declare const process: any;
+
 function assert(condition: boolean, message: string) {
   if (!condition) {
     throw new Error(`❌ TEST FAILED: ${message}`);
