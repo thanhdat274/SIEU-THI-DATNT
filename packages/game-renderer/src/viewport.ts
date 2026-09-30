@@ -284,7 +284,9 @@ export class PixiGameViewport {
         // If outside original shop map bounds, fill with authentic alley ground
         if (x < 0 || x >= width || y < 0 || y >= height) {
           // Use pavement alley texture, with occasional street or sidewalk accents
-          let outerTexture = 'tile_pavement_alley';
+          // Cỏ bao quanh (kiểu làng quê Stardew) thay cho nền xám phẳng; vỉa hè bám sát mặt tiền.
+          let outerTexture = 'tile_grass_patch';
+          if (y + originY >= originY + height - 3 || Math.abs(x - width / 2) < 2.5) outerTexture = 'tile_pavement_alley';
           if (y >= height - 2 && y <= height + 2) {
             outerTexture = 'tile_street';
           } else if ((x === -1 || x === width) && y > 2) {
@@ -310,7 +312,10 @@ export class PixiGameViewport {
 
           if (tileId === 3) textureKey = 'tile_store_floor';
           else if (tileId === 1) textureKey = 'tile_street';
-          else if (tileId === 2) textureKey = 'tile_sidewalk';
+          else if (tileId === 2) {
+            // Vỉa hè chỉ ở mặt tiền (y 11–12); đất trống phía trên/hai bên là cỏ để có chiều sâu kiểu Stardew.
+            textureKey = y + originY < 11 ? 'tile_grass_patch' : 'tile_sidewalk';
+          }
           else if (tileId === 9) textureKey = 'warehouse_floor';
 
           const tileSprite = new Sprite(this.textures.getTexture(textureKey));
@@ -645,6 +650,8 @@ export class PixiGameViewport {
     this.entitiesLayer.addChild(this.partnerContainer);
   }
 
+  private bubbleWidth = 0;
+
   private buildInteractionBubble(): void {
     this.interactionBubble = new Container();
 
@@ -942,6 +949,16 @@ export class PixiGameViewport {
         textNode.text = '[E] Bàn Thu Ngân';
       } else {
         textNode.text = '[E] Xem Kệ Hàng';
+      }
+      // Nền bong bóng bám theo độ rộng chữ để không tràn hoặc thừa khoảng trống.
+      const bubbleBg = this.interactionBubble.children[1] as Graphics;
+      const bubbleWidth = Math.ceil(textNode.width) + 16;
+      if (this.bubbleWidth !== bubbleWidth) {
+        this.bubbleWidth = bubbleWidth;
+        bubbleBg.clear();
+        bubbleBg.rect(-bubbleWidth / 2, -36, bubbleWidth, 24);
+        bubbleBg.fill({ color: 0xfcf4dc, alpha: 0.96 });
+        bubbleBg.stroke({ color: 0x8b5a2b, width: 2 });
       }
     } else {
       this.interactionBubble.visible = false;

@@ -481,6 +481,13 @@ export class GameSimulation {
     }
 
     this.playerData.money -= candidate.hiringFee;
+    {
+      const hireDay = this.clock.getTime().day;
+      this.recordLedger({ day: hireDay, type: 'wage', amount: candidate.hiringFee, description: `Phí tuyển ${candidate.name}` });
+      const hireRecord = hireDay === this.currentDayRecord.day ? this.currentDayRecord : (this.dailyRecords[hireDay] ??= this.createEmptyDailyRecord(hireDay));
+      hireRecord.wagesPaid += candidate.hiringFee;
+      hireRecord.netProfit = hireRecord.revenue - hireRecord.cogs - hireRecord.spoilageCost - hireRecord.wagesPaid;
+    }
     const member: StaffMember = {
       id: candidate.id,
       name: candidate.name,

@@ -24,6 +24,7 @@ import { runQuestTests } from './quests.test';
 import { runSeasonAndStallTests } from './seasons.test';
 import { runWorkerTests } from './workers.test';
 import { runOperationsTests } from './operations.test';
+import { runIntegrationTests } from './integration.test';
 import { runStoreLayoutTests } from './store-layout.test';
 
 declare const process: any;
@@ -46,6 +47,7 @@ export async function runTests(): Promise<void> {
   runSeasonAndStallTests();
   runWorkerTests();
   runOperationsTests();
+  runIntegrationTests();
   runStoreLayoutTests();
   runTaxRegistryTests();
   runInputTests();

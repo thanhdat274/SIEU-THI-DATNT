@@ -3,6 +3,14 @@
 > Cập nhật: 30/09/2026 (Asia/Saigon). Phiên bản package: 0.1.0. Rà soát mới nhất: `yarn test`, `yarn typecheck`, `yarn build` (web bundle 813.54 kB) PASS toàn bộ; hoàn thiện kiến trúc giao diện co giãn đa tầng (Responsive Multi-tier HUD/BottomBar/Touch Controls) cho mọi kích thước màn hình: Desktop có DevTools/sidebar, iPad/Tablet xoay ngang và Mobile xoay ngang. Triệt tiêu vĩnh viễn lỗi bẻ dòng số tiền/số liệu (`white-space: nowrap !important;`), co giãn thông minh nhãn/nút theo không gian thực tế, tối ưu modal và nút bấm cảm ứng.
 > Phạm vi: ứng dụng web/server, các package dùng chung, công cụ nội dung, tài liệu thiết kế, thuế và OpenSpec UI. Warning chunk >500 kB và dynamic/static import `api.ts` giữ nguyên từ trước. Browser acceptance 8.4/9.4, vòng 3 ngày, thiết bị thật và multiplayer replay chưa nghiệm thu.
 
+### Cập nhật 30/09/2026 (đợt rà soát toàn diện)
+
+- Đã chạy: `yarn typecheck`, `yarn test` (thêm `integration.test.ts` vòng 3 ngày, Δtiền khớp sổ cái), `yarn build` (814.44 kB), `test:gateway` — PASS. Chi tiết: `docs/operations/VERIFICATION.md`.
+- Sửa: phí tuyển nhân viên nay ghi vào sổ cái/báo cáo ngày (`simulation.ts hireStaff`); khối Tự nhập hàng gập mặc định + style pixel (`SupplierModal.tsx`, `index.css`); bong bóng [E] co theo chữ và nền ngoài tiệm là cỏ, vỉa hè chỉ ở mặt tiền (`packages/game-renderer/src/viewport.ts`).
+- OpenSpec adapt-reference-shop-operations: đóng 8.4, 9.3, 10.1–10.3 (có code + test/UI xem được). Còn mở 9.4, 11.1–11.3 vì thiếu bằng chứng browser/hiệu năng/replay.
+- Đã xử lý tiếp: HUD kiểm tra bằng iframe ở 1100/980/900/760/680/600px không tràn hay xuống dòng, toast hạ xuống dưới HUD ở khung hẹp; thêm nút "Nhân viên" trên HUD (mở thẳng StaffModal, `HUD.tsx`, `App.tsx openStaffFromHud`, `CashierModal initialShowStaff`); "Khách trong tiệm" nay đếm đủ mọi khách (trước chỉ tối đa 1); lỗi "click đầu không nhận" là do tọa độ lệch sau khi đổi kích thước cửa sổ và Vite reload khi sửa file, không tái hiện với click thật.
+- Vấn đề còn thấy: tab tự động throttle nên chưa đo được nhịp game thật; nhân viên chỉ vào được qua Sổ bán hàng > tab Nhân viên (khó thấy); multiplayer/layout còn cần Mongo replica set để test:worlds.
+
 ## 1. Dự án hiện làm được gì?
 
 Dự án đã có bản game quản lý tiệm chạy trên trình duyệt với vòng chơi thực: di chuyển → nhập hàng bằng tiền → hàng giao sáng hôm sau → kiểm kê nhà kho → bày/cất hàng → khách hàng nhặt hàng vào giỏ → xếp hàng đợi tại quầy thu ngân → người chơi/AI thu tiền hóa đơn tại quầy → cộng tiền và XP → lên cấp → lưu và tải lại tiến trình. Có hệ thống `CustomerManager` quản lý nhiều khách, giỏ hàng độc lập, hàng đợi thu ngân, nhà kho vật lý đi vào được và giao diện pixel tiếng Việt cho desktop/mobile nằm ngang.
