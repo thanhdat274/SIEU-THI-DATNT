@@ -103,6 +103,12 @@ async function run() {
     assert.equal(ownerApproved.data.result.status, 'executed');
     assert.equal(memberApproved.data.snapshot.world.worldTime.day, dayBefore + 1);
 
+    // Both members see the same market (weather, events, supplier day, prices) after the shared day advance.
+    const marketOf = (snapshot: any) => snapshot.businesses[0].save.market;
+    const sharedMarket = marketOf(memberApproved.data.snapshot);
+    assert.ok(sharedMarket?.weather && sharedMarket.suppliers?.cho_dau_moi?.day === dayBefore + 1, 'Snapshot carries the new day market');
+    assert.deepEqual(marketOf(ownerApproved.data.snapshot), sharedMarket, 'Both members receive identical market state');
+
     // A replacement socket closes the older session without unregistering the new one.
     const replacedEvent = nextEvent(ownerSocket, message => message.event === 'session:replaced');
     const replacement = await connect(url, owner.id);
@@ -128,6 +134,7 @@ async function run() {
     sockets.push(resumed);
     assert.equal(getJoined(resumed).data.world.worldTime.day, dayBefore + 1,
       'A fresh runtime loads persisted clock state after idle runtime eviction');
+    assert.deepEqual(marketOf(getJoined(resumed).data), sharedMarket, 'Market state (weather, events, supplier prices and stock) survives reconnect and runtime eviction');
     assert.equal(WorldGateway.getActiveSessionCount(seeded.world.id), 1);
     console.log('PASS WebSocket ticket auth, two-member snapshots, spoofed actor rejection, shared time vote, session replacement, and persisted resume after final disconnect');
   } finally {

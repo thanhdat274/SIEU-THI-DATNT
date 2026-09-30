@@ -6,7 +6,8 @@
   "types": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "tsx src/test-runner.ts"
+    "test": "tsx src/test-runner.ts",
+    "balance": "tsx src/balance-sweep.ts"
   },
   "dependencies": {
     "@game/shared": "*",

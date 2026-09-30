@@ -27,6 +27,8 @@ import { runPriceTests } from './price.test';
 import { runSupplierMarketTests } from './supplier-market.test';
 import { runSpoilageTests } from './spoilage.test';
 import { runForecastTests } from './forecast.test';
+import { runScenarioTests } from './scenarios.test';
+import { runPerformanceTests } from './performance.test';
 import { runShopkeeperTests } from './shopkeeper.test';
 import { runSeasonAndStallTests } from './seasons.test';
 import { runWorkerTests } from './workers.test';
@@ -58,6 +60,8 @@ export async function runTests(): Promise<void> {
   await runSupplierMarketTests();
   runSpoilageTests();
   runForecastTests();
+  runScenarioTests();
+  runPerformanceTests();
   runShopkeeperTests();
   runSeasonAndStallTests();
   runWorkerTests();
