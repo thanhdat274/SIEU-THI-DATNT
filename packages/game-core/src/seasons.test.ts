@@ -30,12 +30,12 @@ export function runSeasonAndStallTests(): void {
   const candy = ALL_PRODUCTS.find(p => p.category === 'candy')!;
   const noodles = ALL_PRODUCTS.find(p => p.category === 'instant_noodles')!;
   sales.forEach((fixture, index) => { fixture.assignedProductId = (index === 0 ? noodles : candy).id; fixture.currentStock = 5; });
-  const seasonalCustomer = new CustomerManager([], 0, 0).maybeSpawnCustomer(1, true, sim0.getFixtures(), map, 1, 0, 1.5, ['candy']);
-  assert.equal(seasonalCustomer?.targetFixtureId, sales[1].id, 'Khách mùa nhắm kệ kẹo');
+  const seasonalCustomer = new CustomerManager([], 0, 0).maybeSpawnCustomer(1, true, sim0.getFixtures(), map, 1, 0, { traffic: 1.5, weightOf: id => id === candy.id ? 100 : 0.001 });
+  assert.equal(seasonalCustomer?.targetFixtureId, sales[1].id, 'Nhu cầu kẹo cao thì khách nhắm kệ kẹo');
   const plainCustomer = new CustomerManager([], 0, 0).maybeSpawnCustomer(1, true, sim0.getFixtures(), map, 1, 0);
   assert.equal(plainCustomer?.targetFixtureId, sales[0].id, 'Ngày thường vẫn đi theo vòng');
   const slow = new CustomerManager([], 0, 0);
-  slow.maybeSpawnCustomer(1, true, sim0.getFixtures(), map, 1, 1, 0.5);
+  slow.maybeSpawnCustomer(1, true, sim0.getFixtures(), map, 1, 1, { traffic: 0.5, weightOf: () => 1 });
   assert.equal(slow.getSpawnCooldown(), 24, 'Nhu cầu thấp kéo dài thời gian giữa hai khách');
 
   // --- Quầy ăn uống ---

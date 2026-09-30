@@ -15,6 +15,7 @@ import { STORE_BOUNDS, PRODUCT_MAP } from '@game/data';
 import { CollisionSystem } from './collision';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { mergeLots, sumLots, takeLots } from './stock';
+import { Mulberry32Rng, daySeed } from './staff';
 
 export const CASHIER_QUEUE_TILES: GridPoint[] = [
   { x: 9, y: 8 },  // Position 0: front of checkout counter
@@ -23,6 +24,12 @@ export const CASHIER_QUEUE_TILES: GridPoint[] = [
 ];
 
 export const ENTRANCE_TILE: GridPoint = { x: 9, y: 11 };
+
+/** Cách khách chọn món khi có thị trường: trọng số nhu cầu theo món và hệ số lưu lượng. */
+export interface CustomerDemandChoice {
+  traffic: number;
+  weightOf: (productId: string) => number;
+}
 
 export interface CustomerMovementPath {
   customerId: string;
@@ -86,15 +93,14 @@ export class CustomerManager {
     tileMap: GameTileMap,
     currentDay: number,
     customersServed: number,
-    demandMultiplier = 1,
-    preferredCategories: readonly string[] = []
+    demand?: CustomerDemandChoice
   ): CustomerState | null {
     if (!isStoreOpen) return null;
     if (this.customers.length >= this.maxConcurrentCustomers) return null;
 
     this.spawnCooldown -= dt;
     if (this.spawnCooldown > 0) return null;
-    this.spawnCooldown = 12 / Math.max(0.25, demandMultiplier);
+    this.spawnCooldown = 12 / Math.max(0.25, demand?.traffic ?? 1);
 
     const stockedShelves = fixtures.filter(
       (f) => isSalesFixture(f) && f.currentStock > 0 && f.assignedProductId
@@ -102,12 +108,10 @@ export class CustomerManager {
     if (!stockedShelves.length) return null;
 
     // Pick target shelf based on customer turn
-    // Mùa/sự kiện: cứ hai khách thì một khách nhắm nhóm hàng đang được ưa chuộng (nếu kệ có bày).
-    const seasonal = preferredCategories.length && customersServed % 2 === 0
-      ? stockedShelves.filter(f => preferredCategories.includes(PRODUCT_MAP[f.assignedProductId!]?.category))
-      : [];
-    const pool = seasonal.length ? seasonal : stockedShelves;
-    const target = pool[Math.floor(customersServed / 2) % pool.length];
+    // Có bảng nhu cầu: chọn kệ theo xác suất tỉ lệ nhu cầu (xác định theo số thứ tự khách). Không có: xoay vòng như cũ.
+    const target = demand
+      ? this.pickShelfByDemand(stockedShelves, demand.weightOf, currentDay)
+      : stockedShelves[customersServed % stockedShelves.length];
     this.customerSequence += 1;
     const customerId = `cust-${currentDay}-${this.customerSequence}`;
     const checkoutId = `checkout-${currentDay}-${this.customerSequence}`;
@@ -127,6 +131,17 @@ export class CustomerManager {
     this.customers.push(newCustomer);
     this.routeCustomer(newCustomer, 'to_shelf', tileMap, fixtures);
     return newCustomer;
+  }
+
+  private pickShelfByDemand(shelves: StoreFixture[], weightOf: (productId: string) => number, currentDay: number): StoreFixture {
+    const weights = shelves.map(shelf => Math.max(0.001, weightOf(shelf.assignedProductId!)));
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    let roll = new Mulberry32Rng(daySeed(this.customerSequence, currentDay)).next() * total;
+    for (let i = 0; i < shelves.length; i++) {
+      roll -= weights[i];
+      if (roll < 0) return shelves[i];
+    }
+    return shelves[shelves.length - 1];
   }
 
   /**
@@ -201,7 +216,8 @@ export class CustomerManager {
     fixtures: StoreFixture[],
     inventory: InventoryItem[],
     onReputationLoss?: (delta: number) => void,
-    onSpoiledGoods?: (spoiledCount: number) => void
+    onSpoiledGoods?: (spoiledCount: number) => void,
+    onOutOfStock?: () => void
   ): void {
     const customerList = [...this.customers];
     for (const customer of customerList) {
@@ -278,6 +294,7 @@ export class CustomerManager {
           this.routeCustomer(customer, 'to_checkout', tileMap, fixtures, queueIndex);
         } else {
           // Shelf is empty (taken by someone else or unstocked) -> no goods, customer leaves
+          onOutOfStock?.();
           onReputationLoss?.(1);
           this.routeCustomer(customer, 'leaving', tileMap, fixtures);
         }

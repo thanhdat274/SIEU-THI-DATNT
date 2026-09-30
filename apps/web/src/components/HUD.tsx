@@ -16,13 +16,18 @@ interface HUDProps {
   onOpenStalls: () => void;
   onOpenStaff: () => void;
   wageDebt?: number;
+  market?: { weather: { label: string; icon: string }; forecast: Array<{ label: string }> };
+  onOpenMarket?: () => void;
 }
-export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, onOpenStaff, wageDebt = 0}) => {
+export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenStaff, wageDebt = 0}) => {
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore();
   const season = getSeasonForDay(worldTime.day);
+  const weather = market?.weather;
+  const forecastText = market?.forecast.map(item => item.label).join(', ') ?? '';
+  const forecastFirst = market?.forecast[0]?.label ?? '';
   return <header className="game-hud">
     <div className="brand" title="Tiệm Tạp Hóa Đầu Hẻm"><div className="brand-sign"><PixelIcon name="warehouse" size={26}/></div><div className="brand-copy"><p className="eyebrow">Một góc nhỏ · Một đời vui</p><h1>Tiệm Tạp Hóa Đầu Hẻm</h1></div></div>
-    <div className="hud-clock" title={`Ngày ${worldTime.day} · ${timeString} (${worldTime.isStoreOpen ? 'Đang mở cửa' : 'Nghỉ bán'})`}><PixelIcon name={worldTime.hour >= 18 ? 'moon' : 'sun'} size={24}/><div><strong className="tabular">Ngày {worldTime.day} · {timeString}</strong><span className="muted hud-store-status">{worldTime.isStoreOpen ? 'Bà con đang ghé tiệm' : 'Tiệm đang nghỉ bán'}</span>{season && <span className="muted hud-season-badge" title={season.blurb}>🎉 {season.name} · còn {seasonDaysLeft(worldTime.day)} ngày</span>}</div></div>
+    <div className="hud-clock" title={`Ngày ${worldTime.day} · ${timeString} (${worldTime.isStoreOpen ? 'Đang mở cửa' : 'Nghỉ bán'})`}><PixelIcon name={worldTime.hour >= 18 ? 'moon' : 'sun'} size={24}/><div><strong className="tabular">Ngày {worldTime.day} · {timeString}</strong><span className="muted hud-store-status">{worldTime.isStoreOpen ? 'Bà con đang ghé tiệm' : 'Tiệm đang nghỉ bán'}</span>{weather && <span className="muted hud-weather-badge" title={`Dự báo: ${forecastText}`}>{weather.icon} {weather.label} · mai {forecastFirst}</span>}{season && <span className="muted hud-season-badge" title={season.blurb}>🎉 {season.name} · còn {seasonDaysLeft(worldTime.day)} ngày</span>}</div></div>
     <div className="hud-stats">
       <PixelStat label="Tiền trong hòm" value={money(player.money)} icon="coin"/>
       <div className="hud-level" title={`${player.experience}/${player.experienceToNextLevel} XP (Cấp ${player.level})`}><strong>Cấp {player.level}</strong><span className="muted"> · {player.experience}/{player.experienceToNextLevel}</span><PixelProgress label="Kinh nghiệm" value={player.experience} max={player.experienceToNextLevel}/></div>
@@ -35,6 +40,7 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
       <PixelButton icon="speed" onClick={onToggleGameSpeed} aria-label={`Tốc độ ${gameSpeed}x`} title={`Tốc độ thời gian ${gameSpeed}x`}>{gameSpeed}×</PixelButton>
       <PixelButton icon="warehouse" onClick={onToggleWarehouseDock} aria-label="Kho hàng" aria-expanded={isWarehouseDockOpen} title="Kho hàng sau tiệm"><span className="button-label">Kho</span></PixelButton>
       <PixelButton icon="person" onClick={onOpenStaff} aria-label="Nhân viên" title={player.level >= 2 ? 'Tuyển và xếp ca nhân viên' : 'Nhân viên: mở tuyển ở cấp 2'}><span className="button-label">Nhân viên</span></PixelButton>
+      {onOpenMarket && <PixelButton icon="sun" onClick={onOpenMarket} aria-label="Thị trường và thời tiết" title="Thời tiết, mùa, lượng khách"><span className="button-label">Thị trường</span></PixelButton>}
       <PixelButton icon="coin" onClick={onOpenStalls} aria-label="Quầy ăn uống" title="Quầy ăn uống & dịch vụ"><span className="button-label">Quầy</span></PixelButton>
       <PixelButton icon="star" onClick={onOpenQuests} aria-label="Nhiệm vụ" title="Nhiệm vụ buôn bán"><span className="button-label">Nhiệm vụ</span></PixelButton>
       <PixelButton icon="save" onClick={toggleSaveModal} aria-label="Lưu tiến trình" title="Lưu tiến trình"/>

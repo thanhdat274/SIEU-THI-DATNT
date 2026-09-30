@@ -179,6 +179,53 @@ export interface LedgerEntry {
   timestamp: string;
 }
 
+/** Thị trường động: mọi khóa là chuỗi để thêm thời tiết/sự kiện/thẻ bằng dữ liệu, không sửa lõi. */
+export type ModifierChannel = 'demand' | 'traffic' | 'wholesalePrice' | 'supplierStock' | 'spoilage' | 'priceSensitivity';
+export type ModifierSource = 'season' | 'climate' | 'weather' | 'time' | 'weekday' | 'event';
+
+export interface ModifierTarget {
+  categories?: ProductCategory[];
+  tags?: string[];
+  productIds?: string[];
+}
+
+/** Điều kiện kích hoạt: mọi trường có mặt phải khớp; mảng là "một trong". */
+export interface ModifierWhen {
+  season?: string[];
+  climate?: string[];
+  weather?: string[];
+  timeBand?: string[];
+  weekdays?: number[]; // 0 = Thứ Hai … 6 = Chủ Nhật
+  event?: string[];
+}
+
+export interface ModifierRule {
+  id: string;
+  label: string; // nhãn đọc được, hiện trong phần giải thích
+  source: ModifierSource;
+  when: ModifierWhen;
+  target?: ModifierTarget; // không có = áp dụng cho mọi sản phẩm
+  effects: Partial<Record<ModifierChannel, number>>;
+}
+
+export interface WeatherState {
+  day: number; // ngày của `today`
+  today: string; // id thời tiết
+  forecast: string[]; // [ngày mai, ngày kia]
+}
+
+export interface ActiveMarketEvent {
+  id: string;
+  startDay: number;
+  endDay: number;
+}
+
+export interface MarketState {
+  seed: string; // hạt giống cố định của thế giới/save
+  weather: WeatherState;
+  events: ActiveMarketEvent[];
+}
+
 export interface StallState {
   owned: string[]; // id quầy đã mở
   processedDayIds: number[]; // ngày đã tính doanh thu quầy (idempotent)
@@ -210,6 +257,7 @@ export interface DailyRecord {
   itemsSold: number; // Total units of items sold
   spoilageCount: number; // Total units spoiled
   productSales?: Record<string, number>; // Units sold per productId on this day
+  outOfStockWalkouts?: number; // Khách bỏ về vì kệ món đã chọn hết hàng
 }
 
 export type PlanogramMap = Record<string, string>; // fixtureId -> productId
@@ -414,6 +462,7 @@ export interface SaveGameData {
   autoBuyReports?: Record<number, AutoBuyReport>;
   quests?: QuestState;
   stalls?: StallState;
+  market?: MarketState;
   dailyRecords?: Record<number, DailyRecord>;
   currentDayRecord?: DailyRecord;
   ledger?: LedgerEntry[];

@@ -27,6 +27,7 @@ import {
   RestockSuggestionResult,
   QuestState,
   StallState,
+  MarketState,
   StallDayReport,
   StaffRole,
   StaffShift,
@@ -51,6 +52,11 @@ import {
   isShiftWithinStoreHours,
   STALLS,
   STALL_MAP,
+  ALL_PRODUCTS,
+  WEATHER_MAP,
+  CLIMATE_SEASON_MAP,
+  TIME_BANDS,
+  WEEKDAY_LABELS,
   SHOPKEEPER_POSITION,
   getSeasonForDay,
   type StallDefinition,
@@ -63,6 +69,9 @@ import { expiryDay, mergeLots, normalizeLots, sumLots, takeLots } from './stock'
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { CustomerManager } from './customers';
 import { generateRestockSuggestions } from './suggestions';
+import { advanceWeather, normalizeMarketState, climateSeasonForDay } from './weather';
+import { assertMarketData, buildMarketContext, timeBandFor, weekdayOf } from './market';
+import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
 import { emptyStallState, normalizeStallState, planStallDay } from './stalls';
 import { emptyQuestState, findClaimableQuest, getDailyQuests, getStoryQuest, markQuestClaimed, normalizeQuestState, type QuestContext, type QuestProgress, type QuestReward } from './quests';
 import { generateCandidatesForDay, validateHireStaff, calculatePayroll } from './staff';
@@ -96,6 +105,7 @@ export interface GameSimulationCallbacks {
   onMapChanged?: (map: GameTileMap) => void;
   onOrdersDelivered?: (quantity:number) => void;
   onLevelUp?: (level: number) => void;
+  onWeatherChanged?: (weatherId: string) => void;
 }
 
 export class GameSimulation {
@@ -119,6 +129,9 @@ export class GameSimulation {
   private dailyRecords: Record<number, DailyRecord> = {};
   private quests: QuestState = emptyQuestState();
   private stalls: StallState = emptyStallState();
+  private market: MarketState;
+  private demandTable?: DemandTable;
+  private demandBuildCount = 0;
   private currentDayRecord: DailyRecord;
   private ledger: LedgerEntry[] = [];
   private closedDayIds: Set<number> = new Set();
@@ -172,6 +185,8 @@ export class GameSimulation {
     this.statistics = { ...initialSave.statistics };
     this.createdAt = initialSave.createdAt;
     this.stalls = normalizeStallState(initialSave.stalls);
+    assertMarketData();
+    this.market = normalizeMarketState(initialSave.market, initialSave.id ?? 'local_save', initialSave.worldTime.day);
     this.tileMap = this.stalls.owned.length ? generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned) : tileMap;
     this.inputManager = inputManager;
     this.callbacks = callbacks;
@@ -205,6 +220,9 @@ export class GameSimulation {
       for (const member of this.staff) this.finishStaffJob(member, true);
       this.processPayroll(day - 1);
       this.processStalls(day - 1);
+      this.market = { ...this.market, weather: advanceWeather(this.market.seed, this.market.weather, day) };
+      this.demandTable = undefined;
+      this.callbacks.onWeatherChanged?.(this.market.weather.today);
       // Close previous day's record (day - 1) idempotently and initialize new day record
       this.closeDailyRecord(day - 1);
       this.initDailyRecord(day);
@@ -285,6 +303,43 @@ export class GameSimulation {
 
   public getLedger(): LedgerEntry[] {
     return this.ledger.map((e) => ({ ...e }));
+  }
+
+  /** Bảng nhu cầu lưu đệm; chỉ tính lại khi bối cảnh đổi (ngày, khung giờ, thời tiết, mùa, sự kiện, bậc uy tín), không mỗi khung hình. */
+  private refreshDemandTable(): DemandTable {
+    const time = this.clock.getTime();
+    const ctx = buildMarketContext(this.market, time.day, time.hour);
+    const key = demandContextKey(ctx, this.playerData.reputation);
+    if (!this.demandTable || this.demandTable.key !== key) {
+      this.demandTable = buildDemandTable({ ctx, products: ALL_PRODUCTS, reputation: this.playerData.reputation });
+      this.demandBuildCount++;
+    }
+    return this.demandTable;
+  }
+
+  public getDemandTable(): DemandTable { return this.refreshDemandTable(); }
+  public getDemandBuildCount(): number { return this.demandBuildCount; }
+  public getMarketState(): MarketState { return structuredClone(this.market); }
+
+  /** Lý do nhu cầu của một món: danh sách hệ số (nguồn, nhãn, hệ số) cùng tổng. */
+  public explainDemand(productId: string): ProductDemand | undefined {
+    return this.refreshDemandTable().perProduct[productId];
+  }
+
+  /** Tóm tắt cho giao diện: thời tiết hôm nay + dự báo, mùa, khung giờ, thứ, lưu lượng và lý do. */
+  public getMarketSummary() {
+    const time = this.clock.getTime();
+    const table = this.refreshDemandTable();
+    const weather = WEATHER_MAP[this.market.weather.today];
+    return {
+      weather: { id: weather.id, label: weather.label, icon: weather.icon },
+      forecast: this.market.weather.forecast.map(id => ({ id, label: WEATHER_MAP[id]?.label ?? id, icon: WEATHER_MAP[id]?.icon ?? '' })),
+      season: getSeasonForDay(time.day),
+      climate: CLIMATE_SEASON_MAP[climateSeasonForDay(time.day).id],
+      timeBand: TIME_BANDS.find(band => band.id === timeBandFor(time.hour))!,
+      weekday: WEEKDAY_LABELS[weekdayOf(time.day)],
+      traffic: table.traffic,
+    };
   }
 
   public getSeason(day = this.clock.getTime().day) {
@@ -1035,8 +1090,16 @@ export class GameSimulation {
         this.statistics.totalSpoiled = (this.statistics.totalSpoiled ?? 0) + spoiled;
         this.callbacks.onStockExpired?.(spoiled);
         this.notifyStateChanged();
+      },
+      () => {
+        this.currentDayRecord.outOfStockWalkouts = (this.currentDayRecord.outOfStockWalkouts ?? 0) + 1;
       }
     );
+    const demandTable = this.refreshDemandTable();
+    const availability = availabilityFactor(demandTable, this.fixtures.filter(isSalesFixture).map(shelf => ({
+      productId: shelf.assignedProductId ?? this.planogram[shelf.id],
+      inStock: shelf.currentStock > 0,
+    })));
     this.customerManager.maybeSpawnCustomer(
       worldDt,
       this.clock.getTime().isStoreOpen,
@@ -1044,8 +1107,7 @@ export class GameSimulation {
       this.tileMap,
       this.clock.getTime().day,
       this.statistics.totalCustomersServed,
-      this.getSeason()?.demandMultiplier ?? 1,
-      this.getSeason()?.preferredCategories ?? []
+      { traffic: effectiveTraffic(demandTable, availability), weightOf: (productId) => demandTable.perProduct[productId]?.demand ?? 0.01 }
     );
 
     this.updateStaffWorkers(worldDt);
@@ -1951,6 +2013,7 @@ export class GameSimulation {
       autoBuyReports: structuredClone(this.autoBuyReports),
       quests: normalizeQuestState(this.quests),
       stalls: normalizeStallState(this.stalls),
+      market: structuredClone(this.market),
       pendingOrders: this.getPendingOrders(),
       customer: this.getCustomer() ?? undefined,
       customers: this.customerManager.getCustomers(),
@@ -1990,6 +2053,8 @@ export class GameSimulation {
     this.autoBuyReports = structuredClone(saveData.autoBuyReports ?? {});
     this.quests = normalizeQuestState(saveData.quests);
     this.stalls = normalizeStallState(saveData.stalls);
+    this.market = normalizeMarketState(saveData.market, this.market.seed, saveData.worldTime.day);
+    this.demandTable = undefined;
     this.pendingOrders = (saveData.pendingOrders ?? []).map((order) => ({
       ...order,
       supplierId: order.supplierId ?? DEFAULT_SUPPLIER_ID,

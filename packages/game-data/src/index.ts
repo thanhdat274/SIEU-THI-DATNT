@@ -9,3 +9,6 @@ export * from './suppliers';
 export * from './staff';
 export * from './seasons';
 export * from './stalls';
+export * from './weather';
+export * from './product-tags';
+export * from './modifiers';

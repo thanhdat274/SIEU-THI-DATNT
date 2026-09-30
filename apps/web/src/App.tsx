@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { generateStarterTileMap, getSeasonForDay, PRODUCT_MAP } from '@game/data';
+import { generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, WEATHER_MAP } from '@game/data';
 import { InputManager, GameSimulation } from '@game/core';
 import { PixiGameViewport } from '@game/renderer';
 import { GameSnapshot, SaveGameData, SupplierOrder, StaffShift, isSalesFixture, isWarehouseFixture } from '@game/shared';
@@ -25,6 +25,7 @@ import { TimeVoteModal } from './components/TimeVoteModal';
 import { StoreLayoutModal } from './components/StoreLayoutModal';
 import { QuestModal } from './components/QuestModal';
 import { StallModal } from './components/StallModal';
+import { MarketModal } from './components/MarketModal';
 import type { StoreLayoutAction } from '@game/core';
 import { PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
@@ -51,6 +52,7 @@ export const App: React.FC = () => {
   const [statistics, setStatistics] = useState<SaveGameData['statistics']>({ totalRevenue: 0, totalCustomersServed: 0, totalDaysPassed: 0 });
   const [isQuestOpen, setQuestOpen] = useState(false);
   const [isStallOpen, setStallOpen] = useState(false);
+  const [isMarketOpen, setMarketOpen] = useState(false);
   const [isWarehouseDockOpen, setWarehouseDockOpen] = useState(() => !window.matchMedia('(max-width: 1023px), (max-height: 499px)').matches);
   const [gameSpeed, setGameSpeed] = useState<number>(1);
   const [isLayoutOpen, setIsLayoutOpen] = useState(false);
@@ -296,6 +298,7 @@ export const App: React.FC = () => {
           addToast(season && season.id !== previous?.id ? `${season.name} bắt đầu! ${season.blurb}` : `Bình minh Ngày ${newDay}! Chúc tiệm một ngày buôn bán đắt hàng! `, 'success');
           handleSaveGame(false);
         },
+        onWeatherChanged: (weatherId) => addToast(`Thời tiết hôm nay: ${WEATHER_MAP[weatherId]?.icon ?? ''} ${WEATHER_MAP[weatherId]?.label ?? weatherId}.`, 'info'),
         onLevelUp: (level) => addToast(`Lên cấp ${level}! Kiểm tra Nhiệm vụ để xem món và mối hàng mới mở khóa.`, 'success'),
         onPlayerRelocated: ()=>addToast('Đã đưa bạn tới cửa hậu của nhà kho mới; tiền và hàng được giữ nguyên.','info'),
         onOrdersDelivered: (quantity)=>addToast(`Đã nhận ${quantity} món từ đại lý vào nhà kho.`, 'success'),
@@ -1076,7 +1079,7 @@ export const App: React.FC = () => {
           ⚠️ Mất kết nối hẻm chung — thao tác bị tạm dừng, đang kết nối lại...
         </div>
       )}
-      {!isLoading && <HUD wageDebt={simulationRef.current?.getWageDebt() ?? 0} onOpenStaff={openStaffFromHud} onOpenStalls={() => setStallOpen(true)} onOpenQuests={() => setQuestOpen(true)} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
+      {!isLoading && <HUD market={simulationRef.current?.getMarketSummary()} onOpenMarket={() => setMarketOpen(true)} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onOpenStaff={openStaffFromHud} onOpenStalls={() => setStallOpen(true)} onOpenQuests={() => setQuestOpen(true)} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
       <main className="game-main">
         <div className="world-viewport">
           <canvas ref={canvasRef} aria-label="Bản đồ Tiệm Tạp Hóa Đầu Hẻm"/>
@@ -1167,6 +1170,7 @@ export const App: React.FC = () => {
         onClose={closeAllModals}
       />
     )}
+    {isMarketOpen && simulationRef.current && <MarketModal summary={simulationRef.current.getMarketSummary()} day={worldTime.day} onClose={() => setMarketOpen(false)}/>}
     {isStallOpen && simulationRef.current && <StallModal stalls={simulationRef.current.getStalls()} season={simulationRef.current.getSeason()} stock={Object.fromEntries(simulationRef.current.getInventory().map(item => [item.productId, item.quantity]))} report={simulationRef.current.getStallReport()} onBuy={handleBuyStall} onClose={() => setStallOpen(false)}/>}
     {isQuestOpen && simulationRef.current && <QuestModal {...simulationRef.current.getQuests()} level={player.level} onClaim={handleClaimQuest} onClose={() => setQuestOpen(false)}/>}
     {isLayoutOpen && simulationRef.current && <StoreLayoutModal save={simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision)} onConfirm={handleApplyStoreLayout} onClose={closeLayoutEditor}/>}
