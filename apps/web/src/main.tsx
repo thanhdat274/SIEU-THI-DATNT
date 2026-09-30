@@ -9,3 +9,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     {import.meta.env.DEV && new URLSearchParams(window.location.search).has('art-lab') ? <ArtLab /> : <App />}
   </React.StrictMode>
 );
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+  });
+}

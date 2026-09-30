@@ -1,12 +1,29 @@
-import { generateStarterTileMap, STARTER_PRODUCTS, ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP, DEFAULT_INITIAL_SAVE } from '@game/data';
+import { generateStarterTileMap, STARTER_PRODUCTS, ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP, DEFAULT_INITIAL_SAVE, runCatalogTests } from '@game/data';
 import { COLD_WAREHOUSE_CAPACITY } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { CollisionSystem } from './collision';
 import { GameClock } from './clock';
 import { findPath } from './pathfinding';
+import { runTaxRegistryTests } from './tax/registry.test';
 import { runInputTests } from './input.test';
 import {runWarehouseTests} from './warehouse.test';
+import { runMultiplayerSchemaTests } from '@game/shared/src/multiplayer.test';
+import { runCoreRuntimeTests } from './runner.test';
+import { runAvatarTests } from './avatars.test';
+import { runCommandTests } from './commands.test';
+import { runWorldRuntimeTests } from './world-runtime.test';
+import { runPersistenceTests, runTransferRegressionTests } from './persistence.test';
+import { runCustomerTests } from './customers.test';
+import { runSupplierTests } from './suppliers.test';
+import { runPlanogramTests } from './planogram.test';
+import { runLedgerTests } from './ledger.test';
+import { runSuggestionTests } from './suggestions.test';
+import { runStaffTests } from './staff.test';
+import { runQuestTests } from './quests.test';
+import { runWorkerTests } from './workers.test';
+import { runOperationsTests } from './operations.test';
+import { runStoreLayoutTests } from './store-layout.test';
 
 declare const process: any;
 
@@ -17,9 +34,48 @@ function assert(condition: boolean, message: string) {
   console.log(`  ✓ Passed: ${message}`);
 }
 
-export function runTests(): void {
+export async function runTests(): Promise<void> {
+  runCatalogTests();
+  runSupplierTests();
+  runPlanogramTests();
+  runLedgerTests();
+  runSuggestionTests();
+  runStaffTests();
+  runQuestTests();
+  runWorkerTests();
+  runOperationsTests();
+  runStoreLayoutTests();
+  runTaxRegistryTests();
   runInputTests();
   runWarehouseTests();
+  runMultiplayerSchemaTests();
+  await runPersistenceTests();
+  runTransferRegressionTests();
+  runCustomerTests();
+  console.log('\n--- Test core headless runtime ---');
+  runCoreRuntimeTests();
+  runAvatarTests();
+  await runCommandTests();
+  await runWorldRuntimeTests();
+  console.log('\n--- Test multiplayer checkout reservation/idempotency ---');
+  const checkoutSave = structuredClone(DEFAULT_INITIAL_SAVE);
+  checkoutSave.customer = {
+    position: { x: 300, y: 250 }, stage: 'checkout', targetFixtureId: 'shelf_wooden_noodles',
+    checkoutId: 'checkout-test-1', reservedProductId: 'mi_hao_hao', patience: 20, checkoutWait: 10,
+  };
+  const checkoutSim = new GameSimulation(checkoutSave, generateStarterTileMap(), new InputManager());
+  assert(!checkoutSim.completeCustomerCheckout('wrong-id', 'shelf_wooden_noodles'), 'Từ chối checkout không khớp khách đang chờ');
+  assert(checkoutSim.unstockShelf('shelf_wooden_noodles', 100), 'Chỉ cất được lượng vượt ngoài một món khách giữ');
+  assert(checkoutSim.getFixtures().find(fixture => fixture.id === 'shelf_wooden_noodles')?.currentStock === 1, 'Món đã giữ còn trên kệ');
+  const reservedBalance = checkoutSim.getPlayerData().money;
+  assert(checkoutSim.completeCustomerCheckout('checkout-test-1', 'shelf_wooden_noodles'), 'Thanh toán đúng khách và kệ');
+  const paidBalance = checkoutSim.getPlayerData().money;
+  assert(paidBalance > reservedBalance, 'Thanh toán cộng tiền một lần');
+  assert(checkoutSim.completeCustomerCheckout('checkout-test-1', 'shelf_wooden_noodles'), 'Retry cùng checkout trả receipt cũ');
+  assert(checkoutSim.getPlayerData().money === paidBalance, 'Retry checkout không nhân tiền');
+  const checkoutReload = new GameSimulation(checkoutSim.exportSaveData('checkout-test', 1), generateStarterTileMap(), new InputManager());
+  assert(checkoutReload.completeCustomerCheckout('checkout-test-1', 'shelf_wooden_noodles'), 'Receipt checkout vẫn có sau save/reload');
+  assert(checkoutReload.getPlayerData().money === paidBalance, 'Save/reload không cộng tiền lần hai');
   console.log('\n=============================================');
   console.log('🧪 BẮT ĐẦU CHẠY KIỂM THỬ TỰ ĐỘNG (UNIT TESTS)');
   console.log('=============================================\n');
@@ -119,11 +175,25 @@ export function runTests(): void {
 
   // Test 7: checkout updates the same state that is saved and loaded.
   console.log('\n--- Test 7: Bán hàng tại quầy ---');
+  assert(!resumed.checkoutShelf('shelf_wooden_noodles'), 'Từ chối bán khi không có khách chờ ở quầy');
+  const noodleFixture = resumed.getFixtures().find((fixture) => fixture.id === 'shelf_wooden_noodles')!;
   const saleMoney = resumed.getPlayerData().money;
-  const saleStock = resumed.getFixtures().find((fixture) => fixture.id === 'shelf_wooden_noodles')!.currentStock;
-  assert(resumed.checkoutShelf('shelf_wooden_noodles'), 'Bán được hàng đang nằm trên kệ');
+  resumed.getCustomerManager().addTestCustomer({
+    id: 'test-cust-7',
+    position: { x: 9 * 32, y: 8 * 32 },
+    stage: 'checkout',
+    targetFixtureId: 'shelf_wooden_noodles',
+    checkoutId: 'test-checkout-7',
+    basket: [{ productId: 'mi_hao_hao', quantity: 1, unitPrice: PRODUCT_MAP['mi_hao_hao'].baseSellingPrice, lots: [{ quantity: 1, expiresOnDay: 10 }] }],
+    patience: 30,
+    checkoutWait: 10,
+  });
+  // Stock was moved into basket upon pickup
+  noodleFixture.currentStock -= 1;
+  const saleStock = noodleFixture.currentStock;
+  assert(resumed.checkoutShelf('shelf_wooden_noodles'), 'Bán được hàng khi khách đang đợi ở quầy');
   assert(resumed.getPlayerData().money === saleMoney + PRODUCT_MAP['mi_hao_hao'].baseSellingPrice, 'Tiền tăng đúng giá bán');
-  assert(resumed.getFixtures().find((fixture) => fixture.id === 'shelf_wooden_noodles')!.currentStock === saleStock - 1, 'Tồn kệ giảm đúng một');
+  assert(resumed.getFixtures().find((fixture) => fixture.id === 'shelf_wooden_noodles')!.currentStock === saleStock, 'Tồn kệ đã trừ vào giỏ lúc nhặt');
   assert(resumed.getStatistics().totalCustomersServed === 1, 'Thống kê bán hàng tăng');
   const afterSale = new GameSimulation(resumed.exportSaveData('test_save_id', 3), tileMap, input);
   assert(afterSale.getStatistics().totalRevenue === PRODUCT_MAP['mi_hao_hao'].baseSellingPrice, 'Doanh thu được khôi phục từ bản lưu');
@@ -137,7 +207,7 @@ export function runTests(): void {
   const migrated = new GameSimulation(legacySave, tileMap, input);
   assert(migrated.getFixtures().some((fixture) => fixture.type === 'refrigerator'), 'Bản lưu cũ được bổ sung tủ mát');
   assert(migrated.getInventory().every((item) => item.lots?.length), 'Hàng trong bản lưu cũ được gắn hạn dùng');
-  assert(migrated.exportSaveData('test_save_id', 4).schemaVersion === 2, 'Bản lưu mới dùng schema version 2');
+  assert(migrated.exportSaveData('test_save_id', 4).schemaVersion === 3, 'Bản lưu mới dùng schema version 3');
   const partialSave = structuredClone(DEFAULT_INITIAL_SAVE);
   partialSave.inventory[0].lots = [];
   assert(new GameSimulation(partialSave, tileMap, input).getInventory()[0].quantity === partialSave.inventory[0].quantity, 'Bản lưu thiếu lô không làm mất hàng');

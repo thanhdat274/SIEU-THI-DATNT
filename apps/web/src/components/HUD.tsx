@@ -9,8 +9,11 @@ interface HUDProps {
   activeCustomers: number;
   onToggleWarehouseDock: () => void;
   isWarehouseDockOpen: boolean;
+  onOpenLayout: () => void;
+  canEditLayout: boolean;
+  onOpenQuests: () => void;
 }
-export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen}) => {
+export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests}) => {
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore();
   return <header className="game-hud">
     <div className="brand"><div className="brand-sign"><PixelIcon name="warehouse" size={28}/></div><div><p className="eyebrow">Một góc nhỏ · Một đời vui</p><h1>Tiệm Tạp Hóa Đầu Hẻm</h1></div></div>
@@ -22,8 +25,10 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
     </div>
     <nav className="hud-actions" aria-label="Điều hành tiệm">
       <PixelButton icon="door" variant={worldTime.isStoreOpen ? 'teal' : 'brick'} onClick={onToggleStoreStatus} aria-label={worldTime.isStoreOpen ? 'Đóng cửa tiệm' : 'Mở cửa đón khách'}><span>{worldTime.isStoreOpen ? 'Mở cửa' : 'Nghỉ bán'}</span></PixelButton>
+      {!worldTime.isStoreOpen && canEditLayout && <PixelButton icon="warehouse" onClick={onOpenLayout} aria-label="Sắp xếp cửa hàng"><span className="button-label">Sắp xếp</span></PixelButton>}
       <PixelButton icon="speed" onClick={onToggleGameSpeed} aria-label={`Tốc độ ${gameSpeed}x`}>{gameSpeed}×</PixelButton>
       <PixelButton icon="warehouse" onClick={onToggleWarehouseDock} aria-label="Kho hàng" aria-expanded={isWarehouseDockOpen}><span className="button-label">Kho</span></PixelButton>
+      <PixelButton icon="star" onClick={onOpenQuests} aria-label="Nhiệm vụ"><span className="button-label">Nhiệm vụ</span></PixelButton>
       <PixelButton icon="save" onClick={toggleSaveModal} aria-label="Lưu tiến trình"/>
     </nav>
   </header>;

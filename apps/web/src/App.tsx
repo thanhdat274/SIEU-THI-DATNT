@@ -2,11 +2,14 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { generateStarterTileMap, PRODUCT_MAP } from '@game/data';
 import { InputManager, GameSimulation } from '@game/core';
 import { PixiGameViewport } from '@game/renderer';
-import { SaveGameData, SupplierOrder, isSalesFixture, isWarehouseFixture } from '@game/shared';
+import { GameSnapshot, SaveGameData, SupplierOrder, StaffShift, isSalesFixture, isWarehouseFixture } from '@game/shared';
 
-import { loadOrCreateSave, persistSave, resetSaveToDefault } from './db';
+import { loadOrCreateSave, persistSave, resetSaveToDefault, restoreFromBackup } from './db';
 import { useGameStore } from './store/useGameStore';
 import { HUD } from './components/HUD';
+import { AccountBar } from './components/AccountBar';
+import { LoginScreen } from './components/LoginScreen';
+import { type WorldDetail, createWorldInvite, commitOnlineCommand, getOnlineWorld, touchWorldSession } from './services/api';
 import { WarehouseModal } from './components/WarehouseModal';
 import { ShelfModal } from './components/ShelfModal';
 import { CashierModal } from './components/CashierModal';
@@ -18,7 +21,12 @@ import { ToastContainer } from './components/ToastContainer';
 import { SupplierModal } from './components/SupplierModal';
 import { BottomBar } from './components/BottomBar';
 import { WarehouseDock } from './components/WarehouseDock';
+import { TimeVoteModal } from './components/TimeVoteModal';
+import { StoreLayoutModal } from './components/StoreLayoutModal';
+import { QuestModal } from './components/QuestModal';
+import type { StoreLayoutAction } from '@game/core';
 import { PixelButton, PixelIcon } from './components/pixel';
+import { useWorldSocket } from './hooks/useWorldSocket';
 
 export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,21 +36,41 @@ export const App: React.FC = () => {
   const revisionRef = useRef(1);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const initializationRef = useRef<Promise<void>>(Promise.resolve());
+  const onlineWorldRef = useRef<WorldDetail | null>(null);
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [onlineWorld, setOnlineWorld] = useState<WorldDetail | null>(null);
+  const [onlineToken, setOnlineToken] = useState<string | null>(null);
   const [startupError, setStartupError] = useState<string>('');
   const [lastSavedTime, setLastSavedTime] = useState<string>('');
   const [currentRevision, setCurrentRevision] = useState<number>(1);
   const [pendingOrders, setPendingOrders] = useState<SupplierOrder[]>([]);
   const [statistics, setStatistics] = useState<SaveGameData['statistics']>({ totalRevenue: 0, totalCustomersServed: 0, totalDaysPassed: 0 });
+  const [isQuestOpen, setQuestOpen] = useState(false);
   const [isWarehouseDockOpen, setWarehouseDockOpen] = useState(() => !window.matchMedia('(max-width: 1023px), (max-height: 499px)').matches);
   const [gameSpeed, setGameSpeed] = useState<number>(1);
+  const [isLayoutOpen, setIsLayoutOpen] = useState(false);
+  const [activeTimeVote, setActiveTimeVote] = useState<{
+    type: 'advance_day' | 'change_speed';
+    targetSpeed?: number;
+    initiatedBy: string;
+    expiresInMs: number;
+    approvalsCount: number;
+    totalRequired: number;
+  } | null>(null);
+  // tracks whether online server is reachable (used to block mutations when network drops)
+  const [onlineConnected, setOnlineConnected] = useState(true);
+  const onlineConnectedRef = useRef(true);
 
   const {
     player,
     worldTime,
     inventory,
+    holdingArea,
+    planogram,
     fixtures,
+    customers,
     activeFixtureModal,
     isInventoryModalOpen,
     isSaveModalOpen,
@@ -51,8 +79,14 @@ export const App: React.FC = () => {
     setPlayerData,
     setWorldTime,
     setInventory,
+    setHoldingArea,
+    setPlanogram,
     setFixtures,
+    setCustomers,
     setNearbyFixture,
+    setDailyRecords,
+    setCurrentDayRecord,
+    setLedger,
     openFixtureModal,
     closeFixtureModal,
     closeAllModals,
@@ -65,15 +99,25 @@ export const App: React.FC = () => {
     const time = sim.getTime();
     setWorldTime(time, sim.getClock().formatTimeString());
     setInventory(sim.getInventory());
+    setHoldingArea(sim.getHoldingArea());
+    setPlanogram(sim.getPlanogram());
+    setDailyRecords(sim.getDailyRecords());
+    setCurrentDayRecord(sim.getCurrentDayRecord());
+    setLedger(sim.getLedger());
     setFixtures(sim.getFixtures());
+    setCustomers(sim.getCustomers());
     setPendingOrders(sim.getPendingOrders());
     setStatistics(sim.getStatistics());
     setNearbyFixture(sim.getActiveFixture());
-  }, [setPlayerData, setWorldTime, setInventory, setFixtures, setNearbyFixture]);
+  }, [setPlayerData, setWorldTime, setInventory, setHoldingArea, setPlanogram, setDailyRecords, setCurrentDayRecord, setLedger, setFixtures, setCustomers, setNearbyFixture]);
 
   // Save progress to Dexie
   const handleSaveGame = useCallback(async (isManual: boolean = false) => {
     if (!simulationRef.current) return false;
+    if (onlineWorldRef.current) {
+      if (isManual) addToast('Tiệm online được lưu trên máy chủ.', 'info');
+      return false;
+    }
     let savedSuccessfully = false;
     saveQueueRef.current = saveQueueRef.current.catch(() => {}).then(async () => {
       try {
@@ -96,6 +140,10 @@ export const App: React.FC = () => {
 
   // Reset progress
   const handleResetGame = useCallback(async () => {
+    if (onlineWorldRef.current) {
+      addToast('Không thể đặt lại save máy khi đang chơi trong hẻm online.', 'warn');
+      return false;
+    }
     try {
       await saveQueueRef.current;
       const freshSave = await resetSaveToDefault();
@@ -116,6 +164,58 @@ export const App: React.FC = () => {
     }
   }, [syncFromSimulation, addToast]);
 
+  const handleEnterGame = (onlineWorldDetail?: WorldDetail) => {
+    if (onlineWorldDetail) {
+      setOnlineWorld(onlineWorldDetail);
+      onlineWorldRef.current = onlineWorldDetail;
+      // Record lastSeenRevision and store token for WebSocket connection
+      import('./services/firebase').then(({ gameAuth }) => {
+        const user = gameAuth().currentUser;
+        if (user) {
+          user.getIdToken().then((token: string) => {
+            setOnlineToken(token);
+            touchWorldSession(token, onlineWorldDetail.world.id).catch(() => {});
+          });
+        }
+      });
+    } else {
+      setOnlineWorld(null);
+      setOnlineToken(null);
+      onlineWorldRef.current = null;
+    }
+    setIsLoading(true);
+    setGameStarted(true);
+  };
+
+  const handleOnlineInvite = async () => {
+    if (!onlineWorld) return;
+    try {
+      const { gameAuth } = await import('./services/firebase');
+      const user = gameAuth().currentUser;
+      if (!user) throw new Error('Cần đăng nhập.');
+      const token = await user.getIdToken();
+      const invite = await createWorldInvite(token, onlineWorld.world.id);
+      navigator.clipboard?.writeText(invite.token);
+      window.prompt('Mã mời tham gia hẻm (đã sao chép vào bộ nhớ tạm):', invite.token);
+      addToast('Đã tạo mã mời tham gia hẻm thành công!', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast(err instanceof Error ? err.message : 'Không tạo được lời mời.', 'warn');
+    }
+  };
+
+  const handleLeaveOnline = () => {
+    if (window.confirm('Rời hẻm online để quay lại tiệm riêng trên máy này?')) {
+      window.location.reload();
+    }
+  };
+
+  const blockOfflineOnlineMutation = () => {
+    if (!onlineWorldRef.current || onlineConnectedRef.current) return false;
+    addToast('Mất kết nối hẻm chung. Thao tác đã bị chặn — đang chờ kết nối lại.', 'warn');
+    return true;
+  };
+
   useEffect(() => {
     let isCancelled = false;
     let initialized = false;
@@ -135,10 +235,28 @@ export const App: React.FC = () => {
     };
 
     async function initGame() {
+      if (!gameStarted) return;
       if (!canvasRef.current) return;
 
-      // 1. Load or create initial save from IndexedDB
-      const initialSave: SaveGameData = await loadOrCreateSave();
+      // 1. Load initial save: either online business save or local IndexedDB save
+      let initialSave: SaveGameData;
+      try {
+        if (onlineWorld && onlineWorld.businesses.length > 0) {
+          initialSave = onlineWorld.businesses[0].save;
+        } else {
+          initialSave = await loadOrCreateSave();
+        }
+      } catch (err) {
+        if (isCancelled) return;
+        console.error('Failed to load local game save:', err);
+        setStartupError(
+          err instanceof Error
+            ? `Lỗi nạp dữ liệu lưu: ${err.message}`
+            : 'Không thể đọc bản lưu từ thiết bị. Dữ liệu chưa bị ghi đè.'
+        );
+        setIsLoading(true);
+        return;
+      }
       if (isCancelled) return;
 
       setCurrentRevision(initialSave.revision);
@@ -155,10 +273,11 @@ export const App: React.FC = () => {
       inputManagerRef.current = inputManager;
 
       // 3. Setup map
-      const tileMap = generateStarterTileMap();
+      const tileMap = generateStarterTileMap(initialSave.storeLayout.unlockedPlotIds ?? []);
 
       // 4. Setup simulation
       const simulation = new GameSimulation(initialSave, tileMap, inputManager, {
+        onMapChanged: (map) => viewportRef.current?.updateTileMap(map),
         onInteractionAvailable: (fixture) => {
           setNearbyFixture(fixture);
         },
@@ -172,6 +291,7 @@ export const App: React.FC = () => {
           addToast(`Bình minh Ngày ${newDay}! Chúc tiệm một ngày buôn bán đắt hàng! `, 'success');
           handleSaveGame(false);
         },
+        onLevelUp: (level) => addToast(`Lên cấp ${level}! Kiểm tra Nhiệm vụ để xem món và mối hàng mới mở khóa.`, 'success'),
         onPlayerRelocated: ()=>addToast('Đã đưa bạn tới cửa hậu của nhà kho mới; tiền và hàng được giữ nguyên.','info'),
         onOrdersDelivered: (quantity)=>addToast(`Đã nhận ${quantity} món từ đại lý vào nhà kho.`, 'success'),
         onStockExpired: (quantity) => {
@@ -201,6 +321,13 @@ export const App: React.FC = () => {
         tileMap,
         simulation,
         onZoomChange: setZoomLevel,
+        getPartnerAvatar: () => {
+          const curWorld = onlineWorldRef.current;
+          if (!curWorld || curWorld.world.avatars.length <= 1) return null;
+          // Partner is the avatar that does not match player
+          const partner = curWorld.world.avatars[1];
+          return partner ? { position: partner.position, direction: partner.direction, isMoving: false, name: 'Bạn cùng hẻm' } : null;
+        },
       });
       ownedViewport = viewport;
 
@@ -228,10 +355,52 @@ export const App: React.FC = () => {
       if (isCancelled) dispose();
     });
 
-    // Auto-save timer every 30 seconds
+    // Auto-save timer every 30 seconds for local solo game (does not run when playing online)
     const autoSaveInterval = setInterval(() => {
-      handleSaveGame(false);
+      if (!onlineWorldRef.current) {
+        handleSaveGame(false);
+      }
     }, 30000);
+
+    // Online world sync interval (polls snapshot/partner updates every 3 seconds)
+    let consecutiveFailures = 0;
+    const onlineSyncInterval = setInterval(async () => {
+      const curWorld = onlineWorldRef.current;
+      if (!curWorld) return;
+      try {
+        const { gameAuth } = await import('./services/firebase');
+        const user = gameAuth().currentUser;
+        if (!user) return;
+        const token = await user.getIdToken();
+        const updated = await getOnlineWorld(token, curWorld.world.id);
+        onlineWorldRef.current = updated;
+        setOnlineWorld(updated);
+        // Restore connection status after success
+        if (!onlineConnectedRef.current) {
+          onlineConnectedRef.current = true;
+          setOnlineConnected(true);
+        }
+        consecutiveFailures = 0;
+        // If partner committed new revision, sync simulation (resync never uploads local save)
+        if (simulationRef.current && updated.businesses[0]?.save) {
+          const remoteRev = updated.world.revision;
+          if (remoteRev > revisionRef.current) {
+            revisionRef.current = remoteRev;
+            setCurrentRevision(remoteRev);
+            simulationRef.current.importSaveData(updated.businesses[0].save);
+            syncFromSimulation(simulationRef.current);
+          }
+        }
+      } catch (err) {
+        consecutiveFailures++;
+        console.debug('Online sync check failed:', err);
+        // Mark disconnected after 2 consecutive failures (~6s)
+        if (consecutiveFailures >= 2 && onlineConnectedRef.current) {
+          onlineConnectedRef.current = false;
+          setOnlineConnected(false);
+        }
+      }
+    }, 3000);
 
     // Global key handler for Esc
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -244,34 +413,210 @@ export const App: React.FC = () => {
     return () => {
       isCancelled = true;
       clearInterval(autoSaveInterval);
+      clearInterval(onlineSyncInterval);
       window.removeEventListener('keydown', handleGlobalKeyDown);
       if (initialized) dispose();
     };
-  }, [addToast, closeAllModals, handleSaveGame, openFixtureModal, setNearbyFixture, syncFromSimulation]);
+  }, [addToast, closeAllModals, gameStarted, handleSaveGame, openFixtureModal, setNearbyFixture, syncFromSimulation]);
+
+  // Real-time WebSocket connection to receive instant world:update notifications
+  const worldSocket = useWorldSocket({
+    worldId: onlineWorld?.world.id ?? null,
+    token: onlineToken,
+    onWorldUpdate: async (data) => {
+      const curWorld = onlineWorldRef.current;
+      if (!curWorld || !simulationRef.current) return;
+      if (data.revision > revisionRef.current) {
+        try {
+          const { gameAuth } = await import('./services/firebase');
+          const user = gameAuth().currentUser;
+          if (!user) return;
+          const token = await user.getIdToken();
+          const updated = await getOnlineWorld(token, curWorld.world.id);
+          onlineWorldRef.current = updated;
+          setOnlineWorld(updated);
+          revisionRef.current = updated.world.revision;
+          setCurrentRevision(updated.world.revision);
+          if (updated.businesses[0]?.save) {
+            simulationRef.current.importSaveData(updated.businesses[0].save);
+            syncFromSimulation(simulationRef.current);
+          }
+        } catch (err) {
+          console.debug('[WS] onWorldUpdate sync failed:', err);
+        }
+      }
+    },
+    onSnapshot: (value) => {
+      if (!value || typeof value !== 'object' || !('world' in value)) return;
+      const snapshot = value as GameSnapshot;
+      const current = onlineWorldRef.current;
+      if (!current || snapshot.world.id !== current.world.id) return;
+      const priorDay = current.world.worldTime.day;
+      const priorHour = current.world.worldTime.hour;
+      const priorMinute = current.world.worldTime.minute;
+      const updated = { ...current, world: snapshot.world, businesses: snapshot.businesses };
+      onlineWorldRef.current = updated;
+      setOnlineWorld(updated);
+      if (snapshot.world.revision > revisionRef.current && snapshot.businesses[0]?.save && simulationRef.current) {
+        simulationRef.current.importSaveData(snapshot.businesses[0].save);
+        revisionRef.current = snapshot.world.revision;
+        setCurrentRevision(snapshot.world.revision);
+        syncFromSimulation(simulationRef.current);
+      } else if (snapshot.world.worldTime.day !== priorDay || snapshot.world.worldTime.hour !== priorHour || snapshot.world.worldTime.minute !== priorMinute) {
+        const sim = simulationRef.current;
+        if (sim) {
+          sim.getClock().setTime(snapshot.world.worldTime);
+          syncFromSimulation(sim);
+        }
+      }
+    },
+    onTimeVote: (value) => {
+      if (!value || typeof value !== 'object') return;
+      const data = value as { status?: typeof activeTimeVote; result?: { status?: string } };
+      if (data.status) setActiveTimeVote(data.status);
+      else if (data.result?.status === 'executed' || data.result?.status === 'rejected') setActiveTimeVote(null);
+    },
+    onSessionEnded: (_event, payload) => {
+      setOnlineConnected(false);
+      onlineConnectedRef.current = false;
+      const reason = payload && typeof payload === 'object' && 'reason' in payload ? String(payload.reason) : '';
+      addToast(reason || 'Phiên chơi chung đã kết thúc.', 'warn');
+    },
+  });
+
+  useEffect(() => {
+    if (!gameStarted || !onlineWorld || !worldSocket.connected) return;
+    const interval = setInterval(() => {
+      const direction = inputManagerRef.current?.getMovementVector();
+      if (direction) worldSocket.sendInput(direction);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [gameStarted, onlineWorld?.world.id, worldSocket.connected, worldSocket.sendInput]);
+
+  // Helper to commit online business mutation or fallback to local
+  const commitBusinessChange = async (
+    commandPayload: any,
+    activityDesc: string,
+    activityType: string
+  ) => {
+    const curWorld = onlineWorldRef.current;
+    if (!curWorld || !simulationRef.current) return false;
+    // Block mutations when not connected to prevent uploading stale data
+    if (!onlineConnectedRef.current) {
+      addToast('Mất kết nối hẻm chung. Thao tác không được lưu — đang chờ kết nối lại...', 'warn');
+      return false;
+    }
+    try {
+      const { gameAuth } = await import('./services/firebase');
+      const user = gameAuth().currentUser;
+      if (!user) throw new Error('Cần đăng nhập tài khoản.');
+      const token = await user.getIdToken();
+
+      const exportedSave = simulationRef.current.exportSaveData(
+        curWorld.businesses[0].save.id,
+        curWorld.world.revision + 1
+      );
+
+      const commandId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `cmd-${Date.now()}`;
+      const res = await commitOnlineCommand(token, curWorld.world.id, {
+        expectedRevision: curWorld.world.revision,
+        receipt: {
+          commandId,
+          actorId: user.uid,
+          status: 'accepted',
+          revision: curWorld.world.revision + 1,
+          payloadJson: JSON.stringify(commandPayload),
+        },
+        updatedBusiness: {
+          ...curWorld.businesses[0],
+          save: exportedSave,
+        },
+        activity: {
+          actorId: user.uid,
+          type: activityType,
+          description: activityDesc,
+        },
+      });
+
+      if (res.committed) {
+        revisionRef.current = res.revision;
+        setCurrentRevision(res.revision);
+        const committedSave = commandPayload?.type === 'layout_batch' && res.updatedBusiness?.save
+          ? res.updatedBusiness.save as SaveGameData
+          : exportedSave;
+        if (commandPayload?.type === 'layout_batch') {
+          simulationRef.current.importSaveData(committedSave);
+          syncFromSimulation(simulationRef.current);
+        }
+        const updatedWorld = {
+          ...curWorld,
+          world: { ...curWorld.world, revision: res.revision },
+          businesses: [{ ...curWorld.businesses[0], ...(res.updatedBusiness ?? {}), save: committedSave }],
+        };
+        onlineWorldRef.current = updatedWorld;
+        setOnlineWorld(updatedWorld);
+        return true;
+      } else {
+        const sim = simulationRef.current;
+        if (sim) {
+          sim.importSaveData(curWorld.businesses[0].save);
+          syncFromSimulation(sim);
+        }
+        addToast('Máy chủ từ chối thay đổi. Đã khôi phục dữ liệu online gần nhất.', 'warn');
+        return false;
+      }
+    } catch (err) {
+      console.error('Online commit error:', err);
+      const sim = simulationRef.current;
+      if (sim) {
+        sim.importSaveData(curWorld.businesses[0].save);
+        syncFromSimulation(sim);
+      }
+      addToast(err instanceof Error ? err.message : 'Không thể lưu lên hẻm chung.', 'warn');
+      return false;
+    }
+  };
 
   // Actions triggered from UI
-  const handleRestock = (fixtureId: string, productId: string, amount: number) => {
+  const handleRestock = async (fixtureId: string, productId: string, amount: number) => {
+    if (blockOfflineOnlineMutation()) return;
     if (!simulationRef.current) return;
     const prod = PRODUCT_MAP[productId];
-    const before = simulationRef.current.getFixtures().find((fixture) => fixture.id === fixtureId)?.currentStock ?? 0;
-    const success = simulationRef.current.restockShelf(fixtureId, productId, amount);
-    if (success) {
-      const after = simulationRef.current.getFixtures().find((fixture) => fixture.id === fixtureId)?.currentStock ?? before;
-      addToast(`Đã bày ${after - before}x ${prod?.name || 'món hàng'} lên kệ!`, 'success');
+    const res = simulationRef.current.transferToShelf(fixtureId, productId, amount);
+    if (res.success && res.actualQuantity > 0) {
+      const count = res.actualQuantity;
+      addToast(`Đã bày ${count}x ${prod?.name || 'món hàng'} lên kệ!`, 'success');
+      syncFromSimulation(simulationRef.current);
+      if (onlineWorldRef.current) {
+        await commitBusinessChange(
+          { type: 'restock', fixtureId, productId, quantity: count },
+          `Bày ${count}x ${prod?.name || 'món hàng'} lên kệ`,
+          'Bày hàng'
+        );
+      }
     } else addToast('Không thể bày hàng lên kệ này.', 'warn');
   };
 
-  const handleUnstock = (fixtureId: string, amount: number) => {
+  const handleUnstock = async (fixtureId: string, amount: number) => {
+    if (blockOfflineOnlineMutation()) return;
     if (!simulationRef.current) return;
-    const before = simulationRef.current.getFixtures().find((fixture) => fixture.id === fixtureId)?.currentStock ?? 0;
-    const success = simulationRef.current.unstockShelf(fixtureId, amount);
-    if (success) {
-      const after = simulationRef.current.getFixtures().find((fixture) => fixture.id === fixtureId)?.currentStock ?? before;
-      addToast(`Đã cất ${before - after} món hàng lại vào nhà kho!`, 'info');
+    const res = simulationRef.current.transferFromShelf(fixtureId, amount);
+    if (res.success && res.actualQuantity > 0) {
+      const count = res.actualQuantity;
+      addToast(`Đã cất ${count} món hàng lại vào nhà kho!`, 'info');
+      syncFromSimulation(simulationRef.current);
+      if (onlineWorldRef.current) {
+        await commitBusinessChange(
+          { type: 'unstock', fixtureId, quantity: count },
+          `Cất ${count} món hàng lại vào kho`,
+          'Cất hàng'
+        );
+      }
     } else addToast('Không thể cất: kho mát có thể đã hết chỗ.', 'warn');
   };
 
-  const handleToggleStoreStatus = () => {
+  const handleToggleStoreStatus = async () => {
+    if (blockOfflineOnlineMutation()) return;
     if (!simulationRef.current) return;
     const isOpen = simulationRef.current.getClock().toggleStoreStatus();
     syncFromSimulation(simulationRef.current);
@@ -279,17 +624,170 @@ export const App: React.FC = () => {
       isOpen ? 'Cửa tiệm đã mở, chào đón bà con trong xóm ghé mua! ' : 'Đã đóng cửa tiệm nghỉ ngơi! ',
       isOpen ? 'success' : 'info'
     );
+    if (onlineWorldRef.current) {
+      await commitBusinessChange({ type: 'store_status', isOpen }, isOpen ? 'Mở cửa tiệm' : 'Đóng cửa tiệm', 'Trạng thái tiệm');
+    }
   };
 
-  const handleAdvanceDay = () => {
+  const handleApplyStoreLayout = async (nextSave: SaveGameData, actions: StoreLayoutAction[]): Promise<boolean> => {
+    if (blockOfflineOnlineMutation()) return false;
+    const simulation = simulationRef.current;
+    if (!simulation || worldTime.isStoreOpen) return false;
+    const previousSave = simulation.exportSaveData(onlineWorldRef.current?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
+    const result = simulation.applyStoreLayout(nextSave);
+    if (!result.save) {
+      addToast('Không thể áp dụng bố cục. Hãy kiểm tra lối đi và trạng thái tiệm.', 'warn');
+      return false;
+    }
+    syncFromSimulation(simulation);
+    if (onlineWorldRef.current) {
+      return await commitBusinessChange({ type: 'layout_batch', actions }, 'Sắp xếp cửa hàng', 'Bố cục cửa hàng');
+    } else {
+      const saved = await handleSaveGame(false);
+      if (!saved) {
+        simulation.importSaveData(previousSave);
+        syncFromSimulation(simulation);
+        return false;
+      }
+      addToast('Đã lưu bố cục cửa hàng.', 'success');
+      return true;
+    }
+  };
+
+  const openLayoutEditor = () => {
+    simulationRef.current?.setPaused(true);
+    inputManagerRef.current?.setEnabled(false);
+    setIsLayoutOpen(true);
+  };
+  const closeLayoutEditor = () => {
+    simulationRef.current?.setPaused(false);
+    inputManagerRef.current?.setEnabled(true);
+    setIsLayoutOpen(false);
+  };
+
+  const handleAdvanceDay = async () => {
+    if (blockOfflineOnlineMutation()) return;
     if (!simulationRef.current) return;
+    // In online mode with 2 players, time vote is required
+    const curWorld = onlineWorldRef.current;
+    if (curWorld && curWorld.world.memberships.length > 1) {
+      const sent = worldSocket.submitTimeVote({ type: 'advance_day' });
+      if (!sent) { addToast('Chưa kết nối realtime; không gửi được phiếu.', 'warn'); return; }
+      const { gameAuth } = await import('./services/firebase');
+      const user = gameAuth().currentUser;
+      setActiveTimeVote({
+        type: 'advance_day',
+        initiatedBy: user?.uid || 'me',
+        expiresInMs: 30000,
+        approvalsCount: 1,
+        totalRequired: 2,
+      });
+      addToast('Đã gửi phiếu yêu cầu qua ngày! Chờ đối tác đồng ý trong 30s...', 'info');
+      closeFixtureModal();
+      return;
+    }
+
     simulationRef.current.getClock().advanceToNextDay();
     syncFromSimulation(simulationRef.current);
     closeFixtureModal();
+    if (onlineWorldRef.current) {
+      await commitBusinessChange(
+        { type: 'advance_day' },
+        `Bước sang Ngày ${simulationRef.current.getTime().day}`,
+        'Qua ngày'
+      );
+    }
   };
 
-  const handleToggleGameSpeed = () => {
+  const handleClaimQuest = async (questId: string) => {
+    const sim = simulationRef.current;
+    if (!sim || blockOfflineOnlineMutation()) return;
+    const result = sim.claimQuest(questId);
+    if (!result.success) { addToast('Nhiệm vụ chưa đủ điều kiện hoặc đã nhận.', 'warn'); return; }
+    syncFromSimulation(sim);
+    if (onlineWorldRef.current) {
+      await commitBusinessChange({ type: 'claim_quest', questId }, 'Nhận thưởng nhiệm vụ', 'Nhiệm vụ');
+    } else void handleSaveGame(false);
+    addToast(`Nhận thưởng ${result.reward!.money.toLocaleString('vi-VN')} ₫${result.reward!.experience ? ` và ${result.reward!.experience} XP` : ''}.`, 'success');
+  };
+
+  const handleHireStaff = (candidateId: string) => {
+    const sim = simulationRef.current;
+    if (!sim) return { success: false, reason: 'Trò chơi chưa sẵn sàng.' };
+    if (onlineWorldRef.current) return { success: false, reason: 'Quản lý nhân viên chưa được đồng bộ cho thế giới co-op.' };
+    const result = sim.hireStaff(candidateId);
+    if (!result.success) {
+      addToast(result.reason ?? 'Không tuyển được nhân viên.', 'warn');
+      return result;
+    }
+    syncFromSimulation(sim);
+    void handleSaveGame(false);
+    addToast('Đã tuyển nhân viên; phí tuyển dụng đã được trừ.', 'success');
+    return result;
+  };
+
+  const handleSetStaffShift = (staffId: string, shift: StaffShift) => {
+    const sim = simulationRef.current;
+    if (onlineWorldRef.current) {
+      addToast('Quản lý ca chưa được đồng bộ cho thế giới co-op.', 'warn');
+      return false;
+    }
+    if (!sim || !sim.setStaffShift(staffId, shift)) {
+      addToast('Không thể đổi ca làm nhân viên.', 'warn');
+      return false;
+    }
+    syncFromSimulation(sim);
+    void handleSaveGame(false);
+    addToast('Đã lưu ca làm mới.', 'success');
+    return true;
+  };
+
+  const handleAssignRefillJob = (staffId: string, fixtureId: string) => {
+    const sim = simulationRef.current;
+    if (!sim) return { success: false, reason: 'Chưa sẵn sàng.' };
+    const result = sim.assignRefillJob(staffId, fixtureId);
+    if (result.success) {
+      syncFromSimulation(sim);
+      void handleSaveGame(false);
+      addToast('Đã giao việc châm kệ cho nhân viên.', 'success');
+    } else addToast(`Chưa giao được việc: ${result.reason ?? 'kệ không khả dụng'}`, 'warn');
+    return result;
+  };
+
+  const handleUpdateAutoBuy = (enabled: boolean, rules: import('@game/shared').AutoBuyRule[]) => {
+    const sim = simulationRef.current;
+    if (!sim) return { success: false, reason: 'Chưa sẵn sàng.' };
+    const result = sim.setAutoBuyConfig(enabled, rules);
+    if (!result.success) addToast(result.reason ?? 'Quy tắc tự nhập không hợp lệ.', 'warn');
+    else {
+      syncFromSimulation(sim);
+      void handleSaveGame(false);
+      addToast(enabled ? 'Đã bật tự nhập theo quy tắc.' : 'Đã tắt tự nhập.', 'success');
+    }
+    return result;
+  };
+
+  const handleToggleGameSpeed = async () => {
+    if (blockOfflineOnlineMutation()) return;
     const nextSpeed = gameSpeed === 1 ? 2 : 1;
+    const curWorld = onlineWorldRef.current;
+    if (curWorld && curWorld.world.memberships.length > 1) {
+      const sent = worldSocket.submitTimeVote({ type: 'change_speed', targetSpeed: nextSpeed as 1 | 2 });
+      if (!sent) { addToast('Chưa kết nối realtime; không gửi được phiếu.', 'warn'); return; }
+      const { gameAuth } = await import('./services/firebase');
+      const user = gameAuth().currentUser;
+      setActiveTimeVote({
+        type: 'change_speed',
+        targetSpeed: nextSpeed,
+        initiatedBy: user?.uid || 'me',
+        expiresInMs: 30000,
+        approvalsCount: 1,
+        totalRequired: 2,
+      });
+      addToast(`Đã gửi phiếu đổi tốc độ ${nextSpeed}x! Chờ đối tác đồng ý...`, 'info');
+      return;
+    }
+
     setGameSpeed(nextSpeed);
     if (simulationRef.current) {
       simulationRef.current.getClock().setTimeScale(nextSpeed === 1 ? 60 : 120);
@@ -309,30 +807,136 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleSupplierOrder = (productId: string, quantity: number) => {
+  const handleSupplierCartOrder = async (supplierId: string, items: { productId: string; quantity: number }[]) => {
+    if (blockOfflineOnlineMutation()) return;
     const sim = simulationRef.current;
     if (!sim) return;
-    if (sim.orderFromSupplier(productId, quantity)) {
+    const res = sim.orderSupplierCart(supplierId, items);
+    if (res.success) {
       syncFromSimulation(sim);
-      addToast('Đã đặt hàng. Nhà phân phối sẽ giao vào sáng mai!', 'success');
+      const supplierName = supplierId === 'cho_dau_moi' ? 'Chợ đầu mối' : supplierId === 'giao_hoa_toc' ? 'Đại lý Hỏa Tốc' : 'Đại lý đầu hẻm';
+      addToast(`Đã đặt giỏ hàng thành công từ ${supplierName}!`, 'success');
+      if (onlineWorldRef.current && res.paidTotal) {
+        await commitBusinessChange(
+          { type: 'order', supplierId, items, paidTotal: res.paidTotal },
+          `Đặt giỏ hàng (${items.length} món, tổng ${res.paidTotal.toLocaleString('vi-VN')} ₫) từ ${supplierName}`,
+          'Nhập hàng'
+        );
+      }
     } else {
-      addToast('Không thể đặt hàng: kiểm tra tiền, cấp độ hoặc chỗ kho mát.', 'warn');
+      addToast(res.reasons?.[0] || 'Không thể đặt giỏ hàng: vui lòng kiểm tra lại điều kiện.', 'warn');
     }
   };
 
-  const handleAutoRestock = () => {
+  const handleSupplierOrder = async (productId: string, quantity: number) => {
+    await handleSupplierCartOrder('dai_ly_dau_hem', [{ productId, quantity }]);
+  };
+
+  const handleStowHolding = async (holdingId?: string) => {
+    if (blockOfflineOnlineMutation()) return;
+    const sim = simulationRef.current;
+    if (!sim) return;
+    if (holdingId) {
+      const res = sim.stowHoldingItem(holdingId);
+      if (res.success) {
+        syncFromSimulation(sim);
+        addToast(`Đã cất ${res.stowedQuantity} món vào kho thành công!`, 'success');
+        if (onlineWorldRef.current && res.stowedQuantity > 0) {
+          await commitBusinessChange({ type: 'stow', holdingId, quantity: res.stowedQuantity }, `Cất ${res.stowedQuantity} món vào kho`, 'Cất hàng');
+        }
+      } else {
+        addToast(res.reason === 'cold_warehouse_full' ? 'Kho mát đã đầy, không thể cất thêm!' : 'Không thể cất món hàng này.', 'warn');
+      }
+    } else {
+      const res = sim.stowAllHolding();
+      if (res.success) {
+        syncFromSimulation(sim);
+        addToast(`Đã cất ${res.totalStowed} món từ hàng chờ vào kho!`, 'success');
+        if (onlineWorldRef.current && res.totalStowed > 0) {
+          await commitBusinessChange({ type: 'stow_all', quantity: res.totalStowed }, `Cất ${res.totalStowed} món từ hàng chờ vào kho`, 'Cất hàng');
+        }
+      } else {
+        addToast('Kho không còn đủ chỗ trống để cất thêm hàng chờ!', 'warn');
+      }
+    }
+  };
+
+  const handleSetPlanogramAssignment = async (fixtureId: string, productId?: string) => {
+    if (blockOfflineOnlineMutation()) return;
+    const sim = simulationRef.current;
+    if (!sim) return;
+    const res = sim.setPlanogramAssignment(fixtureId, productId);
+    if (res.success) {
+      syncFromSimulation(sim);
+      if (onlineWorldRef.current) {
+        await commitBusinessChange({ type: 'planogram_assignment', fixtureId, productId: productId ?? null }, 'Cập nhật sơ đồ bày hàng', 'Sơ đồ kệ');
+      }
+      if (productId) {
+        const prod = PRODUCT_MAP[productId];
+        addToast(`Đã lưu "${prod?.name || productId}" vào sơ đồ kệ!`, 'success');
+      } else {
+        addToast('Đã hủy gán sơ đồ cho kệ này!', 'info');
+      }
+    } else {
+      addToast(
+        res.reason === 'storage_type_mismatch'
+          ? 'Không thể gán: điều kiện bảo quản không phù hợp!'
+          : 'Không thể thiết lập sơ đồ cho kệ này.',
+        'warn'
+      );
+    }
+  };
+
+  const handleApplyPlanogram = async (fixtureId?: string) => {
+    if (blockOfflineOnlineMutation()) return;
+    const sim = simulationRef.current;
+    if (!sim) return;
+    if (fixtureId) {
+      const res = sim.applyPlanogramEntry(fixtureId);
+      if (res.applied && res.actualQuantity > 0) {
+        syncFromSimulation(sim);
+        addToast(`Đã châm ${res.actualQuantity} món theo sơ đồ kệ!`, 'success');
+        if (onlineWorldRef.current) {
+          await commitBusinessChange({ type: 'planogram_restock', fixtureId, quantity: res.actualQuantity }, `Châm ${res.actualQuantity} món theo sơ đồ kệ`, 'Bày hàng');
+        }
+      } else if (res.reason === 'product_mismatch') {
+        addToast('Kệ đang chứa sản phẩm khác! Không thể đổi món khi còn tồn hàng.', 'warn');
+      } else if (res.reason === 'no_inventory') {
+        addToast('Trong kho không còn sản phẩm theo sơ đồ để châm kệ!', 'warn');
+      } else if (res.reason === 'fixture_full') {
+        addToast('Kệ đã đầy đủ theo sơ đồ.', 'info');
+      } else {
+        addToast('Chưa thể châm hàng theo sơ đồ cho kệ này.', 'info');
+      }
+    } else {
+      handleAutoRestock();
+    }
+  };
+
+  const handleAutoRestock = async () => {
+    if (blockOfflineOnlineMutation()) return;
     const sim = simulationRef.current;
     if (!sim) return;
     let restockedCount = 0;
+
+    // 1. Apply planogram entries
+    const batchRes = sim.applyPlanogram();
+    restockedCount += batchRes.totalRefilled;
+
+    // 2. Fallback: restock any sales fixtures with assignedProductId that are not in planogram
+    const currentPlan = sim.getPlanogram();
     for (const fix of sim.getFixtures()) {
-      if (isSalesFixture(fix) && fix.assignedProductId) {
-        const needed = fix.maxCapacity - fix.currentStock;
+      if (isSalesFixture(fix) && fix.assignedProductId && !currentPlan[fix.id]) {
+        const prod = PRODUCT_MAP[fix.assignedProductId];
+        const effectiveCap = prod ? Math.min(fix.maxCapacity, prod.shelfCapacity) : fix.maxCapacity;
+        const needed = effectiveCap - fix.currentStock;
         if (needed > 0) {
           const invItem = sim.getInventory().find((i) => i.productId === fix.assignedProductId);
           if (invItem && invItem.quantity > 0) {
             const transfer = Math.min(needed, invItem.quantity);
-            if (sim.restockShelf(fix.id, fix.assignedProductId, transfer)) {
-              restockedCount += transfer;
+            const res = sim.transferToShelf(fix.id, fix.assignedProductId, transfer);
+            if (res.success && res.actualQuantity > 0) {
+              restockedCount += res.actualQuantity;
             }
           }
         }
@@ -344,28 +948,47 @@ export const App: React.FC = () => {
       if (viewportRef.current) {
         viewportRef.current.addFloatingGain(player.position.x, player.position.y - 20, `+${restockedCount} Bày Kệ`, 0x2a7a43);
       }
+      if (onlineWorldRef.current) {
+        await commitBusinessChange(
+          { type: 'auto_restock', count: restockedCount },
+          `Tự động châm ${restockedCount} món hàng lên kệ`,
+          'Bày hàng tự động'
+        );
+      }
     } else {
       addToast('Kho hàng không có sẵn sản phẩm phù hợp để châm kệ.', 'info');
     }
   };
 
-  const handleCheckout = (fixtureId: string) => {
+  const handleCheckout = async (fixtureId?: string) => {
+    if (blockOfflineOnlineMutation()) return;
     const sim = simulationRef.current;
     if (!sim) return;
-    const shelf = sim.getFixtures().find((f) => f.id === fixtureId);
-    const prod = shelf?.assignedProductId ? PRODUCT_MAP[shelf.assignedProductId] : null;
+    const activeCustomer = sim.getCustomer();
+    if (!activeCustomer || activeCustomer.stage !== 'checkout') {
+      addToast('Chưa có khách đứng đợi ở quầy thu ngân!', 'warn');
+      return;
+    }
+    const moneyBefore = sim.getPlayerData().money;
     if (sim.checkoutShelf(fixtureId)) {
       syncFromSimulation(sim);
-      const earned = prod?.baseSellingPrice || 0;
-      addToast(`Đã bán một món hàng và nhận +${earned.toLocaleString('vi-VN')} đ!`, 'success');
+      const earned = sim.getPlayerData().money - moneyBefore;
+      addToast(`Đã thanh toán cho khách và nhận +${earned.toLocaleString('vi-VN')} đ!`, 'success');
       if (viewportRef.current) {
         const cashier = sim.getFixtures().find((f) => f.type === 'cashier_counter');
         const posX = cashier ? (cashier.tileX + 1) * 32 : player.position.x;
         const posY = cashier ? (cashier.tileY) * 32 : player.position.y;
         viewportRef.current.addFloatingGain(posX, posY - 20, `+${earned.toLocaleString('vi-VN')} đ`, 0xf4a261);
       }
+      if (onlineWorldRef.current) {
+        await commitBusinessChange(
+          { type: 'checkout', fixtureId: fixtureId || '' },
+          `Thanh toán đơn hàng thu về +${earned.toLocaleString('vi-VN')}₫`,
+          'Bán hàng'
+        );
+      }
     } else {
-      addToast('Không thể bán: tiệm đang đóng cửa hoặc kệ đã hết hàng.', 'warn');
+      addToast('Không thể thanh toán: tiệm đang đóng cửa hoặc giỏ hàng trống.', 'warn');
     }
   };
 
@@ -385,7 +1008,7 @@ export const App: React.FC = () => {
     }
   };
 
-  const hasModal = !!(activeFixtureModal || isInventoryModalOpen || isSaveModalOpen || isSupplierModalOpen);
+  const hasModal = !!(activeFixtureModal || isInventoryModalOpen || isSaveModalOpen || isSupplierModalOpen || isLayoutOpen);
   useEffect(() => {
     const syncInput = (state: ReturnType<typeof useGameStore.getState>) => inputManagerRef.current?.setEnabled(!(state.activeFixtureModal || state.isInventoryModalOpen || state.isSaveModalOpen || state.isSupplierModalOpen));
     const unsubscribe = useGameStore.subscribe(syncInput);
@@ -406,9 +1029,29 @@ export const App: React.FC = () => {
     setWarehouseDockOpen(false);
     viewportRef.current?.locateWarehouse();
   };
+  if (!gameStarted && !isLoading) return <LoginScreen onEnter={handleEnterGame}/>;
+
   return <div className="game-shell">
     <div style={{display:'contents'}} {...(hasModal ? {inert:''} : {})}>
-      {!isLoading && <HUD onToggleStoreStatus={handleToggleStoreStatus} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomer() ? 1 : 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
+      {!isLoading && (
+        <AccountBar
+          onlineWorldName={onlineWorld?.world.name}
+          isOnlineOwner={onlineWorld ? onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0] : false}
+          onInvite={handleOnlineInvite}
+          onLeaveOnline={handleLeaveOnline}
+        />
+      )}
+      {!isLoading && onlineWorld && !onlineConnected && (
+        <div role="alert" style={{
+          position: 'fixed', top: 48, left: 0, right: 0, zIndex: 9999,
+          background: '#c0392b', color: '#fff', fontSize: 13, padding: '6px 16px',
+          textAlign: 'center', fontFamily: 'var(--font-pixel, monospace)',
+          borderBottom: '2px solid #922b21',
+        }}>
+          ⚠️ Mất kết nối hẻm chung — thao tác bị tạm dừng, đang kết nối lại...
+        </div>
+      )}
+      {!isLoading && <HUD onOpenQuests={() => setQuestOpen(true)} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomer() ? 1 : 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
       <main className="game-main">
         <div className="world-viewport">
           <canvas ref={canvasRef} aria-label="Bản đồ Tiệm Tạp Hóa Đầu Hẻm"/>
@@ -417,17 +1060,106 @@ export const App: React.FC = () => {
             {!hasModal && !isWarehouseDockOpen && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
           </>}
         </div>
-        {!isLoading && <WarehouseDock inventory={inventory} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onLocateWarehouse={locateWarehouse} currentDay={worldTime.day}/>}
+        {!isLoading && <WarehouseDock inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onLocateWarehouse={locateWarehouse} onStowHolding={handleStowHolding} currentDay={worldTime.day}/>}
       </main>
       {!isLoading && <BottomBar onOpenSupplier={openSupplierModal} onOpenCashier={openCashier}/>}
     </div>
-    {isLoading && <div className="loading-screen" role="status"><div className="loading-sign"><PixelIcon name="warehouse" size={48}/><p className="eyebrow">Chào mừng về hẻm</p><h1>Tiệm Tạp Hóa<br/>Đầu Hẻm</h1></div><p>{startupError || 'Đang mở cửa tiệm, chuẩn bị hàng hóa...'}</p>{startupError ? <PixelButton onClick={()=>window.location.reload()} variant="teal">Thử mở tiệm lại</PixelButton> : <div className="loading-stripes"/>}</div>}
-    {activeFixtureModal && isSalesFixture(activeFixtureModal) && <ShelfModal fixture={activeFixtureModal} inventory={inventory} currentDay={worldTime.day} onRestock={handleRestock} onUnstock={handleUnstock} onClose={closeFixtureModal}/>}
-    {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal fixture={activeFixtureModal} inventory={inventory} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onClose={closeFixtureModal}/>}
-    {activeFixtureModal?.type === 'cashier_counter' && <CashierModal fixture={activeFixtureModal} player={player} worldTime={worldTime} shelves={fixtures.filter(isSalesFixture)} statistics={statistics} onCheckout={handleCheckout} onToggleStoreStatus={handleToggleStoreStatus} onAdvanceDay={handleAdvanceDay} onClose={closeFixtureModal}/>}
+    {isLoading && (
+      <div className="loading-screen" role="status">
+        <div className="loading-sign"><PixelIcon name="warehouse" size={48}/><p className="eyebrow">Chào mừng về hẻm</p><h1>Tiệm Tạp Hóa<br/>Đầu Hẻm</h1></div>
+        <p>{startupError || 'Đang mở cửa tiệm, chuẩn bị hàng hóa...'}</p>
+        {startupError ? (
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '12px' }}>
+            <PixelButton onClick={() => window.location.reload()} variant="teal">Thử đọc lại</PixelButton>
+            <PixelButton
+              onClick={async () => {
+                const restored = await restoreFromBackup().catch(() => undefined);
+                if (restored) {
+                  window.location.reload();
+                } else {
+                  addToast('Không tìm thấy bản sao lưu hợp lệ!', 'warn');
+                }
+              }}
+              variant="wood"
+            >
+              Khôi phục từ sao lưu
+            </PixelButton>
+            <PixelButton
+              onClick={async () => {
+                if (window.confirm('Khởi tạo tiệm mới sẽ xóa dữ liệu cũ trên máy này. Bạn có chắc chắn không?')) {
+                  await resetSaveToDefault();
+                  window.location.reload();
+                }
+              }}
+              variant="brick"
+            >
+              Tạo tiệm mới
+            </PixelButton>
+          </div>
+        ) : (
+          <div className="loading-stripes"/>
+        )}
+      </div>
+    )}
+    {activeFixtureModal && isSalesFixture(activeFixtureModal) && (
+      <ShelfModal
+        fixture={activeFixtureModal}
+        inventory={inventory}
+        currentDay={worldTime.day}
+        planogram={planogram}
+        onRestock={handleRestock}
+        onUnstock={handleUnstock}
+        onSetPlanogramAssignment={handleSetPlanogramAssignment}
+        onApplyPlanogram={handleApplyPlanogram}
+        onClose={closeFixtureModal}
+      />
+    )}
+    {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal fixture={activeFixtureModal} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onStowHolding={handleStowHolding} onClose={closeFixtureModal}/>}
+    {activeFixtureModal?.type === 'cashier_counter' && <CashierModal fixture={activeFixtureModal} player={player} worldTime={worldTime} shelves={fixtures.filter(isSalesFixture)} customers={customers} statistics={statistics} staff={simulationRef.current?.getStaff() ?? []} staffCandidates={simulationRef.current?.getStaffCandidates(worldTime.day) ?? []} wageDebt={simulationRef.current?.getWageDebt() ?? 0} restockTargets={simulationRef.current?.getRestockJobTargets() ?? []} onAssignRefillJob={handleAssignRefillJob} onHireStaff={handleHireStaff} onSetStaffShift={handleSetStaffShift} onCheckout={handleCheckout} onToggleStoreStatus={handleToggleStoreStatus} onAdvanceDay={handleAdvanceDay} onClose={closeFixtureModal}/>}
     {isInventoryModalOpen && <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals}/>}
     {isSaveModalOpen && <SaveModal onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
-    {isSupplierModalOpen && <SupplierModal player={player} pendingOrders={pendingOrders} inventory={inventory} currentDay={worldTime.day} onOrder={handleSupplierOrder} onClose={closeAllModals}/>}
+    {isSupplierModalOpen && (
+      <SupplierModal
+        player={player}
+        pendingOrders={pendingOrders}
+        inventory={inventory}
+        currentDay={worldTime.day}
+        onOrder={handleSupplierOrder}
+        onOrderCart={handleSupplierCartOrder}
+        onGetSuggestions={(supplierId) =>
+          simulationRef.current?.suggestRestock(supplierId) ?? {
+            supplierId,
+            items: [],
+            totalCost: 0,
+            totalQuantity: 0,
+            coldItemCount: 0,
+            appliedConstraints: [],
+            explanation: '',
+          }
+        }
+        autoBuyConfig={simulationRef.current?.getAutoBuyConfig() ?? { enabled: false, rules: [], reports: {} }}
+        onUpdateAutoBuy={handleUpdateAutoBuy}
+        onClose={closeAllModals}
+      />
+    )}
+    {isQuestOpen && simulationRef.current && <QuestModal {...simulationRef.current.getQuests()} level={player.level} onClaim={handleClaimQuest} onClose={() => setQuestOpen(false)}/>}
+    {isLayoutOpen && simulationRef.current && <StoreLayoutModal save={simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision)} onConfirm={handleApplyStoreLayout} onClose={closeLayoutEditor}/>}
+    {activeTimeVote && (
+      <TimeVoteModal
+        vote={activeTimeVote}
+        onApprove={async () => {
+          const sent = activeTimeVote.type === 'advance_day'
+            ? worldSocket.submitTimeVote({ type: 'advance_day' })
+            : worldSocket.submitTimeVote({ type: 'change_speed', targetSpeed: activeTimeVote.targetSpeed === 2 ? 2 : 1 });
+          if (!sent) addToast('Mất kết nối realtime; chưa gửi được phiếu.', 'warn');
+        }}
+        onCancel={() => {
+          worldSocket.cancelTimeVote();
+          setActiveTimeVote(null);
+          addToast('Đã hủy yêu cầu điều chỉnh thời gian.', 'info');
+        }}
+      />
+    )}
     <RotateOverlay/><ToastContainer/>
   </div>;
 };
