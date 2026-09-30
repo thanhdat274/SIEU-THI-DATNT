@@ -1,0 +1,560 @@
+
+# VIETNAM TAX & BUSINESS LEGAL SYSTEM
+# TIỆM TẠP HÓA ĐẦU HẺM
+
+ROLE:
+Act as a Senior Vietnam Tax Researcher,
+Game Economy Designer, Principal Software Architect,
+and Full-stack Game Engineer.
+
+PROJECT:
+Tiệm Tạp Hóa Đầu Hẻm
+
+OBJECTIVE:
+Implement a realistic Vietnamese business registration,
+taxation, accounting, and business expansion system.
+
+The game must simulate the legal and financial journey
+from a small grocery store to a registered household
+business, then to a company operating multiple stores.
+
+All player-facing content must be in Vietnamese.
+
+==================================================
+1. RESTORE PROJECT CONTEXT
+==================================================
+
+Read:
+- GAME_DESIGN.md
+- ARCHITECTURE.md
+- ROADMAP.md
+- TASKS.md
+
+Inspect the existing source code and Git status.
+
+Identify existing systems:
+- Economy
+- Sales
+- Inventory
+- Employees
+- Business progression
+- Game clock
+- Save/load
+- Firebase Authentication
+- MongoDB persistence
+
+Preserve all completed functionality.
+
+Do not rewrite unrelated modules.
+
+==================================================
+2. LEGAL RESEARCH — MANDATORY
+==================================================
+
+Research Vietnamese legislation effective as of
+September 30, 2026.
+
+Prioritize official sources:
+- vanban.chinhphu.vn
+- congbao.chinhphu.vn
+- xaydungchinhsach.chinhphu.vn
+- chinhphu.vn
+- mof.gov.vn
+- gdt.gov.vn
+- thuvienphapluat.vn for secondary reference
+
+Research the following:
+
+A. Business registration:
+- Household businesses.
+- Private enterprises.
+- Single-member limited liability companies.
+- Multi-member limited liability companies.
+- Joint-stock companies.
+- Conversion from household business to enterprise.
+- Business locations and branches.
+
+B. Taxation:
+- Value Added Tax.
+- Personal Income Tax.
+- Corporate Income Tax.
+- Special Consumption Tax when applicable.
+- Import/export duties when applicable.
+- Tax exemptions and reductions.
+- Tax declaration and payment.
+- Electronic invoices.
+- Accounting obligations.
+- Social insurance and payroll obligations.
+
+C. Food-related business requirements:
+- Food safety.
+- Product origin.
+- Food processing.
+- Food and beverage retail.
+- Relevant licensing conditions.
+
+Research applicable laws and amendments,
+including but not limited to:
+
+- Law on Enterprises.
+- Law on Tax Administration 108/2025/QH15.
+- VAT Law 48/2024/QH15 and amendments.
+- PIT Law 109/2025/QH15 and amendments.
+- CIT Law 67/2025/QH15 and amendments.
+- Resolution 198/2025/QH15.
+- Decree 68/2026/ND-CP.
+- Decree 141/2026/ND-CP.
+- Decree 320/2025/ND-CP.
+- Decree 254/2026/ND-CP.
+- Applicable Ministry of Finance circulars.
+
+IMPORTANT:
+Verify each document's legal status, effective date,
+amendments, transitional provisions, and applicability.
+
+Do not use outdated tax thresholds.
+
+Do not treat draft legislation as enacted law.
+
+Do not assume the latest publication date means
+the latest applicable legal rule.
+
+If legislation cannot be verified, flag it as
+UNVERIFIED and do not activate that rule.
+
+==================================================
+3. BUSINESS PROGRESSION
+==================================================
+
+Implement these gameplay stages:
+
+STAGE 1:
+Small neighborhood grocery store.
+
+STAGE 2:
+Registered household business.
+
+STAGE 3:
+Expanded household business with employees,
+warehouse, additional counters, and locations.
+
+STAGE 4:
+Business conversion.
+
+Allow the player to choose:
+- Private enterprise.
+- Single-member LLC.
+- Multi-member LLC.
+- Joint-stock company.
+
+STAGE 5:
+Company with multiple departments and branches.
+
+Legal entity type must be independent of player level.
+
+Level unlocks gameplay opportunities.
+
+Business registration must follow separate legal
+requirements and player decisions.
+
+Do not invent a mandatory revenue threshold
+requiring every household business to incorporate.
+
+==================================================
+4. HOUSEHOLD BUSINESS TAX ENGINE
+==================================================
+
+Implement:
+- Annual revenue tracking.
+- Taxable revenue classification.
+- VAT calculations.
+- PIT calculations.
+- Revenue thresholds.
+- Tax exemptions.
+- Filing obligations.
+- Electronic invoice obligations.
+- Tax payment schedules.
+
+Apply the verified 2026 legislation.
+
+Explicitly verify the threshold introduced by
+Decree 141/2026/ND-CP.
+
+The current verified reference threshold is
+VND 1,000,000,000 annual revenue.
+
+Do not hardcode the older VND 500,000,000 threshold
+as the current rule.
+
+Support historical tax rules separately.
+
+Classify business activities:
+- Retail goods.
+- Food preparation.
+- Beverage services.
+- Other taxable activities.
+
+Do not assume every activity has the same VAT
+or PIT calculation method.
+
+Support eligible PIT calculation methods,
+including revenue-based and income-based methods
+where legally applicable.
+
+==================================================
+5. CORPORATE TAX ENGINE
+==================================================
+
+Implement:
+- Corporate taxable revenue.
+- Deductible expenses.
+- Non-deductible expenses.
+- Taxable income.
+- Corporate Income Tax.
+- VAT input/output.
+- Tax incentives.
+- Tax losses and carryforward rules.
+- Tax payment and settlement.
+
+Verify applicable CIT rates:
+
+15%:
+Eligible businesses with annual revenue
+not exceeding VND 3 billion.
+
+17%:
+Eligible businesses with annual revenue
+above VND 3 billion and not exceeding
+VND 50 billion.
+
+20%:
+Standard rate, subject to statutory exceptions.
+
+Verify revenue reference periods and exclusions.
+
+Implement eligible exemptions under:
+- Decree 141/2026/ND-CP.
+- Resolution 198/2025/QH15.
+- Relevant implementing legislation.
+
+Never automatically grant tax exemptions
+without verifying eligibility.
+
+==================================================
+6. TAX RULE VERSIONING
+==================================================
+
+Build a versioned TaxRuleRegistry.
+
+Each rule must contain:
+
+- ruleId
+- taxType
+- legalDocument
+- article
+- clause
+- effectiveFrom
+- effectiveTo
+- applicableEntityTypes
+- applicableBusinessActivities
+- conditions
+- threshold
+- rate
+- calculationMethod
+- sourceUrl
+- verificationStatus
+- lastVerifiedAt
+
+Support historical game periods.
+
+A saved game must retain its applicable
+tax rule version.
+
+New legal rules must not silently alter
+historical financial records.
+
+==================================================
+7. ACCOUNTING SYSTEM
+==================================================
+
+Implement:
+
+- Daily revenue.
+- Cost of goods sold.
+- Inventory valuation.
+- Operating expenses.
+- Employee salaries.
+- Insurance contributions.
+- Gross profit.
+- Net profit.
+- Tax liabilities.
+- Cash flow.
+- Accounts payable.
+- Accounts receivable.
+- Tax payment history.
+
+Use integer VND values.
+
+Use deterministic calculations.
+
+Avoid floating-point errors.
+
+Distinguish:
+Revenue != Profit
+Profit != Cash Flow
+Taxable Income != Accounting Profit
+
+==================================================
+8. ELECTRONIC INVOICES
+==================================================
+
+Implement a simulated electronic invoice system.
+
+Include:
+- Invoice number.
+- Issue date.
+- Seller information.
+- Buyer information when applicable.
+- Product lines.
+- Quantity.
+- Unit price.
+- Applicable VAT.
+- Total amount.
+- Invoice status.
+
+Implement invoice obligations based on
+verified legislation and business type.
+
+The game must not claim that simulated invoices
+are legally valid electronic invoices.
+
+==================================================
+9. TAX GAMEPLAY
+==================================================
+
+Introduce realistic missions:
+
+- Register a household business.
+- Learn to calculate revenue.
+- Prepare a tax declaration.
+- Review deductible expenses.
+- Manage electronic invoices.
+- Pay taxes on time.
+- Hire an accountant.
+- Convert to a company.
+- Prepare financial statements.
+- Manage branch accounting.
+
+Use educational feedback.
+
+Do not make legal compliance optional
+when a verified rule requires it.
+
+Avoid arbitrary punishments unrelated to law.
+
+==================================================
+10. CHATGPT TAX ASSISTANT
+==================================================
+
+Create an in-game Vietnamese tax assistant.
+
+Example questions:
+
+"Tôi bán được 1,2 tỷ một năm thì đóng thuế gì?"
+
+"Hộ kinh doanh và công ty TNHH khác nhau thế nào?"
+
+"Thuế GTGT tính theo doanh thu hay lợi nhuận?"
+
+"Khi nào phải xuất hóa đơn điện tử?"
+
+"Thuê nhân viên có phải đóng bảo hiểm không?"
+
+The assistant must:
+
+- Retrieve current official legal sources.
+- Explain applicable legal rules.
+- Cite legal document numbers and provisions.
+- Display effective dates.
+- Distinguish historical and current legislation.
+- Explain calculations using game data.
+- Identify missing information.
+- Avoid unsupported legal conclusions.
+
+IMPORTANT:
+ChatGPT must NOT be the tax calculation engine.
+
+All tax amounts must be calculated by
+the deterministic Tax Engine.
+
+AI is responsible for explanations,
+retrieval, and educational guidance.
+
+Implement the assistant through a secure backend.
+
+Never expose an OpenAI API key in the frontend.
+
+Provide a fallback knowledge-base interface
+when AI service is unavailable.
+
+Do not assume ChatGPT subscription access
+provides free API usage.
+
+==================================================
+11. DATABASE DESIGN
+==================================================
+
+Use MongoDB Atlas.
+
+Suggested collections:
+
+- business_entities
+- business_registrations
+- tax_rules
+- tax_periods
+- tax_calculations
+- tax_declarations
+- tax_payments
+- financial_records
+- invoices
+- legal_sources
+- legal_rule_versions
+
+Avoid storing duplicate legal documents
+for every player.
+
+Store common legal rules centrally.
+
+Store only player-specific financial data
+and tax results per player.
+
+==================================================
+12. UI/UX
+==================================================
+
+Preserve:
+- Nostalgic Vietnamese pixel art.
+- Landscape-first 16:9.
+- Desktop and mobile compatibility.
+- Existing React + PixiJS architecture.
+
+Create a dedicated Tax & Business Management UI.
+
+Include:
+- Business status.
+- Annual revenue.
+- Estimated tax liability.
+- Filing deadlines.
+- Tax payment history.
+- Legal compliance checklist.
+- Business conversion screen.
+- Tax advisor interface.
+
+Use accessible Vietnamese explanations.
+
+==================================================
+13. DOCUMENTATION
+==================================================
+
+Create:
+
+docs/tax/
+  VIETNAM_TAX_RESEARCH.md
+  LEGAL_SOURCE_REGISTRY.md
+  BUSINESS_ENTITY_MODEL.md
+  TAX_RULE_MATRIX.md
+  TAX_CALCULATION_SPEC.md
+  TAX_ENGINE_ARCHITECTURE.md
+  TAX_GAMEPLAY_DESIGN.md
+  TAX_TEST_CASES.md
+
+Every tax formula must reference its legal basis.
+
+Document assumptions and unresolved legal issues.
+
+==================================================
+14. TESTING
+==================================================
+
+Test:
+- Revenue below the tax threshold.
+- Revenue exactly at the threshold.
+- Revenue above the threshold.
+- Multiple business activities.
+- Tax exemptions.
+- Tax rule transitions.
+- Household-to-company conversion.
+- Different corporate tax brackets.
+- Invoice obligations.
+- Save/load compatibility.
+- Historical tax calculations.
+
+Test boundary conditions carefully.
+
+Run:
+- Type checking.
+- Unit tests.
+- Integration tests.
+- Production build.
+
+Fix regressions before finishing.
+
+==================================================
+15. IMPLEMENTATION ORDER
+==================================================
+
+PHASE TAX-0:
+Legal research and source verification.
+
+PHASE TAX-1:
+Business entity model and progression.
+
+PHASE TAX-2:
+TaxRuleRegistry and deterministic Tax Engine.
+
+PHASE TAX-3:
+Household business tax calculations.
+
+PHASE TAX-4:
+Corporate taxation and exemptions.
+
+PHASE TAX-5:
+Accounting and invoice simulation.
+
+PHASE TAX-6:
+Tax gameplay and educational missions.
+
+PHASE TAX-7:
+ChatGPT tax assistant integration.
+
+PHASE TAX-8:
+Testing, optimization, and documentation.
+
+Implement one phase at a time.
+
+Do not rush legal research.
+
+Do not activate unverified rules.
+
+==================================================
+16. FIRST EXECUTION
+==================================================
+
+Start by:
+
+1. Inspecting the repository.
+2. Reading existing documentation.
+3. Researching current Vietnamese tax legislation.
+4. Building the legal source registry.
+5. Creating the tax rule matrix.
+6. Identifying legal uncertainties.
+7. Updating ROADMAP.md and TASKS.md.
+
+Then implement the first safe, testable module.
+
+Do not implement tax formulas based on assumptions.
+
+Do not modify unrelated gameplay systems.
+
+Report completed work, verified legal sources,
+test results, and next steps.
