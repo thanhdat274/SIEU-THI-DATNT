@@ -222,8 +222,10 @@ export interface ActiveMarketEvent {
 
 export interface MarketState {
   seed: string; // hạt giống cố định của thế giới/save
-  weather: WeatherState;
-  events: ActiveMarketEvent[];
+  weather: WeatherState; // chuỗi thời tiết gốc; sự kiện có thể ép thời tiết hiệu dụng khi đọc
+  events: ActiveMarketEvent[]; // đang chạy hoặc đã lên lịch (báo trước)
+  decidedThrough?: number; // đã quyết định lịch sự kiện tới hết ngày này
+  lastEventStart?: Record<string, number>; // ngày bắt đầu gần nhất của từng sự kiện (khoảng cách tối thiểu)
 }
 
 export interface StallState {

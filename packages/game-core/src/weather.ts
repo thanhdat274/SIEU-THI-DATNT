@@ -1,4 +1,4 @@
-import type { MarketState, WeatherState } from '@game/shared';
+import type { WeatherState } from '@game/shared';
 import { CLIMATE_SEASONS, WEATHER_TYPES, WEATHER_MAP, getDayOfYear } from '@game/data';
 import { Mulberry32Rng, daySeed } from './staff';
 
@@ -53,19 +53,4 @@ export function advanceWeather(seed: string, state: WeatherState, toDay: number)
     current = { day: current.day + 1, today, forecast: [tomorrow, afterTomorrow] };
   }
   return current;
-}
-
-export function createMarketState(seed: string, day: number): MarketState {
-  return { seed, weather: createWeatherState(seed, day), events: [] };
-}
-
-export function normalizeMarketState(state: MarketState | undefined, fallbackSeed: string, day: number): MarketState {
-  if (!state || typeof state.seed !== 'string' || !state.weather || !WEATHER_MAP[state.weather.today]) return createMarketState(state?.seed || fallbackSeed, day);
-  const weather: WeatherState = {
-    day: state.weather.day,
-    today: state.weather.today,
-    forecast: (state.weather.forecast ?? []).filter(id => !!WEATHER_MAP[id]).slice(0, 2),
-  };
-  const advanced = weather.forecast.length === 2 ? advanceWeather(state.seed, weather, day) : createWeatherState(state.seed, day);
-  return { seed: state.seed, weather: advanced, events: (state.events ?? []).map(event => ({ ...event })) };
 }

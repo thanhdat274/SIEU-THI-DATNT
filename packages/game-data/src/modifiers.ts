@@ -3,6 +3,7 @@ import { ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP } from './products';
 import { ALL_KNOWN_TAGS } from './product-tags';
 import { SEASON_EVENTS, SEASON_YEAR_DAYS } from './seasons';
 import { CLIMATE_SEASONS, WEATHER_MAP, WEATHER_TYPES } from './weather';
+import { MARKET_EVENTS, MARKET_EVENT_RULES } from './market-events';
 
 /** Dải kẹp của tích các hệ số mỗi kênh. */
 export const MODIFIER_RANGES: Record<ModifierChannel, { min: number; max: number }> = {
@@ -85,7 +86,7 @@ const SEASON_RULES: ModifierRule[] = SEASON_EVENTS.flatMap((season): ModifierRul
   })),
 ]);
 
-export const MODIFIER_RULES: readonly ModifierRule[] = [...SEASON_RULES, ...WEATHER_RULES, ...TIME_RULES, ...WEEKDAY_RULES];
+export const MODIFIER_RULES: readonly ModifierRule[] = [...SEASON_RULES, ...WEATHER_RULES, ...TIME_RULES, ...WEEKDAY_RULES, ...MARKET_EVENT_RULES];
 
 export function validateMarketData(rules: readonly ModifierRule[] = MODIFIER_RULES): string[] {
   const errors: string[] = [];
@@ -129,7 +130,22 @@ export function validateMarketData(rules: readonly ModifierRule[] = MODIFIER_RUL
   for (const band of TIME_BANDS) { if (band.fromHour !== hour) errors.push(`time band ${band.id}: không liền mạch`); hour = band.toHour; }
   if (hour !== 24) errors.push('time bands không phủ đủ 24 giờ');
 
+  // Sự kiện thị trường
+  const eventIds = new Set<string>(MARKET_EVENTS.map(item => item.id));
+  for (const event of MARKET_EVENTS) {
+    if (event.durationDays < 1) errors.push(`event ${event.id}: thời lượng < 1 ngày`);
+    if (!(event.trigger.chancePerDay > 0 && event.trigger.chancePerDay <= 1)) errors.push(`event ${event.id}: xác suất ngoài (0,1]`);
+    if (event.trigger.minGapDays < event.durationDays) errors.push(`event ${event.id}: khoảng cách tối thiểu nhỏ hơn thời lượng`);
+    if (event.warnDaysBefore < 0 || event.warnDaysBefore > 2) errors.push(`event ${event.id}: báo trước phải từ 0 đến 2 ngày`);
+    if (event.weatherOverride && !weatherIds.has(event.weatherOverride)) errors.push(`event ${event.id}: thời tiết ép ${event.weatherOverride} không tồn tại`);
+    if (event.weatherOverride && event.warnDaysBefore < 2) errors.push(`event ${event.id}: sự kiện ép thời tiết phải báo trước 2 ngày để dự báo khớp`);
+    for (const id of event.trigger.climates ?? []) if (!climateIds.has(id)) errors.push(`event ${event.id}: mùa khí hậu ${id} không tồn tại`);
+    for (const id of event.trigger.seasons ?? []) if (!seasonIds.has(id)) errors.push(`event ${event.id}: mùa ${id} không tồn tại`);
+    for (const day of event.trigger.weekdays ?? []) if (!Number.isInteger(day) || day < 0 || day > 6) errors.push(`event ${event.id}: thứ ${day} không hợp lệ`);
+  }
+
   for (const rule of rules) {
+    for (const id of rule.when.event ?? []) if (!eventIds.has(id)) errors.push(`rule ${rule.id}: sự kiện ${id} không tồn tại`);
     if (seenRuleIds.has(rule.id)) errors.push(`rule ${rule.id}: trùng id`);
     seenRuleIds.add(rule.id);
     for (const [channel, factor] of Object.entries(rule.effects)) {

@@ -16,7 +16,7 @@ interface HUDProps {
   onOpenStalls: () => void;
   onOpenStaff: () => void;
   wageDebt?: number;
-  market?: { weather: { label: string; icon: string }; forecast: Array<{ label: string }> };
+  market?: { weather: { label: string; icon: string }; forecast: Array<{ label: string }>; events?: Array<{ id: string; label: string; status: string; startsIn: number; notice: string }> };
   onOpenMarket?: () => void;
 }
 export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenStaff, wageDebt = 0}) => {
@@ -27,7 +27,7 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
   const forecastFirst = market?.forecast[0]?.label ?? '';
   return <header className="game-hud">
     <div className="brand" title="Tiệm Tạp Hóa Đầu Hẻm"><div className="brand-sign"><PixelIcon name="warehouse" size={26}/></div><div className="brand-copy"><p className="eyebrow">Một góc nhỏ · Một đời vui</p><h1>Tiệm Tạp Hóa Đầu Hẻm</h1></div></div>
-    <div className="hud-clock" title={`Ngày ${worldTime.day} · ${timeString} (${worldTime.isStoreOpen ? 'Đang mở cửa' : 'Nghỉ bán'})`}><PixelIcon name={worldTime.hour >= 18 ? 'moon' : 'sun'} size={24}/><div><strong className="tabular">Ngày {worldTime.day} · {timeString}</strong><span className="muted hud-store-status">{worldTime.isStoreOpen ? 'Bà con đang ghé tiệm' : 'Tiệm đang nghỉ bán'}</span>{weather && <span className="muted hud-weather-badge" title={`Dự báo: ${forecastText}`}>{weather.icon} {weather.label} · mai {forecastFirst}</span>}{season && <span className="muted hud-season-badge" title={season.blurb}>🎉 {season.name} · còn {seasonDaysLeft(worldTime.day)} ngày</span>}</div></div>
+    <div className="hud-clock" title={`Ngày ${worldTime.day} · ${timeString} (${worldTime.isStoreOpen ? 'Đang mở cửa' : 'Nghỉ bán'})`}><PixelIcon name={worldTime.hour >= 18 ? 'moon' : 'sun'} size={24}/><div><strong className="tabular">Ngày {worldTime.day} · {timeString}</strong><span className="muted hud-store-status">{worldTime.isStoreOpen ? 'Bà con đang ghé tiệm' : 'Tiệm đang nghỉ bán'}</span>{weather && <span className="muted hud-weather-badge" title={`Dự báo: ${forecastText}`}>{weather.icon} {weather.label} · mai {forecastFirst}</span>}{market?.events?.map(event => <span key={event.id} className="muted hud-event-badge" title={event.notice}>{event.status === 'active' ? '⚡' : '⏳'} {event.label}{event.status === 'upcoming' ? ` · sau ${event.startsIn} ngày` : ''}</span>)}{season && <span className="muted hud-season-badge" title={season.blurb}>🎉 {season.name} · còn {seasonDaysLeft(worldTime.day)} ngày</span>}</div></div>
     <div className="hud-stats">
       <PixelStat label="Tiền trong hòm" value={money(player.money)} icon="coin"/>
       <div className="hud-level" title={`${player.experience}/${player.experienceToNextLevel} XP (Cấp ${player.level})`}><strong>Cấp {player.level}</strong><span className="muted"> · {player.experience}/{player.experienceToNextLevel}</span><PixelProgress label="Kinh nghiệm" value={player.experience} max={player.experienceToNextLevel}/></div>

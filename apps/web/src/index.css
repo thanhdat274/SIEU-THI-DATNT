@@ -48,6 +48,8 @@
 .hud-clock strong{display:block;font-size:clamp(12px,1vw,15px);white-space:nowrap}
 .hud-store-status{display:block;font-size:11px;white-space:nowrap}
 .hud-season-badge{display:block;font-size:11px;white-space:nowrap;color:#a4532b;font-weight:700}
+.hud-weather-badge,.hud-event-badge{display:block;font-size:11px;white-space:nowrap;max-width:24ch;overflow:hidden;text-overflow:ellipsis}
+.hud-event-badge{color:#7a3d1f;font-weight:700}
 .hud-stats{display:flex;gap:clamp(8px,1.2vw,18px);align-items:center;min-width:0;flex-shrink:1}
 .hud-level{min-width:80px;max-width:130px;flex-shrink:0}
 .hud-level-header{display:flex;align-items:baseline;justify-content:space-between;white-space:nowrap}
@@ -80,7 +82,7 @@
 /* TIER 1: Standard Desktop & Laptop with side panel / DevTools (max-width: 1400px) */
 @media(max-width:1400px){
   .hud-actions .button-label{display:none}
-  .hud-season-badge{display:none}
+  .hud-season-badge,.hud-event-badge{display:none}
   .brand-copy .eyebrow{display:none}
 }
 /* TIER 2: iPad Horizontal & Medium Tablets (max-width: 1080px) */

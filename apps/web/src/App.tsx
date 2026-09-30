@@ -298,6 +298,7 @@ export const App: React.FC = () => {
           addToast(season && season.id !== previous?.id ? `${season.name} bắt đầu! ${season.blurb}` : `Bình minh Ngày ${newDay}! Chúc tiệm một ngày buôn bán đắt hàng! `, 'success');
           handleSaveGame(false);
         },
+        onMarketNotice: (notice) => addToast(notice.text, notice.severity === 'severe' ? 'warn' : 'info'),
         onWeatherChanged: (weatherId) => addToast(`Thời tiết hôm nay: ${WEATHER_MAP[weatherId]?.icon ?? ''} ${WEATHER_MAP[weatherId]?.label ?? weatherId}.`, 'info'),
         onLevelUp: (level) => addToast(`Lên cấp ${level}! Kiểm tra Nhiệm vụ để xem món và mối hàng mới mở khóa.`, 'success'),
         onPlayerRelocated: ()=>addToast('Đã đưa bạn tới cửa hậu của nhà kho mới; tiền và hàng được giữ nguyên.','info'),

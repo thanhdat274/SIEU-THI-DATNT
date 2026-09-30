@@ -21,10 +21,10 @@ Mỗi nhóm tự chơi được và tự mang test + tài liệu (`tổng hợp.
 
 ## 3. Sự kiện thị trường (market-calendar-weather, phần 2)
 
-- [ ] 3.1 Tạo `game-data/market-events.ts` và `game-core/market.ts` (kích hoạt xác định, thời hạn, cảnh báo trước, lưu `market.events`); kiểm: test kích hoạt theo seed, không chồng vô hạn (`minGapDays`), lưu/tải giữ sự kiện đang chạy.
-- [ ] 3.2 Cài bộ sự kiện đầu: nắng nóng kéo dài, mưa to, lễ hội địa phương, sự kiện trường học, thể thao, mất điện, khan hàng nhà cung cấp, ngày lễ, tụ họp xóm — chỉ bằng dữ liệu; kiểm: test kịch bản nắng nóng làm đồ mát tăng nhu cầu/lưu lượng, không có nhánh code riêng theo tên sự kiện.
-- [ ] 3.3 Thông báo sự kiện gộp/giới hạn tần suất trên hàng đợi toast; kiểm: test không quá một thông báo/loại/giờ game, smoke browser.
-- [ ] 3.4 Co-op: tính thị trường ở `WorldRuntime` và đưa qua snapshot; kiểm: test hai thành viên thấy cùng thời tiết/sự kiện, runtime server là nguồn duy nhất.
+- [x] 3.1 Tạo `game-data/market-events.ts` và `game-core/market.ts` (kích hoạt xác định, thời hạn, cảnh báo trước, lưu `market.events`); kiểm: test kích hoạt theo seed, không chồng vô hạn (`minGapDays`), lưu/tải giữ sự kiện đang chạy.
+- [x] 3.2 Cài bộ sự kiện đầu: nắng nóng kéo dài, mưa to, lễ hội địa phương, sự kiện trường học, thể thao, mất điện, khan hàng nhà cung cấp, ngày lễ, tụ họp xóm — chỉ bằng dữ liệu; kiểm: test kịch bản nắng nóng làm đồ mát tăng nhu cầu/lưu lượng, không có nhánh code riêng theo tên sự kiện.
+- [ ] 3.3 Thông báo sự kiện gộp/giới hạn tần suất trên hàng đợi toast; kiểm: test không quá một thông báo/loại/giờ game, smoke browser. (Mở dở: gộp/giới hạn tần suất đã có test PASS và callback nối vào toast; chưa quan sát toast sự kiện thật trong browser vì game đứng khi pane ẩn và phải chờ qua ngày.)
+- [x] 3.4 Co-op: tính thị trường ở `WorldRuntime` và đưa qua snapshot; kiểm: test hai thành viên thấy cùng thời tiết/sự kiện, runtime server là nguồn duy nhất.
 
 ## 4. Phản ứng giá (price-response) — sau F1 `shop-pricing`
 

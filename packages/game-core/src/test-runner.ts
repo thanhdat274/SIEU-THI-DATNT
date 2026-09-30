@@ -22,6 +22,7 @@ import { runSuggestionTests } from './suggestions.test';
 import { runStaffTests } from './staff.test';
 import { runQuestTests } from './quests.test';
 import { runMarketTests } from './market.test';
+import { runMarketEventTests } from './market-events.test';
 import { runShopkeeperTests } from './shopkeeper.test';
 import { runSeasonAndStallTests } from './seasons.test';
 import { runWorkerTests } from './workers.test';
@@ -48,6 +49,7 @@ export async function runTests(): Promise<void> {
   runStaffTests();
   runQuestTests();
   runMarketTests();
+  await runMarketEventTests();
   runShopkeeperTests();
   runSeasonAndStallTests();
   runWorkerTests();

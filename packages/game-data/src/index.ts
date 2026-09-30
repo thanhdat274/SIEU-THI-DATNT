@@ -11,4 +11,5 @@ export * from './seasons';
 export * from './stalls';
 export * from './weather';
 export * from './product-tags';
+export * from './market-events';
 export * from './modifiers';

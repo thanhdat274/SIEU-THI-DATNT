@@ -69,8 +69,8 @@ import { expiryDay, mergeLots, normalizeLots, sumLots, takeLots } from './stock'
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { CustomerManager } from './customers';
 import { generateRestockSuggestions } from './suggestions';
-import { advanceWeather, normalizeMarketState, climateSeasonForDay } from './weather';
-import { assertMarketData, buildMarketContext, timeBandFor, weekdayOf } from './market';
+import { climateSeasonForDay } from './weather';
+import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, timeBandFor, visibleMarketEvents, weekdayOf, type MarketNotice } from './market';
 import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
 import { emptyStallState, normalizeStallState, planStallDay } from './stalls';
 import { emptyQuestState, findClaimableQuest, getDailyQuests, getStoryQuest, markQuestClaimed, normalizeQuestState, type QuestContext, type QuestProgress, type QuestReward } from './quests';
@@ -106,6 +106,7 @@ export interface GameSimulationCallbacks {
   onOrdersDelivered?: (quantity:number) => void;
   onLevelUp?: (level: number) => void;
   onWeatherChanged?: (weatherId: string) => void;
+  onMarketNotice?: (notice: MarketNotice) => void;
 }
 
 export class GameSimulation {
@@ -132,6 +133,7 @@ export class GameSimulation {
   private market: MarketState;
   private demandTable?: DemandTable;
   private demandBuildCount = 0;
+  private noticeThrottle = new NoticeThrottle();
   private currentDayRecord: DailyRecord;
   private ledger: LedgerEntry[] = [];
   private closedDayIds: Set<number> = new Set();
@@ -220,9 +222,12 @@ export class GameSimulation {
       for (const member of this.staff) this.finishStaffJob(member, true);
       this.processPayroll(day - 1);
       this.processStalls(day - 1);
-      this.market = { ...this.market, weather: advanceWeather(this.market.seed, this.market.weather, day) };
+      this.market = advanceMarketState(this.market, day);
       this.demandTable = undefined;
-      this.callbacks.onWeatherChanged?.(this.market.weather.today);
+      this.callbacks.onWeatherChanged?.(effectiveWeatherId(this.market, day));
+      for (const notice of marketNoticesForDay(this.market, day)) {
+        if (this.noticeThrottle.allow(notice.kind, day, this.clock.getTime().hour)) this.callbacks.onMarketNotice?.(notice);
+      }
       // Close previous day's record (day - 1) idempotently and initialize new day record
       this.closeDailyRecord(day - 1);
       this.initDailyRecord(day);
@@ -330,10 +335,15 @@ export class GameSimulation {
   public getMarketSummary() {
     const time = this.clock.getTime();
     const table = this.refreshDemandTable();
-    const weather = WEATHER_MAP[this.market.weather.today];
+    const todayId = effectiveWeatherId(this.market, time.day);
+    const weather = WEATHER_MAP[todayId] ?? WEATHER_MAP[this.market.weather.today];
     return {
       weather: { id: weather.id, label: weather.label, icon: weather.icon },
-      forecast: this.market.weather.forecast.map(id => ({ id, label: WEATHER_MAP[id]?.label ?? id, icon: WEATHER_MAP[id]?.icon ?? '' })),
+      forecast: [1, 2].map(offset => {
+        const id = effectiveWeatherId(this.market, time.day + offset);
+        return { id, label: WEATHER_MAP[id]?.label ?? id, icon: WEATHER_MAP[id]?.icon ?? '' };
+      }),
+      events: visibleMarketEvents(this.market, time.day),
       season: getSeasonForDay(time.day),
       climate: CLIMATE_SEASON_MAP[climateSeasonForDay(time.day).id],
       timeBand: TIME_BANDS.find(band => band.id === timeBandFor(time.hour))!,

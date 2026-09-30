@@ -10,6 +10,7 @@ interface MarketSummary {
   timeBand: { label: string };
   weekday: string;
   traffic: { value: number; factors: Array<{ ruleId: string; label: string; factor: number }> };
+  events: Array<{ id: string; label: string; notice: string; status: 'active' | 'upcoming'; daysLeft: number; startsIn: number }>;
 }
 
 interface MarketModalProps {
@@ -37,7 +38,13 @@ export const MarketModal: React.FC<MarketModalProps> = ({ summary, day, onClose 
       <strong>Hôm nay: {summary.weather.icon} {summary.weather.label}</strong>
       {summary.forecast.map((item, index) => <span key={index} className="muted"> · {index === 0 ? 'Ngày mai' : 'Ngày kia'}: {item.icon} {item.label}</span>)}
     </p>
-    <h3>Mùa và sự kiện</h3>
+    <h3>Sự kiện trong hẻm</h3>
+    {summary.events.length
+      ? <ul style={{ margin: '4px 0', paddingLeft: 18 }}>{summary.events.map(event => (
+          <li key={event.id}><strong>{event.label}</strong> — {event.status === 'active' ? `đang diễn ra, còn ${event.daysLeft} ngày` : `bắt đầu sau ${event.startsIn} ngày`}. <span className="muted">{event.notice}</span></li>
+        ))}</ul>
+      : <p className="muted">Hiện không có sự kiện nào đang diễn ra hoặc sắp tới.</p>}
+    <h3>Mùa</h3>
     {summary.season
       ? <p className="pixel-panel" style={{ padding: 8 }}><strong>{summary.season.name}</strong> — {summary.season.blurb}</p>
       : <p className="muted">Hiện chưa có sự kiện mùa nào.</p>}
