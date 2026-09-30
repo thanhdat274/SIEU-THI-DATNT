@@ -124,6 +124,7 @@
 - [x] Đọc tài liệu và kiểm tra trạng thái repository; giữ các thay đổi đang có.
 - [x] Tạo tám tài liệu docs/tax; phân biệt nguồn chính thức với quy tắc đủ điều kiện chạy.
 - [x] Thêm registry bất biến và kiểm thử ngày/phiên bản/khôi phục JSON/khóa UNVERIFIED.
+- [x] Thêm màn tham khảo Thuế & sổ kinh doanh mở từ HUD; chỉ báo cáo doanh thu năm trong game, trạng thái hồ sơ và nguồn nghiên cứu, không tạo nghĩa vụ hay trừ tiền.
 - [ ] Đối chiếu bản ký, sửa đổi đến 30/09/2026, điều khoản chuyển tiếp và thông tư; TAX-0 chưa hoàn tất.
 - [ ] Xác minh cụ thể PIT/VAT đa hoạt động, thuế suất CIT và điều kiện miễn, NĐ 254 về hóa đơn, đăng ký, thực phẩm/BHXH.
 - [ ] Thêm TAX-1 sau thẩm định điều kiện; tích hợp năm pháp lý và taxRuleVersion vào save có migration.

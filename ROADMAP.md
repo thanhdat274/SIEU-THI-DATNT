@@ -141,10 +141,11 @@ Phase 7 giữ định hướng Firebase/NestJS/MongoDB, triển khai phần cầ
 - [x] Smoke giao dịch/lưu lại, lỗi revision, responsive năm viewport và kiểm tra build/test.
 - [ ] Nghiệm thu chuyển động/occlusion, night/reduced motion, toàn bộ tổ hợp lỗi và hiệu năng thiết bị thật. Theo dõi OpenSpec premium-vietnamese-pixel-ui và docs/ui/VERIFICATION.md; chưa archive.
 
-## HỆ THỐNG THUẾ — ĐỢT ĐẦU 30/09/2026
+## HỆ THỐNG THUẾ — ĐỢT ĐẦU 01/10/2026
 - [>] TAX-0: Có hồ sơ nguồn, ma trận và danh sách chưa xác minh tại docs/tax; thẩm định toàn bộ pháp luật chưa hoàn tất.
 - [x] Module nền TaxRuleRegistry: phiên bản bất biến, chọn theo ngày/chủ thể/hoạt động, khóa UNVERIFIED, snapshot JSON và kiểm thử.
 - [x] Báo cáo doanh thu năm so với ngưỡng tham khảo (`tax/annual-revenue.ts`, chỉ theo dõi, không trừ tiền; có code, chưa có test riêng, chưa xác minh trên browser).
+- [x] Màn Thuế & sổ kinh doanh mở từ HUD: doanh thu năm game, trạng thái chưa có hồ sơ thuế, nguồn nghiên cứu và giải thích rõ chưa đủ căn cứ; không tính hoặc trừ tiền.
 - [ ] TAX-1: Hồ sơ chủ thể và đăng ký/chuyển đổi độc lập cấp độ.
 - [ ] TAX-2–4: Hoàn tất thẩm định, engine xác định, VAT/PIT hộ và CIT có điều kiện.
 - [ ] TAX-5–8: Kế toán, hóa đơn, UI/nhiệm vụ, backend cố vấn, MongoDB và kiểm thử tích hợp.

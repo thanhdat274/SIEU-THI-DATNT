@@ -1,6 +1,6 @@
 # Tổng hợp hiện trạng code — Tiệm Tạp Hóa Đầu Hẻm
 
-> Cập nhật: 30/09/2026 (Asia/Saigon). Phiên bản package: 0.1.0. Rà soát mới nhất: `yarn test`, `yarn typecheck`, `yarn build` (web bundle 813.54 kB) PASS toàn bộ; hoàn thiện kiến trúc giao diện co giãn đa tầng (Responsive Multi-tier HUD/BottomBar/Touch Controls) cho mọi kích thước màn hình: Desktop có DevTools/sidebar, iPad/Tablet xoay ngang và Mobile xoay ngang. Triệt tiêu vĩnh viễn lỗi bẻ dòng số tiền/số liệu (`white-space: nowrap !important;`), co giãn thông minh nhãn/nút theo không gian thực tế, tối ưu modal và nút bấm cảm ứng.
+> Cập nhật: 01/10/2026 (Asia/Saigon). Phiên bản package: 0.1.0. Bộ kiểm tra gần nhất được ghi nhận trước thay đổi thuế mới: `yarn test`, `yarn typecheck`, `yarn build` PASS; bundle ở lần đó 813.54 kB. Thay đổi màn thuế ngày 01/10/2026: `yarn typecheck` và `yarn test` PASS (chạy lại sau khi soát), chưa chạy build/kiểm tra giao diện trên trình duyệt; hoàn thiện kiến trúc giao diện co giãn đa tầng (Responsive Multi-tier HUD/BottomBar/Touch Controls) cho mọi kích thước màn hình: Desktop có DevTools/sidebar, iPad/Tablet xoay ngang và Mobile xoay ngang. Triệt tiêu vĩnh viễn lỗi bẻ dòng số tiền/số liệu (`white-space: nowrap !important;`), co giãn thông minh nhãn/nút theo không gian thực tế, tối ưu modal và nút bấm cảm ứng.
 > Phạm vi: ứng dụng web/server, các package dùng chung, công cụ nội dung, tài liệu thiết kế, thuế và OpenSpec UI. Warning chunk >500 kB và dynamic/static import `api.ts` giữ nguyên từ trước. Browser acceptance 8.4/9.4, vòng 3 ngày, thiết bị thật và multiplayer replay chưa nghiệm thu.
 
 ### Cập nhật 30/09/2026 (đợt rà soát toàn diện)
@@ -44,7 +44,7 @@ Chưa phải game quản lý siêu thị hoàn chỉnh: còn thiếu nhiệm v�
 | `packages/shared` | Kiểu sản phẩm, save local schema 3 (schema 2 migrate), cùng types/runtime guards cho world/account/business/avatar/layout command/snapshot protocol 1 | `src/index.ts`, `src/multiplayer.test.ts` |
 | `packages/game-data` | 36 sản phẩm/10 nhóm, giá/cấp/hạn, bản đồ/save local ban đầu, seed world online tách biệt, mô tả pixel art | `src/products.ts`, `src/map.ts`, `src/online-world.ts`, `src/pixel-art.ts` |
 | `packages/game-core` | Logic kho/giao dịch/khách/XP/save, input abstraction, headless fixed-step runner, controller avatar authoritative theo intent, va chạm, giờ, A* | `src/simulation.ts`, `runner.ts`, `avatars.ts`, `stock.ts`, `input.ts`, `collision.ts`, `clock.ts`, `pathfinding.ts` |
-| `packages/game-core/src/tax` | Registry phiên bản quy tắc và ứng viên nghiên cứu, chưa tính thuế | `registry.ts`, `research.ts`, `registry.test.ts` |
+| `packages/game-core/src/tax` | Registry quy tắc khóa UNVERIFIED; tổng hợp doanh thu năm game chỉ để tham khảo | `registry.ts`, `research.ts`, `annual-revenue.ts`, `registry.test.ts` |
 | `packages/game-renderer` | Pixi, camera, sprite/texture, animation, kho, ngày/đêm | `src/viewport.ts`, `camera.ts`, `textures.ts`, `premium-textures.ts`, `warehouse-textures.ts` |
 | `apps/server` | NestJS HTTP auth/world API, Firebase token guard, MongoDB pool và world repository (world/invite cùng document); commit lệnh bằng một updateOne nguyên tử trên 1 document (không dùng transaction/replica set) | `src/bootstrap.ts`, `auth.guard.ts`, `world.repository.ts`, `database.ts`, `verify-runtime.ts`, `world.repository.test.ts`; main.ts cũ không phải runtime entry |
 | `tools/content-editor` | Mới có README định hướng | Chưa có editor catalog/map sử dụng được |
@@ -201,7 +201,7 @@ Kiểm tra mới: yarn install sau khi bỏ Firebase CLI đã thành công; yarn
 
 **Thuế:** có tám tài liệu `docs/tax` và `TaxRuleRegistry` đăng ký snapshot không trùng phiên bản, kiểm tra trường dữ liệu, clone chống chỉnh trực tiếp và resolve theo ngày/chủ thể/hoạt động. Quy tắc `UNVERIFIED` bị loại khỏi resolve. `research.ts` chứa ứng viên nghiên cứu chưa xác minh, không dùng khấu trừ tiền người chơi.
 
-Chưa có hồ sơ chủ thể kinh doanh trong save, `taxRuleVersion`/năm pháp lý, engine VAT/PIT/CIT, sổ kế toán, hóa đơn, kê khai/thanh toán thuế, UI thuế hay backend cố vấn. Tài liệu này chỉ ghi trạng thái triển khai, không xác nhận nội dung pháp luật trong hồ sơ nghiên cứu là đúng hoặc đang có hiệu lực.
+Chưa có hồ sơ chủ thể kinh doanh trong save, `taxRuleVersion`/năm pháp lý, engine VAT/PIT/CIT, hóa đơn, kê khai/thanh toán thuế hay backend cố vấn. UI tham khảo `TaxModal` mở từ HUD đã có, nhưng chỉ hiển thị doanh thu năm game, trạng thái chưa có hồ sơ và nguồn nghiên cứu; không tạo số thuế hoặc trừ tiền. Tài liệu này chỉ ghi trạng thái triển khai, không xác nhận nội dung pháp luật trong hồ sơ nghiên cứu là đúng hoặc đang có hiệu lực.
 
 ## 4. Những chức năng chưa làm và nơi nên bổ sung
 
@@ -415,3 +415,5 @@ Tạo OpenSpec `stardew-inspired-management-loop` (proposal/research/design/7 de
 | 01/10/2026 | Thêm 2 bóng đèn treo vẽ thật dưới mái hiên mỗi quầy vỉa hè và tăng quầng sáng (`syncStalls`, `shop-lighting.ts`); bóng bật/tắt theo giờ như đèn tiệm | `tsc --noEmit` renderer PASS | Chưa xem trong browser; vị trí bóng (đỉnh sprite +24px) ước tính theo kích thước sprite 64x48, cần chỉnh nếu lệch mái |
 | 01/10/2026 | Sửa đèn kho bật khi người chơi đứng ngoài bãi cỏ phía bắc kho: điều kiện cửa kho (`viewport.ts`, `isPlayerInWarehouse`) thiếu cận dưới nên mọi `y` nhỏ hơn hàng cửa đều tính là trong kho | `tsc --noEmit` renderer PASS | Chưa xem trong browser |
 | 01/10/2026 | Đối chiếu lại nguồn NĐ 141/2026 (ghi vào `docs/tax/LEGAL_SOURCE_REGISTRY.md`); thêm dòng ROADMAP cho báo cáo doanh thu năm. Không đổi code, không chuyển quy tắc nào sang VERIFIED, không làm TAX-1+ vì còn chặn bởi thẩm định pháp lý | Không chạy test (chỉ sửa tài liệu) | TAX-0 vẫn chưa xong; cần đọc toàn văn NĐ 68/141/254/320 và thông tư bởi người có chuyên môn |
+
+| 01/10/2026 | Thêm TaxModal riêng mở từ HUD: tổng doanh thu theo năm game 365 ngày, ghi rõ không tương đương kỳ tính thuế pháp luật, tình trạng hồ sơ chưa có, quy tắc chưa đủ căn cứ và liên kết nguồn nghiên cứu. Không sửa save và không tính/trừ thuế; cập nhật ROADMAP/TASKS/tổng hợp. | `yarn typecheck` và `yarn test` PASS khi soát lại (01/10/2026); chưa chạy build hoặc browser smoke. | UI tham khảo có code; TAX-0 còn thẩm định; TAX-1–8 chưa hoàn tất. |
