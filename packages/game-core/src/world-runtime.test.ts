@@ -129,6 +129,7 @@ export async function runWorldRuntimeTests() {
   const questSeed = createInitialOnlineWorld(owner, 'world-quest-test');
   questSeed.world.memberships.push({ accountId: 'member-2', role: 'member', joinedAt: new Date().toISOString(), lastSeenRevision: 0 });
   questSeed.business.save.statistics.totalCustomersServed = 10;
+  questSeed.business.save.inventory.push({ productId: 'rau_cai_xanh', quantity: 6, lots: [{ quantity: 6, expiresOnDay: 99, unitCost: 6000, provenance: 'known' }] });
   const questRuntime = new WorldRuntime(questSeed.world, questSeed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
   const questMoney = questRuntime.getSimulation().getPlayerData().money;
   const claimCommand = (commandId: string, questId: string) => ({
@@ -153,6 +154,18 @@ export async function runWorldRuntimeTests() {
   assert.equal((await questRuntime.executeCommand('member-2', buyStall('stall-1'))).status, 'accepted');
   assert.equal(questRuntime.getSimulation().getPlayerData().money, stallMoney - 300000);
   assert.equal((await questRuntime.executeCommand('owner-1', buyStall('stall-2'))).status, 'rejected', 'Không mở trùng quầy trong hẻm chung');
+
+  // Co-op disposal: replaying the same command id or a rejected retry never books the loss twice.
+  const dispose = (commandId: string, quantity: number) => ({ ...claimCommand(commandId, 'x'), payload: { type: 'dispose_stock', productId: 'rau_cai_xanh', quantity } });
+  const spoilageEntries = () => questRuntime.getSimulation().getLedger().filter(entry => entry.type === 'spoilage').length;
+  assert.equal((await questRuntime.executeCommand('member-2', dispose('dispose-1', 4))).status, 'accepted');
+  assert.equal(spoilageEntries(), 1);
+  await questRuntime.executeCommand('member-2', dispose('dispose-1', 4));
+  assert.equal(spoilageEntries(), 1, 'Gửi lại cùng ID lệnh không ghi sổ hỏng lần nữa');
+  assert.equal(questRuntime.getSimulation().getInventory().find(item => item.productId === 'rau_cai_xanh')?.quantity, 2);
+  assert.equal((await questRuntime.executeCommand('owner-1', dispose('dispose-2', 50))).status, 'accepted', 'Hủy phần còn lại');
+  assert.equal((await questRuntime.executeCommand('owner-1', dispose('dispose-3', 1))).status, 'rejected', 'Hết hàng thì từ chối, không ghi sổ');
+  assert.equal(spoilageEntries(), 2);
 
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');
 }

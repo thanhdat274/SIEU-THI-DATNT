@@ -15,6 +15,7 @@ import { STORE_BOUNDS, PRODUCT_MAP } from '@game/data';
 import { CollisionSystem } from './collision';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { mergeLots, sumLots, takeLots } from './stock';
+import { removeExpiredLots } from './spoilage';
 import { Mulberry32Rng, daySeed } from './staff';
 import { hashSeed } from './weather';
 
@@ -226,7 +227,8 @@ export class CustomerManager {
     onReputationLoss?: (delta: number) => void,
     onSpoiledGoods?: (spoiledCount: number) => void,
     onOutOfStock?: () => void,
-    pricing?: CustomerPricing
+    pricing?: CustomerPricing,
+    onExpiredOnShelf?: (productId: string, quantity: number, cost: number) => void
   ): void {
     const customerList = [...this.customers];
     for (const customer of customerList) {
@@ -281,6 +283,17 @@ export class CustomerManager {
         const shelf = fixtures.find((f) => f.id === customer.targetFixtureId);
         const prodId = shelf?.assignedProductId;
         const prod = prodId ? PRODUCT_MAP[prodId] : undefined;
+
+        // Hàng quá hạn còn trên kệ: khách nhìn thấy nên hủy, không bán và mất uy tín
+        if (shelf && isSalesFixture(shelf) && prod && shelf.stockLots?.length) {
+          const expired = removeExpiredLots(shelf.stockLots, currentDay);
+          if (expired.length) {
+            shelf.currentStock = sumLots(shelf.stockLots);
+            if (shelf.currentStock === 0) shelf.assignedProductId = undefined;
+            const quantity = sumLots(expired);
+            onExpiredOnShelf?.(prod.id, quantity, expired.reduce((total, lot) => total + lot.quantity * (lot.unitCost ?? prod.purchasePrice), 0));
+          }
+        }
 
         if (shelf && isSalesFixture(shelf) && prod && shelf.currentStock > 0 && shelf.stockLots && shelf.stockLots.length > 0
           && pricing && new Mulberry32Rng(daySeed(hashSeed(customer.id ?? customer.checkoutId ?? 'customer'), currentDay)).next() >= pricing.keepChance(prod.id)) {

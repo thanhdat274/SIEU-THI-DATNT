@@ -58,6 +58,8 @@ export interface StockLot {
   expiresOnDay: number;
   unitCost?: number;
   provenance?: 'estimated' | 'known';
+  /** Phần hao hạn chưa tròn ngày (0..1) tích lũy theo điều kiện bảo quản; thiếu = 0. */
+  decayCarry?: number;
 }
 
 export interface SupplierConfig {
@@ -154,6 +156,7 @@ export interface HoldingItem {
   originalArrivalDay: number;
   unitCost: number;
   provenance?: 'estimated' | 'known';
+  decayCarry?: number;
 }
 
 export interface SupplierOrder {
@@ -604,6 +607,7 @@ export type GameCommandPayload =
   | { type: 'buy_plot'; plotId: string }
   | { type: 'claim_quest'; questId: string }
   | { type: 'buy_stall'; stallId: string }
+  | { type: 'dispose_stock'; productId: string; quantity: number }
   | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> };
 
 export interface GameCommand {
@@ -801,6 +805,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'buy_plot': return nonEmptyString(p.plotId);
     case 'claim_quest': return nonEmptyString(p.questId);
     case 'buy_stall': return nonEmptyString(p.stallId);
+    case 'dispose_stock': return nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
     case 'order_supplier': return nonEmptyString(p.supplierId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 64 && p.items.every(item => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
     default: return false;
   }

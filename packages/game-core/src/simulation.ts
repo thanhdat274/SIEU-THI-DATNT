@@ -64,6 +64,7 @@ import {
   WEEKDAY_LABELS,
   SHOPKEEPER_POSITION,
   getSeasonForDay,
+  SPOILAGE_RULES,
   type StallDefinition,
 } from '@game/data';
 import { CollisionSystem } from './collision';
@@ -71,6 +72,7 @@ import { buyLandPlot, validateStoreLayout, type LayoutResult } from './store-lay
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
 import { expiryDay, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
+import { decayLot, spoilageRate } from './spoilage';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { CustomerManager } from './customers';
 import { generateRestockSuggestions } from './suggestions';
@@ -107,6 +109,7 @@ export interface GameSimulationCallbacks {
   onDayChanged?: (newDay: number) => void;
   onTimeChanged?: () => void;
   onStockExpired?: (quantity: number) => void;
+  onExpiringSoon?: (items: Array<{ productId: string; quantity: number; daysLeft: number }>) => void;
   onStateChanged?: () => void;
   onPlayerRelocated?: () => void;
   onMapChanged?: (map: GameTileMap) => void;
@@ -230,6 +233,7 @@ export class GameSimulation {
       for (const member of this.staff) this.finishStaffJob(member, true);
       this.processPayroll(day - 1);
       this.processStalls(day - 1);
+      this.decayStock(day - 1); // trước khi thị trường sang ngày mới: sự kiện của ngày vừa qua còn trong trạng thái
       this.market = advanceMarketState(this.market, day);
       this.updatePriceIndex(day);
       this.ensureSupplierMarket(day);
@@ -246,6 +250,8 @@ export class GameSimulation {
       this.processAutoBuy(day);
       this.statistics.totalDaysPassed = Math.max(this.statistics.totalDaysPassed, day - 1);
       if (spoiled > 0) this.callbacks.onStockExpired?.(spoiled);
+      const expiring = this.getExpiringStock();
+      if (expiring.length) this.callbacks.onExpiringSoon?.(expiring);
       if (this.callbacks.onDayChanged) {
         this.callbacks.onDayChanged(day);
       }
@@ -1175,20 +1181,114 @@ export class GameSimulation {
 
     this.statistics.totalSpoiled = (this.statistics.totalSpoiled ?? 0) + spoiled;
 
-    if (spoiled > 0) {
-      this.currentDayRecord.spoilageCount += spoiled;
-      this.currentDayRecord.spoilageCost += spoilageCost;
-      this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid;
-      this.recordLedger({
-        day,
-        type: 'spoilage',
-        amount: spoilageCost,
-        quantity: spoiled,
-        description: `Hàng hết hạn hủy bỏ (${spoiled} sản phẩm)`,
-      });
-    }
+    if (spoiled > 0) this.recordSpoilageLoss(day, spoiled, spoilageCost, `Hàng hết hạn hủy bỏ (${spoiled} sản phẩm)`);
 
     return spoiled;
+  }
+
+  /** Ghi một khoản hỏng vào bản ghi ngày và sổ cái (dùng chung cho hết hạn, khách phát hiện, tiêu hủy thủ công). */
+  private recordSpoilageLoss(day: number, quantity: number, cost: number, description: string): void {
+    this.currentDayRecord.spoilageCount += quantity;
+    this.currentDayRecord.spoilageCost += cost;
+    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid;
+    this.recordLedger({ day, type: 'spoilage', amount: cost, quantity, description });
+  }
+
+  /**
+   * Hao hạn dùng của `day` (ngày vừa kết thúc) theo điều kiện bảo quản: tủ mát có điện 1 ngày/ngày,
+   * mất điện/nóng nhanh hơn. Chỉ gọi khi qua ngày; không đổi hàng không có hạn.
+   */
+  private decayStock(day: number): void {
+    if (day < 1) return;
+    const ctx = buildMarketContext(this.market, day, 12);
+    const rateOf = (productId: string | undefined) => {
+      const product = productId ? PRODUCT_MAP[productId] : undefined;
+      return product ? spoilageRate(ctx, product) : 1;
+    };
+    for (const item of this.inventory) {
+      const rate = rateOf(item.productId);
+      for (const lot of item.lots ?? []) decayLot(lot, rate);
+      item.lots?.sort((a, b) => a.expiresOnDay - b.expiresOnDay);
+    }
+    for (const fixture of this.fixtures) {
+      const rate = rateOf(fixture.assignedProductId);
+      for (const lot of fixture.stockLots ?? []) decayLot(lot, rate);
+      fixture.stockLots?.sort((a, b) => a.expiresOnDay - b.expiresOnDay);
+    }
+    for (const held of this.holdingArea) decayLot(held, rateOf(held.productId));
+  }
+
+  /** Hàng còn tối đa `withinDays` ngày là hết hạn (kho, kệ, khu chờ), gộp theo sản phẩm, gần hạn nhất trước. */
+  public getExpiringStock(withinDays: number = SPOILAGE_RULES.expiringSoonDays): Array<{ productId: string; quantity: number; daysLeft: number }> {
+    const day = this.clock.getTime().day;
+    const soonest = new Map<string, { quantity: number; daysLeft: number }>();
+    const add = (productId: string, quantity: number, expiresOnDay: number) => {
+      const daysLeft = expiresOnDay - day;
+      if (daysLeft > withinDays || daysLeft < 0) return;
+      const entry = soonest.get(productId) ?? { quantity: 0, daysLeft };
+      entry.quantity += quantity;
+      entry.daysLeft = Math.min(entry.daysLeft, daysLeft);
+      soonest.set(productId, entry);
+    };
+    for (const item of this.inventory) for (const lot of item.lots ?? []) add(item.productId, lot.quantity, lot.expiresOnDay);
+    for (const fixture of this.fixtures) if (fixture.assignedProductId) for (const lot of fixture.stockLots ?? []) add(fixture.assignedProductId, lot.quantity, lot.expiresOnDay);
+    for (const held of this.holdingArea) add(held.productId, held.quantity, held.expiresOnDay);
+    return [...soonest.entries()].map(([productId, value]) => ({ productId, ...value })).sort((a, b) => a.daysLeft - b.daysLeft);
+  }
+
+  /**
+   * Tiêu hủy thủ công tối đa `quantity` đơn vị của một sản phẩm, gần hạn nhất trước (kho, khu chờ, rồi kệ).
+   * Mỗi đơn vị chỉ bị hủy và ghi sổ một lần; gọi lại khi đã hết hàng thì không ghi gì.
+   */
+  public disposeStock(productId: string, quantity: number): { success: boolean; disposed: number; cost: number } {
+    const product = PRODUCT_MAP[productId];
+    if (!product || !Number.isSafeInteger(quantity) || quantity <= 0) return { success: false, disposed: 0, cost: 0 };
+    const day = this.clock.getTime().day;
+    let remaining = quantity;
+    let cost = 0;
+    const takeFrom = (lots: StockLot[]) => {
+      if (remaining <= 0 || !lots.length) return;
+      const taken = takeLots(lots, remaining);
+      remaining -= sumLots(taken);
+      for (const lot of taken) cost += lot.quantity * (lot.unitCost ?? product.purchasePrice);
+    };
+    const slot = this.inventory.find((item) => item.productId === productId);
+    if (slot?.lots) {
+      takeFrom(slot.lots);
+      slot.quantity = sumLots(slot.lots);
+      if (slot.quantity === 0) this.inventory = this.inventory.filter((item) => item !== slot);
+    }
+    const holds = this.holdingArea.filter((item) => item.productId === productId).sort((a, b) => a.expiresOnDay - b.expiresOnDay);
+    for (const held of holds) {
+      if (remaining <= 0) break;
+      const count = Math.min(remaining, held.quantity);
+      held.quantity -= count;
+      remaining -= count;
+      cost += count * (held.unitCost ?? product.purchasePrice);
+    }
+    this.holdingArea = this.holdingArea.filter((item) => item.quantity > 0);
+    for (const fixture of this.fixtures) {
+      if (fixture.assignedProductId !== productId || !fixture.stockLots?.length) continue;
+      takeFrom(fixture.stockLots);
+      fixture.currentStock = sumLots(fixture.stockLots);
+      if (fixture.currentStock === 0) fixture.assignedProductId = undefined;
+    }
+    const disposed = quantity - remaining;
+    if (disposed <= 0) return { success: false, disposed: 0, cost: 0 };
+    this.statistics.totalSpoiled = (this.statistics.totalSpoiled ?? 0) + disposed;
+    this.recordSpoilageLoss(day, disposed, cost, `Tiêu hủy thủ công ${product.name} (${disposed})`);
+    this.notifyStateChanged();
+    return { success: true, disposed, cost };
+  }
+
+  /** Lô quá hạn mà khách lấy phải trên kệ đã bị hủy: ghi sổ hỏng, trừ uy tín theo cấu hình. */
+  private handleExpiredOnShelf(productId: string, quantity: number, cost: number): void {
+    const day = this.clock.getTime().day;
+    this.statistics.totalSpoiled = (this.statistics.totalSpoiled ?? 0) + quantity;
+    this.recordSpoilageLoss(day, quantity, cost, `Khách phát hiện hàng quá hạn trên kệ: ${PRODUCT_MAP[productId]?.name ?? productId} (${quantity})`);
+    this.playerData.reputation = Math.max(0, this.playerData.reputation - SPOILAGE_RULES.expiredOnShelfReputationLoss);
+    this.callbacks.onStockExpired?.(quantity);
+    this.notifyStateChanged();
   }
 
   private reservedColdWarehouseCount(): number {
@@ -1224,7 +1324,8 @@ export class GameSimulation {
       () => {
         this.currentDayRecord.outOfStockWalkouts = (this.currentDayRecord.outOfStockWalkouts ?? 0) + 1;
       },
-      this.customerPricing()
+      this.customerPricing(),
+      (productId, quantity, cost) => this.handleExpiredOnShelf(productId, quantity, cost)
     );
     const demandTable = this.refreshDemandTable();
     const availability = availabilityFactor(demandTable, this.fixtures.filter(isSalesFixture).map(shelf => ({
@@ -1940,6 +2041,7 @@ export class GameSimulation {
       expiresOnDay: item.expiresOnDay,
       unitCost: item.unitCost,
       provenance: item.provenance ?? (item.unitCost !== undefined ? 'known' : 'estimated'),
+      ...(item.decayCarry ? { decayCarry: item.decayCarry } : {}),
     };
     if (slot) {
       mergeLots(slot.lots!, [lot]);

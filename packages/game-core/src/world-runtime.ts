@@ -193,6 +193,8 @@ export class WorldRuntime {
         success = this.simulation.orderSupplierCart(p.supplierId, p.items).success;
       } else if (p.type === 'buy_stall') {
         success = this.simulation.buyStall(p.stallId).success;
+      } else if (p.type === 'dispose_stock') {
+        success = this.simulation.disposeStock(p.productId, p.quantity).success;
       } else if (p.type === 'claim_quest') {
         success = this.simulation.claimQuest(p.questId).success;
       } else if (p.type === 'layout_batch') {

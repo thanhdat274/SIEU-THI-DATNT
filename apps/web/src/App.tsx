@@ -306,6 +306,10 @@ export const App: React.FC = () => {
         onStockExpired: (quantity) => {
           addToast(`${quantity} món hàng đã quá hạn và được loại khỏi kho/kệ.`, 'warn');
         },
+        onExpiringSoon: (items) => {
+          const names = items.slice(0, 3).map((item) => `${PRODUCT_MAP[item.productId]?.name ?? item.productId} (${item.quantity}, còn ${item.daysLeft} ngày)`).join(', ');
+          addToast(`Sắp hết hạn: ${names}${items.length > 3 ? ` và ${items.length - 3} món khác` : ''}. Bán nhanh hoặc tiêu hủy.`, 'warn');
+        },
         onTimeChanged: () => {
           if (simulationRef.current) {
             const sim = simulationRef.current;

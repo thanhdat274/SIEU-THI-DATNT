@@ -42,10 +42,10 @@ Mỗi nhóm tự chơi được và tự mang test + tài liệu (`tổng hợp.
 
 ## 6. Hạn dùng theo điều kiện bảo quản (product-spoilage)
 
-- [ ] 6.1 Thêm tiêu hao hạn theo điều kiện (tủ mát có điện, kho thường, nóng, mất điện) bằng bảng dữ liệu; phần dư lưu tùy chọn trên lô; kiểm: test mất điện làm lô lạnh mất hạn nhanh hơn, tủ mát bình thường đúng 1 ngày/ngày, món không hạn không hỏng, save cũ không đổi.
-- [ ] 6.2 Hàng quá hạn còn trên kệ khi khách lấy: hủy món đó, giảm hài lòng/uy tín theo cấu hình; kiểm: test không tạo giao dịch cho món quá hạn.
-- [ ] 6.3 Lệnh tiêu hủy thủ công idempotent theo ID, ghi sổ hỏng một lần, cảnh báo sắp hết hạn theo ngưỡng; kiểm: test không tính đôi sau lưu/tải, báo cáo ngày đúng.
-- [ ] 6.4 Tài liệu + smoke browser với sự kiện mất điện.
+- [x] 6.1 Thêm tiêu hao hạn theo điều kiện (tủ mát có điện, kho thường, nóng, mất điện) bằng bảng dữ liệu; phần dư lưu tùy chọn trên lô; kiểm: test mất điện làm lô lạnh mất hạn nhanh hơn, tủ mát bình thường đúng 1 ngày/ngày, món không hạn không hỏng, save cũ không đổi. (Đã có: `game-data/spoilage.ts` bảng 4 điều kiện + hệ số kênh `spoilage`, `game-core/spoilage.ts`, `decayStock` chạy lúc qua ngày trước khi thị trường sang ngày; phần lẻ lưu `decayCarry` trên lô/hàng chờ. Giới hạn: điều kiện suy từ `storageType` của món, không theo vị trí tủ cụ thể; `decayCarry` bị mất khi lô đi qua `deliverOrders` mới vào kho — chỉ là phần lẻ < 1 ngày.)
+- [x] 6.2 Hàng quá hạn còn trên kệ khi khách lấy: hủy món đó, giảm hài lòng/uy tín theo cấu hình; kiểm: test không tạo giao dịch cho món quá hạn. (Đã có: khách tới kệ thấy lô `expiresOnDay <= ngày` thì lô bị hủy, ghi sổ hỏng, trừ `expiredOnShelfReputationLoss` uy tín; chỉ trừ uy tín, chưa có chỉ số “hài lòng” riêng. Nếu kệ trống sau khi hủy, khách đó còn tính thêm một lần hết hàng như luồng cũ. Vì `expireStock` dọn lô hết hạn lúc qua ngày nên tình huống này chủ yếu xảy ra với save/lô lỗi thời.)
+- [x] 6.3 Lệnh tiêu hủy thủ công idempotent theo ID, ghi sổ hỏng một lần, cảnh báo sắp hết hạn theo ngưỡng; kiểm: test không tính đôi sau lưu/tải, báo cáo ngày đúng. (Đã có: `disposeStock(productId, quantity)` + lệnh co-op `dispose_stock`; hủy hàng gần hạn nhất trước, hết hàng thì từ chối không ghi sổ; `onExpiringSoon` + toast sau khi qua ngày với ngưỡng `expiringSoonDays`. Chưa có nút tiêu hủy trong `WarehouseModal` vì file đó đang có thay đổi của phiên khác.)
+- [ ] 6.4 Tài liệu + smoke browser với sự kiện mất điện. (Tài liệu đã cập nhật; smoke browser chưa chạy nên chưa tick.)
 
 ## 7. Lập kế hoạch tồn kho và phản hồi (stock-planning, economy-feedback)
 
