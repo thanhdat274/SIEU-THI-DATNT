@@ -13,8 +13,11 @@ interface MarketSummary {
   events: Array<{ id: string; label: string; notice: string; status: 'active' | 'upcoming'; daysLeft: number; startsIn: number }>;
 }
 
+interface PriceRow { category: string; label: string; index: number; target: number; demand: number; scarcity: number; cost: number }
+
 interface MarketModalProps {
   summary: MarketSummary;
+  prices?: PriceRow[];
   day: number;
   onClose: () => void;
 }
@@ -31,7 +34,7 @@ function upcomingSeasons(day: number) {
 
 const percent = (factor: number) => `${factor >= 1 ? '+' : ''}${Math.round((factor - 1) * 100)}%`;
 
-export const MarketModal: React.FC<MarketModalProps> = ({ summary, day, onClose }) => (
+export const MarketModal: React.FC<MarketModalProps> = ({ summary, prices, day, onClose }) => (
   <PixelDialog icon="sun" title="THỊ TRƯỜNG HẺM" subtitle={`${summary.weekday} · ${summary.timeBand.label} · ${summary.climate.name}`} onClose={onClose}>
     <h3>Thời tiết</h3>
     <p className="pixel-panel" style={{ padding: 8 }}>
@@ -51,6 +54,21 @@ export const MarketModal: React.FC<MarketModalProps> = ({ summary, day, onClose 
     <ul style={{ margin: '4px 0', paddingLeft: 18 }}>
       {upcomingSeasons(day).map(({ season, inDays }) => <li key={season.id} className="muted">{season.name}: sau {inDays} ngày</li>)}
     </ul>
+    {prices && prices.length > 0 && <>
+      <h3>Giá thị trường theo nhóm hàng</h3>
+      <p className="muted">Giá tham chiếu so với giá gợi ý; đổi dần mỗi ngày. Giá bán hiện cố định theo giá gợi ý, nên khi thị trường đắt hơn khách dễ lấy hàng, khi rẻ hơn khách có thể bỏ hàng.</p>
+      <ul style={{ margin: '4px 0', paddingLeft: 18 }}>
+        {prices.map(row => {
+          const reasons = [
+            Math.abs(row.demand - 1) >= 0.02 ? `nhu cầu ${percent(row.demand)}` : '',
+            Math.abs(row.scarcity - 1) >= 0.01 ? `${row.scarcity > 1 ? 'khan hiếm' : 'ứ đọng'} ${percent(row.scarcity)}` : '',
+            Math.abs(row.cost - 1) >= 0.01 ? `chi phí nhập ${percent(row.cost)}` : '',
+          ].filter(Boolean).join(', ');
+          const trend = row.target > row.index + 0.001 ? '↑' : row.target < row.index - 0.001 ? '↓' : '→';
+          return <li key={row.category}>{row.label}: <strong className="tabular">{percent(row.index)}</strong> {trend} <span className="muted">{reasons || 'ổn định'}</span></li>;
+        })}
+      </ul>
+    </>}
     <h3>Vì sao lượng khách hôm nay như vậy? ({summary.traffic.value.toFixed(2)}×)</h3>
     {summary.traffic.factors.length
       ? <ul style={{ margin: '4px 0', paddingLeft: 18 }}>{summary.traffic.factors.map(item => <li key={item.ruleId}>{item.label}: <strong className="tabular">{percent(item.factor)}</strong></li>)}</ul>

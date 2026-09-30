@@ -226,6 +226,8 @@ export interface MarketState {
   events: ActiveMarketEvent[]; // đang chạy hoặc đã lên lịch (báo trước)
   decidedThrough?: number; // đã quyết định lịch sự kiện tới hết ngày này
   lastEventStart?: Record<string, number>; // ngày bắt đầu gần nhất của từng sự kiện (khoảng cách tối thiểu)
+  priceIndex?: Record<string, number>; // chỉ số giá tham chiếu theo nhóm hàng (thiếu = 1)
+  priceTargets?: Record<string, { target: number; demand: number; scarcity: number; cost: number }>; // lý do cho lần đổi giá gần nhất
 }
 
 export interface StallState {
@@ -260,6 +262,7 @@ export interface DailyRecord {
   spoilageCount: number; // Total units spoiled
   productSales?: Record<string, number>; // Units sold per productId on this day
   outOfStockWalkouts?: number; // Khách bỏ về vì kệ món đã chọn hết hàng
+  priceWalkouts?: number; // Khách bỏ hàng vì giá cao hơn giá thị trường
 }
 
 export type PlanogramMap = Record<string, string>; // fixtureId -> productId

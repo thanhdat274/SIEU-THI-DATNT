@@ -1171,7 +1171,7 @@ export const App: React.FC = () => {
         onClose={closeAllModals}
       />
     )}
-    {isMarketOpen && simulationRef.current && <MarketModal summary={simulationRef.current.getMarketSummary()} day={worldTime.day} onClose={() => setMarketOpen(false)}/>}
+    {isMarketOpen && simulationRef.current && <MarketModal summary={simulationRef.current.getMarketSummary()} prices={simulationRef.current.getPriceMarket()} day={worldTime.day} onClose={() => setMarketOpen(false)}/>}
     {isStallOpen && simulationRef.current && <StallModal stalls={simulationRef.current.getStalls()} season={simulationRef.current.getSeason()} stock={Object.fromEntries(simulationRef.current.getInventory().map(item => [item.productId, item.quantity]))} report={simulationRef.current.getStallReport()} onBuy={handleBuyStall} onClose={() => setStallOpen(false)}/>}
     {isQuestOpen && simulationRef.current && <QuestModal {...simulationRef.current.getQuests()} level={player.level} onClaim={handleClaimQuest} onClose={() => setQuestOpen(false)}/>}
     {isLayoutOpen && simulationRef.current && <StoreLayoutModal save={simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision)} onConfirm={handleApplyStoreLayout} onClose={closeLayoutEditor}/>}

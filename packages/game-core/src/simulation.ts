@@ -53,6 +53,8 @@ import {
   STALLS,
   STALL_MAP,
   ALL_PRODUCTS,
+  PRICED_CATEGORIES,
+  PRODUCT_CATEGORY_LABELS,
   WEATHER_MAP,
   CLIMATE_SEASON_MAP,
   TIME_BANDS,
@@ -71,6 +73,7 @@ import { CustomerManager } from './customers';
 import { generateRestockSuggestions } from './suggestions';
 import { climateSeasonForDay } from './weather';
 import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, timeBandFor, visibleMarketEvents, weekdayOf, type MarketNotice } from './market';
+import { advancePriceIndex, computePriceTargets, demandPriceFactor, keepChance, priceRatio, productSensitivity } from './price';
 import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
 import { emptyStallState, normalizeStallState, planStallDay } from './stalls';
 import { emptyQuestState, findClaimableQuest, getDailyQuests, getStoryQuest, markQuestClaimed, normalizeQuestState, type QuestContext, type QuestProgress, type QuestReward } from './quests';
@@ -223,6 +226,7 @@ export class GameSimulation {
       this.processPayroll(day - 1);
       this.processStalls(day - 1);
       this.market = advanceMarketState(this.market, day);
+      this.updatePriceIndex(day);
       this.demandTable = undefined;
       this.callbacks.onWeatherChanged?.(effectiveWeatherId(this.market, day));
       for (const notice of marketNoticesForDay(this.market, day)) {
@@ -316,10 +320,73 @@ export class GameSimulation {
     const ctx = buildMarketContext(this.market, time.day, time.hour);
     const key = demandContextKey(ctx, this.playerData.reputation);
     if (!this.demandTable || this.demandTable.key !== key) {
-      this.demandTable = buildDemandTable({ ctx, products: ALL_PRODUCTS, reputation: this.playerData.reputation });
+      this.demandTable = buildDemandTable({
+        ctx, products: ALL_PRODUCTS, reputation: this.playerData.reputation,
+        priceFactor: (productId) => demandPriceFactor(priceRatio(this.sellingPrice(productId), this.referencePrice(productId))),
+      });
       this.demandBuildCount++;
     }
     return this.demandTable;
+  }
+
+  /** Giá bán hiện tại. Hiện cố định theo giá gợi ý; việc người chơi tự đặt giá (shop-pricing) sẽ thay hàm này. */
+  public sellingPrice(productId: string): number {
+    return PRODUCT_MAP[productId]?.baseSellingPrice ?? 0;
+  }
+
+  /** Giá tham chiếu thị trường của món = giá gợi ý × chỉ số giá của nhóm (trôi dần theo ngày). */
+  public referencePrice(productId: string): number {
+    const product = PRODUCT_MAP[productId];
+    if (!product) return 0;
+    return product.baseSellingPrice * (this.market.priceIndex?.[product.category] ?? 1);
+  }
+
+  private stockUnitsByCategory(): Record<string, number> {
+    const units: Record<string, number> = {};
+    const add = (productId: string | undefined, quantity: number) => {
+      const category = productId ? PRODUCT_MAP[productId]?.category : undefined;
+      if (category) units[category] = (units[category] ?? 0) + quantity;
+    };
+    for (const item of this.inventory) add(item.productId, item.quantity);
+    for (const item of this.holdingArea) add(item.productId, item.quantity);
+    for (const fixture of this.fixtures) if (isSalesFixture(fixture)) add(fixture.assignedProductId, fixture.currentStock);
+    return units;
+  }
+
+  /** Mỗi ngày đẩy chỉ số giá từng nhóm một bước về mục tiêu (áp lực nhu cầu × khan hiếm × chi phí). */
+  private updatePriceIndex(day: number): void {
+    const table = buildDemandTable({ ctx: buildMarketContext(this.market, day, 12), products: ALL_PRODUCTS, reputation: this.playerData.reputation });
+    const targets = computePriceTargets({ products: ALL_PRODUCTS, table, stockUnits: this.stockUnitsByCategory() });
+    this.market = { ...this.market, priceIndex: advancePriceIndex(this.market.priceIndex, targets), priceTargets: targets };
+  }
+
+  private customerPricing() {
+    const time = this.clock.getTime();
+    const ctx = buildMarketContext(this.market, time.day, time.hour);
+    return {
+      priceOf: (productId: string) => this.sellingPrice(productId),
+      keepChance: (productId: string) => {
+        const product = PRODUCT_MAP[productId];
+        return product ? keepChance(priceRatio(this.sellingPrice(productId), this.referencePrice(productId)), productSensitivity(product, ctx)) : 1;
+      },
+      onReject: () => { this.currentDayRecord.priceWalkouts = (this.currentDayRecord.priceWalkouts ?? 0) + 1; },
+    };
+  }
+
+  /** Thị trường giá theo nhóm cho giao diện: chỉ số, mục tiêu và lý do (nhu cầu, khan hiếm, chi phí). */
+  public getPriceMarket() {
+    return PRICED_CATEGORIES.map(category => {
+      const info = this.market.priceTargets?.[category];
+      return {
+        category,
+        label: PRODUCT_CATEGORY_LABELS[category],
+        index: this.market.priceIndex?.[category] ?? 1,
+        target: info?.target ?? 1,
+        demand: info?.demand ?? 1,
+        scarcity: info?.scarcity ?? 1,
+        cost: info?.cost ?? 1,
+      };
+    });
   }
 
   public getDemandTable(): DemandTable { return this.refreshDemandTable(); }
@@ -1103,7 +1170,8 @@ export class GameSimulation {
       },
       () => {
         this.currentDayRecord.outOfStockWalkouts = (this.currentDayRecord.outOfStockWalkouts ?? 0) + 1;
-      }
+      },
+      this.customerPricing()
     );
     const demandTable = this.refreshDemandTable();
     const availability = availabilityFactor(demandTable, this.fixtures.filter(isSalesFixture).map(shelf => ({

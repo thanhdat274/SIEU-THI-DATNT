@@ -13,3 +13,4 @@ export * from './weather';
 export * from './product-tags';
 export * from './market-events';
 export * from './modifiers';
+export * from './pricing';

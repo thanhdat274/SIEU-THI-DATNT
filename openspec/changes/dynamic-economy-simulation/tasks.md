@@ -28,10 +28,10 @@ Mỗi nhóm tự chơi được và tự mang test + tài liệu (`tổng hợp.
 
 ## 4. Phản ứng giá (price-response) — sau F1 `shop-pricing`
 
-- [ ] 4.1 Thêm độ nhạy giá theo tag/nhóm vào dữ liệu và `keepChance` dùng chung; kiểm: test giá cao → tỉ lệ lấy giảm theo độ nhạy, giá thấp không vượt trần tăng nhu cầu.
-- [ ] 4.2 Tạo giá tham chiếu bán lẻ trôi dần (`maxStep` mỗi ngày, target từ chi phí/khan hiếm/tồn/sự kiện) và lưu trong `market`; kiểm: test không nhảy quá bước, về nền dần khi hết sự kiện.
-- [ ] 4.3 Nối giá người chơi (F1) vào xác suất lấy hàng và nhu cầu; hiển thị lý do khan hiếm; kiểm: test ba chiến lược giá (thấp/thường/cao) cho số lượng, doanh thu, lãi gộp khác nhau hợp lý, giỏ giữ giá lúc lấy.
-- [ ] 4.4 Tài liệu + smoke browser với ba mức giá; cập nhật `tổng hợp.md`.
+- [x] 4.1 Thêm độ nhạy giá theo tag/nhóm vào dữ liệu và `keepChance` dùng chung; kiểm: test giá cao → tỉ lệ lấy giảm theo độ nhạy, giá thấp không vượt trần tăng nhu cầu.
+- [x] 4.2 Tạo giá tham chiếu bán lẻ trôi dần (`maxStep` mỗi ngày, target từ chi phí/khan hiếm/tồn/sự kiện) và lưu trong `market`; kiểm: test không nhảy quá bước, về nền dần khi hết sự kiện.
+- [ ] 4.3 Nối giá người chơi (F1) vào xác suất lấy hàng và nhu cầu; hiển thị lý do khan hiếm; kiểm: test ba chiến lược giá (thấp/thường/cao) cho số lượng, doanh thu, lãi gộp khác nhau hợp lý, giỏ giữ giá lúc lấy. (Mở dở theo quyết định dùng giá gợi ý cố định: động cơ đã nhận giá bán qua `sellingPrice()`, khách từ chối giá cao ghi `priceWalkouts`, giỏ giữ giá lúc lấy hàng, test ba chiến lược giá 0.7/1/1.3 ở mức động cơ PASS; còn thiếu nhập giá của người chơi (`shop-pricing` F1) và giao diện đặt giá.)
+- [ ] 4.4 Tài liệu + smoke browser với ba mức giá; cập nhật `tổng hợp.md`. (Mở dở: chưa có giao diện ba mức giá để smoke; tài liệu đã cập nhật phần đã làm.)
 
 ## 5. Thị trường nhà cung cấp (supplier-market)
 

@@ -16,6 +16,7 @@ import { CollisionSystem } from './collision';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { mergeLots, sumLots, takeLots } from './stock';
 import { Mulberry32Rng, daySeed } from './staff';
+import { hashSeed } from './weather';
 
 export const CASHIER_QUEUE_TILES: GridPoint[] = [
   { x: 9, y: 8 },  // Position 0: front of checkout counter
@@ -29,6 +30,13 @@ export const ENTRANCE_TILE: GridPoint = { x: 9, y: 11 };
 export interface CustomerDemandChoice {
   traffic: number;
   weightOf: (productId: string) => number;
+}
+
+/** Giá bán và mức chấp nhận giá khi khách lấy hàng; không có thì dùng giá gợi ý và luôn lấy. */
+export interface CustomerPricing {
+  priceOf: (productId: string) => number;
+  keepChance: (productId: string) => number;
+  onReject: (productId: string) => void;
 }
 
 export interface CustomerMovementPath {
@@ -217,7 +225,8 @@ export class CustomerManager {
     inventory: InventoryItem[],
     onReputationLoss?: (delta: number) => void,
     onSpoiledGoods?: (spoiledCount: number) => void,
-    onOutOfStock?: () => void
+    onOutOfStock?: () => void,
+    pricing?: CustomerPricing
   ): void {
     const customerList = [...this.customers];
     for (const customer of customerList) {
@@ -273,7 +282,12 @@ export class CustomerManager {
         const prodId = shelf?.assignedProductId;
         const prod = prodId ? PRODUCT_MAP[prodId] : undefined;
 
-        if (shelf && isSalesFixture(shelf) && prod && shelf.currentStock > 0 && shelf.stockLots && shelf.stockLots.length > 0) {
+        if (shelf && isSalesFixture(shelf) && prod && shelf.currentStock > 0 && shelf.stockLots && shelf.stockLots.length > 0
+          && pricing && new Mulberry32Rng(daySeed(hashSeed(customer.id ?? customer.checkoutId ?? 'customer'), currentDay)).next() >= pricing.keepChance(prod.id)) {
+          // Giá cao hơn giá thị trường: khách không lấy, rời tiệm (không trừ uy tín)
+          pricing.onReject(prod.id);
+          this.routeCustomer(customer, 'leaving', tileMap, fixtures);
+        } else if (shelf && isSalesFixture(shelf) && prod && shelf.currentStock > 0 && shelf.stockLots && shelf.stockLots.length > 0) {
           // Pick 1 unit into basket
           const movedLots = takeLots(shelf.stockLots, 1);
           shelf.currentStock = sumLots(shelf.stockLots);
@@ -285,7 +299,7 @@ export class CustomerManager {
           customer.basket.push({
             productId: prod.id,
             quantity: sumLots(movedLots),
-            unitPrice: prod.baseSellingPrice,
+            unitPrice: pricing?.priceOf(prod.id) ?? prod.baseSellingPrice,
             lots: movedLots,
           });
 

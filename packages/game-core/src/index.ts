@@ -19,3 +19,4 @@ export * from './stalls';
 export * from './weather';
 export * from './market';
 export * from './demand';
+export * from './price';
