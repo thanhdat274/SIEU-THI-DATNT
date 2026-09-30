@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { StoreFixture, InventoryItem, PlayerData, WorldTime } from '@game/shared';
+import { StoreFixture, InventoryItem, PlayerData, WorldTime, CustomerState, HoldingItem, DailyRecord, LedgerEntry } from '@game/shared';
 
 let modalReturnFocus: HTMLElement | null = null;
 export function getModalReturnFocus() { return modalReturnFocus; }
@@ -23,6 +23,16 @@ export interface GameStoreState {
   inventory: InventoryItem[];
   // Fixtures
   fixtures: StoreFixture[];
+  // Customers in store
+  customers: CustomerState[];
+  // Holding area for goods waiting to be stowed
+  holdingArea: HoldingItem[];
+  // Planogram mapping (fixtureId -> productId)
+  planogram: Record<string, string>;
+  // Ledger and Daily Records
+  dailyRecords: Record<number, DailyRecord>;
+  currentDayRecord: DailyRecord | null;
+  ledger: LedgerEntry[];
 
   // Modals
   activeFixtureModal: StoreFixture | null;
@@ -41,7 +51,13 @@ export interface GameStoreState {
   setPlayerData: (data: PlayerData) => void;
   setWorldTime: (time: WorldTime, timeString: string) => void;
   setInventory: (items: InventoryItem[]) => void;
+  setHoldingArea: (items: HoldingItem[]) => void;
+  setPlanogram: (planogram: Record<string, string>) => void;
+  setDailyRecords: (records: Record<number, DailyRecord>) => void;
+  setCurrentDayRecord: (record: DailyRecord | null) => void;
+  setLedger: (ledger: LedgerEntry[]) => void;
   setFixtures: (fixtures: StoreFixture[]) => void;
+  setCustomers: (customers: CustomerState[]) => void;
   setNearbyFixture: (fixture: StoreFixture | null) => void;
   openFixtureModal: (fixture: StoreFixture) => void;
   closeFixtureModal: () => void;
@@ -73,7 +89,13 @@ export const useGameStore = create<GameStoreState>((set) => ({
   },
   timeString: '07:00',
   inventory: [],
+  holdingArea: [],
+  planogram: {},
+  dailyRecords: {},
+  currentDayRecord: null,
+  ledger: [],
   fixtures: [],
+  customers: [],
 
   activeFixtureModal: null,
   isInventoryModalOpen: false,
@@ -86,7 +108,13 @@ export const useGameStore = create<GameStoreState>((set) => ({
   setPlayerData: (player) => set({ player }),
   setWorldTime: (worldTime, timeString) => set({ worldTime, timeString }),
   setInventory: (inventory) => set({ inventory }),
+  setHoldingArea: (holdingArea) => set({ holdingArea }),
+  setPlanogram: (planogram: Record<string, string>) => set({ planogram }),
+  setDailyRecords: (dailyRecords) => set({ dailyRecords }),
+  setCurrentDayRecord: (currentDayRecord) => set({ currentDayRecord }),
+  setLedger: (ledger) => set({ ledger }),
   setFixtures: (fixtures) => set(state => ({ fixtures, activeFixtureModal: state.activeFixtureModal ? fixtures.find(f => f.id === state.activeFixtureModal!.id) ?? null : null })),
+  setCustomers: (customers) => set({ customers }),
   setNearbyFixture: (nearbyFixture) => set({ nearbyFixture }),
 
   openFixtureModal: (fixture) => {

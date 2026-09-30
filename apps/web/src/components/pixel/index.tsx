@@ -36,7 +36,7 @@ export function PixelButton({icon, variant = 'paper', className = '', children, 
   return <button type="button" {...props} className={`pixel-button button-${variant} ${className}`}>{icon && <PixelIcon name={icon}/>} {children}</button>;
 }
 export function PixelPanel({children, className = ''}: React.PropsWithChildren<{className?: string}>) {return <section className={`pixel-panel ${className}`}>{children}</section>;}
-export function PixelStat({label, value, icon}: {label: string; value: React.ReactNode; icon: IconName}) {return <div className="pixel-stat"><PixelIcon name={icon} size={24}/><div><span className="muted">{label}</span><strong>{value}</strong></div></div>;}
+export function PixelStat({label, value, icon}: {label: string; value: React.ReactNode; icon: IconName}) {return <div className="pixel-stat"><PixelIcon name={icon} size={22}/><div className="pixel-stat-body"><span className="muted">{label}</span><strong>{value}</strong></div></div>;}
 export function PixelProgress({value, max, label}: {value: number; max: number; label: string}) {
   const safeMax = Math.max(1, max), safeValue = Math.max(0, Math.min(safeMax, value));
   return <div className="pixel-progress" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={safeMax} aria-valuenow={safeValue}><span style={{width:`${safeValue / safeMax * 100}%`}}/></div>;
