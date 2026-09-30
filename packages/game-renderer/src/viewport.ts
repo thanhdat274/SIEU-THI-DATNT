@@ -597,7 +597,7 @@ export class PixiGameViewport {
 
       const sprite = new Sprite(this.textures.getTexture(textureKey));
       sprite.y = -16;
-      container.zIndex = container.y + dimensions.heightTiles * TILE_SIZE;
+      container.zIndex = (fix.tileY + dimensions.heightTiles) * TILE_SIZE;
       container.addChild(sprite);
 
       // Pill stock badge under shelf (Matching user reference image & Redhexx!)
@@ -898,8 +898,12 @@ export class PixiGameViewport {
     }
     const time = this.simulation.getTime();
     const light = getLightingState(time.hour, time.minute);
+    const playerPos = playerData.position;
+    const isPlayerInWarehouse = isInWarehouse(playerPos) || (playerPos.y >= STORE_BOUNDS.top * TILE_SIZE && playerPos.y <= STORE_BOUNDS.top * TILE_SIZE + 6 && Math.abs(playerPos.x - WAREHOUSE_CENTER.x) < 36);
+    const anyWorkerInWarehouse = Array.from(this.workerSprites.values()).some((w) => isInWarehouse(w.container.position));
+    const warehouseActive = isPlayerInWarehouse || anyWorkerInWarehouse;
     this.lighting.syncFixtures(this.simulation.getFixtures());
-    this.lighting.update(light, this.animTimer, reducedMotion);
+    this.lighting.update(light, this.animTimer, reducedMotion, warehouseActive, elapsed);
     const feet: Array<{ x: number; y: number }> = [this.playerContainer.position];
     if (this.partnerContainer.visible) feet.push(this.partnerContainer.position);
     for (const c of this.customerSprites.values()) feet.push(c.container.position);
@@ -910,7 +914,6 @@ export class PixiGameViewport {
     this.app.renderer.background.color = light.sky;
 
     // 2b. Update Doors & Entrance Animation
-    const playerPos = playerData.position;
     const storeDoorCenter = { x: 304, y: 336 };
     // Trigger from the whole doorway, not a circle around its center. The player
     // collider is wider than a single tile, so the edge can cross the threshold
@@ -969,7 +972,14 @@ export class PixiGameViewport {
         entry.container.y = fix.tileY * TILE_SIZE + dimensions.heightTiles * TILE_SIZE / 2;
         entry.container.pivot.set(fix.widthTiles * TILE_SIZE / 2, fix.heightTiles * TILE_SIZE / 2);
         entry.container.rotation = fix.rotation * Math.PI / 180;
-        entry.container.zIndex = entry.container.y + dimensions.heightTiles * TILE_SIZE;
+        entry.container.zIndex = (fix.tileY + dimensions.heightTiles) * TILE_SIZE; // mép dưới kệ = mốc sắp xếp theo Y
+        // Nhân vật đứng sau kệ (phía trên, trong dải sprite cao) thì làm mờ kệ để vẫn nhìn thấy.
+        const pp = this.simulation.getPlayerData().position;
+        const fx = fix.tileX * TILE_SIZE, fy = fix.tileY * TILE_SIZE;
+        const behind = pp.x > fx - 6 && pp.x < fx + dimensions.widthTiles * TILE_SIZE + 6
+          && pp.y > fy - TILE_SIZE * 1.6 && pp.y <= fy + 4;
+        const fadeTarget = behind && fix.type !== 'cashier_counter' ? 0.4 : 1;
+        entry.container.alpha += (fadeTarget - entry.container.alpha) * 0.25;
         if(isWarehouseFixture(fix)) {
           const cold=fix.type==='warehouse_cold';
           const receiving=fix.type==='warehouse_receiving';

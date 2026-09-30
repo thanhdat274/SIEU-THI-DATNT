@@ -1,4 +1,4 @@
-import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D } from '@game/shared';
+import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, getFixtureDimensions } from '@game/shared';
 
 export interface BoundingBox {
   x: number;
@@ -18,6 +18,10 @@ export class CollisionSystem {
 
   public updateFixtures(fixtures: StoreFixture[]): void {
     this.fixtures = fixtures;
+  }
+
+  public updateTileMap(tileMap: GameTileMap): void {
+    this.tileMap = tileMap;
   }
 
   /**
@@ -47,11 +51,12 @@ export class CollisionSystem {
 
     // 2. Check collision against fixtures
     for (const fix of this.fixtures) {
+      const dimensions = getFixtureDimensions(fix);
       const fixBox: BoundingBox = {
         x: fix.tileX * TILE_SIZE,
         y: fix.tileY * TILE_SIZE,
-        width: fix.widthTiles * TILE_SIZE,
-        height: fix.heightTiles * TILE_SIZE,
+        width: dimensions.widthTiles * TILE_SIZE,
+        height: dimensions.heightTiles * TILE_SIZE,
       };
 
       if (this.boxesIntersect(box, fixBox)) {
@@ -63,41 +68,59 @@ export class CollisionSystem {
   }
 
   /**
-   * Attempt movement with axis-aligned sliding (move X then move Y independently)
+   * Attempt movement with axis-aligned sliding and corner assist (smooth navigation past fixtures)
    */
   public resolveMovement(currentPos: Vector2D, velocity: Vector2D, dt: number): Vector2D {
-    // Player collision box is 20px wide, 14px high positioned at character feet
-    const boxWidth = 20;
-    const boxHeight = 14;
+    if (velocity.x === 0 && velocity.y === 0) return currentPos;
+
+    // Player collision box is 14px wide, 8px high positioned at character feet
+    // Anchor at feet: box spans [currentPos.x - 7 .. currentPos.x + 7], [currentPos.y - 8 .. currentPos.y]
+    const boxWidth = 14;
+    const boxHeight = 8;
     const offsetX = -boxWidth / 2;
-    const offsetY = -4; // bottom anchor
+    const offsetY = -boxHeight;
 
-    let nextX = currentPos.x + velocity.x * dt;
-    let nextY = currentPos.y + velocity.y * dt;
-
-    // Test X movement
-    const testBoxX: BoundingBox = {
-      x: nextX + offsetX,
-      y: currentPos.y + offsetY,
+    const canMove = (x: number, y: number): boolean => !this.isColliding({
+      x: x + offsetX,
+      y: y + offsetY,
       width: boxWidth,
       height: boxHeight,
-    };
-    if (this.isColliding(testBoxX)) {
-      nextX = currentPos.x;
-    }
+    });
 
-    // Test Y movement
-    const testBoxY: BoundingBox = {
-      x: nextX + offsetX,
-      y: nextY + offsetY,
-      width: boxWidth,
-      height: boxHeight,
+    // Trượt từng trục, tiến sát vật cản (không dừng cách xa một khe) để không bị khựng.
+    const advance = (x: number, y: number, dx: number, dy: number): Vector2D => {
+      if (dx === 0 && dy === 0) return { x, y };
+      if (canMove(x + dx, y + dy)) return { x: x + dx, y: y + dy };
+      let lo = 0;
+      let hi = 1;
+      for (let i = 0; i < 5; i++) {
+        const mid = (lo + hi) / 2;
+        if (canMove(x + dx * mid, y + dy * mid)) lo = mid; else hi = mid;
+      }
+      return { x: x + dx * lo, y: y + dy * lo };
     };
-    if (this.isColliding(testBoxY)) {
-      nextY = currentPos.y;
-    }
 
-    return { x: nextX, y: nextY };
+    const dx = velocity.x * dt;
+    const dy = velocity.y * dt;
+    let pos = advance(currentPos.x, currentPos.y, dx, 0);
+    pos = advance(pos.x, pos.y, 0, dy);
+
+    // Hỗ trợ góc: đi thẳng mà bị chặn thì lách ngang/dọc tới mép vật cản gần nhất.
+    const movedX = Math.abs(pos.x - currentPos.x);
+    const movedY = Math.abs(pos.y - currentPos.y);
+    const speed = Math.hypot(dx, dy);
+    if (Math.abs(dy) > 0 && Math.abs(dx) < 0.01 && movedY < Math.abs(dy) * 0.5) {
+      for (let offset = 1; offset <= 8; offset++) {
+        if (canMove(pos.x + offset, currentPos.y + dy)) return advance(pos.x, pos.y, Math.min(offset, speed), 0);
+        if (canMove(pos.x - offset, currentPos.y + dy)) return advance(pos.x, pos.y, -Math.min(offset, speed), 0);
+      }
+    } else if (Math.abs(dx) > 0 && Math.abs(dy) < 0.01 && movedX < Math.abs(dx) * 0.5) {
+      for (let offset = 1; offset <= 8; offset++) {
+        if (canMove(currentPos.x + dx, pos.y + offset)) return advance(pos.x, pos.y, 0, Math.min(offset, speed));
+        if (canMove(currentPos.x + dx, pos.y - offset)) return advance(pos.x, pos.y, 0, -Math.min(offset, speed));
+      }
+    }
+    return pos;
   }
 
   private boxesIntersect(a: BoundingBox, b: BoundingBox): boolean {
