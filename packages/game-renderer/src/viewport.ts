@@ -1,6 +1,6 @@
 import { Application, Container, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
-import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture } from '@game/shared';
-import { GameSimulation } from '@game/core';
+import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
+import { FixedStepSimulationRunner, GameSimulation } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { PRODUCT_MAP, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse } from '@game/data';
@@ -11,6 +11,7 @@ export interface PixiGameViewportOptions {
   simulation: GameSimulation;
   onResize?: (width: number, height: number) => void;
   onZoomChange?: (zoom: number) => void;
+  getPartnerAvatar?: () => { position: Vector2D; direction: string; isMoving?: boolean; name?: string } | null;
 }
 
 export class PixiGameViewport {
@@ -18,8 +19,10 @@ export class PixiGameViewport {
   private canvas: HTMLCanvasElement;
   private tileMap: GameTileMap;
   private simulation: GameSimulation;
+  private simulationRunner: FixedStepSimulationRunner;
   private textures: PixelTextureFactory;
   private camera: PixelCamera;
+  private getPartnerAvatar?: () => { position: Vector2D; direction: string; isMoving?: boolean; name?: string } | null;
 
   // Containers
   private worldContainer!: Container;
@@ -31,16 +34,22 @@ export class PixiGameViewport {
   // Dynamic entity sprites & containers
   private playerContainer!: Container;
   private playerSprite!: Sprite;
-  private customerContainer!: Container;
-  private customerSprite!: Sprite;
-  private customerBubble!: Container;
-  private customerBubbleIcon!: Sprite;
-  private npcVariant = 0;
-  private lastCustomerPosition: Vector2D | null = null;
-  private npcDirection = 'down';
+  private partnerContainer!: Container;
+  private partnerSprite!: Sprite;
+  private customerSprites = new Map<string, {
+    container: Container;
+    sprite: Sprite;
+    bubble: Container;
+    bubbleIcon: Sprite;
+    lastPosition: Vector2D | null;
+    npcVariant: number;
+    npcDirection: string;
+  }>();
+  private workerSprites = new Map<string, { container: Container; sprite: Sprite; bubble: Container; status: Text; lastPosition: Vector2D | null; variant: number; direction: string }>();
   private resizeObserver?: ResizeObserver;
   private onZoomChange?: (zoom: number) => void;
   private ambientSprites: Array<{sprite: Sprite; key: string; frames: number}> = [];
+  private stallSprites: Sprite[] = [];
   private nightOverlay!: Graphics;
   private motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string }> = new Map();
@@ -49,17 +58,31 @@ export class PixiGameViewport {
   private locatingWarehouse = false;
   private floatingTexts: Array<{ container: Container; life: number; maxLife: number }> = [];
 
+  // Doors & animations
+  private warehouseDoorContainer!: Container;
+  private warehouseDoorLeft!: Sprite;
+  private warehouseDoorRight!: Sprite;
+  private storeDoorContainer!: Container;
+  private storeDoorLeft!: Sprite;
+  private storeDoorRight!: Sprite;
+  private storeDoorBell!: Sprite;
+  private storeDoorOpenProgress = 0;
+  private warehouseDoorOpenProgress = 0;
+  private storeBellTimer = 999;
+  private wasStoreDoorOpen = false;
+
   private isInitialized: boolean = false;
   private animTimer: number = 0;
-  private accumulatedTime: number = 0;
 
   constructor(options: PixiGameViewportOptions) {
     this.canvas = options.canvas;
     this.tileMap = options.tileMap;
     this.simulation = options.simulation;
+    this.simulationRunner = new FixedStepSimulationRunner(options.simulation);
     this.textures = new PixelTextureFactory();
     this.camera = new PixelCamera(this.tileMap.width, this.tileMap.height);
     this.onZoomChange = options.onZoomChange;
+    this.getPartnerAvatar = options.getPartnerAvatar;
   }
 
   public async initialize(): Promise<void> {
@@ -97,31 +120,14 @@ export class PixiGameViewport {
 
     // Build Fixtures
     this.buildFixtures();
+    this.buildStalls();
 
     // Build Player Sprite & Tag
     this.buildPlayer();
 
-    // Build Customer Container with Thought Bubble
-    this.customerContainer = new Container();
-    this.customerSprite = new Sprite(this.textures.getTexture('npc_0_down_idle_0'));
-    this.customerSprite.anchor.set(0.5, 1);
-    this.customerContainer.addChild(this.customerSprite);
+    // Build Partner Sprite & Tag (Multiplayer)
+    this.buildPartner();
 
-    this.customerBubble = new Container();
-    const bubBg = new Graphics();
-    bubBg.rect(-12, -66, 24, 24);
-    bubBg.fill({ color: 0xffffff, alpha: 0.95 });
-    bubBg.stroke({ color: 0x593a2b, width: 1 });
-    this.customerBubble.addChild(bubBg);
-
-    this.customerBubbleIcon = new Sprite(this.textures.getTexture('product:mi_hao_hao'));
-    this.customerBubbleIcon.anchor.set(0.5);
-    this.customerBubbleIcon.y = -54;
-    this.customerBubble.addChild(this.customerBubbleIcon);
-
-    this.customerContainer.addChild(this.customerBubble);
-    this.customerContainer.visible = false;
-    this.entitiesLayer.addChild(this.customerContainer);
 
     // Build Interaction Bubble
     this.buildInteractionBubble();
@@ -161,6 +167,14 @@ export class PixiGameViewport {
     this.app.ticker.add(this.renderTick);
 
     this.isInitialized = true;
+  }
+
+  public updateTileMap(tileMap: GameTileMap): void {
+    this.tileMap = tileMap;
+    for (const child of this.groundLayer.removeChildren()) child.destroy({ children: true });
+    for (const child of this.wallLayer.removeChildren()) child.destroy({ children: true });
+    this.buildMapLayers();
+    this.buildStalls();
   }
 
   private initialPinchDistance: number | null = null;
@@ -257,6 +271,7 @@ export class PixiGameViewport {
   };
 
   private buildMapLayers(): void {
+    const storeBounds = this.tileMap.storeBounds ?? STORE_BOUNDS;
     const width = this.tileMap.width;
     const height = this.tileMap.height;
     const originY=this.tileMap.originTileY??0;
@@ -306,92 +321,225 @@ export class PixiGameViewport {
       }
     }
 
-    // Wall Layer & Shop decorations
+    // Wall Layer & Shop decorations (2.5D Stardew Valley-inspired slim walls)
     if (wallLayerData) {
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           const tileId = wallLayerData[y * width + x];
           if (tileId === 4 || tileId === 10) {
-            // Yellow Wall
-            const wallSprite = new Sprite(this.textures.getTexture(tileId===10?'warehouse_wall':'tile_yellow_wall'));
+            const worldY = y + originY;
+            let textureKey = tileId === 10 ? 'warehouse_wall' : 'tile_yellow_wall';
+
+            // 2.5D Stardew Valley slim walls:
+            if (worldY < STORE_BOUNDS.top) {
+              if (worldY === WAREHOUSE_BOUNDS.top) {
+                if (x === WAREHOUSE_BOUNDS.left) textureKey = 'wall_warehouse_corner_tl';
+                else if (x === WAREHOUSE_BOUNDS.right) textureKey = 'wall_warehouse_corner_tr';
+                else textureKey = 'wall_warehouse_back';
+              } else if (x === WAREHOUSE_BOUNDS.left) {
+                textureKey = 'wall_warehouse_left';
+              } else if (x === WAREHOUSE_BOUNDS.right) {
+                textureKey = 'wall_warehouse_right';
+              }
+            } else if (worldY === STORE_BOUNDS.top) {
+              if (x <= WAREHOUSE_DOOR_LEFT) textureKey = 'wall_partition_left';
+              else textureKey = 'wall_partition_right';
+            } else {
+              if (worldY === STORE_BOUNDS.bottom) {
+                if (x === STORE_BOUNDS.left) textureKey = 'wall_store_corner_bl';
+                else if (x === storeBounds.right) textureKey = 'wall_store_corner_br';
+                else textureKey = 'wall_store_front';
+              } else if (x === STORE_BOUNDS.left) {
+                textureKey = 'wall_store_left';
+              } else if (x === storeBounds.right) {
+                textureKey = 'wall_store_right';
+              }
+            }
+
+            const wallSprite = new Sprite(this.textures.getTexture(textureKey));
             wallSprite.x = x * TILE_SIZE;
-            wallSprite.y = (y+originY) * TILE_SIZE;
+            wallSprite.y = worldY * TILE_SIZE;
             this.wallLayer.addChild(wallSprite);
-          } else if (tileId === 8 && x === 8 && y === 2) {
-            // Signboard (128x32) spanning across x=8..11
-            const signSprite = new Sprite(this.textures.getTexture('tile_signboard'));
-            signSprite.x = x * TILE_SIZE;
-            signSprite.y = y * TILE_SIZE - 16;
-            this.wallLayer.addChild(signSprite);
           }
         }
       }
     }
 
-    const awning = new Sprite(this.textures.getTexture('tile_awning'));
-    const warehouseSign=new Sprite(this.textures.getTexture('warehouse_sign'));
-    warehouseSign.position.set((WAREHOUSE_BOUNDS.left+2)*TILE_SIZE, WAREHOUSE_BOUNDS.top*TILE_SIZE-16);
-    this.wallLayer.addChild(warehouseSign);
-    const shopSign=new Sprite(this.textures.getTexture('tile_signboard'));
-    shopSign.position.set((STORE_BOUNDS.left-1)*TILE_SIZE, STORE_BOUNDS.top*TILE_SIZE-16);
+    // 2.5D Stardew Valley ambient drop shadows cast by walls onto floors
+    const wallShadows = new Graphics();
+    wallShadows.rect((WAREHOUSE_BOUNDS.left + 1) * TILE_SIZE, (WAREHOUSE_BOUNDS.top + 1) * TILE_SIZE, 6 * TILE_SIZE, 5).fill({ color: 0x26190e, alpha: 0.22 });
+    wallShadows.rect((STORE_BOUNDS.left + 1) * TILE_SIZE, (STORE_BOUNDS.top + 1) * TILE_SIZE, 6 * TILE_SIZE, 5).fill({ color: 0x26190e, alpha: 0.22 });
+    wallShadows.rect((WAREHOUSE_BOUNDS.left + 1) * TILE_SIZE, (WAREHOUSE_BOUNDS.top + 1) * TILE_SIZE, 5, 5 * TILE_SIZE).fill({ color: 0x26190e, alpha: 0.18 });
+    wallShadows.rect((STORE_BOUNDS.left + 1) * TILE_SIZE, (STORE_BOUNDS.top + 1) * TILE_SIZE, 5, 6 * TILE_SIZE).fill({ color: 0x26190e, alpha: 0.18 });
+    this.groundLayer.addChild(wallShadows);
+
+    // Main shop signboard crowning the top of the building
+    const shopSign = new Sprite(this.textures.getTexture('tile_signboard'));
+    shopSign.position.set((WAREHOUSE_BOUNDS.left + 2) * TILE_SIZE, WAREHOUSE_BOUNDS.top * TILE_SIZE - 28);
     this.wallLayer.addChild(shopSign);
-    const doorway=new Graphics();
-    doorway.rect(WAREHOUSE_DOOR_LEFT*TILE_SIZE,STORE_BOUNDS.top*TILE_SIZE,2,32).fill(0x936044);
-    doorway.rect((WAREHOUSE_DOOR_LEFT+2)*TILE_SIZE-2,STORE_BOUNDS.top*TILE_SIZE,2,32).fill(0xc69464);
-    doorway.rect(WAREHOUSE_ENTRANCE.x-1,WAREHOUSE_ENTRANCE.y-8,3,16).fill(0x357f72);
-    doorway.rect(WAREHOUSE_ENTRANCE.x-5,WAREHOUSE_ENTRANCE.y-8,11,4).fill(0x357f72);
+
+    // Warehouse sign located on the arch/transom right above the warehouse door
+    const warehouseSign = new Sprite(this.textures.getTexture('warehouse_sign'));
+    warehouseSign.position.set(WAREHOUSE_DOOR_LEFT * TILE_SIZE, STORE_BOUNDS.top * TILE_SIZE - 20);
+    this.wallLayer.addChild(warehouseSign);
+
+    // Clean warehouse doorway frame and wood threshold
+    const doorway = new Graphics();
+    doorway.rect(WAREHOUSE_DOOR_LEFT * TILE_SIZE, STORE_BOUNDS.top * TILE_SIZE, 2, 32).fill(0x936044);
+    doorway.rect((WAREHOUSE_DOOR_LEFT + 2) * TILE_SIZE - 2, STORE_BOUNDS.top * TILE_SIZE, 2, 32).fill(0xc69464);
+    doorway.rect(WAREHOUSE_DOOR_LEFT * TILE_SIZE, (STORE_BOUNDS.top + 1) * TILE_SIZE - 2, 64, 2).fill(0xbfa993);
     this.groundLayer.addChild(doorway);
-    awning.position.set((STORE_BOUNDS.left-1)*TILE_SIZE, 4 * TILE_SIZE+8);
-    this.wallLayer.addChild(awning);
+
+    // Warehouse sliding doors on overhead steel track
+    this.warehouseDoorContainer = new Container();
+    this.warehouseDoorContainer.position.set(WAREHOUSE_DOOR_LEFT * TILE_SIZE, STORE_BOUNDS.top * TILE_SIZE);
+    this.warehouseDoorContainer.zIndex = 115;
+
+    const track = new Sprite(this.textures.getTexture('warehouse_door_track'));
+    track.position.set(0, -3);
+    this.warehouseDoorContainer.addChild(track);
+
+    this.warehouseDoorLeft = new Sprite(this.textures.getTexture('warehouse_door_left'));
+    this.warehouseDoorLeft.position.set(0, 0);
+    this.warehouseDoorContainer.addChild(this.warehouseDoorLeft);
+
+    this.warehouseDoorRight = new Sprite(this.textures.getTexture('warehouse_door_right'));
+    this.warehouseDoorRight.position.set(32, 0);
+    this.warehouseDoorContainer.addChild(this.warehouseDoorRight);
+
+    this.entitiesLayer.addChild(this.warehouseDoorContainer);
+
+    // 1. Wall fan mounted cleanly on the store partition wall (y = 3)
     const fan = new Sprite(this.textures.getTexture('tile_fan_0'));
-    fan.position.set(7 * TILE_SIZE, 4 * TILE_SIZE + 8);
+    fan.position.set(7 * TILE_SIZE, 3 * TILE_SIZE + 6);
     this.wallLayer.addChild(fan);
-    this.ambientSprites.push({sprite:fan,key:'tile_fan_',frames:4});
+    this.ambientSprites.push({ sprite: fan, key: 'tile_fan_', frames: 4 });
+
+    // 2. Standing pedestal fan (quạt cây) located beside the cashier counter on floor
+    const standingFan = new Sprite(this.textures.getTexture('standing_fan_0'));
+    standingFan.position.set(6 * TILE_SIZE + 18, 8 * TILE_SIZE + 6);
+    standingFan.zIndex = (8 * TILE_SIZE + 6) + 32;
+    this.entitiesLayer.addChild(standingFan);
+    this.ambientSprites.push({ sprite: standingFan, key: 'standing_fan_', frames: 4 });
+
+    // 3. Vintage Vietnamese wooden window with security bars & soft sunlight beam
+    // Window placed on LEFT side wall (x=6) of the shop, facing the exterior street
+    // The window texture shows the inside-looking-out view → correct orientation on left wall
+    const storeWindow = new Sprite(this.textures.getTexture('store_window'));
+    storeWindow.position.set(6 * TILE_SIZE, 5 * TILE_SIZE);
+    this.wallLayer.addChild(storeWindow);
+
+    // Warm morning sunlight beam casting through left-wall window aperture into shop interior (east direction)
+    const sunBeam = new Graphics();
+    sunBeam.poly([
+      6 * TILE_SIZE + 29, 5 * TILE_SIZE + 6,
+      6 * TILE_SIZE + 29, 5 * TILE_SIZE + 22,
+      9 * TILE_SIZE,      7 * TILE_SIZE,
+      9 * TILE_SIZE,      6 * TILE_SIZE,
+    ]).fill({ color: 0xfff3c4, alpha: 0.12 });
+    this.groundLayer.addChild(sunBeam);
+
+    // Storefront awning (mái hiên sọc 2.5D) crowning the front entrance facade neatly
+    // Positioned at x = 7 * TILE_SIZE (centered over the 9..10 entrance and adjacent wall)
+    // and elevated above the door transom (y = 10 * TILE_SIZE - 20) with high zIndex so it looks natural and doesn't cut across the door
+    const awning = new Sprite(this.textures.getTexture('tile_awning'));
+    awning.position.set(7 * TILE_SIZE, 10 * TILE_SIZE - 22);
+    awning.zIndex = 360;
+    this.entitiesLayer.addChild(awning);
+
+    // Front store entrance doors (vintage Vietnamese glass-wood double doors with brass chime bell)
+    const frontDoorSill = new Graphics();
+    frontDoorSill.rect(9 * TILE_SIZE, (10 + 1) * TILE_SIZE - 2, 64, 2).fill(0x8a7762);
+    this.groundLayer.addChild(frontDoorSill);
+
+    this.storeDoorContainer = new Container();
+    this.storeDoorContainer.position.set(9 * TILE_SIZE, 10 * TILE_SIZE);
+    this.storeDoorContainer.zIndex = 345;
+
+    this.storeDoorLeft = new Sprite(this.textures.getTexture('store_door_left'));
+    this.storeDoorLeft.anchor.set(0, 0);
+    this.storeDoorLeft.position.set(0, 0);
+    this.storeDoorContainer.addChild(this.storeDoorLeft);
+
+    this.storeDoorRight = new Sprite(this.textures.getTexture('store_door_right'));
+    this.storeDoorRight.anchor.set(1, 0);
+    this.storeDoorRight.position.set(64, 0);
+    this.storeDoorContainer.addChild(this.storeDoorRight);
+
+    this.storeDoorBell = new Sprite(this.textures.getTexture('store_door_bell'));
+    this.storeDoorBell.anchor.set(0.5, 0);
+    this.storeDoorBell.position.set(32, -3);
+    this.storeDoorContainer.addChild(this.storeDoorBell);
+
+    this.entitiesLayer.addChild(this.storeDoorContainer);
+
+    // Sidewalk Produce Crates - placed naturally along the sidewalk
     const crates = new Sprite(this.textures.getTexture('tile_crates'));
-    crates.position.set(5 * TILE_SIZE, 11 * TILE_SIZE);
+    crates.position.set(5 * TILE_SIZE, 11 * TILE_SIZE + 4);
     crates.zIndex = crates.y + 32;
     this.entitiesLayer.addChild(crates);
+
+    // Chair inside the store near the shelves/cashier area
     const chair = new Sprite(this.textures.getTexture('tile_chair'));
-    chair.position.set(14 * TILE_SIZE, 10 * TILE_SIZE);
+    chair.position.set(11 * TILE_SIZE, 7 * TILE_SIZE);
     chair.zIndex = chair.y + 32;
     this.entitiesLayer.addChild(chair);
+
+    // Cozy Alley Shade Tree on sidewalk
     const tree = new Sprite(this.textures.getTexture('tile_tree'));
-    tree.position.set(2 * TILE_SIZE, 9 * TILE_SIZE);
-    tree.zIndex = tree.y + 96;
+    tree.position.set(2 * TILE_SIZE, 9 * TILE_SIZE - 4);
+    tree.zIndex = tree.y + 100;
     this.entitiesLayer.addChild(tree);
+
     const wires = new Graphics();
     const wireY=(WAREHOUSE_BOUNDS.top-1)*TILE_SIZE;
     wires.moveTo(2*TILE_SIZE,wireY).lineTo(5*TILE_SIZE,wireY+16).lineTo(14*TILE_SIZE,wireY).stroke({color:0x593a2b,width:1});
     this.wallLayer.addChild(wires);
-    // Entrance pots and baskets.
 
+    // Flanking Potted Plants & Baskets on either side of the entrance
     const plant1 = new Sprite(this.textures.getTexture('tile_plant_pot'));
-    plant1.x = 6 * TILE_SIZE;
+    plant1.x = 7 * TILE_SIZE + 8;
     plant1.y = 10 * TILE_SIZE;
     plant1.zIndex = plant1.y + 40;
     this.ambientSprites.push({sprite:plant1,key:'tile_plant_',frames:2});
     this.entitiesLayer.addChild(plant1);
 
     const plant2 = new Sprite(this.textures.getTexture('tile_plant_pot'));
-    plant2.x = 13 * TILE_SIZE;
+    plant2.x = 11 * TILE_SIZE + 8;
     plant2.y = 10 * TILE_SIZE;
     plant2.zIndex = plant2.y + 40;
     this.ambientSprites.push({sprite:plant2,key:'tile_plant_',frames:2});
     this.entitiesLayer.addChild(plant2);
 
     const baskets = new Sprite(this.textures.getTexture('tile_shopping_baskets'));
-    baskets.x = 7 * TILE_SIZE;
-    baskets.y = 10 * TILE_SIZE;
+    baskets.x = 8 * TILE_SIZE + 4;
+    baskets.y = 10 * TILE_SIZE + 6;
     baskets.zIndex = baskets.y + 32;
     this.entitiesLayer.addChild(baskets);
+  }
+
+  /** Quầy ăn uống trên vỉa hè; chỉ vẽ, va chạm đã có trong collisionLayer của bản đồ. */
+  private buildStalls(): void {
+    for (const sprite of this.stallSprites) sprite.destroy();
+    this.stallSprites = [];
+    for (const stall of this.tileMap.stalls ?? []) {
+      const sprite = new Sprite(this.textures.getTexture(`stall_${stall.id}`));
+      sprite.position.set(stall.tileX * TILE_SIZE, (stall.tileY + 1) * TILE_SIZE - 48);
+      sprite.zIndex = (stall.tileY + 1) * TILE_SIZE;
+      this.entitiesLayer.addChild(sprite);
+      this.stallSprites.push(sprite);
+    }
   }
 
   private buildFixtures(): void {
     const fixtures = this.simulation.getFixtures();
     for (const fix of fixtures) {
+      const dimensions = getFixtureDimensions(fix);
       const container = new Container();
-      container.x = fix.tileX * TILE_SIZE;
-      container.y = fix.tileY * TILE_SIZE;
+      container.pivot.set(fix.widthTiles * TILE_SIZE / 2, fix.heightTiles * TILE_SIZE / 2);
+      container.x = fix.tileX * TILE_SIZE + dimensions.widthTiles * TILE_SIZE / 2;
+      container.y = fix.tileY * TILE_SIZE + dimensions.heightTiles * TILE_SIZE / 2;
+      container.rotation = fix.rotation * Math.PI / 180;
 
       let textureKey = 'fixture_shelf_wooden';
       if (fix.type === 'cashier_counter') {
@@ -404,7 +552,7 @@ export class PixiGameViewport {
 
       const sprite = new Sprite(this.textures.getTexture(textureKey));
       sprite.y = -16;
-      container.zIndex = container.y + TILE_SIZE;
+      container.zIndex = container.y + dimensions.heightTiles * TILE_SIZE;
       container.addChild(sprite);
 
       // Pill stock badge under shelf (Matching user reference image & Redhexx!)
@@ -468,6 +616,35 @@ export class PixiGameViewport {
     this.entitiesLayer.addChild(this.playerContainer);
   }
 
+  private buildPartner(): void {
+    this.partnerContainer = new Container();
+
+    this.partnerSprite = new Sprite(this.textures.getTexture('player_down_idle_0'));
+    this.partnerSprite.anchor.set(0.5, 1);
+    this.partnerContainer.addChild(this.partnerSprite);
+
+    const tagBg = new Graphics();
+    tagBg.rect(-16, -62, 32, 11);
+    tagBg.fill({ color: 0x2b6cb0 });
+    tagBg.stroke({ color: 0xffffff, width: 1 });
+    this.partnerContainer.addChild(tagBg);
+
+    const tagStyle = new TextStyle({
+      fontFamily: '"Courier New", Courier, monospace',
+      fontSize: 8,
+      fontWeight: 'bold',
+      fill: 0xffffff,
+    });
+    const tagText = new Text({ text: 'BẠN CÙNG HẺM', style: tagStyle });
+    tagText.anchor.set(0.5);
+    tagText.x = 0;
+    tagText.y = -56;
+    this.partnerContainer.addChild(tagText);
+
+    this.partnerContainer.visible = false;
+    this.entitiesLayer.addChild(this.partnerContainer);
+  }
+
   private buildInteractionBubble(): void {
     this.interactionBubble = new Container();
 
@@ -504,15 +681,7 @@ export class PixiGameViewport {
     const elapsed = Math.min(this.app.ticker.deltaMS / 1000, 0.25);
     const dt = 1 / 60;
     this.animTimer += elapsed;
-    this.accumulatedTime += elapsed;
-
-    // Fixed simulation steps independent of monitor refresh rate.
-    let steps = 0;
-    while (this.accumulatedTime >= dt && steps < 15) {
-      this.simulation.update(dt);
-      this.accumulatedTime -= dt;
-      steps++;
-    }
+    this.simulationRunner.advance(elapsed);
 
     const playerData = this.simulation.getPlayerData();
     const isMoving = this.simulation.getIsMoving();
@@ -526,31 +695,178 @@ export class PixiGameViewport {
     this.playerSprite.texture = this.textures.getTexture(`player_${playerData.direction}_${mode}_${frame}`);
     this.playerContainer.position.set(Math.round(playerData.position.x), Math.round(playerData.position.y));
     this.playerContainer.zIndex = playerData.position.y;
-    const customer = this.simulation.getCustomer();
-    if (customer && !this.customerContainer.visible) this.npcVariant = (this.npcVariant + 1) % 3;
-    this.customerContainer.visible = !!customer;
-    if (customer) {
-      const previous = this.lastCustomerPosition;
-      const dx = previous ? customer.position.x - previous.x : 0;
-      const dy = previous ? customer.position.y - previous.y : 0;
+
+    // Render partner avatar if in online co-op session
+    const partner = this.getPartnerAvatar?.();
+    if (partner) {
+      this.partnerContainer.visible = true;
+      const partnerMoving = partner.isMoving ?? false;
+      const partnerMode = partnerMoving ? 'walk' : 'idle';
+      const partnerFrame = reducedMotion ? 0 : Math.floor(this.animTimer * (partnerMoving ? 8 : 1.5)) % (partnerMoving ? 4 : 2);
+      this.partnerSprite.texture = this.textures.getTexture(`player_${partner.direction || 'down'}_${partnerMode}_${partnerFrame}`);
+      this.partnerContainer.position.set(Math.round(partner.position.x), Math.round(partner.position.y));
+      this.partnerContainer.zIndex = partner.position.y;
+    } else if (this.partnerContainer) {
+      this.partnerContainer.visible = false;
+    }
+
+    const customers = this.simulation.getCustomers();
+    const activeCustomerKeys = new Set<string>();
+
+    for (let idx = 0; idx < customers.length; idx++) {
+      const cust = customers[idx];
+      const key = cust.id ?? cust.checkoutId ?? `cust-${idx}`;
+      activeCustomerKeys.add(key);
+
+      let entry = this.customerSprites.get(key);
+      if (!entry) {
+        entry = this.createCustomerSprite(idx % 3);
+        this.customerSprites.set(key, entry);
+      }
+
+      const previous = entry.lastPosition;
+      const dx = previous ? cust.position.x - previous.x : 0;
+      const dy = previous ? cust.position.y - previous.y : 0;
       const walking = Math.abs(dx) + Math.abs(dy) > 0.01;
-      if(walking) this.npcDirection = Math.abs(dx)>Math.abs(dy) ? (dx>0?'right':'left') : (dy>0?'down':'up');
+      if (walking) {
+        entry.npcDirection = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+      }
       const npcFrame = reducedMotion ? 0 : Math.floor(this.animTimer * (walking ? 8 : 1.5)) % (walking ? 4 : 2);
-      this.customerSprite.texture = this.textures.getTexture(`npc_${this.npcVariant}_${this.npcDirection}_${walking?'walk':'idle'}_${npcFrame}`);
-      this.customerContainer.position.set(Math.round(customer.position.x),Math.round(customer.position.y));
-      this.customerContainer.zIndex = customer.position.y;
-      const target = this.simulation.getFixtures().find(f=>f.id===customer.targetFixtureId);
-      this.customerBubbleIcon.texture = this.textures.getTexture(customer.stage === 'to_shelf' ? `product:${target?.assignedProductId ?? 'none'}` : 'pixel_coin');
-      this.lastCustomerPosition = {...customer.position};
-    } else this.lastCustomerPosition = null;
-    for(const ambient of this.ambientSprites) ambient.sprite.texture = this.textures.getTexture(`${ambient.key}${reducedMotion?0:Math.floor(this.animTimer*(ambient.key==='tile_fan_'?5:1))%ambient.frames}`);
+      entry.sprite.texture = this.textures.getTexture(`npc_${entry.npcVariant}_${entry.npcDirection}_${walking ? 'walk' : 'idle'}_${npcFrame}`);
+      entry.container.position.set(Math.round(cust.position.x), Math.round(cust.position.y));
+      entry.container.zIndex = cust.position.y;
+
+      const target = this.simulation.getFixtures().find((f) => f.id === cust.targetFixtureId);
+      const iconKey = cust.stage === 'to_shelf'
+        ? `product:${target?.assignedProductId ?? 'none'}`
+        : cust.stage === 'leaving'
+        ? 'pixel_coin'
+        : (cust.basket?.[0]?.productId ? `product:${cust.basket[0].productId}` : 'pixel_coin');
+      entry.bubbleIcon.texture = this.textures.getTexture(iconKey);
+      entry.lastPosition = { ...cust.position };
+    }
+
+    // Clean up departed customer sprites
+    for (const [key, entry] of this.customerSprites.entries()) {
+      if (!activeCustomerKeys.has(key)) {
+        this.entitiesLayer.removeChild(entry.container);
+        entry.container.destroy({ children: true });
+        this.customerSprites.delete(key);
+      }
+    }
+
+    const workers = this.simulation.getStaff().slice(0, 2);
+    const workerIds = new Set(workers.map((worker) => worker.id));
+    workers.forEach((worker, idx) => {
+      const position = worker.position ?? { x: 300 + idx * TILE_SIZE, y: 300 };
+      let entry = this.workerSprites.get(worker.id);
+      if (!entry) {
+        const container = new Container();
+        const sprite = new Sprite(this.textures.getTexture(`npc_${idx % 3}_down_idle_0`));
+        sprite.anchor.set(0.5, 1);
+        container.addChild(sprite);
+        const bubble = new Container();
+        const background = new Graphics();
+        background.roundRect(-25, -70, 50, 18, 3);
+        background.fill({ color: 0xfff7df, alpha: 0.95 });
+        background.stroke({ color: 0x593a2b, width: 1 });
+        bubble.addChild(background);
+        const status = new Text({ text: '', style: new TextStyle({ fontFamily: 'Arial', fontSize: 8, fill: 0x263d35, align: 'center' }) });
+        status.anchor.set(0.5);
+        status.y = -61;
+        bubble.addChild(status);
+        container.addChild(bubble);
+        this.entitiesLayer.addChild(container);
+        entry = { container, sprite, bubble, status, lastPosition: null, variant: idx % 3, direction: 'down' };
+        this.workerSprites.set(worker.id, entry);
+      }
+      const previous = entry.lastPosition;
+      const dx = previous ? position.x - previous.x : 0;
+      const dy = previous ? position.y - previous.y : 0;
+      const walking = Math.abs(dx) + Math.abs(dy) > 0.01;
+      if (walking) entry.direction = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+      const frame = reducedMotion ? 0 : Math.floor(this.animTimer * (walking ? 8 : 1.5)) % (walking ? 4 : 2);
+      entry.sprite.texture = this.textures.getTexture(`npc_${entry.variant}_${entry.direction}_${walking ? 'walk' : 'idle'}_${frame}`);
+      entry.container.position.set(Math.round(position.x), Math.round(position.y));
+      entry.container.zIndex = position.y + 1;
+      entry.status.text = worker.lastWorkerError ? 'kẹt' : worker.role === 'cashier' ? (worker.currentCheckoutId ? 'thu ngân' : 'rảnh') : worker.workerTask ? 'châm kệ' : 'rảnh';
+      entry.lastPosition = { ...position };
+    });
+    for (const [id, entry] of this.workerSprites.entries()) {
+      if (!workerIds.has(id)) {
+        this.entitiesLayer.removeChild(entry.container);
+        entry.container.destroy({ children: true });
+        this.workerSprites.delete(id);
+      }
+    }
+
+    for (const ambient of this.ambientSprites) {
+      ambient.sprite.texture = this.textures.getTexture(`${ambient.key}${reducedMotion ? 0 : Math.floor(this.animTimer * (ambient.key === 'tile_fan_' ? 5 : 1)) % ambient.frames}`);
+    }
     const hour = this.simulation.getTime().hour;
-    this.nightOverlay.alpha = hour >= 18 ? Math.min(0.25, (hour-17)*0.05) : hour < 7 ? 0.08 : 0;
+    this.nightOverlay.alpha = hour >= 18 ? Math.min(0.25, (hour - 17) * 0.05) : hour < 7 ? 0.08 : 0;
+
+    // 2b. Update Doors & Entrance Animation
+    const playerPos = playerData.position;
+    const storeDoorCenter = { x: 304, y: 336 };
+    // Trigger from the whole doorway, not a circle around its center. The player
+    // collider is wider than a single tile, so the edge can cross the threshold
+    // while the player's center is still outside the old radius.
+    const isPlayerAtStoreDoor = Math.abs(playerPos.x - storeDoorCenter.x) < 52 && Math.abs(playerPos.y - storeDoorCenter.y) < 48;
+    const isCustomerNearDoor = customers.some(
+      (c) => Math.hypot(c.position.x - storeDoorCenter.x, c.position.y - storeDoorCenter.y) < 52
+    );
+    const isStoreTriggered = isPlayerAtStoreDoor || isCustomerNearDoor;
+    const targetStoreOpen = isStoreTriggered ? 1 : 0;
+    const storeSpeed = isStoreTriggered ? 12 : 5;
+    this.storeDoorOpenProgress += (targetStoreOpen - this.storeDoorOpenProgress) * Math.min(1, storeSpeed * elapsed);
+
+    // Chime bell & sound note when someone opens the store door
+    if (!this.wasStoreDoorOpen && isStoreTriggered) {
+      this.wasStoreDoorOpen = true;
+      this.storeBellTimer = 0;
+      this.addFloatingGain(304, 308, '♪ Kính coong', 0x24584f);
+    } else if (this.wasStoreDoorOpen && !isStoreTriggered && this.storeDoorOpenProgress < 0.08) {
+      this.wasStoreDoorOpen = false;
+    }
+
+    const doorScaleX = Math.max(0.1, 1.0 - this.storeDoorOpenProgress * 0.9);
+    this.storeDoorLeft.scale.x = doorScaleX;
+    this.storeDoorRight.scale.x = doorScaleX;
+    this.storeDoorLeft.skew.y = this.storeDoorOpenProgress * -0.12;
+    this.storeDoorRight.skew.y = this.storeDoorOpenProgress * 0.12;
+
+    this.storeBellTimer += elapsed;
+    if (!reducedMotion && this.storeBellTimer < 1.6) {
+      this.storeDoorBell.rotation = Math.sin(this.storeBellTimer * 22) * Math.exp(-this.storeBellTimer * 2.5) * 0.45;
+    } else {
+      this.storeDoorBell.rotation = 0;
+    }
+
+    // Warehouse sliding doors (center at x=288, y=112)
+    const warehouseDoorCenter = { x: WAREHOUSE_DOOR_LEFT * TILE_SIZE + TILE_SIZE, y: STORE_BOUNDS.top * TILE_SIZE + TILE_SIZE / 2 };
+    // Match the two-tile doorway footprint plus a small approach margin so both
+    // edges open the door before the player's feet enter the threshold.
+    const isWarehouseTriggered = Math.abs(playerPos.x - warehouseDoorCenter.x) < TILE_SIZE + 16 && Math.abs(playerPos.y - warehouseDoorCenter.y) < TILE_SIZE + 16;
+    const targetWarehouseOpen = isWarehouseTriggered ? 1 : 0;
+    const warehouseSpeed = isWarehouseTriggered ? 10 : 4;
+    this.warehouseDoorOpenProgress += (targetWarehouseOpen - this.warehouseDoorOpenProgress) * Math.min(1, warehouseSpeed * elapsed);
+
+    const slideOffset = this.warehouseDoorOpenProgress * 22;
+    this.warehouseDoorLeft.x = -slideOffset;
+    this.warehouseDoorRight.x = 32 + slideOffset;
 
     // 3. Update Fixture Badges & Dot Status Markers (Green = Full, Yellow = Low, Red = Out)
     for (const fix of this.simulation.getFixtures()) {
       const entry = this.fixtureSprites.get(fix.id);
       if (entry) {
+        entry.container.visible = true;
+        const dimensions = getFixtureDimensions(fix);
+        entry.container.x = fix.tileX * TILE_SIZE + dimensions.widthTiles * TILE_SIZE / 2;
+        entry.container.y = fix.tileY * TILE_SIZE + dimensions.heightTiles * TILE_SIZE / 2;
+        entry.container.pivot.set(fix.widthTiles * TILE_SIZE / 2, fix.heightTiles * TILE_SIZE / 2);
+        entry.container.rotation = fix.rotation * Math.PI / 180;
+        entry.container.zIndex = entry.container.y + dimensions.heightTiles * TILE_SIZE;
         if(isWarehouseFixture(fix)) {
           const cold=fix.type==='warehouse_cold';
           const receiving=fix.type==='warehouse_receiving';
@@ -578,6 +894,8 @@ export class PixiGameViewport {
         }
       }
     }
+    const activeFixtureIds = new Set(this.simulation.getFixtures().map(fixture => fixture.id));
+    for (const [id, entry] of this.fixtureSprites) entry.container.visible = activeFixtureIds.has(id);
 
     // 4. Update Y-sorting for realistic depth (so player can walk behind/in front of fixtures)
     this.entitiesLayer.children.sort((a, b) => a.zIndex - b.zIndex);
@@ -608,7 +926,8 @@ export class PixiGameViewport {
     const activeFixture = this.simulation.getActiveFixture();
     if (activeFixture) {
       this.interactionBubble.visible = true;
-      const fixCenterX = (activeFixture.tileX + activeFixture.widthTiles / 2) * TILE_SIZE;
+      const activeSize = getFixtureDimensions(activeFixture);
+      const fixCenterX = (activeFixture.tileX + activeSize.widthTiles / 2) * TILE_SIZE;
       const fixTopY = activeFixture.tileY * TILE_SIZE;
 
       // Floating bounce
@@ -651,6 +970,38 @@ export class PixiGameViewport {
     this.floatingTexts.push({ container, life: 0.8, maxLife: 0.8 });
   };
 
+  private createCustomerSprite(variant: number) {
+    const container = new Container();
+    const sprite = new Sprite(this.textures.getTexture(`npc_${variant}_down_idle_0`));
+    sprite.anchor.set(0.5, 1);
+    container.addChild(sprite);
+
+    const bubble = new Container();
+    const bubBg = new Graphics();
+    bubBg.rect(-12, -66, 24, 24);
+    bubBg.fill({ color: 0xffffff, alpha: 0.95 });
+    bubBg.stroke({ color: 0x593a2b, width: 1 });
+    bubble.addChild(bubBg);
+
+    const bubbleIcon = new Sprite(this.textures.getTexture('product:mi_hao_hao'));
+    bubbleIcon.anchor.set(0.5);
+    bubbleIcon.y = -54;
+    bubble.addChild(bubbleIcon);
+
+    container.addChild(bubble);
+    this.entitiesLayer.addChild(container);
+
+    return {
+      container,
+      sprite,
+      bubble,
+      bubbleIcon,
+      lastPosition: null as Vector2D | null,
+      npcVariant: variant,
+      npcDirection: 'down',
+    };
+  }
+
   /**
    * Public Camera Zoom controls
    */
@@ -692,6 +1043,7 @@ export class PixiGameViewport {
     if (this.app) {
       this.app.destroy(true, { children: true, texture: false });
     }
+    this.workerSprites.clear();
     this.textures.destroy();
   }
 }

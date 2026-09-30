@@ -27,6 +27,7 @@ import {
   RestockSuggestionResult,
   QuestState,
   StallState,
+  StallDayReport,
   StaffRole,
   StaffShift,
   StaffMember,
@@ -61,7 +62,7 @@ import { expiryDay, mergeLots, normalizeLots, sumLots, takeLots } from './stock'
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { CustomerManager } from './customers';
 import { generateRestockSuggestions } from './suggestions';
-import { emptyStallState, normalizeStallState, computeStallDay } from './stalls';
+import { emptyStallState, normalizeStallState, planStallDay } from './stalls';
 import { emptyQuestState, findClaimableQuest, getDailyQuests, getStoryQuest, markQuestClaimed, normalizeQuestState, type QuestContext, type QuestProgress, type QuestReward } from './quests';
 import { generateCandidatesForDay, validateHireStaff, calculatePayroll } from './staff';
 
@@ -169,7 +170,8 @@ export class GameSimulation {
     this.autoBuyReports = structuredClone(initialSave.autoBuyReports ?? {});
     this.statistics = { ...initialSave.statistics };
     this.createdAt = initialSave.createdAt;
-    this.tileMap = tileMap;
+    this.stalls = normalizeStallState(initialSave.stalls);
+    this.tileMap = this.stalls.owned.length ? generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned) : tileMap;
     this.inputManager = inputManager;
     this.callbacks = callbacks;
     this.customerManager = new CustomerManager(
@@ -227,6 +229,8 @@ export class GameSimulation {
 
   public setPaused(paused: boolean): void { this.isPaused = paused; }
 
+  public getTileMap(): GameTileMap { return this.tileMap; }
+
   public getStoredFixtures(): StoreFixture[] { return structuredClone(this.storedFixtures); }
   public getUnlockedPlotIds(): string[] { return [...this.unlockedPlotIds]; }
 
@@ -234,7 +238,7 @@ export class GameSimulation {
     if (this.clock.getTime().isStoreOpen || this.customerManager.getCustomers().some(customer => customer.stage !== 'leaving') || this.staff.some(member => !!member.workerTask)) {
       return { error: 'store_open' };
     }
-    const nextMap = generateStarterTileMap(save.storeLayout.unlockedPlotIds ?? []);
+    const nextMap = generateStarterTileMap(save.storeLayout.unlockedPlotIds ?? [], this.stalls.owned);
     const valid = validateStoreLayout(save, nextMap);
     if (valid.error) return valid;
     this.tileMap = nextMap;
@@ -301,28 +305,63 @@ export class GameSimulation {
     if (!stall.buyable) return { success: false, reason: stall.reason };
     this.playerData.money -= stall.price;
     this.stalls.owned.push(stall.id);
+    this.tileMap = generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned);
+    this.collisionSystem.updateTileMap(this.tileMap);
+    this.ensureSafePlayerPosition();
+    for (const cust of this.customerManager.getCustomers()) {
+      if (cust.stage !== 'checkout') this.customerManager.routeCustomer(cust, cust.stage, this.tileMap, this.fixtures);
+    }
+    this.callbacks.onMapChanged?.(this.tileMap);
     this.notifyStateChanged();
     return { success: true };
   }
 
-  /** Tính doanh thu quầy ăn uống của `day` đúng một lần, ghi sổ như bán lẻ (có giá vốn). */
+  public getStallReport(): StallDayReport | undefined {
+    return this.stalls.lastReport ? structuredClone(this.stalls.lastReport) : undefined;
+  }
+
+  /** Số đơn vị nguyên liệu quầy còn dùng được trong kho nhà (chưa quá hạn). */
+  private warehouseUnits(productId: string): number {
+    return this.inventory.find(item => item.productId === productId)?.quantity ?? 0;
+  }
+
+  /**
+   * Tính quầy ăn uống của `day` đúng một lần: lấy nguyên liệu từ kho nhà theo FEFO,
+   * giá vốn = giá lô thực lấy + nguyên liệu tiền mặt; thiếu nguyên liệu thì bán ít suất hơn.
+   */
   private processStalls(day: number): void {
     if (day < 1 || this.stalls.processedDayIds.includes(day)) return;
     this.stalls.processedDayIds.push(day);
     const record = day === this.currentDayRecord.day ? this.currentDayRecord : (this.dailyRecords[day] ?? this.createEmptyDailyRecord(day));
+    const report: StallDayReport = { day, entries: [] };
     for (const stallId of this.stalls.owned) {
-      const result = computeStallDay(stallId, day, this.playerData.reputation);
-      if (!result || result.servings <= 0) continue;
-      this.playerData.money += result.revenue;
-      this.statistics.totalRevenue += result.revenue;
-      record.revenue += result.revenue;
-      record.cogs += result.cogs;
-      record.itemsSold += result.servings;
-      this.recordLedger({ day, type: 'sale', amount: result.revenue, cogs: result.cogs, quantity: result.servings, description: `${STALL_MAP[stallId].name}: bán ${result.servings} suất` });
+      const stall = STALL_MAP[stallId];
+      const plan = planStallDay(stallId, day, this.playerData.reputation, id => this.warehouseUnits(id));
+      if (!stall || !plan) continue;
+      let cogs = plan.servings * stall.cashCostPerServing;
+      for (const [productId, units] of Object.entries(plan.ingredientUnits)) {
+        if (units <= 0) continue;
+        const slot = this.inventory.find(item => item.productId === productId);
+        if (!slot) continue;
+        slot.lots ??= normalizeLots(slot.quantity, undefined, productId, this.clock.getTime().day);
+        for (const lot of takeLots(slot.lots, units)) cogs += lot.quantity * (lot.unitCost ?? PRODUCT_MAP[productId]?.purchasePrice ?? 0);
+        slot.quantity = sumLots(slot.lots);
+      }
+      this.inventory = this.inventory.filter(item => item.quantity > 0);
+      const revenue = plan.servings * stall.servingPrice;
+      report.entries.push({ stallId, demand: plan.demand, servings: plan.servings, revenue, cogs, limitedBy: plan.limitedBy });
+      if (plan.servings <= 0) continue;
+      this.playerData.money += revenue;
+      this.statistics.totalRevenue += revenue;
+      record.revenue += revenue;
+      record.cogs += cogs;
+      record.itemsSold += plan.servings;
+      this.recordLedger({ day, type: 'sale', amount: revenue, cogs, quantity: plan.servings, description: `${stall.name}: bán ${plan.servings}/${plan.demand} suất` });
     }
     record.grossProfit = record.revenue - record.cogs;
     record.netProfit = record.grossProfit - record.spoilageCost - record.wagesPaid;
     if (record !== this.currentDayRecord) this.dailyRecords[day] = record;
+    this.stalls.lastReport = report;
   }
 
   private questContext(): QuestContext {
@@ -1950,7 +1989,7 @@ export class GameSimulation {
     this.hydrateStock(saveData.worldTime.day);
     this.clock.setTime(saveData.worldTime);
     this.collisionSystem.updateFixtures(this.fixtures);
-    this.tileMap = generateStarterTileMap(this.unlockedPlotIds);
+    this.tileMap = generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned);
     this.collisionSystem.updateTileMap(this.tileMap);
     this.callbacks.onMapChanged?.(this.tileMap);
     this.ensureSafePlayerPosition();

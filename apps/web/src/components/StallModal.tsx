@@ -1,5 +1,6 @@
 import React from 'react';
-import type { SeasonEvent, StallDefinition } from '@game/data';
+import { PRODUCT_MAP, type SeasonEvent, type StallDefinition } from '@game/data';
+import type { StallDayReport } from '@game/shared';
 import { money, PixelButton, PixelDialog } from './pixel';
 
 export type StallView = StallDefinition & { owned: boolean; buyable: boolean; reason?: string };
@@ -7,11 +8,20 @@ export type StallView = StallDefinition & { owned: boolean; buyable: boolean; re
 interface StallModalProps {
   stalls: StallView[];
   season: SeasonEvent | null;
+  stock: Record<string, number>; // tồn nhà kho theo productId
+  report?: StallDayReport;
   onBuy: (stallId: string) => void;
   onClose: () => void;
 }
 
-export const StallModal: React.FC<StallModalProps> = ({ stalls, season, onBuy, onClose }) => (
+const lastEntry = (report: StallDayReport | undefined, stallId: string) => report?.entries.find(entry => entry.stallId === stallId);
+const reportLine = (report: StallDayReport, stallId: string) => {
+  const entry = lastEntry(report, stallId)!;
+  const missing = entry.limitedBy ? ` — thiếu ${PRODUCT_MAP[entry.limitedBy]?.name ?? entry.limitedBy}, hãy nhập thêm vào kho` : '';
+  return `Ngày ${report.day}: bán ${entry.servings}/${entry.demand} suất, thu ${money(entry.revenue)}, vốn ${money(entry.cogs)}${missing}`;
+};
+
+export const StallModal: React.FC<StallModalProps> = ({ stalls, season, stock, report, onBuy, onClose }) => (
   <PixelDialog icon="coin" title="QUẦY ĂN UỐNG" subtitle="Bán trước hiên tiệm, doanh thu tính khi sang ngày mới" onClose={onClose}>
     {season && <p className="pixel-panel" style={{ padding: 8 }}><strong>{season.name}</strong> — {season.blurb}</p>}
     <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0', display: 'grid', gap: 8 }}>
@@ -22,9 +32,11 @@ export const StallModal: React.FC<StallModalProps> = ({ stalls, season, onBuy, o
             <strong>{stall.name}</strong>
             <span className="muted">{stall.description}</span>
             <span className="tabular">
-              {stall.baseServings}–{stall.maxServings} suất/ngày · {money(stall.servingPrice)}/suất · vốn {money(stall.servingCost)}
+              {stall.baseServings}–{stall.maxServings} suất/ngày · {money(stall.servingPrice)}/suất · tiền mặt {money(stall.cashCostPerServing)}/suất
               {boost && boost !== 1 ? ` · mùa này ${boost > 1 ? '+' : ''}${Math.round((boost - 1) * 100)}%` : ''}
             </span>
+            <span className="muted">Nguyên liệu từ kho: {stall.ingredients.map(item => `${PRODUCT_MAP[item.productId]?.name ?? item.productId} ×${item.perServing}/suất (kho còn ${stock[item.productId] ?? 0})`).join('; ')}</span>
+            {stall.owned && lastEntry(report, stall.id) && <span className="tabular">{reportLine(report!, stall.id)}</span>}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <span className="muted">{stall.owned ? 'Đang bán mỗi ngày' : stall.reason ?? `Giá mở quầy ${money(stall.price)}`}</span>
               <PixelButton variant="teal" disabled={!stall.buyable} onClick={() => onBuy(stall.id)}>

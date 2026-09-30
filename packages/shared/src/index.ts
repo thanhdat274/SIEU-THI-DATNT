@@ -182,6 +182,12 @@ export interface LedgerEntry {
 export interface StallState {
   owned: string[]; // id quầy đã mở
   processedDayIds: number[]; // ngày đã tính doanh thu quầy (idempotent)
+  lastReport?: StallDayReport; // kết quả ngày gần nhất để hiển thị
+}
+
+export interface StallDayReport {
+  day: number;
+  entries: Array<{ stallId: string; demand: number; servings: number; revenue: number; cogs: number; limitedBy?: string }>;
 }
 
 export interface QuestState {
@@ -445,6 +451,8 @@ export interface GameTileMap {
   layers: TileMapLayer[];
   collisionLayer: boolean[]; // true if solid
   storeBounds?: { left: number; right: number; top: number; bottom: number };
+  /** Quầy ăn uống đã mở, để renderer vẽ; va chạm đã nằm sẵn trong collisionLayer. */
+  stalls?: Array<{ id: string; tileX: number; tileY: number; widthTiles: number }>;
 }
 
 // Online domain records are intentionally versioned separately from the legacy local save.

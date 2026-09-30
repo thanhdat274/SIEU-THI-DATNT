@@ -1,4 +1,6 @@
 import { GameTileMap, StoreFixture, SaveGameData, Vector2D } from '@game/shared';
+import { LAND_PLOTS, STARTER_OWNED_PLOT_IDS } from './land';
+import { STALLS } from './stalls';
 
 export const MAP_WIDTH = 26;
 export const MAP_HEIGHT = 22;
@@ -88,10 +90,12 @@ export const INITIAL_REFRIGERATOR = INITIAL_FIXTURES.find((fixture) => fixture.t
 /**
  * Map arrays use local rows; world coordinates retain the old sales-floor origin.
  */
-export function generateStarterTileMap(): GameTileMap {
+export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STARTER_OWNED_PLOT_IDS, ownedStallIds: readonly string[] = []): GameTileMap {
   const groundData: number[] = new Array(MAP_WIDTH * MAP_HEIGHT).fill(1); // Street default
   const wallData: number[] = new Array(MAP_WIDTH * MAP_HEIGHT).fill(0);
   const collisionLayer: boolean[] = new Array(MAP_WIDTH * MAP_HEIGHT).fill(false);
+  const purchased = new Set(unlockedPlotIds);
+  const east = purchased.has('east-wing-a') ? (purchased.has('east-wing-b') ? 21 : 17) : STORE_BOUNDS.right;
 
   for (let localY = 0; localY < MAP_HEIGHT; localY++) {
     const y=localY+MAP_ORIGIN_Y;
@@ -108,7 +112,7 @@ export function generateStarterTileMap(): GameTileMap {
         groundData[idx] = 2; // Sidewalk
       } else if (y >= 13) {
         groundData[idx] = 1; // Street
-      } else if (y >= STORE_BOUNDS.top && y <= STORE_BOUNDS.bottom && x >= STORE_BOUNDS.left && x <= STORE_BOUNDS.right) {
+      } else if (y >= STORE_BOUNDS.top && y <= STORE_BOUNDS.bottom && x >= STORE_BOUNDS.left && x <= east) {
         groundData[idx] = 3; // Vintage flower tile inside store
       } else {
         groundData[idx] = 2; // Sidewalk / Alley ground
@@ -116,16 +120,16 @@ export function generateStarterTileMap(): GameTileMap {
 
       // Store Walls (yellow plaster walls)
       // Store spans x: 6..13, y: 3..10
-      if (y === STORE_BOUNDS.top && x >= STORE_BOUNDS.left && x <= STORE_BOUNDS.right) {
+      if (y === STORE_BOUNDS.top && x >= STORE_BOUNDS.left && x <= east) {
         wallData[idx] = 4;
         collisionLayer[idx] = true;
       } else if (x === STORE_BOUNDS.left && y >= STORE_BOUNDS.top && y <= STORE_BOUNDS.bottom) {
         wallData[idx] = 4;
         collisionLayer[idx] = true;
-      } else if (x === STORE_BOUNDS.right && y >= STORE_BOUNDS.top && y <= STORE_BOUNDS.bottom) {
+      } else if (x === east && y >= STORE_BOUNDS.top && y <= STORE_BOUNDS.bottom) {
         wallData[idx] = 4;
         collisionLayer[idx] = true;
-      } else if (y === STORE_BOUNDS.bottom && x >= STORE_BOUNDS.left && x <= STORE_BOUNDS.right) {
+      } else if (y === STORE_BOUNDS.bottom && x >= STORE_BOUNDS.left && x <= east) {
         // Doorway at x = 9 and x = 10
         if (x !== 9 && x !== 10) {
           wallData[idx] = 4;
@@ -149,6 +153,37 @@ export function generateStarterTileMap(): GameTileMap {
     const door=y===STORE_BOUNDS.top&&(x===WAREHOUSE_DOOR_LEFT||x===WAREHOUSE_DOOR_LEFT+1);
     wallData[idx]=boundary&&!door?10:0;
     collisionLayer[idx]=boundary&&!door;
+  }
+
+  for (const plot of LAND_PLOTS) {
+    if (!purchased.has(plot.id)) continue;
+    for (const { x, y } of plot.tiles) {
+      const idx = (y - MAP_ORIGIN_Y) * MAP_WIDTH + x;
+      const isCurrentWall = x === east || y === STORE_BOUNDS.top || y === STORE_BOUNDS.bottom;
+      if (isCurrentWall) {
+        groundData[idx] = 3;
+        wallData[idx] = 4;
+        collisionLayer[idx] = true;
+      } else if (x < east) {
+        groundData[idx] = 3;
+        wallData[idx] = 0;
+        collisionLayer[idx] = false;
+      }
+    }
+  }
+  if (purchased.has('east-wing-a')) {
+    for (let y = STORE_BOUNDS.top + 1; y < STORE_BOUNDS.bottom; y++) {
+      const idx = (y - MAP_ORIGIN_Y) * MAP_WIDTH + STORE_BOUNDS.right;
+      wallData[idx] = 0;
+      collisionLayer[idx] = false;
+      groundData[idx] = 3;
+    }
+  }
+
+  // Quầy ăn uống đã mở chặn đường đi như một vật cản trên vỉa hè.
+  const stalls = STALLS.filter(stall => ownedStallIds.includes(stall.id));
+  for (const stall of stalls) {
+    for (let x = stall.tileX; x < stall.tileX + stall.widthTiles; x++) collisionLayer[(stall.tileY - MAP_ORIGIN_Y) * MAP_WIDTH + x] = true;
   }
 
   return {
@@ -176,12 +211,14 @@ export function generateStarterTileMap(): GameTileMap {
       },
     ],
     collisionLayer,
+    storeBounds: { left: STORE_BOUNDS.left, right: east, top: STORE_BOUNDS.top, bottom: STORE_BOUNDS.bottom },
+    stalls: stalls.map(stall => ({ id: stall.id, tileX: stall.tileX, tileY: stall.tileY, widthTiles: stall.widthTiles })),
   };
 }
 
 export const DEFAULT_INITIAL_SAVE: SaveGameData = {
   id: 'local_save_default',
-  schemaVersion: 2,
+  schemaVersion: 3,
   revision: 1,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -206,6 +243,8 @@ export const DEFAULT_INITIAL_SAVE: SaveGameData = {
     widthTiles: 8,
     heightTiles: 8,
     fixtures: INITIAL_FIXTURES,
+    storedFixtures: [],
+    unlockedPlotIds: STARTER_OWNED_PLOT_IDS,
   },
   inventory: [
     { productId: 'mi_hao_hao', quantity: 15 },
@@ -214,6 +253,10 @@ export const DEFAULT_INITIAL_SAVE: SaveGameData = {
     { productId: 'sua_ong_tho', quantity: 5 },
     { productId: 'banh_mi_que', quantity: 8 },
   ],
+  staff: [],
+  staffSchedule: {},
+  wageDebt: 0,
+  processedPayrollDayIds: [],
   statistics: {
     totalRevenue: 0,
     totalCustomersServed: 0,

@@ -133,7 +133,7 @@ Phase 7 giữ định hướng Firebase/NestJS/MongoDB, triển khai phần cầ
 ---
 
 ### [>] GIAI ĐOẠN 10: QUẦY ĂN UỐNG & ĐỊNH HƯỚNG MULTIPLAYER
-- [>] Quầy cà phê vợt và bánh mì nướng muối ớt: mở bằng tiền/cấp (`StallModal`), doanh thu tính mỗi ngày theo mùa/uy tín, ghi sổ có giá vốn, lưu/tải, co-op qua lệnh `buy_stall` (test core + runtime PASS). Mô hình đơn giản theo ngày: chưa có quầy hiển thị trên bản đồ, chưa tiêu nguyên liệu từ kho, chưa có nhân vật phục vụ; chưa QA browser.
+- [>] Quầy cà phê vợt và bánh mì nướng muối ớt: mở bằng tiền/cấp (`StallModal`), doanh thu tính mỗi ngày theo mùa/uy tín, ghi sổ có giá vốn, lưu/tải, co-op qua lệnh `buy_stall` (test core + runtime PASS). Quầy hiện trên vỉa hè bên phải cửa tiệm (sprite pixel, chặn đường đi) và tiêu nguyên liệu từ nhà kho theo lô FEFO (cà phê: sữa đặc + đường; bánh mì: bánh mì gối + dầu ăn; thiếu hàng thì bán ít suất hơn, báo thiếu trong modal). Còn thiếu: nhân vật phục vụ/khách đứng mua tại quầy (doanh thu vẫn tính gộp theo ngày), cà phê bột/muối ớt chưa có trong catalog nên tính bằng tiền mặt; sprite chưa QA bằng mắt trong browser.
 
 ## GIAO DIỆN PIXEL VIỆT — 30/09/2026
 - [x] Nhà kho vật lý liền phía trên tiệm: phòng đi vào được, giá khô/góc lạnh/khu nhận, WarehouseModal và migration save cũ. Unit/browser tests, năm viewport và joystick đã pass; xem docs/ui/WAREHOUSE.md.
