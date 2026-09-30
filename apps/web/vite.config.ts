@@ -36,8 +36,9 @@ export default defineConfig({
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('pixi')) return 'vendor-pixi';
           if (id.includes('firebase') || id.includes('@firebase')) return 'vendor-firebase';
-          if (id.includes('react')) return 'vendor-react';
-          return 'vendor';
+          // Không gom react/vendor chung: chunk "vendor" gom cả thư viện phụ thuộc react
+          // gây phụ thuộc vòng với vendor-react, khiến React undefined khi chạy production.
+          return undefined;
         },
       },
     },
