@@ -26,6 +26,7 @@ import {
   LedgerEntry,
   RestockSuggestionResult,
   QuestState,
+  StallState,
   StaffRole,
   StaffShift,
   StaffMember,
@@ -47,6 +48,10 @@ import {
   DEFAULT_SUPPLIER_ID,
   getMaxStaffSlots,
   isShiftWithinStoreHours,
+  STALLS,
+  STALL_MAP,
+  getSeasonForDay,
+  type StallDefinition,
 } from '@game/data';
 import { CollisionSystem } from './collision';
 import { buyLandPlot, validateStoreLayout, type LayoutResult } from './store-layout';
@@ -56,6 +61,7 @@ import { expiryDay, mergeLots, normalizeLots, sumLots, takeLots } from './stock'
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { CustomerManager } from './customers';
 import { generateRestockSuggestions } from './suggestions';
+import { emptyStallState, normalizeStallState, computeStallDay } from './stalls';
 import { emptyQuestState, findClaimableQuest, getDailyQuests, getStoryQuest, markQuestClaimed, normalizeQuestState, type QuestContext, type QuestProgress, type QuestReward } from './quests';
 import { generateCandidatesForDay, validateHireStaff, calculatePayroll } from './staff';
 
@@ -110,6 +116,7 @@ export class GameSimulation {
   private pendingOrders: SupplierOrder[];
   private dailyRecords: Record<number, DailyRecord> = {};
   private quests: QuestState = emptyQuestState();
+  private stalls: StallState = emptyStallState();
   private currentDayRecord: DailyRecord;
   private ledger: LedgerEntry[] = [];
   private closedDayIds: Set<number> = new Set();
@@ -172,6 +179,7 @@ export class GameSimulation {
     );
     this.dailyRecords = initialSave.dailyRecords ? structuredClone(initialSave.dailyRecords) : {};
     this.quests = normalizeQuestState(initialSave.quests);
+    this.stalls = normalizeStallState(initialSave.stalls);
     this.closedDayIds = new Set(initialSave.closedDayIds ?? []);
     this.ledger = (initialSave.ledger ?? []).map((e) => ({ ...e }));
     if (initialSave.currentDayRecord) {
@@ -193,6 +201,7 @@ export class GameSimulation {
       }
       for (const member of this.staff) this.finishStaffJob(member, true);
       this.processPayroll(day - 1);
+      this.processStalls(day - 1);
       // Close previous day's record (day - 1) idempotently and initialize new day record
       this.closeDailyRecord(day - 1);
       this.initDailyRecord(day);
@@ -271,6 +280,49 @@ export class GameSimulation {
 
   public getLedger(): LedgerEntry[] {
     return this.ledger.map((e) => ({ ...e }));
+  }
+
+  public getSeason(day = this.clock.getTime().day) {
+    return getSeasonForDay(day);
+  }
+
+  public getStalls(): Array<StallDefinition & { owned: boolean; buyable: boolean; reason?: string }> {
+    return STALLS.map(stall => {
+      const owned = this.stalls.owned.includes(stall.id);
+      const reason = owned ? undefined : this.playerData.level < stall.unlockLevel ? `Mở khóa ở cấp ${stall.unlockLevel}` : this.playerData.money < stall.price ? 'Không đủ tiền' : undefined;
+      return { ...stall, owned, buyable: !owned && !reason, reason };
+    });
+  }
+
+  public buyStall(stallId: string): { success: boolean; reason?: string } {
+    const stall = this.getStalls().find(item => item.id === stallId);
+    if (!stall) return { success: false, reason: 'Quầy không tồn tại.' };
+    if (stall.owned) return { success: false, reason: 'Quầy đã mở.' };
+    if (!stall.buyable) return { success: false, reason: stall.reason };
+    this.playerData.money -= stall.price;
+    this.stalls.owned.push(stall.id);
+    this.notifyStateChanged();
+    return { success: true };
+  }
+
+  /** Tính doanh thu quầy ăn uống của `day` đúng một lần, ghi sổ như bán lẻ (có giá vốn). */
+  private processStalls(day: number): void {
+    if (day < 1 || this.stalls.processedDayIds.includes(day)) return;
+    this.stalls.processedDayIds.push(day);
+    const record = day === this.currentDayRecord.day ? this.currentDayRecord : (this.dailyRecords[day] ?? this.createEmptyDailyRecord(day));
+    for (const stallId of this.stalls.owned) {
+      const result = computeStallDay(stallId, day, this.playerData.reputation);
+      if (!result || result.servings <= 0) continue;
+      this.playerData.money += result.revenue;
+      this.statistics.totalRevenue += result.revenue;
+      record.revenue += result.revenue;
+      record.cogs += result.cogs;
+      record.itemsSold += result.servings;
+      this.recordLedger({ day, type: 'sale', amount: result.revenue, cogs: result.cogs, quantity: result.servings, description: `${STALL_MAP[stallId].name}: bán ${result.servings} suất` });
+    }
+    record.grossProfit = record.revenue - record.cogs;
+    record.netProfit = record.grossProfit - record.spoilageCost - record.wagesPaid;
+    if (record !== this.currentDayRecord) this.dailyRecords[day] = record;
   }
 
   private questContext(): QuestContext {
@@ -927,7 +979,9 @@ export class GameSimulation {
       this.fixtures,
       this.tileMap,
       this.clock.getTime().day,
-      this.statistics.totalCustomersServed
+      this.statistics.totalCustomersServed,
+      this.getSeason()?.demandMultiplier ?? 1,
+      this.getSeason()?.preferredCategories ?? []
     );
 
     this.updateStaffWorkers(dt);
@@ -1832,6 +1886,7 @@ export class GameSimulation {
       processedAutoBuyDayIds: [...this.processedAutoBuyDayIds],
       autoBuyReports: structuredClone(this.autoBuyReports),
       quests: normalizeQuestState(this.quests),
+      stalls: normalizeStallState(this.stalls),
       pendingOrders: this.getPendingOrders(),
       customer: this.getCustomer() ?? undefined,
       customers: this.customerManager.getCustomers(),
@@ -1870,6 +1925,7 @@ export class GameSimulation {
     this.processedAutoBuyDayIds = new Set(saveData.processedAutoBuyDayIds ?? []);
     this.autoBuyReports = structuredClone(saveData.autoBuyReports ?? {});
     this.quests = normalizeQuestState(saveData.quests);
+    this.stalls = normalizeStallState(saveData.stalls);
     this.pendingOrders = (saveData.pendingOrders ?? []).map((order) => ({
       ...order,
       supplierId: order.supplierId ?? DEFAULT_SUPPLIER_ID,

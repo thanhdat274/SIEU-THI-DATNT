@@ -13,3 +13,4 @@ export * from './suggestions';
 export * from './staff';
 export * from './store-layout';
 export * from './quests';
+export * from './stalls';

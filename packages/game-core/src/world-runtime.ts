@@ -189,6 +189,8 @@ export class WorldRuntime {
         success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       } else if (p.type === 'buy_plot') {
         success = !!this.simulation.purchaseLand(p.plotId).save;
+      } else if (p.type === 'buy_stall') {
+        success = this.simulation.buyStall(p.stallId).success;
       } else if (p.type === 'claim_quest') {
         success = this.simulation.claimQuest(p.questId).success;
       } else if (p.type === 'layout_batch') {

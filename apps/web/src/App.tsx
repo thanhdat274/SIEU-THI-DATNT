@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { generateStarterTileMap, PRODUCT_MAP } from '@game/data';
+import { generateStarterTileMap, getSeasonForDay, PRODUCT_MAP } from '@game/data';
 import { InputManager, GameSimulation } from '@game/core';
 import { PixiGameViewport } from '@game/renderer';
 import { GameSnapshot, SaveGameData, SupplierOrder, StaffShift, isSalesFixture, isWarehouseFixture } from '@game/shared';
@@ -24,6 +24,7 @@ import { WarehouseDock } from './components/WarehouseDock';
 import { TimeVoteModal } from './components/TimeVoteModal';
 import { StoreLayoutModal } from './components/StoreLayoutModal';
 import { QuestModal } from './components/QuestModal';
+import { StallModal } from './components/StallModal';
 import type { StoreLayoutAction } from '@game/core';
 import { PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
@@ -48,6 +49,7 @@ export const App: React.FC = () => {
   const [pendingOrders, setPendingOrders] = useState<SupplierOrder[]>([]);
   const [statistics, setStatistics] = useState<SaveGameData['statistics']>({ totalRevenue: 0, totalCustomersServed: 0, totalDaysPassed: 0 });
   const [isQuestOpen, setQuestOpen] = useState(false);
+  const [isStallOpen, setStallOpen] = useState(false);
   const [isWarehouseDockOpen, setWarehouseDockOpen] = useState(() => !window.matchMedia('(max-width: 1023px), (max-height: 499px)').matches);
   const [gameSpeed, setGameSpeed] = useState<number>(1);
   const [isLayoutOpen, setIsLayoutOpen] = useState(false);
@@ -288,7 +290,9 @@ export const App: React.FC = () => {
           useGameStore.getState().toggleInventoryModal();
         },
         onDayChanged: (newDay) => {
-          addToast(`Bình minh Ngày ${newDay}! Chúc tiệm một ngày buôn bán đắt hàng! `, 'success');
+          const season = getSeasonForDay(newDay);
+          const previous = getSeasonForDay(newDay - 1);
+          addToast(season && season.id !== previous?.id ? `${season.name} bắt đầu! ${season.blurb}` : `Bình minh Ngày ${newDay}! Chúc tiệm một ngày buôn bán đắt hàng! `, 'success');
           handleSaveGame(false);
         },
         onLevelUp: (level) => addToast(`Lên cấp ${level}! Kiểm tra Nhiệm vụ để xem món và mối hàng mới mở khóa.`, 'success'),
@@ -699,6 +703,18 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleBuyStall = async (stallId: string) => {
+    const sim = simulationRef.current;
+    if (!sim || blockOfflineOnlineMutation()) return;
+    const result = sim.buyStall(stallId);
+    if (!result.success) { addToast(result.reason ?? 'Không mở được quầy.', 'warn'); return; }
+    syncFromSimulation(sim);
+    if (onlineWorldRef.current) {
+      await commitBusinessChange({ type: 'buy_stall', stallId }, 'Mở quầy ăn uống', 'Quầy ăn uống');
+    } else void handleSaveGame(false);
+    addToast('Đã mở quầy mới; doanh thu được tính khi sang ngày.', 'success');
+  };
+
   const handleClaimQuest = async (questId: string) => {
     const sim = simulationRef.current;
     if (!sim || blockOfflineOnlineMutation()) return;
@@ -1051,7 +1067,7 @@ export const App: React.FC = () => {
           ⚠️ Mất kết nối hẻm chung — thao tác bị tạm dừng, đang kết nối lại...
         </div>
       )}
-      {!isLoading && <HUD onOpenQuests={() => setQuestOpen(true)} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomer() ? 1 : 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
+      {!isLoading && <HUD onOpenStalls={() => setStallOpen(true)} onOpenQuests={() => setQuestOpen(true)} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomer() ? 1 : 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
       <main className="game-main">
         <div className="world-viewport">
           <canvas ref={canvasRef} aria-label="Bản đồ Tiệm Tạp Hóa Đầu Hẻm"/>
@@ -1142,6 +1158,7 @@ export const App: React.FC = () => {
         onClose={closeAllModals}
       />
     )}
+    {isStallOpen && simulationRef.current && <StallModal stalls={simulationRef.current.getStalls()} season={simulationRef.current.getSeason()} onBuy={handleBuyStall} onClose={() => setStallOpen(false)}/>}
     {isQuestOpen && simulationRef.current && <QuestModal {...simulationRef.current.getQuests()} level={player.level} onClaim={handleClaimQuest} onClose={() => setQuestOpen(false)}/>}
     {isLayoutOpen && simulationRef.current && <StoreLayoutModal save={simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision)} onConfirm={handleApplyStoreLayout} onClose={closeLayoutEditor}/>}
     {activeTimeVote && (

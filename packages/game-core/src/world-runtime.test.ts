@@ -145,5 +145,14 @@ export async function runWorldRuntimeTests() {
   const secondClaim = await questRuntime.executeCommand('member-2', claimCommand('claim-2', 'story_first_customers'));
   assert.equal(secondClaim.status, 'rejected', 'Người thứ hai không nhận trùng cùng nhiệm vụ');
 
+  // Co-op stalls: buying is validated by the authoritative runtime and charged once.
+  questRuntime.getSimulation().addExperience(10_000);
+  questRuntime.getSimulation().addMoney(1_000_000);
+  const stallMoney = questRuntime.getSimulation().getPlayerData().money;
+  const buyStall = (commandId: string) => ({ ...claimCommand(commandId, 'x'), payload: { type: 'buy_stall', stallId: 'cafe_vot' } });
+  assert.equal((await questRuntime.executeCommand('member-2', buyStall('stall-1'))).status, 'accepted');
+  assert.equal(questRuntime.getSimulation().getPlayerData().money, stallMoney - 300000);
+  assert.equal((await questRuntime.executeCommand('owner-1', buyStall('stall-2'))).status, 'rejected', 'Không mở trùng quầy trong hẻm chung');
+
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');
 }

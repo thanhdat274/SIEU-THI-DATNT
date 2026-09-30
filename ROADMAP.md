@@ -127,14 +127,13 @@ Phase 7 giữ định hướng Firebase/NestJS/MongoDB, triển khai phần cầ
 
 ---
 
-### [ ] GIAI ĐOẠN 9: SỰ KIỆN MÙA VIỆT NAM (SEASONAL EVENTS)
-- [ ] Sự kiện Tết Nguyên Đán (Bánh chưng, câu đối đỏ, dưa hấu).
-- [ ] Trung Thu, Mùa tựu trường, Mùa mưa Sài Gòn.
+### [>] GIAI ĐOẠN 9: SỰ KIỆN MÙA VIỆT NAM (SEASONAL EVENTS)
+- [>] Tết, Trung Thu, Tựu trường, Mùa mưa: chu kỳ 120 ngày (`game-data/seasons.ts`), đổi tốc độ khách và nhóm hàng khách ưu tiên, nhân sản lượng quầy; biểu ngữ HUD + toast khi sự kiện bắt đầu; test core PASS. Chưa có sản phẩm/art riêng (bánh chưng, câu đối, dưa hấu, bánh trung thu), chưa trang trí cửa hàng, chưa cân bằng bằng playtest.
 
 ---
 
-### [ ] GIAI ĐOẠN 10: QUẦY ĂN UỐNG & ĐỊNH HƯỚNG MULTIPLAYER
-- [ ] Mở quầy cà phê vợt, quầy bánh mì nướng muối ớt trước cửa tiệm.
+### [>] GIAI ĐOẠN 10: QUẦY ĂN UỐNG & ĐỊNH HƯỚNG MULTIPLAYER
+- [>] Quầy cà phê vợt và bánh mì nướng muối ớt: mở bằng tiền/cấp (`StallModal`), doanh thu tính mỗi ngày theo mùa/uy tín, ghi sổ có giá vốn, lưu/tải, co-op qua lệnh `buy_stall` (test core + runtime PASS). Mô hình đơn giản theo ngày: chưa có quầy hiển thị trên bản đồ, chưa tiêu nguyên liệu từ kho, chưa có nhân vật phục vụ; chưa QA browser.
 
 ## GIAO DIỆN PIXEL VIỆT — 30/09/2026
 - [x] Nhà kho vật lý liền phía trên tiệm: phòng đi vào được, giá khô/góc lạnh/khu nhận, WarehouseModal và migration save cũ. Unit/browser tests, năm viewport và joystick đã pass; xem docs/ui/WAREHOUSE.md.

@@ -21,6 +21,7 @@ import { runLedgerTests } from './ledger.test';
 import { runSuggestionTests } from './suggestions.test';
 import { runStaffTests } from './staff.test';
 import { runQuestTests } from './quests.test';
+import { runSeasonAndStallTests } from './seasons.test';
 import { runWorkerTests } from './workers.test';
 import { runOperationsTests } from './operations.test';
 import { runStoreLayoutTests } from './store-layout.test';
@@ -42,6 +43,7 @@ export async function runTests(): Promise<void> {
   runSuggestionTests();
   runStaffTests();
   runQuestTests();
+  runSeasonAndStallTests();
   runWorkerTests();
   runOperationsTests();
   runStoreLayoutTests();

@@ -179,6 +179,11 @@ export interface LedgerEntry {
   timestamp: string;
 }
 
+export interface StallState {
+  owned: string[]; // id quầy đã mở
+  processedDayIds: number[]; // ngày đã tính doanh thu quầy (idempotent)
+}
+
 export interface QuestState {
   claimedDaily: Record<number, string[]>; // day -> daily quest ids đã nhận thưởng
   claimedStory: string[]; // story step ids đã nhận thưởng
@@ -402,6 +407,7 @@ export interface SaveGameData {
   processedAutoBuyDayIds?: number[];
   autoBuyReports?: Record<number, AutoBuyReport>;
   quests?: QuestState;
+  stalls?: StallState;
   dailyRecords?: Record<number, DailyRecord>;
   currentDayRecord?: DailyRecord;
   ledger?: LedgerEntry[];
@@ -501,7 +507,8 @@ export type GameCommandPayload =
       | { type: 'buy_plot'; plotId: string }
     > }
   | { type: 'buy_plot'; plotId: string }
-  | { type: 'claim_quest'; questId: string };
+  | { type: 'claim_quest'; questId: string }
+  | { type: 'buy_stall'; stallId: string };
 
 export interface GameCommand {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
@@ -697,6 +704,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     });
     case 'buy_plot': return nonEmptyString(p.plotId);
     case 'claim_quest': return nonEmptyString(p.questId);
+    case 'buy_stall': return nonEmptyString(p.stallId);
     default: return false;
   }
 }
