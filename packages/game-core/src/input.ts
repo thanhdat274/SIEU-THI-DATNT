@@ -54,6 +54,9 @@ export class InputManager {
 
     this.keysDown.add(e.code);
 
+    // Keep arrow-key movement from scrolling the page while the game is active.
+    if (e.code.startsWith('Arrow')) e.preventDefault();
+
     if (e.code === 'KeyE' || e.code === 'Space') {
       this.interactRequested = true;
     }
