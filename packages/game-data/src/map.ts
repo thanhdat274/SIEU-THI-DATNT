@@ -2,10 +2,19 @@ import { GameTileMap, StoreFixture, SaveGameData, Vector2D } from '@game/shared'
 import { LAND_PLOTS, STARTER_OWNED_PLOT_IDS } from './land';
 import { STALLS } from './stalls';
 
+/** Chủ tiệm đứng sau quầy thu ngân (phía bắc), nhìn ra chỗ khách xếp hàng ở ô (9,8). */
+export const SHOPKEEPER_TILE = { x: 8, y: 7 };
+export const SHOPKEEPER_POSITION = { x: (SHOPKEEPER_TILE.x + 0.5) * 32, y: (SHOPKEEPER_TILE.y + 1) * 32 - 2 };
+
 export const MAP_WIDTH = 26;
 export const MAP_HEIGHT = 22;
 export const MAP_ORIGIN_Y = -6;
 export const STORE_BOUNDS = {left:6,right:13,top:3,bottom:10};
+/** Hàng rào thấp ở hàng y=10 giữa cỏ và vỉa hè (trừ mặt tiền tiệm); dùng chung cho va chạm và renderer. */
+export const isFenceTile = (x: number, worldY: number, mapWidth: number): boolean =>
+  worldY === 10 && x > 0 && x < mapWidth - 1 && (x <= STORE_BOUNDS.left - 2 || x >= STORE_BOUNDS.right + 2);
+/** Đèn đường trên vỉa hè sát lòng đường; cột đèn chặn đường đi như vật cản nhỏ. */
+export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 5, y: 12 }, { x: 15, y: 12 }, { x: 20, y: 12 }];
 export const WAREHOUSE_BOUNDS = {left:STORE_BOUNDS.left,right:STORE_BOUNDS.right,top:STORE_BOUNDS.top-6,bottom:STORE_BOUNDS.top};
 export const WAREHOUSE_CENTER = {x:(WAREHOUSE_BOUNDS.left+WAREHOUSE_BOUNDS.right+1)*16,y:(WAREHOUSE_BOUNDS.top+WAREHOUSE_BOUNDS.bottom+1)*16};
 export const WAREHOUSE_DOOR_LEFT = Math.floor(WAREHOUSE_CENTER.x/32)-1;
@@ -118,6 +127,10 @@ export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STAR
         groundData[idx] = 2; // Sidewalk / Alley ground
       }
 
+      if ((groundData[idx] === 2 && isFenceTile(x, y, MAP_WIDTH)) || STREET_LAMP_TILES.some(l => l.x === x && l.y === y)) {
+        collisionLayer[idx] = true;
+      }
+
       // Store Walls (yellow plaster walls)
       // Store spans x: 6..13, y: 3..10
       if (y === STORE_BOUNDS.top && x >= STORE_BOUNDS.left && x <= east) {
@@ -179,6 +192,9 @@ export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STAR
       groundData[idx] = 3;
     }
   }
+
+  // Chủ tiệm là vật cản đứng sau quầy thu ngân.
+  collisionLayer[(SHOPKEEPER_TILE.y - MAP_ORIGIN_Y) * MAP_WIDTH + SHOPKEEPER_TILE.x] = true;
 
   // Quầy ăn uống đã mở chặn đường đi như một vật cản trên vỉa hè.
   const stalls = STALLS.filter(stall => ownedStallIds.includes(stall.id));

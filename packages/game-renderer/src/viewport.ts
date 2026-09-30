@@ -3,7 +3,7 @@ import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, get
 import { FixedStepSimulationRunner, GameSimulation } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
-import { PRODUCT_MAP, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse } from '@game/data';
+import { PRODUCT_MAP, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES } from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -336,7 +336,7 @@ export class PixiGameViewport {
         for (let x = 0; x < width; x++) {
           if (groundLayerData[y * width + x] !== 2 || y + originY >= 11) continue;
           const h = this.tileHash(x + 91, y + 17);
-          if (y + originY === 10 && (x <= STORE_BOUNDS.left - 2 || x >= STORE_BOUNDS.right + 2) && x > 0 && x < width - 1) {
+          if (isFenceTile(x, y + originY, width)) {
             const fence = new Sprite(this.textures.getTexture('deco_fence'));
             fence.x = x * TILE_SIZE;
             fence.y = (y + originY) * TILE_SIZE;
@@ -349,6 +349,25 @@ export class PixiGameViewport {
           }
         }
       }
+    }
+
+    // Đèn đường: cột đèn nằm trên nền, quầng sáng cộng màu chỉ hiện khi trời tối (xem renderTick).
+    this.lampGlows = [];
+    for (const lamp of STREET_LAMP_TILES) {
+      const pole = new Sprite(this.textures.getTexture('deco_lamp_pole'));
+      pole.anchor.set(0, 1);
+      pole.x = lamp.x * TILE_SIZE;
+      pole.y = (lamp.y + 1) * TILE_SIZE;
+      this.groundLayer.addChild(pole);
+      const glow = new Graphics();
+      for (const [radius, alpha] of [[76, 0.06], [56, 0.09], [38, 0.12], [22, 0.16]] as const) glow.circle(0, 0, radius).fill({ color: 0xffd98a, alpha });
+      glow.x = lamp.x * TILE_SIZE + 16;
+      glow.y = (lamp.y + 1) * TILE_SIZE - 50;
+      glow.blendMode = 'add';
+      glow.alpha = 0;
+      glow.eventMode = 'none';
+      this.groundLayer.addChild(glow);
+      this.lampGlows.push(glow);
     }
 
     if (wallLayerData) {
@@ -697,6 +716,7 @@ export class PixiGameViewport {
   }
 
   private bubbleWidth = 0;
+  private lampGlows: Graphics[] = [];
 
   /** Băm cố định theo ô để cỏ/hoa không nhấp nháy giữa các lần dựng. */
   private tileHash(x: number, y: number): number {
@@ -876,7 +896,11 @@ export class PixiGameViewport {
       ambient.sprite.texture = this.textures.getTexture(`${ambient.key}${reducedMotion ? 0 : Math.floor(this.animTimer * (ambient.key === 'tile_fan_' ? 5 : 1)) % ambient.frames}`);
     }
     const hour = this.simulation.getTime().hour;
-    this.nightOverlay.alpha = hour >= 18 ? Math.min(0.25, (hour - 17) * 0.05) : hour < 7 ? 0.08 : 0;
+    this.nightOverlay.alpha = hour >= 18 ? Math.min(0.32, (hour - 17) * 0.06) : hour < 7 ? 0.1 : 0;
+    // Đèn đường sáng dần từ 17h, tắt dần lúc 6–7h; nhấp nháy nhẹ trừ khi bật giảm chuyển động.
+    const dark = hour >= 17 ? Math.min(1, (hour - 16) / 2) : hour < 7 ? Math.min(1, (7 - hour) / 1.5) : 0;
+    const flicker = reducedMotion ? 1 : 0.94 + Math.sin(this.animTimer * 7) * 0.03;
+    for (const glow of this.lampGlows) glow.alpha = dark * flicker;
 
     // 2b. Update Doors & Entrance Animation
     const playerPos = playerData.position;

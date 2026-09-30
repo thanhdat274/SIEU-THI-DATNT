@@ -90,7 +90,7 @@ Phase 7 giữ định hướng Firebase/NestJS/MongoDB, triển khai phần cầ
 
 ### [ ] GIAI ĐOẠN 3: KHÁCH HÀNG NPC & TÍNH TIỀN (CUSTOMER NPC & CHECKOUT)
 - [x] Thuật toán tìm đường A* (A-Star Pathfinding) dùng cùng vùng va chạm với người chơi.
-- [x] Máy trạng thái khách hàng đa khách: vào -> kệ -> giỏ -> hàng đợi quầy -> thanh toán -> rời tiệm; thu ngân người chơi/nhân viên (test core PASS; browser acceptance còn mở theo OpenSpec adapt-reference-shop-operations).
+- [x] Máy trạng thái khách hàng đa khách: vào -> kệ -> giỏ -> hàng đợi quầy -> thanh toán -> rời tiệm; thu ngân người chơi/nhân viên; NPC chủ tiệm đứng sau quầy (ô 8,7, chặn đường đi), khách dừng ở đầu hàng (9,8) quay mặt vào quầy, chủ tiệm hiện bong bóng "Tính tiền" tới khi thanh toán xong (test core PASS, browser chỉ xác nhận chủ tiệm hiển thị; browser acceptance còn mở theo OpenSpec adapt-reference-shop-operations).
 - [ ] Cơ chế kiên nhẫn: đã có giới hạn chờ và trừ uy tín khi bỏ về; cần cân bằng độ hài lòng và hiển thị phản hồi.
 - [x] Bán hàng thủ công tại quầy từ tồn kệ; cập nhật tiền, XP và doanh thu.
 
