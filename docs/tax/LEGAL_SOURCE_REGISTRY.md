@@ -12,3 +12,7 @@ Ngày truy cập: 30/09/2026. VERIFIED_METADATA chỉ xác nhận số văn bả
 | 320/2025/NĐ-CP | https://vbpl.vn/bocongthuong/Pages/ivbpq-toanvan.aspx?ItemID=186493&Keyword= | Đầu mối chính thức; quy tắc UNVERIFIED | Điều kiện thuế suất và miễn thuế, NĐ 141 sửa đổi |
 
 Các văn bản 48/2024, 108/2025, 109/2025, 67/2025, 198/2025 và các thông tư liên quan: UNVERIFIED trong đợt này; chưa xác nhận đầy đủ hiệu lực, sửa đổi hoặc phạm vi áp dụng.
+
+## Lần đối chiếu 01/10/2026 (chưa đủ để chuyển VERIFIED)
+
+Đọc lại bài chính thức của NĐ 141/2026 (xaydungchinhsach.chinhphu.vn) qua công cụ tóm tắt tự động: khớp ngưỡng 1 tỷ đồng/năm thay cho 500 triệu, hộ trên ngưỡng phải dùng hóa đơn điện tử có mã hoặc hóa đơn từ máy tính tiền nối dữ liệu thuế (đăng ký trong 30 ngày kể từ khi đạt ngưỡng), doanh nghiệp doanh thu ≤ 1 tỷ thuộc diện miễn CIT. Đây chỉ là bản tóm tắt, chưa có số điều/khoản, bản ký, chuyển tiếp hay công thức tính thuế. Vì vậy mọi quy tắc trong `research.ts` vẫn UNVERIFIED và engine vẫn bị khóa. Cần người có chuyên môn đọc toàn văn trước khi đổi trạng thái.

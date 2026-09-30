@@ -144,6 +144,7 @@ Phase 7 giữ định hướng Firebase/NestJS/MongoDB, triển khai phần cầ
 ## HỆ THỐNG THUẾ — ĐỢT ĐẦU 30/09/2026
 - [>] TAX-0: Có hồ sơ nguồn, ma trận và danh sách chưa xác minh tại docs/tax; thẩm định toàn bộ pháp luật chưa hoàn tất.
 - [x] Module nền TaxRuleRegistry: phiên bản bất biến, chọn theo ngày/chủ thể/hoạt động, khóa UNVERIFIED, snapshot JSON và kiểm thử.
+- [x] Báo cáo doanh thu năm so với ngưỡng tham khảo (`tax/annual-revenue.ts`, chỉ theo dõi, không trừ tiền; có code, chưa có test riêng, chưa xác minh trên browser).
 - [ ] TAX-1: Hồ sơ chủ thể và đăng ký/chuyển đổi độc lập cấp độ.
 - [ ] TAX-2–4: Hoàn tất thẩm định, engine xác định, VAT/PIT hộ và CIT có điều kiện.
 - [ ] TAX-5–8: Kế toán, hóa đơn, UI/nhiệm vụ, backend cố vấn, MongoDB và kiểm thử tích hợp.
