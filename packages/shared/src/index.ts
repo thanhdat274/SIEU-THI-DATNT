@@ -666,7 +666,7 @@ export interface SaveValidationResult {
 }
 
 export function isSaveGameData(value: unknown): value is SaveGameData {
-  if (!isRecord(value) || (value.schemaVersion !== 2 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
     return false;
   }
@@ -705,7 +705,8 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
       error: `Bản lưu thuộc phiên bản tương lai (${value.schemaVersion}) chưa được hỗ trợ`,
     };
   }
-  if (value.schemaVersion === 2 && isSaveGameData(value)) {
+  // v1/v2 chỉ thiếu các trường tùy chọn; simulation tự chuẩn hóa khi nạp (lô hàng, kệ, kho...).
+  if ((value.schemaVersion === 1 || value.schemaVersion === 2) && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrated.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
     migrated.storeLayout.storedFixtures = migrated.storeLayout.storedFixtures ?? [];
