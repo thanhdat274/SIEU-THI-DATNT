@@ -14,3 +14,4 @@ export * from './product-tags';
 export * from './market-events';
 export * from './modifiers';
 export * from './pricing';
+export * from './supplier-market';

@@ -28,6 +28,9 @@ import {
   QuestState,
   StallState,
   MarketState,
+  SupplierDayState,
+  SupplierCartLine,
+  SupplierBulkTier,
   StallDayReport,
   StaffRole,
   StaffShift,
@@ -73,6 +76,7 @@ import { CustomerManager } from './customers';
 import { generateRestockSuggestions } from './suggestions';
 import { climateSeasonForDay } from './weather';
 import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, timeBandFor, visibleMarketEvents, weekdayOf, type MarketNotice } from './market';
+import { bulkDiscount, computeSupplierDay, nextDeliveryDay, wholesaleQuote } from './supplier-market';
 import { advancePriceIndex, computePriceTargets, demandPriceFactor, keepChance, priceRatio, productSensitivity } from './price';
 import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
 import { emptyStallState, normalizeStallState, planStallDay } from './stalls';
@@ -192,6 +196,7 @@ export class GameSimulation {
     this.stalls = normalizeStallState(initialSave.stalls);
     assertMarketData();
     this.market = normalizeMarketState(initialSave.market, initialSave.id ?? 'local_save', initialSave.worldTime.day);
+    this.ensureSupplierMarket(initialSave.worldTime.day);
     this.tileMap = this.stalls.owned.length ? generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned) : tileMap;
     this.inputManager = inputManager;
     this.callbacks = callbacks;
@@ -227,6 +232,7 @@ export class GameSimulation {
       this.processStalls(day - 1);
       this.market = advanceMarketState(this.market, day);
       this.updatePriceIndex(day);
+      this.ensureSupplierMarket(day);
       this.demandTable = undefined;
       this.callbacks.onWeatherChanged?.(effectiveWeatherId(this.market, day));
       for (const notice of marketNoticesForDay(this.market, day)) {
@@ -327,6 +333,52 @@ export class GameSimulation {
       this.demandBuildCount++;
     }
     return this.demandTable;
+  }
+
+  /** Thị trường nhà cung cấp của `day`: giá sỉ trôi từng bước từ hôm trước, tồn và ngừng cung tính lại mỗi ngày. */
+  private ensureSupplierMarket(day: number): void {
+    const suppliers: Record<string, SupplierDayState> = { ...(this.market.suppliers ?? {}) };
+    let changed = false;
+    for (const supplier of SUPPLIERS) {
+      const current = suppliers[supplier.id];
+      if (current && current.day === day) continue;
+      const ctx = buildMarketContext(this.market, day, 12);
+      suppliers[supplier.id] = computeSupplierDay(this.market.seed, supplier, ctx, current && current.day < day ? current : undefined);
+      changed = true;
+    }
+    if (changed) this.market = { ...this.market, suppliers };
+  }
+
+  /** Báo giá hôm nay của một nhà cung cấp cho giao diện: đơn giá, đổi so với hôm qua, lý do, tồn, ngừng cung. */
+  public getSupplierQuotes(supplierId: string) {
+    const supplier = SUPPLIER_MAP[supplierId];
+    const state = this.market.suppliers?.[supplierId];
+    const day = this.clock.getTime().day;
+    const hasStock = supplier?.stockPerProductPerDay !== undefined;
+    const quotes: Record<string, { unitPrice: number; previousUnitPrice: number; changePct: number; reasons: string[]; stockLeft?: number; unavailable: boolean }> = {};
+    if (!supplier) return { quotes, deliveryDay: day, deliveryWeekday: WEEKDAY_LABELS[weekdayOf(day)], bulkTiers: [] as SupplierBulkTier[] };
+    for (const product of ALL_PRODUCTS) {
+      const now = wholesaleQuote(supplier, product, state, 1).unit;
+      const yesterday = wholesaleQuote(supplier, product, state ? { ...state, priceIndex: state.prevIndex } : undefined, 1).unit;
+      quotes[product.id] = {
+        unitPrice: now,
+        previousUnitPrice: yesterday,
+        changePct: yesterday > 0 ? Math.round((now / yesterday - 1) * 100) : 0,
+        reasons: state?.reasons[product.category] ?? [],
+        stockLeft: hasStock ? state?.stockLeft[product.id] : undefined,
+        unavailable: !!state?.unavailable.includes(product.id),
+      };
+    }
+    const deliveryDay = nextDeliveryDay(supplier, day + supplier.delayDays);
+    return { quotes, deliveryDay, deliveryWeekday: WEEKDAY_LABELS[weekdayOf(deliveryDay)], bulkTiers: supplier.bulkTiers ?? [] };
+  }
+
+  /** Đơn giá thực của một món tại nhà cung cấp hôm nay (dùng cho gợi ý nhập và tự nhập). */
+  public wholesaleUnitPrice(supplierId: string, productId: string, quantity = 1): number {
+    const supplier = SUPPLIER_MAP[supplierId];
+    const product = PRODUCT_MAP[productId];
+    if (!supplier || !product) return 0;
+    return wholesaleQuote(supplier, product, this.market.suppliers?.[supplierId], quantity).unit;
   }
 
   /** Giá bán hiện tại. Hiện cố định theo giá gợi ý; việc người chơi tự đặt giá (shop-pricing) sẽ thay hàm này. */
@@ -565,7 +617,7 @@ export class GameSimulation {
       if (onHand + incoming > rule.threshold) continue;
       let quantity = rule.quantity;
       const supplier = SUPPLIER_MAP[rule.supplierId]!;
-      const unitPrice = Math.max(1, Math.round(product.purchasePrice * (1 - supplier.discountRate)));
+      const unitPrice = Math.max(1, this.wholesaleUnitPrice(rule.supplierId, rule.productId, quantity));
       const affordable = Math.floor(Math.min(remainingBudget, rule.maxBudget) / unitPrice);
       quantity = Math.min(quantity, affordable);
       if (product.storageType === 'cold') quantity = Math.min(quantity, Math.max(0, COLD_WAREHOUSE_CAPACITY - this.getColdWarehouseCount() - coldIncoming()));
@@ -993,6 +1045,7 @@ export class GameSimulation {
       currentDayRecord: this.currentDayRecord,
       coldWarehouseCount: this.getColdWarehouseCount(),
       budget,
+      unitPriceOf: supplierId ? (productId: string) => this.wholesaleUnitPrice(supplierId, productId) : undefined,
     });
   }
 
@@ -1643,9 +1696,12 @@ export class GameSimulation {
       reasons.push('Giỏ hàng trống');
     }
 
-    let subtotal = 0;
+    let listTotal = 0;
     let itemCount = 0;
     let coldItemCount = 0;
+    const state = this.market.suppliers?.[supplierId];
+    const qtyByProduct: Record<string, number> = {};
+    const cartLines: SupplierCartLine[] = [];
 
     for (const line of items ?? []) {
       if (!Number.isSafeInteger(line.quantity) || line.quantity <= 0) {
@@ -1660,13 +1716,33 @@ export class GameSimulation {
       if (product.unlockLevel > this.playerData.level) {
         reasons.push(`Sản phẩm ${product.name} mở khóa ở cấp ${product.unlockLevel}`);
       }
-      subtotal += product.purchasePrice * line.quantity;
+      qtyByProduct[line.productId] = (qtyByProduct[line.productId] ?? 0) + line.quantity;
+      const quote = supplier ? wholesaleQuote(supplier, product, state, line.quantity) : undefined;
+      listTotal += (quote?.listPrice ?? product.purchasePrice) * line.quantity;
+      cartLines.push({
+        productId: line.productId,
+        quantity: line.quantity,
+        unitPrice: quote?.unit ?? product.purchasePrice,
+        lineTotal: (quote?.unit ?? product.purchasePrice) * line.quantity,
+        bulkDiscount: quote?.bulk ?? 0,
+      });
       itemCount += line.quantity;
       if (product.storageType === 'cold') {
         coldItemCount += line.quantity;
       }
     }
 
+    const subtotal = Math.round(listTotal);
+    if (supplier && state) {
+      for (const [productId, quantity] of Object.entries(qtyByProduct)) {
+        const name = PRODUCT_MAP[productId].name;
+        if (state.unavailable.includes(productId)) {
+          reasons.push(`${name}: ${supplier.name} tạm ngừng cung`);
+        } else if (supplier.stockPerProductPerDay !== undefined && quantity > (state.stockLeft[productId] ?? 0)) {
+          reasons.push(`${name}: ${supplier.name} chỉ còn ${state.stockLeft[productId] ?? 0} hôm nay (cần ${quantity})`);
+        }
+      }
+    }
     if (supplier && subtotal < supplier.minOrderValue) {
       reasons.push(`Chưa đạt giá trị đơn tối thiểu ${supplier.minOrderValue.toLocaleString('vi-VN')} ₫ của ${supplier.name}`);
     }
@@ -1695,6 +1771,8 @@ export class GameSimulation {
       itemCount,
       coldItemCount,
       reasons,
+      lines: cartLines,
+      deliveryDay: supplier ? nextDeliveryDay(supplier, this.clock.getTime().day + supplier.delayDays) : undefined,
     };
   }
 
@@ -1714,13 +1792,14 @@ export class GameSimulation {
     const supplier = SUPPLIER_MAP[supplierId]!;
     this.playerData.money -= validation.totalCost;
 
-    const discountMultiplier = 1 - supplier.discountRate;
-    const arrivalDay = this.clock.getTime().day + supplier.delayDays;
+    const arrivalDay = nextDeliveryDay(supplier, this.clock.getTime().day + supplier.delayDays);
     const orderIds: string[] = [];
+    const supplierState = this.market.suppliers?.[supplierId];
 
     for (const line of items) {
       const product = PRODUCT_MAP[line.productId]!;
-      const unitCost = Math.max(1, Math.round(product.purchasePrice * discountMultiplier));
+      const unitCost = wholesaleQuote(supplier, product, supplierState, line.quantity).unit;
+      if (supplierState && supplier.stockPerProductPerDay !== undefined) supplierState.stockLeft[line.productId] = Math.max(0, (supplierState.stockLeft[line.productId] ?? 0) - line.quantity);
       const orderId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       orderIds.push(orderId);
       this.pendingOrders.push({
@@ -1744,7 +1823,7 @@ export class GameSimulation {
       description: `Nhập hàng từ ${supplier.name} (${validation.itemCount} món)`,
     });
 
-    if (supplier.delayDays === 0) {
+    if (arrivalDay <= this.clock.getTime().day) {
       this.deliverOrders(this.clock.getTime().day);
     }
 
@@ -2132,6 +2211,7 @@ export class GameSimulation {
     this.quests = normalizeQuestState(saveData.quests);
     this.stalls = normalizeStallState(saveData.stalls);
     this.market = normalizeMarketState(saveData.market, this.market.seed, saveData.worldTime.day);
+    this.ensureSupplierMarket(saveData.worldTime.day);
     this.demandTable = undefined;
     this.pendingOrders = (saveData.pendingOrders ?? []).map((order) => ({
       ...order,

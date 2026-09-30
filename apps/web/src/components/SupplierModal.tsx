@@ -14,6 +14,13 @@ import {
 import { ALL_PRODUCTS, PRODUCT_MAP, PRODUCT_CATEGORY_LABELS, SUPPLIERS, SUPPLIER_MAP, DEFAULT_SUPPLIER_ID } from '@game/data';
 import { PixelDialog, PixelStat, PixelButton, ProductSlot, QuantityStepper, money, EmptyState, PixelIcon } from './pixel';
 
+export interface SupplierQuoteBoard {
+  quotes: Record<string, { unitPrice: number; previousUnitPrice: number; changePct: number; reasons: string[]; stockLeft?: number; unavailable: boolean }>;
+  deliveryDay: number;
+  deliveryWeekday: string;
+  bulkTiers: Array<{ minQty: number; discount: number }>;
+}
+
 interface Props {
   player: PlayerData;
   pendingOrders: SupplierOrder[];
@@ -22,6 +29,8 @@ interface Props {
   onOrder: (id: string, n: number) => void;
   onOrderCart?: (supplierId: string, items: SupplierCartItem[]) => void;
   onGetSuggestions?: (supplierId: string) => RestockSuggestionResult;
+  getQuotes?: (supplierId: string) => SupplierQuoteBoard;
+  getUnitPrice?: (supplierId: string, productId: string, quantity: number) => number;
   autoBuyConfig?: { enabled: boolean; rules: AutoBuyRule[]; reports: Record<number, AutoBuyReport> };
   onUpdateAutoBuy?: (enabled: boolean, rules: AutoBuyRule[]) => { success: boolean; reason?: string };
   onClose: () => void;
@@ -35,6 +44,8 @@ export const SupplierModal: React.FC<Props> = ({
   onOrder,
   onOrderCart,
   onGetSuggestions,
+  getQuotes,
+  getUnitPrice,
   autoBuyConfig = { enabled: false, rules: [], reports: {} },
   onUpdateAutoBuy,
   onClose,
@@ -59,6 +70,7 @@ export const SupplierModal: React.FC<Props> = ({
 
   const currentSupplier = SUPPLIER_MAP[selectedSupplierId] ?? SUPPLIERS[0];
   const discountRate = currentSupplier.discountRate ?? 0;
+  const board = getQuotes?.(selectedSupplierId);
 
   const coldUsed = inventory.reduce(
     (n, i) => n + (PRODUCT_MAP[i.productId]?.storageType === 'cold' ? i.quantity : 0),
@@ -190,13 +202,20 @@ export const SupplierModal: React.FC<Props> = ({
         <PixelStat label="Tiền vốn hiện có" value={money(player.money)} icon="coin" />
         <div>
           <strong>
-            {currentSupplier.delayDays === 0
+            {board
+              ? (board.deliveryDay <= currentDay ? 'Giao hàng ngay hôm nay' : `Giao sáng ngày ${board.deliveryDay} (${board.deliveryWeekday})`)
+              : currentSupplier.delayDays === 0
               ? 'Giao hàng ngay hôm nay'
               : `Giao sáng ngày ${currentDay + currentSupplier.delayDays}`}
           </strong>
           <p className="muted">
             Kho mát: {coldUsed + coldReserved}/{COLD_WAREHOUSE_CAPACITY} chỗ (còn trống {availableCold})
           </p>
+          {board && board.bulkTiers.length > 0 && (
+            <p className="muted">
+              Ưu đãi số lượng lớn: {board.bulkTiers.map(tier => `từ ${tier.minQty} món giảm ${Math.round(tier.discount * 100)}%`).join(', ')}
+            </p>
+          )}
           {currentSupplier.minOrderValue ? (
             <p className="muted">
               Đơn tối thiểu: <strong>{money(currentSupplier.minOrderValue)}</strong>
@@ -454,7 +473,8 @@ export const SupplierModal: React.FC<Props> = ({
       ) : (
         filteredProducts.map((product) => {
           const quantity = quantities[product.id] ?? 1;
-          const discountedUnitPrice = Math.round(product.purchasePrice * (1 - discountRate));
+          const quote = board?.quotes[product.id];
+          const discountedUnitPrice = getUnitPrice ? getUnitPrice(selectedSupplierId, product.id, quantity) : Math.round(product.purchasePrice * (1 - discountRate));
           const cost = quantity * discountedUnitPrice;
           const locked = product.unlockLevel > player.level;
           const coldFull =
@@ -462,6 +482,10 @@ export const SupplierModal: React.FC<Props> = ({
             coldUsed + coldReserved + quantity > COLD_WAREHOUSE_CAPACITY;
           const reason = locked
             ? `Mở khóa ở cấp ${product.unlockLevel}`
+            : quote?.unavailable
+            ? `${currentSupplier.name} tạm ngừng cung`
+            : quote?.stockLeft !== undefined && quantity > quote.stockLeft
+            ? `Nhà cung cấp chỉ còn ${quote.stockLeft}`
             : cost > player.money
             ? `Thiếu ${money(cost - player.money)}`
             : coldFull
@@ -491,6 +515,13 @@ export const SupplierModal: React.FC<Props> = ({
                   ) : null}{' '}
                   · Tổng <strong>{money(cost)}</strong>
                 </p>
+                {quote && (quote.changePct !== 0 || quote.reasons.length > 0 || quote.stockLeft !== undefined) && (
+                  <p className="muted" style={{ fontSize: '11px' }}>
+                    {quote.changePct !== 0 && <strong style={{ color: quote.changePct > 0 ? 'var(--brick, #b64c3d)' : 'var(--teal)' }}>{quote.changePct > 0 ? '↑' : '↓'} {quote.changePct > 0 ? '+' : ''}{quote.changePct}% so với hôm qua </strong>}
+                    {quote.reasons.length > 0 && <span>· {quote.reasons.join('; ')} </span>}
+                    {quote.stockLeft !== undefined && !quote.unavailable && <span>· Còn {quote.stockLeft} hôm nay</span>}
+                  </p>
+                )}
                 {reason && <p className="action-reason">{reason}</p>}
               </div>
               <div className="product-actions">

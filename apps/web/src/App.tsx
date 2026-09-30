@@ -1155,6 +1155,8 @@ export const App: React.FC = () => {
         currentDay={worldTime.day}
         onOrder={handleSupplierOrder}
         onOrderCart={handleSupplierCartOrder}
+        getQuotes={(supplierId) => simulationRef.current!.getSupplierQuotes(supplierId)}
+        getUnitPrice={(supplierId, productId, quantity) => simulationRef.current!.wholesaleUnitPrice(supplierId, productId, quantity)}
         onGetSuggestions={(supplierId) =>
           simulationRef.current?.suggestRestock(supplierId) ?? {
             supplierId,

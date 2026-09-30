@@ -69,6 +69,28 @@ export interface SupplierConfig {
   minOrderValue: number; // minimum total purchase price in VND
   delayDays: number; // 0 for same-day delivery, 1 for next-day morning delivery
   note?: string;
+  // Thị trường nhà cung cấp (tùy chọn; thiếu = giá cố định, tồn vô hạn, giao mỗi ngày như cũ)
+  stockPerProductPerDay?: number; // tồn mỗi món mỗi ngày ở điều kiện bình thường
+  priceVolatility?: number; // biên độ dao động ngẫu nhiên xác định của giá mục tiêu (0.05 = ±5%)
+  deliveryWeekdays?: number[]; // chỉ giao vào các thứ này (0 = Thứ Hai); thiếu = mọi ngày
+  bulkTiers?: SupplierBulkTier[]; // ưu đãi số lượng lớn theo từng dòng hàng
+  outageFactor?: number; // nhân xác suất ngừng cung khi có sự kiện khan hàng (0 = không bao giờ ngừng)
+}
+
+export interface SupplierBulkTier {
+  minQty: number;
+  discount: number; // 0.05 = giảm 5% đơn giá
+}
+
+/** Trạng thái thị trường của một nhà cung cấp trong một ngày. */
+export interface SupplierDayState {
+  day: number;
+  priceIndex: Record<string, number>; // hệ số giá sỉ theo nhóm hàng hôm nay
+  prevIndex: Record<string, number>; // hôm qua, để hiển thị chênh lệch
+  reasons: Record<string, string[]>; // lý do chính của mức giá theo nhóm
+  stockCap: Record<string, number>; // tồn đầu ngày theo sản phẩm
+  stockLeft: Record<string, number>; // tồn còn lại hôm nay theo sản phẩm
+  unavailable: string[]; // sản phẩm tạm ngừng cung hôm nay
 }
 
 export interface SupplierCartItem {
@@ -76,9 +98,19 @@ export interface SupplierCartItem {
   quantity: number;
 }
 
+export interface SupplierCartLine {
+  productId: string;
+  quantity: number;
+  unitPrice: number; // đơn giá thực sau giá sỉ động, ưu đãi số lượng và chiết khấu mối
+  lineTotal: number;
+  bulkDiscount: number; // tỉ lệ ưu đãi số lượng lớn đã áp dụng
+}
+
 export interface SupplierCartValidationResult {
   valid: boolean;
   supplierId: string;
+  lines?: SupplierCartLine[];
+  deliveryDay?: number;
   subtotal: number;
   discountAmount: number;
   totalCost: number;
@@ -228,6 +260,7 @@ export interface MarketState {
   lastEventStart?: Record<string, number>; // ngày bắt đầu gần nhất của từng sự kiện (khoảng cách tối thiểu)
   priceIndex?: Record<string, number>; // chỉ số giá tham chiếu theo nhóm hàng (thiếu = 1)
   priceTargets?: Record<string, { target: number; demand: number; scarcity: number; cost: number }>; // lý do cho lần đổi giá gần nhất
+  suppliers?: Record<string, SupplierDayState>; // thị trường từng nhà cung cấp (thiếu = giá cố định, tồn vô hạn)
 }
 
 export interface StallState {
@@ -570,7 +603,8 @@ export type GameCommandPayload =
     > }
   | { type: 'buy_plot'; plotId: string }
   | { type: 'claim_quest'; questId: string }
-  | { type: 'buy_stall'; stallId: string };
+  | { type: 'buy_stall'; stallId: string }
+  | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> };
 
 export interface GameCommand {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
@@ -767,6 +801,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'buy_plot': return nonEmptyString(p.plotId);
     case 'claim_quest': return nonEmptyString(p.questId);
     case 'buy_stall': return nonEmptyString(p.stallId);
+    case 'order_supplier': return nonEmptyString(p.supplierId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 64 && p.items.every(item => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
     default: return false;
   }
 }

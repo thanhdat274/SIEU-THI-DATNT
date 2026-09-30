@@ -28,6 +28,7 @@ export interface MarketEventDef {
   warnDaysBefore: number; // báo trước bao nhiêu ngày (0 = báo khi bắt đầu)
   weatherOverride?: string; // ép thời tiết trong thời gian sự kiện (cần báo trước >= 2 ngày để dự báo khớp)
   powerOutage?: boolean; // đợt hạn dùng: tủ mát mất điện
+  supplierOutageChance?: number; // xác suất mỗi món bị nhà cung cấp ngừng cung mỗi ngày trong sự kiện (nhân với outageFactor của mối)
   effects: MarketEventEffect[];
 }
 
@@ -103,7 +104,7 @@ export const MARKET_EVENTS: readonly MarketEventDef[] = [
   },
   {
     id: 'supplier_shortage', kind: 'supply', label: 'Nhà cung cấp khan hàng', notice: 'Nhà cung cấp khan hàng: hàng nhập ít và giá sỉ nhích lên vài ngày.',
-    durationDays: 3, trigger: { chancePerDay: 0.05, minGapDays: 15 }, warnDaysBefore: 0,
+    durationDays: 3, trigger: { chancePerDay: 0.05, minGapDays: 15 }, warnDaysBefore: 0, supplierOutageChance: 0.3,
     effects: [
       { label: 'tồn nhà cung cấp giảm, giá sỉ tăng', effects: { supplierStock: 0.5, wholesalePrice: 1.2 } },
     ],

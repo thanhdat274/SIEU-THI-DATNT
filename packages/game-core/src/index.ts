@@ -20,3 +20,4 @@ export * from './weather';
 export * from './market';
 export * from './demand';
 export * from './price';
+export * from './supplier-market';

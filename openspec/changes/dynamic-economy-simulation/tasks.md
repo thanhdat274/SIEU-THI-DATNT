@@ -35,10 +35,10 @@ Mỗi nhóm tự chơi được và tự mang test + tài liệu (`tổng hợp.
 
 ## 5. Thị trường nhà cung cấp (supplier-market)
 
-- [ ] 5.1 Mở rộng `SupplierConfig` (trường tùy chọn) và tạo `game-core/supplier-market.ts`: giá sỉ theo ngày (bước giới hạn), tồn theo ngày, ngừng cung, bậc ưu đãi số lượng lớn, lịch giao, lưu `market.suppliers`; kiểm: test giá đổi dần, tồn giảm khi đặt, giỏ vượt tồn/ngừng cung bị từ chối nguyên tử, mối không có dữ liệu = vô hạn như cũ.
-- [ ] 5.2 Nối vào đặt hàng (client và `WorldRuntime`) để server kiểm tra tồn/giá; chốt giá vào đơn; kiểm: test lệnh co-op bị từ chối đúng lý do, đơn đã đặt giữ giá, save cũ đặt hàng như trước.
-- [ ] 5.3 `SupplierModal`: hiện giá hôm nay, chênh so với hôm qua + lý do, tồn còn, ngày giao dự kiến, ưu đãi bậc; kiểm: smoke browser đổi ngày thấy giá/tồn thay đổi có lý do.
-- [ ] 5.4 Kịch bản nhiều hệ: nắng nóng → tồn nhà cung cấp đồ mát↓ → giá sỉ↑ dần → người chơi chọn nhập/chờ/đổi mối; kiểm: test tích hợp nhiều ngày ghi Δtiền = tổng sổ cái, không số âm.
+- [x] 5.1 Mở rộng `SupplierConfig` (trường tùy chọn) và tạo `game-core/supplier-market.ts`: giá sỉ theo ngày (bước giới hạn), tồn theo ngày, ngừng cung, bậc ưu đãi số lượng lớn, lịch giao, lưu `market.suppliers`; kiểm: test giá đổi dần, tồn giảm khi đặt, giỏ vượt tồn/ngừng cung bị từ chối nguyên tử, mối không có dữ liệu = vô hạn như cũ.
+- [ ] 5.2 Nối vào đặt hàng (client và `WorldRuntime`) để server kiểm tra tồn/giá; chốt giá vào đơn; kiểm: test lệnh co-op bị từ chối đúng lý do, đơn đã đặt giữ giá, save cũ đặt hàng như trước. (Mở dở: `validateSupplierCart`/`orderSupplierCart` kiểm tra tồn/ngừng cung/giá chốt nguyên tử và lệnh `order_supplier` được `WorldRuntime` kiểm bằng test; nhưng đường commit REST thật của client (`commitBusinessChange`) vẫn tin save do client gửi như mọi lệnh không phải layout, server chưa tự chạy lại đơn hàng.)
+- [x] 5.3 `SupplierModal`: hiện giá hôm nay, chênh so với hôm qua + lý do, tồn còn, ngày giao dự kiến, ưu đãi bậc; kiểm: smoke browser đổi ngày thấy giá/tồn thay đổi có lý do.
+- [x] 5.4 Kịch bản nhiều hệ: nắng nóng → tồn nhà cung cấp đồ mát↓ → giá sỉ↑ dần → người chơi chọn nhập/chờ/đổi mối; kiểm: test tích hợp nhiều ngày ghi Δtiền = tổng sổ cái, không số âm.
 
 ## 6. Hạn dùng theo điều kiện bảo quản (product-spoilage)
 

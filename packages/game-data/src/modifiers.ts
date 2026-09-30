@@ -4,6 +4,7 @@ import { ALL_KNOWN_TAGS } from './product-tags';
 import { SEASON_EVENTS, SEASON_YEAR_DAYS } from './seasons';
 import { CLIMATE_SEASONS, WEATHER_MAP, WEATHER_TYPES } from './weather';
 import { MARKET_EVENTS, MARKET_EVENT_RULES } from './market-events';
+import { validateSupplierData } from './supplier-market';
 
 /** Dải kẹp của tích các hệ số mỗi kênh. */
 export const MODIFIER_RANGES: Record<ModifierChannel, { min: number; max: number }> = {
@@ -81,6 +82,8 @@ const WEEKDAY_RULES: ModifierRule[] = [
 const SEASON_RULES: ModifierRule[] = SEASON_EVENTS.flatMap((season): ModifierRule[] => [
   { id: `season_${season.id}_traffic`, label: `${season.name}: lượng khách`, source: 'season', when: { season: [season.id] }, effects: { traffic: season.demandMultiplier } },
   { id: `season_${season.id}_preferred`, label: `${season.name}: nhóm hàng được ưa chuộng`, source: 'season', when: { season: [season.id] }, target: { categories: season.preferredCategories }, effects: { demand: 1.6 } },
+  ...(season.supplier?.priceMultiplier ? [{ id: `season_${season.id}_wholesale`, label: `${season.name}: giá sỉ`, source: 'season', when: { season: [season.id] }, effects: { wholesalePrice: season.supplier.priceMultiplier } } as ModifierRule] : []),
+  ...(season.supplier?.stockMultiplier ? [{ id: `season_${season.id}_supplier_stock`, label: `${season.name}: hàng về nhà cung cấp`, source: 'season', when: { season: [season.id] }, effects: { supplierStock: season.supplier.stockMultiplier } } as ModifierRule] : []),
   ...Object.entries(season.demandByTag ?? {}).map(([tag, factor]): ModifierRule => ({
     id: `season_${season.id}_tag_${tag}`, label: `${season.name}: ${tag}`, source: 'season', when: { season: [season.id] }, target: { tags: [tag] }, effects: { demand: factor },
   })),
@@ -136,6 +139,7 @@ export function validateMarketData(rules: readonly ModifierRule[] = MODIFIER_RUL
     if (event.durationDays < 1) errors.push(`event ${event.id}: thời lượng < 1 ngày`);
     if (!(event.trigger.chancePerDay > 0 && event.trigger.chancePerDay <= 1)) errors.push(`event ${event.id}: xác suất ngoài (0,1]`);
     if (event.trigger.minGapDays < event.durationDays) errors.push(`event ${event.id}: khoảng cách tối thiểu nhỏ hơn thời lượng`);
+    if (event.supplierOutageChance !== undefined && !(event.supplierOutageChance >= 0 && event.supplierOutageChance <= 1)) errors.push(`event ${event.id}: xác suất ngừng cung ngoài [0,1]`);
     if (event.warnDaysBefore < 0 || event.warnDaysBefore > 2) errors.push(`event ${event.id}: báo trước phải từ 0 đến 2 ngày`);
     if (event.weatherOverride && !weatherIds.has(event.weatherOverride)) errors.push(`event ${event.id}: thời tiết ép ${event.weatherOverride} không tồn tại`);
     if (event.weatherOverride && event.warnDaysBefore < 2) errors.push(`event ${event.id}: sự kiện ép thời tiết phải báo trước 2 ngày để dự báo khớp`);
@@ -161,6 +165,7 @@ export function validateMarketData(rules: readonly ModifierRule[] = MODIFIER_RUL
     for (const id of rule.target?.productIds ?? []) if (!PRODUCT_MAP[id]) errors.push(`rule ${rule.id}: sản phẩm ${id} không tồn tại`);
     for (const category of rule.target?.categories ?? []) if (!PRODUCT_CATEGORY_LABELS[category]) errors.push(`rule ${rule.id}: nhóm ${category} không tồn tại`);
   }
+  errors.push(...validateSupplierData());
   if (ALL_PRODUCTS.length === 0) errors.push('không có sản phẩm');
   return errors;
 }
