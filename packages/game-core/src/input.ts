@@ -5,6 +5,16 @@ export class InputManager {
   private joystickVector: Vector2D = { x: 0, y: 0 };
   private interactRequested: boolean = false;
   private inventoryToggleRequested: boolean = false;
+  private enabled = true;
+
+  public setEnabled(enabled: boolean): void {
+    if (this.enabled === enabled) return;
+    this.enabled = enabled;
+    this.keysDown.clear();
+    this.joystickVector = { x: 0, y: 0 };
+    this.interactRequested = false;
+    this.inventoryToggleRequested = false;
+  }
 
   constructor() {
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -15,6 +25,7 @@ export class InputManager {
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', this.handleKeyDown);
       window.addEventListener('keyup', this.handleKeyUp);
+      window.addEventListener('blur', this.handleBlur);
     }
   }
 
@@ -22,13 +33,22 @@ export class InputManager {
     if (typeof window !== 'undefined') {
       window.removeEventListener('keydown', this.handleKeyDown);
       window.removeEventListener('keyup', this.handleKeyUp);
+      window.removeEventListener('blur', this.handleBlur);
     }
   }
 
+  private handleBlur = (): void => {
+    this.keysDown.clear();
+    this.joystickVector = { x: 0, y: 0 };
+    this.interactRequested = false;
+    this.inventoryToggleRequested = false;
+  };
+
   private handleKeyDown(e: KeyboardEvent): void {
+    if (!this.enabled) return;
     // Avoid capturing inputs if typing inside an input field
     const activeEl = document.activeElement;
-    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+    if (activeEl && (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName) || (activeEl.tagName === 'BUTTON' && ['Space', 'Enter'].includes(e.code)) || (activeEl as HTMLElement).isContentEditable)) {
       return;
     }
 
@@ -38,7 +58,7 @@ export class InputManager {
       this.interactRequested = true;
     }
 
-    if (e.code === 'KeyI' || e.code === 'Tab') {
+    if (e.code === 'KeyI') {
       e.preventDefault();
       this.inventoryToggleRequested = true;
     }
@@ -49,14 +69,17 @@ export class InputManager {
   }
 
   public setJoystickVector(x: number, y: number): void {
+    if (!this.enabled) return;
     this.joystickVector = { x, y };
   }
 
   public triggerInteract(): void {
+    if (!this.enabled) return;
     this.interactRequested = true;
   }
 
   public triggerInventoryToggle(): void {
+    if (!this.enabled) return;
     this.inventoryToggleRequested = true;
   }
 

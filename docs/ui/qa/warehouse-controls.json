@@ -1,0 +1,18 @@
+[
+  {
+    "mobile": false,
+    "entered": {
+      "x": 254.99999999999946,
+      "y": 7.499999999999957
+    },
+    "reducedMotionStatic": true
+  },
+  {
+    "mobile": true,
+    "entered": {
+      "x": 250.66666666666615,
+      "y": 7.499999999999957
+    },
+    "reducedMotionStatic": true
+  }
+]

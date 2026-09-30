@@ -1,0 +1,21 @@
+const { chromium } = require('C:/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const fs = require('node:fs/promises');
+(async()=>{
+ const browser=await chromium.launch({headless:true});
+ const context=await browser.newContext({viewport:{width:1366,height:768}});
+ const page=await context.newPage(); page.setDefaultTimeout(10000);
+ await page.goto('http://127.0.0.1:5173/'); await page.locator('.game-hud').waitFor();
+ await page.getByRole('button',{name:'Lưu tiến trình',exact:true}).click();
+ await page.getByRole('button',{name:'Lưu tiến trình ngay',exact:true}).click();
+ await page.getByRole('status').filter({hasText:'Đã lưu tiến trình thành công.'}).waitFor();
+ const original=await page.locator('.info-card').first().innerText();
+ await page.evaluate(async()=>{const {db,SAVE_STORAGE_KEY}=await import('/src/db.ts');const s=await db.saves.get(SAVE_STORAGE_KEY);await db.saves.update(SAVE_STORAGE_KEY,{revision:s.revision+100});});
+ await page.getByRole('button',{name:'Lưu tiến trình ngay',exact:true}).click();
+ await page.getByRole('status').filter({hasText:'Chưa lưu được.'}).waitFor();
+ console.log(JSON.stringify({saveFailure:true,timeUnchanged:original===await page.locator('.info-card').first().innerText()}));
+ await page.screenshot({path:'docs/ui/qa/save-failure.png'}); await page.keyboard.press('Escape');
+ await page.waitForTimeout(30000);
+ const perf=await page.evaluate(()=>new Promise(resolve=>{const frames=[];let last;function tick(t){if(last)frames.push(t-last);last=t;if(frames.length<180)requestAnimationFrame(tick);else{frames.sort((a,b)=>a-b);resolve({p95:frames[Math.floor(frames.length*.95)],samples:frames.length,viewport:[innerWidth,innerHeight],dpr:devicePixelRatio});}}requestAnimationFrame(tick);}));
+ await fs.writeFile('docs/ui/qa/performance.json',JSON.stringify(perf,null,2)); console.log(JSON.stringify(perf));
+ await page.screenshot({path:'docs/ui/qa/final-1366.png'});await browser.close();
+})().catch(error=>{console.error(error);process.exit(1);});

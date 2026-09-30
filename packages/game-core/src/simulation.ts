@@ -10,12 +10,16 @@ import {
   WorldTime,
   SupplierOrder,
   COLD_WAREHOUSE_CAPACITY,
+  CustomerState,
+  isSalesFixture,
+  isWarehouseFixture,
 } from '@game/shared';
-import { INITIAL_REFRIGERATOR, PRODUCT_MAP } from '@game/data';
+import { INITIAL_REFRIGERATOR, PRODUCT_MAP, WAREHOUSE_FIXTURES, WAREHOUSE_ENTRANCE, STORE_BOUNDS } from '@game/data';
 import { CollisionSystem } from './collision';
 import { InputManager } from './input';
 import { GameClock } from './clock';
 import { expiryDay, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
+import { findPath, GridPoint, tileCenter } from './pathfinding';
 
 export interface GameSimulationCallbacks {
   onInteractionAvailable?: (fixture: StoreFixture | null) => void;
@@ -25,6 +29,8 @@ export interface GameSimulationCallbacks {
   onTimeChanged?: () => void;
   onStockExpired?: (quantity: number) => void;
   onStateChanged?: () => void;
+  onPlayerRelocated?: () => void;
+  onOrdersDelivered?: (quantity:number) => void;
 }
 
 export class GameSimulation {
@@ -39,6 +45,9 @@ export class GameSimulation {
   private clock: GameClock;
   private inputManager: InputManager;
   private callbacks: GameSimulationCallbacks;
+  private customer: CustomerState | null;
+  private customerPath: Vector2D[] = [];
+  private customerSpawnCooldown: number;
 
   private activeFixture: StoreFixture | null = null;
   private playerSpeed: number = 130; // Pixels per second
@@ -59,19 +68,24 @@ export class GameSimulation {
     this.tileMap = tileMap;
     this.inputManager = inputManager;
     this.callbacks = callbacks;
+    this.customer = initialSave.customer ? { ...initialSave.customer, position: { ...initialSave.customer.position } } : null;
+    this.customerSpawnCooldown = initialSave.customerSpawnCooldown ?? 4;
     this.hydrateStock(initialSave.worldTime.day);
 
     this.collisionSystem = new CollisionSystem(this.tileMap, this.fixtures);
+    this.ensureSafePlayerPosition();
     this.clock = new GameClock(initialSave.worldTime, (day) => {
       const spoiled = this.expireStock(day);
       this.deliverOrders(day);
       this.statistics.totalDaysPassed = Math.max(this.statistics.totalDaysPassed, day - 1);
+      if (this.customer) this.routeCustomer('leaving');
       if (spoiled > 0) this.callbacks.onStockExpired?.(spoiled);
       if (this.callbacks.onDayChanged) {
         this.callbacks.onDayChanged(day);
       }
       this.notifyStateChanged();
     }, () => this.callbacks.onTimeChanged?.());
+    if (this.customer && this.customer.stage !== 'checkout') this.routeCustomer(this.customer.stage, false);
   }
 
   public getPlayerData(): PlayerData {
@@ -102,6 +116,10 @@ export class GameSimulation {
     return this.clock;
   }
 
+  public getCustomer(): CustomerState | null {
+    return this.customer ? { ...this.customer, position: { ...this.customer.position } } : null;
+  }
+
   public getTime(): WorldTime {
     return this.clock.getTime();
   }
@@ -119,6 +137,14 @@ export class GameSimulation {
   }
 
   private hydrateStock(day: number): void {
+    const sideRoom=this.fixtures.some(f=>f.id==='warehouse_dry_rack'&&f.tileX>=15);
+    const p=this.playerData.position;
+    if(sideRoom&&p.x>=15*32&&p.x<23*32&&p.y>=32&&p.y<8*32){this.playerData.position={...WAREHOUSE_ENTRANCE};this.callbacks.onPlayerRelocated?.();}
+    for(const fixture of WAREHOUSE_FIXTURES) {
+      const index=this.fixtures.findIndex(f=>f.id===fixture.id);
+      if(index<0)this.fixtures.push({...fixture});
+      else this.fixtures[index]={...fixture};
+    }
     // A version-1 save has no refrigerator or lot data. Preserve its quantities
     // and assign a fresh shelf life when first loaded into version 2.
     if (!this.fixtures.some((fixture) => fixture.id === INITIAL_REFRIGERATOR.id)) {
@@ -129,6 +155,7 @@ export class GameSimulation {
       return { productId: item.productId, quantity: sumLots(lots), lots };
     }).filter((item) => item.quantity > 0);
     this.fixtures = this.fixtures.map((fixture) => {
+      if(isWarehouseFixture(fixture)) return {...fixture,assignedProductId:undefined,currentStock:0,stockLots:[]};
       if (!fixture.assignedProductId || fixture.currentStock <= 0) {
         return { ...fixture, assignedProductId: undefined, currentStock: 0, stockLots: [] };
       }
@@ -168,6 +195,7 @@ export class GameSimulation {
   public update(dt: number): void {
     // 1. Advance game clock
     this.clock.update(dt);
+    this.updateCustomer(dt);
 
     // 2. Process player movement
     const moveVec = this.inputManager.getMovementVector();
@@ -208,6 +236,87 @@ export class GameSimulation {
     }
   }
 
+  private routeCustomer(stage: CustomerState['stage'], notify = true): void {
+    if (!this.customer) return;
+    this.customer.stage = stage;
+    const start = { x: Math.floor(this.customer.position.x / TILE_SIZE), y: Math.floor(this.customer.position.y / TILE_SIZE) };
+    const goals: GridPoint[] = [];
+    if (stage === 'to_shelf') {
+      const fixture = this.fixtures.find((item) => item.id === this.customer!.targetFixtureId);
+      if (fixture) {
+        for (let x = fixture.tileX; x < fixture.tileX + fixture.widthTiles; x++) {
+          goals.push({ x, y: fixture.tileY - 1 }, { x, y: fixture.tileY + fixture.heightTiles });
+        }
+        for (let y = fixture.tileY; y < fixture.tileY + fixture.heightTiles; y++) {
+          goals.push({ x: fixture.tileX - 1, y }, { x: fixture.tileX + fixture.widthTiles, y });
+        }
+      }
+    } else if (stage === 'to_checkout') goals.push({ x: 9, y: 8 });
+    else if (stage === 'leaving') goals.push({ x: 9, y: 11 });
+    const customerMap = {...this.tileMap, collisionLayer:this.tileMap.collisionLayer.map((solid,i)=>solid || Math.floor(i / this.tileMap.width)+(this.tileMap.originTileY??0)<=STORE_BOUNDS.top)};
+    const customerCollision = new CollisionSystem(customerMap,this.fixtures);
+    const paths = goals.map((goal) => findPath(customerMap, customerCollision, start, goal)).filter((path) => path.length);
+    paths.sort((a, b) => a.length - b.length);
+    this.customerPath = paths[0]?.map(tileCenter).slice(1) ?? [];
+    if (!paths.length && stage !== 'checkout') {
+      this.customer = null;
+      this.customerPath = [];
+    }
+    if (notify) this.notifyStateChanged();
+  }
+
+  private updateCustomer(dt: number): void {
+    if (!this.customer) {
+      if (!this.clock.getTime().isStoreOpen) return;
+      this.customerSpawnCooldown -= dt;
+      if (this.customerSpawnCooldown > 0) return;
+      this.customerSpawnCooldown = 12;
+      const stocked = this.fixtures.filter((fixture) => isSalesFixture(fixture) && fixture.currentStock > 0 && fixture.assignedProductId);
+      if (!stocked.length) return;
+      const target = stocked[this.statistics.totalCustomersServed % stocked.length];
+      this.customer = { position: tileCenter({ x: 9, y: 11 }), stage: 'to_shelf', targetFixtureId: target.id, patience: 45, checkoutWait: 2.5 };
+      this.routeCustomer('to_shelf');
+      return;
+    }
+    const customer = this.customer;
+    if (customer.stage !== 'leaving') {
+      customer.patience -= dt;
+      if (customer.patience <= 0 || !this.clock.getTime().isStoreOpen) {
+        this.playerData.reputation = Math.max(0, this.playerData.reputation - 1);
+        this.routeCustomer('leaving');
+      }
+    }
+    if (!this.customer) return;
+    if (customer.stage === 'checkout') {
+      customer.checkoutWait -= dt;
+      if (customer.checkoutWait <= 0) {
+        if (!this.checkoutShelf(customer.targetFixtureId)) {
+          this.playerData.reputation = Math.max(0, this.playerData.reputation - 1);
+        }
+        this.routeCustomer('leaving');
+      }
+      return;
+    }
+    const next = this.customerPath[0];
+    if (next) {
+      const dx = next.x - customer.position.x;
+      const dy = next.y - customer.position.y;
+      const distance = Math.hypot(dx, dy);
+      const step = 72 * dt;
+      if (distance <= step) {
+        customer.position = { ...next };
+        this.customerPath.shift();
+      } else customer.position = { x: customer.position.x + dx / distance * step, y: customer.position.y + dy / distance * step };
+      return;
+    }
+    if (customer.stage === 'to_shelf') this.routeCustomer('to_checkout');
+    else if (customer.stage === 'to_checkout') this.routeCustomer('checkout');
+    else if (customer.stage === 'leaving') {
+      this.customer = null;
+      this.notifyStateChanged();
+    }
+  }
+
   private checkNearbyInteractions(): void {
     const pX = this.playerData.position.x;
     const pY = this.playerData.position.y;
@@ -239,7 +348,7 @@ export class GameSimulation {
    */
   public restockShelf(fixtureId: string, productId: string, amount: number = 1): boolean {
     const fixture = this.fixtures.find((f) => f.id === fixtureId);
-    if (!fixture || fixture.type === 'cashier_counter' || !Number.isSafeInteger(amount) || amount <= 0) return false;
+    if (!fixture || !isSalesFixture(fixture) || !Number.isSafeInteger(amount) || amount <= 0) return false;
 
     const product = PRODUCT_MAP[productId];
     if (!product || product.unlockLevel > this.playerData.level) return false;
@@ -281,7 +390,7 @@ export class GameSimulation {
    */
   public unstockShelf(fixtureId: string, amount: number = 1): boolean {
     const fixture = this.fixtures.find((f) => f.id === fixtureId);
-    if (!fixture || !fixture.assignedProductId || fixture.currentStock <= 0 || !Number.isSafeInteger(amount) || amount <= 0) return false;
+    if (!fixture || !isSalesFixture(fixture) || !fixture.assignedProductId || fixture.currentStock <= 0 || !Number.isSafeInteger(amount) || amount <= 0) return false;
 
     const actualAmount = Math.min(amount, fixture.currentStock);
     if (PRODUCT_MAP[fixture.assignedProductId]?.storageType === 'cold' &&
@@ -341,13 +450,14 @@ export class GameSimulation {
         slot.quantity = sumLots(slot.lots!);
       } else this.inventory.push({ productId: order.productId, quantity: order.quantity, lots: [lot] });
     }
+    if(arrived.length) this.callbacks.onOrdersDelivered?.(arrived.reduce((n,o)=>n+o.quantity,0));
   }
 
   /** Complete one in-store sale from shelf stock at the cashier. */
   public checkoutShelf(fixtureId: string): boolean {
     if (!this.clock.getTime().isStoreOpen) return false;
     const fixture = this.fixtures.find((item) => item.id === fixtureId);
-    if (!fixture || fixture.type === 'cashier_counter' || !fixture.assignedProductId || fixture.currentStock < 1) return false;
+    if (!fixture || !isSalesFixture(fixture) || !fixture.assignedProductId || fixture.currentStock < 1) return false;
     const product = PRODUCT_MAP[fixture.assignedProductId];
     if (!product) return false;
 
@@ -396,6 +506,14 @@ export class GameSimulation {
     }
   }
 
+  private ensureSafePlayerPosition(): void {
+    const p=this.playerData.position;
+    if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||this.collisionSystem.isColliding({x:p.x-10,y:p.y-4,width:20,height:14})) {
+      this.playerData.position={...WAREHOUSE_ENTRANCE};
+      this.callbacks.onPlayerRelocated?.();
+    }
+  }
+
   /**
    * Export complete save game data snapshot
    */
@@ -415,6 +533,8 @@ export class GameSimulation {
       },
       inventory: this.getInventory(),
       pendingOrders: this.getPendingOrders(),
+      customer: this.getCustomer() ?? undefined,
+      customerSpawnCooldown: this.customerSpawnCooldown,
       statistics: { ...this.statistics },
     };
   }
@@ -427,11 +547,15 @@ export class GameSimulation {
     this.fixtures = saveData.storeLayout.fixtures.map((f) => ({ ...f }));
     this.inventory = saveData.inventory.map((i) => ({ ...i }));
     this.pendingOrders = (saveData.pendingOrders ?? []).map((order) => ({ ...order }));
+    this.customer = saveData.customer ? { ...saveData.customer, position: { ...saveData.customer.position } } : null;
+    this.customerSpawnCooldown = saveData.customerSpawnCooldown ?? 4;
     this.statistics = { ...saveData.statistics };
     this.createdAt = saveData.createdAt;
     this.hydrateStock(saveData.worldTime.day);
     this.clock.setTime(saveData.worldTime);
     this.collisionSystem.updateFixtures(this.fixtures);
+    this.ensureSafePlayerPosition();
+    if (this.customer && this.customer.stage !== 'checkout') this.routeCustomer(this.customer.stage, false);
     this.activeFixture = null;
     this.notifyStateChanged();
   }

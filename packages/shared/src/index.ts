@@ -66,7 +66,17 @@ export interface SupplierOrder {
   arrivalDay: number;
 }
 
-export type FixtureType = 'shelf_wooden' | 'shelf_glass' | 'cashier_counter' | 'refrigerator';
+export interface CustomerState {
+  position: Vector2D;
+  stage: 'to_shelf' | 'to_checkout' | 'checkout' | 'leaving';
+  targetFixtureId: string;
+  patience: number;
+  checkoutWait: number;
+}
+
+export type FixtureType = 'shelf_wooden' | 'shelf_glass' | 'cashier_counter' | 'refrigerator' | 'warehouse_dry' | 'warehouse_cold' | 'warehouse_receiving';
+export const isWarehouseFixture = (fixture: Pick<StoreFixture, 'type'>): boolean => fixture.type.startsWith('warehouse_');
+export const isSalesFixture = (fixture: Pick<StoreFixture, 'type'>): boolean => fixture.type === 'shelf_wooden' || fixture.type === 'shelf_glass' || fixture.type === 'refrigerator';
 
 export interface StoreFixture {
   id: string;
@@ -119,6 +129,8 @@ export interface SaveGameData {
   storeLayout: StoreLayout;
   inventory: InventoryItem[];
   pendingOrders?: SupplierOrder[];
+  customer?: CustomerState;
+  customerSpawnCooldown?: number;
   statistics: {
     totalRevenue: number;
     totalCustomersServed: number;
@@ -137,6 +149,8 @@ export interface TileMapLayer {
 }
 
 export interface GameTileMap {
+  /** World tile row represented by local array row 0; omitted means 0. */
+  originTileY?: number;
   width: number;
   height: number;
   tileWidth: number;

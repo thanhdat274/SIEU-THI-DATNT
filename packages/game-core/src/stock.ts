@@ -13,8 +13,15 @@ export function sumLots(lots: StockLot[]): number {
 /** Old saves have only aggregate quantities. Give those goods a full shelf life on migration. */
 export function normalizeLots(quantity: number, lots: StockLot[] | undefined, productId: string, day: number): StockLot[] {
   if (lots) {
-    return lots.filter((lot) => Number.isSafeInteger(lot.quantity) && lot.quantity > 0 && Number.isSafeInteger(lot.expiresOnDay))
+    const valid = lots.filter((lot) => Number.isSafeInteger(lot.quantity) && lot.quantity > 0 && Number.isSafeInteger(lot.expiresOnDay))
       .map((lot) => ({ ...lot })).sort((a, b) => a.expiresOnDay - b.expiresOnDay);
+    // Interrupted/partial older writes may have an aggregate quantity without
+    // the matching lot. Preserve the missing goods rather than deleting them.
+    const missing = quantity - sumLots(valid);
+    if (Number.isSafeInteger(missing) && missing > 0) {
+      mergeLots(valid, [{ quantity: missing, expiresOnDay: expiryDay(productId, day) }]);
+    }
+    return valid;
   }
   return Number.isSafeInteger(quantity) && quantity > 0
     ? [{ quantity, expiresOnDay: expiryDay(productId, day) }]

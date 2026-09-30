@@ -1,5 +1,18 @@
 # BẢNG THEO DÕI CÔNG VIỆC (TASKS PROGRESS)
 
+## ĐỀ XUẤT THAM KHẢO GAME — 30/09/2026
+
+- Đã tạo kế hoạch OpenSpec `adapt-reference-shop-operations`: khảo sát source game `GAME/tap-hoa-dau-hem`, snapshot 335 sản phẩm, proposal/design/7 delta specs/tasks.
+- Chưa triển khai: giữ 36 món cũ và thêm 20 món được duyệt; sơ đồ kệ, nhiều mối nhập/hàng chờ, giỏ/queue/giao dịch, ledger/gợi ý, thu ngân/châm kệ, ca/lương và tự nhập opt-in.
+- Thứ tự/phụ thuộc/kiểm chứng theo `openspec/changes/adapt-reference-shop-operations/tasks.md`; phối hợp command với `shared-alley-multiplayer`, không tạo backend thứ hai. Chưa chạy game/test nguồn; không coi tài liệu là chức năng đã xong.
+
+## ĐỊNH HƯỚNG CO-OP — 30/09/2026
+- [x] Tạo proposal/design/ba delta specs/tasks tại `openspec/changes/shared-alley-multiplayer`; đây là tài liệu kế hoạch, chưa là multiplayer chạy thật.
+- [ ] Triển khai theo tasks của change: schema world/cơ sở → core headless/giao dịch → server/auth/persistence → client hai người → nghiệm thu reconnect/chơi lệch giờ.
+- [ ] Bản đầu: một tiệm chung, tối đa hai thành viên, owner offline member vẫn chơi; tất cả offline world pause; giữ save local riêng.
+- [ ] Hướng sau: nhiều cơ sở độc lập trong cùng hẻm và quyền ghé thăm/phụ việc; chuyển/gộp tiệm chưa thuộc bản đầu.
+- Ưu tiên kiến trúc multiplayer trước mở rộng building/nhân viên; kiểm tra giao dịch/save và Phase 3 vẫn là nền cần hoàn thiện, không coi đã nghiệm thu.
+
 ## GIAI ĐOẠN 0: THIẾT LẬP NỀN TẢNG DỰ ÁN (PHASE 0)
 - [x] Tạo cấu trúc Monorepo (`pnpm-workspace.yaml`, `package.json`).
 - [x] Khởi tạo các packages: `shared`, `game-data`, `game-core`, `game-renderer`, `game-ui`.
@@ -48,9 +61,31 @@
 - [x] Đặt hàng nhà phân phối bằng tiền thật; đơn chờ được lưu và giao vào kho sáng ngày kế.
 - [x] Bán từng món từ tồn kệ tại quầy; cộng tiền, XP, doanh thu và lưu thống kê.
 - [x] Kiểm thử nghiệp vụ đặt hàng, giao hàng, bán hàng và khôi phục dữ liệu.
-- [ ] Mở rộng danh mục lên 30+ sản phẩm và đủ 10 nhóm.
-- [ ] Quản lý hạn sử dụng theo lô và tủ mát. Hiện hàng chưa hỏng theo thời gian.
-- [ ] Khách NPC tự đi lại, chọn hàng và xếp hàng; thao tác bán ở quầy hiện do người chơi thực hiện.
+- [x] Mở rộng danh mục lên 36 sản phẩm và đủ 10 nhóm; giá nhập/bán và cấp mở khóa dùng chung trong đặt hàng, kho và quầy.
+- [x] Quản lý hạn sử dụng theo lô, loại hàng quá hạn qua ngày, giới hạn kho lạnh 40 món và tủ mát 12 món. Bản lưu cũ được bổ sung lô/tủ mát mà vẫn giữ số hàng.
+- [x] Khách NPC đầu tiên dùng A* đi từ cửa tới kệ, quầy và rời tiệm; giao dịch trừ hàng trên kệ, cộng tiền/XP/thống kê; trạng thái khách đang đi được lưu/tải.
+- [ ] Hàng đợi nhiều khách, người chơi thao tác tính tiền tại quầy và phản hồi mức hài lòng. Hiện NPC tự thanh toán sau khi tới quầy.
 - [ ] Báo cáo tài chính theo ngày, nhiệm vụ và mở khóa cấp độ.
-- [ ] Kiểm thử trực quan trên desktop và mobile, đo FPS.
+- [ ] Đo FPS trên thiết bị thật. Đã kiểm tra giao diện 960×540, 844×390 và màn hình dọc 390×844 trong trình duyệt thử nghiệm; chưa kiểm tra điện thoại thật.
 - [ ] Thiết lập lint script và chạy lint; dự án hiện chưa có cấu hình lint.
+
+## BÀN GIAO PHIÊN 2026-09-30
+- Giai đoạn hiện tại: Phase 3. Phase 2 đã hoàn thành và được kiểm tra bằng typecheck, 10 nhóm test lõi, build production và lưu/tải trên trình duyệt.
+- Tiếp theo: bổ sung hàng đợi nhiều NPC, để người chơi thu tiền tại quầy, phản hồi kiên nhẫn/uy tín; kiểm tra hiệu năng và thiết bị thật.
+- Vấn đề còn biết: không có lint script; NestJS/MongoDB/Firebase/PWA/ECS đầy đủ vẫn thuộc các giai đoạn sau. Bản build hiện cảnh báo JS chunk chính trên 500 kB.
+
+## THUẾ — TAX-0 VÀ MODULE NỀN
+## PREMIUM VIETNAMESE PIXEL UI
+- [x] Nhà kho vật lý sau tiệm đã triển khai: cửa/lối đi, art stock thật, panel kiểm kê/nhận hàng, tương thích save cũ và kiểm thử tích hợp. Bằng chứng docs/ui/WAREHOUSE.md và docs/ui/qa/warehouse-*.
+- [x] Bộ giao diện mới, asset original, modal focus/input và save feedback đã triển khai.
+- [x] Typecheck/test/build và smoke purchase → delivery → restock → sale → save/reload; ảnh năm viewport nằm trong docs/ui/qa.
+- [ ] Hoàn thành các kiểm tra còn mở ở openspec/changes/premium-vietnamese-pixel-ui/tasks.md. Báo cáo pass/thiếu bằng chứng và hạn chế hiệu năng: docs/ui/VERIFICATION.md.
+
+## THUẾ — TAX-0 VÀ MODULE NỀN
+- [x] Đọc tài liệu và kiểm tra trạng thái repository; giữ các thay đổi đang có.
+- [x] Tạo tám tài liệu docs/tax; phân biệt nguồn chính thức với quy tắc đủ điều kiện chạy.
+- [x] Thêm registry bất biến và kiểm thử ngày/phiên bản/khôi phục JSON/khóa UNVERIFIED.
+- [ ] Đối chiếu bản ký, sửa đổi đến 30/09/2026, điều khoản chuyển tiếp và thông tư; TAX-0 chưa hoàn tất.
+- [ ] Xác minh cụ thể PIT/VAT đa hoạt động, thuế suất CIT và điều kiện miễn, NĐ 254 về hóa đơn, đăng ký, thực phẩm/BHXH.
+- [ ] Thêm TAX-1 sau thẩm định điều kiện; tích hợp năm pháp lý và taxRuleVersion vào save có migration.
+- [ ] Triển khai engine, kế toán, UI, trợ lý và persistence theo từng phase; không kích hoạt công thức giả định.

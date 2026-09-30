@@ -1,0 +1,12 @@
+[
+  {
+    "dpr": 1,
+    "canvases": 49,
+    "noPerFrameGeneration": true
+  },
+  {
+    "dpr": 2,
+    "canvases": 49,
+    "noPerFrameGeneration": true
+  }
+]

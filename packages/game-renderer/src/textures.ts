@@ -1,4 +1,5 @@
 import { Texture } from 'pixi.js';
+import { createPremiumTexture } from './premium-textures';
 
 /**
  * Procedural Pixel Art Generator for "Tiệm Tạp Hóa Đầu Hẻm"
@@ -20,6 +21,11 @@ function createCanvas(width: number, height: number): HTMLCanvasElement {
 export class PixelTextureFactory {
   private textures: Map<string, Texture> = new Map();
 
+  public destroy(): void {
+    for (const texture of this.textures.values()) texture.destroy(true);
+    this.textures.clear();
+  }
+
   public getTexture(key: string): Texture {
     const existing = this.textures.get(key);
     if (existing) return existing;
@@ -37,6 +43,8 @@ export class PixelTextureFactory {
   }
 
   private createCanvasForKey(key: string): HTMLCanvasElement {
+    const premium = createPremiumTexture(key);
+    if (premium) return premium;
     switch (key) {
       case 'tile_store_floor':
         return this.createStoreFloorTile();
@@ -46,6 +54,10 @@ export class PixelTextureFactory {
         return this.createSidewalkTile();
       case 'tile_street':
         return this.createStreetTile();
+      case 'tile_pavement_alley':
+        return this.createPavementAlleyTile();
+      case 'tile_grass_patch':
+        return this.createGrassPatchTile();
       case 'tile_yellow_wall':
         return this.createYellowWallTile();
       case 'tile_signboard':
@@ -70,6 +82,8 @@ export class PixelTextureFactory {
         return this.createPlayerTexture('left');
       case 'player_right':
         return this.createPlayerTexture('right');
+      case 'customer_down':
+        return this.createCustomerTexture();
       case 'item_mi_hao_hao':
         return this.createHaoHaoTexture();
       case 'item_xa_xi':
@@ -180,6 +194,58 @@ export class PixelTextureFactory {
     ctx.fillRect(8, 6, 4, 2);
     ctx.fillRect(20, 18, 5, 2);
     ctx.fillRect(6, 24, 3, 2);
+
+    return canvas;
+  }
+
+  /**
+   * Pavement Alley - Nền gạch con hẻm bê tông sáng màu, sạch sẽ
+   */
+  private createPavementAlleyTile(): HTMLCanvasElement {
+    const canvas = createCanvas(32, 32);
+    const ctx = canvas.getContext('2d')!;
+
+    // Warm concrete ground matching nostalgic Vietnamese alley
+    ctx.fillStyle = '#b8aea0';
+    ctx.fillRect(0, 0, 32, 32);
+
+    // Subtle stone paver texture
+    ctx.fillStyle = '#a99e90';
+    ctx.fillRect(0, 0, 32, 1);
+    ctx.fillRect(0, 0, 1, 32);
+
+    ctx.fillStyle = '#c5bcaf';
+    ctx.fillRect(1, 1, 30, 1);
+    ctx.fillRect(1, 1, 1, 30);
+
+    // Natural stone flecks
+    ctx.fillStyle = '#9e9384';
+    ctx.fillRect(7, 11, 2, 2);
+    ctx.fillRect(21, 23, 2, 2);
+    ctx.fillRect(17, 7, 2, 1);
+
+    return canvas;
+  }
+
+  /**
+   * Grass / Moss patch around neighborhood trees
+   */
+  private createGrassPatchTile(): HTMLCanvasElement {
+    const canvas = createCanvas(32, 32);
+    const ctx = canvas.getContext('2d')!;
+
+    ctx.fillStyle = '#5c7a52';
+    ctx.fillRect(0, 0, 32, 32);
+
+    ctx.fillStyle = '#4c6843';
+    ctx.fillRect(4, 8, 4, 3);
+    ctx.fillRect(18, 16, 5, 3);
+    ctx.fillRect(10, 24, 6, 2);
+
+    ctx.fillStyle = '#6e9163';
+    ctx.fillRect(12, 6, 3, 2);
+    ctx.fillRect(24, 10, 3, 3);
+    ctx.fillRect(6, 20, 2, 3);
 
     return canvas;
   }
@@ -621,6 +687,30 @@ export class PixelTextureFactory {
     ctx.fillRect(3, 12, 22, 2);
     ctx.fillStyle = '#540b0e';
     ctx.fillRect(8, 14, 12, 2);
+    return canvas;
+  }
+
+  private createCustomerTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(32, 36);
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#3a2c25';
+    ctx.fillRect(10, 2, 12, 7);
+    ctx.fillStyle = '#dbab78';
+    ctx.fillRect(9, 8, 14, 10);
+    ctx.fillStyle = '#2d2725';
+    ctx.fillRect(12, 12, 2, 2);
+    ctx.fillRect(19, 12, 2, 2);
+    ctx.fillStyle = '#3b7790';
+    ctx.fillRect(8, 18, 16, 10);
+    ctx.fillStyle = '#dbab78';
+    ctx.fillRect(5, 20, 3, 7);
+    ctx.fillRect(24, 20, 3, 7);
+    ctx.fillStyle = '#3d4d5f';
+    ctx.fillRect(10, 28, 5, 5);
+    ctx.fillRect(18, 28, 5, 5);
+    ctx.fillStyle = '#49382c';
+    ctx.fillRect(9, 33, 7, 2);
+    ctx.fillRect(17, 33, 7, 2);
     return canvas;
   }
 

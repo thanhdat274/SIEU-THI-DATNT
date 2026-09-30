@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { generateStarterTileMap, PRODUCT_MAP } from '@game/data';
 import { InputManager, GameSimulation } from '@game/core';
 import { PixiGameViewport } from '@game/renderer';
-import { SaveGameData, SupplierOrder } from '@game/shared';
+import { SaveGameData, SupplierOrder, isSalesFixture, isWarehouseFixture } from '@game/shared';
 
 import { loadOrCreateSave, persistSave, resetSaveToDefault } from './db';
 import { useGameStore } from './store/useGameStore';
 import { HUD } from './components/HUD';
+import { WarehouseModal } from './components/WarehouseModal';
 import { ShelfModal } from './components/ShelfModal';
 import { CashierModal } from './components/CashierModal';
 import { InventoryModal } from './components/InventoryModal';
@@ -16,6 +17,8 @@ import { RotateOverlay } from './components/RotateOverlay';
 import { ToastContainer } from './components/ToastContainer';
 import { SupplierModal } from './components/SupplierModal';
 import { BottomBar } from './components/BottomBar';
+import { WarehouseDock } from './components/WarehouseDock';
+import { PixelButton, PixelIcon } from './components/pixel';
 
 export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,7 +35,7 @@ export const App: React.FC = () => {
   const [currentRevision, setCurrentRevision] = useState<number>(1);
   const [pendingOrders, setPendingOrders] = useState<SupplierOrder[]>([]);
   const [statistics, setStatistics] = useState<SaveGameData['statistics']>({ totalRevenue: 0, totalCustomersServed: 0, totalDaysPassed: 0 });
-  const [isSupplierOpen, setSupplierOpen] = useState(false);
+  const [isWarehouseDockOpen, setWarehouseDockOpen] = useState(() => !window.matchMedia('(max-width: 1023px), (max-height: 499px)').matches);
   const [gameSpeed, setGameSpeed] = useState<number>(1);
 
   const {
@@ -43,6 +46,8 @@ export const App: React.FC = () => {
     activeFixtureModal,
     isInventoryModalOpen,
     isSaveModalOpen,
+    isSupplierModalOpen,
+    openSupplierModal,
     setPlayerData,
     setWorldTime,
     setInventory,
@@ -68,7 +73,8 @@ export const App: React.FC = () => {
 
   // Save progress to Dexie
   const handleSaveGame = useCallback(async (isManual: boolean = false) => {
-    if (!simulationRef.current) return;
+    if (!simulationRef.current) return false;
+    let savedSuccessfully = false;
     saveQueueRef.current = saveQueueRef.current.catch(() => {}).then(async () => {
       try {
         if (!simulationRef.current) return;
@@ -77,6 +83,7 @@ export const App: React.FC = () => {
         revisionRef.current = saved.revision;
         setLastSavedTime(saved.updatedAt);
         setCurrentRevision(saved.revision);
+        savedSuccessfully = true;
         if (isManual) addToast('Đã lưu tiến trình thành công vào máy!', 'success');
       } catch (err) {
         console.error('Save error:', err);
@@ -84,6 +91,7 @@ export const App: React.FC = () => {
       }
     });
     await saveQueueRef.current;
+    return savedSuccessfully;
   }, [addToast]);
 
   // Reset progress
@@ -100,8 +108,11 @@ export const App: React.FC = () => {
       setLastSavedTime(freshSave.updatedAt);
       setGameSpeed(Math.max(1, freshSave.worldTime.timeScale / 60));
       addToast('Đã khởi tạo lại tiệm mới thành công!', 'info');
+      return true;
     } catch (err) {
       console.error('Reset error:', err);
+      addToast('Không thể khởi tạo tiệm mới. Hãy thử lại.', 'warn');
+      return false;
     }
   }, [syncFromSimulation, addToast]);
 
@@ -138,6 +149,8 @@ export const App: React.FC = () => {
       // 2. Setup inputs
       const inputManager = new InputManager();
       inputManager.attachListeners();
+      const modalState = useGameStore.getState();
+      inputManager.setEnabled(!(modalState.activeFixtureModal || modalState.isInventoryModalOpen || modalState.isSaveModalOpen || modalState.isSupplierModalOpen));
       ownedInput = inputManager;
       inputManagerRef.current = inputManager;
 
@@ -156,9 +169,11 @@ export const App: React.FC = () => {
           useGameStore.getState().toggleInventoryModal();
         },
         onDayChanged: (newDay) => {
-          addToast(`Bình minh Ngày ${newDay}! Chúc tiệm một ngày buôn bán đắt hàng! ☀️`, 'success');
+          addToast(`Bình minh Ngày ${newDay}! Chúc tiệm một ngày buôn bán đắt hàng! `, 'success');
           handleSaveGame(false);
         },
+        onPlayerRelocated: ()=>addToast('Đã đưa bạn tới cửa hậu của nhà kho mới; tiền và hàng được giữ nguyên.','info'),
+        onOrdersDelivered: (quantity)=>addToast(`Đã nhận ${quantity} món từ đại lý vào nhà kho.`, 'success'),
         onStockExpired: (quantity) => {
           addToast(`${quantity} món hàng đã quá hạn và được loại khỏi kho/kệ.`, 'warn');
         },
@@ -185,6 +200,7 @@ export const App: React.FC = () => {
         canvas: canvasRef.current,
         tileMap,
         simulation,
+        onZoomChange: setZoomLevel,
       });
       ownedViewport = viewport;
 
@@ -192,9 +208,10 @@ export const App: React.FC = () => {
       if (isCancelled) return;
 
       viewportRef.current = viewport;
+      setZoomLevel(viewport.getZoom());
       initialized = true;
       setIsLoading(false);
-      addToast('Chào mừng bạn đến với Tiệm Tạp Hóa Đầu Hẻm! 🇻🇳', 'info');
+      addToast('Chào mừng bạn đến với Tiệm Tạp Hóa Đầu Hẻm! ', 'info');
     }
 
     // React StrictMode can mount, clean up, and mount again while Pixi is still
@@ -236,18 +253,22 @@ export const App: React.FC = () => {
   const handleRestock = (fixtureId: string, productId: string, amount: number) => {
     if (!simulationRef.current) return;
     const prod = PRODUCT_MAP[productId];
+    const before = simulationRef.current.getFixtures().find((fixture) => fixture.id === fixtureId)?.currentStock ?? 0;
     const success = simulationRef.current.restockShelf(fixtureId, productId, amount);
     if (success) {
-      addToast(`Đã bày ${amount}x ${prod?.name || 'món hàng'} lên kệ!`, 'success');
-    }
+      const after = simulationRef.current.getFixtures().find((fixture) => fixture.id === fixtureId)?.currentStock ?? before;
+      addToast(`Đã bày ${after - before}x ${prod?.name || 'món hàng'} lên kệ!`, 'success');
+    } else addToast('Không thể bày hàng lên kệ này.', 'warn');
   };
 
   const handleUnstock = (fixtureId: string, amount: number) => {
     if (!simulationRef.current) return;
+    const before = simulationRef.current.getFixtures().find((fixture) => fixture.id === fixtureId)?.currentStock ?? 0;
     const success = simulationRef.current.unstockShelf(fixtureId, amount);
     if (success) {
-      addToast(`Đã cất ${amount} món hàng lại vào túi!`, 'info');
-    }
+      const after = simulationRef.current.getFixtures().find((fixture) => fixture.id === fixtureId)?.currentStock ?? before;
+      addToast(`Đã cất ${before - after} món hàng lại vào nhà kho!`, 'info');
+    } else addToast('Không thể cất: kho mát có thể đã hết chỗ.', 'warn');
   };
 
   const handleToggleStoreStatus = () => {
@@ -255,7 +276,7 @@ export const App: React.FC = () => {
     const isOpen = simulationRef.current.getClock().toggleStoreStatus();
     syncFromSimulation(simulationRef.current);
     addToast(
-      isOpen ? 'Cửa tiệm đã mở, chào đón bà con trong xóm ghé mua! 🚪' : 'Đã đóng cửa tiệm nghỉ ngơi! 🔒',
+      isOpen ? 'Cửa tiệm đã mở, chào đón bà con trong xóm ghé mua! ' : 'Đã đóng cửa tiệm nghỉ ngơi! ',
       isOpen ? 'success' : 'info'
     );
   };
@@ -295,107 +316,119 @@ export const App: React.FC = () => {
       syncFromSimulation(sim);
       addToast('Đã đặt hàng. Nhà phân phối sẽ giao vào sáng mai!', 'success');
     } else {
-      addToast('Không thể đặt hàng: kiểm tra số tiền hoặc cấp độ.', 'warn');
+      addToast('Không thể đặt hàng: kiểm tra tiền, cấp độ hoặc chỗ kho mát.', 'warn');
+    }
+  };
+
+  const handleAutoRestock = () => {
+    const sim = simulationRef.current;
+    if (!sim) return;
+    let restockedCount = 0;
+    for (const fix of sim.getFixtures()) {
+      if (isSalesFixture(fix) && fix.assignedProductId) {
+        const needed = fix.maxCapacity - fix.currentStock;
+        if (needed > 0) {
+          const invItem = sim.getInventory().find((i) => i.productId === fix.assignedProductId);
+          if (invItem && invItem.quantity > 0) {
+            const transfer = Math.min(needed, invItem.quantity);
+            if (sim.restockShelf(fix.id, fix.assignedProductId, transfer)) {
+              restockedCount += transfer;
+            }
+          }
+        }
+      }
+    }
+    if (restockedCount > 0) {
+      syncFromSimulation(sim);
+      addToast(`Đã tự động châm ${restockedCount} món hàng từ kho lên các kệ! `, 'success');
+      if (viewportRef.current) {
+        viewportRef.current.addFloatingGain(player.position.x, player.position.y - 20, `+${restockedCount} Bày Kệ`, 0x2a7a43);
+      }
+    } else {
+      addToast('Kho hàng không có sẵn sản phẩm phù hợp để châm kệ.', 'info');
     }
   };
 
   const handleCheckout = (fixtureId: string) => {
     const sim = simulationRef.current;
     if (!sim) return;
+    const shelf = sim.getFixtures().find((f) => f.id === fixtureId);
+    const prod = shelf?.assignedProductId ? PRODUCT_MAP[shelf.assignedProductId] : null;
     if (sim.checkoutShelf(fixtureId)) {
       syncFromSimulation(sim);
-      addToast('Đã bán một món hàng và nhận tiền, kinh nghiệm!', 'success');
+      const earned = prod?.baseSellingPrice || 0;
+      addToast(`Đã bán một món hàng và nhận +${earned.toLocaleString('vi-VN')} đ!`, 'success');
+      if (viewportRef.current) {
+        const cashier = sim.getFixtures().find((f) => f.type === 'cashier_counter');
+        const posX = cashier ? (cashier.tileX + 1) * 32 : player.position.x;
+        const posY = cashier ? (cashier.tileY) * 32 : player.position.y;
+        viewportRef.current.addFloatingGain(posX, posY - 20, `+${earned.toLocaleString('vi-VN')} đ`, 0xf4a261);
+      }
     } else {
       addToast('Không thể bán: tiệm đang đóng cửa hoặc kệ đã hết hàng.', 'warn');
     }
   };
 
-  return (
-    <div className="relative w-full h-full overflow-hidden bg-retro-dark select-none touch-none">
-      {/* PixiJS Canvas */}
-      <canvas ref={canvasRef} className="w-full h-full block" />
+  const [zoomLevel, setZoomLevel] = useState<number>(2.0);
 
-      {/* Loading Screen */}
-      {isLoading && (
-        <div className="absolute inset-0 z-50 bg-[#1b1c1e] text-[#ffd166] flex flex-col items-center justify-center p-4">
-          <div className="text-4xl animate-bounce mb-3">🏪</div>
-          <h1 className="text-xl font-bold tracking-wider mb-2">TIỆM TẠP HÓA ĐẦU HẺM</h1>
-          <p className="text-xs text-[#faedcd]/70 font-mono">{startupError || 'Đang tải cửa tiệm & chuẩn bị hàng hóa...'}</p>
-          {startupError && <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 rounded bg-[#8b5a2b]">Tải lại game</button>}
+  const handleZoomIn = () => {
+    if (viewportRef.current) {
+      const newZoom = viewportRef.current.zoomIn(1);
+      setZoomLevel(newZoom);
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (viewportRef.current) {
+      const newZoom = viewportRef.current.zoomOut(1);
+      setZoomLevel(newZoom);
+    }
+  };
+
+  const hasModal = !!(activeFixtureModal || isInventoryModalOpen || isSaveModalOpen || isSupplierModalOpen);
+  useEffect(() => {
+    const syncInput = (state: ReturnType<typeof useGameStore.getState>) => inputManagerRef.current?.setEnabled(!(state.activeFixtureModal || state.isInventoryModalOpen || state.isSaveModalOpen || state.isSupplierModalOpen));
+    const unsubscribe = useGameStore.subscribe(syncInput);
+    syncInput(useGameStore.getState());
+    return unsubscribe;
+  }, []);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 1023px), (max-height: 499px)');
+    const adapt = () => { if(query.matches) setWarehouseDockOpen(false); };
+    query.addEventListener('change', adapt);
+    return () => query.removeEventListener('change', adapt);
+  }, []);
+  const openCashier = () => {
+    const cashier = fixtures.find(f => f.type === 'cashier_counter');
+    if(cashier) openFixtureModal(cashier);
+  };
+  const locateWarehouse = () => {
+    setWarehouseDockOpen(false);
+    viewportRef.current?.locateWarehouse();
+  };
+  return <div className="game-shell">
+    <div style={{display:'contents'}} {...(hasModal ? {inert:''} : {})}>
+      {!isLoading && <HUD onToggleStoreStatus={handleToggleStoreStatus} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomer() ? 1 : 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
+      <main className="game-main">
+        <div className="world-viewport">
+          <canvas ref={canvasRef} aria-label="Bản đồ Tiệm Tạp Hóa Đầu Hẻm"/>
+          {!isLoading && <><div className="world-caption"><strong>Hẻm nhỏ, chuyện lớn.</strong><span>Nhà kho liền phía trên · Đi qua cửa hậu giữa tiệm.</span></div>
+            <div className="world-tools" aria-label="Góc nhìn bản đồ"><PixelButton icon="warehouse" aria-label="Định vị nhà kho" onClick={locateWarehouse}/><PixelButton icon="minus" aria-label="Thu nhỏ bản đồ" disabled={zoomLevel<=1} onClick={handleZoomOut}/><span className="zoom-value">{zoomLevel}×</span><PixelButton icon="plus" aria-label="Phóng to bản đồ" disabled={zoomLevel>=3} onClick={handleZoomIn}/></div>
+            {!hasModal && !isWarehouseDockOpen && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
+          </>}
         </div>
-      )}
-
-      {/* Top HUD */}
-      {!isLoading && (
-        <HUD
-          onToggleStoreStatus={handleToggleStoreStatus}
-          onOpenSupplier={() => setSupplierOpen(true)}
-          gameSpeed={gameSpeed}
-          onToggleGameSpeed={handleToggleGameSpeed}
-        />
-      )}
-
-      {/* Modals */}
-      {activeFixtureModal && activeFixtureModal.type !== 'cashier_counter' && (
-        <ShelfModal
-          fixture={activeFixtureModal}
-          inventory={inventory}
-          currentDay={worldTime.day}
-          onRestock={handleRestock}
-          onUnstock={handleUnstock}
-          onClose={closeFixtureModal}
-        />
-      )}
-
-      {activeFixtureModal && activeFixtureModal.type === 'cashier_counter' && (
-        <CashierModal
-          fixture={activeFixtureModal}
-          player={player}
-          worldTime={worldTime}
-          shelves={fixtures.filter((fixture) => fixture.type !== 'cashier_counter')}
-          statistics={statistics}
-          onCheckout={handleCheckout}
-          onToggleStoreStatus={handleToggleStoreStatus}
-          onAdvanceDay={handleAdvanceDay}
-          onClose={closeFixtureModal}
-        />
-      )}
-
-      {isInventoryModalOpen && (
-        <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals} />
-      )}
-
-      {isSaveModalOpen && (
-        <SaveModal
-          onManualSave={() => handleSaveGame(true)}
-          onResetSave={handleResetGame}
-          onClose={closeAllModals}
-          lastSavedAt={lastSavedTime}
-          revision={currentRevision}
-        />
-      )}
-
-      {isSupplierOpen && (
-        <SupplierModal player={player} pendingOrders={pendingOrders} inventory={inventory} onOrder={handleSupplierOrder} onClose={() => setSupplierOpen(false)} />
-      )}
-
-      {/* Mobile Touch Controls & Virtual Joystick */}
-      {!isLoading && (
-        <VirtualJoystick
-          onMove={handleMobileJoystickMove}
-          onInteract={handleMobileInteract}
-        />
-      )}
-
-      {/* Rotate Device Screen (For Portrait Viewports) */}
-      <RotateOverlay />
-
-      {/* Bottom Hint Bar (matching reference image) */}
-      {!isLoading && <BottomBar />}
-
-      {/* Cozy Notifications */}
-      <ToastContainer />
+        {!isLoading && <WarehouseDock inventory={inventory} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onLocateWarehouse={locateWarehouse} currentDay={worldTime.day}/>}
+      </main>
+      {!isLoading && <BottomBar onOpenSupplier={openSupplierModal} onOpenCashier={openCashier}/>}
     </div>
-  );
+    {isLoading && <div className="loading-screen" role="status"><div className="loading-sign"><PixelIcon name="warehouse" size={48}/><p className="eyebrow">Chào mừng về hẻm</p><h1>Tiệm Tạp Hóa<br/>Đầu Hẻm</h1></div><p>{startupError || 'Đang mở cửa tiệm, chuẩn bị hàng hóa...'}</p>{startupError ? <PixelButton onClick={()=>window.location.reload()} variant="teal">Thử mở tiệm lại</PixelButton> : <div className="loading-stripes"/>}</div>}
+    {activeFixtureModal && isSalesFixture(activeFixtureModal) && <ShelfModal fixture={activeFixtureModal} inventory={inventory} currentDay={worldTime.day} onRestock={handleRestock} onUnstock={handleUnstock} onClose={closeFixtureModal}/>}
+    {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal fixture={activeFixtureModal} inventory={inventory} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onClose={closeFixtureModal}/>}
+    {activeFixtureModal?.type === 'cashier_counter' && <CashierModal fixture={activeFixtureModal} player={player} worldTime={worldTime} shelves={fixtures.filter(isSalesFixture)} statistics={statistics} onCheckout={handleCheckout} onToggleStoreStatus={handleToggleStoreStatus} onAdvanceDay={handleAdvanceDay} onClose={closeFixtureModal}/>}
+    {isInventoryModalOpen && <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals}/>}
+    {isSaveModalOpen && <SaveModal onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
+    {isSupplierModalOpen && <SupplierModal player={player} pendingOrders={pendingOrders} inventory={inventory} currentDay={worldTime.day} onOrder={handleSupplierOrder} onClose={closeAllModals}/>}
+    <RotateOverlay/><ToastContainer/>
+  </div>;
 };
 export default App;

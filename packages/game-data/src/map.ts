@@ -1,7 +1,13 @@
-import { GameTileMap, StoreFixture, SaveGameData } from '@game/shared';
+import { GameTileMap, StoreFixture, SaveGameData, Vector2D } from '@game/shared';
 
-export const MAP_WIDTH = 20;
-export const MAP_HEIGHT = 16;
+export const MAP_WIDTH = 26;
+export const MAP_HEIGHT = 22;
+export const MAP_ORIGIN_Y = -6;
+export const STORE_BOUNDS = {left:6,right:13,top:3,bottom:10};
+export const WAREHOUSE_BOUNDS = {left:STORE_BOUNDS.left,right:STORE_BOUNDS.right,top:STORE_BOUNDS.top-6,bottom:STORE_BOUNDS.top};
+export const WAREHOUSE_CENTER = {x:(WAREHOUSE_BOUNDS.left+WAREHOUSE_BOUNDS.right+1)*16,y:(WAREHOUSE_BOUNDS.top+WAREHOUSE_BOUNDS.bottom+1)*16};
+export const WAREHOUSE_DOOR_LEFT = Math.floor(WAREHOUSE_CENTER.x/32)-1;
+export const isInWarehouse=(p:Vector2D)=>p.x>=WAREHOUSE_BOUNDS.left*32&&p.x<(WAREHOUSE_BOUNDS.right+1)*32&&p.y>=WAREHOUSE_BOUNDS.top*32&&p.y<WAREHOUSE_BOUNDS.bottom*32;
 
 /**
  * Tile IDs:
@@ -69,22 +75,31 @@ export const INITIAL_FIXTURES: StoreFixture[] = [
   },
 ];
 
+/** Aligned rear room: world origin grows north; legacy sales coordinates stay intact. */
+export const WAREHOUSE_ENTRANCE = {x: WAREHOUSE_CENTER.x, y:(STORE_BOUNDS.top+.5)*32};
+export const WAREHOUSE_FIXTURES: StoreFixture[] = [
+  {id:'warehouse_dry_rack',type:'warehouse_dry',tileX:WAREHOUSE_BOUNDS.left+1,tileY:WAREHOUSE_BOUNDS.top+2,widthTiles:2,heightTiles:1,rotation:0,currentStock:0,maxCapacity:0,label:'Nhà kho · Giá hàng khô'},
+  {id:'warehouse_cold_storage',type:'warehouse_cold',tileX:WAREHOUSE_BOUNDS.right-2,tileY:WAREHOUSE_BOUNDS.top+2,widthTiles:2,heightTiles:1,rotation:0,currentStock:0,maxCapacity:0,label:'Nhà kho · Góc bảo quản lạnh'},
+  {id:'warehouse_receiving_desk',type:'warehouse_receiving',tileX:WAREHOUSE_BOUNDS.right-2,tileY:WAREHOUSE_BOUNDS.bottom-2,widthTiles:2,heightTiles:1,rotation:0,currentStock:0,maxCapacity:0,label:'Nhà kho · Bàn nhận hàng'},
+];
+
 export const INITIAL_REFRIGERATOR = INITIAL_FIXTURES.find((fixture) => fixture.type === 'refrigerator')!;
 
 /**
- * Generate starter map matrix (20 columns x 16 rows)
+ * Map arrays use local rows; world coordinates retain the old sales-floor origin.
  */
 export function generateStarterTileMap(): GameTileMap {
   const groundData: number[] = new Array(MAP_WIDTH * MAP_HEIGHT).fill(1); // Street default
   const wallData: number[] = new Array(MAP_WIDTH * MAP_HEIGHT).fill(0);
   const collisionLayer: boolean[] = new Array(MAP_WIDTH * MAP_HEIGHT).fill(false);
 
-  for (let y = 0; y < MAP_HEIGHT; y++) {
+  for (let localY = 0; localY < MAP_HEIGHT; localY++) {
+    const y=localY+MAP_ORIGIN_Y;
     for (let x = 0; x < MAP_WIDTH; x++) {
-      const idx = y * MAP_WIDTH + x;
+      const idx = localY * MAP_WIDTH + x;
 
       // Outer boundary collision
-      if (x === 0 || x === MAP_WIDTH - 1 || y === 0 || y === MAP_HEIGHT - 1) {
+      if (x === 0 || x === MAP_WIDTH - 1 || localY === 0 || localY === MAP_HEIGHT - 1) {
         collisionLayer[idx] = true;
       }
 
@@ -93,7 +108,7 @@ export function generateStarterTileMap(): GameTileMap {
         groundData[idx] = 2; // Sidewalk
       } else if (y >= 13) {
         groundData[idx] = 1; // Street
-      } else if (y >= 3 && y <= 10 && x >= 6 && x <= 13) {
+      } else if (y >= STORE_BOUNDS.top && y <= STORE_BOUNDS.bottom && x >= STORE_BOUNDS.left && x <= STORE_BOUNDS.right) {
         groundData[idx] = 3; // Vintage flower tile inside store
       } else {
         groundData[idx] = 2; // Sidewalk / Alley ground
@@ -101,26 +116,21 @@ export function generateStarterTileMap(): GameTileMap {
 
       // Store Walls (yellow plaster walls)
       // Store spans x: 6..13, y: 3..10
-      if (y === 3 && x >= 6 && x <= 13) {
+      if (y === STORE_BOUNDS.top && x >= STORE_BOUNDS.left && x <= STORE_BOUNDS.right) {
         wallData[idx] = 4;
         collisionLayer[idx] = true;
-      } else if (x === 6 && y >= 3 && y <= 10) {
+      } else if (x === STORE_BOUNDS.left && y >= STORE_BOUNDS.top && y <= STORE_BOUNDS.bottom) {
         wallData[idx] = 4;
         collisionLayer[idx] = true;
-      } else if (x === 13 && y >= 3 && y <= 10) {
+      } else if (x === STORE_BOUNDS.right && y >= STORE_BOUNDS.top && y <= STORE_BOUNDS.bottom) {
         wallData[idx] = 4;
         collisionLayer[idx] = true;
-      } else if (y === 10 && x >= 6 && x <= 13) {
+      } else if (y === STORE_BOUNDS.bottom && x >= STORE_BOUNDS.left && x <= STORE_BOUNDS.right) {
         // Doorway at x = 9 and x = 10
         if (x !== 9 && x !== 10) {
           wallData[idx] = 4;
           collisionLayer[idx] = true;
         }
-      }
-
-      // Signboard above store door
-      if (y === 2 && x >= 8 && x <= 11) {
-        wallData[idx] = 8;
       }
 
       // Ambient tree outside on sidewalk
@@ -131,7 +141,18 @@ export function generateStarterTileMap(): GameTileMap {
     }
   }
 
+  // Rear room shares the complete back wall with the shop, with a central door.
+  for(let y=WAREHOUSE_BOUNDS.top;y<=WAREHOUSE_BOUNDS.bottom;y++) for(let x=WAREHOUSE_BOUNDS.left;x<=WAREHOUSE_BOUNDS.right;x++) {
+    const idx=(y-MAP_ORIGIN_Y)*MAP_WIDTH+x;
+    groundData[idx]=9;
+    const boundary=y===WAREHOUSE_BOUNDS.top||y===WAREHOUSE_BOUNDS.bottom||x===WAREHOUSE_BOUNDS.left||x===WAREHOUSE_BOUNDS.right;
+    const door=y===STORE_BOUNDS.top&&(x===WAREHOUSE_DOOR_LEFT||x===WAREHOUSE_DOOR_LEFT+1);
+    wallData[idx]=boundary&&!door?10:0;
+    collisionLayer[idx]=boundary&&!door;
+  }
+
   return {
+    originTileY:MAP_ORIGIN_Y,
     width: MAP_WIDTH,
     height: MAP_HEIGHT,
     tileWidth: 32,

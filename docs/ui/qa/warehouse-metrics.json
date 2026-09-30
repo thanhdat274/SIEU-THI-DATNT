@@ -1,0 +1,30 @@
+{
+  "functional": "pass",
+  "metrics": [
+    {
+      "width": 1920,
+      "overflow": false,
+      "dialogFits": true
+    },
+    {
+      "width": 1366,
+      "overflow": false,
+      "dialogFits": true
+    },
+    {
+      "width": 1024,
+      "overflow": false,
+      "dialogFits": true
+    },
+    {
+      "width": 844,
+      "overflow": false,
+      "dialogFits": true
+    },
+    {
+      "width": 667,
+      "overflow": false,
+      "dialogFits": true
+    }
+  ]
+}

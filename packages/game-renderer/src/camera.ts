@@ -17,37 +17,64 @@ export class PixelCamera {
     this.mapHeightPixels = mapHeightTiles * TILE_SIZE;
   }
 
+  private isCustomZoom: boolean = false;
+  public minZoom: number = 1.0;
+  public maxZoom: number = 3;
+
   public setViewportSize(width: number, height: number): void {
     this.viewportWidth = width;
     this.viewportHeight = height;
-    // Calculate appropriate zoom based on screen resolution
-    // On small screens, zoom 1.5x or 2x; on desktop 2x or 2.5x
-    if (width < 640) {
-      this.zoom = 1.75;
-    } else if (width < 1024) {
-      this.zoom = 2.0;
-    } else {
-      this.zoom = 2.5;
+    if (!this.isCustomZoom) {
+      this.zoom = height < 450 ? 1 : height >= 900 && width >= 1400 ? 3 : 2;
     }
   }
 
-  public follow(target: Vector2D, dt: number): void {
+  public setZoom(newZoom: number): void {
+    this.isCustomZoom = true;
+    this.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, Math.round(newZoom)));
+  }
+
+  public zoomIn(delta: number = 1): number {
+    this.setZoom(this.zoom + delta);
+    return this.zoom;
+  }
+
+  public zoomOut(delta: number = 1): number {
+    this.setZoom(this.zoom - delta);
+    return this.zoom;
+  }
+
+  public panOffsetX: number = 0;
+  public panOffsetY: number = 0;
+  public isDragging: boolean = false;
+
+  public pan(deltaX: number, deltaY: number): void {
+    // deltaX & deltaY are screen pixel deltas, convert to world delta
+    this.panOffsetX -= deltaX / this.zoom;
+    this.panOffsetY -= deltaY / this.zoom;
+
+    // Limit maximum pan offset so player doesn't lose the shop
+    const maxPanDist = 500;
+    this.panOffsetX = Math.max(-maxPanDist, Math.min(maxPanDist, this.panOffsetX));
+    this.panOffsetY = Math.max(-maxPanDist, Math.min(maxPanDist, this.panOffsetY));
+  }
+
+  public resetPan(): void {
+    this.panOffsetX = 0;
+    this.panOffsetY = 0;
+  }
+
+  public follow(target: Vector2D, dt: number, verticalBias?:number): void {
     // Center of screen in world coordinates
     const halfW = (this.viewportWidth / this.zoom) / 2;
     const halfH = (this.viewportHeight / this.zoom) / 2;
 
-    this.targetX = target.x - halfW;
-    this.targetY = target.y - halfH;
+    this.targetX = target.x + this.panOffsetX - halfW;
+    // Frame the shop sign above the player in desktop default view.
+    this.targetY = target.y + this.panOffsetY - halfH - (verticalBias ?? (this.viewportHeight >= 450 ? 70 : 20));
 
-    // Clamp camera within map bounds
-    const maxCamX = Math.max(0, this.mapWidthPixels - (this.viewportWidth / this.zoom));
-    const maxCamY = Math.max(0, this.mapHeightPixels - (this.viewportHeight / this.zoom));
-
-    this.targetX = Math.max(0, Math.min(this.targetX, maxCamX));
-    this.targetY = Math.max(0, Math.min(this.targetY, maxCamY));
-
-    // Smooth lerp follow (10.0 lerp factor)
-    const lerpSpeed = Math.min(1.0, 10.0 * dt);
+    // Smooth lerp follow (10.0 lerp factor, or snappy when dragging)
+    const lerpSpeed = this.isDragging ? 1.0 : Math.min(1.0, 10.0 * dt);
     this.x += (this.targetX - this.x) * lerpSpeed;
     this.y += (this.targetY - this.y) * lerpSpeed;
   }

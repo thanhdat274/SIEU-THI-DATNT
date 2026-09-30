@@ -33,11 +33,12 @@ export class CollisionSystem {
     for (let ty = topTile; ty <= bottomTile; ty++) {
       for (let tx = leftTile; tx <= rightTile; tx++) {
         // Outside map is solid
-        if (tx < 0 || tx >= this.tileMap.width || ty < 0 || ty >= this.tileMap.height) {
+        const localY=ty-(this.tileMap.originTileY??0);
+        if (tx < 0 || tx >= this.tileMap.width || localY < 0 || localY >= this.tileMap.height) {
           return true;
         }
 
-        const idx = ty * this.tileMap.width + tx;
+        const idx = localY * this.tileMap.width + tx;
         if (this.tileMap.collisionLayer[idx]) {
           return true;
         }

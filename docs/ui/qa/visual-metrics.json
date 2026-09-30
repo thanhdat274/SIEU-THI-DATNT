@@ -1,0 +1,12 @@
+[
+  {
+    "dpr": 1,
+    "focusContained": true,
+    "reducedMotion": true
+  },
+  {
+    "dpr": 2,
+    "focusContained": true,
+    "reducedMotion": true
+  }
+]

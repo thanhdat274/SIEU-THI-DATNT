@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { StoreFixture, InventoryItem, PlayerData, WorldTime } from '@game/shared';
 
+let modalReturnFocus: HTMLElement | null = null;
+export function getModalReturnFocus() { return modalReturnFocus; }
+function captureModalFocus() {
+  if (typeof document !== 'undefined' && !document.querySelector('[role="dialog"]')) modalReturnFocus = document.activeElement as HTMLElement | null;
+}
+
 export interface ToastMessage {
   id: string;
   message: string;
@@ -22,6 +28,7 @@ export interface GameStoreState {
   activeFixtureModal: StoreFixture | null;
   isInventoryModalOpen: boolean;
   isSaveModalOpen: boolean;
+  isSupplierModalOpen: boolean;
   isMobileControlsVisible: boolean;
 
   // Interaction prompt
@@ -40,6 +47,7 @@ export interface GameStoreState {
   closeFixtureModal: () => void;
   toggleInventoryModal: () => void;
   toggleSaveModal: () => void;
+  openSupplierModal: () => void;
   closeAllModals: () => void;
   addToast: (message: string, type?: 'info' | 'success' | 'warn') => void;
   removeToast: (id: string) => void;
@@ -70,6 +78,7 @@ export const useGameStore = create<GameStoreState>((set) => ({
   activeFixtureModal: null,
   isInventoryModalOpen: false,
   isSaveModalOpen: false,
+  isSupplierModalOpen: false,
   isMobileControlsVisible: true,
   nearbyFixture: null,
   toasts: [],
@@ -77,43 +86,58 @@ export const useGameStore = create<GameStoreState>((set) => ({
   setPlayerData: (player) => set({ player }),
   setWorldTime: (worldTime, timeString) => set({ worldTime, timeString }),
   setInventory: (inventory) => set({ inventory }),
-  setFixtures: (fixtures) => set({ fixtures }),
+  setFixtures: (fixtures) => set(state => ({ fixtures, activeFixtureModal: state.activeFixtureModal ? fixtures.find(f => f.id === state.activeFixtureModal!.id) ?? null : null })),
   setNearbyFixture: (nearbyFixture) => set({ nearbyFixture }),
 
-  openFixtureModal: (fixture) =>
+  openFixtureModal: (fixture) => {
+    captureModalFocus();
     set({
       activeFixtureModal: fixture,
       isInventoryModalOpen: false,
       isSaveModalOpen: false,
-    }),
+      isSupplierModalOpen: false,
+    });
+  },
 
   closeFixtureModal: () => set({ activeFixtureModal: null }),
 
-  toggleInventoryModal: () =>
+  toggleInventoryModal: () => {
+    captureModalFocus();
     set((state) => ({
       isInventoryModalOpen: !state.isInventoryModalOpen,
       activeFixtureModal: null,
       isSaveModalOpen: false,
-    })),
+      isSupplierModalOpen: false,
+    }));
+  },
 
-  toggleSaveModal: () =>
+  toggleSaveModal: () => {
+    captureModalFocus();
     set((state) => ({
       isSaveModalOpen: !state.isSaveModalOpen,
       activeFixtureModal: null,
       isInventoryModalOpen: false,
-    })),
+      isSupplierModalOpen: false,
+    }));
+  },
+
+  openSupplierModal: () => {
+    captureModalFocus();
+    set({ isSupplierModalOpen: true, activeFixtureModal: null, isInventoryModalOpen: false, isSaveModalOpen: false });
+  },
 
   closeAllModals: () =>
     set({
       activeFixtureModal: null,
       isInventoryModalOpen: false,
       isSaveModalOpen: false,
+      isSupplierModalOpen: false,
     }),
 
   addToast: (message, type = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
     set((state) => ({
-      toasts: [...state.toasts.slice(-4), { id, message, type }],
+      toasts: [...state.toasts.slice(-2), { id, message, type }],
     }));
 
     setTimeout(() => {

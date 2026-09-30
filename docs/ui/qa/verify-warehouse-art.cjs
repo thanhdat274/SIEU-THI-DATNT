@@ -1,0 +1,9 @@
+const {chromium}=require('C:/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const fs=require('node:fs/promises');
+(async()=>{const b=await chromium.launch({headless:true});const metrics=[];
+ for(const dpr of [1,2]){const c=await b.newContext({viewport:{width:1366,height:768},deviceScaleFactor:dpr});await c.addInitScript(()=>{window.artCanvasCount=0;const original=Document.prototype.createElement;Document.prototype.createElement=function(...args){if(String(args[0]).toLowerCase()==='canvas')window.artCanvasCount++;return Reflect.apply(original,this,args);};});const p=await c.newPage();p.setDefaultTimeout(10000);await p.goto('http://127.0.0.1:5173/');await p.locator('.game-hud').waitFor();
+ const seed=async y=>{await p.evaluate(async y=>{const {db,SAVE_STORAGE_KEY}=await import('/src/db.ts');const s=await db.saves.get(SAVE_STORAGE_KEY);s.worldTime.isStoreOpen=false;s.player.position={x:256,y};await db.saves.put(s);},y);await p.reload();await p.locator('.game-hud').waitFor();await p.waitForTimeout(4000);};
+ await seed(-48);await p.screenshot({path:`docs/ui/qa/warehouse-behind-dpr${dpr}.png`});await seed(16);await p.screenshot({path:`docs/ui/qa/warehouse-front-dpr${dpr}.png`});
+ const count=await p.evaluate(()=>window.artCanvasCount);await p.waitForTimeout(1200);const after=await p.evaluate(()=>window.artCanvasCount);if(count!==after)throw new Error('Texture canvases regenerated in stable scene');metrics.push({dpr,canvases:count,noPerFrameGeneration:true});
+ await p.getByRole('button',{name:'Thu nhỏ bản đồ'}).click();await p.getByRole('button',{name:'Định vị nhà kho'}).click();await p.waitForTimeout(2000);await p.screenshot({path:`docs/ui/qa/warehouse-plan-view-dpr${dpr}.png`});await c.close();}
+ await fs.writeFile('docs/ui/qa/warehouse-art-metrics.json',JSON.stringify(metrics,null,2));console.log(metrics);await b.close();})().catch(e=>{console.error(e);process.exit(1);});

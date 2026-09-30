@@ -4,6 +4,9 @@ import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { CollisionSystem } from './collision';
 import { GameClock } from './clock';
+import { findPath } from './pathfinding';
+import { runInputTests } from './input.test';
+import {runWarehouseTests} from './warehouse.test';
 
 declare const process: any;
 
@@ -15,6 +18,8 @@ function assert(condition: boolean, message: string) {
 }
 
 export function runTests(): void {
+  runInputTests();
+  runWarehouseTests();
   console.log('\n=============================================');
   console.log('🧪 BẮT ĐẦU CHẠY KIỂM THỬ TỰ ĐỘNG (UNIT TESTS)');
   console.log('=============================================\n');
@@ -35,7 +40,7 @@ export function runTests(): void {
   // Test 2: Map & Collision
   console.log('\n--- Test 2: Bản đồ 8x8 & Hệ thống va chạm ---');
   const tileMap = generateStarterTileMap();
-  assert(tileMap.width === 20 && tileMap.height === 16, 'Kích thước ma trận bản đồ chuẩn 20x16');
+  assert(tileMap.width === 26 && tileMap.height === 22, 'Bản đồ 26x22, kho liền phía trên; giữ tọa độ gian bán cũ');
   const collision = new CollisionSystem(tileMap, DEFAULT_INITIAL_SAVE.storeLayout.fixtures);
   // Outside map is solid
   assert(collision.isColliding({ x: -10, y: 10, width: 20, height: 20 }), 'Không thể đi ra ngoài biên bản đồ');
@@ -133,6 +138,9 @@ export function runTests(): void {
   assert(migrated.getFixtures().some((fixture) => fixture.type === 'refrigerator'), 'Bản lưu cũ được bổ sung tủ mát');
   assert(migrated.getInventory().every((item) => item.lots?.length), 'Hàng trong bản lưu cũ được gắn hạn dùng');
   assert(migrated.exportSaveData('test_save_id', 4).schemaVersion === 2, 'Bản lưu mới dùng schema version 2');
+  const partialSave = structuredClone(DEFAULT_INITIAL_SAVE);
+  partialSave.inventory[0].lots = [];
+  assert(new GameSimulation(partialSave, tileMap, input).getInventory()[0].quantity === partialSave.inventory[0].quantity, 'Bản lưu thiếu lô không làm mất hàng');
   assert(migrated.unstockShelf('shelf_wooden_noodles', 12), 'Cất mì để giải phóng kệ');
   assert(migrated.restockShelf('shelf_wooden_noodles', 'banh_mi_que', 3), 'Bày bánh mì lên kệ');
   const breadExpiry = migrated.getFixtures().find((fixture) => fixture.id === 'shelf_wooden_noodles')!.stockLots?.[0].expiresOnDay;
@@ -159,6 +167,22 @@ export function runTests(): void {
   assert(!coldSim.unstockShelf('refrigerator_small', 1), 'Không thể cất ngược khi kho mát đã được giữ chỗ');
   const coldResumed = new GameSimulation(coldSim.exportSaveData('test_save_id', 5), tileMap, input);
   assert(coldResumed.getFixtures().find((fixture) => fixture.id === 'refrigerator_small')!.currentStock === 5, 'Tủ mát được khôi phục sau khi tải game');
+
+  console.log('\n--- Test 10: Khách NPC đi mua, thanh toán và lưu/tải ---');
+  const npcPath = findPath(tileMap, new CollisionSystem(tileMap, DEFAULT_INITIAL_SAVE.storeLayout.fixtures), { x: 9, y: 11 }, { x: 9, y: 6 });
+  assert(npcPath.length > 0 && npcPath[0].y === 11 && npcPath[npcPath.length - 1].y === 6, 'A* tìm được lối qua cửa tới kệ');
+  const npcSim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), tileMap, input);
+  for (let i = 0; i < 300; i++) npcSim.update(1 / 60);
+  const inProgress = npcSim.getCustomer();
+  assert(!!inProgress, 'Khách thực sự xuất hiện trong cửa hàng');
+  const npcResumed = new GameSimulation(npcSim.exportSaveData('npc_save', 6), tileMap, input);
+  assert(npcResumed.getCustomer()?.targetFixtureId === inProgress?.targetFixtureId, 'Khách đang đi được khôi phục sau tải game');
+  const npcInitialMoney = npcResumed.getPlayerData().money;
+  const npcInitialStock = npcResumed.getFixtures().find((fixture) => fixture.id === inProgress!.targetFixtureId)!.currentStock;
+  for (let i = 0; i < 1200; i++) npcResumed.update(1 / 60);
+  assert(npcResumed.getStatistics().totalCustomersServed >= 1, 'Khách NPC hoàn tất thanh toán');
+  assert(npcResumed.getPlayerData().money > npcInitialMoney, 'Thanh toán NPC cập nhật tiền thật');
+  assert(npcResumed.getFixtures().find((fixture) => fixture.id === inProgress!.targetFixtureId)!.currentStock < npcInitialStock, 'Món khách mua được trừ khỏi kệ');
 
   console.log('\n🎉 TOÀN BỘ CÁC BÀI KIỂM THỬ ĐỀU ĐẠT CHUẨN!\n');
 }
