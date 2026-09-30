@@ -28,6 +28,20 @@ function reloadGameOnChange(): Plugin {
 
 export default defineConfig({
   plugins: [reloadGameOnChange(), react()],
+  build: {
+    rollupOptions: {
+      output: {
+        // Tách thư viện lớn để tải song song và cache lâu dài; mã game đổi thường xuyên không làm mất cache.
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('pixi')) return 'vendor-pixi';
+          if (id.includes('firebase') || id.includes('@firebase')) return 'vendor-firebase';
+          if (id.includes('react')) return 'vendor-react';
+          return 'vendor';
+        },
+      },
+    },
+  },
   server: {
     port: 3000,
     host: true,

@@ -51,6 +51,7 @@ import {
   isShiftWithinStoreHours,
   STALLS,
   STALL_MAP,
+  SHOPKEEPER_POSITION,
   getSeasonForDay,
   type StallDefinition,
 } from '@game/data';
@@ -885,6 +886,21 @@ export class GameSimulation {
     return this.customerManager.getCustomers();
   }
 
+  /**
+   * NPC chủ tiệm đứng sau quầy. Khi có khách đã tới quầy và có giỏ hàng (chưa có nhân viên thu ngân
+   * nhận), chủ tiệm chuyển sang "serving" cho tới khi giao dịch hoàn tất.
+   */
+  public getShopkeeper(): { position: Vector2D; direction: 'down' | 'right'; serving: boolean; checkoutId?: string } {
+    const waiting = this.customerManager.getCustomers().find(customer =>
+      customer.stage === 'checkout' && (customer.basket?.length ?? 0) > 0 && !customer.cashierStaffId);
+    return {
+      position: { ...SHOPKEEPER_POSITION },
+      direction: waiting ? 'right' : 'down',
+      serving: !!waiting,
+      checkoutId: waiting?.checkoutId,
+    };
+  }
+
   public getCustomerManager(): CustomerManager {
     return this.customerManager;
   }
@@ -1002,8 +1018,10 @@ export class GameSimulation {
     if (this.isPaused) return;
     // 1. Advance game clock
     this.clock.update(dt);
+    // Khách và nhân viên chạy theo thời gian game: 2× đồng hồ thì họ cũng hoạt động nhanh gấp đôi (người chơi vẫn đi bộ bình thường).
+    const worldDt = dt * Math.max(0.25, (this.clock.getTime().timeScale || 60) / 60);
     this.customerManager.update(
-      dt,
+      worldDt,
       this.clock.getTime().isStoreOpen,
       this.clock.getTime().day,
       this.tileMap,
@@ -1020,7 +1038,7 @@ export class GameSimulation {
       }
     );
     this.customerManager.maybeSpawnCustomer(
-      dt,
+      worldDt,
       this.clock.getTime().isStoreOpen,
       this.fixtures,
       this.tileMap,
@@ -1030,8 +1048,8 @@ export class GameSimulation {
       this.getSeason()?.preferredCategories ?? []
     );
 
-    this.updateStaffWorkers(dt);
-    this.updateCashierWorkers(dt);
+    this.updateStaffWorkers(worldDt);
+    this.updateCashierWorkers(worldDt);
 
     // Auto checkout for customer waiting at counter if checkoutWait timer reaches 0
     const activeCust = this.customerManager.getActiveCustomer();

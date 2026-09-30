@@ -144,3 +144,6 @@ h3{font-weight:750}.quantity-stepper .pixel-button{min-width:44px}
 /* HUD nhỏ hơn ở khung hẹp: đưa toast xuống ngay dưới HUD, không đè lên số liệu */
 @media(max-width:860px),(max-height:520px){.toast-stack{top:84px}}
 .hud-stats .pixel-stat-body,.hud-clock>div{min-width:max-content}
+
+.hud-debt{display:flex;align-items:center;gap:4px;flex-shrink:0;padding:3px 8px;font:inherit;font-size:12px;font-weight:800;white-space:nowrap;color:#fff;background:var(--brick,#a4532b);border:2px solid var(--wood-dark);box-shadow:2px 2px 0 var(--wood-light);cursor:pointer}
+@media(max-width:860px){.hud-debt span{display:none}}

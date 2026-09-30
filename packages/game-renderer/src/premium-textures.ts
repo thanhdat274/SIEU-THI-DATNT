@@ -5,6 +5,31 @@ function surface(w:number,h:number){const canvas=document.createElement('canvas'
 const C={ink:'#33251D',dark:'#593A2B',wood:'#936044',light:'#C69464',paper:'#FFF2D6',shade:'#E7CE9F',teal:'#357F72',tealDark:'#24584F',sun:'#E9B95D',brick:'#B64C3D'};
 export function createPremiumTexture(key:string):HTMLCanvasElement|null{
  const warehouse=warehouseTexture(key);if(warehouse)return warehouse;
+ if(key.startsWith('tile_grass_v')){
+  // 3 biến thể cỏ (nền #5c7a52) để mặt đất không lặp một ô; nhiễu cố định theo biến thể
+  const v=Number(key.slice(-1)),{canvas,ctx}=surface(32,32);
+  ctx.fillStyle=['#5c7a52','#5f7f55','#587650'][v]??'#5c7a52';ctx.fillRect(0,0,32,32);
+  const dark='#4c6843',light='#78a06a';
+  const spots=[[[4,8],[18,16],[10,24],[26,4]],[[7,3],[22,12],[3,20],[16,27]],[[12,10],[27,22],[5,15],[20,2]]][v]??[];
+  ctx.fillStyle=dark;for(const [x,y] of spots){ctx.fillRect(x,y,4,2);ctx.fillRect(x+1,y-1,2,1);}
+  ctx.fillStyle=light;for(const [x,y] of spots){ctx.fillRect(x+6,y+4,1,3);ctx.fillRect(x+7,y+3,1,2);}
+  return canvas;
+ }
+ if(key.startsWith('deco_flowers_')){
+  const v=Number(key.slice(-1)),{canvas,ctx}=surface(32,32),pal=[['#f2c94c','#fff3b0'],['#e9739b','#ffd1e0'],['#f4f0e6','#ffe08a']][v]??['#f2c94c','#fff3b0'];
+  ctx.fillStyle='#26190E30';for(const [x,y] of [[6,14],[19,22]])ctx.fillRect(x-1,y+3,6,2);
+  for(const [x,y] of [[6,12],[19,20],[24,8]]){ctx.fillStyle='#3f5c39';ctx.fillRect(x+1,y+2,1,4);ctx.fillStyle=pal[0];ctx.fillRect(x-1,y,3,3);ctx.fillRect(x+2,y,3,3);ctx.fillRect(x,y-1,3,1);ctx.fillStyle=pal[1];ctx.fillRect(x+1,y+1,1,1);}
+  return canvas;
+ }
+ if(key==='deco_fence'){
+  // hàng rào gỗ thấp, có bóng đổ xuống cỏ để nổi khối
+  const {canvas,ctx}=surface(32,32);
+  ctx.fillStyle='#26190E40';ctx.fillRect(1,26,30,4);
+  ctx.fillStyle='#7a5230';ctx.fillRect(0,14,32,3);ctx.fillRect(0,21,32,3);
+  ctx.fillStyle='#a97a49';ctx.fillRect(0,14,32,1);ctx.fillRect(0,21,32,1);
+  for(const x of [3,15,27]){ctx.fillStyle='#5c3a1e';ctx.fillRect(x,8,4,20);ctx.fillStyle='#8a5a2f';ctx.fillRect(x,8,1,20);ctx.fillRect(x,8,4,1);}
+  return canvas;
+ }
  if(key.startsWith('product:')) {const {canvas,ctx}=surface(16,16);for(const p of productPixels(PRODUCT_MAP[key.slice(8)])){ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.w,p.h);}return canvas;}
  if(key==='pixel_coin') {const {canvas,ctx}=surface(16,16);ctx.fillStyle=C.dark;ctx.fillRect(3,2,10,12);ctx.fillRect(2,4,12,8);ctx.fillStyle=C.sun;ctx.fillRect(4,3,8,10);ctx.fillRect(3,5,10,6);ctx.fillStyle=C.paper;ctx.fillRect(5,4,2,7);ctx.fillStyle=C.wood;ctx.fillRect(8,5,2,6);return canvas;}
  if(key==='stall_cafe_vot'||key==='stall_banh_mi_muoi_ot'){

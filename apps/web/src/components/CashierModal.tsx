@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StoreFixture, PlayerData, WorldTime, SaveGameData, CustomerState } from '@game/shared';
 import { PRODUCT_MAP } from '@game/data';
+import { summarizeAnnualRevenue } from '@game/core';
 import { PixelDialog, PixelStat, PixelButton, ProductSlot, EmptyState, money } from './pixel';
 import { useGameStore } from '../store/useGameStore';
 import { StaffModal } from './StaffModal';
@@ -232,6 +233,16 @@ export const CashierModal: React.FC<Props> = ({
         </>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {(() => {
+            const annual = summarizeAnnualRevenue(dailyRecords, worldTime.day, currentDayRecord ?? undefined);
+            return (
+              <div className="summary-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }} aria-label="Doanh thu năm">
+                <strong>Doanh thu năm {annual.year}: {money(annual.revenue)}{annual.referenceThreshold ? ` / ngưỡng tham khảo ${money(annual.referenceThreshold)}` : ''}</strong>
+                <div className="pixel-progress"><span style={{ width: `${Math.round(annual.progress * 100)}%` }} /></div>
+                <p className="muted" style={{ margin: 0 }}>{annual.note}</p>
+              </div>
+            );
+          })()}
           {/* Current day live report */}
           <div style={{ background: '#f5efe6', padding: 12, borderRadius: 4, border: '1px solid #d1c4b2' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>

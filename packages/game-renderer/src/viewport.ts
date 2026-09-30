@@ -50,6 +50,7 @@ export class PixiGameViewport {
   private onZoomChange?: (zoom: number) => void;
   private ambientSprites: Array<{sprite: Sprite; key: string; frames: number}> = [];
   private stallSprites: Sprite[] = [];
+  private shopkeeper?: { container: Container; sprite: Sprite; bubble: Container };
   private nightOverlay!: Graphics;
   private motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string }> = new Map();
@@ -124,6 +125,8 @@ export class PixiGameViewport {
 
     // Build Player Sprite & Tag
     this.buildPlayer();
+
+    this.buildShopkeeper();
 
     // Build Partner Sprite & Tag (Multiplayer)
     this.buildPartner();
@@ -285,7 +288,7 @@ export class PixiGameViewport {
         if (x < 0 || x >= width || y < 0 || y >= height) {
           // Use pavement alley texture, with occasional street or sidewalk accents
           // Cỏ bao quanh (kiểu làng quê Stardew) thay cho nền xám phẳng; vỉa hè bám sát mặt tiền.
-          let outerTexture = 'tile_grass_patch';
+          let outerTexture = `tile_grass_v${this.tileHash(x, y) % 3}`;
           if (y + originY >= originY + height - 3 || Math.abs(x - width / 2) < 2.5) outerTexture = 'tile_pavement_alley';
           if (y >= height - 2 && y <= height + 2) {
             outerTexture = 'tile_street';
@@ -314,7 +317,7 @@ export class PixiGameViewport {
           else if (tileId === 1) textureKey = 'tile_street';
           else if (tileId === 2) {
             // Vỉa hè chỉ ở mặt tiền (y 11–12); đất trống phía trên/hai bên là cỏ để có chiều sâu kiểu Stardew.
-            textureKey = y + originY < 11 ? 'tile_grass_patch' : 'tile_sidewalk';
+            textureKey = y + originY < 11 ? `tile_grass_v${this.tileHash(x, y) % 3}` : 'tile_sidewalk';
           }
           else if (tileId === 9) textureKey = 'warehouse_floor';
 
@@ -327,6 +330,27 @@ export class PixiGameViewport {
     }
 
     // Wall Layer & Shop decorations (2.5D Stardew Valley-inspired slim walls)
+    // Trang trí ngoài trời (chỉ hình ảnh): hoa rải rác trên cỏ và hàng rào thấp giữa cỏ với vỉa hè.
+    if (groundLayerData) {
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          if (groundLayerData[y * width + x] !== 2 || y + originY >= 11) continue;
+          const h = this.tileHash(x + 91, y + 17);
+          if (y + originY === 10 && (x <= STORE_BOUNDS.left - 2 || x >= STORE_BOUNDS.right + 2) && x > 0 && x < width - 1) {
+            const fence = new Sprite(this.textures.getTexture('deco_fence'));
+            fence.x = x * TILE_SIZE;
+            fence.y = (y + originY) * TILE_SIZE;
+            this.groundLayer.addChild(fence);
+          } else if (h % 7 === 0) {
+            const flowers = new Sprite(this.textures.getTexture(`deco_flowers_${(h >>> 4) % 3}`));
+            flowers.x = x * TILE_SIZE;
+            flowers.y = (y + originY) * TILE_SIZE;
+            this.groundLayer.addChild(flowers);
+          }
+        }
+      }
+    }
+
     if (wallLayerData) {
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
@@ -621,6 +645,28 @@ export class PixiGameViewport {
     this.entitiesLayer.addChild(this.playerContainer);
   }
 
+  /** Chủ tiệm đứng sau quầy thu ngân; bong bóng "Tính tiền" hiện khi đang phục vụ khách. */
+  private buildShopkeeper(): void {
+    const container = new Container();
+    const sprite = new Sprite(this.textures.getTexture('npc_1_down_idle_0'));
+    sprite.anchor.set(0.5, 1);
+    container.addChild(sprite);
+    const bubble = new Container();
+    const background = new Graphics();
+    background.roundRect(-28, -70, 56, 18, 3);
+    background.fill({ color: 0xfff7df, alpha: 0.95 });
+    background.stroke({ color: 0x593a2b, width: 1 });
+    bubble.addChild(background);
+    const label = new Text({ text: 'Tính tiền', style: new TextStyle({ fontFamily: 'Arial', fontSize: 9, fill: 0x263d35, align: 'center' }) });
+    label.anchor.set(0.5);
+    label.y = -61;
+    bubble.addChild(label);
+    bubble.visible = false;
+    container.addChild(bubble);
+    this.entitiesLayer.addChild(container);
+    this.shopkeeper = { container, sprite, bubble };
+  }
+
   private buildPartner(): void {
     this.partnerContainer = new Container();
 
@@ -651,6 +697,14 @@ export class PixiGameViewport {
   }
 
   private bubbleWidth = 0;
+
+  /** Băm cố định theo ô để cỏ/hoa không nhấp nháy giữa các lần dựng. */
+  private tileHash(x: number, y: number): number {
+    let h = (x * 374761393 + y * 668265263) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return (h ^ (h >>> 16)) >>> 0;
+  }
+
 
   private buildInteractionBubble(): void {
     this.interactionBubble = new Container();
@@ -717,6 +771,15 @@ export class PixiGameViewport {
       this.partnerContainer.visible = false;
     }
 
+    if (this.shopkeeper) {
+      const keeper = this.simulation.getShopkeeper();
+      const frame = reducedMotion ? 0 : Math.floor(this.animTimer * 1.5) % 2;
+      this.shopkeeper.sprite.texture = this.textures.getTexture(`npc_1_${keeper.direction}_idle_${frame}`);
+      this.shopkeeper.container.position.set(Math.round(keeper.position.x), Math.round(keeper.position.y));
+      this.shopkeeper.container.zIndex = keeper.position.y;
+      this.shopkeeper.bubble.visible = keeper.serving;
+    }
+
     const customers = this.simulation.getCustomers();
     const activeCustomerKeys = new Set<string>();
 
@@ -737,6 +800,8 @@ export class PixiGameViewport {
       const walking = Math.abs(dx) + Math.abs(dy) > 0.01;
       if (walking) {
         entry.npcDirection = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+      } else if (cust.stage === 'checkout') {
+        entry.npcDirection = 'left'; // dừng ở quầy thì quay mặt vào quầy thu ngân
       }
       const npcFrame = reducedMotion ? 0 : Math.floor(this.animTimer * (walking ? 8 : 1.5)) % (walking ? 4 : 2);
       entry.sprite.texture = this.textures.getTexture(`npc_${entry.npcVariant}_${entry.npcDirection}_${walking ? 'walk' : 'idle'}_${npcFrame}`);

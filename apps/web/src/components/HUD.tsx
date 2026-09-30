@@ -15,8 +15,9 @@ interface HUDProps {
   onOpenQuests: () => void;
   onOpenStalls: () => void;
   onOpenStaff: () => void;
+  wageDebt?: number;
 }
-export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, onOpenStaff}) => {
+export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, onOpenStaff, wageDebt = 0}) => {
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore();
   const season = getSeasonForDay(worldTime.day);
   return <header className="game-hud">
@@ -25,6 +26,7 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
     <div className="hud-stats">
       <PixelStat label="Tiền trong hòm" value={money(player.money)} icon="coin"/>
       <div className="hud-level" title={`${player.experience}/${player.experienceToNextLevel} XP (Cấp ${player.level})`}><strong>Cấp {player.level}</strong><span className="muted"> · {player.experience}/{player.experienceToNextLevel}</span><PixelProgress label="Kinh nghiệm" value={player.experience} max={player.experienceToNextLevel}/></div>
+      {wageDebt > 0 && <button type="button" className="hud-debt" onClick={onOpenStaff} title="Nợ lương nhân viên: bấm để xem" aria-label={`Nợ lương ${money(wageDebt)}`}><PixelIcon name="coin" size={16}/><span>Nợ lương {money(wageDebt)}</span></button>}
       <div className="hud-customers"><PixelStat label="Khách trong tiệm" value={activeCustomers} icon="person"/></div>
     </div>
     <nav className="hud-actions" aria-label="Điều hành tiệm">
