@@ -1,8 +1,9 @@
 import { Application, Container, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
-import { FixedStepSimulationRunner, GameSimulation } from '@game/core';
+import { FixedStepSimulationRunner, GameSimulation, getLightingState } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
+import { ShopLighting } from './shop-lighting';
 import { PRODUCT_MAP, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES } from '@game/data';
 
 export interface PixiGameViewportOptions {
@@ -51,7 +52,6 @@ export class PixiGameViewport {
   private ambientSprites: Array<{sprite: Sprite; key: string; frames: number}> = [];
   private stallSprites: Sprite[] = [];
   private shopkeeper?: { container: Container; sprite: Sprite; bubble: Container };
-  private nightOverlay!: Graphics;
   private motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string }> = new Map();
   private interactionBubble!: Container;
@@ -109,15 +109,25 @@ export class PixiGameViewport {
     this.entitiesLayer = new Container();
     this.uiOverlayLayer = new Container();
 
+    this.shadowLayer = new Container();
+    this.tintLayer = new Container();
+    this.lightLayer = new Container();
+
+    // Thứ tự: nền, bóng nắng, tường, thực thể, nhân màu ánh sáng, quầng đèn cộng, nhãn UI.
     this.worldContainer.addChild(this.groundLayer);
+    this.worldContainer.addChild(this.shadowLayer);
     this.worldContainer.addChild(this.wallLayer);
     this.worldContainer.addChild(this.entitiesLayer);
+    this.worldContainer.addChild(this.tintLayer);
+    this.worldContainer.addChild(this.lightLayer);
     this.worldContainer.addChild(this.uiOverlayLayer);
+    this.lighting = new ShopLighting(this.tintLayer, this.lightLayer, this.shadowLayer);
 
     this.app.stage.addChild(this.worldContainer);
 
     // Build Tile Layers
     this.buildMapLayers();
+    this.lighting.rebuildMap(this.tileMap);
 
     // Build Fixtures
     this.buildFixtures();
@@ -155,15 +165,10 @@ export class PixiGameViewport {
     window.addEventListener('pointermove', this.handlePointerMove);
     window.addEventListener('pointerup', this.handlePointerUp);
 
-    this.nightOverlay = new Graphics();
-    this.nightOverlay.rect(0, 0, this.app.screen.width, this.app.screen.height).fill(0x1b2646);
-    this.nightOverlay.eventMode = 'none';
-    this.app.stage.addChild(this.nightOverlay);
     this.resizeObserver = new ResizeObserver(() => {
       this.app.resize();
       this.camera.setViewportSize(this.app.screen.width, this.app.screen.height);
       this.onZoomChange?.(this.camera.zoom);
-      this.nightOverlay.clear().rect(0, 0, this.app.screen.width, this.app.screen.height).fill(0x1b2646);
     });
     if (this.canvas.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
     // Hook Ticker
@@ -177,6 +182,7 @@ export class PixiGameViewport {
     for (const child of this.groundLayer.removeChildren()) child.destroy({ children: true });
     for (const child of this.wallLayer.removeChildren()) child.destroy({ children: true });
     this.buildMapLayers();
+    this.lighting.rebuildMap(this.tileMap);
     this.buildStalls();
   }
 
@@ -351,23 +357,13 @@ export class PixiGameViewport {
       }
     }
 
-    // Đèn đường: cột đèn nằm trên nền, quầng sáng cộng màu chỉ hiện khi trời tối (xem renderTick).
-    this.lampGlows = [];
+    // Cột đèn đường; quầng sáng do ShopLighting quản lý theo giờ.
     for (const lamp of STREET_LAMP_TILES) {
       const pole = new Sprite(this.textures.getTexture('deco_lamp_pole'));
       pole.anchor.set(0, 1);
       pole.x = lamp.x * TILE_SIZE;
       pole.y = (lamp.y + 1) * TILE_SIZE;
       this.groundLayer.addChild(pole);
-      const glow = new Graphics();
-      for (let i = 0; i < 12; i++) glow.circle(0, 0, 84 - i * 6.5).fill({ color: 0xffd98a, alpha: 0.035 });
-      glow.x = lamp.x * TILE_SIZE + 16;
-      glow.y = (lamp.y + 1) * TILE_SIZE - 50;
-      glow.blendMode = 'add';
-      glow.alpha = 0;
-      glow.eventMode = 'none';
-      this.groundLayer.addChild(glow);
-      this.lampGlows.push(glow);
     }
 
     if (wallLayerData) {
@@ -479,6 +475,7 @@ export class PixiGameViewport {
 
     // Warm morning sunlight beam casting through left-wall window aperture into shop interior (east direction)
     const sunBeam = new Graphics();
+    this.sunBeamGraphic = sunBeam;
     sunBeam.poly([
       6 * TILE_SIZE + 29, 5 * TILE_SIZE + 6,
       6 * TILE_SIZE + 29, 5 * TILE_SIZE + 22,
@@ -716,7 +713,11 @@ export class PixiGameViewport {
   }
 
   private bubbleWidth = 0;
-  private lampGlows: Graphics[] = [];
+  private lighting!: ShopLighting;
+  private shadowLayer!: Container;
+  private tintLayer!: Container;
+  private lightLayer!: Container;
+  private sunBeamGraphic!: Graphics;
 
   /** Băm cố định theo ô để cỏ/hoa không nhấp nháy giữa các lần dựng. */
   private tileHash(x: number, y: number): number {
@@ -895,12 +896,12 @@ export class PixiGameViewport {
     for (const ambient of this.ambientSprites) {
       ambient.sprite.texture = this.textures.getTexture(`${ambient.key}${reducedMotion ? 0 : Math.floor(this.animTimer * (ambient.key === 'tile_fan_' ? 5 : 1)) % ambient.frames}`);
     }
-    const hour = this.simulation.getTime().hour;
-    this.nightOverlay.alpha = hour >= 17 ? Math.min(0.5, (hour - 17) * 0.125) : hour < 7 ? Math.min(0.5, (7 - hour) * 0.25) : 0;
-    // Đèn đường sáng dần từ 17h, tắt dần lúc 6–7h; nhấp nháy nhẹ trừ khi bật giảm chuyển động.
-    const dark = hour >= 17 ? Math.min(1, (hour - 16) / 2) : hour < 7 ? Math.min(1, (7 - hour) / 1.5) : 0;
-    const flicker = reducedMotion ? 1 : 0.94 + Math.sin(this.animTimer * 7) * 0.03;
-    for (const glow of this.lampGlows) glow.alpha = dark * flicker;
+    const time = this.simulation.getTime();
+    const light = getLightingState(time.hour, time.minute);
+    this.lighting.syncFixtures(this.simulation.getFixtures());
+    this.lighting.update(light, this.animTimer, reducedMotion);
+    this.sunBeamGraphic.alpha = light.sun;
+    this.app.renderer.background.color = light.sky;
 
     // 2b. Update Doors & Entrance Animation
     const playerPos = playerData.position;

@@ -9,6 +9,7 @@ export * from './pathfinding';
 export * from './tax/registry';
 export * from './tax/research';
 export * from './tax/annual-revenue';
+export * from './lighting-phase';
 export * from './world-runtime';
 export * from './suggestions';
 export * from './staff';

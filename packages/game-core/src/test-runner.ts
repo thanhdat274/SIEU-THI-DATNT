@@ -25,6 +25,7 @@ import { runShopkeeperTests } from './shopkeeper.test';
 import { runSeasonAndStallTests } from './seasons.test';
 import { runWorkerTests } from './workers.test';
 import { runOperationsTests } from './operations.test';
+import { runLightingPhaseTests } from './lighting-phase.test';
 import { runIntegrationTests, runOutdoorPropTests } from './integration.test';
 import { runStoreLayoutTests } from './store-layout.test';
 
@@ -50,6 +51,7 @@ export async function runTests(): Promise<void> {
   runWorkerTests();
   runOperationsTests();
   runIntegrationTests();
+  runLightingPhaseTests();
   runOutdoorPropTests();
   runAnnualRevenueTests();
   runStoreLayoutTests();
