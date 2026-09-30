@@ -156,14 +156,14 @@ export class PixiGameViewport {
     window.addEventListener('pointerup', this.handlePointerUp);
 
     this.nightOverlay = new Graphics();
-    this.nightOverlay.rect(0, 0, this.app.screen.width, this.app.screen.height).fill(0x253834);
+    this.nightOverlay.rect(0, 0, this.app.screen.width, this.app.screen.height).fill(0x1b2646);
     this.nightOverlay.eventMode = 'none';
     this.app.stage.addChild(this.nightOverlay);
     this.resizeObserver = new ResizeObserver(() => {
       this.app.resize();
       this.camera.setViewportSize(this.app.screen.width, this.app.screen.height);
       this.onZoomChange?.(this.camera.zoom);
-      this.nightOverlay.clear().rect(0, 0, this.app.screen.width, this.app.screen.height).fill(0x253834);
+      this.nightOverlay.clear().rect(0, 0, this.app.screen.width, this.app.screen.height).fill(0x1b2646);
     });
     if (this.canvas.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
     // Hook Ticker
@@ -360,7 +360,7 @@ export class PixiGameViewport {
       pole.y = (lamp.y + 1) * TILE_SIZE;
       this.groundLayer.addChild(pole);
       const glow = new Graphics();
-      for (const [radius, alpha] of [[76, 0.06], [56, 0.09], [38, 0.12], [22, 0.16]] as const) glow.circle(0, 0, radius).fill({ color: 0xffd98a, alpha });
+      for (let i = 0; i < 12; i++) glow.circle(0, 0, 84 - i * 6.5).fill({ color: 0xffd98a, alpha: 0.035 });
       glow.x = lamp.x * TILE_SIZE + 16;
       glow.y = (lamp.y + 1) * TILE_SIZE - 50;
       glow.blendMode = 'add';
@@ -896,7 +896,7 @@ export class PixiGameViewport {
       ambient.sprite.texture = this.textures.getTexture(`${ambient.key}${reducedMotion ? 0 : Math.floor(this.animTimer * (ambient.key === 'tile_fan_' ? 5 : 1)) % ambient.frames}`);
     }
     const hour = this.simulation.getTime().hour;
-    this.nightOverlay.alpha = hour >= 18 ? Math.min(0.32, (hour - 17) * 0.06) : hour < 7 ? 0.1 : 0;
+    this.nightOverlay.alpha = hour >= 17 ? Math.min(0.5, (hour - 17) * 0.125) : hour < 7 ? Math.min(0.5, (7 - hour) * 0.25) : 0;
     // Đèn đường sáng dần từ 17h, tắt dần lúc 6–7h; nhấp nháy nhẹ trừ khi bật giảm chuyển động.
     const dark = hour >= 17 ? Math.min(1, (hour - 16) / 2) : hour < 7 ? Math.min(1, (7 - hour) / 1.5) : 0;
     const flicker = reducedMotion ? 1 : 0.94 + Math.sin(this.animTimer * 7) * 0.03;

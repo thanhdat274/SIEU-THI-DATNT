@@ -21,6 +21,16 @@ export function createPremiumTexture(key:string):HTMLCanvasElement|null{
   for(const [x,y] of [[6,12],[19,20],[24,8]]){ctx.fillStyle='#3f5c39';ctx.fillRect(x+1,y+2,1,4);ctx.fillStyle=pal[0];ctx.fillRect(x-1,y,3,3);ctx.fillRect(x+2,y,3,3);ctx.fillRect(x,y-1,3,1);ctx.fillStyle=pal[1];ctx.fillRect(x+1,y+1,1,1);}
   return canvas;
  }
+ if(key==='deco_lamp_pole'){
+  // cột đèn gang 32x64, neo đáy; bóng đổ nằm ngang trên vỉa hè
+  const {canvas,ctx}=surface(32,64);
+  ctx.fillStyle='#26190E45';ctx.fillRect(6,58,22,4);
+  ctx.fillStyle='#2b3a37';ctx.fillRect(13,14,4,46);ctx.fillRect(10,56,10,4);
+  ctx.fillStyle='#41564f';ctx.fillRect(13,14,1,46);
+  ctx.fillStyle='#2b3a37';ctx.fillRect(9,6,12,4);ctx.fillRect(8,4,14,2);ctx.fillRect(11,10,8,4);
+  ctx.fillStyle='#ffe9a8';ctx.fillRect(11,10,8,3);
+  return canvas;
+ }
  if(key==='deco_fence'){
   // hàng rào gỗ thấp, có bóng đổ xuống cỏ để nổi khối
   const {canvas,ctx}=surface(32,32);

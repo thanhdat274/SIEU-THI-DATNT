@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { DEFAULT_INITIAL_SAVE, generateStarterTileMap } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, generateStarterTileMap, isFenceTile, STREET_LAMP_TILES } from '@game/data';
 import { AutoBuyRule } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
@@ -61,4 +61,16 @@ export function runIntegrationTests(): void {
   assert.equal(reloaded.getLedger().length, ledger.length, 'Reload giữ sổ cái');
   assert.deepEqual(reloaded.getInventory(), sim.getInventory(), 'Reload giữ tồn kho');
   console.log(`  ✓ Passed: 3 ngày — ${ledger.length} dòng sổ, tiền ${startMoney}→${sim.getPlayerData().money}, khách ${sim.getStatistics().totalCustomersServed}`);
+}
+
+export function runOutdoorPropTests(): void {
+  const map = generateStarterTileMap();
+  const origin = map.originTileY ?? 0;
+  const collide = map.collisionLayer;
+  const solidAt = (x: number, worldY: number) => !!collide[(worldY - origin) * map.width + x];
+  assert.equal(solidAt(2, 10), true, 'Hàng rào chặn đường đi');
+  assert.equal(isFenceTile(9, 10, map.width), false, 'Mặt tiền tiệm không có rào');
+  assert.equal(solidAt(9, 11), false, 'Vỉa hè trước cửa vẫn đi được');
+  for (const lamp of STREET_LAMP_TILES) assert.equal(solidAt(lamp.x, lamp.y), true, 'Cột đèn là vật cản');
+  console.log('  ✓ Passed: Hàng rào và cột đèn có va chạm');
 }
