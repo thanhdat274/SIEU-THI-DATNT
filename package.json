@@ -2,11 +2,14 @@
   "name": "tiem-tap-hoa-dau-hem",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "yarn@1.22.22",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
+    "dev:server": "yarn --cwd apps/server dev",
+    "verify:runtime": "yarn --cwd apps/server verify:runtime",
     "dev": "yarn --cwd apps/web dev",
     "start": "yarn --cwd apps/web dev",
     "build": "yarn --cwd apps/server build && yarn --cwd apps/web build",

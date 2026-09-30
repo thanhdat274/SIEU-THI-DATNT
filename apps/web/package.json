@@ -15,6 +15,7 @@
     "@game/core": "*",
     "@game/renderer": "*",
     "dexie": "^4.0.7",
+    "firebase": "^10.12.2",
     "lucide-react": "^0.378.0",
     "pixi.js": "^8.1.6",
     "react": "^18.3.1",
