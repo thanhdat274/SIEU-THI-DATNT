@@ -45,6 +45,7 @@ export class ShopLighting {
   private fixtureLights: LightSprite[] = [];
   private shadows: Shadow[] = [];
   private glints: Graphics[] = [];
+  private actorShadows: Graphics[] = [];
   private sunPatch?: Sprite;
   private fixtureSignature = '';
   private mapKey = '';
@@ -192,7 +193,31 @@ export class ShopLighting {
     }
   }
 
+  /** Bóng dưới chân người/NPC: bóng tiếp xúc luôn có, thêm vệt nắng ngả theo giờ khi trời sáng. */
+  public updateActorShadows(feet: Array<{ x: number; y: number }>, state: LightingState): void {
+    while (this.actorShadows.length < feet.length) {
+      const g = new Graphics();
+      g.eventMode = 'none';
+      this.shadowLayer.addChild(g);
+      this.actorShadows.push(g);
+    }
+    const sunAlpha = state.sun * 0.28;
+    const stretch = 1 + Math.abs(state.shadowLean) * state.shadowLength * 0.9;
+    const dx = state.shadowLean * state.shadowLength * 4;
+    this.actorShadows.forEach((g, i) => {
+      const f = feet[i];
+      g.visible = !!f;
+      if (!f) return;
+      g.clear();
+      g.position.set(Math.round(f.x), Math.round(f.y));
+      g.ellipse(0, -1, 8, 3).fill({ color: 0x1c1410, alpha: 0.14 + state.artificial * 0.04 });
+      if (sunAlpha > 0.01) g.ellipse(dx, -1, 8 * stretch, 3.4).fill({ color: 0x1c1410, alpha: sunAlpha });
+    });
+  }
+
   public destroy(): void {
+    for (const g of this.actorShadows) g.destroy();
+    this.actorShadows = [];
     for (const l of [...this.staticLights, ...this.fixtureLights]) l.sprite.destroy();
     for (const s of this.shadows) s.graphics.destroy();
     for (const g of this.glints) g.destroy();

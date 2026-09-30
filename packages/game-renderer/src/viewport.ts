@@ -900,6 +900,12 @@ export class PixiGameViewport {
     const light = getLightingState(time.hour, time.minute);
     this.lighting.syncFixtures(this.simulation.getFixtures());
     this.lighting.update(light, this.animTimer, reducedMotion);
+    const feet: Array<{ x: number; y: number }> = [this.playerContainer.position];
+    if (this.partnerContainer.visible) feet.push(this.partnerContainer.position);
+    for (const c of this.customerSprites.values()) feet.push(c.container.position);
+    for (const w of this.workerSprites.values()) feet.push(w.container.position);
+    if (this.shopkeeper) feet.push(this.shopkeeper.container.position);
+    this.lighting.updateActorShadows(feet, light);
     this.sunBeamGraphic.alpha = light.sun;
     this.app.renderer.background.color = light.sky;
 
