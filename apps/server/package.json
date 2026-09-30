@@ -3,15 +3,33 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "dev": "tsx watch src/bootstrap.ts",
+    "start": "tsx src/bootstrap.ts",
+    "verify:runtime": "tsx src/verify-runtime.ts",
+    "test:worlds": "tsx src/world.repository.test.ts",
+    "test:gateway": "tsx src/world.gateway.test.ts",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@nestjs/common": "11.2.6",
+    "@nestjs/core": "11.2.6",
+    "@nestjs/platform-express": "11.2.6",
+    "@nestjs/platform-ws": "11.2.6",
+    "@nestjs/websockets": "11.2.6",
+    "firebase-admin": "13.10.0",
+    "mongodb": "6.21.0",
+    "dotenv": "16.6.1",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "ws": "^8.18.0",
     "@game/shared": "*",
-    "@game/data": "*"
+    "@game/data": "*",
+    "@game/core": "*"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",
+    "@types/ws": "^8.18.1",
     "typescript": "^5.4.5"
   }
 }

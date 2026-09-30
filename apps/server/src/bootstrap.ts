@@ -1,0 +1,197 @@
+import 'reflect-metadata';
+import {
+  BadRequestException, Body, Controller, Delete, Get, Module, Param, Post, Req,
+  ServiceUnavailableException, UseGuards,
+} from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { WsAdapter } from '@nestjs/platform-ws';
+import { isSaveGameData, type GameAccount, type SaveGameData } from '@game/shared';
+import { generateStarterTileMap } from '@game/data';
+import { applyStoreLayoutActions, GameSimulation, validateStoreLayout } from '@game/core';
+import { readRuntimeConfig } from './runtime-config';
+import { closeDatabase, connectDatabase } from './database';
+import { createWebSocketTicket, verifyAccount } from './firebase-admin';
+import { FirebaseAuthGuard } from './auth.guard';
+import { worldRepository } from './world.repository';
+import { WorldGateway } from './world.gateway';
+
+interface AuthenticatedRequest {
+  gameAccount: Awaited<ReturnType<typeof verifyAccount>>;
+}
+
+class HealthController {
+  health() { return { status: 'ok', service: 'tap-hoa-server', protocolVersion: 1 }; }
+  async readiness() {
+    try {
+      const db = await connectDatabase();
+      await db.command({ ping: 1 });
+      return { status: 'ok', database: 'connected' };
+    } catch {
+      throw new ServiceUnavailableException('Database unavailable or not configured');
+    }
+  }
+}
+Controller()(HealthController);
+Get('health')(HealthController.prototype, 'health', Object.getOwnPropertyDescriptor(HealthController.prototype, 'health')!);
+Get('ready')(HealthController.prototype, 'readiness', Object.getOwnPropertyDescriptor(HealthController.prototype, 'readiness')!);
+
+class GameController {
+  me(request: AuthenticatedRequest) {
+    const account: GameAccount = { id: request.gameAccount.uid, displayName: request.gameAccount.name ?? request.gameAccount.email ?? request.gameAccount.uid, photoUrl: null, createdAt: new Date().toISOString() };
+    return { account };
+  }
+  listWorlds(request: AuthenticatedRequest) { return worldRepository.list(request.gameAccount.uid); }
+  createWorld(request: AuthenticatedRequest, body: { name?: unknown }) {
+    if (body?.name !== undefined && (typeof body.name !== 'string' || body.name.trim().length > 48)) throw new BadRequestException('name must be a string up to 48 characters');
+    return worldRepository.create(request.gameAccount, typeof body?.name === 'string' ? body.name : 'Hẻm mới');
+  }
+  getWorld(request: AuthenticatedRequest, worldId: string) { return worldRepository.getForMember(worldId, request.gameAccount.uid); }
+  createInvite(request: AuthenticatedRequest, worldId: string) { return worldRepository.createInvite(worldId, request.gameAccount.uid); }
+  revokeInvite(request: AuthenticatedRequest, worldId: string, inviteId: string) { return worldRepository.revokeInvite(worldId, request.gameAccount.uid, inviteId); }
+  joinWorld(request: AuthenticatedRequest, body: { token?: unknown }) {
+    if (typeof body?.token !== 'string' || body.token.length > 128) throw new BadRequestException('token must be a string up to 128 characters');
+    return worldRepository.join(request.gameAccount, body.token);
+  }
+  async kickMember(request: AuthenticatedRequest, worldId: string, memberId: string) {
+    const res = await worldRepository.kick(worldId, request.gameAccount.uid, memberId);
+    WorldGateway.kickMemberSession(worldId, memberId, 'Bị mời ra khỏi hẻm');
+    return res;
+  }
+  async leaveWorld(request: AuthenticatedRequest, worldId: string) {
+    const res = await worldRepository.leave(worldId, request.gameAccount.uid);
+    WorldGateway.kickMemberSession(worldId, request.gameAccount.uid, 'Đã rời khỏi hẻm');
+    return res;
+  }
+  resetWorld(request: AuthenticatedRequest, worldId: string, body: { confirmation?: unknown }) {
+    if (body?.confirmation !== worldId) throw new BadRequestException('confirmation must equal worldId');
+    return worldRepository.reset(worldId, request.gameAccount.uid);
+  }
+  async commitCommand(request: AuthenticatedRequest, worldId: string, body: any) {
+    if (!body || typeof body !== 'object' || typeof body.expectedRevision !== 'number' || !body.receipt || !body.updatedBusiness) {
+      throw new BadRequestException('Invalid commitCommand payload');
+    }
+    let payload: any;
+    try { payload = JSON.parse(body.receipt.payloadJson); } catch { throw new BadRequestException('Command payload is not valid JSON'); }
+    const commandWorld = await worldRepository.getForMember(worldId, request.gameAccount.uid);
+    const commandBusiness = commandWorld.businesses.find((business: any) => business.id === body.updatedBusiness.id);
+    if (!commandBusiness) throw new BadRequestException('Business is not part of this world.');
+    if (JSON.stringify(commandBusiness.ownerAccountIds) !== JSON.stringify(body.updatedBusiness.ownerAccountIds) || body.updatedBusiness.save?.id !== commandBusiness.save.id) {
+      throw new BadRequestException('Command cannot change business ownership or save identity.');
+    }
+    const normalizeLayout = (save: SaveGameData) => ({
+      ...save.storeLayout,
+      storedFixtures: save.storeLayout.storedFixtures ?? [],
+      unlockedPlotIds: save.storeLayout.unlockedPlotIds ?? [],
+    });
+    if (payload?.type === 'layout_batch') {
+      const currentBusiness = commandBusiness;
+      const nextSave = body.updatedBusiness.save as SaveGameData | undefined;
+      if (!currentBusiness || !currentBusiness.ownerAccountIds.includes(request.gameAccount.uid)) throw new BadRequestException('Chỉ chủ tiệm được sửa bố cục cửa hàng.');
+      if (!Array.isArray(payload.actions) || !isSaveGameData(nextSave) || currentBusiness.save.worldTime.isStoreOpen || (currentBusiness.save.customers ?? (currentBusiness.save.customer ? [currentBusiness.save.customer] : [])).some((customer: any) => customer.stage !== 'leaving') || (currentBusiness.save.staff ?? []).some((staff: any) => !!staff.workerTask)) {
+        throw new BadRequestException('Cửa hàng phải đóng, không còn khách phục vụ hoặc nhân viên đang làm việc.');
+      }
+      const normalizedCurrent = { ...currentBusiness.save, schemaVersion: 3, storeLayout: normalizeLayout(currentBusiness.save) } as SaveGameData;
+      const mapFor = (ids: readonly string[]) => generateStarterTileMap(ids);
+      const headlessInput = { getMovementVector: () => ({ x: 0, y: 0 }), consumeInteract: () => false, consumeInventoryToggle: () => false };
+      const canonicalSave = new GameSimulation(normalizedCurrent, mapFor(normalizedCurrent.storeLayout.unlockedPlotIds ?? []), headlessInput)
+        .exportSaveData(normalizedCurrent.id, body.expectedRevision);
+      const expected = applyStoreLayoutActions(canonicalSave, payload.actions, mapFor);
+      if (!expected.save) throw new BadRequestException(`Bố cục không hợp lệ: ${expected.error ?? 'unknown'}`);
+      const validation = validateStoreLayout(expected.save, mapFor(expected.save.storeLayout.unlockedPlotIds ?? []));
+      if (validation.error) throw new BadRequestException(`Bố cục không hợp lệ: ${validation.error}`);
+      expected.save.id = currentBusiness.save.id;
+      expected.save.revision = body.expectedRevision + 1;
+      expected.save.updatedAt = new Date().toISOString();
+      // Persist the server-replayed result, never arbitrary client fields from the submitted snapshot.
+      body.updatedBusiness = { ...body.updatedBusiness, ownerAccountIds: [...currentBusiness.ownerAccountIds], save: expected.save };
+    } else {
+      const nextSave = body.updatedBusiness.save as SaveGameData | undefined;
+      if (!isSaveGameData(nextSave) || JSON.stringify(normalizeLayout(commandBusiness.save)) !== JSON.stringify(normalizeLayout(nextSave))) {
+        throw new BadRequestException('Thay đổi bố cục phải dùng layout_batch đã kiểm tra.');
+      }
+    }
+    const result = await worldRepository.commitCommand({
+      worldId,
+      actorId: request.gameAccount.uid,
+      expectedRevision: body.expectedRevision,
+      protocolVersion: typeof body.protocolVersion === 'number' ? body.protocolVersion : undefined,
+      receipt: body.receipt,
+      updatedBusiness: body.updatedBusiness,
+      activity: body.activity,
+    });
+    // Push instant world:update to all WS clients (skip if no WS clients connected)
+    if (result.committed) {
+      WorldGateway.notifyCommit(worldId, { revision: result.revision, receipt: result.receipt });
+    }
+    return payload?.type === 'layout_batch' ? { ...result, updatedBusiness: body.updatedBusiness } : result;
+  }
+  async createWebSocketTicket(request: AuthenticatedRequest) {
+    const account = request.gameAccount;
+    return { ticket: await createWebSocketTicket(account.uid) };
+  }
+  listActivities(request: AuthenticatedRequest, worldId: string) {
+    const rawUrl = (request as any).url as string | undefined;
+    const qIndex = rawUrl ? rawUrl.indexOf('?') : -1;
+    const qs = qIndex >= 0 ? rawUrl!.slice(qIndex + 1) : '';
+    const params = new URLSearchParams(qs);
+    const lastSeenParam = params.get('lastSeenRevision');
+    const limitParam = params.get('limit');
+    const lastSeenRevision = lastSeenParam ? parseInt(lastSeenParam, 10) : undefined;
+    const limit = limitParam ? parseInt(limitParam, 10) : undefined;
+
+    return worldRepository.listActivities(worldId, request.gameAccount.uid, {
+      lastSeenRevision: Number.isFinite(lastSeenRevision) ? lastSeenRevision : undefined,
+      limit: Number.isFinite(limit) ? limit : undefined,
+    });
+  }
+  /** POST /worlds/:worldId/session — records member's lastSeenRevision for absence tracking */
+  touchSession(request: AuthenticatedRequest, worldId: string) {
+    return worldRepository.touchSession(worldId, request.gameAccount.uid);
+  }
+}
+Controller('api/v1')(GameController);
+UseGuards(FirebaseAuthGuard)(GameController);
+const game = GameController.prototype;
+const route = (decorator: (path?: string) => MethodDecorator, method: keyof GameController, path?: string) => decorator(path)(game, method, Object.getOwnPropertyDescriptor(game, method)!);
+const requestParam = (method: keyof GameController, index: number) => Req()(game, method, index);
+const bodyParam = (method: keyof GameController, index: number) => Body()(game, method, index);
+const namedParam = (method: keyof GameController, name: string, index: number) => Param(name)(game, method, index);
+route(Get, 'me', 'me'); requestParam('me', 0);
+route(Get, 'listWorlds', 'worlds'); requestParam('listWorlds', 0);
+route(Post, 'createWorld', 'worlds'); requestParam('createWorld', 0); bodyParam('createWorld', 1);
+route(Get, 'getWorld', 'worlds/:worldId'); requestParam('getWorld', 0); namedParam('getWorld', 'worldId', 1);
+route(Post, 'createInvite', 'worlds/:worldId/invites'); requestParam('createInvite', 0); namedParam('createInvite', 'worldId', 1);
+route(Delete, 'revokeInvite', 'worlds/:worldId/invites/:inviteId'); requestParam('revokeInvite', 0); namedParam('revokeInvite', 'worldId', 1); namedParam('revokeInvite', 'inviteId', 2);
+route(Post, 'joinWorld', 'worlds/join'); requestParam('joinWorld', 0); bodyParam('joinWorld', 1);
+route(Delete, 'kickMember', 'worlds/:worldId/members/:memberId'); requestParam('kickMember', 0); namedParam('kickMember', 'worldId', 1); namedParam('kickMember', 'memberId', 2);
+route(Delete, 'leaveWorld', 'worlds/:worldId/membership'); requestParam('leaveWorld', 0); namedParam('leaveWorld', 'worldId', 1);
+route(Post, 'resetWorld', 'worlds/:worldId/reset'); requestParam('resetWorld', 0); namedParam('resetWorld', 'worldId', 1); bodyParam('resetWorld', 2);
+route(Post, 'commitCommand', 'worlds/:worldId/commands'); requestParam('commitCommand', 0); namedParam('commitCommand', 'worldId', 1); bodyParam('commitCommand', 2);
+route(Post, 'createWebSocketTicket', 'ws-ticket'); requestParam('createWebSocketTicket', 0);
+route(Get, 'listActivities', 'worlds/:worldId/activities'); requestParam('listActivities', 0); namedParam('listActivities', 'worldId', 1);
+route(Post, 'touchSession', 'worlds/:worldId/session'); requestParam('touchSession', 0); namedParam('touchSession', 'worldId', 1);
+
+class RuntimeModule {
+  async onApplicationShutdown() { await closeDatabase(); }
+}
+Module({ controllers: [HealthController, GameController], providers: [FirebaseAuthGuard, WorldGateway] })(RuntimeModule);
+
+export async function createServer() {
+  const app = await NestFactory.create(RuntimeModule, { logger: ['error', 'warn', 'log'] });
+  app.useWebSocketAdapter(new WsAdapter(app));
+  return app;
+}
+
+async function main() {
+  const config = readRuntimeConfig();
+  const app = await createServer();
+  app.enableShutdownHooks();
+  app.enableCors({ origin: config.webOrigin, allowedHeaders: ['Content-Type', 'Authorization'], methods: ['GET', 'POST', 'DELETE', 'OPTIONS'] });
+  await app.listen(config.port, config.host);
+  console.log(`Server listening on ${config.host}:${config.port} — WS at ws://${config.host}:${config.port}/ws`);
+}
+
+if (require.main === module) void main().catch(() => {
+  console.error('Server startup failed. Check runtime configuration.');
+  process.exitCode = 1;
+});
