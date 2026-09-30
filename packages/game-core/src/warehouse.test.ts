@@ -16,6 +16,11 @@ export function runWarehouseTests():void {
  const collision=new CollisionSystem(map,sim.getFixtures());
  check(!collision.isColliding({x:9*32+4,y:3*32+4,width:20,height:14}),'shop doorway passable');
  check(!collision.isColliding({x:10*32+4,y:3*32+4,width:20,height:14}),'warehouse doorway passable');
+ // Player center positions that fit through either edge of the two-tile opening
+ // must be inside the renderer's rectangular open-door trigger (door center 304,112).
+ const atDoorApproach=(x:number,y:number)=>Math.abs(x-304)<48&&Math.abs(y-112)<48;
+ check(atDoorApproach(272,112)&&atDoorApproach(336,112),'warehouse door opens at both doorway edges');
+ check(atDoorApproach(304,80)&&atDoorApproach(304,144),'warehouse door opens from both sides');
  check(collision.isColliding({x:7*32+5,y:-1*32+5,width:20,height:14}),'dry rack solid');
  check(findPath(map,collision,{x:9,y:11},{x:9,y:0}).length>0,'warehouse reachable from street');
  sim.getClock().toggleStoreStatus();

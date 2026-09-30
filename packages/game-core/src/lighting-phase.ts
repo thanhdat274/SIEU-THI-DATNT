@@ -35,7 +35,7 @@ const KEYFRAMES: Keyframe[] = [
 ];
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const lerpColor = (a: number, b: number, t: number) => {
+export const lerpColor = (a: number, b: number, t: number) => {
   const r = Math.round(lerp((a >> 16) & 255, (b >> 16) & 255, t));
   const g = Math.round(lerp((a >> 8) & 255, (b >> 8) & 255, t));
   const bl = Math.round(lerp(a & 255, b & 255, t));

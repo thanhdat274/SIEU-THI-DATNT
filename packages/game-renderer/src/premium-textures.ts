@@ -52,6 +52,13 @@ export function createPremiumTexture(key:string):HTMLCanvasElement|null{
   r(6,26,52,18,C.wood);r(6,26,52,3,C.light);r(6,43,52,2,C.dark);    // quầy gỗ
   r(8,30,48,1,C.dark);
   r(2,46,60,2,'#26190E');                                            // bóng đổ
+  // Bóng đèn tròn vàng treo lủng lẳng dưới mái hiên quầy
+  r(31,14,1,5,'#1E1A16');                                            // dây điện đen
+  r(30,18,3,2,'#4A3B2C');                                            // đui đèn đồng kim loại
+  r(29,20,5,4,'#FFCA58');                                            // bóng đèn tròn vàng ấm
+  r(30,21,3,2,'#FFFDE8');                                            // tim đèn phát sáng rực rỡ
+  r(28,20,1,4,'rgba(255,212,112,0.4)');r(34,20,1,4,'rgba(255,212,112,0.4)'); // quầng phản quang
+  r(29,19,5,1,'rgba(255,212,112,0.3)');r(29,24,5,1,'rgba(255,212,112,0.3)');
   if(coffee){
    r(12,18,8,8,C.dark);r(13,19,6,6,'#E9B95D');r(16,22,1,5,'#FFF2D6'); // bình nước sôi
    r(26,21,6,5,C.paper);r(27,22,4,3,'#6B4423');                        // ly cà phê

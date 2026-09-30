@@ -14,7 +14,7 @@ export const STORE_BOUNDS = {left:6,right:13,top:3,bottom:10};
 export const isFenceTile = (x: number, worldY: number, mapWidth: number): boolean =>
   worldY === 10 && x > 0 && x < mapWidth - 1 && (x <= STORE_BOUNDS.left - 2 || x >= STORE_BOUNDS.right + 2);
 /** Đèn đường trên vỉa hè sát lòng đường; cột đèn chặn đường đi như vật cản nhỏ. */
-export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 5, y: 12 }, { x: 15, y: 12 }, { x: 20, y: 12 }];
+export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 4, y: 12 }, { x: 15, y: 12 }, { x: 20, y: 12 }];
 export const WAREHOUSE_BOUNDS = {left:STORE_BOUNDS.left,right:STORE_BOUNDS.right,top:STORE_BOUNDS.top-6,bottom:STORE_BOUNDS.top};
 export const WAREHOUSE_CENTER = {x:(WAREHOUSE_BOUNDS.left+WAREHOUSE_BOUNDS.right+1)*16,y:(WAREHOUSE_BOUNDS.top+WAREHOUSE_BOUNDS.bottom+1)*16};
 export const WAREHOUSE_DOOR_LEFT = Math.floor(WAREHOUSE_CENTER.x/32)-1;

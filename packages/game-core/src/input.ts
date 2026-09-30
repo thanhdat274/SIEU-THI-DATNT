@@ -1,5 +1,17 @@
 import { Vector2D, Direction } from '@game/shared';
 
+export interface GameInputSource {
+  getMovementVector(): Vector2D;
+  consumeInteract(): boolean;
+  consumeInventoryToggle(): boolean;
+}
+
+export function vectorToDirection(vec: Vector2D, currentDirection: Direction): Direction {
+  if (Math.abs(vec.x) < 0.1 && Math.abs(vec.y) < 0.1) return currentDirection;
+  if (Math.abs(vec.x) > Math.abs(vec.y)) return vec.x > 0 ? 'right' : 'left';
+  return vec.y > 0 ? 'down' : 'up';
+}
+
 export class InputManager {
   private keysDown: Set<string> = new Set();
   private joystickVector: Vector2D = { x: 0, y: 0 };
@@ -123,13 +135,6 @@ export class InputManager {
   }
 
   public static vectorToDirection(vec: Vector2D, currentDirection: Direction): Direction {
-    if (Math.abs(vec.x) < 0.1 && Math.abs(vec.y) < 0.1) {
-      return currentDirection;
-    }
-    if (Math.abs(vec.x) > Math.abs(vec.y)) {
-      return vec.x > 0 ? 'right' : 'left';
-    } else {
-      return vec.y > 0 ? 'down' : 'up';
-    }
+    return vectorToDirection(vec, currentDirection);
   }
 }

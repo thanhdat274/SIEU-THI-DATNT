@@ -1,0 +1,336 @@
+id,name,category,cost,price,size,unlockLevel,shelfLifeDays,storage,requiresCold,behindCounter
+mi_goi,"Mì gói",dry,3500,5000,1,1,30,,,false
+gao,"Gạo 1kg",dry,16000,20000,2,1,45,,,false
+nuoc_mam,"Nước mắm",dry,18000,23000,1,1,60,,,false
+dau_an,"Dầu ăn",dry,38000,45000,1,1,60,,,false
+duong,"Đường",dry,17000,21000,1,1,90,,,false
+muoi,"Muối",dry,5000,7000,1,1,120,,,false
+snack,"Snack khoai tây",snack,6000,8000,1,2,20,,,false
+keo,"Kẹo",snack,2000,3000,1,2,45,,,false
+banh_quy,"Bánh quy",snack,9000,12000,1,2,25,,,false
+que_cay,"Que cay",snack,3000,5000,1,2,20,,,false
+xa_phong,"Xà phòng",household,12000,15000,1,4,180,,,false
+kem_danh_rang,"Kem đánh răng",household,20000,25000,1,4,120,,,false
+giay_vs,"Giấy vệ sinh",household,25000,32000,2,4,,,,false
+pin,"Pin",household,8000,10000,1,4,150,,,false
+the_cao,"Thẻ cào",counter,10000,12000,1,3,,,,true
+gas_mini,"Gas mini",counter,18000,23000,1,3,,,,true
+bat_lua,"Bật lửa",counter,3000,5000,1,3,,,,true
+nuoc_ngot,"Nước ngọt lon",drink,7000,10000,1,5,40,,,false
+nuoc_suoi,"Nước suối",drink,3500,5000,1,5,60,,,false
+tra_xanh,"Trà xanh chai",drink,7000,10000,1,5,30,,,false
+tang_luc,"Nước tăng lực",drink,9000,12000,1,5,40,,,false
+sua_hop,"Sữa hộp",drink,5500,7000,1,5,20,,,false
+trung_ga,"Trứng gà",fresh,2500,3500,1,7,3,,,false
+banh_mi,"Bánh mì",fresh,3000,5000,1,7,1,,,false
+rau_muong,"Rau muống",fresh,6000,9000,2,7,2,,,false
+sua_tuoi,"Sữa tươi",fresh,9000,12000,1,7,3,,fridge,false
+dau_hu,"Đậu hũ",fresh,4000,6000,1,7,2,,fridge,false
+kem_que,"Kem que",frozen,5000,8000,1,9,30,,freezer,false
+kem_hop,"Kem hộp",frozen,35000,45000,2,9,30,,freezer,false
+xuc_xich,"Xúc xích",frozen,15000,20000,1,9,20,,freezer,false
+ha_cao,"Há cảo",frozen,30000,40000,2,9,20,,freezer,false
+cha_gio,"Chả giò",frozen,35000,45000,2,9,20,,freezer,false
+nuoc_da,"Nước đá",frozen,3000,5000,2,9,,,freezer,false
+bot_canh,"Bột canh",dry,3500,5000,1,2,120,,,false
+bot_ngot,"Bột ngọt",dry,12000,16000,1,6,150,,,false
+hat_nem,"Hạt nêm",dry,22000,28000,1,7,120,,,false
+nuoc_tuong,"Nước tương",dry,12000,15000,1,8,60,,,false
+tuong_ot,"Tương ớt",dry,10000,13000,1,8,60,,,false
+hu_tieu_goi,"Hủ tiếu gói",dry,6000,8000,1,9,30,,,false
+chao_goi,"Cháo gói",dry,4000,6000,1,10,30,,,false
+sua_dac,"Sữa đặc",dry,22000,27000,1,10,60,,,false
+ca_hop,"Cá hộp",dry,20000,26000,1,11,90,,,false
+pate_hop,"Pate hộp",dry,15000,20000,1,12,60,,,false
+tieu_xay,"Tiêu xay",dry,8000,11000,1,12,90,,,false
+mam_tom,"Mắm tôm",dry,10000,14000,1,13,45,,,false
+ca_phe_hoa_tan,"Cà phê hòa tan",dry,45000,55000,1,14,90,,,false
+bot_chien,"Bột chiên giòn",dry,6000,8000,1,15,60,,,false
+dau_hao,"Dầu hào",dry,20000,25000,1,16,60,,,false
+bun_kho,"Bún khô",dry,12000,15000,1,17,60,,,false
+giam,"Giấm",dry,8000,10000,1,18,90,,,false
+keo_cao_su,"Kẹo cao su",snack,3000,5000,1,6,60,,,false
+banh_gao,"Bánh gạo",snack,8000,10000,1,7,25,,,false
+banh_bong_lan,"Bánh bông lan",snack,4000,6000,1,9,10,,,false
+banh_socola,"Bánh sô-cô-la",snack,30000,38000,1,11,30,,,false
+dau_phong,"Đậu phộng rang",snack,10000,14000,1,13,20,,,false
+rong_bien,"Rong biển sấy",snack,6000,8000,1,15,25,,,false
+kho_ga,"Khô gà lá chanh",snack,20000,28000,1,17,20,,,false
+khan_giay,"Khăn giấy",household,8000,12000,1,6,,,,false
+ban_chai,"Bàn chải đánh răng",household,8000,12000,1,7,,,,false
+nuoc_rua_chen,"Nước rửa chén",household,20000,26000,1,8,180,,,false
+bot_giat,"Bột giặt",household,35000,45000,2,10,180,,,false
+tui_rac,"Túi rác",household,10000,15000,1,11,,,,false
+dau_goi,"Dầu gội",household,45000,55000,1,12,180,,,false
+nhang_muoi,"Nhang muỗi",household,15000,20000,1,13,180,,,false
+khau_trang,"Khẩu trang",household,15000,20000,1,14,,,,false
+nhang,"Nhang thơm",household,12000,18000,1,15,,,,false
+nuoc_lau_san,"Nước lau sàn",household,25000,32000,2,16,180,,,false
+bang_ve_sinh,"Băng vệ sinh",household,18000,23000,1,17,180,,,false
+bong_den,"Bóng đèn",household,25000,35000,1,18,,,,false
+ta_giay,"Tã giấy",household,90000,110000,2,19,180,,,false
+sua_dau_nanh,"Sữa đậu nành",drink,5000,7000,1,6,20,,,false
+bia_lon,"Bia lon",drink,11000,15000,1,8,60,,,false
+ca_phe_lon,"Cà phê lon",drink,10000,14000,1,10,60,,,false
+nuoc_cam,"Nước cam ép",drink,9000,12000,1,12,30,,,false
+nuoc_yen,"Nước yến",drink,9000,12000,1,14,60,,,false
+sua_chua_uong,"Sữa chua uống",drink,5000,7000,1,16,15,,,false
+ca_chua,"Cà chua",fresh,5000,8000,1,8,3,,,false
+hanh_la,"Hành lá",fresh,2000,3000,1,9,2,,,false
+sua_chua,"Sữa chua",fresh,5000,7000,1,10,5,,fridge,false
+chuoi,"Chuối",fresh,10000,14000,2,11,3,,,false
+khoai_tay,"Khoai tây",fresh,8000,11000,2,12,7,,,false
+bun_tuoi,"Bún tươi",fresh,5000,8000,1,13,1,,,false
+cha_lua,"Chả lụa",fresh,25000,32000,1,14,4,,fridge,false
+thit_heo,"Thịt heo",fresh,30000,38000,1,15,1,,fridge,false
+ca_vien,"Cá viên",frozen,25000,32000,1,11,30,,freezer,false
+bo_vien,"Bò viên",frozen,30000,38000,1,13,30,,freezer,false
+canh_ga,"Cánh gà đông lạnh",frozen,40000,50000,2,15,30,,freezer,false
+tom_dong_lanh,"Tôm đông lạnh",frozen,60000,75000,2,17,30,,freezer,false
+sim_dt,"Sim điện thoại",counter,50000,60000,1,8,,,,true
+banh_tet,"Bánh tét",snack,26000,35000,2,21,5,,,false
+hat_dua,"Hạt dưa",snack,8000,12000,1,21,30,,,false
+bao_li_xi,"Bao lì xì",household,1000,3000,1,21,,,,false
+banh_trung_thu,"Bánh trung thu",snack,18000,26000,1,21,8,,,false
+long_den,"Lồng đèn",household,9000,15000,1,21,,,,false
+tap_vo,"Tập vở",household,7000,10000,1,21,,,,false
+but_bi,"Bút bi",household,3000,5000,1,21,,,,false
+ao_mua,"Áo mưa",household,12000,18000,1,21,,,,false
+xuc_xich_nuong_tp,"Xúc xích nướng",counter,15000,35000,1,21,1,,,true
+mi_ly_tp,"Mì ly",counter,6500,14000,1,21,1,,,true
+banh_mi_trung_tp,"Bánh mì trứng",counter,5500,16000,1,23,1,,,true
+trung_luoc_tp,"Trứng luộc",counter,5000,12000,1,21,1,,,true
+tra_tac_tp,"Trà tắc",counter,9000,22000,1,25,1,,,true
+ca_phe_sua_tp,"Cà phê sữa đá",counter,18000,32000,1,25,1,,,true
+nuoc_mia_tp,"Nước mía",counter,5000,15000,1,25,1,,,true
+sinh_to_tp,"Sinh tố",counter,18000,36000,1,26,1,,,true
+tra_sua_tp,"Trà sữa",counter,18000,36000,1,26,1,,,true
+tra_tac_base,"Cốt trà tắc",dry,6000,9000,1,25,30,,,false
+ca_phe_bot,"Cà phê bột",dry,6000,9000,1,25,60,,,false
+mia,"Mía cây",dry,2000,4000,2,25,2,,,false
+trai_cay,"Trái cây",fresh,9000,14000,2,26,2,,,false
+tra_o_long,"Trà ô long chai",drink,7000,10000,1,6,180,,,false
+sua_lua_mach,"Sữa lúa mạch",drink,6000,8000,1,7,90,,,false
+nuoc_dien_giai,"Nước điện giải",drink,8000,11000,1,9,180,,,false
+nuoc_dua_hop,"Nước dừa hộp",drink,9000,13000,1,11,120,,,false
+soda_chanh,"Soda chanh",drink,7000,10000,1,13,180,,,false
+bim_bim_tom,"Bim bim vị tôm",snack,4000,6000,1,3,30,,,false
+keo_deo,"Kẹo dẻo",snack,5000,7000,1,4,60,,,false
+banh_que,"Bánh que",snack,5000,7000,1,5,45,,,false
+mit_say,"Mít sấy",snack,18000,25000,1,10,60,,,false
+pho_goi,"Phở gói",dry,7000,9000,1,6,45,,,false
+mien_goi,"Miến gói",dry,9000,12000,1,8,90,,,false
+bot_mi,"Bột mì 1kg",dry,17000,22000,2,11,120,,,false
+sua_tam,"Sữa tắm",household,55000,68000,1,6,365,,,false
+nuoc_giat,"Nước giặt",household,70000,85000,2,9,365,,,false
+nuoc_xa_vai,"Nước xả vải",household,60000,74000,2,11,365,,,false
+dao_cao,"Dao cạo râu",household,12000,16000,1,12,,,,false
+kem_chong_nang,"Kem chống nắng",household,90000,115000,1,14,365,,,false
+rau_cai,"Rau cải",fresh,7000,10000,2,7,2,,,false
+trung_vit,"Trứng vịt",fresh,3000,4500,1,8,5,,,false
+gia_do,"Giá đỗ",fresh,4000,6000,1,9,1,,fridge,false
+kem_oc_que,"Kem ốc quế",frozen,9000,13000,1,10,30,,freezer,false
+banh_bao,"Bánh bao đông lạnh",frozen,20000,27000,2,12,30,,freezer,false
+ca_basa,"Cá basa phi lê",frozen,45000,58000,2,14,30,,freezer,false
+nep,"Nếp cái (1kg)",dry,28000,36000,2,29,180,,,false
+dau_xanh,"Đậu xanh cà vỏ",dry,2500,4000,1,29,90,,,false
+hanh_phi,"Hành phi",dry,1500,2500,1,29,60,,,false
+cha_bong,"Chà bông",dry,4000,6000,1,29,30,,,false
+lap_xuong,"Lạp xưởng",dry,4000,6000,1,29,60,,,false
+dua_nao,"Dừa nạo",fresh,2500,4000,1,29,2,,,false
+bao_goi,"Lá chuối & hộp giấy",household,1000,2000,1,29,,,,false
+tra_da,"Trà đá (ly)",drink,1000,3000,1,29,1,,,false
+nep_chin,"Nếp chín (phần)",dry,5600,5600,1,29,1,,,false
+xoi_dau_xanh_tp,"Xôi đậu xanh",counter,8100,15000,1,29,1,,,true
+xoi_dau_xanh_goi,"Xôi đậu xanh gói",counter,9100,15000,1,29,1,,,true
+xoi_man_tp,"Xôi mặn",counter,15100,25000,1,29,1,,,true
+xoi_man_goi,"Xôi mặn gói",counter,16100,22000,1,29,1,,,true
+xoi_trung_tp,"Xôi trứng",counter,9600,18000,1,29,1,,,true
+xoi_trung_goi,"Xôi trứng gói",counter,10600,18000,1,29,1,,,true
+xoi_dua_tp,"Xôi dừa",counter,8100,12000,1,29,1,,,true
+xoi_dua_goi,"Xôi dừa gói",counter,9100,15000,1,29,1,,,true
+toi,"Tỏi",fresh,6000,9000,1,9,14,,,false
+hanh_kho,"Hành khô",fresh,8000,12000,1,9,14,,,false
+ca_rot,"Cà rốt",fresh,7000,10000,1,9,5,,,false
+dua_leo,"Dưa leo",fresh,6000,9000,1,10,3,,,false
+bap_cai,"Bắp cải",fresh,8000,12000,2,10,5,,,false
+bi_do,"Bí đỏ",fresh,10000,15000,2,11,7,,,false
+bong_cai_xanh,"Bông cải xanh",fresh,18000,26000,2,12,4,,,false
+kho_qua,"Khổ qua",fresh,9000,13000,1,11,3,,,false
+gung,"Gừng",fresh,7000,11000,1,10,10,,,false
+rau_mui,"Rau mùi",fresh,3000,5000,1,12,2,,,false
+bap,"Bắp ngọt",fresh,6000,9000,1,11,3,,,false
+tao,"Táo",fresh,18000,26000,1,11,7,,,false
+na,"Na",fresh,18000,26000,1,12,3,,,false
+mang_cut,"Măng cụt",fresh,24000,34000,1,14,4,,,false
+nho_xanh,"Nho xanh",fresh,30000,42000,1,14,5,,,false
+nho_tim,"Nho tím",fresh,30000,42000,1,15,5,,,false
+thanh_long_trang,"Thanh long ruột trắng",fresh,10000,15000,1,11,5,,,false
+thanh_long_tim,"Thanh long ruột tím",fresh,16000,23000,1,13,5,,,false
+xoai,"Xoài",fresh,12000,18000,1,11,4,,,false
+cam,"Cam",fresh,10000,15000,1,10,6,,,false
+dua_hau,"Dưa hấu",fresh,12000,18000,2,10,5,,,false
+du_du,"Đu đủ",fresh,8000,12000,2,10,4,,,false
+thom,"Thơm (dứa)",fresh,10000,15000,1,11,5,,,false
+oi,"Ổi",fresh,10000,15000,1,10,4,,,false
+bo,"Bơ",fresh,18000,26000,1,13,4,,,false
+mit,"Mít",fresh,16000,24000,2,13,3,,,false
+chom_chom,"Chôm chôm",fresh,15000,22000,1,14,3,,,false
+vai,"Vải",fresh,22000,32000,1,15,3,,,false
+buoi,"Bưởi",fresh,16000,24000,2,12,7,,,false
+chanh_day,"Chanh dây",fresh,12000,18000,1,13,5,,,false
+banh_trang,"Bánh tráng",dry,10000,14000,1,10,180,,,false
+bot_nang,"Bột năng",dry,8000,11000,1,12,180,,,false
+bot_gao,"Bột gạo",dry,9000,13000,1,12,180,,,false
+nui_kho,"Nui khô",dry,12000,17000,1,13,180,,,false
+mi_trung_kho,"Mì trứng khô",dry,14000,19000,1,14,180,,,false
+mien_dong,"Miến dong",dry,15000,21000,1,10,180,,,false
+nam_meo_kho,"Nấm mèo khô",dry,12000,17000,1,15,180,,,false
+nam_huong_kho,"Nấm hương khô",dry,18000,25000,1,16,180,,,false
+tom_kho,"Tôm khô",dry,25000,34000,1,15,90,,,false
+ca_kho,"Cá khô",dry,22000,30000,1,16,90,,,false
+ot_bot,"Ớt bột",dry,7000,10000,1,11,180,,,false
+tieu_hat,"Tiêu hạt",dry,12000,17000,1,14,180,,,false
+dua_cot_hop,"Nước cốt dừa hộp",dry,10000,14000,1,15,180,,,false
+bap_rang_bo,"Bắp rang bơ",snack,8000,12000,1,8,30,,,false
+snack_bap,"Snack bắp",snack,5000,7000,1,5,30,,,false
+banh_xop,"Bánh xốp",snack,7000,10000,1,6,45,,,false
+banh_trang_nuong,"Bánh tráng nướng",snack,8000,12000,1,12,7,,,false
+com_chay,"Cơm cháy",snack,10000,15000,1,14,30,,,false
+kho_bo,"Khô bò",snack,22000,30000,1,14,30,,,false
+kho_muc,"Khô mực",snack,30000,42000,1,16,30,,,false
+keo_mut,"Kẹo mút",snack,2500,4000,1,6,90,,,false
+keo_lac,"Kẹo lạc",snack,7000,10000,1,11,45,,,false
+banh_dau_xanh,"Bánh đậu xanh",snack,12000,17000,1,11,30,,,false
+hat_dieu_rang,"Hạt điều rang",snack,24000,33000,1,14,45,,,false
+hat_huong_duong,"Hạt hướng dương",snack,8000,12000,1,10,45,,,false
+me_say,"Me sấy",snack,9000,13000,1,13,30,,,false
+mut_dua,"Mứt dừa",snack,13000,18000,1,15,45,,,false
+khoai_lang_say,"Khoai lang sấy",snack,12000,17000,1,12,30,,,false
+coca_cola_lon,"Coca-Cola lon",drink,7000,10000,1,5,180,,,false
+coca_cola_zero,"Coca-Cola không đường",drink,7000,10000,1,9,180,,,false
+pepsi_lon,"Pepsi lon",drink,7000,10000,1,5,180,,,false
+pepsi_black,"Pepsi Black",drink,7000,10000,1,10,180,,,false
+7up_lon,"7Up lon",drink,6500,9000,1,6,180,,,false
+sprite_lon,"Sprite lon",drink,7000,10000,1,7,180,,,false
+mirinda_cam,"Mirinda cam",drink,7000,10000,1,7,180,,,false
+sting_dau,"Sting dâu",drink,8000,11000,1,6,180,,,false
+sting_nhan_sam,"Sting nhân sâm",drink,8000,11000,1,10,180,,,false
+redbull_lon,"Red Bull lon",drink,9000,13000,1,8,180,,,false
+number1_chai,"Number 1 chai",drink,7000,10000,1,7,180,,,false
+aquafina_chai,"Aquafina chai",drink,3000,5000,1,5,365,,,false
+la_vie_chai,"La Vie chai",drink,3000,5000,1,6,365,,,false
+revive_chai,"Revive chai",drink,7000,10000,1,9,180,,,false
+pocari_sweat,"Pocari Sweat",drink,9000,13000,1,12,180,,,false
+tra_dao_chai,"Trà đào chai",drink,7000,10000,1,9,60,,,false
+sua_bap_hop,"Sữa bắp hộp",drink,7000,10000,1,10,90,,,false
+nuoc_nha_dam,"Nước nha đam",drink,7000,10000,1,11,90,,,false
+coca_cola_plus,"Coca-Cola Plus",drink,7500,11000,1,10,180,,,false
+pepsi_chanh,"Pepsi chanh",drink,7500,11000,1,9,180,,,false
+fanta_nho,"Fanta nho",drink,7500,11000,1,8,180,,,false
+fanta_dau,"Fanta dâu",drink,7500,11000,1,8,180,,,false
+mirinda_vai,"Mirinda vải",drink,7500,11000,1,9,180,,,false
+mirinda_dua,"Mirinda dứa",drink,7500,11000,1,10,180,,,false
+schweppes_tonic,"Schweppes Tonic",drink,9000,13000,1,12,180,,,false
+aquafina_soda,"Aquafina Soda",drink,7000,10000,1,11,180,,,false
+milkis_dua_gang,"Milkis dưa gang",drink,10000,14000,1,13,180,,,false
+milkis_chuoi,"Milkis chuối",drink,10000,14000,1,13,180,,,false
+soda_vai_genki,"Soda vải Genki",drink,12000,17000,1,16,180,,,false
+tea_plus_oolong_chanh,"Tea+ Ô long chanh",drink,7000,10000,1,8,90,,,false
+tea_plus_oolong_dao,"Tea+ Ô long đào",drink,7000,10000,1,9,90,,,false
+tea_plus_oolong_truyen_thong,"Tea+ Ô long truyền thống",drink,7000,10000,1,7,90,,,false
+fuze_tea_bi_dao,"Fuze Tea bí đao",drink,7000,10000,1,7,90,,,false
+fuze_tea_chanh_sa,"Fuze Tea chanh sả",drink,7000,10000,1,8,90,,,false
+fuze_tea_vai,"Fuze Tea vải hoa nhài",drink,7000,10000,1,9,90,,,false
+twister_cam,"Twister cam",drink,9000,13000,1,8,90,,,false
+nuoc_nho_trang_gas,"Nước nho trắng có gas",drink,15000,21000,1,16,180,,,false
+nuoc_tao_ep,"Nước táo ép",drink,9000,13000,1,9,90,,,false
+nuoc_le_ep,"Nước lê ép",drink,10000,14000,1,12,90,,,false
+nuoc_luu,"Nước lựu",drink,12000,17000,1,14,90,,,false
+yakult,"Yakult",drink,6000,9000,1,10,30,,,false
+yomost_dau,"Yomost dâu",drink,7000,10000,1,9,45,,,false
+yomost_luu,"Yomost lựu",drink,7000,10000,1,10,45,,,false
+probi_dao,"Probi đào",drink,8000,11000,1,11,45,,,false
+betagen_cam,"Betagen cam",drink,8000,11000,1,12,45,,,false
+ca_phe_sua_chai,"Cà phê sữa chai",drink,9000,13000,1,11,90,,,false
+sua_socola_hop,"Sữa sô-cô-la hộp",drink,6000,9000,1,7,90,,,false
+sua_dau_phong,"Sữa đậu phộng",drink,7000,10000,1,10,30,,,false
+hanh_tay,"Hành tây",fresh,7000,10000,1,10,10,,,false
+ot_chuong,"Ớt chuông",fresh,12000,18000,1,11,4,,,false
+ca_tim,"Cà tím",fresh,10000,15000,1,11,4,,,false
+nam_kim_cham,"Nấm kim châm",fresh,8000,12000,1,12,3,,fridge,false
+khoai_lang_tuoi,"Khoai lang",fresh,8000,12000,2,10,7,,,false
+chanh_khong_hat,"Chanh không hạt",fresh,10000,14000,1,11,7,,,false
+thit_bo,"Thịt bò",fresh,42000,55000,1,16,1,,fridge,false
+thit_ga,"Thịt gà",fresh,24000,32000,1,14,1,,fridge,false
+uc_ga,"Ức gà",fresh,26000,35000,1,16,2,,fridge,false
+suon_heo,"Sườn heo",fresh,35000,46000,1,17,1,,fridge,false
+ca_thu_tuoi,"Cá thu tươi",fresh,30000,41000,1,18,1,,fridge,false
+tom_tuoi,"Tôm tươi",fresh,45000,60000,1,18,1,,fridge,false
+khoai_tay_chien,"Khoai tây chiên đông lạnh",frozen,18000,25000,2,10,90,,freezer,false
+ga_vien_dong_lanh,"Gà viên đông lạnh",frozen,16000,23000,1,11,90,,freezer,false
+pizza_dong_lanh,"Pizza đông lạnh",frozen,25000,35000,2,15,90,,freezer,false
+muc_khoanh_dong_lanh,"Mực khoanh đông lạnh",frozen,30000,42000,1,16,90,,freezer,false
+rau_cu_dong_lanh,"Rau củ thập cẩm đông lạnh",frozen,12000,18000,1,12,90,,freezer,false
+cha_ca_thac_lat,"Chả cá thác lác",frozen,28000,39000,1,17,90,,freezer,false
+yen_mach,"Yến mạch",dry,18000,25000,1,11,180,,,false
+ngu_coc,"Ngũ cốc ăn sáng",dry,22000,30000,1,12,180,,,false
+mat_ong,"Mật ong",dry,25000,34000,1,13,365,,,false
+bo_dau_phong,"Bơ đậu phộng",dry,28000,38000,1,14,180,,,false
+tuong_ca,"Tương cà",dry,9000,13000,1,9,180,,,false
+sot_mayonnaise,"Sốt mayonnaise",dry,12000,17000,1,10,180,,,false
+banh_pia,"Bánh pía",snack,12000,17000,1,13,20,,,false
+keo_dua,"Kẹo dừa",snack,7000,10000,1,10,60,,,false
+banh_mochi,"Bánh mochi",snack,14000,20000,1,15,20,,,false
+hat_bi_rang,"Hạt bí rang",snack,12000,17000,1,12,45,,,false
+dau_ha_lan_say,"Đậu Hà Lan sấy",snack,9000,13000,1,12,45,,,false
+khoai_tay_que,"Khoai tây que",snack,8000,12000,1,8,30,,,false
+nuoc_rua_tay,"Nước rửa tay",household,15000,21000,1,9,365,,,false
+nuoc_lau_kinh,"Nước lau kính",household,18000,25000,1,11,365,,,false
+nuoc_tay_bon_cau,"Nước tẩy bồn cầu",household,22000,30000,1,12,365,,,false
+mang_boc_thuc_pham,"Màng bọc thực phẩm",household,12000,17000,1,10,,,,false
+khan_uot,"Khăn ướt",household,10000,14000,1,9,,,,false
+thuc_an_cho,"Thức ăn cho chó",household,25000,34000,2,15,180,,,false
+thuc_an_meo,"Thức ăn cho mèo",household,22000,31000,2,15,180,,,false
+ca_moi_hop,"Cá mòi sốt cà hộp",dry,18000,25000,1,13,240,,,false
+dau_do,"Đậu đỏ",dry,16000,22000,1,13,180,,,false
+bot_cacao,"Bột ca cao",dry,24000,32000,1,14,180,,,false
+bot_cari,"Bột cà ri",dry,9000,13000,1,14,180,,,false
+ngu_vi_huong,"Ngũ vị hương",dry,5000,8000,1,15,240,,,false
+sa_te,"Sa tế",dry,10000,14000,1,15,180,,,false
+dau_nanh_hat,"Đậu nành hạt",dry,18000,25000,1,16,180,,,false
+mi_y_kho,"Mì Ý khô",dry,14000,20000,1,16,240,,,false
+banh_quy_oreo,"Bánh quy kẹp kem",snack,10000,15000,1,13,120,,,false
+banh_chocopie,"Bánh Choco-pie",snack,12000,17000,1,14,90,,,false
+snack_khoai_tay,"Snack khoai tây lát",snack,7000,10000,1,13,120,,,false
+socola_thanh,"Sô-cô-la thanh",snack,11000,16000,1,15,180,,,false
+bap_rang_caramel,"Bắp rang caramel",snack,9000,13000,1,15,60,,,false
+banh_cracker,"Bánh cracker mặn",snack,9000,13000,1,16,120,,,false
+rong_bien_cuon,"Rong biển cuộn ăn liền",snack,8000,12000,1,16,150,,,false
+keo_bac_ha,"Kẹo bạc hà",snack,5000,8000,1,17,240,,,false
+sua_bot_tre_em,"Sữa bột trẻ em",household,120000,145000,2,18,365,,,false
+nuoc_suc_mieng,"Nước súc miệng",household,28000,38000,1,16,540,,,false
+sua_rua_mat,"Sữa rửa mặt",household,35000,48000,1,18,720,,,false
+kem_duong_da,"Kem dưỡng da",household,42000,58000,1,20,720,,,false
+giay_khan_mat,"Khăn giấy hộp",household,18000,25000,1,14,,,,false
+mieng_rua_chen,"Miếng rửa chén",household,5000,8000,1,13,,,,false
+binh_xit_con_trung,"Bình xịt côn trùng",household,32000,44000,1,19,720,,,false
+xa_lach,"Xà lách",fresh,9000,13000,1,13,3,,,false
+dua_gia,"Dưa giá",fresh,7000,10000,1,14,2,,fridge,false
+khoai_mon,"Khoai môn",fresh,10000,15000,2,14,10,,,false
+nam_bao_ngu,"Nấm bào ngư",fresh,14000,20000,1,16,3,,fridge,false
+ca_ro_phi,"Cá rô phi",fresh,28000,38000,1,19,1,,fridge,false
+muc_tuoi,"Mực tươi",fresh,48000,65000,1,20,1,,fridge,false
+thit_xay,"Thịt heo xay",fresh,30000,41000,1,18,1,,fridge,false
+ca_hoi_tuoi,"Cá hồi phi lê",fresh,65000,85000,1,22,1,,fridge,false
+cha_muc,"Chả mực đông lạnh",frozen,32000,44000,1,18,120,,freezer,false
+vien_tha_lau,"Viên thả lẩu thập cẩm",frozen,28000,39000,1,17,120,,freezer,false
+ca_hoi_dong_lanh,"Cá hồi đông lạnh",frozen,55000,74000,1,23,180,,freezer,false
+bap_non_dong_lanh,"Bắp non đông lạnh",frozen,14000,20000,1,15,180,,freezer,false
+milo_hop,"Sữa cacao lúa mạch",drink,7000,10000,1,13,180,,,false
+sua_dau_nanh_hop,"Sữa đậu nành hộp",drink,6000,9000,1,12,120,,,false
+tra_sua_chai,"Trà sữa đóng chai",drink,11000,15000,1,16,90,,,false
+nuoc_dua_tuoi_chai,"Nước dừa tươi chai",drink,9000,13000,1,15,30,,,false
+nuoc_cam_hop,"Nước cam hộp",drink,8000,12000,1,13,180,,,false
+ca_phe_sua_lon,"Cà phê sữa lon",drink,9000,13000,1,15,240,,,false
+nuoc_sam,"Nước sâm đóng chai",drink,7000,10000,1,14,90,,,false
