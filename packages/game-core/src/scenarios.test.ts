@@ -48,10 +48,12 @@ function runScenario(options: { events?: Array<{ id: string; startDay: number; e
   restock();
   snapshot();
   let day = sim.getTime().day;
+  let hour = sim.getTime().hour;
   let guard = 0;
   while (sim.getTime().day < 1 + DAYS && guard++ < 2_000_000) {
     const t = sim.getTime();
     if (t.day !== day) { day = t.day; restock(); snapshot(); }
+    if (t.hour !== hour) { hour = t.hour; restock(); } // kệ luôn đầy để số khách không bị chặn bởi hàng trong harness
     if (!t.isStoreOpen && t.hour >= 8 && t.hour < 20) sim.getClock().toggleStoreStatus();
     sim.update(STEP);
   }
@@ -82,12 +84,14 @@ export function runScenarioTests(): void {
   assert.ok(hot.metrics[2].supplierStock.nuoc_suoi < base.metrics[2].supplierStock.nuoc_suoi, 'Nóng: tồn nhà cung cấp nước uống thấp hơn nền');
   assert.ok(hot.metrics.at(-1)!.wholesale.bottled_water > base.metrics.at(-1)!.wholesale.bottled_water, 'Nóng: giá sỉ nước uống cao hơn nền sau vài ngày');
   assert.ok(hot.metrics.every((m, i) => i === 0 || Math.abs(m.wholesale.bottled_water - hot.metrics[i - 1].wholesale.bottled_water) <= 0.04 + 1e-9), 'Nóng: giá sỉ đổi từng bước');
+  assert.ok(hot.metrics.at(-1)!.customers > base.metrics.at(-1)!.customers, 'Nóng: phục vụ nhiều khách hơn nền khi kệ luôn đầy');
 
   const rain = runScenario({ weather: 'heavy_rain', events: [{ id: 'heavy_rain_spell', startDay: 1, endDay: 4 }] });
   assertLedger(rain, 'Mưa'); note('mưa', rain);
   assert.ok(rain.metrics[1].traffic < base.metrics[1].traffic, 'Mưa: lưu lượng thấp hơn nền');
   assert.ok(rain.metrics[1].demand.ao_mua_bo > base.metrics[1].demand.ao_mua_bo, 'Mưa: nhu cầu áo mưa cao hơn nền');
   assert.ok(rain.metrics[2].supplierStock.ao_mua_bo < base.metrics[2].supplierStock.ao_mua_bo, 'Mưa: tồn nhà cung cấp áo mưa thấp hơn nền');
+  assert.ok(rain.metrics.at(-1)!.customers < base.metrics.at(-1)!.customers, 'Mưa: phục vụ ít khách hơn nền');
 
   const cold = runScenario({ weather: 'cold' });
   assertLedger(cold, 'Lạnh'); note('lạnh', cold);
@@ -98,6 +102,7 @@ export function runScenarioTests(): void {
   assertLedger(holiday, 'Nghỉ lễ'); note('nghỉ lễ', holiday);
   assert.ok(holiday.metrics[1].traffic > base.metrics[1].traffic, 'Lễ: lưu lượng cao hơn nền');
   assert.ok(holiday.metrics[1].demand.rau_cai_xanh > base.metrics[1].demand.rau_cai_xanh, 'Lễ: nhu cầu thực phẩm tươi cao hơn nền');
+  assert.ok(holiday.metrics.at(-1)!.customers > base.metrics.at(-1)!.customers, 'Lễ: phục vụ nhiều khách hơn nền');
 
   const shortage = runScenario({ weather: 'sunny', events: [{ id: 'supplier_shortage', startDay: 1, endDay: 4 }] });
   assertLedger(shortage, 'Khan hàng'); note('khan hàng', shortage);

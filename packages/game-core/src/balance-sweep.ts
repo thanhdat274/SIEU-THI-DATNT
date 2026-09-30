@@ -35,6 +35,7 @@ for (const seed of SEEDS) {
   });
   refill();
   let day = sim.getTime().day;
+  let hour = sim.getTime().hour;
   let prevPrice: Record<string, number> = {};
   let prevWholesale: Record<string, number> = {};
   const seenEvents = new Set<string>();
@@ -66,6 +67,7 @@ for (const seed of SEEDS) {
       if (record) { stockouts += record.outOfStockWalkouts ?? 0; priceWalkouts += record.priceWalkouts ?? 0; }
       day = t.day; totalDays++; refill(); observe();
     }
+    if (t.hour !== hour) { hour = t.hour; refill(); } // kệ luôn đầy: số khách không bị chặn bởi hàng trong harness
     if (!t.isStoreOpen && t.hour >= 8 && t.hour < 20) sim.getClock().toggleStoreStatus();
     sim.update(0.25);
   }
