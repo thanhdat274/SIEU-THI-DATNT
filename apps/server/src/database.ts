@@ -1,3 +1,4 @@
+import { ServiceUnavailableException } from '@nestjs/common';
 import { MongoClient } from 'mongodb';
 import { readRuntimeConfig } from './runtime-config';
 
@@ -7,7 +8,7 @@ let connecting: Promise<MongoClient> | undefined;
 /** Reuse one pool; failed connection attempts can be retried without exposing URI. */
 export async function connectDatabase() {
   const settings = readRuntimeConfig();
-  if (!settings.mongoUri) throw new Error('MONGO_URI is not configured');
+  if (!settings.mongoUri) throw new ServiceUnavailableException('MONGO_URI is not configured');
   if (!connecting) {
     const candidate = new MongoClient(settings.mongoUri, {
       serverSelectionTimeoutMS: 8000, maxPoolSize: 5, minPoolSize: 0,
@@ -15,10 +16,13 @@ export async function connectDatabase() {
     connecting = candidate.connect().then(() => {
       client = candidate;
       return candidate;
-    }).catch(async () => {
+    }).catch(async (err: unknown) => {
       connecting = undefined;
       await candidate.close();
-      throw new Error('MongoDB connection failed; check configuration and network access');
+      // Ghi nguyên nhân thật (tên lỗi + thông điệp, đã gỡ chuỗi kết nối) để chẩn đoán trên log server.
+      const reason = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      console.error('[mongo] connect failed:', reason.replace(/mongodb(\+srv)?:\/\/\S+/gi, 'mongodb://<redacted>'));
+      throw new ServiceUnavailableException('MongoDB connection failed; check configuration and network access');
     });
   }
   const activeClient = await connecting;
