@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, WEATHER_MAP } from '@game/data';
 import { InputManager, GameSimulation } from '@game/core';
 import { PixiGameViewport } from '@game/renderer';
@@ -53,6 +53,12 @@ export const App: React.FC = () => {
   const [isQuestOpen, setQuestOpen] = useState(false);
   const [isStallOpen, setStallOpen] = useState(false);
   const [isMarketOpen, setMarketOpen] = useState(false);
+  // Bảng kế hoạch chỉ tính khi mở bảng Thị trường hoặc sang ngày mới, không mỗi khung hình.
+  const planDay = useGameStore((state) => state.worldTime.day);
+  const marketPlans = useMemo(() => {
+    const sim = simulationRef.current;
+    return isMarketOpen && sim ? { plans: sim.getProductPlans(), trending: sim.getTrendingProducts() } : { plans: undefined, trending: undefined };
+  }, [isMarketOpen, planDay]);
   const [isWarehouseDockOpen, setWarehouseDockOpen] = useState(() => !window.matchMedia('(max-width: 1023px), (max-height: 499px)').matches);
   const [gameSpeed, setGameSpeed] = useState<number>(1);
   const [isLayoutOpen, setIsLayoutOpen] = useState(false);
@@ -305,6 +311,10 @@ export const App: React.FC = () => {
         onOrdersDelivered: (quantity)=>addToast(`Đã nhận ${quantity} món từ đại lý vào nhà kho.`, 'success'),
         onStockExpired: (quantity) => {
           addToast(`${quantity} món hàng đã quá hạn và được loại khỏi kho/kệ.`, 'warn');
+        },
+        onStockWarning: ({ lowStock, slowMoving, examples }) => {
+          const parts = [lowStock ? `${lowStock} món sắp hết (${examples.join(', ')}${lowStock > examples.length ? '…' : ''})` : '', slowMoving ? `${slowMoving} món chậm bán` : ''].filter(Boolean);
+          addToast(`Kho: ${parts.join('; ')}. Xem chi tiết ở bảng Thị trường.`, 'info');
         },
         onExpiringSoon: (items) => {
           const names = items.slice(0, 3).map((item) => `${PRODUCT_MAP[item.productId]?.name ?? item.productId} (${item.quantity}, còn ${item.daysLeft} ngày)`).join(', ');
@@ -1177,7 +1187,7 @@ export const App: React.FC = () => {
         onClose={closeAllModals}
       />
     )}
-    {isMarketOpen && simulationRef.current && <MarketModal summary={simulationRef.current.getMarketSummary()} prices={simulationRef.current.getPriceMarket()} day={worldTime.day} onClose={() => setMarketOpen(false)}/>}
+    {isMarketOpen && simulationRef.current && <MarketModal summary={simulationRef.current.getMarketSummary()} prices={simulationRef.current.getPriceMarket()} plans={marketPlans.plans} trending={marketPlans.trending} day={worldTime.day} onClose={() => setMarketOpen(false)}/>}
     {isStallOpen && simulationRef.current && <StallModal stalls={simulationRef.current.getStalls()} season={simulationRef.current.getSeason()} stock={Object.fromEntries(simulationRef.current.getInventory().map(item => [item.productId, item.quantity]))} report={simulationRef.current.getStallReport()} onBuy={handleBuyStall} onClose={() => setStallOpen(false)}/>}
     {isQuestOpen && simulationRef.current && <QuestModal {...simulationRef.current.getQuests()} level={player.level} onClaim={handleClaimQuest} onClose={() => setQuestOpen(false)}/>}
     {isLayoutOpen && simulationRef.current && <StoreLayoutModal save={simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision)} onConfirm={handleApplyStoreLayout} onClose={closeLayoutEditor}/>}

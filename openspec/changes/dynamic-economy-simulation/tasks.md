@@ -49,10 +49,10 @@ Mỗi nhóm tự chơi được và tự mang test + tài liệu (`tổng hợp.
 
 ## 7. Lập kế hoạch tồn kho và phản hồi (stock-planning, economy-feedback)
 
-- [ ] 7.1 Tạo `game-core/forecast.ts` (`ProductPlan[]`: tồn, nhu cầu dự kiến, bán gần đây, xu hướng, tác động thời tiết, khuyến nghị, cờ sắp hết/chậm bán/sắp hết hạn) dùng chung bảng nhu cầu với `suggestions.ts`; kiểm: test dự báo mưa đổi nhu cầu dự kiến, khuyến nghị không vượt tồn nhà cung cấp/ngân sách, không tác dụng phụ, hai nơi dùng cùng số.
-- [ ] 7.2 Bảng "Thị trường" trong UI (lịch, dự báo, xu hướng, cảnh báo kho) và chỉ báo nhu cầu có lý do từ phân rã; kiểm: smoke browser mở bảng không đổi tiền/kho, giải thích khớp phân rã.
-- [ ] 7.3 Thông báo cảnh báo kho/hạn dùng gộp, nổi bật cảnh báo nghiêm trọng, đọc được khi giảm chuyển động; kiểm: test gộp, QA 5 viewport ở mức smoke.
-- [ ] 7.4 Tài liệu `docs/ui` mô tả bảng và nhãn lý do.
+- [x] 7.1 Tạo `game-core/forecast.ts` (`ProductPlan[]`: tồn, nhu cầu dự kiến, bán gần đây, xu hướng, tác động thời tiết, khuyến nghị, cờ sắp hết/chậm bán/sắp hết hạn) dùng chung bảng nhu cầu với `suggestions.ts`; kiểm: test dự báo mưa đổi nhu cầu dự kiến, khuyến nghị không vượt tồn nhà cung cấp/ngân sách, không tác dụng phụ, hai nơi dùng cùng số. (Đã có: `game-core/forecast.ts` + `game-data/forecast.ts`, `GameSimulation.getProductPlans/getTrendingProducts`, `suggestRestock` nhận `expectedDailyOf` từ chính bảng kế hoạch. Giới hạn: món chưa có doanh số dùng nhu cầu thử nên có thể vừa “chậm bán” vừa có nhu cầu dự kiến; khuyến nghị chưa tính bậc ưu đãi số lượng lớn.)
+- [x] 7.2 Bảng "Thị trường" trong UI (lịch, dự báo, xu hướng, cảnh báo kho) và chỉ báo nhu cầu có lý do từ phân rã; kiểm: smoke browser mở bảng không đổi tiền/kho, giải thích khớp phân rã. (Đã có trong `MarketModal`; smoke browser một viewport: mở bảng thấy mục ưa chuộng, kế hoạch, cờ và lý do; test xác nhận mở bảng không đổi tiền/kho/đơn/giá. Chưa so từng số với phân rã bằng mắt ở nhiều ngày.)
+- [ ] 7.3 Thông báo cảnh báo kho/hạn dùng gộp, nổi bật cảnh báo nghiêm trọng, đọc được khi giảm chuyển động; kiểm: test gộp, QA 5 viewport ở mức smoke. (Đã có: toast gộp `onStockWarning`/`onExpiringSoon`, cảnh báo mất điện `severe` từ trước, chữ thay cho màu. Chưa có test riêng cho toast gộp trong `App`, chưa QA 5 viewport, chưa thấy toast thật sang ngày → chưa tick.)
+- [x] 7.4 Tài liệu `docs/ui` mô tả bảng và nhãn lý do. (`docs/ui/MARKET-PLANNING.md`)
 
 ## 8. Tích hợp, co-op và nghiệm thu
 

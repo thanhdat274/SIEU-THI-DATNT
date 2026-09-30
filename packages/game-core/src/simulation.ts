@@ -65,6 +65,7 @@ import {
   SHOPKEEPER_POSITION,
   getSeasonForDay,
   SPOILAGE_RULES,
+  FORECAST_RULES,
   type StallDefinition,
 } from '@game/data';
 import { CollisionSystem } from './collision';
@@ -75,7 +76,8 @@ import { expiryDay, mergeLots, normalizeLots, sumLots, takeLots } from './stock'
 import { decayLot, spoilageRate } from './spoilage';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { CustomerManager } from './customers';
-import { generateRestockSuggestions } from './suggestions';
+import { calculateSalesVelocity, generateRestockSuggestions, getIncomingOrdersCount, getUsableStock } from './suggestions';
+import { buildProductPlans, type ProductPlan, type ProductPlanInput } from './forecast';
 import { climateSeasonForDay } from './weather';
 import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, timeBandFor, visibleMarketEvents, weekdayOf, type MarketNotice } from './market';
 import { bulkDiscount, computeSupplierDay, nextDeliveryDay, wholesaleQuote } from './supplier-market';
@@ -109,6 +111,7 @@ export interface GameSimulationCallbacks {
   onDayChanged?: (newDay: number) => void;
   onTimeChanged?: () => void;
   onStockExpired?: (quantity: number) => void;
+  onStockWarning?: (info: { lowStock: number; slowMoving: number; examples: string[] }) => void;
   onExpiringSoon?: (items: Array<{ productId: string; quantity: number; daysLeft: number }>) => void;
   onStateChanged?: () => void;
   onPlayerRelocated?: () => void;
@@ -252,6 +255,12 @@ export class GameSimulation {
       if (spoiled > 0) this.callbacks.onStockExpired?.(spoiled);
       const expiring = this.getExpiringStock();
       if (expiring.length) this.callbacks.onExpiringSoon?.(expiring);
+      if (this.callbacks.onStockWarning) {
+        const tracked = this.getProductPlans().filter((plan) => plan.stock > 0 || plan.soldRecently > 0);
+        const low = tracked.filter((plan) => plan.flags.lowStock);
+        const slow = tracked.filter((plan) => plan.flags.slowMoving);
+        if (low.length || slow.length) this.callbacks.onStockWarning({ lowStock: low.length, slowMoving: slow.length, examples: low.slice(0, 3).map((plan) => PRODUCT_MAP[plan.productId]?.name ?? plan.productId) });
+      }
       if (this.callbacks.onDayChanged) {
         this.callbacks.onDayChanged(day);
       }
@@ -1035,9 +1044,66 @@ export class GameSimulation {
   }
 
   /**
+   * Thông tin lập kế hoạch từng món (tồn, nhu cầu dự kiến hôm nay/ngày mai, xu hướng, lý do, khuyến nghị, cờ).
+   * Chỉ đọc: không đặt hàng, không đổi giá hay kho. Tính theo yêu cầu, không mỗi khung hình.
+   */
+  public getProductPlans(supplierId: string = DEFAULT_SUPPLIER_ID): ProductPlan[] {
+    const time = this.clock.getTime();
+    const day = time.day;
+    const supplier = SUPPLIER_MAP[supplierId];
+    const priceFactor = (productId: string) => demandPriceFactor(priceRatio(this.sellingPrice(productId), this.referencePrice(productId)));
+    const tableFor = (target: number) => buildDemandTable({ ctx: buildMarketContext(this.market, target, 12), products: ALL_PRODUCTS, reputation: this.playerData.reputation, priceFactor });
+    const quotes = this.getSupplierQuotes(supplierId);
+    const expiring = new Map(this.getExpiringStock().map((item) => [item.productId, item]));
+    const inputs: ProductPlanInput[] = ALL_PRODUCTS.filter((product) => product.unlockLevel <= this.playerData.level).map((product) => {
+      const v7 = calculateSalesVelocity(product.id, this.dailyRecords, this.currentDayRecord, 7);
+      const v3 = calculateSalesVelocity(product.id, this.dailyRecords, this.currentDayRecord, 3);
+      const recent = calculateSalesVelocity(product.id, this.dailyRecords, this.currentDayRecord, FORECAST_RULES.slowSellDays);
+      const soon = expiring.get(product.id);
+      const quote = quotes.quotes[product.id];
+      return {
+        product,
+        stock: getUsableStock(product.id, day, this.fixtures, this.inventory, this.holdingArea),
+        incoming: getIncomingOrdersCount(product.id, this.pendingOrders),
+        soldRecently: recent.totalSold,
+        velocity: Math.max(v7.velocity, v3.velocity),
+        hadSales: v7.totalSold > 0 || (this.currentDayRecord.productSales?.[product.id] ?? 0) > 0,
+        expiring: soon ? { quantity: soon.quantity, earliestDay: day + soon.daysLeft } : undefined,
+        supplierStock: quote?.stockLeft,
+        supplierUnavailable: quote?.unavailable,
+        unitPrice: quote?.unitPrice ?? product.purchasePrice,
+      };
+    });
+    return buildProductPlans(inputs, {
+      today: tableFor(day),
+      tomorrow: tableFor(day + 1),
+      leadDays: Math.max(1, quotes.deliveryDay - day),
+      budget: this.playerData.money,
+      coldFree: Math.max(0, COLD_WAREHOUSE_CAPACITY - this.reservedColdWarehouseCount()),
+    });
+  }
+
+  /** Món đang được ưa chuộng: nhu cầu hiệu dụng hôm nay cao nhất, ưu tiên món có tồn hoặc nhập được. */
+  public getTrendingProducts(): Array<{ productId: string; multiplier: number; reasons: string[]; available: boolean }> {
+    const table = this.refreshDemandTable();
+    const plans = new Map(this.getProductPlans().map((plan) => [plan.productId, plan]));
+    return [...plans.keys()]
+      .map((productId) => {
+        const info = table.perProduct[productId];
+        const plan = plans.get(productId)!;
+        return { productId, multiplier: info.multiplier, demand: info.demand, reasons: plan.reasons, available: plan.stock > 0 || plan.recommended > 0 };
+      })
+      .filter((item) => item.multiplier > 1.05)
+      .sort((a, b) => Number(b.available) - Number(a.available) || b.demand - a.demand)
+      .slice(0, FORECAST_RULES.trendingShown)
+      .map(({ productId, multiplier, reasons, available }) => ({ productId, multiplier, reasons, available }));
+  }
+
+  /**
    * Generate intelligent restock suggestions based on sales velocity and store state.
    */
   public suggestRestock(supplierId?: string, budget?: number): RestockSuggestionResult {
+    const expected = new Map(this.getProductPlans(supplierId ?? DEFAULT_SUPPLIER_ID).map((plan) => [plan.productId, plan.expectedTomorrow]));
     return generateRestockSuggestions({
       supplierId,
       playerLevel: this.playerData.level,
@@ -1052,6 +1118,7 @@ export class GameSimulation {
       coldWarehouseCount: this.getColdWarehouseCount(),
       budget,
       unitPriceOf: supplierId ? (productId: string) => this.wholesaleUnitPrice(supplierId, productId) : undefined,
+      expectedDailyOf: (productId: string) => expected.get(productId),
     });
   }
 

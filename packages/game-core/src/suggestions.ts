@@ -33,6 +33,8 @@ export interface SuggestionEngineParams {
   unitPriceOf?: (productId: string) => number; // đơn giá thực (giá sỉ động); thiếu = giá chuẩn × (1 − chiết khấu)
   maxColdCapacity?: number;
   topNBestSellers?: number;
+  /** Nhu cầu dự kiến (đơn vị/ngày) từ bảng lập kế hoạch; thiếu hoặc undefined = dùng vận tốc bán như cũ. */
+  expectedDailyOf?: (productId: string) => number | undefined;
 }
 
 /**
@@ -210,8 +212,8 @@ export function generateRestockSuggestions(
     // Sales velocity: 7 days & 3 days
     const v7 = calculateSalesVelocity(product.id, params.dailyRecords, params.currentDayRecord, 7);
     const v3 = calculateSalesVelocity(product.id, params.dailyRecords, params.currentDayRecord, 3);
-    const trendVelocity = Math.max(v7.velocity, v3.velocity);
     const hadSales = v7.totalSold > 0 || (params.currentDayRecord.productSales?.[product.id] ?? 0) > 0;
+    const trendVelocity = (hadSales ? params.expectedDailyOf?.(product.id) : undefined) ?? Math.max(v7.velocity, v3.velocity);
 
     const assignedFixture = params.fixtures.find(
       (f) => isSalesFixture(f) && f.assignedProductId === product.id

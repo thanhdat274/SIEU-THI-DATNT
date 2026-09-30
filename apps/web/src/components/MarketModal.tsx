@@ -1,5 +1,5 @@
 import React from 'react';
-import { SEASON_EVENTS, SEASON_YEAR_DAYS, getDayOfYear, type SeasonEvent } from '@game/data';
+import { PRODUCT_MAP, SEASON_EVENTS, SEASON_YEAR_DAYS, getDayOfYear, type SeasonEvent } from '@game/data';
 import { PixelDialog } from './pixel';
 
 interface MarketSummary {
@@ -15,9 +15,18 @@ interface MarketSummary {
 
 interface PriceRow { category: string; label: string; index: number; target: number; demand: number; scarcity: number; cost: number }
 
+interface PlanRow {
+  productId: string; stock: number; incoming: number; soldRecently: number; expectedToday: number; expectedTomorrow: number; trend: 'up' | 'down' | 'flat';
+  reasons: string[]; daysOfStock: number | null; recommended: number; note?: string;
+  flags: { lowStock: boolean; slowMoving: boolean; expiring: boolean }; expiring?: { quantity: number; earliestDay: number };
+}
+interface TrendingRow { productId: string; multiplier: number; reasons: string[]; available: boolean }
+
 interface MarketModalProps {
   summary: MarketSummary;
   prices?: PriceRow[];
+  plans?: PlanRow[];
+  trending?: TrendingRow[];
   day: number;
   onClose: () => void;
 }
@@ -34,7 +43,12 @@ function upcomingSeasons(day: number) {
 
 const percent = (factor: number) => `${factor >= 1 ? '+' : ''}${Math.round((factor - 1) * 100)}%`;
 
-export const MarketModal: React.FC<MarketModalProps> = ({ summary, prices, day, onClose }) => (
+const TREND_LABEL = { up: '↑ tăng', down: '↓ giảm', flat: '→ ổn định' } as const;
+const nameOf = (productId: string) => PRODUCT_MAP[productId]?.name ?? productId;
+
+export const MarketModal: React.FC<MarketModalProps> = ({ summary, prices, plans, trending, day, onClose }) => {
+  const attention = (plans ?? []).filter(plan => (plan.stock > 0 || plan.soldRecently > 0 || plan.incoming > 0) && (plan.flags.lowStock || plan.flags.slowMoving || plan.flags.expiring)).slice(0, 12);
+  return (
   <PixelDialog icon="sun" title="THỊ TRƯỜNG HẺM" subtitle={`${summary.weekday} · ${summary.timeBand.label} · ${summary.climate.name}`} onClose={onClose}>
     <h3>Thời tiết</h3>
     <p className="pixel-panel" style={{ padding: 8 }}>
@@ -69,9 +83,34 @@ export const MarketModal: React.FC<MarketModalProps> = ({ summary, prices, day, 
         })}
       </ul>
     </>}
+    {trending && trending.length > 0 && <>
+      <h3>Món đang được ưa chuộng</h3>
+      <ul style={{ margin: '4px 0', paddingLeft: 18 }}>
+        {trending.map(item => <li key={item.productId}><strong>{nameOf(item.productId)}</strong> <span className="tabular">{percent(item.multiplier)}</span> — {item.available ? 'có tồn hoặc nhập được' : 'chưa có hàng'} <span className="muted">{item.reasons.join(', ')}</span></li>)}
+      </ul>
+    </>}
+    {plans && <>
+      <h3>Kế hoạch tồn kho</h3>
+      <p className="muted">Chỉ để tham khảo: bảng này không tự đặt hàng hay đổi giá. Nhu cầu dự kiến là số món/ngày, tính cho ngày mai theo dự báo.</p>
+      {attention.length === 0
+        ? <p className="muted">Chưa có món nào cần chú ý.</p>
+        : <ul style={{ margin: '4px 0', paddingLeft: 18 }} aria-label="Món cần chú ý">
+            {attention.map(plan => (
+              <li key={plan.productId}>
+                <strong>{nameOf(plan.productId)}</strong>: tồn {plan.stock}{plan.incoming ? ` (+${plan.incoming} đang về)` : ''}, cần ~{plan.expectedTomorrow}/ngày {TREND_LABEL[plan.trend]}
+                {plan.flags.lowStock && <strong> · Sắp hết{plan.recommended > 0 ? `, nên nhập ${plan.recommended}` : ''}</strong>}
+                {plan.flags.slowMoving && <strong> · Chậm bán</strong>}
+                {plan.flags.expiring && plan.expiring && <strong> · Sắp hết hạn: {plan.expiring.quantity} món, ngày {plan.expiring.earliestDay}</strong>}
+                {plan.note && <span className="muted"> · {plan.note}</span>}
+                {plan.reasons.length > 0 && <span className="muted"> · {plan.reasons.join(', ')}</span>}
+              </li>
+            ))}
+          </ul>}
+    </>}
     <h3>Vì sao lượng khách hôm nay như vậy? ({summary.traffic.value.toFixed(2)}×)</h3>
     {summary.traffic.factors.length
       ? <ul style={{ margin: '4px 0', paddingLeft: 18 }}>{summary.traffic.factors.map(item => <li key={item.ruleId}>{item.label}: <strong className="tabular">{percent(item.factor)}</strong></li>)}</ul>
       : <p className="muted">Không có yếu tố đặc biệt: lượng khách ở mức bình thường.</p>}
   </PixelDialog>
-);
+  );
+};
