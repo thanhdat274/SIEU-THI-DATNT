@@ -58,6 +58,8 @@ export function computePriceTargets(input: {
   table: DemandTable;
   stockUnits: Record<string, number>; // theo nhóm
   costFactor?: (category: ProductCategory) => number;
+  /** Nhóm hàng người chơi đang bán/giữ. Có truyền vào thì nhóm ngoài danh sách không bị tính khan hiếm/ứ đọng. */
+  activeCategories?: ReadonlySet<string>;
   rules?: PriceRules;
 }): Record<string, PriceTarget> {
   const rules = input.rules ?? PRICE_RULES;
@@ -67,7 +69,7 @@ export function computePriceTargets(input: {
     if (!items.length) continue;
     const meanMultiplier = items.reduce((sum, product) => sum + (input.table.perProduct[product.id]?.multiplier ?? 1), 0) / items.length;
     const demand = Math.pow(meanMultiplier, rules.demandPressureExponent);
-    const scarcity = scarcityFactor(input.stockUnits[category] ?? 0, rules);
+    const scarcity = input.activeCategories && !input.activeCategories.has(category) ? 1 : scarcityFactor(input.stockUnits[category] ?? 0, rules);
     const cost = input.costFactor?.(category) ?? 1;
     const target = Math.min(rules.indexBounds.max, Math.max(rules.indexBounds.min, demand * scarcity * cost));
     result[category] = { target, demand, scarcity, cost };

@@ -420,10 +420,24 @@ export class GameSimulation {
     return units;
   }
 
+  /** Nhóm hàng người chơi đang bán hoặc giữ: có tồn, có kệ/sơ đồ gán món của nhóm, hoặc có doanh số trong 7 ngày gần nhất. */
+  private activePriceCategories(day: number): Set<string> {
+    const active = new Set<string>();
+    const add = (productId: string | undefined) => {
+      const category = productId ? PRODUCT_MAP[productId]?.category : undefined;
+      if (category) active.add(category);
+    };
+    for (const [category, units] of Object.entries(this.stockUnitsByCategory())) if (units > 0) active.add(category);
+    for (const fixture of this.fixtures) if (isSalesFixture(fixture)) { add(fixture.assignedProductId); add(this.planogram[fixture.id]); }
+    for (let d = Math.max(1, day - 7); d < day; d++) for (const productId of Object.keys(this.dailyRecords[d]?.productSales ?? {})) add(productId);
+    for (const productId of Object.keys(this.currentDayRecord.productSales ?? {})) add(productId);
+    return active;
+  }
+
   /** Mỗi ngày đẩy chỉ số giá từng nhóm một bước về mục tiêu (áp lực nhu cầu × khan hiếm × chi phí). */
   private updatePriceIndex(day: number): void {
     const table = buildDemandTable({ ctx: buildMarketContext(this.market, day, 12), products: ALL_PRODUCTS, reputation: this.playerData.reputation });
-    const targets = computePriceTargets({ products: ALL_PRODUCTS, table, stockUnits: this.stockUnitsByCategory() });
+    const targets = computePriceTargets({ products: ALL_PRODUCTS, table, stockUnits: this.stockUnitsByCategory(), activeCategories: this.activePriceCategories(day) });
     this.market = { ...this.market, priceIndex: advancePriceIndex(this.market.priceIndex, targets), priceTargets: targets };
   }
 

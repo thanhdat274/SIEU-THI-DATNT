@@ -56,6 +56,10 @@ export function runPriceTests(): void {
   assert.ok(heatTargets.bottled_water.demand > 1 && heatTargets.bottled_water.scarcity === 1, 'Lý do: áp lực nhu cầu, chưa khan hiếm');
   const scarce = computePriceTargets({ products: ALL_PRODUCTS, table: calm, stockUnits: { bottled_water: 0 } });
   assert.ok(scarce.bottled_water.scarcity > 1 && scarce.bottled_water.target > calmTargets.bottled_water.target, 'Hết hàng: khan hiếm đẩy mục tiêu lên');
+  const onlyWater = computePriceTargets({ products: ALL_PRODUCTS, table: calm, stockUnits: {}, activeCategories: new Set(['bottled_water']) });
+  assert.ok(onlyWater.bottled_water.scarcity > 1, 'Nhóm đang bán mà hết hàng vẫn bị tính khan hiếm');
+  assert.equal(onlyWater.eggs.scarcity, 1, 'Nhóm không bán không bị tính khan hiếm khi kho trống');
+  assert.equal(onlyWater.eggs.target, onlyWater.eggs.demand, 'Mục tiêu giá nhóm không bán chỉ theo nhu cầu');
   const costly = computePriceTargets({ products: ALL_PRODUCTS, table: calm, stockUnits: stocked, costFactor: () => 1.2 });
   assert.ok(costly.bottled_water.target > calmTargets.bottled_water.target, 'Chi phí nhập tăng kéo mục tiêu giá lên');
   const advanced = advancePriceIndex(undefined, heatTargets);
@@ -64,6 +68,9 @@ export function runPriceTests(): void {
   // --- 4.2 trong mô phỏng: kho trống đẩy giá dần, lưu/tải, lý do ---
   const sim = new GameSimulation(Object.assign(structuredClone(DEFAULT_INITIAL_SAVE), { inventory: [] }), generateStarterTileMap(), new InputManager());
   for (const fixture of sim.getFixtures().filter(isSalesFixture)) { fixture.currentStock = 0; fixture.stockLots = []; fixture.assignedProductId = undefined; }
+  // Sơ đồ bày kệ gán nước suối nhưng hết hàng: nhóm nước uống được người chơi bán nên mới bị tính khan hiếm.
+  const planned = sim.setPlanogramAssignment(sim.getFixtures().filter(isSalesFixture)[0].id, 'nuoc_suoi');
+  assert.equal(planned.success, true, 'Gán sơ đồ nước suối');
   assert.equal(sim.referencePrice('nuoc_suoi'), PRODUCT_MAP['nuoc_suoi'].baseSellingPrice, 'Ngày đầu giá tham chiếu bằng giá gợi ý');
   let previous = 1;
   for (let day = 0; day < 8; day++) {
@@ -76,8 +83,12 @@ export function runPriceTests(): void {
   }
   const info = sim.getPriceMarket().find(item => item.category === 'bottled_water')!;
   assert.ok(info.scarcity > 1 && info.demand > 0, 'Có lý do (khan hiếm, áp lực nhu cầu) cho giá tham chiếu');
+  sim.getClock().advanceToNextDay();
+  const market = sim.getPriceMarket();
+  assert.ok(market.find(row => row.category === 'bottled_water')!.scarcity > 1, 'Kệ gán nước suối mà hết hàng: khan hiếm');
+  assert.equal(market.find(row => row.category === 'eggs')!.scarcity, 1, 'Nhóm trứng không bán/không giữ: không khan hiếm');
   const reloaded = new GameSimulation(sim.exportSaveData(), generateStarterTileMap(), new InputManager());
-  assert.equal(reloaded.getPriceMarket().find(item => item.category === 'bottled_water')!.index, previous, 'Lưu/tải giữ chỉ số giá');
+  assert.equal(reloaded.getPriceMarket().find(item => item.category === 'bottled_water')!.index, market.find(row => row.category === 'bottled_water')!.index, 'Lưu/tải giữ chỉ số giá');
   assert.equal(sellingUnchanged(sim), true, 'Giá bán gợi ý cố định không đổi theo chỉ số');
 
   // --- 4.3 khách từ chối giá cao / ba chiến lược giá ở mức động cơ ---
