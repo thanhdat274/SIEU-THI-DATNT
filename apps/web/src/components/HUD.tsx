@@ -25,8 +25,11 @@ interface HUDProps {
   onOpenRegulars?: () => void;
   onOpenSkills?: () => void;
   onOpenTitles?: () => void;
+  /** Số kệ/tủ mát đang mòn hoặc hỏng; > 0 thì hiện nút Sửa chữa. */
+  maintenanceAlerts?: number;
+  onOpenMaintenance?: () => void;
 }
-export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, customerRating = 4, wageDebt = 0}) => {
+export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, maintenanceAlerts, onOpenMaintenance, customerRating = 4, wageDebt = 0}) => {
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore();
   const season = getSeasonForDay(worldTime.day);
   const weather = market?.weather;
@@ -51,6 +54,7 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
       <PixelButton icon="warehouse" onClick={onToggleWarehouseDock} aria-label="Kho hàng" aria-expanded={isWarehouseDockOpen} title="Kho hàng sau tiệm"><span className="button-label">Kho</span></PixelButton>
       <PixelButton icon="person" onClick={onOpenStaff} aria-label="Nhân viên" title={player.level >= 2 ? 'Tuyển và xếp ca nhân viên' : 'Nhân viên: mở tuyển ở cấp 2'}><span className="button-label">Nhân viên</span></PixelButton>
       {onOpenRegulars && <PixelButton icon="heart" onClick={onOpenRegulars} aria-label="Khách quen" title="Sổ khách quen đầu hẻm"><span className="button-label">Khách quen</span></PixelButton>}
+      {onOpenMaintenance && (maintenanceAlerts ?? 0) > 0 && <PixelButton icon="warning" variant="brick" onClick={onOpenMaintenance} aria-label={`Sửa chữa, ${maintenanceAlerts} đồ cần xử lý`} title="Kệ/tủ mát mòn hoặc hỏng"><span className="button-label">Sửa chữa ({maintenanceAlerts})</span></PixelButton>}
       {onOpenSkills && <PixelButton icon="star" onClick={onOpenSkills} aria-label="Kỹ năng" title="Kỹ năng & Đặc quyền buôn bán"><span className="button-label">Kỹ năng</span></PixelButton>}
       {onOpenTitles && <PixelButton icon="star" onClick={onOpenTitles} aria-label="Danh hiệu" title="Danh hiệu chủ tiệm"><span className="button-label">Danh hiệu</span></PixelButton>}
       {onOpenMarket && <PixelButton icon="sun" onClick={onOpenMarket} aria-label="Thị trường và thời tiết" title="Thời tiết, mùa, lượng khách"><span className="button-label">Thị trường</span></PixelButton>}

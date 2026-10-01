@@ -120,7 +120,7 @@ export class CustomerManager {
     this.spawnCooldown = Math.max(1.5, 5.5 / Math.max(0.25, demand?.traffic ?? 1));
 
     const stockedShelves = fixtures.filter(
-      (f) => isSalesFixture(f) && f.currentStock > 0 && f.assignedProductId
+      (f) => isSalesFixture(f) && !f.broken && f.currentStock > 0 && f.assignedProductId
     );
     if (!stockedShelves.length) return null;
 

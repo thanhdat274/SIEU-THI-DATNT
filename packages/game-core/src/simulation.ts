@@ -86,6 +86,7 @@ import { StreetTrafficManager } from './street-traffic';
 import { CollisionSystem } from './collision';
 import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
 import { rainIntensityAt, rainForecastForDay, describeRainForecast, roadWetnessAt } from './weather';
+import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { buyLandPlot, validateStoreLayout, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
@@ -168,6 +169,7 @@ export interface GameSimulationCallbacks {
   onLevelUp?: (level: number) => void;
   onWeatherChanged?: (weatherId: string) => void;
   onMarketNotice?: (notice: MarketNotice) => void;
+  onMaintenanceNotice?: (notices: MaintenanceNotice[]) => void;
   onCustomerRated?: (event: { stars: number; average: number; reason?: CustomerFeedbackReason }) => void;
   onToast?: (message: string, type?: 'info' | 'success' | 'warn') => void;
 }
@@ -301,6 +303,8 @@ export class GameSimulation {
       for (const member of this.staff) this.finishStaffJob(member, true);
       this.processPayroll(day - 1);
       this.processStalls(day - 1);
+      const worn = wearOvernight(this.fixtures, day, this.playerData.level);
+      if (worn.length) this.callbacks.onMaintenanceNotice?.(worn);
       this.decayStock(day - 1); // trước khi thị trường sang ngày mới: sự kiện của ngày vừa qua còn trong trạng thái
       this.market = advanceMarketState(this.market, day);
       this.updatePriceIndex(day);
@@ -679,6 +683,26 @@ export class GameSimulation {
     return roadWetnessAt(this.weatherSeed, time.day, time.hour * 60 + time.minute, effectiveWeatherId(this.market, time.day));
   }
 
+  /** Danh sách kệ/tủ mát kèm độ mòn, trạng thái và hành động bảo trì có thể làm. */
+  public getMaintenanceList(): MaintenanceEntry[] {
+    return listMaintenance(this.fixtures);
+  }
+
+  /** Bảo trì, sửa nhẹ hoặc mua mới một kệ/tủ mát; trừ tiền, ghi sổ cái và chi phí ngày. Mua mới giữ chỗ đặt và hàng đang bày. */
+  public maintainFixture(fixtureId: string, action: MaintenanceAction): { success: boolean; reason?: string; cost?: number } {
+    const fixture = this.fixtures.find((f) => f.id === fixtureId);
+    const result = applyMaintenance(fixture, action, this.playerData.money, this.playerData.level);
+    if (!result.success) return { success: false, reason: MAINTENANCE_FAILURE_TEXT[result.reason] };
+    const day = this.clock.getTime().day;
+    this.playerData.money -= result.cost;
+    this.currentDayRecord.maintenanceCost = (this.currentDayRecord.maintenanceCost ?? 0) + result.cost;
+    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0);
+    const verb = action === 'replace' ? 'Mua mới' : action === 'repair' ? 'Sửa' : 'Bảo trì';
+    this.recordLedger({ day, type: 'maintenance', amount: result.cost, description: `${verb} ${fixture!.label}` });
+    this.notifyStateChanged();
+    return { success: true, cost: result.cost };
+  }
+
   public getStalls(): Array<StallDefinition & { owned: boolean; buyable: boolean; reason?: string }> {
     return STALLS.map(stall => {
       const owned = this.stalls.owned.includes(stall.id);
@@ -749,7 +773,7 @@ export class GameSimulation {
       this.recordLedger({ day, type: 'sale', amount: revenue, cogs, quantity: plan.servings, description: `${stall.name}: bán ${plan.servings}/${plan.demand} suất` });
     }
     record.grossProfit = record.revenue - record.cogs;
-    record.netProfit = record.grossProfit - record.spoilageCost - record.wagesPaid;
+    record.netProfit = record.grossProfit - record.spoilageCost - record.wagesPaid - (record.maintenanceCost ?? 0);
     if (record !== this.currentDayRecord) this.dailyRecords[day] = record;
     this.stalls.lastReport = report;
   }
@@ -1080,7 +1104,7 @@ export class GameSimulation {
       this.recordLedger({ day: hireDay, type: 'wage', amount: candidate.hiringFee, description: `Phí tuyển ${candidate.name}` });
       const hireRecord = hireDay === this.currentDayRecord.day ? this.currentDayRecord : (this.dailyRecords[hireDay] ??= this.createEmptyDailyRecord(hireDay));
       hireRecord.wagesPaid += candidate.hiringFee;
-      hireRecord.netProfit = hireRecord.revenue - hireRecord.cogs - hireRecord.spoilageCost - hireRecord.wagesPaid;
+      hireRecord.netProfit = hireRecord.revenue - hireRecord.cogs - hireRecord.spoilageCost - hireRecord.wagesPaid - (hireRecord.maintenanceCost ?? 0);
     }
     const member: StaffMember = {
       id: candidate.id,
@@ -1370,7 +1394,7 @@ export class GameSimulation {
       : (this.dailyRecords[day] ?? this.createEmptyDailyRecord(day));
     record.wagesPaid += payroll.paidAmount;
     record.grossProfit = record.revenue - record.cogs;
-    record.netProfit = record.grossProfit - record.spoilageCost - record.wagesPaid;
+    record.netProfit = record.grossProfit - record.spoilageCost - record.wagesPaid - (record.maintenanceCost ?? 0);
     if (day !== this.currentDayRecord.day) this.dailyRecords[day] = record;
 
     return {
@@ -1396,6 +1420,7 @@ export class GameSimulation {
       purchaseTotal: 0,
       spoilageCost: 0,
       wagesPaid: 0,
+      maintenanceCost: 0,
       grossProfit: 0,
       netProfit: 0,
       customersServed: 0,
@@ -1422,7 +1447,7 @@ export class GameSimulation {
     const rec = this.dailyRecords[day] ?? { ...this.currentDayRecord, day };
     rec.closedAt = rec.closedAt ?? new Date().toISOString();
     rec.grossProfit = rec.revenue - rec.cogs;
-    rec.netProfit = rec.grossProfit - rec.spoilageCost - rec.wagesPaid;
+    rec.netProfit = rec.grossProfit - rec.spoilageCost - rec.wagesPaid - (rec.maintenanceCost ?? 0);
     rec.productSales = { ...(rec.productSales ?? this.currentDayRecord.productSales ?? {}) };
     this.dailyRecords[day] = rec;
     this.closedDayIds.add(day);
@@ -1564,7 +1589,7 @@ export class GameSimulation {
     this.statistics.totalRevenue += tip;
     this.currentDayRecord.revenue += tip;
     this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
-    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid;
+    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0);
     this.recordLedger({ day, type: 'sale', amount: tip, cogs: 0, quantity: 0, description: 'Tiền boa từ kỹ năng bán hàng' });
   }
 
@@ -1693,7 +1718,7 @@ export class GameSimulation {
   private recordSpoilageLoss(day: number, quantity: number, cost: number, description: string): void {
     this.currentDayRecord.spoilageCount += quantity;
     this.currentDayRecord.spoilageCost += cost;
-    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid;
+    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0);
     this.recordLedger({ day, type: 'spoilage', amount: cost, quantity, description });
   }
 
@@ -1845,7 +1870,7 @@ export class GameSimulation {
     const demandTable = this.refreshDemandTable();
     const availability = availabilityFactor(demandTable, this.fixtures.filter(isSalesFixture).map(shelf => ({
       productId: shelf.assignedProductId ?? this.planogram[shelf.id],
-      inStock: shelf.currentStock > 0,
+      inStock: shelf.currentStock > 0 && !shelf.broken,
     })));
     const inStoreRegularIds = this.customerManager.getCustomers().map(c => c.regularId).filter((id): id is string => Boolean(id));
     const regularCandidate = pickAvailableRegular(this.clock.getTime().day, this.market.seed, inStoreRegularIds, this.regulars);
@@ -1951,6 +1976,7 @@ export class GameSimulation {
     if (!fixture || !isSalesFixture(fixture)) {
       return { success: false, actualQuantity: 0, reason: !fixture ? 'fixture_not_found' : 'not_sales_fixture' };
     }
+    if (fixture.broken) return { success: false, actualQuantity: 0, reason: 'fixture_broken' };
     if (!Number.isSafeInteger(amount) || amount <= 0) {
       return { success: false, actualQuantity: 0, reason: 'invalid_amount' };
     }
@@ -2161,6 +2187,7 @@ export class GameSimulation {
     if (!fix || !isSalesFixture(fix)) {
       return { fixtureId, productId, applied: false, actualQuantity: 0, reason: !fix ? 'fixture_not_found' : 'not_sales_fixture' };
     }
+    if (fix.broken) return { fixtureId, productId, applied: false, actualQuantity: 0, reason: 'fixture_broken' };
     const prod = PRODUCT_MAP[productId];
     if (!prod) {
       return { fixtureId, productId, applied: false, actualQuantity: 0, reason: 'invalid_product' };
@@ -2231,7 +2258,7 @@ export class GameSimulation {
     const targets: RestockJobTarget[] = [];
     for (const [fixtureId, productId] of Object.entries(this.planogram)) {
       const fix = this.fixtures.find((f) => f.id === fixtureId);
-      if (!fix || !isSalesFixture(fix)) continue;
+      if (!fix || !isSalesFixture(fix) || fix.broken) continue;
       const prod = PRODUCT_MAP[productId];
       if (!prod) continue;
       // Shelf must not be blocked by another product with remaining stock
@@ -2662,7 +2689,7 @@ export class GameSimulation {
       this.currentDayRecord.revenue += res.paidTotal;
       this.currentDayRecord.cogs += cogs;
       this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
-      this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid;
+      this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0);
 
       if (res.items) {
         for (const it of res.items) {
@@ -2718,7 +2745,7 @@ export class GameSimulation {
       this.currentDayRecord.revenue += salePrice;
       this.currentDayRecord.cogs += cogs;
       this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
-      this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid;
+      this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0);
       this.recordProductSale(product.id, 1);
 
       this.recordLedger({

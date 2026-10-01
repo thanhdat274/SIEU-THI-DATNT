@@ -34,6 +34,7 @@ import { DaySummaryModal } from './components/DaySummaryModal';
 import { RegularsModal } from './components/RegularsModal';
 import { SkillsModal } from './components/SkillsModal';
 import { TitlesModal } from './components/TitlesModal';
+import { MaintenanceModal } from './components/MaintenanceModal';
 import type { StoreLayoutAction } from '@game/core';
 import { money, PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
@@ -66,6 +67,7 @@ export const App: React.FC = () => {
   const [isRegularsOpen, setRegularsOpen] = useState(false);
   const [isSkillsOpen, setSkillsOpen] = useState(false);
   const [isTitlesOpen, setTitlesOpen] = useState(false);
+  const [isMaintenanceOpen, setMaintenanceOpen] = useState(false);
   const [daySummaryRecord, setDaySummaryRecord] = useState<DailyRecord | null>(null);
   // Bảng kế hoạch chỉ tính khi mở bảng Thị trường hoặc sang ngày mới, không mỗi khung hình.
   const planDay = useGameStore((state) => state.worldTime.day);
@@ -426,6 +428,11 @@ export const App: React.FC = () => {
           handleSaveGame(false);
         },
         onMarketNotice: (notice) => addToast(notice.text, notice.severity === 'severe' ? 'warn' : 'info'),
+        onMaintenanceNotice: (notices) => {
+          for (const notice of notices) {
+            addToast(notice.broken === 'major' ? `${notice.label} hỏng nặng, phải mua mới (Sửa chữa).` : `${notice.label} bị hỏng, cần sửa (Sửa chữa).`, 'warn');
+          }
+        },
         onWeatherChanged: (weatherId) => addToast(`Thời tiết hôm nay: ${WEATHER_MAP[weatherId]?.icon ?? ''} ${WEATHER_MAP[weatherId]?.label ?? weatherId}.`, 'info'),
         onLevelUp: (level) => {
           addToast(`Lên cấp ${level}!`, 'success');
@@ -1297,7 +1304,7 @@ export const App: React.FC = () => {
           ⚠️ Mất kết nối hẻm chung — thao tác bị tạm dừng, đang kết nối lại...
         </div>
       )}
-      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={() => setMarketOpen(true)} onOpenTax={() => setTaxOpen(true)} onOpenRegulars={() => setRegularsOpen(true)} onOpenSkills={() => setSkillsOpen(true)} onOpenTitles={() => setTitlesOpen(true)} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onOpenStaff={openStaffFromHud} onOpenStalls={() => setStallOpen(true)} onOpenQuests={() => setQuestOpen(true)} onOpenLevelRoadmap={() => setLevelRoadmapOpen(true)} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
+      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={() => setMarketOpen(true)} onOpenTax={() => setTaxOpen(true)} onOpenRegulars={() => setRegularsOpen(true)} onOpenSkills={() => setSkillsOpen(true)} onOpenTitles={() => setTitlesOpen(true)} maintenanceAlerts={simulationRef.current?.getMaintenanceList().filter(e => e.status !== 'good').length ?? 0} onOpenMaintenance={() => setMaintenanceOpen(true)} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onOpenStaff={openStaffFromHud} onOpenStalls={() => setStallOpen(true)} onOpenQuests={() => setQuestOpen(true)} onOpenLevelRoadmap={() => setLevelRoadmapOpen(true)} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
       <main className="game-main">
         <div className="world-viewport">
           <canvas ref={canvasRef} aria-label="Bản đồ Tiệm Tạp Hóa Đầu Hẻm"/>
@@ -1514,6 +1521,26 @@ export const App: React.FC = () => {
           }
         }}
         onClose={() => setSkillsOpen(false)}
+      />
+    )}
+    {isMaintenanceOpen && simulationRef.current && (
+      <MaintenanceModal
+        entries={simulationRef.current.getMaintenanceList()}
+        playerMoney={player.money}
+        playerLevel={player.level}
+        onAction={async (fixtureId, action) => {
+          const res = await persistSimulationMutation(
+            { type: 'maintain_fixture', fixtureId, action }, 'Sửa chữa nội thất', 'Sửa chữa',
+            simulation => simulation.maintainFixture(fixtureId, action),
+          );
+          if (!res) return;
+          if (res.success) {
+            addToast(action === 'replace' ? 'Đã mua mới.' : action === 'repair' ? 'Đã sửa xong.' : 'Đã bảo trì xong.', 'success');
+          } else {
+            addToast(res.reason ?? 'Không thể xử lý.', 'warn');
+          }
+        }}
+        onClose={() => setMaintenanceOpen(false)}
       />
     )}
     {isTitlesOpen && simulationRef.current && (

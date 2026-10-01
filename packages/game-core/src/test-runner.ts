@@ -39,6 +39,7 @@ import { runRainTests } from './rain.test';
 import { runRoadTests } from './road.test';
 import { runTrafficSignalTests } from './traffic-signal.test';
 import { runArrivalModeTests } from './arrival-mode.test';
+import { runMaintenanceTests } from './maintenance.test';
 import { runIntegrationTests, runOutdoorPropTests } from './integration.test';
 import { runStoreLayoutTests } from './store-layout.test';
 import { runRegularsTests } from './regulars.test';
@@ -86,6 +87,7 @@ export async function runTests(): Promise<void> {
   runRoadTests();
   runTrafficSignalTests();
   runArrivalModeTests();
+  runMaintenanceTests();
   runOutdoorPropTests();
   runAnnualRevenueTests();
   runStoreLayoutTests();

@@ -239,7 +239,7 @@ export interface CheckoutResult {
   reason?: 'no_waiting_customer' | 'already_processed' | 'empty_basket' | 'store_closed' | 'success';
 }
 
-export type LedgerEntryType = 'purchase' | 'sale' | 'spoilage' | 'wage';
+export type LedgerEntryType = 'purchase' | 'sale' | 'spoilage' | 'wage' | 'maintenance';
 
 export interface LedgerEntry {
   id: string;
@@ -426,6 +426,7 @@ export interface DailyRecord {
   purchaseTotal: number; // Cash spent purchasing goods on this day
   spoilageCost: number; // Value of goods spoiled on this day
   wagesPaid: number; // Wages paid to staff on this day
+  maintenanceCost?: number; // Chi phí bảo trì/sửa/mua mới nội thất trong ngày (thiếu = 0)
   grossProfit: number; // revenue - cogs
   netProfit: number; // revenue - cogs - spoilageCost - wagesPaid
   customersServed: number; // Distinct customers served
@@ -446,6 +447,7 @@ export type PlanogramApplyReason =
   | 'success'
   | 'fixture_not_found'
   | 'not_sales_fixture'
+  | 'fixture_broken'
   | 'invalid_product'
   | 'storage_type_mismatch'
   | 'product_mismatch'
@@ -491,7 +493,14 @@ export interface StoreFixture {
   stockLots?: StockLot[];
   maxCapacity: number;
   label: string;
+  /** Độ hao mòn 0..100 của kệ/tủ mát (thiếu = 0). Chỉ tăng qua đêm, giảm khi bảo trì/sửa. */
+  wear?: number;
+  /** Đang hỏng: nhẹ (sửa được) hoặc nặng (phải mua mới). Kệ hỏng không bán và không châm hàng được. */
+  broken?: 'minor' | 'major';
 }
+
+/** Kệ/tủ mát đang dùng được cho bán hàng và châm hàng (không hỏng). */
+export const isUsableSalesFixture = (fixture: Pick<StoreFixture, 'type' | 'broken'>): boolean => isSalesFixture(fixture) && !fixture.broken;
 
 export function getFixtureDimensions(fixture: Pick<StoreFixture, 'widthTiles' | 'heightTiles' | 'rotation'>): { widthTiles: number; heightTiles: number } {
   const rotated = fixture.rotation === 90 || fixture.rotation === 270;
@@ -789,7 +798,8 @@ export type GameCommandPayload =
   | { type: 'claim_weekly_quest'; questId: string }
   | { type: 'claim_festival_goal'; goalId: string }
   | { type: 'choose_perk'; perkId: string }
-  | { type: 'set_title'; titleId?: string };
+  | { type: 'set_title'; titleId?: string }
+  | { type: 'maintain_fixture'; fixtureId: string; action: 'service' | 'repair' | 'replace' };
 
 export interface GameCommand {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
@@ -928,7 +938,7 @@ export function restoreSaveBackupSnapshot(backup: SaveGameData, targetId = 'loca
 export interface TransferShelfResult {
   success: boolean;
   actualQuantity: number;
-  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'invalid_amount' | 'product_locked' | 'storage_mismatch' | 'no_inventory' | 'product_mismatch' | 'no_space' | 'success';
+  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'fixture_broken' | 'invalid_amount' | 'product_locked' | 'storage_mismatch' | 'no_inventory' | 'product_mismatch' | 'no_space' | 'success';
 }
 
 export interface UnstockShelfResult {
@@ -999,6 +1009,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'claim_festival_goal': return nonEmptyString(p.goalId);
     case 'choose_perk': return nonEmptyString(p.perkId);
     case 'set_title': return p.titleId === undefined || nonEmptyString(p.titleId);
+    case 'maintain_fixture': return nonEmptyString(p.fixtureId) && (p.action === 'service' || p.action === 'repair' || p.action === 'replace');
     default: return false;
   }
 }

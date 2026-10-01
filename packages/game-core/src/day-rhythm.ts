@@ -8,6 +8,8 @@ export interface DaySummary {
   grossProfit: number;
   spoilageCost: number;
   wagesPaid: number;
+  /** Chi phí bảo trì/sửa/mua mới nội thất trong ngày; chỉ có khi > 0. */
+  maintenanceCost?: number;
   netProfit: number;
   customersServed: number;
   transactionsCount: number;
@@ -28,6 +30,7 @@ export function buildDaySummary(record: DailyRecord): DaySummary {
     grossProfit: record.grossProfit,
     spoilageCost: record.spoilageCost,
     wagesPaid: record.wagesPaid,
+    ...(record.maintenanceCost ? { maintenanceCost: record.maintenanceCost } : {}),
     netProfit: record.netProfit,
     customersServed: record.customersServed,
     transactionsCount: record.transactionsCount,

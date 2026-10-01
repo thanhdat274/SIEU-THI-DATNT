@@ -1181,13 +1181,15 @@ export class PixiGameViewport {
           entry.stockText.visible=true;entry.dotMarker.visible=true;
         } else if (fix.type !== 'cashier_counter') {
           const limit = effectiveShelfCapacity(fix.maxCapacity, (fix.assignedProductId && PRODUCT_MAP[fix.assignedProductId]?.shelfCapacity) || fix.maxCapacity, this.simulation.getShelfCapacityBonus());
-          entry.stockText.text = `${fix.currentStock}/${limit}`;
+          entry.stockText.text = fix.broken ? (fix.broken === 'major' ? 'NẶNG' : 'HỎNG') : `${fix.currentStock}/${limit}`;
           const state = fix.currentStock === 0 ? 'empty' : fix.currentStock / limit <= 0.4 ? 'low' : 'full';
           const key = `${entry.textureKey}:${fix.assignedProductId ?? 'none'}:${state}`;
-          if(entry.lastState !== key) {
+          const stateKey = `${key}|${fix.broken ?? ''}`;
+          if(entry.lastState !== stateKey) {
             entry.sprite.texture = this.textures.getTexture(key);
-            entry.lastState = key;
-            entry.dotMarker.clear().rect(13, 38, 6, 6).fill({color:state==='empty'?0xd9381e:state==='low'?0xf4a261:0x2a7a43});
+            entry.lastState = stateKey;
+            entry.sprite.tint = fix.broken ? (fix.broken === 'major' ? 0x7a6a6a : 0xb5a29c) : 0xffffff;
+            entry.dotMarker.clear().rect(13, 38, 6, 6).fill({color: fix.broken ? 0x6f2a1e : state==='empty'?0xd9381e:state==='low'?0xf4a261:0x2a7a43});
           }
           entry.stockText.visible = true;
           entry.dotMarker.visible = true;

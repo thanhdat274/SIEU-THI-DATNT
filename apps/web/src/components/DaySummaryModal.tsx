@@ -57,6 +57,7 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
             <div>Lãi gộp: <strong>{money(summary.grossProfit)}</strong></div>
             <div>Hàng hỏng: <strong style={{ color: 'var(--rust, #b44a2c)' }}>- {money(summary.spoilageCost)}</strong></div>
             <div>Lương nhân viên: <strong style={{ color: 'var(--rust, #b44a2c)' }}>- {money(summary.wagesPaid)}</strong></div>
+            {summary.maintenanceCost ? <div>Sửa chữa, bảo trì: <strong style={{ color: 'var(--rust, #b44a2c)' }}>- {money(summary.maintenanceCost)}</strong></div> : null}
             <div style={{ borderTop: '1px solid var(--wood, #a88)', paddingTop: 6, fontSize: 13 }}>
               Lãi ròng: <strong style={{ color: summary.netProfit >= 0 ? '#16a34a' : '#dc2626' }}>{money(summary.netProfit)}</strong>
             </div>
