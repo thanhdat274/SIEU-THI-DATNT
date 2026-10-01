@@ -89,14 +89,23 @@ export class WorldRepository {
   /** Persist runtime checkpoint (called by WorldRuntime.onCheckpoint callback) */
   async saveCheckpoint(worldId: string, world: import('@game/shared').GameWorld, business: import('@game/shared').BusinessState): Promise<void> {
     const collection = (await connectDatabase()).collection<WorldDocument>(collectionName);
+    // Update avatars element by element: a member who joined over HTTP after this
+    // runtime was loaded must keep their stored avatar instead of being overwritten.
+    const avatarSets: Record<string, unknown> = {};
+    const avatarFilters: Record<string, string>[] = [];
+    world.avatars.forEach((avatar, index) => {
+      avatarSets[`world.avatars.$[a${index}]`] = avatar;
+      avatarFilters.push({ [`a${index}.accountId`]: avatar.accountId });
+    });
     await collection.updateOne(
       { _id: worldId, 'world.revision': world.revision },
       { $set: {
         'world.worldTime': world.worldTime,
-        'world.avatars': world.avatars,
+        ...avatarSets,
         'world.updatedAt': world.updatedAt,
         'businesses.0.save': business.save,
-      } }
+      } },
+      avatarFilters.length ? { arrayFilters: avatarFilters } : undefined
     );
   }
 

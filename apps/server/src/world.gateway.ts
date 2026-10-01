@@ -135,7 +135,13 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
         startTickLoop();
       }
 
-      const joined = entry.runtime.registerSession(account.uid);
+      let joined = entry.runtime.registerSession(account.uid);
+      if (!joined) {
+        // The member may have joined over HTTP after this runtime was loaded.
+        const fresh = await worldRepository.getForMember(worldId, account.uid);
+        entry.runtime.syncMembers(fresh.world);
+        joined = entry.runtime.registerSession(account.uid);
+      }
       if (!joined) {
         socket.close(4003, 'Not a member of this world');
         return;

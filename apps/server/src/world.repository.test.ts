@@ -157,6 +157,22 @@ async function run() {
     assert.equal(resumedRuntime.getSimulation().getPlayerData().money, checkpointBiz.save.player.money);
     assert.equal(resumedRuntime.getSimulation().getTime().hour, 12);
 
+    // A runtime loaded before a member joined checkpoints with only the owner's avatar;
+    // that must not erase the avatar of the member who joined afterwards.
+    if ((await repository.getForMember(world.id, owner.uid)).world.avatars.length < 2) {
+      const lateInvite = await repository.createInvite(world.id, owner.uid);
+      await repository.join({ uid: `test-late-${randomUUID()}`, name: 'Late member', email: null }, lateInvite.token);
+    }
+    const beforeOwnerOnly = await repository.getForMember(world.id, owner.uid);
+    assert.ok(beforeOwnerOnly.world.avatars.length >= 2, 'fixture should have two avatars at this point');
+    const ownerOnlyWorld = structuredClone(beforeOwnerOnly.world);
+    ownerOnlyWorld.avatars = ownerOnlyWorld.avatars.filter(avatar => avatar.accountId === owner.uid);
+    ownerOnlyWorld.avatars[0].position = { x: 123, y: 456 };
+    await repository.saveCheckpoint(world.id, ownerOnlyWorld, structuredClone(beforeOwnerOnly.businesses[0]));
+    const afterOwnerOnly = await repository.getForMember(world.id, owner.uid);
+    assert.equal(afterOwnerOnly.world.avatars.length, beforeOwnerOnly.world.avatars.length, 'owner-only checkpoint must not delete the member avatar');
+    assert.deepEqual(afterOwnerOnly.world.avatars.find(avatar => avatar.accountId === owner.uid)?.position, { x: 123, y: 456 });
+
     // A checkpoint captured before an accepted economic command must not overwrite it.
     const staleWorld = structuredClone(checkpointWorld);
     staleWorld.revision = commit1.revision - 1;

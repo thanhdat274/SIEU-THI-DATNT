@@ -35,6 +35,8 @@ export class GameCommandCoordinator {
 
   getRevision(): number { return this.revision; }
 
+  addMember(accountId: string): void { this.members.add(accountId); }
+
   submit(
     actorId: string,
     input: unknown,

@@ -87,6 +87,24 @@ export class WorldRuntime {
     return true;
   }
 
+  /**
+   * Adopts members/avatars that joined through HTTP after this runtime was loaded.
+   * Without this the runtime keeps a stale member list: the new member's socket is
+   * refused and every checkpoint overwrites `world.avatars`, erasing their avatar.
+   */
+  syncMembers(world: GameWorld): void {
+    for (const membership of world.memberships) {
+      if (this.currentWorld.memberships.some((m) => m.accountId === membership.accountId)) continue;
+      this.currentWorld.memberships.push(structuredClone(membership));
+      this.commandCoordinator.addMember(membership.accountId);
+    }
+    for (const avatar of world.avatars) {
+      if (this.currentWorld.avatars.some((a) => a.accountId === avatar.accountId)) continue;
+      this.currentWorld.avatars.push(structuredClone(avatar));
+      this.avatarController.addAvatar(avatar);
+    }
+  }
+
   unregisterSession(accountId: string): void {
     this.activeSessions.delete(accountId);
     if (this.activeTimeVote) {

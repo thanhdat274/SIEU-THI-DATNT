@@ -181,5 +181,19 @@ export async function runWorldRuntimeTests() {
   const badTitle = await questRuntime.executeCommand('owner-1', titleCommand('title-2', 'unknown_title'));
   assert.equal(badTitle.status, 'rejected', 'Server rejects titles that are not unlocked or defined');
 
+  // A member who joins over HTTP after the runtime was loaded must be adoptable.
+  const lateSeed = createInitialOnlineWorld(owner, 'world-runtime-late-member');
+  const lateRuntime = new WorldRuntime(lateSeed.world, lateSeed.business);
+  assert.equal(lateRuntime.registerSession('late-member'), false, 'unknown account is refused before sync');
+  const lateWorld = structuredClone(lateSeed.world);
+  lateWorld.memberships.push({ accountId: 'late-member', role: 'member', joinedAt: new Date().toISOString(), lastSeenRevision: 0 });
+  lateWorld.avatars.push({ accountId: 'late-member', position: { x: 400, y: 400 }, direction: 'down', updatedAt: new Date().toISOString() });
+  lateRuntime.syncMembers(lateWorld);
+  assert.equal(lateRuntime.registerSession('late-member'), true, 'member is accepted after sync');
+  assert.equal(lateRuntime.getSnapshot().world.avatars.length, 2, 'checkpointed world keeps both avatars');
+  assert.ok(lateRuntime.getAvatarController().getAvatar('late-member'), 'avatar controller tracks the late member');
+  lateRuntime.syncMembers(lateWorld);
+  assert.equal(lateRuntime.getSnapshot().world.avatars.length, 2, 'syncMembers is idempotent');
+
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');
 }

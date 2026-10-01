@@ -21,6 +21,13 @@ export class WorldAvatarController {
     this.collision = new CollisionSystem(map, [...fixtures]);
   }
 
+  /** Adds an avatar for a member who joined after this controller was created. */
+  addAvatar(avatar: GameAvatar): void {
+    if (this.avatars.has(avatar.accountId)) return;
+    this.avatars.set(avatar.accountId, { ...avatar, position: { ...avatar.position } });
+    this.sequences.set(avatar.accountId, -1);
+  }
+
   applyInput(intent: GameInputIntent, serverReceivedAtMs: number): GameAvatar | null {
     const current = this.avatars.get(intent.accountId);
     if (!current || !Number.isSafeInteger(intent.sequence) || intent.sequence < 0 ||
