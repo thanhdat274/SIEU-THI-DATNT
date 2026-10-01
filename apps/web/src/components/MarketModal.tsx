@@ -1,10 +1,11 @@
 import React from 'react';
 import { PRODUCT_MAP, SEASON_EVENTS, SEASON_YEAR_DAYS, getDayOfYear, type SeasonEvent } from '@game/data';
+import { describeRainForecast, type RainForecast } from '@game/core';
 import { PixelDialog } from './pixel';
 
 interface MarketSummary {
-  weather: { id: string; label: string; icon: string };
-  forecast: Array<{ id: string; label: string; icon: string }>;
+  weather: { id: string; label: string; icon: string; rain?: RainForecast | null };
+  forecast: Array<{ id: string; label: string; icon: string; rain?: RainForecast | null }>;
   season: SeasonEvent | null;
   climate: { name: string };
   timeBand: { label: string };
@@ -52,8 +53,8 @@ export const MarketModal: React.FC<MarketModalProps> = ({ summary, prices, plans
   <PixelDialog icon="sun" title="THỊ TRƯỜNG HẺM" subtitle={`${summary.weekday} · ${summary.timeBand.label} · ${summary.climate.name}`} onClose={onClose}>
     <h3>Thời tiết</h3>
     <p className="pixel-panel" style={{ padding: 8 }}>
-      <strong>Hôm nay: {summary.weather.icon} {summary.weather.label}</strong>
-      {summary.forecast.map((item, index) => <span key={index} className="muted"> · {index === 0 ? 'Ngày mai' : 'Ngày kia'}: {item.icon} {item.label}</span>)}
+      <strong>Hôm nay: {summary.weather.icon} {summary.weather.label}{summary.weather.rain ? ` (${describeRainForecast(summary.weather.rain)})` : ''}</strong>
+      {summary.forecast.map((item, index) => <span key={index} className="muted"> · {index === 0 ? 'Ngày mai' : 'Ngày kia'}: {item.icon} {item.label}{item.rain ? ` (${describeRainForecast(item.rain)})` : ''}</span>)}
     </p>
     <h3>Sự kiện trong hẻm</h3>
     {summary.events.length

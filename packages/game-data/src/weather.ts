@@ -38,3 +38,27 @@ export const CLIMATE_SEASONS: readonly ClimateSeason[] = [
 ];
 
 export const CLIMATE_SEASON_MAP: Record<string, ClimateSeason> = Object.fromEntries(CLIMATE_SEASONS.map(item => [item.id, item]));
+
+export type RainBandId = 'none' | 'drizzle' | 'moderate' | 'heavy' | 'thunderstorm';
+
+export interface RainBand {
+  id: RainBandId;
+  label: string;
+  /** Cường độ 0..1 từ mức này trở lên thuộc dải. */
+  min: number;
+}
+
+/** Các dải mưa theo cường độ. Dải mưa của cả ngày dựa trên đỉnh mưa; dải tức thời dựa trên cường độ lúc đó. */
+export const RAIN_BANDS: readonly RainBand[] = [
+  { id: 'none', label: 'Không mưa', min: 0 },
+  { id: 'drizzle', label: 'Mưa phùn', min: 0.03 },
+  { id: 'moderate', label: 'Mưa vừa', min: 0.3 },
+  { id: 'heavy', label: 'Mưa to', min: 0.55 },
+  { id: 'thunderstorm', label: 'Mưa giông', min: 0.8 },
+];
+
+export function rainBandOf(intensity: number): RainBand {
+  let band = RAIN_BANDS[0];
+  for (const candidate of RAIN_BANDS) if (intensity >= candidate.min) band = candidate;
+  return band;
+}

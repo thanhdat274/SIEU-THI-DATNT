@@ -83,7 +83,7 @@ import { pickAvailableRegular, processRegularCheckout, processRegularWalkout } f
 import { StreetTrafficManager } from './street-traffic';
 import { CollisionSystem } from './collision';
 import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
-import { rainIntensityAt } from './weather';
+import { rainIntensityAt, rainForecastForDay, describeRainForecast } from './weather';
 import { buyLandPlot, validateStoreLayout, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
@@ -627,10 +627,14 @@ export class GameSimulation {
     const todayId = effectiveWeatherId(this.market, time.day);
     const weather = WEATHER_MAP[todayId] ?? WEATHER_MAP[this.market.weather.today];
     return {
-      weather: { id: weather.id, label: weather.label, icon: weather.icon, rainIntensity: rainIntensityAt(this.weatherSeed, time.day, time.hour, time.minute, weather.id) },
+      weather: {
+        id: weather.id, label: weather.label, icon: weather.icon,
+        rainIntensity: rainIntensityAt(this.weatherSeed, time.day, time.hour, time.minute, weather.id),
+        rain: rainForecastForDay(this.weatherSeed, time.day, weather.id),
+      },
       forecast: [1, 2].map(offset => {
         const id = effectiveWeatherId(this.market, time.day + offset);
-        return { id, label: WEATHER_MAP[id]?.label ?? id, icon: WEATHER_MAP[id]?.icon ?? '' };
+        return { id, label: WEATHER_MAP[id]?.label ?? id, icon: WEATHER_MAP[id]?.icon ?? '', rain: rainForecastForDay(this.weatherSeed, time.day + offset, id) };
       }),
       events: visibleMarketEvents(this.market, time.day),
       season: getSeasonForDay(time.day),
@@ -1509,7 +1513,8 @@ export class GameSimulation {
     const day = this.clock.getTime().day;
     const season = this.getSeason();
     const weather = this.getMarketSummary().weather;
-    const forecastTomorrow = this.getMarketSummary().forecast[0]?.label;
+    const tomorrow = this.getMarketSummary().forecast[0];
+    const forecastTomorrow = tomorrow ? tomorrow.rain ? `${tomorrow.label} (${describeRainForecast(tomorrow.rain)})` : tomorrow.label : undefined;
     const arrivingOrders = this.pendingOrders.filter((o) => !o.delivered && o.arrivalDay <= day);
     const lowStockItems = this.fixtures
       .filter((f) => isSalesFixture(f) && f.assignedProductId && f.currentStock <= 2)

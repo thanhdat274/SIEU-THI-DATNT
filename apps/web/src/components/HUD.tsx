@@ -1,5 +1,6 @@
 import React from 'react';
 import { getSeasonForDay, seasonDaysLeft } from '@game/data';
+import { describeRainForecast, type RainForecast } from '@game/core';
 import { useGameStore } from '../store/useGameStore';
 import { money, PixelButton, PixelIcon, PixelProgress, PixelStat } from './pixel';
 
@@ -16,7 +17,7 @@ interface HUDProps {
   onOpenStalls: () => void;
   onOpenStaff: () => void;
   wageDebt?: number;
-  market?: { weather: { label: string; icon: string }; forecast: Array<{ label: string }>; events?: Array<{ id: string; label: string; status: string; startsIn: number; notice: string }> };
+  market?: { weather: { label: string; icon: string; rain?: RainForecast | null }; forecast: Array<{ label: string; rain?: RainForecast | null }>; events?: Array<{ id: string; label: string; status: string; startsIn: number; notice: string }> };
   onOpenMarket?: () => void;
   onOpenTax?: () => void;
   onOpenLevelRoadmap: () => void;
@@ -29,11 +30,13 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore();
   const season = getSeasonForDay(worldTime.day);
   const weather = market?.weather;
-  const forecastText = market?.forecast.map(item => item.label).join(', ') ?? '';
+  const rainNote = (rain?: RainForecast | null) => (rain ? ` (${describeRainForecast(rain)})` : '');
+  const forecastText = market?.forecast.map(item => `${item.label}${rainNote(item.rain)}`).join(', ') ?? '';
+  const todayRainText = rainNote(weather?.rain);
   const forecastFirst = market?.forecast[0]?.label ?? '';
   return <header className="game-hud">
     <div className="brand" title="Tiệm Tạp Hóa Đầu Hẻm"><div className="brand-sign"><PixelIcon name="warehouse" size={26}/></div><div className="brand-copy">{player.activeTitle ? <p className="eyebrow" style={{ cursor: onOpenTitles ? 'pointer' : 'default', color: '#ffd56b' }} onClick={onOpenTitles} title="Bấm để xem/đổi danh hiệu">{player.activeTitle}</p> : <p className="eyebrow">Một góc nhỏ · Một đời vui</p>}<h1>Tiệm Tạp Hóa Đầu Hẻm</h1></div></div>
-    <div className="hud-clock" title={`Ngày ${worldTime.day} · ${timeString} (${worldTime.isStoreOpen ? 'Đang mở cửa' : 'Nghỉ bán'})`}><PixelIcon name={worldTime.hour >= 18 ? 'moon' : 'sun'} size={24}/><div><strong className="tabular">Ngày {worldTime.day} · {timeString}</strong><span className="muted hud-store-status">{worldTime.isStoreOpen ? 'Bà con đang ghé tiệm' : 'Tiệm đang nghỉ bán'}</span>{weather && <span className="muted hud-weather-badge" title={`Dự báo: ${forecastText}`}>{weather.icon} {weather.label} · mai {forecastFirst}</span>}{market?.events?.map(event => <span key={event.id} className="muted hud-event-badge" title={event.notice}>{event.status === 'active' ? '⚡' : '⏳'} {event.label}{event.status === 'upcoming' ? ` · sau ${event.startsIn} ngày` : ''}</span>)}{season && <span className="muted hud-season-badge" title={season.blurb}>🎉 {season.name} · còn {seasonDaysLeft(worldTime.day)} ngày</span>}</div></div>
+    <div className="hud-clock" title={`Ngày ${worldTime.day} · ${timeString} (${worldTime.isStoreOpen ? 'Đang mở cửa' : 'Nghỉ bán'})`}><PixelIcon name={worldTime.hour >= 18 ? 'moon' : 'sun'} size={24}/><div><strong className="tabular">Ngày {worldTime.day} · {timeString}</strong><span className="muted hud-store-status">{worldTime.isStoreOpen ? 'Bà con đang ghé tiệm' : 'Tiệm đang nghỉ bán'}</span>{weather && <span className="muted hud-weather-badge" title={`Hôm nay${todayRainText}. Dự báo: ${forecastText}`}>{weather.icon} {weather.label} · mai {forecastFirst}</span>}{market?.events?.map(event => <span key={event.id} className="muted hud-event-badge" title={event.notice}>{event.status === 'active' ? '⚡' : '⏳'} {event.label}{event.status === 'upcoming' ? ` · sau ${event.startsIn} ngày` : ''}</span>)}{season && <span className="muted hud-season-badge" title={season.blurb}>🎉 {season.name} · còn {seasonDaysLeft(worldTime.day)} ngày</span>}</div></div>
     <div className="hud-stats">
       <PixelStat label="Tiền trong hòm" value={money(player.money)} icon="coin"/>
       <PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/>
