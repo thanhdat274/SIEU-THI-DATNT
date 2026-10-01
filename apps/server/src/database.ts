@@ -1,6 +1,6 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { MongoClient } from 'mongodb';
-import { readRuntimeConfig } from './runtime-config';
+import { readRuntimeConfig } from './runtime-config.js';
 
 let client: MongoClient | undefined;
 let connecting: Promise<MongoClient> | undefined;

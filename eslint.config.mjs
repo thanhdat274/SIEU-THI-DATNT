@@ -28,6 +28,8 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-empty-object-type': 'warn',
       'no-empty': ['error', { allowEmptyCatch: true }],
+      // ESLint 10 bật mặc định; code cũ còn nhiều chỗ gán mặc định rồi ghi đè, chưa dọn.
+      'no-useless-assignment': 'warn',
     },
   },
   {

@@ -4,7 +4,7 @@
 ```
 SIEU-THI-DATNT/
 ├── apps/
-│   ├── web/                    # Client Application (React 18 + Vite + Tailwind CSS + PixiJS v8)
+│   ├── web/                    # Client Application (React 19 + Vite 8 + Tailwind CSS + PixiJS v8)
 │   └── server/                 # Cloud API (NestJS + TypeScript + Mongoose + Firebase Admin)
 ├── packages/
 │   ├── game-core/              # ECS engine, physics/collision, game loop, state transitions

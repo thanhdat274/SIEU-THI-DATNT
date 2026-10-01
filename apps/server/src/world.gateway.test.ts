@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import WebSocket from 'ws';
 import { createInitialOnlineWorld } from '@game/data';
-import { createServer } from './bootstrap';
-import { createWebSocketTicket } from './firebase-admin';
-import { connectDatabase } from './database';
-import { WorldGateway } from './world.gateway';
+import { createServer } from './bootstrap.js';
+import { createWebSocketTicket } from './firebase-admin.js';
+import { connectDatabase } from './database.js';
+import { WorldGateway } from './world.gateway.js';
 
 type EventMessage = { event: string; data: any };
 const joinedMessages = new WeakMap<WebSocket, EventMessage>();

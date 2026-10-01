@@ -1,9 +1,9 @@
 import { WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer } from '@nestjs/websockets';
 import type { Server, WebSocket } from 'ws';
-import { worldRepository } from './world.repository';
+import { worldRepository } from './world.repository.js';
 import { WorldRuntime } from '@game/core';
-import { consumeWebSocketTicket } from './firebase-admin';
-import { readRuntimeConfig } from './runtime-config';
+import { consumeWebSocketTicket } from './firebase-admin.js';
+import { readRuntimeConfig } from './runtime-config.js';
 
 /**
  * WS gateway for real-time world sessions.

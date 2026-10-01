@@ -4,7 +4,7 @@ Ngày: 30/09/2026. Phạm vi task 1.1; chưa phải multiplayer hoặc login Goo
 
 ## Quyết định
 
-Node 20.19 máy người dùng (typecheck lần này chạy bundled Node 24.19), NestJS 11.2.6, Firebase Admin 13.10.0, MongoDB driver 6.21.0, dotenv 16.6.1. Pin dependency bằng package.json/yarn.lock. Nest 11 CommonJS phù hợp tsconfig hiện tại; yêu cầu Node >=20 theo https://docs.nestjs.com/v11/first-steps . Protocol version 1; core command/snapshot và avatar contracts đã có, nhưng server transport chưa kết nối.
+Cập nhật 01/10/2026: Node >=22 (kiểm tra bằng 24.21.0), NestJS 12.1.2, Firebase Admin 14.5.0, MongoDB driver 7.7.0, dotenv 18. (Quyết định gốc 30/09: Node 20.19, Nest 11.2.6, Admin 13.10.0, driver 6.21.0, dotenv 16.6.1.) Pin dependency bằng package.json/yarn.lock. Nest 12 là ESM-only; server giữ CommonJS (tsx) và dùng require(esm) của Node 22+, tsconfig `module: node20`. Protocol version 1; core command/snapshot và avatar contracts đã có, nhưng server transport chưa kết nối.
 
 Theo chỉ đạo chủ dự án: chưa dùng Docker, kết nối cluster MongoDB chung nhưng database game riêng sieu_thi_datnt_dev. MONGO_URI đọc từ apps/server/.env; biến shell ưu tiên. Multi-collection transaction cần replica set: https://www.mongodb.com/docs/manual/core/transactions/ . Không fallback bỏ transaction nếu topology không hỗ trợ.
 

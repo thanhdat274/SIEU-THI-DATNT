@@ -11,6 +11,6 @@
     "@game/shared": "*"
   },
   "devDependencies": {
-    "typescript": "^5.4.5"
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

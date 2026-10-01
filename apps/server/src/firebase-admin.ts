@@ -1,8 +1,8 @@
-import './runtime-config';
+import './runtime-config.js';
 import { applicationDefault, cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { randomUUID } from 'node:crypto';
-import { connectDatabase } from './database';
+import { connectDatabase } from './database.js';
 
 export function firebaseAdminAuth() {
   const projectId = process.env.FIREBASE_PROJECT_ID;

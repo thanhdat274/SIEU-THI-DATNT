@@ -15,7 +15,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 
 **Mục tiêu chơi:** nhập hàng (nhiều mối) → hàng giao hôm sau → kiểm kho/hàng chờ → bày kệ, đặt giá → khách NPC chọn hàng, xếp hàng, thanh toán (người chơi hoặc nhân viên) → sổ cái/lãi lỗ → XP, cấp 1–35, kỹ năng, danh hiệu, nhiệm vụ/mục tiêu/đơn tiệc/ngày hội; chịu tác động của mùa, thời tiết, sự kiện thị trường, hạn dùng.
 
-**Công nghệ (theo `package.json`):** TypeScript 5.4 strict · React 18 + Zustand 4 · PixiJS 8 · Vite 5 · Tailwind 3 + CSS riêng · Dexie 4 (IndexedDB) · Firebase Web SDK (đăng nhập) · NestJS 11 (HTTP + WS) · MongoDB driver 6 (không Mongoose) · firebase-admin 13 · ws · Yarn 1 workspaces · ESLint 9 · OpenSpec (quy trình đặc tả). Test: runner assert tự viết chạy bằng `tsx` (không Jest/Vitest/Playwright trong workspace).
+**Công nghệ (theo `package.json`):** TypeScript 7 strict · React 19 + Zustand 5 · PixiJS 8 · Vite 8 · Tailwind 4 + CSS riêng · Dexie 4 (IndexedDB) · Firebase Web SDK (đăng nhập) · NestJS 12 (HTTP + WS) · MongoDB driver 7 (không Mongoose) · firebase-admin 14 · ws · Yarn 1 workspaces · ESLint 10 · OpenSpec (quy trình đặc tả). Test: runner assert tự viết chạy bằng `tsx` (không Jest/Vitest/Playwright trong workspace).
 
 **Kiến trúc (monorepo, ~31k dòng TS/TSX không tính manifest):**
 

@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { MongoClient } from 'mongodb';
 import { ALL_PRODUCTS, PARTY_ORDER_MAP, getSeasonWindow } from '@game/data';
 import { GameSimulation } from '@game/core';
-import { readRuntimeConfig } from './runtime-config';
+import { readRuntimeConfig } from './runtime-config.js';
 
 /**
  * Hai tài khoản chạy bảy lệnh server-replay (đơn tiệc x2, mục tiêu, nhiệm vụ tuần, ngày hội, perk, danh hiệu)
@@ -19,8 +19,8 @@ async function run() {
   const client = new MongoClient(config.mongoUri, { serverSelectionTimeoutMS: 8000, maxPoolSize: 2 });
   try {
     await client.connect();
-    const { GameController } = await import('./bootstrap');
-    const { closeDatabase } = await import('./database');
+    const { GameController } = await import('./bootstrap.js');
+    const { closeDatabase } = await import('./database.js');
     const controller = new GameController();
     const owner = { gameAccount: { uid: `coop-owner-${randomUUID()}`, name: 'Owner', email: null } };
     const member = { gameAccount: { uid: `coop-member-${randomUUID()}`, name: 'Member', email: null } };

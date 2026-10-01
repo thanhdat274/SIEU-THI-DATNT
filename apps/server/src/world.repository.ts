@@ -3,7 +3,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { createInitialOnlineWorld, ONLINE_SPAWN_POINTS } from '@game/data';
 import type { GameAccount, GameAvatar, GameWorld, WorldMembership } from '@game/shared';
 import { MULTIPLAYER_PROTOCOL_VERSION } from '@game/shared';
-import { connectDatabase } from './database';
+import { connectDatabase } from './database.js';
 
 interface InviteRecord { id: string; tokenHash: string; createdAt: Date; expiresAt: Date; usedAt: Date | null; revokedAt: Date | null }
 export interface ReceiptRecord {

@@ -8,12 +8,12 @@ import { WsAdapter } from '@nestjs/platform-ws';
 import { isSaveGameData, type GameAccount, type SaveGameData } from '@game/shared';
 import { generateStarterTileMap } from '@game/data';
 import { applyStoreLayoutActions, GameSimulation, validateStoreLayout, WorldRuntime } from '@game/core';
-import { readRuntimeConfig } from './runtime-config';
-import { closeDatabase, connectDatabase } from './database';
-import { createWebSocketTicket, verifyAccount } from './firebase-admin';
-import { FirebaseAuthGuard } from './auth.guard';
-import { worldRepository } from './world.repository';
-import { WorldGateway } from './world.gateway';
+import { readRuntimeConfig } from './runtime-config.js';
+import { closeDatabase, connectDatabase } from './database.js';
+import { createWebSocketTicket, verifyAccount } from './firebase-admin.js';
+import { FirebaseAuthGuard } from './auth.guard.js';
+import { worldRepository } from './world.repository.js';
+import { WorldGateway } from './world.gateway.js';
 
 interface AuthenticatedRequest {
   gameAccount: Awaited<ReturnType<typeof verifyAccount>>;

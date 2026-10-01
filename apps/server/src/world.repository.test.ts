@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { MongoClient } from 'mongodb';
-import { readRuntimeConfig } from './runtime-config';
-import { WorldRepository } from './world.repository';
-import { closeDatabase } from './database';
-import { createWebSocketTicket, consumeWebSocketTicket } from './firebase-admin';
-import { acceptWebSocketOrigin } from './world.gateway';
+import { readRuntimeConfig } from './runtime-config.js';
+import { WorldRepository } from './world.repository.js';
+import { closeDatabase } from './database.js';
+import { createWebSocketTicket, consumeWebSocketTicket } from './firebase-admin.js';
+import { acceptWebSocketOrigin } from './world.gateway.js';
 import { WorldRuntime } from '@game/core';
 
 async function run() {
@@ -222,7 +222,7 @@ async function run() {
 
 async function rejects(label: string, operation: Promise<unknown>) {
   try { await assert.rejects(operation); }
-  catch (error) { throw new Error(`${label}: ${error instanceof Error ? error.message : 'unexpected resolve'}`); }
+  catch (error) { throw Object.assign(new Error(`${label}: ${error instanceof Error ? error.message : 'unexpected resolve'}`), { cause: error }); }
 }
 
 void run().catch((error: unknown) => {

@@ -1223,7 +1223,7 @@ export const App: React.FC = () => {
   if (!gameStarted && !isLoading) return <LoginScreen onEnter={handleEnterGame}/>;
 
   return <div className="game-shell">
-    <div style={{display:'contents'}} {...(hasModal ? {inert:''} : {})}>
+    <div style={{display:'contents'}} inert={hasModal}>
       {!isLoading && (
         <AccountBar
           onlineWorldName={onlineWorld?.world.name}

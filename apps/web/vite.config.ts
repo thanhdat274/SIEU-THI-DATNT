@@ -1,5 +1,6 @@
 import { defineConfig, normalizePath, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 
 // React Fast Refresh preserves refs, including the running simulation and Pixi
@@ -27,7 +28,7 @@ function reloadGameOnChange(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [reloadGameOnChange(), react()],
+  plugins: [reloadGameOnChange(), react(), tailwindcss()],
   build: {
     rollupOptions: {
       output: {

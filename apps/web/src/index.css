@@ -1,6 +1,18 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@source "../index.html";
+@theme {
+  --color-retro-dark: #1b1c1e;
+  --color-retro-wood: #583101;
+  --color-retro-woodLight: #8b5a2b;
+  --color-retro-woodWarm: #d4a373;
+  --color-retro-paper: #faedcd;
+  --color-retro-paperLight: #fefae0;
+  --color-retro-red: #b7094c;
+  --color-retro-yellow: #ffd166;
+  --color-retro-teal: #2d6a4f;
+  --color-retro-blue: #1d3557;
+  --font-retro: "Courier New", Courier, monospace, sans-serif;
+}
 :root{--ink:#33251D;--wood-dark:#593A2B;--wood:#936044;--wood-light:#C69464;--paper:#FFF2D6;--paper-shade:#E7CE9F;--teal:#357F72;--teal-dark:#24584F;--brick:#B64C3D;--sun:#E9B95D;--muted:#725A47;font-family:'Be Vietnam Pro','Segoe UI',Arial,sans-serif;color:var(--ink);font-size:14px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;width:100%;height:100%;overflow:hidden}body{background:var(--wood-dark)}button,input,select{font:inherit;touch-action:manipulation}button{cursor:pointer}button:disabled{cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--teal-dark);outline-offset:3px}h1,h2,h3,p{margin:0}h2{font-size:20px;line-height:1.3}h3{font-size:16px}strong{font-weight:750}.muted{color:var(--muted)}.eyebrow{font-weight:800;letter-spacing:2px;font-size:11px;text-transform:uppercase}.tabular{font-variant-numeric:tabular-nums}
 .pixel-icon{flex-shrink:0;display:inline-block}.icon-coin,.icon-sun,.icon-star{color:#9B6526}.icon-heart{color:var(--brick)}.product-icon{image-rendering:pixelated;flex-shrink:0}

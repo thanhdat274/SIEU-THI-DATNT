@@ -109,7 +109,7 @@
 ## GIAI ĐOẠN 0: THIẾT LẬP NỀN TẢNG DỰ ÁN (PHASE 0)
 - [x] Tạo cấu trúc Monorepo (`pnpm-workspace.yaml`, `package.json`).
 - [x] Khởi tạo các packages: `shared`, `game-data`, `game-core`, `game-renderer`, `game-ui`.
-- [x] Khởi tạo ứng dụng chính `apps/web` (Vite, React 18, Tailwind CSS, TypeScript).
+- [x] Khởi tạo ứng dụng chính `apps/web` (Vite, React 19, Tailwind CSS, TypeScript).
 - [x] Khởi tạo khung ứng dụng `apps/server` (NestJS structure chuẩn bị cho Phase 7).
 - [x] Viết tài liệu kỹ thuật: `GAME_DESIGN.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `DATABASE_SCHEMA.md`, `TASKS.md`.
 

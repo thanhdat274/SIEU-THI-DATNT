@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { MongoClient } from 'mongodb';
-import { createServer } from './bootstrap';
-import { readRuntimeConfig } from './runtime-config';
+import { createServer } from './bootstrap.js';
+import { readRuntimeConfig } from './runtime-config.js';
 
 async function verify() {
   const app = await createServer();
