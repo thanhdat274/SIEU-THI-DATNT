@@ -108,7 +108,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | I-02 | Bảng xếp hạng dữ liệu giả | Medium | Đã thay bằng dữ liệu thật 2026-10-01 (chưa kiểm đăng nhập thật) |
 | I-03 | Quyền sửa bố cục cho mọi thành viên chưa ghi spec | Medium | Mở (code đã commit) |
 | I-04 | ID `Date.now()/Math.random()` | Medium | Đã làm 2026-10-01 |
-| I-05 | Nhân viên chưa vào co-op | Medium | Mở |
+| I-05 | Nhân viên chưa vào co-op | Medium | Đã làm 2026-10-01 (đường commit; chưa kiểm hai trình duyệt) |
 | I-07 | Tài liệu lạc hậu | Medium | Mở |
 | I-08 | Service worker version cố định | Low | Mở |
 | I-09 | Test server ngoài `yarn test` | Medium | Mở |
@@ -182,8 +182,10 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Related Files:** `bootstrap.ts`, `world-runtime.ts`, `staff.ts`.
 - **Root Cause:** Staff phát triển sau schema co-op.
 - **Suggested Fix:** Thêm lệnh `hire_staff`, `set_staff_shift`, `assign_refill` vào runtime và danh sách replay.
+- **Đã làm 2026-10-01:** ba lệnh `hire_staff`, `set_staff_shift`, `assign_refill_job`: thêm vào `GameCommandPayload` + validator (`shared`), `WorldRuntime.executeCommand`, danh sách cho phép của server; client (`App.tsx`) bỏ chặn "chưa đồng bộ co-op" — mô phỏng cục bộ rồi `commitBusinessChange` (máy chủ từ chối thì khôi phục như các lệnh khác; trước đây `assign_refill_job` chạy cục bộ không gửi gì nên hai bên lệch). Server kiểm bất biến nhân viên trong `save-invariants.ts`: số nhân viên chỉ tăng tối đa 1 và chỉ qua `hire_staff`, không vượt `staffSlotsAtLevel`, không có nhân viên mới ngoài lệnh tuyển. Test: `save-invariants.test.ts` (các ca nhân viên) và `coop-commands.test.ts` (tuyển hợp lệ được commit và thành viên kia thấy; thêm người ngoài lệnh bị từ chối).
+- **Còn lại / giới hạn:** lệnh vẫn thuộc nhóm "client báo, server kiểm bất biến" (I-01 hướng B), không replay phía server; **mỗi client chạy AI nhân viên (châm kệ/thu ngân) cục bộ** nên trạng thái việc đang làm của nhân viên giữa hai client chưa được đồng bộ ngoài các lần commit — chưa kiểm hai trình duyệt; `layout_batch` vẫn bị chặn khi có `workerTask`; chưa có lệnh sa thải (game chưa có chức năng này); lương/nợ lương chỉ được kiểm gián tiếp qua bất biến tiền; `WorldRuntime` đã biết 3 lệnh nhưng đường commit không dùng nó để replay.
 - **Priority:** Medium
-- **Verification:** Nghi vấn qua phân tích tĩnh; cần test hai tài khoản.
+- **Verification:** `test:coop` (gồm ca tuyển), `test:unit`, `test:worlds`, `test:gateway`, `test:leaderboard` PASS; `yarn test` game-core PASS (một lần chạy đầu thoát mã 1 lúc phiên khác đang sửa file, chạy lại PASS); `tsc` server/web sạch; chưa Browser QA hai tài khoản (cần Firebase).
 
 ### Issue: I-06 [ĐÃ XỬ LÝ 2026-10-01] Mã dở dang chưa nối: độ ướt mặt đường và hằng số đường
 
@@ -584,6 +586,17 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ## 8. Lịch sử phát triển
 
+## 2026-10-01 (lượt 11 — I-05 nhân viên trong co-op)
+
+### Changed
+- `shared` (3 loại lệnh + validator), `world-runtime.ts` (3 case), `bootstrap.ts` (allow-list), `save-invariants.ts` (bất biến nhân viên), `App.tsx` (hire/shift/assign gửi commit khi online), test mới trong `save-invariants.test.ts` và `coop-commands.test.ts`.
+
+### Verified
+- Các test server PASS (Mongo thật), `yarn test` game-core PASS, `tsc` sạch. Chưa Browser QA hai tài khoản, chưa build.
+
+### Remaining
+- Xem I-05 (giới hạn); đồng bộ trạng thái AI nhân viên giữa hai client; replay phía server khi chọn hướng A.
+
 ## 2026-10-01 (lượt 10 — I-02 bảng xếp hạng thật)
 
 ### Changed
@@ -742,7 +755,7 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 - [ ] Hoàn tất đèn tín hiệu (S46, I-19): QA browser/hiệu năng (OpenSpec `traffic-light-crosswalk-yielding` 4.2–4.6), quyết định 4.5.
 - [ ] Giới hạn payload/tần suất server (I-15); kế hoạch migration schema world Mongo (I-16).
 - [ ] Ghi quyết định thiết kế quyền sửa bố cục/mua đất của thành viên vào spec (I-03; code đã commit 46f7466).
-- [ ] Lệnh nhân viên trong co-op (I-05, S21).
+- [>] Lệnh nhân viên trong co-op (I-05, S21): đã làm đường commit + bất biến; còn Browser QA hai tài khoản và đồng bộ AI nhân viên.
 - [>] Bảng xếp hạng thật (I-02, S28, F-05): đã nối dữ liệu thật; còn kiểm đăng nhập thật, tuần/mùa, opt-out, chống gian lận (I-01).
 - [>] ID xác định thay `Date.now()/Math.random()` (I-04): code + test xong (đã commit).
 - [>] Xuất/nhập save (I-12, F-04): xong xuất/nhập file 2026-10-01; còn nhiều slot, khóa nhiều tab, kiểm mobile.

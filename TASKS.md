@@ -5,6 +5,7 @@
 ## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)
 
 - [>] Đèn tín hiệu chu kỳ + người đi bộ + xe nhường đường (S46, I-19): đã commit `24a2fab`; OpenSpec `traffic-light-crosswalk-yielding` (tasks 1–3, 4.1 xong; 4.2–4.6 mở). Còn: QA browser (đèn đổi pha/xe dừng/người qua), cảm quan, hiệu năng, quyết định khách thật qua đường và đồng bộ co-op (non-goal hiện tại).
+- [>] I-05: lệnh nhân viên co-op (`hire_staff`/`set_staff_shift`/`assign_refill_job`) đã làm 01/10/2026, test co-op PASS; còn QA hai trình duyệt, đồng bộ AI nhân viên.
 - [>] I-02: bảng xếp hạng thật (`/api/v1/leaderboard`, `leaderboard.test.ts` PASS 01/10/2026); còn kiểm đăng nhập thật, tuần/mùa, opt-out, chống gian lận.
 - [>] I-04: ID đơn nhập/sổ cái xác định (`ord-N`/`led-N`, `deterministic-ids.test.ts` PASS 01/10/2026).
 - [>] I-12: xuất/nhập save file đã làm 01/10/2026 (`save-file.ts`, `SaveModal`, test + Browser pane PASS); còn nhiều slot, khóa nhiều tab, kiểm mobile.

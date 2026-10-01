@@ -43,7 +43,7 @@ const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
   'respond_party_order', 'fulfill_party_order', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title', 'layout_batch',
   'set_price', 'restock', 'unstock', 'store_status', 'buy_stall', 'claim_quest', 'order', 'stow', 'stow_all',
   'planogram_assignment', 'planogram_restock', 'auto_restock', 'checkout', 'advance_day', 'change_speed',
-  'dispose_stock', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve', 'maintain_fixture',
+  'hire_staff', 'set_staff_shift', 'assign_refill_job', 'dispose_stock', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve', 'maintain_fixture',
 ]);
 
 export class GameController {

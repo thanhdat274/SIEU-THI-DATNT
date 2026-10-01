@@ -848,6 +848,9 @@ export interface GameCommand {
 }
 
 export interface GameInputIntent {
+  | { type: 'hire_staff'; candidateId: string }
+  | { type: 'set_staff_shift'; staffId: string; shift: StaffShift }
+  | { type: 'assign_refill_job'; staffId: string; fixtureId: string }
   accountId: string;
   sequence: number;
   direction: Vector2D;
@@ -1059,6 +1062,9 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
   const world = value.world;
   const businesses = value.businesses as BusinessState[];
   return new Set(world.businessIds).size === world.businessIds.length &&
+    case 'hire_staff': return nonEmptyString(p.candidateId);
+    case 'set_staff_shift': return nonEmptyString(p.staffId) && (p.shift === 'morning' || p.shift === 'afternoon' || p.shift === 'full_day');
+    case 'assign_refill_job': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
     new Set(businesses.map(business => business.id)).size === businesses.length &&
     world.businessIds.length === businesses.length &&
     businesses.every(business => world.businessIds.includes(business.id));

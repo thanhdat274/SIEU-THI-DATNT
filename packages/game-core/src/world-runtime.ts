@@ -213,6 +213,12 @@ export class WorldRuntime {
         success = this.simulation.orderSupplierCart(p.supplierId, p.items).success;
       } else if (p.type === 'buy_stall') {
         success = this.simulation.buyStall(p.stallId).success;
+      } else if (p.type === 'hire_staff') {
+        success = this.simulation.hireStaff(p.candidateId).success;
+      } else if (p.type === 'set_staff_shift') {
+        success = this.simulation.setStaffShift(p.staffId, p.shift);
+      } else if (p.type === 'assign_refill_job') {
+        success = this.simulation.assignRefillJob(p.staffId, p.fixtureId).success;
       } else if (p.type === 'dispose_stock') {
         success = this.simulation.disposeStock(p.productId, p.quantity).success;
       } else if (p.type === 'claim_quest') {

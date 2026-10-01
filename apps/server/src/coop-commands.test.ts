@@ -145,6 +145,29 @@ async function run() {
     });
     assert.equal(honest.committed, true, 'save không bị sửa vẫn được nhận');
 
+    // I-05: tuyển nhân viên qua commit co-op. Máy khách mô phỏng cục bộ rồi gửi lệnh; tuyển thêm không qua lệnh bị từ chối.
+    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.player.level': 5, 'businesses.0.save.player.money': 5_000_000 } });
+    const staffBase = await snapshotFor(owner);
+    const { generateStarterTileMap: starterMap } = await import('@game/data');
+    const headless = { getMovementVector: () => ({ x: 0, y: 0 }), consumeInteract: () => false, consumeInventoryToggle: () => false } as any;
+    const clientSim = new GameSimulation(structuredClone(staffBase.businesses[0].save), starterMap(), headless);
+    const candidate = clientSim.getStaffCandidates(staffBase.businesses[0].save.worldTime.day)[0];
+    assert.ok(candidate, 'có ứng viên để tuyển');
+    assert.equal(clientSim.hireStaff(candidate.id).success, true, 'máy khách tuyển được cục bộ');
+    const staffSave = clientSim.exportSaveData(staffBase.businesses[0].save.id, staffBase.world.revision + 1) as any;
+    const staffPayload = JSON.stringify({ type: 'hire_staff', candidateId: candidate.id });
+    const staffCommit = (commandId: string, save: any, expectedRevision: number) => controller.commitCommand(owner as any, world.id, {
+      expectedRevision,
+      receipt: { commandId, actorId: owner.gameAccount.uid, status: 'accepted', revision: expectedRevision + 1, payloadJson: staffPayload, createdAt: new Date().toISOString() },
+      updatedBusiness: { ...staffBase.businesses[0], save },
+    });
+    const extra = structuredClone(staffSave);
+    extra.staff = [...extra.staff, { ...extra.staff[0], id: 'staff-injected' }];
+    await assert.rejects(staffCommit('hire-two', extra, staffBase.world.revision), /Save không hợp lệ/, 'tuyển thêm một người ngoài lệnh bị từ chối');
+    const hireResult = await staffCommit('hire-one', staffSave, staffBase.world.revision);
+    assert.equal(hireResult.committed, true, 'hire_staff hợp lệ được commit');
+    assert.equal((await snapshotFor(member)).businesses[0].save.staff?.length, 1, 'thành viên còn lại thấy nhân viên mới');
+
     console.log('PASS co-op: 7 lệnh server-replay qua GameController.commitCommand trên Mongo thật (2 tài khoản, retry idempotent, trùng commandId khác payload, lệnh bị từ chối, tranh chấp revision)');
     await closeDatabase();
   } finally {

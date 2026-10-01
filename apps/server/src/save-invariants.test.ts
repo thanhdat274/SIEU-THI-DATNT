@@ -41,4 +41,18 @@ assert.equal(checkSaveInvariants(base, n, 'store_status', { isOpen: n.worldTime.
 n = clone(); n.worldTime.minute = Math.max(0, base.worldTime.minute - 5);
 assert.equal(check(n), null, 'giờ lùi nhẹ (client lệch pha) không bị phạt');
 
+// Nhân viên: chỉ hire_staff được thêm một người, không vượt số vị trí theo cấp.
+const member = (id: string) => ({ id, name: id, role: 'cashier', shift: 'full_day' }) as never;
+const staffed = clone(); staffed.player.level = 10;
+n = structuredClone(staffed); n.staff = [member('a')];
+assert.match(check(n, 'set_price', staffed) ?? '', /nhân viên/i, 'tăng nhân viên không qua hire_staff bị từ chối');
+assert.equal(check(n, 'hire_staff', staffed), null, 'hire_staff được thêm một người');
+n = structuredClone(staffed); n.staff = [member('a'), member('b')];
+assert.match(check(n, 'hire_staff', staffed) ?? '', /nhân viên/i, 'một lệnh hire_staff không thêm hai người');
+n = clone(); n.player.level = 1; n.staff = [member('a')];
+assert.match(check(n, 'hire_staff') ?? '', /vị trí/, 'vượt số vị trí theo cấp bị từ chối');
+n = structuredClone(staffed); n.staff = [member('a')];
+const hired = structuredClone(n); hired.staff = [member('a')];
+assert.equal(check(hired, 'set_staff_shift', n), null, 'đổi ca không đổi số nhân viên thì hợp lệ');
+
 console.log('PASS save-invariants: chặn tiền/doanh thu/XP/cấp/đã nhận bị sửa, cho phép tăng hợp lý theo thời gian');

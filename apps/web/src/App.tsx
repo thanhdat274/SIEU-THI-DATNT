@@ -967,30 +967,30 @@ export const App: React.FC = () => {
   const handleHireStaff = (candidateId: string) => {
     const sim = simulationRef.current;
     if (!sim) return { success: false, reason: 'Trò chơi chưa sẵn sàng.' };
-    if (onlineWorldRef.current) return { success: false, reason: 'Quản lý nhân viên chưa được đồng bộ cho thế giới co-op.' };
+    if (blockOfflineOnlineMutation()) return { success: false, reason: 'Mất kết nối hẻm chung.' };
     const result = sim.hireStaff(candidateId);
     if (!result.success) {
       addToast(result.reason ?? 'Không tuyển được nhân viên.', 'warn');
       return result;
     }
     syncFromSimulation(sim);
-    void handleSaveGame(false);
+    // Co-op: gửi lệnh lên hẻm chung (máy chủ từ chối thì khôi phục); chơi một mình: lưu cục bộ.
+    if (onlineWorldRef.current) void commitBusinessChange({ type: 'hire_staff', candidateId }, 'Tuyển nhân viên', 'Nhân viên');
+    else void handleSaveGame(false);
     addToast('Đã tuyển nhân viên; phí tuyển dụng đã được trừ.', 'success');
     return result;
   };
 
   const handleSetStaffShift = (staffId: string, shift: StaffShift) => {
     const sim = simulationRef.current;
-    if (onlineWorldRef.current) {
-      addToast('Quản lý ca chưa được đồng bộ cho thế giới co-op.', 'warn');
-      return false;
-    }
+    if (blockOfflineOnlineMutation()) return false;
     if (!sim || !sim.setStaffShift(staffId, shift)) {
       addToast('Không thể đổi ca làm nhân viên.', 'warn');
       return false;
     }
     syncFromSimulation(sim);
-    void handleSaveGame(false);
+    if (onlineWorldRef.current) void commitBusinessChange({ type: 'set_staff_shift', staffId, shift }, 'Đổi ca nhân viên', 'Nhân viên');
+    else void handleSaveGame(false);
     addToast('Đã lưu ca làm mới.', 'success');
     return true;
   };
@@ -1001,7 +1001,9 @@ export const App: React.FC = () => {
     const result = sim.assignRefillJob(staffId, fixtureId);
     if (result.success) {
       syncFromSimulation(sim);
-      void handleSaveGame(false);
+    if (blockOfflineOnlineMutation()) return { success: false, reason: 'Mất kết nối hẻm chung.' };
+      if (onlineWorldRef.current) void commitBusinessChange({ type: 'assign_refill_job', staffId, fixtureId }, 'Giao việc châm kệ', 'Nhân viên');
+      else void handleSaveGame(false);
       addToast('Đã giao việc châm kệ cho nhân viên.', 'success');
     } else addToast(`Chưa giao được việc: ${result.reason ?? 'kệ không khả dụng'}`, 'warn');
     return result;

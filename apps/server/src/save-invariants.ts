@@ -1,5 +1,5 @@
 import type { SaveGameData } from '@game/shared';
-import { MAX_PLAYER_LEVEL } from '@game/data';
+import { MAX_PLAYER_LEVEL, staffSlotsAtLevel } from '@game/data';
 
 /**
  * Hướng B của I-01: với lệnh server chưa phát lại được, client vẫn gửi save, nên server chỉ kiểm bất biến giữa save đã lưu
@@ -49,6 +49,14 @@ export function checkSaveInvariants(prev: SaveGameData, next: SaveGameData, comm
   if (revenueGrowth > MAX_REVENUE_PER_GAME_MINUTE * elapsed) return 'Doanh thu tăng nhanh bất thường.';
   const allowance = REWARD_COMMANDS.has(commandType) ? MAX_REWARD_PER_COMMAND : 0;
   if (money - prev.player.money > MAX_REVENUE_PER_GAME_MINUTE * elapsed + allowance) return 'Tiền tăng nhanh bất thường.';
+
+  // Nhân viên: chỉ lệnh hire_staff được thêm tối đa một người, và không bao giờ vượt số vị trí theo cấp.
+  const staffBefore = prev.staff?.length ?? 0;
+  const staffAfter = next.staff?.length ?? 0;
+  if (staffAfter > staffBefore + (commandType === 'hire_staff' ? 1 : 0)) return 'Số nhân viên tăng không qua lệnh tuyển dụng.';
+  if (staffAfter > staffSlotsAtLevel(next.player.level)) return 'Số nhân viên vượt số vị trí theo cấp.';
+  const knownStaff = new Set((prev.staff ?? []).map((member) => member.id));
+  if ((next.staff ?? []).filter((member) => !knownStaff.has(member.id)).length > (commandType === 'hire_staff' ? 1 : 0)) return 'Nhân viên mới xuất hiện không qua lệnh tuyển dụng.';
 
   if (commandType === 'store_status' && typeof payload?.isOpen === 'boolean' && next.worldTime.isStoreOpen !== payload.isOpen) {
     return 'Trạng thái cửa hàng không khớp lệnh.';
