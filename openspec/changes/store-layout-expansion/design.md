@@ -47,6 +47,14 @@ Không tăng cả map một cách tùy tiện: map hiện tại vừa chứa c�
 - Với `layout_batch`, server dựng snapshot nền từ business save hiện tại, replay action thuần trên snapshot đó rồi commit kết quả server-generated; không lưu các trường gameplay tùy ý đính kèm trong client snapshot. Response trả authoritative business save để client đồng bộ.
 - Retry cùng command ID không trừ tiền lần hai. Stale revision trả conflict và client phục hồi snapshot authoritative. Offline online-world không ghi Dexie.
 
+### Quyết định quyền sửa bố cục (ghi nhận 01/10/2026, I-03)
+
+- **Quyết định:** mọi thành viên của hẻm (owner và member) được sửa bố cục và mua đất qua `layout_batch`. Owner-only chỉ còn: tạo/thu hồi lời mời, loại thành viên, reset hẻm (spec `world-membership`). Code: `apps/server/src/bootstrap.ts` kiểm `world.memberships`; commit `46f7466`.
+- **Lý do:** hẻm là tiệm chung của hai người (quỹ, kho, tiệm dùng chung); member phải vận hành được khi owner offline (spec "Member plays without owner"); sắp xếp và mở rộng là một phần vận hành, không phải quản trị thành viên.
+- **Rủi ro chấp nhận:** member có thể tiêu quỹ chung vào mua đất (250k/600k, chưa cân bằng — task 7.7). Giảm nhẹ: chỉ khi cửa hàng đóng và không còn khách/nhân viên đang làm; server tự kiểm tiền, hình học, ownership; mọi commit ghi activity log kèm actor; chỉ có tối đa hai thành viên.
+- **Xem lại khi:** nhóm lớn hơn hai người, có chuyện tranh chấp quỹ, hoặc playtest cho thấy mua đất nên cần đồng thuận — khi đó cân nhắc giới hạn mua đất cho owner hoặc cần xác nhận của người còn lại.
+- **Test:** `apps/server/src/coop-commands.test.ts` (member commit `layout_batch`; tài khoản ngoài hẻm bị từ chối).
+
 ### UI/renderer
 
 - Điểm vào: nút Sắp xếp trong cửa hàng đóng; layout editor overlay/modal toàn màn hình phù hợp desktop và mobile landscape.

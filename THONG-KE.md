@@ -106,7 +106,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 |---|---|---|---|
 | I-01 | Co-op: server chỉ replay một phần lệnh | High | Mở |
 | I-02 | Bảng xếp hạng dữ liệu giả | Medium | Đã thay bằng dữ liệu thật 2026-10-01 (chưa kiểm đăng nhập thật) |
-| I-03 | Quyền sửa bố cục cho mọi thành viên chưa ghi spec | Medium | Mở (code đã commit) |
+| I-03 | Quyền sửa bố cục cho mọi thành viên chưa ghi spec | Medium | Đã ghi spec 2026-10-01 |
 | I-04 | ID `Date.now()/Math.random()` | Medium | Đã làm 2026-10-01 |
 | I-05 | Nhân viên chưa vào co-op | Medium | Đã làm 2026-10-01 (đường commit; chưa kiểm hai trình duyệt) |
 | I-07 | Tài liệu lạc hậu | Medium | Mở |
@@ -586,6 +586,17 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ## 8. Lịch sử phát triển
 
+## 2026-10-01 (lượt 12 — I-03 ghi quyết định quyền bố cục)
+
+### Changed
+- Chỉ tài liệu/spec và một ca test: `openspec/changes/store-layout-expansion/specs/store-layout/spec.md` (yêu cầu "Authoritative multiplayer layout changes" nói rõ member được sửa/mua đất, thêm 2 scenario), `openspec/changes/shared-alley-multiplayer/specs/world-membership/spec.md` (scenario member sắp xếp/mua đất), `store-layout-expansion/design.md` (mục "Quyết định quyền sửa bố cục": lý do, rủi ro, điều kiện xem lại), `coop-commands.test.ts` (tài khoản ngoài hẻm bị từ chối lệnh bố cục).
+
+### Verified
+- `test:coop` PASS (Mongo thật). Không đổi mã chạy. `openspec validate store-layout-expansion` báo lỗi: `specs/store-layout/spec.md` dùng tiêu đề `## Requirements` thay vì `## ADDED/MODIFIED Requirements`, nên CLI coi là không có delta. Lỗi này có sẵn từ trước (đã kiểm với bản trong HEAD), không do lượt này; chưa sửa định dạng spec.
+
+### Remaining
+- Cân bằng giá đất (task 7.7) và quyết định lại nếu nhóm >2 người.
+
 ## 2026-10-01 (lượt 11 — I-05 nhân viên trong co-op)
 
 ### Changed
@@ -754,7 +765,7 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 - [ ] Thêm test I-01 cho lệnh hợp lệ nhưng không replay (gửi save sửa tiền) — chỉ viết được khi đã có replay/bất biến; ca lệnh lạ đã có.
 - [ ] Hoàn tất đèn tín hiệu (S46, I-19): QA browser/hiệu năng (OpenSpec `traffic-light-crosswalk-yielding` 4.2–4.6), quyết định 4.5.
 - [ ] Giới hạn payload/tần suất server (I-15); kế hoạch migration schema world Mongo (I-16).
-- [ ] Ghi quyết định thiết kế quyền sửa bố cục/mua đất của thành viên vào spec (I-03; code đã commit 46f7466).
+- [x] Ghi quyết định thiết kế quyền sửa bố cục/mua đất của thành viên vào spec (I-03; 2026-10-01).
 - [>] Lệnh nhân viên trong co-op (I-05, S21): đã làm đường commit + bất biến; còn Browser QA hai tài khoản và đồng bộ AI nhân viên.
 - [>] Bảng xếp hạng thật (I-02, S28, F-05): đã nối dữ liệu thật; còn kiểm đăng nhập thật, tuần/mùa, opt-out, chống gian lận (I-01).
 - [>] ID xác định thay `Date.now()/Math.random()` (I-04): code + test xong (đã commit).

@@ -37,6 +37,10 @@ The system SHALL cho owner/member vận hành tiệm chung; chỉ owner SHALL qu
 - **WHEN** member vào world khi owner offline và nhập/bày/bán hợp lệ
 - **THEN** giao dịch được xử lý bằng quỹ/kho chung, không yêu cầu máy owner hoạt động
 
+#### Scenario: Member rearranges the shop and buys plots
+- **WHEN** member gửi lệnh bố cục (`layout_batch`) hợp lệ, gồm cả mua đất, khi cửa hàng đóng
+- **THEN** server chấp nhận và trừ quỹ chung; mua đất và sắp xếp KHÔNG phải quyền riêng của owner
+
 #### Scenario: Forbidden management
 - **WHEN** member yêu cầu reset hoặc tạo lời mời
 - **THEN** server từ chối, world giữ nguyên

@@ -62,7 +62,16 @@ The system SHALL migrate existing saves to include ownership for the existing fl
 - **AND** a migration failure SHALL NOT overwrite the legacy save with defaults
 
 ### Requirement: Authoritative multiplayer layout changes
-In a shared world, layout edits and plot purchases SHALL use authoritative commands. The server SHALL validate actor permission, store-closed state, command idempotency, revision, money, geometry, ownership and reachability before committing; clients SHALL apply the resulting authoritative snapshot.
+In a shared world, layout edits and plot purchases SHALL use authoritative commands. The server SHALL validate that the actor is a member of the world (owner or member alike: layout edits and plot purchases are NOT owner-only), store-closed state, command idempotency, revision, money, geometry, ownership and reachability before committing; clients SHALL apply the resulting authoritative snapshot.
+
+#### Scenario: Member edits layout and buys a plot without the owner
+- **WHEN** a non-owner member of the shared world submits a valid `layout_batch` (including a plot purchase) while the store is closed
+- **THEN** the server SHALL commit it using the shared funds and stock, without requiring the owner to be online
+- **AND** the commit SHALL be recorded in the world activity log with the acting member as actor
+
+#### Scenario: Non-member layout command
+- **WHEN** an authenticated account that is not a member of the world submits a layout or plot command
+- **THEN** the server SHALL reject it and SHALL NOT reveal or change the world
 
 #### Scenario: Duplicate or stale command
 - **WHEN** the server receives a duplicate command ID or a command based on a stale revision

@@ -123,6 +123,16 @@ async function run() {
     const afterLayout = (await snapshotFor(owner)).businesses[0].save.storeLayout;
     assert.ok(afterLayout.storedFixtures.some((f: any) => f.id === shelf.id), 'kệ đã được cất vào kho sau lệnh của thành viên');
 
+    // I-03: tài khoản không thuộc hẻm không được gửi lệnh bố cục.
+    const outsider = { gameAccount: { uid: `coop-outsider-${randomUUID()}`, name: 'Outsider', email: null } };
+    const outsiderBase = await snapshotFor(owner);
+    await assert.rejects(controller.commitCommand(outsider as any, world.id, {
+      expectedRevision: outsiderBase.world.revision,
+      receipt: { commandId: 'outsider-layout', actorId: outsider.gameAccount.uid, status: 'accepted', revision: outsiderBase.world.revision + 1, payloadJson: JSON.stringify({ type: 'layout_batch', actions: [] }), createdAt: new Date().toISOString() },
+      updatedBusiness: structuredClone(outsiderBase.businesses[0]),
+    }));
+    assert.equal((await snapshotFor(owner)).world.revision, outsiderBase.world.revision, 'lệnh của tài khoản ngoài hẻm không đổi revision');
+
     // I-01 (một phần): loại lệnh lạ bị từ chối dù save hợp lệ.
     const unknownRevision = (await snapshotFor(owner)).world.revision;
     await assert.rejects(send(owner, 'unknown-type', { type: 'give_money', amount: 1_000_000 }, unknownRevision), /không được hỗ trợ/);
