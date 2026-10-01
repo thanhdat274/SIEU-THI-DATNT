@@ -45,7 +45,7 @@
 - Chức năng tasks 1.1–6.4 đã được code: audit/định nghĩa hai plot phía đông (giá/level tạm), layout core + validator đường đi, editor local/touch, save schema 3/migration backup, cập nhật map/collision/routing/renderer và batch command server-authoritative.
 - Đã chạy `yarn test`: PASS, gồm `store-layout.test.ts` mới cho rotation, biên, overlap, cashier bất động, stow/retrieve giữ fixture ID/tồn/lô, điều kiện mua đất, duplicate idempotency, batch nguyên tử và plot mở khóa.
 - Đã chạy `yarn typecheck`: PASS toàn monorepo; `yarn build`: PASS server + web (840 modules). Còn cảnh báo bundle web >500 kB và dynamic/static import `api.ts`.
-- Đã chạy `yarn --cwd apps/server test:gateway`: PASS (2 socket/session; chưa bao gồm layout batch). `test:worlds` không đạt được do MongoDB hiện tại standalone, không hỗ trợ transaction.
+- Đã chạy `yarn --cwd apps/server test:gateway`: PASS (2 socket/session; chưa bao gồm layout batch). `test:worlds` lúc đó không chạy được vì code còn dùng transaction trên Mongo standalone; đã đổi sang `updateOne` nguyên tử và PASS 01/10/2026.
 - Browser local đã mở được save hiện có, đóng tiệm và mở editor; xác nhận grid, fixtures, plot gate theo level/tiền. QA move/rotate/apply/reload chưa hoàn tất vì browser automation mất kết nối. Chưa chạy viewport mobile landscape.
 - Chưa xác minh race revision/idempotency cho layout qua DB, broadcast layout hai client, disconnect rollback/reconnect, hoặc cân bằng giá/level bằng playtest. Giữ các mục tương ứng mở; không ghi nhận PASS toàn bộ.
 - Tham chiếu: `openspec/changes/store-layout-expansion/tasks.md`; giá đất 250.000/600.000 VND và level 5/10 vẫn là đề xuất chưa playtest.
@@ -67,25 +67,25 @@
 - [x] Màn đăng nhập: có nút “Đăng xuất” riêng khi đã đăng nhập; khi chưa đăng nhập hiện “Đăng nhập Google”.
 - [ ] OAuth thật/browser QA chưa chạy. Typecheck gần nhất dừng ở `GameSimulation.updateStaffWorkers` chưa tồn tại (task nhân viên 9.2 đang triển khai); lỗi JSX nút tài khoản đã sửa nhưng chưa thể xác minh toàn app do blocker đó.
 - [ ] Lượt tiếp tục task 3.4/4.2: checkpoint được xếp hàng; runtime idle chỉ evict sau flush thành công, checkpoint lỗi giữ runtime; heartbeat-timeout đóng socket và gửi event. Gateway integration trên Mongo local PASS cho idle eviction rồi khôi phục clock/avatar bằng runtime mới. Client khóa mutation khi disconnect, chặn lưu/reset online save vào Dexie, rollback nếu commit lỗi/từ chối; store status, stow và planogram gửi snapshot commit. Core tests/server typecheck PASS; monorepo typecheck gần nhất FAIL do `GameSimulation.updateStaffWorkers` chưa tồn tại (9.2); chưa build/browser reconnect QA.
-- [ ] Mongo service người dùng đang standalone. Đã tạo replica set single-node tạm port 27018 ở `%TEMP%`, chạy health/auth + transaction commit/rollback PASS, chạy transaction-backed world repository + ticket tests PASS; data/process tạm đã dọn, không đổi service/DB local. Muốn dùng bền cần cấu hình service local replication và URI `replicaSet=rs0`.
+- [x] (Lỗi thời từ 30/09/2026: đã bỏ yêu cầu transaction/replica set; `test:worlds` PASS trên Mongo standalone 01/10/2026.) Ghi chú gốc: Mongo service người dùng đang standalone. Đã tạo replica set single-node tạm port 27018 ở `%TEMP%`, chạy health/auth + transaction commit/rollback PASS, chạy transaction-backed world repository + ticket tests PASS; data/process tạm đã dọn, không đổi service/DB local. Muốn dùng bền cần cấu hình service local replication và URI `replicaSet=rs0`.
 - [x] Thêm WS input authoritative, time-vote/cancel, ticket one-use TTL 30s, origin allowlist, heartbeat timeout 15s, snapshot 500ms và session replacement. `test:gateway` hai session PASS: spoof account bị bỏ qua, movement/avatar snapshot, cùng duyệt ngày, thay session.
-- [x] `commitCommand` dùng Mongo transaction; world repository test PASS cho idempotent retry, command tranh revision (một thắng), checkpoint stale không overwrite; ticket TTL/one-use/origin assertions PASS.
+- [x] `commitCommand` dùng một `updateOne` nguyên tử (revision + receipt, không transaction); world repository test PASS cho idempotent retry, command tranh revision (một thắng), checkpoint stale không overwrite; ticket TTL/one-use/origin assertions PASS.
 - [x] 30/09/2026: `yarn typecheck`, `yarn test`, `yarn build` PASS; local browser smoke vào game PASS. Build chunk chính 736.6 kB cảnh báo.
 - [ ] Còn thiếu full browser flow hai tài khoản, OAuth thật, RTT/drop ACK/DB outage, mobile browser/device QA và restart tiến trình thật. Xem `openspec/changes/shared-alley-multiplayer/tasks.md`.
 ## ĐỊNH HƯỚNG CO-OP — 30/09/2026
 - Trạng thái mới nhất: WS ticket dùng một lần TTL 30 giây thay Firebase token trên URL; gateway kiểm tra origin, broadcast snapshot mỗi 500ms, timeout heartbeat 15 giây; client dùng POST `/api/v1/ws-ticket`. Chưa có input/time-vote qua socket; runtime không restore checkpoint sau restart; checkpoint async chưa serialize với command; transaction cross-collection chưa được chứng minh; chưa có hai browser nghiệm thu.
 - Kiểm tra `yarn typecheck`, `yarn test`, `yarn build` ngày 30/09/2026: PASS toàn bộ monorepo (18 test suites core pass, build 832 modules).
-- OpenSpec `shared-alley-multiplayer`: 5.1/5.2 còn chờ MongoDB replica set và hai browser; 5.3 còn mở do browser regression chưa chạy. Trong lượt rà soát 30/09/2026, `yarn typecheck`, `yarn test`, `yarn build`, gateway PASS; `test:worlds` bị chặn bởi Mongo standalone. Các mục 3.x/4.x có code nền nhưng chưa đủ chứng cứ end-to-end; xem `openspec/changes/shared-alley-multiplayer/tasks.md`.
+- OpenSpec `shared-alley-multiplayer`: 5.1/5.2 còn chờ hai browser và failure injection (không còn cần replica set); 5.3 còn mở do browser regression chưa chạy. Trong lượt rà soát 30/09/2026, `yarn typecheck`, `yarn test`, `yarn build`, gateway PASS; `test:worlds` bị chặn bởi Mongo standalone. Các mục 3.x/4.x có code nền nhưng chưa đủ chứng cứ end-to-end; xem `openspec/changes/shared-alley-multiplayer/tasks.md`.
 - Đã thêm màn hình đăng nhập đầu game theo phong cách pixel ấm, có Google và chơi khách; không sao chép các nút gameplay từ ảnh tham khảo. Login/logout không xóa local IndexedDB; cloud load chưa có. Đây là nền UI, chưa hoàn thành OpenSpec 4.1.
-- Backend có HTTP auth/ACL, Mongo world repository và gateway WS. Repository test lịch sử trên Mongo dev; WS chưa test integration. Mongo transaction probe trước đó bị topology standalone code 20.
+- Backend có HTTP auth/ACL, Mongo world repository và gateway WS. Repository test lịch sử trên Mongo dev; WS chưa test integration. Probe transaction cũ bị standalone code 20 là lịch sử; đã bỏ transaction.
 - Tasks 2.3/2.4 hoàn thành: customer checkout có reservation/receipt qua reload; command coordinator tuần tự, scope/revision/idempotency; test/build PASS. Chưa có transport hoặc receipt DB bền.
 - Task 2.3 hoàn thành: customer checkout ID, giữ món, receipt chống lặp qua save/reload; test/build PASS. Chưa có kiểm tra tranh chấp qua mạng vì chưa có transport.
 - Task 2.2 hoàn thành: avatar controller theo account với sequence, thời gian nhận server, cap tốc độ, va chạm và interaction range; test/build PASS. Chưa có transport/WebSocket nối controller.
 - Task 2.1 hoàn thành: core nhận input interface, fixed-step runner tách khỏi renderer; headless regression cùng typecheck/test/build PASS. Chưa online command/avatar.
-- Task 1.2/1.3 hoàn thành: online types/validators và seed world riêng có test; yarn typecheck/test PASS. Task 1.1 còn mở do MongoDB standalone, chưa transaction.
-- Cập nhật kiểm tra Firebase/MongoDB: typecheck/build, HTTP health và token thiếu/sai 401 PASS. MongoDB đã kết nối thật nhưng là standalone (hello không có replicaSet/mongos), transaction code 20; task 1.1 vẫn mở, chưa bỏ yêu cầu transaction hoặc dùng Docker.
+- Task 1.2/1.3 hoàn thành: online types/validators và seed world riêng có test; yarn typecheck/test PASS. Task 1.1 sau đó đã đóng (bỏ yêu cầu transaction).
+- Cập nhật kiểm tra Firebase/MongoDB: typecheck/build, HTTP health và token thiếu/sai 401 PASS. MongoDB đã kết nối thật nhưng là standalone (hello không có replicaSet/mongos), transaction code 20; (lỗi thời: task 1.1 đã đóng sau khi bỏ yêu cầu transaction).
 - Đã nối project Firebase hem-buon: AccountBar Google popup/logout, Admin credentials qua `FIREBASE_PROJECT_ID`/`FIREBASE_CLIENT_EMAIL`/`FIREBASE_PRIVATE_KEY` và /api/v1/me; có fallback file local cũ trong giai đoạn chuyển đổi. Chưa nghiệm thu OAuth thật, chưa world ACL/cloud save nên tasks 3.1/4.1 chưa xong. Không import key Admin vào web; key được ignore Git.
-- Task 1.1 đang làm: NestJS /health, /ready, MongoDB pool/.env và script transaction đã có; typecheck và HTTP health PASS. Chưa có MONGO_URI dành cho database game để kiểm chứng transaction, chưa login Google/lưu world; checkbox OpenSpec vẫn để mở. Không cần Docker theo yêu cầu mới; chờ chủ dự án chỉ file cấu hình cluster chung/database riêng.
+- Task 1.1 đang làm: NestJS /health, /ready, MongoDB pool/.env và script transaction đã có; typecheck và HTTP health PASS. (Lỗi thời: MONGO_URI đã có, task 1.1 đã đóng, không còn cần transaction.) Không cần Docker theo yêu cầu mới; chờ chủ dự án chỉ file cấu hình cluster chung/database riêng.
 - [x] Tạo proposal/design/ba delta specs/tasks tại `openspec/changes/shared-alley-multiplayer`; đây là tài liệu kế hoạch, chưa là multiplayer chạy thật.
 - [ ] Triển khai theo tasks của change: schema world/cơ sở → core headless/giao dịch → server/auth/persistence → client hai người → nghiệm thu reconnect/chơi lệch giờ.
 - [ ] Bản đầu: một tiệm chung, tối đa hai thành viên, owner offline member vẫn chơi; tất cả offline world pause; giữ save local riêng.
@@ -146,12 +146,12 @@
 - [x] Báo cáo tài chính theo ngày (Nhóm 6: Giá vốn lô, ledger & báo cáo ngày) và gợi ý nhập hàng thông minh (Nhóm 7: tính vận tốc 3/7 ngày & cắt giảm giỏ theo ngân sách/kho/mối sỉ/đơn tối thiểu).
 - [ ] Nhiệm vụ và mở khóa cấp độ sâu hơn.
 - [ ] Đo FPS trên thiết bị thật. Đã kiểm tra giao diện 960×540, 844×390 và màn hình dọc 390×844 trong trình duyệt thử nghiệm; chưa kiểm tra điện thoại thật.
-- [ ] Thiết lập lint script và chạy lint; dự án hiện chưa có cấu hình lint.
+- [x] Lint đã thiết lập (01/10/2026): `eslint.config.mjs`, `yarn lint`/`yarn lint:fix`; 0 lỗi, còn 120 cảnh báo chưa dọn (`no-explicit-any`, `no-unused-vars`, `exhaustive-deps`). Chưa có CI/formatter.
 
 ## BÀN GIAO PHIÊN 2026-09-30
 - Giai đoạn hiện tại: Phase 3. Phase 2 đã hoàn thành và được kiểm tra bằng typecheck, 10 nhóm test lõi, build production và lưu/tải trên trình duyệt.
 - Tiếp theo: bổ sung hàng đợi nhiều NPC, để người chơi thu tiền tại quầy, phản hồi kiên nhẫn/uy tín; kiểm tra hiệu năng và thiết bị thật.
-- Vấn đề còn biết: không có lint script; NestJS/MongoDB/Firebase/PWA/ECS đầy đủ vẫn thuộc các giai đoạn sau. Bản build hiện cảnh báo JS chunk chính trên 500 kB.
+- Vấn đề còn biết: lint còn 120 cảnh báo; NestJS/MongoDB/Firebase/PWA/ECS đầy đủ vẫn thuộc các giai đoạn sau. Bản build hiện cảnh báo JS chunk chính trên 500 kB.
 
 ## THUẾ — TAX-0 VÀ MODULE NỀN
 ## PREMIUM VIETNAMESE PIXEL UI

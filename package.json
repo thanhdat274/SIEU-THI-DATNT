@@ -14,10 +14,17 @@
     "start": "yarn --cwd apps/web dev",
     "build": "yarn --cwd apps/server build && yarn --cwd apps/web build",
     "typecheck": "tsc -b packages/shared packages/game-data packages/game-core packages/game-renderer apps/server apps/web",
-    "test": "yarn --cwd packages/game-core test"
+    "test": "yarn --cwd packages/game-core test",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
+    "@eslint/js": "^9",
+    "eslint": "^9",
+    "eslint-plugin-react-hooks": "^5",
+    "globals": "^17.13.0",
     "tsx": "^4.23.15",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^8"
   }
 }

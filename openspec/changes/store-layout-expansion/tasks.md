@@ -45,8 +45,8 @@
 ## 7. Kiểm chứng và nghiệm thu
 
 - [x] 7.1 Unit tests: geometry/rotation/overlap/door/path, stow/retrieve identity/stock lots, save schema2→3 migration/backup/round-trip; existing planogram suite verifies planogram persistence.
-- [ ] 7.2 Economy tests: level/funds/adjacency/duplicate purchase/no partial deduction đã có core regression; còn competing plot/fixture command theo DB revision/idempotency (Mongo replica set cần thiết).
-- [ ] 7.3 `yarn typecheck`, `yarn test`, `yarn build` PASS ngày 30/09/2026; `yarn --cwd apps/server test:gateway` PASS. `yarn --cwd apps/server test:worlds` không chạy qua được vì Mongo standalone báo transaction chỉ chạy trên replica set/mongos. Xem TASKS.md/ROADMAP.md cho browser scope và cảnh báo build.
+- [ ] 7.2 Economy tests: level/funds/adjacency/duplicate purchase/no partial deduction đã có core regression; còn competing plot/fixture command theo DB revision/idempotency (không cần replica set; commit là `updateOne` nguyên tử).
+- [ ] 7.3 `yarn typecheck`, `yarn test`, `yarn build` PASS ngày 30/09/2026; `yarn --cwd apps/server test:gateway` PASS. `yarn --cwd apps/server test:worlds` lúc đó không chạy được vì code còn dùng transaction; sau khi bỏ transaction, `test:worlds` PASS trên Mongo standalone 01/10/2026. Xem TASKS.md/ROADMAP.md cho browser scope và cảnh báo build.
 - [ ] 7.4 Browser QA desktop: open editor, move/rotate, invalid placement, cancel/confirm, reload persistence đã PASS thủ công trên save cô lập ở 127.0.0.1:3001; customer/staff routing và bàn phím sau focus-trap change còn kiểm tra.
 - [ ] 7.5 Browser QA mobile landscape: touch select-place, hit targets, pan/zoom/grid fit, modal/toolbar không che khu vực thao tác.
 - [ ] 7.6 Hai session online QA: commit/broadcast, duplicate retry, stale revision, race fixture/plot, disconnect rollback/reconnect resync.

@@ -16,8 +16,8 @@
 ## 3. Server, membership và lưu bền
 
 - [ ] 3.1 HTTP bootstrap/Firebase guard/ACL; WS ticket một lần TTL 30s, origin allowlist, heartbeat 10s/timeout 15s, snapshot 500ms, movement/time-vote/cancel và session replacement đã có test gateway hai session. Còn thiếu test Firebase-authenticated ticket route thật và full browser reconnect.
-- [x] 3.2 Mongo repository ACL/create/list/invite/join race/capacity=2/leave/kick/reset/revoke; gateway kick/replacement; `test:worlds` PASS trên replica set tạm.
-- [ ] 3.3 `commitCommand` dùng Mongo transaction; test cùng command retry, payload/revision guard, hai command cùng revision chỉ một thắng; test transaction rollback tổng quát PASS. Chưa test tiến trình server crash sau commit-trước-ACK thực tế hoặc outage đang giao dịch.
+- [x] 3.2 Mongo repository ACL/create/list/invite/join race/capacity=2/leave/kick/reset/revoke; gateway kick/replacement; `test:worlds` PASS trên Mongo standalone (01/10/2026).
+- [ ] 3.3 `commitCommand` dùng một `updateOne` nguyên tử (không transaction); test cùng command retry, payload/revision guard, hai command cùng revision chỉ một thắng; test transaction rollback tổng quát PASS. Chưa test tiến trình server crash sau commit-trước-ACK thực tế hoặc outage đang giao dịch.
 - [ ] 3.4 Core `WorldRuntime` test timeout/pause/checkpoint/vote; repo integration tái tạo runtime từ persisted save/time và chứng minh checkpoint revision cũ không overwrite commit. Gateway tuần tự hóa checkpoint, chỉ evict runtime idle sau khi flush thành công, giữ runtime nếu checkpoint lỗi, đóng socket heartbeat-timeout; gateway integration mô phỏng idle eviction rồi tạo runtime mới và xác nhận clock/avatar từ Mongo. Chưa test process restart thực, owner offline/member tiếp tục qua nhiều giờ hoặc checkpoint outage/retry.
 - [x] 3.5 ProtocolVersion guard, lastSeenRevision/touchSession, không đổi lastSeen khi poll; repo test PASS.
 - [x] 3.6 Phiếu ngày/tốc độ 30s + activity summary 100 event; core/repository test PASS, gateway test xác nhận hai session cùng duyệt ngày.

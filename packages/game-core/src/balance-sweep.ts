@@ -36,8 +36,8 @@ for (const seed of SEEDS) {
   refill();
   let day = sim.getTime().day;
   let hour = sim.getTime().hour;
-  let prevPrice: Record<string, number> = {};
-  let prevWholesale: Record<string, number> = {};
+  const prevPrice: Record<string, number> = {};
+  const prevWholesale: Record<string, number> = {};
   const seenEvents = new Set<string>();
   const observe = () => {
     const market = sim.getMarketState();

@@ -41,7 +41,7 @@ OpenSpec `adapt-reference-shop-operations`:
 ## Ưu tiên mới: con hẻm chơi chung — 30/09/2026
 Ngày 30/09/2026 tiếp tục task 3.4/4.2: gateway xếp hàng checkpoint theo thứ tự, chỉ evict runtime idle sau flush thành công, giữ lại runtime nếu ghi lỗi, và đóng socket heartbeat-timeout. Client chặn mutation lúc offline, không ghi/reset online save vào Dexie, rollback nếu commit lỗi/từ chối; store status, stow và planogram gửi snapshot qua commit HTTP. `yarn --cwd apps/server test:gateway` PASS trên Mongo local; core tests và server typecheck PASS. Monorepo typecheck đã PASS trước khi code task nhân viên 9.2 được cập nhật, lần chạy mới nhất FAIL vì `GameSimulation.updateStaffWorkers` chưa tồn tại. Chưa chạy build/browser reconnect QA.
 Màn đăng nhập đã có nút “Đăng xuất” riêng cạnh tài khoản đã đăng nhập; trạng thái chưa đăng nhập hiện nút “Đăng nhập Google”. Task 4.1 vẫn mở tới khi OAuth thật và luồng UI hai tài khoản được kiểm tra.
-Trạng thái cập nhật 30/09/2026: `yarn typecheck`, `yarn test`, `yarn build` PASS; browser smoke local PASS. Mongo transaction và gateway/world integration PASS trên replica set single-node tạm port 27018 (test data/process đã dọn), trong khi Mongo service đang dùng vẫn standalone. WS giờ nhận movement/time-vote, ticket one-use, replacement; integration hai socket PASS. Còn mở full browser flow hai tài khoản, crash/restart thật, network failure/RTT, OAuth thật, mobile QA và cấu hình replica set bền. Chi tiết OpenSpec tasks.
+Trạng thái cập nhật 30/09/2026: `yarn typecheck`, `yarn test`, `yarn build` PASS; browser smoke local PASS. Gateway/world integration PASS (từ 30/09/2026 chạy trên Mongo standalone, không còn dùng transaction/replica set). WS giờ nhận movement/time-vote, ticket one-use, replacement; integration hai socket PASS. Còn mở full browser flow hai tài khoản, crash/restart thật, network failure/RTT, OAuth thật, mobile QA và cấu hình replica set bền. Chi tiết OpenSpec tasks.
 
 Trạng thái triển khai 30/09/2026: HTTP/Mongo world API và core runtime có code; gateway WS đã có ticket dùng một lần (TTL 30s), origin allowlist theo `WEB_ORIGIN`, heartbeat 10s/timeout 15s, checkpoint 5s và snapshot 500ms. Đã khắc phục lỗi typecheck server (ActivityRecord revision, WebSocketTicketDoc và Cast findOneAndDelete), monorepo `yarn typecheck`, `yarn test` (18 test suites PASS), và `yarn build` PASS sạch sẽ. Chưa nối authoritative movement/time vote thành command realtime; gateway chưa restore runtime sau process restart, checkpoint async chưa serialize với command, transaction cross-collection chưa có chứng cứ, và chưa nghiệm thu hai browser. Xem OpenSpec `shared-alley-multiplayer/tasks.md`, không archive hoặc tuyên bố multiplayer đạt.
 
@@ -49,9 +49,9 @@ Tasks 2.3/2.4 hoàn thành: receipt checkout bền trong core save và command c
 
 UI đăng nhập đầu game đã được thêm: đăng nhập Google hoặc chơi khách, kèm nhận diện tài khoản đã đăng nhập; save local vẫn giữ nguyên khi login/logout. Đây chỉ là entry screen, chưa tải cloud save hoặc chọn/join world; OpenSpec task 4.1 còn mở.
 
-Backend cũ có Nest HTTP routes, Firebase guard, world ACL và Mongo repository tests. Transaction probe trước đây code 20 trên standalone; gateway mới chưa integration-test.
+Backend cũ có Nest HTTP routes, Firebase guard, world ACL và Mongo repository tests. Gateway đã có integration test hai socket (`test:gateway`); transaction đã bỏ.
 
-Task 2.3 đã thêm receipt checkout bền trong save và giữ sản phẩm khách đang mua; unit regression, typecheck/build PASS. Race đa client còn cần task 2.4/server Mongo transactions, hiện topology DB chưa hỗ trợ transaction.
+Task 2.3 đã thêm receipt checkout bền trong save và giữ sản phẩm khách đang mua; unit regression, typecheck/build PASS. Race đa client nay được chặn bằng `updateOne` nguyên tử theo revision ở server (`test:worlds`, `test:coop` PASS).
 
 Task 2.2 hoàn thành: authoritative avatar input có sequence/time cap/collision/range checks; typecheck/test/build PASS. Controller chưa có socket transport. Tiếp task 2.3 checkout hàng giữ chỗ. Task 1.1 Mongo transaction còn chặn persistence nhiều collection.
 
@@ -59,11 +59,11 @@ Task 2.1 hoàn thành: renderer chuyển sang core fixed-step runner và simulat
 
 Tasks 1.2/1.3 đã có hợp đồng dữ liệu/version validator và seed online tách local save; typecheck/test PASS. Tiếp theo task 2.1 tách vòng tick/browser input, trong khi task 1.1 transaction DB vẫn chờ replica set.
 
-Kiểm tra mới: Firebase web/Admin build đạt, thiếu/sai token trả 401; OAuth thật chưa nghiệm thu. MongoDB kết nối được nhưng standalone, chưa hỗ trợ transaction (code 20); cần replica set có sẵn/Atlas để hoàn tất task 1.1, không yêu cầu Docker.
+Kiểm tra mới: Firebase web/Admin build đạt, thiếu/sai token trả 401; OAuth thật chưa nghiệm thu. MongoDB kết nối được nhưng standalone, chưa hỗ trợ transaction (code 20); (lỗi thời: task 1.1 đã đóng sau khi bỏ yêu cầu transaction/replica set).
 
 Firebase hem-buon đã được cấu hình web/Admin và có code login popup/logout, backend verify token; chưa nghiệm thu OAuth thật, chưa nối lưu MongoDB/world ACL. Đây là phần nền task 3.1/4.1, không đánh dấu hoàn thành toàn task hoặc Phase 7.
 
-Apply đã bắt đầu task 1.1: HTTP NestJS và nền MongoDB/.env có code, HTTP health/typecheck đã kiểm chứng; chờ URI cho database game riêng trong cluster chung để kiểm chứng transaction. Google login, cloud save và realtime chưa triển khai. Không yêu cầu Docker theo chỉ đạo mới; chưa hoàn thành task 1.1 hoặc Phase 7.
+Apply đã bắt đầu task 1.1: HTTP NestJS và nền MongoDB/.env có code, HTTP health/typecheck đã kiểm chứng; (lỗi thời: URI đã có, task 1.1 đã đóng). Google login, cloud save và realtime chưa triển khai. Không yêu cầu Docker theo chỉ đạo mới; chưa hoàn thành task 1.1 hoặc Phase 7.
 
 Đã tạo kế hoạch `openspec/changes/shared-alley-multiplayer` (proposal/design/specs/tasks), chưa triển khai online. Không còn để toàn bộ multiplayer tới cuối Phase 10: đưa nền world/cơ sở, headless core và backend/auth/persistence lên trước building/nhân viên. Phase 3 về checkout/save vẫn là phụ thuộc; không đánh dấu hoàn thành giai đoạn vì có kế hoạch.
 

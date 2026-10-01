@@ -66,7 +66,7 @@ export async function runPersistenceTests() {
   assert.equal(isSaveGameData(restored), true, 'Restored save is valid SaveGameData');
 
   // 6. DB read error simulation: must NOT overwrite with default
-  let dbStore: Record<string, SaveGameData> = {
+  const dbStore: Record<string, SaveGameData> = {
     local_save_default: structuredClone(validSave),
   };
   let shouldFailRead = true;

@@ -451,7 +451,7 @@ export class CustomerManager {
 
           if (!returnedToShelf) {
             // Return to warehouse inventory
-            let invSlot = inventory.find((i) => i.productId === item.productId);
+            const invSlot = inventory.find((i) => i.productId === item.productId);
             if (invSlot) {
               invSlot.lots ??= [];
               mergeLots(invSlot.lots, [lot]);

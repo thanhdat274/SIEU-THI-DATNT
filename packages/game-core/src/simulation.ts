@@ -2021,7 +2021,7 @@ export class GameSimulation {
     const moved = takeLots(fixture.stockLots!, actualAmount);
     fixture.currentStock = sumLots(fixture.stockLots!);
 
-    let slot = this.inventory.find((i) => i.productId === fixture.assignedProductId);
+    const slot = this.inventory.find((i) => i.productId === fixture.assignedProductId);
     if (slot) {
       mergeLots(slot.lots!, moved);
       slot.quantity = sumLots(slot.lots!);
