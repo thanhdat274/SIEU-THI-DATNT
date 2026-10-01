@@ -107,7 +107,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | I-01 | Co-op: server chỉ replay một phần lệnh | High | Mở |
 | I-02 | Bảng xếp hạng dữ liệu giả | Medium | Mở |
 | I-03 | Quyền sửa bố cục cho mọi thành viên chưa ghi spec | Medium | Mở (code đã commit) |
-| I-04 | ID `Date.now()/Math.random()` | Medium | Mở |
+| I-04 | ID `Date.now()/Math.random()` | Medium | Đã làm 2026-10-01 |
 | I-05 | Nhân viên chưa vào co-op | Medium | Mở |
 | I-07 | Tài liệu lạc hậu | Medium | Mở |
 | I-08 | Service worker version cố định | Low | Mở |
@@ -168,7 +168,9 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Root Cause:** Sinh ID tiện lợi ở giai đoạn đơn người chơi.
 - **Suggested Fix:** Bộ đếm tuần tự trong save hoặc `commandId` + chỉ số.
 - **Priority:** Medium
-- **Verification:** Cần test replay hai lần so sánh ID.
+- **Đã làm 2026-10-01:** ID đơn nhập là `ord-N`, ID sổ cái là `led-N` từ hai bộ đếm `orderSequence`/`ledgerSequence` (trường mới tùy chọn trong `SaveGameData`, lưu/nạp cùng save; khi nạp lấy max(bộ đếm đã lưu, số lớn nhất của ID dạng `ord-N`/`led-N`)). Save cũ (ID theo giờ thật) vẫn nạp được, ID cũ không khớp mẫu nên không va chạm. Không đổi schemaVersion vì trường tùy chọn. Test `deterministic-ids.test.ts` (trong `yarn test` game-core): hai mô phỏng cùng lệnh ra cùng ID, ID không trùng, nạp lại save không trùng, save cũ, bộ đếm đã lưu được tiếp tục.
+- **Còn lại / giới hạn:** `timestamp` của sổ cái và `closedAt` vẫn lấy giờ thật (siêu dữ liệu kiểm toán, không dùng để định danh/logic; nếu cần so snapshot hai bên thì phải bỏ qua các trường này); ID khách/xe/người đi bộ đã dùng bộ đếm/seed sẵn (chưa rà lại ngoài hai chỗ này; `grep` `Date.now`/`Math.random` trong `game-core/data/shared` chỉ còn các hàm thời gian của `world-runtime.ts`); chưa có test replay client–server so sánh save đầy đủ (I-01).
+- **Verification:** `yarn --cwd packages/game-core test` PASS (7 tests, 0 fail, gồm nhóm ID mới), `tsc` server/web sạch, `test:db` PASS.
 
 ### Issue: I-05 Nhân viên chưa tham gia co-op đầy đủ
 
@@ -580,6 +582,18 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ## 8. Lịch sử phát triển
 
+## 2026-10-01 (lượt 9 — I-04 ID xác định)
+
+### Changed
+- `simulation.ts`: bỏ `Date.now()/Math.random()` ở `recordLedger` và `orderSupplierCart`, thêm `orderSequence`/`ledgerSequence` + `hydrateIdSequences`; `shared`: hai trường tùy chọn trong `SaveGameData`; thêm `deterministic-ids.test.ts` và đăng ký trong `test-runner.ts`.
+
+### Verified
+- `yarn --cwd packages/game-core test` PASS; `tsc` server/web sạch; `test:db` PASS. Chưa chạy build/browser.
+
+### Remaining
+- Đã commit chỉ các hunk của I-04 (các hunk chưa commit của việc khác trong cùng file được giữ nguyên trong working tree). Sai sót phát hiện trước khi commit: regex quét ID viết `'d'` trong chuỗi JS nên mất dấu ``, không khớp chữ số; đã đổi thành `[0-9]` và thêm test `runDeterministicIdScanTests` (save không có bộ đếm, ID `ord-7`/`led-12` → mới là `ord-8`/`led-13`). Test cũ không bắt được lỗi này vì chỉ dùng bộ đếm đã lưu.
+- Một lỗi cá nhân khi sửa: lần thay thế đầu dùng `String.replace` với chuỗi chứa `` $` `` làm nhân đôi nội dung `simulation.ts`; đã khôi phục (3.011 dòng) và kiểm bằng typecheck + test, nhưng nên xem `git diff` kỹ trước khi commit.
+
 ## 2026-10-01 (lượt 8 — I-12 xuất/nhập save)
 
 ### Changed
@@ -717,7 +731,7 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 - [ ] Ghi quyết định thiết kế quyền sửa bố cục/mua đất của thành viên vào spec (I-03; code đã commit 46f7466).
 - [ ] Lệnh nhân viên trong co-op (I-05, S21).
 - [ ] Thay bảng xếp hạng giả (I-02, S28, F-05).
-- [ ] ID xác định thay `Date.now()/Math.random()` (I-04).
+- [>] ID xác định thay `Date.now()/Math.random()` (I-04): code + test xong (đã commit).
 - [>] Xuất/nhập save (I-12, F-04): xong xuất/nhập file 2026-10-01; còn nhiều slot, khóa nhiều tab, kiểm mobile.
 - [ ] Đồng bộ/rút gọn `tổng hợp.md`, `TASKS.md`, `ROADMAP.md` (I-07).
 - [ ] Playtest cân bằng: XP cấp 1–35, perk, nhịp khách, giá đất (S35, S39).

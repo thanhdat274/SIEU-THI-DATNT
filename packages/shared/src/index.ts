@@ -722,6 +722,9 @@ export interface SaveGameData {
   regulars?: Record<string, RegularCustomerProgress>;
   partyOrders?: PartyOrderState;
   goals?: GoalState;
+  /** Bộ đếm tuần tự để sinh ID đơn nhập/sổ cái xác định (không dùng giờ thật hay ngẫu nhiên). */
+  orderSequence?: number;
+  ledgerSequence?: number;
   skills?: SkillState;
 }
 

@@ -38,6 +38,7 @@ import { runTreeShadowTests } from './tree-shadow.test';
 import { runRainTests } from './rain.test';
 import { runRoadTests } from './road.test';
 import { runTrafficSignalTests } from './traffic-signal.test';
+import { runDeterministicIdTests } from './deterministic-ids.test';
 import { runArrivalModeTests } from './arrival-mode.test';
 import { runMaintenanceTests } from './maintenance.test';
 import { runIntegrationTests, runOutdoorPropTests } from './integration.test';
@@ -87,6 +88,7 @@ export async function runTests(): Promise<void> {
   runRainTests();
   runRoadTests();
   runTrafficSignalTests();
+  runDeterministicIdTests();
   runArrivalModeTests();
   runMaintenanceTests();
   runOutdoorPropTests();

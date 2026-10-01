@@ -196,6 +196,8 @@ export class GameSimulation {
   private pendingOrders: SupplierOrder[];
   private dailyRecords: Record<number, DailyRecord> = {};
   private quests: QuestState = emptyQuestState();
+  private orderSequence = 0;
+  private ledgerSequence = 0;
   private stalls: StallState = emptyStallState();
   private market: MarketState;
   private demandTable?: DemandTable;
@@ -288,6 +290,7 @@ export class GameSimulation {
       this.currentDayRecord = { ...initialSave.currentDayRecord };
     } else {
       this.currentDayRecord = this.createEmptyDailyRecord(initialSave.worldTime.day);
+    this.hydrateIdSequences(initialSave);
     }
     this.completedCheckoutIds = new Set(initialSave.completedCheckoutIds ?? []);
     this.hydrateStock(initialSave.worldTime.day);
@@ -1575,7 +1578,7 @@ export class GameSimulation {
   private recordLedger(entry: Omit<LedgerEntry, 'id' | 'timestamp'>): LedgerEntry {
     const fullEntry: LedgerEntry = {
       ...entry,
-      id: `led-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: `led-${++this.ledgerSequence}`,
       timestamp: new Date().toISOString(),
     };
     this.ledger.push(fullEntry);
@@ -1608,6 +1611,21 @@ export class GameSimulation {
 
   /**
    * NPC chủ tiệm đứng sau quầy. Khi có khách đã tới quầy và có giỏ hàng (chưa có nhân viên thu ngân
+  /** Đưa bộ đếm ID về mức không trùng với save: lấy giá trị đã lưu hoặc số lớn nhất trong ID dạng `ord-N`/`led-N` đang có (ID cũ dùng giờ thật không khớp mẫu nên bị bỏ qua). */
+  private hydrateIdSequences(save: Pick<SaveGameData, 'orderSequence' | 'ledgerSequence'>): void {
+    const maxSuffix = (ids: Iterable<string>, prefix: string) => {
+      let max = 0;
+      const pattern = new RegExp('^' + prefix + '-([0-9]+)$');
+      for (const id of ids) {
+        const match = pattern.exec(id);
+        if (match) max = Math.max(max, Number(match[1]));
+      }
+      return max;
+    };
+    this.orderSequence = Math.max(save.orderSequence ?? 0, maxSuffix(this.pendingOrders.map((o) => o.id), 'ord'));
+    this.ledgerSequence = Math.max(save.ledgerSequence ?? 0, maxSuffix(this.ledger.map((e) => e.id), 'led'));
+  }
+
    * nhận), chủ tiệm chuyển sang "serving" cho tới khi giao dịch hoàn tất.
    */
   public getShopkeeper(): { position: Vector2D; direction: 'down' | 'right'; serving: boolean; checkoutId?: string } {
@@ -2466,7 +2484,7 @@ export class GameSimulation {
       const product = PRODUCT_MAP[line.productId]!;
       const unitCost = wholesaleQuote(supplier, product, supplierState, line.quantity).unit;
       if (supplierState && supplier.stockPerProductPerDay !== undefined) supplierState.stockLeft[line.productId] = Math.max(0, (supplierState.stockLeft[line.productId] ?? 0) - line.quantity);
-      const orderId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const orderId = `ord-${++this.orderSequence}`;
       orderIds.push(orderId);
       this.pendingOrders.push({
         id: orderId,
@@ -2901,6 +2919,8 @@ export class GameSimulation {
     }));
     this.staffSchedule = normalizeStaffSchedule(saveData.staffSchedule, this.staff);
     this.wageDebt = Math.max(0, saveData.wageDebt ?? 0);
+      orderSequence: this.orderSequence,
+      ledgerSequence: this.ledgerSequence,
     this.processedPayrollDayIds = new Set(saveData.processedPayrollDayIds ?? []);
     this.autoBuyEnabled = saveData.autoBuyEnabled ?? false;
     this.autoBuyRules = this.validateAutoBuyRules(saveData.autoBuyRules ?? []);
@@ -2964,6 +2984,7 @@ export class GameSimulation {
       reputation: this.playerData.reputation,
     };
   }
+    this.hydrateIdSequences(saveData);
 
   public getTitles(): Array<TitleDef & { unlocked: boolean; isActive: boolean }> {
     const ctx = this.getTitleContext();
