@@ -23,6 +23,9 @@ import { buildTrafficSignalHeads, createPedestrianSprite, placePedestrian, type 
 /** Điểm gốc bóng so với góc trên-trái sprite cây 80x100 (px): chân thân cây, để bóng đổ từ mặt đất chứ không từ tán. */
 const TREE_SHADOW_ORIGIN_PX = { x: 40, y: 90 } as const;
 
+/** Đáy thùng so với chân nhân viên: thấp hơn đầu/vai để không che mặt. */
+const LOGISTICS_BOX_CARRY_Y = -4;
+
 export class PixiGameViewport {
   private app!: Application;
   private canvas: HTMLCanvasElement;
@@ -1428,7 +1431,7 @@ export class PixiGameViewport {
         this.logisticsWorkerContainer.addChild(this.logisticsWorkerSprite);
         this.logisticsBoxSprite = new Sprite(this.textures.getTexture('prop_cargo_carton'));
         this.logisticsBoxSprite.anchor.set(0.5, 1);
-        this.logisticsBoxSprite.y = -20;
+        this.logisticsBoxSprite.y = LOGISTICS_BOX_CARRY_Y;
         this.logisticsWorkerContainer.addChild(this.logisticsBoxSprite);
         this.entitiesLayer.addChild(this.logisticsWorkerContainer);
       }
@@ -1446,9 +1449,9 @@ export class PixiGameViewport {
         if (w.carryingBox) {
           const boxKey = w.boxType === 'foam_cold' ? 'prop_foam_box_cold' : 'prop_cargo_carton';
           this.logisticsBoxSprite.texture = this.textures.getTexture(boxKey);
-          if (!reducedMotion) {
-            this.logisticsBoxSprite.y = -20 + Math.sin(this.animTimer * 8) * 1.5;
-          }
+          // Ôm thùng trước ngực (đáy thùng ngang tay), không che mặt; lệch nhẹ theo hướng đi.
+          this.logisticsBoxSprite.x = w.direction === 'right' ? 3 : -3;
+          this.logisticsBoxSprite.y = LOGISTICS_BOX_CARRY_Y + (reducedMotion ? 0 : Math.round(Math.sin(this.animTimer * 8)));
         }
       }
     } else if (this.logisticsWorkerContainer && ev.phase !== 'unloading' && ev.phase !== 'loading') {

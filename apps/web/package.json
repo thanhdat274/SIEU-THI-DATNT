@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "tsx src/save-file.test.ts"
+    "test": "tsx src/save-file.test.ts && tsx src/supplier-cart.test.ts"
   },
   "dependencies": {
     "@game/core": "*",
