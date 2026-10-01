@@ -12,6 +12,7 @@ import {
   AutoBuyReport,
 } from '@game/shared';
 import { ALL_PRODUCTS, PRODUCT_MAP, PRODUCT_CATEGORY_LABELS, SUPPLIERS, SUPPLIER_MAP, DEFAULT_SUPPLIER_ID } from '@game/data';
+import { addRecommendation, setCartQuantity } from './supplier-cart';
 import { PixelDialog, PixelStat, PixelButton, ProductSlot, QuantityStepper, money, EmptyState } from './pixel';
 
 export interface SupplierQuoteBoard {
@@ -131,10 +132,29 @@ export const SupplierModal: React.FC<Props> = ({
       }
     }
     // Reset giỏ sau khi đặt
-    setQuantities({});
+    clearCart();
   };
 
-  // Handle generating restock suggestion
+  // Số lượng tối đa mua được của một mặt hàng từ NCC đang chọn (tồn NCC hôm nay).
+  const maxQtyFor = (productId: string): number => {
+    const quote = board?.quotes[productId];
+    if (quote?.unavailable) return 0;
+    return quote?.stockLeft ?? 99;
+  };
+
+  // Nguồn sự thật duy nhất của số lượng đặt: `quantities`. Luôn kẹp theo tồn NCC.
+  const setCartQty = (productId: string, n: number) =>
+    setQuantities((old) => setCartQuantity(old, productId, n, maxQtyFor(productId)));
+
+  const clearCart = () => {
+    setQuantities({});
+    setSuggestedCart(null);
+  };
+
+  // Thêm số lượng gợi ý vào giỏ: min(gợi ý, tồn NCC - đã có trong giỏ)
+  const addSuggestedToQuantities = (base: Record<string, number>, items: SuggestedCartItem[]) =>
+    items.reduce((cart, it) => addRecommendation(cart, it.productId, it.quantity, maxQtyFor(it.productId)), base);
+
   const handleGenerateSuggestion = () => {
     if (!onGetSuggestions) return;
     const res = onGetSuggestions(selectedSupplierId);
@@ -143,62 +163,8 @@ export const SupplierModal: React.FC<Props> = ({
       constraints: res.appliedConstraints,
       explanation: res.explanation,
     });
-    // Áp số lượng gợi ý vào giỏ
-    const newQtys: Record<string, number> = { ...quantities };
-    for (const it of res.items) {
-      newQtys[it.productId] = (newQtys[it.productId] ?? 0) + it.quantity;
-    }
-    setQuantities(newQtys);
+    setQuantities((old) => addSuggestedToQuantities(old, res.items));
   };
-
-  // Adjust suggested item quantity
-  const handleUpdateSuggestedQuantity = (productId: string, newQty: number) => {
-    if (!suggestedCart) return;
-    if (newQty <= 0) {
-      setSuggestedCart({
-        ...suggestedCart,
-        items: suggestedCart.items.filter((it) => it.productId !== productId),
-      });
-      setQuantities((old) => { const next = { ...old }; delete next[productId]; return next; });
-    } else {
-      setSuggestedCart({
-        ...suggestedCart,
-        items: suggestedCart.items.map((it) =>
-          it.productId === productId
-            ? { ...it, quantity: newQty, estimatedCost: newQty * it.unitPrice }
-            : it
-        ),
-      });
-      setQuantities((old) => ({ ...old, [productId]: newQty }));
-    }
-  };
-
-  // Confirm and order the suggested cart
-  const handleOrderSuggestedCart = () => {
-    if (!suggestedCart || suggestedCart.items.length === 0) return;
-    const orderItems: SupplierCartItem[] = suggestedCart.items.map((it) => ({
-      productId: it.productId,
-      quantity: it.quantity,
-    }));
-    if (onOrderCart) {
-      onOrderCart(selectedSupplierId, orderItems);
-      setSuggestedCart(null);
-      setQuantities({});
-    }
-  };
-
-  const suggestedTotalCost = suggestedCart
-    ? suggestedCart.items.reduce((sum, it) => sum + it.estimatedCost, 0)
-    : 0;
-  const suggestedColdUnits = suggestedCart
-    ? suggestedCart.items
-        .filter((it) => PRODUCT_MAP[it.productId]?.storageType === 'cold')
-        .reduce((sum, it) => sum + it.quantity, 0)
-    : 0;
-
-  const minOrderMet = !currentSupplier.minOrderValue || suggestedTotalCost >= currentSupplier.minOrderValue;
-  const coldOk = suggestedColdUnits <= availableCold;
-  const budgetOk = suggestedTotalCost <= player.money;
 
   const cartOrderLabel = !cartBudgetOk
     ? `Thiếu ${money(cartTotal - player.money)}`
@@ -386,6 +352,9 @@ export const SupplierModal: React.FC<Props> = ({
                   : item.reason === 'best_seller' ? '#b5838d'
                   : item.reason === 'low_stock' ? '#e07a5f'
                   : '#3d5a80';
+                const inCart = quantities[item.productId] ?? 0;
+                const maxQty = maxQtyFor(item.productId);
+                const shopStock = inventory.find((i) => i.productId === item.productId)?.quantity ?? 0;
                 return (
                   <div
                     key={item.productId}
@@ -403,26 +372,24 @@ export const SupplierModal: React.FC<Props> = ({
                         <strong style={{ fontSize: '12px' }}>{prod?.name ?? item.productId}</strong>
                         <span style={{ marginLeft: '5px', background: badgeColor, color: '#fff', fontSize: '10px', padding: '1px 4px', borderRadius: '3px' }}>{badgeLabel}</span>
                         <div style={{ fontSize: '11px', color: 'var(--ink-light)' }}>
-                          {money(item.unitPrice)} × {item.quantity} = {money(item.estimatedCost)}
+                          Tiệm còn {shopStock} · NCC còn {maxQty >= 99 ? '∞' : maxQty} · Gợi ý {item.quantity} · Tối đa {maxQty}
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <QuantityStepper
-                        label={`Số lượng ${prod?.name ?? item.productId}`}
-                        value={item.quantity}
-                        min={1}
-                        max={99}
-                        onChange={(n) => handleUpdateSuggestedQuantity(item.productId, n)}
-                      />
-                      <PixelButton
-                        variant="brick"
-                        onClick={() => handleUpdateSuggestedQuantity(item.productId, 0)}
-                        style={{ padding: '4px 6px', fontSize: '11px' }}
-                        aria-label={`Xóa ${prod?.name ?? item.productId}`}
-                      >
-                        ✕
-                      </PixelButton>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                      {inCart > 0 ? (
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--teal-dark)' }}>✓ Trong giỏ: {inCart}</span>
+                      ) : (
+                        <PixelButton
+                          variant="teal"
+                          disabled={maxQty <= 0}
+                          onClick={() => setQuantities((old) => addSuggestedToQuantities(old, [item]))}
+                          style={{ padding: '4px 8px', fontSize: '11px' }}
+                          aria-label={`Thêm gợi ý ${prod?.name ?? item.productId}`}
+                        >
+                          {maxQty <= 0 ? 'Hết hàng NCC' : 'Thêm'}
+                        </PixelButton>
+                      )}
                     </div>
                   </div>
                 );
@@ -430,7 +397,7 @@ export const SupplierModal: React.FC<Props> = ({
             </div>
           )}
           <p className="muted" style={{ margin: '8px 0 0', fontSize: '11px' }}>
-            Số lượng gợi ý đã được thêm vào giỏ bên dưới. Điều chỉnh nếu muốn, rồi bấm <strong>Đặt hàng</strong> một lần.
+            Gợi ý chỉ là số tham khảo; số lượng thật nằm trong giỏ bên dưới (không vượt tồn NCC). Chỉnh ở giỏ rồi bấm <strong>Đặt hàng</strong> một lần.
           </p>
         </section>
       )}
@@ -587,15 +554,9 @@ export const SupplierModal: React.FC<Props> = ({
                   label={`Số lượng ${product.name}`}
                   value={quantity}
                   min={0}
-                  disabled={locked}
-                  onChange={(n) => setQuantities((old) => {
-                    if (n <= 0) {
-                      const next = { ...old };
-                      delete next[product.id];
-                      return next;
-                    }
-                    return { ...old, [product.id]: n };
-                  })}
+                  disabled={locked || maxQtyFor(product.id) <= 0}
+                  max={Math.max(0, maxQtyFor(product.id))}
+                  onChange={(n) => setCartQty(product.id, n)}
                 />
                 {quantity > 0 && (
                   <span style={{ fontSize: '10px', color: 'var(--teal-dark)', fontWeight: 700, whiteSpace: 'nowrap' }}>
@@ -635,7 +596,7 @@ export const SupplierModal: React.FC<Props> = ({
               </div>
               <PixelButton
                 variant="paper"
-                onClick={() => setQuantities({})}
+                onClick={clearCart}
                 style={{ fontSize: '11px', padding: '4px 8px' }}
                 aria-label="Xóa giỏ hàng"
               >
