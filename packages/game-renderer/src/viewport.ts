@@ -1,10 +1,10 @@
 import { Application, Container, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
 import { GameTileMap, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
-import { FixedStepSimulationRunner, GameSimulation, getLightingState } from '@game/core';
+import { FixedStepSimulationRunner, GameSimulation, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting } from './shop-lighting';
-import { PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES } from '@game/data';
+import { PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp } from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -14,6 +14,11 @@ export interface PixiGameViewportOptions {
   onZoomChange?: (zoom: number) => void;
   getPartnerAvatar?: () => { position: Vector2D; direction: string; isMoving?: boolean; name?: string } | null;
 }
+
+import { getDebugVisualTime } from './debug-time';
+
+/** Điểm gốc bóng so với góc trên-trái sprite cây 80x100 (px): chân thân cây, để bóng đổ từ mặt đất chứ không từ tán. */
+const TREE_SHADOW_ORIGIN_PX = { x: 40, y: 90 } as const;
 
 export class PixiGameViewport {
   private app!: Application;
@@ -560,12 +565,16 @@ export class PixiGameViewport {
     this.entitiesLayer.addChild(chair);
 
     // Cozy Alley Shade Tree on sidewalk
-    const tree = new Sprite(this.textures.getTexture('tile_tree'));
-    tree.position.set(2 * TILE_SIZE, 9 * TILE_SIZE - 4);
-    tree.zIndex = tree.y + 100;
-    this.entitiesLayer.addChild(tree);
-    this.treeShadowGraphic = new Graphics();
-    this.shadowLayer.addChild(this.treeShadowGraphic);
+    for (const prop of TREE_PROPS) {
+      const tree = new Sprite(this.textures.getTexture('tile_tree'));
+      tree.position.set((prop.tileX + TREE_SPRITE_OFFSET.tilesX) * TILE_SIZE, (prop.tileY + TREE_SPRITE_OFFSET.tilesY) * TILE_SIZE + TREE_SPRITE_OFFSET.pixelsY);
+      tree.zIndex = tree.y + 100;
+      this.entitiesLayer.addChild(tree);
+      const shadow = new Graphics();
+      shadow.eventMode = 'none';
+      this.shadowLayer.addChild(shadow);
+      this.treeShadows.push({ prop, graphic: shadow, last: null });
+    }
 
     const wires = new Graphics();
     const wireY=(WAREHOUSE_BOUNDS.top-1)*TILE_SIZE;
@@ -767,7 +776,7 @@ export class PixiGameViewport {
   private tintLayer!: Container;
   private lightLayer!: Container;
   private sunBeamGraphic!: Graphics;
-  private treeShadowGraphic!: Graphics;
+  private treeShadows: Array<{ prop: TreeProp; graphic: Graphics; last: TreeShadowSnapshot | null }> = [];
   private rainOverlay!: Graphics;
 
   /** Băm cố định theo ô để cỏ/hoa không nhấp nháy giữa các lần dựng. */
@@ -1034,7 +1043,8 @@ export class PixiGameViewport {
     }
 
     const time = this.simulation.getTime();
-    const light = getLightingState(time.hour, time.minute, time.day);
+    const debugTime = getDebugVisualTime();
+    const light = debugTime ? getLightingState(debugTime.hour, debugTime.minute, debugTime.day) : getLightingState(time.hour, time.minute, time.day);
     const playerPos = playerData.position;
     const isPlayerInWarehouse = isInWarehouse(playerPos) || (playerPos.y >= STORE_BOUNDS.top * TILE_SIZE && playerPos.y <= STORE_BOUNDS.top * TILE_SIZE + 6 && Math.abs(playerPos.x - WAREHOUSE_CENTER.x) < 36);
     const anyWorkerInWarehouse = Array.from(this.workerSprites.values()).some((w) => isInWarehouse(w.container.position));
@@ -1049,9 +1059,22 @@ export class PixiGameViewport {
     this.lighting.updateActorShadows(feet, light);
     this.sunBeamGraphic.alpha = light.sun;
     this.app.renderer.background.color = light.sky;
-    const rain = this.simulation.getRainIntensity();
-    this.treeShadowGraphic.clear();
-    this.treeShadowGraphic.ellipse(2 * TILE_SIZE + 39 + light.shadowLean * 13, 9 * TILE_SIZE + 27, 23 + light.shadowLength * 10, 5 + light.shadowLength * 2).fill({ color: 0x26190e, alpha: Math.max(0, 0.24 * light.sun * (1 - rain * 0.88)) });
+    const rain = debugTime?.rain ?? this.simulation.getRainIntensity();
+    for (const entry of this.treeShadows) {
+      const snapshot = { azimuth: light.sunAzimuth, elevation: light.sunElevation, sun: light.sun, rain };
+      if (!treeShadowNeedsRedraw(entry.last, snapshot)) continue;
+      entry.last = snapshot;
+      const shape = computeTreeShadow(entry.prop, light, rain);
+      const g = entry.graphic;
+      g.clear();
+      g.visible = shape.visible;
+      if (!shape.visible) continue;
+      const baseX = (entry.prop.tileX + TREE_SPRITE_OFFSET.tilesX) * TILE_SIZE + TREE_SHADOW_ORIGIN_PX.x;
+      const baseY = (entry.prop.tileY + TREE_SPRITE_OFFSET.tilesY) * TILE_SIZE + TREE_SPRITE_OFFSET.pixelsY + TREE_SHADOW_ORIGIN_PX.y;
+      g.position.set(baseX + shape.offsetX * TILE_SIZE, baseY + shape.offsetY * TILE_SIZE);
+      g.rotation = shape.angle;
+      g.ellipse(0, 0, shape.radiusAlong * TILE_SIZE, shape.radiusAcross * TILE_SIZE).fill({ color: 0x26190e, alpha: shape.alpha });
+    }
     this.rainOverlay.clear();
     if (rain > 0.01) {
       const width = this.app.screen.width / this.camera.zoom;

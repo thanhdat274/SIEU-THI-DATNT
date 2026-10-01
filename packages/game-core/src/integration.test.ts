@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { DEFAULT_INITIAL_SAVE, generateStarterTileMap, isFenceTile, STREET_LAMP_TILES } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, generateStarterTileMap, isFenceTile, STREET_LAMP_TILES, STREET_PARKING_SPOTS, STORE_BOUNDS, TREE_PROPS, TREE_SPRITE_OFFSET } from '@game/data';
 import { AutoBuyRule } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
@@ -72,5 +72,18 @@ export function runOutdoorPropTests(): void {
   assert.equal(isFenceTile(9, 10, map.width), false, 'Mặt tiền tiệm không có rào');
   assert.equal(solidAt(9, 11), false, 'Vỉa hè trước cửa vẫn đi được');
   for (const lamp of STREET_LAMP_TILES) assert.equal(solidAt(lamp.x, lamp.y), true, 'Cột đèn là vật cản');
+  // Cây là dữ liệu bản đồ: va chạm khớp dữ liệu, vị trí sprite cũ giữ nguyên, không chặn cửa/ô đỗ/cột đèn.
+  assert.equal(TREE_PROPS.length >= 1 && new Set(TREE_PROPS.map(t => t.id)).size === TREE_PROPS.length, true, 'Cây có id duy nhất');
+  const tree0 = TREE_PROPS[0];
+  assert.deepEqual([tree0.tileX + TREE_SPRITE_OFFSET.tilesX, tree0.tileY + TREE_SPRITE_OFFSET.tilesY, TREE_SPRITE_OFFSET.pixelsY], [2, 9, -4], 'Sprite cây vẫn ở vị trí cũ');
+  for (const tree of TREE_PROPS) {
+    assert.equal(solidAt(tree.tileX, tree.tileY), true, 'Gốc cây có va chạm');
+    assert.ok(tree.height > 0 && tree.crownRadius > 0, 'Cây có kích thước dương');
+    assert.ok(tree.tileX > 0 && tree.tileX < map.width - 1, 'Cây trong bản đồ');
+    assert.ok(!(tree.tileX >= STORE_BOUNDS.left && tree.tileX <= STORE_BOUNDS.right && tree.tileY >= STORE_BOUNDS.top && tree.tileY <= STORE_BOUNDS.bottom), 'Cây không nằm trong tiệm');
+    assert.ok(!(tree.tileY === 10 && (tree.tileX === 9 || tree.tileX === 10)), 'Cây không chặn cửa tiệm');
+    assert.ok(!STREET_LAMP_TILES.some(l => l.x === tree.tileX && l.y === tree.tileY), 'Cây không trùng cột đèn');
+    assert.ok(!STREET_PARKING_SPOTS.some(p => Math.floor(p.x / 32) === tree.tileX && Math.floor(p.y / 32) === tree.tileY), 'Cây không trùng ô đỗ xe');
+  }
   console.log('  ✓ Passed: Hàng rào và cột đèn có va chạm');
 }

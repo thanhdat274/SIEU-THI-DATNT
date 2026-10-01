@@ -1,3 +1,5 @@
+import { SEASON_YEAR_DAYS, getDayOfYear } from '@game/data';
+
 /** Trạng thái ánh sáng theo giờ game. Hàm thuần: renderer chỉ đọc, không tự suy ra giờ. */
 export interface LightingState {
   /** Màu nhân (multiply) cho ngoài trời, 0xRRGGBB; trắng = không đổi. */
@@ -14,18 +16,61 @@ export interface LightingState {
   shadowLean: number;
   /** Bóng đổ: hệ số độ dài (dài lúc bình minh/hoàng hôn, ngắn lúc trưa). */
   shadowLength: number;
+  /** Phương vị mặt trời (rad), tính theo chiều kim đồng hồ từ hướng bắc: 0 = bắc, π/2 = đông, π = nam. */
+  sunAzimuth: number;
+  /** Độ cao mặt trời (rad); 0 lúc mọc/lặn, âm ban đêm. */
+  sunElevation: number;
+  /** Hướng bóng trên bản đồ (vector đơn vị, +x = đông, +y = nam), ngược hướng mặt trời; (0,0) khi mặt trời ở thiên đỉnh. */
+  shadowDir: { x: number; y: number };
   phase: 'night' | 'dawn' | 'morning' | 'day' | 'late_afternoon' | 'sunset' | 'dusk';
 }
 
 interface Keyframe { hour: number; outdoor: number; indoor: number; sun: number; artificial: number; sky: number; lean: number; length: number; phase: LightingState['phase'] }
 
-/** Approximate HCMC sunrise/sunset design envelope across the 120-day game year. */
+/**
+ * Giữa tháng 1..12: [giờ mọc, giờ lặn] dạng "hh:mm" (xấp xỉ thiết kế cho TP.HCM, không phải dữ liệu thiên văn).
+ * Mọc và lặn lệch pha nhau nên dùng bảng thay cho một đường sin.
+ */
+const SUN_TABLE_MINUTES: ReadonlyArray<readonly [number, number]> = [
+  [6 * 60 + 17, 17 * 60 + 45], [6 * 60 + 14, 18 * 60], [6 * 60 + 2, 18 * 60 + 5], [5 * 60 + 47, 18 * 60 + 5],
+  [5 * 60 + 34, 18 * 60 + 5], [5 * 60 + 32, 18 * 60 + 14], [5 * 60 + 40, 18 * 60 + 16], [5 * 60 + 46, 18 * 60 + 8],
+  [5 * 60 + 48, 17 * 60 + 55], [5 * 60 + 50, 17 * 60 + 36], [5 * 60 + 59, 17 * 60 + 28], [6 * 60 + 12, 17 * 60 + 33],
+];
+
+/** Giờ mọc/lặn (giờ thập phân) theo ngày game: năm 120 ngày ánh xạ sang năm 365 ngày, nội suy tuyến tuần hoàn. */
 export function getSeasonalSunTimes(day: number): { sunrise: number; sunset: number } {
-  const phase = ((Math.max(1, Math.floor(day)) - 1) % 120) / 120 * Math.PI * 2;
-  // HCMC design approximation: transition-season early sunrise and slight sunset drift.
-  const sunrise = 5.88 + 0.22 * Math.sin(phase - 0.45);
-  const sunset = 17.91 + 0.16 * Math.sin(phase + 0.6);
-  return { sunrise, sunset };
+  const n = SUN_TABLE_MINUTES.length;
+  const pos = (getDayOfYear(day) / SEASON_YEAR_DAYS) * n - 0.5; // mốc i nằm giữa tháng i
+  const base = Math.floor(pos);
+  const t = pos - base;
+  const lo = SUN_TABLE_MINUTES[((base % n) + n) % n];
+  const hi = SUN_TABLE_MINUTES[(((base + 1) % n) + n) % n];
+  return { sunrise: (lo[0] + (hi[0] - lo[0]) * t) / 60, sunset: (lo[1] + (hi[1] - lo[1]) * t) / 60 };
+}
+
+/** Vĩ độ TP.HCM (độ), dùng cho vị trí mặt trời. */
+const LATITUDE_RAD = (10.8 * Math.PI) / 180;
+
+/**
+ * Vị trí mặt trời, nhất quán với mốc mọc/lặn của ngày: độ cao = 0 lúc mọc/lặn, đỉnh lúc 12:00.
+ * Độ lệch mặt trời hiệu dụng suy từ độ dài ngày (tanδ = −cosH0 / tanφ), nên không cần lịch thiên văn riêng;
+ * góc giờ H chạy tuyến tính −H0 → 0 (12:00) → +H0 theo cùng phép warp như getLightingState.
+ */
+export function getSolarPosition(hour: number, minute = 0, day = 1): { azimuth: number; elevation: number; shadowDir: { x: number; y: number } } {
+  const rawHour = ((hour + minute / 60) % 24 + 24) % 24;
+  const { sunrise, sunset } = getSeasonalSunTimes(day);
+  const h0 = (Math.PI * (sunset - sunrise)) / 24;
+  const hourAngle = rawHour < 12 ? -h0 * (12 - rawHour) / (12 - sunrise) : h0 * (rawHour - 12) / (sunset - 12);
+  const dec = Math.atan(-Math.cos(h0) / Math.tan(LATITUDE_RAD));
+  const sinEl = Math.sin(LATITUDE_RAD) * Math.sin(dec) + Math.cos(LATITUDE_RAD) * Math.cos(dec) * Math.cos(hourAngle);
+  const east = -Math.cos(dec) * Math.sin(hourAngle);
+  const north = Math.sin(dec) * Math.cos(LATITUDE_RAD) - Math.cos(dec) * Math.sin(LATITUDE_RAD) * Math.cos(hourAngle);
+  const len = Math.hypot(east, north);
+  return {
+    azimuth: (Math.atan2(east, north) + Math.PI * 2) % (Math.PI * 2),
+    elevation: Math.asin(Math.max(-1, Math.min(1, sinEl))),
+    shadowDir: len < 1e-6 ? { x: 0, y: 0 } : { x: -east / len, y: north / len },
+  };
 }
 
 const KEYFRAMES: Keyframe[] = [
@@ -68,6 +113,7 @@ export function getLightingState(hour: number, minute = 0, day = 1): LightingSta
   const b = KEYFRAMES[i + 1];
   const raw = (h - a.hour) / (b.hour - a.hour);
   const t = raw * raw * (3 - 2 * raw); // smoothstep: chuyển pha mượt, không bật/tắt đột ngột
+  const solar = getSolarPosition(hour, minute, day);
   return {
     outdoor: lerpColor(a.outdoor, b.outdoor, t),
     indoor: lerpColor(a.indoor, b.indoor, t),
@@ -76,6 +122,9 @@ export function getLightingState(hour: number, minute = 0, day = 1): LightingSta
     sky: lerpColor(a.sky, b.sky, t),
     shadowLean: lerp(a.lean, b.lean, t),
     shadowLength: lerp(a.length, b.length, t),
+    sunAzimuth: solar.azimuth,
+    sunElevation: solar.elevation,
+    shadowDir: solar.shadowDir,
     phase: t < 0.5 ? a.phase : b.phase,
   };
 }

@@ -22,6 +22,16 @@ export const isFenceTile = (x: number, worldY: number, mapWidth: number): boolea
 /** Đèn đường trên vỉa hè sát lòng đường; cột đèn chặn đường đi như vật cản nhỏ. */
 export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 4, y: 12 }, { x: 15, y: 12 }, { x: 20, y: 12 }];
 
+/**
+ * Cây trên vỉa hè. `tileX/tileY` là ô gốc cây (có va chạm, tường loại 7); sprite và bóng bám theo ô này.
+ * `height` (ô) quyết định độ dài bóng, `crownRadius` (ô) là bán kính tán. Thêm cây = thêm một dòng; cần tự kiểm
+ * không chặn cửa tiệm, ô đỗ xe, cột đèn hay lối đi.
+ */
+export interface TreeProp { id: string; tileX: number; tileY: number; height: number; crownRadius: number }
+export const TREE_PROPS: ReadonlyArray<TreeProp> = [{ id: 'alley_shade_tree', tileX: 3, tileY: 11, height: 2.4, crownRadius: 1.1 }];
+/** Vị trí góc trên-trái của sprite cây so với ô gốc (đơn vị ô) và độ dịch dọc bằng pixel; giữ đúng vị trí vẽ trước đây. */
+export const TREE_SPRITE_OFFSET = { tilesX: -1, tilesY: -2, pixelsY: -4 } as const;
+
 /** Điểm đỗ xe máy lề đường trước tiệm (trên vỉa hè sát lòng đường, không chặn cửa tiệm hay cột đèn). */
 export const STREET_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
   { x: 6 * 32 + 16, y: 12 * 32 + 10 },
@@ -165,7 +175,7 @@ export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STAR
       }
 
       // Ambient tree outside on sidewalk
-      if (x === 3 && y === 11) {
+      if (TREE_PROPS.some(t => t.tileX === x && t.tileY === y)) {
         wallData[idx] = 7;
         collisionLayer[idx] = true;
       }
