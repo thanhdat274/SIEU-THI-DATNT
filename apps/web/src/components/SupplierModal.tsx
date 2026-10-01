@@ -51,6 +51,7 @@ export const SupplierModal: React.FC<Props> = ({
   onClose,
 }) => {
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(DEFAULT_SUPPLIER_ID);
+  // quantities: mặc định 0 — người chơi bấm + để thêm vào giỏ
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [category, setCategory] = useState<ProductCategory | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -92,6 +93,47 @@ export const SupplierModal: React.FC<Props> = ({
     });
   }, [category, searchTerm]);
 
+  // ===== GIỎ ĐẶT HÀNG: sản phẩm có số lượng > 0 =====
+  const cartItems = useMemo(() => {
+    return ALL_PRODUCTS
+      .filter((p) => (quantities[p.id] ?? 0) > 0)
+      .map((p) => {
+        const qty = quantities[p.id]!;
+        const discountedUnitPrice = getUnitPrice
+          ? getUnitPrice(selectedSupplierId, p.id, qty)
+          : Math.round(p.purchasePrice * (1 - discountRate));
+        return { product: p, qty, unitPrice: discountedUnitPrice, total: qty * discountedUnitPrice };
+      });
+  }, [quantities, selectedSupplierId, discountRate, getUnitPrice]);
+
+  const cartTotal = cartItems.reduce((sum, it) => sum + it.total, 0);
+  const cartColdUnits = cartItems
+    .filter((it) => it.product.storageType === 'cold')
+    .reduce((sum, it) => sum + it.qty, 0);
+
+  const cartMinOrderMet = !currentSupplier.minOrderValue || cartTotal >= currentSupplier.minOrderValue;
+  const cartColdOk = cartColdUnits <= availableCold;
+  const cartBudgetOk = cartTotal <= player.money;
+  const cartHasItems = cartItems.length > 0;
+
+  const handlePlaceCartOrder = () => {
+    if (!cartHasItems) return;
+    const items: SupplierCartItem[] = cartItems.map((it) => ({
+      productId: it.product.id,
+      quantity: it.qty,
+    }));
+    if (onOrderCart) {
+      onOrderCart(selectedSupplierId, items);
+    } else {
+      // fallback: đặt từng món
+      for (const it of items) {
+        onOrder(it.productId, it.quantity);
+      }
+    }
+    // Reset giỏ sau khi đặt
+    setQuantities({});
+  };
+
   // Handle generating restock suggestion
   const handleGenerateSuggestion = () => {
     if (!onGetSuggestions) return;
@@ -101,6 +143,12 @@ export const SupplierModal: React.FC<Props> = ({
       constraints: res.appliedConstraints,
       explanation: res.explanation,
     });
+    // Áp số lượng gợi ý vào giỏ
+    const newQtys: Record<string, number> = { ...quantities };
+    for (const it of res.items) {
+      newQtys[it.productId] = (newQtys[it.productId] ?? 0) + it.quantity;
+    }
+    setQuantities(newQtys);
   };
 
   // Adjust suggested item quantity
@@ -111,6 +159,7 @@ export const SupplierModal: React.FC<Props> = ({
         ...suggestedCart,
         items: suggestedCart.items.filter((it) => it.productId !== productId),
       });
+      setQuantities((old) => { const next = { ...old }; delete next[productId]; return next; });
     } else {
       setSuggestedCart({
         ...suggestedCart,
@@ -120,6 +169,7 @@ export const SupplierModal: React.FC<Props> = ({
             : it
         ),
       });
+      setQuantities((old) => ({ ...old, [productId]: newQty }));
     }
   };
 
@@ -133,6 +183,7 @@ export const SupplierModal: React.FC<Props> = ({
     if (onOrderCart) {
       onOrderCart(selectedSupplierId, orderItems);
       setSuggestedCart(null);
+      setQuantities({});
     }
   };
 
@@ -149,6 +200,14 @@ export const SupplierModal: React.FC<Props> = ({
   const coldOk = suggestedColdUnits <= availableCold;
   const budgetOk = suggestedTotalCost <= player.money;
 
+  const cartOrderLabel = !cartBudgetOk
+    ? `Thiếu ${money(cartTotal - player.money)}`
+    : !cartMinOrderMet
+    ? `Chưa đạt tối thiểu ${money(currentSupplier.minOrderValue ?? 0)}`
+    : !cartColdOk
+    ? 'Vượt dung lượng kho mát'
+    : `Đặt hàng · ${money(cartTotal)}`;
+
   return (
     <PixelDialog
       title={currentSupplier.name}
@@ -156,7 +215,7 @@ export const SupplierModal: React.FC<Props> = ({
       icon="truck"
       onClose={onClose}
     >
-      {/* Supplier Selection Tabs */}
+      {/* Auto Buy Panel */}
       <details className="auto-buy-panel" style={{ marginBottom: 14, padding: 12, border: '2px solid var(--teal)', background: 'var(--paper-light)' }} aria-label="Tự nhập hàng" open={autoBuyConfig.enabled || autoBuyConfig.rules.length > 0}>
         <summary style={{ cursor: 'pointer', fontWeight: 700, marginBottom: 8 }}>Tự nhập hàng · {autoBuyConfig.enabled ? 'đang bật' : 'đang tắt'} · {autoBuyConfig.rules.length} quy tắc</summary>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -189,6 +248,7 @@ export const SupplierModal: React.FC<Props> = ({
               onClick={() => {
                 setSelectedSupplierId(sup.id);
                 setSuggestedCart(null);
+                setQuantities({});
               }}
               style={{ flex: '1 1 140px', fontSize: '12px' }}
             >
@@ -225,7 +285,7 @@ export const SupplierModal: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Suggest Restock Button & Bar */}
+      {/* Suggest Restock Button */}
       {onGetSuggestions && (
         <div
           style={{
@@ -244,7 +304,7 @@ export const SupplierModal: React.FC<Props> = ({
           <div>
             <strong>Gợi ý thông minh</strong>
             <p className="muted" style={{ margin: 0, fontSize: '11px' }}>
-              Phân tích tốc độ bán 3–7 ngày, tồn kho & đơn chờ để tính toán giỏ hàng tối ưu.
+              Phân tích tốc độ bán 3–7 ngày, tồn kho &amp; đơn chờ để tính toán giỏ hàng tối ưu.
             </p>
           </div>
           <PixelButton
@@ -258,7 +318,7 @@ export const SupplierModal: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Suggested Cart Review Drawer */}
+      {/* Suggested Cart Review Drawer — chỉ hiển thị giải thích, không có nút đặt riêng nữa */}
       {suggestedCart && (
         <section
           style={{
@@ -272,14 +332,14 @@ export const SupplierModal: React.FC<Props> = ({
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <h3 style={{ margin: 0, color: 'var(--teal-dark)' }}>
-              Giỏ hàng gợi ý ({suggestedCart.items.length} mặt hàng)
+              Gợi ý nhập hàng ({suggestedCart.items.length} mặt hàng · đã thêm vào giỏ ↓)
             </h3>
             <PixelButton
               variant="paper"
               onClick={() => setSuggestedCart(null)}
               style={{ fontSize: '11px', padding: '4px 8px' }}
             >
-              Đóng gợi ý
+              Đóng
             </PixelButton>
           </div>
 
@@ -313,26 +373,19 @@ export const SupplierModal: React.FC<Props> = ({
           {suggestedCart.items.length === 0 ? (
             <p className="muted">Không có mặt hàng nào cần nhập lúc này.</p>
           ) : (
-            <div style={{ maxHeight: '180px', overflowY: 'auto', marginBottom: '10px' }}>
+            <div style={{ maxHeight: '140px', overflowY: 'auto' }}>
               {suggestedCart.items.map((item) => {
                 const prod = PRODUCT_MAP[item.productId];
                 const badgeLabel =
-                  item.reason === 'out_of_stock'
-                    ? 'Hết hàng'
-                    : item.reason === 'best_seller'
-                    ? 'Bán chạy'
-                    : item.reason === 'low_stock'
-                    ? 'Sắp hết'
-                    : 'Thử nghiệm';
+                  item.reason === 'out_of_stock' ? 'Hết hàng'
+                  : item.reason === 'best_seller' ? 'Bán chạy'
+                  : item.reason === 'low_stock' ? 'Sắp hết'
+                  : 'Thử nghiệm';
                 const badgeColor =
-                  item.reason === 'out_of_stock'
-                    ? '#d90429'
-                    : item.reason === 'best_seller'
-                    ? '#b5838d'
-                    : item.reason === 'low_stock'
-                    ? '#e07a5f'
-                    : '#3d5a80';
-
+                  item.reason === 'out_of_stock' ? '#d90429'
+                  : item.reason === 'best_seller' ? '#b5838d'
+                  : item.reason === 'low_stock' ? '#e07a5f'
+                  : '#3d5a80';
                 return (
                   <div
                     key={item.productId}
@@ -340,32 +393,21 @@ export const SupplierModal: React.FC<Props> = ({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '6px 0',
+                      padding: '4px 0',
                       borderBottom: '1px dashed var(--wood-light)',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <ProductSlot productId={item.productId} />
                       <div>
-                        <strong>{prod?.name ?? item.productId}</strong>
-                        <span
-                          style={{
-                            marginLeft: '6px',
-                            background: badgeColor,
-                            color: '#fff',
-                            fontSize: '10px',
-                            padding: '1px 5px',
-                            borderRadius: '3px',
-                          }}
-                        >
-                          {badgeLabel}
-                        </span>
+                        <strong style={{ fontSize: '12px' }}>{prod?.name ?? item.productId}</strong>
+                        <span style={{ marginLeft: '5px', background: badgeColor, color: '#fff', fontSize: '10px', padding: '1px 4px', borderRadius: '3px' }}>{badgeLabel}</span>
                         <div style={{ fontSize: '11px', color: 'var(--ink-light)' }}>
-                          Đơn giá: {money(item.unitPrice)} · Thành tiền: {money(item.estimatedCost)}
+                          {money(item.unitPrice)} × {item.quantity} = {money(item.estimatedCost)}
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <QuantityStepper
                         label={`Số lượng ${prod?.name ?? item.productId}`}
                         value={item.quantity}
@@ -377,7 +419,7 @@ export const SupplierModal: React.FC<Props> = ({
                         variant="brick"
                         onClick={() => handleUpdateSuggestedQuantity(item.productId, 0)}
                         style={{ padding: '4px 6px', fontSize: '11px' }}
-                        aria-label={`Xóa ${prod?.name ?? item.productId} khỏi giỏ`}
+                        aria-label={`Xóa ${prod?.name ?? item.productId}`}
                       >
                         ✕
                       </PixelButton>
@@ -387,116 +429,127 @@ export const SupplierModal: React.FC<Props> = ({
               })}
             </div>
           )}
-
-          {suggestedCart.items.length > 0 && (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '8px',
-                borderTop: '2px solid var(--wood-light)',
-                paddingTop: '8px',
-              }}
-            >
-              <div>
-                <strong>Tổng cộng: {money(suggestedTotalCost)}</strong>
-                {suggestedColdUnits > 0 && (
-                  <span style={{ fontSize: '11px', marginLeft: '8px', color: 'var(--ink-light)' }}>
-                    (Hàng lạnh: {suggestedColdUnits} món)
-                  </span>
-                )}
-              </div>
-              <PixelButton
-                variant="teal"
-                disabled={!budgetOk || !minOrderMet || !coldOk}
-                onClick={handleOrderSuggestedCart}
-                aria-label="Xác nhận đặt toàn bộ giỏ hàng gợi ý"
-              >
-                {!budgetOk
-                  ? `Thiếu ${money(suggestedTotalCost - player.money)}`
-                  : !minOrderMet
-                  ? `Chưa đạt tối thiểu ${money(currentSupplier.minOrderValue ?? 0)}`
-                  : !coldOk
-                  ? 'Vượt dung lượng kho mát'
-                  : 'Xác nhận đặt giỏ hàng này'}
-              </PixelButton>
-            </div>
-          )}
+          <p className="muted" style={{ margin: '8px 0 0', fontSize: '11px' }}>
+            Số lượng gợi ý đã được thêm vào giỏ bên dưới. Điều chỉnh nếu muốn, rồi bấm <strong>Đặt hàng</strong> một lần.
+          </p>
         </section>
       )}
 
-      {/* Filter and Search */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
-        <label className="form-filter" style={{ flex: '1 1 200px', margin: 0 }}>
-          Tìm kiếm
-          <input
-            type="search"
-            placeholder="Tìm theo tên hoặc mã..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+      {/* Tìm kiếm + Bộ lọc danh mục dạng nút nhanh */}
+      <div style={{ marginBottom: '14px' }}>
+        {/* Ô tìm kiếm */}
+        <input
+          type="search"
+          placeholder="🔍 Tìm theo tên hoặc mã..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            width: '100%',
+            minHeight: '40px',
+            background: 'var(--paper)',
+            border: '2px solid var(--wood-light)',
+            padding: '6px 10px',
+            color: 'var(--ink)',
+            marginBottom: '10px',
+            boxSizing: 'border-box',
+          }}
+        />
+
+        {/* Nút phân loại nhanh */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {/* Nút "Tất cả" */}
+          <button
+            type="button"
+            onClick={() => setCategory('all')}
             style={{
-              minHeight: '44px',
-              width: '100%',
-              background: 'var(--paper)',
-              border: '2px solid var(--wood-light)',
-              padding: '8px',
-              color: 'var(--ink)',
+              padding: '5px 12px',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              borderRadius: '4px',
+              border: '2px solid',
+              transition: 'all 0.15s',
+              borderColor: category === 'all' ? 'var(--teal-dark)' : 'var(--wood-light)',
+              background: category === 'all' ? 'var(--teal)' : 'var(--paper)',
+              color: category === 'all' ? '#fff' : 'var(--ink)',
             }}
-          />
-        </label>
-        <label className="form-filter" style={{ flex: '1 1 200px', margin: 0 }}>
-          Nhóm hàng
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value as ProductCategory | 'all')}
-            style={{ width: '100%' }}
           >
-            <option value="all">Tất cả ({ALL_PRODUCTS.length} món)</option>
-            {Object.entries(PRODUCT_CATEGORY_LABELS).map(([id, name]) => {
-              const count = ALL_PRODUCTS.filter((p) => p.category === id).length;
-              return (
-                <option key={id} value={id}>
-                  {name} ({count})
-                </option>
-              );
-            })}
-          </select>
-        </label>
+            Tất cả ({ALL_PRODUCTS.length})
+          </button>
+
+          {/* Một nút cho mỗi danh mục */}
+          {(Object.entries(PRODUCT_CATEGORY_LABELS) as [ProductCategory, string][]).map(([id, name]) => {
+            const count = ALL_PRODUCTS.filter((p) => p.category === id).length;
+            const isActive = category === id;
+            // Emoji theo danh mục
+            const emoji: Record<string, string> = {
+              instant_noodles: '🍜',
+              snacks: '🍘',
+              candy: '🍬',
+              bottled_water: '💧',
+              soft_drinks: '🥤',
+              milk: '🥛',
+              bread: '🍞',
+              eggs: '🥚',
+              cooking_ingredients: '🧂',
+              household: '🧹',
+            };
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setCategory(isActive ? 'all' : id)}
+                title={`${name} · ${count} sản phẩm`}
+                style={{
+                  padding: '5px 10px',
+                  fontSize: '12px',
+                  fontWeight: isActive ? 700 : 400,
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  border: '2px solid',
+                  transition: 'all 0.15s',
+                  borderColor: isActive ? 'var(--teal-dark)' : 'var(--wood-light)',
+                  background: isActive ? 'var(--teal)' : 'var(--paper-light)',
+                  color: isActive ? '#fff' : 'var(--ink)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {emoji[id] ?? '📦'} {name}
+                <span style={{ marginLeft: '4px', fontSize: '10px', opacity: 0.75 }}>({count})</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
+
+      {/* Product List — mỗi dòng chỉ có stepper (+/-), không có nút Đặt hàng riêng */}
       {filteredProducts.length === 0 ? (
         <EmptyState title="Không tìm thấy mặt hàng" icon="bag">
           Không có sản phẩm nào khớp với tìm kiếm hoặc bộ lọc nhóm hàng hiện tại.
         </EmptyState>
       ) : (
         filteredProducts.map((product) => {
-          const quantity = quantities[product.id] ?? 1;
+          const quantity = quantities[product.id] ?? 0;
           const quote = board?.quotes[product.id];
-          const discountedUnitPrice = getUnitPrice ? getUnitPrice(selectedSupplierId, product.id, quantity) : Math.round(product.purchasePrice * (1 - discountRate));
+          const discountedUnitPrice = getUnitPrice
+            ? getUnitPrice(selectedSupplierId, product.id, Math.max(1, quantity))
+            : Math.round(product.purchasePrice * (1 - discountRate));
           const cost = quantity * discountedUnitPrice;
           const locked = product.unlockLevel > player.level;
-          const coldFull =
-            product.storageType === 'cold' &&
-            coldUsed + coldReserved + quantity > COLD_WAREHOUSE_CAPACITY;
+
           const reason = locked
             ? `Mở khóa ở cấp ${product.unlockLevel}`
             : quote?.unavailable
             ? `${currentSupplier.name} tạm ngừng cung`
-            : quote?.stockLeft !== undefined && quantity > quote.stockLeft
-            ? `Nhà cung cấp chỉ còn ${quote.stockLeft}`
-            : cost > player.money
-            ? `Thiếu ${money(cost - player.money)}`
-            : coldFull
-            ? 'Kho mát không đủ chỗ'
             : '';
 
           return (
             <article
               key={product.id}
-              className={`product-row ${locked ? 'is-locked' : ''}`}
+              className={`product-row ${locked ? 'is-locked' : ''} ${quantity > 0 ? 'in-cart' : ''}`}
               aria-label={product.name}
+              style={quantity > 0 ? { background: 'rgba(53,127,114,0.07)', borderLeft: '3px solid var(--teal)' } : undefined}
             >
               <ProductSlot productId={product.id} />
               <div className="product-info">
@@ -512,8 +565,12 @@ export const SupplierModal: React.FC<Props> = ({
                       {' '}
                       (-{Math.round(discountRate * 100)}%)
                     </span>
-                  ) : null}{' '}
-                  · Tổng <strong>{money(cost)}</strong>
+                  ) : null}
+                  {quantity > 0 && (
+                    <span style={{ marginLeft: 6, color: 'var(--teal-dark)', fontWeight: 700 }}>
+                      · Tổng <strong>{money(cost)}</strong>
+                    </span>
+                  )}
                 </p>
                 {quote && (quote.changePct !== 0 || quote.reasons.length > 0 || quote.stockLeft !== undefined) && (
                   <p className="muted" style={{ fontSize: '11px' }}>
@@ -524,34 +581,111 @@ export const SupplierModal: React.FC<Props> = ({
                 )}
                 {reason && <p className="action-reason">{reason}</p>}
               </div>
+              {/* Chỉ có stepper — không có nút Đặt hàng riêng */}
               <div className="product-actions">
                 <QuantityStepper
                   label={`Số lượng ${product.name}`}
                   value={quantity}
+                  min={0}
                   disabled={locked}
-                  onChange={(n) => setQuantities((old) => ({ ...old, [product.id]: n }))}
-                />
-                <PixelButton
-                  variant="teal"
-                  onClick={() => {
-                    if (onOrderCart) {
-                      onOrderCart(selectedSupplierId, [{ productId: product.id, quantity }]);
-                    } else {
-                      onOrder(product.id, quantity);
+                  onChange={(n) => setQuantities((old) => {
+                    if (n <= 0) {
+                      const next = { ...old };
+                      delete next[product.id];
+                      return next;
                     }
-                  }}
-                  disabled={!!reason}
-                  aria-label={`Đặt ${product.name}`}
-                >
-                  Đặt hàng
-                </PixelButton>
+                    return { ...old, [product.id]: n };
+                  })}
+                />
+                {quantity > 0 && (
+                  <span style={{ fontSize: '10px', color: 'var(--teal-dark)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                    ✓ Đã chọn
+                  </span>
+                )}
               </div>
             </article>
           );
         })
       )}
 
-      <section className="pending-orders">
+      {/* ===== GIỎ HÀNG & NÚT ĐẶT HÀNG DUY NHẤT ===== */}
+      <section
+        style={{
+          position: 'sticky',
+          bottom: 0,
+          background: 'var(--paper)',
+          border: '2px solid var(--teal)',
+          borderRadius: '4px',
+          marginTop: '16px',
+          padding: '12px 16px',
+          zIndex: 10,
+        }}
+        aria-label="Giỏ đặt hàng"
+      >
+        {cartHasItems ? (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+              <div>
+                <strong style={{ color: 'var(--teal-dark)' }}>
+                  🛒 Giỏ đặt hàng · {cartItems.length} loại · {cartItems.reduce((s, it) => s + it.qty, 0)} đơn vị
+                </strong>
+                <div style={{ fontSize: '11px', color: 'var(--ink-light)', marginTop: '2px' }}>
+                  {cartItems.map((it) => `${it.product.name} ×${it.qty}`).join(' · ')}
+                </div>
+              </div>
+              <PixelButton
+                variant="paper"
+                onClick={() => setQuantities({})}
+                style={{ fontSize: '11px', padding: '4px 8px' }}
+                aria-label="Xóa giỏ hàng"
+              >
+                Xóa giỏ
+              </PixelButton>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', borderTop: '1px solid var(--wood-light)', paddingTop: '8px' }}>
+              <div>
+                <strong style={{ fontSize: '15px' }}>Tổng: {money(cartTotal)}</strong>
+                {cartColdUnits > 0 && (
+                  <span style={{ fontSize: '11px', marginLeft: '8px', color: 'var(--ink-light)' }}>
+                    (Hàng lạnh: {cartColdUnits} món)
+                  </span>
+                )}
+                {!cartBudgetOk && (
+                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--brick)' }}>
+                    Thiếu {money(cartTotal - player.money)}
+                  </span>
+                )}
+                {!cartMinOrderMet && cartBudgetOk && (
+                  <span style={{ display: 'block', fontSize: '11px', color: '#856404' }}>
+                    Chưa đạt đơn tối thiểu {money(currentSupplier.minOrderValue ?? 0)}
+                  </span>
+                )}
+                {!cartColdOk && cartColdUnits > 0 && (
+                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--brick)' }}>
+                    Vượt sức chứa kho mát ({cartColdUnits}/{availableCold})
+                  </span>
+                )}
+              </div>
+              <PixelButton
+                variant="teal"
+                disabled={!cartBudgetOk || !cartMinOrderMet || !cartColdOk}
+                onClick={handlePlaceCartOrder}
+                aria-label="Xác nhận đặt toàn bộ giỏ hàng"
+                style={{ fontSize: '14px', padding: '10px 20px', fontWeight: 700 }}
+              >
+                {cartOrderLabel}
+              </PixelButton>
+            </div>
+          </>
+        ) : (
+          <p className="muted" style={{ margin: 0, textAlign: 'center', padding: '4px 0' }}>
+            🛒 Giỏ trống — bấm <strong>+</strong> vào sản phẩm để thêm vào giỏ, rồi đặt một lần
+          </p>
+        )}
+      </section>
+
+      {/* Đơn hàng đang giao */}
+      <section className="pending-orders" style={{ marginTop: '16px' }}>
         <h3>Đơn hàng đang giao · {pendingOrders.length}</h3>
         {pendingOrders.length ? (
           pendingOrders.map((order) => (

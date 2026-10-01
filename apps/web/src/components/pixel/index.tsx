@@ -2,7 +2,7 @@ import React, { useEffect, useId, useRef } from 'react';
 import { PRODUCT_MAP, productPixels } from '@game/data';
 import { getModalReturnFocus } from '../../store/useGameStore';
 
-export type IconName = 'sun' | 'clock' | 'coin' | 'warehouse' | 'bag' | 'truck' | 'save' | 'book' | 'close' | 'plus' | 'minus' | 'door' | 'person' | 'heart' | 'star' | 'check' | 'warning' | 'speed' | 'hand' | 'moon' | 'cold';
+export type IconName = 'sun' | 'clock' | 'coin' | 'warehouse' | 'bag' | 'truck' | 'save' | 'book' | 'close' | 'plus' | 'minus' | 'door' | 'person' | 'heart' | 'star' | 'check' | 'warning' | 'speed' | 'hand' | 'moon' | 'cold' | 'menu';
 const glyphs: Record<IconName, string[]> = {
   sun: ['...x.x...', '....x....', '..xxxxx..', '.xxxxxxx.', 'xxxxxxxxx', '.xxxxxxx.', '..xxxxx..', '....x....', '...x.x...'],
   clock: ['..xxxxx..','.xx...xx.','xx..x..xx','x...x...x','x...xxx.x','x.......x','xx.....xx','.xx...xx.','..xxxxx..'],
@@ -25,6 +25,7 @@ const glyphs: Record<IconName, string[]> = {
   hand: ['...xx....','.x.xx.x..','.x.xx.x.x','.xxxxxx.x','.xxxxxxxx','xxxxxxxxx','xxxxxxxxx','.xxxxxxx.','..xxxxx..'],
   moon: ['..xxxx...','.xxxx....','xxxx.....','xxxx.....','xxxx....x','xxxxx..xx','.xxxxxxxx','..xxxxxx.','...xxxx..'],
   cold: ['x...x...x','.x..x..x.','..x.x.x..','...xxx...','xxxxxxxxx','...xxx...','..x.x.x..','.x..x..x.','x...x...x'],
+  menu: ['xxxxxxxxx','xxxxxxxxx','.........','xxxxxxxxx','xxxxxxxxx','.........','xxxxxxxxx','xxxxxxxxx','.........'],
 };
 export function PixelIcon({ name, size = 20 }: {name: IconName; size?: number}) {
   return <svg width={size} height={size} viewBox="0 0 11 11" shapeRendering="crispEdges" aria-hidden="true" focusable="false" className={`pixel-icon icon-${name}`}>

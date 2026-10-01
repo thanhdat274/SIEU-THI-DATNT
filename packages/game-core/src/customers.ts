@@ -112,6 +112,23 @@ export class CustomerManager {
     }));
   }
 
+  /** Hoàn giỏ cho khách thật trong danh sách nội bộ khi sang ngày. */
+  public abandonAllBaskets(
+    tileMap: GameTileMap,
+    fixtures: StoreFixture[],
+    inventory: InventoryItem[],
+    onSpoiledGoods: (spoiledCount: number) => void,
+    currentDay: number,
+    shelfCapacityMultiplier = 1,
+  ): void {
+    for (const customer of this.customers) {
+      this.abandonBasket(customer, fixtures, inventory, onSpoiledGoods, currentDay, shelfCapacityMultiplier);
+      customer.cashierStaffId = undefined;
+      customer.reservedProductId = undefined;
+      this.routeCustomer(customer, 'leaving', tileMap, fixtures);
+    }
+  }
+
   public assignCashier(checkoutId: string, staffId: string | undefined): boolean {
     const customer = this.customers.find((item) => item.checkoutId === checkoutId && item.stage === 'checkout');
     if (!customer) return false;
@@ -297,6 +314,13 @@ export class CustomerManager {
           goals.push({ x: fixture.tileX - 1, y }, { x: fixture.tileX + dimensions.widthTiles, y });
         }
       }
+    } else if (stage === 'to_table') {
+      const fixture = fixtures.find(f => f.id === customer.diningTableId && f.type === 'dining_table');
+      if (fixture) {
+        const dimensions = getFixtureDimensions(fixture);
+        for (let x = fixture.tileX; x < fixture.tileX + dimensions.widthTiles; x++) goals.push({ x, y: fixture.tileY - 1 }, { x, y: fixture.tileY + dimensions.heightTiles });
+        for (let y = fixture.tileY; y < fixture.tileY + dimensions.heightTiles; y++) goals.push({ x: fixture.tileX - 1, y }, { x: fixture.tileX + dimensions.widthTiles, y });
+      }
     } else if (stage === 'to_checkout' || stage === 'checkout') {
       const counters = cashierCounters(fixtures);
       const lanes = this.laneTiles(counters, tileMap, fixtures);
@@ -315,7 +339,8 @@ export class CustomerManager {
           y: Math.floor(customer.vehicleSpot.y / TILE_SIZE),
         });
       } else {
-        goals.push(ENTRANCE_TILE);
+        const exitX = (customer.id ? customer.id.charCodeAt(customer.id.length - 1) : 0) % 2 === 0 ? 1 : 24;
+        goals.push({ x: exitX, y: 12 });
       }
     }
 
@@ -331,7 +356,11 @@ export class CustomerManager {
       .filter((p) => p.length);
     paths.sort((a, b) => a.length - b.length);
 
-    const waypoints = paths[0]?.map(tileCenter).slice(1) ?? [];
+    let chosenPath = paths[0];
+    if (!chosenPath && stage === 'leaving' && !customer.vehicleSpot) {
+      chosenPath = findPath(customerMap, customerCollision, start, ENTRANCE_TILE);
+    }
+    const waypoints = chosenPath?.map(tileCenter).slice(1) ?? [];
     this.paths.set(customer.id ?? customer.checkoutId ?? 'default', waypoints);
 
     if (!paths.length && stage !== 'checkout') {
@@ -361,7 +390,9 @@ export class CustomerManager {
     pricing?: CustomerPricing,
     onExpiredOnShelf?: (productId: string, quantity: number, cost: number) => void,
     onWalkout?: (customer: CustomerState, reason: CustomerFeedbackReason) => void,
-    shelfCapacityMultiplier = 1
+    shelfCapacityMultiplier = 1,
+    onCustomerDepart?: (customer: CustomerState) => void,
+    onDiningComplete?: (customer: CustomerState) => void
   ): void {
     const customerList = [...this.customers];
     for (const customer of customerList) {
@@ -369,7 +400,7 @@ export class CustomerManager {
       const key = customer.id ?? customer.checkoutId ?? 'default';
 
       // 1. Patience check (before checkout)
-      if (customer.stage !== 'leaving') {
+      if (customer.stage !== 'leaving' && customer.stage !== 'eating') {
         customer.patience -= dt;
         if (customer.patience <= 0 || !isStoreOpen) {
           onReputationLoss?.(1);
@@ -378,6 +409,16 @@ export class CustomerManager {
           this.routeCustomer(customer, 'leaving', tileMap, fixtures);
           continue;
         }
+      }
+
+      if (customer.stage === 'eating') {
+        customer.diningTimeLeft = (customer.diningTimeLeft ?? 60) - dt;
+        if (customer.diningTimeLeft <= 0) {
+          onDiningComplete?.(customer);
+          customer.diningTableId = undefined;
+          this.routeCustomer(customer, 'leaving', tileMap, fixtures);
+        }
+        continue;
       }
 
       // 2. Checkout wait timer
@@ -461,6 +502,9 @@ export class CustomerManager {
           onWalkout?.(customer, 'out_of_stock');
           this.routeCustomer(customer, 'leaving', tileMap, fixtures);
         }
+      } else if (customer.stage === 'to_table') {
+        customer.stage = 'eating';
+        customer.diningTimeLeft = 60;
       } else if (customer.stage === 'to_checkout') {
         // Check position in queue
         const queueIndex = this.getQueueIndex(customer);
@@ -468,6 +512,7 @@ export class CustomerManager {
           customer.stage = 'checkout';
         }
       } else if (customer.stage === 'leaving') {
+        onCustomerDepart?.(customer);
         this.removeCustomer(customer);
       }
     }
@@ -532,6 +577,37 @@ export class CustomerManager {
   }
 
   /**
+   * Kẻ trộm lẻ rời quầy mà không trả tiền (thao tác trên khách thật trong danh sách). Bị bắt thì hàng được trả về kệ hoặc kho,
+   * không thì giỏ bị mang đi. Trả về tổng giá bán, giá vốn và số món của giỏ, hoặc null nếu không có khách đang ở quầy.
+   */
+  public finishShoplifter(
+    checkoutId: string,
+    caught: boolean,
+    tileMap: GameTileMap,
+    fixtures: StoreFixture[],
+    inventory: InventoryItem[],
+    onSpoiledGoods?: (spoiledCount: number) => void,
+    currentDay = 1,
+    shelfCapacityMultiplier = 1
+  ): { retail: number; cost: number; count: number } | null {
+    const customer = this.customers.find((item) => item.checkoutId === checkoutId && item.stage === 'checkout');
+    if (!customer) return null;
+    const items = customer.basket ?? [];
+    const totals = {
+      retail: items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
+      cost: items.reduce((sum, item) => sum + item.lots.reduce((n, lot) => n + lot.quantity * (lot.unitCost ?? PRODUCT_MAP[item.productId]?.purchasePrice ?? 0), 0), 0),
+      count: items.reduce((sum, item) => sum + item.quantity, 0),
+    };
+    if (caught) this.abandonBasket(customer, fixtures, inventory, onSpoiledGoods, currentDay, shelfCapacityMultiplier);
+    else customer.basket = [];
+    customer.cashierStaffId = undefined;
+    customer.reservedProductId = undefined;
+    customer.stage = 'leaving';
+    this.routeCustomer(customer, 'leaving', tileMap, fixtures);
+    return totals;
+  }
+
+  /**
    * Process checkout at the cashier counter.
    * Only the customer at the front of the queue can checkout.
    */
@@ -539,7 +615,8 @@ export class CustomerManager {
     checkoutId: string | undefined,
     completedCheckoutIds: Set<string>,
     tileMap: GameTileMap,
-    fixtures: StoreFixture[]
+    fixtures: StoreFixture[],
+    diningTableId?: string
   ): CheckoutResult {
     // 1. Check idempotency: if already processed, return idempotent receipt without double charging
     if (checkoutId && completedCheckoutIds.has(checkoutId)) {
@@ -605,8 +682,10 @@ export class CustomerManager {
     // 5. Commit
     completedCheckoutIds.add(effectiveCheckoutId);
     customer.basket = [];
-    customer.stage = 'leaving';
-    this.routeCustomer(customer, 'leaving', tileMap, fixtures);
+    customer.diningTableId = diningTableId;
+    customer.diningTimeLeft = diningTableId ? 60 : undefined;
+    customer.stage = diningTableId ? 'to_table' : 'leaving';
+    this.routeCustomer(customer, diningTableId ? 'to_table' : 'leaving', tileMap, fixtures);
 
     return {
       success: true,
@@ -617,6 +696,29 @@ export class CustomerManager {
       items,
       reason: 'success',
     };
+  }
+
+  public getLiveCustomerByCheckoutId(checkoutId: string): CustomerState | undefined {
+    return this.customers.find(customer => customer.checkoutId === checkoutId && customer.stage === 'checkout');
+  }
+
+  public diningOccupancy(tableId: string): number {
+    return this.customers.filter(customer => customer.diningTableId === tableId && (customer.stage === 'to_table' || customer.stage === 'eating')).length;
+  }
+
+  public routeDinerToTable(checkoutId: string, tableId: string, tileMap: GameTileMap, fixtures: StoreFixture[]): boolean {
+    const customer = this.customers.find(item => item.checkoutId === checkoutId);
+    if (!customer) return false;
+    customer.diningTableId = tableId;
+    customer.diningTimeLeft = 60;
+    this.routeCustomer(customer, 'to_table', tileMap, fixtures);
+    return customer.stage === 'to_table';
+  }
+
+  public restoreDiningRoutes(tileMap: GameTileMap, fixtures: StoreFixture[]): void {
+    for (const customer of this.customers) {
+      if (customer.stage === 'to_table' && customer.diningTableId) this.routeCustomer(customer, 'to_table', tileMap, fixtures);
+    }
   }
 
   /** Ô xếp hàng theo quầy; quầy không có chỗ đứng đi được thì bị bỏ qua (khách dồn sang quầy khác). */

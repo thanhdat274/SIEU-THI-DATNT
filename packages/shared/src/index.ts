@@ -181,7 +181,7 @@ export type CustomerArrivalMode = 'walk' | 'motorbike' | 'car';
 
 export interface StreetVehicleState {
   id: string;
-  type: 'motorbike' | 'car';
+  type: 'motorbike' | 'car' | 'bicycle' | 'minibus';
   variant: number;
   direction: 'left' | 'right';
   position: Vector2D;
@@ -189,6 +189,7 @@ export interface StreetVehicleState {
   hornTimer?: number;
   /** Tốc độ hiện tại (px/s) khi đang giảm tốc/dừng/tăng tốc; thiếu thì bằng `speed` (tốc độ chạy thông thường). */
   currentSpeed?: number;
+  isDeparting?: boolean;
 }
 
 /** Người đi bộ băng qua đường tại vạch trước cửa tiệm (chỉ hình ảnh, không phải khách). */
@@ -196,14 +197,66 @@ export interface StreetPedestrianState {
   id: string;
   variant: number;
   /** Hướng băng qua: từ vỉa hè phía bắc sang nam hoặc ngược lại. */
-  direction: 'south' | 'north';
-  state: 'waiting' | 'crossing';
+  direction: 'south' | 'north' | 'left' | 'right';
+  state: 'waiting' | 'crossing' | 'walking';
+  activity?: 'stroll' | 'grocery' | 'jog' | 'student' | 'dog';
   position: Vector2D;
 }
 
 export type TrafficLightColor = 'green' | 'yellow' | 'red';
 export type PedestrianSignal = 'dont_walk' | 'walk' | 'clearing';
 
+
+
+export type LogisticsTruckType =
+  | 'truck_refrigerated'
+  | 'truck_dry_goods'
+  | 'truck_beverage_sweets'
+  | 'truck_fresh_produce'
+  | 'truck_heavy_container';
+
+export type LogisticsPhase =
+  | 'approaching'
+  | 'docked'
+  | 'unloading'
+  | 'loading'
+  | 'completed'
+  | 'departing';
+
+export interface LogisticsWorkerState {
+  id: string;
+  x: number;
+  y: number;
+  direction: 'left' | 'right' | 'up' | 'down';
+  carryingBox: boolean;
+  boxType: 'carton' | 'foam_cold' | 'trolley' | 'produce_crate';
+  target: 'truck' | 'dock' | 'warehouse';
+}
+
+export interface StoreLogisticsEventState {
+  id: string;
+  type: 'supplier_delivery' | 'outbound_party_order' | 'ambient_restock';
+  truckType: LogisticsTruckType;
+  truckPosition: Vector2D;
+  direction: 'left' | 'right';
+  doorsOpen: boolean;
+  phase: LogisticsPhase;
+  totalBoxes: number;
+  boxesRemaining: number;
+  statusText: string;
+  productNames: string[];
+  worker?: LogisticsWorkerState;
+}
+
+export interface StoreLogisticsState {
+  activeEvent: StoreLogisticsEventState | null;
+  loadingDockLocation: {
+    dockX: number;
+    dockY: number;
+    truckBayX: number;
+    truckBayY: number;
+  };
+}
 export interface TrafficSignalState {
   vehicle: TrafficLightColor;
   pedestrian: PedestrianSignal;
@@ -214,7 +267,7 @@ export interface TrafficSignalState {
 export interface CustomerState {
   id?: string;
   position: Vector2D;
-  stage: 'to_shelf' | 'to_checkout' | 'checkout' | 'leaving';
+  stage: 'to_shelf' | 'to_checkout' | 'checkout' | 'to_table' | 'eating' | 'leaving';
   targetFixtureId: string;
   checkoutId?: string;
   cashierStaffId?: string;
@@ -229,6 +282,10 @@ export interface CustomerState {
   arrivalMode?: CustomerArrivalMode;
   vehicleSpot?: Vector2D;
   vehicleVariant?: number;
+  /** Kẻ trộm lẻ: lấy hàng mà không trả tiền nếu không bị phát hiện ở quầy. Khách quen không bao giờ là kẻ trộm. */
+  thief?: boolean;
+  diningTableId?: string;
+  diningTimeLeft?: number;
 }
 
 export interface CheckoutResult {
@@ -255,7 +312,34 @@ export interface CustomerReview {
   regularId?: string;
 }
 
-export type LedgerEntryType = 'purchase' | 'sale' | 'spoilage' | 'wage' | 'maintenance';
+/** Sự cố an ninh (trộm lẻ, trộm đột nhập, kết quả công an) để hiển thị cho người chơi. */
+export interface SecurityIncident {
+  id: string;
+  day: number;
+  kind: 'burglary' | 'burglary_repelled' | 'shoplift_caught' | 'shoplift_escaped' | 'police_recovered' | 'police_closed';
+  text: string;
+  /** Giá trị mất (VND, theo giá vốn hoặc tiền mặt). */
+  loss?: number;
+  /** Giá trị thu hồi (tiền phạt hoặc công an trả lại). */
+  recovered?: number;
+}
+
+export interface PoliceCase {
+  day: number;
+  value: number;
+  resolveDay: number;
+  caught: boolean;
+}
+
+export interface SecurityState {
+  camera: boolean;
+  /** Có báo công an khi bị trộm đột nhập không (mặc định có). */
+  callPolice: boolean;
+  incidents: SecurityIncident[];
+  policeCases: PoliceCase[];
+}
+
+export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit';
 
 export interface LedgerEntry {
   id: string;
@@ -443,6 +527,10 @@ export interface DailyRecord {
   spoilageCost: number; // Value of goods spoiled on this day
   wagesPaid: number; // Wages paid to staff on this day
   maintenanceCost?: number; // Chi phí bảo trì/sửa/mua mới nội thất trong ngày (thiếu = 0)
+  theftCost?: number; // Giá vốn hàng và tiền bị trộm trong ngày (thiếu = 0)
+  theftRecovered?: number; // Tiền thu hồi từ phạt kẻ trộm và công an trong ngày (thiếu = 0)
+  counterfeitLoss?: number; // Mệnh giá tiền giả nhận nhầm trong ngày (thiếu = 0)
+  badDebtCost?: number; // Khoản phải thu đã xóa nợ xấu trong ngày (thiếu = 0)
   grossProfit: number; // revenue - cogs
   netProfit: number; // revenue - cogs - spoilageCost - wagesPaid
   customersServed: number; // Distinct customers served
@@ -492,7 +580,7 @@ export interface RestockJobTarget {
   availableInInventory: number;
 }
 
-export type FixtureType = 'decor' | 'shelf_wooden' | 'shelf_glass' | 'cashier_counter' | 'refrigerator' | 'warehouse_dry' | 'warehouse_cold' | 'warehouse_receiving';
+export type FixtureType = 'decor' | 'shelf_wooden' | 'shelf_glass' | 'cashier_counter' | 'refrigerator' | 'dining_table' | 'warehouse_dry' | 'warehouse_cold' | 'warehouse_receiving';
 export const isWarehouseFixture = (fixture: Pick<StoreFixture, 'type'>): boolean => fixture.type.startsWith('warehouse_');
 export const isSalesFixture = (fixture: Pick<StoreFixture, 'type'>): boolean => fixture.type === 'shelf_wooden' || fixture.type === 'shelf_glass' || fixture.type === 'refrigerator';
 
@@ -633,6 +721,7 @@ export interface StaffMember {
   assignedFixtureId?: string;
   position?: Vector2D;
   workerTask?: StaffWorkerTask;
+  diningTask?: StaffDiningTask;
   currentCheckoutId?: string;
   checkoutServiceRemaining?: number;
   lastWorkerError?: string;
@@ -746,11 +835,17 @@ export interface SaveGameData {
     totalSpoiled?: number;
   };
   regulars?: Record<string, RegularCustomerProgress>;
+  /** Khoản phải thu khách quen; thiếu ở save cũ tương đương danh sách trống. */
+  customerCredits?: CustomerCreditAccount[];
+  customerCreditSequence?: number;
+  diningDirtyTableIds?: string[];
   partyOrders?: PartyOrderState;
   goals?: GoalState;
   skills?: SkillState;
   /** Lời đánh giá gần đây của khách (tối đa 60), mới nhất ở cuối. */
   reviews?: CustomerReview[];
+  /** An ninh: camera, báo công an, sự cố gần đây và hồ sơ công an đang mở. */
+  security?: SecurityState;
 }
 
 export interface RegularCustomerProgress {
@@ -761,6 +856,23 @@ export interface RegularCustomerProgress {
   totalVisits: number;
   lastVisitDay?: number;
   lastFriendshipDay?: number; // Giới hạn trần +2 điểm thân thiết mỗi ngày
+}
+
+export interface StaffDiningTask {
+  fixtureId: string;
+  route: Vector2D[];
+  workRemaining: number;
+}
+
+export interface CustomerCreditAccount {
+  id: string;
+  regularId: string;
+  checkoutId: string;
+  issuedDay: number;
+  dueDay: number;
+  amount: number;
+  balance: number;
+  status: 'open' | 'overdue' | 'defaulted' | 'paid';
 }
 
 export interface TileMapLayer {
@@ -837,7 +949,10 @@ export type GameCommandPayload =
   | { type: 'move'; sequence: number; direction: Vector2D }
   | { type: 'restock'; fixtureId: string; productId: string; quantity: number }
   | { type: 'unstock'; fixtureId: string; quantity: number }
-  | { type: 'checkout'; checkoutId: string; fixtureId: string }
+  | { type: 'checkout'; checkoutId: string; fixtureId: string; onCredit?: boolean; dineIn?: boolean }
+  | { type: 'repay_customer_credit'; creditId: string }
+  | { type: 'clean_dining_table'; fixtureId: string }
+  | { type: 'assign_dining_cleanup'; staffId: string; fixtureId: string }
   | { type: 'set_price'; productId: string; price: number | null }
   | { type: 'layout_move'; fixtureId: string; tileX: number; tileY: number; rotation: 0 | 90 | 180 | 270 }
   | { type: 'layout_store'; fixtureId: string }
@@ -865,7 +980,8 @@ export type GameCommandPayload =
   | { type: 'claim_festival_goal'; goalId: string }
   | { type: 'choose_perk'; perkId: string }
   | { type: 'set_title'; titleId?: string }
-  | { type: 'maintain_fixture'; fixtureId: string; action: 'service' | 'repair' | 'replace' };
+  | { type: 'maintain_fixture'; fixtureId: string; action: 'service' | 'repair' | 'replace' }
+  | { type: 'security_action'; action: 'buy_camera' | 'police_on' | 'police_off' };
 
 export interface GameCommand {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
@@ -1050,7 +1166,10 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'move': return nonNegativeInteger(p.sequence) && finiteVector(p.direction);
     case 'restock': return nonEmptyString(p.fixtureId) && nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
     case 'unstock': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
-    case 'checkout': return nonEmptyString(p.checkoutId) && nonEmptyString(p.fixtureId);
+    case 'checkout': return nonEmptyString(p.checkoutId) && nonEmptyString(p.fixtureId) && (p.onCredit === undefined || typeof p.onCredit === 'boolean') && (p.dineIn === undefined || typeof p.dineIn === 'boolean');
+    case 'repay_customer_credit': return nonEmptyString(p.creditId);
+    case 'clean_dining_table': return nonEmptyString(p.fixtureId);
+    case 'assign_dining_cleanup': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
     case 'set_price': return nonEmptyString(p.productId) && (p.price === null || (Number.isSafeInteger(p.price) && Number(p.price) > 0));
     case 'layout_move': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.tileX) && Number.isSafeInteger(p.tileY) && [0, 90, 180, 270].includes(p.rotation as number);
     case 'layout_store': return nonEmptyString(p.fixtureId);
@@ -1080,6 +1199,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'claim_festival_goal': return nonEmptyString(p.goalId);
     case 'choose_perk': return nonEmptyString(p.perkId);
     case 'set_title': return p.titleId === undefined || nonEmptyString(p.titleId);
+    case 'security_action': return p.action === 'buy_camera' || p.action === 'police_on' || p.action === 'police_off';
     case 'maintain_fixture': return nonEmptyString(p.fixtureId) && (p.action === 'service' || p.action === 'repair' || p.action === 'replace');
     default: return false;
   }

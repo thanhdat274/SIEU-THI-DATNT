@@ -148,7 +148,10 @@ export class ShopLighting {
       const dim = getFixtureDimensions(f);
       const x = f.tileX * T, y = f.tileY * T, w = dim.widthTiles * T, h = dim.heightTiles * T;
       if (f.type === 'cashier_counter') this.add(this.fixtureLights, x + w / 2, y + h / 2, 1.6 * T, 1.3 * T, 0xffcf9e, 0.28, 'artificial', 0.02);
-      else if (f.type === 'refrigerator') this.add(this.fixtureLights, x + w / 2, y + h * 0.45, 0.9 * T, 1.1 * T, 0xc2ecf7, 0.18);
+      else if (f.type === 'refrigerator') {
+        const radiusX = f.widthTiles >= 2 ? 1.4 * T : 0.9 * T;
+        this.add(this.fixtureLights, x + w / 2, y + h * 0.45, radiusX, 1.1 * T, 0xc2ecf7, 0.18);
+      }
       else if (f.type.startsWith('shelf')) this.add(this.fixtureLights, x + w / 2, y + h * 0.8, w * 0.75, 0.55 * T, 0xf2f7ff, 0.22);
       else if (isWarehouseFixture(f)) this.add(this.warehouseFixtureLights, x + w / 2, y + h / 2, 1.6 * T, 1.3 * T, 0xdff0ff, 0.15);
       const shadow = new Graphics();

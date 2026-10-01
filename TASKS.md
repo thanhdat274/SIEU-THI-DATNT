@@ -1,6 +1,22 @@
 # BẢNG THEO DÕI CÔNG VIỆC (TASKS PROGRESS)
 
+## Mở rộng gameplay (01/10/2026)
+
+- [>] `reference-gameplay-expansion`: đã code tiền giả, tín dụng khách quen và dine-in MVP. Dine-in dùng đồ ăn đóng gói từ kệ, khách đi tới bàn, ăn 60 giây game, bàn bẩn; người chơi hoặc nhân viên bổ sung hàng có thể dọn. Checkout, thu nợ, dọn bàn và giao job nhân viên được server replay. Chưa chạy test/typecheck/build/browser QA; balance provisional, verification gom ở cuối.
+- [ ] Wave A còn validation/verification trong section 8; recipe/production vẫn là Wave B và chưa có.
+- [ ] Wave B: công thức và sản xuất tại bếp; Wave C: prestige; Wave D: biểu đồ/heatmap/checklist/audio/replay; Wave E: tax chỉ sau TAX-0.
+- [ ] Chuỗi chi nhánh/loại hình cửa hàng/luân chuyển nội bộ vẫn plan sau, phụ thuộc thiết kế mở rộng và phân khu trên cùng khu đất.
+
 > Ghi chú: các mục `pnpm` ở các giai đoạn cũ bên dưới là lịch sử; dự án hiện dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
+
+## Tiếp nối an ninh/trộm cắp — 01/10/2026
+
+- [>] OpenSpec `theft-and-security`: code, test tự động và giao diện đã có; sửa lỗi qua ngày hoàn giỏ trên khách thật. `tsc -b`, core `test-runner.ts` (suite security + 7 TAP), server TS build và web Vite production build PASS. Còn browser QA màn An ninh/toast/mua camera, cân bằng, và quyết định về server replay `security_action`/thuế camera.
+
+## Kế hoạch lấy ý tưởng game tham khảo — 01/10/2026
+
+- [>] OpenSpec `reference-gameplay-expansion`: plan đã được chia thành capability specs; implementation-first/test-last được ghi ở tasks. Bắt đầu tiền giả bằng kết quả checkout xác định, detection player/thu ngân, loss ledger/net-profit, toast và summary. Chưa chạy kiểm chứng; tham số provisional. Dine-in, credit, production, prestige, analytics, checklist, audio, replay và tax engine chưa triển khai.
+- [ ] Chuỗi chi nhánh/loại cửa hàng/internal supply được để plan sau; cần chốt cách mở rộng và phân khu trên cùng khu đất trước.
 
 ## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)
 
@@ -8,7 +24,7 @@
 - [>] I-05: lệnh nhân viên co-op (`hire_staff`/`set_staff_shift`/`assign_refill_job`) đã làm 01/10/2026, test co-op PASS; còn QA hai trình duyệt, đồng bộ AI nhân viên.
 - [>] I-02: bảng xếp hạng thật (`/api/v1/leaderboard`, `leaderboard.test.ts` PASS 01/10/2026); còn kiểm đăng nhập thật, tuần/mùa, opt-out, chống gian lận.
 - [>] I-04: ID đơn nhập/sổ cái xác định (`ord-N`/`led-N`, `deterministic-ids.test.ts` PASS 01/10/2026).
-- [>] I-12: xuất/nhập save file (`save-file.ts`, test + Browser pane PASS), 3 ô lưu và khóa nhiều tab bằng Web Locks (`db.ts`, `slot-lock.ts`, Browser pane hai tab) đã làm 01/10/2026; còn test tự động, kiểm mobile/trình duyệt khác.
+- [>] I-12: xuất/nhập save file (`save-file.ts`, test + Browser pane PASS), 3 ô lưu và khóa nhiều tab bằng Web Locks (`db.ts`, `slot-lock.ts`, Browser pane hai tab) đã làm 01/10/2026; menu ẩn bộ chọn khi chỉ có một save và ưu tiên ô trống khi tạo tiệm mới (code cập nhật 01/10/2026, chưa xác minh); còn test tự động, kiểm mobile/trình duyệt khác.
 - [>] I-15: giới hạn payload/tần suất đã làm 01/10/2026 (HTTP/commit/WS, thân JSON 2 MB, `test:ratelimit`); còn: ngưỡng theo lưu lượng thật, trust proxy, client xử lý 429, giới hạn số kết nối WS.
 - [>] Co-op I-01: hướng B xong 01/10/2026 (`save-invariants.ts`, `test:invariants`, test co-op PASS); còn kiểm kho/giá, hiệu chỉnh ngưỡng bằng playtest, hướng A lâu dài. Replay mọi lệnh (I-01). Xong 01/10/2026: allow-list loại lệnh + test lệnh lạ (`test:coop`, `test:worlds`, `test:gateway` PASS). Còn: thống nhất payload client–`WorldRuntime` rồi chuyển từng lệnh sang replay.
 - [ ] Giới hạn payload/tần suất server (I-15); migration schema world Mongo (I-16).

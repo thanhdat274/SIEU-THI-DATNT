@@ -76,7 +76,9 @@ export class PixelTextureFactory {
       case 'fixture_cashier':
         return this.createDetailedCashierTexture();
       case 'fixture_refrigerator':
-        return this.createRefrigeratorTexture();
+        return this.createRefrigeratorTexture(true);
+      case 'fixture_refrigerator_single':
+        return this.createRefrigeratorTexture(false);
       case 'bubble_question':
         return this.createQuestionBubbleTexture();
       case 'player_down':
@@ -475,26 +477,46 @@ export class PixelTextureFactory {
   /**
    * Cute Stardew-style Question Bubble (?)
    */
-  private createRefrigeratorTexture(): HTMLCanvasElement {
-    const canvas = createCanvas(32, 38);
+  private createRefrigeratorTexture(doubleWide = true): HTMLCanvasElement {
+    const width = doubleWide ? 64 : 32;
+    const canvas = createCanvas(width, 38);
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = '#3d5456';
-    ctx.fillRect(0, 2, 32, 36);
+    ctx.fillRect(0, 2, width, 36);
     ctx.fillStyle = '#d7e3e5';
-    ctx.fillRect(2, 0, 28, 35);
-    ctx.fillStyle = '#6c8f91';
-    ctx.fillRect(5, 4, 22, 23);
-    ctx.fillStyle = '#a9d6d8';
-    ctx.fillRect(7, 6, 18, 19);
-    ctx.fillStyle = '#f4ecd8';
-    ctx.fillRect(9, 12, 5, 9);
-    ctx.fillRect(18, 12, 5, 9);
-    ctx.fillStyle = '#c1121f';
-    ctx.fillRect(9, 9, 5, 3);
-    ctx.fillStyle = '#287c84';
-    ctx.fillRect(18, 9, 5, 3);
-    ctx.fillStyle = '#455c5e';
-    ctx.fillRect(3, 29, 26, 4);
+    ctx.fillRect(2, 0, width - 4, 35);
+
+    if (doubleWide) {
+      for (const dx of [5, 35]) {
+        ctx.fillStyle = '#6c8f91';
+        ctx.fillRect(dx, 4, 24, 23);
+        ctx.fillStyle = '#a9d6d8';
+        ctx.fillRect(dx + 2, 6, 20, 19);
+        ctx.fillStyle = '#f4ecd8';
+        ctx.fillRect(dx + 4, 12, 5, 9);
+        ctx.fillRect(dx + 11, 12, 5, 9);
+        ctx.fillStyle = '#c1121f';
+        ctx.fillRect(dx + 4, 9, 5, 3);
+        ctx.fillStyle = '#287c84';
+        ctx.fillRect(dx + 11, 9, 5, 3);
+      }
+      ctx.fillStyle = '#455c5e';
+      ctx.fillRect(3, 29, width - 6, 4);
+    } else {
+      ctx.fillStyle = '#6c8f91';
+      ctx.fillRect(5, 4, 22, 23);
+      ctx.fillStyle = '#a9d6d8';
+      ctx.fillRect(7, 6, 18, 19);
+      ctx.fillStyle = '#f4ecd8';
+      ctx.fillRect(9, 12, 5, 9);
+      ctx.fillRect(18, 12, 5, 9);
+      ctx.fillStyle = '#c1121f';
+      ctx.fillRect(9, 9, 5, 3);
+      ctx.fillStyle = '#287c84';
+      ctx.fillRect(18, 9, 5, 3);
+      ctx.fillStyle = '#455c5e';
+      ctx.fillRect(3, 29, 26, 4);
+    }
     return canvas;
   }
 

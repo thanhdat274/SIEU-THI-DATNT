@@ -168,3 +168,141 @@ h3{font-weight:750}.quantity-stepper .pixel-button{min-width:44px}
 .hud-debt{display:flex;align-items:center;gap:4px;flex-shrink:0;padding:3px 8px;font:inherit;font-size:12px;font-weight:800;white-space:nowrap;color:#fff;background:var(--brick,#a4532b);border:2px solid var(--wood-dark);box-shadow:2px 2px 0 var(--wood-light);cursor:pointer}
 @media(max-width:860px){.hud-debt span{display:none}}
 .shelf-slot-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.shelf-slot-tabs button{font-size:12px}
+
+/* Management Modal & HUD Badge */
+.hud-management-badge {
+  display: inline-block;
+  font-weight: 800;
+  color: #ffeedd;
+  margin-left: 2px;
+}
+.hud-actions .btn-management {
+  position: relative;
+}
+
+.management-modal-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 680px;
+  width: 100%;
+}
+.management-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.management-section-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--wood-dark, #3b2518);
+  border-bottom: 2px dashed var(--wood-light, #cba67b);
+  padding-bottom: 4px;
+  margin: 0;
+}
+.management-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+}
+.management-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #FFF8E7;
+  border: 2px solid var(--wood-light, #cba67b);
+  box-shadow: 2px 2px 0 var(--wood, #8c644a);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.1s ease, background-color 0.1s ease;
+  min-height: 56px;
+  font: inherit;
+  color: inherit;
+}
+.management-card:hover:not(:disabled) {
+  background: #FFFDF5;
+  border-color: var(--teal, #2f7f6f);
+  transform: translateY(-2px);
+  box-shadow: 2px 4px 0 var(--wood-dark, #3b2518);
+}
+.management-card:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 1px 1px 0 var(--wood-dark, #3b2518);
+}
+.management-card.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #EFE6D2;
+  box-shadow: none;
+}
+.management-card-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  background: var(--paper, #fdf6e6);
+  border: 2px solid var(--wood, #8c644a);
+  flex-shrink: 0;
+  color: var(--wood-dark, #3b2518);
+}
+.management-card:hover:not(:disabled) .management-card-icon {
+  background: var(--teal-dark, #235438);
+  color: #fff;
+  border-color: var(--teal, #2f7f6f);
+}
+.management-card-info {
+  flex: 1;
+  min-width: 0;
+}
+.management-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.management-card-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--wood-dark, #3b2518);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.management-card-desc {
+  font-size: 11px;
+  color: var(--muted, #6d503d);
+  margin-top: 2px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.management-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.management-badge.badge-brick {
+  background: var(--brick, #a4532b);
+  color: #fff;
+}
+.management-badge.badge-teal {
+  background: var(--teal, #2f7f6f);
+  color: #fff;
+}
+.management-badge.badge-default {
+  background: var(--wood-light, #cba67b);
+  color: var(--wood-dark, #3b2518);
+}
+@media(max-width: 640px) {
+  .management-grid {
+    grid-template-columns: 1fr;
+  }
+  .management-card {
+    padding: 8px 10px;
+  }
+}

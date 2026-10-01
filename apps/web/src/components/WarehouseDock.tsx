@@ -12,6 +12,7 @@ interface Props {
   onToggle: () => void;
   onAutoRestock: () => void;
   onOpenSupplier: () => void;
+  onOpenPlanogram?: () => void;
   onLocateWarehouse: () => void;
   onStowHolding?: (id?: string) => void;
   currentDay: number;
@@ -25,6 +26,7 @@ export const WarehouseDock: React.FC<Props> = ({
   onToggle,
   onAutoRestock,
   onOpenSupplier,
+  onOpenPlanogram,
   onLocateWarehouse,
   onStowHolding,
   currentDay,
@@ -109,6 +111,11 @@ export const WarehouseDock: React.FC<Props> = ({
         <PixelButton icon="warehouse" onClick={onLocateWarehouse}>
           Xem nhà kho
         </PixelButton>
+        {onOpenPlanogram && (
+          <PixelButton icon="warehouse" onClick={onOpenPlanogram} title="Xem toàn bộ các kệ và châm hàng">
+            Sơ đồ kệ
+          </PixelButton>
+        )}
         <p>
           {empty > 0 ? `${empty} kệ đang trống. ` : ''}
           {restockable.length ? `${restockable.length} kệ có thể châm từ kho.` : 'Chưa có hàng phù hợp để châm các kệ.'}

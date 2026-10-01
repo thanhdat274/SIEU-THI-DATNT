@@ -5,7 +5,7 @@ import { FixedStepSimulationRunner, GameSimulation, getLightingState, computeTre
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting } from './shop-lighting';
-import { DECOR_MAP, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp } from '@game/data';
+import { DECOR_MAP, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp, LOADING_DOCK_CONFIG } from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -70,11 +70,22 @@ export class PixiGameViewport {
   private stallSprites: Sprite[] = [];
   private shopkeeper?: { container: Container; sprite: Sprite; bubble: Container };
   private motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-  private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string; staticArt?: boolean }> = new Map();
+  private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string; staticArt?: boolean; dotX: number }> = new Map();
   private interactionBubble!: Container;
   private warehouseLocator!: Container;
   private locatingWarehouse = false;
   private floatingTexts: Array<{ container: Container; life: number; maxLife: number }> = [];
+
+  // ===== LOGISTICS RENDERER STATE =====
+  private logisticsTruckSprite: Sprite | null = null;
+  private logisticsWorkerContainer: Container | null = null;
+  private logisticsWorkerSprite: Sprite | null = null;
+  private logisticsBoxSprite: Sprite | null = null;
+  private logisticsToastContainer: Container | null = null;
+  private logisticsToastText: Text | null = null;
+  private logisticsToastLife = 0;
+  private logisticsLastPhase = '';
+  private logisticsLastStatus = '';
 
   // Doors & animations
   private warehouseDoorContainer!: Container;
@@ -548,12 +559,6 @@ export class PixiGameViewport {
     crates.zIndex = crates.y + 32;
     this.entitiesLayer.addChild(crates);
 
-    // Chair inside the store near the shelves/cashier area
-    const chair = new Sprite(this.textures.getTexture('tile_chair'));
-    chair.position.set(11 * TILE_SIZE, 7 * TILE_SIZE);
-    chair.zIndex = chair.y + 32;
-    this.entitiesLayer.addChild(chair);
-
     // Cozy Alley Shade Tree on sidewalk
     this.trafficSignalHeads = buildTrafficSignalHeads(this.entitiesLayer);
     for (const prop of TREE_PROPS) {
@@ -667,7 +672,7 @@ export class PixiGameViewport {
       if (fix.type === 'cashier_counter') {
         textureKey = 'fixture_cashier';
       } else if (fix.type === 'refrigerator') {
-        textureKey = 'fixture_refrigerator';
+        textureKey = fix.widthTiles >= 2 ? 'fixture_refrigerator' : 'fixture_refrigerator_single';
       } else if(isWarehouseFixture(fix)) {
         textureKey = `fixture_${fix.type}`;
       }
@@ -684,16 +689,23 @@ export class PixiGameViewport {
       container.addChild(sprite);
 
       // Pill stock badge under shelf (Matching user reference image & Redhexx!)
+      const isWarehouse = isWarehouseFixture(fix);
+      const is1Tile = fix.widthTiles === 1 && !isWarehouse;
+      const badgeW = isWarehouse ? 60 : is1Tile ? 38 : 44;
+      const badgeX = isWarehouse ? 2 : Math.round((fix.widthTiles * TILE_SIZE - badgeW) / 2);
+      const dotX = badgeX + 3;
+      const textX = badgeX + 12;
+
       const badgeBg = new Graphics();
-      badgeBg.rect(isWarehouseFixture(fix)?2:10, 34, isWarehouseFixture(fix)?60:44, 13);
+      badgeBg.rect(badgeX, 34, badgeW, 13);
       badgeBg.fill({ color: 0xeadcc9, alpha: 0.96 });
       badgeBg.stroke({ color: 0xbfa993, width: 1 });
-      badgeBg.visible = fix.type !== 'cashier_counter' && fix.type !== 'decor';
+      badgeBg.visible = fix.type !== 'cashier_counter' && fix.type !== 'decor' && fix.type !== 'dining_table';
       container.addChild(badgeBg);
 
       // Dot marker (Green = Full, Yellow = Low stock, Red = Out of stock)
       const dotMarker = new Graphics();
-      dotMarker.rect(13, 38, 6, 6);
+      dotMarker.rect(dotX, 38, 6, 6);
       dotMarker.fill({ color: 0x2a7a43 });
       container.addChild(dotMarker);
 
@@ -706,12 +718,12 @@ export class PixiGameViewport {
 
       const stockText = new Text({ text: '', style });
       stockText.anchor.set(0, 0.5);
-      stockText.x = isWarehouseFixture(fix)?14:22;
+      stockText.x = textX;
       stockText.y = 40.5;
       container.addChild(stockText);
 
       this.entitiesLayer.addChild(container);
-      this.fixtureSprites.set(fix.id, { container, stockText, dotMarker, sprite, textureKey, lastState: '', staticArt: !!art });
+      this.fixtureSprites.set(fix.id, { container, stockText, dotMarker, sprite, textureKey, lastState: '', staticArt: !!art, dotX });
     }
   }
 
@@ -957,6 +969,16 @@ export class PixiGameViewport {
         entry.regularTag.container.visible = false;
       }
 
+      if (cust.stage === 'leaving') {
+        const distFromEdge = Math.min(cust.position.x, MAP_WIDTH * TILE_SIZE - cust.position.x);
+        if (distFromEdge < 48) {
+          entry.container.alpha = Math.max(0, Math.min(1, distFromEdge / 48));
+        } else {
+          entry.container.alpha = 1;
+        }
+      } else {
+        entry.container.alpha = 1;
+      }
       entry.lastPosition = { ...cust.position };
     }
 
@@ -1058,9 +1080,17 @@ export class PixiGameViewport {
     for (const veh of streetVehicles) {
       activeStreetKeys.add(veh.id);
       let sprite = this.streetTrafficSprites.get(veh.id);
-      const textureKey = veh.type === 'motorbike'
-        ? `vehicle_motorbike_rider_${veh.variant ?? 0}_${veh.direction}`
-        : `vehicle_car_${veh.direction}`;
+      let textureKey = `vehicle_car_${veh.direction}`;
+      if (veh.type === 'motorbike') {
+        textureKey = `vehicle_motorbike_rider_${veh.variant ?? 0}_${veh.direction}`;
+      } else if (veh.type === 'bicycle') {
+        textureKey = `vehicle_bicycle_rider_${veh.direction}`;
+      } else if (veh.type === 'minibus') {
+        textureKey = `vehicle_minibus_${veh.variant ?? 0}_${veh.direction}`;
+      } else {
+        textureKey = `vehicle_car_${veh.direction}`;
+      }
+
       if (!sprite) {
         sprite = new Sprite(this.textures.getTexture(textureKey));
         sprite.anchor.set(0.5, 1);
@@ -1072,6 +1102,15 @@ export class PixiGameViewport {
       sprite.x = Math.round(veh.position.x);
       sprite.y = Math.round(veh.position.y);
       sprite.zIndex = veh.position.y;
+
+      // Hiệu ứng mờ dần khi xe tới gần hai mép bản đồ (không biến mất đột ngột)
+      const EDGE_FADE_PX = 56;
+      const distFromEdge = Math.min(veh.position.x, MAP_WIDTH * TILE_SIZE - veh.position.x);
+      if (distFromEdge < EDGE_FADE_PX) {
+        sprite.alpha = Math.max(0, Math.min(1, distFromEdge / EDGE_FADE_PX));
+      } else {
+        sprite.alpha = 1;
+      }
     }
     for (const [id, sprite] of this.streetTrafficSprites.entries()) {
       if (!activeStreetKeys.has(id)) {
@@ -1088,11 +1127,17 @@ export class PixiGameViewport {
       activePedestrians.add(ped.id);
       let sprite = this.pedestrianSprites.get(ped.id);
       if (!sprite) {
-        sprite = createPedestrianSprite(ped.variant);
+        sprite = createPedestrianSprite(ped.variant, ped.activity);
         this.entitiesLayer.addChild(sprite);
         this.pedestrianSprites.set(ped.id, sprite);
       }
       placePedestrian(sprite, ped, this.animTimer);
+      const pedDist = Math.min(ped.position.x, MAP_WIDTH * TILE_SIZE - ped.position.x);
+      if (pedDist < 48) {
+        sprite.alpha = Math.max(0, Math.min(1, pedDist / 48));
+      } else {
+        sprite.alpha = 1;
+      }
     }
     for (const [id, sprite] of this.pedestrianSprites.entries()) {
       if (!activePedestrians.has(id)) {
@@ -1242,7 +1287,7 @@ export class PixiGameViewport {
             if (!entry.staticArt) entry.sprite.texture = this.textures.getTexture(key);
             entry.lastState = stateKey;
             entry.sprite.tint = fix.broken ? (fix.broken === 'major' ? 0x7a6a6a : 0xb5a29c) : 0xffffff;
-            entry.dotMarker.clear().rect(13, 38, 6, 6).fill({color: fix.broken ? 0x6f2a1e : state==='empty'?0xd9381e:state==='low'?0xf4a261:0x2a7a43});
+            entry.dotMarker.clear().rect(entry.dotX, 38, 6, 6).fill({color: fix.broken ? 0x6f2a1e : state==='empty'?0xd9381e:state==='low'?0xf4a261:0x2a7a43});
           }
           entry.stockText.visible = true;
           entry.dotMarker.visible = true;
@@ -1254,6 +1299,9 @@ export class PixiGameViewport {
     }
     const activeFixtureIds = new Set(this.simulation.getFixtures().map(fixture => fixture.id));
     for (const [id, entry] of this.fixtureSprites) entry.container.visible = activeFixtureIds.has(id);
+
+    // Logistics: render trucks, workers, boxes and toast notifications
+    this.updateLogistics(elapsed);
 
     // 4. Update Y-sorting for realistic depth (so player can walk behind/in front of fixtures)
     this.entitiesLayer.children.sort((a, b) => a.zIndex - b.zIndex);
@@ -1315,6 +1363,141 @@ export class PixiGameViewport {
       this.interactionBubble.visible = false;
     }
   };
+
+  /**
+   * Cap nhat hien thi he thong giao nhan kho hang (logistics renderer):
+   * ve xe tai den/di, nhan vien boc/xep kien hang va toast thong bao.
+   */
+  private updateLogistics(elapsed: number): void {
+    const ev = this.simulation.getLogisticsState().activeEvent;
+    const reducedMotion = this.motionQuery.matches;
+
+    if (!ev) {
+      if (this.logisticsTruckSprite) {
+        this.entitiesLayer.removeChild(this.logisticsTruckSprite);
+        this.logisticsTruckSprite.destroy();
+        this.logisticsTruckSprite = null;
+      }
+      if (this.logisticsWorkerContainer) {
+        this.entitiesLayer.removeChild(this.logisticsWorkerContainer);
+        this.logisticsWorkerContainer.destroy({ children: true });
+        this.logisticsWorkerContainer = null;
+        this.logisticsWorkerSprite = null;
+        this.logisticsBoxSprite = null;
+      }
+      if (this.logisticsToastContainer) {
+        this.logisticsToastLife -= elapsed;
+        this.logisticsToastContainer.alpha = Math.max(0, this.logisticsToastLife / 1.5);
+        if (this.logisticsToastLife <= 0) {
+          this.uiOverlayLayer.removeChild(this.logisticsToastContainer);
+          this.logisticsToastContainer.destroy({ children: true });
+          this.logisticsToastContainer = null;
+          this.logisticsToastText = null;
+          this.logisticsLastStatus = '';
+        }
+      }
+      return;
+    }
+
+    // ---- Truck Sprite ----
+    const truckTextureKey = ev.truckType + '_' + ev.direction;
+    if (!this.logisticsTruckSprite) {
+      this.logisticsTruckSprite = new Sprite(this.textures.getTexture(truckTextureKey));
+      this.logisticsTruckSprite.anchor.set(0.5, 1);
+      this.entitiesLayer.addChild(this.logisticsTruckSprite);
+    } else {
+      this.logisticsTruckSprite.texture = this.textures.getTexture(truckTextureKey);
+    }
+    this.logisticsTruckSprite.x = Math.round(ev.truckPosition.x);
+    this.logisticsTruckSprite.y = Math.round(ev.truckPosition.y);
+    this.logisticsTruckSprite.zIndex = ev.truckPosition.y + 2;
+
+    if (!reducedMotion && (ev.phase === 'docked' || ev.phase === 'unloading' || ev.phase === 'loading')) {
+      this.logisticsTruckSprite.x += (Math.random() - 0.5) * 0.4;
+    }
+
+    const edgeDist = Math.min(ev.truckPosition.x, MAP_WIDTH * TILE_SIZE - ev.truckPosition.x);
+    this.logisticsTruckSprite.alpha = Math.max(0, Math.min(1, edgeDist / 48));
+
+    // ---- Worker Sprite ----
+    if (ev.worker && (ev.phase === 'unloading' || ev.phase === 'loading')) {
+      if (!this.logisticsWorkerContainer) {
+        this.logisticsWorkerContainer = new Container();
+        this.logisticsWorkerSprite = new Sprite(this.textures.getTexture('npc_0_right_walk_0'));
+        this.logisticsWorkerSprite.anchor.set(0.5, 1);
+        this.logisticsWorkerContainer.addChild(this.logisticsWorkerSprite);
+        this.logisticsBoxSprite = new Sprite(this.textures.getTexture('prop_cargo_carton'));
+        this.logisticsBoxSprite.anchor.set(0.5, 1);
+        this.logisticsBoxSprite.y = -20;
+        this.logisticsWorkerContainer.addChild(this.logisticsBoxSprite);
+        this.entitiesLayer.addChild(this.logisticsWorkerContainer);
+      }
+      const w = ev.worker;
+      const walkFrame = reducedMotion ? 0 : Math.floor(this.animTimer * 8) % 4;
+      const dir = w.direction === 'right' ? 'right' : 'left';
+      if (this.logisticsWorkerSprite) {
+        this.logisticsWorkerSprite.texture = this.textures.getTexture('npc_0_' + dir + '_walk_' + walkFrame);
+      }
+      this.logisticsWorkerContainer.position.set(Math.round(w.x), Math.round(w.y));
+      // Đảm bảo nhân viên đứng ngoài cửa vẫn hiện phía trước sprite cửa chính.
+      this.logisticsWorkerContainer.zIndex = Math.max(w.y + 1, 346);
+      if (this.logisticsBoxSprite) {
+        this.logisticsBoxSprite.visible = w.carryingBox;
+        if (w.carryingBox) {
+          const boxKey = w.boxType === 'foam_cold' ? 'prop_foam_box_cold' : 'prop_cargo_carton';
+          this.logisticsBoxSprite.texture = this.textures.getTexture(boxKey);
+          if (!reducedMotion) {
+            this.logisticsBoxSprite.y = -20 + Math.sin(this.animTimer * 8) * 1.5;
+          }
+        }
+      }
+    } else if (this.logisticsWorkerContainer && ev.phase !== 'unloading' && ev.phase !== 'loading') {
+      this.entitiesLayer.removeChild(this.logisticsWorkerContainer);
+      this.logisticsWorkerContainer.destroy({ children: true });
+      this.logisticsWorkerContainer = null;
+      this.logisticsWorkerSprite = null;
+      this.logisticsBoxSprite = null;
+    }
+
+    // ---- Toast Notification ----
+    if (ev.statusText && ev.statusText !== this.logisticsLastStatus) {
+      this.logisticsLastStatus = ev.statusText;
+      if (!this.logisticsToastContainer) {
+        this.logisticsToastContainer = new Container();
+        const bg = new Graphics();
+        this.logisticsToastContainer.addChild(bg);
+        this.logisticsToastText = new Text({ text: '', style: new TextStyle({
+          fontFamily: 'Arial', fontSize: 9, fontWeight: 'bold',
+          fill: 0xe8f4d4, align: 'center', wordWrap: true, wordWrapWidth: 200,
+        }) });
+        this.logisticsToastText.anchor.set(0.5, 1);
+        this.logisticsToastContainer.addChild(this.logisticsToastText);
+        this.uiOverlayLayer.addChild(this.logisticsToastContainer);
+      }
+      if (this.logisticsToastText) {
+        this.logisticsToastText.text = '\u{1F69A} ' + ev.statusText;
+        const tw = Math.max(80, this.logisticsToastText.width + 16);
+        const th = this.logisticsToastText.height + 10;
+        const bg = this.logisticsToastContainer.children[0] as Graphics;
+        bg.clear();
+        bg.roundRect(-tw / 2, -th, tw, th, 4).fill({ color: 0x1a3a2a, alpha: 0.88 });
+        bg.stroke({ color: 0x4caf50, width: 1, alpha: 0.8 });
+      }
+      this.logisticsToastLife = 4.0;
+      this.logisticsToastContainer.alpha = 1;
+      const dockPx = LOADING_DOCK_CONFIG.storeEntrancePosition;
+      this.logisticsToastContainer.position.set(dockPx.x, dockPx.y - 36);
+    }
+    if (this.logisticsToastContainer) {
+      this.logisticsToastLife -= elapsed;
+      if (this.logisticsToastLife < 1.5) {
+        this.logisticsToastContainer.alpha = Math.max(0, this.logisticsToastLife / 1.5);
+      }
+      if (this.logisticsToastLife <= 0) {
+        this.logisticsToastContainer.alpha = 0;
+      }
+    }
+  }
 
   /**
    * Spawns a floating gain label (e.g. "+24.000₫", "+12 XP") above a world coordinate

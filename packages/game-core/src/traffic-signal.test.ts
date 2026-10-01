@@ -32,7 +32,7 @@ export function runTrafficSignalTests(): void {
 
   // Xe dừng trước vạch khi đèn đỏ, xe sau giữ khoảng cách, rồi cùng đi khi xanh.
   {
-    const m = new StreetTrafficManager([car('a', 100), car('b', 10)]);
+    const m = new StreetTrafficManager([car('a', stopFront - STREET_VEHICLE_RULES.halfLength.car - 20), car('b', stopFront - STREET_VEHICLE_RULES.halfLength.car - 120)]);
     m.setSignalClock(RED_START);
     run(m, 9);
     const a = find(m, 'a'), b = find(m, 'b');
@@ -47,7 +47,7 @@ export function runTrafficSignalTests(): void {
 
   // Đèn xanh, không người qua đường: xe không giảm tốc.
   {
-    const m = new StreetTrafficManager([car('a', 100)]);
+    const m = new StreetTrafficManager([car('a', crossRight + 50)]);
     m.setSignalClock(0.5);
     let minSpeed = Infinity;
     for (let t = 0; t < 4; t += 0.1) { m.update(0.1, 12, 0, 1); const a = m.getVehicles().find(v => v.id === 'a'); if (a) minSpeed = Math.min(minSpeed, a.currentSpeed ?? a.speed); }
@@ -70,7 +70,7 @@ export function runTrafficSignalTests(): void {
   {
     const m = new StreetTrafficManager([car('a', stopFront - STREET_VEHICLE_RULES.halfLength.car - 30)]);
     m.setSignalClock(5);
-    m.addPedestrian({ id: 'p1', direction: 'south', state: 'crossing', x: crossLeft + 30 });
+    m.addPedestrian({ id: 'p1', direction: 'south', state: 'crossing', x: crossLeft + 15 });
     run(m, 1);
     const a = find(m, 'a');
     assert.ok(frontOf(a) <= crossLeft && (a.currentSpeed ?? a.speed) < 60, 'Xe nhường người đang qua đường dù đèn xanh');
@@ -108,7 +108,7 @@ export function runTrafficSignalTests(): void {
     assert.equal(storm.getPedestrians().length, 0, 'Mưa lớn không có người qua đường');
     const day = new StreetTrafficManager();
     let seen = 0, max = 0;
-    for (let t = 0; t < 600; t += 0.1) { day.update(0.1, 12, 0, 9); const n = day.getPedestrians().length; seen += n > 0 ? 1 : 0; max = Math.max(max, n); }
+    for (let t = 0; t < 600; t += 0.1) { day.update(0.1, 12, 0, 9); const n = day.getPedestrians().filter(p => p.direction === 'south' || p.direction === 'north').length; seen += n > 0 ? 1 : 0; max = Math.max(max, n); }
     assert.ok(seen > 0, 'Ban ngày có người qua đường');
     assert.ok(max <= STREET_PEDESTRIANS.maxConcurrent, 'Không vượt số người tối đa');
   }

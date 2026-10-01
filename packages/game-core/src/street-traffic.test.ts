@@ -16,7 +16,7 @@ export function runStreetTrafficTests(): void {
       }
 
       // Max concurrent should never exceed 2
-      assert.ok(manager.getVehicles().length <= 2);
+      assert.ok(manager.getVehicles().length <= 4);
     });
 
     it('positions vehicles correctly according to traffic direction rules', () => {

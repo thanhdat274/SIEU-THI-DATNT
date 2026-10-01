@@ -42,6 +42,7 @@ import { runDeterministicIdTests } from './deterministic-ids.test';
 import { runArrivalModeTests } from './arrival-mode.test';
 import { runMaintenanceTests } from './maintenance.test';
 import { runReviewTests } from './reviews.test';
+import { runSecurityTests } from './security.test';
 import { runIntegrationTests, runOutdoorPropTests } from './integration.test';
 import { runStoreLayoutTests } from './store-layout.test';
 import { runShelfSlotTests } from './shelf-slots.test';
@@ -54,6 +55,7 @@ import { runGoalTests } from './goals.test';
 import { runSkillTests } from './skills.test';
 import { runPerkBehaviorTests } from './perks.test';
 import { runTitlesTests } from './titles.test';
+import { runStoreLogisticsTests } from './store-logistics.test';
 
 declare const process: any;
 
@@ -94,6 +96,7 @@ export async function runTests(): Promise<void> {
   runArrivalModeTests();
   runMaintenanceTests();
   runReviewTests();
+  runSecurityTests();
   runOutdoorPropTests();
   runAnnualRevenueTests();
   runStoreLayoutTests();
@@ -114,6 +117,7 @@ export async function runTests(): Promise<void> {
   runSkillTests();
   runPerkBehaviorTests();
   runTitlesTests();
+  runStoreLogisticsTests();
   console.log('\n--- Test core headless runtime ---');
   runCoreRuntimeTests();
   runAvatarTests();

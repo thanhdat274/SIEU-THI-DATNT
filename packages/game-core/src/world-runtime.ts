@@ -192,7 +192,13 @@ export class WorldRuntime {
       } else if (p.type === 'unstock') {
         success = this.simulation.unstockShelf(p.fixtureId, p.quantity);
       } else if (p.type === 'checkout') {
-        success = this.simulation.completeCustomerCheckout(p.checkoutId, p.fixtureId);
+        success = this.simulation.completeCustomerCheckout(p.checkoutId, p.fixtureId, p.onCredit ?? false, p.dineIn ?? false);
+      } else if (p.type === 'repay_customer_credit') {
+        success = this.simulation.repayCustomerCredit(p.creditId);
+      } else if (p.type === 'clean_dining_table') {
+        success = this.simulation.cleanDiningTable(p.fixtureId);
+      } else if (p.type === 'assign_dining_cleanup') {
+        success = this.simulation.assignDiningCleanup(p.staffId, p.fixtureId);
       } else if (p.type === 'set_price') {
         success = this.simulation.setSellingPrice(p.productId, p.price).success;
       } else if (p.type === 'layout_move') {

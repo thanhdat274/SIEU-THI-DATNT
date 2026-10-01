@@ -63,7 +63,7 @@ function runScenario(options: { events?: Array<{ id: string; startDay: number; e
 
 function assertLedger(result: ScenarioResult, label: string): void {
   const ledger = result.sim.getLedger();
-  const net = ledger.reduce((sum, entry) => sum + (entry.type === 'sale' ? entry.amount : entry.type === 'spoilage' ? 0 : -entry.amount), 0);
+  const net = ledger.reduce((sum, entry) => sum + (entry.type === 'sale' || entry.type === 'recovery' ? entry.amount : entry.type === 'spoilage' || entry.type === 'theft' ? 0 : -entry.amount), 0);
   assert.equal(result.sim.getPlayerData().money - result.startMoney, net, `${label}: Δtiền khớp sổ cái`);
   assert.ok(result.sim.getPlayerData().money >= 0, `${label}: tiền không âm`);
   assert.ok(result.metrics.every(m => Number.isFinite(m.traffic) && m.traffic > 0 && Object.values(m.demand).every(v => v > 0 && Number.isFinite(v))), `${label}: không có số âm hoặc vô hạn`);

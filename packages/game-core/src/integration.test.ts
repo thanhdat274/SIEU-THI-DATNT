@@ -45,7 +45,7 @@ export function runIntegrationTests(): void {
   assert.ok(guard < 3_000_000, 'Vòng 3 ngày phải kết thúc');
 
   const ledger = sim.getLedger();
-  const net = ledger.reduce((sum, e) => sum + (e.type === 'sale' ? e.amount : e.type === 'spoilage' ? 0 : -e.amount), 0);
+  const net = ledger.reduce((sum, e) => sum + (e.type === 'sale' || e.type === 'recovery' ? e.amount : e.type === 'spoilage' || e.type === 'theft' ? 0 : -e.amount), 0);
   const drift = (sim.getPlayerData().money - startMoney) - net;
   assert.equal(drift, 0, 'Δtiền phải khớp sổ cái');
   console.log(`    đối chiếu: Δtiền=${sim.getPlayerData().money - startMoney}, sổ cái=${net}, lệch=${drift}`);

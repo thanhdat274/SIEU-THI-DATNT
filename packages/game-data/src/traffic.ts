@@ -30,5 +30,5 @@ export const STREET_VEHICLE_RULES = {
   followGapPx: 14,
   decel: 140,
   accel: 80,
-  halfLength: { motorbike: 22, car: 32 },
+  halfLength: { motorbike: 22, car: 32, bicycle: 18, minibus: 46 },
 } as const;

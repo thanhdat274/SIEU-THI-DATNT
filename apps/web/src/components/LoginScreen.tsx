@@ -61,7 +61,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   // Đọc ba ô lưu và ô đang chọn từ IndexedDB; làm mới khi quay lại tab (tab khác có thể đã đổi/khóa ô).
   const refreshSlots = React.useCallback(async () => {
     try {
-      const [list, locked, save] = await Promise.all([listSaveSlots(), slotsLockedElsewhere(), loadExistingSave()]);
+      const [list, locked] = await Promise.all([listSaveSlots(), slotsLockedElsewhere()]);
+      let selectedSlot = getActiveSlotId();
+      const occupied = list.filter((slot) => slot.status !== 'empty');
+      if (list.find((slot) => slot.slotId === selectedSlot)?.status === 'empty' && occupied.length === 1) {
+        selectedSlot = occupied[0].slotId;
+        setActiveSlotId(selectedSlot);
+        setActiveSlot(selectedSlot);
+      }
+      const save = await loadExistingSave(selectedSlot);
       setSlots(list);
       setLockedSlots(locked);
       setHasSave(!!save);
@@ -289,16 +297,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
 
   const handleNewGame = async () => {
     triggerSound(380);
-    if (
-      hasSave &&
-      !window.confirm(
-        `Bạn đang có bản lưu Ngày ${saveDay}. Bắt đầu chơi mới sẽ đặt lại toàn bộ tiến trình trên thiết bị này. Bạn có chắc chắn không?`
-      )
-    ) {
-      return;
-    }
+    const currentSlot = getActiveSlotId();
     setBusy(true);
     try {
+      const latestSlots = await listSaveSlots();
+      const emptySlot = latestSlots.find((slot) => slot.status === 'empty');
+      const targetSlot = hasSave && emptySlot ? emptySlot.slotId : currentSlot;
+      if (hasSave && !emptySlot && !window.confirm(
+        `Bạn đang có bản lưu Ngày ${saveDay}. Cả ba ô đã dùng; bắt đầu tiệm mới sẽ đặt lại ô đang chọn. Bạn có chắc chắn không?`
+      )) { setBusy(false); return; }
+      setActiveSlotId(targetSlot);
+      setActiveSlot(targetSlot);
       // Xin khóa trước khi ghi đè để không phá ô đang mở ở tab khác.
       if (!(await claimActiveSlot())) { setBusy(false); return; }
       await resetSaveToDefault();
@@ -542,7 +551,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
                 </div>
               </div>
 
-              <div className="save-slot-row" role="radiogroup" aria-label="Chọn ô lưu">
+              {slots.filter((slot) => slot.status !== 'empty').length >= 2 && <div className="save-slot-row" role="radiogroup" aria-label="Chọn ô lưu">
                 {slots.map((slot) => {
                   const locked = lockedSlots.has(slot.slotId);
                   const detail = locked ? 'Đang mở ở thẻ khác'
@@ -561,7 +570,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
                     </div>
                   );
                 })}
-              </div>
+              </div>}
 
               <p className="spotlight-summary-text">
                 {hasSave

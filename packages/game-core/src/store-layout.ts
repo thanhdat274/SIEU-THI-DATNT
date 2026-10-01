@@ -206,7 +206,7 @@ export function rotateStoreFixture(fixture: StoreFixture): StoreFixture['rotatio
 
 export function applyStoreLayoutActions(save: SaveGameData, actions: readonly StoreLayoutAction[], mapFor: (ownedPlotIds: readonly string[]) => GameTileMap): LayoutResult {
   if (!Array.isArray(actions) || actions.length === 0 || actions.length > 64) return { error: 'prerequisite' };
-  if (save.worldTime.isStoreOpen || (save.customers ?? (save.customer ? [save.customer] : [])).some(customer => customer.stage !== 'leaving') || (save.staff ?? []).some(staff => !!staff.workerTask)) {
+  if (save.worldTime.isStoreOpen || (save.customers ?? (save.customer ? [save.customer] : [])).some(customer => customer.stage !== 'leaving') || (save.staff ?? []).some(staff => !!staff.workerTask || !!staff.diningTask)) {
     return { error: 'store_open' };
   }
   let draft = structuredClone(save);

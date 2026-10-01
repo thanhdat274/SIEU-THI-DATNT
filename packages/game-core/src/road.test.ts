@@ -25,8 +25,8 @@ export function runRoadTests(): void {
   }
 
   // Vạch qua đường nằm trước cửa tiệm (cửa ở x = 9..10), trên mặt đường, và không chồng ô đỗ xe.
-  assert.deepEqual([CROSSWALK.tileX, CROSSWALK.tileX + CROSSWALK.widthTiles - 1], [9, 10], 'Vạch qua đường ngay trước cửa tiệm');
-  assert.ok(CROSSWALK.tileX >= STORE_BOUNDS.left && CROSSWALK.tileX + CROSSWALK.widthTiles - 1 <= STORE_BOUNDS.right, 'Vạch nằm trong bề ngang tiệm');
+  assert.deepEqual([CROSSWALK.tileX, CROSSWALK.tileX + CROSSWALK.widthTiles - 1], [1, 2], 'Vạch qua đường ở đầu hẻm');
+  assert.ok(CROSSWALK.tileX < STORE_BOUNDS.left, 'Vạch và đèn nằm ngoài mặt tiền tiệm');
   for (let row = CROSSWALK.firstRow; row < CROSSWALK.firstRow + CROSSWALK.rows; row++) {
     assert.equal(tileAt(CROSSWALK.tileX, row), 1, 'Vạch qua đường nằm trên mặt đường');
   }

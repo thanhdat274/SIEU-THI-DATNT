@@ -28,10 +28,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 16000,
     "sourcePrice": 20000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "gao",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_mam",
@@ -72,10 +72,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 5000,
     "sourcePrice": 7000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "muoi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "snack",
@@ -105,10 +105,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 9000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "banh_quy",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "que_cay",
@@ -116,10 +116,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 3000,
     "sourcePrice": 5000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "que_cay",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "xa_phong",
@@ -160,10 +160,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 8000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "pin",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "the_cao",
@@ -237,10 +237,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 9000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tang_luc",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_hop",
@@ -248,10 +248,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 5500,
     "sourcePrice": 7000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sua_hop",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "trung_ga",
@@ -281,10 +281,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 6000,
     "sourcePrice": 9000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "rau_muong",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_tuoi",
@@ -303,10 +303,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 4000,
     "sourcePrice": 6000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "dau_hu",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "kem_que",
@@ -380,10 +380,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 3500,
     "sourcePrice": 5000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bot_canh",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bot_ngot",
@@ -402,10 +402,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 22000,
     "sourcePrice": 28000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "hat_nem",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_tuong",
@@ -413,10 +413,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 12000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_tuong",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tuong_ot",
@@ -424,10 +424,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 10000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tuong_ot",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "hu_tieu_goi",
@@ -446,10 +446,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 4000,
     "sourcePrice": 6000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "chao_goi",
+    "targetCategory": "instant_noodles",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_dac",
@@ -468,10 +468,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 20000,
     "sourcePrice": 26000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ca_hop",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "pate_hop",
@@ -479,10 +479,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 15000,
     "sourcePrice": 20000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "pate_hop",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tieu_xay",
@@ -490,10 +490,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 8000,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tieu_xay",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mam_tom",
@@ -501,10 +501,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 10000,
     "sourcePrice": 14000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mam_tom",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_phe_hoa_tan",
@@ -512,10 +512,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 45000,
     "sourcePrice": 55000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "legacy_match",
+    "alias": "ca_phe_hoa_tan",
+    "targetCategory": "soft_drinks",
+    "reason": "Matches existing seasonal item ca_phe_hoa_tan"
   },
   {
     "sourceId": "bot_chien",
@@ -523,10 +523,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 6000,
     "sourcePrice": 8000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bot_chien",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "dau_hao",
@@ -534,10 +534,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 20000,
     "sourcePrice": 25000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "dau_hao",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bun_kho",
@@ -545,10 +545,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 12000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bun_kho",
+    "targetCategory": "instant_noodles",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "giam",
@@ -556,10 +556,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 8000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "giam",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "keo_cao_su",
@@ -567,10 +567,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 3000,
     "sourcePrice": 5000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "keo_cao_su",
+    "targetCategory": "candy",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "banh_gao",
@@ -589,10 +589,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 4000,
     "sourcePrice": 6000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "banh_bong_lan",
+    "targetCategory": "bread",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "banh_socola",
@@ -600,10 +600,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 30000,
     "sourcePrice": 38000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "banh_socola",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "dau_phong",
@@ -622,10 +622,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 6000,
     "sourcePrice": 8000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "rong_bien",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "kho_ga",
@@ -644,10 +644,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 8000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "khan_giay",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ban_chai",
@@ -655,10 +655,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 8000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ban_chai",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_rua_chen",
@@ -677,10 +677,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 35000,
     "sourcePrice": 45000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bot_giat",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tui_rac",
@@ -688,10 +688,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 10000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tui_rac",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "dau_goi",
@@ -699,10 +699,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 45000,
     "sourcePrice": 55000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "dau_goi",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nhang_muoi",
@@ -710,10 +710,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 15000,
     "sourcePrice": 20000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nhang_muoi",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "khau_trang",
@@ -721,10 +721,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 15000,
     "sourcePrice": 20000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "khau_trang",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nhang",
@@ -732,10 +732,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 12000,
     "sourcePrice": 18000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nhang",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_lau_san",
@@ -743,10 +743,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 25000,
     "sourcePrice": 32000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_lau_san",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bang_ve_sinh",
@@ -754,10 +754,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 18000,
     "sourcePrice": 23000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bang_ve_sinh",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bong_den",
@@ -765,10 +765,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 25000,
     "sourcePrice": 35000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bong_den",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ta_giay",
@@ -776,10 +776,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 90000,
     "sourcePrice": 110000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ta_giay",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_dau_nanh",
@@ -798,10 +798,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 11000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bia_lon",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_phe_lon",
@@ -809,10 +809,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 10000,
     "sourcePrice": 14000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ca_phe_lon",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_cam",
@@ -820,10 +820,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 9000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "legacy_match",
+    "alias": "nuoc_cam",
+    "targetCategory": "soft_drinks",
+    "reason": "Matches existing legacy item nuoc_cam"
   },
   {
     "sourceId": "nuoc_yen",
@@ -831,10 +831,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 9000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_yen",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_chua_uong",
@@ -842,10 +842,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 5000,
     "sourcePrice": 7000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sua_chua_uong",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_chua",
@@ -853,10 +853,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 5000,
     "sourcePrice": 8000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ca_chua",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "hanh_la",
@@ -864,10 +864,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 2000,
     "sourcePrice": 3000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "hanh_la",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_chua",
@@ -886,10 +886,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 10000,
     "sourcePrice": 14000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "chuoi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "khoai_tay",
@@ -897,10 +897,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 8000,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "khoai_tay",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bun_tuoi",
@@ -908,10 +908,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 5000,
     "sourcePrice": 8000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bun_tuoi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "cha_lua",
@@ -919,10 +919,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 25000,
     "sourcePrice": 32000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "cha_lua",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "thit_heo",
@@ -930,10 +930,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 30000,
     "sourcePrice": 38000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "thit_heo",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_vien",
@@ -1073,10 +1073,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 12000,
     "sourcePrice": 18000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ao_mua",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "xuc_xich_nuong_tp",
@@ -1183,10 +1183,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 6000,
     "sourcePrice": 9000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tra_tac_base",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_phe_bot",
@@ -1194,10 +1194,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 6000,
     "sourcePrice": 9000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ca_phe_bot",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mia",
@@ -1205,10 +1205,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 2000,
     "sourcePrice": 4000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mia",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "trai_cay",
@@ -1216,10 +1216,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 9000,
     "sourcePrice": 14000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "trai_cay",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tra_o_long",
@@ -1227,10 +1227,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tra_o_long",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_lua_mach",
@@ -1238,10 +1238,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 6000,
     "sourcePrice": 8000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sua_lua_mach",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_dien_giai",
@@ -1249,10 +1249,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 8000,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_dien_giai",
+    "targetCategory": "bottled_water",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_dua_hop",
@@ -1260,10 +1260,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_dua_hop",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "soda_chanh",
@@ -1271,10 +1271,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "soda_chanh",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bim_bim_tom",
@@ -1282,10 +1282,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 4000,
     "sourcePrice": 6000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bim_bim_tom",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "keo_deo",
@@ -1293,10 +1293,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 5000,
     "sourcePrice": 7000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "keo_deo",
+    "targetCategory": "candy",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "banh_que",
@@ -1304,10 +1304,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 5000,
     "sourcePrice": 7000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "banh_que",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mit_say",
@@ -1315,10 +1315,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 18000,
     "sourcePrice": 25000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mit_say",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "pho_goi",
@@ -1326,10 +1326,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 7000,
     "sourcePrice": 9000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "legacy_match",
+    "alias": "pho_goi",
+    "targetCategory": "instant_noodles",
+    "reason": "Matches existing legacy item pho_goi"
   },
   {
     "sourceId": "mien_goi",
@@ -1337,10 +1337,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 9000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mien_goi",
+    "targetCategory": "instant_noodles",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bot_mi",
@@ -1348,10 +1348,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 17000,
     "sourcePrice": 22000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bot_mi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_tam",
@@ -1359,10 +1359,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 55000,
     "sourcePrice": 68000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sua_tam",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_giat",
@@ -1370,10 +1370,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 70000,
     "sourcePrice": 85000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_giat",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_xa_vai",
@@ -1381,10 +1381,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 60000,
     "sourcePrice": 74000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_xa_vai",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "dao_cao",
@@ -1392,10 +1392,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 12000,
     "sourcePrice": 16000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "dao_cao",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "kem_chong_nang",
@@ -1403,10 +1403,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 90000,
     "sourcePrice": 115000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "kem_chong_nang",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "rau_cai",
@@ -1414,10 +1414,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "rau_cai",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "trung_vit",
@@ -1436,10 +1436,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 4000,
     "sourcePrice": 6000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "gia_do",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "kem_oc_que",
@@ -1480,10 +1480,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 28000,
     "sourcePrice": 36000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nep",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "dau_xanh",
@@ -1491,10 +1491,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 2500,
     "sourcePrice": 4000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "dau_xanh",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "hanh_phi",
@@ -1502,10 +1502,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 1500,
     "sourcePrice": 2500,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "hanh_phi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "cha_bong",
@@ -1513,10 +1513,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 4000,
     "sourcePrice": 6000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "cha_bong",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "lap_xuong",
@@ -1524,10 +1524,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 4000,
     "sourcePrice": 6000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "lap_xuong",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "dua_nao",
@@ -1535,10 +1535,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 2500,
     "sourcePrice": 4000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "dua_nao",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bao_goi",
@@ -1546,10 +1546,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 1000,
     "sourcePrice": 2000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bao_goi",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tra_da",
@@ -1557,10 +1557,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 1000,
     "sourcePrice": 3000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tra_da",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nep_chin",
@@ -1667,10 +1667,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 6000,
     "sourcePrice": 9000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "toi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "hanh_kho",
@@ -1678,10 +1678,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 8000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "hanh_kho",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_rot",
@@ -1689,10 +1689,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ca_rot",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "dua_leo",
@@ -1700,10 +1700,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 6000,
     "sourcePrice": 9000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "dua_leo",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bap_cai",
@@ -1711,10 +1711,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 8000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bap_cai",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bi_do",
@@ -1722,10 +1722,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 10000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bi_do",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bong_cai_xanh",
@@ -1733,10 +1733,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 18000,
     "sourcePrice": 26000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bong_cai_xanh",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "kho_qua",
@@ -1744,10 +1744,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "kho_qua",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "gung",
@@ -1755,10 +1755,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 7000,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "gung",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "rau_mui",
@@ -1766,10 +1766,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 3000,
     "sourcePrice": 5000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "rau_mui",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bap",
@@ -1777,10 +1777,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 6000,
     "sourcePrice": 9000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bap",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tao",
@@ -1788,10 +1788,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 18000,
     "sourcePrice": 26000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tao",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "na",
@@ -1799,10 +1799,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 18000,
     "sourcePrice": 26000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "na",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mang_cut",
@@ -1810,10 +1810,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 24000,
     "sourcePrice": 34000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mang_cut",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nho_xanh",
@@ -1821,10 +1821,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 30000,
     "sourcePrice": 42000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nho_xanh",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nho_tim",
@@ -1832,10 +1832,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 30000,
     "sourcePrice": 42000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nho_tim",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "thanh_long_trang",
@@ -1843,10 +1843,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 10000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "thanh_long_trang",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "thanh_long_tim",
@@ -1854,10 +1854,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 16000,
     "sourcePrice": 23000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "thanh_long_tim",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "xoai",
@@ -1865,10 +1865,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 12000,
     "sourcePrice": 18000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "xoai",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "cam",
@@ -1876,10 +1876,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 10000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "cam",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "dua_hau",
@@ -1887,10 +1887,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 12000,
     "sourcePrice": 18000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "dua_hau",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "du_du",
@@ -1898,10 +1898,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 8000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "du_du",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "thom",
@@ -1909,10 +1909,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 10000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "thom",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "oi",
@@ -1920,10 +1920,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 10000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "oi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bo",
@@ -1931,10 +1931,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 18000,
     "sourcePrice": 26000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bo",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mit",
@@ -1942,10 +1942,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 16000,
     "sourcePrice": 24000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mit",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "chom_chom",
@@ -1953,10 +1953,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 15000,
     "sourcePrice": 22000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "chom_chom",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "vai",
@@ -1964,10 +1964,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 22000,
     "sourcePrice": 32000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "vai",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "buoi",
@@ -1975,10 +1975,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 16000,
     "sourcePrice": 24000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "buoi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "chanh_day",
@@ -1986,10 +1986,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 12000,
     "sourcePrice": 18000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "chanh_day",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "banh_trang",
@@ -1997,10 +1997,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 10000,
     "sourcePrice": 14000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "banh_trang",
+    "targetCategory": "bread",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bot_nang",
@@ -2008,10 +2008,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 8000,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bot_nang",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bot_gao",
@@ -2019,10 +2019,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bot_gao",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nui_kho",
@@ -2030,10 +2030,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 12000,
     "sourcePrice": 17000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nui_kho",
+    "targetCategory": "instant_noodles",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mi_trung_kho",
@@ -2041,10 +2041,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 14000,
     "sourcePrice": 19000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mi_trung_kho",
+    "targetCategory": "instant_noodles",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mien_dong",
@@ -2052,10 +2052,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 15000,
     "sourcePrice": 21000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mien_dong",
+    "targetCategory": "instant_noodles",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nam_meo_kho",
@@ -2063,10 +2063,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 12000,
     "sourcePrice": 17000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nam_meo_kho",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nam_huong_kho",
@@ -2074,10 +2074,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 18000,
     "sourcePrice": 25000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nam_huong_kho",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tom_kho",
@@ -2085,10 +2085,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 25000,
     "sourcePrice": 34000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tom_kho",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_kho",
@@ -2096,10 +2096,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 22000,
     "sourcePrice": 30000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ca_kho",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ot_bot",
@@ -2107,10 +2107,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ot_bot",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tieu_hat",
@@ -2118,10 +2118,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 12000,
     "sourcePrice": 17000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tieu_hat",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "dua_cot_hop",
@@ -2129,10 +2129,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 10000,
     "sourcePrice": 14000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "dua_cot_hop",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bap_rang_bo",
@@ -2140,10 +2140,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 8000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bap_rang_bo",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "snack_bap",
@@ -2151,10 +2151,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 5000,
     "sourcePrice": 7000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "snack_bap",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "banh_xop",
@@ -2162,10 +2162,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "banh_xop",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "banh_trang_nuong",
@@ -2173,10 +2173,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 8000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "banh_trang_nuong",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "com_chay",
@@ -2184,10 +2184,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 10000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "com_chay",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "kho_bo",
@@ -2195,10 +2195,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 22000,
     "sourcePrice": 30000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "kho_bo",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "kho_muc",
@@ -2206,10 +2206,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 30000,
     "sourcePrice": 42000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "kho_muc",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "keo_mut",
@@ -2217,10 +2217,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 2500,
     "sourcePrice": 4000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "keo_mut",
+    "targetCategory": "candy",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "keo_lac",
@@ -2228,10 +2228,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "keo_lac",
+    "targetCategory": "candy",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "banh_dau_xanh",
@@ -2239,10 +2239,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 12000,
     "sourcePrice": 17000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "banh_dau_xanh",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "hat_dieu_rang",
@@ -2250,10 +2250,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 24000,
     "sourcePrice": 33000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "hat_dieu_rang",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "hat_huong_duong",
@@ -2261,10 +2261,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 8000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "hat_huong_duong",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "me_say",
@@ -2272,10 +2272,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "me_say",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mut_dua",
@@ -2283,10 +2283,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 13000,
     "sourcePrice": 18000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mut_dua",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "khoai_lang_say",
@@ -2294,10 +2294,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 12000,
     "sourcePrice": 17000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "khoai_lang_say",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "coca_cola_lon",
@@ -2305,10 +2305,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "coca_cola_lon",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "coca_cola_zero",
@@ -2316,10 +2316,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "coca_cola_zero",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "pepsi_lon",
@@ -2327,10 +2327,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "pepsi_lon",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "pepsi_black",
@@ -2338,10 +2338,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "pepsi_black",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "7up_lon",
@@ -2349,10 +2349,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 6500,
     "sourcePrice": 9000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "7up_lon",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sprite_lon",
@@ -2360,10 +2360,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sprite_lon",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mirinda_cam",
@@ -2371,10 +2371,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mirinda_cam",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sting_dau",
@@ -2382,10 +2382,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 8000,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sting_dau",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sting_nhan_sam",
@@ -2393,10 +2393,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 8000,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sting_nhan_sam",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "redbull_lon",
@@ -2404,10 +2404,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "redbull_lon",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "number1_chai",
@@ -2415,10 +2415,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "number1_chai",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "aquafina_chai",
@@ -2426,10 +2426,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 3000,
     "sourcePrice": 5000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "aquafina_chai",
+    "targetCategory": "bottled_water",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "la_vie_chai",
@@ -2437,10 +2437,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 3000,
     "sourcePrice": 5000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "la_vie_chai",
+    "targetCategory": "bottled_water",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "revive_chai",
@@ -2448,10 +2448,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "revive_chai",
+    "targetCategory": "bottled_water",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "pocari_sweat",
@@ -2459,10 +2459,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "pocari_sweat",
+    "targetCategory": "bottled_water",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tra_dao_chai",
@@ -2470,10 +2470,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tra_dao_chai",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_bap_hop",
@@ -2481,10 +2481,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sua_bap_hop",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_nha_dam",
@@ -2492,10 +2492,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_nha_dam",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "coca_cola_plus",
@@ -2503,10 +2503,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7500,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "coca_cola_plus",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "pepsi_chanh",
@@ -2514,10 +2514,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7500,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "pepsi_chanh",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "fanta_nho",
@@ -2525,10 +2525,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7500,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "fanta_nho",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "fanta_dau",
@@ -2536,10 +2536,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7500,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "fanta_dau",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mirinda_vai",
@@ -2547,10 +2547,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7500,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mirinda_vai",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mirinda_dua",
@@ -2558,10 +2558,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7500,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mirinda_dua",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "schweppes_tonic",
@@ -2569,10 +2569,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "schweppes_tonic",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "aquafina_soda",
@@ -2580,10 +2580,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "aquafina_soda",
+    "targetCategory": "bottled_water",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "milkis_dua_gang",
@@ -2591,10 +2591,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 10000,
     "sourcePrice": 14000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "milkis_dua_gang",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "milkis_chuoi",
@@ -2602,10 +2602,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 10000,
     "sourcePrice": 14000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "milkis_chuoi",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "soda_vai_genki",
@@ -2613,10 +2613,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 12000,
     "sourcePrice": 17000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "soda_vai_genki",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tea_plus_oolong_chanh",
@@ -2624,10 +2624,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tea_plus_oolong_chanh",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tea_plus_oolong_dao",
@@ -2635,10 +2635,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tea_plus_oolong_dao",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tea_plus_oolong_truyen_thong",
@@ -2646,10 +2646,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tea_plus_oolong_truyen_thong",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "fuze_tea_bi_dao",
@@ -2657,10 +2657,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "fuze_tea_bi_dao",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "fuze_tea_chanh_sa",
@@ -2668,10 +2668,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "fuze_tea_chanh_sa",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "fuze_tea_vai",
@@ -2679,10 +2679,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "fuze_tea_vai",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "twister_cam",
@@ -2690,10 +2690,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "twister_cam",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_nho_trang_gas",
@@ -2701,10 +2701,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 15000,
     "sourcePrice": 21000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_nho_trang_gas",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_tao_ep",
@@ -2712,10 +2712,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_tao_ep",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_le_ep",
@@ -2723,10 +2723,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 10000,
     "sourcePrice": 14000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_le_ep",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_luu",
@@ -2734,10 +2734,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 12000,
     "sourcePrice": 17000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_luu",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "yakult",
@@ -2745,10 +2745,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 6000,
     "sourcePrice": 9000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "yakult",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "yomost_dau",
@@ -2756,10 +2756,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "yomost_dau",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "yomost_luu",
@@ -2767,10 +2767,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "yomost_luu",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "probi_dao",
@@ -2778,10 +2778,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 8000,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "probi_dao",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "betagen_cam",
@@ -2789,10 +2789,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 8000,
     "sourcePrice": 11000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "betagen_cam",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_phe_sua_chai",
@@ -2800,10 +2800,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ca_phe_sua_chai",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_socola_hop",
@@ -2811,10 +2811,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 6000,
     "sourcePrice": 9000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sua_socola_hop",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_dau_phong",
@@ -2822,10 +2822,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sua_dau_phong",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "hanh_tay",
@@ -2833,10 +2833,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "hanh_tay",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ot_chuong",
@@ -2844,10 +2844,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 12000,
     "sourcePrice": 18000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ot_chuong",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_tim",
@@ -2855,10 +2855,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 10000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ca_tim",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nam_kim_cham",
@@ -2866,10 +2866,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 8000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nam_kim_cham",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "khoai_lang_tuoi",
@@ -2877,10 +2877,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 8000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "khoai_lang_tuoi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "chanh_khong_hat",
@@ -2888,10 +2888,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 10000,
     "sourcePrice": 14000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "chanh_khong_hat",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "thit_bo",
@@ -2899,10 +2899,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 42000,
     "sourcePrice": 55000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "thit_bo",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "thit_ga",
@@ -2910,10 +2910,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 24000,
     "sourcePrice": 32000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "thit_ga",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "uc_ga",
@@ -2921,10 +2921,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 26000,
     "sourcePrice": 35000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "uc_ga",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "suon_heo",
@@ -2932,10 +2932,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 35000,
     "sourcePrice": 46000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "suon_heo",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_thu_tuoi",
@@ -2943,10 +2943,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 30000,
     "sourcePrice": 41000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ca_thu_tuoi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tom_tuoi",
@@ -2954,10 +2954,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 45000,
     "sourcePrice": 60000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tom_tuoi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "khoai_tay_chien",
@@ -3031,10 +3031,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 18000,
     "sourcePrice": 25000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "yen_mach",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ngu_coc",
@@ -3042,10 +3042,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 22000,
     "sourcePrice": 30000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ngu_coc",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mat_ong",
@@ -3053,10 +3053,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 25000,
     "sourcePrice": 34000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mat_ong",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "bo_dau_phong",
@@ -3064,10 +3064,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 28000,
     "sourcePrice": 38000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bo_dau_phong",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tuong_ca",
@@ -3075,10 +3075,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tuong_ca",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sot_mayonnaise",
@@ -3306,10 +3306,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 18000,
     "sourcePrice": 25000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "dau_nanh_hat",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mi_y_kho",
@@ -3317,10 +3317,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "dry",
     "sourceCost": 14000,
     "sourcePrice": 20000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mi_y_kho",
+    "targetCategory": "instant_noodles",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "banh_quy_oreo",
@@ -3328,10 +3328,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 10000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "banh_quy_oreo",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "banh_chocopie",
@@ -3339,10 +3339,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 12000,
     "sourcePrice": 17000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "banh_chocopie",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "snack_khoai_tay",
@@ -3350,10 +3350,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "snack_khoai_tay",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "socola_thanh",
@@ -3372,10 +3372,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "bap_rang_caramel",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "banh_cracker",
@@ -3383,10 +3383,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "banh_cracker",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "rong_bien_cuon",
@@ -3394,10 +3394,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 8000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "rong_bien_cuon",
+    "targetCategory": "snacks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "keo_bac_ha",
@@ -3405,10 +3405,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "snack",
     "sourceCost": 5000,
     "sourcePrice": 8000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "keo_bac_ha",
+    "targetCategory": "candy",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_bot_tre_em",
@@ -3416,10 +3416,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 120000,
     "sourcePrice": 145000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sua_bot_tre_em",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_suc_mieng",
@@ -3427,10 +3427,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 28000,
     "sourcePrice": 38000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_suc_mieng",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_rua_mat",
@@ -3438,10 +3438,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 35000,
     "sourcePrice": 48000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sua_rua_mat",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "kem_duong_da",
@@ -3449,10 +3449,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 42000,
     "sourcePrice": 58000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "kem_duong_da",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "giay_khan_mat",
@@ -3460,10 +3460,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 18000,
     "sourcePrice": 25000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "giay_khan_mat",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "mieng_rua_chen",
@@ -3471,10 +3471,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 5000,
     "sourcePrice": 8000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "mieng_rua_chen",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "binh_xit_con_trung",
@@ -3482,10 +3482,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "household",
     "sourceCost": 32000,
     "sourcePrice": 44000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "binh_xit_con_trung",
+    "targetCategory": "household",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "xa_lach",
@@ -3493,10 +3493,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "xa_lach",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "dua_gia",
@@ -3504,10 +3504,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "dua_gia",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "khoai_mon",
@@ -3515,10 +3515,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 10000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "khoai_mon",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nam_bao_ngu",
@@ -3526,10 +3526,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 14000,
     "sourcePrice": 20000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nam_bao_ngu",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_ro_phi",
@@ -3537,10 +3537,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 28000,
     "sourcePrice": 38000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ca_ro_phi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "muc_tuoi",
@@ -3548,10 +3548,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 48000,
     "sourcePrice": 65000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "muc_tuoi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "thit_xay",
@@ -3559,10 +3559,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 30000,
     "sourcePrice": 41000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "thit_xay",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_hoi_tuoi",
@@ -3570,10 +3570,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "fresh",
     "sourceCost": 65000,
     "sourcePrice": 85000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ca_hoi_tuoi",
+    "targetCategory": "cooking_ingredients",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "cha_muc",
@@ -3625,10 +3625,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "milo_hop",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "sua_dau_nanh_hop",
@@ -3636,10 +3636,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 6000,
     "sourcePrice": 9000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "sua_dau_nanh_hop",
+    "targetCategory": "milk",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "tra_sua_chai",
@@ -3647,10 +3647,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 11000,
     "sourcePrice": 15000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "tra_sua_chai",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_dua_tuoi_chai",
@@ -3658,10 +3658,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_dua_tuoi_chai",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_cam_hop",
@@ -3669,10 +3669,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 8000,
     "sourcePrice": 12000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_cam_hop",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "ca_phe_sua_lon",
@@ -3680,10 +3680,10 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 9000,
     "sourcePrice": 13000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "ca_phe_sua_lon",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   },
   {
     "sourceId": "nuoc_sam",
@@ -3691,9 +3691,9 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "sourceCategory": "drink",
     "sourceCost": 7000,
     "sourcePrice": 10000,
-    "disposition": "deferred",
-    "alias": null,
-    "targetCategory": null,
-    "reason": "Valid item deferred for future retail expansion"
+    "disposition": "curated_new",
+    "alias": "nuoc_sam",
+    "targetCategory": "soft_drinks",
+    "reason": "Curated into core catalog expansion"
   }
 ];

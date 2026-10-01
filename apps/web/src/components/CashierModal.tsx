@@ -7,6 +7,7 @@ import { useGameStore } from '../store/useGameStore';
 import { StaffModal } from './StaffModal';
 import { StaffCandidate, StaffMember, StaffShift } from '@game/shared';
 import { RestockJobTarget } from '@game/shared';
+import type { CustomerCreditAccount } from '@game/shared';
 
 interface Props {
   fixture: StoreFixture;
@@ -15,7 +16,11 @@ interface Props {
   shelves: StoreFixture[];
   customers?: CustomerState[];
   statistics: SaveGameData['statistics'];
-  onCheckout: (fixtureId?: string, checkoutId?: string) => void;
+  onCheckout: (fixtureId?: string, checkoutId?: string, onCredit?: boolean, dineIn?: boolean) => void;
+  creditAccounts?: CustomerCreditAccount[];
+  creditTerms?: (regularId: string) => { eligible: boolean; limit: number; used: number; available: number };
+  canDineIn?: (customer: CustomerState) => boolean;
+  onRepayCredit?: (creditId: string) => void;
   onToggleStoreStatus: () => void;
   onAdvanceDay: () => void;
   staff: StaffMember[];
@@ -36,6 +41,10 @@ export const CashierModal: React.FC<Props> = ({
   customers = [],
   statistics,
   onCheckout,
+  creditAccounts = [],
+  creditTerms,
+  canDineIn,
+  onRepayCredit,
   onToggleStoreStatus,
   onAdvanceDay,
   staff,
@@ -48,7 +57,7 @@ export const CashierModal: React.FC<Props> = ({
   onClose,
   initialShowStaff = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<'checkout' | 'reports'>('checkout');
+  const [activeTab, setActiveTab] = useState<'checkout' | 'reports' | 'credits'>('checkout');
   const [showStaff, setShowStaff] = useState(initialShowStaff);
   const { dailyRecords = {}, currentDayRecord } = useGameStore();
 
@@ -130,6 +139,9 @@ export const CashierModal: React.FC<Props> = ({
         >
           Thu ngân tại quầy {queueCount > 0 ? `(${queueCount})` : ''}
         </PixelButton>
+        <PixelButton variant={activeTab === 'credits' ? 'wood' : 'paper'} icon="coin" onClick={() => setActiveTab('credits')} aria-label="Sổ mua chịu">
+          Sổ mua chịu ({creditAccounts.filter(account => account.status === 'open' || account.status === 'overdue').length})
+        </PixelButton>
         <PixelButton
           variant={activeTab === 'reports' ? 'wood' : 'paper'}
           icon="book"
@@ -193,14 +205,19 @@ export const CashierModal: React.FC<Props> = ({
                   <span className="muted">Tổng hóa đơn: </span>
                   <strong style={{ fontSize: 16, color: '#b64c3d' }}>{money(totalBill)}</strong>
                 </div>
-                <PixelButton
-                  variant="teal"
-                  disabled={!worldTime.isStoreOpen}
-                  onClick={() => onCheckout(activeCustomer.targetFixtureId, activeCustomer.checkoutId)}
-                  aria-label={`Thu tiền ${money(totalBill)}`}
-                >
-                  Thu tiền {money(totalBill)}
-                </PixelButton>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <PixelButton variant="teal" disabled={!worldTime.isStoreOpen} onClick={() => onCheckout(activeCustomer.targetFixtureId, activeCustomer.checkoutId)} aria-label={`Thu tiền ${money(totalBill)}`}>
+                    Thu tiền {money(totalBill)}
+                  </PixelButton>
+                  {activeCustomer.regularId && creditTerms?.(activeCustomer.regularId).eligible && (
+                    <PixelButton variant="wood" disabled={!worldTime.isStoreOpen || totalBill > creditTerms(activeCustomer.regularId).available} onClick={() => onCheckout(activeCustomer.targetFixtureId, activeCustomer.checkoutId, true)} aria-label={`Bán chịu ${money(totalBill)}`}>
+                      Bán chịu {money(totalBill)}
+                    </PixelButton>
+                  )}
+                  {canDineIn?.(activeCustomer) && <PixelButton variant="wood" disabled={!worldTime.isStoreOpen} onClick={() => onCheckout(activeCustomer.targetFixtureId, activeCustomer.checkoutId, false, true)} aria-label={`Thanh toán và ăn tại bàn ${money(totalBill)}`}>
+                    Ăn tại bàn {money(totalBill)}
+                  </PixelButton>}
+                </div>
               </div>
             </div>
           ) : (
@@ -234,6 +251,17 @@ export const CashierModal: React.FC<Props> = ({
             </PixelButton>
           </div>
         </>
+      ) : activeTab === 'credits' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="section-label"><h3>Sổ mua chịu khách quen</h3><span>Hạn mức riêng theo độ thân thiết</span></div>
+          {creditAccounts.length === 0 ? <EmptyState title="Chưa có khoản mua chịu">Khách quen từ 40 điểm thân thiết mới đủ điều kiện mua chịu.</EmptyState> : creditAccounts.map(account => (
+            <div className="summary-row" key={account.id}>
+              <div><strong>{account.id} · {account.status === 'open' ? 'Đang nợ' : account.status === 'overdue' ? 'Quá hạn' : account.status === 'paid' ? 'Đã trả' : 'Nợ xấu'}</strong><p className="muted">Khách quen {account.regularId} · hạn ngày {account.dueDay}</p></div>
+              <strong>{money(account.balance || account.amount)}</strong>
+              {(account.status === 'open' || account.status === 'overdue') && <PixelButton variant="teal" onClick={() => onRepayCredit?.(account.id)}>Thu nợ</PixelButton>}
+            </div>
+          ))}
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {(() => {
@@ -278,6 +306,10 @@ export const CashierModal: React.FC<Props> = ({
                 <span className="muted">Tổn thất hàng quá hạn:</span>
                 <span style={{ color: '#b64c3d' }}>- {money(currentDayRecord?.spoilageCost ?? 0)} ({currentDayRecord?.spoilageCount ?? 0} món)</span>
               </div>
+              {(currentDayRecord?.counterfeitLoss ?? 0) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span className="muted">Tiền giả nhận nhầm:</span>
+                <span style={{ color: '#b64c3d' }}>- {money(currentDayRecord?.counterfeitLoss ?? 0)}</span>
+              </div>}
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px double #583c28', paddingTop: 4, fontWeight: 'bold' }}>
                 <span>Lợi nhuận ròng:</span>
                 <span style={{ color: (currentDayRecord?.netProfit ?? 0) >= 0 ? '#2a7a43' : '#b64c3d', fontSize: 14 }}>

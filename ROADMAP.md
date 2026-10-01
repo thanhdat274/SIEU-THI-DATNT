@@ -2,6 +2,15 @@
 
 > Ghi chú: `pnpm-workspace.yaml` ở Giai đoạn 0 là lịch sử; dự án dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
 
+## Tiếp nối tính năng an ninh — 01/10/2026
+
+- OpenSpec `theft-and-security` đã có code/test/UI; lỗi hoàn giỏ trên khách thật khi đổi ngày đã được sửa và kiểm bằng test hồi quy. Typecheck, core tests, server build và web production build PASS. Để còn nghiệm thu: browser QA ở cấp 5+, cân bằng kinh tế và quyết định server replay `security_action` cùng các mục thiết kế trong tasks.
+
+## Plan sau: chọn lọc gameplay từ game tham khảo — 01/10/2026
+
+- OpenSpec `reference-gameplay-expansion` đang triển khai theo wave. Đã có code tiền giả, tín dụng khách quen và dine-in MVP (đồ ăn đóng gói, khách đi bàn, bàn bẩn, dọn bởi người chơi/nhân viên, server replay). Chưa chạy kiểm chứng; tham số kinh tế/thời lượng provisional. Recipe/production, prestige, biểu đồ, heatmap, checklist, âm thanh, replay và engine thuế còn chờ; test/build/playtest được gom về wave cuối theo yêu cầu.
+- Chuỗi chi nhánh, loại hình cửa hàng và luân chuyển nội bộ để plan sau; chờ thiết kế mở rộng trên cùng khu đất. Tách từng wave thành change riêng trước khi bắt đầu code.
+
 ## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)
 
 - **Hẻm sống động:** mặt cắt đường/cống/độ ướt đã commit (2f2af38). Đèn tín hiệu chu kỳ + người đi bộ + nhường đường: đã commit `24a2fab` + OpenSpec `traffic-light-crosswalk-yielding`, QA browser mới một phần (S46, F-03); khách thật qua đường và đồng bộ co-op là non-goal hiện tại.
