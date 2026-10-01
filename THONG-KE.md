@@ -114,7 +114,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | I-09 | Test server ngoài `yarn test` | Medium | Mở |
 | I-10 | Bundle lớn | Low | Mở |
 | I-11 | `server/main.ts` lỗi thời | Low | Mở |
-| I-12 | Save local một slot, xuất/nhập file | Medium | Xuất/nhập file đã làm 2026-10-01; còn nhiều slot, khóa nhiều tab |
+| I-12 | Save local một slot, xuất/nhập file | Medium | Xuất/nhập file, 3 ô lưu và khóa nhiều tab đã làm 2026-10-01 |
 | I-13 | Mưa chỉ dùng ngưỡng 0,4 | Low | Mở |
 | I-14 | Khóa bí mật trong thư mục dự án | Low | Mở |
 | I-15 | Server không giới hạn payload/tần suất | Medium | Xử lý một phần 2026-10-01 |
@@ -263,7 +263,8 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Suggested Fix:** Nút xuất/nhập JSON (dùng `validateSaveGameData`), khóa tab (`BroadcastChannel`).
 - **Priority:** Medium
 - **Đã làm 2026-10-01:** xuất/nhập file JSON. `apps/web/src/save-file.ts` (phong bì `{format, formatVersion, exportedAt, save}`, `parseSaveFile` từ chối JSON hỏng/file lạ/định dạng tương lai/schema tương lai/save không qua `validateSaveGameData`/file >5 MB, nâng save schema cũ), `db.ts` `replaceSaveWithImported` (transaction, giữ bản cũ làm backup, revision đi tiếp), `App.tsx` `handleExportSave`/`handleImportSave`, `SaveModal.tsx` có nút Xuất/Nhập + hộp xác nhận hiện tóm tắt (ngày, cấp, tiền, doanh thu). Bị chặn khi đang chơi online. Test: `apps/web/src/save-file.test.ts` (script `yarn --cwd apps/web test`, nằm trong `test:all`). **Đã xem trong Browser pane (dev server, desktop):** xuất ra file đúng định dạng (25,8 KB), file hỏng báo lỗi rõ, nhập file sửa tiền/ngày hiện xác nhận đúng, sau khi đồng ý HUD đổi, IndexedDB có bản dự phòng cũ + bản mới với revision liên tục; không có lỗi console. Save dev đã được nhập lại về trạng thái ban đầu sau khi thử.
-- **Còn lại / giới hạn:** chỉ một slot và một bản backup (lần nhập sau ghi đè backup); chưa xử lý hai tab mở cùng lúc (khóa `BroadcastChannel`); file không mã hóa/không ký nên người chơi có thể sửa tay (chỉ dùng cho save cục bộ, không đưa lên hẻm online); chưa kiểm trên mobile/iOS Safari (tải file, chọn file) và chưa kiểm khi save lớn gần 5 MB; ngoài `validateSaveGameData` chưa có kiểm tra bất biến nội dung (tiền cực lớn vẫn nhập được); lúc nhập qua giao diện tôi đẩy file bằng script `DataTransfer`, chưa dùng hộp chọn file thật.
+- **Ba ô lưu + khóa nhiều tab (2026-10-01):** `db.ts` có `SAVE_SLOT_IDS` (ô 1 giữ khóa cũ `local_save_default` nên save hiện có không cần migration; ô 2/3 là `local_save_slot_2/3`), mỗi ô một backup (`backupKeyFor`), `getActiveSlotId/setActiveSlotId` (ô chọn giữ trong bộ nhớ từng tab, nhớ qua localStorage), `listSaveSlots`, `deleteSaveSlot`; mọi hàm đọc/ghi/nhập/xuất dùng ô đang chọn. `slot-lock.ts` dùng Web Locks API (`navigator.locks`, `ifAvailable`): tab giữ khóa ô khi vào chơi một mình, nhả khi về menu hoặc đóng tab; tab khác thấy ô "Đang mở ở thẻ khác" và không vào được (kể cả "Bắt đầu tiệm mới", xin khóa trước khi ghi đè). `LoginScreen.tsx` có chọn ô, xóa ô (xác nhận), làm mới khi quay lại tab. **Đã xem trong Browser pane (hai tab):** chip ba ô đúng trạng thái; tab thứ hai thấy ô đang mở bị khóa và bấm tiếp tục thì ở lại menu kèm thông báo; về menu ở tab đầu thì tab hai vào được ô đó sau khi làm mới; save ô 2 lưu riêng cùng backup riêng, ô 1 không bị đụng; xóa ô 2 xóa cả backup; dữ liệu thử đã dọn. Ô 1 lúc thử đang được một tab khác chơi (có khóa của tab đó), cũng chứng minh khóa chéo tab.
+- **Còn lại / giới hạn:** chưa có test tự động cho `db.ts`/`slot-lock.ts` (cần IndexedDB/Web Locks giả; `db.ts` import `@game/data` không chạy được dưới `tsx` ESM của `apps/web`) — mới kiểm bằng Browser pane desktop; trình duyệt không có Web Locks thì không khóa (còn kiểm revision trong `persistSave`, ghi đè nhau vẫn có thể báo lỗi 'Bản lưu đã thay đổi'); chưa kiểm Safari/Firefox/mobile; không đổi tên ô, không sao chép ô; nhập file (`replaceSaveWithImported`) và "Khôi phục" dùng ô đang chọn; chọn ô ở menu chưa cập nhật các tab đang mở ở menu theo thời gian thực (chỉ khi tab lấy lại focus); `weatherSeed = save.id` nên mỗi ô có thời tiết khác nhau (ID ô khác nhau); fallback `'local_save_default'` còn ở vài chỗ trong `App.tsx` chỉ dùng làm ID tạm cho snapshot khôi phục/bố cục, không ghi DB; file không mã hóa/không ký nên người chơi có thể sửa tay (chỉ dùng cho save cục bộ, không đưa lên hẻm online); chưa kiểm trên mobile/iOS Safari (tải file, chọn file) và chưa kiểm khi save lớn gần 5 MB; ngoài `validateSaveGameData` chưa có kiểm tra bất biến nội dung (tiền cực lớn vẫn nhập được); lúc nhập qua giao diện tôi đẩy file bằng script `DataTransfer`, chưa dùng hộp chọn file thật.
 - **Verification:** `save-file.test.ts` PASS, `tsc` web sạch, `eslint` sạch cho các file đã sửa; thao tác thủ công như trên.
 
 ### Issue: I-13 Hành vi mưa/đường chỉ dùng ngưỡng cố định
@@ -586,6 +587,17 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ## 8. Lịch sử phát triển
 
+## 2026-10-01 (lượt 13 — I-12 ba ô lưu và khóa nhiều tab)
+
+### Changed
+- `db.ts` (ô lưu), `slot-lock.ts` (mới), `LoginScreen.tsx`/`.css` (chọn/xóa ô, khóa), `App.tsx` (`getActiveSlotId` khi lưu/xuất, nhả khóa khi về menu).
+
+### Verified
+- `tsc -p apps/web` sạch, `eslint` sạch; Browser pane hai tab như mô tả ở I-12. Không có test tự động mới, chưa chạy `test:all`/build.
+
+### Remaining
+- Test tự động (cần môi trường IndexedDB/Web Locks), kiểm trình duyệt khác/mobile, đặt tên/sao chép ô.
+
 ## 2026-10-01 (lượt 12 — I-03 ghi quyết định quyền bố cục)
 
 ### Changed
@@ -769,7 +781,7 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 - [>] Lệnh nhân viên trong co-op (I-05, S21): đã làm đường commit + bất biến; còn Browser QA hai tài khoản và đồng bộ AI nhân viên.
 - [>] Bảng xếp hạng thật (I-02, S28, F-05): đã nối dữ liệu thật; còn kiểm đăng nhập thật, tuần/mùa, opt-out, chống gian lận (I-01).
 - [>] ID xác định thay `Date.now()/Math.random()` (I-04): code + test xong (đã commit).
-- [>] Xuất/nhập save (I-12, F-04): xong xuất/nhập file 2026-10-01; còn nhiều slot, khóa nhiều tab, kiểm mobile.
+- [>] Xuất/nhập save (I-12, F-04): xong xuất/nhập file, 3 ô lưu và khóa nhiều tab (2026-10-01); còn test tự động, kiểm mobile/trình duyệt khác.
 - [ ] Đồng bộ/rút gọn `tổng hợp.md`, `TASKS.md`, `ROADMAP.md` (I-07).
 - [ ] Playtest cân bằng: XP cấp 1–35, perk, nhịp khách, giá đất (S35, S39).
 - [ ] Xác minh Google OAuth và PWA (S36, S37).

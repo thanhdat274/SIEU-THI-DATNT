@@ -1870,3 +1870,13 @@
     padding: 8px 12px;
   }
 }
+
+/* Ô lưu cục bộ */
+.save-slot-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; }
+.save-slot-chip { position: relative; flex: 1 1 140px; min-width: 120px; }
+.save-slot-chip > button:first-child { width: 100%; text-align: left; padding: 8px 28px 8px 10px; border: 2px solid #d4b88d; border-radius: 8px; background: #fff8e7; color: #3b281b; cursor: pointer; }
+.save-slot-chip.is-active > button:first-child { border-color: #10b981; background: #ecfdf5; }
+.save-slot-chip > button:first-child strong { display: block; font-size: 13px; }
+.save-slot-chip > button:first-child small { display: block; font-size: 11px; color: #7a634e; margin-top: 2px; }
+.save-slot-chip > button:disabled { opacity: 0.6; cursor: default; }
+.save-slot-delete { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; line-height: 18px; border: 1px solid #c27a6e; border-radius: 50%; background: #fff; color: #88392f; cursor: pointer; font-size: 14px; }

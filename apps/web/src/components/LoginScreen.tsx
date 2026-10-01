@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
-import { loadExistingSave, resetSaveToDefault } from '../db';
+import { deleteSaveSlot, getActiveSlotId, listSaveSlots, loadExistingSave, resetSaveToDefault, setActiveSlotId, type SaveSlotId, type SaveSlotInfo } from '../db';
+import { acquireSlotLock, releaseSlotLock, slotsLockedElsewhere } from '../slot-lock';
 import { listUserWorlds, createOnlineWorld, joinOnlineWorld, getLeaderboard, type WorldSummary, type WorldDetail, type ActivitiesResponse, type LeaderboardResponse } from '../services/api';
 import './LoginScreen.css';
 
@@ -53,23 +54,74 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   const [selectedWorldDetail, setSelectedWorldDetail] = useState<WorldDetail | null>(null);
   const [activeGuideTab, setActiveGuideTab] = useState<'daily' | 'controls' | 'stock' | 'features' | 'coop'>('daily');
 
-  // Check existing game save in IndexedDB
-  useEffect(() => {
-    let active = true;
-    void loadExistingSave().then((save) => {
-      if (!active) return;
-      if (save) {
-        setHasSave(true);
-        setSaveDay(save.worldTime.day ?? 1);
-      } else {
-        setHasSave(false);
-        setSaveDay(1);
-      }
-    });
-    return () => {
-      active = false;
-    };
+  const [slots, setSlots] = useState<SaveSlotInfo[]>([]);
+  const [activeSlot, setActiveSlot] = useState<SaveSlotId>(getActiveSlotId());
+  const [lockedSlots, setLockedSlots] = useState<Set<SaveSlotId>>(new Set());
+
+  // Đọc ba ô lưu và ô đang chọn từ IndexedDB; làm mới khi quay lại tab (tab khác có thể đã đổi/khóa ô).
+  const refreshSlots = React.useCallback(async () => {
+    try {
+      const [list, locked, save] = await Promise.all([listSaveSlots(), slotsLockedElsewhere(), loadExistingSave()]);
+      setSlots(list);
+      setLockedSlots(locked);
+      setHasSave(!!save);
+      setSaveDay(save?.worldTime.day ?? 1);
+    } catch (err) {
+      console.error('Không đọc được các ô lưu:', err);
+    }
   }, []);
+
+  useEffect(() => {
+    void refreshSlots();
+    const onVisible = () => { if (document.visibilityState === 'visible') void refreshSlots(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [refreshSlots]);
+
+  const handleSelectSlot = async (slotId: SaveSlotId) => {
+    triggerSound(420);
+    setActiveSlotId(slotId);
+    setActiveSlot(slotId);
+    await refreshSlots();
+  };
+
+  const handleDeleteSlot = async (slot: SaveSlotInfo) => {
+    if (!window.confirm(`Xóa hẳn Ô ${slot.number} (và bản dự phòng của ô này)? Không thể hoàn tác.`)) return;
+    setBusy(true);
+    try {
+      await deleteSaveSlot(slot.slotId);
+      setFeedbackMsg(`Đã xóa Ô ${slot.number}.`);
+    } catch (err) {
+      console.error(err);
+      setFeedbackMsg('Không xóa được ô lưu. Vui lòng thử lại.');
+    } finally {
+      setBusy(false);
+      await refreshSlots();
+    }
+  };
+
+  /** Giữ khóa ô đang chọn trước khi vào chơi một mình; ô đang mở ở tab khác thì không vào. */
+  const claimActiveSlot = async (): Promise<boolean> => {
+    if (await acquireSlotLock(getActiveSlotId())) return true;
+    setFeedbackMsg('Ô lưu này đang mở ở một thẻ khác. Hãy đóng thẻ đó hoặc chọn ô khác.');
+    await refreshSlots();
+    return false;
+  };
+
+  const handleContinue = async () => {
+    triggerSound(580);
+    setBusy(true);
+    try {
+      if (!(await claimActiveSlot())) return;
+      onEnter();
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // Listen to Firebase Auth state
   useEffect(() => {
@@ -247,11 +299,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
     }
     setBusy(true);
     try {
+      // Xin khóa trước khi ghi đè để không phá ô đang mở ở tab khác.
+      if (!(await claimActiveSlot())) { setBusy(false); return; }
       await resetSaveToDefault();
       triggerSound(600);
       onEnter();
     } catch (err) {
       console.error('Failed to create new save:', err);
+      releaseSlotLock();
       setFeedbackMsg('Lỗi tạo tiến trình mới. Vui lòng thử lại.');
       setBusy(false);
     }
@@ -487,6 +542,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
                 </div>
               </div>
 
+              <div className="save-slot-row" role="radiogroup" aria-label="Chọn ô lưu">
+                {slots.map((slot) => {
+                  const locked = lockedSlots.has(slot.slotId);
+                  const detail = locked ? 'Đang mở ở thẻ khác'
+                    : slot.status === 'empty' ? 'Trống'
+                    : slot.status === 'corrupt' ? 'Dữ liệu lỗi'
+                    : `Ngày ${slot.day} · cấp ${slot.level} · ${(slot.money ?? 0).toLocaleString('vi-VN')}₫`;
+                  return (
+                    <div key={slot.slotId} className={`save-slot-chip${activeSlot === slot.slotId ? ' is-active' : ''}`}>
+                      <button type="button" role="radio" aria-checked={activeSlot === slot.slotId} disabled={busy} onClick={() => void handleSelectSlot(slot.slotId)}>
+                        <strong>Ô {slot.number}</strong>
+                        <small>{detail}</small>
+                      </button>
+                      {slot.status !== 'empty' && !locked && (
+                        <button type="button" className="save-slot-delete" aria-label={`Xóa Ô ${slot.number}`} disabled={busy} onClick={() => void handleDeleteSlot(slot)}>×</button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
               <p className="spotlight-summary-text">
                 {hasSave
                   ? 'Bà con chòm xóm đang chờ bạn mở cửa tiệm. Hãy kiểm tra kho, châm đầy hàng lên kệ và tính tiền cho khách quen nhé!'
@@ -497,10 +573,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
                 type="button"
                 className="btn-hero-launch"
                 disabled={busy}
-                onClick={() => {
-                  triggerSound(580);
-                  onEnter();
-                }}
+                onClick={() => { void handleContinue(); }}
               >
                 <div className="hero-launch-texts">
                   <span className="launch-action-main">{hasSave ? 'TIẾP TỤC BUÔN BÁN' : 'MỞ CỬA BÁN HÀNG'}</span>

@@ -4,7 +4,8 @@ import { InputManager, GameSimulation } from '@game/core';
 import { PixiGameViewport } from '@game/renderer';
 import { GameSnapshot, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
 
-import { loadOrCreateSave, persistSave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
+import { getActiveSlotId, loadOrCreateSave, persistSave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
+import { releaseSlotLock } from './slot-lock';
 import { buildSaveFile, saveFileName } from './save-file';
 import { useGameStore } from './store/useGameStore';
 import { HUD } from './components/HUD';
@@ -168,7 +169,7 @@ export const App: React.FC = () => {
     saveQueueRef.current = saveQueueRef.current.catch(() => {}).then(async () => {
       try {
         if (!simulationRef.current) return;
-        const exportData = simulationRef.current.exportSaveData('local_save_default', revisionRef.current);
+        const exportData = simulationRef.current.exportSaveData(getActiveSlotId(), revisionRef.current);
         const saved = await persistSave(exportData);
         revisionRef.current = saved.revision;
         setLastSavedTime(saved.updatedAt);
@@ -221,7 +222,7 @@ export const App: React.FC = () => {
     if (!simulationRef.current) return false;
     try {
       await saveQueueRef.current;
-      const data = simulationRef.current.exportSaveData('local_save_default', revisionRef.current);
+      const data = simulationRef.current.exportSaveData(getActiveSlotId(), revisionRef.current);
       const url = URL.createObjectURL(new Blob([buildSaveFile(data)], { type: 'application/json' }));
       const link = document.createElement('a');
       link.href = url;
@@ -338,9 +339,11 @@ export const App: React.FC = () => {
       setOnlineWorld(null);
       setOnlineToken(null);
       onlineWorldRef.current = null;
+      releaseSlotLock();
       setGameStarted(false);
     } catch (err) {
       console.error('Lỗi khi quay về màn hình chính:', err);
+      releaseSlotLock();
       setGameStarted(false);
     }
   }, [addToast, closeAllModals, handleSaveGame]);
