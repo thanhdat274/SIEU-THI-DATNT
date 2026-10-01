@@ -113,6 +113,16 @@ async function run() {
     assert.equal(race.filter(r => r.status === 'fulfilled').length, 1, 'tranh chấp cùng revision: đúng một thắng');
     assert.equal((await snapshotFor(owner)).world.revision, revision + 1);
 
+    // Thành viên (không phải chủ hẻm) cũng được sửa bố cục cửa hàng qua layout_batch.
+    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.worldTime.isStoreOpen': false } }); // layout chỉ sửa được khi đóng cửa
+    const layoutRevision = (await snapshotFor(member)).world.revision;
+    const shelf = (await snapshotFor(member)).businesses[0].save.storeLayout.fixtures.find((f: any) => f.type === 'shelf_wooden');
+    assert.ok(shelf, 'save gieo có ít nhất một kệ');
+    const layoutResult = await send(member, 'member-layout', { type: 'layout_batch', actions: [{ type: 'store', fixtureId: shelf.id }] }, layoutRevision);
+    assert.equal(layoutResult.committed, true, 'thành viên được commit layout_batch');
+    const afterLayout = (await snapshotFor(owner)).businesses[0].save.storeLayout;
+    assert.ok(afterLayout.storedFixtures.some((f: any) => f.id === shelf.id), 'kệ đã được cất vào kho sau lệnh của thành viên');
+
     console.log('PASS co-op: 7 lệnh server-replay qua GameController.commitCommand trên Mongo thật (2 tài khoản, retry idempotent, trùng commandId khác payload, lệnh bị từ chối, tranh chấp revision)');
     await closeDatabase();
   } finally {

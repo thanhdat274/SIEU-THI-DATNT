@@ -103,5 +103,5 @@ export interface SaveGameData {
 
 - Shared contract thật ở `packages/shared/src/index.ts`; `schemaVersion` hiện là 3. Phần pseudo-interface ở mục 2 chỉ là tóm tắt, không phải định nghĩa đầy đủ.
 - Bố cục dùng `StoreFixture.tileX/tileY/widthTiles/heightTiles/rotation`; plot ownership là IDs data-driven, không nhận geometry tùy ý từ client. `storedFixtures` giữ nguyên fixture ID và dữ liệu hàng.
-- Bản local schema 2 được backup trong transaction IndexedDB rồi migrate. Online layout dùng `layout_batch`; server tái áp dụng action lên save hiện tại, validate quyền owner, điều kiện cửa hàng, geometry/path và tiền trước commit revision/idempotency.
+- Bản local schema 2 được backup trong transaction IndexedDB rồi migrate. Online layout dùng `layout_batch`; server tái áp dụng action lên save hiện tại, validate người gửi là thành viên của hẻm (cả chủ và thành viên đều được sửa bố cục/mua đất), điều kiện cửa hàng, geometry/path và tiền trước commit revision/idempotency.
 - Hai plot phía đông hiện có giá 250.000/600.000 VND, level 5/10; đây là giá trị đề xuất chưa qua playtest. Tính năng vừa được code nhưng chưa chạy typecheck/test/build/browser QA theo yêu cầu gom kiểm chứng sau.

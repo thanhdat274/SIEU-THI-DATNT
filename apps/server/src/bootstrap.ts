@@ -135,7 +135,8 @@ export class GameController {
     if (payload?.type === 'layout_batch') {
       const currentBusiness = commandBusiness;
       const nextSave = body.updatedBusiness.save as SaveGameData | undefined;
-      if (!currentBusiness || !currentBusiness.ownerAccountIds.includes(request.gameAccount.uid)) throw new BadRequestException('Chỉ chủ tiệm được sửa bố cục cửa hàng.');
+      // Any member of the shared alley may rearrange the shop and buy plots (getForMember already proved membership).
+      if (!currentBusiness || !commandWorld.world.memberships.some((member) => member.accountId === request.gameAccount.uid)) throw new BadRequestException('Chỉ thành viên của hẻm được sửa bố cục cửa hàng.');
       if (!Array.isArray(payload.actions) || !isSaveGameData(nextSave) || currentBusiness.save.worldTime.isStoreOpen || (currentBusiness.save.customers ?? (currentBusiness.save.customer ? [currentBusiness.save.customer] : [])).some((customer) => customer.stage !== 'leaving') || (currentBusiness.save.staff ?? []).some((staff) => !!staff.workerTask)) {
         throw new BadRequestException('Cửa hàng phải đóng, không còn khách phục vụ hoặc nhân viên đang làm việc.');
       }
