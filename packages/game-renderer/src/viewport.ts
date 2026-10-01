@@ -17,6 +17,7 @@ export interface PixiGameViewportOptions {
 
 import { getDebugVisualTime } from './debug-time';
 import { buildRoadSurface, type RoadSurface } from './road-surface';
+import { buildTrafficSignalHeads, createPedestrianSprite, placePedestrian, type TrafficSignalHeads } from './street-signal';
 
 /** Điểm gốc bóng so với góc trên-trái sprite cây 80x100 (px): chân thân cây, để bóng đổ từ mặt đất chứ không từ tán. */
 const TREE_SHADOW_ORIGIN_PX = { x: 40, y: 90 } as const;
@@ -551,6 +552,7 @@ export class PixiGameViewport {
     this.entitiesLayer.addChild(chair);
 
     // Cozy Alley Shade Tree on sidewalk
+    this.trafficSignalHeads = buildTrafficSignalHeads(this.entitiesLayer);
     for (const prop of TREE_PROPS) {
       const tree = new Sprite(this.textures.getTexture('tile_tree'));
       tree.position.set((prop.tileX + TREE_SPRITE_OFFSET.tilesX) * TILE_SIZE, (prop.tileY + TREE_SPRITE_OFFSET.tilesY) * TILE_SIZE + TREE_SPRITE_OFFSET.pixelsY);
@@ -763,6 +765,8 @@ export class PixiGameViewport {
   private lightLayer!: Container;
   private sunBeamGraphic!: Graphics;
   private roadSurface: RoadSurface | null = null;
+  private trafficSignalHeads: TrafficSignalHeads | null = null;
+  private pedestrianSprites = new Map<string, Container>();
   private treeShadows: Array<{ prop: TreeProp; graphic: Graphics; last: TreeShadowSnapshot | null }> = [];
   private rainOverlay!: Graphics;
 
@@ -1026,6 +1030,27 @@ export class PixiGameViewport {
         this.entitiesLayer.removeChild(sprite);
         sprite.destroy();
         this.streetTrafficSprites.delete(id);
+      }
+    }
+
+    // Đèn tín hiệu và người đi bộ qua vạch trước cửa tiệm (ambient, không phải khách)
+    this.trafficSignalHeads?.update(this.simulation.getTrafficSignal());
+    const activePedestrians = new Set<string>();
+    for (const ped of this.simulation.getStreetPedestrians()) {
+      activePedestrians.add(ped.id);
+      let sprite = this.pedestrianSprites.get(ped.id);
+      if (!sprite) {
+        sprite = createPedestrianSprite(ped.variant);
+        this.entitiesLayer.addChild(sprite);
+        this.pedestrianSprites.set(ped.id, sprite);
+      }
+      placePedestrian(sprite, ped, this.animTimer);
+    }
+    for (const [id, sprite] of this.pedestrianSprites.entries()) {
+      if (!activePedestrians.has(id)) {
+        this.entitiesLayer.removeChild(sprite);
+        sprite.destroy({ children: true });
+        this.pedestrianSprites.delete(id);
       }
     }
 
@@ -1351,6 +1376,7 @@ export class PixiGameViewport {
     this.workerSprites.clear();
     this.parkedMotorbikeSprites.clear();
     this.streetTrafficSprites.clear();
+    this.pedestrianSprites.clear();
     this.textures.destroy();
   }
 }

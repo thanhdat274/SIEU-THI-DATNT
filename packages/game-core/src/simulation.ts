@@ -40,6 +40,8 @@ import {
   AutoBuyReport,
   RegularCustomerProgress,
   StreetVehicleState,
+  StreetPedestrianState,
+  TrafficSignalState,
   PartyOrderState,
   GoalState,
   SkillState,
@@ -438,6 +440,14 @@ export class GameSimulation {
 
   public getStreetVehicles(): StreetVehicleState[] {
     return this.streetTraffic.getVehicles();
+  }
+
+  public getStreetPedestrians(): StreetPedestrianState[] {
+    return this.streetTraffic.getPedestrians();
+  }
+
+  public getTrafficSignal(): TrafficSignalState {
+    return this.streetTraffic.getSignal();
   }
 
   /** Bảng nhu cầu lưu đệm; chỉ tính lại khi bối cảnh đổi (ngày, khung giờ, thời tiết, mùa, sự kiện, bậc uy tín), không mỗi khung hình. */

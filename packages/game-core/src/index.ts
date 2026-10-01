@@ -11,6 +11,7 @@ export * from './tax/research';
 export * from './tax/annual-revenue';
 export * from './lighting-phase';
 export * from './tree-shadow';
+export * from './traffic-signal';
 export * from './world-runtime';
 export * from './suggestions';
 export * from './staff';

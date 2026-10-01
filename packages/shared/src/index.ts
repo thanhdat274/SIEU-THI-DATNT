@@ -187,6 +187,28 @@ export interface StreetVehicleState {
   position: Vector2D;
   speed: number;
   hornTimer?: number;
+  /** Tốc độ hiện tại (px/s) khi đang giảm tốc/dừng/tăng tốc; thiếu thì bằng `speed` (tốc độ chạy thông thường). */
+  currentSpeed?: number;
+}
+
+/** Người đi bộ băng qua đường tại vạch trước cửa tiệm (chỉ hình ảnh, không phải khách). */
+export interface StreetPedestrianState {
+  id: string;
+  variant: number;
+  /** Hướng băng qua: từ vỉa hè phía bắc sang nam hoặc ngược lại. */
+  direction: 'south' | 'north';
+  state: 'waiting' | 'crossing';
+  position: Vector2D;
+}
+
+export type TrafficLightColor = 'green' | 'yellow' | 'red';
+export type PedestrianSignal = 'dont_walk' | 'walk' | 'clearing';
+
+export interface TrafficSignalState {
+  vehicle: TrafficLightColor;
+  pedestrian: PedestrianSignal;
+  /** Giây còn lại của pha xe hiện tại. */
+  secondsLeft: number;
 }
 
 export interface CustomerState {
