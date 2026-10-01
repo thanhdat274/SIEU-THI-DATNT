@@ -1,7 +1,7 @@
-import { getFixtureDimensions, type GameTileMap, type SaveGameData, type StoreFixture } from '@game/shared';
-import { LAND_PLOTS, MAP_ORIGIN_Y, STORE_BOUNDS, WAREHOUSE_DOOR_LEFT } from '@game/data';
+import { getFixtureDimensions, isSlotChild, syncSlotChildren, type GameTileMap, type SaveGameData, type StoreFixture } from '@game/shared';
+import { FIXTURE_SHOP, LAND_PLOTS, MAP_ORIGIN_Y, STORE_BOUNDS, WAREHOUSE_DOOR_LEFT } from '@game/data';
 
-export type LayoutFailure = 'fixture_missing' | 'plot_locked' | 'outside_floor' | 'overlap' | 'path_blocked' | 'invalid_rotation' | 'store_open' | 'level' | 'money' | 'prerequisite';
+export type LayoutFailure = 'fixture_missing' | 'plot_locked' | 'outside_floor' | 'overlap' | 'path_blocked' | 'invalid_rotation' | 'store_open' | 'level' | 'money' | 'prerequisite' | 'unknown_item';
 
 export interface LayoutResult {
   save?: SaveGameData;
@@ -13,13 +13,20 @@ export type StoreLayoutAction =
   | { type: 'move'; fixtureId: string; tileX: number; tileY: number; rotation: StoreFixture['rotation'] }
   | { type: 'store'; fixtureId: string }
   | { type: 'retrieve'; fixtureId: string; tileX: number; tileY: number }
-  | { type: 'buy_plot'; plotId: string };
+  | { type: 'buy_plot'; plotId: string }
+  | { type: 'buy_fixture'; shopId: string; tileX: number; tileY: number; rotation: StoreFixture['rotation'] };
 
 const key = (x: number, y: number) => `${x},${y}`;
 const footprint = (fixture: StoreFixture) => {
   const { widthTiles: width, heightTiles: height } = getFixtureDimensions(fixture);
   return Array.from({ length: width * height }, (_, i) => ({ x: fixture.tileX + i % width, y: fixture.tileY + Math.floor(i / width) }));
 };
+
+/** Đồng bộ ô phụ (vị trí theo kệ cha, đủ số ô) cho cả sàn lẫn kho. */
+export function syncLayoutSlots(save: SaveGameData): void {
+  save.storeLayout.fixtures = syncSlotChildren(save.storeLayout.fixtures);
+  if (save.storeLayout.storedFixtures?.length) save.storeLayout.storedFixtures = syncSlotChildren(save.storeLayout.storedFixtures);
+}
 
 export function validateStoreLayout(save: SaveGameData, map: GameTileMap): LayoutResult {
   const plotIds = save.storeLayout.unlockedPlotIds ?? [];
@@ -39,7 +46,7 @@ export function validateStoreLayout(save: SaveGameData, map: GameTileMap): Layou
   const invalid: string[] = [];
   if (!save.storeLayout.fixtures.some(fixture => fixture.type === 'cashier_counter')) invalid.push('cashier_missing');
   for (const fixture of save.storeLayout.fixtures) {
-    if (fixture.type.startsWith('warehouse_')) continue;
+    if (fixture.type.startsWith('warehouse_') || isSlotChild(fixture)) continue;
     if (![0, 90, 180, 270].includes(fixture.rotation)) return { error: 'invalid_rotation' };
     for (const tile of footprint(fixture)) {
       const localY = tile.y - (map.originTileY ?? 0);
@@ -72,6 +79,7 @@ export function validateStoreLayout(save: SaveGameData, map: GameTileMap): Layou
 
   const requiredStaffTargets = new Set((save.staff ?? []).map(member => member.assignedFixtureId).filter((id): id is string => !!id));
   for (const fixture of save.storeLayout.fixtures) {
+    if (isSlotChild(fixture)) continue;
     const required = fixture.type === 'cashier_counter' || ((fixture.type === 'shelf_wooden' || fixture.type === 'shelf_glass' || fixture.type === 'refrigerator') && fixture.currentStock > 0) || requiredStaffTargets.has(fixture.id);
     if (!required) continue;
     const own = new Set(footprint(fixture).map(tile => key(tile.x, tile.y)));
@@ -98,7 +106,9 @@ export function moveStoreFixture(save: SaveGameData, fixtureId: string, tileX: n
   if (fixture.type.startsWith('warehouse_')) return { error: 'prerequisite' };
   fixture.tileX = tileX;
   fixture.tileY = tileY;
+  if (fixture.parentId) return { error: 'prerequisite' };
   if (rotation !== undefined) fixture.rotation = rotation;
+  syncLayoutSlots(next);
   if (map) {
     const result = validateStoreLayout(next, map);
     if (result.error) return result;
@@ -112,9 +122,12 @@ export function storeFixture(save: SaveGameData, fixtureId: string): LayoutResul
   if (index < 0) return { error: 'fixture_missing' };
   if (next.storeLayout.fixtures[index].type.startsWith('warehouse_')) return { error: 'prerequisite' };
   if (next.storeLayout.fixtures[index].type === 'cashier_counter') return { error: 'prerequisite' };
-  const [fixture] = next.storeLayout.fixtures.splice(index, 1);
-  next.storeLayout.storedFixtures = [...(next.storeLayout.storedFixtures ?? []), fixture];
-  next.staff = (next.staff ?? []).map(member => member.assignedFixtureId === fixtureId ? { ...member, assignedFixtureId: undefined } : member);
+  if (next.storeLayout.fixtures[index].parentId) return { error: 'prerequisite' };
+  const moving = next.storeLayout.fixtures.filter(item => item.id === fixtureId || item.parentId === fixtureId);
+  const movingIds = new Set(moving.map(item => item.id));
+  next.storeLayout.fixtures = next.storeLayout.fixtures.filter(item => !movingIds.has(item.id));
+  next.storeLayout.storedFixtures = [...(next.storeLayout.storedFixtures ?? []), ...moving];
+  next.staff = (next.staff ?? []).map(member => member.assignedFixtureId && movingIds.has(member.assignedFixtureId) ? { ...member, assignedFixtureId: undefined } : member);
   return { save: next };
 }
 
@@ -123,9 +136,13 @@ export function retrieveStoreFixture(save: SaveGameData, fixtureId: string, tile
   const stored = next.storeLayout.storedFixtures ?? [];
   const index = stored.findIndex(item => item.id === fixtureId);
   if (index < 0) return { error: 'fixture_missing' };
-  const [fixture] = stored.splice(index, 1);
+  if (stored[index].parentId) return { error: 'prerequisite' };
+  const fixture = stored[index];
+  const bundle = stored.filter(item => item.id === fixtureId || item.parentId === fixtureId);
+  next.storeLayout.storedFixtures = stored.filter(item => !bundle.includes(item));
   fixture.tileX = tileX; fixture.tileY = tileY;
-  next.storeLayout.fixtures.push(fixture);
+  next.storeLayout.fixtures.push(...bundle);
+  syncLayoutSlots(next);
   const valid = validateStoreLayout(next, map);
   return valid.error ? valid : { save: next };
 }
@@ -142,6 +159,25 @@ export function buyLandPlot(save: SaveGameData, plotId: string): LayoutResult {
   const next = structuredClone(save);
   next.player.money -= plot.cost;
   next.storeLayout.unlockedPlotIds = [...owned, plotId];
+  return { save: next };
+}
+
+export function buyShopFixture(save: SaveGameData, shopId: string, tileX: number, tileY: number, rotation: StoreFixture['rotation']): LayoutResult {
+  if (save.worldTime.isStoreOpen) return { error: 'store_open' };
+  const item = FIXTURE_SHOP.find(entry => entry.id === shopId);
+  if (!item) return { error: 'unknown_item' };
+  if (![0, 90, 180, 270].includes(rotation) || !Number.isSafeInteger(tileX) || !Number.isSafeInteger(tileY)) return { error: 'invalid_rotation' };
+  if (save.player.money < item.cost) return { error: 'money' };
+  const next = structuredClone(save);
+  const used = new Set([...next.storeLayout.fixtures, ...(next.storeLayout.storedFixtures ?? [])].map(fixture => fixture.id));
+  let n = 1;
+  while (used.has(`${item.type}_buy_${n}`)) n++;
+  next.player.money -= item.cost;
+  next.storeLayout.fixtures.push({
+    id: `${item.type}_buy_${n}`, type: item.type, tileX, tileY, widthTiles: item.widthTiles, heightTiles: item.heightTiles,
+    rotation, currentStock: 0, maxCapacity: item.maxCapacity, label: `${item.name} mới ${n}`,
+  });
+  syncLayoutSlots(next);
   return { save: next };
 }
 
@@ -168,11 +204,17 @@ export function applyStoreLayoutActions(save: SaveGameData, actions: readonly St
       const stored = draft.storeLayout.storedFixtures ?? [];
       const index = stored.findIndex(item => item.id === action.fixtureId);
       if (index < 0) return { error: 'fixture_missing' };
-      const [fixture] = stored.splice(index, 1);
-      if (fixture.type.startsWith('warehouse_')) return { error: 'prerequisite' };
+      const fixture = stored[index];
+      if (fixture.type.startsWith('warehouse_') || fixture.parentId) return { error: 'prerequisite' };
+      const bundle = stored.filter(item => item.id === action.fixtureId || item.parentId === action.fixtureId);
+      draft.storeLayout.storedFixtures = stored.filter(item => !bundle.includes(item));
       fixture.tileX = action.tileX; fixture.tileY = action.tileY;
-      draft.storeLayout.storedFixtures = stored;
-      draft.storeLayout.fixtures.push(fixture);
+      draft.storeLayout.fixtures.push(...bundle);
+      syncLayoutSlots(draft);
+    } else if (action.type === 'buy_fixture') {
+      const result = buyShopFixture(draft, action.shopId, action.tileX, action.tileY, action.rotation);
+      if (!result.save) return result;
+      draft = result.save;
     } else {
       const result = buyLandPlot(draft, action.plotId);
       if (!result.save) return result;

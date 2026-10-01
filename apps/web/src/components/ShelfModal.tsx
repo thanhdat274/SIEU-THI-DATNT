@@ -19,6 +19,9 @@ interface Props {
   sellingPriceBounds?: { min: number; max: number; step: number } | null;
   onSetPrice?: (productId: string, price: number | null) => void;
   onClose: () => void;
+  /** Mọi ô của cùng một kệ (ô chính + ô phụ), theo thứ tự. */
+  slots?: StoreFixture[];
+  onSelectSlot?: (fixtureId: string) => void;
 }
 
 export const ShelfModal: React.FC<Props> = ({
@@ -35,16 +38,21 @@ export const ShelfModal: React.FC<Props> = ({
   onSetPrice,
   onClose,
   capacityBonus = 0,
+  slots = [],
+  onSelectSlot,
 }) => {
   const [priceDraft, setPriceDraft] = useState(sellingPrice ?? 0);
   const product = fixture.assignedProductId ? PRODUCT_MAP[fixture.assignedProductId] : null;
   useEffect(() => setPriceDraft(sellingPrice ?? product?.baseSellingPrice ?? 0), [fixture.id, product?.id, product?.baseSellingPrice, sellingPrice]);
   const limit = product ? effectiveShelfCapacity(fixture.maxCapacity, product.shelfCapacity, capacityBonus) : fixture.maxCapacity;
   const inBag = inventory.find((i) => i.productId === product?.id)?.quantity ?? 0;
+  const siblingCategory = slots.filter(o => o.id !== fixture.id && o.currentStock > 0 && o.assignedProductId)
+    .map(o => PRODUCT_MAP[o.assignedProductId!]?.category)[0];
   const compatible = inventory.filter(
     (i) =>
       i.quantity > 0 &&
       PRODUCT_MAP[i.productId] &&
+      (!siblingCategory || PRODUCT_MAP[i.productId].category === siblingCategory) &&
       (fixture.type === 'refrigerator'
         ? PRODUCT_MAP[i.productId].storageType === 'cold'
         : PRODUCT_MAP[i.productId].storageType === 'ambient')
@@ -63,9 +71,15 @@ export const ShelfModal: React.FC<Props> = ({
       icon={fixture.type === 'refrigerator' ? 'cold' : 'warehouse'}
       onClose={onClose}
     >
+      {slots.length > 1 && <div className="shelf-slot-tabs" role="tablist" aria-label="Các ô trên kệ">
+        {slots.map((slot, index) => <PixelButton key={slot.id} role="tab" aria-selected={slot.id === fixture.id} variant={slot.id === fixture.id ? 'teal' : undefined} onClick={() => onSelectSlot?.(slot.id)}>
+          Ô {index + 1}: {slot.assignedProductId ? `${PRODUCT_MAP[slot.assignedProductId]?.name ?? slot.assignedProductId} (${slot.currentStock})` : 'trống'}
+        </PixelButton>)}
+      </div>}
+      {siblingCategory && <p className="muted">Các ô cùng kệ chỉ bày hàng cùng nhóm với ô đang có hàng.</p>}
       <div className="info-card">
         <div className="section-label">
-          <strong>Sức chứa kệ</strong>
+          <strong>Sức chứa ô này</strong>
           <span>
             {fixture.currentStock}/{limit} món
           </span>

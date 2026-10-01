@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { effectiveShelfCapacity, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, WEATHER_MAP } from '@game/data';
 import { InputManager, GameSimulation } from '@game/core';
 import { PixiGameViewport } from '@game/renderer';
-import { GameSnapshot, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture } from '@game/shared';
+import { GameSnapshot, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
 
 import { loadOrCreateSave, persistSave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
 import { buildSaveFile, saveFileName } from './save-file';
@@ -131,6 +131,7 @@ export const App: React.FC = () => {
     setCurrentDayRecord,
     setLedger,
     openFixtureModal,
+    showFixtureSlot,
     closeFixtureModal,
     closeAllModals,
     addToast,
@@ -1382,6 +1383,8 @@ export const App: React.FC = () => {
       <ShelfModal
         capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0}
         fixture={activeFixtureModal}
+        slots={slotGroup(fixtures, activeFixtureModal)}
+        onSelectSlot={showFixtureSlot}
         inventory={inventory}
         currentDay={worldTime.day}
         planogram={planogram}

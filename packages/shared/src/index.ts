@@ -497,6 +497,39 @@ export interface StoreFixture {
   wear?: number;
   /** Đang hỏng: nhẹ (sửa được) hoặc nặng (phải mua mới). Kệ hỏng không bán và không châm hàng được. */
   broken?: 'minor' | 'major';
+  /** Ô phụ của một kệ/tủ: dùng chung vị trí với kệ cha, mỗi ô giữ một sản phẩm (cùng nhóm hàng với các ô khác). */
+  parentId?: string;
+}
+
+export const isSlotChild = (fixture: Pick<StoreFixture, 'parentId'>): boolean => !!fixture.parentId;
+/** Số ô phụ thêm cho kệ/tủ (ô chính chính là kệ cha). */
+export function extraSlotCount(fixture: Pick<StoreFixture, 'type' | 'widthTiles' | 'heightTiles'>): number {
+  if (fixture.type === 'shelf_wooden' || fixture.type === 'shelf_glass') return 3;
+  if (fixture.type === 'refrigerator') return fixture.widthTiles * fixture.heightTiles >= 2 ? 3 : 1;
+  return 0;
+}
+export const slotGroup = <T extends Pick<StoreFixture, 'id' | 'parentId'>>(fixtures: readonly T[], fixture: Pick<StoreFixture, 'id' | 'parentId'>): T[] => {
+  const root = fixture.parentId ?? fixture.id;
+  return fixtures.filter(item => item.id === root || item.parentId === root);
+};
+/** Đảm bảo mỗi kệ có đủ ô phụ, ô phụ khớp vị trí/độ hỏng của kệ cha, bỏ ô mồ côi. */
+export function syncSlotChildren(fixtures: StoreFixture[]): StoreFixture[] {
+  const out: StoreFixture[] = [];
+  for (const parent of fixtures.filter(item => !item.parentId)) {
+    out.push(parent);
+    const need = extraSlotCount(parent);
+    for (let n = 2; n <= need + 1; n++) {
+      const id = `${parent.id}#s${n}`;
+      const existing = fixtures.find(item => item.id === id);
+      out.push({
+        id, type: parent.type, widthTiles: parent.widthTiles, heightTiles: parent.heightTiles, maxCapacity: Math.max(6, Math.round(parent.maxCapacity / 2)),
+        currentStock: 0, stockLots: [], ...existing,
+        tileX: parent.tileX, tileY: parent.tileY, rotation: parent.rotation, parentId: parent.id, label: `${parent.label} · ô ${n}`,
+        wear: parent.wear, broken: parent.broken,
+      });
+    }
+  }
+  return out;
 }
 
 /** Kệ/tủ mát đang dùng được cho bán hàng và châm hàng (không hỏng). */
@@ -789,6 +822,7 @@ export type GameCommandPayload =
     > }
   | { type: 'buy_plot'; plotId: string }
   | { type: 'claim_quest'; questId: string }
+      | { type: 'buy_fixture'; shopId: string; tileX: number; tileY: number; rotation: 0 | 90 | 180 | 270 }
   | { type: 'buy_stall'; stallId: string }
   | { type: 'dispose_stock'; productId: string; quantity: number }
   | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> }
@@ -998,6 +1032,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
       return false;
     });
     case 'buy_plot': return nonEmptyString(p.plotId);
+      if (action.type === 'buy_fixture') return nonEmptyString(action.shopId) && Number.isSafeInteger(action.tileX) && Number.isSafeInteger(action.tileY) && [0,90,180,270].includes(action.rotation as number);
     case 'claim_quest': return nonEmptyString(p.questId);
     case 'buy_stall': return nonEmptyString(p.stallId);
     case 'dispose_stock': return nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;

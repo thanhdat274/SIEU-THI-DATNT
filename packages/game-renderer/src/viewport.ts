@@ -615,6 +615,7 @@ export class PixiGameViewport {
   private buildFixtures(): void {
     const fixtures = this.simulation.getFixtures();
     for (const fix of fixtures) {
+      if (fix.parentId) continue;
       const dimensions = getFixtureDimensions(fix);
       const container = new Container();
       container.pivot.set(fix.widthTiles * TILE_SIZE / 2, fix.heightTiles * TILE_SIZE / 2);
@@ -1062,7 +1063,7 @@ export class PixiGameViewport {
     const isPlayerInWarehouse = isInWarehouse(playerPos) || (playerPos.y >= STORE_BOUNDS.top * TILE_SIZE && playerPos.y <= STORE_BOUNDS.top * TILE_SIZE + 6 && Math.abs(playerPos.x - WAREHOUSE_CENTER.x) < 36);
     const anyWorkerInWarehouse = Array.from(this.workerSprites.values()).some((w) => isInWarehouse(w.container.position));
     const warehouseActive = isPlayerInWarehouse || anyWorkerInWarehouse;
-    this.lighting.syncFixtures(this.simulation.getFixtures());
+    this.lighting.syncFixtures(this.simulation.getFixtures().filter(fixture => !fixture.parentId));
     this.lighting.update(light, this.animTimer, reducedMotion, warehouseActive, elapsed);
     const feet: Array<{ x: number; y: number }> = [this.playerContainer.position];
     if (this.partnerContainer.visible) feet.push(this.partnerContainer.position);
@@ -1153,7 +1154,9 @@ export class PixiGameViewport {
     this.warehouseDoorRight.x = 32 + slideOffset;
 
     // 3. Update Fixture Badges & Dot Status Markers (Green = Full, Yellow = Low, Red = Out)
-    for (const fix of this.simulation.getFixtures()) {
+    const allFixtures = this.simulation.getFixtures();
+    for (const fix of allFixtures) {
+      if (fix.parentId) continue;
       const entry = this.fixtureSprites.get(fix.id);
       if (entry) {
         entry.container.visible = true;
@@ -1180,9 +1183,11 @@ export class PixiGameViewport {
           entry.stockText.text=receiving?`${count} đơn`:cold?`${count}/40`:`${count} món`;
           entry.stockText.visible=true;entry.dotMarker.visible=true;
         } else if (fix.type !== 'cashier_counter') {
-          const limit = effectiveShelfCapacity(fix.maxCapacity, (fix.assignedProductId && PRODUCT_MAP[fix.assignedProductId]?.shelfCapacity) || fix.maxCapacity, this.simulation.getShelfCapacityBonus());
-          entry.stockText.text = fix.broken ? (fix.broken === 'major' ? 'NẶNG' : 'HỎNG') : `${fix.currentStock}/${limit}`;
-          const state = fix.currentStock === 0 ? 'empty' : fix.currentStock / limit <= 0.4 ? 'low' : 'full';
+          const group = allFixtures.filter(item => item.id === fix.id || item.parentId === fix.id);
+          const limit = group.reduce((sum, item) => sum + effectiveShelfCapacity(item.maxCapacity, (item.assignedProductId && PRODUCT_MAP[item.assignedProductId]?.shelfCapacity) || item.maxCapacity, this.simulation.getShelfCapacityBonus()), 0);
+          const stock = group.reduce((sum, item) => sum + item.currentStock, 0);
+          entry.stockText.text = fix.broken ? (fix.broken === 'major' ? 'NẶNG' : 'HỎNG') : `${stock}/${limit}`;
+          const state = stock === 0 ? 'empty' : stock / limit <= 0.4 ? 'low' : 'full';
           const key = `${entry.textureKey}:${fix.assignedProductId ?? 'none'}:${state}`;
           const stateKey = `${key}|${fix.broken ?? ''}`;
           if(entry.lastState !== stateKey) {

@@ -87,6 +87,7 @@ import { CollisionSystem } from './collision';
 import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
 import { rainIntensityAt, rainForecastForDay, describeRainForecast, roadWetnessAt } from './weather';
 import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
+import { slotCategoryConflict } from './shelf-slots';
 import { buyLandPlot, validateStoreLayout, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
@@ -134,7 +135,7 @@ import {
 } from './skills';
 import { LONG_TERM_GOALS, WEEKLY_QUESTS, PARTY_ORDER_MAP, TITLES, effectiveShelfCapacity } from '@game/data';
 import { getUnlockedTitles, setActiveTitle, type TitleContext } from './titles';
-import type { TitleDef } from '@game/shared';
+import { syncSlotChildren, type TitleDef } from '@game/shared';
 
 function normalizeStaffSchedule(
   schedule: Record<string, StaffShift> | undefined,
@@ -1284,7 +1285,7 @@ export class GameSimulation {
       const shelf = this.fixtures.find((item) => item.id === task.fixtureId);
       const product = PRODUCT_MAP[task.productId];
       if (!shelf || !isSalesFixture(shelf) || !product ||
-          (shelf.currentStock > 0 && shelf.assignedProductId !== task.productId)) {
+          (shelf.currentStock > 0 && shelf.assignedProductId !== task.productId) || slotCategoryConflict(this.fixtures, shelf, task.productId)) {
         member.lastWorkerError = 'Kệ không còn khớp với việc được giao.';
         this.finishStaffJob(member, true);
         continue;
@@ -1676,6 +1677,8 @@ export class GameSimulation {
     this.inventory = this.inventory.map((item) => {
       const prod = PRODUCT_MAP[item.productId];
       const fallbackCost = prod?.purchasePrice ?? 0;
+    this.fixtures = syncSlotChildren(this.fixtures);
+    this.storedFixtures = syncSlotChildren(this.storedFixtures);
       const expired = (item.lots ?? []).filter((lot) => lot.expiresOnDay <= day);
       for (const lot of expired) {
         spoiled += lot.quantity;
@@ -1967,6 +1970,7 @@ export class GameSimulation {
       }
     }
   }
+      if (fix.parentId) continue;
 
   /**
    * Transfer items to a sales shelf with detailed result.
@@ -2019,6 +2023,9 @@ export class GameSimulation {
     fixture.stockLots ??= [];
     mergeLots(fixture.stockLots, moved);
     fixture.currentStock = sumLots(fixture.stockLots);
+    if (slotCategoryConflict(this.fixtures, fixture, productId)) {
+      return { success: false, actualQuantity: 0, reason: 'product_mismatch' };
+    }
 
     // Clean up empty inventory slots
     if (inventorySlot.quantity <= 0) {
@@ -2222,6 +2229,9 @@ export class GameSimulation {
     }
 
     const res = this.transferToShelf(fixtureId, productId, needed);
+    if (slotCategoryConflict(this.fixtures, fix, productId)) {
+      return { fixtureId, productId, applied: false, actualQuantity: 0, reason: 'product_mismatch' };
+    }
     if (res.success && res.actualQuantity > 0) {
       return { fixtureId, productId, applied: true, actualQuantity: res.actualQuantity, reason: 'success' };
     }
@@ -2281,6 +2291,7 @@ export class GameSimulation {
       });
     }
     return targets;
+      if (slotCategoryConflict(this.fixtures, fix, productId)) continue;
   }
 
   private isActorAvailableForRestock(actorId: string): boolean {

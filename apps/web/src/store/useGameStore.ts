@@ -60,6 +60,7 @@ export interface GameStoreState {
   setCustomers: (customers: CustomerState[]) => void;
   setNearbyFixture: (fixture: StoreFixture | null) => void;
   openFixtureModal: (fixture: StoreFixture) => void;
+  showFixtureSlot: (fixtureId: string) => void;
   closeFixtureModal: () => void;
   toggleInventoryModal: () => void;
   toggleSaveModal: () => void;
@@ -119,13 +120,14 @@ export const useGameStore = create<GameStoreState>((set) => ({
 
   openFixtureModal: (fixture) => {
     captureModalFocus();
-    set({
-      activeFixtureModal: fixture,
+    set(state => ({
+      activeFixtureModal: fixture.parentId ? state.fixtures.find(f => f.id === fixture.parentId) ?? fixture : fixture,
       isInventoryModalOpen: false,
       isSaveModalOpen: false,
       isSupplierModalOpen: false,
-    });
+    }));
   },
+  showFixtureSlot: (fixtureId) => set(state => ({ activeFixtureModal: state.fixtures.find(f => f.id === fixtureId) ?? state.activeFixtureModal })),
 
   closeFixtureModal: () => set({ activeFixtureModal: null }),
 

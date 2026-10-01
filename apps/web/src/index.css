@@ -167,3 +167,4 @@ h3{font-weight:750}.quantity-stepper .pixel-button{min-width:44px}
 
 .hud-debt{display:flex;align-items:center;gap:4px;flex-shrink:0;padding:3px 8px;font:inherit;font-size:12px;font-weight:800;white-space:nowrap;color:#fff;background:var(--brick,#a4532b);border:2px solid var(--wood-dark);box-shadow:2px 2px 0 var(--wood-light);cursor:pointer}
 @media(max-width:860px){.hud-debt span{display:none}}
+.shelf-slot-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.shelf-slot-tabs button{font-size:12px}

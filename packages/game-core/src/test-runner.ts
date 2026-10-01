@@ -43,6 +43,7 @@ import { runMaintenanceTests } from './maintenance.test';
 import { runIntegrationTests, runOutdoorPropTests } from './integration.test';
 import { runStoreLayoutTests } from './store-layout.test';
 import { runRegularsTests } from './regulars.test';
+import { runShelfSlotTests } from './shelf-slots.test';
 import { runDayRhythmTests } from './day-rhythm.test';
 import { runStreetTrafficTests } from './street-traffic.test';
 import { runPartyOrderTests } from './party-orders.test';
@@ -93,6 +94,7 @@ export async function runTests(): Promise<void> {
   runStoreLayoutTests();
   runTaxRegistryTests();
   runInputTests();
+  runShelfSlotTests();
   runWarehouseTests();
   runMultiplayerSchemaTests();
   await runPersistenceTests();
