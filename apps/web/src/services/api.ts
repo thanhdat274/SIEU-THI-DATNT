@@ -84,6 +84,7 @@ export async function resetOnlineWorld(idToken: string, worldId: string): Promis
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- command payloads and receipts are command-specific JSON
 export async function commitOnlineCommand(idToken: string, worldId: string, payload: any): Promise<{ committed: boolean; revision: number; receipt: any; updatedBusiness?: any }> {
   return fetchWithAuth(`/api/v1/worlds/${worldId}/commands`, idToken, {
     method: 'POST',
@@ -92,6 +93,7 @@ export async function commitOnlineCommand(idToken: string, worldId: string, payl
 }
 
 export interface ActivitiesResponse {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- activity rows are shaped by the server
   activities: any[];
   totalCount: number;
   hasMore: boolean;

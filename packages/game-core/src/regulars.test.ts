@@ -2,9 +2,8 @@ import assert from 'node:assert/strict';
 import { REGULAR_CUSTOMERS, REGULAR_CUSTOMERS_MAP } from '@game/data';
 import {
   shouldRegularVisitToday,
-  pickAvailableRegular,
   processRegularCheckout,
-  processRegularWalkout,
+  processRegularWalkout
 } from './regulars';
 import { RegularCustomerProgress } from '@game/shared';
 

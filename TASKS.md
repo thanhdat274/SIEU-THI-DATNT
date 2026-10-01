@@ -31,6 +31,7 @@
   - 4.2: Cẩm nang hướng dẫn cách chơi trong `LoginScreen.tsx` (tab tính năng nâng cao), 4 sản phẩm lễ hội thuần Việt (Bánh chưng xanh, Liễn câu đối đỏ, Dưa hấu Tài Lộc, Bánh Trung Thu), vai trò nhân viên bảo vệ trông xe (`security` role, tăng kiên nhẫn +15s và sao hài lòng cho khách đi xe máy), người bán quầy phụ vỉa hè (`buildStalls`).
 - **Đợt E (Hẻm sống động)**:
   - Giao thông hẻm `StreetTrafficManager`, khách đến bằng xe máy/ô tô/đi bộ, đỗ xe lề đường `STREET_PARKING_SPOTS`, texture pixel art xe máy/taxi. Test PASS.
+- **Đề xuất tiếp theo (01/10/2026, chưa triển khai)**: OpenSpec `seasonal-daylight-tree-shadows` (mốc mọc/lặn theo mùa, vị trí mặt trời, bóng cây theo dữ liệu bản đồ). Mới có đặc tả; xem `tasks.md` của change.
 - **Kết quả kiểm chứng kỹ thuật**:
   - `yarn typecheck` PASS (0 errors).
   - `yarn test` PASS 100% (tất cả 40+ unit test suites và 7 TAP subtests).
@@ -146,12 +147,12 @@
 - [x] Báo cáo tài chính theo ngày (Nhóm 6: Giá vốn lô, ledger & báo cáo ngày) và gợi ý nhập hàng thông minh (Nhóm 7: tính vận tốc 3/7 ngày & cắt giảm giỏ theo ngân sách/kho/mối sỉ/đơn tối thiểu).
 - [ ] Nhiệm vụ và mở khóa cấp độ sâu hơn.
 - [ ] Đo FPS trên thiết bị thật. Đã kiểm tra giao diện 960×540, 844×390 và màn hình dọc 390×844 trong trình duyệt thử nghiệm; chưa kiểm tra điện thoại thật.
-- [x] Lint đã thiết lập (01/10/2026): `eslint.config.mjs`, `yarn lint`/`yarn lint:fix`; 0 lỗi, còn 120 cảnh báo chưa dọn (`no-explicit-any`, `no-unused-vars`, `exhaustive-deps`). Chưa có CI/formatter.
+- [x] Lint đã thiết lập (01/10/2026): `eslint.config.mjs`, `yarn lint`/`yarn lint:fix`; 0 lỗi, 0 cảnh báo sau khi dọn (01/10/2026). Các `any` còn lại (payload lệnh/receipt/Mongo update) có `eslint-disable-next-line` kèm lý do; 3 chỗ `react-hooks/exhaustive-deps` trong `App.tsx` được tắt có chủ đích kèm ghi chú; test bị tắt rule `no-explicit-any`. Chưa có CI/formatter.
 
 ## BÀN GIAO PHIÊN 2026-09-30
 - Giai đoạn hiện tại: Phase 3. Phase 2 đã hoàn thành và được kiểm tra bằng typecheck, 10 nhóm test lõi, build production và lưu/tải trên trình duyệt.
 - Tiếp theo: bổ sung hàng đợi nhiều NPC, để người chơi thu tiền tại quầy, phản hồi kiên nhẫn/uy tín; kiểm tra hiệu năng và thiết bị thật.
-- Vấn đề còn biết: lint còn 120 cảnh báo; NestJS/MongoDB/Firebase/PWA/ECS đầy đủ vẫn thuộc các giai đoạn sau. Bản build hiện cảnh báo JS chunk chính trên 500 kB.
+- Vấn đề còn biết: NestJS/MongoDB/Firebase/PWA/ECS đầy đủ vẫn thuộc các giai đoạn sau. Bản build hiện cảnh báo JS chunk chính trên 500 kB.
 
 ## THUẾ — TAX-0 VÀ MODULE NỀN
 ## PREMIUM VIETNAMESE PIXEL UI

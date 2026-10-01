@@ -7,7 +7,7 @@ import {
   getWeeklyQuestProgress,
   type SimulationGoalContext,
 } from './goals';
-import { GOAL_MAP, LONG_TERM_GOALS, WEEKLY_QUESTS, getSeasonWindow, SEASON_YEAR_DAYS, ALL_PRODUCTS as PRODUCTS } from '@game/data';
+import { GOAL_MAP, WEEKLY_QUESTS, getSeasonWindow, SEASON_YEAR_DAYS, ALL_PRODUCTS as PRODUCTS } from '@game/data';
 import { claimFestivalGoal, getFestivalGoalProgress } from './goals';
 import { GameSimulation } from './simulation';
 import { DEFAULT_INITIAL_SAVE, generateStarterTileMap } from '@game/data';

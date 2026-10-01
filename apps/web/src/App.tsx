@@ -71,6 +71,8 @@ export const App: React.FC = () => {
   const marketPlans = useMemo(() => {
     const sim = simulationRef.current;
     return isMarketOpen && sim ? { plans: sim.getProductPlans(), trending: sim.getTrendingProducts() } : { plans: undefined, trending: undefined };
+    // planDay is a deliberate cache-buster: plans must refresh when the day changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMarketOpen, planDay]);
   const [isWarehouseDockOpen, setWarehouseDockOpen] = useState(() => !window.matchMedia('(max-width: 1023px), (max-height: 499px)').matches);
   const [gameSpeed, setGameSpeed] = useState<number>(1);
@@ -514,6 +516,8 @@ export const App: React.FC = () => {
       window.removeEventListener('keydown', handleGlobalKeyDown);
       if (initialized) dispose();
     };
+  // Re-subscribing on every handler identity change would recreate the game loop; deps kept minimal on purpose.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addToast, closeAllModals, gameStarted, handleSaveGame, openFixtureModal, setNearbyFixture, syncFromSimulation]);
 
   // Real-time WebSocket connection to receive instant world:update notifications
@@ -603,10 +607,13 @@ export const App: React.FC = () => {
       if (direction) worldSocket.sendInput(direction);
     }, 100);
     return () => clearInterval(interval);
+  // Interval reads the latest online world through refs; only these values should restart it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameStarted, onlineWorld?.world.id, worldSocket.connected, worldSocket.sendInput]);
 
   // Helper to commit online business mutation or fallback to local
   const commitBusinessChange = async (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- payload is any command shape serialized to the server
     commandPayload: any,
     activityDesc: string,
     activityType: string

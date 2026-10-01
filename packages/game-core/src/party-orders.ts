@@ -1,10 +1,9 @@
 import {
   ActivePartyOrder,
   InventoryItem,
-  PartyOrderDef,
   PartyOrderReward,
   PartyOrderState,
-  StockLot,
+  StockLot
 } from '@game/shared';
 import { PARTY_ORDERS, PARTY_ORDER_MAP } from '@game/data';
 

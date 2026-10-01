@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
 import { loadExistingSave, resetSaveToDefault } from '../db';
-import { listUserWorlds, createOnlineWorld, joinOnlineWorld, type WorldSummary, type WorldDetail } from '../services/api';
+import { listUserWorlds, createOnlineWorld, joinOnlineWorld, type WorldSummary, type WorldDetail, type ActivitiesResponse } from '../services/api';
 import './LoginScreen.css';
 
 interface LoginScreenProps {
@@ -45,7 +45,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   const [joinToken, setJoinToken] = useState<string>('');
   const [feedbackMsg, setFeedbackMsg] = useState<string>('');
   const [loadingWorlds, setLoadingWorlds] = useState<boolean>(false);
-  const [absenceActivities, setAbsenceActivities] = useState<any[]>([]);
+  const [absenceActivities, setAbsenceActivities] = useState<ActivitiesResponse['activities']>([]);
   const [absenceHasMore, setAbsenceHasMore] = useState<boolean>(false);
   const [showAbsenceModal, setShowAbsenceModal] = useState<boolean>(false);
   const [selectedWorldDetail, setSelectedWorldDetail] = useState<WorldDetail | null>(null);

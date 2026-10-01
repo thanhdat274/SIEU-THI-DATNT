@@ -1,16 +1,14 @@
 import {
-  BasketItem,
   CustomerState,
   CheckoutResult,
   GameTileMap,
   isSalesFixture,
-  StockLot,
   StoreFixture,
   getFixtureDimensions,
   TILE_SIZE,
   Vector2D,
   InventoryItem,
-  CustomerArrivalMode,
+  CustomerArrivalMode
 } from '@game/shared';
 import { STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS } from '@game/data';
 import { CollisionSystem } from './collision';
@@ -277,7 +275,7 @@ export class CustomerManager {
     if (!paths.length && stage !== 'checkout') {
       // Unreachable goal, leave
       if (stage !== 'leaving') {
-        this.abandonBasket(customer, fixtures, [], currentDay => {});
+        this.abandonBasket(customer, fixtures, [], () => {});
         this.routeCustomer(customer, 'leaving', tileMap, fixtures);
       } else {
         this.removeCustomer(customer);

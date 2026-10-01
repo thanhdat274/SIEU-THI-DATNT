@@ -1,5 +1,5 @@
 import { TitleDef, PlayerData } from '@game/shared';
-import { TITLES, TITLE_MAP } from '@game/data';
+import { TITLES } from '@game/data';
 
 export interface TitleContext {
   level: number;

@@ -52,7 +52,6 @@ export const ShelfModal: React.FC<Props> = ({
 
   const planogramProductId = planogram[fixture.id];
   const planogramProduct = planogramProductId ? PRODUCT_MAP[planogramProductId] : null;
-  const isMatchPlanogram = product && planogramProductId === product.id;
   const isMismatchPlanogram = product && planogramProductId && planogramProductId !== product.id;
 
   const reason = fixture.currentStock >= limit ? 'Kệ đã đầy.' : inBag <= 0 ? 'Trong kho không còn hàng này để bày thêm.' : '';

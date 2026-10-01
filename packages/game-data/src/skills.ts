@@ -1,4 +1,4 @@
-import type { PerkDef, SkillType } from '@game/shared';
+import type { PerkDef } from '@game/shared';
 
 export const SKILL_XP_PER_LEVEL = [0, 100, 250, 500, 1000]; // Mức XP cho level 1, 2, 3, 4
 

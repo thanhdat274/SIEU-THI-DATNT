@@ -55,7 +55,6 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onTi
     if (!worldId || !token) return disconnect;
 
     let cancelled = false;
-    let ws: WebSocket | null = null;
     const apiBase = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:3001').replace(/\/$/, '');
     void fetch(`${apiBase}/api/v1/ws-ticket`, {
       method: 'POST', headers: { Authorization: `Bearer ${token}` },
@@ -64,7 +63,6 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onTi
       const body = await response.json() as { ticket: string };
       if (cancelled) return;
       const socket = new WebSocket(`${WS_BASE}/ws?worldId=${encodeURIComponent(worldId)}`, `ticket.${body.ticket}`);
-      ws = socket;
       wsRef.current = socket;
 
     socket.onopen = () => {

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { evaluateTitleUnlock, getUnlockedTitles, setActiveTitle, TitleContext } from './titles';
-import { TITLES, TITLE_MAP } from '@game/data';
+import { TITLE_MAP } from '@game/data';
 import { PlayerData } from '@game/shared';
 
 export function runTitlesTests(): void {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { PixelButton, PixelDialog, PixelIcon } from './pixel';
+import { PixelButton, PixelDialog } from './pixel';
 
 interface TimeVoteModalProps {
   vote: {

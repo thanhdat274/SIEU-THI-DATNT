@@ -230,6 +230,7 @@ export class WorldRepository {
     const nextRevision = params.expectedRevision + 1;
     const now = new Date().toISOString();
     const receiptToSave: ReceiptRecord = { ...params.receipt, revision: nextRevision, createdAt: now };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Mongo update document with positional array filters
     const updateOps: any = {
       $set: { 'world.revision': nextRevision, 'world.updatedAt': now, 'businesses.$[b]': params.updatedBusiness },
       $push: { receipts: { $each: [receiptToSave], $slice: -200 } },

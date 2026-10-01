@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
 import { DEFAULT_INITIAL_SAVE, generateStarterTileMap } from '@game/data';
 import {
-  CURRENT_SAVE_SCHEMA_VERSION,
   createSaveBackupSnapshot,
   isSaveGameData,
   restoreSaveBackupSnapshot,
   validateSaveGameData,
-  type SaveGameData,
+  type SaveGameData
 } from '@game/shared';
 import { GameSimulation } from './simulation';
 import { InputManager } from './input';
@@ -93,7 +92,7 @@ export async function runPersistenceTests() {
   let errorCaught = false;
   try {
     await mockLoadOrCreateSave();
-  } catch (err) {
+  } catch {
     errorCaught = true;
   }
   assert.equal(errorCaught, true, 'DB read failure throws instead of swallowing');

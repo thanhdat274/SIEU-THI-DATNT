@@ -66,14 +66,16 @@ export class GameController {
     if (body?.confirmation !== worldId) throw new BadRequestException('confirmation must equal worldId');
     return worldRepository.reset(worldId, request.gameAccount.uid);
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untrusted JSON body, validated field by field below
   async commitCommand(request: AuthenticatedRequest, worldId: string, body: any) {
     if (!body || typeof body !== 'object' || typeof body.expectedRevision !== 'number' || !body.receipt || !body.updatedBusiness) {
       throw new BadRequestException('Invalid commitCommand payload');
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- command payload shape depends on command type
     let payload: any;
     try { payload = JSON.parse(body.receipt.payloadJson); } catch { throw new BadRequestException('Command payload is not valid JSON'); }
     const commandWorld = await worldRepository.getForMember(worldId, request.gameAccount.uid);
-    const commandBusiness = commandWorld.businesses.find((business: any) => business.id === body.updatedBusiness.id);
+    const commandBusiness = commandWorld.businesses.find((business) => business.id === body.updatedBusiness.id);
     if (!commandBusiness) throw new BadRequestException('Business is not part of this world.');
     if (JSON.stringify(commandBusiness.ownerAccountIds) !== JSON.stringify(body.updatedBusiness.ownerAccountIds) || body.updatedBusiness.save?.id !== commandBusiness.save.id) {
       throw new BadRequestException('Command cannot change business ownership or save identity.');
@@ -121,12 +123,12 @@ export class GameController {
     // Chỉ so hình học bố cục: save mới tạo chưa có `stockLots`, simulation chuẩn hóa thêm khi replay, không phải đổi bố cục.
     const layoutGeometry = (save: SaveGameData) => {
       const layout = normalizeLayout(save);
-      const place = (f: any) => ({ id: f.id, type: f.type, tileX: f.tileX, tileY: f.tileY, widthTiles: f.widthTiles, heightTiles: f.heightTiles, rotation: f.rotation });
+      const place = (f: ReturnType<typeof normalizeLayout>['fixtures'][number]) => ({ id: f.id, type: f.type, tileX: f.tileX, tileY: f.tileY, widthTiles: f.widthTiles, heightTiles: f.heightTiles, rotation: f.rotation });
       return {
         widthTiles: layout.widthTiles,
         heightTiles: layout.heightTiles,
         fixtures: layout.fixtures.map(place),
-        storedFixtures: layout.storedFixtures.map((f: any) => f.id),
+        storedFixtures: layout.storedFixtures.map((f) => f.id),
         unlockedPlotIds: layout.unlockedPlotIds,
       };
     };
@@ -134,7 +136,7 @@ export class GameController {
       const currentBusiness = commandBusiness;
       const nextSave = body.updatedBusiness.save as SaveGameData | undefined;
       if (!currentBusiness || !currentBusiness.ownerAccountIds.includes(request.gameAccount.uid)) throw new BadRequestException('Chỉ chủ tiệm được sửa bố cục cửa hàng.');
-      if (!Array.isArray(payload.actions) || !isSaveGameData(nextSave) || currentBusiness.save.worldTime.isStoreOpen || (currentBusiness.save.customers ?? (currentBusiness.save.customer ? [currentBusiness.save.customer] : [])).some((customer: any) => customer.stage !== 'leaving') || (currentBusiness.save.staff ?? []).some((staff: any) => !!staff.workerTask)) {
+      if (!Array.isArray(payload.actions) || !isSaveGameData(nextSave) || currentBusiness.save.worldTime.isStoreOpen || (currentBusiness.save.customers ?? (currentBusiness.save.customer ? [currentBusiness.save.customer] : [])).some((customer) => customer.stage !== 'leaving') || (currentBusiness.save.staff ?? []).some((staff) => !!staff.workerTask)) {
         throw new BadRequestException('Cửa hàng phải đóng, không còn khách phục vụ hoặc nhân viên đang làm việc.');
       }
       const normalizedCurrent = { ...currentBusiness.save, schemaVersion: 3, storeLayout: normalizeLayout(currentBusiness.save) } as SaveGameData;
@@ -191,7 +193,7 @@ export class GameController {
     return { ticket: await createWebSocketTicket(account.uid) };
   }
   listActivities(request: AuthenticatedRequest, worldId: string) {
-    const rawUrl = (request as any).url as string | undefined;
+    const rawUrl = (request as { url?: string }).url;
     const qIndex = rawUrl ? rawUrl.indexOf('?') : -1;
     const qs = qIndex >= 0 ? rawUrl!.slice(qIndex + 1) : '';
     const params = new URLSearchParams(qs);

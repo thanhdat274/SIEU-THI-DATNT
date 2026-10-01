@@ -1,5 +1,5 @@
 import { RegularCustomerProgress } from '@game/shared';
-import { REGULAR_CUSTOMERS, REGULAR_CUSTOMERS_MAP, RegularCustomerDefinition } from '@game/data';
+import { REGULAR_CUSTOMERS, RegularCustomerDefinition } from '@game/data';
 
 function seedToNumber(seed: number | string): number {
   if (typeof seed === 'number') return seed;

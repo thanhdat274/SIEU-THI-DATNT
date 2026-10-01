@@ -1,7 +1,7 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { LightingState, lerpColor } from '@game/core';
 import { GameTileMap, StoreFixture, TILE_SIZE, getFixtureDimensions, isWarehouseFixture } from '@game/shared';
-import { STORE_BOUNDS, STREET_LAMP_TILES, WAREHOUSE_BOUNDS, WAREHOUSE_CENTER } from '@game/data';
+import { STORE_BOUNDS, STREET_LAMP_TILES, WAREHOUSE_BOUNDS } from '@game/data';
 
 type LightKind = 'artificial' | 'sun';
 interface LightSprite { sprite: Sprite; base: number; kind: LightKind; flicker: number }

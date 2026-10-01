@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { GameSimulation } from './simulation';
 import { DEFAULT_INITIAL_SAVE, PRODUCT_MAP, generateStarterTileMap, INITIAL_REFRIGERATOR } from '@game/data';
 import { InputManager } from './input';
-import { normalizeLots, sumLots, takeLots, mergeLots } from './stock';
+import { normalizeLots, sumLots, takeLots } from './stock';
 import { StockLot, SaveGameData } from '@game/shared';
 
 export function runLedgerTests(): void {

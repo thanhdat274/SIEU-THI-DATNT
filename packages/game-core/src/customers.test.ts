@@ -5,7 +5,6 @@ import {
 import { PRODUCT_MAP, generateStarterTileMap, DEFAULT_INITIAL_SAVE } from '@game/data';
 import { GameSimulation } from './simulation';
 import { InputManager } from './input';
-import { sumLots } from './stock';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {

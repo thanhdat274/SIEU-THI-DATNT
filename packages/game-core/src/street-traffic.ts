@@ -1,4 +1,4 @@
-import { StreetVehicleState, Vector2D, TILE_SIZE } from '@game/shared';
+import { StreetVehicleState, TILE_SIZE } from '@game/shared';
 import { MAP_WIDTH } from '@game/data';
 import { Mulberry32Rng } from './staff';
 

@@ -1,5 +1,4 @@
 import {
-  Direction,
   GameTileMap,
   InventoryItem,
   PlayerData,
@@ -32,7 +31,6 @@ import {
   SupplierCartLine,
   SupplierBulkTier,
   StallDayReport,
-  StaffRole,
   StaffShift,
   StaffMember,
   StaffCandidate,
@@ -45,7 +43,7 @@ import {
   PartyOrderState,
   GoalState,
   SkillState,
-  SkillType,
+  SkillType
 } from '@game/shared';
 import {
   INITIAL_REFRIGERATOR,
@@ -57,7 +55,6 @@ import {
   SUPPLIERS,
   SUPPLIER_MAP,
   DEFAULT_SUPPLIER_ID,
-  getMaxStaffSlots,
   isShiftWithinStoreHours,
   STALLS,
   STALL_MAP,
@@ -79,9 +76,8 @@ import {
   FORECAST_RULES,
   PRICE_RULES,
   type StallDefinition,
-  REGULAR_CUSTOMERS_MAP,
-  type RegularCustomerDefinition,
-} from '@game/data';
+  REGULAR_CUSTOMERS_MAP
+  } from '@game/data';
 import { buildMorningBrief, type MorningBrief } from './day-rhythm';
 import { pickAvailableRegular, processRegularCheckout, processRegularWalkout } from './regulars';
 import { StreetTrafficManager } from './street-traffic';
@@ -100,7 +96,7 @@ import { calculateSalesVelocity, generateRestockSuggestions, getIncomingOrdersCo
 import { buildProductPlans, type ProductPlan, type ProductPlanInput } from './forecast';
 import { climateSeasonForDay } from './weather';
 import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, timeBandFor, visibleMarketEvents, weekdayOf, type MarketNotice } from './market';
-import { bulkDiscount, computeSupplierDay, nextDeliveryDay, wholesaleQuote } from './supplier-market';
+import { computeSupplierDay, nextDeliveryDay, wholesaleQuote } from './supplier-market';
 import { advancePriceIndex, clampSellingPrice, computePriceTargets, demandPriceFactor, keepChance, priceRatio, productSensitivity } from './price';
 import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
 import { emptyStallState, normalizeStallState, planStallDay } from './stalls';
@@ -1010,7 +1006,6 @@ export class GameSimulation {
       const incoming = this.pendingOrders.filter((order) => order.productId === rule.productId && !order.delivered).reduce((sum, order) => sum + order.quantity, 0);
       if (onHand + incoming > rule.threshold) continue;
       let quantity = rule.quantity;
-      const supplier = SUPPLIER_MAP[rule.supplierId]!;
       const unitPrice = Math.max(1, this.wholesaleUnitPrice(rule.supplierId, rule.productId, quantity));
       const affordable = Math.floor(Math.min(remainingBudget, rule.maxBudget) / unitPrice);
       quantity = Math.min(quantity, affordable);
@@ -1437,7 +1432,6 @@ export class GameSimulation {
   public getProductPlans(supplierId: string = DEFAULT_SUPPLIER_ID): ProductPlan[] {
     const time = this.clock.getTime();
     const day = time.day;
-    const supplier = SUPPLIER_MAP[supplierId];
     const priceFactor = (productId: string) => demandPriceFactor(priceRatio(this.sellingPrice(productId), this.referencePrice(productId)));
     const tableFor = (target: number) => buildDemandTable({ ctx: buildMarketContext(this.market, target, 12), products: ALL_PRODUCTS, reputation: this.playerData.reputation, priceFactor });
     const quotes = this.getSupplierQuotes(supplierId);

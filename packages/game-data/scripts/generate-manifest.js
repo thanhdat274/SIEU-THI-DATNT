@@ -49,7 +49,7 @@ const CURATED_20 = [
 ];
 
 // 3. 36 Legacy items matching dictionary
-const LEGACY_36 = [
+const _LEGACY_36 = [
   'mi_hao_hao', 'xa_xi_chuong_duong', 'keo_big_babol', 'sua_ong_tho', 'banh_mi_que',
   'mi_omachi', 'mi_ba_mien', 'pho_goi', 'hu_tieu_goi', 'banh_poca',
   'bim_bim_oishi', 'banh_gao', 'dau_phong_rang', 'keo_dua', 'keo_me',

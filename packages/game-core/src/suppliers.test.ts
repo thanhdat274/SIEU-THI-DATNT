@@ -1,4 +1,4 @@
-import { DEFAULT_INITIAL_SAVE, generateStarterTileMap, PRODUCT_MAP, SUPPLIERS, SUPPLIER_MAP, DEFAULT_SUPPLIER_ID } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, generateStarterTileMap, PRODUCT_MAP, SUPPLIERS, SUPPLIER_MAP } from '@game/data';
 import { COLD_WAREHOUSE_CAPACITY, SaveGameData } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
@@ -197,7 +197,6 @@ export function runSupplierTests(): void {
     },
   ];
   simHold.importSaveData(spoilHoldingSave);
-  const spoiledBefore = simHold.getStatistics().totalSpoiled ?? 0;
   // Kích hoạt qua ngày 3
   const clock = simHold.getClock();
   clock.setTime({ ...clock.getTime(), day: 3 });

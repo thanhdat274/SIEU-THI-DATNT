@@ -1,5 +1,4 @@
 import { DEFAULT_INITIAL_SAVE, generateStarterTileMap, PRODUCT_MAP } from '@game/data';
-import { COLD_WAREHOUSE_CAPACITY, SaveGameData } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { sumLots } from './stock';

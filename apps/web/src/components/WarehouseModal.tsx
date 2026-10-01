@@ -20,12 +20,10 @@ interface Props {
 export const WarehouseModal: React.FC<Props> = ({
   fixture,
   inventory,
-  holdingArea = [],
   fixtures,
   pendingOrders,
   currentDay,
   onRestock,
-  onStowHolding,
   onClose,
   capacityBonus = 0,
 }) => {

@@ -1,5 +1,5 @@
-import { PerkDef, SkillState, SkillType } from '@game/shared';
-import { PERK_MAP, SKILL_PERKS, SKILL_XP_PER_LEVEL } from '@game/data';
+import { SkillState, SkillType } from '@game/shared';
+import { PERK_MAP, SKILL_XP_PER_LEVEL } from '@game/data';
 
 export function createInitialSkillState(): SkillState {
   return {

@@ -27,7 +27,7 @@ export async function runSupplierMarketTests(): Promise<void> {
   assert.equal(stepWholesaleIndex(1, 1.6), 1 + SUPPLIER_MARKET_RULES.maxStepPerDay, 'Giá sỉ chỉ nhích một bước mỗi ngày');
   assert.equal(stepWholesaleIndex(1.03, 0.5), 1.03 - SUPPLIER_MARKET_RULES.maxStepPerDay);
   assert.equal(stepWholesaleIndex(1.59, 3), SUPPLIER_MARKET_RULES.indexBounds.max, 'Kẹp trong dải');
-  const market = SUPPLIER_MAP['cho_dau_moi'], local = SUPPLIER_MAP['dai_ly_dau_hem'], express = SUPPLIER_MAP['giao_hoa_toc'];
+  const market = SUPPLIER_MAP['cho_dau_moi'], local = SUPPLIER_MAP['dai_ly_dau_hem'];
   assert.equal(bulkDiscount(market, 10), 0);
   assert.equal(bulkDiscount(market, 24), 0.03);
   assert.equal(bulkDiscount(market, 60), 0.06, 'Bậc cao nhất đạt được');

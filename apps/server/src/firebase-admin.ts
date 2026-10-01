@@ -44,6 +44,6 @@ export async function createWebSocketTicket(accountId: string): Promise<string> 
 
 export async function consumeWebSocketTicket(ticket: string) {
   const result = await (await connectDatabase()).collection<WebSocketTicketDoc>('websocket_tickets').findOneAndDelete({ _id: ticket, expiresAt: { $gt: new Date() } });
-  const row = (result && 'value' in (result as any) ? (result as any).value : result) as WebSocketTicketDoc | null;
+  const row = (result && 'value' in (result as object) ? (result as unknown as { value: unknown }).value : result) as WebSocketTicketDoc | null;
   return row && typeof row.accountId === 'string' ? { uid: row.accountId, name: null, email: null } : null;
 }

@@ -1,11 +1,9 @@
 import {
   StaffRole,
-  StaffShift,
   StaffMember,
   StaffCandidate,
-  STAFF_SHIFTS,
-  PayrollResult,
-} from '@game/shared';
+  STAFF_SHIFTS
+  } from '@game/shared';
 import {
   CANDIDATE_NAMES,
   DEFAULT_HIRING_FEE,

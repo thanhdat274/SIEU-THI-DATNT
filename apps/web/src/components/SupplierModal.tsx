@@ -12,7 +12,7 @@ import {
   AutoBuyReport,
 } from '@game/shared';
 import { ALL_PRODUCTS, PRODUCT_MAP, PRODUCT_CATEGORY_LABELS, SUPPLIERS, SUPPLIER_MAP, DEFAULT_SUPPLIER_ID } from '@game/data';
-import { PixelDialog, PixelStat, PixelButton, ProductSlot, QuantityStepper, money, EmptyState, PixelIcon } from './pixel';
+import { PixelDialog, PixelStat, PixelButton, ProductSlot, QuantityStepper, money, EmptyState } from './pixel';
 
 export interface SupplierQuoteBoard {
   quotes: Record<string, { unitPrice: number; previousUnitPrice: number; changePct: number; reasons: string[]; stockLeft?: number; unavailable: boolean }>;

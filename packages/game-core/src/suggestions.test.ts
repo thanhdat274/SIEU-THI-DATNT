@@ -5,14 +5,12 @@ import {
   generateStarterTileMap,
   PRODUCT_MAP,
 } from '@game/data';
-import { COLD_WAREHOUSE_CAPACITY } from '@game/shared';
 import { GameSimulation } from './simulation';
 import { InputManager } from './input';
 import {
   calculateSalesVelocity,
   generateRestockSuggestions,
-  getIncomingOrdersCount,
-  getUsableStock,
+  getUsableStock
 } from './suggestions';
 
 export function runSuggestionTests(): void {

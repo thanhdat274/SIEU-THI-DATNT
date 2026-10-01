@@ -1,5 +1,5 @@
 import { Application, Container, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
-import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
+import { GameTileMap, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
 import { FixedStepSimulationRunner, GameSimulation, getLightingState } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
