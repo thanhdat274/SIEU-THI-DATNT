@@ -611,6 +611,27 @@ export const App: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameStarted, onlineWorld?.world.id, worldSocket.connected, worldSocket.sendInput]);
 
+  // After a rejected commit, adopt the server's current world (not the possibly stale
+  // copy we held) so the next action uses the right revision and sees the real state.
+  const resyncOnlineWorldAfterReject = async (fallback: WorldDetail) => {
+    const sim = simulationRef.current;
+    if (!sim) return;
+    try {
+      const { gameAuth } = await import('./services/firebase');
+      const user = gameAuth().currentUser;
+      if (!user) throw new Error('not signed in');
+      const fresh = await getOnlineWorld(await user.getIdToken(), fallback.world.id);
+      onlineWorldRef.current = fresh;
+      setOnlineWorld(fresh);
+      revisionRef.current = fresh.world.revision;
+      setCurrentRevision(fresh.world.revision);
+      importOnlineSave(sim, fresh.businesses[0].save);
+    } catch {
+      importOnlineSave(sim, fallback.businesses[0].save);
+    }
+    syncFromSimulation(sim);
+  };
+
   // Helper to commit online business mutation or fallback to local
   const commitBusinessChange = async (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- payload is any command shape serialized to the server
@@ -676,21 +697,13 @@ export const App: React.FC = () => {
         setOnlineWorld(updatedWorld);
         return true;
       } else {
-        const sim = simulationRef.current;
-        if (sim) {
-          importOnlineSave(sim, curWorld.businesses[0].save);
-          syncFromSimulation(sim);
-        }
+        await resyncOnlineWorldAfterReject(curWorld);
         addToast('Máy chủ từ chối thay đổi. Đã khôi phục dữ liệu online gần nhất.', 'warn');
         return false;
       }
     } catch (err) {
       console.error('Online commit error:', err);
-      const sim = simulationRef.current;
-      if (sim) {
-        importOnlineSave(sim, curWorld.businesses[0].save);
-        syncFromSimulation(sim);
-      }
+      await resyncOnlineWorldAfterReject(curWorld);
       addToast(err instanceof Error ? err.message : 'Không thể lưu lên hẻm chung.', 'warn');
       return false;
     }
@@ -877,14 +890,16 @@ export const App: React.FC = () => {
 
   const handleClaimQuest = async (questId: string) => {
     const sim = simulationRef.current;
-    if (!sim || blockOfflineOnlineMutation()) return;
+    if (!sim || blockOfflineOnlineMutation()) return false;
     const result = sim.claimQuest(questId);
-    if (!result.success) { addToast('Nhiệm vụ chưa đủ điều kiện hoặc đã nhận.', 'warn'); return; }
+    if (!result.success) { addToast('Nhiệm vụ chưa đủ điều kiện hoặc đã nhận.', 'warn'); return false; }
     syncFromSimulation(sim);
     if (onlineWorldRef.current) {
-      await commitBusinessChange({ type: 'claim_quest', questId }, 'Nhận thưởng nhiệm vụ', 'Nhiệm vụ');
+      const committed = await commitBusinessChange({ type: 'claim_quest', questId }, 'Nhận thưởng nhiệm vụ', 'Nhiệm vụ');
+      if (!committed) return false;
     } else void handleSaveGame(false);
     addToast(`Nhận thưởng ${result.reward!.money.toLocaleString('vi-VN')} ₫${result.reward!.experience ? ` và ${result.reward!.experience} XP` : ''}.`, 'success');
+    return true;
   };
 
   const handleHireStaff = (candidateId: string) => {
@@ -1390,36 +1405,39 @@ export const App: React.FC = () => {
             { type: 'claim_festival_goal', goalId }, 'Nhận thưởng ngày hội', 'Ngày hội',
             simulation => simulation.claimFestivalGoal(goalId),
           );
-          if (!res) return;
+          if (!res) return false;
           if (res.success) {
             addToast('Nhận thưởng ngày hội thành công!', 'success');
-          } else {
-            addToast(res.reason ?? 'Không thể nhận thưởng ngày hội.', 'warn');
+            return true;
           }
+          addToast(res.reason ?? 'Không thể nhận thưởng ngày hội.', 'warn');
+          return false;
         }}
         onClaimGoal={async (goalId) => {
           const res = await persistSimulationMutation(
             { type: 'claim_goal', goalId }, 'Nhận thưởng mục tiêu', 'Mục tiêu',
             simulation => simulation.claimGoal(goalId),
           );
-          if (!res) return;
+          if (!res) return false;
           if (res.success) {
             addToast('Nhận thưởng mục tiêu thành công!', 'success');
-          } else {
-            addToast(res.reason ?? 'Không thể nhận thưởng.', 'warn');
+            return true;
           }
+          addToast(res.reason ?? 'Không thể nhận thưởng.', 'warn');
+          return false;
         }}
         onClaimWeeklyQuest={async (questId) => {
           const res = await persistSimulationMutation(
             { type: 'claim_weekly_quest', questId }, 'Nhận thưởng nhiệm vụ tuần', 'Nhiệm vụ tuần',
             simulation => simulation.claimWeeklyQuest(questId),
           );
-          if (!res) return;
+          if (!res) return false;
           if (res.success) {
             addToast('Nhận thưởng nhiệm vụ tuần thành công!', 'success');
-          } else {
-            addToast(res.reason ?? 'Không thể nhận thưởng.', 'warn');
+            return true;
           }
+          addToast(res.reason ?? 'Không thể nhận thưởng.', 'warn');
+          return false;
         }}
         onClaim={handleClaimQuest}
         onOpenLevelRoadmap={() => setLevelRoadmapOpen(true)}

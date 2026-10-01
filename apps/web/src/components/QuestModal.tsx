@@ -5,12 +5,15 @@ import type { ActivePartyOrder, InventoryItem } from '@game/shared';
 import { GOAL_MAP, PARTY_ORDER_MAP, PRODUCT_MAP, WEEKLY_QUESTS } from '@game/data';
 import { money, PixelButton, PixelDialog, PixelProgress } from './pixel';
 
+/** Returns false when the claim failed so a batch claim can stop. */
+type ClaimHandler = (id: string) => void | boolean | Promise<void | boolean>;
+
 interface QuestModalProps {
   daily: QuestProgress[];
   story: QuestProgress | null;
   level: number;
   onOpenLevelRoadmap: () => void;
-  onClaim: (questId: string) => void;
+  onClaim: ClaimHandler;
   onClose: () => void;
   // Party orders
   partyOrders?: ActivePartyOrder[];
@@ -21,21 +24,21 @@ interface QuestModalProps {
   goals?: GoalProgressInfo[];
   weeklyQuests?: WeeklyQuestProgressInfo[];
   festivalGoals?: FestivalGoalProgressInfo[];
-  onClaimFestivalGoal?: (goalId: string) => void;
-  onClaimGoal?: (goalId: string) => void;
-  onClaimWeeklyQuest?: (questId: string) => void;
+  onClaimFestivalGoal?: ClaimHandler;
+  onClaimGoal?: ClaimHandler;
+  onClaimWeeklyQuest?: ClaimHandler;
 }
 
 type QuestTab = 'daily' | 'party' | 'goals';
 
-const QuestRow: React.FC<{ quest: QuestProgress; onClaim: (id: string) => void }> = ({ quest, onClaim }) => (
+const QuestRow: React.FC<{ quest: QuestProgress; onClaim: ClaimHandler; disabled?: boolean }> = ({ quest, onClaim, disabled }) => (
   <li className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 4 }}>
     <strong>{quest.title}</strong>
     <span className="muted">{quest.description}</span>
     <PixelProgress label={quest.title} value={quest.current} max={quest.target} />
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
       <span className="tabular">Thưởng {money(quest.reward.money)}{quest.reward.experience > 0 ? ` · ${quest.reward.experience} XP` : ''}</span>
-      <PixelButton variant="teal" disabled={!quest.done || quest.claimed} onClick={() => onClaim(quest.id)}>
+      <PixelButton variant="teal" disabled={disabled || !quest.done || quest.claimed} onClick={() => void onClaim(quest.id)}>
         {quest.claimed ? 'Đã nhận' : quest.done ? 'Nhận thưởng' : 'Chưa xong'}
       </PixelButton>
     </div>
@@ -61,6 +64,7 @@ export const QuestModal: React.FC<QuestModalProps> = ({
   onClaimWeeklyQuest,
 }) => {
   const [activeTab, setActiveTab] = useState<QuestTab>('daily');
+  const [claimingAll, setClaimingAll] = useState(false);
 
   const capped = level >= MAX_PLAYER_LEVEL;
   const next = capped ? null : getLevelUnlocks(level + 1);
@@ -90,6 +94,30 @@ export const QuestModal: React.FC<QuestModalProps> = ({
 
   const pendingOrdersCount = partyOrders.filter((o) => o.status === 'pending' || (o.status === 'accepted' && checkOrderStock(o.orderId))).length;
   const claimableGoalsCount = goals.filter((g) => g.completed && !g.claimed).length + festivalGoals.filter((f) => f.completed && !f.claimed).length + weeklyQuests.filter((w) => w.completed && !w.claimed).length;
+
+  const claimableDaily = [story, ...daily].filter((q): q is QuestProgress => !!q && q.done && !q.claimed);
+  const claimableFestival = festivalGoals.filter((f) => f.completed && !f.claimed);
+  const claimableWeekly = weeklyQuests.filter((w) => w.completed && !w.claimed);
+  const claimableGoals = goals.filter((g) => g.completed && !g.claimed);
+
+  /** Claims one by one (each claim is its own committed command) and stops at the first failure. */
+  const claimAll = async (jobs: Array<() => void | boolean | Promise<void | boolean>>) => {
+    if (claimingAll) return;
+    setClaimingAll(true);
+    try {
+      for (const job of jobs) {
+        if ((await job()) === false) break;
+      }
+    } finally {
+      setClaimingAll(false);
+    }
+  };
+  const claimAllDaily = () => claimAll(claimableDaily.map((q) => () => onClaim(q.id)));
+  const claimAllGoals = () => claimAll([
+    ...claimableFestival.map((f) => () => onClaimFestivalGoal?.(f.goalId)),
+    ...claimableWeekly.map((w) => () => onClaimWeeklyQuest?.(w.questId)),
+    ...claimableGoals.map((g) => () => onClaimGoal?.(g.goalId)),
+  ]);
 
   return (
     <PixelDialog icon="star" title="SỔ NHIỆM VỤ & MỤC TIÊU" subtitle="Việc trong ngày, đơn tiệc xóm và hoài bão phát triển" onClose={onClose}>
@@ -121,13 +149,18 @@ export const QuestModal: React.FC<QuestModalProps> = ({
       {/* Tab 1: Nhiệm vụ ngày */}
       {activeTab === 'daily' && (
         <>
+          {claimableDaily.length > 0 && (
+            <PixelButton variant="teal" disabled={claimingAll} onClick={() => void claimAllDaily()}>
+              {claimingAll ? 'Đang nhận…' : `Nhận tất cả (${claimableDaily.length})`}
+            </PixelButton>
+          )}
           <h3>Chuyện xóm nhỏ</h3>
           <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0', display: 'grid', gap: 8 }}>
-            {story ? <QuestRow quest={story} onClaim={onClaim} /> : <li className="muted">Bạn đã hoàn thành toàn bộ chuyện xóm hiện có.</li>}
+            {story ? <QuestRow quest={story} onClaim={onClaim} disabled={claimingAll} /> : <li className="muted">Bạn đã hoàn thành toàn bộ chuyện xóm hiện có.</li>}
           </ul>
           <h3>Nhiệm vụ hôm nay</h3>
           <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0', display: 'grid', gap: 8 }}>
-            {daily.map((quest) => <QuestRow key={quest.id} quest={quest} onClaim={onClaim} />)}
+            {daily.map((quest) => <QuestRow key={quest.id} quest={quest} onClaim={onClaim} disabled={claimingAll} />)}
           </ul>
           <h3>{capped ? 'Cấp tối đa' : `Mốc cấp tiếp theo (cấp ${level + 1})`}</h3>
           <p className="muted">{capped ? `Bạn đã đạt cấp tối đa ${MAX_PLAYER_LEVEL}.` : nextItems.length || nextFeatures.length ? `Mở khóa: ${[...nextItems, ...nextFeatures].join(', ')}` : 'Cấp này chưa có mở khóa mới được thiết kế. Chạm thanh Cấp trên HUD để xem toàn bộ lộ trình.'}</p>
@@ -227,6 +260,11 @@ export const QuestModal: React.FC<QuestModalProps> = ({
       {/* Tab 3: Sổ mục tiêu & Tuần */}
       {activeTab === 'goals' && (
         <div style={{ display: 'grid', gap: 12 }}>
+          {claimableGoalsCount > 0 && (
+            <PixelButton variant="teal" disabled={claimingAll} onClick={() => void claimAllGoals()}>
+              {claimingAll ? 'Đang nhận…' : `Nhận tất cả (${claimableGoalsCount})`}
+            </PixelButton>
+          )}
           {/* Mục tiêu ngày hội (chỉ hiện khi đang có ngày hội) */}
           {festivalGoals.length > 0 && (
             <div>
@@ -248,8 +286,8 @@ export const QuestModal: React.FC<QuestModalProps> = ({
                       </span>
                       <PixelButton
                         variant="teal"
-                        disabled={!f.completed || f.claimed}
-                        onClick={() => onClaimFestivalGoal?.(f.goalId)}
+                        disabled={claimingAll || !f.completed || f.claimed}
+                        onClick={() => void onClaimFestivalGoal?.(f.goalId)}
                         style={{ minWidth: 90 }}
                       >
                         {f.claimed ? 'Đã nhận' : f.completed ? 'Nhận thưởng' : 'Chưa xong'}
@@ -284,8 +322,8 @@ export const QuestModal: React.FC<QuestModalProps> = ({
                       </span>
                       <PixelButton
                         variant="teal"
-                        disabled={!wq.completed || wq.claimed}
-                        onClick={() => onClaimWeeklyQuest?.(wq.questId)}
+                        disabled={claimingAll || !wq.completed || wq.claimed}
+                        onClick={() => void onClaimWeeklyQuest?.(wq.questId)}
                         style={{ minWidth: 90 }}
                       >
                         {wq.claimed ? 'Đã nhận' : wq.completed ? 'Nhận thưởng' : 'Chưa xong'}
@@ -320,8 +358,8 @@ export const QuestModal: React.FC<QuestModalProps> = ({
                       </span>
                       <PixelButton
                         variant="teal"
-                        disabled={!g.completed || g.claimed}
-                        onClick={() => onClaimGoal?.(g.goalId)}
+                        disabled={claimingAll || !g.completed || g.claimed}
+                        onClick={() => void onClaimGoal?.(g.goalId)}
                         style={{ minWidth: 90 }}
                       >
                         {g.claimed ? 'Đã nhận' : g.completed ? 'Nhận thưởng' : 'Chưa xong'}
