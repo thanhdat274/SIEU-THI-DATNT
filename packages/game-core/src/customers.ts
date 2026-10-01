@@ -29,6 +29,45 @@ export const CASHIER_QUEUE_TILES: GridPoint[] = [
 
 export const ENTRANCE_TILE: GridPoint = { x: 9, y: 11 };
 
+const QUEUE_LENGTH = CASHIER_QUEUE_TILES.length;
+const tileKey = (x: number, y: number) => `${x},${y}`;
+
+/** Các quầy thu ngân đang đặt trên sàn, theo thứ tự ổn định (quầy gốc đứng trước). */
+export const cashierCounters = (fixtures: readonly StoreFixture[]): StoreFixture[] =>
+  fixtures.filter((fixture) => fixture.type === 'cashier_counter' && !fixture.parentId);
+
+/**
+ * Ô xếp hàng của từng quầy: ô đầu là ô đi được sát quầy (ưu tiên bên phải, dưới, trái, trên), các ô sau nối xuống dưới
+ * (rồi lên trên). Quầy gốc ở vị trí mặc định cho đúng ba ô cũ (9,8) (9,9) (9,10). `taken` tránh trùng làn khác.
+ */
+export function queueTilesForCounter(counter: StoreFixture, tileMap: GameTileMap, fixtures: readonly StoreFixture[], taken: Set<string>): GridPoint[] {
+  const ground = tileMap.layers.find((layer) => layer.name === 'ground')?.data ?? [];
+  const blocked = new Set<string>();
+  for (const fixture of fixtures) {
+    if (fixture.parentId || fixture.type.startsWith('warehouse_')) continue;
+    const { widthTiles, heightTiles } = getFixtureDimensions(fixture);
+    for (let dx = 0; dx < widthTiles; dx++) for (let dy = 0; dy < heightTiles; dy++) blocked.add(tileKey(fixture.tileX + dx, fixture.tileY + dy));
+  }
+  const walkable = (x: number, y: number) => {
+    const localY = y - (tileMap.originTileY ?? 0);
+    const index = localY * tileMap.width + x;
+    return x >= 0 && x < tileMap.width && localY >= 0 && localY < tileMap.height && ground[index] === 3
+      && !tileMap.collisionLayer[index] && !blocked.has(tileKey(x, y)) && !taken.has(tileKey(x, y));
+  };
+  const { widthTiles, heightTiles } = getFixtureDimensions(counter);
+  const fronts: GridPoint[] = [
+    { x: counter.tileX + widthTiles, y: counter.tileY }, { x: counter.tileX, y: counter.tileY + heightTiles },
+    { x: counter.tileX - 1, y: counter.tileY }, { x: counter.tileX, y: counter.tileY - 1 },
+  ];
+  const front = fronts.find((tile) => walkable(tile.x, tile.y));
+  if (!front) return [];
+  const tiles = [front];
+  for (const step of [1, -1]) {
+    for (let y = front.y + step; tiles.length < QUEUE_LENGTH && walkable(front.x, y); y += step) tiles.push({ x: front.x, y });
+  }
+  return tiles;
+}
+
 /** Cách khách chọn món khi có thị trường: trọng số nhu cầu theo món và hệ số lưu lượng. */
 export interface CustomerDemandChoice {
   traffic: number;
@@ -259,8 +298,16 @@ export class CustomerManager {
         }
       }
     } else if (stage === 'to_checkout' || stage === 'checkout') {
-      const targetQueueTile = CASHIER_QUEUE_TILES[Math.min(queueIndex, CASHIER_QUEUE_TILES.length - 1)];
-      goals.push(targetQueueTile);
+      const counters = cashierCounters(fixtures);
+      const lanes = this.laneTiles(counters, tileMap, fixtures);
+      if (counters.length && lanes.size) {
+        if (!customer.cashierFixtureId || !lanes.has(customer.cashierFixtureId)) customer.cashierFixtureId = this.leastBusyCounter(counters, lanes, customer);
+        const tiles = lanes.get(customer.cashierFixtureId)!;
+        goals.push(tiles[Math.min(this.getQueueIndex(customer), tiles.length - 1)]);
+      } else {
+        customer.cashierFixtureId = undefined;
+        goals.push(CASHIER_QUEUE_TILES[Math.min(queueIndex, CASHIER_QUEUE_TILES.length - 1)]);
+      }
     } else if (stage === 'leaving') {
       if (customer.vehicleSpot) {
         goals.push({
@@ -506,7 +553,8 @@ export class CustomerManager {
     }
 
     // 2. Find customer at checkout counter
-    const customer = this.customers.find((c) => c.stage === 'checkout');
+    const customer = (checkoutId ? this.customers.find((c) => c.stage === 'checkout' && c.checkoutId === checkoutId) : undefined)
+      ?? this.customers.find((c) => c.stage === 'checkout');
     if (!customer) {
       return {
         success: false,
@@ -571,9 +619,34 @@ export class CustomerManager {
     };
   }
 
+  /** Ô xếp hàng theo quầy; quầy không có chỗ đứng đi được thì bị bỏ qua (khách dồn sang quầy khác). */
+  private laneTiles(counters: StoreFixture[], tileMap: GameTileMap, fixtures: StoreFixture[]): Map<string, GridPoint[]> {
+    const lanes = new Map<string, GridPoint[]>();
+    const taken = new Set<string>();
+    for (const counter of counters) {
+      const tiles = queueTilesForCounter(counter, tileMap, fixtures, taken);
+      if (!tiles.length) continue;
+      lanes.set(counter.id, tiles);
+      for (const tile of tiles) taken.add(tileKey(tile.x, tile.y));
+    }
+    return lanes;
+  }
+
+  /** Quầy ít người xếp hàng nhất (hòa thì quầy đứng trước). */
+  private leastBusyCounter(counters: StoreFixture[], lanes: Map<string, GridPoint[]>, customer: CustomerState): string {
+    let best = '';
+    let bestLoad = Infinity;
+    for (const counter of counters) {
+      if (!lanes.has(counter.id)) continue;
+      const load = this.customers.filter((c) => c !== customer && c.cashierFixtureId === counter.id && (c.stage === 'to_checkout' || c.stage === 'checkout')).length;
+      if (load < bestLoad) { best = counter.id; bestLoad = load; }
+    }
+    return best;
+  }
+
   private getQueueIndex(customer: CustomerState): number {
     const queueCustomers = this.customers.filter(
-      (c) => c.stage === 'to_checkout' || c.stage === 'checkout'
+      (c) => (c.stage === 'to_checkout' || c.stage === 'checkout') && c.cashierFixtureId === customer.cashierFixtureId
     );
     return Math.max(0, queueCustomers.indexOf(customer));
   }

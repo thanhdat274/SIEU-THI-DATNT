@@ -15,7 +15,7 @@ interface Props {
   shelves: StoreFixture[];
   customers?: CustomerState[];
   statistics: SaveGameData['statistics'];
-  onCheckout: (fixtureId?: string) => void;
+  onCheckout: (fixtureId?: string, checkoutId?: string) => void;
   onToggleStoreStatus: () => void;
   onAdvanceDay: () => void;
   staff: StaffMember[];
@@ -30,6 +30,7 @@ interface Props {
 }
 
 export const CashierModal: React.FC<Props> = ({
+  fixture,
   player,
   worldTime,
   customers = [],
@@ -51,8 +52,10 @@ export const CashierModal: React.FC<Props> = ({
   const [showStaff, setShowStaff] = useState(initialShowStaff);
   const { dailyRecords = {}, currentDayRecord } = useGameStore();
 
-  const activeCustomer = customers.find((c) => c.stage === 'checkout');
-  const queueCount = customers.filter((c) => c.stage === 'to_checkout').length;
+  // Mỗi quầy thu ngân có hàng riêng; khách chưa gán quầy (làn cũ) thuộc quầy đang mở.
+  const ownLane = (c: { cashierFixtureId?: string }) => !c.cashierFixtureId || c.cashierFixtureId === fixture.id;
+  const activeCustomer = customers.find((c) => c.stage === 'checkout' && ownLane(c));
+  const queueCount = customers.filter((c) => c.stage === 'to_checkout' && ownLane(c)).length;
 
   let totalBill = 0;
   let basketItems: { productId: string; name: string; quantity: number; unitPrice: number }[] = [];
@@ -193,7 +196,7 @@ export const CashierModal: React.FC<Props> = ({
                 <PixelButton
                   variant="teal"
                   disabled={!worldTime.isStoreOpen}
-                  onClick={() => onCheckout(activeCustomer.targetFixtureId)}
+                  onClick={() => onCheckout(activeCustomer.targetFixtureId, activeCustomer.checkoutId)}
                   aria-label={`Thu tiền ${money(totalBill)}`}
                 >
                   Thu tiền {money(totalBill)}

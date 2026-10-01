@@ -90,6 +90,7 @@ import { rainIntensityAt, rainForecastForDay, describeRainForecast, roadWetnessA
 import { appendReview, composeReview, sanitizeReviews, summarizeReviews } from './reviews';
 import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { slotCategoryConflict } from './shelf-slots';
+import { decorAttraction, decorTrafficMultiplier } from './decor';
 import { buyLandPlot, validateStoreLayout, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
@@ -107,7 +108,7 @@ import { advancePriceIndex, clampSellingPrice, computePriceTargets, demandPriceF
 import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
 import { emptyStallState, normalizeStallState, planStallDay } from './stalls';
 import { emptyQuestState, findClaimableQuest, getDailyQuests, getStoryQuest, markQuestClaimed, normalizeQuestState, type QuestContext, type QuestProgress, type QuestReward } from './quests';
-import { generateCandidatesForDay, validateHireStaff, calculatePayroll } from './staff';
+import { generateCandidatesForDay, validateHireStaff, calculatePayroll, Mulberry32Rng } from './staff';
 import {
   createInitialPartyOrderState,
   refreshAvailablePartyOrders,
@@ -183,6 +184,7 @@ export class GameSimulation {
   private fixtures: StoreFixture[];
   private storedFixtures: StoreFixture[];
   private unlockedPlotIds: string[];
+  private decorOwned: string[];
   private inventory: InventoryItem[];
   private holdingArea: HoldingItem[];
   private planogram: Record<string, string> = {};
@@ -196,10 +198,10 @@ export class GameSimulation {
   private processedAutoBuyDayIds = new Set<number>();
   private autoBuyReports: Record<number, AutoBuyReport> = {};
   private pendingOrders: SupplierOrder[];
-  private dailyRecords: Record<number, DailyRecord> = {};
-  private quests: QuestState = emptyQuestState();
   private orderSequence = 0;
   private ledgerSequence = 0;
+  private dailyRecords: Record<number, DailyRecord> = {};
+  private quests: QuestState = emptyQuestState();
   private stalls: StallState = emptyStallState();
   private market: MarketState;
   private demandTable?: DemandTable;
@@ -242,6 +244,7 @@ export class GameSimulation {
     this.fixtures = initialSave.storeLayout.fixtures.map((f) => ({ ...f }));
     this.storedFixtures = (initialSave.storeLayout.storedFixtures ?? []).map(f => ({ ...f }));
     this.unlockedPlotIds = [...(initialSave.storeLayout.unlockedPlotIds ?? [])];
+    this.decorOwned = [...(initialSave.storeLayout.decorOwned ?? [])];
     this.inventory = initialSave.inventory.map((i) => ({ ...i }));
     this.holdingArea = (initialSave.holdingArea ?? []).map((h) => ({ ...h }));
     this.planogram = initialSave.planogram ? { ...initialSave.planogram } : {};
@@ -290,11 +293,11 @@ export class GameSimulation {
     this.stalls = normalizeStallState(initialSave.stalls);
     this.closedDayIds = new Set(initialSave.closedDayIds ?? []);
     this.ledger = (initialSave.ledger ?? []).map((e) => ({ ...e }));
+    this.hydrateIdSequences(initialSave);
     if (initialSave.currentDayRecord) {
       this.currentDayRecord = { ...initialSave.currentDayRecord };
     } else {
       this.currentDayRecord = this.createEmptyDailyRecord(initialSave.worldTime.day);
-    this.hydrateIdSequences(initialSave);
     }
     this.completedCheckoutIds = new Set(initialSave.completedCheckoutIds ?? []);
     this.hydrateStock(initialSave.worldTime.day);
@@ -323,6 +326,7 @@ export class GameSimulation {
         if (this.noticeThrottle.allow(notice.kind, day, this.clock.getTime().hour)) this.callbacks.onMarketNotice?.(notice);
       }
       // Close previous day's record (day - 1) idempotently and initialize new day record
+      const yesterdayRevenue = this.currentDayRecord.revenue;
       this.closeDailyRecord(day - 1);
       this.initDailyRecord(day);
       const spoiled = this.expireStock(day);
@@ -425,6 +429,12 @@ export class GameSimulation {
 
   public getStoredFixtures(): StoreFixture[] { return structuredClone(this.storedFixtures); }
   public getUnlockedPlotIds(): string[] { return [...this.unlockedPlotIds]; }
+  public getDecorOwned(): string[] { return [...this.decorOwned]; }
+  /** Điểm thu hút từ trang trí và hệ số khách tương ứng. */
+  public getDecorAttraction(): { points: number; trafficMultiplier: number } {
+    const points = decorAttraction(this.decorOwned, this.fixtures);
+    return { points, trafficMultiplier: decorTrafficMultiplier(points) };
+  }
 
   public applyStoreLayout(save: SaveGameData): LayoutResult {
     if (this.clock.getTime().isStoreOpen || this.customerManager.getCustomers().some(customer => customer.stage !== 'leaving') || this.staff.some(member => !!member.workerTask)) {
@@ -697,10 +707,11 @@ export class GameSimulation {
       weekday: WEEKDAY_LABELS[weekdayOf(time.day)],
       traffic: {
         ...table.traffic,
-        value: trafficAtLevel(table.traffic.value * reputationTrafficMultiplier(this.playerData.ratings), this.playerData.level),
+        value: trafficAtLevel(table.traffic.value * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier, this.playerData.level),
         factors: [
           ...table.traffic.factors,
           { ruleId: 'customer_ratings', label: 'Đánh giá khách', factor: reputationTrafficMultiplier(this.playerData.ratings) },
+          ...(this.getDecorAttraction().points > 0 ? [{ ruleId: 'decor_attraction', label: 'Trang trí cửa hàng', factor: this.getDecorAttraction().trafficMultiplier }] : []),
           ...(getLevelTrafficMultiplier(this.playerData.level) > 1 ? [{ ruleId: 'level_progression_traffic', label: `Cấp ${this.playerData.level}: lưu lượng khách tăng`, factor: getLevelTrafficMultiplier(this.playerData.level) }] : []),
         ],
       },
@@ -1611,6 +1622,21 @@ export class GameSimulation {
     });
   }
 
+  /** Đưa bộ đếm ID về mức không trùng với save: lấy giá trị đã lưu hoặc số lớn nhất trong ID dạng `ord-N`/`led-N` đang có (ID cũ dùng giờ thật không khớp mẫu nên bị bỏ qua). */
+  private hydrateIdSequences(save: Pick<SaveGameData, 'orderSequence' | 'ledgerSequence'>): void {
+    const maxSuffix = (ids: Iterable<string>, prefix: string) => {
+      let max = 0;
+      const pattern = new RegExp('^' + prefix + '-([0-9]+)$');
+      for (const id of ids) {
+        const match = pattern.exec(id);
+        if (match) max = Math.max(max, Number(match[1]));
+      }
+      return max;
+    };
+    this.orderSequence = Math.max(save.orderSequence ?? 0, maxSuffix(this.pendingOrders.map((o) => o.id), 'ord'));
+    this.ledgerSequence = Math.max(save.ledgerSequence ?? 0, maxSuffix(this.ledger.map((e) => e.id), 'led'));
+  }
+
   private recordLedger(entry: Omit<LedgerEntry, 'id' | 'timestamp'>): LedgerEntry {
     const fullEntry: LedgerEntry = {
       ...entry,
@@ -1647,21 +1673,6 @@ export class GameSimulation {
 
   /**
    * NPC chủ tiệm đứng sau quầy. Khi có khách đã tới quầy và có giỏ hàng (chưa có nhân viên thu ngân
-  /** Đưa bộ đếm ID về mức không trùng với save: lấy giá trị đã lưu hoặc số lớn nhất trong ID dạng `ord-N`/`led-N` đang có (ID cũ dùng giờ thật không khớp mẫu nên bị bỏ qua). */
-  private hydrateIdSequences(save: Pick<SaveGameData, 'orderSequence' | 'ledgerSequence'>): void {
-    const maxSuffix = (ids: Iterable<string>, prefix: string) => {
-      let max = 0;
-      const pattern = new RegExp('^' + prefix + '-([0-9]+)$');
-      for (const id of ids) {
-        const match = pattern.exec(id);
-        if (match) max = Math.max(max, Number(match[1]));
-      }
-      return max;
-    };
-    this.orderSequence = Math.max(save.orderSequence ?? 0, maxSuffix(this.pendingOrders.map((o) => o.id), 'ord'));
-    this.ledgerSequence = Math.max(save.ledgerSequence ?? 0, maxSuffix(this.ledger.map((e) => e.id), 'led'));
-  }
-
    * nhận), chủ tiệm chuyển sang "serving" cho tới khi giao dịch hoàn tất.
    */
   public getShopkeeper(): { position: Vector2D; direction: 'down' | 'right'; serving: boolean; checkoutId?: string } {
@@ -1713,6 +1724,8 @@ export class GameSimulation {
       const lots = normalizeLots(item.quantity, item.lots, item.productId, day);
       return { productId: item.productId, quantity: sumLots(lots), lots };
     }).filter((item) => item.quantity > 0);
+    this.fixtures = syncSlotChildren(this.fixtures);
+    this.storedFixtures = syncSlotChildren(this.storedFixtures);
     this.fixtures = this.fixtures.map((fixture) => {
       if(isWarehouseFixture(fixture)) return {...fixture,assignedProductId:undefined,currentStock:0,stockLots:[]};
       if (!fixture.assignedProductId || fixture.currentStock <= 0) {
@@ -1731,8 +1744,6 @@ export class GameSimulation {
     this.inventory = this.inventory.map((item) => {
       const prod = PRODUCT_MAP[item.productId];
       const fallbackCost = prod?.purchasePrice ?? 0;
-    this.fixtures = syncSlotChildren(this.fixtures);
-    this.storedFixtures = syncSlotChildren(this.storedFixtures);
       const expired = (item.lots ?? []).filter((lot) => lot.expiresOnDay <= day);
       for (const lot of expired) {
         spoiled += lot.quantity;
@@ -1931,7 +1942,7 @@ export class GameSimulation {
     })));
     const inStoreRegularIds = this.customerManager.getCustomers().map(c => c.regularId).filter((id): id is string => Boolean(id));
     const regularCandidate = pickAvailableRegular(this.clock.getTime().day, this.market.seed, inStoreRegularIds, this.regulars);
-    this.customerManager.maybeSpawnCustomer(
+    const spawned = this.customerManager.maybeSpawnCustomer(
       worldDt,
       this.clock.getTime().isStoreOpen,
       this.fixtures,
@@ -1939,7 +1950,7 @@ export class GameSimulation {
       this.clock.getTime().day,
       this.statistics.totalCustomersServed,
       {
-        traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * (1 + getSkillModifier(this.skills, 'traffic_boost')), this.playerData.level),
+        traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * (1 + getSkillModifier(this.skills, 'traffic_boost')), this.playerData.level),
         maxConcurrentCustomers: maxActiveCustomersForLevel(this.playerData.level),
         weightOf: (productId) => demandTable.perProduct[productId]?.demand ?? 0.01,
       },
@@ -1955,9 +1966,8 @@ export class GameSimulation {
     this.updateCashierWorkers(worldDt);
 
     // Auto checkout for customer waiting at counter if checkoutWait timer reaches 0
-    const activeCust = this.customerManager.getActiveCustomer();
-    if (activeCust && activeCust.stage === 'checkout' && activeCust.checkoutWait <= 0 && activeCust.checkoutId) {
-      this.completeCustomerCheckout(activeCust.checkoutId);
+    for (const waiting of this.customerManager.getCustomers()) {
+      if (waiting.stage === 'checkout' && waiting.checkoutWait <= 0 && waiting.checkoutId) this.completeCustomerCheckout(waiting.checkoutId);
     }
 
     // 2. Process player movement
@@ -2006,6 +2016,7 @@ export class GameSimulation {
     let minDistance = 56; // Interaction reach distance in pixels
 
     for (const fix of this.fixtures) {
+      if (fix.parentId || fix.type === 'decor') continue;
       // Center of fixture
       const fCenterX = (fix.tileX + fix.widthTiles / 2) * TILE_SIZE;
       const fCenterY = (fix.tileY + fix.heightTiles / 2) * TILE_SIZE;
@@ -2024,7 +2035,6 @@ export class GameSimulation {
       }
     }
   }
-      if (fix.parentId) continue;
 
   /**
    * Transfer items to a sales shelf with detailed result.
@@ -2059,6 +2069,9 @@ export class GameSimulation {
     if (fixture.assignedProductId && fixture.assignedProductId !== productId && fixture.currentStock > 0) {
       return { success: false, actualQuantity: 0, reason: 'product_mismatch' };
     }
+    if (slotCategoryConflict(this.fixtures, fixture, productId)) {
+      return { success: false, actualQuantity: 0, reason: 'product_mismatch' };
+    }
 
     const effectiveCapacity = effectiveShelfCapacity(fixture.maxCapacity, product.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
     const availableSpace = effectiveCapacity - fixture.currentStock;
@@ -2077,9 +2090,6 @@ export class GameSimulation {
     fixture.stockLots ??= [];
     mergeLots(fixture.stockLots, moved);
     fixture.currentStock = sumLots(fixture.stockLots);
-    if (slotCategoryConflict(this.fixtures, fixture, productId)) {
-      return { success: false, actualQuantity: 0, reason: 'product_mismatch' };
-    }
 
     // Clean up empty inventory slots
     if (inventorySlot.quantity <= 0) {
@@ -2265,6 +2275,9 @@ export class GameSimulation {
     if (fix.currentStock > 0 && fix.assignedProductId && fix.assignedProductId !== productId) {
       return { fixtureId, productId, applied: false, actualQuantity: 0, reason: 'product_mismatch' };
     }
+    if (slotCategoryConflict(this.fixtures, fix, productId)) {
+      return { fixtureId, productId, applied: false, actualQuantity: 0, reason: 'product_mismatch' };
+    }
 
     // If shelf is empty, assign product
     if (fix.currentStock === 0) {
@@ -2283,9 +2296,6 @@ export class GameSimulation {
     }
 
     const res = this.transferToShelf(fixtureId, productId, needed);
-    if (slotCategoryConflict(this.fixtures, fix, productId)) {
-      return { fixtureId, productId, applied: false, actualQuantity: 0, reason: 'product_mismatch' };
-    }
     if (res.success && res.actualQuantity > 0) {
       return { fixtureId, productId, applied: true, actualQuantity: res.actualQuantity, reason: 'success' };
     }
@@ -2327,6 +2337,7 @@ export class GameSimulation {
       if (!prod) continue;
       // Shelf must not be blocked by another product with remaining stock
       if (fix.currentStock > 0 && fix.assignedProductId && fix.assignedProductId !== productId) continue;
+      if (slotCategoryConflict(this.fixtures, fix, productId)) continue;
 
       const effectiveCap = effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
       const needed = Math.max(0, effectiveCap - fix.currentStock);
@@ -2345,7 +2356,6 @@ export class GameSimulation {
       });
     }
     return targets;
-      if (slotCategoryConflict(this.fixtures, fix, productId)) continue;
   }
 
   private isActorAvailableForRestock(actorId: string): boolean {
@@ -2695,9 +2705,11 @@ export class GameSimulation {
   }
 
   /** Complete one in-store sale from customer basket at the cashier counter. */
-  public checkoutShelf(fixtureId?: string): boolean {
+  public checkoutShelf(fixtureId?: string, checkoutId?: string): boolean {
     if (!this.clock.getTime().isStoreOpen) return false;
-    const activeCustomer = this.customerManager.getActiveCustomer();
+    const activeCustomer = checkoutId
+      ? this.customerManager.getCustomers().find((c) => c.stage === 'checkout' && c.checkoutId === checkoutId) ?? null
+      : this.customerManager.getActiveCustomer();
     if (!activeCustomer || activeCustomer.stage !== 'checkout') {
       return false;
     }
@@ -2903,6 +2915,7 @@ export class GameSimulation {
         fixtures: this.fixtures.map((f) => ({ ...f, stockLots: f.stockLots?.map((lot) => ({ ...lot })) })),
         storedFixtures: this.storedFixtures.map(f => ({ ...f, stockLots: f.stockLots?.map(lot => ({ ...lot })) })),
         unlockedPlotIds: [...this.unlockedPlotIds],
+        decorOwned: [...this.decorOwned],
       },
       inventory: this.getInventory(),
       holdingArea: this.getHoldingArea(),
@@ -2919,6 +2932,8 @@ export class GameSimulation {
       stalls: normalizeStallState(this.stalls),
       market: structuredClone(this.market),
       pendingOrders: this.getPendingOrders(),
+      orderSequence: this.orderSequence,
+      ledgerSequence: this.ledgerSequence,
       customer: this.getCustomer() ?? undefined,
       customers: this.customerManager.getCustomers(),
       customerSpawnCooldown: this.customerManager.getSpawnCooldown(),
@@ -2947,6 +2962,7 @@ export class GameSimulation {
     this.fixtures = saveData.storeLayout.fixtures.map((f) => ({ ...f }));
     this.storedFixtures = (saveData.storeLayout.storedFixtures ?? []).map(f => ({ ...f }));
     this.unlockedPlotIds = [...(saveData.storeLayout.unlockedPlotIds ?? [])];
+    this.decorOwned = [...(saveData.storeLayout.decorOwned ?? [])];
     this.inventory = saveData.inventory.map((i) => ({ ...i }));
     this.holdingArea = (saveData.holdingArea ?? []).map((h) => ({ ...h }));
     this.planogram = saveData.planogram ? { ...saveData.planogram } : {};
@@ -2956,8 +2972,6 @@ export class GameSimulation {
     }));
     this.staffSchedule = normalizeStaffSchedule(saveData.staffSchedule, this.staff);
     this.wageDebt = Math.max(0, saveData.wageDebt ?? 0);
-      orderSequence: this.orderSequence,
-      ledgerSequence: this.ledgerSequence,
     this.processedPayrollDayIds = new Set(saveData.processedPayrollDayIds ?? []);
     this.autoBuyEnabled = saveData.autoBuyEnabled ?? false;
     this.autoBuyRules = this.validateAutoBuyRules(saveData.autoBuyRules ?? []);
@@ -2984,6 +2998,7 @@ export class GameSimulation {
     this.goals = saveData.goals ? structuredClone(saveData.goals) : createInitialGoalState();
     this.skills = saveData.skills ? structuredClone(saveData.skills) : createInitialSkillState();
     this.ledger = (saveData.ledger ?? []).map((e) => ({ ...e }));
+    this.hydrateIdSequences(saveData);
     if (saveData.currentDayRecord) {
       this.currentDayRecord = { ...saveData.currentDayRecord };
     } else {
@@ -3022,7 +3037,6 @@ export class GameSimulation {
       reputation: this.playerData.reputation,
     };
   }
-    this.hydrateIdSequences(saveData);
 
   public getTitles(): Array<TitleDef & { unlocked: boolean; isActive: boolean }> {
     const ctx = this.getTitleContext();

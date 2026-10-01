@@ -27,3 +27,4 @@ export * from './partyOrders';
 export * from './goals';
 export * from './skills';
 export * from './titles';
+export * from './decor';

@@ -218,6 +218,8 @@ export interface CustomerState {
   targetFixtureId: string;
   checkoutId?: string;
   cashierStaffId?: string;
+  /** Quầy thu ngân (fixture) mà khách xếp hàng; thiếu = làn mặc định cũ. */
+  cashierFixtureId?: string;
   reservedProductId?: string;
   patience: number;
   checkoutWait: number;
@@ -490,7 +492,7 @@ export interface RestockJobTarget {
   availableInInventory: number;
 }
 
-export type FixtureType = 'shelf_wooden' | 'shelf_glass' | 'cashier_counter' | 'refrigerator' | 'warehouse_dry' | 'warehouse_cold' | 'warehouse_receiving';
+export type FixtureType = 'decor' | 'shelf_wooden' | 'shelf_glass' | 'cashier_counter' | 'refrigerator' | 'warehouse_dry' | 'warehouse_cold' | 'warehouse_receiving';
 export const isWarehouseFixture = (fixture: Pick<StoreFixture, 'type'>): boolean => fixture.type.startsWith('warehouse_');
 export const isSalesFixture = (fixture: Pick<StoreFixture, 'type'>): boolean => fixture.type === 'shelf_wooden' || fixture.type === 'shelf_glass' || fixture.type === 'refrigerator';
 
@@ -513,11 +515,16 @@ export interface StoreFixture {
   broken?: 'minor' | 'major';
   /** Ô phụ của một kệ/tủ: dùng chung vị trí với kệ cha, mỗi ô giữ một sản phẩm (cùng nhóm hàng với các ô khác). */
   parentId?: string;
+  /** Mã món trong danh mục mua thêm (để chọn ảnh/nhãn). */
+  shopId?: string;
+  /** Tổng số ô hàng của kệ/tủ (ô chính + phụ); thiếu = theo loại. */
+  slotCount?: number;
 }
 
 export const isSlotChild = (fixture: Pick<StoreFixture, 'parentId'>): boolean => !!fixture.parentId;
 /** Số ô phụ thêm cho kệ/tủ (ô chính chính là kệ cha). */
-export function extraSlotCount(fixture: Pick<StoreFixture, 'type' | 'widthTiles' | 'heightTiles'>): number {
+export function extraSlotCount(fixture: Pick<StoreFixture, 'type' | 'widthTiles' | 'heightTiles' | 'slotCount'>): number {
+  if (fixture.slotCount !== undefined) return Math.max(0, fixture.slotCount - 1);
   if (fixture.type === 'shelf_wooden' || fixture.type === 'shelf_glass') return 3;
   if (fixture.type === 'refrigerator') return fixture.widthTiles * fixture.heightTiles >= 2 ? 3 : 1;
   return 0;
@@ -690,6 +697,8 @@ export interface StoreLayout {
   fixtures: StoreFixture[];
   storedFixtures: StoreFixture[];
   unlockedPlotIds: string[];
+  /** Đồ trang trí tường/biển/quầy đã mua (đồ sàn là fixture type 'decor'). */
+  decorOwned?: string[];
 }
 
 export interface SaveGameData {
@@ -722,6 +731,9 @@ export interface SaveGameData {
   ledger?: LedgerEntry[];
   closedDayIds?: number[];
   pendingOrders?: SupplierOrder[];
+  /** Bộ đếm tuần tự để sinh ID đơn nhập/sổ cái xác định (không dùng giờ thật hay ngẫu nhiên). */
+  orderSequence?: number;
+  ledgerSequence?: number;
   customer?: CustomerState;
   customers?: CustomerState[];
   customerSpawnCooldown?: number;
@@ -736,9 +748,6 @@ export interface SaveGameData {
   regulars?: Record<string, RegularCustomerProgress>;
   partyOrders?: PartyOrderState;
   goals?: GoalState;
-  /** Bộ đếm tuần tự để sinh ID đơn nhập/sổ cái xác định (không dùng giờ thật hay ngẫu nhiên). */
-  orderSequence?: number;
-  ledgerSequence?: number;
   skills?: SkillState;
   /** Lời đánh giá gần đây của khách (tối đa 60), mới nhất ở cuối. */
   reviews?: CustomerReview[];
@@ -838,11 +847,15 @@ export type GameCommandPayload =
       | { type: 'store'; fixtureId: string }
       | { type: 'retrieve'; fixtureId: string; tileX: number; tileY: number }
       | { type: 'buy_plot'; plotId: string }
+      | { type: 'buy_decor'; decorId: string }
+      | { type: 'buy_fixture'; shopId: string; tileX: number; tileY: number; rotation: 0 | 90 | 180 | 270 }
     > }
   | { type: 'buy_plot'; plotId: string }
   | { type: 'claim_quest'; questId: string }
-      | { type: 'buy_fixture'; shopId: string; tileX: number; tileY: number; rotation: 0 | 90 | 180 | 270 }
   | { type: 'buy_stall'; stallId: string }
+  | { type: 'hire_staff'; candidateId: string }
+  | { type: 'set_staff_shift'; staffId: string; shift: StaffShift }
+  | { type: 'assign_refill_job'; staffId: string; fixtureId: string }
   | { type: 'dispose_stock'; productId: string; quantity: number }
   | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> }
   | { type: 'respond_party_order'; orderId: string; accept: boolean }
@@ -864,9 +877,6 @@ export interface GameCommand {
 }
 
 export interface GameInputIntent {
-  | { type: 'hire_staff'; candidateId: string }
-  | { type: 'set_staff_shift'; staffId: string; shift: StaffShift }
-  | { type: 'assign_refill_job'; staffId: string; fixtureId: string }
   accountId: string;
   sequence: number;
   direction: Vector2D;
@@ -1051,12 +1061,16 @@ export function isGameCommand(value: unknown): value is GameCommand {
       if (action.type === 'store') return nonEmptyString(action.fixtureId);
       if (action.type === 'retrieve') return nonEmptyString(action.fixtureId) && Number.isSafeInteger(action.tileX) && Number.isSafeInteger(action.tileY);
       if (action.type === 'buy_plot') return nonEmptyString(action.plotId);
+      if (action.type === 'buy_decor') return nonEmptyString(action.decorId);
+      if (action.type === 'buy_fixture') return nonEmptyString(action.shopId) && Number.isSafeInteger(action.tileX) && Number.isSafeInteger(action.tileY) && [0,90,180,270].includes(action.rotation as number);
       return false;
     });
     case 'buy_plot': return nonEmptyString(p.plotId);
-      if (action.type === 'buy_fixture') return nonEmptyString(action.shopId) && Number.isSafeInteger(action.tileX) && Number.isSafeInteger(action.tileY) && [0,90,180,270].includes(action.rotation as number);
     case 'claim_quest': return nonEmptyString(p.questId);
     case 'buy_stall': return nonEmptyString(p.stallId);
+    case 'hire_staff': return nonEmptyString(p.candidateId);
+    case 'set_staff_shift': return nonEmptyString(p.staffId) && (p.shift === 'morning' || p.shift === 'afternoon' || p.shift === 'full_day');
+    case 'assign_refill_job': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
     case 'dispose_stock': return nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
     case 'order_supplier': return nonEmptyString(p.supplierId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 64 && p.items.every(item => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
     case 'respond_party_order': return nonEmptyString(p.orderId) && typeof p.accept === 'boolean';
@@ -1078,9 +1092,6 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
   const world = value.world;
   const businesses = value.businesses as BusinessState[];
   return new Set(world.businessIds).size === world.businessIds.length &&
-    case 'hire_staff': return nonEmptyString(p.candidateId);
-    case 'set_staff_shift': return nonEmptyString(p.staffId) && (p.shift === 'morning' || p.shift === 'afternoon' || p.shift === 'full_day');
-    case 'assign_refill_job': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
     new Set(businesses.map(business => business.id)).size === businesses.length &&
     world.businessIds.length === businesses.length &&
     businesses.every(business => world.businessIds.includes(business.id));

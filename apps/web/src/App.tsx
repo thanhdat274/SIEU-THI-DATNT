@@ -1221,17 +1221,17 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleCheckout = async (fixtureId?: string) => {
+  const handleCheckout = async (fixtureId?: string, checkoutId?: string) => {
     if (blockOfflineOnlineMutation()) return;
     const sim = simulationRef.current;
     if (!sim) return;
-    const activeCustomer = sim.getCustomer();
+    const activeCustomer = checkoutId ? sim.getCustomers().find(c => c.stage === 'checkout' && c.checkoutId === checkoutId) : sim.getCustomer();
     if (!activeCustomer || activeCustomer.stage !== 'checkout') {
       addToast('Chưa có khách đứng đợi ở quầy thu ngân!', 'warn');
       return;
     }
     const moneyBefore = sim.getPlayerData().money;
-    if (sim.checkoutShelf(fixtureId)) {
+    if (sim.checkoutShelf(fixtureId, checkoutId)) {
       syncFromSimulation(sim);
       const earned = sim.getPlayerData().money - moneyBefore;
       addToast(`Đã thanh toán cho khách và nhận +${earned.toLocaleString('vi-VN')} đ!`, 'success');
@@ -1243,7 +1243,7 @@ export const App: React.FC = () => {
       }
       if (onlineWorldRef.current) {
         await commitBusinessChange(
-          { type: 'checkout', fixtureId: fixtureId || '' },
+          { type: 'checkout', checkoutId: checkoutId || '', fixtureId: fixtureId || '' },
           `Thanh toán đơn hàng thu về +${earned.toLocaleString('vi-VN')}₫`,
           'Bán hàng'
         );

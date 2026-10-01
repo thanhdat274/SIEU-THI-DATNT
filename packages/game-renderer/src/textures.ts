@@ -26,6 +26,11 @@ export class PixelTextureFactory {
     this.textures.clear();
   }
 
+  /** Canvas thô của một khóa texture, dùng cho ảnh xem trước trong giao diện HTML. */
+  public getCanvas(key: string): HTMLCanvasElement {
+    return this.createCanvasForKey(key);
+  }
+
   public getTexture(key: string): Texture {
     const existing = this.textures.get(key);
     if (existing) return existing;

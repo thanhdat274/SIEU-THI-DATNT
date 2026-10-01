@@ -35,3 +35,4 @@ export * from './party-orders';
 export * from './goals';
 export * from './skills';
 export * from './titles';
+export * from './decor';

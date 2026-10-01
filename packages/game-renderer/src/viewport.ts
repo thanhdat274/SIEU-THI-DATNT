@@ -1,10 +1,11 @@
+import { furnitureSpriteTexture, STOCK_ART_SHOP_IDS } from './fixture-preview';
 import { Application, Container, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
-import { GameTileMap, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
+import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
 import { FixedStepSimulationRunner, GameSimulation, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting } from './shop-lighting';
-import { PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp } from '@game/data';
+import { DECOR_MAP, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp } from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -36,6 +37,8 @@ export class PixiGameViewport {
   private worldContainer!: Container;
   private groundLayer!: Container;
   private entitiesLayer!: Container;
+  private decorKey = '';
+  private decorSprites: Text[] = [];
   private wallLayer!: Container;
   private uiOverlayLayer!: Container;
 
@@ -67,7 +70,7 @@ export class PixiGameViewport {
   private stallSprites: Sprite[] = [];
   private shopkeeper?: { container: Container; sprite: Sprite; bubble: Container };
   private motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-  private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string }> = new Map();
+  private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string; staticArt?: boolean }> = new Map();
   private interactionBubble!: Container;
   private warehouseLocator!: Container;
   private locatingWarehouse = false;
@@ -613,9 +616,46 @@ export class PixiGameViewport {
   }
 
   private buildFixtures(): void {
-    const fixtures = this.simulation.getFixtures();
-    for (const fix of fixtures) {
-      if (fix.parentId) continue;
+    for (const fix of this.simulation.getFixtures()) this.addFixtureSprite(fix);
+  }
+
+  /** Đồ trang trí tường/biển đã mua: biểu tượng treo dọc tường sau của tiệm, dựng lại khi danh sách đổi. */
+  private syncDecor(): void {
+    const owned = this.simulation.getDecorOwned();
+    const key = owned.join(',');
+    if (key === this.decorKey) return;
+    this.decorKey = key;
+    for (const old of this.decorSprites) old.destroy();
+    this.decorSprites = [];
+    const slots = [[7.5, 3.7], [8.5, 3.7], [11.5, 3.7], [12.5, 3.7]];
+    owned.slice(0, slots.length).forEach((id, index) => {
+      const item = DECOR_MAP[id];
+      if (!item) return;
+      const text = new Text({ text: item.icon, style: new TextStyle({ fontSize: 20 }) });
+      text.anchor.set(0.5);
+      text.x = slots[index][0] * TILE_SIZE;
+      text.y = slots[index][1] * TILE_SIZE;
+      text.zIndex = STORE_BOUNDS.top * TILE_SIZE + 20;
+      this.entitiesLayer.addChild(text);
+      this.decorSprites.push(text);
+    });
+  }
+
+  /** Thêm sprite cho nội thất mới mua / lấy lại, và bỏ sprite của nội thất đã cất (trước đây chỉ dựng một lần lúc vào game). */
+  private syncFixtureSprites(): void {
+    const fixtures = this.simulation.getFixtures().filter(fix => !fix.parentId);
+    const ids = new Set(fixtures.map(fix => fix.id));
+    for (const [id, entry] of this.fixtureSprites) {
+      if (ids.has(id)) continue;
+      entry.container.destroy({ children: true });
+      this.fixtureSprites.delete(id);
+    }
+    for (const fix of fixtures) if (!this.fixtureSprites.has(fix.id)) this.addFixtureSprite(fix);
+  }
+
+  private addFixtureSprite(fix: StoreFixture): void {
+    {
+      if (fix.parentId) return;
       const dimensions = getFixtureDimensions(fix);
       const container = new Container();
       container.pivot.set(fix.widthTiles * TILE_SIZE / 2, fix.heightTiles * TILE_SIZE / 2);
@@ -632,8 +672,14 @@ export class PixiGameViewport {
         textureKey = `fixture_${fix.type}`;
       }
 
-      const sprite = new Sprite(this.textures.getTexture(textureKey));
-      sprite.y = -16;
+      // Nội thất mua thêm không có bản vẽ theo lượng hàng: dùng sprite danh mục (tỉ lệ nguyên theo bề rộng ô).
+      const art = fix.shopId && !STOCK_ART_SHOP_IDS.has(fix.shopId) ? furnitureSpriteTexture(fix.shopId) : null;
+      const sprite = new Sprite(art ?? this.textures.getTexture(textureKey));
+      if (art) {
+        const scale = Math.max(1, Math.round(fix.widthTiles * TILE_SIZE / art.width));
+        sprite.scale.set(scale);
+        sprite.y = fix.heightTiles * TILE_SIZE - art.height * scale;
+      } else sprite.y = -16;
       container.zIndex = (fix.tileY + dimensions.heightTiles) * TILE_SIZE;
       container.addChild(sprite);
 
@@ -642,7 +688,7 @@ export class PixiGameViewport {
       badgeBg.rect(isWarehouseFixture(fix)?2:10, 34, isWarehouseFixture(fix)?60:44, 13);
       badgeBg.fill({ color: 0xeadcc9, alpha: 0.96 });
       badgeBg.stroke({ color: 0xbfa993, width: 1 });
-      badgeBg.visible = fix.type !== 'cashier_counter';
+      badgeBg.visible = fix.type !== 'cashier_counter' && fix.type !== 'decor';
       container.addChild(badgeBg);
 
       // Dot marker (Green = Full, Yellow = Low stock, Red = Out of stock)
@@ -665,7 +711,7 @@ export class PixiGameViewport {
       container.addChild(stockText);
 
       this.entitiesLayer.addChild(container);
-      this.fixtureSprites.set(fix.id, { container, stockText, dotMarker, sprite, textureKey, lastState: '' });
+      this.fixtureSprites.set(fix.id, { container, stockText, dotMarker, sprite, textureKey, lastState: '', staticArt: !!art });
     }
   }
 
@@ -1154,6 +1200,8 @@ export class PixiGameViewport {
     this.warehouseDoorRight.x = 32 + slideOffset;
 
     // 3. Update Fixture Badges & Dot Status Markers (Green = Full, Yellow = Low, Red = Out)
+    this.syncFixtureSprites();
+    this.syncDecor();
     const allFixtures = this.simulation.getFixtures();
     for (const fix of allFixtures) {
       if (fix.parentId) continue;
@@ -1182,7 +1230,7 @@ export class PixiGameViewport {
           if(entry.lastState!==key){entry.sprite.texture=this.textures.getTexture(key);entry.lastState=key;entry.dotMarker.clear().rect(5,38,6,6).fill(state==='empty'?0xb64c3d:0x357f72);}
           entry.stockText.text=receiving?`${count} đơn`:cold?`${count}/40`:`${count} món`;
           entry.stockText.visible=true;entry.dotMarker.visible=true;
-        } else if (fix.type !== 'cashier_counter') {
+        } else if (fix.type !== 'cashier_counter' && fix.type !== 'decor') {
           const group = allFixtures.filter(item => item.id === fix.id || item.parentId === fix.id);
           const limit = group.reduce((sum, item) => sum + effectiveShelfCapacity(item.maxCapacity, (item.assignedProductId && PRODUCT_MAP[item.assignedProductId]?.shelfCapacity) || item.maxCapacity, this.simulation.getShelfCapacityBonus()), 0);
           const stock = group.reduce((sum, item) => sum + item.currentStock, 0);
@@ -1191,7 +1239,7 @@ export class PixiGameViewport {
           const key = `${entry.textureKey}:${fix.assignedProductId ?? 'none'}:${state}`;
           const stateKey = `${key}|${fix.broken ?? ''}`;
           if(entry.lastState !== stateKey) {
-            entry.sprite.texture = this.textures.getTexture(key);
+            if (!entry.staticArt) entry.sprite.texture = this.textures.getTexture(key);
             entry.lastState = stateKey;
             entry.sprite.tint = fix.broken ? (fix.broken === 'major' ? 0x7a6a6a : 0xb5a29c) : 0xffffff;
             entry.dotMarker.clear().rect(13, 38, 6, 6).fill({color: fix.broken ? 0x6f2a1e : state==='empty'?0xd9381e:state==='low'?0xf4a261:0x2a7a43});
