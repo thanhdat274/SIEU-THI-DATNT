@@ -1,15 +1,17 @@
 import 'reflect-metadata';
 import {
   BadRequestException, Body, Controller, Delete, Get, Module, Param, Post, Req,
-  ServiceUnavailableException, UseGuards,
+  HttpException, HttpStatus, ServiceUnavailableException, UseGuards,
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { WsAdapter } from '@nestjs/platform-ws';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { isSaveGameData, type GameAccount, type SaveGameData } from '@game/shared';
 import { generateStarterTileMap } from '@game/data';
 import { applyStoreLayoutActions, GameSimulation, validateStoreLayout, WorldRuntime } from '@game/core';
 import { readRuntimeConfig } from './runtime-config.js';
 import { checkSaveInvariants } from './save-invariants.js';
+import { commitLimiter, httpIpLimiter, MAX_HTTP_BODY } from './rate-limit.js';
 import { closeDatabase, connectDatabase } from './database.js';
 import { createWebSocketTicket, verifyAccount } from './firebase-admin.js';
 import { FirebaseAuthGuard } from './auth.guard.js';
@@ -41,7 +43,7 @@ const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
   'respond_party_order', 'fulfill_party_order', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title', 'layout_batch',
   'set_price', 'restock', 'unstock', 'store_status', 'buy_stall', 'claim_quest', 'order', 'stow', 'stow_all',
   'planogram_assignment', 'planogram_restock', 'auto_restock', 'checkout', 'advance_day', 'change_speed',
-  'dispose_stock', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve',
+  'dispose_stock', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve', 'maintain_fixture',
 ]);
 
 export class GameController {
@@ -77,6 +79,9 @@ export class GameController {
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untrusted JSON body, validated field by field below
   async commitCommand(request: AuthenticatedRequest, worldId: string, body: any) {
+    if (!commitLimiter.take(request.gameAccount.uid)) {
+      throw new HttpException('Gửi lệnh quá nhanh, vui lòng thử lại sau.', HttpStatus.TOO_MANY_REQUESTS);
+    }
     if (!body || typeof body !== 'object' || typeof body.expectedRevision !== 'number' || !body.receipt || !body.updatedBusiness) {
       throw new BadRequestException('Invalid commitCommand payload');
     }
@@ -259,7 +264,14 @@ class RuntimeModule {
 Module({ controllers: [HealthController, GameController], providers: [FirebaseAuthGuard, WorldGateway] })(RuntimeModule);
 
 export async function createServer() {
-  const app = await NestFactory.create(RuntimeModule, { logger: ['error', 'warn', 'log'] });
+  const app = await NestFactory.create<NestExpressApplication>(RuntimeModule, { logger: ['error', 'warn', 'log'], bodyParser: false });
+  // Thân JSON có giới hạn tường minh (save đầy đủ + sổ cái), thay cho mặc định ngầm của Express.
+  app.useBodyParser('json', { limit: MAX_HTTP_BODY });
+  // Giới hạn theo IP trước khi xác thực (bảo vệ bước verify token Firebase). Sau reverse proxy cần cấu hình trust proxy riêng.
+  app.use((req: { ip?: string; socket?: { remoteAddress?: string } }, res: { status: (code: number) => { json: (body: unknown) => void } }, next: () => void) => {
+    if (httpIpLimiter.take(req.ip ?? req.socket?.remoteAddress ?? 'unknown')) return next();
+    res.status(429).json({ statusCode: 429, message: 'Quá nhiều yêu cầu, vui lòng thử lại sau.' });
+  });
   app.useWebSocketAdapter(new WsAdapter(app));
   return app;
 }

@@ -4,6 +4,7 @@ import { worldRepository } from './world.repository.js';
 import { WorldRuntime } from '@game/core';
 import { consumeWebSocketTicket } from './firebase-admin.js';
 import { readRuntimeConfig } from './runtime-config.js';
+import { MAX_WS_PAYLOAD_BYTES, RATE_LIMITS, RateLimiter } from './rate-limit.js';
 
 /**
  * WS gateway for real-time world sessions.
@@ -25,6 +26,22 @@ interface AuthenticatedSocket extends WebSocket {
   _worldId?: string;
   _accountId?: string;
   _sessionOk?: boolean;
+}
+
+const socketLimits = new WeakMap<object, { limiter: RateLimiter; violations: number; windowStart: number }>();
+
+/** Giới hạn tần suất thông điệp theo kết nối; vượt hạn mức bị bỏ qua, lặp lại nhiều lần thì đóng kết nối. */
+export function allowSocketMessage(socket: { close: (code?: number, reason?: string) => void }, now = Date.now()): boolean {
+  let state = socketLimits.get(socket);
+  if (!state) {
+    state = { limiter: new RateLimiter(RATE_LIMITS.wsMessagesPerSocketPerSec, 1000), violations: 0, windowStart: now };
+    socketLimits.set(socket, state);
+  }
+  if (state.limiter.take('m', now)) return true;
+  if (now - state.windowStart > 10_000) { state.windowStart = now; state.violations = 0; }
+  state.violations += 1;
+  if (state.violations >= RATE_LIMITS.wsViolationsBeforeClose) socket.close(1008, 'Too many messages');
+  return false;
 }
 
 export function acceptWebSocketOrigin(origin: string | undefined, allowedOrigin: string): boolean {
@@ -86,6 +103,7 @@ function broadcastToWorld(worldId: string, event: string, data: unknown) {
 
 @WebSocketGateway({
   path: '/ws',
+  maxPayload: MAX_WS_PAYLOAD_BYTES, // thông điệp lớn hơn bị ws đóng kết nối (mã 1009)
   cors: { origin: '*' }, // narrowed by main.ts CORS for HTTP; WS has separate origin handling
 })
 export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -190,6 +208,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('heartbeat')
   handleHeartbeat(@ConnectedSocket() socket: AuthenticatedSocket) {
+    if (!allowSocketMessage(socket)) return;
     if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
     const entry = worldRuntimes.get(socket._worldId);
     if (entry) entry.runtime.heartbeat(socket._accountId);
@@ -197,6 +216,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('input')
   handleInput(@ConnectedSocket() socket: AuthenticatedSocket, @MessageBody() body: unknown) {
+    if (!allowSocketMessage(socket)) return;
     if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
     const entry = worldRuntimes.get(socket._worldId);
     if (!entry) return;
@@ -206,6 +226,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('time-vote')
   handleTimeVote(@ConnectedSocket() socket: AuthenticatedSocket, @MessageBody() body: unknown) {
+    if (!allowSocketMessage(socket)) return;
     if (!socket._worldId || !socket._accountId || !socket._sessionOk || !body || typeof body !== 'object') return;
     const entry = worldRuntimes.get(socket._worldId);
     if (!entry) return;
@@ -225,6 +246,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('time-vote:cancel')
   handleCancelTimeVote(@ConnectedSocket() socket: AuthenticatedSocket) {
+    if (!allowSocketMessage(socket)) return;
     if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
     const entry = worldRuntimes.get(socket._worldId);
     if (!entry) return;

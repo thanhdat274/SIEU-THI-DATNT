@@ -117,7 +117,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | I-12 | Save local một slot | Medium | Mở |
 | I-13 | Mưa chỉ dùng ngưỡng 0,4 | Low | Mở |
 | I-14 | Khóa bí mật trong thư mục dự án | Low | Mở |
-| I-15 | Server không giới hạn payload/tần suất | Medium | Mở |
+| I-15 | Server không giới hạn payload/tần suất | Medium | Xử lý một phần 2026-10-01 |
 | I-16 | Chưa có migration schema world Mongo | Medium | Mở |
 | I-17 | Thiếu tài liệu triển khai/vận hành | Low | Mở |
 | I-18 | A11y/cảm ứng chưa kiểm | Low | Mở |
@@ -289,7 +289,9 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Root Cause:** Ưu tiên chạy được co-op trước.
 - **Suggested Fix:** Throttler cho REST, giới hạn kích thước message WS, giới hạn kích thước save khi commit.
 - **Priority:** Medium
-- **Verification:** Cần đọc lại cấu hình Nest và test tải.
+- **Đã làm 2026-10-01:** `apps/server/src/rate-limit.ts` (cửa sổ cố định trong bộ nhớ, không thêm dependency): HTTP theo IP 600/phút (middleware, trước xác thực), theo tài khoản 240/phút (`auth.guard.ts`), commit 120/phút (`commitCommand`) → 429; thân JSON tối đa 2 MB (`useBodyParser`, trả 413); WebSocket `maxPayload` 64 KB và 40 thông điệp/giây/kết nối, vượt 20 lần trong 10 s thì đóng 1008. Hạn mức ghi đè bằng biến `RATE_LIMIT_*`. Test: `rate-limit.test.ts` (limiter, `allowSocketMessage`, HTTP 413 qua server thật).
+- **Còn lại / giới hạn:** bộ đếm theo từng tiến trình (nhiều instance thì mỗi cái đếm riêng); sau reverse proxy `req.ip` có thể là IP proxy (cần cấu hình trust proxy); ngưỡng chưa đối chiếu với lưu lượng thật (client commit mỗi hành động, input 10 Hz); 2 MB chưa đối chiếu với kích thước save cuối game (ledger tăng dần; save khởi tạo chỉ ~1,7 KB); chưa giới hạn số kết nối WS theo IP/tài khoản; hành vi 429 của client (toast/thử lại) chưa kiểm tra.
+- **Verification:** `test:unit` (invariants + rate-limit), `test:db`, `verify:runtime` PASS cục bộ ngày 2026-10-01; chưa test tải.
 
 ### Issue: I-16 Chưa có kế hoạch migration schema phía world Mongo
 
@@ -575,6 +577,17 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 ---
 
 ## 8. Lịch sử phát triển
+
+## 2026-10-01 (lượt 7 — I-15 giới hạn payload/tần suất)
+
+### Changed
+- Thêm `rate-limit.ts`, `rate-limit.test.ts`, script `test:ratelimit` (nằm trong `test:unit`); nối vào `auth.guard.ts`, `bootstrap.ts` (`commitCommand`, `createServer` với `bodyParser: false` + `useBodyParser('json', {limit})`) và `world.gateway.ts` (`maxPayload`, `allowSocketMessage`).
+
+### Verified
+- `tsc` server sạch; `test:unit`, `test:db`, `verify:runtime` PASS (Node 20.19 cục bộ, `--ignore-engines` cho yarn root). Chưa chạy `test:all` trên Node 22, chưa test tải, chưa kiểm client xử lý 429.
+
+### Remaining
+- Xem I-15 (giới hạn); hiệu chỉnh ngưỡng; client hiển thị 429.
 
 ## 2026-10-01 (lượt 6 — test:all và CI)
 
