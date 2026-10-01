@@ -1,6 +1,7 @@
 export * from './products';
 export * from './map';
 export * from './traffic';
+export * from './arrival-modes';
 export * from './land';
 export * from './pixel-art';
 export * from './online-world';

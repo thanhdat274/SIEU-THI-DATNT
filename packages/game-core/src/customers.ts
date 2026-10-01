@@ -10,7 +10,8 @@ import {
   InventoryItem,
   CustomerArrivalMode
 } from '@game/shared';
-import { STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS } from '@game/data';
+import { STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS } from '@game/data';
+import { arrivalModeWeights, pickArrivalMode } from './arrival-mode';
 import { CollisionSystem } from './collision';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { mergeLots, sumLots, takeLots } from './stock';
@@ -106,7 +107,8 @@ export class CustomerManager {
     demand?: CustomerDemandChoice,
     regularCandidate?: RegularCustomerDefinition | null,
     rainIntensity = 0,
-    hasBikeSecurity = false
+    hasBikeSecurity = false,
+    arrivalContext?: { hour: number; weekday: number }
   ): CustomerState | null {
     if (!isStoreOpen) return null;
     if (this.customers.length >= (demand?.maxConcurrentCustomers ?? this.maxConcurrentCustomers)) return null;
@@ -146,9 +148,9 @@ export class CustomerManager {
         .filter((c) => c.vehicleSpot)
         .map((c) => `${Math.round(c.vehicleSpot!.x)},${Math.round(c.vehicleSpot!.y)}`)
     );
-    const availableSpots = STREET_PARKING_SPOTS.filter(
-      (s) => !occupiedSpots.has(`${Math.round(s.x)},${Math.round(s.y)}`)
-    );
+    const isFree = (s: Vector2D) => !occupiedSpots.has(`${Math.round(s.x)},${Math.round(s.y)}`);
+    const availableSpots = STREET_PARKING_SPOTS.filter(isFree);
+    const availableCarSpots = CAR_PARKING_SPOTS.filter(isFree);
 
     const rng = new Mulberry32Rng(daySeed(this.customerSequence * 77 + currentDay, currentDay));
     const roll = rng.next();
@@ -164,16 +166,28 @@ export class CustomerManager {
         arrivalMode = 'walk';
       }
     } else {
-      if (rainIntensity > 0.4) {
-        arrivalMode = roll < 0.4 ? 'motorbike' : roll < 0.65 ? 'car' : 'walk';
-      } else {
-        arrivalMode = roll < 0.45 ? 'motorbike' : roll < 0.52 ? 'car' : 'walk';
-      }
+      arrivalMode = pickArrivalMode(
+        arrivalModeWeights({
+          hour: arrivalContext?.hour,
+          weekday: arrivalContext?.weekday,
+          rainIntensity,
+          freeMotorbikeSpot: availableSpots.length > 0,
+          freeCarSpot: availableCarSpots.length > 0,
+        }),
+        roll
+      );
     }
 
     if (arrivalMode === 'motorbike') {
       if (availableSpots.length > 0) {
         vehicleSpot = availableSpots[this.customerSequence % availableSpots.length];
+        vehicleVariant = this.customerSequence % 3;
+      } else {
+        arrivalMode = 'walk';
+      }
+    } else if (arrivalMode === 'car') {
+      if (availableCarSpots.length > 0) {
+        vehicleSpot = availableCarSpots[this.customerSequence % availableCarSpots.length];
         vehicleVariant = this.customerSequence % 3;
       } else {
         arrivalMode = 'walk';

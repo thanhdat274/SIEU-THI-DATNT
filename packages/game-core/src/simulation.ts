@@ -1863,7 +1863,8 @@ export class GameSimulation {
       },
       regularCandidate,
       this.getRainIntensity(),
-      this.hasSecurityGuardOnShift()
+      this.hasSecurityGuardOnShift(),
+      { hour: this.clock.getTime().hour, weekday: weekdayOf(this.clock.getTime().day) }
     );
 
     this.streetTraffic.update(worldDt, this.clock.getTime().hour, this.getRainIntensity(), this.clock.getTime().day * 1337);

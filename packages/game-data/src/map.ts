@@ -50,6 +50,15 @@ export const STORM_DRAINS: ReadonlyArray<{ tileX: number }> = [{ tileX: 4 }, { t
 /** Vạch qua đường ngay trước cửa tiệm (cửa ở ô x = 9..10), phủ hai làn. */
 export const CROSSWALK = { tileX: 9, widthTiles: 2, firstRow: 13, rows: 2 } as const;
 
+/**
+ * Chỗ đỗ ô tô của khách trên vỉa hè phía đông (rộng hơn chỗ xe máy, chân xe tại y px), giữa các cột đèn x = 15, 20 và
+ * mép bản đồ; ô tô neo giữa-đáy tại điểm này (sprite 68x36). Không chặn cửa tiệm, ô đỗ xe máy hay vạch qua đường.
+ */
+export const CAR_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
+  { x: 560, y: 12 * 32 + 14 },
+  { x: 736, y: 12 * 32 + 14 },
+];
+
 export const WAREHOUSE_BOUNDS = {left:STORE_BOUNDS.left,right:STORE_BOUNDS.right,top:STORE_BOUNDS.top-6,bottom:STORE_BOUNDS.top};
 export const WAREHOUSE_CENTER = {x:(WAREHOUSE_BOUNDS.left+WAREHOUSE_BOUNDS.right+1)*16,y:(WAREHOUSE_BOUNDS.top+WAREHOUSE_BOUNDS.bottom+1)*16};
 export const WAREHOUSE_DOOR_LEFT = Math.floor(WAREHOUSE_CENTER.x/32)-1;

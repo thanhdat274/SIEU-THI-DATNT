@@ -979,12 +979,13 @@ export class PixiGameViewport {
     // Render parked motorbikes of customers currently visiting
     const activeVehicleKeys = new Set<string>();
     for (const cust of customers) {
-      if (cust.vehicleSpot && cust.arrivalMode === 'motorbike') {
+      if (cust.vehicleSpot && (cust.arrivalMode === 'motorbike' || cust.arrivalMode === 'car')) {
+        const parkedTexture = cust.arrivalMode === 'car' ? 'vehicle_car_right' : `vehicle_motorbike_parked_${cust.vehicleVariant ?? 0}`;
         const key = cust.id ?? cust.checkoutId ?? 'vehicle';
         activeVehicleKeys.add(key);
         let sprite = this.parkedMotorbikeSprites.get(key);
         if (!sprite) {
-          sprite = new Sprite(this.textures.getTexture(`vehicle_motorbike_parked_${cust.vehicleVariant ?? 0}`));
+          sprite = new Sprite(this.textures.getTexture(parkedTexture));
           sprite.anchor.set(0.5, 1);
           sprite.x = Math.round(cust.vehicleSpot.x);
           sprite.y = Math.round(cust.vehicleSpot.y);
@@ -992,7 +993,7 @@ export class PixiGameViewport {
           this.entitiesLayer.addChild(sprite);
           this.parkedMotorbikeSprites.set(key, sprite);
         } else {
-          sprite.texture = this.textures.getTexture(`vehicle_motorbike_parked_${cust.vehicleVariant ?? 0}`);
+          sprite.texture = this.textures.getTexture(parkedTexture);
         }
       }
     }
