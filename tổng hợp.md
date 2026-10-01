@@ -1,7 +1,7 @@
 # Tổng hợp hiện trạng code — Tiệm Tạp Hóa Đầu Hẻm
 
 > **Cập nhật 01/10/2026 (đồng bộ với `THONG-KE.md`).** Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
-> - Đèn tín hiệu chu kỳ, người đi bộ qua vạch và xe nhường đường (`core/traffic-signal.ts`, `street-traffic.ts`, `game-data/traffic.ts`, `renderer/street-signal.ts`) đang nằm trong working tree **chưa commit**, chưa có OpenSpec riêng, chưa xem browser; `signalClock` cục bộ nên pha đèn chưa đồng bộ giữa hai client co-op. Typecheck và `yarn test` (game-core) PASS ngày 01/10/2026 (lượt này không chạy build/test server/browser).
+> - Đèn tín hiệu chu kỳ, người đi bộ qua vạch và xe nhường đường (`core/traffic-signal.ts`, `street-traffic.ts`, `game-data/traffic.ts`, `renderer/street-signal.ts`) đã commit `24a2fab`, có OpenSpec `traffic-light-crosswalk-yielding` (4.2–4.6 còn mở), browser mới thấy hình tĩnh; đồng bộ đèn giữa client là non-goal của change (giao thông hẻm ambient, không lưu). Typecheck và `yarn test` (game-core) PASS ngày 01/10/2026 (lượt này không chạy build/test server/browser).
 > - Mới ghi nhận vấn đề tồn đọng: co-op chỉ replay một phần lệnh (I-01), server chưa giới hạn payload/tần suất (I-15), chưa có migration schema world Mongo (I-16), ID dùng `Date.now()/Math.random()` (I-04), bảng xếp hạng là dữ liệu giả (I-02).
 > - Các mục dưới đây có nhiều đoạn lịch sử cũ; đoạn nào mâu thuẫn (PWA "chưa có", nhân viên "chưa render", NestJS "chưa có API") đã được sửa hoặc đánh dấu lạc hậu.
 
@@ -324,7 +324,7 @@ P1: nên xử lý trong đợt gần nhất. P2: nên xử lý trước tính n�
 ## 6. Các điểm tài liệu đang lệch hoặc dễ hiểu nhầm
 
 1. `TASKS.md`/`ROADMAP.md` nhắc pnpm và `pnpm-workspace.yaml` ở các giai đoạn cũ (đã ghi chú trong hai file), nhưng workspace hiện dùng Yarn và `yarn.lock`.
-10. Các mô tả "đèn giao thông/cống/vạch qua đường" ở Đợt E: cống/vạch là hình ảnh đã commit; đèn chu kỳ + nhường đường có code nhưng chưa commit (xem đầu file).
+10. Các mô tả "đèn giao thông/cống/vạch qua đường" ở Đợt E: cống/vạch là hình ảnh đã commit; đèn chu kỳ + nhường đường đã commit 24a2fab (xem đầu file).
 2. `ARCHITECTURE.md` có `game-ui`, ECS đầy đủ, NestJS/Mongoose/Firebase và nhiều store/DTO dự kiến; thư mục và code thật chưa có đủ các thành phần này.
 3. Lên cấp và khóa mặt hàng theo cấp đã có trong core, nên không ghi toàn bộ progression là “chưa làm”. Chỉ nhiệm vụ/phần thưởng/mốc mở rộng còn thiếu.
 4. Kho vật lý đã có; việc “mua đất và xây kho” trong roadmap vẫn chưa có. Phòng kho dựng sẵn không chứng minh building mode đã xong.
@@ -407,7 +407,7 @@ Còn thiếu khách quen với lịch sử/thân thiết, bản tin sáng, phư�
 
 | Ngày | Thay đổi | Xác minh | Việc còn lại |
 | --- | --- | --- | --- |
-| 01/10/2026 | Đồng bộ tài liệu: thêm `THONG-KE.md` làm bản chuẩn hiện trạng (S01–S46, I-01…I-19); sửa các dòng lạc hậu về PWA/NestJS/pnpm; ghi nhận đèn tín hiệu + người đi bộ chưa commit. Không đổi mã | `yarn typecheck` PASS, `yarn test` (game-core) PASS (7 tests, 0 fail). Không chạy test server/build/browser | Commit + OpenSpec cho đèn tín hiệu, đồng bộ pha co-op, QA browser; I-01/I-15 phía server |
+| 01/10/2026 | Đồng bộ tài liệu: thêm `THONG-KE.md` làm bản chuẩn hiện trạng (S01–S46, I-01…I-19); sửa các dòng lạc hậu về PWA/NestJS/pnpm; ghi nhận đèn tín hiệu + người đi bộ (sau đó commit 24a2fab). Không đổi mã | `yarn typecheck` PASS, `yarn test` (game-core) PASS (7 tests, 0 fail). Không chạy test server/build/browser | QA browser/hiệu năng đèn tín hiệu (4.2–4.4); I-01/I-15 phía server |
 | 01/10/2026 | Sửa phát hiện review: co-op replay phía server cho sáu command đơn tiệc/mục tiêu/perk/danh hiệu; receipt-first idempotency; nối modifier kỹ năng vào simulation; `completedDay` và đếm đơn tiệc đúng tuần; OpenSpec/TASKS/ROADMAP cập nhật | `tsc -b packages/shared packages/game-data packages/game-core packages/game-renderer apps/server apps/web` PASS; `packages/game-core/src/test-runner.ts` PASS | Chưa HTTP/DB hai client, reconnect, browser responsive hoặc playtest; browser/dev server bị chặn trong sandbox; FestivalGoal vẫn chỉ metadata; thiếu test hành vi riêng cho toàn bộ perk |
 | 01/10/2026 | Thêm code giá người chơi đặt, rating khách/traffic, tổng kết ngày, daylight mùa, mưa intensity/VFX, bóng cây và decal đường; cập nhật OpenSpec `stardew-inspired-management-loop` | Chưa chạy typecheck/test/build/browser; chưa playtest; đây chỉ là kiểm kê code | Khách quen, bản tin sáng, arrival motorbike/car/walk, QA và cân bằng còn mở |
 | 01/10/2026 | Sửa lỗi production trên Vercel `Cannot read properties of undefined (reading 'useState')`: `apps/web/vite.config.ts` bỏ chunk `vendor-react`/`vendor` (phụ thuộc vòng khiến React chưa nạp); chỉ còn tách `vendor-pixi` và `vendor-firebase` | `npm run build -w apps/web` PASS, output không còn chunk vendor/react; chưa chạy thử bản build trong trình duyệt | Push, redeploy Vercel và kiểm tra game chạy, không còn lỗi console |

@@ -4,7 +4,7 @@
 
 ## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)
 
-- [>] Đèn tín hiệu chu kỳ + người đi bộ + xe nhường đường (S46, I-19): code có, **chưa commit**, chưa OpenSpec; typecheck + `yarn test` PASS 01/10/2026. Còn: tạo change `traffic-signal-crosswalk`, đồng bộ pha co-op, QA browser/hiệu năng.
+- [>] Đèn tín hiệu chu kỳ + người đi bộ + xe nhường đường (S46, I-19): đã commit `24a2fab`; OpenSpec `traffic-light-crosswalk-yielding` (tasks 1–3, 4.1 xong; 4.2–4.6 mở). Còn: QA browser (đèn đổi pha/xe dừng/người qua), cảm quan, hiệu năng, quyết định khách thật qua đường và đồng bộ co-op (non-goal hiện tại).
 - [ ] Co-op: server replay mọi lệnh đổi tài nguyên + test lệnh lạ/save sửa tiền (I-01).
 - [ ] Giới hạn payload/tần suất server (I-15); migration schema world Mongo (I-16).
 - [ ] Lệnh nhân viên trong co-op (I-05); ID xác định (I-04).

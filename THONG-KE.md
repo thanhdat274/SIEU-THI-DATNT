@@ -61,7 +61,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | S14 | Mùa, ngày hội, mục tiêu ngày hội, quầy ăn uống | ✅ | `game-data/seasons.ts`, `core/stalls.ts`, `goals.ts`, `StallModal.tsx` | Quầy bán theo mô hình **nhu cầu tổng hợp** (`processStalls`), không có NPC ghé quầy (xem S33). Ân hạn 1 ngày nhận thưởng. Test `seasons.test`, `goals.test`. |
 | S15 | Kỹ năng & 9 perk | ✅ | `core/skills.ts`, `game-data/skills.ts`, `SkillsModal.tsx` | Chín modifier nối vào simulation. Test `skills.test`, `perks.test`. Cân bằng chưa playtest. |
 | S16 | Danh hiệu cột mốc (9) | ✅ | `core/titles.ts`, `TitlesModal.tsx` | Test `titles.test`. |
-| S17 | Giao thông hẻm & phương thức đến (walk/motorbike/car) — logic | ✅ | `core/street-traffic.ts`, `game-data/map.ts`, `customers.ts` | Làn, đỗ lề, trần 2 actor, không va chạm. Test `street-traffic.test`. Hình ảnh xem S33. **Lưu ý:** `street-traffic.ts` đang được sửa lớn chưa commit (S46); phần đã commit chưa tính đèn/nhường đường. |
+| S17 | Giao thông hẻm & phương thức đến (walk/motorbike/car) — logic | ✅ | `core/street-traffic.ts`, `game-data/map.ts`, `customers.ts` | Làn, đỗ lề, trần 2 actor, không va chạm. Test `street-traffic.test`. Hình ảnh xem S33. **Lưu ý:** đèn/nhường đường đã thêm vào `street-traffic.ts` ở commit `24a2fab` (S46). |
 | S18 | Server HTTP: world, ACL, invite, receipt, commit nguyên tử | ✅ | `apps/server/src/world.repository.ts`, `bootstrap.ts`, `auth.guard.ts`, `firebase-admin.ts` | Test `world.repository.test` (Mongo thật). Chưa test qua Firebase guard thật (S36). |
 | S19 | WS gateway + `WorldRuntime` (avatar authoritative, time-vote, session) | ✅ | `world.gateway.ts`, `core/world-runtime.ts`, `avatars.ts` | Test `world.gateway.test`, `world-runtime.test`, `avatars.test`. Chưa test reconnect trình duyệt (S38). |
 | S20 | Công cụ debug giờ/ngày/mưa (chỉ dev) | ✅ | `apps/web/src/main.tsx`, `renderer/debug-time.ts` | Chỉ hiển thị, không đổi save/mô phỏng; chỉ bật khi `import.meta.env.DEV`. |
@@ -69,7 +69,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | S22 | Co-op: replay lệnh phía server | 🟡 | `apps/server/src/bootstrap.ts:83-190`, `world-runtime.ts` | Server replay `respond/fulfill_party_order, claim_goal, claim_weekly_quest, claim_festival_goal, choose_perk, set_title` + `layout_batch`. `WorldRuntime` biết thêm `restock, unstock, checkout, set_price, order_supplier, buy_stall, dispose_stock, claim_quest, buy_plot...` nhưng đường commit **không** replay chúng (I-01). Test `coop-commands.test` gọi controller trực tiếp. |
 | S23 | Bố cục cửa hàng & mua đất mở rộng | 🟡 | `core/store-layout.ts`, `game-data/land.ts`, `StoreLayoutModal.tsx` | Editor khi đóng cửa, validation, save schema 3, migration có backup. Còn mở (OpenSpec 6 task): mobile, 2-session, routing sau layout, giá đất 250k/600k chưa cân bằng. |
 | S24 | Mặt đường: vạch, cống, vạch qua đường | 🟡 | `renderer/road-surface.ts` (commit 2f2af38), `viewport.ts`, `game-data/map.ts` (`ROAD_PROFILE`, `STORM_DRAINS`, `CROSSWALK`) | Mặt cắt/cống/vạch lấy từ dữ liệu bản đồ, đã commit. Cống/vạch là **hình ảnh**, không có thoát nước thật; chưa xem browser. Phần đèn tín hiệu tách ra S46. |
-| S46 | Đèn tín hiệu chu kỳ, người đi bộ qua đường, xe nhường đường | 🟡 | `core/traffic-signal.ts` (+`.test.ts`), `core/street-traffic.ts`, `game-data/traffic.ts`, `renderer/street-signal.ts`, `viewport.ts`, `shared` (`TrafficSignalState`, `StreetPedestrianState`) | **Có code, CHƯA commit, chưa có OpenSpec change riêng.** Pha xanh 26/vàng 3/đỏ 15 s; người đi bộ chờ đèn walk rồi qua; xe dừng trước vạch khi đèn không xanh hoặc có người qua, giữ khoảng cách xe trước. Typecheck + `yarn test` PASS ngày 2026-10-01, nhưng chưa xem browser/hiệu năng; chưa rõ ảnh hưởng tới thời gian đến cửa của khách đi xe (`customers.ts`); đồng hồ đèn (`signalClock`) không nằm trong save/WorldRuntime và về 0 khi `reset` nên hai client co-op có thể lệch pha. Người đi bộ chỉ hình ảnh, không phải khách. |
+| S46 | Đèn tín hiệu chu kỳ, người đi bộ qua đường, xe nhường đường | 🟡 | `core/traffic-signal.ts` (+`.test.ts`), `core/street-traffic.ts`, `game-data/traffic.ts`, `renderer/street-signal.ts`, `viewport.ts`, `shared` (`TrafficSignalState`, `StreetPedestrianState`) | **Có code, đã commit `24a2fab`, kèm OpenSpec `traffic-light-crosswalk-yielding` (tasks 1–3 và 4.1 đánh [x], 4.2–4.6 còn mở).** Pha xanh 26/vàng 3/đỏ 15 s; người đi bộ chờ đèn walk rồi qua; xe dừng trước vạch khi đèn không xanh hoặc có người qua, giữ khoảng cách xe trước. Typecheck + `yarn test` PASS ngày 2026-10-01 (tôi chạy trước commit 24a2fab); tasks.md ghi thêm `yarn build` PASS nhưng **tôi chưa chạy lại build**. Browser QA mới thấy hình tĩnh (đèn đổi pha/xe dừng/người qua chưa xem được, task 4.2); chưa đo hiệu năng (4.4); chưa rõ ảnh hưởng tới thời gian đến cửa của khách đi xe (`customers.ts`); đồng bộ đèn giữa client và khách thật qua đường là **non-goal có chủ ý** của change (giao thông hẻm ambient cục bộ, không lưu): `signalClock` về 0 khi `reset`, hai client co-op có thể lệch pha (task 4.5). Người đi bộ chỉ hình ảnh, không phải khách. |
 | S25 | Độ ướt mặt đường | ✅ | `core/weather.ts` `roadWetnessAt`, `simulation.ts getRoadWetness`, `renderer/road-surface.ts`, `road.test.ts` | Đã commit (2f2af38): hàm thuần có test, renderer gọi `setWetness` (`viewport.ts:1050`). Chỉ hình ảnh, chưa kiểm browser. |
 | S26 | Menu khởi đầu, đăng nhập, sổ tay hướng dẫn | 🟡 | `LoginScreen.tsx` (1.004 dòng), `AccountBar.tsx` | Có Chơi tiếp/Chơi mới/Hẻm chung/Cách chơi/sổ tay. Bảng xếp hạng là dữ liệu giả (S28). |
 | S27 | Thuế: registry quy tắc + theo dõi doanh thu năm | 🟡 | `core/tax/*`, `TaxModal.tsx`, `docs/tax/*` | Registry khóa `UNVERIFIED`; modal chỉ hiển thị doanh thu năm so ngưỡng tham khảo, **không tính/trừ thuế**. Engine xem S41. |
@@ -121,7 +121,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | I-16 | Chưa có migration schema world Mongo | Medium | Mở |
 | I-17 | Thiếu tài liệu triển khai/vận hành | Low | Mở |
 | I-18 | A11y/cảm ứng chưa kiểm | Low | Mở |
-| I-19 | Đèn tín hiệu chưa commit/OpenSpec/đồng bộ co-op | Medium | Mở |
+| I-19 | Đèn tín hiệu: QA browser dở, pha không đồng bộ co-op (chủ ý) | Medium | Mở |
 | I-06 | Hằng số đường chưa nối | Low | Đã đóng 2026-10-01 (commit 2f2af38) |
 
 ### Issue: I-01 Co-op: đa số lệnh do client quyết định, server chỉ kiểm hình học bố cục
@@ -322,14 +322,14 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Priority:** Low
 - **Verification:** Chưa kiểm.
 
-### Issue: I-19 Đèn tín hiệu chưa commit, chưa có OpenSpec/QA, pha chưa đồng bộ co-op
+### Issue: I-19 Đèn tín hiệu: QA browser còn dở, pha không đồng bộ co-op (chủ ý)
 
-- **Current State:** Xem S46. Thay đổi trải qua `shared`, `game-data`, `game-core`, `game-renderer`; `signalClock` là bộ đếm cục bộ trong `StreetTrafficManager`, không nằm trong save.
-- **Expected State:** Có OpenSpec change, commit riêng, QA browser, quyết định đồng bộ pha đèn giữa hai client.
+- **Current State:** Xem S46 (commit `24a2fab`). Thay đổi trải qua `shared`, `game-data`, `game-core`, `game-renderer`; `signalClock` là bộ đếm cục bộ trong `StreetTrafficManager`, không nằm trong save.
+- **Expected State:** Hoàn tất QA browser (4.2–4.4) và quyết định giữ ambient cục bộ hay đồng bộ pha đèn giữa hai client (4.5).
 - **Impact:** Nguy cơ lệch hình ảnh giữa hai người chơi; tính năng chưa được theo dõi chính thức.
 - **Related Files:** `core/street-traffic.ts`, `core/traffic-signal.ts`, `game-data/traffic.ts`, `renderer/street-signal.ts`.
-- **Root Cause:** Làm dở trong working tree.
-- **Suggested Fix:** Suy pha đèn từ thời gian mô phỏng chung (`trafficSignalAt(elapsed)` đã là hàm thuần) thay vì bộ đếm riêng; tạo change `traffic-signal-crosswalk`.
+- **Root Cause:** Non-goal của change hiện tại; QA bị chặn vì Browser pane ẩn làm game giảm tốc.
+- **Suggested Fix:** Chạy QA khi pane hiển thị; nếu cần đồng bộ co-op, suy pha từ thời gian mô phỏng chung (`trafficSignalAt(elapsed)` đã là hàm thuần) thay vì `signalClock` cục bộ.
 - **Priority:** Medium
 - **Verification:** Typecheck + test lõi PASS (2026-10-01); chưa chạy browser.
 
@@ -345,7 +345,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | 6 | Mongo cần replica set/transaction | Đã bỏ; commit `updateOne` nguyên tử trên standalone |
 | 7 | `FestivalGoal` "chỉ metadata" (dòng lịch sử) | Đã có logic nhận thưởng, UI, replay (phần đầu `tổng hợp.md` đúng, dòng lịch sử cũ sai) |
 | 8 | "Bảng xếp hạng" như tính năng menu | Dữ liệu cứng (S28) |
-| 9 | Đợt E: "đèn giao thông, cống, vạch qua đường" | Cống/vạch: hình ảnh đã commit (S24). Đèn tín hiệu + nhường đường: có logic nhưng chưa commit (S46) |
+| 9 | Đợt E: "đèn giao thông, cống, vạch qua đường" | Cống/vạch: hình ảnh đã commit (S24). Đèn tín hiệu + nhường đường: có logic, đã commit 24a2fab (S46) |
 | 10 | `TASKS.md`/`ROADMAP.md` nhắc pnpm | Dự án dùng Yarn 1 |
 | 11 | Số test "10 nhóm"/"18 nhóm" | `test-runner.ts` có 48 lời gọi `run*Tests` (45 file `*.test.ts`) |
 
@@ -363,7 +363,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 **Recommended:**
 - Xuất/nhập save file, nhiều slot (I-12).
 - Hành vi khách/xe theo dải mưa (I-13). (Độ ướt mặt đường đã nối renderer, S25 ✅.)
-- Hoàn tất đèn tín hiệu + nhường đường (S46, I-19): commit, OpenSpec, đồng bộ pha co-op, QA browser.
+- Hoàn tất đèn tín hiệu + nhường đường (S46, I-19): QA browser/hiệu năng (tasks 4.2–4.4), quyết định đồng bộ co-op/khách thật qua đường (4.5).
 - Giới hạn payload/tần suất server (I-15), migration schema world (I-16), tài liệu triển khai (I-17), a11y (I-18).
 - Test `apps/web` (hook/modal) và CI (S32, S43).
 - Âm thanh môi trường/UI (S40).
@@ -394,7 +394,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Potential Risks:** Nội dung lặp; giữ chọn câu theo seed để xác định.
 - **Priority:** High
 
-### Feature: F-03 Đèn tín hiệu chu kỳ & nhường đường — đang triển khai (S46, chưa commit)
+### Feature: F-03 Đèn tín hiệu chu kỳ & nhường đường — đã commit 24a2fab, QA browser dở (S46)
 - **Purpose:** Biến trang trí đường thành hệ thống nhất quán.
 - **Why It Fits:** `street-traffic`, `CROSSWALK`, arrival mode.
 - **Gameplay / UX Value:** Nhịp xe dừng/đi tạo cửa sổ cho khách đi bộ.
@@ -520,10 +520,10 @@ Tất cả 🔍; không phải lỗi trừ khi có bằng chứng.
 | I-03 | `store-layout-expansion`, `shared-alley-multiplayer` | Đã có ca thành viên gửi `layout_batch`; thêm ca giới hạn mua đất nếu đổi thiết kế |
 | I-04 | (chưa có) | Replay hai lần, so sánh ID |
 | I-13 | `rain-intensity-forecast` | `customers.test`/`street-traffic.test` theo dải |
-| I-19, S46 | (chưa có; nên tạo `traffic-signal-crosswalk`) | `traffic-signal.test.ts` (đã có), thêm test đồng bộ pha |
+| I-19, S46 | `traffic-light-crosswalk-yielding` | `traffic-signal.test.ts` (đã có), thêm test đồng bộ pha nếu đổi quyết định 4.5 |
 | I-16 | (chưa có) | Fixture save schema cũ, world migrate |
 
-OpenSpec còn task mở (đếm `- [ ]`): adapt-reference-shop-operations 4, dynamic-economy-simulation 9, level-progression-roadmap 2, rain-intensity-forecast 4, seasonal-daylight-tree-shadows 2, shared-alley-multiplayer 11, stardew-inspired-management-loop 7, store-layout-expansion 6 (tổng 45); premium-vietnamese-pixel-ui 0.
+OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswalk-yielding`: 5 task mở 4.2–4.6): adapt-reference-shop-operations 4, dynamic-economy-simulation 9, level-progression-roadmap 2, rain-intensity-forecast 4, seasonal-daylight-tree-shadows 2, shared-alley-multiplayer 11, stardew-inspired-management-loop 7, store-layout-expansion 6 (tổng 45); premium-vietnamese-pixel-ui 0.
 
 ---
 
@@ -578,7 +578,7 @@ OpenSpec còn task mở (đếm `- [ ]`): adapt-reference-shop-operations 4, dyn
 
 ### Verified
 - `yarn typecheck`: **PASS**. `yarn test` (`game-core`): **PASS** — `# tests 7, # suites 2, pass 7, fail 0`. Runner TAP gộp các nhóm thành 7 test/2 suite; con số này không so sánh được với 48 lời gọi `run*Tests` (số hàm nhóm, không phải số TAP test). Test server, build và browser **không chạy lại** lượt này.
-- Đọc `git status`/`git diff`: đèn tín hiệu + người đi bộ + nhường đường nằm trong working tree **chưa commit** (S46, I-19).
+- Lúc rà soát, đèn tín hiệu + người đi bộ + nhường đường nằm trong working tree chưa commit; sau đó đã được commit `24a2fab` cùng OpenSpec `traffic-light-crosswalk-yielding`. Các câu "chưa commit/chưa có OpenSpec" trong commit tài liệu 9cbfa43 là sai và đã sửa.
 
 ### Changed
 - Thêm S46, I-15…I-19, F-08…F-11, bảng tóm tắt vấn đề, tiêu chí nghiệm thu, bảng liên kết OpenSpec/test; sửa S17, S24, mục 3.2 dòng 9, mục 4, mục 9, mục 10. Không đổi mã.
@@ -633,10 +633,10 @@ OpenSpec còn task mở (đếm `- [ ]`): adapt-reference-shop-operations 4, dyn
 
 **Mức độ hoàn thiện:** lõi mô phỏng đơn người chơi rộng và có test lõi dày; co-op có hạ tầng nhưng chưa nghiệm thu đầu–cuối; kiểm chứng bằng browser/máy thật còn thiếu.
 **Hệ thống chính đã xong (mức mã + test):** kho/lô/hạn, nhập hàng, ledger, khách/thu ngân, thị trường/thời tiết, khách quen, mục tiêu, đơn tiệc, kỹ năng, danh hiệu, server world + gateway.
-**Vấn đề lớn:** I-01 (tin cậy lệnh co-op), I-15 (server tin save, không giới hạn), I-02 (bảng xếp hạng giả), I-03 (chưa ghi quyết định thiết kế), I-09 (không CI), I-19 (đèn tín hiệu chưa commit).
+**Vấn đề lớn:** I-01 (tin cậy lệnh co-op), I-15 (server tin save, không giới hạn), I-02 (bảng xếp hạng giả), I-03 (chưa ghi quyết định thiết kế), I-09 (không CI), I-19 (đèn tín hiệu: QA dở).
 **Rủi ro kỹ thuật:** đồng bộ co-op, ID không xác định, `simulation.ts`/`App.tsx`/`viewport.ts` quá lớn, bundle >500 kB.
 **Thiếu hệ thống:** âm thanh, thuế, content editor, CI, review chữ.
-**Tập trung phát triển hiện tại (theo git/diff):** đèn tín hiệu, người đi bộ qua đường và xe nhường đường (chưa commit); trước đó là mặt cắt đường/độ ướt (đã commit).
+**Tập trung phát triển hiện tại (theo git):** đèn tín hiệu, người đi bộ qua đường và xe nhường đường (commit 24a2fab, QA dở); trước đó là mặt cắt đường/độ ướt.
 
 ---
 
@@ -650,7 +650,7 @@ OpenSpec còn task mở (đếm `- [ ]`): adapt-reference-shop-operations 4, dyn
 
 ### 🟠 Medium Priority
 - [ ] Thêm test I-01: gửi save sửa tiền với lệnh không replay phải bị từ chối.
-- [ ] Hoàn tất đèn tín hiệu (S46, I-19): OpenSpec, commit, đồng bộ pha co-op, QA browser.
+- [ ] Hoàn tất đèn tín hiệu (S46, I-19): QA browser/hiệu năng (OpenSpec `traffic-light-crosswalk-yielding` 4.2–4.6), quyết định 4.5.
 - [ ] Giới hạn payload/tần suất server (I-15); kế hoạch migration schema world Mongo (I-16).
 - [ ] Ghi quyết định thiết kế quyền sửa bố cục/mua đất của thành viên vào spec (I-03; code đã commit 46f7466).
 - [ ] Lệnh nhân viên trong co-op (I-05, S21).
