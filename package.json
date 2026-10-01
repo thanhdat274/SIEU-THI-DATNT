@@ -15,6 +15,8 @@
     "build": "yarn --cwd apps/server build && yarn --cwd apps/web build",
     "typecheck": "tsc -b packages/shared packages/game-data packages/game-core packages/game-renderer apps/server apps/web",
     "test": "yarn --cwd packages/game-core test",
+    "test:all": "yarn test && yarn --cwd apps/server test:unit",
+    "test:all:db": "yarn test:all && yarn --cwd apps/server test:db",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

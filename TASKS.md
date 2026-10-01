@@ -9,7 +9,7 @@
 - [ ] Giới hạn payload/tần suất server (I-15); migration schema world Mongo (I-16).
 - [ ] Lệnh nhân viên trong co-op (I-05); ID xác định (I-04).
 - [ ] Thay bảng xếp hạng giả (I-02); xuất/nhập save (I-12).
-- [ ] CI + `test:all` (I-09); tài liệu triển khai `docs/deploy.md` (I-17); checklist a11y (I-18).
+- [>] CI + `test:all` (I-09): đã thêm `test:all`, `test:unit`, `test:db` và `.github/workflows/ci.yml` (01/10/2026), chưa chạy trên GitHub; còn: tài liệu triển khai `docs/deploy.md` (I-17); checklist a11y (I-18).
 - [ ] Ghi quyết định quyền sửa bố cục/mua đất của thành viên vào spec (I-03; code đã commit 46f7466).
 - [x] Đã đóng: hằng số/độ ướt mặt đường (I-06, commit 2f2af38).
 

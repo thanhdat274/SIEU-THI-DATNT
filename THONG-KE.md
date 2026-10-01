@@ -576,6 +576,17 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ## 8. Lịch sử phát triển
 
+## 2026-10-01 (lượt 6 — test:all và CI)
+
+### Changed
+- Root: `test:all` (game-core + `apps/server test:unit`), `test:all:db` (thêm test Mongo). `apps/server`: `test:unit` (= `test:invariants`), `test:db` (worlds + gateway + coop). Thêm `.github/workflows/ci.yml`: job `checks` (typecheck, lint, `test:all`, build trên Node 22) và job `server-db` (service `mongo:7`, `MONGO_URI`, `test:db`).
+
+### Verified
+- Máy cục bộ chạy Node 20.19.0 trong khi `engines` yêu cầu >=22 nên `yarn` ở root từ chối chạy `test:all`/`typecheck` (lỗi môi trường, không phải lỗi mã). Đã chạy riêng: `yarn --cwd packages/game-core test` (7/7 PASS), `test:unit` PASS, `test:db` (Mongo thật cục bộ, 3 test) PASS, `eslint .` 0 lỗi / 6 cảnh báo. **Workflow CI chưa chạy lần nào** (chưa đẩy lên GitHub); `test:all` đầy đủ chưa chạy trên Node 22; chưa biết test server có cần biến Firebase trong CI hay không.
+
+### Remaining
+- Đẩy lên GitHub, xem lần chạy CI đầu và sửa nếu đỏ; cân nhắc `.nvmrc`/Node 22 cục bộ; chặn merge khi CI đỏ.
+
 ## 2026-10-01 (lượt 5 — I-01 hướng B)
 
 ### Changed
@@ -669,7 +680,7 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ### 🔴 High Priority
 - [>] I-01: hướng B đã làm (bất biến save, 2026-10-01); còn kiểm kho/giá theo lệnh, hiệu chỉnh ngưỡng, và hướng A (server authoritative) về lâu dài. Trước đó: server replay mọi lệnh đổi tài nguyên (S22). Đã xong: từ chối `payload.type` lạ (2026-10-01). Còn: thống nhất payload client–`WorldRuntime`, rồi chuyển từng lệnh sang replay.
-- [ ] Thiết lập CI: typecheck + `yarn test` + lint + build; chạy test server với Mongo (I-09, S32, S43).
+- [>] CI: `.github/workflows/ci.yml` đã viết (typecheck, lint, `test:all`, build, test Mongo) nhưng **chưa chạy trên GitHub** (I-09, S32, S43).
 - [x] Chạy lại typecheck/test/build (2026-10-01: PASS, mục 8). Lặp lại sau mỗi đợt thay đổi.
 - [ ] Browser QA hai tài khoản: tạo hẻm → mời → nhập → bán → reconnect → restart server (S38).
 

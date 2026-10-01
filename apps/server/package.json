@@ -10,6 +10,8 @@
     "test:gateway": "tsx src/world.gateway.test.ts",
     "test:coop": "tsx src/coop-commands.test.ts",
     "test:invariants": "tsx src/save-invariants.test.ts",
+    "test:unit": "yarn test:invariants",
+    "test:db": "yarn test:worlds && yarn test:gateway && yarn test:coop",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
