@@ -5,7 +5,7 @@
 ## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)
 
 - [>] Đèn tín hiệu chu kỳ + người đi bộ + xe nhường đường (S46, I-19): đã commit `24a2fab`; OpenSpec `traffic-light-crosswalk-yielding` (tasks 1–3, 4.1 xong; 4.2–4.6 mở). Còn: QA browser (đèn đổi pha/xe dừng/người qua), cảm quan, hiệu năng, quyết định khách thật qua đường và đồng bộ co-op (non-goal hiện tại).
-- [>] Co-op: server replay mọi lệnh đổi tài nguyên (I-01). Xong 01/10/2026: allow-list loại lệnh + test lệnh lạ (`test:coop`, `test:worlds`, `test:gateway` PASS). Còn: thống nhất payload client–`WorldRuntime` rồi chuyển từng lệnh sang replay.
+- [>] Co-op I-01: hướng B xong 01/10/2026 (`save-invariants.ts`, `test:invariants`, test co-op PASS); còn kiểm kho/giá, hiệu chỉnh ngưỡng bằng playtest, hướng A lâu dài. Replay mọi lệnh (I-01). Xong 01/10/2026: allow-list loại lệnh + test lệnh lạ (`test:coop`, `test:worlds`, `test:gateway` PASS). Còn: thống nhất payload client–`WorldRuntime` rồi chuyển từng lệnh sang replay.
 - [ ] Giới hạn payload/tần suất server (I-15); migration schema world Mongo (I-16).
 - [ ] Lệnh nhân viên trong co-op (I-05); ID xác định (I-04).
 - [ ] Thay bảng xếp hạng giả (I-02); xuất/nhập save (I-12).

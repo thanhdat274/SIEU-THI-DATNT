@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import { createInitialOnlineWorld } from '@game/data';
+import type { SaveGameData } from '@game/shared';
+import { checkSaveInvariants, MAX_REVENUE_PER_GAME_MINUTE } from './save-invariants.js';
+
+const base = createInitialOnlineWorld({ id: 'inv-owner', displayName: 'Owner', photoUrl: null }, 'inv-world').business.save as SaveGameData;
+const clone = (): SaveGameData => structuredClone(base);
+const check = (next: SaveGameData, type = 'set_price', prev = base) => checkSaveInvariants(prev, next, type);
+
+assert.equal(check(clone()), null, 'save không đổi hợp lệ');
+
+let n = clone(); n.player.money += 5_000_000;
+assert.match(check(n) ?? '', /Tiền tăng/, 'cộng tiền không có thời gian trôi qua bị từ chối');
+n = clone(); n.player.money += 5_000_000; n.worldTime.day += 1;
+assert.equal(check(n), null, 'một ngày game trôi qua cho phép tiền tăng hợp lý');
+n = clone(); n.player.money += 900_000; assert.equal(check(n, 'claim_goal'), null, 'lệnh nhận thưởng được cộng trong hạn mức');
+n = clone(); n.player.money += 1_500_000; assert.match(check(n, 'claim_goal') ?? '', /Tiền tăng/, 'vượt hạn mức thưởng bị từ chối');
+n = clone(); n.player.money = -1; assert.match(check(n) ?? '', /Tiền không hợp lệ/);
+n = clone(); n.player.money = Number.NaN; assert.match(check(n) ?? '', /Tiền không hợp lệ/);
+n = clone(); n.player.level = 99; assert.match(check(n) ?? '', /Cấp độ/);
+n = clone(); n.statistics.totalRevenue += MAX_REVENUE_PER_GAME_MINUTE * 10; assert.match(check(n) ?? '', /Doanh thu/);
+n = clone(); n.worldTime.minute += 10; n.statistics.totalRevenue += MAX_REVENUE_PER_GAME_MINUTE * 10;
+assert.equal(check(n), null, 'doanh thu trong hạn mức theo thời gian');
+
+const richPrev = clone();
+richPrev.statistics.totalRevenue = 1000;
+richPrev.player.experience = 50;
+richPrev.goals = { claimedGoalIds: ['g1'], claimedWeeklyQuestIds: { 1: ['w1'] }, claimedFestivalGoalKeys: ['f@1'] };
+richPrev.skills = { xp: { management: 10, marketing: 0, storage: 0 }, levels: { management: 1, marketing: 1, storage: 1 }, chosenPerks: ['p1'] };
+n = structuredClone(richPrev); n.statistics.totalRevenue = 500; assert.match(check(n, 'set_price', richPrev) ?? '', /doanh thu/i);
+n = structuredClone(richPrev); n.player.experience = 10; assert.match(check(n, 'set_price', richPrev) ?? '', /XP/);
+n = structuredClone(richPrev); n.goals!.claimedGoalIds = []; assert.match(check(n, 'set_price', richPrev) ?? '', /mục tiêu/);
+n = structuredClone(richPrev); n.goals!.claimedWeeklyQuestIds = {}; assert.match(check(n, 'set_price', richPrev) ?? '', /tuần/);
+n = structuredClone(richPrev); n.skills!.chosenPerks = []; assert.match(check(n, 'set_price', richPrev) ?? '', /đặc quyền/);
+n = structuredClone(richPrev); n.skills!.xp.management = 0; assert.match(check(n, 'set_price', richPrev) ?? '', /XP kỹ năng/);
+n = clone(); n.inventory = [{ productId: 'x', quantity: -3, lots: [] } as never]; assert.match(check(n) ?? '', /kho/);
+
+n = clone(); n.worldTime.isStoreOpen = !base.worldTime.isStoreOpen;
+assert.match(checkSaveInvariants(base, n, 'store_status', { isOpen: base.worldTime.isStoreOpen }) ?? '', /cửa hàng/);
+assert.equal(checkSaveInvariants(base, n, 'store_status', { isOpen: n.worldTime.isStoreOpen }), null);
+n = clone(); n.worldTime.minute = Math.max(0, base.worldTime.minute - 5);
+assert.equal(check(n), null, 'giờ lùi nhẹ (client lệch pha) không bị phạt');
+
+console.log('PASS save-invariants: chặn tiền/doanh thu/XP/cấp/đã nhận bị sửa, cho phép tăng hợp lý theo thời gian');

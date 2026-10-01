@@ -9,6 +9,7 @@ import { isSaveGameData, type GameAccount, type SaveGameData } from '@game/share
 import { generateStarterTileMap } from '@game/data';
 import { applyStoreLayoutActions, GameSimulation, validateStoreLayout, WorldRuntime } from '@game/core';
 import { readRuntimeConfig } from './runtime-config.js';
+import { checkSaveInvariants } from './save-invariants.js';
 import { closeDatabase, connectDatabase } from './database.js';
 import { createWebSocketTicket, verifyAccount } from './firebase-admin.js';
 import { FirebaseAuthGuard } from './auth.guard.js';
@@ -182,6 +183,11 @@ export class GameController {
       };
       if (!sameLayout()) {
         throw new BadRequestException('Thay đổi bố cục phải dùng layout_batch đã kiểm tra.');
+      }
+      // Lệnh chưa được server phát lại: không tin tuyệt đối save client, kiểm bất biến so với save đã lưu (I-01, hướng B).
+      if (!serverReplayedCommands.has(payload.type)) {
+        const violation = checkSaveInvariants(commandBusiness.save, nextSave as SaveGameData, payload.type, payload);
+        if (violation) throw new BadRequestException(`Save không hợp lệ: ${violation}`);
       }
     }
     const result = await worldRepository.commitCommand({

@@ -9,6 +9,7 @@
     "test:worlds": "tsx src/world.repository.test.ts",
     "test:gateway": "tsx src/world.gateway.test.ts",
     "test:coop": "tsx src/coop-commands.test.ts",
+    "test:invariants": "tsx src/save-invariants.test.ts",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },

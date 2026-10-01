@@ -128,6 +128,23 @@ async function run() {
     await assert.rejects(send(owner, 'unknown-type', { type: 'give_money', amount: 1_000_000 }, unknownRevision), /không được hỗ trợ/);
     assert.equal((await snapshotFor(owner)).world.revision, unknownRevision, 'lệnh lạ không làm đổi revision');
 
+    // I-01 hướng B: lệnh chưa replay nhưng save bị sửa tiền thì bị từ chối; save giữ nguyên thì được nhận.
+    const cheatBase = await snapshotFor(owner);
+    const cheatBusiness = structuredClone(cheatBase.businesses[0]) as any;
+    cheatBusiness.save.player.money += 50_000_000;
+    await assert.rejects(controller.commitCommand(owner as any, world.id, {
+      expectedRevision: cheatBase.world.revision,
+      receipt: { commandId: 'cheat-money', actorId: owner.gameAccount.uid, status: 'accepted', revision: cheatBase.world.revision + 1, payloadJson: JSON.stringify({ type: 'set_price', productId: 'x', price: null }), createdAt: new Date().toISOString() },
+      updatedBusiness: cheatBusiness,
+    }), /Save không hợp lệ/);
+    assert.equal((await snapshotFor(owner)).world.revision, cheatBase.world.revision, 'save gian lận không làm đổi revision');
+    const honest = await controller.commitCommand(owner as any, world.id, {
+      expectedRevision: cheatBase.world.revision,
+      receipt: { commandId: 'honest-price', actorId: owner.gameAccount.uid, status: 'accepted', revision: cheatBase.world.revision + 1, payloadJson: JSON.stringify({ type: 'set_price', productId: 'x', price: null }), createdAt: new Date().toISOString() },
+      updatedBusiness: structuredClone(cheatBase.businesses[0]),
+    });
+    assert.equal(honest.committed, true, 'save không bị sửa vẫn được nhận');
+
     console.log('PASS co-op: 7 lệnh server-replay qua GameController.commitCommand trên Mongo thật (2 tài khoản, retry idempotent, trùng commandId khác payload, lệnh bị từ chối, tranh chấp revision)');
     await closeDatabase();
   } finally {

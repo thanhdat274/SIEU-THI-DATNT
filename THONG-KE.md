@@ -132,6 +132,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Related Files:** `apps/server/src/bootstrap.ts`, `packages/game-core/src/world-runtime.ts`, `apps/web/src/App.tsx` (`persistSimulationMutation`).
 - **Root Cause:** Mô hình ban đầu "client xuất save"; replay được thêm dần cho từng lệnh.
 - **Suggested Fix:** Mở rộng `serverReplayedCommands` cho mọi lệnh `WorldRuntime` đã hỗ trợ; từ chối commit khi `payload.type` không nằm trong danh sách; thêm test như `coop-commands.test.ts` cho từng lệnh.
+- **Hướng B (2026-10-01, đã chọn và làm):** `apps/server/src/save-invariants.ts` (`checkSaveInvariants`) chạy trên mọi lệnh không được server phát lại: tiền/số lượng kho không âm và hữu hạn, cấp ≤ 35, doanh thu/khách/cấp/XP/XP kỹ năng/đặc quyền/danh hiệu/mục tiêu đã nhận **không được giảm**, tiền và doanh thu tăng không quá 20.000₫ mỗi phút game trôi qua (+ tối đa 1.000.000₫ cho lệnh nhận thưởng/đơn tiệc), `store_status` phải khớp `isOpen`. Ngưỡng cố ý rộng nên **chưa chống gian lận triệt để** (có thể tăng ~19M₫/ngày game, kho/giá chưa được kiểm), và ngưỡng chưa đối chiếu với cân bằng thực tế (có thể từ chối người chơi cuối game giàu — cần playtest). Test: `save-invariants.test.ts` (đơn vị) và ca "cheat-money"/"honest-price" trong `coop-commands.test.ts`.
 - **Tiến độ 2026-10-01 (một phần):** `bootstrap.ts` nay có `ALLOWED_COMMAND_TYPES` và từ chối loại lệnh lạ ("Loại lệnh không được hỗ trợ"); `coop-commands.test.ts` có ca `give_money` bị từ chối. **Chưa giải quyết lõi I-01:** các lệnh client vẫn gửi (`set_price`, `restock`, `unstock`, `checkout`, `order`, `stow*`, `planogram_*`, `auto_restock`, `store_status`, `buy_stall`, `claim_quest`, `advance_day`, `change_speed`) vẫn tin save client. **Phân tích bổ sung (đọc mã, chưa chạy):** vấn đề gốc là trạng thái bị tách ba nơi — mỗi client chạy `GameSimulation` đầy đủ (bán hàng, tiền, kho đổi liên tục), `WorldGateway` giữ một `WorldRuntime` riêng có checkpoint, còn `commitCommand` dựng `WorldRuntime` mới từ save trong DB. Replay lệnh trên save DB cũ sẽ trả "save chuẩn hóa" làm mất doanh thu/kho client đã tạo từ commit trước, và các lệnh phụ thuộc trạng thái tạm (`checkout` cần khách đang đứng quầy, `auto_restock`, `advance_day`, `store_status`) không replay được trên save tĩnh. Vì vậy chuyển từng lệnh sang replay đòi quyết định kiến trúc: (A) server là nguồn sự thật duy nhất, client chỉ gửi ý định và nhận snapshot; hoặc (B) giữ client-sim nhưng server chỉ kiểm bất biến (tiền/kho/XP đổi trong ngưỡng hợp lý theo loại lệnh). Chưa chọn. Ngoài ra không thể chỉ thêm vào danh sách replay vì payload client lệch `WorldRuntime` (client gửi `order` còn runtime là `order_supplier`; `checkout` thiếu `checkoutId`; `store_status`, `stow*`, `planogram_*`, `auto_restock` runtime chưa có).
 - **Priority:** High
 - **Verification:** Chưa tái hiện. Cần test: gửi save sửa tiền với payload `restock` và kiểm bị từ chối. Liên kết: OpenSpec `shared-alley-multiplayer`; test dự kiến `apps/server/src/coop-commands.test.ts` (thêm ca lệnh không replay).
@@ -575,6 +576,17 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ## 8. Lịch sử phát triển
 
+## 2026-10-01 (lượt 5 — I-01 hướng B)
+
+### Changed
+- Thêm `apps/server/src/save-invariants.ts` + `save-invariants.test.ts`, script `test:invariants`; `bootstrap.ts` gọi `checkSaveInvariants` cho lệnh không replay (trả `Save không hợp lệ: ...`); `coop-commands.test.ts` thêm ca save sửa tiền bị từ chối và save nguyên vẹn được nhận.
+
+### Verified
+- `tsc` server `--noEmit` sạch; `test:coop`, `test:worlds`, `test:gateway`, `test:invariants`: **PASS** (Mongo thật cho 3 test đầu). Chưa chạy `yarn test` game-core/build, chưa browser, chưa qua Firebase guard.
+
+### Remaining
+- Kiểm kho/giá theo lệnh; hiệu chỉnh ngưỡng bằng playtest; đưa `test:invariants` vào CI/`test:all` (I-09); rủi ro: hai client lệch pha có thể bị từ chối nếu một trong các chỉ số bị lùi.
+
 ## 2026-10-01 (lượt 4 — I-01 một phần)
 
 ### Changed
@@ -656,7 +668,7 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 ## 10. Next Steps
 
 ### 🔴 High Priority
-- [ ] Server replay cho mọi lệnh đổi tài nguyên (I-01, S22). Đã xong: từ chối `payload.type` lạ (2026-10-01). Còn: thống nhất payload client–`WorldRuntime`, rồi chuyển từng lệnh sang replay.
+- [>] I-01: hướng B đã làm (bất biến save, 2026-10-01); còn kiểm kho/giá theo lệnh, hiệu chỉnh ngưỡng, và hướng A (server authoritative) về lâu dài. Trước đó: server replay mọi lệnh đổi tài nguyên (S22). Đã xong: từ chối `payload.type` lạ (2026-10-01). Còn: thống nhất payload client–`WorldRuntime`, rồi chuyển từng lệnh sang replay.
 - [ ] Thiết lập CI: typecheck + `yarn test` + lint + build; chạy test server với Mongo (I-09, S32, S43).
 - [x] Chạy lại typecheck/test/build (2026-10-01: PASS, mục 8). Lặp lại sau mỗi đợt thay đổi.
 - [ ] Browser QA hai tài khoản: tạo hẻm → mời → nhập → bán → reconnect → restart server (S38).
