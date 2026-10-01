@@ -3,6 +3,7 @@ import {
   PRODUCT_MAP,
   SUPPLIER_MAP,
   DEFAULT_SUPPLIER_ID,
+  effectiveShelfCapacity,
 } from '@game/data';
 import {
   COLD_WAREHOUSE_CAPACITY,
@@ -23,6 +24,7 @@ export interface SuggestionEngineParams {
   playerMoney: number;
   currentDay: number;
   fixtures: StoreFixture[];
+  shelfCapacityBonus?: number;
   inventory: InventoryItem[];
   holdingArea: HoldingItem[];
   pendingOrders: SupplierOrder[];
@@ -35,6 +37,8 @@ export interface SuggestionEngineParams {
   topNBestSellers?: number;
   /** Nhu cầu dự kiến (đơn vị/ngày) từ bảng lập kế hoạch; thiếu hoặc undefined = dùng vận tốc bán như cũ. */
   expectedDailyOf?: (productId: string) => number | undefined;
+  /** Hệ số nhu cầu theo thời tiết & mùa (hoặc tổng hệ số thị trường). Mặc định 1.0 */
+  demandMultiplierOf?: (productId: string) => number;
 }
 
 /**
@@ -213,7 +217,9 @@ export function generateRestockSuggestions(
     const v7 = calculateSalesVelocity(product.id, params.dailyRecords, params.currentDayRecord, 7);
     const v3 = calculateSalesVelocity(product.id, params.dailyRecords, params.currentDayRecord, 3);
     const hadSales = v7.totalSold > 0 || (params.currentDayRecord.productSales?.[product.id] ?? 0) > 0;
-    const trendVelocity = (hadSales ? params.expectedDailyOf?.(product.id) : undefined) ?? Math.max(v7.velocity, v3.velocity);
+    const demandMultiplier = Math.max(0.1, Math.min(4.0, params.demandMultiplierOf?.(product.id) ?? 1.0));
+    const baseVelocity = Math.max(v7.velocity, v3.velocity);
+    const trendVelocity = (hadSales ? params.expectedDailyOf?.(product.id) : undefined) ?? (baseVelocity * demandMultiplier);
 
     const assignedFixture = params.fixtures.find(
       (f) => isSalesFixture(f) && f.assignedProductId === product.id
@@ -227,7 +233,7 @@ export function generateRestockSuggestions(
       // Stock target for 2.5 days of demand
       target = Math.ceil(trendVelocity * 2.5);
       if (assignedFixture) {
-        const shelfCap = Math.min(assignedFixture.maxCapacity, product.shelfCapacity);
+        const shelfCap = effectiveShelfCapacity(assignedFixture.maxCapacity, product.shelfCapacity, params.shelfCapacityBonus ?? 0);
         target = Math.max(target, shelfCap);
       }
 
@@ -246,14 +252,14 @@ export function generateRestockSuggestions(
         reason = 'low_stock';
       }
     } else {
-      // Fallback trial demand profile
+      // Fallback trial demand profile (scaled by weather/season multiplier)
       isFallback = true;
       reason = 'fallback_trial';
       const basePop = product.demandProfile?.basePopularity ?? 0.5;
-      const trialQty = Math.max(2, Math.round(basePop * 5));
+      const trialQty = Math.max(2, Math.round(basePop * 5 * demandMultiplier));
 
       if (assignedFixture) {
-        const shelfCap = Math.min(assignedFixture.maxCapacity, product.shelfCapacity);
+        const shelfCap = effectiveShelfCapacity(assignedFixture.maxCapacity, product.shelfCapacity, params.shelfCapacityBonus ?? 0);
         target = Math.min(trialQty, shelfCap);
       } else {
         target = trialQty;

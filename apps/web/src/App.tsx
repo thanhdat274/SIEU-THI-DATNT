@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, WEATHER_MAP } from '@game/data';
+import { effectiveShelfCapacity, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, WEATHER_MAP } from '@game/data';
 import { InputManager, GameSimulation } from '@game/core';
 import { PixiGameViewport } from '@game/renderer';
-import { GameSnapshot, SaveGameData, SupplierOrder, StaffShift, isSalesFixture, isWarehouseFixture } from '@game/shared';
+import { GameSnapshot, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture } from '@game/shared';
 
 import { loadOrCreateSave, persistSave, resetSaveToDefault, restoreFromBackup } from './db';
 import { useGameStore } from './store/useGameStore';
@@ -24,11 +24,17 @@ import { WarehouseDock } from './components/WarehouseDock';
 import { TimeVoteModal } from './components/TimeVoteModal';
 import { StoreLayoutModal } from './components/StoreLayoutModal';
 import { QuestModal } from './components/QuestModal';
+import { LevelRoadmapModal } from './components/LevelRoadmapModal';
+import { feedbackReasonLabel, levelUnlockToast } from '@game/core';
 import { StallModal } from './components/StallModal';
 import { MarketModal } from './components/MarketModal';
 import { TaxModal } from './components/TaxModal';
+import { DaySummaryModal } from './components/DaySummaryModal';
+import { RegularsModal } from './components/RegularsModal';
+import { SkillsModal } from './components/SkillsModal';
+import { TitlesModal } from './components/TitlesModal';
 import type { StoreLayoutAction } from '@game/core';
-import { PixelButton, PixelIcon } from './components/pixel';
+import { money, PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
 
 export const App: React.FC = () => {
@@ -52,9 +58,14 @@ export const App: React.FC = () => {
   const [pendingOrders, setPendingOrders] = useState<SupplierOrder[]>([]);
   const [statistics, setStatistics] = useState<SaveGameData['statistics']>({ totalRevenue: 0, totalCustomersServed: 0, totalDaysPassed: 0 });
   const [isQuestOpen, setQuestOpen] = useState(false);
+  const [isLevelRoadmapOpen, setLevelRoadmapOpen] = useState(false);
   const [isStallOpen, setStallOpen] = useState(false);
   const [isMarketOpen, setMarketOpen] = useState(false);
   const [isTaxOpen, setTaxOpen] = useState(false);
+  const [isRegularsOpen, setRegularsOpen] = useState(false);
+  const [isSkillsOpen, setSkillsOpen] = useState(false);
+  const [isTitlesOpen, setTitlesOpen] = useState(false);
+  const [daySummaryRecord, setDaySummaryRecord] = useState<DailyRecord | null>(null);
   // Bảng kế hoạch chỉ tính khi mở bảng Thị trường hoặc sang ngày mới, không mỗi khung hình.
   const planDay = useGameStore((state) => state.worldTime.day);
   const marketPlans = useMemo(() => {
@@ -75,6 +86,18 @@ export const App: React.FC = () => {
   // tracks whether online server is reachable (used to block mutations when network drops)
   const [onlineConnected, setOnlineConnected] = useState(true);
   const onlineConnectedRef = useRef(true);
+  const [showWorldCaption, setShowWorldCaption] = useState(true);
+
+  useEffect(() => {
+    if (!gameStarted) {
+      setShowWorldCaption(true);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setShowWorldCaption(false);
+    }, 7000);
+    return () => clearTimeout(timer);
+  }, [gameStarted]);
 
   const {
     player,
@@ -179,6 +202,16 @@ export const App: React.FC = () => {
     }
   }, [syncFromSimulation, addToast]);
 
+  const onlineUidRef = useRef<string | null>(null);
+  const spawnPlacedForRef = useRef<string | null>(null);
+
+  // Vị trí đứng là của riêng từng người chơi; save dùng chung không được kéo người kia về chỗ cũ.
+  const importOnlineSave = useCallback((sim: GameSimulation, save: Parameters<GameSimulation['importSaveData']>[0]) => {
+    const { position, direction } = sim.getPlayerData();
+    sim.importSaveData(save);
+    sim.setPlayerPosition(position, direction);
+  }, []);
+
   const handleEnterGame = (onlineWorldDetail?: WorldDetail) => {
     if (onlineWorldDetail) {
       setOnlineWorld(onlineWorldDetail);
@@ -187,6 +220,7 @@ export const App: React.FC = () => {
       import('./services/firebase').then(({ gameAuth }) => {
         const user = gameAuth().currentUser;
         if (user) {
+          onlineUidRef.current = user.uid;
           user.getIdToken().then((token: string) => {
             setOnlineToken(token);
             touchWorldSession(token, onlineWorldDetail.world.id).catch(() => {});
@@ -224,6 +258,31 @@ export const App: React.FC = () => {
       window.location.reload();
     }
   };
+
+  const handleReturnHome = useCallback(async () => {
+    if (onlineWorldRef.current && !window.confirm('Rời phòng chơi chung để về màn hình chính?')) {
+      return;
+    }
+    try {
+      if (!onlineWorldRef.current) {
+        addToast('Đang lưu tiến trình...', 'info');
+        await handleSaveGame(false);
+      }
+      closeAllModals();
+      setQuestOpen(false);
+      setStallOpen(false);
+      setMarketOpen(false);
+      setTaxOpen(false);
+      setIsLayoutOpen(false);
+      setOnlineWorld(null);
+      setOnlineToken(null);
+      onlineWorldRef.current = null;
+      setGameStarted(false);
+    } catch (err) {
+      console.error('Lỗi khi quay về màn hình chính:', err);
+      setGameStarted(false);
+    }
+  }, [addToast, closeAllModals, handleSaveGame]);
 
   const blockOfflineOnlineMutation = () => {
     if (!onlineWorldRef.current || onlineConnectedRef.current) return false;
@@ -306,11 +365,21 @@ export const App: React.FC = () => {
           const season = getSeasonForDay(newDay);
           const previous = getSeasonForDay(newDay - 1);
           addToast(season && season.id !== previous?.id ? `${season.name} bắt đầu! ${season.blurb}` : `Bình minh Ngày ${newDay}! Chúc tiệm một ngày buôn bán đắt hàng! `, 'success');
+          const completedRecord = simulationRef.current?.getDailyRecords()[newDay - 1];
+          if (completedRecord) setDaySummaryRecord({ ...completedRecord });
           handleSaveGame(false);
         },
         onMarketNotice: (notice) => addToast(notice.text, notice.severity === 'severe' ? 'warn' : 'info'),
         onWeatherChanged: (weatherId) => addToast(`Thời tiết hôm nay: ${WEATHER_MAP[weatherId]?.icon ?? ''} ${WEATHER_MAP[weatherId]?.label ?? weatherId}.`, 'info'),
-        onLevelUp: (level) => addToast(`Lên cấp ${level}! Kiểm tra Nhiệm vụ để xem món và mối hàng mới mở khóa.`, 'success'),
+        onLevelUp: (level) => {
+          addToast(`Lên cấp ${level}!`, 'success');
+          addToast(levelUnlockToast(level), 'success');
+        },
+        onCustomerRated: ({ stars, average, reason }) => {
+          const why = reason ? ` · ${feedbackReasonLabel(reason)}` : '';
+          addToast(`Khách đánh giá ${stars}★${why} · trung bình ${average.toFixed(1)}★`, stars <= 2 ? 'warn' : 'info');
+        },
+        onToast: (message, type) => addToast(message, type),
         onPlayerRelocated: ()=>addToast('Đã đưa bạn tới cửa hậu của nhà kho mới; tiền và hàng được giữ nguyên.','info'),
         onOrdersDelivered: (quantity)=>addToast(`Đã nhận ${quantity} món từ đại lý vào nhà kho.`, 'success'),
         onStockExpired: (quantity) => {
@@ -351,9 +420,10 @@ export const App: React.FC = () => {
         getPartnerAvatar: () => {
           const curWorld = onlineWorldRef.current;
           if (!curWorld || curWorld.world.avatars.length <= 1) return null;
-          // Partner is the avatar that does not match player
-          const partner = curWorld.world.avatars[1];
-          return partner ? { position: partner.position, direction: partner.direction, isMoving: false, name: 'Bạn cùng hẻm' } : null;
+          // Partner is the avatar that does not belong to the signed-in account
+          const myUid = onlineUidRef.current;
+          const partner = myUid ? curWorld.world.avatars.find(avatar => avatar.accountId !== myUid) : null;
+          return partner ? { position: partner.position, direction: partner.direction, name: partner.displayName?.trim() || 'Bạn cùng hẻm' } : null;
         },
       });
       ownedViewport = viewport;
@@ -414,7 +484,7 @@ export const App: React.FC = () => {
           if (remoteRev > revisionRef.current) {
             revisionRef.current = remoteRev;
             setCurrentRevision(remoteRev);
-            simulationRef.current.importSaveData(updated.businesses[0].save);
+            importOnlineSave(simulationRef.current, updated.businesses[0].save);
             syncFromSimulation(simulationRef.current);
           }
         }
@@ -465,7 +535,7 @@ export const App: React.FC = () => {
           revisionRef.current = updated.world.revision;
           setCurrentRevision(updated.world.revision);
           if (updated.businesses[0]?.save) {
-            simulationRef.current.importSaveData(updated.businesses[0].save);
+            importOnlineSave(simulationRef.current, updated.businesses[0].save);
             syncFromSimulation(simulationRef.current);
           }
         } catch (err) {
@@ -485,7 +555,7 @@ export const App: React.FC = () => {
       onlineWorldRef.current = updated;
       setOnlineWorld(updated);
       if (snapshot.world.revision > revisionRef.current && snapshot.businesses[0]?.save && simulationRef.current) {
-        simulationRef.current.importSaveData(snapshot.businesses[0].save);
+        importOnlineSave(simulationRef.current, snapshot.businesses[0].save);
         revisionRef.current = snapshot.world.revision;
         setCurrentRevision(snapshot.world.revision);
         syncFromSimulation(simulationRef.current);
@@ -510,6 +580,21 @@ export const App: React.FC = () => {
       addToast(reason || 'Phiên chơi chung đã kết thúc.', 'warn');
     },
   });
+
+  useEffect(() => {
+    const worldId = onlineWorld?.world.id;
+    if (!gameStarted || !worldId || spawnPlacedForRef.current === worldId) return;
+    const timer = setInterval(() => {
+      const uid = onlineUidRef.current;
+      const sim = simulationRef.current;
+      const mine = uid ? onlineWorldRef.current?.world.avatars.find(avatar => avatar.accountId === uid) : null;
+      if (!sim || !mine) return;
+      sim.setPlayerPosition(mine.position, mine.direction);
+      spawnPlacedForRef.current = worldId;
+      clearInterval(timer);
+    }, 300);
+    return () => clearInterval(timer);
+  }, [gameStarted, onlineWorld?.world.id]);
 
   useEffect(() => {
     if (!gameStarted || !onlineWorld || !worldSocket.connected) return;
@@ -568,11 +653,11 @@ export const App: React.FC = () => {
       if (res.committed) {
         revisionRef.current = res.revision;
         setCurrentRevision(res.revision);
-        const committedSave = commandPayload?.type === 'layout_batch' && res.updatedBusiness?.save
+        const committedSave = res.updatedBusiness?.save
           ? res.updatedBusiness.save as SaveGameData
           : exportedSave;
-        if (commandPayload?.type === 'layout_batch') {
-          simulationRef.current.importSaveData(committedSave);
+        if (res.updatedBusiness?.save) {
+          importOnlineSave(simulationRef.current, committedSave);
           syncFromSimulation(simulationRef.current);
         }
         const updatedWorld = {
@@ -586,7 +671,7 @@ export const App: React.FC = () => {
       } else {
         const sim = simulationRef.current;
         if (sim) {
-          sim.importSaveData(curWorld.businesses[0].save);
+          importOnlineSave(sim, curWorld.businesses[0].save);
           syncFromSimulation(sim);
         }
         addToast('Máy chủ từ chối thay đổi. Đã khôi phục dữ liệu online gần nhất.', 'warn');
@@ -596,7 +681,7 @@ export const App: React.FC = () => {
       console.error('Online commit error:', err);
       const sim = simulationRef.current;
       if (sim) {
-        sim.importSaveData(curWorld.businesses[0].save);
+        importOnlineSave(sim, curWorld.businesses[0].save);
         syncFromSimulation(sim);
       }
       addToast(err instanceof Error ? err.message : 'Không thể lưu lên hẻm chung.', 'warn');
@@ -604,7 +689,44 @@ export const App: React.FC = () => {
     }
   };
 
+  const persistSimulationMutation = async <T extends { success: boolean; reason?: string }>(
+    payload: unknown,
+    description: string,
+    activityType: string,
+    mutate: (simulation: GameSimulation) => T,
+  ): Promise<T | null> => {
+    if (blockOfflineOnlineMutation()) return null;
+    const simulation = simulationRef.current;
+    if (!simulation) return null;
+    const result = mutate(simulation);
+    if (!result.success) return result;
+    syncFromSimulation(simulation);
+    if (onlineWorldRef.current) {
+      const committed = await commitBusinessChange(payload, description, activityType);
+      if (!committed) return { ...result, success: false, reason: 'Máy chủ chưa xác nhận thay đổi.' };
+    } else {
+      await handleSaveGame(false);
+    }
+    return result;
+  };
+
   // Actions triggered from UI
+  const handleSetSellingPrice = async (productId: string, requestedPrice: number | null) => {
+    if (blockOfflineOnlineMutation()) return;
+    const sim = simulationRef.current;
+    if (!sim) return;
+    const result = sim.setSellingPrice(productId, requestedPrice);
+    if (!result.success) { addToast(result.reason ?? 'Không đổi được giá bán.', 'warn'); return; }
+    syncFromSimulation(sim);
+    const productName = PRODUCT_MAP[productId]?.name ?? productId;
+    if (onlineWorldRef.current) {
+      await commitBusinessChange({ type: 'set_price', productId, price: requestedPrice === null ? null : result.price }, `Đổi giá ${productName} thành ${result.price?.toLocaleString('vi-VN')}₫`, 'Đặt giá');
+    } else {
+      await handleSaveGame(false);
+    }
+    addToast(`Đã đặt giá ${productName}: ${result.price?.toLocaleString('vi-VN')}₫.`, 'success');
+  };
+
   const handleRestock = async (fixtureId: string, productId: string, amount: number) => {
     if (blockOfflineOnlineMutation()) return;
     if (!simulationRef.current) return;
@@ -975,7 +1097,7 @@ export const App: React.FC = () => {
     for (const fix of sim.getFixtures()) {
       if (isSalesFixture(fix) && fix.assignedProductId && !currentPlan[fix.id]) {
         const prod = PRODUCT_MAP[fix.assignedProductId];
-        const effectiveCap = prod ? Math.min(fix.maxCapacity, prod.shelfCapacity) : fix.maxCapacity;
+        const effectiveCap = prod ? effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, sim.getShelfCapacityBonus()) : fix.maxCapacity;
         const needed = effectiveCap - fix.currentStock;
         if (needed > 0) {
           const invItem = sim.getInventory().find((i) => i.productId === fix.assignedProductId);
@@ -1086,6 +1208,7 @@ export const App: React.FC = () => {
           isOnlineOwner={onlineWorld ? onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0] : false}
           onInvite={handleOnlineInvite}
           onLeaveOnline={handleLeaveOnline}
+          onReturnHome={handleReturnHome}
         />
       )}
       {!isLoading && onlineWorld && !onlineConnected && (
@@ -1098,16 +1221,40 @@ export const App: React.FC = () => {
           ⚠️ Mất kết nối hẻm chung — thao tác bị tạm dừng, đang kết nối lại...
         </div>
       )}
-      {!isLoading && <HUD market={simulationRef.current?.getMarketSummary()} onOpenMarket={() => setMarketOpen(true)} onOpenTax={() => setTaxOpen(true)} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onOpenStaff={openStaffFromHud} onOpenStalls={() => setStallOpen(true)} onOpenQuests={() => setQuestOpen(true)} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
+      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={() => setMarketOpen(true)} onOpenTax={() => setTaxOpen(true)} onOpenRegulars={() => setRegularsOpen(true)} onOpenSkills={() => setSkillsOpen(true)} onOpenTitles={() => setTitlesOpen(true)} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onOpenStaff={openStaffFromHud} onOpenStalls={() => setStallOpen(true)} onOpenQuests={() => setQuestOpen(true)} onOpenLevelRoadmap={() => setLevelRoadmapOpen(true)} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
       <main className="game-main">
         <div className="world-viewport">
           <canvas ref={canvasRef} aria-label="Bản đồ Tiệm Tạp Hóa Đầu Hẻm"/>
-          {!isLoading && <><div className="world-caption"><strong>Hẻm nhỏ, chuyện lớn.</strong><span>Nhà kho liền phía trên · Đi qua cửa hậu giữa tiệm.</span></div>
+          {!isLoading && <>
+            {showWorldCaption && (
+              <div
+                className="world-caption"
+                role="note"
+                aria-label="Gợi ý ban đầu"
+                onClick={() => setShowWorldCaption(false)}
+                title="Bấm để đóng gợi ý"
+              >
+                <strong>Hẻm nhỏ, chuyện lớn.</strong>
+                <span>Nhà kho liền phía trên · Đi qua cửa hậu giữa tiệm.</span>
+                <button
+                  type="button"
+                  className="world-caption-close"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowWorldCaption(false);
+                  }}
+                  aria-label="Đóng gợi ý"
+                  title="Đóng gợi ý"
+                >
+                  ×
+                </button>
+              </div>
+            )}
             <div className="world-tools" aria-label="Góc nhìn bản đồ"><PixelButton icon="warehouse" aria-label="Định vị nhà kho" onClick={locateWarehouse}/><PixelButton icon="minus" aria-label="Thu nhỏ bản đồ" disabled={zoomLevel<=1} onClick={handleZoomOut}/><span className="zoom-value">{zoomLevel}×</span><PixelButton icon="plus" aria-label="Phóng to bản đồ" disabled={zoomLevel>=3} onClick={handleZoomIn}/></div>
             {!hasModal && !isWarehouseDockOpen && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
           </>}
         </div>
-        {!isLoading && <WarehouseDock inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onLocateWarehouse={locateWarehouse} onStowHolding={handleStowHolding} currentDay={worldTime.day}/>}
+        {!isLoading && <WarehouseDock capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onLocateWarehouse={locateWarehouse} onStowHolding={handleStowHolding} currentDay={worldTime.day}/>}
       </main>
       {!isLoading && <BottomBar onOpenSupplier={openSupplierModal} onOpenCashier={openCashier}/>}
     </div>
@@ -1150,6 +1297,7 @@ export const App: React.FC = () => {
     )}
     {activeFixtureModal && isSalesFixture(activeFixtureModal) && (
       <ShelfModal
+        capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0}
         fixture={activeFixtureModal}
         inventory={inventory}
         currentDay={worldTime.day}
@@ -1158,10 +1306,13 @@ export const App: React.FC = () => {
         onUnstock={handleUnstock}
         onSetPlanogramAssignment={handleSetPlanogramAssignment}
         onApplyPlanogram={handleApplyPlanogram}
+        sellingPrice={simulationRef.current?.sellingPrice(activeFixtureModal.assignedProductId ?? '')}
+        sellingPriceBounds={simulationRef.current?.sellingPriceBounds(activeFixtureModal.assignedProductId ?? '')}
+        onSetPrice={handleSetSellingPrice}
         onClose={closeFixtureModal}
       />
     )}
-    {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal fixture={activeFixtureModal} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onStowHolding={handleStowHolding} onClose={closeFixtureModal}/>}
+    {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} fixture={activeFixtureModal} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onStowHolding={handleStowHolding} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'cashier_counter' && <CashierModal initialShowStaff={staffRequested} fixture={activeFixtureModal} player={player} worldTime={worldTime} shelves={fixtures.filter(isSalesFixture)} customers={customers} statistics={statistics} staff={simulationRef.current?.getStaff() ?? []} staffCandidates={simulationRef.current?.getStaffCandidates(worldTime.day) ?? []} wageDebt={simulationRef.current?.getWageDebt() ?? 0} restockTargets={simulationRef.current?.getRestockJobTargets() ?? []} onAssignRefillJob={handleAssignRefillJob} onHireStaff={handleHireStaff} onSetStaffShift={handleSetStaffShift} onCheckout={handleCheckout} onToggleStoreStatus={handleToggleStoreStatus} onAdvanceDay={handleAdvanceDay} onClose={closeFixtureModal}/>}
     {isInventoryModalOpen && <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals}/>}
     {isSaveModalOpen && <SaveModal onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
@@ -1193,8 +1344,122 @@ export const App: React.FC = () => {
     )}
     {isMarketOpen && simulationRef.current && <MarketModal summary={simulationRef.current.getMarketSummary()} prices={simulationRef.current.getPriceMarket()} plans={marketPlans.plans} trending={marketPlans.trending} day={worldTime.day} onClose={() => setMarketOpen(false)}/>}
     {isStallOpen && simulationRef.current && <StallModal stalls={simulationRef.current.getStalls()} season={simulationRef.current.getSeason()} stock={Object.fromEntries(simulationRef.current.getInventory().map(item => [item.productId, item.quantity]))} report={simulationRef.current.getStallReport()} onBuy={handleBuyStall} onClose={() => setStallOpen(false)}/>}
-    {isQuestOpen && simulationRef.current && <QuestModal {...simulationRef.current.getQuests()} level={player.level} onClaim={handleClaimQuest} onClose={() => setQuestOpen(false)}/>}
+    {isQuestOpen && simulationRef.current && (
+      <QuestModal
+        {...simulationRef.current.getQuests()}
+        level={player.level}
+        partyOrders={simulationRef.current.getPartyOrderState().available}
+        onRespondPartyOrder={async (orderId, accept) => {
+          const res = await persistSimulationMutation(
+            { type: 'respond_party_order', orderId, accept },
+            accept ? 'Nhận đơn tiệc' : 'Từ chối đơn tiệc', 'Đơn tiệc',
+            simulation => simulation.respondPartyOrder(orderId, accept),
+          );
+          if (!res) return;
+          if (res.success) {
+            addToast(accept ? 'Đã nhận đơn tiệc!' : 'Đã từ chối đơn tiệc.', 'info');
+          } else {
+            addToast(res.reason ?? 'Không thể xử lý đơn tiệc.', 'warn');
+          }
+        }}
+        onFulfillPartyOrder={async (orderId) => {
+          const res = await persistSimulationMutation(
+            { type: 'fulfill_party_order', orderId }, 'Giao đơn tiệc', 'Đơn tiệc',
+            simulation => simulation.fulfillPartyOrder(orderId),
+          );
+          if (!res) return;
+          if (res.success) {
+            addToast(`Giao đơn tiệc thành công! +${money(res.reward?.money ?? 0)}`, 'success');
+          } else {
+            addToast(res.reason ?? 'Không thể giao đơn tiệc.', 'warn');
+          }
+        }}
+        inventory={inventory}
+        goals={simulationRef.current.getGoalProgressList()}
+        weeklyQuests={simulationRef.current.getWeeklyQuestProgressList()}
+        festivalGoals={simulationRef.current.getFestivalGoalProgressList()}
+        onClaimFestivalGoal={async (goalId) => {
+          const res = await persistSimulationMutation(
+            { type: 'claim_festival_goal', goalId }, 'Nhận thưởng ngày hội', 'Ngày hội',
+            simulation => simulation.claimFestivalGoal(goalId),
+          );
+          if (!res) return;
+          if (res.success) {
+            addToast('Nhận thưởng ngày hội thành công!', 'success');
+          } else {
+            addToast(res.reason ?? 'Không thể nhận thưởng ngày hội.', 'warn');
+          }
+        }}
+        onClaimGoal={async (goalId) => {
+          const res = await persistSimulationMutation(
+            { type: 'claim_goal', goalId }, 'Nhận thưởng mục tiêu', 'Mục tiêu',
+            simulation => simulation.claimGoal(goalId),
+          );
+          if (!res) return;
+          if (res.success) {
+            addToast('Nhận thưởng mục tiêu thành công!', 'success');
+          } else {
+            addToast(res.reason ?? 'Không thể nhận thưởng.', 'warn');
+          }
+        }}
+        onClaimWeeklyQuest={async (questId) => {
+          const res = await persistSimulationMutation(
+            { type: 'claim_weekly_quest', questId }, 'Nhận thưởng nhiệm vụ tuần', 'Nhiệm vụ tuần',
+            simulation => simulation.claimWeeklyQuest(questId),
+          );
+          if (!res) return;
+          if (res.success) {
+            addToast('Nhận thưởng nhiệm vụ tuần thành công!', 'success');
+          } else {
+            addToast(res.reason ?? 'Không thể nhận thưởng.', 'warn');
+          }
+        }}
+        onClaim={handleClaimQuest}
+        onOpenLevelRoadmap={() => setLevelRoadmapOpen(true)}
+        onClose={() => setQuestOpen(false)}
+      />
+    )}
+    {isSkillsOpen && simulationRef.current && (
+      <SkillsModal
+        skillState={simulationRef.current.getSkillState()}
+        onChoosePerk={async (perkId) => {
+          const res = await persistSimulationMutation(
+            { type: 'choose_perk', perkId }, 'Mở khóa đặc quyền', 'Kỹ năng',
+            simulation => simulation.chooseSkillPerk(perkId),
+          );
+          if (!res) return;
+          if (res.success) {
+            addToast('Mở khóa đặc quyền thành công!', 'success');
+          } else {
+            addToast(res.reason ?? 'Không thể mở đặc quyền.', 'warn');
+          }
+        }}
+        onClose={() => setSkillsOpen(false)}
+      />
+    )}
+    {isTitlesOpen && simulationRef.current && (
+      <TitlesModal
+        titles={simulationRef.current.getTitles()}
+        activeTitle={player.activeTitle}
+        onSelectTitle={async (titleId) => {
+          const res = await persistSimulationMutation(
+            { type: 'set_title', titleId }, titleId ? 'Đổi danh hiệu' : 'Gỡ danh hiệu', 'Danh hiệu',
+            simulation => simulation.setActiveTitle(titleId),
+          );
+          if (!res) return;
+          if (res.success) {
+            addToast(titleId ? 'Đã đổi danh hiệu thành công!' : 'Đã gỡ danh hiệu.', 'success');
+          } else {
+            addToast(res.reason ?? 'Không thể chọn danh hiệu.', 'warn');
+          }
+        }}
+        onClose={() => setTitlesOpen(false)}
+      />
+    )}
+    {isLevelRoadmapOpen && <LevelRoadmapModal player={player} onClose={() => setLevelRoadmapOpen(false)}/>}
+    {daySummaryRecord && <DaySummaryModal record={daySummaryRecord} morningBrief={simulationRef.current?.getMorningBrief()} onClose={() => setDaySummaryRecord(null)}/>}
     {isTaxOpen && <TaxModal day={worldTime.day} worldTime={worldTime} dailyRecords={dailyRecords} currentDayRecord={currentDayRecord} onClose={() => setTaxOpen(false)}/>}
+    {isRegularsOpen && simulationRef.current && <RegularsModal regulars={simulationRef.current.getRegulars()} onClose={() => setRegularsOpen(false)}/>}
     {isLayoutOpen && simulationRef.current && <StoreLayoutModal save={simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision)} onConfirm={handleApplyStoreLayout} onClose={closeLayoutEditor}/>}
     {activeTimeVote && (
       <TimeVoteModal

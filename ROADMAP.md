@@ -1,5 +1,25 @@
 # LỘ TRÌNH PHÁT TRIỂN (DEVELOPMENT ROADMAP)
 
+## Kết quả rà soát co-op/perk — 01/10/2026
+
+- Đã phát lại phía server các lệnh đơn tiệc, mục tiêu dài hạn/tuần, chọn perk và danh hiệu; client dùng cùng luồng commit và server trả save chuẩn hóa. Đã thêm xử lý receipt trước replay cho lệnh retry. Typecheck và core suite PASS; còn cần HTTP/DB hai client + reconnect QA.
+- Đã nối 9 modifier perk vào các nhánh gameplay, thêm boa vào tiền/doanh thu/ledger và `completedDay` để tính đơn tiệc trong tuần. Kiểm tra hành vi boa checkout, sức chứa kệ, save/reload và suite core PASS; còn thiếu test riêng từng modifier cùng playtest cân bằng.
+- `FestivalGoal` đã có tiến độ (theo doanh số sản phẩm trong khoảng ngày ngày hội), nhận thưởng một lần mỗi năm mùa, lưu trong save, lệnh co-op `claim_festival_goal` và UI trong `QuestModal` (test đơn vị PASS). Còn thiếu browser QA, test HTTP/DB hai client và cân bằng phần thưởng.
+- FestivalGoal đã tính cả suất quầy ăn uống (`stallServings`, 3 mục tiêu quầy mới); độ trễ chốt quầy ngày cuối đã xử lý bằng ngày ân hạn nhận thưởng (+1 ngày).
+- Perk: đã có test hành vi cho đủ 9 perk (`perks.test.ts`, PASS 01/10/2026); còn thiếu playtest cân bằng. Trần neat_shelves đã xử lý: +20% áp dụng sau trần kệ và UI/renderer/gợi ý nhập dùng cùng hàm.
+- Co-op: đã có test controller + Mongo thật hai tài khoản cho 7 lệnh server-replay (`apps/server/src/coop-commands.test.ts`, PASS 01/10/2026) và sửa lỗi bố cục làm world mới từ chối lệnh đầu tiên; còn thiếu HTTP/Firebase guard thật và reconnect browser.
+- Browser QA responsive chưa chạy được trong môi trường hiện tại: Vite/esbuild không đọc được thư mục cha, bind loopback bị từ chối, và browser policy chặn `file://`. Cần chạy ở môi trường cho phép dev server để kiểm tra desktop/tablet/mobile.
+
+## Tiến độ triển khai OpenSpec `stardew-inspired-management-loop` — 01/10/2026 (Code & Tests PASS)
+
+- **Đã hoàn thành và kiểm chứng tự động (Unit / Integration Tests PASS 100%)**:
+  - Đợt B (Con người & Biến thiên): 6 khách quen hẻm (`regulars.ts`, trần +2/ngày, overhead tag, modal), Bản tin sáng `MorningBrief`, Gợi ý nhập hàng theo mùa & kẹp trần tươi sống (`suggestions.ts`), Đơn tiệc FEFO (`partyOrders.ts`, `party-orders.ts`), Mục tiêu ngày hội (`seasons.ts`).
+  - Đợt C (Mục tiêu dài hạn & Kỹ năng): 10 mục tiêu dài hạn & 3 nhiệm vụ tuần (`goals.ts`), Sổ mục tiêu trong `QuestModal`, 3 cây kỹ năng & 9 đặc quyền (`skills.ts`, `SkillsModal`, nút Kỹ năng HUD).
+  - Đợt D (Hoàn thiện & Nội dung): Milestone Titles (`titles.ts`, `TitlesModal`, hiển thị trên HUD), Cẩm nang cách chơi (`LoginScreen.tsx` tab tính năng nâng cao), 4 sản phẩm lễ hội thuần Việt (Bánh chưng xanh, Liễn câu đối đỏ, Dưa hấu Tài Lộc, Bánh Trung Thu), Nhân viên bảo vệ trông xe (`security` role, tăng kiên nhẫn và rating cho khách đi xe máy), Người bán quầy phụ vỉa hè (`buildStalls`).
+  - Đợt E (Hẻm sống động): Giao thông hẻm `StreetTrafficManager`, khách đến bằng xe máy/ô tô/đi bộ, đỗ xe lề đường `STREET_PARKING_SPOTS`, texture pixel art xe máy/taxi không va chạm.
+- **Xác minh kỹ thuật**: `yarn typecheck` PASS (0 errors), `yarn test` PASS (100% test suites), `yarn build` PASS (server + web dist).
+- **Các gate kiểm thử còn mở**: Browser QA trên thiết bị thật, playtest cân bằng kinh tế dài ngày, OAuth thật và 2-browser co-op replay, TAX-0 thẩm định pháp lý.
+
 ## KẾ HOẠCH CHỌN LỌC GAME THAM KHẢO — 30/09/2026
 
 OpenSpec `adapt-reference-shop-operations`:
@@ -99,7 +119,7 @@ Phase 7 giữ định hướng Firebase/NestJS/MongoDB, triển khai phần cầ
 ### [ ] GIAI ĐOẠN 4: KINH TẾ, NHIỆM VỤ & LÊN CẤP (ECONOMY & QUESTS)
 - [x] Báo cáo tài chính cuối ngày (Doanh thu, tiền vốn theo lô thực bán, chi phí mua hàng/lương/hàng hỏng, lãi gộp & lãi ròng GAAP) và gợi ý nhập hàng thông minh (vận tốc bán 3–7 ngày, cắt giảm giỏ theo ngân sách/kho lạnh/mối sỉ).
 - [x] Nhiệm vụ hàng ngày (3/ngày, scale theo cấp) và chuỗi cốt truyện 7 bước; nhận thưởng một lần, lưu trong save (`quests`), đồng bộ co-op qua lệnh `claim_quest` (core/runtime test PASS; UI `QuestModal` chưa QA browser, chưa có nhiệm vụ gắn sản phẩm/sự kiện).
-- [x] Mốc cấp: modal hiện món/mối hàng mở khóa ở cấp kế, toast khi lên cấp (dữ liệu từ `unlockLevel` có sẵn; chưa có phần thưởng vật phẩm riêng).
+- [>] Mốc cấp: có bảng XP/cap 35, save normalization, modal HUD cấp 2–35, toast và milestone nhân viên/traffic/NPC; chưa chạy kiểm tra hoặc playtest trong lượt code này. Chi tiết `openspec/changes/level-progression-roadmap`.
 
 ---
 

@@ -140,3 +140,11 @@ Danh hiệu theo cột mốc (doanh thu tích lũy/số ngày/sao) từ `titles.
 - **Kinh tế:** test bất biến `Σ ledger = Δ tiền`, `lãi gộp = doanh thu − cogs` sau khi đổi giá; mô phỏng nhiều ngày (mở rộng `runner`) kiểm lãi không tăng vô hạn khi đặt giá tối đa.
 - **Multiplayer:** hàm mới không đọc `Math.random`/`Date.now`; command idempotent theo `commandId`; replay tái tạo cùng state.
 - **Hiệu năng:** khách quen/thời tiết tính theo ngày, không theo tick; UI tổng kết không tạo vòng lặp render.
+
+## E. Lát cắt daylight, mưa và đường (bổ sung 01/10/2026)
+
+- `getSeasonalSunTimes(day)` maps calendar 120-day cycle to a small daylight envelope around noon, then warps existing light keyframes. This first pass is not yet fitted to the month/season ranges in research; requires calibration and astronomy/playtest review.
+- `rainIntensityAt(worldSeed, day, hour, minute, weatherId)` produces a deterministic triangular/smooth envelope with weather-specific peak and duration. Renderer uses the value for rain streaks and tree-shadow opacity. No gameplay modifier is added, avoiding double application to existing market weather factors.
+- Tree shadow is a cosmetic ellipse based on existing keyframe lean/length; update in renderer only. Current decal road treatment adds lane dashes, drain marks, crosswalk and one signal prop without touching collision/pathfinding.
+- Vehicle arrivals (walk/motorbike/car), parking, animated signal phases, realistic stormwater simulation, puddle surface and morning brief remain unimplemented tasks. Keep arrivals cosmetic/non-colliding initially and bound sprite count.
+- Code in the working tree is not verified in this change session. Keep all integration/browser/balance gates open until actually run and recorded.

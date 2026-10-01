@@ -10,14 +10,16 @@ import {
   TILE_SIZE,
   Vector2D,
   InventoryItem,
+  CustomerArrivalMode,
 } from '@game/shared';
-import { STORE_BOUNDS, PRODUCT_MAP } from '@game/data';
+import { STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS } from '@game/data';
 import { CollisionSystem } from './collision';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { mergeLots, sumLots, takeLots } from './stock';
 import { removeExpiredLots } from './spoilage';
 import { Mulberry32Rng, daySeed } from './staff';
 import { hashSeed } from './weather';
+import type { CustomerFeedbackReason } from './reputation';
 
 export const CASHIER_QUEUE_TILES: GridPoint[] = [
   { x: 9, y: 8 },  // Position 0: front of checkout counter
@@ -30,6 +32,7 @@ export const ENTRANCE_TILE: GridPoint = { x: 9, y: 11 };
 /** Cách khách chọn món khi có thị trường: trọng số nhu cầu theo món và hệ số lưu lượng. */
 export interface CustomerDemandChoice {
   traffic: number;
+  maxConcurrentCustomers?: number;
   weightOf: (productId: string) => number;
 }
 
@@ -49,13 +52,13 @@ export class CustomerManager {
   private customers: CustomerState[] = [];
   private paths = new Map<string, Vector2D[]>();
   private customerSequence = 0;
-  private spawnCooldown = 12;
-  private readonly maxConcurrentCustomers = 2;
+  private spawnCooldown = 5.5;
+  private readonly maxConcurrentCustomers = 3;
 
   constructor(
     initialCustomers: CustomerState[] = [],
     customerSequence = 0,
-    spawnCooldown = 12
+    spawnCooldown = 5.5
   ) {
     this.customerSequence = customerSequence;
     this.spawnCooldown = spawnCooldown;
@@ -102,39 +105,100 @@ export class CustomerManager {
     tileMap: GameTileMap,
     currentDay: number,
     customersServed: number,
-    demand?: CustomerDemandChoice
+    demand?: CustomerDemandChoice,
+    regularCandidate?: RegularCustomerDefinition | null,
+    rainIntensity = 0,
+    hasBikeSecurity = false
   ): CustomerState | null {
     if (!isStoreOpen) return null;
-    if (this.customers.length >= this.maxConcurrentCustomers) return null;
+    if (this.customers.length >= (demand?.maxConcurrentCustomers ?? this.maxConcurrentCustomers)) return null;
 
     this.spawnCooldown -= dt;
     if (this.spawnCooldown > 0) return null;
-    this.spawnCooldown = 12 / Math.max(0.25, demand?.traffic ?? 1);
+    // Match the reference game's ~5.5s baseline while keeping high traffic
+    // readable and preventing a very high level multiplier from flooding the shop.
+    this.spawnCooldown = Math.max(1.5, 5.5 / Math.max(0.25, demand?.traffic ?? 1));
 
     const stockedShelves = fixtures.filter(
       (f) => isSalesFixture(f) && f.currentStock > 0 && f.assignedProductId
     );
     if (!stockedShelves.length) return null;
 
-    // Pick target shelf based on customer turn
-    // Có bảng nhu cầu: chọn kệ theo xác suất tỉ lệ nhu cầu (xác định theo số thứ tự khách). Không có: xoay vòng như cũ.
-    const target = demand
-      ? this.pickShelfByDemand(stockedShelves, demand.weightOf, currentDay)
-      : stockedShelves[customersServed % stockedShelves.length];
+    // Ưu tiên kệ có món ưa thích nếu là khách quen
+    let target: StoreFixture;
+    if (regularCandidate) {
+      const favShelves = stockedShelves.filter((s) => regularCandidate.favoriteProductIds.includes(s.assignedProductId!));
+      target = favShelves.length > 0 ? favShelves[0] : (demand ? this.pickShelfByDemand(stockedShelves, demand.weightOf, currentDay) : stockedShelves[0]);
+    } else if (demand) {
+      target = this.pickShelfByDemand(stockedShelves, demand.weightOf, currentDay);
+    } else {
+      target = stockedShelves[customersServed % stockedShelves.length];
+    }
     this.customerSequence += 1;
     const customerId = `cust-${currentDay}-${this.customerSequence}`;
     const checkoutId = `checkout-${currentDay}-${this.customerSequence}`;
 
+    // Xác định phương thức ghé tiệm (arrivalMode)
+    let arrivalMode: CustomerArrivalMode = 'walk';
+    let vehicleSpot: Vector2D | undefined;
+    let vehicleVariant: number | undefined;
+
+    const occupiedSpots = new Set(
+      this.customers
+        .filter((c) => c.vehicleSpot)
+        .map((c) => `${Math.round(c.vehicleSpot!.x)},${Math.round(c.vehicleSpot!.y)}`)
+    );
+    const availableSpots = STREET_PARKING_SPOTS.filter(
+      (s) => !occupiedSpots.has(`${Math.round(s.x)},${Math.round(s.y)}`)
+    );
+
+    const rng = new Mulberry32Rng(daySeed(this.customerSequence * 77 + currentDay, currentDay));
+    const roll = rng.next();
+
+    if (regularCandidate) {
+      if (regularCandidate.id === 'regular-chuba') {
+        arrivalMode = 'motorbike';
+      } else if (regularCandidate.id === 'regular-chilan') {
+        arrivalMode = roll < 0.7 ? 'motorbike' : 'walk';
+      } else if (regularCandidate.id === 'regular-anhtuan') {
+        arrivalMode = roll < 0.5 ? 'motorbike' : roll < 0.75 ? 'car' : 'walk';
+      } else {
+        arrivalMode = 'walk';
+      }
+    } else {
+      if (rainIntensity > 0.4) {
+        arrivalMode = roll < 0.4 ? 'motorbike' : roll < 0.65 ? 'car' : 'walk';
+      } else {
+        arrivalMode = roll < 0.45 ? 'motorbike' : roll < 0.52 ? 'car' : 'walk';
+      }
+    }
+
+    if (arrivalMode === 'motorbike') {
+      if (availableSpots.length > 0) {
+        vehicleSpot = availableSpots[this.customerSequence % availableSpots.length];
+        vehicleVariant = this.customerSequence % 3;
+      } else {
+        arrivalMode = 'walk';
+      }
+    }
+
+    const startPos = vehicleSpot ? { ...vehicleSpot } : tileCenter(ENTRANCE_TILE);
+
     const newCustomer: CustomerState = {
       id: customerId,
-      position: tileCenter(ENTRANCE_TILE),
+      position: startPos,
       stage: 'to_shelf',
       targetFixtureId: target.id,
       checkoutId,
       reservedProductId: target.assignedProductId,
       basket: [],
-      patience: 45,
+      patience: (regularCandidate ? regularCandidate.patienceSeconds : 45) + (hasBikeSecurity && arrivalMode === 'motorbike' ? 15 : 0),
       checkoutWait: 2.5,
+      regularId: regularCandidate?.id,
+      regularName: regularCandidate?.name,
+      arrivalMode,
+      vehicleSpot,
+      vehicleVariant,
     };
 
     this.customers.push(newCustomer);
@@ -185,7 +249,14 @@ export class CustomerManager {
       const targetQueueTile = CASHIER_QUEUE_TILES[Math.min(queueIndex, CASHIER_QUEUE_TILES.length - 1)];
       goals.push(targetQueueTile);
     } else if (stage === 'leaving') {
-      goals.push(ENTRANCE_TILE);
+      if (customer.vehicleSpot) {
+        goals.push({
+          x: Math.floor(customer.vehicleSpot.x / TILE_SIZE),
+          y: Math.floor(customer.vehicleSpot.y / TILE_SIZE),
+        });
+      } else {
+        goals.push(ENTRANCE_TILE);
+      }
     }
 
     const customerMap = {
@@ -228,7 +299,9 @@ export class CustomerManager {
     onSpoiledGoods?: (spoiledCount: number) => void,
     onOutOfStock?: () => void,
     pricing?: CustomerPricing,
-    onExpiredOnShelf?: (productId: string, quantity: number, cost: number) => void
+    onExpiredOnShelf?: (productId: string, quantity: number, cost: number) => void,
+    onWalkout?: (customer: CustomerState, reason: CustomerFeedbackReason) => void,
+    shelfCapacityMultiplier = 1
   ): void {
     const customerList = [...this.customers];
     for (const customer of customerList) {
@@ -240,7 +313,8 @@ export class CustomerManager {
         customer.patience -= dt;
         if (customer.patience <= 0 || !isStoreOpen) {
           onReputationLoss?.(1);
-          this.abandonBasket(customer, fixtures, inventory, onSpoiledGoods, currentDay);
+          onWalkout?.(customer, isStoreOpen ? 'wait' : 'store_closed');
+          this.abandonBasket(customer, fixtures, inventory, onSpoiledGoods, currentDay, shelfCapacityMultiplier);
           this.routeCustomer(customer, 'leaving', tileMap, fixtures);
           continue;
         }
@@ -299,6 +373,7 @@ export class CustomerManager {
           && pricing && new Mulberry32Rng(daySeed(hashSeed(customer.id ?? customer.checkoutId ?? 'customer'), currentDay)).next() >= pricing.keepChance(prod.id)) {
           // Giá cao hơn giá thị trường: khách không lấy, rời tiệm (không trừ uy tín)
           pricing.onReject(prod.id);
+          onWalkout?.(customer, 'price');
           this.routeCustomer(customer, 'leaving', tileMap, fixtures);
         } else if (shelf && isSalesFixture(shelf) && prod && shelf.currentStock > 0 && shelf.stockLots && shelf.stockLots.length > 0) {
           // Pick 1 unit into basket
@@ -323,6 +398,7 @@ export class CustomerManager {
           // Shelf is empty (taken by someone else or unstocked) -> no goods, customer leaves
           onOutOfStock?.();
           onReputationLoss?.(1);
+          onWalkout?.(customer, 'out_of_stock');
           this.routeCustomer(customer, 'leaving', tileMap, fixtures);
         }
       } else if (customer.stage === 'to_checkout') {
@@ -346,7 +422,8 @@ export class CustomerManager {
     fixtures: StoreFixture[],
     inventory: InventoryItem[],
     onSpoiledGoods?: (spoiledCount: number) => void,
-    currentDay = 1
+    currentDay = 1,
+    shelfCapacityMultiplier = 1
   ): void {
     if (!customer.basket || customer.basket.length === 0) return;
 
@@ -362,7 +439,7 @@ export class CustomerManager {
             (f) => isSalesFixture(f) && (f.id === customer.targetFixtureId || f.assignedProductId === item.productId)
           );
           const prod = PRODUCT_MAP[item.productId];
-          const shelfCap = prod ? Math.min(matchingShelf?.maxCapacity ?? 0, prod.shelfCapacity) : 0;
+          const shelfCap = prod ? effectiveShelfCapacity(matchingShelf?.maxCapacity ?? 0, prod.shelfCapacity, shelfCapacityMultiplier - 1) : 0;
 
           if (matchingShelf && isSalesFixture(matchingShelf) && (!matchingShelf.assignedProductId || matchingShelf.assignedProductId === item.productId) && matchingShelf.currentStock < shelfCap) {
             matchingShelf.assignedProductId = item.productId;

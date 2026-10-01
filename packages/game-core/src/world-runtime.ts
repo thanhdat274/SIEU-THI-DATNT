@@ -175,6 +175,8 @@ export class WorldRuntime {
         success = this.simulation.unstockShelf(p.fixtureId, p.quantity);
       } else if (p.type === 'checkout') {
         success = this.simulation.completeCustomerCheckout(p.checkoutId, p.fixtureId);
+      } else if (p.type === 'set_price') {
+        success = this.simulation.setSellingPrice(p.productId, p.price).success;
       } else if (p.type === 'layout_move') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
         const next = moveStoreFixture(current, p.fixtureId, p.tileX, p.tileY, p.rotation, generateStarterTileMap(current.storeLayout.unlockedPlotIds ?? []));
@@ -197,6 +199,20 @@ export class WorldRuntime {
         success = this.simulation.disposeStock(p.productId, p.quantity).success;
       } else if (p.type === 'claim_quest') {
         success = this.simulation.claimQuest(p.questId).success;
+      } else if (p.type === 'respond_party_order') {
+        success = this.simulation.respondPartyOrder(p.orderId, p.accept).success;
+      } else if (p.type === 'fulfill_party_order') {
+        success = this.simulation.fulfillPartyOrder(p.orderId).success;
+      } else if (p.type === 'claim_goal') {
+        success = this.simulation.claimGoal(p.goalId).success;
+      } else if (p.type === 'claim_weekly_quest') {
+        success = this.simulation.claimWeeklyQuest(p.questId).success;
+      } else if (p.type === 'claim_festival_goal') {
+        success = this.simulation.claimFestivalGoal(p.goalId).success;
+      } else if (p.type === 'choose_perk') {
+        success = this.simulation.chooseSkillPerk(p.perkId).success;
+      } else if (p.type === 'set_title') {
+        success = this.simulation.setActiveTitle(p.titleId).success;
       } else if (p.type === 'layout_batch') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
         const next = applyStoreLayoutActions(current, p.actions, ids => generateStarterTileMap(ids));

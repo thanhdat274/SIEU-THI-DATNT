@@ -36,6 +36,14 @@ import { runOperationsTests } from './operations.test';
 import { runLightingPhaseTests } from './lighting-phase.test';
 import { runIntegrationTests, runOutdoorPropTests } from './integration.test';
 import { runStoreLayoutTests } from './store-layout.test';
+import { runRegularsTests } from './regulars.test';
+import { runDayRhythmTests } from './day-rhythm.test';
+import { runStreetTrafficTests } from './street-traffic.test';
+import { runPartyOrderTests } from './party-orders.test';
+import { runGoalTests } from './goals.test';
+import { runSkillTests } from './skills.test';
+import { runPerkBehaviorTests } from './perks.test';
+import { runTitlesTests } from './titles.test';
 
 declare const process: any;
 
@@ -78,6 +86,14 @@ export async function runTests(): Promise<void> {
   await runPersistenceTests();
   runTransferRegressionTests();
   runCustomerTests();
+  runRegularsTests();
+  runDayRhythmTests();
+  runStreetTrafficTests();
+  runPartyOrderTests();
+  runGoalTests();
+  runSkillTests();
+  runPerkBehaviorTests();
+  runTitlesTests();
   console.log('\n--- Test core headless runtime ---');
   runCoreRuntimeTests();
   runAvatarTests();

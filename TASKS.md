@@ -1,5 +1,45 @@
 # BẢNG THEO DÕI CÔNG VIỆC (TASKS PROGRESS)
 
+## Rà soát sau backlog — 01/10/2026
+
+- [x] Đưa sáu thao tác đơn tiệc/mục tiêu/kỹ năng/danh hiệu vào luồng command co-op phát lại phía server (`apps/web/src/App.tsx`, `apps/server/src/bootstrap.ts`, `packages/game-core/src/world-runtime.ts`); receipt đã ghi được xử lý trước replay để retry idempotent.
+- [x] Nối modifier kỹ năng vào gameplay và sửa đếm đơn tiệc theo ngày hoàn tất trong tuần hiện tại (`packages/game-core/src/simulation.ts`, `party-orders.ts`, `customers.ts`).
+- [x] Typecheck workspace và suite `packages/game-core/src/test-runner.ts` PASS trong lượt rà soát.
+- [x] (một phần) Xác minh các thao tác co-op ở mức controller + Mongo thật hai tài khoản: `apps/server/src/coop-commands.test.ts` (`yarn --cwd apps/server test:coop`): hai tài khoản gửi xen kẽ 7 lệnh server-replay (đơn tiệc nhận/giao, mục tiêu, nhiệm vụ tuần, ngày hội, perk, danh hiệu) qua `GameController.commitCommand` + Mongo thật trong DB ngẫu nhiên, kiểm revision tăng một bậc, client kia đọc lại đúng, retry cùng commandId không cộng thưởng lần hai, trùng commandId khác payload bị từ chối, lệnh không đủ điều kiện không đổi revision, hai lệnh cùng revision chỉ một thắng. PASS 01/10/2026. Giới hạn: gọi trực tiếp controller, chưa đi qua HTTP/Firebase guard (cần token Firebase thật) và chưa kiểm reconnect WebSocket/browser.
+- [ ] Còn mở: HTTP thật qua Firebase guard và reconnect WebSocket/browser.
+- [x] Sửa lỗi thật phát hiện nhờ test này: world mới tạo từ seed bị `commitCommand` từ chối lệnh server-replay đầu tiên ('Thay đổi bố cục phải dùng layout_batch') vì simulation migrate thêm fixture kho mặc định và `stockLots` khi load lần đầu nên bố cục 'khác'. `apps/server/src/bootstrap.ts` giờ chỉ so hình học bố cục (id/loại/ô/kích thước/xoay) và so với bản đã chuẩn hóa của server khi lệch.
+- [ ] Browser QA modal trên desktop/tablet/mobile; Vite/esbuild bị chặn đọc thư mục cha và bind loopback, `file://` bị browser policy từ chối.
+- [x] Mục tiêu ngày hội (`seasons.ts`, `goals.ts`, `simulation.ts`, `QuestModal.tsx`): tiến độ, nhận thưởng một lần/năm mùa, lưu trong save, lệnh co-op và UI; `goals.test.ts` (đơn vị + save/load) PASS. Chưa browser QA/HTTP hai client.
+- [x] Test hành vi từng perk (`packages/game-core/src/perks.test.ts`, 01/10/2026): quick_hands 0,85× và master_manager 0,8× thời gian thu ngân (nhân với nhau khi có cả hai), cool_pack +1 ngày hạn hàng tươi lạnh khi giao, zero_waste giảm hao hạn ngày mất điện, neat_shelves +20% sức chứa (nay áp dụng cả món đã chạm trần kệ), local_legend nhân traffic đưa vào bộ sinh khách đúng 1,1; cùng `skills.test.ts` đã có cho good_boss/negotiator/charm. Giới hạn: local_legend chỉ kiểm hệ số, chưa đo lượng khách thực vì bị trần khách đồng thời; chưa playtest cân bằng.
+- [ ] Playtest cân bằng perk vẫn chưa chạy.
+- [x] Trần `neat_shelves` đã xử lý (01/10/2026): `effectiveShelfCapacity` (`game-data/products.ts`) cộng bonus sau khi lấy mức thấp hơn giữa sức chứa kệ và mặt hàng, nên perk +20% luôn có tác dụng, kể cả món đã chạm trần kệ (nước suối 24→28). Đồng thời sửa lỗi hiển thị: trước đây ShelfModal, WarehouseDock/Modal, nhãn tồn trên renderer, auto-restock UI (`App.tsx`) và gợi ý nhập hàng (`suggestions.ts`) không tính bonus perk nên cho thấy giới hạn thấp hơn simulation; nay dùng cùng hàm + `GameSimulation.getShelfCapacityBonus()`. Quyết định thiết kế: kệ có thể chứa vượt `maxCapacity` tối đa 20% khi có perk. Test `perks.test.ts` PASS; typecheck PASS; chưa browser QA nhãn kệ/modal, chưa cân bằng.
+- [x] Mục tiêu ngày hội đã nối sang quầy ăn uống (01/10/2026): `FestivalGoal.targetStallId` (`game-data/seasons.ts`), `DailyRecord.stallServings` ghi trong `processStalls` (`simulation.ts`), `countFestivalUnits` (`goals.ts`) đếm suất của đúng quầy; thêm 3 mục tiêu `fest_tet_cafe`, `fest_rain_cafe`, `fest_school_toast`. Test mới trong `goals.test.ts` (đếm đúng quầy, tích hợp quầy bán thật + save/load) và `seasons.test.ts`; typecheck/test PASS. Độ trễ ngày cuối đã sửa bằng ngày ân hạn: `getFestivalClaimWindow` (`seasons.ts`) cho nhận thưởng đến hết ngày liền sau ngày cuối, tiến độ vẫn chỉ đếm đến hết ngày cuối; UI ghi rõ hạn tính và hạn nhận; test `goals.test.ts` (đơn vị + quầy bán thật qua ngày cuối) PASS. Giới hạn: mùa nối liền nhau thì ngày ân hạn của mùa trước bị mùa sau thay thế (hiện dữ liệu mùa đều có khoảng trống); phần thưởng chưa cân bằng; chưa browser QA.
+
+## Tiến độ triển khai OpenSpec `stardew-inspired-management-loop` — 01/10/2026 (Code & Tests PASS)
+
+- **Đợt B (Con người & Biến thiên)**:
+  - 2.1–2.3: Hệ thống 6 khách quen thuần Việt (`regulars.ts`), tích lũy thân thiết trần +2/ngày, overhead tag tim, `RegularsModal`. Unit test PASS.
+  - 2.4: Bản tin sáng `MorningBrief` trong `day-rhythm.ts` + tab trong `DaySummaryModal`. Test PASS.
+  - 2.5: Gợi ý nhập hàng theo mùa/thời tiết (`suggestions.ts`), kẹp an toàn hạn tươi sống <= 7 ngày. Test PASS.
+  - 2.6: Đơn tiệc (`partyOrders.ts` + `party-orders.ts`), xuất kho FEFO, tính đúng COGS, chống nhận trùng, tab Đơn tiệc trong `QuestModal`. Test PASS.
+  - 2.7: Mục tiêu ngày hội (`FestivalGoal` trong `seasons.ts`). Test PASS.
+- **Đợt C (Mục tiêu dài hạn & Kỹ năng)**:
+  - 3.1 & 3.2: 10 mục tiêu dài hạn & 3 nhiệm vụ tuần (`goals.ts`), kiểm tra tiến độ, nhận thưởng 1 lần idempotent, tab Sổ mục tiêu trong `QuestModal`. Test PASS.
+  - 3.3: Kỹ năng (Quản lý, Ngoại giao, Kho vận) & 9 đặc quyền (`skills.ts`), tích hợp chiết khấu giá sỉ và giảm lương, modal `SkillsModal`. Test PASS.
+- **Đợt D (Hoàn thiện & Nội dung)**:
+  - 4.1: Danh hiệu theo cột mốc (`titles.ts`), chọn/gỡ danh hiệu, hiển thị trên HUD và `TitlesModal`. Test PASS.
+  - 4.2: Cẩm nang hướng dẫn cách chơi trong `LoginScreen.tsx` (tab tính năng nâng cao), 4 sản phẩm lễ hội thuần Việt (Bánh chưng xanh, Liễn câu đối đỏ, Dưa hấu Tài Lộc, Bánh Trung Thu), vai trò nhân viên bảo vệ trông xe (`security` role, tăng kiên nhẫn +15s và sao hài lòng cho khách đi xe máy), người bán quầy phụ vỉa hè (`buildStalls`).
+- **Đợt E (Hẻm sống động)**:
+  - Giao thông hẻm `StreetTrafficManager`, khách đến bằng xe máy/ô tô/đi bộ, đỗ xe lề đường `STREET_PARKING_SPOTS`, texture pixel art xe máy/taxi. Test PASS.
+- **Kết quả kiểm chứng kỹ thuật**:
+  - `yarn typecheck` PASS (0 errors).
+  - `yarn test` PASS 100% (tất cả 40+ unit test suites và 7 TAP subtests).
+  - `yarn build` PASS (server build PASS, web production bundle sạch).
+- **Các hạng mục còn mở (chưa nghiệm thu)**:
+  - Browser QA trên thiết bị di động thật và playtest cân bằng kinh tế nhiều ngày.
+  - 2-browser multiplayer co-op flow, OAuth thật và xử lý mất mạng/drop ACK.
+  - Thẩm định pháp lý thuế TAX-0.
+
 ## OpenSpec `store-layout-expansion` — 30/09/2026 (kiểm chứng)
 
 - Chức năng tasks 1.1–6.4 đã được code: audit/định nghĩa hai plot phía đông (giá/level tạm), layout core + validator đường đi, editor local/touch, save schema 3/migration backup, cập nhật map/collision/routing/renderer và batch command server-authoritative.

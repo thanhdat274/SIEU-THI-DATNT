@@ -49,7 +49,7 @@ export function generateCandidatesForDay(day: number, count = 3): StaffCandidate
   const rng = new Mulberry32Rng(daySeed(day, 0x57aff));
   const candidates: StaffCandidate[] = [];
 
-  const roles: StaffRole[] = ['cashier', 'refill'];
+  const roles: StaffRole[] = ['cashier', 'refill', 'security'];
   // Shuffle name pool deterministically for this day to avoid picking duplicates
   const namePool = [...CANDIDATE_NAMES];
   for (let i = namePool.length - 1; i > 0; i--) {
@@ -58,14 +58,16 @@ export function generateCandidatesForDay(day: number, count = 3): StaffCandidate
   }
 
   for (let i = 0; i < count; i++) {
-    // Ensure both cashier and refill roles are present in the list
-    const role: StaffRole = i === 0 ? 'cashier' : i === 1 ? 'refill' : rng.pick(roles);
+    // Ensure diverse roles in the candidate list
+    const role: StaffRole = i === 0 ? 'cashier' : i === 1 ? 'refill' : i === 2 ? 'security' : rng.pick(roles);
     let speed = rng.int(3, 8);
     let accuracy = rng.int(3, 8);
-    const stamina = rng.int(3, 8);
+    let stamina = rng.int(3, 8);
 
     if (role === 'cashier') {
       accuracy = Math.min(10, accuracy + 1);
+    } else if (role === 'security') {
+      stamina = Math.min(10, stamina + 2);
     } else {
       speed = Math.min(10, speed + 1);
     }

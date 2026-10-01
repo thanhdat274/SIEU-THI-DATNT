@@ -49,7 +49,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   const [absenceHasMore, setAbsenceHasMore] = useState<boolean>(false);
   const [showAbsenceModal, setShowAbsenceModal] = useState<boolean>(false);
   const [selectedWorldDetail, setSelectedWorldDetail] = useState<WorldDetail | null>(null);
-  const [activeGuideTab, setActiveGuideTab] = useState<'daily' | 'controls' | 'stock' | 'coop'>('daily');
+  const [activeGuideTab, setActiveGuideTab] = useState<'daily' | 'controls' | 'stock' | 'features' | 'coop'>('daily');
 
   // Check existing game save in IndexedDB
   useEffect(() => {
@@ -633,6 +633,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
               </button>
               <button
                 type="button"
+                className={`notebook-tab-item ${activeGuideTab === 'features' ? 'is-active' : ''}`}
+                onClick={() => { triggerSound(400); setActiveGuideTab('features'); }}
+              >
+                🌟 Tính năng nâng cao
+              </button>
+              <button
+                type="button"
                 className={`notebook-tab-item ${activeGuideTab === 'coop' ? 'is-active' : ''}`}
                 onClick={() => { triggerSound(400); setActiveGuideTab('coop'); }}
               >
@@ -720,9 +727,38 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
                 </div>
               )}
 
+              {activeGuideTab === 'features' && (
+                <div className="notebook-tab-panel">
+                  <h4>04 · Các tính năng buôn bán nâng cao</h4>
+                  <ul className="parchment-bullet-list">
+                    <li>
+                      <strong>Khách quen hẻm:</strong> 6 nhân vật thân quen (Bà Năm Bán Xôi, Chú Ba Xe Ôm, Bé Na Học Sinh...) ghé tiệm định kỳ. Phục vụ đúng món ưa thích giúp tích lũy điểm thân thiết (+2 điểm/ngày) và mở khóa đặc quyền như mua thêm hàng, boa tiền hào phóng.
+                    </li>
+                    <li>
+                      <strong>Đơn tiệc (Party Orders):</strong> Nhận các đơn đặt hàng số lượng lớn phục vụ liên hoan xóm, đám giỗ, tiệc sinh nhật. Trả hàng trực tiếp từ kho theo phương pháp FEFO (First-Expired-First-Out) để nhận tiền thưởng lớn và danh tiếng.
+                    </li>
+                    <li>
+                      <strong>Mục tiêu dài hạn & Nhiệm vụ tuần:</strong> Sổ ước nguyện giúp bạn theo dõi các cột mốc kinh doanh. Hoàn thành nhiệm vụ nhận thưởng tiền mặt và điểm uy tín một lần.
+                    </li>
+                    <li>
+                      <strong>Kỹ năng & Đặc quyền:</strong> Mỗi hoạt động bán hàng, quản lý kho và giao lưu với khách giúp tích lũy XP cho 3 nhánh kỹ năng: Quản lý, Ngoại giao & Kho vận. Đạt các mốc cấp 5 và 10 cho phép bạn chọn đặc quyền vĩnh viễn (chiết khấu giá sỉ, giảm lương nhân viên, v.v.).
+                    </li>
+                    <li>
+                      <strong>Mùa lễ hội & Sản phẩm truyền thống:</strong> Trải nghiệm 4 mùa đặc trưng (Tết Nguyên Đán, Mùa mưa Sài Gòn, Tựu trường, Trung Thu) cùng các mặt hàng truyền thống như Bánh chưng xanh, Câu đối đỏ, Dưa hấu Tài Lộc, Bánh Trung Thu.
+                    </li>
+                    <li>
+                      <strong>Bảo vệ trông xe & Quầy phụ:</strong> Thuê nhân viên bảo vệ trông xe vỉa hè để khách đi xe máy yên tâm ghé tiệm lâu hơn và đánh giá cao hơn. Mở thêm quầy cà phê vợt và bánh mì muối ớt phục vụ khách vãng lai trước hiên nhà.
+                    </li>
+                    <li>
+                      <strong>Danh hiệu chủ tiệm:</strong> Đạt các cột mốc để mở khóa và trang bị danh hiệu độc đáo thể hiện uy tín và phong cách của tiệm trên phố.
+                    </li>
+                  </ul>
+                </div>
+              )}
+
               {activeGuideTab === 'coop' && (
                 <div className="notebook-tab-panel">
-                  <h4>04 · Hẻm chơi cùng (Multiplayer 2 người) & Lưu trữ</h4>
+                  <h4>05 · Hẻm chơi cùng (Multiplayer 2 người) & Lưu trữ</h4>
                   <p>
                     Chế độ Hẻm chơi cùng cho phép bạn và bạn bè cùng đăng nhập Google và quản lý chung một tiệm tạp hóa trong một hẻm realtime.
                   </p>

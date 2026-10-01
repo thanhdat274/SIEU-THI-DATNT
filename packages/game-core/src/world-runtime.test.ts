@@ -167,5 +167,19 @@ export async function runWorldRuntimeTests() {
   assert.equal((await questRuntime.executeCommand('owner-1', dispose('dispose-3', 1))).status, 'rejected', 'Hết hàng thì từ chối, không ghi sổ');
   assert.equal(spoilageEntries(), 2);
 
+  // New progression commands must run through the shared authoritative simulation.
+  const titleCommand = (commandId: string, titleId?: string) => ({
+    protocolVersion: MULTIPLAYER_PROTOCOL_VERSION,
+    worldId: questSeed.world.id,
+    businessId: questSeed.business.id,
+    commandId,
+    expectedRevision: questRuntime.getSnapshot().world.revision,
+    payload: { type: 'set_title', titleId },
+  });
+  assert.equal((await questRuntime.executeCommand('member-2', titleCommand('title-1', undefined))).status, 'accepted');
+  assert.equal(questRuntime.getSimulation().getPlayerData().activeTitle, undefined);
+  const badTitle = await questRuntime.executeCommand('owner-1', titleCommand('title-2', 'unknown_title'));
+  assert.equal(badTitle.status, 'rejected', 'Server rejects titles that are not unlocked or defined');
+
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');
 }

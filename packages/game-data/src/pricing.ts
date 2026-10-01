@@ -2,6 +2,10 @@ import type { ProductCategory } from '@game/shared';
 
 /** Luật giá cấu hình bằng dữ liệu: mọi con số cân bằng nằm ở đây. */
 export const PRICE_RULES = {
+  /** Giá người chơi đặt nằm quanh giá bán gợi ý trong catalog. */
+  sellingPriceBand: { min: 0.8, max: 1.3 },
+  /** Bước chỉnh giá bằng đồng Việt Nam. */
+  sellingPriceStep: 100,
   /** Biên độ đổi tối đa của chỉ số giá tham chiếu mỗi ngày (3% = 0.03). */
   maxStepPerDay: 0.03,
   /** Chỉ số giá tham chiếu luôn nằm trong dải này so với giá gợi ý. */

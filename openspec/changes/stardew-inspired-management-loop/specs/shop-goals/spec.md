@@ -34,6 +34,10 @@ Hệ thống SHALL sinh nhiệm vụ tuần xác định theo tuần (7 ngày) d
 - **WHEN** sang tuần mới
 - **THEN** nhiệm vụ tuần mới thay thế, mục chưa nhận bị bỏ
 
+#### Scenario: Party order count is scoped to current week
+- **WHEN** tính tiến độ tuần có điều kiện số đơn tiệc
+- **THEN** chỉ đếm đơn có `completedDay` trong khoảng tuần hiện tại; đơn hoàn tất tuần trước không được tính
+
 ### Requirement: Data-driven content
 Mục tiêu và thưởng SHALL nằm trong `game-data` để thêm nhóm không sửa logic.
 

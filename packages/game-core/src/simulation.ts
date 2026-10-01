@@ -40,6 +40,12 @@ import {
   PayrollResult,
   AutoBuyRule,
   AutoBuyReport,
+  RegularCustomerProgress,
+  StreetVehicleState,
+  PartyOrderState,
+  GoalState,
+  SkillState,
+  SkillType,
 } from '@game/shared';
 import {
   INITIAL_REFRIGERATOR,
@@ -59,33 +65,77 @@ import {
   PRICED_CATEGORIES,
   PRODUCT_CATEGORY_LABELS,
   WEATHER_MAP,
+  MAX_PLAYER_LEVEL,
+  getLevelTrafficMultiplier,
+  maxActiveCustomersForLevel,
+  xpToNextLevel,
   CLIMATE_SEASON_MAP,
   TIME_BANDS,
   WEEKDAY_LABELS,
   SHOPKEEPER_POSITION,
   getSeasonForDay,
+  seasonDaysLeft,
   SPOILAGE_RULES,
   FORECAST_RULES,
+  PRICE_RULES,
   type StallDefinition,
+  REGULAR_CUSTOMERS_MAP,
+  type RegularCustomerDefinition,
 } from '@game/data';
+import { buildMorningBrief, type MorningBrief } from './day-rhythm';
+import { pickAvailableRegular, processRegularCheckout, processRegularWalkout } from './regulars';
+import { StreetTrafficManager } from './street-traffic';
 import { CollisionSystem } from './collision';
+import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
+import { rainIntensityAt } from './weather';
 import { buyLandPlot, validateStoreLayout, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
 import { expiryDay, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
 import { decayLot, spoilageRate } from './spoilage';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
+import { normalizePlayerProgression, saleExperienceMultiplier, trafficAtLevel } from './progression';
 import { CustomerManager } from './customers';
 import { calculateSalesVelocity, generateRestockSuggestions, getIncomingOrdersCount, getUsableStock } from './suggestions';
 import { buildProductPlans, type ProductPlan, type ProductPlanInput } from './forecast';
 import { climateSeasonForDay } from './weather';
 import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, timeBandFor, visibleMarketEvents, weekdayOf, type MarketNotice } from './market';
 import { bulkDiscount, computeSupplierDay, nextDeliveryDay, wholesaleQuote } from './supplier-market';
-import { advancePriceIndex, computePriceTargets, demandPriceFactor, keepChance, priceRatio, productSensitivity } from './price';
+import { advancePriceIndex, clampSellingPrice, computePriceTargets, demandPriceFactor, keepChance, priceRatio, productSensitivity } from './price';
 import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
 import { emptyStallState, normalizeStallState, planStallDay } from './stalls';
 import { emptyQuestState, findClaimableQuest, getDailyQuests, getStoryQuest, markQuestClaimed, normalizeQuestState, type QuestContext, type QuestProgress, type QuestReward } from './quests';
 import { generateCandidatesForDay, validateHireStaff, calculatePayroll } from './staff';
+import {
+  createInitialPartyOrderState,
+  refreshAvailablePartyOrders,
+  respondPartyOrder,
+  fulfillPartyOrder,
+  type FulfillPartyOrderResult,
+} from './party-orders';
+import {
+  createInitialGoalState,
+  getGoalProgress,
+  claimGoal,
+  getWeeklyQuestProgress,
+  claimWeeklyQuest,
+  getFestivalGoalProgress,
+  claimFestivalGoal,
+  type FestivalGoalProgressInfo,
+  type GoalProgressInfo,
+  type WeeklyQuestProgressInfo,
+  type SimulationGoalContext,
+} from './goals';
+import {
+  createInitialSkillState,
+  addSkillXp,
+  choosePerk,
+  getSkillModifier,
+  hasPerk,
+} from './skills';
+import { LONG_TERM_GOALS, WEEKLY_QUESTS, PARTY_ORDER_MAP, TITLES, effectiveShelfCapacity } from '@game/data';
+import { getUnlockedTitles, setActiveTitle, type TitleContext } from './titles';
+import type { TitleDef } from '@game/shared';
 
 function normalizeStaffSchedule(
   schedule: Record<string, StaffShift> | undefined,
@@ -120,10 +170,13 @@ export interface GameSimulationCallbacks {
   onLevelUp?: (level: number) => void;
   onWeatherChanged?: (weatherId: string) => void;
   onMarketNotice?: (notice: MarketNotice) => void;
+  onCustomerRated?: (event: { stars: number; average: number; reason?: CustomerFeedbackReason }) => void;
+  onToast?: (message: string, type?: 'info' | 'success' | 'warn') => void;
 }
 
 export class GameSimulation {
   private playerData: PlayerData;
+  private sellingPrices: Record<string, number> = {};
   private fixtures: StoreFixture[];
   private storedFixtures: StoreFixture[];
   private unlockedPlotIds: string[];
@@ -158,12 +211,18 @@ export class GameSimulation {
   private inputManager: GameInputSource;
   private customerManager: CustomerManager;
   private completedCheckoutIds: Set<string>;
+  private regulars: Record<string, RegularCustomerProgress> = {};
+  private partyOrders: PartyOrderState;
+  private goals: GoalState;
+  private skills: SkillState;
+  private streetTraffic = new StreetTrafficManager();
 
   private activeFixture: StoreFixture | null = null;
   private playerSpeed: number = 130; // Pixels per second
   private isMoving: boolean = false;
   private isPaused: boolean = false;
   private callbacks: GameSimulationCallbacks = {};
+  private readonly weatherSeed: string;
 
   constructor(
     initialSave: SaveGameData,
@@ -171,7 +230,9 @@ export class GameSimulation {
     inputManager: GameInputSource,
     callbacks: GameSimulationCallbacks = {}
   ) {
-    this.playerData = { ...initialSave.player };
+    this.weatherSeed = initialSave.id ?? 'local_save';
+    this.playerData = normalizePlayerProgression(initialSave.player);
+    this.sellingPrices = { ...(initialSave.sellingPrices ?? {}) };
     this.fixtures = initialSave.storeLayout.fixtures.map((f) => ({ ...f }));
     this.storedFixtures = (initialSave.storeLayout.storedFixtures ?? []).map(f => ({ ...f }));
     this.unlockedPlotIds = [...(initialSave.storeLayout.unlockedPlotIds ?? [])];
@@ -199,6 +260,12 @@ export class GameSimulation {
     this.autoBuyReports = structuredClone(initialSave.autoBuyReports ?? {});
     this.statistics = { ...initialSave.statistics };
     this.createdAt = initialSave.createdAt;
+    this.regulars = initialSave.regulars ? structuredClone(initialSave.regulars) : {};
+    this.partyOrders = initialSave.partyOrders
+      ? refreshAvailablePartyOrders(structuredClone(initialSave.partyOrders), initialSave.worldTime.day, this.playerData.level)
+      : refreshAvailablePartyOrders(createInitialPartyOrderState(), initialSave.worldTime.day, this.playerData.level);
+    this.goals = initialSave.goals ? structuredClone(initialSave.goals) : createInitialGoalState();
+    this.skills = initialSave.skills ? structuredClone(initialSave.skills) : createInitialSkillState();
     this.stalls = normalizeStallState(initialSave.stalls);
     assertMarketData();
     this.market = normalizeMarketState(initialSave.market, initialSave.id ?? 'local_save', initialSave.worldTime.day);
@@ -230,7 +297,7 @@ export class GameSimulation {
       for (const cust of this.customerManager.getCustomers()) {
         this.customerManager.abandonBasket(cust, this.fixtures, this.inventory, (cnt) => {
           this.statistics.totalSpoiled = (this.statistics.totalSpoiled ?? 0) + cnt;
-        }, day - 1);
+        }, day - 1, 1 + getSkillModifier(this.skills, 'shelf_capacity_bonus'));
         this.customerManager.routeCustomer(cust, 'leaving', this.tileMap, this.fixtures);
       }
       for (const member of this.staff) this.finishStaffJob(member, true);
@@ -251,6 +318,7 @@ export class GameSimulation {
       const spoiled = this.expireStock(day);
       this.deliverOrders(day);
       this.processAutoBuy(day);
+      this.partyOrders = refreshAvailablePartyOrders(this.partyOrders, day, this.playerData.level);
       this.statistics.totalDaysPassed = Math.max(this.statistics.totalDaysPassed, day - 1);
       if (spoiled > 0) this.callbacks.onStockExpired?.(spoiled);
       const expiring = this.getExpiringStock();
@@ -268,8 +336,41 @@ export class GameSimulation {
     }, () => this.callbacks.onTimeChanged?.());
   }
 
+  /** Đặt lại vị trí nhân vật (dùng khi chơi chung: vị trí không theo save dùng chung). */
+  public setPlayerPosition(position: Vector2D, direction?: PlayerData['direction']): void {
+    this.playerData.position = { ...position };
+    if (direction) this.playerData.direction = direction;
+  }
+
   public getPlayerData(): PlayerData {
     return { ...this.playerData };
+  }
+
+  public getAverageCustomerRating(): number {
+    return averageRating(this.playerData.ratings);
+  }
+
+  private recordCustomerRating(customer: CustomerState, reason?: CustomerFeedbackReason, legacyProductId?: string): void {
+    const items = customer.basket ?? [];
+    const ratios = items.map(item => item.unitPrice / Math.max(1, PRODUCT_MAP[item.productId]?.baseSellingPrice ?? item.unitPrice));
+    if (!ratios.length && legacyProductId) ratios.push(this.sellingPrice(legacyProductId) / Math.max(1, PRODUCT_MAP[legacyProductId]?.baseSellingPrice ?? 1));
+    const averagePriceRatio = ratios.length ? ratios.reduce((sum, ratio) => sum + ratio, 0) / ratios.length : 1;
+    let stars = ratingForVisit({
+      waitSeconds: Math.max(0, 45 - customer.patience),
+      gotAll: (items.length > 0 || !!legacyProductId) && !reason,
+      averagePriceRatio,
+      reason,
+    });
+    if (customer.arrivalMode === 'motorbike' && this.hasSecurityGuardOnShift()) {
+      stars = Math.min(5, stars + 1);
+    }
+    this.playerData.ratings = appendRating(this.playerData.ratings, stars);
+    this.playerData.reputation = Math.max(0, Math.min(100, this.playerData.reputation + reputationDeltaFromRating(stars)));
+    const previousCount = this.currentDayRecord.ratingCount ?? 0;
+    this.currentDayRecord.averageStars = ((this.currentDayRecord.averageStars ?? 0) * previousCount + stars) / (previousCount + 1);
+    this.currentDayRecord.ratingCount = previousCount + 1;
+    this.demandTable = undefined;
+    this.callbacks.onCustomerRated?.({ stars, average: averageRating(this.playerData.ratings), reason });
   }
 
   public getFixtures(): StoreFixture[] {
@@ -335,6 +436,14 @@ export class GameSimulation {
     return this.ledger.map((e) => ({ ...e }));
   }
 
+  public getRegulars(): Record<string, RegularCustomerProgress> {
+    return structuredClone(this.regulars);
+  }
+
+  public getStreetVehicles(): StreetVehicleState[] {
+    return this.streetTraffic.getVehicles();
+  }
+
   /** Bảng nhu cầu lưu đệm; chỉ tính lại khi bối cảnh đổi (ngày, khung giờ, thời tiết, mùa, sự kiện, bậc uy tín), không mỗi khung hình. */
   private refreshDemandTable(): DemandTable {
     const time = this.clock.getTime();
@@ -393,12 +502,48 @@ export class GameSimulation {
     const supplier = SUPPLIER_MAP[supplierId];
     const product = PRODUCT_MAP[productId];
     if (!supplier || !product) return 0;
-    return wholesaleQuote(supplier, product, this.market.suppliers?.[supplierId], quantity).unit;
+    const baseUnit = wholesaleQuote(supplier, product, this.market.suppliers?.[supplierId], quantity).unit;
+    const discount = getSkillModifier(this.skills, 'supplier_discount');
+    return discount > 0 ? Math.round(baseUnit * (1 - discount)) : baseUnit;
   }
 
-  /** Giá bán hiện tại. Hiện cố định theo giá gợi ý; việc người chơi tự đặt giá (shop-pricing) sẽ thay hàm này. */
+  /** Giá bán hiện tại; món chưa được chỉnh dùng giá gợi ý trong catalog. */
   public sellingPrice(productId: string): number {
-    return PRODUCT_MAP[productId]?.baseSellingPrice ?? 0;
+    return this.sellingPrices[productId] ?? PRODUCT_MAP[productId]?.baseSellingPrice ?? 0;
+  }
+
+  public setSellingPrice(productId: string, requestedPrice: number | null): { success: boolean; price?: number; reason?: string } {
+    const product = PRODUCT_MAP[productId];
+    if (!product) return { success: false, reason: 'Mặt hàng không tồn tại.' };
+    if (this.customerManager.getCustomers().some(customer => customer.stage === 'checkout' && customer.basket?.some(item => item.productId === productId))) {
+      return { success: false, reason: 'Không đổi giá khi khách đang thanh toán món này.' };
+    }
+    if (requestedPrice === null) {
+      delete this.sellingPrices[productId];
+      this.demandTable = undefined;
+      this.notifyStateChanged();
+      return { success: true, price: product.baseSellingPrice };
+    }
+    if (!Number.isFinite(requestedPrice) || requestedPrice <= 0) return { success: false, reason: 'Nhập giá bán hợp lệ.' };
+    const bounds = this.sellingPriceBounds(productId)!;
+    const clampedRequest = Math.min(bounds.max, Math.max(bounds.min, requestedPrice));
+    const price = clampSellingPrice(clampedRequest, product.baseSellingPrice);
+    if (price === product.baseSellingPrice) delete this.sellingPrices[productId];
+    else this.sellingPrices[productId] = price;
+    this.demandTable = undefined;
+    this.notifyStateChanged();
+    return { success: true, price };
+  }
+
+  public sellingPriceBounds(productId: string): { min: number; max: number; step: number } | null {
+    const suggested = PRODUCT_MAP[productId]?.baseSellingPrice;
+    if (!suggested) return null;
+    const step = PRICE_RULES.sellingPriceStep;
+    return {
+      min: Math.ceil((suggested * PRICE_RULES.sellingPriceBand.min) / step) * step,
+      max: Math.floor((suggested * PRICE_RULES.sellingPriceBand.max) / step) * step,
+      step,
+    };
   }
 
   /** Giá tham chiếu thị trường của món = giá gợi ý × chỉ số giá của nhóm (trôi dần theo ngày). */
@@ -486,7 +631,7 @@ export class GameSimulation {
     const todayId = effectiveWeatherId(this.market, time.day);
     const weather = WEATHER_MAP[todayId] ?? WEATHER_MAP[this.market.weather.today];
     return {
-      weather: { id: weather.id, label: weather.label, icon: weather.icon },
+      weather: { id: weather.id, label: weather.label, icon: weather.icon, rainIntensity: rainIntensityAt(this.weatherSeed, time.day, time.hour, time.minute, weather.id) },
       forecast: [1, 2].map(offset => {
         const id = effectiveWeatherId(this.market, time.day + offset);
         return { id, label: WEATHER_MAP[id]?.label ?? id, icon: WEATHER_MAP[id]?.icon ?? '' };
@@ -496,12 +641,26 @@ export class GameSimulation {
       climate: CLIMATE_SEASON_MAP[climateSeasonForDay(time.day).id],
       timeBand: TIME_BANDS.find(band => band.id === timeBandFor(time.hour))!,
       weekday: WEEKDAY_LABELS[weekdayOf(time.day)],
-      traffic: table.traffic,
+      traffic: {
+        ...table.traffic,
+        value: trafficAtLevel(table.traffic.value * reputationTrafficMultiplier(this.playerData.ratings), this.playerData.level),
+        factors: [
+          ...table.traffic.factors,
+          { ruleId: 'customer_ratings', label: 'Đánh giá khách', factor: reputationTrafficMultiplier(this.playerData.ratings) },
+          ...(getLevelTrafficMultiplier(this.playerData.level) > 1 ? [{ ruleId: 'level_progression_traffic', label: `Cấp ${this.playerData.level}: lưu lượng khách tăng`, factor: getLevelTrafficMultiplier(this.playerData.level) }] : []),
+        ],
+      },
     };
   }
 
   public getSeason(day = this.clock.getTime().day) {
     return getSeasonForDay(day);
+  }
+
+  public getRainIntensity(): number {
+    const time = this.clock.getTime();
+    const weatherId = effectiveWeatherId(this.market, time.day);
+    return rainIntensityAt(this.weatherSeed, time.day, time.hour, time.minute, weatherId);
   }
 
   public getStalls(): Array<StallDefinition & { owned: boolean; buyable: boolean; reason?: string }> {
@@ -570,6 +729,7 @@ export class GameSimulation {
       record.revenue += revenue;
       record.cogs += cogs;
       record.itemsSold += plan.servings;
+      record.stallServings = { ...record.stallServings, [stallId]: (record.stallServings?.[stallId] ?? 0) + plan.servings };
       this.recordLedger({ day, type: 'sale', amount: revenue, cogs, quantity: plan.servings, description: `${stall.name}: bán ${plan.servings}/${plan.demand} suất` });
     }
     record.grossProfit = record.revenue - record.cogs;
@@ -604,6 +764,211 @@ export class GameSimulation {
     this.addExperience(quest.reward.experience);
     this.notifyStateChanged();
     return { success: true, reward: quest.reward };
+  }
+
+  // ==========================================
+  // Party Orders (Đơn tiệc có hạn)
+  // ==========================================
+
+  public getPartyOrderState(): PartyOrderState {
+    return structuredClone(this.partyOrders);
+  }
+
+  public respondPartyOrder(orderId: string, accept: boolean): { success: boolean; reason?: string } {
+    const res = respondPartyOrder(this.partyOrders, orderId, accept, this.clock.getTime().day);
+    if (res.success) {
+      this.partyOrders = res.state;
+      this.notifyStateChanged();
+    }
+    return { success: res.success, reason: res.reason };
+  }
+
+  public fulfillPartyOrder(orderId: string): FulfillPartyOrderResult {
+    const day = this.clock.getTime().day;
+    const res = fulfillPartyOrder({
+      state: this.partyOrders,
+      orderId,
+      day,
+      inventory: this.inventory,
+    });
+
+    if (res.success && !res.alreadyCompleted && res.reward && res.inventory) {
+      this.inventory = res.inventory;
+      this.playerData.money += res.reward.money;
+      this.playerData.reputation = Math.min(100, this.playerData.reputation + res.reward.reputation);
+      if (res.reward.experience) {
+        this.addExperience(res.reward.experience);
+      }
+      this.addSkillExperience('marketing', 15);
+
+      const def = PARTY_ORDER_MAP[orderId];
+      const desc = def ? `Giao đơn tiệc: ${def.title}` : `Giao đơn tiệc: ${orderId}`;
+      const totalUnits = def ? def.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+
+      this.currentDayRecord.revenue += res.reward.money;
+      this.currentDayRecord.cogs += res.cogs;
+      this.currentDayRecord.itemsSold += totalUnits;
+      this.statistics.totalRevenue += res.reward.money;
+
+      this.recordLedger({
+        day,
+        type: 'sale',
+        amount: res.reward.money,
+        cogs: res.cogs,
+        quantity: totalUnits,
+        description: desc,
+      });
+
+      this.notifyStateChanged();
+    }
+
+    return res;
+  }
+
+  // ==========================================
+  // Goals & Weekly Quests (Mục tiêu & Nhiệm vụ tuần)
+  // ==========================================
+
+  public getGoalContext(): SimulationGoalContext {
+    const currentDay = this.clock.getTime().day;
+    const currentWeek = Math.floor((currentDay - 1) / 7) + 1;
+    const startDayOfWeek = (currentWeek - 1) * 7 + 1;
+
+    let weekRevenue = 0;
+    let weekCustomersServed = 0;
+    let weekItemsSold = 0;
+
+    for (let d = startDayOfWeek; d <= currentDay; d++) {
+      const rec = d === currentDay ? this.currentDayRecord : this.dailyRecords[d];
+      if (rec) {
+        weekRevenue += rec.revenue ?? 0;
+        weekCustomersServed += rec.customersServed ?? 0;
+        weekItemsSold += rec.itemsSold ?? 0;
+      }
+    }
+
+    const salesFixturesCount = this.fixtures.filter(isSalesFixture).length;
+    const stallsCount = this.stalls.owned.length;
+    const completedPartyOrdersCount = this.partyOrders.completedOrderIds.length;
+    const weekPartyOrdersCount = this.partyOrders.available.filter(order =>
+      order.status === 'completed' && order.completedDay !== undefined &&
+      order.completedDay >= startDayOfWeek && order.completedDay <= currentDay
+    ).length;
+
+    return {
+      totalRevenue: this.statistics.totalRevenue,
+      totalCustomersServed: this.statistics.totalCustomersServed,
+      salesFixturesCount,
+      stallsCount,
+      reputation: this.playerData.reputation,
+      completedPartyOrdersCount,
+      weekRevenue,
+      weekCustomersServed,
+      weekItemsSold,
+      weekPartyOrdersCount,
+      currentWeek,
+    };
+  }
+
+  public getGoalState(): GoalState {
+    return structuredClone(this.goals);
+  }
+
+  public getGoalProgressList(): GoalProgressInfo[] {
+    const ctx = this.getGoalContext();
+    return LONG_TERM_GOALS.map((g) => getGoalProgress(g, ctx, this.goals));
+  }
+
+  public getWeeklyQuestProgressList(): WeeklyQuestProgressInfo[] {
+    const ctx = this.getGoalContext();
+    return WEEKLY_QUESTS.map((q) => getWeeklyQuestProgress(q, ctx, this.goals));
+  }
+
+  public claimGoal(goalId: string): { success: boolean; reason?: string } {
+    const ctx = this.getGoalContext();
+    const res = claimGoal(this.goals, goalId, ctx);
+    if (res.success && res.reward) {
+      this.goals = res.state;
+      this.playerData.money += res.reward.money;
+      this.playerData.reputation = Math.min(100, this.playerData.reputation + res.reward.reputation);
+      if (res.reward.experience) {
+        this.addExperience(res.reward.experience);
+      }
+      this.addSkillExperience('management', 10);
+      this.notifyStateChanged();
+      return { success: true };
+    }
+    return { success: false, reason: res.reason };
+  }
+
+  public claimWeeklyQuest(questId: string): { success: boolean; reason?: string } {
+    const ctx = this.getGoalContext();
+    const res = claimWeeklyQuest(this.goals, questId, ctx);
+    if (res.success && res.reward) {
+      this.goals = res.state;
+      this.playerData.money += res.reward.money;
+      this.playerData.reputation = Math.min(100, this.playerData.reputation + res.reward.reputation);
+      this.addSkillExperience('management', 15);
+      this.notifyStateChanged();
+      return { success: true };
+    }
+    return { success: false, reason: res.reason };
+  }
+
+  private productSalesOn = (day: number) =>
+    day === this.currentDayRecord.day ? this.currentDayRecord : this.dailyRecords[day];
+
+  public getFestivalGoalProgressList(): FestivalGoalProgressInfo[] {
+    return getFestivalGoalProgress(this.clock.getTime().day, this.goals, this.productSalesOn);
+  }
+
+  /** Thưởng ngày hội là tiền thưởng ngoài sổ GAAP, như thưởng mục tiêu/nhiệm vụ. */
+  public claimFestivalGoal(goalId: string): { success: boolean; reason?: string } {
+    const res = claimFestivalGoal(this.goals, goalId, this.clock.getTime().day, this.productSalesOn);
+    if (res.success && res.reward) {
+      this.goals = res.state;
+      this.playerData.money += res.reward.money;
+      this.playerData.reputation = Math.min(100, this.playerData.reputation + res.reward.reputation);
+      this.addSkillExperience('management', 10);
+      this.notifyStateChanged();
+      return { success: true };
+    }
+    return { success: false, reason: res.reason };
+  }
+
+  // ==========================================
+  // Skills & Perks (Kỹ năng & Đặc quyền)
+  // ==========================================
+
+  public getSkillState(): SkillState {
+    return structuredClone(this.skills);
+  }
+
+  public addSkillExperience(skill: SkillType, amount: number): void {
+    const res = addSkillXp(this.skills, skill, amount);
+    this.skills = res.state;
+    if (res.leveledUp) {
+      this.callbacks.onLevelUp?.(res.newLevel);
+    }
+    this.notifyStateChanged();
+  }
+
+  public chooseSkillPerk(perkId: string): { success: boolean; reason?: string } {
+    const res = choosePerk(this.skills, perkId);
+    if (res.success) {
+      this.skills = res.state;
+      this.notifyStateChanged();
+    }
+    return { success: res.success, reason: res.reason };
+  }
+
+  /** Bonus sức chứa kệ từ perk (0 nếu chưa có), để UI/renderer hiển thị cùng giới hạn với simulation. */
+  public getShelfCapacityBonus(): number {
+    return getSkillModifier(this.skills, 'shelf_capacity_bonus');
+  }
+
+  public hasPerk(perkId: string): boolean {
+    return hasPerk(this.skills, perkId);
   }
 
   public getStaff(): StaffMember[] {
@@ -719,6 +1084,8 @@ export class GameSimulation {
               ? { x: (counter.tileX + counter.widthTiles / 2) * TILE_SIZE, y: (counter.tileY + counter.heightTiles + 1) * TILE_SIZE }
               : { ...WAREHOUSE_ENTRANCE };
           })()
+        : candidate.role === 'security'
+        ? { x: 4 * 32, y: 13 * 32 }
         : { ...WAREHOUSE_ENTRANCE },
     };
     this.staff.push(member);
@@ -740,6 +1107,10 @@ export class GameSimulation {
     }
     this.notifyStateChanged();
     return true;
+  }
+
+  public hasSecurityGuardOnShift(): boolean {
+    return this.staff.some((s) => s.role === 'security' && this.isStaffOnShift(s));
   }
 
   private routeToFixture(startPosition: Vector2D, fixture: StoreFixture): Vector2D[] | undefined {
@@ -810,7 +1181,7 @@ export class GameSimulation {
     if (!customer?.checkoutId) return false;
     member.currentCheckoutId = customer.checkoutId;
     this.customerManager.assignCashier(customer.checkoutId, staffId);
-    member.checkoutServiceRemaining = Math.max(0.6, 2.4 - member.accuracy * 0.15);
+    member.checkoutServiceRemaining = Math.max(0.6, 2.4 - member.accuracy * 0.15) * (1 - getSkillModifier(this.skills, 'cashier_speed')) * (1 - getSkillModifier(this.skills, 'staff_speed'));
     return true;
   }
 
@@ -830,7 +1201,7 @@ export class GameSimulation {
         const dx = waypoint.x - position.x;
         const dy = waypoint.y - position.y;
         const distance = Math.hypot(dx, dy);
-        const step = Math.max(35, member.speed * 16) * Math.max(0, dt);
+        const step = Math.max(35, member.speed * 16) * (1 + getSkillModifier(this.skills, 'staff_speed')) * Math.max(0, dt);
         if (distance <= step) {
           member.position = { ...waypoint };
           task.route.shift();
@@ -879,7 +1250,7 @@ export class GameSimulation {
         this.finishStaffJob(member, true);
         continue;
       }
-      const capacity = Math.min(shelf.maxCapacity, product.shelfCapacity);
+      const capacity = effectiveShelfCapacity(shelf.maxCapacity, product.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
       const moved = Math.min(Math.max(0, capacity - shelf.currentStock), sumLots(task.carriedLots));
       if (moved > 0) {
         const movedLots = takeLots(task.carriedLots, moved);
@@ -915,7 +1286,7 @@ export class GameSimulation {
           member.currentCheckoutId = undefined;
           member.checkoutServiceRemaining = 0;
         } else {
-          member.checkoutServiceRemaining = Math.max(0, (member.checkoutServiceRemaining ?? 0) - dt);
+          member.checkoutServiceRemaining = Math.max(0, (member.checkoutServiceRemaining ?? 0) - dt * (1 + getSkillModifier(this.skills, 'staff_speed')));
           if (member.checkoutServiceRemaining <= 0) {
             this.completeCustomerCheckout(currentId);
             member.currentCheckoutId = undefined;
@@ -941,10 +1312,12 @@ export class GameSimulation {
       };
     }
 
+    const wageDiscount = getSkillModifier(this.skills, 'wage_discount');
     const dueStaff = this.staff
       .filter((member) => member.hiredOnDay <= day)
       .map((member) => ({
         ...member,
+        dailyWage: wageDiscount > 0 ? Math.round(member.dailyWage * (1 - wageDiscount)) : member.dailyWage,
         shift: this.staffSchedule[member.id] ?? member.shift,
       }));
     const payroll = calculatePayroll({
@@ -1124,6 +1497,7 @@ export class GameSimulation {
       playerMoney: this.playerData.money,
       currentDay: this.clock.getTime().day,
       fixtures: this.fixtures,
+      shelfCapacityBonus: getSkillModifier(this.skills, 'shelf_capacity_bonus'),
       inventory: this.inventory,
       holdingArea: this.holdingArea,
       pendingOrders: this.pendingOrders,
@@ -1133,6 +1507,27 @@ export class GameSimulation {
       budget,
       unitPriceOf: supplierId ? (productId: string) => this.wholesaleUnitPrice(supplierId, productId) : undefined,
       expectedDailyOf: (productId: string) => expected.get(productId),
+      demandMultiplierOf: (productId: string) => this.refreshDemandTable().perProduct[productId]?.multiplier ?? 1.0,
+    });
+  }
+
+  public getMorningBrief(): MorningBrief {
+    const day = this.clock.getTime().day;
+    const season = this.getSeason();
+    const weather = this.getMarketSummary().weather;
+    const forecastTomorrow = this.getMarketSummary().forecast[0]?.label;
+    const arrivingOrders = this.pendingOrders.filter((o) => !o.delivered && o.arrivalDay <= day);
+    const lowStockItems = this.fixtures
+      .filter((f) => isSalesFixture(f) && f.assignedProductId && f.currentStock <= 2)
+      .map((f) => f.assignedProductId!);
+    return buildMorningBrief({
+      day,
+      season: { name: season?.name ?? 'Ngày thường' },
+      seasonDaysLeft: seasonDaysLeft(day),
+      weather,
+      forecastTomorrow,
+      arrivingOrders,
+      lowStockItems,
     });
   }
 
@@ -1144,6 +1539,18 @@ export class GameSimulation {
     };
     this.ledger.push(fullEntry);
     return fullEntry;
+  }
+
+  private awardSkillTip(saleAmount: number): void {
+    const tip = Math.round(saleAmount * getSkillModifier(this.skills, 'tip_bonus'));
+    if (tip <= 0) return;
+    const day = this.clock.getTime().day;
+    this.playerData.money += tip;
+    this.statistics.totalRevenue += tip;
+    this.currentDayRecord.revenue += tip;
+    this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
+    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid;
+    this.recordLedger({ day, type: 'sale', amount: tip, cogs: 0, quantity: 0, description: 'Tiền boa từ kỹ năng bán hàng' });
   }
 
   public getClock(): GameClock {
@@ -1284,7 +1691,9 @@ export class GameSimulation {
     const ctx = buildMarketContext(this.market, day, 12);
     const rateOf = (productId: string | undefined) => {
       const product = productId ? PRODUCT_MAP[productId] : undefined;
-      return product ? spoilageRate(ctx, product) : 1;
+      if (!product) return 1;
+      const rate = spoilageRate(ctx, product);
+      return 1 + (rate - 1) * (1 - getSkillModifier(this.skills, 'spoilage_reduction'));
     };
     for (const item of this.inventory) {
       const rate = rateOf(item.productId);
@@ -1393,10 +1802,7 @@ export class GameSimulation {
       this.tileMap,
       this.fixtures,
       this.inventory,
-      (repLoss) => {
-        this.playerData.reputation = Math.max(0, this.playerData.reputation - repLoss);
-        this.notifyStateChanged();
-      },
+      () => {}, // Customer satisfaction now records a reasoned 1–5 rating below.
       (spoiled) => {
         this.statistics.totalSpoiled = (this.statistics.totalSpoiled ?? 0) + spoiled;
         this.callbacks.onStockExpired?.(spoiled);
@@ -1406,13 +1812,28 @@ export class GameSimulation {
         this.currentDayRecord.outOfStockWalkouts = (this.currentDayRecord.outOfStockWalkouts ?? 0) + 1;
       },
       this.customerPricing(),
-      (productId, quantity, cost) => this.handleExpiredOnShelf(productId, quantity, cost)
+      (productId, quantity, cost) => this.handleExpiredOnShelf(productId, quantity, cost),
+      (customer, reason) => {
+        if (reason === 'price') this.currentDayRecord.priceWalkouts = (this.currentDayRecord.priceWalkouts ?? 0) + 1;
+        if (reason === 'out_of_stock') this.currentDayRecord.outOfStockWalkouts = (this.currentDayRecord.outOfStockWalkouts ?? 0) + 1;
+        this.recordCustomerRating(customer, reason);
+        if (customer.regularId) {
+          const regDef = REGULAR_CUSTOMERS_MAP[customer.regularId];
+          if (regDef) {
+            this.regulars[customer.regularId] = processRegularWalkout(regDef, this.regulars[customer.regularId], this.clock.getTime().day);
+          }
+        }
+        this.notifyStateChanged();
+      },
+      1 + getSkillModifier(this.skills, 'shelf_capacity_bonus')
     );
     const demandTable = this.refreshDemandTable();
     const availability = availabilityFactor(demandTable, this.fixtures.filter(isSalesFixture).map(shelf => ({
       productId: shelf.assignedProductId ?? this.planogram[shelf.id],
       inStock: shelf.currentStock > 0,
     })));
+    const inStoreRegularIds = this.customerManager.getCustomers().map(c => c.regularId).filter((id): id is string => Boolean(id));
+    const regularCandidate = pickAvailableRegular(this.clock.getTime().day, this.market.seed, inStoreRegularIds, this.regulars);
     this.customerManager.maybeSpawnCustomer(
       worldDt,
       this.clock.getTime().isStoreOpen,
@@ -1420,8 +1841,17 @@ export class GameSimulation {
       this.tileMap,
       this.clock.getTime().day,
       this.statistics.totalCustomersServed,
-      { traffic: effectiveTraffic(demandTable, availability), weightOf: (productId) => demandTable.perProduct[productId]?.demand ?? 0.01 }
+      {
+        traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * (1 + getSkillModifier(this.skills, 'traffic_boost')), this.playerData.level),
+        maxConcurrentCustomers: maxActiveCustomersForLevel(this.playerData.level),
+        weightOf: (productId) => demandTable.perProduct[productId]?.demand ?? 0.01,
+      },
+      regularCandidate,
+      this.getRainIntensity(),
+      this.hasSecurityGuardOnShift()
     );
+
+    this.streetTraffic.update(worldDt, this.clock.getTime().hour, this.getRainIntensity(), this.clock.getTime().day * 1337);
 
     this.updateStaffWorkers(worldDt);
     this.updateCashierWorkers(worldDt);
@@ -1530,7 +1960,7 @@ export class GameSimulation {
       return { success: false, actualQuantity: 0, reason: 'product_mismatch' };
     }
 
-    const effectiveCapacity = Math.min(fixture.maxCapacity, product.shelfCapacity);
+    const effectiveCapacity = effectiveShelfCapacity(fixture.maxCapacity, product.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
     const availableSpace = effectiveCapacity - fixture.currentStock;
     if (availableSpace <= 0) {
       return { success: false, actualQuantity: 0, reason: 'no_space' };
@@ -1737,7 +2167,7 @@ export class GameSimulation {
       fix.assignedProductId = productId;
     }
 
-    const effectiveCap = Math.min(fix.maxCapacity, prod.shelfCapacity);
+      const effectiveCap = effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
     const needed = effectiveCap - fix.currentStock;
     if (needed <= 0) {
       return { fixtureId, productId, applied: true, actualQuantity: 0, reason: 'fixture_full' };
@@ -1791,7 +2221,7 @@ export class GameSimulation {
       // Shelf must not be blocked by another product with remaining stock
       if (fix.currentStock > 0 && fix.assignedProductId && fix.assignedProductId !== productId) continue;
 
-      const effectiveCap = Math.min(fix.maxCapacity, prod.shelfCapacity);
+      const effectiveCap = effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
       const needed = Math.max(0, effectiveCap - fix.currentStock);
       if (needed <= 0) continue;
 
@@ -2033,7 +2463,7 @@ export class GameSimulation {
       order.delivered = true;
       order.deliveryDay = day;
       const product = PRODUCT_MAP[order.productId];
-      const expiry = expiryDay(order.productId, day);
+      const expiry = expiryDay(order.productId, day) + getSkillModifier(this.skills, 'fresh_extra_day');
 
       if (product?.storageType === 'cold') {
         const currentCold = this.getColdWarehouseCount();
@@ -2184,11 +2614,30 @@ export class GameSimulation {
       this.customerManager.assignCashier(checkoutId, undefined);
       const res = this.customerManager.completeCheckout(checkoutId, this.completedCheckoutIds, this.tileMap, this.fixtures);
       if (!res.success) return false;
+      this.recordCustomerRating(customer);
 
       this.playerData.money += res.paidTotal;
       this.statistics.totalRevenue += res.paidTotal;
       this.statistics.totalCustomersServed += 1;
-      this.addExperience(5 * res.itemCount);
+      this.addExperience(Math.round(5 * res.itemCount * saleExperienceMultiplier(this.playerData.level)));
+
+      if (customer.regularId) {
+        const regDef = REGULAR_CUSTOMERS_MAP[customer.regularId];
+        if (regDef) {
+          const basketPids = customer.basket.map((b) => b.productId);
+          const currentDay = this.clock.getTime().day;
+          const regRes = processRegularCheckout(regDef, this.regulars[customer.regularId], basketPids, currentDay);
+          this.regulars[customer.regularId] = regRes.updatedProgress;
+          if (regRes.tipBonusRatio > 0) {
+            const regularTip = Math.round(res.paidTotal * regRes.tipBonusRatio);
+            this.playerData.money += regularTip;
+            this.callbacks.onToast?.(`${regDef.name} boa thêm ${regularTip.toLocaleString('vi-VN')} VND!`);
+          }
+          if (regRes.newlyUnlockedPerks.length > 0) {
+            this.callbacks.onToast?.(`Khách quen ${regDef.name} mở đặc quyền: ${regRes.newlyUnlockedPerks.join(', ')}!`);
+          }
+        }
+      }
 
       const cogs = res.cogs ?? 0;
       this.currentDayRecord.customersServed += 1;
@@ -2213,6 +2662,7 @@ export class GameSimulation {
         quantity: res.itemCount,
         description: `Bán lẻ cho khách hàng #${checkoutId} (${res.itemCount} món)`,
       });
+      this.awardSkillTip(res.paidTotal);
 
       this.notifyStateChanged();
       return true;
@@ -2238,16 +2688,18 @@ export class GameSimulation {
       customer.stage = 'leaving';
       this.customerManager.routeCustomer(customer, 'leaving', this.tileMap, this.fixtures);
 
-      this.playerData.money += product.baseSellingPrice;
-      this.statistics.totalRevenue += product.baseSellingPrice;
+      const salePrice = this.sellingPrice(product.id);
+      this.recordCustomerRating(customer, undefined, product.id);
+      this.playerData.money += salePrice;
+      this.statistics.totalRevenue += salePrice;
       this.statistics.totalCustomersServed += 1;
-      this.addExperience(5);
+      this.addExperience(Math.round(5 * saleExperienceMultiplier(this.playerData.level)));
 
       const cogs = (taken[0]?.unitCost ?? product.purchasePrice) * 1;
       this.currentDayRecord.customersServed += 1;
       this.currentDayRecord.transactionsCount += 1;
       this.currentDayRecord.itemsSold += 1;
-      this.currentDayRecord.revenue += product.baseSellingPrice;
+      this.currentDayRecord.revenue += salePrice;
       this.currentDayRecord.cogs += cogs;
       this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
       this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid;
@@ -2256,12 +2708,13 @@ export class GameSimulation {
       this.recordLedger({
         day: this.clock.getTime().day,
         type: 'sale',
-        amount: product.baseSellingPrice,
+        amount: salePrice,
         cogs,
         quantity: 1,
         productId: product.id,
         description: `Bán lẻ cho khách hàng #${checkoutId} (${product.name})`,
       });
+      this.awardSkillTip(salePrice);
 
       this.notifyStateChanged();
       return true;
@@ -2295,15 +2748,17 @@ export class GameSimulation {
    * Add experience points & handle level up
    */
   public addExperience(xp: number): void {
+    if (!Number.isFinite(xp) || xp <= 0 || this.playerData.level >= MAX_PLAYER_LEVEL) return;
     this.playerData.experience += xp;
-    while (this.playerData.experience >= this.playerData.experienceToNextLevel) {
+    while (this.playerData.level < MAX_PLAYER_LEVEL && this.playerData.experience >= this.playerData.experienceToNextLevel) {
       this.playerData.experience -= this.playerData.experienceToNextLevel;
       this.playerData.level += 1;
-      this.playerData.experienceToNextLevel = Math.floor(
-        this.playerData.experienceToNextLevel * 1.5
-      );
+      this.playerData.experienceToNextLevel = this.playerData.level >= MAX_PLAYER_LEVEL
+        ? 0
+        : xpToNextLevel(this.playerData.level);
       this.callbacks.onLevelUp?.(this.playerData.level);
     }
+    if (this.playerData.level >= MAX_PLAYER_LEVEL) this.playerData.experience = 0;
     this.notifyStateChanged();
   }
 
@@ -2332,6 +2787,7 @@ export class GameSimulation {
       createdAt: this.createdAt,
       updatedAt: new Date().toISOString(),
       player: { ...this.playerData },
+      sellingPrices: { ...this.sellingPrices },
       worldTime: this.clock.getTime(),
       storeLayout: {
         widthTiles: (this.tileMap.storeBounds?.right ?? STORE_BOUNDS.right) - STORE_BOUNDS.left + 1,
@@ -2364,6 +2820,10 @@ export class GameSimulation {
       currentDayRecord: { ...this.currentDayRecord },
       ledger: this.ledger.map((e) => ({ ...e })),
       closedDayIds: [...this.closedDayIds],
+      regulars: structuredClone(this.regulars),
+      partyOrders: structuredClone(this.partyOrders),
+      goals: structuredClone(this.goals),
+      skills: structuredClone(this.skills),
       statistics: { ...this.statistics },
     };
   }
@@ -2373,7 +2833,8 @@ export class GameSimulation {
    */
   public importSaveData(saveData: SaveGameData): void {
     this.restockJobClaims.clear();
-    this.playerData = { ...saveData.player };
+    this.playerData = normalizePlayerProgression(saveData.player);
+    this.sellingPrices = { ...(saveData.sellingPrices ?? {}) };
     this.fixtures = saveData.storeLayout.fixtures.map((f) => ({ ...f }));
     this.storedFixtures = (saveData.storeLayout.storedFixtures ?? []).map(f => ({ ...f }));
     this.unlockedPlotIds = [...(saveData.storeLayout.unlockedPlotIds ?? [])];
@@ -2404,6 +2865,12 @@ export class GameSimulation {
     this.completedCheckoutIds = new Set(saveData.completedCheckoutIds ?? []);
     this.dailyRecords = saveData.dailyRecords ? structuredClone(saveData.dailyRecords) : {};
     this.closedDayIds = new Set(saveData.closedDayIds ?? []);
+    this.regulars = saveData.regulars ? structuredClone(saveData.regulars) : {};
+    this.partyOrders = saveData.partyOrders
+      ? refreshAvailablePartyOrders(structuredClone(saveData.partyOrders), saveData.worldTime.day, this.playerData.level)
+      : refreshAvailablePartyOrders(createInitialPartyOrderState(), saveData.worldTime.day, this.playerData.level);
+    this.goals = saveData.goals ? structuredClone(saveData.goals) : createInitialGoalState();
+    this.skills = saveData.skills ? structuredClone(saveData.skills) : createInitialSkillState();
     this.ledger = (saveData.ledger ?? []).map((e) => ({ ...e }));
     if (saveData.currentDayRecord) {
       this.currentDayRecord = { ...saveData.currentDayRecord };
@@ -2431,5 +2898,38 @@ export class GameSimulation {
     }
     this.activeFixture = null;
     this.notifyStateChanged();
+  }
+
+  public getTitleContext(): TitleContext {
+    return {
+      level: this.playerData.level,
+      totalRevenue: this.statistics.totalRevenue,
+      totalCustomers: this.statistics.totalCustomersServed,
+      daysPassed: this.statistics.totalDaysPassed,
+      partyOrders: this.partyOrders.completedOrderIds.length,
+      reputation: this.playerData.reputation,
+    };
+  }
+
+  public getTitles(): Array<TitleDef & { unlocked: boolean; isActive: boolean }> {
+    const ctx = this.getTitleContext();
+    const unlocked = getUnlockedTitles(ctx, this.playerData.unlockedTitles);
+    this.playerData.unlockedTitles = unlocked;
+    return TITLES.map(title => ({
+      ...title,
+      unlocked: unlocked.includes(title.id),
+      isActive: this.playerData.activeTitle === title.id,
+    }));
+  }
+
+  public setActiveTitle(titleId?: string): { success: boolean; activeTitle?: string; reason?: string } {
+    const ctx = this.getTitleContext();
+    const unlocked = getUnlockedTitles(ctx, this.playerData.unlockedTitles);
+    this.playerData.unlockedTitles = unlocked;
+    const res = setActiveTitle(this.playerData, titleId, unlocked);
+    if (res.success) {
+      this.notifyStateChanged();
+    }
+    return res;
   }
 }

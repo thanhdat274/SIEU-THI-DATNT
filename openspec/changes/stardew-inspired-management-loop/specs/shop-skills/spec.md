@@ -41,3 +41,14 @@ Save không có kỹ năng SHALL tải với XP 0 và không perk.
 #### Scenario: Old save
 - **WHEN** tải save cũ
 - **THEN** ba kỹ năng ở cấp 1, không lỗi
+
+### Requirement: Perk modifiers affect simulation
+Mọi modifier được công bố SHALL được đọc tại điểm tính gameplay tương ứng; modifier tiền SHALL được ghi vào thống kê ngày và ledger, và skill state SHALL tồn tại qua save/reload.
+
+#### Scenario: Tip perk during checkout
+- **WHEN** checkout hoàn tất khi đã mở perk boa
+- **THEN** tiền boa được cộng đúng một lần vào tiền, doanh thu và ledger
+
+#### Scenario: Shelf capacity perk
+- **WHEN** người chơi hoặc nhân viên bổ sung hàng lên kệ có perk sức chứa
+- **THEN** giới hạn kệ dùng sức chứa tăng đã cấu hình nhưng không vượt `fixture.maxCapacity`

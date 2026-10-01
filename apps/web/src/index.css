@@ -33,10 +33,12 @@
 .account-bar-btn.btn-logout{background:#68231a;border-color:#8a3429;color:#ffe8e4;box-shadow:0 1.5px 0 #3a110b}
 .account-bar-btn.btn-logout:hover:not(:disabled){background:#802e23;border-color:#aa4436}
 .account-bar-btn.btn-login{background:#235438;border-color:#357f57;color:#e5fbf1;box-shadow:0 1.5px 0 #132f20}
-.account-bar-btn.btn-login:hover:not(:disabled){background:#2b6845}
+.account-bar-btn.btn-home{background:#356658;border-color:#4a8a77;color:#e8fdf5;box-shadow:0 1.5px 0 #1c3d34}
+.account-bar-btn.btn-home:hover:not(:disabled){background:#427e6d;border-color:#5ca892}
 .account-bar-btn.btn-invite{background:#24584f;border-color:#357f72;color:#e3fdf7;box-shadow:0 1.5px 0 #132f2b}
 .account-bar-btn.btn-invite:hover:not(:disabled){background:#2c6c61}
 @media (max-width:820px){.account-bar{padding:4px 10px;font-size:11px}.account-bar-status,.account-bar-divider{display:none}.account-bar-name{max-width:140px}}
+@media (max-width:640px){.account-bar-btn.btn-home .btn-home-text{display:none}}
 .game-hud{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:clamp(8px,1.2vw,18px);padding:clamp(6px,0.8vw,10px) clamp(10px,1.2vw,20px);border-bottom:4px solid var(--wood-dark);background:var(--paper);box-shadow:inset 0 4px 0 var(--wood-light);z-index:20;min-height:58px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:0}
 .brand-sign{display:grid;place-items:center;background:var(--teal-dark);color:var(--paper);border:2px solid var(--wood-dark);width:38px;height:38px;box-shadow:2px 2px 0 var(--wood-light);flex-shrink:0}
@@ -52,6 +54,8 @@
 .hud-event-badge{color:#7a3d1f;font-weight:700}
 .hud-stats{display:flex;gap:clamp(8px,1.2vw,18px);align-items:center;min-width:0;flex-shrink:1}
 .hud-level{min-width:80px;max-width:130px;flex-shrink:0}
+.hud-level{padding:0;border:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer;border-radius:4px}
+.hud-level:focus-visible{outline:2px solid #b7791f;outline-offset:3px}
 .hud-level-header{display:flex;align-items:baseline;justify-content:space-between;white-space:nowrap}
 .hud-level strong{font-size:clamp(12px,0.9vw,14px)}
 .hud-level-header span{font-size:11px}
@@ -61,7 +65,7 @@
 .hud-actions .pixel-button{padding:clamp(5px,0.6vw,7px) clamp(7px,0.8vw,11px);min-width:clamp(34px,2.4vw,40px);min-height:clamp(34px,2.4vw,40px);font-size:12px}
 .hud-actions .btn-store-toggle{min-width:76px;font-weight:800}
 .game-main{flex:1;display:flex;min-height:0;position:relative;overflow:hidden}.world-viewport{position:relative;flex:1;min-width:0;min-height:0;overflow:hidden;background:#B8B4A0}.world-viewport canvas{display:block;width:100%;height:100%;image-rendering:pixelated;touch-action:none}
-.world-caption{position:absolute;top:14px;left:18px;color:var(--wood-dark);padding:8px 12px;background:#FFF2D6EB;border-left:3px solid var(--teal);pointer-events:none;font-size:14px;box-shadow:2px 2px 0 #593A2B22}.world-caption strong{display:block}.world-caption span{color:var(--muted);font-size:14px}
+.world-caption{position:absolute;top:14px;left:18px;color:var(--wood-dark);padding:8px 30px 8px 12px;background:#FFF2D6EB;border-left:3px solid var(--teal);pointer-events:auto;font-size:14px;box-shadow:2px 2px 0 #593A2B22;cursor:pointer;user-select:none;transition:opacity .3s ease}.world-caption strong{display:block}.world-caption span{color:var(--muted);font-size:13px}.world-caption-close{position:absolute;top:2px;right:6px;background:none;border:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px;font-weight:700}.world-caption-close:hover{color:var(--wood-dark)}
 .world-tools{position:absolute;right:14px;bottom:16px;display:flex;gap:8px;align-items:center;z-index:18}.zoom-value{background:var(--paper);border:2px solid var(--wood-dark);padding:8px;min-width:40px;text-align:center;font-weight:800}
 .warehouse-dock{width:290px;flex-shrink:0;display:flex;flex-direction:column;background:var(--paper);border-left:4px solid var(--wood-dark);min-height:0;z-index:22;box-shadow:-4px 0 12px rgba(51,37,29,0.18);transition:width .15s ease}
 .dock-heading{padding:14px 14px 10px;border-bottom:2px solid var(--paper-shade)}.dock-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.dock-title h2{font-size:16px}.dock-title>div{display:flex;align-items:center;gap:8px}.dock-meta{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}.dock-list{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:10px 14px;touch-action:pan-y}
@@ -87,6 +91,7 @@
 }
 /* TIER 2: iPad Horizontal & Medium Tablets (max-width: 1080px) */
 @media(max-width:1080px){
+  .world-caption{display:none!important}
   .game-hud{gap:10px;padding:6px 12px;min-height:52px}
   .brand-copy h1{font-size:14px}
   .hud-store-status{display:none}
@@ -97,6 +102,7 @@
 }
 /* TIER 3: Mobile Landscape & Small Tablets (max-width: 860px), or Landscape phone height (max-height: 520px) */
 @media(max-width:860px),(max-height:520px){
+  .world-caption{display:none!important}
   .game-hud{min-height:46px;padding:4px 8px;gap:6px}
   .brand-copy{display:none}
   .brand-sign{width:32px;height:32px}

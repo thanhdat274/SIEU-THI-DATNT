@@ -1,10 +1,11 @@
 import React, {useState, useMemo} from 'react';
 import {InventoryItem,StoreFixture,SupplierOrder,HoldingItem,COLD_WAREHOUSE_CAPACITY,isSalesFixture} from '@game/shared';
-import {PRODUCT_MAP} from '@game/data';
+import {PRODUCT_MAP, effectiveShelfCapacity} from '@game/data';
 import {useGameStore} from '../store/useGameStore';
 import {PixelDialog,PixelButton,PixelStat,PixelProgress,ProductSlot,EmptyState} from './pixel';
 
 interface Props {
+  capacityBonus?: number;
   fixture: StoreFixture;
   inventory: InventoryItem[];
   holdingArea?: HoldingItem[];
@@ -25,7 +26,8 @@ export const WarehouseModal: React.FC<Props> = ({
   currentDay,
   onRestock,
   onStowHolding,
-  onClose
+  onClose,
+  capacityBonus = 0,
 }) => {
   const [group, setGroup] = useState<'all' | 'ambient' | 'cold'>(
     fixture.type === 'warehouse_cold' ? 'cold' : fixture.type === 'warehouse_dry' ? 'ambient' : 'all'
@@ -36,7 +38,7 @@ export const WarehouseModal: React.FC<Props> = ({
   const cold = items.reduce((n, i) => n + (PRODUCT_MAP[i.productId]?.storageType === 'cold' ? i.quantity : 0), 0);
   const reserved = pendingOrders.reduce((n, o) => n + (PRODUCT_MAP[o.productId]?.storageType === 'cold' ? o.quantity : 0), 0);
   const canRestock = fixtures.some(
-    f => isSalesFixture(f) && f.assignedProductId && f.currentStock < Math.min(f.maxCapacity, PRODUCT_MAP[f.assignedProductId]?.shelfCapacity ?? f.maxCapacity) && items.some(i => i.productId === f.assignedProductId)
+    f => isSalesFixture(f) && f.assignedProductId && f.currentStock < effectiveShelfCapacity(f.maxCapacity, PRODUCT_MAP[f.assignedProductId]?.shelfCapacity ?? f.maxCapacity, capacityBonus) && items.some(i => i.productId === f.assignedProductId)
   );
 
   const filteredItems = useMemo(() => {

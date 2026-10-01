@@ -37,3 +37,10 @@ Màn tổng kết SHALL dùng được ở viewport mobile ngang, không tràn n
 #### Scenario: 844×390
 - **WHEN** mở tổng kết ở 844×390
 - **THEN** nút Tiếp tục luôn thấy được
+
+### Requirement: Implemented summary scope
+Phần code hiện tại SHALL được mô tả là modal tổng kết mở khi ngày đổi và chỉ đọc từ `DailyRecord`; bản tin sáng, mở lại sau reload và highlights hoàn chỉnh vẫn là yêu cầu chưa triển khai.
+
+#### Scenario: Do not claim morning brief exists
+- **WHEN** người chơi bắt đầu ngày mới
+- **THEN** hệ thống không được xem các toast rời rạc là bản tin sáng hoàn chỉnh

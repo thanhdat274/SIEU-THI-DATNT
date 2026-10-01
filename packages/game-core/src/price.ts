@@ -12,6 +12,16 @@ export interface PriceTarget {
 
 export type PriceRules = typeof PRICE_RULES;
 
+/** Kẹp và làm tròn giá người chơi đặt theo giá gợi ý trong catalog. */
+export function clampSellingPrice(value: number, suggested: number, rules: PriceRules = PRICE_RULES): number {
+  if (!Number.isFinite(value) || suggested <= 0) return Math.max(0, Math.round(suggested));
+  const step = rules.sellingPriceStep;
+  const min = Math.ceil((suggested * rules.sellingPriceBand.min) / step) * step;
+  const max = Math.floor((suggested * rules.sellingPriceBand.max) / step) * step;
+  const rounded = Math.round(value / step) * step;
+  return Math.min(max, Math.max(min, rounded));
+}
+
 /** Tỉ số giá: bán / tham chiếu. > 1 là đắt hơn thị trường. */
 export const priceRatio = (selling: number, reference: number) => reference > 0 ? selling / reference : 1;
 

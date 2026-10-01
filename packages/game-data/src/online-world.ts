@@ -1,6 +1,6 @@
 import type { BusinessState, GameAccount, GameAvatar, GameWorld, WorldMembership } from '@game/shared';
 import { MULTIPLAYER_PROTOCOL_VERSION } from '@game/shared';
-import { DEFAULT_INITIAL_SAVE } from './map';
+import { DEFAULT_INITIAL_SAVE, ONLINE_SPAWN_POINTS } from './map';
 
 export function createInitialOnlineWorld(
   owner: Pick<GameAccount, 'id' | 'displayName' | 'photoUrl'>,
@@ -20,9 +20,10 @@ export function createInitialOnlineWorld(
   const membership: WorldMembership = { accountId: owner.id, role: 'owner', joinedAt: now, lastSeenRevision: 0 };
   const avatar: GameAvatar = {
     accountId: owner.id,
-    position: { ...save.player.position },
-    direction: save.player.direction,
+    position: { ...ONLINE_SPAWN_POINTS[0] },
+    direction: 'up',
     updatedAt: now,
+    displayName: owner.displayName.slice(0, 64),
   };
   const business: BusinessState = { id: businessId, ownerAccountIds: [owner.id], save };
   const world: GameWorld = {

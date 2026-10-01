@@ -433,6 +433,10 @@ export const SEASONAL_PRODUCTS: Product[] = [
   { id: 'tra_nong_gung', name: 'Trà gừng hòa tan', category: 'soft_drinks', spriteId: 'item_tra_nong_gung', purchasePrice: 25000, baseSellingPrice: 36000, shelfCapacity: 12, storageType: 'ambient', expirationRules: { daysToSpoil: 240 }, unlockLevel: 2, demandProfile: { basePopularity: 0.4 }, description: 'Trà gừng pha nóng cho ngày lạnh, ấm bụng dễ ngủ.' },
   { id: 'thit_heo_tuoi', name: 'Thịt heo tươi 300g', category: 'cooking_ingredients', spriteId: 'item_thit_heo_tuoi', purchasePrice: 38000, baseSellingPrice: 52000, shelfCapacity: 10, storageType: 'cold', expirationRules: { daysToSpoil: 2 }, unlockLevel: 3, demandProfile: { basePopularity: 0.45 }, description: 'Thịt heo ba rọi tươi trong ngày, sắm Tết và nấu bữa cơm chiều.' },
   { id: 'rau_cai_xanh', name: 'Rau cải xanh (bó)', category: 'cooking_ingredients', spriteId: 'item_rau_cai_xanh', purchasePrice: 6000, baseSellingPrice: 10000, shelfCapacity: 14, storageType: 'cold', expirationRules: { daysToSpoil: 3 }, unlockLevel: 2, demandProfile: { basePopularity: 0.5 }, description: 'Bó cải xanh tươi, để lâu là héo nên phải bán cho nhanh.' },
+  { id: 'banh_chung_tet', name: 'Bánh Chưng Xanh Tết', category: 'cooking_ingredients', spriteId: 'item_banh_chung_tet', purchasePrice: 40000, baseSellingPrice: 65000, shelfCapacity: 12, storageType: 'ambient', expirationRules: { daysToSpoil: 15 }, unlockLevel: 1, demandProfile: { basePopularity: 0.6 }, description: 'Bánh chưng vuông vắn nếp cái hoa vàng, đậu xanh thịt mỡ đậm đà hương vị Tết cổ truyền.' },
+  { id: 'cau_doi_do', name: 'Liễn Câu Đối Đỏ', category: 'household', spriteId: 'item_cau_doi_do', purchasePrice: 20000, baseSellingPrice: 35000, shelfCapacity: 16, storageType: 'ambient', expirationRules: { daysToSpoil: 180 }, unlockLevel: 1, demandProfile: { basePopularity: 0.45 }, description: 'Câu đối đỏ thư pháp may mắn, chúc gia chủ phúc lộc an khang thịnh vượng đầu năm.' },
+  { id: 'dua_hau_tet', name: 'Dưa Hấu Khắc Chữ Tài Lộc', category: 'snacks', spriteId: 'item_dua_hau_tet', purchasePrice: 35000, baseSellingPrice: 55000, shelfCapacity: 10, storageType: 'ambient', expirationRules: { daysToSpoil: 20 }, unlockLevel: 1, demandProfile: { basePopularity: 0.5 }, description: 'Trái dưa hấu ruột đỏ ngọt lịm khắc chữ Tài Lộc trang trọng trưng trên bàn thờ gia tiên.' },
+  { id: 'banh_trung_thu', name: 'Bánh Trung Thu Thập Cẩm', category: 'candy', spriteId: 'item_banh_trung_thu', purchasePrice: 35000, baseSellingPrice: 58000, shelfCapacity: 14, storageType: 'ambient', expirationRules: { daysToSpoil: 30 }, unlockLevel: 1, demandProfile: { basePopularity: 0.55 }, description: 'Bánh nướng thập cẩm lạp xưởng trứng muối truyền thống thơm nức đêm rằm phá cỗ.' },
 ];
 
 export const ALL_PRODUCTS: Product[] = [
@@ -455,3 +459,11 @@ export const PRODUCT_MAP: Record<string, Product> = ALL_PRODUCTS.reduce(
   },
   {} as Record<string, Product>
 );
+
+/**
+ * Sức chứa thực tế của một kệ cho một mặt hàng: lấy mức thấp hơn giữa sức chứa kệ và sức chứa mặt hàng rồi cộng bonus (perk).
+ * Bonus nhân sau khi chạm trần nên perk luôn có tác dụng, kể cả với món đã đầy kệ khi không có perk.
+ */
+export function effectiveShelfCapacity(fixtureMaxCapacity: number, productShelfCapacity: number, bonus = 0): number {
+  return Math.floor(Math.min(fixtureMaxCapacity, productShelfCapacity) * (1 + bonus));
+}

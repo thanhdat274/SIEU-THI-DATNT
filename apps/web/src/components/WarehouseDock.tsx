@@ -1,9 +1,10 @@
 import React from 'react';
 import { InventoryItem, StoreFixture, HoldingItem, COLD_WAREHOUSE_CAPACITY, isSalesFixture } from '@game/shared';
-import { PRODUCT_MAP } from '@game/data';
+import { PRODUCT_MAP, effectiveShelfCapacity } from '@game/data';
 import { PixelButton, PixelIcon, ProductSlot, EmptyState } from './pixel';
 
 interface Props {
+  capacityBonus?: number;
   inventory: InventoryItem[];
   holdingArea?: HoldingItem[];
   fixtures: StoreFixture[];
@@ -27,6 +28,7 @@ export const WarehouseDock: React.FC<Props> = ({
   onLocateWarehouse,
   onStowHolding,
   currentDay,
+  capacityBonus = 0,
 }) => {
   if (!isOpen) return null;
   const items = inventory.filter((i) => i.quantity > 0);
@@ -35,7 +37,7 @@ export const WarehouseDock: React.FC<Props> = ({
     (f) =>
       isSalesFixture(f) &&
       f.assignedProductId &&
-      f.currentStock < Math.min(f.maxCapacity, PRODUCT_MAP[f.assignedProductId]?.shelfCapacity ?? f.maxCapacity) &&
+      f.currentStock < effectiveShelfCapacity(f.maxCapacity, PRODUCT_MAP[f.assignedProductId]?.shelfCapacity ?? f.maxCapacity, capacityBonus) &&
       items.some((i) => i.productId === f.assignedProductId && i.quantity > 0)
   );
   const empty = fixtures.filter((f) => isSalesFixture(f) && f.currentStock === 0).length;

@@ -95,3 +95,9 @@ Nhãn: **R** dùng trực tiếp · **A** điều chỉnh · **D** thiết kế 
 | Trạng thái mới vào save/multiplayer | Trường tùy chọn + migration mặc định; thay đổi qua `GameCommand` có ID, server dùng cùng hàm thuần |
 | Quá nhiều hệ cùng lúc | 4 đợt, mỗi đợt tự đủ; P0 trước |
 | Cày quan hệ/khách quen | Trần điểm thân thiết theo ngày |
+
+## 6. Implementation snapshot — 01/10/2026
+
+- Working tree now contains first-pass price overrides, customer star/reputation signals, end-of-day modal, seasonal keyframe warp, deterministic intraday rain intensity/VFX, moving tree shadow, and cosmetic lane/drain/crosswalk/signal decals.
+- These are code-presence observations only: no typecheck, tests, build, browser QA or balance playtest were run for this implementation session. OpenSpec task gates remain unchecked.
+- Not implemented: persistent regular-customer profiles/history, morning brief, customer arrivals by motorbike/car/on foot, parking/routing, traffic phases, functional storm drains/puddles, full review history, plus balance and compatibility verification.

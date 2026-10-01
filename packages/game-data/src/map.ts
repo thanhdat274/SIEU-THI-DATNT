@@ -1,6 +1,7 @@
 import { GameTileMap, StoreFixture, SaveGameData, Vector2D } from '@game/shared';
 import { LAND_PLOTS, STARTER_OWNED_PLOT_IDS } from './land';
 import { STALLS } from './stalls';
+import { xpToNextLevel } from './progression';
 
 /** Chủ tiệm đứng sau quầy thu ngân (phía bắc), nhìn ra chỗ khách xếp hàng ở ô (9,8). */
 export const SHOPKEEPER_TILE = { x: 8, y: 7 };
@@ -10,11 +11,24 @@ export const MAP_WIDTH = 26;
 export const MAP_HEIGHT = 22;
 export const MAP_ORIGIN_Y = -6;
 export const STORE_BOUNDS = {left:6,right:13,top:3,bottom:10};
+/** Điểm xuất hiện của người chơi trong hẻm chung: vỉa hè ngay ngoài cửa tiệm (cửa ở x=9..10, y=10). Chỉnh ở đây để đổi chỗ xuất hiện; chủ hẻm lấy mục 0, thành viên mục 1. */
+export const ONLINE_SPAWN_POINTS: readonly { x: number; y: number }[] = [
+  { x: 8.5 * 32, y: 12.5 * 32 },
+  { x: 11.5 * 32, y: 12.5 * 32 },
+];
 /** Hàng rào thấp ở hàng y=10 giữa cỏ và vỉa hè (trừ mặt tiền tiệm); dùng chung cho va chạm và renderer. */
 export const isFenceTile = (x: number, worldY: number, mapWidth: number): boolean =>
   worldY === 10 && x > 0 && x < mapWidth - 1 && (x <= STORE_BOUNDS.left - 2 || x >= STORE_BOUNDS.right + 2);
 /** Đèn đường trên vỉa hè sát lòng đường; cột đèn chặn đường đi như vật cản nhỏ. */
 export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 4, y: 12 }, { x: 15, y: 12 }, { x: 20, y: 12 }];
+
+/** Điểm đỗ xe máy lề đường trước tiệm (trên vỉa hè sát lòng đường, không chặn cửa tiệm hay cột đèn). */
+export const STREET_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
+  { x: 6 * 32 + 16, y: 12 * 32 + 10 },
+  { x: 7 * 32 + 16, y: 12 * 32 + 10 },
+  { x: 12 * 32 + 16, y: 12 * 32 + 10 },
+  { x: 13 * 32 + 16, y: 12 * 32 + 10 },
+];
 export const WAREHOUSE_BOUNDS = {left:STORE_BOUNDS.left,right:STORE_BOUNDS.right,top:STORE_BOUNDS.top-6,bottom:STORE_BOUNDS.top};
 export const WAREHOUSE_CENTER = {x:(WAREHOUSE_BOUNDS.left+WAREHOUSE_BOUNDS.right+1)*16,y:(WAREHOUSE_BOUNDS.top+WAREHOUSE_BOUNDS.bottom+1)*16};
 export const WAREHOUSE_DOOR_LEFT = Math.floor(WAREHOUSE_CENTER.x/32)-1;
@@ -242,7 +256,7 @@ export const DEFAULT_INITIAL_SAVE: SaveGameData = {
     name: 'Cô Năm Tạp Hóa',
     level: 1,
     experience: 0,
-    experienceToNextLevel: 100,
+    experienceToNextLevel: xpToNextLevel(1),
     money: 150000, // 150,000 VND starting capital
     reputation: 10,
     position: { x: 9.5 * 32, y: 8.5 * 32 },
@@ -273,6 +287,7 @@ export const DEFAULT_INITIAL_SAVE: SaveGameData = {
   staffSchedule: {},
   wageDebt: 0,
   processedPayrollDayIds: [],
+  regulars: {},
   statistics: {
     totalRevenue: 0,
     totalCustomersServed: 0,

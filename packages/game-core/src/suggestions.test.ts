@@ -372,8 +372,106 @@ export function runSuggestionTests(): void {
     assert.equal(closed[1]?.productSales?.['mi_hao_hao'], 15, 'Bản ghi ngày đã chốt bảo lưu số lượng từng sản phẩm');
   }
 
-  console.log('  ✓ GameSimulation.suggestRestock hoạt động liền mạch');
-  console.log('  ✓ GameSimulation.recordProductSale theo dõi đúng doanh số từng món');
+  // --- Test 7.4: Gợi ý theo mùa/thời tiết & giới hạn hàng tươi sống (Task 2.5) ---
+  console.log('\n--- Test 7.4: Gợi ý theo mùa/thời tiết & giới hạn hàng tươi sống ---');
+  {
+    const fixtures: any[] = [
+      {
+        id: 'shelf_wooden_1',
+        type: 'shelf_wooden',
+        assignedProductId: 'mi_hao_hao',
+        currentStock: 0,
+        stockLots: [],
+        maxCapacity: 50,
+      },
+    ];
+    const dailyRecords: Record<number, any> = {
+      1: { day: 1, productSales: { mi_hao_hao: 10 } },
+    };
+    const currentDayRecord: any = { day: 2, productSales: { mi_hao_hao: 10 } };
+
+    // Standard demand: velocity = 10, target = 25
+    const normalRes = generateRestockSuggestions({
+      playerLevel: 10,
+      playerMoney: 500000,
+      currentDay: 2,
+      fixtures,
+      inventory: [],
+      holdingArea: [],
+      pendingOrders: [],
+      dailyRecords,
+      currentDayRecord,
+      coldWarehouseCount: 0,
+    });
+    const normalNoodle = normalRes.items.find((i) => i.productId === 'mi_hao_hao');
+    assert.ok(normalNoodle, 'Có gợi ý nhập mì Hảo Hảo');
+
+    // Rainy season/weather boost (1.5x multiplier): target should scale up
+    const boostedRes = generateRestockSuggestions({
+      playerLevel: 10,
+      playerMoney: 500000,
+      currentDay: 2,
+      fixtures,
+      inventory: [],
+      holdingArea: [],
+      pendingOrders: [],
+      dailyRecords,
+      currentDayRecord,
+      coldWarehouseCount: 0,
+      demandMultiplierOf: (id) => (id === 'mi_hao_hao' ? 1.5 : 1.0),
+    });
+    const boostedNoodle = boostedRes.items.find((i) => i.productId === 'mi_hao_hao');
+    assert.ok(boostedNoodle, 'Có gợi ý nhập mì mùa mưa');
+    assert.ok(
+      boostedNoodle.quantity > normalNoodle.quantity,
+      `Hệ số mùa/thời tiết làm tăng lượng gợi ý: ${boostedNoodle.quantity} > ${normalNoodle.quantity}`
+    );
+
+    // Fresh perishable item (rau_cai_xanh: daysToSpoil = 3)
+    // Even if demand multiplier is huge (3.0x), target must not exceed daysToSpoil shelf life ceiling
+    const vegProduct = ALL_PRODUCTS.find((p) => p.expirationRules?.daysToSpoil && p.expirationRules.daysToSpoil <= 3);
+    if (vegProduct) {
+      const freshFixtures: any[] = [
+        {
+          id: 'shelf_veg',
+          type: 'shelf_wooden',
+          assignedProductId: vegProduct.id,
+          currentStock: 0,
+          stockLots: [],
+          maxCapacity: 100,
+        },
+      ];
+      const freshDailyRecords: Record<number, any> = {
+        1: { day: 1, productSales: { [vegProduct.id]: 2 } },
+      };
+      const freshRes = generateRestockSuggestions({
+        playerLevel: 20,
+        playerMoney: 500000,
+        currentDay: 2,
+        fixtures: freshFixtures,
+        inventory: [],
+        holdingArea: [],
+        pendingOrders: [],
+        dailyRecords: freshDailyRecords,
+        currentDayRecord: { day: 2, productSales: { [vegProduct.id]: 2 } } as any,
+        coldWarehouseCount: 0,
+        demandMultiplierOf: () => 3.0, // High season multiplier
+      });
+      const freshItem = freshRes.items.find((i) => i.productId === vegProduct.id);
+      if (freshItem) {
+        const daysToSpoil = vegProduct.expirationRules?.daysToSpoil ?? 3;
+        // maxFresh = Math.ceil(trendVelocity * daysToSpoil) = Math.ceil((2 * 3.0) * 3) = 18
+        // Should not exceed maxFresh and definitely should not exceed shelf life safety limit
+        assert.ok(
+          freshItem.quantity <= Math.ceil(2 * 3.0 * daysToSpoil),
+          'Hàng tươi sống không vượt trần tiêu thụ theo hạn sử dụng'
+        );
+      }
+    }
+  }
+
+  console.log('  ✓ Hệ số thời tiết/mùa làm tăng nhu cầu gợi ý chính xác');
+  console.log('  ✓ Hàng tươi sống tuân thủ nghiêm ngặt trần hạn sử dụng');
 
   console.log('\n🎉 TOÀN BỘ CÁC BÀI KIỂM THỬ GỢI Ý NHẬP HÀNG (NHÓM 7) ĐÃ ĐẠT!');
 }

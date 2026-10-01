@@ -13,6 +13,20 @@ export function climateSeasonForDay(day: number) {
   return CLIMATE_SEASONS.find(item => doy >= item.startDayOfYear && doy <= item.endDayOfYear) ?? CLIMATE_SEASONS[0];
 }
 
+/** Deterministic intraday shower envelope: rain fades in/out rather than staying at one daily intensity. */
+export function rainIntensityAt(seed: string, day: number, hour: number, minute: number, weatherId: string): number {
+  if (weatherId !== 'rainy' && weatherId !== 'heavy_rain' && weatherId !== 'storm') return 0;
+  const rng = new Mulberry32Rng(hashSeed(`${seed}:rain:${day}`));
+  const daylightCenter = 13 * 60 + Math.floor(rng.next() * 5 * 60);
+  const halfDuration = (weatherId === 'rainy' ? 55 : weatherId === 'heavy_rain' ? 80 : 65) + Math.floor(rng.next() * 75);
+  const centerMinute = 6 * 60 + (daylightCenter - 6 * 60) * 0.7;
+  const peak = weatherId === 'rainy' ? 0.2 + rng.next() * 0.32 : weatherId === 'heavy_rain' ? 0.55 + rng.next() * 0.35 : 0.78 + rng.next() * 0.22;
+  const currentMinute = hour * 60 + minute;
+  const progress = Math.max(0, 1 - Math.abs(currentMinute - centerMinute) / halfDuration);
+  const smooth = progress * progress * (3 - 2 * progress);
+  return Math.max(0, Math.min(1, peak * smooth));
+}
+
 /** Thời tiết của `day` từ hạt giống, mùa khí hậu và thời tiết hôm trước (chuỗi Markov đơn giản có độ "dai"). */
 export function pickWeather(seed: string, day: number, previous?: string): string {
   const climate = climateSeasonForDay(day);

@@ -6,9 +6,10 @@ interface AccountBarProps {
   isOnlineOwner?: boolean;
   onInvite?: () => void;
   onLeaveOnline?: () => void;
+  onReturnHome?: () => void;
 }
 
-export function AccountBar({ onlineWorldName, isOnlineOwner, onInvite, onLeaveOnline }: AccountBarProps = {}) {
+export function AccountBar({ onlineWorldName, isOnlineOwner, onInvite, onLeaveOnline, onReturnHome }: AccountBarProps = {}) {
   const [user, setUser] = useState<User | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('Tiến trình hiện lưu an toàn trên máy này.');
@@ -94,6 +95,17 @@ export function AccountBar({ onlineWorldName, isOnlineOwner, onInvite, onLeaveOn
       </div>
 
       <div className="account-bar-actions">
+        {onReturnHome && (
+          <button
+            type="button"
+            className="account-bar-btn btn-home"
+            onClick={onReturnHome}
+            title="Lưu tiến trình và quay về màn hình chính"
+          >
+            <span className="btn-home-icon" aria-hidden="true">🏠</span>
+            <span className="btn-home-text">Về màn hình chính</span>
+          </button>
+        )}
         {onlineWorldName && isOnlineOwner && onInvite && (
           <button
             type="button"

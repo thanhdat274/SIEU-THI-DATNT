@@ -18,7 +18,7 @@ Mỗi lượt khách kết thúc (thanh toán hoặc bỏ đi) SHALL cho một �
 - **THEN** điểm không quá 2 và lý do "hết hàng" được ghi
 
 ### Requirement: Reputation from rolling average
-Uy tín SHALL suy ra từ trung bình cửa sổ (rỗng coi như 4) và SHALL không được lưu song song với ratings; hệ số lượng khách SHALL nằm trong [0,8; 1,2].
+Trung bình rating SHALL suy ra từ cửa sổ (rỗng coi như 4); uy tín tích lũy legacy có thể tiếp tục lưu riêng để tương thích gameplay hiện có. Hệ số lượng khách SHALL nằm trong [0,8; 1,2] và dựa trên rating trung bình.
 
 #### Scenario: High average
 - **WHEN** trung bình ≥ 4,5
@@ -29,7 +29,7 @@ Uy tín SHALL suy ra từ trung bình cửa sổ (rỗng coi như 4) và SHALL k
 - **THEN** trung bình là 4 và hệ số trung tính
 
 ### Requirement: Legacy migration
-Save có `reputation` cũ SHALL tải được với `ratings` rỗng; không mất tiền/kho và không làm uy tín âm.
+Save có `reputation` cũ SHALL tải được với `ratings` rỗng; không mất tiền/kho và điểm uy tín SHALL giữ trong giới hạn cũ.
 
 #### Scenario: Load old save
 - **WHEN** tải save chưa có `ratings`

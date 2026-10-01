@@ -1,17 +1,12 @@
 import { StaffRole, StaffShift, STAFF_SHIFTS } from '@game/shared';
+import { STAFF_SLOT_MILESTONES, staffSlotsAtLevel } from './progression';
 
-export const STAFF_SLOTS_BY_LEVEL: Record<number, number> = {
-  1: 0,
-  2: 1,
-  3: 2,
-};
+export const STAFF_SLOTS_BY_LEVEL: Record<number, number> = { ...STAFF_SLOT_MILESTONES };
 
 export const DEFAULT_HIRING_FEE = 50000;
 
 export function getMaxStaffSlots(playerLevel: number): number {
-  if (playerLevel < 2) return 0;
-  if (playerLevel === 2) return 1;
-  return 2; // Level >= 3 has 2 slots in MVP
+  return staffSlotsAtLevel(playerLevel);
 }
 
 export interface RoleInfo {
@@ -35,6 +30,13 @@ export const STAFF_ROLE_INFO: Record<StaffRole, RoleInfo> = {
     label: 'Bổ sung kệ',
     icon: '🧺',
     description: 'Vận chuyển hàng từ nhà kho châm vào kệ trưng bày',
+    primaryStat: 'speed',
+  },
+  security: {
+    id: 'security',
+    label: 'Bảo vệ xe',
+    icon: '🛵',
+    description: 'Trông giữ xe bãi đỗ vỉa hè, giúp khách đi xe máy yên tâm mua sắm và tăng độ hài lòng',
     primaryStat: 'speed',
   },
 };

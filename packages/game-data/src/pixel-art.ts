@@ -20,6 +20,27 @@ export function productPixels(product?: Pick<Product, 'id' | 'category'>): Pixel
     rect(3, 2, 10, 13, ink); rect(4, 3, 8, 11, '#E9B95D'); rect(6, 2, 4, 3, ink); rect(6, 3, 4, 2, '#C69464'); rect(7, 5, 2, 9, '#C99A3E');
     return p;
   }
+  if (product?.id === 'banh_chung_tet') { // bánh chưng xanh vuông lạt rơm
+    rect(2, 2, 12, 12, ink); rect(3, 3, 10, 10, '#2E6828'); rect(4, 4, 8, 8, '#418E3A');
+    rect(7, 3, 2, 10, '#E5C26B'); rect(3, 7, 10, 2, '#E5C26B'); // lạt tre chữ thập
+    return p;
+  }
+  if (product?.id === 'cau_doi_do') { // câu đối đỏ
+    rect(4, 1, 8, 14, ink); rect(5, 2, 6, 12, '#B8281F');
+    rect(6, 4, 4, 2, '#F8D05C'); rect(6, 7, 4, 2, '#F8D05C'); rect(6, 10, 4, 2, '#F8D05C'); // chữ vàng
+    rect(4, 1, 8, 1, '#422315'); rect(4, 14, 8, 1, '#422315'); // trục gỗ cuốn
+    return p;
+  }
+  if (product?.id === 'dua_hau_tet') { // dưa hấu khắc chữ
+    rect(3, 3, 10, 10, ink); rect(4, 4, 8, 8, '#2E6828'); rect(5, 4, 2, 8, '#418E3A'); rect(9, 4, 2, 8, '#418E3A');
+    rect(6, 6, 4, 4, '#D63629'); rect(7, 7, 2, 2, '#F8D05C'); // tâm khắc chữ Tài Lộc vàng
+    return p;
+  }
+  if (product?.id === 'banh_trung_thu') { // bánh trung thu tròn nướng
+    rect(3, 3, 10, 10, ink); rect(4, 3, 8, 10, '#B5651D'); rect(3, 4, 10, 8, '#B5651D');
+    rect(5, 5, 6, 6, '#E29B48'); rect(7, 7, 2, 2, '#7C3B08');
+    return p;
+  }
   const hash = [...(product?.id ?? '')].reduce((a, c) => a + c.charCodeAt(0), 0);
   const accent = ['#B64C3D', '#357F72', '#B58443', '#77649B'][hash % 4];
   if (category === 'soft_drinks' || category === 'bottled_water') {

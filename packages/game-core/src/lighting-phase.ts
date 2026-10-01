@@ -19,6 +19,15 @@ export interface LightingState {
 
 interface Keyframe { hour: number; outdoor: number; indoor: number; sun: number; artificial: number; sky: number; lean: number; length: number; phase: LightingState['phase'] }
 
+/** Approximate HCMC sunrise/sunset design envelope across the 120-day game year. */
+export function getSeasonalSunTimes(day: number): { sunrise: number; sunset: number } {
+  const phase = ((Math.max(1, Math.floor(day)) - 1) % 120) / 120 * Math.PI * 2;
+  // HCMC design approximation: transition-season early sunrise and slight sunset drift.
+  const sunrise = 5.88 + 0.22 * Math.sin(phase - 0.45);
+  const sunset = 17.91 + 0.16 * Math.sin(phase + 0.6);
+  return { sunrise, sunset };
+}
+
 const KEYFRAMES: Keyframe[] = [
   { hour: 0,    outdoor: 0x2c3868, indoor: 0xb7bad4, sun: 0,   artificial: 1,    sky: 0x111a33, lean: 0,    length: 0,   phase: 'night' },
   { hour: 5,    outdoor: 0x34407a, indoor: 0xbcbfd8, sun: 0,   artificial: 1,    sky: 0x1c2748, lean: -1,   length: 2,   phase: 'night' },
@@ -42,8 +51,17 @@ export const lerpColor = (a: number, b: number, t: number) => {
   return (r << 16) | (g << 8) | bl;
 };
 
-export function getLightingState(hour: number, minute = 0): LightingState {
-  const h = ((hour + minute / 60) % 24 + 24) % 24;
+export function getLightingState(hour: number, minute = 0, day = 1): LightingState {
+  const rawHour = ((hour + minute / 60) % 24 + 24) % 24;
+  const { sunrise, sunset } = getSeasonalSunTimes(day);
+  const h =
+    rawHour < sunrise
+      ? (rawHour / sunrise) * 6
+      : rawHour < 12
+      ? 6 + ((rawHour - sunrise) / (12 - sunrise)) * 6
+      : rawHour < sunset
+      ? 12 + ((rawHour - 12) / (sunset - 12)) * 6
+      : 18 + ((rawHour - sunset) / (24 - sunset)) * 6;
   let i = 0;
   while (i < KEYFRAMES.length - 2 && h >= KEYFRAMES[i + 1].hour) i++;
   const a = KEYFRAMES[i];

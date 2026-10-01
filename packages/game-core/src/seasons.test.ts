@@ -20,7 +20,13 @@ export function runSeasonAndStallTests(): void {
   assert.equal(getSeasonForDay(dayOf('tet', 9))?.id, 'tet', 'Ngày cuối vẫn thuộc Tết');
   assert.equal(getSeasonForDay(dayOf('tet', 10)), null, 'Sau Tết hết sự kiện');
   assert.equal(getSeasonForDay(1), getSeasonForDay(1 + SEASON_YEAR_DAYS), 'Sự kiện lặp theo năm');
-  for (const event of SEASON_EVENTS) assert.ok(event.demandMultiplier > 0 && event.preferredCategories.length > 0);
+  for (const event of SEASON_EVENTS) {
+    assert.ok(event.demandMultiplier > 0 && event.preferredCategories.length > 0);
+    assert.ok(event.goals && event.goals.length > 0, `Mùa ${event.name} có mục tiêu ngày hội`);
+    for (const goal of event.goals) {
+      assert.ok(goal.id && goal.title && goal.targetUnits > 0 && goal.rewardMoney > 0, 'Mục tiêu ngày hội hợp lệ');
+    }
+  }
 
   // Khách mùa ưu tiên nhóm hàng theo mùa.
   const map = generateStarterTileMap();
@@ -36,7 +42,7 @@ export function runSeasonAndStallTests(): void {
   assert.equal(plainCustomer?.targetFixtureId, sales[0].id, 'Ngày thường vẫn đi theo vòng');
   const slow = new CustomerManager([], 0, 0);
   slow.maybeSpawnCustomer(1, true, sim0.getFixtures(), map, 1, 1, { traffic: 0.5, weightOf: () => 1 });
-  assert.equal(slow.getSpawnCooldown(), 24, 'Nhu cầu thấp kéo dài thời gian giữa hai khách');
+  assert.equal(slow.getSpawnCooldown(), 11, 'Nhu cầu thấp kéo dài thời gian giữa hai khách theo nhịp cơ sở 5.5 giây');
 
   // --- Quầy ăn uống ---
   const coffee = STALL_MAP['cafe_vot'];
@@ -97,6 +103,7 @@ export function runSeasonAndStallTests(): void {
   assert.ok(saleEntry && saleEntry.cogs === cogs && saleEntry.amount === revenue, 'Quầy ghi sổ với giá vốn theo lô kho');
   assert.equal(sim.getInventory().find(i => i.productId === 'sua_ong_tho')?.quantity ?? 0, 5 - plan.ingredientUnits['sua_ong_tho'], 'Trừ đúng nguyên liệu trong kho');
   assert.ok(sim.getDailyRecords()[day]?.revenue >= revenue, 'Doanh thu quầy vào báo cáo ngày');
+  assert.equal(sim.getDailyRecords()[day]?.stallServings?.cafe_vot, plan.servings, 'Số suất quầy được ghi theo ngày để tính mục tiêu ngày hội');
 
   const reloaded = new GameSimulation(sim.exportSaveData(), generateStarterTileMap(), new InputManager());
   assert.equal(reloaded.getStalls().find(item => item.id === 'cafe_vot')?.owned, true, 'Quầy được lưu/tải');

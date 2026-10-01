@@ -1,5 +1,6 @@
 import type { DailyRecord, PlayerData, QuestState, SaveGameData } from '@game/shared';
-import { ALL_PRODUCTS, SUPPLIERS } from '@game/data';
+import { ALL_PRODUCTS, LAND_PLOTS, STALLS, SUPPLIERS, getMaxStaffSlots, getLevelTrafficMultiplier, maxActiveCustomersForLevel } from '@game/data';
+import { MAX_PLAYER_LEVEL } from './progression';
 
 export interface QuestReward { money: number; experience: number }
 
@@ -87,12 +88,49 @@ export function markQuestClaimed(state: QuestState, day: number, questId: string
   else state.claimedDaily[day] = [...(state.claimedDaily[day] ?? []), questId];
 }
 
-export interface LevelUnlock { products: string[]; suppliers: string[] }
+export interface LevelUnlock {
+  products: string[];
+  suppliers: string[];
+  stalls: string[];
+  plots: Array<{ name: string; cost: number; prerequisite?: string }>;
+  staffSlots: number;
+  staffUnlocked: boolean;
+  trafficMultiplier: number;
+  customerCapacity: number;
+}
 
 /** Mốc cấp: món hàng và nhà cung cấp mở khóa đúng ở cấp này. */
 export function getLevelUnlocks(level: number): LevelUnlock {
+  const previousStaffSlots = getMaxStaffSlots(Math.max(1, level - 1));
+  const staffSlots = getMaxStaffSlots(level);
   return {
     products: ALL_PRODUCTS.filter(p => p.unlockLevel === level).map(p => p.name),
     suppliers: SUPPLIERS.filter(s => s.unlockLevel === level).map(s => s.name),
+    stalls: STALLS.filter(stall => stall.unlockLevel === level).map(stall => stall.name),
+    plots: LAND_PLOTS.filter(plot => plot.level === level).map(plot => ({
+      name: plot.name,
+      cost: plot.cost,
+      prerequisite: plot.prerequisitePlotId ? LAND_PLOTS.find(item => item.id === plot.prerequisitePlotId)?.name : undefined,
+    })),
+    staffSlots: Math.max(0, staffSlots - previousStaffSlots),
+    staffUnlocked: level === 2 && previousStaffSlots === 0 && staffSlots > 0,
+    trafficMultiplier: Math.max(0, getLevelTrafficMultiplier(level) - getLevelTrafficMultiplier(Math.max(1, level - 1))),
+    customerCapacity: Math.max(0, maxActiveCustomersForLevel(level) - maxActiveCustomersForLevel(Math.max(1, level - 1))),
   };
+}
+
+/** Mô tả ngắn cho toast; tên từng món được trình bày trong lộ trình cấp. */
+export function levelUnlockToast(level: number): string {
+  const unlocks = getLevelUnlocks(level);
+  const parts: string[] = [];
+  if (unlocks.products.length) parts.push(`${unlocks.products.length} mặt hàng`);
+  if (unlocks.suppliers.length) parts.push(unlocks.suppliers.join(', '));
+  if (unlocks.staffUnlocked) parts.push('mở tuyển nhân viên');
+  else if (unlocks.staffSlots) parts.push(`+${unlocks.staffSlots} chỗ nhân viên`);
+  if (unlocks.stalls.length) parts.push(unlocks.stalls.join(', '));
+  if (unlocks.plots.length) parts.push(`quyền mua ${unlocks.plots.map(plot => plot.name).join(', ')}`);
+  if (unlocks.trafficMultiplier > 0) parts.push(`lưu lượng khách +${unlocks.trafficMultiplier.toFixed(1)}×`);
+  if (unlocks.customerCapacity > 0) parts.push(`sức chứa ${unlocks.customerCapacity} khách đồng thời`);
+  if (level >= MAX_PLAYER_LEVEL) parts.push(`đạt cấp tối đa ${MAX_PLAYER_LEVEL}`);
+  return parts.length ? `Mở khóa: ${parts.join(' · ')}. Xem Lộ trình cấp để biết chi tiết.` : 'Chưa có nội dung mới gắn với mốc cấp này.';
 }

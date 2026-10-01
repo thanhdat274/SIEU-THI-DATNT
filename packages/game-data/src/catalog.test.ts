@@ -13,7 +13,7 @@ export function runCatalogTests(): void {
 
   // 1. Kiểm tra tổng số lượng 56 sản phẩm và không mất 36 món legacy
   assert(ALL_PRODUCTS.length === 56 + SEASONAL_PRODUCTS.length, `Catalog tổng = 56 món gốc + ${SEASONAL_PRODUCTS.length} món theo mùa (hiện có ${ALL_PRODUCTS.length})`);
-  assert(SEASONAL_PRODUCTS.length === 7, 'Có đúng 7 sản phẩm theo mùa/thời tiết');
+  assert(SEASONAL_PRODUCTS.length === 11, `Có đúng 11 sản phẩm theo mùa/lễ hội (hiện có ${SEASONAL_PRODUCTS.length})`);
   assert(STARTER_PRODUCTS.length === 5, 'Có đúng 5 sản phẩm khởi đầu');
   assert(ADDITIONAL_PRODUCTS.length === 31, 'Có đúng 31 sản phẩm mở rộng ban đầu');
   assert(CURATED_PRODUCTS.length === 20, 'Có đúng 20 sản phẩm chọn lọc từ game tham khảo');

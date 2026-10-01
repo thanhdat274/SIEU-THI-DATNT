@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { createInitialOnlineWorld } from '@game/data';
+import { createInitialOnlineWorld, ONLINE_SPAWN_POINTS } from '@game/data';
 import type { GameAccount, GameAvatar, GameWorld, WorldMembership } from '@game/shared';
 import { MULTIPLAYER_PROTOCOL_VERSION } from '@game/shared';
 import { connectDatabase } from './database';
@@ -58,6 +58,14 @@ export class WorldRepository {
       .findOne({ _id: worldId, 'world.memberships.accountId': accountId }, { projection: { invites: 0 } });
     if (!doc) throw new NotFoundException('Không tìm thấy hẻm hoặc bạn chưa tham gia.');
     return { world: doc.world, businesses: doc.businesses };
+  }
+
+  async findReceipt(worldId: string, actorId: string, commandId: string): Promise<ReceiptRecord | undefined> {
+    const doc = await (await connectDatabase()).collection<WorldDocument>(collectionName).findOne(
+      { _id: worldId, 'world.memberships.accountId': actorId, 'receipts.commandId': commandId, 'receipts.actorId': actorId },
+      { projection: { receipts: 1 } }
+    );
+    return doc?.receipts?.find(receipt => receipt.commandId === commandId && receipt.actorId === actorId);
   }
 
   /** Called once when a member enters the game to record their lastSeenRevision
@@ -136,7 +144,7 @@ export class WorldRepository {
       $set: { 'invites.$.usedAt': now },
       $push: {
         'world.memberships': { accountId: account.uid, role: 'member', joinedAt: now.toISOString(), lastSeenRevision: 0 } satisfies WorldMembership,
-        'world.avatars': { accountId: account.uid, position: { x: 304, y: 272 }, direction: 'down', updatedAt: now.toISOString() } satisfies GameAvatar,
+        'world.avatars': { accountId: account.uid, position: { ...ONLINE_SPAWN_POINTS[1] }, direction: 'up', updatedAt: now.toISOString(), displayName: (account.name?.trim() || account.email || account.uid).slice(0, 64) } satisfies GameAvatar,
       },
     }, { returnDocument: 'after', projection: { invites: 0 } });
     if (!doc) throw new ForbiddenException('Mã mời hết hạn, đã dùng, bị thu hồi hoặc hẻm đã đủ người.');

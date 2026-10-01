@@ -147,9 +147,9 @@ export class ShopLighting {
     for (const f of fixtures) {
       const dim = getFixtureDimensions(f);
       const x = f.tileX * T, y = f.tileY * T, w = dim.widthTiles * T, h = dim.heightTiles * T;
-      if (f.type === 'cashier_counter') this.add(this.fixtureLights, x + w / 2, y + h / 2, 2 * T, 1.7 * T, 0xffc98a, 0.62, 'artificial', 0.02);
-      else if (f.type === 'refrigerator') this.add(this.fixtureLights, x + w / 2, y + h / 2, 1.5 * T, 1.7 * T, 0xa8ecff, 0.7);
-      else if (f.type.startsWith('shelf')) this.add(this.fixtureLights, x + w / 2, y + h * 0.8, w * 0.85, 0.7 * T, 0xf2f7ff, 0.55);
+      if (f.type === 'cashier_counter') this.add(this.fixtureLights, x + w / 2, y + h / 2, 1.6 * T, 1.3 * T, 0xffcf9e, 0.28, 'artificial', 0.02);
+      else if (f.type === 'refrigerator') this.add(this.fixtureLights, x + w / 2, y + h * 0.45, 0.9 * T, 1.1 * T, 0xc2ecf7, 0.18);
+      else if (f.type.startsWith('shelf')) this.add(this.fixtureLights, x + w / 2, y + h * 0.8, w * 0.75, 0.55 * T, 0xf2f7ff, 0.22);
       else if (isWarehouseFixture(f)) this.add(this.warehouseFixtureLights, x + w / 2, y + h / 2, 1.6 * T, 1.3 * T, 0xdff0ff, 0.15);
       const shadow = new Graphics();
       shadow.eventMode = 'none';
@@ -203,10 +203,10 @@ export class ShopLighting {
     for (const l of this.lampBulbs) l.g.destroy();
     this.lampBulbs = [];
     const out = this.staticLights;
-    // Đèn trần cửa hàng (trắng ấm ~3500K), mỗi bóng hơi lệch cường độ để ánh sáng không đều tăm tắp.
+    // Đèn trần cửa hàng (trắng ấm ~3200-3500K), ánh sáng tự nhiên dịu mắt, không bị cháy sáng
     for (let gx = 0; gx < 3; gx++) {
       for (let gy = 0; gy < 3; gy++) {
-        this.add(out, (STORE_BOUNDS.left + 1.6 + gx * 2.6) * T, (STORE_BOUNDS.top + 1.6 + gy * 2.6) * T, 2.6 * T, 2.2 * T, 0xffeccc, 0.34 + hash(gx, gy) * 0.16);
+        this.add(out, (STORE_BOUNDS.left + 1.6 + gx * 2.6) * T, (STORE_BOUNDS.top + 1.6 + gy * 2.6) * T, 1.9 * T, 1.7 * T, 0xffeccc, 0.16 + hash(gx, gy) * 0.08);
       }
     }
     // Đèn kho: Đèn tuýp huỳnh quang sáng mát dịu, phòng sáng rõ và sạch sẽ không bị chói lóa
@@ -228,12 +228,12 @@ export class ShopLighting {
     }
     for (let gx = 0; gx < 3; gx++) this.addLamp((STORE_BOUNDS.left + 2.6 + gx * 2.6) * T, (STORE_BOUNDS.top + 1.1) * T, false);
     // Biển hiệu: neon ấm cho tiệm, lạnh cho kho; đèn tường hai bên cửa chính.
-    this.add(out, (WAREHOUSE_BOUNDS.left + 3.4) * T, WAREHOUSE_BOUNDS.top * T - 12, 2.8 * T, 1.1 * T, 0xffc37a, 0.6, 'artificial', 0.05);
-    this.add(out, 10 * T, STORE_BOUNDS.top * T - 4, 1.8 * T, 0.9 * T, 0xbfe6ff, 0.45);
-    for (const x of [8.4, 11.6]) this.add(out, x * T, (STORE_BOUNDS.bottom + 0.05) * T, 1.3 * T, 1.3 * T, 0xffd9a0, 0.6);
+    this.add(out, (WAREHOUSE_BOUNDS.left + 3.4) * T, WAREHOUSE_BOUNDS.top * T - 12, 2.6 * T, 1.0 * T, 0xffc37a, 0.32, 'artificial', 0.04);
+    this.add(out, 10 * T, STORE_BOUNDS.top * T - 4, 1.6 * T, 0.8 * T, 0xbfe6ff, 0.26);
+    for (const x of [8.4, 11.6]) this.add(out, x * T, (STORE_BOUNDS.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xffd9a0, 0.26);
     // Ánh sáng tiệm lọt ra ngoài: cửa kính rọi xuống vỉa hè, cửa sổ trái rọi ra cỏ.
-    this.add(out, 10 * T, (STORE_BOUNDS.bottom + 1.9) * T, 3.4 * T, 2.2 * T, 0xffdfa8, 0.55);
-    this.add(out, (STORE_BOUNDS.left - 1.4) * T, 5.5 * T, 2.6 * T, 1.6 * T, 0xffd9a0, 0.5);
+    this.add(out, 10 * T, (STORE_BOUNDS.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xffdfa8, 0.30);
+    this.add(out, (STORE_BOUNDS.left - 1.4) * T, 5.5 * T, 2.2 * T, 1.4 * T, 0xffd9a0, 0.26);
     for (const lamp of STREET_LAMP_TILES) this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 50, 3.1 * T, 3.1 * T, 0xffd98a, 0.75, 'artificial', 0.03);
     // Nắng lọt qua cửa vào và cửa sổ (chỉ ban ngày); vệt nắng dịch theo giờ.
     this.sunPatch = this.add(out, 10 * T, (STORE_BOUNDS.bottom - 1.4) * T, 1.9 * T, 1.5 * T, 0xffe9b0, 0.5, 'sun');

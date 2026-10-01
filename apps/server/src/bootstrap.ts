@@ -7,7 +7,7 @@ import { NestFactory } from '@nestjs/core';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { isSaveGameData, type GameAccount, type SaveGameData } from '@game/shared';
 import { generateStarterTileMap } from '@game/data';
-import { applyStoreLayoutActions, GameSimulation, validateStoreLayout } from '@game/core';
+import { applyStoreLayoutActions, GameSimulation, validateStoreLayout, WorldRuntime } from '@game/core';
 import { readRuntimeConfig } from './runtime-config';
 import { closeDatabase, connectDatabase } from './database';
 import { createWebSocketTicket, verifyAccount } from './firebase-admin';
@@ -35,7 +35,7 @@ Controller()(HealthController);
 Get('health')(HealthController.prototype, 'health', Object.getOwnPropertyDescriptor(HealthController.prototype, 'health')!);
 Get('ready')(HealthController.prototype, 'readiness', Object.getOwnPropertyDescriptor(HealthController.prototype, 'readiness')!);
 
-class GameController {
+export class GameController {
   me(request: AuthenticatedRequest) {
     const account: GameAccount = { id: request.gameAccount.uid, displayName: request.gameAccount.name ?? request.gameAccount.email ?? request.gameAccount.uid, photoUrl: null, createdAt: new Date().toISOString() };
     return { account };
@@ -78,11 +78,58 @@ class GameController {
     if (JSON.stringify(commandBusiness.ownerAccountIds) !== JSON.stringify(body.updatedBusiness.ownerAccountIds) || body.updatedBusiness.save?.id !== commandBusiness.save.id) {
       throw new BadRequestException('Command cannot change business ownership or save identity.');
     }
+    const serverReplayedCommands = new Set([
+      'respond_party_order', 'fulfill_party_order', 'claim_goal',
+      'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title',
+    ]);
+    if (serverReplayedCommands.has(payload?.type)) {
+      const priorReceipt = await worldRepository.findReceipt(worldId, request.gameAccount.uid, body.receipt.commandId);
+      if (priorReceipt) {
+        if (priorReceipt.payloadJson !== body.receipt.payloadJson) throw new BadRequestException('Trùng mã lệnh với nội dung khác.');
+        return {
+          committed: true,
+          revision: commandWorld.world.revision,
+          receipt: priorReceipt,
+          updatedBusiness: commandBusiness,
+        };
+      }
+      const runtime = new WorldRuntime(commandWorld.world, commandBusiness);
+      const commandResult = await runtime.executeCommand(request.gameAccount.uid, {
+        protocolVersion: typeof body.protocolVersion === 'number' ? body.protocolVersion : commandWorld.world.protocolVersion,
+        worldId,
+        businessId: commandBusiness.id,
+        commandId: body.receipt.commandId,
+        expectedRevision: body.expectedRevision,
+        payload,
+      });
+      if (commandResult.status !== 'accepted') throw new BadRequestException(commandResult.reason ?? 'Lệnh không hợp lệ hoặc trạng thái đã thay đổi.');
+      const canonicalSave = runtime.getSnapshot().businesses[0].save;
+      canonicalSave.id = commandBusiness.save.id;
+      canonicalSave.revision = body.expectedRevision + 1;
+      canonicalSave.updatedAt = new Date().toISOString();
+      body.updatedBusiness = {
+        ...commandBusiness,
+        ownerAccountIds: [...commandBusiness.ownerAccountIds],
+        save: canonicalSave,
+      };
+    }
     const normalizeLayout = (save: SaveGameData) => ({
       ...save.storeLayout,
       storedFixtures: save.storeLayout.storedFixtures ?? [],
       unlockedPlotIds: save.storeLayout.unlockedPlotIds ?? [],
     });
+    // Chỉ so hình học bố cục: save mới tạo chưa có `stockLots`, simulation chuẩn hóa thêm khi replay, không phải đổi bố cục.
+    const layoutGeometry = (save: SaveGameData) => {
+      const layout = normalizeLayout(save);
+      const place = (f: any) => ({ id: f.id, type: f.type, tileX: f.tileX, tileY: f.tileY, widthTiles: f.widthTiles, heightTiles: f.heightTiles, rotation: f.rotation });
+      return {
+        widthTiles: layout.widthTiles,
+        heightTiles: layout.heightTiles,
+        fixtures: layout.fixtures.map(place),
+        storedFixtures: layout.storedFixtures.map((f: any) => f.id),
+        unlockedPlotIds: layout.unlockedPlotIds,
+      };
+    };
     if (payload?.type === 'layout_batch') {
       const currentBusiness = commandBusiness;
       const nextSave = body.updatedBusiness.save as SaveGameData | undefined;
@@ -106,7 +153,19 @@ class GameController {
       body.updatedBusiness = { ...body.updatedBusiness, ownerAccountIds: [...currentBusiness.ownerAccountIds], save: expected.save };
     } else {
       const nextSave = body.updatedBusiness.save as SaveGameData | undefined;
-      if (!isSaveGameData(nextSave) || JSON.stringify(normalizeLayout(commandBusiness.save)) !== JSON.stringify(normalizeLayout(nextSave))) {
+      const sameLayout = () => {
+        if (!isSaveGameData(nextSave)) return false;
+        const submitted = JSON.stringify(layoutGeometry(nextSave));
+        if (JSON.stringify(layoutGeometry(commandBusiness.save)) === submitted) return true;
+        // Save cũ/seed chưa qua simulation: lần load đầu migrate thêm fixture mặc định (kho...), nên so với bản đã chuẩn hóa.
+        const baseline = new GameSimulation(
+          { ...commandBusiness.save, schemaVersion: 3, storeLayout: normalizeLayout(commandBusiness.save) } as SaveGameData,
+          generateStarterTileMap(commandBusiness.save.storeLayout.unlockedPlotIds ?? []),
+          { getMovementVector: () => ({ x: 0, y: 0 }), consumeInteract: () => false, consumeInventoryToggle: () => false },
+        ).exportSaveData(commandBusiness.save.id, body.expectedRevision);
+        return JSON.stringify(layoutGeometry(baseline)) === submitted;
+      };
+      if (!sameLayout()) {
         throw new BadRequestException('Thay đổi bố cục phải dùng layout_batch đã kiểm tra.');
       }
     }
@@ -123,7 +182,9 @@ class GameController {
     if (result.committed) {
       WorldGateway.notifyCommit(worldId, { revision: result.revision, receipt: result.receipt });
     }
-    return payload?.type === 'layout_batch' ? { ...result, updatedBusiness: body.updatedBusiness } : result;
+    return payload?.type === 'layout_batch' || serverReplayedCommands.has(payload?.type)
+      ? { ...result, updatedBusiness: body.updatedBusiness }
+      : result;
   }
   async createWebSocketTicket(request: AuthenticatedRequest) {
     const account = request.gameAccount;

@@ -177,6 +177,18 @@ export interface BasketItem {
   lots: StockLot[];
 }
 
+export type CustomerArrivalMode = 'walk' | 'motorbike' | 'car';
+
+export interface StreetVehicleState {
+  id: string;
+  type: 'motorbike' | 'car';
+  variant: number;
+  direction: 'left' | 'right';
+  position: Vector2D;
+  speed: number;
+  hornTimer?: number;
+}
+
 export interface CustomerState {
   id?: string;
   position: Vector2D;
@@ -188,6 +200,11 @@ export interface CustomerState {
   patience: number;
   checkoutWait: number;
   basket?: BasketItem[];
+  regularId?: string;
+  regularName?: string;
+  arrivalMode?: CustomerArrivalMode;
+  vehicleSpot?: Vector2D;
+  vehicleVariant?: number;
 }
 
 export interface CheckoutResult {
@@ -282,6 +299,103 @@ export interface QuestState {
   claimedStory: string[]; // story step ids đã nhận thưởng
 }
 
+// ==========================================
+// Party Orders (Đơn tiệc có hạn)
+// ==========================================
+
+export type PartyOrderStatus = 'pending' | 'accepted' | 'completed' | 'declined' | 'expired';
+
+export interface PartyOrderItem {
+  productId: string;
+  quantity: number;
+}
+
+export interface PartyOrderReward {
+  money: number;
+  reputation: number;
+  experience?: number;
+}
+
+export interface PartyOrderDef {
+  id: string;
+  title: string;
+  customerName: string;
+  description: string;
+  items: PartyOrderItem[];
+  reward: PartyOrderReward;
+  durationDays: number;
+  minPlayerLevel: number;
+}
+
+export interface ActivePartyOrder {
+  orderId: string;
+  status: PartyOrderStatus;
+  availableDay: number;
+  acceptedDay?: number;
+  completedDay?: number;
+  deadlineDay: number;
+}
+
+export interface PartyOrderState {
+  available: ActivePartyOrder[];
+  completedOrderIds: string[];
+  lastGeneratedDay?: number;
+}
+
+// ==========================================
+// Goals & Weekly Quests (Mục tiêu dài hạn & Tuần)
+// ==========================================
+
+export type GoalCategory = 'sales' | 'customers' | 'expansion' | 'reputation';
+
+export interface LongTermGoalDef {
+  id: string;
+  category: GoalCategory;
+  title: string;
+  description: string;
+  targetValue: number;
+  rewardMoney: number;
+  rewardReputation: number;
+  rewardExperience?: number;
+}
+
+export interface WeeklyQuestDef {
+  id: string;
+  title: string;
+  description: string;
+  targetType: 'revenue' | 'customers' | 'items_sold' | 'party_orders';
+  targetValue: number;
+  rewardMoney: number;
+  rewardReputation: number;
+}
+
+export interface GoalState {
+  claimedGoalIds: string[];
+  claimedWeeklyQuestIds: Record<number, string[]>; // weekNumber -> questIds
+  /** Khóa `${goalId}@${năm mùa}`: mục tiêu ngày hội đã nhận trong năm đó. */
+  claimedFestivalGoalKeys?: string[];
+}
+
+// ==========================================
+// Skills & Perks (Kỹ năng & Đặc quyền)
+// ==========================================
+
+export type SkillType = 'management' | 'marketing' | 'storage';
+
+export interface PerkDef {
+  id: string;
+  skill: SkillType;
+  tier: 1 | 2 | 3;
+  name: string;
+  description: string;
+}
+
+export interface SkillState {
+  xp: Record<SkillType, number>;
+  levels: Record<SkillType, number>;
+  chosenPerks: string[];
+}
+
 export interface DailyRecord {
   day: number;
   closedAt?: string;
@@ -297,8 +411,11 @@ export interface DailyRecord {
   itemsSold: number; // Total units of items sold
   spoilageCount: number; // Total units spoiled
   productSales?: Record<string, number>; // Units sold per productId on this day
+  stallServings?: Record<string, number>; // Suất bán ra theo id quầy ăn uống trong ngày (tính vào mục tiêu ngày hội)
   outOfStockWalkouts?: number; // Khách bỏ về vì kệ món đã chọn hết hàng
   priceWalkouts?: number; // Khách bỏ hàng vì giá cao hơn giá thị trường
+  averageStars?: number;
+  ratingCount?: number;
 }
 
 export type PlanogramMap = Record<string, string>; // fixtureId -> productId
@@ -368,8 +485,24 @@ export interface PlayerData {
   experienceToNextLevel: number;
   money: number; // VND
   reputation: number;
+  /** Recent per-visit customer ratings; reputation remains a bounded cumulative score. */
+  ratings?: number[];
   position: Vector2D;
   direction: Direction;
+  activeTitle?: string;
+  unlockedTitles?: string[];
+}
+
+export interface TitleDef {
+  id: string;
+  name: string;
+  description: string;
+  category: 'level' | 'wealth' | 'reputation' | 'service' | 'orders';
+  icon: string;
+  requirement: {
+    type: 'level' | 'totalRevenue' | 'totalCustomers' | 'daysPassed' | 'partyOrders' | 'reputation';
+    threshold: number;
+  };
 }
 
 export interface WorldTime {
@@ -384,7 +517,7 @@ export interface WorldTime {
 // Staff, Shifts, and Payroll
 // ==========================================
 
-export type StaffRole = 'cashier' | 'refill';
+export type StaffRole = 'cashier' | 'refill' | 'security';
 
 export type StaffShift = 'morning' | 'afternoon' | 'full_day';
 
@@ -488,6 +621,8 @@ export interface SaveGameData {
   createdAt: string;
   updatedAt: string;
   player: PlayerData;
+  /** Giá bán do chủ tiệm đặt; món không có khóa dùng giá gợi ý catalog. */
+  sellingPrices?: Record<string, number>;
   worldTime: WorldTime;
   storeLayout: StoreLayout;
   inventory: InventoryItem[];
@@ -520,6 +655,20 @@ export interface SaveGameData {
     totalDaysPassed: number;
     totalSpoiled?: number;
   };
+  regulars?: Record<string, RegularCustomerProgress>;
+  partyOrders?: PartyOrderState;
+  goals?: GoalState;
+  skills?: SkillState;
+}
+
+export interface RegularCustomerProgress {
+  id: string;
+  friendship: number; // Điểm thân thiết 0–100+
+  unlockedPerks: string[]; // Danh sách perk đã mở
+  discoveredProductIds: string[]; // Món ưa thích đã từng bán thành công
+  totalVisits: number;
+  lastVisitDay?: number;
+  lastFriendshipDay?: number; // Giới hạn trần +2 điểm thân thiết mỗi ngày
 }
 
 export interface TileMapLayer {
@@ -568,6 +717,8 @@ export interface GameAvatar {
   position: Vector2D;
   direction: Direction;
   updatedAt: string;
+  /** Tên hiển thị trên đầu nhân vật khi chơi chung (hẻm cũ có thể thiếu). */
+  displayName?: string;
 }
 
 export interface BusinessState {
@@ -595,6 +746,7 @@ export type GameCommandPayload =
   | { type: 'restock'; fixtureId: string; productId: string; quantity: number }
   | { type: 'unstock'; fixtureId: string; quantity: number }
   | { type: 'checkout'; checkoutId: string; fixtureId: string }
+  | { type: 'set_price'; productId: string; price: number | null }
   | { type: 'layout_move'; fixtureId: string; tileX: number; tileY: number; rotation: 0 | 90 | 180 | 270 }
   | { type: 'layout_store'; fixtureId: string }
   | { type: 'layout_retrieve'; fixtureId: string; tileX: number; tileY: number }
@@ -608,7 +760,14 @@ export type GameCommandPayload =
   | { type: 'claim_quest'; questId: string }
   | { type: 'buy_stall'; stallId: string }
   | { type: 'dispose_stock'; productId: string; quantity: number }
-  | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> };
+  | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> }
+  | { type: 'respond_party_order'; orderId: string; accept: boolean }
+  | { type: 'fulfill_party_order'; orderId: string }
+  | { type: 'claim_goal'; goalId: string }
+  | { type: 'claim_weekly_quest'; questId: string }
+  | { type: 'claim_festival_goal'; goalId: string }
+  | { type: 'choose_perk'; perkId: string }
+  | { type: 'set_title'; titleId?: string };
 
 export interface GameCommand {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
@@ -653,7 +812,8 @@ export function isWorldMembership(value: unknown): value is WorldMembership {
 
 export function isGameAvatar(value: unknown): value is GameAvatar {
   return isRecord(value) && nonEmptyString(value.accountId) && finiteVector(value.position) &&
-    isDirection(value.direction) && nonEmptyString(value.updatedAt) && !Number.isNaN(Date.parse(value.updatedAt));
+    isDirection(value.direction) && nonEmptyString(value.updatedAt) && !Number.isNaN(Date.parse(value.updatedAt)) &&
+    (value.displayName === undefined || (typeof value.displayName === 'string' && value.displayName.length <= 64));
 }
 
 export const CURRENT_SAVE_SCHEMA_VERSION = 3;
@@ -684,6 +844,7 @@ export function isSaveGameData(value: unknown): value is SaveGameData {
   const sl = value.storeLayout;
   if (!isRecord(sl) || !Array.isArray(sl.fixtures)) return false;
   if (!Array.isArray(value.inventory)) return false;
+  if (value.sellingPrices !== undefined && (!isRecord(value.sellingPrices) || !Object.values(value.sellingPrices).every(price => Number.isSafeInteger(price) && Number(price) > 0))) return false;
   const stats = value.statistics;
   if (!isRecord(stats) || !nonNegativeInteger(stats.totalRevenue) || !nonNegativeInteger(stats.totalCustomersServed)) {
     return false;
@@ -792,6 +953,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'restock': return nonEmptyString(p.fixtureId) && nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
     case 'unstock': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
     case 'checkout': return nonEmptyString(p.checkoutId) && nonEmptyString(p.fixtureId);
+    case 'set_price': return nonEmptyString(p.productId) && (p.price === null || (Number.isSafeInteger(p.price) && Number(p.price) > 0));
     case 'layout_move': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.tileX) && Number.isSafeInteger(p.tileY) && [0, 90, 180, 270].includes(p.rotation as number);
     case 'layout_store': return nonEmptyString(p.fixtureId);
     case 'layout_retrieve': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.tileX) && Number.isSafeInteger(p.tileY);
@@ -808,6 +970,13 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'buy_stall': return nonEmptyString(p.stallId);
     case 'dispose_stock': return nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
     case 'order_supplier': return nonEmptyString(p.supplierId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 64 && p.items.every(item => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
+    case 'respond_party_order': return nonEmptyString(p.orderId) && typeof p.accept === 'boolean';
+    case 'fulfill_party_order': return nonEmptyString(p.orderId);
+    case 'claim_goal': return nonEmptyString(p.goalId);
+    case 'claim_weekly_quest': return nonEmptyString(p.questId);
+    case 'claim_festival_goal': return nonEmptyString(p.goalId);
+    case 'choose_perk': return nonEmptyString(p.perkId);
+    case 'set_title': return p.titleId === undefined || nonEmptyString(p.titleId);
     default: return false;
   }
 }

@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StoreFixture, InventoryItem } from '@game/shared';
-import { PRODUCT_MAP } from '@game/data';
+import { PRODUCT_MAP, effectiveShelfCapacity } from '@game/data';
 import { useGameStore } from '../store/useGameStore';
 import { PixelDialog, PixelButton, ProductSlot, PixelProgress, EmptyState, money } from './pixel';
 
 interface Props {
+  /** Bonus sức chứa kệ từ perk (0.2 = +20%). */
+  capacityBonus?: number;
   fixture: StoreFixture;
   inventory: InventoryItem[];
   currentDay: number;
@@ -13,6 +15,9 @@ interface Props {
   onUnstock: (id: string, n: number) => void;
   onSetPlanogramAssignment?: (fixtureId: string, productId?: string) => void;
   onApplyPlanogram?: (fixtureId?: string) => void;
+  sellingPrice?: number;
+  sellingPriceBounds?: { min: number; max: number; step: number } | null;
+  onSetPrice?: (productId: string, price: number | null) => void;
   onClose: () => void;
 }
 
@@ -25,10 +30,16 @@ export const ShelfModal: React.FC<Props> = ({
   onUnstock,
   onSetPlanogramAssignment,
   onApplyPlanogram,
+  sellingPrice,
+  sellingPriceBounds,
+  onSetPrice,
   onClose,
+  capacityBonus = 0,
 }) => {
+  const [priceDraft, setPriceDraft] = useState(sellingPrice ?? 0);
   const product = fixture.assignedProductId ? PRODUCT_MAP[fixture.assignedProductId] : null;
-  const limit = product ? Math.min(fixture.maxCapacity, product.shelfCapacity) : fixture.maxCapacity;
+  useEffect(() => setPriceDraft(sellingPrice ?? product?.baseSellingPrice ?? 0), [fixture.id, product?.id, product?.baseSellingPrice, sellingPrice]);
+  const limit = product ? effectiveShelfCapacity(fixture.maxCapacity, product.shelfCapacity, capacityBonus) : fixture.maxCapacity;
   const inBag = inventory.find((i) => i.productId === product?.id)?.quantity ?? 0;
   const compatible = inventory.filter(
     (i) =>
@@ -123,7 +134,7 @@ export const ShelfModal: React.FC<Props> = ({
               <h3>{product.name}</h3>
               <p>{product.description}</p>
               <p>
-                Bán {money(product.baseSellingPrice)} · Vốn {money(product.purchasePrice)}
+                Giá gợi ý {money(product.baseSellingPrice)} · Giá bán {money(sellingPrice ?? product.baseSellingPrice)} · Vốn {money(product.purchasePrice)}
               </p>
               <p>
                 Trong kho: <strong>{inBag}</strong> món
@@ -136,6 +147,16 @@ export const ShelfModal: React.FC<Props> = ({
               )}
             </div>
           </div>
+          {onSetPrice && sellingPriceBounds && <div className="info-card">
+            <strong>Đặt giá bán</strong>
+            <p className="muted">Khoảng {money(sellingPriceBounds.min)}–{money(sellingPriceBounds.max)} · biên trước hao hụt {money((sellingPrice ?? product.baseSellingPrice) - product.purchasePrice)}/món</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <label htmlFor={`selling-price-${fixture.id}`} className="muted">Giá mới</label>
+              <input id={`selling-price-${fixture.id}`} type="number" min={sellingPriceBounds.min} max={sellingPriceBounds.max} step={sellingPriceBounds.step} value={priceDraft} onChange={event => setPriceDraft(Number(event.target.value))} />
+              <PixelButton variant="teal" onClick={() => onSetPrice(product.id, priceDraft)}>Áp dụng</PixelButton>
+              <PixelButton variant="wood" onClick={() => { setPriceDraft(product.baseSellingPrice); onSetPrice(product.id, null); }}>Về giá gợi ý</PixelButton>
+            </div>
+          </div>}
           {reason && <p className="action-reason">{reason}</p>}
           <div className="action-grid">
             <PixelButton variant="teal" icon="plus" disabled={!!reason} onClick={() => onRestock(fixture.id, product.id, 1)}>
@@ -176,7 +197,7 @@ export const ShelfModal: React.FC<Props> = ({
                       onRestock(
                         fixture.id,
                         i.productId,
-                        Math.min(i.quantity, fixture.maxCapacity, PRODUCT_MAP[i.productId].shelfCapacity)
+                        Math.min(i.quantity, effectiveShelfCapacity(fixture.maxCapacity, PRODUCT_MAP[i.productId].shelfCapacity, capacityBonus))
                       )
                     }
                   >

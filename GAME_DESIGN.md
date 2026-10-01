@@ -72,3 +72,25 @@
   - Túi đồ / Kho hàng (danh sách vật phẩm, số lượng).
   - Thời gian game (Ngày thứ mấy, giờ trong ngày từ 06:00 đến 22:00).
 - **Cơ chế Autosave**: Tự động lưu ngầm mỗi 30 giây và khi đóng cửa tiệm / chuyển ngày.
+
+---
+
+## 7. CÁC HỆ THỐNG QUẢN LÝ MỞ RỘNG (EXPANDED MANAGEMENT SYSTEMS)
+- **Khách quen hẻm (Regular Customers)**: 6 cư dân đại diện với sở thích, độ nhạy giá và độ kiên nhẫn riêng. Tích lũy điểm thân thiết (+2/ngày) mở khóa đặc quyền boa thêm tiền và mua thêm hàng.
+- **Đơn tiệc (Party Orders)**: Nhận đơn đặt hàng lớn từ cư dân xóm, xuất kho theo nguyên tắc FEFO (hạn dùng gần nhất xuất trước) để nhận thưởng tiền mặt và danh tiếng.
+- **Mục tiêu dài hạn & Nhiệm vụ tuần (Goals & Weekly Quests)**: Sổ ước nguyện theo dõi các cột mốc buôn bán, thưởng một lần cùng nhiệm vụ tuần định kỳ.
+- **Kỹ năng & Đặc quyền (Skills & Perks)**: 3 nhánh kỹ năng (Quản lý tiệm, Buôn bán & Ngoại giao, Kho bãi & Bảo quản). Lựa chọn đặc quyền tại các mốc cấp 5 và 10.
+- **Danh hiệu chủ tiệm (Milestone Titles)**: Hệ thống danh hiệu ghi nhận các thành tựu nổi bật (Tập sự, Chủ tiệm cần mẫn, Vua đơn tiệc, Đại gia tạp hóa, Huyền thoại đầu hẻm), hiển thị trên HUD.
+- **Bảo vệ trông xe (Bike Guard)**: Vai trò nhân viên an ninh trông giữ xe máy tại bãi đỗ vỉa hè, giúp khách đi xe máy yên tâm mua hàng lâu hơn (+15s kiên nhẫn) và tăng độ hài lòng.
+- **Quầy phụ vỉa hè (Side Stalls)**: Quầy cà phê vợt và bánh mì muối ớt trước hiên nhà, có người bán đứng quầy và phục vụ khách bộ hành.
+
+---
+
+## 8. MÙA LỄ HỘI & SẢN PHẨM TRUYỀN THỐNG (SEASONS & FESTIVAL PRODUCTS)
+- **4 Mùa trong năm (Chu kỳ 120 ngày)**:
+  - *Tết Nguyên Đán*: Bánh chưng xanh, Liễn câu đối đỏ, Dưa hấu khắc chữ Tài Lộc, Thịt heo tươi, Rau cải xanh.
+  - *Mùa mưa Sài Gòn*: Ô gấp che mưa, Áo mưa bộ, Cà phê hòa tan, Trà gừng ấm bụng.
+  - *Mùa tựu trường*: Bánh mì, sữa tươi, bánh kẹo, đồ ăn sáng.
+  - *Rằm Trung Thu*: Bánh Trung Thu thập cẩm, bánh kẹo phá cỗ đêm trăng.
+- **Mục tiêu ngày hội (Festival Goals)**: Thử thách buôn bán các nhóm mặt hàng chủ đạo theo từng mùa lễ hội để nhận thưởng uy tín và tiền mặt.
+

@@ -4,7 +4,7 @@ import { FixedStepSimulationRunner, GameSimulation, getLightingState } from '@ga
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting } from './shop-lighting';
-import { PRODUCT_MAP, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES } from '@game/data';
+import { PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES } from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -37,16 +37,23 @@ export class PixiGameViewport {
   private playerSprite!: Sprite;
   private partnerContainer!: Container;
   private partnerSprite!: Sprite;
+  private partnerTagBg: Graphics | null = null;
+  private partnerTagText: Text | null = null;
+  private partnerTagLabel = 'BẠN CÙNG HẺM';
+  private partnerShown: { x: number; y: number } | null = null;
   private customerSprites = new Map<string, {
     container: Container;
     sprite: Sprite;
     bubble: Container;
     bubbleIcon: Sprite;
+    regularTag: { container: Container; text: Text; bg: Graphics };
     lastPosition: Vector2D | null;
     npcVariant: number;
     npcDirection: string;
   }>();
   private workerSprites = new Map<string, { container: Container; sprite: Sprite; bubble: Container; status: Text; lastPosition: Vector2D | null; variant: number; direction: string }>();
+  private parkedMotorbikeSprites = new Map<string, Sprite>();
+  private streetTrafficSprites = new Map<string, Sprite>();
   private resizeObserver?: ResizeObserver;
   private onZoomChange?: (zoom: number) => void;
   private ambientSprites: Array<{sprite: Sprite; key: string; frames: number}> = [];
@@ -128,7 +135,9 @@ export class PixiGameViewport {
     // Build Tile Layers
     this.buildMapLayers();
     this.lighting.rebuildMap(this.tileMap);
-
+    this.rainOverlay = new Graphics();
+    this.rainOverlay.eventMode = 'none';
+    this.worldContainer.addChild(this.rainOverlay);
     // Build Fixtures
     this.buildFixtures();
     this.buildStalls();
@@ -183,6 +192,7 @@ export class PixiGameViewport {
     for (const child of this.wallLayer.removeChildren()) child.destroy({ children: true });
     this.buildMapLayers();
     this.lighting.rebuildMap(this.tileMap);
+    this.rainOverlay.clear();
     this.buildStalls();
   }
 
@@ -333,6 +343,24 @@ export class PixiGameViewport {
           this.groundLayer.addChild(tileSprite);
         }
       }
+
+      // Cosmetic lane, drain, crossing and signal markings; they do not alter movement or collision.
+      const road = new Graphics();
+      const streetRows = Array.from({ length }, (_, y) => y).filter(y => groundLayerData.slice(y * width, (y + 1) * width).includes(1));
+      for (const y of streetRows) for (let x = 0; x < width; x++) {
+        if (groundLayerData[y * width + x] !== 1) continue;
+        const wx = x * TILE_SIZE, wy = (y + originY) * TILE_SIZE;
+        if (x % 3 === 1) road.rect(wx + 9, wy + 15, 14, 2).fill({ color: 0xf0d48a, alpha: 0.62 });
+        if (x % 4 === 0) road.rect(wx + 2, wy + 2, 3, 2).fill({ color: 0x354e4a, alpha: 0.75 });
+        if (x === 8) for (let stripe = 0; stripe < 4; stripe++) road.rect(wx + 3 + stripe * 7, wy + 4, 4, 24).fill({ color: 0xfff0cf, alpha: 0.78 });
+      }
+      if (streetRows.length) {
+        const sx = 12 * TILE_SIZE, sy = (streetRows[0] + originY) * TILE_SIZE;
+        road.rect(sx, sy - 12, 2, 16).fill(0x31443c);
+        road.roundRect(sx - 3, sy - 22, 9, 12, 2).fill(0x263934);
+        road.circle(sx + 1, sy - 18, 1.5).fill(0xf4cf62);
+      }
+      this.groundLayer.addChild(road);
     }
 
     // Wall Layer & Shop decorations (2.5D Stardew Valley-inspired slim walls)
@@ -357,6 +385,7 @@ export class PixiGameViewport {
       }
     }
 
+    this.worldContainer.sortableChildren = true;
     // Cột đèn đường; quầng sáng do ShopLighting quản lý theo giờ.
     for (const lamp of STREET_LAMP_TILES) {
       const pole = new Sprite(this.textures.getTexture('deco_lamp_pole'));
@@ -535,6 +564,8 @@ export class PixiGameViewport {
     tree.position.set(2 * TILE_SIZE, 9 * TILE_SIZE - 4);
     tree.zIndex = tree.y + 100;
     this.entitiesLayer.addChild(tree);
+    this.treeShadowGraphic = new Graphics();
+    this.shadowLayer.addChild(this.treeShadowGraphic);
 
     const wires = new Graphics();
     const wireY=(WAREHOUSE_BOUNDS.top-1)*TILE_SIZE;
@@ -570,9 +601,17 @@ export class PixiGameViewport {
     for (const stall of this.tileMap.stalls ?? []) {
       const sprite = new Sprite(this.textures.getTexture(`stall_${stall.id}`));
       sprite.position.set(stall.tileX * TILE_SIZE, (stall.tileY + 1) * TILE_SIZE - 48);
-      sprite.zIndex = (stall.tileY + 1) * TILE_SIZE;
+      sprite.zIndex = (stall.tileY + 1) * TILE_SIZE + 2;
       this.entitiesLayer.addChild(sprite);
       this.stallSprites.push(sprite);
+
+      // Người bán quầy phụ đứng sau quầy
+      const vendor = new Sprite(this.textures.getTexture('npc_1_down_idle_0'));
+      vendor.anchor.set(0.5, 1);
+      vendor.position.set((stall.tileX + 1) * TILE_SIZE, (stall.tileY + 0.6) * TILE_SIZE);
+      vendor.zIndex = stall.tileY * TILE_SIZE;
+      this.entitiesLayer.addChild(vendor);
+      this.stallSprites.push(vendor);
     }
   }
 
@@ -683,6 +722,17 @@ export class PixiGameViewport {
     this.shopkeeper = { container, sprite, bubble };
   }
 
+  private setPartnerTag(label: string): void {
+    this.partnerTagLabel = label;
+    if (!this.partnerTagText || !this.partnerTagBg) return;
+    this.partnerTagText.text = label;
+    const width = Math.max(32, Math.ceil(this.partnerTagText.width) + 10);
+    this.partnerTagBg.clear();
+    this.partnerTagBg.rect(-width / 2, -62, width, 11);
+    this.partnerTagBg.fill({ color: 0x2b6cb0 });
+    this.partnerTagBg.stroke({ color: 0xffffff, width: 1 });
+  }
+
   private buildPartner(): void {
     this.partnerContainer = new Container();
 
@@ -690,11 +740,9 @@ export class PixiGameViewport {
     this.partnerSprite.anchor.set(0.5, 1);
     this.partnerContainer.addChild(this.partnerSprite);
 
-    const tagBg = new Graphics();
-    tagBg.rect(-16, -62, 32, 11);
-    tagBg.fill({ color: 0x2b6cb0 });
-    tagBg.stroke({ color: 0xffffff, width: 1 });
-    this.partnerContainer.addChild(tagBg);
+    this.partnerTagBg = new Graphics();
+    this.partnerContainer.addChild(this.partnerTagBg);
+    this.setPartnerTag('BẠN CÙNG HẺM');
 
     const tagStyle = new TextStyle({
       fontFamily: '"Courier New", Courier, monospace',
@@ -702,11 +750,12 @@ export class PixiGameViewport {
       fontWeight: 'bold',
       fill: 0xffffff,
     });
-    const tagText = new Text({ text: 'BẠN CÙNG HẺM', style: tagStyle });
-    tagText.anchor.set(0.5);
-    tagText.x = 0;
-    tagText.y = -56;
-    this.partnerContainer.addChild(tagText);
+    this.partnerTagText = new Text({ text: this.partnerTagLabel, style: tagStyle });
+    this.partnerTagText.anchor.set(0.5);
+    this.partnerTagText.x = 0;
+    this.partnerTagText.y = -56;
+    this.partnerContainer.addChild(this.partnerTagText);
+    this.setPartnerTag(this.partnerTagLabel);
 
     this.partnerContainer.visible = false;
     this.entitiesLayer.addChild(this.partnerContainer);
@@ -718,6 +767,8 @@ export class PixiGameViewport {
   private tintLayer!: Container;
   private lightLayer!: Container;
   private sunBeamGraphic!: Graphics;
+  private treeShadowGraphic!: Graphics;
+  private rainOverlay!: Graphics;
 
   /** Băm cố định theo ô để cỏ/hoa không nhấp nháy giữa các lần dựng. */
   private tileHash(x: number, y: number): number {
@@ -782,14 +833,24 @@ export class PixiGameViewport {
     const partner = this.getPartnerAvatar?.();
     if (partner) {
       this.partnerContainer.visible = true;
-      const partnerMoving = partner.isMoving ?? false;
+      const partnerLabel = (partner.name ?? 'BẠN CÙNG HẺM').toUpperCase().slice(0, 18);
+      if (partnerLabel !== this.partnerTagLabel) this.setPartnerTag(partnerLabel);
+      // Smooth the ~10Hz server snapshots and derive walk animation from displayed motion
+      const target = partner.position;
+      const shown = this.partnerShown ?? { x: target.x, y: target.y };
+      const gap = Math.hypot(target.x - shown.x, target.y - shown.y);
+      if (gap > 96) { shown.x = target.x; shown.y = target.y; }
+      else { const k = Math.min(1, elapsed * 12); shown.x += (target.x - shown.x) * k; shown.y += (target.y - shown.y) * k; }
+      this.partnerShown = shown;
+      const partnerMoving = partner.isMoving ?? gap > 1.5;
       const partnerMode = partnerMoving ? 'walk' : 'idle';
       const partnerFrame = reducedMotion ? 0 : Math.floor(this.animTimer * (partnerMoving ? 8 : 1.5)) % (partnerMoving ? 4 : 2);
       this.partnerSprite.texture = this.textures.getTexture(`player_${partner.direction || 'down'}_${partnerMode}_${partnerFrame}`);
-      this.partnerContainer.position.set(Math.round(partner.position.x), Math.round(partner.position.y));
-      this.partnerContainer.zIndex = partner.position.y;
+      this.partnerContainer.position.set(Math.round(shown.x), Math.round(shown.y));
+      this.partnerContainer.zIndex = shown.y;
     } else if (this.partnerContainer) {
       this.partnerContainer.visible = false;
+      this.partnerShown = null;
     }
 
     if (this.shopkeeper) {
@@ -836,6 +897,19 @@ export class PixiGameViewport {
         ? 'pixel_coin'
         : (cust.basket?.[0]?.productId ? `product:${cust.basket[0].productId}` : 'pixel_coin');
       entry.bubbleIcon.texture = this.textures.getTexture(iconKey);
+
+      if (cust.regularName) {
+        entry.regularTag.container.visible = true;
+        entry.regularTag.text.text = `♥ ${cust.regularName}`;
+        const tagWidth = Math.max(32, Math.ceil(entry.regularTag.text.width) + 8);
+        entry.regularTag.bg.clear();
+        entry.regularTag.bg.rect(-tagWidth / 2, -78, tagWidth, 12);
+        entry.regularTag.bg.fill({ color: 0x8b5cf6, alpha: 0.95 });
+        entry.regularTag.bg.stroke({ color: 0xffffff, width: 1 });
+      } else {
+        entry.regularTag.container.visible = false;
+      }
+
       entry.lastPosition = { ...cust.position };
     }
 
@@ -848,7 +922,7 @@ export class PixiGameViewport {
       }
     }
 
-    const workers = this.simulation.getStaff().slice(0, 2);
+    const workers = this.simulation.getStaff().slice(0, 4);
     const workerIds = new Set(workers.map((worker) => worker.id));
     workers.forEach((worker, idx) => {
       const position = worker.position ?? { x: 300 + idx * TILE_SIZE, y: 300 };
@@ -882,7 +956,13 @@ export class PixiGameViewport {
       entry.sprite.texture = this.textures.getTexture(`npc_${entry.variant}_${entry.direction}_${walking ? 'walk' : 'idle'}_${frame}`);
       entry.container.position.set(Math.round(position.x), Math.round(position.y));
       entry.container.zIndex = position.y + 1;
-      entry.status.text = worker.lastWorkerError ? 'kẹt' : worker.role === 'cashier' ? (worker.currentCheckoutId ? 'thu ngân' : 'rảnh') : worker.workerTask ? 'châm kệ' : 'rảnh';
+      entry.status.text = worker.lastWorkerError
+        ? 'kẹt'
+        : worker.role === 'security'
+        ? 'bảo vệ xe'
+        : worker.role === 'cashier'
+        ? (worker.currentCheckoutId ? 'thu ngân' : 'chờ khách')
+        : worker.workerTask ? 'châm kệ' : 'rảnh';
       entry.lastPosition = { ...position };
     });
     for (const [id, entry] of this.workerSprites.entries()) {
@@ -896,8 +976,65 @@ export class PixiGameViewport {
     for (const ambient of this.ambientSprites) {
       ambient.sprite.texture = this.textures.getTexture(`${ambient.key}${reducedMotion ? 0 : Math.floor(this.animTimer * (ambient.key === 'tile_fan_' ? 5 : 1)) % ambient.frames}`);
     }
+    // Render parked motorbikes of customers currently visiting
+    const activeVehicleKeys = new Set<string>();
+    for (const cust of customers) {
+      if (cust.vehicleSpot && cust.arrivalMode === 'motorbike') {
+        const key = cust.id ?? cust.checkoutId ?? 'vehicle';
+        activeVehicleKeys.add(key);
+        let sprite = this.parkedMotorbikeSprites.get(key);
+        if (!sprite) {
+          sprite = new Sprite(this.textures.getTexture(`vehicle_motorbike_parked_${cust.vehicleVariant ?? 0}`));
+          sprite.anchor.set(0.5, 1);
+          sprite.x = Math.round(cust.vehicleSpot.x);
+          sprite.y = Math.round(cust.vehicleSpot.y);
+          sprite.zIndex = cust.vehicleSpot.y;
+          this.entitiesLayer.addChild(sprite);
+          this.parkedMotorbikeSprites.set(key, sprite);
+        } else {
+          sprite.texture = this.textures.getTexture(`vehicle_motorbike_parked_${cust.vehicleVariant ?? 0}`);
+        }
+      }
+    }
+    for (const [key, sprite] of this.parkedMotorbikeSprites.entries()) {
+      if (!activeVehicleKeys.has(key)) {
+        this.entitiesLayer.removeChild(sprite);
+        sprite.destroy();
+        this.parkedMotorbikeSprites.delete(key);
+      }
+    }
+
+    // Render ambient street vehicles flowing along alley
+    const streetVehicles = this.simulation.getStreetVehicles();
+    const activeStreetKeys = new Set<string>();
+    for (const veh of streetVehicles) {
+      activeStreetKeys.add(veh.id);
+      let sprite = this.streetTrafficSprites.get(veh.id);
+      const textureKey = veh.type === 'motorbike'
+        ? `vehicle_motorbike_rider_${veh.variant ?? 0}_${veh.direction}`
+        : `vehicle_car_${veh.direction}`;
+      if (!sprite) {
+        sprite = new Sprite(this.textures.getTexture(textureKey));
+        sprite.anchor.set(0.5, 1);
+        this.entitiesLayer.addChild(sprite);
+        this.streetTrafficSprites.set(veh.id, sprite);
+      } else {
+        sprite.texture = this.textures.getTexture(textureKey);
+      }
+      sprite.x = Math.round(veh.position.x);
+      sprite.y = Math.round(veh.position.y);
+      sprite.zIndex = veh.position.y;
+    }
+    for (const [id, sprite] of this.streetTrafficSprites.entries()) {
+      if (!activeStreetKeys.has(id)) {
+        this.entitiesLayer.removeChild(sprite);
+        sprite.destroy();
+        this.streetTrafficSprites.delete(id);
+      }
+    }
+
     const time = this.simulation.getTime();
-    const light = getLightingState(time.hour, time.minute);
+    const light = getLightingState(time.hour, time.minute, time.day);
     const playerPos = playerData.position;
     const isPlayerInWarehouse = isInWarehouse(playerPos) || (playerPos.y >= STORE_BOUNDS.top * TILE_SIZE && playerPos.y <= STORE_BOUNDS.top * TILE_SIZE + 6 && Math.abs(playerPos.x - WAREHOUSE_CENTER.x) < 36);
     const anyWorkerInWarehouse = Array.from(this.workerSprites.values()).some((w) => isInWarehouse(w.container.position));
@@ -912,6 +1049,22 @@ export class PixiGameViewport {
     this.lighting.updateActorShadows(feet, light);
     this.sunBeamGraphic.alpha = light.sun;
     this.app.renderer.background.color = light.sky;
+    const rain = this.simulation.getRainIntensity();
+    this.treeShadowGraphic.clear();
+    this.treeShadowGraphic.ellipse(2 * TILE_SIZE + 39 + light.shadowLean * 13, 9 * TILE_SIZE + 27, 23 + light.shadowLength * 10, 5 + light.shadowLength * 2).fill({ color: 0x26190e, alpha: Math.max(0, 0.24 * light.sun * (1 - rain * 0.88)) });
+    this.rainOverlay.clear();
+    if (rain > 0.01) {
+      const width = this.app.screen.width / this.camera.zoom;
+      const height = this.app.screen.height / this.camera.zoom;
+      const left = this.camera.x - width / 2;
+      const top = this.camera.y - height / 2;
+      this.rainOverlay.position.set(left, top);
+      for (let i = 0; i < 44; i++) {
+        const x = ((i * 67 + this.animTimer * (85 + rain * 130)) % (width + 24)) - 12;
+        const y = ((i * 43 + this.animTimer * (155 + rain * 190)) % (height + 24)) - 12;
+        this.rainOverlay.moveTo(x, y).lineTo(x - 5, y + 10 + rain * 5).stroke({ color: 0xb9d8e8, alpha: rain * 0.48, width: 1 });
+      }
+    }
 
     // 2b. Update Doors & Entrance Animation
     const storeDoorCenter = { x: 304, y: 336 };
@@ -990,7 +1143,7 @@ export class PixiGameViewport {
           entry.stockText.text=receiving?`${count} đơn`:cold?`${count}/40`:`${count} món`;
           entry.stockText.visible=true;entry.dotMarker.visible=true;
         } else if (fix.type !== 'cashier_counter') {
-          const limit = Math.min(fix.maxCapacity, (fix.assignedProductId && PRODUCT_MAP[fix.assignedProductId]?.shelfCapacity) || fix.maxCapacity);
+          const limit = effectiveShelfCapacity(fix.maxCapacity, (fix.assignedProductId && PRODUCT_MAP[fix.assignedProductId]?.shelfCapacity) || fix.maxCapacity, this.simulation.getShelfCapacityBonus());
           entry.stockText.text = `${fix.currentStock}/${limit}`;
           const state = fix.currentStock === 0 ? 'empty' : fix.currentStock / limit <= 0.4 ? 'low' : 'full';
           const key = `${entry.textureKey}:${fix.assignedProductId ?? 'none'}:${state}`;
@@ -1112,6 +1265,23 @@ export class PixiGameViewport {
     bubble.addChild(bubbleIcon);
 
     container.addChild(bubble);
+
+    const regularTag = new Container();
+    const regularTagBg = new Graphics();
+    regularTag.addChild(regularTagBg);
+    const regularTagStyle = new TextStyle({
+      fontFamily: '"Courier New", Courier, monospace',
+      fontSize: 8,
+      fontWeight: 'bold',
+      fill: 0xffffff,
+    });
+    const regularTagText = new Text({ text: '', style: regularTagStyle });
+    regularTagText.anchor.set(0.5);
+    regularTagText.y = -72;
+    regularTag.addChild(regularTagText);
+    regularTag.visible = false;
+    container.addChild(regularTag);
+
     this.entitiesLayer.addChild(container);
 
     return {
@@ -1119,6 +1289,7 @@ export class PixiGameViewport {
       sprite,
       bubble,
       bubbleIcon,
+      regularTag: { container: regularTag, text: regularTagText, bg: regularTagBg },
       lastPosition: null as Vector2D | null,
       npcVariant: variant,
       npcDirection: 'down',
@@ -1167,6 +1338,8 @@ export class PixiGameViewport {
       this.app.destroy(true, { children: true, texture: false });
     }
     this.workerSprites.clear();
+    this.parkedMotorbikeSprites.clear();
+    this.streetTrafficSprites.clear();
     this.textures.destroy();
   }
 }
