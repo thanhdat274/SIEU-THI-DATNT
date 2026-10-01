@@ -73,6 +73,27 @@ export function rainForecastForDay(seed: string, day: number, weatherId: string)
   };
 }
 
+/** Mặt đường khô dần với hằng số thời gian này (phút) sau khi mưa tạnh. */
+export const ROAD_DRY_TAU_MINUTES = 120;
+
+/**
+ * Độ ướt mặt đường 0..1 lúc `minuteOfDay`: lên theo cường độ mưa, khô dần theo hàm mũ sau mưa. Hàm thuần theo hạt giống,
+ * ngày và loại thời tiết; ngày không mưa trả 0 (mặt đường khô qua đêm, không mang sang ngày sau).
+ */
+export function roadWetnessAt(seed: string, day: number, minuteOfDay: number, weatherId: string): number {
+  const profile = rainDayProfile(seed, day, weatherId);
+  if (!profile) return 0;
+  const first = Math.max(0, Math.floor(profile.centerMinute - profile.halfDuration));
+  let wet = 0;
+  for (let m = first; m <= minuteOfDay; m += 5) {
+    const progress = Math.max(0, 1 - Math.abs(m - profile.centerMinute) / profile.halfDuration);
+    const intensity = profile.peak * progress * progress * (3 - 2 * progress);
+    wet = Math.max(wet, intensity * Math.exp(-(minuteOfDay - m) / ROAD_DRY_TAU_MINUTES));
+  }
+  const current = rainIntensityAt(seed, day, Math.floor(minuteOfDay / 60), minuteOfDay % 60, weatherId);
+  return Math.min(1, Math.max(wet, current) * 1.5);
+}
+
 export function formatMinuteOfDay(minute: number): string {
   const hh = Math.floor(minute / 60) % 24;
   return `${String(hh).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;

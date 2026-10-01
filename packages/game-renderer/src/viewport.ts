@@ -16,6 +16,7 @@ export interface PixiGameViewportOptions {
 }
 
 import { getDebugVisualTime } from './debug-time';
+import { buildRoadSurface, type RoadSurface } from './road-surface';
 
 /** Điểm gốc bóng so với góc trên-trái sprite cây 80x100 (px): chân thân cây, để bóng đổ từ mặt đất chứ không từ tán. */
 const TREE_SHADOW_ORIGIN_PX = { x: 40, y: 90 } as const;
@@ -349,23 +350,8 @@ export class PixiGameViewport {
         }
       }
 
-      // Cosmetic lane, drain, crossing and signal markings; they do not alter movement or collision.
-      const road = new Graphics();
-      const streetRows = Array.from({ length }, (_, y) => y).filter(y => groundLayerData.slice(y * width, (y + 1) * width).includes(1));
-      for (const y of streetRows) for (let x = 0; x < width; x++) {
-        if (groundLayerData[y * width + x] !== 1) continue;
-        const wx = x * TILE_SIZE, wy = (y + originY) * TILE_SIZE;
-        if (x % 3 === 1) road.rect(wx + 9, wy + 15, 14, 2).fill({ color: 0xf0d48a, alpha: 0.62 });
-        if (x % 4 === 0) road.rect(wx + 2, wy + 2, 3, 2).fill({ color: 0x354e4a, alpha: 0.75 });
-        if (x === 8) for (let stripe = 0; stripe < 4; stripe++) road.rect(wx + 3 + stripe * 7, wy + 4, 4, 24).fill({ color: 0xfff0cf, alpha: 0.78 });
-      }
-      if (streetRows.length) {
-        const sx = 12 * TILE_SIZE, sy = (streetRows[0] + originY) * TILE_SIZE;
-        road.rect(sx, sy - 12, 2, 16).fill(0x31443c);
-        road.roundRect(sx - 3, sy - 22, 9, 12, 2).fill(0x263934);
-        road.circle(sx + 1, sy - 18, 1.5).fill(0xf4cf62);
-      }
-      this.groundLayer.addChild(road);
+      // Mặt cắt lòng đường: bó vỉa, rãnh, cửa thu nước, vạch giữa, vạch qua đường, lớp ướt. Chỉ hình ảnh.
+      this.roadSurface = buildRoadSurface(this.groundLayer, width);
     }
 
     // Wall Layer & Shop decorations (2.5D Stardew Valley-inspired slim walls)
@@ -776,6 +762,7 @@ export class PixiGameViewport {
   private tintLayer!: Container;
   private lightLayer!: Container;
   private sunBeamGraphic!: Graphics;
+  private roadSurface: RoadSurface | null = null;
   private treeShadows: Array<{ prop: TreeProp; graphic: Graphics; last: TreeShadowSnapshot | null }> = [];
   private rainOverlay!: Graphics;
 
@@ -1060,6 +1047,7 @@ export class PixiGameViewport {
     this.sunBeamGraphic.alpha = light.sun;
     this.app.renderer.background.color = light.sky;
     const rain = debugTime?.rain ?? this.simulation.getRainIntensity();
+    this.roadSurface?.setWetness(debugTime?.rain !== undefined ? Math.min(1, rain * 1.5) : this.simulation.getRoadWetness());
     for (const entry of this.treeShadows) {
       const snapshot = { azimuth: light.sunAzimuth, elevation: light.sunElevation, sun: light.sun, rain };
       if (!treeShadowNeedsRedraw(entry.last, snapshot)) continue;

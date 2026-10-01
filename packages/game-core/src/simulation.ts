@@ -83,7 +83,7 @@ import { pickAvailableRegular, processRegularCheckout, processRegularWalkout } f
 import { StreetTrafficManager } from './street-traffic';
 import { CollisionSystem } from './collision';
 import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
-import { rainIntensityAt, rainForecastForDay, describeRainForecast } from './weather';
+import { rainIntensityAt, rainForecastForDay, describeRainForecast, roadWetnessAt } from './weather';
 import { buyLandPlot, validateStoreLayout, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
@@ -661,6 +661,12 @@ export class GameSimulation {
     const time = this.clock.getTime();
     const weatherId = effectiveWeatherId(this.market, time.day);
     return rainIntensityAt(this.weatherSeed, time.day, time.hour, time.minute, weatherId);
+  }
+
+  /** Độ ướt mặt đường 0..1 (mưa + khô dần sau mưa), dùng cho đường ướt và vũng nước. */
+  public getRoadWetness(): number {
+    const time = this.clock.getTime();
+    return roadWetnessAt(this.weatherSeed, time.day, time.hour * 60 + time.minute, effectiveWeatherId(this.market, time.day));
   }
 
   public getStalls(): Array<StallDefinition & { owned: boolean; buyable: boolean; reason?: string }> {

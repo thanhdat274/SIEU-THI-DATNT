@@ -39,6 +39,17 @@ export const STREET_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
   { x: 12 * 32 + 16, y: 12 * 32 + 10 },
   { x: 13 * 32 + 16, y: 12 * 32 + 10 },
 ];
+/**
+ * Mặt cắt lòng đường (chỉ hình ảnh, không đổi va chạm hay đường đi): vỉa hè (y 11-12) → bó vỉa + rãnh thoát nước →
+ * làn bắc (y 13, đi sang trái) → vạch giữa (biên y 14) → làn nam (y 14, đi sang phải) → mặt đường còn lại.
+ * Hai làn trùng với STREET_LANE_LEFT_Y/STREET_LANE_RIGHT_Y trong game-core/street-traffic.ts.
+ */
+export const ROAD_PROFILE = { kerbTileY: 13, centerLineTileY: 14, laneRows: 2 } as const;
+/** Cửa thu nước mưa trong rãnh sát bó vỉa (ô x, ở hàng kerbTileY); tránh vạch qua đường trước cửa tiệm. */
+export const STORM_DRAINS: ReadonlyArray<{ tileX: number }> = [{ tileX: 4 }, { tileX: 12 }, { tileX: 17 }, { tileX: 22 }];
+/** Vạch qua đường ngay trước cửa tiệm (cửa ở ô x = 9..10), phủ hai làn. */
+export const CROSSWALK = { tileX: 9, widthTiles: 2, firstRow: 13, rows: 2 } as const;
+
 export const WAREHOUSE_BOUNDS = {left:STORE_BOUNDS.left,right:STORE_BOUNDS.right,top:STORE_BOUNDS.top-6,bottom:STORE_BOUNDS.top};
 export const WAREHOUSE_CENTER = {x:(WAREHOUSE_BOUNDS.left+WAREHOUSE_BOUNDS.right+1)*16,y:(WAREHOUSE_BOUNDS.top+WAREHOUSE_BOUNDS.bottom+1)*16};
 export const WAREHOUSE_DOOR_LEFT = Math.floor(WAREHOUSE_CENTER.x/32)-1;
