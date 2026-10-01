@@ -1,5 +1,18 @@
 # BẢNG THEO DÕI CÔNG VIỆC (TASKS PROGRESS)
 
+> Ghi chú: các mục `pnpm` ở các giai đoạn cũ bên dưới là lịch sử; dự án hiện dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
+
+## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)
+
+- [>] Đèn tín hiệu chu kỳ + người đi bộ + xe nhường đường (S46, I-19): code có, **chưa commit**, chưa OpenSpec; typecheck + `yarn test` PASS 01/10/2026. Còn: tạo change `traffic-signal-crosswalk`, đồng bộ pha co-op, QA browser/hiệu năng.
+- [ ] Co-op: server replay mọi lệnh đổi tài nguyên + test lệnh lạ/save sửa tiền (I-01).
+- [ ] Giới hạn payload/tần suất server (I-15); migration schema world Mongo (I-16).
+- [ ] Lệnh nhân viên trong co-op (I-05); ID xác định (I-04).
+- [ ] Thay bảng xếp hạng giả (I-02); xuất/nhập save (I-12).
+- [ ] CI + `test:all` (I-09); tài liệu triển khai `docs/deploy.md` (I-17); checklist a11y (I-18).
+- [ ] Ghi quyết định quyền sửa bố cục/mua đất của thành viên vào spec (I-03; code đã commit 46f7466).
+- [x] Đã đóng: hằng số/độ ướt mặt đường (I-06, commit 2f2af38).
+
 ## Rà soát sau backlog — 01/10/2026
 
 - [x] Đưa sáu thao tác đơn tiệc/mục tiêu/kỹ năng/danh hiệu vào luồng command co-op phát lại phía server (`apps/web/src/App.tsx`, `apps/server/src/bootstrap.ts`, `packages/game-core/src/world-runtime.ts`); receipt đã ghi được xử lý trước replay để retry idempotent.

@@ -2,7 +2,7 @@
 
 > **Tiệm Tạp Hóa Đầu Hẻm** (`tiem-tap-hoa-dau-hem` 0.1.0). Tài liệu sống: đọc file này trước khi cập nhật, giữ cấu trúc, không xóa lịch sử, cập nhật trạng thái tại chỗ và tính lại mục 9 sau mỗi đợt lớn.
 >
-> **Lần kiểm kê đầu tiên: 2026-10-01 (Asia/Saigon).** Phương pháp: rà soát **chỉ đọc** (đọc mã nguồn, cấu hình, test, OpenSpec, tài liệu; `git status/diff`). **Không chạy** ứng dụng, typecheck, test, build hay browser trong lượt này. Mọi câu "test PASS" dưới đây là **bằng chứng lấy từ tài liệu cũ** (`tổng hợp.md`, `TASKS.md`, OpenSpec) hoặc từ việc test tồn tại trong mã — không phải kết quả mới. Khi tài liệu và mã khác nhau, **mã là nguồn sự thật** và chênh lệch được ghi ở mục 3.2.
+> **Lần kiểm kê đầu tiên: 2026-10-01 (Asia/Saigon).** Phương pháp: rà soát **chỉ đọc** (đọc mã nguồn, cấu hình, test, OpenSpec, tài liệu; `git status/diff`). **Không chạy** ứng dụng, typecheck, test, build hay browser trong lượt này. Mọi câu "test PASS" dưới đây là **bằng chứng lấy từ tài liệu cũ** (`tổng hợp.md`, `TASKS.md`, OpenSpec) hoặc từ việc test tồn tại trong mã — không phải kết quả mới. Khi tài liệu và mã khác nhau, **mã là nguồn sự thật** và chênh lệch được ghi ở mục 3.2. Số dòng/số file nêu trong tài liệu là số liệu **tại thời điểm kiểm kê 2026-10-01**, sẽ lệch dần.
 
 Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪ Planned · 🔵 Improvement · 🔍 Needs Verification.
 "✅" ở đây nghĩa là: có logic thật được nối vào luồng chơi **và** có test tự động trong repo (hoặc kiểm tra tương đương); không đồng nghĩa đã qua browser QA/playtest cân bằng.
@@ -61,14 +61,15 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | S14 | Mùa, ngày hội, mục tiêu ngày hội, quầy ăn uống | ✅ | `game-data/seasons.ts`, `core/stalls.ts`, `goals.ts`, `StallModal.tsx` | Quầy bán theo mô hình **nhu cầu tổng hợp** (`processStalls`), không có NPC ghé quầy (xem S33). Ân hạn 1 ngày nhận thưởng. Test `seasons.test`, `goals.test`. |
 | S15 | Kỹ năng & 9 perk | ✅ | `core/skills.ts`, `game-data/skills.ts`, `SkillsModal.tsx` | Chín modifier nối vào simulation. Test `skills.test`, `perks.test`. Cân bằng chưa playtest. |
 | S16 | Danh hiệu cột mốc (9) | ✅ | `core/titles.ts`, `TitlesModal.tsx` | Test `titles.test`. |
-| S17 | Giao thông hẻm & phương thức đến (walk/motorbike/car) — logic | ✅ | `core/street-traffic.ts`, `game-data/map.ts`, `customers.ts` | Làn, đỗ lề, trần 2 actor, không va chạm. Test `street-traffic.test`. Hình ảnh xem S33. |
+| S17 | Giao thông hẻm & phương thức đến (walk/motorbike/car) — logic | ✅ | `core/street-traffic.ts`, `game-data/map.ts`, `customers.ts` | Làn, đỗ lề, trần 2 actor, không va chạm. Test `street-traffic.test`. Hình ảnh xem S33. **Lưu ý:** `street-traffic.ts` đang được sửa lớn chưa commit (S46); phần đã commit chưa tính đèn/nhường đường. |
 | S18 | Server HTTP: world, ACL, invite, receipt, commit nguyên tử | ✅ | `apps/server/src/world.repository.ts`, `bootstrap.ts`, `auth.guard.ts`, `firebase-admin.ts` | Test `world.repository.test` (Mongo thật). Chưa test qua Firebase guard thật (S36). |
 | S19 | WS gateway + `WorldRuntime` (avatar authoritative, time-vote, session) | ✅ | `world.gateway.ts`, `core/world-runtime.ts`, `avatars.ts` | Test `world.gateway.test`, `world-runtime.test`, `avatars.test`. Chưa test reconnect trình duyệt (S38). |
 | S20 | Công cụ debug giờ/ngày/mưa (chỉ dev) | ✅ | `apps/web/src/main.tsx`, `renderer/debug-time.ts` | Chỉ hiển thị, không đổi save/mô phỏng; chỉ bật khi `import.meta.env.DEV`. |
 | S21 | Nhân viên (tuyển, ca, lương, AI châm kệ/thu ngân, bảo vệ xe) | 🟡 | `core/staff.ts`, `simulation.ts`, `StaffModal.tsx`, `viewport.ts` (workerSprites) | Có logic + test (`staff.test`, `workers.test`) và **có render** (`viewport.ts:921`). Thiếu: lệnh nhân viên không nằm trong danh sách server-replay; `layout_batch` bị chặn khi có `workerTask`; chưa browser QA vòng 3 ngày; vị trí bảo vệ hard-code `(4*32, 13*32)`. |
 | S22 | Co-op: replay lệnh phía server | 🟡 | `apps/server/src/bootstrap.ts:83-190`, `world-runtime.ts` | Server replay `respond/fulfill_party_order, claim_goal, claim_weekly_quest, claim_festival_goal, choose_perk, set_title` + `layout_batch`. `WorldRuntime` biết thêm `restock, unstock, checkout, set_price, order_supplier, buy_stall, dispose_stock, claim_quest, buy_plot...` nhưng đường commit **không** replay chúng (I-01). Test `coop-commands.test` gọi controller trực tiếp. |
 | S23 | Bố cục cửa hàng & mua đất mở rộng | 🟡 | `core/store-layout.ts`, `game-data/land.ts`, `StoreLayoutModal.tsx` | Editor khi đóng cửa, validation, save schema 3, migration có backup. Còn mở (OpenSpec 6 task): mobile, 2-session, routing sau layout, giá đất 250k/600k chưa cân bằng. |
-| S24 | Mặt đường: vạch, cống, vạch qua đường, đèn tín hiệu | 🟡 | `renderer/road-surface.ts` (commit 2f2af38), `viewport.ts`, `game-data/map.ts` (`ROAD_PROFILE`, `STORM_DRAINS`, `CROSSWALK`) | Mặt cắt/cống/vạch nay lấy từ dữ liệu bản đồ. Vẫn **chỉ trang trí**: không chu kỳ đèn, không nhường đường, không thoát nước; chưa xem browser. |
+| S24 | Mặt đường: vạch, cống, vạch qua đường | 🟡 | `renderer/road-surface.ts` (commit 2f2af38), `viewport.ts`, `game-data/map.ts` (`ROAD_PROFILE`, `STORM_DRAINS`, `CROSSWALK`) | Mặt cắt/cống/vạch lấy từ dữ liệu bản đồ, đã commit. Cống/vạch là **hình ảnh**, không có thoát nước thật; chưa xem browser. Phần đèn tín hiệu tách ra S46. |
+| S46 | Đèn tín hiệu chu kỳ, người đi bộ qua đường, xe nhường đường | 🟡 | `core/traffic-signal.ts` (+`.test.ts`), `core/street-traffic.ts`, `game-data/traffic.ts`, `renderer/street-signal.ts`, `viewport.ts`, `shared` (`TrafficSignalState`, `StreetPedestrianState`) | **Có code, CHƯA commit, chưa có OpenSpec change riêng.** Pha xanh 26/vàng 3/đỏ 15 s; người đi bộ chờ đèn walk rồi qua; xe dừng trước vạch khi đèn không xanh hoặc có người qua, giữ khoảng cách xe trước. Typecheck + `yarn test` PASS ngày 2026-10-01, nhưng chưa xem browser/hiệu năng; chưa rõ ảnh hưởng tới thời gian đến cửa của khách đi xe (`customers.ts`); đồng hồ đèn (`signalClock`) không nằm trong save/WorldRuntime và về 0 khi `reset` nên hai client co-op có thể lệch pha. Người đi bộ chỉ hình ảnh, không phải khách. |
 | S25 | Độ ướt mặt đường | ✅ | `core/weather.ts` `roadWetnessAt`, `simulation.ts getRoadWetness`, `renderer/road-surface.ts`, `road.test.ts` | Đã commit (2f2af38): hàm thuần có test, renderer gọi `setWetness` (`viewport.ts:1050`). Chỉ hình ảnh, chưa kiểm browser. |
 | S26 | Menu khởi đầu, đăng nhập, sổ tay hướng dẫn | 🟡 | `LoginScreen.tsx` (1.004 dòng), `AccountBar.tsx` | Có Chơi tiếp/Chơi mới/Hẻm chung/Cách chơi/sổ tay. Bảng xếp hạng là dữ liệu giả (S28). |
 | S27 | Thuế: registry quy tắc + theo dõi doanh thu năm | 🟡 | `core/tax/*`, `TaxModal.tsx`, `docs/tax/*` | Registry khóa `UNVERIFIED`; modal chỉ hiển thị doanh thu năm so ngưỡng tham khảo, **không tính/trừ thuế**. Engine xem S41. |
@@ -99,6 +100,30 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 
 > "Xác nhận" chỉ dùng khi đã đọc đúng đoạn mã gây ra hành vi; còn lại ghi "Nghi vấn qua phân tích tĩnh".
 
+### Bảng tóm tắt vấn đề
+
+| ID | Vấn đề | Ưu tiên | Trạng thái |
+|---|---|---|---|
+| I-01 | Co-op: server chỉ replay một phần lệnh | High | Mở |
+| I-02 | Bảng xếp hạng dữ liệu giả | Medium | Mở |
+| I-03 | Quyền sửa bố cục cho mọi thành viên chưa ghi spec | Medium | Mở (code đã commit) |
+| I-04 | ID `Date.now()/Math.random()` | Medium | Mở |
+| I-05 | Nhân viên chưa vào co-op | Medium | Mở |
+| I-07 | Tài liệu lạc hậu | Medium | Mở |
+| I-08 | Service worker version cố định | Low | Mở |
+| I-09 | Test server ngoài `yarn test` | Medium | Mở |
+| I-10 | Bundle lớn | Low | Mở |
+| I-11 | `server/main.ts` lỗi thời | Low | Mở |
+| I-12 | Save local một slot | Medium | Mở |
+| I-13 | Mưa chỉ dùng ngưỡng 0,4 | Low | Mở |
+| I-14 | Khóa bí mật trong thư mục dự án | Low | Mở |
+| I-15 | Server không giới hạn payload/tần suất | Medium | Mở |
+| I-16 | Chưa có migration schema world Mongo | Medium | Mở |
+| I-17 | Thiếu tài liệu triển khai/vận hành | Low | Mở |
+| I-18 | A11y/cảm ứng chưa kiểm | Low | Mở |
+| I-19 | Đèn tín hiệu chưa commit/OpenSpec/đồng bộ co-op | Medium | Mở |
+| I-06 | Hằng số đường chưa nối | Low | Đã đóng 2026-10-01 (commit 2f2af38) |
+
 ### Issue: I-01 Co-op: đa số lệnh do client quyết định, server chỉ kiểm hình học bố cục
 
 - **Current State:** `commitCommand` nhận cả `updatedBusiness.save` từ client. Chỉ 7 lệnh (+ `layout_batch`) được server phát lại. Với các lệnh khác (nhập hàng, bán, đặt giá, bày kệ, mua quầy, tiêu hủy, nhận nhiệm vụ ngày…), nhánh `else` chỉ kiểm tra `sameLayout()` rồi lưu save do client gửi (`bootstrap.ts` ~164-186). `WorldRuntime.executeCommand` đã hiểu các lệnh này (`world-runtime.ts:190-234`) nhưng không được dùng ở đây.
@@ -108,7 +133,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Root Cause:** Mô hình ban đầu "client xuất save"; replay được thêm dần cho từng lệnh.
 - **Suggested Fix:** Mở rộng `serverReplayedCommands` cho mọi lệnh `WorldRuntime` đã hỗ trợ; từ chối commit khi `payload.type` không nằm trong danh sách; thêm test như `coop-commands.test.ts` cho từng lệnh.
 - **Priority:** High
-- **Verification:** Chưa tái hiện (không chạy). Cần test: gửi save sửa tiền với payload `restock` và kiểm bị từ chối.
+- **Verification:** Chưa tái hiện. Cần test: gửi save sửa tiền với payload `restock` và kiểm bị từ chối. Liên kết: OpenSpec `shared-alley-multiplayer`; test dự kiến `apps/server/src/coop-commands.test.ts` (thêm ca lệnh không replay).
 
 ### Issue: I-02 Bảng xếp hạng là dữ liệu giả
 
@@ -253,6 +278,61 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Priority:** Low
 - **Verification:** `git ls-files` không chứa; `git check-ignore` xác nhận bị bỏ qua.
 
+### Issue: I-15 Server chưa giới hạn payload/tần suất và tin save của client
+
+- **Current State:** `commitCommand` nhận cả `updatedBusiness.save` (xem I-01); chưa thấy rate limit REST/WS hay giới hạn kích thước save (nghi vấn qua phân tích tĩnh, chưa kiểm cấu hình Nest).
+- **Expected State:** Giới hạn body, rate limit theo uid/IP, validate save bằng `validateSaveGameData` và bất biến tài nguyên trước khi ghi.
+- **Impact:** Lạm dụng/DoS nhẹ, ghi document Mongo quá lớn.
+- **Related Files:** `apps/server/src/bootstrap.ts`, `world.gateway.ts`, `world.repository.ts`.
+- **Root Cause:** Ưu tiên chạy được co-op trước.
+- **Suggested Fix:** Throttler cho REST, giới hạn kích thước message WS, giới hạn kích thước save khi commit.
+- **Priority:** Medium
+- **Verification:** Cần đọc lại cấu hình Nest và test tải.
+
+### Issue: I-16 Chưa có kế hoạch migration schema phía world Mongo
+
+- **Current State:** Migration 2→3 chỉ có phía Dexie (local) có backup. Document world trên Mongo chứa save; tính năng cần schema 4 (ví dụ F-01) sẽ phải nâng cả world đang tồn tại.
+- **Expected State:** Quy trình nâng schema world có backup/rollback.
+- **Impact:** Rủi ro hỏng hẻm chung khi nâng schema.
+- **Related Files:** `packages/shared` (validator), `apps/server/src/world.repository.ts`.
+- **Root Cause:** Chưa gặp nhu cầu.
+- **Suggested Fix:** Hàm migrate dùng chung trong `shared`, chạy khi load world, kèm test fixture schema cũ.
+- **Priority:** Medium
+- **Verification:** Chưa kiểm; ghi nhận từ đọc kiến trúc.
+
+### Issue: I-17 Thiếu thông tin triển khai/vận hành
+
+- **Current State:** Chưa có tài liệu nơi deploy, danh sách biến môi trường bắt buộc, sao lưu Mongo, logging/monitoring. Mới có I-14 về khóa Firebase.
+- **Expected State:** Một mục trong `docs/` mô tả deploy, env, backup, giám sát.
+- **Impact:** Khó dựng lại môi trường, khó xử lý sự cố.
+- **Related Files:** `apps/web/vite.config.ts`, `apps/server/src/bootstrap.ts`.
+- **Root Cause:** Chưa ưu tiên.
+- **Suggested Fix:** Viết `docs/deploy.md`, liệt kê tên biến (không ghi giá trị).
+- **Priority:** Low
+- **Verification:** Chưa kiểm.
+
+### Issue: I-18 Khả năng truy cập, cảm ứng và chỉ landscape
+
+- **Current State:** Chỉ landscape (overlay xoay); QA bàn phím/focus chưa làm (S30); chưa kiểm `prefers-reduced-motion`/đọc màn hình.
+- **Expected State:** Checklist a11y tối thiểu cho modal/HUD và kiểm cảm ứng thật.
+- **Impact:** Người dùng bàn phím/cảm ứng gặp khó; không rõ mức hỗ trợ.
+- **Related Files:** `apps/web/src/components/*`, `index.css`.
+- **Root Cause:** Ưu tiên chức năng.
+- **Suggested Fix:** Checklist focus trap/phím tắt/aria cho modal; thử trên thiết bị thật.
+- **Priority:** Low
+- **Verification:** Chưa kiểm.
+
+### Issue: I-19 Đèn tín hiệu chưa commit, chưa có OpenSpec/QA, pha chưa đồng bộ co-op
+
+- **Current State:** Xem S46. Thay đổi trải qua `shared`, `game-data`, `game-core`, `game-renderer`; `signalClock` là bộ đếm cục bộ trong `StreetTrafficManager`, không nằm trong save.
+- **Expected State:** Có OpenSpec change, commit riêng, QA browser, quyết định đồng bộ pha đèn giữa hai client.
+- **Impact:** Nguy cơ lệch hình ảnh giữa hai người chơi; tính năng chưa được theo dõi chính thức.
+- **Related Files:** `core/street-traffic.ts`, `core/traffic-signal.ts`, `game-data/traffic.ts`, `renderer/street-signal.ts`.
+- **Root Cause:** Làm dở trong working tree.
+- **Suggested Fix:** Suy pha đèn từ thời gian mô phỏng chung (`trafficSignalAt(elapsed)` đã là hàm thuần) thay vì bộ đếm riêng; tạo change `traffic-signal-crosswalk`.
+- **Priority:** Medium
+- **Verification:** Typecheck + test lõi PASS (2026-10-01); chưa chạy browser.
+
 ### 3.2. Chênh lệch giữa tài liệu và mã (mã là sự thật)
 
 | # | Tài liệu nói | Thực tế trong mã |
@@ -265,7 +345,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | 6 | Mongo cần replica set/transaction | Đã bỏ; commit `updateOne` nguyên tử trên standalone |
 | 7 | `FestivalGoal` "chỉ metadata" (dòng lịch sử) | Đã có logic nhận thưởng, UI, replay (phần đầu `tổng hợp.md` đúng, dòng lịch sử cũ sai) |
 | 8 | "Bảng xếp hạng" như tính năng menu | Dữ liệu cứng (S28) |
-| 9 | Đợt E: "đèn giao thông, cống, vạch qua đường" | Chỉ trang trí, không logic (S24) |
+| 9 | Đợt E: "đèn giao thông, cống, vạch qua đường" | Cống/vạch: hình ảnh đã commit (S24). Đèn tín hiệu + nhường đường: có logic nhưng chưa commit (S46) |
 | 10 | `TASKS.md`/`ROADMAP.md` nhắc pnpm | Dự án dùng Yarn 1 |
 | 11 | Số test "10 nhóm"/"18 nhóm" | `test-runner.ts` có 48 lời gọi `run*Tests` (45 file `*.test.ts`) |
 
@@ -282,8 +362,9 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 
 **Recommended:**
 - Xuất/nhập save file, nhiều slot (I-12).
-- Hành vi khách/xe theo dải mưa (I-13) và nối độ ướt mặt đường vào renderer (I-06).
-- Chu kỳ đèn tín hiệu + nhường đường (khi muốn "đường sống" thật).
+- Hành vi khách/xe theo dải mưa (I-13). (Độ ướt mặt đường đã nối renderer, S25 ✅.)
+- Hoàn tất đèn tín hiệu + nhường đường (S46, I-19): commit, OpenSpec, đồng bộ pha co-op, QA browser.
+- Giới hạn payload/tần suất server (I-15), migration schema world (I-16), tài liệu triển khai (I-17), a11y (I-18).
 - Test `apps/web` (hook/modal) và CI (S32, S43).
 - Âm thanh môi trường/UI (S40).
 
@@ -313,7 +394,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Potential Risks:** Nội dung lặp; giữ chọn câu theo seed để xác định.
 - **Priority:** High
 
-### Feature: F-03 Đèn tín hiệu chu kỳ & nhường đường
+### Feature: F-03 Đèn tín hiệu chu kỳ & nhường đường — đang triển khai (S46, chưa commit)
 - **Purpose:** Biến trang trí đường thành hệ thống nhất quán.
 - **Why It Fits:** `street-traffic`, `CROSSWALK`, arrival mode.
 - **Gameplay / UX Value:** Nhịp xe dừng/đi tạo cửa sổ cho khách đi bộ.
@@ -321,7 +402,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Dependencies:** Pha đèn là hàm thuần theo thời gian game.
 - **Implementation Complexity:** Medium
 - **Potential Risks:** Hiệu năng actor; giữ trần actor.
-- **Priority:** Low
+- **Priority:** Medium (đã có code)
 
 ### Feature: F-04 Xuất/nhập save + sao lưu có tên
 - **Purpose:** Bảo vệ tiến trình.
@@ -363,6 +444,46 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Potential Risks:** Chính sách autoplay, dung lượng.
 - **Priority:** Low
 
+### Feature: F-08 Bản đồ nhiệt khách và lộ trình trong tiệm
+- **Purpose:** Giúp người chơi tối ưu bố cục.
+- **Why It Fits:** Đã có `pathfinding`, editor bố cục, khách NPC.
+- **Gameplay / UX Value:** Thấy nút thắt hàng chờ, khu kệ ít người qua.
+- **Integration Points:** `customers.ts`, `StoreLayoutModal`, lớp phủ renderer.
+- **Dependencies:** Tổng hợp vị trí khách theo ô theo ngày (không lưu chi tiết vào save).
+- **Implementation Complexity:** Medium
+- **Potential Risks:** Chi phí vẽ lớp phủ trên mobile.
+- **Priority:** Low
+
+### Feature: F-09 Sự kiện ngẫu nhiên nhỏ (mất điện, kiểm tra vệ sinh, trộm vặt)
+- **Purpose:** Thêm biến động vận hành.
+- **Why It Fits:** `market-events`, `spoilage` (mất điện), nhân viên bảo vệ.
+- **Gameplay / UX Value:** Quyết định phản ứng; bảo vệ có giá trị thật.
+- **Integration Points:** `game-data/market-events.ts`, `staff.ts`, ledger.
+- **Dependencies:** Seed theo ngày để xác định; lệnh replay nếu co-op.
+- **Implementation Complexity:** Medium
+- **Potential Risks:** Cân bằng, cảm giác bất công.
+- **Priority:** Low
+
+### Feature: F-10 Hướng dẫn trong game theo checklist cấp độ
+- **Purpose:** Thay sổ tay tĩnh bằng onboarding có tiến độ.
+- **Why It Fits:** `LevelRoadmapModal`, `QuestModal`, goals.
+- **Gameplay / UX Value:** Người mới biết bước tiếp theo.
+- **Integration Points:** `core/goals.ts`, sổ tay trong `LoginScreen`.
+- **Dependencies:** Nội dung tiếng Việt trong `game-data`.
+- **Implementation Complexity:** Low
+- **Potential Risks:** Rườm rà với người chơi cũ (cho phép tắt).
+- **Priority:** Medium
+
+### Feature: F-11 Ghi lại và phát lại ngày chơi (replay)
+- **Purpose:** Gỡ lỗi, chia sẻ, so sánh lệch client/server.
+- **Why It Fits:** Mô phỏng bước cố định 1/60 s, seed xác định.
+- **Gameplay / UX Value:** Xem lại một ngày.
+- **Integration Points:** `simulation.ts`, log lệnh.
+- **Dependencies:** I-04 (ID xác định) phải xong trước.
+- **Implementation Complexity:** High
+- **Potential Risks:** Kích thước log, phiên bản logic.
+- **Priority:** Low
+
 ---
 
 ## 6. Hệ thống cần kiểm chứng thêm
@@ -381,6 +502,26 @@ Tất cả 🔍; không phải lỗi trừ khi có bằng chứng.
 | — | Thời tiết/ánh sáng chuyển tiếp mượt | Chơi một ngày đầy đủ |
 | — | Bóng cây mobile (bị thanh UI che theo ghi chú cũ) | Thiết bị thật |
 | — | Replay server vs client cùng kết quả | Test so sánh snapshot |
+
+### Tiêu chí nghiệm thu đề xuất (chưa phải số đo thật)
+
+| Hạng mục | Tiêu chí đề xuất | Hiện trạng |
+|---|---|---|
+| FPS (S39) | ≥ 45 FPS trung bình, p95 frame ≤ 33 ms trên máy mục tiêu; mobile tầm trung ≥ 30 FPS | Chưa đo (headless cũ p95 ~67–83 ms) |
+| Tải cảnh | Không tụt FPS ở trần khách + xe + người đi bộ (S46) | Chưa đo |
+| Co-op (S38) | Reconnect ≤ 10 s, không mất lệnh đã có receipt | Chưa kiểm |
+| Save | Đóng/mở tab không mất quá 1 lệnh gần nhất | Chưa kiểm browser |
+
+### Liên kết vấn đề, OpenSpec và test dự kiến
+
+| Vấn đề | OpenSpec change | Test dự kiến |
+|---|---|---|
+| I-01, I-05, I-15 | `shared-alley-multiplayer` | `coop-commands.test.ts` (ca lệnh lạ, save sửa tiền, payload quá lớn) |
+| I-03 | `store-layout-expansion`, `shared-alley-multiplayer` | Đã có ca thành viên gửi `layout_batch`; thêm ca giới hạn mua đất nếu đổi thiết kế |
+| I-04 | (chưa có) | Replay hai lần, so sánh ID |
+| I-13 | `rain-intensity-forecast` | `customers.test`/`street-traffic.test` theo dải |
+| I-19, S46 | (chưa có; nên tạo `traffic-signal-crosswalk`) | `traffic-signal.test.ts` (đã có), thêm test đồng bộ pha |
+| I-16 | (chưa có) | Fixture save schema cũ, world migrate |
 
 OpenSpec còn task mở (đếm `- [ ]`): adapt-reference-shop-operations 4, dynamic-economy-simulation 9, level-progression-roadmap 2, rain-intensity-forecast 4, seasonal-daylight-tree-shadows 2, shared-alley-multiplayer 11, stardew-inspired-management-loop 7, store-layout-expansion 6 (tổng 45); premium-vietnamese-pixel-ui 0.
 
@@ -433,6 +574,15 @@ OpenSpec còn task mở (đếm `- [ ]`): adapt-reference-shop-operations 4, dyn
 
 ## 8. Lịch sử phát triển
 
+## 2026-10-01 (lượt 3 — cập nhật tài liệu theo rà soát)
+
+### Verified
+- `yarn typecheck`: **PASS**. `yarn test` (`game-core`): **PASS** — `# tests 7, # suites 2, pass 7, fail 0`. Runner TAP gộp các nhóm thành 7 test/2 suite; con số này không so sánh được với 48 lời gọi `run*Tests` (số hàm nhóm, không phải số TAP test). Test server, build và browser **không chạy lại** lượt này.
+- Đọc `git status`/`git diff`: đèn tín hiệu + người đi bộ + nhường đường nằm trong working tree **chưa commit** (S46, I-19).
+
+### Changed
+- Thêm S46, I-15…I-19, F-08…F-11, bảng tóm tắt vấn đề, tiêu chí nghiệm thu, bảng liên kết OpenSpec/test; sửa S17, S24, mục 3.2 dòng 9, mục 4, mục 9, mục 10. Không đổi mã.
+
 ## 2026-10-01 (kiểm chứng sau kiểm kê)
 
 ### Verified
@@ -473,20 +623,20 @@ OpenSpec còn task mở (đếm `- [ ]`): adapt-reference-shop-operations 4, dyn
 | Category | Count |
 |---|---:|
 | Completed | 21 |
-| Partial | 6 |
+| Partial | 7 |
 | Needs Fix | 1 |
 | Planned | 6 |
 | Improvement | 4 |
 | Needs Verification | 7 |
 
-(45 hệ thống S01–S45 ở mục 2. Số vấn đề I-01…I-14 là danh sách riêng: 14.)
+(46 hệ thống S01–S46 ở mục 2; S46 mới là 🟡. Số vấn đề I-01…I-19 là danh sách riêng: 19, trong đó I-06 đã đóng.)
 
 **Mức độ hoàn thiện:** lõi mô phỏng đơn người chơi rộng và có test lõi dày; co-op có hạ tầng nhưng chưa nghiệm thu đầu–cuối; kiểm chứng bằng browser/máy thật còn thiếu.
 **Hệ thống chính đã xong (mức mã + test):** kho/lô/hạn, nhập hàng, ledger, khách/thu ngân, thị trường/thời tiết, khách quen, mục tiêu, đơn tiệc, kỹ năng, danh hiệu, server world + gateway.
-**Vấn đề lớn:** I-01 (tin cậy lệnh co-op), I-02 (bảng xếp hạng giả), I-03 (chưa ghi quyết định thiết kế quyền thành viên), I-09 (không CI).
+**Vấn đề lớn:** I-01 (tin cậy lệnh co-op), I-15 (server tin save, không giới hạn), I-02 (bảng xếp hạng giả), I-03 (chưa ghi quyết định thiết kế), I-09 (không CI), I-19 (đèn tín hiệu chưa commit).
 **Rủi ro kỹ thuật:** đồng bộ co-op, ID không xác định, `simulation.ts`/`App.tsx`/`viewport.ts` quá lớn, bundle >500 kB.
 **Thiếu hệ thống:** âm thanh, thuế, content editor, CI, review chữ.
-**Tập trung phát triển hiện tại (theo git/diff):** thời tiết/đường (mưa, độ ướt, mặt cắt đường) và quyền co-op.
+**Tập trung phát triển hiện tại (theo git/diff):** đèn tín hiệu, người đi bộ qua đường và xe nhường đường (chưa commit); trước đó là mặt cắt đường/độ ướt (đã commit).
 
 ---
 
@@ -499,7 +649,10 @@ OpenSpec còn task mở (đếm `- [ ]`): adapt-reference-shop-operations 4, dyn
 - [ ] Browser QA hai tài khoản: tạo hẻm → mời → nhập → bán → reconnect → restart server (S38).
 
 ### 🟠 Medium Priority
-- [ ] Quyết định/ghi spec quyền sửa bố cục của thành viên; commit hoặc hoàn nguyên (I-03).
+- [ ] Thêm test I-01: gửi save sửa tiền với lệnh không replay phải bị từ chối.
+- [ ] Hoàn tất đèn tín hiệu (S46, I-19): OpenSpec, commit, đồng bộ pha co-op, QA browser.
+- [ ] Giới hạn payload/tần suất server (I-15); kế hoạch migration schema world Mongo (I-16).
+- [ ] Ghi quyết định thiết kế quyền sửa bố cục/mua đất của thành viên vào spec (I-03; code đã commit 46f7466).
 - [ ] Lệnh nhân viên trong co-op (I-05, S21).
 - [ ] Thay bảng xếp hạng giả (I-02, S28, F-05).
 - [ ] ID xác định thay `Date.now()/Math.random()` (I-04).
@@ -512,6 +665,7 @@ OpenSpec còn task mở (đếm `- [ ]`): adapt-reference-shop-operations 4, dyn
 - [ ] Hành vi khách/xe theo dải mưa (I-13).
 - [ ] Bump version service worker theo build, đường dẫn tương đối (I-08).
 - [ ] Code-splitting, gỡ `lucide-react` nếu dư, xóa `server/main.ts` (I-10, I-11).
-- [ ] Cân nhắc F-01, F-02, F-06, F-07, F-03.
+- [ ] Cân nhắc F-01, F-02, F-06, F-07, F-08…F-11.
+- [ ] Viết `docs/deploy.md` (I-17); checklist a11y/cảm ứng (I-18).
 - [ ] Chuyển hằng số hard-code sang `game-data` (mục 7).
 - [ ] Chuyển khóa Firebase Admin ra ngoài thư mục dự án (I-14).

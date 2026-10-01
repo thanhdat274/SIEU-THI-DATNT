@@ -1,5 +1,15 @@
 # LỘ TRÌNH PHÁT TRIỂN (DEVELOPMENT ROADMAP)
 
+> Ghi chú: `pnpm-workspace.yaml` ở Giai đoạn 0 là lịch sử; dự án dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
+
+## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)
+
+- **Hẻm sống động:** mặt cắt đường/cống/độ ướt đã commit (2f2af38). Đèn tín hiệu chu kỳ + người đi bộ + nhường đường: có code, chưa commit/OpenSpec/QA browser (S46, F-03).
+- **Co-op:** ưu tiên I-01 (replay mọi lệnh), I-15, I-16, I-05; sau đó mới tới bảng xếp hạng thật (F-05, phụ thuộc I-01).
+- **Chất lượng:** CI, `test:all`, test `apps/web`, a11y (I-09, I-18, S32, S43).
+- **Vận hành:** `docs/deploy.md`, quản lý khóa bí mật (I-17, I-14).
+- **Ý tưởng sau:** F-01, F-02, F-06…F-11 trong `THONG-KE.md` mục 5.
+
 ## Kết quả rà soát co-op/perk — 01/10/2026
 
 - Đã phát lại phía server các lệnh đơn tiệc, mục tiêu dài hạn/tuần, chọn perk và danh hiệu; client dùng cùng luồng commit và server trả save chuẩn hóa. Đã thêm xử lý receipt trước replay cho lệnh retry. Typecheck và core suite PASS; còn cần HTTP/DB hai client + reconnect QA.
@@ -143,7 +153,7 @@ Phase 7 giữ định hướng Firebase/NestJS/MongoDB, triển khai phần cầ
 ---
 
 ### [>] GIAI ĐOẠN 8: TỐI ƯU HÓA MOBILE & PWA
-- [>] PWA: manifest, icon, meta iOS, service worker cache shell/asset (`apps/web/public`), đăng ký khi production; `yarn build` PASS. Chưa kiểm chứng cài đặt/offline trên trình duyệt hoặc iOS/Android thật.
+- [>] PWA: manifest, icon, meta iOS, service worker cache shell/asset (`apps/web/public`), đăng ký khi production; `yarn build` PASS. Còn I-08: `VERSION` cố định `v1`, đường dẫn `/sw.js` tuyệt đối. Chưa kiểm chứng cài đặt/offline trên trình duyệt hoặc iOS/Android thật.
 
 ---
 
