@@ -132,6 +132,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Related Files:** `apps/server/src/bootstrap.ts`, `packages/game-core/src/world-runtime.ts`, `apps/web/src/App.tsx` (`persistSimulationMutation`).
 - **Root Cause:** Mô hình ban đầu "client xuất save"; replay được thêm dần cho từng lệnh.
 - **Suggested Fix:** Mở rộng `serverReplayedCommands` cho mọi lệnh `WorldRuntime` đã hỗ trợ; từ chối commit khi `payload.type` không nằm trong danh sách; thêm test như `coop-commands.test.ts` cho từng lệnh.
+- **Tiến độ 2026-10-01 (một phần):** `bootstrap.ts` nay có `ALLOWED_COMMAND_TYPES` và từ chối loại lệnh lạ ("Loại lệnh không được hỗ trợ"); `coop-commands.test.ts` có ca `give_money` bị từ chối. **Chưa giải quyết lõi I-01:** các lệnh client vẫn gửi (`set_price`, `restock`, `unstock`, `checkout`, `order`, `stow*`, `planogram_*`, `auto_restock`, `store_status`, `buy_stall`, `claim_quest`, `advance_day`, `change_speed`) vẫn tin save client. Không thể chỉ thêm vào danh sách replay vì payload client lệch `WorldRuntime` (client gửi `order` còn runtime là `order_supplier`; `checkout` thiếu `checkoutId`; `store_status`, `stow*`, `planogram_*`, `auto_restock` runtime chưa có).
 - **Priority:** High
 - **Verification:** Chưa tái hiện. Cần test: gửi save sửa tiền với payload `restock` và kiểm bị từ chối. Liên kết: OpenSpec `shared-alley-multiplayer`; test dự kiến `apps/server/src/coop-commands.test.ts` (thêm ca lệnh không replay).
 
@@ -574,6 +575,17 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ## 8. Lịch sử phát triển
 
+## 2026-10-01 (lượt 4 — I-01 một phần)
+
+### Changed
+- `apps/server/src/bootstrap.ts`: thêm `ALLOWED_COMMAND_TYPES`, từ chối loại lệnh lạ. `coop-commands.test.ts`: thêm ca lệnh `give_money` bị từ chối và revision không đổi.
+
+### Verified
+- `test:coop`, `test:worlds`, `test:gateway` (Mongo thật, DB ngẫu nhiên): **PASS**. `tsc` server `--noEmit`: không lỗi. `yarn typecheck` ở root lần này không chạy được vì shell báo engine node >=22 nhưng đang là 20.19.0 (đã chạy `tsc` trực tiếp thay thế). Chưa qua Firebase guard thật, chưa browser.
+
+### Remaining
+- Lõi I-01: replay phía server cho các lệnh còn lại; cần thống nhất payload client–`WorldRuntime` và đồng hồ server trước.
+
 ## 2026-10-01 (lượt 3 — cập nhật tài liệu theo rà soát)
 
 ### Verified
@@ -644,13 +656,13 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 ## 10. Next Steps
 
 ### 🔴 High Priority
-- [ ] Server replay cho mọi lệnh đổi tài nguyên + từ chối `payload.type` lạ (I-01, S22).
+- [ ] Server replay cho mọi lệnh đổi tài nguyên (I-01, S22). Đã xong: từ chối `payload.type` lạ (2026-10-01). Còn: thống nhất payload client–`WorldRuntime`, rồi chuyển từng lệnh sang replay.
 - [ ] Thiết lập CI: typecheck + `yarn test` + lint + build; chạy test server với Mongo (I-09, S32, S43).
 - [x] Chạy lại typecheck/test/build (2026-10-01: PASS, mục 8). Lặp lại sau mỗi đợt thay đổi.
 - [ ] Browser QA hai tài khoản: tạo hẻm → mời → nhập → bán → reconnect → restart server (S38).
 
 ### 🟠 Medium Priority
-- [ ] Thêm test I-01: gửi save sửa tiền với lệnh không replay phải bị từ chối.
+- [ ] Thêm test I-01 cho lệnh hợp lệ nhưng không replay (gửi save sửa tiền) — chỉ viết được khi đã có replay/bất biến; ca lệnh lạ đã có.
 - [ ] Hoàn tất đèn tín hiệu (S46, I-19): QA browser/hiệu năng (OpenSpec `traffic-light-crosswalk-yielding` 4.2–4.6), quyết định 4.5.
 - [ ] Giới hạn payload/tần suất server (I-15); kế hoạch migration schema world Mongo (I-16).
 - [ ] Ghi quyết định thiết kế quyền sửa bố cục/mua đất của thành viên vào spec (I-03; code đã commit 46f7466).

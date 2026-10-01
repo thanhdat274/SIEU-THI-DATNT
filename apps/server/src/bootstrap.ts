@@ -35,6 +35,14 @@ Controller()(HealthController);
 Get('health')(HealthController.prototype, 'health', Object.getOwnPropertyDescriptor(HealthController.prototype, 'health')!);
 Get('ready')(HealthController.prototype, 'readiness', Object.getOwnPropertyDescriptor(HealthController.prototype, 'readiness')!);
 
+/** Loại lệnh được commit. Chỉ một phần được server phát lại; phần còn lại vẫn tin save client (I-01, xem THONG-KE.md). */
+const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
+  'respond_party_order', 'fulfill_party_order', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title', 'layout_batch',
+  'set_price', 'restock', 'unstock', 'store_status', 'buy_stall', 'claim_quest', 'order', 'stow', 'stow_all',
+  'planogram_assignment', 'planogram_restock', 'auto_restock', 'checkout', 'advance_day', 'change_speed',
+  'dispose_stock', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve',
+]);
+
 export class GameController {
   me(request: AuthenticatedRequest) {
     const account: GameAccount = { id: request.gameAccount.uid, displayName: request.gameAccount.name ?? request.gameAccount.email ?? request.gameAccount.uid, photoUrl: null, createdAt: new Date().toISOString() };
@@ -79,6 +87,10 @@ export class GameController {
     if (!commandBusiness) throw new BadRequestException('Business is not part of this world.');
     if (JSON.stringify(commandBusiness.ownerAccountIds) !== JSON.stringify(body.updatedBusiness.ownerAccountIds) || body.updatedBusiness.save?.id !== commandBusiness.save.id) {
       throw new BadRequestException('Command cannot change business ownership or save identity.');
+    }
+    // Danh sách loại lệnh được phép commit: gồm cả lệnh client đang gửi nhưng server chưa phát lại (I-01), để chặn loại lệnh lạ.
+    if (typeof payload?.type !== 'string' || !ALLOWED_COMMAND_TYPES.has(payload.type)) {
+      throw new BadRequestException('Loại lệnh không được hỗ trợ.');
     }
     const serverReplayedCommands = new Set([
       'respond_party_order', 'fulfill_party_order', 'claim_goal',

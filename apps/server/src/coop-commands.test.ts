@@ -123,6 +123,11 @@ async function run() {
     const afterLayout = (await snapshotFor(owner)).businesses[0].save.storeLayout;
     assert.ok(afterLayout.storedFixtures.some((f: any) => f.id === shelf.id), 'kệ đã được cất vào kho sau lệnh của thành viên');
 
+    // I-01 (một phần): loại lệnh lạ bị từ chối dù save hợp lệ.
+    const unknownRevision = (await snapshotFor(owner)).world.revision;
+    await assert.rejects(send(owner, 'unknown-type', { type: 'give_money', amount: 1_000_000 }, unknownRevision), /không được hỗ trợ/);
+    assert.equal((await snapshotFor(owner)).world.revision, unknownRevision, 'lệnh lạ không làm đổi revision');
+
     console.log('PASS co-op: 7 lệnh server-replay qua GameController.commitCommand trên Mongo thật (2 tài khoản, retry idempotent, trùng commandId khác payload, lệnh bị từ chối, tranh chấp revision)');
     await closeDatabase();
   } finally {
