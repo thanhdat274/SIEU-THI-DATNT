@@ -4,7 +4,8 @@ import { InputManager, GameSimulation } from '@game/core';
 import { PixiGameViewport } from '@game/renderer';
 import { GameSnapshot, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture } from '@game/shared';
 
-import { loadOrCreateSave, persistSave, resetSaveToDefault, restoreFromBackup } from './db';
+import { loadOrCreateSave, persistSave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
+import { buildSaveFile, saveFileName } from './save-file';
 import { useGameStore } from './store/useGameStore';
 import { HUD } from './components/HUD';
 import { AccountBar } from './components/AccountBar';
@@ -206,6 +207,59 @@ export const App: React.FC = () => {
 
   const onlineUidRef = useRef<string | null>(null);
   const spawnPlacedForRef = useRef<string | null>(null);
+  // Xuất bản lưu hiện tại (trạng thái đang chơi, không phải bản trong DB) ra file JSON để sao lưu/chuyển máy.
+  const handleExportSave = useCallback(async () => {
+    if (onlineWorldRef.current) {
+      addToast('Tiệm online nằm trên máy chủ, không xuất file được.', 'warn');
+      return false;
+    }
+    if (!simulationRef.current) return false;
+    try {
+      await saveQueueRef.current;
+      const data = simulationRef.current.exportSaveData('local_save_default', revisionRef.current);
+      const url = URL.createObjectURL(new Blob([buildSaveFile(data)], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = saveFileName(data);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      addToast('Đã xuất bản lưu ra file.', 'success');
+      return true;
+    } catch (err) {
+      console.error('Export error:', err);
+      addToast('Không xuất được file. Hãy thử lại.', 'warn');
+      return false;
+    }
+  }, [addToast]);
+
+  // Nhập save đã được modal kiểm tra (`parseSaveFile`); bản hiện tại được giữ làm backup.
+  const handleImportSave = useCallback(async (save: Parameters<typeof replaceSaveWithImported>[0]) => {
+    if (onlineWorldRef.current) {
+      addToast('Không thể nhập save máy khi đang chơi trong hẻm online.', 'warn');
+      return false;
+    }
+    try {
+      await saveQueueRef.current;
+      const stored = await replaceSaveWithImported(save);
+      if (simulationRef.current) {
+        simulationRef.current.importSaveData(stored);
+        syncFromSimulation(simulationRef.current);
+      }
+      setCurrentRevision(stored.revision);
+      revisionRef.current = stored.revision;
+      setLastSavedTime(stored.updatedAt);
+      setGameSpeed(Math.max(1, stored.worldTime.timeScale / 60));
+      addToast('Đã nhập bản lưu. Bản cũ được giữ làm bản dự phòng.', 'success');
+      return true;
+    } catch (err) {
+      console.error('Import error:', err);
+      addToast(err instanceof Error ? err.message : 'Không nhập được bản lưu.', 'warn');
+      return false;
+    }
+  }, [syncFromSimulation, addToast]);
+
 
   // Vị trí đứng là của riêng từng người chơi; save dùng chung không được kéo người kia về chỗ cũ.
   const importOnlineSave = useCallback((sim: GameSimulation, save: Parameters<GameSimulation['importSaveData']>[0]) => {
@@ -1337,7 +1391,7 @@ export const App: React.FC = () => {
     {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} fixture={activeFixtureModal} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onStowHolding={handleStowHolding} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'cashier_counter' && <CashierModal initialShowStaff={staffRequested} fixture={activeFixtureModal} player={player} worldTime={worldTime} shelves={fixtures.filter(isSalesFixture)} customers={customers} statistics={statistics} staff={simulationRef.current?.getStaff() ?? []} staffCandidates={simulationRef.current?.getStaffCandidates(worldTime.day) ?? []} wageDebt={simulationRef.current?.getWageDebt() ?? 0} restockTargets={simulationRef.current?.getRestockJobTargets() ?? []} onAssignRefillJob={handleAssignRefillJob} onHireStaff={handleHireStaff} onSetStaffShift={handleSetStaffShift} onCheckout={handleCheckout} onToggleStoreStatus={handleToggleStoreStatus} onAdvanceDay={handleAdvanceDay} onClose={closeFixtureModal}/>}
     {isInventoryModalOpen && <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals}/>}
-    {isSaveModalOpen && <SaveModal onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
+    {isSaveModalOpen && <SaveModal onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onExportSave={handleExportSave} onImportSave={handleImportSave} isOnline={!!onlineWorld} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
     {isSupplierModalOpen && (
       <SupplierModal
         player={player}

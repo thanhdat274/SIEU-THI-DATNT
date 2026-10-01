@@ -114,7 +114,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | I-09 | Test server ngoài `yarn test` | Medium | Mở |
 | I-10 | Bundle lớn | Low | Mở |
 | I-11 | `server/main.ts` lỗi thời | Low | Mở |
-| I-12 | Save local một slot | Medium | Mở |
+| I-12 | Save local một slot, xuất/nhập file | Medium | Xuất/nhập file đã làm 2026-10-01; còn nhiều slot, khóa nhiều tab |
 | I-13 | Mưa chỉ dùng ngưỡng 0,4 | Low | Mở |
 | I-14 | Khóa bí mật trong thư mục dự án | Low | Mở |
 | I-15 | Server không giới hạn payload/tần suất | Medium | Xử lý một phần 2026-10-01 |
@@ -256,7 +256,9 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Root Cause:** Phạm vi MVP.
 - **Suggested Fix:** Nút xuất/nhập JSON (dùng `validateSaveGameData`), khóa tab (`BroadcastChannel`).
 - **Priority:** Medium
-- **Verification:** Xác nhận qua đọc mã.
+- **Đã làm 2026-10-01:** xuất/nhập file JSON. `apps/web/src/save-file.ts` (phong bì `{format, formatVersion, exportedAt, save}`, `parseSaveFile` từ chối JSON hỏng/file lạ/định dạng tương lai/schema tương lai/save không qua `validateSaveGameData`/file >5 MB, nâng save schema cũ), `db.ts` `replaceSaveWithImported` (transaction, giữ bản cũ làm backup, revision đi tiếp), `App.tsx` `handleExportSave`/`handleImportSave`, `SaveModal.tsx` có nút Xuất/Nhập + hộp xác nhận hiện tóm tắt (ngày, cấp, tiền, doanh thu). Bị chặn khi đang chơi online. Test: `apps/web/src/save-file.test.ts` (script `yarn --cwd apps/web test`, nằm trong `test:all`). **Đã xem trong Browser pane (dev server, desktop):** xuất ra file đúng định dạng (25,8 KB), file hỏng báo lỗi rõ, nhập file sửa tiền/ngày hiện xác nhận đúng, sau khi đồng ý HUD đổi, IndexedDB có bản dự phòng cũ + bản mới với revision liên tục; không có lỗi console. Save dev đã được nhập lại về trạng thái ban đầu sau khi thử.
+- **Còn lại / giới hạn:** chỉ một slot và một bản backup (lần nhập sau ghi đè backup); chưa xử lý hai tab mở cùng lúc (khóa `BroadcastChannel`); file không mã hóa/không ký nên người chơi có thể sửa tay (chỉ dùng cho save cục bộ, không đưa lên hẻm online); chưa kiểm trên mobile/iOS Safari (tải file, chọn file) và chưa kiểm khi save lớn gần 5 MB; ngoài `validateSaveGameData` chưa có kiểm tra bất biến nội dung (tiền cực lớn vẫn nhập được); lúc nhập qua giao diện tôi đẩy file bằng script `DataTransfer`, chưa dùng hộp chọn file thật.
+- **Verification:** `save-file.test.ts` PASS, `tsc` web sạch, `eslint` sạch cho các file đã sửa; thao tác thủ công như trên.
 
 ### Issue: I-13 Hành vi mưa/đường chỉ dùng ngưỡng cố định
 
@@ -578,6 +580,17 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ## 8. Lịch sử phát triển
 
+## 2026-10-01 (lượt 8 — I-12 xuất/nhập save)
+
+### Changed
+- Thêm `apps/web/src/save-file.ts` + `save-file.test.ts`, script `test` cho `apps/web` (vào `test:all`), `replaceSaveWithImported` trong `db.ts`, handler xuất/nhập trong `App.tsx`, nút và hộp xác nhận trong `SaveModal.tsx`.
+
+### Verified
+- `save-file.test.ts` PASS; `tsc -p apps/web` sạch; Browser pane: xuất, từ chối file hỏng, nhập có xác nhận, backup + revision liên tục, không lỗi console. Chưa chạy `test:all` đầy đủ (Node 20 cục bộ), chưa build, chưa mobile.
+
+### Remaining
+- Xem I-12 (giới hạn); nhiều slot, khóa nhiều tab, kiểm mobile.
+
 ## 2026-10-01 (lượt 7 — I-15 giới hạn payload/tần suất)
 
 ### Changed
@@ -705,7 +718,7 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 - [ ] Lệnh nhân viên trong co-op (I-05, S21).
 - [ ] Thay bảng xếp hạng giả (I-02, S28, F-05).
 - [ ] ID xác định thay `Date.now()/Math.random()` (I-04).
-- [ ] Xuất/nhập save (I-12, F-04).
+- [>] Xuất/nhập save (I-12, F-04): xong xuất/nhập file 2026-10-01; còn nhiều slot, khóa nhiều tab, kiểm mobile.
 - [ ] Đồng bộ/rút gọn `tổng hợp.md`, `TASKS.md`, `ROADMAP.md` (I-07).
 - [ ] Playtest cân bằng: XP cấp 1–35, perk, nhịp khách, giá đất (S35, S39).
 - [ ] Xác minh Google OAuth và PWA (S36, S37).

@@ -135,3 +135,24 @@ export async function resetSaveToDefault(): Promise<SaveGameData> {
   await db.saves.put(freshSave);
   return freshSave;
 }
+
+/**
+ * Thay bản lưu hiện tại bằng save nhập từ file. Save được kiểm tra lại, bản hiện tại giữ làm backup (một bản)
+ * và revision đi tiếp từ bản cũ để hàng đợi lưu tuần tự không báo lệch.
+ */
+export async function replaceSaveWithImported(imported: SaveGameData): Promise<SaveGameData> {
+  const validation = validateSaveGameData(imported);
+  if (!validation.valid || !validation.data) throw new Error(validation.error ?? 'Bản lưu nhập vào không hợp lệ.');
+  return await db.transaction('rw', db.saves, async () => {
+    const existing = await db.saves.get(SAVE_STORAGE_KEY);
+    const next: SaveGameData = {
+      ...validation.data!,
+      id: SAVE_STORAGE_KEY,
+      revision: (existing?.revision ?? 0) + 1,
+      updatedAt: new Date().toISOString(),
+    };
+    if (existing) await db.saves.put({ ...existing, id: SAVE_BACKUP_KEY });
+    await db.saves.put(next);
+    return next;
+  });
+}
