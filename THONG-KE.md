@@ -73,7 +73,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | S25 | Độ ướt mặt đường | ✅ | `core/weather.ts` `roadWetnessAt`, `simulation.ts getRoadWetness`, `renderer/road-surface.ts`, `road.test.ts` | Đã commit (2f2af38): hàm thuần có test, renderer gọi `setWetness` (`viewport.ts:1050`). Chỉ hình ảnh, chưa kiểm browser. |
 | S26 | Menu khởi đầu, đăng nhập, sổ tay hướng dẫn | 🟡 | `LoginScreen.tsx` (1.004 dòng), `AccountBar.tsx` | Có Chơi tiếp/Chơi mới/Hẻm chung/Cách chơi/sổ tay. Bảng xếp hạng là dữ liệu giả (S28). |
 | S27 | Thuế: registry quy tắc + theo dõi doanh thu năm | 🟡 | `core/tax/*`, `TaxModal.tsx`, `docs/tax/*` | Registry khóa `UNVERIFIED`; modal chỉ hiển thị doanh thu năm so ngưỡng tham khảo, **không tính/trừ thuế**. Engine xem S41. |
-| S28 | Bảng xếp hạng ("Bảng vàng thành tích") | 🔴 | `LoginScreen.tsx:896-940` | Danh sách **cứng** ("Tiệm Cô Tư Hẻm 4 15.420.000₫"…), không có API/DB; chữ trong UI nói sẽ cập nhật khi có máy chủ. Hiện như dữ liệu thật. |
+| S28 | Bảng xếp hạng ("Bảng vàng thành tích") | 🟡 | `LoginScreen.tsx`, `world.repository.ts` (`leaderboard`), `bootstrap.ts` (`GET /api/v1/leaderboard`) | Đã thay dữ liệu cứng bằng top 10 hẻm theo tổng doanh thu từ Mongo (2026-10-01, I-02). Test Mongo PASS; chưa kiểm đăng nhập thật; doanh thu do client báo nên chưa chống gian lận; chưa có tuần/mùa/opt-out. |
 | S29 | Lưu cục bộ (Dexie/IndexedDB) | 🔵 | `apps/web/src/db.ts` | Chạy tốt: revision tuần tự, backup 1 bản, migration schema 2→3 có backup, lỗi đọc **không** ghi đè save (đã sửa so với tài liệu cũ), màn khôi phục. Thiếu: nhiều slot, export/import file, xử lý nhiều tab. |
 | S30 | HUD/Modal/UI pixel | 🔵 | `components/*`, `pixel/index.tsx`, `index.css` | Chức năng đủ; `App.tsx` gom ~34 hook/handler; `LoginScreen.css` 1.872 dòng; cần chia nhỏ và QA bàn phím/focus. |
 | S31 | Ánh sáng theo mùa, vị trí mặt trời, bóng cây | 🔵 | `core/lighting-phase.ts`, `tree-shadow.ts`, `renderer/viewport.ts` | Mốc mọc/lặn 12 điểm nội suy; bóng mỗi cây theo `TREE_PROPS`. Test `lighting-phase.test`, `tree-shadow.test`. Bóng là elip đơn giản, chưa theo mây, `height/crownRadius` chưa cân bằng mắt, mốc là xấp xỉ. |
@@ -105,7 +105,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | ID | Vấn đề | Ưu tiên | Trạng thái |
 |---|---|---|---|
 | I-01 | Co-op: server chỉ replay một phần lệnh | High | Mở |
-| I-02 | Bảng xếp hạng dữ liệu giả | Medium | Mở |
+| I-02 | Bảng xếp hạng dữ liệu giả | Medium | Đã thay bằng dữ liệu thật 2026-10-01 (chưa kiểm đăng nhập thật) |
 | I-03 | Quyền sửa bố cục cho mọi thành viên chưa ghi spec | Medium | Mở (code đã commit) |
 | I-04 | ID `Date.now()/Math.random()` | Medium | Đã làm 2026-10-01 |
 | I-05 | Nhân viên chưa vào co-op | Medium | Mở |
@@ -146,7 +146,9 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Root Cause:** Placeholder UI chưa nối backend.
 - **Suggested Fix:** Ẩn mục hoặc thêm API `/leaderboard` (xem Feature F-05); sau I-01.
 - **Priority:** Medium
-- **Verification:** Xác nhận bằng đọc mã.
+- **Đã làm 2026-10-01:** bỏ danh sách cứng. `WorldRepository.leaderboard` (`world.repository.ts`, aggregate Mongo) + route `GET /api/v1/leaderboard` (sau `FirebaseAuthGuard`, chịu rate limit I-15): top 10 hẻm theo tổng doanh thu (hòa thì theo `_id`), mỗi dòng chỉ có `rank, name, totalRevenue, day, level, members, mine`; **không** trả uid hay id hẻm; `myRank` cho hẻm tốt nhất của người gọi kể cả ngoài top. Client: `getLeaderboard` (`services/api.ts`), `LoginScreen.tsx` gọi khi mở bảng, có trạng thái chưa đăng nhập/đang tải/lỗi/trống, đánh dấu hẻm của mình. Test: `apps/server/src/leaderboard.test.ts` (Mongo thật, trong `test:db`): thứ tự, hòa ổn định, giới hạn, mine, hạng ngoài top, không lộ ID.
+- **Còn lại / giới hạn:** doanh thu là số do client báo, server mới kiểm bất biến ở mức rộng (I-01 hướng B: có thể tăng tới 20.000₫/phút game), nên bảng **chưa chống gian lận**; chưa có opt-out hiển thị tên hẻm (tên hẻm do người chơi đặt, hiện công khai với mọi tài khoản đăng nhập, chưa lọc từ ngữ); chỉ tổng doanh thu mọi thời gian (chưa có theo tuần/mùa); aggregate quét toàn bộ collection mỗi lần gọi (chưa có chỉ mục/bộ nhớ đệm, ổn với quy mô nhỏ); tiệm chơi một mình không lên bảng; **chưa kiểm đường đăng nhập thật** (cần Firebase) nên mới xem được trạng thái chưa đăng nhập trong Browser pane (không còn dữ liệu giả); Browser pane ghi hai lỗi tải tài nguyên 500 chưa xác định nguồn (mọi module chính trả 200; có thể do dev server lúc việc khác đang sửa file), chưa xác nhận liên quan.
+- **Verification:** `test:leaderboard` PASS (Mongo thật), `tsc` server/web sạch, `eslint` sạch.
 
 ### Issue: I-03 Quyền sửa bố cục chuyển từ chủ hẻm sang mọi thành viên (đã commit 46f7466; còn thiếu quyết định thiết kế)
 
@@ -352,7 +354,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | 5 | NestJS "chưa có API auth/world/realtime" | Có đủ REST world/invite/commit + WS gateway |
 | 6 | Mongo cần replica set/transaction | Đã bỏ; commit `updateOne` nguyên tử trên standalone |
 | 7 | `FestivalGoal` "chỉ metadata" (dòng lịch sử) | Đã có logic nhận thưởng, UI, replay (phần đầu `tổng hợp.md` đúng, dòng lịch sử cũ sai) |
-| 8 | "Bảng xếp hạng" như tính năng menu | Dữ liệu cứng (S28) |
+| 8 | "Bảng xếp hạng" như tính năng menu | Lúc kiểm kê: dữ liệu cứng; nay đã nối dữ liệu thật (S28, I-02) |
 | 9 | Đợt E: "đèn giao thông, cống, vạch qua đường" | Cống/vạch: hình ảnh đã commit (S24). Đèn tín hiệu + nhường đường: có logic, đã commit 24a2fab (S46) |
 | 10 | `TASKS.md`/`ROADMAP.md` nhắc pnpm | Dự án dùng Yarn 1 |
 | 11 | Số test "10 nhóm"/"18 nhóm" | `test-runner.ts` có 48 lời gọi `run*Tests` (45 file `*.test.ts`) |
@@ -582,6 +584,17 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ## 8. Lịch sử phát triển
 
+## 2026-10-01 (lượt 10 — I-02 bảng xếp hạng thật)
+
+### Changed
+- Thêm `leaderboard` vào `world.repository.ts`, route trong `bootstrap.ts`, `leaderboard.test.ts` (+ script `test:leaderboard` trong `test:db`), `getLeaderboard` trong `api.ts`, thay modal bảng vàng trong `LoginScreen.tsx`.
+
+### Verified
+- `test:leaderboard` PASS; `tsc` server/web sạch; Browser pane: trạng thái chưa đăng nhập đúng, không còn dữ liệu giả. Chưa kiểm đăng nhập thật/Firebase, chưa build.
+
+### Remaining
+- Xem I-02 (giới hạn); F-05 mở rộng (tuần/mùa) và chống gian lận phụ thuộc I-01.
+
 ## 2026-10-01 (lượt 9 — I-04 ID xác định)
 
 ### Changed
@@ -699,8 +712,8 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 | Category | Count |
 |---|---:|
 | Completed | 21 |
-| Partial | 7 |
-| Needs Fix | 1 |
+| Partial | 8 |
+| Needs Fix | 0 |
 | Planned | 6 |
 | Improvement | 4 |
 | Needs Verification | 7 |
@@ -730,7 +743,7 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 - [ ] Giới hạn payload/tần suất server (I-15); kế hoạch migration schema world Mongo (I-16).
 - [ ] Ghi quyết định thiết kế quyền sửa bố cục/mua đất của thành viên vào spec (I-03; code đã commit 46f7466).
 - [ ] Lệnh nhân viên trong co-op (I-05, S21).
-- [ ] Thay bảng xếp hạng giả (I-02, S28, F-05).
+- [>] Bảng xếp hạng thật (I-02, S28, F-05): đã nối dữ liệu thật; còn kiểm đăng nhập thật, tuần/mùa, opt-out, chống gian lận (I-01).
 - [>] ID xác định thay `Date.now()/Math.random()` (I-04): code + test xong (đã commit).
 - [>] Xuất/nhập save (I-12, F-04): xong xuất/nhập file 2026-10-01; còn nhiều slot, khóa nhiều tab, kiểm mobile.
 - [ ] Đồng bộ/rút gọn `tổng hợp.md`, `TASKS.md`, `ROADMAP.md` (I-07).

@@ -53,6 +53,60 @@ export class WorldRepository {
     return docs.map(doc => ({ id: doc.world.id, name: doc.world.name ?? 'Hẻm', role: doc.world.memberships.find(m => m.accountId === accountId)?.role, revision: doc.world.revision }));
   }
 
+  /**
+   * Bảng xếp hạng theo tổng doanh thu của tiệm trong mỗi hẻm. Chỉ trả tên hẻm và số liệu công khai; không bao giờ trả ID tài khoản
+   * hay ID hẻm. Doanh thu lấy từ save do client báo cáo (chỉ được kiểm bất biến, xem THONG-KE.md I-01) nên chưa phải số đã xác minh.
+   */
+  async leaderboard(accountId: string, limit = 10) {
+    const cap = Math.max(1, Math.min(50, Math.floor(limit)));
+    const collection = (await connectDatabase()).collection<WorldDocument>(collectionName);
+    const revenueOf = { $ifNull: [{ $arrayElemAt: ['$businesses.save.statistics.totalRevenue', 0] }, 0] };
+    const withStats = {
+      $addFields: {
+        revenue: revenueOf,
+        day: { $ifNull: [{ $arrayElemAt: ['$businesses.save.worldTime.day', 0] }, 1] },
+        level: { $ifNull: [{ $arrayElemAt: ['$businesses.save.player.level', 0] }, 1] },
+        members: { $size: { $ifNull: ['$world.memberships', []] } },
+        mine: { $in: [accountId, { $ifNull: ['$world.memberships.accountId', []] }] },
+      },
+    };
+    const rows = await collection.aggregate<{ _id: string; name?: string; revenue: number; day: number; level: number; members: number; mine: boolean }>([
+      withStats,
+      { $sort: { revenue: -1, _id: 1 } },
+      { $limit: cap },
+      { $project: { name: '$world.name', revenue: 1, day: 1, level: 1, members: 1, mine: 1 } },
+    ]).toArray();
+    const entries = rows.map((row, index) => ({
+      rank: index + 1,
+      name: (row.name ?? 'Hẻm').slice(0, 48),
+      totalRevenue: Math.max(0, Math.floor(Number(row.revenue) || 0)),
+      day: Math.max(1, Math.floor(Number(row.day) || 1)),
+      level: Math.max(1, Math.floor(Number(row.level) || 1)),
+      members: row.members,
+      mine: row.mine,
+    }));
+    // Hạng của hẻm tốt nhất của người gọi nếu nằm ngoài top (cùng thứ tự: doanh thu giảm dần, hòa thì theo _id).
+    let myRank: number | null = entries.find((entry) => entry.mine)?.rank ?? null;
+    if (myRank === null) {
+      const best = await collection.aggregate<{ _id: string; revenue: number }>([
+        { $match: { 'world.memberships.accountId': accountId } },
+        { $addFields: { revenue: revenueOf } },
+        { $sort: { revenue: -1, _id: 1 } },
+        { $limit: 1 },
+        { $project: { revenue: 1 } },
+      ]).next();
+      if (best) {
+        const ahead = await collection.aggregate<{ n: number }>([
+          { $addFields: { revenue: revenueOf } },
+          { $match: { $or: [{ revenue: { $gt: best.revenue } }, { revenue: best.revenue, _id: { $lt: best._id } }] } },
+          { $count: 'n' },
+        ]).next();
+        myRank = (ahead?.n ?? 0) + 1;
+      }
+    }
+    return { entries, myRank };
+  }
+
   async getForMember(worldId: string, accountId: string) {
     const doc = await (await connectDatabase()).collection<WorldDocument>(collectionName)
       .findOne({ _id: worldId, 'world.memberships.accountId': accountId }, { projection: { invites: 0 } });

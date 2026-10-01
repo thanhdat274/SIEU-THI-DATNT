@@ -212,6 +212,9 @@ export class GameController {
       ? { ...result, updatedBusiness: body.updatedBusiness }
       : result;
   }
+  leaderboard(request: AuthenticatedRequest) {
+    return worldRepository.leaderboard(request.gameAccount.uid);
+  }
   async createWebSocketTicket(request: AuthenticatedRequest) {
     const account = request.gameAccount;
     return { ticket: await createWebSocketTicket(account.uid) };
@@ -245,6 +248,7 @@ const bodyParam = (method: keyof GameController, index: number) => Body()(game, 
 const namedParam = (method: keyof GameController, name: string, index: number) => Param(name)(game, method, index);
 route(Get, 'me', 'me'); requestParam('me', 0);
 route(Get, 'listWorlds', 'worlds'); requestParam('listWorlds', 0);
+route(Get, 'leaderboard', 'leaderboard'); requestParam('leaderboard', 0);
 route(Post, 'createWorld', 'worlds'); requestParam('createWorld', 0); bodyParam('createWorld', 1);
 route(Get, 'getWorld', 'worlds/:worldId'); requestParam('getWorld', 0); namedParam('getWorld', 'worldId', 1);
 route(Post, 'createInvite', 'worlds/:worldId/invites'); requestParam('createInvite', 0); namedParam('createInvite', 'worldId', 1);

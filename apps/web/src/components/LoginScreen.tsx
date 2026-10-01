@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
 import { loadExistingSave, resetSaveToDefault } from '../db';
-import { listUserWorlds, createOnlineWorld, joinOnlineWorld, type WorldSummary, type WorldDetail, type ActivitiesResponse } from '../services/api';
+import { listUserWorlds, createOnlineWorld, joinOnlineWorld, getLeaderboard, type WorldSummary, type WorldDetail, type ActivitiesResponse, type LeaderboardResponse } from '../services/api';
 import './LoginScreen.css';
 
 interface LoginScreenProps {
@@ -39,6 +39,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [showHowToPlay, setShowHowToPlay] = useState<boolean>(false);
   const [showLeaderboard, setShowLeaderboard] = useState<boolean>(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
+  const [leaderboardState, setLeaderboardState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [showMultiplayerModal, setShowMultiplayerModal] = useState<boolean>(false);
   const [userWorlds, setUserWorlds] = useState<WorldSummary[]>([]);
   const [newWorldName, setNewWorldName] = useState<string>('');
@@ -101,6 +103,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   async function getIdToken(): Promise<string> {
     if (!user) throw new Error('Cần đăng nhập tài khoản trước.');
     return user.getIdToken();
+  }
+
+  async function handleOpenLeaderboard() {
+    triggerSound(440);
+    setShowLeaderboard(true);
+    setLeaderboard(null);
+    if (!user) { setLeaderboardState('idle'); return; }
+    setLeaderboardState('loading');
+    try {
+      setLeaderboard(await getLeaderboard(await getIdToken()));
+      setLeaderboardState('idle');
+    } catch (err) {
+      console.error(err);
+      setLeaderboardState('error');
+    }
   }
 
   async function handleOpenMultiplayer() {
@@ -548,10 +565,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
             <button
               type="button"
               className="deck-action-card card-rankings"
-              onClick={() => {
-                triggerSound(440);
-                setShowLeaderboard(true);
-              }}
+              onClick={() => { void handleOpenLeaderboard(); }}
             >
               <span className="card-symbol-badge badge-gold">🏆</span>
               <div className="card-text-body">
@@ -902,37 +916,36 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
               <p>Những tiệm tạp hóa buôn may bán đắt nhất phố</p>
             </header>
 
-            <div className="honor-list">
-              <div className="honor-rank-card rank-gold">
-                <div className="rank-num">1</div>
-                <div className="rank-info">
-                  <strong>Tiệm Cô Tư Hẻm 4</strong>
-                  <span>Khách quen nườm nượp mỗi sáng</span>
+            <div className="honor-list" aria-live="polite">
+              {!user && <p className="honor-disclaimer">Đăng nhập Google để xem bảng xếp hạng của các hẻm online.</p>}
+              {user && leaderboardState === 'loading' && <p className="honor-disclaimer">Đang tải bảng xếp hạng...</p>}
+              {user && leaderboardState === 'error' && <p className="honor-disclaimer">Không tải được bảng xếp hạng. Hãy thử lại sau.</p>}
+              {user && leaderboardState === 'idle' && leaderboard && leaderboard.entries.length === 0 && (
+                <p className="honor-disclaimer">Chưa có hẻm nào trên bảng. Hãy lập hẻm online và là người đầu tiên.</p>
+              )}
+              {leaderboard?.entries.map((entry) => (
+                <div key={entry.rank} className={`honor-rank-card ${entry.mine ? 'rank-player' : entry.rank === 1 ? 'rank-gold' : entry.rank === 2 ? 'rank-silver' : ''}`}>
+                  <div className="rank-num">{entry.rank}</div>
+                  <div className="rank-info">
+                    <strong>{entry.name}{entry.mine ? ' (hẻm của bạn)' : ''}</strong>
+                    <span>Ngày {entry.day} · cấp {entry.level} · {entry.members} người</span>
+                  </div>
+                  <div className="rank-stat">{entry.totalRevenue.toLocaleString('vi-VN')}₫</div>
                 </div>
-                <div className="rank-stat">15.420.000₫</div>
-              </div>
-
-              <div className="honor-rank-card rank-silver">
-                <div className="rank-num">2</div>
-                <div className="rank-info">
-                  <strong>Bách Hóa Chú Bảy</strong>
-                  <span>Đại lý bánh kẹo uy tín nhất vùng</span>
+              ))}
+              {leaderboard && leaderboard.myRank !== null && !leaderboard.entries.some((entry) => entry.mine) && (
+                <div className="honor-rank-card rank-player">
+                  <div className="rank-num">{leaderboard.myRank}</div>
+                  <div className="rank-info">
+                    <strong>Hẻm của bạn</strong>
+                    <span>Chưa vào top {leaderboard.entries.length}</span>
+                  </div>
                 </div>
-                <div className="rank-stat">12.800.000₫</div>
-              </div>
-
-              <div className="honor-rank-card rank-player">
-                <div className="rank-num">3</div>
-                <div className="rank-info">
-                  <strong>Tiệm Của Bạn (Hiện tại)</strong>
-                  <span>Đang mở cửa buôn bán chăm chỉ</span>
-                </div>
-                <div className="rank-stat">Ngày {saveDay}</div>
-              </div>
+              )}
             </div>
 
             <p className="honor-disclaimer">
-              * Bảng vinh danh trực tuyến toàn thành phố sẽ tự động cập nhật và vinh danh khi kết nối máy chủ hoàn tất.
+              * Xếp theo tổng doanh thu của các hẻm online. Số liệu do máy người chơi báo về và mới được máy chủ kiểm tra ở mức cơ bản, nên chưa phải số đã xác minh. Tiệm chơi một mình trên máy không có trên bảng.
             </p>
 
             <button

@@ -115,3 +115,22 @@ export async function listOnlineActivities(
 export async function touchWorldSession(idToken: string, worldId: string): Promise<{ revision: number }> {
   return fetchWithAuth(`/api/v1/worlds/${worldId}/session`, idToken, { method: 'POST', body: '{}' });
 }
+
+export interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  totalRevenue: number;
+  day: number;
+  level: number;
+  members: number;
+  mine: boolean;
+}
+
+export interface LeaderboardResponse {
+  entries: LeaderboardEntry[];
+  myRank: number | null;
+}
+
+export async function getLeaderboard(idToken: string): Promise<LeaderboardResponse> {
+  return fetchWithAuth('/api/v1/leaderboard', idToken);
+}
