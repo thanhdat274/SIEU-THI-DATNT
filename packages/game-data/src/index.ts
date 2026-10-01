@@ -3,6 +3,7 @@ export * from './map';
 export * from './traffic';
 export * from './arrival-modes';
 export * from './maintenance';
+export * from './reviews';
 export * from './land';
 export * from './pixel-art';
 export * from './online-world';

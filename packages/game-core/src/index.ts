@@ -14,6 +14,7 @@ export * from './tree-shadow';
 export * from './traffic-signal';
 export * from './arrival-mode';
 export * from './maintenance';
+export * from './reviews';
 export * from './world-runtime';
 export * from './suggestions';
 export * from './staff';

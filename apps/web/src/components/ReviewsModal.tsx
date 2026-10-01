@@ -1,0 +1,78 @@
+import React, { useState } from 'react';
+import type { CustomerReview } from '@game/shared';
+import { PRODUCT_MAP } from '@game/data';
+import { feedbackReasonLabel, type ReviewSummary } from '@game/core';
+import { PixelButton, PixelDialog } from './pixel';
+
+interface ReviewsModalProps {
+  reviews: CustomerReview[];
+  summary: ReviewSummary;
+  onClose: () => void;
+}
+
+type Filter = 'all' | 'praise' | 'complaint';
+
+const FILTERS: Array<{ id: Filter; label: string }> = [
+  { id: 'all', label: 'Tất cả' },
+  { id: 'praise', label: 'Lời khen (4–5★)' },
+  { id: 'complaint', label: 'Lời chê (1–2★, bỏ về)' },
+];
+
+const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
+const clock = (r: CustomerReview) => `${String(r.hour).padStart(2, '0')}:${String(r.minute).padStart(2, '0')}`;
+
+/** Lời đánh giá bằng chữ của khách: tóm tắt điểm, lý do chê nhiều nhất và danh sách mới nhất trước. */
+export const ReviewsModal: React.FC<ReviewsModalProps> = ({ reviews, summary, onClose }) => {
+  const [filter, setFilter] = useState<Filter>('all');
+  const shown = [...reviews]
+    .reverse()
+    .filter((r) => filter === 'all' || (filter === 'praise' ? r.stars >= 4 && !r.reason : r.stars <= 2 || !!r.reason));
+  const max = Math.max(1, ...summary.byStars);
+  return (
+    <PixelDialog icon="heart" title="LỜI KHÁCH NHẬN XÉT" subtitle="Khách chấm sao và để lại vài lời sau mỗi lượt ghé tiệm" onClose={onClose}>
+      {summary.count === 0 ? (
+        <p className="muted">Chưa có lời nhận xét nào. Khách sẽ để lại lời sau khi mua xong hoặc bỏ về.</p>
+      ) : (
+        <>
+          <div className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 4, marginBottom: 8 }}>
+            <strong>{summary.average.toFixed(1)} ★ <span className="muted">· {summary.count} lời gần nhất</span></strong>
+            {[5, 4, 3, 2, 1].map((n) => (
+              <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+                <span style={{ width: 22 }}>{n}★</span>
+                <div style={{ flex: 1, height: 6, background: '#e5d8c4', border: '1px solid #bfa993' }}>
+                  <div style={{ width: `${(summary.byStars[n - 1] / max) * 100}%`, height: '100%', background: n >= 4 ? '#2a7a43' : n === 3 ? '#e09f3e' : '#b64c3d' }} />
+                </div>
+                <span style={{ width: 20, textAlign: 'right' }}>{summary.byStars[n - 1]}</span>
+              </div>
+            ))}
+            {summary.topReason && (
+              <span className="muted" style={{ fontSize: 11 }}>Khách bỏ về nhiều nhất vì: {feedbackReasonLabel(summary.topReason.reason)} ({summary.topReason.count} lần)</span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+            {FILTERS.map((f) => (
+              <PixelButton key={f.id} variant={filter === f.id ? 'teal' : 'paper'} onClick={() => setFilter(f.id)}>{f.label}</PixelButton>
+            ))}
+          </div>
+          {shown.length === 0 && <p className="muted">Không có lời nào trong mục này.</p>}
+          <div style={{ display: 'grid', gap: 8 }}>
+            {shown.map((r) => (
+              <article key={r.id} className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                  <strong>{r.author}{r.regularId ? ' ♥' : ''}</strong>
+                  <span style={{ color: r.stars >= 4 ? '#2a7a43' : r.stars === 3 ? '#a86b12' : '#b64c3d' }} aria-label={`${r.stars} sao`}>{stars(r.stars)}</span>
+                </div>
+                <p style={{ margin: 0 }}>“{r.text}”</p>
+                <div className="muted" style={{ fontSize: 10 }}>
+                  Ngày {r.day} · {clock(r)}
+                  {r.reason ? ` · bỏ về: ${feedbackReasonLabel(r.reason)}` : ''}
+                  {r.productId && PRODUCT_MAP[r.productId] ? ` · ${PRODUCT_MAP[r.productId].name}` : ''}
+                </div>
+              </article>
+            ))}
+          </div>
+        </>
+      )}
+    </PixelDialog>
+  );
+};

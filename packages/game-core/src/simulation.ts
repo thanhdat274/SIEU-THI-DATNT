@@ -10,6 +10,7 @@ import {
   SupplierOrder,
   COLD_WAREHOUSE_CAPACITY,
   CustomerState,
+  CustomerReview,
   isSalesFixture,
   isWarehouseFixture,
   TransferShelfResult,
@@ -86,6 +87,7 @@ import { StreetTrafficManager } from './street-traffic';
 import { CollisionSystem } from './collision';
 import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
 import { rainIntensityAt, rainForecastForDay, describeRainForecast, roadWetnessAt } from './weather';
+import { appendReview, composeReview, sanitizeReviews, summarizeReviews } from './reviews';
 import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { slotCategoryConflict } from './shelf-slots';
 import { buyLandPlot, validateStoreLayout, type LayoutResult } from './store-layout';
@@ -171,7 +173,7 @@ export interface GameSimulationCallbacks {
   onWeatherChanged?: (weatherId: string) => void;
   onMarketNotice?: (notice: MarketNotice) => void;
   onMaintenanceNotice?: (notices: MaintenanceNotice[]) => void;
-  onCustomerRated?: (event: { stars: number; average: number; reason?: CustomerFeedbackReason }) => void;
+  onCustomerRated?: (event: { stars: number; average: number; reason?: CustomerFeedbackReason; review?: CustomerReview }) => void;
   onToast?: (message: string, type?: 'info' | 'success' | 'warn') => void;
 }
 
@@ -215,6 +217,7 @@ export class GameSimulation {
   private customerManager: CustomerManager;
   private completedCheckoutIds: Set<string>;
   private regulars: Record<string, RegularCustomerProgress> = {};
+  private reviews: CustomerReview[] = [];
   private partyOrders: PartyOrderState;
   private goals: GoalState;
   private skills: SkillState;
@@ -264,6 +267,7 @@ export class GameSimulation {
     this.statistics = { ...initialSave.statistics };
     this.createdAt = initialSave.createdAt;
     this.regulars = initialSave.regulars ? structuredClone(initialSave.regulars) : {};
+    this.reviews = sanitizeReviews(initialSave.reviews);
     this.partyOrders = initialSave.partyOrders
       ? refreshAvailablePartyOrders(structuredClone(initialSave.partyOrders), initialSave.worldTime.day, this.playerData.level)
       : refreshAvailablePartyOrders(createInitialPartyOrderState(), initialSave.worldTime.day, this.playerData.level);
@@ -376,7 +380,39 @@ export class GameSimulation {
     this.currentDayRecord.averageStars = ((this.currentDayRecord.averageStars ?? 0) * previousCount + stars) / (previousCount + 1);
     this.currentDayRecord.ratingCount = previousCount + 1;
     this.demandTable = undefined;
-    this.callbacks.onCustomerRated?.({ stars, average: averageRating(this.playerData.ratings), reason });
+
+    // Lời đánh giá bằng chữ: món liên quan là món đắt nhất trong giỏ, hoặc món khách định mua nếu bỏ về.
+    const time = this.clock.getTime();
+    const priciest = [...items].sort((a, b) => b.unitPrice * b.quantity - a.unitPrice * a.quantity)[0]?.productId;
+    const productId = reason ? (customer.reservedProductId ?? priciest ?? this.fixtures.find(f => f.id === customer.targetFixtureId)?.assignedProductId) : (priciest ?? legacyProductId);
+    const review = composeReview({
+      day: time.day,
+      hour: time.hour,
+      minute: time.minute,
+      stars,
+      sequence: previousCount + 1,
+      reason,
+      productId,
+      productName: productId ? PRODUCT_MAP[productId]?.name : undefined,
+      waitSeconds: Math.max(0, 45 - customer.patience),
+      averagePriceRatio,
+      rainIntensity: this.getRainIntensity(),
+      isWeekend: weekdayOf(time.day) >= 5,
+      guardHelped: customer.arrivalMode === 'motorbike' && this.hasSecurityGuardOnShift(),
+      regularId: customer.regularId,
+      regularName: customer.regularName,
+    });
+    this.reviews = appendReview(this.reviews, review);
+    this.callbacks.onCustomerRated?.({ stars, average: averageRating(this.playerData.ratings), reason, review });
+  }
+
+  /** Lời đánh giá gần đây của khách, mới nhất ở cuối. */
+  public getReviews(): CustomerReview[] {
+    return this.reviews.map(review => ({ ...review }));
+  }
+
+  public getReviewSummary() {
+    return summarizeReviews(this.reviews);
   }
 
   public getFixtures(): StoreFixture[] {
@@ -2893,6 +2929,7 @@ export class GameSimulation {
       ledger: this.ledger.map((e) => ({ ...e })),
       closedDayIds: [...this.closedDayIds],
       regulars: structuredClone(this.regulars),
+      reviews: this.reviews.map(review => ({ ...review })),
       partyOrders: structuredClone(this.partyOrders),
       goals: structuredClone(this.goals),
       skills: structuredClone(this.skills),
@@ -2940,6 +2977,7 @@ export class GameSimulation {
     this.dailyRecords = saveData.dailyRecords ? structuredClone(saveData.dailyRecords) : {};
     this.closedDayIds = new Set(saveData.closedDayIds ?? []);
     this.regulars = saveData.regulars ? structuredClone(saveData.regulars) : {};
+    this.reviews = sanitizeReviews(saveData.reviews);
     this.partyOrders = saveData.partyOrders
       ? refreshAvailablePartyOrders(structuredClone(saveData.partyOrders), saveData.worldTime.day, this.playerData.level)
       : refreshAvailablePartyOrders(createInitialPartyOrderState(), saveData.worldTime.day, this.playerData.level);

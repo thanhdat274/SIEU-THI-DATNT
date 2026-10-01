@@ -239,6 +239,20 @@ export interface CheckoutResult {
   reason?: 'no_waiting_customer' | 'already_processed' | 'empty_basket' | 'store_closed' | 'success';
 }
 
+/** Lời đánh giá bằng chữ của một lượt khách (mua xong hoặc bỏ về), sinh từ mẫu theo ngữ cảnh. */
+export interface CustomerReview {
+  id: string;
+  day: number;
+  hour: number;
+  minute: number;
+  stars: number;
+  author: string;
+  text: string;
+  reason?: 'out_of_stock' | 'price' | 'wait' | 'store_closed' | 'unreachable';
+  productId?: string;
+  regularId?: string;
+}
+
 export type LedgerEntryType = 'purchase' | 'sale' | 'spoilage' | 'wage' | 'maintenance';
 
 export interface LedgerEntry {
@@ -726,6 +740,8 @@ export interface SaveGameData {
   orderSequence?: number;
   ledgerSequence?: number;
   skills?: SkillState;
+  /** Lời đánh giá gần đây của khách (tối đa 60), mới nhất ở cuối. */
+  reviews?: CustomerReview[];
 }
 
 export interface RegularCustomerProgress {

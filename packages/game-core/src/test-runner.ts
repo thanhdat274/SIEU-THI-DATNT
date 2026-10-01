@@ -41,6 +41,7 @@ import { runTrafficSignalTests } from './traffic-signal.test';
 import { runDeterministicIdTests } from './deterministic-ids.test';
 import { runArrivalModeTests } from './arrival-mode.test';
 import { runMaintenanceTests } from './maintenance.test';
+import { runReviewTests } from './reviews.test';
 import { runIntegrationTests, runOutdoorPropTests } from './integration.test';
 import { runStoreLayoutTests } from './store-layout.test';
 import { runRegularsTests } from './regulars.test';
@@ -91,6 +92,7 @@ export async function runTests(): Promise<void> {
   runDeterministicIdTests();
   runArrivalModeTests();
   runMaintenanceTests();
+  runReviewTests();
   runOutdoorPropTests();
   runAnnualRevenueTests();
   runStoreLayoutTests();

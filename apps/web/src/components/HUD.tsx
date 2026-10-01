@@ -25,11 +25,13 @@ interface HUDProps {
   onOpenRegulars?: () => void;
   onOpenSkills?: () => void;
   onOpenTitles?: () => void;
+  /** Mở danh sách lời khách nhận xét (bấm vào điểm đánh giá). */
+  onOpenReviews?: () => void;
   /** Số kệ/tủ mát đang mòn hoặc hỏng; > 0 thì hiện nút Sửa chữa. */
   maintenanceAlerts?: number;
   onOpenMaintenance?: () => void;
 }
-export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, maintenanceAlerts, onOpenMaintenance, customerRating = 4, wageDebt = 0}) => {
+export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, maintenanceAlerts, onOpenMaintenance, customerRating = 4, wageDebt = 0}) => {
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore();
   const season = getSeasonForDay(worldTime.day);
   const weather = market?.weather;
@@ -42,7 +44,9 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
     <div className="hud-clock" title={`Ngày ${worldTime.day} · ${timeString} (${worldTime.isStoreOpen ? 'Đang mở cửa' : 'Nghỉ bán'})`}><PixelIcon name={worldTime.hour >= 18 ? 'moon' : 'sun'} size={24}/><div><strong className="tabular">Ngày {worldTime.day} · {timeString}</strong><span className="muted hud-store-status">{worldTime.isStoreOpen ? 'Bà con đang ghé tiệm' : 'Tiệm đang nghỉ bán'}</span>{weather && <span className="muted hud-weather-badge" title={`Hôm nay${todayRainText}. Dự báo: ${forecastText}`}>{weather.icon} {weather.label} · mai {forecastFirst}</span>}{market?.events?.map(event => <span key={event.id} className="muted hud-event-badge" title={event.notice}>{event.status === 'active' ? '⚡' : '⏳'} {event.label}{event.status === 'upcoming' ? ` · sau ${event.startsIn} ngày` : ''}</span>)}{season && <span className="muted hud-season-badge" title={season.blurb}>🎉 {season.name} · còn {seasonDaysLeft(worldTime.day)} ngày</span>}</div></div>
     <div className="hud-stats">
       <PixelStat label="Tiền trong hòm" value={money(player.money)} icon="coin"/>
-      <PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/>
+      {onOpenReviews
+        ? <button type="button" onClick={onOpenReviews} title="Xem lời khách nhận xét" aria-label={`Đánh giá khách ${customerRating.toFixed(1)} sao, xem nhận xét`} style={{ all: 'unset', cursor: 'pointer' }}><PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/></button>
+        : <PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/>}
       <button type="button" className="hud-level" onClick={onOpenLevelRoadmap} title="Xem tiến độ XP và các mốc mở khóa" aria-label={`Cấp ${player.level}, xem lộ trình cấp`}><strong>Cấp {player.level}</strong><span className="muted"> · {player.experience}/{player.experienceToNextLevel}</span><PixelProgress label="Kinh nghiệm" value={player.experience} max={player.experienceToNextLevel}/></button>
       {wageDebt > 0 && <button type="button" className="hud-debt" onClick={onOpenStaff} title="Nợ lương nhân viên: bấm để xem" aria-label={`Nợ lương ${money(wageDebt)}`}><PixelIcon name="coin" size={16}/><span>Nợ lương {money(wageDebt)}</span></button>}
       <div className="hud-customers"><PixelStat label="Khách trong tiệm" value={activeCustomers} icon="person"/></div>
