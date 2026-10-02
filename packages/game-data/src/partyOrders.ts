@@ -1,4 +1,5 @@
 import type { PartyOrderDef } from '@game/shared';
+import { nullProto } from './safe-map';
 
 export const PARTY_ORDERS: readonly PartyOrderDef[] = [
   {
@@ -90,6 +91,6 @@ export const PARTY_ORDERS: readonly PartyOrderDef[] = [
   },
 ];
 
-export const PARTY_ORDER_MAP: Record<string, PartyOrderDef> = Object.fromEntries(
+export const PARTY_ORDER_MAP: Record<string, PartyOrderDef> = nullProto(Object.fromEntries(
   PARTY_ORDERS.map((order) => [order.id, order])
-);
+));

@@ -1,4 +1,5 @@
 import type { Product } from '@game/shared';
+import { nullProto } from './safe-map';
 
 /** Số liệu cân bằng ban đầu (giá, thời gian, hao hụt) là provisional, chưa playtest. */
 export interface RecipeIngredient {
@@ -48,7 +49,7 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_xoi_dua', name: 'Xôi dừa (5 phần)', stationShopId: 'quay_xoi', inputs: [{ productId: 'nep_chin', quantity: 5 }, { productId: 'dua_nao', quantity: 5 }], outputProductId: 'xoi_dua_tp', outputQuantity: 5, durationSeconds: 30, unlockLevel: 29 },
 ];
 
-export const RECIPE_MAP: Record<string, Recipe> = Object.fromEntries(RECIPES.map(recipe => [recipe.id, recipe]));
+export const RECIPE_MAP: Record<string, Recipe> = nullProto(Object.fromEntries(RECIPES.map(recipe => [recipe.id, recipe])));
 
 /** Thành phẩm quầy xôi (món chỉ `autoFillShelf` chấp nhận cho kệ tiệm xôi). */
 export const XOI_DISH_IDS: ReadonlySet<string> = new Set(

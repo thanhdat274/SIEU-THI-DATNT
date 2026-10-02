@@ -1,4 +1,5 @@
 import type { ModifierChannel, ModifierRule, ModifierTarget } from '@game/shared';
+import { nullProto } from './safe-map';
 
 export type MarketEventKind = 'weather' | 'local' | 'holiday' | 'supply' | 'infrastructure';
 
@@ -136,7 +137,7 @@ export const MARKET_EVENTS: readonly MarketEventDef[] = [
   },
 ];
 
-export const MARKET_EVENT_MAP: Record<string, MarketEventDef> = Object.fromEntries(MARKET_EVENTS.map(item => [item.id, item]));
+export const MARKET_EVENT_MAP: Record<string, MarketEventDef> = nullProto(Object.fromEntries(MARKET_EVENTS.map(item => [item.id, item])));
 
 /** Bộ chỉnh sinh từ dữ liệu sự kiện; dùng chung cơ chế với mùa/thời tiết. */
 export const MARKET_EVENT_RULES: ModifierRule[] = MARKET_EVENTS.flatMap(event =>

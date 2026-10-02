@@ -1,4 +1,5 @@
 import type { LongTermGoalDef, WeeklyQuestDef } from '@game/shared';
+import { nullProto } from './safe-map';
 
 export const LONG_TERM_GOALS: readonly LongTermGoalDef[] = [
   // --- Doanh thu ---
@@ -110,9 +111,9 @@ export const LONG_TERM_GOALS: readonly LongTermGoalDef[] = [
   },
 ];
 
-export const GOAL_MAP: Record<string, LongTermGoalDef> = Object.fromEntries(
+export const GOAL_MAP: Record<string, LongTermGoalDef> = nullProto(Object.fromEntries(
   LONG_TERM_GOALS.map((g) => [g.id, g])
-);
+));
 
 export const WEEKLY_QUESTS: readonly WeeklyQuestDef[] = [
   {

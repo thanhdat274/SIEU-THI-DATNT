@@ -680,7 +680,7 @@ export class GameSimulation {
     return true;
   }
 
-  public getPriceHistory(productId: string): Array<{ day: number; price: number }> { return (this.priceHistory[productId] ?? []).map(point => ({ ...point })); }
+  public getPriceHistory(productId: string): Array<{ day: number; price: number }> { return (Object.prototype.hasOwnProperty.call(this.priceHistory, productId) ? this.priceHistory[productId] : []).map(point => ({ ...point })); }
   public getHeatmap(days: number): Record<string, number> { return aggregateHeatmap(this.heatmap, this.clock.getTime().day, days); }
 
   private recordHeatmap(): void {

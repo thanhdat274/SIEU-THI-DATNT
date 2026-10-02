@@ -1,4 +1,5 @@
 import type { PerkDef } from '@game/shared';
+import { nullProto } from './safe-map';
 
 export const SKILL_XP_PER_LEVEL = [0, 100, 250, 500, 1000]; // Mức XP cho level 1, 2, 3, 4
 
@@ -73,6 +74,6 @@ export const SKILL_PERKS: readonly PerkDef[] = [
   },
 ];
 
-export const PERK_MAP: Record<string, PerkDef> = Object.fromEntries(
+export const PERK_MAP: Record<string, PerkDef> = nullProto(Object.fromEntries(
   SKILL_PERKS.map((p) => [p.id, p])
-);
+));

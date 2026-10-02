@@ -1,3 +1,4 @@
+import { nullProto } from './safe-map';
 /** Điều kiện hoàn thành chương; đo từ chỉ số mô phỏng, không có nhánh code theo id chương. */
 export type StoryObjective =
   | { kind: 'customersServed'; target: number }
@@ -50,4 +51,4 @@ export const STORY_CHAPTERS: readonly StoryChapterDef[] = [
     goal: 'Bán 10 suất ở các quầy ăn uống', objective: { kind: 'stallServings', target: 10 }, rewardMoney: 250000, rewardExp: 600 },
 ];
 
-export const STORY_CHAPTER_MAP: Record<string, StoryChapterDef> = Object.fromEntries(STORY_CHAPTERS.map(chapter => [chapter.id, chapter]));
+export const STORY_CHAPTER_MAP: Record<string, StoryChapterDef> = nullProto(Object.fromEntries(STORY_CHAPTERS.map(chapter => [chapter.id, chapter])));

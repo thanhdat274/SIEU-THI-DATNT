@@ -1,5 +1,6 @@
 import { PRODUCED_PRODUCTS } from './recipes';
 import { Product, ProductCategory, StorageType } from '@game/shared';
+import { nullProto } from './safe-map';
 
 export const STARTER_PRODUCTS: Product[] = [
   {
@@ -3733,13 +3734,13 @@ export const PRODUCT_CATEGORY_LABELS: Record<ProductCategory, string> = {
   cooking_ingredients: 'Gia vị', household: 'Đồ gia dụng',
 };
 
-export const PRODUCT_MAP: Record<string, Product> = [...ALL_PRODUCTS, ...PRODUCED_PRODUCTS].reduce(
+export const PRODUCT_MAP: Record<string, Product> = nullProto([...ALL_PRODUCTS, ...PRODUCED_PRODUCTS].reduce(
   (acc, prod) => {
     acc[prod.id] = prod;
     return acc;
   },
   {} as Record<string, Product>
-);
+));
 
 /**
  * Sức chứa thực tế của một kệ cho một mặt hàng: lấy mức thấp hơn giữa sức chứa kệ và sức chứa mặt hàng rồi cộng bonus (perk).

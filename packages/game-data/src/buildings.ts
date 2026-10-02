@@ -1,4 +1,5 @@
 import { getFixtureDimensions, type StoreFixture } from '@game/shared';
+import { nullProto } from './safe-map';
 
 /** Biên một tòa nhà (ô, tính cả tường). */
 export interface BuildingBounds { left: number; right: number; top: number; bottom: number }
@@ -48,7 +49,7 @@ export const BUILDINGS: readonly BuildingDef[] = [
   },
 ];
 
-export const BUILDING_MAP: Record<BuildingId, BuildingDef> = Object.fromEntries(BUILDINGS.map(building => [building.id, building])) as Record<BuildingId, BuildingDef>;
+export const BUILDING_MAP: Record<BuildingId, BuildingDef> = nullProto(Object.fromEntries(BUILDINGS.map(building => [building.id, building])) as Record<BuildingId, BuildingDef>);
 
 /** Ô nằm trong biên tòa (tính cả tường). */
 export const inBounds = (bounds: BuildingBounds, x: number, y: number): boolean =>
