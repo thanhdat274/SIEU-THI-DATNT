@@ -79,6 +79,17 @@ export function runTrafficSignalTests(): void {
     assert.ok(frontOf(find(m, 'a')) > crossRight, 'Người qua xong thì xe đi tiếp');
   }
 
+  // Xe đã qua hẳn vạch thì không bị kẹt lại khi có người qua đường (từng đứng yên giữa phố).
+  {
+    const m = new StreetTrafficManager([car('past', crossRight + 150)]);
+    m.setSignalClock(RED_START + 2);
+    m.addPedestrian({ id: 'p1', direction: 'south', state: 'crossing', x: crossLeft + 15 });
+    const x0 = find(m, 'past').position.x;
+    run(m, 1);
+    const past = find(m, 'past');
+    assert.ok((past.currentSpeed ?? past.speed) > 60 && past.position.x > x0 + 40, 'Xe đã qua vạch vẫn chạy khi người đang qua đường');
+  }
+
   // Người đi bộ chờ đến pha đi, không bắt đầu qua khi sắp hết pha.
   {
     const m = new StreetTrafficManager();

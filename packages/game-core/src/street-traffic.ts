@@ -167,13 +167,14 @@ export class StreetTrafficManager {
     const signal = this.getSignal();
     const mustStop = signal.vehicle !== 'green' || this.anyPedestrianCrossing();
     const enteredCrosswalk = sign > 0 ? front > crossLeft : front < crossRight;
+    const passedCrosswalk = sign > 0 ? front > crossRight : front < crossLeft;
     if (mustStop) {
       if (!enteredCrosswalk) {
         const brake = (current * current) / (2 * decel);
         const committed = signal.vehicle === 'yellow' && !this.anyPedestrianCrossing() && current >= v.speed - 1 && distance < brake * 0.6;
         if (!committed) desired = Math.min(desired, Math.sqrt(2 * decel * Math.max(0, distance)));
-      } else if (this.anyPedestrianCrossing()) {
-        desired = 0;
+      } else if (this.anyPedestrianCrossing() && !passedCrosswalk) {
+        desired = 0; // xe đã qua hẳn vạch thì cứ chạy, nếu không sẽ đứng giữa đường và kéo cả hàng phía sau
       }
     }
 
