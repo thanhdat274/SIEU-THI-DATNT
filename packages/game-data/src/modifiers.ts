@@ -137,7 +137,7 @@ export function validateMarketData(rules: readonly ModifierRule[] = MODIFIER_RUL
   const eventIds = new Set<string>(MARKET_EVENTS.map(item => item.id));
   for (const event of MARKET_EVENTS) {
     if (event.durationDays < 1) errors.push(`event ${event.id}: thời lượng < 1 ngày`);
-    if (!(event.trigger.chancePerDay > 0 && event.trigger.chancePerDay <= 1)) errors.push(`event ${event.id}: xác suất ngoài (0,1]`);
+    if (event.manual ? event.trigger.chancePerDay !== 0 : !(event.trigger.chancePerDay > 0 && event.trigger.chancePerDay <= 1)) errors.push(`event ${event.id}: xác suất ngoài (0,1] (sự kiện thủ công phải bằng 0)`);
     if (event.trigger.minGapDays < event.durationDays) errors.push(`event ${event.id}: khoảng cách tối thiểu nhỏ hơn thời lượng`);
     if (event.supplierOutageChance !== undefined && !(event.supplierOutageChance >= 0 && event.supplierOutageChance <= 1)) errors.push(`event ${event.id}: xác suất ngừng cung ngoài [0,1]`);
     if (event.warnDaysBefore < 0 || event.warnDaysBefore > 2) errors.push(`event ${event.id}: báo trước phải từ 0 đến 2 ngày`);

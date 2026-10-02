@@ -214,7 +214,7 @@ function run(): SimResult {
   let money = START_MONEY;
   let level = 1;
   let xp = 0;
-  let stars = 0;
+  const stars = 0;
   let rep = 50;
 
   // Stock: substantial initial inventory to last simulation
@@ -244,7 +244,7 @@ function run(): SimResult {
   const dailyTraffic: number[] = [];
 
   // Staff
-  let staffList: { role: string; dailyWage: number }[] = [];
+  const staffList: { role: string; dailyWage: number }[] = [];
 
   // Production jobs: { recipeId, doneByDay }
   const prodJobs: { recipeId: string; doneByDay: number }[] = [];
@@ -261,7 +261,7 @@ function run(): SimResult {
   let totalItemsSold = 0;
   let maintenanceCost = 0;
   let stallRevenue = 0;
-  let stallCOGS = 0;
+  const stallCOGS = 0;
 
   // Suppliers
   const suppliers = [

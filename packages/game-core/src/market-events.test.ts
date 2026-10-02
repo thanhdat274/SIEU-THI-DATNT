@@ -45,7 +45,10 @@ export async function runMarketEventTests(): Promise<void> {
   }
   const covered = new Set<string>();
   for (const seed of seeds) for (const event of scheduleEvents(seed, undefined, 480).events) covered.add(event.id);
-  for (const def of MARKET_EVENTS) assert.ok(covered.has(def.id), `Sự kiện ${def.id} xuất hiện trong dữ liệu mô phỏng`);
+  for (const def of MARKET_EVENTS) {
+    if (def.manual) assert.ok(!covered.has(def.id), `Sự kiện thủ công ${def.id} không tự lên lịch`);
+    else assert.ok(covered.has(def.id), `Sự kiện ${def.id} xuất hiện trong dữ liệu mô phỏng`);
+  }
   assert.ok(MARKET_EVENTS.length >= 9, 'Đủ bộ sự kiện yêu cầu');
 
   // --- 3.1 lưu/tải giữ sự kiện đang chạy ---

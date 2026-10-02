@@ -139,3 +139,49 @@ export function getSkillModifier(
       return 0;
   }
 }
+
+/**
+ * Quản lý kỹ năng & đặc quyền của người chơi.
+ * Pattern: nhận state qua constructor, trả bản sao qua getters (immutable updates).
+ */
+export class SkillsManager {
+  private state: SkillState;
+
+  constructor(initial: SkillState | undefined) {
+    this.state = initial ?? createInitialSkillState();
+  }
+
+  public getSkillState(): SkillState {
+    return structuredClone(this.state);
+  }
+
+  public addSkillExperience(skill: SkillType, amount: number): void {
+    const res = addSkillXp(this.state, skill, amount);
+    this.state = res.state;
+  }
+
+  public choosePerk(perkId: string): { success: boolean; reason?: string } {
+    const res = choosePerk(this.state, perkId);
+    if (res.success) this.state = res.state;
+    return { success: res.success, reason: res.reason };
+  }
+
+  /** Alias của `hasPerk` để simulation.ts gọi qua manager. */
+  public hasPerk(perkId: string): boolean {
+    return hasPerk(this.state, perkId);
+  }
+
+  public getShelfCapacityBonus(): number {
+    return getSkillModifier(this.state, 'shelf_capacity_bonus');
+  }
+
+  /** Trả về toàn bộ state để serialize (deep clone). */
+  public exportSkills(): SkillState {
+    return structuredClone(this.state);
+  }
+
+  /** Load state từ save data. */
+  public importSkills(initial: SkillState | undefined): void {
+    this.state = initial ?? createInitialSkillState();
+  }
+}
