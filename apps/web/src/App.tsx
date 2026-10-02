@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { effectiveShelfCapacity, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, WEATHER_MAP } from '@game/data';
+import { effectiveShelfCapacity, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, WEATHER_MAP, XOI_DISH_IDS } from '@game/data';
 import { InputManager, GameSimulation, ambientMix, getTutorialChecklist } from '@game/core';
 import type { TutorialItem } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
@@ -1389,7 +1389,7 @@ export const App: React.FC = () => {
             {!hasModal && !isWarehouseDockOpen && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
           </>}
         </div>
-        {!isLoading && <WarehouseDock capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onOpenPlanogram={() => setIsPlanogramOpen(true)} onLocateWarehouse={locateWarehouse} onStowHolding={handleStowHolding} currentDay={worldTime.day}/>}
+        {!isLoading && <WarehouseDock coldCapacity={simulationRef.current?.getColdCapacity()} ambientCapacity={simulationRef.current?.getAmbientCapacity()} ambientUsed={simulationRef.current?.getAmbientCellsUsed()} capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onOpenPlanogram={() => setIsPlanogramOpen(true)} onLocateWarehouse={locateWarehouse} onStowHolding={handleStowHolding} currentDay={worldTime.day}/>}
       </main>
       {!isLoading && <BottomBar onOpenSupplier={openSupplierModal} onOpenCashier={openCashier}/>}
     </div>
@@ -1450,7 +1450,7 @@ export const App: React.FC = () => {
         onClose={closeFixtureModal}
       />
     )}
-    {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} fixture={activeFixtureModal} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onStowHolding={handleStowHolding} onClose={closeFixtureModal}/>}
+    {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal coldCapacity={simulationRef.current?.getColdCapacity()} ambientCapacity={simulationRef.current?.getAmbientCapacity()} ambientUsed={simulationRef.current?.getAmbientCellsUsed()} capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} fixture={activeFixtureModal} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onStowHolding={handleStowHolding} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'cashier_counter' && <CashierModal initialShowStaff={staffRequested} fixture={activeFixtureModal} player={player} worldTime={worldTime} shelves={fixtures.filter(isSalesFixture)} customers={customers} statistics={statistics} canDineIn={customer => simulationRef.current?.canDineIn(customer) ?? false} creditAccounts={simulationRef.current?.getCustomerCredits() ?? []} creditTerms={regularId => simulationRef.current?.getCustomerCreditTerms(regularId) ?? { eligible: false, limit: 0, used: 0, available: 0 }} onRepayCredit={async creditId => { const res = await persistSimulationMutation({ type: 'repay_customer_credit', creditId }, 'Thu hồi nợ khách quen', 'Thu nợ', simulation => ({ success: simulation.repayCustomerCredit(creditId), reason: undefined as string | undefined })); if (res?.success) addToast('Đã thu hồi khoản mua chịu.', 'success'); else if (res) addToast(res.reason ?? 'Không thu được khoản nợ.', 'warn'); }} staff={simulationRef.current?.getStaff() ?? []} staffCandidates={simulationRef.current?.getStaffCandidates(worldTime.day) ?? []} wageDebt={simulationRef.current?.getWageDebt() ?? 0} restockTargets={simulationRef.current?.getRestockJobTargets() ?? []} onAssignRefillJob={handleAssignRefillJob} onHireStaff={handleHireStaff} onSetStaffShift={handleSetStaffShift} onCheckout={handleCheckout} onToggleStoreStatus={handleToggleStoreStatus} onAdvanceDay={handleAdvanceDay} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'kitchen_station' && simulationRef.current && <KitchenStationModal fixture={activeFixtureModal} recipes={simulationRef.current.getStationRecipes(activeFixtureModal.id)} job={simulationRef.current.getProductionJobs().find(job => job.stationId === activeFixtureModal.id)} inventory={simulationRef.current.getInventory()} day={simulationRef.current.getTime().day} onStart={async recipeId => { const stationId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'start_production', recipeId, stationId }, 'Bắt đầu nấu', 'Sản xuất', simulation => simulation.startProduction(recipeId, stationId)); if (!res?.success) addToast(res?.reason ?? 'Không bắt đầu được mẻ nấu.', 'warn'); }} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'dining_table' && simulationRef.current && <DiningTableModal fixture={activeFixtureModal} state={simulationRef.current.getDiningTableState(activeFixtureModal.id)} staff={simulationRef.current.getStaff()} onAssignCleaner={async staffId => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'assign_dining_cleanup', staffId, fixtureId }, 'Giao việc dọn bàn', 'Dọn dẹp', simulation => ({ success: simulation.assignDiningCleanup(staffId, fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast(res?.reason ?? 'Không giao được việc dọn bàn.', 'warn'); }} onClean={async () => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'clean_dining_table', fixtureId }, 'Dọn bàn ăn', 'Dọn dẹp', simulation => ({ success: simulation.cleanDiningTable(fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast('Bàn đang có khách hoặc đã sạch.', 'warn'); }} onClose={closeFixtureModal}/>}
@@ -1458,6 +1458,7 @@ export const App: React.FC = () => {
     {isSaveModalOpen && <SaveModal onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onExportSave={handleExportSave} onImportSave={handleImportSave} isOnline={!!onlineWorld} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
     {isSupplierModalOpen && (
       <SupplierModal
+        coldCapacity={simulationRef.current?.getColdCapacity()}
         player={player}
         pendingOrders={pendingOrders}
         inventory={inventory}
@@ -1539,6 +1540,33 @@ export const App: React.FC = () => {
           if (!res) return false;
           if (res.success) {
             addToast('Nhận thưởng mục tiêu thành công!', 'success');
+            return true;
+          }
+          addToast(res.reason ?? 'Không thể nhận thưởng.', 'warn');
+          return false;
+        }}
+        chapters={simulationRef.current.getStoryProgressList()}
+        onBeginChapter={async (chapterId) => {
+          const res = await persistSimulationMutation(
+            { type: 'begin_story_chapter', chapterId }, 'Bắt đầu chương cốt truyện', 'Cốt truyện',
+            simulation => simulation.beginStoryChapter(chapterId),
+          );
+          if (!res) return false;
+          if (res.success) {
+            addToast('Đã bắt đầu chương mới!', 'info');
+            return true;
+          }
+          addToast(res.reason ?? 'Không thể bắt đầu chương.', 'warn');
+          return false;
+        }}
+        onClaimChapter={async (chapterId) => {
+          const res = await persistSimulationMutation(
+            { type: 'claim_story_chapter', chapterId }, 'Nhận thưởng chương cốt truyện', 'Cốt truyện',
+            simulation => simulation.claimStoryChapter(chapterId),
+          );
+          if (!res) return false;
+          if (res.success) {
+            addToast('Hoàn thành chương! Nhận thưởng thành công.', 'success');
             return true;
           }
           addToast(res.reason ?? 'Không thể nhận thưởng.', 'warn');
@@ -1687,6 +1715,7 @@ export const App: React.FC = () => {
           }
           return res;
         }}
+        xoiProductIds={[...XOI_DISH_IDS]}
         onOpenSupplier={() => {
           setIsPlanogramOpen(false);
           openSupplierModal();

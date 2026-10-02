@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { StoreFixture, InventoryItem, isSalesFixture, isUsableSalesFixture, slotGroup } from '@game/shared';
-import { PRODUCT_MAP, SELLABLE_PRODUCTS, effectiveShelfCapacity, FIXTURE_SHOP } from '@game/data';
+import { PRODUCT_MAP, SELLABLE_PRODUCTS, effectiveShelfCapacity, FIXTURE_SHOP, fixtureBuilding } from '@game/data';
 import { fixturePreviewUrl } from '@game/renderer';
 import { PixelDialog, PixelButton, PixelIcon, ProductSlot, PixelProgress, EmptyState } from './pixel';
 import './store-planogram.css';
@@ -19,6 +19,8 @@ interface Props {
   onAutoFill?: (fixtureId: string) => { assigned: boolean; productId: string | null; filled: number; reason: string };
   /** Tự động gán + châm đầy toàn bộ kệ. */
   onAutoFillAll?: () => { totalFilled: number; newAssignments: number; skipped: number };
+  /** ID các món xôi để UI biết khi nào chỉ chấp nhận món xôi cho kệ xôi. */
+  xoiProductIds?: readonly string[];
   onClose: () => void;
 }
 
@@ -44,8 +46,10 @@ export const StorePlanogramModal: React.FC<Props> = ({
   onOpenSupplier,
   onAutoFill,
   onAutoFillAll,
+  xoiProductIds,
   onClose,
 }) => {
+  const xoiIds = xoiProductIds ?? [];
   const [filter, setFilter] = useState<FixtureFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [slotToChange, setSlotToChange] = useState<{ slot: StoreFixture; parent: StoreFixture } | null>(null);
@@ -94,7 +98,11 @@ export const StorePlanogramModal: React.FC<Props> = ({
           const hasCompatible = inventory.some(inv => {
             if (inv.quantity <= 0) return false;
             const p = PRODUCT_MAP[inv.productId];
-            return p && (p.storageType === 'cold') === isColdFix;
+            if (!p) return false;
+            if ((p.storageType === 'cold') !== isColdFix) return false;
+            // Kệ xôi: chỉ cho phép món xôi
+            if (xoiIds.length > 0 && fixtureBuilding(mainFix) === 'xoi' && !xoiIds.includes(inv.productId)) return false;
+            return true;
           });
           if (hasCompatible) canRestockCount++;
         }
@@ -102,7 +110,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
     }
 
     return { totalSlots, emptySlots, lowStockSlots, canRestockCount };
-  }, [mainFixtures, fixtures, planogram, capacityBonus, inventoryMap]);
+  }, [mainFixtures, fixtures, planogram, capacityBonus, inventoryMap, xoiIds]);
 
   // Lọc kệ theo tiêu chí
   const filteredFixtures = useMemo(() => {
@@ -352,7 +360,11 @@ export const StorePlanogramModal: React.FC<Props> = ({
                   return inventory.some(inv => {
                     if (inv.quantity <= 0) return false;
                     const p = PRODUCT_MAP[inv.productId];
-                    return p && (p.storageType === 'cold') === isCold;
+                    if (!p) return false;
+                    if ((p.storageType === 'cold') !== isCold) return false;
+                    // Kệ xôi: chỉ cho phép món xôi
+                    if (xoiIds.length > 0 && fixtureBuilding(mainFix) === 'xoi' && !xoiIds.includes(inv.productId)) return false;
+                    return true;
                   });
                 }
                 return false;

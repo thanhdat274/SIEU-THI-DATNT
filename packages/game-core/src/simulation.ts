@@ -9,7 +9,6 @@ import {
   Vector2D,
   WorldTime,
   SupplierOrder,
-  COLD_WAREHOUSE_CAPACITY,
   CustomerState,
   CustomerReview,
   SecurityIncident,
@@ -99,11 +98,11 @@ import { rainIntensityAt, rainForecastForDay, describeRainForecast, roadWetnessA
 import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance } from './security';
 import { assessCounterfeit } from './counterfeit';
 import { summarizeAnnualRevenue, calculateDailyTax } from './tax/annual-revenue';
-import { appendReview, composeReview, sanitizeReviews, summarizeReviews } from './reviews';
+import { composeReview, sanitizeReviews, summarizeReviews, ReviewsManager } from './reviews';
 import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, staffServiceTargets, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { slotCategoryConflict } from './shelf-slots';
 import { decorAttraction, decorTrafficMultiplier } from './decor';
-import { buyLandPlot, upgradeFixtureSlots, validateStoreLayout, totalWarehouseCells, type LayoutResult } from './store-layout';
+import { buyLandPlot, relocateMisplacedFixtures, upgradeFixtureSlots, validateStoreLayout, totalWarehouseCells, coldWarehouseCapacity, warehouseCellsFor, unitsFittingInCells, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
 import { expiryDay, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
@@ -148,7 +147,12 @@ import {
   getSkillModifier,
   hasPerk,
 } from './skills';
+import { DINING, DINING_ADD_ON_RULES, RIVAL_EVENT_ID, fixtureBuilding, XOI_DISH_IDS } from '@game/data';
+import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS } from '@game/data';
+
+/** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
+import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
 import { aggregateHeatmap, appendPricePoint, pruneHeatmap, sanitizeHeatmap, sanitizePriceHistory } from './analytics';
 import { addProductionOutput, consumeIngredients, missingIngredients, sanitizeProductionJobs } from './production';
 import { LONG_TERM_GOALS, WEEKLY_QUESTS, PARTY_ORDER_MAP, TITLES, effectiveShelfCapacity, SECURITY_RULES } from '@game/data';
@@ -244,7 +248,7 @@ export class GameSimulation {
   private heatmap: NonNullable<SaveGameData['heatmap']> = {};
   /** Ô cuối cùng của từng khách, chỉ trong bộ nhớ, để đếm lượt vào ô thay vì mỗi khung hình. */
   private heatmapLastTile = new Map<string, string>();
-  private reviews: CustomerReview[] = [];
+  private reviewsManager: ReviewsManager;
   private security: SecurityState = emptySecurityState();
   private partyOrders: PartyOrderState;
   private goals: GoalState;
@@ -308,12 +312,12 @@ export class GameSimulation {
     this.priceHistory = sanitizePriceHistory(initialSave.priceHistory);
     this.heatmap = sanitizeHeatmap(initialSave.heatmap);
     this.productionJobSequence = Math.max(initialSave.productionJobSequence ?? 0, ...this.productionJobs.map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
-    this.reviews = sanitizeReviews(initialSave.reviews);
+    this.reviewsManager = new ReviewsManager(initialSave.reviews);
     this.security = sanitizeSecurity(initialSave.security);
     this.partyOrders = initialSave.partyOrders
       ? refreshAvailablePartyOrders(structuredClone(initialSave.partyOrders), initialSave.worldTime.day, this.playerData.level)
       : refreshAvailablePartyOrders(createInitialPartyOrderState(), initialSave.worldTime.day, this.playerData.level);
-    this.goals = initialSave.goals ? structuredClone(initialSave.goals) : createInitialGoalState();
+    this.goals = this.withStory(initialSave.goals ? structuredClone(initialSave.goals) : createInitialGoalState());
     this.skills = initialSave.skills ? structuredClone(initialSave.skills) : createInitialSkillState();
     this.stalls = normalizeStallState(initialSave.stalls);
     assertMarketData();
@@ -450,17 +454,17 @@ export class GameSimulation {
       regularId: customer.regularId,
       regularName: customer.regularName,
     });
-    this.reviews = appendReview(this.reviews, review);
+    this.reviewsManager.addReview(review);
     this.callbacks.onCustomerRated?.({ stars, average: averageRating(this.playerData.ratings), reason, review });
   }
 
   /** Lời đánh giá gần đây của khách, mới nhất ở cuối. */
   public getReviews(): CustomerReview[] {
-    return this.reviews.map(review => ({ ...review }));
+    return this.reviewsManager.getReviews();
   }
 
-  public getReviewSummary() {
-    return summarizeReviews(this.reviews);
+  public getReviewSummary(): ReturnType<typeof summarizeReviews> {
+    return this.reviewsManager.getReviewSummary();
   }
 
   public getFixtures(): StoreFixture[] {
@@ -508,8 +512,35 @@ export class GameSimulation {
     return this.inventory.reduce((count, item) => count + (PRODUCT_MAP[item.productId]?.storageType === 'cold' ? item.quantity : 0), 0);
   }
 
-  public getAmbientWarehouseCount(): number {
-    return this.inventory.reduce((count, item) => count + (PRODUCT_MAP[item.productId]?.storageType !== 'cold' ? item.quantity : 0), 0);
+  /** Sức chứa kho mát (đơn vị hàng), tăng theo bậc kho. */
+  public getColdCapacity(): number {
+    return coldWarehouseCapacity({ warehouseTier: this.warehouseTier });
+  }
+
+  /** Sức chứa kho thường, tính bằng ô kho (mỗi ô chứa 10 đơn vị, hàng cồng kềnh chiếm 2 ô). */
+  public getAmbientCapacity(): number {
+    return totalWarehouseCells({ warehouseTier: this.warehouseTier, storageRackCount: this.storageRackCount });
+  }
+
+  /** Số ô kho thường đã dùng; làm tròn lên theo ô cho từng món. */
+  public getAmbientCellsUsed(): number {
+    return this.inventory.reduce((cells, item) => {
+      const product = PRODUCT_MAP[item.productId];
+      return cells + (product?.storageType !== 'cold' ? warehouseCellsFor(product, item.quantity) : 0);
+    }, 0);
+  }
+
+  private ambientFreeCells(): number {
+    return Math.max(0, this.getAmbientCapacity() - this.getAmbientCellsUsed());
+  }
+
+  private ambientUnitsOf(productId: string): number {
+    return this.inventory.find((item) => item.productId === productId)?.quantity ?? 0;
+  }
+
+  /** Số đơn vị tối đa (≤ want) của món thường còn nhét vừa kho thường. */
+  private ambientFitQuantity(productId: string, want: number): number {
+    return unitsFittingInCells(PRODUCT_MAP[productId], this.ambientUnitsOf(productId), this.ambientFreeCells(), want);
   }
 
   public getPendingOrders(): SupplierOrder[] {
@@ -690,13 +721,57 @@ export class GameSimulation {
     return true;
   }
 
-  private availableDiningTableId(): string | undefined {
-    return this.fixtures.find(fixture => fixture.type === 'dining_table' && !this.diningDirtyTableIds.has(fixture.id)
+  /** Bàn trống (sạch, còn chỗ) trong đúng tòa nhà của khách; không dùng bàn của tòa kia. */
+  private availableDiningTableId(buildingId = 'main'): string | undefined {
+    return this.fixtures.find(fixture => fixture.type === 'dining_table' && (fixtureBuilding(fixture) ?? 'main') === buildingId && !this.diningDirtyTableIds.has(fixture.id)
       && this.customerManager.diningOccupancy(fixture.id) < (fixture.shopId === 'food_table_4' ? 4 : 2))?.id;
   }
 
+  /**
+   * Khách vừa ngồi bàn có thể gọi thêm đồ uống kèm theo món đã mua (DINING_ADD_ON_RULES). Món lấy từ kho còn hạn theo FEFO,
+   * tính doanh thu/giá vốn như một giao dịch bán lẻ và kéo dài thời gian ngồi. Hết hàng thì khách không gọi.
+   */
+  private serveDiningAddOns(customer: CustomerState): void {
+    const bought = customer.diningProductIds ?? (customer.reservedProductId ? [customer.reservedProductId] : []);
+    if (bought.length === 0) return;
+    const day = this.clock.getTime().day;
+    const key = customer.id ?? customer.checkoutId ?? `${Math.round(customer.position.x)},${Math.round(customer.position.y)}`;
+    let totalRevenue = 0;
+    let totalCogs = 0;
+    let totalItems = 0;
+    for (const productId of rollDiningAddOns(DINING_ADD_ON_RULES, bought, key, day)) {
+      const product = PRODUCT_MAP[productId];
+      if (!product) continue;
+      const taken = takeInventoryUnits(this.inventory, productId, 1, day);
+      if (!taken) continue;
+      const price = this.sellingPrice(productId);
+      totalRevenue += price;
+      totalCogs += taken.cost;
+      totalItems += 1;
+      this.recordProductSale(productId, 1);
+      customer.diningTimeLeft = (customer.diningTimeLeft ?? 60) + DINING.extraOrderSeconds;
+      // Ghi ledger chi tiết cho từng món gọi thêm
+      this.recordLedger({
+        day, type: 'sale', amount: price, cogs: taken.cost, quantity: 1,
+        description: `Khách ngồi bàn gọi thêm ${product.name}`,
+      });
+    }
+    if (totalItems === 0) return;
+    this.inventory = this.inventory.filter(item => item.quantity > 0);
+    this.playerData.money += totalRevenue;
+    this.statistics.totalRevenue += totalRevenue;
+    this.addExperience(Math.round(5 * totalItems * saleExperienceMultiplier(this.playerData.level)));
+    const record = this.currentDayRecord;
+    record.revenue += totalRevenue;
+    record.cogs += totalCogs;
+    record.itemsSold += totalItems;
+    record.grossProfit = record.revenue - record.cogs;
+    record.netProfit = record.grossProfit - record.spoilageCost - record.wagesPaid - (record.maintenanceCost ?? 0) - (record.theftCost ?? 0) + (record.theftRecovered ?? 0) - (record.counterfeitLoss ?? 0) - (record.badDebtCost ?? 0);
+    this.notifyStateChanged();
+  }
+
   public canDineIn(customer: CustomerState): boolean {
-    return this.isDineInBasketEligible(customer) && !!this.availableDiningTableId();
+    return this.isDineInBasketEligible(customer) && !!this.availableDiningTableId(customer.buildingId);
   }
 
   private isDineInBasketEligible(customer: CustomerState): boolean {
@@ -1412,6 +1487,62 @@ export class GameSimulation {
     return { success: false, reason: res.reason };
   }
 
+  /** Bảo đảm `goals.story` luôn có và hợp lệ (save cũ chưa có tiến độ cốt truyện). */
+  private withStory(goals: GoalState): GoalState {
+    return { ...goals, story: normalizeStoryState(goals.story) };
+  }
+
+  private getStoryContext(): StoryContext {
+    const day = this.clock.getTime().day;
+    let stallServings = 0;
+    for (const record of Object.values(this.dailyRecords)) {
+      if (record.day !== day) stallServings += Object.values(record.stallServings ?? {}).reduce((sum, n) => sum + n, 0);
+    }
+    stallServings += Object.values(this.currentDayRecord.stallServings ?? {}).reduce((sum, n) => sum + n, 0);
+    return {
+      day,
+      level: this.playerData.level,
+      totalCustomersServed: this.statistics.totalCustomersServed,
+      totalRevenue: this.statistics.totalRevenue,
+      staffCount: this.staff.length,
+      reputation: this.playerData.reputation,
+      regularsCount: Object.keys(this.regulars).length,
+      stallServings,
+    };
+  }
+
+  public getStoryProgressList(): StoryChapterProgress[] {
+    return getStoryProgressList(this.goals.story ?? createInitialStoryState(), this.getStoryContext());
+  }
+
+  public beginStoryChapter(chapterId: string): { success: boolean; reason?: string } {
+    const story = structuredClone(this.goals.story ?? createInitialStoryState());
+    const ctx = this.getStoryContext();
+    const res = beginChapter(story, chapterId, ctx);
+    if (!res.success) return { success: false, reason: res.reason };
+    this.goals = { ...this.goals, story };
+    if (res.rivalDays) {
+      // Chương siêu thị đối diện kích hoạt sự kiện thị trường tương ứng (thay đợt cũ nếu còn).
+      const events = this.market.events.filter(event => event.id !== RIVAL_EVENT_ID);
+      events.push({ id: RIVAL_EVENT_ID, startDay: ctx.day, endDay: ctx.day + res.rivalDays - 1 });
+      this.market = { ...this.market, events };
+    }
+    this.notifyStateChanged();
+    return { success: true };
+  }
+
+  /** Thưởng chương cốt truyện là tiền thưởng ngoài sổ GAAP, như thưởng mục tiêu/nhiệm vụ. */
+  public claimStoryChapter(chapterId: string): { success: boolean; reason?: string } {
+    const story = structuredClone(this.goals.story ?? createInitialStoryState());
+    const res = claimChapter(story, chapterId, this.getStoryContext());
+    if (!res.success) return { success: false, reason: res.reason };
+    this.goals = { ...this.goals, story };
+    this.playerData.money += res.reward.money;
+    if (res.reward.experience) this.addExperience(res.reward.experience);
+    this.notifyStateChanged();
+    return { success: true };
+  }
+
   private productSalesOn = (day: number) =>
     day === this.currentDayRecord.day ? this.currentDayRecord : this.dailyRecords[day];
 
@@ -1511,10 +1642,9 @@ export class GameSimulation {
       const affordable = Math.floor(Math.min(remainingBudget, rule.maxBudget) / unitPrice);
       quantity = Math.min(quantity, affordable);
       if (product.storageType === 'cold') {
-        quantity = Math.min(quantity, Math.max(0, COLD_WAREHOUSE_CAPACITY - this.getColdWarehouseCount() - coldIncoming()));
+        quantity = Math.min(quantity, Math.max(0, this.getColdCapacity() - this.getColdWarehouseCount() - coldIncoming()));
       } else {
-        const ambientFree = Math.max(0, totalWarehouseCells({ warehouseTier: this.warehouseTier, storageRackCount: this.storageRackCount }) - this.getAmbientWarehouseCount());
-        quantity = Math.min(quantity, Math.max(0, ambientFree - coldIncoming()));
+        quantity = this.ambientFitQuantity(rule.productId, quantity);
       }
       if (quantity <= 0) {
         report.skipped.push({ ruleId: rule.id, productId: rule.productId, reason: 'Vượt ngân sách hoặc không còn chỗ kho mát.' });
@@ -2014,7 +2144,7 @@ export class GameSimulation {
       tomorrow: tableFor(day + 1),
       leadDays: Math.max(1, quotes.deliveryDay - day),
       budget: this.playerData.money,
-      coldFree: Math.max(0, COLD_WAREHOUSE_CAPACITY - this.reservedColdWarehouseCount()),
+      coldFree: Math.max(0, this.getColdCapacity() - this.reservedColdWarehouseCount()),
     });
   }
 
@@ -2052,6 +2182,7 @@ export class GameSimulation {
       dailyRecords: this.dailyRecords,
       currentDayRecord: this.currentDayRecord,
       coldWarehouseCount: this.getColdWarehouseCount(),
+      maxColdCapacity: this.getColdCapacity(),
       budget,
       unitPriceOf: supplierId ? (productId: string) => this.wholesaleUnitPrice(supplierId, productId) : undefined,
       expectedDailyOf: (productId: string) => expected.get(productId),
@@ -2182,6 +2313,10 @@ export class GameSimulation {
       const lots = normalizeLots(item.quantity, item.lots, item.productId, day);
       return { productId: item.productId, quantity: sumLots(lots), lots };
     }).filter((item) => item.quantity > 0);
+    const relocated = relocateMisplacedFixtures(this.fixtures, this.storedFixtures);
+    this.fixtures = relocated.fixtures;
+    this.storedFixtures = relocated.stored;
+    if (relocated.movedIds.length) this.callbacks.onToast?.(`${relocated.movedIds.length} nội thất đặt sai tòa nhà đã được cất vào kho nội thất.`, 'warn');
     this.fixtures = syncSlotChildren(upgradeFixtureSlots(this.fixtures));
     this.storedFixtures = syncSlotChildren(upgradeFixtureSlots(this.storedFixtures));
     this.fixtures = this.fixtures.map((fixture) => {
@@ -2407,7 +2542,8 @@ export class GameSimulation {
           this.callbacks.onToast?.('Khách đã dùng xong bàn. Cần dọn trước lượt tiếp theo.', 'info');
           this.notifyStateChanged();
         }
-      }
+      },
+      (diner) => this.serveDiningAddOns(diner)
     );
     const demandTable = this.refreshDemandTable();
     const availability = availabilityFactor(demandTable, this.fixtures.filter(isSalesFixture).map(shelf => ({
@@ -2606,12 +2742,11 @@ export class GameSimulation {
     }
     const actualAmount = Math.min(amount, available);
     if (PRODUCT_MAP[fixture.assignedProductId]?.storageType === 'cold') {
-      if (this.reservedColdWarehouseCount() + actualAmount > COLD_WAREHOUSE_CAPACITY) {
+      if (this.reservedColdWarehouseCount() + actualAmount > this.getColdCapacity()) {
         return { success: false, actualQuantity: 0, reason: 'cold_storage_full' };
       }
     } else {
-      const ambientFree = Math.max(0, totalWarehouseCells({ warehouseTier: this.warehouseTier, storageRackCount: this.storageRackCount }) - this.getAmbientWarehouseCount());
-      if (this.getAmbientWarehouseCount() + actualAmount > totalWarehouseCells({ warehouseTier: this.warehouseTier, storageRackCount: this.storageRackCount })) {
+      if (this.ambientFitQuantity(fixture.assignedProductId, actualAmount) < actualAmount) {
         return { success: false, actualQuantity: 0, reason: 'ambient_storage_full' };
       }
     }
@@ -2822,6 +2957,7 @@ export class GameSimulation {
     if (fix.broken) return { assigned: false, productId: null, filled: 0, reason: 'broken' };
 
     const isColdFixture = fix.type === 'refrigerator';
+    const isXoiShelf = fixtureBuilding(fix) === 'xoi';
 
     // Kệ đã có sản phẩm và còn hàng → chỉ châm thêm
     if (fix.assignedProductId && fix.currentStock > 0) {
@@ -2850,6 +2986,8 @@ export class GameSimulation {
         // Đúng loại kệ (lạnh/thường)
         const needsCold = prod.storageType === 'cold';
         if (needsCold !== isColdFixture) return false;
+        // Món xôi nấu ở quầy xôi chỉ tự châm vào kệ của tiệm xôi; kệ tiệm xôi chỉ tự nhận món xôi (tránh đổ đồ tạp hóa làm kệ bị khóa nhóm hàng).
+        if (isXoiShelf !== XOI_DISH_IDS.has(inv.productId)) return false;
         return true;
       })
       .sort((a, b) => {
@@ -3065,17 +3203,22 @@ export class GameSimulation {
 
     if (coldItemCount > 0) {
       const reservedCold = this.reservedColdWarehouseCount();
-      if (reservedCold + coldItemCount > COLD_WAREHOUSE_CAPACITY) {
-        reasons.push(`Kho mát không đủ chỗ (cần thêm ${coldItemCount}, còn ${Math.max(0, COLD_WAREHOUSE_CAPACITY - reservedCold)} chỗ)`);
+      if (reservedCold + coldItemCount > this.getColdCapacity()) {
+        reasons.push(`Kho mát không đủ chỗ (cần thêm ${coldItemCount}, còn ${Math.max(0, this.getColdCapacity() - reservedCold)} chỗ)`);
       }
     }
 
-    const ambientItemCount = itemCount - coldItemCount;
-    if (ambientItemCount > 0) {
-      const totalCells = totalWarehouseCells({ warehouseTier: this.warehouseTier, storageRackCount: this.storageRackCount });
-      const usedAmbient = this.getAmbientWarehouseCount();
-      if (usedAmbient + ambientItemCount > totalCells) {
-        reasons.push(`Kho lạnh/ambient không đủ chỗ (cần thêm ${ambientItemCount}, còn ${Math.max(0, totalCells - usedAmbient)} chỗ)`);
+    let ambientNeededCells = 0;
+    for (const [productId, quantity] of Object.entries(qtyByProduct)) {
+      const product = PRODUCT_MAP[productId];
+      if (product.storageType === 'cold') continue;
+      const held = this.ambientUnitsOf(productId);
+      ambientNeededCells += warehouseCellsFor(product, held + quantity) - warehouseCellsFor(product, held);
+    }
+    if (ambientNeededCells > 0) {
+      const freeCells = this.ambientFreeCells();
+      if (ambientNeededCells > freeCells) {
+        reasons.push(`Kho thường không đủ chỗ (cần thêm ${ambientNeededCells} ô, còn ${freeCells} ô)`);
       }
     }
 
@@ -3177,7 +3320,7 @@ export class GameSimulation {
 
       if (product?.storageType === 'cold') {
         const currentCold = this.getColdWarehouseCount();
-        const freeCold = Math.max(0, COLD_WAREHOUSE_CAPACITY - currentCold);
+        const freeCold = Math.max(0, this.getColdCapacity() - currentCold);
         const fitQty = Math.min(order.quantity, freeCold);
         const overflowQty = order.quantity - fitQty;
 
@@ -3249,18 +3392,16 @@ export class GameSimulation {
 
     let stowQty = item.quantity;
     if (product.storageType === 'cold') {
-      const freeCold = Math.max(0, COLD_WAREHOUSE_CAPACITY - this.getColdWarehouseCount());
+      const freeCold = Math.max(0, this.getColdCapacity() - this.getColdWarehouseCount());
       if (freeCold <= 0) {
         return { success: false, stowedQuantity: 0, reason: 'cold_warehouse_full' };
       }
       stowQty = Math.min(item.quantity, freeCold);
     } else {
-      const totalCells = totalWarehouseCells({ warehouseTier: this.warehouseTier, storageRackCount: this.storageRackCount });
-      const freeAmbient = Math.max(0, totalCells - this.getAmbientWarehouseCount());
-      if (freeAmbient <= 0) {
+      stowQty = this.ambientFitQuantity(item.productId, item.quantity);
+      if (stowQty <= 0) {
         return { success: false, stowedQuantity: 0, reason: 'ambient_warehouse_full' };
       }
-      stowQty = Math.min(item.quantity, freeAmbient);
     }
 
     const slot = this.inventory.find((i) => i.productId === item.productId);
@@ -3335,7 +3476,7 @@ export class GameSimulation {
       if (!terms.eligible || basketTotal <= 0 || basketTotal > terms.available) return false;
     }
 
-    const diningTableId = dineIn && this.isDineInBasketEligible(customer) ? this.availableDiningTableId() : undefined;
+    const diningTableId = dineIn && this.isDineInBasketEligible(customer) ? this.availableDiningTableId(customer.buildingId) : undefined;
     if (dineIn && !diningTableId) return false;
 
     if (customer.thief && customer.basket && customer.basket.length > 0) return this.resolveShoplifter(customer, checkoutId);
@@ -3601,7 +3742,7 @@ export class GameSimulation {
       productionJobSequence: this.productionJobSequence,
       priceHistory: structuredClone(this.priceHistory),
       heatmap: structuredClone(this.heatmap),
-      reviews: this.reviews.map(review => ({ ...review })),
+      reviews: this.reviewsManager.exportReviews(),
       security: { ...this.security, incidents: this.security.incidents.map(i => ({ ...i })), policeCases: this.security.policeCases.map(c => ({ ...c })) },
       partyOrders: structuredClone(this.partyOrders),
       goals: structuredClone(this.goals),
@@ -3659,12 +3800,12 @@ export class GameSimulation {
     this.heatmap = sanitizeHeatmap(saveData.heatmap);
     this.heatmapLastTile.clear();
     this.productionJobSequence = Math.max(saveData.productionJobSequence ?? 0, ...this.productionJobs.map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
-    this.reviews = sanitizeReviews(saveData.reviews);
+    this.reviewsManager.importReviews(saveData.reviews);
     this.security = sanitizeSecurity(saveData.security);
     this.partyOrders = saveData.partyOrders
       ? refreshAvailablePartyOrders(structuredClone(saveData.partyOrders), saveData.worldTime.day, this.playerData.level)
       : refreshAvailablePartyOrders(createInitialPartyOrderState(), saveData.worldTime.day, this.playerData.level);
-    this.goals = saveData.goals ? structuredClone(saveData.goals) : createInitialGoalState();
+    this.goals = this.withStory(saveData.goals ? structuredClone(saveData.goals) : createInitialGoalState());
     this.skills = saveData.skills ? structuredClone(saveData.skills) : createInitialSkillState();
     this.ledger = (saveData.ledger ?? []).map((e) => ({ ...e }));
     this.hydrateIdSequences(saveData);
