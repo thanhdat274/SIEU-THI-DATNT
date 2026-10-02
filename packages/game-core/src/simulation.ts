@@ -151,6 +151,8 @@ import { DINING, DINING_ADD_ON_RULES, RIVAL_EVENT_ID, fixtureBuilding, XOI_DISH_
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS } from '@game/data';
 import { RestockClaimManager } from './restock-claims';
+import { StorageManager } from './storage';
+import { LedgerManager } from './ledger';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
@@ -220,18 +222,13 @@ export class GameSimulation {
   private autoBuyReports: Record<number, AutoBuyReport> = {};
   private pendingOrders: SupplierOrder[];
   private orderSequence = 0;
-  private ledgerSequence = 0;
-  private dailyRecords: Record<number, DailyRecord> = {};
+  private ledgerManager: LedgerManager;
   private quests: QuestState = emptyQuestState();
   private stalls: StallState = emptyStallState();
   private market: MarketState;
   private demandTable?: DemandTable;
   private demandBuildCount = 0;
   private noticeThrottle = new NoticeThrottle();
-  private currentDayRecord: DailyRecord;
-  private ledger: LedgerEntry[] = [];
-  private closedDayIds: Set<number> = new Set();
-  private statistics: SaveGameData['statistics'];
   private createdAt: string;
   private tileMap: GameTileMap;
   private collisionSystem: CollisionSystem;
@@ -256,8 +253,33 @@ export class GameSimulation {
   private skills: SkillState;
   private streetTraffic = new StreetTrafficManager();
   private logisticsManager = new StoreLogisticsManager();
+  private storageManager: StorageManager;
   private warehouseTier: number;
   private storageRackCount: number;
+
+  /** Tham chiếu đến currentDayRecord từ ledgerManager. */
+  private get currentDayRecord(): DailyRecord { return this.ledgerManager.getCurrentDayRecordRef(); }
+  private set currentDayRecord(val: DailyRecord) { this.ledgerManager.setCurrentDayRecord(val); }
+
+  /** Proxy đến ledgerManager cho statistics (đọc/ghi). */
+  private get statistics(): SaveGameData['statistics'] { return this.ledgerManager.getStatisticsRef(); }
+  private set statistics(val: SaveGameData['statistics']) { /* write-through: manager giữ state nội bộ */ }
+
+  /** Proxy đến ledgerManager cho ledgerSequence (đọc/ghi). */
+  private get ledgerSequence(): number { return this.ledgerManager.getLedgerSequence(); }
+  private set ledgerSequence(val: number) { this.ledgerManager.setLedgerSequence(val); }
+
+  /** Proxy đến ledgerManager cho dailyRecords (đọc/ghi). */
+  private get dailyRecords(): Record<number, DailyRecord> { return this.ledgerManager.getDailyRecordsRef(); }
+  private set dailyRecords(val: Record<number, DailyRecord>) { /* write-through to manager ref */ }
+
+  /** Proxy đến ledgerManager cho closedDayIds (đọc/ghi). */
+  private get closedDayIds(): Set<number> { return this.ledgerManager.getClosedDayIdsRef(); }
+  private set closedDayIds(val: Set<number>) { /* write-through to manager ref */ }
+
+  /** Proxy đến ledgerManager cho ledger entries (đọc/ghi). */
+  private get ledger(): LedgerEntry[] { return this.ledgerManager.getLedger(); }
+  private set ledger(val: LedgerEntry[]) { /* write-through to manager ref */ }
 
   private activeFixture: StoreFixture | null = null;
   private playerSpeed: number = 130; // Pixels per second
@@ -274,6 +296,8 @@ export class GameSimulation {
   ) {
     this.weatherSeed = initialSave.id ?? 'local_save';
     this.playerData = normalizePlayerProgression(initialSave.player);
+    this.storageManager = new StorageManager(initialSave);
+    this.ledgerManager = new LedgerManager(initialSave);
     this.warehouseTier = initialSave.warehouseTier ?? 0;
     this.storageRackCount = initialSave.storageRackCount ?? 0;
     this.sellingPrices = { ...(initialSave.sellingPrices ?? {}) };
@@ -334,11 +358,8 @@ export class GameSimulation {
       initialSave.customerSpawnCooldown ?? 4
     );
     this.customerManager.restoreDiningRoutes(this.tileMap, this.fixtures);
-    this.dailyRecords = initialSave.dailyRecords ? structuredClone(initialSave.dailyRecords) : {};
     this.quests = normalizeQuestState(initialSave.quests);
     this.stalls = normalizeStallState(initialSave.stalls);
-    this.closedDayIds = new Set(initialSave.closedDayIds ?? []);
-    this.ledger = (initialSave.ledger ?? []).map((e) => ({ ...e }));
     this.hydrateIdSequences(initialSave);
     if (initialSave.currentDayRecord) {
       this.currentDayRecord = { ...initialSave.currentDayRecord };
