@@ -23,7 +23,7 @@ export interface FixtureShopItem {
   id: string;
   name: string;
   kind: FixtureShopKind;
-  type: 'shelf_wooden' | 'shelf_glass' | 'refrigerator' | 'decor' | 'cashier_counter' | 'dining_table';
+  type: 'shelf_wooden' | 'shelf_glass' | 'refrigerator' | 'decor' | 'cashier_counter' | 'dining_table' | 'kitchen_station';
   widthTiles: number;
   heightTiles: number;
   maxCapacity: number;
@@ -53,8 +53,8 @@ export const FIXTURE_SHOP: FixtureShopItem[] = [
   { id: 'shelf_3', name: 'Kệ 3', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 12, cost: 320_000, unlockLevel: 21, functional: true, requiresPlot: 'D', },
   { id: 'shelf_4', name: 'Kệ 4', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 16, cost: 500_000, unlockLevel: 29, functional: true, requiresPlot: 'D', },
   { id: 'counter2', name: 'Quầy thu ngân 2', kind: 'counter', type: 'cashier_counter', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 300_000, unlockLevel: 15, functional: true, limit: 1, requiresPlot: 'D', },
-  { id: 'food_grill', name: 'Bếp nướng', kind: 'food', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 260_000, unlockLevel: 21, functional: false, requiresPlot: 'E', },
-  { id: 'hot_kettle', name: 'Ấm nước nóng', kind: 'food', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 90_000, unlockLevel: 21, functional: false, requiresPlot: 'E', },
+  { id: 'food_grill', name: 'Bếp nướng', kind: 'food', type: 'kitchen_station', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 260_000, unlockLevel: 21, functional: true, requiresPlot: 'E', },
+  { id: 'hot_kettle', name: 'Ấm nước nóng', kind: 'food', type: 'kitchen_station', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 90_000, unlockLevel: 21, functional: true, requiresPlot: 'E', },
   { id: 'bread_case', name: 'Tủ bánh mì', kind: 'food', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 180_000, unlockLevel: 21, functional: false, requiresPlot: 'E', },
   { id: 'food_table_2', name: 'Bàn 2 chỗ', kind: 'seating', type: 'dining_table', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 50_000, unlockLevel: 23, functional: true, },
   { id: 'food_table_4', name: 'Bàn 4 chỗ', kind: 'seating', type: 'dining_table', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 90_000, unlockLevel: 23, functional: true, },

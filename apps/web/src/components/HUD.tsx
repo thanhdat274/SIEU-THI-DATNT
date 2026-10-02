@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getSeasonForDay, seasonDaysLeft } from '@game/data';
+import { PRESTIGE_XP_PER_STAR, getSeasonForDay, seasonDaysLeft } from '@game/data';
 import { describeRainForecast, type RainForecast } from '@game/core';
 import { useGameStore } from '../store/useGameStore';
 import { money, PixelButton, PixelIcon, PixelProgress, PixelStat } from './pixel';
@@ -30,13 +30,16 @@ interface HUDProps {
   onOpenReviews?: () => void;
   /** Mở màn An ninh (chỉ truyền khi đã mở khóa). */
   onOpenSecurity?: () => void;
+  onOpenAnalytics?: () => void;
+  audioMuted?: boolean;
+  onToggleAudioMute?: () => void;
   /** Số kệ/tủ mát đang mòn hoặc hỏng; > 0 thì hiện nút Sửa chữa. */
   maintenanceAlerts?: number;
   onOpenMaintenance?: () => void;
   onOpenPlanogram?: () => void;
   emptySlotsCount?: number;
 }
-export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, maintenanceAlerts = 0, onOpenMaintenance, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0}) => {
+export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0}) => {
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore();
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const season = getSeasonForDay(worldTime.day);
@@ -74,9 +77,9 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
             ? <button type="button" onClick={onOpenReviews} title="Xem lời khách nhận xét" aria-label={`Đánh giá khách ${customerRating.toFixed(1)} sao, xem nhận xét`} style={{ all: 'unset', cursor: 'pointer' }}><PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/></button>
             : <PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/>}
           <button type="button" className="hud-level" onClick={onOpenLevelRoadmap} title="Xem tiến độ XP và các mốc mở khóa" aria-label={`Cấp ${player.level}, xem lộ trình cấp`}>
-            <strong>Cấp {player.level}</strong>
-            <span className="muted"> · {player.experience}/{player.experienceToNextLevel}</span>
-            <PixelProgress label="Kinh nghiệm" value={player.experience} max={player.experienceToNextLevel}/>
+            <strong>Cấp {player.level}{(player.prestigeStars ?? 0) > 0 ? ` · ★${player.prestigeStars}` : ''}</strong>
+            <span className="muted"> · {player.experienceToNextLevel > 0 ? `${player.experience}/${player.experienceToNextLevel}` : `Prestige ${player.prestigeXp ?? 0}/${PRESTIGE_XP_PER_STAR}`}</span>
+            <PixelProgress label="Kinh nghiệm" value={player.experienceToNextLevel > 0 ? player.experience : (player.prestigeXp ?? 0)} max={player.experienceToNextLevel > 0 ? player.experienceToNextLevel : PRESTIGE_XP_PER_STAR}/>
           </button>
           {wageDebt > 0 && <button type="button" className="hud-debt" onClick={onOpenStaff} title="Nợ lương nhân viên: bấm để xem" aria-label={`Nợ lương ${money(wageDebt)}`}><PixelIcon name="coin" size={16}/><span>Nợ lương {money(wageDebt)}</span></button>}
           <div className="hud-customers"><PixelStat label="Khách trong tiệm" value={activeCustomers} icon="person"/></div>
@@ -143,6 +146,9 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
           onOpenTax={onOpenTax}
           onOpenStalls={onOpenStalls}
           onOpenSecurity={onOpenSecurity}
+          onOpenAnalytics={onOpenAnalytics}
+          audioMuted={audioMuted}
+          onToggleAudioMute={onToggleAudioMute}
           maintenanceAlerts={maintenanceAlerts}
           onOpenMaintenance={onOpenMaintenance}
           onOpenLevelRoadmap={onOpenLevelRoadmap}

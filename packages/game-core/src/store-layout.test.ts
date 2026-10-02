@@ -84,7 +84,7 @@ export function runStoreLayoutTests() {
   assert.equal(buyShopFixture(rich, 'khong_co', 7, 5, 0).error, 'unknown_item', 'Món lạ bị từ chối');
   const lowLevel = structuredClone(rich); lowLevel.player.level = 1;
   assert.equal(buyShopFixture(lowLevel, 'shelf', 7, 6, 0).error, 'level', 'Chưa đủ cấp không mua được');
-  assert.equal(buyShopFixture(rich, 'food_grill', 7, 6, 0).error, 'unavailable', 'Món chưa có chức năng không cho mua');
+  assert.equal(buyShopFixture(rich, 'drink_counter', 7, 6, 0).error, 'unavailable', 'Món chưa có chức năng không cho mua');
   const big = buyShopFixture(rich, 'shelf_double', 7, 6, 0);
   assert.equal(big.save?.storeLayout.fixtures.filter(item => item.parentId === 'shelf_wooden_buy_1').length, 7, 'Kệ đôi có 8 ô (1 chính + 7 phụ)');
 

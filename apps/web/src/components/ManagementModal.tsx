@@ -25,6 +25,9 @@ interface ManagementModalProps {
   onOpenTax?: () => void;
   onOpenStalls?: () => void;
   onOpenSecurity?: () => void;
+  onOpenAnalytics?: () => void;
+  audioMuted?: boolean;
+  onToggleAudioMute?: () => void;
   maintenanceAlerts?: number;
   onOpenMaintenance?: () => void;
   onOpenLevelRoadmap?: () => void;
@@ -48,6 +51,9 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
   onOpenTax,
   onOpenStalls,
   onOpenSecurity,
+  onOpenAnalytics,
+  audioMuted = false,
+  onToggleAudioMute,
   maintenanceAlerts = 0,
   onOpenMaintenance,
   onOpenLevelRoadmap,
@@ -125,6 +131,13 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
       id: 'business',
       title: '📊 Kinh doanh & Vận hành',
       items: [
+        onOpenAnalytics && {
+          id: 'analytics',
+          label: 'Phân tích',
+          desc: 'Biểu đồ giá, doanh số và bản đồ nhiệt lưu lượng khách',
+          icon: 'book' as IconName,
+          action: () => handleSelect(onOpenAnalytics),
+        },
         onOpenPlanogram && {
           id: 'planogram',
           label: 'Sơ đồ & Bày hàng',
@@ -185,6 +198,15 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
           desc: 'Lưu thủ công save game và quản lý dữ liệu máy chủ',
           icon: 'save' as IconName,
           action: () => handleSelect(onToggleSaveModal),
+        },
+        onToggleAudioMute && {
+          id: 'audio',
+          label: audioMuted ? 'Bật âm thanh' : 'Tắt âm thanh',
+          desc: 'Âm thanh môi trường theo thời tiết và giờ; chỉ phát sau khi bạn tương tác, tạm dừng khi tab ẩn',
+          icon: 'speed' as IconName,
+          action: () => onToggleAudioMute(),
+          badge: audioMuted ? 'Đang tắt' : undefined,
+          badgeVariant: 'gold' as const,
         },
       ].filter(Boolean) as ManagementItem[],
     },

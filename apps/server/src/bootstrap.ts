@@ -40,7 +40,7 @@ Get('ready')(HealthController.prototype, 'readiness', Object.getOwnPropertyDescr
 
 /** Loại lệnh được commit. Chỉ một phần được server phát lại; phần còn lại vẫn tin save client (I-01, xem THONG-KE.md). */
 const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
-  'respond_party_order', 'fulfill_party_order', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title', 'layout_batch', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup',
+  'respond_party_order', 'fulfill_party_order', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title', 'layout_batch', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production',
   'set_price', 'restock', 'unstock', 'store_status', 'buy_stall', 'claim_quest', 'order', 'stow', 'stow_all',
   'planogram_assignment', 'planogram_restock', 'auto_restock', 'checkout', 'advance_day', 'change_speed',
   'hire_staff', 'set_staff_shift', 'assign_refill_job', 'dispose_stock', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve', 'maintain_fixture', 'security_action',
@@ -99,7 +99,7 @@ export class GameController {
       throw new BadRequestException('Loại lệnh không được hỗ trợ.');
     }
     const serverReplayedCommands = new Set([
-      'checkout', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'respond_party_order', 'fulfill_party_order', 'claim_goal',
+      'checkout', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production', 'respond_party_order', 'fulfill_party_order', 'claim_goal',
       'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title', 'maintain_fixture', 'security_action',
     ]);
     if (serverReplayedCommands.has(payload?.type)) {

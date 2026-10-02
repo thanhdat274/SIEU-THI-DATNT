@@ -703,7 +703,7 @@ export class PixiGameViewport {
       badgeBg.rect(badgeX, 34, badgeW, 13);
       badgeBg.fill({ color: 0xeadcc9, alpha: 0.96 });
       badgeBg.stroke({ color: 0xbfa993, width: 1 });
-      badgeBg.visible = fix.type !== 'cashier_counter' && fix.type !== 'decor' && fix.type !== 'dining_table';
+      badgeBg.visible = fix.type !== 'cashier_counter' && fix.type !== 'decor' && fix.type !== 'dining_table' && fix.type !== 'kitchen_station';
       container.addChild(badgeBg);
 
       // Dot marker (Green = Full, Yellow = Low stock, Red = Out of stock)
@@ -1284,7 +1284,7 @@ export class PixiGameViewport {
           if(entry.lastState!==key){entry.sprite.texture=this.textures.getTexture(key);entry.lastState=key;entry.dotMarker.clear().rect(5,38,6,6).fill(state==='empty'?0xb64c3d:0x357f72);}
           entry.stockText.text=receiving?`${count} đơn`:cold?`${count}/40`:`${count} món`;
           entry.stockText.visible=true;entry.dotMarker.visible=true;
-        } else if (fix.type !== 'cashier_counter' && fix.type !== 'decor') {
+        } else if (fix.type !== 'cashier_counter' && fix.type !== 'decor' && fix.type !== 'kitchen_station') {
           const group = allFixtures.filter(item => item.id === fix.id || item.parentId === fix.id);
           const limit = group.reduce((sum, item) => sum + effectiveShelfCapacity(item.maxCapacity, (item.assignedProductId && PRODUCT_MAP[item.assignedProductId]?.shelfCapacity) || item.maxCapacity, this.simulation.getShelfCapacityBonus()), 0);
           const stock = group.reduce((sum, item) => sum + item.currentStock, 0);

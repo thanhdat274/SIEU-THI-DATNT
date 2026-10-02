@@ -195,6 +195,8 @@ export class WorldRuntime {
         success = this.simulation.completeCustomerCheckout(p.checkoutId, p.fixtureId, p.onCredit ?? false, p.dineIn ?? false);
       } else if (p.type === 'repay_customer_credit') {
         success = this.simulation.repayCustomerCredit(p.creditId);
+      } else if (p.type === 'start_production') {
+        success = this.simulation.startProduction(p.recipeId, p.stationId).success;
       } else if (p.type === 'clean_dining_table') {
         success = this.simulation.cleanDiningTable(p.fixtureId);
       } else if (p.type === 'assign_dining_cleanup') {

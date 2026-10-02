@@ -8,7 +8,7 @@
 
 ## Plan sau: chọn lọc gameplay từ game tham khảo — 01/10/2026
 
-- OpenSpec `reference-gameplay-expansion` đang triển khai theo wave. Đã có code tiền giả, tín dụng khách quen và dine-in MVP (đồ ăn đóng gói, khách đi bàn, bàn bẩn, dọn bởi người chơi/nhân viên, server replay). Chưa chạy kiểm chứng; tham số kinh tế/thời lượng provisional. Recipe/production, prestige, biểu đồ, heatmap, checklist, âm thanh, replay và engine thuế còn chờ; test/build/playtest được gom về wave cuối theo yêu cầu.
+- OpenSpec `reference-gameplay-expansion` đang triển khai theo wave. Đã có code tiền giả, tín dụng khách quen và dine-in MVP (đồ ăn đóng gói, khách đi bàn, bàn bẩn, dọn bởi người chơi/nhân viên, server replay). Chưa chạy kiểm chứng; tham số kinh tế/thời lượng provisional. Recipe/production đã có code (bếp nướng/ấm nước, 3 công thức, test lõi PASS, chưa browser QA); prestige và công cụ quản lý (biểu đồ, heatmap, checklist, âm thanh, replay lõi) đã có code, test lõi PASS, chưa browser QA; biểu đồ, heatmap, checklist, âm thanh, replay và engine thuế còn chờ; test/build/playtest được gom về wave cuối theo yêu cầu.
 - Chuỗi chi nhánh, loại hình cửa hàng và luân chuyển nội bộ để plan sau; chờ thiết kế mở rộng trên cùng khu đất. Tách từng wave thành change riêng trước khi bắt đầu code.
 
 ## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)

@@ -2,7 +2,7 @@
 
 ## Mở rộng gameplay (01/10/2026)
 
-- [>] `reference-gameplay-expansion`: đã code tiền giả, tín dụng khách quen và dine-in MVP. Dine-in dùng đồ ăn đóng gói từ kệ, khách đi tới bàn, ăn 60 giây game, bàn bẩn; người chơi hoặc nhân viên bổ sung hàng có thể dọn. Checkout, thu nợ, dọn bàn và giao job nhân viên được server replay. Chưa chạy test/typecheck/build/browser QA; balance provisional, verification gom ở cuối.
+- [>] `reference-gameplay-expansion`: đã code tiền giả, tín dụng khách quen và dine-in MVP. Dine-in dùng đồ ăn đóng gói từ kệ, khách đi tới bàn, ăn 60 giây game, bàn bẩn; người chơi hoặc nhân viên bổ sung hàng có thể dọn. Checkout, thu nợ, dọn bàn và giao job nhân viên được server replay. Wave B (bếp/công thức/sản xuất, 3.1–3.4) đã có code + test lõi `production.test.ts` và `tsc -b` PASS (02/10/2026); `store-logistics.test.ts` đang FAIL (ngoài phạm vi); Mục 8.1–8.4 và 8.8 đã chốt (02/10/2026); 8.5 (mô phỏng cân bằng), 8.6 (browser QA còn thiếu) và 8.7 (chờ TAX-0) còn mở. Wave C prestige (4.1–4.2) và Wave D (biểu đồ, heatmap, checklist, âm thanh, replay lõi) có code + test lõi; chưa browser QA, balance provisional.
 - [ ] Wave A còn validation/verification trong section 8; recipe/production vẫn là Wave B và chưa có.
 - [ ] Wave B: công thức và sản xuất tại bếp; Wave C: prestige; Wave D: biểu đồ/heatmap/checklist/audio/replay; Wave E: tax chỉ sau TAX-0.
 - [ ] Chuỗi chi nhánh/loại hình cửa hàng/luân chuyển nội bộ vẫn plan sau, phụ thuộc thiết kế mở rộng và phân khu trên cùng khu đất.

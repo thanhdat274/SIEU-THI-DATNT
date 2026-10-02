@@ -59,3 +59,14 @@ export function maxActiveCustomersForLevel(level: number): number {
 export function saleExperienceMultiplier(level: number): number {
   return level >= 30 ? 0.55 : level >= 20 ? 0.7 : 1;
 }
+
+/** Prestige sau cấp tối đa. Số liệu provisional, chưa playtest. */
+export const PRESTIGE_XP_PER_STAR = 5000;
+export const PRESTIGE_MAX_STARS = 10;
+/** Mỗi sao tăng lưu lượng khách 1% (tối đa +10%); không tăng XP hay doanh thu trực tiếp nên không tạo vòng lặp XP. */
+export const PRESTIGE_TRAFFIC_PER_STAR = 0.01;
+
+export function prestigeTrafficMultiplier(stars: number): number {
+  const clamped = Math.max(0, Math.min(PRESTIGE_MAX_STARS, Number.isFinite(stars) ? Math.floor(stars) : 0));
+  return 1 + clamped * PRESTIGE_TRAFFIC_PER_STAR;
+}

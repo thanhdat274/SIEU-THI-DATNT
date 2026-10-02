@@ -53,6 +53,19 @@ export interface InventoryItem {
   lots?: StockLot[];
 }
 
+/** Mẻ sản xuất đang chạy tại một trạm bếp. Nguyên liệu đã trừ khi bắt đầu; `inputCost` là tổng giá vốn các lô đã lấy. */
+export interface ProductionJob {
+  id: string;
+  recipeId: string;
+  stationId: string;
+  startedDay: number;
+  /** Giây game còn lại cho tới khi mẻ xong. */
+  remaining: number;
+  inputCost: number;
+  /** Hạn dùng sớm nhất trong các lô nguyên liệu đã dùng (đầu ra không sống lâu hơn nguyên liệu). */
+  inputExpiresOnDay: number;
+}
+
 export interface StockLot {
   quantity: number;
   expiresOnDay: number;
@@ -580,7 +593,7 @@ export interface RestockJobTarget {
   availableInInventory: number;
 }
 
-export type FixtureType = 'decor' | 'shelf_wooden' | 'shelf_glass' | 'cashier_counter' | 'refrigerator' | 'dining_table' | 'warehouse_dry' | 'warehouse_cold' | 'warehouse_receiving';
+export type FixtureType = 'decor' | 'shelf_wooden' | 'shelf_glass' | 'cashier_counter' | 'refrigerator' | 'dining_table' | 'kitchen_station' | 'warehouse_dry' | 'warehouse_cold' | 'warehouse_receiving';
 export const isWarehouseFixture = (fixture: Pick<StoreFixture, 'type'>): boolean => fixture.type.startsWith('warehouse_');
 export const isSalesFixture = (fixture: Pick<StoreFixture, 'type'>): boolean => fixture.type === 'shelf_wooden' || fixture.type === 'shelf_glass' || fixture.type === 'refrigerator';
 
@@ -664,6 +677,10 @@ export interface PlayerData {
   direction: Direction;
   activeTitle?: string;
   unlockedTitles?: string[];
+  /** XP dư tích lũy hướng tới sao prestige tiếp theo (chỉ tăng khi đã ở cấp tối đa); thiếu = 0. */
+  prestigeXp?: number;
+  /** Số sao prestige đã đạt (0..PRESTIGE_MAX_STARS); thiếu = 0. */
+  prestigeStars?: number;
 }
 
 export interface TitleDef {
@@ -839,6 +856,12 @@ export interface SaveGameData {
   customerCredits?: CustomerCreditAccount[];
   customerCreditSequence?: number;
   diningDirtyTableIds?: string[];
+  productionJobs?: ProductionJob[];
+  productionJobSequence?: number;
+  /** Giá bán thực đã chốt cuối mỗi ngày theo sản phẩm (tối đa 60 điểm gần nhất); ngày không có điểm = thiếu dữ liệu. */
+  priceHistory?: Record<string, Array<{ day: number; price: number }>>;
+  /** Số lượt khách bước vào từng ô (khóa "x,y") theo ngày, giữ tối đa 7 ngày gần nhất; chỉ tổng hợp, không lưu đường đi cá nhân. */
+  heatmap?: Record<number, Record<string, number>>;
   partyOrders?: PartyOrderState;
   goals?: GoalState;
   skills?: SkillState;
@@ -951,6 +974,7 @@ export type GameCommandPayload =
   | { type: 'unstock'; fixtureId: string; quantity: number }
   | { type: 'checkout'; checkoutId: string; fixtureId: string; onCredit?: boolean; dineIn?: boolean }
   | { type: 'repay_customer_credit'; creditId: string }
+  | { type: 'start_production'; recipeId: string; stationId: string }
   | { type: 'clean_dining_table'; fixtureId: string }
   | { type: 'assign_dining_cleanup'; staffId: string; fixtureId: string }
   | { type: 'set_price'; productId: string; price: number | null }
@@ -1168,6 +1192,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'unstock': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
     case 'checkout': return nonEmptyString(p.checkoutId) && nonEmptyString(p.fixtureId) && (p.onCredit === undefined || typeof p.onCredit === 'boolean') && (p.dineIn === undefined || typeof p.dineIn === 'boolean');
     case 'repay_customer_credit': return nonEmptyString(p.creditId);
+    case 'start_production': return nonEmptyString(p.recipeId) && nonEmptyString(p.stationId);
     case 'clean_dining_table': return nonEmptyString(p.fixtureId);
     case 'assign_dining_cleanup': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
     case 'set_price': return nonEmptyString(p.productId) && (p.price === null || (Number.isSafeInteger(p.price) && Number(p.price) > 0));

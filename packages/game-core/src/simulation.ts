@@ -1,6 +1,7 @@
 import {
   GameTileMap,
   InventoryItem,
+  ProductionJob,
   PlayerData,
   SaveGameData,
   StoreFixture,
@@ -70,6 +71,9 @@ import {
   PRODUCT_CATEGORY_LABELS,
   WEATHER_MAP,
   MAX_PLAYER_LEVEL,
+  PRESTIGE_XP_PER_STAR,
+  PRESTIGE_MAX_STARS,
+  prestigeTrafficMultiplier,
   getLevelTrafficMultiplier,
   maxActiveCustomersForLevel,
   xpToNextLevel,
@@ -143,6 +147,9 @@ import {
   getSkillModifier,
   hasPerk,
 } from './skills';
+import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS } from '@game/data';
+import { aggregateHeatmap, appendPricePoint, pruneHeatmap, sanitizeHeatmap, sanitizePriceHistory } from './analytics';
+import { addProductionOutput, consumeIngredients, missingIngredients, sanitizeProductionJobs } from './production';
 import { LONG_TERM_GOALS, WEEKLY_QUESTS, PARTY_ORDER_MAP, TITLES, effectiveShelfCapacity, SECURITY_RULES } from '@game/data';
 import { getUnlockedTitles, setActiveTitle, type TitleContext } from './titles';
 import { syncSlotChildren, type TitleDef } from '@game/shared';
@@ -230,6 +237,12 @@ export class GameSimulation {
   private customerCredits: CustomerCreditAccount[] = [];
   private customerCreditSequence = 0;
   private diningDirtyTableIds = new Set<string>();
+  private productionJobs: ProductionJob[] = [];
+  private productionJobSequence = 0;
+  private priceHistory: NonNullable<SaveGameData['priceHistory']> = {};
+  private heatmap: NonNullable<SaveGameData['heatmap']> = {};
+  /** Ô cuối cùng của từng khách, chỉ trong bộ nhớ, để đếm lượt vào ô thay vì mỗi khung hình. */
+  private heatmapLastTile = new Map<string, string>();
   private reviews: CustomerReview[] = [];
   private security: SecurityState = emptySecurityState();
   private partyOrders: PartyOrderState;
@@ -286,6 +299,10 @@ export class GameSimulation {
     this.customerCredits = (initialSave.customerCredits ?? []).filter(c => c && typeof c.id === 'string' && typeof c.regularId === 'string' && Number.isFinite(c.balance) && c.balance >= 0).map(c => ({ ...c }));
     this.customerCreditSequence = Math.max(initialSave.customerCreditSequence ?? 0, ...this.customerCredits.map(c => Number(c.id.match(/^credit-(\d+)$/)?.[1] ?? 0)));
     this.diningDirtyTableIds = new Set((initialSave.diningDirtyTableIds ?? []).filter(id => typeof id === 'string'));
+    this.productionJobs = sanitizeProductionJobs(initialSave.productionJobs);
+    this.priceHistory = sanitizePriceHistory(initialSave.priceHistory);
+    this.heatmap = sanitizeHeatmap(initialSave.heatmap);
+    this.productionJobSequence = Math.max(initialSave.productionJobSequence ?? 0, ...this.productionJobs.map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
     this.reviews = sanitizeReviews(initialSave.reviews);
     this.security = sanitizeSecurity(initialSave.security);
     this.partyOrders = initialSave.partyOrders
@@ -557,6 +574,79 @@ export class GameSimulation {
     return true;
   }
 
+  public getPriceHistory(productId: string): Array<{ day: number; price: number }> { return (this.priceHistory[productId] ?? []).map(point => ({ ...point })); }
+  public getHeatmap(days: number): Record<string, number> { return aggregateHeatmap(this.heatmap, this.clock.getTime().day, days); }
+
+  private recordHeatmap(): void {
+    const day = this.clock.getTime().day;
+    const seen = new Set<string>();
+    for (const customer of this.customerManager.getCustomers()) {
+      if (!customer.id) continue;
+      const tile = `${Math.floor(customer.position.x / TILE_SIZE)},${Math.floor(customer.position.y / TILE_SIZE)}`;
+      seen.add(customer.id);
+      if (this.heatmapLastTile.get(customer.id) === tile) continue;
+      this.heatmapLastTile.set(customer.id, tile);
+      const today = (this.heatmap[day] ??= {});
+      today[tile] = (today[tile] ?? 0) + 1;
+    }
+    for (const id of this.heatmapLastTile.keys()) if (!seen.has(id)) this.heatmapLastTile.delete(id);
+  }
+
+  public getProductionJobs(): ProductionJob[] { return this.productionJobs.map(job => ({ ...job })); }
+
+  /** Công thức đã mở khóa theo cấp hiện tại cho một trạm (theo `shopId`). */
+  public getStationRecipes(stationId: string): Recipe[] {
+    const station = this.fixtures.find(item => item.id === stationId && item.type === 'kitchen_station');
+    return station ? RECIPES.filter(recipe => recipe.stationShopId === station.shopId && recipe.unlockLevel <= this.playerData.level) : [];
+  }
+
+  /** Nhân viên bổ sung hàng đang trong ca làm bếp nhanh hơn (provisional, chưa playtest). */
+  private productionSpeed(): number {
+    return this.staff.some(member => member.role === 'refill' && this.isStaffOnShift(member)) ? 1.5 : 1;
+  }
+
+  public startProduction(recipeId: string, stationId: string): { success: boolean; reason?: string } {
+    const recipe = RECIPE_MAP[recipeId];
+    const station = this.fixtures.find(item => item.id === stationId && item.type === 'kitchen_station');
+    if (!recipe || !station) return { success: false, reason: 'Không tìm thấy công thức hoặc trạm.' };
+    if (station.broken || station.shopId !== recipe.stationShopId) return { success: false, reason: 'Trạm này không nấu được công thức đó.' };
+    if (this.playerData.level < recipe.unlockLevel) return { success: false, reason: `Cần đạt cấp ${recipe.unlockLevel}.` };
+    if (this.productionJobs.some(job => job.stationId === stationId)) return { success: false, reason: 'Trạm đang bận một mẻ khác.' };
+    const day = this.clock.getTime().day;
+    const missing = missingIngredients(this.inventory, recipe, day);
+    if (missing.length > 0) {
+      return { success: false, reason: `Thiếu nguyên liệu: ${missing.map(m => `${PRODUCT_MAP[m.productId]?.name ?? m.productId} (${m.available}/${m.needed})`).join(', ')}.` };
+    }
+    const used = consumeIngredients(this.inventory, recipe, day);
+    if (!used) return { success: false, reason: 'Không đủ nguyên liệu.' };
+    this.inventory = this.inventory.filter(item => item.quantity > 0);
+    this.productionJobSequence += 1;
+    this.productionJobs.push({ id: `job-${this.productionJobSequence}`, recipeId, stationId, startedDay: day, remaining: recipe.durationSeconds, inputCost: used.inputCost, inputExpiresOnDay: used.inputExpiresOnDay });
+    this.callbacks.onToast?.(`Bắt đầu nấu ${recipe.name}.`, 'info');
+    this.notifyStateChanged();
+    return { success: true };
+  }
+
+  private updateProduction(dt: number): void {
+    if (this.productionJobs.length === 0) return;
+    const speed = this.productionSpeed();
+    const day = this.clock.getTime().day;
+    const finished: ProductionJob[] = [];
+    for (const job of this.productionJobs) {
+      job.remaining -= dt * speed;
+      if (job.remaining <= 0) finished.push(job);
+    }
+    if (finished.length === 0) return;
+    this.productionJobs = this.productionJobs.filter(job => !finished.includes(job));
+    for (const job of finished) {
+      const recipe = RECIPE_MAP[job.recipeId];
+      if (!recipe) continue;
+      addProductionOutput(this.inventory, recipe, job, day, PRODUCT_MAP[recipe.outputProductId]?.expirationRules?.daysToSpoil);
+      this.callbacks.onToast?.(`${recipe.name} đã xong: +${recipe.outputQuantity} vào kho.`, 'success');
+    }
+    this.notifyStateChanged();
+  }
+
   public getDiningTableState(fixtureId: string): { seats: number; occupied: number; dirty: boolean; enabled: boolean } {
     const fixture = this.fixtures.find(item => item.id === fixtureId && item.type === 'dining_table');
     if (!fixture) return { seats: 0, occupied: 0, dirty: false, enabled: false };
@@ -631,7 +721,7 @@ export class GameSimulation {
     const key = demandContextKey(ctx, this.playerData.reputation);
     if (!this.demandTable || this.demandTable.key !== key) {
       this.demandTable = buildDemandTable({
-        ctx, products: ALL_PRODUCTS, reputation: this.playerData.reputation,
+        ctx, products: SELLABLE_PRODUCTS, reputation: this.playerData.reputation,
         priceFactor: (productId) => demandPriceFactor(priceRatio(this.sellingPrice(productId), this.referencePrice(productId))),
       });
       this.demandBuildCount++;
@@ -761,8 +851,8 @@ export class GameSimulation {
 
   /** Mỗi ngày đẩy chỉ số giá từng nhóm một bước về mục tiêu (áp lực nhu cầu × khan hiếm × chi phí). */
   private updatePriceIndex(day: number): void {
-    const table = buildDemandTable({ ctx: buildMarketContext(this.market, day, 12), products: ALL_PRODUCTS, reputation: this.playerData.reputation });
-    const targets = computePriceTargets({ products: ALL_PRODUCTS, table, stockUnits: this.stockUnitsByCategory(), activeCategories: this.activePriceCategories(day) });
+    const table = buildDemandTable({ ctx: buildMarketContext(this.market, day, 12), products: SELLABLE_PRODUCTS, reputation: this.playerData.reputation });
+    const targets = computePriceTargets({ products: SELLABLE_PRODUCTS, table, stockUnits: this.stockUnitsByCategory(), activeCategories: this.activePriceCategories(day) });
     this.market = { ...this.market, priceIndex: advancePriceIndex(this.market.priceIndex, targets), priceTargets: targets };
   }
 
@@ -827,7 +917,7 @@ export class GameSimulation {
       weekday: WEEKDAY_LABELS[weekdayOf(time.day)],
       traffic: {
         ...table.traffic,
-        value: trafficAtLevel(table.traffic.value * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier, this.playerData.level),
+        value: trafficAtLevel(table.traffic.value * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * prestigeTrafficMultiplier(this.playerData.prestigeStars ?? 0), this.playerData.level),
         factors: [
           ...table.traffic.factors,
           { ruleId: 'customer_ratings', label: 'Đánh giá khách', factor: reputationTrafficMultiplier(this.playerData.ratings) },
@@ -1836,6 +1926,10 @@ export class GameSimulation {
     rec.productSales = { ...(rec.productSales ?? this.currentDayRecord.productSales ?? {}) };
     this.dailyRecords[day] = rec;
     this.closedDayIds.add(day);
+    const priced = new Set<string>(Object.keys(rec.productSales ?? {}));
+    for (const fixture of this.fixtures) if (isSalesFixture(fixture) && fixture.assignedProductId) priced.add(fixture.assignedProductId);
+    for (const productId of priced) if (PRODUCT_MAP[productId]) appendPricePoint(this.priceHistory, productId, day, this.sellingPrice(productId));
+    pruneHeatmap(this.heatmap, day);
   }
 
   /** Record or increment product sales in daily record */
@@ -2300,7 +2394,7 @@ export class GameSimulation {
       this.clock.getTime().day,
       this.statistics.totalCustomersServed,
       {
-        traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * (1 + getSkillModifier(this.skills, 'traffic_boost')), this.playerData.level),
+        traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * (1 + getSkillModifier(this.skills, 'traffic_boost')) * prestigeTrafficMultiplier(this.playerData.prestigeStars ?? 0), this.playerData.level),
         maxConcurrentCustomers: maxActiveCustomersForLevel(this.playerData.level),
         weightOf: (productId) => demandTable.perProduct[productId]?.demand ?? 0.01,
       },
@@ -2314,7 +2408,9 @@ export class GameSimulation {
     this.streetTraffic.update(worldDt, this.clock.getTime().hour, this.getRainIntensity(), this.clock.getTime().day * 1337);
     this.logisticsManager.update(worldDt, this.clock.getTime().hour);
 
+    this.recordHeatmap();
     this.updateStaffWorkers(worldDt);
+    this.updateProduction(worldDt);
     this.updateCashierWorkers(worldDt);
 
     // Auto checkout for customer waiting at counter if checkoutWait timer reaches 0
@@ -3346,7 +3442,11 @@ export class GameSimulation {
    * Add experience points & handle level up
    */
   public addExperience(xp: number): void {
-    if (!Number.isFinite(xp) || xp <= 0 || this.playerData.level >= MAX_PLAYER_LEVEL) return;
+    if (!Number.isFinite(xp) || xp <= 0) return;
+    if (this.playerData.level >= MAX_PLAYER_LEVEL) {
+      this.addPrestigeExperience(xp);
+      return;
+    }
     this.playerData.experience += xp;
     while (this.playerData.level < MAX_PLAYER_LEVEL && this.playerData.experience >= this.playerData.experienceToNextLevel) {
       this.playerData.experience -= this.playerData.experienceToNextLevel;
@@ -3356,7 +3456,25 @@ export class GameSimulation {
         : xpToNextLevel(this.playerData.level);
       this.callbacks.onLevelUp?.(this.playerData.level);
     }
-    if (this.playerData.level >= MAX_PLAYER_LEVEL) this.playerData.experience = 0;
+    if (this.playerData.level >= MAX_PLAYER_LEVEL) {
+      const overflow = this.playerData.experience;
+      this.playerData.experience = 0;
+      this.addPrestigeExperience(overflow);
+      return;
+    }
+    this.notifyStateChanged();
+  }
+
+  /** XP dư ở cấp tối đa đổi thành sao prestige theo ngưỡng cố định, tối đa PRESTIGE_MAX_STARS; không đặt lại cấp. */
+  private addPrestigeExperience(xp: number): void {
+    const stars = this.playerData.prestigeStars ?? 0;
+    if (xp > 0 && stars < PRESTIGE_MAX_STARS) {
+      const total = (this.playerData.prestigeXp ?? 0) + xp;
+      const gained = Math.min(PRESTIGE_MAX_STARS - stars, Math.floor(total / PRESTIGE_XP_PER_STAR));
+      this.playerData.prestigeStars = stars + gained;
+      this.playerData.prestigeXp = this.playerData.prestigeStars >= PRESTIGE_MAX_STARS ? 0 : total - gained * PRESTIGE_XP_PER_STAR;
+      if (gained > 0) this.callbacks.onToast?.(`Đạt ${this.playerData.prestigeStars}/${PRESTIGE_MAX_STARS} sao uy tín (prestige).`, 'success');
+    }
     this.notifyStateChanged();
   }
 
@@ -3425,6 +3543,10 @@ export class GameSimulation {
       customerCredits: this.getCustomerCredits(),
       customerCreditSequence: this.customerCreditSequence,
       diningDirtyTableIds: [...this.diningDirtyTableIds],
+      productionJobs: this.productionJobs.map(job => ({ ...job })),
+      productionJobSequence: this.productionJobSequence,
+      priceHistory: structuredClone(this.priceHistory),
+      heatmap: structuredClone(this.heatmap),
       reviews: this.reviews.map(review => ({ ...review })),
       security: { ...this.security, incidents: this.security.incidents.map(i => ({ ...i })), policeCases: this.security.policeCases.map(c => ({ ...c })) },
       partyOrders: structuredClone(this.partyOrders),
@@ -3476,6 +3598,11 @@ export class GameSimulation {
     this.customerCredits = (saveData.customerCredits ?? []).filter(c => c && typeof c.id === 'string' && typeof c.regularId === 'string' && Number.isFinite(c.balance) && c.balance >= 0).map(c => ({ ...c }));
     this.customerCreditSequence = Math.max(saveData.customerCreditSequence ?? 0, ...this.customerCredits.map(c => Number(c.id.match(/^credit-(\d+)$/)?.[1] ?? 0)));
     this.diningDirtyTableIds = new Set((saveData.diningDirtyTableIds ?? []).filter(id => typeof id === 'string'));
+    this.productionJobs = sanitizeProductionJobs(saveData.productionJobs);
+    this.priceHistory = sanitizePriceHistory(saveData.priceHistory);
+    this.heatmap = sanitizeHeatmap(saveData.heatmap);
+    this.heatmapLastTile.clear();
+    this.productionJobSequence = Math.max(saveData.productionJobSequence ?? 0, ...this.productionJobs.map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
     this.reviews = sanitizeReviews(saveData.reviews);
     this.security = sanitizeSecurity(saveData.security);
     this.partyOrders = saveData.partyOrders

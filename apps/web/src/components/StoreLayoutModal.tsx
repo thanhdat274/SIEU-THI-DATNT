@@ -476,7 +476,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                     <div className="layout-inspector-info">
                       <div className="inspector-title-row">
                         <strong className="inspector-name">{catalogName(selected)}</strong>
-                        <span className="inspector-badge">{selected.type === 'cashier_counter' ? 'Thu ngân' : selected.type === 'dining_table' ? 'Bàn ăn' : 'Kệ bán hàng'}</span>
+                        <span className="inspector-badge">{selected.type === 'cashier_counter' ? 'Thu ngân' : selected.type === 'dining_table' ? 'Bàn ăn' : selected.type === 'kitchen_station' ? 'Trạm bếp' : 'Kệ bán hàng'}</span>
                         <span className="inspector-state-pill">{selectMode === 'adjust' ? 'Đang di chuyển' : 'Đã cố định'}</span>
                       </div>
                       <div className="inspector-details-row">

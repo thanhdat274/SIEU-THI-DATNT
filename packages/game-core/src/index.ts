@@ -39,3 +39,7 @@ export * from './skills';
 export * from './titles';
 export * from './decor';
 export * from './store-logistics';
+export * from './production';
+export * from './analytics';
+export * from './ambient-audio';
+export * from './replay';

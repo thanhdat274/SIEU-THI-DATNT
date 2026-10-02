@@ -1,3 +1,4 @@
+import { PRODUCED_PRODUCTS } from './recipes';
 import { Product, ProductCategory, StorageType } from '@game/shared';
 
 export const STARTER_PRODUCTS: Product[] = [
@@ -3723,13 +3724,16 @@ export const ALL_PRODUCTS: Product[] = [
   ...SEASONAL_PRODUCTS,
 ];
 
+/** Hàng bán được: catalog nhập từ nhà cung cấp + hàng bếp tự sản xuất (dùng cho nhu cầu và chọn hàng lên kệ). */
+export const SELLABLE_PRODUCTS: Product[] = [...ALL_PRODUCTS, ...PRODUCED_PRODUCTS];
+
 export const PRODUCT_CATEGORY_LABELS: Record<ProductCategory, string> = {
   instant_noodles: 'Mì ăn liền', snacks: 'Bánh ăn vặt', candy: 'Kẹo', bottled_water: 'Nước suối',
   soft_drinks: 'Nước ngọt', milk: 'Sữa', bread: 'Bánh mì', eggs: 'Trứng',
   cooking_ingredients: 'Gia vị', household: 'Đồ gia dụng',
 };
 
-export const PRODUCT_MAP: Record<string, Product> = ALL_PRODUCTS.reduce(
+export const PRODUCT_MAP: Record<string, Product> = [...ALL_PRODUCTS, ...PRODUCED_PRODUCTS].reduce(
   (acc, prod) => {
     acc[prod.id] = prod;
     return acc;

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { StoreFixture, InventoryItem, isSalesFixture, isUsableSalesFixture, slotGroup } from '@game/shared';
-import { PRODUCT_MAP, ALL_PRODUCTS, effectiveShelfCapacity, FIXTURE_SHOP } from '@game/data';
+import { PRODUCT_MAP, SELLABLE_PRODUCTS, effectiveShelfCapacity, FIXTURE_SHOP } from '@game/data';
 import { fixturePreviewUrl } from '@game/renderer';
 import { PixelDialog, PixelButton, PixelIcon, ProductSlot, PixelProgress, EmptyState } from './pixel';
 import './store-planogram.css';
@@ -197,7 +197,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
   const compatibleProducts = useMemo(() => {
     if (!slotToChange) return [];
     const isCold = slotToChange.parent.type === 'refrigerator';
-    return ALL_PRODUCTS.filter(p => isCold ? p.storageType === 'cold' : p.storageType === 'ambient');
+    return SELLABLE_PRODUCTS.filter(p => isCold ? p.storageType === 'cold' : p.storageType === 'ambient');
   }, [slotToChange]);
 
   const handleSelectNewProduct = (productId: string) => {

@@ -1,4 +1,5 @@
 export * from './products';
+export * from './recipes';
 export * from './map';
 export * from './traffic';
 export * from './arrival-modes';
