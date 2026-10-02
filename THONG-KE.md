@@ -94,7 +94,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | S42 | Content editor (catalog/map) | ⚪ | `tools/content-editor/README.md` | Chỉ README. |
 | S43 | CI/CD, formatter | ⚪ | — | Không có `.github`, không formatter. |
 | S44 | Nhật ký đánh giá bằng chữ / khách quay lại theo review | ⚪ | — | Mới có sao + lý do walkout. |
-| S45 | Nhiều cơ sở/ghé thăm tiệm khác | ⚪ | — | Được ghi "hướng sau". |
+| S45 | Nhiều cơ sở/ghé thăm tiệm khác | 🟡 | `game-data/buildings.ts`, `map.ts`, `land.ts`, `game-core/store-layout.ts`, `customers.ts`, `renderer/viewport.ts`, `StoreLayoutModal.tsx` | Mới có **một** cơ sở thêm: tiệm xôi riêng trên cùng bản đồ (OpenSpec `xoi-shop-same-land-strip`, xem `tổng hợp.md` 02/10/2026). Chợ, cổng trường, khu công nghiệp và luân chuyển nội bộ vẫn chưa có. |
 
 ---
 
