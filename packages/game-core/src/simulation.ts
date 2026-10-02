@@ -95,7 +95,7 @@ import { rainIntensityAt, rainForecastForDay, describeRainForecast, roadWetnessA
 import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance } from './security';
 import { assessCounterfeit } from './counterfeit';
 import { appendReview, composeReview, sanitizeReviews, summarizeReviews } from './reviews';
-import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
+import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, staffServiceTargets, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { slotCategoryConflict } from './shelf-slots';
 import { decorAttraction, decorTrafficMultiplier } from './decor';
 import { buyLandPlot, validateStoreLayout, type LayoutResult } from './store-layout';
@@ -332,6 +332,7 @@ export class GameSimulation {
       for (const member of this.staff) { this.finishStaffJob(member, true); member.diningTask = undefined; }
       this.processPayroll(day - 1);
       this.processStalls(day - 1);
+      this.runStaffMaintenance();
       const worn = wearOvernight(this.fixtures, day, this.playerData.level);
       if (worn.length) this.callbacks.onMaintenanceNotice?.(worn);
       this.decayStock(day - 1); // trước khi thị trường sang ngày mới: sự kiện của ngày vừa qua còn trong trạng thái
@@ -1027,6 +1028,20 @@ export class GameSimulation {
 
   /** Bảo trì, sửa nhẹ hoặc mua mới một kệ/tủ mát; trừ tiền, ghi sổ cái và chi phí ngày. Mua mới giữ chỗ đặt và hàng đang bày. */
   public maintainFixture(fixtureId: string, action: MaintenanceAction): { success: boolean; reason?: string; cost?: number } {
+    return this.applyMaintenanceAction(fixtureId, action, false);
+  }
+
+  /** Nhân viên châm hàng tự bảo trì đồ đã mòn trước khi đêm làm hỏng; trả phí như người chơi. */
+  private runStaffMaintenance(): void {
+    let count = 0, total = 0;
+    for (const id of staffServiceTargets(this.fixtures, this.staff)) {
+      const result = this.applyMaintenanceAction(id, 'service', true);
+      if (result.success) { count += 1; total += result.cost ?? 0; }
+    }
+    if (count > 0) this.callbacks.onToast?.(`Nhân viên đã bảo trì ${count} món nội thất (${total.toLocaleString('vi-VN')} VND).`);
+  }
+
+  private applyMaintenanceAction(fixtureId: string, action: MaintenanceAction, byStaff: boolean): { success: boolean; reason?: string; cost?: number } {
     const fixture = this.fixtures.find((f) => f.id === fixtureId);
     const result = applyMaintenance(fixture, action, this.playerData.money, this.playerData.level);
     if (!result.success) return { success: false, reason: MAINTENANCE_FAILURE_TEXT[result.reason] };
@@ -1035,7 +1050,7 @@ export class GameSimulation {
     this.currentDayRecord.maintenanceCost = (this.currentDayRecord.maintenanceCost ?? 0) + result.cost;
     this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
     const verb = action === 'replace' ? 'Mua mới' : action === 'repair' ? 'Sửa' : 'Bảo trì';
-    this.recordLedger({ day, type: 'maintenance', amount: result.cost, description: `${verb} ${fixture!.label}` });
+    this.recordLedger({ day, type: 'maintenance', amount: result.cost, description: `${verb} ${fixture!.label}${byStaff ? ' (nhân viên)' : ''}` });
     this.notifyStateChanged();
     return { success: true, cost: result.cost };
   }

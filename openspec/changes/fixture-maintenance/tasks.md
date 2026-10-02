@@ -27,5 +27,5 @@ Trạng thái 01/10/2026: nhóm 1–4 đã có code; test tự động (`mainten
 - [ ] 4.3 Cân bằng: chi phí bảo trì so với doanh thu, ngưỡng và xác suất hỏng, phí sửa.
 - [x] 4.4a (02/10/2026) Chỉ báo "đã mòn" ngay trên kệ (vạch hổ phách, `viewport.ts`) và tủ mát hỏng làm hàng lạnh nhanh hỏng (+1 ngày hạn mỗi đêm, test `maintenance.test.ts`).
 - [x] 4.4b (02/10/2026) Server phát lại `maintain_fixture` (`world-runtime.test.ts`).
-- [ ] 4.4 Còn lại: đưa chi phí vào mô-đun thuế (chờ TAX-0, mô-đun thuế chưa có quy tắc chi phí); bảo trì nhân viên/thợ.
+- [ ] 4.4 Còn lại: đưa chi phí vào mô-đun thuế (chờ TAX-0, mô-đun thuế chưa có quy tắc chi phí); bảo trì nhân viên/thợ: 02/10/2026 đã làm bản gộp qua đêm cho nhân viên châm hàng (không hoạt ảnh, không theo ca, chưa có thợ riêng; test `maintenance.test.ts`), chưa kiểm trình duyệt.
 - [ ] 4.5 Cập nhật `TASKS.md`/`ROADMAP.md` khi chốt nghiệm thu.
