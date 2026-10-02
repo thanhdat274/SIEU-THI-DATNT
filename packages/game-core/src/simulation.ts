@@ -156,6 +156,7 @@ import { LedgerManager } from './ledger';
 import { StaffManager } from './staff-manager';
 import { DiningManager } from './dining-manager';
 import { ProductionManager } from './production-manager';
+import { SecurityManager } from './security-manager';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
@@ -247,7 +248,7 @@ export class GameSimulation {
   /** Ô cuối cùng của từng khách, chỉ trong bộ nhớ, để đếm lượt vào ô thay vì mỗi khung hình. */
   private heatmapLastTile = new Map<string, string>();
   private reviewsManager: ReviewsManager;
-  private security: SecurityState = emptySecurityState();
+  private securityManager: SecurityManager;
   private partyOrders: PartyOrderState;
   private goals: GoalState;
   private skills: SkillState;
@@ -277,6 +278,9 @@ export class GameSimulation {
 
   private warehouseTier: number;
   private storageRackCount: number;
+
+  /** Proxy đến securityManager cho security state (đọc/ghi). */
+  private get security(): SecurityState { return this.securityManager.getRef(); }
 
   /** Tham chiếu đến currentDayRecord từ ledgerManager. */
   private get currentDayRecord(): DailyRecord { return this.ledgerManager.getCurrentDayRecordRef(); }
@@ -355,7 +359,7 @@ export class GameSimulation {
     this.heatmap = sanitizeHeatmap(initialSave.heatmap);
     this.productionJobSequence = Math.max(initialSave.productionJobSequence ?? 0, ...this.productionManager.getRef().map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
     this.reviewsManager = new ReviewsManager(initialSave.reviews);
-    this.security = sanitizeSecurity(initialSave.security);
+    this.securityManager = new SecurityManager(initialSave.security);
     this.partyOrders = initialSave.partyOrders
       ? refreshAvailablePartyOrders(structuredClone(initialSave.partyOrders), initialSave.worldTime.day, this.playerData.level)
       : refreshAvailablePartyOrders(createInitialPartyOrderState(), initialSave.worldTime.day, this.playerData.level);
@@ -3839,7 +3843,7 @@ export class GameSimulation {
     this.heatmapLastTile.clear();
     this.productionJobSequence = Math.max(saveData.productionJobSequence ?? 0, ...this.productionManager.getRef().map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
     this.reviewsManager.importReviews(saveData.reviews);
-    this.security = sanitizeSecurity(saveData.security);
+    this.securityManager.load({ security: saveData.security });
     this.partyOrders = saveData.partyOrders
       ? refreshAvailablePartyOrders(structuredClone(saveData.partyOrders), saveData.worldTime.day, this.playerData.level)
       : refreshAvailablePartyOrders(createInitialPartyOrderState(), saveData.worldTime.day, this.playerData.level);
