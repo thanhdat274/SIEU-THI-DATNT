@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "tsx src/save-file.test.ts && tsx src/supplier-cart.test.ts"
+    "test": "tsx src/save-file.test.ts && tsx src/supplier-cart.test.ts && tsx --tsconfig tsconfig.test.json src/db.test.ts && tsx --tsconfig tsconfig.test.json src/slot-lock.test.ts"
   },
   "dependencies": {
     "@game/core": "*",
@@ -29,6 +29,7 @@
     "@types/react-dom": "^19",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitejs/plugin-react": "^6",
+    "fake-indexeddb": "^6.2.5",
     "tailwindcss": "^4",
     "vite": "^8"
   }
