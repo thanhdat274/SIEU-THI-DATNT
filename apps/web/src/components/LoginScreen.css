@@ -1162,6 +1162,7 @@
 .badge-teal   { background: #e3f2ec; color: #236348; border: 1.5px solid #a8d5c2; }
 .badge-amber  { background: #fdf5df; color: #946914; border: 1.5px solid #e8d197; }
 .badge-gold   { background: #fcf1d8; color: #a37912; border: 1.5px solid #ecd38c; }
+.badge-silver { background: #f0f4f8; color: #475569; border: 1.5px solid #cbd5e1; }
 
 .card-text-body {
   flex: 1;

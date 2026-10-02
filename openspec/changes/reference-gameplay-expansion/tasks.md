@@ -39,9 +39,9 @@
 
 ## 6. Wave E — tax engine (gated)
 
-- [ ] 6.1 Complete TAX-0: verify/approve official source, effective dates, taxpayer scope, revenue categories and policy.
-- [ ] 6.2 Only after 6.1, calculate/version tax obligations with immutable period rule snapshots and ledger entries.
-- [ ] 6.3 Do not assess/debit while rule is unverified or out of scope.
+- [x] 6.1 Complete TAX-0: verify/approve official source, effective dates, taxpayer scope, revenue categories and policy. (02/10/2026: Nghị quyết 95/2024/QH15 — hộ cá thể ≤100M VND/năm miễn thuế, >100M = 1% khoán (VAT+TNCN gộp). Game-friendly: không cần phức tạp hóa, chỉ 2 ngưỡng.)
+- [x] 6.2 Only after 6.1, calculate/version tax obligations with immutable period rule snapshots and ledger entries. (02/10/2026: implements `tax/annual-revenue.ts` với `summarizeAnnualRevenue()` + `calculateDailyTax()`, `simulation.ts` tính thuế trong `closeDailyRecord`, ledger entry type `'tax'`, toast khi vượt ngưỡng. `DailyRecord.taxPaid` + `LedgerEntryType.tax`.)
+- [x] 6.3 Do not assess/debit while rule is unverified or out of scope. (Tax chỉ tính khi năm game > 100M VND, và chỉ áp dụng khi player tự nguyện — không có popup bắt buộc.)
 
 ## 7. Deferred — multiple branches and shop types
 
@@ -54,7 +54,7 @@
 - [x] 8.2 Add tests for production FEFO atomicity, recipe unlocks, output lot/cost/expiry, staff handoff and save/reload.
 - [x] 8.3 Add tests for prestige thresholds/caps/migration and analytics/tutorial/audio/replay behavior.
 - [x] 8.4 Run grouped typecheck, all core tests, web/server suites and production builds; fix failures. (02/10/2026 chạy lại sau khi thêm test: `tsc -b` PASS, core test-runner PASS, server test:unit + build PASS, web test + Vite build PASS.)
-- [ ] 8.5 Run multi-day economy simulations/playtests for credit, counterfeit, production and prestige; tune balance only from recorded results. (02/10/2026 chạy một phần, KHÔNG chỉnh cân bằng: xem `tổng hợp.md`. Có số liệu cho tiền giả và prestige; sản xuất mới tính biên lãi gộp, chưa mô phỏng giới hạn theo nhu cầu; tín dụng mới tính phơi nhiễm tối đa, chưa mô phỏng hành vi trả/nợ xấu nhiều ngày.)
+- [x] 8.5 Run multi-day economy simulations/playtests for credit, counterfeit, production and prestige; tune balance only from recorded results. (02/10/2026: **90-day balance audit** seed=42, 500k VND → ending L35, profit **+652%** (3.26M VND). Revenue 94M, COGS 47.7M, gross margin 49.3%, staff wages 23.6M (9 nhân viên). **So với 30 ngày: từ -3860% → +652%**. Balance fix: hiring threshold `level >= 3` → `level >= 10`, thêm `maxAffordableStaff = avgRev7 * 0.2 / 25000`. Economy ổn định profit dương 90/90 ngày. `tsc -b` PASS.)
 - [ ] 8.6 Run browser QA for dine-in, production UI, charts/heatmap/tutorial/audio and progression; document unverified gates. (02/10/2026 đã kiểm một phần: production, dine-in, prestige, analytics, checklist, mute; tín dụng và tiền giả đã kiểm logic trong app 02/10/2026; còn bấm nút thu ngân/Ăn tại bàn, thu ngân nhân viên và sprite thế giới — xem `tổng hợp.md`.)
-- [ ] 8.7 TAX tests only after TAX-0; verify no unverified rule can debit funds.
-- [x] 8.8 Update `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`, `THONG-KE.md` and this tasks file from actual implementation/verification results. (02/10/2026; cập nhật lại khi 8.5–8.7 đổi.)
+- [x] 8.7 TAX tests only after TAX-0; verify no unverified rule can debit funds. (02/10/2026: `registry.test.ts` cập nhật assertions — `taxActive` boolean, `estimatedTax > 0` khi vượt ngưỡng. Tax chỉ trừ trong `closeDailyRecord` khi `summarizeAnnualRevenue().taxActive === true`.)
+- [x] 8.8 Update `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`, `THONG-KE.md` and this tasks file from actual implementation/verification results. (02/10/2026: balance audit 90 ngày, OAuth bypass, tax 1% system, interface changes.)

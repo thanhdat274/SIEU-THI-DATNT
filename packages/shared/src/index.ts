@@ -352,7 +352,7 @@ export interface SecurityState {
   policeCases: PoliceCase[];
 }
 
-export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit';
+export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit' | 'tax';
 
 export interface LedgerEntry {
   id: string;
@@ -544,6 +544,7 @@ export interface DailyRecord {
   theftRecovered?: number; // Tiền thu hồi từ phạt kẻ trộm và công an trong ngày (thiếu = 0)
   counterfeitLoss?: number; // Mệnh giá tiền giả nhận nhầm trong ngày (thiếu = 0)
   badDebtCost?: number; // Khoản phải thu đã xóa nợ xấu trong ngày (thiếu = 0)
+  taxPaid?: number; // Thuế đã trừ trong ngày (VAT+TNCN gộp, hộ cá thể: 1% doanh thu)
   grossProfit: number; // revenue - cogs
   netProfit: number; // revenue - cogs - spoilageCost - wagesPaid
   customersServed: number; // Distinct customers served
@@ -644,10 +645,11 @@ export function syncSlotChildren(fixtures: StoreFixture[]): StoreFixture[] {
       const id = `${parent.id}#s${n}`;
       const existing = fixtures.find(item => item.id === id);
       out.push({
-        id, type: parent.type, widthTiles: parent.widthTiles, heightTiles: parent.heightTiles, maxCapacity: Math.max(6, Math.round(parent.maxCapacity / 2)),
+        id, type: parent.type, widthTiles: parent.widthTiles, heightTiles: parent.heightTiles,
         currentStock: 0, stockLots: [], ...existing,
         tileX: parent.tileX, tileY: parent.tileY, rotation: parent.rotation, parentId: parent.id, label: `${parent.label} · ô ${n}`,
         wear: parent.wear, broken: parent.broken,
+        maxCapacity: Math.min(20, parent.maxCapacity),
       });
     }
   }
@@ -869,6 +871,10 @@ export interface SaveGameData {
   reviews?: CustomerReview[];
   /** An ninh: camera, báo công an, sự cố gần đây và hồ sơ công an đang mở. */
   security?: SecurityState;
+  /** Chỉ số tier kho hàng (0–3). Thiếu = 0. */
+  warehouseTier?: number;
+  /** Số kệ kho storage_rack đã mua. Thiếu = 0. */
+  storageRackCount?: number;
 }
 
 export interface RegularCustomerProgress {
@@ -988,6 +994,8 @@ export type GameCommandPayload =
       | { type: 'buy_plot'; plotId: string }
       | { type: 'buy_decor'; decorId: string }
       | { type: 'buy_fixture'; shopId: string; tileX: number; tileY: number; rotation: 0 | 90 | 180 | 270 }
+      | { type: 'buy_warehouse_tier'; tier: number }
+      | { type: 'buy_storage_rack' }
     > }
   | { type: 'buy_plot'; plotId: string }
   | { type: 'claim_quest'; questId: string }
@@ -1005,7 +1013,9 @@ export type GameCommandPayload =
   | { type: 'choose_perk'; perkId: string }
   | { type: 'set_title'; titleId?: string }
   | { type: 'maintain_fixture'; fixtureId: string; action: 'service' | 'repair' | 'replace' }
-  | { type: 'security_action'; action: 'buy_camera' | 'police_on' | 'police_off' };
+  | { type: 'security_action'; action: 'buy_camera' | 'police_on' | 'police_off' }
+  | { type: 'buy_warehouse_tier'; tier: number }
+  | { type: 'buy_storage_rack' };
 
 export interface GameCommand {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
@@ -1054,7 +1064,7 @@ export function isGameAvatar(value: unknown): value is GameAvatar {
     (value.displayName === undefined || (typeof value.displayName === 'string' && value.displayName.length <= 64));
 }
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 3;
+export const CURRENT_SAVE_SCHEMA_VERSION = 4;
 
 export interface SaveValidationResult {
   valid: boolean;
@@ -1150,7 +1160,7 @@ export interface TransferShelfResult {
 export interface UnstockShelfResult {
   success: boolean;
   actualQuantity: number;
-  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'empty_shelf' | 'invalid_amount' | 'cold_storage_full' | 'success';
+  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'empty_shelf' | 'invalid_amount' | 'cold_storage_full' | 'ambient_storage_full' | 'success';
 }
 
 export interface GameCommandResult {

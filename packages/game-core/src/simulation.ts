@@ -98,11 +98,12 @@ import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating,
 import { rainIntensityAt, rainForecastForDay, describeRainForecast, roadWetnessAt } from './weather';
 import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance } from './security';
 import { assessCounterfeit } from './counterfeit';
+import { summarizeAnnualRevenue, calculateDailyTax } from './tax/annual-revenue';
 import { appendReview, composeReview, sanitizeReviews, summarizeReviews } from './reviews';
 import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, staffServiceTargets, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { slotCategoryConflict } from './shelf-slots';
 import { decorAttraction, decorTrafficMultiplier } from './decor';
-import { buyLandPlot, validateStoreLayout, type LayoutResult } from './store-layout';
+import { buyLandPlot, validateStoreLayout, totalWarehouseCells, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
 import { expiryDay, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
@@ -250,6 +251,8 @@ export class GameSimulation {
   private skills: SkillState;
   private streetTraffic = new StreetTrafficManager();
   private logisticsManager = new StoreLogisticsManager();
+  private warehouseTier: number;
+  private storageRackCount: number;
 
   private activeFixture: StoreFixture | null = null;
   private playerSpeed: number = 130; // Pixels per second
@@ -266,6 +269,8 @@ export class GameSimulation {
   ) {
     this.weatherSeed = initialSave.id ?? 'local_save';
     this.playerData = normalizePlayerProgression(initialSave.player);
+    this.warehouseTier = initialSave.warehouseTier ?? 0;
+    this.storageRackCount = initialSave.storageRackCount ?? 0;
     this.sellingPrices = { ...(initialSave.sellingPrices ?? {}) };
     this.fixtures = initialSave.storeLayout.fixtures.map((f) => ({ ...f }));
     this.storedFixtures = (initialSave.storeLayout.storedFixtures ?? []).map(f => ({ ...f }));
@@ -501,6 +506,10 @@ export class GameSimulation {
 
   public getColdWarehouseCount(): number {
     return this.inventory.reduce((count, item) => count + (PRODUCT_MAP[item.productId]?.storageType === 'cold' ? item.quantity : 0), 0);
+  }
+
+  public getAmbientWarehouseCount(): number {
+    return this.inventory.reduce((count, item) => count + (PRODUCT_MAP[item.productId]?.storageType !== 'cold' ? item.quantity : 0), 0);
   }
 
   public getPendingOrders(): SupplierOrder[] {
@@ -1501,7 +1510,12 @@ export class GameSimulation {
       const unitPrice = Math.max(1, this.wholesaleUnitPrice(rule.supplierId, rule.productId, quantity));
       const affordable = Math.floor(Math.min(remainingBudget, rule.maxBudget) / unitPrice);
       quantity = Math.min(quantity, affordable);
-      if (product.storageType === 'cold') quantity = Math.min(quantity, Math.max(0, COLD_WAREHOUSE_CAPACITY - this.getColdWarehouseCount() - coldIncoming()));
+      if (product.storageType === 'cold') {
+        quantity = Math.min(quantity, Math.max(0, COLD_WAREHOUSE_CAPACITY - this.getColdWarehouseCount() - coldIncoming()));
+      } else {
+        const ambientFree = Math.max(0, totalWarehouseCells({ warehouseTier: this.warehouseTier, storageRackCount: this.storageRackCount }) - this.getAmbientWarehouseCount());
+        quantity = Math.min(quantity, Math.max(0, ambientFree - coldIncoming()));
+      }
       if (quantity <= 0) {
         report.skipped.push({ ruleId: rule.id, productId: rule.productId, reason: 'Vượt ngân sách hoặc không còn chỗ kho mát.' });
         continue;
@@ -1923,6 +1937,22 @@ export class GameSimulation {
     rec.closedAt = rec.closedAt ?? new Date().toISOString();
     rec.grossProfit = rec.revenue - rec.cogs;
     rec.netProfit = rec.grossProfit - rec.spoilageCost - rec.wagesPaid - (rec.maintenanceCost ?? 0) - (rec.theftCost ?? 0) + (rec.theftRecovered ?? 0) - (rec.counterfeitLoss ?? 0) - (rec.badDebtCost ?? 0);
+
+    // Thuế 1% khoán hộ cá thể: chỉ tính khi đóng ngày hiện tại
+    if (day === this.clock.getTime().day) {
+      const annual = summarizeAnnualRevenue(this.dailyRecords, day, this.currentDayRecord);
+      if (annual.taxActive) {
+        const tax = calculateDailyTax(rec.revenue, true);
+        rec.taxPaid = (rec.taxPaid ?? 0) + tax;
+        rec.netProfit -= tax;
+        this.playerData.money -= tax;
+        this.recordLedger({ day, type: 'tax', amount: tax, description: `Thuế khoán 1% (doanh thu ${rec.revenue.toLocaleString('vi-VN')} VND)` });
+        if (annual.progress < 1 && annual.progress + (tax / annual.revenue) >= 1) {
+          this.callbacks.onToast?.('📊 Đã vượt ngưỡng 100 triệu VND/năm — áp dụng thuế khoán 1% (VAT+TNCN gộp).', 'warn');
+        }
+      }
+    }
+
     rec.productSales = { ...(rec.productSales ?? this.currentDayRecord.productSales ?? {}) };
     this.dailyRecords[day] = rec;
     this.closedDayIds.add(day);
@@ -2575,9 +2605,15 @@ export class GameSimulation {
       return { success: false, actualQuantity: 0, reason: 'empty_shelf' };
     }
     const actualAmount = Math.min(amount, available);
-    if (PRODUCT_MAP[fixture.assignedProductId]?.storageType === 'cold' &&
-      this.reservedColdWarehouseCount() + actualAmount > COLD_WAREHOUSE_CAPACITY) {
-      return { success: false, actualQuantity: 0, reason: 'cold_storage_full' };
+    if (PRODUCT_MAP[fixture.assignedProductId]?.storageType === 'cold') {
+      if (this.reservedColdWarehouseCount() + actualAmount > COLD_WAREHOUSE_CAPACITY) {
+        return { success: false, actualQuantity: 0, reason: 'cold_storage_full' };
+      }
+    } else {
+      const ambientFree = Math.max(0, totalWarehouseCells({ warehouseTier: this.warehouseTier, storageRackCount: this.storageRackCount }) - this.getAmbientWarehouseCount());
+      if (this.getAmbientWarehouseCount() + actualAmount > totalWarehouseCells({ warehouseTier: this.warehouseTier, storageRackCount: this.storageRackCount })) {
+        return { success: false, actualQuantity: 0, reason: 'ambient_storage_full' };
+      }
     }
     const moved = takeLots(fixture.stockLots!, actualAmount);
     fixture.currentStock = sumLots(fixture.stockLots!);
@@ -3034,6 +3070,15 @@ export class GameSimulation {
       }
     }
 
+    const ambientItemCount = itemCount - coldItemCount;
+    if (ambientItemCount > 0) {
+      const totalCells = totalWarehouseCells({ warehouseTier: this.warehouseTier, storageRackCount: this.storageRackCount });
+      const usedAmbient = this.getAmbientWarehouseCount();
+      if (usedAmbient + ambientItemCount > totalCells) {
+        reasons.push(`Kho lạnh/ambient không đủ chỗ (cần thêm ${ambientItemCount}, còn ${Math.max(0, totalCells - usedAmbient)} chỗ)`);
+      }
+    }
+
     return {
       valid: reasons.length === 0,
       supplierId,
@@ -3209,6 +3254,13 @@ export class GameSimulation {
         return { success: false, stowedQuantity: 0, reason: 'cold_warehouse_full' };
       }
       stowQty = Math.min(item.quantity, freeCold);
+    } else {
+      const totalCells = totalWarehouseCells({ warehouseTier: this.warehouseTier, storageRackCount: this.storageRackCount });
+      const freeAmbient = Math.max(0, totalCells - this.getAmbientWarehouseCount());
+      if (freeAmbient <= 0) {
+        return { success: false, stowedQuantity: 0, reason: 'ambient_warehouse_full' };
+      }
+      stowQty = Math.min(item.quantity, freeAmbient);
     }
 
     const slot = this.inventory.find((i) => i.productId === item.productId);
@@ -3498,11 +3550,13 @@ export class GameSimulation {
   public exportSaveData(existingSaveId?: string, currentRevision: number = 1): SaveGameData {
     return {
       id: existingSaveId || 'local_save_default',
-      schemaVersion: 3,
+      schemaVersion: 4,
       revision: currentRevision + 1,
       createdAt: this.createdAt,
       updatedAt: new Date().toISOString(),
       player: { ...this.playerData },
+      warehouseTier: this.warehouseTier,
+      storageRackCount: this.storageRackCount,
       sellingPrices: { ...this.sellingPrices },
       worldTime: this.clock.getTime(),
       storeLayout: {
@@ -3562,6 +3616,8 @@ export class GameSimulation {
   public importSaveData(saveData: SaveGameData): void {
     this.restockJobClaims.clear();
     this.playerData = normalizePlayerProgression(saveData.player);
+    this.warehouseTier = saveData.warehouseTier ?? 0;
+    this.storageRackCount = saveData.storageRackCount ?? 0;
     this.sellingPrices = { ...(saveData.sellingPrices ?? {}) };
     this.fixtures = saveData.storeLayout.fixtures.map((f) => ({ ...f }));
     this.storedFixtures = (saveData.storeLayout.storedFixtures ?? []).map(f => ({ ...f }));

@@ -325,6 +325,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
     }
   };
 
+  /** Chơi thử local — không cần Google Auth, tạo bản lưu mới tại ô đang chọn */
+  const handleLocalDemo = async () => {
+    triggerSound(380);
+    setBusy(true);
+    try {
+      if (!(await claimActiveSlot())) return;
+      await resetSaveToDefault();
+      triggerSound(600);
+      setFeedbackMsg('Chế độ Local Demo — không đồng bộ máy chủ. Chơi thử đơn player.');
+      onEnter();
+    } catch (err) {
+      console.error('Local demo error:', err);
+      setFeedbackMsg('Lỗi mở chế độ Local Demo. Vui lòng thử lại.');
+      setBusy(false);
+    }
+  };
+
   return (
     <main className="login-screen-vintage">
       {/* 1. CINEMATIC BACKGROUND: Sunset Sky, Clouds, Wires & Street Life */}
@@ -631,6 +648,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
                   <span className="badge-tag-online">Co-op 2 người</span>
                 </div>
                 <small>Góp vốn kinh doanh chung trong một hẻm</small>
+              </div>
+              <span className="card-arrow-mark">›</span>
+            </button>
+
+            <button
+              type="button"
+              className="deck-action-card card-local"
+              disabled={busy}
+              onClick={() => void handleLocalDemo()}
+            >
+              <span className="card-symbol-badge badge-silver">🎮</span>
+              <div className="card-text-body">
+                <div className="card-heading-row">
+                  <strong>Chơi Thử (Local)</strong>
+                  <span className="badge-tag-local">Không cần đăng nhập</span>
+                </div>
+                <small>Chế độ Local Demo — chơi đơn không đồng bộ máy chủ</small>
               </div>
               <span className="card-arrow-mark">›</span>
             </button>

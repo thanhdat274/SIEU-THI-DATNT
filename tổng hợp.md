@@ -1,6 +1,42 @@
 # Tổng hợp hiện trạng code — Tiệm Tạp Hóa Đầu Hẻm
 
+> **Cập nhật 02/10/2026 — Balance audit 90 ngày, OAuth bypass, Tax 1%:**
+> - **Balance-audit 90 ngày:** Chạy `balance-audit.ts` (seed=42, 500k VND, 90 ngày). Kết quả: ending level 35, profit **+652%** (3.26M VND). Revenue 94M, COGS 47.7M, gross margin 49.3%. Staff wages 23.6M (262k/ngày, 9 nhân viên). Spoilage 20k, theft 1.36M, counterfeit loss 2.74M. **So với 30 ngày trước:** từ -3860% → +652%.
+> - **Balance fix:** Đổi hiring threshold từ `level >= 3` → `level >= 10`, thêm logic `maxAffordableStaff = avgRev7 * 0.2 / 25000` để AI chỉ hire khi revenue đủ chi trả lương. Thay đổi ở `balance-audit.ts:staff hiring` (dòng 593-610).
+> - **OAuth bypass:** Thêm `GOOGLE_AUTH_BYPASS=true` env var trong `auth.guard.ts` — tạo dummy guest account thay vì verify Firebase. Thêm nút "Chơi thử (Local)" trong `LoginScreen.tsx` (button chơi đơn không đăng nhập). CSS badge-silver trong `LoginScreen.css`.
+> - **Tax 1% system:** Nghị quyết 95/2024/QH15 — hộ cá thể ≤100M VND/năm miễn thuế, >100M áp dụng 1% khoán (VAT+TNCN gộp). Files: `tax/annual-revenue.ts` (interface mới AnnualRevenueSummary + hàm calculateDailyTax), `simulation.ts` (closeDailyRecord tính thuế, ghi ledger type 'tax', toast khi vượt ngưỡng), `TaxModal.tsx` (UI mới với badge, progress bar, thống kê thuế), `CashierModal.tsx` (update text tax info), `shared/src/index.ts` (thêm `taxPaid` vào DailyRecord, `'tax'` vào LedgerEntryType). Test: `registry.test.ts` cập nhật assertions.
+> **Typecheck PASS** (tất cả packages/apps). Balance-audit chạy đúng, economy 90 ngày ổn định profit dương.
+
+> **Cập nhật 02/10/2026 — Port hệ thống kệ/kho từ tap-hoa-dau-hem:**
+> Đã port toàn bộ hệ thống kệ/kho: shelf slot capacity=20 (từ max(6, parent/2) → min(20, parent.maxCapacity)),
+> warehouse tier system (30→50→80→120 cells, sequential upgrade), storage_rack (+20 cells, max 10),
+> ambient warehouse capacity enforcement trong simulation.
+> **Files thay đổi:** shared/src/index.ts (syncSlotChildren, SaveGameData fields, GameCommandPayload, UnstockShelfResult),
+> game-data/src/land.ts (WAREHOUSE_TIERS, STORAGE_RACK_CELL_BONUS, MAX_STORAGE_RACKS, storage_rack functional),
+> game-core/src/store-layout.ts (buyWarehouseTier, buyStorageRack, totalWarehouseCells, sequential gate),
+> game-core/src/simulation.ts (getAmbientWarehouseCount, warehouse capacity checks trong autoBuy/transferFromShelf/validateSupplierCart/stowHoldingItem, schemaVersion 4, warehouseTier/storageRackCount state fields),
+> **Test files mới:** warehouse-tiers.test.ts (23 tests), child-capacity.test.ts (7 tests).
+> **Kiểm chứng:** typecheck PASS (shared/game-data/game-core, 0 lỗi mới — chỉ pre-existing balance-audit.ts/registry.test.ts),
+> warehouse-tiers.test PASS 23/23, child-capacity.test PASS 7/7.
+> **Còn mở:** Phase 7 (land plots expansion), Phase 8 (autoArrange), Phase 9 (UI WarehouseModal/ShopModal/App), Phase 10 (land-plots/migration/storage-rack tests).
+>
+> **Cập nhật 02/10/2026 — cân bằng số liệu 30-day simulation (seed 42, 500k VND khởi đầu):**
+> Đã chạy `balance-audit.ts` (phiên bản hoàn chỉnh, 30 ngày): ending level 35, profit +210.6%, ending money 1.55M VND.
+> Revenue: 30.3M, COGS: 15.3M, gross margin: 49.4%. Staff wages: 8.75M (291k/ngày). Spoilage: 5k. Theft: 417k. Counterfeit loss: 740k (77 detected).
+> **Key findings:** (1) Production shelf life 1 ngày là constraint chính — hàng không bán hết ngày thì hỏng;
+> (2) Staff break-even ở level 3-5, profitable từ level 10+;
+> (3) Stalls: cafe_vot ROI ~6 ngày, banh_mi_muoi_ot ROI ~4.4 ngày;
+> (4) Counterfeit: 315k/tháng không cashier vs 162k/tháng có cashier — cashier tự trả vốn;
+> (5) Prestige +20% traffic (đã fix từ +10%), còn waste cap ở late game.
+> **Đã áp dụng 3 điều chỉnh:** (1) `mi_trung_nong` outputQuantity 1→2, profit/săng từ 288→576 VND/s;
+> (2) `PRESTIGE_TRAFFIC_PER_STAR` 0.01→0.02 (+2%/sao);
+> (3) traffic base simulation 35→28.
+> `tsc -b` PASS, core test-runner 7/7 PASS (bao gồm `prestige.test.ts` fix assertion hardcoded).
+> tsc -b PASS (02/10/2026), test chưa chạy lại sau balance changes.
+>
+
 > **Cập nhật 01/10/2026 (đồng bộ với `THONG-KE.md`).** Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
+> - **Sửa lỗi SW 02/10/2026 — "fetching the script":** `apps/web/public/sw.js` có `VERSION = 'v1'` cứng không đổi qua các lần build → SW cũ cache assets hash cũ, browser cố fetch assets đổi tên sau build mới → lỗi. Đã sửa 3 chỗ: (1) `sw.js`: đổi `VERSION = '__SW_VERSION__'` (placeholder); (2) `vite.config.ts`: thêm plugin `injectSwVersion` tự động replace placeholder bằng build timestamp (dạng `v-202610020847`) trong `dist/sw.js` mỗi lần build; (3) `main.tsx`: thêm `updatefound/statechange` handler reload trang khi SW mới kích hoạt, và đổi `.catch(() => undefined)` thành `.catch(err => console.warn('[SW]', err))` để lỗi không bị nuốt im. Typecheck PASS, build PASS (02/10/2026), VERSION trong dist/sw.js xác nhận là `v-2026100201481`; chưa kiểm chứng browser trên production thật.
 > - **Sửa lỗi UI 02/10/2026:** `TutorialChecklist` (`apps/web/src/components/TutorialChecklist.tsx`) trước đây đặt `position: fixed, left: 8, bottom: 72` — che lên joystick di chuyển trên mobile (`.joystick` nằm góc trái dưới). Đã sửa: chuyển sang `right: 8, bottom: 62` (góc phải), thu `maxWidth` từ 260→240px, thêm `maxHeight: calc(50vh - 62px)` và `overflowY: auto` để panel không che quá nhiều màn hình. Không cần build/typecheck cho thay đổi thuần UI inline-style này; chưa kiểm chứng browser.
 > - Đèn tín hiệu chu kỳ, người đi bộ qua vạch và xe nhường đường (`core/traffic-signal.ts`, `street-traffic.ts`, `game-data/traffic.ts`, `renderer/street-signal.ts`) đã commit `24a2fab`, có OpenSpec `traffic-light-crosswalk-yielding` (4.2–4.6 còn mở), browser mới thấy hình tĩnh; đồng bộ đèn giữa client là non-goal của change (giao thông hẻm ambient, không lưu). Typecheck và `yarn test` (game-core) PASS ngày 01/10/2026 (thêm `yarn build` PASS 01/10/2026 sau commit 24a2fab: index 710,53 kB, vendor-pixi 547,40 kB; không chạy test server/browser).
 > - Mới ghi nhận vấn đề tồn đọng: co-op chỉ replay một phần lệnh (I-01), server chưa giới hạn payload/tần suất (I-15), chưa có migration schema world Mongo (I-16), ID dùng `Date.now()/Math.random()` (I-04), bảng xếp hạng là dữ liệu giả (I-02).

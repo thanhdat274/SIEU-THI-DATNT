@@ -37,7 +37,13 @@ export function runAnnualRevenueTests(): void {
   const s = summarizeAnnualRevenue({ 1: rec(1, 1000), 2: rec(2, 500), 366: rec(366, 999) }, 2, rec(2, 700));
   nodeAssert.equal(s.year, 1);
   nodeAssert.equal(s.revenue, 1700, 'Năm 1 dùng bản ghi hiện tại thay bản cũ và bỏ ngày năm 2');
-  nodeAssert.equal(s.verified, false);
+  nodeAssert.equal(s.taxActive, false, 'Chưa vượt ngưỡng miễn thuế');
   nodeAssert.equal(summarizeAnnualRevenue({ 366: rec(366, 5) }, 366).year, 2);
-  console.log('  ✓ Passed: Doanh thu năm chỉ để theo dõi, không trừ thuế');
+  // Test với doanh thu vượt ngưỡng
+  const big: Record<number, any> = {};
+  for (let d = 1; d <= 365; d++) big[d] = rec(d, 300_000); // 109.5B ≈ trên 100M
+  const bigS = summarizeAnnualRevenue(big, 365);
+  nodeAssert.equal(bigS.taxActive, true, 'Vượt 100M → thuế khoán');
+  nodeAssert.ok(bigS.estimatedTax > 0, 'Có thuế ước tính > 0');
+  console.log('  ✓ Passed: Doanh thu năm, thuế khoán 1% khi vượt ngưỡng');
 }
