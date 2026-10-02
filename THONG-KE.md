@@ -593,6 +593,14 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ## 8. Lịch sử phát triển
 
+## 2026-10-02 (lượt 15 — sửa lỗi bãi bốc dỡ làm test:all đỏ)
+
+### Changed
+- `store-logistics.ts`: nhân viên bốc hàng đi bước lớn hơn khoảng cách còn lại (`dt` lớn, ví dụ 0,2 s ở `store-logistics.test.ts`) nên vượt qua điểm đích rồi dao động, không bao giờ vào ngưỡng "đã đến" (4 px) và chuyến không hoàn tất. Ngưỡng nay là `max(4, walkSpeed*dt)` ở cả bốc và xếp hàng. Lỗi có sẵn từ trước: xác nhận trên worktree sạch trước khi sửa.
+
+### Verified
+- `yarn --ignore-engines test:all` PASS toàn bộ (exit 0) trên working tree có thay đổi chưa commit của phiên khác. Chưa chạy CI/build.
+
 ## 2026-10-02 (lượt 14 — test tự động db.ts và slot-lock.ts)
 
 ### Changed
