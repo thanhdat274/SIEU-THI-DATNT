@@ -4,7 +4,7 @@ import { WorldAvatarController } from './avatars';
 import { GameCommandCoordinator, CommandResult } from './commands';
 import { FixedStepSimulationRunner } from './runner';
 import { generateStarterTileMap } from '@game/data';
-import { applyStoreLayoutActions, moveStoreFixture, retrieveStoreFixture, storeFixture } from './store-layout';
+import { applyStoreLayoutActions, moveStoreFixture, retrieveStoreFixture, storeFixture, buyWarehouseTier, buyStorageRack } from './store-layout';
 
 export interface WorldRuntimeOptions {
   heartbeatTimeoutMs?: number;
@@ -252,6 +252,14 @@ export class WorldRuntime {
       } else if (p.type === 'layout_batch') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
         const next = applyStoreLayoutActions(current, p.actions, ids => generateStarterTileMap(ids));
+        success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
+      } else if (p.type === 'buy_warehouse_tier') {
+        const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
+        const next = buyWarehouseTier(current, p.tier);
+        success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
+      } else if (p.type === 'buy_storage_rack') {
+        const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
+        const next = buyStorageRack(current);
         success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       }
 
