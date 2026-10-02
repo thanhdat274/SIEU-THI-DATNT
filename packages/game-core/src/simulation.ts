@@ -115,6 +115,7 @@ import { buildProductPlans, type ProductPlan, type ProductPlanInput } from './fo
 import { climateSeasonForDay } from './weather';
 import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, timeBandFor, visibleMarketEvents, weekdayOf, type MarketNotice } from './market';
 import { computeSupplierDay, nextDeliveryDay, wholesaleQuote } from './supplier-market';
+import { validateSupplierCart as validateSupplierCartPure } from './supplier-cart';
 import { advancePriceIndex, clampSellingPrice, computePriceTargets, demandPriceFactor, keepChance, priceRatio, productSensitivity } from './price';
 import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
 import { emptyStallState, normalizeStallState, planStallDay } from './stalls';
@@ -3188,110 +3189,16 @@ export class GameSimulation {
     supplierId: string,
     items: SupplierCartItem[]
   ): SupplierCartValidationResult {
-    const reasons: string[] = [];
-    const supplier = SUPPLIER_MAP[supplierId];
-    if (!supplier) {
-      reasons.push('Nhà cung cấp không tồn tại');
-    } else if (supplier.unlockLevel > this.playerData.level) {
-      reasons.push(`Nhà cung cấp mở khóa ở cấp ${supplier.unlockLevel}`);
-    }
-
-    if (!items || items.length === 0) {
-      reasons.push('Giỏ hàng trống');
-    }
-
-    let listTotal = 0;
-    let itemCount = 0;
-    let coldItemCount = 0;
-    const state = this.market.suppliers?.[supplierId];
-    const qtyByProduct: Record<string, number> = {};
-    const cartLines: SupplierCartLine[] = [];
-
-    for (const line of items ?? []) {
-      if (!Number.isSafeInteger(line.quantity) || line.quantity <= 0) {
-        reasons.push(`Số lượng sản phẩm ${line.productId} không hợp lệ`);
-        continue;
-      }
-      const product = PRODUCT_MAP[line.productId];
-      if (!product) {
-        reasons.push(`Sản phẩm ${line.productId} không tồn tại`);
-        continue;
-      }
-      if (product.unlockLevel > this.playerData.level) {
-        reasons.push(`Sản phẩm ${product.name} mở khóa ở cấp ${product.unlockLevel}`);
-      }
-      qtyByProduct[line.productId] = (qtyByProduct[line.productId] ?? 0) + line.quantity;
-      const quote = supplier ? wholesaleQuote(supplier, product, state, line.quantity) : undefined;
-      listTotal += (quote?.listPrice ?? product.purchasePrice) * line.quantity;
-      cartLines.push({
-        productId: line.productId,
-        quantity: line.quantity,
-        unitPrice: quote?.unit ?? product.purchasePrice,
-        lineTotal: (quote?.unit ?? product.purchasePrice) * line.quantity,
-        bulkDiscount: quote?.bulk ?? 0,
-      });
-      itemCount += line.quantity;
-      if (product.storageType === 'cold') {
-        coldItemCount += line.quantity;
-      }
-    }
-
-    const subtotal = Math.round(listTotal);
-    if (supplier && state) {
-      for (const [productId, quantity] of Object.entries(qtyByProduct)) {
-        const name = PRODUCT_MAP[productId].name;
-        if (state.unavailable.includes(productId)) {
-          reasons.push(`${name}: ${supplier.name} tạm ngừng cung`);
-        } else if (supplier.stockPerProductPerDay !== undefined && quantity > (state.stockLeft[productId] ?? 0)) {
-          reasons.push(`${name}: ${supplier.name} chỉ còn ${state.stockLeft[productId] ?? 0} hôm nay (cần ${quantity})`);
-        }
-      }
-    }
-    if (supplier && subtotal < supplier.minOrderValue) {
-      reasons.push(`Chưa đạt giá trị đơn tối thiểu ${supplier.minOrderValue.toLocaleString('vi-VN')} ₫ của ${supplier.name}`);
-    }
-
-    const discountRate = supplier?.discountRate ?? 0;
-    const discountAmount = Math.round(subtotal * discountRate);
-    const totalCost = Math.max(0, subtotal - discountAmount);
-
-    if (totalCost > this.playerData.money) {
-      reasons.push(`Không đủ tiền (cần ${totalCost.toLocaleString('vi-VN')} ₫, hiện có ${this.playerData.money.toLocaleString('vi-VN')} ₫)`);
-    }
-
-    if (coldItemCount > 0) {
-      const reservedCold = this.reservedColdWarehouseCount();
-      if (reservedCold + coldItemCount > this.getColdCapacity()) {
-        reasons.push(`Kho mát không đủ chỗ (cần thêm ${coldItemCount}, còn ${Math.max(0, this.getColdCapacity() - reservedCold)} chỗ)`);
-      }
-    }
-
-    let ambientNeededCells = 0;
-    for (const [productId, quantity] of Object.entries(qtyByProduct)) {
-      const product = PRODUCT_MAP[productId];
-      if (product.storageType === 'cold') continue;
-      const held = this.ambientUnitsOf(productId);
-      ambientNeededCells += warehouseCellsFor(product, held + quantity) - warehouseCellsFor(product, held);
-    }
-    if (ambientNeededCells > 0) {
-      const freeCells = this.ambientFreeCells();
-      if (ambientNeededCells > freeCells) {
-        reasons.push(`Kho thường không đủ chỗ (cần thêm ${ambientNeededCells} ô, còn ${freeCells} ô)`);
-      }
-    }
-
-    return {
-      valid: reasons.length === 0,
-      supplierId,
-      subtotal,
-      discountAmount,
-      totalCost,
-      itemCount,
-      coldItemCount,
-      reasons,
-      lines: cartLines,
-      deliveryDay: supplier ? nextDeliveryDay(supplier, this.clock.getTime().day + supplier.delayDays) : undefined,
-    };
+    return validateSupplierCartPure(supplierId, items, {
+      level: this.playerData.level,
+      money: this.playerData.money,
+      day: this.clock.getTime().day,
+      supplierState: this.market.suppliers?.[supplierId],
+      coldCapacity: this.getColdCapacity(),
+      reservedColdCount: this.reservedColdWarehouseCount(),
+      ambientUnitsOf: (productId) => this.ambientUnitsOf(productId),
+      ambientFreeCells: this.ambientFreeCells(),
+    });
   }
 
   /**
