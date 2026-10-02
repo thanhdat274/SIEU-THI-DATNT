@@ -6,6 +6,8 @@ export const TILE_SIZE = 32;
 export const REFERENCE_WIDTH = 960;
 export const REFERENCE_HEIGHT = 540;
 export const COLD_WAREHOUSE_CAPACITY = 40;
+/** Số đơn vị hàng chứa được trong 1 ô kho thường (như game gốc tap-hoa-dau-hem). */
+export const UNITS_PER_WAREHOUSE_CELL = 10;
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -45,6 +47,10 @@ export interface Product {
     basePopularity: number; // 0 to 1
   };
   description: string;
+  /** Bán thành phẩm (vd. nếp ngâm, nếp chín): chỉ làm nguyên liệu, không bày bán và không có nhu cầu của khách. */
+  intermediate?: boolean;
+  /** Số ô kho chiếm cho mỗi UNITS_PER_WAREHOUSE_CELL đơn vị. Thiếu = suy từ shelfCapacity (hàng cồng kềnh = 2). */
+  warehouseSize?: number;
 }
 
 export interface InventoryItem {
@@ -299,6 +305,10 @@ export interface CustomerState {
   thief?: boolean;
   diningTableId?: string;
   diningTimeLeft?: number;
+  /** Món đã mua ngay trước khi ngồi bàn; dùng để quyết định gọi thêm đồ uống kèm (giỏ hàng đã được xóa sau thanh toán). */
+  diningProductIds?: string[];
+  /** Tòa nhà khách đang mua sắm ('main' | 'xoi'); thiếu = tiệm chính (save cũ). */
+  buildingId?: string;
 }
 
 export interface CheckoutResult {
@@ -509,6 +519,14 @@ export interface GoalState {
   claimedWeeklyQuestIds: Record<number, string[]>; // weekNumber -> questIds
   /** Khóa `${goalId}@${năm mùa}`: mục tiêu ngày hội đã nhận trong năm đó. */
   claimedFestivalGoalKeys?: string[];
+  /** Tiến độ các chương cốt truyện có lời thoại (khác chuỗi "chuyện xóm" ở QuestState). */
+  story?: StoryState;
+}
+
+export interface StoryState {
+  /** id chương -> ngày bắt đầu chương. */
+  startedChapters: Record<string, number>;
+  claimedChapters: string[];
 }
 
 // ==========================================
@@ -923,6 +941,8 @@ export interface GameTileMap {
   layers: TileMapLayer[];
   collisionLayer: boolean[]; // true if solid
   storeBounds?: { left: number; right: number; top: number; bottom: number };
+  /** Các tòa nhà trên bản đồ và trạng thái mở (hình học nằm ở BUILDINGS của game-data). */
+  buildings?: Array<{ id: string; open: boolean }>;
   /** Quầy ăn uống đã mở, để renderer vẽ; va chạm đã nằm sẵn trong collisionLayer. */
   stalls?: Array<{ id: string; tileX: number; tileY: number; widthTiles: number }>;
 }
@@ -1010,6 +1030,8 @@ export type GameCommandPayload =
   | { type: 'claim_goal'; goalId: string }
   | { type: 'claim_weekly_quest'; questId: string }
   | { type: 'claim_festival_goal'; goalId: string }
+  | { type: 'begin_story_chapter'; chapterId: string }
+  | { type: 'claim_story_chapter'; chapterId: string }
   | { type: 'choose_perk'; perkId: string }
   | { type: 'set_title'; titleId?: string }
   | { type: 'maintain_fixture'; fixtureId: string; action: 'service' | 'repair' | 'replace' }
@@ -1232,10 +1254,14 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'claim_goal': return nonEmptyString(p.goalId);
     case 'claim_weekly_quest': return nonEmptyString(p.questId);
     case 'claim_festival_goal': return nonEmptyString(p.goalId);
+    case 'begin_story_chapter':
+    case 'claim_story_chapter': return nonEmptyString(p.chapterId);
     case 'choose_perk': return nonEmptyString(p.perkId);
     case 'set_title': return p.titleId === undefined || nonEmptyString(p.titleId);
     case 'security_action': return p.action === 'buy_camera' || p.action === 'police_on' || p.action === 'police_off';
     case 'maintain_fixture': return nonEmptyString(p.fixtureId) && (p.action === 'service' || p.action === 'repair' || p.action === 'replace');
+    case 'buy_warehouse_tier': return Number.isSafeInteger(p.tier) && Number(p.tier) >= 1 && Number(p.tier) <= 3;
+    case 'buy_storage_rack': return true;
     default: return false;
   }
 }

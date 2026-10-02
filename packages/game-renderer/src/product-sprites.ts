@@ -1835,7 +1835,7 @@ Object.assign(PRODUCT_SPRITES, {
 // Tiệm xôi: mượn hình có sẵn (đã khai báo ở trên) cho tới khi vẽ sprite riêng.
 for (const [id, source] of Object.entries({
   nep: 'gao', dau_xanh: 'dau_phong', hanh_phi: 'hat_nem', cha_bong: 'kho_ga', lap_xuong: 'xuc_xich', dua_nao: 'bot_mi',
-  bao_goi: 'khan_giay', tra_da: 'tra_xanh', nep_chin: 'gao',
+  bao_goi: 'khan_giay', tra_da: 'tra_xanh', nep_chin: 'gao', nep_ngam: 'gao',
   xoi_dau_xanh_tp: 'banh_bao', xoi_man_tp: 'banh_bao', xoi_trung_tp: 'banh_bao', xoi_dua_tp: 'banh_bao',
   xoi_dau_xanh_goi: 'banh_bao', xoi_man_goi: 'banh_bao', xoi_trung_goi: 'banh_bao', xoi_dua_goi: 'banh_bao',
 })) PRODUCT_SPRITES[id] = PRODUCT_SPRITES[source];

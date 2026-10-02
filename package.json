@@ -10,7 +10,8 @@
   "scripts": {
     "dev:server": "yarn --cwd apps/server dev",
     "verify:runtime": "yarn --cwd apps/server verify:runtime",
-    "dev": "yarn --cwd apps/web dev",
+    "dev:web": "yarn --cwd apps/web dev",
+    "dev": "node scripts/run-dev.js",
     "start": "yarn --cwd apps/web dev",
     "build": "yarn --cwd apps/server build && yarn --cwd apps/web build",
     "typecheck": "tsc -b packages/shared packages/game-data packages/game-core packages/game-renderer apps/server apps/web",
@@ -26,6 +27,7 @@
     "eslint": "^10",
     "eslint-plugin-react-hooks": "^7",
     "globals": "^17.13.0",
+    "npm-run-all2": "^9.0.3",
     "tsx": "^4.23.15",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-eslint": "^8"

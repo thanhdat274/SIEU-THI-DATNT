@@ -35,6 +35,8 @@ export * from './regulars';
 export * from './street-traffic';
 export * from './party-orders';
 export * from './goals';
+export * from './dining';
+export * from './story';
 export * from './skills';
 export * from './titles';
 export * from './decor';

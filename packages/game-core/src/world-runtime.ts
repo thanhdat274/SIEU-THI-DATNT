@@ -241,6 +241,10 @@ export class WorldRuntime {
         success = this.simulation.claimWeeklyQuest(p.questId).success;
       } else if (p.type === 'claim_festival_goal') {
         success = this.simulation.claimFestivalGoal(p.goalId).success;
+      } else if (p.type === 'begin_story_chapter') {
+        success = this.simulation.beginStoryChapter(p.chapterId).success;
+      } else if (p.type === 'claim_story_chapter') {
+        success = this.simulation.claimStoryChapter(p.chapterId).success;
       } else if (p.type === 'choose_perk') {
         success = this.simulation.chooseSkillPerk(p.perkId).success;
       } else if (p.type === 'set_title') {

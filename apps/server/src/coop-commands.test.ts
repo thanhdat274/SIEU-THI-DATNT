@@ -138,22 +138,70 @@ async function run() {
     await assert.rejects(send(owner, 'unknown-type', { type: 'give_money', amount: 1_000_000 }, unknownRevision), /không được hỗ trợ/);
     assert.equal((await snapshotFor(owner)).world.revision, unknownRevision, 'lệnh lạ không làm đổi revision');
 
-    // I-01 hướng B: lệnh chưa replay nhưng save bị sửa tiền thì bị từ chối; save giữ nguyên thì được nhận.
+    // I-01 hướng B: lệnh kinh tế được server replay rồi lưu save chuẩn của server, bỏ qua save máy khách; tiền cộng thêm không vào được.
     const cheatBase = await snapshotFor(owner);
     const cheatBusiness = structuredClone(cheatBase.businesses[0]) as any;
     cheatBusiness.save.player.money += 50_000_000;
-    await assert.rejects(controller.commitCommand(owner as any, world.id, {
+    const cheatResult = await controller.commitCommand(owner as any, world.id, {
       expectedRevision: cheatBase.world.revision,
-      receipt: { commandId: 'cheat-money', actorId: owner.gameAccount.uid, status: 'accepted', revision: cheatBase.world.revision + 1, payloadJson: JSON.stringify({ type: 'set_price', productId: 'x', price: null }), createdAt: new Date().toISOString() },
+      receipt: { commandId: 'cheat-money', actorId: owner.gameAccount.uid, status: 'accepted', revision: cheatBase.world.revision + 1, payloadJson: JSON.stringify({ type: 'set_price', productId: 'mi_hao_hao', price: null }), createdAt: new Date().toISOString() },
       updatedBusiness: cheatBusiness,
-    }), /Save không hợp lệ/);
-    assert.equal((await snapshotFor(owner)).world.revision, cheatBase.world.revision, 'save gian lận không làm đổi revision');
-    const honest = await controller.commitCommand(owner as any, world.id, {
-      expectedRevision: cheatBase.world.revision,
-      receipt: { commandId: 'honest-price', actorId: owner.gameAccount.uid, status: 'accepted', revision: cheatBase.world.revision + 1, payloadJson: JSON.stringify({ type: 'set_price', productId: 'x', price: null }), createdAt: new Date().toISOString() },
-      updatedBusiness: structuredClone(cheatBase.businesses[0]),
     });
-    assert.equal(honest.committed, true, 'save không bị sửa vẫn được nhận');
+    assert.equal(cheatResult.committed, true, 'lệnh hợp lệ được nhận');
+    assert.equal((await snapshotFor(owner)).businesses[0].save.player.money, cheatBase.businesses[0].save.player.money, 'tiền gian lận trong save máy khách bị bỏ, server giữ kết quả replay');
+
+    // I-01 mở rộng (02/10/2026): buy_plot, buy_warehouse_tier, buy_storage_rack phải qua server replay và được hai client thấy.
+    // Cần đóng cửa để buy_plot được phép, level >= 11 cho buy_warehouse_tier tier 3 (save khởi đầu đã có kho tier 2).
+    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.worldTime.isStoreOpen': false, 'businesses.0.save.player.level': 11, 'businesses.0.save.player.money': 5_000_000 } });
+    const buyRevision = (await snapshotFor(owner)).world.revision;
+    const buyMoney = (await snapshotFor(owner)).businesses[0].save.player.money;
+    assert.ok(buyMoney >= 250_000, 'có đủ tiền mua kho tier 1');
+    const buyPlotResult = await send(owner, 'buy-plot', { type: 'buy_plot', plotId: 'east-wing-a' }, buyRevision);
+    assert.equal(buyPlotResult.committed, true, 'buy_plot được commit');
+    const afterBuyPlot = await snapshotFor(member);
+    assert.ok(afterBuyPlot.businesses[0].save.storeLayout.unlockedPlotIds?.includes('east-wing-a'), 'member thấy plot mới qua server replay');
+    assert.equal(afterBuyPlot.world.revision, buyRevision + 1, 'revision tăng đúng bậc');
+
+    const warehouseRevision = (await snapshotFor(owner)).world.revision;
+    const whMoney = (await snapshotFor(owner)).businesses[0].save.player.money;
+    assert.ok(whMoney >= 900_000, 'có đủ tiền mua kho tier 3');
+    const whResult = await send(owner, 'buy-warehouse', { type: 'buy_warehouse_tier', tier: 3 }, warehouseRevision);
+    assert.equal(whResult.committed, true, 'buy_warehouse_tier được commit');
+    const afterWh = await snapshotFor(member);
+    assert.equal(afterWh.businesses[0].save.warehouseTier, 3, 'member thấy warehouse tier 3');
+
+    const rackRevision = (await snapshotFor(owner)).world.revision;
+    const rackMoney = (await snapshotFor(owner)).businesses[0].save.player.money;
+    assert.ok(rackMoney >= 50_000, 'có đủ tiền mua storage rack');
+    const racksBefore = (await snapshotFor(owner)).businesses[0].save.storageRackCount ?? 0;
+    const rackResult = await send(member, 'buy-rack', { type: 'buy_storage_rack' }, rackRevision);
+    assert.equal(rackResult.committed, true, 'buy_storage_rack được commit');
+    const afterRack = await snapshotFor(owner);
+    assert.equal(afterRack.businesses[0].save.storageRackCount, racksBefore + 1, 'owner thấy thêm đúng một storage rack qua server replay');
+
+    // Tiệm xôi riêng (OpenSpec xoi-shop-same-land-strip): mua qua buy_plot như đất, server replay và hai client cùng thấy.
+    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.worldTime.isStoreOpen': false, 'businesses.0.save.player.level': 30, 'businesses.0.save.player.money': 5_000_000 } });
+    const xoiRevision = (await snapshotFor(owner)).world.revision;
+    const xoiResult = await send(owner, 'buy-xoi', { type: 'buy_plot', plotId: 'building-xoi' }, xoiRevision);
+    assert.equal(xoiResult.committed, true, 'mua tiệm xôi được commit');
+    const afterXoi = await snapshotFor(member);
+    const xoiSave = afterXoi.businesses[0].save;
+    assert.ok(xoiSave.storeLayout.unlockedPlotIds?.includes('building-xoi'), 'member thấy tiệm xôi đã mở');
+    assert.equal(xoiSave.player.money, 5_000_000 - 700_000, 'trừ đúng 700.000 ₫ một lần');
+    assert.ok(xoiSave.storeLayout.fixtures.some((f: { id: string }) => f.id === 'xoi_cashier_counter'), 'bố cục mặc định tiệm xôi có quầy thu ngân');
+    const xoiRetry = await send(owner, 'buy-xoi', { type: 'buy_plot', plotId: 'building-xoi' }, xoiRevision);
+    assert.equal(xoiRetry.committed, true, 'gửi lại cùng lệnh idempotent');
+    assert.equal((await snapshotFor(owner)).businesses[0].save.player.money, 5_000_000 - 700_000, 'gửi lại không trừ tiền lần hai');
+
+    // Người ngoài hẻm gửi lệnh mua đất/tiệm bị từ chối và không đổi revision.
+    const xoiOutsider = { gameAccount: { uid: `coop-outsider-${randomUUID()}`, name: 'Outsider', email: null } };
+    const xoiBase = await snapshotFor(owner);
+    await assert.rejects(controller.commitCommand(xoiOutsider as any, world.id, {
+      expectedRevision: xoiBase.world.revision,
+      receipt: { commandId: 'outsider-plot', actorId: xoiOutsider.gameAccount.uid, status: 'accepted', revision: xoiBase.world.revision + 1, payloadJson: JSON.stringify({ type: 'buy_plot', plotId: 'east-wing-b' }), createdAt: new Date().toISOString() },
+      updatedBusiness: structuredClone(xoiBase.businesses[0]),
+    }));
+    assert.equal((await snapshotFor(owner)).world.revision, xoiBase.world.revision, 'lệnh mua đất của người ngoài hẻm không đổi revision');
 
     // I-05: tuyển nhân viên qua commit co-op. Máy khách mô phỏng cục bộ rồi gửi lệnh; tuyển thêm không qua lệnh bị từ chối.
     await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.player.level': 5, 'businesses.0.save.player.money': 5_000_000 } });
@@ -173,12 +221,14 @@ async function run() {
     });
     const extra = structuredClone(staffSave);
     extra.staff = [...extra.staff, { ...extra.staff[0], id: 'staff-injected' }];
-    await assert.rejects(staffCommit('hire-two', extra, staffBase.world.revision), /Save không hợp lệ/, 'tuyển thêm một người ngoài lệnh bị từ chối');
-    const hireResult = await staffCommit('hire-one', staffSave, staffBase.world.revision);
+    // hire_staff được server replay: nhân viên chèn thêm trong save máy khách bị bỏ, chỉ còn đúng một người do lệnh tạo.
+    const hireResult = await staffCommit('hire-one', extra, staffBase.world.revision);
     assert.equal(hireResult.committed, true, 'hire_staff hợp lệ được commit');
-    assert.equal((await snapshotFor(member)).businesses[0].save.staff?.length, 1, 'thành viên còn lại thấy nhân viên mới');
+    const hired = (await snapshotFor(member)).businesses[0].save.staff ?? [];
+    assert.equal(hired.length, 1, 'thành viên còn lại thấy đúng một nhân viên mới');
+    assert.ok(!hired.some((member: any) => member.id === 'staff-injected'), 'nhân viên chèn ngoài lệnh không vào save chuẩn');
 
-    console.log('PASS co-op: 7 lệnh server-replay qua GameController.commitCommand trên Mongo thật (2 tài khoản, retry idempotent, trùng commandId khác payload, lệnh bị từ chối, tranh chấp revision)');
+    console.log('PASS co-op: 10 lệnh server-replay qua GameController.commitCommand');
     await closeDatabase();
   } finally {
     await client.db(testDbName).dropDatabase();

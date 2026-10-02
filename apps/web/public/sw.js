@@ -1,6 +1,7 @@
 // Service worker: chơi offline. Shell + tài nguyên cùng origin được cache khi đã tải một lần.
-// Đổi VERSION khi cần buộc máy khách bỏ cache cũ.
-const VERSION = 'v1';
+// VERSION được Vite plugin tự động thay bằng build timestamp (vd "v-202610020847") khi build production.
+// Không sửa tay — mỗi lần deploy sẽ có VERSION mới, buộc browser update SW và xóa cache cũ.
+const VERSION = '__SW_VERSION__';
 const CACHE = `tap-hoa-${VERSION}`;
 const SHELL = ['./', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 

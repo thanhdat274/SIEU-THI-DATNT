@@ -40,7 +40,7 @@ Get('ready')(HealthController.prototype, 'readiness', Object.getOwnPropertyDescr
 
 /** Loại lệnh được commit. Chỉ một phần được server phát lại; phần còn lại vẫn tin save client (I-01, xem THONG-KE.md). */
 const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
-  'respond_party_order', 'fulfill_party_order', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title', 'layout_batch', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production',
+  'respond_party_order', 'fulfill_party_order', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'begin_story_chapter', 'claim_story_chapter', 'choose_perk', 'set_title', 'layout_batch', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production',
   'set_price', 'restock', 'unstock', 'buy_stall', 'claim_quest',
   'checkout',
   'hire_staff', 'set_staff_shift', 'assign_refill_job', 'dispose_stock', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve', 'maintain_fixture', 'security_action',
@@ -101,10 +101,11 @@ export class GameController {
     }
     const serverReplayedCommands = new Set([
       'checkout', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production', 'respond_party_order', 'fulfill_party_order', 'claim_goal',
-      'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title', 'maintain_fixture', 'security_action',
+      'claim_weekly_quest', 'claim_festival_goal', 'begin_story_chapter', 'claim_story_chapter', 'choose_perk', 'set_title', 'maintain_fixture', 'security_action',
       'order_supplier', 'buy_stall', 'dispose_stock', 'claim_quest',
       'restock', 'unstock', 'set_price',
       'hire_staff', 'set_staff_shift', 'assign_refill_job',
+      'buy_plot', 'buy_warehouse_tier', 'buy_storage_rack',
     ]);
     if (serverReplayedCommands.has(payload?.type)) {
       const priorReceipt = await worldRepository.findReceipt(worldId, request.gameAccount.uid, body.receipt.commandId);
@@ -190,7 +191,8 @@ export class GameController {
         ).exportSaveData(commandBusiness.save.id, body.expectedRevision);
         return JSON.stringify(layoutGeometry(baseline)) === submitted;
       };
-      if (!sameLayout()) {
+      // Lệnh server tự phát lại (vd. buy_plot mở đất/tiệm xôi) tạo save chuẩn ngay tại server nên được phép đổi bố cục; chỉ save do client gửi mới phải giữ nguyên bố cục.
+      if (!serverReplayedCommands.has(payload.type) && !sameLayout()) {
         throw new BadRequestException('Thay đổi bố cục phải dùng layout_batch đã kiểm tra.');
       }
       // Lệnh chưa được server phát lại: không tin tuyệt đối save client, kiểm bất biến so với save đã lưu (I-01, hướng B).
