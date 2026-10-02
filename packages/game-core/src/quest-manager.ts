@@ -17,7 +17,7 @@ export class QuestManager {
     this.state = normalizeQuestState(saveData.quests);
     this.partyOrders = refreshAvailablePartyOrders(
       saveData.partyOrders ?? createInitialPartyOrderState(),
-      saveData.worldTime.day,
+      saveData.worldTime?.day ?? 1,
       saveData.player?.level ?? 1
     );
     this.goals = saveData.goals ? structuredClone(saveData.goals) : createInitialGoalState();
