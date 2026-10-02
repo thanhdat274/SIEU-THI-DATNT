@@ -217,6 +217,9 @@ export class WorldRuntime {
         success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       } else if (p.type === 'buy_plot') {
         success = !!this.simulation.purchaseLand(p.plotId).save;
+      } else if (p.type === 'set_restock_options') {
+        this.simulation.setRestockOptions(p.options);
+        success = true;
       } else if (p.type === 'order_supplier') {
         success = this.simulation.orderSupplierCart(p.supplierId, p.items).success;
       } else if (p.type === 'buy_stall') {

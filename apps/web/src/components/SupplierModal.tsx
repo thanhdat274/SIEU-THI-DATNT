@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   PlayerData,
   InventoryItem,
@@ -97,12 +97,18 @@ export const SupplierModal: React.FC<Props> = ({
     saveSuggestOptions({ ...suggestOptions, [key]: Math.min(max, Math.max(min, Number.isFinite(value) ? Math.round(value) : min)) });
 
   // Suggested Cart state
+  const suggestionRef = useRef<HTMLElement>(null);
   const [suggestedCart, setSuggestedCart] = useState<{
     items: SuggestedCartItem[];
     constraints: string[];
     explanation: string;
     budget?: RestockBudgetSplit;
   } | null>(null);
+
+  // Khung giải thích nằm dưới thanh giỏ cố định nên cuộn tới khi có gợi ý mới.
+  useEffect(() => {
+    if (suggestedCart) suggestionRef.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+  }, [suggestedCart]);
 
   const currentSupplier = SUPPLIER_MAP[selectedSupplierId] ?? SUPPLIERS[0];
   const discountRate = currentSupplier.discountRate ?? 0;
@@ -345,6 +351,7 @@ export const SupplierModal: React.FC<Props> = ({
       {/* Suggested Cart Review Drawer — chỉ hiển thị giải thích, không có nút đặt riêng nữa */}
       {suggestedCart && (
         <section
+          ref={suggestionRef}
           style={{
             background: 'var(--paper)',
             border: '2px solid var(--teal)',

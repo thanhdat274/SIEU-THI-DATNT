@@ -1065,6 +1065,7 @@ export type GameCommandPayload =
   | { type: 'assign_refill_job'; staffId: string; fixtureId: string }
   | { type: 'dispose_stock'; productId: string; quantity: number }
   | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> }
+  | { type: 'set_restock_options'; options: RestockSuggestionOptions }
   | { type: 'respond_party_order'; orderId: string; accept: boolean }
   | { type: 'fulfill_party_order'; orderId: string }
   | { type: 'claim_goal'; goalId: string }
@@ -1138,6 +1139,15 @@ export interface SaveValidationResult {
 const OPTIONAL_SAVE_ARRAYS = ['staff', 'processedPayrollDayIds', 'pendingOrders', 'holdingArea', 'closedDayIds', 'completedCheckoutIds', 'processedAutoBuyDayIds', 'autoBuyRules', 'customerCredits', 'ledger'] as const;
 const OPTIONAL_LAYOUT_ARRAYS = ['storedFixtures', 'unlockedPlotIds', 'decorOwned'] as const;
 
+/** Cài đặt gợi ý nhập hàng hợp lệ: mọi trường tùy chọn, số hữu hạn / công tắc đúng kiểu (giá trị ngoài khoảng được kẹp khi áp dụng). */
+export function isRestockSuggestionOptions(value: unknown): value is RestockSuggestionOptions {
+  if (!isRecord(value)) return false;
+  for (const key of ['provenSharePct', 'maxTrialProducts', 'cashReservePct'] as const) {
+    if (value[key] !== undefined && !(typeof value[key] === 'number' && Number.isFinite(value[key]))) return false;
+  }
+  return value.protectObligations === undefined || typeof value.protectObligations === 'boolean';
+}
+
 export function isSaveGameData(value: unknown): value is SaveGameData {
   if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
@@ -1160,12 +1170,7 @@ export function isSaveGameData(value: unknown): value is SaveGameData {
   // Trường mảng tùy chọn: nếu có thì phải là mảng, để nạp save không sập ở `.map`/`for…of` (save hỏng hoặc sửa tay).
   for (const key of OPTIONAL_SAVE_ARRAYS) if (value[key] !== undefined && !Array.isArray(value[key])) return false;
   for (const key of OPTIONAL_LAYOUT_ARRAYS) if (sl[key] !== undefined && !Array.isArray(sl[key])) return false;
-  if (value.restockOptions !== undefined) {
-    const o = value.restockOptions;
-    if (!isRecord(o)) return false;
-    for (const key of ['provenSharePct', 'maxTrialProducts', 'cashReservePct'] as const) if (o[key] !== undefined && !Number.isFinite(o[key])) return false;
-    if (o.protectObligations !== undefined && typeof o.protectObligations !== 'boolean') return false;
-  }
+  if (value.restockOptions !== undefined && !isRestockSuggestionOptions(value.restockOptions)) return false;
   if (value.sellingPrices !== undefined && (!isRecord(value.sellingPrices) || !Object.values(value.sellingPrices).every(price => Number.isSafeInteger(price) && Number(price) > 0))) return false;
   const stats = value.statistics;
   if (!isRecord(stats) || !nonNegativeInteger(stats.totalRevenue) || !nonNegativeInteger(stats.totalCustomersServed)) {
@@ -1279,6 +1284,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'start_production': return nonEmptyString(p.recipeId) && nonEmptyString(p.stationId);
     case 'clean_dining_table': return nonEmptyString(p.fixtureId);
     case 'assign_dining_cleanup': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
+    case 'set_restock_options': return isRestockSuggestionOptions(p.options);
     case 'set_price': return nonEmptyString(p.productId) && (p.price === null || (Number.isSafeInteger(p.price) && Number(p.price) > 0));
     case 'layout_move': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.tileX) && Number.isSafeInteger(p.tileY) && [0, 90, 180, 270].includes(p.rotation as number);
     case 'layout_store': return nonEmptyString(p.fixtureId);

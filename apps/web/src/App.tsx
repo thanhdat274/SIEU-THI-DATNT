@@ -1059,10 +1059,14 @@ export const App: React.FC = () => {
   useEffect(() => () => clearTimeout(restockSaveTimer.current), []);
   const handleSaveRestockOptions = (options: import('@game/shared').RestockSuggestionOptions) => {
     const sim = simulationRef.current;
-    if (!sim) return;
+    if (!sim || blockOfflineOnlineMutation()) return;
     sim.setRestockOptions(options);
     clearTimeout(restockSaveTimer.current);
-    restockSaveTimer.current = setTimeout(() => { void handleSaveGame(false); }, 600);
+    restockSaveTimer.current = setTimeout(() => {
+      // Hẻm chung: gửi lệnh để máy chủ giữ bản chung; chơi riêng: ghi save cục bộ.
+      if (onlineWorldRef.current) void commitBusinessChange({ type: 'set_restock_options', options }, 'Đổi cài đặt gợi ý nhập hàng', 'Cài đặt');
+      else void handleSaveGame(false);
+    }, 600);
   };
 
   const handleUpdateAutoBuy = (enabled: boolean, rules: import('@game/shared').AutoBuyRule[]) => {

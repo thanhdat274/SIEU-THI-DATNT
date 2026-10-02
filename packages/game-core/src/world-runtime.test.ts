@@ -230,5 +230,29 @@ export async function runWorldRuntimeTests() {
   lateRuntime.syncMembers(lateWorld);
   assert.equal(lateRuntime.getSnapshot().world.avatars.length, 2, 'syncMembers is idempotent');
 
+  // Co-op: cài đặt gợi ý nhập hàng là lệnh server-replay, ghi vào save chung và kiểm đầu vào.
+  {
+    const seed = createInitialOnlineWorld(owner, 'world-restock-options');
+    const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    const cmd = (commandId: string, options: unknown) => ({
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId,
+      expectedRevision: rt.getSnapshot().world.revision, payload: { type: 'set_restock_options', options },
+    });
+    assert.equal(rt.getSimulation().getRestockOptions(), undefined, 'Hẻm mới chưa có cài đặt gợi ý');
+    const ok = await rt.executeCommand('owner-1', cmd('opt-1', { provenSharePct: 55, maxTrialProducts: 4, cashReservePct: 20, protectObligations: false }));
+    assert.equal(ok.status, 'accepted');
+    assert.deepEqual(rt.getSimulation().getRestockOptions(), { provenSharePct: 55, maxTrialProducts: 4, cashReservePct: 20, protectObligations: false });
+    assert.equal(rt.getSimulation().exportSaveData().restockOptions?.provenSharePct, 55, 'Cài đặt nằm trong save chung');
+    for (const [id, bad] of [['opt-bad-1', 'x'], ['opt-bad-2', { cashReservePct: 'abc' }], ['opt-bad-3', { protectObligations: 'yes' }], ['opt-bad-4', null]] as const) {
+      const res = await rt.executeCommand('owner-1', cmd(id, bad));
+      assert.equal(res.status, 'invalid', `Cài đặt sai (${id}) bị từ chối`);
+    }
+    assert.equal(rt.getSimulation().getRestockOptions()?.provenSharePct, 55, 'Lệnh sai không làm đổi cài đặt');
+    const clamped = await rt.executeCommand('owner-1', cmd('opt-clamp', { provenSharePct: 900, cashReservePct: -5 }));
+    assert.equal(clamped.status, 'accepted');
+    assert.equal(rt.getSimulation().getRestockOptions()?.provenSharePct, 100, 'Giá trị ngoài khoảng bị kẹp');
+    assert.equal(rt.getSimulation().getRestockOptions()?.cashReservePct, 0);
+  }
+
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');
 }
