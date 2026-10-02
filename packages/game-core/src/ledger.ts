@@ -100,6 +100,10 @@ export class LedgerManager {
 
   public getLedgerSequence(): number { return this.ledgerSequence; }
   public setLedgerSequence(val: number): void { this.ledgerSequence = val; }
+  public setLedger(val: LedgerEntry[]): void { this.ledger = val; }
+  public setDailyRecords(val: Record<number, DailyRecord>): void { this.dailyRecords = val; }
+  public setClosedDayIds(val: Set<number>): void { this.closedDayIds = val; }
+  public setStatistics(val: SaveGameData['statistics']): void { this.statistics = val; }
 
   // --- Daily record helpers ---
 

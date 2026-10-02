@@ -25,7 +25,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 |---|---|
 | `packages/shared` | Kiểu dữ liệu, `SaveGameData` (schema **3**), validator runtime, giao thức multiplayer (protocol 1) |
 | `packages/game-data` | Dữ liệu tĩnh: catalog (`catalog-manifest.ts` ~3.7k dòng sinh bằng script), nhà cung cấp, mùa/sự kiện, khách quen, kỹ năng, danh hiệu, bản đồ, tiến cấp 1–35, thời tiết |
-| `packages/game-core` | Logic thuần, không DOM: `GameSimulation` (`simulation.ts` 2.940 dòng), khách, kho/lô, ledger, thị trường, thời tiết, ánh sáng pha, `WorldRuntime` (co-op), thuế (registry) |
+| `packages/game-core` | Logic thuần, không DOM: `GameSimulation` (`simulation.ts` ≈3.920 dòng (03/10/2026; đã tách 5 Manager)), khách, kho/lô, ledger, thị trường, thời tiết, ánh sáng pha, `WorldRuntime` (co-op), thuế (registry) |
 | `packages/game-renderer` | Pixi: `viewport.ts` (1.368 dòng), texture procedural, `shop-lighting.ts`, camera, bóng cây |
 | `apps/web` | React UI (`App.tsx` 1.508 dòng), modal, Dexie save, hook WebSocket, service worker/manifest |
 | `apps/server` | NestJS dựng bằng decorator thủ công (`bootstrap.ts`), Firebase token guard, `WorldRepository` (Mongo), `WorldGateway` (WS) |
@@ -122,7 +122,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | I-13 | Mưa chỉ dùng ngưỡng 0,4 | Low | Mở |
 | I-14 | Khóa bí mật trong thư mục dự án | Low | Mở |
 | I-15 | Server không giới hạn payload/tần suất | Medium | Xử lý một phần 2026-10-01 |
-| I-16 | Chưa có migration schema world Mongo | Medium | Mở |
+| I-16 | Chưa có migration schema world Mongo | Medium | Đã có code (03/10/2026): `world-migrations.ts` chạy lúc khởi động server; chưa chạy thật (mới dry-run) |
 | I-17 | Thiếu tài liệu triển khai/vận hành | Low | Mở |
 | I-18 | A11y/cảm ứng chưa kiểm | Low | Mở |
 | I-19 | Đèn tín hiệu: QA browser dở, pha không đồng bộ co-op (chủ ý) | Medium | Mở |
@@ -231,6 +231,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Impact:** Hồi quy co-op không tự phát hiện.
 - **Related Files:** `package.json`, `apps/server/package.json`.
 - **Root Cause:** Chưa có CI.
+- **Tiến độ 2026-10-03 (một phần):** đã có script `test:all` / `test:all:db` và `.github/workflows/ci.yml`. `yarn test:all` chạy thật PASS 03/10/2026 (sau khi sửa 3 hồi quy setter Manager no-op, xem `tổng hợp.md`). Workflow CI **chưa chạy lần nào trên GitHub**; `test:all:db` (Mongo) chưa chạy lại. Vẫn Mở đến khi CI xanh trên GitHub.
 - **Suggested Fix:** Script `test:all`, Mongo in-memory/service trong CI.
 - **Priority:** Medium
 - **Verification:** Xác nhận qua `package.json`.
@@ -548,7 +549,7 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ## 7. Nợ kỹ thuật
 
-- **Problem:** `simulation.ts` 2.940 dòng gom kho, khách, ledger, quầy, thời tiết…
+- **Problem:** `simulation.ts` ≈3.920 dòng (03/10/2026; đã tách 5 Manager) gom kho, khách, ledger, quầy, thời tiết…
   - **Current Implementation:** Một class lớn.
   - **Risk:** Khó đồng bộ co-op, khó test cô lập, xung đột merge.
   - **Recommended Direction:** Tách module theo miền (đã có `stock.ts`, `ledger`…), giữ API.

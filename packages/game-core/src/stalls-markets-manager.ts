@@ -50,6 +50,9 @@ export class StallsMarketsManager {
   }
 
   /** Tham chiếu trực tiếp đến market (dùng để ghi). */
+  public setStalls(val: StallState): void { this.stalls = val; }
+  public setMarket(val: MarketState): void { this.market = val; }
+
   public getMarketRef(): MarketState {
     return this.market;
   }

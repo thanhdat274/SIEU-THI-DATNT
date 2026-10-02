@@ -270,18 +270,18 @@ export class GameSimulation {
 
   /** Proxy đến productionManager cho productionJobs (đọc). */
   private get productionJobs(): ProductionJob[] { return this.productionManager.getRef(); }
-  private set productionJobs(val: ProductionJob[]) { /* write-through to manager ref */ }
+  private set productionJobs(val: ProductionJob[]) { this.productionManager.setJobs(val); }
 
   private warehouseTier: number;
   private storageRackCount: number;
 
   /** Proxy đến stallsMarketsManager cho stalls (đọc/ghi). */
   private get stalls(): StallState { return this.stallsMarketsManager.getStallsRef(); }
-  private set stalls(val: StallState) { /* write-through: manager giữ state nội bộ */ }
+  private set stalls(val: StallState) { this.stallsMarketsManager.setStalls(val); }
 
   /** Proxy đến stallsMarketsManager cho market (đọc/ghi). */
   private get market(): MarketState { return this.stallsMarketsManager.getMarketRef(); }
-  private set market(val: MarketState) { /* write-through: manager giữ state nội bộ */ }
+  private set market(val: MarketState) { this.stallsMarketsManager.setMarket(val); }
 
   /** Proxy đến stallsMarketsManager cho demandTable (đọc). */
   private get demandTable(): DemandTable | undefined { return this.stallsMarketsManager.getDemandTable(); }
@@ -289,7 +289,7 @@ export class GameSimulation {
 
   /** Proxy đến stallsMarketsManager cho demandBuildCount (đọc/ghi). */
   private get demandBuildCount(): number { return this.stallsMarketsManager.getDemandBuildCount(); }
-  private set demandBuildCount(val: number) { /* write-through: manager giữ state nội bộ */ }
+  private set demandBuildCount(val: number) { void val; }
 
   /** Proxy đến stallsMarketsManager cho noticeThrottle (đọc). */
   private get noticeThrottle() { return this.stallsMarketsManager.getNoticeThrottle(); }
@@ -299,15 +299,15 @@ export class GameSimulation {
 
   /** Proxy đến questsManager cho quests (đọc/ghi). */
   private get quests(): QuestState { return this.questsManager.getState(); }
-  private set quests(val: QuestState) { /* write-through: manager giữ state nội bộ */ }
+  private set quests(val: QuestState) { this.questsManager.setState(val); }
 
   /** Proxy đến questsManager cho partyOrders (đọc/ghi). */
   private get partyOrders(): PartyOrderState { return this.questsManager.getPartyOrdersRef(); }
-  private set partyOrders(val: PartyOrderState) { /* write-through: manager giữ state nội bộ */ }
+  private set partyOrders(val: PartyOrderState) { this.questsManager.setPartyOrders(val); }
 
   /** Proxy đến questsManager cho goals (đọc/ghi). */
   private get goals(): GoalState { return this.questsManager.getGoalsRef(); }
-  private set goals(val: GoalState) { /* write-through: manager giữ state nội bộ */ }
+  private set goals(val: GoalState) { this.questsManager.setGoals(val); }
 
   /** Tham chiếu đến currentDayRecord từ ledgerManager. */
   private get currentDayRecord(): DailyRecord { return this.ledgerManager.getCurrentDayRecordRef(); }
@@ -315,7 +315,7 @@ export class GameSimulation {
 
   /** Proxy đến ledgerManager cho statistics (đọc/ghi). */
   private get statistics(): SaveGameData['statistics'] { return this.ledgerManager.getStatisticsRef(); }
-  private set statistics(val: SaveGameData['statistics']) { /* write-through: manager giữ state nội bộ */ }
+  private set statistics(val: SaveGameData['statistics']) { this.ledgerManager.setStatistics(val); }
 
   /** Proxy đến ledgerManager cho ledgerSequence (đọc/ghi). */
   private get ledgerSequence(): number { return this.ledgerManager.getLedgerSequence(); }
@@ -323,15 +323,15 @@ export class GameSimulation {
 
   /** Proxy đến ledgerManager cho dailyRecords (đọc/ghi). */
   private get dailyRecords(): Record<number, DailyRecord> { return this.ledgerManager.getDailyRecordsRef(); }
-  private set dailyRecords(val: Record<number, DailyRecord>) { /* write-through to manager ref */ }
+  private set dailyRecords(val: Record<number, DailyRecord>) { this.ledgerManager.setDailyRecords(val); }
 
   /** Proxy đến ledgerManager cho closedDayIds (đọc/ghi). */
   private get closedDayIds(): Set<number> { return this.ledgerManager.getClosedDayIdsRef(); }
-  private set closedDayIds(val: Set<number>) { /* write-through to manager ref */ }
+  private set closedDayIds(val: Set<number>) { this.ledgerManager.setClosedDayIds(val); }
 
   /** Proxy đến ledgerManager cho ledger entries (đọc/ghi). */
   private get ledger(): LedgerEntry[] { return this.ledgerManager.getLedger(); }
-  private set ledger(val: LedgerEntry[]) { /* write-through to manager ref */ }
+  private set ledger(val: LedgerEntry[]) { this.ledgerManager.setLedger(val); }
 
   private activeFixture: StoreFixture | null = null;
   private playerSpeed: number = 130; // Pixels per second
@@ -390,6 +390,7 @@ export class GameSimulation {
     this.questsManager = new QuestManager(initialSave);
     this.skills = initialSave.skills ? structuredClone(initialSave.skills) : createInitialSkillState();
     this.stallsMarketsManager = new StallsMarketsManager(initialSave);
+    this.ensureSupplierMarket(initialSave.worldTime.day);
     this.tileMap = this.stalls.owned.length ? generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned) : tileMap;
     this.inputManager = inputManager;
     this.callbacks = callbacks;
@@ -871,7 +872,7 @@ export class GameSimulation {
         ctx, products: SELLABLE_PRODUCTS, reputation: this.playerData.reputation,
         priceFactor: (productId) => demandPriceFactor(priceRatio(this.sellingPrice(productId), this.referencePrice(productId))),
       });
-      this.demandBuildCount++;
+      this.stallsMarketsManager.bumpDemandTable(key);
     }
     return this.demandTable;
   }
@@ -3835,6 +3836,7 @@ export class GameSimulation {
     this.autoBuyReports = structuredClone(saveData.autoBuyReports ?? {});
     this.questsManager.load(saveData);
     this.stallsMarketsManager.load(saveData);
+    this.ensureSupplierMarket(saveData.worldTime.day);
     this.pendingOrders = (saveData.pendingOrders ?? []).map((order) => ({
       ...order,
       supplierId: order.supplierId ?? DEFAULT_SUPPLIER_ID,

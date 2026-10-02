@@ -46,6 +46,10 @@ export class QuestManager {
   }
 
   /** Tham chiếu trực tiếp đến goals (dùng để ghi). */
+  public setState(val: QuestState): void { this.state = val; }
+  public setPartyOrders(val: PartyOrderState): void { this.partyOrders = val; }
+  public setGoals(val: GoalState): void { this.goals = val; }
+
   public getGoalsRef(): GoalState {
     return this.goals;
   }

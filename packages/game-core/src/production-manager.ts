@@ -18,6 +18,8 @@ export class ProductionManager {
   }
 
   /** Tham chiếu trực tiếp đến productionJobs (dùng để ghi/push/filter). */
+  public setJobs(jobs: ProductionJob[]): void { this.productionJobs = jobs; }
+
   public getRef(): ProductionJob[] {
     return this.productionJobs;
   }
