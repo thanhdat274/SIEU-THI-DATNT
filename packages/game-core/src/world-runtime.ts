@@ -243,6 +243,10 @@ export class WorldRuntime {
         success = this.simulation.chooseSkillPerk(p.perkId).success;
       } else if (p.type === 'set_title') {
         success = this.simulation.setActiveTitle(p.titleId).success;
+      } else if (p.type === 'maintain_fixture') {
+        success = this.simulation.maintainFixture(p.fixtureId, p.action).success;
+      } else if (p.type === 'security_action') {
+        success = p.action === 'buy_camera' ? this.simulation.buyCamera().success : this.simulation.setCallPolice(p.action === 'police_on').success;
       } else if (p.type === 'layout_batch') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
         const next = applyStoreLayoutActions(current, p.actions, ids => generateStarterTileMap(ids));

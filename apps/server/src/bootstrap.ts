@@ -100,7 +100,7 @@ export class GameController {
     }
     const serverReplayedCommands = new Set([
       'checkout', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'respond_party_order', 'fulfill_party_order', 'claim_goal',
-      'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title',
+      'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title', 'maintain_fixture', 'security_action',
     ]);
     if (serverReplayedCommands.has(payload?.type)) {
       const priorReceipt = await worldRepository.findReceipt(worldId, request.gameAccount.uid, body.receipt.commandId);
