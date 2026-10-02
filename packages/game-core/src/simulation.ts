@@ -153,6 +153,7 @@ import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS } from '@game/data';
 import { RestockClaimManager } from './restock-claims';
 import { StorageManager } from './storage';
 import { LedgerManager } from './ledger';
+import { StaffManager } from './staff-manager';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
@@ -211,11 +212,8 @@ export class GameSimulation {
   private inventory: InventoryItem[];
   private holdingArea: HoldingItem[];
   private planogram: Record<string, string> = {};
-  private staff: StaffMember[] = [];
-  private staffSchedule: Record<string, StaffShift> = {};
+  private staffManager: StaffManager;
   private restockJobClaims: RestockClaimManager;
-  private wageDebt: number = 0;
-  private processedPayrollDayIds: Set<number> = new Set();
   private autoBuyEnabled = false;
   private autoBuyRules: AutoBuyRule[] = [];
   private processedAutoBuyDayIds = new Set<number>();
@@ -254,6 +252,20 @@ export class GameSimulation {
   private streetTraffic = new StreetTrafficManager();
   private logisticsManager = new StoreLogisticsManager();
   private storageManager: StorageManager;
+
+  /** Proxy đến staffManager cho staff list (đọc). */
+  private get staff(): StaffMember[] { return this.staffManager.getStaffRef(); }
+
+  /** Proxy đến staffManager cho staffSchedule (đọc). */
+  private get staffSchedule(): Record<string, StaffShift> { return this.staffManager.getStaffScheduleRef(); }
+
+  /** Proxy đến staffManager cho wageDebt (đọc/ghi). */
+  private get wageDebt(): number { return this.staffManager.getWageDebtRef(); }
+  private set wageDebt(val: number) { this.staffManager.setWageDebt(val); }
+
+  /** Proxy đến staffManager cho processedPayrollDayIds (đọc/ghi). */
+  private get processedPayrollDayIds(): Set<number> { return this.staffManager.getProcessedPayrollDayIdsRef(); }
+
   private warehouseTier: number;
   private storageRackCount: number;
 
@@ -313,17 +325,11 @@ export class GameSimulation {
       supplierId: order.supplierId ?? DEFAULT_SUPPLIER_ID,
       delivered: order.delivered ?? false,
     }));
-    this.staff = (initialSave.staff ?? []).map((s) => ({
-      ...structuredClone(s),
-      shift: isShiftWithinStoreHours(s.shift) ? s.shift : 'full_day',
-    }));
-    this.staffSchedule = normalizeStaffSchedule(initialSave.staffSchedule, this.staff);
+    this.staffManager = new StaffManager(initialSave);
     this.restockJobClaims = new RestockClaimManager();
     for (const member of this.staff) {
       if (member.workerTask) this.restockJobClaims.addFromWorkerTask(member.workerTask.fixtureId, member.id);
     }
-    this.wageDebt = Math.max(0, initialSave.wageDebt ?? 0);
-    this.processedPayrollDayIds = new Set(initialSave.processedPayrollDayIds ?? []);
     this.autoBuyEnabled = initialSave.autoBuyEnabled ?? false;
     this.autoBuyRules = this.validateAutoBuyRules(initialSave.autoBuyRules ?? []);
     this.processedAutoBuyDayIds = new Set(initialSave.processedAutoBuyDayIds ?? []);
@@ -3790,13 +3796,11 @@ export class GameSimulation {
     this.inventory = saveData.inventory.map((i) => ({ ...i }));
     this.holdingArea = (saveData.holdingArea ?? []).map((h) => ({ ...h }));
     this.planogram = saveData.planogram ? { ...saveData.planogram } : {};
-    this.staff = (saveData.staff ?? []).map((s) => ({
-      ...structuredClone(s),
-      shift: isShiftWithinStoreHours(s.shift) ? s.shift : 'full_day',
-    }));
-    this.staffSchedule = normalizeStaffSchedule(saveData.staffSchedule, this.staff);
-    this.wageDebt = Math.max(0, saveData.wageDebt ?? 0);
-    this.processedPayrollDayIds = new Set(saveData.processedPayrollDayIds ?? []);
+    this.staffManager = new StaffManager(saveData);
+    this.restockJobClaims = new RestockClaimManager();
+    for (const member of this.staff) {
+      if (member.workerTask) this.restockJobClaims.addFromWorkerTask(member.workerTask.fixtureId, member.id);
+    }
     this.autoBuyEnabled = saveData.autoBuyEnabled ?? false;
     this.autoBuyRules = this.validateAutoBuyRules(saveData.autoBuyRules ?? []);
     this.processedAutoBuyDayIds = new Set(saveData.processedAutoBuyDayIds ?? []);
