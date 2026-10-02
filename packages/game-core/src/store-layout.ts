@@ -1,5 +1,5 @@
 import { getFixtureDimensions, isSlotChild, syncSlotChildren, type GameTileMap, type SaveGameData, type StoreFixture } from '@game/shared';
-import { DECOR_MAP, FIXTURE_SHOP, LAND_PLOTS, MAP_ORIGIN_Y, STORE_BOUNDS, WAREHOUSE_DOOR_LEFT } from '@game/data';
+import { DECOR_MAP, FIXTURE_SHOP, LAND_PLOTS, MAP_ORIGIN_Y, STORE_BOUNDS, WAREHOUSE_DOOR_LEFT, WAREHOUSE_TIERS, STORAGE_RACK_CELL_BONUS, MAX_STORAGE_RACKS } from '@game/data';
 
 export type LayoutFailure = 'fixture_missing' | 'plot_locked' | 'outside_floor' | 'overlap' | 'path_blocked' | 'invalid_rotation' | 'store_open' | 'level' | 'money' | 'prerequisite' | 'unknown_item' | 'unavailable' | 'owned';
 
@@ -15,7 +15,9 @@ export type StoreLayoutAction =
   | { type: 'retrieve'; fixtureId: string; tileX: number; tileY: number }
   | { type: 'buy_plot'; plotId: string }
   | { type: 'buy_decor'; decorId: string }
-  | { type: 'buy_fixture'; shopId: string; tileX: number; tileY: number; rotation: StoreFixture['rotation'] };
+  | { type: 'buy_fixture'; shopId: string; tileX: number; tileY: number; rotation: StoreFixture['rotation'] }
+  | { type: 'buy_warehouse_tier'; tier: number }
+  | { type: 'buy_storage_rack' };
 
 const key = (x: number, y: number) => `${x},${y}`;
 const footprint = (fixture: StoreFixture) => {
@@ -200,6 +202,44 @@ export function buyDecorItem(save: SaveGameData, decorId: string): LayoutResult 
   return { save: next };
 }
 
+// ==========================================
+// Warehouse tier & storage rack (ported from tap-hoa-dau-hem)
+// ==========================================
+
+/** Mua/cập nhật tier kho hàng. Chỉ được nâng dần (không được nhảy cóc hoặc hạ cấp). */
+export function buyWarehouseTier(save: SaveGameData, tier: number): LayoutResult {
+  if (tier < 0 || tier >= WAREHOUSE_TIERS.length) return { error: 'unknown_item' };
+  const current = save.warehouseTier ?? 0;
+  if (current === tier) return { error: 'owned' };
+  if (tier <= current) return { error: 'owned' }; // only sequential upgrade
+  if (tier !== current + 1) return { error: 'owned' }; // must upgrade to next tier only
+  const target = WAREHOUSE_TIERS[tier];
+  if (save.player.level < target.unlockLevel) return { error: 'level' };
+  if (save.player.money < target.cost) return { error: 'money' };
+  const next = structuredClone(save);
+  next.player.money -= target.cost;
+  next.warehouseTier = tier;
+  return { save: next };
+}
+
+/** Mua thêm 1 kệ kho storage_rack (+20 cells, tối đa 10 cái). */
+export function buyStorageRack(save: SaveGameData): LayoutResult {
+  const current = save.storageRackCount ?? 0;
+  if (current >= MAX_STORAGE_RACKS) return { error: 'owned' };
+  if (save.player.money < 50_000) return { error: 'money' };
+  const next = structuredClone(save);
+  next.player.money -= 50_000;
+  next.storageRackCount = current + 1;
+  return { save: next };
+}
+
+/** Tính tổng sức chứa kho: base tier + storage_rack bonus. */
+export function totalWarehouseCells(save: Pick<SaveGameData, 'warehouseTier' | 'storageRackCount'>): number {
+  const base = WAREHOUSE_TIERS[save.warehouseTier ?? 0]?.storageCells ?? WAREHOUSE_TIERS[0].storageCells;
+  const racks = save.storageRackCount ?? 0;
+  return base + racks * STORAGE_RACK_CELL_BONUS;
+}
+
 export function rotateStoreFixture(fixture: StoreFixture): StoreFixture['rotation'] {
   return ((fixture.rotation + 90) % 360) as StoreFixture['rotation'];
 }
@@ -236,6 +276,14 @@ export function applyStoreLayoutActions(save: SaveGameData, actions: readonly St
       draft = result.save;
     } else if (action.type === 'buy_fixture') {
       const result = buyShopFixture(draft, action.shopId, action.tileX, action.tileY, action.rotation);
+      if (!result.save) return result;
+      draft = result.save;
+    } else if (action.type === 'buy_warehouse_tier') {
+      const result = buyWarehouseTier(draft, action.tier);
+      if (!result.save) return result;
+      draft = result.save;
+    } else if (action.type === 'buy_storage_rack') {
+      const result = buyStorageRack(draft);
       if (!result.save) return result;
       draft = result.save;
     } else {

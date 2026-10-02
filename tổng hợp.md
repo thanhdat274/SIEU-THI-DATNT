@@ -1,5 +1,7 @@
 # Tổng hợp hiện trạng code — Tiệm Tạp Hóa Đầu Hẻm
 
+> **Cập nhật 02/10/2026 — OpenSpec `seasonal-daylight-tree-shadows` 5.3 (sync tài liệu):** Đã cập nhật TASKS.md và ROADMAP.md phản ánh đúng trạng thái: code + test PASS (`yarn typecheck/test/build` PASS, 7/7 suite), browser QA desktop một phần (bóng đổi hướng theo giờ/mùa/đêm), mobile chưa nghiệm thu trực tiếp. Chỉ còn 5.2 (browser QA mobile trên thiết bị thật) chưa đạt. Tổng hợp chi tiết giữ nguyên tại mục seasonal-daylight trong tổng hợp.md.
+
 > **Cập nhật 02/10/2026 — Balance audit 90 ngày, OAuth bypass, Tax 1%:**
 > - **Balance-audit 90 ngày:** Chạy `balance-audit.ts` (seed=42, 500k VND, 90 ngày). Kết quả: ending level 35, profit **+652%** (3.26M VND). Revenue 94M, COGS 47.7M, gross margin 49.3%. Staff wages 23.6M (262k/ngày, 9 nhân viên). Spoilage 20k, theft 1.36M, counterfeit loss 2.74M. **So với 30 ngày trước:** từ -3860% → +652%.
 > - **Balance fix:** Đổi hiring threshold từ `level >= 3` → `level >= 10`, thêm logic `maxAffordableStaff = avgRev7 * 0.2 / 25000` để AI chỉ hire khi revenue đủ chi trả lương. Thay đổi ở `balance-audit.ts:staff hiring` (dòng 593-610).

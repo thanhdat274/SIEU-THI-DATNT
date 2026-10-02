@@ -60,6 +60,8 @@ import { runSkillTests } from './skills.test';
 import { runPerkBehaviorTests } from './perks.test';
 import { runTitlesTests } from './titles.test';
 import { runStoreLogisticsTests } from './store-logistics.test';
+import { runWarehouseTierTests, runStorageRackTests, runTotalWarehouseCellsTests } from './warehouse-tiers.test';
+import { runChildCapacityTests } from './child-capacity.test';
 
 declare const process: any;
 
@@ -109,6 +111,10 @@ export async function runTests(): Promise<void> {
   runAnnualRevenueTests();
   runStoreLayoutTests();
   runShelfSlotTests();
+  runChildCapacityTests();
+  runWarehouseTierTests();
+  runStorageRackTests();
+  runTotalWarehouseCellsTests();
   runCheckoutLaneTests();
   runTaxRegistryTests();
   runInputTests();

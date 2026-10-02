@@ -27,6 +27,7 @@
 - [>] I-12: xuất/nhập save file (`save-file.ts`, test + Browser pane PASS), 3 ô lưu và khóa nhiều tab bằng Web Locks (`db.ts`, `slot-lock.ts`, Browser pane hai tab) đã làm 01/10/2026; menu ẩn bộ chọn khi chỉ có một save và ưu tiên ô trống khi tạo tiệm mới (code cập nhật 01/10/2026, chưa xác minh); test tự động `db.test.ts`/`slot-lock.test.ts` PASS 02/10/2026 (IndexedDB/Web Locks giả); còn kiểm mobile/trình duyệt khác.
 - [>] I-15: giới hạn payload/tần suất đã làm 01/10/2026 (HTTP/commit/WS, thân JSON 2 MB, `test:ratelimit`); còn: ngưỡng theo lưu lượng thật, trust proxy, client xử lý 429, giới hạn số kết nối WS.
 - [>] Co-op I-01: hướng B xong 01/10/2026 (`save-invariants.ts`, `test:invariants`, test co-op PASS); còn kiểm kho/giá, hiệu chỉnh ngưỡng bằng playtest, hướng A lâu dài. Replay mọi lệnh (I-01). Xong 01/10/2026: allow-list loại lệnh + test lệnh lạ (`test:coop`, `test:worlds`, `test:gateway` PASS). Còn: thống nhất payload client–`WorldRuntime` rồi chuyển từng lệnh sang replay.
+- [>] I-01 (02/10/2026): Đã mở rộng `serverReplayedCommands` trong `bootstrap.ts` — thêm toàn bộ lệnh còn lại (restock, unstock, set_price, planogram_assignment, planogram_restock, auto_restock, stow, stow_all, advance_day, change_speed, hire_staff, set_staff_shift, assign_refill_job). Tổng cộng **22/26 lệnh** được server replay từ 26 lệnh allowed (bỏ 2 lệnh `order`/`store_status` không tồn tại trong GameCommandPayload). 4 lệnh layout_* không cần thêm vì đã có handler riêng trong `layout_batch`. Chưa test/verify — cần chạy `yarn test --cwd apps/server`.
 - [ ] Giới hạn payload/tần suất server (I-15); migration schema world Mongo (I-16).
 - [ ] Lệnh nhân viên trong co-op (I-05); ID xác định (I-04).
 - [ ] Thay bảng xếp hạng giả (I-02); xuất/nhập save (I-12).
@@ -65,7 +66,7 @@
   - 4.2: Cẩm nang hướng dẫn cách chơi trong `LoginScreen.tsx` (tab tính năng nâng cao), 4 sản phẩm lễ hội thuần Việt (Bánh chưng xanh, Liễn câu đối đỏ, Dưa hấu Tài Lộc, Bánh Trung Thu), vai trò nhân viên bảo vệ trông xe (`security` role, tăng kiên nhẫn +15s và sao hài lòng cho khách đi xe máy), người bán quầy phụ vỉa hè (`buildStalls`).
 - **Đợt E (Hẻm sống động)**:
   - Giao thông hẻm `StreetTrafficManager`, khách đến bằng xe máy/ô tô/đi bộ, đỗ xe lề đường `STREET_PARKING_SPOTS`, texture pixel art xe máy/taxi. Test PASS.
-- **Đề xuất tiếp theo (01/10/2026, chưa triển khai)**: OpenSpec `seasonal-daylight-tree-shadows` (mốc mọc/lặn theo mùa, vị trí mặt trời, bóng cây theo dữ liệu bản đồ). Mới có đặc tả; xem `tasks.md` của change.
+- **Triển khai 01/10/2026 (code+test PASS):** OpenSpec `seasonal-daylight-tree-shadows`: bảng 12 mốc mọc/lặn nội suy (`lighting-phase.ts`), `getSolarPosition` + azimuth/elevation, `TREE_PROPS` trong `game-data/map.ts`, `computeTreeShadow` thuần với cache theo ngưỡng 1°+mưa (`tree-shadow.ts`), công cụ debug giờ/ngày (`debug-time.ts`). `yarn typecheck/test/build` PASS (7/7 suite, 0 fail). Browser QA desktop: bóng đổi hướng theo giờ/mùa, biến mất đêm/mưa; mobile chưa nghiệm thu trực tiếp. Chỉ còn 5.2 (browser QA mobile) và 5.3 (sync tài liệu này — đang làm).
 - **Kết quả kiểm chứng kỹ thuật**:
   - `yarn typecheck` PASS (0 errors).
   - `yarn test` PASS 100% (tất cả 40+ unit test suites và 7 TAP subtests).

@@ -108,7 +108,7 @@ export class CustomerManager {
     return this.customers.map((c) => ({
       ...c,
       position: { ...c.position },
-      basket: c.basket?.map((b) => ({ ...b, lots: [...b.lots] })),
+      basket: c.basket?.map((b) => ({ ...b, lots: b.lots ? [...b.lots] : [] })),
     }));
   }
 
@@ -548,7 +548,7 @@ export class CustomerManager {
     if (!customer.basket || customer.basket.length === 0) return;
 
     for (const item of customer.basket) {
-      for (const lot of item.lots) {
+      for (const lot of item.lots ?? []) {
         if (lot.expiresOnDay <= currentDay) {
           // Spoiled
           onSpoiledGoods?.(lot.quantity);
@@ -610,7 +610,7 @@ export class CustomerManager {
     const items = customer.basket ?? [];
     const totals = {
       retail: items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
-      cost: items.reduce((sum, item) => sum + item.lots.reduce((n, lot) => n + lot.quantity * (lot.unitCost ?? PRODUCT_MAP[item.productId]?.purchasePrice ?? 0), 0), 0),
+      cost: items.reduce((sum, item) => sum + (item.lots ?? []).reduce((n, lot) => n + lot.quantity * (lot.unitCost ?? PRODUCT_MAP[item.productId]?.purchasePrice ?? 0), 0), 0),
       count: items.reduce((sum, item) => sum + item.quantity, 0),
     };
     if (caught) this.abandonBasket(customer, fixtures, inventory, onSpoiledGoods, currentDay, shelfCapacityMultiplier);

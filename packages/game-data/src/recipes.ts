@@ -29,7 +29,7 @@ export const PRODUCED_PRODUCTS: Product[] = [
 export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_mi_trung_nuong', name: 'Bánh mì trứng nướng', stationShopId: 'food_grill', inputs: [{ productId: 'banh_mi_goi', quantity: 1 }, { productId: 'trung_ga', quantity: 2 }], outputProductId: 'banh_mi_trung_nuong', outputQuantity: 4, durationSeconds: 40, unlockLevel: 21 },
   { id: 'recipe_tra_gung_nong', name: 'Trà gừng pha nóng', stationShopId: 'hot_kettle', inputs: [{ productId: 'tra_nong_gung', quantity: 1 }, { productId: 'nuoc_suoi', quantity: 4 }], outputProductId: 'tra_gung_nong', outputQuantity: 5, durationSeconds: 30, unlockLevel: 21 },
-  { id: 'recipe_mi_trung_nong', name: 'Mì trứng nấu sẵn', stationShopId: 'hot_kettle', inputs: [{ productId: 'mi_omachi', quantity: 1 }, { productId: 'trung_ga', quantity: 1 }], outputProductId: 'mi_trung_nong', outputQuantity: 1, durationSeconds: 25, unlockLevel: 21 },
+  { id: 'recipe_mi_trung_nong', name: 'Mì trứng nấu sẵn', stationShopId: 'hot_kettle', inputs: [{ productId: 'mi_omachi', quantity: 1 }, { productId: 'trung_ga', quantity: 1 }], outputProductId: 'mi_trung_nong', outputQuantity: 2, durationSeconds: 25, unlockLevel: 21 },
 ];
 
 export const RECIPE_MAP: Record<string, Recipe> = Object.fromEntries(RECIPES.map(recipe => [recipe.id, recipe]));

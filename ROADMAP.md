@@ -171,6 +171,17 @@ Phase 7 giữ định hướng Firebase/NestJS/MongoDB, triển khai phần cầ
 
 ---
 
+### [>] OpenSpec `seasonal-daylight-tree-shadows` — 02/10/2026 (Code + Tests PASS)
+- [x] **Nhóm 1** (Mốc mọc/lặn theo mùa): bảng 12 mốc nội suy tuần hoàn trên năm 120 ngày (`lighting-phase.ts`), test xác định/không cày/lặp theo năm/độ dài ngày 11–13h.
+- [x] **Nhóm 2** (Vị trí mặt trời): `getSolarPosition` (vĩ độ 10,8°), azimuth/elevation/shadowDir, test đỉnh 12:00/mọc-lặn ≈ 0/đông-tây ngả đúng/nối 24h.
+- [x] **Nhóm 3** (Cây là dữ liệu bản đồ): `TREE_PROPS`/`TREE_SPRITE_OFFSET` trong `game-data/map.ts`, sprite và va chạm không trùng cửa/đỗ/đèn.
+- [x] **Nhóm 4** (Bóng cây động): `computeTreeShadow` thuần, cache theo ngưỡng 1°+mưa, elip theo độ cao mặt trời (dài 3,5 ô max), mờ nắng/mưa, chỉ vẽ lại khi góc đổi. Đo hiệu năng desktop: không đáng kể (~±3% nhiễu CPU luồng chính).
+- [x] **Nhóm 5.1** (typecheck/test/build): PASS (7/7 suite, 0 fail).
+- [ ] **5.2** Browser QA mobile: bóng đổi hướng/mùa/đêm/mưa trên thiết bị thật; mới kiểm một phần desktop.
+- [ ] **5.3** Sync tài liệu — ĐÃ CẬP NHẬT (02/10/2026).
+
+---
+
 ### [>] GIAI ĐOẠN 10: QUẦY ĂN UỐNG & ĐỊNH HƯỚNG MULTIPLAYER
 - [>] Quầy cà phê vợt và bánh mì nướng muối ớt: mở bằng tiền/cấp (`StallModal`), doanh thu tính mỗi ngày theo mùa/uy tín, ghi sổ có giá vốn, lưu/tải, co-op qua lệnh `buy_stall` (test core + runtime PASS). Quầy hiện trên vỉa hè bên phải cửa tiệm (sprite pixel, chặn đường đi) và tiêu nguyên liệu từ nhà kho theo lô FEFO (cà phê: sữa đặc + đường; bánh mì: bánh mì gối + dầu ăn; thiếu hàng thì bán ít suất hơn, báo thiếu trong modal). Còn thiếu: nhân vật phục vụ/khách đứng mua tại quầy (doanh thu vẫn tính gộp theo ngày), cà phê bột/muối ớt chưa có trong catalog nên tính bằng tiền mặt; sprite chưa QA bằng mắt trong browser.
 

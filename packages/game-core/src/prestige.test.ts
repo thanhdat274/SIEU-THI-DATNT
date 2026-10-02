@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { DEFAULT_INITIAL_SAVE, MAX_PLAYER_LEVEL, PRESTIGE_MAX_STARS, PRESTIGE_XP_PER_STAR, generateStarterTileMap, prestigeTrafficMultiplier, xpToNextLevel } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, MAX_PLAYER_LEVEL, PRESTIGE_MAX_STARS, PRESTIGE_TRAFFIC_PER_STAR, PRESTIGE_XP_PER_STAR, generateStarterTileMap, prestigeTrafficMultiplier, xpToNextLevel } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { normalizePlayerProgression } from './progression';
@@ -52,7 +52,7 @@ export function runPrestigeTests(): void {
 
   // Thưởng bị chặn.
   assert.equal(prestigeTrafficMultiplier(0), 1);
-  assert.ok(prestigeTrafficMultiplier(999) <= 1 + PRESTIGE_MAX_STARS * 0.01 + 1e-9);
+  assert.ok(prestigeTrafficMultiplier(999) <= 1 + PRESTIGE_MAX_STARS * PRESTIGE_TRAFFIC_PER_STAR + 1e-9);
 
   // Save cũ không có prestige giữ nguyên; save/reload giữ sao; dữ liệu bẩn bị làm sạch.
   const legacy = normalizePlayerProgression(structuredClone(DEFAULT_INITIAL_SAVE.player));

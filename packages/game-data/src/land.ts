@@ -17,6 +17,20 @@ export const LAND_PLOTS: LandPlotDefinition[] = [
 
 export const STARTER_OWNED_PLOT_IDS: string[] = [];
 
+// ==========================================
+// Warehouse tier system (ported from tap-hoa-dau-hem)
+// ==========================================
+
+export const WAREHOUSE_TIERS = [
+  { tier: 0, name: 'Kho cơ bản',    storageCells: 30, cost: 0,            unlockLevel: 1  },
+  { tier: 1, name: 'Kho mở rộng',   storageCells: 50, cost: 250_000,      unlockLevel: 8  },
+  { tier: 2, name: 'Kho lớn',       storageCells: 80, cost: 500_000,      unlockLevel: 9  },
+  { tier: 3, name: 'Kho tối đa',    storageCells: 120, cost: 900_000,     unlockLevel: 11 },
+] as const;
+
+export const STORAGE_RACK_CELL_BONUS = 20;
+export const MAX_STORAGE_RACKS = 10;
+
 export type FixtureShopKind = 'decor' | 'shelf' | 'fridge' | 'freezer' | 'storage' | 'counter' | 'food' | 'drink' | 'seating' | 'generator';
 
 export interface FixtureShopItem {
@@ -37,6 +51,8 @@ export interface FixtureShopItem {
   limit?: number;
   /** Mảnh đất yêu cầu trong game gốc (chưa áp dụng ở đây). */
   requiresPlot?: string;
+  /** Số ô kho bổ sung mỗi khi mua (chỉ áp dụng cho storage_rack). */
+  storageCells?: number;
 }
 
 /**
@@ -48,7 +64,7 @@ export const FIXTURE_SHOP: FixtureShopItem[] = [
   { id: 'fridge', name: 'Tủ lạnh 2 cánh', kind: 'fridge', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 4, cost: 220_000, unlockLevel: 5, functional: true, },
   { id: 'fridge_single', name: 'Tủ lạnh 1 cánh', kind: 'fridge', type: 'refrigerator', widthTiles: 1, heightTiles: 1, maxCapacity: 12, slotCount: 2, cost: 90_000, unlockLevel: 5, functional: true, },
   { id: 'freezer', name: 'Tủ đông', kind: 'freezer', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 18, slotCount: 3, cost: 180_000, unlockLevel: 9, functional: true, },
-  { id: 'storage_rack', name: 'Kệ kho', kind: 'storage', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 50_000, unlockLevel: 9, functional: false, },
+  { id: 'storage_rack', name: 'Kệ kho', kind: 'storage', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 50_000, unlockLevel: 9, functional: true, limit: 10, storageCells: STORAGE_RACK_CELL_BONUS, },
   { id: 'shelf_double', name: 'Kệ đôi', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 8, cost: 160_000, unlockLevel: 15, functional: true, requiresPlot: 'D', },
   { id: 'shelf_3', name: 'Kệ 3', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 12, cost: 320_000, unlockLevel: 21, functional: true, requiresPlot: 'D', },
   { id: 'shelf_4', name: 'Kệ 4', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 16, cost: 500_000, unlockLevel: 29, functional: true, requiresPlot: 'D', },
