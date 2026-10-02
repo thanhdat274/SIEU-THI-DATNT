@@ -144,6 +144,7 @@ export type SuggestionReason =
   | 'out_of_stock'
   | 'low_stock'
   | 'best_seller'
+  | 'slow_seller' // đã bán nhưng chậm: chỉ nhập lượng nhỏ theo tốc độ bán thật
   | 'fallback_trial';
 
 export interface SuggestedCartItem {
@@ -153,8 +154,19 @@ export interface SuggestedCartItem {
   estimatedCost: number;
   reason: SuggestionReason;
   salesVelocity?: number; // Average units sold per day
-  isFallback: boolean;
+  isFallback: boolean; // true = hàng mới nhập thử (nhóm 60%)
   daysOfStockLeft?: number;
+}
+
+/** Phân bổ ngân sách gợi ý: hàng đang bán (mặc định 40%) và hàng mới nhập thử (60%); phần nhóm này không dùng hết được chuyển sang nhóm kia. */
+export interface RestockBudgetSplit {
+  /** Tiền còn dùng được cho gợi ý = min(ngân sách, tiền mặt) − giá trị giỏ đang có. */
+  spendable: number;
+  provenShare: number;
+  provenTarget: number;
+  trialTarget: number;
+  provenSpent: number;
+  trialSpent: number;
 }
 
 export interface RestockSuggestionResult {
@@ -165,6 +177,7 @@ export interface RestockSuggestionResult {
   coldItemCount: number;
   appliedConstraints: string[];
   explanation: string;
+  budget?: RestockBudgetSplit;
 }
 
 export interface HoldingItem {

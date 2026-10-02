@@ -1478,8 +1478,8 @@ export const App: React.FC = () => {
         onOrderCart={handleSupplierCartOrder}
         getQuotes={(supplierId) => simulationRef.current!.getSupplierQuotes(supplierId)}
         getUnitPrice={(supplierId, productId, quantity) => simulationRef.current!.wholesaleUnitPrice(supplierId, productId, quantity)}
-        onGetSuggestions={(supplierId) =>
-          simulationRef.current?.suggestRestock(supplierId) ?? {
+        onGetSuggestions={(supplierId, cart) =>
+          simulationRef.current?.suggestRestock(supplierId, undefined, cart) ?? {
             supplierId,
             items: [],
             totalCost: 0,

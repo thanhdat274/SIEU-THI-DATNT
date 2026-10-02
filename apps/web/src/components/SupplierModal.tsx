@@ -7,6 +7,7 @@ import {
   COLD_WAREHOUSE_CAPACITY,
   SupplierCartItem,
   RestockSuggestionResult,
+  RestockBudgetSplit,
   SuggestedCartItem,
   AutoBuyRule,
   AutoBuyReport,
@@ -30,7 +31,7 @@ interface Props {
   currentDay: number;
   onOrder: (id: string, n: number) => void;
   onOrderCart?: (supplierId: string, items: SupplierCartItem[]) => void;
-  onGetSuggestions?: (supplierId: string) => RestockSuggestionResult;
+  onGetSuggestions?: (supplierId: string, cart: Record<string, number>) => RestockSuggestionResult;
   getQuotes?: (supplierId: string) => SupplierQuoteBoard;
   getUnitPrice?: (supplierId: string, productId: string, quantity: number) => number;
   autoBuyConfig?: { enabled: boolean; rules: AutoBuyRule[]; reports: Record<number, AutoBuyReport> };
@@ -70,6 +71,7 @@ export const SupplierModal: React.FC<Props> = ({
     items: SuggestedCartItem[];
     constraints: string[];
     explanation: string;
+    budget?: RestockBudgetSplit;
   } | null>(null);
 
   const currentSupplier = SUPPLIER_MAP[selectedSupplierId] ?? SUPPLIERS[0];
@@ -159,11 +161,13 @@ export const SupplierModal: React.FC<Props> = ({
 
   const handleGenerateSuggestion = () => {
     if (!onGetSuggestions) return;
-    const res = onGetSuggestions(selectedSupplierId);
+    // Truyền giỏ đang soạn để gợi ý chỉ tiêu phần tiền còn lại (bấm nhiều lần không cộng dồn vượt tiền).
+    const res = onGetSuggestions(selectedSupplierId, quantities);
     setSuggestedCart({
       items: res.items.map((it) => ({ ...it })),
       constraints: res.appliedConstraints,
       explanation: res.explanation,
+      budget: res.budget,
     });
     setQuantities((old) => addSuggestedToQuantities(old, res.items));
   };
@@ -272,7 +276,7 @@ export const SupplierModal: React.FC<Props> = ({
           <div>
             <strong>Gợi ý thông minh</strong>
             <p className="muted" style={{ margin: 0, fontSize: '11px' }}>
-              Phân tích tốc độ bán 3–7 ngày, tồn kho &amp; đơn chờ để tính toán giỏ hàng tối ưu.
+              Phân tích tốc độ bán 3–7 ngày, tồn kho &amp; đơn chờ. Chia tiền còn lại: 40% hàng đang bán, 60% nhập thử hàng mới; không vượt tiền đang có.
             </p>
           </div>
           <PixelButton
@@ -315,6 +319,12 @@ export const SupplierModal: React.FC<Props> = ({
             {suggestedCart.explanation}
           </p>
 
+          {suggestedCart.budget && suggestedCart.budget.spendable > 0 && (
+            <p className="muted" style={{ fontSize: '11px', margin: '0 0 8px' }}>
+              Tiền dùng cho gợi ý {money(suggestedCart.budget.spendable)} · Hàng đang bán {money(suggestedCart.budget.provenSpent)} / {money(suggestedCart.budget.provenTarget)} (40%) · Hàng mới thử {money(suggestedCart.budget.trialSpent)} / {money(suggestedCart.budget.trialTarget)} (60%)
+            </p>
+          )}
+
           {suggestedCart.constraints.length > 0 && (
             <div style={{ marginBottom: '10px' }}>
               {suggestedCart.constraints.map((c, idx) => (
@@ -348,11 +358,13 @@ export const SupplierModal: React.FC<Props> = ({
                   item.reason === 'out_of_stock' ? 'Hết hàng'
                   : item.reason === 'best_seller' ? 'Bán chạy'
                   : item.reason === 'low_stock' ? 'Sắp hết'
-                  : 'Thử nghiệm';
+                  : item.reason === 'slow_seller' ? 'Bán chậm'
+                  : 'Hàng mới thử';
                 const badgeColor =
                   item.reason === 'out_of_stock' ? '#d90429'
                   : item.reason === 'best_seller' ? '#b5838d'
                   : item.reason === 'low_stock' ? '#e07a5f'
+                  : item.reason === 'slow_seller' ? '#6c757d'
                   : '#3d5a80';
                 const inCart = quantities[item.productId] ?? 0;
                 const maxQty = maxQtyFor(item.productId);

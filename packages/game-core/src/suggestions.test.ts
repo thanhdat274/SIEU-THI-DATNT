@@ -471,5 +471,105 @@ export function runSuggestionTests(): void {
   console.log('  ✓ Hệ số thời tiết/mùa làm tăng nhu cầu gợi ý chính xác');
   console.log('  ✓ Hàng tươi sống tuân thủ nghiêm ngặt trần hạn sử dụng');
 
+  // --- Test 7.5: Chia ngân sách 40/60, giỏ đang có, hàng bán chậm & hàng đang thử ---
+  console.log('\n--- Test 7.5: Chia ngân sách 40/60, không vượt tiền, giảm hàng bán chậm ---');
+  const noodleShelf = (stock: number): any => ({
+    id: 'shelf_noodle',
+    type: 'shelf_wooden',
+    assignedProductId: 'mi_hao_hao',
+    currentStock: stock,
+    stockLots: stock > 0 ? [{ quantity: stock, expiresOnDay: 99, unitCost: 3000 }] : [],
+    maxCapacity: 40,
+  });
+  const weekOf = (sales: Record<number, Record<string, number>>): Record<number, any> =>
+    Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((day) => [day, { day, productSales: sales[day] ?? {} }]));
+  const base = {
+    playerLevel: 1,
+    currentDay: 8,
+    inventory: [],
+    holdingArea: [],
+    pendingOrders: [],
+    coldWarehouseCount: 0,
+    currentDayRecord: { day: 8, productSales: {} } as any,
+  };
+
+  // 1. Hàng bán chạy cần nhiều hơn tiền đang có → vẫn giữ 60% cho hàng mới nhập thử, tổng không vượt tiền.
+  {
+    const money = 100000;
+    const res = generateRestockSuggestions({
+      ...base,
+      playerMoney: money,
+      fixtures: [noodleShelf(0)],
+      dailyRecords: weekOf(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [d, { mi_hao_hao: 60 }]))),
+    });
+    assert.ok(res.totalCost <= money, `Tổng gợi ý ${res.totalCost} không vượt tiền ${money}`);
+    assert.ok(res.budget, 'Có thông tin phân bổ ngân sách');
+    assert.equal(res.budget!.provenTarget, 40000, 'Hàng đang bán được 40% ngân sách');
+    assert.ok(res.budget!.provenSpent <= 40000, `Hàng đang bán không lấn phần hàng mới (${res.budget!.provenSpent})`);
+    const noodle = res.items.find((i) => i.productId === 'mi_hao_hao');
+    assert.ok(noodle && !noodle.isFallback, 'Mì đang bán chạy vẫn được gợi ý');
+    const trialItems = res.items.filter((i) => i.isFallback);
+    assert.ok(trialItems.length >= 2, `Hàng mới luôn được gợi ý nhập thử (${trialItems.length} món)`);
+    assert.ok(trialItems.length <= 6, 'Mỗi lần thử tối đa 6 mặt hàng mới');
+    const trialCategories = new Set(trialItems.map((i) => PRODUCT_MAP[i.productId]!.category));
+    assert.equal(trialCategories.size, trialItems.length, 'Hàng thử trải đều mỗi ngành một món để đa dạng mẫu mã');
+    assert.ok(res.budget!.trialSpent > res.budget!.provenSpent * 0.9, 'Phần hàng mới dùng được tương ứng 60%');
+  }
+
+  // 2. Không có hàng mới để thử (đều đã có tồn) → phần 60% nhường cho hàng đang bán.
+  {
+    const res = generateRestockSuggestions({
+      ...base,
+      playerMoney: 100000,
+      fixtures: [noodleShelf(0)],
+      dailyRecords: weekOf(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [d, { mi_hao_hao: 60 }]))),
+      supplierStockOf: (id) => (id === 'mi_hao_hao' ? undefined : 0),
+    });
+    assert.equal(res.items.every((i) => i.productId === 'mi_hao_hao'), true, 'NCC hết hàng thì không gợi ý món đó');
+    assert.ok(res.budget!.provenSpent > 40000, `Phần dư của nhóm hàng mới chuyển cho hàng đang bán (${res.budget!.provenSpent})`);
+    assert.ok(res.totalCost <= 100000);
+  }
+
+  // 3. Hàng bán chậm/tồn nhiều không bị lấp đầy kệ; hàng chưa bán mà còn tồn thì chờ, không nhập thêm.
+  {
+    const res = generateRestockSuggestions({
+      ...base,
+      playerMoney: 500000,
+      fixtures: [noodleShelf(1), { id: 'shelf_candy', type: 'shelf_wooden', assignedProductId: 'keo_big_babol', currentStock: 3, stockLots: [{ quantity: 3, expiresOnDay: 99, unitCost: 1000 }], maxCapacity: 40 }],
+      dailyRecords: weekOf({ 1: { mi_hao_hao: 1 } }), // 1 gói / 7 ngày
+    });
+    assert.equal(res.items.find((i) => i.productId === 'mi_hao_hao'), undefined, 'Mì bán chậm còn 1 gói thì không lấp kệ 40');
+    assert.equal(res.items.find((i) => i.productId === 'keo_big_babol'), undefined, 'Kẹo đang thử chưa bán, còn tồn → không nhập thêm');
+    assert.ok(res.explanation.includes('bán chậm'), 'Giải thích có nhắc hàng bán chậm');
+    assert.ok(res.explanation.includes('đang thử'), 'Giải thích có nhắc hàng đang thử');
+  }
+
+  // 4. Tích hợp: bấm gợi ý hai lần (giỏ cộng dồn như UI) vẫn không vượt tiền theo giá thật lúc đặt.
+  {
+    const sim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+    const money = sim.getPlayerData().money;
+    const supplierId = 'dai_ly_dau_hem';
+    let cart: Record<string, number> = {};
+    for (let i = 0; i < 3; i++) {
+      const res = sim.suggestRestock(supplierId, undefined, cart);
+      for (const item of res.items) cart = { ...cart, [item.productId]: (cart[item.productId] ?? 0) + item.quantity };
+    }
+    const lines = Object.entries(cart).map(([productId, quantity]) => ({ productId, quantity }));
+    assert.ok(lines.length > 0, 'Gợi ý có hàng');
+    const check = sim.validateSupplierCart(supplierId, lines);
+    assert.ok(check.totalCost <= money, `Giỏ sau 3 lần bấm (${check.totalCost}) không vượt tiền (${money})`);
+    assert.ok(!check.reasons.some((r) => r.includes('Không đủ tiền')), 'Giỏ gợi ý không bị từ chối vì thiếu tiền');
+
+    // Ngân sách nhỏ: cắt theo giá thật, vẫn không vượt.
+    const tight = sim.suggestRestock(supplierId, 20000);
+    const tightCheck = sim.validateSupplierCart(supplierId, tight.items.map((i) => ({ productId: i.productId, quantity: i.quantity })));
+    assert.ok(tight.items.length === 0 || tightCheck.totalCost <= 20000, `Ngân sách 20.000 ₫ được tôn trọng (${tightCheck.totalCost})`);
+  }
+
+  console.log('  ✓ Hàng đang bán 40%, hàng mới nhập thử 60%; nhóm dùng không hết nhường nhóm kia');
+  console.log('  ✓ Hàng mới luôn được gợi ý (tối đa 6 món/lần), NCC hết hàng thì bỏ qua');
+  console.log('  ✓ Hàng bán chậm/tồn nhiều không bị lấp kệ; hàng đang thử còn tồn thì chờ kết quả');
+  console.log('  ✓ Bấm gợi ý nhiều lần cộng dồn vào giỏ vẫn không vượt tiền đang có');
+
   console.log('\n🎉 TOÀN BỘ CÁC BÀI KIỂM THỬ GỢI Ý NHẬP HÀNG (NHÓM 7) ĐÃ ĐẠT!');
 }

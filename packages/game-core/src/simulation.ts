@@ -2236,9 +2236,18 @@ export class GameSimulation {
   /**
    * Generate intelligent restock suggestions based on sales velocity and store state.
    */
-  public suggestRestock(supplierId?: string, budget?: number): RestockSuggestionResult {
-    const expected = new Map(this.getProductPlans(supplierId ?? DEFAULT_SUPPLIER_ID).map((plan) => [plan.productId, plan.expectedTomorrow]));
+  public suggestRestock(supplierId?: string, budget?: number, existingCart?: Record<string, number>): RestockSuggestionResult {
+    const effectiveSupplierId = supplierId ?? DEFAULT_SUPPLIER_ID;
+    const expected = new Map(this.getProductPlans(effectiveSupplierId).map((plan) => [plan.productId, plan.expectedTomorrow]));
+    const supplierState = this.market.suppliers?.[effectiveSupplierId];
+    const limitedStock = SUPPLIER_MAP[effectiveSupplierId]?.stockPerProductPerDay !== undefined;
     return generateRestockSuggestions({
+      existingCart,
+      // Giá thật lúc đặt giỏ (cùng công thức với validateSupplierCart) để tổng gợi ý + giỏ không vượt tiền.
+      cartCostOf: (items) => this.validateSupplierCart(effectiveSupplierId, items).totalCost,
+      supplierStockOf: (productId) =>
+        supplierState?.unavailable.includes(productId) ? 0 : limitedStock && supplierState ? supplierState.stockLeft[productId] ?? 0 : undefined,
+      ambient: { freeCells: this.ambientFreeCells(), heldOf: (productId) => this.ambientUnitsOf(productId) },
       supplierId,
       playerLevel: this.playerData.level,
       playerMoney: this.playerData.money,
