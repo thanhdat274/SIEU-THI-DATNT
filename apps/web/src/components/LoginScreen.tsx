@@ -57,6 +57,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   const [slots, setSlots] = useState<SaveSlotInfo[]>([]);
   const [activeSlot, setActiveSlot] = useState<SaveSlotId>(getActiveSlotId());
   const [lockedSlots, setLockedSlots] = useState<Set<SaveSlotId>>(new Set());
+  const [slotsExpanded, setSlotsExpanded] = useState<boolean>(false);
+  // Chỉ hiện hàng chọn ô khi thật sự có lựa chọn: từ hai bản lưu trở lên, hoặc bản lưu duy nhất không nằm ở ô đang chọn, hoặc người chơi tự mở.
+  const filledSlots = slots.filter((slot) => slot.status !== 'empty');
+  const showSlotRow = slotsExpanded || filledSlots.length >= 2 || (filledSlots.length === 1 && filledSlots[0].slotId !== activeSlot);
 
   // Đọc ba ô lưu và ô đang chọn từ IndexedDB; làm mới khi quay lại tab (tab khác có thể đã đổi/khóa ô).
   const refreshSlots = React.useCallback(async () => {
@@ -551,7 +555,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
                 </div>
               </div>
 
-              {slots.filter((slot) => slot.status !== 'empty').length >= 2 && <div className="save-slot-row" role="radiogroup" aria-label="Chọn ô lưu">
+              {!showSlotRow && slots.length > 0 && (
+                <button type="button" className="save-slot-more" onClick={() => setSlotsExpanded(true)}>+ Thêm ô lưu khác</button>
+              )}
+              {showSlotRow && <div className="save-slot-row" role="radiogroup" aria-label="Chọn ô lưu">
                 {slots.map((slot) => {
                   const locked = lockedSlots.has(slot.slotId);
                   const detail = locked ? 'Đang mở ở thẻ khác'

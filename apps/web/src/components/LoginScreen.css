@@ -1880,3 +1880,5 @@
 .save-slot-chip > button:first-child small { display: block; font-size: 11px; color: #7a634e; margin-top: 2px; }
 .save-slot-chip > button:disabled { opacity: 0.6; cursor: default; }
 .save-slot-delete { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; line-height: 18px; border: 1px solid #c27a6e; border-radius: 50%; background: #fff; color: #88392f; cursor: pointer; font-size: 14px; }
+
+.save-slot-more { align-self: flex-start; margin: 2px 0 10px; padding: 0; border: 0; background: none; color: #7a634e; font-size: 12px; text-decoration: underline; cursor: pointer; }
