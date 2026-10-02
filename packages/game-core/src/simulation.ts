@@ -157,6 +157,8 @@ import { StaffManager } from './staff-manager';
 import { DiningManager } from './dining-manager';
 import { ProductionManager } from './production-manager';
 import { SecurityManager } from './security-manager';
+import { StallsMarketsManager } from './stalls-markets-manager';
+import { QuestManager } from './quest-manager';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
@@ -224,12 +226,8 @@ export class GameSimulation {
   private pendingOrders: SupplierOrder[];
   private orderSequence = 0;
   private ledgerManager: LedgerManager;
-  private quests: QuestState = emptyQuestState();
-  private stalls: StallState = emptyStallState();
-  private market: MarketState;
-  private demandTable?: DemandTable;
-  private demandBuildCount = 0;
-  private noticeThrottle = new NoticeThrottle();
+  private questsManager: QuestManager;
+  private stallsMarketsManager: StallsMarketsManager;
   private createdAt: string;
   private tileMap: GameTileMap;
   private collisionSystem: CollisionSystem;
@@ -279,8 +277,39 @@ export class GameSimulation {
   private warehouseTier: number;
   private storageRackCount: number;
 
+  /** Proxy đến stallsMarketsManager cho stalls (đọc/ghi). */
+  private get stalls(): StallState { return this.stallsMarketsManager.getStallsRef(); }
+  private set stalls(val: StallState) { /* write-through: manager giữ state nội bộ */ }
+
+  /** Proxy đến stallsMarketsManager cho market (đọc/ghi). */
+  private get market(): MarketState { return this.stallsMarketsManager.getMarketRef(); }
+  private set market(val: MarketState) { /* write-through: manager giữ state nội bộ */ }
+
+  /** Proxy đến stallsMarketsManager cho demandTable (đọc). */
+  private get demandTable(): DemandTable | undefined { return this.stallsMarketsManager.getDemandTable(); }
+  private set demandTable(val: DemandTable | undefined) { this.stallsMarketsManager.setDemandTable(val); }
+
+  /** Proxy đến stallsMarketsManager cho demandBuildCount (đọc/ghi). */
+  private get demandBuildCount(): number { return this.stallsMarketsManager.getDemandBuildCount(); }
+  private set demandBuildCount(val: number) { /* write-through: manager giữ state nội bộ */ }
+
+  /** Proxy đến stallsMarketsManager cho noticeThrottle (đọc). */
+  private get noticeThrottle() { return this.stallsMarketsManager.getNoticeThrottle(); }
+
   /** Proxy đến securityManager cho security state (đọc/ghi). */
   private get security(): SecurityState { return this.securityManager.getRef(); }
+
+  /** Proxy đến questsManager cho quests (đọc/ghi). */
+  private get quests(): QuestState { return this.questsManager.getQuestsRef(); }
+  private set quests(val: QuestState) { /* write-through: manager giữ state nội bộ */ }
+
+  /** Proxy đến questsManager cho partyOrders (đọc/ghi). */
+  private get partyOrders(): PartyOrderState { return this.questsManager.getPartyOrdersRef(); }
+  private set partyOrders(val: PartyOrderState) { /* write-through: manager giữ state nội bộ */ }
+
+  /** Proxy đến questsManager cho goals (đọc/ghi). */
+  private get goals(): GoalState { return this.questsManager.getGoalsRef(); }
+  private set goals(val: GoalState) { /* write-through: manager giữ state nội bộ */ }
 
   /** Tham chiếu đến currentDayRecord từ ledgerManager. */
   private get currentDayRecord(): DailyRecord { return this.ledgerManager.getCurrentDayRecordRef(); }
@@ -360,15 +389,15 @@ export class GameSimulation {
     this.productionJobSequence = Math.max(initialSave.productionJobSequence ?? 0, ...this.productionManager.getRef().map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
     this.reviewsManager = new ReviewsManager(initialSave.reviews);
     this.securityManager = new SecurityManager(initialSave.security);
-    this.partyOrders = initialSave.partyOrders
-      ? refreshAvailablePartyOrders(structuredClone(initialSave.partyOrders), initialSave.worldTime.day, this.playerData.level)
-      : refreshAvailablePartyOrders(createInitialPartyOrderState(), initialSave.worldTime.day, this.playerData.level);
-    this.goals = this.withStory(initialSave.goals ? structuredClone(initialSave.goals) : createInitialGoalState());
+    this.questsManager = new QuestManager({
+      quests: initialSave.quests,
+      partyOrders: initialSave.partyOrders,
+      goals: initialSave.goals,
+      level: initialSave.level,
+      day: initialSave.worldTime.day,
+    });
     this.skills = initialSave.skills ? structuredClone(initialSave.skills) : createInitialSkillState();
-    this.stalls = normalizeStallState(initialSave.stalls);
-    assertMarketData();
-    this.market = normalizeMarketState(initialSave.market, initialSave.id ?? 'local_save', initialSave.worldTime.day);
-    this.ensureSupplierMarket(initialSave.worldTime.day);
+    this.stallsMarketsManager = new StallsMarketsManager(initialSave);
     this.tileMap = this.stalls.owned.length ? generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned) : tileMap;
     this.inputManager = inputManager;
     this.callbacks = callbacks;
@@ -378,7 +407,6 @@ export class GameSimulation {
       initialSave.customerSpawnCooldown ?? 4
     );
     this.customerManager.restoreDiningRoutes(this.tileMap, this.fixtures);
-    this.quests = normalizeQuestState(initialSave.quests);
     this.stalls = normalizeStallState(initialSave.stalls);
     this.hydrateIdSequences(initialSave);
     if (initialSave.currentDayRecord) {
@@ -405,14 +433,14 @@ export class GameSimulation {
       const worn = wearOvernight(this.fixtures, day, this.playerData.level);
       if (worn.length) this.callbacks.onMaintenanceNotice?.(worn);
       this.decayStock(day - 1); // trước khi thị trường sang ngày mới: sự kiện của ngày vừa qua còn trong trạng thái
-      this.market = advanceMarketState(this.market, day);
-      this.updatePriceIndex(day);
-      this.ensureSupplierMarket(day);
-      this.demandTable = undefined;
+      this.stallsMarketsManager.advanceMarket(day);
+      this.stallsMarketsManager.advanceSupplierMarket(day);
+      this.stallsMarketsManager.advancePriceIndex(day, this.playerData.reputation, () => this.stockUnitsByCategory(), (d) => this.activePriceCategories(d));
+      this.demandBuildCount = 0;
       this.callbacks.onWeatherChanged?.(effectiveWeatherId(this.market, day));
-      for (const notice of marketNoticesForDay(this.market, day)) {
-        if (this.noticeThrottle.allow(notice.kind, day, this.clock.getTime().hour)) this.callbacks.onMarketNotice?.(notice);
-      }
+      this.stallsMarketsManager.getMarketNotices(day, this.clock.getTime().hour, (notice) => {
+        this.callbacks.onMarketNotice?.(notice);
+      });
       // Close previous day's record (day - 1) idempotently and initialize new day record
       const yesterdayRevenue = this.currentDayRecord.revenue;
       this.closeDailyRecord(day - 1);
@@ -423,7 +451,7 @@ export class GameSimulation {
       const spoiled = this.expireStock(day);
       this.deliverOrders(day);
       this.processAutoBuy(day);
-      this.partyOrders = refreshAvailablePartyOrders(this.partyOrders, day, this.playerData.level);
+      this.questsManager.refreshPartyOrders(day, this.playerData.level);
       this.statistics.totalDaysPassed = Math.max(this.statistics.totalDaysPassed, day - 1);
       if (spoiled > 0) this.callbacks.onStockExpired?.(spoiled);
       const expiring = this.getExpiringStock();
@@ -2270,13 +2298,7 @@ export class GameSimulation {
   }
 
   private recordLedger(entry: Omit<LedgerEntry, 'id' | 'timestamp'>): LedgerEntry {
-    const fullEntry: LedgerEntry = {
-      ...entry,
-      id: `led-${++this.ledgerSequence}`,
-      timestamp: new Date().toISOString(),
-    };
-    this.ledger.push(fullEntry);
-    return fullEntry;
+    return this.ledgerManager.recordLedger(entry);
   }
 
   private awardSkillTip(saleAmount: number): void {
@@ -3819,11 +3841,14 @@ export class GameSimulation {
     this.autoBuyRules = this.validateAutoBuyRules(saveData.autoBuyRules ?? []);
     this.processedAutoBuyDayIds = new Set(saveData.processedAutoBuyDayIds ?? []);
     this.autoBuyReports = structuredClone(saveData.autoBuyReports ?? {});
-    this.quests = normalizeQuestState(saveData.quests);
-    this.stalls = normalizeStallState(saveData.stalls);
-    this.market = normalizeMarketState(saveData.market, this.market.seed, saveData.worldTime.day);
-    this.ensureSupplierMarket(saveData.worldTime.day);
-    this.demandTable = undefined;
+    this.questsManager.load({
+      quests: saveData.quests,
+      partyOrders: saveData.partyOrders,
+      goals: saveData.goals,
+      level: saveData.worldTime.day,
+      day: saveData.worldTime.day,
+    });
+    this.stallsMarketsManager.load(saveData);
     this.pendingOrders = (saveData.pendingOrders ?? []).map((order) => ({
       ...order,
       supplierId: order.supplierId ?? DEFAULT_SUPPLIER_ID,
@@ -3844,10 +3869,6 @@ export class GameSimulation {
     this.productionJobSequence = Math.max(saveData.productionJobSequence ?? 0, ...this.productionManager.getRef().map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
     this.reviewsManager.importReviews(saveData.reviews);
     this.securityManager.load({ security: saveData.security });
-    this.partyOrders = saveData.partyOrders
-      ? refreshAvailablePartyOrders(structuredClone(saveData.partyOrders), saveData.worldTime.day, this.playerData.level)
-      : refreshAvailablePartyOrders(createInitialPartyOrderState(), saveData.worldTime.day, this.playerData.level);
-    this.goals = this.withStory(saveData.goals ? structuredClone(saveData.goals) : createInitialGoalState());
     this.skills = saveData.skills ? structuredClone(saveData.skills) : createInitialSkillState();
     this.ledger = (saveData.ledger ?? []).map((e) => ({ ...e }));
     this.hydrateIdSequences(saveData);
