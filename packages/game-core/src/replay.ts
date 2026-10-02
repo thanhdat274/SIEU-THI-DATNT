@@ -61,11 +61,15 @@ function apply(sim: GameSimulation, command: ReplayCommand): void {
   }
 }
 
+/** Giới hạn replay: chặn dữ liệu xấu làm treo tiến trình (một ngày ≈ vài nghìn bước ở dt 0,25 s). */
+export const MAX_REPLAY_STEPS = 500_000;
+export const MAX_REPLAY_DT = 1;
+
 /** Phát lại; không đụng tới save đang chơi (dùng bản sao). */
 export function runDayReplay(replay: DayReplay, version = SIMULATION_VERSION): ReplayResult {
   if (replay.schema !== REPLAY_SCHEMA) return { ok: false, reason: `Replay schema ${replay.schema} không được hỗ trợ.` };
   if (replay.simulationVersion !== version) return { ok: false, reason: `Không thể xác minh replay: ghi bằng ${replay.simulationVersion}, hiện là ${version}.` };
-  if (!Number.isSafeInteger(replay.steps) || replay.steps < 0 || !(replay.dt > 0)) return { ok: false, reason: 'Replay không hợp lệ.' };
+  if (!Number.isSafeInteger(replay.steps) || replay.steps < 0 || replay.steps > MAX_REPLAY_STEPS || !Number.isFinite(replay.dt) || !(replay.dt > 0) || replay.dt > MAX_REPLAY_DT) return { ok: false, reason: 'Replay không hợp lệ.' };
   const sim = new GameSimulation(structuredClone(replay.startSave), generateStarterTileMap(replay.startSave.storeLayout.unlockedPlotIds ?? []), new InputManager(), {});
   const commands = [...replay.commands].sort((a, b) => a.step - b.step);
   let next = 0;

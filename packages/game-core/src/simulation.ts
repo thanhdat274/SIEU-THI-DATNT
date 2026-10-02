@@ -2554,6 +2554,8 @@ export class GameSimulation {
    * Fixed update step
    */
   public update(dt: number): void {
+    if (!Number.isFinite(dt) || dt <= 0) return;
+    dt = Math.min(dt, GameClock.MAX_UPDATE_SECONDS); // dt bất thường (tab treo, dữ liệu xấu) không được làm vòng lặp con chạy vô hạn
     if (this.isPaused) return;
     // 1. Advance game clock
     this.clock.update(dt);

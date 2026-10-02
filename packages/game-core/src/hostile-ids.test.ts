@@ -3,6 +3,7 @@ import { DEFAULT_INITIAL_SAVE, PRODUCT_MAP, SUPPLIER_MAP, STORY_CHAPTER_MAP, gen
 import { isSalesFixture } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
+import { MAX_REPLAY_STEPS, REPLAY_SCHEMA, SIMULATION_VERSION, runDayReplay, type DayReplay } from './replay';
 
 /** Id lạ từ client/co-op (`constructor`, `__proto__`…) phải bị từ chối chứ không ném lỗi hay lọt qua bảng tra cứu. */
 export function runHostileIdTests(): void {
@@ -39,5 +40,16 @@ export function runHostileRuntimeKeyTests(): void {
   }
   const exported = sim.exportSaveData('x', 1);
   assert.equal(JSON.parse(JSON.stringify(exported)).sellingPrices !== undefined, true, 'Xuất save vẫn tuần tự hóa được bảng giá');
-  console.log('  ✓ Passed: Bảng giá bán/sơ đồ/khách quen không trả thuộc tính prototype cho khóa lạ');
+  // dt bất thường không được treo vòng lặp phút của đồng hồ hay replay
+  const clockSim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+  clockSim.getClock().toggleStoreStatus();
+  const started = Date.now();
+  for (const dt of [Number.POSITIVE_INFINITY, Number.NaN, -5, 1e9, 1e12]) clockSim.update(dt);
+  assert.ok(Date.now() - started < 5000, 'update(dt bất thường) phải trả về nhanh');
+  assert.ok(Number.isFinite(clockSim.getTime().hour) && Number.isFinite(clockSim.getPlayerData().money));
+  const base = { schema: REPLAY_SCHEMA, simulationVersion: SIMULATION_VERSION, startSave: structuredClone(DEFAULT_INITIAL_SAVE), commands: [] } as never as DayReplay;
+  for (const bad of [{ steps: 10, dt: Number.POSITIVE_INFINITY }, { steps: 10, dt: 1e9 }, { steps: MAX_REPLAY_STEPS + 1, dt: 0.25 }, { steps: 10, dt: 0 }]) {
+    assert.equal(runDayReplay({ ...base, ...bad } as DayReplay).ok, false, 'replay xấu phải bị từ chối');
+  }
+  console.log('  ✓ Passed: Bảng giá bán/sơ đồ/khách quen không trả thuộc tính prototype; dt/replay bất thường không treo');
 }
