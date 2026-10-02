@@ -1058,9 +1058,7 @@ export class GameSimulation {
     this.tileMap = generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned);
     this.collisionSystem.updateTileMap(this.tileMap);
     this.ensureSafePlayerPosition();
-    for (const cust of this.customerManager.getCustomers()) {
-      if (cust.stage !== 'checkout') this.customerManager.routeCustomer(cust, cust.stage, this.tileMap, this.fixtures);
-    }
+    this.customerManager.rerouteAll(this.tileMap, this.fixtures);
     this.callbacks.onMapChanged?.(this.tileMap);
     this.notifyStateChanged();
     return { success: true };
@@ -3260,11 +3258,11 @@ export class GameSimulation {
 
       this.completedCheckoutIds.add(checkoutId);
       this.customerManager.assignCashier(checkoutId, undefined);
-      customer.reservedProductId = undefined;
-      if (diningTableId) this.customerManager.routeDinerToTable(checkoutId, diningTableId, this.tileMap, this.fixtures);
-      else {
-        customer.stage = 'leaving';
-        this.customerManager.routeCustomer(customer, 'leaving', this.tileMap, this.fixtures);
+      if (diningTableId) {
+        this.customerManager.routeDinerToTable(checkoutId, diningTableId, this.tileMap, this.fixtures);
+        this.customerManager.leaveAfterLegacySale(checkoutId, this.tileMap, this.fixtures, true);
+      } else {
+        this.customerManager.leaveAfterLegacySale(checkoutId, this.tileMap, this.fixtures);
       }
 
       const salePrice = this.sellingPrice(product.id);
@@ -3492,11 +3490,7 @@ export class GameSimulation {
     this.customerManager.restoreDiningRoutes(this.tileMap, this.fixtures);
     this.callbacks.onMapChanged?.(this.tileMap);
     this.ensureSafePlayerPosition();
-    for (const cust of this.customerManager.getCustomers()) {
-      if (cust.stage !== 'checkout') {
-        this.customerManager.routeCustomer(cust, cust.stage, this.tileMap, this.fixtures);
-      }
-    }
+    this.customerManager.rerouteAll(this.tileMap, this.fixtures);
     this.activeFixture = null;
     this.notifyStateChanged();
   }

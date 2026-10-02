@@ -200,5 +200,20 @@ export function runCustomerTests(): void {
     const completed = reloadedSim.completeCustomerCheckout('legacy-chk-99');
     assert(completed, 'Hoàn tất thanh toán cho khách legacy');
     assert(reloadedSim.completeCustomerCheckout('legacy-chk-99'), 'Replay thanh toán khách legacy an toàn');
+    const afterSale = reloadedSim.getCustomers().find((c) => c.checkoutId === 'legacy-chk-99');
+    assert(afterSale?.stage === 'leaving' && afterSale.reservedProductId === undefined, 'Khách luồng cũ thanh toán xong là khách thật đã bỏ đặt chỗ và đang rời quầy (không chỉ bản sao)');
+  }
+
+  // Test 2.x: Tính lại đường đi phải tác động lên khách thật, không phải bản sao
+  {
+    console.log('--- Test 2.x: rerouteAll tác động lên khách thật ---');
+    const sim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), tileMap, new InputManager());
+    const mgr = sim.getCustomerManager();
+    mgr.addTestCustomer({ id: 'reroute-shelf', position: { x: 9 * 32, y: 7 * 32 }, stage: 'to_shelf', targetFixtureId: 'shelf_wooden_noodles', checkoutId: 'chk-r1', patience: 30, checkoutWait: 5, basket: [] });
+    mgr.addTestCustomer({ id: 'reroute-checkout', position: { x: 9 * 32, y: 9 * 32 }, stage: 'checkout', targetFixtureId: 'shelf_wooden_noodles', checkoutId: 'chk-r2', patience: 30, checkoutWait: 5, basket: [] });
+    mgr.rerouteAll(tileMap, []); // kệ đích không còn trong bố cục: khách đang tới kệ không có đường nên phải bỏ đi
+    const live = mgr.getCustomers();
+    assert(live.find((c) => c.id === 'reroute-shelf')?.stage === 'leaving', 'Khách đang tới kệ đã mất đích chuyển sang rời đi trên khách thật');
+    assert(live.find((c) => c.id === 'reroute-checkout')?.stage === 'checkout', 'Khách đang ở quầy không bị tính lại đường đi');
   }
 }

@@ -129,6 +129,21 @@ export class CustomerManager {
     }
   }
 
+  /** Tính lại đường đi của khách thật (không phải bản sao) sau khi bản đồ hoặc đồ đạc đổi. */
+  public rerouteAll(tileMap: GameTileMap, fixtures: StoreFixture[]): void {
+    for (const customer of this.customers) {
+      if (customer.stage !== 'checkout') this.routeCustomer(customer, customer.stage, tileMap, fixtures);
+    }
+  }
+
+  /** Khách luồng cũ (đặt 1 món) thanh toán xong: bỏ đặt chỗ và cho rời quầy, trên khách thật. */
+  public leaveAfterLegacySale(checkoutId: string, tileMap: GameTileMap, fixtures: StoreFixture[], keepRoute = false): void {
+    const customer = this.customers.find((item) => item.checkoutId === checkoutId);
+    if (!customer) return;
+    customer.reservedProductId = undefined;
+    if (!keepRoute) this.routeCustomer(customer, 'leaving', tileMap, fixtures);
+  }
+
   public assignCashier(checkoutId: string, staffId: string | undefined): boolean {
     const customer = this.customers.find((item) => item.checkoutId === checkoutId && item.stage === 'checkout');
     if (!customer) return false;
