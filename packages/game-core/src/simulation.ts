@@ -154,6 +154,7 @@ import { RestockClaimManager } from './restock-claims';
 import { StorageManager } from './storage';
 import { LedgerManager } from './ledger';
 import { StaffManager } from './staff-manager';
+import { DiningManager } from './dining-manager';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
@@ -237,7 +238,7 @@ export class GameSimulation {
   private regulars: Record<string, RegularCustomerProgress> = {};
   private customerCredits: CustomerCreditAccount[] = [];
   private customerCreditSequence = 0;
-  private diningDirtyTableIds = new Set<string>();
+  private diningManager: DiningManager;
   private productionJobs: ProductionJob[] = [];
   private productionJobSequence = 0;
   private priceHistory: NonNullable<SaveGameData['priceHistory']> = {};
@@ -265,6 +266,9 @@ export class GameSimulation {
 
   /** Proxy đến staffManager cho processedPayrollDayIds (đọc/ghi). */
   private get processedPayrollDayIds(): Set<number> { return this.staffManager.getProcessedPayrollDayIdsRef(); }
+
+  /** Proxy đến diningManager cho diningDirtyTableIds (đọc). */
+  private get diningDirtyTableIds(): Set<string> { return this.diningManager.getRef(); }
 
   private warehouseTier: number;
   private storageRackCount: number;
@@ -339,7 +343,8 @@ export class GameSimulation {
     this.regulars = initialSave.regulars ? structuredClone(initialSave.regulars) : {};
     this.customerCredits = (initialSave.customerCredits ?? []).filter(c => c && typeof c.id === 'string' && typeof c.regularId === 'string' && Number.isFinite(c.balance) && c.balance >= 0).map(c => ({ ...c }));
     this.customerCreditSequence = Math.max(initialSave.customerCreditSequence ?? 0, ...this.customerCredits.map(c => Number(c.id.match(/^credit-(\d+)$/)?.[1] ?? 0)));
-    this.diningDirtyTableIds = new Set((initialSave.diningDirtyTableIds ?? []).filter(id => typeof id === 'string'));
+    this.diningManager = new DiningManager();
+    this.diningManager.load(initialSave);
     this.productionJobs = sanitizeProductionJobs(initialSave.productionJobs);
     this.priceHistory = sanitizePriceHistory(initialSave.priceHistory);
     this.heatmap = sanitizeHeatmap(initialSave.heatmap);
@@ -3821,7 +3826,8 @@ export class GameSimulation {
     this.regulars = saveData.regulars ? structuredClone(saveData.regulars) : {};
     this.customerCredits = (saveData.customerCredits ?? []).filter(c => c && typeof c.id === 'string' && typeof c.regularId === 'string' && Number.isFinite(c.balance) && c.balance >= 0).map(c => ({ ...c }));
     this.customerCreditSequence = Math.max(saveData.customerCreditSequence ?? 0, ...this.customerCredits.map(c => Number(c.id.match(/^credit-(\d+)$/)?.[1] ?? 0)));
-    this.diningDirtyTableIds = new Set((saveData.diningDirtyTableIds ?? []).filter(id => typeof id === 'string'));
+    this.diningManager = new DiningManager();
+    this.diningManager.load(saveData);
     this.productionJobs = sanitizeProductionJobs(saveData.productionJobs);
     this.priceHistory = sanitizePriceHistory(saveData.priceHistory);
     this.heatmap = sanitizeHeatmap(saveData.heatmap);
