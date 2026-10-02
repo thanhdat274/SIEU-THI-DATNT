@@ -19,28 +19,5 @@
             "PowerShell(Test-Path *)"
         ]
     },
-    "hooks": {
-        "PostToolUse": [
-            {
-                "matcher": "Write",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "bash .claude/hooks/add-file-header.sh"
-                    }
-                ]
-            }
-        ],
-        "SessionStart": [
-            {
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "node .claude/hooks/load-context.js"
-                    }
-                ]
-            }
-        ]
-    },
     "spinnerTipsEnabled": true
 }
