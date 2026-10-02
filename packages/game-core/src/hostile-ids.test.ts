@@ -27,3 +27,17 @@ export function runHostileIdTests(): void {
   assert.equal(sim.getPlayerData().money, money, 'Id lạ không làm đổi tiền');
   console.log('  ✓ Passed: Id lạ (__proto__/constructor…) bị từ chối an toàn ở bảng dữ liệu và API mô phỏng');
 }
+
+/** Bảng runtime (giá bán, sơ đồ, khách quen) cũng không được trả thuộc tính prototype cho khóa lạ. */
+export function runHostileRuntimeKeyTests(): void {
+  const sim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+  for (const id of ['__proto__', 'constructor', 'toString']) {
+    assert.equal(typeof sim.sellingPrice(id), 'number', `sellingPrice(${id}) phải là số`);
+    assert.equal(sim.sellingPrice(id), 0);
+    assert.equal(sim.getPlanogramForFixture(id), undefined, `planogram[${id}]`);
+    assert.equal(sim.getCustomerCreditTerms(id).eligible, false);
+  }
+  const exported = sim.exportSaveData('x', 1);
+  assert.equal(JSON.parse(JSON.stringify(exported)).sellingPrices !== undefined, true, 'Xuất save vẫn tuần tự hóa được bảng giá');
+  console.log('  ✓ Passed: Bảng giá bán/sơ đồ/khách quen không trả thuộc tính prototype cho khóa lạ');
+}

@@ -209,16 +209,19 @@ export interface GameSimulationCallbacks {
   onToast?: (message: string, type?: 'info' | 'success' | 'warn') => void;
 }
 
+/** Bảng khóa-theo-id không có prototype: khóa như 'constructor' không bao giờ trả về thuộc tính của Object. */
+const dict = <T>(source?: Record<string, T>): Record<string, T> => Object.assign(Object.create(null), source) as Record<string, T>;
+
 export class GameSimulation {
   private playerData: PlayerData;
-  private sellingPrices: Record<string, number> = {};
+  private sellingPrices: Record<string, number> = dict();
   private fixtures: StoreFixture[];
   private storedFixtures: StoreFixture[];
   private unlockedPlotIds: string[];
   private decorOwned: string[];
   private inventory: InventoryItem[];
   private holdingArea: HoldingItem[];
-  private planogram: Record<string, string> = {};
+  private planogram: Record<string, string> = dict();
   private staffManager: StaffManager;
   private restockJobClaims: RestockClaimManager;
   private autoBuyEnabled = false;
@@ -237,7 +240,7 @@ export class GameSimulation {
   private inputManager: GameInputSource;
   private customerManager: CustomerManager;
   private completedCheckoutIds: Set<string>;
-  private regulars: Record<string, RegularCustomerProgress> = {};
+  private regulars: Record<string, RegularCustomerProgress> = dict();
   private customerCredits: CustomerCreditAccount[] = [];
   private customerCreditSequence = 0;
   private diningManager: DiningManager;
@@ -354,14 +357,14 @@ export class GameSimulation {
     this.ledgerManager = new LedgerManager(initialSave);
     this.warehouseTier = initialSave.warehouseTier ?? 0;
     this.storageRackCount = initialSave.storageRackCount ?? 0;
-    this.sellingPrices = { ...(initialSave.sellingPrices ?? {}) };
+    this.sellingPrices = dict(initialSave.sellingPrices);
     this.fixtures = initialSave.storeLayout.fixtures.map((f) => ({ ...f }));
     this.storedFixtures = (initialSave.storeLayout.storedFixtures ?? []).map(f => ({ ...f }));
     this.unlockedPlotIds = [...(initialSave.storeLayout.unlockedPlotIds ?? [])];
     this.decorOwned = [...(initialSave.storeLayout.decorOwned ?? [])];
     this.inventory = initialSave.inventory.map((i) => ({ ...i }));
     this.holdingArea = (initialSave.holdingArea ?? []).map((h) => ({ ...h }));
-    this.planogram = initialSave.planogram ? { ...initialSave.planogram } : {};
+    this.planogram = dict(initialSave.planogram);
     this.pendingOrders = (initialSave.pendingOrders ?? []).map((order) => ({
       ...order,
       supplierId: order.supplierId ?? DEFAULT_SUPPLIER_ID,
@@ -378,7 +381,7 @@ export class GameSimulation {
     this.autoBuyReports = structuredClone(initialSave.autoBuyReports ?? {});
     this.statistics = { ...initialSave.statistics };
     this.createdAt = initialSave.createdAt;
-    this.regulars = initialSave.regulars ? structuredClone(initialSave.regulars) : {};
+    this.regulars = dict(initialSave.regulars ? structuredClone(initialSave.regulars) : undefined);
     this.customerCredits = (initialSave.customerCredits ?? []).filter(c => c && typeof c.id === 'string' && typeof c.regularId === 'string' && Number.isFinite(c.balance) && c.balance >= 0).map(c => ({ ...c }));
     this.customerCreditSequence = Math.max(initialSave.customerCreditSequence ?? 0, ...this.customerCredits.map(c => Number(c.id.match(/^credit-(\d+)$/)?.[1] ?? 0)));
     this.diningManager = new DiningManager();
@@ -2918,7 +2921,7 @@ export class GameSimulation {
       newMap[fixtureId] = productId;
       successCount++;
     }
-    this.planogram = newMap;
+    this.planogram = dict(newMap);
     this.notifyStateChanged();
     return { successCount, errors };
   }
@@ -3697,14 +3700,14 @@ export class GameSimulation {
     this.playerData = normalizePlayerProgression(saveData.player);
     this.warehouseTier = saveData.warehouseTier ?? 0;
     this.storageRackCount = saveData.storageRackCount ?? 0;
-    this.sellingPrices = { ...(saveData.sellingPrices ?? {}) };
+    this.sellingPrices = dict(saveData.sellingPrices);
     this.fixtures = saveData.storeLayout.fixtures.map((f) => ({ ...f }));
     this.storedFixtures = (saveData.storeLayout.storedFixtures ?? []).map(f => ({ ...f }));
     this.unlockedPlotIds = [...(saveData.storeLayout.unlockedPlotIds ?? [])];
     this.decorOwned = [...(saveData.storeLayout.decorOwned ?? [])];
     this.inventory = saveData.inventory.map((i) => ({ ...i }));
     this.holdingArea = (saveData.holdingArea ?? []).map((h) => ({ ...h }));
-    this.planogram = saveData.planogram ? { ...saveData.planogram } : {};
+    this.planogram = dict(saveData.planogram);
     this.staffManager = new StaffManager(saveData);
     this.restockJobClaims = new RestockClaimManager();
     for (const member of this.staff) {
@@ -3725,7 +3728,7 @@ export class GameSimulation {
     this.completedCheckoutIds = new Set(saveData.completedCheckoutIds ?? []);
     this.dailyRecords = saveData.dailyRecords ? structuredClone(saveData.dailyRecords) : {};
     this.closedDayIds = new Set(saveData.closedDayIds ?? []);
-    this.regulars = saveData.regulars ? structuredClone(saveData.regulars) : {};
+    this.regulars = dict(saveData.regulars ? structuredClone(saveData.regulars) : undefined);
     this.customerCredits = (saveData.customerCredits ?? []).filter(c => c && typeof c.id === 'string' && typeof c.regularId === 'string' && Number.isFinite(c.balance) && c.balance >= 0).map(c => ({ ...c }));
     this.customerCreditSequence = Math.max(saveData.customerCreditSequence ?? 0, ...this.customerCredits.map(c => Number(c.id.match(/^credit-(\d+)$/)?.[1] ?? 0)));
     this.diningManager = new DiningManager();

@@ -28,7 +28,7 @@ import { runSupplierMarketTests } from './supplier-market.test';
 import { runSpoilageTests } from './spoilage.test';
 import { runSupplierCartTests } from './supplier-cart.test';
 import { runDeliveryTests, runReceiveDeliveredOrdersTests } from './delivery.test';
-import { runHostileIdTests } from './hostile-ids.test';
+import { runHostileIdTests, runHostileRuntimeKeyTests } from './hostile-ids.test';
 import { runCounterfeitTests } from './counterfeit.test';
 import { runReplayTests } from './replay.test';
 import { runForecastTests } from './forecast.test';
@@ -101,6 +101,7 @@ export async function runTests(): Promise<void> {
   runDeliveryTests();
   runReceiveDeliveredOrdersTests();
   runHostileIdTests();
+  runHostileRuntimeKeyTests();
   runReplayTests();
   runForecastTests();
   runScenarioTests();
