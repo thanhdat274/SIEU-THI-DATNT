@@ -25,5 +25,6 @@ Trạng thái 01/10/2026: nhóm 1–4 đã có code; test tự động (`mainten
 - [x] 4.1 `tsc -b`, `yarn test`, `yarn build` PASS (01/10/2026, Node 24 qua PATH).
 - [ ] 4.2 Browser QA: mở màn Sửa chữa, thấy kệ hỏng tối màu/nhãn, bấm sửa/mua mới/bảo trì, HUD nút xuất hiện/biến mất, desktop và mobile. Chưa làm được vì chưa có kệ hỏng trong save thử và game chưa có công cụ dev ép hỏng (cần thêm).
 - [ ] 4.3 Cân bằng: chi phí bảo trì so với doanh thu, ngưỡng và xác suất hỏng, phí sửa.
-- [ ] 4.4 Chỉ báo "đã mòn" ngay trên kệ; tủ mát hỏng làm hàng lạnh nhanh hỏng; server phát lại lệnh; đưa chi phí vào mô-đun thuế; bảo trì nhân viên/thợ.
+- [x] 4.4a (02/10/2026) Chỉ báo "đã mòn" ngay trên kệ (vạch hổ phách, `viewport.ts`) và tủ mát hỏng làm hàng lạnh nhanh hỏng (+1 ngày hạn mỗi đêm, test `maintenance.test.ts`).
+- [ ] 4.4 Còn lại: server phát lại lệnh; đưa chi phí vào mô-đun thuế; bảo trì nhân viên/thợ.
 - [ ] 4.5 Cập nhật `TASKS.md`/`ROADMAP.md` khi chốt nghiệm thu.

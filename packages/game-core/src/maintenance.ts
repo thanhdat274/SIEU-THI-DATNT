@@ -29,6 +29,10 @@ export const maintenanceUnlocked = (level: number): boolean => level >= MAINTENA
 export const isWearable = (fixture: Pick<StoreFixture, 'type'>): boolean => isSalesFixture(fixture);
 export const needsService = (fixture: Pick<StoreFixture, 'wear' | 'broken'>): boolean => !fixture.broken && (fixture.wear ?? 0) >= MAINTENANCE_RULES.breakFrom * MAINTENANCE_RULES.serviceFraction;
 
+/** Hạn dùng mất thêm mỗi đêm của hàng trong tủ mát đang hỏng (0 nếu không phải tủ mát hoặc còn chạy). */
+export const coldBreakExtraDecay = (fixture: Pick<StoreFixture, 'type' | 'broken'>): number =>
+  fixture.type === 'refrigerator' && fixture.broken ? MAINTENANCE_RULES.brokenColdExtraDecay : 0;
+
 export function maintenanceStatus(fixture: Pick<StoreFixture, 'wear' | 'broken'>): MaintenanceStatus {
   if (fixture.broken === 'major') return 'broken_major';
   if (fixture.broken === 'minor') return 'broken_minor';

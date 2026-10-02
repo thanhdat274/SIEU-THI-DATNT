@@ -1,7 +1,7 @@
 import { furnitureSpriteTexture, STOCK_ART_SHOP_IDS } from './fixture-preview';
 import { Application, Container, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
-import { FixedStepSimulationRunner, GameSimulation, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
+import { FixedStepSimulationRunner, GameSimulation, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting } from './shop-lighting';
@@ -73,7 +73,7 @@ export class PixiGameViewport {
   private stallSprites: Sprite[] = [];
   private shopkeeper?: { container: Container; sprite: Sprite; bubble: Container };
   private motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-  private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string; staticArt?: boolean; dotX: number }> = new Map();
+  private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; wearMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string; staticArt?: boolean; dotX: number }> = new Map();
   private interactionBubble!: Container;
   private warehouseLocator!: Container;
   private locatingWarehouse = false;
@@ -712,6 +712,12 @@ export class PixiGameViewport {
       dotMarker.fill({ color: 0x2a7a43 });
       container.addChild(dotMarker);
 
+      // Vạch hổ phách ngay cạnh huy hiệu: đồ đã mòn, nên bảo trì trước khi hỏng
+      const wearMarker = new Graphics();
+      wearMarker.rect(badgeX + badgeW + 2, 34, 7, 13).fill({ color: 0xd98a1c }).stroke({ color: 0x6b3d0a, width: 1 });
+      wearMarker.visible = false;
+      container.addChild(wearMarker);
+
       const style = new TextStyle({
         fontFamily: '"Courier New", Courier, monospace',
         fontSize: 9,
@@ -726,7 +732,7 @@ export class PixiGameViewport {
       container.addChild(stockText);
 
       this.entitiesLayer.addChild(container);
-      this.fixtureSprites.set(fix.id, { container, stockText, dotMarker, sprite, textureKey, lastState: '', staticArt: !!art, dotX });
+      this.fixtureSprites.set(fix.id, { container, stockText, dotMarker, wearMarker, sprite, textureKey, lastState: '', staticArt: !!art, dotX });
     }
   }
 
@@ -1285,6 +1291,8 @@ export class PixiGameViewport {
           entry.stockText.text = fix.broken ? (fix.broken === 'major' ? 'NẶNG' : 'HỎNG') : `${stock}/${limit}`;
           const state = stock === 0 ? 'empty' : stock / limit <= 0.4 ? 'low' : 'full';
           const key = `${entry.textureKey}:${fix.assignedProductId ?? 'none'}:${state}`;
+          const worn = needsService(fix);
+          entry.wearMarker.visible = worn;
           const stateKey = `${key}|${fix.broken ?? ''}`;
           if(entry.lastState !== stateKey) {
             if (!entry.staticArt) entry.sprite.texture = this.textures.getTexture(key);

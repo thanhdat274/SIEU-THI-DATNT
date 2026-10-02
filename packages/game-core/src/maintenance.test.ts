@@ -4,7 +4,7 @@ import { DEFAULT_INITIAL_SAVE, MAINTENANCE_RULES, PRODUCT_MAP, fixtureRepairCost
 import { CustomerManager } from './customers';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
-import { listMaintenance, maintainFixture, maintenanceStatus, needsService, wearOvernight, type MaintenanceNotice } from './maintenance';
+import { coldBreakExtraDecay, listMaintenance, maintainFixture, maintenanceStatus, needsService, wearOvernight, type MaintenanceNotice } from './maintenance';
 
 const shelf = (id: string, over: Partial<StoreFixture> = {}): StoreFixture => ({ id, type: 'shelf_wooden', tileX: 2, tileY: 2, widthTiles: 2, heightTiles: 1, rotation: 0, currentStock: 0, maxCapacity: 24, label: id, ...over });
 
@@ -146,5 +146,21 @@ export function runMaintenanceTests(): void {
   const lowSim = new GameSimulation(lowSave, map, new InputManager());
   for (let i = 0; i < 5; i++) lowSim.getClock().advanceToNextDay();
   assert.ok(lowSim.getFixtures().every(f => f.wear === undefined && !f.broken), 'Cấp 1 không hao mòn');
+  // Tủ mát hỏng không giữ lạnh: hàng trong tủ mất thêm hạn dùng mỗi đêm; kệ thường và tủ còn chạy thì không.
+  assert.equal(coldBreakExtraDecay({ type: 'refrigerator', broken: 'minor' }), MAINTENANCE_RULES.brokenColdExtraDecay);
+  assert.equal(coldBreakExtraDecay({ type: 'refrigerator', broken: 'major' }), MAINTENANCE_RULES.brokenColdExtraDecay);
+  assert.equal(coldBreakExtraDecay({ type: 'refrigerator' }), 0, 'Tủ mát còn chạy không mất thêm');
+  assert.equal(coldBreakExtraDecay({ type: 'shelf_wooden', broken: 'minor' }), 0, 'Kệ khô hỏng không làm hàng hỏng nhanh');
+  const coldExpiry = (broken: boolean): number => {
+    const sv = structuredClone(save);
+    const sm = new GameSimulation(sv, map, new InputManager());
+    const day = sm.getClock().getTime().day;
+    const fr = sm.getFixtures().find(f => f.type === 'refrigerator')!;
+    fr.assignedProductId = water.id; fr.currentStock = 5; fr.stockLots = [{ quantity: 5, expiresOnDay: day + 30 }];
+    fr.wear = 0; fr.broken = broken ? 'minor' : undefined;
+    sm.getClock().advanceToNextDay();
+    return sm.getFixtures().find(f => f.id === fr.id)!.stockLots![0].expiresOnDay;
+  };
+  assert.ok(coldExpiry(true) <= coldExpiry(false) - MAINTENANCE_RULES.brokenColdExtraDecay, 'Qua đêm, hàng trong tủ hỏng còn ít ngày hạn hơn tủ còn chạy');
   console.log('  ✓ Passed: Hao mòn qua đêm, hỏng nhẹ/nặng, sửa/bảo trì/mua mới, ghi sổ cái và lưu/tải');
 }

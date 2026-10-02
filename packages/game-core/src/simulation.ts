@@ -95,7 +95,7 @@ import { rainIntensityAt, rainForecastForDay, describeRainForecast, roadWetnessA
 import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance } from './security';
 import { assessCounterfeit } from './counterfeit';
 import { appendReview, composeReview, sanitizeReviews, summarizeReviews } from './reviews';
-import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
+import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { slotCategoryConflict } from './shelf-slots';
 import { decorAttraction, decorTrafficMultiplier } from './decor';
 import { buyLandPlot, validateStoreLayout, type LayoutResult } from './store-layout';
@@ -2128,7 +2128,7 @@ export class GameSimulation {
       item.lots?.sort((a, b) => a.expiresOnDay - b.expiresOnDay);
     }
     for (const fixture of this.fixtures) {
-      const rate = rateOf(fixture.assignedProductId);
+      const rate = rateOf(fixture.assignedProductId) + coldBreakExtraDecay(fixture);
       for (const lot of fixture.stockLots ?? []) decayLot(lot, rate);
       fixture.stockLots?.sort((a, b) => a.expiresOnDay - b.expiresOnDay);
     }
