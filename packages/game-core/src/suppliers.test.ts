@@ -67,7 +67,7 @@ export function runSupplierTests(): void {
   // 4. Kho lạnh vượt sức chứa
   const coldProd = Object.values(PRODUCT_MAP).find((p) => p.storageType === 'cold')!;
   const overflowColdCart = sim.validateSupplierCart('dai_ly_dau_hem', [
-    { productId: coldProd.id, quantity: COLD_WAREHOUSE_CAPACITY + 10 },
+    { productId: coldProd.id, quantity: sim.getColdCapacity() + 10 },
   ]);
   assert(!overflowColdCart.valid, 'Giỏ hàng lạnh vượt sức chứa kho mát -> từ chối cả giỏ');
 
@@ -114,7 +114,9 @@ export function runSupplierTests(): void {
   // Test 4.3: Delivery once, holding overflow, stow & spoilage
   console.log('\n--- Test 4.3: Giao hàng một lần, Hàng chờ (Holding Area) & Cất kho (Stow) ---');
   // Reset sim với kho lạnh chỉ còn 4 chỗ trống
-  const simHold = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+  const holdSave = structuredClone(DEFAULT_INITIAL_SAVE);
+  holdSave.warehouseTier = 0; // kho mát bậc đầu = COLD_WAREHOUSE_CAPACITY
+  const simHold = new GameSimulation(holdSave, generateStarterTileMap(), new InputManager());
   simHold.addMoney(500000);
   simHold.addExperience(500);
 

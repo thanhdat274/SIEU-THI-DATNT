@@ -3725,7 +3725,7 @@ export const ALL_PRODUCTS: Product[] = [
 ];
 
 /** Hàng bán được: catalog nhập từ nhà cung cấp + hàng bếp tự sản xuất (dùng cho nhu cầu và chọn hàng lên kệ). */
-export const SELLABLE_PRODUCTS: Product[] = [...ALL_PRODUCTS, ...PRODUCED_PRODUCTS];
+export const SELLABLE_PRODUCTS: Product[] = [...ALL_PRODUCTS, ...PRODUCED_PRODUCTS].filter(product => !product.intermediate);
 
 export const PRODUCT_CATEGORY_LABELS: Record<ProductCategory, string> = {
   instant_noodles: 'Mì ăn liền', snacks: 'Bánh ăn vặt', candy: 'Kẹo', bottled_water: 'Nước suối',

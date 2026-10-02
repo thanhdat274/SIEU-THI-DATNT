@@ -150,6 +150,7 @@ import {
 import { DINING, DINING_ADD_ON_RULES, RIVAL_EVENT_ID, fixtureBuilding, XOI_DISH_IDS } from '@game/data';
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS } from '@game/data';
+import { RestockClaimManager } from './restock-claims';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
@@ -210,7 +211,7 @@ export class GameSimulation {
   private planogram: Record<string, string> = {};
   private staff: StaffMember[] = [];
   private staffSchedule: Record<string, StaffShift> = {};
-  private restockJobClaims = new Map<string, RestockJobClaim>();
+  private restockJobClaims: RestockClaimManager;
   private wageDebt: number = 0;
   private processedPayrollDayIds: Set<number> = new Set();
   private autoBuyEnabled = false;
@@ -293,8 +294,9 @@ export class GameSimulation {
       shift: isShiftWithinStoreHours(s.shift) ? s.shift : 'full_day',
     }));
     this.staffSchedule = normalizeStaffSchedule(initialSave.staffSchedule, this.staff);
+    this.restockJobClaims = new RestockClaimManager();
     for (const member of this.staff) {
-      if (member.workerTask) this.restockJobClaims.set(member.workerTask.fixtureId, { actorId: member.id, fixtureId: member.workerTask.fixtureId });
+      if (member.workerTask) this.restockJobClaims.addFromWorkerTask(member.workerTask.fixtureId, member.id);
     }
     this.wageDebt = Math.max(0, initialSave.wageDebt ?? 0);
     this.processedPayrollDayIds = new Set(initialSave.processedPayrollDayIds ?? []);
@@ -3094,7 +3096,7 @@ export class GameSimulation {
     }
     const activeClaim = this.restockJobClaims.get(fixtureId);
     if (activeClaim && activeClaim.actorId !== actorId) return { claimed: false, reason: 'target_claimed' };
-    this.restockJobClaims.set(fixtureId, { actorId, fixtureId });
+    this.restockJobClaims.set(fixtureId, actorId);
     return { claimed: true, target: { ...target } };
   }
 

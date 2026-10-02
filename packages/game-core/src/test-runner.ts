@@ -44,6 +44,11 @@ import { runMaintenanceTests } from './maintenance.test';
 import { runReviewTests } from './reviews.test';
 import { runSecurityTests } from './security.test';
 import { runProductionTests } from './production.test';
+import { runXoiTests } from './xoi.test';
+import { runBuildingTests } from './buildings.test';
+import { runXoiCustomerTests } from './xoi-customers.test';
+import { runXoiStaffTests } from './xoi-staff.test';
+import { runDiningAddonTests } from './dining-addons.test';
 import { runPrestigeTests } from './prestige.test';
 import { runAnalyticsTests } from './analytics.test';
 import { runWaveATests } from './wave-a.test';
@@ -56,11 +61,12 @@ import { runDayRhythmTests } from './day-rhythm.test';
 import { runStreetTrafficTests } from './street-traffic.test';
 import { runPartyOrderTests } from './party-orders.test';
 import { runGoalTests } from './goals.test';
+import { runStoryTests } from './story.test';
 import { runSkillTests } from './skills.test';
 import { runPerkBehaviorTests } from './perks.test';
 import { runTitlesTests } from './titles.test';
 import { runStoreLogisticsTests } from './store-logistics.test';
-import { runWarehouseTierTests, runStorageRackTests, runTotalWarehouseCellsTests } from './warehouse-tiers.test';
+import { runWarehouseTierTests, runStorageRackTests, runTotalWarehouseCellsTests, runWarehouseCellRoundingTests } from './warehouse-tiers.test';
 import { runChildCapacityTests } from './child-capacity.test';
 
 declare const process: any;
@@ -104,6 +110,11 @@ export async function runTests(): Promise<void> {
   runReviewTests();
   runSecurityTests();
   runProductionTests();
+  runXoiTests();
+  runBuildingTests();
+  runXoiCustomerTests();
+  runXoiStaffTests();
+  runDiningAddonTests();
   runPrestigeTests();
   runAnalyticsTests();
   runWaveATests();
@@ -115,6 +126,7 @@ export async function runTests(): Promise<void> {
   runWarehouseTierTests();
   runStorageRackTests();
   runTotalWarehouseCellsTests();
+  runWarehouseCellRoundingTests();
   runCheckoutLaneTests();
   runTaxRegistryTests();
   runInputTests();
@@ -128,6 +140,7 @@ export async function runTests(): Promise<void> {
   runStreetTrafficTests();
   runPartyOrderTests();
   runGoalTests();
+  runStoryTests();
   runSkillTests();
   runPerkBehaviorTests();
   runTitlesTests();
@@ -287,7 +300,7 @@ export async function runTests(): Promise<void> {
   const migrated = new GameSimulation(legacySave, tileMap, input);
   assert(migrated.getFixtures().some((fixture) => fixture.type === 'refrigerator'), 'Bản lưu cũ được bổ sung tủ mát');
   assert(migrated.getInventory().every((item) => item.lots?.length), 'Hàng trong bản lưu cũ được gắn hạn dùng');
-  assert(migrated.exportSaveData('test_save_id', 4).schemaVersion === 3, 'Bản lưu mới dùng schema version 3');
+  assert(migrated.exportSaveData('test_save_id', 4).schemaVersion === 4, 'Bản lưu mới dùng schema version 4');
   const partialSave = structuredClone(DEFAULT_INITIAL_SAVE);
   partialSave.inventory[0].lots = [];
   assert(new GameSimulation(partialSave, tileMap, input).getInventory()[0].quantity === partialSave.inventory[0].quantity, 'Bản lưu thiếu lô không làm mất hàng');
@@ -305,6 +318,7 @@ export async function runTests(): Promise<void> {
   console.log('\n--- Test 9: Bảo quản lạnh và giới hạn kho mát ---');
   const richSave = structuredClone(DEFAULT_INITIAL_SAVE);
   richSave.player.money = 1_000_000;
+  richSave.warehouseTier = 0; // kho mát bậc đầu = COLD_WAREHOUSE_CAPACITY
   const coldSim = new GameSimulation(richSave, tileMap, input);
   assert(!coldSim.orderFromSupplier('sua_chua', COLD_WAREHOUSE_CAPACITY + 1), 'Không nhận đơn lạnh vượt sức chứa kho');
   assert(coldSim.orderFromSupplier('sua_chua', COLD_WAREHOUSE_CAPACITY), 'Đặt được hàng lạnh vừa sức chứa');
