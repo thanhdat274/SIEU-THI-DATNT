@@ -88,7 +88,7 @@ export const INITIAL_FIXTURES: StoreFixture[] = [
     rotation: 0,
     assignedProductId: 'mi_hao_hao',
     currentStock: 12,
-    maxCapacity: 24,
+    maxCapacity: 20,
     label: 'Kệ Gỗ 01 - Mì Gói & Lương Khô',
   },
   {
@@ -101,7 +101,7 @@ export const INITIAL_FIXTURES: StoreFixture[] = [
     rotation: 0,
     assignedProductId: 'xa_xi_chuong_duong',
     currentStock: 8,
-    maxCapacity: 16,
+    maxCapacity: 20,
     label: 'Kệ Gỗ 02 - Nước Ngọt & Bánh Kẹo',
   },
   {

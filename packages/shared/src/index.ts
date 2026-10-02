@@ -627,8 +627,8 @@ export const isSlotChild = (fixture: Pick<StoreFixture, 'parentId'>): boolean =>
 /** Số ô phụ thêm cho kệ/tủ (ô chính chính là kệ cha). */
 export function extraSlotCount(fixture: Pick<StoreFixture, 'type' | 'widthTiles' | 'heightTiles' | 'slotCount'>): number {
   if (fixture.slotCount !== undefined) return Math.max(0, fixture.slotCount - 1);
-  if (fixture.type === 'shelf_wooden' || fixture.type === 'shelf_glass') return 3;
-  if (fixture.type === 'refrigerator') return fixture.widthTiles * fixture.heightTiles >= 2 ? 3 : 1;
+  if (fixture.type === 'shelf_wooden' || fixture.type === 'shelf_glass') return 11;
+  if (fixture.type === 'refrigerator') return fixture.widthTiles * fixture.heightTiles >= 2 ? 23 : 7;
   return 0;
 }
 export const slotGroup = <T extends Pick<StoreFixture, 'id' | 'parentId'>>(fixtures: readonly T[], fixture: Pick<StoreFixture, 'id' | 'parentId'>): T[] => {

@@ -60,14 +60,14 @@ export interface FixtureShopItem {
  * Số ô đã quy đổi sang mô hình ô của dự án này (xem scripts ở lịch sử cập nhật `tổng hợp.md`).
  */
 export const FIXTURE_SHOP: FixtureShopItem[] = [
-  { id: 'shelf', name: 'Kệ gỗ', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 4, cost: 80_000, unlockLevel: 5, functional: true, },
-  { id: 'fridge', name: 'Tủ lạnh 2 cánh', kind: 'fridge', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 4, cost: 220_000, unlockLevel: 5, functional: true, },
-  { id: 'fridge_single', name: 'Tủ lạnh 1 cánh', kind: 'fridge', type: 'refrigerator', widthTiles: 1, heightTiles: 1, maxCapacity: 12, slotCount: 2, cost: 90_000, unlockLevel: 5, functional: true, },
-  { id: 'freezer', name: 'Tủ đông', kind: 'freezer', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 18, slotCount: 3, cost: 180_000, unlockLevel: 9, functional: true, },
+  { id: 'shelf', name: 'Kệ gỗ', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 12, cost: 80_000, unlockLevel: 5, functional: true, },
+  { id: 'fridge', name: 'Tủ lạnh 2 cánh', kind: 'fridge', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 24, cost: 220_000, unlockLevel: 5, functional: true, },
+  { id: 'fridge_single', name: 'Tủ lạnh 1 cánh', kind: 'fridge', type: 'refrigerator', widthTiles: 1, heightTiles: 1, maxCapacity: 12, slotCount: 8, cost: 90_000, unlockLevel: 5, functional: true, },
+  { id: 'freezer', name: 'Tủ đông', kind: 'freezer', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 18, slotCount: 12, cost: 180_000, unlockLevel: 9, functional: true, },
   { id: 'storage_rack', name: 'Kệ kho', kind: 'storage', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 50_000, unlockLevel: 9, functional: true, limit: 10, storageCells: STORAGE_RACK_CELL_BONUS, },
-  { id: 'shelf_double', name: 'Kệ đôi', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 8, cost: 160_000, unlockLevel: 15, functional: true, requiresPlot: 'D', },
-  { id: 'shelf_3', name: 'Kệ 3', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 12, cost: 320_000, unlockLevel: 21, functional: true, requiresPlot: 'D', },
-  { id: 'shelf_4', name: 'Kệ 4', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 16, cost: 500_000, unlockLevel: 29, functional: true, requiresPlot: 'D', },
+  { id: 'shelf_double', name: 'Kệ đôi', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 24, cost: 160_000, unlockLevel: 15, functional: true, requiresPlot: 'D', },
+  { id: 'shelf_3', name: 'Kệ 3', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 36, cost: 320_000, unlockLevel: 21, functional: true, requiresPlot: 'D', },
+  { id: 'shelf_4', name: 'Kệ 4', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 48, cost: 500_000, unlockLevel: 29, functional: true, requiresPlot: 'D', },
   { id: 'counter2', name: 'Quầy thu ngân 2', kind: 'counter', type: 'cashier_counter', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 300_000, unlockLevel: 15, functional: true, limit: 1, requiresPlot: 'D', },
   { id: 'food_grill', name: 'Bếp nướng', kind: 'food', type: 'kitchen_station', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 260_000, unlockLevel: 21, functional: true, requiresPlot: 'E', },
   { id: 'hot_kettle', name: 'Ấm nước nóng', kind: 'food', type: 'kitchen_station', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 90_000, unlockLevel: 21, functional: true, requiresPlot: 'E', },

@@ -1,4 +1,4 @@
-import { getFixtureDimensions, isSlotChild, syncSlotChildren, type GameTileMap, type SaveGameData, type StoreFixture } from '@game/shared';
+import { getFixtureDimensions, isSalesFixture, isSlotChild, syncSlotChildren, type GameTileMap, type SaveGameData, type StoreFixture } from '@game/shared';
 import { DECOR_MAP, FIXTURE_SHOP, LAND_PLOTS, MAP_ORIGIN_Y, STORE_BOUNDS, WAREHOUSE_DOOR_LEFT, WAREHOUSE_TIERS, STORAGE_RACK_CELL_BONUS, MAX_STORAGE_RACKS } from '@game/data';
 
 export type LayoutFailure = 'fixture_missing' | 'plot_locked' | 'outside_floor' | 'overlap' | 'path_blocked' | 'invalid_rotation' | 'store_open' | 'level' | 'money' | 'prerequisite' | 'unknown_item' | 'unavailable' | 'owned';
@@ -25,10 +25,26 @@ const footprint = (fixture: StoreFixture) => {
   return Array.from({ length: width * height }, (_, i) => ({ x: fixture.tileX + i % width, y: fixture.tileY + Math.floor(i / width) }));
 };
 
+/**
+ * Save cũ lưu số khay/sức chứa theo catalog cũ (4/8/12/16 khay, ô chính 16–24): nâng số khay lên catalog hiện tại
+ * (không giảm) và đưa sức chứa ô chính kệ về 20 như các ô phụ (không cắt hàng đang có).
+ */
+export function upgradeFixtureSlots(fixtures: StoreFixture[]): StoreFixture[] {
+  return fixtures.map(f => {
+    if (f.parentId) return f;
+    const shop = f.shopId ? FIXTURE_SHOP.find(item => item.id === f.shopId) : undefined;
+    const next = { ...f };
+    if (shop && (f.slotCount ?? 0) < shop.slotCount) next.slotCount = shop.slotCount;
+    const cap = shop?.maxCapacity ?? (f.type === 'shelf_wooden' || f.type === 'shelf_glass' ? 20 : 0);
+    if (isSalesFixture(f) && cap === 20 && f.maxCapacity !== cap) next.maxCapacity = Math.max(cap, f.currentStock);
+    return next;
+  });
+}
+
 /** Đồng bộ ô phụ (vị trí theo kệ cha, đủ số ô) cho cả sàn lẫn kho. */
 export function syncLayoutSlots(save: SaveGameData): void {
-  save.storeLayout.fixtures = syncSlotChildren(save.storeLayout.fixtures);
-  if (save.storeLayout.storedFixtures?.length) save.storeLayout.storedFixtures = syncSlotChildren(save.storeLayout.storedFixtures);
+  save.storeLayout.fixtures = syncSlotChildren(upgradeFixtureSlots(save.storeLayout.fixtures));
+  if (save.storeLayout.storedFixtures?.length) save.storeLayout.storedFixtures = syncSlotChildren(upgradeFixtureSlots(save.storeLayout.storedFixtures));
 }
 
 export function validateStoreLayout(save: SaveGameData, map: GameTileMap): LayoutResult {

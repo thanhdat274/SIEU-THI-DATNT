@@ -103,7 +103,7 @@ import { appendReview, composeReview, sanitizeReviews, summarizeReviews } from '
 import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, staffServiceTargets, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { slotCategoryConflict } from './shelf-slots';
 import { decorAttraction, decorTrafficMultiplier } from './decor';
-import { buyLandPlot, validateStoreLayout, totalWarehouseCells, type LayoutResult } from './store-layout';
+import { buyLandPlot, upgradeFixtureSlots, validateStoreLayout, totalWarehouseCells, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
 import { expiryDay, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
@@ -2182,8 +2182,8 @@ export class GameSimulation {
       const lots = normalizeLots(item.quantity, item.lots, item.productId, day);
       return { productId: item.productId, quantity: sumLots(lots), lots };
     }).filter((item) => item.quantity > 0);
-    this.fixtures = syncSlotChildren(this.fixtures);
-    this.storedFixtures = syncSlotChildren(this.storedFixtures);
+    this.fixtures = syncSlotChildren(upgradeFixtureSlots(this.fixtures));
+    this.storedFixtures = syncSlotChildren(upgradeFixtureSlots(this.storedFixtures));
     this.fixtures = this.fixtures.map((fixture) => {
       if(isWarehouseFixture(fixture)) return {...fixture,assignedProductId:undefined,currentStock:0,stockLots:[]};
       if (!fixture.assignedProductId || fixture.currentStock <= 0) {
