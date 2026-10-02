@@ -224,7 +224,7 @@ export class StoreLogisticsManager {
       worker.carryingBox = false;
       worker.direction = dx > 0 ? 'right' : 'left';
 
-      if (dist < 4) {
+      if (dist < Math.max(4, walkSpeed * dt)) {
         worker.x = truckTail.x;
         worker.y = truckTail.y;
         worker.carryingBox = true;
@@ -243,7 +243,7 @@ export class StoreLogisticsManager {
       worker.carryingBox = true;
       worker.direction = dx > 0 ? 'right' : 'left';
 
-      if (dist < 4) {
+      if (dist < Math.max(4, walkSpeed * dt)) {
         worker.x = storeDoor.x;
         worker.y = storeDoor.y;
         worker.carryingBox = false;
@@ -280,7 +280,7 @@ export class StoreLogisticsManager {
       worker.carryingBox = false;
       worker.direction = dx > 0 ? 'right' : 'left';
 
-      if (dist < 4) {
+      if (dist < Math.max(4, walkSpeed * dt)) {
         worker.x = storeDoor.x;
         worker.y = storeDoor.y;
         worker.carryingBox = true;
@@ -299,7 +299,7 @@ export class StoreLogisticsManager {
       worker.carryingBox = true;
       worker.direction = dx > 0 ? 'right' : 'left';
 
-      if (dist < 4) {
+      if (dist < Math.max(4, walkSpeed * dt)) {
         worker.x = truckTail.x;
         worker.y = truckTail.y;
         worker.carryingBox = false;

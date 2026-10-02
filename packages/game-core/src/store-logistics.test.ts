@@ -73,7 +73,7 @@ export function runStoreLogisticsTests(): void {
     for (let t = 0; t < 3; t += 0.2) {
       mgr.update(0.2, 8);
     }
-    let ev = mgr.getActiveEvent()!;
+    const ev = mgr.getActiveEvent()!;
     assert.ok(ev.phase === 'docked' || ev.phase === 'unloading', 'Xe đã cập bãi và mở cửa');
     assert.ok(ev.doorsOpen, 'Cửa thùng xe mở khi đỗ bãi');
 

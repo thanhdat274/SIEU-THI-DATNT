@@ -1,6 +1,9 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { effectiveShelfCapacity, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, WEATHER_MAP } from '@game/data';
-import { InputManager, GameSimulation } from '@game/core';
+import React, { lazy, Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { effectiveShelfCapacity, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, WEATHER_MAP, XOI_DISH_IDS } from '@game/data';
+import { InputManager, GameSimulation, ambientMix, getTutorialChecklist } from '@game/core';
+import type { TutorialItem } from '@game/core';
+import { TutorialChecklist } from './components/TutorialChecklist';
+import { AmbientAudioEngine } from './services/ambient-audio-engine';
 import { PixiGameViewport } from '@game/renderer';
 import { GameSnapshot, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
 
@@ -15,34 +18,40 @@ import { type WorldDetail, createWorldInvite, commitOnlineCommand, getOnlineWorl
 import { WarehouseModal } from './components/WarehouseModal';
 import { ShelfModal } from './components/ShelfModal';
 import { CashierModal } from './components/CashierModal';
-import { DiningTableModal } from './components/DiningTableModal';
 import { InventoryModal } from './components/InventoryModal';
-import { SaveModal } from './components/SaveModal';
 import { VirtualJoystick } from './components/VirtualJoystick';
 import { RotateOverlay } from './components/RotateOverlay';
 import { ToastContainer } from './components/ToastContainer';
-import { SupplierModal } from './components/SupplierModal';
 import { BottomBar } from './components/BottomBar';
 import { WarehouseDock } from './components/WarehouseDock';
-import { TimeVoteModal } from './components/TimeVoteModal';
-import { StoreLayoutModal } from './components/StoreLayoutModal';
-import { StorePlanogramModal } from './components/StorePlanogramModal';
-import { QuestModal } from './components/QuestModal';
-import { LevelRoadmapModal } from './components/LevelRoadmapModal';
 import { feedbackReasonLabel, levelUnlockToast } from '@game/core';
-import { StallModal } from './components/StallModal';
-import { MarketModal } from './components/MarketModal';
-import { TaxModal } from './components/TaxModal';
-import { DaySummaryModal } from './components/DaySummaryModal';
-import { RegularsModal } from './components/RegularsModal';
-import { SkillsModal } from './components/SkillsModal';
-import { TitlesModal } from './components/TitlesModal';
-import { MaintenanceModal } from './components/MaintenanceModal';
-import { ReviewsModal } from './components/ReviewsModal';
-import { SecurityModal } from './components/SecurityModal';
 import type { StoreLayoutAction } from '@game/core';
 import { money, PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
+
+/** Modal ít mở nạp theo yêu cầu để không nằm trong chunk đầu (I-10). */
+const lazyModal = <P,>(load: () => Promise<Record<string, unknown>>, name: string) =>
+  lazy(() => load().then((m) => ({ default: m[name] as React.ComponentType<P> })));
+const AnalyticsModal = lazyModal<React.ComponentProps<typeof import('./components/AnalyticsModal').AnalyticsModal>>(() => import('./components/AnalyticsModal'), 'AnalyticsModal');
+const KitchenStationModal = lazyModal<React.ComponentProps<typeof import('./components/KitchenStationModal').KitchenStationModal>>(() => import('./components/KitchenStationModal'), 'KitchenStationModal');
+const DiningTableModal = lazyModal<React.ComponentProps<typeof import('./components/DiningTableModal').DiningTableModal>>(() => import('./components/DiningTableModal'), 'DiningTableModal');
+const SaveModal = lazyModal<React.ComponentProps<typeof import('./components/SaveModal').SaveModal>>(() => import('./components/SaveModal'), 'SaveModal');
+const SupplierModal = lazyModal<React.ComponentProps<typeof import('./components/SupplierModal').SupplierModal>>(() => import('./components/SupplierModal'), 'SupplierModal');
+const TimeVoteModal = lazyModal<React.ComponentProps<typeof import('./components/TimeVoteModal').TimeVoteModal>>(() => import('./components/TimeVoteModal'), 'TimeVoteModal');
+const StoreLayoutModal = lazyModal<React.ComponentProps<typeof import('./components/StoreLayoutModal').StoreLayoutModal>>(() => import('./components/StoreLayoutModal'), 'StoreLayoutModal');
+const StorePlanogramModal = lazyModal<React.ComponentProps<typeof import('./components/StorePlanogramModal').StorePlanogramModal>>(() => import('./components/StorePlanogramModal'), 'StorePlanogramModal');
+const QuestModal = lazyModal<React.ComponentProps<typeof import('./components/QuestModal').QuestModal>>(() => import('./components/QuestModal'), 'QuestModal');
+const LevelRoadmapModal = lazyModal<React.ComponentProps<typeof import('./components/LevelRoadmapModal').LevelRoadmapModal>>(() => import('./components/LevelRoadmapModal'), 'LevelRoadmapModal');
+const StallModal = lazyModal<React.ComponentProps<typeof import('./components/StallModal').StallModal>>(() => import('./components/StallModal'), 'StallModal');
+const MarketModal = lazyModal<React.ComponentProps<typeof import('./components/MarketModal').MarketModal>>(() => import('./components/MarketModal'), 'MarketModal');
+const TaxModal = lazyModal<React.ComponentProps<typeof import('./components/TaxModal').TaxModal>>(() => import('./components/TaxModal'), 'TaxModal');
+const DaySummaryModal = lazyModal<React.ComponentProps<typeof import('./components/DaySummaryModal').DaySummaryModal>>(() => import('./components/DaySummaryModal'), 'DaySummaryModal');
+const RegularsModal = lazyModal<React.ComponentProps<typeof import('./components/RegularsModal').RegularsModal>>(() => import('./components/RegularsModal'), 'RegularsModal');
+const SkillsModal = lazyModal<React.ComponentProps<typeof import('./components/SkillsModal').SkillsModal>>(() => import('./components/SkillsModal'), 'SkillsModal');
+const TitlesModal = lazyModal<React.ComponentProps<typeof import('./components/TitlesModal').TitlesModal>>(() => import('./components/TitlesModal'), 'TitlesModal');
+const MaintenanceModal = lazyModal<React.ComponentProps<typeof import('./components/MaintenanceModal').MaintenanceModal>>(() => import('./components/MaintenanceModal'), 'MaintenanceModal');
+const ReviewsModal = lazyModal<React.ComponentProps<typeof import('./components/ReviewsModal').ReviewsModal>>(() => import('./components/ReviewsModal'), 'ReviewsModal');
+const SecurityModal = lazyModal<React.ComponentProps<typeof import('./components/SecurityModal').SecurityModal>>(() => import('./components/SecurityModal'), 'SecurityModal');
 
 export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -75,6 +84,27 @@ export const App: React.FC = () => {
   const [isMaintenanceOpen, setMaintenanceOpen] = useState(false);
   const [isReviewsOpen, setReviewsOpen] = useState(false);
   const [isSecurityOpen, setSecurityOpen] = useState(false);
+  const [isAnalyticsOpen, setAnalyticsOpen] = useState(false);
+  const audioRef = useRef<AmbientAudioEngine | null>(null);
+  if (!audioRef.current) audioRef.current = new AmbientAudioEngine();
+  const [tutorialItems, setTutorialItems] = useState<TutorialItem[]>([]);
+  const [audioMuted, setAudioMuted] = useState(() => audioRef.current!.getSettings().muted);
+  useEffect(() => {
+    if (!gameStarted) return;
+    const engine = audioRef.current;
+    engine?.attach();
+    // Checklist và mix âm thanh chỉ làm mới vài giây một lần, không mỗi khung hình.
+    const refresh = () => {
+      const sim = simulationRef.current;
+      if (!sim) return;
+      setTutorialItems(getTutorialChecklist(sim.exportSaveData('tutorial', 0)));
+      const time = sim.getTime();
+      engine?.setMix(ambientMix({ rainIntensity: sim.getRainIntensity(), hour: time.hour, isStoreOpen: time.isStoreOpen }));
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 5000);
+    return () => { window.clearInterval(timer); engine?.detach(); };
+  }, [gameStarted]);
   const [daySummaryRecord, setDaySummaryRecord] = useState<DailyRecord | null>(null);
   // Bảng kế hoạch chỉ tính khi mở bảng Thị trường hoặc sang ngày mới, không mỗi khung hình.
   const planDay = useGameStore((state) => state.worldTime.day);
@@ -484,6 +514,8 @@ export const App: React.FC = () => {
       });
       ownedSimulation = simulation;
       simulationRef.current = simulation;
+      // Chỉ dev: console dùng `__sim` để ép cấp/tiền (addExperience, addMoney) hoặc nạp save đã chỉnh (importSaveData) khi QA.
+      if (import.meta.env.DEV) (window as unknown as { __sim?: GameSimulation }).__sim = simulation;
 
       // Sync initial state
       syncFromSimulation(simulation);
@@ -1100,6 +1132,17 @@ export const App: React.FC = () => {
     await handleSupplierCartOrder('dai_ly_dau_hem', [{ productId, quantity }]);
   };
 
+  const handleDisposeStock = async (productId: string, quantity: number) => {
+    if (blockOfflineOnlineMutation()) return;
+    const sim = simulationRef.current;
+    if (!sim) return;
+    const res = sim.disposeStock(productId, quantity);
+    if (!res.success || res.disposed <= 0) { addToast('Không có hàng để tiêu hủy.', 'warn'); return; }
+    syncFromSimulation(sim);
+    addToast(`Đã tiêu hủy ${res.disposed} món, ghi lỗ ${res.cost.toLocaleString('vi-VN')}đ.`, 'success');
+    if (onlineWorldRef.current) await commitBusinessChange({ type: 'dispose_stock', productId, quantity: res.disposed }, `Tiêu hủy ${res.disposed} món`, 'Tiêu hủy hàng');
+  };
+
   const handleStowHolding = async (holdingId?: string) => {
     if (blockOfflineOnlineMutation()) return;
     const sim = simulationRef.current;
@@ -1324,7 +1367,7 @@ export const App: React.FC = () => {
           ⚠️ Mất kết nối hẻm chung — thao tác bị tạm dừng, đang kết nối lại...
         </div>
       )}
-      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={() => setMarketOpen(true)} onOpenTax={() => setTaxOpen(true)} onOpenRegulars={() => setRegularsOpen(true)} onOpenSkills={() => setSkillsOpen(true)} onOpenTitles={() => setTitlesOpen(true)} maintenanceAlerts={simulationRef.current?.getMaintenanceList().filter(e => e.status !== 'good').length ?? 0} onOpenMaintenance={() => setMaintenanceOpen(true)} onOpenReviews={() => setReviewsOpen(true)} onOpenSecurity={(player.level >= SECURITY_RULES.unlockLevel) ? () => setSecurityOpen(true) : undefined} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onOpenStaff={openStaffFromHud} onOpenStalls={() => setStallOpen(true)} onOpenQuests={() => setQuestOpen(true)} onOpenLevelRoadmap={() => setLevelRoadmapOpen(true)} onOpenPlanogram={() => setIsPlanogramOpen(true)} emptySlotsCount={fixtures.filter(f => isSalesFixture(f) && f.currentStock === 0).length} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
+      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={() => setMarketOpen(true)} onOpenTax={() => setTaxOpen(true)} onOpenRegulars={() => setRegularsOpen(true)} onOpenSkills={() => setSkillsOpen(true)} onOpenTitles={() => setTitlesOpen(true)} maintenanceAlerts={simulationRef.current?.getMaintenanceList().filter(e => e.status !== 'good').length ?? 0} onOpenMaintenance={() => setMaintenanceOpen(true)} onOpenReviews={() => setReviewsOpen(true)} onOpenAnalytics={() => setAnalyticsOpen(true)} audioMuted={audioMuted} onToggleAudioMute={() => { const next = !audioMuted; audioRef.current?.setMuted(next); setAudioMuted(next); }} onOpenSecurity={(player.level >= SECURITY_RULES.unlockLevel) ? () => setSecurityOpen(true) : undefined} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onOpenStaff={openStaffFromHud} onOpenStalls={() => setStallOpen(true)} onOpenQuests={() => setQuestOpen(true)} onOpenLevelRoadmap={() => setLevelRoadmapOpen(true)} onOpenPlanogram={() => setIsPlanogramOpen(true)} emptySlotsCount={fixtures.filter(f => isSalesFixture(f) && f.currentStock === 0).length} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
       <main className="game-main">
         <div className="world-viewport">
           <canvas ref={canvasRef} aria-label="Bản đồ Tiệm Tạp Hóa Đầu Hẻm"/>
@@ -1357,7 +1400,7 @@ export const App: React.FC = () => {
             {!hasModal && !isWarehouseDockOpen && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
           </>}
         </div>
-        {!isLoading && <WarehouseDock capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onOpenPlanogram={() => setIsPlanogramOpen(true)} onLocateWarehouse={locateWarehouse} onStowHolding={handleStowHolding} currentDay={worldTime.day}/>}
+        {!isLoading && <WarehouseDock coldCapacity={simulationRef.current?.getColdCapacity()} ambientCapacity={simulationRef.current?.getAmbientCapacity()} ambientUsed={simulationRef.current?.getAmbientCellsUsed()} capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onOpenPlanogram={() => setIsPlanogramOpen(true)} onLocateWarehouse={locateWarehouse} onStowHolding={handleStowHolding} currentDay={worldTime.day}/>}
       </main>
       {!isLoading && <BottomBar onOpenSupplier={openSupplierModal} onOpenCashier={openCashier}/>}
     </div>
@@ -1398,6 +1441,7 @@ export const App: React.FC = () => {
         )}
       </div>
     )}
+    <Suspense fallback={null}>
     {activeFixtureModal && isSalesFixture(activeFixtureModal) && (
       <ShelfModal
         capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0}
@@ -1417,13 +1461,15 @@ export const App: React.FC = () => {
         onClose={closeFixtureModal}
       />
     )}
-    {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} fixture={activeFixtureModal} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onStowHolding={handleStowHolding} onClose={closeFixtureModal}/>}
+    {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal coldCapacity={simulationRef.current?.getColdCapacity()} ambientCapacity={simulationRef.current?.getAmbientCapacity()} ambientUsed={simulationRef.current?.getAmbientCellsUsed()} capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} fixture={activeFixtureModal} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onStowHolding={handleStowHolding} onDisposeStock={handleDisposeStock} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'cashier_counter' && <CashierModal initialShowStaff={staffRequested} fixture={activeFixtureModal} player={player} worldTime={worldTime} shelves={fixtures.filter(isSalesFixture)} customers={customers} statistics={statistics} canDineIn={customer => simulationRef.current?.canDineIn(customer) ?? false} creditAccounts={simulationRef.current?.getCustomerCredits() ?? []} creditTerms={regularId => simulationRef.current?.getCustomerCreditTerms(regularId) ?? { eligible: false, limit: 0, used: 0, available: 0 }} onRepayCredit={async creditId => { const res = await persistSimulationMutation({ type: 'repay_customer_credit', creditId }, 'Thu hồi nợ khách quen', 'Thu nợ', simulation => ({ success: simulation.repayCustomerCredit(creditId), reason: undefined as string | undefined })); if (res?.success) addToast('Đã thu hồi khoản mua chịu.', 'success'); else if (res) addToast(res.reason ?? 'Không thu được khoản nợ.', 'warn'); }} staff={simulationRef.current?.getStaff() ?? []} staffCandidates={simulationRef.current?.getStaffCandidates(worldTime.day) ?? []} wageDebt={simulationRef.current?.getWageDebt() ?? 0} restockTargets={simulationRef.current?.getRestockJobTargets() ?? []} onAssignRefillJob={handleAssignRefillJob} onHireStaff={handleHireStaff} onSetStaffShift={handleSetStaffShift} onCheckout={handleCheckout} onToggleStoreStatus={handleToggleStoreStatus} onAdvanceDay={handleAdvanceDay} onClose={closeFixtureModal}/>}
+    {activeFixtureModal?.type === 'kitchen_station' && simulationRef.current && <KitchenStationModal fixture={activeFixtureModal} recipes={simulationRef.current.getStationRecipes(activeFixtureModal.id)} job={simulationRef.current.getProductionJobs().find(job => job.stationId === activeFixtureModal.id)} inventory={simulationRef.current.getInventory()} day={simulationRef.current.getTime().day} onStart={async recipeId => { const stationId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'start_production', recipeId, stationId }, 'Bắt đầu nấu', 'Sản xuất', simulation => simulation.startProduction(recipeId, stationId)); if (!res?.success) addToast(res?.reason ?? 'Không bắt đầu được mẻ nấu.', 'warn'); }} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'dining_table' && simulationRef.current && <DiningTableModal fixture={activeFixtureModal} state={simulationRef.current.getDiningTableState(activeFixtureModal.id)} staff={simulationRef.current.getStaff()} onAssignCleaner={async staffId => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'assign_dining_cleanup', staffId, fixtureId }, 'Giao việc dọn bàn', 'Dọn dẹp', simulation => ({ success: simulation.assignDiningCleanup(staffId, fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast(res?.reason ?? 'Không giao được việc dọn bàn.', 'warn'); }} onClean={async () => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'clean_dining_table', fixtureId }, 'Dọn bàn ăn', 'Dọn dẹp', simulation => ({ success: simulation.cleanDiningTable(fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast('Bàn đang có khách hoặc đã sạch.', 'warn'); }} onClose={closeFixtureModal}/>}
     {isInventoryModalOpen && <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals}/>}
     {isSaveModalOpen && <SaveModal onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onExportSave={handleExportSave} onImportSave={handleImportSave} isOnline={!!onlineWorld} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
     {isSupplierModalOpen && (
       <SupplierModal
+        coldCapacity={simulationRef.current?.getColdCapacity()}
         player={player}
         pendingOrders={pendingOrders}
         inventory={inventory}
@@ -1510,6 +1556,33 @@ export const App: React.FC = () => {
           addToast(res.reason ?? 'Không thể nhận thưởng.', 'warn');
           return false;
         }}
+        chapters={simulationRef.current.getStoryProgressList()}
+        onBeginChapter={async (chapterId) => {
+          const res = await persistSimulationMutation(
+            { type: 'begin_story_chapter', chapterId }, 'Bắt đầu chương cốt truyện', 'Cốt truyện',
+            simulation => simulation.beginStoryChapter(chapterId),
+          );
+          if (!res) return false;
+          if (res.success) {
+            addToast('Đã bắt đầu chương mới!', 'info');
+            return true;
+          }
+          addToast(res.reason ?? 'Không thể bắt đầu chương.', 'warn');
+          return false;
+        }}
+        onClaimChapter={async (chapterId) => {
+          const res = await persistSimulationMutation(
+            { type: 'claim_story_chapter', chapterId }, 'Nhận thưởng chương cốt truyện', 'Cốt truyện',
+            simulation => simulation.claimStoryChapter(chapterId),
+          );
+          if (!res) return false;
+          if (res.success) {
+            addToast('Hoàn thành chương! Nhận thưởng thành công.', 'success');
+            return true;
+          }
+          addToast(res.reason ?? 'Không thể nhận thưởng.', 'warn');
+          return false;
+        }}
         onClaimWeeklyQuest={async (questId) => {
           const res = await persistSimulationMutation(
             { type: 'claim_weekly_quest', questId }, 'Nhận thưởng nhiệm vụ tuần', 'Nhiệm vụ tuần',
@@ -1546,6 +1619,8 @@ export const App: React.FC = () => {
         onClose={() => setSkillsOpen(false)}
       />
     )}
+    {isAnalyticsOpen && simulationRef.current && <AnalyticsModal day={simulationRef.current.getTime().day} records={simulationRef.current.getDailyRecords()} getPriceHistory={id => simulationRef.current?.getPriceHistory(id) ?? []} getHeatmap={days => simulationRef.current?.getHeatmap(days) ?? {}} onClose={() => setAnalyticsOpen(false)}/>}
+    {gameStarted && !isLoading && simulationRef.current && <TutorialChecklist items={tutorialItems}/>}
     {isSecurityOpen && simulationRef.current && (
       <SecurityModal
         security={simulationRef.current.getSecurityState()}
@@ -1651,6 +1726,7 @@ export const App: React.FC = () => {
           }
           return res;
         }}
+        xoiProductIds={[...XOI_DISH_IDS]}
         onOpenSupplier={() => {
           setIsPlanogramOpen(false);
           openSupplierModal();
@@ -1674,6 +1750,7 @@ export const App: React.FC = () => {
         }}
       />
     )}
+    </Suspense>
     <RotateOverlay/><ToastContainer/>
   </div>;
 };

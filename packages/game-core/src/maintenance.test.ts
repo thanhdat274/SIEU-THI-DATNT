@@ -4,7 +4,7 @@ import { DEFAULT_INITIAL_SAVE, MAINTENANCE_RULES, PRODUCT_MAP, fixtureRepairCost
 import { CustomerManager } from './customers';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
-import { listMaintenance, maintainFixture, maintenanceStatus, needsService, wearOvernight, type MaintenanceNotice } from './maintenance';
+import { coldBreakExtraDecay, listMaintenance, maintainFixture, staffServiceTargets, maintenanceStatus, needsService, wearOvernight, type MaintenanceNotice } from './maintenance';
 
 const shelf = (id: string, over: Partial<StoreFixture> = {}): StoreFixture => ({ id, type: 'shelf_wooden', tileX: 2, tileY: 2, widthTiles: 2, heightTiles: 1, rotation: 0, currentStock: 0, maxCapacity: 24, label: id, ...over });
 
@@ -146,5 +146,56 @@ export function runMaintenanceTests(): void {
   const lowSim = new GameSimulation(lowSave, map, new InputManager());
   for (let i = 0; i < 5; i++) lowSim.getClock().advanceToNextDay();
   assert.ok(lowSim.getFixtures().every(f => f.wear === undefined && !f.broken), 'Cấp 1 không hao mòn');
+  // Tủ mát hỏng không giữ lạnh: hàng trong tủ mất thêm hạn dùng mỗi đêm; kệ thường và tủ còn chạy thì không.
+  assert.equal(coldBreakExtraDecay({ type: 'refrigerator', broken: 'minor' }), MAINTENANCE_RULES.brokenColdExtraDecay);
+  assert.equal(coldBreakExtraDecay({ type: 'refrigerator', broken: 'major' }), MAINTENANCE_RULES.brokenColdExtraDecay);
+  assert.equal(coldBreakExtraDecay({ type: 'refrigerator' }), 0, 'Tủ mát còn chạy không mất thêm');
+  assert.equal(coldBreakExtraDecay({ type: 'shelf_wooden', broken: 'minor' }), 0, 'Kệ khô hỏng không làm hàng hỏng nhanh');
+  const coldExpiry = (broken: boolean): number => {
+    const sv = structuredClone(save);
+    const sm = new GameSimulation(sv, map, new InputManager());
+    const day = sm.getClock().getTime().day;
+    const fr = sm.getFixtures().find(f => f.type === 'refrigerator')!;
+    fr.assignedProductId = water.id; fr.currentStock = 5; fr.stockLots = [{ quantity: 5, expiresOnDay: day + 30 }];
+    fr.wear = 0; fr.broken = broken ? 'minor' : undefined;
+    sm.getClock().advanceToNextDay();
+    return sm.getFixtures().find(f => f.id === fr.id)!.stockLots![0].expiresOnDay;
+  };
+  assert.ok(coldExpiry(true) <= coldExpiry(false) - MAINTENANCE_RULES.brokenColdExtraDecay, 'Qua đêm, hàng trong tủ hỏng còn ít ngày hạn hơn tủ còn chạy');
+  // Nhân viên châm hàng tự bảo trì đồ đã mòn trước khi đêm làm hỏng; có phí, ghi sổ, giới hạn theo số nhân viên.
+  {
+    const refill = { role: 'refill' as const };
+    const wornA = shelf('a', { wear: 60 }), wornB = shelf('b', { wear: 70 }), wornC = shelf('c', { wear: 50 });
+    const fresh = shelf('d', { wear: 10 }), broken = shelf('e', { wear: 90, broken: 'minor' });
+    const all = [wornA, wornB, wornC, fresh, broken];
+    assert.deepEqual(staffServiceTargets(all, []), [], 'Không có nhân viên thì không ai bảo trì');
+    assert.deepEqual(staffServiceTargets(all, [{ role: 'cashier' }, { role: 'security' }]), [], 'Thu ngân và bảo vệ không bảo trì');
+    assert.deepEqual(staffServiceTargets(all, [refill]), ['b', 'a'], 'Một nhân viên làm tối đa 2 món, mòn nhiều trước, bỏ qua đồ mới và đồ đã hỏng');
+    assert.deepEqual(staffServiceTargets(all, [refill, refill]), ['b', 'a', 'c'], 'Hai nhân viên làm hết các món cần bảo trì');
+
+    const nightRun = (withStaff: boolean, money: number) => {
+      const sv = structuredClone(save);
+      sv.player.money = money;
+      sv.staff = withStaff ? [{ id: 'refill-1', name: 'Chị Hai', role: 'refill', speed: 5, accuracy: 5, stamina: 5, dailyWage: 0, hiredOnDay: 1, shift: 'full_day' }] : [];
+      const sm = new GameSimulation(sv, map, new InputManager());
+      for (const f of sm.getFixtures().filter(isSalesFixture)) f.wear = 0;
+      const targets = sm.getFixtures().filter(isSalesFixture).slice(0, 3);
+      targets.forEach((f, i) => { f.wear = 50 - i; });
+      sm.getClock().advanceToNextDay();
+      return { sm, ids: targets.map(f => f.id) };
+    };
+    const staffed = nightRun(true, 5_000_000);
+    const serviced = staffed.sm.getLedger().filter(e => e.type === 'maintenance' && e.description.includes('(nhân viên)'));
+    assert.equal(serviced.length, MAINTENANCE_RULES.staffServicePerNight, 'Một nhân viên bảo trì đúng giới hạn mỗi đêm');
+    assert.ok(serviced.every(e => e.amount > 0), 'Bảo trì có phí và được ghi sổ');
+    const lowered = staffed.ids.filter(id => (staffed.sm.getFixtures().find(f => f.id === id)!.wear ?? 99) <= MAINTENANCE_RULES.repairWear + MAINTENANCE_RULES.wearMax);
+    assert.equal(lowered.length, MAINTENANCE_RULES.staffServicePerNight, 'Đồ được bảo trì có độ mòn về mức sau sửa');
+    const bookedCost = staffed.sm.getLedger().filter(e => e.type === 'maintenance').reduce((n, e) => n + e.amount, 0);
+    assert.ok(bookedCost >= serviced.reduce((n, e) => n + e.amount, 0), 'Tổng sổ cái gồm phí nhân viên');
+    const unstaffed = nightRun(false, 5_000_000);
+    assert.equal(unstaffed.sm.getLedger().filter(e => e.type === 'maintenance').length, 0, 'Không có nhân viên thì không ai bảo trì');
+    const broke = nightRun(true, 0);
+    assert.equal(broke.sm.getLedger().filter(e => e.type === 'maintenance').length, 0, 'Hết tiền thì nhân viên không bảo trì');
+  }
   console.log('  ✓ Passed: Hao mòn qua đêm, hỏng nhẹ/nặng, sửa/bảo trì/mua mới, ghi sổ cái và lưu/tải');
 }

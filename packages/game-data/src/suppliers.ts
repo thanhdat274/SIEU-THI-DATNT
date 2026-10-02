@@ -1,4 +1,5 @@
 import { SupplierConfig } from '@game/shared';
+import { nullProto } from './safe-map';
 
 export const SUPPLIERS: SupplierConfig[] = [
   {
@@ -46,6 +47,6 @@ export const SUPPLIERS: SupplierConfig[] = [
 
 export const DEFAULT_SUPPLIER_ID = 'dai_ly_dau_hem';
 
-export const SUPPLIER_MAP: Record<string, SupplierConfig> = Object.fromEntries(
+export const SUPPLIER_MAP: Record<string, SupplierConfig> = nullProto(Object.fromEntries(
   SUPPLIERS.map((s) => [s.id, s])
-);
+));

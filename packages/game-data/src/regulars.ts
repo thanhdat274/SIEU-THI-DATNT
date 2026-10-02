@@ -1,3 +1,4 @@
+import { nullProto } from './safe-map';
 export interface RegularCustomerPerk {
   threshold: number; // Mốc điểm thân thiết (ví dụ: 15, 40, 80)
   title: string;
@@ -146,6 +147,6 @@ export const REGULAR_CUSTOMERS: RegularCustomerDefinition[] = [
   },
 ];
 
-export const REGULAR_CUSTOMERS_MAP: Record<string, RegularCustomerDefinition> = Object.fromEntries(
+export const REGULAR_CUSTOMERS_MAP: Record<string, RegularCustomerDefinition> = nullProto(Object.fromEntries(
   REGULAR_CUSTOMERS.map((c) => [c.id, c])
-);
+));

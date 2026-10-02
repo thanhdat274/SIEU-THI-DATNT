@@ -268,9 +268,13 @@ export const CashierModal: React.FC<Props> = ({
             const annual = summarizeAnnualRevenue(dailyRecords, worldTime.day, currentDayRecord ?? undefined);
             return (
               <div className="summary-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }} aria-label="Doanh thu năm">
-                <strong>Doanh thu năm {annual.year}: {money(annual.revenue)}{annual.referenceThreshold ? ` / ngưỡng tham khảo ${money(annual.referenceThreshold)}` : ''}</strong>
-                <div className="pixel-progress"><span style={{ width: `${Math.round(annual.progress * 100)}%` }} /></div>
-                <p className="muted" style={{ margin: 0 }}>{annual.note}</p>
+                <strong>Doanh thu năm {annual.year}: {money(annual.revenue)}</strong>
+                <div className="pixel-progress"><span style={{ width: `${Math.min(100, Math.round(annual.progress * 100))}%` }} /></div>
+                <p className="muted" style={{ margin: 0 }}>
+                  {annual.taxActive
+                    ? `Thuế khoán 1% đang áp dụng — thuế ước tính: ${money(annual.estimatedTax)} (đã khấu trừ: ${money(annual.taxPaidYear)})`
+                    : `Chưa vượt ngưỡng miễn thuế ${money(annual.threshold)}/năm. Vượt ngưỡng sẽ áp dụng 1% khoán.`}
+                </p>
               </div>
             );
           })()}

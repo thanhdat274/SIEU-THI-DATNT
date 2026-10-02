@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createInitialOnlineWorld } from '@game/data';
+import { MAINTENANCE_RULES, SECURITY_RULES, createInitialOnlineWorld } from '@game/data';
 import { MULTIPLAYER_PROTOCOL_VERSION } from '@game/shared';
 import { WorldRuntime } from './world-runtime';
 
@@ -180,6 +180,41 @@ export async function runWorldRuntimeTests() {
   assert.equal(questRuntime.getSimulation().getPlayerData().activeTitle, undefined);
   const badTitle = await questRuntime.executeCommand('owner-1', titleCommand('title-2', 'unknown_title'));
   assert.equal(badTitle.status, 'rejected', 'Server rejects titles that are not unlocked or defined');
+
+  // Bảo trì nội thất và an ninh chạy qua mô phỏng chuẩn của server; gửi lại cùng mã lệnh không tính hai lần.
+  {
+    const sim = questRuntime.getSimulation();
+    sim.addMoney(2_000_000);
+    const send = (actor: string, commandId: string, payload: unknown) => questRuntime.executeCommand(actor, {
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION,
+      worldId: questSeed.world.id,
+      businessId: questSeed.business.id,
+      commandId,
+      expectedRevision: questRuntime.getSnapshot().world.revision,
+      payload,
+    });
+    const shelf = sim.getFixtures().find(f => f.type === 'shelf_wooden')!;
+    shelf.wear = 60;
+    const maintenanceEntries = () => sim.getLedger().filter(entry => entry.type === 'maintenance').length;
+    const m0 = sim.getPlayerData().money;
+    assert.equal((await send('member-2', 'maint-1', { type: 'maintain_fixture', fixtureId: shelf.id, action: 'service' })).status, 'accepted');
+    assert.equal(sim.getFixtures().find(f => f.id === shelf.id)!.wear, MAINTENANCE_RULES.repairWear, 'Bảo trì đưa độ mòn về mức đã cấu hình');
+    assert.ok(sim.getPlayerData().money < m0 && maintenanceEntries() === 1, 'Bảo trì trừ tiền và ghi sổ một lần');
+    await send('member-2', 'maint-1', { type: 'maintain_fixture', fixtureId: shelf.id, action: 'service' });
+    assert.equal(maintenanceEntries(), 1, 'Gửi lại cùng mã lệnh không ghi sổ lần hai');
+    assert.equal((await send('owner-1', 'maint-2', { type: 'maintain_fixture', fixtureId: 'khong_co', action: 'repair' })).status, 'rejected', 'Nội thất không tồn tại bị từ chối');
+
+    const money = sim.getPlayerData().money;
+    assert.equal((await send('owner-1', 'sec-1', { type: 'security_action', action: 'buy_camera' })).status, 'accepted');
+    assert.equal(sim.getSecurityState().camera, true);
+    assert.equal(sim.getPlayerData().money, money - SECURITY_RULES.cameraCost, 'Lắp camera trừ đúng một lần');
+    assert.equal((await send('member-2', 'sec-2', { type: 'security_action', action: 'buy_camera' })).status, 'rejected', 'Đã có camera thì từ chối, không trừ tiền thêm');
+    assert.equal(sim.getPlayerData().money, money - SECURITY_RULES.cameraCost);
+    assert.equal((await send('member-2', 'sec-3', { type: 'security_action', action: 'police_off' })).status, 'accepted');
+    assert.equal(sim.getSecurityState().callPolice, false);
+    assert.equal((await send('owner-1', 'sec-4', { type: 'security_action', action: 'police_on' })).status, 'accepted');
+    assert.equal(sim.getSecurityState().callPolice, true);
+  }
 
   // A member who joins over HTTP after the runtime was loaded must be adoptable.
   const lateSeed = createInitialOnlineWorld(owner, 'world-runtime-late-member');

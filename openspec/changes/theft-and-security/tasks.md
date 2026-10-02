@@ -24,8 +24,8 @@ Trạng thái 01/10/2026: nhóm 1–3 đã có code và test tự động. Trong
 ## 4. Kiểm chứng và còn lại
 
 - [x] 4.1 `tsc -b`, toàn bộ `test-runner.ts` và 7 TAP test PASS; server `tsc -p tsconfig.build.json` và web Vite production build PASS (01/10/2026, Node 24.19.0 gọi trực tiếp). Vite giữ cảnh báo chunk lớn và import động/tĩnh `api.ts`.
-- [ ] 4.2 Browser QA: mở màn An ninh, mua camera, thấy sự cố, toast. Chưa làm được vì cần cấp 5 và game thử đang ở cấp thấp, chưa có công cụ dev ép cấp hoặc ép sự cố.
+- [x] 4.2 Browser QA một phần (02/10/2026, dev server, cấp 12 ép bằng `window.__sim.addExperience`): mở màn An ninh từ "Sổ quản lý", bấm "Lắp camera" (tiền −250.000, sổ cái `maintenance` 250.000, camera bật), bật/tắt báo công an đổi `callPolice`, danh sách sự cố (nạp bằng `importSaveData`) hiển thị đúng biểu tượng và nội dung. Chưa thấy toast sự cố thật và chưa gặp trộm thật trong lúc chạy, vì xác suất thấp và trang liên tục tải lại do phiên khác sửa file.
 - [ ] 4.3 Cân bằng: tần suất, mức mất, giá camera, phạt, tỷ lệ bắt của công an; xem người chơi có hiểu vì sao bị mất hàng.
-- [ ] 4.4 Quyết định sau: người chơi tự bắt trộm, dấu hiệu nhìn thấy trên khách trộm, bảo vệ ca đêm, chi phí camera trong mô-đun thuế, server phát lại `security_action`.
+- [ ] 4.4 Quyết định sau: người chơi tự bắt trộm, dấu hiệu nhìn thấy trên khách trộm, bảo vệ ca đêm, chi phí camera trong mô-đun thuế (chờ TAX-0). Đã làm 02/10/2026: server phát lại `security_action` (`world-runtime.test.ts`).
 - [x] 4.5 Lỗi có sẵn khi đổi ngày: đã sửa trong cùng lượt vì ảnh hưởng trực tiếp tới hoàn giỏ; `abandonAllBaskets` cập nhật khách thật.
 - [ ] 4.6 Cập nhật `TASKS.md`/`ROADMAP.md` khi chốt nghiệm thu.

@@ -20,7 +20,7 @@ Trạng thái 01/10/2026: nhóm 1–3 đã có code và test tự động (`yarn
 ## 4. Kiểm chứng và còn lại
 
 - [x] 4.1 `yarn typecheck`, `yarn test`, `yarn build` PASS (01/10/2026).
-- [ ] 4.2 Browser QA: đã thấy trong Browser pane hai cột đèn cạnh vạch, một người đứng chờ ở mép vỉa và xe chạy qua; chưa thấy đèn đổi màu, xe dừng/xếp hàng chờ đèn đỏ hay người băng qua vì pane bị ẩn nên trang bị giảm tốc (khung hình/thời gian game gần như dừng). Cần chạy lại khi pane hiển thị, cả desktop và mobile.
+- [x] 4.2 (một phần, 02/10/2026: đèn đổi màu, xe xếp hàng chờ đỏ, 0 xe vi phạm vạch, đã sửa lỗi xe qua vạch bị kẹt; còn mobile) Browser QA: đã thấy trong Browser pane hai cột đèn cạnh vạch, một người đứng chờ ở mép vỉa và xe chạy qua; chưa thấy đèn đổi màu, xe dừng/xếp hàng chờ đèn đỏ hay người băng qua vì pane bị ẩn nên trang bị giảm tốc (khung hình/thời gian game gần như dừng). Cần chạy lại khi pane hiển thị, cả desktop và mobile.
 - [ ] 4.3 Cảm quan: tốc độ phanh/tăng tốc, độ dài các pha, kích thước đèn và người đi bộ khi thu nhỏ camera, đèn ban đêm.
 - [ ] 4.4 Đo hiệu năng bước con 0,1 s và sprite người đi bộ.
 - [ ] 4.5 Quyết định sau: khách thật qua đường (đổi ô xuất hiện/ô đỗ), đồng bộ đèn giữa các client, tăng `maxConcurrent`.

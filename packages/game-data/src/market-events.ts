@@ -1,4 +1,5 @@
 import type { ModifierChannel, ModifierRule, ModifierTarget } from '@game/shared';
+import { nullProto } from './safe-map';
 
 export type MarketEventKind = 'weather' | 'local' | 'holiday' | 'supply' | 'infrastructure';
 
@@ -18,6 +19,8 @@ export interface MarketEventDef {
   label: string;
   notice: string; // nội dung thông báo cho người chơi
   durationDays: number;
+  /** Chỉ do hệ thống khác kích hoạt (vd. chương cốt truyện), không bao giờ tự lên lịch: xác suất phải là 0. */
+  manual?: boolean;
   trigger: {
     climates?: string[]; // chỉ kích hoạt trong mùa khí hậu này
     seasons?: string[]; // hoặc trong mùa sự kiện này
@@ -109,9 +112,32 @@ export const MARKET_EVENTS: readonly MarketEventDef[] = [
       { label: 'tồn nhà cung cấp giảm, giá sỉ tăng', effects: { supplierStock: 0.5, wholesalePrice: 1.2 } },
     ],
   },
+  {
+    id: 'wholesale_sale', kind: 'supply', label: 'Mối sỉ xả hàng', notice: 'Mối sỉ báo xả hàng: hôm nay giá nhập giảm mạnh, đáng nhập thêm.',
+    durationDays: 1, trigger: { chancePerDay: 0.07, minGapDays: 10 }, warnDaysBefore: 0,
+    effects: [
+      { label: 'giá sỉ giảm 40%', effects: { wholesalePrice: 0.6 } },
+    ],
+  },
+  {
+    id: 'social_trend', kind: 'local', label: 'Trend mạng xã hội', notice: 'Một trend mạng xã hội đang lan: đồ ăn vặt, bánh kẹo và nước uống được hỏi nhiều trong hai ngày tới.',
+    durationDays: 2, trigger: { chancePerDay: 0.055, minGapDays: 12 }, warnDaysBefore: 0,
+    effects: [
+      { label: 'người trẻ kéo tới check-in', effects: { traffic: 1.1 } },
+      { label: 'ăn vặt, bánh kẹo, nước mát', target: { tags: ['snack', 'sweet', 'cold_drink'] }, effects: { demand: 1.8 } },
+    ],
+  },
+  {
+    // Không tự xuất hiện (chancePerDay 0): do chương cốt truyện "Siêu thị đối diện" kích hoạt (xem game-core/story.ts).
+    id: 'supermarket_rival', kind: 'local', label: 'Siêu thị đối diện', notice: 'Siêu thị bên kia đường khai trương: khách vãng lai giảm trong 10 ngày.',
+    durationDays: 10, manual: true, trigger: { chancePerDay: 0, minGapDays: 10 }, warnDaysBefore: 0,
+    effects: [
+      { label: 'khách vãng lai sang siêu thị', effects: { traffic: 0.85 } },
+    ],
+  },
 ];
 
-export const MARKET_EVENT_MAP: Record<string, MarketEventDef> = Object.fromEntries(MARKET_EVENTS.map(item => [item.id, item]));
+export const MARKET_EVENT_MAP: Record<string, MarketEventDef> = nullProto(Object.fromEntries(MARKET_EVENTS.map(item => [item.id, item])));
 
 /** Bộ chỉnh sinh từ dữ liệu sự kiện; dùng chung cơ chế với mùa/thời tiết. */
 export const MARKET_EVENT_RULES: ModifierRule[] = MARKET_EVENTS.flatMap(event =>

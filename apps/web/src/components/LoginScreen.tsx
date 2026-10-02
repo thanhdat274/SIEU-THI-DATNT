@@ -57,6 +57,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   const [slots, setSlots] = useState<SaveSlotInfo[]>([]);
   const [activeSlot, setActiveSlot] = useState<SaveSlotId>(getActiveSlotId());
   const [lockedSlots, setLockedSlots] = useState<Set<SaveSlotId>>(new Set());
+  const [slotsExpanded, setSlotsExpanded] = useState<boolean>(false);
+  // Chỉ hiện hàng chọn ô khi thật sự có lựa chọn: từ hai bản lưu trở lên, hoặc bản lưu duy nhất không nằm ở ô đang chọn, hoặc người chơi tự mở.
+  const filledSlots = slots.filter((slot) => slot.status !== 'empty');
+  const showSlotRow = slotsExpanded || filledSlots.length >= 2 || (filledSlots.length === 1 && filledSlots[0].slotId !== activeSlot);
 
   // Đọc ba ô lưu và ô đang chọn từ IndexedDB; làm mới khi quay lại tab (tab khác có thể đã đổi/khóa ô).
   const refreshSlots = React.useCallback(async () => {
@@ -321,6 +325,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
     }
   };
 
+  /** Chơi thử local — không cần Google Auth, tạo bản lưu mới tại ô đang chọn */
+  const handleLocalDemo = async () => {
+    triggerSound(380);
+    setBusy(true);
+    try {
+      if (!(await claimActiveSlot())) return;
+      await resetSaveToDefault();
+      triggerSound(600);
+      setFeedbackMsg('Chế độ Local Demo — không đồng bộ máy chủ. Chơi thử đơn player.');
+      onEnter();
+    } catch (err) {
+      console.error('Local demo error:', err);
+      setFeedbackMsg('Lỗi mở chế độ Local Demo. Vui lòng thử lại.');
+      setBusy(false);
+    }
+  };
+
   return (
     <main className="login-screen-vintage">
       {/* 1. CINEMATIC BACKGROUND: Sunset Sky, Clouds, Wires & Street Life */}
@@ -551,7 +572,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
                 </div>
               </div>
 
-              {slots.filter((slot) => slot.status !== 'empty').length >= 2 && <div className="save-slot-row" role="radiogroup" aria-label="Chọn ô lưu">
+              {!showSlotRow && slots.length > 0 && (
+                <button type="button" className="save-slot-more" onClick={() => setSlotsExpanded(true)}>+ Thêm ô lưu khác</button>
+              )}
+              {showSlotRow && <div className="save-slot-row" role="radiogroup" aria-label="Chọn ô lưu">
                 {slots.map((slot) => {
                   const locked = lockedSlots.has(slot.slotId);
                   const detail = locked ? 'Đang mở ở thẻ khác'
@@ -624,6 +648,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
                   <span className="badge-tag-online">Co-op 2 người</span>
                 </div>
                 <small>Góp vốn kinh doanh chung trong một hẻm</small>
+              </div>
+              <span className="card-arrow-mark">›</span>
+            </button>
+
+            <button
+              type="button"
+              className="deck-action-card card-local"
+              disabled={busy}
+              onClick={() => void handleLocalDemo()}
+            >
+              <span className="card-symbol-badge badge-silver">🎮</span>
+              <div className="card-text-body">
+                <div className="card-heading-row">
+                  <strong>Chơi Thử (Local)</strong>
+                  <span className="badge-tag-local">Không cần đăng nhập</span>
+                </div>
+                <small>Chế độ Local Demo — chơi đơn không đồng bộ máy chủ</small>
               </div>
               <span className="card-arrow-mark">›</span>
             </button>

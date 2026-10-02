@@ -1,4 +1,5 @@
 import { TitleDef } from '@game/shared';
+import { nullProto } from './safe-map';
 
 export const TITLES: readonly TitleDef[] = [
   {
@@ -75,6 +76,6 @@ export const TITLES: readonly TitleDef[] = [
   },
 ];
 
-export const TITLE_MAP: Record<string, TitleDef> = Object.fromEntries(
+export const TITLE_MAP: Record<string, TitleDef> = nullProto(Object.fromEntries(
   TITLES.map(title => [title.id, title])
-);
+));

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { getFixtureDimensions, slotGroup, type SaveGameData, type StoreFixture } from '@game/shared';
-import { DECOR, FIXTURE_SHOP, LAND_PLOTS, PRODUCT_MAP, generateStarterTileMap } from '@game/data';
-import { applyStoreLayoutActions, decorAttraction, decorTrafficMultiplier, rotateStoreFixture, type StoreLayoutAction } from '@game/core';
+import { UNITS_PER_WAREHOUSE_CELL, getFixtureDimensions, slotGroup, type SaveGameData, type StoreFixture } from '@game/shared';
+import { BUILDING_MAP, DECOR, FIXTURE_SHOP, LAND_PLOTS, MAX_STORAGE_RACKS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, XOI_PLOT_ID, fixtureBuilding, generateStarterTileMap, type BuildingId } from '@game/data';
+import { applyStoreLayoutActions, coldWarehouseCapacity, decorAttraction, decorTrafficMultiplier, rotateStoreFixture, totalWarehouseCells, type StoreLayoutAction } from '@game/core';
 import { fixturePreviewUrl } from '@game/renderer';
 import { PixelButton } from './pixel';
 import './store-layout.css';
@@ -12,8 +12,14 @@ interface Props {
   onClose: () => void;
 }
 
-type SidebarTab = 'shop' | 'decor' | 'stored' | 'plots';
+type SidebarTab = 'shop' | 'decor' | 'stored' | 'plots' | 'warehouse';
 type SelectMode = 'inspect' | 'adjust';
+
+/** Lưới sàn hiển thị theo tòa nhà đang chỉnh: gốc, số cột/hàng (tính cả tường, khớp BUILDINGS). */
+const BOARD_VIEWS: Record<BuildingId, { x0: number; cols: number; y0: number; rows: number; label: string }> = {
+  main: { x0: 6, cols: 16, y0: 3, rows: 8, label: 'Tiệm chính' },
+  xoi: { x0: 0, cols: 7, y0: 3, rows: 8, label: 'Tiệm xôi' },
+};
 
 const FixtureArt: React.FC<{ type: StoreFixture['type']; shopId?: string; doubleWide?: boolean; className?: string }> = ({ type, shopId, doubleWide, className }) => {
   const tint = type === 'shelf_glass' ? 'fx-glass' : '';
@@ -52,6 +58,7 @@ const errorMessage = (error: string | undefined, action: StoreLayoutAction, bloc
   if (error === 'unknown_item') return 'Món này không có trong cửa hàng.';
   if (error === 'level') return 'Chưa đủ cấp độ để mở khu đất.';
   if (error === 'outside_floor') return 'Ô đặt nằm ngoài mặt bằng đã mở.';
+  if (error === 'wrong_building') return 'Món này không đặt được ở tòa nhà này (trạm xôi chỉ đặt trong tiệm xôi).';
   if (error === 'overlap') return 'Vị trí đang bị nội thất khác chiếm.';
   if (error === 'path_blocked') return `Bố cục chặn lối tới: ${blocked?.join(', ')}`;
   if (error === 'prerequisite') return 'Cần mở khu đất liền trước hoặc giữ quầy thu ngân.';
@@ -67,6 +74,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
   const [retrieveId, setRetrieveId] = useState<string | null>(null);
   const [buyId, setBuyId] = useState<string | null>(null);
   const [tab, setTab] = useState<SidebarTab>('shop');
+  const [view, setView] = useState<BuildingId>('main');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [previewCell, setPreviewCell] = useState<{ x: number; y: number } | null>(null);
@@ -133,6 +141,9 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
   const map = useMemo(() => generateStarterTileMap(draft.storeLayout.unlockedPlotIds ?? []), [draft.storeLayout.unlockedPlotIds]);
   const selected = draft.storeLayout.fixtures.find(item => item.id === selectedId) ?? null;
   const owned = new Set(draft.storeLayout.unlockedPlotIds ?? []);
+  const xoiOwned = owned.has(XOI_PLOT_ID);
+  const board = BOARD_VIEWS[xoiOwned || view === 'main' ? view : 'main'];
+  const activeView: BuildingId = xoiOwned || view === 'main' ? view : 'main';
   const stored = (draft.storeLayout.storedFixtures ?? []).filter(fixture => !fixture.parentId);
   const attraction = decorAttraction(draft.storeLayout.decorOwned, draft.storeLayout.fixtures);
 
@@ -183,6 +194,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
       setSelectMode('inspect');
       return true;
     }
+    if (action.type === 'buy_plot' && action.plotId === XOI_PLOT_ID) setView('xoi');
     setBuyId(null);
     setRetrieveId(null);
     return true;
@@ -384,13 +396,29 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
 
             {/* Board Container */}
             <div className="layout-board-container">
-              <div className="board-landmark is-warehouse">
-                <span>📦 Cửa kho (phía trên)</span>
-              </div>
+              {xoiOwned && (
+                <div className="layout-building-tabs" role="tablist" aria-label="Chọn tòa nhà">
+                  {(Object.keys(BOARD_VIEWS) as BuildingId[]).map(id => (
+                    <button key={id} type="button" role="tab" aria-selected={activeView === id} className={activeView === id ? 'is-active' : ''} onClick={() => { setView(id); setSelectedId(null); }}>
+                      {BOARD_VIEWS[id].label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {activeView === 'main' && (
+                <div className="board-landmark is-warehouse">
+                  <span>📦 Cửa kho (phía trên)</span>
+                </div>
+              )}
 
-              <div className="layout-board" role="grid" aria-label="Lưới bố trí cửa hàng">
-                {Array.from({ length: 8 }, (_, row) => Array.from({ length: 16 }, (_, col) => {
-                  const x = 6 + col, y = 3 + row;
+              <div
+                className="layout-board"
+                role="grid"
+                aria-label={`Lưới bố trí ${board.label.toLowerCase()}`}
+                style={{ '--layout-cols': board.cols, aspectRatio: `${board.cols} / ${board.rows}`, maxWidth: board.cols === 16 ? undefined : 380 } as React.CSSProperties}
+              >
+                {Array.from({ length: board.rows }, (_, row) => Array.from({ length: board.cols }, (_, col) => {
+                  const x = board.x0 + col, y = board.y0 + row;
                   const fixture = draft.storeLayout.fixtures.find(item => !item.parentId && inFootprint(item, x, y));
                   const floor = tileKind(x, y) === 3 && !map.collisionLayer[(y - (map.originTileY ?? 0)) * map.width + x];
                   const previewCovered = placing && !!previewCell && x >= previewCell.x && x < previewCell.x + previewWidth && y >= previewCell.y && y < previewCell.y + previewHeight;
@@ -415,7 +443,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
 
                 {/* Fixture Art overlay */}
                 <div className="layout-art" aria-hidden="true">
-                  {draft.storeLayout.fixtures.filter(item => !item.parentId && !item.type.startsWith('warehouse_')).map(item => {
+                  {draft.storeLayout.fixtures.filter(item => !item.parentId && !item.type.startsWith('warehouse_') && (fixtureBuilding(item) ?? 'main') === activeView).map(item => {
                     const { widthTiles: w, heightTiles: h } = getFixtureDimensions(item);
                     const turned = item.rotation === 90 || item.rotation === 270;
                     const isSel = item.id === selectedId;
@@ -425,10 +453,10 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                         key={item.id}
                         className={`layout-art-item ${isSel ? 'is-selected' : ''} ${isSel && selectMode === 'adjust' ? 'is-adjusting' : ''}`}
                         style={{
-                          left: `${(item.tileX - 6) / 16 * 100}%`,
-                          top: `${(item.tileY - 3) / 8 * 100}%`,
-                          width: `${w / 16 * 100}%`,
-                          height: `${h / 8 * 100}%`
+                          left: `${(item.tileX - board.x0) / board.cols * 100}%`,
+                          top: `${(item.tileY - board.y0) / board.rows * 100}%`,
+                          width: `${w / board.cols * 100}%`,
+                          height: `${h / board.rows * 100}%`
                         }}
                       >
                         <div
@@ -457,7 +485,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
               </div>
 
               <div className="board-landmark is-entrance">
-                <span>🚪 Lối vào tiệm (khách đi vào từ đây)</span>
+                <span>🚪 {activeView === 'xoi' ? `Lối vào ${board.label.toLowerCase()} (cửa ở ô ${BUILDING_MAP.xoi.doorTiles.map(door => door.x).join('–')})` : 'Lối vào tiệm (khách đi vào từ đây)'}</span>
               </div>
             </div>
 
@@ -476,7 +504,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                     <div className="layout-inspector-info">
                       <div className="inspector-title-row">
                         <strong className="inspector-name">{catalogName(selected)}</strong>
-                        <span className="inspector-badge">{selected.type === 'cashier_counter' ? 'Thu ngân' : selected.type === 'dining_table' ? 'Bàn ăn' : 'Kệ bán hàng'}</span>
+                        <span className="inspector-badge">{selected.type === 'cashier_counter' ? 'Thu ngân' : selected.type === 'dining_table' ? 'Bàn ăn' : selected.type === 'kitchen_station' ? 'Trạm bếp' : 'Kệ bán hàng'}</span>
                         <span className="inspector-state-pill">{selectMode === 'adjust' ? 'Đang di chuyển' : 'Đã cố định'}</span>
                       </div>
                       <div className="inspector-details-row">
@@ -632,12 +660,15 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
               <button type="button" className={tab === 'plots' ? 'is-active' : ''} onClick={() => setTab('plots')}>
                 🚩 Mở đất
               </button>
+              <button type="button" className={tab === 'warehouse' ? 'is-active' : ''} onClick={() => setTab('warehouse')}>
+                🏭 Nhà kho
+              </button>
             </nav>
 
             <div className="sidebar-tab-content">
               {tab === 'shop' && (
                 <div className="layout-fixtures layout-shop">
-                  {FIXTURE_SHOP.map(item => (
+                  {FIXTURE_SHOP.filter(item => !item.allowedBuildings || item.allowedBuildings.includes(activeView)).map(item => (
                     <button
                       key={item.id}
                       type="button"
@@ -726,9 +757,69 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                 </div>
               )}
 
+              {tab === 'warehouse' && (() => {
+                const tierIndex = draft.warehouseTier ?? 0;
+                const racks = draft.storageRackCount ?? 0;
+                const nextTier = WAREHOUSE_TIERS[tierIndex + 1];
+                const rackCost = 50_000;
+                return (
+                  <div className="layout-plots-section">
+                    <p className="plots-heading-help">
+                      Kho thường có {totalWarehouseCells(draft).toLocaleString('vi-VN')} ô, mỗi ô chứa {UNITS_PER_WAREHOUSE_CELL} hàng (hàng cồng kềnh chiếm 2 ô).
+                      Kho mát chứa {coldWarehouseCapacity(draft).toLocaleString('vi-VN')} hàng, tăng theo bậc kho.
+                    </p>
+                    <div className="plots-card-list">
+                      <article className="layout-plot-card">
+                        <div className="plot-card-header">
+                          <strong className="plot-card-name">{WAREHOUSE_TIERS[tierIndex]?.name ?? 'Kho cơ bản'}</strong>
+                          <span className="plot-card-dim">Bậc {tierIndex + 1}/{WAREHOUSE_TIERS.length}</span>
+                        </div>
+                        {nextTier ? (
+                          <>
+                            <div className="plot-card-meta">
+                              <span className={`plot-req-badge ${draft.player.level >= nextTier.unlockLevel ? 'is-met' : 'is-unmet'}`}>Lv {nextTier.unlockLevel}</span>
+                              <span className="plot-cost-badge">{nextTier.cost.toLocaleString('vi-VN')} đ</span>
+                            </div>
+                            <div className="plot-card-action">
+                              <PixelButton
+                                variant="teal"
+                                disabled={busy || draft.player.level < nextTier.unlockLevel || draft.player.money < nextTier.cost}
+                                onClick={() => applyAction({ type: 'buy_warehouse_tier', tier: tierIndex + 1 })}
+                              >
+                                Nâng lên {nextTier.name} ({nextTier.storageCells} ô)
+                              </PixelButton>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="plot-card-action"><span className="plot-owned-tag">✓ Đã là bậc kho cao nhất</span></div>
+                        )}
+                      </article>
+                      <article className="layout-plot-card">
+                        <div className="plot-card-header">
+                          <strong className="plot-card-name">Kệ kho thêm</strong>
+                          <span className="plot-card-dim">{racks}/{MAX_STORAGE_RACKS} kệ · +{STORAGE_RACK_CELL_BONUS} ô mỗi kệ</span>
+                        </div>
+                        <div className="plot-card-meta">
+                          <span className="plot-cost-badge">{rackCost.toLocaleString('vi-VN')} đ</span>
+                        </div>
+                        <div className="plot-card-action">
+                          {racks >= MAX_STORAGE_RACKS ? (
+                            <span className="plot-owned-tag">✓ Đã đủ kệ kho</span>
+                          ) : (
+                            <PixelButton variant="teal" disabled={busy || draft.player.money < rackCost} onClick={() => applyAction({ type: 'buy_storage_rack' })}>
+                              Mua thêm 1 kệ kho
+                            </PixelButton>
+                          )}
+                        </div>
+                      </article>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {tab === 'plots' && (
                 <div className="layout-plots-section">
-                  <p className="plots-heading-help">Mở rộng thêm diện tích mặt bằng sang hướng đông để bày thêm kệ.</p>
+                  <p className="plots-heading-help">Mở rộng mặt bằng sang hướng đông, hoặc mở tiệm xôi riêng ở dải đất phía tây, cạnh tiệm chính.</p>
                   <div className="plots-card-list">
                     {LAND_PLOTS.map(plot => {
                       const unlocked = owned.has(plot.id);
@@ -737,7 +828,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                         <article key={plot.id} className={`layout-plot-card ${unlocked ? 'is-owned' : ''}`}>
                           <div className="plot-card-header">
                             <strong className="plot-card-name">{plot.name}</strong>
-                            <span className="plot-card-dim">+4 cột ô sàn</span>
+                            <span className="plot-card-dim">{plot.buildingId ? 'Tòa nhà riêng · sàn 5×6 ô' : '+4 cột ô sàn'}</span>
                           </div>
                           <div className="plot-card-meta">
                             <span className={`plot-req-badge ${draft.player.level >= plot.level ? 'is-met' : 'is-unmet'}`}>
@@ -749,14 +840,14 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                           </div>
                           <div className="plot-card-action">
                             {unlocked ? (
-                              <span className="plot-owned-tag">✓ Đã mở mặt bằng</span>
+                              <span className="plot-owned-tag">{plot.buildingId ? '✓ Tiệm đã mở' : '✓ Đã mở mặt bằng'}</span>
                             ) : (
                               <PixelButton
                                 variant="teal"
                                 disabled={busy || !!blocked}
                                 onClick={() => applyAction({ type: 'buy_plot', plotId: plot.id })}
                               >
-                                Mở khu này
+                                {plot.buildingId ? 'Mở tiệm này' : 'Mở khu này'}
                               </PixelButton>
                             )}
                           </div>

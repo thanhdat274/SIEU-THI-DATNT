@@ -22,7 +22,7 @@ Trạng thái 01/10/2026: nhóm 1–3 đã có code và test tự động (`revi
 
 - [x] 4.1 `tsc -b`, `yarn test`, `yarn build` PASS (01/10/2026, Node 24 qua PATH).
 - [ ] 4.2 Browser QA: mở màn, thấy lời đánh giá thật, lọc, toast. Chưa làm được: ở rộng 1700 thấy nút trên HUD (đã tìm thấy bằng truy vấn trình duyệt) nhưng trang liên tục tải lại về màn tiêu đề do một phiên khác đang sửa file nên chưa tạo được lượt khách để xem.
-- [ ] 4.3 Lối vào cho màn hình hẹp (khối "Đánh giá khách" bị CSS hiện có ẩn ở rộng 1280 trở xuống).
-- [ ] 4.4 Thêm mẫu câu (hiện khoảng 30 câu chính và 9 câu ngữ cảnh), kiểm cách đọc tên món trong câu.
+- [x] 4.3 Lối vào cho màn hình hẹp: đo 02/10/2026, ô "Đánh giá khách" hiện và bấm được ở 760–900 px, bị đè ở ≤ 700 px; đã sửa `index.css` (≤ 860 px ẩn cấp/số khách, ≤ 720 px nút Mở cửa chỉ còn biểu tượng); kiểm lại 667/760 px bấm được, màn Đánh giá vừa khít ở 812×375.
+- [x] 4.4 Thêm mẫu câu (02/10/2026: mở rộng từ ~38 lên ~80 câu chính + ~20 câu ngữ cảnh để tránh lặp).
 - [ ] 4.5 Quyết định sau: lời đánh giá trong bản tin sáng/tổng kết ngày, phản hồi lời chê, lọc theo món.
 - [ ] 4.6 Cập nhật `TASKS.md`/`ROADMAP.md` khi chốt nghiệm thu.

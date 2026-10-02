@@ -1,3 +1,4 @@
+import { XOI_PLOT_ID, type BuildingId } from './buildings';
 export interface LandPlotDefinition {
   id: string;
   name: string;
@@ -5,6 +6,8 @@ export interface LandPlotDefinition {
   cost: number;
   tiles: { x: number; y: number }[];
   prerequisitePlotId?: string;
+  /** Mảnh đất kiểu "tòa nhà": mua là mở cả tòa (hình học ở BUILDINGS), `tiles` để trống. */
+  buildingId?: BuildingId;
 }
 
 // Plot geometry is reviewed against map.ts: the final column in each plot is the new shop wall.
@@ -13,9 +16,25 @@ export const LAND_PLOTS: LandPlotDefinition[] = [
     tiles: Array.from({ length: 32 }, (_, i) => ({ x: 14 + i % 4, y: 3 + Math.floor(i / 4) })) },
   { id: 'east-wing-b', name: 'Gian hàng mở rộng', level: 10, cost: 600_000, prerequisitePlotId: 'east-wing-a',
     tiles: Array.from({ length: 32 }, (_, i) => ({ x: 18 + i % 4, y: 3 + Math.floor(i / 4) })) },
+  // Tiệm xôi (cấp 29, 700.000 ₫ theo branches.json của game gốc; chưa cân bằng): tòa nhà riêng ở dải đất phía tây.
+  { id: XOI_PLOT_ID, name: 'Tiệm xôi', level: 29, cost: 700_000, tiles: [], buildingId: 'xoi' },
 ];
 
 export const STARTER_OWNED_PLOT_IDS: string[] = [];
+
+// ==========================================
+// Warehouse tier system (ported from tap-hoa-dau-hem)
+// ==========================================
+
+export const WAREHOUSE_TIERS = [
+  { tier: 0, name: 'Kho cơ bản',    storageCells: 30, cost: 0,            unlockLevel: 1  },
+  { tier: 1, name: 'Kho mở rộng',   storageCells: 50, cost: 250_000,      unlockLevel: 8  },
+  { tier: 2, name: 'Kho lớn',       storageCells: 80, cost: 500_000,      unlockLevel: 9  },
+  { tier: 3, name: 'Kho tối đa',    storageCells: 120, cost: 900_000,     unlockLevel: 11 },
+] as const;
+
+export const STORAGE_RACK_CELL_BONUS = 20;
+export const MAX_STORAGE_RACKS = 10;
 
 export type FixtureShopKind = 'decor' | 'shelf' | 'fridge' | 'freezer' | 'storage' | 'counter' | 'food' | 'drink' | 'seating' | 'generator';
 
@@ -23,7 +42,7 @@ export interface FixtureShopItem {
   id: string;
   name: string;
   kind: FixtureShopKind;
-  type: 'shelf_wooden' | 'shelf_glass' | 'refrigerator' | 'decor' | 'cashier_counter' | 'dining_table';
+  type: 'shelf_wooden' | 'shelf_glass' | 'refrigerator' | 'decor' | 'cashier_counter' | 'dining_table' | 'kitchen_station';
   widthTiles: number;
   heightTiles: number;
   maxCapacity: number;
@@ -35,8 +54,12 @@ export interface FixtureShopItem {
   functional: boolean;
   /** Số lượng tối đa được sở hữu (kể cả đang cất). */
   limit?: number;
-  /** Mảnh đất yêu cầu trong game gốc (chưa áp dụng ở đây). */
+  /** Mảnh đất yêu cầu trong game gốc (chưa áp dụng ở đây; dùng `allowedBuildings`). */
   requiresPlot?: string;
+  /** Tòa nhà được đặt món này; thiếu = mọi tòa đang mở. Trạm xôi chỉ đặt được trong tiệm xôi. */
+  allowedBuildings?: readonly BuildingId[];
+  /** Số ô kho bổ sung mỗi khi mua (chỉ áp dụng cho storage_rack). */
+  storageCells?: number;
 }
 
 /**
@@ -44,17 +67,17 @@ export interface FixtureShopItem {
  * Số ô đã quy đổi sang mô hình ô của dự án này (xem scripts ở lịch sử cập nhật `tổng hợp.md`).
  */
 export const FIXTURE_SHOP: FixtureShopItem[] = [
-  { id: 'shelf', name: 'Kệ gỗ', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 4, cost: 80_000, unlockLevel: 5, functional: true, },
-  { id: 'fridge', name: 'Tủ lạnh 2 cánh', kind: 'fridge', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 4, cost: 220_000, unlockLevel: 5, functional: true, },
-  { id: 'fridge_single', name: 'Tủ lạnh 1 cánh', kind: 'fridge', type: 'refrigerator', widthTiles: 1, heightTiles: 1, maxCapacity: 12, slotCount: 2, cost: 90_000, unlockLevel: 5, functional: true, },
-  { id: 'freezer', name: 'Tủ đông', kind: 'freezer', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 18, slotCount: 3, cost: 180_000, unlockLevel: 9, functional: true, },
-  { id: 'storage_rack', name: 'Kệ kho', kind: 'storage', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 50_000, unlockLevel: 9, functional: false, },
-  { id: 'shelf_double', name: 'Kệ đôi', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 8, cost: 160_000, unlockLevel: 15, functional: true, requiresPlot: 'D', },
-  { id: 'shelf_3', name: 'Kệ 3', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 12, cost: 320_000, unlockLevel: 21, functional: true, requiresPlot: 'D', },
-  { id: 'shelf_4', name: 'Kệ 4', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 24, slotCount: 16, cost: 500_000, unlockLevel: 29, functional: true, requiresPlot: 'D', },
+  { id: 'shelf', name: 'Kệ gỗ', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 12, cost: 80_000, unlockLevel: 5, functional: true, },
+  { id: 'fridge', name: 'Tủ lạnh 2 cánh', kind: 'fridge', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 24, cost: 220_000, unlockLevel: 5, functional: true, },
+  { id: 'fridge_single', name: 'Tủ lạnh 1 cánh', kind: 'fridge', type: 'refrigerator', widthTiles: 1, heightTiles: 1, maxCapacity: 12, slotCount: 8, cost: 90_000, unlockLevel: 5, functional: true, },
+  { id: 'freezer', name: 'Tủ đông', kind: 'freezer', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 18, slotCount: 12, cost: 180_000, unlockLevel: 9, functional: true, },
+  { id: 'storage_rack', name: 'Kệ kho', kind: 'storage', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 50_000, unlockLevel: 9, functional: true, limit: 10, storageCells: STORAGE_RACK_CELL_BONUS, },
+  { id: 'shelf_double', name: 'Kệ đôi', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 24, cost: 160_000, unlockLevel: 15, functional: true, requiresPlot: 'D', },
+  { id: 'shelf_3', name: 'Kệ 3', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 36, cost: 320_000, unlockLevel: 21, functional: true, requiresPlot: 'D', },
+  { id: 'shelf_4', name: 'Kệ 4', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 48, cost: 500_000, unlockLevel: 29, functional: true, requiresPlot: 'D', },
   { id: 'counter2', name: 'Quầy thu ngân 2', kind: 'counter', type: 'cashier_counter', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 300_000, unlockLevel: 15, functional: true, limit: 1, requiresPlot: 'D', },
-  { id: 'food_grill', name: 'Bếp nướng', kind: 'food', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 260_000, unlockLevel: 21, functional: false, requiresPlot: 'E', },
-  { id: 'hot_kettle', name: 'Ấm nước nóng', kind: 'food', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 90_000, unlockLevel: 21, functional: false, requiresPlot: 'E', },
+  { id: 'food_grill', name: 'Bếp nướng', kind: 'food', type: 'kitchen_station', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 260_000, unlockLevel: 21, functional: true, requiresPlot: 'E', },
+  { id: 'hot_kettle', name: 'Ấm nước nóng', kind: 'food', type: 'kitchen_station', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 90_000, unlockLevel: 21, functional: true, requiresPlot: 'E', },
   { id: 'bread_case', name: 'Tủ bánh mì', kind: 'food', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 180_000, unlockLevel: 21, functional: false, requiresPlot: 'E', },
   { id: 'food_table_2', name: 'Bàn 2 chỗ', kind: 'seating', type: 'dining_table', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 50_000, unlockLevel: 23, functional: true, },
   { id: 'food_table_4', name: 'Bàn 4 chỗ', kind: 'seating', type: 'dining_table', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 90_000, unlockLevel: 23, functional: true, },
@@ -63,8 +86,8 @@ export const FIXTURE_SHOP: FixtureShopItem[] = [
   { id: 'sugarcane_press', name: 'Máy ép mía', kind: 'drink', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 240_000, unlockLevel: 25, functional: false, requiresPlot: 'F', },
   { id: 'drink_table_2', name: 'Bàn nước 2 chỗ', kind: 'seating', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 50_000, unlockLevel: 25, functional: false, requiresPlot: 'F', },
   { id: 'generator', name: 'Máy phát điện', kind: 'generator', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 360_000, unlockLevel: 21, functional: false, },
-  { id: 'thung_ngam', name: 'Thùng ngâm nếp', kind: 'food', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 120_000, unlockLevel: 29, functional: false, },
-  { id: 'xung_hap', name: 'Xửng hấp xôi', kind: 'food', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 320_000, unlockLevel: 29, functional: false, },
-  { id: 'quay_xoi', name: 'Quầy trưng bày xôi', kind: 'food', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 180_000, unlockLevel: 29, functional: false, },
+  { id: 'thung_ngam', name: 'Thùng ngâm nếp', kind: 'food', type: 'kitchen_station', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 120_000, unlockLevel: 29, functional: true, limit: 3, allowedBuildings: ['xoi'], },
+  { id: 'xung_hap', name: 'Xửng hấp xôi', kind: 'food', type: 'kitchen_station', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 320_000, unlockLevel: 29, functional: true, limit: 2, allowedBuildings: ['xoi'], },
+  { id: 'quay_xoi', name: 'Quầy trưng bày xôi', kind: 'food', type: 'kitchen_station', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 180_000, unlockLevel: 29, functional: true, limit: 1, allowedBuildings: ['xoi'], },
   { id: 'chau_cay', name: 'Chậu cây', kind: 'decor', type: 'decor', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 40_000, unlockLevel: 8, functional: true },
 ];

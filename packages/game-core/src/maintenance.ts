@@ -1,4 +1,4 @@
-import { isSalesFixture, type StoreFixture } from '@game/shared';
+import { isSalesFixture, type StaffMember, type StoreFixture } from '@game/shared';
 import { MAINTENANCE_RULES, fixtureRepairCost, fixtureReplacementCost } from '@game/data';
 import { Mulberry32Rng, daySeed } from './staff';
 import { hashSeed } from './weather';
@@ -28,6 +28,21 @@ export interface MaintenanceNotice {
 export const maintenanceUnlocked = (level: number): boolean => level >= MAINTENANCE_RULES.unlockLevel;
 export const isWearable = (fixture: Pick<StoreFixture, 'type'>): boolean => isSalesFixture(fixture);
 export const needsService = (fixture: Pick<StoreFixture, 'wear' | 'broken'>): boolean => !fixture.broken && (fixture.wear ?? 0) >= MAINTENANCE_RULES.breakFrom * MAINTENANCE_RULES.serviceFraction;
+
+/** Hạn dùng mất thêm mỗi đêm của hàng trong tủ mát đang hỏng (0 nếu không phải tủ mát hoặc còn chạy). */
+export const coldBreakExtraDecay = (fixture: Pick<StoreFixture, 'type' | 'broken'>): number =>
+  fixture.type === 'refrigerator' && fixture.broken ? MAINTENANCE_RULES.brokenColdExtraDecay : 0;
+
+/** Đồ nhân viên châm hàng tự bảo trì đêm nay: đã mòn, chưa hỏng, mòn nhiều trước; mỗi nhân viên được `staffServicePerNight` món. */
+export function staffServiceTargets(fixtures: readonly StoreFixture[], staff: readonly Pick<StaffMember, 'role'>[]): string[] {
+  const limit = staff.filter((member) => member.role === 'refill').length * MAINTENANCE_RULES.staffServicePerNight;
+  if (limit <= 0) return [];
+  return fixtures
+    .filter((f) => isWearable(f) && needsService(f))
+    .sort((a, b) => (b.wear ?? 0) - (a.wear ?? 0) || (a.id < b.id ? -1 : 1))
+    .slice(0, limit)
+    .map((f) => f.id);
+}
 
 export function maintenanceStatus(fixture: Pick<StoreFixture, 'wear' | 'broken'>): MaintenanceStatus {
   if (fixture.broken === 'major') return 'broken_major';

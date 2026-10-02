@@ -2,10 +2,11 @@
 
 ## Mở rộng gameplay (01/10/2026)
 
-- [>] `reference-gameplay-expansion`: đã code tiền giả, tín dụng khách quen và dine-in MVP. Dine-in dùng đồ ăn đóng gói từ kệ, khách đi tới bàn, ăn 60 giây game, bàn bẩn; người chơi hoặc nhân viên bổ sung hàng có thể dọn. Checkout, thu nợ, dọn bàn và giao job nhân viên được server replay. Chưa chạy test/typecheck/build/browser QA; balance provisional, verification gom ở cuối.
+- [>] `reference-gameplay-expansion`: đã code tiền giả, tín dụng khách quen và dine-in MVP. Dine-in dùng đồ ăn đóng gói từ kệ, khách đi tới bàn, ăn 60 giây game, bàn bẩn; người chơi hoặc nhân viên bổ sung hàng có thể dọn. Checkout, thu nợ, dọn bàn và giao job nhân viên được server replay. Wave B (bếp/công thức/sản xuất, 3.1–3.4) đã có code + test lõi `production.test.ts` và `tsc -b` PASS (02/10/2026); `store-logistics.test.ts` đang FAIL (ngoài phạm vi); Mục 8.1–8.4 và 8.8 đã chốt (02/10/2026); 8.5 (mô phỏng cân bằng), 8.6 (browser QA còn thiếu) và 8.7 (chờ TAX-0) còn mở. Wave C prestige (4.1–4.2) và Wave D (biểu đồ, heatmap, checklist, âm thanh, replay lõi) có code + test lõi; chưa browser QA, balance provisional.
 - [ ] Wave A còn validation/verification trong section 8; recipe/production vẫn là Wave B và chưa có.
 - [ ] Wave B: công thức và sản xuất tại bếp; Wave C: prestige; Wave D: biểu đồ/heatmap/checklist/audio/replay; Wave E: tax chỉ sau TAX-0.
-- [ ] Chuỗi chi nhánh/loại hình cửa hàng/luân chuyển nội bộ vẫn plan sau, phụ thuộc thiết kế mở rộng và phân khu trên cùng khu đất.
+- [x] Tiệm xôi riêng trên cùng dải đất: code + test PASS 02/10/2026 (OpenSpec `xoi-shop-same-land-strip`, 23/26 task); còn avatar đi ra/bảo vệ, QA chạm thật, co-op hai client thật và ca `buy_warehouse_tier` đỏ trong `coop-commands.test.ts`.
+- [ ] Chuỗi chi nhánh khác/loại hình cửa hàng/luân chuyển nội bộ vẫn plan sau, phụ thuộc thiết kế mở rộng và phân khu trên cùng khu đất.
 
 > Ghi chú: các mục `pnpm` ở các giai đoạn cũ bên dưới là lịch sử; dự án hiện dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
 
@@ -24,9 +25,10 @@
 - [>] I-05: lệnh nhân viên co-op (`hire_staff`/`set_staff_shift`/`assign_refill_job`) đã làm 01/10/2026, test co-op PASS; còn QA hai trình duyệt, đồng bộ AI nhân viên.
 - [>] I-02: bảng xếp hạng thật (`/api/v1/leaderboard`, `leaderboard.test.ts` PASS 01/10/2026); còn kiểm đăng nhập thật, tuần/mùa, opt-out, chống gian lận.
 - [>] I-04: ID đơn nhập/sổ cái xác định (`ord-N`/`led-N`, `deterministic-ids.test.ts` PASS 01/10/2026).
-- [>] I-12: xuất/nhập save file (`save-file.ts`, test + Browser pane PASS), 3 ô lưu và khóa nhiều tab bằng Web Locks (`db.ts`, `slot-lock.ts`, Browser pane hai tab) đã làm 01/10/2026; menu ẩn bộ chọn khi chỉ có một save và ưu tiên ô trống khi tạo tiệm mới (code cập nhật 01/10/2026, chưa xác minh); còn test tự động, kiểm mobile/trình duyệt khác.
+- [>] I-12: xuất/nhập save file (`save-file.ts`, test + Browser pane PASS), 3 ô lưu và khóa nhiều tab bằng Web Locks (`db.ts`, `slot-lock.ts`, Browser pane hai tab) đã làm 01/10/2026; menu ẩn bộ chọn khi chỉ có một save và ưu tiên ô trống khi tạo tiệm mới (code cập nhật 01/10/2026, chưa xác minh); test tự động `db.test.ts`/`slot-lock.test.ts` PASS 02/10/2026 (IndexedDB/Web Locks giả); còn kiểm mobile/trình duyệt khác.
 - [>] I-15: giới hạn payload/tần suất đã làm 01/10/2026 (HTTP/commit/WS, thân JSON 2 MB, `test:ratelimit`); còn: ngưỡng theo lưu lượng thật, trust proxy, client xử lý 429, giới hạn số kết nối WS.
 - [>] Co-op I-01: hướng B xong 01/10/2026 (`save-invariants.ts`, `test:invariants`, test co-op PASS); còn kiểm kho/giá, hiệu chỉnh ngưỡng bằng playtest, hướng A lâu dài. Replay mọi lệnh (I-01). Xong 01/10/2026: allow-list loại lệnh + test lệnh lạ (`test:coop`, `test:worlds`, `test:gateway` PASS). Còn: thống nhất payload client–`WorldRuntime` rồi chuyển từng lệnh sang replay.
+- [>] I-01 (02/10/2026): Đã mở rộng `serverReplayedCommands` trong `bootstrap.ts` — thêm toàn bộ lệnh còn lại (restock, unstock, set_price, planogram_assignment, planogram_restock, auto_restock, stow, stow_all, advance_day, change_speed, hire_staff, set_staff_shift, assign_refill_job) + `buy_plot`, `buy_warehouse_tier`, `buy_storage_rack`. Tổng cộng **25/29 lệnh** được server replay từ 29 lệnh allowed. 4 lệnh layout_* (`layout_batch`, `layout_move`, `layout_store`, `layout_retrieve`) không cần thêm vì đã có handler riêng trong `layout_batch` (layout_batch) hoặc được kiểm tra hình học (layout_move/store/retrieve). `coop-commands.test.ts` đã thêm co-op test cho 3 lệnh mới: buy_plot, buy_warehouse_tier, buy_storage_rack. Typecheck PASS. Co-op test (`test:coop`) chưa chạy do Mongo timeout.
 - [ ] Giới hạn payload/tần suất server (I-15); migration schema world Mongo (I-16).
 - [ ] Lệnh nhân viên trong co-op (I-05); ID xác định (I-04).
 - [ ] Thay bảng xếp hạng giả (I-02); xuất/nhập save (I-12).
@@ -65,7 +67,7 @@
   - 4.2: Cẩm nang hướng dẫn cách chơi trong `LoginScreen.tsx` (tab tính năng nâng cao), 4 sản phẩm lễ hội thuần Việt (Bánh chưng xanh, Liễn câu đối đỏ, Dưa hấu Tài Lộc, Bánh Trung Thu), vai trò nhân viên bảo vệ trông xe (`security` role, tăng kiên nhẫn +15s và sao hài lòng cho khách đi xe máy), người bán quầy phụ vỉa hè (`buildStalls`).
 - **Đợt E (Hẻm sống động)**:
   - Giao thông hẻm `StreetTrafficManager`, khách đến bằng xe máy/ô tô/đi bộ, đỗ xe lề đường `STREET_PARKING_SPOTS`, texture pixel art xe máy/taxi. Test PASS.
-- **Đề xuất tiếp theo (01/10/2026, chưa triển khai)**: OpenSpec `seasonal-daylight-tree-shadows` (mốc mọc/lặn theo mùa, vị trí mặt trời, bóng cây theo dữ liệu bản đồ). Mới có đặc tả; xem `tasks.md` của change.
+- **Triển khai 01/10/2026 (code+test PASS):** OpenSpec `seasonal-daylight-tree-shadows`: bảng 12 mốc mọc/lặn nội suy (`lighting-phase.ts`), `getSolarPosition` + azimuth/elevation, `TREE_PROPS` trong `game-data/map.ts`, `computeTreeShadow` thuần với cache theo ngưỡng 1°+mưa (`tree-shadow.ts`), công cụ debug giờ/ngày (`debug-time.ts`). `yarn typecheck/test/build` PASS (7/7 suite, 0 fail). Browser QA desktop: bóng đổi hướng theo giờ/mùa, biến mất đêm/mưa; mobile chưa nghiệm thu trực tiếp. Chỉ còn 5.2 (browser QA mobile) và 5.3 (sync tài liệu này — đang làm).
 - **Kết quả kiểm chứng kỹ thuật**:
   - `yarn typecheck` PASS (0 errors).
   - `yarn test` PASS 100% (tất cả 40+ unit test suites và 7 TAP subtests).

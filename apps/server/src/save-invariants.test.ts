@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { createInitialOnlineWorld } from '@game/data';
+import { createInitialOnlineWorld, XOI_PLOT_ID } from '@game/data';
+import { buyLandPlot } from '@game/core';
 import type { SaveGameData } from '@game/shared';
 import { checkSaveInvariants, MAX_REVENUE_PER_GAME_MINUTE } from './save-invariants.js';
 
@@ -54,5 +55,16 @@ assert.match(check(n, 'hire_staff') ?? '', /vị trí/, 'vượt số vị trí 
 n = structuredClone(staffed); n.staff = [member('a')];
 const hired = structuredClone(n); hired.staff = [member('a')];
 assert.equal(check(hired, 'set_staff_shift', n), null, 'đổi ca không đổi số nhân viên thì hợp lệ');
+
+// Mua tiệm xôi (buy_plot): tiền chỉ giảm đúng giá, nội thất mặc định được thêm; không bị chặn bởi bất biến.
+{
+  const prev = clone(); prev.player.level = 29; prev.player.money = 2_000_000; prev.worldTime.isStoreOpen = false;
+  const bought = buyLandPlot(prev, XOI_PLOT_ID).save!;
+  assert.equal(bought.player.money, prev.player.money - 700_000, 'trừ đúng giá tiệm xôi');
+  assert.ok(bought.storeLayout.fixtures.some(fixture => fixture.id === 'xoi_cashier_counter'), 'có bố cục mặc định');
+  assert.equal(check(bought, 'buy_plot', prev), null, 'mua tiệm xôi hợp lệ theo bất biến');
+  const cheated = structuredClone(bought); cheated.player.money = prev.player.money + 5_000_000;
+  assert.match(check(cheated, 'buy_plot', prev) ?? '', /Tiền tăng/, 'mua tiệm mà tiền tăng bị từ chối');
+}
 
 console.log('PASS save-invariants: chặn tiền/doanh thu/XP/cấp/đã nhận bị sửa, cho phép tăng hợp lý theo thời gian');

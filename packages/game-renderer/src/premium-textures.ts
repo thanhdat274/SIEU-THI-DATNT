@@ -76,6 +76,8 @@ export function createPremiumTexture(key:string):HTMLCanvasElement|null{
  if(key.startsWith('fixture_')) return fixture(key);
  if(key.startsWith('wall_')) return wallTexture(key);
  if(key.startsWith('vehicle_')) return vehicleTexture(key);
+ if(key.startsWith('truck_')) return logisticsTruckTexture(key);
+ if(key.startsWith('prop_')) return logisticsPropTexture(key);
  if(key==='tile_signboard') return sign();
  if(key==='tile_awning') {
   // Stardew Valley 2.5D storefront awning (128x28) with 3D slope, valance scallops and contact shadow
@@ -720,6 +722,10 @@ function wallTexture(key:string):HTMLCanvasElement|null{
     r(0,24,32,8,whSkirt);r(0,24,32,1,'#827B6E');r(0,31,32,1,'#33251D');
     return canvas;
   }
+  return null;
+}
+
+function logisticsTruckTexture(key: string): HTMLCanvasElement | null {
 
   // ==========================================
   // HỆ THỐNG XE TẢI GIAO NHẬN HÀNG HÓA (STORE LOGISTICS TRUCKS)
@@ -1041,19 +1047,33 @@ function wallTexture(key:string):HTMLCanvasElement|null{
     return canvas;
   }
 
+  return null;
+}
+
+function logisticsPropTexture(key: string): HTMLCanvasElement | null {
   // ==========================================
   // ĐỒ VẬT TRANG TRÍ BÃI BỐC DỠ (LOADING DOCK PROPS)
   // ==========================================
   if (key === 'prop_dock_pallet') {
     const { canvas, ctx } = surface(32, 16);
     const r = (x: number, y: number, w: number, h: number, col: string) => { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); };
-    r(2, 12, 28, 4, '#26190e35');
-    r(2, 4, 28, 2, '#a04000');
-    r(2, 5, 28, 1, '#d35400');
-    r(4, 7, 4, 5, '#6e2c00');
-    r(14, 7, 4, 5, '#6e2c00');
-    r(24, 7, 4, 5, '#6e2c00');
-    r(2, 12, 28, 2, '#a04000');
+    // Bóng đổ tiếp đất trên vỉa hè
+    r(2, 12, 28, 4, '#26190e40');
+    r(4, 13, 24, 2, '#26190e25');
+    // 3 Chân trụ đỡ gỗ pallet (trái, giữa, phải)
+    r(3, 8, 5, 4, '#3e2210'); r(4, 8, 3, 4, '#7a4822');
+    r(14, 8, 4, 4, '#3e2210'); r(15, 8, 2, 4, '#7a4822');
+    r(24, 8, 5, 4, '#3e2210'); r(25, 8, 3, 4, '#7a4822');
+    // Thanh nan đế dưới cùng
+    r(2, 11, 28, 2, '#543015'); r(3, 11, 26, 1, '#8e5628');
+    // Mặt sàn ván gỗ pallet trên cùng
+    r(1, 4, 30, 4, '#3e2210');
+    r(2, 5, 28, 3, '#9c6434');
+    r(2, 4, 28, 1, '#cfa070'); // Viền vát sáng
+    // Các khe rãnh nan gỗ
+    r(8, 5, 1, 3, '#3e2210');
+    r(16, 5, 1, 3, '#3e2210');
+    r(23, 5, 1, 3, '#3e2210');
     return canvas;
   }
 
@@ -1077,6 +1097,20 @@ function wallTexture(key:string):HTMLCanvasElement|null{
     r(3, 5, 10, 8, '#eaeded');
     r(3, 5, 10, 2, '#ffffff');
     r(2, 8, 12, 2, '#2980b9');
+    return canvas;
+  }
+
+  if (key === 'prop_produce_crate') {
+    const { canvas, ctx } = surface(16, 16);
+    const r = (x: number, y: number, w: number, h: number, col: string) => { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); };
+    r(1, 13, 14, 3, '#26190e30');
+    r(2, 4, 12, 10, '#4a2c11');
+    r(3, 5, 10, 8, '#8e5a35');
+    r(3, 5, 10, 2, '#ba8254');
+    r(3, 9, 10, 1, '#4a2c11');
+    r(4, 3, 3, 3, '#27ae60');
+    r(8, 2, 4, 3, '#e67e22');
+    r(11, 3, 2, 3, '#e74c3c');
     return canvas;
   }
 

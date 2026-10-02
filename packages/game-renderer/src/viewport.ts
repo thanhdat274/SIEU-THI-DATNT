@@ -1,11 +1,11 @@
 import { furnitureSpriteTexture, STOCK_ART_SHOP_IDS } from './fixture-preview';
 import { Application, Container, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
-import { FixedStepSimulationRunner, GameSimulation, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
+import { FixedStepSimulationRunner, GameSimulation, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting } from './shop-lighting';
-import { DECOR_MAP, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp, LOADING_DOCK_CONFIG } from '@game/data';
+import { DECOR_MAP, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, BUILDING_MAP} from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -24,7 +24,7 @@ import { buildTrafficSignalHeads, createPedestrianSprite, placePedestrian, type 
 const TREE_SHADOW_ORIGIN_PX = { x: 40, y: 90 } as const;
 
 /** Đáy thùng so với chân nhân viên: thấp hơn đầu/vai để không che mặt. */
-const LOGISTICS_BOX_CARRY_Y = -4;
+const LOGISTICS_BOX_CARRY_Y = -12;
 
 export class PixiGameViewport {
   private app!: Application;
@@ -73,7 +73,7 @@ export class PixiGameViewport {
   private stallSprites: Sprite[] = [];
   private shopkeeper?: { container: Container; sprite: Sprite; bubble: Container };
   private motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-  private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string; staticArt?: boolean; dotX: number }> = new Map();
+  private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; wearMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string; staticArt?: boolean; dotX: number }> = new Map();
   private interactionBubble!: Container;
   private warehouseLocator!: Container;
   private locatingWarehouse = false;
@@ -89,6 +89,10 @@ export class PixiGameViewport {
   private logisticsToastLife = 0;
   private logisticsLastPhase = '';
   private logisticsLastStatus = '';
+  private loadingDockZone: Graphics | null = null;
+  private loadingDockPallet: Sprite | null = null;
+  private loadingDockTrolley: Sprite | null = null;
+  private loadingDockBoxesContainer: Container | null = null;
 
   // Doors & animations
   private warehouseDoorContainer!: Container;
@@ -313,6 +317,65 @@ export class PixiGameViewport {
     this.onZoomChange?.(this.camera.zoom);
   };
 
+  /**
+   * Mặt tiền tiệm xôi (tòa thứ hai ở dải đất phía tây): biển hiệu, mái hiên sọc, khung cửa; chưa mua thì cửa cuốn đóng
+   * và biển "CHO THUÊ". Vẽ vào groundLayer/wallLayer nên được dựng lại mỗi lần bản đồ đổi (mua tiệm).
+   */
+  private buildXoiFacade(): void {
+    const xoi = BUILDING_MAP.xoi;
+    const open = this.tileMap.buildings?.find(building => building.id === 'xoi')?.open ?? false;
+    const bounds = XOI_BOUNDS;
+    const frontY = bounds.bottom * TILE_SIZE;
+    const doorX = xoi.doorTiles[0].x * TILE_SIZE;
+    const doorW = xoi.doorTiles.length * TILE_SIZE;
+
+    // Bóng đổ trong sàn như tiệm chính.
+    const shadows = new Graphics();
+    shadows.rect((bounds.left + 1) * TILE_SIZE, (bounds.top + 1) * TILE_SIZE, (bounds.right - bounds.left - 1) * TILE_SIZE, 5).fill({ color: 0x26190e, alpha: 0.22 });
+    shadows.rect((bounds.left + 1) * TILE_SIZE, (bounds.top + 1) * TILE_SIZE, 5, (bounds.bottom - bounds.top - 1) * TILE_SIZE).fill({ color: 0x26190e, alpha: 0.18 });
+    this.groundLayer.addChild(shadows);
+
+    // Ngưỡng cửa và khung cửa gỗ.
+    const frame = new Graphics();
+    frame.rect(doorX, frontY, 2, TILE_SIZE).fill(0x936044);
+    frame.rect(doorX + doorW - 2, frontY, 2, TILE_SIZE).fill(0xc69464);
+    frame.rect(doorX, frontY + TILE_SIZE - 2, doorW, 2).fill(0xbfa993);
+    this.groundLayer.addChild(frame);
+
+    if (open) {
+      // Mái hiên sọc đỏ trắng phía trên cửa.
+      const awning = new Graphics();
+      // Mái hiên và biển chỉ rộng 3,5 ô (x 0,5..4) để tán cây ở x=5 không che.
+      const awningX = (bounds.left + 0.5) * TILE_SIZE;
+      const stripes = 7;
+      const stripeW = (3.5 * TILE_SIZE) / stripes;
+      for (let i = 0; i < stripes; i++) awning.rect(awningX + i * stripeW, frontY - 6, stripeW, 9).fill(i % 2 === 0 ? 0xc0392b : 0xf5ecd8);
+      awning.rect(awningX, frontY + 3, stripes * stripeW, 2).fill({ color: 0x26190e, alpha: 0.35 });
+      awning.zIndex = 360;
+      this.wallLayer.addChild(awning);
+    } else {
+      // Cửa cuốn đóng: tấm sắt có rãnh ngang và ổ khóa.
+      const shutter = new Graphics();
+      shutter.rect(doorX, frontY, doorW, TILE_SIZE).fill(0x8f989f);
+      for (let y = 4; y < TILE_SIZE; y += 5) shutter.rect(doorX, frontY + y, doorW, 1).fill({ color: 0x4d555b, alpha: 0.7 });
+      shutter.rect(doorX + doorW / 2 - 2, frontY + TILE_SIZE - 7, 4, 4).fill(0x2f3438);
+      this.wallLayer.addChild(shutter);
+    }
+
+    // Biển hiệu trên cửa.
+    const boardW = 3.5 * TILE_SIZE;
+    const board = new Graphics();
+    board.roundRect(0, 0, boardW, 14, 2).fill(open ? 0x7a2f1d : 0x6b6f73).stroke({ color: open ? 0xe0b85a : 0x9aa0a4, width: 1 });
+    board.position.set((bounds.left + 0.5) * TILE_SIZE, frontY - 22);
+    board.zIndex = 361;
+    this.wallLayer.addChild(board);
+    const label = new Text({ text: open ? 'TIỆM XÔI' : 'CHO THUÊ', style: new TextStyle({ fontFamily: 'Arial', fontSize: 10, fontWeight: 'bold', fill: open ? 0xffe9b0 : 0xe5e8ea }) });
+    label.anchor.set(0.5);
+    label.position.set(board.x + boardW / 2, board.y + 7.5);
+    label.zIndex = 362;
+    this.wallLayer.addChild(label);
+  }
+
   private buildMapLayers(): void {
     const storeBounds = this.tileMap.storeBounds ?? STORE_BOUNDS;
     const width = this.tileMap.width;
@@ -404,6 +467,9 @@ export class PixiGameViewport {
       this.groundLayer.addChild(pole);
     }
 
+    // Bãi bốc dỡ & tiếp nhận hàng hóa phía Đông (Dedicated Loading Dock - Phương án 1)
+    this.buildLoadingDock();
+
     if (wallLayerData) {
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
@@ -413,7 +479,12 @@ export class PixiGameViewport {
             let textureKey = tileId === 10 ? 'warehouse_wall' : 'tile_yellow_wall';
 
             // 2.5D Stardew Valley slim walls:
-            if (worldY < STORE_BOUNDS.top) {
+            if (x < STORE_BOUNDS.left && worldY >= XOI_BOUNDS.top && worldY <= XOI_BOUNDS.bottom) {
+              // Tiệm xôi (dải phía tây): tường sau là vách ngăn, tường trái và mặt tiền dùng kiểu tường tiệm.
+              if (worldY === XOI_BOUNDS.top) textureKey = 'wall_partition_left';
+              else if (worldY === XOI_BOUNDS.bottom) textureKey = x === XOI_BOUNDS.left ? 'wall_store_corner_bl' : 'wall_store_front';
+              else textureKey = 'wall_store_left';
+            } else if (worldY < STORE_BOUNDS.top) {
               if (worldY === WAREHOUSE_BOUNDS.top) {
                 if (x === WAREHOUSE_BOUNDS.left) textureKey = 'wall_warehouse_corner_tl';
                 else if (x === WAREHOUSE_BOUNDS.right) textureKey = 'wall_warehouse_corner_tr';
@@ -464,6 +535,8 @@ export class PixiGameViewport {
     const warehouseSign = new Sprite(this.textures.getTexture('warehouse_sign'));
     warehouseSign.position.set(WAREHOUSE_DOOR_LEFT * TILE_SIZE, STORE_BOUNDS.top * TILE_SIZE - 20);
     this.wallLayer.addChild(warehouseSign);
+
+    this.buildXoiFacade();
 
     // Clean warehouse doorway frame and wood threshold
     const doorway = new Graphics();
@@ -703,7 +776,7 @@ export class PixiGameViewport {
       badgeBg.rect(badgeX, 34, badgeW, 13);
       badgeBg.fill({ color: 0xeadcc9, alpha: 0.96 });
       badgeBg.stroke({ color: 0xbfa993, width: 1 });
-      badgeBg.visible = fix.type !== 'cashier_counter' && fix.type !== 'decor' && fix.type !== 'dining_table';
+      badgeBg.visible = fix.type !== 'cashier_counter' && fix.type !== 'decor' && fix.type !== 'dining_table' && fix.type !== 'kitchen_station';
       container.addChild(badgeBg);
 
       // Dot marker (Green = Full, Yellow = Low stock, Red = Out of stock)
@@ -711,6 +784,12 @@ export class PixiGameViewport {
       dotMarker.rect(dotX, 38, 6, 6);
       dotMarker.fill({ color: 0x2a7a43 });
       container.addChild(dotMarker);
+
+      // Vạch hổ phách ngay cạnh huy hiệu: đồ đã mòn, nên bảo trì trước khi hỏng
+      const wearMarker = new Graphics();
+      wearMarker.rect(badgeX + badgeW + 2, 34, 7, 13).fill({ color: 0xd98a1c }).stroke({ color: 0x6b3d0a, width: 1 });
+      wearMarker.visible = false;
+      container.addChild(wearMarker);
 
       const style = new TextStyle({
         fontFamily: '"Courier New", Courier, monospace',
@@ -726,7 +805,7 @@ export class PixiGameViewport {
       container.addChild(stockText);
 
       this.entitiesLayer.addChild(container);
-      this.fixtureSprites.set(fix.id, { container, stockText, dotMarker, sprite, textureKey, lastState: '', staticArt: !!art, dotX });
+      this.fixtureSprites.set(fix.id, { container, stockText, dotMarker, wearMarker, sprite, textureKey, lastState: '', staticArt: !!art, dotX });
     }
   }
 
@@ -1278,13 +1357,15 @@ export class PixiGameViewport {
           if(entry.lastState!==key){entry.sprite.texture=this.textures.getTexture(key);entry.lastState=key;entry.dotMarker.clear().rect(5,38,6,6).fill(state==='empty'?0xb64c3d:0x357f72);}
           entry.stockText.text=receiving?`${count} đơn`:cold?`${count}/40`:`${count} món`;
           entry.stockText.visible=true;entry.dotMarker.visible=true;
-        } else if (fix.type !== 'cashier_counter' && fix.type !== 'decor') {
+        } else if (fix.type !== 'cashier_counter' && fix.type !== 'decor' && fix.type !== 'kitchen_station') {
           const group = allFixtures.filter(item => item.id === fix.id || item.parentId === fix.id);
           const limit = group.reduce((sum, item) => sum + effectiveShelfCapacity(item.maxCapacity, (item.assignedProductId && PRODUCT_MAP[item.assignedProductId]?.shelfCapacity) || item.maxCapacity, this.simulation.getShelfCapacityBonus()), 0);
           const stock = group.reduce((sum, item) => sum + item.currentStock, 0);
           entry.stockText.text = fix.broken ? (fix.broken === 'major' ? 'NẶNG' : 'HỎNG') : `${stock}/${limit}`;
           const state = stock === 0 ? 'empty' : stock / limit <= 0.4 ? 'low' : 'full';
           const key = `${entry.textureKey}:${fix.assignedProductId ?? 'none'}:${state}`;
+          const worn = needsService(fix);
+          entry.wearMarker.visible = worn;
           const stateKey = `${key}|${fix.broken ?? ''}`;
           if(entry.lastState !== stateKey) {
             if (!entry.staticArt) entry.sprite.texture = this.textures.getTexture(key);
@@ -1371,6 +1452,63 @@ export class PixiGameViewport {
    * Cap nhat hien thi he thong giao nhan kho hang (logistics renderer):
    * ve xe tai den/di, nhan vien boc/xep kien hang va toast thong bao.
    */
+  /**
+   * Thiết kế bãi tiếp nhận hàng hóa chuyên dụng phía Đông (Phương án 1):
+   * vạch sơn an toàn phản quang, pallet gỗ kê hàng và xe đẩy tay đỏ.
+   */
+  private buildLoadingDock(): void {
+    if (this.loadingDockZone) {
+      this.groundLayer.removeChild(this.loadingDockZone);
+      this.loadingDockZone.destroy();
+      this.loadingDockZone = null;
+    }
+    if (this.loadingDockPallet) {
+      this.entitiesLayer.removeChild(this.loadingDockPallet);
+      this.loadingDockPallet.destroy();
+      this.loadingDockPallet = null;
+    }
+    if (this.loadingDockTrolley) {
+      this.entitiesLayer.removeChild(this.loadingDockTrolley);
+      this.loadingDockTrolley.destroy();
+      this.loadingDockTrolley = null;
+    }
+
+    // 1. Vạch sơn an toàn cảnh báo bãi bốc dỡ trên vỉa hè phía Đông (ô x = 16.5..20, y = 11.2..12.3)
+    const g = new Graphics();
+    const zx = 16.5 * TILE_SIZE;
+    const zy = 11.2 * TILE_SIZE;
+    const zw = 3.6 * TILE_SIZE;
+    const zh = 1.05 * TILE_SIZE;
+
+    // Vạch viền vàng an toàn công nghiệp
+    g.roundRect(zx, zy, zw, zh, 2);
+    g.stroke({ color: 0xe5b85c, width: 1, alpha: 0.6 });
+
+    // Vạch chéo vàng cảnh báo khu vực nâng dỡ hàng
+    for (let lx = zx + 8; lx < zx + zw; lx += 16) {
+      g.moveTo(lx, zy + zh - 1);
+      g.lineTo(Math.min(zx + zw - 2, lx + 12), zy + 1);
+      g.stroke({ color: 0xe5b85c, width: 1, alpha: 0.35 });
+    }
+    this.groundLayer.addChild(g);
+    this.loadingDockZone = g;
+
+    // 2. Pallet gỗ kê hàng cố định tại bãi tập kết (x = 18.2 * TILE_SIZE, y = 11.8 * TILE_SIZE)
+    const pallet = new Sprite(this.textures.getTexture('prop_dock_pallet'));
+    pallet.anchor.set(0.5, 1);
+    pallet.position.set(Math.round(LOADING_DOCK_CONFIG.palletPosition.x), Math.round(LOADING_DOCK_CONFIG.palletPosition.y));
+    pallet.zIndex = LOADING_DOCK_CONFIG.palletPosition.y - 1;
+    this.entitiesLayer.addChild(pallet);
+    this.loadingDockPallet = pallet;
+
+    // 3. Xe đẩy hàng 2 bánh màu đỏ đứng chờ cạnh pallet (x = 17.2 * TILE_SIZE, y = 11.8 * TILE_SIZE)
+    const trolley = new Sprite(this.textures.getTexture('prop_hand_trolley'));
+    trolley.anchor.set(0.5, 1);
+    trolley.position.set(Math.round(LOADING_DOCK_CONFIG.trolleyPosition.x), Math.round(LOADING_DOCK_CONFIG.trolleyPosition.y));
+    trolley.zIndex = LOADING_DOCK_CONFIG.trolleyPosition.y - 1;
+    this.entitiesLayer.addChild(trolley);
+    this.loadingDockTrolley = trolley;
+  }
   private updateLogistics(elapsed: number): void {
     const ev = this.simulation.getLogisticsState().activeEvent;
     const reducedMotion = this.motionQuery.matches;
@@ -1387,6 +1525,11 @@ export class PixiGameViewport {
         this.logisticsWorkerContainer = null;
         this.logisticsWorkerSprite = null;
         this.logisticsBoxSprite = null;
+      }
+      if (this.loadingDockBoxesContainer) {
+        this.entitiesLayer.removeChild(this.loadingDockBoxesContainer);
+        this.loadingDockBoxesContainer.destroy({ children: true });
+        this.loadingDockBoxesContainer = null;
       }
       if (this.logisticsToastContainer) {
         this.logisticsToastLife -= elapsed;
@@ -1447,7 +1590,7 @@ export class PixiGameViewport {
       if (this.logisticsBoxSprite) {
         this.logisticsBoxSprite.visible = w.carryingBox;
         if (w.carryingBox) {
-          const boxKey = w.boxType === 'foam_cold' ? 'prop_foam_box_cold' : 'prop_cargo_carton';
+          const boxKey = w.boxType === 'foam_cold' ? 'prop_foam_box_cold' : w.boxType === 'produce_crate' ? 'prop_produce_crate' : 'prop_cargo_carton';
           this.logisticsBoxSprite.texture = this.textures.getTexture(boxKey);
           // Ôm thùng trước ngực (đáy thùng ngang tay), không che mặt; lệch nhẹ theo hướng đi.
           this.logisticsBoxSprite.x = w.direction === 'right' ? 3 : -3;
@@ -1460,6 +1603,57 @@ export class PixiGameViewport {
       this.logisticsWorkerContainer = null;
       this.logisticsWorkerSprite = null;
       this.logisticsBoxSprite = null;
+    }
+
+    // ---- Dynamic Stacked Boxes on Pallet ----
+    const deliveredCount = (ev.phase === 'docked' || ev.phase === 'unloading' || ev.phase === 'loading' || ev.phase === 'completed' || ev.phase === 'departing')
+      ? (ev.type === 'outbound_party_order'
+          ? Math.max(0, ev.totalBoxes - ev.boxesRemaining)
+          : Math.max(0, ev.totalBoxes - ev.boxesRemaining))
+      : 0;
+
+    if (deliveredCount > 0) {
+      if (!this.loadingDockBoxesContainer) {
+        this.loadingDockBoxesContainer = new Container();
+        this.loadingDockBoxesContainer.position.set(
+          Math.round(LOADING_DOCK_CONFIG.palletPosition.x),
+          Math.round(LOADING_DOCK_CONFIG.palletPosition.y)
+        );
+        this.loadingDockBoxesContainer.zIndex = LOADING_DOCK_CONFIG.palletPosition.y + 1;
+        this.entitiesLayer.addChild(this.loadingDockBoxesContainer);
+      }
+
+      const boxKey = ev.worker?.boxType === 'foam_cold'
+        ? 'prop_foam_box_cold'
+        : ev.worker?.boxType === 'produce_crate'
+        ? 'prop_produce_crate'
+        : 'prop_cargo_carton';
+
+      // Các vị trí xếp tầng trên pallet gỗ (tối đa 6 thùng theo hình tháp)
+      const stackOffsets = [
+        { x: -5, y: -4 },
+        { x: 5, y: -4 },
+        { x: 0, y: -13 },
+        { x: -6, y: -13 },
+        { x: 6, y: -13 },
+        { x: 0, y: -21 },
+      ];
+
+      while (this.loadingDockBoxesContainer.children.length < deliveredCount && this.loadingDockBoxesContainer.children.length < stackOffsets.length) {
+        const idx = this.loadingDockBoxesContainer.children.length;
+        const boxSprite = new Sprite(this.textures.getTexture(boxKey));
+        boxSprite.anchor.set(0.5, 1);
+        boxSprite.position.set(stackOffsets[idx].x, stackOffsets[idx].y);
+        this.loadingDockBoxesContainer.addChild(boxSprite);
+      }
+      while (this.loadingDockBoxesContainer.children.length > deliveredCount) {
+        const removed = this.loadingDockBoxesContainer.removeChildAt(this.loadingDockBoxesContainer.children.length - 1);
+        removed.destroy();
+      }
+    } else if (this.loadingDockBoxesContainer && deliveredCount === 0) {
+      this.entitiesLayer.removeChild(this.loadingDockBoxesContainer);
+      this.loadingDockBoxesContainer.destroy({ children: true });
+      this.loadingDockBoxesContainer = null;
     }
 
     // ---- Toast Notification ----
@@ -1612,6 +1806,17 @@ export class PixiGameViewport {
     this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
     window.removeEventListener('pointermove', this.handlePointerMove);
     window.removeEventListener('pointerup', this.handlePointerUp);
+    if (this.loadingDockBoxesContainer) {
+      this.entitiesLayer.removeChild(this.loadingDockBoxesContainer);
+      this.loadingDockBoxesContainer.destroy({ children: true });
+      this.loadingDockBoxesContainer = null;
+    }
+    this.loadingDockZone?.destroy();
+    this.loadingDockZone = null;
+    this.loadingDockPallet?.destroy();
+    this.loadingDockPallet = null;
+    this.loadingDockTrolley?.destroy();
+    this.loadingDockTrolley = null;
     if (this.app) {
       this.app.destroy(true, { children: true, texture: false });
     }

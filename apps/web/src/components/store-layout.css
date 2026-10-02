@@ -175,7 +175,7 @@
 /* Board Grid (16x8) */
 .layout-board {
   display: grid;
-  grid-template-columns: repeat(16, minmax(24px, 1fr));
+  grid-template-columns: repeat(var(--layout-cols, 16), minmax(24px, 1fr));
   width: 100%;
   max-width: 740px;
   aspect-ratio: 2 / 1;
@@ -991,7 +991,7 @@
   }
 
   .layout-board {
-    grid-template-columns: repeat(16, minmax(18px, 1fr));
+    grid-template-columns: repeat(var(--layout-cols, 16), minmax(18px, 1fr));
   }
 
   .layout-cell {
@@ -1034,4 +1034,24 @@
     flex-direction: column;
     gap: 10px;
   }
+}
+
+/* Chọn tòa nhà đang chỉnh (tiệm chính / tiệm xôi) */
+.layout-building-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.layout-building-tabs button {
+  border: 2px solid #3D2616;
+  background: #c9a979;
+  color: #3D2616;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.layout-building-tabs button.is-active {
+  background: #255845;
+  color: #D4F4E4;
 }

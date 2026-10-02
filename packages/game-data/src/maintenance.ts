@@ -23,6 +23,10 @@ export const MAINTENANCE_RULES = {
   repairWear: 20,
   /** Từ độ mòn bằng tỷ lệ này của `breakFrom` trở lên thì bảo trì trước khi hỏng được. */
   serviceFraction: 0.7,
+  /** Tủ mát đang hỏng không giữ lạnh: mỗi đêm hàng trong tủ mất thêm chừng này ngày hạn dùng (cộng vào tốc độ hỏng bình thường). */
+  brokenColdExtraDecay: 1,
+  /** Mỗi nhân viên châm hàng trong biên chế tự bảo trì tối đa chừng này món đã mòn mỗi đêm (trước khi đêm đó có thể làm hỏng), người chơi vẫn trả phí bảo trì. */
+  staffServicePerNight: 2,
 } as const;
 
 /** Giá mua mới tham chiếu từng mẫu kệ/tủ mát (khớp giá các mẫu bán trong màn Sắp xếp cửa hàng). */

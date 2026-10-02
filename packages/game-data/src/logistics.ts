@@ -2,13 +2,13 @@ import { TILE_SIZE, Vector2D } from '@game/shared';
 
 /**
  * Khu vực Bốc dỡ & Giao nhận Hàng Hóa (Dedicated Loading / Unloading Area)
- * Tọa lạc tại góc phía đông của vỉa hè & lề đường (ô x = 20..24, hàng y = 11..13).
- * Có vạch kẻ sơn an toàn phản quang, pallet gỗ kê hàng và lối vận chuyển hàng vào kho.
+ * Tọa lạc tại góc phía đông của vỉa hè & lề đường (ô x = 17..24, hàng y = 11..13).
+ * Có vạch kẻ sơn an toàn phản quang, pallet gỗ kê hàng và xe đẩy tay trung chuyển.
  */
 export const LOADING_DOCK_CONFIG = {
-  tileX: 20,
+  tileX: 17,
   tileY: 11,
-  widthTiles: 4,
+  widthTiles: 5,
   heightTiles: 2,
   /** Vị trí xe tải dừng đỗ bốc dỡ (tọa độ px neo giữa đáy xe) */
   truckStopPosition: {
@@ -17,13 +17,23 @@ export const LOADING_DOCK_CONFIG = {
   },
   /** Vị trí nhân viên nhận/giao kiện hàng tại đuôi xe tải, trên vỉa hè */
   truckTailPosition: {
-    x: 20.2 * TILE_SIZE,
-    y: 12.2 * TILE_SIZE,
+    x: 20.2 * TILE_SIZE, // 646.4px
+    y: 12.2 * TILE_SIZE, // 390.4px
   },
-  /** Điểm bàn giao ở ngoài cửa chính, trên vỉa hè (không đi xuyên vào trong nhà) */
+  /** Điểm bàn giao hàng hóa tại bãi tập kết phía Đông vỉa hè (không chắn cửa chính tiệm) */
   storeEntrancePosition: {
-    x: 10 * TILE_SIZE,
-    y: 11.7 * TILE_SIZE,
+    x: 18.2 * TILE_SIZE, // 582.4px (tại pallet bãi tập kết)
+    y: 11.8 * TILE_SIZE, // 377.6px
+  },
+  /** Vị trí pallet gỗ kê hàng */
+  palletPosition: {
+    x: 18.2 * TILE_SIZE,
+    y: 11.8 * TILE_SIZE,
+  },
+  /** Vị trí xe đẩy hàng tay đỏ chờ sẵn cạnh pallet */
+  trolleyPosition: {
+    x: 17.2 * TILE_SIZE,
+    y: 11.8 * TILE_SIZE,
   },
   /** Điểm nhập kho bên trong */
   warehouseStagingPosition: {

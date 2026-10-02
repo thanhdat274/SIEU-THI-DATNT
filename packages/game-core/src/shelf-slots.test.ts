@@ -18,7 +18,7 @@ export function runShelfSlotTests(): void {
   const fixtures = sim.getFixtures();
   const shelf = fixtures.find(f => f.id === 'shelf_wooden_noodles')!;
   const slots = fixtures.filter(f => f.parentId === shelf.id);
-  assert(slots.length === 3, 'Kệ gỗ tự có 3 ô phụ khi tải save cũ');
+  assert(slots.length === 11, 'Kệ gỗ tự có 11 ô phụ khi tải save cũ');
   assert(slots.every(s => s.tileX === shelf.tileX && s.tileY === shelf.tileY), 'Ô phụ trùng vị trí kệ cha');
 
   const sameCategory = sim.transferToShelf(slots[0].id, 'mi_hao_hao', 5);
@@ -28,5 +28,5 @@ export function runShelfSlotTests(): void {
 
   const roundTrip = new GameSimulation(sim.exportSaveData(), generateStarterTileMap(), new InputManager());
   const again = roundTrip.getFixtures().filter(f => f.parentId === shelf.id);
-  assert(again.length === 3 && again[0].currentStock === 5, 'Ô phụ và hàng trong ô được lưu/tải lại');
+  assert(again.length === 11 && again[0].currentStock === 5, 'Ô phụ và hàng trong ô được lưu/tải lại');
 }

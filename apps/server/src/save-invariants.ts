@@ -8,7 +8,7 @@ import { MAX_PLAYER_LEVEL, staffSlotsAtLevel } from '@game/data';
 export const MAX_REVENUE_PER_GAME_MINUTE = 20_000;
 /** Phần thưởng một lệnh nhận thưởng/đơn tiệc có thể cộng vào tiền ngoài doanh thu bán hàng. */
 export const MAX_REWARD_PER_COMMAND = 1_000_000;
-const REWARD_COMMANDS = new Set(['claim_quest', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'fulfill_party_order', 'respond_party_order']);
+const REWARD_COMMANDS = new Set(['claim_quest', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'claim_story_chapter', 'fulfill_party_order', 'respond_party_order']);
 
 const minutesOf = (save: SaveGameData) => save.worldTime.day * 1440 + save.worldTime.hour * 60 + save.worldTime.minute;
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);

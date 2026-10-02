@@ -99,3 +99,34 @@ export function summarizeReviews(reviews: readonly CustomerReview[]): ReviewSumm
   const top = [...reasons.entries()].sort((a, b) => b[1] - a[1])[0];
   return { count: reviews.length, average: reviews.length ? total / reviews.length : 0, byStars, ...(top ? { topReason: { reason: top[0], count: top[1] } } : {}) };
 }
+
+/** Quản lý danh sách đánh giá khách hàng. Tuân theo pattern của CustomerManager: nhận dữ liệu qua constructor, không nhận `this`. */
+export class ReviewsManager {
+  private reviews: CustomerReview[] = [];
+
+  constructor(initialReviews: CustomerReview[] | undefined) {
+    this.reviews = sanitizeReviews(initialReviews);
+  }
+
+  public addReview(review: CustomerReview): void {
+    this.reviews = appendReview(this.reviews, review);
+  }
+
+  public getReviews(): CustomerReview[] {
+    return this.reviews.map(r => ({ ...r }));
+  }
+
+  public getReviewSummary(): ReviewSummary {
+    return summarizeReviews(this.reviews);
+  }
+
+  /** Ghi lại reviews từ dữ liệu save (dùng trong importSaveData). */
+  public importReviews(initialReviews: CustomerReview[] | undefined): void {
+    this.reviews = sanitizeReviews(initialReviews);
+  }
+
+  /** Trả về bản sao sâu để serialize. */
+  public exportReviews(): CustomerReview[] {
+    return this.reviews.map(r => ({ ...r }));
+  }
+}

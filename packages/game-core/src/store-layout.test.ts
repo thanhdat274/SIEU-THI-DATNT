@@ -77,31 +77,31 @@ export function runStoreLayoutTests() {
   const bought = applyStoreLayoutActions(rich, [{ type: 'buy_fixture', shopId: 'shelf', tileX: 7, tileY: 6, rotation: 0 }], mapFor);
   assert.ok(bought.save, `Mua kệ gỗ đặt vào ô trống hợp lệ (${bought.error ?? ''})`);
   assert.equal(bought.save.player.money, 420_000, 'Mua kệ gỗ trừ 80.000đ');
-  assert.equal(bought.save.storeLayout.fixtures.length, base.storeLayout.fixtures.length + 11, 'Kệ mới + ô phụ của mọi kệ (3+3+1 cũ, 3 mới)');
+  assert.equal(bought.save.storeLayout.fixtures.length, base.storeLayout.fixtures.length + 41, 'Kệ mới + ô phụ của mọi kệ (11+11+7 cũ, 11 mới + 1 kệ)');
   assert.equal(applyStoreLayoutActions(rich, [{ type: 'buy_fixture', shopId: 'shelf', tileX: 8, tileY: 5, rotation: 0 }], mapFor).error, 'overlap', 'Không đặt chồng lên kệ cũ');
   const poor = structuredClone(base); poor.player.money = 10; poor.player.level = 30;
   assert.equal(buyShopFixture(poor, 'fridge', 7, 5, 0).error, 'money', 'Thiếu tiền không mua được');
   assert.equal(buyShopFixture(rich, 'khong_co', 7, 5, 0).error, 'unknown_item', 'Món lạ bị từ chối');
   const lowLevel = structuredClone(rich); lowLevel.player.level = 1;
   assert.equal(buyShopFixture(lowLevel, 'shelf', 7, 6, 0).error, 'level', 'Chưa đủ cấp không mua được');
-  assert.equal(buyShopFixture(rich, 'food_grill', 7, 6, 0).error, 'unavailable', 'Món chưa có chức năng không cho mua');
+  assert.equal(buyShopFixture(rich, 'drink_counter', 7, 6, 0).error, 'unavailable', 'Món chưa có chức năng không cho mua');
   const big = buyShopFixture(rich, 'shelf_double', 7, 6, 0);
-  assert.equal(big.save?.storeLayout.fixtures.filter(item => item.parentId === 'shelf_wooden_buy_1').length, 7, 'Kệ đôi có 8 ô (1 chính + 7 phụ)');
+  assert.equal(big.save?.storeLayout.fixtures.filter(item => item.parentId === 'shelf_wooden_buy_1').length, 23, 'Kệ đôi có 24 ô (1 chính + 23 phụ)');
 
   // Ô phụ đi theo kệ cha khi di chuyển / cất / lấy lại.
   const withSlots = bought.save;
   const newShelf = withSlots.storeLayout.fixtures.find(item => item.id === 'shelf_wooden_buy_1')!;
   const children = withSlots.storeLayout.fixtures.filter(item => item.parentId === newShelf.id);
-  assert.equal(children.length, 3, 'Kệ gỗ có 3 ô phụ');
+  assert.equal(children.length, 11, 'Kệ gỗ có 12 ô (11 phụ)');
   const moved = moveStoreFixture(withSlots, newShelf.id, 9, 4, 0, map);
   assert.ok(moved.save, `Di chuyển kệ nhiều ô hợp lệ (${moved.error ?? ''})`);
   assert.ok(moved.save.storeLayout.fixtures.filter(item => item.parentId === newShelf.id).every(item => item.tileX === 9 && item.tileY === 4), 'Ô phụ theo kệ cha');
   assert.equal(moveStoreFixture(withSlots, children[0].id, 9, 4, 0, map).error, 'prerequisite', 'Không di chuyển riêng ô phụ');
   const stowedSlots = storeFixture(withSlots, newShelf.id);
   assert.equal(stowedSlots.save?.storeLayout.fixtures.some(item => item.parentId === newShelf.id), false, 'Cất kệ cũng cất ô phụ');
-  assert.equal(stowedSlots.save?.storeLayout.storedFixtures.filter(item => item.parentId === newShelf.id).length, 3, 'Ô phụ nằm trong kho cùng kệ');
+  assert.equal(stowedSlots.save?.storeLayout.storedFixtures.filter(item => item.parentId === newShelf.id).length, 11, 'Ô phụ nằm trong kho cùng kệ');
   const back = retrieveStoreFixture(stowedSlots.save!, newShelf.id, 7, 6, map);
-  assert.equal(back.save?.storeLayout.fixtures.filter(item => item.parentId === newShelf.id).length, 3, 'Lấy lại kệ mang theo ô phụ');
+  assert.equal(back.save?.storeLayout.fixtures.filter(item => item.parentId === newShelf.id).length, 11, 'Lấy lại kệ mang theo ô phụ');
 
   // Đồ trang trí: mua một lần, biển thay biển, có điểm thu hút làm tăng khách.
   const decorBuy = buyDecorItem(rich, 'day_den');

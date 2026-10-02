@@ -4,7 +4,7 @@ import { WorldAvatarController } from './avatars';
 import { GameCommandCoordinator, CommandResult } from './commands';
 import { FixedStepSimulationRunner } from './runner';
 import { generateStarterTileMap } from '@game/data';
-import { applyStoreLayoutActions, moveStoreFixture, retrieveStoreFixture, storeFixture } from './store-layout';
+import { applyStoreLayoutActions, moveStoreFixture, retrieveStoreFixture, storeFixture, buyWarehouseTier, buyStorageRack } from './store-layout';
 
 export interface WorldRuntimeOptions {
   heartbeatTimeoutMs?: number;
@@ -195,6 +195,8 @@ export class WorldRuntime {
         success = this.simulation.completeCustomerCheckout(p.checkoutId, p.fixtureId, p.onCredit ?? false, p.dineIn ?? false);
       } else if (p.type === 'repay_customer_credit') {
         success = this.simulation.repayCustomerCredit(p.creditId);
+      } else if (p.type === 'start_production') {
+        success = this.simulation.startProduction(p.recipeId, p.stationId).success;
       } else if (p.type === 'clean_dining_table') {
         success = this.simulation.cleanDiningTable(p.fixtureId);
       } else if (p.type === 'assign_dining_cleanup') {
@@ -239,13 +241,29 @@ export class WorldRuntime {
         success = this.simulation.claimWeeklyQuest(p.questId).success;
       } else if (p.type === 'claim_festival_goal') {
         success = this.simulation.claimFestivalGoal(p.goalId).success;
+      } else if (p.type === 'begin_story_chapter') {
+        success = this.simulation.beginStoryChapter(p.chapterId).success;
+      } else if (p.type === 'claim_story_chapter') {
+        success = this.simulation.claimStoryChapter(p.chapterId).success;
       } else if (p.type === 'choose_perk') {
         success = this.simulation.chooseSkillPerk(p.perkId).success;
       } else if (p.type === 'set_title') {
         success = this.simulation.setActiveTitle(p.titleId).success;
+      } else if (p.type === 'maintain_fixture') {
+        success = this.simulation.maintainFixture(p.fixtureId, p.action).success;
+      } else if (p.type === 'security_action') {
+        success = p.action === 'buy_camera' ? this.simulation.buyCamera().success : this.simulation.setCallPolice(p.action === 'police_on').success;
       } else if (p.type === 'layout_batch') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
         const next = applyStoreLayoutActions(current, p.actions, ids => generateStarterTileMap(ids));
+        success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
+      } else if (p.type === 'buy_warehouse_tier') {
+        const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
+        const next = buyWarehouseTier(current, p.tier);
+        success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
+      } else if (p.type === 'buy_storage_rack') {
+        const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
+        const next = buyStorageRack(current);
         success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       }
 

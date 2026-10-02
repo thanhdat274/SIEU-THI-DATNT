@@ -13,6 +13,7 @@ import { readRuntimeConfig } from './runtime-config.js';
 import { checkSaveInvariants } from './save-invariants.js';
 import { commitLimiter, httpIpLimiter, MAX_HTTP_BODY } from './rate-limit.js';
 import { closeDatabase, connectDatabase } from './database.js';
+import { migrateWorldSaves } from './world-migrations.js';
 import { createWebSocketTicket, verifyAccount } from './firebase-admin.js';
 import { FirebaseAuthGuard } from './auth.guard.js';
 import { worldRepository } from './world.repository.js';
@@ -40,10 +41,11 @@ Get('ready')(HealthController.prototype, 'readiness', Object.getOwnPropertyDescr
 
 /** Loại lệnh được commit. Chỉ một phần được server phát lại; phần còn lại vẫn tin save client (I-01, xem THONG-KE.md). */
 const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
-  'respond_party_order', 'fulfill_party_order', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title', 'layout_batch', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup',
-  'set_price', 'restock', 'unstock', 'store_status', 'buy_stall', 'claim_quest', 'order', 'stow', 'stow_all',
-  'planogram_assignment', 'planogram_restock', 'auto_restock', 'checkout', 'advance_day', 'change_speed',
+  'respond_party_order', 'fulfill_party_order', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'begin_story_chapter', 'claim_story_chapter', 'choose_perk', 'set_title', 'layout_batch', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production',
+  'set_price', 'restock', 'unstock', 'buy_stall', 'claim_quest',
+  'checkout',
   'hire_staff', 'set_staff_shift', 'assign_refill_job', 'dispose_stock', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve', 'maintain_fixture', 'security_action',
+  'buy_warehouse_tier', 'buy_storage_rack',
 ]);
 
 export class GameController {
@@ -99,8 +101,12 @@ export class GameController {
       throw new BadRequestException('Loại lệnh không được hỗ trợ.');
     }
     const serverReplayedCommands = new Set([
-      'checkout', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'respond_party_order', 'fulfill_party_order', 'claim_goal',
-      'claim_weekly_quest', 'claim_festival_goal', 'choose_perk', 'set_title',
+      'checkout', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production', 'respond_party_order', 'fulfill_party_order', 'claim_goal',
+      'claim_weekly_quest', 'claim_festival_goal', 'begin_story_chapter', 'claim_story_chapter', 'choose_perk', 'set_title', 'maintain_fixture', 'security_action',
+      'order_supplier', 'buy_stall', 'dispose_stock', 'claim_quest',
+      'restock', 'unstock', 'set_price',
+      'hire_staff', 'set_staff_shift', 'assign_refill_job',
+      'buy_plot', 'buy_warehouse_tier', 'buy_storage_rack',
     ]);
     if (serverReplayedCommands.has(payload?.type)) {
       const priorReceipt = await worldRepository.findReceipt(worldId, request.gameAccount.uid, body.receipt.commandId);
@@ -186,7 +192,8 @@ export class GameController {
         ).exportSaveData(commandBusiness.save.id, body.expectedRevision);
         return JSON.stringify(layoutGeometry(baseline)) === submitted;
       };
-      if (!sameLayout()) {
+      // Lệnh server tự phát lại (vd. buy_plot mở đất/tiệm xôi) tạo save chuẩn ngay tại server nên được phép đổi bố cục; chỉ save do client gửi mới phải giữ nguyên bố cục.
+      if (!serverReplayedCommands.has(payload.type) && !sameLayout()) {
         throw new BadRequestException('Thay đổi bố cục phải dùng layout_batch đã kiểm tra.');
       }
       // Lệnh chưa được server phát lại: không tin tuyệt đối save client, kiểm bất biến so với save đã lưu (I-01, hướng B).
@@ -268,6 +275,7 @@ class RuntimeModule {
 Module({ controllers: [HealthController, GameController], providers: [FirebaseAuthGuard, WorldGateway] })(RuntimeModule);
 
 export async function createServer() {
+  await migrateWorldSaves().then((m) => { if (m.migrated || m.failed.length) console.log(`[migrate] nâng cấp ${m.migrated}/${m.scanned} phòng, lỗi ${m.failed.length}`, m.failed); }).catch((err: unknown) => console.warn("[migrate] bỏ qua:", err instanceof Error ? err.message : err));
   const app = await NestFactory.create<NestExpressApplication>(RuntimeModule, { logger: ['error', 'warn', 'log'], bodyParser: false });
   // Thân JSON có giới hạn tường minh (save đầy đủ + sổ cái), thay cho mặc định ngầm của Express.
   app.useBodyParser('json', { limit: MAX_HTTP_BODY });

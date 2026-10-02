@@ -75,7 +75,7 @@ export function runOutdoorPropTests(): void {
   // Cây là dữ liệu bản đồ: va chạm khớp dữ liệu, vị trí sprite cũ giữ nguyên, không chặn cửa/ô đỗ/cột đèn.
   assert.equal(TREE_PROPS.length >= 1 && new Set(TREE_PROPS.map(t => t.id)).size === TREE_PROPS.length, true, 'Cây có id duy nhất');
   const tree0 = TREE_PROPS[0];
-  assert.deepEqual([tree0.tileX + TREE_SPRITE_OFFSET.tilesX, tree0.tileY + TREE_SPRITE_OFFSET.tilesY, TREE_SPRITE_OFFSET.pixelsY], [2, 9, -4], 'Sprite cây vẫn ở vị trí cũ');
+  assert.deepEqual([tree0.tileX + TREE_SPRITE_OFFSET.tilesX, tree0.tileY + TREE_SPRITE_OFFSET.tilesY, TREE_SPRITE_OFFSET.pixelsY], [4, 9, -4], 'Sprite cây dời sang x=5 (sát tường chung) để không che cửa tiệm xôi');
   for (const tree of TREE_PROPS) {
     assert.equal(solidAt(tree.tileX, tree.tileY), true, 'Gốc cây có va chạm');
     assert.ok(tree.height > 0 && tree.crownRadius > 0, 'Cây có kích thước dương');

@@ -5,6 +5,9 @@ import { PixelButton, PixelIcon, ProductSlot, EmptyState } from './pixel';
 
 interface Props {
   capacityBonus?: number;
+  coldCapacity?: number;
+  ambientCapacity?: number;
+  ambientUsed?: number;
   inventory: InventoryItem[];
   holdingArea?: HoldingItem[];
   fixtures: StoreFixture[];
@@ -31,6 +34,9 @@ export const WarehouseDock: React.FC<Props> = ({
   onStowHolding,
   currentDay,
   capacityBonus = 0,
+  coldCapacity = COLD_WAREHOUSE_CAPACITY,
+  ambientCapacity,
+  ambientUsed = 0,
 }) => {
   if (!isOpen) return null;
   const items = inventory.filter((i) => i.quantity > 0);
@@ -57,7 +63,8 @@ export const WarehouseDock: React.FC<Props> = ({
         </div>
         <div className="dock-meta">
           <span>{items.reduce((n, i) => n + i.quantity, 0)} món hàng</span>
-          <span>Mát {cold}/{COLD_WAREHOUSE_CAPACITY}</span>
+          {ambientCapacity !== undefined && <span>Thường {ambientUsed}/{ambientCapacity} ô</span>}
+          <span>Mát {cold}/{coldCapacity}</span>
         </div>
       </header>
 
@@ -119,7 +126,7 @@ export const WarehouseDock: React.FC<Props> = ({
         <p>
           {empty > 0 ? `${empty} kệ đang trống. ` : ''}
           {restockable.length ? `${restockable.length} kệ có thể châm từ kho.` : 'Chưa có hàng phù hợp để châm các kệ.'}
-          {cold >= COLD_WAREHOUSE_CAPACITY ? ' Kho mát đã đầy.' : ''}
+          {cold >= coldCapacity ? ' Kho mát đã đầy.' : ''}
         </p>
         <PixelButton icon="plus" variant="teal" onClick={onAutoRestock} disabled={!restockable.length}>
           Châm các kệ

@@ -1,4 +1,5 @@
 import { SEASON_YEAR_DAYS } from './seasons';
+import { nullProto } from './safe-map';
 
 export interface WeatherType {
   id: string;
@@ -19,7 +20,7 @@ export const WEATHER_TYPES: readonly WeatherType[] = [
   { id: 'special', label: 'Sương mù dày', icon: '🌫', stickiness: 0.2 }, // hiện tượng đặc biệt hiếm
 ];
 
-export const WEATHER_MAP: Record<string, WeatherType> = Object.fromEntries(WEATHER_TYPES.map(type => [type.id, type]));
+export const WEATHER_MAP: Record<string, WeatherType> = nullProto(Object.fromEntries(WEATHER_TYPES.map(type => [type.id, type])));
 
 export interface ClimateSeason {
   id: string;
@@ -37,7 +38,7 @@ export const CLIMATE_SEASONS: readonly ClimateSeason[] = [
   { id: 'clim_mild', name: 'Cuối năm dịu mát', startDayOfYear: 90, endDayOfYear: SEASON_YEAR_DAYS - 1, weights: { cloudy: 3, sunny: 3, rainy: 2, cold: 1.5, heavy_rain: 0.6, storm: 0.4, special: 0.5, hot: 0.3 } },
 ];
 
-export const CLIMATE_SEASON_MAP: Record<string, ClimateSeason> = Object.fromEntries(CLIMATE_SEASONS.map(item => [item.id, item]));
+export const CLIMATE_SEASON_MAP: Record<string, ClimateSeason> = nullProto(Object.fromEntries(CLIMATE_SEASONS.map(item => [item.id, item])));
 
 export type RainBandId = 'none' | 'drizzle' | 'moderate' | 'heavy' | 'thunderstorm';
 

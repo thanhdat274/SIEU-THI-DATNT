@@ -1,6 +1,7 @@
 import { GameTileMap, StoreFixture, SaveGameData, Vector2D } from '@game/shared';
 import { LAND_PLOTS, STARTER_OWNED_PLOT_IDS } from './land';
 import { STALLS } from './stalls';
+import { BUILDINGS, BUILDING_MAP, MAIN_STORE_BOUNDS, XOI_BOUNDS, XOI_PLOT_ID } from './buildings';
 import { xpToNextLevel } from './progression';
 
 /** Chủ tiệm đứng sau quầy thu ngân (phía bắc), nhìn ra chỗ khách xếp hàng ở ô (9,8). */
@@ -10,7 +11,7 @@ export const SHOPKEEPER_POSITION = { x: (SHOPKEEPER_TILE.x + 0.5) * 32, y: (SHOP
 export const MAP_WIDTH = 26;
 export const MAP_HEIGHT = 22;
 export const MAP_ORIGIN_Y = -6;
-export const STORE_BOUNDS = {left:6,right:13,top:3,bottom:10};
+export const STORE_BOUNDS = MAIN_STORE_BOUNDS;
 /** Điểm xuất hiện của người chơi trong hẻm chung: vỉa hè ngay ngoài cửa tiệm (cửa ở x=9..10, y=10). Chỉnh ở đây để đổi chỗ xuất hiện; chủ hẻm lấy mục 0, thành viên mục 1. */
 export const ONLINE_SPAWN_POINTS: readonly { x: number; y: number }[] = [
   { x: 8.5 * 32, y: 12.5 * 32 },
@@ -18,7 +19,7 @@ export const ONLINE_SPAWN_POINTS: readonly { x: number; y: number }[] = [
 ];
 /** Hàng rào thấp ở hàng y=10 giữa cỏ và vỉa hè (trừ mặt tiền tiệm); dùng chung cho va chạm và renderer. */
 export const isFenceTile = (x: number, worldY: number, mapWidth: number): boolean =>
-  worldY === 10 && x > 0 && x < mapWidth - 1 && (x <= STORE_BOUNDS.left - 2 || x >= STORE_BOUNDS.right + 2);
+  worldY === 10 && x > XOI_BOUNDS.right && x < mapWidth - 1 && x >= STORE_BOUNDS.right + 2;
 /** Đèn đường trên vỉa hè sát lòng đường; cột đèn chặn đường đi như vật cản nhỏ. */
 export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 4, y: 12 }, { x: 15, y: 12 }, { x: 20, y: 12 }];
 
@@ -28,7 +29,7 @@ export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 
  * không chặn cửa tiệm, ô đỗ xe, cột đèn hay lối đi.
  */
 export interface TreeProp { id: string; tileX: number; tileY: number; height: number; crownRadius: number }
-export const TREE_PROPS: ReadonlyArray<TreeProp> = [{ id: 'alley_shade_tree', tileX: 3, tileY: 11, height: 2.4, crownRadius: 1.1 }];
+export const TREE_PROPS: ReadonlyArray<TreeProp> = [{ id: 'alley_shade_tree', tileX: 5, tileY: 11, height: 2.4, crownRadius: 1.1 }];
 /** Vị trí góc trên-trái của sprite cây so với ô gốc (đơn vị ô) và độ dịch dọc bằng pixel; giữ đúng vị trí vẽ trước đây. */
 export const TREE_SPRITE_OFFSET = { tilesX: -1, tilesY: -2, pixelsY: -4 } as const;
 
@@ -88,7 +89,7 @@ export const INITIAL_FIXTURES: StoreFixture[] = [
     rotation: 0,
     assignedProductId: 'mi_hao_hao',
     currentStock: 12,
-    maxCapacity: 24,
+    maxCapacity: 20,
     label: 'Kệ Gỗ 01 - Mì Gói & Lương Khô',
   },
   {
@@ -101,7 +102,7 @@ export const INITIAL_FIXTURES: StoreFixture[] = [
     rotation: 0,
     assignedProductId: 'xa_xi_chuong_duong',
     currentStock: 8,
-    maxCapacity: 16,
+    maxCapacity: 20,
     label: 'Kệ Gỗ 02 - Nước Ngọt & Bánh Kẹo',
   },
   {
@@ -212,6 +213,21 @@ export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STAR
     collisionLayer[idx]=boundary&&!door;
   }
 
+  // Tiệm xôi: tòa thứ hai ở dải tây, tường đông x=6 dùng chung với tiệm chính (đã dựng ở trên). Luôn có vỏ nhà;
+  // chưa mua thì cửa và sàn trong bị chặn (renderer vẽ cửa cuốn), mua rồi mới đi vào/đặt nội thất được.
+  const xoiOpen = purchased.has(XOI_PLOT_ID);
+  const xoiDoors = BUILDING_MAP.xoi.doorTiles;
+  for (let y = XOI_BOUNDS.top; y <= XOI_BOUNDS.bottom; y++) {
+    for (let x = XOI_BOUNDS.left; x < XOI_BOUNDS.right; x++) {
+      const idx = (y - MAP_ORIGIN_Y) * MAP_WIDTH + x;
+      const door = xoiDoors.some(tile => tile.x === x && tile.y === y);
+      const wall = !door && (y === XOI_BOUNDS.top || y === XOI_BOUNDS.bottom || x === XOI_BOUNDS.left);
+      groundData[idx] = 3;
+      wallData[idx] = wall ? 4 : 0;
+      collisionLayer[idx] = wall || !xoiOpen;
+    }
+  }
+
   for (const plot of LAND_PLOTS) {
     if (!purchased.has(plot.id)) continue;
     for (const { x, y } of plot.tiles) {
@@ -272,13 +288,14 @@ export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STAR
     ],
     collisionLayer,
     storeBounds: { left: STORE_BOUNDS.left, right: east, top: STORE_BOUNDS.top, bottom: STORE_BOUNDS.bottom },
+    buildings: BUILDINGS.map(building => ({ id: building.id, open: !building.plotId || purchased.has(building.plotId) })),
     stalls: stalls.map(stall => ({ id: stall.id, tileX: stall.tileX, tileY: stall.tileY, widthTiles: stall.widthTiles })),
   };
 }
 
 export const DEFAULT_INITIAL_SAVE: SaveGameData = {
   id: 'local_save_default',
-  schemaVersion: 3,
+  schemaVersion: 4,
   revision: 1,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -306,6 +323,8 @@ export const DEFAULT_INITIAL_SAVE: SaveGameData = {
     storedFixtures: [],
     unlockedPlotIds: STARTER_OWNED_PLOT_IDS,
   },
+  warehouseTier: 2,
+  storageRackCount: 5,
   inventory: [
     { productId: 'mi_hao_hao', quantity: 15 },
     { productId: 'xa_xi_chuong_duong', quantity: 10 },

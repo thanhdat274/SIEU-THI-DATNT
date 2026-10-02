@@ -6,6 +6,8 @@ export const TILE_SIZE = 32;
 export const REFERENCE_WIDTH = 960;
 export const REFERENCE_HEIGHT = 540;
 export const COLD_WAREHOUSE_CAPACITY = 40;
+/** Số đơn vị hàng chứa được trong 1 ô kho thường (như game gốc tap-hoa-dau-hem). */
+export const UNITS_PER_WAREHOUSE_CELL = 10;
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -45,12 +47,29 @@ export interface Product {
     basePopularity: number; // 0 to 1
   };
   description: string;
+  /** Bán thành phẩm (vd. nếp ngâm, nếp chín): chỉ làm nguyên liệu, không bày bán và không có nhu cầu của khách. */
+  intermediate?: boolean;
+  /** Số ô kho chiếm cho mỗi UNITS_PER_WAREHOUSE_CELL đơn vị. Thiếu = suy từ shelfCapacity (hàng cồng kềnh = 2). */
+  warehouseSize?: number;
 }
 
 export interface InventoryItem {
   productId: string;
   quantity: number;
   lots?: StockLot[];
+}
+
+/** Mẻ sản xuất đang chạy tại một trạm bếp. Nguyên liệu đã trừ khi bắt đầu; `inputCost` là tổng giá vốn các lô đã lấy. */
+export interface ProductionJob {
+  id: string;
+  recipeId: string;
+  stationId: string;
+  startedDay: number;
+  /** Giây game còn lại cho tới khi mẻ xong. */
+  remaining: number;
+  inputCost: number;
+  /** Hạn dùng sớm nhất trong các lô nguyên liệu đã dùng (đầu ra không sống lâu hơn nguyên liệu). */
+  inputExpiresOnDay: number;
 }
 
 export interface StockLot {
@@ -286,6 +305,10 @@ export interface CustomerState {
   thief?: boolean;
   diningTableId?: string;
   diningTimeLeft?: number;
+  /** Món đã mua ngay trước khi ngồi bàn; dùng để quyết định gọi thêm đồ uống kèm (giỏ hàng đã được xóa sau thanh toán). */
+  diningProductIds?: string[];
+  /** Tòa nhà khách đang mua sắm ('main' | 'xoi'); thiếu = tiệm chính (save cũ). */
+  buildingId?: string;
 }
 
 export interface CheckoutResult {
@@ -339,7 +362,7 @@ export interface SecurityState {
   policeCases: PoliceCase[];
 }
 
-export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit';
+export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit' | 'tax';
 
 export interface LedgerEntry {
   id: string;
@@ -496,6 +519,14 @@ export interface GoalState {
   claimedWeeklyQuestIds: Record<number, string[]>; // weekNumber -> questIds
   /** Khóa `${goalId}@${năm mùa}`: mục tiêu ngày hội đã nhận trong năm đó. */
   claimedFestivalGoalKeys?: string[];
+  /** Tiến độ các chương cốt truyện có lời thoại (khác chuỗi "chuyện xóm" ở QuestState). */
+  story?: StoryState;
+}
+
+export interface StoryState {
+  /** id chương -> ngày bắt đầu chương. */
+  startedChapters: Record<string, number>;
+  claimedChapters: string[];
 }
 
 // ==========================================
@@ -531,6 +562,7 @@ export interface DailyRecord {
   theftRecovered?: number; // Tiền thu hồi từ phạt kẻ trộm và công an trong ngày (thiếu = 0)
   counterfeitLoss?: number; // Mệnh giá tiền giả nhận nhầm trong ngày (thiếu = 0)
   badDebtCost?: number; // Khoản phải thu đã xóa nợ xấu trong ngày (thiếu = 0)
+  taxPaid?: number; // Thuế đã trừ trong ngày (VAT+TNCN gộp, hộ cá thể: 1% doanh thu)
   grossProfit: number; // revenue - cogs
   netProfit: number; // revenue - cogs - spoilageCost - wagesPaid
   customersServed: number; // Distinct customers served
@@ -580,7 +612,7 @@ export interface RestockJobTarget {
   availableInInventory: number;
 }
 
-export type FixtureType = 'decor' | 'shelf_wooden' | 'shelf_glass' | 'cashier_counter' | 'refrigerator' | 'dining_table' | 'warehouse_dry' | 'warehouse_cold' | 'warehouse_receiving';
+export type FixtureType = 'decor' | 'shelf_wooden' | 'shelf_glass' | 'cashier_counter' | 'refrigerator' | 'dining_table' | 'kitchen_station' | 'warehouse_dry' | 'warehouse_cold' | 'warehouse_receiving';
 export const isWarehouseFixture = (fixture: Pick<StoreFixture, 'type'>): boolean => fixture.type.startsWith('warehouse_');
 export const isSalesFixture = (fixture: Pick<StoreFixture, 'type'>): boolean => fixture.type === 'shelf_wooden' || fixture.type === 'shelf_glass' || fixture.type === 'refrigerator';
 
@@ -613,8 +645,8 @@ export const isSlotChild = (fixture: Pick<StoreFixture, 'parentId'>): boolean =>
 /** Số ô phụ thêm cho kệ/tủ (ô chính chính là kệ cha). */
 export function extraSlotCount(fixture: Pick<StoreFixture, 'type' | 'widthTiles' | 'heightTiles' | 'slotCount'>): number {
   if (fixture.slotCount !== undefined) return Math.max(0, fixture.slotCount - 1);
-  if (fixture.type === 'shelf_wooden' || fixture.type === 'shelf_glass') return 3;
-  if (fixture.type === 'refrigerator') return fixture.widthTiles * fixture.heightTiles >= 2 ? 3 : 1;
+  if (fixture.type === 'shelf_wooden' || fixture.type === 'shelf_glass') return 11;
+  if (fixture.type === 'refrigerator') return fixture.widthTiles * fixture.heightTiles >= 2 ? 23 : 7;
   return 0;
 }
 export const slotGroup = <T extends Pick<StoreFixture, 'id' | 'parentId'>>(fixtures: readonly T[], fixture: Pick<StoreFixture, 'id' | 'parentId'>): T[] => {
@@ -631,10 +663,11 @@ export function syncSlotChildren(fixtures: StoreFixture[]): StoreFixture[] {
       const id = `${parent.id}#s${n}`;
       const existing = fixtures.find(item => item.id === id);
       out.push({
-        id, type: parent.type, widthTiles: parent.widthTiles, heightTiles: parent.heightTiles, maxCapacity: Math.max(6, Math.round(parent.maxCapacity / 2)),
+        id, type: parent.type, widthTiles: parent.widthTiles, heightTiles: parent.heightTiles,
         currentStock: 0, stockLots: [], ...existing,
         tileX: parent.tileX, tileY: parent.tileY, rotation: parent.rotation, parentId: parent.id, label: `${parent.label} · ô ${n}`,
         wear: parent.wear, broken: parent.broken,
+        maxCapacity: Math.min(20, parent.maxCapacity),
       });
     }
   }
@@ -664,6 +697,10 @@ export interface PlayerData {
   direction: Direction;
   activeTitle?: string;
   unlockedTitles?: string[];
+  /** XP dư tích lũy hướng tới sao prestige tiếp theo (chỉ tăng khi đã ở cấp tối đa); thiếu = 0. */
+  prestigeXp?: number;
+  /** Số sao prestige đã đạt (0..PRESTIGE_MAX_STARS); thiếu = 0. */
+  prestigeStars?: number;
 }
 
 export interface TitleDef {
@@ -839,6 +876,12 @@ export interface SaveGameData {
   customerCredits?: CustomerCreditAccount[];
   customerCreditSequence?: number;
   diningDirtyTableIds?: string[];
+  productionJobs?: ProductionJob[];
+  productionJobSequence?: number;
+  /** Giá bán thực đã chốt cuối mỗi ngày theo sản phẩm (tối đa 60 điểm gần nhất); ngày không có điểm = thiếu dữ liệu. */
+  priceHistory?: Record<string, Array<{ day: number; price: number }>>;
+  /** Số lượt khách bước vào từng ô (khóa "x,y") theo ngày, giữ tối đa 7 ngày gần nhất; chỉ tổng hợp, không lưu đường đi cá nhân. */
+  heatmap?: Record<number, Record<string, number>>;
   partyOrders?: PartyOrderState;
   goals?: GoalState;
   skills?: SkillState;
@@ -846,6 +889,10 @@ export interface SaveGameData {
   reviews?: CustomerReview[];
   /** An ninh: camera, báo công an, sự cố gần đây và hồ sơ công an đang mở. */
   security?: SecurityState;
+  /** Chỉ số tier kho hàng (0–3). Thiếu = 0. */
+  warehouseTier?: number;
+  /** Số kệ kho storage_rack đã mua. Thiếu = 0. */
+  storageRackCount?: number;
 }
 
 export interface RegularCustomerProgress {
@@ -894,6 +941,8 @@ export interface GameTileMap {
   layers: TileMapLayer[];
   collisionLayer: boolean[]; // true if solid
   storeBounds?: { left: number; right: number; top: number; bottom: number };
+  /** Các tòa nhà trên bản đồ và trạng thái mở (hình học nằm ở BUILDINGS của game-data). */
+  buildings?: Array<{ id: string; open: boolean }>;
   /** Quầy ăn uống đã mở, để renderer vẽ; va chạm đã nằm sẵn trong collisionLayer. */
   stalls?: Array<{ id: string; tileX: number; tileY: number; widthTiles: number }>;
 }
@@ -951,6 +1000,7 @@ export type GameCommandPayload =
   | { type: 'unstock'; fixtureId: string; quantity: number }
   | { type: 'checkout'; checkoutId: string; fixtureId: string; onCredit?: boolean; dineIn?: boolean }
   | { type: 'repay_customer_credit'; creditId: string }
+  | { type: 'start_production'; recipeId: string; stationId: string }
   | { type: 'clean_dining_table'; fixtureId: string }
   | { type: 'assign_dining_cleanup'; staffId: string; fixtureId: string }
   | { type: 'set_price'; productId: string; price: number | null }
@@ -964,6 +1014,8 @@ export type GameCommandPayload =
       | { type: 'buy_plot'; plotId: string }
       | { type: 'buy_decor'; decorId: string }
       | { type: 'buy_fixture'; shopId: string; tileX: number; tileY: number; rotation: 0 | 90 | 180 | 270 }
+      | { type: 'buy_warehouse_tier'; tier: number }
+      | { type: 'buy_storage_rack' }
     > }
   | { type: 'buy_plot'; plotId: string }
   | { type: 'claim_quest'; questId: string }
@@ -978,10 +1030,14 @@ export type GameCommandPayload =
   | { type: 'claim_goal'; goalId: string }
   | { type: 'claim_weekly_quest'; questId: string }
   | { type: 'claim_festival_goal'; goalId: string }
+  | { type: 'begin_story_chapter'; chapterId: string }
+  | { type: 'claim_story_chapter'; chapterId: string }
   | { type: 'choose_perk'; perkId: string }
   | { type: 'set_title'; titleId?: string }
   | { type: 'maintain_fixture'; fixtureId: string; action: 'service' | 'repair' | 'replace' }
-  | { type: 'security_action'; action: 'buy_camera' | 'police_on' | 'police_off' };
+  | { type: 'security_action'; action: 'buy_camera' | 'police_on' | 'police_off' }
+  | { type: 'buy_warehouse_tier'; tier: number }
+  | { type: 'buy_storage_rack' };
 
 export interface GameCommand {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
@@ -1030,7 +1086,7 @@ export function isGameAvatar(value: unknown): value is GameAvatar {
     (value.displayName === undefined || (typeof value.displayName === 'string' && value.displayName.length <= 64));
 }
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 3;
+export const CURRENT_SAVE_SCHEMA_VERSION = 4;
 
 export interface SaveValidationResult {
   valid: boolean;
@@ -1040,7 +1096,7 @@ export interface SaveValidationResult {
 }
 
 export function isSaveGameData(value: unknown): value is SaveGameData {
-  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
     return false;
   }
@@ -1080,8 +1136,8 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
       error: `Bản lưu thuộc phiên bản tương lai (${value.schemaVersion}) chưa được hỗ trợ`,
     };
   }
-  // v1/v2 chỉ thiếu các trường tùy chọn; simulation tự chuẩn hóa khi nạp (lô hàng, kệ, kho...).
-  if ((value.schemaVersion === 1 || value.schemaVersion === 2) && isSaveGameData(value)) {
+  // v1/v2/v3 chỉ thiếu các trường tùy chọn; simulation tự chuẩn hóa khi nạp (lô hàng, kệ, kho...).
+  if ((value.schemaVersion === 1 || value.schemaVersion === 2 || value.schemaVersion === 3) && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrated.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
     migrated.storeLayout.storedFixtures = migrated.storeLayout.storedFixtures ?? [];
@@ -1126,7 +1182,7 @@ export interface TransferShelfResult {
 export interface UnstockShelfResult {
   success: boolean;
   actualQuantity: number;
-  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'empty_shelf' | 'invalid_amount' | 'cold_storage_full' | 'success';
+  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'empty_shelf' | 'invalid_amount' | 'cold_storage_full' | 'ambient_storage_full' | 'success';
 }
 
 export interface GameCommandResult {
@@ -1168,6 +1224,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'unstock': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
     case 'checkout': return nonEmptyString(p.checkoutId) && nonEmptyString(p.fixtureId) && (p.onCredit === undefined || typeof p.onCredit === 'boolean') && (p.dineIn === undefined || typeof p.dineIn === 'boolean');
     case 'repay_customer_credit': return nonEmptyString(p.creditId);
+    case 'start_production': return nonEmptyString(p.recipeId) && nonEmptyString(p.stationId);
     case 'clean_dining_table': return nonEmptyString(p.fixtureId);
     case 'assign_dining_cleanup': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
     case 'set_price': return nonEmptyString(p.productId) && (p.price === null || (Number.isSafeInteger(p.price) && Number(p.price) > 0));
@@ -1197,10 +1254,14 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'claim_goal': return nonEmptyString(p.goalId);
     case 'claim_weekly_quest': return nonEmptyString(p.questId);
     case 'claim_festival_goal': return nonEmptyString(p.goalId);
+    case 'begin_story_chapter':
+    case 'claim_story_chapter': return nonEmptyString(p.chapterId);
     case 'choose_perk': return nonEmptyString(p.perkId);
     case 'set_title': return p.titleId === undefined || nonEmptyString(p.titleId);
     case 'security_action': return p.action === 'buy_camera' || p.action === 'police_on' || p.action === 'police_off';
     case 'maintain_fixture': return nonEmptyString(p.fixtureId) && (p.action === 'service' || p.action === 'repair' || p.action === 'replace');
+    case 'buy_warehouse_tier': return Number.isSafeInteger(p.tier) && Number(p.tier) >= 1 && Number(p.tier) <= 3;
+    case 'buy_storage_rack': return true;
     default: return false;
   }
 }

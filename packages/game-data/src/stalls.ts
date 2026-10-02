@@ -1,3 +1,4 @@
+import { nullProto } from './safe-map';
 export interface StallIngredient {
   productId: string; // hàng lấy từ nhà kho
   perServing: number; // đơn vị hàng cho mỗi suất (có thể lẻ, ví dụ 0.2 hộp)
@@ -34,4 +35,4 @@ export const STALLS: readonly StallDefinition[] = [
   },
 ];
 
-export const STALL_MAP: Record<string, StallDefinition> = Object.fromEntries(STALLS.map(stall => [stall.id, stall]));
+export const STALL_MAP: Record<string, StallDefinition> = nullProto(Object.fromEntries(STALLS.map(stall => [stall.id, stall])));

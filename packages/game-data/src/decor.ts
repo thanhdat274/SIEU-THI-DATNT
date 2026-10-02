@@ -1,3 +1,4 @@
+import { nullProto } from './safe-map';
 export type DecorSlot = 'sign' | 'wall' | 'floor' | 'counter';
 
 export interface DecorDef {
@@ -35,4 +36,4 @@ export const DECOR: DecorDef[] = [
 export const DECOR_ATTRACTION_MAX = 100;
 /** Hệ số khách = 1 + điểm thu hút / DIVISOR (tối đa +25%). */
 export const DECOR_ATTRACTION_DIVISOR = 400;
-export const DECOR_MAP: Record<string, DecorDef> = Object.fromEntries(DECOR.map(item => [item.id, item]));
+export const DECOR_MAP: Record<string, DecorDef> = nullProto(Object.fromEntries(DECOR.map(item => [item.id, item])));

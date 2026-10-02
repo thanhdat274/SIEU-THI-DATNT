@@ -32,6 +32,10 @@ export function runMultiplayerSchemaTests() {
   assert.equal(isGameSnapshot(JSON.parse(JSON.stringify(snapshot))), true);
   assert.equal(isGameCommand({ ...command, payload: { ...command.payload, quantity: 0 } }), false);
   assert.equal(isGameCommand({ ...command, protocolVersion: 2 }), false);
+  // Lệnh mua kho/kệ kho phải qua được validator (trước đây thiếu case nên server luôn trả invalid).
+  assert.equal(isGameCommand({ ...command, payload: { type: 'buy_warehouse_tier', tier: 3 } }), true);
+  assert.equal(isGameCommand({ ...command, payload: { type: 'buy_warehouse_tier', tier: 9 } }), false);
+  assert.equal(isGameCommand({ ...command, payload: { type: 'buy_storage_rack' } }), true);
   assert.equal(isBusinessState({ ...business, save: { ...business.save, player: { ...business.save.player, money: -1 } } }), false);
   assert.equal(isGameWorld({ ...world, businessIds: ['another-business'] }), true); // Membership is checked against the snapshot.
   assert.equal(isGameSnapshot({ ...snapshot, world: { ...world, businessIds: ['another-business'] } }), false);

@@ -1,6 +1,6 @@
 # THONG-KE — Bảng theo dõi phát triển & hiện trạng triển khai
 
-> **Bổ sung tiến độ 2026-10-01:** OpenSpec `reference-gameplay-expansion`: code tiền giả, tín dụng khách quen và dine-in MVP đã có trong working tree; dine-in cho khách chọn ăn tại bàn bằng món đóng gói, lưu occupancy/bàn bẩn, dọn bởi người chơi hoặc nhân viên, server replay. Tín dụng có hạn mức, tài khoản tuần tự, hạn trả/quá hạn/nợ xấu, thu hồi, ledger/save và server replay. Chưa chạy test/typecheck/build/browser QA trong lượt này (đang gom test về cuối), balance/thời lượng provisional. Xem `tổng hợp.md` và `openspec/changes/reference-gameplay-expansion`.
+> **Bổ sung tiến độ 2026-10-01:** OpenSpec `reference-gameplay-expansion`: code tiền giả, tín dụng khách quen và dine-in MVP đã có trong working tree; dine-in cho khách chọn ăn tại bàn bằng món đóng gói, lưu occupancy/bàn bẩn, dọn bởi người chơi hoặc nhân viên, server replay. Tín dụng có hạn mức, tài khoản tuần tự, hạn trả/quá hạn/nợ xấu, thu hồi, ledger/save và server replay. Chưa chạy test/typecheck/build/browser QA trong lượt này (đang gom test về cuối), balance/thời lượng provisional. Bổ sung 02/10/2026: Wave B sản xuất công thức (bếp nướng/ấm nước, 3 công thức, mẻ lưu save, server replay, UI trạm bếp) đã có code, `tsc -b` và test lõi sản xuất PASS; chưa browser QA. Wave C prestige (sao sau cấp 35, HUD, test lõi) và Wave D (biểu đồ giá/doanh số, heatmap, checklist, âm thanh, replay lõi) đã có code, chưa browser QA. Xem `tổng hợp.md` và `openspec/changes/reference-gameplay-expansion`.
 
 > **Tiệm Tạp Hóa Đầu Hẻm** (`tiem-tap-hoa-dau-hem` 0.1.0). Tài liệu sống: đọc file này trước khi cập nhật, giữ cấu trúc, không xóa lịch sử, cập nhật trạng thái tại chỗ và tính lại mục 9 sau mỗi đợt lớn.
 >
@@ -25,7 +25,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 |---|---|
 | `packages/shared` | Kiểu dữ liệu, `SaveGameData` (schema **3**), validator runtime, giao thức multiplayer (protocol 1) |
 | `packages/game-data` | Dữ liệu tĩnh: catalog (`catalog-manifest.ts` ~3.7k dòng sinh bằng script), nhà cung cấp, mùa/sự kiện, khách quen, kỹ năng, danh hiệu, bản đồ, tiến cấp 1–35, thời tiết |
-| `packages/game-core` | Logic thuần, không DOM: `GameSimulation` (`simulation.ts` 2.940 dòng), khách, kho/lô, ledger, thị trường, thời tiết, ánh sáng pha, `WorldRuntime` (co-op), thuế (registry) |
+| `packages/game-core` | Logic thuần, không DOM: `GameSimulation` (`simulation.ts` ≈3.920 dòng (03/10/2026; đã tách 5 Manager)), khách, kho/lô, ledger, thị trường, thời tiết, ánh sáng pha, `WorldRuntime` (co-op), thuế (registry) |
 | `packages/game-renderer` | Pixi: `viewport.ts` (1.368 dòng), texture procedural, `shop-lighting.ts`, camera, bóng cây |
 | `apps/web` | React UI (`App.tsx` 1.508 dòng), modal, Dexie save, hook WebSocket, service worker/manifest |
 | `apps/server` | NestJS dựng bằng decorator thủ công (`bootstrap.ts`), Firebase token guard, `WorldRepository` (Mongo), `WorldGateway` (WS) |
@@ -94,7 +94,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | S42 | Content editor (catalog/map) | ⚪ | `tools/content-editor/README.md` | Chỉ README. |
 | S43 | CI/CD, formatter | ⚪ | — | Không có `.github`, không formatter. |
 | S44 | Nhật ký đánh giá bằng chữ / khách quay lại theo review | ⚪ | — | Mới có sao + lý do walkout. |
-| S45 | Nhiều cơ sở/ghé thăm tiệm khác | ⚪ | — | Được ghi "hướng sau". |
+| S45 | Nhiều cơ sở/ghé thăm tiệm khác | 🟡 | `game-data/buildings.ts`, `map.ts`, `land.ts`, `game-core/store-layout.ts`, `customers.ts`, `renderer/viewport.ts`, `StoreLayoutModal.tsx` | Mới có **một** cơ sở thêm: tiệm xôi riêng trên cùng bản đồ (OpenSpec `xoi-shop-same-land-strip`, xem `tổng hợp.md` 02/10/2026). Chợ, cổng trường, khu công nghiệp và luân chuyển nội bộ vẫn chưa có. |
 
 ---
 
@@ -122,7 +122,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | I-13 | Mưa chỉ dùng ngưỡng 0,4 | Low | Mở |
 | I-14 | Khóa bí mật trong thư mục dự án | Low | Mở |
 | I-15 | Server không giới hạn payload/tần suất | Medium | Xử lý một phần 2026-10-01 |
-| I-16 | Chưa có migration schema world Mongo | Medium | Mở |
+| I-16 | Chưa có migration schema world Mongo | Medium | Đã có code (03/10/2026): `world-migrations.ts` chạy lúc khởi động server; chưa chạy thật (mới dry-run) |
 | I-17 | Thiếu tài liệu triển khai/vận hành | Low | Mở |
 | I-18 | A11y/cảm ứng chưa kiểm | Low | Mở |
 | I-19 | Đèn tín hiệu: QA browser dở, pha không đồng bộ co-op (chủ ý) | Medium | Mở |
@@ -231,6 +231,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Impact:** Hồi quy co-op không tự phát hiện.
 - **Related Files:** `package.json`, `apps/server/package.json`.
 - **Root Cause:** Chưa có CI.
+- **Tiến độ 2026-10-03 (một phần):** đã có script `test:all` / `test:all:db` và `.github/workflows/ci.yml`. `yarn test:all` chạy thật PASS 03/10/2026 (sau khi sửa 3 hồi quy setter Manager no-op, xem `tổng hợp.md`). CI chạy thật trên PR #2 (02/10/2026): run `37039000966` xanh cả hai job, gồm test Mongo. Còn lại: merge vào `main` để CI chạy trên push.
 - **Suggested Fix:** Script `test:all`, Mongo in-memory/service trong CI.
 - **Priority:** Medium
 - **Verification:** Xác nhận qua `package.json`.
@@ -269,8 +270,9 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Đã làm 2026-10-01:** xuất/nhập file JSON. `apps/web/src/save-file.ts` (phong bì `{format, formatVersion, exportedAt, save}`, `parseSaveFile` từ chối JSON hỏng/file lạ/định dạng tương lai/schema tương lai/save không qua `validateSaveGameData`/file >5 MB, nâng save schema cũ), `db.ts` `replaceSaveWithImported` (transaction, giữ bản cũ làm backup, revision đi tiếp), `App.tsx` `handleExportSave`/`handleImportSave`, `SaveModal.tsx` có nút Xuất/Nhập + hộp xác nhận hiện tóm tắt (ngày, cấp, tiền, doanh thu). Bị chặn khi đang chơi online. Test: `apps/web/src/save-file.test.ts` (script `yarn --cwd apps/web test`, nằm trong `test:all`). **Đã xem trong Browser pane (dev server, desktop):** xuất ra file đúng định dạng (25,8 KB), file hỏng báo lỗi rõ, nhập file sửa tiền/ngày hiện xác nhận đúng, sau khi đồng ý HUD đổi, IndexedDB có bản dự phòng cũ + bản mới với revision liên tục; không có lỗi console. Save dev đã được nhập lại về trạng thái ban đầu sau khi thử.
 - **Ba ô lưu + khóa nhiều tab (2026-10-01):** `db.ts` có `SAVE_SLOT_IDS` (ô 1 giữ khóa cũ `local_save_default` nên save hiện có không cần migration; ô 2/3 là `local_save_slot_2/3`), mỗi ô một backup (`backupKeyFor`), `getActiveSlotId/setActiveSlotId` (ô chọn giữ trong bộ nhớ từng tab, nhớ qua localStorage), `listSaveSlots`, `deleteSaveSlot`; mọi hàm đọc/ghi/nhập/xuất dùng ô đang chọn. `slot-lock.ts` dùng Web Locks API (`navigator.locks`, `ifAvailable`): tab giữ khóa ô khi vào chơi một mình, nhả khi về menu hoặc đóng tab; tab khác thấy ô "Đang mở ở thẻ khác" và không vào được (kể cả "Bắt đầu tiệm mới", xin khóa trước khi ghi đè). `LoginScreen.tsx` có chọn ô, xóa ô (xác nhận), làm mới khi quay lại tab. **Đã xem trong Browser pane (hai tab):** chip ba ô đúng trạng thái; tab thứ hai thấy ô đang mở bị khóa và bấm tiếp tục thì ở lại menu kèm thông báo; về menu ở tab đầu thì tab hai vào được ô đó sau khi làm mới; save ô 2 lưu riêng cùng backup riêng, ô 1 không bị đụng; xóa ô 2 xóa cả backup; dữ liệu thử đã dọn. Ô 1 lúc thử đang được một tab khác chơi (có khóa của tab đó), cũng chứng minh khóa chéo tab.
 - **Điều chỉnh menu (01/10/2026):** `LoginScreen.tsx` chỉ hiện bộ chọn ô khi ít nhất hai ô có save, để menu một tiệm gọn hơn. "Bắt đầu tiệm mới" dùng ô trống trước; nếu cả ba đã có save thì mới xác nhận ghi đè ô đang chọn. Đây là thay đổi code chưa được kiểm tra browser/build trong lượt này. Save chơi đơn lưu cục bộ trong IndexedDB; Google login không đồng nghĩa đồng bộ cloud realtime cho save đó. Hẻm co-op là luồng online/server riêng.
-- **Còn lại / giới hạn:** chưa có test tự động cho `db.ts`/`slot-lock.ts` (cần IndexedDB/Web Locks giả; `db.ts` import `@game/data` không chạy được dưới `tsx` ESM của `apps/web`) — mới kiểm bằng Browser pane desktop; trình duyệt không có Web Locks thì không khóa (còn kiểm revision trong `persistSave`, ghi đè nhau vẫn có thể báo lỗi 'Bản lưu đã thay đổi'); chưa kiểm Safari/Firefox/mobile; không đổi tên ô, không sao chép ô; nhập file (`replaceSaveWithImported`) và "Khôi phục" dùng ô đang chọn; chọn ô ở menu chưa cập nhật các tab đang mở ở menu theo thời gian thực (chỉ khi tab lấy lại focus); `weatherSeed = save.id` nên mỗi ô có thời tiết khác nhau (ID ô khác nhau); fallback `'local_save_default'` còn ở vài chỗ trong `App.tsx` chỉ dùng làm ID tạm cho snapshot khôi phục/bố cục, không ghi DB; file không mã hóa/không ký nên người chơi có thể sửa tay (chỉ dùng cho save cục bộ, không đưa lên hẻm online); chưa kiểm trên mobile/iOS Safari (tải file, chọn file) và chưa kiểm khi save lớn gần 5 MB; ngoài `validateSaveGameData` chưa có kiểm tra bất biến nội dung (tiền cực lớn vẫn nhập được); lúc nhập qua giao diện tôi đẩy file bằng script `DataTransfer`, chưa dùng hộp chọn file thật.
-- **Verification:** `save-file.test.ts` PASS, `tsc` web sạch, `eslint` sạch cho các file đã sửa; thao tác thủ công như trên.
+- **Điều chỉnh giao diện (2026-10-02):** hàng chọn ô trước đó luôn hiện (rối mắt); commit `b0b2bfa` của chủ dự án đã ẩn khi có dưới 2 bản lưu nhưng khi đó không còn cách tạo ô thứ hai. Nay `LoginScreen.tsx` chỉ hiện hàng ô khi có từ hai bản lưu, hoặc bản lưu duy nhất không ở ô đang chọn, hoặc người chơi bấm liên kết "+ Thêm ô lưu khác" (hiện khi hàng đang ẩn). Đã xem trong Browser pane: một bản lưu thì hàng ẩn + có liên kết, bấm thì hiện ba ô. **Chưa xem được trường hợp tự hiện khi có hai bản lưu** (trang bị tải lại giữa chừng do dev server đổi file); logic dùng cùng điều kiện đã có.
+- **Còn lại / giới hạn:** test tự động cho `db.ts`/`slot-lock.ts` đã có (xem Verification) nhưng chạy trên IndexedDB/Web Locks giả, còn Browser pane desktop là bằng chứng duy nhất trên trình duyệt thật; trình duyệt không có Web Locks thì không khóa (còn kiểm revision trong `persistSave`, ghi đè nhau vẫn có thể báo lỗi 'Bản lưu đã thay đổi'); chưa kiểm Safari/Firefox/mobile; không đổi tên ô, không sao chép ô; nhập file (`replaceSaveWithImported`) và "Khôi phục" dùng ô đang chọn; chọn ô ở menu chưa cập nhật các tab đang mở ở menu theo thời gian thực (chỉ khi tab lấy lại focus); `weatherSeed = save.id` nên mỗi ô có thời tiết khác nhau (ID ô khác nhau); fallback `'local_save_default'` còn ở vài chỗ trong `App.tsx` chỉ dùng làm ID tạm cho snapshot khôi phục/bố cục, không ghi DB; file không mã hóa/không ký nên người chơi có thể sửa tay (chỉ dùng cho save cục bộ, không đưa lên hẻm online); chưa kiểm trên mobile/iOS Safari (tải file, chọn file) và chưa kiểm khi save lớn gần 5 MB; ngoài `validateSaveGameData` chưa có kiểm tra bất biến nội dung (tiền cực lớn vẫn nhập được); lúc nhập qua giao diện tôi đẩy file bằng script `DataTransfer`, chưa dùng hộp chọn file thật.
+- **Verification:** `save-file.test.ts` PASS; `db.test.ts` + `slot-lock.test.ts` PASS 2026-10-02 (`yarn --cwd apps/web test`: `fake-indexeddb` làm devDependency của apps/web, `tsconfig.test.json` ánh xạ `@game/data` sang `src/test-stubs/game-data.ts` vì gói thật không import được dưới ESM của `tsx`; `navigator.locks` giả tự viết nên chưa phản ánh hành vi Web Locks của từng trình duyệt), `tsc` web sạch, `eslint` sạch cho các file đã sửa; thao tác thủ công như trên.
 
 ### Issue: I-13 Hành vi mưa/đường chỉ dùng ngưỡng cố định
 
@@ -547,7 +549,7 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 
 ## 7. Nợ kỹ thuật
 
-- **Problem:** `simulation.ts` 2.940 dòng gom kho, khách, ledger, quầy, thời tiết…
+- **Problem:** `simulation.ts` ≈3.920 dòng (03/10/2026; đã tách 5 Manager) gom kho, khách, ledger, quầy, thời tiết…
   - **Current Implementation:** Một class lớn.
   - **Risk:** Khó đồng bộ co-op, khó test cô lập, xung đột merge.
   - **Recommended Direction:** Tách module theo miền (đã có `stock.ts`, `ledger`…), giữ API.
@@ -591,6 +593,26 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 ---
 
 ## 8. Lịch sử phát triển
+
+## 2026-10-02 (lượt 15 — sửa lỗi bãi bốc dỡ làm test:all đỏ)
+
+### Changed
+- `store-logistics.ts`: nhân viên bốc hàng đi bước lớn hơn khoảng cách còn lại (`dt` lớn, ví dụ 0,2 s ở `store-logistics.test.ts`) nên vượt qua điểm đích rồi dao động, không bao giờ vào ngưỡng "đã đến" (4 px) và chuyến không hoàn tất. Ngưỡng nay là `max(4, walkSpeed*dt)` ở cả bốc và xếp hàng. Lỗi có sẵn từ trước: xác nhận trên worktree sạch trước khi sửa.
+
+### Verified
+- `yarn --ignore-engines test:all` PASS toàn bộ (exit 0) trên working tree có thay đổi chưa commit của phiên khác. Chưa chạy CI.
+- Chạy 2026-10-02: `yarn --ignore-engines build` (server `tsc -p tsconfig.build.json` + web `tsc && vite build`, 889 modules) PASS, exit 0, 6,12 s, trên working tree có thay đổi chưa commit của phiên khác nên không phải bản commit sạch. Bundle: index 1.090,08 kB (gzip 305,47), vendor-pixi 534,54 kB, vendor-firebase 154,20 kB, css 84,56 kB. Vẫn cảnh báo chunk >500 kB và `api.ts` import tĩnh+động (I-10 còn nguyên); index tăng mạnh so với 710,53 kB ở lần build trước (01/10/2026), nguyên nhân đã tách (02/10/2026, build có sourcemap rồi cộng byte đầu ra theo file nguồn): không có một thay đổi đột biến mà là dữ liệu và UI mới cộng dồn vào cùng một chunk. Lớn nhất trong 1.090 kB: react-dom 203 kB, `game-data/products.ts` 95 kB (catalog ~3.300 dòng mới so với 24a2fab), dexie 93 kB, `game-core/simulation.ts` 87 kB, `game-renderer/ref-pixelart.ts` 57 kB (mới, dữ liệu pixel art), `App.tsx` 38 kB, `viewport.ts` 37 kB, `premium-textures.ts` 36 kB, `LoginScreen.tsx` 32 kB, rồi các modal Sắp xếp/Sơ đồ kệ/Nhập hàng (21+11+15 kB). Cộng phần tăng của products + ref-pixelart + premium-textures + simulation + các modal mới ≈ 380 kB, khớp mức tăng 710→1.090 kB; đây là ước lượng từ diff và sourcemap, chưa build lại từng commit cũ để đối chiếu. **Đã làm một phần cùng ngày (code trong working tree, chưa commit vì `App.tsx` đang lẫn thay đổi chưa commit của phiên khác):** `App.tsx` nạp 20 modal ít mở bằng `React.lazy` (helper `lazyModal` + một `<Suspense fallback={null}>` bao khối modal; giữ import tĩnh `ShelfModal`, `CashierModal`, `WarehouseModal`, `InventoryModal`). Kết quả build web: index 1.090,08 → 611,30 kB (gzip 305,47 → 181,52), thêm 20 chunk modal nhỏ (2–23 kB) và tách css Layout/Planogram; `tsc -p apps/web` sạch, `yarn --cwd apps/web test` PASS; dev server: modal Lưu và Nhập hàng nạp và mở đúng, không lỗi console (chưa mở từng modal còn lại, chưa đo thời gian nạp chunk khi mạng chậm). index vẫn >500 kB nên cảnh báo chunk lớn còn. **Tách `ref-pixelart.ts` (02/10/2026, đã commit):** `PRODUCT_SPRITES` (~2.160 dòng, 335 sprite món) chuyển sang `game-renderer/src/product-sprites.ts`; không module nào import nó (chỉ `FURNITURE_SPRITES`/`PALETTE` được dùng qua `fixture-preview.ts`) nên bundler loại khỏi bản build: index 611,30 → 561,67 kB (gzip 172,30). Dữ liệu giữ nguyên (so `deepEqual` với bản cũ: 335 sprite món, 25 nội thất, `PALETTE`). **Không tách `products.ts` thành chunk nạp sau:** `PRODUCT_MAP`/`ALL_PRODUCTS` được import đồng bộ ở 61 file (simulation, UI, tutorial) và game cần ngay khi vào tiệm, nên chỉ tách được nếu đổi sang nạp bất đồng bộ hoặc tách riêng "màn menu" và "màn chơi" ở `App.tsx` (việc lớn, chưa làm). `furnitureSpriteTexture` dùng đồng bộ trong `viewport.ts`, nạp muộn sẽ phải vẽ lại. **`manualChunks` cho `dexie` và `react` (02/10/2026, đã commit):** `vite.config.ts` thêm chunk `vendor-dexie` (95 kB, gzip 31) và `vendor-react` (chỉ `react`/`react-dom`/`scheduler`, 219 kB, gzip 68; không gom thư viện khác để tránh vòng phụ thuộc đã gây "React undefined" như ghi chú cũ trong file). index 561,67 → 255,44 kB (gzip 75,74); tổng không giảm, nhưng thư viện ít đổi được cache riêng và tải song song. Kiểm chứng: `tsc` sạch, build PASS, `vite preview` bản production: menu hiển thị, bắt đầu tiệm mới vào được game (Pixi vẽ, HUD, kho), không có "React undefined". Console có lỗi "An unknown error occurred when fetching the script" ở cả bản này; chưa tìm ra nguồn (chunk, sw.js, manifest và icon đều trả 200; nghi do Browser pane/service worker, chưa kiểm chứng, cùng loại lỗi 500 chưa giải thích ở I-12). Còn lại: tách `products.ts`/`ref-pixelart.ts` thành chunk nạp sau, `manualChunks` cho `dexie`/`react-dom`; I-10. Node 20.19 cục bộ thấp hơn `engines` >=22, nên dùng `--ignore-engines`.
+
+## 2026-10-02 (lượt 14 — test tự động db.ts và slot-lock.ts)
+
+### Changed
+- `apps/web/src/db.test.ts`, `slot-lock.test.ts`, `test-stubs/game-data.ts`, `tsconfig.test.json`; script `test` của apps/web; devDependency `fake-indexeddb`.
+
+### Verified
+- `yarn --ignore-engines --cwd apps/web test` PASS (4 file); `tsc -p apps/web` sạch. Chưa chạy lại `test:all` toàn repo/CI.
+
+### Remaining
+- Kiểm trình duyệt khác/mobile, đặt tên/sao chép ô.
 
 ## 2026-10-01 (lượt 13 — I-12 ba ô lưu và khóa nhiều tab)
 

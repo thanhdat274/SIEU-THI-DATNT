@@ -8,8 +8,8 @@
 
 ## Plan sau: chọn lọc gameplay từ game tham khảo — 01/10/2026
 
-- OpenSpec `reference-gameplay-expansion` đang triển khai theo wave. Đã có code tiền giả, tín dụng khách quen và dine-in MVP (đồ ăn đóng gói, khách đi bàn, bàn bẩn, dọn bởi người chơi/nhân viên, server replay). Chưa chạy kiểm chứng; tham số kinh tế/thời lượng provisional. Recipe/production, prestige, biểu đồ, heatmap, checklist, âm thanh, replay và engine thuế còn chờ; test/build/playtest được gom về wave cuối theo yêu cầu.
-- Chuỗi chi nhánh, loại hình cửa hàng và luân chuyển nội bộ để plan sau; chờ thiết kế mở rộng trên cùng khu đất. Tách từng wave thành change riêng trước khi bắt đầu code.
+- OpenSpec `reference-gameplay-expansion` đang triển khai theo wave. Đã có code tiền giả, tín dụng khách quen và dine-in MVP (đồ ăn đóng gói, khách đi bàn, bàn bẩn, dọn bởi người chơi/nhân viên, server replay). Chưa chạy kiểm chứng; tham số kinh tế/thời lượng provisional. Recipe/production đã có code (bếp nướng/ấm nước, 3 công thức, test lõi PASS, chưa browser QA); prestige và công cụ quản lý (biểu đồ, heatmap, checklist, âm thanh, replay lõi) đã có code, test lõi PASS, chưa browser QA; biểu đồ, heatmap, checklist, âm thanh, replay và engine thuế còn chờ; test/build/playtest được gom về wave cuối theo yêu cầu.
+- Tiệm xôi riêng trên cùng dải đất (OpenSpec `xoi-shop-same-land-strip`): 23/26 task xong ngày 02/10/2026, mua tiệm, bản đồ hai tòa nhà, khách/hàng đợi/bàn theo tòa, nhân viên đi giữa hai tòa, editor có tab tòa nhà. Còn mở: avatar đi bộ vào tiệm xôi, QA điện thoại/chạm, co-op hai client thật, (đã đo và chỉnh cân bằng: thêm 15% khách tự sinh cho tiệm xôi, ≈34 phần/ngày, hoàn vốn ≈17–33 ngày, provisional) một ngày bán thật trên trình duyệt. Chi nhánh khác (chợ, trường, khu công nghiệp) và luân chuyển nội bộ vẫn để plan sau; chờ thiết kế mở rộng trên cùng khu đất. Tách từng wave thành change riêng trước khi bắt đầu code.
 
 ## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)
 
@@ -17,7 +17,7 @@
 - **Co-op:** ưu tiên I-01 (replay mọi lệnh), I-15, I-16, I-05; sau đó mới tới bảng xếp hạng thật (F-05, phụ thuộc I-01).
 - **Chất lượng:** CI, `test:all`, test `apps/web`, a11y (I-09, I-18, S32, S43).
 - **Vận hành:** `docs/deploy.md`, quản lý khóa bí mật (I-17, I-14).
-- **Ý tưởng sau:** F-01, F-02, F-06…F-11 trong `THONG-KE.md` mục 5.
+- **Ý tưởng sau:** F-01, F-06…F-11 trong `THONG-KE.md` mục 5 (F-02 customer reviews đã hoàn tất 02/10/2026).
 
 ## Kết quả rà soát co-op/perk — 01/10/2026
 
@@ -171,14 +171,25 @@ Phase 7 giữ định hướng Firebase/NestJS/MongoDB, triển khai phần cầ
 
 ---
 
+### [>] OpenSpec `seasonal-daylight-tree-shadows` — 02/10/2026 (Code + Tests PASS)
+- [x] **Nhóm 1** (Mốc mọc/lặn theo mùa): bảng 12 mốc nội suy tuần hoàn trên năm 120 ngày (`lighting-phase.ts`), test xác định/không cày/lặp theo năm/độ dài ngày 11–13h.
+- [x] **Nhóm 2** (Vị trí mặt trời): `getSolarPosition` (vĩ độ 10,8°), azimuth/elevation/shadowDir, test đỉnh 12:00/mọc-lặn ≈ 0/đông-tây ngả đúng/nối 24h.
+- [x] **Nhóm 3** (Cây là dữ liệu bản đồ): `TREE_PROPS`/`TREE_SPRITE_OFFSET` trong `game-data/map.ts`, sprite và va chạm không trùng cửa/đỗ/đèn.
+- [x] **Nhóm 4** (Bóng cây động): `computeTreeShadow` thuần, cache theo ngưỡng 1°+mưa, elip theo độ cao mặt trời (dài 3,5 ô max), mờ nắng/mưa, chỉ vẽ lại khi góc đổi. Đo hiệu năng desktop: không đáng kể (~±3% nhiễu CPU luồng chính).
+- [x] **Nhóm 5.1** (typecheck/test/build): PASS (7/7 suite, 0 fail).
+- [ ] **5.2** Browser QA mobile: bóng đổi hướng/mùa/đêm/mưa trên thiết bị thật; mới kiểm một phần desktop.
+- [ ] **5.3** Sync tài liệu — ĐÃ CẬP NHẬT (02/10/2026).
+
+---
+
 ### [>] GIAI ĐOẠN 10: QUẦY ĂN UỐNG & ĐỊNH HƯỚNG MULTIPLAYER
 - [>] Quầy cà phê vợt và bánh mì nướng muối ớt: mở bằng tiền/cấp (`StallModal`), doanh thu tính mỗi ngày theo mùa/uy tín, ghi sổ có giá vốn, lưu/tải, co-op qua lệnh `buy_stall` (test core + runtime PASS). Quầy hiện trên vỉa hè bên phải cửa tiệm (sprite pixel, chặn đường đi) và tiêu nguyên liệu từ nhà kho theo lô FEFO (cà phê: sữa đặc + đường; bánh mì: bánh mì gối + dầu ăn; thiếu hàng thì bán ít suất hơn, báo thiếu trong modal). Còn thiếu: nhân vật phục vụ/khách đứng mua tại quầy (doanh thu vẫn tính gộp theo ngày), cà phê bột/muối ớt chưa có trong catalog nên tính bằng tiền mặt; sprite chưa QA bằng mắt trong browser.
 
-## GIAO DIỆN PIXEL VIỆT — 30/09/2026
+## GIAO DIỆN PIXEL VIỆT — 02/10/2026 (ARCHIVED)
+- [x] Đã archive `premium-vietnamese-pixel-ui` vào `openspec/changes/archive/` (02/10/2026).
 - [x] Nhà kho vật lý liền phía trên tiệm: phòng đi vào được, giá khô/góc lạnh/khu nhận, WarehouseModal và migration save cũ. Unit/browser tests, năm viewport và joystick đã pass; xem docs/ui/WAREHOUSE.md.
 - [x] Triển khai palette Nắng Hẻm, component pixel, HUD/kho/modal, original procedural art và integer camera.
 - [x] Smoke giao dịch/lưu lại, lỗi revision, responsive năm viewport và kiểm tra build/test.
-- [ ] Nghiệm thu chuyển động/occlusion, night/reduced motion, toàn bộ tổ hợp lỗi và hiệu năng thiết bị thật. Theo dõi OpenSpec premium-vietnamese-pixel-ui và docs/ui/VERIFICATION.md; chưa archive.
 
 ## HỆ THỐNG THUẾ — ĐỢT ĐẦU 01/10/2026
 - [>] TAX-0: Có hồ sơ nguồn, ma trận và danh sách chưa xác minh tại docs/tax; thẩm định toàn bộ pháp luật chưa hoàn tất.

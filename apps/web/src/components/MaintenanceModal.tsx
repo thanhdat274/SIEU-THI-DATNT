@@ -25,7 +25,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({ entries, pla
   const unlocked = playerLevel >= MAINTENANCE_RULES.unlockLevel;
   const sorted = [...entries].sort((a, b) => Number(b.status === 'broken_major') - Number(a.status === 'broken_major') || Number(!!b.broken) - Number(!!a.broken) || b.wear - a.wear);
   return (
-    <PixelDialog icon="warning" title="SỬA CHỮA & BẢO TRÌ" subtitle="Kệ và tủ mát mòn dần mỗi đêm; hỏng thì không bán và không châm hàng được" onClose={onClose}>
+    <PixelDialog icon="warning" title="SỬA CHỮA & BẢO TRÌ" subtitle="Kệ và tủ mát mòn dần mỗi đêm; hỏng thì không bán và không châm hàng được. Nhân viên châm hàng tự bảo trì đồ đã mòn mỗi đêm (có phí)" onClose={onClose}>
       {!unlocked && (
         <p className="pixel-panel" style={{ padding: 8 }}>Hao mòn bắt đầu từ cấp {MAINTENANCE_RULES.unlockLevel}; cấp hiện tại {playerLevel}.</p>
       )}

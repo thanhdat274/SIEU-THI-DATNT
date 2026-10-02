@@ -2,6 +2,8 @@ import type { PlayerData } from '@game/shared';
 import {
   LEVEL_XP_THRESHOLDS,
   MAX_PLAYER_LEVEL,
+  PRESTIGE_MAX_STARS,
+  PRESTIGE_XP_PER_STAR,
   getLevelTrafficMultiplier,
   maxActiveCustomersForLevel,
   xpToNextLevel,
@@ -18,8 +20,11 @@ export function normalizePlayerProgression(player: PlayerData): PlayerData {
   const oldProgress = oldRequired > 0 && Number.isFinite(player.experience)
     ? Math.max(0, Math.min(1, player.experience / oldRequired))
     : 0;
+  const stars = Number.isFinite(player.prestigeStars) ? Math.max(0, Math.min(PRESTIGE_MAX_STARS, Math.floor(player.prestigeStars as number))) : 0;
+  const prestigeXp = Number.isFinite(player.prestigeXp) && stars < PRESTIGE_MAX_STARS ? Math.max(0, Math.min(PRESTIGE_XP_PER_STAR - 1, Math.floor(player.prestigeXp as number))) : 0;
   return {
     ...player,
+    ...(stars > 0 || prestigeXp > 0 ? { prestigeStars: stars, prestigeXp } : {}),
     level,
     experience: required > 0 ? Math.floor(oldProgress * required) : 0,
     experienceToNextLevel: required,

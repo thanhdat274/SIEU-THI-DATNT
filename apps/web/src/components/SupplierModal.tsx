@@ -23,6 +23,7 @@ export interface SupplierQuoteBoard {
 }
 
 interface Props {
+  coldCapacity?: number;
   player: PlayerData;
   pendingOrders: SupplierOrder[];
   inventory: InventoryItem[];
@@ -38,6 +39,7 @@ interface Props {
 }
 
 export const SupplierModal: React.FC<Props> = ({
+  coldCapacity = COLD_WAREHOUSE_CAPACITY,
   player,
   pendingOrders,
   inventory,
@@ -82,7 +84,7 @@ export const SupplierModal: React.FC<Props> = ({
     (n, i) => n + (PRODUCT_MAP[i.productId]?.storageType === 'cold' ? i.quantity : 0),
     0
   );
-  const availableCold = Math.max(0, COLD_WAREHOUSE_CAPACITY - coldUsed - coldReserved);
+  const availableCold = Math.max(0, coldCapacity - coldUsed - coldReserved);
 
   const filteredProducts = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -235,7 +237,7 @@ export const SupplierModal: React.FC<Props> = ({
               : `Giao sáng ngày ${currentDay + currentSupplier.delayDays}`}
           </strong>
           <p className="muted">
-            Kho mát: {coldUsed + coldReserved}/{COLD_WAREHOUSE_CAPACITY} chỗ (còn trống {availableCold})
+            Kho mát: {coldUsed + coldReserved}/{coldCapacity} chỗ (còn trống {availableCold})
           </p>
           {board && board.bulkTiers.length > 0 && (
             <p className="muted">
