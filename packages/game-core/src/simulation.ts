@@ -155,6 +155,7 @@ import { StorageManager } from './storage';
 import { LedgerManager } from './ledger';
 import { StaffManager } from './staff-manager';
 import { DiningManager } from './dining-manager';
+import { ProductionManager } from './production-manager';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
@@ -239,7 +240,7 @@ export class GameSimulation {
   private customerCredits: CustomerCreditAccount[] = [];
   private customerCreditSequence = 0;
   private diningManager: DiningManager;
-  private productionJobs: ProductionJob[] = [];
+  private productionManager: ProductionManager;
   private productionJobSequence = 0;
   private priceHistory: NonNullable<SaveGameData['priceHistory']> = {};
   private heatmap: NonNullable<SaveGameData['heatmap']> = {};
@@ -269,6 +270,10 @@ export class GameSimulation {
 
   /** Proxy đến diningManager cho diningDirtyTableIds (đọc). */
   private get diningDirtyTableIds(): Set<string> { return this.diningManager.getRef(); }
+
+  /** Proxy đến productionManager cho productionJobs (đọc). */
+  private get productionJobs(): ProductionJob[] { return this.productionManager.getRef(); }
+  private set productionJobs(val: ProductionJob[]) { /* write-through to manager ref */ }
 
   private warehouseTier: number;
   private storageRackCount: number;
@@ -345,10 +350,10 @@ export class GameSimulation {
     this.customerCreditSequence = Math.max(initialSave.customerCreditSequence ?? 0, ...this.customerCredits.map(c => Number(c.id.match(/^credit-(\d+)$/)?.[1] ?? 0)));
     this.diningManager = new DiningManager();
     this.diningManager.load(initialSave);
-    this.productionJobs = sanitizeProductionJobs(initialSave.productionJobs);
+    this.productionManager = new ProductionManager(initialSave);
     this.priceHistory = sanitizePriceHistory(initialSave.priceHistory);
     this.heatmap = sanitizeHeatmap(initialSave.heatmap);
-    this.productionJobSequence = Math.max(initialSave.productionJobSequence ?? 0, ...this.productionJobs.map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
+    this.productionJobSequence = Math.max(initialSave.productionJobSequence ?? 0, ...this.productionManager.getRef().map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
     this.reviewsManager = new ReviewsManager(initialSave.reviews);
     this.security = sanitizeSecurity(initialSave.security);
     this.partyOrders = initialSave.partyOrders
@@ -3828,11 +3833,11 @@ export class GameSimulation {
     this.customerCreditSequence = Math.max(saveData.customerCreditSequence ?? 0, ...this.customerCredits.map(c => Number(c.id.match(/^credit-(\d+)$/)?.[1] ?? 0)));
     this.diningManager = new DiningManager();
     this.diningManager.load(saveData);
-    this.productionJobs = sanitizeProductionJobs(saveData.productionJobs);
+    this.productionManager = new ProductionManager(saveData);
     this.priceHistory = sanitizePriceHistory(saveData.priceHistory);
     this.heatmap = sanitizeHeatmap(saveData.heatmap);
     this.heatmapLastTile.clear();
-    this.productionJobSequence = Math.max(saveData.productionJobSequence ?? 0, ...this.productionJobs.map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
+    this.productionJobSequence = Math.max(saveData.productionJobSequence ?? 0, ...this.productionManager.getRef().map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
     this.reviewsManager.importReviews(saveData.reviews);
     this.security = sanitizeSecurity(saveData.security);
     this.partyOrders = saveData.partyOrders
