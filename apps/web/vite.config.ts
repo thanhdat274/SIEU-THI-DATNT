@@ -37,6 +37,9 @@ export default defineConfig({
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('pixi')) return 'vendor-pixi';
           if (id.includes('firebase') || id.includes('@firebase')) return 'vendor-firebase';
+          if (/node_modules[\/]dexie[\/]/.test(id)) return 'vendor-dexie';
+          // Chỉ react, react-dom, scheduler (lõi, không phụ thuộc thư viện khác) nên không tạo vòng với chunk khác.
+          if (/node_modules[\/](?:react|react-dom|scheduler)[\/]/.test(id)) return 'vendor-react';
           // Không gom react/vendor chung: chunk "vendor" gom cả thư viện phụ thuộc react
           // gây phụ thuộc vòng với vendor-react, khiến React undefined khi chạy production.
           return undefined;
