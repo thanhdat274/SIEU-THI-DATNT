@@ -96,7 +96,7 @@ export class StallsMarketsManager {
   }
 
   /** Market notices cho ngày hiện tại. */
-  public getMarketNotices(day: number, hour: number, onNotice: (notice: { kind: string; text: string }) => void): void {
+  public getMarketNotices(day: number, hour: number, onNotice: (notice: import('./market').MarketNotice) => void): void {
     for (const notice of marketNoticesForDay(this.market, day)) {
       if (this.noticeThrottle.allow(notice.kind, day, hour)) {
         onNotice(notice);
