@@ -1,6 +1,7 @@
 import { PRODUCED_PRODUCTS } from './recipes';
 import { Product, ProductCategory, StorageType } from '@game/shared';
 import { nullProto } from './safe-map';
+import { EXPANSION_PRODUCTS } from './products-expansion';
 
 export const STARTER_PRODUCTS: Product[] = [
   {
@@ -3718,12 +3719,33 @@ export const SEASONAL_PRODUCTS: Product[] = [
   { id: 'banh_trung_thu', name: 'Bánh Trung Thu Thập Cẩm', category: 'candy', spriteId: 'item_banh_trung_thu', purchasePrice: 35000, baseSellingPrice: 58000, shelfCapacity: 14, storageType: 'ambient', expirationRules: { daysToSpoil: 30 }, unlockLevel: 1, demandProfile: { basePopularity: 0.55 }, description: 'Bánh nướng thập cẩm lạp xưởng trứng muối truyền thống thơm nức đêm rằm phá cỗ.' },
 ];
 
+/** Hàng cũ được xếp lại vào nhóm mới (id giữ nguyên nên save, công thức, thẻ riêng không đổi). */
+const RECATEGORIZED: Record<string, ProductCategory> = {
+  kem_que: 'frozen',
+  ...Object.fromEntries([
+    'xa_phong', 'kem_danh_rang', 'ban_chai', 'dau_goi', 'sua_tam', 'dao_cao', 'kem_chong_nang', 'nuoc_suc_mieng',
+    'sua_rua_mat', 'kem_duong_da', 'bang_ve_sinh',
+  ].map(id => [id, 'personal_care' as ProductCategory])),
+};
+
+/** Nhóm "Gia vị" tách đôi: hàng tươi (hạn dùng ≤ 8 ngày: rau củ, trái cây, thịt cá, đậu hũ...) sang `fresh_produce`. */
+const FRESH_SHELF_LIFE_MAX_DAYS = 8;
+
+function reclassify(product: Product): Product {
+  const forced = RECATEGORIZED[product.id];
+  if (forced) return { ...product, category: forced };
+  if (product.category === 'cooking_ingredients' && (product.expirationRules?.daysToSpoil ?? Infinity) <= FRESH_SHELF_LIFE_MAX_DAYS) {
+    return { ...product, category: 'fresh_produce' };
+  }
+  return product;
+}
+
 export const ALL_PRODUCTS: Product[] = [
   ...STARTER_PRODUCTS,
   ...ADDITIONAL_PRODUCTS,
   ...CURATED_PRODUCTS,
   ...SEASONAL_PRODUCTS,
-];
+].map(reclassify).concat(EXPANSION_PRODUCTS);
 
 /** Hàng bán được: catalog nhập từ nhà cung cấp + hàng bếp tự sản xuất (dùng cho nhu cầu và chọn hàng lên kệ). */
 export const SELLABLE_PRODUCTS: Product[] = [...ALL_PRODUCTS, ...PRODUCED_PRODUCTS].filter(product => !product.intermediate);
@@ -3731,7 +3753,9 @@ export const SELLABLE_PRODUCTS: Product[] = [...ALL_PRODUCTS, ...PRODUCED_PRODUC
 export const PRODUCT_CATEGORY_LABELS: Record<ProductCategory, string> = {
   instant_noodles: 'Mì ăn liền', snacks: 'Bánh ăn vặt', candy: 'Kẹo', bottled_water: 'Nước suối',
   soft_drinks: 'Nước ngọt', milk: 'Sữa', bread: 'Bánh mì', eggs: 'Trứng',
-  cooking_ingredients: 'Gia vị', household: 'Đồ gia dụng',
+  cooking_ingredients: 'Gia vị & thực phẩm khô', household: 'Đồ gia dụng',
+  personal_care: 'Chăm sóc cá nhân', frozen: 'Đồ đông lạnh', fresh_produce: 'Rau củ, thịt cá tươi',
+  health: 'Thuốc & vitamin', toys_stationery: 'Đồ chơi & văn phòng phẩm', alcohol: 'Bia rượu',
 };
 
 export const PRODUCT_MAP: Record<string, Product> = nullProto([...ALL_PRODUCTS, ...PRODUCED_PRODUCTS].reduce(

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { UNITS_PER_WAREHOUSE_CELL, getFixtureDimensions, slotGroup, type SaveGameData, type StoreFixture } from '@game/shared';
-import { BUILDING_MAP, DECOR, FIXTURE_SHOP, LAND_PLOTS, MAX_STORAGE_RACKS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, XOI_PLOT_ID, fixtureBuilding, generateStarterTileMap, type BuildingId } from '@game/data';
+import { BUILDING_MAP, DECOR, DECOR_ATTRACTION_MAX, FIXTURE_SHOP, LAND_PLOTS, MAX_STORAGE_RACKS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, XOI_PLOT_ID, fixtureBuilding, generateStarterTileMap, type BuildingId } from '@game/data';
 import { applyStoreLayoutActions, coldWarehouseCapacity, decorAttraction, decorTrafficMultiplier, rotateStoreFixture, totalWarehouseCells, type StoreLayoutAction } from '@game/core';
 import { fixturePreviewUrl } from '@game/renderer';
 import { PixelButton } from './pixel';
@@ -697,7 +697,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
               {tab === 'decor' && (
                 <div className="sidebar-decor-section">
                   <div className="decor-banner">
-                    <span>Điểm thu hút: <strong>{attraction}/100</strong></span>
+                    <span>Điểm thu hút: <strong>{attraction}/{DECOR_ATTRACTION_MAX}</strong></span>
                     <small>Khách đông thêm +{Math.round((decorTrafficMultiplier(attraction) - 1) * 100)}%</small>
                   </div>
                   <div className="layout-fixtures layout-shop">

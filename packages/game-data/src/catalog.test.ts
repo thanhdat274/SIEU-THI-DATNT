@@ -1,5 +1,6 @@
 import { ALL_PRODUCTS, SEASONAL_PRODUCTS, STARTER_PRODUCTS, ADDITIONAL_PRODUCTS, CURATED_PRODUCTS, PRODUCT_MAP, PRODUCT_CATEGORY_LABELS } from './products';
-import { CATALOG_SOURCE_MANIFEST } from './catalog-manifest';
+import { EXPANSION_PRODUCTS } from './products-expansion';
+import { CATALOG_SOURCE_MANIFEST, EXPANSION_MANIFEST } from './catalog-manifest';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -12,7 +13,8 @@ export function runCatalogTests(): void {
   console.log('\n--- Test Group 3: B — Catalog chọn lọc toàn diện (290 sản phẩm gốc + 11 sản phẩm theo mùa = 301 món) ---');
 
   // 1. Kiểm tra tổng số lượng 290 sản phẩm gốc và không mất 36 món legacy
-  assert(ALL_PRODUCTS.length === 290 + SEASONAL_PRODUCTS.length, `Catalog tổng = 292 món gốc + ${SEASONAL_PRODUCTS.length} món theo mùa (hiện có ${ALL_PRODUCTS.length})`);
+  assert(ALL_PRODUCTS.length === 290 + SEASONAL_PRODUCTS.length + EXPANSION_PRODUCTS.length, `Catalog tổng = 290 món gốc + ${SEASONAL_PRODUCTS.length} món theo mùa + ${EXPANSION_PRODUCTS.length} món mở rộng (hiện có ${ALL_PRODUCTS.length})`);
+  assert(EXPANSION_PRODUCTS.length === 182, `Có đúng 182 sản phẩm mở rộng cấp 5–30 (hiện có ${EXPANSION_PRODUCTS.length})`);
   assert(SEASONAL_PRODUCTS.length === 11, `Có đúng 11 sản phẩm theo mùa/lễ hội (hiện có ${SEASONAL_PRODUCTS.length})`);
   assert(STARTER_PRODUCTS.length === 5, 'Có đúng 5 sản phẩm khởi đầu');
   assert(ADDITIONAL_PRODUCTS.length === 31, 'Có đúng 31 sản phẩm mở rộng ban đầu');
@@ -59,4 +61,39 @@ export function runCatalogTests(): void {
 
   const deferredCount = CATALOG_SOURCE_MANIFEST.filter((m) => m.disposition === 'deferred').length;
   assert(deferredCount === 0, 'Toàn bộ 100% sản phẩm bán lẻ từ game tham khảo đã được chuyển giao thành công (0 deferred)');
+}
+
+export function runExpansionCatalogTests(): void {
+  console.log('\n--- Catalog mở rộng: nhóm mới, hàng cao cấp cấp 5–30 ---');
+  const newCategories = ['personal_care', 'frozen', 'fresh_produce', 'health', 'toys_stationery', 'alcohol'] as const;
+  for (const category of newCategories) {
+    assert(!!PRODUCT_CATEGORY_LABELS[category], `Nhóm mới ${category} có nhãn`);
+    assert(ALL_PRODUCTS.filter((p) => p.category === category).length >= 15, `Nhóm ${category} có tối thiểu 15 sản phẩm`);
+  }
+  for (const category of Object.keys(PRODUCT_CATEGORY_LABELS)) {
+    const share = ALL_PRODUCTS.filter((p) => p.category === category).length / ALL_PRODUCTS.length;
+    assert(share < 0.25, `Nhóm ${category} không chiếm quá 25% catalog (${Math.round(share * 100)}%)`);
+  }
+  for (const p of EXPANSION_PRODUCTS) {
+    assert(p.unlockLevel >= 5 && p.unlockLevel <= 30, `${p.id} mở khóa trong cấp 5–30 (${p.unlockLevel})`);
+    assert(p.baseSellingPrice > p.purchasePrice, `${p.id} có lãi`);
+    assert(Number.isInteger(p.purchasePrice) && Number.isInteger(p.baseSellingPrice), `${p.id} giá là số nguyên`);
+    assert(p.storageType === 'cold' ? (p.expirationRules?.daysToSpoil ?? 0) > 0 : true, `${p.id} hạn dùng hợp lệ`);
+  }
+  for (let level = 5; level <= 30; level += 5) {
+    assert(ALL_PRODUCTS.some((p) => p.unlockLevel > level - 5 && p.unlockLevel <= level), `Có hàng mới mở khóa trong khoảng cấp ${level - 4}–${level}`);
+  }
+}
+
+export function runExpansionManifestTests(): void {
+  console.log('\n--- Manifest catalog mở rộng ---');
+  assert(EXPANSION_MANIFEST.length === EXPANSION_PRODUCTS.length, `Manifest mở rộng phủ đủ ${EXPANSION_PRODUCTS.length} món (hiện có ${EXPANSION_MANIFEST.length})`);
+  // Món nguồn từng bị đánh dấu unsupported (thiếu tủ đông, vd. pizza_dong_lanh) nay được phép có bản triển khai ở đợt mở rộng.
+  const sourceIds = new Set(CATALOG_SOURCE_MANIFEST.filter((m) => m.disposition !== 'unsupported').map((m) => m.alias ?? m.sourceId));
+  for (const entry of EXPANSION_MANIFEST) {
+    assert(!!PRODUCT_MAP[entry.productId], `Manifest mở rộng: ${entry.productId} có trong PRODUCT_MAP`);
+    assert(PRODUCT_MAP[entry.productId].category === entry.targetCategory, `Manifest mở rộng: nhóm của ${entry.productId} khớp catalog`);
+    assert(!sourceIds.has(entry.productId), `Manifest mở rộng: ${entry.productId} không trùng món của catalog nguồn`);
+  }
+  assert(new Set(EXPANSION_MANIFEST.map((m) => m.productId)).size === EXPANSION_MANIFEST.length, 'Manifest mở rộng không trùng id');
 }

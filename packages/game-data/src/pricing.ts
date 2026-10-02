@@ -40,8 +40,15 @@ export const PRICE_SENSITIVITY_BY_TAG: Record<string, number> = {
   cooking: 1.2,
   hot_drink: 1.5,
   comfort_food: 1.5,
+  personal_care: 1.0,
+  frozen: 1.5,
+  health: 0.8, // thuốc/vitamin: cần là mua, ít nhạy giá
+  toys: 1.8,
+  school: 1.2,
+  alcohol: 1.3,
 };
 
 export const PRICED_CATEGORIES: readonly ProductCategory[] = [
   'instant_noodles', 'snacks', 'candy', 'bottled_water', 'soft_drinks', 'milk', 'bread', 'eggs', 'cooking_ingredients', 'household',
+  'personal_care', 'frozen', 'fresh_produce', 'health', 'toys_stationery', 'alcohol',
 ];

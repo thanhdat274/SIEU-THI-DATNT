@@ -28,7 +28,13 @@ export type ProductCategory =
   | 'bread'
   | 'eggs'
   | 'cooking_ingredients'
-  | 'household';
+  | 'household'
+  | 'personal_care'
+  | 'frozen'
+  | 'fresh_produce'
+  | 'health'
+  | 'toys_stationery'
+  | 'alcohol';
 
 export interface Product {
   id: string;

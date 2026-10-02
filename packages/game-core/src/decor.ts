@@ -9,5 +9,5 @@ export function decorAttraction(decorOwned: readonly string[] | undefined, fixtu
   return Math.min(DECOR_ATTRACTION_MAX, total);
 }
 
-/** Hệ số lượng khách theo thu hút: 1 + điểm / 400 (tối đa +25%). */
+/** Hệ số lượng khách theo thu hút: 1 + điểm / DECOR_ATTRACTION_DIVISOR (tối đa +25%). */
 export const decorTrafficMultiplier = (attraction: number): number => 1 + attraction / DECOR_ATTRACTION_DIVISOR;

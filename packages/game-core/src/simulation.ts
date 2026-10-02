@@ -108,7 +108,7 @@ import { buyLandPlot, relocateMisplacedFixtures, upgradeFixtureSlots, validateSt
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
 import { mergeLots, normalizeLots, sumLots, takeLots } from './stock';
-import { decayLot, spoilageRate } from './spoilage';
+import { decayLot, spoilageRate, withBackupPower } from './spoilage';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { normalizePlayerProgression, saleExperienceMultiplier, trafficAtLevel } from './progression';
 import { CustomerManager } from './customers';
@@ -213,9 +213,11 @@ export interface GameSimulationCallbacks {
 
 /** Bảng khóa-theo-id không có prototype: khóa như 'constructor' không bao giờ trả về thuộc tính của Object. */
 const dict = <T>(source?: Record<string, T>): Record<string, T> => Object.assign(Object.create(null), source) as Record<string, T>;
-
+/** Giây game để một quầy tự thanh toán xử lý một khách. */
+const SELF_CHECKOUT_SECONDS = 3;
 export class GameSimulation {
   private playerData: PlayerData;
+
   private sellingPrices: Record<string, number> = dict();
   private fixtures: StoreFixture[];
   private storedFixtures: StoreFixture[];
@@ -246,6 +248,7 @@ export class GameSimulation {
   private completedCheckoutIds: Set<string>;
   private regulars: Record<string, RegularCustomerProgress> = dict();
   private customerCredits: CustomerCreditAccount[] = [];
+  private selfCheckoutTimer = 0;
   private customerCreditSequence = 0;
   private diningManager: DiningManager;
   private productionManager: ProductionManager;
@@ -2017,6 +2020,21 @@ export class GameSimulation {
       const currentId = member.currentCheckoutId;
       if (currentId) {
         if (this.completedCheckoutIds.has(currentId)) {
+  /** Quầy tự thanh toán: mỗi máy tự tính tiền một khách (có giỏ, chưa có thu ngân phụ trách, không phải kẻ trộm) sau mỗi chu kỳ. */
+  private updateSelfCheckout(dt: number): void {
+    const machines = this.fixtures.filter(fixture => fixture.type === 'cashier_counter' && fixture.shopId === 'self_checkout' && !fixture.parentId && !fixture.broken).length;
+    if (machines === 0) { this.selfCheckoutTimer = 0; return; }
+    this.selfCheckoutTimer += dt;
+    if (this.selfCheckoutTimer < SELF_CHECKOUT_SECONDS) return;
+    this.selfCheckoutTimer = 0;
+    let served = 0;
+    for (const customer of this.customerManager.getCustomers()) {
+      if (served >= machines) break;
+      if (customer.stage !== 'checkout' || !customer.checkoutId || customer.cashierStaffId || customer.thief || !customer.basket?.length) continue;
+      if (this.completeCustomerCheckout(customer.checkoutId)) served++;
+    }
+  }
+
           member.currentCheckoutId = undefined;
           member.checkoutServiceRemaining = 0;
         } else if (!this.isStaffOnShift(member)) {
@@ -2507,7 +2525,8 @@ export class GameSimulation {
    */
   private decayStock(day: number): void {
     if (day < 1) return;
-    const ctx = buildMarketContext(this.market, day, 12);
+    const marketCtx = buildMarketContext(this.market, day, 12);
+    const ctx = this.fixtures.some(fixture => fixture.shopId === 'generator' && !fixture.broken) ? withBackupPower(marketCtx) : marketCtx; // máy phát điện: tủ mát không hỏng nhanh khi cúp điện
     const rateOf = (productId: string | undefined) => {
       const product = productId ? PRODUCT_MAP[productId] : undefined;
       if (!product) return 1;
@@ -2752,6 +2771,7 @@ export class GameSimulation {
     for (const fix of this.fixtures) {
       if (fix.parentId || fix.type === 'decor') continue;
       // Center of fixture
+    this.updateSelfCheckout(worldDt);
       const fCenterX = (fix.tileX + fix.widthTiles / 2) * TILE_SIZE;
       const fCenterY = (fix.tileY + fix.heightTiles / 2) * TILE_SIZE;
 

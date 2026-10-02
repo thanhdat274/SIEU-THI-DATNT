@@ -1,4 +1,4 @@
-import { generateStarterTileMap, STARTER_PRODUCTS, ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP, DEFAULT_INITIAL_SAVE, runCatalogTests } from '@game/data';
+import { generateStarterTileMap, STARTER_PRODUCTS, ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP, DEFAULT_INITIAL_SAVE, runCatalogTests, runExpansionCatalogTests, runExpansionManifestTests } from '@game/data';
 import { COLD_WAREHOUSE_CAPACITY } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
@@ -87,6 +87,8 @@ export async function runTests(): Promise<void> {
   runCatalogTests();
   runSupplierTests();
   runPlanogramTests();
+  runExpansionCatalogTests();
+  runExpansionManifestTests();
   runLedgerTests();
   runSuggestionTests();
   runStaffTests();

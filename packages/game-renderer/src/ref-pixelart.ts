@@ -218,6 +218,60 @@ FURNITURE_SPRITES.shelf_double = FURNITURE_SPRITES.shelf.map((row) => row.replac
 FURNITURE_SPRITES.shelf_3 = FURNITURE_SPRITES.shelf_double;
 FURNITURE_SPRITES.shelf_4 = FURNITURE_SPRITES.shelf_double;
 FURNITURE_SPRITES.counter2 = FURNITURE_SPRITES.counter.map((row) => row.replace(/n/g, 'l'));
+FURNITURE_SPRITES.ghe_nghi_khach = [
+  '................',
+  '................',
+  '................',
+  '..kkkkkkkkkkkk..',
+  '..kbttttttttbk..',
+  '..kbttttttttbk..',
+  '..kbbbbbbbbbbk..',
+  '..kkkkkkkkkkkk..',
+  '..kbbbbbbbbbbk..',
+  '..kbtttttttbbk..',
+  '..kkkkkkkkkkkk..',
+  '..kb........bk..',
+  '..kb........bk..',
+  '..kb........bk..',
+  '..kk........kk..',
+  '................',
+];
+FURNITURE_SPRITES.cay_kieng_lon = [
+  '......nn........',
+  '....nnNNnn......',
+  '...nNNnnnNn.....',
+  '..nnnNnnnnNnn...',
+  '.nnNnnnNnnnnNn..',
+  '.nnnnNnnnNnnnn..',
+  '..nNnnnnnnnNn...',
+  '...nnNnnNnnn....',
+  '....nnnNnn......',
+  '......bb........',
+  '......bb........',
+  '...oooooooooo...',
+  '....keeeeeek....',
+  '....keeeeeek....',
+  '....kkkkkkkk....',
+  '................',
+];
+FURNITURE_SPRITES.be_ca_koi = [
+  '................',
+  '..kkkkkkkkkkkk..',
+  '..kiiiiiiiiiik..',
+  '..kiiiiiiiiiik..',
+  '..kiiiroiiiiik..',
+  '..kiilllllliik..',
+  '..kiilllllrlik..',
+  '..kiillllllLik..',
+  '..kiilllLllLik..',
+  '..kiillllllLik..',
+  '..kLLLLLLLLLLk..',
+  '..kkkkkkkkkkkk..',
+  '...kb......bk...',
+  '...kb......bk...',
+  '...kk......kk...',
+  '................',
+];
 
 // Chuẩn hóa pixel art cho footprint của từng nội thất.
 function fitFurnitureSprite(width: number, rows: string[]): Sprite {
