@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { DEFAULT_INITIAL_SAVE, PRODUCT_MAP, SUPPLIER_MAP, STORY_CHAPTER_MAP, generateStarterTileMap } from '@game/data';
-import { isSalesFixture } from '@game/shared';
+import { isSalesFixture, validateSaveGameData } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { MAX_REPLAY_STEPS, REPLAY_SCHEMA, SIMULATION_VERSION, runDayReplay, type DayReplay } from './replay';
@@ -51,5 +51,24 @@ export function runHostileRuntimeKeyTests(): void {
   for (const bad of [{ steps: 10, dt: Number.POSITIVE_INFINITY }, { steps: 10, dt: 1e9 }, { steps: MAX_REPLAY_STEPS + 1, dt: 0.25 }, { steps: 10, dt: 0 }]) {
     assert.equal(runDayReplay({ ...base, ...bad } as DayReplay).ok, false, 'replay xấu phải bị từ chối');
   }
+  runCorruptSaveShapeTests();
   console.log('  ✓ Passed: Bảng giá bán/sơ đồ/khách quen không trả thuộc tính prototype; dt/replay bất thường không treo');
+}
+
+/** Save sai kiểu ở trường mảng tùy chọn phải bị validator từ chối, không để lọt tới constructor rồi sập ở `.map`. */
+export function runCorruptSaveShapeTests(): void {
+  const mutate = (path: string[], value: unknown) => {
+    const save = JSON.parse(JSON.stringify(DEFAULT_INITIAL_SAVE));
+    let target = save;
+    for (const key of path.slice(0, -1)) target = target[key];
+    target[path[path.length - 1]] = value;
+    return save;
+  };
+  assert.equal(validateSaveGameData(JSON.parse(JSON.stringify(DEFAULT_INITIAL_SAVE))).valid, true, 'Save mặc định hợp lệ');
+  for (const path of [['staff'], ['processedPayrollDayIds'], ['pendingOrders'], ['holdingArea'], ['storeLayout', 'storedFixtures'], ['storeLayout', 'unlockedPlotIds'], ['storeLayout', 'decorOwned']]) {
+    for (const bad of ['x', -1, {}]) {
+      assert.equal(validateSaveGameData(mutate(path, bad)).valid, false, `${path.join('.')}=${JSON.stringify(bad)} phải bị từ chối`);
+    }
+  }
+  console.log('  ✓ Passed: Save sai kiểu ở trường mảng tùy chọn bị validator từ chối');
 }

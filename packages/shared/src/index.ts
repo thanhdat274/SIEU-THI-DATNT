@@ -1095,6 +1095,9 @@ export interface SaveValidationResult {
   data?: SaveGameData;
 }
 
+const OPTIONAL_SAVE_ARRAYS = ['staff', 'processedPayrollDayIds', 'pendingOrders', 'holdingArea', 'closedDayIds', 'completedCheckoutIds', 'processedAutoBuyDayIds', 'autoBuyRules', 'customerCredits', 'ledger'] as const;
+const OPTIONAL_LAYOUT_ARRAYS = ['storedFixtures', 'unlockedPlotIds', 'decorOwned'] as const;
+
 export function isSaveGameData(value: unknown): value is SaveGameData {
   if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
@@ -1114,6 +1117,9 @@ export function isSaveGameData(value: unknown): value is SaveGameData {
   const sl = value.storeLayout;
   if (!isRecord(sl) || !Array.isArray(sl.fixtures)) return false;
   if (!Array.isArray(value.inventory)) return false;
+  // Trường mảng tùy chọn: nếu có thì phải là mảng, để nạp save không sập ở `.map`/`for…of` (save hỏng hoặc sửa tay).
+  for (const key of OPTIONAL_SAVE_ARRAYS) if (value[key] !== undefined && !Array.isArray(value[key])) return false;
+  for (const key of OPTIONAL_LAYOUT_ARRAYS) if (sl[key] !== undefined && !Array.isArray(sl[key])) return false;
   if (value.sellingPrices !== undefined && (!isRecord(value.sellingPrices) || !Object.values(value.sellingPrices).every(price => Number.isSafeInteger(price) && Number(price) > 0))) return false;
   const stats = value.statistics;
   if (!isRecord(stats) || !nonNegativeInteger(stats.totalRevenue) || !nonNegativeInteger(stats.totalCustomersServed)) {
