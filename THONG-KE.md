@@ -599,7 +599,8 @@ OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswa
 - `store-logistics.ts`: nhân viên bốc hàng đi bước lớn hơn khoảng cách còn lại (`dt` lớn, ví dụ 0,2 s ở `store-logistics.test.ts`) nên vượt qua điểm đích rồi dao động, không bao giờ vào ngưỡng "đã đến" (4 px) và chuyến không hoàn tất. Ngưỡng nay là `max(4, walkSpeed*dt)` ở cả bốc và xếp hàng. Lỗi có sẵn từ trước: xác nhận trên worktree sạch trước khi sửa.
 
 ### Verified
-- `yarn --ignore-engines test:all` PASS toàn bộ (exit 0) trên working tree có thay đổi chưa commit của phiên khác. Chưa chạy CI/build.
+- `yarn --ignore-engines test:all` PASS toàn bộ (exit 0) trên working tree có thay đổi chưa commit của phiên khác. Chưa chạy CI.
+- Chạy 2026-10-02: `yarn --ignore-engines build` (server `tsc -p tsconfig.build.json` + web `tsc && vite build`, 889 modules) PASS, exit 0, 6,12 s, trên working tree có thay đổi chưa commit của phiên khác nên không phải bản commit sạch. Bundle: index 1.090,08 kB (gzip 305,47), vendor-pixi 534,54 kB, vendor-firebase 154,20 kB, css 84,56 kB. Vẫn cảnh báo chunk >500 kB và `api.ts` import tĩnh+động (I-10 còn nguyên); index tăng mạnh so với 710,53 kB ở lần build trước (01/10/2026), chưa tách nguyên nhân (nhiều thay đổi của hai phiên cộng dồn). Node 20.19 cục bộ thấp hơn `engines` >=22, nên dùng `--ignore-engines`.
 
 ## 2026-10-02 (lượt 14 — test tự động db.ts và slot-lock.ts)
 
