@@ -34,7 +34,7 @@ export async function runPersistenceTests() {
 
   // 3. Future unsupported version
   const futureSave = structuredClone(validSave);
-  futureSave.schemaVersion = 4;
+  futureSave.schemaVersion = 5;
   const futureResult = validateSaveGameData(futureSave);
   assert.equal(futureResult.valid, false, 'Future schema version fails validation');
   assert.equal(futureResult.versionStatus, 'unsupported_future', 'Version marked unsupported_future');
@@ -52,6 +52,11 @@ export async function runPersistenceTests() {
   assert.equal(schema2Result.valid, true);
   assert.equal(schema2Result.versionStatus, 'legacy_migrate');
   assert.deepEqual(schema2Result.data?.storeLayout.unlockedPlotIds, []);
+  const schema3Save = structuredClone(validSave);
+  schema3Save.schemaVersion = 3;
+  const schema3Result = validateSaveGameData(schema3Save);
+  assert.equal(schema3Result.valid, true);
+  assert.equal(schema3Result.data?.schemaVersion, 4, 'Schema 3 migrate lên 4');
 
   // 5. Backup snapshot keeps sequential revision
   const backup = createSaveBackupSnapshot(validSave, 'backup-test-key');
