@@ -20,6 +20,10 @@ interface Pedestrian {
   x: number;
   y: number;
   speed?: number;
+  /** Khách ghé quầy vỉa hè: dừng ở x này một lúc rồi đi tiếp (chỉ hiển thị, không đổi doanh thu quầy). */
+  stopX?: number;
+  pauseLeft?: number;
+  stopped?: boolean;
 }
 
 export class StreetTrafficManager {
@@ -28,6 +32,9 @@ export class StreetTrafficManager {
   private spawnCooldown = 4;
   private pedestrianCooldown = 7;
   private sidewalkPedestrianCooldown = 8;
+  private stallVisitorCooldown = 6;
+  private stallStops: number[] = [];
+  private stallVisitsCompleted = 0;
   private vehicleSequence = 0;
   private pedestrianSequence = 0;
   private signalClock = 0;
@@ -55,6 +62,16 @@ export class StreetTrafficManager {
     }));
   }
 
+  /** Tọa độ x (px) giữa các quầy vỉa hè đang mở; rỗng thì không có khách ghé quầy. */
+  public setStallStops(xs: number[]): void {
+    this.stallStops = [...xs];
+  }
+
+  /** Số lượt khách ghé quầy đã dừng xong (dùng cho kiểm thử). */
+  public getStallVisitsCompleted(): number {
+    return this.stallVisitsCompleted;
+  }
+
   public getSignal(): TrafficSignalState {
     return trafficSignalAt(this.signalClock);
   }
@@ -65,7 +82,7 @@ export class StreetTrafficManager {
   }
 
   /** Thêm người đi bộ (kiểm thử và dựng cảnh). */
-  public addPedestrian(p: { id: string; direction: 'south' | 'north' | 'left' | 'right'; state?: 'waiting' | 'crossing' | 'walking'; activity?: 'stroll' | 'grocery' | 'jog' | 'student' | 'dog'; x: number; y?: number; variant?: number; speed?: number }): void {
+  public addPedestrian(p: { stopX?: number; pauseSec?: number; id: string; direction: 'south' | 'north' | 'left' | 'right'; state?: 'waiting' | 'crossing' | 'walking'; activity?: 'stroll' | 'grocery' | 'jog' | 'student' | 'dog'; x: number; y?: number; variant?: number; speed?: number }): void {
     const isSidewalk = p.direction === 'left' || p.direction === 'right';
     const defY = isSidewalk ? (p.y ?? 11.8 * TILE_SIZE) : (p.direction === 'south' ? STREET_PEDESTRIANS.northCurbY : STREET_PEDESTRIANS.southCurbY);
     this.pedestrians.push({
@@ -77,6 +94,7 @@ export class StreetTrafficManager {
       x: p.x,
       y: p.y ?? defY,
       speed: p.speed,
+      ...(p.stopX !== undefined ? { stopX: p.stopX, pauseLeft: p.pauseSec ?? 4 } : {}),
     });
   }
 
@@ -102,6 +120,8 @@ export class StreetTrafficManager {
     this.spawnCooldown = 4;
     this.pedestrianCooldown = 7;
     this.sidewalkPedestrianCooldown = 8;
+    this.stallVisitorCooldown = 6;
+    this.stallVisitsCompleted = 0;
     this.signalClock = 0;
   }
 
@@ -127,8 +147,23 @@ export class StreetTrafficManager {
     for (let i = this.pedestrians.length - 1; i >= 0; i--) {
       const p = this.pedestrians[i];
       if (p.direction === 'left' || p.direction === 'right') {
+        if (p.state === 'waiting') {
+          p.pauseLeft = (p.pauseLeft ?? 0) - dt;
+          if (p.pauseLeft <= 0) {
+            p.state = 'walking';
+            p.stopped = true;
+            this.stallVisitsCompleted++;
+          }
+          continue;
+        }
         const spd = p.speed ?? (p.activity === 'jog' ? 52 : defaultSpeed * 0.85);
-        p.x += (p.direction === 'right' ? 1 : -1) * spd * dt;
+        const dir = p.direction === 'right' ? 1 : -1;
+        const before = p.x;
+        p.x += dir * spd * dt;
+        if (p.stopX !== undefined && !p.stopped && (p.x - p.stopX) * dir >= 0 && (before - p.stopX) * dir < 0) {
+          p.x = p.stopX;
+          p.state = 'waiting';
+        }
         if (p.x < -40 || p.x > MAP_WIDTH * TILE_SIZE + 40) {
           this.pedestrians.splice(i, 1);
         }
@@ -273,6 +308,32 @@ export class StreetTrafficManager {
     }
   }
 
+  private spawnStallVisitor(dt: number, hour: number, rainIntensity: number, seedNumber: number): void {
+    if (!this.stallStops.length) return;
+    this.stallVisitorCooldown -= dt;
+    if (this.stallVisitorCooldown > 0) return;
+    const rng = new Mulberry32Rng(seedNumber + this.pedestrianSequence * 131 + 71);
+    // Càng nhiều quầy mở, khách ghé càng dày.
+    this.stallVisitorCooldown = (14 - Math.min(this.stallStops.length, 3) * 3) + rng.next() * 8;
+    this.pedestrianSequence++;
+    const active = this.pedestrians.filter(p => p.stopX !== undefined).length;
+    if (hour < 6 || hour >= 21 || rainIntensity > 0.7 || active >= 3) return;
+    const dir: 'left' | 'right' = rng.next() < 0.5 ? 'right' : 'left';
+    const stopX = this.stallStops[Math.floor(rng.next() * this.stallStops.length)];
+    this.addPedestrian({
+      id: `stall-ped-${seedNumber}-${this.pedestrianSequence}`,
+      direction: dir,
+      state: 'walking',
+      activity: 'stroll',
+      x: dir === 'right' ? -20 : MAP_WIDTH * TILE_SIZE + 20,
+      y: (11.7 + rng.next() * 0.3) * TILE_SIZE,
+      variant: Math.floor(rng.next() * 5),
+      speed: 28 + rng.next() * 8,
+      stopX,
+      pauseSec: 3 + rng.next() * 3,
+    });
+  }
+
   public update(dt: number, hour: number, rainIntensity = 0, seedNumber = 12345): void {
     let remaining = dt;
     while (remaining > 1e-9) {
@@ -284,6 +345,7 @@ export class StreetTrafficManager {
     }
 
     this.spawnPedestrian(dt, hour, rainIntensity, seedNumber);
+    this.spawnStallVisitor(dt, hour, rainIntensity, seedNumber);
 
     if (this.vehicles.length >= this.maxConcurrent) return;
 

@@ -272,8 +272,8 @@ export const CashierModal: React.FC<Props> = ({
                 <div className="pixel-progress"><span style={{ width: `${Math.min(100, Math.round(annual.progress * 100))}%` }} /></div>
                 <p className="muted" style={{ margin: 0 }}>
                   {annual.taxActive
-                    ? `Thuế khoán 1% đang áp dụng — thuế ước tính: ${money(annual.estimatedTax)} (đã khấu trừ: ${money(annual.taxPaidYear)})`
-                    : `Chưa vượt ngưỡng miễn thuế ${money(annual.threshold)}/năm. Vượt ngưỡng sẽ áp dụng 1% khoán.`}
+                    ? `Đang chịu thuế GTGT + TNCN — thuế ước tính: ${money(annual.estimatedTax)} (đã khấu trừ: ${money(annual.taxPaidYear)})`
+                    : `Chưa vượt ngưỡng miễn thuế ${money(annual.threshold)}/năm. Vượt ngưỡng sẽ nộp GTGT ${annual.policy.vatRate * 100}% + TNCN ${annual.policy.pitRate * 100}%.`}
                 </p>
               </div>
             );

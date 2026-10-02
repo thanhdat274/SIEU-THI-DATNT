@@ -606,7 +606,10 @@ export interface DailyRecord {
   theftRecovered?: number; // Tiền thu hồi từ phạt kẻ trộm và công an trong ngày (thiếu = 0)
   counterfeitLoss?: number; // Mệnh giá tiền giả nhận nhầm trong ngày (thiếu = 0)
   badDebtCost?: number; // Khoản phải thu đã xóa nợ xấu trong ngày (thiếu = 0)
-  taxPaid?: number; // Thuế đã trừ trong ngày (VAT+TNCN gộp, hộ cá thể: 1% doanh thu)
+  taxPaid?: number; // Thuế đã trừ trong ngày (GTGT + TNCN thực nộp theo kê khai)
+  taxHidden?: number; // Phần thuế bị khai bớt trong ngày (chưa nộp, có thể bị truy thu khi kiểm tra)
+  taxBackPaid?: number; // Thuế truy thu khi kiểm tra, ghi vào ngày bị kiểm tra
+  taxPenalty?: number; // Tiền phạt khi kiểm tra thuế trong ngày
   grossProfit: number; // revenue - cogs
   netProfit: number; // revenue - cogs - spoilageCost - wagesPaid
   customersServed: number; // Distinct customers served
@@ -871,7 +874,29 @@ export interface StoreLayout {
   decorOwned?: string[];
 }
 
+/** Một lần cơ quan thuế kiểm tra bất ngờ. */
+export interface TaxAuditRecord {
+  day: number;
+  /** Tổng truy thu + phạt (0 nếu sổ sách sạch). */
+  total: number;
+  findings: string[];
+  clean: boolean;
+}
+
+export interface TaxState {
+  /** Đang chọn khai bớt: mỗi lần đóng ngày chỉ nộp một phần thuế, phần còn lại bị giấu và có thể bị truy thu. */
+  underDeclare: boolean;
+  /** Tổng thuế đã giấu mà chưa qua kiểm tra. */
+  hiddenTax: number;
+  /** Tiền truy thu/phạt chưa trả hết do thiếu tiền mặt, thu dần ở các lần đóng ngày sau. */
+  debt: number;
+  audits: TaxAuditRecord[];
+  cleanAudits: number;
+}
+
 export interface SaveGameData {
+  /** Trạng thái thuế (khai bớt, nợ, lịch sử kiểm tra); thiếu ở save cũ = mặc định. */
+  tax?: TaxState;
   id: string;
   schemaVersion: number;
   revision: number;
@@ -1070,6 +1095,14 @@ export type GameCommandPayload =
   | { type: 'set_staff_shift'; staffId: string; shift: StaffShift }
   | { type: 'assign_refill_job'; staffId: string; fixtureId: string }
   | { type: 'dispose_stock'; productId: string; quantity: number }
+  | { type: 'store_status'; isOpen: boolean }
+  | { type: 'set_tax_declaration'; underDeclare: boolean }
+  | { type: 'advance_day' }
+  | { type: 'stow'; holdingId: string }
+  | { type: 'stow_all' }
+  | { type: 'planogram_assignment'; fixtureId: string; productId: string | null }
+  | { type: 'planogram_restock'; fixtureId: string }
+  | { type: 'auto_restock' }
   | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> }
   | { type: 'set_restock_options'; options: RestockSuggestionOptions }
   | { type: 'respond_party_order'; orderId: string; accept: boolean }
@@ -1311,6 +1344,12 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'hire_staff': return nonEmptyString(p.candidateId);
     case 'set_staff_shift': return nonEmptyString(p.staffId) && (p.shift === 'morning' || p.shift === 'afternoon' || p.shift === 'full_day');
     case 'assign_refill_job': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
+    case 'store_status': return typeof p.isOpen === 'boolean';
+    case 'set_tax_declaration': return typeof p.underDeclare === 'boolean';
+    case 'advance_day': case 'stow_all': case 'auto_restock': return true;
+    case 'stow': return nonEmptyString(p.holdingId);
+    case 'planogram_assignment': return nonEmptyString(p.fixtureId) && (p.productId === null || nonEmptyString(p.productId));
+    case 'planogram_restock': return nonEmptyString(p.fixtureId);
     case 'dispose_stock': return nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
     case 'order_supplier': return nonEmptyString(p.supplierId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 64 && p.items.every(item => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
     case 'respond_party_order': return nonEmptyString(p.orderId) && typeof p.accept === 'boolean';

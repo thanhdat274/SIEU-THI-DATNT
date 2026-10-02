@@ -325,3 +325,10 @@ h3{font-weight:750}.quantity-stepper .pixel-button{min-width:44px}
 .toast .pixel-icon,.toast svg{width:16px;height:16px;flex:none}
 .toast .pixel-button{min-height:28px;min-width:28px;padding:2px}
 }
+
+/* Cách điều khiển (control-mode.ts): iPad cỡ lớn bị coi là màn desktop nên cho người chơi chọn. */
+@media (pointer:coarse){html[data-controls="auto"] .touch-controls{display:block}}
+html[data-controls="touch"] .touch-controls{display:block}
+html[data-controls="keyboard"] .touch-controls{display:none}
+.control-mode-options{display:flex;gap:8px;flex-wrap:wrap}
+.control-mode-options button{padding:6px 10px;cursor:pointer}.control-mode-options button.active{font-weight:700;outline:2px solid currentColor}

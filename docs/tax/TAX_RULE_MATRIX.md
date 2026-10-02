@@ -12,3 +12,6 @@
 | BHXH, TTĐB, xuất nhập khẩu, thực phẩm | Chưa xác minh | Không suy ra từ tên sản phẩm | UNVERIFIED |
 
 Không dùng 500 triệu làm ngưỡng hiện hành. Phiên bản lịch sử chỉ thêm khi có căn cứ độc lập. Trên ngưỡng không đồng nghĩa toàn bộ doanh thu là căn cứ PIT hoặc phải chuyển thành công ty.
+
+## Ghi chú 03/10/2026 — chính sách trong game
+Gameplay dùng `TaxPolicy` (`packages/game-core/src/tax/annual-revenue.ts`) theo tổng hợp tra cứu thứ cấp: bán hàng hóa, ngưỡng 1 tỷ đồng/năm, trên ngưỡng GTGT 1% + TNCN 0,5%. Đây là mô phỏng đơn giản hóa cho game. Các dòng ở bảng trên **vẫn UNVERIFIED** và registry không kích hoạt chính sách này; cần đối chiếu NĐ 68/2026, NĐ 141/2026, Luật 09/2026/QH16, VBHN 25/2026/VBHN-BTC trước khi nâng trạng thái VERIFIED.

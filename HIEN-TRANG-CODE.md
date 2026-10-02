@@ -83,7 +83,7 @@ Monorepo Yarn 1 workspaces (~31k dòng TS/TSX)
 | Rate limit HTTP + WS | ✅ | |
 | Leaderboard Mongo top 10 | ✅ | leaderboard.test.ts PASS |
 | Activity feed | ✅ | Paginated |
-| **Server replay** | 🟡 25/29 lệnh | 4 lệnh layout còn mở |
+| **Server replay** | ✅ 36 loại lệnh (03/10/2026) | `layout_batch` có nhánh riêng; còn 3 `layout_*` cấp cao FE không gửi |
 | **Save invariants** | 🟡 | Check cho lệnh không replay (I-01 hướng B) |
 | Reconnect 2-browser | 🔍 | Chưa QA browser |
 | OAuth thật | 🔍 | Chưa nghiệm thu Google Auth |
@@ -157,7 +157,7 @@ Monorepo Yarn 1 workspaces (~31k dòng TS/TSX)
 
 | # | Tính năng | Mức độ ưu tiên | Ghi chú |
 |---|-----------|---------------|---------|
-| 1 | Server replay 100% lệnh (I-01) | 🔴 High | 25/29 xong, còn 4 lệnh layout |
+| 1 | ~~Server replay 100% lệnh (I-01)~~ | ✅ Đã làm 03/10/2026 | Chưa kiểm browser/2 client thật |
 | 2 | CI chạy thật trên GitHub (I-09) | 🔴 High | .github/workflows/ci.yml đã viết, chưa chạy |
 | 3 | Migration schema Mongo (I-16) | 🟠 Medium | Đã có `apps/server/src/world-migrations.ts` (03/10/2026), chưa chạy thật trên Mongo |
 | 4 | Nút tiêu hủy trong UI kho | 🟠 Medium | Core dispose_stock đã có |
@@ -244,7 +244,7 @@ Monorepo Yarn 1 workspaces (~31k dòng TS/TSX)
 ## 10. KIẾN NGHỊ ƯU TIÊN
 
 ### 🔴 Cao nhất
-1. **Fix I-01**: Mở rộng server replay cho 4 lệnh layout còn lại
+1. ~~Fix I-01~~ đã xong 03/10/2026 (mở rộng replay 7 lệnh vận hành)
 2. **Fix coop-commands.test.ts RED** (buy_warehouse_tier) — blocking co-op verification
 3. **Chạy CI lần đầu** trên GitHub
 

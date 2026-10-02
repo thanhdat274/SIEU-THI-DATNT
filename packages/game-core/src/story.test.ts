@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
-import { DEFAULT_INITIAL_SAVE, MARKET_EVENT_MAP, RIVAL_EVENT_ID, STORY_CHAPTERS, generateStarterTileMap, validateMarketData } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, XOI_PLOT_ID, MARKET_EVENT_MAP, RIVAL_EVENT_ID, STORY_CHAPTERS, generateStarterTileMap, validateMarketData } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { beginChapter, claimChapter, createInitialStoryState, getChapterProgress, normalizeStoryState, type StoryContext } from './story';
 import { scheduleEvents } from './market';
 
 const ctxAt = (patch: Partial<StoryContext> = {}): StoryContext => ({
-  day: 1, level: 1, totalCustomersServed: 0, totalRevenue: 0, staffCount: 0, reputation: 20, regularsCount: 0, stallServings: 0, ...patch,
+  day: 1, level: 1, totalCustomersServed: 0, totalRevenue: 0, staffCount: 0, reputation: 20, regularsCount: 0, stallServings: 0, buildingsOpened: 1, ...patch,
 });
 
 export function runStoryTests(): void {
@@ -49,6 +49,31 @@ export function runStoryTests(): void {
     assert.equal(getChapterProgress(state, rival, ctxAt({ ...strong, day: 40 })).status, 'completed');
     assert.equal(getChapterProgress(state, rival, ctxAt({ ...strong, day: 40, reputation: 60 })).status, 'started', 'danh tiếng thấp');
     assert.equal(getChapterProgress(state, rival, ctxAt({ ...strong, day: 40, regularsCount: 3 })).status, 'started', 'thiếu khách quen');
+  }
+
+  // Chương 7: cần đã nhận chương 6, đủ cấp và đã mở tiệm xôi
+  {
+    const ch7 = STORY_CHAPTERS.find(c => c.id === 'open_second_shop')!;
+    assert.equal(ch7.chapter, 7);
+    const state = normalizeStoryState({ startedChapters: {}, claimedChapters: STORY_CHAPTERS.slice(0, 5).map(c => c.id) });
+    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 29 })).status, 'locked', 'chương 6 chưa nhận');
+    state.claimedChapters.push('grandma_visit');
+    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 28 })).status, 'locked', 'thiếu cấp');
+    assert.equal(beginChapter(state, ch7.id, ctxAt({ level: 29 })).success, true);
+    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 29, buildingsOpened: 1 })).status, 'started', 'chưa mở tiệm xôi');
+    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 29, buildingsOpened: 2 })).status, 'completed');
+    assert.equal(claimChapter(state, ch7.id, ctxAt({ level: 29, buildingsOpened: 2 })).success, true);
+
+    // Qua simulation: mua mảnh đất tiệm xôi thì đếm là cơ sở thứ hai
+    const save = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player.level = 29;
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    const before = sim.getStoryProgressList().find(p => p.chapterId === ch7.id)!;
+    assert.equal(before.current, 1);
+    const opened = structuredClone(save);
+    opened.storeLayout.unlockedPlotIds = [...(opened.storeLayout.unlockedPlotIds ?? []), XOI_PLOT_ID];
+    sim.importSaveData(opened);
+    assert.equal(sim.getStoryProgressList().find(p => p.chapterId === ch7.id)!.current, 2, 'Mở tiệm xôi = 2 cơ sở');
   }
 
   // Normalize: bỏ chương lạ, ngày không hợp lệ

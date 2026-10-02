@@ -13,6 +13,7 @@ import { buildSaveFile, saveFileName } from './save-file';
 import { useGameStore } from './store/useGameStore';
 import { HUD } from './components/HUD';
 import { AccountBar } from './components/AccountBar';
+import { useCloudSave } from './hooks/useCloudSave';
 import { LoginScreen } from './components/LoginScreen';
 import { type WorldDetail, createWorldInvite, commitOnlineCommand, getOnlineWorld, touchWorldSession } from './services/api';
 import { WarehouseModal } from './components/WarehouseModal';
@@ -20,6 +21,7 @@ import { ShelfModal } from './components/ShelfModal';
 import { CashierModal } from './components/CashierModal';
 import { InventoryModal } from './components/InventoryModal';
 import { VirtualJoystick } from './components/VirtualJoystick';
+import { useControlMode } from './control-mode';
 import { RotateOverlay } from './components/RotateOverlay';
 import { ToastContainer } from './components/ToastContainer';
 import { BottomBar } from './components/BottomBar';
@@ -298,6 +300,9 @@ export const App: React.FC = () => {
       return false;
     }
   }, [syncFromSimulation, addToast]);
+
+  const exportLocalSave = useCallback(() => simulationRef.current?.exportSaveData(getActiveSlotId(), revisionRef.current), []);
+  const { cloud, uploadCloud, downloadCloud } = useCloudSave({ enabled: isSaveModalOpen && !onlineWorld, exportLocal: exportLocalSave, importSave: handleImportSave });
 
   const onlineUidRef = useRef<string | null>(null);
   const spawnPlacedForRef = useRef<string | null>(null);
@@ -1133,7 +1138,7 @@ export const App: React.FC = () => {
       addToast(`Đã đặt giỏ hàng thành công từ ${supplierName}!`, 'success');
       if (onlineWorldRef.current && res.paidTotal) {
         await commitBusinessChange(
-          { type: 'order', supplierId, items, paidTotal: res.paidTotal },
+          { type: 'order_supplier', supplierId, items },
           `Đặt giỏ hàng (${items.length} món, tổng ${res.paidTotal.toLocaleString('vi-VN')} ₫) từ ${supplierName}`,
           'Nhập hàng'
         );
@@ -1243,31 +1248,7 @@ export const App: React.FC = () => {
     if (blockOfflineOnlineMutation()) return;
     const sim = simulationRef.current;
     if (!sim) return;
-    let restockedCount = 0;
-
-    // 1. Apply planogram entries
-    const batchRes = sim.applyPlanogram();
-    restockedCount += batchRes.totalRefilled;
-
-    // 2. Fallback: restock any sales fixtures with assignedProductId that are not in planogram
-    const currentPlan = sim.getPlanogram();
-    for (const fix of sim.getFixtures()) {
-      if (isSalesFixture(fix) && fix.assignedProductId && !currentPlan[fix.id]) {
-        const prod = PRODUCT_MAP[fix.assignedProductId];
-        const effectiveCap = prod ? effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, sim.getShelfCapacityBonus()) : fix.maxCapacity;
-        const needed = effectiveCap - fix.currentStock;
-        if (needed > 0) {
-          const invItem = sim.getInventory().find((i) => i.productId === fix.assignedProductId);
-          if (invItem && invItem.quantity > 0) {
-            const transfer = Math.min(needed, invItem.quantity);
-            const res = sim.transferToShelf(fix.id, fix.assignedProductId, transfer);
-            if (res.success && res.actualQuantity > 0) {
-              restockedCount += res.actualQuantity;
-            }
-          }
-        }
-      }
-    }
+    const restockedCount = sim.autoRestockShelves();
     if (restockedCount > 0) {
       syncFromSimulation(sim);
       addToast(`Đã tự động châm ${restockedCount} món hàng từ kho lên các kệ! `, 'success');
@@ -1276,7 +1257,7 @@ export const App: React.FC = () => {
       }
       if (onlineWorldRef.current) {
         await commitBusinessChange(
-          { type: 'auto_restock', count: restockedCount },
+          { type: 'auto_restock' },
           `Tự động châm ${restockedCount} món hàng lên kệ`,
           'Bày hàng tự động'
         );
@@ -1338,6 +1319,7 @@ export const App: React.FC = () => {
     }
   };
 
+  const controlMode = useControlMode();
   const hasModal = !!(activeFixtureModal || isInventoryModalOpen || isSaveModalOpen || isSupplierModalOpen || isLayoutOpen || isPlanogramOpen);
   useEffect(() => {
     const syncInput = (state: ReturnType<typeof useGameStore.getState>) => inputManagerRef.current?.setEnabled(!(state.activeFixtureModal || state.isInventoryModalOpen || state.isSaveModalOpen || state.isSupplierModalOpen));
@@ -1412,7 +1394,7 @@ export const App: React.FC = () => {
               </div>
             )}
             <div className="world-tools" aria-label="Góc nhìn bản đồ"><PixelButton icon="warehouse" aria-label="Định vị nhà kho" onClick={locateWarehouse}/><PixelButton icon="minus" aria-label="Thu nhỏ bản đồ" disabled={zoomLevel<=1} onClick={handleZoomOut}/><span className="zoom-value">{zoomLevel}×</span><PixelButton icon="plus" aria-label="Phóng to bản đồ" disabled={zoomLevel>=3} onClick={handleZoomIn}/></div>
-            {!hasModal && !isWarehouseDockOpen && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
+            {!hasModal && (!isWarehouseDockOpen || controlMode === 'touch') && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
           </>}
         </div>
         {!isLoading && <WarehouseDock coldCapacity={simulationRef.current?.getColdCapacity()} ambientCapacity={simulationRef.current?.getAmbientCapacity()} ambientUsed={simulationRef.current?.getAmbientCellsUsed()} capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onOpenPlanogram={() => setIsPlanogramOpen(true)} onLocateWarehouse={locateWarehouse} onStowHolding={handleStowHolding} currentDay={worldTime.day}/>}
@@ -1481,7 +1463,7 @@ export const App: React.FC = () => {
     {activeFixtureModal?.type === 'kitchen_station' && simulationRef.current && <KitchenStationModal fixture={activeFixtureModal} recipes={simulationRef.current.getStationRecipes(activeFixtureModal.id)} job={simulationRef.current.getProductionJobs().find(job => job.stationId === activeFixtureModal.id)} inventory={simulationRef.current.getInventory()} day={simulationRef.current.getTime().day} onStart={async recipeId => { const stationId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'start_production', recipeId, stationId }, 'Bắt đầu nấu', 'Sản xuất', simulation => simulation.startProduction(recipeId, stationId)); if (!res?.success) addToast(res?.reason ?? 'Không bắt đầu được mẻ nấu.', 'warn'); }} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'dining_table' && simulationRef.current && <DiningTableModal fixture={activeFixtureModal} state={simulationRef.current.getDiningTableState(activeFixtureModal.id)} staff={simulationRef.current.getStaff()} onAssignCleaner={async staffId => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'assign_dining_cleanup', staffId, fixtureId }, 'Giao việc dọn bàn', 'Dọn dẹp', simulation => ({ success: simulation.assignDiningCleanup(staffId, fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast(res?.reason ?? 'Không giao được việc dọn bàn.', 'warn'); }} onClean={async () => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'clean_dining_table', fixtureId }, 'Dọn bàn ăn', 'Dọn dẹp', simulation => ({ success: simulation.cleanDiningTable(fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast('Bàn đang có khách hoặc đã sạch.', 'warn'); }} onClose={closeFixtureModal}/>}
     {isInventoryModalOpen && <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals}/>}
-    {isSaveModalOpen && <SaveModal onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onExportSave={handleExportSave} onImportSave={handleImportSave} isOnline={!!onlineWorld} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
+    {isSaveModalOpen && <SaveModal cloud={{state:cloud,onUpload:uploadCloud,onDownload:downloadCloud}} onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onExportSave={handleExportSave} onImportSave={handleImportSave} isOnline={!!onlineWorld} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
     {isSupplierModalOpen && (
       <SupplierModal
         coldCapacity={simulationRef.current?.getColdCapacity()}
@@ -1707,7 +1689,7 @@ export const App: React.FC = () => {
     )}
     {isLevelRoadmapOpen && <LevelRoadmapModal player={player} onClose={() => setLevelRoadmapOpen(false)}/>}
     {daySummaryRecord && <DaySummaryModal record={daySummaryRecord} morningBrief={simulationRef.current?.getMorningBrief()} onClose={() => setDaySummaryRecord(null)}/>}
-    {isTaxOpen && <TaxModal day={worldTime.day} worldTime={worldTime} dailyRecords={dailyRecords} currentDayRecord={currentDayRecord} onClose={() => setTaxOpen(false)}/>}
+    {isTaxOpen && <TaxModal day={worldTime.day} worldTime={worldTime} dailyRecords={dailyRecords} currentDayRecord={currentDayRecord} taxState={simulationRef.current?.getTaxState()} onSetUnderDeclare={async (underDeclare) => { const res = await persistSimulationMutation({ type: 'set_tax_declaration', underDeclare }, underDeclare ? 'Chọn khai bớt thuế' : 'Chọn kê khai đủ thuế', 'Thuế', simulation => simulation.setTaxUnderDeclare(underDeclare)); if (!res?.success) addToast(res?.reason ?? 'Không đổi được cách kê khai.', 'warn'); }} onClose={() => setTaxOpen(false)}/>}
     {isRegularsOpen && simulationRef.current && <RegularsModal regulars={simulationRef.current.getRegulars()} onClose={() => setRegularsOpen(false)}/>}
     {isLayoutOpen && simulationRef.current && <StoreLayoutModal save={simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision)} onConfirm={handleApplyStoreLayout} onClose={closeLayoutEditor}/>}
     {isPlanogramOpen && (

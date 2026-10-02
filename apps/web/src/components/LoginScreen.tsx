@@ -3,6 +3,7 @@ import type { User } from 'firebase/auth';
 import { deleteSaveSlot, getActiveSlotId, listSaveSlots, loadExistingSave, resetSaveToDefault, setActiveSlotId, type SaveSlotId, type SaveSlotInfo } from '../db';
 import { acquireSlotLock, releaseSlotLock, slotsLockedElsewhere } from '../slot-lock';
 import { listUserWorlds, createOnlineWorld, joinOnlineWorld, getLeaderboard, type WorldSummary, type WorldDetail, type ActivitiesResponse, type LeaderboardResponse } from '../services/api';
+import { useControlMode, setControlMode, type ControlMode } from '../control-mode';
 import './LoginScreen.css';
 
 interface LoginScreenProps {
@@ -33,6 +34,7 @@ function playChime(freq = 440, soundEnabled = true) {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
+  const controlMode = useControlMode();
   const [user, setUser] = useState<User | null>(null);
   const [busy, setBusy] = useState(false);
   const [saveDay, setSaveDay] = useState<number>(1);
@@ -839,7 +841,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
                   </div>
                   <div className="mobile-touch-note">
                     <span className="note-icon">📱</span>
-                    <span>Trên điện thoại và máy tính bảng: sử dụng cần xoay ảo (Virtual Joystick) bên trái và nút tương tác cảm ứng bên phải; xoay ngang màn hình để trải nghiệm tốt nhất.</span>
+                    <span>Trên điện thoại và máy tính bảng: sử dụng cần xoay ảo (Virtual Joystick) bên trái và nút tương tác cảm ứng bên phải; xoay ngang màn hình để trải nghiệm tốt nhất. iPad màn lớn bị nhận là máy tính? Chọn "Cảm ứng" bên dưới.</span>
+                  </div>
+                  <div className="control-mode-options" role="radiogroup" aria-label="Cách điều khiển" style={{ marginTop: 8 }}>
+                    {([['auto', 'Tự nhận'], ['touch', 'Cảm ứng (nút di chuyển)'], ['keyboard', 'Bàn phím / chuột']] as Array<[ControlMode, string]>).map(([mode, label]) => (
+                      <button key={mode} type="button" role="radio" aria-checked={controlMode === mode} className={controlMode === mode ? 'active' : ''} onClick={() => setControlMode(mode)}>{label}</button>
+                    ))}
                   </div>
                 </div>
               )}

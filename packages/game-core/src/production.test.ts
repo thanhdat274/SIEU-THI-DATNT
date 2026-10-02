@@ -91,4 +91,20 @@ export function runProductionTests(): void {
   const staffed = timeToFinish(true);
   assert.ok(solo >= recipe.durationSeconds - 1 && solo <= recipe.durationSeconds + 1, `Không nhân viên: ~${recipe.durationSeconds}s (thực tế ${solo}s)`);
   assert.ok(staffed < solo, `Có nhân viên trong ca nấu nhanh hơn (${staffed}s < ${solo}s)`);
+  // Quầy nước: máy ép mía, máy xay, quầy nước là trạm chạy được.
+  for (const [shopId, recipeId, inputs, outId] of [
+    ['sugarcane_press', 'recipe_nuoc_mia', [['mia', 4]], 'nuoc_mia'],
+    ['blender', 'recipe_sinh_to', [['trai_cay', 2], ['sua_chua', 2]], 'sinh_to_trai_cay'],
+    ['drink_counter', 'recipe_ca_phe_sua', [['ca_phe_bot', 1], ['duong_cat', 1], ['sua_hop', 2]], 'ca_phe_sua_pha'],
+  ] as const) {
+    const save = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player.level = 25;
+    save.inventory = inputs.map(([productId, quantity]) => ({ productId, quantity, lots: [{ quantity, expiresOnDay: 50, unitCost: 2_000, provenance: 'known' as const }] }));
+    save.storeLayout.fixtures.push({ id: 'drink_station_1', type: 'kitchen_station', tileX: 5, tileY: 5, widthTiles: 1, heightTiles: 1, rotation: 0, currentStock: 0, maxCapacity: 0, label: shopId, shopId });
+    const d = new GameSimulation(save, map, new InputManager(), {});
+    assert.ok(d.getStationRecipes('drink_station_1').some(r => r.id === recipeId), `${shopId} có công thức ${recipeId}`);
+    assert.equal(d.startProduction(recipeId, 'drink_station_1').success, true, `${shopId} bắt đầu được mẻ`);
+    for (let i = 0; i < 100 && d.getProductionJobs().length > 0; i++) d.update(1);
+    assert.equal(d.getInventory().find(i => i.productId === outId)?.quantity, RECIPE_MAP[recipeId].outputQuantity, `${shopId} ra thành phẩm`);
+  }
 }

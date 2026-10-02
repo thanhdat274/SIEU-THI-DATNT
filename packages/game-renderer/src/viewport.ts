@@ -5,7 +5,7 @@ import { FixedStepSimulationRunner, GameSimulation, needsService, getLightingSta
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting } from './shop-lighting';
-import { DECOR_MAP, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, BUILDING_MAP} from '@game/data';
+import { DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, BUILDING_MAP} from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -703,7 +703,8 @@ export class PixiGameViewport {
   /** Đồ trang trí tường/biển đã mua: biểu tượng treo dọc tường sau của tiệm, dựng lại khi danh sách đổi. */
   private syncDecor(): void {
     const owned = this.simulation.getDecorOwned();
-    const key = owned.join(',');
+    const seasonal = seasonalDecorForDay(this.simulation.getTime().day);
+    const key = `${owned.join(',')}|${seasonal.map(item => item.id).join(',')}`;
     if (key === this.decorKey) return;
     this.decorKey = key;
     for (const old of this.decorSprites) old.destroy();
@@ -716,6 +717,17 @@ export class PixiGameViewport {
       text.anchor.set(0.5);
       text.x = slots[index][0] * TILE_SIZE;
       text.y = slots[index][1] * TILE_SIZE;
+      text.zIndex = STORE_BOUNDS.top * TILE_SIZE + 20;
+      this.entitiesLayer.addChild(text);
+      this.decorSprites.push(text);
+    });
+    // Trang trí theo sự kiện đang diễn ra: xen giữa các món đã mua, tự gỡ khi hết mùa.
+    const seasonalSlots = [[9.5, 3.7], [10.5, 3.7]];
+    seasonal.slice(0, seasonalSlots.length).forEach((item, index) => {
+      const text = new Text({ text: item.icon, style: new TextStyle({ fontSize: 20 }) });
+      text.anchor.set(0.5);
+      text.x = seasonalSlots[index][0] * TILE_SIZE;
+      text.y = seasonalSlots[index][1] * TILE_SIZE;
       text.zIndex = STORE_BOUNDS.top * TILE_SIZE + 20;
       this.entitiesLayer.addChild(text);
       this.decorSprites.push(text);

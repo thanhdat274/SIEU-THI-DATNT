@@ -14,7 +14,7 @@
 ## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)
 
 - **Hẻm sống động:** mặt cắt đường/cống/độ ướt đã commit (2f2af38). Đèn tín hiệu chu kỳ + người đi bộ + nhường đường: đã commit `24a2fab` + OpenSpec `traffic-light-crosswalk-yielding`, QA browser mới một phần (S46, F-03); khách thật qua đường và đồng bộ co-op là non-goal hiện tại.
-- **Co-op:** ưu tiên I-01 (replay mọi lệnh), I-15, I-16, I-05; sau đó mới tới bảng xếp hạng thật (F-05, phụ thuộc I-01).
+- **Co-op:** I-01 đã mở rộng replay 36 loại lệnh (03/10/2026, chưa kiểm browser/2 client thật), I-16 đã có code migration (chưa chạy thật); còn I-15, I-05; sau đó mới tới bảng xếp hạng thật (F-05, phụ thuộc I-01).
 - **Chất lượng:** CI, `test:all`, test `apps/web`, a11y (I-09, I-18, S32, S43).
 - **Vận hành:** `docs/deploy.md`, quản lý khóa bí mật (I-17, I-14).
 - **Ý tưởng sau:** F-01, F-06…F-11 trong `THONG-KE.md` mục 5 (F-02 customer reviews đã hoàn tất 02/10/2026).

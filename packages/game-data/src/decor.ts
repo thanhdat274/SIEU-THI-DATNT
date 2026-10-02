@@ -1,4 +1,5 @@
 import { nullProto } from './safe-map';
+import { getSeasonForDay, type SeasonId } from './seasons';
 export type DecorSlot = 'sign' | 'wall' | 'floor' | 'counter';
 
 export interface DecorDef {
@@ -31,7 +32,6 @@ export const DECOR: DecorDef[] = [
   { id: 'bang_khai_giang', name: 'Bảng khai giảng', icon: '🎒', slot: 'wall', cost: 0, attraction: 10, unlockLevel: 21, exclusive: true },
   { id: 'co_bong_da', name: 'Cờ mùa bóng đá', icon: '⚽', slot: 'wall', cost: 0, attraction: 15, unlockLevel: 22, exclusive: true },
   { id: 'bang_khen_thue', name: 'Bằng khen nộp thuế gương mẫu', icon: '🏅', slot: 'wall', cost: 0, attraction: 12, unlockLevel: 10, exclusive: true },
-];
   // Chủ đề Việt hóa
   { id: 'non_la_treo', name: 'Nón lá treo tường', icon: '👒', slot: 'wall', cost: 25_000, attraction: 4, unlockLevel: 10 },
   { id: 'am_tra_quay', name: 'Bộ ấm trà đặt quầy', icon: '🍵', slot: 'counter', cost: 30_000, attraction: 4, unlockLevel: 10 },
@@ -53,8 +53,31 @@ export const DECOR: DecorDef[] = [
   { id: 'ghe_nghi_khach', name: 'Ghế nghỉ cho khách', icon: '🪑', slot: 'floor', cost: 60_000, attraction: 6, unlockLevel: 11 },
   { id: 'cay_kieng_lon', name: 'Cây kiểng lớn', icon: '🌳', slot: 'floor', cost: 70_000, attraction: 10, unlockLevel: 12 },
   { id: 'be_ca_koi', name: 'Bể cá Koi mini', icon: '🐟', slot: 'floor', cost: 150_000, attraction: 14, unlockLevel: 17 },
+];
 
 export const DECOR_ATTRACTION_MAX = 160;
 /** Hệ số khách = 1 + điểm thu hút / DIVISOR (tối đa +25%, ứng với điểm thu hút tối đa). */
 export const DECOR_ATTRACTION_DIVISOR = 640;
 export const DECOR_MAP: Record<string, DecorDef> = nullProto(Object.fromEntries(DECOR.map(item => [item.id, item])));
+
+export interface SeasonalDecorItem {
+  id: string;
+  name: string;
+  icon: string;
+}
+
+/**
+ * Trang trí tạm theo mùa/sự kiện: chỉ hiển thị trên tường tiệm khi sự kiện đang diễn ra, tự gỡ khi hết.
+ * Không phải đồ sở hữu (không vào save, không tính điểm thu hút); sức hút của sự kiện đã nằm ở hệ số `demandMultiplier`.
+ */
+export const SEASONAL_DECOR: Record<SeasonId, readonly SeasonalDecorItem[]> = {
+  tet: [{ id: 'tet_mai', name: 'Cành mai ngày Tết', icon: '🌼' }, { id: 'tet_long_den', name: 'Đèn lồng đỏ', icon: '🏮' }],
+  mua_mua: [{ id: 'mua_o', name: 'Ô che mưa treo hiên', icon: '☂️' }, { id: 'mua_ech', name: 'Ếch mùa mưa', icon: '🐸' }],
+  tuu_truong: [{ id: 'tt_cap', name: 'Cặp sách ngày khai giảng', icon: '🎒' }, { id: 'tt_sach', name: 'Sách vở mới', icon: '📚' }],
+  trung_thu: [{ id: 'tr_long_den', name: 'Lồng đèn ông sao', icon: '⭐' }, { id: 'tr_banh', name: 'Bánh trung thu', icon: '🥮' }],
+};
+
+export function seasonalDecorForDay(day: number): readonly SeasonalDecorItem[] {
+  const season = getSeasonForDay(day);
+  return season ? SEASONAL_DECOR[season.id] : [];
+}

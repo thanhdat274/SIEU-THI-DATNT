@@ -6,6 +6,7 @@ import { CollisionSystem } from './collision';
 import { GameClock } from './clock';
 import { findPath } from './pathfinding';
 import { runTaxRegistryTests, runAnnualRevenueTests } from './tax/registry.test';
+import { runTaxAuditTests } from './tax/audit.test';
 import { runInputTests } from './input.test';
 import {runWarehouseTests} from './warehouse.test';
 import { runMultiplayerSchemaTests } from '@game/shared/src/multiplayer.test';
@@ -31,6 +32,7 @@ import { runDeliveryTests, runReceiveDeliveredOrdersTests } from './delivery.tes
 import { runHostileIdTests, runHostileRuntimeKeyTests } from './hostile-ids.test';
 import { runCounterfeitTests } from './counterfeit.test';
 import { runReplayTests } from './replay.test';
+import { runStallsStorageTests } from './stalls.test';
 import { runForecastTests } from './forecast.test';
 import { runScenarioTests } from './scenarios.test';
 import { runPerformanceTests } from './performance.test';
@@ -85,10 +87,10 @@ function assert(condition: boolean, message: string) {
 
 export async function runTests(): Promise<void> {
   runCatalogTests();
-  runSupplierTests();
-  runPlanogramTests();
   runExpansionCatalogTests();
   runExpansionManifestTests();
+  runSupplierTests();
+  runPlanogramTests();
   runLedgerTests();
   runSuggestionTests();
   runStaffTests();
@@ -105,6 +107,7 @@ export async function runTests(): Promise<void> {
   runHostileIdTests();
   runHostileRuntimeKeyTests();
   runReplayTests();
+  runStallsStorageTests();
   runForecastTests();
   runScenarioTests();
   runPerformanceTests();
@@ -134,6 +137,7 @@ export async function runTests(): Promise<void> {
   runWaveATests();
   runOutdoorPropTests();
   runAnnualRevenueTests();
+  runTaxAuditTests();
   runStoreLayoutTests();
   runShelfSlotTests();
   runChildCapacityTests();
