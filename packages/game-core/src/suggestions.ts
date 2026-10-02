@@ -12,6 +12,7 @@ import {
   InventoryItem,
   RestockSuggestionResult,
   StoreFixture,
+  CashObligations,
   RestockSuggestionOptions,
   SuggestedCartItem,
   SuggestionReason,
@@ -46,6 +47,8 @@ export interface SuggestionEngineParams {
   existingCart?: Record<string, number>;
   /** Tuỳ chỉnh tỷ lệ chia, số món thử và quỹ dự phòng; thiếu = mặc định. */
   options?: RestockSuggestionOptions;
+  /** Nợ lương, lương kỳ tới và thuế sắp nộp; giữ lại nếu `options.protectObligations` không tắt. */
+  obligations?: CashObligations;
   /** Tổng tiền thật phải trả cho một giỏ (giá sỉ theo bậc số lượng, chiết khấu NCC); dùng để kiểm tra cuối không vượt tiền. */
   cartCostOf?: (items: SupplierCartItem[]) => number;
   /** Tồn còn bán hôm nay của NCC; 0 = tạm ngừng cung, undefined = không giới hạn. */
@@ -168,6 +171,20 @@ export const MAX_COVER_DAYS = 5;
 export const MAX_TRIAL_PRODUCTS = 6;
 /** Lượt đầu mỗi món thử chỉ lấy chừng này đơn vị để tiền chia đều cho nhiều mẫu mã trước khi nhập thêm. */
 export const TRIAL_FIRST_PASS_UNITS = 2;
+/** Số ngày lịch sử tìm xem món đã từng bán chưa: có bán trong khoảng này thì không coi là hàng mới. */
+export const HISTORY_DAYS = 60;
+
+/** Đưa cài đặt người chơi (có thể thiếu/rác từ save hay ô nhập) về giá trị hợp lệ đầy đủ; dùng chung cho engine, save và giao diện. */
+export function normalizeRestockOptions(options?: RestockSuggestionOptions | null): Required<RestockSuggestionOptions> {
+  const num = (value: unknown, fallback: number, min: number, max: number) =>
+    typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value))) : fallback;
+  return {
+    provenSharePct: num(options?.provenSharePct, PROVEN_BUDGET_SHARE * 100, 0, 100),
+    maxTrialProducts: num(options?.maxTrialProducts, MAX_TRIAL_PRODUCTS, 0, 20),
+    cashReservePct: num(options?.cashReservePct, DEFAULT_CASH_RESERVE_PCT, 0, 90),
+    protectObligations: typeof options?.protectObligations === 'boolean' ? options.protectObligations : true,
+  };
+}
 
 type SuggestionGroup = 'proven' | 'trial';
 type LimitKind = 'budget' | 'cold' | 'ambient' | 'supplier';
@@ -256,9 +273,24 @@ export function generateRestockSuggestions(
   const reservePct = clampNum(params.options?.cashReservePct, DEFAULT_CASH_RESERVE_PCT, 0, 90);
 
   const money = Math.max(0, params.playerMoney);
-  const reserved = Math.floor((money * reservePct) / 100);
+  const percentReserve = Math.floor((money * reservePct) / 100);
+  const obligationReserve = params.options?.protectObligations === false ? 0 : Math.max(0, Math.floor(params.obligations?.total ?? 0));
+  const reserved = Math.min(money, Math.max(percentReserve, obligationReserve));
   const moneyCap = Math.max(0, Math.min(params.budget ?? money, money - reserved));
-  if (reserved > 0) appliedConstraints.push(`Giữ lại ${formatMoney(reserved)} (${Math.round(reservePct)}% tiền mặt) làm quỹ dự phòng`);
+  if (reserved > 0) {
+    const ob = params.obligations;
+    if (obligationReserve > percentReserve && ob) {
+      const parts = [
+        ob.wageDebt > 0 ? `nợ lương ${formatMoney(ob.wageDebt)}` : '',
+        ob.nextWages > 0 ? `lương kỳ tới ${formatMoney(ob.nextWages)}` : '',
+        ob.taxDue > 0 ? `thuế sắp nộp ${formatMoney(ob.taxDue)}` : '',
+        ob.taxDebt > 0 ? `nợ thuế ${formatMoney(ob.taxDebt)}` : '',
+      ].filter(Boolean);
+      appliedConstraints.push(`Giữ lại ${formatMoney(reserved)} cho ${parts.join(' + ')}`);
+    } else {
+      appliedConstraints.push(`Giữ lại ${formatMoney(reserved)} (${Math.round(reservePct)}% tiền mặt) làm quỹ dự phòng`);
+    }
+  }
   const spendable = Math.max(0, moneyCap - cartCost);
   if (cartCost > 0) {
     appliedConstraints.push(`Giỏ đang có ${formatMoney(cartCost)} — chỉ gợi ý thêm trong ${formatMoney(spendable)} còn lại`);
@@ -316,10 +348,14 @@ export function generateRestockSuggestions(
     // Sales velocity: 7 days & 3 days
     const v7 = calculateSalesVelocity(product.id, params.dailyRecords, params.currentDayRecord, 7);
     const v3 = calculateSalesVelocity(product.id, params.dailyRecords, params.currentDayRecord, 3);
-    const hadSales = v7.totalSold > 0 || (params.currentDayRecord.productSales?.[product.id] ?? 0) > 0;
+    const soldRecently = v7.totalSold > 0 || (params.currentDayRecord.productSales?.[product.id] ?? 0) > 0;
+    // Món từng bán trước đây (xa hơn 7 ngày) vẫn là hàng đã có lịch sử, không phải hàng mới: nhập theo tốc độ bán cũ.
+    const lifetime = soldRecently ? undefined : calculateSalesVelocity(product.id, params.dailyRecords, params.currentDayRecord, HISTORY_DAYS);
+    const soldBefore = (lifetime?.totalSold ?? 0) > 0;
+    const hadSales = soldRecently || soldBefore;
     const demandMultiplier = Math.max(0.1, Math.min(4.0, params.demandMultiplierOf?.(product.id) ?? 1.0));
-    const baseVelocity = Math.max(v7.velocity, v3.velocity);
-    const trendVelocity = (hadSales ? params.expectedDailyOf?.(product.id) : undefined) ?? (baseVelocity * demandMultiplier);
+    const baseVelocity = soldBefore ? lifetime!.velocity : Math.max(v7.velocity, v3.velocity);
+    const trendVelocity = (soldRecently ? params.expectedDailyOf?.(product.id) : undefined) ?? (baseVelocity * demandMultiplier);
 
     const assignedFixture = params.fixtures.find(
       (f) => isSalesFixture(f) && f.assignedProductId === product.id
@@ -557,6 +593,7 @@ export function generateRestockSuggestions(
     spendable,
     provenShare,
     reserved,
+    obligations: obligationReserve,
     provenTarget,
     trialTarget: spendable - provenTarget,
     provenSpent: spentOf('proven'),

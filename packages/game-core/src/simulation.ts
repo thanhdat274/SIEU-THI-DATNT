@@ -26,6 +26,7 @@ import {
   StockLot,
   DailyRecord,
   LedgerEntry,
+  CashObligations,
   RestockSuggestionOptions,
   RestockSuggestionResult,
   QuestState,
@@ -111,7 +112,7 @@ import { decayLot, spoilageRate } from './spoilage';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { normalizePlayerProgression, saleExperienceMultiplier, trafficAtLevel } from './progression';
 import { CustomerManager } from './customers';
-import { calculateSalesVelocity, generateRestockSuggestions, getIncomingOrdersCount, getUsableStock } from './suggestions';
+import { calculateSalesVelocity, generateRestockSuggestions, normalizeRestockOptions, getIncomingOrdersCount, getUsableStock } from './suggestions';
 import { buildProductPlans, type ProductPlan, type ProductPlanInput } from './forecast';
 import { climateSeasonForDay } from './weather';
 import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, timeBandFor, visibleMarketEvents, weekdayOf, type MarketNotice } from './market';
@@ -227,6 +228,8 @@ export class GameSimulation {
   private restockJobClaims: RestockClaimManager;
   private autoBuyEnabled = false;
   private autoBuyRules: AutoBuyRule[] = [];
+  /** Cài đặt gợi ý nhập hàng; undefined = chưa từng chỉnh (dùng mặc định / giá trị cũ ở trình duyệt). */
+  private restockOptions?: RestockSuggestionOptions;
   private processedAutoBuyDayIds = new Set<number>();
   private autoBuyReports: Record<number, AutoBuyReport> = {};
   private pendingOrders: SupplierOrder[];
@@ -378,6 +381,7 @@ export class GameSimulation {
     }
     this.autoBuyEnabled = initialSave.autoBuyEnabled ?? false;
     this.autoBuyRules = this.validateAutoBuyRules(initialSave.autoBuyRules ?? []);
+    this.restockOptions = initialSave.restockOptions ? normalizeRestockOptions(initialSave.restockOptions) : undefined;
     this.processedAutoBuyDayIds = new Set(initialSave.processedAutoBuyDayIds ?? []);
     this.autoBuyReports = structuredClone(initialSave.autoBuyReports ?? {});
     this.statistics = { ...initialSave.statistics };
@@ -1677,6 +1681,17 @@ export class GameSimulation {
     return { enabled: this.autoBuyEnabled, rules: structuredClone(this.autoBuyRules), reports: structuredClone(this.autoBuyReports) };
   }
 
+  /** Cài đặt gợi ý nhập hàng đã lưu; undefined nếu người chơi chưa chỉnh lần nào. */
+  public getRestockOptions(): Required<RestockSuggestionOptions> | undefined {
+    return this.restockOptions ? normalizeRestockOptions(this.restockOptions) : undefined;
+  }
+
+  public setRestockOptions(options: RestockSuggestionOptions): Required<RestockSuggestionOptions> {
+    this.restockOptions = normalizeRestockOptions(options);
+    this.notifyStateChanged();
+    return { ...this.restockOptions } as Required<RestockSuggestionOptions>;
+  }
+
   public setAutoBuyConfig(enabled: boolean, rules: AutoBuyRule[]): { success: boolean; reason?: string } {
     const valid = this.validateAutoBuyRules(rules);
     if (valid.length !== rules.length) return { success: false, reason: 'Quy tắc có sản phẩm, nhà cung cấp hoặc giới hạn không hợp lệ.' };
@@ -2237,7 +2252,35 @@ export class GameSimulation {
   /**
    * Generate intelligent restock suggestions based on sales velocity and store state.
    */
-  public suggestRestock(supplierId?: string, budget?: number, existingCart?: Record<string, number>, options?: RestockSuggestionOptions): RestockSuggestionResult {
+  /** Khoản truy thu/phạt thuế còn nợ (thu dần khi đóng ngày). */
+  private outstandingTaxDebt(): number {
+    return 0; // HEAD chưa có nợ truy thu/phạt thuế (taxState); phần thuế mới sẽ trả số thật
+  }
+
+  /** Thuế sẽ bị trừ khi đóng ngày `day` (ước tính, tính đủ cả phần có thể khai bớt). */
+  private estimateTaxDueOnClose(day: number): number {
+    const annual = summarizeAnnualRevenue(this.dailyRecords, day, this.currentDayRecord);
+    return annual.taxActive ? calculateDailyTax(this.currentDayRecord.revenue, true) : 0;
+  }
+
+  /** Tiền mặt phải chừa cho kỳ tới: nợ lương, lương một ngày (đã trừ perk, nhân theo ca), thuế sẽ nộp khi đóng ngày, nợ thuế. */
+  public getCashObligations(): CashObligations {
+    const day = this.clock.getTime().day;
+    const wageDiscount = getSkillModifier(this.skills, 'wage_discount');
+    const nextWages = this.staff
+      .filter((member) => member.hiredOnDay <= day)
+      .reduce((sum, member) => {
+        const wage = wageDiscount > 0 ? Math.round(member.dailyWage * (1 - wageDiscount)) : member.dailyWage;
+        const shift = this.staffSchedule[member.id] ?? member.shift;
+        return sum + Math.round(wage * (STAFF_SHIFTS[shift]?.wageMultiplier ?? 1));
+      }, 0);
+    const taxDue = this.estimateTaxDueOnClose(day);
+    const wageDebt = Math.max(0, this.wageDebt);
+    const taxDebt = this.outstandingTaxDebt();
+    return { wageDebt, nextWages, taxDue, taxDebt, total: wageDebt + nextWages + taxDue + taxDebt };
+  }
+
+  public suggestRestock(supplierId?: string, budget?: number, existingCart?: Record<string, number>, options: RestockSuggestionOptions | undefined = this.restockOptions): RestockSuggestionResult {
     const effectiveSupplierId = supplierId ?? DEFAULT_SUPPLIER_ID;
     const expected = new Map(this.getProductPlans(effectiveSupplierId).map((plan) => [plan.productId, plan.expectedTomorrow]));
     const supplierState = this.market.suppliers?.[effectiveSupplierId];
@@ -2245,6 +2288,7 @@ export class GameSimulation {
     return generateRestockSuggestions({
       existingCart,
       options,
+      obligations: this.getCashObligations(),
       // Giá thật lúc đặt giỏ (cùng công thức với validateSupplierCart) để tổng gợi ý + giỏ không vượt tiền.
       cartCostOf: (items) => this.validateSupplierCart(effectiveSupplierId, items).totalCost,
       supplierStockOf: (productId) =>
@@ -3240,7 +3284,6 @@ export class GameSimulation {
     const supplierState = this.market.suppliers?.[supplierId];
 
     for (const line of items) {
-      const product = PRODUCT_MAP[line.productId]!;
       const unitCost = this.wholesaleUnitPrice(supplierId, line.productId, line.quantity);
       if (supplierState && supplier.stockPerProductPerDay !== undefined) supplierState.stockLeft[line.productId] = Math.max(0, (supplierState.stockLeft[line.productId] ?? 0) - line.quantity);
       const orderId = `ord-${++this.orderSequence}`;
@@ -3672,6 +3715,7 @@ export class GameSimulation {
       processedPayrollDayIds: [...this.processedPayrollDayIds],
       autoBuyEnabled: this.autoBuyEnabled,
       autoBuyRules: structuredClone(this.autoBuyRules),
+      ...(this.restockOptions ? { restockOptions: { ...this.restockOptions } } : {}),
       processedAutoBuyDayIds: [...this.processedAutoBuyDayIds],
       autoBuyReports: structuredClone(this.autoBuyReports),
       quests: normalizeQuestState(this.quests),
@@ -3729,6 +3773,7 @@ export class GameSimulation {
     }
     this.autoBuyEnabled = saveData.autoBuyEnabled ?? false;
     this.autoBuyRules = this.validateAutoBuyRules(saveData.autoBuyRules ?? []);
+    this.restockOptions = saveData.restockOptions ? normalizeRestockOptions(saveData.restockOptions) : undefined;
     this.processedAutoBuyDayIds = new Set(saveData.processedAutoBuyDayIds ?? []);
     this.autoBuyReports = structuredClone(saveData.autoBuyReports ?? {});
     this.questsManager.load(saveData);

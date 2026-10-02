@@ -5,6 +5,7 @@ import {
   generateStarterTileMap,
   PRODUCT_MAP,
 } from '@game/data';
+import { isSaveGameData } from '@game/shared';
 import { GameSimulation } from './simulation';
 import { InputManager } from './input';
 import {
@@ -617,6 +618,111 @@ export function runSuggestionTests(): void {
     assert.ok(order.success, 'Đặt hàng thành công');
     assert.equal(moneyBefore - sim.getPlayerData().money, afterSkill.totalCost, 'Tiền trừ đúng bằng giá giỏ đã giảm');
     assert.equal(sim.getPendingOrders().at(-1)!.unitCost, sim.wholesaleUnitPrice(supplierId, 'mi_hao_hao', 10), 'Giá vốn lô ghi theo giá đã giảm');
+  }
+
+  // 6b. Món từng bán lâu trước đó, nay hết hàng: là hàng cũ (nhập theo tốc độ bán cũ), không phải hàng mới thử.
+  {
+    const old = Object.fromEntries(Array.from({ length: 30 }, (_, i) => [i + 1, { day: i + 1, productSales: i < 3 ? { mi_hao_hao: 20 } : {} }]));
+    const res = generateRestockSuggestions({
+      ...base,
+      currentDay: 40,
+      currentDayRecord: { day: 40, productSales: {} } as any,
+      playerMoney: 100000,
+      options: { cashReservePct: 0 },
+      fixtures: [noodleShelf(0)],
+      dailyRecords: old as any,
+    });
+    const noodle = res.items.find((i) => i.productId === 'mi_hao_hao');
+    assert.ok(noodle, 'Mì từng bán (cách đây >7 ngày) và đang hết hàng được gợi ý');
+    assert.equal(noodle!.isFallback, false, 'Không bị xếp vào nhóm hàng mới thử');
+    assert.notEqual(noodle!.reason, 'fallback_trial');
+    assert.ok(noodle!.salesVelocity! > 0, 'Dùng tốc độ bán đã ghi nhận');
+    assert.ok(noodle!.quantity < 20, `Bán thưa nên lượng nhập nhỏ (${noodle!.quantity}), không lấp đầy kệ 40`);
+
+    // Chưa từng bán ngày nào trong lịch sử: vẫn là hàng mới thử.
+    const fresh = generateRestockSuggestions({
+      ...base, currentDay: 40, currentDayRecord: { day: 40, productSales: {} } as any, playerMoney: 100000,
+      options: { cashReservePct: 0 }, fixtures: [noodleShelf(0)],
+      dailyRecords: Object.fromEntries(Array.from({ length: 30 }, (_, i) => [i + 1, { day: i + 1, productSales: {} }])) as any,
+    });
+    assert.equal(fresh.items.find((i) => i.productId === 'mi_hao_hao')?.isFallback, true, 'Chưa từng bán → hàng mới thử');
+  }
+
+  // 7. Quỹ dự phòng theo nghĩa vụ thực tế (lương, thuế) — lấy mức lớn hơn giữa nghĩa vụ và % tiền mặt.
+  {
+    const common = {
+      ...base,
+      playerMoney: 100000,
+      fixtures: [noodleShelf(0)],
+      dailyRecords: weekOf(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [d, { mi_hao_hao: 60 }]))),
+    };
+    const obligations = { wageDebt: 20000, nextWages: 30000, taxDue: 10000, taxDebt: 5000, total: 65000 };
+    const res = generateRestockSuggestions({ ...common, obligations });
+    assert.equal(res.budget!.reserved, 65000, 'Nghĩa vụ 65.000 lớn hơn 10% (10.000) nên giữ 65.000');
+    assert.equal(res.budget!.obligations, 65000);
+    assert.ok(res.totalCost <= 35000, `Chỉ chi trong phần còn lại 35.000 (${res.totalCost})`);
+    assert.ok(res.appliedConstraints.some((c) => c.includes('nợ lương') && c.includes('lương kỳ tới') && c.includes('thuế sắp nộp')), 'Ghi rõ giữ lại cho khoản nào');
+
+    const off = generateRestockSuggestions({ ...common, obligations, options: { protectObligations: false } });
+    assert.equal(off.budget!.reserved, 10000, 'Tắt công tắc: chỉ còn % tiền mặt');
+
+    const small = generateRestockSuggestions({ ...common, obligations: { wageDebt: 0, nextWages: 3000, taxDue: 0, taxDebt: 0, total: 3000 } });
+    assert.equal(small.budget!.reserved, 10000, 'Nghĩa vụ nhỏ hơn 10% thì vẫn giữ 10%');
+
+    const broke = generateRestockSuggestions({ ...common, obligations: { ...obligations, total: 500000 } });
+    assert.equal(broke.items.length, 0, 'Nghĩa vụ vượt tiền mặt: không gợi ý gì');
+    assert.equal(broke.totalCost, 0);
+
+    // Tích hợp: nợ lương trong GameSimulation được giữ lại khi gợi ý.
+    const sim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+    const money = sim.getPlayerData().money;
+    assert.equal(sim.getCashObligations().total, 0, 'Tiệm mới chưa có nghĩa vụ');
+    (sim as any).wageDebt = 60000;
+    const ob = sim.getCashObligations();
+    assert.equal(ob.wageDebt, 60000);
+    const gen = sim.suggestRestock('dai_ly_dau_hem');
+    assert.ok(gen.totalCost <= money - 60000, `Gợi ý chừa nợ lương 60.000 (${gen.totalCost} <= ${money - 60000})`);
+
+    // Lương kỳ tới khớp đúng số processPayroll sẽ trả cho nhân viên đã thuê.
+    const staffSim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+    (staffSim as any).playerData.money = 5_000_000;
+    (staffSim as any).playerData.level = 2; // thuê nhân viên cần cấp 2
+    const candidate = staffSim.getStaffCandidates()[0];
+    assert.ok(candidate, 'Có ứng viên');
+    const hired = staffSim.hireStaff(candidate!.id);
+    assert.ok(hired.success, `Thuê được nhân viên (${hired.reason ?? 'ok'})`);
+    const expected = staffSim.getCashObligations().nextWages;
+    assert.ok(expected > 0, 'Có nhân viên thì có lương kỳ tới');
+    const moneyBefore = staffSim.getPlayerData().money;
+    const paid = staffSim.processPayroll(staffSim.getTime().day);
+    assert.equal(paid.totalGrossWage, expected, 'nextWages khớp tổng lương processPayroll tính');
+    assert.equal(moneyBefore - staffSim.getPlayerData().money, expected, 'Tiền trả đúng bằng nextWages');
+  }
+
+  // 8. Cài đặt gợi ý nằm trong save: lưu → nạp lại giữ nguyên, save cũ không có trường vẫn hợp lệ, trường rác bị từ chối/kẹp.
+  {
+    const sim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+    assert.equal(sim.getRestockOptions(), undefined, 'Chưa chỉnh thì chưa có cài đặt lưu');
+    assert.equal('restockOptions' in sim.exportSaveData(), false, 'Save không ghi trường khi chưa chỉnh');
+    assert.equal(isSaveGameData(sim.exportSaveData()), true, 'Save cũ (không có restockOptions) vẫn hợp lệ');
+
+    const saved = sim.setRestockOptions({ provenSharePct: 65, maxTrialProducts: 3, cashReservePct: 25, protectObligations: false });
+    assert.deepEqual(saved, { provenSharePct: 65, maxTrialProducts: 3, cashReservePct: 25, protectObligations: false });
+    const data = sim.exportSaveData();
+    assert.deepEqual(data.restockOptions, saved, 'Cài đặt được ghi vào save');
+    assert.equal(isSaveGameData(JSON.parse(JSON.stringify(data))), true, 'Save có restockOptions hợp lệ sau JSON');
+
+    const reloaded = new GameSimulation(structuredClone(data), generateStarterTileMap(), new InputManager());
+    assert.deepEqual(reloaded.getRestockOptions(), saved, 'Nạp lại save giữ nguyên cài đặt');
+    const res = reloaded.suggestRestock('dai_ly_dau_hem');
+    assert.equal(res.budget!.provenShare, 0.65, 'suggestRestock dùng cài đặt đã lưu khi không truyền options');
+    assert.equal(res.budget!.reserved, Math.floor(reloaded.getPlayerData().money * 0.25), 'Quỹ giữ lại theo 25% đã lưu');
+
+    assert.equal(isSaveGameData({ ...JSON.parse(JSON.stringify(data)), restockOptions: 'x' }), false, 'restockOptions không phải object bị từ chối');
+    assert.equal(isSaveGameData({ ...JSON.parse(JSON.stringify(data)), restockOptions: { cashReservePct: 'abc' } }), false, 'Số sai kiểu bị từ chối');
+    assert.equal(isSaveGameData({ ...JSON.parse(JSON.stringify(data)), restockOptions: { protectObligations: 1 } }), false, 'Công tắc sai kiểu bị từ chối');
+    const clamped = new GameSimulation({ ...structuredClone(data), restockOptions: { provenSharePct: 500, maxTrialProducts: -3, cashReservePct: 1e9 } }, generateStarterTileMap(), new InputManager());
+    assert.deepEqual(clamped.getRestockOptions(), { provenSharePct: 100, maxTrialProducts: 0, cashReservePct: 90, protectObligations: true }, 'Giá trị ngoài khoảng bị kẹp khi nạp');
   }
 
   console.log('  ✓ Hàng đang bán 40%, hàng mới nhập thử 60%; nhóm dùng không hết nhường nhóm kia');

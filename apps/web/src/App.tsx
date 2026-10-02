@@ -1054,6 +1054,17 @@ export const App: React.FC = () => {
     return result;
   };
 
+  // Lưu cài đặt gợi ý nhập hàng vào save; gộp các lần đổi liên tiếp (gõ số) thành một lần ghi.
+  const restockSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(restockSaveTimer.current), []);
+  const handleSaveRestockOptions = (options: import('@game/shared').RestockSuggestionOptions) => {
+    const sim = simulationRef.current;
+    if (!sim) return;
+    sim.setRestockOptions(options);
+    clearTimeout(restockSaveTimer.current);
+    restockSaveTimer.current = setTimeout(() => { void handleSaveGame(false); }, 600);
+  };
+
   const handleUpdateAutoBuy = (enabled: boolean, rules: import('@game/shared').AutoBuyRule[]) => {
     const sim = simulationRef.current;
     if (!sim) return { success: false, reason: 'Chưa sẵn sàng.' };
@@ -1478,6 +1489,8 @@ export const App: React.FC = () => {
         onOrderCart={handleSupplierCartOrder}
         getQuotes={(supplierId) => simulationRef.current!.getSupplierQuotes(supplierId)}
         getUnitPrice={(supplierId, productId, quantity) => simulationRef.current!.wholesaleUnitPrice(supplierId, productId, quantity)}
+        savedRestockOptions={simulationRef.current?.getRestockOptions()}
+        onSaveRestockOptions={handleSaveRestockOptions}
         onGetSuggestions={(supplierId, cart, options) =>
           simulationRef.current?.suggestRestock(supplierId, undefined, cart, options) ?? {
             supplierId,

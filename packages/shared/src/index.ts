@@ -166,6 +166,17 @@ export interface RestockSuggestionOptions {
   maxTrialProducts?: number;
   /** % tiền mặt giữ lại làm quỹ dự phòng lương/thuế, không đưa vào gợi ý (0–90). */
   cashReservePct?: number;
+  /** Giữ thêm đủ tiền cho nợ lương, lương kỳ tới và thuế sắp nộp (lấy mức lớn hơn giữa nghĩa vụ và % ở trên). Mặc định bật. */
+  protectObligations?: boolean;
+}
+
+/** Khoản tiền mặt phải chừa lại: tính từ tiệm thực tế, không phải % ước chừng. */
+export interface CashObligations {
+  wageDebt: number;
+  nextWages: number;
+  taxDue: number;
+  taxDebt: number;
+  total: number;
 }
 
 /** Phân bổ ngân sách gợi ý: hàng đang bán (mặc định 40%) và hàng mới nhập thử (60%); phần nhóm này không dùng hết được chuyển sang nhóm kia. */
@@ -175,6 +186,8 @@ export interface RestockBudgetSplit {
   provenShare: number;
   /** Tiền mặt giữ lại không dùng cho gợi ý (quỹ dự phòng). */
   reserved: number;
+  /** Phần nghĩa vụ lương/thuế trong khoản giữ lại (0 nếu tắt hoặc không có). */
+  obligations?: number;
   provenTarget: number;
   trialTarget: number;
   provenSpent: number;
@@ -872,6 +885,8 @@ export interface SaveGameData {
   processedPayrollDayIds?: number[];
   autoBuyEnabled?: boolean;
   autoBuyRules?: AutoBuyRule[];
+  /** Cài đặt gợi ý nhập hàng của người chơi (tỷ lệ chia, số món thử, quỹ dự phòng); thiếu = mặc định. */
+  restockOptions?: RestockSuggestionOptions;
   processedAutoBuyDayIds?: number[];
   autoBuyReports?: Record<number, AutoBuyReport>;
   quests?: QuestState;
@@ -1145,6 +1160,12 @@ export function isSaveGameData(value: unknown): value is SaveGameData {
   // Trường mảng tùy chọn: nếu có thì phải là mảng, để nạp save không sập ở `.map`/`for…of` (save hỏng hoặc sửa tay).
   for (const key of OPTIONAL_SAVE_ARRAYS) if (value[key] !== undefined && !Array.isArray(value[key])) return false;
   for (const key of OPTIONAL_LAYOUT_ARRAYS) if (sl[key] !== undefined && !Array.isArray(sl[key])) return false;
+  if (value.restockOptions !== undefined) {
+    const o = value.restockOptions;
+    if (!isRecord(o)) return false;
+    for (const key of ['provenSharePct', 'maxTrialProducts', 'cashReservePct'] as const) if (o[key] !== undefined && !Number.isFinite(o[key])) return false;
+    if (o.protectObligations !== undefined && typeof o.protectObligations !== 'boolean') return false;
+  }
   if (value.sellingPrices !== undefined && (!isRecord(value.sellingPrices) || !Object.values(value.sellingPrices).every(price => Number.isSafeInteger(price) && Number(price) > 0))) return false;
   const stats = value.statistics;
   if (!isRecord(stats) || !nonNegativeInteger(stats.totalRevenue) || !nonNegativeInteger(stats.totalCustomersServed)) {
