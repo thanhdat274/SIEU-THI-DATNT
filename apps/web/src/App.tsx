@@ -484,6 +484,8 @@ export const App: React.FC = () => {
       });
       ownedSimulation = simulation;
       simulationRef.current = simulation;
+      // Chỉ dev: console dùng `__sim` để ép cấp/tiền (addExperience, addMoney) hoặc nạp save đã chỉnh (importSaveData) khi QA.
+      if (import.meta.env.DEV) (window as unknown as { __sim?: GameSimulation }).__sim = simulation;
 
       // Sync initial state
       syncFromSimulation(simulation);
