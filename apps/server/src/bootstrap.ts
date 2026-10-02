@@ -13,6 +13,7 @@ import { readRuntimeConfig } from './runtime-config.js';
 import { checkSaveInvariants } from './save-invariants.js';
 import { commitLimiter, httpIpLimiter, MAX_HTTP_BODY } from './rate-limit.js';
 import { closeDatabase, connectDatabase } from './database.js';
+import { migrateWorldSaves } from './world-migrations.js';
 import { createWebSocketTicket, verifyAccount } from './firebase-admin.js';
 import { FirebaseAuthGuard } from './auth.guard.js';
 import { worldRepository } from './world.repository.js';
@@ -274,6 +275,7 @@ class RuntimeModule {
 Module({ controllers: [HealthController, GameController], providers: [FirebaseAuthGuard, WorldGateway] })(RuntimeModule);
 
 export async function createServer() {
+  await migrateWorldSaves().then((m) => { if (m.migrated || m.failed.length) console.log(`[migrate] nâng cấp ${m.migrated}/${m.scanned} phòng, lỗi ${m.failed.length}`, m.failed); }).catch((err: unknown) => console.warn("[migrate] bỏ qua:", err instanceof Error ? err.message : err));
   const app = await NestFactory.create<NestExpressApplication>(RuntimeModule, { logger: ['error', 'warn', 'log'], bodyParser: false });
   // Thân JSON có giới hạn tường minh (save đầy đủ + sổ cái), thay cho mặc định ngầm của Express.
   app.useBodyParser('json', { limit: MAX_HTTP_BODY });

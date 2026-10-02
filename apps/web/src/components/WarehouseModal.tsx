@@ -17,6 +17,7 @@ interface Props {
   currentDay: number;
   onRestock: () => void;
   onStowHolding?: (id?: string) => void;
+  onDisposeStock?: (productId: string, quantity: number) => void;
   onClose: () => void;
 }
 
@@ -28,6 +29,7 @@ export const WarehouseModal: React.FC<Props> = ({
   currentDay,
   onRestock,
   onClose,
+  onDisposeStock,
   capacityBonus = 0,
   coldCapacity = COLD_WAREHOUSE_CAPACITY,
   ambientCapacity,
@@ -98,6 +100,12 @@ export const WarehouseModal: React.FC<Props> = ({
             {i.lots?.map(l => (
               <p key={l.expiresOnDay}>Lô {l.quantity} món · Hạn ngày {l.expiresOnDay} · còn {Math.max(0, l.expiresOnDay - currentDay)} ngày</p>
             ))}
+            {onDisposeStock && (
+              <PixelButton icon="warning" variant="brick" onClick={() => {
+                const name = PRODUCT_MAP[i.productId]?.name ?? i.productId;
+                if (window.confirm(`Tiêu hủy toàn bộ ${i.quantity} ${name} trong kho? Hàng gần hạn bị hủy trước và ghi vào sổ cái như một khoản lỗ.`)) onDisposeStock(i.productId, i.quantity);
+              }}>Tiêu hủy hàng</PixelButton>
+            )}
           </div>
         </div>
       ))}
