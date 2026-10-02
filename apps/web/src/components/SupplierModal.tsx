@@ -34,6 +34,8 @@ function loadSuggestOptions(): Required<RestockSuggestionOptions> {
   }
 }
 
+const SUGGEST_INPUT_STYLE: React.CSSProperties = { height: 28, border: '2px solid var(--wood-light)', background: '#FFFAEE', color: 'var(--ink)', textAlign: 'center', fontWeight: 700, borderRadius: 0, margin: '0 2px' };
+
 export interface SupplierQuoteBoard {
   quotes: Record<string, { unitPrice: number; previousUnitPrice: number; changePct: number; reasons: string[]; stockLeft?: number; unavailable: boolean }>;
   deliveryDay: number;
@@ -306,17 +308,17 @@ export const SupplierModal: React.FC<Props> = ({
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '6px', fontSize: '11px' }}>
               <label title="% ngân sách cho hàng đang bán; phần còn lại nhập thử hàng mới">
                 Hàng đang bán{' '}
-                <input type="number" min={0} max={100} value={suggestOptions.provenSharePct} style={{ width: 52 }} aria-label="Phần trăm ngân sách cho hàng đang bán"
+                <input type="number" min={0} max={100} value={suggestOptions.provenSharePct} style={{ ...SUGGEST_INPUT_STYLE, width: 52 }} aria-label="Phần trăm ngân sách cho hàng đang bán"
                   onChange={(e) => updateSuggestOption('provenSharePct', Number(e.target.value), 0, 100)} />% · mới {100 - suggestOptions.provenSharePct}%
               </label>
               <label title="Số mặt hàng mới nhập thử tối đa mỗi lần gợi ý">
                 Món mới tối đa{' '}
-                <input type="number" min={0} max={20} value={suggestOptions.maxTrialProducts} style={{ width: 46 }} aria-label="Số món mới nhập thử tối đa"
+                <input type="number" min={0} max={20} value={suggestOptions.maxTrialProducts} style={{ ...SUGGEST_INPUT_STYLE, width: 46 }} aria-label="Số món mới nhập thử tối đa"
                   onChange={(e) => updateSuggestOption('maxTrialProducts', Number(e.target.value), 0, 20)} />
               </label>
               <label title="% tiền mặt giữ lại cho lương/thuế, không đưa vào gợi ý">
                 Giữ lại quỹ{' '}
-                <input type="number" min={0} max={90} value={suggestOptions.cashReservePct} style={{ width: 52 }} aria-label="Phần trăm tiền mặt giữ lại"
+                <input type="number" min={0} max={90} value={suggestOptions.cashReservePct} style={{ ...SUGGEST_INPUT_STYLE, width: 52 }} aria-label="Phần trăm tiền mặt giữ lại"
                   onChange={(e) => updateSuggestOption('cashReservePct', Number(e.target.value), 0, 90)} />%
               </label>
             </div>
@@ -516,6 +518,12 @@ export const SupplierModal: React.FC<Props> = ({
               eggs: '🥚',
               cooking_ingredients: '🧂',
               household: '🧹',
+              personal_care: '🧴',
+              frozen: '🧊',
+              fresh_produce: '🥬',
+              health: '💊',
+              toys_stationery: '🧸',
+              alcohol: '🍺',
             };
             return (
               <button
