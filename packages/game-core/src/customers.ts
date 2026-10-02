@@ -11,7 +11,7 @@ import {
   InventoryItem,
   CustomerArrivalMode
 } from '@game/shared';
-import { STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS } from '@game/data';
+import { BUILDING_MAP, XOI_TRAFFIC_SHARE, fixtureBuilding, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS } from '@game/data';
 import { arrivalModeWeights, pickArrivalMode } from './arrival-mode';
 import { CollisionSystem } from './collision';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
@@ -202,7 +202,7 @@ export class CustomerManager {
       const favShelves = stockedShelves.filter((s) => regularCandidate.favoriteProductIds.includes(s.assignedProductId!));
       target = favShelves.length > 0 ? favShelves[0] : (demand ? this.pickShelfByDemand(stockedShelves, demand.weightOf, currentDay) : stockedShelves[0]);
     } else if (demand) {
-      target = this.pickShelfByDemand(stockedShelves, demand.weightOf, currentDay);
+      target = this.pickShelfByDemand(this.pickBuildingShelves(stockedShelves, currentDay), demand.weightOf, currentDay);
     } else {
       target = stockedShelves[customersServed % stockedShelves.length];
     }
@@ -266,7 +266,9 @@ export class CustomerManager {
       }
     }
 
-    const startPos = vehicleSpot ? { ...vehicleSpot } : tileCenter(ENTRANCE_TILE);
+    // Khách vào đúng tòa nhà của kệ mục tiêu (kệ trong tiệm xôi thì vào cửa tiệm xôi).
+    const buildingId = fixtureBuilding(target) ?? 'main';
+    const startPos = vehicleSpot ? { ...vehicleSpot } : tileCenter(BUILDING_MAP[buildingId].entranceTile);
 
     const newCustomer: CustomerState = {
       id: customerId,
@@ -275,6 +277,7 @@ export class CustomerManager {
       targetFixtureId: target.id,
       checkoutId,
       reservedProductId: target.assignedProductId,
+      buildingId,
       basket: [],
       patience: (regularCandidate ? regularCandidate.patienceSeconds : 45) + (hasBikeSecurity && arrivalMode === 'motorbike' ? 15 : 0),
       checkoutWait: 2.5,
@@ -288,6 +291,14 @@ export class CustomerManager {
     this.customers.push(newCustomer);
     this.routeCustomer(newCustomer, 'to_shelf', tileMap, fixtures);
     return newCustomer;
+  }
+
+  /** Tiệm xôi có dòng khách riêng: khi cả hai tòa có hàng, một phần cố định khách chọn tiệm xôi thay vì bị chìm trong ~12 kệ tiệm chính. */
+  private pickBuildingShelves(shelves: StoreFixture[], currentDay: number): StoreFixture[] {
+    const xoi = shelves.filter(shelf => fixtureBuilding(shelf) === 'xoi');
+    if (xoi.length === 0 || xoi.length === shelves.length) return shelves;
+    const roll = new Mulberry32Rng(daySeed(this.customerSequence + 7919, currentDay)).next();
+    return roll < XOI_TRAFFIC_SHARE ? xoi : shelves.filter(shelf => fixtureBuilding(shelf) !== 'xoi');
   }
 
   private pickShelfByDemand(shelves: StoreFixture[], weightOf: (productId: string) => number, currentDay: number): StoreFixture {
@@ -337,7 +348,9 @@ export class CustomerManager {
         for (let y = fixture.tileY; y < fixture.tileY + dimensions.heightTiles; y++) goals.push({ x: fixture.tileX - 1, y }, { x: fixture.tileX + dimensions.widthTiles, y });
       }
     } else if (stage === 'to_checkout' || stage === 'checkout') {
-      const counters = cashierCounters(fixtures);
+      // Chỉ dùng quầy thu ngân của đúng tòa nhà khách đang ở.
+      const home = customer.buildingId ?? 'main';
+      const counters = cashierCounters(fixtures).filter((counter) => (fixtureBuilding(counter) ?? 'main') === home);
       const lanes = this.laneTiles(counters, tileMap, fixtures);
       if (counters.length && lanes.size) {
         if (!customer.cashierFixtureId || !lanes.has(customer.cashierFixtureId)) customer.cashierFixtureId = this.leastBusyCounter(counters, lanes, customer);
@@ -345,7 +358,8 @@ export class CustomerManager {
         goals.push(tiles[Math.min(this.getQueueIndex(customer), tiles.length - 1)]);
       } else {
         customer.cashierFixtureId = undefined;
-        goals.push(CASHIER_QUEUE_TILES[Math.min(queueIndex, CASHIER_QUEUE_TILES.length - 1)]);
+        // Ô xếp hàng mặc định chỉ có ở tiệm chính; tòa khác không có quầy thì khách bỏ về (không có đích).
+        if (home === 'main') goals.push(CASHIER_QUEUE_TILES[Math.min(queueIndex, CASHIER_QUEUE_TILES.length - 1)]);
       }
     } else if (stage === 'leaving') {
       if (customer.vehicleSpot) {
@@ -373,7 +387,7 @@ export class CustomerManager {
 
     let chosenPath = paths[0];
     if (!chosenPath && stage === 'leaving' && !customer.vehicleSpot) {
-      chosenPath = findPath(customerMap, customerCollision, start, ENTRANCE_TILE);
+      chosenPath = findPath(customerMap, customerCollision, start, BUILDING_MAP[(customer.buildingId as 'main' | 'xoi' | undefined) ?? 'main']?.entranceTile ?? ENTRANCE_TILE);
     }
     const waypoints = chosenPath?.map(tileCenter).slice(1) ?? [];
     this.paths.set(customer.id ?? customer.checkoutId ?? 'default', waypoints);
@@ -407,7 +421,8 @@ export class CustomerManager {
     onWalkout?: (customer: CustomerState, reason: CustomerFeedbackReason) => void,
     shelfCapacityMultiplier = 1,
     onCustomerDepart?: (customer: CustomerState) => void,
-    onDiningComplete?: (customer: CustomerState) => void
+    onDiningComplete?: (customer: CustomerState) => void,
+    onDinerSeated?: (customer: CustomerState) => void
   ): void {
     const customerList = [...this.customers];
     for (const customer of customerList) {
@@ -520,6 +535,7 @@ export class CustomerManager {
       } else if (customer.stage === 'to_table') {
         customer.stage = 'eating';
         customer.diningTimeLeft = 60;
+        onDinerSeated?.(customer);
       } else if (customer.stage === 'to_checkout') {
         // Check position in queue
         const queueIndex = this.getQueueIndex(customer);
@@ -696,6 +712,7 @@ export class CustomerManager {
 
     // 5. Commit
     completedCheckoutIds.add(effectiveCheckoutId);
+    customer.diningProductIds = diningTableId ? customer.basket.map(item => item.productId) : undefined;
     customer.basket = [];
     customer.diningTableId = diningTableId;
     customer.diningTimeLeft = diningTableId ? 60 : undefined;

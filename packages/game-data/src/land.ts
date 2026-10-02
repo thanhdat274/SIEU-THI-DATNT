@@ -1,3 +1,4 @@
+import { XOI_PLOT_ID, type BuildingId } from './buildings';
 export interface LandPlotDefinition {
   id: string;
   name: string;
@@ -5,6 +6,8 @@ export interface LandPlotDefinition {
   cost: number;
   tiles: { x: number; y: number }[];
   prerequisitePlotId?: string;
+  /** Mảnh đất kiểu "tòa nhà": mua là mở cả tòa (hình học ở BUILDINGS), `tiles` để trống. */
+  buildingId?: BuildingId;
 }
 
 // Plot geometry is reviewed against map.ts: the final column in each plot is the new shop wall.
@@ -13,6 +16,8 @@ export const LAND_PLOTS: LandPlotDefinition[] = [
     tiles: Array.from({ length: 32 }, (_, i) => ({ x: 14 + i % 4, y: 3 + Math.floor(i / 4) })) },
   { id: 'east-wing-b', name: 'Gian hàng mở rộng', level: 10, cost: 600_000, prerequisitePlotId: 'east-wing-a',
     tiles: Array.from({ length: 32 }, (_, i) => ({ x: 18 + i % 4, y: 3 + Math.floor(i / 4) })) },
+  // Tiệm xôi (cấp 29, 700.000 ₫ theo branches.json của game gốc; chưa cân bằng): tòa nhà riêng ở dải đất phía tây.
+  { id: XOI_PLOT_ID, name: 'Tiệm xôi', level: 29, cost: 700_000, tiles: [], buildingId: 'xoi' },
 ];
 
 export const STARTER_OWNED_PLOT_IDS: string[] = [];
@@ -49,8 +54,10 @@ export interface FixtureShopItem {
   functional: boolean;
   /** Số lượng tối đa được sở hữu (kể cả đang cất). */
   limit?: number;
-  /** Mảnh đất yêu cầu trong game gốc (chưa áp dụng ở đây). */
+  /** Mảnh đất yêu cầu trong game gốc (chưa áp dụng ở đây; dùng `allowedBuildings`). */
   requiresPlot?: string;
+  /** Tòa nhà được đặt món này; thiếu = mọi tòa đang mở. Trạm xôi chỉ đặt được trong tiệm xôi. */
+  allowedBuildings?: readonly BuildingId[];
   /** Số ô kho bổ sung mỗi khi mua (chỉ áp dụng cho storage_rack). */
   storageCells?: number;
 }
@@ -79,8 +86,8 @@ export const FIXTURE_SHOP: FixtureShopItem[] = [
   { id: 'sugarcane_press', name: 'Máy ép mía', kind: 'drink', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 240_000, unlockLevel: 25, functional: false, requiresPlot: 'F', },
   { id: 'drink_table_2', name: 'Bàn nước 2 chỗ', kind: 'seating', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 50_000, unlockLevel: 25, functional: false, requiresPlot: 'F', },
   { id: 'generator', name: 'Máy phát điện', kind: 'generator', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 360_000, unlockLevel: 21, functional: false, },
-  { id: 'thung_ngam', name: 'Thùng ngâm nếp', kind: 'food', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 120_000, unlockLevel: 29, functional: false, },
-  { id: 'xung_hap', name: 'Xửng hấp xôi', kind: 'food', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 320_000, unlockLevel: 29, functional: false, },
-  { id: 'quay_xoi', name: 'Quầy trưng bày xôi', kind: 'food', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 180_000, unlockLevel: 29, functional: false, },
+  { id: 'thung_ngam', name: 'Thùng ngâm nếp', kind: 'food', type: 'kitchen_station', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 120_000, unlockLevel: 29, functional: true, limit: 3, allowedBuildings: ['xoi'], },
+  { id: 'xung_hap', name: 'Xửng hấp xôi', kind: 'food', type: 'kitchen_station', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 320_000, unlockLevel: 29, functional: true, limit: 2, allowedBuildings: ['xoi'], },
+  { id: 'quay_xoi', name: 'Quầy trưng bày xôi', kind: 'food', type: 'kitchen_station', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 180_000, unlockLevel: 29, functional: true, limit: 1, allowedBuildings: ['xoi'], },
   { id: 'chau_cay', name: 'Chậu cây', kind: 'decor', type: 'decor', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 40_000, unlockLevel: 8, functional: true },
 ];
