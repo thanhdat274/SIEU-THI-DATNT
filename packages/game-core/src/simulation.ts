@@ -105,7 +105,7 @@ import { decorAttraction, decorTrafficMultiplier } from './decor';
 import { buyLandPlot, relocateMisplacedFixtures, upgradeFixtureSlots, validateStoreLayout, totalWarehouseCells, coldWarehouseCapacity, warehouseCellsFor, unitsFittingInCells, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
-import { expiryDay, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
+import { mergeLots, normalizeLots, sumLots, takeLots } from './stock';
 import { decayLot, spoilageRate } from './spoilage';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { normalizePlayerProgression, saleExperienceMultiplier, trafficAtLevel } from './progression';
@@ -116,6 +116,7 @@ import { climateSeasonForDay } from './weather';
 import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, timeBandFor, visibleMarketEvents, weekdayOf, type MarketNotice } from './market';
 import { computeSupplierDay, nextDeliveryDay, wholesaleQuote } from './supplier-market';
 import { validateSupplierCart as validateSupplierCartPure } from './supplier-cart';
+import { receiveDeliveredOrders } from './delivery';
 import { advancePriceIndex, clampSellingPrice, computePriceTargets, demandPriceFactor, keepChance, priceRatio, productSensitivity } from './price';
 import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
 import { emptyStallState, normalizeStallState, planStallDay } from './stalls';
@@ -3276,64 +3277,12 @@ export class GameSimulation {
       products: arrived.map(o => ({ productId: o.productId, quantity: o.quantity })),
       supplierName: 'Nhà phân phối',
     });
-    let deliveredCount = 0;
-    for (const order of arrived) {
-      order.delivered = true;
-      order.deliveryDay = day;
-      const product = PRODUCT_MAP[order.productId];
-      const expiry = expiryDay(order.productId, day) + getSkillModifier(this.skills, 'fresh_extra_day');
-
-      if (product?.storageType === 'cold') {
-        const currentCold = this.getColdWarehouseCount();
-        const freeCold = Math.max(0, this.getColdCapacity() - currentCold);
-        const fitQty = Math.min(order.quantity, freeCold);
-        const overflowQty = order.quantity - fitQty;
-
-        if (fitQty > 0) {
-          const slot = this.inventory.find((item) => item.productId === order.productId);
-          const lot: StockLot = {
-            quantity: fitQty,
-            expiresOnDay: expiry,
-            unitCost: order.unitCost,
-            provenance: 'known',
-          };
-          if (slot) {
-            mergeLots(slot.lots!, [lot]);
-            slot.quantity = sumLots(slot.lots!);
-          } else {
-            this.inventory.push({ productId: order.productId, quantity: fitQty, lots: [lot] });
-          }
-          deliveredCount += fitQty;
-        }
-
-        if (overflowQty > 0) {
-          this.holdingArea.push({
-            id: `holding-${order.id}-${this.holdingArea.length + 1}`,
-            productId: order.productId,
-            quantity: overflowQty,
-            expiresOnDay: expiry,
-            originalArrivalDay: order.arrivalDay,
-            unitCost: order.unitCost,
-            provenance: 'known',
-          });
-        }
-      } else {
-        const slot = this.inventory.find((item) => item.productId === order.productId);
-        const lot: StockLot = {
-          quantity: order.quantity,
-          expiresOnDay: expiry,
-          unitCost: order.unitCost,
-          provenance: 'known',
-        };
-        if (slot) {
-          mergeLots(slot.lots!, [lot]);
-          slot.quantity = sumLots(slot.lots!);
-        } else {
-          this.inventory.push({ productId: order.productId, quantity: order.quantity, lots: [lot] });
-        }
-        deliveredCount += order.quantity;
-      }
-    }
+    const deliveredCount = receiveDeliveredOrders(arrived, day, {
+      inventory: this.inventory,
+      holdingArea: this.holdingArea,
+      freeColdSlots: () => this.getColdCapacity() - this.getColdWarehouseCount(),
+      freshExtraDays: getSkillModifier(this.skills, 'fresh_extra_day'),
+    });
 
     this.pendingOrders = this.pendingOrders.filter((order) => !order.delivered);
     if (deliveredCount > 0) {
@@ -3407,6 +3356,30 @@ export class GameSimulation {
       }
     }
     return { success: totalStowed > 0, totalStowed };
+  }
+
+  /** Đặt trạng thái mở/đóng cửa; trả true nếu trạng thái hiện tại khớp `open` sau khi gọi. */
+  public setStoreOpen(open: boolean): boolean {
+    if (this.clock.getTime().isStoreOpen !== open) this.clock.toggleStoreStatus();
+    return this.clock.getTime().isStoreOpen === open;
+  }
+
+  /** Châm kệ từ kho: áp sơ đồ bày hàng, rồi kệ có gán sản phẩm nhưng chưa nằm trong sơ đồ. Trả tổng số món đã châm. */
+  public autoRestockShelves(): number {
+    let restocked = this.applyPlanogram().totalRefilled;
+    const plan = this.getPlanogram();
+    for (const fix of this.getFixtures()) {
+      if (!isSalesFixture(fix) || !fix.assignedProductId || plan[fix.id]) continue;
+      const prod = PRODUCT_MAP[fix.assignedProductId];
+      const cap = prod ? effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, this.getShelfCapacityBonus()) : fix.maxCapacity;
+      const needed = cap - fix.currentStock;
+      const have = this.getInventory().find((i) => i.productId === fix.assignedProductId);
+      if (needed > 0 && have && have.quantity > 0) {
+        const res = this.transferToShelf(fix.id, fix.assignedProductId, Math.min(needed, have.quantity));
+        if (res.success && res.actualQuantity > 0) restocked += res.actualQuantity;
+      }
+    }
+    return restocked;
   }
 
   /** Complete one in-store sale from customer basket at the cashier counter. */
