@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import type { FestivalGoalProgressInfo, GoalProgressInfo, QuestProgress, WeeklyQuestProgressInfo } from '@game/core';
+import type { FestivalGoalProgressInfo, GoalProgressInfo, QuestProgress, StoryChapterProgress, WeeklyQuestProgressInfo } from '@game/core';
 import { getLevelUnlocks, MAX_PLAYER_LEVEL } from '@game/core';
 import type { ActivePartyOrder, InventoryItem } from '@game/shared';
-import { GOAL_MAP, PARTY_ORDER_MAP, PRODUCT_MAP, WEEKLY_QUESTS } from '@game/data';
+import { GOAL_MAP, PARTY_ORDER_MAP, PRODUCT_MAP, STORY_CHAPTER_MAP, WEEKLY_QUESTS } from '@game/data';
 import { money, PixelButton, PixelDialog, PixelProgress } from './pixel';
 
 /** Returns false when the claim failed so a batch claim can stop. */
@@ -27,9 +27,13 @@ interface QuestModalProps {
   onClaimFestivalGoal?: ClaimHandler;
   onClaimGoal?: ClaimHandler;
   onClaimWeeklyQuest?: ClaimHandler;
+  // Chương cốt truyện có lời thoại
+  chapters?: StoryChapterProgress[];
+  onBeginChapter?: ClaimHandler;
+  onClaimChapter?: ClaimHandler;
 }
 
-type QuestTab = 'daily' | 'party' | 'goals';
+type QuestTab = 'daily' | 'party' | 'goals' | 'chapters';
 
 const QuestRow: React.FC<{ quest: QuestProgress; onClaim: ClaimHandler; disabled?: boolean }> = ({ quest, onClaim, disabled }) => (
   <li className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 4 }}>
@@ -62,6 +66,9 @@ export const QuestModal: React.FC<QuestModalProps> = ({
   onClaimFestivalGoal,
   onClaimGoal,
   onClaimWeeklyQuest,
+  chapters = [],
+  onBeginChapter,
+  onClaimChapter,
 }) => {
   const [activeTab, setActiveTab] = useState<QuestTab>('daily');
   const [claimingAll, setClaimingAll] = useState(false);
@@ -95,6 +102,7 @@ export const QuestModal: React.FC<QuestModalProps> = ({
   const pendingOrdersCount = partyOrders.filter((o) => o.status === 'pending' || (o.status === 'accepted' && checkOrderStock(o.orderId))).length;
   const claimableGoalsCount = goals.filter((g) => g.completed && !g.claimed).length + festivalGoals.filter((f) => f.completed && !f.claimed).length + weeklyQuests.filter((w) => w.completed && !w.claimed).length;
 
+  const claimableChapters = chapters.filter((c) => c.status === 'completed' || c.status === 'available');
   const claimableDaily = [story, ...daily].filter((q): q is QuestProgress => !!q && q.done && !q.claimed);
   const claimableFestival = festivalGoals.filter((f) => f.completed && !f.claimed);
   const claimableWeekly = weeklyQuests.filter((w) => w.completed && !w.claimed);
@@ -122,7 +130,7 @@ export const QuestModal: React.FC<QuestModalProps> = ({
   return (
     <PixelDialog icon="star" title="SỔ NHIỆM VỤ & MỤC TIÊU" subtitle="Việc trong ngày, đơn tiệc xóm và hoài bão phát triển" onClose={onClose}>
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
         <PixelButton
           variant={activeTab === 'daily' ? 'teal' : 'paper'}
           onClick={() => setActiveTab('daily')}
@@ -143,6 +151,13 @@ export const QuestModal: React.FC<QuestModalProps> = ({
           style={{ flex: 1, padding: '6px 4px', fontSize: '0.85rem' }}
         >
           Mục tiêu & Tuần {claimableGoalsCount > 0 ? `(${claimableGoalsCount})` : ''}
+        </PixelButton>
+        <PixelButton
+          variant={activeTab === 'chapters' ? 'teal' : 'paper'}
+          onClick={() => setActiveTab('chapters')}
+          style={{ flex: 1, padding: '6px 4px', fontSize: '0.85rem' }}
+        >
+          Cốt truyện {claimableChapters.length > 0 ? `(${claimableChapters.length})` : ''}
         </PixelButton>
       </div>
 
@@ -370,6 +385,47 @@ export const QuestModal: React.FC<QuestModalProps> = ({
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Tab 4: Cốt truyện (chương có lời thoại) */}
+      {activeTab === 'chapters' && (
+        <div style={{ display: 'grid', gap: 8 }}>
+          {chapters.map((progress) => {
+            const def = STORY_CHAPTER_MAP[progress.chapterId];
+            if (!def) return null;
+            const locked = progress.status === 'locked';
+            return (
+              <div key={def.id} className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 4, opacity: locked ? 0.65 : 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span aria-hidden="true" style={{ fontSize: '1.6rem' }}>{def.portrait}</span>
+                  <strong>Chương {def.chapter}: {def.title}</strong>
+                </div>
+                {locked ? (
+                  <span className="muted">Mở khi đạt cấp {def.unlockLevel}{def.chapter > 1 ? ' và nhận thưởng chương trước.' : '.'}</span>
+                ) : (
+                  <>
+                    {def.dialog.map((line, i) => <span key={i} className="muted" style={{ fontSize: '0.9rem' }}>“{line}”</span>)}
+                    <span style={{ fontSize: '0.9rem' }}>Mục tiêu: {def.goal}</span>
+                    {progress.status !== 'available' && <PixelProgress label={def.title} value={progress.current} max={progress.target} />}
+                    {progress.rivalEndsDay !== undefined && progress.status === 'started' && <span className="muted" style={{ fontSize: '0.85rem' }}>Đợt cạnh tranh kéo dài tới hết ngày {progress.rivalEndsDay}.</span>}
+                  </>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <span className="tabular" style={{ fontSize: '0.85rem' }}>Thưởng {money(def.rewardMoney)} · {def.rewardExp} XP</span>
+                  {progress.status === 'completed' ? (
+                    <PixelButton variant="teal" disabled={claimingAll} onClick={() => void onClaimChapter?.(def.id)} style={{ minWidth: 110 }}>Nhận thưởng</PixelButton>
+                  ) : progress.status === 'available' ? (
+                    <PixelButton variant="teal" disabled={claimingAll} onClick={() => void onBeginChapter?.(def.id)} style={{ minWidth: 110 }}>Bắt đầu chương</PixelButton>
+                  ) : (
+                    <PixelButton variant="paper" disabled style={{ minWidth: 110 }}>
+                      {progress.status === 'claimed' ? 'Đã nhận' : progress.status === 'started' ? 'Đang thực hiện' : `Cấp ${def.unlockLevel}`}
+                    </PixelButton>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </PixelDialog>

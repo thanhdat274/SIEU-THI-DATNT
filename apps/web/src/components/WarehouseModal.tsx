@@ -6,6 +6,9 @@ import {PixelDialog,PixelButton,PixelStat,PixelProgress,ProductSlot,EmptyState} 
 
 interface Props {
   capacityBonus?: number;
+  coldCapacity?: number;
+  ambientCapacity?: number;
+  ambientUsed?: number;
   fixture: StoreFixture;
   inventory: InventoryItem[];
   holdingArea?: HoldingItem[];
@@ -26,6 +29,9 @@ export const WarehouseModal: React.FC<Props> = ({
   onRestock,
   onClose,
   capacityBonus = 0,
+  coldCapacity = COLD_WAREHOUSE_CAPACITY,
+  ambientCapacity,
+  ambientUsed = 0,
 }) => {
   const [group, setGroup] = useState<'all' | 'ambient' | 'cold'>(
     fixture.type === 'warehouse_cold' ? 'cold' : fixture.type === 'warehouse_dry' ? 'ambient' : 'all'
@@ -54,11 +60,12 @@ export const WarehouseModal: React.FC<Props> = ({
       <div className="summary-row">
         <PixelStat label="Hàng dự trữ" value={`${items.reduce((n, i) => n + i.quantity, 0)} món`} icon="warehouse" />
         <div>
-          <strong>Kho mát {cold}/{COLD_WAREHOUSE_CAPACITY}</strong>
-          <p className="muted">Đơn chờ giữ {reserved} chỗ · Còn {Math.max(0, COLD_WAREHOUSE_CAPACITY - cold - reserved)} chỗ</p>
+          <strong>Kho mát {cold}/{coldCapacity}</strong>
+          <p className="muted">Đơn chờ giữ {reserved} chỗ · Còn {Math.max(0, coldCapacity - cold - reserved)} chỗ</p>
         </div>
       </div>
-      <PixelProgress label="Chỗ kho mát đã dùng và giữ" value={cold + reserved} max={COLD_WAREHOUSE_CAPACITY} />
+      {ambientCapacity !== undefined && <PixelProgress label={`Kho thường ${ambientUsed}/${ambientCapacity} ô`} value={ambientUsed} max={ambientCapacity} />}
+      <PixelProgress label="Chỗ kho mát đã dùng và giữ" value={cold + reserved} max={coldCapacity} />
       <p className="muted" style={{ margin: '8px 0 12px' }}>Hàng dự trữ dùng chung với sổ kho. Bày lên kệ lấy hàng từ đây; cất khỏi kệ trả hàng về kho.</p>
 
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>

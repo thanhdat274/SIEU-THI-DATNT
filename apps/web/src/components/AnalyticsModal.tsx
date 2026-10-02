@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { DailyRecord } from '@game/shared';
-import { PRODUCT_MAP, SELLABLE_PRODUCTS, STORE_BOUNDS } from '@game/data';
+import { PRODUCT_MAP, SELLABLE_PRODUCTS, STORE_BOUNDS, XOI_BOUNDS } from '@game/data';
 import { buildProductSeries } from '@game/core';
 import { PixelButton, PixelDialog } from './pixel';
 
@@ -49,7 +49,8 @@ const PriceSalesChart: React.FC<{ productId: string } & Pick<Props, 'day' | 'rec
 };
 
 const Heatmap: React.FC<{ counts: Record<string, number> }> = ({ counts }) => {
-  const x0 = STORE_BOUNDS.left - 2, x1 = STORE_BOUNDS.right + 2, y0 = STORE_BOUNDS.top - 1, y1 = STORE_BOUNDS.bottom + 3;
+  // Gộp cả hai tòa nhà (tiệm xôi ở dải phía tây) vào một bản đồ nhiệt.
+  const x0 = Math.min(STORE_BOUNDS.left - 2, XOI_BOUNDS.left), x1 = STORE_BOUNDS.right + 2, y0 = STORE_BOUNDS.top - 1, y1 = STORE_BOUNDS.bottom + 3;
   const max = Math.max(1, ...Object.values(counts));
   const cols = x1 - x0 + 1;
   const cells: React.ReactNode[] = [];
