@@ -231,7 +231,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Impact:** Hồi quy co-op không tự phát hiện.
 - **Related Files:** `package.json`, `apps/server/package.json`.
 - **Root Cause:** Chưa có CI.
-- **Tiến độ 2026-10-03 (một phần):** đã có script `test:all` / `test:all:db` và `.github/workflows/ci.yml`. `yarn test:all` chạy thật PASS 03/10/2026 (sau khi sửa 3 hồi quy setter Manager no-op, xem `tổng hợp.md`). Workflow CI **chưa chạy lần nào trên GitHub**; `test:all:db` (Mongo) chưa chạy lại. Vẫn Mở đến khi CI xanh trên GitHub.
+- **Tiến độ 2026-10-03 (một phần):** đã có script `test:all` / `test:all:db` và `.github/workflows/ci.yml`. `yarn test:all` chạy thật PASS 03/10/2026 (sau khi sửa 3 hồi quy setter Manager no-op, xem `tổng hợp.md`). CI chạy thật trên PR #2 (02/10/2026): run `37039000966` xanh cả hai job, gồm test Mongo. Còn lại: merge vào `main` để CI chạy trên push.
 - **Suggested Fix:** Script `test:all`, Mongo in-memory/service trong CI.
 - **Priority:** Medium
 - **Verification:** Xác nhận qua `package.json`.
