@@ -1,17 +1,18 @@
+import type { SaveGameData } from '@game/shared';
+
 /** Quản lý tier kho hàng và storage rack count (dùng để tính dung lượng kho). */
 export class StorageManager {
-  private warehouseTier: number;
-  private storageRackCount: number;
+  private warehouseTier!: number;
+  private storageRackCount!: number;
 
-  constructor(tier: number, rackCount: number) {
-    this.warehouseTier = tier;
-    this.storageRackCount = rackCount;
+  constructor(initialSave: SaveGameData) {
+    this.load(initialSave);
   }
 
   /** Tải từ save data. */
-  public load(tier: number, rackCount: number): void {
-    this.warehouseTier = tier;
-    this.storageRackCount = rackCount;
+  public load(saveData: SaveGameData): void {
+    this.warehouseTier = saveData.warehouseTier ?? 0;
+    this.storageRackCount = saveData.storageRackCount ?? 0;
   }
 
   public getWarehouseTier(): number {
