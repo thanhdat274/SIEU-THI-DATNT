@@ -158,11 +158,23 @@ export interface SuggestedCartItem {
   daysOfStockLeft?: number;
 }
 
+/** Tuỳ chỉnh của người chơi cho gợi ý nhập hàng; thiếu trường nào dùng mặc định (40% / 6 món / giữ lại 10%). */
+export interface RestockSuggestionOptions {
+  /** % ngân sách dành cho hàng đang bán (0–100); phần còn lại cho hàng mới nhập thử. */
+  provenSharePct?: number;
+  /** Số mặt hàng mới nhập thử tối đa mỗi lần gợi ý (0–20). */
+  maxTrialProducts?: number;
+  /** % tiền mặt giữ lại làm quỹ dự phòng lương/thuế, không đưa vào gợi ý (0–90). */
+  cashReservePct?: number;
+}
+
 /** Phân bổ ngân sách gợi ý: hàng đang bán (mặc định 40%) và hàng mới nhập thử (60%); phần nhóm này không dùng hết được chuyển sang nhóm kia. */
 export interface RestockBudgetSplit {
   /** Tiền còn dùng được cho gợi ý = min(ngân sách, tiền mặt) − giá trị giỏ đang có. */
   spendable: number;
   provenShare: number;
+  /** Tiền mặt giữ lại không dùng cho gợi ý (quỹ dự phòng). */
+  reserved: number;
   provenTarget: number;
   trialTarget: number;
   provenSpent: number;

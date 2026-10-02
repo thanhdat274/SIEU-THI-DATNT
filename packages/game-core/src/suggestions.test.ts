@@ -498,6 +498,7 @@ export function runSuggestionTests(): void {
     const money = 100000;
     const res = generateRestockSuggestions({
       ...base,
+      options: { cashReservePct: 0 },
       playerMoney: money,
       fixtures: [noodleShelf(0)],
       dailyRecords: weekOf(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [d, { mi_hao_hao: 60 }]))),
@@ -520,6 +521,7 @@ export function runSuggestionTests(): void {
   {
     const res = generateRestockSuggestions({
       ...base,
+      options: { cashReservePct: 0 },
       playerMoney: 100000,
       fixtures: [noodleShelf(0)],
       dailyRecords: weekOf(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [d, { mi_hao_hao: 60 }]))),
@@ -564,6 +566,57 @@ export function runSuggestionTests(): void {
     const tight = sim.suggestRestock(supplierId, 20000);
     const tightCheck = sim.validateSupplierCart(supplierId, tight.items.map((i) => ({ productId: i.productId, quantity: i.quantity })));
     assert.ok(tight.items.length === 0 || tightCheck.totalCost <= 20000, `Ngân sách 20.000 ₫ được tôn trọng (${tightCheck.totalCost})`);
+  }
+
+  // 5. Tuỳ chọn: quỹ dự phòng, tỷ lệ chia và số món thử chỉnh được.
+  {
+    const common = {
+      ...base,
+      playerMoney: 100000,
+      fixtures: [noodleShelf(0)],
+      dailyRecords: weekOf(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [d, { mi_hao_hao: 60 }]))),
+    };
+    const byDefault = generateRestockSuggestions(common);
+    assert.equal(byDefault.budget!.reserved, 10000, 'Mặc định giữ lại 10% tiền mặt');
+    assert.ok(byDefault.totalCost <= 90000, `Không đụng quỹ dự phòng (${byDefault.totalCost} <= 90000)`);
+
+    const reserve50 = generateRestockSuggestions({ ...common, options: { cashReservePct: 50 } });
+    assert.ok(reserve50.totalCost <= 50000, `Giữ 50% thì chỉ chi tối đa 50.000 (${reserve50.totalCost})`);
+
+    const noReserve = generateRestockSuggestions({ ...common, options: { cashReservePct: 0 } });
+    assert.ok(noReserve.totalCost > byDefault.totalCost - 1, 'Không giữ quỹ thì được dùng nhiều hơn hoặc bằng');
+
+    const split = generateRestockSuggestions({ ...common, options: { cashReservePct: 0, provenSharePct: 70 } });
+    assert.equal(split.budget!.provenTarget, 70000, 'Tỷ lệ hàng đang bán chỉnh thành 70%');
+    assert.equal(split.budget!.trialTarget, 30000);
+
+    const fewer = generateRestockSuggestions({ ...common, options: { cashReservePct: 0, maxTrialProducts: 2 } });
+    assert.ok(fewer.items.filter((i) => i.isFallback).length <= 2, 'Giới hạn món thử chỉnh được còn 2');
+    const none = generateRestockSuggestions({ ...common, options: { cashReservePct: 0, maxTrialProducts: 0 } });
+    assert.equal(none.items.some((i) => i.isFallback), false, 'maxTrialProducts = 0 tắt hàng thử');
+
+    const garbage = generateRestockSuggestions({ ...common, options: { provenSharePct: NaN, cashReservePct: 999, maxTrialProducts: -4 } });
+    assert.ok(garbage.totalCost <= 10000 + 1, 'Giá trị rác bị kẹp về khoảng hợp lệ (giữ tối đa 90%)');
+  }
+
+  // 6. Giá giỏ khớp giá hiển thị khi có kỹ năng giảm giá nhà cung cấp.
+  {
+    const sim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+    const supplierId = 'dai_ly_dau_hem';
+    const lines = [{ productId: 'mi_hao_hao', quantity: 10 }];
+    const before = sim.validateSupplierCart(supplierId, lines);
+    const shown = sim.wholesaleUnitPrice(supplierId, 'mi_hao_hao', 10) * 10;
+    assert.equal(before.totalCost, shown, 'Không có kỹ năng: giá giỏ = giá hiển thị');
+    (sim as any).skills.chosenPerks = ['perk_negotiator']; // -5% giá nhập
+    const afterSkill = sim.validateSupplierCart(supplierId, lines);
+    const shownAfter = sim.wholesaleUnitPrice(supplierId, 'mi_hao_hao', 10) * 10;
+    assert.ok(afterSkill.totalCost < before.totalCost, 'Có kỹ năng: giỏ rẻ hơn');
+    assert.ok(Math.abs(afterSkill.totalCost - shownAfter) <= 10, `Giá giỏ (${afterSkill.totalCost}) khớp giá hiển thị (${shownAfter})`);
+    const moneyBefore = sim.getPlayerData().money;
+    const order = sim.orderSupplierCart(supplierId, lines);
+    assert.ok(order.success, 'Đặt hàng thành công');
+    assert.equal(moneyBefore - sim.getPlayerData().money, afterSkill.totalCost, 'Tiền trừ đúng bằng giá giỏ đã giảm');
+    assert.equal(sim.getPendingOrders().at(-1)!.unitCost, sim.wholesaleUnitPrice(supplierId, 'mi_hao_hao', 10), 'Giá vốn lô ghi theo giá đã giảm');
   }
 
   console.log('  ✓ Hàng đang bán 40%, hàng mới nhập thử 60%; nhóm dùng không hết nhường nhóm kia');

@@ -12,6 +12,7 @@ import {
   InventoryItem,
   RestockSuggestionResult,
   StoreFixture,
+  RestockSuggestionOptions,
   SuggestedCartItem,
   SuggestionReason,
   SupplierCartItem,
@@ -43,6 +44,8 @@ export interface SuggestionEngineParams {
   demandMultiplierOf?: (productId: string) => number;
   /** Giỏ đang soạn (productId → số lượng): tính như hàng sắp về và đã giữ tiền, để bấm gợi ý nhiều lần không cộng dồn vượt tiền. */
   existingCart?: Record<string, number>;
+  /** Tuỳ chỉnh tỷ lệ chia, số món thử và quỹ dự phòng; thiếu = mặc định. */
+  options?: RestockSuggestionOptions;
   /** Tổng tiền thật phải trả cho một giỏ (giá sỉ theo bậc số lượng, chiết khấu NCC); dùng để kiểm tra cuối không vượt tiền. */
   cartCostOf?: (items: SupplierCartItem[]) => number;
   /** Tồn còn bán hôm nay của NCC; 0 = tạm ngừng cung, undefined = không giới hạn. */
@@ -155,6 +158,8 @@ export function getIncomingOrdersCount(
 
 /** Tỷ lệ ngân sách gợi ý dành cho hàng đang bán; phần còn lại dành cho hàng mới nhập thử. */
 export const PROVEN_BUDGET_SHARE = 0.4;
+/** Tiền mặt giữ lại mặc định (10%) cho lương/thuế, không đưa vào gợi ý. */
+export const DEFAULT_CASH_RESERVE_PCT = 10;
 /** Dưới mức này (món/ngày) coi là bán chậm: chỉ nhập theo tốc độ bán thật, không lấp đầy kệ. */
 export const SLOW_SELLER_VELOCITY = 0.5;
 /** Tồn (kể cả đơn đang về và giỏ đang có) đủ bán quá số ngày này thì không nhập thêm để lấp kệ. */
@@ -244,8 +249,16 @@ export function generateRestockSuggestions(
   const cartLines = [...cartQty].map(([productId, quantity]) => ({ productId, quantity }));
   const cartCost = costOf(cartLines);
 
+  const clampNum = (value: number | undefined, fallback: number, min: number, max: number) =>
+    Number.isFinite(value) ? Math.min(max, Math.max(min, value as number)) : fallback;
+  const provenShare = clampNum(params.options?.provenSharePct, PROVEN_BUDGET_SHARE * 100, 0, 100) / 100;
+  const maxTrialProducts = Math.round(clampNum(params.options?.maxTrialProducts, MAX_TRIAL_PRODUCTS, 0, 20));
+  const reservePct = clampNum(params.options?.cashReservePct, DEFAULT_CASH_RESERVE_PCT, 0, 90);
+
   const money = Math.max(0, params.playerMoney);
-  const moneyCap = Math.max(0, Math.min(params.budget ?? money, money));
+  const reserved = Math.floor((money * reservePct) / 100);
+  const moneyCap = Math.max(0, Math.min(params.budget ?? money, money - reserved));
+  if (reserved > 0) appliedConstraints.push(`Giữ lại ${formatMoney(reserved)} (${Math.round(reservePct)}% tiền mặt) làm quỹ dự phòng`);
   const spendable = Math.max(0, moneyCap - cartCost);
   if (cartCost > 0) {
     appliedConstraints.push(`Giỏ đang có ${formatMoney(cartCost)} — chỉ gợi ý thêm trong ${formatMoney(spendable)} còn lại`);
@@ -382,7 +395,7 @@ export function generateRestockSuggestions(
   trials.sort((a, b) => b.score - a.score || a.unitPrice - b.unitPrice);
 
   // ===== Phân bổ ngân sách 40/60 =====
-  const provenTarget = Math.floor(spendable * PROVEN_BUDGET_SHARE);
+  const provenTarget = Math.floor(spendable * provenShare);
   const pools: Record<SuggestionGroup, number> = { proven: provenTarget, trial: spendable - provenTarget };
   const picked = new Map<string, SuggestedCartItem>();
   const groupOf = new Map<string, SuggestionGroup>();
@@ -457,7 +470,7 @@ export function generateRestockSuggestions(
     for (const diverseOnly of [true, false]) {
       const usedCategories = new Set(selectedTrials.map(categoryOf));
       for (const cand of trials) {
-        if (selectedTrials.length >= MAX_TRIAL_PRODUCTS) return;
+        if (selectedTrials.length >= maxTrialProducts) return;
         if (picked.has(cand.productId)) continue;
         if (diverseOnly && usedCategories.has(categoryOf(cand))) continue;
         if (take(cand, TRIAL_FIRST_PASS_UNITS, pool) > 0) {
@@ -525,12 +538,12 @@ export function generateRestockSuggestions(
     if (got > 0) appliedConstraints.push(`Cắt giảm ${name} từ ${cand.wantQuantity} xuống ${got} ${why}`);
     else if (cand.group === 'proven' || selectedTrials.includes(cand)) appliedConstraints.push(`Bỏ qua ${name} ${why}`);
   }
-  if ([...limits.values()].some((kinds) => kinds.has('budget')) && items.length < proven.length + Math.min(trials.length, MAX_TRIAL_PRODUCTS)) {
+  if ([...limits.values()].some((kinds) => kinds.has('budget')) && items.length < proven.length + Math.min(trials.length, maxTrialProducts)) {
     appliedConstraints.push('Dừng gợi ý thêm sản phẩm do không đủ ngân sách');
   }
   const untriedCount = trials.filter((cand) => !picked.has(cand.productId)).length;
-  if (untriedCount > 0 && selectedTrials.length >= MAX_TRIAL_PRODUCTS) {
-    appliedConstraints.push(`Còn ${untriedCount} mặt hàng mới chưa nhập thử — để các lần gợi ý sau (mỗi lần tối đa ${MAX_TRIAL_PRODUCTS} món)`);
+  if (untriedCount > 0 && selectedTrials.length >= maxTrialProducts) {
+    appliedConstraints.push(`Còn ${untriedCount} mặt hàng mới chưa nhập thử — để các lần gợi ý sau (mỗi lần tối đa ${maxTrialProducts} món)`);
   }
 
   const totalCost = costOf(items.map((item) => ({ productId: item.productId, quantity: item.quantity })));
@@ -542,7 +555,8 @@ export function generateRestockSuggestions(
     items.filter((item) => groupOf.get(item.productId) === group).reduce((sum, item) => sum + item.estimatedCost, 0);
   const budget = {
     spendable,
-    provenShare: PROVEN_BUDGET_SHARE,
+    provenShare,
+    reserved,
     provenTarget,
     trialTarget: spendable - provenTarget,
     provenSpent: spentOf('proven'),
@@ -567,7 +581,7 @@ export function generateRestockSuggestions(
       : 'Tồn kho hiện tại và các đơn đang giao đã đủ đáp ứng nhu cầu dự kiến.';
   } else {
     explanation = `Gợi ý ${items.length} mặt hàng (${totalQuantity} sản phẩm) từ ${supplier.name} với tổng chi phí ${formatMoney(totalCost)} (tiền đang có ${formatMoney(money)}).`;
-    explanation += ` Phân bổ: hàng đang bán ${formatMoney(budget.provenSpent)} · hàng mới nhập thử nghiệm ${formatMoney(budget.trialSpent)} (mục tiêu ${Math.round(PROVEN_BUDGET_SHARE * 100)}/${Math.round((1 - PROVEN_BUDGET_SHARE) * 100)}; nhóm dùng không hết thì nhường cho nhóm kia).`;
+    explanation += ` Phân bổ: hàng đang bán ${formatMoney(budget.provenSpent)} · hàng mới nhập thử nghiệm ${formatMoney(budget.trialSpent)} (mục tiêu ${Math.round(provenShare * 100)}/${Math.round((1 - provenShare) * 100)}; nhóm dùng không hết thì nhường cho nhóm kia).`;
     if (reducedSlow.length > 0) {
       explanation += ` ${reducedSlow.length} mặt hàng bán chậm/tồn nhiều được giảm hoặc bỏ nhập.`;
     }

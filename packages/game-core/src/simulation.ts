@@ -26,6 +26,7 @@ import {
   StockLot,
   DailyRecord,
   LedgerEntry,
+  RestockSuggestionOptions,
   RestockSuggestionResult,
   QuestState,
   StallState,
@@ -2236,13 +2237,14 @@ export class GameSimulation {
   /**
    * Generate intelligent restock suggestions based on sales velocity and store state.
    */
-  public suggestRestock(supplierId?: string, budget?: number, existingCart?: Record<string, number>): RestockSuggestionResult {
+  public suggestRestock(supplierId?: string, budget?: number, existingCart?: Record<string, number>, options?: RestockSuggestionOptions): RestockSuggestionResult {
     const effectiveSupplierId = supplierId ?? DEFAULT_SUPPLIER_ID;
     const expected = new Map(this.getProductPlans(effectiveSupplierId).map((plan) => [plan.productId, plan.expectedTomorrow]));
     const supplierState = this.market.suppliers?.[effectiveSupplierId];
     const limitedStock = SUPPLIER_MAP[effectiveSupplierId]?.stockPerProductPerDay !== undefined;
     return generateRestockSuggestions({
       existingCart,
+      options,
       // Giá thật lúc đặt giỏ (cùng công thức với validateSupplierCart) để tổng gợi ý + giỏ không vượt tiền.
       cartCostOf: (items) => this.validateSupplierCart(effectiveSupplierId, items).totalCost,
       supplierStockOf: (productId) =>
@@ -3213,6 +3215,7 @@ export class GameSimulation {
       reservedColdCount: this.reservedColdWarehouseCount(),
       ambientUnitsOf: (productId) => this.ambientUnitsOf(productId),
       ambientFreeCells: this.ambientFreeCells(),
+      skillDiscount: getSkillModifier(this.skills, 'supplier_discount'),
     });
   }
 
@@ -3238,7 +3241,7 @@ export class GameSimulation {
 
     for (const line of items) {
       const product = PRODUCT_MAP[line.productId]!;
-      const unitCost = wholesaleQuote(supplier, product, supplierState, line.quantity).unit;
+      const unitCost = this.wholesaleUnitPrice(supplierId, line.productId, line.quantity);
       if (supplierState && supplier.stockPerProductPerDay !== undefined) supplierState.stockLeft[line.productId] = Math.max(0, (supplierState.stockLeft[line.productId] ?? 0) - line.quantity);
       const orderId = `ord-${++this.orderSequence}`;
       orderIds.push(orderId);

@@ -8,6 +8,7 @@ import {
   SupplierCartItem,
   RestockSuggestionResult,
   RestockBudgetSplit,
+  RestockSuggestionOptions,
   SuggestedCartItem,
   AutoBuyRule,
   AutoBuyReport,
@@ -15,6 +16,23 @@ import {
 import { ALL_PRODUCTS, PRODUCT_MAP, PRODUCT_CATEGORY_LABELS, SUPPLIERS, SUPPLIER_MAP, DEFAULT_SUPPLIER_ID } from '@game/data';
 import { addRecommendation, setCartQuantity } from './supplier-cart';
 import { PixelDialog, PixelStat, PixelButton, ProductSlot, QuantityStepper, money, EmptyState } from './pixel';
+
+const SUGGEST_OPTIONS_KEY = 'supplier-suggest-options';
+const DEFAULT_SUGGEST_OPTIONS: Required<RestockSuggestionOptions> = { provenSharePct: 40, maxTrialProducts: 6, cashReservePct: 10 };
+
+// Cài đặt gợi ý là tiện ích riêng của người xem: lưu localStorage, lỗi/không có thì dùng mặc định.
+function loadSuggestOptions(): Required<RestockSuggestionOptions> {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SUGGEST_OPTIONS_KEY) ?? 'null') as Partial<Required<RestockSuggestionOptions>> | null;
+    return {
+      provenSharePct: Number.isFinite(raw?.provenSharePct) ? Math.min(100, Math.max(0, raw!.provenSharePct!)) : DEFAULT_SUGGEST_OPTIONS.provenSharePct,
+      maxTrialProducts: Number.isFinite(raw?.maxTrialProducts) ? Math.min(20, Math.max(0, Math.round(raw!.maxTrialProducts!))) : DEFAULT_SUGGEST_OPTIONS.maxTrialProducts,
+      cashReservePct: Number.isFinite(raw?.cashReservePct) ? Math.min(90, Math.max(0, raw!.cashReservePct!)) : DEFAULT_SUGGEST_OPTIONS.cashReservePct,
+    };
+  } catch {
+    return { ...DEFAULT_SUGGEST_OPTIONS };
+  }
+}
 
 export interface SupplierQuoteBoard {
   quotes: Record<string, { unitPrice: number; previousUnitPrice: number; changePct: number; reasons: string[]; stockLeft?: number; unavailable: boolean }>;
@@ -31,7 +49,7 @@ interface Props {
   currentDay: number;
   onOrder: (id: string, n: number) => void;
   onOrderCart?: (supplierId: string, items: SupplierCartItem[]) => void;
-  onGetSuggestions?: (supplierId: string, cart: Record<string, number>) => RestockSuggestionResult;
+  onGetSuggestions?: (supplierId: string, cart: Record<string, number>, options: RestockSuggestionOptions) => RestockSuggestionResult;
   getQuotes?: (supplierId: string) => SupplierQuoteBoard;
   getUnitPrice?: (supplierId: string, productId: string, quantity: number) => number;
   autoBuyConfig?: { enabled: boolean; rules: AutoBuyRule[]; reports: Record<number, AutoBuyReport> };
@@ -65,6 +83,13 @@ export const SupplierModal: React.FC<Props> = ({
   const [autoQuantity, setAutoQuantity] = useState(8);
   const [autoBudget, setAutoBudget] = useState(50000);
   const [autoPriority, setAutoPriority] = useState(1);
+
+  const [suggestOptions, setSuggestOptions] = useState<Required<RestockSuggestionOptions>>(loadSuggestOptions);
+  const updateSuggestOption = (key: keyof RestockSuggestionOptions, value: number, min: number, max: number) => {
+    const next = { ...suggestOptions, [key]: Math.min(max, Math.max(min, Number.isFinite(value) ? Math.round(value) : min)) };
+    setSuggestOptions(next);
+    try { localStorage.setItem(SUGGEST_OPTIONS_KEY, JSON.stringify(next)); } catch { /* không lưu được thì bỏ qua */ }
+  };
 
   // Suggested Cart state
   const [suggestedCart, setSuggestedCart] = useState<{
@@ -162,7 +187,7 @@ export const SupplierModal: React.FC<Props> = ({
   const handleGenerateSuggestion = () => {
     if (!onGetSuggestions) return;
     // Truyền giỏ đang soạn để gợi ý chỉ tiêu phần tiền còn lại (bấm nhiều lần không cộng dồn vượt tiền).
-    const res = onGetSuggestions(selectedSupplierId, quantities);
+    const res = onGetSuggestions(selectedSupplierId, quantities, suggestOptions);
     setSuggestedCart({
       items: res.items.map((it) => ({ ...it })),
       constraints: res.appliedConstraints,
@@ -276,8 +301,25 @@ export const SupplierModal: React.FC<Props> = ({
           <div>
             <strong>Gợi ý thông minh</strong>
             <p className="muted" style={{ margin: 0, fontSize: '11px' }}>
-              Phân tích tốc độ bán 3–7 ngày, tồn kho &amp; đơn chờ. Chia tiền còn lại: 40% hàng đang bán, 60% nhập thử hàng mới; không vượt tiền đang có.
+              Phân tích tốc độ bán 3–7 ngày, tồn kho &amp; đơn chờ. Chia tiền theo tỷ lệ bên dưới (hàng đang bán / hàng mới nhập thử), luôn chừa quỹ dự phòng và không vượt tiền đang có.
             </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '6px', fontSize: '11px' }}>
+              <label title="% ngân sách cho hàng đang bán; phần còn lại nhập thử hàng mới">
+                Hàng đang bán{' '}
+                <input type="number" min={0} max={100} value={suggestOptions.provenSharePct} style={{ width: 52 }} aria-label="Phần trăm ngân sách cho hàng đang bán"
+                  onChange={(e) => updateSuggestOption('provenSharePct', Number(e.target.value), 0, 100)} />% · mới {100 - suggestOptions.provenSharePct}%
+              </label>
+              <label title="Số mặt hàng mới nhập thử tối đa mỗi lần gợi ý">
+                Món mới tối đa{' '}
+                <input type="number" min={0} max={20} value={suggestOptions.maxTrialProducts} style={{ width: 46 }} aria-label="Số món mới nhập thử tối đa"
+                  onChange={(e) => updateSuggestOption('maxTrialProducts', Number(e.target.value), 0, 20)} />
+              </label>
+              <label title="% tiền mặt giữ lại cho lương/thuế, không đưa vào gợi ý">
+                Giữ lại quỹ{' '}
+                <input type="number" min={0} max={90} value={suggestOptions.cashReservePct} style={{ width: 52 }} aria-label="Phần trăm tiền mặt giữ lại"
+                  onChange={(e) => updateSuggestOption('cashReservePct', Number(e.target.value), 0, 90)} />%
+              </label>
+            </div>
           </div>
           <PixelButton
             variant="teal"
@@ -321,7 +363,7 @@ export const SupplierModal: React.FC<Props> = ({
 
           {suggestedCart.budget && suggestedCart.budget.spendable > 0 && (
             <p className="muted" style={{ fontSize: '11px', margin: '0 0 8px' }}>
-              Tiền dùng cho gợi ý {money(suggestedCart.budget.spendable)} · Hàng đang bán {money(suggestedCart.budget.provenSpent)} / {money(suggestedCart.budget.provenTarget)} (40%) · Hàng mới thử {money(suggestedCart.budget.trialSpent)} / {money(suggestedCart.budget.trialTarget)} (60%)
+              Tiền dùng cho gợi ý {money(suggestedCart.budget.spendable)}{suggestedCart.budget.reserved > 0 ? ` (giữ lại ${money(suggestedCart.budget.reserved)})` : ''} · Hàng đang bán {money(suggestedCart.budget.provenSpent)} / {money(suggestedCart.budget.provenTarget)} ({Math.round(suggestedCart.budget.provenShare * 100)}%) · Hàng mới thử {money(suggestedCart.budget.trialSpent)} / {money(suggestedCart.budget.trialTarget)} ({100 - Math.round(suggestedCart.budget.provenShare * 100)}%)
             </p>
           )}
 
