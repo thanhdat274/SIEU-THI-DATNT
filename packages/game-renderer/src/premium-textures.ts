@@ -1177,14 +1177,14 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
 
     // Kính chắn gió xiên + tài xế (dx dịch kính về phía sau với xe có mũi dài)
     const windshield = (dx: number) => {
-      for (let y = 12; y <= 31; y++) {
-        const xl = 124 + dx + Math.floor((y - 12) * 0.3);
-        const xr = 136 + dx + Math.floor((y - 12) * 0.32);
-        R(xl - 1, y, xr - xl + 3, 1, DARK);
-        if (y > 12 && y < 31) R(xl, y, xr - xl + 1, 1, GLASS);
-      }
-      R(127 + dx, 14, 4, 2, GLASS_HI);
-      R(131 + dx, 21, 5, 5, SKIN); R(130 + dx, 20, 7, 2, '#2a1c14'); R(131 + dx, 26, 6, 4, '#2c3e50');
+      const x0 = 125 + dx;
+      const w = 17;
+      R(x0 - 1, 12, w + 2, 20, DARK);
+      R(x0, 13, w, 18, GLASS);
+      R(x0, 28, w, 3, '#5a8fb0');                          // taplo
+      R(x0 + 2, 14, 3, 2, GLASS_HI); R(x0 + 6, 14, 2, 1, GLASS_HI);
+      R(x0 + 1, 27, 10, 1, DARK);                          // cần gạt nước
+      R(x0 + 5, 19, 5, 5, SKIN); R(x0 + 4, 18, 7, 2, '#2a1c14'); R(x0 + 5, 24, 6, 4, '#2c3e50');   // tài xế
     };
     const wheelWell = (cx: number) => { R(cx - 11, 38, 22, 8, '#26190e'); drawWheel(raw, cx, 49 + DY, 8); };
 
@@ -1236,11 +1236,11 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
       R(98, 13, 20, 32, DARK); R(99, 14, 18, 30, '#c0392b'); R(100, 16, 7, 14, '#7fd6d0'); R(109, 16, 7, 14, '#7fd6d0'); R(108, 14, 1, 30, DARK);
       // Giá nóc + hành lý
       R(6, 8, 130, 2, DARK);
-      R(8, -1, 118, 9, DARK); R(9, 0, 116, 7, '#2e8b57'); R(9, 0, 116, 1, '#52b27a');
+      R(8, 1, 118, 8, DARK); R(9, 2, 116, 6, '#2e8b57'); R(9, 2, 116, 1, '#52b27a');
       R(12, 7, 2, 2, DARK); R(122, 7, 2, 2, DARK);
-      for (const x of [26, 56, 90]) { R(x, -1, 3, 10, '#e67e22'); R(x, -1, 1, 10, '#f5a05a'); }
-      R(14, -5, 20, 6, DARK); R(15, -4, 18, 4, '#c89b5c'); R(15, -4, 18, 1, '#dcb27a');
-      R(98, -4, 18, 5, DARK); R(99, -3, 16, 3, '#8e44ad'); R(99, -3, 16, 1, '#a569bd');
+      for (const x of [26, 56, 90]) { R(x, 1, 3, 8, '#e67e22'); R(x, 1, 1, 8, '#f5a05a'); }
+      R(14, -2, 20, 4, DARK); R(15, -1, 18, 2, '#c89b5c'); R(15, -1, 18, 1, '#dcb27a');
+      R(98, -1, 18, 3, DARK); R(99, 0, 16, 1, '#8e44ad');
       windshield(0);
       R(137, 22, 3, 7, DARK);
     }
