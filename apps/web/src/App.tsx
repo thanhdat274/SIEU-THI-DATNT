@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { DRINK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, WEATHER_MAP, XOI_DISH_IDS } from '@game/data';
+import { DRINK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, STORE_TYPES, WEATHER_MAP, XOI_DISH_IDS } from '@game/data';
 import { InputManager, GameSimulation, ambientMix, getTutorialChecklist } from '@game/core';
 import type { TutorialItem } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
@@ -35,7 +35,10 @@ import type { StoreLayoutAction } from '@game/core';
 import { money, PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
 
-import { AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, SecurityModal } from './lazy-modals';
+import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, SecurityModal } from './lazy-modals';
+
+/** Cấp thấp nhất mở được một loại chi nhánh; dưới cấp này (và chưa có chi nhánh) ẩn mục Chuỗi chi nhánh. */
+const CHAIN_UNLOCK_LEVEL = Math.min(...STORE_TYPES.map(type => type.unlockLevel));
 
 export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -66,6 +69,7 @@ export const App: React.FC = () => {
   const [isSkillsOpen, setSkillsOpen] = useState(false);
   const [isTitlesOpen, setTitlesOpen] = useState(false);
   const [isMaintenanceOpen, setMaintenanceOpen] = useState(false);
+  const [isChainOpen, setChainOpen] = useState(false);
   const [isReviewsOpen, setReviewsOpen] = useState(false);
   const [isSecurityOpen, setSecurityOpen] = useState(false);
   const [isAnalyticsOpen, setAnalyticsOpen] = useState(false);
@@ -989,6 +993,30 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleOpenBranch = async (storeTypeId: string, name: string) => {
+    const chain = simulationRef.current?.getChain();
+    if (!chain) return;
+    // Mã sinh ở client để lệnh gửi lại (retry) là no-op ở server, giống `buy_plot`.
+    const branchId = `branch-${chain.nextBranchSeq}`;
+    const res = await persistSimulationMutation(
+      { type: 'open_branch', storeType: storeTypeId, ...(name ? { name } : {}), branchId }, 'Mở chi nhánh', 'Chuỗi chi nhánh',
+      simulation => simulation.openBranch(storeTypeId, name || undefined, branchId),
+    );
+    if (!res) return;
+    addToast(res.success ? 'Đã mở chi nhánh; chi nhánh bắt đầu bán từ ngày kế tiếp. Hãy chuyển hàng cho chi nhánh.' : (res.reason ?? 'Không mở được chi nhánh.'), res.success ? 'success' : 'warn');
+  };
+
+  const handleBranchStock = async (kind: 'transfer_stock' | 'return_stock', branchId: string, items: Array<{ productId: string; quantity: number }>) => {
+    const res = await persistSimulationMutation(
+      { type: kind, branchId, items }, kind === 'transfer_stock' ? 'Chuyển hàng tới chi nhánh' : 'Trả hàng về kho tổng', 'Chuỗi chi nhánh',
+      simulation => kind === 'transfer_stock' ? simulation.transferToBranch(branchId, items) : simulation.returnFromBranch(branchId, items),
+    );
+    if (!res) return false;
+    const units = items.reduce((total, item) => total + item.quantity, 0);
+    addToast(res.success ? `${kind === 'transfer_stock' ? 'Đã chuyển' : 'Đã trả về kho tổng'} ${units} món.` : (res.reason ?? 'Không chuyển được hàng.'), res.success ? 'success' : 'warn');
+    return res.success;
+  };
+
   const handleBuyStall = async (stallId: string) => {
     const sim = simulationRef.current;
     if (!sim || blockOfflineOnlineMutation()) return;
@@ -1365,7 +1393,7 @@ export const App: React.FC = () => {
           ⚠️ Mất kết nối hẻm chung — thao tác bị tạm dừng, đang kết nối lại...
         </div>
       )}
-      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={() => setMarketOpen(true)} onOpenTax={() => setTaxOpen(true)} onOpenRegulars={() => setRegularsOpen(true)} onOpenSkills={() => setSkillsOpen(true)} onOpenTitles={() => setTitlesOpen(true)} maintenanceAlerts={simulationRef.current?.getMaintenanceList().filter(e => e.status !== 'good').length ?? 0} onOpenMaintenance={() => setMaintenanceOpen(true)} onOpenReviews={() => setReviewsOpen(true)} onOpenAnalytics={() => setAnalyticsOpen(true)} audioMuted={audioMuted} onToggleAudioMute={() => { const next = !audioMuted; audioRef.current?.setMuted(next); setAudioMuted(next); }} onOpenSecurity={(player.level >= SECURITY_RULES.unlockLevel) ? () => setSecurityOpen(true) : undefined} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onOpenStaff={openStaffFromHud} onOpenStalls={() => setStallOpen(true)} onOpenQuests={() => setQuestOpen(true)} onOpenLevelRoadmap={() => setLevelRoadmapOpen(true)} onOpenPlanogram={() => setIsPlanogramOpen(true)} emptySlotsCount={fixtures.filter(f => isSalesFixture(f) && f.currentStock === 0).length} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
+      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={() => setMarketOpen(true)} onOpenTax={() => setTaxOpen(true)} onOpenRegulars={() => setRegularsOpen(true)} onOpenSkills={() => setSkillsOpen(true)} onOpenTitles={() => setTitlesOpen(true)} maintenanceAlerts={simulationRef.current?.getMaintenanceList().filter(e => e.status !== 'good').length ?? 0} onOpenMaintenance={() => setMaintenanceOpen(true)} onOpenChain={(player.level >= CHAIN_UNLOCK_LEVEL || (simulationRef.current?.getChain().branches.length ?? 0) > 0) ? () => setChainOpen(true) : undefined} onOpenReviews={() => setReviewsOpen(true)} onOpenAnalytics={() => setAnalyticsOpen(true)} audioMuted={audioMuted} onToggleAudioMute={() => { const next = !audioMuted; audioRef.current?.setMuted(next); setAudioMuted(next); }} onOpenSecurity={(player.level >= SECURITY_RULES.unlockLevel) ? () => setSecurityOpen(true) : undefined} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onOpenStaff={openStaffFromHud} onOpenStalls={() => setStallOpen(true)} onOpenQuests={() => setQuestOpen(true)} onOpenLevelRoadmap={() => setLevelRoadmapOpen(true)} onOpenPlanogram={() => setIsPlanogramOpen(true)} emptySlotsCount={fixtures.filter(f => isSalesFixture(f) && f.currentStock === 0).length} onToggleStoreStatus={handleToggleStoreStatus} onOpenLayout={openLayoutEditor} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={handleToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={()=>setWarehouseDockOpen(v=>!v)} isWarehouseDockOpen={isWarehouseDockOpen}/>}
       <main className="game-main">
         <div className="world-viewport">
           <canvas ref={canvasRef} aria-label="Bản đồ Tiệm Tạp Hóa Đầu Hẻm"/>
@@ -1650,6 +1678,19 @@ export const App: React.FC = () => {
     )}
     {isReviewsOpen && simulationRef.current && (
       <ReviewsModal reviews={simulationRef.current.getReviews()} summary={simulationRef.current.getReviewSummary()} onClose={() => setReviewsOpen(false)} />
+    )}
+    {isChainOpen && simulationRef.current && (
+      <ChainModal
+        chain={simulationRef.current.getChain()}
+        warehouse={simulationRef.current.getInventory()}
+        playerMoney={player.money}
+        playerLevel={player.level}
+        day={simulationRef.current.getTime().day}
+        onOpenBranch={handleOpenBranch}
+        onTransfer={(branchId, items) => handleBranchStock('transfer_stock', branchId, items)}
+        onReturn={(branchId, items) => handleBranchStock('return_stock', branchId, items)}
+        onClose={() => setChainOpen(false)}
+      />
     )}
     {isMaintenanceOpen && simulationRef.current && (
       <MaintenanceModal

@@ -36,9 +36,9 @@ Quy ước: chỉ đánh `[x]` khi code và kiểm chứng tương ứng đã ch
 
 > Quyết định 03/10/2026: quán nước gần = tòa nhà thứ 3 trên cùng bản đồ (nhánh việc riêng, chưa có task chi tiết; xem `design.md`); quán xa = chi nhánh nền. Các mục dưới đây áp dụng cho chi nhánh xa/màn tổng quan.
 
-- [ ] 6.1 Bộ chọn chi nhánh (HUD/`BottomBar`), dựng lại simulation khi chuyển, màn tải ngắn.
-- [ ] 6.2 Màn tổng quan chuỗi: ví chung, kho tổng, từng chi nhánh (doanh thu hôm qua, hàng sắp hết, bán hụt).
-- [ ] 6.3 Hộp thoại chuyển/trả kho nhiều món (hiện hạn dùng, kiểm sức chứa); hộp thoại mở chi nhánh.
+- [ ] 6.1 (chưa làm: `switchBranch` có trong core/lệnh nhưng chưa có chế độ điều hành nên UI cố ý không đưa bộ chọn) Bộ chọn chi nhánh (HUD/`BottomBar`), dựng lại simulation khi chuyển, màn tải ngắn.
+- [>] 6.2 (03/10/2026: `ChainModal` có ví chung, kho tổng, từng chi nhánh với tồn/sức chứa, báo cáo ngày gần nhất, bán hụt; **chưa** có hàng sắp hết dạng cảnh báo riêng, chưa có báo cáo ngày vắng) Màn tổng quan chuỗi: ví chung, kho tổng, từng chi nhánh (doanh thu hôm qua, hàng sắp hết, bán hụt).
+- [>] 6.3 (03/10/2026: `ChainModal` chuyển/trả nhiều món cùng lúc, hiện hạn lô gần nhất, kiểm sức chứa chi nhánh phía client, mở chi nhánh có đặt tên; lệnh `open_branch`/`transfer_stock`/`return_stock` đi qua `persistSimulationMutation` (online gửi server-replay). Đã xem trên Browser pane desktop + 844×390: mở chi nhánh trừ 1.500.000 ₫, chuyển 41 món vào kho chi nhánh. **Chưa** kiểm: trả hàng bấm thật, hai tài khoản online, qua ngày chạy nền trên UI) Hộp thoại chuyển/trả kho nhiều món (hiện hạn dùng, kiểm sức chứa); hộp thoại mở chi nhánh.
 - [ ] 6.4 Chế độ ghé qua: mở công cụ bố cục/mua đất cho chi nhánh (tái dùng `StoreLayoutModal`); báo cáo ngày có lọc theo chi nhánh.
 - [ ] 6.5 Renderer: bản đồ và biển theo loại hình (tái dùng texture, chỉ thêm biển "QUÁN NƯỚC").
 

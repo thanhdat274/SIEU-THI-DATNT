@@ -36,10 +36,11 @@ interface HUDProps {
   /** Số kệ/tủ mát đang mòn hoặc hỏng; > 0 thì hiện nút Sửa chữa. */
   maintenanceAlerts?: number;
   onOpenMaintenance?: () => void;
+  onOpenChain?: () => void;
   onOpenPlanogram?: () => void;
   emptySlotsCount?: number;
 }
-export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0}) => {
+export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0}) => {
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore();
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const season = getSeasonForDay(worldTime.day);
@@ -151,6 +152,7 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
           onToggleAudioMute={onToggleAudioMute}
           maintenanceAlerts={maintenanceAlerts}
           onOpenMaintenance={onOpenMaintenance}
+          onOpenChain={onOpenChain}
           onOpenLevelRoadmap={onOpenLevelRoadmap}
           onOpenPlanogram={onOpenPlanogram}
           emptySlotsCount={emptySlotsCount}

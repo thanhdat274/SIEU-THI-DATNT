@@ -31,6 +31,7 @@ interface ManagementModalProps {
   onToggleAudioMute?: () => void;
   maintenanceAlerts?: number;
   onOpenMaintenance?: () => void;
+  onOpenChain?: () => void;
   onOpenLevelRoadmap?: () => void;
   onOpenPlanogram?: () => void;
   emptySlotsCount?: number;
@@ -57,6 +58,7 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
   onToggleAudioMute,
   maintenanceAlerts = 0,
   onOpenMaintenance,
+  onOpenChain,
   onOpenLevelRoadmap,
   onOpenPlanogram,
   emptySlotsCount = 0,
@@ -194,6 +196,13 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
           action: () => handleSelect(onOpenMaintenance),
           badge: maintenanceAlerts > 0 ? `${maintenanceAlerts} cần sửa` : undefined,
           badgeVariant: 'brick' as const,
+        },
+        onOpenChain && {
+          id: 'chain',
+          label: 'Chuỗi chi nhánh',
+          desc: 'Mở chi nhánh, xem doanh thu và chuyển hàng từ kho tổng',
+          icon: 'door' as IconName,
+          action: () => handleSelect(onOpenChain),
         },
         onOpenLayout && {
           id: 'layout',
