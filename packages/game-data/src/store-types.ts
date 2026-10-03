@@ -30,7 +30,7 @@ export const STORE_TYPES: readonly StoreTypeDef[] = [
     unlockLevel: 32,
     openCost: 1_500_000,
     maxBranches: 3,
-    staffWagePerDay: 120_000,
+    staffWagePerDay: 60_000,
     stockCapacity: 400,
     baseDailyDemand: {
       nuoc_suoi: 14, nuoc_khoang: 6, nuoc_tinh_khiet: 6, nuoc_cam: 8, tra_xanh: 8,
@@ -53,7 +53,7 @@ export const BRANCH_PRICE_MODES = {
 } as const;
 
 /** Quản lý chi nhánh: lương thêm mỗi ngày (₫) và hệ số cầu nền khi có quản lý (thay cho hệ số nền 0,7). **Tạm, chưa playtest.** */
-export const BRANCH_MANAGER = { wagePerDay: 90_000, demandFactor: 0.95 } as const;
+export const BRANCH_MANAGER = { wagePerDay: 40_000, demandFactor: 0.95 } as const;
 
 /** Số chi nhánh tối đa toàn chuỗi ở bản đầu (D8). */
 export const MAX_CHAIN_BRANCHES = 3;

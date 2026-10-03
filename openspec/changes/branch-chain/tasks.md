@@ -64,5 +64,5 @@ Quy ước: chỉ đánh `[x]` khi code và kiểm chứng tương ứng đã ch
 
 - [ ] 8.1 `yarn typecheck`, `yarn test`, `yarn test:all:db`, `yarn build` PASS bằng kết quả thực tế; ghi lệnh/ngày vào `tổng hợp.md`.
 - [ ] 8.2 Browser QA desktop và mobile: mở chi nhánh, chuyển kho, ghé qua sắp xếp, chạy nền qua nhiều ngày, nạp lại; ghi riêng.
-- [ ] 8.3 Mô phỏng cân bằng nhiều ngày (giống `xoi-balance-sim.ts`): thu nhập chi nhánh nền so với điều hành, thời gian hoàn vốn, ảnh hưởng của giới hạn số chi nhánh.
+- [>] 8.3 (03/10/2026: chạy `branch-balance-sim.ts` 5 seed × 120 ngày; số cũ lãi ≈ 0 nên đã đổi lương nền 120.000 → 60.000 và quản lý 90.000 → 40.000; chạy lại: hoàn vốn 18–39 ngày, mọi cấu hình có lãi. **Chưa** đo ảnh hưởng giới hạn số chi nhánh, chưa playtest; xem `tổng hợp.md`)
 - [ ] 8.4 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`; ghi giới hạn còn lại (loại hình khác, đóng chi nhánh, co-op nhiều người).
