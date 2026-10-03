@@ -3,7 +3,11 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ArtLab } from './components/ArtLab';
 import { setDebugVisualTime } from '@game/renderer';
+import { installPerfOverlay } from './services/perf-overlay';
+import { watchAppUpdates } from './services/app-update';
 import './index.css';
+
+installPerfOverlay();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -14,17 +18,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then((reg) => {
-      // Khi SW mới được install và activate (deploy mới), reload trang để dùng assets mới.
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        if (!newWorker) return;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
-            // SW mới vừa kích hoạt → reload để đảm bảo không còn assets cũ trong cache.
-            window.location.reload();
-          }
-        });
-      });
+      // SW mới chỉ chờ; UpdateBanner/nút "Cập nhật" lưu tiến trình rồi mới kích hoạt và reload.
+      watchAppUpdates(reg);
     }).catch((err: unknown) => {
       // Không throw — SW là tính năng PWA tuỳ chọn, lỗi không nên ảnh hưởng game.
       console.warn('[SW] Đăng ký thất bại:', err);

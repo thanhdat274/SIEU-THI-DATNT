@@ -1,5 +1,6 @@
 import React from 'react';
 import { PixelDialog, PixelIcon, type IconName } from './pixel';
+import { applyAppUpdate, checkForAppUpdate, isAppUpdateReady, subscribeAppUpdate, type AppUpdateResult } from '../services/app-update';
 
 export interface ManagementItem {
   id: string;
@@ -64,6 +65,23 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
   isStoreOpen = false,
   onToggleSaveModal,
 }) => {
+  const [updateStatus, setUpdateStatus] = React.useState<AppUpdateResult | 'checking' | null>(null);
+  const updateText: Record<AppUpdateResult | 'checking', string> = {
+    checking: 'Đang kiểm tra…',
+    available: 'Đã có bản mới. Bấm lại để lưu tiến trình và cập nhật',
+    'up-to-date': 'Bạn đang dùng bản mới nhất',
+    offline: 'Không có mạng, thử lại sau',
+    unsupported: 'Chỉ hoạt động ở bản đã cài/build (có service worker)',
+    error: 'Kiểm tra thất bại, thử lại sau',
+  };
+  const updateReady = React.useSyncExternalStore(subscribeAppUpdate, isAppUpdateReady);
+  const handleCheckUpdate = () => {
+    if (updateStatus === 'checking') return;
+    if (updateReady) { onClose(); void applyAppUpdate(); return; }
+    setUpdateStatus('checking');
+    void checkForAppUpdate().then(setUpdateStatus);
+  };
+
   const handleSelect = (action?: () => void) => {
     if (!action) return;
     onClose();
@@ -207,6 +225,15 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
           action: () => onToggleAudioMute(),
           badge: audioMuted ? 'Đang tắt' : undefined,
           badgeVariant: 'gold' as const,
+        },
+        {
+          id: 'check-update',
+          label: updateReady ? 'Cập nhật ngay' : 'Kiểm tra cập nhật',
+          desc: updateReady ? updateText.available : updateStatus ? updateText[updateStatus] : 'Tải giao diện/phiên bản mới nhất của game nếu có',
+          icon: 'speed' as IconName,
+          action: handleCheckUpdate,
+          badge: updateReady ? 'Có bản mới' : undefined,
+          badgeVariant: 'teal' as const,
         },
       ].filter(Boolean) as ManagementItem[],
     },

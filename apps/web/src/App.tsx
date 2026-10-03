@@ -14,6 +14,10 @@ import { useGameStore } from './store/useGameStore';
 import { HUD } from './components/HUD';
 import { AccountBar } from './components/AccountBar';
 import { useCloudSave } from './hooks/useCloudSave';
+import { setBeforeApplyUpdate } from './services/app-update';
+import { UpdateBanner } from './components/UpdateBanner';
+import { UpdateConflictDialog, type UpdateConflictChoice } from './components/UpdateConflictDialog';
+import type { CloudSaveSummary } from './services/api';
 import { LoginScreen } from './components/LoginScreen';
 import { type WorldDetail, createWorldInvite, commitOnlineCommand, getOnlineWorld, touchWorldSession } from './services/api';
 import { WarehouseModal } from './components/WarehouseModal';
@@ -280,7 +284,26 @@ export const App: React.FC = () => {
   }, [syncFromSimulation, addToast]);
 
   const exportLocalSave = useCallback(() => simulationRef.current?.exportSaveData(getActiveSlotId(), revisionRef.current), []);
-  const { cloud, uploadCloud, downloadCloud } = useCloudSave({ enabled: isSaveModalOpen && !onlineWorld, exportLocal: exportLocalSave, importSave: handleImportSave });
+  const { cloud, uploadCloud, downloadCloud, uploadIfLinked } = useCloudSave({ enabled: isSaveModalOpen && !onlineWorld, exportLocal: exportLocalSave, importSave: handleImportSave });
+
+  // Trước khi tải lại để cập nhật app: lưu máy, rồi đẩy cloud nếu đã liên kết. Hẻm online đã lưu trên máy chủ.
+  const [updateConflict, setUpdateConflict] = useState<{ remote: CloudSaveSummary; resolve: (choice: UpdateConflictChoice) => void } | null>(null);
+  useEffect(() => {
+    setBeforeApplyUpdate(async () => {
+      if (onlineWorldRef.current || !simulationRef.current) return true;
+      if (!(await handleSaveGame(false)) && !window.confirm('Chưa lưu được tiến trình trên máy. Vẫn cập nhật và tải lại?')) return false;
+      const { status, remote } = await uploadIfLinked();
+      if (status === 'failed') return window.confirm('Không đẩy được lên cloud (bản trên máy vẫn đã lưu). Vẫn cập nhật và tải lại?');
+      if (status !== 'conflict' || !remote) return true;
+      const choice = await new Promise<UpdateConflictChoice>(resolve => setUpdateConflict({ remote, resolve }));
+      setUpdateConflict(null);
+      if (choice === 'cancel') return false;
+      if (choice === 'overwrite') return (await uploadCloud(true)) || window.confirm('Không ghi đè được cloud (bản trên máy vẫn đã lưu). Vẫn cập nhật và tải lại?');
+      if (choice === 'download') return (await downloadCloud()) || window.confirm('Không tải được bản cloud. Vẫn cập nhật bằng bản trên máy?');
+      return true;
+    });
+    return () => setBeforeApplyUpdate(null);
+  }, [handleSaveGame, uploadIfLinked, uploadCloud, downloadCloud]);
 
   const onlineUidRef = useRef<string | null>(null);
   const spawnPlacedForRef = useRef<string | null>(null);
@@ -1319,7 +1342,7 @@ export const App: React.FC = () => {
     setWarehouseDockOpen(false);
     viewportRef.current?.locateWarehouse();
   };
-  if (!gameStarted && !isLoading) return <LoginScreen onEnter={handleEnterGame}/>;
+  if (!gameStarted && !isLoading) return <><LoginScreen onEnter={handleEnterGame}/><UpdateBanner/></>;
 
   return <div className="game-shell">
     <div style={{display:'contents'}} inert={hasModal}>
@@ -1441,6 +1464,8 @@ export const App: React.FC = () => {
     {activeFixtureModal?.type === 'kitchen_station' && simulationRef.current && <KitchenStationModal fixture={activeFixtureModal} recipes={simulationRef.current.getStationRecipes(activeFixtureModal.id)} job={simulationRef.current.getProductionJobs().find(job => job.stationId === activeFixtureModal.id)} inventory={simulationRef.current.getInventory()} day={simulationRef.current.getTime().day} allFixtures={fixtures.filter(f => f.type === 'kitchen_station' && f.shopId)} onStart={async (recipeId, stationId) => { const targetId = stationId ?? activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'start_production', recipeId, stationId: targetId }, 'Bắt đầu nấu', 'Sản xuất', simulation => simulation.startProduction(recipeId, targetId)); if (!res?.success) addToast(res?.reason ?? 'Không bắt đầu được mẻ nấu.', 'warn'); }} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'dining_table' && simulationRef.current && <DiningTableModal fixture={activeFixtureModal} state={simulationRef.current.getDiningTableState(activeFixtureModal.id)} staff={simulationRef.current.getStaff()} onAssignCleaner={async staffId => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'assign_dining_cleanup', staffId, fixtureId }, 'Giao việc dọn bàn', 'Dọn dẹp', simulation => ({ success: simulation.assignDiningCleanup(staffId, fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast(res?.reason ?? 'Không giao được việc dọn bàn.', 'warn'); }} onClean={async () => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'clean_dining_table', fixtureId }, 'Dọn bàn ăn', 'Dọn dẹp', simulation => ({ success: simulation.cleanDiningTable(fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast('Bàn đang có khách hoặc đã sạch.', 'warn'); }} onClose={closeFixtureModal}/>}
     {isInventoryModalOpen && <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals}/>}
+    <UpdateBanner/>
+    {updateConflict && <UpdateConflictDialog local={simulationRef.current?.exportSaveData(getActiveSlotId(), revisionRef.current)} remote={updateConflict.remote} onChoose={updateConflict.resolve}/>}
     {isSaveModalOpen && <SaveModal cloud={{state:cloud,onUpload:uploadCloud,onDownload:downloadCloud}} onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onExportSave={handleExportSave} onImportSave={handleImportSave} isOnline={!!onlineWorld} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
     {isSupplierModalOpen && (
       <SupplierModal
