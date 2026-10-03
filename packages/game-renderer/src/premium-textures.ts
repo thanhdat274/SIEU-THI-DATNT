@@ -75,6 +75,7 @@ export function createPremiumTexture(key:string):HTMLCanvasElement|null{
  if(key.startsWith('player_')||key.startsWith('npc_')) return character(key);
  if(key.startsWith('fixture_')) return fixture(key);
  if(key.startsWith('wall_')) return wallTexture(key);
+ if(key.startsWith('vehicle_minibus_')) return scaleCanvas(vehicleTexture(key),1.5); // xe buýt vẽ gốc 94×44 px, phóng 1,5× cho đúng tỉ lệ với xe tải/ô tô
  if(key.startsWith('vehicle_')) return vehicleTexture(key);
  if(key.startsWith('truck_')) return logisticsTruckTexture(key);
  if(key.startsWith('prop_')) return logisticsPropTexture(key);
@@ -940,98 +941,75 @@ function logisticsPropTexture(key: string): HTMLCanvasElement | null {
   return null;
 }
 
+function scaleCanvas(src: HTMLCanvasElement | null, factor: number): HTMLCanvasElement | null {
+  if (!src) return null;
+  const { canvas, ctx } = surface(Math.round(src.width * factor), Math.round(src.height * factor));
+  ctx.drawImage(src, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
 function vehicleTexture(key: string): HTMLCanvasElement | null {
-  if (key.startsWith('vehicle_motorbike_parked_')) {
-    const v = Number(key.slice(-1));
-    const { canvas, ctx } = surface(44, 34);
-    const r = (x: number, y: number, w: number, h: number, col: string) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(x, y, w, h);
-    };
-    const bodyColors = [
-      { main: '#c0392b', dark: '#962d22', light: '#e74c3c', cowl: '#f5f5f5' }, // Wave đỏ yếm trắng
-      { main: '#1b4f72', dark: '#154360', light: '#2874a6', cowl: '#fcf3cf' }, // Dream xanh đậm, yếm tem kem
-      { main: '#f4f6f7', dark: '#bdc3c7', light: '#ffffff', cowl: '#e5e7e9' }, // Lead trắng thanh lịch
-    ][v] ?? { main: '#c0392b', dark: '#962d22', light: '#e74c3c', cowl: '#f5f5f5' };
-
-    // Bóng đổ nghiêng chân chống trên vỉa hè
-    r(4, 29, 36, 4, '#26190e38');
-    r(8, 28, 28, 5, '#26190e20');
-
-    // Bánh xe căm tròn (đường kính 11)
-    const drawWheel = (wx: number, wy: number) => {
-      r(wx + 3, wy + 0, 5, 11, '#1a1815');
-      r(wx + 1, wy + 1, 9, 9, '#1a1815');
-      r(wx + 0, wy + 3, 11, 5, '#1a1815');
-      r(wx + 2, wy + 2, 7, 7, '#bdc3c7');
-      r(wx + 3, wy + 3, 5, 5, '#2c3e50');
-      r(wx + 4, wy + 4, 3, 3, '#e5e7eb');
-      r(wx + 5, wy + 5, 1, 1, '#1a1815');
-    };
-    drawWheel(3, 19);  // Bánh sau
-    drawWheel(29, 19); // Bánh trước
-
-    // Chân chống nghiêng (tựa vào vỉa hè)
-    r(19, 24, 2, 8, '#2c3e50');
-    r(18, 30, 3, 2, '#1a1815');
-
-    // Bô xe mạ crom & lốc máy
-    r(14, 25, 15, 3, '#e5e7eb');
-    r(16, 24, 11, 1, '#ffffff');
-    r(10, 26, 6, 2, '#95a5a6');
-    r(17, 21, 9, 5, '#7f8c8d');
-    r(18, 22, 6, 3, '#bdc3c7');
-
-    // Phuộc trước & dè trước
-    r(33, 16, 2, 8, '#bdc3c7');
-    r(28, 18, 8, 3, bodyColors.main);
-    r(29, 17, 5, 2, bodyColors.light);
-
-    if (v === 2) {
-      // Lead scooter: thân liền kín, sàn phẳng và yếm lớn.
-      r(11, 16, 19, 7, bodyColors.dark);
-      r(13, 14, 18, 8, bodyColors.main);
-      r(16, 14, 11, 2, bodyColors.light);
-      r(25, 11, 8, 12, bodyColors.cowl);
-      r(27, 13, 4, 8, '#ffffff');
-      r(14, 22, 14, 3, '#28343a');
-      r(8, 12, 18, 4, '#1a1a1a');
-      r(9, 11, 16, 4, '#2c3e50');
-      r(10, 11, 13, 1, '#4a6572');
-      r(6, 13, 4, 2, '#bdc3c7');
-    } else {
-      // Wave/Dream underbone: yếm trước tách khỏi thân, để lộ sườn và máy.
-      r(13, 17, 17, 5, bodyColors.dark);
-      r(14, 15, 16, 5, bodyColors.main);
-      r(16, 15, 11, 2, bodyColors.light);
-      r(25, 12, 7, 10, bodyColors.cowl);
-      r(26, 14, 4, 6, v === 1 ? '#fcf3cf' : '#ffffff');
-      r(8, 12, 17, 4, '#1a1a1a');
-      r(9, 11, 15, 4, '#2c3e50');
-      r(10, 11, 13, 1, '#4a6572');
-      r(6, 13, 4, 2, '#bdc3c7');
-      if (v === 1) {
-        r(5, 10, 8, 1, '#bdc3c7');
-        r(5, 10, 1, 4, '#7f8c8d');
-        r(27, 15, 2, 3, '#f4e6b7');
-      }
+  // Tỉ lệ ~20-22 px/mét như xe tải: ô tô dài 100 px (4,5 m) cao ~35 px, xe máy dài ~52 px (1,9 m).
+  // Mọi mẫu vẽ quay mặt sang phải rồi lật ngang khi hướng trái; neo giữa-đáy, đáy canvas ~ mặt đường.
+  const DARK = '#1a1815';
+  const makeSurface = (w: number, h: number, flip: boolean) => {
+    const { canvas, ctx } = surface(w, h);
+    if (flip) { ctx.translate(w, 0); ctx.scale(-1, 1); }
+    const r = (x: number, y: number, rw: number, rh: number, col: string) => { ctx.fillStyle = col; ctx.fillRect(x, y, rw, rh); };
+    return { canvas, r };
+  };
+  // Bánh xe tròn đường kính d (lẻ), tâm (cx, cy): lốp, vành bạc, trục.
+  const drawWheel = (r: (x: number, y: number, w: number, h: number, c: string) => void, cx: number, cy: number, rad: number) => {
+    for (let dy = -rad; dy <= rad; dy++) {
+      const half = Math.round(Math.sqrt(rad * rad - dy * dy));
+      r(cx - half, cy + dy, half * 2 + 1, 1, DARK);
     }
+    const inner = rad - 2;
+    for (let dy = -inner; dy <= inner; dy++) {
+      const half = Math.round(Math.sqrt(inner * inner - dy * dy));
+      r(cx - half, cy + dy, half * 2 + 1, 1, '#2d2a27');
+    }
+    const hub = Math.max(2, rad - 4);
+    for (let dy = -hub; dy <= hub; dy++) {
+      const half = Math.round(Math.sqrt(hub * hub - dy * dy));
+      r(cx - half, cy + dy, half * 2 + 1, 1, '#b8bec4');
+    }
+    r(cx - 1, cy - 1, 2, 2, '#5d6368');
+  };
+  const bikeColors = [
+    { body: '#c0392b', dark: '#962d22', light: '#e8604f' },
+    { body: '#2e6da4', dark: '#1f4d78', light: '#5a95c8' },
+    { body: '#e8ecef', dark: '#b6bdc4', light: '#ffffff' },
+  ];
+  // Xe tay ga: (ox, oy) là góc trên-trái vùng 56x40 của xe; tâm bánh sau (12,29), bánh trước (44,29), mặt đường y=36.
+  const drawScooter = (r: (x: number, y: number, w: number, h: number, c: string) => void, ox: number, oy: number, v: number, topBox: boolean) => {
+    const col = bikeColors[v % bikeColors.length];
+    const p = (x: number, y: number, w: number, h: number, c: string) => r(ox + x, oy + y, w, h, c);
+    p(5, 34, 48, 4, '#26190e40'); p(9, 33, 40, 4, '#26190e25');
+    // ống xả + chắn bùn sau
+    p(3, 26, 12, 3, '#8a9199'); p(3, 26, 12, 1, '#c3c8cd');
+    drawWheel(p, 12, 29, 7);
+    drawWheel(p, 44, 29, 7);
+    // thân sau + yên
+    p(4, 14, 22, 12, DARK); p(5, 18, 20, 7, col.body); p(5, 18, 20, 1, col.light); p(5, 23, 20, 2, col.dark);
+    p(6, 12, 18, 5, DARK); p(7, 12, 16, 3, '#3a342c'); p(7, 12, 16, 1, '#5a5148');
+    // sàn để chân + tấm chắn chân
+    p(22, 25, 18, 4, DARK); p(23, 25, 16, 2, col.dark);
+    p(36, 8, 8, 20, DARK); p(37, 9, 6, 18, col.body); p(37, 9, 2, 18, col.light);
+    // phuộc, chắn bùn trước, đầu xe
+    p(43, 14, 3, 16, '#8a9199'); p(40, 20, 12, 3, col.body); p(40, 20, 12, 1, col.light);
+    p(36, 6, 12, 3, DARK); p(38, 7, 8, 1, '#8a9199');
+    p(40, 1, 2, 5, DARK); p(38, 0, 6, 2, '#9aa5ad');
+    p(44, 9, 5, 5, DARK); p(45, 10, 3, 3, '#ffe27a'); p(47, 11, 1, 1, '#ffffff');
+    // đèn hậu + biển số
+    p(2, 15, 3, 4, '#e74c3c'); p(1, 20, 4, 3, '#f4f4f4'); p(2, 21, 2, 1, DARK);
+    if (topBox) { p(0, 4, 14, 8, DARK); p(1, 5, 12, 6, '#e67e22'); p(1, 5, 12, 1, '#f5a05a'); p(5, 7, 4, 2, '#fff3e0'); }
+  };
 
-    // Ghi-đông & đầu xe
-    r(30, 8, 3, 5, '#7f8c8d');
-    r(29, 7, 5, 2, '#bdc3c7');
-    r(28, 7, 2, 2, '#1a1815'); // Tay nắm
-    // Gương chiếu hậu
-    r(28, 2, 3, 3, '#2c3e50');
-    r(29, 3, 1, 1, '#d4efdf');
-    r(29, 5, 1, 2, '#7f8c8d');
-
-    // Đèn pha & xi nhan
-    r(33, 10, 3, 3, '#f1c40f');
-    r(34, 11, 1, 1, '#ffffff');
-    r(32, 13, 2, 2, '#f39c12');
-    r(7, 14, 2, 2, '#e74c3c'); // Đèn hậu đỏ
-
+  if (key.startsWith('vehicle_motorbike_parked_')) {
+    const v = Number(key.slice(-1)) || 0;
+    const { canvas, r } = makeSurface(56, 40, false);
+    drawScooter(r, 0, 0, v, false);
     return canvas;
   }
 
@@ -1039,261 +1017,73 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
     const isRight = key.endsWith('right');
     const variantMatch = key.match(/_(\d+)_(?:left|right)$/);
     const variant = variantMatch ? Number(variantMatch[1]) % 3 : 0;
-    const { canvas, ctx } = surface(48, 44);
-    const r = (x: number, y: number, w: number, h: number, col: string) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(isRight ? x : (48 - x - w), y, w, h);
-    };
-
-    // Soft 2.5D contact drop shadow underneath on asphalt
-    r(4, 40, 40, 4, '#26190e40');
-    r(8, 39, 32, 5, '#26190e25');
-
-    // Wheels (diameter 12, rounded corners)
-    const drawWheel = (wx: number, wy: number) => {
-      r(wx + 3, wy + 0, 6, 12, '#1a1815');
-      r(wx + 1, wy + 1, 10, 10, '#1a1815');
-      r(wx + 0, wy + 3, 12, 6, '#1a1815');
-      r(wx + 3, wy + 1, 6, 1, '#3a342c');
-      r(wx + 3, wy + 2, 6, 8, '#bdc3c7');
-      r(wx + 2, wy + 3, 8, 6, '#bdc3c7');
-      r(wx + 3, wy + 3, 6, 6, '#2c3e50');
-      r(wx + 4, wy + 4, 4, 4, '#e5e7eb');
-      r(wx + 5, wy + 5, 2, 2, '#1a1815');
-    };
-
-    // Bánh sau & Bánh trước
-    drawWheel(4, 29);
-    drawWheel(32, 29);
-
-    // Phuộc trước mạ crôm nghiêng chéo
-    r(37, 26, 2, 10, '#bdc3c7');
-    r(36, 22, 2, 8, '#e5e7eb');
-    r(35, 18, 2, 6, '#7f8c8d');
-    // Dè chắn bùn trước ôm bánh xe
-    r(31, 27, 9, 3, '#c0392b');
-    r(32, 26, 6, 2, '#e74c3c');
-
-    // Gắp sau & phuộc lò xo sau
-    r(11, 33, 14, 3, '#7f8c8d');
-    r(14, 26, 3, 8, '#e74c3c');
-    r(15, 26, 1, 8, '#bdc3c7');
-
-    // Ống bô xe máy mạ crôm sáng bóng
-    r(16, 36, 16, 3, '#e5e7eb');
-    r(18, 35, 12, 1, '#ffffff');
-    r(10, 36, 7, 2, '#7f8c8d');
-    r(8, 35, 3, 2, '#95a5a6');
-
-    // Lốc máy & gác chân
-    r(20, 31, 10, 7, '#34495e');
-    r(22, 32, 7, 5, '#7f8c8d');
-    r(23, 33, 5, 3, '#bdc3c7');
-    r(21, 37, 4, 2, '#1a1815');
-
-    const riderBikeColors = [
-      { main: '#c0392b', dark: '#962d22', light: '#e74c3c', cowl: '#ffffff' }, // Wave đỏ
-      { main: '#1b4f72', dark: '#154360', light: '#2874a6', cowl: '#fcf3cf' }, // Dream xanh
-      { main: '#f4f6f7', dark: '#bdc3c7', light: '#ffffff', cowl: '#e5e7e9' }, // Lead trắng
-    ][variant];
-    // Dáng xe số cho Wave/Dream; Lead có thân kín và sàn scooter.
-    r(14, 25, 22, 7, riderBikeColors.dark);
-    r(15, 24, 20, 7, riderBikeColors.main);
-    r(18, 24, 14, 3, riderBikeColors.light);
-    if (variant === 2) {
-      r(26, 20, 10, 13, riderBikeColors.dark);
-      r(28, 20, 8, 12, riderBikeColors.main);
-      r(29, 22, 5, 8, riderBikeColors.cowl);
-      r(18, 31, 14, 3, '#28343a'); // sàn để chân
-    } else {
-      r(28, 21, 8, 12, riderBikeColors.dark);
-      r(29, 21, 6, 11, riderBikeColors.cowl);
-      r(30, 22, 4, 9, variant === 1 ? '#fcf3cf' : '#ffffff');
-      r(33, 19, 4, 8, riderBikeColors.main);
-      if (variant === 1) r(29, 24, 2, 5, '#f4e6b7'); // Dream cream accent
-    }
-
-    // Yên xe da đen dài mềm mại
-    r(10, 20, 20, 5, '#1a1a1a');
-    r(11, 19, 18, 5, '#2c3e50');
-    r(12, 19, 16, 2, '#34495e');
-    r(13, 20, 14, 1, '#4a6572');
-    r(8, 22, 4, 2, '#bdc3c7'); // Tay dắt sau
-
-    // Ghi-đông, cụm đồng hồ, gương chiếu hậu
-    r(34, 14, 3, 6, '#7f8c8d');
-    r(32, 13, 6, 3, '#2c3e50');
-    r(33, 12, 4, 2, '#bdc3c7');
-    r(36, 12, 3, 2, '#1a1815');
-    r(31, 7, 3, 3, '#2c3e50');
-    r(32, 8, 1, 1, '#d4efdf');
-    r(32, 10, 1, 3, '#7f8c8d');
-
-    // Đèn pha trước & xi nhan
-    r(37, 18, 3, 4, '#f1c40f');
-    r(38, 19, 2, 2, '#ffffff');
-    r(36, 22, 2, 2, '#f39c12');
-    // Đèn hậu đỏ
-    r(9, 23, 2, 3, '#e74c3c');
-    r(9, 24, 1, 1, '#ffffff');
-
-    // Vệt đèn pha chiếu sáng mặt đường
-    r(40, 16, 6, 8, 'rgba(255, 241, 118, 0.35)');
-    r(44, 14, 4, 12, 'rgba(255, 241, 118, 0.18)');
-
-    // ============================================
-    // RIDER (Người lái xe máy cân đối, tư thế tự nhiên)
-    // ============================================
-    // Chân & Giày
-    r(14, 22, 9, 6, '#1f618d'); // Đùi
-    r(15, 23, 8, 4, '#2980b9');
-    r(16, 23, 6, 2, '#5dade2');
-    r(21, 26, 5, 8, '#1f618d'); // Cẳng chân
-    r(22, 27, 4, 7, '#2980b9');
-    r(21, 34, 7, 3, '#2c3e50'); // Giày sneaker
-    r(23, 34, 5, 1, '#7f8c8d');
-    r(21, 36, 7, 1, '#ecf0f1');
-
-    // Thân áo khoác gió cam thể thao
-    r(13, 11, 12, 13, '#ba4a00');
-    r(14, 12, 11, 11, '#d35400');
-    r(15, 12, 9, 3, '#e67e22');
-    r(16, 14, 2, 8, '#ffffff');
-
-    // Cánh tay vươn tới tay lái ghi-đông
-    r(19, 13, 12, 4, '#ba4a00');
-    r(20, 14, 10, 3, '#d35400');
-    r(22, 14, 8, 1, '#e67e22');
-    r(29, 14, 6, 4, '#ba4a00');
-    r(30, 15, 5, 2, '#d35400');
-    // Bàn tay nắm chặt tay lái
-    r(34, 13, 3, 3, '#2a180e');
-    r(34, 13, 2, 2, '#f0c494');
-    r(35, 13, 1, 1, '#fce0bf');
-
-    // Cổ & cằm
-    r(20, 10, 4, 3, '#d35400');
-    r(21, 9, 3, 2, '#f0c494');
-
-    // Nón 3/4 che kín đầu, có vành, kính và quai cằm.
-    r(18, 1, 12, 10, '#252b35');
-    r(19, 1, 10, 8, '#9d3028');
-    r(20, 2, 8, 5, '#d84b3d');
-    r(21, 2, 6, 1, '#f6b6a8');
-    r(27, 5, 4, 2, '#a8d1cf');
-    r(18, 8, 8, 2, '#252b35');
-
-    // Mặt nghiêng nhìn về trước
-    r(24, 5, 5, 5, '#f0c494');
-    r(25, 6, 3, 3, '#fce0bf');
-    r(27, 5, 2, 2, '#1f1612'); // Mắt
-    r(27, 5, 1, 1, '#ffffff'); // Ánh mắt
-    r(26, 8, 2, 1, '#e8a08c'); // Má hồng
-
-    // Quai nón bảo hiểm ôm cằm
-    r(22, 7, 2, 4, '#1a1a1a');
-    r(23, 10, 2, 1, '#bdc3c7');
-
+    const { canvas, r } = makeSurface(60, 56, !isRight);
+    const shirts = ['#d35400', '#27ae60', '#2980b9'];
+    const helmets = ['#f4f4f4', '#2b2b2b', '#f1c40f'];
+    const oy = 16;
+    drawScooter(r, 2, oy, variant, variant === 0);
+    // Người lái ngồi trên yên, nghiêng nhẹ về trước (đỉnh mũ ~ cao 1,5 m)
+    r(15, oy + 4, 11, 12, DARK); r(16, oy + 5, 9, 10, shirts[variant]); r(16, oy + 5, 2, 10, '#ffffff22');
+    r(14, oy + 9, 4, 5, DARK);                                  // đai lưng/balo
+    r(18, oy - 4, 9, 9, DARK); r(19, oy - 3, 7, 7, '#f1c8a0');   // đầu
+    r(18, oy - 6, 10, 6, DARK); r(19, oy - 5, 8, 4, helmets[variant]); r(19, oy - 5, 8, 1, '#ffffff'); // mũ bảo hiểm
+    r(25, oy - 2, 3, 3, '#3a3a3a');                              // kính mũ
+    r(26, oy + 6, 12, 4, DARK); r(26, oy + 7, 11, 2, shirts[variant]); r(35, oy + 8, 6, 4, DARK); r(36, oy + 9, 4, 2, '#f1c8a0'); // tay nắm ghi-đông
+    r(17, oy + 15, 14, 6, DARK); r(18, oy + 16, 12, 4, '#3b4e4e');   // đùi
+    r(29, oy + 17, 6, 14, DARK); r(30, oy + 18, 4, 12, '#3b4e4e');   // cẳng chân
+    r(28, oy + 29, 10, 4, DARK); r(29, oy + 30, 8, 2, '#462719');    // giày
     return canvas;
   }
 
   if (key.startsWith('vehicle_car_')) {
+    // Taxi vàng đô thị (sedan). Greenhouse dựng theo từng hàng để có kính chắn gió/kính sau xiên.
     const isRight = key.endsWith('right');
-    const { canvas, ctx } = surface(68, 36);
-    const r = (x: number, y: number, w: number, h: number, col: string) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(isRight ? x : (68 - x - w), y, w, h);
-    };
-
-    // Soft 2.5D drop shadow underneath on asphalt
-    r(4, 32, 60, 4, '#26190e40');
-    r(8, 31, 52, 5, '#26190e25');
-
-    // 14x14 Car Wheels with alloy hubcaps
-    const drawCarWheel = (wx: number, wy: number) => {
-      r(wx + 4, wy + 0, 6, 14, '#1a1815');
-      r(wx + 2, wy + 1, 10, 12, '#1a1815');
-      r(wx + 1, wy + 2, 12, 10, '#1a1815');
-      r(wx + 0, wy + 4, 14, 6, '#1a1815');
-      // Tire highlight
-      r(wx + 4, wy + 1, 6, 1, '#3a342c');
-      // Silver rim
-      r(wx + 3, wy + 3, 8, 8, '#bdc3c7');
-      r(wx + 2, wy + 4, 10, 6, '#bdc3c7');
-      // Alloy 5-spoke hub
-      r(wx + 4, wy + 4, 6, 6, '#7f8c8d');
-      r(wx + 5, wy + 5, 4, 4, '#e5e7eb');
-      r(wx + 6, wy + 6, 2, 2, '#1a1815');
-    };
-    drawCarWheel(8, 21);  // Bánh sau
-    drawCarWheel(46, 21); // Bánh trước
-
-    // Chassis & Undercarriage
-    r(6, 26, 56, 3, '#1a1815');
-    r(22, 27, 24, 2, '#34495e');
-
-    // Car Body - taxi đô thị vàng kem với ca-rô nhận diện.
-    // Thân dưới (Lower body)
-    r(4, 16, 60, 11, '#5f4b23'); // Outline thân dưới
-    r(5, 17, 58, 9, '#e4bd48');  // Vàng taxi thành phố
-    r(6, 17, 56, 2, '#f4d975');  // Dải sáng thân xe
-    r(4, 21, 60, 2, '#b69235');  // Nẹp sườn
-
-    // Mũi xe & Đuôi xe vát góc khí động học
-    r(57, 19, 5, 7, '#e4bd48');  // Đầu mũi xe
-    r(61, 20, 2, 5, '#5f4b23');  // Cản trước (bumper)
-    r(2, 20, 3, 6, '#5f4b23');   // Cản sau
-
-    // Cabin / Mui xe (Roof & Pillars)
-    r(14, 6, 36, 11, '#5f4b23'); // Outline mui
-    r(15, 7, 34, 10, '#e4bd48');
-    r(16, 7, 32, 2, '#f4d975');  // Nóc xe sáng
-
-    // TAXI rooftop badge (Hộp đèn mào TAXI vàng sáng)
-    r(27, 2, 12, 5, '#5f4b23');
-    r(28, 3, 10, 3, '#f1c40f');
-    r(29, 3, 8, 1, '#fff4c4');   // Đèn mào sáng rực
-    r(30, 4, 6, 2, '#1a1815');   // Chữ TAXI
-
-    // Windshield & Windows (Kính chắn gió & cửa sổ có bóng người lái)
-    // Kính sau nghiêng
-    r(16, 9, 5, 8, '#5f4b23');
-    r(17, 10, 4, 6, '#a2d9ce');
-    // Kính cửa sau & cửa trước
-    r(22, 9, 10, 7, '#d4efdf');
-    r(33, 9, 10, 7, '#d4efdf');
-    r(32, 8, 2, 8, '#5f4b23');   // Cột B
-    // Kính chắn gió trước nghiêng
-    r(44, 9, 7, 8, '#a2d9ce');
-    r(45, 10, 5, 6, '#ffffff');  // Vệt phản chiếu ánh sáng trên kính chắn gió
-
-    // Bóng người lái xe bên trong cabin
-    r(35, 11, 4, 4, '#2c3e50');  // Đầu người lái
-    r(36, 13, 2, 2, '#f0c494');  // Mặt người lái
-    r(39, 14, 2, 2, '#1a1815');  // Vành vô lăng
-
-    // Tay nắm cửa và dải ca-rô taxi dọc thân.
-    r(24, 18, 4, 1, '#f5e8bd');
-    r(35, 18, 4, 1, '#f5e8bd');
-    r(22, 20, 4, 2, '#f5eed8');
-    r(30, 20, 4, 2, '#f5eed8');
-    r(38, 20, 4, 2, '#f5eed8');
-    r(26, 20, 4, 2, '#493c28');
-    r(34, 20, 4, 2, '#493c28');
-
-    // Headlights & Taillights
-    // Đèn pha trước chiếu sáng
-    r(60, 18, 4, 4, '#f1c40f');
-    r(61, 19, 3, 2, '#ffffff');
-    r(59, 22, 3, 2, '#f39c12');  // Xi nhan trước
-    // Đèn hậu đỏ LED
-    r(3, 18, 3, 5, '#c0392b');
-    r(3, 19, 2, 2, '#e74c3c');
-    r(3, 21, 2, 1, '#f39c12');  // Xi nhan sau
-
-    // Vệt đèn pha ô tô rọi dài trên đường
-    r(64, 16, 4, 8, 'rgba(255, 241, 118, 0.40)');
-
+    const { canvas, r } = makeSurface(100, 50, !isRight);
+    const GLASS = '#8ec6e6';
+    const roofTop = 13;
+    const bodyTop = 27;
+    r(6, 44, 88, 5, '#26190e40'); r(10, 43, 80, 5, '#26190e25');
+    // Cabin (greenhouse): viền tối, mui, kính
+    const leftAt = (y: number) => 31 - Math.floor((y - roofTop) * 0.75);
+    const rightAt = (y: number) => 69 + Math.floor((y - roofTop) * 0.8);
+    for (let y = roofTop; y < bodyTop; y++) r(leftAt(y) - 1, y, rightAt(y) - leftAt(y) + 3, 1, DARK);
+    for (let y = roofTop + 1; y < bodyTop; y++) {
+      const l = leftAt(y);
+      const rr = rightAt(y);
+      if (y <= roofTop + 2) { r(l, y, rr - l + 1, 1, '#e4bd48'); continue; }
+      r(l, y, rr - l + 1, 1, GLASS);
+    }
+    r(leftAt(roofTop) + 1, roofTop + 1, rightAt(roofTop) - leftAt(roofTop) - 1, 1, '#f4d97a');
+    // Trụ B và trụ C/A (màu thân xe)
+    for (let y = roofTop + 3; y < bodyTop; y++) {
+      r(leftAt(y) + 1, y, 4, 1, '#e4bd48');
+      r(46, y, 4, 1, '#e4bd48');
+      r(rightAt(y) - 4, y, 4, 1, '#e4bd48');
+    }
+    // Phản chiếu kính + tài xế + khách ghế sau
+    r(52, 17, 3, 2, '#d6eefb'); r(33, 17, 3, 2, '#d6eefb');
+    r(60, 17, 5, 5, '#f1c8a0'); r(59, 16, 7, 2, '#2a1c14'); r(60, 22, 5, 4, '#2e86c1');
+    r(36, 19, 4, 4, '#f1c8a0'); r(35, 18, 6, 2, '#2a1c14');
+    // Đèn mui "TAXI"
+    r(47, 8, 12, 5, DARK); r(48, 9, 10, 3, '#ffffff'); r(50, 9, 3, 3, '#e74c3c'); r(54, 9, 3, 3, '#e74c3c');
+    // Thân xe
+    r(2, bodyTop - 1, 96, 17, DARK);
+    r(3, bodyTop, 94, 15, '#e4bd48');
+    r(3, bodyTop, 94, 2, '#f4d97a');
+    r(3, bodyTop + 9, 94, 6, '#c79a2c');
+    // Dải ca-rô taxi dọc thân
+    for (let x = 6; x < 92; x += 4) { r(x, bodyTop + 6, 2, 2, DARK); r(x + 2, bodyTop + 8, 2, 2, DARK); }
+    // Cửa, tay nắm, gương
+    r(47, bodyTop + 1, 1, 12, '#a07a1c'); r(25, bodyTop + 1, 1, 12, '#a07a1c'); r(70, bodyTop + 1, 1, 12, '#a07a1c');
+    r(41, bodyTop + 3, 4, 1, '#7a5e14'); r(64, bodyTop + 3, 4, 1, '#7a5e14');
+    r(70, bodyTop - 3, 4, 3, DARK);
+    // Đèn trước/sau, lưới tản nhiệt, cản
+    r(93, bodyTop + 2, 5, 4, '#fff3b0'); r(96, bodyTop + 3, 2, 2, '#ffffff');
+    r(2, bodyTop + 2, 3, 5, '#e74c3c'); r(2, bodyTop + 2, 1, 5, '#ff8a80');
+    r(94, bodyTop + 7, 4, 4, '#2b2f33'); r(95, bodyTop + 8, 2, 1, '#5d6368');
+    r(0, bodyTop + 10, 7, 5, '#4a4540'); r(92, bodyTop + 10, 8, 5, '#4a4540'); r(92, bodyTop + 10, 8, 1, '#9aa0a6');
+    // Bánh xe (có hốc bánh tối)
+    for (const cx of [24, 77]) { r(cx - 9, bodyTop + 6, 18, 8, '#26190e'); drawWheel(r, cx, 40, 7); }
     return canvas;
   }
 

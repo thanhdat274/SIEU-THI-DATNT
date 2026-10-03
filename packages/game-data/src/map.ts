@@ -52,14 +52,15 @@ export const TREE_SPRITE_OFFSET = { tilesX: -1, tilesY: -2, pixelsY: -4 } as con
 
 /** Điểm đỗ xe máy lề đường trước tiệm (trên vỉa hè sát lòng đường, không chặn cửa tiệm hay cột đèn). */
 export const STREET_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
-  { x: 6 * 32 + 16, y: 12 * 32 + 10 },
-  { x: 7 * 32 + 16, y: 12 * 32 + 10 },
-  { x: 12 * 32 + 16, y: 12 * 32 + 10 },
-  { x: 13 * 32 + 16, y: 12 * 32 + 10 },
+  // Xe máy dài ~56 px nên hai chỗ cạnh nhau cách ~58 px (trước đây 32 px khi xe chỉ dài 44 px).
+  { x: 200, y: 12 * 32 + 10 },
+  { x: 258, y: 12 * 32 + 10 },
+  { x: 392, y: 12 * 32 + 10 },
+  { x: 450, y: 12 * 32 + 10 },
   // Trước quán nước (cửa ở x=30..31): xe máy đỗ gần cửa, khách không phải đi bộ từ đầu hẻm.
-  { x: 28 * 32 + 16, y: 12 * 32 + 10 },
-  { x: 29 * 32 + 16, y: 12 * 32 + 10 },
-  { x: 32 * 32 + 16, y: 12 * 32 + 10 },
+  { x: 904, y: 12 * 32 + 10 },
+  { x: 962, y: 12 * 32 + 10 },
+  { x: 1000, y: 12 * 32 + 10 },
 ];
 /**
  * Mặt cắt lòng đường (chỉ hình ảnh, không đổi va chạm hay đường đi): vỉa hè (y 11-12) → bó vỉa + rãnh thoát nước →
@@ -74,12 +75,12 @@ export const CROSSWALK = { tileX: 1, widthTiles: 2, firstRow: 13, rows: 2 } as c
 
 /**
  * Chỗ đỗ ô tô của khách trên vỉa hè phía đông (rộng hơn chỗ xe máy, chân xe tại y px), giữa các cột đèn x = 15, 21 và
- * mép bản đồ; ô tô neo giữa-đáy tại điểm này (sprite 68x36). Không chặn cửa tiệm, ô đỗ xe máy hay vạch qua đường.
+ * mép bản đồ; ô tô neo giữa-đáy tại điểm này (sprite 100x50). Không chặn cửa tiệm, ô đỗ xe máy hay vạch qua đường.
  */
 export const CAR_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
   { x: 560, y: 12 * 32 + 14 },
-  { x: 736, y: 12 * 32 + 14 },
-  { x: 34.5 * 32, y: 12 * 32 + 14 },
+  { x: 750, y: 12 * 32 + 14 },
+  { x: 34 * 32, y: 12 * 32 + 14 },
 ];
 
 export const WAREHOUSE_BOUNDS = {left:STORE_BOUNDS.left,right:STORE_BOUNDS.right,top:STORE_BOUNDS.top-6,bottom:STORE_BOUNDS.top};
