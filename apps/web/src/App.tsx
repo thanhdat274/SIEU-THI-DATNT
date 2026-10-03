@@ -16,6 +16,8 @@ import { AccountBar } from './components/AccountBar';
 import { useCloudSave } from './hooks/useCloudSave';
 import { setBeforeApplyUpdate } from './services/app-update';
 import { UpdateBanner } from './components/UpdateBanner';
+import { UpdateConflictDialog, type UpdateConflictChoice } from './components/UpdateConflictDialog';
+import type { CloudSaveSummary } from './services/api';
 import { LoginScreen } from './components/LoginScreen';
 import { type WorldDetail, createWorldInvite, commitOnlineCommand, getOnlineWorld, touchWorldSession } from './services/api';
 import { WarehouseModal } from './components/WarehouseModal';
@@ -285,15 +287,23 @@ export const App: React.FC = () => {
   const { cloud, uploadCloud, downloadCloud, uploadIfLinked } = useCloudSave({ enabled: isSaveModalOpen && !onlineWorld, exportLocal: exportLocalSave, importSave: handleImportSave });
 
   // Trước khi tải lại để cập nhật app: lưu máy, rồi đẩy cloud nếu đã liên kết. Hẻm online đã lưu trên máy chủ.
+  const [updateConflict, setUpdateConflict] = useState<{ remote: CloudSaveSummary; resolve: (choice: UpdateConflictChoice) => void } | null>(null);
   useEffect(() => {
     setBeforeApplyUpdate(async () => {
       if (onlineWorldRef.current || !simulationRef.current) return true;
       if (!(await handleSaveGame(false)) && !window.confirm('Chưa lưu được tiến trình trên máy. Vẫn cập nhật và tải lại?')) return false;
-      if ((await uploadIfLinked()) === 'failed') return window.confirm('Không đẩy được lên cloud (bản trên máy vẫn đã lưu). Vẫn cập nhật và tải lại?');
+      const { status, remote } = await uploadIfLinked();
+      if (status === 'failed') return window.confirm('Không đẩy được lên cloud (bản trên máy vẫn đã lưu). Vẫn cập nhật và tải lại?');
+      if (status !== 'conflict' || !remote) return true;
+      const choice = await new Promise<UpdateConflictChoice>(resolve => setUpdateConflict({ remote, resolve }));
+      setUpdateConflict(null);
+      if (choice === 'cancel') return false;
+      if (choice === 'overwrite') return (await uploadCloud(true)) || window.confirm('Không ghi đè được cloud (bản trên máy vẫn đã lưu). Vẫn cập nhật và tải lại?');
+      if (choice === 'download') return (await downloadCloud()) || window.confirm('Không tải được bản cloud. Vẫn cập nhật bằng bản trên máy?');
       return true;
     });
     return () => setBeforeApplyUpdate(null);
-  }, [handleSaveGame, uploadIfLinked]);
+  }, [handleSaveGame, uploadIfLinked, uploadCloud, downloadCloud]);
 
   const onlineUidRef = useRef<string | null>(null);
   const spawnPlacedForRef = useRef<string | null>(null);
@@ -1455,6 +1465,7 @@ export const App: React.FC = () => {
     {activeFixtureModal?.type === 'dining_table' && simulationRef.current && <DiningTableModal fixture={activeFixtureModal} state={simulationRef.current.getDiningTableState(activeFixtureModal.id)} staff={simulationRef.current.getStaff()} onAssignCleaner={async staffId => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'assign_dining_cleanup', staffId, fixtureId }, 'Giao việc dọn bàn', 'Dọn dẹp', simulation => ({ success: simulation.assignDiningCleanup(staffId, fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast(res?.reason ?? 'Không giao được việc dọn bàn.', 'warn'); }} onClean={async () => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'clean_dining_table', fixtureId }, 'Dọn bàn ăn', 'Dọn dẹp', simulation => ({ success: simulation.cleanDiningTable(fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast('Bàn đang có khách hoặc đã sạch.', 'warn'); }} onClose={closeFixtureModal}/>}
     {isInventoryModalOpen && <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals}/>}
     <UpdateBanner/>
+    {updateConflict && <UpdateConflictDialog local={simulationRef.current?.exportSaveData(getActiveSlotId(), revisionRef.current)} remote={updateConflict.remote} onChoose={updateConflict.resolve}/>}
     {isSaveModalOpen && <SaveModal cloud={{state:cloud,onUpload:uploadCloud,onDownload:downloadCloud}} onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onExportSave={handleExportSave} onImportSave={handleImportSave} isOnline={!!onlineWorld} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
     {isSupplierModalOpen && (
       <SupplierModal

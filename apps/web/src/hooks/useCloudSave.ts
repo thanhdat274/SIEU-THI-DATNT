@@ -2,7 +2,7 @@
  * useCloudSave — tải/đẩy bản lưu cloud của tài khoản đang đăng nhập (tách khỏi hẻm online).
  * Không tự ghi đè: người chơi chọn tải hoặc đẩy; thiết bị khác đã ghi thì dừng ở 409 để hỏi lại.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SaveGameData } from '@game/shared';
 import { validateSaveGameData } from '@game/shared';
 import { getCloudSave, isCloudConflict, putCloudSave, type CloudSaveSummary } from '../services/api';
@@ -33,6 +33,7 @@ const NEED_LOGIN = 'Hãy đăng nhập Google để dùng cloud.';
 
 export function useCloudSave({ enabled, exportLocal, importSave }: UseCloudSaveOptions) {
   const [state, setState] = useState<CloudSaveState>({ signedIn: false, busy: false, remote: undefined, message: '', failed: false, conflict: false });
+  const conflictRemoteRef = useRef<CloudSaveSummary | null>(null);
   const patch = useCallback((next: Partial<CloudSaveState>) => setState(prev => ({ ...prev, ...next })), []);
 
   const auth = useCallback(async () => {
@@ -74,6 +75,7 @@ export function useCloudSave({ enabled, exportLocal, importSave }: UseCloudSaveO
       return true;
     } catch (err) {
       if (isCloudConflict(err)) {
+        conflictRemoteRef.current = err.body?.current ?? null;
         patch({ busy: false, failed: true, conflict: true, remote: err.body?.current ?? null, message: 'Cloud đã có bản lưu khác (thiết bị khác hoặc chưa tải về). Hãy tải bản cloud, hoặc ghi đè nếu chắc chắn bản trên máy là đúng.' });
       } else {
         patch({ busy: false, failed: true, message: err instanceof Error ? err.message : 'Không đẩy được lên cloud.' });
@@ -104,10 +106,12 @@ export function useCloudSave({ enabled, exportLocal, importSave }: UseCloudSaveO
   }, [auth, importSave, patch]);
 
   /** Đẩy cloud trước khi cập nhật app, chỉ khi đã đăng nhập và từng đồng bộ cloud (không tạo mới ngoài ý muốn). */
-  const uploadIfLinked = useCallback(async (): Promise<'skipped' | 'ok' | 'failed'> => {
+  const uploadIfLinked = useCallback(async (): Promise<{ status: 'skipped' | 'ok' | 'failed' | 'conflict'; remote: CloudSaveSummary | null }> => {
     const session = await auth();
-    if (!session || !readSeen(session.uid)) return 'skipped';
-    return (await upload()) ? 'ok' : 'failed';
+    if (!session || !readSeen(session.uid)) return { status: 'skipped', remote: null };
+    conflictRemoteRef.current = null;
+    if (await upload()) return { status: 'ok', remote: null };
+    return conflictRemoteRef.current ? { status: 'conflict', remote: conflictRemoteRef.current } : { status: 'failed', remote: null };
   }, [auth, upload]);
 
   return { cloud: state, refreshCloud: refresh, uploadCloud: upload, downloadCloud: download, uploadIfLinked };
