@@ -4,7 +4,7 @@ import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, get
 import { FixedStepSimulationRunner, GameSimulation, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
-import { ShopLighting } from './shop-lighting';
+import { ShopLighting, type VehicleLightSource } from './shop-lighting';
 import { DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, BUILDING_MAP, type BuildingId} from '@game/data';
 
 export interface PixiGameViewportOptions {
@@ -98,6 +98,8 @@ export class PixiGameViewport {
   private workerSprites = new Map<string, { container: Container; sprite: Sprite; bubble: Container; status: Text; lastPosition: Vector2D | null; variant: number; direction: string }>();
   private parkedMotorbikeSprites = new Map<string, Sprite>();
   private streetTrafficSprites = new Map<string, Sprite>();
+  /** Xe đang chạy trong khung hình hiện tại, để ShopLighting bật đèn pha/đèn hậu ban đêm. */
+  private vehicleLightSources: VehicleLightSource[] = [];
   private resizeObserver?: ResizeObserver;
   private onZoomChange?: (zoom: number) => void;
   private ambientSprites: Array<{sprite: Sprite; key: string; frames: number}> = [];
@@ -1325,6 +1327,7 @@ export class PixiGameViewport {
     // Render ambient street vehicles flowing along alley
     const streetVehicles = this.simulation.getStreetVehicles();
     const activeStreetKeys = new Set<string>();
+    this.vehicleLightSources.length = 0;
     for (const veh of streetVehicles) {
       activeStreetKeys.add(veh.id);
       let sprite = this.streetTrafficSprites.get(veh.id);
@@ -1359,6 +1362,7 @@ export class PixiGameViewport {
       } else {
         sprite.alpha = 1;
       }
+      this.vehicleLightSources.push({ x: sprite.x, y: sprite.y, direction: veh.direction === 'left' ? 'left' : 'right', type: veh.type, alpha: sprite.alpha });
     }
     for (const [id, sprite] of this.streetTrafficSprites.entries()) {
       if (!activeStreetKeys.has(id)) {
@@ -1553,6 +1557,7 @@ export class PixiGameViewport {
 
     // Logistics: render trucks, workers, boxes and toast notifications
     this.updateLogistics(elapsed);
+    this.lighting.updateVehicleLights(this.vehicleLightSources, light);
 
     // 4. Update Y-sorting for realistic depth (so player can walk behind/in front of fixtures)
     this.entitiesLayer.children.sort((a, b) => a.zIndex - b.zIndex);
@@ -1732,6 +1737,7 @@ export class PixiGameViewport {
 
     const edgeDist = Math.min(ev.truckPosition.x, MAP_WIDTH * TILE_SIZE - ev.truckPosition.x);
     this.logisticsTruckSprite.alpha = Math.max(0, Math.min(1, edgeDist / 48));
+    this.vehicleLightSources.push({ x: this.logisticsTruckSprite.x, y: this.logisticsTruckSprite.y, direction: ev.direction === 'left' ? 'left' : 'right', type: 'truck', alpha: this.logisticsTruckSprite.alpha });
 
     // ---- Worker Sprite ----
     if (ev.worker && (ev.phase === 'unloading' || ev.phase === 'loading')) {

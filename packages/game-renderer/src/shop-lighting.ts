@@ -7,6 +7,28 @@ type LightKind = 'artificial' | 'sun';
 interface LightSprite { sprite: Sprite; base: number; kind: LightKind; flicker: number }
 interface Shadow { graphics: Graphics; width: number; strength: number }
 
+/** Phương tiện đang chạy cần bật đèn ban đêm (vị trí là điểm neo giữa-đáy của sprite). */
+export interface VehicleLightSource {
+  x: number;
+  y: number;
+  direction: 'left' | 'right';
+  type: 'car' | 'motorbike' | 'bicycle' | 'minibus' | 'truck';
+  /** Độ mờ của sprite (xe mờ dần ở mép bản đồ thì đèn cũng mờ theo). */
+  alpha: number;
+}
+
+/**
+ * Vị trí đèn theo từng loại xe (px so với điểm neo giữa-đáy, khớp sprite trong premium-textures.ts):
+ * front/rear = khoảng cách ngang từ tâm tới đèn trước/sau, headY/tailY = độ cao đèn, beam = độ dài vệt sáng trước đầu xe.
+ */
+const VEHICLE_LIGHTS: Record<VehicleLightSource['type'], { front: number; rear: number; headY: number; tailY: number; beam: number; spread: number; power: number }> = {
+  car: { front: 47, rear: 47, headY: 18, tailY: 18, beam: 78, spread: 34, power: 1 },
+  motorbike: { front: 27, rear: 29, headY: 29, tailY: 21, beam: 56, spread: 26, power: 0.85 },
+  bicycle: { front: 22, rear: 20, headY: 24, tailY: 12, beam: 26, spread: 14, power: 0.35 },
+  minibus: { front: 72, rear: 72, headY: 21, tailY: 20, beam: 92, spread: 40, power: 1.1 },
+  truck: { front: 54, rear: 56, headY: 30, tailY: 20, beam: 90, spread: 38, power: 1.1 },
+};
+
 const T = TILE_SIZE;
 
 function glowTexture(): Texture {
@@ -50,6 +72,7 @@ export class ShopLighting {
   private glints: Graphics[] = [];
   private lampBulbs: Array<{ g: Graphics; warehouse: boolean; stall?: boolean }> = [];
   private actorShadows: Graphics[] = [];
+  private vehicleLights: Array<{ head: Sprite; beam: Sprite; tail: Sprite }> = [];
   private sunPatch?: Sprite;
   private fixtureSignature = '';
   private mapKey = '';
@@ -337,6 +360,46 @@ export class ShopLighting {
     }
   }
 
+  /**
+   * Đèn pha/đèn hậu của xe đang chạy: quầng sáng ở đầu xe, vệt sáng ấm dọc mặt đường phía trước và đèn đỏ ở đuôi.
+   * Cường độ theo đèn nhân tạo của giờ (ban ngày = 0 nên không vẽ gì); xe đỗ coi như tắt máy.
+   */
+  public updateVehicleLights(sources: VehicleLightSource[], state: LightingState): void {
+    const strength = Math.max(0, Math.min(1, (state.artificial - 0.08) / 0.5));
+    while (this.vehicleLights.length < sources.length) {
+      const make = (color: number, rx: number, ry: number): Sprite => {
+        const sprite = new Sprite(this.glow);
+        sprite.anchor.set(0.5);
+        sprite.width = rx * 2;
+        sprite.height = ry * 2;
+        sprite.tint = color;
+        sprite.blendMode = 'add';
+        sprite.alpha = 0;
+        sprite.eventMode = 'none';
+        this.lightLayer.addChild(sprite);
+        return sprite;
+      };
+      this.vehicleLights.push({ head: make(0xfff0b8, 11, 9), beam: make(0xffe3a0, 50, 20), tail: make(0xff3b30, 7, 6) });
+    }
+    this.vehicleLights.forEach((light, i) => {
+      const src = sources[i];
+      const visible = !!src && strength > 0.01;
+      light.head.visible = light.beam.visible = light.tail.visible = visible;
+      if (!visible) return;
+      const spec = VEHICLE_LIGHTS[src.type];
+      const dir = src.direction === 'right' ? 1 : -1;
+      const a = strength * src.alpha * spec.power;
+      light.head.position.set(Math.round(src.x + dir * spec.front), Math.round(src.y - spec.headY));
+      light.head.alpha = Math.min(1, a * 0.95);
+      light.beam.position.set(Math.round(src.x + dir * (spec.front + spec.beam * 0.35)), Math.round(src.y - 4));
+      light.beam.width = spec.beam * 1.3;
+      light.beam.height = spec.spread;
+      light.beam.alpha = Math.min(1, a * 0.55);
+      light.tail.position.set(Math.round(src.x - dir * spec.rear), Math.round(src.y - spec.tailY));
+      light.tail.alpha = Math.min(1, a * 0.7);
+    });
+  }
+
   /** Bóng dưới chân người/NPC: bóng tiếp xúc luôn có, thêm vệt nắng ngả theo giờ khi trời sáng. */
   public updateActorShadows(feet: Array<{ x: number; y: number }>, state: LightingState): void {
     while (this.actorShadows.length < feet.length) {
@@ -362,6 +425,8 @@ export class ShopLighting {
   public destroy(): void {
     for (const g of this.actorShadows) g.destroy();
     this.actorShadows = [];
+    for (const l of this.vehicleLights) { l.head.destroy(); l.beam.destroy(); l.tail.destroy(); }
+    this.vehicleLights = [];
     for (const l of [...this.staticLights, ...this.stallLights, ...this.warehouseLights, ...this.fixtureLights, ...this.warehouseFixtureLights]) l.sprite.destroy();
     for (const s of this.shadows) s.graphics.destroy();
     for (const g of this.glints) g.destroy();
