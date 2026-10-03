@@ -22,7 +22,7 @@ export interface VehicleLightSource {
  * front/rear = khoảng cách ngang từ tâm tới đèn trước/sau, headY/tailY = độ cao đèn, beam = độ dài vệt sáng trước đầu xe.
  */
 const VEHICLE_LIGHTS: Record<VehicleLightSource['type'], { front: number; rear: number; headY: number; tailY: number; beam: number; spread: number; power: number }> = {
-  car: { front: 47, rear: 47, headY: 18, tailY: 18, beam: 78, spread: 34, power: 1 },
+  car: { front: 61, rear: 61, headY: 23, tailY: 23, beam: 78, spread: 34, power: 1 },
   motorbike: { front: 27, rear: 29, headY: 29, tailY: 21, beam: 56, spread: 26, power: 0.85 },
   bicycle: { front: 22, rear: 20, headY: 24, tailY: 12, beam: 26, spread: 14, power: 0.35 },
   minibus: { front: 72, rear: 72, headY: 21, tailY: 20, beam: 92, spread: 40, power: 1.1 },

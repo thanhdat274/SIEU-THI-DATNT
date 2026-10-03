@@ -32,7 +32,7 @@ export function runTrafficSignalTests(): void {
 
   // Xe dừng trước vạch khi đèn đỏ, xe sau giữ khoảng cách, rồi cùng đi khi xanh.
   {
-    const m = new StreetTrafficManager([car('a', stopFront - STREET_VEHICLE_RULES.halfLength.car - 20), car('b', stopFront - STREET_VEHICLE_RULES.halfLength.car - 120)]);
+    const m = new StreetTrafficManager([car('a', stopFront - STREET_VEHICLE_RULES.halfLength.car - 20), car('b', stopFront - STREET_VEHICLE_RULES.halfLength.car - 180)]);
     m.setSignalClock(RED_START);
     run(m, 9);
     const a = find(m, 'a'), b = find(m, 'b');

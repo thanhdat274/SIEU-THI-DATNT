@@ -1085,6 +1085,7 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
   }
 
   if (key.startsWith('vehicle_car_')) {
+    const CAR_W = 130, CAR_H = 65;
     // Taxi vàng đô thị (sedan). Greenhouse dựng theo từng hàng để có kính chắn gió/kính sau xiên.
     const isRight = key.endsWith('right');
     const { canvas, r } = makeSurface(100, 50, !isRight);
@@ -1133,7 +1134,11 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
     r(0, bodyTop + 10, 7, 5, '#4a4540'); r(92, bodyTop + 10, 8, 5, '#4a4540'); r(92, bodyTop + 10, 8, 1, '#9aa0a6');
     // Bánh xe (có hốc bánh tối)
     for (const cx of [24, 77]) { r(cx - 9, bodyTop + 6, 18, 8, '#26190e'); drawWheel(r, cx, 40, 7); }
-    return canvas;
+    // Phóng 1,3 lần (130×65) cho cùng tỉ lệ với xe máy có người lái (cao 65 px) và nhỏ hơn xe khách (148 px).
+    const out = surface(CAR_W, CAR_H);
+    out.ctx.imageSmoothingEnabled = false;
+    out.ctx.drawImage(canvas, 0, 0, 100, 50, 0, 0, CAR_W, CAR_H);
+    return out.canvas;
   }
 
   if (key.startsWith('vehicle_bicycle_rider_')) {
