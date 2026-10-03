@@ -74,6 +74,9 @@ const SKIN = 0xe3b48a;
 const SHIRTS = [0x4f8fba, 0xc1573f, 0x6aa36a, 0xf39c12, 0x8e44ad];
 const PANTS = 0x30384a;
 
+/** Hệ số tỉ lệ người đi bộ nền so với nhân vật chính/khách. */
+export const PEDESTRIAN_SCALE = 1.6;
+
 /** Dựng người đi bộ bằng đồ họa pixel nhỏ (đầu, áo, quần, bóng); gốc tọa độ tại chân. */
 export function createPedestrianSprite(variant: number, activity?: string): Container {
   const c = new Container();
@@ -123,10 +126,14 @@ export function placePedestrian(sprite: Container, p: StreetPedestrianState, tim
   sprite.position.set(Math.round(p.position.x), Math.round(p.position.y - bob));
   sprite.zIndex = p.position.y;
 
+  // Phóng to cho cùng tỉ lệ với người chơi/khách (sprite nhân vật cao ~40 px, người đi bộ vẽ tay chỉ ~24 px).
+  sprite.scale.y = PEDESTRIAN_SCALE;
   // Lật hướng nhìn nếu đi bộ ngang vỉa hè
   if (p.direction === 'left') {
-    sprite.scale.x = -1;
+    sprite.scale.x = -PEDESTRIAN_SCALE;
   } else if (p.direction === 'right') {
-    sprite.scale.x = 1;
+    sprite.scale.x = PEDESTRIAN_SCALE;
+  } else {
+    sprite.scale.x = Math.sign(sprite.scale.x || 1) * PEDESTRIAN_SCALE;
   }
 }

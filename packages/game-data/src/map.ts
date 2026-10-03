@@ -20,8 +20,16 @@ export const ONLINE_SPAWN_POINTS: readonly { x: number; y: number }[] = [
 /** Hàng rào thấp ở hàng y=10 giữa cỏ và vỉa hè (trừ mặt tiền tiệm); dùng chung cho va chạm và renderer. */
 export const isFenceTile = (x: number, worldY: number, mapWidth: number): boolean =>
   worldY === 10 && x > XOI_BOUNDS.right && x < mapWidth - 1 && x >= STORE_BOUNDS.right + 2 && (x < DRINK_BOUNDS.left || x > DRINK_BOUNDS.right);
-/** Đèn đường trên vỉa hè sát lòng đường; cột đèn chặn đường đi như vật cản nhỏ. Không đặt cột đèn chéo sát một cây (cột ở hàng 12, cây ở hàng 11, lệch một cột) vì hai vật cản chạm góc sẽ bịt kín cả vỉa hè; `sidewalk-passable.test.ts` kiểm tra. */
+/** Đèn đường trên vỉa hè sát lòng đường; cột đèn chỉ chặn phần chân cột (`STREET_LAMP_COLLIDER`). Không đặt cột đèn chéo sát một cây (cột ở hàng 12, cây ở hàng 11, lệch một cột) vì hai vật cản chạm góc sẽ bịt kín cả vỉa hè; `sidewalk-passable.test.ts` kiểm tra. */
 export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 3, y: 12 }, { x: 15, y: 12 }, { x: 21, y: 12 }];
+/**
+ * Va chạm của cột đèn: chỉ phần chân cột (khớp sprite `deco_lamp_pole` 32x64: thân rộng ~10 px quanh x=10..20, chân cột
+ * cao ~10 px sát đáy ô), không chặn cả ô 32x32 như tường. Tọa độ pixel tương đối góc trên-trái của ô cột đèn.
+ */
+export const STREET_LAMP_COLLIDER = { offsetX: 10, offsetY: 22, width: 12, height: 10 } as const;
+/** Hộp va chạm (pixel thế giới) của mọi cột đèn đường. */
+export const streetLampBoxes = (): Array<{ x: number; y: number; width: number; height: number }> =>
+  STREET_LAMP_TILES.map(l => ({ x: l.x * 32 + STREET_LAMP_COLLIDER.offsetX, y: l.y * 32 + STREET_LAMP_COLLIDER.offsetY, width: STREET_LAMP_COLLIDER.width, height: STREET_LAMP_COLLIDER.height }));
 
 /**
  * Cây trên vỉa hè. `tileX/tileY` là ô gốc cây (có va chạm, tường loại 7); sprite và bóng bám theo ô này.
@@ -185,7 +193,7 @@ export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STAR
         groundData[idx] = 2; // Sidewalk / Alley ground
       }
 
-      if ((groundData[idx] === 2 && isFenceTile(x, y, MAP_WIDTH)) || STREET_LAMP_TILES.some(l => l.x === x && l.y === y)) {
+      if (groundData[idx] === 2 && isFenceTile(x, y, MAP_WIDTH)) { // cột đèn dùng hộp va chạm hẹp riêng (streetLampBoxes), không nằm trong collisionLayer
         collisionLayer[idx] = true;
       }
 
