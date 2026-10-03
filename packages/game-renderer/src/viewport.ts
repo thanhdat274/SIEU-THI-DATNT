@@ -1211,16 +1211,9 @@ export class PixiGameViewport {
         entry.regularTag.container.visible = false;
       }
 
-      if (cust.stage === 'leaving') {
-        const distFromEdge = Math.min(cust.position.x, MAP_WIDTH * TILE_SIZE - cust.position.x);
-        if (distFromEdge < 48) {
-          entry.container.alpha = Math.max(0, Math.min(1, distFromEdge / 48));
-        } else {
-          entry.container.alpha = 1;
-        }
-      } else {
-        entry.container.alpha = 1;
-      }
+      // Mờ dần ở hai mép bản đồ: khách đi bộ đến từ mép và rời đi về mép, không hiện/biến mất đột ngột.
+      const distFromEdge = Math.min(cust.position.x, MAP_WIDTH * TILE_SIZE - cust.position.x);
+      entry.container.alpha = distFromEdge < 48 ? Math.max(0, Math.min(1, distFromEdge / 48)) : 1;
       entry.lastPosition = { ...cust.position };
     }
 
