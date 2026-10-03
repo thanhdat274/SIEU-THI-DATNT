@@ -52,15 +52,15 @@ export const TREE_SPRITE_OFFSET = { tilesX: -1, tilesY: -2, pixelsX: 8, pixelsY:
 
 /** Điểm đỗ xe máy lề đường trước tiệm (trên vỉa hè sát lòng đường, không chặn cửa tiệm hay cột đèn). */
 export const STREET_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
-  // Xe máy dài ~56 px nên hai chỗ cạnh nhau cách ~58 px (trước đây 32 px khi xe chỉ dài 44 px).
-  { x: 200, y: 12 * 32 + 10 },
-  { x: 258, y: 12 * 32 + 10 },
+  // Xe máy dài ~62 px nên hai chỗ cạnh nhau cách ~64 px (trước đây 32 px khi xe dài 44 px).
+  { x: 196, y: 12 * 32 + 10 },
+  { x: 260, y: 12 * 32 + 10 },
   { x: 392, y: 12 * 32 + 10 },
-  { x: 450, y: 12 * 32 + 10 },
+  { x: 456, y: 12 * 32 + 10 },
   // Trước quán nước (cửa ở x=30..31): xe máy đỗ gần cửa, khách không phải đi bộ từ đầu hẻm.
-  { x: 904, y: 12 * 32 + 10 },
-  { x: 962, y: 12 * 32 + 10 },
-  { x: 1000, y: 12 * 32 + 10 },
+  { x: 880, y: 12 * 32 + 10 },
+  { x: 944, y: 12 * 32 + 10 },
+  { x: 1006, y: 12 * 32 + 10 },
 ];
 /**
  * Mặt cắt lòng đường (chỉ hình ảnh, không đổi va chạm hay đường đi): vỉa hè (y 11-12) → bó vỉa + rãnh thoát nước →

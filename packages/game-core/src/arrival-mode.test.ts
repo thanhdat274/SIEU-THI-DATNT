@@ -56,7 +56,7 @@ export function runArrivalModeTests(): void {
   const carHalf = 50; // ô tô dài 100 px
   for (const spot of CAR_PARKING_SPOTS) {
     for (const lamp of STREET_LAMP_TILES) assert.ok(Math.abs(spot.x - (lamp.x + 0.5) * 32) > carHalf + 8, 'Ô tô không chồng cột đèn');
-    for (const bike of STREET_PARKING_SPOTS) assert.ok(Math.abs(spot.x - bike.x) > carHalf + 28, 'Ô tô không chồng ô đỗ xe máy');
+    for (const bike of STREET_PARKING_SPOTS) assert.ok(Math.abs(spot.x - bike.x) > carHalf + 31, 'Ô tô không chồng ô đỗ xe máy');
     assert.ok(spot.x - carHalf > (CROSSWALK.tileX + CROSSWALK.widthTiles) * 32, 'Ô tô nằm ngoài vạch qua đường');
     assert.ok(spot.x - carHalf > (STORE_BOUNDS.right + 1) * 32 - 1 || Math.floor(spot.y / 32) > STORE_BOUNDS.bottom, 'Ô tô không nằm trong tiệm');
     assert.ok(spot.x + carHalf < MAP_WIDTH * 32, 'Ô tô trong bản đồ');
