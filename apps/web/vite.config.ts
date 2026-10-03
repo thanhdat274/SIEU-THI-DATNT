@@ -71,8 +71,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
-    // Không tự nhảy sang 3001 (cổng của BE) khi 3000 đang bị tiến trình cũ giữ; báo lỗi rõ ràng thay vì chạy sai cổng.
+    port: 5173,
+    // Không tự nhảy sang 3001 (cổng của BE) khi 5173 đang bị tiến trình cũ giữ; báo lỗi rõ ràng thay vì chạy sai cổng.
     strictPort: true,
     host: true,
     open: true,
