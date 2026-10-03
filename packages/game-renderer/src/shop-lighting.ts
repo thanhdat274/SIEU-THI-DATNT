@@ -35,7 +35,7 @@ const VEHICLE_LIGHTS: Record<VehicleLightSource['type'], { front: number; rear: 
   motorbike: { front: 27, rear: 29, headY: 29, tailY: 21, beam: 56, spread: 26, power: 0.85 },
   bicycle: { front: 22, rear: 20, headY: 24, tailY: 12, beam: 26, spread: 14, power: 0.35 },
   minibus: { front: 94, rear: 94, headY: 27, tailY: 26, beam: 100, spread: 44, power: 1.1 },
-  truck: { front: 54, rear: 56, headY: 30, tailY: 20, beam: 90, spread: 38, power: 1.1 },
+  truck: { front: 86, rear: 88, headY: 45, tailY: 30, beam: 120, spread: 54, power: 1.1 },
 };
 
 const T = TILE_SIZE;

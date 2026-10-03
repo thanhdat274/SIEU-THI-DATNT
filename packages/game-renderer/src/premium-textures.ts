@@ -867,7 +867,11 @@ function logisticsTruckTexture(key: string): HTMLCanvasElement | null {
   };
   wheel(26); wheel(W - 18);
   if (kind === 'heavy_container') wheel(44, true);
-  return canvas;
+  // Phóng 1,5 lần (180×90, container 198×90): xe tải ~5,9 m dài gấp ~1,4 lần taxi 130×65 và cao hơn hẳn (xe tải 2,75 m vs taxi 1,45 m).
+  const TRUCK_SCALE = 1.5;
+  const scaled = surface(Math.round(W * TRUCK_SCALE), Math.round(60 * TRUCK_SCALE));
+  scaled.ctx.drawImage(canvas, 0, 0, scaled.canvas.width, scaled.canvas.height);
+  return scaled.canvas;
 }
 
 function logisticsPropTexture(key: string): HTMLCanvasElement | null {
