@@ -108,14 +108,22 @@ export function createPedestrianSprite(variant: number, activity: string | undef
   }
   c.addChild(g);
 
-  // Túi xách treo ở tay: quai nắm trong tay, thân túi lơ lửng trên mặt đất; vị trí đổi theo hướng đi.
+  // Túi giấy kraft đi chợ: quai nắm trong tay (tay cách chân ~14 px), thân túi buông xuống tới gần mặt đất,
+  // thò ra mớ hành lá và khúc bánh mì. Tọa độ gốc ở giữa túi, vị trí đổi theo hướng đi.
   const bag = new Graphics();
   if (activity === 'grocery') {
-    bag.rect(-1, -6, 1, 4).fill(0x7a2a1f);
-    bag.rect(3, -6, 1, 4).fill(0x7a2a1f);
-    bag.rect(-3, -3, 9, 9).fill(0xe74c3c);
-    bag.rect(-3, -3, 9, 2).fill(0xc0392b);
-    bag.rect(0, 0, 3, 2).fill(0xffffff);
+    bag.rect(-2, -15, 5, 1).fill(0x5a3a22);
+    bag.rect(-2, -15, 1, 5).fill(0x5a3a22);
+    bag.rect(2, -15, 1, 5).fill(0x5a3a22);
+    bag.rect(-5, -14, 1, 5).fill(0x4f9a4a);
+    bag.rect(-4, -15, 1, 6).fill(0x7bc06a);
+    bag.rect(4, -13, 2, 4).fill(0xd9a24f);
+    bag.rect(-5, -11, 11, 11).fill(0x4a2f1a);
+    bag.rect(-4, -10, 9, 9).fill(0xc9985a);
+    bag.rect(-4, -10, 9, 2).fill(0xa87a42);
+    bag.rect(3, -8, 2, 7).fill(0xb0834a);
+    bag.rect(-2, -6, 4, 3).fill(0xf2e3c0);
+    bag.rect(-1, -5, 2, 1).fill(0xb8432f);
   }
   bag.visible = activity === 'grocery';
   c.addChild(bag);
@@ -141,6 +149,6 @@ export function placePedestrian(sprite: Container, p: StreetPedestrianState, tim
   else if (p.direction === 'right') accessory.scale.x = 1;
   // Đi ngang: tay ở giữa thân nên túi treo sát chân, hơi lệch về phía trước. Đi dọc: túi ở tay phải (nhìn từ ngoài vào).
   const lateral = p.direction === 'left' || p.direction === 'right';
-  bag.x = lateral ? (p.direction === 'left' ? -4 : 2) : 10;
-  bag.y = isMoving && !reducedMotion ? -Math.round(Math.abs(Math.sin(time * speed)) * 1) - 4 : -4;
+  bag.x = lateral ? (p.direction === 'left' ? -2 : 2) : 10;
+  bag.y = isMoving && !reducedMotion ? -Math.round(Math.abs(Math.sin(time * speed))) : 0;
 }
