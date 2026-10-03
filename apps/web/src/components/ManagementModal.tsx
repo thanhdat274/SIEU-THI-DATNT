@@ -1,5 +1,6 @@
 import React from 'react';
 import { PixelDialog, PixelIcon, type IconName } from './pixel';
+import { checkForAppUpdate, type AppUpdateResult } from '../services/app-update';
 
 export interface ManagementItem {
   id: string;
@@ -64,6 +65,21 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
   isStoreOpen = false,
   onToggleSaveModal,
 }) => {
+  const [updateStatus, setUpdateStatus] = React.useState<AppUpdateResult | 'checking' | null>(null);
+  const updateText: Record<AppUpdateResult | 'checking', string> = {
+    checking: 'Đang kiểm tra…',
+    updating: 'Có bản mới, đang cập nhật và tải lại…',
+    'up-to-date': 'Bạn đang dùng bản mới nhất',
+    offline: 'Không có mạng, thử lại sau',
+    unsupported: 'Chỉ hoạt động ở bản đã cài/build (có service worker)',
+    error: 'Kiểm tra thất bại, thử lại sau',
+  };
+  const handleCheckUpdate = () => {
+    if (updateStatus === 'checking') return;
+    setUpdateStatus('checking');
+    void checkForAppUpdate().then(setUpdateStatus);
+  };
+
   const handleSelect = (action?: () => void) => {
     if (!action) return;
     onClose();
@@ -207,6 +223,15 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
           action: () => onToggleAudioMute(),
           badge: audioMuted ? 'Đang tắt' : undefined,
           badgeVariant: 'gold' as const,
+        },
+        {
+          id: 'check-update',
+          label: 'Kiểm tra cập nhật',
+          desc: updateStatus ? updateText[updateStatus] : 'Tải giao diện/phiên bản mới nhất của game nếu có',
+          icon: 'speed' as IconName,
+          action: handleCheckUpdate,
+          badge: updateStatus === 'updating' ? 'Có bản mới' : undefined,
+          badgeVariant: 'teal' as const,
         },
       ].filter(Boolean) as ManagementItem[],
     },
