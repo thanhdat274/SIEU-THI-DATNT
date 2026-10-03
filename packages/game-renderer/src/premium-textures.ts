@@ -75,7 +75,6 @@ export function createPremiumTexture(key:string):HTMLCanvasElement|null{
  if(key.startsWith('player_')||key.startsWith('npc_')) return character(key);
  if(key.startsWith('fixture_')) return fixture(key);
  if(key.startsWith('wall_')) return wallTexture(key);
- if(key.startsWith('vehicle_minibus_')) return scaleCanvas(vehicleTexture(key),1.5); // xe buýt vẽ gốc 94×44 px, phóng 1,5× cho đúng tỉ lệ với xe tải/ô tô
  if(key.startsWith('vehicle_')) return vehicleTexture(key);
  if(key.startsWith('truck_')) return logisticsTruckTexture(key);
  if(key.startsWith('prop_')) return logisticsPropTexture(key);
@@ -952,13 +951,6 @@ function logisticsPropTexture(key: string): HTMLCanvasElement | null {
   return null;
 }
 
-function scaleCanvas(src: HTMLCanvasElement | null, factor: number): HTMLCanvasElement | null {
-  if (!src) return null;
-  const { canvas, ctx } = surface(Math.round(src.width * factor), Math.round(src.height * factor));
-  ctx.drawImage(src, 0, 0, canvas.width, canvas.height);
-  return canvas;
-}
-
 function vehicleTexture(key: string): HTMLCanvasElement | null {
   // Tỉ lệ ~20-22 px/mét như xe tải: ô tô dài 100 px (4,5 m) cao ~35 px, xe máy dài ~52 px (1,9 m).
   // Mọi mẫu vẽ quay mặt sang phải rồi lật ngang khi hướng trái; neo giữa-đáy, đáy canvas ~ mặt đường.
@@ -1164,280 +1156,99 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
   }
 
   if (key.startsWith('vehicle_minibus_')) {
+    // Xe khách/xe buýt nhỏ dài ~7 m (148 px), cao ~2,6 m + hành lý trên nóc; 4 biến thể cùng bộ khung, cùng tỉ lệ xe tải/ô tô.
     const isRight = key.endsWith('right');
-    // Extract variant: 'vehicle_minibus_1_right' or 'vehicle_minibus_right'
     const parts = key.split('_');
     let variant = 0;
     if (parts.length >= 4) {
       const parsed = parseInt(parts[2], 10);
       if (!isNaN(parsed)) variant = ((parsed % 4) + 4) % 4;
     }
+    const W = 148;
+    const DY = 8;
+    const { canvas, r: raw } = makeSurface(W, 70, !isRight);
+    const R = (x: number, y: number, w: number, h: number, c: string) => raw(x, y + DY, w, h, c);
+    const GLASS = '#8ec6e6';
+    const GLASS_HI = '#d6eefb';
+    const SKIN = '#f1c8a0';
 
-    const { canvas, ctx } = surface(94, 44);
-    const r = (x: number, y: number, w: number, h: number, col: string) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(isRight ? x : (94 - x - w), y, w, h);
+    R(4, 56, W - 8, 5, '#26190e40'); R(10, 55, W - 20, 4, '#26190e25');   // bóng đổ
+    R(3, 43, W - 6, 5, DARK); R(4, 44, W - 8, 1, '#4a4540');            // khung gầm
+
+    // Kính chắn gió xiên + tài xế (dx dịch kính về phía sau với xe có mũi dài)
+    const windshield = (dx: number) => {
+      for (let y = 12; y <= 31; y++) {
+        const xl = 124 + dx + Math.floor((y - 12) * 0.3);
+        const xr = 136 + dx + Math.floor((y - 12) * 0.32);
+        R(xl - 1, y, xr - xl + 3, 1, DARK);
+        if (y > 12 && y < 31) R(xl, y, xr - xl + 1, 1, GLASS);
+      }
+      R(127 + dx, 14, 4, 2, GLASS_HI);
+      R(131 + dx, 21, 5, 5, SKIN); R(130 + dx, 20, 7, 2, '#2a1c14'); R(131 + dx, 26, 6, 4, '#2c3e50');
     };
+    const wheelWell = (cx: number) => { R(cx - 11, 38, 22, 8, '#26190e'); drawWheel(raw, cx, 49 + DY, 8); };
 
-    const drawBusWheel = (wx: number, wy: number, rimColor = '#bdc3c7', hubColor = '#7f8c8d') => {
-      r(wx + 4, wy + 0, 6, 14, '#1a1815');
-      r(wx + 2, wy + 1, 10, 12, '#1a1815');
-      r(wx + 1, wy + 2, 12, 10, '#1a1815');
-      r(wx + 0, wy + 4, 14, 6, '#1a1815');
-      r(wx + 3, wy + 3, 8, 8, rimColor);
-      r(wx + 4, wy + 4, 6, 6, hubColor);
-      r(wx + 5, wy + 5, 4, 4, '#ecf0f1');
-      r(wx + 6, wy + 6, 2, 2, '#1a1815');
-    };
-
-    if (variant === 1) {
-      // ===== VARIANT 1: XE BUÝT XANH LÁ CÂY THÀNH PHỐ (Green City Bus - Ảnh 1) =====
-      // Thân xe xanh lá cây tươi sáng, dải lượn sóng vàng nghệ thuật, cửa kính đôi ở giữa, kính ngọc bích
-      r(6, 40, 82, 4, '#26190e40');
-      r(12, 39, 70, 5, '#26190e25');
-      drawBusWheel(16, 29, '#7f8c8d', '#2c3e50');
-      drawBusWheel(68, 29, '#7f8c8d', '#2c3e50');
-      r(8, 34, 78, 4, '#152e1b');
-
-      // Thân xe xanh lá cây
-      r(6, 12, 82, 23, '#152e1b'); // viền ngoài
-      r(7, 13, 80, 21, '#4cae3b'); // xanh lá chủ đạo
-      r(7, 13, 80, 3, '#5ec84c');  // mui nóc xanh sáng
-
-      // Cản trước và đầu xe vàng năng động
-      r(78, 13, 9, 21, '#f4d03f');
-      r(70, 22, 17, 12, '#f4d03f');
-      r(70, 25, 17, 9, '#f1c40f');
-
-      // Dải lượn sóng vàng nghệ thuật chạy dọc thân xe (Yellow swoosh stripe)
-      r(10, 29, 65, 3, '#f4d03f');
-      r(22, 27, 45, 3, '#f4d03f');
-      r(35, 25, 20, 3, '#f4d03f');
-      r(8, 30, 70, 2, '#234d1e'); // bóng dải sườn
-
-      // Mui xe & Hộp điều hòa nóc (Roof AC Unit)
-      r(48, 7, 24, 6, '#152e1b');
-      r(49, 8, 22, 4, '#27ae60');
-      r(50, 8, 20, 1, '#2ecc71');
-
-      // Cửa kính đôi ở giữa (Center double passenger doors)
-      r(40, 14, 14, 20, '#152e1b');
-      r(41, 15, 5, 18, '#2c3e50');
-      r(47, 15, 5, 18, '#2c3e50');
-      r(42, 17, 3, 13, '#a2d9ce');
-      r(48, 17, 3, 13, '#a2d9ce');
-      r(42, 18, 1, 11, '#ffffff'); // vệt phản quang
-      r(48, 18, 1, 11, '#ffffff');
-      r(46, 23, 2, 2, '#bdc3c7'); // tay nắm cửa
-
-      // Cửa sổ khách phía sau (Large rear passenger windows)
-      r(9, 14, 29, 12, '#152e1b');
-      r(10, 15, 27, 10, '#34495e');
-      r(11, 16, 25, 8, '#48c9b0');
-      r(13, 16, 3, 8, '#a2d9ce');
-      r(14, 16, 1, 8, '#ffffff');
-      r(22, 16, 3, 8, '#a2d9ce');
-      r(23, 16, 1, 8, '#ffffff');
-      r(30, 16, 3, 8, '#a2d9ce');
-      r(31, 16, 1, 8, '#ffffff');
-
-      // Cửa sổ phía trước
-      r(56, 14, 28, 12, '#152e1b');
-      r(57, 15, 26, 10, '#34495e');
-      r(58, 16, 24, 8, '#48c9b0');
-      r(60, 16, 3, 8, '#a2d9ce');
-      r(61, 16, 1, 8, '#ffffff');
-      r(68, 16, 3, 8, '#a2d9ce');
-      r(69, 16, 1, 8, '#ffffff');
-
-      // Khoang lái & kính chắn gió trước
-      r(78, 15, 7, 10, '#a2d9ce');
-      r(79, 16, 2, 8, '#ffffff');
-      r(76, 20, 3, 4, '#1b4f72');
-      r(77, 21, 2, 2, '#f5cba7');
-
-      // Gương chiếu hậu xe buýt cao
-      r(85, 14, 2, 9, '#152e1b');
-      r(83, 14, 3, 5, '#152e1b');
-      r(83, 15, 2, 3, '#7fb3d5');
-
-      // Đèn pha trước & cản xe
-      r(84, 27, 3, 5, '#f4d03f');
-      r(85, 28, 2, 3, '#ffffff');
-      r(87, 25, 6, 8, 'rgba(255, 241, 118, 0.45)');
-      r(7, 22, 2, 7, '#e74c3c');
-      r(7, 24, 1, 3, '#f39c12');
+    if (variant === 0) {
+      // Xe khách 16 chỗ kiểu Solati/Transit: trắng, dải xanh biển, cửa lùa giữa thân
+      R(2, 9, 144, 38, DARK); R(3, 10, 142, 36, '#f4f6f7'); R(3, 10, 142, 2, '#ffffff');
+      R(3, 36, 142, 9, '#2e6da4'); R(3, 35, 142, 1, '#5a95c8'); R(3, 41, 142, 4, '#1f4d78');
+      R(8, 15, 112, 15, DARK); R(9, 16, 110, 13, '#5a8fb0');
+      for (let x = 9; x < 119; x += 22) R(x, 16, 3, 13, '#f4f6f7');
+      for (let x = 14; x < 118; x += 22) { R(x, 17, 5, 2, '#b9dcf0'); R(x + 9, 19, 3, 2, '#b9dcf0'); }
+      R(66, 13, 24, 32, DARK); R(67, 14, 22, 30, '#e4e9ec'); R(67, 16, 10, 13, '#5a8fb0'); R(78, 16, 10, 13, '#5a8fb0'); R(77, 14, 1, 30, '#9aa5ad'); R(84, 31, 3, 2, '#7f8c8d');
+      R(56, 5, 20, 5, DARK); R(57, 6, 18, 3, '#bdc3c7');     // quạt thông gió nóc
+      windshield(0);
+      R(137, 22, 3, 7, DARK); R(138, 21, 4, 2, DARK);        // gương
+    } else if (variant === 1) {
+      // Xe buýt thành phố xanh lá: dải vàng, cửa đôi, bảng điện tử, dàn lạnh nóc
+      R(2, 9, 144, 38, DARK); R(3, 10, 142, 36, '#4cae3b'); R(3, 10, 142, 3, '#6fd45c');
+      R(3, 34, 142, 10, '#3a8a2c');
+      R(3, 31, 112, 3, '#f4d03f'); R(24, 34, 70, 3, '#f4d03f'); R(50, 37, 30, 3, '#f4d03f');
+      R(8, 15, 50, 15, DARK); R(9, 16, 48, 13, '#48c9b0');
+      R(90, 15, 32, 15, DARK); R(91, 16, 30, 13, '#48c9b0');
+      for (const x of [20, 34, 46, 100, 112]) { R(x, 16, 3, 13, '#a2d9ce'); R(x, 16, 1, 13, '#ffffff'); }
+      R(62, 13, 26, 32, DARK); R(63, 14, 11, 30, '#2c3e50'); R(76, 14, 11, 30, '#2c3e50');
+      R(64, 16, 9, 22, '#a2d9ce'); R(77, 16, 9, 22, '#a2d9ce'); R(65, 17, 1, 18, '#ffffff'); R(78, 17, 1, 18, '#ffffff');
+      R(70, 7, 40, 4, DARK); R(71, 5, 38, 3, '#2d7a22'); R(72, 5, 36, 1, '#5ec84c');  // dàn lạnh nóc
+      R(126, 3, 16, 7, DARK); R(127, 4, 14, 5, '#1a1815'); for (let i = 0; i < 5; i++) R(129 + i * 2, 6, 1, 2, '#f39c12'); // bảng LED tuyến
+      windshield(0);
+      R(137, 22, 3, 7, DARK);
     } else if (variant === 2) {
-      // ===== VARIANT 2: XE BUÝT TRƯỜNG HỌC VÀNG (Yellow School Bus - Ảnh 2, 3, 4) =====
-      // Thân vàng tươi, mũi xe dài nhô ra trước, nẹp gầm xanh xám, 4 ô cửa sổ kinh điển, la-zăng nan hoa vàng
-      r(6, 40, 82, 4, '#26190e40');
-      r(12, 39, 70, 5, '#26190e25');
-      drawBusWheel(18, 29, '#f39c12', '#d35400');
-      drawBusWheel(68, 29, '#f39c12', '#d35400');
-      r(8, 34, 78, 4, '#1a1815');
-
-      // Thân dưới viền thép xám xanh
-      r(6, 29, 80, 6, '#2c3e50');
-      r(7, 30, 78, 4, '#5d6d7e');
-
-      // Thân xe vàng trường học
-      r(6, 12, 66, 18, '#26190e');
-      r(7, 13, 64, 16, '#f39c12');
-      r(7, 13, 64, 3, '#f5b041');
-
-      // Mũi xe nhô dài phía trước
-      r(70, 20, 16, 11, '#26190e');
-      r(71, 21, 14, 9, '#f39c12');
-      r(71, 21, 14, 2, '#f5b041');
-      r(83, 23, 3, 7, '#2c3e50');
-      r(84, 24, 2, 5, '#bdc3c7');
-      r(85, 29, 3, 5, '#2c3e50');
-
-      // Cửa lên xuống
-      r(58, 16, 11, 17, '#26190e');
-      r(59, 17, 9, 15, '#e67e22');
-      r(61, 18, 5, 8, '#2c3e50');
-      r(62, 19, 3, 6, '#5dade2');
-      r(62, 19, 1, 4, '#ffffff');
-
-      // 4 Ô cửa sổ hành khách vuông vắn
-      const windowPositions = [12, 23, 34, 45];
-      for (const wx of windowPositions) {
-        r(wx, 15, 9, 10, '#26190e');
-        r(wx + 1, 16, 7, 8, '#2980b9');
-        r(wx + 1, 17, 6, 6, '#5dade2');
-        r(wx + 2, 17, 2, 6, '#ffffff');
-        r(wx + 5, 17, 1, 4, '#d4e6f1');
-      }
-
-      // Kính chắn gió buồng lái
-      r(69, 15, 5, 8, '#26190e');
-      r(70, 16, 4, 6, '#5dade2');
-      r(71, 16, 1, 5, '#ffffff');
-
-      // Gương chiếu hậu
-      r(73, 17, 3, 6, '#26190e');
-      r(74, 18, 1, 4, '#5dade2');
-
-      // Đèn pha trước & đèn mui
-      r(84, 25, 2, 3, '#fff9c4');
-      r(86, 23, 5, 6, 'rgba(255, 241, 118, 0.45)');
-      r(66, 12, 3, 2, '#e67e22');
-      r(10, 12, 3, 2, '#e67e22');
-      r(6, 23, 2, 5, '#c0392b');
-    } else if (variant === 3) {
-      // ===== VARIANT 3: XE KHÁCH ĐÒ RETRO CHỞ HÀNG NÓC (Retro Colorful Bus - Ảnh 5) =====
-      // Giá chở hàng bạt xanh chằng dây trên nóc, bảng tuyến LED, hoa văn cam/đỏ/vàng/lam ngọc, ca-lăng chrome
-      r(6, 40, 82, 4, '#26190e40');
-      r(12, 39, 70, 5, '#26190e25');
-      drawBusWheel(16, 29, '#e74c3c', '#f1c40f');
-      drawBusWheel(68, 29, '#e74c3c', '#f1c40f');
-      r(8, 34, 78, 4, '#1a1815');
-
-      // GIÁ CHỞ HÀNG TRÊN NÓC & BẠT HÀNH LÝ XANH
-      r(16, 6, 46, 3, '#7f8c8d');
-      r(14, 3, 48, 6, '#1e8449');
-      r(15, 2, 46, 3, '#27ae60');
-      r(16, 2, 44, 1, '#2ecc71');
-      // Dây chằng bạt cam
-      r(24, 2, 2, 7, '#d35400');
-      r(38, 2, 2, 7, '#d35400');
-      r(50, 2, 2, 7, '#d35400');
-
-      // Bảng hiệu tuyến xe phía trước
-      r(62, 4, 16, 6, '#2c3e50');
-      r(63, 5, 14, 4, '#1b4f72');
-      r(65, 6, 10, 2, '#2ecc71');
-
-      // Thân xe hoa văn retro đa sắc
-      r(6, 12, 80, 23, '#1a1815');
-      r(7, 13, 78, 5, '#e67e22');  // khoang nóc cam
-      r(7, 18, 78, 3, '#f1c40f');  // dải sọc vàng
-      r(7, 21, 78, 2, '#1abc9c');  // dải sọc lam ngọc
-      r(7, 23, 78, 5, '#e74c3c');  // dải sọc đỏ
-      r(7, 28, 78, 6, '#2980b9');  // thân dưới xanh dương
-
-      // Mặt ca-lăng chrome trước xe
-      r(78, 17, 8, 16, '#1a1815');
-      r(79, 18, 6, 12, '#bdc3c7');
-      r(80, 19, 4, 2, '#ecf0f1');
-      r(80, 22, 4, 2, '#ecf0f1');
-      r(80, 25, 4, 2, '#ecf0f1');
-      r(83, 30, 4, 5, '#bdc3c7');
-      r(84, 31, 2, 3, '#ecf0f1');
-
-      // Đèn pha tròn cổ điển
-      r(78, 23, 4, 5, '#f39c12');
-      r(79, 24, 3, 3, '#ffffff');
-      r(83, 22, 6, 8, 'rgba(255, 241, 118, 0.45)');
-
-      // Dãy 5 ô cửa sổ cổ điển
-      const retroWindows = [10, 21, 32, 43, 54];
-      for (const rx of retroWindows) {
-        r(rx, 14, 8, 9, '#16a085');
-        r(rx + 1, 15, 6, 7, '#a2d9ce');
-        r(rx + 2, 15, 2, 6, '#ffffff');
-      }
-
-      // Kính chắn gió buồng lái
-      r(67, 14, 11, 9, '#16a085');
-      r(68, 15, 9, 7, '#a2d9ce');
-      r(70, 15, 2, 6, '#ffffff');
-
-      // Gương chiếu hậu tai thỏ
-      r(79, 13, 2, 7, '#1a1815');
-      r(80, 14, 3, 4, '#27ae60');
-      r(81, 15, 1, 2, '#a2d9ce');
-      r(7, 24, 2, 6, '#f39c12');
+      // Xe buýt trường học vàng: mũi xe dài, 7 ô cửa sổ, viền đen, đèn cảnh báo nóc
+      R(2, 9, 112, 38, DARK); R(3, 10, 110, 36, '#f5b81c'); R(3, 10, 110, 2, '#ffd75e');
+      R(3, 33, 110, 2, DARK); R(3, 39, 110, 2, DARK);
+      for (let i = 0; i < 7; i++) { R(7 + i * 14, 15, 12, 12, DARK); R(8 + i * 14, 16, 10, 10, GLASS); R(9 + i * 14, 17, 3, 2, GLASS_HI); }
+      R(104, 12, 10, 32, DARK); R(105, 13, 8, 30, '#d98e04'); R(106, 15, 6, 16, GLASS); R(106, 33, 6, 8, '#d98e04');   // cửa gấp
+      R(8, 5, 5, 4, DARK); R(9, 6, 3, 2, '#e74c3c'); R(100, 5, 5, 4, DARK); R(101, 6, 3, 2, '#f1c40f');                // đèn nóc
+      // Mũi xe (capô) thấp phía trước
+      R(112, 27, 35, 20, DARK); R(113, 28, 33, 18, '#f5b81c'); R(113, 28, 33, 2, '#ffd75e'); R(113, 38, 33, 2, DARK);
+      R(143, 31, 4, 11, '#2b2f33'); R(144, 33, 2, 1, '#5d6368'); R(144, 36, 2, 1, '#5d6368'); R(143, 28, 4, 3, '#ffe27a');
+      windshield(-14);
+      R(100, 21, 3, 7, DARK);
+      R(30, 28, 18, 4, DARK); R(32, 29, 14, 2, '#f5b81c');  // vạch chữ
     } else {
-      // ===== VARIANT 0: XE KHÁCH 16 CHỖ SOLATI/TRANSIT (Trắng - Xanh biển) =====
-      r(6, 40, 82, 4, '#26190e40');
-      r(12, 39, 70, 5, '#26190e25');
-      drawBusWheel(14, 29);
-      drawBusWheel(68, 29);
-
-      r(8, 34, 78, 4, '#1a1815');
-      r(4, 32, 6, 5, '#2c3e50');
-      r(84, 32, 6, 5, '#2c3e50');
-
-      r(6, 12, 82, 22, '#2c3e50');
-      r(7, 13, 80, 20, '#ecf0f1');
-      r(7, 28, 80, 4, '#2980b9');
-      r(8, 29, 78, 2, '#3498db');
-
-      r(30, 8, 36, 5, '#2c3e50');
-      r(31, 9, 34, 3, '#bdc3c7');
-
-      r(9, 15, 6, 11, '#2c3e50');
-      r(10, 16, 5, 9, '#7fb3d5');
-      r(18, 15, 14, 11, '#2c3e50');
-      r(19, 16, 12, 9, '#aed6f1');
-      r(35, 15, 14, 11, '#2c3e50');
-      r(36, 16, 12, 9, '#aed6f1');
-      r(52, 15, 14, 11, '#2c3e50');
-      r(53, 16, 12, 9, '#aed6f1');
-
-      r(20, 16, 2, 8, '#f9e79f');
-      r(37, 16, 2, 8, '#f9e79f');
-      r(54, 16, 2, 8, '#f9e79f');
-      r(25, 18, 4, 4, '#34495e');
-      r(42, 18, 4, 4, '#2e4053');
-
-      r(68, 15, 17, 11, '#2c3e50');
-      r(69, 16, 15, 9, '#d4efdf');
-      r(73, 18, 4, 4, '#1b4f72');
-      r(74, 20, 3, 2, '#f5cba7');
-      r(78, 20, 2, 3, '#1a1815');
-
-      r(84, 17, 3, 6, '#2c3e50');
-      r(85, 18, 1, 4, '#d4efdf');
-
-      r(84, 26, 4, 5, '#f1c40f');
-      r(85, 27, 2, 3, '#ffffff');
-      r(88, 24, 6, 8, 'rgba(255, 241, 118, 0.45)');
-      r(7, 22, 2, 8, '#c0392b');
+      // Xe khách đò màu retro chở hành lý nóc: cam/đỏ/xanh ngọc, rèm cửa, bạt xanh buộc dây cam
+      R(2, 9, 144, 38, DARK); R(3, 10, 142, 36, '#e67e22'); R(3, 10, 142, 3, '#f5a05a');
+      R(3, 32, 142, 3, '#fdebd0'); R(3, 35, 142, 4, '#c0392b'); R(3, 39, 142, 6, '#1f7a8c'); R(3, 39, 142, 1, '#48a9b8');
+      R(8, 15, 112, 15, DARK); R(9, 16, 110, 13, '#7fd6d0');
+      for (let x = 9; x < 119; x += 18) { R(x, 16, 3, 13, '#e67e22'); R(x + 3, 16, 15, 3, '#f7dc6f'); }
+      for (let x = 14; x < 118; x += 18) R(x, 20, 3, 2, GLASS_HI);
+      R(98, 13, 20, 32, DARK); R(99, 14, 18, 30, '#c0392b'); R(100, 16, 7, 14, '#7fd6d0'); R(109, 16, 7, 14, '#7fd6d0'); R(108, 14, 1, 30, DARK);
+      // Giá nóc + hành lý
+      R(6, 8, 130, 2, DARK);
+      R(8, -1, 118, 9, DARK); R(9, 0, 116, 7, '#2e8b57'); R(9, 0, 116, 1, '#52b27a');
+      R(12, 7, 2, 2, DARK); R(122, 7, 2, 2, DARK);
+      for (const x of [26, 56, 90]) { R(x, -1, 3, 10, '#e67e22'); R(x, -1, 1, 10, '#f5a05a'); }
+      R(14, -5, 20, 6, DARK); R(15, -4, 18, 4, '#c89b5c'); R(15, -4, 18, 1, '#dcb27a');
+      R(98, -4, 18, 5, DARK); R(99, -3, 16, 3, '#8e44ad'); R(99, -3, 16, 1, '#a569bd');
+      windshield(0);
+      R(137, 22, 3, 7, DARK);
     }
-
+    // Đèn trước/sau, cản
+    R(143, 38, 4, 5, '#fff3b0'); R(145, 39, 2, 2, '#ffffff');
+    R(2, 34, 3, 7, '#e74c3c'); R(2, 34, 1, 7, '#ff8a80');
+    R(142, 44, 6, 4, '#9aa0a6'); R(142, 44, 6, 1, '#d0d4d8'); R(0, 44, 6, 4, '#4a4540');
+    wheelWell(32); wheelWell(114);
     return canvas;
   }
 
