@@ -44,7 +44,7 @@ export const TREE_PROPS: ReadonlyArray<TreeProp> = [
   // Cây mới phía đông (gần quán nước)
   { id: 'east_tree_small', tileX: 19, tileY: 11, height: 1.8, crownRadius: 0.8 },  // Giữa tiệm xôi và quán nước
   { id: 'east_tree_tall', tileX: 25, tileY: 11, height: 2.6, crownRadius: 1.2 },   // Trước quán nước bên trái
-  { id: 'east_tree_bush', tileX: 33, tileY: 11, height: 1.5, crownRadius: 1.0 },   // Trước quán nước bên phải
+  { id: 'east_tree_bush', tileX: 28, tileY: 11, height: 1.5, crownRadius: 1.0 },   // Trước quán nước, sát phía tây cửa (x=30..31) nhưng cách cửa 1 ô; tách khỏi cây ở mép đông (trước đây ở x=33 dính cây x=34)
   { id: 'east_tree_cluster', tileX: 34, tileY: 11, height: 2.0, crownRadius: 0.9 }, // Mép đông bản đồ
 ];
 /** Vị trí góc trên-trái của sprite cây so với ô gốc (đơn vị ô) và độ dịch dọc bằng pixel; giữ đúng vị trí vẽ trước đây. */
