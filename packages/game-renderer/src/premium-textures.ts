@@ -1088,58 +1088,66 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
   }
 
   if (key.startsWith('vehicle_bicycle_rider_')) {
+    // Xe đạp ~1,8 m (≈ 40 px) với người đạp ngồi thẳng, đội nón lá, giỏ trước chở rau (cùng tỉ lệ xe máy/ô tô).
     const isRight = key.endsWith('right');
-    const { canvas, ctx } = surface(44, 40);
-    const r = (x: number, y: number, w: number, h: number, col: string) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(isRight ? x : (44 - x - w), y, w, h);
+    const { canvas, r } = makeSurface(52, 50, !isRight);
+    const FRAME = '#16a085';
+    const FRAME_LIGHT = '#48c9b0';
+    const PANTS = '#3b4e4e';
+    const SKIN = '#f1c8a0';
+    r(5, 44, 42, 4, '#26190e30'); r(9, 43, 34, 4, '#26190e20');
+
+    // Bánh xe mảnh: lốp đen, vành bạc, nan chéo (tâm ở độ cao 37, bán kính 7)
+    const bikeWheel = (cx: number, cy: number) => {
+      drawWheel(r, cx, cy, 7);
+      // Khoét lòng vành để thấy nan, rồi vẽ nan + trục
+      const ring = (rad: number, col: string) => {
+        for (let dy = -rad; dy <= rad; dy++) {
+          const half = Math.round(Math.sqrt(rad * rad - dy * dy));
+          r(cx - half, cy + dy, half * 2 + 1, 1, col);
+        }
+      };
+      ring(5, '#d5dbdb');
+      ring(4, '#e8ecef');
+      r(cx - 4, cy, 9, 1, '#9aa5ad'); r(cx, cy - 4, 1, 9, '#9aa5ad');
+      r(cx - 3, cy - 3, 1, 1, '#9aa5ad'); r(cx + 3, cy - 3, 1, 1, '#9aa5ad'); r(cx - 3, cy + 3, 1, 1, '#9aa5ad'); r(cx + 3, cy + 3, 1, 1, '#9aa5ad');
+      r(cx - 1, cy - 1, 3, 3, '#5d6368');
     };
+    bikeWheel(13, 37);
+    bikeWheel(40, 37);
 
-    // Bóng đổ nhẹ
-    r(4, 36, 36, 3, '#26190e30');
+    // Khung sườn: ống yên, ống ngang, ống xiên, càng sau, phuộc trước
+    const tube = (x: number, y: number, w: number, h: number) => { r(x, y, w, h, FRAME); r(x, y, 1, h, FRAME_LIGHT); };
+    tube(19, 27, 2, 11);          // ống yên
+    tube(20, 27, 17, 2);          // ống ngang
+    for (let i = 0; i < 11; i++) tube(21 + i, 30 + Math.floor(i * 0.6), 2, 2); // ống xiên
+    for (let i = 0; i < 7; i++) tube(14 + i, 37 - Math.floor(i * 1.4), 2, 2);  // càng sau
+    tube(37, 27, 2, 4);
+    for (let i = 0; i < 6; i++) r(38 + Math.floor(i * 0.5), 29 + i, 2, 2, '#8a9199'); // phuộc
+    r(13, 36, 3, 3, '#5d6368'); r(39, 36, 3, 3, '#5d6368');                            // trục bánh
+    r(19, 37, 5, 2, '#5d6368'); r(20, 39, 3, 2, '#2c3e50');                            // đùi đĩa + bàn đạp
+    // Yên, ghi-đông, chuông
+    r(15, 25, 9, 3, DARK); r(16, 25, 7, 1, '#5a5148');
+    r(36, 22, 3, 6, '#8a9199'); r(35, 21, 8, 2, DARK); r(42, 21, 2, 3, DARK);
+    // Giỏ trước có rau
+    r(43, 24, 9, 8, DARK); r(44, 25, 7, 6, '#c89b5c'); r(44, 28, 7, 1, '#8a5a2f'); r(44, 25, 7, 1, '#dcb27a');
+    r(44, 22, 3, 3, '#7bc043'); r(47, 21, 3, 4, '#2e8b57'); r(50, 23, 2, 2, '#e67e22');
 
-    // Bánh xe căm mảnh đường kính 11
-    const drawBikeWheel = (wx: number, wy: number) => {
-      r(wx + 3, wy + 0, 5, 11, '#1a1815');
-      r(wx + 1, wy + 1, 9, 9, '#1a1815');
-      r(wx + 0, wy + 3, 11, 5, '#1a1815');
-      r(wx + 2, wy + 2, 7, 7, '#d5dbdb');
-      r(wx + 3, wy + 3, 5, 5, '#2c3e50');
-      r(wx + 5, wy + 5, 1, 1, '#ffffff');
-    };
-    drawBikeWheel(3, 26);
-    drawBikeWheel(29, 26);
-
-    // Khung sườn xe đạp
-    r(9, 30, 11, 2, '#16a085');
-    r(13, 22, 2, 9, '#1abc9c');
-    r(14, 20, 14, 2, '#16a085');
-    r(15, 23, 12, 2, '#1abc9c');
-    r(28, 22, 2, 9, '#16a085');
-    r(10, 20, 5, 2, '#2c3e50');
-    r(12, 18, 5, 3, '#7f8c8d');
-
-    // Giỏ trước
-    r(31, 17, 7, 6, '#bdc3c7');
-    r(32, 18, 5, 4, '#7f8c8d');
-
-    // Ghi-đông
-    r(27, 14, 3, 6, '#bdc3c7');
-    r(26, 13, 4, 2, '#ecf0f1');
-    r(25, 14, 2, 2, '#2c3e50');
-
-    // Người đạp xe
-    r(16, 25, 4, 6, '#2980b9');
-    r(18, 29, 3, 5, '#f5cba7');
-    r(18, 34, 4, 2, '#2c3e50');
-    r(16, 12, 9, 10, '#27ae60');
-    r(17, 13, 7, 8, '#2ecc71');
-    r(21, 14, 7, 3, '#27ae60');
-    r(25, 14, 3, 2, '#f5cba7');
-    r(21, 5, 6, 7, '#f5cba7');
-    r(20, 3, 8, 4, '#2c3e50');
-    r(25, 5, 3, 2, '#2c3e50');
-    r(25, 6, 1, 1, '#1a1815');
+    // Người đạp: ngồi thẳng, hơi nghiêng, đầu ở độ cao ~ 1,5 m
+    r(19, 18, 8, 10, DARK); r(20, 19, 6, 8, '#27ae60'); r(20, 19, 2, 8, '#52be80');   // thân áo
+    r(24, 12, 6, 8, DARK); r(25, 13, 4, 6, '#27ae60');                                  // vai/ngực
+    r(25, 3, 7, 8, DARK); r(26, 4, 5, 6, SKIN); r(26, 3, 5, 2, '#2a1c14');              // đầu + tóc
+    for (let row = 0; row < 5; row++) r(21 + row * 1, 1 + row, 18 - row * 2, 1, '#e8d49a'); // nón lá (hình chóp)
+    r(21, 6, 18, 1, '#cdb877'); r(22, 6, 16, 1, '#a58f4a');
+    r(30, 6, 2, 3, DARK);                                                               // quai nón
+    r(28, 8, 2, 1, '#c0392b');                                                          // miệng
+    // Tay cầm ghi-đông
+    r(28, 15, 6, 3, '#27ae60'); r(33, 17, 5, 3, '#27ae60'); r(37, 19, 4, 3, SKIN); r(36, 20, 4, 3, '#27ae60');
+    // Chân đạp: đùi → gối → cẳng chân → giày trên bàn đạp
+    r(19, 27, 10, 4, DARK); r(20, 28, 8, 2, PANTS);
+    r(26, 29, 5, 4, DARK); r(27, 30, 3, 2, PANTS);
+    r(24, 32, 5, 6, DARK); r(25, 32, 3, 6, PANTS);
+    r(21, 38, 8, 3, DARK); r(22, 38, 6, 2, '#462719');
 
     return canvas;
   }
