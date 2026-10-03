@@ -200,6 +200,13 @@ export async function runWorldRuntimeTests() {
       assert.equal((await send('owner-1', 'branch-back-1', { type: 'return_stock', branchId: 'branch-1', items: [{ productId: 'nuoc_suoi', quantity: 2 }] })).status, 'accepted');
       assert.equal(sim.getInventory().find((item) => item.productId === 'nuoc_suoi')?.quantity, have);
     }
+    // Bảng điều hành: member đổi mức giá/quản lý, không tốn tiền; chi nhánh lạ bị từ chối; payload sai bị validate chặn
+    const moneyBeforePolicy = sim.getPlayerData().money;
+    assert.equal((await send('member-2', 'branch-policy-1', { type: 'set_branch_policy', branchId: 'branch-1', policy: { priceMode: 'high', manager: true } })).status, 'accepted');
+    assert.deepEqual(sim.getChain().branches[0].policy, { priceMode: 'high', manager: true });
+    assert.equal(sim.getPlayerData().money, moneyBeforePolicy);
+    assert.equal((await send('owner-1', 'branch-policy-bad', { type: 'set_branch_policy', branchId: 'nope', policy: { priceMode: 'low', manager: false } })).status, 'rejected');
+    for (const bad of [{ type: 'set_branch_policy', branchId: 'branch-1', policy: { priceMode: 'cheap', manager: false } }, { type: 'set_branch_policy', branchId: 'branch-1', policy: { priceMode: 'low', manager: 1 } }, { type: 'set_branch_policy', branchId: 'branch-1' }]) assert.equal(isGameCommand({ ...claimCommand('x', 'x'), payload: bad } as never), false, JSON.stringify(bad));
     // Payload sai hình dạng bị lớp validate chặn trước khi tới mô phỏng
     for (const bad of [
       { type: 'transfer_stock', branchId: 'branch-1', items: [] },

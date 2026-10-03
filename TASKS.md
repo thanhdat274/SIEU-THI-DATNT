@@ -6,7 +6,7 @@
 - [ ] Wave A còn validation/verification trong section 8; recipe/production vẫn là Wave B và chưa có.
 - [ ] Wave B: công thức và sản xuất tại bếp; Wave C: prestige; Wave D: biểu đồ/heatmap/checklist/audio/replay; Wave E: tax chỉ sau TAX-0.
 - [x] Tiệm xôi riêng trên cùng dải đất: code + test PASS 02/10/2026 (OpenSpec `xoi-shop-same-land-strip`, 23/26 task); còn avatar đi ra/bảo vệ, QA chạm thật, co-op hai client thật và ca `buy_warehouse_tier` đỏ trong `coop-commands.test.ts`.
-- [ ] Chuỗi chi nhánh khác/loại hình cửa hàng/luân chuyển nội bộ vẫn plan sau, phụ thuộc thiết kế mở rộng và phân khu trên cùng khu đất. UI tổng quan/mở/chuyển hàng chi nhánh đã có (`ChainModal`, 03/10/2026); còn bộ chọn/chế độ điều hành, renderer chi nhánh xa.
+- [ ] Chuỗi chi nhánh khác/loại hình cửa hàng/luân chuyển nội bộ vẫn plan sau, phụ thuộc thiết kế mở rộng và phân khu trên cùng khu đất. UI tổng quan/mở/chuyển hàng chi nhánh đã có (`ChainModal`, 03/10/2026); còn bộ chọn/chế độ điều hành, renderer chi nhánh xa. Chi nhánh xa nay có bảng điều hành nhẹ (mức giá + quản lý, `set_branch_policy`).
 
 ## ĐỢT RÀ SOÁT HIỆN TẠI (03/10/2026)
 

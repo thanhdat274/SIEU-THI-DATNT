@@ -26,6 +26,7 @@ import {
   StockLot,
   DailyRecord,
   TaxState,
+  BranchPolicy,
   ChainState,
   LedgerEntry,
   CashObligations,
@@ -99,7 +100,7 @@ import { rainIntensityAt, describeRainForecast, roadWetnessAt, hashSeed } from '
 import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance } from './security';
 import { assessCounterfeit } from './counterfeit';
 import { ACTIVE_TAX_POLICY, summarizeAnnualRevenue, taxDueOnClose } from './tax/annual-revenue';
-import { createChain, normalizeChain, openBranch as openBranchPure, returnStock as returnStockPure, switchBranch as switchBranchPure, transferStock as transferStockPure, type ChainContext, type TransferItem } from './chain';
+import { createChain, normalizeChain, openBranch as openBranchPure, returnStock as returnStockPure, setBranchPolicy as setBranchPolicyPure, switchBranch as switchBranchPure, transferStock as transferStockPure, type ChainContext, type TransferItem } from './chain';
 import { runBranchDay } from './branch-ops';
 import { applyAuditToState, emptyTaxState, normalizeTaxState, resolveAudit, shouldAudit, splitDeclared } from './tax/audit';
 import { composeReview, sanitizeReviews, summarizeReviews, ReviewsManager } from './reviews';
@@ -2170,6 +2171,15 @@ export class GameSimulation {
 
   public switchBranch(branchId: string): { success: boolean; reason?: string } {
     const result = switchBranchPure(this.chainContext(), branchId);
+    if (!result.ok) return { success: false, reason: result.reason };
+    this.chainState = result.chain;
+    this.notifyStateChanged();
+    return { success: true };
+  }
+
+  /** Đổi mức giá/quản lý của chi nhánh (bảng điều hành nhẹ). Không đổi ví; có hiệu lực từ lần chạy nền kế tiếp. */
+  public setBranchPolicy(branchId: string, policy: BranchPolicy): { success: boolean; reason?: string } {
+    const result = setBranchPolicyPure(this.chainContext(), branchId, policy);
     if (!result.ok) return { success: false, reason: result.reason };
     this.chainState = result.chain;
     this.notifyStateChanged();

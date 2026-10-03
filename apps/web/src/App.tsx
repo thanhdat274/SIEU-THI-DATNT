@@ -5,7 +5,7 @@ import type { TutorialItem } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
 import { PixiGameViewport } from '@game/renderer';
-import { GameSnapshot, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
+import { BranchPolicy, GameSnapshot, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
 
 import { getActiveSlotId, loadOrCreateSave, persistSave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
 import { releaseSlotLock } from './slot-lock';
@@ -1017,6 +1017,15 @@ export const App: React.FC = () => {
     return res.success;
   };
 
+  const handleBranchPolicy = async (branchId: string, policy: BranchPolicy) => {
+    const res = await persistSimulationMutation(
+      { type: 'set_branch_policy', branchId, policy }, 'Điều hành chi nhánh', 'Chuỗi chi nhánh',
+      simulation => simulation.setBranchPolicy(branchId, policy),
+    );
+    if (!res) return;
+    addToast(res.success ? 'Đã đổi cách điều hành chi nhánh; có hiệu lực từ khi sang ngày.' : (res.reason ?? 'Không đổi được.'), res.success ? 'success' : 'warn');
+  };
+
   const handleBuyStall = async (stallId: string) => {
     const sim = simulationRef.current;
     if (!sim || blockOfflineOnlineMutation()) return;
@@ -1689,6 +1698,7 @@ export const App: React.FC = () => {
         onOpenBranch={handleOpenBranch}
         onTransfer={(branchId, items) => handleBranchStock('transfer_stock', branchId, items)}
         onReturn={(branchId, items) => handleBranchStock('return_stock', branchId, items)}
+        onPolicy={handleBranchPolicy}
         onClose={() => setChainOpen(false)}
       />
     )}

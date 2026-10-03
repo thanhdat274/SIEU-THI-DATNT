@@ -34,7 +34,7 @@ import { runCounterfeitTests } from './counterfeit.test';
 import { runReplayTests } from './replay.test';
 import { runStallsStorageTests } from './stalls.test';
 import { runAmbientAudioTests } from './ambient-audio.test';
-import { runChainTests, runChainSaveTests, runChainSimulationTests } from './chain.test';
+import { runChainTests, runChainSaveTests, runChainSimulationTests, runBranchPolicyTests, runBranchPolicySimulationTests } from './chain.test';
 import { runForecastTests } from './forecast.test';
 import { runScenarioTests } from './scenarios.test';
 import { runPerformanceTests } from './performance.test';
@@ -116,6 +116,8 @@ export async function runTests(): Promise<void> {
   runChainTests();
   runChainSaveTests();
   runChainSimulationTests();
+  runBranchPolicyTests();
+  runBranchPolicySimulationTests();
   runForecastTests();
   runScenarioTests();
   runPerformanceTests();

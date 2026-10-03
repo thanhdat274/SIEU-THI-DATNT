@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { MAX_CHAIN_BRANCHES, PRODUCT_MAP, STORE_TYPES } from '@game/data';
-import type { BranchSave, ChainState, InventoryItem } from '@game/shared';
-import { branchStockUnits, stockTotals, type TransferItem } from '@game/core';
+import { BRANCH_MANAGER, BRANCH_PRICE_MODES, MAX_CHAIN_BRANCHES, PRODUCT_MAP, STORE_TYPES } from '@game/data';
+import type { BranchPolicy, BranchPriceMode, BranchSave, ChainState, InventoryItem } from '@game/shared';
+import { branchStockUnits, policyOf, stockTotals, type TransferItem } from '@game/core';
 import { EmptyState, PixelButton, PixelDialog, PixelStat, ProductIcon, QuantityStepper, money } from './pixel';
 
 export interface ChainModalProps {
@@ -14,6 +14,7 @@ export interface ChainModalProps {
   onOpenBranch: (storeTypeId: string, name: string) => void | Promise<unknown>;
   onTransfer: (branchId: string, items: TransferItem[]) => boolean | Promise<boolean>;
   onReturn: (branchId: string, items: TransferItem[]) => boolean | Promise<boolean>;
+  onPolicy: (branchId: string, policy: BranchPolicy) => void | Promise<unknown>;
   onClose: () => void;
 }
 
@@ -113,6 +114,39 @@ const TransferPanel: React.FC<{
   );
 };
 
+/** Bảng điều hành nhẹ: mức giá và quản lý của một chi nhánh (có hiệu lực từ lần chạy nền kế tiếp). */
+const PolicyPanel: React.FC<{ branch: BranchSave; onPolicy: ChainModalProps['onPolicy'] }> = ({ branch, onPolicy }) => {
+  const policy = policyOf(branch);
+  const [busy, setBusy] = useState(false);
+  const apply = async (next: BranchPolicy) => {
+    if (busy) return;
+    setBusy(true);
+    try { await onPolicy(branch.id, next); } finally { setBusy(false); }
+  };
+  return (
+    <div className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 6 }}>
+      <strong>Điều hành</strong>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} role="radiogroup" aria-label="Mức giá chi nhánh">
+        {(Object.keys(BRANCH_PRICE_MODES) as BranchPriceMode[]).map((mode) => (
+          <PixelButton key={mode} variant={policy.priceMode === mode ? 'teal' : 'paper'} role="radio" aria-checked={policy.priceMode === mode} disabled={busy}
+            onClick={() => policy.priceMode !== mode && apply({ ...policy, priceMode: mode })}>
+            {BRANCH_PRICE_MODES[mode].label} (giá {Math.round(BRANCH_PRICE_MODES[mode].priceFactor * 100)}%, khách {Math.round(BRANCH_PRICE_MODES[mode].demandFactor * 100)}%)
+          </PixelButton>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <PixelButton variant={policy.manager ? 'brick' : 'teal'} disabled={busy} aria-pressed={policy.manager} onClick={() => apply({ ...policy, manager: !policy.manager })}>
+          {policy.manager ? 'Sa thải quản lý' : `Thuê quản lý ${money(BRANCH_MANAGER.wagePerDay)}/ngày`}
+        </PixelButton>
+        <span className="muted" style={{ fontSize: 12 }}>
+          {policy.manager ? 'Có quản lý: chi nhánh bán gần bằng khi bạn trực tiếp đứng quầy; lương thêm trừ vào ví mỗi ngày.' : 'Không có quản lý: chi nhánh chỉ bán ở mức nền (≈70%).'}
+        </span>
+      </div>
+      <span className="muted" style={{ fontSize: 12 }}>Thay đổi có hiệu lực từ lần chạy nền kế tiếp (khi sang ngày). Các hệ số là đề xuất tạm, chưa playtest.</span>
+    </div>
+  );
+};
+
 const BranchCard: React.FC<{
   branch: BranchSave;
   warehouse: InventoryItem[];
@@ -121,7 +155,8 @@ const BranchCard: React.FC<{
   onToggle: () => void;
   onTransfer: ChainModalProps['onTransfer'];
   onReturn: ChainModalProps['onReturn'];
-}> = ({ branch, warehouse, day, expanded, onToggle, onTransfer, onReturn }) => {
+  onPolicy: ChainModalProps['onPolicy'];
+}> = ({ branch, warehouse, day, expanded, onToggle, onTransfer, onReturn, onPolicy }) => {
   const type = typeOf(branch.storeType);
   const units = branchStockUnits(branch);
   const value = stockTotals(branch.stock, day).value;
@@ -148,6 +183,7 @@ const BranchCard: React.FC<{
         </div>
         : <span className="muted" style={{ fontSize: 13 }}>Chi nhánh chạy nền từ ngày kế tiếp; chưa có báo cáo ngày.</span>}
       {lowStock && <span style={{ color: '#a86b12', fontSize: 13 }}>Kho chi nhánh trống: chuyển hàng từ kho tổng để có hàng bán.</span>}
+      <PolicyPanel branch={branch} onPolicy={onPolicy} />
       <div><PixelButton variant="teal" aria-expanded={expanded} onClick={onToggle}>{expanded ? 'Đóng chuyển hàng' : 'Chuyển hàng'}</PixelButton></div>
       {expanded && <TransferPanel branch={branch} warehouse={warehouse} day={day} onTransfer={onTransfer} onReturn={onReturn} />}
     </div>
@@ -155,12 +191,12 @@ const BranchCard: React.FC<{
 };
 
 /** Tổng quan chuỗi chi nhánh: ví chung, kho tổng, từng chi nhánh, mở chi nhánh mới và chuyển/trả hàng. */
-export const ChainModal: React.FC<ChainModalProps> = ({ chain, warehouse, playerMoney, playerLevel, day, onOpenBranch, onTransfer, onReturn, onClose }) => {
+export const ChainModal: React.FC<ChainModalProps> = ({ chain, warehouse, playerMoney, playerLevel, day, onOpenBranch, onTransfer, onReturn, onPolicy, onClose }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [newNames, setNewNames] = useState<Record<string, string>>({});
   const [opening, setOpening] = useState(false);
   const warehouseTotals = stockTotals(warehouse, day);
-  const dailyWages = chain.branches.reduce((total, branch) => total + (typeOf(branch.storeType)?.staffWagePerDay ?? 0), 0);
+  const dailyWages = chain.branches.reduce((total, branch) => total + (typeOf(branch.storeType)?.staffWagePerDay ?? 0) + (policyOf(branch).manager ? BRANCH_MANAGER.wagePerDay : 0), 0);
   const chainFull = chain.branches.length >= MAX_CHAIN_BRANCHES;
 
   const reasonFor = (typeId: string): string | undefined => {
@@ -196,7 +232,7 @@ export const ChainModal: React.FC<ChainModalProps> = ({ chain, warehouse, player
           : chain.branches.map((branch) => (
             <BranchCard key={branch.id} branch={branch} warehouse={warehouse} day={day}
               expanded={expandedId === branch.id} onToggle={() => setExpandedId(expandedId === branch.id ? null : branch.id)}
-              onTransfer={onTransfer} onReturn={onReturn} />
+              onTransfer={onTransfer} onReturn={onReturn} onPolicy={onPolicy} />
           ))}
 
         <h3 style={{ margin: '4px 0 0' }}>Mở chi nhánh mới</h3>
@@ -222,7 +258,7 @@ export const ChainModal: React.FC<ChainModalProps> = ({ chain, warehouse, player
           );
         })}
         <p className="muted" style={{ margin: 0, fontSize: 12 }}>
-          Giới hạn hiện tại: chưa có chế độ điều hành trực tiếp chi nhánh, đóng/bán chi nhánh hay bản đồ riêng cho chi nhánh xa. Số liệu cầu/lương là đề xuất tạm, chưa playtest.
+          Giới hạn hiện tại: chưa có điều khiển trực tiếp trong chi nhánh (bố cục, khách thật), đóng/bán chi nhánh hay bản đồ riêng cho chi nhánh xa. Số liệu cầu/lương là đề xuất tạm, chưa playtest.
         </p>
       </div>
     </PixelDialog>
