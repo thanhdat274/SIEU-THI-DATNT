@@ -1085,60 +1085,57 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
   }
 
   if (key.startsWith('vehicle_car_')) {
-    const CAR_W = 130, CAR_H = 65;
-    // Taxi vàng đô thị (sedan). Greenhouse dựng theo từng hàng để có kính chắn gió/kính sau xiên.
+    // Taxi vàng đô thị (sedan) ~4,5 m, vẽ trực tiếp ở 130×65 (cùng tỉ lệ xe máy có người lái cao 65 px, nhỏ hơn xe khách 148 px).
+    // Greenhouse dựng theo từng hàng để có kính chắn gió/kính sau xiên.
     const isRight = key.endsWith('right');
-    const { canvas, r } = makeSurface(100, 50, !isRight);
+    const { canvas, r } = makeSurface(130, 65, !isRight);
     const GLASS = '#8ec6e6';
-    const roofTop = 13;
-    const bodyTop = 27;
-    r(6, 44, 88, 5, '#26190e40'); r(10, 43, 80, 5, '#26190e25');
+    const BODY = '#e4bd48';
+    const roofTop = 17;
+    const bodyTop = 35;
+    r(8, 57, 114, 6, '#26190e40'); r(13, 56, 104, 6, '#26190e25');
     // Cabin (greenhouse): viền tối, mui, kính
-    const leftAt = (y: number) => 31 - Math.floor((y - roofTop) * 0.75);
-    const rightAt = (y: number) => 69 + Math.floor((y - roofTop) * 0.8);
+    const leftAt = (y: number) => 40 - Math.floor((y - roofTop) * 0.75);
+    const rightAt = (y: number) => 90 + Math.floor((y - roofTop) * 0.8);
     for (let y = roofTop; y < bodyTop; y++) r(leftAt(y) - 1, y, rightAt(y) - leftAt(y) + 3, 1, DARK);
     for (let y = roofTop + 1; y < bodyTop; y++) {
       const l = leftAt(y);
       const rr = rightAt(y);
-      if (y <= roofTop + 2) { r(l, y, rr - l + 1, 1, '#e4bd48'); continue; }
+      if (y <= roofTop + 2) { r(l, y, rr - l + 1, 1, BODY); continue; }
       r(l, y, rr - l + 1, 1, GLASS);
     }
     r(leftAt(roofTop) + 1, roofTop + 1, rightAt(roofTop) - leftAt(roofTop) - 1, 1, '#f4d97a');
-    // Trụ B và trụ C/A (màu thân xe)
+    // Trụ A, B, C (màu thân xe)
     for (let y = roofTop + 3; y < bodyTop; y++) {
-      r(leftAt(y) + 1, y, 4, 1, '#e4bd48');
-      r(46, y, 4, 1, '#e4bd48');
-      r(rightAt(y) - 4, y, 4, 1, '#e4bd48');
+      r(leftAt(y) + 1, y, 5, 1, BODY);
+      r(60, y, 5, 1, BODY);
+      r(rightAt(y) - 5, y, 5, 1, BODY);
     }
     // Phản chiếu kính + tài xế + khách ghế sau
-    r(52, 17, 3, 2, '#d6eefb'); r(33, 17, 3, 2, '#d6eefb');
-    r(60, 17, 5, 5, '#f1c8a0'); r(59, 16, 7, 2, '#2a1c14'); r(60, 22, 5, 4, '#2e86c1');
-    r(36, 19, 4, 4, '#f1c8a0'); r(35, 18, 6, 2, '#2a1c14');
+    r(68, 22, 4, 3, '#d6eefb'); r(43, 22, 4, 3, '#d6eefb');
+    r(77, 22, 7, 7, '#f1c8a0'); r(76, 21, 9, 3, '#2a1c14'); r(77, 29, 7, 5, '#2e86c1');
+    r(47, 25, 5, 5, '#f1c8a0'); r(46, 24, 7, 3, '#2a1c14');
     // Đèn mui "TAXI"
-    r(47, 8, 12, 5, DARK); r(48, 9, 10, 3, '#ffffff'); r(50, 9, 3, 3, '#e74c3c'); r(54, 9, 3, 3, '#e74c3c');
+    r(61, 10, 16, 7, DARK); r(62, 11, 14, 5, '#ffffff'); r(65, 12, 4, 4, '#e74c3c'); r(70, 12, 4, 4, '#e74c3c');
     // Thân xe
-    r(2, bodyTop - 1, 96, 17, DARK);
-    r(3, bodyTop, 94, 15, '#e4bd48');
-    r(3, bodyTop, 94, 2, '#f4d97a');
-    r(3, bodyTop + 9, 94, 6, '#c79a2c');
-    // Dải ca-rô taxi dọc thân
-    for (let x = 6; x < 92; x += 4) { r(x, bodyTop + 6, 2, 2, DARK); r(x + 2, bodyTop + 8, 2, 2, DARK); }
+    r(3, bodyTop - 1, 124, 22, DARK);
+    r(4, bodyTop, 122, 20, BODY);
+    r(4, bodyTop, 122, 3, '#f4d97a');
+    r(4, bodyTop + 12, 122, 8, '#c79a2c');
+    // Dải ca-rô taxi dọc thân (ô 2×2 xen kẽ)
+    for (let x = 8; x < 116; x += 4) { r(x, bodyTop + 8, 2, 2, DARK); r(x + 2, bodyTop + 10, 2, 2, DARK); }
     // Cửa, tay nắm, gương
-    r(47, bodyTop + 1, 1, 12, '#a07a1c'); r(25, bodyTop + 1, 1, 12, '#a07a1c'); r(70, bodyTop + 1, 1, 12, '#a07a1c');
-    r(41, bodyTop + 3, 4, 1, '#7a5e14'); r(64, bodyTop + 3, 4, 1, '#7a5e14');
-    r(70, bodyTop - 3, 4, 3, DARK);
+    r(33, bodyTop + 1, 1, 16, '#a07a1c'); r(61, bodyTop + 1, 1, 16, '#a07a1c'); r(91, bodyTop + 1, 1, 16, '#a07a1c');
+    r(53, bodyTop + 4, 5, 2, '#7a5e14'); r(83, bodyTop + 4, 5, 2, '#7a5e14');
+    r(92, bodyTop - 4, 5, 4, DARK);
     // Đèn trước/sau, lưới tản nhiệt, cản
-    r(93, bodyTop + 2, 5, 4, '#fff3b0'); r(96, bodyTop + 3, 2, 2, '#ffffff');
-    r(2, bodyTop + 2, 3, 5, '#e74c3c'); r(2, bodyTop + 2, 1, 5, '#ff8a80');
-    r(94, bodyTop + 7, 4, 4, '#2b2f33'); r(95, bodyTop + 8, 2, 1, '#5d6368');
-    r(0, bodyTop + 10, 7, 5, '#4a4540'); r(92, bodyTop + 10, 8, 5, '#4a4540'); r(92, bodyTop + 10, 8, 1, '#9aa0a6');
+    r(121, bodyTop + 3, 6, 5, '#fff3b0'); r(125, bodyTop + 4, 2, 3, '#ffffff');
+    r(3, bodyTop + 3, 4, 6, '#e74c3c'); r(3, bodyTop + 3, 1, 6, '#ff8a80');
+    r(122, bodyTop + 9, 5, 5, '#2b2f33'); r(123, bodyTop + 11, 3, 1, '#5d6368');
+    r(0, bodyTop + 13, 9, 6, '#4a4540'); r(120, bodyTop + 13, 10, 6, '#4a4540'); r(120, bodyTop + 13, 10, 1, '#9aa0a6');
     // Bánh xe (có hốc bánh tối)
-    for (const cx of [24, 77]) { r(cx - 9, bodyTop + 6, 18, 8, '#26190e'); drawWheel(r, cx, 40, 7); }
-    // Phóng 1,3 lần (130×65) cho cùng tỉ lệ với xe máy có người lái (cao 65 px) và nhỏ hơn xe khách (148 px).
-    const out = surface(CAR_W, CAR_H);
-    out.ctx.imageSmoothingEnabled = false;
-    out.ctx.drawImage(canvas, 0, 0, 100, 50, 0, 0, CAR_W, CAR_H);
-    return out.canvas;
+    for (const cx of [31, 100]) { r(cx - 12, bodyTop + 8, 24, 10, '#26190e'); drawWheel(r, cx, 52, 9); }
+    return canvas;
   }
 
   if (key.startsWith('vehicle_bicycle_rider_')) {

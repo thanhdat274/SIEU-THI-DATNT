@@ -60,7 +60,6 @@ export const STREET_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
   // Trước quán nước (cửa ở x=30..31): xe máy đỗ gần cửa, khách không phải đi bộ từ đầu hẻm.
   { x: 880, y: 12 * 32 + 10 },
   { x: 944, y: 12 * 32 + 10 },
-  { x: 1006, y: 12 * 32 + 10 },
 ];
 /**
  * Mặt cắt lòng đường (chỉ hình ảnh, không đổi va chạm hay đường đi): vỉa hè (y 11-12) → bó vỉa + rãnh thoát nước →
@@ -75,12 +74,12 @@ export const CROSSWALK = { tileX: 1, widthTiles: 2, firstRow: 13, rows: 2 } as c
 
 /**
  * Chỗ đỗ ô tô của khách trên vỉa hè phía đông (rộng hơn chỗ xe máy, chân xe tại y px), giữa các cột đèn x = 15, 21 và
- * mép bản đồ; ô tô neo giữa-đáy tại điểm này (sprite 100x50). Không chặn cửa tiệm, ô đỗ xe máy hay vạch qua đường.
+ * mép bản đồ; ô tô neo giữa-đáy tại điểm này (sprite 130x65, nửa dài 65 px: cách cột đèn > 73 px, cách chỗ xe máy > 96 px, nằm trong bản đồ). Không chặn cửa tiệm, ô đỗ xe máy hay vạch qua đường.
  */
 export const CAR_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
-  { x: 560, y: 12 * 32 + 14 },
-  { x: 750, y: 12 * 32 + 14 },
-  { x: 34 * 32, y: 12 * 32 + 14 },
+  { x: 592, y: 12 * 32 + 14 },
+  { x: 772, y: 12 * 32 + 14 },
+  { x: 1060, y: 12 * 32 + 14 },
 ];
 
 export const WAREHOUSE_BOUNDS = {left:STORE_BOUNDS.left,right:STORE_BOUNDS.right,top:STORE_BOUNDS.top-6,bottom:STORE_BOUNDS.top};
