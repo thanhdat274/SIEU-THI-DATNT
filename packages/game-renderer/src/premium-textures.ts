@@ -1297,7 +1297,11 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
     R(2, 34, 3, 7, '#e74c3c'); R(2, 34, 1, 7, '#ff8a80');
     R(142, 44, 6, 4, '#9aa0a6'); R(142, 44, 6, 1, '#d0d4d8'); R(0, 44, 6, 4, '#4a4540');
     wheelWell(32); wheelWell(114);
-    return canvas;
+    // Phóng 1,3 lần (192×91) để xe khách ~8 m dài hơn hẳn taxi 130×65 (tỉ lệ ~1,5 lần) và cao hơn rõ rệt.
+    const BUS_W = 192, BUS_H = 91;
+    const scaled = surface(BUS_W, BUS_H);
+    scaled.ctx.drawImage(canvas, 0, 0, W, 70, 0, 0, BUS_W, BUS_H);
+    return scaled.canvas;
   }
 
   return null;
