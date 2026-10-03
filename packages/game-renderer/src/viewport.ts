@@ -1345,15 +1345,16 @@ export class PixiGameViewport {
     // Đèn tín hiệu và người đi bộ qua vạch trước cửa tiệm (ambient, không phải khách)
     this.trafficSignalHeads?.update(this.simulation.getTrafficSignal());
     const activePedestrians = new Set<string>();
+    const getPedTexture = (key: string) => this.textures.getTexture(key);
     for (const ped of this.simulation.getStreetPedestrians()) {
       activePedestrians.add(ped.id);
       let sprite = this.pedestrianSprites.get(ped.id);
       if (!sprite) {
-        sprite = createPedestrianSprite(ped.variant, ped.activity);
+        sprite = createPedestrianSprite(ped.variant, ped.activity, getPedTexture);
         this.entitiesLayer.addChild(sprite);
         this.pedestrianSprites.set(ped.id, sprite);
       }
-      placePedestrian(sprite, ped, this.animTimer);
+      placePedestrian(sprite, ped, this.animTimer, getPedTexture, reducedMotion);
       const pedDist = Math.min(ped.position.x, MAP_WIDTH * TILE_SIZE - ped.position.x);
       if (pedDist < 48) {
         sprite.alpha = Math.max(0, Math.min(1, pedDist / 48));

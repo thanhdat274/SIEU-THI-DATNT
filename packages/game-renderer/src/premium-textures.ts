@@ -415,6 +415,19 @@ function character(key:string):HTMLCanvasElement{
  rect(8,43,16,6,'#26190E35');
  rect(10,42,12,8,'#26190E1F');
 
+ const shirt=npc?[C.teal,'#7B5E99','#D48B38'][variant%3]:'#BA3B28';
+ const shirtLight=npc?['#4E9B8E','#9B7BB8','#EDB15E'][variant%3]:'#D95A45';
+ const shirtDark=npc?['#1E544A','#4C3563','#8C5317'][variant%3]:'#7A1F12';
+ const side=dir==='left'||dir==='right';
+ if(side){
+   // Dáng nghiêng khi đi ngang: thân hẹp, một tay ở giữa, hai chân bước dọc theo hướng đi (vẽ hướng phải, hướng trái lật gương).
+   const sr=(x:number,y:number,w:number,h:number,c:string)=>rect(dir==='left'?32-x-w:x,y,w,h,c);
+   const sw=kind==='walk'?[0,3,0,-3][frame%4]:0;
+   sr(11-sw,32,5,11,'#251D19'); sr(12-sw,33,3,9,'#3B4E4E'); sr(11-sw,42,7,3,'#462719'); sr(11-sw,42,7,1,'#73442D');
+   sr(16+sw,32,5,11,'#251D19'); sr(17+sw,33,3,9,'#3B4E4E'); sr(16+sw,42,7,3,'#462719'); sr(16+sw,42,7,1,'#73442D');
+   sr(10,21-breathe,12,13,'#281810'); sr(11,22-breathe,10,11,shirt); sr(11,22-breathe,2,11,shirtLight); sr(19,22-breathe,2,11,shirtDark);
+   sr(13-sw,23,4,11,'#281810'); sr(14-sw,24,2,9,'#E8B684');
+ } else {
  // Legs & Trousers
  rect(10,32,5,11-stride,'#251D19'); // Outline left leg
  rect(18,32,5,11+stride,'#251D19'); // Outline right leg
@@ -428,9 +441,6 @@ function character(key:string):HTMLCanvasElement{
  rect(9,42-stride,7,1,'#73442D');   // Boot specular highlight
 
  // Torso / Shirt
- const shirt=npc?[C.teal,'#7B5E99','#D48B38'][variant%3]:'#BA3B28';
- const shirtLight=npc?['#4E9B8E','#9B7BB8','#EDB15E'][variant%3]:'#D95A45';
- const shirtDark=npc?['#1E544A','#4C3563','#8C5317'][variant%3]:'#7A1F12';
 
  rect(8,21-breathe,16,13,'#281810'); // Dark outline
  rect(9,22-breathe,14,11,shirt);     // Main shirt
@@ -444,6 +454,7 @@ function character(key:string):HTMLCanvasElement{
  rect(7,24+stride/2,1,9,'#FADBB5');  // Hand highlight
  rect(24,23-stride/2,3,11,'#281810');
  rect(24,24-stride/2,2,9,'#E8B684');
+ }
 
  // Head & Face
  rect(9,3-breathe,14,20,'#2A180E');  // Head outline
