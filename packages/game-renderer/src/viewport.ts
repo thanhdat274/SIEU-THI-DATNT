@@ -23,6 +23,31 @@ import { buildTrafficSignalHeads, createPedestrianSprite, placePedestrian, type 
 /** Điểm gốc bóng so với góc trên-trái sprite cây 80x100 (px): chân thân cây, để bóng đổ từ mặt đất chứ không từ tán. */
 const TREE_SHADOW_ORIGIN_PX = { x: 40, y: 90 } as const;
 
+/**
+ * Bồn cây xây gạch bao quanh gốc, vừa khít ô gốc (32x32, đúng vùng va chạm của cây) để người chơi thấy rõ vì sao ô đó
+ * không đi qua được. Chỉ hình ảnh; (x, y) là góc trên-trái ô, tính bằng px thế giới. Thân cây vẽ đè lên trên (zIndex cao hơn).
+ */
+function buildTreePlanter(x: number, y: number): Graphics {
+  const g = new Graphics();
+  g.eventMode = 'none';
+  g.position.set(x, y);
+  g.zIndex = y + 30;
+  g.rect(1, 29, 31, 3).fill({ color: 0x000000, alpha: 0.2 });
+  // Viền gạch sáng bao quanh (mặt trên của thành bồn) rồi đất lót bên trong
+  g.rect(0, 0, 32, 30).fill(0x6a655b);
+  g.rect(1, 1, 30, 28).fill(0xb4ad9d);
+  g.rect(4, 4, 24, 21).fill(0x3a2616);
+  g.rect(5, 5, 22, 19).fill(0x72502f);
+  for (const [dx, dy] of [[6, 7], [11, 17], [21, 8], [22, 17], [8, 12], [19, 12]] as const) g.rect(dx, dy, 3, 2).fill(0x4b311c);
+  for (const [dx, dy] of [[7, 19], [14, 8], [18, 19], [23, 11]] as const) g.rect(dx, dy, 2, 3).fill(0x5fa14a);
+  // Mặt trước bồn: gạch xám có viền sáng ở mép trên và mạch vữa
+  g.rect(0, 25, 32, 7).fill(0x8f897c);
+  g.rect(0, 25, 32, 1).fill(0xd2ccbd);
+  g.rect(0, 31, 32, 1).fill(0x57534b);
+  for (const jx of [8, 16, 24]) g.rect(jx, 26, 1, 5).fill(0x6e6a60);
+  return g;
+}
+
 /** Đáy thùng so với chân nhân viên: thấp hơn đầu/vai để không che mặt. */
 const LOGISTICS_BOX_CARRY_Y = -12;
 
@@ -741,7 +766,7 @@ export class PixiGameViewport {
 
     // Sidewalk Produce Crates - placed naturally along the sidewalk
     const crates = new Sprite(this.textures.getTexture('tile_crates'));
-    crates.position.set(5 * TILE_SIZE, 11 * TILE_SIZE + 4);
+    crates.position.set(6 * TILE_SIZE, 11 * TILE_SIZE + 4); // ô 5 là bồn cây nên thùng hàng dời sang ô 6
     crates.zIndex = crates.y + 32;
     this.entitiesLayer.addChild(crates);
 
@@ -749,8 +774,9 @@ export class PixiGameViewport {
     this.trafficSignalHeads = buildTrafficSignalHeads(this.entitiesLayer);
     for (const prop of TREE_PROPS) {
       const tree = new Sprite(this.textures.getTexture('tile_tree'));
-      tree.position.set((prop.tileX + TREE_SPRITE_OFFSET.tilesX) * TILE_SIZE, (prop.tileY + TREE_SPRITE_OFFSET.tilesY) * TILE_SIZE + TREE_SPRITE_OFFSET.pixelsY);
+      tree.position.set((prop.tileX + TREE_SPRITE_OFFSET.tilesX) * TILE_SIZE + TREE_SPRITE_OFFSET.pixelsX, (prop.tileY + TREE_SPRITE_OFFSET.tilesY) * TILE_SIZE + TREE_SPRITE_OFFSET.pixelsY);
       tree.zIndex = tree.y + 100;
+      this.entitiesLayer.addChild(buildTreePlanter(prop.tileX * TILE_SIZE, prop.tileY * TILE_SIZE));
       this.entitiesLayer.addChild(tree);
       const shadow = new Graphics();
       shadow.eventMode = 'none';
@@ -1398,7 +1424,7 @@ export class PixiGameViewport {
       g.clear();
       g.visible = shape.visible;
       if (!shape.visible) continue;
-      const baseX = (entry.prop.tileX + TREE_SPRITE_OFFSET.tilesX) * TILE_SIZE + TREE_SHADOW_ORIGIN_PX.x;
+      const baseX = (entry.prop.tileX + TREE_SPRITE_OFFSET.tilesX) * TILE_SIZE + TREE_SPRITE_OFFSET.pixelsX + TREE_SHADOW_ORIGIN_PX.x;
       const baseY = (entry.prop.tileY + TREE_SPRITE_OFFSET.tilesY) * TILE_SIZE + TREE_SPRITE_OFFSET.pixelsY + TREE_SHADOW_ORIGIN_PX.y;
       g.position.set(baseX + shape.offsetX * TILE_SIZE, baseY + shape.offsetY * TILE_SIZE);
       g.rotation = shape.angle;

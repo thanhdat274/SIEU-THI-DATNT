@@ -47,8 +47,8 @@ export const TREE_PROPS: ReadonlyArray<TreeProp> = [
   { id: 'east_tree_bush', tileX: 28, tileY: 11, height: 1.5, crownRadius: 1.0 },   // Trước quán nước, sát phía tây cửa (x=30..31) nhưng cách cửa 1 ô; tách khỏi cây ở mép đông (trước đây ở x=33 dính cây x=34)
   { id: 'east_tree_cluster', tileX: 34, tileY: 11, height: 2.0, crownRadius: 0.9 }, // Mép đông bản đồ
 ];
-/** Vị trí góc trên-trái của sprite cây so với ô gốc (đơn vị ô) và độ dịch dọc bằng pixel; giữ đúng vị trí vẽ trước đây. */
-export const TREE_SPRITE_OFFSET = { tilesX: -1, tilesY: -2, pixelsY: -4 } as const;
+/** Vị trí góc trên-trái của sprite cây so với ô gốc (đơn vị ô) và độ dịch bằng pixel. `pixelsX` = 8 đặt thân cây (sprite 80 px, thân tâm ở x=40) đúng giữa ô gốc để bồn cây vừa khít ô có va chạm (`TREE_PLANTER`). */
+export const TREE_SPRITE_OFFSET = { tilesX: -1, tilesY: -2, pixelsX: 8, pixelsY: -4 } as const;
 
 /** Điểm đỗ xe máy lề đường trước tiệm (trên vỉa hè sát lòng đường, không chặn cửa tiệm hay cột đèn). */
 export const STREET_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
