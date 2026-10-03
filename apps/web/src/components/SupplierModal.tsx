@@ -126,13 +126,19 @@ export const SupplierModal: React.FC<Props> = ({
 
   const filteredProducts = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    return ALL_PRODUCTS.filter((product) => {
+    const matched = ALL_PRODUCTS.filter((product) => {
       const matchCat = category === 'all' || product.category === category;
       const matchSearch =
         !q || product.name.toLowerCase().includes(q) || product.id.toLowerCase().includes(q);
       return matchCat && matchSearch;
     });
-  }, [category, searchTerm]);
+    // Đã mở khóa lên trước (giữ thứ tự gốc); chưa mở khóa xuống sau, cấp thấp hơn đứng trước.
+    const unlocked = matched.filter((product) => product.unlockLevel <= player.level);
+    const locked = matched
+      .filter((product) => product.unlockLevel > player.level)
+      .sort((a, b) => a.unlockLevel - b.unlockLevel);
+    return [...unlocked, ...locked];
+  }, [category, searchTerm, player.level]);
 
   // ===== GIỎ ĐẶT HÀNG: sản phẩm có số lượng > 0 =====
   const cartItems = useMemo(() => {
