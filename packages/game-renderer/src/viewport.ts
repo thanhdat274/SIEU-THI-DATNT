@@ -1727,7 +1727,8 @@ export class PixiGameViewport {
       }
       this.logisticsWorkerContainer.position.set(Math.round(w.x), Math.round(w.y));
       // Đảm bảo nhân viên đứng ngoài cửa vẫn hiện phía trước sprite cửa chính.
-      this.logisticsWorkerContainer.zIndex = Math.max(w.y + 1, 346);
+      // Xe tải cao hơn người nên che vỉa hè phía sau; nhân viên bốc hàng luôn hiện phía trước thân xe.
+      this.logisticsWorkerContainer.zIndex = Math.max(w.y + 1, 346, ev.truckPosition.y + 3);
       if (this.logisticsBoxSprite) {
         this.logisticsBoxSprite.visible = w.carryingBox;
         if (w.carryingBox) {

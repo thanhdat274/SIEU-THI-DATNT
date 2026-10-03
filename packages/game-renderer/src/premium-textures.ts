@@ -725,329 +725,138 @@ function wallTexture(key:string):HTMLCanvasElement|null{
   return null;
 }
 
+/**
+ * Xe tải giao hàng (5 mẫu), vẽ pixel theo tỉ lệ xe tải nhỏ đô thị Đông Nam Á (kiểu Hyundai Porter/Isuzu QKR: cabin lật
+ * chắn bùn thấp, thùng dài ~2× cabin, cao ~1,6 lần người). Canvas 120×60 (container 132×60): cao gần 1,5 lần nhân vật
+ * (~40 px) và dài ~3 lần. Vẽ quay mặt sang phải rồi lật ngang khi hướng trái; neo giữa-đáy tại bánh xe (y=56).
+ */
+type TruckKind = 'refrigerated' | 'dry_goods' | 'beverage_sweets' | 'fresh_produce' | 'heavy_container';
+
 function logisticsTruckTexture(key: string): HTMLCanvasElement | null {
+  const match = /^truck_(refrigerated|dry_goods|beverage_sweets|fresh_produce|heavy_container)_(left|right)$/.exec(key);
+  if (!match) return null;
+  const kind = match[1] as TruckKind;
+  const isRight = match[2] === 'right';
+  const W = kind === 'heavy_container' ? 132 : 120;
+  const { canvas, ctx } = surface(W, 60);
+  if (!isRight) { ctx.translate(W, 0); ctx.scale(-1, 1); }
+  const r = (x: number, y: number, w: number, h: number, c: string) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+  const DARK = '#1a1815';
+  const cabColors: Record<TruckKind, { main: string; dark: string; light: string; shirt: string }> = {
+    refrigerated: { main: '#f2f5f7', dark: '#c3ccd3', light: '#ffffff', shirt: '#2e86c1' },
+    dry_goods: { main: '#c0392b', dark: '#962d22', light: '#e8604f', shirt: '#f4d03f' },
+    beverage_sweets: { main: '#e67e22', dark: '#b9631a', light: '#f5a05a', shirt: '#e91e63' },
+    fresh_produce: { main: '#2e8b57', dark: '#216540', light: '#52b27a', shirt: '#f7dc6f' },
+    heavy_container: { main: '#2c3e50', dark: '#1d2a37', light: '#4a6178', shirt: '#e67e22' },
+  };
+  const cab = cabColors[kind];
+  const cabX = W - 42;
+  const bx = 2;
+  const bw = cabX - 4;
 
-  // ==========================================
-  // HỆ THỐNG XE TẢI GIAO NHẬN HÀNG HÓA (STORE LOGISTICS TRUCKS)
-  // Thiết kế theo đúng 5 mẫu ảnh xe tải thực tế người dùng cung cấp
-  // ==========================================
+  // Bóng đổ gầm và khung xe
+  r(4, 54, W - 8, 5, '#26190e40');
+  r(8, 53, W - 16, 4, '#26190e25');
+  r(2, 44, W - 4, 5, DARK);
+  r(3, 45, W - 6, 1, '#4a4540');
 
-  // 1. XE TẢI ĐÔNG LẠNH BẢO ÔN (truck_refrigerated - Ảnh 1)
-  if (key.startsWith('truck_refrigerated_')) {
-    const isRight = key.endsWith('right');
-    const { canvas, ctx } = surface(86, 42);
-    const r = (x: number, y: number, w: number, h: number, col: string) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(isRight ? x : (86 - x - w), y, w, h);
-    };
-
-    // Bóng đổ gầm
-    r(6, 38, 74, 4, '#26190e40');
-    r(10, 37, 66, 5, '#26190e25');
-
-    // Bánh xe địa hình đỏ viền đen dày (theo ảnh 1)
-    const drawRedHubWheel = (wx: number, wy: number) => {
-      r(wx + 4, wy + 0, 6, 14, '#1a1815');
-      r(wx + 2, wy + 1, 10, 12, '#1a1815');
-      r(wx + 1, wy + 2, 12, 10, '#1a1815');
-      r(wx + 0, wy + 4, 14, 6, '#1a1815');
-      r(wx + 3, wy + 3, 8, 8, '#5d6d7e');
-      r(wx + 4, wy + 4, 6, 6, '#e74c3c');
-      r(wx + 5, wy + 5, 4, 4, '#f1948a');
-      r(wx + 6, wy + 6, 2, 2, '#1a1815');
-    };
-    drawRedHubWheel(14, 27);
-    drawRedHubWheel(60, 27);
-    r(8, 32, 70, 4, '#1a1815');
-
-    // Thùng đông lạnh màu xanh dương (Refrigerated Blue Cargo Box)
-    r(6, 10, 48, 24, '#1a1815');
-    r(7, 11, 46, 22, '#2471a3');
-    r(7, 11, 46, 3, '#2980b9');
-    // Dải viền đỏ góc sau
-    r(6, 10, 4, 24, '#c0392b');
-    r(7, 11, 2, 22, '#e74c3c');
-    // Dải sọc vàng viền đỏ ngang thân xe (theo ảnh 1)
-    r(8, 23, 44, 4, '#f1c40f');
-    r(8, 23, 44, 1, '#f9e79f');
-    r(48, 23, 4, 4, '#c0392b');
-    // Bảng hiệu / họa tiết trang trí trên thùng lạnh
-    r(14, 14, 30, 7, '#1b4f72');
-    r(15, 15, 28, 5, '#5dade2');
-    r(20, 16, 8, 3, '#ffffff');
-
-    // Mui mào máy lạnh Thermoking nóc thùng
-    r(12, 7, 34, 4, '#1a1815');
-    r(13, 8, 32, 2, '#2980b9');
-    r(15, 8, 10, 1, '#f1c40f');
-
-    // Cabin xe tải màu xanh dương đậm
-    r(53, 12, 27, 22, '#1a1815');
-    r(54, 13, 25, 20, '#2471a3');
-    r(54, 13, 14, 3, '#f1c40f'); // Mui vàng cabin
-    r(54, 14, 12, 1, '#f9e79f');
-
-    // Kính chắn gió & cửa sổ lái
-    r(56, 17, 9, 9, '#1a1815');
-    r(57, 18, 7, 7, '#a2d9ce');
-    r(58, 18, 1, 6, '#ffffff');
-    r(67, 17, 8, 9, '#1a1815');
-    r(68, 18, 6, 7, '#a2d9ce');
-    r(69, 18, 2, 6, '#ffffff');
-
-    // Tay nắm cửa & gờ
-    r(57, 28, 4, 2, '#1a1815');
-
-    // Đèn pha trước hình chữ nhật nổi bật màu đỏ cam (theo ảnh 1)
-    r(77, 24, 4, 6, '#e74c3c');
-    r(78, 25, 2, 4, '#f1c40f');
-    r(81, 23, 5, 8, 'rgba(255, 241, 118, 0.45)');
-    r(6, 21, 2, 7, '#c0392b');
-
-    return canvas;
-  }
-
-  // 2. XE TẢI THÙNG KÍN HÀNG KHÔ (truck_dry_goods - Ảnh 2)
-  if (key.startsWith('truck_dry_goods_')) {
-    const isRight = key.endsWith('right');
-    const { canvas, ctx } = surface(86, 42);
-    const r = (x: number, y: number, w: number, h: number, col: string) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(isRight ? x : (86 - x - w), y, w, h);
-    };
-
-    // Bóng đổ gầm
-    r(6, 38, 74, 4, '#26190e40');
-    r(10, 37, 66, 5, '#26190e25');
-
-    // Bánh xe với mâm đĩa kim loại dày
-    const drawSilverWheel = (wx: number, wy: number) => {
-      r(wx + 4, wy + 0, 6, 14, '#1a1815');
-      r(wx + 2, wy + 1, 10, 12, '#1a1815');
-      r(wx + 1, wy + 2, 12, 10, '#1a1815');
-      r(wx + 0, wy + 4, 14, 6, '#1a1815');
-      r(wx + 3, wy + 3, 8, 8, '#7f8c8d');
-      r(wx + 4, wy + 4, 6, 6, '#bdc3c7');
-      r(wx + 5, wy + 5, 4, 4, '#ecf0f1');
-      r(wx + 6, wy + 6, 2, 2, '#1a1815');
-    };
-    drawSilverWheel(14, 27);
-    drawSilverWheel(60, 27);
-
-    // Thanh gầm sườn kim loại màu xanh lá cây đặc trưng (theo ảnh 2)
-    r(6, 32, 72, 4, '#1b4d2e');
-    r(7, 33, 70, 2, '#2ecc71');
-
-    // Thùng hàng đỏ gân ca-rô (Red Box Cargo)
-    r(6, 8, 38, 25, '#1a1815');
-    r(7, 9, 36, 23, '#c0392b');
-    r(7, 9, 36, 2, '#ffffff'); // Nóc thùng trắng
-    // Nan lưới gân dập nổi trên thùng đỏ
-    for (let gx = 12; gx <= 36; gx += 8) {
-      r(gx, 12, 2, 19, '#922b21');
+  // ---- Thùng hàng ----
+  const top = kind === 'heavy_container' ? 3 : 5;
+  const boxH = 44 - top;
+  if (kind === 'fresh_produce') {
+    // Thùng hở: sàn gỗ, thành ván, các thùng rau củ chồng hai tầng
+    r(bx - 1, 35, bw + 2, 9, DARK);
+    r(bx, 36, bw, 7, '#8a5a2f');
+    r(bx, 36, bw, 1, '#c89b5c');
+    const crateColors = ['#c89b5c', '#b98a4b'];
+    const produce = ['#e67e22', '#e74c3c', '#7bc043', '#f4d03f', '#8e44ad'];
+    for (let row = 0; row < 2; row++) {
+      const crates = Math.floor((bw - 4) / 17);
+      for (let i = 0; i < crates; i++) {
+        const cx = bx + 2 + i * 17;
+        const cy = 26 - row * 11;
+        r(cx - 1, cy - 1, 17, 12, DARK);
+        r(cx, cy, 15, 10, crateColors[(i + row) % 2]);
+        r(cx, cy + 3, 15, 1, '#8a5a2f');
+        r(cx, cy + 7, 15, 1, '#8a5a2f');
+        const p = produce[(i * 2 + row) % produce.length];
+        r(cx + 1, cy - 2, 4, 3, p); r(cx + 6, cy - 3, 4, 4, p); r(cx + 11, cy - 2, 3, 3, p);
+        if (row === 1) { r(cx + 2, cy - 4, 3, 2, '#2e8b57'); r(cx + 8, cy - 5, 3, 2, '#2e8b57'); }
+      }
     }
-    for (let gy = 15; gy <= 28; gy += 6) {
-      r(8, gy, 34, 2, '#922b21');
+    // Cọc và thanh chắn thành thùng
+    for (const px of [bx, bx + Math.floor(bw / 2), bx + bw - 2]) { r(px, 12, 2, 24, DARK); r(px, 13, 1, 22, '#8a5a2f'); }
+    r(bx, 28, bw, 2, DARK); r(bx, 28, bw, 1, '#a97a49');
+  } else {
+    r(bx - 1, top - 1, bw + 2, boxH + 2, DARK);
+    if (kind === 'refrigerated') {
+      r(bx, top, bw, boxH, '#eef2f5');
+      r(bx, top, bw, 2, '#ffffff');
+      r(bx, 40, bw, 4, '#c5ced6');
+      r(bx, 26, bw, 5, '#2e86c1'); r(bx, 26, bw, 1, '#5dade2');
+      // Hoa tuyết xanh + dàn lạnh trên nóc sát cabin
+      const sx = bx + 26, sy = 15;
+      r(sx - 6, sy, 13, 1, '#2e86c1'); r(sx, sy - 6, 1, 13, '#2e86c1');
+      r(sx - 4, sy - 4, 1, 1, '#2e86c1'); r(sx + 4, sy - 4, 1, 1, '#2e86c1'); r(sx - 4, sy + 4, 1, 1, '#2e86c1'); r(sx + 4, sy + 4, 1, 1, '#2e86c1');
+      r(bx + bw - 16, top - 4, 14, 5, DARK); r(bx + bw - 15, top - 3, 12, 3, '#9aa5ad');
+      for (let i = 0; i < 4; i++) r(bx + bw - 13 + i * 3, top - 3, 1, 3, '#5d6d7e');
+    } else if (kind === 'dry_goods') {
+      r(bx, top, bw, boxH, '#f4e9d2');
+      r(bx, top, bw, 2, '#fff8e8');
+      for (let x = bx + 5; x < bx + bw - 2; x += 6) r(x, top + 2, 1, boxH - 4, '#e3d5b8');
+      r(bx, 33, bw, 7, '#c0392b'); r(bx, 33, bw, 1, '#e8604f');
+      // Biểu tượng thùng carton có băng keo
+      r(bx + 22, 12, 22, 16, DARK); r(bx + 23, 13, 20, 14, '#c89b5c'); r(bx + 23, 13, 20, 3, '#dcb27a');
+      r(bx + 31, 13, 4, 14, '#f4e9d2');
+    } else if (kind === 'beverage_sweets') {
+      const stripes = ['#e91e63', '#9c27b0', '#2196f3', '#4caf50', '#ffeb3b', '#ff9800'];
+      stripes.forEach((c, i) => r(bx, top + i * 6, bw, 6, c));
+      r(bx, top + 36, bw, 3, '#ffffff');
+      // Nhãn kẹo/chai nước
+      r(bx + 22, 14, 26, 15, DARK); r(bx + 23, 15, 24, 13, '#ffffff');
+      r(bx + 26, 17, 5, 9, '#e91e63'); r(bx + 33, 19, 5, 7, '#2196f3'); r(bx + 40, 17, 4, 9, '#ff9800');
+    } else {
+      // container 20ft xanh dương có gân dọc
+      r(bx, top, bw, boxH, '#1b5e8e');
+      for (let x = bx + 3; x < bx + bw - 2; x += 5) { r(x, top + 3, 2, boxH - 6, '#14496e'); r(x, top + 3, 1, boxH - 6, '#2a7ab0'); }
+      r(bx, top, bw, 3, '#0f3a57'); r(bx, top + boxH - 3, bw, 3, '#0f3a57');
+      for (const cx of [bx, bx + bw - 4]) { r(cx, top, 4, 4, '#e67e22'); r(cx, top + boxH - 4, 4, 4, '#e67e22'); }
+      r(bx + 18, 14, 30, 10, '#f4f6f7'); r(bx + 20, 16, 12, 2, '#1b5e8e'); r(bx + 20, 20, 24, 2, '#e67e22');
     }
-
-    // Cabin đỏ xe tải
-    r(43, 11, 35, 22, '#1a1815');
-    r(44, 12, 33, 20, '#e74c3c');
-    r(44, 12, 20, 2, '#ecf0f1'); // Nóc cabin
-
-    // Kính chắn gió buồng lái rộng vát nghiêng
-    r(47, 14, 20, 11, '#1a1815');
-    r(48, 15, 18, 9, '#7fb3d5');
-    r(50, 15, 4, 9, '#aed6f1');
-    r(52, 16, 2, 7, '#ffffff');
-
-    // Tay nắm cửa mạ vàng
-    r(48, 26, 5, 2, '#f39c12');
-
-    // Đèn pha trước hình khối vàng vuông vức (theo ảnh 2)
-    r(75, 23, 4, 5, '#f1c40f');
-    r(76, 24, 2, 3, '#ffffff');
-    r(78, 22, 5, 7, 'rgba(255, 241, 118, 0.45)');
-    r(6, 20, 2, 6, '#922b21');
-
-    return canvas;
   }
+  // Đèn hậu + cản sau
+  r(1, 36, 3, 6, '#e74c3c'); r(1, 36, 1, 6, '#ff8a80');
+  r(2, 46, 7, 3, '#7f8c8d');
 
-  // 3. XE TẢI BÁNH KẸO & NƯỚC GIẢI KHÁT SỌC MÀU (truck_beverage_sweets - Ảnh 3)
-  if (key.startsWith('truck_beverage_sweets_')) {
-    const isRight = key.endsWith('right');
-    const { canvas, ctx } = surface(86, 42);
-    const r = (x: number, y: number, w: number, h: number, col: string) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(isRight ? x : (86 - x - w), y, w, h);
-    };
+  // ---- Cabin ----
+  r(cabX - 1, 14, 43, 31, DARK);
+  r(cabX, 15, 41, 29, cab.main);
+  r(cabX, 15, 41, 2, cab.light);
+  r(cabX, 36, 41, 8, cab.dark);
+  if (kind === 'refrigerated') r(cabX, 33, 41, 3, '#2e86c1');
+  // Kính chắn gió (phía trước, bên phải) + cửa sổ bên có tài xế
+  r(cabX + 22, 18, 17, 13, DARK); r(cabX + 23, 19, 15, 11, '#8ec6e6'); r(cabX + 25, 20, 6, 2, '#d6eefb'); r(cabX + 35, 25, 3, 5, '#6aa8cc');
+  r(cabX + 3, 18, 17, 13, DARK); r(cabX + 4, 19, 15, 11, '#8ec6e6');
+  r(cabX + 9, 22, 6, 6, '#f1c8a0'); r(cabX + 8, 21, 8, 2, '#2a1c14'); r(cabX + 8, 28, 9, 2, cab.shirt);
+  // Cửa, tay nắm, gương
+  r(cabX + 20, 18, 1, 25, DARK); r(cabX + 16, 33, 4, 2, '#cfd3d6');
+  r(cabX + 21, 22, 2, 7, DARK); r(cabX + 22, 21, 3, 2, DARK);
+  // Mặt trước: lưới tản nhiệt, đèn pha, cản
+  r(cabX + 39, 24, 2, 18, cab.dark);
+  r(cabX + 36, 32, 5, 8, '#2b2f33'); r(cabX + 37, 33, 3, 1, '#5d6368'); r(cabX + 37, 36, 3, 1, '#5d6368');
+  r(cabX + 36, 28, 5, 4, '#ffe27a'); r(cabX + 38, 29, 2, 2, '#ffffff');
+  r(cabX + 34, 42, 8, 4, '#9aa0a6'); r(cabX + 34, 42, 8, 1, '#d0d4d8');
 
-    // Bóng đổ gầm
-    r(6, 38, 74, 4, '#26190e40');
-    r(10, 37, 66, 5, '#26190e25');
-
-    // Bánh xe hoạt hình dày
-    const drawChunkyWheel = (wx: number, wy: number) => {
-      r(wx + 3, wy + 0, 8, 14, '#1a1815');
-      r(wx + 1, wy + 2, 12, 10, '#1a1815');
-      r(wx + 4, wy + 4, 6, 6, '#e67e22');
-      r(wx + 5, wy + 5, 4, 4, '#f39c12');
-      r(wx + 6, wy + 6, 2, 2, '#1a1815');
-    };
-    drawChunkyWheel(12, 27);
-    drawChunkyWheel(58, 27);
-    r(8, 32, 70, 4, '#1a1815');
-
-    // Thùng xe vòm cong kẹo ngọt cầu vồng
-    r(40, 15, 38, 18, '#1a1815');
-    r(41, 16, 36, 16, '#e67e22');
-
-    // Dải sọc màu kẹo ngọt pastel trên thùng tròn (theo ảnh 3)
-    r(6, 15, 36, 18, '#1a1815');
-    r(7, 15, 34, 3, '#e91e63'); // Hồng
-    r(7, 18, 34, 3, '#9c27b0'); // Tím
-    r(7, 21, 34, 3, '#2196f3'); // Lam
-    r(7, 24, 34, 3, '#4caf50'); // Lục
-    r(7, 27, 34, 3, '#ffeb3b'); // Vàng
-    r(7, 30, 34, 3, '#ff9800'); // Cam
-
-    // Kính chắn gió buồng lái & Tài xế đội mũ vẫy tay
-    r(44, 18, 24, 8, '#1a1815');
-    r(45, 19, 22, 6, '#7fb3d5');
-    // Bác tài xế đội mũ đỏ
-    r(48, 20, 6, 5, '#f5cba7');
-    r(47, 19, 8, 2, '#e74c3c'); // Nón đỏ
-    r(58, 19, 3, 4, '#f5cba7'); // Tay vẫy chào
-
-    // Lưới tản nhiệt chrome và đèn pha tròn
-    r(76, 24, 4, 5, '#bdc3c7');
-    r(77, 25, 2, 3, '#ecf0f1');
-    r(72, 28, 6, 4, '#bdc3c7');
-    r(78, 24, 5, 6, 'rgba(255, 241, 118, 0.45)');
-
-    return canvas;
-  }
-
-  // 4. XE BÁN TẢI / NÔNG SẢN RAU CỦ QUẢ (truck_fresh_produce - Ảnh 4)
-  if (key.startsWith('truck_fresh_produce_')) {
-    const isRight = key.endsWith('right');
-    const { canvas, ctx } = surface(86, 42);
-    const r = (x: number, y: number, w: number, h: number, col: string) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(isRight ? x : (86 - x - w), y, w, h);
-    };
-
-    // Bóng đổ gầm
-    r(6, 38, 74, 4, '#26190e40');
-    r(10, 37, 66, 5, '#26190e25');
-
-    // Bánh xe cổ điển
-    const drawClassicWheel = (wx: number, wy: number) => {
-      r(wx + 4, wy + 0, 6, 14, '#1a1815');
-      r(wx + 2, wy + 1, 10, 12, '#1a1815');
-      r(wx + 0, wy + 4, 14, 6, '#1a1815');
-      r(wx + 4, wy + 4, 6, 6, '#935116');
-      r(wx + 5, wy + 5, 4, 4, '#f5b041');
-      r(wx + 6, wy + 6, 2, 2, '#1a1815');
-    };
-    drawClassicWheel(14, 27);
-    drawClassicWheel(58, 27);
-    r(8, 32, 68, 4, '#1a1815');
-
-    // Thùng gỗ & Mái hiên gỗ nông sản (theo ảnh 4)
-    r(6, 8, 42, 25, '#1a1815');
-    r(7, 9, 40, 6, '#ba4a00'); // Mái ngói/bạt che gỗ
-    r(8, 9, 38, 2, '#e59866');
-    r(7, 16, 40, 17, '#52be80'); // Vách thùng xanh ngọc
-
-    // Khung cửa sổ bán hàng trên thùng xe
-    r(12, 17, 30, 9, '#1a1815');
-    r(13, 18, 28, 7, '#d5f5e3');
-    // Các sọt hoa quả/rau xanh bên trong
-    r(15, 20, 6, 4, '#e74c3c'); // Cà chua
-    r(23, 20, 6, 4, '#27ae60'); // Dưa leo/rau
-    r(31, 20, 6, 4, '#f39c12'); // Cam/xoài
-
-    // Biểu tượng bông hoa / nông sản tươi trên mui xe
-    r(22, 10, 10, 5, '#ffffff');
-    r(24, 10, 6, 5, '#e91e63');
-    r(26, 12, 2, 2, '#f1c40f');
-
-    // Cabin xanh ngọc nhạt
-    r(48, 14, 30, 19, '#1a1815');
-    r(49, 15, 28, 17, '#52be80');
-    r(50, 15, 26, 2, '#a9dfbf');
-
-    // Kính chắn gió cabin
-    r(53, 17, 18, 8, '#1a1815');
-    r(54, 18, 16, 6, '#a2d9ce');
-    r(56, 18, 3, 5, '#ffffff');
-
-    // Đèn pha trước tròn
-    r(75, 24, 4, 5, '#f1c40f');
-    r(76, 25, 2, 3, '#ffffff');
-    r(78, 23, 5, 7, 'rgba(255, 241, 118, 0.45)');
-
-    return canvas;
-  }
-
-  // 5. XE CONTAINER NẶNG GIAO SỈ & ĐƠN TIỆC (truck_heavy_container - Ảnh 5)
-  if (key.startsWith('truck_heavy_container_')) {
-    const isRight = key.endsWith('right');
-    const { canvas, ctx } = surface(92, 44);
-    const r = (x: number, y: number, w: number, h: number, col: string) => {
-      ctx.fillStyle = col;
-      ctx.fillRect(isRight ? x : (92 - x - w), y, w, h);
-    };
-
-    // Bóng đổ gầm xe lớn
-    r(6, 40, 80, 4, '#26190e40');
-    r(10, 39, 72, 5, '#26190e25');
-
-    // Bánh xe tải nặng (Heavy wheels)
-    const drawHeavyWheel = (wx: number, wy: number) => {
-      r(wx + 4, wy + 0, 6, 14, '#1a1815');
-      r(wx + 2, wy + 1, 10, 12, '#1a1815');
-      r(wx + 0, wy + 4, 14, 6, '#1a1815');
-      r(wx + 3, wy + 3, 8, 8, '#5d6d7e');
-      r(wx + 4, wy + 4, 6, 6, '#7f8c8d');
-      r(wx + 5, wy + 5, 4, 4, '#bdc3c7');
-    };
-    drawHeavyWheel(14, 29);
-    drawHeavyWheel(28, 29); // Cụm bánh kép phía sau
-    drawHeavyWheel(66, 29); // Bánh trước
-    r(8, 34, 76, 4, '#1a1815');
-
-    // Thùng container màu xanh dương đậm viền xanh lá (theo ảnh 5)
-    r(6, 8, 52, 27, '#1a1815');
-    r(7, 9, 50, 25, '#1b4f72');
-    r(7, 9, 50, 2, '#2874a6');
-    r(7, 24, 50, 2, '#2ecc71'); // Dải kẻ xanh lá cây ngang thùng container
-
-    // Cabin xe tải màu xanh lá cây đậm (theo ảnh 5)
-    r(57, 12, 26, 23, '#1a1815');
-    r(58, 13, 24, 21, '#27ae60');
-    r(58, 13, 24, 2, '#2ecc71');
-
-    // Cửa kính chắn gió lớn
-    r(60, 15, 21, 9, '#1a1815');
-    r(61, 16, 19, 7, '#a2d9ce');
-    r(64, 16, 3, 6, '#ffffff');
-
-    // Cản va trước kim loại lớn màu xám
-    r(76, 28, 6, 6, '#1a1815');
-    r(77, 29, 5, 4, '#bdc3c7');
-    r(79, 29, 2, 2, '#ecf0f1');
-
-    // Đèn pha trước
-    r(77, 24, 4, 4, '#f1c40f');
-    r(78, 25, 2, 2, '#ffffff');
-    r(81, 23, 6, 7, 'rgba(255, 241, 118, 0.45)');
-
-    return canvas;
-  }
-
-  return null;
+  // ---- Bánh xe ----
+  const wheel = (cx: number, heavy = false) => {
+    r(cx - 10, 41, 20, 3, DARK);
+    r(cx - 7, 42, 14, 15, DARK); r(cx - 9, 44, 18, 11, DARK);
+    r(cx - 6, 45, 12, 9, '#2d2a27');
+    r(cx - 4, 46, 8, 7, heavy ? '#7f8c8d' : '#b8bec4'); r(cx - 2, 48, 4, 3, '#5d6368');
+  };
+  wheel(26); wheel(W - 18);
+  if (kind === 'heavy_container') wheel(44, true);
+  return canvas;
 }
 
 function logisticsPropTexture(key: string): HTMLCanvasElement | null {
