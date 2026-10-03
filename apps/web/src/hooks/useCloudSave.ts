@@ -103,5 +103,12 @@ export function useCloudSave({ enabled, exportLocal, importSave }: UseCloudSaveO
     }
   }, [auth, importSave, patch]);
 
-  return { cloud: state, refreshCloud: refresh, uploadCloud: upload, downloadCloud: download };
+  /** Đẩy cloud trước khi cập nhật app, chỉ khi đã đăng nhập và từng đồng bộ cloud (không tạo mới ngoài ý muốn). */
+  const uploadIfLinked = useCallback(async (): Promise<'skipped' | 'ok' | 'failed'> => {
+    const session = await auth();
+    if (!session || !readSeen(session.uid)) return 'skipped';
+    return (await upload()) ? 'ok' : 'failed';
+  }, [auth, upload]);
+
+  return { cloud: state, refreshCloud: refresh, uploadCloud: upload, downloadCloud: download, uploadIfLinked };
 }

@@ -6,7 +6,13 @@ const CACHE = `tap-hoa-${VERSION}`;
 const SHELL = ['./', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  // Không skipWaiting tự động: bản mới chờ tới khi người chơi bấm cập nhật (đã lưu tiến trình).
+  // Lần cài đầu (chưa có SW cũ) vẫn kích hoạt ngay.
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
+});
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') void self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
