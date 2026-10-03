@@ -230,6 +230,14 @@ export class WorldRuntime {
         success = this.simulation.setStaffShift(p.staffId, p.shift);
       } else if (p.type === 'assign_refill_job') {
         success = this.simulation.assignRefillJob(p.staffId, p.fixtureId).success;
+      } else if (p.type === 'open_branch') {
+        success = this.simulation.openBranch(p.storeType, p.name, p.branchId).success;
+      } else if (p.type === 'switch_branch') {
+        success = this.simulation.switchBranch(p.branchId).success;
+      } else if (p.type === 'transfer_stock') {
+        success = this.simulation.transferToBranch(p.branchId, p.items).success;
+      } else if (p.type === 'return_stock') {
+        success = this.simulation.returnFromBranch(p.branchId, p.items).success;
       } else if (p.type === 'set_tax_declaration') {
         success = this.simulation.setTaxUnderDeclare(p.underDeclare).success;
       } else if (p.type === 'store_status') {

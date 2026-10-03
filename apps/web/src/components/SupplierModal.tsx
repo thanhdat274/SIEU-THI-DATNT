@@ -38,7 +38,7 @@ export interface SupplierQuoteBoard {
   bulkTiers: Array<{ minQty: number; discount: number }>;
 }
 
-interface Props {
+export interface Props {
   coldCapacity?: number;
   player: PlayerData;
   pendingOrders: SupplierOrder[];

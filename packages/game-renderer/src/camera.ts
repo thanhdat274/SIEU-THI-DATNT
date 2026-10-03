@@ -25,7 +25,17 @@ export class PixelCamera {
     this.viewportWidth = width;
     this.viewportHeight = height;
     if (!this.isCustomZoom) {
-      this.zoom = height < 450 ? 1 : height >= 900 && width >= 1400 ? 3 : 2;
+      // Mobile Portrait (< 768px width) -> Zoom 1.25
+      // Mobile Landscape -> Zoom 1.5
+      // Desktop Small -> Zoom 2
+      // Desktop Large -> Zoom 3
+      if (width < 768) {
+        this.zoom = height > width ? 1.25 : 1.5;
+      } else if (height >= 900 && width >= 1400) {
+        this.zoom = 3;
+      } else {
+        this.zoom = 2;
+      }
     }
   }
 

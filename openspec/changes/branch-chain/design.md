@@ -88,10 +88,15 @@ Thêm bộ chọn chi nhánh (HUD/`BottomBar`), màn tổng quan chuỗi (ví ch
 - **Co-op:** hai người ở hai chi nhánh phức tạp; hoãn bằng giới hạn ở D8.
 - **Test hiện có đỏ/ngoài phạm vi** (xem `tổng hợp.md`): không coi PASS build là nghiệm thu.
 
-## Câu hỏi mở (cần chủ dự án quyết trước khi apply)
+## Quyết định của chủ dự án (03/10/2026, trả lời 4/5 câu)
 
-1. Ngưỡng thuế 100 triệu tính **tổng chuỗi** (đề xuất) hay từng cơ sở?
-2. Chi nhánh có chi phí vận chuyển/thời gian chuyển kho không (đề xuất: không ở bản đầu)?
-3. Co-op: cho phép chi nhánh khi có 2 thành viên, và ai sở hữu chi nhánh (đề xuất: hoãn, chỉ một thành viên)?
-4. Giá mở chi nhánh quán nước, cấp mở khóa, số chi nhánh tối đa (đề xuất tạm: cấp 32, 1.500.000 ₫, tối đa 3; **chưa cân bằng**).
-5. Có cho đóng/bán chi nhánh không (đề xuất: ngoài phạm vi bản đầu)?
+1. Ngưỡng thuế 100 triệu tính **tổng chuỗi**.
+2. Chuyển kho kho tổng ↔ chi nhánh **tức thời, không phí, không độ trễ** ở bản đầu.
+3. Co-op: **cho phép cả 2 thành viên mở chi nhánh** (khác đề xuất ban đầu là hoãn). **Đã xác nhận 03/10/2026:** chi nhánh thuộc **chung hẻm** (mọi thành viên cùng quyền như bố cục/mua đất, theo I-03), dùng **một ví chung** của doanh nghiệp hẻm; `open_branch`/`transfer_stock`… đi qua `ALLOWED_COMMAND_TYPES` + server replay như các lệnh khác, ràng buộc ví bằng `save-invariants.ts`. Bản đồ quán nước: quán nhỏ ~10×8 (quầy + bàn), đã chọn 03/10/2026; thứ tự làm: lõi (save → simulation → lệnh/server) trước, UI và bản đồ sau.
+4. Mở chi nhánh quán nước: **cấp 32, 1.500.000 ₫, tối đa 3 chi nhánh** (tạm, **chưa cân bằng**).
+5. Đóng/bán chi nhánh: **chưa được hỏi**; giữ đề xuất "ngoài phạm vi bản đầu" cho tới khi chủ dự án nói khác.
+
+### Hướng giao diện đã chọn (03/10/2026) và hệ quả cần thiết kế lại
+
+- **Điều hành:** người chơi **tự đi bộ sang quán trên cùng bản đồ** (quán nước là tòa nhà thứ 3 như tiệm xôi), không chuyển màn, khách thật. **Hệ quả:** lệch với D1 (mỗi chi nhánh một `GameSimulation` riêng) và D5 (chạy nền theo lô ngày). Cần quyết cách dung hòa: quán nước thành tòa nhà của hub (kho/ví/sổ cái chung như tiệm xôi, `buildings.ts`) và `ChainState` chỉ còn cho chi nhánh ở xa chạy nền, hay bỏ chạy nền cho loại hình này. **Quyết định (03/10/2026): làm cả hai** — quán nước **gần** là tòa nhà thứ 3 của hub trên cùng bản đồ (kho/ví/sổ cái/nhân viên dùng chung, khách thật, theo mẫu `buildings.ts`/tiệm xôi, không dùng `ChainState`); quán **xa** là chi nhánh nền (`ChainState`, đã có lõi). Đây là hai nhánh công việc riêng; **chưa có code cho tòa nhà thứ 3** (cần: `buildings.ts`, `map.ts`, bố cục mặc định, renderer/biển, khách chọn tòa, nhân viên, mua qua `buy_plot`, test).
+- **Màn tổng quan:** ví chung + kho tổng + từng chi nhánh (doanh thu hôm qua, hàng sắp hết, bán hụt, nút chuyển kho nhanh), thêm biểu đồ doanh thu 30 ngày (từ `BranchSave.reports`) và gợi ý số lượng chuyển kho theo cầu/tồn (người chơi bấm xác nhận).

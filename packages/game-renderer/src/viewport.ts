@@ -5,7 +5,7 @@ import { FixedStepSimulationRunner, GameSimulation, needsService, getLightingSta
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting } from './shop-lighting';
-import { DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, BUILDING_MAP} from '@game/data';
+import { DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, BUILDING_MAP, type BuildingId} from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -25,6 +25,12 @@ const TREE_SHADOW_ORIGIN_PX = { x: 40, y: 90 } as const;
 
 /** Đáy thùng so với chân nhân viên: thấp hơn đầu/vai để không che mặt. */
 const LOGISTICS_BOX_CARRY_Y = -12;
+
+/** Mặt tiền các tòa phụ: biên, tên biển, màu mái hiên/biển, vị trí mái hiên (ô). */
+const FACADES = {
+  xoi: { bounds: XOI_BOUNDS, name: 'TIỆM XÔI', awning: 0xc0392b, board: 0x7a2f1d, trim: 0xe0b85a, text: 0xffe9b0, awningStart: XOI_BOUNDS.left + 0.5, awningTiles: 3.5 },
+  drink: { bounds: DRINK_BOUNDS, name: 'QUÁN NƯỚC', awning: 0x1f6f8b, board: 0x14506a, trim: 0x8fd3e8, text: 0xd9f4ff, awningStart: 29, awningTiles: 4 },
+} as const;
 
 export class PixiGameViewport {
   private app!: Application;
@@ -71,6 +77,7 @@ export class PixiGameViewport {
   private onZoomChange?: (zoom: number) => void;
   private ambientSprites: Array<{sprite: Sprite; key: string; frames: number}> = [];
   private stallSprites: Sprite[] = [];
+  private eastDecorSprites: Array<Sprite | Graphics | Text> = [];
   private shopkeeper?: { container: Container; sprite: Sprite; bubble: Container };
   private motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; wearMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string; staticArt?: boolean; dotX: number }> = new Map();
@@ -78,6 +85,7 @@ export class PixiGameViewport {
   private warehouseLocator!: Container;
   private locatingWarehouse = false;
   private floatingTexts: Array<{ container: Container; life: number; maxLife: number }> = [];
+  private floatingTextPool: Array<{ container: Container; life: number; maxLife: number }> = [];
 
   // ===== LOGISTICS RENDERER STATE =====
   private logisticsTruckSprite: Sprite | null = null;
@@ -313,18 +321,35 @@ export class PixiGameViewport {
 
   private handleResize = (): void => {
     if (!this.app || !this.app.renderer) return;
+    this.updateResponsiveSettings();
     this.camera.setViewportSize(this.app.screen.width, this.app.screen.height);
     this.onZoomChange?.(this.camera.zoom);
   };
 
   /**
+   * Responsive Settings: Optimize resolution and default zoom for mobile devices.
+   */
+  private updateResponsiveSettings(): void {
+    const isMobile = window.innerWidth < 768;
+    // Reduce resolution on mobile to prevent overheating and frame drops
+    const targetRes = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+    if (this.app.renderer && this.app.renderer.resolution !== targetRes) {
+      this.app.renderer.resize(this.app.screen.width, this.app.screen.height, targetRes);
+    }
+  }
+
+  /**
    * Mặt tiền tiệm xôi (tòa thứ hai ở dải đất phía tây): biển hiệu, mái hiên sọc, khung cửa; chưa mua thì cửa cuốn đóng
    * và biển "CHO THUÊ". Vẽ vào groundLayer/wallLayer nên được dựng lại mỗi lần bản đồ đổi (mua tiệm).
    */
-  private buildXoiFacade(): void {
-    const xoi = BUILDING_MAP.xoi;
-    const open = this.tileMap.buildings?.find(building => building.id === 'xoi')?.open ?? false;
-    const bounds = XOI_BOUNDS;
+  private buildXoiFacade(): void { this.buildBuildingFacade('xoi'); }
+
+  /** Mặt tiền tòa phụ (tiệm xôi, quán nước); dữ liệu màu/biển theo `FACADES`. */
+  private buildBuildingFacade(id: Exclude<BuildingId, 'main'>): void {
+    const facade = FACADES[id];
+    const xoi = BUILDING_MAP[id];
+    const open = this.tileMap.buildings?.find(building => building.id === id)?.open ?? false;
+    const bounds = { ...facade.bounds, top: this.tileMap.buildings?.find(building => building.id === id)?.top ?? facade.bounds.top };
     const frontY = bounds.bottom * TILE_SIZE;
     const doorX = xoi.doorTiles[0].x * TILE_SIZE;
     const doorW = xoi.doorTiles.length * TILE_SIZE;
@@ -345,11 +370,11 @@ export class PixiGameViewport {
     if (open) {
       // Mái hiên sọc đỏ trắng phía trên cửa.
       const awning = new Graphics();
-      // Mái hiên và biển chỉ rộng 3,5 ô (x 0,5..4) để tán cây ở x=5 không che.
-      const awningX = (bounds.left + 0.5) * TILE_SIZE;
+      // Mái hiên và biển chỉ rộng `awningTiles` ô để không che tán cây hay tòa bên cạnh.
+      const awningX = facade.awningStart * TILE_SIZE;
       const stripes = 7;
-      const stripeW = (3.5 * TILE_SIZE) / stripes;
-      for (let i = 0; i < stripes; i++) awning.rect(awningX + i * stripeW, frontY - 6, stripeW, 9).fill(i % 2 === 0 ? 0xc0392b : 0xf5ecd8);
+      const stripeW = (facade.awningTiles * TILE_SIZE) / stripes;
+      for (let i = 0; i < stripes; i++) awning.rect(awningX + i * stripeW, frontY - 6, stripeW, 9).fill(i % 2 === 0 ? facade.awning : 0xf5ecd8);
       awning.rect(awningX, frontY + 3, stripes * stripeW, 2).fill({ color: 0x26190e, alpha: 0.35 });
       awning.zIndex = 360;
       this.wallLayer.addChild(awning);
@@ -363,17 +388,94 @@ export class PixiGameViewport {
     }
 
     // Biển hiệu trên cửa.
-    const boardW = 3.5 * TILE_SIZE;
+    const boardW = facade.awningTiles * TILE_SIZE;
     const board = new Graphics();
-    board.roundRect(0, 0, boardW, 14, 2).fill(open ? 0x7a2f1d : 0x6b6f73).stroke({ color: open ? 0xe0b85a : 0x9aa0a4, width: 1 });
-    board.position.set((bounds.left + 0.5) * TILE_SIZE, frontY - 22);
+    board.roundRect(0, 0, boardW, 14, 2).fill(open ? facade.board : 0x6b6f73).stroke({ color: open ? facade.trim : 0x9aa0a4, width: 1 });
+    board.position.set(facade.awningStart * TILE_SIZE, frontY - 22);
     board.zIndex = 361;
     this.wallLayer.addChild(board);
-    const label = new Text({ text: open ? 'TIỆM XÔI' : 'CHO THUÊ', style: new TextStyle({ fontFamily: 'Arial', fontSize: 10, fontWeight: 'bold', fill: open ? 0xffe9b0 : 0xe5e8ea }) });
+    const label = new Text({ text: open ? facade.name : 'CHO THUÊ', style: new TextStyle({ fontFamily: 'Arial', fontSize: 10, fontWeight: 'bold', fill: open ? facade.text : 0xe5e8ea }) });
     label.anchor.set(0.5);
     label.position.set(board.x + boardW / 2, board.y + 7.5);
     label.zIndex = 362;
     this.wallLayer.addChild(label);
+  }
+
+  /**
+   * Trang trí phía đông bản đồ (khu vực quán nước): cột đèn, biển "QUÁN NƯỚC", đèn lồng, bảng menu.
+   * Vẽ vào entitiesLayer để cùng hệ thống với sprite cây/bóng.
+   */
+  private buildEastDecorations(): void {
+    const drinkOpen = this.tileMap.buildings?.find(b => b.id === 'drink')?.open ?? false;
+    if (!drinkOpen) return; // Chưa mở quán nước thì không hiển thị decor
+
+    // 1. Biển hiệu "QUÁN NƯỚC" (đặt trên hiên, phía đông tiệm chính)
+    const signBoard = new Graphics();
+    signBoard.roundRect(0, 0, 128, 20, 3).fill(0x14506a).stroke({ color: 0x8fd3e8, width: 2 });
+    signBoard.position.set(DRINK_BOUNDS.left * TILE_SIZE, (DRINK_BOUNDS.bottom + 1) * TILE_SIZE - 38);
+    signBoard.zIndex = 361;
+    this.wallLayer.addChild(signBoard);
+    const signText = new Text({
+      text: 'QUÁN NƯỚC',
+      style: new TextStyle({ fontFamily: 'Arial', fontSize: 12, fontWeight: 'bold', fill: 0xd9f4ff })
+    });
+    signText.anchor.set(0.5);
+    signText.position.set(signBoard.x + 64, signBoard.y + 10);
+    signText.zIndex = 362;
+    this.wallLayer.addChild(signText);
+
+    // 2. Cột đèn đường phía đông (2 cột: x=19 và x=33)
+    for (const lampX of [19, 33]) {
+      const pole = new Sprite(this.textures.getTexture('deco_lamp_pole'));
+      pole.anchor.set(0, 1);
+      pole.x = lampX * TILE_SIZE;
+      pole.y = (11 + 1) * TILE_SIZE;
+      pole.zIndex = pole.y + 10;
+      this.groundLayer.addChild(pole);
+
+      // Bóng đèn phát sáng (vẽ Graphics)
+      const lampLight = new Graphics();
+      lampLight.circle(16, 4, 6).fill({ color: 0xfff3c4, alpha: 0.6 });
+      lampLight.position.set(lampX * TILE_SIZE + 16, 11 * TILE_SIZE - 12);
+      lampLight.zIndex = lampLight.y;
+      this.entitiesLayer.addChild(lampLight);
+      this.eastDecorSprites.push(lampLight);
+    }
+
+    // 3. Đèn lồng đỏ trước quán nước (x=30)
+    if (drinkOpen) {
+      for (let i = 0; i < 3; i++) {
+        const lantern = new Sprite(this.textures.getTexture('deco_lantern'));
+        lantern.position.set((28 + i * 2) * TILE_SIZE, (DRINK_BOUNDS.bottom + 1) * TILE_SIZE - 20 - i * 3);
+        lantern.zIndex = lantern.y - 50;
+        this.entitiesLayer.addChild(lantern);
+        this.eastDecorSprites.push(lantern);
+      }
+    }
+
+    // 4. Chậu cây cảnh (x=27 và x=35)
+    for (const potX of [27, 35]) {
+      const pot = new Sprite(this.textures.getTexture('tile_plant_pot'));
+      pot.position.set(potX * TILE_SIZE + 8, 11 * TILE_SIZE);
+      pot.zIndex = pot.y + 50;
+      this.entitiesLayer.addChild(pot);
+      this.eastDecorSprites.push(pot);
+    }
+
+    // 5. Biển menu bảng gỗ (x=28)
+    const menuBoard = new Graphics();
+    menuBoard.roundRect(0, 0, 64, 40, 2).fill(0x8b5a2b).stroke({ color: 0x5c3a1a, width: 1 });
+    menuBoard.position.set(28 * TILE_SIZE, (DRINK_BOUNDS.bottom + 1) * TILE_SIZE - 52);
+    menuBoard.zIndex = 363;
+    this.wallLayer.addChild(menuBoard);
+    const menuText = new Text({
+      text: 'MENU',
+      style: new TextStyle({ fontFamily: 'Arial', fontSize: 8, fontWeight: 'bold', fill: 0xd9f4ff })
+    });
+    menuText.anchor.set(0.5);
+    menuText.position.set(menuBoard.x + 32, menuBoard.y + 20);
+    menuText.zIndex = 364;
+    this.wallLayer.addChild(menuText);
   }
 
   private buildMapLayers(): void {
@@ -479,9 +581,16 @@ export class PixiGameViewport {
             let textureKey = tileId === 10 ? 'warehouse_wall' : 'tile_yellow_wall';
 
             // 2.5D Stardew Valley slim walls:
-            if (x < STORE_BOUNDS.left && worldY >= XOI_BOUNDS.top && worldY <= XOI_BOUNDS.bottom) {
+            const drinkTop = this.tileMap.buildings?.find(building => building.id === 'drink')?.top ?? DRINK_BOUNDS.top;
+            const xoiTop = this.tileMap.buildings?.find(building => building.id === 'xoi')?.top ?? XOI_BOUNDS.top;
+            if (x >= DRINK_BOUNDS.left && worldY >= drinkTop && worldY <= DRINK_BOUNDS.bottom) {
+              // Quán nước (dải phía đông): đủ bốn tường riêng, kiểu tường tiệm; tường sau là vách ngăn.
+              if (worldY === drinkTop) textureKey = 'wall_partition_right';
+              else if (worldY === DRINK_BOUNDS.bottom) textureKey = x === DRINK_BOUNDS.left ? 'wall_store_corner_bl' : x === DRINK_BOUNDS.right ? 'wall_store_corner_br' : 'wall_store_front';
+              else textureKey = x === DRINK_BOUNDS.left ? 'wall_store_left' : 'wall_store_right';
+            } else if (x < STORE_BOUNDS.left && worldY >= xoiTop && worldY <= XOI_BOUNDS.bottom) {
               // Tiệm xôi (dải phía tây): tường sau là vách ngăn, tường trái và mặt tiền dùng kiểu tường tiệm.
-              if (worldY === XOI_BOUNDS.top) textureKey = 'wall_partition_left';
+              if (worldY === xoiTop) textureKey = 'wall_partition_left';
               else if (worldY === XOI_BOUNDS.bottom) textureKey = x === XOI_BOUNDS.left ? 'wall_store_corner_bl' : 'wall_store_front';
               else textureKey = 'wall_store_left';
             } else if (worldY < STORE_BOUNDS.top) {
@@ -537,6 +646,7 @@ export class PixiGameViewport {
     this.wallLayer.addChild(warehouseSign);
 
     this.buildXoiFacade();
+    this.buildBuildingFacade('drink');
 
     // Clean warehouse doorway frame and wood threshold
     const doorway = new Graphics();
@@ -647,6 +757,9 @@ export class PixiGameViewport {
       this.shadowLayer.addChild(shadow);
       this.treeShadows.push({ prop, graphic: shadow, last: null });
     }
+
+    // Build east side decorations (street lamps, signs, plants, etc.)
+    this.buildEastDecorations();
 
     const wires = new Graphics();
     const wireY=(WAREHOUSE_BOUNDS.top-1)*TILE_SIZE;
@@ -1029,6 +1142,13 @@ export class PixiGameViewport {
         this.customerSprites.set(key, entry);
       }
 
+      // ✅ Frustum Culling: Skip off-screen customers to save CPU/GPU
+      if (!this.isOnScreen(cust.position.x, cust.position.y)) {
+        entry.container.visible = false;
+        continue;
+      }
+      entry.container.visible = true;
+
       const previous = entry.lastPosition;
       const dx = previous ? cust.position.x - previous.x : 0;
       const dy = previous ? cust.position.y - previous.y : 0;
@@ -1110,6 +1230,14 @@ export class PixiGameViewport {
         entry = { container, sprite, bubble, status, lastPosition: null, variant: idx % 3, direction: 'down' };
         this.workerSprites.set(worker.id, entry);
       }
+
+      // ✅ Frustum Culling: Skip off-screen workers
+      if (!this.isOnScreen(position.x, position.y)) {
+        entry.container.visible = false;
+        return;
+      }
+      entry.container.visible = true;
+
       const previous = entry.lastPosition;
       const dx = previous ? position.x - previous.x : 0;
       const dy = previous ? position.y - previous.y : 0;
@@ -1402,7 +1530,7 @@ export class PixiGameViewport {
     // 4. Update Y-sorting for realistic depth (so player can walk behind/in front of fixtures)
     this.entitiesLayer.children.sort((a, b) => a.zIndex - b.zIndex);
 
-    // 5. Update Floating Texts (Juice)
+    // 5. Update Floating Texts (Juice) with Object Pooling
     for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
       const item = this.floatingTexts[i];
       item.life -= elapsed;
@@ -1410,8 +1538,9 @@ export class PixiGameViewport {
       item.container.alpha = Math.max(0, item.life / item.maxLife);
       if (item.life <= 0) {
         this.uiOverlayLayer.removeChild(item.container);
-        item.container.destroy({ children: true });
-        this.floatingTexts.splice(i, 1);
+        item.container.visible = false;
+        item.container.alpha = 1;
+        this.floatingTextPool.push(this.floatingTexts.splice(i, 1)[0]);
       }
     }
 
@@ -1712,22 +1841,37 @@ export class PixiGameViewport {
    * Spawns a floating gain label (e.g. "+24.000₫", "+12 XP") above a world coordinate
    */
   public addFloatingGain(x: number, y: number, text: string, color: number = 0xf4a261): void {
-    const container = new Container();
-    container.x = x;
-    container.y = y;
+    let item: { container: Container; life: number; maxLife: number };
+    if (this.floatingTextPool.length > 0) {
+      item = this.floatingTextPool.pop()!;
+      item.container.visible = true;
+    } else {
+      const container = new Container();
+      container.x = x;
+      container.y = y;
 
-    const style = new TextStyle({
-      fontFamily: '"Courier New", Courier, monospace',
-      fontSize: 11,
-      fontWeight: 'bold',
-      fill: color,
-    });
-    const label = new Text({ text, style });
-    label.anchor.set(0.5);
-    container.addChild(label);
+      const style = new TextStyle({
+        fontFamily: '"Courier New", Courier, monospace',
+        fontSize: 11,
+        fontWeight: 'bold',
+        fill: color,
+      });
+      const label = new Text({ text, style });
+      label.anchor.set(0.5);
+      container.addChild(label);
 
-    this.uiOverlayLayer.addChild(container);
-    this.floatingTexts.push({ container, life: 0.8, maxLife: 0.8 });
+      this.uiOverlayLayer.addChild(container);
+      item = { container, life: 0.8, maxLife: 0.8 };
+    }
+    
+    item.container.x = x;
+    item.container.y = y;
+    const label = item.container.children[0] as Text;
+    label.text = text;
+    (label.style as TextStyle).fill = color;
+    item.life = 0.8;
+    item.maxLife = 0.8;
+    this.floatingTexts.push(item);
   };
 
   private createCustomerSprite(variant: number) {
@@ -1778,6 +1922,17 @@ export class PixiGameViewport {
       npcVariant: variant,
       npcDirection: 'down',
     };
+  }
+
+  /**
+   * Frustum Culling Helper
+   * Chỉ cho phép render những thực thể nằm trong vùng nhìn thấy của camera để tăng hiệu năng.
+   */
+  private isOnScreen(x: number, y: number): boolean {
+    const halfW = this.app.screen.width / (2 * this.camera.zoom);
+    const halfH = this.app.screen.height / (2 * this.camera.zoom);
+    return x >= this.camera.x - halfW - 32 && x <= this.camera.x + halfW + 32 &&
+           y >= this.camera.y - halfH - 32 && y <= this.camera.y + halfH + 32;
   }
 
   /**

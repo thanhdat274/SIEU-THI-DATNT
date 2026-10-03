@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import type { GameTileMap, SaveGameData, StoreFixture } from '@game/shared';
-import { BUILDINGS, BUILDING_MAP, DEFAULT_INITIAL_SAVE, FIXTURE_SHOP, LAND_PLOTS, MAP_HEIGHT, MAP_ORIGIN_Y, MAP_WIDTH, STORE_BOUNDS, XOI_BOUNDS, XOI_DEFAULT_FIXTURES, XOI_PLOT_ID, buildingAt, buildingOfTiles, generateStarterTileMap, isFenceTile } from '@game/data';
+import { BUILDINGS, BUILDING_MAP, DEFAULT_INITIAL_SAVE, FIXTURE_SHOP, LAND_PLOTS, MAP_HEIGHT, MAP_ORIGIN_Y, MAP_WIDTH, STORE_BOUNDS, XOI_BOUNDS, XOI_DEFAULT_FIXTURES, XOI_PLOT_ID, DRINK_BOUNDS, DRINK_DEFAULT_FIXTURES, DRINK_PLOT_ID, DRINK_EXPANSION_PLOT_IDS, XOI_EXPANSION_PLOT_IDS, NORTH_EXPANSION_ROWS, buildingTop, fixtureBuilding, buildingAt, buildingOfTiles, generateStarterTileMap, isFenceTile } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { applyStoreLayoutActions, buyLandPlot, relocateMisplacedFixtures, validateStoreLayout } from './store-layout';
@@ -53,6 +53,7 @@ export function runBuildingTests(): void {
   // Dữ liệu: tòa không chồng sàn trong, chỉ chung một tường, nằm trong bản đồ, cửa nằm trên hàng tường dưới.
   {
     const [main, xoi] = BUILDINGS;
+    assert.equal(BUILDINGS.length, 3, 'main, xoi, drink');
     assert.equal(xoi.bounds.right, STORE_BOUNDS.left, 'tiệm xôi dùng chung tường x=6 với tiệm chính');
     for (const building of BUILDINGS) {
       assert.ok(building.bounds.left >= 0 && building.bounds.right < MAP_WIDTH);
@@ -84,8 +85,8 @@ export function runBuildingTests(): void {
     const open = mapFor([XOI_PLOT_ID]);
     assert.equal(closed.width, MAP_WIDTH);
     assert.equal(closed.height, MAP_HEIGHT);
-    assert.deepEqual(closed.buildings, [{ id: 'main', open: true }, { id: 'xoi', open: false }]);
-    assert.deepEqual(open.buildings, [{ id: 'main', open: true }, { id: 'xoi', open: true }]);
+    assert.deepEqual(closed.buildings, [{ id: 'main', open: true, top: 3 }, { id: 'xoi', open: false, top: 3 }, { id: 'drink', open: false, top: 3 }]);
+    assert.deepEqual(open.buildings, [{ id: 'main', open: true, top: 3 }, { id: 'xoi', open: true, top: 3 }, { id: 'drink', open: false, top: 3 }]);
     const ground = (map: GameTileMap) => map.layers.find(layer => layer.name === 'ground')!.data;
     const walls = (map: GameTileMap) => map.layers.find(layer => layer.name === 'walls')!.data;
     for (let y = XOI_BOUNDS.top; y <= XOI_BOUNDS.bottom; y++) {
@@ -134,6 +135,151 @@ export function runBuildingTests(): void {
     assert.equal(buyLandPlot(poor, XOI_PLOT_ID).save, undefined);
     assert.equal(poor.player.money, 100);
     assert.equal(poor.storeLayout.unlockedPlotIds?.length ?? 0, 0);
+  }
+
+  // Quán nước: tòa thứ ba đứng riêng ở dải đông (bản đồ mở rộng), đủ bốn tường, mua như tiệm xôi.
+  {
+    const drink = BUILDING_MAP.drink;
+    assert.equal(MAP_WIDTH, 36, 'bản đồ mở rộng cho quán nước');
+    assert.equal(DRINK_BOUNDS.right, MAP_WIDTH - 1, 'quán nước sát mép đông');
+    assert.equal(DRINK_BOUNDS.right - DRINK_BOUNDS.left + 1, 10);
+    assert.equal(DRINK_BOUNDS.bottom - DRINK_BOUNDS.top + 1, 8);
+    assert.ok(DRINK_BOUNDS.left > 21, 'không chồng cánh đông tiệm chính');
+    assert.equal(buildingAt(30, 6), 'drink');
+    assert.equal(buildingAt(DRINK_BOUNDS.left, 6), 'drink');
+    assert.equal(buildingAt(24, 6), undefined, 'khoảng trống giữa hai tòa không thuộc tòa nào');
+    assert.equal(buildingAt(9, 6), 'main');
+    assert.equal(buildingOfTiles([{ x: 26, y: 6 }, { x: 27, y: 6 }]), undefined, 'tường quán nước không đặt được nội thất');
+    assert.equal(buildingOfTiles([{ x: 30, y: 6 }, { x: 31, y: 6 }]), 'drink');
+    assert.ok(LAND_PLOTS.some(plot => plot.id === DRINK_PLOT_ID && plot.buildingId === 'drink' && plot.level === 32 && plot.cost === 1_500_000));
+    for (const door of drink.doorTiles) assert.equal(isFenceTile(door.x, door.y, MAP_WIDTH), false, 'cửa quán nước không bị hàng rào chặn');
+    // Hàng rào vẫn chạy giữa cánh đông và quán nước, nhưng không nằm trên tường quán nước.
+    assert.equal(isFenceTile(23, 10, MAP_WIDTH), true);
+    assert.equal(isFenceTile(DRINK_BOUNDS.left + 1, 10, MAP_WIDTH), false);
+
+    const closed = mapFor([]);
+    const open = mapFor([DRINK_PLOT_ID]);
+    const walls = (map: GameTileMap) => map.layers.find(layer => layer.name === 'walls')!.data;
+    assert.deepEqual(open.buildings?.find(b => b.id === 'drink'), { id: 'drink', open: true, top: 3 });
+    for (const door of drink.doorTiles) {
+      assert.equal(closed.collisionLayer[tileIndex(door.x, door.y)], true, 'cửa đóng');
+      assert.equal(open.collisionLayer[tileIndex(door.x, door.y)], false, 'cửa mở');
+    }
+    for (let x = DRINK_BOUNDS.left; x <= DRINK_BOUNDS.right; x++) {
+      for (const y of [DRINK_BOUNDS.top, DRINK_BOUNDS.bottom]) {
+        if (drink.doorTiles.some(d => d.x === x && d.y === y)) continue;
+        assert.equal(walls(open)[tileIndex(x, y)], 4, `tường ngang (${x},${y})`);
+        assert.equal(open.collisionLayer[tileIndex(x, y)], true);
+      }
+    }
+    for (let y = DRINK_BOUNDS.top; y <= DRINK_BOUNDS.bottom; y++) for (const x of [DRINK_BOUNDS.left, DRINK_BOUNDS.right]) assert.equal(open.collisionLayer[tileIndex(x, y)], true, `tường dọc (${x},${y})`);
+    assert.equal(reachable(closed, drink.entranceTile, { x: 30, y: 6 }), false, 'chưa mua thì không vào được');
+    assert.equal(reachable(open, drink.entranceTile, { x: 30, y: 6 }), true, 'đã mua thì đi từ vỉa hè vào được');
+    assert.equal(reachable(open, drink.entranceTile, BUILDING_MAP.main.entranceTile), true, 'đi vòng qua vỉa hè giữa các tòa');
+    // Tiệm chính và tiệm xôi không đổi khi quán nước mở.
+    for (let y = 0; y < MAP_HEIGHT + MAP_ORIGIN_Y; y++) for (let x = 0; x < DRINK_BOUNDS.left; x++) {
+      assert.equal(closed.collisionLayer[tileIndex(x, y)], open.collisionLayer[tileIndex(x, y)], `(${x},${y}) ngoài quán nước không đổi`);
+    }
+
+    // Mua: trừ đúng giá một lần, bố cục mặc định hợp lệ, idempotent, điều kiện.
+    const save = baseSave(32, 3_000_000);
+    const bought = applyStoreLayoutActions(save, [{ type: 'buy_plot', plotId: DRINK_PLOT_ID }], mapFor).save!;
+    assert.ok(bought, 'mua quán nước hợp lệ');
+    assert.equal(bought.player.money, save.player.money - 1_500_000);
+    for (const expected of DRINK_DEFAULT_FIXTURES) assert.ok(bought.storeLayout.fixtures.some(f => f.id === expected.id), `${expected.id} có trong bố cục mặc định`);
+    for (const f of DRINK_DEFAULT_FIXTURES) assert.equal(fixtureBuilding(f), 'drink', `${f.id} nằm trọn trong quán nước`);
+    assert.equal(validateStoreLayout(bought, mapFor([DRINK_PLOT_ID])).error, undefined, 'bố cục mặc định hợp lệ và có đường tới quầy/kệ');
+    const again = buyLandPlot(bought, DRINK_PLOT_ID);
+    assert.equal(again.save?.player.money, bought.player.money);
+    assert.equal(again.save?.storeLayout.fixtures.length, bought.storeLayout.fixtures.length);
+    assert.equal(buyLandPlot(baseSave(31), DRINK_PLOT_ID).error, 'level');
+    assert.equal(buyLandPlot(baseSave(32, 1_499_999), DRINK_PLOT_ID).error, 'money');
+    assert.equal(buyLandPlot({ ...baseSave(32), worldTime: { ...baseSave().worldTime, isStoreOpen: true } }, DRINK_PLOT_ID).error, 'store_open');
+    // Mua cả hai tòa: bố cục hai tòa không đè lên nhau.
+    const both = applyStoreLayoutActions(buyXoi(baseSave(32, 5_000_000)), [{ type: 'buy_plot', plotId: DRINK_PLOT_ID }], mapFor).save!;
+    assert.ok(both, 'mua tiệm xôi rồi quán nước');
+    assert.equal(validateStoreLayout(both, mapFor([XOI_PLOT_ID, DRINK_PLOT_ID])).error, undefined);
+    assert.equal(new Set(both.storeLayout.fixtures.map(f => f.id)).size, both.storeLayout.fixtures.length, 'id nội thất không trùng');
+    // Quầy thu ngân riêng bắt buộc: bỏ quầy quán nước thì bố cục không hợp lệ.
+    const noCashier = structuredClone(bought);
+    noCashier.storeLayout.fixtures = noCashier.storeLayout.fixtures.filter(f => f.id !== 'drink_cashier_counter');
+    assert.notEqual(validateStoreLayout(noCashier, mapFor([DRINK_PLOT_ID])).error, undefined, 'quán nước phải có quầy thu ngân riêng');
+  }
+
+  // Mở rộng đất về phía bắc: tiệm xôi và quán nước mua tối đa 2 mảnh, mỗi mảnh sâu thêm 3 hàng; tiệm chính vẫn mở sang đông.
+  {
+    for (const [id, base, plots] of [['xoi', XOI_PLOT_ID, XOI_EXPANSION_PLOT_IDS], ['drink', DRINK_PLOT_ID, DRINK_EXPANSION_PLOT_IDS]] as const) {
+      const building = id;
+      const def = BUILDING_MAP[building];
+      assert.equal(def.expansionPlotIds?.length, 2);
+      assert.equal(def.maxBounds.top, def.bounds.top - 2 * NORTH_EXPANSION_ROWS, `${id}: biên tối đa lùi 6 hàng`);
+      assert.ok(def.maxBounds.top >= MAP_ORIGIN_Y, `${id}: không vượt mép bản đồ`);
+      assert.equal(buildingTop(building, []), def.bounds.top);
+      assert.equal(buildingTop(building, [plots[0]]), def.bounds.top, 'mảnh mở rộng không có tác dụng khi chưa mua tòa');
+      assert.equal(buildingTop(building, [base]), def.bounds.top);
+      assert.equal(buildingTop(building, [base, plots[0]]), def.bounds.top - 3);
+      assert.equal(buildingTop(building, [base, plots[1]]), def.bounds.top, 'mảnh 2 cần mảnh 1');
+      assert.equal(buildingTop(building, [base, plots[0], plots[1]]), def.bounds.top - 6);
+      for (const plotId of plots) assert.ok(LAND_PLOTS.some(p => p.id === plotId && p.expandsBuilding === building && p.tiles.length === 0));
+      const [pa, pb] = plots.map(plotId => LAND_PLOTS.find(p => p.id === plotId)!);
+      const baseLevel = LAND_PLOTS.find(p => p.id === base)!.level;
+      assert.equal(pa.prerequisitePlotId, base);
+      assert.equal(pb.prerequisitePlotId, pa.id);
+      assert.ok(pa.level > baseLevel && pb.level >= pa.level && pb.cost > pa.cost, `${id}: giá/cấp tăng dần`);
+
+      const maps = [mapFor([base]), mapFor([base, plots[0]]), mapFor([base, plots[0], plots[1]])];
+      const ground = (map: GameTileMap) => map.layers.find(layer => layer.name === 'ground')!.data;
+      const walls = (map: GameTileMap) => map.layers.find(layer => layer.name === 'walls')!.data;
+      const entrance = def.entranceTile;
+      const midX = Math.floor((def.bounds.left + def.bounds.right) / 2);
+      maps.forEach((map, rows) => {
+        const top = def.bounds.top - 3 * rows;
+        assert.equal(map.buildings?.find(b => b.id === building)?.top, top);
+        assert.equal(walls(map)[tileIndex(midX, top)], 4, `${id}: tường sau ở y=${top}`);
+        assert.equal(map.collisionLayer[tileIndex(midX, top)], true);
+        assert.equal(map.collisionLayer[tileIndex(midX, top + 1)], false, 'hàng sát tường sau đi được');
+        assert.equal(reachable(map, entrance, { x: midX, y: top + 1 }), true, `${id}: đi từ cửa tới sàn trong cùng`);
+        for (let y = top - 1; y >= def.maxBounds.top; y--) assert.equal(walls(map)[tileIndex(midX, y)], 0, 'chưa mua thì chưa có tường ở hàng này');
+        for (let y = top + 1; y < def.bounds.bottom; y++) assert.equal(ground(map)[tileIndex(midX, y)], 3);
+        if (rows > 0) assert.equal(walls(map)[tileIndex(midX, def.bounds.top - 3 * (rows - 1))], 0, 'tường sau cũ đã thành sàn');
+      });
+      for (let y = 0; y < MAP_HEIGHT; y++) for (let x = 0; x < MAP_WIDTH; x++) {
+        const wy = y + MAP_ORIGIN_Y;
+        if (x >= def.maxBounds.left && x <= def.maxBounds.right && wy >= def.maxBounds.top && wy <= def.maxBounds.bottom) continue;
+        const idx = y * MAP_WIDTH + x;
+        assert.equal(maps[0].collisionLayer[idx], maps[2].collisionLayer[idx], `(${x},${wy}) ngoài ${id} không đổi`);
+      }
+    }
+
+    // Mua mảnh mở rộng: thứ tự, cấp, tiền, idempotent, thất bại không đổi save.
+    const save = baseSave(35, 10_000_000);
+    assert.equal(buyLandPlot(save, 'drink-north-a').error, 'prerequisite', 'chưa mua quán nước thì chưa mở rộng được');
+    const withDrink = applyStoreLayoutActions(save, [{ type: 'buy_plot', plotId: DRINK_PLOT_ID }], mapFor).save!;
+    assert.equal(buyLandPlot(withDrink, 'drink-north-b').error, 'prerequisite', 'mảnh 2 cần mảnh 1');
+    const a = applyStoreLayoutActions(withDrink, [{ type: 'buy_plot', plotId: 'drink-north-a' }], mapFor);
+    assert.ok(a.save, `mua mảnh 1 hợp lệ (${a.error ?? ''})`);
+    assert.equal(a.save.player.money, withDrink.player.money - 500_000);
+    const again = buyLandPlot(a.save, 'drink-north-a');
+    assert.equal(again.save?.player.money, a.save.player.money, 'mua lại không trừ tiền');
+    assert.equal(buyLandPlot({ ...withDrink, player: { ...withDrink.player, level: 32 } }, 'drink-north-a').error, 'level');
+    assert.equal(buyLandPlot({ ...withDrink, player: { ...withDrink.player, money: 499_999 } }, 'drink-north-a').error, 'money');
+    const b = applyStoreLayoutActions(a.save, [{ type: 'buy_plot', plotId: 'drink-north-b' }], mapFor);
+    assert.ok(b.save, `mua mảnh 2 hợp lệ (${b.error ?? ''})`);
+    assert.equal(b.save.player.money, a.save.player.money - 750_000);
+    assert.equal(validateStoreLayout(b.save, mapFor(b.save.storeLayout.unlockedPlotIds ?? [])).error, undefined, 'bố cục mặc định vẫn hợp lệ sau khi mở rộng hết');
+
+    // Đặt nội thất vào vùng mở rộng: chỉ được khi đã mua mảnh; tòa vẫn nhận diện đúng.
+    const probe = fixture({ id: 'probe_table', type: 'dining_table', tileX: 30, tileY: 1, shopId: 'drink_table_2' });
+    assert.equal(fixtureBuilding(probe), 'drink', 'ô y=1 thuộc quán nước (vùng mở rộng)');
+    const early = structuredClone(withDrink);
+    early.storeLayout.fixtures.push(probe);
+    assert.equal(validateStoreLayout(early, mapFor(early.storeLayout.unlockedPlotIds ?? [])).error, 'outside_floor', 'chưa mua mảnh thì chưa đặt được');
+    const late = structuredClone(a.save);
+    late.storeLayout.fixtures.push(probe);
+    assert.equal(validateStoreLayout(late, mapFor(late.storeLayout.unlockedPlotIds ?? [])).error, undefined, 'đã mua mảnh 1 thì đặt được ở hàng y=1');
+    const wallRow = structuredClone(a.save);
+    wallRow.storeLayout.fixtures.push(fixture({ id: 'probe_old_wall', type: 'dining_table', tileX: 30, tileY: 3, shopId: 'drink_table_2' }));
+    assert.equal(validateStoreLayout(wallRow, mapFor(wallRow.storeLayout.unlockedPlotIds ?? [])).error, undefined, 'hàng y=3 (tường cũ) thành sàn');
   }
 
   // Quy tắc đặt nội thất theo tòa nhà.

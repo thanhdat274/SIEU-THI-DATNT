@@ -11,7 +11,7 @@ import {
   InventoryItem,
   CustomerArrivalMode
 } from '@game/shared';
-import { BUILDING_MAP, XOI_TRAFFIC_SHARE, fixtureBuilding, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS } from '@game/data';
+import { BUILDING_MAP, BUILDING_TRAFFIC_SHARE, MAP_WIDTH, buildingAt, fixtureBuilding, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS, type BuildingId } from '@game/data';
 import { arrivalModeWeights, pickArrivalMode } from './arrival-mode';
 import { CollisionSystem } from './collision';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
@@ -92,6 +92,8 @@ export class CustomerManager {
   private paths = new Map<string, Vector2D[]>();
   private customerSequence = 0;
   private spawnCooldown = 5.5;
+  /** Nhịp sinh khách của các tòa phụ (không lưu trong save; nạp lại thì bắt đầu từ 5,5 s). */
+  private streamCooldowns = new Map<string, number>();
   private readonly maxConcurrentCustomers = 3;
 
   constructor(
@@ -158,6 +160,11 @@ export class CustomerManager {
     return this.customers[0] ? { ...this.customers[0], position: { ...this.customers[0].position } } : null;
   }
 
+  private setStreamCooldown(streamId: BuildingId, value: number): void {
+    if (streamId === 'main') this.spawnCooldown = value;
+    else this.streamCooldowns.set(streamId, value);
+  }
+
   public getSpawnCooldown(): number {
     return this.spawnCooldown;
   }
@@ -167,7 +174,8 @@ export class CustomerManager {
   }
 
   /**
-   * Spawn a new customer if conditions allow
+   * Spawn a new customer if conditions allow. Mỗi tòa nhà có dòng khách riêng (nhịp sinh khách, trần đồng thời): tiệm chính
+   * giữ nhịp cũ, tòa phụ (tiệm xôi, quán nước) sinh khách thêm theo `BUILDING_TRAFFIC_SHARE`; mỗi lần gọi sinh tối đa một khách.
    */
   public maybeSpawnCustomer(
     dt: number,
@@ -183,16 +191,40 @@ export class CustomerManager {
     arrivalContext?: { hour: number; weekday: number }
   ): CustomerState | null {
     if (!isStoreOpen) return null;
-    if (this.customers.length >= (demand?.maxConcurrentCustomers ?? this.maxConcurrentCustomers)) return null;
+    const streams: Array<readonly [BuildingId, number]> = [['main', 1], ...BUILDING_TRAFFIC_SHARE];
+    for (const [streamId, factor] of streams) {
+      const spawned = this.spawnForBuilding(streamId, factor, dt, fixtures, tileMap, currentDay, customersServed, demand, streamId === 'main' ? regularCandidate : null, rainIntensity, hasBikeSecurity, arrivalContext);
+      if (spawned) return spawned;
+    }
+    return null;
+  }
 
-    this.spawnCooldown -= dt;
-    if (this.spawnCooldown > 0) return null;
+  private spawnForBuilding(
+    streamId: BuildingId,
+    factor: number,
+    dt: number,
+    fixtures: StoreFixture[],
+    tileMap: GameTileMap,
+    currentDay: number,
+    customersServed: number,
+    demand: CustomerDemandChoice | undefined,
+    regularCandidate: RegularCustomerDefinition | null | undefined,
+    rainIntensity: number,
+    hasBikeSecurity: boolean,
+    arrivalContext?: { hour: number; weekday: number }
+  ): CustomerState | null {
+    const cap = demand?.maxConcurrentCustomers ?? this.maxConcurrentCustomers;
+    if (this.customers.filter((c) => (c.buildingId ?? 'main') === streamId).length >= cap) return null;
+
+    const cooldown = (streamId === 'main' ? this.spawnCooldown : this.streamCooldowns.get(streamId) ?? 5.5) - dt;
+    if (cooldown > 0) { this.setStreamCooldown(streamId, cooldown); return null; }
     // Match the reference game's ~5.5s baseline while keeping high traffic
     // readable and preventing a very high level multiplier from flooding the shop.
-    this.spawnCooldown = Math.max(1.5, 5.5 / Math.max(0.25, demand?.traffic ?? 1));
+    // Tòa phụ: cùng công thức rồi chia cho `factor` (cả trần 1,5 s), để nhịp sinh khách tỉ lệ đúng với tiệm chính kể cả khi lưu lượng đã chạm trần.
+    this.setStreamCooldown(streamId, Math.max(1.5, 5.5 / Math.max(0.25, demand?.traffic ?? 1)) / factor);
 
     const stockedShelves = fixtures.filter(
-      (f) => isSalesFixture(f) && !f.broken && f.currentStock > 0 && f.assignedProductId
+      (f) => isSalesFixture(f) && !f.broken && f.currentStock > 0 && f.assignedProductId && (fixtureBuilding(f) ?? 'main') === streamId
     );
     if (!stockedShelves.length) return null;
 
@@ -202,13 +234,16 @@ export class CustomerManager {
       const favShelves = stockedShelves.filter((s) => regularCandidate.favoriteProductIds.includes(s.assignedProductId!));
       target = favShelves.length > 0 ? favShelves[0] : (demand ? this.pickShelfByDemand(stockedShelves, demand.weightOf, currentDay) : stockedShelves[0]);
     } else if (demand) {
-      target = this.pickShelfByDemand(this.pickBuildingShelves(stockedShelves, currentDay), demand.weightOf, currentDay);
+      target = this.pickShelfByDemand(stockedShelves, demand.weightOf, currentDay);
     } else {
       target = stockedShelves[customersServed % stockedShelves.length];
     }
     this.customerSequence += 1;
     const customerId = `cust-${currentDay}-${this.customerSequence}`;
     const checkoutId = `checkout-${currentDay}-${this.customerSequence}`;
+
+    // Khách vào đúng tòa nhà của kệ mục tiêu (kệ trong tiệm xôi thì vào cửa tiệm xôi); xe đỗ ở chỗ gần cửa tòa đó.
+    const buildingId = fixtureBuilding(target) ?? 'main';
 
     // Xác định phương thức ghé tiệm (arrivalMode)
     let arrivalMode: CustomerArrivalMode = 'walk';
@@ -221,8 +256,12 @@ export class CustomerManager {
         .map((c) => `${Math.round(c.vehicleSpot!.x)},${Math.round(c.vehicleSpot!.y)}`)
     );
     const isFree = (s: Vector2D) => !occupiedSpots.has(`${Math.round(s.x)},${Math.round(s.y)}`);
-    const availableSpots = STREET_PARKING_SPOTS.filter(isFree);
-    const availableCarSpots = CAR_PARKING_SPOTS.filter(isFree);
+    const entrance = BUILDING_MAP[buildingId].entranceTile;
+    const distanceToDoor = (s: Vector2D) => Math.abs(s.x / TILE_SIZE - (entrance.x + 0.5));
+    // Chỉ chỗ đỗ trong vòng 15 ô tới cửa tòa; tiệm chính giữ cách chọn cũ (xoay vòng), tòa phụ chọn chỗ gần cửa nhất.
+    const nearDoor = (spots: ReadonlyArray<Vector2D>) => spots.filter(isFree).filter(s => distanceToDoor(s) <= 15).sort((a, b) => buildingId === 'main' ? 0 : distanceToDoor(a) - distanceToDoor(b));
+    const availableSpots = nearDoor(STREET_PARKING_SPOTS);
+    const availableCarSpots = nearDoor(CAR_PARKING_SPOTS);
 
     const rng = new Mulberry32Rng(daySeed(this.customerSequence * 77 + currentDay, currentDay));
     const roll = rng.next();
@@ -252,22 +291,20 @@ export class CustomerManager {
 
     if (arrivalMode === 'motorbike') {
       if (availableSpots.length > 0) {
-        vehicleSpot = availableSpots[this.customerSequence % availableSpots.length];
+        vehicleSpot = availableSpots[buildingId === 'main' ? this.customerSequence % availableSpots.length : 0];
         vehicleVariant = this.customerSequence % 3;
       } else {
         arrivalMode = 'walk';
       }
     } else if (arrivalMode === 'car') {
       if (availableCarSpots.length > 0) {
-        vehicleSpot = availableCarSpots[this.customerSequence % availableCarSpots.length];
+        vehicleSpot = availableCarSpots[buildingId === 'main' ? this.customerSequence % availableCarSpots.length : 0];
         vehicleVariant = this.customerSequence % 3;
       } else {
         arrivalMode = 'walk';
       }
     }
 
-    // Khách vào đúng tòa nhà của kệ mục tiêu (kệ trong tiệm xôi thì vào cửa tiệm xôi).
-    const buildingId = fixtureBuilding(target) ?? 'main';
     const startPos = vehicleSpot ? { ...vehicleSpot } : tileCenter(BUILDING_MAP[buildingId].entranceTile);
 
     const newCustomer: CustomerState = {
@@ -291,14 +328,6 @@ export class CustomerManager {
     this.customers.push(newCustomer);
     this.routeCustomer(newCustomer, 'to_shelf', tileMap, fixtures);
     return newCustomer;
-  }
-
-  /** Tiệm xôi có dòng khách riêng: khi cả hai tòa có hàng, một phần cố định khách chọn tiệm xôi thay vì bị chìm trong ~12 kệ tiệm chính. */
-  private pickBuildingShelves(shelves: StoreFixture[], currentDay: number): StoreFixture[] {
-    const xoi = shelves.filter(shelf => fixtureBuilding(shelf) === 'xoi');
-    if (xoi.length === 0 || xoi.length === shelves.length) return shelves;
-    const roll = new Mulberry32Rng(daySeed(this.customerSequence + 7919, currentDay)).next();
-    return roll < XOI_TRAFFIC_SHARE ? xoi : shelves.filter(shelf => fixtureBuilding(shelf) !== 'xoi');
   }
 
   private pickShelfByDemand(shelves: StoreFixture[], weightOf: (productId: string) => number, currentDay: number): StoreFixture {
@@ -368,16 +397,20 @@ export class CustomerManager {
           y: Math.floor(customer.vehicleSpot.y / TILE_SIZE),
         });
       } else {
-        const exitX = (customer.id ? customer.id.charCodeAt(customer.id.length - 1) : 0) % 2 === 0 ? 1 : 24;
+        const exitX = (customer.id ? customer.id.charCodeAt(customer.id.length - 1) : 0) % 2 === 0 ? 1 : MAP_WIDTH - 2;
         goals.push({ x: exitX, y: 12 });
       }
     }
 
+    // Khách không vào kho/phía sau tiệm chính (hàng y <= STORE_BOUNDS.top), trừ phần mở rộng phía bắc của tòa phụ (sàn tòa mở).
     const customerMap = {
       ...tileMap,
-      collisionLayer: tileMap.collisionLayer.map(
-        (solid, i) => solid || Math.floor(i / tileMap.width) + (tileMap.originTileY ?? 0) <= STORE_BOUNDS.top
-      ),
+      collisionLayer: tileMap.collisionLayer.map((solid, i) => {
+        const y = Math.floor(i / tileMap.width) + (tileMap.originTileY ?? 0);
+        if (solid || y > STORE_BOUNDS.top) return solid;
+        const building = buildingAt(i % tileMap.width, y);
+        return !building || building === 'main'; // cửa kho nằm ở hàng tường sau tiệm chính nên vẫn chặn
+      }),
     };
     const customerCollision = new CollisionSystem(customerMap, fixtures);
     const paths = goals
@@ -387,7 +420,7 @@ export class CustomerManager {
 
     let chosenPath = paths[0];
     if (!chosenPath && stage === 'leaving' && !customer.vehicleSpot) {
-      chosenPath = findPath(customerMap, customerCollision, start, BUILDING_MAP[(customer.buildingId as 'main' | 'xoi' | undefined) ?? 'main']?.entranceTile ?? ENTRANCE_TILE);
+      chosenPath = findPath(customerMap, customerCollision, start, BUILDING_MAP[(customer.buildingId as BuildingId | undefined) ?? 'main']?.entranceTile ?? ENTRANCE_TILE);
     }
     const waypoints = chosenPath?.map(tileCenter).slice(1) ?? [];
     this.paths.set(customer.id ?? customer.checkoutId ?? 'default', waypoints);

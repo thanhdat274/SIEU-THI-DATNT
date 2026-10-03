@@ -1,5 +1,5 @@
 import {
-  ALL_PRODUCTS, DECOR, FIXTURE_SHOP, PRODUCT_MAP, RECIPES, SEASON_EVENTS, STALLS, STORY_CHAPTERS, SEASONAL_DECOR,
+  ALL_PRODUCTS, DECOR, FIXTURE_SHOP, PRODUCT_MAP, RECIPES, SEASON_EVENTS, STALLS, STORY_CHAPTERS, SEASONAL_DECOR, STORE_TYPES, MAX_CHAIN_BRANCHES,
 } from '@game/data';
 
 /**
@@ -78,6 +78,22 @@ export function validateContent(): string[] {
   // Trang trí
   dup('Trang trí', DECOR.map(d => d.id));
   for (const decor of DECOR) if (!decor.exclusive && decor.cost <= 0) errors.push(`Trang trí ${decor.id}: đồ mua được phải có giá`);
+
+  // Loại hình cửa hàng (chuỗi chi nhánh)
+  dup('Loại hình', STORE_TYPES.map(t => t.id));
+  for (const type of STORE_TYPES) {
+    if (!type.name.trim()) errors.push(`Loại hình ${type.id}: thiếu tên`);
+    if (!Number.isSafeInteger(type.openCost) || type.openCost <= 0) errors.push(`Loại hình ${type.id}: giá mở phải là số nguyên dương`);
+    if (!Number.isSafeInteger(type.maxBranches) || type.maxBranches < 1 || type.maxBranches > MAX_CHAIN_BRANCHES) errors.push(`Loại hình ${type.id}: maxBranches phải trong 1..${MAX_CHAIN_BRANCHES}`);
+    if (!Number.isSafeInteger(type.stockCapacity) || type.stockCapacity <= 0) errors.push(`Loại hình ${type.id}: sức chứa kho phải là số nguyên dương`);
+    if (!Object.keys(type.baseDailyDemand).length) errors.push(`Loại hình ${type.id}: không có món bán`);
+    for (const [productId, demand] of Object.entries(type.baseDailyDemand)) {
+      const product = PRODUCT_MAP[productId];
+      if (!product) errors.push(`Loại hình ${type.id}: món "${productId}" không có trong catalog`);
+      else if (product.intermediate) errors.push(`Loại hình ${type.id}: "${productId}" là bán thành phẩm, không bán được`);
+      if (!Number.isFinite(demand) || demand <= 0) errors.push(`Loại hình ${type.id}: cầu của "${productId}" phải dương`);
+    }
+  }
 
   return errors;
 }

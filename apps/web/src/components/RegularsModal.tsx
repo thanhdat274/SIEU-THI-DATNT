@@ -3,7 +3,7 @@ import type { RegularCustomerProgress } from '@game/shared';
 import { REGULAR_CUSTOMERS, PRODUCT_MAP } from '@game/data';
 import { PixelDialog, PixelProgress } from './pixel';
 
-interface Props {
+export interface Props {
   regulars: Record<string, RegularCustomerProgress>;
   onClose: () => void;
 }

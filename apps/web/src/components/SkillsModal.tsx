@@ -3,7 +3,7 @@ import type { SkillState, SkillType } from '@game/shared';
 import { SKILL_PERKS, SKILL_XP_PER_LEVEL } from '@game/data';
 import { PixelButton, PixelDialog, PixelProgress } from './pixel';
 
-interface SkillsModalProps {
+export interface SkillsModalProps {
   skillState: SkillState;
   onChoosePerk: (perkId: string) => void;
   onClose: () => void;

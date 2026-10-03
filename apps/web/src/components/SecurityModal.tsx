@@ -3,7 +3,7 @@ import type { SecurityIncident, SecurityState } from '@game/shared';
 import { SECURITY_RULES } from '@game/data';
 import { PixelButton, PixelDialog, money } from './pixel';
 
-interface SecurityModalProps {
+export interface SecurityModalProps {
   security: SecurityState;
   level: number;
   playerMoney: number;

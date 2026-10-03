@@ -23,7 +23,7 @@ interface PlanRow {
 }
 interface TrendingRow { productId: string; multiplier: number; reasons: string[]; available: boolean }
 
-interface MarketModalProps {
+export interface MarketModalProps {
   summary: MarketSummary;
   prices?: PriceRow[];
   plans?: PlanRow[];

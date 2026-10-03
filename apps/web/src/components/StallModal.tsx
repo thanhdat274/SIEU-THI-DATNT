@@ -5,7 +5,7 @@ import { money, PixelButton, PixelDialog } from './pixel';
 
 export type StallView = StallDefinition & { owned: boolean; buyable: boolean; reason?: string };
 
-interface StallModalProps {
+export interface StallModalProps {
   stalls: StallView[];
   season: SeasonEvent | null;
   stock: Record<string, number>; // tồn nhà kho theo productId

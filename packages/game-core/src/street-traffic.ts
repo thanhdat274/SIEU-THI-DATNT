@@ -273,7 +273,7 @@ export class StreetTrafficManager {
       this.pedestrianSequence++;
       const awake = hour >= 5 && hour < 22;
       const crossingCount = this.pedestrians.filter(p => p.direction === 'south' || p.direction === 'north').length;
-      if (awake && rainIntensity <= 0.6 && crossingCount < STREET_PEDESTRIANS.maxConcurrent) {
+      if (awake && rainIntensity <= STREET_PEDESTRIANS.maxRainCrossing && crossingCount < STREET_PEDESTRIANS.maxConcurrent) {
         const direction: 'south' | 'north' = rng.next() < 0.5 ? 'south' : 'north';
         const left = CROSSWALK.tileX * TILE_SIZE + 10;
         const x = left + rng.next() * (CROSSWALK.widthTiles * TILE_SIZE - 20);
@@ -287,7 +287,7 @@ export class StreetTrafficManager {
       this.sidewalkPedestrianCooldown = 10 + rng2.next() * 15;
       const awake = hour >= 6 && hour < 21;
       const sidewalkCount = this.pedestrians.filter(p => p.direction === 'left' || p.direction === 'right').length;
-      if (awake && rainIntensity <= 0.7 && sidewalkCount < 3) {
+      if (awake && rainIntensity <= STREET_PEDESTRIANS.maxRainSidewalk && sidewalkCount < 3) {
         this.pedestrianSequence++;
         const dir: 'left' | 'right' = rng2.next() < 0.5 ? 'right' : 'left';
         const startX = dir === 'right' ? -20 : MAP_WIDTH * TILE_SIZE + 20;
@@ -317,7 +317,7 @@ export class StreetTrafficManager {
     this.stallVisitorCooldown = (14 - Math.min(this.stallStops.length, 3) * 3) + rng.next() * 8;
     this.pedestrianSequence++;
     const active = this.pedestrians.filter(p => p.stopX !== undefined).length;
-    if (hour < 6 || hour >= 21 || rainIntensity > 0.7 || active >= 3) return;
+    if (hour < 6 || hour >= 21 || rainIntensity > STREET_PEDESTRIANS.maxRainStallVisit || active >= 3) return;
     const dir: 'left' | 'right' = rng.next() < 0.5 ? 'right' : 'left';
     const stopX = this.stallStops[Math.floor(rng.next() * this.stallStops.length)];
     this.addPedestrian({

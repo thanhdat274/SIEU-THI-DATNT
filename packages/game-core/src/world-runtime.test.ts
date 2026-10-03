@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { MAINTENANCE_RULES, SECURITY_RULES, createInitialOnlineWorld } from '@game/data';
-import { MULTIPLAYER_PROTOCOL_VERSION } from '@game/shared';
+import { MULTIPLAYER_PROTOCOL_VERSION, isGameCommand } from '@game/shared';
 import { WorldRuntime } from './world-runtime';
 
 export async function runWorldRuntimeTests() {
@@ -166,6 +166,48 @@ export async function runWorldRuntimeTests() {
   assert.equal((await questRuntime.executeCommand('owner-1', dispose('dispose-2', 50))).status, 'accepted', 'Hủy phần còn lại');
   assert.equal((await questRuntime.executeCommand('owner-1', dispose('dispose-3', 1))).status, 'rejected', 'Hết hàng thì từ chối, không ghi sổ');
   assert.equal(spoilageEntries(), 2);
+
+  // Chuỗi chi nhánh (branch-chain): cả hai thành viên cùng quyền, ví/kho chung, replay trên mô phỏng của server.
+  {
+    const sim = questRuntime.getSimulation();
+    while (sim.getPlayerData().level < 32) sim.addExperience(50_000);
+    sim.addMoney(5_000_000);
+    const send = (actor: string, commandId: string, payload: unknown) => questRuntime.executeCommand(actor, {
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION,
+      worldId: questSeed.world.id,
+      businessId: questSeed.business.id,
+      commandId,
+      expectedRevision: questRuntime.getSnapshot().world.revision,
+      payload,
+    });
+    const money0 = sim.getPlayerData().money;
+    assert.equal((await send('member-2', 'branch-open-1', { type: 'open_branch', storeType: 'drink_shop', name: 'Quán chung', branchId: 'branch-1' })).status, 'accepted', 'Thành viên thứ hai mở được');
+    assert.equal(sim.getPlayerData().money, money0 - 1_500_000);
+    assert.equal(sim.getChain().branches.length, 1);
+    await send('member-2', 'branch-open-1', { type: 'open_branch', storeType: 'drink_shop', name: 'Quán chung', branchId: 'branch-1' });
+    assert.equal(sim.getPlayerData().money, money0 - 1_500_000, 'Gửi lại cùng mã lệnh không trừ tiền lần nữa');
+    assert.equal((await send('owner-1', 'branch-open-bad', { type: 'open_branch', storeType: 'constructor' })).status, 'rejected', 'Loại hình lạ bị từ chối');
+    assert.equal((await send('owner-1', 'branch-open-bad2', { type: 'open_branch', storeType: 'drink_shop', branchId: 'hub' })).status, 'invalid', 'Mã chi nhánh sai định dạng bị lớp validate chặn');
+    assert.equal((await send('owner-1', 'branch-switch-bad', { type: 'switch_branch', branchId: 'nope' })).status, 'rejected');
+    assert.equal((await send('owner-1', 'branch-switch-1', { type: 'switch_branch', branchId: 'branch-1' })).status, 'accepted');
+    assert.equal(sim.getChain().activeBranchId, 'branch-1');
+    // Chuyển kho cần hàng thật trong kho tổng
+    assert.equal((await send('member-2', 'branch-xfer-bad', { type: 'transfer_stock', branchId: 'branch-1', items: [{ productId: 'nuoc_suoi', quantity: 99999 }] })).status, 'rejected');
+    const have = sim.getInventory().find((item) => item.productId === 'nuoc_suoi')?.quantity ?? 0;
+    if (have >= 2) {
+      assert.equal((await send('member-2', 'branch-xfer-1', { type: 'transfer_stock', branchId: 'branch-1', items: [{ productId: 'nuoc_suoi', quantity: 2 }] })).status, 'accepted');
+      assert.equal(sim.getInventory().find((item) => item.productId === 'nuoc_suoi')?.quantity, have - 2);
+      assert.equal((await send('owner-1', 'branch-back-1', { type: 'return_stock', branchId: 'branch-1', items: [{ productId: 'nuoc_suoi', quantity: 2 }] })).status, 'accepted');
+      assert.equal(sim.getInventory().find((item) => item.productId === 'nuoc_suoi')?.quantity, have);
+    }
+    // Payload sai hình dạng bị lớp validate chặn trước khi tới mô phỏng
+    for (const bad of [
+      { type: 'transfer_stock', branchId: 'branch-1', items: [] },
+      { type: 'transfer_stock', branchId: 'branch-1', items: [{ productId: 'nuoc_suoi', quantity: -1 }] },
+      { type: 'return_stock', branchId: 'branch-1', items: [{ productId: 'nuoc_suoi', quantity: 1.5 }] },
+      { type: 'open_branch', storeType: 5 },
+    ]) assert.equal(isGameCommand({ ...claimCommand('x', 'x'), payload: bad } as never), false, JSON.stringify(bad));
+  }
 
   // New progression commands must run through the shared authoritative simulation.
   const titleCommand = (commandId: string, titleId?: string) => ({

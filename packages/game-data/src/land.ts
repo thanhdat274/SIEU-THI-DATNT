@@ -1,4 +1,4 @@
-import { XOI_PLOT_ID, type BuildingId } from './buildings';
+import { DRINK_PLOT_ID, XOI_PLOT_ID, type BuildingId } from './buildings';
 export interface LandPlotDefinition {
   id: string;
   name: string;
@@ -8,6 +8,8 @@ export interface LandPlotDefinition {
   prerequisitePlotId?: string;
   /** Mảnh đất kiểu "tòa nhà": mua là mở cả tòa (hình học ở BUILDINGS), `tiles` để trống. */
   buildingId?: BuildingId;
+  /** Mảnh mở rộng về phía bắc của một tòa (tiệm xôi/quán nước): `tiles` để trống, hình học theo `buildingTop`. */
+  expandsBuilding?: BuildingId;
 }
 
 // Plot geometry is reviewed against map.ts: the final column in each plot is the new shop wall.
@@ -18,6 +20,13 @@ export const LAND_PLOTS: LandPlotDefinition[] = [
     tiles: Array.from({ length: 32 }, (_, i) => ({ x: 18 + i % 4, y: 3 + Math.floor(i / 4) })) },
   // Tiệm xôi (cấp 29, 700.000 ₫ theo branches.json của game gốc; chưa cân bằng): tòa nhà riêng ở dải đất phía tây.
   { id: XOI_PLOT_ID, name: 'Tiệm xôi', level: 29, cost: 700_000, tiles: [], buildingId: 'xoi' },
+  // Quán nước (cấp 32, 1.500.000 ₫ khớp `STORE_TYPES.drink_shop`; chưa cân bằng): tòa nhà riêng ở dải đất phía đông.
+  { id: DRINK_PLOT_ID, name: 'Quán nước', level: 32, cost: 1_500_000, tiles: [], buildingId: 'drink' },
+  // Mở rộng về phía bắc (làm tòa sâu thêm 3 hàng mỗi mảnh). Giá ≈ 1/3 và ≈ 1/2 giá mở tòa, mở khóa sau cấp mở tòa vài cấp; chưa cân bằng.
+  { id: 'xoi-north-a', name: 'Mở rộng tiệm xôi (1)', level: 31, cost: 230_000, tiles: [], prerequisitePlotId: XOI_PLOT_ID, expandsBuilding: 'xoi' },
+  { id: 'xoi-north-b', name: 'Mở rộng tiệm xôi (2)', level: 33, cost: 350_000, tiles: [], prerequisitePlotId: 'xoi-north-a', expandsBuilding: 'xoi' },
+  { id: 'drink-north-a', name: 'Mở rộng quán nước (1)', level: 33, cost: 500_000, tiles: [], prerequisitePlotId: DRINK_PLOT_ID, expandsBuilding: 'drink' },
+  { id: 'drink-north-b', name: 'Mở rộng quán nước (2)', level: 35, cost: 750_000, tiles: [], prerequisitePlotId: 'drink-north-a', expandsBuilding: 'drink' },
 ];
 
 export const STARTER_OWNED_PLOT_IDS: string[] = [];

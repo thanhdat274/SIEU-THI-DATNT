@@ -1,7 +1,7 @@
 import React from 'react';
 import { PixelButton, PixelDialog } from './pixel';
 
-interface TimeVoteModalProps {
+export interface TimeVoteModalProps {
   vote: {
     type: 'advance_day' | 'change_speed';
     targetSpeed?: number;

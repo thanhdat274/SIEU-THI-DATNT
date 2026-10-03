@@ -39,6 +39,20 @@ export const STAFF_ROLE_INFO: Record<StaffRole, RoleInfo> = {
     description: 'Trông giữ xe bãi đỗ vỉa hè, giúp khách đi xe máy yên tâm mua sắm và tăng độ hài lòng',
     primaryStat: 'speed',
   },
+  drink_staff: {
+    id: 'drink_staff',
+    label: 'Nhân viên quán nước',
+    icon: '🍹',
+    description: 'Phụ trách quán nước, hỗ trợ nấu nước, châm hàng và bảo trì quán',
+    primaryStat: 'speed',
+  },
+  drink_security: {
+    id: 'drink_security',
+    label: 'Bảo vệ quán nước',
+    icon: '🔒',
+    description: 'Bảo vệ riêng quán nước, chống trộm cắp và hỗ trợ an ninh khu vực',
+    primaryStat: 'speed',
+  },
 };
 
 export const CANDIDATE_NAMES: string[] = [

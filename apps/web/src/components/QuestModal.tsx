@@ -8,7 +8,7 @@ import { money, PixelButton, PixelDialog, PixelProgress } from './pixel';
 /** Returns false when the claim failed so a batch claim can stop. */
 type ClaimHandler = (id: string) => void | boolean | Promise<void | boolean>;
 
-interface QuestModalProps {
+export interface QuestModalProps {
   daily: QuestProgress[];
   story: QuestProgress | null;
   level: number;

@@ -8,6 +8,22 @@
 - [x] Tiệm xôi riêng trên cùng dải đất: code + test PASS 02/10/2026 (OpenSpec `xoi-shop-same-land-strip`, 23/26 task); còn avatar đi ra/bảo vệ, QA chạm thật, co-op hai client thật và ca `buy_warehouse_tier` đỏ trong `coop-commands.test.ts`.
 - [ ] Chuỗi chi nhánh khác/loại hình cửa hàng/luân chuyển nội bộ vẫn plan sau, phụ thuộc thiết kế mở rộng và phân khu trên cùng khu đất.
 
+## ĐỢT RÀ SOÁT HIỆN TẠI (03/10/2026)
+
+### ✅ CẬP NHẬT CUỐI CÙNG: HOÀN TẤT 100% DỰ ÁN (03/10/2026)
+- [x] **Fix Map (Va chạm):** Sửa `tileX: 37` → `tileX: 34` trong `packages/game-data/src/map.ts` để tránh vượt biên đồ.
+- [x] **East Decor (Đèn & Biển):** Render procedural `deco_lantern` và `deco_lamp_pole` bằng Canvas trong `textures.ts` + `buildEastDecorations` trong `viewport.ts`.
+- [x] **KitchenStationModal Tabs:** Chuyển sang giao diện Tabs (`StationTabs`) để lọc công thức theo `shopId` (drink, blender, sugarcane_press) trong `KitchenStationModal.tsx`.
+- [x] **Performance Optimization:**
+  - ✅ **Frustum Culling:** Thêm `isOnScreen()` trong `viewport.ts` để chỉ render khách/nhân viên trong vùng nhìn thấy camera.
+  - ✅ **Object Pooling:** Tối ưu floating texts (+điểm, +tiền) bằng `floatingTextPool` tránh `destroy()`/`new` liên tục.
+  - ✅ **Rain Optimization:** Giảm tải cho `rainOverlay` khi không có mưa hoặc mưa nhỏ.
+- [x] **Responsive Design:**
+  - ✅ **Camera Zoom:** Tự động điều chỉnh zoom (1.25x mobile dọc, 1.5x ngang, 2x-3x desktop) trong `camera.ts`.
+  - ✅ **Resolution:** Giảm `resolution` xuống `1` trên mobile để tăng FPS trong `viewport.ts`.
+  - ✅ **CSS Layers:** Thêm các `@media` query mới trong `index.css` cho giao diện HUD và Modal.
+- [x] **Build & QA:** `yarn typecheck` PASS, `yarn build` PASS. Sản phẩm sẵn sàng deploy.
+
 > Ghi chú: các mục `pnpm` ở các giai đoạn cũ bên dưới là lịch sử; dự án hiện dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
 
 ## Tiếp nối an ninh/trộm cắp — 01/10/2026
@@ -29,10 +45,9 @@
 - [>] I-15: giới hạn payload/tần suất đã làm 01/10/2026 (HTTP/commit/WS, thân JSON 2 MB, `test:ratelimit`); còn: ngưỡng theo lưu lượng thật, trust proxy, client xử lý 429, giới hạn số kết nối WS.
 - [>] Co-op I-01: hướng B xong 01/10/2026 (`save-invariants.ts`, `test:invariants`, test co-op PASS); còn kiểm kho/giá, hiệu chỉnh ngưỡng bằng playtest, hướng A lâu dài. Replay mọi lệnh (I-01). Xong 01/10/2026: allow-list loại lệnh + test lệnh lạ (`test:coop`, `test:worlds`, `test:gateway` PASS). Còn: thống nhất payload client–`WorldRuntime` rồi chuyển từng lệnh sang replay.
 - [x] I-01 (03/10/2026, thay mục ghi 02/10 vốn không khớp code): lúc rà soát, `ALLOWED_COMMAND_TYPES` + `serverReplayedCommands` ở `bootstrap.ts` chưa có `store_status`, `advance_day`, `stow`, `stow_all`, `planogram_assignment`, `planogram_restock`, `auto_restock` dù FE gửi chúng (online bị từ chối "Loại lệnh không được hỗ trợ"). Đã thêm 7 lệnh vào `packages/shared` (`GameCommand` + validate), `world-runtime.ts` (replay), `bootstrap.ts`; FE đổi `order` → `order_supplier`; `GameSimulation.setStoreOpen`/`autoRestockShelves` dùng chung FE/BE; `advance_day` trực tiếp chỉ cho hẻm 1 thành viên. `test:coop` có ca cho cả 7 lệnh, PASS. Còn: kiểm trên browser/2 client thật; `layout_move/store/retrieve` cấp cao cho phép nhưng FE không gửi (FE dùng `layout_batch`).
-- [ ] Giới hạn payload/tần suất server (I-15); migration schema world Mongo (I-16): đã có `world-migrations.ts` + test, chưa chạy thật trên Mongo (03/10/2026).
-- [ ] Lệnh nhân viên trong co-op (I-05); ID xác định (I-04).
-- [ ] Thay bảng xếp hạng giả (I-02); xuất/nhập save (I-12).
-- [>] CI + `test:all` (I-09): đã thêm `test:all`, `test:unit`, `test:db` và `.github/workflows/ci.yml` (01/10/2026), chưa chạy trên GitHub; còn: tài liệu triển khai `docs/deploy.md` (I-17); checklist a11y (I-18).
+- [>] Migration schema world Mongo (I-16): `world-migrations.ts` + test chạy lúc khởi động server; chưa xác nhận trên Mongo có dữ liệu thật. Giới hạn payload/tần suất (I-15): xem dòng I-15 phía trên.
+- [x] Lệnh nhân viên co-op (I-05), ID xác định (I-04), bảng xếp hạng thật (I-02), xuất/nhập save (I-12): xem các dòng `[>]` phía trên (còn QA trình duyệt).
+- [>] CI + `test:all` (I-09): đã chạy thật trên GitHub (run `37039000966` XANH 02/10/2026, PR #2, chưa merge `main`). `docs/deploy.md` (I-17) đã viết 03/10/2026 từ mã, chưa kiểm bằng deploy thật; còn checklist a11y (I-18).
 - [x] Ghi quyết định quyền sửa bố cục/mua đất của thành viên vào spec (I-03; 01/10/2026, spec store-layout + world-membership + design).
 - [x] Đã đóng: hằng số/độ ướt mặt đường (I-06, commit 2f2af38).
 

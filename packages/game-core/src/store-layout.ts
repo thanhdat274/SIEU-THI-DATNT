@@ -1,5 +1,5 @@
 import { COLD_WAREHOUSE_CAPACITY, UNITS_PER_WAREHOUSE_CELL, getFixtureDimensions, type Product, isSalesFixture, isSlotChild, syncSlotChildren, type GameTileMap, type SaveGameData, type StoreFixture } from '@game/shared';
-import { BUILDING_MAP, DECOR_MAP, FIXTURE_SHOP, LAND_PLOTS, MAP_ORIGIN_Y, STORE_BOUNDS, WAREHOUSE_DOOR_LEFT, WAREHOUSE_TIERS, STORAGE_RACK_CELL_BONUS, MAX_STORAGE_RACKS, XOI_DEFAULT_FIXTURES, XOI_PLOT_ID, buildingOfTiles, type BuildingId } from '@game/data';
+import { BUILDING_MAP, DECOR_MAP, FIXTURE_SHOP, LAND_PLOTS, MAP_ORIGIN_Y, STORE_BOUNDS, WAREHOUSE_DOOR_LEFT, WAREHOUSE_TIERS, STORAGE_RACK_CELL_BONUS, MAX_STORAGE_RACKS, XOI_DEFAULT_FIXTURES, XOI_PLOT_ID, DRINK_DEFAULT_FIXTURES, DRINK_PLOT_ID, buildingOfTiles, type BuildingId } from '@game/data';
 
 export type LayoutFailure = 'fixture_missing' | 'plot_locked' | 'outside_floor' | 'overlap' | 'path_blocked' | 'invalid_rotation' | 'store_open' | 'level' | 'money' | 'prerequisite' | 'unknown_item' | 'unavailable' | 'owned' | 'wrong_building';
 
@@ -102,7 +102,9 @@ export function validateStoreLayout(save: SaveGameData, map: GameTileMap): Layou
     buildingOf.set(fixture.id, home);
   }
   // Tiệm xôi đã mở phải có quầy thu ngân riêng (mỗi tòa một quầy và một hàng đợi).
-  if (plotIds.includes(XOI_PLOT_ID) && !save.storeLayout.fixtures.some(fixture => fixture.type === 'cashier_counter' && buildingOf.get(fixture.id) === 'xoi')) invalid.push('cashier_missing');
+  for (const [plotId, building] of [[XOI_PLOT_ID, 'xoi'], [DRINK_PLOT_ID, 'drink']] as const) {
+    if (plotIds.includes(plotId) && !save.storeLayout.fixtures.some(fixture => fixture.type === 'cashier_counter' && buildingOf.get(fixture.id) === building)) invalid.push('cashier_missing');
+  }
 
   const walkable = (x: number, y: number) => {
     const localY = y - (map.originTileY ?? 0);
@@ -219,10 +221,11 @@ export function buyLandPlot(save: SaveGameData, plotId: string): LayoutResult {
   const next = structuredClone(save);
   next.player.money -= plot.cost;
   next.storeLayout.unlockedPlotIds = [...owned, plotId];
-  if (plot.buildingId === 'xoi') {
+  const defaults = plot.buildingId === 'xoi' ? XOI_DEFAULT_FIXTURES : plot.buildingId === 'drink' ? DRINK_DEFAULT_FIXTURES : undefined;
+  if (defaults) {
     // Mua tòa nhà: đặt bố cục mặc định (id cố định, đã có thì bỏ qua), miễn phí vì đã gồm trong giá.
     const used = new Set([...next.storeLayout.fixtures, ...(next.storeLayout.storedFixtures ?? [])].map(fixture => fixture.id));
-    for (const fixture of XOI_DEFAULT_FIXTURES) if (!used.has(fixture.id)) next.storeLayout.fixtures.push(structuredClone(fixture));
+    for (const fixture of defaults) if (!used.has(fixture.id)) next.storeLayout.fixtures.push(structuredClone(fixture));
     syncLayoutSlots(next);
   }
   return { save: next };

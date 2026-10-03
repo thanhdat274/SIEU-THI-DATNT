@@ -5,7 +5,7 @@ import type {SaveGameData} from '@game/shared';
 import {useControlMode,setControlMode,type ControlMode} from '../control-mode';
 const CONTROL_OPTIONS:Array<{mode:ControlMode;label:string}>=[{mode:'auto',label:'Tự nhận'},{mode:'touch',label:'Cảm ứng (nút di chuyển)'},{mode:'keyboard',label:'Bàn phím / chuột'}];
 import type {CloudSaveState} from '../hooks/useCloudSave';
-interface Props {onManualSave:()=>Promise<boolean>;onResetSave:()=>Promise<boolean>;onExportSave:()=>Promise<boolean>;onImportSave:(save:SaveGameData)=>Promise<boolean>;isOnline?:boolean;cloud?:{state:CloudSaveState;onUpload:(overwrite?:boolean)=>Promise<boolean>;onDownload:()=>Promise<boolean>};onClose:()=>void;lastSavedAt?:string;revision?:number;}
+export interface Props {onManualSave:()=>Promise<boolean>;onResetSave:()=>Promise<boolean>;onExportSave:()=>Promise<boolean>;onImportSave:(save:SaveGameData)=>Promise<boolean>;isOnline?:boolean;cloud?:{state:CloudSaveState;onUpload:(overwrite?:boolean)=>Promise<boolean>;onDownload:()=>Promise<boolean>};onClose:()=>void;lastSavedAt?:string;revision?:number;}
 const money=(value:number)=>`${value.toLocaleString('vi-VN')}₫`;
 export const SaveModal:React.FC<Props>=({onManualSave,onResetSave,onExportSave,onImportSave,isOnline=false,cloud,onClose,lastSavedAt,revision=1})=>{
  const [confirm,setConfirm]=useState(false),[pending,setPending]=useState(false),[status,setStatus]=useState(''),[failed,setFailed]=useState(false);

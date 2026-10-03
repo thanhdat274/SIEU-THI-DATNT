@@ -3,7 +3,7 @@ import { summarizeAnnualRevenue, type AnnualRevenueSummary } from '@game/core';
 import type { DailyRecord, TaxState, WorldTime } from '@game/shared';
 import { PixelDialog, money } from './pixel';
 
-interface Props {
+export interface Props {
   day: number;
   worldTime: WorldTime;
   dailyRecords: Record<number, DailyRecord>;

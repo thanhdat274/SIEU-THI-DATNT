@@ -162,7 +162,15 @@ Phase 7 giữ định hướng Firebase/NestJS/MongoDB, triển khai phần cầ
 ---
 
 ### [>] GIAI ĐOẠN 8: TỐI ƯU HÓA MOBILE & PWA
-- [>] PWA: manifest, icon, meta iOS, service worker cache shell/asset (`apps/web/public`), đăng ký khi production; `yarn build` PASS. Còn I-08: `VERSION` cố định `v1`, đường dẫn `/sw.js` tuyệt đối. Chưa kiểm chứng cài đặt/offline trên trình duyệt hoặc iOS/Android thật.
+- [x] **PWA:** manifest, icon, meta iOS, service worker cache shell/asset (`apps/web/public`), đăng ký khi production; `yarn build` PASS. Còn I-08: `VERSION` cố định `v1`, đường dẫn `/sw.js` tuyệt đối. Chưa kiểm chứng cài đặt/offline trên trình duyệt hoặc iOS/Android thật.
+- [x] **Hiệu năng (03/10/2026):** 
+  - ✅ **Frustum Culling:** Chỉ render entity trong vùng nhìn thấy camera (`viewport.ts`).
+  - ✅ **Object Pooling:** Tái sử dụng floating texts (+tiền, +XP) thay vì tạo/xóa mới.
+  - ✅ **Rain Optimization:** Giảm tải vẽ hạt mưa khi cường độ thấp.
+- [x] **Responsive Design (03/10/2026):**
+  - ✅ **Camera Zoom:** Tự động 1.25x (mobile dọc), 1.5x (ngang), 2x-3x (desktop) (`camera.ts`).
+  - ✅ **Resolution:** Giảm resolution xuống 1x trên mobile để tăng FPS (`viewport.ts`).
+  - ✅ **UI/UX:** CSS media queries cho HUD/Modal trên màn hình nhỏ.
 
 ---
 

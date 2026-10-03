@@ -7,7 +7,7 @@ export interface TitleWithState extends TitleDef {
   isActive: boolean;
 }
 
-interface TitlesModalProps {
+export interface TitlesModalProps {
   titles: TitleWithState[];
   activeTitle?: string;
   onSelectTitle: (titleId?: string) => void;

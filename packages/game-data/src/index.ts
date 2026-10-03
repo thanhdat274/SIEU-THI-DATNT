@@ -34,3 +34,4 @@ export * from './skills';
 export * from './titles';
 export * from './decor';
 export * from './logistics';
+export * from './store-types';

@@ -58,6 +58,9 @@ export function checkSaveInvariants(prev: SaveGameData, next: SaveGameData, comm
   const knownStaff = new Set((prev.staff ?? []).map((member) => member.id));
   if ((next.staff ?? []).filter((member) => !knownStaff.has(member.id)).length > (commandType === 'hire_staff' ? 1 : 0)) return 'Nhân viên mới xuất hiện không qua lệnh tuyển dụng.';
 
+  // Chuỗi chi nhánh chỉ đổi qua lệnh chuỗi (open/switch/transfer/return) hoặc qua ngày, đều do server phát lại; save client của lệnh khác không được đụng tới.
+  if (JSON.stringify(prev.chain ?? null) !== JSON.stringify(next.chain ?? null)) return 'Chuỗi chi nhánh chỉ đổi qua lệnh chuỗi.';
+
   if (commandType === 'store_status' && typeof payload?.isOpen === 'boolean' && next.worldTime.isStoreOpen !== payload.isOpen) {
     return 'Trạng thái cửa hàng không khớp lệnh.';
   }

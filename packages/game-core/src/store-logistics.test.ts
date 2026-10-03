@@ -70,7 +70,8 @@ export function runStoreLogisticsTests(): void {
     });
 
     // Mô phỏng xe chạy vào bãi (approaching)
-    for (let t = 0; t < 3; t += 0.2) {
+    // Xe xuất phát ở mép đông bản đồ (MAP_WIDTH) nên thời gian chạy vào bãi tăng theo chiều rộng bản đồ: chạy tới khi cập bãi (tối đa 20 giây).
+    for (let t = 0; t < 20 && mgr.getActiveEvent()?.phase === 'approaching'; t += 0.2) {
       mgr.update(0.2, 8);
     }
     const ev = mgr.getActiveEvent()!;

@@ -299,6 +299,35 @@ async function run() {
     await assert.rejects(send(owner, 'ops-stow-all-empty', { type: 'stow_all' }, opsRevision), 'stow_all không có hàng chờ bị từ chối');
     assert.equal((await snapshotFor(owner)).world.revision, opsRevision, 'lệnh bị từ chối không đổi revision');
 
+    // Chuỗi chi nhánh (branch-chain): cả hai thành viên cùng quyền, ví chung, server replay; tiền giả trong save client không có tác dụng.
+    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.player.level': 35, 'businesses.0.save.player.money': 5_000_000 } });
+    const chainSeed = await snapshotFor(owner);
+    const chainMoney = chainSeed.businesses[0].save.player.money;
+    const chainOpen = await send(member, 'chain-open', { type: 'open_branch', storeType: 'drink_shop', name: 'Quán chung', branchId: 'branch-1' }, chainSeed.world.revision);
+    assert.equal(chainOpen.committed, true, 'thành viên thứ hai mở được chi nhánh');
+    const afterChainOpen = await snapshotFor(owner);
+    assert.equal(afterChainOpen.businesses[0].save.player.money, chainMoney - 1_500_000, 'ví chung bị trừ đúng giá mở');
+    assert.equal(afterChainOpen.businesses[0].save.chain?.branches[0]?.id, 'branch-1', 'owner thấy chi nhánh do member mở');
+    await assert.rejects(send(owner, 'chain-open-bad', { type: 'open_branch', storeType: 'constructor' }, afterChainOpen.world.revision), 'loại hình lạ bị từ chối');
+    await assert.rejects(send(owner, 'chain-xfer-bad', { type: 'transfer_stock', branchId: 'branch-1', items: [{ productId: 'nuoc_suoi', quantity: 99999 }] }, afterChainOpen.world.revision), 'chuyển quá tồn kho bị từ chối');
+    const chainSwitch = await send(owner, 'chain-switch', { type: 'switch_branch', branchId: 'branch-1' }, afterChainOpen.world.revision);
+    assert.equal(chainSwitch.committed, true);
+    assert.equal((await snapshotFor(member)).businesses[0].save.chain?.activeBranchId, 'branch-1', 'member thấy chi nhánh đang chọn');
+    assert.equal((await snapshotFor(owner)).world.revision, afterChainOpen.world.revision + 1, 'lệnh bị từ chối không đổi revision');
+
+    // Quán nước (tòa thứ ba, cùng dải bản đồ mở rộng): mua qua buy_plot như tiệm xôi, server replay, hai client cùng thấy.
+    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.worldTime.isStoreOpen': false, 'businesses.0.save.player.level': 35, 'businesses.0.save.player.money': 5_000_000 } });
+    const drinkRevision = (await snapshotFor(owner)).world.revision;
+    const drinkResult = await send(member, 'buy-drink', { type: 'buy_plot', plotId: 'building-drink' }, drinkRevision);
+    assert.equal(drinkResult.committed, true, 'mua quán nước được commit');
+    const drinkSave = (await snapshotFor(owner)).businesses[0].save;
+    assert.ok(drinkSave.storeLayout.unlockedPlotIds?.includes('building-drink'), 'owner thấy quán nước đã mở');
+    assert.equal(drinkSave.player.money, 5_000_000 - 1_500_000, 'trừ đúng 1.500.000 ₫ một lần');
+    assert.ok(drinkSave.storeLayout.fixtures.some((f: { id: string }) => f.id === 'drink_cashier_counter'), 'bố cục mặc định quán nước có quầy thu ngân');
+    const drinkRetry = await send(member, 'buy-drink', { type: 'buy_plot', plotId: 'building-drink' }, drinkRevision);
+    assert.equal(drinkRetry.committed, true, 'gửi lại cùng lệnh idempotent');
+    assert.equal((await snapshotFor(owner)).businesses[0].save.player.money, 5_000_000 - 1_500_000, 'gửi lại không trừ tiền lần hai');
+
     console.log('PASS co-op: 10 lệnh server-replay + lệnh vận hành (store_status, planogram, advance_day, stow_all) qua GameController.commitCommand');
     await closeDatabase();
   } finally {

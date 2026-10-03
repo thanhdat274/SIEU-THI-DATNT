@@ -418,6 +418,8 @@ export interface LedgerEntry {
   productId?: string;
   description: string;
   timestamp: string;
+  /** Chi nhánh phát sinh dòng này; thiếu = hub (`branch-chain`). */
+  branchId?: string;
 }
 
 /** Thị trường động: mọi khóa là chuỗi để thêm thời tiết/sự kiện/thẻ bằng dữ liệu, không sửa lõi. */
@@ -774,7 +776,10 @@ export interface WorldTime {
 // Staff, Shifts, and Payroll
 // ==========================================
 
-export type StaffRole = 'cashier' | 'refill' | 'security';
+export type StaffRole = 'cashier' | 'refill' | 'security' | 'drink_staff' | 'drink_security';
+
+/** Tòa nhà mà nhân viên phụ trách (undefined = tất cả tòa). */
+export type StaffBuilding = 'main' | 'xoi' | 'drink' | undefined;
 
 export type StaffShift = 'morning' | 'afternoon' | 'full_day';
 
@@ -803,6 +808,7 @@ export interface StaffMember {
   hiredOnDay: number;
   shift: StaffShift;
   assignedFixtureId?: string;
+  assignedBuilding?: StaffBuilding; /** Tòa nhà nhân viên phụ trách (undefined = tất cả). */
   position?: Vector2D;
   workerTask?: StaffWorkerTask;
   diningTask?: StaffDiningTask;
@@ -839,6 +845,7 @@ export interface StaffWorkerTask {
   stage: 'to_warehouse' | 'to_shelf';
   route: Vector2D[];
   carriedLots: StockLot[];
+  assignedBuilding?: StaffBuilding; /** Tòa nhà của task (giúp nhân viên biết nơi làm việc). */
 }
 
 export interface StaffCandidate {
@@ -850,6 +857,7 @@ export interface StaffCandidate {
   stamina: number;
   dailyWage: number;
   hiringFee: number;
+  assignedBuilding?: StaffBuilding; /** Tòa nhà đề xuất nhân viên này phụ trách. */
 }
 
 export type StaffSchedule = Record<string, StaffShift>; // staffId -> shift
@@ -894,7 +902,45 @@ export interface TaxState {
   cleanAudits: number;
 }
 
+/** Báo cáo một ngày của chi nhánh (giữ tối đa `BRANCH_REPORT_LIMIT` ngày gần nhất). */
+export interface BranchDayReport {
+  day: number;
+  revenue: number;
+  cogs: number;
+  wages: number;
+  spoilageLoss: number;
+  unitsSold: number;
+  /** Món hết hàng khiến cầu không được đáp ứng ("bán hụt"). */
+  stockouts: string[];
+}
+
+/** Một chi nhánh (kho, danh tiếng, báo cáo). Chưa chứa save mô phỏng đầy đủ; xem OpenSpec `branch-chain` D1/D2. */
+export interface BranchSave {
+  id: string;
+  storeType: string;
+  name: string;
+  openedDay: number;
+  stock: InventoryItem[];
+  reputation: number;
+  /** Ngày cuối đã chạy nền; chống tính trùng khi nạp lại/replay. */
+  lastBackgroundDay: number;
+  reports: BranchDayReport[];
+  totalRevenue: number;
+}
+
+/** Chuỗi chi nhánh; `SaveGameData.chain` thiếu = chuỗi một cơ sở (hub). Ví chung = `player.money`, kho tổng = kho hub. */
+export interface ChainState {
+  branches: BranchSave[];
+  /** 'hub' hoặc id chi nhánh. */
+  activeBranchId: string;
+  nextBranchSeq: number;
+}
+
+export const BRANCH_REPORT_LIMIT = 30;
+
 export interface SaveGameData {
+  /** Chuỗi chi nhánh (tùy chọn, không nâng schema). */
+  chain?: ChainState;
   /** Trạng thái thuế (khai bớt, nợ, lịch sử kiểm tra); thiếu ở save cũ = mặc định. */
   tax?: TaxState;
   id: string;
@@ -1013,7 +1059,8 @@ export interface GameTileMap {
   collisionLayer: boolean[]; // true if solid
   storeBounds?: { left: number; right: number; top: number; bottom: number };
   /** Các tòa nhà trên bản đồ và trạng thái mở (hình học nằm ở BUILDINGS của game-data). */
-  buildings?: Array<{ id: string; open: boolean }>;
+  /** `top` = hàng tường sau hiện tại của tòa (đã tính mảnh mở rộng phía bắc); thiếu = biên gốc. */
+  buildings?: Array<{ id: string; open: boolean; top?: number }>;
   /** Quầy ăn uống đã mở, để renderer vẽ; va chạm đã nằm sẵn trong collisionLayer. */
   stalls?: Array<{ id: string; tileX: number; tileY: number; widthTiles: number }>;
 }
@@ -1097,6 +1144,10 @@ export type GameCommandPayload =
   | { type: 'dispose_stock'; productId: string; quantity: number }
   | { type: 'store_status'; isOpen: boolean }
   | { type: 'set_tax_declaration'; underDeclare: boolean }
+  | { type: 'open_branch'; storeType: string; name?: string; branchId?: string }
+  | { type: 'switch_branch'; branchId: string }
+  | { type: 'transfer_stock'; branchId: string; items: Array<{ productId: string; quantity: number }> }
+  | { type: 'return_stock'; branchId: string; items: Array<{ productId: string; quantity: number }> }
   | { type: 'advance_day' }
   | { type: 'stow'; holdingId: string }
   | { type: 'stow_all' }
@@ -1187,6 +1238,13 @@ export function isRestockSuggestionOptions(value: unknown): value is RestockSugg
   return value.protectObligations === undefined || typeof value.protectObligations === 'boolean';
 }
 
+/** Chuỗi chi nhánh hợp lệ về hình dạng (nội dung chi tiết được `normalizeChain` làm sạch khi nạp). */
+export function isChainState(value: unknown): value is ChainState {
+  if (!isRecord(value) || !Array.isArray(value.branches) || value.branches.length > 10) return false;
+  if (typeof value.activeBranchId !== 'string') return false;
+  return value.branches.every((b) => isRecord(b) && typeof b.id === 'string' && typeof b.storeType === 'string');
+}
+
 export function isSaveGameData(value: unknown): value is SaveGameData {
   if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
@@ -1210,6 +1268,7 @@ export function isSaveGameData(value: unknown): value is SaveGameData {
   for (const key of OPTIONAL_SAVE_ARRAYS) if (value[key] !== undefined && !Array.isArray(value[key])) return false;
   for (const key of OPTIONAL_LAYOUT_ARRAYS) if (sl[key] !== undefined && !Array.isArray(sl[key])) return false;
   if (value.restockOptions !== undefined && !isRestockSuggestionOptions(value.restockOptions)) return false;
+  if (value.chain !== undefined && !isChainState(value.chain)) return false;
   if (value.sellingPrices !== undefined && (!isRecord(value.sellingPrices) || !Object.values(value.sellingPrices).every(price => Number.isSafeInteger(price) && Number(price) > 0))) return false;
   const stats = value.statistics;
   if (!isRecord(stats) || !nonNegativeInteger(stats.totalRevenue) || !nonNegativeInteger(stats.totalCustomersServed)) {
@@ -1346,6 +1405,11 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'assign_refill_job': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
     case 'store_status': return typeof p.isOpen === 'boolean';
     case 'set_tax_declaration': return typeof p.underDeclare === 'boolean';
+    case 'open_branch': return nonEmptyString(p.storeType) && (p.name === undefined || (typeof p.name === 'string' && p.name.length <= 48)) && (p.branchId === undefined || (nonEmptyString(p.branchId) && /^branch-\d{1,6}$/.test(p.branchId as string)));
+    case 'switch_branch': return nonEmptyString(p.branchId);
+    case 'transfer_stock':
+    case 'return_stock': return nonEmptyString(p.branchId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 50
+      && p.items.every((item) => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
     case 'advance_day': case 'stow_all': case 'auto_restock': return true;
     case 'stow': return nonEmptyString(p.holdingId);
     case 'planogram_assignment': return nonEmptyString(p.fixtureId) && (p.productId === null || nonEmptyString(p.productId));

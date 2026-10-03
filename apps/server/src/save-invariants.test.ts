@@ -67,4 +67,15 @@ assert.equal(check(hired, 'set_staff_shift', n), null, 'đổi ca không đổi 
   assert.match(check(cheated, 'buy_plot', prev) ?? '', /Tiền tăng/, 'mua tiệm mà tiền tăng bị từ chối');
 }
 
+// Chuỗi chi nhánh: save client của lệnh không phải lệnh chuỗi không được thêm/sửa chuỗi.
+{
+  const withChain = clone();
+  withChain.chain = { branches: [{ id: 'branch-1', storeType: 'drink_shop', name: 'Q', openedDay: 1, stock: [{ productId: 'nuoc_suoi', quantity: 5 }], reputation: 20, lastBackgroundDay: 1, reports: [], totalRevenue: 0 }], activeBranchId: 'hub', nextBranchSeq: 2 };
+  assert.match(check(withChain, 'set_price') ?? '', /Chuỗi chi nhánh/, 'tự thêm chi nhánh qua save client bị từ chối');
+  const inflated = structuredClone(withChain); inflated.chain!.branches[0].stock[0].quantity = 9999;
+  assert.match(check(inflated, 'set_price', withChain) ?? '', /Chuỗi chi nhánh/, 'tự tăng kho chi nhánh bị từ chối');
+  assert.equal(check(structuredClone(withChain), 'set_price', withChain), null, 'chuỗi không đổi thì hợp lệ');
+  assert.equal(check(clone(), 'set_price'), null, 'save không có chuỗi vẫn hợp lệ');
+}
+
 console.log('PASS save-invariants: chặn tiền/doanh thu/XP/cấp/đã nhận bị sửa, cho phép tăng hợp lý theo thời gian');

@@ -4,7 +4,7 @@ import { PRODUCT_MAP } from '@game/data';
 import { feedbackReasonLabel, type ReviewSummary } from '@game/core';
 import { PixelButton, PixelDialog } from './pixel';
 
-interface ReviewsModalProps {
+export interface ReviewsModalProps {
   reviews: CustomerReview[];
   summary: ReviewSummary;
   onClose: () => void;

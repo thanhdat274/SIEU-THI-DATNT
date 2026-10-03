@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import type { DailyRecord } from '@game/shared';
-import { PRODUCT_MAP, SELLABLE_PRODUCTS, STORE_BOUNDS, XOI_BOUNDS } from '@game/data';
+import { DRINK_BOUNDS, PRODUCT_MAP, SELLABLE_PRODUCTS, STORE_BOUNDS, XOI_BOUNDS } from '@game/data';
 import { buildProductSeries } from '@game/core';
 import { PixelButton, PixelDialog } from './pixel';
 
-interface Props {
+export interface Props {
   day: number;
   records: Record<number, DailyRecord>;
   getPriceHistory: (productId: string) => Array<{ day: number; price: number }>;
@@ -49,8 +49,8 @@ const PriceSalesChart: React.FC<{ productId: string } & Pick<Props, 'day' | 'rec
 };
 
 const Heatmap: React.FC<{ counts: Record<string, number> }> = ({ counts }) => {
-  // Gộp cả hai tòa nhà (tiệm xôi ở dải phía tây) vào một bản đồ nhiệt.
-  const x0 = Math.min(STORE_BOUNDS.left - 2, XOI_BOUNDS.left), x1 = STORE_BOUNDS.right + 2, y0 = STORE_BOUNDS.top - 1, y1 = STORE_BOUNDS.bottom + 3;
+  // Gộp cả ba tòa nhà (tiệm xôi ở dải phía tây, quán nước ở dải phía đông) vào một bản đồ nhiệt.
+  const x0 = Math.min(STORE_BOUNDS.left - 2, XOI_BOUNDS.left), x1 = Math.max(STORE_BOUNDS.right + 2, DRINK_BOUNDS.right), y0 = STORE_BOUNDS.top - 1, y1 = STORE_BOUNDS.bottom + 3;
   const max = Math.max(1, ...Object.values(counts));
   const cols = x1 - x0 + 1;
   const cells: React.ReactNode[] = [];

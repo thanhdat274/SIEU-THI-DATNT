@@ -22,6 +22,10 @@ export const STREET_PEDESTRIANS = {
   /** Mép vỉa phía bắc (y px) nơi đứng chờ, và mép phía nam. */
   northCurbY: 12.85 * 32,
   southCurbY: 15.15 * 32,
+  /** Cường độ mưa (0..1) tối đa mà còn có người qua đường / đi vỉa hè / ghé quầy. */
+  maxRainCrossing: 0.6,
+  maxRainSidewalk: 0.7,
+  maxRainStallVisit: 0.7,
 } as const;
 
 /** Xe dừng cách mép vạch qua đường ngần này (px) và giữ khoảng cách tối thiểu với xe phía trước. */
