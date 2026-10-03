@@ -21,7 +21,7 @@ export function installPerfOverlay(): void {
 
   const root = document.createElement('section');
   root.setAttribute('aria-label', 'Đo hiệu năng');
-  root.style.cssText = 'position:fixed;z-index:9999;top:calc(env(safe-area-inset-top,0px) + 8px);left:calc(env(safe-area-inset-left,0px) + 8px);width:min(255px,calc(100vw - 16px));font:12px/1.4 system-ui,sans-serif;color:#fff;background:rgba(25,20,17,.92);border:1px solid #c8a77c;border-radius:8px;box-shadow:0 2px 10px #0008;pointer-events:auto;touch-action:none;';
+  root.style.cssText = 'position:fixed;z-index:9999;top:calc(env(safe-area-inset-top,0px) + 8px);left:calc(env(safe-area-inset-left,0px) + 8px);width:min(285px,calc(100vw - 16px));font:12px/1.4 system-ui,sans-serif;color:#fff;background:rgba(25,20,17,.92);border:1px solid #c8a77c;border-radius:8px;box-shadow:0 2px 10px #0008;pointer-events:auto;touch-action:none;';
   const header = document.createElement('div');
   header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#3b2618;border-radius:8px 8px 0 0;font-weight:700;';
   header.innerHTML = '<span>Đo hiệu năng · 5 giây</span>';
@@ -67,12 +67,18 @@ export function installPerfOverlay(): void {
       const intervals = samples.map((item) => item.duration).sort((a, b) => a - b);
       const mean = intervals.length ? intervals.reduce((sum, n) => sum + n, 0) / intervals.length : 0;
       const p99 = intervals.length ? intervals[Math.min(intervals.length - 1, Math.floor(intervals.length * 0.99))] : 0;
-      const over33 = intervals.filter((n) => n > 33.3).length;
+      const p95 = intervals.length ? intervals[Math.min(intervals.length - 1, Math.floor(intervals.length * 0.95))] : 0;
+      const worst = intervals.length ? intervals[intervals.length - 1] : 0;
+      const heap = (performance as Performance & { memory?: { usedJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
+      const memory = heap
+        ? `${(heap.usedJSHeapSize / 1048576).toFixed(0)} / ${(heap.jsHeapSizeLimit / 1048576).toFixed(0)} MB`
+        : 'không hỗ trợ (Safari/Firefox)';
+      const over33 =intervals.filter((n) => n > 33.3).length;
       const over50 = intervals.filter((n) => n > 50).length;
       const canvas = document.querySelector('canvas');
       const gl = canvas ? (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) : null;
       const renderer = canvas ? (gl ? 'WebGL' : 'Canvas/khác') : '—';
-      body.textContent = `FPS TB: ${mean ? (1000 / mean).toFixed(1) : 'đang đo…'}   ·   p1: ${p99 ? (1000 / p99).toFixed(1) : '—'}\nKhung >33 ms: ${over33}   ·   >50 ms: ${over50}\nSố mẫu: ${intervals.length} / 5 giây\n${renderer} · DPR ${window.devicePixelRatio || 1} · ${screen.width}×${screen.height}`;
+      body.textContent = `FPS TB: ${mean ? (1000 / mean).toFixed(1) : 'đang đo…'}   ·   p1: ${p99 ? (1000 / p99).toFixed(1) : '—'}\np95: ${p95 ? p95.toFixed(1) + ' ms' : '—'}   ·   chậm nhất: ${worst ? worst.toFixed(1) + ' ms' : '—'}\nKhung >33 ms: ${over33}   ·   >50 ms: ${over50}\nBộ nhớ JS: ${memory}\nSố mẫu: ${intervals.length} / 5 giây\n${renderer} · DPR ${window.devicePixelRatio || 1} · ${screen.width}×${screen.height}`;
     }
     raf = window.requestAnimationFrame(frame);
   };
