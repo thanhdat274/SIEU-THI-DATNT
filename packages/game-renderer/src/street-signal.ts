@@ -108,22 +108,19 @@ export function createPedestrianSprite(variant: number, activity: string | undef
   }
   c.addChild(g);
 
-  // Túi giấy kraft đi chợ: quai nắm trong tay (tay cách chân ~14 px), thân túi buông xuống tới gần mặt đất,
-  // thò ra mớ hành lá và khúc bánh mì. Tọa độ gốc ở giữa túi, vị trí đổi theo hướng đi.
+  // Túi tote đỏ có nhãn trắng, hai quai nắm trong tay (tay cách chân ~14 px), thân túi buông xuống sát mặt đất.
+  // Tọa độ gốc ở giữa túi; vị trí đổi theo hướng đi và theo nhịp đung đưa của tay.
   const bag = new Graphics();
   if (activity === 'grocery') {
-    bag.rect(-2, -15, 5, 1).fill(0x5a3a22);
-    bag.rect(-2, -15, 1, 5).fill(0x5a3a22);
-    bag.rect(2, -15, 1, 5).fill(0x5a3a22);
-    bag.rect(-5, -14, 1, 5).fill(0x4f9a4a);
-    bag.rect(-4, -15, 1, 6).fill(0x7bc06a);
-    bag.rect(4, -13, 2, 4).fill(0xd9a24f);
-    bag.rect(-5, -11, 11, 11).fill(0x4a2f1a);
-    bag.rect(-4, -10, 9, 9).fill(0xc9985a);
-    bag.rect(-4, -10, 9, 2).fill(0xa87a42);
-    bag.rect(3, -8, 2, 7).fill(0xb0834a);
-    bag.rect(-2, -6, 4, 3).fill(0xf2e3c0);
-    bag.rect(-1, -5, 2, 1).fill(0xb8432f);
+    bag.rect(-3, -15, 6, 1).fill(0x8e2a22);
+    bag.rect(-3, -15, 1, 4).fill(0x8e2a22);
+    bag.rect(2, -15, 1, 4).fill(0x8e2a22);
+    bag.rect(-5, -12, 11, 12).fill(0x7a1f19);
+    bag.rect(-4, -11, 9, 10).fill(0xe03a2e);
+    bag.rect(-4, -11, 9, 1).fill(0xff6a50);
+    bag.rect(3, -10, 2, 9).fill(0xb82a20);
+    bag.rect(-2, -8, 4, 3).fill(0xf2e3c0);
+    bag.rect(-1, -7, 2, 1).fill(0xd9b99a);
   }
   bag.visible = activity === 'grocery';
   c.addChild(bag);
@@ -147,8 +144,9 @@ export function placePedestrian(sprite: Container, p: StreetPedestrianState, tim
   // Đồ kèm (túi, cún) lật theo chiều ngang; khi băng qua đường thì giữ phía hướng phải.
   if (p.direction === 'left') accessory.scale.x = -1;
   else if (p.direction === 'right') accessory.scale.x = 1;
-  // Đi ngang: tay ở giữa thân nên túi treo sát chân, hơi lệch về phía trước. Đi dọc: túi ở tay phải (nhìn từ ngoài vào).
+  // Đi ngang: túi treo ở tay đung đưa theo bước chân (khớp tay trong sprite nghiêng); đi dọc: túi ở tay phải.
   const lateral = p.direction === 'left' || p.direction === 'right';
-  bag.x = lateral ? (p.direction === 'left' ? -2 : 2) : 10;
-  bag.y = isMoving && !reducedMotion ? -Math.round(Math.abs(Math.sin(time * speed))) : 0;
+  const swing = isMoving && !reducedMotion ? [0, 3, 0, -3][frame % 4] : 0;
+  bag.x = lateral ? (p.direction === 'left' ? 1.5 + swing : -1.5 - swing) : 10;
+  bag.y = 0;
 }
