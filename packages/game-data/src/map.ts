@@ -21,7 +21,8 @@ export const ONLINE_SPAWN_POINTS: readonly { x: number; y: number }[] = [
 export const isFenceTile = (x: number, worldY: number, mapWidth: number): boolean =>
   worldY === 10 && x > XOI_BOUNDS.right && x < mapWidth - 1 && x >= STORE_BOUNDS.right + 2 && (x < DRINK_BOUNDS.left || x > DRINK_BOUNDS.right);
 /** Đèn đường trên vỉa hè sát lòng đường; cột đèn chỉ chặn phần chân cột (`STREET_LAMP_COLLIDER`). Không đặt cột đèn chéo sát một cây (cột ở hàng 12, cây ở hàng 11, lệch một cột) vì hai vật cản chạm góc sẽ bịt kín cả vỉa hè; `sidewalk-passable.test.ts` kiểm tra. */
-export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 3, y: 12 }, { x: 15, y: 12 }, { x: 21, y: 12 }];
+export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 9, y: 12 }, { x: 15, y: 12 }, { x: 21, y: 12 }];
+// Cột đèn đầu hẻm trước ở x=3 sát cột đèn tín hiệu phía bắc vạch qua đường (x≈106 px), nên dời sang x=9: cách đều cột tín hiệu và cột x=15 (~195 px).
 /**
  * Va chạm của cột đèn: chỉ phần chân cột (khớp sprite `deco_lamp_pole` 32x64: thân rộng ~10 px quanh x=10..20, chân cột
  * cao ~10 px sát đáy ô), không chặn cả ô 32x32 như tường. Tọa độ pixel tương đối góc trên-trái của ô cột đèn.

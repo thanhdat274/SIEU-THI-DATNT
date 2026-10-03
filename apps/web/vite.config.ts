@@ -40,7 +40,7 @@ function injectSwVersion(): Plugin {
     name: 'inject-sw-version',
     apply: 'build',
     closeBundle() {
-      const swPath = path.resolve(__dirname, 'dist', 'sw.js');
+      const swPath = path.resolve(import.meta.dirname, 'dist', 'sw.js');
       if (!fs.existsSync(swPath)) return;
       const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 13); // "202610020847"
       const version = `v-${ts}`;

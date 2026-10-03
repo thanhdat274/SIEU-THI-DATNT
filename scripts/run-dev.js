@@ -4,8 +4,16 @@ const path = require('path');
 
 const cwd = path.resolve(__dirname, '..');
 
-const server = spawn('yarn', ['dev:server'], { cwd, stdio: 'inherit', shell: true });
-const web = spawn('yarn', ['dev:web'], { cwd, stdio: 'inherit', shell: true });
+// Chạy yarn qua chính node (npm_execpath) để không cần `shell: true`; nếu không có thì rơi về một chuỗi lệnh duy nhất.
+const yarnJs = process.env.npm_execpath;
+function runYarn(script) {
+  return yarnJs
+    ? spawn(process.execPath, [yarnJs, script], { cwd, stdio: 'inherit' })
+    : spawn(`yarn ${script}`, { cwd, stdio: 'inherit', shell: true });
+}
+
+const server = runYarn('dev:server');
+const web = runYarn('dev:web');
 
 console.log('BE (dev:server) started');
 console.log('FE (dev:web) started');
