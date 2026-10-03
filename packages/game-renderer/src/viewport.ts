@@ -4,7 +4,7 @@ import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, get
 import { FixedStepSimulationRunner, GameSimulation, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
-import { ShopLighting, type VehicleLightSource } from './shop-lighting';
+import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
 import { DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, BUILDING_MAP, type BuildingId} from '@game/data';
 
 export interface PixiGameViewportOptions {
@@ -105,6 +105,8 @@ export class PixiGameViewport {
   private ambientSprites: Array<{sprite: Sprite; key: string; frames: number}> = [];
   private stallSprites: Sprite[] = [];
   private eastDecorSprites: Array<Sprite | Graphics | Text> = [];
+  /** Quầng sáng bóng đèn của hai cột đèn trang trí phía đông: chỉ sáng khi trời tối như đèn đường. */
+  private decorLampGlows: Graphics[] = [];
   private shopkeeper?: { container: Container; sprite: Sprite; bubble: Container };
   private motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; wearMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string; staticArt?: boolean; dotX: number }> = new Map();
@@ -467,6 +469,7 @@ export class PixiGameViewport {
       lampLight.zIndex = lampLight.y;
       this.entitiesLayer.addChild(lampLight);
       this.eastDecorSprites.push(lampLight);
+      this.decorLampGlows.push(lampLight);
     }
 
     // 3. Đèn lồng đỏ trước quán nước (x=30)
@@ -1402,6 +1405,8 @@ export class PixiGameViewport {
     const warehouseActive = isPlayerInWarehouse || anyWorkerInWarehouse;
     this.lighting.syncFixtures(this.simulation.getFixtures().filter(fixture => !fixture.parentId));
     this.lighting.update(light, this.animTimer, reducedMotion, warehouseActive, elapsed);
+    const streetStrength = streetLightStrength(light);
+    for (const glow of this.decorLampGlows) glow.alpha = streetStrength;
     const feet: Array<{ x: number; y: number }> = [this.playerContainer.position];
     if (this.partnerContainer.visible) feet.push(this.partnerContainer.position);
     for (const c of this.customerSprites.values()) feet.push(c.container.position);

@@ -3,7 +3,16 @@ import { LightingState, lerpColor } from '@game/core';
 import { GameTileMap, StoreFixture, TILE_SIZE, getFixtureDimensions, isWarehouseFixture } from '@game/shared';
 import { BUILDING_MAP, DRINK_BOUNDS, STORE_BOUNDS, STREET_LAMP_TILES, WAREHOUSE_BOUNDS, XOI_BOUNDS } from '@game/data';
 
-type LightKind = 'artificial' | 'sun';
+type LightKind = 'artificial' | 'sun' | 'street';
+
+/**
+ * Cường độ đèn ngoài đường (đèn đường, đèn pha xe): bật theo độ sáng bầu trời chứ không theo `artificial`, vì `artificial`
+ * còn dùng cho đèn trong tiệm và giảm rất chậm suốt buổi sáng (còn ~0,4 lúc 7 giờ khi trời đã sáng). Tắt hẳn khi nắng
+ * ≥ 0,46 (~7 giờ sáng, ~17 giờ 30 chiều), sáng đủ khi nắng ≤ 0,2 (bình minh ~6 giờ, hoàng hôn ~18 giờ 30).
+ */
+export function streetLightStrength(state: LightingState): number {
+  return Math.max(0, Math.min(1, (0.46 - state.sun) / 0.26));
+}
 interface LightSprite { sprite: Sprite; base: number; kind: LightKind; flicker: number }
 interface Shadow { graphics: Graphics; width: number; strength: number }
 
@@ -297,7 +306,7 @@ export class ShopLighting {
       for (const x of [door.x - 0.6, door.x + 2.6]) this.add(out, x * T, (DRINK_BOUNDS.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xd6f0ff, 0.26);
       this.add(out, (door.x + 1) * T, (DRINK_BOUNDS.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xd2eeff, 0.30);
     }
-    for (const lamp of STREET_LAMP_TILES) this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 50, 3.1 * T, 3.1 * T, 0xffd98a, 0.75, 'artificial', 0.03);
+    for (const lamp of STREET_LAMP_TILES) this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 50, 3.1 * T, 3.1 * T, 0xffd98a, 0.75, 'street', 0.03);
     // Nắng lọt qua cửa vào và cửa sổ (chỉ ban ngày); vệt nắng dịch theo giờ.
     this.sunPatch = this.add(out, 10 * T, (STORE_BOUNDS.bottom - 1.4) * T, 1.9 * T, 1.5 * T, 0xffe9b0, 0.5, 'sun');
     this.add(out, (STORE_BOUNDS.left + 1.6) * T, 5.7 * T, 1.6 * T, 0.9 * T, 0xfff0c0, 0.35, 'sun');
@@ -327,9 +336,10 @@ export class ShopLighting {
     // warehouseTint chuyển mượt từ tối sẫm 0x141824 sang sáng trắng 0xffffff
     this.warehouseTint.tint = lerpColor(0x5a6278, 0xffffff, this.warehouseLightProgress);
 
+    const streetStrength = streetLightStrength(state);
     const apply = (list: LightSprite[]) => {
       for (const l of list) {
-        const strength = l.kind === 'sun' ? state.sun : state.artificial;
+        const strength = l.kind === 'sun' ? state.sun : l.kind === 'street' ? streetStrength : state.artificial;
         const wobble = reducedMotion || !l.flicker ? 1 : 1 - l.flicker * (0.5 + 0.5 * Math.sin(timeSeconds * 7 + l.sprite.x));
         l.sprite.alpha = strength * l.base * wobble;
       }
@@ -365,7 +375,7 @@ export class ShopLighting {
    * Cường độ theo đèn nhân tạo của giờ (ban ngày = 0 nên không vẽ gì); xe đỗ coi như tắt máy.
    */
   public updateVehicleLights(sources: VehicleLightSource[], state: LightingState): void {
-    const strength = Math.max(0, Math.min(1, (state.artificial - 0.08) / 0.5));
+    const strength = streetLightStrength(state);
     while (this.vehicleLights.length < sources.length) {
       const make = (color: number, rx: number, ry: number): Sprite => {
         const sprite = new Sprite(this.glow);
