@@ -1143,67 +1143,74 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
   }
 
   if (key.startsWith('vehicle_bicycle_rider_')) {
-    // Xe đạp ~1,8 m (≈ 40 px) với người đạp ngồi thẳng, đội nón lá, giỏ trước chở rau (cùng tỉ lệ xe máy/ô tô).
+    // Xe đạp xanh lá + người đạp đội nón lá theo ảnh mẫu: đầu to kiểu hoạt hình, áo khoác xanh, bánh vành trắng,
+    // giỏ rau phía trước, baga sau chở thùng và gói hàng. Vẽ quay mặt sang phải rồi lật ngang khi hướng trái.
     const isRight = key.endsWith('right');
-    const { canvas, r } = makeSurface(52, 50, !isRight);
-    const FRAME = '#16a085';
-    const FRAME_LIGHT = '#48c9b0';
-    const PANTS = '#3b4e4e';
+    const { canvas, r: r0 } = makeSurface(64, 64, !isRight);
+    const r: R4 = (x, y, w, h, c) => r0(x, y + 2, w, h, c);
+    const G = { main: '#3f9b4a', light: '#6fcb7a', dark: '#2c7336' };
+    const J = { main: '#2e8b3e', light: '#4cb25d', dark: '#1f6a2d' };
     const SKIN = '#f1c8a0';
-    r(5, 44, 42, 4, '#26190e30'); r(9, 43, 34, 4, '#26190e20');
+    const PANTS = '#1f4d33';
+    r(4, 56, 56, 4, '#26190e40'); r(9, 55, 46, 3, '#26190e25');
 
-    // Bánh xe mảnh: lốp đen, vành bạc, nan chéo (tâm ở độ cao 37, bán kính 7)
-    const bikeWheel = (cx: number, cy: number) => {
-      drawWheel(r, cx, cy, 7);
-      // Khoét lòng vành để thấy nan, rồi vẽ nan + trục
-      const ring = (rad: number, col: string) => {
-        for (let dy = -rad; dy <= rad; dy++) {
-          const half = Math.round(Math.sqrt(rad * rad - dy * dy));
-          r(cx - half, cy + dy, half * 2 + 1, 1, col);
-        }
-      };
-      ring(5, '#d5dbdb');
-      ring(4, '#e8ecef');
-      r(cx - 4, cy, 9, 1, '#9aa5ad'); r(cx, cy - 4, 1, 9, '#9aa5ad');
-      r(cx - 3, cy - 3, 1, 1, '#9aa5ad'); r(cx + 3, cy - 3, 1, 1, '#9aa5ad'); r(cx - 3, cy + 3, 1, 1, '#9aa5ad'); r(cx + 3, cy + 3, 1, 1, '#9aa5ad');
-      r(cx - 1, cy - 1, 3, 3, '#5d6368');
+    // Bánh xe: lốp đen dày, vành trắng, nan chéo xám, trục
+    const wheel = (cx: number, cy: number) => {
+      disc(r, cx, cy, 9, DARK);
+      disc(r, cx, cy, 7, '#eef1f3');
+      disc(r, cx, cy, 6, '#dfe3e6');
+      r(cx - 6, cy, 13, 1, '#9aa5ad'); r(cx, cy - 6, 1, 13, '#9aa5ad');
+      r(cx - 4, cy - 4, 1, 1, '#9aa5ad'); r(cx + 4, cy - 4, 1, 1, '#9aa5ad'); r(cx - 4, cy + 4, 1, 1, '#9aa5ad'); r(cx + 4, cy + 4, 1, 1, '#9aa5ad');
+      disc(r, cx, cy, 2, '#5d6368'); r(cx - 1, cy - 1, 2, 2, '#2c3e50');
     };
-    bikeWheel(13, 37);
-    bikeWheel(40, 37);
+    wheel(14, 49);
+    wheel(49, 49);
 
-    // Khung sườn: ống yên, ống ngang, ống xiên, càng sau, phuộc trước
-    const tube = (x: number, y: number, w: number, h: number) => { r(x, y, w, h, FRAME); r(x, y, 1, h, FRAME_LIGHT); };
-    tube(19, 27, 2, 11);          // ống yên
-    tube(20, 27, 17, 2);          // ống ngang
-    for (let i = 0; i < 11; i++) tube(21 + i, 30 + Math.floor(i * 0.6), 2, 2); // ống xiên
-    for (let i = 0; i < 7; i++) tube(14 + i, 37 - Math.floor(i * 1.4), 2, 2);  // càng sau
-    tube(37, 27, 2, 4);
-    for (let i = 0; i < 6; i++) r(38 + Math.floor(i * 0.5), 29 + i, 2, 2, '#8a9199'); // phuộc
-    r(13, 36, 3, 3, '#5d6368'); r(39, 36, 3, 3, '#5d6368');                            // trục bánh
-    r(19, 37, 5, 2, '#5d6368'); r(20, 39, 3, 2, '#2c3e50');                            // đùi đĩa + bàn đạp
-    // Yên, ghi-đông, chuông
-    r(15, 25, 9, 3, DARK); r(16, 25, 7, 1, '#5a5148');
-    r(36, 22, 3, 6, '#8a9199'); r(35, 21, 8, 2, DARK); r(42, 21, 2, 3, DARK);
-    // Giỏ trước có rau
-    r(43, 24, 9, 8, DARK); r(44, 25, 7, 6, '#c89b5c'); r(44, 28, 7, 1, '#8a5a2f'); r(44, 25, 7, 1, '#dcb27a');
-    r(44, 22, 3, 3, '#7bc043'); r(47, 21, 3, 4, '#2e8b57'); r(50, 23, 2, 2, '#e67e22');
+    // Khung: càng sau, ống yên, ống ngang, ống xiên, phuộc xám
+    const bar = (x: number, y: number, w: number, h: number) => { r(x, y, w, h, G.main); r(x, y, w, 1, G.light); };
+    bar(15, 48, 16, 2);                                         // càng sau ngang
+    for (let i = 0; i < 10; i++) bar(15 + i, 47 - i, 2, 2);     // ống nâng yên (seat stay)
+    for (let i = 0; i < 8; i++) bar(30 - Math.floor(i * 0.75), 48 - i * 1, 2, 2); // ống yên
+    bar(24, 37, 22, 2);                                         // ống ngang
+    for (let i = 0; i < 16; i++) bar(46 - i, 38 + Math.floor(i * 0.7), 2, 2);     // ống xiên
+    r(46, 33, 3, 6, '#9aa0a6');                                 // cổ phuộc
+    for (let i = 0; i < 11; i++) r(47 + Math.floor(i * 0.2), 38 + i, 2, 2, '#8a9199'); // phuộc trước
+    r(13, 48, 3, 3, '#5d6368'); r(48, 48, 3, 3, '#5d6368');     // trục bánh
+    r(28, 48, 7, 3, '#5d6368'); r(29, 51, 5, 2, '#2c3e50');     // đĩa + bàn đạp
+    // Chắn bùn trước nhỏ + đèn pha
+    r(44, 41, 10, 2, G.dark);
+    r(53, 31, 3, 3, DARK); r(54, 32, 1, 1, '#ffe27a');
+    // Yên, ghi-đông
+    r(19, 34, 10, 4, DARK); r(20, 34, 8, 2, '#3a342c');
+    r(44, 27, 3, 7, '#9aa0a6'); r(41, 26, 12, 3, DARK); r(51, 26, 4, 3, '#2a2a2a');
+    // Baga sau: thùng xanh + gói hàng cam
+    r(2, 38, 17, 2, '#6b7078');
+    r(4, 30, 14, 9, DARK); r(5, 31, 12, 7, G.main); r(5, 31, 12, 2, G.light); r(5, 36, 12, 2, G.dark);
+    r(12, 28, 8, 10, DARK); r(13, 29, 6, 8, '#e09a3a'); r(13, 29, 6, 2, '#f0b860'); r(15, 29, 2, 8, '#f4e6c4');
+    r(1, 40, 3, 4, '#e74c3c');
+    // Giỏ trước đan, có rau
+    r(49, 35, 14, 10, DARK); r(50, 36, 12, 8, '#c89b5c'); r(50, 36, 12, 2, '#dcb27a');
+    r(50, 40, 12, 1, '#8a5a2f'); r(53, 36, 1, 8, '#a67c45'); r(58, 36, 1, 8, '#a67c45');
+    r(50, 31, 7, 5, '#4cae3b'); r(52, 29, 4, 3, '#2e8b57'); r(58, 32, 4, 4, '#d8d78a'); r(50, 32, 3, 3, '#e8a33a');
 
-    // Người đạp: ngồi thẳng, hơi nghiêng, đầu ở độ cao ~ 1,5 m
-    r(19, 18, 8, 10, DARK); r(20, 19, 6, 8, '#27ae60'); r(20, 19, 2, 8, '#52be80');   // thân áo
-    r(24, 12, 6, 8, DARK); r(25, 13, 4, 6, '#27ae60');                                  // vai/ngực
-    r(25, 3, 7, 8, DARK); r(26, 4, 5, 6, SKIN); r(26, 3, 5, 2, '#2a1c14');              // đầu + tóc
-    for (let row = 0; row < 5; row++) r(21 + row * 1, 1 + row, 18 - row * 2, 1, '#e8d49a'); // nón lá (hình chóp)
-    r(21, 6, 18, 1, '#cdb877'); r(22, 6, 16, 1, '#a58f4a');
-    r(30, 6, 2, 3, DARK);                                                               // quai nón
-    r(28, 8, 2, 1, '#c0392b');                                                          // miệng
-    // Tay cầm ghi-đông
-    r(28, 15, 6, 3, '#27ae60'); r(33, 17, 5, 3, '#27ae60'); r(37, 19, 4, 3, SKIN); r(36, 20, 4, 3, '#27ae60');
-    // Chân đạp: đùi → gối → cẳng chân → giày trên bàn đạp
-    r(19, 27, 10, 4, DARK); r(20, 28, 8, 2, PANTS);
-    r(26, 29, 5, 4, DARK); r(27, 30, 3, 2, PANTS);
-    r(24, 32, 5, 6, DARK); r(25, 32, 3, 6, PANTS);
-    r(21, 38, 8, 3, DARK); r(22, 38, 6, 2, '#462719');
-
+    // Người đạp: chân → thân → tay → đầu → nón lá
+    r(22, 36, 13, 7, DARK); r(23, 37, 11, 5, PANTS);                  // đùi
+    r(31, 39, 7, 11, DARK); r(32, 40, 5, 9, PANTS);                   // cẳng chân
+    r(29, 48, 11, 5, DARK); r(30, 49, 9, 3, '#8a5a33'); r(30, 49, 9, 1, '#b07a4a');   // giày
+    r(20, 18, 16, 19, DARK); r(21, 19, 14, 17, J.main); r(21, 19, 3, 17, J.light); r(31, 19, 4, 17, J.dark);
+    r(28, 18, 6, 3, '#f4f4f4');                                       // cổ áo
+    r(32, 21, 9, 6, DARK); r(33, 22, 7, 4, J.main);                   // cánh tay
+    r(39, 24, 9, 5, DARK); r(40, 25, 7, 3, J.main);                   // cẳng tay
+    r(46, 25, 7, 5, DARK); r(47, 26, 5, 3, SKIN);                     // bàn tay trên ghi-đông
+    r(24, 5, 15, 14, DARK); r(25, 6, 13, 12, SKIN);                   // đầu
+    r(24, 5, 15, 5, '#1a1815'); r(24, 8, 4, 10, '#1a1815');           // tóc đen
+    r(33, 10, 3, 4, '#1a1815'); r(34, 11, 1, 1, '#ffffff');           // mắt
+    r(31, 14, 4, 2, '#e8907a'); r(36, 15, 3, 1, '#b5594a');           // má hồng + miệng
+    // Nón lá: hình chóp rộng, màu kem
+    r(31, -1, 4, 1, DARK); r(28, 0, 10, 1, '#d9c581'); r(30, 0, 6, 1, '#f0e2a0');
+    r(25, 1, 16, 1, '#e9d792'); r(22, 2, 22, 1, '#f0e2a0'); r(19, 3, 28, 1, '#e9d792');
+    r(17, 4, 32, 1, '#d9c581'); r(17, 5, 32, 1, '#b8a463');
+    r(34, 6, 2, 3, DARK);                                             // quai nón
     return canvas;
   }
 
