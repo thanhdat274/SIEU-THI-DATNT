@@ -1342,7 +1342,7 @@ export const App: React.FC = () => {
     setWarehouseDockOpen(false);
     viewportRef.current?.locateWarehouse();
   };
-  if (!gameStarted && !isLoading) return <LoginScreen onEnter={handleEnterGame}/>;
+  if (!gameStarted && !isLoading) return <><LoginScreen onEnter={handleEnterGame}/><UpdateBanner/></>;
 
   return <div className="game-shell">
     <div style={{display:'contents'}} inert={hasModal}>
