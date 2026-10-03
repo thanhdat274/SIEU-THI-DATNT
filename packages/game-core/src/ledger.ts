@@ -1,5 +1,5 @@
 import type { DailyRecord, LedgerEntry, SaveGameData } from '@game/shared';
-import { summarizeAnnualRevenue, calculateDailyTax } from './tax/annual-revenue';
+import { summarizeAnnualRevenue } from './tax/annual-revenue';
 
 /** Quản lý sổ cái (ledger), nhật ký hàng ngày (daily records), thống kê (statistics).
  * Pattern: nhận dữ liệu từ constructor, không nhận `this`.

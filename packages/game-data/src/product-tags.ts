@@ -12,6 +12,12 @@ export const CATEGORY_TAGS: Record<ProductCategory, string[]> = {
   eggs: ['breakfast', 'fresh'],
   cooking_ingredients: ['cooking'],
   household: ['household'],
+  personal_care: ['personal_care', 'household'],
+  frozen: ['frozen'],
+  fresh_produce: ['fresh', 'cooking'],
+  health: ['health'],
+  toys_stationery: ['toys', 'school'],
+  alcohol: ['alcohol'],
 };
 
 /** Thẻ riêng của từng sản phẩm; `replace` thay hẳn thẻ nhóm thay vì cộng thêm. */
@@ -19,6 +25,14 @@ export const PRODUCT_TAG_OVERRIDES: Record<string, { add?: string[]; replace?: s
   sua_ong_tho: { add: ['coffee_ingredient'] },
   banh_mi_que: { add: ['hot_food'] },
   kem_que: { replace: ['ice_cream', 'frozen', 'sweet'] },
+  kem_hop_vinamilk: { replace: ['ice_cream', 'frozen', 'sweet'] },
+  kem_oc_que_walls: { replace: ['ice_cream', 'frozen', 'sweet'] },
+  kem_mochi: { replace: ['ice_cream', 'frozen', 'sweet'] },
+  kem_haagen_dazs: { replace: ['ice_cream', 'frozen', 'sweet'] },
+  bia_333_lon: { add: ['cold_drink'] },
+  bia_saigon_special: { add: ['cold_drink'] },
+  bia_tiger_lon: { add: ['cold_drink'] },
+  bia_heineken_lon: { add: ['cold_drink'] },
   o_gap: { replace: ['rain_gear', 'household'] },
   ao_mua_bo: { replace: ['rain_gear', 'household'] },
   ca_phe_hoa_tan: { replace: ['hot_drink', 'breakfast', 'coffee_ingredient'] },

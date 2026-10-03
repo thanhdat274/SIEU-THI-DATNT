@@ -2,7 +2,8 @@ import {
   StaffRole,
   StaffMember,
   StaffCandidate,
-  STAFF_SHIFTS
+  STAFF_SHIFTS,
+  StaffBuilding,
   } from '@game/shared';
 import {
   CANDIDATE_NAMES,
@@ -42,18 +43,22 @@ export function daySeed(day: number, salt = 0x57aff): number {
 /**
  * Generate deterministic candidate list for a given day.
  * Calling with the same day seed returns identical candidates.
+ * Hỗ trợ roles mới: drink_staff, drink_security cho quán nước.
  */
 export function generateCandidatesForDay(day: number, count = 3): StaffCandidate[] {
   const rng = new Mulberry32Rng(daySeed(day, 0x57aff));
   const candidates: StaffCandidate[] = [];
 
-  const roles: StaffRole[] = ['cashier', 'refill', 'security'];
+  const roles: StaffRole[] = ['cashier', 'refill', 'security', 'drink_staff', 'drink_security'];
   // Shuffle name pool deterministically for this day to avoid picking duplicates
   const namePool = [...CANDIDATE_NAMES];
   for (let i = namePool.length - 1; i > 0; i--) {
     const j = Math.floor(rng.next() * (i + 1));
     [namePool[i], namePool[j]] = [namePool[j], namePool[i]];
   }
+
+  // Buildings available for assignment
+  const buildings: StaffBuilding[] = [undefined, 'main', 'xoi', 'drink'];
 
   for (let i = 0; i < count; i++) {
     // Ensure diverse roles in the candidate list
@@ -64,7 +69,7 @@ export function generateCandidatesForDay(day: number, count = 3): StaffCandidate
 
     if (role === 'cashier') {
       accuracy = Math.min(10, accuracy + 1);
-    } else if (role === 'security') {
+    } else if (role === 'security' || role === 'drink_security') {
       stamina = Math.min(10, stamina + 2);
     } else {
       speed = Math.min(10, speed + 1);
@@ -73,6 +78,15 @@ export function generateCandidatesForDay(day: number, count = 3): StaffCandidate
     // Daily wage base 20,000 + stats * 500, rounded to nearest 5,000
     const rawWage = 20000 + (speed + accuracy + stamina) * 500;
     const dailyWage = Math.max(25000, Math.round(rawWage / 5000) * 5000);
+
+    // Assign building for drink-specific roles
+    let assignedBuilding: StaffBuilding = undefined;
+    if (role === 'drink_staff' || role === 'drink_security') {
+      assignedBuilding = 'drink';
+    } else if (role === 'security' && rng.next() < 0.3) {
+      // 30% chance global security becomes building-specific
+      assignedBuilding = rng.pick(['main', 'xoi'] as StaffBuilding[]);
+    }
 
     candidates.push({
       id: `cand_d${day}_${i + 1}`,
@@ -83,6 +97,7 @@ export function generateCandidatesForDay(day: number, count = 3): StaffCandidate
       stamina,
       dailyWage,
       hiringFee: DEFAULT_HIRING_FEE,
+      assignedBuilding,
     });
   }
 

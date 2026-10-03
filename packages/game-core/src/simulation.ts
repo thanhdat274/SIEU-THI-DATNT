@@ -25,7 +25,11 @@ import {
   RestockJobTarget,
   StockLot,
   DailyRecord,
+  TaxState,
+  ChainState,
   LedgerEntry,
+  CashObligations,
+  RestockSuggestionOptions,
   RestockSuggestionResult,
   QuestState,
   StallState,
@@ -68,16 +72,12 @@ import {
   ALL_PRODUCTS,
   PRICED_CATEGORIES,
   PRODUCT_CATEGORY_LABELS,
-  WEATHER_MAP,
   MAX_PLAYER_LEVEL,
   PRESTIGE_XP_PER_STAR,
   PRESTIGE_MAX_STARS,
   prestigeTrafficMultiplier,
-  getLevelTrafficMultiplier,
   maxActiveCustomersForLevel,
   xpToNextLevel,
-  CLIMATE_SEASON_MAP,
-  TIME_BANDS,
   WEEKDAY_LABELS,
   SHOPKEEPER_POSITION,
   getSeasonForDay,
@@ -89,15 +89,19 @@ import {
   REGULAR_CUSTOMERS_MAP
   } from '@game/data';
 import { buildMorningBrief, type MorningBrief } from './day-rhythm';
+import { buildMarketSummary } from './market-summary';
 import { pickAvailableRegular, processRegularCheckout, processRegularWalkout } from './regulars';
 import { StreetTrafficManager } from './street-traffic';
 import { StoreLogisticsManager } from './store-logistics';
 import { CollisionSystem } from './collision';
 import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
-import { rainIntensityAt, rainForecastForDay, describeRainForecast, roadWetnessAt } from './weather';
+import { rainIntensityAt, describeRainForecast, roadWetnessAt, hashSeed } from './weather';
 import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance } from './security';
 import { assessCounterfeit } from './counterfeit';
-import { summarizeAnnualRevenue, calculateDailyTax } from './tax/annual-revenue';
+import { ACTIVE_TAX_POLICY, summarizeAnnualRevenue, taxDueOnClose } from './tax/annual-revenue';
+import { createChain, normalizeChain, openBranch as openBranchPure, returnStock as returnStockPure, switchBranch as switchBranchPure, transferStock as transferStockPure, type ChainContext, type TransferItem } from './chain';
+import { runBranchDay } from './branch-ops';
+import { applyAuditToState, emptyTaxState, normalizeTaxState, resolveAudit, shouldAudit, splitDeclared } from './tax/audit';
 import { composeReview, sanitizeReviews, summarizeReviews, ReviewsManager } from './reviews';
 import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, staffServiceTargets, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { slotCategoryConflict } from './shelf-slots';
@@ -106,14 +110,13 @@ import { buyLandPlot, relocateMisplacedFixtures, upgradeFixtureSlots, validateSt
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
 import { mergeLots, normalizeLots, sumLots, takeLots } from './stock';
-import { decayLot, spoilageRate } from './spoilage';
+import { decayLot, spoilageRate, withBackupPower } from './spoilage';
 import { findPath, GridPoint, tileCenter } from './pathfinding';
 import { normalizePlayerProgression, saleExperienceMultiplier, trafficAtLevel } from './progression';
 import { CustomerManager } from './customers';
-import { calculateSalesVelocity, generateRestockSuggestions, getIncomingOrdersCount, getUsableStock } from './suggestions';
+import { calculateSalesVelocity, generateRestockSuggestions, normalizeRestockOptions, getIncomingOrdersCount, getUsableStock } from './suggestions';
 import { buildProductPlans, type ProductPlan, type ProductPlanInput } from './forecast';
-import { climateSeasonForDay } from './weather';
-import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, timeBandFor, visibleMarketEvents, weekdayOf, type MarketNotice } from './market';
+import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, weekdayOf, type MarketNotice } from './market';
 import { computeSupplierDay, nextDeliveryDay, wholesaleQuote } from './supplier-market';
 import { validateSupplierCart as validateSupplierCartPure } from './supplier-cart';
 import { receiveDeliveredOrders } from './delivery';
@@ -149,7 +152,7 @@ import {
   getSkillModifier,
   hasPerk,
 } from './skills';
-import { DINING, DINING_ADD_ON_RULES, RIVAL_EVENT_ID, fixtureBuilding, XOI_DISH_IDS } from '@game/data';
+import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, fixtureBuilding, XOI_DISH_IDS } from '@game/data';
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS } from '@game/data';
 import { RestockClaimManager } from './restock-claims';
@@ -208,21 +211,28 @@ export interface GameSimulationCallbacks {
   onCustomerRated?: (event: { stars: number; average: number; reason?: CustomerFeedbackReason; review?: CustomerReview }) => void;
   onToast?: (message: string, type?: 'info' | 'success' | 'warn') => void;
 }
+/** Giây game để một quầy tự thanh toán xử lý một khách. */
+const SELF_CHECKOUT_SECONDS = 3;
+/** Bảng khóa-theo-id không có prototype: khóa như 'constructor' không bao giờ trả về thuộc tính của Object. */
+const dict = <T>(source?: Record<string, T>): Record<string, T> => Object.assign(Object.create(null), source) as Record<string, T>;
+
 
 export class GameSimulation {
   private playerData: PlayerData;
-  private sellingPrices: Record<string, number> = {};
+  private sellingPrices: Record<string, number> = dict();
   private fixtures: StoreFixture[];
   private storedFixtures: StoreFixture[];
   private unlockedPlotIds: string[];
   private decorOwned: string[];
   private inventory: InventoryItem[];
   private holdingArea: HoldingItem[];
-  private planogram: Record<string, string> = {};
+  private planogram: Record<string, string> = dict();
   private staffManager: StaffManager;
   private restockJobClaims: RestockClaimManager;
   private autoBuyEnabled = false;
   private autoBuyRules: AutoBuyRule[] = [];
+  /** Cài đặt gợi ý nhập hàng; undefined = chưa từng chỉnh (dùng mặc định / giá trị cũ ở trình duyệt). */
+  private restockOptions?: RestockSuggestionOptions;
   private processedAutoBuyDayIds = new Set<number>();
   private autoBuyReports: Record<number, AutoBuyReport> = {};
   private pendingOrders: SupplierOrder[];
@@ -237,12 +247,16 @@ export class GameSimulation {
   private inputManager: GameInputSource;
   private customerManager: CustomerManager;
   private completedCheckoutIds: Set<string>;
-  private regulars: Record<string, RegularCustomerProgress> = {};
+  private selfCheckoutTimer = 0;
+  private regulars: Record<string, RegularCustomerProgress> = dict();
   private customerCredits: CustomerCreditAccount[] = [];
   private customerCreditSequence = 0;
   private diningManager: DiningManager;
   private productionManager: ProductionManager;
   private productionJobSequence = 0;
+  private taxState: TaxState = emptyTaxState();
+  /** Chuỗi chi nhánh (`branch-chain`); rỗng = chuỗi một cơ sở. Ví chung = `playerData.money`, kho tổng = `inventory`. */
+  private chainState: ChainState = createChain();
   private priceHistory: NonNullable<SaveGameData['priceHistory']> = {};
   private heatmap: NonNullable<SaveGameData['heatmap']> = {};
   /** Ô cuối cùng của từng khách, chỉ trong bộ nhớ, để đếm lượt vào ô thay vì mỗi khung hình. */
@@ -354,14 +368,14 @@ export class GameSimulation {
     this.ledgerManager = new LedgerManager(initialSave);
     this.warehouseTier = initialSave.warehouseTier ?? 0;
     this.storageRackCount = initialSave.storageRackCount ?? 0;
-    this.sellingPrices = { ...(initialSave.sellingPrices ?? {}) };
+    this.sellingPrices = dict(initialSave.sellingPrices);
     this.fixtures = initialSave.storeLayout.fixtures.map((f) => ({ ...f }));
     this.storedFixtures = (initialSave.storeLayout.storedFixtures ?? []).map(f => ({ ...f }));
     this.unlockedPlotIds = [...(initialSave.storeLayout.unlockedPlotIds ?? [])];
     this.decorOwned = [...(initialSave.storeLayout.decorOwned ?? [])];
     this.inventory = initialSave.inventory.map((i) => ({ ...i }));
     this.holdingArea = (initialSave.holdingArea ?? []).map((h) => ({ ...h }));
-    this.planogram = initialSave.planogram ? { ...initialSave.planogram } : {};
+    this.planogram = dict(initialSave.planogram);
     this.pendingOrders = (initialSave.pendingOrders ?? []).map((order) => ({
       ...order,
       supplierId: order.supplierId ?? DEFAULT_SUPPLIER_ID,
@@ -374,11 +388,12 @@ export class GameSimulation {
     }
     this.autoBuyEnabled = initialSave.autoBuyEnabled ?? false;
     this.autoBuyRules = this.validateAutoBuyRules(initialSave.autoBuyRules ?? []);
+    this.restockOptions = initialSave.restockOptions ? normalizeRestockOptions(initialSave.restockOptions) : undefined;
     this.processedAutoBuyDayIds = new Set(initialSave.processedAutoBuyDayIds ?? []);
     this.autoBuyReports = structuredClone(initialSave.autoBuyReports ?? {});
     this.statistics = { ...initialSave.statistics };
     this.createdAt = initialSave.createdAt;
-    this.regulars = initialSave.regulars ? structuredClone(initialSave.regulars) : {};
+    this.regulars = dict(initialSave.regulars ? structuredClone(initialSave.regulars) : undefined);
     this.customerCredits = (initialSave.customerCredits ?? []).filter(c => c && typeof c.id === 'string' && typeof c.regularId === 'string' && Number.isFinite(c.balance) && c.balance >= 0).map(c => ({ ...c }));
     this.customerCreditSequence = Math.max(initialSave.customerCreditSequence ?? 0, ...this.customerCredits.map(c => Number(c.id.match(/^credit-(\d+)$/)?.[1] ?? 0)));
     this.diningManager = new DiningManager();
@@ -386,6 +401,8 @@ export class GameSimulation {
     this.productionManager = new ProductionManager(initialSave);
     this.priceHistory = sanitizePriceHistory(initialSave.priceHistory);
     this.heatmap = sanitizeHeatmap(initialSave.heatmap);
+    this.taxState = normalizeTaxState(initialSave.tax);
+    this.chainState = normalizeChain(initialSave.chain);
     this.productionJobSequence = Math.max(initialSave.productionJobSequence ?? 0, ...this.productionManager.getRef().map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
     this.reviewsManager = new ReviewsManager(initialSave.reviews);
     this.securityManager = new SecurityManager(initialSave.security);
@@ -424,6 +441,7 @@ export class GameSimulation {
       for (const member of this.staff) { this.finishStaffJob(member, true); member.diningTask = undefined; }
       this.processPayroll(day - 1);
       this.processStalls(day - 1);
+      this.processBranches(day - 1);
       this.runStaffMaintenance();
       const worn = wearOvernight(this.fixtures, day, this.playerData.level);
       if (worn.length) this.callbacks.onMaintenanceNotice?.(worn);
@@ -1046,36 +1064,16 @@ export class GameSimulation {
 
   /** Tóm tắt cho giao diện: thời tiết hôm nay + dự báo, mùa, khung giờ, thứ, lưu lượng và lý do. */
   public getMarketSummary() {
-    const time = this.clock.getTime();
-    const table = this.refreshDemandTable();
-    const todayId = effectiveWeatherId(this.market, time.day);
-    const weather = WEATHER_MAP[todayId] ?? WEATHER_MAP[this.market.weather.today];
-    return {
-      weather: {
-        id: weather.id, label: weather.label, icon: weather.icon,
-        rainIntensity: rainIntensityAt(this.weatherSeed, time.day, time.hour, time.minute, weather.id),
-        rain: rainForecastForDay(this.weatherSeed, time.day, weather.id),
-      },
-      forecast: [1, 2].map(offset => {
-        const id = effectiveWeatherId(this.market, time.day + offset);
-        return { id, label: WEATHER_MAP[id]?.label ?? id, icon: WEATHER_MAP[id]?.icon ?? '', rain: rainForecastForDay(this.weatherSeed, time.day + offset, id) };
-      }),
-      events: visibleMarketEvents(this.market, time.day),
-      season: getSeasonForDay(time.day),
-      climate: CLIMATE_SEASON_MAP[climateSeasonForDay(time.day).id],
-      timeBand: TIME_BANDS.find(band => band.id === timeBandFor(time.hour))!,
-      weekday: WEEKDAY_LABELS[weekdayOf(time.day)],
-      traffic: {
-        ...table.traffic,
-        value: trafficAtLevel(table.traffic.value * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * prestigeTrafficMultiplier(this.playerData.prestigeStars ?? 0), this.playerData.level),
-        factors: [
-          ...table.traffic.factors,
-          { ruleId: 'customer_ratings', label: 'Đánh giá khách', factor: reputationTrafficMultiplier(this.playerData.ratings) },
-          ...(this.getDecorAttraction().points > 0 ? [{ ruleId: 'decor_attraction', label: 'Trang trí cửa hàng', factor: this.getDecorAttraction().trafficMultiplier }] : []),
-          ...(getLevelTrafficMultiplier(this.playerData.level) > 1 ? [{ ruleId: 'level_progression_traffic', label: `Cấp ${this.playerData.level}: lưu lượng khách tăng`, factor: getLevelTrafficMultiplier(this.playerData.level) }] : []),
-        ],
-      },
-    };
+    return buildMarketSummary({
+      market: this.market,
+      weatherSeed: this.weatherSeed,
+      time: this.clock.getTime(),
+      table: this.refreshDemandTable(),
+      ratings: this.playerData.ratings,
+      level: this.playerData.level,
+      prestigeStars: this.playerData.prestigeStars ?? 0,
+      decor: this.getDecorAttraction(),
+    });
   }
 
   public getSeason(day = this.clock.getTime().day) {
@@ -1574,6 +1572,7 @@ export class GameSimulation {
       reputation: this.playerData.reputation,
       regularsCount: Object.keys(this.regulars).length,
       stallServings,
+      buildingsOpened: 1 + BUILDINGS.filter(building => building.plotId && this.unlockedPlotIds.includes(building.plotId)).length,
     };
   }
 
@@ -1671,6 +1670,17 @@ export class GameSimulation {
 
   public getAutoBuyConfig(): { enabled: boolean; rules: AutoBuyRule[]; reports: Record<number, AutoBuyReport> } {
     return { enabled: this.autoBuyEnabled, rules: structuredClone(this.autoBuyRules), reports: structuredClone(this.autoBuyReports) };
+  }
+
+  /** Cài đặt gợi ý nhập hàng đã lưu; undefined nếu người chơi chưa chỉnh lần nào. */
+  public getRestockOptions(): Required<RestockSuggestionOptions> | undefined {
+    return this.restockOptions ? normalizeRestockOptions(this.restockOptions) : undefined;
+  }
+
+  public setRestockOptions(options: RestockSuggestionOptions): Required<RestockSuggestionOptions> {
+    this.restockOptions = normalizeRestockOptions(options);
+    this.notifyStateChanged();
+    return { ...this.restockOptions } as Required<RestockSuggestionOptions>;
   }
 
   public setAutoBuyConfig(enabled: boolean, rules: AutoBuyRule[]): { success: boolean; reason?: string } {
@@ -1993,6 +2003,21 @@ export class GameSimulation {
     return !!config && hour >= config.startHour && hour < config.endHour;
   }
 
+  /** Quầy tự thanh toán: mỗi máy tự tính tiền một khách (có giỏ, chưa có thu ngân phụ trách, không phải kẻ trộm) sau mỗi chu kỳ. */
+  private updateSelfCheckout(dt: number): void {
+    const machines = this.fixtures.filter(fixture => fixture.type === 'cashier_counter' && fixture.shopId === 'self_checkout' && !fixture.parentId && !fixture.broken).length;
+    if (machines === 0) { this.selfCheckoutTimer = 0; return; }
+    this.selfCheckoutTimer += dt;
+    if (this.selfCheckoutTimer < SELF_CHECKOUT_SECONDS) return;
+    this.selfCheckoutTimer = 0;
+    let served = 0;
+    for (const customer of this.customerManager.getCustomers()) {
+      if (served >= machines) break;
+      if (customer.stage !== 'checkout' || !customer.checkoutId || customer.cashierStaffId || customer.thief || !customer.basket?.length) continue;
+      if (this.completeCustomerCheckout(customer.checkoutId)) served++;
+    }
+  }
+
   private updateCashierWorkers(dt: number): void {
     for (const member of this.staff.filter((candidate) => candidate.role === 'cashier')) {
       const currentId = member.currentCheckoutId;
@@ -2125,6 +2150,127 @@ export class GameSimulation {
     }
   }
 
+  public getTaxState(): TaxState { return structuredClone(this.taxState); }
+  public getChain(): ChainState { return structuredClone(this.chainState); }
+
+  private chainContext(): ChainContext {
+    return { money: this.playerData.money, warehouse: this.inventory, chain: this.chainState, day: this.clock.getTime().day, level: this.playerData.level };
+  }
+
+  /** Mở chi nhánh: trừ ví chung một lần (không ghi sổ cái, giống mua đất). `requestedId` giúp lệnh lặp là no-op. */
+  public openBranch(storeTypeId: string, name?: string, requestedId?: string): { success: boolean; reason?: string; branchId?: string } {
+    const result = openBranchPure(this.chainContext(), storeTypeId, name, requestedId);
+    if (!result.ok) return { success: false, reason: result.reason };
+    this.playerData.money = result.money;
+    this.chainState = result.chain;
+    this.notifyStateChanged();
+    const created = requestedId && result.duplicate ? requestedId : result.chain.branches[result.chain.branches.length - 1]?.id;
+    return { success: true, branchId: created };
+  }
+
+  public switchBranch(branchId: string): { success: boolean; reason?: string } {
+    const result = switchBranchPure(this.chainContext(), branchId);
+    if (!result.ok) return { success: false, reason: result.reason };
+    this.chainState = result.chain;
+    this.notifyStateChanged();
+    return { success: true };
+  }
+
+  /** Kho tổng → chi nhánh (FEFO, giữ lô/hạn/giá vốn, tất cả hoặc không). */
+  public transferToBranch(branchId: string, items: TransferItem[]): { success: boolean; reason?: string } {
+    const result = transferStockPure(this.chainContext(), branchId, items);
+    if (!result.ok) return { success: false, reason: result.reason };
+    this.inventory = result.warehouse;
+    this.chainState = result.chain;
+    this.notifyStateChanged();
+    return { success: true };
+  }
+
+  /** Chi nhánh → kho tổng; từ chối nếu vượt sức chứa kho thường/kho mát của hub. */
+  public returnFromBranch(branchId: string, items: TransferItem[]): { success: boolean; reason?: string } {
+    const result = returnStockPure(this.chainContext(), branchId, items);
+    if (!result.ok) return { success: false, reason: result.reason };
+    const previous = this.inventory;
+    this.inventory = result.warehouse;
+    if (this.getAmbientCellsUsed() > this.getAmbientCapacity() || this.reservedColdWarehouseCount() > this.getColdCapacity()) {
+      this.inventory = previous;
+      return { success: false, reason: 'Kho tổng không đủ chỗ.' };
+    }
+    this.chainState = result.chain;
+    this.notifyStateChanged();
+    return { success: true };
+  }
+
+  /**
+   * Chạy nền các chi nhánh cho `day` (ngày vừa kết thúc), giống `processStalls`: doanh thu/giá vốn/lương vào ví chung,
+   * bản ghi ngày của hub và sổ cái (có `branchId`). Nhờ vậy thuế tính trên tổng chuỗi. Idempotent theo `lastBackgroundDay`.
+   * Giới hạn: chưa có chế độ điều hành chi nhánh nên mọi chi nhánh (kể cả đang chọn) chạy nền.
+   */
+  private processBranches(day: number): void {
+    if (day < 1 || !this.chainState.branches.length) return;
+    const record = day === this.currentDayRecord.day ? this.currentDayRecord : (this.dailyRecords[day] ?? this.createEmptyDailyRecord(day));
+    let touched = false;
+    const seed = hashSeed(this.weatherSeed);
+    this.chainState = { ...this.chainState, branches: this.chainState.branches.map((branch) => {
+      const result = runBranchDay({ branch, day, money: this.playerData.money, seed });
+      if (result.skipped || !result.report) return branch;
+      touched = true;
+      const { revenue, cogs, wages, spoilageLoss, unitsSold } = result.report;
+      this.playerData.money += result.moneyDelta;
+      this.statistics.totalRevenue += revenue;
+      record.revenue += revenue;
+      record.cogs += cogs;
+      record.itemsSold += unitsSold;
+      record.wagesPaid += wages;
+      record.spoilageCost += spoilageLoss;
+      if (unitsSold > 0) this.recordLedger({ day, type: 'sale', amount: revenue, cogs, quantity: unitsSold, description: `${result.branch.name}: bán ${unitsSold} món (chạy nền)`, branchId: branch.id });
+      if (wages > 0) this.recordLedger({ day, type: 'wage', amount: wages, description: `${result.branch.name}: lương nhân viên`, branchId: branch.id });
+      if (spoilageLoss > 0) this.recordLedger({ day, type: 'spoilage', amount: spoilageLoss, description: `${result.branch.name}: hàng hết hạn`, branchId: branch.id });
+      return result.branch;
+    }) };
+    if (!touched) return;
+    record.grossProfit = record.revenue - record.cogs;
+    record.netProfit = record.grossProfit - record.spoilageCost - record.wagesPaid - (record.maintenanceCost ?? 0) - (record.theftCost ?? 0) + (record.theftRecovered ?? 0) - (record.counterfeitLoss ?? 0) - (record.badDebtCost ?? 0);
+    if (record !== this.currentDayRecord) this.dailyRecords[day] = record;
+  }
+
+  /** Bật/tắt khai bớt thuế (rủi ro: bị truy thu và phạt nếu bị kiểm tra). Luôn tắt được. */
+  public setTaxUnderDeclare(on: boolean): { success: boolean; reason?: string } {
+    this.taxState.underDeclare = on;
+    return { success: true };
+  }
+
+  /** Thu dần khoản truy thu/phạt còn nợ do thiếu tiền mặt lúc bị kiểm tra. */
+  private collectTaxDebt(day: number, rec: DailyRecord): void {
+    if (this.taxState.debt <= 0 || this.playerData.money <= 0) return;
+    const paid = Math.min(this.taxState.debt, this.playerData.money);
+    this.taxState.debt -= paid;
+    this.playerData.money -= paid;
+    rec.netProfit -= paid;
+    rec.taxPenalty = (rec.taxPenalty ?? 0) + paid;
+    this.recordLedger({ day, type: 'tax', amount: paid, description: `Trả dần khoản truy thu/phạt thuế (còn nợ ${this.taxState.debt.toLocaleString('vi-VN')} VND)` });
+  }
+
+  /** Chị cán bộ thuế ghé kiểm tra: truy thu và phạt phần khai bớt, hoặc khen khi sổ sách sạch. */
+  private runTaxAudit(day: number, rec: DailyRecord, policy: typeof ACTIVE_TAX_POLICY): void {
+    const outcome = resolveAudit(day, this.taxState, policy, n => `${n.toLocaleString('vi-VN')} ₫`);
+    applyAuditToState(this.taxState, outcome);
+    this.playerData.reputation = Math.max(0, Math.min(100, this.playerData.reputation + outcome.reputationDelta));
+    if (outcome.record.total > 0) {
+      const paid = Math.min(outcome.record.total, Math.max(0, this.playerData.money));
+      this.taxState.debt += outcome.record.total - paid;
+      this.playerData.money -= paid;
+      rec.taxBackPaid = (rec.taxBackPaid ?? 0) + outcome.backTax;
+      rec.taxPenalty = (rec.taxPenalty ?? 0) + outcome.fine;
+      rec.netProfit -= outcome.record.total;
+      if (paid > 0) this.recordLedger({ day, type: 'tax', amount: paid, description: `Truy thu và phạt sau kiểm tra thuế (${outcome.record.findings.join('; ')})` });
+      this.callbacks.onToast?.(`🕵️ Chị Hạnh bên thuế ghé kiểm tra: ${outcome.record.findings.join('; ')}.${outcome.record.total > paid ? ` Thiếu tiền, còn nợ ${(outcome.record.total - paid).toLocaleString('vi-VN')} ₫ sẽ trừ dần.` : ''} Danh tiếng giảm.`, 'warn');
+    } else {
+      if (outcome.commend && !this.decorOwned.includes('bang_khen_thue')) this.decorOwned.push('bang_khen_thue');
+      this.callbacks.onToast?.('🕵️ Chị Hạnh bên thuế ghé kiểm tra: sổ sách minh bạch, không vi phạm gì. Xóm khen tiệm làm ăn đàng hoàng! Danh tiếng tăng.', 'success');
+    }
+  }
+
   public closeDailyRecord(day: number): void {
     if (this.closedDayIds.has(day)) {
       return; // Idempotent: already closed
@@ -2136,17 +2282,27 @@ export class GameSimulation {
 
     // Thuế 1% khoán hộ cá thể: chỉ tính khi đóng ngày hiện tại
     if (day === this.clock.getTime().day) {
-      const annual = summarizeAnnualRevenue(this.dailyRecords, day, this.currentDayRecord);
-      if (annual.taxActive) {
-        const tax = calculateDailyTax(rec.revenue, true);
-        rec.taxPaid = (rec.taxPaid ?? 0) + tax;
-        rec.netProfit -= tax;
-        this.playerData.money -= tax;
-        this.recordLedger({ day, type: 'tax', amount: tax, description: `Thuế khoán 1% (doanh thu ${rec.revenue.toLocaleString('vi-VN')} VND)` });
-        if (annual.progress < 1 && annual.progress + (tax / annual.revenue) >= 1) {
-          this.callbacks.onToast?.('📊 Đã vượt ngưỡng 100 triệu VND/năm — áp dụng thuế khoán 1% (VAT+TNCN gộp).', 'warn');
+      const policy = ACTIVE_TAX_POLICY;
+      const annual = summarizeAnnualRevenue(this.dailyRecords, day, this.currentDayRecord, policy);
+      const due = taxDueOnClose(this.dailyRecords, day, this.currentDayRecord, policy);
+      const { pay, hidden } = splitDeclared(due, this.taxState.underDeclare, policy);
+      if (due > 0) {
+        if (pay > 0) {
+          rec.taxPaid = (rec.taxPaid ?? 0) + pay;
+          rec.netProfit -= pay;
+          this.playerData.money -= pay;
+          this.recordLedger({ day, type: 'tax', amount: pay, description: `Thuế hộ kinh doanh: GTGT + TNCN (doanh thu năm ${annual.revenue.toLocaleString('vi-VN')} VND)` });
+        }
+        if (hidden > 0) {
+          rec.taxHidden = (rec.taxHidden ?? 0) + hidden;
+          this.taxState.hiddenTax += hidden;
+        }
+        if (annual.taxPaidYear === 0 && annual.taxHiddenYear === 0) {
+          this.callbacks.onToast?.(`📊 Doanh thu năm vượt ${annual.threshold.toLocaleString('vi-VN')} ₫ — bắt đầu nộp thuế GTGT ${annual.policy.vatRate * 100}% + TNCN ${annual.policy.pitRate * 100}%, nộp bù cho cả năm.`, 'warn');
         }
       }
+      this.collectTaxDebt(day, rec);
+      if (shouldAudit(day, annual.revenue, this.taxState, policy)) this.runTaxAudit(day, rec, policy);
     }
 
     rec.productSales = { ...(rec.productSales ?? this.currentDayRecord.productSales ?? {}) };
@@ -2233,9 +2389,47 @@ export class GameSimulation {
   /**
    * Generate intelligent restock suggestions based on sales velocity and store state.
    */
-  public suggestRestock(supplierId?: string, budget?: number): RestockSuggestionResult {
-    const expected = new Map(this.getProductPlans(supplierId ?? DEFAULT_SUPPLIER_ID).map((plan) => [plan.productId, plan.expectedTomorrow]));
+  /** Khoản truy thu/phạt thuế còn nợ (thu dần khi đóng ngày). */
+  private outstandingTaxDebt(): number {
+    return Math.max(0, this.taxState.debt);
+  }
+
+  /** Thuế sẽ bị trừ khi đóng ngày `day` (ước tính, tính đủ cả phần có thể khai bớt). */
+  private estimateTaxDueOnClose(day: number): number {
+    return taxDueOnClose(this.dailyRecords, day, this.currentDayRecord, ACTIVE_TAX_POLICY);
+  }
+
+  /** Tiền mặt phải chừa cho kỳ tới: nợ lương, lương một ngày (đã trừ perk, nhân theo ca), thuế sẽ nộp khi đóng ngày, nợ thuế. */
+  public getCashObligations(): CashObligations {
+    const day = this.clock.getTime().day;
+    const wageDiscount = getSkillModifier(this.skills, 'wage_discount');
+    const nextWages = this.staff
+      .filter((member) => member.hiredOnDay <= day)
+      .reduce((sum, member) => {
+        const wage = wageDiscount > 0 ? Math.round(member.dailyWage * (1 - wageDiscount)) : member.dailyWage;
+        const shift = this.staffSchedule[member.id] ?? member.shift;
+        return sum + Math.round(wage * (STAFF_SHIFTS[shift]?.wageMultiplier ?? 1));
+      }, 0);
+    const taxDue = this.estimateTaxDueOnClose(day);
+    const wageDebt = Math.max(0, this.wageDebt);
+    const taxDebt = this.outstandingTaxDebt();
+    return { wageDebt, nextWages, taxDue, taxDebt, total: wageDebt + nextWages + taxDue + taxDebt };
+  }
+
+  public suggestRestock(supplierId?: string, budget?: number, existingCart?: Record<string, number>, options: RestockSuggestionOptions | undefined = this.restockOptions): RestockSuggestionResult {
+    const effectiveSupplierId = supplierId ?? DEFAULT_SUPPLIER_ID;
+    const expected = new Map(this.getProductPlans(effectiveSupplierId).map((plan) => [plan.productId, plan.expectedTomorrow]));
+    const supplierState = this.market.suppliers?.[effectiveSupplierId];
+    const limitedStock = SUPPLIER_MAP[effectiveSupplierId]?.stockPerProductPerDay !== undefined;
     return generateRestockSuggestions({
+      existingCart,
+      options,
+      obligations: this.getCashObligations(),
+      // Giá thật lúc đặt giỏ (cùng công thức với validateSupplierCart) để tổng gợi ý + giỏ không vượt tiền.
+      cartCostOf: (items) => this.validateSupplierCart(effectiveSupplierId, items).totalCost,
+      supplierStockOf: (productId) =>
+        supplierState?.unavailable.includes(productId) ? 0 : limitedStock && supplierState ? supplierState.stockLeft[productId] ?? 0 : undefined,
+      ambient: { freeCells: this.ambientFreeCells(), heldOf: (productId) => this.ambientUnitsOf(productId) },
       supplierId,
       playerLevel: this.playerData.level,
       playerMoney: this.playerData.money,
@@ -2449,7 +2643,8 @@ export class GameSimulation {
    */
   private decayStock(day: number): void {
     if (day < 1) return;
-    const ctx = buildMarketContext(this.market, day, 12);
+    const marketCtx = buildMarketContext(this.market, day, 12);
+    const ctx = this.fixtures.some(fixture => fixture.shopId === 'generator' && !fixture.broken) ? withBackupPower(marketCtx) : marketCtx; // máy phát điện: tủ mát không hỏng nhanh khi cúp điện
     const rateOf = (productId: string | undefined) => {
       const product = productId ? PRODUCT_MAP[productId] : undefined;
       if (!product) return 1;
@@ -2551,6 +2746,8 @@ export class GameSimulation {
    * Fixed update step
    */
   public update(dt: number): void {
+    if (!Number.isFinite(dt) || dt <= 0) return;
+    dt = Math.min(dt, GameClock.MAX_UPDATE_SECONDS); // dt bất thường (tab treo, dữ liệu xấu) không được làm vòng lặp con chạy vô hạn
     if (this.isPaused) return;
     // 1. Advance game clock
     this.clock.update(dt);
@@ -2631,6 +2828,7 @@ export class GameSimulation {
     );
     if (spawned?.id && rollShoplifter(this.clock.getTime().day, spawned.id, this.playerData.level, !!spawned.regularId)) spawned.thief = true;
 
+    this.streetTraffic.setStallStops(this.stalls.owned.flatMap(id => STALL_MAP[id] ? [(STALL_MAP[id].tileX + STALL_MAP[id].widthTiles / 2) * TILE_SIZE] : []));
     this.streetTraffic.update(worldDt, this.clock.getTime().hour, this.getRainIntensity(), this.clock.getTime().day * 1337);
     this.logisticsManager.update(worldDt, this.clock.getTime().hour);
 
@@ -2638,6 +2836,7 @@ export class GameSimulation {
     this.updateStaffWorkers(worldDt);
     this.updateProduction(worldDt);
     this.updateCashierWorkers(worldDt);
+    this.updateSelfCheckout(worldDt);
 
     // Auto checkout for customer waiting at counter if checkoutWait timer reaches 0
     for (const waiting of this.customerManager.getCustomers()) {
@@ -2918,7 +3117,7 @@ export class GameSimulation {
       newMap[fixtureId] = productId;
       successCount++;
     }
-    this.planogram = newMap;
+    this.planogram = dict(newMap);
     this.notifyStateChanged();
     return { successCount, errors };
   }
@@ -3017,7 +3216,9 @@ export class GameSimulation {
     if (fix.broken) return { assigned: false, productId: null, filled: 0, reason: 'broken' };
 
     const isColdFixture = fix.type === 'refrigerator';
-    const isXoiShelf = fixtureBuilding(fix) === 'xoi';
+    const shelfBuilding = fixtureBuilding(fix);
+    const isXoiShelf = shelfBuilding === 'xoi';
+    const isDrinkShelf = shelfBuilding === 'drink';
 
     // Kệ đã có sản phẩm và còn hàng → chỉ châm thêm
     if (fix.assignedProductId && fix.currentStock > 0) {
@@ -3048,6 +3249,8 @@ export class GameSimulation {
         if (needsCold !== isColdFixture) return false;
         // Món xôi nấu ở quầy xôi chỉ tự châm vào kệ của tiệm xôi; kệ tiệm xôi chỉ tự nhận món xôi (tránh đổ đồ tạp hóa làm kệ bị khóa nhóm hàng).
         if (isXoiShelf !== XOI_DISH_IDS.has(inv.productId)) return false;
+        // Kệ quán nước chỉ tự nhận đồ uống của quán; kệ tòa khác không tự nhận thành phẩm riêng của quán nước (vẫn bày tay được).
+        if (isDrinkShelf && !DRINK_SHOP_PRODUCT_IDS.has(inv.productId)) return false;
         return true;
       })
       .sort((a, b) => {
@@ -3199,6 +3402,7 @@ export class GameSimulation {
       reservedColdCount: this.reservedColdWarehouseCount(),
       ambientUnitsOf: (productId) => this.ambientUnitsOf(productId),
       ambientFreeCells: this.ambientFreeCells(),
+      skillDiscount: getSkillModifier(this.skills, 'supplier_discount'),
     });
   }
 
@@ -3223,8 +3427,7 @@ export class GameSimulation {
     const supplierState = this.market.suppliers?.[supplierId];
 
     for (const line of items) {
-      const product = PRODUCT_MAP[line.productId]!;
-      const unitCost = wholesaleQuote(supplier, product, supplierState, line.quantity).unit;
+      const unitCost = this.wholesaleUnitPrice(supplierId, line.productId, line.quantity);
       if (supplierState && supplier.stockPerProductPerDay !== undefined) supplierState.stockLeft[line.productId] = Math.max(0, (supplierState.stockLeft[line.productId] ?? 0) - line.quantity);
       const orderId = `ord-${++this.orderSequence}`;
       orderIds.push(orderId);
@@ -3655,6 +3858,7 @@ export class GameSimulation {
       processedPayrollDayIds: [...this.processedPayrollDayIds],
       autoBuyEnabled: this.autoBuyEnabled,
       autoBuyRules: structuredClone(this.autoBuyRules),
+      ...(this.restockOptions ? { restockOptions: { ...this.restockOptions } } : {}),
       processedAutoBuyDayIds: [...this.processedAutoBuyDayIds],
       autoBuyReports: structuredClone(this.autoBuyReports),
       quests: normalizeQuestState(this.quests),
@@ -3678,6 +3882,8 @@ export class GameSimulation {
       diningDirtyTableIds: [...this.diningDirtyTableIds],
       productionJobs: this.productionJobs.map(job => ({ ...job })),
       productionJobSequence: this.productionJobSequence,
+      tax: structuredClone(this.taxState),
+      ...(this.chainState.branches.length ? { chain: structuredClone(this.chainState) } : {}),
       priceHistory: structuredClone(this.priceHistory),
       heatmap: structuredClone(this.heatmap),
       reviews: this.reviewsManager.exportReviews(),
@@ -3697,14 +3903,14 @@ export class GameSimulation {
     this.playerData = normalizePlayerProgression(saveData.player);
     this.warehouseTier = saveData.warehouseTier ?? 0;
     this.storageRackCount = saveData.storageRackCount ?? 0;
-    this.sellingPrices = { ...(saveData.sellingPrices ?? {}) };
+    this.sellingPrices = dict(saveData.sellingPrices);
     this.fixtures = saveData.storeLayout.fixtures.map((f) => ({ ...f }));
     this.storedFixtures = (saveData.storeLayout.storedFixtures ?? []).map(f => ({ ...f }));
     this.unlockedPlotIds = [...(saveData.storeLayout.unlockedPlotIds ?? [])];
     this.decorOwned = [...(saveData.storeLayout.decorOwned ?? [])];
     this.inventory = saveData.inventory.map((i) => ({ ...i }));
     this.holdingArea = (saveData.holdingArea ?? []).map((h) => ({ ...h }));
-    this.planogram = saveData.planogram ? { ...saveData.planogram } : {};
+    this.planogram = dict(saveData.planogram);
     this.staffManager = new StaffManager(saveData);
     this.restockJobClaims = new RestockClaimManager();
     for (const member of this.staff) {
@@ -3712,6 +3918,7 @@ export class GameSimulation {
     }
     this.autoBuyEnabled = saveData.autoBuyEnabled ?? false;
     this.autoBuyRules = this.validateAutoBuyRules(saveData.autoBuyRules ?? []);
+    this.restockOptions = saveData.restockOptions ? normalizeRestockOptions(saveData.restockOptions) : undefined;
     this.processedAutoBuyDayIds = new Set(saveData.processedAutoBuyDayIds ?? []);
     this.autoBuyReports = structuredClone(saveData.autoBuyReports ?? {});
     this.questsManager.load(saveData);
@@ -3725,7 +3932,7 @@ export class GameSimulation {
     this.completedCheckoutIds = new Set(saveData.completedCheckoutIds ?? []);
     this.dailyRecords = saveData.dailyRecords ? structuredClone(saveData.dailyRecords) : {};
     this.closedDayIds = new Set(saveData.closedDayIds ?? []);
-    this.regulars = saveData.regulars ? structuredClone(saveData.regulars) : {};
+    this.regulars = dict(saveData.regulars ? structuredClone(saveData.regulars) : undefined);
     this.customerCredits = (saveData.customerCredits ?? []).filter(c => c && typeof c.id === 'string' && typeof c.regularId === 'string' && Number.isFinite(c.balance) && c.balance >= 0).map(c => ({ ...c }));
     this.customerCreditSequence = Math.max(saveData.customerCreditSequence ?? 0, ...this.customerCredits.map(c => Number(c.id.match(/^credit-(\d+)$/)?.[1] ?? 0)));
     this.diningManager = new DiningManager();
@@ -3734,6 +3941,8 @@ export class GameSimulation {
     this.priceHistory = sanitizePriceHistory(saveData.priceHistory);
     this.heatmap = sanitizeHeatmap(saveData.heatmap);
     this.heatmapLastTile.clear();
+    this.taxState = normalizeTaxState(saveData.tax);
+    this.chainState = normalizeChain(saveData.chain);
     this.productionJobSequence = Math.max(saveData.productionJobSequence ?? 0, ...this.productionManager.getRef().map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
     this.reviewsManager.importReviews(saveData.reviews);
     this.securityManager.load({ security: saveData.security });

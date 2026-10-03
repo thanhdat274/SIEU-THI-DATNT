@@ -108,22 +108,22 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 
 | ID | Vấn đề | Ưu tiên | Trạng thái |
 |---|---|---|---|
-| I-01 | Co-op: server chỉ replay một phần lệnh | High | Mở |
+| I-01 | Co-op: server chỉ replay một phần lệnh | High | Đã làm 2026-10-03: 38 loại lệnh được server phát lại (`test:coop` PASS trên Mongo local); `layout_move/store/retrieve` FE không gửi; chưa kiểm 2 client thật |
 | I-02 | Bảng xếp hạng dữ liệu giả | Medium | Đã thay bằng dữ liệu thật 2026-10-01 (chưa kiểm đăng nhập thật) |
 | I-03 | Quyền sửa bố cục cho mọi thành viên chưa ghi spec | Medium | Đã ghi spec 2026-10-01 |
 | I-04 | ID `Date.now()/Math.random()` | Medium | Đã làm 2026-10-01 |
 | I-05 | Nhân viên chưa vào co-op | Medium | Đã làm 2026-10-01 (đường commit; chưa kiểm hai trình duyệt) |
 | I-07 | Tài liệu lạc hậu | Medium | Mở |
-| I-08 | Service worker version cố định | Low | Mở |
-| I-09 | Test server ngoài `yarn test` | Medium | Mở |
+| I-08 | Service worker version cố định | Low | Đã đóng: `sw.js` dùng `__SW_VERSION__`, Vite thay theo build (đọc mã 2026-10-03) |
+| I-09 | Test server ngoài `yarn test` | Medium | Đã làm: `test:all`/`test:all:db` + CI; run GitHub `37039000966` XANH 2026-10-02 (chưa merge vào `main`) |
 | I-10 | Bundle lớn | Low | Mở |
-| I-11 | `server/main.ts` lỗi thời | Low | Mở |
+| I-11 | `server/main.ts` lỗi thời | Low | Đã xóa 2026-10-03 |
 | I-12 | Save local một slot, xuất/nhập file | Medium | Xuất/nhập file, 3 ô lưu và khóa nhiều tab đã làm 2026-10-01 |
-| I-13 | Mưa chỉ dùng ngưỡng 0,4 | Low | Mở |
-| I-14 | Khóa bí mật trong thư mục dự án | Low | Mở |
+| I-13 | Mưa chỉ dùng ngưỡng 0,4 | Low | Xử lý một phần: cường độ mưa liên tục (`rainIntensity`) đã vào `customers`, `arrival-mode`, `reviews`, `street-traffic`; ngưỡng mưa của `street-traffic` nay nằm trong `STREET_PEDESTRIANS` (`game-data/traffic.ts`, 03/10/2026); chưa có bảng hệ số theo dải |
+| I-14 | Khóa bí mật trong thư mục dự án | Low | Đã `.gitignore`, `git ls-files` không theo dõi (kiểm 2026-10-03); file vẫn nằm trong thư mục làm việc |
 | I-15 | Server không giới hạn payload/tần suất | Medium | Xử lý một phần 2026-10-01 |
 | I-16 | Chưa có migration schema world Mongo | Medium | Đã có code (03/10/2026): `world-migrations.ts` chạy lúc khởi động server; chưa chạy thật (mới dry-run) |
-| I-17 | Thiếu tài liệu triển khai/vận hành | Low | Mở |
+| I-17 | Thiếu tài liệu triển khai/vận hành | Low | Đã viết `docs/deploy.md` 2026-10-03 (từ mã, chưa kiểm bằng deploy thật) |
 | I-18 | A11y/cảm ứng chưa kiểm | Low | Mở |
 | I-19 | Đèn tín hiệu: QA browser dở, pha không đồng bộ co-op (chủ ý) | Medium | Mở |
 | I-06 | Hằng số đường chưa nối | Low | Đã đóng 2026-10-01 (commit 2f2af38) |

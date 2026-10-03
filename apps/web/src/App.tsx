@@ -1,5 +1,5 @@
-import React, { lazy, Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { effectiveShelfCapacity, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, WEATHER_MAP, XOI_DISH_IDS } from '@game/data';
+import React, { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { DRINK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, WEATHER_MAP, XOI_DISH_IDS } from '@game/data';
 import { InputManager, GameSimulation, ambientMix, getTutorialChecklist } from '@game/core';
 import type { TutorialItem } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
@@ -13,6 +13,7 @@ import { buildSaveFile, saveFileName } from './save-file';
 import { useGameStore } from './store/useGameStore';
 import { HUD } from './components/HUD';
 import { AccountBar } from './components/AccountBar';
+import { useCloudSave } from './hooks/useCloudSave';
 import { LoginScreen } from './components/LoginScreen';
 import { type WorldDetail, createWorldInvite, commitOnlineCommand, getOnlineWorld, touchWorldSession } from './services/api';
 import { WarehouseModal } from './components/WarehouseModal';
@@ -20,6 +21,7 @@ import { ShelfModal } from './components/ShelfModal';
 import { CashierModal } from './components/CashierModal';
 import { InventoryModal } from './components/InventoryModal';
 import { VirtualJoystick } from './components/VirtualJoystick';
+import { useControlMode } from './control-mode';
 import { RotateOverlay } from './components/RotateOverlay';
 import { ToastContainer } from './components/ToastContainer';
 import { BottomBar } from './components/BottomBar';
@@ -29,29 +31,7 @@ import type { StoreLayoutAction } from '@game/core';
 import { money, PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
 
-/** Modal ít mở nạp theo yêu cầu để không nằm trong chunk đầu (I-10). */
-const lazyModal = <P,>(load: () => Promise<Record<string, unknown>>, name: string) =>
-  lazy(() => load().then((m) => ({ default: m[name] as React.ComponentType<P> })));
-const AnalyticsModal = lazyModal<React.ComponentProps<typeof import('./components/AnalyticsModal').AnalyticsModal>>(() => import('./components/AnalyticsModal'), 'AnalyticsModal');
-const KitchenStationModal = lazyModal<React.ComponentProps<typeof import('./components/KitchenStationModal').KitchenStationModal>>(() => import('./components/KitchenStationModal'), 'KitchenStationModal');
-const DiningTableModal = lazyModal<React.ComponentProps<typeof import('./components/DiningTableModal').DiningTableModal>>(() => import('./components/DiningTableModal'), 'DiningTableModal');
-const SaveModal = lazyModal<React.ComponentProps<typeof import('./components/SaveModal').SaveModal>>(() => import('./components/SaveModal'), 'SaveModal');
-const SupplierModal = lazyModal<React.ComponentProps<typeof import('./components/SupplierModal').SupplierModal>>(() => import('./components/SupplierModal'), 'SupplierModal');
-const TimeVoteModal = lazyModal<React.ComponentProps<typeof import('./components/TimeVoteModal').TimeVoteModal>>(() => import('./components/TimeVoteModal'), 'TimeVoteModal');
-const StoreLayoutModal = lazyModal<React.ComponentProps<typeof import('./components/StoreLayoutModal').StoreLayoutModal>>(() => import('./components/StoreLayoutModal'), 'StoreLayoutModal');
-const StorePlanogramModal = lazyModal<React.ComponentProps<typeof import('./components/StorePlanogramModal').StorePlanogramModal>>(() => import('./components/StorePlanogramModal'), 'StorePlanogramModal');
-const QuestModal = lazyModal<React.ComponentProps<typeof import('./components/QuestModal').QuestModal>>(() => import('./components/QuestModal'), 'QuestModal');
-const LevelRoadmapModal = lazyModal<React.ComponentProps<typeof import('./components/LevelRoadmapModal').LevelRoadmapModal>>(() => import('./components/LevelRoadmapModal'), 'LevelRoadmapModal');
-const StallModal = lazyModal<React.ComponentProps<typeof import('./components/StallModal').StallModal>>(() => import('./components/StallModal'), 'StallModal');
-const MarketModal = lazyModal<React.ComponentProps<typeof import('./components/MarketModal').MarketModal>>(() => import('./components/MarketModal'), 'MarketModal');
-const TaxModal = lazyModal<React.ComponentProps<typeof import('./components/TaxModal').TaxModal>>(() => import('./components/TaxModal'), 'TaxModal');
-const DaySummaryModal = lazyModal<React.ComponentProps<typeof import('./components/DaySummaryModal').DaySummaryModal>>(() => import('./components/DaySummaryModal'), 'DaySummaryModal');
-const RegularsModal = lazyModal<React.ComponentProps<typeof import('./components/RegularsModal').RegularsModal>>(() => import('./components/RegularsModal'), 'RegularsModal');
-const SkillsModal = lazyModal<React.ComponentProps<typeof import('./components/SkillsModal').SkillsModal>>(() => import('./components/SkillsModal'), 'SkillsModal');
-const TitlesModal = lazyModal<React.ComponentProps<typeof import('./components/TitlesModal').TitlesModal>>(() => import('./components/TitlesModal'), 'TitlesModal');
-const MaintenanceModal = lazyModal<React.ComponentProps<typeof import('./components/MaintenanceModal').MaintenanceModal>>(() => import('./components/MaintenanceModal'), 'MaintenanceModal');
-const ReviewsModal = lazyModal<React.ComponentProps<typeof import('./components/ReviewsModal').ReviewsModal>>(() => import('./components/ReviewsModal'), 'ReviewsModal');
-const SecurityModal = lazyModal<React.ComponentProps<typeof import('./components/SecurityModal').SecurityModal>>(() => import('./components/SecurityModal'), 'SecurityModal');
+import { AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, SecurityModal } from './lazy-modals';
 
 export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -298,6 +278,9 @@ export const App: React.FC = () => {
       return false;
     }
   }, [syncFromSimulation, addToast]);
+
+  const exportLocalSave = useCallback(() => simulationRef.current?.exportSaveData(getActiveSlotId(), revisionRef.current), []);
+  const { cloud, uploadCloud, downloadCloud } = useCloudSave({ enabled: isSaveModalOpen && !onlineWorld, exportLocal: exportLocalSave, importSave: handleImportSave });
 
   const onlineUidRef = useRef<string | null>(null);
   const spawnPlacedForRef = useRef<string | null>(null);
@@ -1054,6 +1037,21 @@ export const App: React.FC = () => {
     return result;
   };
 
+  // Lưu cài đặt gợi ý nhập hàng vào save; gộp các lần đổi liên tiếp (gõ số) thành một lần ghi.
+  const restockSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(restockSaveTimer.current), []);
+  const handleSaveRestockOptions = (options: import('@game/shared').RestockSuggestionOptions) => {
+    const sim = simulationRef.current;
+    if (!sim || blockOfflineOnlineMutation()) return;
+    sim.setRestockOptions(options);
+    clearTimeout(restockSaveTimer.current);
+    restockSaveTimer.current = setTimeout(() => {
+      // Hẻm chung: gửi lệnh để máy chủ giữ bản chung; chơi riêng: ghi save cục bộ.
+      if (onlineWorldRef.current) void commitBusinessChange({ type: 'set_restock_options', options }, 'Đổi cài đặt gợi ý nhập hàng', 'Cài đặt');
+      else void handleSaveGame(false);
+    }, 600);
+  };
+
   const handleUpdateAutoBuy = (enabled: boolean, rules: import('@game/shared').AutoBuyRule[]) => {
     const sim = simulationRef.current;
     if (!sim) return { success: false, reason: 'Chưa sẵn sàng.' };
@@ -1118,7 +1116,7 @@ export const App: React.FC = () => {
       addToast(`Đã đặt giỏ hàng thành công từ ${supplierName}!`, 'success');
       if (onlineWorldRef.current && res.paidTotal) {
         await commitBusinessChange(
-          { type: 'order', supplierId, items, paidTotal: res.paidTotal },
+          { type: 'order_supplier', supplierId, items },
           `Đặt giỏ hàng (${items.length} món, tổng ${res.paidTotal.toLocaleString('vi-VN')} ₫) từ ${supplierName}`,
           'Nhập hàng'
         );
@@ -1228,31 +1226,7 @@ export const App: React.FC = () => {
     if (blockOfflineOnlineMutation()) return;
     const sim = simulationRef.current;
     if (!sim) return;
-    let restockedCount = 0;
-
-    // 1. Apply planogram entries
-    const batchRes = sim.applyPlanogram();
-    restockedCount += batchRes.totalRefilled;
-
-    // 2. Fallback: restock any sales fixtures with assignedProductId that are not in planogram
-    const currentPlan = sim.getPlanogram();
-    for (const fix of sim.getFixtures()) {
-      if (isSalesFixture(fix) && fix.assignedProductId && !currentPlan[fix.id]) {
-        const prod = PRODUCT_MAP[fix.assignedProductId];
-        const effectiveCap = prod ? effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, sim.getShelfCapacityBonus()) : fix.maxCapacity;
-        const needed = effectiveCap - fix.currentStock;
-        if (needed > 0) {
-          const invItem = sim.getInventory().find((i) => i.productId === fix.assignedProductId);
-          if (invItem && invItem.quantity > 0) {
-            const transfer = Math.min(needed, invItem.quantity);
-            const res = sim.transferToShelf(fix.id, fix.assignedProductId, transfer);
-            if (res.success && res.actualQuantity > 0) {
-              restockedCount += res.actualQuantity;
-            }
-          }
-        }
-      }
-    }
+    const restockedCount = sim.autoRestockShelves();
     if (restockedCount > 0) {
       syncFromSimulation(sim);
       addToast(`Đã tự động châm ${restockedCount} món hàng từ kho lên các kệ! `, 'success');
@@ -1261,7 +1235,7 @@ export const App: React.FC = () => {
       }
       if (onlineWorldRef.current) {
         await commitBusinessChange(
-          { type: 'auto_restock', count: restockedCount },
+          { type: 'auto_restock' },
           `Tự động châm ${restockedCount} món hàng lên kệ`,
           'Bày hàng tự động'
         );
@@ -1323,6 +1297,7 @@ export const App: React.FC = () => {
     }
   };
 
+  const controlMode = useControlMode();
   const hasModal = !!(activeFixtureModal || isInventoryModalOpen || isSaveModalOpen || isSupplierModalOpen || isLayoutOpen || isPlanogramOpen);
   useEffect(() => {
     const syncInput = (state: ReturnType<typeof useGameStore.getState>) => inputManagerRef.current?.setEnabled(!(state.activeFixtureModal || state.isInventoryModalOpen || state.isSaveModalOpen || state.isSupplierModalOpen));
@@ -1397,7 +1372,7 @@ export const App: React.FC = () => {
               </div>
             )}
             <div className="world-tools" aria-label="Góc nhìn bản đồ"><PixelButton icon="warehouse" aria-label="Định vị nhà kho" onClick={locateWarehouse}/><PixelButton icon="minus" aria-label="Thu nhỏ bản đồ" disabled={zoomLevel<=1} onClick={handleZoomOut}/><span className="zoom-value">{zoomLevel}×</span><PixelButton icon="plus" aria-label="Phóng to bản đồ" disabled={zoomLevel>=3} onClick={handleZoomIn}/></div>
-            {!hasModal && !isWarehouseDockOpen && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
+            {!hasModal && (!isWarehouseDockOpen || controlMode === 'touch') && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
           </>}
         </div>
         {!isLoading && <WarehouseDock coldCapacity={simulationRef.current?.getColdCapacity()} ambientCapacity={simulationRef.current?.getAmbientCapacity()} ambientUsed={simulationRef.current?.getAmbientCellsUsed()} capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onOpenPlanogram={() => setIsPlanogramOpen(true)} onLocateWarehouse={locateWarehouse} onStowHolding={handleStowHolding} currentDay={worldTime.day}/>}
@@ -1463,10 +1438,10 @@ export const App: React.FC = () => {
     )}
     {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal coldCapacity={simulationRef.current?.getColdCapacity()} ambientCapacity={simulationRef.current?.getAmbientCapacity()} ambientUsed={simulationRef.current?.getAmbientCellsUsed()} capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} fixture={activeFixtureModal} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onStowHolding={handleStowHolding} onDisposeStock={handleDisposeStock} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'cashier_counter' && <CashierModal initialShowStaff={staffRequested} fixture={activeFixtureModal} player={player} worldTime={worldTime} shelves={fixtures.filter(isSalesFixture)} customers={customers} statistics={statistics} canDineIn={customer => simulationRef.current?.canDineIn(customer) ?? false} creditAccounts={simulationRef.current?.getCustomerCredits() ?? []} creditTerms={regularId => simulationRef.current?.getCustomerCreditTerms(regularId) ?? { eligible: false, limit: 0, used: 0, available: 0 }} onRepayCredit={async creditId => { const res = await persistSimulationMutation({ type: 'repay_customer_credit', creditId }, 'Thu hồi nợ khách quen', 'Thu nợ', simulation => ({ success: simulation.repayCustomerCredit(creditId), reason: undefined as string | undefined })); if (res?.success) addToast('Đã thu hồi khoản mua chịu.', 'success'); else if (res) addToast(res.reason ?? 'Không thu được khoản nợ.', 'warn'); }} staff={simulationRef.current?.getStaff() ?? []} staffCandidates={simulationRef.current?.getStaffCandidates(worldTime.day) ?? []} wageDebt={simulationRef.current?.getWageDebt() ?? 0} restockTargets={simulationRef.current?.getRestockJobTargets() ?? []} onAssignRefillJob={handleAssignRefillJob} onHireStaff={handleHireStaff} onSetStaffShift={handleSetStaffShift} onCheckout={handleCheckout} onToggleStoreStatus={handleToggleStoreStatus} onAdvanceDay={handleAdvanceDay} onClose={closeFixtureModal}/>}
-    {activeFixtureModal?.type === 'kitchen_station' && simulationRef.current && <KitchenStationModal fixture={activeFixtureModal} recipes={simulationRef.current.getStationRecipes(activeFixtureModal.id)} job={simulationRef.current.getProductionJobs().find(job => job.stationId === activeFixtureModal.id)} inventory={simulationRef.current.getInventory()} day={simulationRef.current.getTime().day} onStart={async recipeId => { const stationId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'start_production', recipeId, stationId }, 'Bắt đầu nấu', 'Sản xuất', simulation => simulation.startProduction(recipeId, stationId)); if (!res?.success) addToast(res?.reason ?? 'Không bắt đầu được mẻ nấu.', 'warn'); }} onClose={closeFixtureModal}/>}
+    {activeFixtureModal?.type === 'kitchen_station' && simulationRef.current && <KitchenStationModal fixture={activeFixtureModal} recipes={simulationRef.current.getStationRecipes(activeFixtureModal.id)} job={simulationRef.current.getProductionJobs().find(job => job.stationId === activeFixtureModal.id)} inventory={simulationRef.current.getInventory()} day={simulationRef.current.getTime().day} allFixtures={fixtures.filter(f => f.type === 'kitchen_station' && f.shopId)} onStart={async (recipeId, stationId) => { const targetId = stationId ?? activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'start_production', recipeId, stationId: targetId }, 'Bắt đầu nấu', 'Sản xuất', simulation => simulation.startProduction(recipeId, targetId)); if (!res?.success) addToast(res?.reason ?? 'Không bắt đầu được mẻ nấu.', 'warn'); }} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'dining_table' && simulationRef.current && <DiningTableModal fixture={activeFixtureModal} state={simulationRef.current.getDiningTableState(activeFixtureModal.id)} staff={simulationRef.current.getStaff()} onAssignCleaner={async staffId => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'assign_dining_cleanup', staffId, fixtureId }, 'Giao việc dọn bàn', 'Dọn dẹp', simulation => ({ success: simulation.assignDiningCleanup(staffId, fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast(res?.reason ?? 'Không giao được việc dọn bàn.', 'warn'); }} onClean={async () => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'clean_dining_table', fixtureId }, 'Dọn bàn ăn', 'Dọn dẹp', simulation => ({ success: simulation.cleanDiningTable(fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast('Bàn đang có khách hoặc đã sạch.', 'warn'); }} onClose={closeFixtureModal}/>}
     {isInventoryModalOpen && <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals}/>}
-    {isSaveModalOpen && <SaveModal onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onExportSave={handleExportSave} onImportSave={handleImportSave} isOnline={!!onlineWorld} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
+    {isSaveModalOpen && <SaveModal cloud={{state:cloud,onUpload:uploadCloud,onDownload:downloadCloud}} onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onExportSave={handleExportSave} onImportSave={handleImportSave} isOnline={!!onlineWorld} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
     {isSupplierModalOpen && (
       <SupplierModal
         coldCapacity={simulationRef.current?.getColdCapacity()}
@@ -1478,8 +1453,10 @@ export const App: React.FC = () => {
         onOrderCart={handleSupplierCartOrder}
         getQuotes={(supplierId) => simulationRef.current!.getSupplierQuotes(supplierId)}
         getUnitPrice={(supplierId, productId, quantity) => simulationRef.current!.wholesaleUnitPrice(supplierId, productId, quantity)}
-        onGetSuggestions={(supplierId) =>
-          simulationRef.current?.suggestRestock(supplierId) ?? {
+        savedRestockOptions={simulationRef.current?.getRestockOptions()}
+        onSaveRestockOptions={handleSaveRestockOptions}
+        onGetSuggestions={(supplierId, cart, options) =>
+          simulationRef.current?.suggestRestock(supplierId, undefined, cart, options) ?? {
             supplierId,
             items: [],
             totalCost: 0,
@@ -1690,7 +1667,7 @@ export const App: React.FC = () => {
     )}
     {isLevelRoadmapOpen && <LevelRoadmapModal player={player} onClose={() => setLevelRoadmapOpen(false)}/>}
     {daySummaryRecord && <DaySummaryModal record={daySummaryRecord} morningBrief={simulationRef.current?.getMorningBrief()} onClose={() => setDaySummaryRecord(null)}/>}
-    {isTaxOpen && <TaxModal day={worldTime.day} worldTime={worldTime} dailyRecords={dailyRecords} currentDayRecord={currentDayRecord} onClose={() => setTaxOpen(false)}/>}
+    {isTaxOpen && <TaxModal day={worldTime.day} worldTime={worldTime} dailyRecords={dailyRecords} currentDayRecord={currentDayRecord} taxState={simulationRef.current?.getTaxState()} onSetUnderDeclare={async (underDeclare) => { const res = await persistSimulationMutation({ type: 'set_tax_declaration', underDeclare }, underDeclare ? 'Chọn khai bớt thuế' : 'Chọn kê khai đủ thuế', 'Thuế', simulation => simulation.setTaxUnderDeclare(underDeclare)); if (!res?.success) addToast(res?.reason ?? 'Không đổi được cách kê khai.', 'warn'); }} onClose={() => setTaxOpen(false)}/>}
     {isRegularsOpen && simulationRef.current && <RegularsModal regulars={simulationRef.current.getRegulars()} onClose={() => setRegularsOpen(false)}/>}
     {isLayoutOpen && simulationRef.current && <StoreLayoutModal save={simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision)} onConfirm={handleApplyStoreLayout} onClose={closeLayoutEditor}/>}
     {isPlanogramOpen && (
@@ -1727,6 +1704,7 @@ export const App: React.FC = () => {
           return res;
         }}
         xoiProductIds={[...XOI_DISH_IDS]}
+        drinkProductIds={[...DRINK_SHOP_PRODUCT_IDS]}
         onOpenSupplier={() => {
           setIsPlanogramOpen(false);
           openSupplierModal();

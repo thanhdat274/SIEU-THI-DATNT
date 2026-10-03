@@ -1,14 +1,14 @@
 import { GameTileMap, StoreFixture, SaveGameData, Vector2D } from '@game/shared';
 import { LAND_PLOTS, STARTER_OWNED_PLOT_IDS } from './land';
 import { STALLS } from './stalls';
-import { BUILDINGS, BUILDING_MAP, MAIN_STORE_BOUNDS, XOI_BOUNDS, XOI_PLOT_ID } from './buildings';
+import { BUILDINGS, BUILDING_MAP, DRINK_BOUNDS, DRINK_PLOT_ID, MAIN_STORE_BOUNDS, XOI_BOUNDS, XOI_PLOT_ID, buildingTop } from './buildings';
 import { xpToNextLevel } from './progression';
 
 /** Chủ tiệm đứng sau quầy thu ngân (phía bắc), nhìn ra chỗ khách xếp hàng ở ô (9,8). */
 export const SHOPKEEPER_TILE = { x: 8, y: 7 };
 export const SHOPKEEPER_POSITION = { x: (SHOPKEEPER_TILE.x + 0.5) * 32, y: (SHOPKEEPER_TILE.y + 1) * 32 - 2 };
 
-export const MAP_WIDTH = 26;
+export const MAP_WIDTH = 36;
 export const MAP_HEIGHT = 22;
 export const MAP_ORIGIN_Y = -6;
 export const STORE_BOUNDS = MAIN_STORE_BOUNDS;
@@ -19,7 +19,7 @@ export const ONLINE_SPAWN_POINTS: readonly { x: number; y: number }[] = [
 ];
 /** Hàng rào thấp ở hàng y=10 giữa cỏ và vỉa hè (trừ mặt tiền tiệm); dùng chung cho va chạm và renderer. */
 export const isFenceTile = (x: number, worldY: number, mapWidth: number): boolean =>
-  worldY === 10 && x > XOI_BOUNDS.right && x < mapWidth - 1 && x >= STORE_BOUNDS.right + 2;
+  worldY === 10 && x > XOI_BOUNDS.right && x < mapWidth - 1 && x >= STORE_BOUNDS.right + 2 && (x < DRINK_BOUNDS.left || x > DRINK_BOUNDS.right);
 /** Đèn đường trên vỉa hè sát lòng đường; cột đèn chặn đường đi như vật cản nhỏ. */
 export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 4, y: 12 }, { x: 15, y: 12 }, { x: 20, y: 12 }];
 
@@ -29,7 +29,15 @@ export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 
  * không chặn cửa tiệm, ô đỗ xe, cột đèn hay lối đi.
  */
 export interface TreeProp { id: string; tileX: number; tileY: number; height: number; crownRadius: number }
-export const TREE_PROPS: ReadonlyArray<TreeProp> = [{ id: 'alley_shade_tree', tileX: 5, tileY: 11, height: 2.4, crownRadius: 1.1 }];
+export const TREE_PROPS: ReadonlyArray<TreeProp> = [
+  // Cây hiện có phía tây
+  { id: 'alley_shade_tree', tileX: 5, tileY: 11, height: 2.4, crownRadius: 1.1 },
+  // Cây mới phía đông (gần quán nước)
+  { id: 'east_tree_small', tileX: 19, tileY: 11, height: 1.8, crownRadius: 0.8 },  // Giữa tiệm xôi và quán nước
+  { id: 'east_tree_tall', tileX: 25, tileY: 11, height: 2.6, crownRadius: 1.2 },   // Trước quán nước bên trái
+  { id: 'east_tree_bush', tileX: 33, tileY: 11, height: 1.5, crownRadius: 1.0 },   // Trước quán nước bên phải
+  { id: 'east_tree_cluster', tileX: 34, tileY: 11, height: 2.0, crownRadius: 0.9 }, // Mép đông bản đồ
+];
 /** Vị trí góc trên-trái của sprite cây so với ô gốc (đơn vị ô) và độ dịch dọc bằng pixel; giữ đúng vị trí vẽ trước đây. */
 export const TREE_SPRITE_OFFSET = { tilesX: -1, tilesY: -2, pixelsY: -4 } as const;
 
@@ -39,6 +47,10 @@ export const STREET_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
   { x: 7 * 32 + 16, y: 12 * 32 + 10 },
   { x: 12 * 32 + 16, y: 12 * 32 + 10 },
   { x: 13 * 32 + 16, y: 12 * 32 + 10 },
+  // Trước quán nước (cửa ở x=30..31): xe máy đỗ gần cửa, khách không phải đi bộ từ đầu hẻm.
+  { x: 28 * 32 + 16, y: 12 * 32 + 10 },
+  { x: 29 * 32 + 16, y: 12 * 32 + 10 },
+  { x: 32 * 32 + 16, y: 12 * 32 + 10 },
 ];
 /**
  * Mặt cắt lòng đường (chỉ hình ảnh, không đổi va chạm hay đường đi): vỉa hè (y 11-12) → bó vỉa + rãnh thoát nước →
@@ -58,6 +70,7 @@ export const CROSSWALK = { tileX: 1, widthTiles: 2, firstRow: 13, rows: 2 } as c
 export const CAR_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
   { x: 560, y: 12 * 32 + 14 },
   { x: 736, y: 12 * 32 + 14 },
+  { x: 34.5 * 32, y: 12 * 32 + 14 },
 ];
 
 export const WAREHOUSE_BOUNDS = {left:STORE_BOUNDS.left,right:STORE_BOUNDS.right,top:STORE_BOUNDS.top-6,bottom:STORE_BOUNDS.top};
@@ -217,14 +230,30 @@ export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STAR
   // chưa mua thì cửa và sàn trong bị chặn (renderer vẽ cửa cuốn), mua rồi mới đi vào/đặt nội thất được.
   const xoiOpen = purchased.has(XOI_PLOT_ID);
   const xoiDoors = BUILDING_MAP.xoi.doorTiles;
-  for (let y = XOI_BOUNDS.top; y <= XOI_BOUNDS.bottom; y++) {
+  const xoiTop = buildingTop('xoi', purchased);
+  for (let y = xoiTop; y <= XOI_BOUNDS.bottom; y++) {
     for (let x = XOI_BOUNDS.left; x < XOI_BOUNDS.right; x++) {
       const idx = (y - MAP_ORIGIN_Y) * MAP_WIDTH + x;
       const door = xoiDoors.some(tile => tile.x === x && tile.y === y);
-      const wall = !door && (y === XOI_BOUNDS.top || y === XOI_BOUNDS.bottom || x === XOI_BOUNDS.left);
+      const wall = !door && (y === xoiTop || y === XOI_BOUNDS.bottom || x === XOI_BOUNDS.left);
       groundData[idx] = 3;
       wallData[idx] = wall ? 4 : 0;
       collisionLayer[idx] = wall || !xoiOpen;
+    }
+  }
+
+  // Quán nước: tòa thứ ba đứng riêng ở dải đông, đủ bốn tường; chưa mua thì cửa và sàn trong bị chặn như tiệm xôi.
+  const drinkOpen = purchased.has(DRINK_PLOT_ID);
+  const drinkDoors = BUILDING_MAP.drink.doorTiles;
+  const drinkTop = buildingTop('drink', purchased);
+  for (let y = drinkTop; y <= DRINK_BOUNDS.bottom; y++) {
+    for (let x = DRINK_BOUNDS.left; x <= DRINK_BOUNDS.right && x < MAP_WIDTH; x++) {
+      const idx = (y - MAP_ORIGIN_Y) * MAP_WIDTH + x;
+      const door = drinkDoors.some(tile => tile.x === x && tile.y === y);
+      const wall = !door && (y === drinkTop || y === DRINK_BOUNDS.bottom || x === DRINK_BOUNDS.left || x === DRINK_BOUNDS.right);
+      groundData[idx] = 3;
+      wallData[idx] = wall ? 4 : 0;
+      collisionLayer[idx] = wall || !drinkOpen;
     }
   }
 
@@ -288,7 +317,7 @@ export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STAR
     ],
     collisionLayer,
     storeBounds: { left: STORE_BOUNDS.left, right: east, top: STORE_BOUNDS.top, bottom: STORE_BOUNDS.bottom },
-    buildings: BUILDINGS.map(building => ({ id: building.id, open: !building.plotId || purchased.has(building.plotId) })),
+    buildings: BUILDINGS.map(building => ({ id: building.id, open: !building.plotId || purchased.has(building.plotId), top: buildingTop(building.id, purchased) })),
     stalls: stalls.map(stall => ({ id: stall.id, tileX: stall.tileX, tileY: stall.tileY, widthTiles: stall.widthTiles })),
   };
 }

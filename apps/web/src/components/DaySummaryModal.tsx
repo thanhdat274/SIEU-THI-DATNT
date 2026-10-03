@@ -4,7 +4,7 @@ import { buildDaySummary, type MorningBrief } from '@game/core';
 import { PRODUCT_MAP } from '@game/data';
 import { money, PixelDialog, PixelStat, PixelButton } from './pixel';
 
-interface Props {
+export interface Props {
   record: DailyRecord;
   morningBrief?: MorningBrief | null;
   onClose: () => void;

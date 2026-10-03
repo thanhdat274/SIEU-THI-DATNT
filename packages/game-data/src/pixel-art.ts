@@ -60,6 +60,24 @@ export function productPixels(product?: Pick<Product, 'id' | 'category'>): Pixel
   } else if (category === 'household') {
     rect(5, 1, 6, 2, ink); rect(3, 3, 10, 12, ink); rect(4, 4, 8, 10, '#87BEB9');
     rect(6, 5, 4, 6, paper); rect(7, 7, 2, 2, teal); rect(4, 12, 8, 2, accent);
+  } else if (category === 'personal_care') { // chai/tuýp có nắp
+    rect(6, 1, 4, 3, ink); rect(7, 2, 2, 1, gold); rect(4, 4, 8, 11, ink); rect(5, 5, 6, 9, '#E9C7D2');
+    rect(6, 7, 4, 4, paper); rect(7, 8, 2, 2, accent); rect(5, 12, 6, 1, accent);
+  } else if (category === 'frozen') { // hộp đông lạnh phủ sương
+    rect(2, 4, 12, 11, ink); rect(3, 5, 10, 9, '#BFE3EE'); rect(3, 5, 10, 2, '#E4F4F8');
+    rect(5, 8, 6, 4, paper); rect(6, 9, 4, 2, accent); rect(4, 13, 1, 1, '#FFFFFF'); rect(11, 6, 1, 1, '#FFFFFF');
+  } else if (category === 'fresh_produce') { // quả/rau có cuống lá
+    rect(7, 1, 2, 3, '#2E6828'); rect(9, 2, 3, 2, '#418E3A'); rect(3, 4, 10, 10, ink);
+    rect(4, 5, 8, 8, accent === '#357F72' ? '#5FA84A' : '#D6593F'); rect(5, 6, 2, 2, '#F5D9C9'); rect(4, 12, 8, 1, '#8A3A2A');
+  } else if (category === 'health') { // hộp thuốc chữ thập
+    rect(2, 4, 12, 10, ink); rect(3, 5, 10, 8, paper); rect(7, 6, 2, 6, '#C93A32'); rect(5, 8, 6, 2, '#C93A32');
+    rect(3, 12, 10, 1, '#C7B8A0');
+  } else if (category === 'toys_stationery') { // khối xếp hình + bút
+    rect(2, 8, 7, 7, ink); rect(3, 9, 5, 5, accent); rect(8, 3, 6, 6, ink); rect(9, 4, 4, 4, gold);
+    rect(10, 5, 2, 2, paper); rect(3, 9, 5, 1, paper);
+  } else if (category === 'alcohol') { // chai cổ dài
+    rect(7, 1, 2, 3, ink); rect(6, 4, 4, 2, ink); rect(4, 6, 8, 9, ink);
+    rect(5, 7, 6, 7, '#2E5B3A'); rect(5, 9, 6, 3, paper); rect(6, 10, 4, 1, accent); rect(7, 2, 2, 1, gold);
   } else if (category === 'candy') {
     rect(1, 5, 3, 6, ink); rect(12, 5, 3, 6, ink); rect(4, 3, 8, 10, ink);
     rect(5, 4, 6, 8, accent); rect(2, 6, 2, 4, gold); rect(12, 6, 2, 4, gold);

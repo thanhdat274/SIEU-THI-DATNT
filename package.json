@@ -18,6 +18,9 @@
     "test": "yarn --cwd packages/game-core test",
     "test:all": "yarn test && yarn --cwd apps/server test:unit && yarn --cwd apps/web test",
     "test:all:db": "yarn test:all && yarn --cwd apps/server test:db",
+    "content:validate": "tsx tools/content-editor/cli.ts validate",
+    "content:export": "tsx tools/content-editor/cli.ts export",
+    "content:test": "tsx tools/content-editor/validate.test.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

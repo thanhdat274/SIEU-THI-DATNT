@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import {
   BadRequestException, Body, Controller, Delete, Get, Module, Param, Post, Req,
-  HttpException, HttpStatus, ServiceUnavailableException, UseGuards,
+  HttpException, HttpStatus, Put, ServiceUnavailableException, UseGuards,
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { WsAdapter } from '@nestjs/platform-ws';
@@ -17,6 +17,7 @@ import { migrateWorldSaves } from './world-migrations.js';
 import { createWebSocketTicket, verifyAccount } from './firebase-admin.js';
 import { FirebaseAuthGuard } from './auth.guard.js';
 import { worldRepository } from './world.repository.js';
+import { cloudSaveRepository, decideCloudSaveWrite } from './cloud-save.js';
 import { WorldGateway } from './world.gateway.js';
 
 interface AuthenticatedRequest {
@@ -42,10 +43,12 @@ Get('ready')(HealthController.prototype, 'readiness', Object.getOwnPropertyDescr
 /** Loại lệnh được commit. Chỉ một phần được server phát lại; phần còn lại vẫn tin save client (I-01, xem THONG-KE.md). */
 const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
   'respond_party_order', 'fulfill_party_order', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'begin_story_chapter', 'claim_story_chapter', 'choose_perk', 'set_title', 'layout_batch', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production',
-  'set_price', 'restock', 'unstock', 'buy_stall', 'claim_quest',
+  'set_price', 'set_restock_options', 'restock', 'unstock', 'buy_stall', 'claim_quest',
   'checkout',
   'hire_staff', 'set_staff_shift', 'assign_refill_job', 'dispose_stock', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve', 'maintain_fixture', 'security_action',
   'buy_warehouse_tier', 'buy_storage_rack',
+  'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock',
+  'open_branch', 'switch_branch', 'transfer_stock', 'return_stock',
 ]);
 
 export class GameController {
@@ -104,9 +107,11 @@ export class GameController {
       'checkout', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production', 'respond_party_order', 'fulfill_party_order', 'claim_goal',
       'claim_weekly_quest', 'claim_festival_goal', 'begin_story_chapter', 'claim_story_chapter', 'choose_perk', 'set_title', 'maintain_fixture', 'security_action',
       'order_supplier', 'buy_stall', 'dispose_stock', 'claim_quest',
-      'restock', 'unstock', 'set_price',
+      'restock', 'unstock', 'set_price', 'set_restock_options',
       'hire_staff', 'set_staff_shift', 'assign_refill_job',
       'buy_plot', 'buy_warehouse_tier', 'buy_storage_rack',
+      'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock',
+      'open_branch', 'switch_branch', 'transfer_stock', 'return_stock',
     ]);
     if (serverReplayedCommands.has(payload?.type)) {
       const priorReceipt = await worldRepository.findReceipt(worldId, request.gameAccount.uid, body.receipt.commandId);
@@ -241,6 +246,24 @@ export class GameController {
       limit: Number.isFinite(limit) ? limit : undefined,
     });
   }
+  /** GET /game/save — bản lưu cloud của tài khoản (null nếu chưa có). */
+  async getCloudSave(request: AuthenticatedRequest) {
+    return (await cloudSaveRepository.get(request.gameAccount.uid)) ?? { save: null, summary: null };
+  }
+  /** PUT /game/save — ghi lạc quan theo `expectedUpdatedAt`; 409 kèm tóm tắt bản hiện có khi lệch. */
+  async putCloudSave(request: AuthenticatedRequest, body: { save?: unknown; expectedUpdatedAt?: unknown }) {
+    if (!commitLimiter.take(request.gameAccount.uid)) throw new HttpException('Gửi lệnh quá nhanh, vui lòng thử lại sau.', HttpStatus.TOO_MANY_REQUESTS);
+    const expected = body?.expectedUpdatedAt === undefined ? null : body.expectedUpdatedAt;
+    const current = await cloudSaveRepository.get(request.gameAccount.uid);
+    const decision = decideCloudSaveWrite(current ? { updatedAt: current.summary.updatedAt } : null, expected, body?.save);
+    if (!decision.ok) {
+      if (decision.status === 409) throw new HttpException({ statusCode: 409, message: decision.message, current: current?.summary ?? null }, HttpStatus.CONFLICT);
+      throw new BadRequestException(decision.message);
+    }
+    const result = await cloudSaveRepository.put(request.gameAccount.uid, body.save as SaveGameData, expected as string | null);
+    if ('conflict' in result) throw new HttpException({ statusCode: 409, message: 'Bản lưu cloud đã thay đổi từ thiết bị khác.', current: result.conflict }, HttpStatus.CONFLICT);
+    return { summary: result };
+  }
   /** POST /worlds/:worldId/session — records member's lastSeenRevision for absence tracking */
   touchSession(request: AuthenticatedRequest, worldId: string) {
     return worldRepository.touchSession(worldId, request.gameAccount.uid);
@@ -267,6 +290,8 @@ route(Post, 'resetWorld', 'worlds/:worldId/reset'); requestParam('resetWorld', 0
 route(Post, 'commitCommand', 'worlds/:worldId/commands'); requestParam('commitCommand', 0); namedParam('commitCommand', 'worldId', 1); bodyParam('commitCommand', 2);
 route(Post, 'createWebSocketTicket', 'ws-ticket'); requestParam('createWebSocketTicket', 0);
 route(Get, 'listActivities', 'worlds/:worldId/activities'); requestParam('listActivities', 0); namedParam('listActivities', 'worldId', 1);
+route(Get, 'getCloudSave', 'game/save'); requestParam('getCloudSave', 0);
+route(Put, 'putCloudSave', 'game/save'); requestParam('putCloudSave', 0); bodyParam('putCloudSave', 1);
 route(Post, 'touchSession', 'worlds/:worldId/session'); requestParam('touchSession', 0); namedParam('touchSession', 'worldId', 1);
 
 class RuntimeModule {
@@ -292,7 +317,7 @@ async function main() {
   const config = readRuntimeConfig();
   const app = await createServer();
   app.enableShutdownHooks();
-  app.enableCors({ origin: config.webOrigin, allowedHeaders: ['Content-Type', 'Authorization'], methods: ['GET', 'POST', 'DELETE', 'OPTIONS'] });
+  app.enableCors({ origin: config.webOrigin, allowedHeaders: ['Content-Type', 'Authorization'], methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] });
   await app.listen(config.port, config.host);
   console.log(`Server listening on ${config.host}:${config.port} — WS at ws://${config.host}:${config.port}/ws`);
 }

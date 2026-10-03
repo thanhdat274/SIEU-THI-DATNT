@@ -50,3 +50,8 @@ export function removeExpiredLots(lots: StockLot[], day: number): StockLot[] {
   }
   return expired;
 }
+
+/** Ngữ cảnh khi có máy phát điện dự phòng: các sự kiện mất điện không còn làm tủ mát hỏng nhanh hơn. */
+export function withBackupPower(ctx: MarketContext): MarketContext {
+  return isPowerOut(ctx) ? { ...ctx, eventIds: ctx.eventIds.filter(id => !MARKET_EVENT_MAP[id]?.powerOutage) } : ctx;
+}

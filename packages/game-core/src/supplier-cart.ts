@@ -14,6 +14,8 @@ export interface SupplierCartContext {
   reservedColdCount: number;
   ambientUnitsOf: (productId: string) => number;
   ambientFreeCells: number;
+  /** Giảm giá thêm từ kỹ năng (0–1), áp lên giá sau chiết khấu NCC; khớp `GameSimulation.wholesaleUnitPrice`. */
+  skillDiscount?: number;
 }
 
 /**
@@ -41,6 +43,8 @@ export function validateSupplierCart(
   let itemCount = 0;
   let coldItemCount = 0;
   const state = ctx.supplierState;
+  const skillDiscount = Math.min(1, Math.max(0, ctx.skillDiscount ?? 0));
+  const unitAfterSkill = (unit: number) => (skillDiscount > 0 ? Math.round(unit * (1 - skillDiscount)) : unit);
   const qtyByProduct: Record<string, number> = {};
   const cartLines: SupplierCartLine[] = [];
 
@@ -63,8 +67,8 @@ export function validateSupplierCart(
     cartLines.push({
       productId: line.productId,
       quantity: line.quantity,
-      unitPrice: quote?.unit ?? product.purchasePrice,
-      lineTotal: (quote?.unit ?? product.purchasePrice) * line.quantity,
+      unitPrice: unitAfterSkill(quote?.unit ?? product.purchasePrice),
+      lineTotal: unitAfterSkill(quote?.unit ?? product.purchasePrice) * line.quantity,
       bulkDiscount: quote?.bulk ?? 0,
     });
     itemCount += line.quantity;
@@ -89,8 +93,11 @@ export function validateSupplierCart(
   }
 
   const discountRate = supplier?.discountRate ?? 0;
-  const discountAmount = Math.round(subtotal * discountRate);
-  const totalCost = Math.max(0, subtotal - discountAmount);
+  const supplierDiscount = Math.round(subtotal * discountRate);
+  const afterSupplier = Math.max(0, subtotal - supplierDiscount);
+  const skillCut = skillDiscount > 0 ? Math.round(afterSupplier * skillDiscount) : 0;
+  const discountAmount = supplierDiscount + skillCut;
+  const totalCost = afterSupplier - skillCut;
 
   if (totalCost > ctx.money) {
     reasons.push(`Không đủ tiền (cần ${totalCost.toLocaleString('vi-VN')} ₫, hiện có ${ctx.money.toLocaleString('vi-VN')} ₫)`);

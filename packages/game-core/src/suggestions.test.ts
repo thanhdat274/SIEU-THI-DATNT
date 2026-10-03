@@ -5,6 +5,7 @@ import {
   generateStarterTileMap,
   PRODUCT_MAP,
 } from '@game/data';
+import { isSaveGameData } from '@game/shared';
 import { GameSimulation } from './simulation';
 import { InputManager } from './input';
 import {
@@ -470,6 +471,264 @@ export function runSuggestionTests(): void {
 
   console.log('  ✓ Hệ số thời tiết/mùa làm tăng nhu cầu gợi ý chính xác');
   console.log('  ✓ Hàng tươi sống tuân thủ nghiêm ngặt trần hạn sử dụng');
+
+  // --- Test 7.5: Chia ngân sách 40/60, giỏ đang có, hàng bán chậm & hàng đang thử ---
+  console.log('\n--- Test 7.5: Chia ngân sách 40/60, không vượt tiền, giảm hàng bán chậm ---');
+  const noodleShelf = (stock: number): any => ({
+    id: 'shelf_noodle',
+    type: 'shelf_wooden',
+    assignedProductId: 'mi_hao_hao',
+    currentStock: stock,
+    stockLots: stock > 0 ? [{ quantity: stock, expiresOnDay: 99, unitCost: 3000 }] : [],
+    maxCapacity: 40,
+  });
+  const weekOf = (sales: Record<number, Record<string, number>>): Record<number, any> =>
+    Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((day) => [day, { day, productSales: sales[day] ?? {} }]));
+  const base = {
+    playerLevel: 1,
+    currentDay: 8,
+    inventory: [],
+    holdingArea: [],
+    pendingOrders: [],
+    coldWarehouseCount: 0,
+    currentDayRecord: { day: 8, productSales: {} } as any,
+  };
+
+  // 1. Hàng bán chạy cần nhiều hơn tiền đang có → vẫn giữ 60% cho hàng mới nhập thử, tổng không vượt tiền.
+  {
+    const money = 100000;
+    const res = generateRestockSuggestions({
+      ...base,
+      options: { cashReservePct: 0 },
+      playerMoney: money,
+      fixtures: [noodleShelf(0)],
+      dailyRecords: weekOf(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [d, { mi_hao_hao: 60 }]))),
+    });
+    assert.ok(res.totalCost <= money, `Tổng gợi ý ${res.totalCost} không vượt tiền ${money}`);
+    assert.ok(res.budget, 'Có thông tin phân bổ ngân sách');
+    assert.equal(res.budget!.provenTarget, 40000, 'Hàng đang bán được 40% ngân sách');
+    assert.ok(res.budget!.provenSpent <= 40000, `Hàng đang bán không lấn phần hàng mới (${res.budget!.provenSpent})`);
+    const noodle = res.items.find((i) => i.productId === 'mi_hao_hao');
+    assert.ok(noodle && !noodle.isFallback, 'Mì đang bán chạy vẫn được gợi ý');
+    const trialItems = res.items.filter((i) => i.isFallback);
+    assert.ok(trialItems.length >= 2, `Hàng mới luôn được gợi ý nhập thử (${trialItems.length} món)`);
+    assert.ok(trialItems.length <= 6, 'Mỗi lần thử tối đa 6 mặt hàng mới');
+    const trialCategories = new Set(trialItems.map((i) => PRODUCT_MAP[i.productId]!.category));
+    assert.equal(trialCategories.size, trialItems.length, 'Hàng thử trải đều mỗi ngành một món để đa dạng mẫu mã');
+    assert.ok(res.budget!.trialSpent > res.budget!.provenSpent * 0.9, 'Phần hàng mới dùng được tương ứng 60%');
+  }
+
+  // 2. Không có hàng mới để thử (đều đã có tồn) → phần 60% nhường cho hàng đang bán.
+  {
+    const res = generateRestockSuggestions({
+      ...base,
+      options: { cashReservePct: 0 },
+      playerMoney: 100000,
+      fixtures: [noodleShelf(0)],
+      dailyRecords: weekOf(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [d, { mi_hao_hao: 60 }]))),
+      supplierStockOf: (id) => (id === 'mi_hao_hao' ? undefined : 0),
+    });
+    assert.equal(res.items.every((i) => i.productId === 'mi_hao_hao'), true, 'NCC hết hàng thì không gợi ý món đó');
+    assert.ok(res.budget!.provenSpent > 40000, `Phần dư của nhóm hàng mới chuyển cho hàng đang bán (${res.budget!.provenSpent})`);
+    assert.ok(res.totalCost <= 100000);
+  }
+
+  // 3. Hàng bán chậm/tồn nhiều không bị lấp đầy kệ; hàng chưa bán mà còn tồn thì chờ, không nhập thêm.
+  {
+    const res = generateRestockSuggestions({
+      ...base,
+      playerMoney: 500000,
+      fixtures: [noodleShelf(1), { id: 'shelf_candy', type: 'shelf_wooden', assignedProductId: 'keo_big_babol', currentStock: 3, stockLots: [{ quantity: 3, expiresOnDay: 99, unitCost: 1000 }], maxCapacity: 40 }],
+      dailyRecords: weekOf({ 1: { mi_hao_hao: 1 } }), // 1 gói / 7 ngày
+    });
+    assert.equal(res.items.find((i) => i.productId === 'mi_hao_hao'), undefined, 'Mì bán chậm còn 1 gói thì không lấp kệ 40');
+    assert.equal(res.items.find((i) => i.productId === 'keo_big_babol'), undefined, 'Kẹo đang thử chưa bán, còn tồn → không nhập thêm');
+    assert.ok(res.explanation.includes('bán chậm'), 'Giải thích có nhắc hàng bán chậm');
+    assert.ok(res.explanation.includes('đang thử'), 'Giải thích có nhắc hàng đang thử');
+  }
+
+  // 4. Tích hợp: bấm gợi ý hai lần (giỏ cộng dồn như UI) vẫn không vượt tiền theo giá thật lúc đặt.
+  {
+    const sim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+    const money = sim.getPlayerData().money;
+    const supplierId = 'dai_ly_dau_hem';
+    let cart: Record<string, number> = {};
+    for (let i = 0; i < 3; i++) {
+      const res = sim.suggestRestock(supplierId, undefined, cart);
+      for (const item of res.items) cart = { ...cart, [item.productId]: (cart[item.productId] ?? 0) + item.quantity };
+    }
+    const lines = Object.entries(cart).map(([productId, quantity]) => ({ productId, quantity }));
+    assert.ok(lines.length > 0, 'Gợi ý có hàng');
+    const check = sim.validateSupplierCart(supplierId, lines);
+    assert.ok(check.totalCost <= money, `Giỏ sau 3 lần bấm (${check.totalCost}) không vượt tiền (${money})`);
+    assert.ok(!check.reasons.some((r) => r.includes('Không đủ tiền')), 'Giỏ gợi ý không bị từ chối vì thiếu tiền');
+
+    // Ngân sách nhỏ: cắt theo giá thật, vẫn không vượt.
+    const tight = sim.suggestRestock(supplierId, 20000);
+    const tightCheck = sim.validateSupplierCart(supplierId, tight.items.map((i) => ({ productId: i.productId, quantity: i.quantity })));
+    assert.ok(tight.items.length === 0 || tightCheck.totalCost <= 20000, `Ngân sách 20.000 ₫ được tôn trọng (${tightCheck.totalCost})`);
+  }
+
+  // 5. Tuỳ chọn: quỹ dự phòng, tỷ lệ chia và số món thử chỉnh được.
+  {
+    const common = {
+      ...base,
+      playerMoney: 100000,
+      fixtures: [noodleShelf(0)],
+      dailyRecords: weekOf(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [d, { mi_hao_hao: 60 }]))),
+    };
+    const byDefault = generateRestockSuggestions(common);
+    assert.equal(byDefault.budget!.reserved, 10000, 'Mặc định giữ lại 10% tiền mặt');
+    assert.ok(byDefault.totalCost <= 90000, `Không đụng quỹ dự phòng (${byDefault.totalCost} <= 90000)`);
+
+    const reserve50 = generateRestockSuggestions({ ...common, options: { cashReservePct: 50 } });
+    assert.ok(reserve50.totalCost <= 50000, `Giữ 50% thì chỉ chi tối đa 50.000 (${reserve50.totalCost})`);
+
+    const noReserve = generateRestockSuggestions({ ...common, options: { cashReservePct: 0 } });
+    assert.ok(noReserve.totalCost > byDefault.totalCost - 1, 'Không giữ quỹ thì được dùng nhiều hơn hoặc bằng');
+
+    const split = generateRestockSuggestions({ ...common, options: { cashReservePct: 0, provenSharePct: 70 } });
+    assert.equal(split.budget!.provenTarget, 70000, 'Tỷ lệ hàng đang bán chỉnh thành 70%');
+    assert.equal(split.budget!.trialTarget, 30000);
+
+    const fewer = generateRestockSuggestions({ ...common, options: { cashReservePct: 0, maxTrialProducts: 2 } });
+    assert.ok(fewer.items.filter((i) => i.isFallback).length <= 2, 'Giới hạn món thử chỉnh được còn 2');
+    const none = generateRestockSuggestions({ ...common, options: { cashReservePct: 0, maxTrialProducts: 0 } });
+    assert.equal(none.items.some((i) => i.isFallback), false, 'maxTrialProducts = 0 tắt hàng thử');
+
+    const garbage = generateRestockSuggestions({ ...common, options: { provenSharePct: NaN, cashReservePct: 999, maxTrialProducts: -4 } });
+    assert.ok(garbage.totalCost <= 10000 + 1, 'Giá trị rác bị kẹp về khoảng hợp lệ (giữ tối đa 90%)');
+  }
+
+  // 6. Giá giỏ khớp giá hiển thị khi có kỹ năng giảm giá nhà cung cấp.
+  {
+    const sim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+    const supplierId = 'dai_ly_dau_hem';
+    const lines = [{ productId: 'mi_hao_hao', quantity: 10 }];
+    const before = sim.validateSupplierCart(supplierId, lines);
+    const shown = sim.wholesaleUnitPrice(supplierId, 'mi_hao_hao', 10) * 10;
+    assert.equal(before.totalCost, shown, 'Không có kỹ năng: giá giỏ = giá hiển thị');
+    (sim as any).skills.chosenPerks = ['perk_negotiator']; // -5% giá nhập
+    const afterSkill = sim.validateSupplierCart(supplierId, lines);
+    const shownAfter = sim.wholesaleUnitPrice(supplierId, 'mi_hao_hao', 10) * 10;
+    assert.ok(afterSkill.totalCost < before.totalCost, 'Có kỹ năng: giỏ rẻ hơn');
+    assert.ok(Math.abs(afterSkill.totalCost - shownAfter) <= 10, `Giá giỏ (${afterSkill.totalCost}) khớp giá hiển thị (${shownAfter})`);
+    const moneyBefore = sim.getPlayerData().money;
+    const order = sim.orderSupplierCart(supplierId, lines);
+    assert.ok(order.success, 'Đặt hàng thành công');
+    assert.equal(moneyBefore - sim.getPlayerData().money, afterSkill.totalCost, 'Tiền trừ đúng bằng giá giỏ đã giảm');
+    assert.equal(sim.getPendingOrders().at(-1)!.unitCost, sim.wholesaleUnitPrice(supplierId, 'mi_hao_hao', 10), 'Giá vốn lô ghi theo giá đã giảm');
+  }
+
+  // 6b. Món từng bán lâu trước đó, nay hết hàng: là hàng cũ (nhập theo tốc độ bán cũ), không phải hàng mới thử.
+  {
+    const old = Object.fromEntries(Array.from({ length: 30 }, (_, i) => [i + 1, { day: i + 1, productSales: i < 3 ? { mi_hao_hao: 20 } : {} }]));
+    const res = generateRestockSuggestions({
+      ...base,
+      currentDay: 40,
+      currentDayRecord: { day: 40, productSales: {} } as any,
+      playerMoney: 100000,
+      options: { cashReservePct: 0 },
+      fixtures: [noodleShelf(0)],
+      dailyRecords: old as any,
+    });
+    const noodle = res.items.find((i) => i.productId === 'mi_hao_hao');
+    assert.ok(noodle, 'Mì từng bán (cách đây >7 ngày) và đang hết hàng được gợi ý');
+    assert.equal(noodle!.isFallback, false, 'Không bị xếp vào nhóm hàng mới thử');
+    assert.notEqual(noodle!.reason, 'fallback_trial');
+    assert.ok(noodle!.salesVelocity! > 0, 'Dùng tốc độ bán đã ghi nhận');
+    assert.ok(noodle!.quantity < 20, `Bán thưa nên lượng nhập nhỏ (${noodle!.quantity}), không lấp đầy kệ 40`);
+
+    // Chưa từng bán ngày nào trong lịch sử: vẫn là hàng mới thử.
+    const fresh = generateRestockSuggestions({
+      ...base, currentDay: 40, currentDayRecord: { day: 40, productSales: {} } as any, playerMoney: 100000,
+      options: { cashReservePct: 0 }, fixtures: [noodleShelf(0)],
+      dailyRecords: Object.fromEntries(Array.from({ length: 30 }, (_, i) => [i + 1, { day: i + 1, productSales: {} }])) as any,
+    });
+    assert.equal(fresh.items.find((i) => i.productId === 'mi_hao_hao')?.isFallback, true, 'Chưa từng bán → hàng mới thử');
+  }
+
+  // 7. Quỹ dự phòng theo nghĩa vụ thực tế (lương, thuế) — lấy mức lớn hơn giữa nghĩa vụ và % tiền mặt.
+  {
+    const common = {
+      ...base,
+      playerMoney: 100000,
+      fixtures: [noodleShelf(0)],
+      dailyRecords: weekOf(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [d, { mi_hao_hao: 60 }]))),
+    };
+    const obligations = { wageDebt: 20000, nextWages: 30000, taxDue: 10000, taxDebt: 5000, total: 65000 };
+    const res = generateRestockSuggestions({ ...common, obligations });
+    assert.equal(res.budget!.reserved, 65000, 'Nghĩa vụ 65.000 lớn hơn 10% (10.000) nên giữ 65.000');
+    assert.equal(res.budget!.obligations, 65000);
+    assert.ok(res.totalCost <= 35000, `Chỉ chi trong phần còn lại 35.000 (${res.totalCost})`);
+    assert.ok(res.appliedConstraints.some((c) => c.includes('nợ lương') && c.includes('lương kỳ tới') && c.includes('thuế sắp nộp')), 'Ghi rõ giữ lại cho khoản nào');
+
+    const off = generateRestockSuggestions({ ...common, obligations, options: { protectObligations: false } });
+    assert.equal(off.budget!.reserved, 10000, 'Tắt công tắc: chỉ còn % tiền mặt');
+
+    const small = generateRestockSuggestions({ ...common, obligations: { wageDebt: 0, nextWages: 3000, taxDue: 0, taxDebt: 0, total: 3000 } });
+    assert.equal(small.budget!.reserved, 10000, 'Nghĩa vụ nhỏ hơn 10% thì vẫn giữ 10%');
+
+    const broke = generateRestockSuggestions({ ...common, obligations: { ...obligations, total: 500000 } });
+    assert.equal(broke.items.length, 0, 'Nghĩa vụ vượt tiền mặt: không gợi ý gì');
+    assert.equal(broke.totalCost, 0);
+
+    // Tích hợp: nợ lương trong GameSimulation được giữ lại khi gợi ý.
+    const sim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+    const money = sim.getPlayerData().money;
+    assert.equal(sim.getCashObligations().total, 0, 'Tiệm mới chưa có nghĩa vụ');
+    (sim as any).wageDebt = 60000;
+    const ob = sim.getCashObligations();
+    assert.equal(ob.wageDebt, 60000);
+    const gen = sim.suggestRestock('dai_ly_dau_hem');
+    assert.ok(gen.totalCost <= money - 60000, `Gợi ý chừa nợ lương 60.000 (${gen.totalCost} <= ${money - 60000})`);
+
+    // Lương kỳ tới khớp đúng số processPayroll sẽ trả cho nhân viên đã thuê.
+    const staffSim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+    (staffSim as any).playerData.money = 5_000_000;
+    (staffSim as any).playerData.level = 2; // thuê nhân viên cần cấp 2
+    const candidate = staffSim.getStaffCandidates()[0];
+    assert.ok(candidate, 'Có ứng viên');
+    const hired = staffSim.hireStaff(candidate!.id);
+    assert.ok(hired.success, `Thuê được nhân viên (${hired.reason ?? 'ok'})`);
+    const expected = staffSim.getCashObligations().nextWages;
+    assert.ok(expected > 0, 'Có nhân viên thì có lương kỳ tới');
+    const moneyBefore = staffSim.getPlayerData().money;
+    const paid = staffSim.processPayroll(staffSim.getTime().day);
+    assert.equal(paid.totalGrossWage, expected, 'nextWages khớp tổng lương processPayroll tính');
+    assert.equal(moneyBefore - staffSim.getPlayerData().money, expected, 'Tiền trả đúng bằng nextWages');
+  }
+
+  // 8. Cài đặt gợi ý nằm trong save: lưu → nạp lại giữ nguyên, save cũ không có trường vẫn hợp lệ, trường rác bị từ chối/kẹp.
+  {
+    const sim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+    assert.equal(sim.getRestockOptions(), undefined, 'Chưa chỉnh thì chưa có cài đặt lưu');
+    assert.equal('restockOptions' in sim.exportSaveData(), false, 'Save không ghi trường khi chưa chỉnh');
+    assert.equal(isSaveGameData(sim.exportSaveData()), true, 'Save cũ (không có restockOptions) vẫn hợp lệ');
+
+    const saved = sim.setRestockOptions({ provenSharePct: 65, maxTrialProducts: 3, cashReservePct: 25, protectObligations: false });
+    assert.deepEqual(saved, { provenSharePct: 65, maxTrialProducts: 3, cashReservePct: 25, protectObligations: false });
+    const data = sim.exportSaveData();
+    assert.deepEqual(data.restockOptions, saved, 'Cài đặt được ghi vào save');
+    assert.equal(isSaveGameData(JSON.parse(JSON.stringify(data))), true, 'Save có restockOptions hợp lệ sau JSON');
+
+    const reloaded = new GameSimulation(structuredClone(data), generateStarterTileMap(), new InputManager());
+    assert.deepEqual(reloaded.getRestockOptions(), saved, 'Nạp lại save giữ nguyên cài đặt');
+    const res = reloaded.suggestRestock('dai_ly_dau_hem');
+    assert.equal(res.budget!.provenShare, 0.65, 'suggestRestock dùng cài đặt đã lưu khi không truyền options');
+    assert.equal(res.budget!.reserved, Math.floor(reloaded.getPlayerData().money * 0.25), 'Quỹ giữ lại theo 25% đã lưu');
+
+    assert.equal(isSaveGameData({ ...JSON.parse(JSON.stringify(data)), restockOptions: 'x' }), false, 'restockOptions không phải object bị từ chối');
+    assert.equal(isSaveGameData({ ...JSON.parse(JSON.stringify(data)), restockOptions: { cashReservePct: 'abc' } }), false, 'Số sai kiểu bị từ chối');
+    assert.equal(isSaveGameData({ ...JSON.parse(JSON.stringify(data)), restockOptions: { protectObligations: 1 } }), false, 'Công tắc sai kiểu bị từ chối');
+    const clamped = new GameSimulation({ ...structuredClone(data), restockOptions: { provenSharePct: 500, maxTrialProducts: -3, cashReservePct: 1e9 } }, generateStarterTileMap(), new InputManager());
+    assert.deepEqual(clamped.getRestockOptions(), { provenSharePct: 100, maxTrialProducts: 0, cashReservePct: 90, protectObligations: true }, 'Giá trị ngoài khoảng bị kẹp khi nạp');
+  }
+
+  console.log('  ✓ Hàng đang bán 40%, hàng mới nhập thử 60%; nhóm dùng không hết nhường nhóm kia');
+  console.log('  ✓ Hàng mới luôn được gợi ý (tối đa 6 món/lần), NCC hết hàng thì bỏ qua');
+  console.log('  ✓ Hàng bán chậm/tồn nhiều không bị lấp kệ; hàng đang thử còn tồn thì chờ kết quả');
+  console.log('  ✓ Bấm gợi ý nhiều lần cộng dồn vào giỏ vẫn không vượt tiền đang có');
 
   console.log('\n🎉 TOÀN BỘ CÁC BÀI KIỂM THỬ GỢI Ý NHẬP HÀNG (NHÓM 7) ĐÃ ĐẠT!');
 }

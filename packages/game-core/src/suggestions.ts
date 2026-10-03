@@ -12,11 +12,15 @@ import {
   InventoryItem,
   RestockSuggestionResult,
   StoreFixture,
+  CashObligations,
+  RestockSuggestionOptions,
   SuggestedCartItem,
   SuggestionReason,
+  SupplierCartItem,
   SupplierOrder,
   isSalesFixture,
 } from '@game/shared';
+import { unitsFittingInCells, warehouseCellsFor } from './store-layout';
 
 export interface SuggestionEngineParams {
   supplierId?: string;
@@ -39,6 +43,18 @@ export interface SuggestionEngineParams {
   expectedDailyOf?: (productId: string) => number | undefined;
   /** Hệ số nhu cầu theo thời tiết & mùa (hoặc tổng hệ số thị trường). Mặc định 1.0 */
   demandMultiplierOf?: (productId: string) => number;
+  /** Giỏ đang soạn (productId → số lượng): tính như hàng sắp về và đã giữ tiền, để bấm gợi ý nhiều lần không cộng dồn vượt tiền. */
+  existingCart?: Record<string, number>;
+  /** Tuỳ chỉnh tỷ lệ chia, số món thử và quỹ dự phòng; thiếu = mặc định. */
+  options?: RestockSuggestionOptions;
+  /** Nợ lương, lương kỳ tới và thuế sắp nộp; giữ lại nếu `options.protectObligations` không tắt. */
+  obligations?: CashObligations;
+  /** Tổng tiền thật phải trả cho một giỏ (giá sỉ theo bậc số lượng, chiết khấu NCC); dùng để kiểm tra cuối không vượt tiền. */
+  cartCostOf?: (items: SupplierCartItem[]) => number;
+  /** Tồn còn bán hôm nay của NCC; 0 = tạm ngừng cung, undefined = không giới hạn. */
+  supplierStockOf?: (productId: string) => number | undefined;
+  /** Kho thường: số ô trống và số đơn vị món đang giữ trong kho (giống kiểm tra khi đặt giỏ). Thiếu = không giới hạn. */
+  ambient?: { freeCells: number; heldOf: (productId: string) => number };
 }
 
 /**
@@ -142,29 +158,72 @@ export function getIncomingOrdersCount(
     .reduce((sum, order) => sum + order.quantity, 0);
 }
 
+
+/** Tỷ lệ ngân sách gợi ý dành cho hàng đang bán; phần còn lại dành cho hàng mới nhập thử. */
+export const PROVEN_BUDGET_SHARE = 0.4;
+/** Tiền mặt giữ lại mặc định (10%) cho lương/thuế, không đưa vào gợi ý. */
+export const DEFAULT_CASH_RESERVE_PCT = 10;
+/** Dưới mức này (món/ngày) coi là bán chậm: chỉ nhập theo tốc độ bán thật, không lấp đầy kệ. */
+export const SLOW_SELLER_VELOCITY = 0.5;
+/** Tồn (kể cả đơn đang về và giỏ đang có) đủ bán quá số ngày này thì không nhập thêm để lấp kệ. */
+export const MAX_COVER_DAYS = 5;
+/** Số mặt hàng mới tối đa đưa vào thử trong một lần gợi ý (tránh tràn kho/kệ khi danh mục lớn). */
+export const MAX_TRIAL_PRODUCTS = 6;
+/** Lượt đầu mỗi món thử chỉ lấy chừng này đơn vị để tiền chia đều cho nhiều mẫu mã trước khi nhập thêm. */
+export const TRIAL_FIRST_PASS_UNITS = 2;
+/** Số ngày lịch sử tìm xem món đã từng bán chưa: có bán trong khoảng này thì không coi là hàng mới. */
+export const HISTORY_DAYS = 60;
+
+/** Đưa cài đặt người chơi (có thể thiếu/rác từ save hay ô nhập) về giá trị hợp lệ đầy đủ; dùng chung cho engine, save và giao diện. */
+export function normalizeRestockOptions(options?: RestockSuggestionOptions | null): Required<RestockSuggestionOptions> {
+  const num = (value: unknown, fallback: number, min: number, max: number) =>
+    typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value))) : fallback;
+  return {
+    provenSharePct: num(options?.provenSharePct, PROVEN_BUDGET_SHARE * 100, 0, 100),
+    maxTrialProducts: num(options?.maxTrialProducts, MAX_TRIAL_PRODUCTS, 0, 20),
+    cashReservePct: num(options?.cashReservePct, DEFAULT_CASH_RESERVE_PCT, 0, 90),
+    protectObligations: typeof options?.protectObligations === 'boolean' ? options.protectObligations : true,
+  };
+}
+
+type SuggestionGroup = 'proven' | 'trial';
+type LimitKind = 'budget' | 'cold' | 'ambient' | 'supplier';
+
+const LIMIT_LABELS: Record<LimitKind, string> = {
+  budget: 'theo ngân sách',
+  cold: 'do giới hạn kho lạnh',
+  ambient: 'do kho thường hết chỗ',
+  supplier: 'do nhà cung cấp chỉ còn ít hàng',
+};
+
 interface CandidateItem {
   productId: string;
+  group: SuggestionGroup;
   wantQuantity: number;
   unitPrice: number;
   reason: SuggestionReason;
   salesVelocity?: number;
-  isFallback: boolean;
   daysOfStockLeft?: number;
   storageType: 'ambient' | 'cold';
-  daysToSpoil: number;
-  basePopularity: number;
+  /** Thứ tự trong nhóm: hàng đang bán theo tốc độ bán, hàng mới theo độ phổ biến (kệ trống sẵn được ưu tiên). */
+  score: number;
 }
+
+const formatMoney = (n: number) => `${n.toLocaleString('vi-VN')} ₫`;
 
 /**
  * Generate intelligent restock suggestions.
- * Prunes cart by budget, cold storage limits, supplier min order, and locked products.
+ *
+ * Chia hai nhóm: hàng đang bán (có bán trong 7 ngày) nhận `PROVEN_BUDGET_SHARE` (40%) ngân sách,
+ * hàng mới chưa bán và đang hết hàng nhận phần còn lại (60%) để nhập thử. Hàng bán chậm/tồn nhiều
+ * bị giảm lượng; hàng chưa bán nhưng còn tồn thì chờ kết quả, không nhập thêm. Nhóm nào không dùng
+ * hết phần của mình thì phần dư chuyển sang nhóm kia. Tổng giỏ (kể cả giỏ đang có) không vượt tiền mặt.
  */
 export function generateRestockSuggestions(
   params: SuggestionEngineParams
 ): RestockSuggestionResult {
   const supplierId = params.supplierId ?? DEFAULT_SUPPLIER_ID;
   const supplier = SUPPLIER_MAP[supplierId];
-  const appliedConstraints: string[] = [];
 
   if (!supplier) {
     return {
@@ -190,19 +249,92 @@ export function generateRestockSuggestions(
     };
   }
 
+  const appliedConstraints: string[] = [];
+  const discount = supplier.discountRate ?? 0;
+  const unitPriceOf = (productId: string) =>
+    Math.max(1, params.unitPriceOf?.(productId) ?? Math.round(PRODUCT_MAP[productId]!.purchasePrice * (1 - discount)));
+
+  // ===== Giỏ đang có: coi như hàng sắp về và đã giữ tiền =====
+  const cartQty = new Map<string, number>();
+  for (const [productId, qty] of Object.entries(params.existingCart ?? {})) {
+    if (PRODUCT_MAP[productId] && Number.isSafeInteger(qty) && qty > 0) cartQty.set(productId, qty);
+  }
+  const costOf = (lines: SupplierCartItem[]): number =>
+    lines.length === 0
+      ? 0
+      : params.cartCostOf?.(lines) ?? lines.reduce((sum, line) => sum + line.quantity * unitPriceOf(line.productId), 0);
+  const cartLines = [...cartQty].map(([productId, quantity]) => ({ productId, quantity }));
+  const cartCost = costOf(cartLines);
+
+  const clampNum = (value: number | undefined, fallback: number, min: number, max: number) =>
+    Number.isFinite(value) ? Math.min(max, Math.max(min, value as number)) : fallback;
+  const provenShare = clampNum(params.options?.provenSharePct, PROVEN_BUDGET_SHARE * 100, 0, 100) / 100;
+  const maxTrialProducts = Math.round(clampNum(params.options?.maxTrialProducts, MAX_TRIAL_PRODUCTS, 0, 20));
+  const reservePct = clampNum(params.options?.cashReservePct, DEFAULT_CASH_RESERVE_PCT, 0, 90);
+
+  const money = Math.max(0, params.playerMoney);
+  const percentReserve = Math.floor((money * reservePct) / 100);
+  const obligationReserve = params.options?.protectObligations === false ? 0 : Math.max(0, Math.floor(params.obligations?.total ?? 0));
+  const reserved = Math.min(money, Math.max(percentReserve, obligationReserve));
+  const moneyCap = Math.max(0, Math.min(params.budget ?? money, money - reserved));
+  if (reserved > 0) {
+    const ob = params.obligations;
+    if (obligationReserve > percentReserve && ob) {
+      const parts = [
+        ob.wageDebt > 0 ? `nợ lương ${formatMoney(ob.wageDebt)}` : '',
+        ob.nextWages > 0 ? `lương kỳ tới ${formatMoney(ob.nextWages)}` : '',
+        ob.taxDue > 0 ? `thuế sắp nộp ${formatMoney(ob.taxDue)}` : '',
+        ob.taxDebt > 0 ? `nợ thuế ${formatMoney(ob.taxDebt)}` : '',
+      ].filter(Boolean);
+      appliedConstraints.push(`Giữ lại ${formatMoney(reserved)} cho ${parts.join(' + ')}`);
+    } else {
+      appliedConstraints.push(`Giữ lại ${formatMoney(reserved)} (${Math.round(reservePct)}% tiền mặt) làm quỹ dự phòng`);
+    }
+  }
+  const spendable = Math.max(0, moneyCap - cartCost);
+  if (cartCost > 0) {
+    appliedConstraints.push(`Giỏ đang có ${formatMoney(cartCost)} — chỉ gợi ý thêm trong ${formatMoney(spendable)} còn lại`);
+  }
+
+  // ===== Sức chứa còn lại (trừ đơn đang về và giỏ đang có) =====
   const maxColdCapacity = params.maxColdCapacity ?? COLD_WAREHOUSE_CAPACITY;
   const pendingColdCount = params.pendingOrders
     .filter((order) => !order.delivered && PRODUCT_MAP[order.productId]?.storageType === 'cold')
     .reduce((sum, order) => sum + order.quantity, 0);
-  let availableCold = Math.max(0, maxColdCapacity - params.coldWarehouseCount - pendingColdCount);
+  const cartColdCount = cartLines
+    .filter((line) => PRODUCT_MAP[line.productId]!.storageType === 'cold')
+    .reduce((sum, line) => sum + line.quantity, 0);
+  let availableCold = Math.max(0, maxColdCapacity - params.coldWarehouseCount - pendingColdCount - cartColdCount);
 
-  const discount = supplier.discountRate ?? 0;
-  const candidates: CandidateItem[] = [];
+  const ambient = params.ambient;
+  const ambientHeld = (productId: string) => (ambient?.heldOf(productId) ?? 0) + (cartQty.get(productId) ?? 0);
+  let ambientFree = ambient?.freeCells ?? Infinity;
+  if (ambient) {
+    for (const line of cartLines) {
+      const product = PRODUCT_MAP[line.productId]!;
+      if (product.storageType === 'cold') continue;
+      const held = ambient.heldOf(line.productId);
+      ambientFree -= warehouseCellsFor(product, held + line.quantity) - warehouseCellsFor(product, held);
+    }
+    ambientFree = Math.max(0, ambientFree);
+  }
 
-  // Filter products by player level
+  const supplierRoom = (productId: string): number => {
+    const stock = params.supplierStockOf?.(productId);
+    return stock === undefined ? Infinity : Math.max(0, stock - (cartQty.get(productId) ?? 0));
+  };
+
+  // ===== Phân loại & tính nhu cầu từng mặt hàng =====
+  const proven: CandidateItem[] = [];
+  const trials: CandidateItem[] = [];
+  const reducedSlow: string[] = [];
+  let waitingTrialCount = 0;
+
   const availableProducts = ALL_PRODUCTS.filter((p) => p.unlockLevel <= params.playerLevel);
 
   for (const product of availableProducts) {
+    if (supplierRoom(product.id) <= 0) continue; // NCC tạm ngừng cung / hết hàng hôm nay
+
     const usableStock = getUsableStock(
       product.id,
       params.currentDay,
@@ -210,234 +342,299 @@ export function generateRestockSuggestions(
       params.inventory,
       params.holdingArea
     );
-    const incoming = getIncomingOrdersCount(product.id, params.pendingOrders);
+    const incoming = getIncomingOrdersCount(product.id, params.pendingOrders) + (cartQty.get(product.id) ?? 0);
     const effectiveStock = usableStock + incoming;
 
     // Sales velocity: 7 days & 3 days
     const v7 = calculateSalesVelocity(product.id, params.dailyRecords, params.currentDayRecord, 7);
     const v3 = calculateSalesVelocity(product.id, params.dailyRecords, params.currentDayRecord, 3);
-    const hadSales = v7.totalSold > 0 || (params.currentDayRecord.productSales?.[product.id] ?? 0) > 0;
+    const soldRecently = v7.totalSold > 0 || (params.currentDayRecord.productSales?.[product.id] ?? 0) > 0;
+    // Món từng bán trước đây (xa hơn 7 ngày) vẫn là hàng đã có lịch sử, không phải hàng mới: nhập theo tốc độ bán cũ.
+    const lifetime = soldRecently ? undefined : calculateSalesVelocity(product.id, params.dailyRecords, params.currentDayRecord, HISTORY_DAYS);
+    const soldBefore = (lifetime?.totalSold ?? 0) > 0;
+    const hadSales = soldRecently || soldBefore;
     const demandMultiplier = Math.max(0.1, Math.min(4.0, params.demandMultiplierOf?.(product.id) ?? 1.0));
-    const baseVelocity = Math.max(v7.velocity, v3.velocity);
-    const trendVelocity = (hadSales ? params.expectedDailyOf?.(product.id) : undefined) ?? (baseVelocity * demandMultiplier);
+    const baseVelocity = soldBefore ? lifetime!.velocity : Math.max(v7.velocity, v3.velocity);
+    const trendVelocity = (soldRecently ? params.expectedDailyOf?.(product.id) : undefined) ?? (baseVelocity * demandMultiplier);
 
     const assignedFixture = params.fixtures.find(
       (f) => isSalesFixture(f) && f.assignedProductId === product.id
     );
-
-    let target = 0;
-    let isFallback = false;
-    let reason: SuggestionReason = 'low_stock';
+    const shelfCap = assignedFixture
+      ? effectiveShelfCapacity(assignedFixture.maxCapacity, product.shelfCapacity, params.shelfCapacityBonus ?? 0)
+      : undefined;
+    const daysToSpoil = product.expirationRules?.daysToSpoil ?? 99;
+    const unitPrice = unitPriceOf(product.id);
 
     if (hadSales) {
-      // Stock target for 2.5 days of demand
-      target = Math.ceil(trendVelocity * 2.5);
-      if (assignedFixture) {
-        const shelfCap = effectiveShelfCapacity(assignedFixture.maxCapacity, product.shelfCapacity, params.shelfCapacityBonus ?? 0);
-        target = Math.max(target, shelfCap);
+      // Hàng đang bán: đủ 2.5 ngày bán; lấp kệ nhưng không vượt MAX_COVER_DAYS ngày bán để hàng chậm không bị nhập tràn.
+      const slow = trendVelocity < SLOW_SELLER_VELOCITY;
+      let target = Math.ceil(trendVelocity * 2.5);
+      if (shelfCap !== undefined) {
+        target = Math.max(target, Math.min(shelfCap, Math.ceil(trendVelocity * MAX_COVER_DAYS)));
       }
-
       // Perishable constraint: fresh items must not exceed shelf life
-      const daysToSpoil = product.expirationRules?.daysToSpoil ?? 99;
       if (daysToSpoil <= 7) {
-        const maxFresh = Math.max(2, Math.ceil(Math.max(trendVelocity, 1) * daysToSpoil));
-        target = Math.min(target, maxFresh);
+        target = Math.min(target, Math.max(2, Math.ceil(Math.max(trendVelocity, 1) * daysToSpoil)));
       }
 
-      if (effectiveStock === 0) {
-        reason = 'out_of_stock';
-      } else if (trendVelocity >= 2) {
-        reason = 'best_seller';
-      } else {
-        reason = 'low_stock';
+      const wantQuantity = Math.max(0, target - effectiveStock);
+      if (wantQuantity <= 0) {
+        if (effectiveStock > 0 && (slow || effectiveStock >= trendVelocity * MAX_COVER_DAYS)) reducedSlow.push(product.name);
+        continue;
       }
-    } else {
-      // Fallback trial demand profile (scaled by weather/season multiplier)
-      isFallback = true;
-      reason = 'fallback_trial';
-      const basePop = product.demandProfile?.basePopularity ?? 0.5;
-      const trialQty = Math.max(2, Math.round(basePop * 5 * demandMultiplier));
-
-      if (assignedFixture) {
-        const shelfCap = effectiveShelfCapacity(assignedFixture.maxCapacity, product.shelfCapacity, params.shelfCapacityBonus ?? 0);
-        target = Math.min(trialQty, shelfCap);
-      } else {
-        target = trialQty;
-      }
-
-      // Fresh perishable constraint for trial
-      const daysToSpoil = product.expirationRules?.daysToSpoil ?? 99;
-      if (daysToSpoil <= 7) {
-        target = Math.min(target, Math.max(2, daysToSpoil));
-      }
-    }
-
-    const wantQuantity = Math.max(0, target - effectiveStock);
-    if (wantQuantity > 0) {
-      const unitPrice = params.unitPriceOf?.(product.id) ?? Math.round(product.purchasePrice * (1 - discount));
-      const daysOfStockLeft =
-        trendVelocity > 0
-          ? Number((effectiveStock / trendVelocity).toFixed(1))
-          : effectiveStock > 0
-          ? 99
-          : 0;
-
-      const daysToSpoil = product.expirationRules?.daysToSpoil ?? 99;
-      candidates.push({
+      if (slow) reducedSlow.push(product.name);
+      proven.push({
         productId: product.id,
+        group: 'proven',
         wantQuantity,
         unitPrice,
-        reason,
-        salesVelocity: hadSales ? trendVelocity : undefined,
-        isFallback,
-        daysOfStockLeft,
+        reason: effectiveStock === 0 ? 'out_of_stock' : slow ? 'slow_seller' : trendVelocity >= 2 ? 'best_seller' : 'low_stock',
+        salesVelocity: trendVelocity,
+        daysOfStockLeft: trendVelocity > 0 ? Number((effectiveStock / trendVelocity).toFixed(1)) : effectiveStock > 0 ? 99 : 0,
         storageType: product.storageType,
-        daysToSpoil,
-        basePopularity: product.demandProfile?.basePopularity ?? 0.5,
+        score: trendVelocity,
+      });
+    } else {
+      // Chưa bán mà vẫn còn hàng (kệ/kho/đơn đang về): đang thử, chờ kết quả — không nhập thêm.
+      if (effectiveStock > 0) {
+        waitingTrialCount++;
+        continue;
+      }
+      // Hàng mới: nhập thử lượng nhỏ theo độ phổ biến × hệ số mùa/thời tiết.
+      const basePop = product.demandProfile?.basePopularity ?? 0.5;
+      let target = Math.max(2, Math.round(basePop * 5 * demandMultiplier));
+      if (shelfCap !== undefined) target = Math.min(target, shelfCap);
+      if (daysToSpoil <= 7) target = Math.min(target, Math.max(2, daysToSpoil));
+      if (target <= 0) continue;
+      trials.push({
+        productId: product.id,
+        group: 'trial',
+        wantQuantity: target,
+        unitPrice,
+        reason: 'fallback_trial',
+        daysOfStockLeft: 0,
+        storageType: product.storageType,
+        score: basePop * demandMultiplier + (shelfCap !== undefined ? 10 : 0),
       });
     }
   }
 
-  // Priority sorting:
-  // 1. out_of_stock
-  // 2. low_stock
-  // 3. best_seller
-  // 4. fallback_trial
   const priorityOrder: Record<SuggestionReason, number> = {
     out_of_stock: 1,
     low_stock: 2,
     best_seller: 3,
-    fallback_trial: 4,
+    slow_seller: 4,
+    fallback_trial: 5,
+  };
+  proven.sort((a, b) => priorityOrder[a.reason] - priorityOrder[b.reason] || b.score - a.score || a.unitPrice - b.unitPrice);
+  trials.sort((a, b) => b.score - a.score || a.unitPrice - b.unitPrice);
+
+  // ===== Phân bổ ngân sách 40/60 =====
+  const provenTarget = Math.floor(spendable * provenShare);
+  const pools: Record<SuggestionGroup, number> = { proven: provenTarget, trial: spendable - provenTarget };
+  const picked = new Map<string, SuggestedCartItem>();
+  const groupOf = new Map<string, SuggestionGroup>();
+  const limits = new Map<string, Set<LimitKind>>();
+  const selectedTrials: CandidateItem[] = [];
+
+  const markLimit = (productId: string, kind: LimitKind) => {
+    const set = limits.get(productId) ?? new Set<LimitKind>();
+    set.add(kind);
+    limits.set(productId, set);
   };
 
-  candidates.sort((a, b) => {
-    const pDiff = priorityOrder[a.reason] - priorityOrder[b.reason];
-    if (pDiff !== 0) return pDiff;
-    if (a.salesVelocity !== undefined && b.salesVelocity !== undefined) {
-      return b.salesVelocity - a.salesVelocity;
+  /** Thêm tối đa `qty` đơn vị của `cand` (không vượt nhu cầu trừ khi `overWant`), trả về số thực thêm. */
+  const take = (cand: CandidateItem, qty: number, pool: SuggestionGroup | 'shared', overWant = false): number => {
+    const product = PRODUCT_MAP[cand.productId]!;
+    const already = picked.get(cand.productId)?.quantity ?? 0;
+    let q = overWant ? qty : Math.min(qty, cand.wantQuantity - already);
+    if (q <= 0) return 0;
+
+    const room = supplierRoom(cand.productId) - already;
+    if (q > room) { markLimit(cand.productId, 'supplier'); q = Math.max(0, room); }
+    if (cand.storageType === 'cold' && q > availableCold) { markLimit(cand.productId, 'cold'); q = availableCold; }
+    if (cand.storageType !== 'cold' && ambient) {
+      const fit = unitsFittingInCells(product, ambientHeld(cand.productId) + already, ambientFree, q);
+      if (fit < q) { markLimit(cand.productId, 'ambient'); q = fit; }
     }
-    if (a.isFallback && b.isFallback) {
-      return b.basePopularity - a.basePopularity;
+    const budgetLeft = pool === 'shared' ? pools.proven + pools.trial : pools[pool];
+    const affordable = Math.floor(budgetLeft / cand.unitPrice);
+    if (q > affordable) { markLimit(cand.productId, 'budget'); q = affordable; }
+    if (q <= 0) return 0;
+
+    const cost = q * cand.unitPrice;
+    if (pool === 'shared') {
+      const fromProven = Math.min(pools.proven, cost);
+      pools.proven -= fromProven;
+      pools.trial -= cost - fromProven;
+    } else {
+      pools[pool] -= cost;
     }
-    return a.unitPrice - b.unitPrice;
-  });
+    if (cand.storageType === 'cold') availableCold -= q;
+    else if (ambient) {
+      const held = ambientHeld(cand.productId) + already;
+      ambientFree -= warehouseCellsFor(product, held + q) - warehouseCellsFor(product, held);
+    }
 
-  // Pruning phase
-  let remainingBudget = Math.min(params.budget ?? params.playerMoney, params.playerMoney);
-  const suggestedItems: SuggestedCartItem[] = [];
+    const item = picked.get(cand.productId);
+    if (item) {
+      item.quantity += q;
+      item.estimatedCost += cost;
+    } else {
+      picked.set(cand.productId, {
+        productId: cand.productId,
+        quantity: q,
+        unitPrice: cand.unitPrice,
+        estimatedCost: cost,
+        reason: cand.reason,
+        salesVelocity: cand.salesVelocity,
+        isFallback: cand.group === 'trial',
+        daysOfStockLeft: cand.daysOfStockLeft,
+      });
+      groupOf.set(cand.productId, cand.group);
+    }
+    return q;
+  };
 
-  for (const cand of candidates) {
-    let finalQty = cand.wantQuantity;
-    const prod = PRODUCT_MAP[cand.productId]!;
-
-    // Cold storage constraint
-    if (cand.storageType === 'cold') {
-      if (availableCold <= 0) {
-        appliedConstraints.push(`Bỏ qua ${prod.name} do kho lạnh không còn chỗ trống`);
-        continue;
+  /**
+   * Mở thêm mặt hàng mới (mỗi món lượt đầu tối đa TRIAL_FIRST_PASS_UNITS) cho tới MAX_TRIAL_PRODUCTS món.
+   * Vòng đầu mỗi ngành hàng chưa có món thử chỉ lấy một món để đa dạng mẫu mã, vòng sau lấp chỗ còn lại.
+   */
+  const openTrials = (pool: SuggestionGroup | 'shared') => {
+    const categoryOf = (cand: CandidateItem) => PRODUCT_MAP[cand.productId]!.category;
+    for (const diverseOnly of [true, false]) {
+      const usedCategories = new Set(selectedTrials.map(categoryOf));
+      for (const cand of trials) {
+        if (selectedTrials.length >= maxTrialProducts) return;
+        if (picked.has(cand.productId)) continue;
+        if (diverseOnly && usedCategories.has(categoryOf(cand))) continue;
+        if (take(cand, TRIAL_FIRST_PASS_UNITS, pool) > 0) {
+          selectedTrials.push(cand);
+          usedCategories.add(categoryOf(cand));
+        }
       }
-      if (finalQty > availableCold) {
-        appliedConstraints.push(`Cắt giảm ${prod.name} từ ${finalQty} xuống ${availableCold} do giới hạn kho lạnh`);
-        finalQty = availableCold;
+    }
+  };
+
+  // 1) Hàng đang bán trong phần 40%.
+  for (const cand of proven) take(cand, cand.wantQuantity, 'proven');
+  // 2) Hàng mới trong phần 60%: chia đều cho nhiều mẫu mã trước, sau đó nhập đủ lượng thử.
+  openTrials('trial');
+  for (const cand of selectedTrials) take(cand, cand.wantQuantity, 'trial');
+  // 3) Phần dư của nhóm này bù cho nhóm kia.
+  for (const cand of proven) take(cand, cand.wantQuantity, 'shared');
+  openTrials('shared');
+  for (const cand of selectedTrials) take(cand, cand.wantQuantity, 'shared');
+
+  const orderedItems = () => [...picked.values()];
+  const mergedWithCart = (): SupplierCartItem[] => {
+    const merged = new Map(cartQty);
+    for (const item of picked.values()) merged.set(item.productId, (merged.get(item.productId) ?? 0) + item.quantity);
+    return [...merged].map(([productId, quantity]) => ({ productId, quantity }));
+  };
+
+  // ===== Đơn tối thiểu của nhà cung cấp (tính cả giỏ đang có) =====
+  if (supplier.minOrderValue && picked.size > 0) {
+    let orderTotal = costOf(mergedWithCart());
+    if (orderTotal < supplier.minOrderValue && moneyCap >= supplier.minOrderValue) {
+      const all = [...proven, ...selectedTrials];
+      for (const cand of all) {
+        if (!picked.has(cand.productId)) continue;
+        const deficit = supplier.minOrderValue - orderTotal;
+        if (deficit <= 0) break;
+        if (take(cand, Math.ceil(deficit / cand.unitPrice), 'shared', true) > 0) orderTotal = costOf(mergedWithCart());
       }
-    }
-
-    if (finalQty <= 0) continue;
-
-    // Budget constraint
-    if (remainingBudget < cand.unitPrice) {
-      appliedConstraints.push(`Dừng gợi ý thêm sản phẩm do không đủ ngân sách`);
-      break;
-    }
-
-    const affordableQty = Math.min(finalQty, Math.floor(remainingBudget / cand.unitPrice));
-    if (affordableQty < finalQty) {
-      appliedConstraints.push(`Cắt giảm ${prod.name} từ ${finalQty} xuống ${affordableQty} theo ngân sách`);
-      finalQty = affordableQty;
-    }
-
-    if (finalQty <= 0) continue;
-
-    const estimatedCost = finalQty * cand.unitPrice;
-    suggestedItems.push({
-      productId: cand.productId,
-      quantity: finalQty,
-      unitPrice: cand.unitPrice,
-      estimatedCost,
-      reason: cand.reason,
-      salesVelocity: cand.salesVelocity,
-      isFallback: cand.isFallback,
-      daysOfStockLeft: cand.daysOfStockLeft,
-    });
-
-    remainingBudget -= estimatedCost;
-    if (cand.storageType === 'cold') {
-      availableCold -= finalQty;
     }
   }
 
-  let totalCost = suggestedItems.reduce((sum, item) => sum + item.estimatedCost, 0);
-  const totalQuantity = suggestedItems.reduce((sum, item) => sum + item.quantity, 0);
-  const coldItemCount = suggestedItems
+  // ===== Kiểm tra cuối theo giá thật: tổng giỏ (giỏ đang có + gợi ý) không được vượt tiền =====
+  let trimmed = false;
+  if (params.cartCostOf) {
+    let total = costOf(mergedWithCart());
+    while (total > moneyCap && picked.size > 0) {
+      const last = orderedItems()[picked.size - 1]!;
+      last.quantity -= 1;
+      last.estimatedCost = last.quantity * last.unitPrice;
+      if (last.quantity <= 0) picked.delete(last.productId);
+      total = costOf(mergedWithCart());
+      trimmed = true;
+    }
+  }
+  if (trimmed) appliedConstraints.push('Giảm bớt số lượng cuối giỏ để tổng tiền theo giá thật không vượt tiền đang có');
+
+  const items = orderedItems();
+  for (const cand of [...proven, ...trials]) {
+    const kinds = limits.get(cand.productId);
+    if (!kinds) continue;
+    const got = picked.get(cand.productId)?.quantity ?? 0;
+    if (got >= cand.wantQuantity) continue;
+    const name = PRODUCT_MAP[cand.productId]!.name;
+    const why = [...kinds].map((kind) => LIMIT_LABELS[kind]).join(', ');
+    if (got > 0) appliedConstraints.push(`Cắt giảm ${name} từ ${cand.wantQuantity} xuống ${got} ${why}`);
+    else if (cand.group === 'proven' || selectedTrials.includes(cand)) appliedConstraints.push(`Bỏ qua ${name} ${why}`);
+  }
+  if ([...limits.values()].some((kinds) => kinds.has('budget')) && items.length < proven.length + Math.min(trials.length, maxTrialProducts)) {
+    appliedConstraints.push('Dừng gợi ý thêm sản phẩm do không đủ ngân sách');
+  }
+  const untriedCount = trials.filter((cand) => !picked.has(cand.productId)).length;
+  if (untriedCount > 0 && selectedTrials.length >= maxTrialProducts) {
+    appliedConstraints.push(`Còn ${untriedCount} mặt hàng mới chưa nhập thử — để các lần gợi ý sau (mỗi lần tối đa ${maxTrialProducts} món)`);
+  }
+
+  const totalCost = costOf(items.map((item) => ({ productId: item.productId, quantity: item.quantity })));
+  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+  const coldItemCount = items
     .filter((item) => PRODUCT_MAP[item.productId]?.storageType === 'cold')
     .reduce((sum, item) => sum + item.quantity, 0);
+  const spentOf = (group: SuggestionGroup) =>
+    items.filter((item) => groupOf.get(item.productId) === group).reduce((sum, item) => sum + item.estimatedCost, 0);
+  const budget = {
+    spendable,
+    provenShare,
+    reserved,
+    obligations: obligationReserve,
+    provenTarget,
+    trialTarget: spendable - provenTarget,
+    provenSpent: spentOf('proven'),
+    trialSpent: spentOf('trial'),
+  };
 
-  // Supplier minOrder handling
-  if (supplier.minOrderValue && totalCost < supplier.minOrderValue && suggestedItems.length > 0) {
-    if (params.playerMoney < supplier.minOrderValue) {
+  if (supplier.minOrderValue && items.length > 0) {
+    const orderTotal = costOf(mergedWithCart());
+    if (orderTotal < supplier.minOrderValue) {
       appliedConstraints.push(
-        `Đơn hàng (${totalCost.toLocaleString('vi-VN')} ₫) chưa đạt đơn tối thiểu (${supplier.minOrderValue.toLocaleString('vi-VN')} ₫) của ${supplier.name}`
+        `Đơn hàng (${formatMoney(orderTotal)}) chưa đạt đơn tối thiểu (${formatMoney(supplier.minOrderValue)}) của ${supplier.name}`
       );
-    } else {
-      // Try to top up highest priority items to reach minOrder if budget and storage allow
-      for (const item of suggestedItems) {
-        const deficit = supplier.minOrderValue - totalCost;
-        if (deficit <= 0) break;
-        const extraUnitsNeeded = Math.ceil(deficit / item.unitPrice);
-        const maxBudgetUnits = Math.floor(remainingBudget / item.unitPrice);
-        let addQty = Math.min(extraUnitsNeeded, maxBudgetUnits);
-        const prod = PRODUCT_MAP[item.productId]!;
-        if (prod.storageType === 'cold') {
-          addQty = Math.min(addQty, availableCold);
-        }
-
-        if (addQty > 0) {
-          item.quantity += addQty;
-          item.estimatedCost += addQty * item.unitPrice;
-          totalCost += addQty * item.unitPrice;
-          remainingBudget -= addQty * item.unitPrice;
-          if (prod.storageType === 'cold') availableCold -= addQty;
-        }
-      }
-
-      if (totalCost < supplier.minOrderValue) {
-        appliedConstraints.push(
-          `Đơn hàng (${totalCost.toLocaleString('vi-VN')} ₫) chưa đạt đơn tối thiểu (${supplier.minOrderValue.toLocaleString('vi-VN')} ₫)`
-        );
-      }
     }
   }
 
-  // Deduplicate constraints
-  const uniqueConstraints = Array.from(new Set(appliedConstraints));
-
-  let explanation = '';
-  if (suggestedItems.length === 0) {
-    explanation = 'Tồn kho hiện tại và các đơn đang giao đã đủ đáp ứng nhu cầu dự kiến.';
+  let explanation: string;
+  if (items.length === 0) {
+    explanation = spendable <= 0
+      ? cartCost > 0
+        ? 'Giỏ đang có đã dùng hết số tiền hiện có — không gợi ý thêm.'
+        : 'Không còn tiền để nhập hàng.'
+      : 'Tồn kho hiện tại và các đơn đang giao đã đủ đáp ứng nhu cầu dự kiến.';
   } else {
-    explanation = `Gợi ý ${suggestedItems.length} mặt hàng (${totalQuantity} sản phẩm) từ ${supplier.name} với tổng chi phí ${totalCost.toLocaleString('vi-VN')} ₫.`;
-    if (suggestedItems.some((it) => it.isFallback)) {
-      explanation += ' Một số mặt hàng được gợi ý thử nghiệm mức nhỏ do chưa có đủ lịch sử bán.';
+    explanation = `Gợi ý ${items.length} mặt hàng (${totalQuantity} sản phẩm) từ ${supplier.name} với tổng chi phí ${formatMoney(totalCost)} (tiền đang có ${formatMoney(money)}).`;
+    explanation += ` Phân bổ: hàng đang bán ${formatMoney(budget.provenSpent)} · hàng mới nhập thử nghiệm ${formatMoney(budget.trialSpent)} (mục tiêu ${Math.round(provenShare * 100)}/${Math.round((1 - provenShare) * 100)}; nhóm dùng không hết thì nhường cho nhóm kia).`;
+    if (reducedSlow.length > 0) {
+      explanation += ` ${reducedSlow.length} mặt hàng bán chậm/tồn nhiều được giảm hoặc bỏ nhập.`;
+    }
+    if (waitingTrialCount > 0) {
+      explanation += ` ${waitingTrialCount} mặt hàng đang thử chưa bán được nên chưa nhập thêm.`;
     }
   }
 
   return {
     supplierId,
-    items: suggestedItems,
+    items,
     totalCost,
     totalQuantity,
     coldItemCount,
-    appliedConstraints: uniqueConstraints,
+    appliedConstraints: Array.from(new Set(appliedConstraints)),
     explanation,
+    budget,
   };
 }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   PlayerData,
   InventoryItem,
@@ -7,13 +7,29 @@ import {
   COLD_WAREHOUSE_CAPACITY,
   SupplierCartItem,
   RestockSuggestionResult,
+  RestockBudgetSplit,
+  RestockSuggestionOptions,
   SuggestedCartItem,
   AutoBuyRule,
   AutoBuyReport,
 } from '@game/shared';
 import { ALL_PRODUCTS, PRODUCT_MAP, PRODUCT_CATEGORY_LABELS, SUPPLIERS, SUPPLIER_MAP, DEFAULT_SUPPLIER_ID } from '@game/data';
+import { normalizeRestockOptions } from '@game/core';
 import { addRecommendation, setCartQuantity } from './supplier-cart';
 import { PixelDialog, PixelStat, PixelButton, ProductSlot, QuantityStepper, money, EmptyState } from './pixel';
+
+const SUGGEST_OPTIONS_KEY = 'supplier-suggest-options';
+// Bản lưu trong save (`savedRestockOptions`) được ưu tiên; localStorage là dự phòng cho save cũ và tiệm online (không ghi save cục bộ).
+function loadSuggestOptions(saved?: RestockSuggestionOptions): Required<RestockSuggestionOptions> {
+  if (saved) return normalizeRestockOptions(saved);
+  try {
+    return normalizeRestockOptions(JSON.parse(localStorage.getItem(SUGGEST_OPTIONS_KEY) ?? 'null') as RestockSuggestionOptions | null);
+  } catch {
+    return normalizeRestockOptions();
+  }
+}
+
+const SUGGEST_INPUT_STYLE: React.CSSProperties = { height: 28, border: '2px solid var(--wood-light)', background: '#FFFAEE', color: 'var(--ink)', textAlign: 'center', fontWeight: 700, borderRadius: 0, margin: '0 2px' };
 
 export interface SupplierQuoteBoard {
   quotes: Record<string, { unitPrice: number; previousUnitPrice: number; changePct: number; reasons: string[]; stockLeft?: number; unavailable: boolean }>;
@@ -22,7 +38,7 @@ export interface SupplierQuoteBoard {
   bulkTiers: Array<{ minQty: number; discount: number }>;
 }
 
-interface Props {
+export interface Props {
   coldCapacity?: number;
   player: PlayerData;
   pendingOrders: SupplierOrder[];
@@ -30,7 +46,11 @@ interface Props {
   currentDay: number;
   onOrder: (id: string, n: number) => void;
   onOrderCart?: (supplierId: string, items: SupplierCartItem[]) => void;
-  onGetSuggestions?: (supplierId: string) => RestockSuggestionResult;
+  /** Cài đặt gợi ý đã lưu trong save (thiếu = đọc localStorage cũ). */
+  savedRestockOptions?: RestockSuggestionOptions;
+  /** Gọi mỗi khi người chơi đổi cài đặt để ghi vào save. */
+  onSaveRestockOptions?: (options: RestockSuggestionOptions) => void;
+  onGetSuggestions?: (supplierId: string, cart: Record<string, number>, options: RestockSuggestionOptions) => RestockSuggestionResult;
   getQuotes?: (supplierId: string) => SupplierQuoteBoard;
   getUnitPrice?: (supplierId: string, productId: string, quantity: number) => number;
   autoBuyConfig?: { enabled: boolean; rules: AutoBuyRule[]; reports: Record<number, AutoBuyReport> };
@@ -47,6 +67,8 @@ export const SupplierModal: React.FC<Props> = ({
   onOrder,
   onOrderCart,
   onGetSuggestions,
+  savedRestockOptions,
+  onSaveRestockOptions,
   getQuotes,
   getUnitPrice,
   autoBuyConfig = { enabled: false, rules: [], reports: {} },
@@ -65,12 +87,28 @@ export const SupplierModal: React.FC<Props> = ({
   const [autoBudget, setAutoBudget] = useState(50000);
   const [autoPriority, setAutoPriority] = useState(1);
 
+  const [suggestOptions, setSuggestOptions] = useState<Required<RestockSuggestionOptions>>(() => loadSuggestOptions(savedRestockOptions));
+  const saveSuggestOptions = (next: Required<RestockSuggestionOptions>) => {
+    setSuggestOptions(next);
+    try { localStorage.setItem(SUGGEST_OPTIONS_KEY, JSON.stringify(next)); } catch { /* không lưu được thì bỏ qua */ }
+    onSaveRestockOptions?.(next);
+  };
+  const updateSuggestOption = (key: 'provenSharePct' | 'maxTrialProducts' | 'cashReservePct', value: number, min: number, max: number) =>
+    saveSuggestOptions({ ...suggestOptions, [key]: Math.min(max, Math.max(min, Number.isFinite(value) ? Math.round(value) : min)) });
+
   // Suggested Cart state
+  const suggestionRef = useRef<HTMLElement>(null);
   const [suggestedCart, setSuggestedCart] = useState<{
     items: SuggestedCartItem[];
     constraints: string[];
     explanation: string;
+    budget?: RestockBudgetSplit;
   } | null>(null);
+
+  // Khung giải thích nằm dưới thanh giỏ cố định nên cuộn tới khi có gợi ý mới.
+  useEffect(() => {
+    if (suggestedCart) suggestionRef.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+  }, [suggestedCart]);
 
   const currentSupplier = SUPPLIER_MAP[selectedSupplierId] ?? SUPPLIERS[0];
   const discountRate = currentSupplier.discountRate ?? 0;
@@ -159,11 +197,13 @@ export const SupplierModal: React.FC<Props> = ({
 
   const handleGenerateSuggestion = () => {
     if (!onGetSuggestions) return;
-    const res = onGetSuggestions(selectedSupplierId);
+    // Truyền giỏ đang soạn để gợi ý chỉ tiêu phần tiền còn lại (bấm nhiều lần không cộng dồn vượt tiền).
+    const res = onGetSuggestions(selectedSupplierId, quantities, suggestOptions);
     setSuggestedCart({
       items: res.items.map((it) => ({ ...it })),
       constraints: res.appliedConstraints,
       explanation: res.explanation,
+      budget: res.budget,
     });
     setQuantities((old) => addSuggestedToQuantities(old, res.items));
   };
@@ -272,8 +312,30 @@ export const SupplierModal: React.FC<Props> = ({
           <div>
             <strong>Gợi ý thông minh</strong>
             <p className="muted" style={{ margin: 0, fontSize: '11px' }}>
-              Phân tích tốc độ bán 3–7 ngày, tồn kho &amp; đơn chờ để tính toán giỏ hàng tối ưu.
+              Phân tích tốc độ bán 3–7 ngày, tồn kho &amp; đơn chờ. Chia tiền theo tỷ lệ bên dưới (hàng đang bán / hàng mới nhập thử), luôn chừa quỹ dự phòng và không vượt tiền đang có.
             </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '6px', fontSize: '11px' }}>
+              <label title="% ngân sách cho hàng đang bán; phần còn lại nhập thử hàng mới">
+                Hàng đang bán{' '}
+                <input type="number" min={0} max={100} value={suggestOptions.provenSharePct} style={{ ...SUGGEST_INPUT_STYLE, width: 52 }} aria-label="Phần trăm ngân sách cho hàng đang bán"
+                  onChange={(e) => updateSuggestOption('provenSharePct', Number(e.target.value), 0, 100)} />% · mới {100 - suggestOptions.provenSharePct}%
+              </label>
+              <label title="Số mặt hàng mới nhập thử tối đa mỗi lần gợi ý">
+                Món mới tối đa{' '}
+                <input type="number" min={0} max={20} value={suggestOptions.maxTrialProducts} style={{ ...SUGGEST_INPUT_STYLE, width: 46 }} aria-label="Số món mới nhập thử tối đa"
+                  onChange={(e) => updateSuggestOption('maxTrialProducts', Number(e.target.value), 0, 20)} />
+              </label>
+              <label title="% tiền mặt giữ lại cho lương/thuế, không đưa vào gợi ý">
+                Giữ lại quỹ{' '}
+                <input type="number" min={0} max={90} value={suggestOptions.cashReservePct} style={{ ...SUGGEST_INPUT_STYLE, width: 52 }} aria-label="Phần trăm tiền mặt giữ lại"
+                  onChange={(e) => updateSuggestOption('cashReservePct', Number(e.target.value), 0, 90)} />%
+              </label>
+              <label title="Giữ đủ tiền trả nợ lương, lương kỳ tới và thuế sắp nộp (lấy mức lớn hơn giữa khoản này và % bên trên)">
+                <input type="checkbox" checked={suggestOptions.protectObligations} aria-label="Chừa tiền lương và thuế"
+                  onChange={(e) => saveSuggestOptions({ ...suggestOptions, protectObligations: e.target.checked })} />{' '}
+                Chừa tiền lương &amp; thuế
+              </label>
+            </div>
           </div>
           <PixelButton
             variant="teal"
@@ -289,6 +351,7 @@ export const SupplierModal: React.FC<Props> = ({
       {/* Suggested Cart Review Drawer — chỉ hiển thị giải thích, không có nút đặt riêng nữa */}
       {suggestedCart && (
         <section
+          ref={suggestionRef}
           style={{
             background: 'var(--paper)',
             border: '2px solid var(--teal)',
@@ -314,6 +377,12 @@ export const SupplierModal: React.FC<Props> = ({
           <p style={{ fontSize: '12px', marginBottom: '8px', fontStyle: 'italic' }}>
             {suggestedCart.explanation}
           </p>
+
+          {suggestedCart.budget && suggestedCart.budget.spendable > 0 && (
+            <p className="muted" style={{ fontSize: '11px', margin: '0 0 8px' }}>
+              Tiền dùng cho gợi ý {money(suggestedCart.budget.spendable)}{suggestedCart.budget.reserved > 0 ? ` (giữ lại ${money(suggestedCart.budget.reserved)}${suggestedCart.budget.obligations ? ' cho lương/thuế' : ''})` : ''} · Hàng đang bán {money(suggestedCart.budget.provenSpent)} / {money(suggestedCart.budget.provenTarget)} ({Math.round(suggestedCart.budget.provenShare * 100)}%) · Hàng mới thử {money(suggestedCart.budget.trialSpent)} / {money(suggestedCart.budget.trialTarget)} ({100 - Math.round(suggestedCart.budget.provenShare * 100)}%)
+            </p>
+          )}
 
           {suggestedCart.constraints.length > 0 && (
             <div style={{ marginBottom: '10px' }}>
@@ -348,11 +417,13 @@ export const SupplierModal: React.FC<Props> = ({
                   item.reason === 'out_of_stock' ? 'Hết hàng'
                   : item.reason === 'best_seller' ? 'Bán chạy'
                   : item.reason === 'low_stock' ? 'Sắp hết'
-                  : 'Thử nghiệm';
+                  : item.reason === 'slow_seller' ? 'Bán chậm'
+                  : 'Hàng mới thử';
                 const badgeColor =
                   item.reason === 'out_of_stock' ? '#d90429'
                   : item.reason === 'best_seller' ? '#b5838d'
                   : item.reason === 'low_stock' ? '#e07a5f'
+                  : item.reason === 'slow_seller' ? '#6c757d'
                   : '#3d5a80';
                 const inCart = quantities[item.productId] ?? 0;
                 const maxQty = maxQtyFor(item.productId);
@@ -462,6 +533,12 @@ export const SupplierModal: React.FC<Props> = ({
               eggs: '🥚',
               cooking_ingredients: '🧂',
               household: '🧹',
+              personal_care: '🧴',
+              frozen: '🧊',
+              fresh_produce: '🥬',
+              health: '💊',
+              toys_stationery: '🧸',
+              alcohol: '🍺',
             };
             return (
               <button

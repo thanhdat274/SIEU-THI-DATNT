@@ -147,12 +147,40 @@ export class StaffManager {
 
   public hasSecurityOnShift(getShift: (id: string) => StaffShift | undefined): boolean {
     return this.staff.some(
-      (s) => s.role === 'security' && this.isOnShift(s, getShift)
+      (s) => (s.role === 'security' || s.role === 'drink_security') && this.isOnShift(s, getShift)
+    );
+  }
+
+  /** Kiểm tra bảo vệ cho tòa nhà cụ thể (hoặc bảo vệ chung). */
+  public hasSecurityForBuilding(building: 'main' | 'xoi' | 'drink' | undefined, getShift: (id: string) => StaffShift | undefined): boolean {
+    return this.staff.some(
+      (s) =>
+        ((s.role === 'security' && !s.assignedBuilding) || // Bảo vệ chung
+        (s.role === 'drink_security' && s.assignedBuilding === 'drink') || // Bảo vệ quán nước
+        (s.role === 'security' && s.assignedBuilding === building)) // Bảo vệ tòa cụ thể
+        && this.isOnShift(s, getShift)
     );
   }
 
   public findSecurityMember(): StaffMember | undefined {
     return this.staff.find((s) => s.role === 'security');
+  }
+
+  /** Tìm bảo vệ quán nước. */
+  public findDrinkSecurityMember(): StaffMember | undefined {
+    return this.staff.find((s) => s.role === 'drink_security');
+  }
+
+  /** Tìm nhân viên quán nước (drink_staff). */
+  public findDrinkStaffMember(): StaffMember | undefined {
+    return this.staff.find((s) => s.role === 'drink_staff');
+  }
+
+  /** Tìm tất cả nhân viên cho tòa nhà cụ thể. */
+  public getStaffForBuilding(building: 'main' | 'xoi' | 'drink' | undefined): StaffMember[] {
+    return this.staff.filter(
+      (s) => !s.assignedBuilding || s.assignedBuilding === building
+    );
   }
 
   public getActiveRefillCount(): number {
@@ -168,6 +196,16 @@ export class StaffManager {
     return this.staff.filter((m) => m.role === 'cashier');
   }
 
+  /** Tìm tất cả nhân viên bảo trì (refill + drink_staff). */
+  public getAllMaintenanceStaff(): StaffMember[] {
+    return this.staff.filter((m) => m.role === 'refill' || m.role === 'drink_staff');
+  }
+
+  /** Tìm tất cả nhân viên bảo vệ (security + drink_security). */
+  public getAllSecurityStaff(): StaffMember[] {
+    return this.staff.filter((m) => m.role === 'security' || m.role === 'drink_security');
+  }
+
   /** Kiểm tra nhân viên có task đang chạy (refill hoặc dining). */
   public hasActiveTask(member: StaffMember): boolean {
     return !!member.workerTask || !!member.diningTask;
@@ -179,5 +217,13 @@ export class StaffManager {
       member.diningTask = undefined;
     }
     member.workerTask = undefined;
+  }
+
+  /** Cập nhật building assignment cho nhân viên. */
+  public updateStaffBuilding(staffId: string, building: 'main' | 'xoi' | 'drink' | undefined): boolean {
+    const member = this.staff.find((m) => m.id === staffId);
+    if (!member) return false;
+    member.assignedBuilding = building;
+    return true;
   }
 }

@@ -1,3 +1,5 @@
+import { EXPANSION_PRODUCTS } from './products-expansion';
+
 export interface CatalogManifestEntry {
   sourceId: string;
   sourceName: string;
@@ -3697,3 +3699,36 @@ export const CATALOG_SOURCE_MANIFEST: CatalogManifestEntry[] = [
     "reason": "Curated into core catalog expansion"
   }
 ];
+
+/**
+ * Manifest cho đợt mở rộng cấp 5–30 (`products-expansion.ts`). Các món này do dự án tự thiết kế, không có trong catalog nguồn
+ * 335 dòng ở trên nên không dùng chung `CatalogManifestEntry`; manifest sinh từ dữ liệu để không lệch với catalog.
+ */
+export interface ExpansionManifestEntry {
+  productId: string;
+  productName: string;
+  origin: 'original_design';
+  /** `new_category`: thuộc 6 nhóm mới; `category_fill`: bổ sung cho nhóm đã có (nhập khẩu, cao cấp, quà biếu). */
+  segment: 'new_category' | 'category_fill';
+  /** Phân bậc theo cấp mở khóa: entry 5–9, mid 10–19, premium 20–30. */
+  tier: 'entry' | 'mid' | 'premium';
+  targetCategory: string;
+  unlockLevel: number;
+  reason: string;
+}
+
+const NEW_CATEGORIES: ReadonlySet<string> = new Set(['personal_care', 'frozen', 'fresh_produce', 'health', 'toys_stationery', 'alcohol']);
+
+export const EXPANSION_MANIFEST: ExpansionManifestEntry[] = EXPANSION_PRODUCTS.map((p) => {
+  const segment = NEW_CATEGORIES.has(p.category) ? 'new_category' : 'category_fill';
+  return {
+    productId: p.id,
+    productName: p.name,
+    origin: 'original_design',
+    segment,
+    tier: p.unlockLevel >= 20 ? 'premium' : p.unlockLevel >= 10 ? 'mid' : 'entry',
+    targetCategory: p.category,
+    unlockLevel: p.unlockLevel,
+    reason: segment === 'new_category' ? `Mở nhóm mới ${p.category}` : `Bổ sung hàng nhập khẩu/cao cấp cho nhóm ${p.category}`,
+  };
+});

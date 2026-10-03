@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { isSalesFixture } from '@game/shared';
-import { ALL_PRODUCTS, DEFAULT_INITIAL_SAVE, generateStarterTileMap, getSeasonForDay, getDayOfYear, SEASON_EVENTS, SEASON_YEAR_DAYS, STALL_MAP } from '@game/data';
+import { ALL_PRODUCTS, DEFAULT_INITIAL_SAVE, generateStarterTileMap, getSeasonForDay, getDayOfYear, SEASON_EVENTS, SEASON_YEAR_DAYS, STALL_MAP, SEASONAL_DECOR, seasonalDecorForDay } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { planStallDay } from './stalls';
@@ -113,4 +113,14 @@ export function runSeasonAndStallTests(): void {
   reloaded.importSaveData(sim.exportSaveData());
   assert.equal(soldEntries(), beforeCount, 'Nhập lại save không tính trùng ngày đã xử lý');
   console.log('  ✓ Passed: Mùa Việt Nam và quầy ăn uống (bản đồ, nguyên liệu kho, giá vốn, sổ sách, lưu/tải)');
+  // Trang trí theo sự kiện: có đúng trong mùa, gỡ khi hết mùa, không phải đồ sở hữu.
+  const eventDays = SEASON_EVENTS.map(event => ({ event, day: Array.from({ length: SEASON_YEAR_DAYS }, (_, i) => i + 1).find(d => getSeasonForDay(d)?.id === event.id)! }));
+  for (const { event, day } of eventDays) {
+    assert.ok(seasonalDecorForDay(day).length > 0, `${event.id} có trang trí`);
+    assert.deepEqual(seasonalDecorForDay(day), SEASONAL_DECOR[event.id]);
+  }
+  const offSeasonDay = Array.from({ length: SEASON_YEAR_DAYS }, (_, i) => i + 1).find(d => !getSeasonForDay(d));
+  if (offSeasonDay) assert.deepEqual(seasonalDecorForDay(offSeasonDay), [], 'Hết mùa thì gỡ trang trí');
+  assert.ok(Object.values(SEASONAL_DECOR).every(items => items.length <= 2), 'Vừa đủ hai ô giữa tường');
+  console.log('  ✓ Passed: Trang trí động theo sự kiện');
 }

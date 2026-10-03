@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { DEFAULT_INITIAL_SAVE, generateStarterTileMap } from '@game/data';
+import { DECOR_ATTRACTION_MAX, FIXTURE_SHOP, DEFAULT_INITIAL_SAVE, generateStarterTileMap } from '@game/data';
 import { decorAttraction, decorTrafficMultiplier } from './decor';
 import { applyStoreLayoutActions, buyLandPlot, buyShopFixture, buyDecorItem, moveStoreFixture, rotateStoreFixture, storeFixture, retrieveStoreFixture, validateStoreLayout } from './store-layout';
 
@@ -84,7 +84,11 @@ export function runStoreLayoutTests() {
   assert.equal(buyShopFixture(rich, 'khong_co', 7, 5, 0).error, 'unknown_item', 'Món lạ bị từ chối');
   const lowLevel = structuredClone(rich); lowLevel.player.level = 1;
   assert.equal(buyShopFixture(lowLevel, 'shelf', 7, 6, 0).error, 'level', 'Chưa đủ cấp không mua được');
-  assert.equal(buyShopFixture(rich, 'drink_counter', 7, 6, 0).error, 'unavailable', 'Món chưa có chức năng không cho mua');
+  const stub = { id: 'stub_chua_co', name: 'Chưa có', kind: 'decor' as const, type: 'decor' as const, widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 1, unlockLevel: 1, functional: false };
+  FIXTURE_SHOP.push(stub);
+  assert.equal(buyShopFixture(rich, 'stub_chua_co', 7, 6, 0).error, 'unavailable', 'Món chưa có chức năng không cho mua');
+  FIXTURE_SHOP.splice(FIXTURE_SHOP.indexOf(stub), 1);
+  assert.ok(FIXTURE_SHOP.filter(item => !item.functional).length === 0, 'Mọi món trong cửa hàng nội thất đều dùng được');
   const big = buyShopFixture(rich, 'shelf_double', 7, 6, 0);
   assert.equal(big.save?.storeLayout.fixtures.filter(item => item.parentId === 'shelf_wooden_buy_1').length, 23, 'Kệ đôi có 24 ô (1 chính + 23 phụ)');
 
@@ -116,6 +120,6 @@ export function runStoreLayoutTests() {
   const plant = applyStoreLayoutActions(sign.save!, [{ type: 'buy_decor', decorId: 'than_tai' }], mapFor);
   assert.ok(plant.save?.storeLayout.decorOwned?.includes('than_tai'), 'buy_decor đi qua batch layout');
   assert.equal(decorAttraction(['bien_led', 'than_tai'], []), 45, 'Thu hút = 20 + 25');
-  assert.equal(decorAttraction(['bien_led', 'than_tai', 'day_den', 'lich_treo', 'may_quat'], Array.from({ length: 10 }, () => ({ type: 'decor', shopId: 'than_tai' }) as never)), 100, 'Thu hút tối đa 100');
-  assert.equal(decorTrafficMultiplier(100), 1.25, 'Tối đa +25% khách');
+  assert.equal(decorAttraction(['bien_led', 'than_tai', 'day_den', 'lich_treo', 'may_quat'], Array.from({ length: 10 }, () => ({ type: 'decor', shopId: 'than_tai' }) as never)), DECOR_ATTRACTION_MAX, 'Thu hút tối đa theo trần');
+  assert.equal(decorTrafficMultiplier(DECOR_ATTRACTION_MAX), 1.25, 'Tối đa +25% khách');
 }

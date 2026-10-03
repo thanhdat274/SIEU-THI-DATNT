@@ -4,7 +4,7 @@ import { getLevelUnlocks, MAX_PLAYER_LEVEL, LEVEL_XP_THRESHOLDS } from '@game/co
 import { xpForLevel } from '@game/data';
 import { PixelDialog, PixelProgress } from './pixel';
 
-interface Props { player: PlayerData; onClose: () => void }
+export interface Props { player: PlayerData; onClose: () => void }
 
 const xp = (value: number) => `${Math.max(0, Math.ceil(value)).toLocaleString('vi-VN')} XP`;
 

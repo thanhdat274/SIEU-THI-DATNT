@@ -1,4 +1,4 @@
-import type { GameWorld, BusinessState } from '@game/shared';
+import type { GameWorld, BusinessState, SaveGameData } from '@game/shared';
 import { MULTIPLAYER_PROTOCOL_VERSION } from '@game/shared';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3001';
@@ -26,7 +26,7 @@ export async function fetchWithAuth(path: string, idToken: string, options: Requ
   });
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));
-    throw new Error(errorBody.message || `Lỗi máy chủ (${res.status})`);
+    throw Object.assign(new Error(errorBody.message || `Lỗi máy chủ (${res.status})`), { status: res.status, body: errorBody });
   }
   return res.json();
 }
@@ -134,3 +134,23 @@ export interface LeaderboardResponse {
 export async function getLeaderboard(idToken: string): Promise<LeaderboardResponse> {
   return fetchWithAuth('/api/v1/leaderboard', idToken);
 }
+
+export interface CloudSaveSummary {
+  updatedAt: string;
+  day: number;
+  level: number;
+  money: number;
+  totalRevenue: number;
+}
+
+export async function getCloudSave(idToken: string): Promise<{ save: SaveGameData | null; summary: CloudSaveSummary | null }> {
+  return fetchWithAuth('/api/v1/game/save', idToken);
+}
+
+/** `expectedUpdatedAt` = `updatedAt` của bản cloud lần cuối thấy (null nếu chưa có). Server trả 409 nếu thiết bị khác đã ghi. */
+export async function putCloudSave(idToken: string, save: SaveGameData, expectedUpdatedAt: string | null): Promise<{ summary: CloudSaveSummary }> {
+  return fetchWithAuth('/api/v1/game/save', idToken, { method: 'PUT', body: JSON.stringify({ save, expectedUpdatedAt }) });
+}
+
+export const isCloudConflict = (err: unknown): err is Error & { status: 409; body: { current: CloudSaveSummary | null } } =>
+  err instanceof Error && (err as { status?: number }).status === 409;

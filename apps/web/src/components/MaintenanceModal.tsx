@@ -3,7 +3,7 @@ import { MAINTENANCE_RULES } from '@game/data';
 import type { MaintenanceAction, MaintenanceEntry } from '@game/core';
 import { PixelButton, PixelDialog, money } from './pixel';
 
-interface MaintenanceModalProps {
+export interface MaintenanceModalProps {
   entries: MaintenanceEntry[];
   playerMoney: number;
   playerLevel: number;

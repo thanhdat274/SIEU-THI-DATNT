@@ -14,7 +14,7 @@
 ## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)
 
 - **Hẻm sống động:** mặt cắt đường/cống/độ ướt đã commit (2f2af38). Đèn tín hiệu chu kỳ + người đi bộ + nhường đường: đã commit `24a2fab` + OpenSpec `traffic-light-crosswalk-yielding`, QA browser mới một phần (S46, F-03); khách thật qua đường và đồng bộ co-op là non-goal hiện tại.
-- **Co-op:** ưu tiên I-01 (replay mọi lệnh), I-15, I-16, I-05; sau đó mới tới bảng xếp hạng thật (F-05, phụ thuộc I-01).
+- **Co-op:** I-01 đã mở rộng replay 36 loại lệnh (03/10/2026, chưa kiểm browser/2 client thật), I-16 đã có code migration (chưa chạy thật); còn I-15, I-05; sau đó mới tới bảng xếp hạng thật (F-05, phụ thuộc I-01).
 - **Chất lượng:** CI, `test:all`, test `apps/web`, a11y (I-09, I-18, S32, S43).
 - **Vận hành:** `docs/deploy.md`, quản lý khóa bí mật (I-17, I-14).
 - **Ý tưởng sau:** F-01, F-06…F-11 trong `THONG-KE.md` mục 5 (F-02 customer reviews đã hoàn tất 02/10/2026).
@@ -162,7 +162,15 @@ Phase 7 giữ định hướng Firebase/NestJS/MongoDB, triển khai phần cầ
 ---
 
 ### [>] GIAI ĐOẠN 8: TỐI ƯU HÓA MOBILE & PWA
-- [>] PWA: manifest, icon, meta iOS, service worker cache shell/asset (`apps/web/public`), đăng ký khi production; `yarn build` PASS. Còn I-08: `VERSION` cố định `v1`, đường dẫn `/sw.js` tuyệt đối. Chưa kiểm chứng cài đặt/offline trên trình duyệt hoặc iOS/Android thật.
+- [x] **PWA:** manifest, icon, meta iOS, service worker cache shell/asset (`apps/web/public`), đăng ký khi production; `yarn build` PASS. Còn I-08: `VERSION` cố định `v1`, đường dẫn `/sw.js` tuyệt đối. Chưa kiểm chứng cài đặt/offline trên trình duyệt hoặc iOS/Android thật.
+- [x] **Hiệu năng (03/10/2026):** 
+  - ✅ **Frustum Culling:** Chỉ render entity trong vùng nhìn thấy camera (`viewport.ts`).
+  - ✅ **Object Pooling:** Tái sử dụng floating texts (+tiền, +XP) thay vì tạo/xóa mới.
+  - ✅ **Rain Optimization:** Giảm tải vẽ hạt mưa khi cường độ thấp.
+- [x] **Responsive Design (03/10/2026):**
+  - ✅ **Camera Zoom:** Tự động 1.25x (mobile dọc), 1.5x (ngang), 2x-3x (desktop) (`camera.ts`).
+  - ✅ **Resolution:** Giảm resolution xuống 1x trên mobile để tăng FPS (`viewport.ts`).
+  - ✅ **UI/UX:** CSS media queries cho HUD/Modal trên màn hình nhỏ.
 
 ---
 

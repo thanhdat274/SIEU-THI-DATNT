@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { StaffMember, StoreFixture } from '@game/shared';
 import { PixelButton, PixelDialog } from './pixel';
 
-interface Props {
+export interface Props {
   fixture: StoreFixture;
   state: { seats: number; occupied: number; dirty: boolean; enabled: boolean };
   staff: StaffMember[];

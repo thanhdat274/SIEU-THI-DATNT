@@ -31,12 +31,15 @@ export class GameClock {
     this.time.timeScale = scale;
   }
 
+  /** Một lần cập nhật tối đa 1 giờ thực: dt bất thường (tab treo, dữ liệu xấu) không được làm vòng lặp phút chạy vô hạn. */
+  public static readonly MAX_UPDATE_SECONDS = 3600;
+
   public update(dt: number): void {
-    if (!this.time.isStoreOpen) {
+    if (!this.time.isStoreOpen || !Number.isFinite(dt) || dt <= 0) {
       return;
     }
 
-    this.accumulatedSeconds += dt;
+    this.accumulatedSeconds += Math.min(dt, GameClock.MAX_UPDATE_SECONDS);
 
     // Advance 1 game minute every (60 / timeScale) real seconds
     // Default timeScale = 60 means 1 real second = 1 game minute

@@ -217,6 +217,9 @@ export class WorldRuntime {
         success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       } else if (p.type === 'buy_plot') {
         success = !!this.simulation.purchaseLand(p.plotId).save;
+      } else if (p.type === 'set_restock_options') {
+        this.simulation.setRestockOptions(p.options);
+        success = true;
       } else if (p.type === 'order_supplier') {
         success = this.simulation.orderSupplierCart(p.supplierId, p.items).success;
       } else if (p.type === 'buy_stall') {
@@ -227,6 +230,33 @@ export class WorldRuntime {
         success = this.simulation.setStaffShift(p.staffId, p.shift);
       } else if (p.type === 'assign_refill_job') {
         success = this.simulation.assignRefillJob(p.staffId, p.fixtureId).success;
+      } else if (p.type === 'open_branch') {
+        success = this.simulation.openBranch(p.storeType, p.name, p.branchId).success;
+      } else if (p.type === 'switch_branch') {
+        success = this.simulation.switchBranch(p.branchId).success;
+      } else if (p.type === 'transfer_stock') {
+        success = this.simulation.transferToBranch(p.branchId, p.items).success;
+      } else if (p.type === 'return_stock') {
+        success = this.simulation.returnFromBranch(p.branchId, p.items).success;
+      } else if (p.type === 'set_tax_declaration') {
+        success = this.simulation.setTaxUnderDeclare(p.underDeclare).success;
+      } else if (p.type === 'store_status') {
+        success = this.simulation.setStoreOpen(p.isOpen);
+      } else if (p.type === 'advance_day') {
+        // Hẻm 2 người phải qua phiếu bầu thời gian (WebSocket); lệnh trực tiếp chỉ dành cho hẻm một thành viên.
+        success = this.currentWorld.memberships.length <= 1;
+        if (success) this.simulation.getClock().advanceToNextDay();
+      } else if (p.type === 'stow') {
+        success = this.simulation.stowHoldingItem(p.holdingId).success;
+      } else if (p.type === 'stow_all') {
+        success = this.simulation.stowAllHolding().success;
+      } else if (p.type === 'planogram_assignment') {
+        success = this.simulation.setPlanogramAssignment(p.fixtureId, p.productId ?? undefined).success;
+      } else if (p.type === 'planogram_restock') {
+        const res = this.simulation.applyPlanogramEntry(p.fixtureId);
+        success = res.applied && res.actualQuantity > 0;
+      } else if (p.type === 'auto_restock') {
+        success = this.simulation.autoRestockShelves() > 0;
       } else if (p.type === 'dispose_stock') {
         success = this.simulation.disposeStock(p.productId, p.quantity).success;
       } else if (p.type === 'claim_quest') {

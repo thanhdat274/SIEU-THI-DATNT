@@ -69,6 +69,43 @@ export function runStreetTrafficTests(): void {
         assert.ok(rainVehicles[0].speed <= dryVehicles[0].speed);
       }
     });
+
+    it('khách ghé quầy vỉa hè dừng lại tại quầy rồi đi tiếp; không có quầy thì không có khách ghé', () => {
+      const none = new StreetTrafficManager();
+      for (let i = 0; i < 400; i++) none.update(0.5, 10, 0, 321);
+      assert.strictEqual(none.getStallVisitsCompleted(), 0);
+      assert.ok(!none.getPedestrians().some(p => p.id.startsWith('stall-ped')));
+
+      const stopX = 15 * TILE_SIZE;
+      const manager = new StreetTrafficManager();
+      manager.setStallStops([stopX]);
+      let sawPausedAtStall = false;
+      for (let i = 0; i < 1200; i++) {
+        manager.update(0.5, 10, 0, 321);
+        for (const p of manager.getPedestrians()) {
+          if (!p.id.startsWith('stall-ped')) continue;
+          if (p.state === 'waiting') {
+            sawPausedAtStall = true;
+            assert.strictEqual(p.position.x, stopX, 'Chỉ đứng chờ đúng chỗ quầy');
+          }
+        }
+      }
+      assert.ok(sawPausedAtStall, 'Có khách dừng ở quầy');
+      assert.ok(manager.getStallVisitsCompleted() > 0, 'Có khách mua xong và đi tiếp');
+      for (const p of manager.getPedestrians()) {
+        if (p.id.startsWith('stall-ped')) assert.ok(p.position.y < 12.1 * TILE_SIZE, 'Đi trên vỉa hè phía bắc');
+      }
+    });
+
+    it('không có khách ghé quầy ban đêm hoặc khi mưa to', () => {
+      const night = new StreetTrafficManager();
+      night.setStallStops([400]);
+      const rain = new StreetTrafficManager();
+      rain.setStallStops([400]);
+      for (let i = 0; i < 600; i++) { night.update(0.5, 23, 0, 5); rain.update(0.5, 10, 0.9, 5); }
+      assert.ok(!night.getPedestrians().some(p => p.id.startsWith('stall-ped')));
+      assert.ok(!rain.getPedestrians().some(p => p.id.startsWith('stall-ped')));
+    });
   });
 }
 

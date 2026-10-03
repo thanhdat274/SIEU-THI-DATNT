@@ -228,7 +228,107 @@ async function run() {
     assert.equal(hired.length, 1, 'thành viên còn lại thấy đúng một nhân viên mới');
     assert.ok(!hired.some((member: any) => member.id === 'staff-injected'), 'nhân viên chèn ngoài lệnh không vào save chuẩn');
 
-    console.log('PASS co-op: 10 lệnh server-replay qua GameController.commitCommand');
+    // --- Lệnh vận hành hằng ngày: server phát lại và lưu save chuẩn ---
+    const opsBase = await snapshotFor(owner);
+    let opsRevision = opsBase.world.revision;
+    const ops = async (id: string, payload: unknown) => {
+      const result = await send(owner, id, payload, opsRevision);
+      assert.equal(result.committed, true, `${id} phải được commit`);
+      opsRevision = result.revision;
+      return (await snapshotFor(member)).businesses[0].save as any;
+    };
+    const wasOpen = opsBase.businesses[0].save.worldTime.isStoreOpen;
+    let after = await ops('ops-store-status', { type: 'store_status', isOpen: !wasOpen });
+    assert.equal(after.worldTime.isStoreOpen, !wasOpen, 'store_status đổi trạng thái mở/đóng ở server');
+    after = await ops('ops-store-status-back', { type: 'store_status', isOpen: wasOpen });
+    assert.equal(after.worldTime.isStoreOpen, wasOpen);
+
+    // Cài đặt gợi ý nhập hàng: lệnh server-replay, lưu vào save chung; payload sai bị chặn trước khi chạm save.
+    after = await ops('ops-restock-options', { type: 'set_restock_options', options: { provenSharePct: 60, maxTrialProducts: 3, cashReservePct: 15, protectObligations: false } });
+    assert.deepEqual(after.restockOptions, { provenSharePct: 60, maxTrialProducts: 3, cashReservePct: 15, protectObligations: false }, 'set_restock_options lưu ở save chuẩn');
+    await assert.rejects(send(owner, 'ops-restock-options-bad', { type: 'set_restock_options', options: { cashReservePct: 'abc' } }, opsRevision), /không hợp lệ|invalid|Bad/i, 'cài đặt sai kiểu bị từ chối');
+    after = (await snapshotFor(member)).businesses[0].save as any;
+    assert.equal(after.restockOptions.cashReservePct, 15, 'lệnh sai không đổi cài đặt');
+
+    // Gieo kho + hàng chờ + kệ trống để thử cất hàng, sơ đồ kệ và châm kệ tự động.
+    const noodleShelf = 'shelf_wooden_drinks';
+    const noodle = 'xa_xi_chuong_duong';
+    const gameDb = client.db(testDbName).collection<{ _id: string }>('game_worlds');
+    const opsSave = (await snapshotFor(owner)).businesses[0].save as any;
+    const shelfIndex = opsSave.storeLayout.fixtures.findIndex((f: any) => f.id === noodleShelf);
+    assert.ok(shelfIndex >= 0, 'save mặc định phải có kệ mì: ' + opsSave.storeLayout.fixtures.map((f: any) => f.id + ':' + f.type + ':' + f.assignedProductId).join(','));
+    await gameDb.updateOne({ _id: world.id }, { $set: {
+      'businesses.0.save.inventory': [{ productId: noodle, quantity: 30, lots: [lot(30)] }],
+      'businesses.0.save.holdingArea': [{ id: 'hold-test-1', productId: 'mi_hao_hao', quantity: 6, expiresOnDay: tetDay + 60, originalArrivalDay: tetDay, unitCost: 1000, provenance: 'known' }],
+      [`businesses.0.save.storeLayout.fixtures.${shelfIndex}.currentStock`]: 0,
+      [`businesses.0.save.storeLayout.fixtures.${shelfIndex}.stockLots`]: [],
+    } });
+    opsRevision = (await snapshotFor(owner)).world.revision;
+
+    after = await ops('ops-planogram', { type: 'planogram_assignment', fixtureId: noodleShelf, productId: noodle });
+    assert.equal(after.planogram?.[noodleShelf], noodle, 'planogram_assignment lưu ở save chuẩn');
+
+    const stockOf = (s: any) => s.storeLayout.fixtures.find((f: any) => f.id === noodleShelf).currentStock as number;
+    const noodleQty = (s: any) => (s.inventory.find((i: any) => i.productId === noodle)?.quantity ?? 0) as number;
+    after = await ops('ops-planogram-restock', { type: 'planogram_restock', fixtureId: noodleShelf });
+    assert.ok(stockOf(after) > 0, 'planogram_restock châm kệ từ kho');
+    assert.equal(noodleQty(after) + stockOf(after), 30, 'hàng chuyển từ kho lên kệ, không sinh thêm');
+
+    await gameDb.updateOne({ _id: world.id }, { $set: { [`businesses.0.save.storeLayout.fixtures.${shelfIndex}.currentStock`]: 0, [`businesses.0.save.storeLayout.fixtures.${shelfIndex}.stockLots`]: [], 'businesses.0.save.inventory': [{ productId: noodle, quantity: 30, lots: [lot(30)] }] } });
+    opsRevision = (await snapshotFor(owner)).world.revision;
+    after = await ops('ops-auto-restock', { type: 'auto_restock' });
+    assert.ok(stockOf(after) > 0, 'auto_restock châm kệ từ kho');
+    assert.equal(noodleQty(after) + stockOf(after), 30, 'auto_restock bảo toàn số lượng');
+
+    const heldBefore = (after.holdingArea ?? []).length;
+    assert.equal(heldBefore, 1, 'có đúng một mục hàng chờ');
+    after = await ops('ops-stow', { type: 'stow', holdingId: 'hold-test-1' });
+    assert.equal((after.holdingArea ?? []).length, 0, 'stow cất hàng chờ vào kho');
+    assert.equal(after.inventory.find((i: any) => i.productId === 'mi_hao_hao')?.quantity, 6, 'hàng đã cất nằm trong kho');
+    await assert.rejects(send(owner, 'ops-stow-gone', { type: 'stow', holdingId: 'hold-test-1' }, opsRevision), 'stow mục đã cất bị từ chối');
+
+    await gameDb.updateOne({ _id: world.id }, { $set: { 'businesses.0.save.holdingArea': [{ id: 'hold-test-2', productId: 'mi_hao_hao', quantity: 3, expiresOnDay: tetDay + 60, originalArrivalDay: tetDay, unitCost: 1000, provenance: 'known' }] } });
+    opsRevision = (await snapshotFor(owner)).world.revision;
+    after = await ops('ops-stow-all', { type: 'stow_all' });
+    assert.equal((after.holdingArea ?? []).length, 0, 'stow_all cất hết hàng chờ');
+    assert.equal(after.inventory.find((i: any) => i.productId === 'mi_hao_hao')?.quantity, 9, 'stow_all cộng đúng số lượng');
+
+    // advance_day trực tiếp chỉ cho hẻm một thành viên; hẻm này có 2 người nên phải qua phiếu bầu → bị từ chối, không đổi revision.
+    await assert.rejects(send(owner, 'ops-advance-day', { type: 'advance_day' }, opsRevision), 'advance_day bị từ chối khi hẻm có 2 thành viên');
+    // Lệnh vô hiệu (không có hàng chờ để cất) bị từ chối thay vì commit khống.
+    await assert.rejects(send(owner, 'ops-stow-all-empty', { type: 'stow_all' }, opsRevision), 'stow_all không có hàng chờ bị từ chối');
+    assert.equal((await snapshotFor(owner)).world.revision, opsRevision, 'lệnh bị từ chối không đổi revision');
+
+    // Chuỗi chi nhánh (branch-chain): cả hai thành viên cùng quyền, ví chung, server replay; tiền giả trong save client không có tác dụng.
+    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.player.level': 35, 'businesses.0.save.player.money': 5_000_000 } });
+    const chainSeed = await snapshotFor(owner);
+    const chainMoney = chainSeed.businesses[0].save.player.money;
+    const chainOpen = await send(member, 'chain-open', { type: 'open_branch', storeType: 'drink_shop', name: 'Quán chung', branchId: 'branch-1' }, chainSeed.world.revision);
+    assert.equal(chainOpen.committed, true, 'thành viên thứ hai mở được chi nhánh');
+    const afterChainOpen = await snapshotFor(owner);
+    assert.equal(afterChainOpen.businesses[0].save.player.money, chainMoney - 1_500_000, 'ví chung bị trừ đúng giá mở');
+    assert.equal(afterChainOpen.businesses[0].save.chain?.branches[0]?.id, 'branch-1', 'owner thấy chi nhánh do member mở');
+    await assert.rejects(send(owner, 'chain-open-bad', { type: 'open_branch', storeType: 'constructor' }, afterChainOpen.world.revision), 'loại hình lạ bị từ chối');
+    await assert.rejects(send(owner, 'chain-xfer-bad', { type: 'transfer_stock', branchId: 'branch-1', items: [{ productId: 'nuoc_suoi', quantity: 99999 }] }, afterChainOpen.world.revision), 'chuyển quá tồn kho bị từ chối');
+    const chainSwitch = await send(owner, 'chain-switch', { type: 'switch_branch', branchId: 'branch-1' }, afterChainOpen.world.revision);
+    assert.equal(chainSwitch.committed, true);
+    assert.equal((await snapshotFor(member)).businesses[0].save.chain?.activeBranchId, 'branch-1', 'member thấy chi nhánh đang chọn');
+    assert.equal((await snapshotFor(owner)).world.revision, afterChainOpen.world.revision + 1, 'lệnh bị từ chối không đổi revision');
+
+    // Quán nước (tòa thứ ba, cùng dải bản đồ mở rộng): mua qua buy_plot như tiệm xôi, server replay, hai client cùng thấy.
+    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.worldTime.isStoreOpen': false, 'businesses.0.save.player.level': 35, 'businesses.0.save.player.money': 5_000_000 } });
+    const drinkRevision = (await snapshotFor(owner)).world.revision;
+    const drinkResult = await send(member, 'buy-drink', { type: 'buy_plot', plotId: 'building-drink' }, drinkRevision);
+    assert.equal(drinkResult.committed, true, 'mua quán nước được commit');
+    const drinkSave = (await snapshotFor(owner)).businesses[0].save;
+    assert.ok(drinkSave.storeLayout.unlockedPlotIds?.includes('building-drink'), 'owner thấy quán nước đã mở');
+    assert.equal(drinkSave.player.money, 5_000_000 - 1_500_000, 'trừ đúng 1.500.000 ₫ một lần');
+    assert.ok(drinkSave.storeLayout.fixtures.some((f: { id: string }) => f.id === 'drink_cashier_counter'), 'bố cục mặc định quán nước có quầy thu ngân');
+    const drinkRetry = await send(member, 'buy-drink', { type: 'buy_plot', plotId: 'building-drink' }, drinkRevision);
+    assert.equal(drinkRetry.committed, true, 'gửi lại cùng lệnh idempotent');
+    assert.equal((await snapshotFor(owner)).businesses[0].save.player.money, 5_000_000 - 1_500_000, 'gửi lại không trừ tiền lần hai');
+
+    console.log('PASS co-op: 10 lệnh server-replay + lệnh vận hành (store_status, planogram, advance_day, stow_all) qua GameController.commitCommand');
     await closeDatabase();
   } finally {
     await client.db(testDbName).dropDatabase();
@@ -237,7 +337,10 @@ async function run() {
   }
 }
 
-void run().catch((error: unknown) => {
+void run().catch(async (error: unknown) => {
   console.error(`Co-op commands test failed: ${error instanceof Error ? error.stack ?? error.message : 'unknown error'}`);
-  process.exitCode = 1;
+  // Đóng pool Mongo để tiến trình thoát thay vì treo khi test thất bại.
+  const { closeDatabase } = await import('./database.js');
+  await closeDatabase().catch(() => undefined);
+  process.exit(1);
 });

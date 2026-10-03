@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { UNITS_PER_WAREHOUSE_CELL, getFixtureDimensions, slotGroup, type SaveGameData, type StoreFixture } from '@game/shared';
-import { BUILDING_MAP, DECOR, FIXTURE_SHOP, LAND_PLOTS, MAX_STORAGE_RACKS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, XOI_PLOT_ID, fixtureBuilding, generateStarterTileMap, type BuildingId } from '@game/data';
+import { BUILDING_MAP, BUILDINGS, DECOR, DECOR_ATTRACTION_MAX, FIXTURE_SHOP, LAND_PLOTS, MAX_STORAGE_RACKS, NORTH_EXPANSION_ROWS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, fixtureBuilding, generateStarterTileMap, type BuildingId } from '@game/data';
 import { applyStoreLayoutActions, coldWarehouseCapacity, decorAttraction, decorTrafficMultiplier, rotateStoreFixture, totalWarehouseCells, type StoreLayoutAction } from '@game/core';
 import { fixturePreviewUrl } from '@game/renderer';
 import { PixelButton } from './pixel';
 import './store-layout.css';
 
-interface Props {
+export interface Props {
   save: SaveGameData;
   onConfirm: (save: SaveGameData, actions: StoreLayoutAction[]) => Promise<boolean | void> | boolean | void;
   onClose: () => void;
@@ -18,7 +18,9 @@ type SelectMode = 'inspect' | 'adjust';
 /** Lưới sàn hiển thị theo tòa nhà đang chỉnh: gốc, số cột/hàng (tính cả tường, khớp BUILDINGS). */
 const BOARD_VIEWS: Record<BuildingId, { x0: number; cols: number; y0: number; rows: number; label: string }> = {
   main: { x0: 6, cols: 16, y0: 3, rows: 8, label: 'Tiệm chính' },
-  xoi: { x0: 0, cols: 7, y0: 3, rows: 8, label: 'Tiệm xôi' },
+  // Tiệm xôi/quán nước lùi tường sau lên 3 hàng mỗi mảnh mở rộng phía bắc (tối đa 2 mảnh): bảng hiển thị tới hàng y=-3, hàng chưa mua là ô khóa.
+  xoi: { x0: 0, cols: 7, y0: -3, rows: 14, label: 'Tiệm xôi' },
+  drink: { x0: 26, cols: 10, y0: -3, rows: 14, label: 'Quán nước' },
 };
 
 const FixtureArt: React.FC<{ type: StoreFixture['type']; shopId?: string; doubleWide?: boolean; className?: string }> = ({ type, shopId, doubleWide, className }) => {
@@ -141,9 +143,10 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
   const map = useMemo(() => generateStarterTileMap(draft.storeLayout.unlockedPlotIds ?? []), [draft.storeLayout.unlockedPlotIds]);
   const selected = draft.storeLayout.fixtures.find(item => item.id === selectedId) ?? null;
   const owned = new Set(draft.storeLayout.unlockedPlotIds ?? []);
-  const xoiOwned = owned.has(XOI_PLOT_ID);
-  const board = BOARD_VIEWS[xoiOwned || view === 'main' ? view : 'main'];
-  const activeView: BuildingId = xoiOwned || view === 'main' ? view : 'main';
+  const ownedBuildings = BUILDINGS.filter(building => !building.plotId || owned.has(building.plotId)).map(building => building.id);
+  const extraBuildingOwned = ownedBuildings.length > 1;
+  const activeView: BuildingId = ownedBuildings.includes(view) ? view : 'main';
+  const board = BOARD_VIEWS[activeView];
   const stored = (draft.storeLayout.storedFixtures ?? []).filter(fixture => !fixture.parentId);
   const attraction = decorAttraction(draft.storeLayout.decorOwned, draft.storeLayout.fixtures);
 
@@ -194,7 +197,10 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
       setSelectMode('inspect');
       return true;
     }
-    if (action.type === 'buy_plot' && action.plotId === XOI_PLOT_ID) setView('xoi');
+    if (action.type === 'buy_plot') {
+      const bought = BUILDINGS.find(building => building.plotId === action.plotId);
+      if (bought) setView(bought.id);
+    }
     setBuyId(null);
     setRetrieveId(null);
     return true;
@@ -396,9 +402,9 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
 
             {/* Board Container */}
             <div className="layout-board-container">
-              {xoiOwned && (
+              {extraBuildingOwned && (
                 <div className="layout-building-tabs" role="tablist" aria-label="Chọn tòa nhà">
-                  {(Object.keys(BOARD_VIEWS) as BuildingId[]).map(id => (
+                  {ownedBuildings.map(id => (
                     <button key={id} type="button" role="tab" aria-selected={activeView === id} className={activeView === id ? 'is-active' : ''} onClick={() => { setView(id); setSelectedId(null); }}>
                       {BOARD_VIEWS[id].label}
                     </button>
@@ -485,7 +491,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
               </div>
 
               <div className="board-landmark is-entrance">
-                <span>🚪 {activeView === 'xoi' ? `Lối vào ${board.label.toLowerCase()} (cửa ở ô ${BUILDING_MAP.xoi.doorTiles.map(door => door.x).join('–')})` : 'Lối vào tiệm (khách đi vào từ đây)'}</span>
+                <span>🚪 {activeView !== 'main' ? `Lối vào ${board.label.toLowerCase()} (cửa ở ô ${BUILDING_MAP[activeView].doorTiles.map(door => door.x).join('–')})` : 'Lối vào tiệm (khách đi vào từ đây)'}</span>
               </div>
             </div>
 
@@ -697,7 +703,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
               {tab === 'decor' && (
                 <div className="sidebar-decor-section">
                   <div className="decor-banner">
-                    <span>Điểm thu hút: <strong>{attraction}/100</strong></span>
+                    <span>Điểm thu hút: <strong>{attraction}/{DECOR_ATTRACTION_MAX}</strong></span>
                     <small>Khách đông thêm +{Math.round((decorTrafficMultiplier(attraction) - 1) * 100)}%</small>
                   </div>
                   <div className="layout-fixtures layout-shop">
@@ -828,7 +834,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                         <article key={plot.id} className={`layout-plot-card ${unlocked ? 'is-owned' : ''}`}>
                           <div className="plot-card-header">
                             <strong className="plot-card-name">{plot.name}</strong>
-                            <span className="plot-card-dim">{plot.buildingId ? 'Tòa nhà riêng · sàn 5×6 ô' : '+4 cột ô sàn'}</span>
+                            <span className="plot-card-dim">{plot.buildingId ? 'Tòa nhà riêng' : plot.expandsBuilding ? `+${NORTH_EXPANSION_ROWS} hàng sàn phía bắc` : '+4 cột ô sàn'}</span>
                           </div>
                           <div className="plot-card-meta">
                             <span className={`plot-req-badge ${draft.player.level >= plot.level ? 'is-met' : 'is-unmet'}`}>
@@ -840,14 +846,14 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                           </div>
                           <div className="plot-card-action">
                             {unlocked ? (
-                              <span className="plot-owned-tag">{plot.buildingId ? '✓ Tiệm đã mở' : '✓ Đã mở mặt bằng'}</span>
+                              <span className="plot-owned-tag">{plot.buildingId ? '✓ Tiệm đã mở' : plot.expandsBuilding ? '✓ Đã mở rộng' : '✓ Đã mở mặt bằng'}</span>
                             ) : (
                               <PixelButton
                                 variant="teal"
                                 disabled={busy || !!blocked}
                                 onClick={() => applyAction({ type: 'buy_plot', plotId: plot.id })}
                               >
-                                {plot.buildingId ? 'Mở tiệm này' : 'Mở khu này'}
+                                {plot.buildingId ? 'Mở tiệm này' : plot.expandsBuilding ? 'Mở rộng' : 'Mở khu này'}
                               </PixelButton>
                             )}
                           </div>

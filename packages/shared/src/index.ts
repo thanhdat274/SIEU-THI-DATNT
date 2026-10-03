@@ -28,7 +28,13 @@ export type ProductCategory =
   | 'bread'
   | 'eggs'
   | 'cooking_ingredients'
-  | 'household';
+  | 'household'
+  | 'personal_care'
+  | 'frozen'
+  | 'fresh_produce'
+  | 'health'
+  | 'toys_stationery'
+  | 'alcohol';
 
 export interface Product {
   id: string;
@@ -144,6 +150,7 @@ export type SuggestionReason =
   | 'out_of_stock'
   | 'low_stock'
   | 'best_seller'
+  | 'slow_seller' // đã bán nhưng chậm: chỉ nhập lượng nhỏ theo tốc độ bán thật
   | 'fallback_trial';
 
 export interface SuggestedCartItem {
@@ -153,8 +160,44 @@ export interface SuggestedCartItem {
   estimatedCost: number;
   reason: SuggestionReason;
   salesVelocity?: number; // Average units sold per day
-  isFallback: boolean;
+  isFallback: boolean; // true = hàng mới nhập thử (nhóm 60%)
   daysOfStockLeft?: number;
+}
+
+/** Tuỳ chỉnh của người chơi cho gợi ý nhập hàng; thiếu trường nào dùng mặc định (40% / 6 món / giữ lại 10%). */
+export interface RestockSuggestionOptions {
+  /** % ngân sách dành cho hàng đang bán (0–100); phần còn lại cho hàng mới nhập thử. */
+  provenSharePct?: number;
+  /** Số mặt hàng mới nhập thử tối đa mỗi lần gợi ý (0–20). */
+  maxTrialProducts?: number;
+  /** % tiền mặt giữ lại làm quỹ dự phòng lương/thuế, không đưa vào gợi ý (0–90). */
+  cashReservePct?: number;
+  /** Giữ thêm đủ tiền cho nợ lương, lương kỳ tới và thuế sắp nộp (lấy mức lớn hơn giữa nghĩa vụ và % ở trên). Mặc định bật. */
+  protectObligations?: boolean;
+}
+
+/** Khoản tiền mặt phải chừa lại: tính từ tiệm thực tế, không phải % ước chừng. */
+export interface CashObligations {
+  wageDebt: number;
+  nextWages: number;
+  taxDue: number;
+  taxDebt: number;
+  total: number;
+}
+
+/** Phân bổ ngân sách gợi ý: hàng đang bán (mặc định 40%) và hàng mới nhập thử (60%); phần nhóm này không dùng hết được chuyển sang nhóm kia. */
+export interface RestockBudgetSplit {
+  /** Tiền còn dùng được cho gợi ý = min(ngân sách, tiền mặt) − giá trị giỏ đang có. */
+  spendable: number;
+  provenShare: number;
+  /** Tiền mặt giữ lại không dùng cho gợi ý (quỹ dự phòng). */
+  reserved: number;
+  /** Phần nghĩa vụ lương/thuế trong khoản giữ lại (0 nếu tắt hoặc không có). */
+  obligations?: number;
+  provenTarget: number;
+  trialTarget: number;
+  provenSpent: number;
+  trialSpent: number;
 }
 
 export interface RestockSuggestionResult {
@@ -165,6 +208,7 @@ export interface RestockSuggestionResult {
   coldItemCount: number;
   appliedConstraints: string[];
   explanation: string;
+  budget?: RestockBudgetSplit;
 }
 
 export interface HoldingItem {
@@ -374,6 +418,8 @@ export interface LedgerEntry {
   productId?: string;
   description: string;
   timestamp: string;
+  /** Chi nhánh phát sinh dòng này; thiếu = hub (`branch-chain`). */
+  branchId?: string;
 }
 
 /** Thị trường động: mọi khóa là chuỗi để thêm thời tiết/sự kiện/thẻ bằng dữ liệu, không sửa lõi. */
@@ -562,7 +608,10 @@ export interface DailyRecord {
   theftRecovered?: number; // Tiền thu hồi từ phạt kẻ trộm và công an trong ngày (thiếu = 0)
   counterfeitLoss?: number; // Mệnh giá tiền giả nhận nhầm trong ngày (thiếu = 0)
   badDebtCost?: number; // Khoản phải thu đã xóa nợ xấu trong ngày (thiếu = 0)
-  taxPaid?: number; // Thuế đã trừ trong ngày (VAT+TNCN gộp, hộ cá thể: 1% doanh thu)
+  taxPaid?: number; // Thuế đã trừ trong ngày (GTGT + TNCN thực nộp theo kê khai)
+  taxHidden?: number; // Phần thuế bị khai bớt trong ngày (chưa nộp, có thể bị truy thu khi kiểm tra)
+  taxBackPaid?: number; // Thuế truy thu khi kiểm tra, ghi vào ngày bị kiểm tra
+  taxPenalty?: number; // Tiền phạt khi kiểm tra thuế trong ngày
   grossProfit: number; // revenue - cogs
   netProfit: number; // revenue - cogs - spoilageCost - wagesPaid
   customersServed: number; // Distinct customers served
@@ -727,7 +776,10 @@ export interface WorldTime {
 // Staff, Shifts, and Payroll
 // ==========================================
 
-export type StaffRole = 'cashier' | 'refill' | 'security';
+export type StaffRole = 'cashier' | 'refill' | 'security' | 'drink_staff' | 'drink_security';
+
+/** Tòa nhà mà nhân viên phụ trách (undefined = tất cả tòa). */
+export type StaffBuilding = 'main' | 'xoi' | 'drink' | undefined;
 
 export type StaffShift = 'morning' | 'afternoon' | 'full_day';
 
@@ -756,6 +808,7 @@ export interface StaffMember {
   hiredOnDay: number;
   shift: StaffShift;
   assignedFixtureId?: string;
+  assignedBuilding?: StaffBuilding; /** Tòa nhà nhân viên phụ trách (undefined = tất cả). */
   position?: Vector2D;
   workerTask?: StaffWorkerTask;
   diningTask?: StaffDiningTask;
@@ -792,6 +845,7 @@ export interface StaffWorkerTask {
   stage: 'to_warehouse' | 'to_shelf';
   route: Vector2D[];
   carriedLots: StockLot[];
+  assignedBuilding?: StaffBuilding; /** Tòa nhà của task (giúp nhân viên biết nơi làm việc). */
 }
 
 export interface StaffCandidate {
@@ -803,6 +857,7 @@ export interface StaffCandidate {
   stamina: number;
   dailyWage: number;
   hiringFee: number;
+  assignedBuilding?: StaffBuilding; /** Tòa nhà đề xuất nhân viên này phụ trách. */
 }
 
 export type StaffSchedule = Record<string, StaffShift>; // staffId -> shift
@@ -827,7 +882,67 @@ export interface StoreLayout {
   decorOwned?: string[];
 }
 
+/** Một lần cơ quan thuế kiểm tra bất ngờ. */
+export interface TaxAuditRecord {
+  day: number;
+  /** Tổng truy thu + phạt (0 nếu sổ sách sạch). */
+  total: number;
+  findings: string[];
+  clean: boolean;
+}
+
+export interface TaxState {
+  /** Đang chọn khai bớt: mỗi lần đóng ngày chỉ nộp một phần thuế, phần còn lại bị giấu và có thể bị truy thu. */
+  underDeclare: boolean;
+  /** Tổng thuế đã giấu mà chưa qua kiểm tra. */
+  hiddenTax: number;
+  /** Tiền truy thu/phạt chưa trả hết do thiếu tiền mặt, thu dần ở các lần đóng ngày sau. */
+  debt: number;
+  audits: TaxAuditRecord[];
+  cleanAudits: number;
+}
+
+/** Báo cáo một ngày của chi nhánh (giữ tối đa `BRANCH_REPORT_LIMIT` ngày gần nhất). */
+export interface BranchDayReport {
+  day: number;
+  revenue: number;
+  cogs: number;
+  wages: number;
+  spoilageLoss: number;
+  unitsSold: number;
+  /** Món hết hàng khiến cầu không được đáp ứng ("bán hụt"). */
+  stockouts: string[];
+}
+
+/** Một chi nhánh (kho, danh tiếng, báo cáo). Chưa chứa save mô phỏng đầy đủ; xem OpenSpec `branch-chain` D1/D2. */
+export interface BranchSave {
+  id: string;
+  storeType: string;
+  name: string;
+  openedDay: number;
+  stock: InventoryItem[];
+  reputation: number;
+  /** Ngày cuối đã chạy nền; chống tính trùng khi nạp lại/replay. */
+  lastBackgroundDay: number;
+  reports: BranchDayReport[];
+  totalRevenue: number;
+}
+
+/** Chuỗi chi nhánh; `SaveGameData.chain` thiếu = chuỗi một cơ sở (hub). Ví chung = `player.money`, kho tổng = kho hub. */
+export interface ChainState {
+  branches: BranchSave[];
+  /** 'hub' hoặc id chi nhánh. */
+  activeBranchId: string;
+  nextBranchSeq: number;
+}
+
+export const BRANCH_REPORT_LIMIT = 30;
+
 export interface SaveGameData {
+  /** Chuỗi chi nhánh (tùy chọn, không nâng schema). */
+  chain?: ChainState;
+  /** Trạng thái thuế (khai bớt, nợ, lịch sử kiểm tra); thiếu ở save cũ = mặc định. */
+  tax?: TaxState;
   id: string;
   schemaVersion: number;
   revision: number;
@@ -847,6 +962,8 @@ export interface SaveGameData {
   processedPayrollDayIds?: number[];
   autoBuyEnabled?: boolean;
   autoBuyRules?: AutoBuyRule[];
+  /** Cài đặt gợi ý nhập hàng của người chơi (tỷ lệ chia, số món thử, quỹ dự phòng); thiếu = mặc định. */
+  restockOptions?: RestockSuggestionOptions;
   processedAutoBuyDayIds?: number[];
   autoBuyReports?: Record<number, AutoBuyReport>;
   quests?: QuestState;
@@ -942,7 +1059,8 @@ export interface GameTileMap {
   collisionLayer: boolean[]; // true if solid
   storeBounds?: { left: number; right: number; top: number; bottom: number };
   /** Các tòa nhà trên bản đồ và trạng thái mở (hình học nằm ở BUILDINGS của game-data). */
-  buildings?: Array<{ id: string; open: boolean }>;
+  /** `top` = hàng tường sau hiện tại của tòa (đã tính mảnh mở rộng phía bắc); thiếu = biên gốc. */
+  buildings?: Array<{ id: string; open: boolean; top?: number }>;
   /** Quầy ăn uống đã mở, để renderer vẽ; va chạm đã nằm sẵn trong collisionLayer. */
   stalls?: Array<{ id: string; tileX: number; tileY: number; widthTiles: number }>;
 }
@@ -1024,7 +1142,20 @@ export type GameCommandPayload =
   | { type: 'set_staff_shift'; staffId: string; shift: StaffShift }
   | { type: 'assign_refill_job'; staffId: string; fixtureId: string }
   | { type: 'dispose_stock'; productId: string; quantity: number }
+  | { type: 'store_status'; isOpen: boolean }
+  | { type: 'set_tax_declaration'; underDeclare: boolean }
+  | { type: 'open_branch'; storeType: string; name?: string; branchId?: string }
+  | { type: 'switch_branch'; branchId: string }
+  | { type: 'transfer_stock'; branchId: string; items: Array<{ productId: string; quantity: number }> }
+  | { type: 'return_stock'; branchId: string; items: Array<{ productId: string; quantity: number }> }
+  | { type: 'advance_day' }
+  | { type: 'stow'; holdingId: string }
+  | { type: 'stow_all' }
+  | { type: 'planogram_assignment'; fixtureId: string; productId: string | null }
+  | { type: 'planogram_restock'; fixtureId: string }
+  | { type: 'auto_restock' }
   | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> }
+  | { type: 'set_restock_options'; options: RestockSuggestionOptions }
   | { type: 'respond_party_order'; orderId: string; accept: boolean }
   | { type: 'fulfill_party_order'; orderId: string }
   | { type: 'claim_goal'; goalId: string }
@@ -1095,6 +1226,25 @@ export interface SaveValidationResult {
   data?: SaveGameData;
 }
 
+const OPTIONAL_SAVE_ARRAYS = ['staff', 'processedPayrollDayIds', 'pendingOrders', 'holdingArea', 'closedDayIds', 'completedCheckoutIds', 'processedAutoBuyDayIds', 'autoBuyRules', 'customerCredits', 'ledger'] as const;
+const OPTIONAL_LAYOUT_ARRAYS = ['storedFixtures', 'unlockedPlotIds', 'decorOwned'] as const;
+
+/** Cài đặt gợi ý nhập hàng hợp lệ: mọi trường tùy chọn, số hữu hạn / công tắc đúng kiểu (giá trị ngoài khoảng được kẹp khi áp dụng). */
+export function isRestockSuggestionOptions(value: unknown): value is RestockSuggestionOptions {
+  if (!isRecord(value)) return false;
+  for (const key of ['provenSharePct', 'maxTrialProducts', 'cashReservePct'] as const) {
+    if (value[key] !== undefined && !(typeof value[key] === 'number' && Number.isFinite(value[key]))) return false;
+  }
+  return value.protectObligations === undefined || typeof value.protectObligations === 'boolean';
+}
+
+/** Chuỗi chi nhánh hợp lệ về hình dạng (nội dung chi tiết được `normalizeChain` làm sạch khi nạp). */
+export function isChainState(value: unknown): value is ChainState {
+  if (!isRecord(value) || !Array.isArray(value.branches) || value.branches.length > 10) return false;
+  if (typeof value.activeBranchId !== 'string') return false;
+  return value.branches.every((b) => isRecord(b) && typeof b.id === 'string' && typeof b.storeType === 'string');
+}
+
 export function isSaveGameData(value: unknown): value is SaveGameData {
   if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
@@ -1114,6 +1264,11 @@ export function isSaveGameData(value: unknown): value is SaveGameData {
   const sl = value.storeLayout;
   if (!isRecord(sl) || !Array.isArray(sl.fixtures)) return false;
   if (!Array.isArray(value.inventory)) return false;
+  // Trường mảng tùy chọn: nếu có thì phải là mảng, để nạp save không sập ở `.map`/`for…of` (save hỏng hoặc sửa tay).
+  for (const key of OPTIONAL_SAVE_ARRAYS) if (value[key] !== undefined && !Array.isArray(value[key])) return false;
+  for (const key of OPTIONAL_LAYOUT_ARRAYS) if (sl[key] !== undefined && !Array.isArray(sl[key])) return false;
+  if (value.restockOptions !== undefined && !isRestockSuggestionOptions(value.restockOptions)) return false;
+  if (value.chain !== undefined && !isChainState(value.chain)) return false;
   if (value.sellingPrices !== undefined && (!isRecord(value.sellingPrices) || !Object.values(value.sellingPrices).every(price => Number.isSafeInteger(price) && Number(price) > 0))) return false;
   const stats = value.statistics;
   if (!isRecord(stats) || !nonNegativeInteger(stats.totalRevenue) || !nonNegativeInteger(stats.totalCustomersServed)) {
@@ -1227,6 +1382,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'start_production': return nonEmptyString(p.recipeId) && nonEmptyString(p.stationId);
     case 'clean_dining_table': return nonEmptyString(p.fixtureId);
     case 'assign_dining_cleanup': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
+    case 'set_restock_options': return isRestockSuggestionOptions(p.options);
     case 'set_price': return nonEmptyString(p.productId) && (p.price === null || (Number.isSafeInteger(p.price) && Number(p.price) > 0));
     case 'layout_move': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.tileX) && Number.isSafeInteger(p.tileY) && [0, 90, 180, 270].includes(p.rotation as number);
     case 'layout_store': return nonEmptyString(p.fixtureId);
@@ -1247,6 +1403,17 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'hire_staff': return nonEmptyString(p.candidateId);
     case 'set_staff_shift': return nonEmptyString(p.staffId) && (p.shift === 'morning' || p.shift === 'afternoon' || p.shift === 'full_day');
     case 'assign_refill_job': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
+    case 'store_status': return typeof p.isOpen === 'boolean';
+    case 'set_tax_declaration': return typeof p.underDeclare === 'boolean';
+    case 'open_branch': return nonEmptyString(p.storeType) && (p.name === undefined || (typeof p.name === 'string' && p.name.length <= 48)) && (p.branchId === undefined || (nonEmptyString(p.branchId) && /^branch-\d{1,6}$/.test(p.branchId as string)));
+    case 'switch_branch': return nonEmptyString(p.branchId);
+    case 'transfer_stock':
+    case 'return_stock': return nonEmptyString(p.branchId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 50
+      && p.items.every((item) => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
+    case 'advance_day': case 'stow_all': case 'auto_restock': return true;
+    case 'stow': return nonEmptyString(p.holdingId);
+    case 'planogram_assignment': return nonEmptyString(p.fixtureId) && (p.productId === null || nonEmptyString(p.productId));
+    case 'planogram_restock': return nonEmptyString(p.fixtureId);
     case 'dispose_stock': return nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
     case 'order_supplier': return nonEmptyString(p.supplierId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 64 && p.items.every(item => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
     case 'respond_party_order': return nonEmptyString(p.orderId) && typeof p.accept === 'boolean';

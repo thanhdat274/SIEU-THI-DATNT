@@ -5,7 +5,7 @@ import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { CustomerManager } from './customers';
 import { createMarketState, timeBandFor, weekdayOf, type MarketContext } from './market';
-import { decayLot, spoilageCondition, spoilageRate } from './spoilage';
+import { decayLot, spoilageCondition, spoilageRate, withBackupPower } from './spoilage';
 
 const ctxFor = (weatherId: string, eventIds: string[] = [], day = 70): MarketContext => ({
   day, hour: 12, season: null, climateId: 'clim_hot', weatherId, timeBand: timeBandFor(12), weekday: weekdayOf(day), eventIds,
@@ -34,6 +34,8 @@ export function runSpoilageTests(): void {
   assert.equal(spoilageRate(ctxFor('sunny', ['power_outage']), noodles), 1, 'Mất điện không ảnh hưởng hàng khô');
   assert.ok(spoilageRate(ctxFor('hot'), noodles) > 1 && spoilageRate(ctxFor('hot'), noodles) < 1.5, 'Trời nóng hao nhẹ hàng kho thường');
   assert.ok(spoilageRate(ctxFor('sunny', ['power_outage']), meat) <= SPOILAGE_RULES.maxDaysLostPerDay);
+  assert.equal(spoilageRate(withBackupPower(ctxFor('sunny', ['power_outage'])), meat), 1, 'Có máy phát điện: cúp điện không làm tủ mát hao nhanh');
+  assert.equal(withBackupPower(ctxFor('sunny')).eventIds.length, 0, 'Không có sự kiện mất điện thì ngữ cảnh giữ nguyên');
 
   const lot = { quantity: 1, expiresOnDay: 20 } as { quantity: number; expiresOnDay: number; decayCarry?: number };
   assert.equal(decayLot(lot, 1), 0);

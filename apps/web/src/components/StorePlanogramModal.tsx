@@ -5,7 +5,7 @@ import { fixturePreviewUrl } from '@game/renderer';
 import { PixelDialog, PixelButton, PixelIcon, ProductSlot, PixelProgress, EmptyState } from './pixel';
 import './store-planogram.css';
 
-interface Props {
+export interface Props {
   fixtures: StoreFixture[];
   inventory: InventoryItem[];
   planogram?: Record<string, string>;
@@ -21,6 +21,8 @@ interface Props {
   onAutoFillAll?: () => { totalFilled: number; newAssignments: number; skipped: number };
   /** ID các món xôi để UI biết khi nào chỉ chấp nhận món xôi cho kệ xôi. */
   xoiProductIds?: readonly string[];
+  /** Món của quán nước: kệ trong quán nước chỉ nhận các món này (khớp `autoFillShelf`). */
+  drinkProductIds?: readonly string[];
   onClose: () => void;
 }
 
@@ -47,9 +49,11 @@ export const StorePlanogramModal: React.FC<Props> = ({
   onAutoFill,
   onAutoFillAll,
   xoiProductIds,
+  drinkProductIds,
   onClose,
 }) => {
   const xoiIds = xoiProductIds ?? [];
+  const drinkIds = drinkProductIds ?? [];
   const [filter, setFilter] = useState<FixtureFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [slotToChange, setSlotToChange] = useState<{ slot: StoreFixture; parent: StoreFixture } | null>(null);
@@ -102,6 +106,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
             if ((p.storageType === 'cold') !== isColdFix) return false;
             // Kệ xôi: chỉ cho phép món xôi
             if (xoiIds.length > 0 && fixtureBuilding(mainFix) === 'xoi' && !xoiIds.includes(inv.productId)) return false;
+            if (drinkIds.length > 0 && fixtureBuilding(mainFix) === 'drink' && !drinkIds.includes(inv.productId)) return false;
             return true;
           });
           if (hasCompatible) canRestockCount++;
@@ -364,6 +369,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
                     if ((p.storageType === 'cold') !== isCold) return false;
                     // Kệ xôi: chỉ cho phép món xôi
                     if (xoiIds.length > 0 && fixtureBuilding(mainFix) === 'xoi' && !xoiIds.includes(inv.productId)) return false;
+            if (drinkIds.length > 0 && fixtureBuilding(mainFix) === 'drink' && !drinkIds.includes(inv.productId)) return false;
                     return true;
                   });
                 }

@@ -69,6 +69,10 @@ export class PixelTextureFactory {
         return this.createSignboardTexture();
       case 'tile_plant_pot':
         return this.createPlantPotTexture();
+      case 'deco_lantern':
+        return this.createLanternTexture();
+      case 'deco_lamp_pole':
+        return this.createLampPoleTexture();
       case 'tile_shopping_baskets':
         return this.createBasketsTexture();
       case 'fixture_shelf_wooden':
@@ -714,6 +718,76 @@ export class PixelTextureFactory {
     ctx.fillRect(3, 12, 22, 2);
     ctx.fillStyle = '#540b0e';
     ctx.fillRect(8, 14, 12, 2);
+    return canvas;
+  }
+
+  /**
+   * Red Vietnamese lantern (đèn lồng đỏ) - 20x28 pixels
+   */
+  private createLanternTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(20, 28);
+    const ctx = canvas.getContext('2d')!;
+
+    // Hanging string
+    ctx.fillStyle = '#5c3a1a';
+    ctx.fillRect(9, 0, 2, 6);
+
+    // Top cap (gold)
+    ctx.fillStyle = '#ffb703';
+    ctx.fillRect(6, 6, 8, 3);
+
+    // Red lantern body
+    ctx.fillStyle = '#c1121f';
+    ctx.fillRect(4, 9, 12, 14);
+
+    // Vertical ribs
+    ctx.fillStyle = '#780000';
+    ctx.fillRect(4, 9, 2, 14);
+    ctx.fillRect(14, 9, 2, 14);
+    ctx.fillRect(9, 9, 2, 14);
+
+    // Bottom cap (gold)
+    ctx.fillStyle = '#ffb703';
+    ctx.fillRect(6, 23, 8, 3);
+
+    // Tassel
+    ctx.fillStyle = '#ffb703';
+    ctx.fillRect(9, 26, 2, 2);
+
+    // Highlight
+    ctx.fillStyle = '#ff4d6d';
+    ctx.fillRect(6, 11, 2, 10);
+
+    return canvas;
+  }
+
+  /**
+   * Street lamp pole (cột đèn đường) - 16x40 pixels
+   */
+  private createLampPoleTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(16, 40);
+    const ctx = canvas.getContext('2d')!;
+
+    // Base
+    ctx.fillStyle = '#4d555b';
+    ctx.fillRect(4, 36, 8, 4);
+
+    // Pole
+    ctx.fillStyle = '#6b7278';
+    ctx.fillRect(6, 8, 4, 28);
+
+    // Cross bar
+    ctx.fillStyle = '#4d555b';
+    ctx.fillRect(2, 6, 12, 2);
+
+    // Lamp head (glowing)
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(5, 0, 6, 6);
+
+    // Glow
+    ctx.fillStyle = '#fde68a';
+    ctx.fillRect(6, 1, 4, 4);
+
     return canvas;
   }
 

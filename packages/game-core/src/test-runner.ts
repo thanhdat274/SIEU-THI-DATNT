@@ -1,4 +1,4 @@
-import { generateStarterTileMap, STARTER_PRODUCTS, ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP, DEFAULT_INITIAL_SAVE, runCatalogTests } from '@game/data';
+import { generateStarterTileMap, STARTER_PRODUCTS, ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP, DEFAULT_INITIAL_SAVE, runCatalogTests, runExpansionCatalogTests, runExpansionManifestTests } from '@game/data';
 import { COLD_WAREHOUSE_CAPACITY } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
@@ -6,6 +6,7 @@ import { CollisionSystem } from './collision';
 import { GameClock } from './clock';
 import { findPath } from './pathfinding';
 import { runTaxRegistryTests, runAnnualRevenueTests } from './tax/registry.test';
+import { runTaxAuditTests } from './tax/audit.test';
 import { runInputTests } from './input.test';
 import {runWarehouseTests} from './warehouse.test';
 import { runMultiplayerSchemaTests } from '@game/shared/src/multiplayer.test';
@@ -28,9 +29,12 @@ import { runSupplierMarketTests } from './supplier-market.test';
 import { runSpoilageTests } from './spoilage.test';
 import { runSupplierCartTests } from './supplier-cart.test';
 import { runDeliveryTests, runReceiveDeliveredOrdersTests } from './delivery.test';
-import { runHostileIdTests } from './hostile-ids.test';
+import { runHostileIdTests, runHostileRuntimeKeyTests } from './hostile-ids.test';
 import { runCounterfeitTests } from './counterfeit.test';
 import { runReplayTests } from './replay.test';
+import { runStallsStorageTests } from './stalls.test';
+import { runAmbientAudioTests } from './ambient-audio.test';
+import { runChainTests, runChainSaveTests, runChainSimulationTests } from './chain.test';
 import { runForecastTests } from './forecast.test';
 import { runScenarioTests } from './scenarios.test';
 import { runPerformanceTests } from './performance.test';
@@ -52,6 +56,8 @@ import { runProductionTests } from './production.test';
 import { runXoiTests } from './xoi.test';
 import { runBuildingTests } from './buildings.test';
 import { runXoiCustomerTests } from './xoi-customers.test';
+import { runDrinkCustomerTests } from './drink-customers.test';
+import { runDrinkStaffTests } from './drink-staff.test';
 import { runXoiStaffTests } from './xoi-staff.test';
 import { runDiningAddonTests } from './dining-addons.test';
 import { runPrestigeTests } from './prestige.test';
@@ -85,6 +91,8 @@ function assert(condition: boolean, message: string) {
 
 export async function runTests(): Promise<void> {
   runCatalogTests();
+  runExpansionCatalogTests();
+  runExpansionManifestTests();
   runSupplierTests();
   runPlanogramTests();
   runLedgerTests();
@@ -101,7 +109,13 @@ export async function runTests(): Promise<void> {
   runDeliveryTests();
   runReceiveDeliveredOrdersTests();
   runHostileIdTests();
+  runHostileRuntimeKeyTests();
   runReplayTests();
+  runStallsStorageTests();
+  runAmbientAudioTests();
+  runChainTests();
+  runChainSaveTests();
+  runChainSimulationTests();
   runForecastTests();
   runScenarioTests();
   runPerformanceTests();
@@ -124,6 +138,8 @@ export async function runTests(): Promise<void> {
   runXoiTests();
   runBuildingTests();
   runXoiCustomerTests();
+  runDrinkCustomerTests();
+  runDrinkStaffTests();
   runXoiStaffTests();
   runDiningAddonTests();
   runPrestigeTests();
@@ -131,6 +147,7 @@ export async function runTests(): Promise<void> {
   runWaveATests();
   runOutdoorPropTests();
   runAnnualRevenueTests();
+  runTaxAuditTests();
   runStoreLayoutTests();
   runShelfSlotTests();
   runChildCapacityTests();
@@ -200,7 +217,7 @@ export async function runTests(): Promise<void> {
   // Test 2: Map & Collision
   console.log('\n--- Test 2: Bản đồ 8x8 & Hệ thống va chạm ---');
   const tileMap = generateStarterTileMap();
-  assert(tileMap.width === 26 && tileMap.height === 22, 'Bản đồ 26x22, kho liền phía trên; giữ tọa độ gian bán cũ');
+  assert(tileMap.width === 36 && tileMap.height === 22, 'Bản đồ 36x22 (mở rộng đông cho quán nước), kho liền phía trên; giữ tọa độ gian bán cũ');
   const collision = new CollisionSystem(tileMap, DEFAULT_INITIAL_SAVE.storeLayout.fixtures);
   // Outside map is solid
   assert(collision.isColliding({ x: -10, y: 10, width: 20, height: 20 }), 'Không thể đi ra ngoài biên bản đồ');

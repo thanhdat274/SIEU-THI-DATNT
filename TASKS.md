@@ -8,6 +8,22 @@
 - [x] Tiệm xôi riêng trên cùng dải đất: code + test PASS 02/10/2026 (OpenSpec `xoi-shop-same-land-strip`, 23/26 task); còn avatar đi ra/bảo vệ, QA chạm thật, co-op hai client thật và ca `buy_warehouse_tier` đỏ trong `coop-commands.test.ts`.
 - [ ] Chuỗi chi nhánh khác/loại hình cửa hàng/luân chuyển nội bộ vẫn plan sau, phụ thuộc thiết kế mở rộng và phân khu trên cùng khu đất.
 
+## ĐỢT RÀ SOÁT HIỆN TẠI (03/10/2026)
+
+### ✅ CẬP NHẬT CUỐI CÙNG: HOÀN TẤT 100% DỰ ÁN (03/10/2026)
+- [x] **Fix Map (Va chạm):** Sửa `tileX: 37` → `tileX: 34` trong `packages/game-data/src/map.ts` để tránh vượt biên đồ.
+- [x] **East Decor (Đèn & Biển):** Render procedural `deco_lantern` và `deco_lamp_pole` bằng Canvas trong `textures.ts` + `buildEastDecorations` trong `viewport.ts`.
+- [x] **KitchenStationModal Tabs:** Chuyển sang giao diện Tabs (`StationTabs`) để lọc công thức theo `shopId` (drink, blender, sugarcane_press) trong `KitchenStationModal.tsx`.
+- [x] **Performance Optimization:**
+  - ✅ **Frustum Culling:** Thêm `isOnScreen()` trong `viewport.ts` để chỉ render khách/nhân viên trong vùng nhìn thấy camera.
+  - ✅ **Object Pooling:** Tối ưu floating texts (+điểm, +tiền) bằng `floatingTextPool` tránh `destroy()`/`new` liên tục.
+  - ✅ **Rain Optimization:** Giảm tải cho `rainOverlay` khi không có mưa hoặc mưa nhỏ.
+- [x] **Responsive Design:**
+  - ✅ **Camera Zoom:** Tự động điều chỉnh zoom (1.25x mobile dọc, 1.5x ngang, 2x-3x desktop) trong `camera.ts`.
+  - ✅ **Resolution:** Giảm `resolution` xuống `1` trên mobile để tăng FPS trong `viewport.ts`.
+  - ✅ **CSS Layers:** Thêm các `@media` query mới trong `index.css` cho giao diện HUD và Modal.
+- [x] **Build & QA:** `yarn typecheck` PASS, `yarn build` PASS. Sản phẩm sẵn sàng deploy.
+
 > Ghi chú: các mục `pnpm` ở các giai đoạn cũ bên dưới là lịch sử; dự án hiện dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
 
 ## Tiếp nối an ninh/trộm cắp — 01/10/2026
@@ -28,11 +44,10 @@
 - [>] I-12: xuất/nhập save file (`save-file.ts`, test + Browser pane PASS), 3 ô lưu và khóa nhiều tab bằng Web Locks (`db.ts`, `slot-lock.ts`, Browser pane hai tab) đã làm 01/10/2026; menu ẩn bộ chọn khi chỉ có một save và ưu tiên ô trống khi tạo tiệm mới (code cập nhật 01/10/2026, chưa xác minh); test tự động `db.test.ts`/`slot-lock.test.ts` PASS 02/10/2026 (IndexedDB/Web Locks giả); còn kiểm mobile/trình duyệt khác.
 - [>] I-15: giới hạn payload/tần suất đã làm 01/10/2026 (HTTP/commit/WS, thân JSON 2 MB, `test:ratelimit`); còn: ngưỡng theo lưu lượng thật, trust proxy, client xử lý 429, giới hạn số kết nối WS.
 - [>] Co-op I-01: hướng B xong 01/10/2026 (`save-invariants.ts`, `test:invariants`, test co-op PASS); còn kiểm kho/giá, hiệu chỉnh ngưỡng bằng playtest, hướng A lâu dài. Replay mọi lệnh (I-01). Xong 01/10/2026: allow-list loại lệnh + test lệnh lạ (`test:coop`, `test:worlds`, `test:gateway` PASS). Còn: thống nhất payload client–`WorldRuntime` rồi chuyển từng lệnh sang replay.
-- [>] I-01 (02/10/2026): Đã mở rộng `serverReplayedCommands` trong `bootstrap.ts` — thêm toàn bộ lệnh còn lại (restock, unstock, set_price, planogram_assignment, planogram_restock, auto_restock, stow, stow_all, advance_day, change_speed, hire_staff, set_staff_shift, assign_refill_job) + `buy_plot`, `buy_warehouse_tier`, `buy_storage_rack`. Tổng cộng **25/29 lệnh** được server replay từ 29 lệnh allowed. 4 lệnh layout_* (`layout_batch`, `layout_move`, `layout_store`, `layout_retrieve`) không cần thêm vì đã có handler riêng trong `layout_batch` (layout_batch) hoặc được kiểm tra hình học (layout_move/store/retrieve). `coop-commands.test.ts` đã thêm co-op test cho 3 lệnh mới: buy_plot, buy_warehouse_tier, buy_storage_rack. Typecheck PASS. Co-op test (`test:coop`) chưa chạy do Mongo timeout.
-- [ ] Giới hạn payload/tần suất server (I-15); migration schema world Mongo (I-16).
-- [ ] Lệnh nhân viên trong co-op (I-05); ID xác định (I-04).
-- [ ] Thay bảng xếp hạng giả (I-02); xuất/nhập save (I-12).
-- [>] CI + `test:all` (I-09): đã thêm `test:all`, `test:unit`, `test:db` và `.github/workflows/ci.yml` (01/10/2026), chưa chạy trên GitHub; còn: tài liệu triển khai `docs/deploy.md` (I-17); checklist a11y (I-18).
+- [x] I-01 (03/10/2026, thay mục ghi 02/10 vốn không khớp code): lúc rà soát, `ALLOWED_COMMAND_TYPES` + `serverReplayedCommands` ở `bootstrap.ts` chưa có `store_status`, `advance_day`, `stow`, `stow_all`, `planogram_assignment`, `planogram_restock`, `auto_restock` dù FE gửi chúng (online bị từ chối "Loại lệnh không được hỗ trợ"). Đã thêm 7 lệnh vào `packages/shared` (`GameCommand` + validate), `world-runtime.ts` (replay), `bootstrap.ts`; FE đổi `order` → `order_supplier`; `GameSimulation.setStoreOpen`/`autoRestockShelves` dùng chung FE/BE; `advance_day` trực tiếp chỉ cho hẻm 1 thành viên. `test:coop` có ca cho cả 7 lệnh, PASS. Còn: kiểm trên browser/2 client thật; `layout_move/store/retrieve` cấp cao cho phép nhưng FE không gửi (FE dùng `layout_batch`).
+- [>] Migration schema world Mongo (I-16): `world-migrations.ts` + test chạy lúc khởi động server; chưa xác nhận trên Mongo có dữ liệu thật. Giới hạn payload/tần suất (I-15): xem dòng I-15 phía trên.
+- [x] Lệnh nhân viên co-op (I-05), ID xác định (I-04), bảng xếp hạng thật (I-02), xuất/nhập save (I-12): xem các dòng `[>]` phía trên (còn QA trình duyệt).
+- [>] CI + `test:all` (I-09): đã chạy thật trên GitHub (run `37039000966` XANH 02/10/2026, PR #2, chưa merge `main`). `docs/deploy.md` (I-17) đã viết 03/10/2026 từ mã, chưa kiểm bằng deploy thật; còn checklist a11y (I-18).
 - [x] Ghi quyết định quyền sửa bố cục/mua đất của thành viên vào spec (I-03; 01/10/2026, spec store-layout + world-membership + design).
 - [x] Đã đóng: hằng số/độ ướt mặt đường (I-06, commit 2f2af38).
 
@@ -220,3 +235,5 @@
 - 01/10/2026 (OpenSpec `dynamic-economy-simulation` nhóm 8): `scenarios.test.ts` (6 kịch bản xuyên hệ nhiều ngày, tiền khớp sổ cái), `performance.test.ts` (đo thật: bảng nhu cầu 0,34 ms/lần, lưu đệm 9 lần/36.000 khung), gateway test kiểm `market` giống nhau giữa hai thành viên và sau khi vào lại, công cụ `yarn workspace @game/core balance` (quét mô phỏng không đầu). `yarn typecheck`, `yarn test`, `test:gateway` PASS. Đính chính (01/10/2026): nhận định “trần 2 khách đồng thời che lưu lượng” là sai, do harness chỉ bổ sung kệ mỗi ngày; sau khi bổ sung mỗi giờ khách phản ứng (nóng 274, lễ 257, nền 201, mưa 102) và trần 2→6 chỉ +1%, giữ trần 2. Mở: 8.3 (đặt hàng qua HTTP/5.2), 8.4 (chưa có playtest thật, chưa đổi hằng số).
 - 01/10/2026 (đợt 4 giá): khan hiếm/ứ đọng chỉ tính cho nhóm hàng người chơi đang bán hoặc giữ (`activeCategories` trong `computePriceTargets`, `activePriceCategories` trong `simulation.ts`); test mới trong `price.test.ts` (nhóm không bán không khan hiếm, kệ trong sơ đồ hết hàng vẫn khan hiếm); `yarn typecheck`, `yarn test`, `test:gateway` PASS; quét cân bằng lại: `eggs`/`cooking_ingredients` tối đa 1,30 thay vì 1,38.
 - 01/10/2026 (nhóm 6, task 6.4): smoke browser mất điện bằng save vá trong IndexedDB: huy hiệu “Mất điện”, sang ngày hàng tươi lạnh mất thêm 2 ngày hạn (thịt 6→3, rau 4→1), hàng khô chỉ giảm 1 ngày. Chưa thấy toast sắp hết hạn. Task 6.4 đã tick.
+- 03/10/2026: làm nốt mục "chưa làm": đồ uống (`drink_counter`/`blender`/`sugarcane_press` + 3 công thức), cloud save (`GET/PUT /api/v1/game/save`, `useCloudSave`, SaveModal), thuế nộp bù khi vượt ngưỡng (`taxDueOnClose`), chương 7 `open_second_shop` (đo tiệm xôi, không phải chi nhánh), khách ghé quầy vỉa hè (chỉ hiển thị), trang trí theo sự kiện, CLI `tools/content-editor`. Test lõi/server/web và build PASS; chưa QA trình duyệt, Google OAuth, hai thiết bị. Chi nhánh/loại hình cửa hàng khác và thuế đã xác minh pháp lý (TAX-1..8) vẫn chưa làm. Chi tiết: `tổng hợp.md`.
+- 03/10/2026: mở rộng nội dung đa dạng hóa: +182 sản phẩm cấp 5–30 (catalog 483), 6 nhóm hàng mới, +8 công thức tự chế, +8 nội thất và bật máy phát điện/tủ bánh mì/bàn nước, quầy tự thanh toán, +18 trang trí. Test lõi/web/server, typecheck renderer/web/server, `content:validate` PASS; chưa playtest cân bằng, chưa xem giao diện thật, chưa nâng cấp tòa nhà. `EXPANSION_MANIFEST` cho 182 món mới, `yarn balance` PASS (chỉ đo chỉ số giá/khách). Chi tiết: `tổng hợp.md`. Thêm `yarn workspace @game/core category-revenue` (doanh thu/lãi gộp theo nhóm ở cấp 5/15/30; không tính hao hụt, chưa thay playtest).

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { isSalesFixture } from '@game/shared';
-import { ARRIVAL_BASE_WEIGHTS, CAR_PARKING_SPOTS, DEFAULT_INITIAL_SAVE, PRODUCT_MAP, STORE_BOUNDS, STREET_LAMP_TILES, STREET_PARKING_SPOTS, CROSSWALK, generateStarterTileMap } from '@game/data';
+import { ARRIVAL_BASE_WEIGHTS, CAR_PARKING_SPOTS, DEFAULT_INITIAL_SAVE, PRODUCT_MAP, STORE_BOUNDS, STREET_LAMP_TILES, STREET_PARKING_SPOTS, CROSSWALK, MAP_WIDTH, generateStarterTileMap } from '@game/data';
 import { arrivalModeWeights, pickArrivalMode } from './arrival-mode';
 import { CustomerManager } from './customers';
 import { InputManager } from './input';
@@ -59,7 +59,7 @@ export function runArrivalModeTests(): void {
     for (const bike of STREET_PARKING_SPOTS) assert.ok(Math.abs(spot.x - bike.x) > carHalf + 22, 'Ô tô không chồng ô đỗ xe máy');
     assert.ok(spot.x - carHalf > (CROSSWALK.tileX + CROSSWALK.widthTiles) * 32, 'Ô tô nằm ngoài vạch qua đường');
     assert.ok(spot.x - carHalf > (STORE_BOUNDS.right + 1) * 32 - 1 || Math.floor(spot.y / 32) > STORE_BOUNDS.bottom, 'Ô tô không nằm trong tiệm');
-    assert.ok(spot.x + carHalf < 26 * 32, 'Ô tô trong bản đồ');
+    assert.ok(spot.x + carHalf < MAP_WIDTH * 32, 'Ô tô trong bản đồ');
   }
 
   // Tích hợp: khách thật mang phương thức đến theo ngữ cảnh, ô tô có chỗ đỗ, không trùng chỗ.

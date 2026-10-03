@@ -1,23 +1,23 @@
 {
-    "permissions": {
-        "allow": [
-            "Bash(openspec *)",
-            "PowerShell(openspec *)",
-            "Bash(npm --prefix BE *)",
-            "Bash(npm --prefix FE *)",
-            "Bash(npm run *)",
-            "Bash(npm test*)",
-            "Bash(node *)",
-            "Bash(git status*)",
-            "Bash(git diff*)",
-            "Bash(git log*)",
-            "PowerShell(npm *)",
-            "PowerShell(node *)",
-            "PowerShell(git status*)",
-            "PowerShell(git diff*)",
-            "PowerShell(git log*)",
-            "PowerShell(Test-Path *)"
-        ]
-    },
-    "spinnerTipsEnabled": true
+	"permissions": {
+		"allow": [
+			"Bash(openspec *)",
+			"PowerShell(openspec *)",
+			"Bash(npm --prefix BE *)",
+			"Bash(npm --prefix FE *)",
+			"Bash(npm run *)",
+			"Bash(npm test*)",
+			"Bash(node *)",
+			"Bash(git status*)",
+			"Bash(git diff*)",
+			"Bash(git log*)",
+			"PowerShell(npm *)",
+			"PowerShell(node *)",
+			"PowerShell(git status*)",
+			"PowerShell(git diff*)",
+			"PowerShell(git log*)",
+			"PowerShell(Test-Path *)"
+		]
+	},
+	"spinnerTipsEnabled": true
 }

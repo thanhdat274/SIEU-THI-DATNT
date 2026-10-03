@@ -12,6 +12,8 @@ export interface StoryContext {
   regularsCount: number;
   /** Tổng suất bán ra ở các quầy ăn uống từ đầu game. */
   stallServings: number;
+  /** Số cơ sở đang có: tiệm chính (1) + mỗi tòa nhà đã mở. */
+  buildingsOpened: number;
 }
 
 export type StoryChapterStatus = 'locked' | 'available' | 'started' | 'completed' | 'claimed';
@@ -54,6 +56,7 @@ function measure(objective: StoryObjective, ctx: StoryContext, startedDay: numbe
     case 'level': return { current: Math.min(ctx.level, objective.target), target: objective.target, met: ctx.level >= objective.target };
     case 'totalRevenue': return { current: Math.min(ctx.totalRevenue, objective.target), target: objective.target, met: ctx.totalRevenue >= objective.target };
     case 'stallServings': return { current: Math.min(ctx.stallServings, objective.target), target: objective.target, met: ctx.stallServings >= objective.target };
+    case 'buildingsOpened': return { current: Math.min(ctx.buildingsOpened, objective.target), target: objective.target, met: ctx.buildingsOpened >= objective.target };
     case 'levelAndStaff': {
       const met = ctx.level >= objective.level && ctx.staffCount >= objective.staff;
       return { current: (ctx.level >= objective.level ? 1 : 0) + (ctx.staffCount >= objective.staff ? 1 : 0), target: 2, met };
