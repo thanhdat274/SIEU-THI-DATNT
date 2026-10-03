@@ -3,7 +3,10 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ArtLab } from './components/ArtLab';
 import { setDebugVisualTime } from '@game/renderer';
+import { installPerfOverlay } from './services/perf-overlay';
 import './index.css';
+
+installPerfOverlay();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
