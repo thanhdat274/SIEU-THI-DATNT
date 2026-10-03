@@ -20,8 +20,8 @@ export const ONLINE_SPAWN_POINTS: readonly { x: number; y: number }[] = [
 /** Hàng rào thấp ở hàng y=10 giữa cỏ và vỉa hè (trừ mặt tiền tiệm); dùng chung cho va chạm và renderer. */
 export const isFenceTile = (x: number, worldY: number, mapWidth: number): boolean =>
   worldY === 10 && x > XOI_BOUNDS.right && x < mapWidth - 1 && x >= STORE_BOUNDS.right + 2 && (x < DRINK_BOUNDS.left || x > DRINK_BOUNDS.right);
-/** Đèn đường trên vỉa hè sát lòng đường; cột đèn chặn đường đi như vật cản nhỏ. */
-export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 4, y: 12 }, { x: 15, y: 12 }, { x: 20, y: 12 }];
+/** Đèn đường trên vỉa hè sát lòng đường; cột đèn chặn đường đi như vật cản nhỏ. Không đặt cột đèn chéo sát một cây (cột ở hàng 12, cây ở hàng 11, lệch một cột) vì hai vật cản chạm góc sẽ bịt kín cả vỉa hè; `sidewalk-passable.test.ts` kiểm tra. */
+export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 3, y: 12 }, { x: 15, y: 12 }, { x: 21, y: 12 }];
 
 /**
  * Cây trên vỉa hè. `tileX/tileY` là ô gốc cây (có va chạm, tường loại 7); sprite và bóng bám theo ô này.
@@ -64,7 +64,7 @@ export const STORM_DRAINS: ReadonlyArray<{ tileX: number }> = [{ tileX: 4 }, { t
 export const CROSSWALK = { tileX: 1, widthTiles: 2, firstRow: 13, rows: 2 } as const;
 
 /**
- * Chỗ đỗ ô tô của khách trên vỉa hè phía đông (rộng hơn chỗ xe máy, chân xe tại y px), giữa các cột đèn x = 15, 20 và
+ * Chỗ đỗ ô tô của khách trên vỉa hè phía đông (rộng hơn chỗ xe máy, chân xe tại y px), giữa các cột đèn x = 15, 21 và
  * mép bản đồ; ô tô neo giữa-đáy tại điểm này (sprite 68x36). Không chặn cửa tiệm, ô đỗ xe máy hay vạch qua đường.
  */
 export const CAR_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
