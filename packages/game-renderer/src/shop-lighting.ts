@@ -3,9 +3,40 @@ import { LightingState, lerpColor } from '@game/core';
 import { GameTileMap, StoreFixture, TILE_SIZE, getFixtureDimensions, isWarehouseFixture } from '@game/shared';
 import { BUILDING_MAP, DRINK_BOUNDS, STORE_BOUNDS, STREET_LAMP_TILES, WAREHOUSE_BOUNDS, XOI_BOUNDS } from '@game/data';
 
-type LightKind = 'artificial' | 'sun';
+type LightKind = 'artificial' | 'sun' | 'street';
+
+/**
+ * Cường độ đèn ngoài đường (đèn đường, đèn pha xe): bật theo độ sáng bầu trời chứ không theo `artificial`, vì `artificial`
+ * còn dùng cho đèn trong tiệm và giảm rất chậm suốt buổi sáng (còn ~0,4 lúc 7 giờ khi trời đã sáng). Tắt hẳn khi nắng
+ * ≥ 0,46 (~7 giờ sáng, ~17 giờ 30 chiều), sáng đủ khi nắng ≤ 0,2 (bình minh ~6 giờ, hoàng hôn ~18 giờ 30).
+ */
+export function streetLightStrength(state: LightingState): number {
+  return Math.max(0, Math.min(1, (0.46 - state.sun) / 0.26));
+}
 interface LightSprite { sprite: Sprite; base: number; kind: LightKind; flicker: number }
 interface Shadow { graphics: Graphics; width: number; strength: number }
+
+/** Phương tiện đang chạy cần bật đèn ban đêm (vị trí là điểm neo giữa-đáy của sprite). */
+export interface VehicleLightSource {
+  x: number;
+  y: number;
+  direction: 'left' | 'right';
+  type: 'car' | 'motorbike' | 'bicycle' | 'minibus' | 'truck';
+  /** Độ mờ của sprite (xe mờ dần ở mép bản đồ thì đèn cũng mờ theo). */
+  alpha: number;
+}
+
+/**
+ * Vị trí đèn theo từng loại xe (px so với điểm neo giữa-đáy, khớp sprite trong premium-textures.ts):
+ * front/rear = khoảng cách ngang từ tâm tới đèn trước/sau, headY/tailY = độ cao đèn, beam = độ dài vệt sáng trước đầu xe.
+ */
+const VEHICLE_LIGHTS: Record<VehicleLightSource['type'], { front: number; rear: number; headY: number; tailY: number; beam: number; spread: number; power: number }> = {
+  car: { front: 61, rear: 61, headY: 23, tailY: 23, beam: 78, spread: 34, power: 1 },
+  motorbike: { front: 27, rear: 29, headY: 29, tailY: 21, beam: 56, spread: 26, power: 0.85 },
+  bicycle: { front: 30, rear: 28, headY: 28, tailY: 20, beam: 34, spread: 18, power: 0.4 },
+  minibus: { front: 94, rear: 94, headY: 27, tailY: 26, beam: 100, spread: 44, power: 1.1 },
+  truck: { front: 86, rear: 88, headY: 45, tailY: 30, beam: 120, spread: 54, power: 1.1 },
+};
 
 const T = TILE_SIZE;
 
@@ -50,6 +81,7 @@ export class ShopLighting {
   private glints: Graphics[] = [];
   private lampBulbs: Array<{ g: Graphics; warehouse: boolean; stall?: boolean }> = [];
   private actorShadows: Graphics[] = [];
+  private vehicleLights: Array<{ head: Sprite; beam: Sprite; tail: Sprite }> = [];
   private sunPatch?: Sprite;
   private fixtureSignature = '';
   private mapKey = '';
@@ -274,7 +306,7 @@ export class ShopLighting {
       for (const x of [door.x - 0.6, door.x + 2.6]) this.add(out, x * T, (DRINK_BOUNDS.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xd6f0ff, 0.26);
       this.add(out, (door.x + 1) * T, (DRINK_BOUNDS.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xd2eeff, 0.30);
     }
-    for (const lamp of STREET_LAMP_TILES) this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 50, 3.1 * T, 3.1 * T, 0xffd98a, 0.75, 'artificial', 0.03);
+    for (const lamp of STREET_LAMP_TILES) this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 50, 3.1 * T, 3.1 * T, 0xffd98a, 0.75, 'street', 0.03);
     // Nắng lọt qua cửa vào và cửa sổ (chỉ ban ngày); vệt nắng dịch theo giờ.
     this.sunPatch = this.add(out, 10 * T, (STORE_BOUNDS.bottom - 1.4) * T, 1.9 * T, 1.5 * T, 0xffe9b0, 0.5, 'sun');
     this.add(out, (STORE_BOUNDS.left + 1.6) * T, 5.7 * T, 1.6 * T, 0.9 * T, 0xfff0c0, 0.35, 'sun');
@@ -304,9 +336,10 @@ export class ShopLighting {
     // warehouseTint chuyển mượt từ tối sẫm 0x141824 sang sáng trắng 0xffffff
     this.warehouseTint.tint = lerpColor(0x5a6278, 0xffffff, this.warehouseLightProgress);
 
+    const streetStrength = streetLightStrength(state);
     const apply = (list: LightSprite[]) => {
       for (const l of list) {
-        const strength = l.kind === 'sun' ? state.sun : state.artificial;
+        const strength = l.kind === 'sun' ? state.sun : l.kind === 'street' ? streetStrength : state.artificial;
         const wobble = reducedMotion || !l.flicker ? 1 : 1 - l.flicker * (0.5 + 0.5 * Math.sin(timeSeconds * 7 + l.sprite.x));
         l.sprite.alpha = strength * l.base * wobble;
       }
@@ -337,6 +370,46 @@ export class ShopLighting {
     }
   }
 
+  /**
+   * Đèn pha/đèn hậu của xe đang chạy: quầng sáng ở đầu xe, vệt sáng ấm dọc mặt đường phía trước và đèn đỏ ở đuôi.
+   * Cường độ theo đèn nhân tạo của giờ (ban ngày = 0 nên không vẽ gì); xe đỗ coi như tắt máy.
+   */
+  public updateVehicleLights(sources: VehicleLightSource[], state: LightingState): void {
+    const strength = streetLightStrength(state);
+    while (this.vehicleLights.length < sources.length) {
+      const make = (color: number, rx: number, ry: number): Sprite => {
+        const sprite = new Sprite(this.glow);
+        sprite.anchor.set(0.5);
+        sprite.width = rx * 2;
+        sprite.height = ry * 2;
+        sprite.tint = color;
+        sprite.blendMode = 'add';
+        sprite.alpha = 0;
+        sprite.eventMode = 'none';
+        this.lightLayer.addChild(sprite);
+        return sprite;
+      };
+      this.vehicleLights.push({ head: make(0xfff0b8, 11, 9), beam: make(0xffe3a0, 50, 20), tail: make(0xff3b30, 7, 6) });
+    }
+    this.vehicleLights.forEach((light, i) => {
+      const src = sources[i];
+      const visible = !!src && strength > 0.01;
+      light.head.visible = light.beam.visible = light.tail.visible = visible;
+      if (!visible) return;
+      const spec = VEHICLE_LIGHTS[src.type];
+      const dir = src.direction === 'right' ? 1 : -1;
+      const a = strength * src.alpha * spec.power;
+      light.head.position.set(Math.round(src.x + dir * spec.front), Math.round(src.y - spec.headY));
+      light.head.alpha = Math.min(1, a * 0.95);
+      light.beam.position.set(Math.round(src.x + dir * (spec.front + spec.beam * 0.35)), Math.round(src.y - 4));
+      light.beam.width = spec.beam * 1.3;
+      light.beam.height = spec.spread;
+      light.beam.alpha = Math.min(1, a * 0.55);
+      light.tail.position.set(Math.round(src.x - dir * spec.rear), Math.round(src.y - spec.tailY));
+      light.tail.alpha = Math.min(1, a * 0.7);
+    });
+  }
+
   /** Bóng dưới chân người/NPC: bóng tiếp xúc luôn có, thêm vệt nắng ngả theo giờ khi trời sáng. */
   public updateActorShadows(feet: Array<{ x: number; y: number }>, state: LightingState): void {
     while (this.actorShadows.length < feet.length) {
@@ -362,6 +435,8 @@ export class ShopLighting {
   public destroy(): void {
     for (const g of this.actorShadows) g.destroy();
     this.actorShadows = [];
+    for (const l of this.vehicleLights) { l.head.destroy(); l.beam.destroy(); l.tail.destroy(); }
+    this.vehicleLights = [];
     for (const l of [...this.staticLights, ...this.stallLights, ...this.warehouseLights, ...this.fixtureLights, ...this.warehouseFixtureLights]) l.sprite.destroy();
     for (const s of this.shadows) s.graphics.destroy();
     for (const g of this.glints) g.destroy();

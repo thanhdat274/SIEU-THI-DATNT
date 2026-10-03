@@ -1,4 +1,4 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { StreetPedestrianState, TILE_SIZE, TrafficSignalState } from '@game/shared';
 import { CROSSWALK, STREET_PEDESTRIANS } from '@game/data';
 
@@ -70,63 +70,83 @@ export function buildTrafficSignalHeads(layer: Container): TrafficSignalHeads {
   };
 }
 
-const SKIN = 0xe3b48a;
-const SHIRTS = [0x4f8fba, 0xc1573f, 0x6aa36a, 0xf39c12, 0x8e44ad];
-const PANTS = 0x30384a;
+const NPC_VARIANTS = 3;
 
-/** Dựng người đi bộ bằng đồ họa pixel nhỏ (đầu, áo, quần, bóng); gốc tọa độ tại chân. */
-export function createPedestrianSprite(variant: number, activity?: string): Container {
+/** Hàm lấy texture theo khóa (cùng kho texture với nhân vật chính và khách). */
+export type PedestrianTextureGetter = (key: string) => Texture;
+
+/**
+ * Dựng người đi bộ nền bằng đúng sprite NPC 32×48 (có mặt mũi) như khách và nhân viên,
+ * nên cùng kích thước với mọi nhân vật khác. Gốc tọa độ tại chân.
+ * Container con `accessory` chứa đồ kèm (túi, balo, cún) và được lật theo hướng đi.
+ */
+export function createPedestrianSprite(variant: number, activity: string | undefined, getTexture: PedestrianTextureGetter): Container {
   const c = new Container();
   c.eventMode = 'none';
+  const npc = ((variant % NPC_VARIANTS) + NPC_VARIANTS) % NPC_VARIANTS;
+  c.label = String(npc);
+
+  const shadow = new Graphics();
+  shadow.ellipse(0, 0, 8, 3).fill({ color: 0x26190e, alpha: 0.25 });
+  c.addChild(shadow);
+
+  const body = new Sprite(getTexture(`npc_${npc}_right_idle_0`));
+  body.anchor.set(0.5, 1);
+  c.addChild(body);
+
   const g = new Graphics();
-  g.ellipse(0, 0, 5, 2).fill({ color: 0x26190e, alpha: 0.25 });
-  g.rect(-3, -8, 2, 8).fill(PANTS);
-  g.rect(1, -8, 2, 8).fill(PANTS);
-  g.rect(-4, -17, 8, 9).fill(SHIRTS[((variant % SHIRTS.length) + SHIRTS.length) % SHIRTS.length]);
-  g.rect(-5, -16, 1, 6).fill(SKIN);
-  g.rect(4, -16, 1, 6).fill(SKIN);
-  g.rect(-3, -23, 6, 6).fill(SKIN);
-  g.rect(-3, -24, 6, 2).fill(0x2a1c14);
-
-  // Phụ kiện / hoạt động sinh động
-  if (activity === 'grocery') {
-    // Túi đồ tạp hóa đỏ xách trên tay
-    g.rect(5, -13, 4, 5).fill(0xe74c3c);
-    g.rect(6, -15, 2, 2).fill(0xffffff);
-  } else if (activity === 'student') {
-    // Balo học sinh trên lưng
-    g.rect(-7, -17, 3, 8).fill(0x2980b9);
-    g.rect(-6, -15, 2, 4).fill(0xf1c40f);
-  } else if (activity === 'jog') {
-    // Băng đô thể thao
-    g.rect(-3, -22, 6, 2).fill(0xf1c40f);
+  if (activity === 'jog') {
+    g.rect(-5, -41, 10, 2).fill(0xf1c40f);
   } else if (activity === 'dog') {
-    // Cún con lon ton đi kèm
-    g.ellipse(-11, -3, 4, 3).fill(0xd35400); // Thân cún
-    g.circle(-7, -5, 2.5).fill(0xd35400);   // Đầu cún
-    g.rect(-6, -6, 1, 1).fill(0x1a1815);   // Mắt
-    g.rect(-13, -6, 1, 3).fill(0xd35400);  // Đuôi vểnh
-    g.rect(-12, 0, 1, 2).fill(0x2c3e50);   // Chân
-    g.rect(-9, 0, 1, 2).fill(0x2c3e50);    // Chân
-    g.rect(-7, -4, 9, 1).fill({ color: 0x7f8c8d, alpha: 0.6 }); // Dây dắt chó
+    g.ellipse(-17, -4, 6, 4).fill(0xd35400);
+    g.circle(-11, -7, 3.5).fill(0xd35400);
+    g.rect(-10, -8, 1, 1).fill(0x1a1815);
+    g.rect(-21, -9, 2, 4).fill(0xd35400);
+    g.rect(-19, 0, 1, 3).fill(0x2c3e50);
+    g.rect(-14, 0, 1, 3).fill(0x2c3e50);
+    g.rect(-11, -6, 11, 1).fill({ color: 0x7f8c8d, alpha: 0.6 });
   }
-
   c.addChild(g);
+
+  // Túi tote đỏ có nhãn trắng, hai quai nắm trong tay (tay cách chân ~14 px), thân túi buông xuống sát mặt đất.
+  // Tọa độ gốc ở giữa túi; vị trí đổi theo hướng đi và theo nhịp đung đưa của tay.
+  const bag = new Graphics();
+  if (activity === 'grocery') {
+    bag.rect(-3, -15, 6, 1).fill(0x8e2a22);
+    bag.rect(-3, -15, 1, 4).fill(0x8e2a22);
+    bag.rect(2, -15, 1, 4).fill(0x8e2a22);
+    bag.rect(-5, -12, 11, 12).fill(0x7a1f19);
+    bag.rect(-4, -11, 9, 10).fill(0xe03a2e);
+    bag.rect(-4, -11, 9, 1).fill(0xff6a50);
+    bag.rect(3, -10, 2, 9).fill(0xb82a20);
+    bag.rect(-2, -8, 4, 3).fill(0xf2e3c0);
+    bag.rect(-1, -7, 2, 1).fill(0xd9b99a);
+  }
+  bag.visible = activity === 'grocery';
+  c.addChild(bag);
   return c;
 }
 
-/** Đặt vị trí và độ nhún nhẹ khi đang đi. */
-export function placePedestrian(sprite: Container, p: StreetPedestrianState, time: number): void {
+/** Đặt vị trí, hướng nhìn và khung hình đi/đứng; nhún nhẹ khi đang đi. */
+export function placePedestrian(sprite: Container, p: StreetPedestrianState, time: number, getTexture: PedestrianTextureGetter, reducedMotion = false): void {
   const isMoving = p.state === 'crossing' || p.state === 'walking';
   const speed = p.activity === 'jog' ? 16 : 9;
-  const bob = isMoving ? Math.abs(Math.sin(time * speed)) * (p.activity === 'jog' ? 2 : 1.2) : 0;
+  const bob = isMoving && !reducedMotion ? Math.abs(Math.sin(time * speed)) * (p.activity === 'jog' ? 2 : 1.2) : 0;
   sprite.position.set(Math.round(p.position.x), Math.round(p.position.y - bob));
   sprite.zIndex = p.position.y;
 
-  // Lật hướng nhìn nếu đi bộ ngang vỉa hè
-  if (p.direction === 'left') {
-    sprite.scale.x = -1;
-  } else if (p.direction === 'right') {
-    sprite.scale.x = 1;
-  }
+  const body = sprite.children[1] as Sprite;
+  const accessory = sprite.children[2] as Graphics;
+  const bag = sprite.children[3] as Graphics;
+  const dir = p.direction === 'south' ? 'down' : p.direction === 'north' ? 'up' : p.direction;
+  const frame = reducedMotion ? 0 : Math.floor(time * (isMoving ? 8 : 1.5)) % (isMoving ? 4 : 2);
+  body.texture = getTexture(`npc_${sprite.label}_${dir}_${isMoving ? 'walk' : 'idle'}_${frame}`);
+  // Đồ kèm (túi, cún) lật theo chiều ngang; khi băng qua đường thì giữ phía hướng phải.
+  if (p.direction === 'left') accessory.scale.x = -1;
+  else if (p.direction === 'right') accessory.scale.x = 1;
+  // Đi ngang: túi treo ở tay đung đưa theo bước chân (khớp tay trong sprite nghiêng); đi dọc: túi ở tay phải.
+  const lateral = p.direction === 'left' || p.direction === 'right';
+  const swing = isMoving && !reducedMotion ? [0, 3, 0, -3][frame % 4] : 0;
+  bag.x = lateral ? (p.direction === 'left' ? 1.5 + swing : -1.5 - swing) : 10;
+  bag.y = 0;
 }

@@ -914,6 +914,18 @@ export interface BranchDayReport {
   stockouts: string[];
 }
 
+/** Mức giá chi nhánh: hệ số giá bán và cầu nằm ở `game-data/store-types.ts` (`BRANCH_PRICE_MODES`). */
+export type BranchPriceMode = 'low' | 'normal' | 'high';
+
+/** Cách điều hành chi nhánh từ xa (bảng điều hành nhẹ, OpenSpec `branch-chain` 6.1/6.4); thiếu = mặc định. */
+export interface BranchPolicy {
+  priceMode: BranchPriceMode;
+  /** Có thuê quản lý: tốn thêm lương mỗi ngày, đổi lại chạy nền gần bằng điều hành trực tiếp. */
+  manager: boolean;
+}
+
+export const DEFAULT_BRANCH_POLICY: Readonly<BranchPolicy> = Object.freeze({ priceMode: 'normal', manager: false });
+
 /** Một chi nhánh (kho, danh tiếng, báo cáo). Chưa chứa save mô phỏng đầy đủ; xem OpenSpec `branch-chain` D1/D2. */
 export interface BranchSave {
   id: string;
@@ -926,6 +938,8 @@ export interface BranchSave {
   lastBackgroundDay: number;
   reports: BranchDayReport[];
   totalRevenue: number;
+  /** Cách điều hành; thiếu = `DEFAULT_BRANCH_POLICY`. */
+  policy?: BranchPolicy;
 }
 
 /** Chuỗi chi nhánh; `SaveGameData.chain` thiếu = chuỗi một cơ sở (hub). Ví chung = `player.money`, kho tổng = kho hub. */
@@ -1148,6 +1162,7 @@ export type GameCommandPayload =
   | { type: 'switch_branch'; branchId: string }
   | { type: 'transfer_stock'; branchId: string; items: Array<{ productId: string; quantity: number }> }
   | { type: 'return_stock'; branchId: string; items: Array<{ productId: string; quantity: number }> }
+  | { type: 'set_branch_policy'; branchId: string; policy: BranchPolicy }
   | { type: 'advance_day' }
   | { type: 'stow'; holdingId: string }
   | { type: 'stow_all' }
@@ -1407,6 +1422,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'set_tax_declaration': return typeof p.underDeclare === 'boolean';
     case 'open_branch': return nonEmptyString(p.storeType) && (p.name === undefined || (typeof p.name === 'string' && p.name.length <= 48)) && (p.branchId === undefined || (nonEmptyString(p.branchId) && /^branch-\d{1,6}$/.test(p.branchId as string)));
     case 'switch_branch': return nonEmptyString(p.branchId);
+    case 'set_branch_policy': return nonEmptyString(p.branchId) && isRecord(p.policy) && (p.policy.priceMode === 'low' || p.policy.priceMode === 'normal' || p.policy.priceMode === 'high') && typeof p.policy.manager === 'boolean';
     case 'transfer_stock':
     case 'return_stock': return nonEmptyString(p.branchId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 50
       && p.items.every((item) => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);

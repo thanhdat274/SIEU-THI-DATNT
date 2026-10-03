@@ -305,7 +305,19 @@ export class CustomerManager {
       }
     }
 
-    const startPos = vehicleSpot ? { ...vehicleSpot } : tileCenter(BUILDING_MAP[buildingId].entranceTile);
+    // Khách đi bộ xuất hiện ở mép bản đồ trên vỉa hè (hàng y = 12, cùng lối họ rời đi) rồi đi dọc vỉa hè tới cửa,
+    // không hiện ra ngay trước cửa. Chọn bên theo số thứ tự khách; nếu bên đó quá xa cửa (> 16 ô) thì dùng bên gần hơn.
+    let startPos: Vector2D;
+    if (vehicleSpot) {
+      startPos = { ...vehicleSpot };
+    } else {
+      const doorTileX = entrance.x;
+      const leftX = 1;
+      const rightX = MAP_WIDTH - 2;
+      let fromLeft = this.customerSequence % 2 === 0;
+      if (Math.abs((fromLeft ? leftX : rightX) - doorTileX) > 16) fromLeft = Math.abs(leftX - doorTileX) <= Math.abs(rightX - doorTileX);
+      startPos = tileCenter({ x: fromLeft ? leftX : rightX, y: 12 });
+    }
 
     const newCustomer: CustomerState = {
       id: customerId,

@@ -30,7 +30,7 @@ export const STORE_TYPES: readonly StoreTypeDef[] = [
     unlockLevel: 32,
     openCost: 1_500_000,
     maxBranches: 3,
-    staffWagePerDay: 120_000,
+    staffWagePerDay: 60_000,
     stockCapacity: 400,
     baseDailyDemand: {
       nuoc_suoi: 14, nuoc_khoang: 6, nuoc_tinh_khiet: 6, nuoc_cam: 8, tra_xanh: 8,
@@ -41,6 +41,19 @@ export const STORE_TYPES: readonly StoreTypeDef[] = [
 ];
 
 export const STORE_TYPE_MAP: Record<string, StoreTypeDef> = nullProto(Object.fromEntries(STORE_TYPES.map((type) => [type.id, type])));
+
+/**
+ * Mức giá chi nhánh: nhân giá bán và cầu. Giá cao lãi mỗi món nhiều hơn nhưng bán ít hơn (hệ số **tạm, chưa playtest**).
+ * Với hệ số 0,9/1,1 cầu và giá 0,9/1,1 thì doanh thu gần như bằng nhau; khác biệt nằm ở lãi gộp và hao hụt.
+ */
+export const BRANCH_PRICE_MODES = {
+  low: { label: 'Giá mềm', priceFactor: 0.9, demandFactor: 1.15 },
+  normal: { label: 'Giá chuẩn', priceFactor: 1, demandFactor: 1 },
+  high: { label: 'Giá cao', priceFactor: 1.1, demandFactor: 0.85 },
+} as const;
+
+/** Quản lý chi nhánh: lương thêm mỗi ngày (₫) và hệ số cầu nền khi có quản lý (thay cho hệ số nền 0,7). **Tạm, chưa playtest.** */
+export const BRANCH_MANAGER = { wagePerDay: 40_000, demandFactor: 0.95 } as const;
 
 /** Số chi nhánh tối đa toàn chuỗi ở bản đầu (D8). */
 export const MAX_CHAIN_BRANCHES = 3;

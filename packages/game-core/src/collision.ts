@@ -1,4 +1,5 @@
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, getFixtureDimensions } from '@game/shared';
+import { streetLampBoxes } from '@game/data';
 
 export interface BoundingBox {
   x: number;
@@ -6,6 +7,8 @@ export interface BoundingBox {
   width: number;
   height: number;
 }
+
+const LAMP_BOXES = streetLampBoxes();
 
 export class CollisionSystem {
   private tileMap: GameTileMap;
@@ -47,6 +50,11 @@ export class CollisionSystem {
           return true;
         }
       }
+    }
+
+    // 1b. Chân cột đèn đường (hộp hẹp, không chặn cả ô)
+    for (const lamp of LAMP_BOXES) {
+      if (this.boxesIntersect(box, lamp)) return true;
     }
 
     // 2. Check collision against fixtures

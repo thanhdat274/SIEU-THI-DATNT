@@ -48,7 +48,7 @@ const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
   'hire_staff', 'set_staff_shift', 'assign_refill_job', 'dispose_stock', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve', 'maintain_fixture', 'security_action',
   'buy_warehouse_tier', 'buy_storage_rack',
   'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock',
-  'open_branch', 'switch_branch', 'transfer_stock', 'return_stock',
+  'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
 ]);
 
 export class GameController {
@@ -111,7 +111,7 @@ export class GameController {
       'hire_staff', 'set_staff_shift', 'assign_refill_job',
       'buy_plot', 'buy_warehouse_tier', 'buy_storage_rack',
       'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock',
-      'open_branch', 'switch_branch', 'transfer_stock', 'return_stock',
+      'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
     ]);
     if (serverReplayedCommands.has(payload?.type)) {
       const priorReceipt = await worldRepository.findReceipt(worldId, request.gameAccount.uid, body.receipt.commandId);

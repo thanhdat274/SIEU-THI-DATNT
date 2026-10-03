@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
-import type { BranchSave, InventoryItem, StockLot } from '@game/shared';
-import { DEFAULT_INITIAL_SAVE, MAX_CHAIN_BRANCHES, PRODUCT_MAP, STORE_TYPE_MAP, generateStarterTileMap } from '@game/data';
+import type { BranchPolicy, BranchSave, InventoryItem, StockLot } from '@game/shared';
+import { BRANCH_MANAGER, DEFAULT_INITIAL_SAVE, MAX_CHAIN_BRANCHES, PRODUCT_MAP, STORE_TYPE_MAP, generateStarterTileMap } from '@game/data';
 import { validateSaveGameData } from '@game/shared';
 import { InputManager } from './input';
 import { summarizeAnnualRevenue } from './tax/annual-revenue';
 import { GameSimulation } from './simulation';
 import { BACKGROUND_DEMAND_FACTOR, catchUpBranch, runBranchDay } from './branch-ops';
 import {
-  HUB_ID, branchStockUnits, createChain, normalizeChain, openBranch, returnStock, stockTotals, switchBranch, transferStock,
+  HUB_ID, branchStockUnits, createChain, normalizeChain, openBranch, policyOf, returnStock, sanitizePolicy, setBranchPolicy, stockTotals, switchBranch, transferStock,
   type ChainContext,
 } from './chain';
 
@@ -320,4 +320,64 @@ export function runChainSimulationTests(): void {
   assert.equal(reloaded.getChain().branches[0].lastBackgroundDay, day + 1);
   assert.equal(reloaded.getChain().branches[0].reports.filter((r) => r.day === day).length, 1, 'Mỗi ngày một báo cáo');
   assert.ok(nextEntries.length === 0 || nextEntries.every((e) => e.day === day + 1), 'Ngày cũ không bị tính lại');
+}
+
+/** Bảng điều hành nhẹ: mức giá và quản lý (OpenSpec `branch-chain` 6.1/6.4 bản nhẹ). */
+export function runBranchPolicyTests(): void {
+  // Làm sạch: kiểu sai/mức lạ về mặc định, manager chỉ nhận đúng true.
+  assert.deepEqual(sanitizePolicy(undefined), { priceMode: 'normal', manager: false });
+  assert.deepEqual(sanitizePolicy({ priceMode: '__proto__', manager: 'yes' }), { priceMode: 'normal', manager: false });
+  assert.deepEqual(sanitizePolicy({ priceMode: 'high', manager: true }), { priceMode: 'high', manager: true });
+
+  // Lệnh thuần: không đổi ví/kho, chi nhánh lạ bị từ chối, qua JSON vẫn giữ.
+  const opened = mustOk(openBranch(ctx(), 'drink_shop', 'Quán A'));
+  const base = ctx({ chain: opened.chain, money: opened.money, warehouse: opened.warehouse });
+  assert.equal(setBranchPolicy(base, 'nope', { priceMode: 'low', manager: false }).ok, false);
+  const set = mustOk(setBranchPolicy(base, 'branch-1', { priceMode: 'high', manager: true }));
+  assert.equal(set.money, base.money);
+  assert.deepEqual(set.warehouse, base.warehouse);
+  assert.deepEqual(policyOf(set.chain.branches[0]), { priceMode: 'high', manager: true });
+  assert.deepEqual(policyOf(normalizeChain(JSON.parse(JSON.stringify(set.chain))).branches[0]), { priceMode: 'high', manager: true });
+  assert.deepEqual(policyOf(opened.chain.branches[0]), { priceMode: 'normal', manager: false }, 'Thiếu policy = mặc định');
+  assert.equal('policy' in opened.chain.branches[0], false, 'Chi nhánh mới không ghi policy');
+
+  // Hiệu ứng lên chạy nền: cùng hạt giống, cùng kho dư dả, chỉ khác chính sách.
+  const run = (policy: BranchPolicy) => {
+    const stocked = mustOk(transferStock(ctx({ chain: opened.chain, warehouse: [{ productId: 'nuoc_suoi', quantity: 400, lots: [lot(400, 99, 3000)] }] }), 'branch-1', [{ productId: 'nuoc_suoi', quantity: 380 }]));
+    const branch: BranchSave = { ...stocked.chain.branches[0], policy, lastBackgroundDay: 4 };
+    const result = runBranchDay({ branch, day: 5, money: 1_000_000 });
+    assert.ok(result.report && !result.skipped);
+    return result;
+  };
+  const normal = run({ priceMode: 'normal', manager: false });
+  const low = run({ priceMode: 'low', manager: false });
+  const high = run({ priceMode: 'high', manager: false });
+  const managed = run({ priceMode: 'normal', manager: true });
+  const perUnit = (r: ReturnType<typeof run>) => r.report!.revenue / r.report!.unitsSold;
+  assert.ok(low.report!.unitsSold > normal.report!.unitsSold && normal.report!.unitsSold > high.report!.unitsSold, 'Giá càng cao càng bán ít');
+  assert.ok(perUnit(low) < perUnit(normal) && perUnit(normal) < perUnit(high), 'Giá càng cao càng lãi/doanh thu mỗi món lớn');
+  assert.ok(managed.report!.unitsSold > normal.report!.unitsSold, 'Có quản lý bán nhiều hơn nền');
+  assert.equal(managed.report!.wages, normal.report!.wages + BRANCH_MANAGER.wagePerDay, 'Quản lý tốn thêm lương mỗi ngày');
+  assert.equal(managed.moneyDelta, managed.report!.revenue - managed.report!.wages);
+
+  // Lương không làm ví âm kể cả khi có quản lý, và cùng ngày chạy lại là no-op.
+  const broke = runBranchDay({ branch: { ...managed.branch, lastBackgroundDay: 5 }, day: 6, money: 0 });
+  assert.ok(broke.report && broke.report.wages <= broke.report.revenue, 'Ví 0: chỉ trả lương bằng doanh thu thu được');
+  assert.equal(runBranchDay({ branch: managed.branch, day: 5, money: 1_000_000 }).skipped, true);
+}
+
+/** Lệnh `set_branch_policy` qua `GameSimulation`: không đổi ví, đi qua save/nạp. */
+export function runBranchPolicySimulationTests(): void {
+  const save = structuredClone(DEFAULT_INITIAL_SAVE);
+  save.player.level = 40; save.player.money = 5_000_000;
+  const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager(), {});
+  assert.equal(sim.openBranch('drink_shop', 'Quán B', 'branch-1').success, true);
+  const money = sim.getPlayerData().money;
+  assert.equal(sim.setBranchPolicy('nope', { priceMode: 'low', manager: false }).success, false);
+  assert.equal(sim.setBranchPolicy('branch-1', { priceMode: 'low', manager: true }).success, true);
+  assert.equal(sim.getPlayerData().money, money, 'Đổi chính sách không tốn tiền');
+  assert.deepEqual(policyOf(sim.getChain().branches[0]), { priceMode: 'low', manager: true });
+  const reloaded = newSim();
+  reloaded.importSaveData(JSON.parse(JSON.stringify(sim.exportSaveData('chain-policy', 1))));
+  assert.deepEqual(policyOf(reloaded.getChain().branches[0]), { priceMode: 'low', manager: true });
 }
