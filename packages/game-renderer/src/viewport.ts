@@ -1239,6 +1239,7 @@ export class PixiGameViewport {
       this.shopkeeper.sprite.texture = this.textures.getTexture(`npc_1_${keeper.direction}_idle_${frame}`);
       this.shopkeeper.container.position.set(Math.round(keeper.position.x), Math.round(keeper.position.y));
       this.shopkeeper.container.zIndex = keeper.position.y;
+      this.shopkeeper.container.visible = keeper.visible;
       this.shopkeeper.bubble.visible = keeper.serving;
     }
 

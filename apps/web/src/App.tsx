@@ -1226,10 +1226,24 @@ export const App: React.FC = () => {
     const result = sim.assignRefillJob(staffId, fixtureId);
     if (result.success) {
       syncFromSimulation(sim);
-      if (onlineWorldRef.current) void commitBusinessChange({ type: 'assign_refill_job', staffId, fixtureId }, 'Giao việc châm kệ', 'Nhân viên');
+      if (onlineWorldRef.current) void commitBusinessChange({ type: 'assign_refill_job', staffId, fixtureId }, 'Giao việc bày kệ', 'Nhân viên');
       else void handleSaveGame(false);
-      addToast('Đã giao việc châm kệ cho nhân viên.', 'success');
+      addToast('Đã giao việc bày kệ cho nhân viên.', 'success');
     } else addToast(`Chưa giao được việc: ${result.reason ?? 'kệ không khả dụng'}`, 'warn');
+    return result;
+  };
+
+  const handleAssignAutoRestockJob = (staffId: string) => {
+    const sim = simulationRef.current;
+    if (!sim) return { success: false, reason: 'Chưa sẵn sàng.' };
+    if (blockOfflineOnlineMutation()) return { success: false, reason: 'Mất kết nối hẻm chung.' };
+    const result = sim.assignAutoRestockJob(staffId);
+    if (result.success) {
+      syncFromSimulation(sim);
+      if (onlineWorldRef.current) void commitBusinessChange({ type: 'assign_auto_restock_job', staffId }, 'Giao việc tự động bày kệ', 'Nhân viên');
+      else void handleSaveGame(false);
+      addToast('Đã giao việc tự động bày kệ cho nhân viên.', 'success');
+    } else addToast(`Chưa giao được việc: ${result.reason ?? 'không có kệ thiếu'}`, 'warn');
     return result;
   };
 
@@ -1400,20 +1414,20 @@ export const App: React.FC = () => {
       const res = sim.applyPlanogramEntry(fixtureId);
       if (res.applied && res.actualQuantity > 0) {
         syncFromSimulation(sim);
-        addToast(`Đã châm ${res.actualQuantity} món theo sơ đồ kệ!`, 'success');
+        addToast(`Đã bày ${res.actualQuantity} món theo sơ đồ kệ!`, 'success');
         if (onlineWorldRef.current) {
-          await commitBusinessChange({ type: 'planogram_restock', fixtureId, quantity: res.actualQuantity }, `Châm ${res.actualQuantity} món theo sơ đồ kệ`, 'Bày hàng');
+          await commitBusinessChange({ type: 'planogram_restock', fixtureId, quantity: res.actualQuantity }, `Bày ${res.actualQuantity} món theo sơ đồ kệ`, 'Bày hàng');
         }
       } else if (res.reason === 'product_mismatch') {
         addToast('Kệ đang chứa sản phẩm khác! Không thể đổi món khi còn tồn hàng.', 'warn');
       } else if (res.reason === 'in_cases') {
-        addToast('Hàng theo sơ đồ còn nguyên thùng trong kho — mở thùng ở kho rồi mới châm kệ.', 'warn');
+        addToast('Hàng theo sơ đồ còn nguyên thùng trong kho — mở thùng ở kho rồi mới bày kệ.', 'warn');
       } else if (res.reason === 'no_inventory') {
-        addToast('Trong kho không còn sản phẩm theo sơ đồ để châm kệ!', 'warn');
+        addToast('Trong kho không còn sản phẩm theo sơ đồ để bày kệ!', 'warn');
       } else if (res.reason === 'fixture_full') {
         addToast('Kệ đã đầy đủ theo sơ đồ.', 'info');
       } else {
-        addToast('Chưa thể châm hàng theo sơ đồ cho kệ này.', 'info');
+        addToast('Chưa thể bày hàng theo sơ đồ cho kệ này.', 'info');
       }
     } else {
       handleAutoRestock();
@@ -1424,24 +1438,29 @@ export const App: React.FC = () => {
     if (blockOfflineOnlineMutation()) return;
     const sim = simulationRef.current;
     if (!sim) return;
-    const restockedCount = sim.autoRestockShelves();
+    // Giống nút "Bày hàng lên kệ" ở Sơ đồ kệ: châm kệ đã gán rồi tự gán + bày các ô còn trống.
+    const refilled = sim.autoRestockShelves();
+    const autoFill = sim.autoFillAllShelves();
+    const restockedCount = refilled + autoFill.totalFilled;
     if (restockedCount > 0) {
       syncFromSimulation(sim);
-      addToast(`Đã tự động châm ${restockedCount} món hàng từ kho lên các kệ! `, 'success');
+      addToast(autoFill.newAssignments > 0
+        ? `⚡ Đã tự gán & bày ${autoFill.newAssignments} ô mới · ${restockedCount} đơn vị lên kệ`
+        : `Đã tự động bày ${restockedCount} món hàng từ kho lên các kệ! `, 'success');
       if (viewportRef.current) {
         viewportRef.current.addFloatingGain(player.position.x, player.position.y - 20, `+${restockedCount} Bày Kệ`, 0x2a7a43);
       }
       if (onlineWorldRef.current) {
         await commitBusinessChange(
           { type: 'auto_restock' },
-          `Tự động châm ${restockedCount} món hàng lên kệ`,
+          `Tự động bày ${restockedCount} món hàng lên kệ`,
           'Bày hàng tự động'
         );
       }
     } else {
       addToast(sim.getInventory().some((item) => (item.lots ?? []).some((lot) => (lot.caseCount ?? 0) > 0))
-        ? 'Không có hàng lẻ để châm kệ; có hàng còn nguyên thùng — mở thùng ở kho trước.'
-        : 'Kho hàng không có sẵn sản phẩm phù hợp để châm kệ.', 'info');
+        ? 'Không có hàng lẻ để bày kệ; có hàng còn nguyên thùng — mở thùng ở kho trước.'
+        : 'Kho hàng không có sẵn sản phẩm phù hợp để bày kệ.', 'info');
     }
   };
 
@@ -1661,7 +1680,7 @@ export const App: React.FC = () => {
       />
     )}
     {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal coldCapacity={simulationRef.current?.getColdCapacity()} ambientCapacity={simulationRef.current?.getAmbientCapacity()} ambientUsed={simulationRef.current?.getAmbientCellsUsed()} capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} fixture={activeFixtureModal} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onStowHolding={handleStowHolding} onDisposeStock={handleDisposeStock} onOpenCase={async (productId, count) => { const res = await persistSimulationMutation({ type: 'open_case', productId, count }, `Mở ${count} thùng ${PRODUCT_MAP[productId]?.name ?? productId}`, 'Mở thùng', simulation => simulation.unpackMultipleCases(productId, count)); if (res?.success) addToast(`Đã mở ${res.openedCases} thùng → +${res.unitsAdded} lẻ`, 'success'); else if (res) addToast(res.reason ?? 'Không thể mở thùng', 'warn'); }} onOpenSupplier={openSupplierModal} onClose={closeFixtureModal}/>}
-    {activeFixtureModal?.type === 'cashier_counter' && <CashierModal initialShowStaff={staffRequested} fixture={activeFixtureModal} player={player} worldTime={worldTime} shelves={fixtures.filter(isSalesFixture)} customers={customers} statistics={statistics} canDineIn={customer => simulationRef.current?.canDineIn(customer) ?? false} creditAccounts={simulationRef.current?.getCustomerCredits() ?? []} creditTerms={regularId => simulationRef.current?.getCustomerCreditTerms(regularId) ?? { eligible: false, limit: 0, used: 0, available: 0 }} onRepayCredit={async creditId => { const res = await persistSimulationMutation({ type: 'repay_customer_credit', creditId }, 'Thu hồi nợ khách quen', 'Thu nợ', simulation => ({ success: simulation.repayCustomerCredit(creditId), reason: undefined as string | undefined })); if (res?.success) addToast('Đã thu hồi khoản mua chịu.', 'success'); else if (res) addToast(res.reason ?? 'Không thu được khoản nợ.', 'warn'); }} staff={simulationRef.current?.getStaff() ?? []} staffCandidates={simulationRef.current?.getStaffCandidates(worldTime.day) ?? []} wageDebt={simulationRef.current?.getWageDebt() ?? 0} restockTargets={simulationRef.current?.getRestockJobTargets() ?? []} onAssignRefillJob={handleAssignRefillJob} onHireStaff={handleHireStaff} onSetStaffShift={handleSetStaffShift} onCheckout={handleCheckout} onToggleStoreStatus={handleToggleStoreStatus} onAdvanceDay={handleAdvanceDay} onClose={closeFixtureModal}/>}
+    {activeFixtureModal?.type === 'cashier_counter' && <CashierModal initialShowStaff={staffRequested} fixture={activeFixtureModal} player={player} worldTime={worldTime} shelves={fixtures.filter(isSalesFixture)} customers={customers} statistics={statistics} canDineIn={customer => simulationRef.current?.canDineIn(customer) ?? false} creditAccounts={simulationRef.current?.getCustomerCredits() ?? []} creditTerms={regularId => simulationRef.current?.getCustomerCreditTerms(regularId) ?? { eligible: false, limit: 0, used: 0, available: 0 }} onRepayCredit={async creditId => { const res = await persistSimulationMutation({ type: 'repay_customer_credit', creditId }, 'Thu hồi nợ khách quen', 'Thu nợ', simulation => ({ success: simulation.repayCustomerCredit(creditId), reason: undefined as string | undefined })); if (res?.success) addToast('Đã thu hồi khoản mua chịu.', 'success'); else if (res) addToast(res.reason ?? 'Không thu được khoản nợ.', 'warn'); }} staff={simulationRef.current?.getStaff() ?? []} staffCandidates={simulationRef.current?.getStaffCandidates(worldTime.day) ?? []} wageDebt={simulationRef.current?.getWageDebt() ?? 0} restockTargets={simulationRef.current?.getRestockJobTargets() ?? []} onAssignRefillJob={handleAssignRefillJob} onAssignAutoRestockJob={handleAssignAutoRestockJob} onHireStaff={handleHireStaff} onSetStaffShift={handleSetStaffShift} onCheckout={handleCheckout} onToggleStoreStatus={handleToggleStoreStatus} onAdvanceDay={handleAdvanceDay} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'kitchen_station' && simulationRef.current && <KitchenStationModal fixture={activeFixtureModal} recipes={simulationRef.current.getStationRecipes(activeFixtureModal.id)} job={simulationRef.current.getProductionJobs().find(job => job.stationId === activeFixtureModal.id)} inventory={simulationRef.current.getInventory()} day={simulationRef.current.getTime().day} allFixtures={fixtures.filter(f => f.type === 'kitchen_station' && f.shopId)} onStart={async (recipeId, stationId) => { const targetId = stationId ?? activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'start_production', recipeId, stationId: targetId }, 'Bắt đầu nấu', 'Sản xuất', simulation => simulation.startProduction(recipeId, targetId)); if (!res?.success) addToast(res?.reason ?? 'Không bắt đầu được mẻ nấu.', 'warn'); }} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'dining_table' && simulationRef.current && <DiningTableModal fixture={activeFixtureModal} state={simulationRef.current.getDiningTableState(activeFixtureModal.id)} staff={simulationRef.current.getStaff()} onAssignCleaner={async staffId => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'assign_dining_cleanup', staffId, fixtureId }, 'Giao việc dọn bàn', 'Dọn dẹp', simulation => ({ success: simulation.assignDiningCleanup(staffId, fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast(res?.reason ?? 'Không giao được việc dọn bàn.', 'warn'); }} onClean={async () => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'clean_dining_table', fixtureId }, 'Dọn bàn ăn', 'Dọn dẹp', simulation => ({ success: simulation.cleanDiningTable(fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast('Bàn đang có khách hoặc đã sạch.', 'warn'); }} onClose={closeFixtureModal}/>}
     {isInventoryModalOpen && <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals}/>}
@@ -1951,7 +1970,7 @@ export const App: React.FC = () => {
             setInventory(sim.getInventory());
             setFixtures(sim.getFixtures());
             if (res.newAssignments > 0) {
-              addToast(`⚡ Đã tự gán & châm ${res.newAssignments} ô mới · ${res.totalFilled} đơn vị lên kệ`, 'success');
+              addToast(`⚡ Đã tự gán & bày ${res.newAssignments} ô mới · ${res.totalFilled} đơn vị lên kệ`, 'success');
             }
           }
           return res;

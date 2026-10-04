@@ -2,9 +2,12 @@
 
 > **Trạng thái 03/10/2026 (đã đính chính):** dòng "Hoàn tất 100% - Production Ready" từng ghi ở đây là **sai** và đã gỡ. Code build/typecheck/test PASS (chạy lại 03/10/2026) nhưng còn nhiều OpenSpec mở (QA trình duyệt, playtest cân bằng, thiết bị thật, co-op hai trình duyệt). Danh sách chi tiết: `docs/RA-SOAT-2026-10-03.md`.
 
+> **Cập nhật 04/10/2026 (nút "Bày hàng lên kệ" ở kho dùng chung logic với Sơ đồ kệ):**
+> - Có code, typecheck PASS, chưa QA bằng mắt: `handleAutoRestock` (`App.tsx`) nay gọi `autoRestockShelves` rồi `autoFillAllShelves` (tự gán món + bày ô trống) như nút ở `StorePlanogramModal`; `WarehouseDock.tsx` chỉ khóa nút khi không còn ô trống lẫn kệ cần châm. Giới hạn: chế độ online vẫn commit `auto_restock`, phần tự gán món mới chưa được xác nhận đồng bộ server.
+>
 > **Cập nhật 04/10/2026 (thu ngân tự đi về đứng ở quầy thu ngân):**
 > - **Có code, `yarn test` game-core PASS, chưa QA bằng mắt trong trình duyệt:** `simulation.ts` thêm `getCashierPost`/`moveCashierToPost` (gọi từ `updateCashierWorkers`): thu ngân trong ca, không bận việc bổ sung/dọn bàn, sẽ đi về chỗ đứng trước quầy chính (tính theo xoay/vị trí hiện tại, nên quầy dời thì đi theo). Trước đây chỉ đặt vị trí lúc thuê/tải save nên thu ngân đứng sai chỗ nếu quầy bị dời hoặc save cũ.
-> - **Giới hạn:** đi thẳng tới chỗ đứng (không dò đường), cách xa hơn 12 ô thì dịch tức thì; chỗ đứng là giữa quầy, phía khách (phía nam) theo yêu cầu chủ dự án; vẫn chưa QA bằng mắt.
+> - **Giới hạn:** đi thẳng tới chỗ đứng (không dò đường), cách xa hơn 12 ô thì dịch tức thì; chỗ đứng đã đổi lại theo yêu cầu mới: thu ngân thứ i đứng SAU quầy thứ i (vòng lại nếu ít quầy), giữa chiều dài quầy, theo hướng xoay quầy (0°=bắc, 90°=đông, 180°=nam, 270°=tây) qua `getCounterBackPosition`; quầy tự thanh toán không có người đứng. Chủ tiệm (`getShopkeeper`, thêm `visible`) dùng cùng vị trí và ẩn đi khi thu ngân đầu tiên đang trong ca. Typecheck + `yarn test` PASS; hướng xoay 90/270 và đặt 2 thu ngân/2 quầy chưa QA bằng mắt.
 >
 > **Cập nhật 04/10/2026 (mở ô sau quầy thu ngân (8,7) thành ô sàn mặc định ban đầu của tiệm, bỏ đánh dấu ×):**
 > - **Nguyên nhân:** Trước đây `map.ts` gán cứng `collisionLayer` tại `SHOPKEEPER_TILE` (8,7) thành `true`. Trong `StoreLayoutModal`, công thức xác định ô sàn kiểm tra `!map.collisionLayer[...]`, dẫn đến ô (8,7) bị coi là ô ngoài mặt bằng / bị khóa, hiển thị dấu `×` với hoa văn sọc và không thể đặt nội thất lên dù quầy thu ngân được dời đi.

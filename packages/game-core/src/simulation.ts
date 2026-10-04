@@ -2007,7 +2007,7 @@ export class GameSimulation {
       hiredOnDay: this.clock.getTime().day,
       shift: 'full_day',
       position: candidate.role === 'cashier'
-        ? (this.getCashierPost() ?? { ...WAREHOUSE_ENTRANCE })
+        ? (this.getCashierPost(candidate.id) ?? { ...WAREHOUSE_ENTRANCE })
         : candidate.role === 'security'
         ? { x: 4 * 32, y: 13 * 32 }
         : { ...WAREHOUSE_ENTRANCE },
@@ -2356,20 +2356,36 @@ export class GameSimulation {
     }
   }
 
-  /** Chỗ đứng của thu ngân: ngay trước quầy thu ngân chính (theo vị trí/xoay hiện tại). */
-  private getCashierPost(): Vector2D | undefined {
-    const counter = this.fixtures.find((fixture) => fixture.type === 'cashier_counter' && !fixture.parentId)
-      ?? this.fixtures.find((fixture) => fixture.type === 'cashier_counter');
-    if (!counter) return undefined;
-    const { widthTiles } = getFixtureDimensions(counter);
-    // Đứng sau quầy (phía bắc) như chủ tiệm, lệch sang ô cuối quầy để không chồng lên chủ tiệm.
-    return { x: (counter.tileX + (widthTiles > 1 ? widthTiles - 0.5 : 0.5)) * TILE_SIZE, y: counter.tileY * TILE_SIZE - 2 };
+  /** Quầy có người đứng: không tính quầy tự thanh toán; quầy gốc đứng trước. */
+  private getStaffedCounters(): StoreFixture[] {
+    return this.fixtures.filter((fixture) => fixture.type === 'cashier_counter' && !fixture.parentId && fixture.shopId !== 'self_checkout');
+  }
+
+  /** Ô sau quầy (xoay 0° = phía bắc, mỗi 90° quay theo chiều kim đồng hồ), giữa chiều dài quầy. */
+  private getCounterBackPosition(counter: StoreFixture): Vector2D {
+    const { widthTiles, heightTiles } = getFixtureDimensions(counter);
+    const midX = (counter.tileX + widthTiles / 2) * TILE_SIZE;
+    const midY = (counter.tileY + heightTiles / 2) * TILE_SIZE;
+    const rotation = ((counter.rotation % 360) + 360) % 360;
+    if (rotation === 90) return { x: (counter.tileX + widthTiles + 0.5) * TILE_SIZE, y: midY + TILE_SIZE / 2 - 2 };
+    if (rotation === 270) return { x: (counter.tileX - 0.5) * TILE_SIZE, y: midY + TILE_SIZE / 2 - 2 };
+    if (rotation === 180) return { x: midX, y: (counter.tileY + heightTiles + 1) * TILE_SIZE - 2 };
+    return { x: midX, y: counter.tileY * TILE_SIZE - 2 };
+  }
+
+  /** Thu ngân thứ i đứng sau quầy thứ i (vòng lại nếu ít quầy hơn), theo đúng hướng xoay của quầy. */
+  private getCashierPost(staffId?: string): Vector2D | undefined {
+    const counters = this.getStaffedCounters();
+    if (!counters.length) return undefined;
+    const cashiers = this.staff.filter((member) => member.role === 'cashier');
+    const index = Math.max(0, cashiers.findIndex((member) => member.id === staffId));
+    return this.getCounterBackPosition(counters[index % counters.length]);
   }
 
   /** Thu ngân đang rảnh/phục vụ thì đi về và đứng ở quầy; quầy bị dời thì đi theo quầy. */
   private moveCashierToPost(member: StaffMember, dt: number): void {
     if (member.workerTask || member.diningTask) return;
-    const post = this.getCashierPost();
+    const post = this.getCashierPost(member.id);
     if (!post) return;
     const position = member.position ?? { ...WAREHOUSE_ENTRANCE };
     const dx = post.x - position.x, dy = post.y - position.y, distance = Math.hypot(dx, dy);
@@ -2870,29 +2886,19 @@ export class GameSimulation {
    * nhận), chủ tiệm chuyển sang "serving" cho tới khi giao dịch hoàn tất.
    * Vị trí được tính động theo quầy thu ngân hiện tại để hỗ trợ xoay quầy.
    */
-  public getShopkeeper(): { position: Vector2D; direction: 'down' | 'right'; serving: boolean; checkoutId?: string } {
+  public getShopkeeper(): { position: Vector2D; direction: 'down' | 'right'; serving: boolean; visible: boolean; checkoutId?: string } {
     const waiting = this.customerManager.peekCustomers().find(customer =>
       customer.stage === 'checkout' && (customer.basket?.length ?? 0) > 0 && !customer.cashierStaffId);
-    // Tính vị trí chủ tiệm dựa trên quầy thu ngân hiện tại
-    const counter = this.fixtures.find((fixture) => fixture.type === 'cashier_counter');
-    let keeperPosition: Vector2D;
-    if (counter) {
-      // Chủ tiệm đứng sau quầy (phía bắc), cách quầy 1 ô
-      const rotated = counter.rotation === 90 || counter.rotation === 270;
-      const width = rotated ? counter.heightTiles : counter.widthTiles;
-      const height = rotated ? counter.widthTiles : counter.heightTiles;
-      // Vị trí sau quầy (phía Bắc): tileY - 1
-      keeperPosition = {
-        x: (counter.tileX + width / 2) * TILE_SIZE,
-        y: (counter.tileY - 1 + 1) * TILE_SIZE - 2,
-      };
-    } else {
-      keeperPosition = { ...SHOPKEEPER_POSITION };
-    }
+    // Chủ tiệm đứng sau quầy gốc theo hướng xoay; có thu ngân đang trong ca đứng quầy đó thì chủ tiệm nhường chỗ.
+    const counter = this.getStaffedCounters()[0] ?? this.fixtures.find((fixture) => fixture.type === 'cashier_counter');
+    const keeperPosition: Vector2D = counter ? this.getCounterBackPosition(counter) : { ...SHOPKEEPER_POSITION };
+    const cashiers = this.staff.filter((member) => member.role === 'cashier');
+    const visible = !(cashiers.length > 0 && this.isStaffOnShift(cashiers[0]) && this.getStaffedCounters().length > 0);
     return {
       position: keeperPosition,
       direction: waiting ? 'right' : 'down',
       serving: !!waiting,
+      visible,
       checkoutId: waiting?.checkoutId,
     };
   }
@@ -4719,7 +4725,7 @@ export class GameSimulation {
     // Cập nhật vị trí nhân viên thu ngân nếu quầy thu ngân đã di chuyển/xoay
     for (const member of this.staff) {
       if (member.role === 'cashier') {
-        const post = this.getCashierPost();
+        const post = this.getCashierPost(member.id);
         if (post) member.position = post;
       }
     }
