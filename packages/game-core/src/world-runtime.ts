@@ -203,6 +203,8 @@ export class WorldRuntime {
         success = this.simulation.assignDiningCleanup(p.staffId, p.fixtureId);
       } else if (p.type === 'set_price') {
         success = this.simulation.setSellingPrice(p.productId, p.price).success;
+      } else if (p.type === 'reset_prices') {
+        success = this.simulation.resetSellingPrices().success;
       } else if (p.type === 'layout_move') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
         const next = moveStoreFixture(current, p.fixtureId, p.tileX, p.tileY, p.rotation, generateStarterTileMap(current.storeLayout.unlockedPlotIds ?? []));

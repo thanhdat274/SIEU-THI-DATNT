@@ -1091,6 +1091,26 @@ export class GameSimulation {
     return { success: true, price };
   }
 
+  /** Đưa mọi món về giá gợi ý trong một lần; món đang có khách thanh toán được giữ nguyên giá. */
+  public resetSellingPrices(): { success: boolean; reset: number; blocked: number } {
+    const checkingOut = new Set<string>();
+    for (const customer of this.customerManager.getCustomers()) {
+      if (customer.stage === 'checkout') for (const item of customer.basket ?? []) checkingOut.add(item.productId);
+    }
+    let reset = 0;
+    let blocked = 0;
+    for (const productId of Object.keys(this.sellingPrices)) {
+      if (checkingOut.has(productId)) { blocked++; continue; }
+      delete this.sellingPrices[productId];
+      reset++;
+    }
+    if (reset > 0) {
+      this.demandTable = undefined;
+      this.notifyStateChanged();
+    }
+    return { success: blocked === 0, reset, blocked };
+  }
+
   public sellingPriceBounds(productId: string): { min: number; max: number; step: number } | null {
     const suggested = PRODUCT_MAP[productId]?.baseSellingPrice;
     if (!suggested) return null;

@@ -21,6 +21,8 @@ interface HUDProps {
   wageDebt?: number;
   market?: { weather: { label: string; icon: string; rain?: RainForecast | null }; forecast: Array<{ label: string; rain?: RainForecast | null }>; events?: Array<{ id: string; label: string; status: string; startsIn: number; notice: string }> };
   onOpenMarket?: () => void;
+  /** Mở màn chỉnh giá bán tập trung. */
+  onOpenPrices?: () => void;
   onOpenTax?: () => void;
   onOpenLevelRoadmap: () => void;
   customerRating?: number;
@@ -43,7 +45,7 @@ interface HUDProps {
   /** Mốc lưu gần nhất (ISO) để hiện trong mục Lưu tiến trình của sổ quản lý. */
   lastSavedAt?: string;
 }
-const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0, lastSavedAt}) => {
+const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenPrices, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0, lastSavedAt}) => {
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore(useShallow((s) => ({player: s.player, worldTime: s.worldTime, timeString: s.timeString, toggleSaveModal: s.toggleSaveModal})));
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const season = getSeasonForDay(worldTime.day);
@@ -104,6 +106,11 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
               <span className="hud-management-badge" title={`${emptySlotsCount} ô kệ hết hàng`}>({emptySlotsCount})</span>
             )}
           </PixelButton>
+          {onOpenPrices && (
+            <PixelButton icon="coin" onClick={onOpenPrices} aria-label="Giá bán" title="Chỉnh giá bán các món">
+              <span className="button-label">Giá bán</span>
+            </PixelButton>
+          )}
           <PixelButton icon="star" onClick={onOpenQuests} aria-label="Nhiệm vụ" title="Nhiệm vụ buôn bán">
             <span className="button-label">Nhiệm vụ</span>
           </PixelButton>

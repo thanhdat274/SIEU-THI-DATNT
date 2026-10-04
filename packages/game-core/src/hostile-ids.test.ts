@@ -38,6 +38,16 @@ export function runHostileRuntimeKeyTests(): void {
     assert.equal(sim.getPlanogramForFixture(id), undefined, `planogram[${id}]`);
     assert.equal(sim.getCustomerCreditTerms(id).eligible, false);
   }
+  // Về giá gợi ý tất cả: một lần gọi xóa mọi giá đã chỉnh.
+  {
+    const ids = ['mi_hao_hao', 'xa_xi_chuong_duong'];
+    for (const id of ids) { const b = sim.sellingPriceBounds(id)!; sim.setSellingPrice(id, b.max); }
+    assert.ok(ids.every(id => sim.sellingPrice(id) !== PRODUCT_MAP[id].baseSellingPrice), 'đã chỉnh giá khác gợi ý');
+    const result = sim.resetSellingPrices();
+    assert.deepEqual({ success: result.success, reset: result.reset }, { success: true, reset: 2 });
+    assert.ok(ids.every(id => sim.sellingPrice(id) === PRODUCT_MAP[id].baseSellingPrice), 'mọi món về giá gợi ý');
+    assert.equal(sim.resetSellingPrices().reset, 0, 'gọi lại không còn gì để đặt lại');
+  }
   const exported = sim.exportSaveData('x', 1);
   assert.equal(JSON.parse(JSON.stringify(exported)).sellingPrices !== undefined, true, 'Xuất save vẫn tuần tự hóa được bảng giá');
   // dt bất thường không được treo vòng lặp phút của đồng hồ hay replay
