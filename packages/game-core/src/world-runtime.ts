@@ -220,6 +220,9 @@ export class WorldRuntime {
       } else if (p.type === 'set_restock_options') {
         this.simulation.setRestockOptions(p.options);
         success = true;
+      } else if (p.type === 'set_auto_buy_stalls') {
+        this.simulation.setAutoBuyStalls(p.enabled);
+        success = true;
       } else if (p.type === 'order_supplier') {
         success = this.simulation.orderSupplierCart(p.supplierId, p.items).success;
       } else if (p.type === 'buy_stall') {

@@ -580,6 +580,105 @@ export function runSuggestionTests(): void {
     assert.ok(res.explanation.includes('đang thử'), 'Giải thích có nhắc hàng đang thử');
   }
 
+  // 3d. Nhập nhanh nguyên liệu quầy: tự chọn đại lý, đặt thành công, tồn kho tăng sau khi giao
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 2000000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    (sim as any).stalls.owned.push('cafe_vot', 'banh_mi_muoi_ot');
+    for (const stallId of ['cafe_vot', 'banh_mi_muoi_ot']) {
+      const need = sim.getStallRestockItems(stallId);
+      assert.ok(need.length > 0, `Quầy ${stallId} thiếu nguyên liệu khi kho trống`);
+      const plan = sim.planStallRestock(stallId);
+      assert.ok('orders' in plan, `Lập được kế hoạch nhập cho ${stallId}: ${'reason' in plan ? plan.reason : ''}`);
+      if (!('orders' in plan)) continue;
+      const before = (sim as any).playerData.money;
+      for (const order of plan.orders) {
+        const res = sim.orderSupplierCart(order.supplierId, order.items);
+        assert.ok(res.success, `Đặt giỏ ${order.supplierId} thành công: ${res.reasons?.join(' · ') ?? ''}`);
+      }
+      assert.ok(before - (sim as any).playerData.money <= plan.totalCost + 1, 'Chi đúng theo kế hoạch');
+      for (const line of need) {
+        const ordered: number = plan.orders.flatMap(o => o.items).filter(it => it.productId === line.productId).reduce((sum: number, it) => sum + it.quantity, 0);
+        assert.ok(ordered >= line.quantity, `Đặt đủ ${line.productId}`);
+      }
+    }
+  }
+
+  // 3e. Thiếu tiền cho đủ 3 ngày: vẫn mua trước phần làm được và báo món còn thiếu
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 100000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    (sim as any).stalls.owned.push('banh_mi_muoi_ot');
+    const plan = sim.planStallRestock('banh_mi_muoi_ot');
+    assert.ok('orders' in plan, `Có kế hoạch mua một phần: ${'reason' in plan ? plan.reason : ''}`);
+    if ('orders' in plan) {
+      assert.ok(plan.totalCost <= 100000, 'Không vượt tiền đang có');
+      assert.ok((plan.missing?.length ?? 0) > 0, 'Báo món còn thiếu');
+      for (const order of plan.orders) assert.ok(sim.orderSupplierCart(order.supplierId, order.items).success, 'Đặt được phần mua trước');
+    }
+  }
+
+  // 3f. Tự nhập nguyên liệu quầy mỗi sáng (auto-buy): đặt hàng, ghi báo cáo, lưu/nạp cờ
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 2000000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    (sim as any).stalls.owned.push('cafe_vot');
+    sim.setAutoBuyStalls(true);
+    const pendingBefore = (sim as any).pendingOrders.length;
+    (sim as any).processAutoBuy(2);
+    assert.ok((sim as any).pendingOrders.length > pendingBefore, 'Sáng hôm sau tự đặt nguyên liệu quầy');
+    const report = sim.getAutoBuyConfig().reports[2];
+    assert.ok(report && report.placed.some(p => p.ruleId === 'stall:cafe_vot'), 'Báo cáo ghi dòng đặt của quầy');
+    const exported: any = sim.exportSaveData('slot', 1);
+    assert.equal(exported.autoBuyStalls, true, 'Cờ tự nhập quầy được lưu');
+    assert.ok(isSaveGameData(exported), 'Save có cờ mới vẫn hợp lệ');
+  }
+
+  // 3g. Thiếu tiền buổi sáng → mua một phần, giữa ngày có tiền thì tự mua nốt; nạp lại save giữ cờ
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 100000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    (sim as any).stalls.owned.push('banh_mi_muoi_ot');
+    sim.setAutoBuyStalls(true);
+    (sim as any).processAutoBuy(2);
+    assert.ok((sim as any).stallShortfall.has('banh_mi_muoi_ot'), 'Quầy mới nhập một phần được đánh dấu còn thiếu');
+    const afterMorning = (sim as any).pendingOrders.length;
+    (sim as any).topUpStallShortfalls();
+    assert.equal((sim as any).pendingOrders.length, afterMorning, 'Chưa đủ tiền thì chưa mua nốt');
+    const midSave: any = structuredClone(sim.exportSaveData('slot', 1));
+    assert.deepEqual(midSave.stallShortfall, ['banh_mi_muoi_ot'], 'Danh sách quầy còn thiếu nằm trong save');
+    assert.ok(isSaveGameData(midSave), 'Save có stallShortfall vẫn hợp lệ');
+    const midReload = new GameSimulation(structuredClone(midSave), generateStarterTileMap(), new InputManager());
+    assert.ok((midReload as any).stallShortfall.has('banh_mi_muoi_ot'), 'Nạp lại save giữa ngày vẫn nhớ quầy còn thiếu');
+    (sim as any).playerData.money += 1000000;
+    (sim as any).lastStallTopUpKey = '';
+    (sim as any).topUpStallShortfalls();
+    assert.ok((sim as any).pendingOrders.length > afterMorning, 'Có tiền giữa ngày thì tự mua nốt');
+    assert.equal((sim as any).stallShortfall.size, 0, 'Hết thiếu sau khi mua nốt');
+
+    const reloaded = new GameSimulation(structuredClone(sim.exportSaveData('slot', 1)) as any, generateStarterTileMap(), new InputManager());
+    assert.equal(reloaded.getAutoBuyConfig().stalls, true, 'Nạp lại save vẫn bật tự nhập quầy');
+    const loaded = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+    loaded.importSaveData(structuredClone(sim.exportSaveData('slot', 1)) as any);
+    assert.equal(loaded.getAutoBuyConfig().stalls, true, 'importSaveData giữ cờ tự nhập quầy');
+  }
+
+  // 3h. Callback onAutoPurchase báo cho UI khi tự nhập đặt đơn (để commit/lưu, kể cả tiệm online)
+  {
+    let fired = 0;
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 2000000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager(), { onAutoPurchase: () => { fired++; } });
+    (sim as any).stalls.owned.push('cafe_vot');
+    sim.setAutoBuyStalls(true);
+    (sim as any).processAutoBuy(2);
+    assert.equal(fired, 1, 'Đặt đơn buổi sáng báo đúng một lần');
+  }
+
   // 4. Tích hợp: bấm gợi ý hai lần (giỏ cộng dồn như UI) vẫn không vượt tiền theo giá thật lúc đặt.
   {
     const sim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());

@@ -201,6 +201,8 @@ export interface GameSimulationCallbacks {
   onOpenFixtureModal?: (fixture: StoreFixture) => void;
   onOpenInventoryModal?: () => void;
   onDayChanged?: (newDay: number) => void;
+  /** Tự nhập hàng (sáng hoặc giữa ngày) vừa đặt đơn: để UI lưu/commit ngay (tiệm online gửi save lên máy chủ). */
+  onAutoPurchase?: () => void;
   onTimeChanged?: () => void;
   onStockExpired?: (quantity: number) => void;
   onStockWarning?: (info: { lowStock: number; slowMoving: number; examples: string[] }) => void;
@@ -243,6 +245,17 @@ export function hourlyStoreTrafficMultiplier(hour: number): number {
   return 1.0;
 }
 
+export interface StallRestockPlan {
+  orders: { supplierId: string; items: { productId: string; quantity: number }[]; totalCost: number }[];
+  totalCost: number;
+  /** Tiền chi thêm so với nhu cầu 3 ngày do phải nâng cho đủ đơn tối thiểu (xấp xỉ). */
+  paddedCost: number;
+  /** Đã phải dùng sang quỹ lương/thuế chưa đến hạn. */
+  usedReserve: boolean;
+  /** Nguyên liệu chưa nhập đủ 3 ngày (thiếu tiền hoặc đại lý hết hàng); rỗng/thiếu = đã đủ. */
+  missing?: string[];
+}
+
 export class GameSimulation {
   private playerData: PlayerData;
   private sellingPrices: Record<string, number> = dict();
@@ -256,6 +269,10 @@ export class GameSimulation {
   private staffManager: StaffManager;
   private restockJobClaims: RestockClaimManager;
   private autoBuyEnabled = false;
+  private autoBuyStalls = false;
+  /** Quầy mới nhập được một phần (thiếu tiền/hàng): thử mua nốt mỗi giờ trong ngày khi có đủ tiền. Không lưu save; sáng hôm sau auto-buy tính lại. */
+  private stallShortfall = new Set<string>();
+  private lastStallTopUpKey = '';
   private autoBuyRules: AutoBuyRule[] = [];
   /** Cài đặt gợi ý nhập hàng; undefined = chưa từng chỉnh (dùng mặc định / giá trị cũ ở trình duyệt). */
   private restockOptions?: RestockSuggestionOptions;
@@ -420,6 +437,8 @@ export class GameSimulation {
       if (member.workerTask) this.restockJobClaims.addFromWorkerTask(member.workerTask.fixtureId, member.id);
     }
     this.autoBuyEnabled = initialSave.autoBuyEnabled ?? false;
+    this.autoBuyStalls = initialSave.autoBuyStalls ?? false;
+    this.stallShortfall = new Set((initialSave.stallShortfall ?? []).filter((id) => !!STALL_MAP[id]));
     this.autoBuyRules = this.validateAutoBuyRules(initialSave.autoBuyRules ?? []);
     this.restockOptions = initialSave.restockOptions ? normalizeRestockOptions(initialSave.restockOptions) : undefined;
     this.processedAutoBuyDayIds = new Set(initialSave.processedAutoBuyDayIds ?? []);
@@ -552,7 +571,7 @@ export class GameSimulation {
         this.callbacks.onDayChanged(day);
       }
       this.notifyStateChanged();
-    }, () => this.callbacks.onTimeChanged?.());
+    }, () => { this.callbacks.onTimeChanged?.(); this.topUpStallShortfalls(); });
   }
 
   /** Đặt lại vị trí nhân vật (dùng khi chơi chung: vị trí không theo save dùng chung). */
@@ -1903,8 +1922,8 @@ export class GameSimulation {
     return this.staff;
   }
 
-  public getAutoBuyConfig(): { enabled: boolean; rules: AutoBuyRule[]; reports: Record<number, AutoBuyReport> } {
-    return { enabled: this.autoBuyEnabled, rules: structuredClone(this.autoBuyRules), reports: structuredClone(this.autoBuyReports) };
+  public getAutoBuyConfig(): { enabled: boolean; stalls: boolean; rules: AutoBuyRule[]; reports: Record<number, AutoBuyReport> } {
+    return { enabled: this.autoBuyEnabled, stalls: this.autoBuyStalls, rules: structuredClone(this.autoBuyRules), reports: structuredClone(this.autoBuyReports) };
   }
 
   /** Cài đặt gợi ý nhập hàng đã lưu; undefined nếu người chơi chưa chỉnh lần nào. */
@@ -1916,6 +1935,61 @@ export class GameSimulation {
     this.restockOptions = normalizeRestockOptions(options);
     this.notifyStateChanged();
     return { ...this.restockOptions } as Required<RestockSuggestionOptions>;
+  }
+
+  /** Mỗi giờ game: quầy còn thiếu nguyên liệu từ sáng được mua nốt nếu giờ đã đủ tiền cho phần thiếu. */
+  private topUpStallShortfalls(): void {
+    if (!this.autoBuyStalls || this.stallShortfall.size === 0) return;
+    const time = this.clock.getTime();
+    const key = `${time.day}:${time.hour}`;
+    if (key === this.lastStallTopUpKey) return;
+    this.lastStallTopUpKey = key;
+    let changed = false;
+    for (const stallId of [...this.stallShortfall]) {
+      if (!this.stalls.owned.includes(stallId) || this.getStallRestockItems(stallId).length === 0) { this.stallShortfall.delete(stallId); continue; }
+      const plan = this.planStallRestock(stallId);
+      if ('reason' in plan || plan.missing?.length) continue; // vẫn chưa đủ tiền cho cả phần thiếu
+      let ok = true;
+      for (const order of plan.orders) {
+        const result = this.orderSupplierCart(order.supplierId, order.items);
+        if (!result.success) { ok = false; continue; }
+        const report = this.autoBuyReports[time.day];
+        if (report) order.items.forEach((item, index) => report.placed.push({ ruleId: `stall:${stallId}`, productId: item.productId, quantity: item.quantity, supplierId: order.supplierId, paidTotal: index === 0 ? result.paidTotal ?? order.totalCost : 0 }));
+        changed = true;
+      }
+      if (ok) this.stallShortfall.delete(stallId);
+    }
+    if (changed) { this.notifyStateChanged(); this.callbacks.onAutoPurchase?.(); }
+  }
+
+  public setAutoBuyStalls(enabled: boolean): void {
+    this.autoBuyStalls = !!enabled;
+    if (!this.autoBuyStalls) this.stallShortfall.clear();
+    this.notifyStateChanged();
+  }
+
+  /** Mỗi sáng: quầy đã mở nào kho thiếu nguyên liệu thì nhập (cả phần mua được một phần), tiền vẫn chừa lương/thuế như nút nhập nhanh. */
+  private autoBuyStallIngredients(report: AutoBuyReport): void {
+    for (const stallId of this.stalls.owned) {
+      const plan = this.planStallRestock(stallId);
+      if ('reason' in plan) {
+        if (this.getStallRestockItems(stallId).length > 0) report.skipped.push({ ruleId: `stall:${stallId}`, productId: STALL_MAP[stallId]?.ingredients[0]?.productId ?? '', reason: `${STALL_MAP[stallId]?.name ?? stallId}: ${plan.reason}` });
+        continue;
+      }
+      for (const order of plan.orders) {
+        const result = this.orderSupplierCart(order.supplierId, order.items);
+        if (!result.success) {
+          report.skipped.push({ ruleId: `stall:${stallId}`, productId: order.items[0]?.productId ?? '', reason: `${STALL_MAP[stallId]?.name ?? stallId}: ${result.reasons?.join(' · ') ?? 'Không thể đặt đơn.'}` });
+          continue;
+        }
+        const paid = result.paidTotal ?? order.totalCost;
+        for (const [index, item] of order.items.entries()) {
+          report.placed.push({ ruleId: `stall:${stallId}`, productId: item.productId, quantity: item.quantity, supplierId: order.supplierId, paidTotal: index === 0 ? paid : 0 });
+        }
+      }
+      if (plan.missing?.length) this.stallShortfall.add(stallId); else this.stallShortfall.delete(stallId);
+      if (plan.missing?.length) report.skipped.push({ ruleId: `stall:${stallId}`, productId: plan.missing[0]!, reason: `${STALL_MAP[stallId]?.name ?? stallId}: mới nhập được một phần, còn thiếu ${plan.missing.map((id) => PRODUCT_MAP[id]?.name ?? id).join(', ')}` });
+    }
   }
 
   public setAutoBuyConfig(enabled: boolean, rules: AutoBuyRule[]): { success: boolean; reason?: string } {
@@ -1939,7 +2013,8 @@ export class GameSimulation {
     this.processedAutoBuyDayIds.add(day);
     const report: AutoBuyReport = { day, placed: [], skipped: [] };
     this.autoBuyReports[day] = report;
-    if (!this.autoBuyEnabled) return;
+    if (this.autoBuyStalls) this.autoBuyStallIngredients(report);
+    if (!this.autoBuyEnabled) { if (this.autoBuyStalls) { this.notifyStateChanged(); if (report.placed.length > 0) this.callbacks.onAutoPurchase?.(); } return; }
     const coldIncoming = () => this.pendingOrders.reduce((sum, order) => sum + (!order.delivered && PRODUCT_MAP[order.productId]?.storageType === 'cold' ? order.quantity : 0), 0);
     let remainingBudget = Math.max(0, this.playerData.money);
     const rules = [...this.autoBuyRules].sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id));
@@ -1971,6 +2046,7 @@ export class GameSimulation {
       report.placed.push({ ruleId: rule.id, productId: rule.productId, quantity, supplierId: rule.supplierId, paidTotal });
     }
     this.notifyStateChanged();
+    if (report.placed.length > 0) this.callbacks.onAutoPurchase?.();
   }
 
   public getWageDebt(): number {
@@ -2889,43 +2965,121 @@ export class GameSimulation {
   }
 
   /**
-   * Chọn đại lý còn đủ hàng cho giỏ nhập nhanh của quầy: thử từng đại lý đã mở khóa, cắt theo tồn của đại lý,
-   * tự tăng số lượng cho đủ đơn tối thiểu, rồi lấy giỏ hợp lệ rẻ nhất. Không có đại lý nào đặt được thì trả lý do.
+   * Lập kế hoạch nhập nhanh nguyên liệu cho quầy: có thể tách sang nhiều đại lý (mỗi món lấy chỗ rẻ nhất còn hàng,
+   * thiếu thì lấy nốt ở đại lý kế tiếp), tự tăng số lượng cho đủ đơn tối thiểu, rồi chọn phương án rẻ nhất
+   * (so với việc dồn hết vào một đại lý). Tiền phụ trội do làm tròn lên đủ đơn tối thiểu không được chạm vào
+   * quỹ lương/thuế; nếu không thể thì thử lại chỉ chừa nợ đã đến hạn. Không đặt được thì trả lý do.
    */
-  public planStallRestock(stallId: string): { supplierId: string; items: { productId: string; quantity: number }[]; totalCost: number } | { reason: string } {
+  public planStallRestock(stallId: string): StallRestockPlan | { reason: string } {
     const need = this.getStallRestockItems(stallId);
     if (need.length === 0) return { reason: 'Kho đã đủ nguyên liệu cho quầy này.' };
-    let best: { supplierId: string; items: { productId: string; quantity: number }[]; totalCost: number } | undefined;
-    let lastReason = 'Không có đại lý nào còn đủ nguyên liệu.';
-    for (const supplier of SUPPLIERS) {
-      if (supplier.unlockLevel > this.playerData.level) continue;
-      const quotes = this.getSupplierQuotes(supplier.id).quotes;
-      const items: { productId: string; quantity: number }[] = [];
-      for (const line of need) {
-        const quote = quotes[line.productId];
-        if (!quote || quote.unavailable) continue;
-        const pack = PRODUCT_MAP[line.productId]?.caseSize ?? 1;
-        const cap = quote.stockLeft === undefined ? line.quantity : Math.floor(quote.stockLeft / pack) * pack;
-        const quantity = Math.min(line.quantity, cap);
-        if (quantity > 0) items.push({ productId: line.productId, quantity });
+    const full = this.planStallRestockFor(need);
+    if ('orders' in full) return full;
+    // Thiếu tiền/hàng cho đủ 3 ngày: mua trước phần làm được, món cạn nhất xét trước, mỗi món giảm dần về một kiện.
+    const urgency = (line: { productId: string; quantity: number }) => this.warehouseUnits(line.productId) / Math.max(1, line.quantity);
+    const included: { productId: string; quantity: number }[] = [];
+    let partial: StallRestockPlan | undefined;
+    for (const line of [...need].sort((x, y) => urgency(x) - urgency(y))) {
+      const pack = PRODUCT_MAP[line.productId]?.caseSize ?? 1;
+      const tries = new Set([line.quantity, Math.max(pack, Math.ceil(line.quantity / 2 / pack) * pack), pack]);
+      for (const quantity of [...tries].sort((x, y) => y - x)) {
+        const attempt = this.planStallRestockFor([...included, { productId: line.productId, quantity }]);
+        if ('orders' in attempt) { included.push({ productId: line.productId, quantity }); partial = attempt; break; }
       }
-      if (items.length === 0) { lastReason = `${supplier.name} không còn nguyên liệu quầy cần.`; continue; }
-      let check = this.validateSupplierCart(supplier.id, items);
-      // Đơn dưới mức tối thiểu: tăng dần món còn tồn nhiều nhất cho tới khi hợp lệ.
-      for (let i = 0; i < 40 && !check.valid && check.totalCost < this.playerData.money; i++) {
-        const target = items.find(it => {
-          const quote = quotes[it.productId]!;
-          const pack = PRODUCT_MAP[it.productId]?.caseSize ?? 1;
-          return quote.stockLeft === undefined || it.quantity + pack <= quote.stockLeft;
-        });
-        if (!target) break;
-        target.quantity += PRODUCT_MAP[target.productId]?.caseSize ?? 1;
-        check = this.validateSupplierCart(supplier.id, items);
-      }
-      if (!check.valid) { lastReason = check.reasons[0] ?? lastReason; continue; }
-      if (!best || check.totalCost < best.totalCost) best = { supplierId: supplier.id, items, totalCost: check.totalCost };
     }
-    return best ?? { reason: lastReason };
+    if (!partial) return full;
+    const missing = need.filter(line => (included.find(it => it.productId === line.productId)?.quantity ?? 0) < line.quantity).map(line => line.productId);
+    return { ...partial, missing };
+  }
+
+  private planStallRestockFor(need: { productId: string; quantity: number }[]): StallRestockPlan | { reason: string } {
+    type Line = { productId: string; quantity: number };
+    const suppliers = SUPPLIERS.filter(sup => sup.unlockLevel <= this.playerData.level);
+    const quotes = new Map(suppliers.map(sup => [sup.id, this.getSupplierQuotes(sup.id).quotes]));
+    const packOf = (productId: string) => PRODUCT_MAP[productId]?.caseSize ?? 1;
+    const roomOf = (supId: string, productId: string): number => {
+      const quote = quotes.get(supId)?.[productId];
+      if (!quote || quote.unavailable) return 0;
+      return quote.stockLeft === undefined ? Infinity : Math.floor(quote.stockLeft / packOf(productId)) * packOf(productId);
+    };
+    const priceOf = (supId: string, productId: string) => quotes.get(supId)?.[productId]?.unitPrice ?? Infinity;
+    const obligations = this.getCashObligations();
+    const baseCost = (orders: { supplierId: string; items: Line[] }[]) =>
+      orders.reduce((sum, order) => sum + order.items.reduce((inner, it) => inner + it.quantity * priceOf(order.supplierId, it.productId), 0), 0);
+
+    /** Kiểm tra một giỏ; thiếu đơn tối thiểu thì tăng dần số lượng (trong tồn đại lý và trần chi tiền `cap`). */
+    const settle = (supplierId: string, lines: Line[], cap: number) => {
+      const items = lines.map(it => ({ ...it }));
+      let check = this.validateSupplierCart(supplierId, items);
+      for (let i = 0; i < 40 && !check.valid && check.totalCost < cap; i++) {
+        const target = items.find(it => it.quantity + packOf(it.productId) <= roomOf(supplierId, it.productId));
+        if (!target) break;
+        target.quantity += packOf(target.productId);
+        check = this.validateSupplierCart(supplierId, items);
+      }
+      return check.valid && check.totalCost <= cap ? { supplierId, items, totalCost: check.totalCost } : undefined;
+    };
+
+    /** Gom các giỏ theo phương án phân bổ; giỏ nào không hợp lệ thì dồn món sang giỏ khác còn chỗ. */
+    const build = (assign: Map<string, Line[]>, cap: number) => {
+      const orders: { supplierId: string; items: Line[]; totalCost: number }[] = [];
+      const failed: Line[] = [];
+      for (const [supplierId, lines] of assign) {
+        const order = settle(supplierId, lines, cap - orders.reduce((sum, o) => sum + o.totalCost, 0));
+        if (order) orders.push(order); else failed.push(...lines);
+      }
+      for (const line of failed) {
+        const home = orders.find(o => roomOf(o.supplierId, line.productId) >= line.quantity + (o.items.find(it => it.productId === line.productId)?.quantity ?? 0));
+        if (!home) return undefined;
+        const existing = home.items.find(it => it.productId === line.productId);
+        if (existing) existing.quantity += line.quantity; else home.items.push({ ...line });
+        const recheck = this.validateSupplierCart(home.supplierId, home.items);
+        if (!recheck.valid) return undefined;
+        home.totalCost = recheck.totalCost;
+      }
+      const total = orders.reduce((sum, o) => sum + o.totalCost, 0);
+      return orders.length > 0 && total <= cap ? orders : undefined;
+    };
+
+    // Phương án chia: mỗi món lấy ở đại lý rẻ nhất còn hàng, thiếu thì lấy nốt ở đại lý đắt hơn kế tiếp.
+    const split = new Map<string, Line[]>();
+    let splitOk = true;
+    for (const line of need) {
+      let left = line.quantity;
+      for (const sup of [...suppliers].sort((a, b) => priceOf(a.id, line.productId) - priceOf(b.id, line.productId))) {
+        const take = Math.min(left, roomOf(sup.id, line.productId));
+        if (take <= 0) continue;
+        split.set(sup.id, [...(split.get(sup.id) ?? []), { productId: line.productId, quantity: take }]);
+        left -= take;
+        if (left <= 0) break;
+      }
+      if (left > 0) splitOk = false;
+    }
+    const candidates: Map<string, Line[]>[] = [];
+    if (splitOk) candidates.push(split);
+    for (const sup of suppliers) {
+      const lines = need.map(line => ({ productId: line.productId, quantity: Math.min(line.quantity, roomOf(sup.id, line.productId)) })).filter(line => line.quantity > 0);
+      if (lines.length === need.length) candidates.push(new Map([[sup.id, lines]]));
+    }
+    if (candidates.length === 0) return { reason: 'Không đại lý nào còn đủ nguyên liệu quầy cần hôm nay.' };
+
+    const money = this.playerData.money;
+    const due = Math.max(0, obligations.wageDebt) + Math.max(0, obligations.taxDebt);
+    for (const cap of [money - obligations.total, money - due]) {
+      if (cap <= 0) continue;
+      let best: { supplierId: string; items: Line[]; totalCost: number }[] | undefined;
+      for (const candidate of candidates) {
+        const orders = build(candidate, cap);
+        if (!orders) continue;
+        const cost = orders.reduce((sum, o) => sum + o.totalCost, 0);
+        if (!best || cost < best.reduce((sum, o) => sum + o.totalCost, 0)) best = orders;
+      }
+      if (best) {
+        const totalCost = best.reduce((sum, o) => sum + o.totalCost, 0);
+        return { orders: best, totalCost, paddedCost: Math.max(0, totalCost - baseCost(best.map(o => ({ supplierId: o.supplierId, items: need.filter(n => o.items.some(it => it.productId === n.productId)) })))) , usedReserve: cap !== money - obligations.total };
+      }
+    }
+    return { reason: 'Không đủ tiền (sau khi chừa lương/thuế) hoặc đại lý không đủ hàng để nhập nguyên liệu quầy.' };
   }
 
   public suggestRestock(supplierId?: string, budget?: number, existingCart?: Record<string, number>, options: RestockSuggestionOptions | undefined = this.restockOptions): RestockSuggestionResult {
@@ -4791,6 +4945,8 @@ export class GameSimulation {
       wageDebt: this.wageDebt,
       processedPayrollDayIds: [...this.processedPayrollDayIds],
       autoBuyEnabled: this.autoBuyEnabled,
+      autoBuyStalls: this.autoBuyStalls,
+      stallShortfall: [...this.stallShortfall],
       autoBuyRules: structuredClone(this.autoBuyRules),
       ...(this.restockOptions ? { restockOptions: { ...this.restockOptions } } : {}),
       processedAutoBuyDayIds: [...this.processedAutoBuyDayIds],
@@ -4851,6 +5007,8 @@ export class GameSimulation {
       if (member.workerTask) this.restockJobClaims.addFromWorkerTask(member.workerTask.fixtureId, member.id);
     }
     this.autoBuyEnabled = saveData.autoBuyEnabled ?? false;
+    this.autoBuyStalls = saveData.autoBuyStalls ?? false;
+    this.stallShortfall = new Set((saveData.stallShortfall ?? []).filter((id) => !!STALL_MAP[id]));
     this.autoBuyRules = this.validateAutoBuyRules(saveData.autoBuyRules ?? []);
     this.restockOptions = saveData.restockOptions ? normalizeRestockOptions(saveData.restockOptions) : undefined;
     this.processedAutoBuyDayIds = new Set(saveData.processedAutoBuyDayIds ?? []);

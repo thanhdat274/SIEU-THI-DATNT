@@ -321,5 +321,21 @@ export async function runWorldRuntimeTests() {
     assert.equal(rt.getSimulation().getRestockOptions()?.cashReservePct, 0);
   }
 
+  // Co-op: bật/tắt tự nhập nguyên liệu quầy là lệnh server-replay, ghi vào save chung và kiểm đầu vào.
+  {
+    const seed = createInitialOnlineWorld(owner, 'world-auto-buy-stalls');
+    const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    const cmd = (commandId: string, enabled: unknown) => ({
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId,
+      expectedRevision: rt.getSnapshot().world.revision, payload: { type: 'set_auto_buy_stalls', enabled },
+    });
+    assert.equal(rt.getSimulation().getAutoBuyConfig().stalls, false, 'Mặc định tắt');
+    const ok = await rt.executeCommand('owner-1', cmd('abs-1', true));
+    assert.equal(ok.status, 'accepted');
+    assert.equal(rt.getSimulation().exportSaveData().autoBuyStalls, true, 'Cờ nằm trong save chung');
+    const bad = await rt.executeCommand('owner-1', cmd('abs-bad', 'yes'));
+    assert.equal(bad.status, 'invalid', 'Giá trị không phải boolean bị từ chối');
+  }
+
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');
 }

@@ -528,6 +528,10 @@ export const App: React.FC = () => {
         onOpenInventoryModal: () => {
           useGameStore.getState().toggleInventoryModal();
         },
+        onAutoPurchase: () => {
+          if (onlineWorldRef.current) void commitBusinessChange({ type: 'auto_buy_sync' }, 'Tự nhập hàng đã đặt đơn', 'Nhập hàng');
+          else void handleSaveGame(false);
+        },
         onDayChanged: (newDay) => {
           const season = getSeasonForDay(newDay);
           const previous = getSeasonForDay(newDay - 1);
@@ -1167,7 +1171,10 @@ export const App: React.FC = () => {
     if (!sim) return;
     const plan = sim.planStallRestock(stallId);
     if ('reason' in plan) { addToast(plan.reason, 'warn'); return; }
-    await handleSupplierCartOrder(plan.supplierId, plan.items);
+    for (const order of plan.orders) await handleSupplierCartOrder(order.supplierId, order.items);
+    if (plan.missing?.length) addToast(`Chưa đủ tiền/hàng để nhập đủ: còn thiếu ${plan.missing.map(id => PRODUCT_MAP[id]?.name ?? id).join(', ')}. Bấm lại khi có thêm tiền.`, 'warn');
+    if (plan.paddedCost > 0) addToast(`Đã nhập thêm khoảng ${plan.paddedCost.toLocaleString('vi-VN')} ₫ để đủ đơn tối thiểu của đại lý.`, 'info');
+    if (plan.usedReserve) addToast('Đã dùng một phần quỹ lương/thuế chưa đến hạn để nhập nguyên liệu.', 'warn');
   };
 
   const handleBuyStall = async (stallId: string) => {
@@ -1268,6 +1275,16 @@ export const App: React.FC = () => {
       if (onlineWorldRef.current) void commitBusinessChange({ type: 'set_restock_options', options }, 'Đổi cài đặt gợi ý nhập hàng', 'Cài đặt');
       else void handleSaveGame(false);
     }, 600);
+  };
+
+  const handleToggleAutoBuyStalls = (enabled: boolean) => {
+    const sim = simulationRef.current;
+    if (!sim) return;
+    sim.setAutoBuyStalls(enabled);
+    syncFromSimulation(sim);
+    if (onlineWorldRef.current) void commitBusinessChange({ type: 'set_auto_buy_stalls', enabled }, enabled ? 'Bật tự nhập nguyên liệu quầy' : 'Tắt tự nhập nguyên liệu quầy', 'Nhập hàng');
+    else void handleSaveGame(false);
+    addToast(enabled ? 'Mỗi sáng sẽ tự nhập nguyên liệu cho quầy ăn uống.' : 'Đã tắt tự nhập nguyên liệu quầy.', 'success');
   };
 
   const handleUpdateAutoBuy = (enabled: boolean, rules: import('@game/shared').AutoBuyRule[]) => {
@@ -1721,6 +1738,7 @@ export const App: React.FC = () => {
         }
         autoBuyConfig={simulationRef.current?.getAutoBuyConfig() ?? { enabled: false, rules: [], reports: {} }}
         onUpdateAutoBuy={handleUpdateAutoBuy}
+        onToggleAutoBuyStalls={handleToggleAutoBuyStalls}
         onClose={closeAllModals}
       />
     )}

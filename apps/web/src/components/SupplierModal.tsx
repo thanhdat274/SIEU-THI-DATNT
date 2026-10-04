@@ -174,8 +174,9 @@ export interface Props {
   onGetSuggestions?: (supplierId: string, cart: Record<string, number>, options: RestockSuggestionOptions) => RestockSuggestionResult;
   getQuotes?: (supplierId: string) => SupplierQuoteBoard;
   getUnitPrice?: (supplierId: string, productId: string, quantity: number) => number;
-  autoBuyConfig?: { enabled: boolean; rules: AutoBuyRule[]; reports: Record<number, AutoBuyReport> };
+  autoBuyConfig?: { enabled: boolean; stalls?: boolean; rules: AutoBuyRule[]; reports: Record<number, AutoBuyReport> };
   onUpdateAutoBuy?: (enabled: boolean, rules: AutoBuyRule[]) => { success: boolean; reason?: string };
+  onToggleAutoBuyStalls?: (enabled: boolean) => void;
   onClose: () => void;
 }
 
@@ -194,6 +195,7 @@ export const SupplierModal: React.FC<Props> = ({
   getUnitPrice,
   autoBuyConfig = { enabled: false, rules: [], reports: {} },
   onUpdateAutoBuy,
+  onToggleAutoBuyStalls,
   onClose,
 }) => {
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(DEFAULT_SUPPLIER_ID);
@@ -389,8 +391,11 @@ export const SupplierModal: React.FC<Props> = ({
       onClose={onClose}
     >
       {/* Auto Buy Panel */}
-      <details className="auto-buy-panel" style={{ marginBottom: 14, padding: 12, border: '2px solid var(--teal)', background: 'var(--paper-light)' }} aria-label="Tự nhập hàng" open={autoBuyConfig.enabled || autoBuyConfig.rules.length > 0}>
+      <details className="auto-buy-panel" style={{ marginBottom: 14, padding: 12, border: '2px solid var(--teal)', background: 'var(--paper-light)' }} aria-label="Tự nhập hàng" open={autoBuyConfig.enabled || !!autoBuyConfig.stalls || autoBuyConfig.rules.length > 0}>
         <summary style={{ cursor: 'pointer', fontWeight: 700, marginBottom: 8 }}>Tự nhập hàng · {autoBuyConfig.enabled ? 'đang bật' : 'đang tắt'} · {autoBuyConfig.rules.length} quy tắc</summary>
+        <label style={{ display: 'block', margin: '0 0 8px', fontSize: 12 }} title="Mỗi sáng nếu kho thiếu nguyên liệu cho quầy cà phê/bánh mì đã mở, game tự chọn đại lý, đặt đủ ~3 ngày và trừ tiền (vẫn chừa lương/thuế; thiếu tiền thì mua phần làm được)">
+          <input type="checkbox" checked={!!autoBuyConfig.stalls} disabled={!onToggleAutoBuyStalls} onChange={(e) => onToggleAutoBuyStalls?.(e.target.checked)} /> Tự nhập nguyên liệu cho quầy ăn uống mỗi sáng
+        </label>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <div><strong>Tự nhập hàng</strong><p className="muted" style={{ margin: '4px 0 0' }}>Tự đặt mua theo tồn kho mỗi sáng. Chức năng này đang {autoBuyConfig.enabled ? 'bật' : 'tắt'}; khác với nhân viên bày hàng từ kho.</p></div>
           <PixelButton variant={autoBuyConfig.enabled ? 'brick' : 'teal'} disabled={!onUpdateAutoBuy} onClick={() => onUpdateAutoBuy?.(!autoBuyConfig.enabled, autoBuyConfig.rules)}>{autoBuyConfig.enabled ? 'Tắt tự nhập' : 'Bật tự nhập'}</PixelButton>

@@ -992,6 +992,10 @@ export interface SaveGameData {
   wageDebt?: number;
   processedPayrollDayIds?: number[];
   autoBuyEnabled?: boolean;
+  /** Mỗi sáng tự nhập nguyên liệu cho quầy ăn uống đã mở (độc lập với quy tắc theo mặt hàng). */
+  autoBuyStalls?: boolean;
+  /** Quầy đã nhập một phần (thiếu tiền/hàng) và đang chờ mua nốt giữa ngày. */
+  stallShortfall?: string[];
   autoBuyRules?: AutoBuyRule[];
   /** Cài đặt gợi ý nhập hàng của người chơi (tỷ lệ chia, số món thử, quỹ dự phòng); thiếu = mặc định. */
   restockOptions?: RestockSuggestionOptions;
@@ -1190,6 +1194,8 @@ export type GameCommandPayload =
   | { type: 'auto_restock' }
   | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> }
   | { type: 'set_restock_options'; options: RestockSuggestionOptions }
+  | { type: 'set_auto_buy_stalls'; enabled: boolean }
+  | { type: 'auto_buy_sync' }
   | { type: 'respond_party_order'; orderId: string; accept: boolean }
   | { type: 'fulfill_party_order'; orderId: string }
   | { type: 'rush_fulfill_party_order'; orderId: string }
@@ -1420,6 +1426,8 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'clean_dining_table': return nonEmptyString(p.fixtureId);
     case 'assign_dining_cleanup': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
     case 'set_restock_options': return isRestockSuggestionOptions(p.options);
+    case 'set_auto_buy_stalls': return typeof p.enabled === 'boolean';
+    case 'auto_buy_sync': return true;
     case 'set_price': return nonEmptyString(p.productId) && (p.price === null || (Number.isSafeInteger(p.price) && Number(p.price) > 0));
     case 'layout_move': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.tileX) && Number.isSafeInteger(p.tileY) && [0, 90, 180, 270].includes(p.rotation as number);
     case 'layout_store': return nonEmptyString(p.fixtureId);
