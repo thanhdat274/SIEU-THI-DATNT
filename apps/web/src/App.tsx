@@ -2056,16 +2056,20 @@ export const App: React.FC = () => {
           if (res.filled > 0 || res.assigned) {
             setInventory(sim.getInventory());
             setFixtures(sim.getFixtures());
+            if (onlineWorldRef.current) void commitBusinessChange({ type: 'auto_fill_shelf', fixtureId }, `Tự động bày kệ ${fixtureId}`, 'Bày hàng tự động');
           }
           return res;
         }}
         onAutoFillAll={() => {
           const sim = simulationRef.current;
           if (!sim) return { totalFilled: 0, newAssignments: 0, skipped: 0 };
+          // Khớp lệnh `auto_restock` ở server: châm kệ đã gán trước, rồi tự gán + bày ô trống.
+          const refilled = sim.autoRestockShelves();
           const res = sim.autoFillAllShelves();
-          if (res.totalFilled > 0 || res.newAssignments > 0) {
+          if (refilled + res.totalFilled > 0 || res.newAssignments > 0) {
             setInventory(sim.getInventory());
             setFixtures(sim.getFixtures());
+            if (onlineWorldRef.current) void commitBusinessChange({ type: 'auto_restock' }, `Tự động bày ${refilled + res.totalFilled} món hàng lên kệ`, 'Bày hàng tự động');
             if (res.newAssignments > 0) {
               addToast(`⚡ Đã tự gán & bày ${res.newAssignments} ô mới · ${res.totalFilled} đơn vị lên kệ`, 'success');
             }

@@ -271,7 +271,11 @@ export class WorldRuntime {
         const res = this.simulation.applyPlanogramEntry(p.fixtureId);
         success = res.applied && res.actualQuantity > 0;
       } else if (p.type === 'auto_restock') {
-        success = this.simulation.autoRestockShelves() > 0;
+        // Phải khớp client (handleAutoRestock): châm kệ đã gán rồi tự gán + bày các ô trống.
+        success = this.simulation.autoRestockShelves() + this.simulation.autoFillAllShelves().totalFilled > 0;
+      } else if (p.type === 'auto_fill_shelf') {
+        const res = this.simulation.autoFillShelf(p.fixtureId);
+        success = res.filled > 0 || res.assigned;
       } else if (p.type === 'dispose_stock') {
         success = this.simulation.disposeStock(p.productId, p.quantity).success;
       } else if (p.type === 'open_case') {

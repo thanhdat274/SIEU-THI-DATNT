@@ -1201,6 +1201,7 @@ export type GameCommandPayload =
   | { type: 'planogram_assignment'; fixtureId: string; productId: string | null }
   | { type: 'planogram_restock'; fixtureId: string }
   | { type: 'auto_restock' }
+  | { type: 'auto_fill_shelf'; fixtureId: string }
   | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> }
   | { type: 'set_restock_options'; options: RestockSuggestionOptions }
   | { type: 'set_auto_buy_stalls'; enabled: boolean }
@@ -1469,7 +1470,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'advance_day': case 'stow_all': case 'auto_restock': return true;
     case 'stow': return nonEmptyString(p.holdingId);
     case 'planogram_assignment': return nonEmptyString(p.fixtureId) && (p.productId === null || nonEmptyString(p.productId));
-    case 'planogram_restock': return nonEmptyString(p.fixtureId);
+    case 'planogram_restock': case 'auto_fill_shelf': return nonEmptyString(p.fixtureId);
     case 'dispose_stock': return nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
     case 'open_case': return nonEmptyString(p.productId) && Number.isSafeInteger(p.count) && Number(p.count) > 0;
     case 'order_supplier': return nonEmptyString(p.supplierId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 64 && p.items.every(item => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
