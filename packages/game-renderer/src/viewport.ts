@@ -2122,10 +2122,11 @@ export class PixiGameViewport {
    * Chỉ cho phép render những thực thể nằm trong vùng nhìn thấy của camera để tăng hiệu năng.
    */
   private isOnScreen(x: number, y: number): boolean {
-    const halfW = this.app.screen.width / (2 * this.camera.zoom);
-    const halfH = this.app.screen.height / (2 * this.camera.zoom);
-    return x >= this.camera.x - halfW - 32 && x <= this.camera.x + halfW + 32 &&
-           y >= this.camera.y - halfH - 32 && y <= this.camera.y + halfH + 32;
+    // camera.x/y là góc trên-trái của khung nhìn (không phải tâm).
+    const viewW = this.app.screen.width / this.camera.zoom;
+    const viewH = this.app.screen.height / this.camera.zoom;
+    return x >= this.camera.x - 32 && x <= this.camera.x + viewW + 32 &&
+           y >= this.camera.y - 32 && y <= this.camera.y + viewH + 32;
   }
 
   /**
