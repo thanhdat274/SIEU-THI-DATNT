@@ -2,6 +2,10 @@
 
 > **Trạng thái 03/10/2026 (đã đính chính):** dòng "Hoàn tất 100% - Production Ready" từng ghi ở đây là **sai** và đã gỡ. Code build/typecheck/test PASS (chạy lại 03/10/2026) nhưng còn nhiều OpenSpec mở (QA trình duyệt, playtest cân bằng, thiết bị thật, co-op hai trình duyệt). Danh sách chi tiết: `docs/RA-SOAT-2026-10-03.md`.
 
+> **Cập nhật 04/10/2026 (nhân viên tự hoạt động: bổ sung kệ, bảo vệ đi tuần, giới hạn thu ngân theo quầy):**
+> - Có code, typecheck + `yarn test` game-core PASS, chưa QA bằng mắt (`simulation.ts`): (1) `updateAutoRefillWorkers`: nhân viên bổ sung kệ rảnh trong ca cứ 3 giây kiểm tra, thấy kệ vơi mà kho còn hàng lẻ thì tự đi vào kho lấy rồi bày lên kệ; `getRestockJobTargets` nay gồm cả kệ đã có món nhưng không nằm trong sơ đồ. (2) `updateSecurityPatrol`: bảo vệ trong ca đi tuần đường trước tiệm → cửa → trong tiệm → quay ra, dò đường bằng `findPathToAny`. (3) Mỗi quầy thu ngân (trừ quầy tự thanh toán) có 2 chỗ đứng, chủ tiệm mặc định tính là người thứ nhất; `hireStaff` từ chối tuyển thu ngân khi (chủ tiệm + thu ngân) vượt 2 × số quầy, báo cần mua thêm quầy; chỗ đứng thu ngân lệch ±0,5 ô dọc quầy, theo hướng xoay.
+> - **Giới hạn:** ô trống chưa gán món vẫn cần nút "Bày hàng lên kệ" (tự gán); điểm dừng tuần tra của bảo vệ là tọa độ cố định gần cửa chính (chưa theo bố cục); chưa kiểm tra người chơi thấy đúng hoạt họa trong game; chủ tiệm không còn ẩn khi có thu ngân (đứng cạnh nhau).
+>
 > **Cập nhật 04/10/2026 (nút "Bày hàng lên kệ" ở kho dùng chung logic với Sơ đồ kệ):**
 > - Có code, typecheck PASS, chưa QA bằng mắt: `handleAutoRestock` (`App.tsx`) nay gọi `autoRestockShelves` rồi `autoFillAllShelves` (tự gán món + bày ô trống) như nút ở `StorePlanogramModal`; `WarehouseDock.tsx` chỉ khóa nút khi không còn ô trống lẫn kệ cần châm. Giới hạn: chế độ online vẫn commit `auto_restock`, phần tự gán món mới chưa được xác nhận đồng bộ server.
 >

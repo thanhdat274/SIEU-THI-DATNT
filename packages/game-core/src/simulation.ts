@@ -1988,6 +1988,13 @@ export class GameSimulation {
       return { success: false, reason: reasons[validation.reason ?? ''] ?? 'Không thể tuyển ứng viên.' };
     }
 
+    if (candidate.role === 'cashier') {
+      const counters = this.getStaffedCounters().length;
+      const people = this.staff.filter((member) => member.role === 'cashier').length + 1; // +1: chủ tiệm mặc định
+      if (people + 1 > counters * GameSimulation.PEOPLE_PER_COUNTER) {
+        return { success: false, reason: `Mỗi quầy thu ngân chỉ có ${GameSimulation.PEOPLE_PER_COUNTER} người đứng (tính cả chủ tiệm). Cần mua thêm quầy thu ngân để tuyển thêm.` };
+      }
+    }
     this.playerData.money -= candidate.hiringFee;
     {
       const hireDay = this.clock.getTime().day;
@@ -2307,6 +2314,53 @@ export class GameSimulation {
     }
   }
 
+  private autoRefillTimer = 0;
+
+  /** Nhân viên bổ sung kệ rảnh trong ca tự để ý kệ hết hàng mà kho còn: đi vào kho lấy rồi bày lên kệ. */
+  private updateAutoRefillWorkers(dt: number): void {
+    this.autoRefillTimer -= dt;
+    if (this.autoRefillTimer > 0) return;
+    this.autoRefillTimer = 3;
+    for (const member of this.staff) {
+      if (member.role !== 'refill' || member.workerTask || member.diningTask) continue;
+      if (!this.isActorAvailableForRestock(member.id)) continue;
+      if (!this.getRestockJobTargets().some((target) => target.availableInInventory > 0)) return;
+      this.assignAutoRestockJob(member.id);
+    }
+  }
+
+  private securityPatrol = new Map<string, { step: number; route: Vector2D[]; wait: number }>();
+
+  /** Bảo vệ trong ca đi tuần: ra đường trước tiệm, vào cửa, đi sâu vào trong tiệm rồi quay ra. */
+  private updateSecurityPatrol(dt: number): void {
+    const door = BUILDING_MAP.main.entranceTile;
+    const stops: GridPoint[] = [{ x: 4, y: 13 }, { x: door.x, y: door.y }, { x: door.x - 2, y: door.y - 3 }, { x: door.x, y: door.y }];
+    for (const member of this.staff) {
+      if (member.role !== 'security' || member.workerTask || member.diningTask || !this.isStaffOnShift(member)) continue;
+      let patrol = this.securityPatrol.get(member.id);
+      if (!patrol) { patrol = { step: 0, route: [], wait: 0 }; this.securityPatrol.set(member.id, patrol); }
+      if (patrol.wait > 0) { patrol.wait -= dt; continue; }
+      const position = member.position ?? { x: 4 * TILE_SIZE, y: 13 * TILE_SIZE };
+      member.position = position;
+      if (!patrol.route.length) {
+        patrol.step = (patrol.step + 1) % stops.length;
+        const goal = stops[patrol.step];
+        const path = findPathToAny(this.tileMap, this.collisionSystem, { x: Math.floor(position.x / TILE_SIZE), y: Math.floor(position.y / TILE_SIZE) }, [goal]);
+        if (path.length > 1) patrol.route = path.slice(1).map(tileCenter);
+        else patrol.wait = 3;
+        continue;
+      }
+      const waypoint = patrol.route[0];
+      const dx = waypoint.x - position.x, dy = waypoint.y - position.y, distance = Math.hypot(dx, dy);
+      const step = Math.max(35, member.speed * 12) * dt;
+      if (distance <= step) {
+        member.position = { ...waypoint };
+        patrol.route.shift();
+        if (!patrol.route.length) patrol.wait = 4;
+      } else member.position = { x: position.x + dx / distance * step, y: position.y + dy / distance * step };
+    }
+  }
+
   private isStaffOnShift(member: StaffMember): boolean {
     if (member.hiredOnDay > this.clock.getTime().day) return false;
     const shift = this.staffSchedule[member.id] ?? member.shift;
@@ -2361,25 +2415,34 @@ export class GameSimulation {
     return this.fixtures.filter((fixture) => fixture.type === 'cashier_counter' && !fixture.parentId && fixture.shopId !== 'self_checkout');
   }
 
-  /** Ô sau quầy (xoay 0° = phía bắc, mỗi 90° quay theo chiều kim đồng hồ), giữa chiều dài quầy. */
-  private getCounterBackPosition(counter: StoreFixture): Vector2D {
+  /** Số người đứng tối đa ở mỗi quầy thu ngân. */
+  private static readonly PEOPLE_PER_COUNTER = 2;
+
+  /**
+   * Ô sau quầy (xoay 0° = phía bắc, mỗi 90° quay theo chiều kim đồng hồ). Quầy có 2 chỗ đứng: chỗ 0 và chỗ 1,
+   * lệch ±0,5 ô dọc theo chiều dài quầy.
+   */
+  private getCounterBackPosition(counter: StoreFixture, slot = 0): Vector2D {
     const { widthTiles, heightTiles } = getFixtureDimensions(counter);
+    const lateral = (slot - 0.5) * TILE_SIZE;
     const midX = (counter.tileX + widthTiles / 2) * TILE_SIZE;
     const midY = (counter.tileY + heightTiles / 2) * TILE_SIZE;
     const rotation = ((counter.rotation % 360) + 360) % 360;
-    if (rotation === 90) return { x: (counter.tileX + widthTiles + 0.5) * TILE_SIZE, y: midY + TILE_SIZE / 2 - 2 };
-    if (rotation === 270) return { x: (counter.tileX - 0.5) * TILE_SIZE, y: midY + TILE_SIZE / 2 - 2 };
-    if (rotation === 180) return { x: midX, y: (counter.tileY + heightTiles + 1) * TILE_SIZE - 2 };
-    return { x: midX, y: counter.tileY * TILE_SIZE - 2 };
+    if (rotation === 90) return { x: (counter.tileX + widthTiles + 0.5) * TILE_SIZE, y: midY + lateral + TILE_SIZE / 2 - 2 };
+    if (rotation === 270) return { x: (counter.tileX - 0.5) * TILE_SIZE, y: midY + lateral + TILE_SIZE / 2 - 2 };
+    if (rotation === 180) return { x: midX + lateral, y: (counter.tileY + heightTiles + 1) * TILE_SIZE - 2 };
+    return { x: midX + lateral, y: counter.tileY * TILE_SIZE - 2 };
   }
 
-  /** Thu ngân thứ i đứng sau quầy thứ i (vòng lại nếu ít quầy hơn), theo đúng hướng xoay của quầy. */
+  /** Chủ tiệm (người mặc định) chiếm chỗ 0 của quầy đầu; thu ngân thuê lần lượt lấp các chỗ tiếp theo. */
   private getCashierPost(staffId?: string): Vector2D | undefined {
     const counters = this.getStaffedCounters();
     if (!counters.length) return undefined;
     const cashiers = this.staff.filter((member) => member.role === 'cashier');
-    const index = Math.max(0, cashiers.findIndex((member) => member.id === staffId));
-    return this.getCounterBackPosition(counters[index % counters.length]);
+    const found = cashiers.findIndex((member) => member.id === staffId);
+    const person = (found < 0 ? cashiers.length : found) + 1;
+    const per = GameSimulation.PEOPLE_PER_COUNTER;
+    return this.getCounterBackPosition(counters[Math.floor(person / per) % counters.length], person % per);
   }
 
   /** Thu ngân đang rảnh/phục vụ thì đi về và đứng ở quầy; quầy bị dời thì đi theo quầy. */
@@ -2889,11 +2952,10 @@ export class GameSimulation {
   public getShopkeeper(): { position: Vector2D; direction: 'down' | 'right'; serving: boolean; visible: boolean; checkoutId?: string } {
     const waiting = this.customerManager.peekCustomers().find(customer =>
       customer.stage === 'checkout' && (customer.basket?.length ?? 0) > 0 && !customer.cashierStaffId);
-    // Chủ tiệm đứng sau quầy gốc theo hướng xoay; có thu ngân đang trong ca đứng quầy đó thì chủ tiệm nhường chỗ.
+    // Chủ tiệm đứng sau quầy gốc theo hướng xoay, ở chỗ 0 (thu ngân thuê đứng chỗ kế bên).
     const counter = this.getStaffedCounters()[0] ?? this.fixtures.find((fixture) => fixture.type === 'cashier_counter');
-    const keeperPosition: Vector2D = counter ? this.getCounterBackPosition(counter) : { ...SHOPKEEPER_POSITION };
-    const cashiers = this.staff.filter((member) => member.role === 'cashier');
-    const visible = !(cashiers.length > 0 && this.isStaffOnShift(cashiers[0]) && this.getStaffedCounters().length > 0);
+    const keeperPosition: Vector2D = counter ? this.getCounterBackPosition(counter, 0) : { ...SHOPKEEPER_POSITION };
+    const visible = true;
     return {
       position: keeperPosition,
       direction: waiting ? 'right' : 'down',
@@ -3468,7 +3530,9 @@ export class GameSimulation {
     this.logisticsManager.update(worldDt, this.clock.getTime().hour);
 
     this.recordHeatmap();
+    this.updateAutoRefillWorkers(worldDt);
     this.updateStaffWorkers(worldDt);
+    this.updateSecurityPatrol(worldDt);
     if (this.routineEnabled && this.dailyRoutine.getState() === 'INVENTORY') {
       this.updateInventoryPatrolWorkers(worldDt);
     }
@@ -4078,6 +4142,18 @@ export class GameSimulation {
         needed,
         availableInInventory: available,
       });
+    }
+    // Kệ đã có món (không nằm trong sơ đồ) mà vơi hàng: nhân viên cũng tự châm lại từ kho.
+    for (const fix of this.fixtures) {
+      if (!isSalesFixture(fix) || fix.broken || !fix.assignedProductId || this.planogram[fix.id]) continue;
+      const prod = PRODUCT_MAP[fix.assignedProductId];
+      if (!prod || slotCategoryConflict(this.fixtures, fix, fix.assignedProductId)) continue;
+      const effectiveCap = effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
+      const needed = Math.max(0, effectiveCap - fix.currentStock);
+      if (needed <= 0) continue;
+      const invSlot = this.inventory.find((i) => i.productId === fix.assignedProductId);
+      const available = invSlot ? (invSlot.lots ? looseUnits(invSlot.lots, prod.caseSize) : invSlot.quantity) : 0;
+      targets.push({ fixtureId: fix.id, productId: fix.assignedProductId, currentStock: fix.currentStock, maxCapacity: effectiveCap, needed, availableInInventory: available });
     }
     return targets;
   }
