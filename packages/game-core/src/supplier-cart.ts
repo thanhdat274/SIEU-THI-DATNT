@@ -1,7 +1,28 @@
 import { PRODUCT_MAP, SUPPLIER_MAP } from '@game/data';
-import type { SupplierCartItem, SupplierCartLine, SupplierCartValidationResult, SupplierDayState } from '@game/shared';
+import type { SupplierCartItem, SupplierCartLine, SupplierCartValidationResult, SupplierDayState, StockLot } from '@game/shared';
 import { warehouseCellsFor } from './store-layout';
 import { nextDeliveryDay, wholesaleQuote } from './supplier-market';
+
+/** Kiểm tra số lượng có phải bội số của caseSize không (nếu có caseSize). */
+function isCaseMultiple(productId: string, quantity: number): boolean {
+  const product = PRODUCT_MAP[productId];
+  if (!product?.caseSize) return true; // không có caseSize = mua lẻ tự do
+  return quantity % product.caseSize === 0;
+}
+
+/** Lấy số case từ số lượng (floor division). */
+function quantityToCases(productId: string, quantity: number): number {
+  const product = PRODUCT_MAP[productId];
+  if (!product?.caseSize) return 0;
+  return Math.floor(quantity / product.caseSize);
+}
+
+/** Tính giá case với chiết khấu 5% so mua lẻ. */
+function caseDiscount(unitPrice: number, caseSize: number): number {
+  const casePriceWithoutDiscount = unitPrice * caseSize;
+  const casePriceWithDiscount = Math.round(casePriceWithoutDiscount * 0.95); // 5% discount
+  return casePriceWithDiscount;
+}
 
 /** Trạng thái tiệm mà việc kiểm giỏ hàng cần đọc; tách khỏi `GameSimulation` để kiểm thử độc lập. */
 export interface SupplierCartContext {
@@ -62,14 +83,36 @@ export function validateSupplierCart(
       reasons.push(`Sản phẩm ${product.name} mở khóa ở cấp ${product.unlockLevel}`);
     }
     qtyByProduct[line.productId] = (qtyByProduct[line.productId] ?? 0) + line.quantity;
+
+    // Xử lý giá theo case/lẻ
     const quote = supplier ? wholesaleQuote(supplier, product, state, line.quantity) : undefined;
-    listTotal += (quote?.listPrice ?? product.purchasePrice) * line.quantity;
+    const baseUnitPrice = quote?.unit ?? product.purchasePrice;
+    let lineTotal = baseUnitPrice * line.quantity;
+    let caseCount = 0;
+
+    if (product.caseSize && line.quantity >= product.caseSize) {
+      // Tính số case đầy
+      caseCount = Math.floor(line.quantity / product.caseSize);
+      const remainingUnits = line.quantity % product.caseSize;
+
+      // Giá case (giảm 5%)
+      const casePrice = caseDiscount(baseUnitPrice, product.caseSize);
+      lineTotal = casePrice * caseCount + baseUnitPrice * remainingUnits;
+    }
+    // Tổng niêm yết (trước chiết khấu NCC/kỹ năng) là cơ sở trừ tiền: thiếu dòng này thì subtotal = 0 và đặt hàng miễn phí.
+    // Hàng lẻ giữ như trước (giá niêm yết × số lượng); phần đủ thùng giảm 5% như `caseDiscount`.
+    const listUnit = quote?.listPrice ?? product.purchasePrice;
+    listTotal += caseCount > 0 && product.caseSize
+      ? caseDiscount(listUnit, product.caseSize) * caseCount + listUnit * (line.quantity % product.caseSize)
+      : listUnit * line.quantity;
+
     cartLines.push({
       productId: line.productId,
       quantity: line.quantity,
-      unitPrice: unitAfterSkill(quote?.unit ?? product.purchasePrice),
-      lineTotal: unitAfterSkill(quote?.unit ?? product.purchasePrice) * line.quantity,
+      unitPrice: unitAfterSkill(baseUnitPrice),
+      lineTotal: unitAfterSkill(lineTotal),
       bulkDiscount: quote?.bulk ?? 0,
+      caseCount, // số case trong line này
     });
     itemCount += line.quantity;
     if (product.storageType === 'cold') {

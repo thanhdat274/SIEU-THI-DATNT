@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ArtLab } from './components/ArtLab';
-import { setDebugVisualTime } from '@game/renderer';
+import { getWeatherVisualModel, getWeatherVisualState, setDebugVisualTime } from '@game/renderer';
 import { installPerfOverlay } from './services/perf-overlay';
 import { watchAppUpdates } from './services/app-update';
 import './index.css';
@@ -35,6 +35,9 @@ if (import.meta.env.DEV) {
   const w = window as unknown as Record<string, unknown>;
   w.setDebugTime = (day: number, hour: number, minute = 0, rain?: number) => setDebugVisualTime({ day, hour, minute, rain });
   w.clearDebugTime = () => setDebugVisualTime(null);
+  // Dev: điều khiển thời tiết từ console/kịch bản kiểm thử, ví dụ weatherModel().transitionWeather('storm', 2000).
+  w.weatherModel = getWeatherVisualModel;
+  w.weatherState = getWeatherVisualState;
   const raw = new URLSearchParams(window.location.search).get('debugTime');
   if (raw) {
     const [day, hour, minute, rain] = raw.split(':').map(Number);

@@ -130,6 +130,8 @@ export async function runWorldRuntimeTests() {
   questSeed.world.memberships.push({ accountId: 'member-2', role: 'member', joinedAt: new Date().toISOString(), lastSeenRevision: 0 });
   questSeed.business.save.statistics.totalCustomersServed = 10;
   questSeed.business.save.inventory.push({ productId: 'rau_cai_xanh', quantity: 6, lots: [{ quantity: 6, expiresOnDay: 99, unitCost: 6000, provenance: 'known' }] });
+  questSeed.business.save.inventory = questSeed.business.save.inventory.filter(item => item.productId !== 'mi_hao_hao');
+  questSeed.business.save.inventory.push({ productId: 'mi_hao_hao', quantity: 80, lots: [{ quantity: 80, expiresOnDay: 99, unitCost: 2488, provenance: 'known', caseCount: 2 }] });
   const questRuntime = new WorldRuntime(questSeed.world, questSeed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
   const questMoney = questRuntime.getSimulation().getPlayerData().money;
   const claimCommand = (commandId: string, questId: string) => ({
@@ -167,6 +169,22 @@ export async function runWorldRuntimeTests() {
   assert.equal((await questRuntime.executeCommand('owner-1', dispose('dispose-3', 1))).status, 'rejected', 'Hết hàng thì từ chối, không ghi sổ');
   assert.equal(spoilageEntries(), 2);
 
+  // Co-op mở thùng: lệnh open_case được server phát lại, đổi thùng thành hàng lẻ một lần, tổng hàng không đổi.
+  const openCase = (commandId: string, count: number) => ({ ...claimCommand(commandId, 'x'), payload: { type: 'open_case', productId: 'mi_hao_hao', count } });
+  const miStock = () => {
+    const item = questRuntime.getSimulation().getInventory().find(entry => entry.productId === 'mi_hao_hao');
+    return { quantity: item?.quantity, cases: (item?.lots ?? []).reduce((n, lot) => n + (lot.caseCount ?? 0), 0) };
+  };
+  assert.equal(isGameCommand(openCase('case-bad', 0) as never), false, 'Số thùng 0 không phải lệnh hợp lệ');
+  assert.equal(isGameCommand(openCase('case-bad', 1.5) as never), false, 'Số thùng lẻ không phải lệnh hợp lệ');
+  assert.equal((await questRuntime.executeCommand('member-2', openCase('case-1', 1))).status, 'accepted');
+  assert.deepEqual(miStock(), { quantity: 80, cases: 1 }, 'Mở 1 thùng: còn 1 thùng, tổng vẫn 80 gói');
+  await questRuntime.executeCommand('member-2', openCase('case-1', 1));
+  assert.deepEqual(miStock(), { quantity: 80, cases: 1 }, 'Gửi lại cùng ID lệnh không mở thêm thùng');
+  assert.equal((await questRuntime.executeCommand('owner-1', openCase('case-2', 5))).status, 'accepted', 'Mở nhiều hơn số thùng còn: mở phần còn lại');
+  assert.deepEqual(miStock(), { quantity: 80, cases: 0 });
+  assert.equal((await questRuntime.executeCommand('owner-1', openCase('case-3', 1))).status, 'rejected', 'Hết thùng thì từ chối');
+
   // Chuỗi chi nhánh (branch-chain): cả hai thành viên cùng quyền, ví/kho chung, replay trên mô phỏng của server.
   {
     const sim = questRuntime.getSimulation();
@@ -200,6 +218,13 @@ export async function runWorldRuntimeTests() {
       assert.equal((await send('owner-1', 'branch-back-1', { type: 'return_stock', branchId: 'branch-1', items: [{ productId: 'nuoc_suoi', quantity: 2 }] })).status, 'accepted');
       assert.equal(sim.getInventory().find((item) => item.productId === 'nuoc_suoi')?.quantity, have);
     }
+    // Bảng điều hành: member đổi mức giá/quản lý, không tốn tiền; chi nhánh lạ bị từ chối; payload sai bị validate chặn
+    const moneyBeforePolicy = sim.getPlayerData().money;
+    assert.equal((await send('member-2', 'branch-policy-1', { type: 'set_branch_policy', branchId: 'branch-1', policy: { priceMode: 'high', manager: true } })).status, 'accepted');
+    assert.deepEqual(sim.getChain().branches[0].policy, { priceMode: 'high', manager: true });
+    assert.equal(sim.getPlayerData().money, moneyBeforePolicy);
+    assert.equal((await send('owner-1', 'branch-policy-bad', { type: 'set_branch_policy', branchId: 'nope', policy: { priceMode: 'low', manager: false } })).status, 'rejected');
+    for (const bad of [{ type: 'set_branch_policy', branchId: 'branch-1', policy: { priceMode: 'cheap', manager: false } }, { type: 'set_branch_policy', branchId: 'branch-1', policy: { priceMode: 'low', manager: 1 } }, { type: 'set_branch_policy', branchId: 'branch-1' }]) assert.equal(isGameCommand({ ...claimCommand('x', 'x'), payload: bad } as never), false, JSON.stringify(bad));
     // Payload sai hình dạng bị lớp validate chặn trước khi tới mô phỏng
     for (const bad of [
       { type: 'transfer_stock', branchId: 'branch-1', items: [] },
@@ -294,6 +319,22 @@ export async function runWorldRuntimeTests() {
     assert.equal(clamped.status, 'accepted');
     assert.equal(rt.getSimulation().getRestockOptions()?.provenSharePct, 100, 'Giá trị ngoài khoảng bị kẹp');
     assert.equal(rt.getSimulation().getRestockOptions()?.cashReservePct, 0);
+  }
+
+  // Co-op: bật/tắt tự nhập nguyên liệu quầy là lệnh server-replay, ghi vào save chung và kiểm đầu vào.
+  {
+    const seed = createInitialOnlineWorld(owner, 'world-auto-buy-stalls');
+    const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    const cmd = (commandId: string, enabled: unknown) => ({
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId,
+      expectedRevision: rt.getSnapshot().world.revision, payload: { type: 'set_auto_buy_stalls', enabled },
+    });
+    assert.equal(rt.getSimulation().getAutoBuyConfig().stalls, false, 'Mặc định tắt');
+    const ok = await rt.executeCommand('owner-1', cmd('abs-1', true));
+    assert.equal(ok.status, 'accepted');
+    assert.equal(rt.getSimulation().exportSaveData().autoBuyStalls, true, 'Cờ nằm trong save chung');
+    const bad = await rt.executeCommand('owner-1', cmd('abs-bad', 'yes'));
+    assert.equal(bad.status, 'invalid', 'Giá trị không phải boolean bị từ chối');
   }
 
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');

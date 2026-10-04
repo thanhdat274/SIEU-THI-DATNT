@@ -36,10 +36,10 @@ Quy ước: chỉ đánh `[x]` khi code và kiểm chứng tương ứng đã ch
 
 > Quyết định 03/10/2026: quán nước gần = tòa nhà thứ 3 trên cùng bản đồ (nhánh việc riêng, chưa có task chi tiết; xem `design.md`); quán xa = chi nhánh nền. Các mục dưới đây áp dụng cho chi nhánh xa/màn tổng quan.
 
-- [ ] 6.1 Bộ chọn chi nhánh (HUD/`BottomBar`), dựng lại simulation khi chuyển, màn tải ngắn.
-- [ ] 6.2 Màn tổng quan chuỗi: ví chung, kho tổng, từng chi nhánh (doanh thu hôm qua, hàng sắp hết, bán hụt).
-- [ ] 6.3 Hộp thoại chuyển/trả kho nhiều món (hiện hạn dùng, kiểm sức chứa); hộp thoại mở chi nhánh.
-- [ ] 6.4 Chế độ ghé qua: mở công cụ bố cục/mua đất cho chi nhánh (tái dùng `StoreLayoutModal`); báo cáo ngày có lọc theo chi nhánh.
+- [>] 6.1 (03/10/2026, quyết định chủ dự án: chi nhánh xa điều hành bằng bảng điều hành nhẹ, không dựng `GameSimulation` riêng; bộ chọn/`switchBranch` không đưa vào UI) Xem 6.4.
+- [>] 6.2 (03/10/2026: `ChainModal` có ví chung, kho tổng, từng chi nhánh với tồn/sức chứa, báo cáo ngày gần nhất, bán hụt; **chưa** có hàng sắp hết dạng cảnh báo riêng, chưa có báo cáo ngày vắng) Màn tổng quan chuỗi: ví chung, kho tổng, từng chi nhánh (doanh thu hôm qua, hàng sắp hết, bán hụt).
+- [>] 6.3 (03/10/2026: `ChainModal` chuyển/trả nhiều món cùng lúc, hiện hạn lô gần nhất, kiểm sức chứa chi nhánh phía client, mở chi nhánh có đặt tên; lệnh `open_branch`/`transfer_stock`/`return_stock` đi qua `persistSimulationMutation` (online gửi server-replay). Đã xem trên Browser pane desktop + 844×390: mở chi nhánh trừ 1.500.000 ₫, chuyển 41 món vào kho chi nhánh. **Chưa** kiểm: trả hàng bấm thật, hai tài khoản online, qua ngày chạy nền trên UI) Hộp thoại chuyển/trả kho nhiều món (hiện hạn dùng, kiểm sức chứa); hộp thoại mở chi nhánh.
+- [>] 6.4 (03/10/2026: bản nhẹ thay chế độ ghé qua — khối "Điều hành" trong `ChainModal`: mức giá thấp/chuẩn/cao + thuê quản lý, lệnh co-op `set_branch_policy`, test core + runtime PASS, đã xem trên Browser pane; **chưa** có mở bố cục/mua đất cho chi nhánh xa, báo cáo ngày hub chưa lọc theo chi nhánh, chưa cân bằng 8.3)
 - [ ] 6.5 Renderer: bản đồ và biển theo loại hình (tái dùng texture, chỉ thêm biển "QUÁN NƯỚC").
 
 ### 6b. Quán nước gần = tòa nhà thứ 3 trên cùng bản đồ (nhánh việc riêng, quyết định 03/10/2026)
@@ -64,5 +64,5 @@ Quy ước: chỉ đánh `[x]` khi code và kiểm chứng tương ứng đã ch
 
 - [ ] 8.1 `yarn typecheck`, `yarn test`, `yarn test:all:db`, `yarn build` PASS bằng kết quả thực tế; ghi lệnh/ngày vào `tổng hợp.md`.
 - [ ] 8.2 Browser QA desktop và mobile: mở chi nhánh, chuyển kho, ghé qua sắp xếp, chạy nền qua nhiều ngày, nạp lại; ghi riêng.
-- [ ] 8.3 Mô phỏng cân bằng nhiều ngày (giống `xoi-balance-sim.ts`): thu nhập chi nhánh nền so với điều hành, thời gian hoàn vốn, ảnh hưởng của giới hạn số chi nhánh.
+- [>] 8.3 (03/10/2026: chạy `branch-balance-sim.ts` 5 seed × 120 ngày; số cũ lãi ≈ 0 nên đã đổi lương nền 120.000 → 60.000 và quản lý 90.000 → 40.000; chạy lại: hoàn vốn 18–39 ngày, mọi cấu hình có lãi. **Chưa** đo ảnh hưởng giới hạn số chi nhánh, chưa playtest; xem `tổng hợp.md`)
 - [ ] 8.4 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`; ghi giới hạn còn lại (loại hình khác, đóng chi nhánh, co-op nhiều người).

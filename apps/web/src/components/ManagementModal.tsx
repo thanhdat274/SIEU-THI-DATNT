@@ -1,3 +1,4 @@
+import { useWeatherFx, WEATHER_QUALITY_LABEL, WEATHER_QUALITY_ORDER } from '../hooks/useWeatherFx';
 import React from 'react';
 import { PixelDialog, PixelIcon, type IconName } from './pixel';
 import { applyAppUpdate, checkForAppUpdate, isAppUpdateReady, subscribeAppUpdate, type AppUpdateResult } from '../services/app-update';
@@ -31,6 +32,7 @@ interface ManagementModalProps {
   onToggleAudioMute?: () => void;
   maintenanceAlerts?: number;
   onOpenMaintenance?: () => void;
+  onOpenChain?: () => void;
   onOpenLevelRoadmap?: () => void;
   onOpenPlanogram?: () => void;
   emptySlotsCount?: number;
@@ -38,6 +40,7 @@ interface ManagementModalProps {
   canEditLayout?: boolean;
   isStoreOpen?: boolean;
   onToggleSaveModal?: () => void;
+  lastSavedAt?: string;
 }
 
 export const ManagementModal: React.FC<ManagementModalProps> = ({
@@ -57,6 +60,7 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
   onToggleAudioMute,
   maintenanceAlerts = 0,
   onOpenMaintenance,
+  onOpenChain,
   onOpenLevelRoadmap,
   onOpenPlanogram,
   emptySlotsCount = 0,
@@ -64,7 +68,11 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
   canEditLayout = false,
   isStoreOpen = false,
   onToggleSaveModal,
+  lastSavedAt,
 }) => {
+  const [weatherFx, setWeatherFx] = useWeatherFx();
+  const savedDate = lastSavedAt ? new Date(lastSavedAt) : null;
+  const savedText = savedDate && !Number.isNaN(savedDate.getTime()) ? `Lưu gần nhất: ${savedDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} ${savedDate.toLocaleDateString("vi-VN")}.` : "Chưa có mốc lưu trong phiên này.";
   const [updateStatus, setUpdateStatus] = React.useState<AppUpdateResult | 'checking' | null>(null);
   const updateText: Record<AppUpdateResult | 'checking', string> = {
     checking: 'Đang kiểm tra…',
@@ -159,7 +167,7 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
         onOpenPlanogram && {
           id: 'planogram',
           label: 'Sơ đồ & Bày hàng',
-          desc: 'Xem tổng quan tất cả kệ tiệm, châm hàng nhanh hoặc đặt thêm từ đại lý',
+          desc: 'Xem tổng quan tất cả kệ tiệm, bày hàng nhanh hoặc đặt thêm từ đại lý',
           icon: 'warehouse' as IconName,
           action: () => handleSelect(onOpenPlanogram),
           badge: emptySlotsCount > 0 ? `${emptySlotsCount} ô hết` : undefined,
@@ -195,6 +203,13 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
           badge: maintenanceAlerts > 0 ? `${maintenanceAlerts} cần sửa` : undefined,
           badgeVariant: 'brick' as const,
         },
+        onOpenChain && {
+          id: 'chain',
+          label: 'Chuỗi chi nhánh',
+          desc: 'Mở chi nhánh, xem doanh thu và chuyển hàng từ kho tổng',
+          icon: 'door' as IconName,
+          action: () => handleSelect(onOpenChain),
+        },
         onOpenLayout && {
           id: 'layout',
           label: 'Sắp xếp tiệm',
@@ -213,7 +228,7 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
         onToggleSaveModal && {
           id: 'save',
           label: 'Lưu tiến trình',
-          desc: 'Lưu thủ công save game và quản lý dữ liệu máy chủ',
+          desc: `Lưu thủ công, xuất/nhập file, đồng bộ đám mây. ${savedText}`,
           icon: 'save' as IconName,
           action: () => handleSelect(onToggleSaveModal),
         },
@@ -225,6 +240,22 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
           action: () => onToggleAudioMute(),
           badge: audioMuted ? 'Đang tắt' : undefined,
           badgeVariant: 'gold' as const,
+        },
+        {
+          id: 'weather-fx',
+          label: weatherFx.enabled ? 'Tắt hiệu ứng thời tiết' : 'Bật hiệu ứng thời tiết',
+          desc: 'Chỉ ẩn/hiện hiệu ứng hình ảnh (mưa, mây, nước chảy mái hiên); thời tiết vẫn diễn ra và ảnh hưởng khách',
+          icon: (weatherFx.enabled ? 'sun' : 'cold') as IconName,
+          action: () => setWeatherFx({ enabled: !weatherFx.enabled }),
+          badge: weatherFx.enabled ? undefined : 'Đang tắt',
+          badgeVariant: 'gold' as const,
+        },
+        {
+          id: 'weather-quality',
+          label: `Chất lượng thời tiết: ${WEATHER_QUALITY_LABEL[weatherFx.quality ?? 'auto']}`,
+          desc: 'Mật độ mưa, mây, lá bay. Tự động: điện thoại = Vừa, máy tính = Cao. Bấm để đổi vòng Tự động → Thấp → Vừa → Cao',
+          icon: 'cold' as IconName,
+          action: () => setWeatherFx({ quality: WEATHER_QUALITY_ORDER[(WEATHER_QUALITY_ORDER.indexOf(weatherFx.quality) + 1) % WEATHER_QUALITY_ORDER.length] }),
         },
         {
           id: 'check-update',

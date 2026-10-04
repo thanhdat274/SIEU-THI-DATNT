@@ -11,6 +11,8 @@ export interface StallModalProps {
   stock: Record<string, number>; // tồn nhà kho theo productId
   report?: StallDayReport;
   onBuy: (stallId: string) => void;
+  onRestock?: (stallId: string) => void;
+  getRestockItems?: (stallId: string) => { productId: string; quantity: number }[];
   onClose: () => void;
 }
 
@@ -21,7 +23,7 @@ const reportLine = (report: StallDayReport, stallId: string) => {
   return `Ngày ${report.day}: bán ${entry.servings}/${entry.demand} suất, thu ${money(entry.revenue)}, vốn ${money(entry.cogs)}${missing}`;
 };
 
-export const StallModal: React.FC<StallModalProps> = ({ stalls, season, stock, report, onBuy, onClose }) => (
+export const StallModal: React.FC<StallModalProps> = ({ stalls, season, stock, report, onBuy, onRestock, getRestockItems, onClose }) => (
   <PixelDialog icon="coin" title="QUẦY ĂN UỐNG" subtitle="Bán trước hiên tiệm, doanh thu tính khi sang ngày mới" onClose={onClose}>
     {season && <p className="pixel-panel" style={{ padding: 8 }}><strong>{season.name}</strong> — {season.blurb}</p>}
     <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0', display: 'grid', gap: 8 }}>
@@ -39,6 +41,15 @@ export const StallModal: React.FC<StallModalProps> = ({ stalls, season, stock, r
             {stall.owned && lastEntry(report, stall.id) && <span className="tabular">{reportLine(report!, stall.id)}</span>}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <span className="muted">{stall.owned ? 'Đang bán mỗi ngày' : stall.reason ?? `Giá mở quầy ${money(stall.price)}`}</span>
+              {stall.owned && onRestock && (() => {
+                const need = getRestockItems?.(stall.id) ?? [];
+                return (
+                  <PixelButton variant="paper" disabled={need.length === 0} onClick={() => onRestock(stall.id)}
+                    title={need.map(i => `${PRODUCT_MAP[i.productId]?.name ?? i.productId} ×${i.quantity}`).join(', ')}>
+                    {need.length === 0 ? 'Kho đủ nguyên liệu' : 'Nhập nhanh nguyên liệu'}
+                  </PixelButton>
+                );
+              })()}
               <PixelButton variant="teal" disabled={!stall.buyable} onClick={() => onBuy(stall.id)}>
                 {stall.owned ? 'Đã mở' : `Mở quầy · ${money(stall.price)}`}
               </PixelButton>

@@ -1,4 +1,4 @@
-import { BRANCH_REPORT_LIMIT, type BranchSave, type ChainState, type InventoryItem, type StockLot } from '@game/shared';
+import { BRANCH_REPORT_LIMIT, type BranchPolicy, type BranchSave, type ChainState, type InventoryItem, type StockLot } from '@game/shared';
 import { MAX_CHAIN_BRANCHES, PRODUCT_MAP, STORE_TYPE_MAP } from '@game/data';
 import { mergeLots, normalizeLots, sumLots, takeLots } from './stock';
 
@@ -37,6 +37,15 @@ const branchSeq = (id: string): number => Number(/^branch-(\d+)$/.exec(id)?.[1] 
 
 const finite = (n: unknown, fallback: number): number => (typeof n === 'number' && Number.isFinite(n) ? n : fallback);
 
+/** Chính sách điều hành đọc từ save: mức giá lạ về chuẩn, `manager` chỉ nhận đúng true. */
+export function sanitizePolicy(raw: unknown): BranchPolicy {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<BranchPolicy>;
+  return {
+    priceMode: r.priceMode === 'low' || r.priceMode === 'high' ? r.priceMode : 'normal',
+    manager: r.manager === true,
+  };
+}
+
 /** Làm sạch một chi nhánh đọc từ save: kiểu sai/thiếu trường không làm sập nạp, lô hỏng bị bỏ. */
 function sanitizeBranch(raw: BranchSave): BranchSave {
   const type = STORE_TYPE_MAP[raw.storeType];
@@ -65,6 +74,7 @@ function sanitizeBranch(raw: BranchSave): BranchSave {
     lastBackgroundDay: Number.isSafeInteger(raw.lastBackgroundDay) ? raw.lastBackgroundDay : 0,
     reports,
     totalRevenue: Math.max(0, finite(raw.totalRevenue, 0)),
+    ...(raw.policy ? { policy: sanitizePolicy(raw.policy) } : {}),
   };
 }
 
@@ -164,7 +174,7 @@ function moveStock(from: InventoryItem[], to: InventoryItem[], wanted: Map<strin
   for (const [productId, quantity] of wanted) {
     const lots = lotsOf(source.find((i) => i.productId === productId), day);
     if (sumLots(lots) < quantity) return fail(`Không đủ ${PRODUCT_MAP[productId]?.name ?? productId} để chuyển.`);
-    const moved = takeLots(lots, quantity);
+    const moved = takeLots(lots, quantity, { caseSize: PRODUCT_MAP[productId]?.caseSize });
     setLots(source, productId, lots);
     const targetLots = lotsOf(target.find((i) => i.productId === productId), day);
     mergeLots(targetLots, moved);
@@ -202,6 +212,17 @@ export function returnStock(ctx: ChainContext, branchId: string, items: Transfer
   const next = { ...chain, branches: chain.branches.map((b) => (b.id === branchId ? { ...b, stock: moved.from } : b)) };
   return { ok: true, money: ctx.money, warehouse: moved.to, chain: next };
 }
+
+/** Đổi cách điều hành chi nhánh (mức giá, thuê/sa thải quản lý). Không đổi ví; áp dụng từ lần chạy nền kế tiếp. */
+export function setBranchPolicy(ctx: ChainContext, branchId: string, policy: BranchPolicy): ChainResult {
+  const chain = normalizeChain(ctx.chain);
+  if (!chain.branches.some((b) => b.id === branchId)) return fail('Chi nhánh không tồn tại.');
+  const next = sanitizePolicy(policy);
+  return { ok: true, money: ctx.money, warehouse: structuredClone(ctx.warehouse), chain: { ...chain, branches: chain.branches.map((b) => (b.id === branchId ? { ...b, policy: next } : b)) } };
+}
+
+/** Chính sách đang áp dụng của chi nhánh (thiếu = mặc định). */
+export const policyOf = (branch: BranchSave): BranchPolicy => sanitizePolicy(branch.policy);
 
 /** Tổng đơn vị và giá trị vốn của một kho (dùng cho bất biến bảo toàn). */
 export function stockTotals(stock: InventoryItem[], day: number): { units: number; value: number } {

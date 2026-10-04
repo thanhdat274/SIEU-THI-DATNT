@@ -119,17 +119,17 @@ export const WarehouseDock: React.FC<Props> = ({
           Xem nhà kho
         </PixelButton>
         {onOpenPlanogram && (
-          <PixelButton icon="warehouse" onClick={onOpenPlanogram} title="Xem toàn bộ các kệ và châm hàng">
+          <PixelButton icon="warehouse" onClick={onOpenPlanogram} title="Xem toàn bộ các kệ và bày hàng">
             Sơ đồ kệ
           </PixelButton>
         )}
         <p>
           {empty > 0 ? `${empty} kệ đang trống. ` : ''}
-          {restockable.length ? `${restockable.length} kệ có thể châm từ kho.` : 'Chưa có hàng phù hợp để châm các kệ.'}
+          {restockable.length ? `${restockable.length} kệ có thể bày từ kho.` : empty > 0 && items.length > 0 ? 'Bấm để tự gán món cho các ô trống.' : 'Chưa có hàng phù hợp để bày các kệ.'}
           {cold >= coldCapacity ? ' Kho mát đã đầy.' : ''}
         </p>
-        <PixelButton icon="plus" variant="teal" onClick={onAutoRestock} disabled={!restockable.length}>
-          Châm các kệ
+        <PixelButton icon="plus" variant="teal" onClick={onAutoRestock} disabled={!restockable.length && !(empty > 0 && items.length > 0)}>
+          Bày hàng lên kệ
         </PixelButton>
         <PixelButton icon="truck" onClick={onOpenSupplier}>
           Ghé đại lý

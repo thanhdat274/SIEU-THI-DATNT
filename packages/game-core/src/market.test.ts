@@ -115,7 +115,8 @@ export function runMarketTests(): void {
   const builds = interval.getDemandBuildCount();
   assert.ok(builds >= 1 && builds <= 2, `Không tính lại mỗi khung hình (${builds} lần sau 600 khung)`);
   for (let i = 0; i < 600; i++) interval.update(1 / 60);
-  assert.ok(interval.getDemandBuildCount() - builds <= 1, 'Thêm 600 khung chỉ tính lại khi sang khung giờ');
+  // 600 khung ~ 10 phút trong game; bảng nhu cầu đổi khoảng 5 phút một lần (lệch theo lúc khách tới nên cửa sổ 600 khung có thể trúng 2 lần), nên tối đa 2 lần, không mỗi khung hình.
+  assert.ok(interval.getDemandBuildCount() - builds <= 2, 'Thêm 600 khung chỉ tính lại theo khoảng, không mỗi khung hình');
   const before = interval.getDemandBuildCount();
   const swapped = interval.exportSaveData();
   swapped.market = { ...swapped.market!, weather: { ...swapped.market!.weather, today: swapped.market!.weather.today === 'storm' ? 'hot' : 'storm' } };

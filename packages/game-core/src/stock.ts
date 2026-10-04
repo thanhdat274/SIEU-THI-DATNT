@@ -10,6 +10,19 @@ export function sumLots(lots: StockLot[]): number {
   return lots.reduce((total, lot) => total + lot.quantity, 0);
 }
 
+/**
+ * Hàng lẻ (đã mở thùng) trong các lô: `quantity` của lô gồm cả hàng còn nguyên thùng (`caseCount` × `caseSize`),
+ * chỉ phần lẻ mới được châm lên kệ. Không có `caseSize` (món không bán theo thùng) thì mọi hàng đều là hàng lẻ.
+ */
+export function looseUnits(lots: readonly StockLot[] | undefined, caseSize?: number): number {
+  return (lots ?? []).reduce((total, lot) => total + Math.max(0, lot.quantity - (caseSize ? (lot.caseCount ?? 0) * caseSize : 0)), 0);
+}
+
+/** Số thùng còn nguyên trong các lô. */
+export function sealedCases(lots: readonly StockLot[] | undefined): number {
+  return (lots ?? []).reduce((total, lot) => total + (lot.caseCount ?? 0), 0);
+}
+
 /** Old saves have only aggregate quantities or lack unitCost. Give those goods a full shelf life and estimated cost on migration. */
 export function normalizeLots(quantity: number, lots: StockLot[] | undefined, productId: string, day: number): StockLot[] {
   const defaultCost = PRODUCT_MAP[productId]?.purchasePrice ?? 0;
@@ -50,14 +63,24 @@ export function normalizeLots(quantity: number, lots: StockLot[] | undefined, pr
     : [];
 }
 
-/** Transfer oldest stock first; mutates source lots and returns the moved lots with unitCost and provenance preserved. */
-export function takeLots(source: StockLot[], amount: number): StockLot[] {
+/**
+ * Transfer oldest stock first; mutates source lots and returns the moved lots with unitCost and provenance preserved.
+ * Hàng lấy ra luôn là hàng lẻ (không mang `caseCount`). Có `caseSize`:
+ * - `looseOnly` (châm kệ): chỉ lấy phần lẻ của từng lô, hàng còn nguyên thùng ở lại kho;
+ * - mặc định (tiêu hủy, quầy dùng nguyên liệu...): lấy theo hạn như cũ; trong một lô, phần lẻ hết trước rồi mới khui thùng
+ *   (bớt `caseCount` cho khớp, không bao giờ vượt `quantity / caseSize`).
+ */
+export function takeLots(source: StockLot[], amount: number, options: { caseSize?: number; looseOnly?: boolean } = {}): StockLot[] {
+  const { caseSize, looseOnly = false } = options;
   source.sort((a, b) => a.expiresOnDay - b.expiresOnDay);
   const moved: StockLot[] = [];
   let remaining = amount;
-  while (remaining > 0 && source.length > 0) {
-    const lot = source[0];
-    const quantity = Math.min(remaining, lot.quantity);
+  for (let i = 0; remaining > 0 && i < source.length;) {
+    const lot = source[i];
+    const sealed = caseSize ? (lot.caseCount ?? 0) * caseSize : 0;
+    const takeable = looseOnly ? Math.max(0, lot.quantity - sealed) : lot.quantity;
+    const quantity = Math.min(remaining, takeable);
+    if (quantity <= 0) { i++; continue; }
     moved.push({
       quantity,
       expiresOnDay: lot.expiresOnDay,
@@ -67,7 +90,12 @@ export function takeLots(source: StockLot[], amount: number): StockLot[] {
     });
     lot.quantity -= quantity;
     remaining -= quantity;
-    if (lot.quantity === 0) source.shift();
+    if (caseSize && lot.caseCount) {
+      lot.caseCount = Math.min(lot.caseCount, Math.floor(lot.quantity / caseSize));
+      if (lot.caseCount === 0) delete lot.caseCount;
+    }
+    if (lot.quantity === 0) source.splice(i, 1);
+    else i++;
   }
   return moved;
 }
@@ -81,8 +109,11 @@ export function mergeLots(target: StockLot[], incoming: StockLot[]): void {
         existing.provenance === lot.provenance &&
         (existing.decayCarry ?? 0) === (lot.decayCarry ?? 0)
     );
-    if (match) match.quantity += lot.quantity;
-    else target.push({ ...lot });
+    if (match) {
+      match.quantity += lot.quantity;
+      // Gộp lô thì cộng cả số thùng (trước đây thùng của lô gộp vào bị mất, hàng thành lẻ hết).
+      if (lot.caseCount) match.caseCount = (match.caseCount ?? 0) + lot.caseCount;
+    } else target.push({ ...lot });
   }
   target.sort((a, b) => a.expiresOnDay - b.expiresOnDay);
 }

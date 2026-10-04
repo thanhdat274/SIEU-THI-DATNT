@@ -25,5 +25,23 @@ export function runAvatarTests() {
   assert.equal(controller.isWithinInteractionRange('unknown', DEFAULT_INITIAL_SAVE.storeLayout.fixtures[0]), false);
   assert.equal(controller.isWithinInteractionRange('a', DEFAULT_INITIAL_SAVE.storeLayout.fixtures[0]), false);
   assert.equal(controller.getAvatar('unknown'), null);
+
+  // Co-op: avatar do server điều khiển dùng cùng va chạm người chơi nên cũng đi ra khỏi bản đồ ô, và bị nhà chặn như người chơi.
+  {
+    const sidewalk = { x: 1.5 * 32, y: 12.5 * 32 };
+    const ctl = new WorldAvatarController([
+      { accountId: 'host', position: { ...sidewalk }, direction: 'left', updatedAt: '2026-10-04T00:00:00.000Z' },
+      { accountId: 'guest', position: { x: 11.5 * 32, y: 12.5 * 32 }, direction: 'left', updatedAt: '2026-10-04T00:00:00.000Z' },
+    ], generateStarterTileMap(), DEFAULT_INITIAL_SAVE.storeLayout.fixtures);
+    let t = 1000;
+    for (let seq = 1; seq <= 120; seq++) { t += 50; ctl.applyInput({ accountId: 'host', sequence: seq, direction: { x: -1, y: 0 } }, t); }
+    assert.ok(ctl.getAvatar('host')!.position.x < -200, 'Avatar co-op đi ra khỏi bản đồ ô qua vỉa hè');
+    assert.ok(ctl.getAvatar('guest')!.position.x > 11 * 32, 'Avatar kia không bị ảnh hưởng');
+    const south = new WorldAvatarController([{ accountId: 'g', position: { x: 60, y: 12.5 * 32 }, direction: 'down', updatedAt: '2026-10-04T00:00:00.000Z' }], generateStarterTileMap(), DEFAULT_INITIAL_SAVE.storeLayout.fixtures);
+    t = 1000;
+    for (let seq = 1; seq <= 300; seq++) { t += 50; south.applyInput({ accountId: 'g', sequence: seq, direction: { x: 0, y: 1 } }, t); }
+    const y = south.getAvatar('g')!.position.y;
+    assert.ok(y > 16 * 32 && y < 21 * 32, `Avatar co-op đi qua đường rồi bị tường nhà phía nam chặn (y=${Math.round(y)})`);
+  }
   console.log('✓ Avatar movement is sequenced, bounded, collision-aware, and isolated by account.');
 }

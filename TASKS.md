@@ -1,12 +1,16 @@
 # BẢNG THEO DÕI CÔNG VIỆC (TASKS PROGRESS)
 
+## Khu phố mở rộng quanh tiệm (04/10/2026)
+
+- [>] Khu phố mở rộng (zoom xa 0,5×, nhà dân/nhà phố/chung cư/trường/công viên/đường/đồi, giao thông theo giờ-thời tiết, NPC nền có lịch + hội thoại): code + `neighborhood.test.ts` PASS, đã nhìn trong Browser pane (desktop, tablet, 852×393). Chưa có: thiết bị thật, FPS thật, test tự động renderer, xe chạy đường dọc, A* cho NPC, đồng bộ co-op. Chi tiết và giới hạn: `tổng hợp.md` (khối đầu file).
+
 ## Mở rộng gameplay (01/10/2026)
 
 - [>] `reference-gameplay-expansion`: đã code tiền giả, tín dụng khách quen và dine-in MVP. Dine-in dùng đồ ăn đóng gói từ kệ, khách đi tới bàn, ăn 60 giây game, bàn bẩn; người chơi hoặc nhân viên bổ sung hàng có thể dọn. Checkout, thu nợ, dọn bàn và giao job nhân viên được server replay. Wave B (bếp/công thức/sản xuất, 3.1–3.4) đã có code + test lõi `production.test.ts` và `tsc -b` PASS (02/10/2026); `store-logistics.test.ts` đang FAIL (ngoài phạm vi); Mục 8.1–8.4 và 8.8 đã chốt (02/10/2026); 8.5 (mô phỏng cân bằng), 8.6 (browser QA còn thiếu) và 8.7 (chờ TAX-0) còn mở. Wave C prestige (4.1–4.2) và Wave D (biểu đồ, heatmap, checklist, âm thanh, replay lõi) có code + test lõi; chưa browser QA, balance provisional.
 - [ ] Wave A còn validation/verification trong section 8; recipe/production vẫn là Wave B và chưa có.
 - [ ] Wave B: công thức và sản xuất tại bếp; Wave C: prestige; Wave D: biểu đồ/heatmap/checklist/audio/replay; Wave E: tax chỉ sau TAX-0.
 - [x] Tiệm xôi riêng trên cùng dải đất: code + test PASS 02/10/2026 (OpenSpec `xoi-shop-same-land-strip`, 23/26 task); còn avatar đi ra/bảo vệ, QA chạm thật, co-op hai client thật và ca `buy_warehouse_tier` đỏ trong `coop-commands.test.ts`.
-- [ ] Chuỗi chi nhánh khác/loại hình cửa hàng/luân chuyển nội bộ vẫn plan sau, phụ thuộc thiết kế mở rộng và phân khu trên cùng khu đất.
+- [ ] Chuỗi chi nhánh khác/loại hình cửa hàng/luân chuyển nội bộ vẫn plan sau, phụ thuộc thiết kế mở rộng và phân khu trên cùng khu đất. UI tổng quan/mở/chuyển hàng chi nhánh đã có (`ChainModal`, 03/10/2026); còn bộ chọn/chế độ điều hành, renderer chi nhánh xa. Chi nhánh xa nay có bảng điều hành nhẹ (mức giá + quản lý, `set_branch_policy`).
 
 ## ĐỢT RÀ SOÁT HIỆN TẠI (03/10/2026)
 
@@ -117,8 +121,8 @@
 
 ## CO-OP — TRẠNG THÁI 30/09/2026 (sau integration)
 - [x] Màn đăng nhập: có nút “Đăng xuất” riêng khi đã đăng nhập; khi chưa đăng nhập hiện “Đăng nhập Google”.
-- [ ] OAuth thật/browser QA chưa chạy. Typecheck gần nhất dừng ở `GameSimulation.updateStaffWorkers` chưa tồn tại (task nhân viên 9.2 đang triển khai); lỗi JSX nút tài khoản đã sửa nhưng chưa thể xác minh toàn app do blocker đó.
-- [ ] Lượt tiếp tục task 3.4/4.2: checkpoint được xếp hàng; runtime idle chỉ evict sau flush thành công, checkpoint lỗi giữ runtime; heartbeat-timeout đóng socket và gửi event. Gateway integration trên Mongo local PASS cho idle eviction rồi khôi phục clock/avatar bằng runtime mới. Client khóa mutation khi disconnect, chặn lưu/reset online save vào Dexie, rollback nếu commit lỗi/từ chối; store status, stow và planogram gửi snapshot commit. Core tests/server typecheck PASS; monorepo typecheck gần nhất FAIL do `GameSimulation.updateStaffWorkers` chưa tồn tại (9.2); chưa build/browser reconnect QA.
+- [ ] OAuth thật/browser QA chưa chạy. (Lỗi thời: typecheck PASS 03/10/2026.) Từng ghi typecheck dừng ở `GameSimulation.updateStaffWorkers`; lỗi JSX nút tài khoản đã sửa nhưng chưa thể xác minh toàn app do blocker đó.
+- [ ] Lượt tiếp tục task 3.4/4.2: checkpoint được xếp hàng; runtime idle chỉ evict sau flush thành công, checkpoint lỗi giữ runtime; heartbeat-timeout đóng socket và gửi event. Gateway integration trên Mongo local PASS cho idle eviction rồi khôi phục clock/avatar bằng runtime mới. Client khóa mutation khi disconnect, chặn lưu/reset online save vào Dexie, rollback nếu commit lỗi/từ chối; store status, stow và planogram gửi snapshot commit. Core tests/server typecheck PASS; (typecheck từng FAIL do `updateStaffWorkers`, nay đã PASS 03/10/2026); chưa build/browser reconnect QA.
 - [x] (Lỗi thời từ 30/09/2026: đã bỏ yêu cầu transaction/replica set; `test:worlds` PASS trên Mongo standalone 01/10/2026.) Ghi chú gốc: Mongo service người dùng đang standalone. Đã tạo replica set single-node tạm port 27018 ở `%TEMP%`, chạy health/auth + transaction commit/rollback PASS, chạy transaction-backed world repository + ticket tests PASS; data/process tạm đã dọn, không đổi service/DB local. Muốn dùng bền cần cấu hình service local replication và URI `replicaSet=rs0`.
 - [x] Thêm WS input authoritative, time-vote/cancel, ticket one-use TTL 30s, origin allowlist, heartbeat timeout 15s, snapshot 500ms và session replacement. `test:gateway` hai session PASS: spoof account bị bỏ qua, movement/avatar snapshot, cùng duyệt ngày, thay session.
 - [x] `commitCommand` dùng một `updateOne` nguyên tử (revision + receipt, không transaction); world repository test PASS cho idempotent retry, command tranh revision (một thắng), checkpoint stale không overwrite; ticket TTL/one-use/origin assertions PASS.

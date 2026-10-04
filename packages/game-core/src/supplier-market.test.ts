@@ -81,7 +81,10 @@ export async function runSupplierMarketTests(): Promise<void> {
   assert.equal(sim.orderSupplierCart('dai_ly_dau_hem', [{ productId: 'mi_hao_hao', quantity: 100 }]).success, true, 'Mối khác còn hàng vẫn đặt được');
   assert.ok(money0 > sim.getPlayerData().money);
   const pendingCost = sim.getPendingOrders().find(order => order.supplierId === 'cho_dau_moi')!.unitCost;
-  assert.equal(pendingCost, Math.max(1, Math.round(mi.purchasePrice * 0.97 * 0.9)), 'Đơn giá chốt gồm ưu đãi số lượng lớn');
+  // 60 gói = đủ 2 thùng (caseSize 30): đơn giá chốt gồm ưu đãi số lượng lớn, chiết khấu mối và giảm 5% theo thùng (cộng dồn).
+  const unitLoose = Math.max(1, Math.round(mi.purchasePrice * 0.97 * 0.9));
+  const expectedCasePrice = sim.validateSupplierCart('cho_dau_moi', [{ productId: 'mi_hao_hao', quantity: 40 }]).lines![0].lineTotal;
+  assert.equal(pendingCost, Math.round(expectedCasePrice / 40), 'Đơn giá vốn khớp giá thực sau ưu đãi thùng');
 
   const outSave = sim.exportSaveData();
   outSave.market!.suppliers!['cho_dau_moi'].unavailable = ['mi_hao_hao'];

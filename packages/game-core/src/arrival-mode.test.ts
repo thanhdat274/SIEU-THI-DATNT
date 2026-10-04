@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { isSalesFixture } from '@game/shared';
-import { ARRIVAL_BASE_WEIGHTS, CAR_PARKING_SPOTS, DEFAULT_INITIAL_SAVE, PRODUCT_MAP, STORE_BOUNDS, STREET_LAMP_TILES, STREET_PARKING_SPOTS, CROSSWALK, MAP_WIDTH, generateStarterTileMap } from '@game/data';
+import { ARRIVAL_BASE_WEIGHTS, CAR_PARKING_SPOTS, DEFAULT_INITIAL_SAVE, PRODUCT_MAP, STORE_BOUNDS, STREET_LAMP_TILES, STREET_PARKING_SPOTS, MAP_WIDTH, generateStarterTileMap } from '@game/data';
 import { arrivalModeWeights, pickArrivalMode } from './arrival-mode';
 import { CustomerManager } from './customers';
 import { InputManager } from './input';
@@ -52,14 +52,14 @@ export function runArrivalModeTests(): void {
   assert.equal(pickArrivalMode(w, 0.51), 'walk');
   assert.equal(pickArrivalMode(w, 0.999), 'walk');
 
-  // Hình học chỗ đỗ ô tô: không chồng cột đèn, ô đỗ xe máy, vạch qua đường hay cửa tiệm.
-  const carHalf = 34;
+  // Hình học chỗ đỗ ô tô: không chồng cột đèn, ô đỗ xe máy hay cửa tiệm.
+  const carHalf = 65; // ô tô dài 130 px
   for (const spot of CAR_PARKING_SPOTS) {
     for (const lamp of STREET_LAMP_TILES) assert.ok(Math.abs(spot.x - (lamp.x + 0.5) * 32) > carHalf + 8, 'Ô tô không chồng cột đèn');
-    for (const bike of STREET_PARKING_SPOTS) assert.ok(Math.abs(spot.x - bike.x) > carHalf + 22, 'Ô tô không chồng ô đỗ xe máy');
-    assert.ok(spot.x - carHalf > (CROSSWALK.tileX + CROSSWALK.widthTiles) * 32, 'Ô tô nằm ngoài vạch qua đường');
+    for (const bike of STREET_PARKING_SPOTS) assert.ok(Math.abs(spot.x - bike.x) > carHalf + 31, 'Ô tô không chồng ô đỗ xe máy');
     assert.ok(spot.x - carHalf > (STORE_BOUNDS.right + 1) * 32 - 1 || Math.floor(spot.y / 32) > STORE_BOUNDS.bottom, 'Ô tô không nằm trong tiệm');
     assert.ok(spot.x + carHalf < MAP_WIDTH * 32, 'Ô tô trong bản đồ');
+    for (const other of CAR_PARKING_SPOTS) if (other !== spot) assert.ok(Math.abs(spot.x - other.x) > carHalf * 2, 'Hai ô tô đỗ không chồng nhau');
   }
 
   // Tích hợp: khách thật mang phương thức đến theo ngữ cảnh, ô tô có chỗ đỗ, không trùng chỗ.

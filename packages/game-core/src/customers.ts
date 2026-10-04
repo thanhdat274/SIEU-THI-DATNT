@@ -1,4 +1,3 @@
-import { slotCategoryConflict } from './shelf-slots';
 import {
   CustomerState,
   CheckoutResult,
@@ -14,7 +13,7 @@ import {
 import { BUILDING_MAP, BUILDING_TRAFFIC_SHARE, MAP_WIDTH, buildingAt, fixtureBuilding, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS, type BuildingId } from '@game/data';
 import { arrivalModeWeights, pickArrivalMode } from './arrival-mode';
 import { CollisionSystem } from './collision';
-import { findPath, GridPoint, tileCenter } from './pathfinding';
+import { findPath, findPathToAny, GridPoint, tileCenter } from './pathfinding';
 import { mergeLots, sumLots, takeLots } from './stock';
 import { removeExpiredLots } from './spoilage';
 import { Mulberry32Rng, daySeed } from './staff';
@@ -89,6 +88,8 @@ export interface CustomerMovementPath {
 
 export class CustomerManager {
   private customers: CustomerState[] = [];
+  /** Hệ số đi nhanh của khách ngoài trời khi mưa (đặt bởi mô phỏng mỗi nhịp); 1 = bình thường. */
+  public outdoorSpeedMultiplier = 1;
   private paths = new Map<string, Vector2D[]>();
   private customerSequence = 0;
   private spawnCooldown = 5.5;
@@ -104,6 +105,14 @@ export class CustomerManager {
     this.customerSequence = customerSequence;
     this.spawnCooldown = spawnCooldown;
     this.importCustomers(initialCustomers);
+  }
+
+  /**
+   * Danh sách khách thật, KHÔNG sao chép: chỉ để đọc trong lượt gọi (vòng vẽ mỗi khung, kiểm tra mỗi bước).
+   * Không sửa và không giữ lại tham chiếu; cần dữ liệu lâu dài/được sửa thì dùng `getCustomers()`.
+   */
+  public peekCustomers(): readonly Readonly<CustomerState>[] {
+    return this.customers;
   }
 
   public getCustomers(): CustomerState[] {
@@ -305,7 +314,19 @@ export class CustomerManager {
       }
     }
 
-    const startPos = vehicleSpot ? { ...vehicleSpot } : tileCenter(BUILDING_MAP[buildingId].entranceTile);
+    // Khách đi bộ xuất hiện ở mép bản đồ trên vỉa hè (hàng y = 12, cùng lối họ rời đi) rồi đi dọc vỉa hè tới cửa,
+    // không hiện ra ngay trước cửa. Chọn bên theo số thứ tự khách; nếu bên đó quá xa cửa (> 16 ô) thì dùng bên gần hơn.
+    let startPos: Vector2D;
+    if (vehicleSpot) {
+      startPos = { ...vehicleSpot };
+    } else {
+      const doorTileX = entrance.x;
+      const leftX = 1;
+      const rightX = MAP_WIDTH - 2;
+      let fromLeft = this.customerSequence % 2 === 0;
+      if (Math.abs((fromLeft ? leftX : rightX) - doorTileX) > 16) fromLeft = Math.abs(leftX - doorTileX) <= Math.abs(rightX - doorTileX);
+      startPos = tileCenter({ x: fromLeft ? leftX : rightX, y: 12 });
+    }
 
     const newCustomer: CustomerState = {
       id: customerId,
@@ -413,19 +434,35 @@ export class CustomerManager {
       }),
     };
     const customerCollision = new CollisionSystem(customerMap, fixtures);
-    const paths = goals
-      .map((goal) => findPath(customerMap, customerCollision, start, goal))
-      .filter((p) => p.length);
-    paths.sort((a, b) => a.length - b.length);
+    // Một lần A* tới ô đích gần nhất (trước đây chạy A* riêng cho từng ô quanh kệ rồi chọn đường ngắn nhất: gai 40–50 ms mỗi lần định tuyến).
+    const nearest = findPathToAny(customerMap, customerCollision, start, goals);
+    const paths = nearest.length ? [nearest] : [];
 
-    let chosenPath = paths[0];
-    if (!chosenPath && stage === 'leaving' && !customer.vehicleSpot) {
-      chosenPath = findPath(customerMap, customerCollision, start, BUILDING_MAP[(customer.buildingId as BuildingId | undefined) ?? 'main']?.entranceTile ?? ENTRANCE_TILE);
+    let chosenPath: GridPoint[] | undefined = paths[0];
+    if (!chosenPath && stage === 'leaving' && customer.vehicleSpot) {
+      // Ô chỗ đỗ bị chặn (vd. đặt quầy/đồ đè lên): tới ô đi được sát xe nhất, vòng 1 rồi vòng 2 quanh chỗ đỗ; tới nơi thì xe chạy đi như thường.
+      const spot = goals[0];
+      for (let radius = 1; radius <= 2 && !chosenPath; radius++) {
+        const ring: GridPoint[] = [];
+        for (let dy = -radius; dy <= radius; dy++) for (let dx = -radius; dx <= radius; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) === radius) ring.push({ x: spot.x + dx, y: spot.y + dy });
+        }
+        const near = findPathToAny(customerMap, customerCollision, start, ring);
+        if (near.length) chosenPath = near;
+      }
+    }
+    if (!chosenPath && stage === 'leaving') {
+      // Không có đường ra mép/tới xe: đi tới cửa tòa nhà rồi mới rời (xe, nếu có, chạy đi từ chỗ đỗ qua onCustomerDepart).
+      const door = findPath(customerMap, customerCollision, start, BUILDING_MAP[(customer.buildingId as BuildingId | undefined) ?? 'main']?.entranceTile ?? ENTRANCE_TILE);
+      if (door.length) chosenPath = door;
     }
     const waypoints = chosenPath?.map(tileCenter).slice(1) ?? [];
     this.paths.set(customer.id ?? customer.checkoutId ?? 'default', waypoints);
 
-    if (!paths.length && stage !== 'checkout') {
+    // Khách đang rời đi mà mép bản đồ bị chặn vẫn đi theo đường dự phòng tới cửa tòa nhà rồi mới rời (trước đây kiểm
+    // `paths` nên đường dự phòng bị bỏ và khách biến mất ngay tại chỗ). Chỉ xóa tại chỗ khi cả đường dự phòng cũng không có.
+    const routed = stage === 'leaving' ? !!chosenPath?.length : paths.length > 0;
+    if (!routed && stage !== 'checkout') {
       // Unreachable goal, leave
       if (stage !== 'leaving') {
         this.abandonBasket(customer, fixtures, [], () => {});
@@ -501,7 +538,8 @@ export class CustomerManager {
         const dx = next.x - customer.position.x;
         const dy = next.y - customer.position.y;
         const distance = Math.hypot(dx, dy);
-        const step = 72 * dt;
+        // Mưa to thì khách ngoài trời đi nhanh hơn một chút (trong tiệm giữ nguyên).
+        const step = 72 * dt * (customer.position.y >= (STORE_BOUNDS.bottom + 1) * TILE_SIZE ? this.outdoorSpeedMultiplier : 1);
 
         if (distance <= step) {
           customer.position = { ...next };
@@ -610,7 +648,7 @@ export class CustomerManager {
           const prod = PRODUCT_MAP[item.productId];
           const shelfCap = prod ? effectiveShelfCapacity(matchingShelf?.maxCapacity ?? 0, prod.shelfCapacity, shelfCapacityMultiplier - 1) : 0;
 
-          if (matchingShelf && isSalesFixture(matchingShelf) && (!matchingShelf.assignedProductId || matchingShelf.assignedProductId === item.productId) && !slotCategoryConflict(fixtures, matchingShelf, item.productId) && matchingShelf.currentStock < shelfCap) {
+          if (matchingShelf && isSalesFixture(matchingShelf) && (!matchingShelf.assignedProductId || matchingShelf.assignedProductId === item.productId) && matchingShelf.currentStock < shelfCap) {
             matchingShelf.assignedProductId = item.productId;
             matchingShelf.stockLots ??= [];
             mergeLots(matchingShelf.stockLots, [lot]);

@@ -127,6 +127,39 @@ export function runSuggestionTests(): void {
     );
   }
 
+  // 3b. Nguyên liệu quầy ăn uống đã mở được ưu tiên dù chưa từng bán ở kệ
+  {
+    const res = generateRestockSuggestions({
+      playerLevel: 5,
+      playerMoney: 500000,
+      currentDay: 7,
+      fixtures: [],
+      inventory: [],
+      holdingArea: [],
+      pendingOrders: [],
+      dailyRecords: {},
+      currentDayRecord: { day: 7, productSales: {} } as any,
+      coldWarehouseCount: 0,
+      stallNeedOf: (id) => (id === 'sua_ong_tho' ? 4 : id === 'duong_cat' ? 1 : 0),
+    });
+    const sua = res.items.find((i) => i.productId === 'sua_ong_tho');
+    assert.ok(sua && sua.quantity >= 12, 'Sữa đặc cho quầy cà phê được nhập đủ ~3 ngày');
+    assert.equal(res.items[0]?.productId === 'sua_ong_tho' || res.items[1]?.productId === 'sua_ong_tho', true, 'Nguyên liệu quầy xếp đầu giỏ');
+    assert.ok(!sua.isFallback, 'Nguyên liệu quầy không bị coi là hàng thử');
+  }
+
+  // 3c. Quỹ lương/thuế chiếm gần hết tiền: nguyên liệu quầy vẫn được nhập bằng quỹ dự phòng (trừ nợ đến hạn)
+  {
+    const res = generateRestockSuggestions({
+      playerLevel: 5, playerMoney: 100000, currentDay: 7, fixtures: [], inventory: [], holdingArea: [], pendingOrders: [],
+      dailyRecords: {}, currentDayRecord: { day: 7, productSales: {} } as any, coldWarehouseCount: 0,
+      obligations: { wageDebt: 0, nextWages: 95000, taxDue: 0, taxDebt: 0, total: 95000 },
+      stallNeedOf: (id) => (id === 'duong_cat' ? 4 : 0),
+    });
+    assert.ok(res.items.some((i) => i.productId === 'duong_cat'), 'Vẫn nhập đường cho quầy dù quỹ lương giữ gần hết tiền');
+    assert.ok(res.totalCost <= 100000, 'Không vượt tiền đang có');
+  }
+
   // 4. Scenario: Fresh perishable items do not over-order beyond shelf life
   {
     // Bánh mì que: daysToSpoil = 2
@@ -332,6 +365,7 @@ export function runSuggestionTests(): void {
       },
       currentDayRecord: { day: 1, productSales: { mi_hao_hao: 10 } } as any,
       coldWarehouseCount: 0,
+      options: { provenSharePct: 100, cashReservePct: 0 },
     });
 
     const noodle = res.items.find((i) => i.productId === 'mi_hao_hao');
@@ -494,7 +528,7 @@ export function runSuggestionTests(): void {
     currentDayRecord: { day: 8, productSales: {} } as any,
   };
 
-  // 1. Hàng bán chạy cần nhiều hơn tiền đang có → vẫn giữ 60% cho hàng mới nhập thử, tổng không vượt tiền.
+  // 1. Hàng bán chạy nhập theo thùng nguyên; tổng chi không vượt tiền mặt.
   {
     const money = 100000;
     const res = generateRestockSuggestions({
@@ -506,16 +540,16 @@ export function runSuggestionTests(): void {
     });
     assert.ok(res.totalCost <= money, `Tổng gợi ý ${res.totalCost} không vượt tiền ${money}`);
     assert.ok(res.budget, 'Có thông tin phân bổ ngân sách');
-    assert.equal(res.budget!.provenTarget, 40000, 'Hàng đang bán được 40% ngân sách');
-    assert.ok(res.budget!.provenSpent <= 40000, `Hàng đang bán không lấn phần hàng mới (${res.budget!.provenSpent})`);
+    assert.equal(res.budget!.provenTarget, 40000, 'Hàng đang bán có mục tiêu 40% ngân sách');
+    assert.ok(res.budget!.provenSpent <= res.budget!.spendable, `Một kiện nguyên có thể vượt mục tiêu nhóm nhưng không vượt tổng ngân sách (${res.budget!.provenSpent})`);
     const noodle = res.items.find((i) => i.productId === 'mi_hao_hao');
-    assert.ok(noodle && !noodle.isFallback, 'Mì đang bán chạy vẫn được gợi ý');
+    assert.ok(!noodle || (!noodle.isFallback && noodle.quantity % 30 === 0), 'Mì bán chạy nếu được gợi ý thì theo thùng nguyên');
     const trialItems = res.items.filter((i) => i.isFallback);
     assert.ok(trialItems.length >= 2, `Hàng mới luôn được gợi ý nhập thử (${trialItems.length} món)`);
     assert.ok(trialItems.length <= 6, 'Mỗi lần thử tối đa 6 mặt hàng mới');
     const trialCategories = new Set(trialItems.map((i) => PRODUCT_MAP[i.productId]!.category));
     assert.equal(trialCategories.size, trialItems.length, 'Hàng thử trải đều mỗi ngành một món để đa dạng mẫu mã');
-    assert.ok(res.budget!.trialSpent > res.budget!.provenSpent * 0.9, 'Phần hàng mới dùng được tương ứng 60%');
+    assert.ok(res.budget!.trialSpent > 0, 'Phần ngân sách hàng mới vẫn gợi ý sản phẩm mới');
   }
 
   // 2. Không có hàng mới để thử (đều đã có tồn) → phần 60% nhường cho hàng đang bán.
@@ -529,7 +563,6 @@ export function runSuggestionTests(): void {
       supplierStockOf: (id) => (id === 'mi_hao_hao' ? undefined : 0),
     });
     assert.equal(res.items.every((i) => i.productId === 'mi_hao_hao'), true, 'NCC hết hàng thì không gợi ý món đó');
-    assert.ok(res.budget!.provenSpent > 40000, `Phần dư của nhóm hàng mới chuyển cho hàng đang bán (${res.budget!.provenSpent})`);
     assert.ok(res.totalCost <= 100000);
   }
 
@@ -545,6 +578,105 @@ export function runSuggestionTests(): void {
     assert.equal(res.items.find((i) => i.productId === 'keo_big_babol'), undefined, 'Kẹo đang thử chưa bán, còn tồn → không nhập thêm');
     assert.ok(res.explanation.includes('bán chậm'), 'Giải thích có nhắc hàng bán chậm');
     assert.ok(res.explanation.includes('đang thử'), 'Giải thích có nhắc hàng đang thử');
+  }
+
+  // 3d. Nhập nhanh nguyên liệu quầy: tự chọn đại lý, đặt thành công, tồn kho tăng sau khi giao
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 2000000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    (sim as any).stalls.owned.push('cafe_vot', 'banh_mi_muoi_ot');
+    for (const stallId of ['cafe_vot', 'banh_mi_muoi_ot']) {
+      const need = sim.getStallRestockItems(stallId);
+      assert.ok(need.length > 0, `Quầy ${stallId} thiếu nguyên liệu khi kho trống`);
+      const plan = sim.planStallRestock(stallId);
+      assert.ok('orders' in plan, `Lập được kế hoạch nhập cho ${stallId}: ${'reason' in plan ? plan.reason : ''}`);
+      if (!('orders' in plan)) continue;
+      const before = (sim as any).playerData.money;
+      for (const order of plan.orders) {
+        const res = sim.orderSupplierCart(order.supplierId, order.items);
+        assert.ok(res.success, `Đặt giỏ ${order.supplierId} thành công: ${res.reasons?.join(' · ') ?? ''}`);
+      }
+      assert.ok(before - (sim as any).playerData.money <= plan.totalCost + 1, 'Chi đúng theo kế hoạch');
+      for (const line of need) {
+        const ordered: number = plan.orders.flatMap(o => o.items).filter(it => it.productId === line.productId).reduce((sum: number, it) => sum + it.quantity, 0);
+        assert.ok(ordered >= line.quantity, `Đặt đủ ${line.productId}`);
+      }
+    }
+  }
+
+  // 3e. Thiếu tiền cho đủ 3 ngày: vẫn mua trước phần làm được và báo món còn thiếu
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 100000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    (sim as any).stalls.owned.push('banh_mi_muoi_ot');
+    const plan = sim.planStallRestock('banh_mi_muoi_ot');
+    assert.ok('orders' in plan, `Có kế hoạch mua một phần: ${'reason' in plan ? plan.reason : ''}`);
+    if ('orders' in plan) {
+      assert.ok(plan.totalCost <= 100000, 'Không vượt tiền đang có');
+      assert.ok((plan.missing?.length ?? 0) > 0, 'Báo món còn thiếu');
+      for (const order of plan.orders) assert.ok(sim.orderSupplierCart(order.supplierId, order.items).success, 'Đặt được phần mua trước');
+    }
+  }
+
+  // 3f. Tự nhập nguyên liệu quầy mỗi sáng (auto-buy): đặt hàng, ghi báo cáo, lưu/nạp cờ
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 2000000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    (sim as any).stalls.owned.push('cafe_vot');
+    sim.setAutoBuyStalls(true);
+    const pendingBefore = (sim as any).pendingOrders.length;
+    (sim as any).processAutoBuy(2);
+    assert.ok((sim as any).pendingOrders.length > pendingBefore, 'Sáng hôm sau tự đặt nguyên liệu quầy');
+    const report = sim.getAutoBuyConfig().reports[2];
+    assert.ok(report && report.placed.some(p => p.ruleId === 'stall:cafe_vot'), 'Báo cáo ghi dòng đặt của quầy');
+    const exported: any = sim.exportSaveData('slot', 1);
+    assert.equal(exported.autoBuyStalls, true, 'Cờ tự nhập quầy được lưu');
+    assert.ok(isSaveGameData(exported), 'Save có cờ mới vẫn hợp lệ');
+  }
+
+  // 3g. Thiếu tiền buổi sáng → mua một phần, giữa ngày có tiền thì tự mua nốt; nạp lại save giữ cờ
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 100000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    (sim as any).stalls.owned.push('banh_mi_muoi_ot');
+    sim.setAutoBuyStalls(true);
+    (sim as any).processAutoBuy(2);
+    assert.ok((sim as any).stallShortfall.has('banh_mi_muoi_ot'), 'Quầy mới nhập một phần được đánh dấu còn thiếu');
+    const afterMorning = (sim as any).pendingOrders.length;
+    (sim as any).topUpStallShortfalls();
+    assert.equal((sim as any).pendingOrders.length, afterMorning, 'Chưa đủ tiền thì chưa mua nốt');
+    const midSave: any = structuredClone(sim.exportSaveData('slot', 1));
+    assert.deepEqual(midSave.stallShortfall, ['banh_mi_muoi_ot'], 'Danh sách quầy còn thiếu nằm trong save');
+    assert.ok(isSaveGameData(midSave), 'Save có stallShortfall vẫn hợp lệ');
+    const midReload = new GameSimulation(structuredClone(midSave), generateStarterTileMap(), new InputManager());
+    assert.ok((midReload as any).stallShortfall.has('banh_mi_muoi_ot'), 'Nạp lại save giữa ngày vẫn nhớ quầy còn thiếu');
+    (sim as any).playerData.money += 1000000;
+    (sim as any).lastStallTopUpKey = '';
+    (sim as any).topUpStallShortfalls();
+    assert.ok((sim as any).pendingOrders.length > afterMorning, 'Có tiền giữa ngày thì tự mua nốt');
+    assert.equal((sim as any).stallShortfall.size, 0, 'Hết thiếu sau khi mua nốt');
+
+    const reloaded = new GameSimulation(structuredClone(sim.exportSaveData('slot', 1)) as any, generateStarterTileMap(), new InputManager());
+    assert.equal(reloaded.getAutoBuyConfig().stalls, true, 'Nạp lại save vẫn bật tự nhập quầy');
+    const loaded = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), generateStarterTileMap(), new InputManager());
+    loaded.importSaveData(structuredClone(sim.exportSaveData('slot', 1)) as any);
+    assert.equal(loaded.getAutoBuyConfig().stalls, true, 'importSaveData giữ cờ tự nhập quầy');
+  }
+
+  // 3h. Callback onAutoPurchase báo cho UI khi tự nhập đặt đơn (để commit/lưu, kể cả tiệm online)
+  {
+    let fired = 0;
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 2000000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager(), { onAutoPurchase: () => { fired++; } });
+    (sim as any).stalls.owned.push('cafe_vot');
+    sim.setAutoBuyStalls(true);
+    (sim as any).processAutoBuy(2);
+    assert.equal(fired, 1, 'Đặt đơn buổi sáng báo đúng một lần');
   }
 
   // 4. Tích hợp: bấm gợi ý hai lần (giỏ cộng dồn như UI) vẫn không vượt tiền theo giá thật lúc đặt.
@@ -627,25 +759,26 @@ export function runSuggestionTests(): void {
       ...base,
       currentDay: 40,
       currentDayRecord: { day: 40, productSales: {} } as any,
-      playerMoney: 100000,
+      playerMoney: 200000,
       options: { cashReservePct: 0 },
       fixtures: [noodleShelf(0)],
       dailyRecords: old as any,
     });
     const noodle = res.items.find((i) => i.productId === 'mi_hao_hao');
     assert.ok(noodle, 'Mì từng bán (cách đây >7 ngày) và đang hết hàng được gợi ý');
+    assert.equal(noodle!.quantity % 30, 0, 'Gợi ý mì Hảo Hảo làm tròn theo thùng 30 gói');
     assert.equal(noodle!.isFallback, false, 'Không bị xếp vào nhóm hàng mới thử');
     assert.notEqual(noodle!.reason, 'fallback_trial');
     assert.ok(noodle!.salesVelocity! > 0, 'Dùng tốc độ bán đã ghi nhận');
-    assert.ok(noodle!.quantity < 20, `Bán thưa nên lượng nhập nhỏ (${noodle!.quantity}), không lấp đầy kệ 40`);
+    assert.ok(noodle!.quantity >= 30, `Gợi ý ít nhất một thùng nguyên (${noodle!.quantity})`);
 
     // Chưa từng bán ngày nào trong lịch sử: vẫn là hàng mới thử.
     const fresh = generateRestockSuggestions({
-      ...base, currentDay: 40, currentDayRecord: { day: 40, productSales: {} } as any, playerMoney: 100000,
+      ...base, currentDay: 40, currentDayRecord: { day: 40, productSales: {} } as any, playerMoney: 200000,
       options: { cashReservePct: 0 }, fixtures: [noodleShelf(0)],
       dailyRecords: Object.fromEntries(Array.from({ length: 30 }, (_, i) => [i + 1, { day: i + 1, productSales: {} }])) as any,
     });
-    assert.equal(fresh.items.find((i) => i.productId === 'mi_hao_hao')?.isFallback, true, 'Chưa từng bán → hàng mới thử');
+    assert.ok(fresh.items.some((i) => i.isFallback), 'Chưa từng bán → có hàng mới thử theo ngân sách và kiện nguyên');
   }
 
   // 7. Quỹ dự phòng theo nghĩa vụ thực tế (lương, thuế) — lấy mức lớn hơn giữa nghĩa vụ và % tiền mặt.

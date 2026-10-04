@@ -3,6 +3,7 @@ import { StoreFixture, PlayerData, WorldTime, SaveGameData, CustomerState } from
 import { PRODUCT_MAP } from '@game/data';
 import { summarizeAnnualRevenue } from '@game/core';
 import { PixelDialog, PixelStat, PixelButton, ProductSlot, EmptyState, money } from './pixel';
+import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../store/useGameStore';
 import { StaffModal } from './StaffModal';
 import { StaffCandidate, StaffMember, StaffShift } from '@game/shared';
@@ -30,6 +31,7 @@ interface Props {
   onSetStaffShift: (staffId: string, shift: StaffShift) => boolean;
   restockTargets?: RestockJobTarget[];
   onAssignRefillJob?: (staffId: string, fixtureId: string) => { success: boolean; reason?: string };
+  onAssignAutoRestockJob?: (staffId: string) => { success: boolean; reason?: string };
   onClose: () => void;
   initialShowStaff?: boolean;
 }
@@ -54,12 +56,13 @@ export const CashierModal: React.FC<Props> = ({
   onSetStaffShift,
   restockTargets = [],
   onAssignRefillJob,
+  onAssignAutoRestockJob,
   onClose,
   initialShowStaff = false,
 }) => {
   const [activeTab, setActiveTab] = useState<'checkout' | 'reports' | 'credits'>('checkout');
   const [showStaff, setShowStaff] = useState(initialShowStaff);
-  const { dailyRecords = {}, currentDayRecord } = useGameStore();
+  const { dailyRecords = {}, currentDayRecord } = useGameStore(useShallow((s) => ({ dailyRecords: s.dailyRecords, currentDayRecord: s.currentDayRecord })));
 
   // Mỗi quầy thu ngân có hàng riêng; khách chưa gán quầy (làn cũ) thuộc quầy đang mở.
   const ownLane = (c: { cashierFixtureId?: string }) => !c.cashierFixtureId || c.cashierFixtureId === fixture.id;
@@ -113,6 +116,7 @@ export const CashierModal: React.FC<Props> = ({
       onSetShift={onSetStaffShift}
       restockTargets={restockTargets}
       onAssignRefillJob={onAssignRefillJob}
+      onAssignAutoRestockJob={onAssignAutoRestockJob}
       onClose={() => (initialShowStaff ? onClose() : setShowStaff(false))}
     />;
   }

@@ -33,13 +33,13 @@ export function receiveDeliveredOrders(orders: SupplierOrder[], day: number, tar
     order.deliveryDay = day;
     const product = PRODUCT_MAP[order.productId];
     const expiry = expiryDay(order.productId, day) + target.freshExtraDays;
-    const newLot = (quantity: number): StockLot => ({ quantity, expiresOnDay: expiry, unitCost: order.unitCost, provenance: 'known' });
+    const newLot = (quantity: number, caseCount: number = 0): StockLot => ({ quantity, expiresOnDay: expiry, unitCost: order.unitCost, provenance: 'known', caseCount });
 
     if (product?.storageType === 'cold') {
       const fitQty = Math.min(order.quantity, Math.max(0, target.freeColdSlots()));
       const overflowQty = order.quantity - fitQty;
       if (fitQty > 0) {
-        addLot(target.inventory, order.productId, fitQty, newLot(fitQty));
+        addLot(target.inventory, order.productId, fitQty, newLot(fitQty, order.caseCount ?? 0));
         deliveredCount += fitQty;
       }
       if (overflowQty > 0) {
@@ -54,7 +54,7 @@ export function receiveDeliveredOrders(orders: SupplierOrder[], day: number, tar
         });
       }
     } else {
-      addLot(target.inventory, order.productId, order.quantity, newLot(order.quantity));
+      addLot(target.inventory, order.productId, order.quantity, newLot(order.quantity, order.caseCount ?? 0));
       deliveredCount += order.quantity;
     }
   }

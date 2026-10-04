@@ -1,11 +1,17 @@
 import { Container, Graphics } from 'pixi.js';
 import { TILE_SIZE } from '@game/shared';
-import { CROSSWALK, ROAD_PROFILE, STORM_DRAINS } from '@game/data';
+import { ROAD_PROFILE, STORM_DRAINS } from '@game/data';
 
 /** Số hàng mặt đường vẽ lớp ướt: hàng bó vỉa (13) tới hết vùng nhựa đường hiển thị dưới bản đồ. */
 const WET_ROWS = 6;
 /** Chỉ vẽ lại lớp ướt khi độ ướt đổi ít nhất ngần này, tránh vẽ lại mỗi frame. */
 const WET_REDRAW_STEP = 0.02;
+
+/** Kích thước vũng nước quanh cửa thu nước theo độ ướt 0..1; dùng chung cho vẽ vũng và gợn/phản chiếu. */
+export function puddleGeometry(wet: number): { level: number; rx: number; ry: number } {
+  const level = Math.max(0, (wet - 0.3) / 0.7);
+  return { level, rx: 10 + 26 * level, ry: 3 + 7 * level };
+}
 
 export interface RoadSurface {
   /** Độ ướt mặt đường 0..1; vẽ lại lớp đường ướt và vũng nước khi đổi đủ lớn. */
@@ -13,8 +19,8 @@ export interface RoadSurface {
 }
 
 /**
- * Mặt cắt lòng đường (chỉ hình ảnh, không va chạm): bó vỉa + rãnh, vạch giữa đường, cửa thu nước, vạch qua đường trước
- * cửa tiệm; kèm lớp đường ướt và vũng nước gần cửa thu nước khi trời mưa.
+ * Mặt cắt lòng đường (chỉ hình ảnh, không va chạm): bó vỉa + rãnh, vạch giữa đường, cửa thu nước (vạch qua đường nằm ở các ngã tư,
+ * xem neighborhood-scene); kèm lớp đường ướt và vũng nước gần cửa thu nước khi trời mưa.
  */
 export function buildRoadSurface(layer: Container, widthTiles: number): RoadSurface {
   const widthPx = widthTiles * TILE_SIZE;
@@ -35,11 +41,6 @@ export function buildRoadSurface(layer: Container, widthTiles: number): RoadSurf
     fixed.rect(gx, kerbY + 3, 16, 6).fill(0x2d3836);
     for (let bar = 0; bar < 4; bar++) fixed.rect(gx + 2 + bar * 4, kerbY + 3, 1, 6).fill({ color: 0x6a7a75, alpha: 0.9 });
   }
-  // Vạch qua đường: thanh song song hướng xe chạy, xếp dọc theo hướng người đi bộ.
-  const cx0 = CROSSWALK.tileX * TILE_SIZE;
-  const cy0 = CROSSWALK.firstRow * TILE_SIZE + 12;
-  const cy1 = (CROSSWALK.firstRow + CROSSWALK.rows) * TILE_SIZE - 4;
-  for (let y = cy0; y + 4 <= cy1; y += 8) fixed.rect(cx0, y, CROSSWALK.widthTiles * TILE_SIZE, 4).fill({ color: 0xfff0cf, alpha: 0.8 });
   layer.addChild(fixed);
 
   const wetLayer = new Graphics();
@@ -66,13 +67,11 @@ export function buildRoadSurface(layer: Container, widthTiles: number): RoadSurf
         wetLayer.rect(sx, sy, len, 1).fill({ color: 0xcfe3f0, alpha: 0.12 * wet });
       }
       // Vũng nước gần cửa thu nước, lớn dần khi mưa nặng.
-      const level = Math.max(0, (wet - 0.3) / 0.7);
+      const { level, rx, ry } = puddleGeometry(wet);
       if (level > 0) {
         for (const drain of STORM_DRAINS) {
           const px = drain.tileX * TILE_SIZE + 16;
           const py = kerbY + 14;
-          const rx = 10 + 26 * level;
-          const ry = 3 + 7 * level;
           wetLayer.ellipse(px, py, rx, ry).fill({ color: 0x8db3c7, alpha: 0.28 + 0.22 * level });
           wetLayer.ellipse(px - rx * 0.25, py - ry * 0.3, rx * 0.5, ry * 0.4).fill({ color: 0xe2f0f7, alpha: 0.25 * level });
         }

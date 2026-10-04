@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { PRESTIGE_XP_PER_STAR, getSeasonForDay, seasonDaysLeft } from '@game/data';
 import { describeRainForecast, type RainForecast } from '@game/core';
-import { useGameStore } from '../store/useGameStore';
+import { useShallow } from 'zustand/react/shallow';
+import { sameData, useGameStore } from '../store/useGameStore';
 import { money, PixelButton, PixelIcon, PixelProgress, PixelStat } from './pixel';
 import { ManagementModal } from './ManagementModal';
 
@@ -36,11 +37,14 @@ interface HUDProps {
   /** Số kệ/tủ mát đang mòn hoặc hỏng; > 0 thì hiện nút Sửa chữa. */
   maintenanceAlerts?: number;
   onOpenMaintenance?: () => void;
+  onOpenChain?: () => void;
   onOpenPlanogram?: () => void;
   emptySlotsCount?: number;
+  /** Mốc lưu gần nhất (ISO) để hiện trong mục Lưu tiến trình của sổ quản lý. */
+  lastSavedAt?: string;
 }
-export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0}) => {
-  const {player, worldTime, timeString, toggleSaveModal} = useGameStore();
+const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0, lastSavedAt}) => {
+  const {player, worldTime, timeString, toggleSaveModal} = useGameStore(useShallow((s) => ({player: s.player, worldTime: s.worldTime, timeString: s.timeString, toggleSaveModal: s.toggleSaveModal})));
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const season = getSeasonForDay(worldTime.day);
   const weather = market?.weather;
@@ -94,23 +98,12 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
             </PixelButton>
           )}
           <PixelButton icon="speed" onClick={onToggleGameSpeed} aria-label={`Tốc độ ${gameSpeed}x`} title={`Tốc độ thời gian ${gameSpeed}x`}>{gameSpeed}×</PixelButton>
-          <PixelButton icon="warehouse" onClick={onToggleWarehouseDock} aria-label="Kho hàng" aria-expanded={isWarehouseDockOpen} title="Kho hàng sau tiệm">
+          <PixelButton icon="warehouse" onClick={onToggleWarehouseDock} aria-label={emptySlotsCount > 0 ? `Kho hàng, ${emptySlotsCount} ô kệ hết hàng` : 'Kho hàng'} aria-expanded={isWarehouseDockOpen} title="Kho hàng sau tiệm: xem tồn kho, mở sơ đồ kệ và bày hàng nhanh" className="btn-warehouse">
             <span className="button-label">Kho</span>
+            {emptySlotsCount > 0 && (
+              <span className="hud-management-badge" title={`${emptySlotsCount} ô kệ hết hàng`}>({emptySlotsCount})</span>
+            )}
           </PixelButton>
-          {onOpenPlanogram && (
-            <PixelButton
-              icon="warehouse"
-              onClick={onOpenPlanogram}
-              aria-label="Sơ đồ kệ hàng"
-              title="Sơ đồ bày hàng & Châm hàng nhanh"
-              className="btn-planogram"
-            >
-              <span className="button-label">Kệ hàng</span>
-              {emptySlotsCount > 0 && (
-                <span className="hud-management-badge" title={`${emptySlotsCount} ô hết hàng`}>({emptySlotsCount})</span>
-              )}
-            </PixelButton>
-          )}
           <PixelButton icon="star" onClick={onOpenQuests} aria-label="Nhiệm vụ" title="Nhiệm vụ buôn bán">
             <span className="button-label">Nhiệm vụ</span>
           </PixelButton>
@@ -129,7 +122,6 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
               <span className="hud-management-badge" title="Nợ lương nhân viên">(!)</span>
             ) : null}
           </PixelButton>
-          <PixelButton icon="save" onClick={toggleSaveModal} aria-label="Lưu tiến trình" title="Lưu tiến trình"/>
         </nav>
       </header>
 
@@ -151,6 +143,7 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
           onToggleAudioMute={onToggleAudioMute}
           maintenanceAlerts={maintenanceAlerts}
           onOpenMaintenance={onOpenMaintenance}
+          onOpenChain={onOpenChain}
           onOpenLevelRoadmap={onOpenLevelRoadmap}
           onOpenPlanogram={onOpenPlanogram}
           emptySlotsCount={emptySlotsCount}
@@ -158,8 +151,23 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
           canEditLayout={canEditLayout}
           isStoreOpen={worldTime.isStoreOpen}
           onToggleSaveModal={toggleSaveModal}
+          lastSavedAt={lastSavedAt}
         />
       )}
     </>
   );
 };
+
+/**
+ * HUD chỉ render lại khi props thật sự đổi: so sánh nông, riêng `market` (đối tượng mới mỗi lần App render) so theo nội dung.
+ * Handler do App truyền có danh tính ổn định (`useStableCallbacks`) nên không làm HUD render lại.
+ */
+const hudPropsEqual = (a: HUDProps, b: HUDProps): boolean => {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof HUDProps>;
+  for (const k of keys) {
+    if (k === 'market') { if (!sameData(a.market, b.market)) return false; continue; }
+    if (!Object.is(a[k], b[k])) return false;
+  }
+  return true;
+};
+export const HUD = React.memo(HUDInner, hudPropsEqual);

@@ -40,7 +40,7 @@ function injectSwVersion(): Plugin {
     name: 'inject-sw-version',
     apply: 'build',
     closeBundle() {
-      const swPath = path.resolve(__dirname, 'dist', 'sw.js');
+      const swPath = path.resolve(import.meta.dirname, 'dist', 'sw.js');
       if (!fs.existsSync(swPath)) return;
       const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 13); // "202610020847"
       const version = `v-${ts}`;
@@ -71,7 +71,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 5173,
+    // Không tự nhảy sang 3001 (cổng của BE) khi 5173 đang bị tiến trình cũ giữ; báo lỗi rõ ràng thay vì chạy sai cổng.
+    strictPort: true,
     host: true,
     open: true,
   },

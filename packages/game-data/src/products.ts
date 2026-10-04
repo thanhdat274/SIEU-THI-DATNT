@@ -1,7 +1,7 @@
 import { PRODUCED_PRODUCTS } from './recipes';
 import { Product, ProductCategory, StorageType } from '@game/shared';
 import { nullProto } from './safe-map';
-import { EXPANSION_PRODUCTS } from './products-expansion';
+import { EXPANSION_PRODUCTS, EXTRA_EXPANSION_PRODUCTS } from './products-expansion';
 
 export const STARTER_PRODUCTS: Product[] = [
   {
@@ -21,6 +21,7 @@ export const STARTER_PRODUCTS: Product[] = [
       basePopularity: 0.95,
     },
     description: 'Mì tôm chua cay huyền thoại tuổi thơ. Hàng bán chạy nhất xóm, già trẻ lớn bé ai cũng thích.',
+    caseSize: 30, // Co.op Online: Hảo Hảo 30 gói/thùng
   },
   {
     id: 'xa_xi_chuong_duong',
@@ -75,6 +76,7 @@ export const STARTER_PRODUCTS: Product[] = [
       basePopularity: 0.75,
     },
     description: 'Hộp sữa đặc có đường nắp giật, không thể thiếu cho ly cà phê sữa đá buổi sáng.',
+    caseSize: 24, // Vinamilk/Co.op: Ông Thọ đỏ hộp giấy 380g thùng 24; game giá/unit khớp 1 hộp
   },
   {
     id: 'banh_mi_que',
@@ -142,6 +144,16 @@ export const ADDITIONAL_PRODUCTS: Product[] = ADDITIONAL_ROWS.map(([
   expirationRules: { daysToSpoil },
   demandProfile: { basePopularity: 0.6 },
   description: `${name} quen thuộc ở tiệm tạp hóa đầu hẻm.`,
+  // Only attach a case size when the actual sell unit/package has been verified.
+  ...(
+    id.startsWith('mi_') && id !== 'mi_ly_modern_bo_ham'
+      ? { caseSize: 30 }
+      : id === 'mi_ly_modern_bo_ham'
+        ? { caseSize: 24 }
+        : ['nuoc_suoi', 'nuoc_khoang', 'nuoc_tinh_khiet'].includes(id)
+          ? { caseSize: 24 }
+          : {}
+  ),
 }));
 
 export const CURATED_PRODUCTS: Product[] = [
@@ -489,11 +501,26 @@ export const CURATED_PRODUCTS: Product[] = [
     purchasePrice: 5500,
     baseSellingPrice: 8000,
     shelfCapacity: 20,
-    storageType: 'ambient',
+    storageType: 'cold',
     expirationRules: { daysToSpoil: 60 },
     unlockLevel: 1,
     demandProfile: { basePopularity: 0.85 },
-    description: 'Hộp sữa tươi dinh dưỡng bổ sung vitamin và canxi cho các bạn nhỏ trước giờ vào lớp.',
+    description: 'Hộp sữa tươi dinh dưỡng bổ sung vitamin và canxi. Để lạnh hay để nhiệt độ thường đều được — sữa tiệt trùng an toàn mọi nhiệt độ.',
+  },
+  {
+    id: 'sua_thanh_trung',
+    name: 'Sữa Tươi Thanh Trùng',
+    category: 'milk',
+    spriteId: 'item_sua_hop',
+    purchasePrice: 9000,
+    baseSellingPrice: 13000,
+    shelfCapacity: 16,
+    storageType: 'cold',
+    coldOnly: true,
+    expirationRules: { daysToSpoil: 5 },
+    unlockLevel: 3,
+    demandProfile: { basePopularity: 0.75 },
+    description: 'Sữa tươi thanh trùng tươi ngon, giữ nguyên vị sữa thật. BẮT BUỘC bảo quản tủ mát — uống lạnh càng ngon.',
   },
   {
     id: 'sua_chua_uong',
@@ -718,6 +745,7 @@ export const CURATED_PRODUCTS: Product[] = [
     unlockLevel: 1,
     demandProfile: { basePopularity: 0.9 },
     description: 'Lon Coca-Cola đỏ truyền thống mát lạnh, giải khát tức thì ngày hè oi ả.',
+    caseSize: 24, // 1 thùng = 24 lon
   },
   {
     id: 'pepsi_lon',
@@ -732,6 +760,7 @@ export const CURATED_PRODUCTS: Product[] = [
     unlockLevel: 1,
     demandProfile: { basePopularity: 0.85 },
     description: 'Nước ngọt Pepsi sảng khoái đã khát, vị cola êm dịu quen thuộc.',
+    caseSize: 24, // 1 thùng = 24 lon
   },
   {
     id: '7up_lon',
@@ -746,6 +775,7 @@ export const CURATED_PRODUCTS: Product[] = [
     unlockLevel: 1,
     demandProfile: { basePopularity: 0.8 },
     description: 'Nước ngọt có ga vị chanh tươi mát, xua tan cảm giác ngấy sau bữa ăn.',
+    caseSize: 24, // 1 thùng = 24 lon
   },
   {
     id: 'sprite_lon',
@@ -760,6 +790,7 @@ export const CURATED_PRODUCTS: Product[] = [
     unlockLevel: 2,
     demandProfile: { basePopularity: 0.8 },
     description: 'Lon Sprite chanh thanh mát tê đầu lưỡi, thức uống ưa thích của giới trẻ.',
+    caseSize: 24, // 1 thùng = 24 lon
   },
   {
     id: 'mirinda_cam',
@@ -774,6 +805,7 @@ export const CURATED_PRODUCTS: Product[] = [
     unlockLevel: 2,
     demandProfile: { basePopularity: 0.85 },
     description: 'Nước ngọt vị cam đậm đà ngọt ngào sủi tăm, thơm nồng hương cam chín.',
+    caseSize: 24, // 1 thùng = 24 lon
   },
   {
     id: 'sting_dau',
@@ -788,6 +820,7 @@ export const CURATED_PRODUCTS: Product[] = [
     unlockLevel: 1,
     demandProfile: { basePopularity: 0.95 },
     description: 'Nước tăng lực Sting dâu đỏ huyền thoại thơm nồng, uống vào là tỉnh táo tức thì.',
+    caseSize: 24, // 1 thùng = 24 lon
   },
   {
     id: 'nuoc_yen',
@@ -816,6 +849,7 @@ export const CURATED_PRODUCTS: Product[] = [
     unlockLevel: 1,
     demandProfile: { basePopularity: 0.9 },
     description: 'Hộp sữa lúa mạch Milo sô cô la thơm béo giàu canxi, tiếp năng lượng cho trẻ năng động.',
+    caseSize: 48, // Co.op Online: Milo hộp 180ml, thùng 48
   },
   {
     id: 'nuoc_dua_hop',
@@ -3745,7 +3779,7 @@ export const ALL_PRODUCTS: Product[] = [
   ...ADDITIONAL_PRODUCTS,
   ...CURATED_PRODUCTS,
   ...SEASONAL_PRODUCTS,
-].map(reclassify).concat(EXPANSION_PRODUCTS);
+].map(reclassify).concat(EXPANSION_PRODUCTS, EXTRA_EXPANSION_PRODUCTS);
 
 /** Hàng bán được: catalog nhập từ nhà cung cấp + hàng bếp tự sản xuất (dùng cho nhu cầu và chọn hàng lên kệ). */
 export const SELLABLE_PRODUCTS: Product[] = [...ALL_PRODUCTS, ...PRODUCED_PRODUCTS].filter(product => !product.intermediate);

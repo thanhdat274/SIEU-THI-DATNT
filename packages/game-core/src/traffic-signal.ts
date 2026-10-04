@@ -13,11 +13,22 @@ export function trafficSignalAt(elapsedSec: number): TrafficSignalState {
   return { vehicle: 'red', pedestrian, secondsLeft: redSec - r };
 }
 
-/** Số giây còn lại của pha đi bộ (0 nếu không đang ở pha đi). */
-export function pedestrianWalkSecondsLeft(elapsedSec: number): number {
-  const cycle = TRAFFIC_SIGNAL_CYCLE_SEC;
-  const t = ((elapsedSec % cycle) + cycle) % cycle;
-  const walkEnd = TRAFFIC_SIGNAL.greenSec + TRAFFIC_SIGNAL.yellowSec + TRAFFIC_SIGNAL.pedLeadSec + TRAFFIC_SIGNAL.pedWalkSec;
-  const walkStart = walkEnd - TRAFFIC_SIGNAL.pedWalkSec;
-  return t >= walkStart && t < walkEnd ? walkEnd - t : 0;
+/** Đèn một ngã tư: `main` cho đường ngang (xe + người đi bộ qua đường ngang), `avenue` cho đường dọc. */
+export interface IntersectionSignals { main: TrafficSignalState; avenue: TrafficSignalState }
+
+/**
+ * Hai pha xen kẽ dùng lại chu kỳ của đèn trước tiệm: đường ngang xanh → vàng → đỏ; trong lúc đỏ đường ngang thì đường dọc xanh
+ * (vàng ở 3 giây cuối pha dọn đường). Người đi bộ đi cùng chiều với dòng xe đang xanh: qua đường ngang khi đường ngang đỏ,
+ * qua đường dọc khi đường ngang xanh (nhấp nháy dọn đường lúc vàng).
+ */
+export function intersectionSignalsAt(elapsedSec: number): IntersectionSignals {
+  const main = trafficSignalAt(elapsedSec);
+  const { yellowSec } = TRAFFIC_SIGNAL;
+  let avenueVehicle: TrafficSignalState['vehicle'] = 'red';
+  if (main.vehicle === 'red') {
+    if (main.pedestrian === 'walk') avenueVehicle = 'green';
+    else if (main.pedestrian === 'clearing') avenueVehicle = main.secondsLeft <= yellowSec ? 'yellow' : 'green';
+  }
+  const avenuePedestrian: TrafficSignalState['pedestrian'] = main.vehicle === 'green' ? 'walk' : main.vehicle === 'yellow' ? 'clearing' : 'dont_walk';
+  return { main, avenue: { vehicle: avenueVehicle, pedestrian: avenuePedestrian, secondsLeft: main.secondsLeft } };
 }

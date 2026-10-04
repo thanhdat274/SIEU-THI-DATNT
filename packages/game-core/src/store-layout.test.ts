@@ -15,7 +15,7 @@ export function runStoreLayoutTests() {
   assert.equal(rotateStoreFixture(shelf), 90, 'Rotation advances by ninety degrees');
   const edge = moveStoreFixture(base, shelf.id, 12, 6, 90, map);
   assert.equal(edge.error, undefined, 'Rotated fixture may occupy valid floor tiles');
-  assert.equal(moveStoreFixture(base, shelf.id, 8, 6, 90, map).error, 'outside_floor', 'Không đặt nội thất lên ô chủ tiệm đang đứng');
+  assert.equal(moveStoreFixture(base, shelf.id, 8, 6, 90, map).error, undefined, 'Ô (8,7) sau quầy là sàn tiệm mặc định hợp lệ, có thể bố trí nội thất');
   const outside = moveStoreFixture(base, shelf.id, 25, 20, 90, map);
   assert.equal(outside.error, 'outside_floor', 'Fixture footprint beyond map bounds is rejected');
   const overlap = moveStoreFixture(base, shelf.id, 7, 8, 0, map);

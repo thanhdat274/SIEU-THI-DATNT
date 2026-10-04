@@ -6,7 +6,7 @@ import { CASHIER_QUEUE_TILES } from './customers';
 
 export function runShopkeeperTests(): void {
   const map = generateStarterTileMap();
-  assert.equal(map.collisionLayer[(SHOPKEEPER_TILE.y - MAP_ORIGIN_Y) * MAP_WIDTH + SHOPKEEPER_TILE.x], true, 'Chủ tiệm chiếm ô sau quầy');
+  assert.equal(map.collisionLayer[(SHOPKEEPER_TILE.y - MAP_ORIGIN_Y) * MAP_WIDTH + SHOPKEEPER_TILE.x], false, 'Ô sau quầy là sàn tiệm mở, không bị khóa cứng');
 
   const sim = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), map, new InputManager());
   const idle = sim.getShopkeeper();

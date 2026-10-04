@@ -57,6 +57,10 @@ export interface Product {
   intermediate?: boolean;
   /** Số ô kho chiếm cho mỗi UNITS_PER_WAREHOUSE_CELL đơn vị. Thiếu = suy từ shelfCapacity (hàng cồng kềnh = 2). */
   warehouseSize?: number;
+  /** Nếu true: sản phẩm cold chỉ được bày vào tủ lạnh (không được vào kệ nhiệt độ thường). Default: false. */
+  coldOnly?: boolean;
+  /** Số lượng đơn vị trong 1 thùng/nhập nguyên kiện. Undefined = không bán theo thùng. */
+  caseSize?: number;
 }
 
 export interface InventoryItem {
@@ -85,6 +89,8 @@ export interface StockLot {
   provenance?: 'estimated' | 'known';
   /** Phần hao hạn chưa tròn ngày (0..1) tích lũy theo điều kiện bảo quản; thiếu = 0. */
   decayCarry?: number;
+  /** Số thùng/case đang giữ (0 = không có case). Khi mở case: case giảm, quantity += caseSize. */
+  caseCount?: number;
 }
 
 export interface SupplierConfig {
@@ -131,6 +137,8 @@ export interface SupplierCartLine {
   unitPrice: number; // đơn giá thực sau giá sỉ động, ưu đãi số lượng và chiết khấu mối
   lineTotal: number;
   bulkDiscount: number; // tỉ lệ ưu đãi số lượng lớn đã áp dụng
+  /** Số case/thùng trong line này (0 = mua lẻ). */
+  caseCount?: number;
 }
 
 export interface SupplierCartValidationResult {
@@ -231,6 +239,8 @@ export interface SupplierOrder {
   supplierId?: string;
   delivered?: boolean;
   deliveryDay?: number;
+  /** Số case/thùng trong đơn hàng này. */
+  caseCount?: number;
 }
 
 export interface BasketItem {
@@ -244,24 +254,28 @@ export type CustomerArrivalMode = 'walk' | 'motorbike' | 'car';
 
 export interface StreetVehicleState {
   id: string;
-  type: 'motorbike' | 'car' | 'bicycle' | 'minibus';
+  type: 'motorbike' | 'car' | 'bicycle' | 'minibus' | 'truck';
   variant: number;
+  /** Chiều chạy: 'right' = tăng tọa độ trục chạy (sang đông / xuôi nam), 'left' = giảm (sang tây / ngược bắc). */
   direction: 'left' | 'right';
   position: Vector2D;
   speed: number;
+  /** Đường (id trong `VEHICLE_ROADS`) xe đang chạy; thiếu = đường chính. */
+  roadId?: string;
+  /** Trục chạy: thiếu = 'x' (đường ngang); 'y' = đường dọc (xe nhìn trước/sau, `direction` 'right' = xuôi nam). */
+  axis?: 'x' | 'y';
   hornTimer?: number;
   /** Tốc độ hiện tại (px/s) khi đang giảm tốc/dừng/tăng tốc; thiếu thì bằng `speed` (tốc độ chạy thông thường). */
   currentSpeed?: number;
   isDeparting?: boolean;
 }
 
-/** Người đi bộ băng qua đường tại vạch trước cửa tiệm (chỉ hình ảnh, không phải khách). */
+/** Người đi bộ nền trên vỉa hè (chỉ hình ảnh, không phải khách). */
 export interface StreetPedestrianState {
   id: string;
   variant: number;
-  /** Hướng băng qua: từ vỉa hè phía bắc sang nam hoặc ngược lại. */
-  direction: 'south' | 'north' | 'left' | 'right';
-  state: 'waiting' | 'crossing' | 'walking';
+  direction: 'left' | 'right';
+  state: 'waiting' | 'walking';
   activity?: 'stroll' | 'grocery' | 'jog' | 'student' | 'dog';
   position: Vector2D;
 }
@@ -637,6 +651,8 @@ export type PlanogramApplyReason =
   | 'storage_type_mismatch'
   | 'product_mismatch'
   | 'no_inventory'
+  /** Kho chỉ còn hàng nguyên thùng, cần mở thùng trước. */
+  | 'in_cases'
   | 'fixture_full';
 
 export interface PlanogramApplyResult {
@@ -682,7 +698,7 @@ export interface StoreFixture {
   wear?: number;
   /** Đang hỏng: nhẹ (sửa được) hoặc nặng (phải mua mới). Kệ hỏng không bán và không châm hàng được. */
   broken?: 'minor' | 'major';
-  /** Ô phụ của một kệ/tủ: dùng chung vị trí với kệ cha, mỗi ô giữ một sản phẩm (cùng nhóm hàng với các ô khác). */
+  /** Ô phụ của một kệ/tủ: dùng chung vị trí với kệ cha, mỗi ô giữ một sản phẩm (các ô cùng kệ được bày khác nhóm hàng). */
   parentId?: string;
   /** Mã món trong danh mục mua thêm (để chọn ảnh/nhãn). */
   shopId?: string;
@@ -840,12 +856,13 @@ export interface AutoBuyReport {
 }
 
 export interface StaffWorkerTask {
-  fixtureId: string;
-  productId: string;
+  fixtureId: string; /** ID của kệ đang châm (hoặc 'auto' cho chế độ tự động). */
+  productId: string; /** productId của kệ hiện tại (dùng khi fixtureId='auto'). */
   stage: 'to_warehouse' | 'to_shelf';
   route: Vector2D[];
   carriedLots: StockLot[];
   assignedBuilding?: StaffBuilding; /** Tòa nhà của task (giúp nhân viên biết nơi làm việc). */
+  autoRestock?: boolean; /** Nếu true, nhân viên tự động châm tất cả kệ thiếu hàng. */
 }
 
 export interface StaffCandidate {
@@ -914,6 +931,18 @@ export interface BranchDayReport {
   stockouts: string[];
 }
 
+/** Mức giá chi nhánh: hệ số giá bán và cầu nằm ở `game-data/store-types.ts` (`BRANCH_PRICE_MODES`). */
+export type BranchPriceMode = 'low' | 'normal' | 'high';
+
+/** Cách điều hành chi nhánh từ xa (bảng điều hành nhẹ, OpenSpec `branch-chain` 6.1/6.4); thiếu = mặc định. */
+export interface BranchPolicy {
+  priceMode: BranchPriceMode;
+  /** Có thuê quản lý: tốn thêm lương mỗi ngày, đổi lại chạy nền gần bằng điều hành trực tiếp. */
+  manager: boolean;
+}
+
+export const DEFAULT_BRANCH_POLICY: Readonly<BranchPolicy> = Object.freeze({ priceMode: 'normal', manager: false });
+
 /** Một chi nhánh (kho, danh tiếng, báo cáo). Chưa chứa save mô phỏng đầy đủ; xem OpenSpec `branch-chain` D1/D2. */
 export interface BranchSave {
   id: string;
@@ -926,6 +955,8 @@ export interface BranchSave {
   lastBackgroundDay: number;
   reports: BranchDayReport[];
   totalRevenue: number;
+  /** Cách điều hành; thiếu = `DEFAULT_BRANCH_POLICY`. */
+  policy?: BranchPolicy;
 }
 
 /** Chuỗi chi nhánh; `SaveGameData.chain` thiếu = chuỗi một cơ sở (hub). Ví chung = `player.money`, kho tổng = kho hub. */
@@ -961,6 +992,10 @@ export interface SaveGameData {
   wageDebt?: number;
   processedPayrollDayIds?: number[];
   autoBuyEnabled?: boolean;
+  /** Mỗi sáng tự nhập nguyên liệu cho quầy ăn uống đã mở (độc lập với quy tắc theo mặt hàng). */
+  autoBuyStalls?: boolean;
+  /** Quầy đã nhập một phần (thiếu tiền/hàng) và đang chờ mua nốt giữa ngày. */
+  stallShortfall?: string[];
   autoBuyRules?: AutoBuyRule[];
   /** Cài đặt gợi ý nhập hàng của người chơi (tỷ lệ chia, số món thử, quỹ dự phòng); thiếu = mặc định. */
   restockOptions?: RestockSuggestionOptions;
@@ -1142,12 +1177,15 @@ export type GameCommandPayload =
   | { type: 'set_staff_shift'; staffId: string; shift: StaffShift }
   | { type: 'assign_refill_job'; staffId: string; fixtureId: string }
   | { type: 'dispose_stock'; productId: string; quantity: number }
+  /** Mở thùng trong kho: chỉ đổi thùng thành hàng lẻ, tổng hàng không đổi. */
+  | { type: 'open_case'; productId: string; count: number }
   | { type: 'store_status'; isOpen: boolean }
   | { type: 'set_tax_declaration'; underDeclare: boolean }
   | { type: 'open_branch'; storeType: string; name?: string; branchId?: string }
   | { type: 'switch_branch'; branchId: string }
   | { type: 'transfer_stock'; branchId: string; items: Array<{ productId: string; quantity: number }> }
   | { type: 'return_stock'; branchId: string; items: Array<{ productId: string; quantity: number }> }
+  | { type: 'set_branch_policy'; branchId: string; policy: BranchPolicy }
   | { type: 'advance_day' }
   | { type: 'stow'; holdingId: string }
   | { type: 'stow_all' }
@@ -1156,8 +1194,11 @@ export type GameCommandPayload =
   | { type: 'auto_restock' }
   | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> }
   | { type: 'set_restock_options'; options: RestockSuggestionOptions }
+  | { type: 'set_auto_buy_stalls'; enabled: boolean }
+  | { type: 'auto_buy_sync' }
   | { type: 'respond_party_order'; orderId: string; accept: boolean }
   | { type: 'fulfill_party_order'; orderId: string }
+  | { type: 'rush_fulfill_party_order'; orderId: string }
   | { type: 'claim_goal'; goalId: string }
   | { type: 'claim_weekly_quest'; questId: string }
   | { type: 'claim_festival_goal'; goalId: string }
@@ -1331,7 +1372,9 @@ export function restoreSaveBackupSnapshot(backup: SaveGameData, targetId = 'loca
 export interface TransferShelfResult {
   success: boolean;
   actualQuantity: number;
-  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'fixture_broken' | 'invalid_amount' | 'product_locked' | 'storage_mismatch' | 'no_inventory' | 'product_mismatch' | 'no_space' | 'success';
+  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'fixture_broken' | 'invalid_amount' | 'product_locked' | 'storage_mismatch' | 'no_inventory' | 'product_mismatch' | 'no_space' | 'success'
+    /** Kho còn hàng nhưng toàn nguyên thùng: phải mở thùng trong kho rồi mới châm kệ được. */
+    | 'in_cases';
 }
 
 export interface UnstockShelfResult {
@@ -1383,6 +1426,8 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'clean_dining_table': return nonEmptyString(p.fixtureId);
     case 'assign_dining_cleanup': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
     case 'set_restock_options': return isRestockSuggestionOptions(p.options);
+    case 'set_auto_buy_stalls': return typeof p.enabled === 'boolean';
+    case 'auto_buy_sync': return true;
     case 'set_price': return nonEmptyString(p.productId) && (p.price === null || (Number.isSafeInteger(p.price) && Number(p.price) > 0));
     case 'layout_move': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.tileX) && Number.isSafeInteger(p.tileY) && [0, 90, 180, 270].includes(p.rotation as number);
     case 'layout_store': return nonEmptyString(p.fixtureId);
@@ -1407,6 +1452,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'set_tax_declaration': return typeof p.underDeclare === 'boolean';
     case 'open_branch': return nonEmptyString(p.storeType) && (p.name === undefined || (typeof p.name === 'string' && p.name.length <= 48)) && (p.branchId === undefined || (nonEmptyString(p.branchId) && /^branch-\d{1,6}$/.test(p.branchId as string)));
     case 'switch_branch': return nonEmptyString(p.branchId);
+    case 'set_branch_policy': return nonEmptyString(p.branchId) && isRecord(p.policy) && (p.policy.priceMode === 'low' || p.policy.priceMode === 'normal' || p.policy.priceMode === 'high') && typeof p.policy.manager === 'boolean';
     case 'transfer_stock':
     case 'return_stock': return nonEmptyString(p.branchId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 50
       && p.items.every((item) => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
@@ -1415,9 +1461,11 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'planogram_assignment': return nonEmptyString(p.fixtureId) && (p.productId === null || nonEmptyString(p.productId));
     case 'planogram_restock': return nonEmptyString(p.fixtureId);
     case 'dispose_stock': return nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
+    case 'open_case': return nonEmptyString(p.productId) && Number.isSafeInteger(p.count) && Number(p.count) > 0;
     case 'order_supplier': return nonEmptyString(p.supplierId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 64 && p.items.every(item => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
     case 'respond_party_order': return nonEmptyString(p.orderId) && typeof p.accept === 'boolean';
     case 'fulfill_party_order': return nonEmptyString(p.orderId);
+    case 'rush_fulfill_party_order': return nonEmptyString(p.orderId);
     case 'claim_goal': return nonEmptyString(p.goalId);
     case 'claim_weekly_quest': return nonEmptyString(p.questId);
     case 'claim_festival_goal': return nonEmptyString(p.goalId);

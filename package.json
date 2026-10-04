@@ -21,6 +21,8 @@
     "content:validate": "tsx tools/content-editor/cli.ts validate",
     "content:export": "tsx tools/content-editor/cli.ts export",
     "content:test": "tsx tools/content-editor/validate.test.ts",
+    "weather:sprites": "tsx tools/weather-sprites/build.ts",
+    "weather:sprites:test": "tsx tools/weather-sprites/validate.test.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

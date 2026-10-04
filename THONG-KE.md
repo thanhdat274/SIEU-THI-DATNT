@@ -543,7 +543,7 @@ Tất cả 🔍; không phải lỗi trừ khi có bằng chứng.
 | I-19, S46 | `traffic-light-crosswalk-yielding` | `traffic-signal.test.ts` (đã có), thêm test đồng bộ pha nếu đổi quyết định 4.5 |
 | I-16 | (chưa có) | Fixture save schema cũ, world migrate |
 
-OpenSpec còn task mở (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswalk-yielding`: 5 task mở 4.2–4.6): adapt-reference-shop-operations 4, dynamic-economy-simulation 9, level-progression-roadmap 2, rain-intensity-forecast 4, seasonal-daylight-tree-shadows 2, shared-alley-multiplayer 11, stardew-inspired-management-loop 7, store-layout-expansion 6 (tổng 45); premium-vietnamese-pixel-ui 0.
+OpenSpec còn task mở (**số cũ lúc 01/10/2026; đếm lại 03/10/2026 là ≈100 task `[ ]` ở 17 change, xem `docs/RA-SOAT-2026-10-03.md`**) (đếm `- [ ]`; **chưa đếm** `traffic-light-crosswalk-yielding`: 5 task mở 4.2–4.6): adapt-reference-shop-operations 4, dynamic-economy-simulation 9, level-progression-roadmap 2, rain-intensity-forecast 4, seasonal-daylight-tree-shadows 2, shared-alley-multiplayer 11, stardew-inspired-management-loop 7, store-layout-expansion 6 (tổng 45); premium-vietnamese-pixel-ui 0.
 
 ---
 

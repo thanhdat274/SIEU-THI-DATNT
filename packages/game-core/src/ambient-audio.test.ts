@@ -18,6 +18,11 @@ export function runAmbientAudioTests(): void {
   assert.equal(ambientMix({ rainIntensity: Number.NaN, hour: 12, isStoreOpen: true }).rain, 0);
   assert.equal(ambientMix({ rainIntensity: Number.POSITIVE_INFINITY, hour: 12, isStoreOpen: true }).rain, 0);
 
+  // Gió: kẹp 0..1, bỏ trống = lặng
+  assert.equal(ambientMix({ rainIntensity: 0, hour: 12, isStoreOpen: true }).wind, 0);
+  assert.ok(ambientMix({ rainIntensity: 0, hour: 12, isStoreOpen: true, windIntensity: 1 }).wind > ambientMix({ rainIntensity: 0, hour: 12, isStoreOpen: true, windIntensity: 0.3 }).wind);
+  assert.equal(ambientMix({ rainIntensity: 0, hour: 12, isStoreOpen: true, windIntensity: 9 }).wind, 0.7);
+
   // Âm lượng chung
   const ok = { userGestured: true, pageVisible: true };
   assert.equal(masterGain(DEFAULT_AUDIO_SETTINGS, ok), 1);

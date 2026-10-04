@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
-import { DEFAULT_INITIAL_SAVE, generateStarterTileMap, isFenceTile, STREET_LAMP_TILES, STREET_PARKING_SPOTS, STORE_BOUNDS, TREE_PROPS, TREE_SPRITE_OFFSET } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, generateStarterTileMap, isFenceTile, STREET_LAMP_TILES, STREET_LAMP_COLLIDER, STREET_PARKING_SPOTS, STORE_BOUNDS, TREE_PROPS, TREE_SPRITE_OFFSET } from '@game/data';
 import { AutoBuyRule } from '@game/shared';
+import { CollisionSystem } from './collision';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 
@@ -71,7 +72,15 @@ export function runOutdoorPropTests(): void {
   assert.equal(solidAt(2, 10), true, 'Hàng rào chặn đường đi');
   assert.equal(isFenceTile(9, 10, map.width), false, 'Mặt tiền tiệm không có rào');
   assert.equal(solidAt(9, 11), false, 'Vỉa hè trước cửa vẫn đi được');
-  for (const lamp of STREET_LAMP_TILES) assert.equal(solidAt(lamp.x, lamp.y), true, 'Cột đèn là vật cản');
+  const lampCollision = new CollisionSystem(map, []);
+  for (const lamp of STREET_LAMP_TILES) {
+    const foot = { x: lamp.x * 32 + 16, y: (lamp.y + 1) * 32 - 2 };
+    assert.equal(lampCollision.isColliding({ x: foot.x - 7, y: foot.y - 8, width: 14, height: 8 }), true, 'Chân cột đèn là vật cản');
+    // Cột đèn không chiếm cả ô: đứng sát mép ô (cách thân cột) vẫn đi được, chỉ rộng bằng thân cột + nửa người.
+    assert.equal(solidAt(lamp.x, lamp.y), false, 'Cột đèn không nằm trong lớp va chạm theo ô');
+    const nearLeft = lamp.x * 32 + STREET_LAMP_COLLIDER.offsetX - 8;
+    assert.equal(lampCollision.isColliding({ x: nearLeft - 7, y: foot.y - 8, width: 14, height: 8 }), false, 'Sát cột đèn một chút vẫn đi được');
+  }
   // Cây là dữ liệu bản đồ: va chạm khớp dữ liệu, vị trí sprite cũ giữ nguyên, không chặn cửa/ô đỗ/cột đèn.
   assert.equal(TREE_PROPS.length >= 1 && new Set(TREE_PROPS.map(t => t.id)).size === TREE_PROPS.length, true, 'Cây có id duy nhất');
   const tree0 = TREE_PROPS[0];

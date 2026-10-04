@@ -1,5 +1,5 @@
 import { InventoryItem, ProductionJob, StockLot } from '@game/shared';
-import { Recipe } from '@game/data';
+import { PRODUCT_MAP, Recipe } from '@game/data';
 import { mergeLots, normalizeLots, sumLots, takeLots } from './stock';
 
 export interface MissingIngredient {
@@ -35,7 +35,7 @@ export function consumeIngredients(inventory: InventoryItem[], recipe: Recipe, d
     // Lô đã hết hạn nằm đầu hàng đợi FEFO; tách ra để không bị dùng nhầm.
     const expired = slot.lots.filter(lot => lot.expiresOnDay <= day);
     const fresh = slot.lots.filter(lot => lot.expiresOnDay > day);
-    const taken: StockLot[] = takeLots(fresh, input.quantity);
+    const taken: StockLot[] = takeLots(fresh, input.quantity, { caseSize: PRODUCT_MAP[input.productId]?.caseSize });
     for (const lot of taken) {
       inputCost += lot.quantity * (lot.unitCost ?? 0);
       inputExpiresOnDay = Math.min(inputExpiresOnDay, lot.expiresOnDay);

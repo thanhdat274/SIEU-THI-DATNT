@@ -1,7 +1,6 @@
 import React, {useState, useMemo} from 'react';
 import {InventoryItem,StoreFixture,SupplierOrder,HoldingItem,COLD_WAREHOUSE_CAPACITY,isSalesFixture} from '@game/shared';
 import {PRODUCT_MAP, effectiveShelfCapacity} from '@game/data';
-import {useGameStore} from '../store/useGameStore';
 import {PixelDialog,PixelButton,PixelStat,PixelProgress,ProductSlot,EmptyState} from './pixel';
 
 interface Props {
@@ -18,6 +17,8 @@ interface Props {
   onRestock: () => void;
   onStowHolding?: (id?: string) => void;
   onDisposeStock?: (productId: string, quantity: number) => void;
+  onOpenCase?: (productId: string, count: number) => void;
+  onOpenSupplier?: () => void;
   onClose: () => void;
 }
 
@@ -30,6 +31,8 @@ export const WarehouseModal: React.FC<Props> = ({
   onRestock,
   onClose,
   onDisposeStock,
+  onOpenCase,
+  onOpenSupplier,
   capacityBonus = 0,
   coldCapacity = COLD_WAREHOUSE_CAPACITY,
   ambientCapacity,
@@ -91,24 +94,45 @@ export const WarehouseModal: React.FC<Props> = ({
         </label>
       </div>
 
-      {filteredItems.map(i => (
-        <div className="product-row" key={i.productId}>
-          <ProductSlot productId={i.productId} />
-          <div className="product-info">
-            <h3>{PRODUCT_MAP[i.productId]?.name ?? i.productId}</h3>
-            <p>{PRODUCT_MAP[i.productId]?.storageType === 'cold' ? 'Giữ lạnh' : 'Hàng khô'} · {i.quantity} món</p>
-            {i.lots?.map(l => (
-              <p key={l.expiresOnDay}>Lô {l.quantity} món · Hạn ngày {l.expiresOnDay} · còn {Math.max(0, l.expiresOnDay - currentDay)} ngày</p>
-            ))}
-            {onDisposeStock && (
-              <PixelButton icon="warning" variant="brick" onClick={() => {
-                const name = PRODUCT_MAP[i.productId]?.name ?? i.productId;
-                if (window.confirm(`Tiêu hủy toàn bộ ${i.quantity} ${name} trong kho? Hàng gần hạn bị hủy trước và ghi vào sổ cái như một khoản lỗ.`)) onDisposeStock(i.productId, i.quantity);
-              }}>Tiêu hủy hàng</PixelButton>
-            )}
+      {filteredItems.map(i => {
+        const product = PRODUCT_MAP[i.productId];
+        const totalCases = i.lots?.reduce((sum, l) => sum + (l.caseCount ?? 0), 0) ?? 0;
+        return (
+          <div className="product-row" key={i.productId}>
+            <ProductSlot productId={i.productId} />
+            <div className="product-info">
+              <h3>{product?.name ?? i.productId}</h3>
+              <p>{product?.storageType === 'cold' ? 'Giữ lạnh' : 'Hàng khô'} · {i.quantity} món</p>
+              {totalCases > 0 && product?.caseSize && (
+                <p style={{ color: 'var(--teal)', fontWeight: 'bold' }}>📦 {totalCases} thùng ({totalCases * product.caseSize} lẻ)</p>
+              )}
+              {i.lots?.map(l => (
+                <p key={l.expiresOnDay}>Lô {l.quantity} món · Hạn ngày {l.expiresOnDay} · còn {Math.max(0, l.expiresOnDay - currentDay)} ngày{l.caseCount ? ` · ${l.caseCount} thùng` : ''}</p>
+              ))}
+              {totalCases > 0 && onDisposeStock && onOpenCase && (
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <PixelButton variant="teal" onClick={() => {
+                    if (window.confirm(`Mở 1 thùng ${product?.name}? Thùng sẽ thành ${product.caseSize} lẻ.`)) {
+                      onOpenCase(i.productId, 1);
+                    }
+                  }}>📦 Mở 1 thùng</PixelButton>
+                  <PixelButton variant="teal" onClick={() => {
+                    if (window.confirm(`Mở tất cả ${totalCases} thùng ${product?.name}?`)) {
+                      onOpenCase(i.productId, totalCases);
+                    }
+                  }}>📦 Mở hết thùng</PixelButton>
+                </div>
+              )}
+              {onDisposeStock && (
+                <PixelButton icon="warning" variant="brick" onClick={() => {
+                  const name = PRODUCT_MAP[i.productId]?.name ?? i.productId;
+                  if (window.confirm(`Tiêu hủy toàn bộ ${i.quantity} ${name} trong kho? Hàng gần hạn bị hủy trước và ghi vào sổ cái như một khoản lỗ.`)) onDisposeStock(i.productId, i.quantity);
+                }}>Tiêu hủy hàng</PixelButton>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       {filteredItems.length === 0 && (
         <EmptyState title="Không có hàng phù hợp">
           {items.length === 0 ? 'Ghé đại lý để chuẩn bị hàng cho ngày bán mới.' : 'Không tìm thấy mặt hàng khớp với bộ lọc.'}
@@ -126,10 +150,10 @@ export const WarehouseModal: React.FC<Props> = ({
         )) : <p className="muted">Chưa có đơn đang giao.</p>}
       </section>
 
-      {!canRestock && <p className="action-reason" style={{ marginTop: '12px' }}>Chưa có kệ thiếu hàng phù hợp để châm từ kho. Chọn hàng tại kệ trống để bày món mới.</p>}
+      {!canRestock && <p className="action-reason" style={{ marginTop: '12px' }}>Chưa có kệ thiếu hàng phù hợp để bày từ kho. Chọn hàng tại kệ trống để bày món mới.</p>}
       <div className="save-actions" style={{ marginTop: '16px' }}>
-        <PixelButton icon="plus" variant="teal" disabled={!canRestock} onClick={onRestock}>Châm các kệ từ kho</PixelButton>
-        <PixelButton icon="truck" onClick={useGameStore.getState().openSupplierModal}>Ghé đại lý nhập hàng</PixelButton>
+        <PixelButton icon="plus" variant="teal" disabled={!canRestock} onClick={onRestock}>Bày hàng lên kệ</PixelButton>
+        <PixelButton icon="truck" onClick={onOpenSupplier}>Ghé đại lý nhập hàng</PixelButton>
       </div>
     </PixelDialog>
   );

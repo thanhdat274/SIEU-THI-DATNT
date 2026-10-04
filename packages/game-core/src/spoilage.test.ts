@@ -45,6 +45,9 @@ export function runSpoilageTests(): void {
   assert.equal(decayLot(lot, 2.5), 2);
   assert.equal(lot.expiresOnDay, 17, 'Hai ngày rate 2.5 = mất 3 ngày hạn');
   assert.equal(lot.decayCarry, undefined, 'Hết phần lẻ thì bỏ trường để save gọn');
+  const kept = { quantity: 1, expiresOnDay: 10 } as { quantity: number; expiresOnDay: number; decayCarry?: number };
+  for (let day = 0; day < 4; day++) decayLot(kept, 0.75);
+  assert.equal(kept.expiresOnDay, 11, 'Bảo quản tốt (rate 0,75): 4 ngày kéo dài thêm đúng 1 ngày hạn');
   const forever = { expiresOnDay: NEVER } as { expiresOnDay: number; decayCarry?: number };
   assert.equal(decayLot(forever, 3), 0);
   assert.equal(forever.expiresOnDay, NEVER, 'Món không có hạn không hỏng');

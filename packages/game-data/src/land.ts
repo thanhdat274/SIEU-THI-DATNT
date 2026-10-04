@@ -79,7 +79,7 @@ export const FIXTURE_SHOP: FixtureShopItem[] = [
   { id: 'shelf', name: 'Kệ gỗ', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 12, cost: 80_000, unlockLevel: 5, functional: true, },
   { id: 'fridge', name: 'Tủ lạnh 2 cánh', kind: 'fridge', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 24, cost: 220_000, unlockLevel: 5, functional: true, },
   { id: 'fridge_single', name: 'Tủ lạnh 1 cánh', kind: 'fridge', type: 'refrigerator', widthTiles: 1, heightTiles: 1, maxCapacity: 12, slotCount: 8, cost: 90_000, unlockLevel: 5, functional: true, },
-  { id: 'freezer', name: 'Tủ đông', kind: 'freezer', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 18, slotCount: 12, cost: 180_000, unlockLevel: 9, functional: true, },
+  { id: 'freezer', name: 'Tủ đông', kind: 'freezer', type: 'refrigerator', widthTiles: 2, heightTiles: 1, maxCapacity: 18, slotCount: 12, cost: 180_000, unlockLevel: 2, functional: true, },
   { id: 'storage_rack', name: 'Kệ kho', kind: 'storage', type: 'shelf_wooden', widthTiles: 1, heightTiles: 1, maxCapacity: 0, slotCount: 1, cost: 50_000, unlockLevel: 9, functional: true, limit: 10, storageCells: STORAGE_RACK_CELL_BONUS, },
   { id: 'shelf_double', name: 'Kệ đôi', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 24, cost: 160_000, unlockLevel: 15, functional: true, requiresPlot: 'D', },
   { id: 'shelf_3', name: 'Kệ 3', kind: 'shelf', type: 'shelf_wooden', widthTiles: 2, heightTiles: 1, maxCapacity: 20, slotCount: 36, cost: 320_000, unlockLevel: 21, functional: true, requiresPlot: 'D', },

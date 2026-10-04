@@ -1,5 +1,6 @@
 import { Texture } from 'pixi.js';
 import { createPremiumTexture } from './premium-textures';
+import { createNeighborhoodTexture } from './neighborhood-textures';
 
 /**
  * Procedural Pixel Art Generator for "Tiệm Tạp Hóa Đầu Hẻm"
@@ -48,6 +49,8 @@ export class PixelTextureFactory {
   }
 
   private createCanvasForKey(key: string): HTMLCanvasElement {
+    const neighborhood = createNeighborhoodTexture(key);
+    if (neighborhood) return neighborhood;
     const premium = createPremiumTexture(key);
     if (premium) return premium;
     switch (key) {
@@ -67,6 +70,16 @@ export class PixelTextureFactory {
         return this.createYellowWallTile();
       case 'tile_signboard':
         return this.createSignboardTexture();
+      case 'sign_banh_mi':
+        return this.createBanhMiSignTexture();
+      case 'sign_cafe':
+        return this.createCafeSignTexture();
+      case 'sign_xoi':
+        return this.createXoiSignTexture();
+      case 'sign_drink':
+        return this.createDrinkSignTexture();
+      case 'sign_general':
+        return this.createGeneralStoreSignTexture();
       case 'tile_plant_pot':
         return this.createPlantPotTexture();
       case 'deco_lantern':
@@ -309,6 +322,145 @@ export class PixelTextureFactory {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('TIỆM TẠP HÓA ĐẦU HẺM', 64, 16);
+
+    return canvas;
+  }
+
+  /**
+   * Signboard "TIỆM BÁNH MÌ" (128x32) - Bakery sign
+   */
+  private createBanhMiSignTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(128, 32);
+    const ctx = canvas.getContext('2d')!;
+
+    // Warm orange board
+    ctx.fillStyle = '#d4762c';
+    ctx.fillRect(0, 0, 128, 32);
+
+    // White frame
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, 126, 30);
+
+    // Text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('TIỆM BÁNH MÌ', 64, 14);
+    ctx.font = '9px sans-serif';
+    ctx.fillStyle = '#fff3b0';
+    ctx.fillText('BÁNH MÌ - ĐỒ UỐNG', 64, 24);
+
+    return canvas;
+  }
+
+  /**
+   * Signboard "QUÁN CÀ PHÊ" (128x32) - Cafe sign
+   */
+  private createCafeSignTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(128, 32);
+    const ctx = canvas.getContext('2d')!;
+
+    // Brown board
+    ctx.fillStyle = '#5c3a1a';
+    ctx.fillRect(0, 0, 128, 32);
+
+    // Gold frame
+    ctx.strokeStyle = '#d4a574';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, 126, 30);
+
+    // Text
+    ctx.fillStyle = '#f4e4c1';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('QUÁN CÀ PHÊ', 64, 14);
+    ctx.font = '9px sans-serif';
+    ctx.fillStyle = '#d4a574';
+    ctx.fillText('CÀ PHÊ SỮA - ĐÁ', 64, 24);
+
+    return canvas;
+  }
+
+  /**
+   * Signboard "TIỆM XÔI" (128x32) - Sticky rice shop
+   */
+  private createXoiSignTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(128, 32);
+    const ctx = canvas.getContext('2d')!;
+
+    // Red board
+    ctx.fillStyle = '#c0392b';
+    ctx.fillRect(0, 0, 128, 32);
+
+    // Yellow frame
+    ctx.strokeStyle = '#f1c40f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, 126, 30);
+
+    // Text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('TIỆM XÔI XÁO', 64, 16);
+
+    return canvas;
+  }
+
+  /**
+   * Signboard "QUÁN NƯỚC" (128x32) - Drink stall
+   */
+  private createDrinkSignTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(128, 32);
+    const ctx = canvas.getContext('2d')!;
+
+    // Blue board
+    ctx.fillStyle = '#2980b9';
+    ctx.fillRect(0, 0, 128, 32);
+
+    // White frame
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, 126, 30);
+
+    // Text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('QUÁN NƯỚC', 64, 14);
+    ctx.font = '9px sans-serif';
+    ctx.fillStyle = '#aed6f1';
+    ctx.fillText('NƯỚC ÉP - TRÁI CÂY', 64, 24);
+
+    return canvas;
+  }
+
+  /**
+   * Signboard "TẠP HÓA" (128x32) - General store
+   */
+  private createGeneralStoreSignTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(128, 32);
+    const ctx = canvas.getContext('2d')!;
+
+    // Green board
+    ctx.fillStyle = '#27ae60';
+    ctx.fillRect(0, 0, 128, 32);
+
+    // White frame
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, 126, 30);
+
+    // Text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('TẠP HÓA', 64, 16);
 
     return canvas;
   }

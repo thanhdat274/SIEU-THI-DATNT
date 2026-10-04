@@ -1,7 +1,7 @@
 import type { BranchDayReport, BranchSave } from '@game/shared';
 import { BRANCH_REPORT_LIMIT } from '@game/shared';
-import { PRODUCT_MAP, STORE_TYPE_MAP, getSeasonForDay } from '@game/data';
-import { setLots } from './chain';
+import { BRANCH_MANAGER, BRANCH_PRICE_MODES, PRODUCT_MAP, STORE_TYPE_MAP, getSeasonForDay } from '@game/data';
+import { policyOf, setLots } from './chain';
 import { Mulberry32Rng } from './staff';
 import { normalizeLots, sumLots, takeLots } from './stock';
 
@@ -47,6 +47,9 @@ export function runBranchDay(input: BranchDayInput): BranchDayResult {
 
   const rng = new Mulberry32Rng(hashString(branch.id) + day * 7919 + (input.seed ?? 0));
   const season = getSeasonForDay(day);
+  const policy = policyOf(branch);
+  const mode = BRANCH_PRICE_MODES[policy.priceMode];
+  const baseFactor = policy.manager ? BRANCH_MANAGER.demandFactor : BACKGROUND_DEMAND_FACTOR;
   const reputationFactor = 1 + Math.min(Math.max(branch.reputation, 0), 100) / 400;
 
   // Hết hạn trước khi bán.
@@ -65,21 +68,21 @@ export function runBranchDay(input: BranchDayInput): BranchDayResult {
     const product = PRODUCT_MAP[productId];
     if (!product) continue;
     const jitter = 0.9 + rng.next() * 0.2;
-    const demand = Math.max(0, Math.round(baseDemand * (season?.demandMultiplier ?? 1) * reputationFactor * BACKGROUND_DEMAND_FACTOR * jitter));
+    const demand = Math.max(0, Math.round(baseDemand * (season?.demandMultiplier ?? 1) * reputationFactor * baseFactor * mode.demandFactor * jitter));
     if (demand === 0) continue;
     const item = branch.stock.find((i) => i.productId === productId);
     const lots = normalizeLots(item?.quantity ?? 0, item?.lots, productId, day);
     const sold = Math.min(demand, sumLots(lots));
     if (sold < demand) stockouts.push(productId);
     if (sold <= 0) continue;
-    for (const lot of takeLots(lots, sold)) cogs += lot.quantity * (lot.unitCost ?? product.purchasePrice);
+    for (const lot of takeLots(lots, sold, { caseSize: product.caseSize })) cogs += lot.quantity * (lot.unitCost ?? product.purchasePrice);
     setLots(branch.stock, productId, lots);
-    revenue += sold * product.baseSellingPrice;
+    revenue += Math.round(sold * product.baseSellingPrice * mode.priceFactor);
     unitsSold += sold;
   }
 
   const available = Math.max(0, input.money) + revenue;
-  const wages = Math.min(type.staffWagePerDay, available);
+  const wages = Math.min(type.staffWagePerDay + (policy.manager ? BRANCH_MANAGER.wagePerDay : 0), available);
   const report: BranchDayReport = { day, revenue, cogs, wages, spoilageLoss, unitsSold, stockouts };
   branch.reports = [...branch.reports, report].slice(-BRANCH_REPORT_LIMIT);
   branch.totalRevenue += revenue;

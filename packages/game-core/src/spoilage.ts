@@ -29,12 +29,13 @@ export function spoilageRate(ctx: MarketContext, product: Pick<Product, 'id' | '
  * Hàng không có hạn (hạn vô hạn) và tốc độ ≤ 1 không đổi. Trả về số ngày đã trừ.
  */
 export function decayLot<T extends { expiresOnDay: number; decayCarry?: number }>(lot: T, rate: number): number {
-  if (lot.expiresOnDay >= NEVER || rate <= 1) return 0;
+  if (lot.expiresOnDay >= NEVER || rate === 1) return 0;
+  // rate > 1 trừ thêm ngày; rate < 1 (bảo quản tốt hơn bình thường) cộng dần ngày, mỗi lần đủ một ngày.
   const total = (lot.decayCarry ?? 0) + (rate - 1);
-  const whole = Math.floor(total + 1e-9);
+  const whole = total >= 0 ? Math.floor(total + 1e-9) : Math.ceil(total - 1e-9);
   const carry = total - whole;
   lot.expiresOnDay -= whole;
-  if (carry > 1e-9) lot.decayCarry = carry; else delete lot.decayCarry;
+  if (Math.abs(carry) > 1e-9) lot.decayCarry = carry; else delete lot.decayCarry;
   return whole;
 }
 

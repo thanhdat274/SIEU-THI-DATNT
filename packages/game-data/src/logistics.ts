@@ -17,7 +17,7 @@ export const LOADING_DOCK_CONFIG = {
   },
   /** Vị trí nhân viên nhận/giao kiện hàng tại đuôi xe tải, trên vỉa hè */
   truckTailPosition: {
-    x: 20.2 * TILE_SIZE, // 646.4px
+    x: 25 * TILE_SIZE, // 800px: ngay sau đuôi xe (xe dài 180-198 px, đỗ giữa tại 688px, đầu xe quay sang trái)
     y: 12.2 * TILE_SIZE, // 390.4px
   },
   /** Điểm bàn giao hàng hóa tại bãi tập kết phía Đông vỉa hè (không chắn cửa chính tiệm) */

@@ -23,5 +23,6 @@ const TitlesModal = lazyModal<React.ComponentProps<typeof import('./components/T
 const MaintenanceModal = lazyModal<React.ComponentProps<typeof import('./components/MaintenanceModal').MaintenanceModal>>(() => import('./components/MaintenanceModal'), 'MaintenanceModal');
 const ReviewsModal = lazyModal<React.ComponentProps<typeof import('./components/ReviewsModal').ReviewsModal>>(() => import('./components/ReviewsModal'), 'ReviewsModal');
 const SecurityModal = lazyModal<React.ComponentProps<typeof import('./components/SecurityModal').SecurityModal>>(() => import('./components/SecurityModal'), 'SecurityModal');
+const ChainModal = lazyModal<React.ComponentProps<typeof import('./components/ChainModal').ChainModal>>(() => import('./components/ChainModal'), 'ChainModal');
 
-export { AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, SecurityModal };
+export { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, SecurityModal };

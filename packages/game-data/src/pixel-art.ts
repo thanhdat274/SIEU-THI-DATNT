@@ -1,4 +1,5 @@
 import { Product } from '@game/shared';
+import { drawColdProductIcon } from './pixel-art-cold';
 
 /** Original 16px product silhouettes, shared by DOM icons and world shelf stock. */
 export interface PixelRect { x: number; y: number; w: number; h: number; color: string }
@@ -7,6 +8,7 @@ export function productPixels(product?: Pick<Product, 'id' | 'category'>): Pixel
   const rect = (x: number, y: number, w: number, h: number, color: string) => p.push({ x, y, w, h, color });
   const ink = '#593A2B', paper = '#FFF2D6', gold = '#E9B95D', teal = '#357F72';
   const category = product?.category;
+  if (drawColdProductIcon(product?.id, rect)) return p;
   if (product?.id === 'kem_que') { // que kem: thân kem + que gỗ
     rect(5, 1, 6, 9, ink); rect(6, 2, 4, 7, '#F4E4BC'); rect(6, 2, 4, 2, '#9BD0C8'); rect(7, 10, 2, 5, ink); rect(7, 10, 2, 4, '#C69464');
     return p;

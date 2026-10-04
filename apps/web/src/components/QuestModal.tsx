@@ -19,6 +19,9 @@ export interface QuestModalProps {
   partyOrders?: ActivePartyOrder[];
   onRespondPartyOrder?: (orderId: string, accept: boolean) => void;
   onFulfillPartyOrder?: (orderId: string) => void;
+  /** Nhận (nếu cần) + nhập hỏa tốc phần thiếu + giao ngay; `rushQuote` trả tiền nhập hỏa tốc (<0 nếu không có nguồn). */
+  onRushFulfillPartyOrder?: (orderId: string) => void;
+  rushQuote?: (orderId: string) => number;
   inventory?: InventoryItem[];
   // Goals & Weekly Quests
   goals?: GoalProgressInfo[];
@@ -59,6 +62,8 @@ export const QuestModal: React.FC<QuestModalProps> = ({
   partyOrders = [],
   onRespondPartyOrder,
   onFulfillPartyOrder,
+  onRushFulfillPartyOrder,
+  rushQuote,
   inventory = [],
   goals = [],
   weeklyQuests = [],
@@ -191,7 +196,17 @@ export const QuestModal: React.FC<QuestModalProps> = ({
               Hiện chưa có đơn tiệc nào từ bà con trong hẻm. Hãy tiếp tục kinh doanh và mở cửa tiệm mỗi ngày!
             </div>
           ) : (
-            partyOrders.map((ord) => {
+            [...partyOrders]
+              .map((ord, index) => ({ ord, index }))
+              .sort((a, b) => {
+                const activeA = a.ord.status === 'pending' || a.ord.status === 'accepted' ? 0 : 1;
+                const activeB = b.ord.status === 'pending' || b.ord.status === 'accepted' ? 0 : 1;
+                if (activeA !== activeB) return activeA - activeB;
+                if (a.ord.availableDay !== b.ord.availableDay) return b.ord.availableDay - a.ord.availableDay;
+                return b.index - a.index;
+              })
+              .map(({ ord }) => ord)
+              .map((ord) => {
               const def = PARTY_ORDER_MAP[ord.orderId];
               if (!def) return null;
               const hasStock = checkOrderStock(ord.orderId);
@@ -240,7 +255,20 @@ export const QuestModal: React.FC<QuestModalProps> = ({
                       Thưởng: {money(def.reward.money)} · +{def.reward.reputation} Uy tín
                     </span>
 
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      {(ord.status === 'pending' || ord.status === 'accepted') && !hasStock && onRushFulfillPartyOrder && rushQuote && (() => {
+                        const cost = rushQuote(ord.orderId);
+                        return (
+                          <PixelButton
+                            variant="teal"
+                            disabled={cost < 0}
+                            title="Nhập phần còn thiếu giao ngay trong ngày (phụ phí hỏa tốc +30%), rồi giao đơn luôn"
+                            onClick={() => onRushFulfillPartyOrder(ord.orderId)}
+                          >
+                            {cost < 0 ? 'Không có nguồn hàng' : `${ord.status === 'pending' ? 'Nhận đơn + ' : ''}Nhập hỏa tốc & giao (${money(cost)})`}
+                          </PixelButton>
+                        );
+                      })()}
                       {ord.status === 'pending' && onRespondPartyOrder && (
                         <>
                           <PixelButton variant="teal" onClick={() => onRespondPartyOrder(ord.orderId, true)}>

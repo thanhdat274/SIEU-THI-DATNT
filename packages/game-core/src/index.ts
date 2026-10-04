@@ -57,3 +57,12 @@ export * from './production';
 export * from './analytics';
 export * from './ambient-audio';
 export * from './replay';
+export * from './weather-visual';
+export * from './rain-protection';
+export * from './shelter-seek';
+export * from './neighborhood-chat';
+export * from './neighborhood-life';
+export * from './daily-routine';
+export * from './coop-routine';
+// Đếm hàng lẻ / thùng cho UI (ShelfModal); phần còn lại của stock.ts là nội bộ mô phỏng.
+export { looseUnits, sealedCases } from './stock';
