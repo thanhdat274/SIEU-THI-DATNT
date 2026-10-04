@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { StreetTrafficManager, STREET_LANE_LEFT_Y, STREET_LANE_RIGHT_Y } from './street-traffic';
-import { MAP_WIDTH } from '@game/data';
+import { MAP_WIDTH, TRAFFIC_X_RANGE } from '@game/data';
 import { TILE_SIZE } from '@game/shared';
 
 export function runStreetTrafficTests(): void {
@@ -15,8 +15,8 @@ export function runStreetTrafficTests(): void {
         manager.update(1.0, 8, 0, 100);
       }
 
-      // Max concurrent should never exceed 2
-      assert.ok(manager.getVehicles().length <= 4);
+      // Ngân sách xe là giới hạn cứng, dù mô phỏng bao lâu
+      assert.ok(manager.getVehicles().length <= manager.getVehicleBudget());
     });
 
     it('positions vehicles correctly according to traffic direction rules', () => {
@@ -27,6 +27,7 @@ export function runStreetTrafficTests(): void {
       assert.ok(vehicles.length > 0);
 
       for (const v of vehicles) {
+        if ((v.roadId ?? 'main') !== 'main') continue; // đường phụ có làn riêng (kiểm ở neighborhood.test)
         if (v.direction === 'right') {
           assert.strictEqual(v.position.y, STREET_LANE_RIGHT_Y);
         } else {
@@ -48,9 +49,29 @@ export function runStreetTrafficTests(): void {
       ]);
 
       assert.strictEqual(manager.getVehicles().length, 1);
-      // Advance by 1s (will move 100px further right, beyond MAP_WIDTH * TILE_SIZE + 60)
+      // Còn trong khu phố mở rộng nên chưa bị xóa; chạy tới hết biên spawn/despawn mới bị dọn
       manager.update(1.0, 12, 0, 123);
-      assert.strictEqual(manager.getVehicles().length, 0);
+      assert.strictEqual(manager.getVehicles().filter(v => v.id === 'test-car').length, 1);
+      const far = new StreetTrafficManager([{ id: 'edge-car', type: 'car', variant: 0, direction: 'right', position: { x: TRAFFIC_X_RANGE.max - 20, y: STREET_LANE_RIGHT_Y }, speed: 100 }]);
+      far.update(1.0, 12, 0, 123);
+      assert.strictEqual(far.getVehicles().filter(v => v.id === 'edge-car').length, 0);
+    });
+
+    it('thứ tự cập nhật xe không phụ thuộc thứ tự trong mảng: xe đi đầu mỗi làn cập nhật trước', () => {
+      // Xe sau bám sát xe trước đang đứng (cùng làn đường south, hướng phải), xen giữa là một xe làn khác.
+      const leader = { id: 'lead', type: 'car' as const, variant: 0, direction: 'right' as const, roadId: 'south', position: { x: 400, y: 820 }, speed: 90, currentSpeed: 0 };
+      const follower = { id: 'follow', type: 'car' as const, variant: 0, direction: 'right' as const, roadId: 'south', position: { x: 330, y: 820 }, speed: 90, currentSpeed: 60 };
+      const other = { id: 'other', type: 'car' as const, variant: 0, direction: 'left' as const, roadId: 'main', position: { x: 360, y: STREET_LANE_LEFT_Y }, speed: 90 };
+      const clone = <T,>(v: T): T => structuredClone(v);
+      const run = (list: Array<typeof leader | typeof follower | typeof other>) => {
+        const m = new StreetTrafficManager(list.map(clone));
+        for (let i = 0; i < 30; i++) m.update(1 / 60, 2, 0, 7);
+        const byId = new Map(m.getVehicles().map((v) => [v.id, v]));
+        return ['lead', 'follow', 'other'].map((id) => `${byId.get(id)?.position.x.toFixed(4)}:${byId.get(id)?.currentSpeed?.toFixed(4)}`).join('|');
+      };
+      // Mảng cũ sắp bằng hàm so sánh trả 0 khi khác làn nên [xe sau, xe khác, xe trước] giữ nguyên và xe sau đi trước xe dẫn.
+      assert.strictEqual(run([follower, other, leader]), run([leader, other, follower]));
+      assert.strictEqual(run([other, follower, leader]), run([leader, follower, other]));
     });
 
     it('adjusts spawn frequency and speeds according to weather and rush hour', () => {

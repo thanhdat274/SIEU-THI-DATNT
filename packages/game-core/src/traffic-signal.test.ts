@@ -130,7 +130,7 @@ export function runTrafficSignalTests(): void {
     let conflicts = 0, overlaps = 0, stoppedAtRed = 0;
     for (let t = 0; t < 1800; t += 0.1) {
       m.update(0.1, 8, 0, 4242);
-      const vehicles = m.getVehicles();
+      const vehicles = m.getVehicles().filter(v => (v.roadId ?? 'main') === 'main'); // vạch qua đường chỉ ở đường chính
       const crossing = m.getPedestrians().some(p => p.state === 'crossing');
       for (const v of vehicles) {
         const half = STREET_VEHICLE_RULES.halfLength[v.type];

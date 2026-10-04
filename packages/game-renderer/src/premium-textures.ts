@@ -1094,8 +1094,20 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
     const isRight = key.endsWith('right');
     const { canvas, r } = makeSurface(130, 65, !isRight);
     const GLASS = '#8ec6e6';
-    const BODY = '#e4bd48';
-    const roofTop = 17;
+    // `vehicle_car_v<n>_<hướng>`: n=0 taxi vàng; 1..5 sedan trắng, hatchback bạc, hatchback đỏ, sedan xanh, SUV đen. Khóa cũ `vehicle_car_<hướng>` = taxi.
+    const variantMatch = /^vehicle_car_v(\d+)_/.exec(key);
+    const carVariant = variantMatch ? Number(variantMatch[1]) % 6 : 0;
+    const taxi = carVariant === 0;
+    const CAR_PAL = [
+      { body: '#e4bd48', hi: '#f4d97a', lo: '#c79a2c', seam: '#a07a1c', handle: '#7a5e14' },
+      { body: '#e6eaed', hi: '#ffffff', lo: '#b9c1c8', seam: '#8a939a', handle: '#6b747a' },
+      { body: '#b4bcc4', hi: '#d6dce2', lo: '#8c949c', seam: '#6a727a', handle: '#4f565c' },
+      { body: '#c0392b', hi: '#e8604f', lo: '#8f2a20', seam: '#6f1f17', handle: '#4f1610' },
+      { body: '#2e6fa8', hi: '#5f9cd0', lo: '#215582', seam: '#173f61', handle: '#112f48' },
+      { body: '#343a41', hi: '#5a626b', lo: '#22272c', seam: '#16191d', handle: '#0d0f12' },
+    ][carVariant];
+    const BODY = CAR_PAL.body;
+    const roofTop = carVariant === 5 ? 12 : 17;
     const bodyTop = 35;
     r(8, 57, 114, 6, '#26190e40'); r(13, 56, 104, 6, '#26190e25');
     // Cabin (greenhouse): viền tối, mui, kính
@@ -1108,7 +1120,7 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
       if (y <= roofTop + 2) { r(l, y, rr - l + 1, 1, BODY); continue; }
       r(l, y, rr - l + 1, 1, GLASS);
     }
-    r(leftAt(roofTop) + 1, roofTop + 1, rightAt(roofTop) - leftAt(roofTop) - 1, 1, '#f4d97a');
+    r(leftAt(roofTop) + 1, roofTop + 1, rightAt(roofTop) - leftAt(roofTop) - 1, 1, CAR_PAL.hi);
     // Trụ A, B, C (màu thân xe)
     for (let y = roofTop + 3; y < bodyTop; y++) {
       r(leftAt(y) + 1, y, 5, 1, BODY);
@@ -1119,18 +1131,19 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
     r(68, 22, 4, 3, '#d6eefb'); r(43, 22, 4, 3, '#d6eefb');
     r(77, 22, 7, 7, '#f1c8a0'); r(76, 21, 9, 3, '#2a1c14'); r(77, 29, 7, 5, '#2e86c1');
     r(47, 25, 5, 5, '#f1c8a0'); r(46, 24, 7, 3, '#2a1c14');
-    // Đèn mui "TAXI"
-    r(61, 10, 16, 7, DARK); r(62, 11, 14, 5, '#ffffff'); r(65, 12, 4, 4, '#e74c3c'); r(70, 12, 4, 4, '#e74c3c');
+    // Đèn mui "TAXI" (chỉ taxi)
+    if (taxi) { r(61, 10, 16, 7, DARK); r(62, 11, 14, 5, '#ffffff'); r(65, 12, 4, 4, '#e74c3c'); r(70, 12, 4, 4, '#e74c3c'); }
     // Thân xe
     r(3, bodyTop - 1, 124, 22, DARK);
     r(4, bodyTop, 122, 20, BODY);
-    r(4, bodyTop, 122, 3, '#f4d97a');
-    r(4, bodyTop + 12, 122, 8, '#c79a2c');
-    // Dải ca-rô taxi dọc thân (ô 2×2 xen kẽ)
-    for (let x = 8; x < 116; x += 4) { r(x, bodyTop + 8, 2, 2, DARK); r(x + 2, bodyTop + 10, 2, 2, DARK); }
+    r(4, bodyTop, 122, 3, CAR_PAL.hi);
+    r(4, bodyTop + 12, 122, 8, CAR_PAL.lo);
+    // Dải ca-rô taxi dọc thân (ô 2×2 xen kẽ); xe thường chỉ có đường gân thân
+    if (taxi) for (let x = 8; x < 116; x += 4) { r(x, bodyTop + 8, 2, 2, DARK); r(x + 2, bodyTop + 10, 2, 2, DARK); }
+    else r(6, bodyTop + 9, 118, 1, CAR_PAL.seam);
     // Cửa, tay nắm, gương
-    r(33, bodyTop + 1, 1, 16, '#a07a1c'); r(61, bodyTop + 1, 1, 16, '#a07a1c'); r(91, bodyTop + 1, 1, 16, '#a07a1c');
-    r(53, bodyTop + 4, 5, 2, '#7a5e14'); r(83, bodyTop + 4, 5, 2, '#7a5e14');
+    r(33, bodyTop + 1, 1, 16, CAR_PAL.seam); r(61, bodyTop + 1, 1, 16, CAR_PAL.seam); r(91, bodyTop + 1, 1, 16, CAR_PAL.seam);
+    r(53, bodyTop + 4, 5, 2, CAR_PAL.handle); r(83, bodyTop + 4, 5, 2, CAR_PAL.handle);
     r(92, bodyTop - 4, 5, 4, DARK);
     // Đèn trước/sau, lưới tản nhiệt, cản
     r(121, bodyTop + 3, 6, 5, '#fff3b0'); r(125, bodyTop + 4, 2, 3, '#ffffff');

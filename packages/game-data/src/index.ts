@@ -38,3 +38,5 @@ export * from './store-types';
 export * from './weather-visual';
 export * from './shelter';
 export * from './weather-sprite-layout';
+export * from './neighborhood';
+export * from './neighborhood-dialogue';

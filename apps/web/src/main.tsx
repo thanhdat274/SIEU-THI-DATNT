@@ -32,12 +32,6 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
  * URL: ?debugTime=ngày:giờ[:phút[:mưa]] (ví dụ ?debugTime=34:12:0:0.8). Console: setDebugTime(34, 12, 0, 0.8), clearDebugTime().
  */
 if (import.meta.env.DEV) {
-  // Bảng debug thời tiết (chỉ dev; code được tách chunk và không vào bản production).
-  void import('./components/WeatherDebugPanel').then(({ WeatherDebugPanel }) => {
-    const host = document.createElement('div');
-    document.body.appendChild(host);
-    ReactDOM.createRoot(host).render(<WeatherDebugPanel />);
-  });
   const w = window as unknown as Record<string, unknown>;
   w.setDebugTime = (day: number, hour: number, minute = 0, rain?: number) => setDebugVisualTime({ day, hour, minute, rain });
   w.clearDebugTime = () => setDebugVisualTime(null);

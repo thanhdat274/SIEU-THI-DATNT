@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getWeatherFxSettings, getWeatherVisualModel, getWeatherVisualState, setWeatherFxSettings, setDebugVisualTime } from '@game/renderer';
 import type { WeatherPresetId, WeatherQuality } from '@game/data';
 
-/** Bảng debug thời tiết. Chỉ được mount ở chế độ dev (xem main.tsx), không có trong bản production. */
+/** Bảng debug thời tiết. Chỉ hiện khi nhấn Shift+F5 hoặc bật flag trong localStorage. */
 const PRESETS: Array<[WeatherPresetId, string]> = [
   ['clear', 'Clear'], ['cloudy', 'Cloudy'], ['rain_light', 'Light Rain'], ['rain', 'Rain'],
   ['rain_heavy', 'Heavy Rain'], ['storm', 'Storm'], ['wind_light', 'Wind light'], ['wind_strong', 'Wind strong'],
@@ -12,7 +12,24 @@ const box: React.CSSProperties = { position: 'fixed', left: 8, bottom: 8, zIndex
 const btn: React.CSSProperties = { margin: 2, padding: '3px 6px', font: '11px monospace', cursor: 'pointer' };
 
 export const WeatherDebugPanel: React.FC = () => {
+  const [show, setShow] = useState(false);
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    // Chỉ hiện nút Weather nếu người dùng bật flag debug trong localStorage
+    const isDebug = localStorage.getItem('show_debug_weather') === '1';
+    if (!isDebug) return;
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.key === 'F5') {
+        e.preventDefault();
+        setShow(s => !s);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
+
   const [rain, setRain] = useState(0);
   const [wind, setWind] = useState(0);
   const [dir, setDir] = useState(0);
@@ -29,10 +46,11 @@ export const WeatherDebugPanel: React.FC = () => {
   };
   const state = getWeatherVisualState();
 
-  if (!open) return <button style={{ ...box, padding: '4px 8px', cursor: 'pointer' }} onClick={() => setOpen(true)}>☁ Weather</button>;
+  if (!show && !open) return null;
+  if (!open) return <button style={{ ...box, padding: '4px 8px', cursor: 'pointer' }} onClick={() => setOpen(true)}>☁ Weather Debug</button>;
   return (
     <div style={box}>
-      <div><b>Weather Debug</b> <button style={btn} onClick={() => setOpen(false)}>x</button> <button style={btn} onClick={() => tick(n => n + 1)}>refresh</button></div>
+      <div><b>Weather Debug</b> <button style={btn} onClick={() => { setOpen(false); setShow(false); localStorage.removeItem('show_debug_weather'); }}>x</button> <button style={btn} onClick={() => tick(n => n + 1)}>refresh</button></div>
       <div>
         {PRESETS.map(([id, label]) => (
           <button key={id} style={btn} onClick={() => { model()?.setWindOverride(null, null); model()?.transitionWeather(id, 15000); }}>{label}</button>

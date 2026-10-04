@@ -475,6 +475,8 @@ export class WeatherEffects {
 
 /** Độ lệch skew (rad nhỏ) cho cây/biển hiệu từ gió; building luôn 0. Dùng chung công thức windSway của game-core. */
 export function swaySkew(kind: 'tree' | 'sign', wind: number, direction: number, time: number, phase: number): number {
-  const max = kind === 'tree' ? 0.05 : 0.09;
-  return windSway(kind, wind, time, phase) * Math.cos(direction) * max + Math.cos(direction) * wind * (kind === 'tree' ? 0.008 : 0.02);
+  // Tăng cường hiệu ứng gió cho biển hiệu khi mưa to
+  const windBoost = kind === 'sign' ? Math.pow(wind, 0.7) : wind; // Biển hiệu rung nhiều hơn khi gió mạnh
+  const max = kind === 'tree' ? 0.05 : 0.12; // Tăng max skew cho biển hiệu từ 0.09 lên 0.12
+  return windSway(kind, wind, time, phase) * Math.cos(direction) * max + Math.cos(direction) * windBoost * (kind === 'tree' ? 0.008 : 0.03);
 }
