@@ -129,6 +129,9 @@ export class GameController {
           updatedBusiness: commandBusiness,
         };
       }
+      // Lệnh server phát lại luôn chạy trên trạng thái chuẩn mới nhất của server, nên không bắt client khớp revision:
+      // hai người cùng hẻm thao tác xen kẽ thì revision client dễ chậm một nhịp và lệnh hợp lệ bị 400 "stale" oan.
+      body.expectedRevision = commandWorld.world.revision;
       const runtime = new WorldRuntime(commandWorld.world, commandBusiness);
       const commandResult = await runtime.executeCommand(request.gameAccount.uid, {
         protocolVersion: typeof body.protocolVersion === 'number' ? body.protocolVersion : commandWorld.world.protocolVersion,
