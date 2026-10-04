@@ -310,7 +310,7 @@ export const App: React.FC = () => {
       setCurrentRevision(freshSave.revision);
       revisionRef.current = freshSave.revision;
       setLastSavedTime(freshSave.updatedAt);
-      setGameSpeed(Math.max(1, freshSave.worldTime.timeScale / 60));
+      setGameSpeed(Math.max(1, freshSave.worldTime.timeScale / 90));
       addToast('Đã khởi tạo lại tiệm mới thành công!', 'info');
       return true;
     } catch (err) {
@@ -363,7 +363,7 @@ export const App: React.FC = () => {
       setCurrentRevision(stored.revision);
       revisionRef.current = stored.revision;
       setLastSavedTime(stored.updatedAt);
-      setGameSpeed(Math.max(1, stored.worldTime.timeScale / 60));
+      setGameSpeed(Math.max(1, stored.worldTime.timeScale / 90));
       addToast('Đã nhập bản lưu. Bản cũ được giữ làm bản dự phòng.', 'success');
       return true;
     } catch (err) {
@@ -534,7 +534,7 @@ export const App: React.FC = () => {
       setCurrentRevision(initialSave.revision);
       revisionRef.current = initialSave.revision;
       setLastSavedTime(initialSave.updatedAt);
-      setGameSpeed(Math.max(1, initialSave.worldTime.timeScale / 60));
+      setGameSpeed(Math.max(1, initialSave.worldTime.timeScale / 90));
 
       // 2. Setup inputs
       const inputManager = new InputManager();
@@ -1333,10 +1333,10 @@ export const App: React.FC = () => {
 
   const handleToggleGameSpeed = async () => {
     if (blockOfflineOnlineMutation()) return;
-    const nextSpeed = gameSpeed === 1 ? 2 : 1;
+    const nextSpeed = gameSpeed === 1 ? 2 : gameSpeed === 2 ? 4 : 1;
     const curWorld = onlineWorldRef.current;
     if (curWorld && curWorld.world.memberships.length > 1) {
-      const sent = worldSocket.submitTimeVote({ type: 'change_speed', targetSpeed: nextSpeed as 1 | 2 });
+      const sent = worldSocket.submitTimeVote({ type: 'change_speed', targetSpeed: nextSpeed as 1 | 2 | 4 });
       if (!sent) { addToast('Chưa kết nối realtime; không gửi được phiếu.', 'warn'); return; }
       const { gameAuth } = await import('./services/firebase');
       const user = gameAuth().currentUser;
@@ -1354,7 +1354,7 @@ export const App: React.FC = () => {
 
     setGameSpeed(nextSpeed);
     if (simulationRef.current) {
-      simulationRef.current.getClock().setTimeScale(nextSpeed === 1 ? 60 : 120);
+      simulationRef.current.getClock().setTimeScale(nextSpeed * 90);
     }
     addToast(`Tốc độ thời gian: ${nextSpeed}x`, 'info');
   };
@@ -1777,7 +1777,7 @@ export const App: React.FC = () => {
       />
     )}
     {isMarketOpen && simulationRef.current && <MarketModal summary={simulationRef.current.getMarketSummary()} prices={simulationRef.current.getPriceMarket()} plans={marketPlans.plans} trending={marketPlans.trending} day={worldTime.day} onClose={() => setMarketOpen(false)}/>}
-    {isStallOpen && simulationRef.current && <StallModal stalls={simulationRef.current.getStalls()} season={simulationRef.current.getSeason()} stock={Object.fromEntries(simulationRef.current.getInventory().map(item => [item.productId, item.quantity]))} report={simulationRef.current.getStallReport()} onBuy={handleBuyStall} onRestock={handleRestockStall} getRestockItems={(id) => simulationRef.current!.getStallRestockItems(id)} onClose={() => setStallOpen(false)}/>}
+    {isStallOpen && simulationRef.current && <StallModal stalls={simulationRef.current.getStalls()} season={simulationRef.current.getSeason()} stock={Object.fromEntries(simulationRef.current.getInventory().map(item => [item.productId, item.quantity]))} incoming={simulationRef.current.getPendingOrders().filter(o => !o.delivered).reduce<Record<string, number>>((acc, o) => ({ ...acc, [o.productId]: (acc[o.productId] ?? 0) + o.quantity }), {})} report={simulationRef.current.getStallReport()} onBuy={handleBuyStall} onRestock={handleRestockStall} getRestockItems={(id) => simulationRef.current!.getStallRestockItems(id)} onClose={() => setStallOpen(false)}/>}
     {isQuestOpen && simulationRef.current && (
       <QuestModal
         {...simulationRef.current.getQuests()}
@@ -2050,7 +2050,7 @@ export const App: React.FC = () => {
         onApprove={async () => {
           const sent = activeTimeVote.type === 'advance_day'
             ? worldSocket.submitTimeVote({ type: 'advance_day' })
-            : worldSocket.submitTimeVote({ type: 'change_speed', targetSpeed: activeTimeVote.targetSpeed === 2 ? 2 : 1 });
+            : worldSocket.submitTimeVote({ type: 'change_speed', targetSpeed: activeTimeVote.targetSpeed === 4 ? 4 : activeTimeVote.targetSpeed === 2 ? 2 : 1 });
           if (!sent) addToast('Mất kết nối realtime; chưa gửi được phiếu.', 'warn');
         }}
         onCancel={() => {

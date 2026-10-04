@@ -348,7 +348,7 @@ export const DEFAULT_INITIAL_SAVE: SaveGameData = {
     hour: 7,
     minute: 0,
     isStoreOpen: true,
-    timeScale: 60, // 1 real sec = 1 game minute
+    timeScale: 90, // 1x: 1 giây thực = 1,5 phút game (ngày 07:00–22:00 = 10 phút thực)
   },
   storeLayout: {
     widthTiles: 8,

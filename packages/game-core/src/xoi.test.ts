@@ -54,7 +54,7 @@ export function runXoiTests(): void {
   assert.equal(qty('nep'), 0);
   assert.equal(sim.startProduction('recipe_ngam_nep_5', 'st_soak').success, false, 'thùng đang bận');
   const soakSeconds = runUntilIdle(sim, 400);
-  assert.ok(soakSeconds >= RECIPE_MAP.recipe_ngam_nep_10.durationSeconds - 1 && soakSeconds <= 400, `ngâm mất ~${RECIPE_MAP.recipe_ngam_nep_10.durationSeconds}s (thực tế ${soakSeconds}s)`);
+  assert.ok(soakSeconds >= RECIPE_MAP.recipe_ngam_nep_10.durationSeconds * 60 / 90 - 1 && soakSeconds <= 400, `ngâm mất ~${RECIPE_MAP.recipe_ngam_nep_10.durationSeconds}s (thực tế ${soakSeconds}s)`);
   assert.equal(qty('nep_ngam'), 10);
   assert.equal(sim.getInventory().find(item => item.productId === 'nep_ngam')!.lots![0].unitCost, 28_000);
 

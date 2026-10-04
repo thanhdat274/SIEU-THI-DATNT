@@ -175,7 +175,7 @@ export const useGameStore = create<GameStoreState>((set) => ({
     hour: 7,
     minute: 0,
     isStoreOpen: true,
-    timeScale: 60,
+    timeScale: 90,
   },
   timeString: '07:00',
   inventory: [],

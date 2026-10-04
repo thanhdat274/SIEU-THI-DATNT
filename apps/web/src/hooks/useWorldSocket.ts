@@ -124,7 +124,7 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onTi
     return true;
   }, []);
 
-  const submitTimeVote = useCallback((vote: { type: 'advance_day' } | { type: 'change_speed'; targetSpeed: 1 | 2 }) => {
+  const submitTimeVote = useCallback((vote: { type: 'advance_day' } | { type: 'change_speed'; targetSpeed: 1 | 2 | 4 }) => {
     const socket = wsRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return false;
     socket.send(JSON.stringify({ event: 'time-vote', data: vote }));

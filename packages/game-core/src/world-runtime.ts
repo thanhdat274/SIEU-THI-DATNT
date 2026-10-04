@@ -394,7 +394,7 @@ export class WorldRuntime {
       if (params.type === 'advance_day') {
         this.simulation.getClock().advanceToNextDay();
       } else if (params.type === 'change_speed' && typeof params.targetSpeed === 'number') {
-        this.simulation.getClock().setTimeScale(params.targetSpeed * 60);
+        this.simulation.getClock().setTimeScale(params.targetSpeed * 90);
       }
       this.triggerCheckpoint();
       return { executed: true, status: 'executed' };
@@ -444,7 +444,7 @@ export class WorldRuntime {
       if (voteType === 'advance_day') {
         this.simulation.getClock().advanceToNextDay();
       } else if (voteType === 'change_speed' && typeof speed === 'number') {
-        this.simulation.getClock().setTimeScale(speed * 60);
+        this.simulation.getClock().setTimeScale(speed * 90);
       }
       this.triggerCheckpoint();
       return { executed: true, status: 'executed' };

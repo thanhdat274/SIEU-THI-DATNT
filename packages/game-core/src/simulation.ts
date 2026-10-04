@@ -2992,6 +2992,11 @@ export class GameSimulation {
     return need;
   }
 
+  /** Đơn vị nguyên liệu còn thiếu trong kho để các quầy bán đủ hôm nay (chỉ hàng giao ngay trong ngày mới kịp). */
+  private stallTodayGap(productId: string): number {
+    return Math.max(0, Math.ceil(this.stallIngredientNeedPerDay(productId) - 1e-9) - this.warehouseUnits(productId));
+  }
+
   /** Giỏ nhập nhanh nguyên liệu cho một quầy: bù đủ ~3 ngày nhu cầu (tính theo tồn kho), làm tròn theo kiện. */
   public getStallRestockItems(stallId: string, days = 3): { productId: string; quantity: number }[] {
     const stall = STALL_MAP[stallId];
@@ -3000,7 +3005,8 @@ export class GameSimulation {
     const items: { productId: string; quantity: number }[] = [];
     for (const ing of stall.ingredients) {
       const incoming = this.pendingOrders.filter(o => !o.delivered && o.productId === ing.productId).reduce((sum, o) => sum + o.quantity, 0);
-      let want = Math.ceil(demand * ing.perServing * days) - this.warehouseUnits(ing.productId) - incoming;
+      // Hàng đang về (giao sáng mai) không kịp bán hôm nay: phần thiếu cho hôm nay vẫn phải nhập thêm.
+      let want = Math.max(Math.ceil(demand * ing.perServing * days) - this.warehouseUnits(ing.productId) - incoming, this.stallTodayGap(ing.productId));
       if (want <= 0) continue;
       const pack = PRODUCT_MAP[ing.productId]?.caseSize ?? 1;
       want = Math.ceil(want / pack) * pack;
@@ -3089,20 +3095,41 @@ export class GameSimulation {
     // Phương án chia: mỗi món lấy ở đại lý rẻ nhất còn hàng, thiếu thì lấy nốt ở đại lý đắt hơn kế tiếp.
     const split = new Map<string, Line[]>();
     let splitOk = true;
+    // Phần thiếu cho hôm nay phải lấy ở đại lý giao ngay trong ngày, vì quầy tính doanh thu lúc sang ngày mới.
+    const rushSuppliers = suppliers.filter(sup => sup.delayDays === 0);
+    const addLine = (supId: string, productId: string, quantity: number) => {
+      const lines = split.get(supId) ?? [];
+      const existing = lines.find(it => it.productId === productId);
+      if (existing) existing.quantity += quantity; else lines.push({ productId, quantity });
+      split.set(supId, lines);
+    };
+    let rushUsed = false;
     for (const line of need) {
       let left = line.quantity;
-      for (const sup of [...suppliers].sort((a, b) => priceOf(a.id, line.productId) - priceOf(b.id, line.productId))) {
-        const take = Math.min(left, roomOf(sup.id, line.productId));
+      let urgent = Math.min(left, this.stallTodayGap(line.productId));
+      for (const sup of rushSuppliers) {
+        if (urgent <= 0) break;
+        const take = Math.min(urgent, roomOf(sup.id, line.productId));
         if (take <= 0) continue;
-        split.set(sup.id, [...(split.get(sup.id) ?? []), { productId: line.productId, quantity: take }]);
+        addLine(sup.id, line.productId, take);
+        urgent -= take;
         left -= take;
+        rushUsed = true;
+      }
+      for (const sup of [...suppliers].sort((a, b) => priceOf(a.id, line.productId) - priceOf(b.id, line.productId))) {
         if (left <= 0) break;
+        const room = roomOf(sup.id, line.productId) - (split.get(sup.id)?.find(it => it.productId === line.productId)?.quantity ?? 0);
+        const take = Math.min(left, room);
+        if (take <= 0) continue;
+        addLine(sup.id, line.productId, take);
+        left -= take;
       }
       if (left > 0) splitOk = false;
     }
     const candidates: Map<string, Line[]>[] = [];
     if (splitOk) candidates.push(split);
     for (const sup of suppliers) {
+      if (rushUsed && sup.delayDays !== 0) continue; // đã có phần cần hàng ngay hôm nay thì không chọn đại lý giao sáng mai
       const lines = need.map(line => ({ productId: line.productId, quantity: Math.min(line.quantity, roomOf(sup.id, line.productId)) })).filter(line => line.quantity > 0);
       if (lines.length === need.length) candidates.push(new Map([[sup.id, lines]]));
     }
@@ -3732,7 +3759,7 @@ export class GameSimulation {
     }
     
     // Khách và nhân viên chạy theo thời gian game: 2× đồng hồ thì họ cũng hoạt động nhanh gấp đôi (người chơi vẫn đi bộ bình thường).
-    const worldDt = dt * Math.max(0.25, (this.clock.getTime().timeScale || 60) / 60);
+    const worldDt = dt * Math.max(0.25, (this.clock.getTime().timeScale || 90) / 60);
       this.customerManager.outdoorSpeedMultiplier = rainSpeedMultiplier(this.getRainIntensity());
       this.customerManager.update(
       worldDt,
