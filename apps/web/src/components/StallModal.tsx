@@ -25,7 +25,7 @@ const reportLine = (report: StallDayReport, stallId: string) => {
 };
 
 export const StallModal: React.FC<StallModalProps> = ({ stalls, season, stock, incoming, report, onBuy, onRestock, getRestockItems, onClose }) => (
-  <PixelDialog icon="coin" title="QUẦY ĂN UỐNG" subtitle="Bán trước hiên tiệm, doanh thu tính khi sang ngày mới" onClose={onClose}>
+  <PixelDialog icon="coin" title="QUẦY ĂN UỐNG" subtitle="Bán trước hiên tiệm, chốt doanh thu lúc 22:00 và cộng vào sổ bán hàng hôm nay" onClose={onClose}>
     {season && <p className="pixel-panel" style={{ padding: 8 }}><strong>{season.name}</strong> — {season.blurb}</p>}
     <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0', display: 'grid', gap: 8 }}>
       {stalls.map(stall => {

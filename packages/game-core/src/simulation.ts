@@ -571,7 +571,7 @@ export class GameSimulation {
         this.callbacks.onDayChanged(day);
       }
       this.notifyStateChanged();
-    }, () => { this.callbacks.onTimeChanged?.(); this.topUpStallShortfalls(); });
+    }, () => { this.callbacks.onTimeChanged?.(); this.topUpStallShortfalls(); this.settleStallsAtClose(); });
   }
 
   /** Đặt lại vị trí nhân vật (dùng khi chơi chung: vị trí không theo save dùng chung). */
@@ -1957,6 +1957,14 @@ export class GameSimulation {
     this.restockOptions = normalizeRestockOptions(options);
     this.notifyStateChanged();
     return { ...this.restockOptions } as Required<RestockSuggestionOptions>;
+  }
+
+  /** Từ 22:00 chốt quầy ăn uống của hôm nay ngay (doanh thu hiện trên sổ bán hàng hôm nay); không kịp thì sang ngày mới chốt như cũ. */
+  private settleStallsAtClose(): void {
+    const time = this.clock.getTime();
+    if (time.hour < SAME_DAY_SUPPLIER_CUTOFF_HOUR || this.stalls.owned.length === 0 || this.stalls.processedDayIds.includes(time.day)) return;
+    this.processStalls(time.day);
+    this.notifyStateChanged();
   }
 
   /** Mỗi giờ game: quầy còn thiếu nguyên liệu từ sáng được mua nốt nếu giờ đã đủ tiền cho phần thiếu. */
