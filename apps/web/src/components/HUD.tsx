@@ -2,7 +2,8 @@ import { useWeatherFx } from '../hooks/useWeatherFx';
 import React, { useState } from 'react';
 import { PRESTIGE_XP_PER_STAR, getSeasonForDay, seasonDaysLeft } from '@game/data';
 import { describeRainForecast, type RainForecast } from '@game/core';
-import { useGameStore } from '../store/useGameStore';
+import { useShallow } from 'zustand/react/shallow';
+import { sameData, useGameStore } from '../store/useGameStore';
 import { money, PixelButton, PixelIcon, PixelProgress, PixelStat } from './pixel';
 import { ManagementModal } from './ManagementModal';
 
@@ -41,9 +42,9 @@ interface HUDProps {
   onOpenPlanogram?: () => void;
   emptySlotsCount?: number;
 }
-export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0}) => {
+const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0}) => {
   const [weatherFx, setWeatherFx] = useWeatherFx();
-  const {player, worldTime, timeString, toggleSaveModal} = useGameStore();
+  const {player, worldTime, timeString, toggleSaveModal} = useGameStore(useShallow((s) => ({player: s.player, worldTime: s.worldTime, timeString: s.timeString, toggleSaveModal: s.toggleSaveModal})));
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const season = getSeasonForDay(worldTime.day);
   const weather = market?.weather;
@@ -176,3 +177,17 @@ export const HUD: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggl
     </>
   );
 };
+
+/**
+ * HUD chỉ render lại khi props thật sự đổi: so sánh nông, riêng `market` (đối tượng mới mỗi lần App render) so theo nội dung.
+ * Handler do App truyền có danh tính ổn định (`useStableCallbacks`) nên không làm HUD render lại.
+ */
+const hudPropsEqual = (a: HUDProps, b: HUDProps): boolean => {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof HUDProps>;
+  for (const k of keys) {
+    if (k === 'market') { if (!sameData(a.market, b.market)) return false; continue; }
+    if (!Object.is(a[k], b[k])) return false;
+  }
+  return true;
+};
+export const HUD = React.memo(HUDInner, hudPropsEqual);

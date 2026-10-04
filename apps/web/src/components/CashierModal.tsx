@@ -3,6 +3,7 @@ import { StoreFixture, PlayerData, WorldTime, SaveGameData, CustomerState } from
 import { PRODUCT_MAP } from '@game/data';
 import { summarizeAnnualRevenue } from '@game/core';
 import { PixelDialog, PixelStat, PixelButton, ProductSlot, EmptyState, money } from './pixel';
+import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../store/useGameStore';
 import { StaffModal } from './StaffModal';
 import { StaffCandidate, StaffMember, StaffShift } from '@game/shared';
@@ -59,7 +60,7 @@ export const CashierModal: React.FC<Props> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'checkout' | 'reports' | 'credits'>('checkout');
   const [showStaff, setShowStaff] = useState(initialShowStaff);
-  const { dailyRecords = {}, currentDayRecord } = useGameStore();
+  const { dailyRecords = {}, currentDayRecord } = useGameStore(useShallow((s) => ({ dailyRecords: s.dailyRecords, currentDayRecord: s.currentDayRecord })));
 
   // Mỗi quầy thu ngân có hàng riêng; khách chưa gán quầy (làn cũ) thuộc quầy đang mở.
   const ownLane = (c: { cashierFixtureId?: string }) => !c.cashierFixtureId || c.cashierFixtureId === fixture.id;

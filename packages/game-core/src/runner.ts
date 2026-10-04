@@ -27,5 +27,8 @@ export class FixedStepSimulationRunner {
     return steps;
   }
 
+  /** Phần bước đang dở (0..1) để vẽ nội suy giữa hai bước mô phỏng; sau mỗi `advance` luôn nhỏ hơn 1. */
+  getAlpha(): number { return Math.min(1, this.accumulatedSeconds / this.stepSeconds); }
+
   reset(): void { this.accumulatedSeconds = 0; }
 }
