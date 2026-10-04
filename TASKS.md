@@ -1,5 +1,9 @@
 # BẢNG THEO DÕI CÔNG VIỆC (TASKS PROGRESS)
 
+## Khu phố mở rộng quanh tiệm (04/10/2026)
+
+- [>] Khu phố mở rộng (zoom xa 0,5×, nhà dân/nhà phố/chung cư/trường/công viên/đường/đồi, giao thông theo giờ-thời tiết, NPC nền có lịch + hội thoại): code + `neighborhood.test.ts` PASS, đã nhìn trong Browser pane (desktop, tablet, 852×393). Chưa có: thiết bị thật, FPS thật, test tự động renderer, xe chạy đường dọc, A* cho NPC, đồng bộ co-op. Chi tiết và giới hạn: `tổng hợp.md` (khối đầu file).
+
 ## Mở rộng gameplay (01/10/2026)
 
 - [>] `reference-gameplay-expansion`: đã code tiền giả, tín dụng khách quen và dine-in MVP. Dine-in dùng đồ ăn đóng gói từ kệ, khách đi tới bàn, ăn 60 giây game, bàn bẩn; người chơi hoặc nhân viên bổ sung hàng có thể dọn. Checkout, thu nợ, dọn bàn và giao job nhân viên được server replay. Wave B (bếp/công thức/sản xuất, 3.1–3.4) đã có code + test lõi `production.test.ts` và `tsc -b` PASS (02/10/2026); `store-logistics.test.ts` đang FAIL (ngoài phạm vi); Mục 8.1–8.4 và 8.8 đã chốt (02/10/2026); 8.5 (mô phỏng cân bằng), 8.6 (browser QA còn thiếu) và 8.7 (chờ TAX-0) còn mở. Wave C prestige (4.1–4.2) và Wave D (biểu đồ, heatmap, checklist, âm thanh, replay lõi) có code + test lõi; chưa browser QA, balance provisional.

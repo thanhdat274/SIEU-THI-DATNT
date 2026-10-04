@@ -2,6 +2,10 @@
 
 > Ghi chú: `pnpm-workspace.yaml` ở Giai đoạn 0 là lịch sử; dự án dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
 
+## Khu phố mở rộng quanh tiệm — 04/10/2026
+
+- MVP môi trường sống quanh cửa hàng (bắc: nhà dân + trường xa; đông: chung cư + bãi xe; tây: công viên + vườn hoa; nam: nhà phố; nền: đồi núi) đã có code, test logic và kiểm bằng mắt trên Browser pane; zoom xa 0,5× giữ pixel nguyên. Bước tiếp đề xuất: xe chạy đường dọc, A* trên lưới vỉa hè, đồng bộ NPC nền ở co-op, nội thất trường/chung cư, đo FPS trên thiết bị thật.
+
 ## Tiếp nối tính năng an ninh — 01/10/2026
 
 - OpenSpec `theft-and-security` đã có code/test/UI; lỗi hoàn giỏ trên khách thật khi đổi ngày đã được sửa và kiểm bằng test hồi quy. Typecheck, core tests, server build và web production build PASS. Để còn nghiệm thu: browser QA ở cấp 5+, cân bằng kinh tế và quyết định server replay `security_action` cùng các mục thiết kế trong tasks.
