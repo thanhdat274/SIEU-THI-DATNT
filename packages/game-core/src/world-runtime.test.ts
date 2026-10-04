@@ -81,6 +81,15 @@ export async function runWorldRuntimeTests() {
   assert.ok(afterRejoin, 'input sequence 1 sau khi vào lại phải được nhận');
   assert.notEqual(afterRejoin.world.avatars.find(item => item.accountId === 'owner-1')?.position.x, beforeRejoin, 'vào lại hẻm vẫn di chuyển được');
 
+  // Commit qua HTTP: runtime phải nhận save + revision mới để snapshot gửi cho người kia không bị cũ.
+  const committed = structuredClone(runtime.getSnapshot().businesses[0]);
+  committed.save.player.money += 12345;
+  const nextRevision = runtime.getSnapshot().world.revision + 3;
+  assert.equal(runtime.adoptCommitted(nextRevision, committed), true);
+  assert.equal(runtime.getSnapshot().world.revision, nextRevision, 'revision runtime theo kịp commit HTTP');
+  assert.equal(runtime.getSnapshot().businesses[0].save.player.money, committed.save.player.money, 'tiền mới có trong snapshot');
+  assert.equal(runtime.adoptCommitted(nextRevision, committed), false, 'revision không mới hơn thì bỏ qua');
+
   // 4. Register outsider is rejected
   const stranger = runtime.registerSession('stranger-999');
   assert.equal(stranger, false, 'Non-member session rejected');

@@ -106,6 +106,23 @@ export class WorldRuntime {
     }
   }
 
+  /**
+   * Nhận trạng thái đã commit qua HTTP. Không có bước này runtime giữ save/revision cũ, nên snapshot 0,5 giây
+   * gửi cho mọi người là dữ liệu cũ (bạn cùng hẻm không thấy hàng/tiền mới) và checkpoint ghi đè ngược.
+   */
+  adoptCommitted(revision: number, business: BusinessState): boolean {
+    if (revision <= this.currentWorld.revision) return false;
+    this.simulation.importSaveData(structuredClone(business.save));
+    this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds()), this.simulation.getFixtures());
+    this.currentWorld.revision = revision;
+    this.commandCoordinator.setRevision(revision);
+    this.currentBusiness = structuredClone(business);
+    this.currentBusiness.save = this.simulation.exportSaveData(business.save.id, revision);
+    this.currentWorld.worldTime = this.simulation.getTime();
+    this.currentWorld.updatedAt = new Date().toISOString();
+    return true;
+  }
+
   unregisterSession(accountId: string): void {
     this.activeSessions.delete(accountId);
     if (this.activeTimeVote) {

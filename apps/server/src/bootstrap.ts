@@ -226,7 +226,7 @@ export class GameController {
     });
     // Push instant world:update to all WS clients (skip if no WS clients connected)
     if (result.committed) {
-      WorldGateway.notifyCommit(worldId, { revision: result.revision, receipt: result.receipt });
+      WorldGateway.notifyCommit(worldId, { revision: result.revision, receipt: result.receipt }, { revision: result.revision, business: body.updatedBusiness });
     }
     return payload?.type === 'layout_batch' || serverReplayedCommands.has(payload?.type)
       ? { ...result, updatedBusiness: body.updatedBusiness }

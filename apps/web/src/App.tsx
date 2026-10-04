@@ -822,7 +822,11 @@ export const App: React.FC = () => {
       for (const known of current.world.avatars) {
         if (!avatars.some(item => item.accountId === known.accountId) && snapshot.world.memberships.some(m => m.accountId === known.accountId)) avatars.push(known);
       }
-      const updated = { ...current, world: { ...snapshot.world, avatars }, businesses: snapshot.businesses };
+      // Snapshot cũ hơn bản đã có (revision thấp hơn) không được kéo revision/save lùi, nếu không lệnh kế tiếp bị server từ chối.
+      const stale = snapshot.world.revision < current.world.revision;
+      const updated = stale
+        ? { ...current, world: { ...current.world, avatars, worldTime: snapshot.world.worldTime } }
+        : { ...current, world: { ...snapshot.world, avatars }, businesses: snapshot.businesses };
       onlineWorldRef.current = updated;
       setOnlineWorld(updated);
       if (snapshot.world.revision > revisionRef.current && snapshot.businesses[0]?.save && simulationRef.current) {

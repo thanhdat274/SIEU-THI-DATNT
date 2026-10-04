@@ -2,6 +2,7 @@ import { WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket, OnGat
 import type { Server, WebSocket } from 'ws';
 import { worldRepository } from './world.repository.js';
 import { WorldRuntime } from '@game/core';
+import type { BusinessState } from '@game/shared';
 import { consumeWebSocketTicket } from './firebase-admin.js';
 import { readRuntimeConfig } from './runtime-config.js';
 import { MAX_WS_PAYLOAD_BYTES, RATE_LIMITS, RateLimiter } from './rate-limit.js';
@@ -256,7 +257,12 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /** Called by HTTP commitCommand after a successful commit to push update to all WS clients */
-  static notifyCommit(worldId: string, snapshot: unknown) {
+  static notifyCommit(worldId: string, snapshot: unknown, committed?: { revision: number; business: BusinessState }) {
+    const entry = worldRuntimes.get(worldId);
+    // Runtime phải theo kịp bản vừa commit rồi mới phát, để người kia nhận ngay trạng thái mới (tiền, hàng, kệ...) không chờ vòng hỏi lại.
+    if (entry && committed && entry.runtime.adoptCommitted(committed.revision, committed.business)) {
+      broadcastToWorld(worldId, 'world:snapshot', entry.runtime.getSnapshot());
+    }
     broadcastToWorld(worldId, 'world:update', snapshot);
   }
 
