@@ -1,7 +1,7 @@
 import { Container, Graphics, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
 import type { WeatherVisualState } from '@game/core';
 import {
-  APARTMENT_PARKING, AVENUES, INTERSECTIONS, NEIGHBORHOOD_LOTS, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, PARK, PARK_BENCHES, PARK_LAMPS, PARK_PATHS, SCHOOL, STREET_LAMP_TILES,
+  APARTMENT_PARKING, AVENUES, INTERSECTIONS, NEIGHBORHOOD_LOTS, NEIGHBORHOOD_PROPS, hash, rnd, NEIGHBORHOOD_STREET_LAMPS, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, PARK, PARK_LAMPS, PARK_PATHS, SCHOOL,
   TRAFFIC_ROADS, type NeighborhoodLot, type NeighborhoodQuality, type RoadDef,
 } from '@game/data';
 import type { PixelTextureFactory } from './textures';
@@ -13,12 +13,6 @@ const SKY = 0xbcd8e8;
 /** Đồi cách mép bắc khu phố: đáy lớp đồi nằm ngay mép vùng vẽ. */
 const HILL_H = 200;
 
-const hash = (...n: number[]): number => {
-  let h = 2166136261;
-  for (const v of n) h = Math.imul(h ^ (v | 0), 16777619);
-  return h >>> 0;
-};
-const rnd = (...n: number[]) => (hash(...n) % 100000) / 100000;
 
 export interface NeighborhoodSceneFrame {
   /** 0..1: đèn nhân tạo (cửa sổ, đèn đường sáng khi tối). */
@@ -111,9 +105,9 @@ export class NeighborhoodScene {
     this.buildSchool();
     this.buildApartmentParking();
     this.buildLots();
-    this.buildTrees(X0, X1, Y0, Y1, detail);
+    this.buildTrees(X0, X1, Y0, Y1);
     this.buildLamps();
-    this.buildStreetFurniture();
+    this.buildProps();
     this.buildLabels();
     this.glow.addChild(this.windowGlow);
   }
@@ -306,30 +300,7 @@ export class NeighborhoodScene {
       if (y >= gateE - 1 && y <= gateE + 1) continue;
       this.sprite(this.props, 'deco_fence', a.x1 * T - T, (y + 1) * T, 0, -2);
     }
-    // Vườn hoa: luống hoa xếp hàng trong ô vườn
-    const ga = PARK.garden;
-    let n = 0;
-    for (let y = ga.y0 + 1; y < ga.y1 - 1; y += 2) for (let x = ga.x0 + 1; x < ga.x1 - 2; x += 3) this.sprite(this.props, `nb_flowerbed_${n++ % 3}`, x * T, y * T + 26, 0, -1);
-    // Chòi, sân chơi, ghế, đèn, bụi cây, thùng rác
-    this.sprite(this.props, 'nb_pavilion', PARK.pavilion.x * T, PARK.pavilion.y * T + 20, 0.5, 4);
-    this.sprite(this.props, 'nb_playground', ((pg.x0 + pg.x1) / 2) * T, (pg.y1 - 0.3) * T, 0.5, 2);
-    for (const b of PARK_BENCHES) this.sprite(this.props, 'nb_bench', b.x * T + 16, b.y * T + 20, 0.5, 2);
     for (const l of PARK_LAMPS) this.sprite(this.props, 'deco_lamp_pole', l.x * T, (l.y + 1) * T, 0, 3);
-    for (let i = 0; i < 14; i++) {
-      const x = a.x0 + 1 + rnd(i, 31) * (a.x1 - a.x0 - 3);
-      const y = a.y0 + 1 + rnd(i, 32) * (a.y1 - a.y0 - 3);
-      if (this.onParkFeature(x, y)) continue;
-      this.sprite(this.props, `nb_bush_${i % 3}`, x * T, y * T + 24, 0, 0);
-    }
-    this.sprite(this.props, 'nb_bin', (PARK.gateSouth.x + 2) * T, a.y1 * T - 2, 0, 1);
-    this.sprite(this.props, 'nb_bus_stop', ((-36 + -34) / 2) * T, 13 * T - 2, 0.5, 5);
-  }
-
-  /** Ô (x,y) có đè lên đường dạo/ao/vườn/sân chơi/chòi không (để rải cây tránh). */
-  private onParkFeature(x: number, y: number): boolean {
-    const inR = (r: { x0: number; y0: number; x1: number; y1: number }, m = 0) => x >= r.x0 - m && x <= r.x1 + m && y >= r.y0 - m && y <= r.y1 + m;
-    return PARK_PATHS.some((p) => inR(p, 1)) || inR(PARK.pond, 1) || inR(PARK.garden, 0) || inR(PARK.playground, 1)
-      || (Math.abs(x - PARK.pavilion.x) < 4 && Math.abs(y - PARK.pavilion.y) < 3) || PARK_BENCHES.some((b) => Math.abs(b.x - x) < 2 && Math.abs(b.y - y) < 2);
   }
 
   // ------------------------------------------------------------------ trường học
@@ -366,9 +337,6 @@ export class NeighborhoodScene {
     flag.position.set(fp.x * T, fp.y * T);
     (flag as unknown as { zIndex: number }).zIndex = fp.y * T + 8;
     this.props.addChild(flag);
-    // Cây sân trường + ghế
-    for (const tx of [10.5, 14, 34]) this.sprite(this.props, 'nb_tree_round_1', tx * T, (SCHOOL.area.y1 - 1.2) * T, 0.5, 0);
-    for (const bx of [16, 30]) this.sprite(this.props, 'nb_bench', bx * T, -22.6 * T, 0.5, 1);
   }
 
   // ------------------------------------------------------------------ bãi xe chung cư
@@ -384,18 +352,6 @@ export class NeighborhoodScene {
       }
     }
     g.addChild(lines);
-    // Xe đỗ ngẫu nhiên trong ô
-    let seed = 0;
-    for (let x = p.x0 * T + 28; x < p.x1 * T - 80; x += 5 * T) {
-      for (const [row, d] of [[p.y0 + 1.1, 'right'], [p.y0 + 4.2, 'left']] as const) {
-        const roll = rnd(seed++, 51);
-        if (roll < 0.4) continue;
-        if (roll < 0.8) this.sprite(this.props, `vehicle_car_v${1 + (seed % 5)}_${d}`, x + 66, (row + 2.1) * T, 0.5, 0);
-        else for (let k = 0; k < 2; k++) this.sprite(this.props, `vehicle_motorbike_parked_${(seed + k) % 3}`, x + 30 + k * 64, (row + 2) * T, 0.5, 0);
-      }
-    }
-    for (const bx of [44, 58, 72]) this.sprite(this.props, 'nb_bin', bx * T, (p.y1 + 0.2) * T, 0, 1);
-    for (let x = p.x0; x < p.x1; x += 3) this.sprite(this.props, 'nb_hedge', x * T, (p.y1) * T, 0, -1);
   }
 
   // ------------------------------------------------------------------ nhà
@@ -414,13 +370,6 @@ export class NeighborhoodScene {
     const x = lot.x * T;
     const bottom = lot.frontY * T + 4;
     this.sprite(this.props, this.lotKey(lot), x, bottom, 0, 0);
-    // Xe máy dựng trước nhà, thùng rác, chậu cây: mỗi nhà một chút khác biệt
-    const h = hash(lot.x, lot.frontY, 7);
-    if (lot.kind !== 'apartment') {
-      if (h % 3 !== 0) this.sprite(this.props, `vehicle_motorbike_parked_${h % 3}`, x + 40 + (h % 5) * 12, bottom + 18, 0.5, 0);
-      if (h % 5 === 0) this.sprite(this.props, 'nb_bin', x + lot.w * T - 22, bottom + 14, 0, 0);
-      if (h % 7 === 0) this.sprite(this.props, `nb_pot_${h % 3}`, x + 6, bottom + 12, 0, 0);
-    }
     // Cửa sổ sáng đèn khi tối: một phần cửa sổ bật sáng, cố định theo nhà
     if (lot.kind !== 'apartment') {
       const wins = houseLitWindows(lot.variant, lot.floors, lot.w);
@@ -443,7 +392,7 @@ export class NeighborhoodScene {
 
   // ------------------------------------------------------------------ cây + đèn
 
-  private buildTrees(X0: number, X1: number, Y0: number, Y1: number, detail: boolean): void {
+  private buildTrees(X0: number, X1: number, Y0: number, Y1: number): void {
     const placeTree = (xt: number, yt: number, i: number) => {
       const kind = (hash(i, 99) % 5);
       if (kind === 0) this.sprite(this.props, 'tile_tree', xt * T - 24, yt * T, 0, 0);
@@ -455,21 +404,6 @@ export class NeighborhoodScene {
     // Vành đai cây bao quanh vùng vẽ để không lộ mép: mép bắc dày nhất (chân đồi)
     for (let x = F(X0); x < F(X1); x += 2 + (i % 2)) { placeTree(x, Y0 / T + 3 + (i % 3) * 0.6, i++); placeTree(x + 1, Y1 / T - (i % 3) * 0.5, i++); }
     for (let y = Y0 / T + 5; y < Y1 / T - 2; y += 3) { placeTree(X0 / T + 1 + (i % 2), y, i++); placeTree(X1 / T - 1 - (i % 2), y, i++); }
-    // Cây dọc vỉa hè đường chính phía nam, rải đều (không chặn lối rẽ vào hẻm)
-    for (let x = -42; x < 78; x += 6) {
-      if (AVENUES.some((a) => x + 1 > a.x0 - 1 && x < a.x1 + 1)) continue;
-      if (x > 8 && x < 16) continue; // đầu hẻm phía nam
-      this.sprite(this.props, `nb_tree_round_${(x + 100) % 3}`, x * T, 17.2 * T, 0.5, 0);
-    }
-    // Cây phía bắc dọc đường trường, trong sân chung cư và quanh bãi xe
-    if (detail) {
-      for (let x = -42; x < 78; x += 5) {
-        if (AVENUES.some((a) => x + 1 > a.x0 - 1 && x < a.x1 + 1)) continue;
-        if (x > 6 && x < 38) continue; // trường
-        this.sprite(this.props, `nb_tree_round_${(x + 101) % 3}`, x * T, -16.2 * T, 0.5, 0);
-      }
-      for (let x = 42; x < 77; x += 7) this.sprite(this.props, `nb_tree_round_${x % 3}`, x * T, 10.2 * T, 0.5, 0);
-    }
   }
 
   private buildLamps(): void {
@@ -485,16 +419,7 @@ export class NeighborhoodScene {
       void s;
     };
     // Đèn dọc vỉa hè hai bên đường chính ngoài bản đồ chơi (trong bản đồ đã có đèn riêng), đường trường và đường phía nam.
-    const skipMap = (x: number) => x >= -1 && x <= 36;
-    const existing = new Set(STREET_LAMP_TILES.map((l) => l.x));
-    for (let x = -42; x < 78; x += 8) {
-      if (skipMap(x) || existing.has(x)) continue;
-      if (AVENUES.some((a) => x > a.x0 - 2 && x < a.x1 + 2)) continue;
-      place(x, 12, 32);
-    }
-    for (let x = -40; x < 78; x += 8) { if (!AVENUES.some((a) => x > a.x0 - 2 && x < a.x1 + 2)) place(x, 17, 32); }
-    for (let x = -40; x < 78; x += 10) { if (!AVENUES.some((a) => x > a.x0 - 2 && x < a.x1 + 2)) { place(x, -17, 32); place(x + 3, 29, 32); } }
-    for (const a of AVENUES) for (let y = -16; y < 44; y += 9) { if (TRAFFIC_ROADS.some((r) => y > r.topRow - 3 && y < r.topRow + 5)) continue; place(a.x0 - 1, y, 32); }
+    for (const l of NEIGHBORHOOD_STREET_LAMPS) place(l.x, l.y, l.bottomOffset);
     for (const l of PARK_LAMPS) {
       const gl = new Sprite(glowTex);
       gl.anchor.set(0.5);
@@ -505,25 +430,14 @@ export class NeighborhoodScene {
     }
   }
 
-  // ------------------------------------------------------------------ đồ vỉa hè (ghế, thùng rác, xe máy đỗ)
+  // ------------------------------------------------------------------ đồ vật (danh sách dùng chung với va chạm)
 
-  /** Vỉa hè hai bên đường chính ngoài bản đồ chơi: ghế đá, thùng rác, xe máy dựng sát lề, không đều tăm tắp như khu mới. */
-  private buildStreetFurniture(): void {
-    const blocked = (x: number) => AVENUES.some((a) => x + 2 > a.x0 - 1 && x < a.x1 + 2) || (x >= -2 && x <= 37);
-    for (let x = -40, i = 0; x < 78; x += 6, i++) {
-      if (blocked(x)) continue;
-      const h = hash(x, 303);
-      // vỉa hè phía nam đường chính (hàng 16–17)
-      if (h % 3 === 0) this.sprite(this.props, 'nb_bench', x * T + 16, 17.45 * T, 0.5, 2);
-      else if (h % 3 === 1) this.sprite(this.props, 'nb_bin', x * T + 8, 17.5 * T, 0, 1);
-      else this.sprite(this.props, `vehicle_motorbike_parked_${h % 3}`, x * T + 24, 17.45 * T, 0.5, 1);
-      // vỉa hè phía bắc (hàng 11–12), chỗ không có bản đồ chơi
-      if ((h >>> 3) % 2 === 0) this.sprite(this.props, `vehicle_motorbike_parked_${(h >>> 5) % 3}`, x * T + 40, 12.9 * T, 0.5, 1);
-      else this.sprite(this.props, 'nb_bin', x * T + 20, 12.95 * T, 0, 1);
-    }
+  /** Mọi đồ vật rải trong khu phố vẽ theo `NEIGHBORHOOD_PROPS`; cùng danh sách đó cho va chạm người chơi. */
+  private buildProps(): void {
+    for (const p of NEIGHBORHOOD_PROPS) if (p.key) this.sprite(this.props, p.key, p.x, p.y, p.anchorX, p.bias);
   }
 
-  // ------------------------------------------------------------------ biển hiệu chữ
+  // ------------------------------------------------------------------ biển hiệu chữ  // ------------------------------------------------------------------ biển hiệu chữ
 
   private buildLabels(): void {
     const mk = (text: string, x: number, y: number, size: number, fill: number, stroke?: number) => {

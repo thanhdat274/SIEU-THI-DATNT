@@ -60,6 +60,7 @@ import { runProductionTests } from './production.test';
 import { runXoiTests } from './xoi.test';
 import { runBuildingTests } from './buildings.test';
 import { runSidewalkPassableTests } from './sidewalk-passable.test';
+import { runNeighborhoodWalkTests } from './neighborhood-walk.test';
 import { runXoiCustomerTests } from './xoi-customers.test';
 import { runDrinkCustomerTests } from './drink-customers.test';
 import { runDrinkStaffTests } from './drink-staff.test';
@@ -142,6 +143,7 @@ export async function runTests(): Promise<void> {
   runRainTests();
   runRoadTests();
   runTrafficSignalTests();
+  runNeighborhoodWalkTests();
   runDeterministicIdTests();
   runArrivalModeTests();
   runMaintenanceTests();

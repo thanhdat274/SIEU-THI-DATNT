@@ -3437,6 +3437,7 @@ export class GameSimulation {
     const product = PRODUCT_MAP[productId];
     if (!product || product.unlockLevel > this.playerData.level) {
       return { success: false, actualQuantity: 0, reason: 'product_locked' };
+    this.streetTraffic.setPlayerPosition(this.playerData.position);
     }
     // Chỉ chặn nếu: sản phẩm cold-only mà không vào tủ lạnh
     // Sản phẩm cold bình thường (như sữa tiệt trùng) có thể vào cả tủ lạnh HOẶC kệ nhiệt độ thường
@@ -4446,7 +4447,7 @@ export class GameSimulation {
 
   private ensureSafePlayerPosition(): void {
     const p=this.playerData.position;
-    if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||this.collisionSystem.isColliding({x:p.x-10,y:p.y-4,width:20,height:14})) {
+    if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||this.collisionSystem.isCollidingPlayer({x:p.x-10,y:p.y-4,width:20,height:14})) {
       this.playerData.position={...WAREHOUSE_ENTRANCE};
       this.callbacks.onPlayerRelocated?.();
     }

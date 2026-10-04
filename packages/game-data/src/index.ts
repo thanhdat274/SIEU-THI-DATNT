@@ -39,4 +39,5 @@ export * from './weather-visual';
 export * from './shelter';
 export * from './weather-sprite-layout';
 export * from './neighborhood';
+export * from './neighborhood-collision';
 export * from './neighborhood-dialogue';

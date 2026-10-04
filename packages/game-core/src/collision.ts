@@ -1,5 +1,5 @@
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D } from '@game/shared';
-import { streetLampBoxes } from '@game/data';
+import { hitsNeighborhood, isFenceTile, streetLampBoxes } from '@game/data';
 
 export interface BoundingBox {
   x: number;
@@ -72,6 +72,43 @@ export class CollisionSystem {
   }
 
   /**
+   * Va chạm của nhân vật người chơi: như `isColliding` nhưng viền ngoài bản đồ ô không còn là tường (đi ra được khu phố),
+   * còn phần ngoài bản đồ ô dùng vật cản khu phố (nhà, trường, công viên, hàng rào, cây, cột đèn) và biên khu phố.
+   * Khách, nhân viên và A* vẫn dùng `isColliding` (không ra khỏi bản đồ ô).
+   */
+  public isCollidingPlayer(box: BoundingBox): boolean {
+    const leftTile = Math.floor(box.x / TILE_SIZE);
+    const rightTile = Math.floor((box.x + box.width - 0.001) / TILE_SIZE);
+    const topTile = Math.floor(box.y / TILE_SIZE);
+    const bottomTile = Math.floor((box.y + box.height - 0.001) / TILE_SIZE);
+    const wallLayer = this.tileMap.layers.find((l) => l.name === 'walls');
+    const originY = this.tileMap.originTileY ?? 0;
+    for (let ty = topTile; ty <= bottomTile; ty++) {
+      for (let tx = leftTile; tx <= rightTile; tx++) {
+        const localY = ty - originY;
+        if (tx < 0 || tx >= this.tileMap.width || localY < 0 || localY >= this.tileMap.height) continue; // ngoài bản đồ ô: xét vật cản khu phố bên dưới
+        const idx = localY * this.tileMap.width + tx;
+        if (!this.tileMap.collisionLayer[idx]) continue;
+        const ring = tx === 0 || tx === this.tileMap.width - 1 || localY === 0 || localY === this.tileMap.height - 1;
+        // Ô viền chỉ là tường giữ chân khách; viền không có tường/cây/hàng rào thì người chơi bước qua được.
+        if (ring && !(wallLayer && wallLayer.data[idx]) && !isFenceTile(tx, ty, this.tileMap.width)) continue;
+        return true;
+      }
+    }
+    for (const lamp of LAMP_BOXES) if (this.boxesIntersect(box, lamp)) return true;
+    const boxRight = box.x + box.width;
+    const boxBottom = box.y + box.height;
+    for (const fix of this.fixtures) {
+      const left = fix.tileX * TILE_SIZE;
+      const top = fix.tileY * TILE_SIZE;
+      if (boxRight <= left || boxBottom <= top) continue;
+      const rotated = fix.rotation === 90 || fix.rotation === 270;
+      if (box.x < left + (rotated ? fix.heightTiles : fix.widthTiles) * TILE_SIZE && box.y < top + (rotated ? fix.widthTiles : fix.heightTiles) * TILE_SIZE) return true;
+    }
+    return hitsNeighborhood(box);
+  }
+
+  /**
    * Attempt movement with axis-aligned sliding and corner assist (smooth navigation past fixtures)
    */
   public resolveMovement(currentPos: Vector2D, velocity: Vector2D, dt: number): Vector2D {
@@ -84,7 +121,7 @@ export class CollisionSystem {
     const offsetX = -boxWidth / 2;
     const offsetY = -boxHeight;
 
-    const canMove = (x: number, y: number): boolean => !this.isColliding({
+    const canMove = (x: number, y: number): boolean => !this.isCollidingPlayer({
       x: x + offsetX,
       y: y + offsetY,
       width: boxWidth,

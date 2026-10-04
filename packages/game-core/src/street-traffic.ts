@@ -16,6 +16,8 @@ export interface TrafficClockContext { minute?: number; weekday?: number }
 
 /** Bước con tối đa (giây) khi tích phân chuyển động, để một lần update dt lớn vẫn dừng đúng vạch. */
 const MAX_STEP = 0.1;
+/** Nửa bề rộng vùng xe phải nhường quanh nhân vật người chơi (px). */
+const PLAYER_YIELD_HALF = 24;
 
 /** Người đi bộ nền trên vỉa hè (không còn vạch qua đường riêng trước tiệm: người qua đường dùng vạch ở các ngã tư). */
 interface Pedestrian {
@@ -52,12 +54,18 @@ export class StreetTrafficManager {
   /** Cường độ mưa của nhịp cập nhật hiện tại (cho hành vi trú mưa). */
   private rain = 0;
   /** Vạch qua đường ngoài vạch có đèn (NPC nền khu phố đang chờ/qua đường): xe chưa vào vạch phải dừng nhường. */
+  /** Vị trí chân nhân vật người chơi (px thế giới) để xe nhường khi người chơi ở trên lòng đường. */
+  private playerPosition: Vector2D | null = null;
   private externalCrossings: ReadonlyArray<{ roadId: string; x0: number; x1: number }> = [];
   /** Hệ số ngân sách xe theo chất lượng đồ họa (0..1); không đổi hành vi, chỉ giới hạn số xe cùng lúc. */
   private budgetScale = 1;
 
   constructor(initialVehicles: StreetVehicleState[] = []) {
     this.vehicles = [...initialVehicles];
+  }
+
+  public setPlayerPosition(position: Vector2D | null): void {
+    this.playerPosition = position;
   }
 
   public setExternalCrossings(crossings: ReadonlyArray<{ roadId: string; x0: number; x1: number }>): void {
@@ -248,6 +256,22 @@ export class StreetTrafficManager {
       const committed = lamp.vehicle === 'yellow' && current >= v.speed - 1 && gap < brake * 0.6;
       const blocked = lamp.vehicle !== 'green' ? !committed : this.vehicles.some((o) => o !== v && (o.axis === 'y') !== vertical && this.occupiesConflictZone(o, x));
       if (blocked) desired = Math.min(desired, Math.sqrt(2 * decel * gap));
+    }
+
+    // Nhân vật người chơi đang ở trên lòng đường thì xe chưa tới nhường như với người qua đường.
+    const pp = this.playerPosition;
+    if (pp) {
+      const road = this.roadOf(v);
+      const across = vertical ? pp.x : pp.y;
+      const lo = road.topRow * TILE_SIZE, hi = lo + (vertical ? 3 : 3) * TILE_SIZE;
+      if (across >= lo - 6 && across <= hi + 6) {
+        const at = vertical ? pp.y : pp.x;
+        if (!(sign > 0 ? front > at - PLAYER_YIELD_HALF : front < at + PLAYER_YIELD_HALF)) {
+          const stop = sign > 0 ? at - PLAYER_YIELD_HALF - stopMarginPx : at + PLAYER_YIELD_HALF + stopMarginPx;
+          const gap = sign > 0 ? stop - front : front - stop;
+          desired = Math.min(desired, Math.sqrt(2 * decel * Math.max(0, gap)));
+        }
+      }
     }
 
     for (const c of this.externalCrossings) {

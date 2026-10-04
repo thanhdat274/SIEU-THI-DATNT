@@ -1,5 +1,5 @@
 import { Vector2D, TILE_SIZE } from '@game/shared';
-import { ZOOM_LEVELS, ZOOM_MAX, ZOOM_MIN, snapZoom } from '@game/data';
+import { NEIGHBORHOOD_PX, ZOOM_LEVELS, ZOOM_MAX, ZOOM_MIN, snapZoom } from '@game/data';
 
 export class PixelCamera {
   public x: number = 0;
@@ -70,9 +70,9 @@ export class PixelCamera {
     return this.zoom;
   }
 
-  /** Khoảng kéo tối đa (px thế giới): càng xa càng được kéo rộng để đi tới trường/chung cư/đồi mà không mất tiệm. */
+  /** Khoảng kéo tối đa (px thế giới): đủ để kéo tới mọi góc khu phố (người chơi đi được khắp khu phố); nút về tiệm đặt lại bằng `resetPan`. */
   public maxPanDistance(): number {
-    return 500 + Math.max(0, 1 / this.zoom - 1) * 320;
+    return Math.max(NEIGHBORHOOD_PX.x1 - NEIGHBORHOOD_PX.x0, NEIGHBORHOOD_PX.y1 - NEIGHBORHOOD_PX.y0);
   }
 
   private clampPan(): void {
