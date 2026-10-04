@@ -220,6 +220,15 @@ export function runPartyOrderTests(): void {
     assert.equal(poor.getPartyOrderState().available[0].status, 'pending', 'Từ chối không làm đơn bị nhận ngầm');
     assert.equal(poor.getPlayerData().money, 10, 'Không trừ tiền khi từ chối');
     assert.equal(poor.getInventory().length, 0, 'Không để lại hàng khi từ chối');
+
+    const late = makeSim(5_000_000);
+    const lateOrder = late.getPartyOrderState().available[0];
+    (late as any).clock.setTime({ ...(late as any).clock.getTime(), hour: 22, minute: 0 });
+    assert.equal(late.getPartyOrderRushQuote(lateOrder.orderId).totalCost, -1, 'Sau 22:00 không có báo giá hỏa tốc');
+    const lateRes = late.rushFulfillPartyOrder(lateOrder.orderId);
+    assert.equal(lateRes.success, false, 'Sau 22:00 từ chối nhập hỏa tốc');
+    assert.ok(lateRes.reason?.includes('nghỉ'), 'Lý do nói đại lý đã nghỉ');
+    assert.equal(late.getPlayerData().money, 5_000_000, 'Không trừ tiền khi đại lý nghỉ');
   }
   console.log('  ✓ Nhập hỏa tốc nguyên tử: đủ tiền thì nhận+giao, thiếu tiền thì không đổi gì');
 

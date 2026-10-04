@@ -605,6 +605,37 @@ export function runSuggestionTests(): void {
     }
   }
 
+  // 3d2. Kho trống hôm nay: phần thiếu cho hôm nay lấy ở đại lý hỏa tốc; hàng đang về sáng mai không làm nút báo "đủ"
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 2000000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    (sim as any).stalls.owned.push('cafe_vot');
+    const plan = sim.planStallRestock('cafe_vot');
+    assert.ok('orders' in plan, `Có kế hoạch: ${'reason' in plan ? plan.reason : ''}`);
+    if ('orders' in plan) {
+      const rushQty = plan.orders.filter(o => o.supplierId === 'giao_hoa_toc').flatMap(o => o.items).reduce((s, it) => s + it.quantity, 0);
+      assert.ok(rushQty > 0, 'Phần thiếu hôm nay đặt ở đại lý hỏa tốc');
+      for (const order of plan.orders) sim.orderSupplierCart(order.supplierId, order.items);
+      assert.equal(sim.getStallRestockItems('cafe_vot').length, 0, 'Đặt xong thì nút báo đủ nguyên liệu');
+    }
+  }
+
+  // 3d3. Sau 22:00 đại lý Hỏa Tốc nghỉ: không đặt được, kế hoạch nhập nhanh chuyển sang đại lý thường
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 2000000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    (sim as any).stalls.owned.push('cafe_vot');
+    const now = (sim as any).clock.getTime();
+    (sim as any).clock.setTime({ ...now, hour: 22, minute: 0 });
+    const rushRes = sim.validateSupplierCart('giao_hoa_toc', sim.getStallRestockItems('cafe_vot'));
+    assert.equal(rushRes.valid, false, 'Hỏa tốc không nhận đơn lúc 22:00');
+    assert.ok(rushRes.reasons.some(r => r.includes('đã nghỉ')), 'Có lý do đại lý đã nghỉ');
+    const plan = sim.planStallRestock('cafe_vot');
+    if ('orders' in plan) assert.ok(plan.orders.every(o => o.supplierId !== 'giao_hoa_toc'), 'Kế hoạch không dùng hỏa tốc sau 22h');
+  }
+
   // 3e. Thiếu tiền cho đủ 3 ngày: vẫn mua trước phần làm được và báo món còn thiếu
   {
     const save: any = structuredClone(DEFAULT_INITIAL_SAVE);

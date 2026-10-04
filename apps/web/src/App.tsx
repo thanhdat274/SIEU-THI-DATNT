@@ -1763,6 +1763,7 @@ export const App: React.FC = () => {
           simulationRef.current?.suggestRestock(supplierId, undefined, cart, options) ?? {
             supplierId,
             items: [],
+        currentHour={worldTime.hour}
             totalCost: 0,
             totalQuantity: 0,
             coldItemCount: 0,

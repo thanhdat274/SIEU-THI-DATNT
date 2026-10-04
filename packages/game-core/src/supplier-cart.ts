@@ -24,11 +24,16 @@ function caseDiscount(unitPrice: number, caseSize: number): number {
   return casePriceWithDiscount;
 }
 
+/** Giờ đại lý giao ngay trong ngày (hỏa tốc) ngừng nhận đơn. */
+export const SAME_DAY_SUPPLIER_CUTOFF_HOUR = 22;
+
 /** Trạng thái tiệm mà việc kiểm giỏ hàng cần đọc; tách khỏi `GameSimulation` để kiểm thử độc lập. */
 export interface SupplierCartContext {
   level: number;
   money: number;
   day: number;
+  /** Giờ game hiện tại; đại lý giao ngay trong ngày không nhận đơn từ `SAME_DAY_SUPPLIER_CUTOFF_HOUR`. */
+  hour?: number;
   /** Báo giá/tồn hôm nay của nhà cung cấp đang chọn (nếu đã tính). */
   supplierState?: SupplierDayState;
   coldCapacity: number;
@@ -54,6 +59,8 @@ export function validateSupplierCart(
     reasons.push('Nhà cung cấp không tồn tại');
   } else if (supplier.unlockLevel > ctx.level) {
     reasons.push(`Nhà cung cấp mở khóa ở cấp ${supplier.unlockLevel}`);
+  } else if (supplier.delayDays === 0 && ctx.hour !== undefined && ctx.hour >= SAME_DAY_SUPPLIER_CUTOFF_HOUR) {
+    reasons.push(`${supplier.name} đã nghỉ sau ${SAME_DAY_SUPPLIER_CUTOFF_HOUR}:00, hãy đặt đại lý khác hoặc đặt lại sáng mai`);
   }
 
   if (!items || items.length === 0) {

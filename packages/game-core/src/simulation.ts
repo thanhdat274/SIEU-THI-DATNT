@@ -120,7 +120,7 @@ import { calculateSalesVelocity, generateRestockSuggestions, normalizeRestockOpt
 import { buildProductPlans, type ProductPlan, type ProductPlanInput } from './forecast';
 import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, weekdayOf, type MarketNotice } from './market';
 import { computeSupplierDay, nextDeliveryDay, wholesaleQuote } from './supplier-market';
-import { validateSupplierCart as validateSupplierCartPure } from './supplier-cart';
+import { validateSupplierCart as validateSupplierCartPure, SAME_DAY_SUPPLIER_CUTOFF_HOUR } from './supplier-cart';
 import { receiveDeliveredOrders } from './delivery';
 import { advancePriceIndex, clampSellingPrice, computePriceTargets, demandPriceFactor, keepChance, priceRatio, productSensitivity } from './price';
 import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
@@ -1624,6 +1624,7 @@ export class GameSimulation {
     const level = this.playerData.level;
     const lines: Array<{ productId: string; missing: number; supplierId: string; unitPrice: number; lineTotal: number }> = [];
     let totalCost = 0;
+    if (this.clock.getTime().hour >= SAME_DAY_SUPPLIER_CUTOFF_HOUR) return { lines, totalCost: -1 }; // đại lý đã nghỉ, không có hàng giao ngay
     for (const item of def?.items ?? []) {
       const inv = this.inventory.find((i) => i.productId === item.productId);
       const usable = inv?.lots?.length ? inv.lots.reduce((sum, lot) => sum + (lot.expiresOnDay > day ? lot.quantity : 0), 0) : (inv?.quantity ?? 0);
@@ -1656,6 +1657,7 @@ export class GameSimulation {
     const day = this.clock.getTime().day;
     if (order.status === 'accepted' && day > order.deadlineDay) return fail('Đơn tiệc đã quá hạn chót.');
 
+    if (this.clock.getTime().hour >= SAME_DAY_SUPPLIER_CUTOFF_HOUR) return fail(`Đại lý đã nghỉ sau ${SAME_DAY_SUPPLIER_CUTOFF_HOUR}:00, không nhập hỏa tốc được. Hãy thử lại sáng mai.`);
     const quote = this.getPartyOrderRushQuote(orderId);
     if (quote.totalCost < 0) return fail('Chưa có nhà cung cấp nào bán được món còn thiếu.');
     if (quote.totalCost > this.playerData.money) return fail(`Không đủ tiền nhập hỏa tốc (cần ${quote.totalCost.toLocaleString('vi-VN')} ₫).`);
@@ -3045,7 +3047,8 @@ export class GameSimulation {
 
   private planStallRestockFor(need: { productId: string; quantity: number }[]): StallRestockPlan | { reason: string } {
     type Line = { productId: string; quantity: number };
-    const suppliers = SUPPLIERS.filter(sup => sup.unlockLevel <= this.playerData.level);
+    const hour = this.clock.getTime().hour;
+    const suppliers = SUPPLIERS.filter(sup => sup.unlockLevel <= this.playerData.level && !(sup.delayDays === 0 && hour >= SAME_DAY_SUPPLIER_CUTOFF_HOUR));
     const quotes = new Map(suppliers.map(sup => [sup.id, this.getSupplierQuotes(sup.id).quotes]));
     const packOf = (productId: string) => PRODUCT_MAP[productId]?.caseSize ?? 1;
     const roomOf = (supId: string, productId: string): number => {
@@ -4547,6 +4550,7 @@ export class GameSimulation {
       level: this.playerData.level,
       money: this.playerData.money,
       day: this.clock.getTime().day,
+      hour: this.clock.getTime().hour,
       supplierState: this.market.suppliers?.[supplierId],
       coldCapacity: this.getColdCapacity(),
       reservedColdCount: this.reservedColdWarehouseCount(),
