@@ -7,7 +7,7 @@ import { AmbientAudioEngine } from './services/ambient-audio-engine';
 import { PixiGameViewport, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
 import { BranchPolicy, CustomerState, GameSnapshot, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
 
-import { getActiveSlotId, loadOrCreateSave, persistSave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
+import { getActiveSlotId, loadOrCreateSave, persistSave, writeEmergencySave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
 import { releaseSlotLock } from './slot-lock';
 import { buildSaveFile, saveFileName } from './save-file';
 import { useShallow } from 'zustand/react/shallow';
@@ -212,7 +212,10 @@ export const App: React.FC = () => {
    * Đồng bộ mô phỏng -> store bằng một lần cập nhật. `heavy=false` bỏ qua dailyRecords (structuredClone, lớn dần theo số ngày) và sổ cái:
    * dùng cho luồng sự kiện tần suất cao (`onStateChanged`); thao tác của người chơi vẫn gọi bản đầy đủ.
    */
-  const syncFromSimulation = useCallback((sim: GameSimulation, heavy = true) => {
+  // Thao tác của người chơi (offline) lưu vào máy sau 1 giây yên lặng, để F5 không làm mất tiến trình; autosave 30 giây vẫn chạy song song.
+  const persistSoonRef = useRef<() => void>(() => {});
+  const syncFromSimulation = useCallback((sim: GameSimulation, heavy = true, persist = true) => {
+    if (persist) persistSoonRef.current();
     const time = sim.getTime();
     useGameStore.getState().applySimulationSnapshot({
       player: sim.getPlayerData(),
@@ -262,6 +265,34 @@ export const App: React.FC = () => {
     await saveQueueRef.current;
     return savedSuccessfully;
   }, [addToast]);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    persistSoonRef.current = () => {
+      if (onlineWorldRef.current) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => { timer = undefined; if (!onlineWorldRef.current) void handleSaveGame(false); }, 1000);
+    };
+    // Rời/ẩn trang: lưu ngay phần đang chờ (IndexedDB có thể kịp hoàn tất trước khi tab đóng).
+    const flush = () => {
+      if (!timer || onlineWorldRef.current) return;
+      clearTimeout(timer);
+      timer = undefined;
+      // Ghi đồng bộ trước (chắc chắn xong khi tab đóng), rồi lưu IndexedDB như thường.
+      const sim = simulationRef.current;
+      if (sim) writeEmergencySave(sim.exportSaveData(getActiveSlotId(), revisionRef.current));
+      void handleSaveGame(false);
+    };
+    const onHide = () => { if (document.visibilityState === 'hidden') flush(); };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onHide);
+      persistSoonRef.current = () => {};
+    };
+  }, [handleSaveGame]);
 
   // Reset progress
   const handleResetGame = useCallback(async () => {
@@ -604,7 +635,7 @@ export const App: React.FC = () => {
             const now = performance.now();
             const heavy = now - lastHeavySync >= 1000;
             if (heavy) lastHeavySync = now;
-            syncFromSimulation(sim, heavy);
+            syncFromSimulation(sim, heavy, false);
           });
         },
       });
@@ -684,12 +715,12 @@ export const App: React.FC = () => {
       if (isCancelled) dispose();
     });
 
-    // Auto-save timer every 30 seconds for local solo game (does not run when playing online)
+    // Auto-save timer every 20 seconds for local solo game (does not run when playing online)
     const autoSaveInterval = setInterval(() => {
       if (!onlineWorldRef.current) {
         handleSaveGame(false);
       }
-    }, 30000);
+    }, 20000);
 
     // Online world sync interval (polls snapshot/partner updates every 3 seconds)
     let consecutiveFailures = 0;
@@ -1355,6 +1386,9 @@ export const App: React.FC = () => {
           `Đặt giỏ hàng (${items.length} món, tổng ${res.paidTotal.toLocaleString('vi-VN')} ₫) từ ${supplierName}`,
           'Nhập hàng'
         );
+      } else if (!onlineWorldRef.current) {
+        // Đơn đã trừ tiền: lưu ngay để tải lại trang không làm mất đơn (autosave 30 giây có thể chưa kịp chạy).
+        void handleSaveGame(false);
       }
     } else {
       addToast((res as any).reasons?.[0] || 'Không thể đặt giỏ hàng: vui lòng kiểm tra lại điều kiện.', 'warn');

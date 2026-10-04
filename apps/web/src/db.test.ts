@@ -98,3 +98,26 @@ assert.equal(fresh.id, 'local_save_default');
 assert.equal(fresh.revision, 1);
 
 console.log('PASS db: ô lưu, khóa backup, ô đang chọn, revision, backup riêng từng ô, ô hỏng, nhập file, xóa ô');
+
+// Bản chụp khẩn cấp: ghi đồng bộ khi đóng trang, lần mở sau nhận nếu mới hơn bản trong IndexedDB.
+{
+  const ls = globalThis.localStorage as unknown as { getItem(k: string): string | null; setItem(k: string, v: string): void; removeItem?: (k: string) => void };
+  ls.removeItem = (k: string) => void store.delete(k);
+  setActiveSlotId('local_save_slot_3');
+  await deleteSaveSlot('local_save_slot_3');
+  const base = await loadOrCreateSave();
+  await new Promise((r) => setTimeout(r, 20));
+  const emergency = { ...mk(base.revision, 123_456), updatedAt: base.updatedAt };
+  assert.equal(dbm.writeEmergencySave(emergency), true, 'ghi bản chụp khẩn cấp');
+  const recovered = await loadOrCreateSave();
+  assert.equal(recovered.player.money, 123_456, 'nạp lại nhận bản khẩn cấp mới hơn');
+  assert.equal(recovered.revision, base.revision + 1, 'revision đi tiếp để lần lưu sau không báo lệch');
+  assert.equal((await db.saves.get('local_save_slot_3'))!.player.money, 123_456, 'đã ghi vào IndexedDB');
+  assert.equal(store.has('tiem.emergencySave.local_save_slot_3'), false, 'bản chụp bị xóa sau khi dùng');
+  // Bản khẩn cấp cũ hơn IndexedDB thì bị bỏ.
+  store.set('tiem.emergencySave.local_save_slot_3', JSON.stringify({ savedAtMs: 1, save: mk(1, 999) }));
+  const kept = await loadOrCreateSave();
+  assert.equal(kept.player.money, 123_456, 'bản khẩn cấp cũ hơn không đè');
+  assert.equal(store.has('tiem.emergencySave.local_save_slot_3'), false);
+  console.log('PASS db: bản chụp khẩn cấp');
+}

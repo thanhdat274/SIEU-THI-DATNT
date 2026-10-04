@@ -109,6 +109,43 @@ export async function loadExistingSave(slotId: SaveSlotId = activeSlotId): Promi
   return await db.saves.get(slotId);
 }
 
+const emergencyKeyFor = (slotId: SaveSlotId) => `tiem.emergencySave.${slotId}`;
+
+/**
+ * Bản chụp khẩn cấp: ghi ĐỒNG BỘ vào localStorage khi trang sắp đóng/tải lại (IndexedDB là bất đồng bộ nên có thể không kịp).
+ * Lần mở sau `loadOrCreateSave` nhận bản này nếu mới hơn bản trong IndexedDB. Lỗi (đầy bộ nhớ, bị chặn) thì bỏ qua.
+ */
+export function writeEmergencySave(saveData: SaveGameData): boolean {
+  try {
+    localStorage.setItem(emergencyKeyFor(activeSlotId), JSON.stringify({ savedAtMs: Date.now(), save: saveData }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function clearEmergencySave(slotId: SaveSlotId = activeSlotId): void {
+  try { localStorage.removeItem?.(emergencyKeyFor(slotId)); } catch { /* bỏ qua */ }
+}
+
+/** Trả bản chụp khẩn cấp hợp lệ và mới hơn `existing`; xóa nó dù dùng hay bỏ để không nạp lại lần sau. */
+function takeEmergencySave(slotId: SaveSlotId, existing: SaveGameData): SaveGameData | undefined {
+  let raw: string | null = null;
+  try { raw = localStorage.getItem(emergencyKeyFor(slotId)); } catch { return undefined; }
+  if (!raw) return undefined;
+  clearEmergencySave(slotId);
+  try {
+    const parsed = JSON.parse(raw) as { savedAtMs?: unknown; save?: unknown };
+    if (typeof parsed.savedAtMs !== 'number' || !parsed.save) return undefined;
+    if (parsed.savedAtMs < Date.parse(existing.updatedAt)) return undefined; // IndexedDB đã có bản mới hơn
+    const validation = validateSaveGameData(parsed.save);
+    if (!validation.valid || !validation.data || validation.versionStatus !== 'supported') return undefined;
+    return { ...validation.data, id: slotId, revision: existing.revision + 1, updatedAt: new Date().toISOString() };
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Load active local game save, or create initial save ONLY if not found.
  * If reading the database fails, throws an error rather than silently overwriting with default.
@@ -132,6 +169,14 @@ export async function loadOrCreateSave(): Promise<SaveGameData> {
         await db.saves.put(migrated);
       });
       return migrated;
+    }
+    const recovered = takeEmergencySave(slotId, existing);
+    if (recovered) {
+      await db.transaction('rw', db.saves, async () => {
+        await db.saves.put({ ...existing, id: backupKeyFor(slotId) });
+        await db.saves.put(recovered);
+      });
+      return recovered;
     }
     return existing;
   }

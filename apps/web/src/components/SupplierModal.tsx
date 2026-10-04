@@ -18,6 +18,21 @@ import { normalizeRestockOptions } from '@game/core';
 import { addRecommendation, setCartQuantity } from './supplier-cart';
 import { PixelDialog, PixelStat, PixelButton, ProductSlot, QuantityStepper, money, EmptyState } from './pixel';
 
+const CART_KEY = 'supplier-cart-draft';
+// Giỏ soạn dở được nhớ qua lần tải lại trang (chỉ nhớ món còn trong danh mục, số lượng nguyên dương).
+function loadSavedCart(): Record<string, number> {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CART_KEY) ?? 'null') as Record<string, unknown> | null;
+    if (!raw || typeof raw !== 'object') return {};
+    const cart: Record<string, number> = {};
+    for (const [id, qty] of Object.entries(raw)) {
+      if (PRODUCT_MAP[id] && Number.isSafeInteger(qty) && (qty as number) > 0) cart[id] = qty as number;
+    }
+    return cart;
+  } catch {
+    return {};
+  }
+}
 const SUGGEST_OPTIONS_KEY = 'supplier-suggest-options';
 // Bản lưu trong save (`savedRestockOptions`) được ưu tiên; localStorage là dự phòng cho save cũ và tiệm online (không ghi save cục bộ).
 function loadSuggestOptions(saved?: RestockSuggestionOptions): Required<RestockSuggestionOptions> {
@@ -200,7 +215,7 @@ export const SupplierModal: React.FC<Props> = ({
 }) => {
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(DEFAULT_SUPPLIER_ID);
   // quantities: mặc định 0 — người chơi bấm + để thêm vào giỏ
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [quantities, setQuantities] = useState<Record<string, number>>(loadSavedCart);
   const [category, setCategory] = useState<ProductCategory | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [autoProductId, setAutoProductId] = useState(ALL_PRODUCTS[0]?.id ?? '');
@@ -243,6 +258,10 @@ export const SupplierModal: React.FC<Props> = ({
     suggestDraft.provenSharePct !== String(suggestOptions.provenSharePct) ||
     suggestDraft.maxTrialProducts !== String(suggestOptions.maxTrialProducts) ||
     suggestDraft.cashReservePct !== String(suggestOptions.cashReservePct);
+
+  useEffect(() => {
+    try { localStorage.setItem(CART_KEY, JSON.stringify(quantities)); } catch { /* không lưu được thì bỏ qua */ }
+  }, [quantities]);
 
   // Suggested Cart state
   const suggestionRef = useRef<HTMLElement>(null);
