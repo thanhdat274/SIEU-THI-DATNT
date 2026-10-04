@@ -1,4 +1,4 @@
-import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, getFixtureDimensions } from '@game/shared';
+import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D } from '@game/shared';
 import { streetLampBoxes } from '@game/data';
 
 export interface BoundingBox {
@@ -57,19 +57,15 @@ export class CollisionSystem {
       if (this.boxesIntersect(box, lamp)) return true;
     }
 
-    // 2. Check collision against fixtures
+    // 2. Check collision against fixtures (so trực tiếp, không tạo hộp mới: hàm này chạy hàng trăm lần mỗi lần tìm đường/lách góc)
+    const boxRight = box.x + box.width;
+    const boxBottom = box.y + box.height;
     for (const fix of this.fixtures) {
-      const dimensions = getFixtureDimensions(fix);
-      const fixBox: BoundingBox = {
-        x: fix.tileX * TILE_SIZE,
-        y: fix.tileY * TILE_SIZE,
-        width: dimensions.widthTiles * TILE_SIZE,
-        height: dimensions.heightTiles * TILE_SIZE,
-      };
-
-      if (this.boxesIntersect(box, fixBox)) {
-        return true;
-      }
+      const left = fix.tileX * TILE_SIZE;
+      const top = fix.tileY * TILE_SIZE;
+      if (boxRight <= left || boxBottom <= top) continue;
+      const rotated = fix.rotation === 90 || fix.rotation === 270; // cùng quy ước với getFixtureDimensions
+      if (box.x < left + (rotated ? fix.heightTiles : fix.widthTiles) * TILE_SIZE && box.y < top + (rotated ? fix.widthTiles : fix.heightTiles) * TILE_SIZE) return true;
     }
 
     return false;

@@ -1,7 +1,7 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { LightingState, lerpColor } from '@game/core';
 import { GameTileMap, StoreFixture, TILE_SIZE, getFixtureDimensions, isWarehouseFixture } from '@game/shared';
-import { BUILDING_MAP, DRINK_BOUNDS, STORE_BOUNDS, STREET_LAMP_TILES, WAREHOUSE_BOUNDS, XOI_BOUNDS } from '@game/data';
+import { BUILDING_MAP, DRINK_BOUNDS, NEIGHBORHOOD_PX, STORE_BOUNDS, STREET_LAMP_TILES, WAREHOUSE_BOUNDS, XOI_BOUNDS } from '@game/data';
 
 type LightKind = 'artificial' | 'sun' | 'street';
 
@@ -79,8 +79,12 @@ export class ShopLighting {
   private warehouseFixtureLights: LightSprite[] = [];
   private shadows: Shadow[] = [];
   private glints: Graphics[] = [];
-  private lampBulbs: Array<{ g: Graphics; warehouse: boolean; stall?: boolean }> = [];
+  /** `drawn`: mức sáng (đã lượng tử) lần vẽ trước; Graphics chỉ vẽ lại khi mức này đổi, không xóa-vẽ mỗi khung. */
+  private lampBulbs: Array<{ g: Graphics; warehouse: boolean; stall?: boolean; drawn?: number }> = [];
   private actorShadows: Graphics[] = [];
+  /** Khóa hình dạng bóng đã vẽ trong từng Graphics (cùng chỉ số với `actorShadows`). */
+  private actorShadowKeys: string[] = [];
+  private fixtureShadowKey = '';
   private vehicleLights: Array<{ head: Sprite; beam: Sprite; tail: Sprite }> = [];
   private sunPatch?: Sprite;
   private fixtureSignature = '';
@@ -117,7 +121,10 @@ export class ShopLighting {
     this.outdoorTint.clear();
     this.indoorTint.clear();
     this.warehouseTint.clear();
-    this.outdoorTint.rect(-pad, originY * T - pad, tileMap.width * T + pad * 2, tileMap.height * T + pad * 2).fill(0xffffff);
+    // Phủ cả khu phố mở rộng (nhà, đường, công viên, trường, đồi) bằng cùng một lớp nhân màu ngoài trời để ngày/đêm liền mạch.
+    const nx0 = Math.min(-pad, NEIGHBORHOOD_PX.x0 - 400), ny0 = Math.min(originY * T - pad, NEIGHBORHOOD_PX.y0 - 400);
+    const nx1 = Math.max(tileMap.width * T + pad, NEIGHBORHOOD_PX.x1 + 400), ny1 = Math.max((originY + tileMap.height) * T + pad, NEIGHBORHOOD_PX.y1 + 400);
+    this.outdoorTint.rect(nx0, ny0, nx1 - nx0, ny1 - ny0).fill(0xffffff);
 
     // Khu vực nhà kho phủ riêng bằng warehouseTint (để bật/tắt độc lập với tiệm)
     const whX = WAREHOUSE_BOUNDS.left * T;
@@ -177,9 +184,11 @@ export class ShopLighting {
 
   /** Dựng lại đèn nội thất và bóng đổ khi bố cục đổi; chữ ký giúp bỏ qua khi không đổi. */
   public syncFixtures(fixtures: StoreFixture[]): void {
-    const signature = fixtures.map((f) => `${f.id}:${f.type}:${f.tileX}:${f.tileY}`).join('|');
+    // Có cả kích thước/góc xoay: xoay kệ tại chỗ phải dựng lại bóng và đèn theo khuôn mới.
+    const signature = fixtures.map((f) => `${f.id}:${f.type}:${f.tileX}:${f.tileY}:${f.widthTiles}x${f.heightTiles}:${f.rotation}`).join('|');
     if (signature === this.fixtureSignature) return;
     this.fixtureSignature = signature;
+    this.fixtureShadowKey = '';
     for (const l of this.fixtureLights) l.sprite.destroy();
     for (const l of this.warehouseFixtureLights) l.sprite.destroy();
     for (const s of this.shadows) s.graphics.destroy();
@@ -229,8 +238,12 @@ export class ShopLighting {
   }
 
   private drawLamps(on: { shop: number; warehouse: number }): void {
-    for (const { g, warehouse } of this.lampBulbs) {
-      const k = warehouse ? on.warehouse : on.shop;
+    for (const lamp of this.lampBulbs) {
+      const { g, warehouse } = lamp;
+      // Lượng tử 1/64: đèn kho chuyển dần theo hàm mũ nên giá trị đổi rất nhỏ mãi; dưới ngưỡng này màu không khác bằng mắt.
+      const k = Math.round((warehouse ? on.warehouse : on.shop) * 64) / 64;
+      if (lamp.drawn === k) continue;
+      lamp.drawn = k;
       g.clear();
       g.rect(-0.5, -16, 1, 12).fill(0x2a2118);
       g.poly([-5, -4, 5, -4, 3, -8, -3, -8]).fill(warehouse ? 0x4a5560 : 0x5a3a22);
@@ -361,6 +374,10 @@ export class ShopLighting {
     // Bóng đổ nắng: dài và ngả theo giờ, nhạt đi khi nắng yếu.
     const dx = state.shadowLean * (6 + state.shadowLength * 9);
     const drop = 3 + state.shadowLength * 5;
+    // Bóng chỉ đổi theo giờ (chậm): vẽ lại khi khác thấy được thay vì xóa-vẽ hàng chục Graphics mỗi khung.
+    const shadowKey = `${Math.round(state.sun * 400)}|${Math.round(dx * 4)}|${Math.round(drop * 4)}`;
+    if (shadowKey === this.fixtureShadowKey) return;
+    this.fixtureShadowKey = shadowKey;
     for (const s of this.shadows) {
       const g = s.graphics;
       g.clear();
@@ -421,12 +438,16 @@ export class ShopLighting {
     const sunAlpha = state.sun * 0.28;
     const stretch = 1 + Math.abs(state.shadowLean) * state.shadowLength * 0.9;
     const dx = state.shadowLean * state.shadowLength * 4;
+    // Mọi bóng cùng một hình (chỉ khác vị trí): vẽ lại khi hình đổi theo giờ, còn mỗi khung chỉ dời vị trí.
+    const key = `${Math.round(state.artificial * 100)}|${Math.round(sunAlpha * 400)}|${Math.round(stretch * 50)}|${Math.round(dx * 8)}`;
     this.actorShadows.forEach((g, i) => {
       const f = feet[i];
       g.visible = !!f;
       if (!f) return;
-      g.clear();
       g.position.set(Math.round(f.x), Math.round(f.y));
+      if (this.actorShadowKeys[i] === key) return;
+      this.actorShadowKeys[i] = key;
+      g.clear();
       g.ellipse(0, -1, 8, 3).fill({ color: 0x1c1410, alpha: 0.14 + state.artificial * 0.04 });
       if (sunAlpha > 0.01) g.ellipse(dx, -1, 8 * stretch, 3.4).fill({ color: 0x1c1410, alpha: sunAlpha });
     });
@@ -435,6 +456,7 @@ export class ShopLighting {
   public destroy(): void {
     for (const g of this.actorShadows) g.destroy();
     this.actorShadows = [];
+    this.actorShadowKeys = [];
     for (const l of this.vehicleLights) { l.head.destroy(); l.beam.destroy(); l.tail.destroy(); }
     this.vehicleLights = [];
     for (const l of [...this.staticLights, ...this.stallLights, ...this.warehouseLights, ...this.fixtureLights, ...this.warehouseFixtureLights]) l.sprite.destroy();

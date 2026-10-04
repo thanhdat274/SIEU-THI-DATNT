@@ -15,6 +15,17 @@ export function installPerfOverlay(): void {
   if (typeof window === 'undefined' || new URLSearchParams(window.location.search).get('perf') !== '1') return;
 
   const samples: FrameSample[] = [];
+  // Long task = JS chiếm luồng chính ≥50 ms (chỉ Chromium). Nhiều long task thì nghẽn ở mã JS (mô phỏng/React/Pixi);
+  // khung chậm mà không có long task thì nghẽn ở GPU/trình duyệt (vẽ, ghép lớp, DevTools đang ghi).
+  const longTasks: FrameSample[] = [];
+  const longTaskSupported = typeof PerformanceObserver !== 'undefined' && (PerformanceObserver.supportedEntryTypes ?? []).includes('longtask');
+  if (longTaskSupported) {
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) longTasks.push({ at: entry.startTime + entry.duration, duration: entry.duration });
+    }).observe({ type: 'longtask' });
+  }
+  let rendererCanvas: HTMLCanvasElement | null = null;
+  let rendererLabel = '—';
   let previous = 0;
   let lastPaint = 0;
   let raf = 0;
@@ -44,7 +55,7 @@ export function installPerfOverlay(): void {
   const restore = makeButton('FPS', 'Mở bảng đo hiệu năng', () => { root.style.display = 'block'; restore.style.display = 'none'; });
   restore.style.cssText += 'display:none;position:fixed;z-index:9999;top:50%;left:calc(env(safe-area-inset-left,0px) + 8px);transform:translateY(-50%);pointer-events:auto;touch-action:none;';
   const hide = makeButton('Ẩn', 'Thu gọn bảng đo', () => { root.style.display = 'none'; restore.style.display = 'block'; });
-  const reset = makeButton('Đặt lại', 'Xóa số liệu đang ghi', () => { samples.length = 0; previous = 0; });
+  const reset = makeButton('Đặt lại', 'Xóa số liệu đang ghi', () => { samples.length = 0; longTasks.length = 0; previous = 0; });
   const copy = makeButton('Sao chép', 'Sao chép số liệu để gửi', () => {
     void navigator.clipboard?.writeText(body.textContent ?? '')
       .then(() => { copy.textContent = 'Đã chép'; setTimeout(() => { copy.textContent = 'Sao chép'; }, 1200); })
@@ -62,6 +73,7 @@ export function installPerfOverlay(): void {
     if (previous > 0 && document.visibilityState === 'visible') samples.push({ at: now, duration: now - previous });
     previous = now;
     while (samples.length && now - samples[0].at > WINDOW_MS) samples.shift();
+    while (longTasks.length && now - longTasks[0].at > WINDOW_MS) longTasks.shift();
     if (now - lastPaint >= REFRESH_MS) {
       lastPaint = now;
       const intervals = samples.map((item) => item.duration).sort((a, b) => a - b);
@@ -75,10 +87,17 @@ export function installPerfOverlay(): void {
         : 'không hỗ trợ (Safari/Firefox)';
       const over33 =intervals.filter((n) => n > 33.3).length;
       const over50 = intervals.filter((n) => n > 50).length;
+      // Dò kiểu vẽ một lần cho mỗi canvas (getContext trên canvas chưa có ngữ cảnh sẽ tạo thêm một ngữ cảnh WebGL mới).
       const canvas = document.querySelector('canvas');
-      const gl = canvas ? (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) : null;
-      const renderer = canvas ? (gl ? 'WebGL' : 'Canvas/khác') : '—';
-      body.textContent = `FPS TB: ${mean ? (1000 / mean).toFixed(1) : 'đang đo…'}   ·   p1: ${p99 ? (1000 / p99).toFixed(1) : '—'}\np95: ${p95 ? p95.toFixed(1) + ' ms' : '—'}   ·   chậm nhất: ${worst ? worst.toFixed(1) + ' ms' : '—'}\nKhung >33 ms: ${over33}   ·   >50 ms: ${over50}\nBộ nhớ JS: ${memory}\nSố mẫu: ${intervals.length} / 5 giây\n${renderer} · DPR ${window.devicePixelRatio || 1} · ${screen.width}×${screen.height}`;
+      if (canvas !== rendererCanvas) {
+        rendererCanvas = canvas;
+        const gl = canvas ? (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) : null;
+        rendererLabel = canvas ? (gl ? 'WebGL' : 'Canvas/khác') : '—';
+      }
+      const longTaskLine = longTaskSupported
+        ? `Long task JS: ${longTasks.length}   ·   dài nhất: ${longTasks.length ? Math.max(...longTasks.map((t) => t.duration)).toFixed(0) + ' ms' : '—'}`
+        : 'Long task JS: không hỗ trợ (Safari/Firefox)';
+      body.textContent = `FPS TB: ${mean ? (1000 / mean).toFixed(1) : 'đang đo…'}   ·   p1: ${p99 ? (1000 / p99).toFixed(1) : '—'}\np95: ${p95 ? p95.toFixed(1) + ' ms' : '—'}   ·   chậm nhất: ${worst ? worst.toFixed(1) + ' ms' : '—'}\nKhung >33 ms: ${over33}   ·   >50 ms: ${over50}\n${longTaskLine}\nBộ nhớ JS: ${memory}\nSố mẫu: ${intervals.length} / 5 giây\n${rendererLabel} · DPR ${window.devicePixelRatio || 1} · ${screen.width}×${screen.height}`;
     }
     raf = window.requestAnimationFrame(frame);
   };

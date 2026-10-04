@@ -14,7 +14,7 @@ import {
 import { BUILDING_MAP, BUILDING_TRAFFIC_SHARE, MAP_WIDTH, buildingAt, fixtureBuilding, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS, type BuildingId } from '@game/data';
 import { arrivalModeWeights, pickArrivalMode } from './arrival-mode';
 import { CollisionSystem } from './collision';
-import { findPath, GridPoint, tileCenter } from './pathfinding';
+import { findPath, findPathToAny, GridPoint, tileCenter } from './pathfinding';
 import { mergeLots, sumLots, takeLots } from './stock';
 import { removeExpiredLots } from './spoilage';
 import { Mulberry32Rng, daySeed } from './staff';
@@ -106,6 +106,14 @@ export class CustomerManager {
     this.customerSequence = customerSequence;
     this.spawnCooldown = spawnCooldown;
     this.importCustomers(initialCustomers);
+  }
+
+  /**
+   * Danh sách khách thật, KHÔNG sao chép: chỉ để đọc trong lượt gọi (vòng vẽ mỗi khung, kiểm tra mỗi bước).
+   * Không sửa và không giữ lại tham chiếu; cần dữ liệu lâu dài/được sửa thì dùng `getCustomers()`.
+   */
+  public peekCustomers(): readonly Readonly<CustomerState>[] {
+    return this.customers;
   }
 
   public getCustomers(): CustomerState[] {
@@ -427,19 +435,35 @@ export class CustomerManager {
       }),
     };
     const customerCollision = new CollisionSystem(customerMap, fixtures);
-    const paths = goals
-      .map((goal) => findPath(customerMap, customerCollision, start, goal))
-      .filter((p) => p.length);
-    paths.sort((a, b) => a.length - b.length);
+    // Một lần A* tới ô đích gần nhất (trước đây chạy A* riêng cho từng ô quanh kệ rồi chọn đường ngắn nhất: gai 40–50 ms mỗi lần định tuyến).
+    const nearest = findPathToAny(customerMap, customerCollision, start, goals);
+    const paths = nearest.length ? [nearest] : [];
 
-    let chosenPath = paths[0];
-    if (!chosenPath && stage === 'leaving' && !customer.vehicleSpot) {
-      chosenPath = findPath(customerMap, customerCollision, start, BUILDING_MAP[(customer.buildingId as BuildingId | undefined) ?? 'main']?.entranceTile ?? ENTRANCE_TILE);
+    let chosenPath: GridPoint[] | undefined = paths[0];
+    if (!chosenPath && stage === 'leaving' && customer.vehicleSpot) {
+      // Ô chỗ đỗ bị chặn (vd. đặt quầy/đồ đè lên): tới ô đi được sát xe nhất, vòng 1 rồi vòng 2 quanh chỗ đỗ; tới nơi thì xe chạy đi như thường.
+      const spot = goals[0];
+      for (let radius = 1; radius <= 2 && !chosenPath; radius++) {
+        const ring: GridPoint[] = [];
+        for (let dy = -radius; dy <= radius; dy++) for (let dx = -radius; dx <= radius; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) === radius) ring.push({ x: spot.x + dx, y: spot.y + dy });
+        }
+        const near = findPathToAny(customerMap, customerCollision, start, ring);
+        if (near.length) chosenPath = near;
+      }
+    }
+    if (!chosenPath && stage === 'leaving') {
+      // Không có đường ra mép/tới xe: đi tới cửa tòa nhà rồi mới rời (xe, nếu có, chạy đi từ chỗ đỗ qua onCustomerDepart).
+      const door = findPath(customerMap, customerCollision, start, BUILDING_MAP[(customer.buildingId as BuildingId | undefined) ?? 'main']?.entranceTile ?? ENTRANCE_TILE);
+      if (door.length) chosenPath = door;
     }
     const waypoints = chosenPath?.map(tileCenter).slice(1) ?? [];
     this.paths.set(customer.id ?? customer.checkoutId ?? 'default', waypoints);
 
-    if (!paths.length && stage !== 'checkout') {
+    // Khách đang rời đi mà mép bản đồ bị chặn vẫn đi theo đường dự phòng tới cửa tòa nhà rồi mới rời (trước đây kiểm
+    // `paths` nên đường dự phòng bị bỏ và khách biến mất ngay tại chỗ). Chỉ xóa tại chỗ khi cả đường dự phòng cũng không có.
+    const routed = stage === 'leaving' ? !!chosenPath?.length : paths.length > 0;
+    if (!routed && stage !== 'checkout') {
       // Unreachable goal, leave
       if (stage !== 'leaving') {
         this.abandonBasket(customer, fixtures, [], () => {});

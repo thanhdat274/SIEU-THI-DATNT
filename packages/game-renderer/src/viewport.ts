@@ -1,11 +1,11 @@
 import { furnitureSpriteTexture, STOCK_ART_SHOP_IDS } from './fixture-preview';
 import { Application, Container, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
-import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, type WeatherVisualState, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
+import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, weekdayOf, hashSeed, type WeatherVisualState, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
-import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, BUILDING_MAP, type BuildingId} from '@game/data';
+import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, TRUCK_KINDS, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, BUILDING_MAP, type BuildingId} from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -22,6 +22,8 @@ import { WeatherEffects, swaySkew } from './weather-effects';
 import { RainGear, roofProximity, type GearFacing } from './rain-gear';
 import { loadWeatherSprites } from './weather-sprites';
 import { emitThunder, setRoofProximity, getWeatherFxSettings, publishWeatherVisual, resolveWeatherQuality } from './weather-settings';
+import { NeighborhoodScene } from './neighborhood-scene';
+import { NeighborhoodActors } from './neighborhood-actors';
 import { buildTrafficSignalHeads, createPedestrianSprite, placePedestrian, type TrafficSignalHeads } from './street-signal';
 
 /** Điểm gốc bóng so với góc trên-trái sprite cây 80x100 (px): chân thân cây, để bóng đổ từ mặt đất chứ không từ tán. */
@@ -94,7 +96,7 @@ export class PixiGameViewport {
     sprite: Sprite;
     bubble: Container;
     bubbleIcon: Sprite;
-    regularTag: { container: Container; text: Text; bg: Graphics };
+    regularTag: { container: Container; text: Text; bg: Graphics; drawn?: string };
     lastPosition: Vector2D | null;
     npcVariant: number;
     npcDirection: string;
@@ -102,6 +104,9 @@ export class PixiGameViewport {
   private workerSprites = new Map<string, { container: Container; sprite: Sprite; bubble: Container; status: Text; lastPosition: Vector2D | null; variant: number; direction: string }>();
   private parkedMotorbikeSprites = new Map<string, Sprite>();
   private streetTrafficSprites = new Map<string, Sprite>();
+  private neighborhood!: NeighborhoodScene;
+  private actors!: NeighborhoodActors;
+  private trafficBudgetQuality = '';
   /** Xe đang chạy trong khung hình hiện tại, để ShopLighting bật đèn pha/đèn hậu ban đêm. */
   private vehicleLightSources: VehicleLightSource[] = [];
   private resizeObserver?: ResizeObserver;
@@ -171,7 +176,7 @@ export class PixiGameViewport {
     await this.app.init({
       canvas: this.canvas,
       resizeTo: this.canvas.parentElement || window,
-      backgroundColor: 0xb8aea0, // Warm concrete pavement matching Vietnamese alley instead of pitch black
+      backgroundColor: 0x5c7a52, // màu cỏ khu phố: lộ ra ngoài vùng vẽ cũng liền mạch (nền cỏ vô hạn trong NeighborhoodScene)
       resolution: Math.min(window.devicePixelRatio || 1, 2),
       autoDensity: true,
       roundPixels: true,
@@ -193,9 +198,15 @@ export class PixiGameViewport {
     this.lightLayer = new Container();
 
     // Thứ tự: nền, bóng nắng, tường, thực thể, nhân màu ánh sáng, quầng đèn cộng, nhãn UI.
+    // Khu phố mở rộng nằm dưới bản đồ chơi: trời/đồi, nền (cỏ, đường), rồi công trình/cây xa; bản đồ chơi vẽ đè lên.
+    this.neighborhood = new NeighborhoodScene(this.textures);
+    this.neighborhood.build(resolveWeatherQuality(getWeatherFxSettings()));
+    this.worldContainer.addChild(this.neighborhood.backdrop);
+    this.worldContainer.addChild(this.neighborhood.ground);
     this.worldContainer.addChild(this.groundLayer);
     this.worldContainer.addChild(this.shadowLayer);
     this.worldContainer.addChild(this.weatherFx.groundLayer);
+    this.worldContainer.addChild(this.neighborhood.props);
     this.worldContainer.addChild(this.wallLayer);
     this.worldContainer.addChild(this.entitiesLayer);
     // Nước chảy từ mái hiên nằm trước mặt tiền (entitiesLayer không tự sắp theo zIndex nên đặt lớp riêng ngay sau nó).
@@ -203,7 +214,10 @@ export class PixiGameViewport {
     this.worldContainer.addChild(this.weatherFx.darknessLayer);
     this.worldContainer.addChild(this.tintLayer);
     this.worldContainer.addChild(this.lightLayer);
+    this.worldContainer.addChild(this.neighborhood.glow);
+    this.worldContainer.addChild(this.neighborhood.labels);
     this.worldContainer.addChild(this.uiOverlayLayer);
+    this.actors = new NeighborhoodActors(this.textures, this.entitiesLayer, this.uiOverlayLayer, hashSeed(String(this.simulation.getWeatherSeed())));
     this.lighting = new ShopLighting(this.tintLayer, this.lightLayer, this.shadowLayer);
 
     this.app.stage.addChild(this.worldContainer);
@@ -522,29 +536,7 @@ export class PixiGameViewport {
     const height = this.tileMap.height;
     const originY=this.tileMap.originTileY??0;
 
-    // Surrounding buffer around the shop map (-20 to +20 tiles)
-    // Ensures seamless nostalgic alley pavement with zero black borders when zoomed out
-    const buffer = 18;
-    for (let y = -buffer; y < height + buffer; y++) {
-      for (let x = -buffer; x < width + buffer; x++) {
-        // If outside original shop map bounds, fill with authentic alley ground
-        if (x < 0 || x >= width || y < 0 || y >= height) {
-          // Use pavement alley texture, with occasional street or sidewalk accents
-          // Cỏ bao quanh (kiểu làng quê Stardew) thay cho nền xám phẳng; vỉa hè bám sát mặt tiền.
-          let outerTexture = `tile_grass_v${this.tileHash(x, y) % 3}`;
-          if (y + originY >= originY + height - 3 || Math.abs(x - width / 2) < 2.5) outerTexture = 'tile_pavement_alley';
-          if (y >= height - 2 && y <= height + 2) {
-            outerTexture = 'tile_street';
-          } else if ((x === -1 || x === width) && y > 2) {
-            outerTexture = 'tile_sidewalk';
-          }
-          const bgSprite = new Sprite(this.textures.getTexture(outerTexture));
-          bgSprite.x = x * TILE_SIZE;
-          bgSprite.y = (y+originY) * TILE_SIZE;
-          this.groundLayer.addChild(bgSprite);
-        }
-      }
-    }
+    // Mặt đất ngoài bản đồ chơi do NeighborhoodScene dựng (cỏ, đường, vỉa hè, nhà, công viên...), không còn vành đai ô cỏ riêng.
 
     const groundLayerData = this.tileMap.layers.find((l) => l.name === 'ground')?.data;
     const wallLayerData = this.tileMap.layers.find((l) => l.name === 'walls')?.data;
@@ -685,6 +677,21 @@ export class PixiGameViewport {
     const warehouseSign = new Sprite(this.textures.getTexture('warehouse_sign'));
     warehouseSign.position.set(WAREHOUSE_DOOR_LEFT * TILE_SIZE, STORE_BOUNDS.top * TILE_SIZE - 20);
     this.wallLayer.addChild(warehouseSign);
+
+    // === BIỂN HIỆU MỚI: Đặt trên các tòa nhà thực tế ===
+    // Tiệm xôi (xoi building)
+    const xoiSign = new Sprite(this.textures.getTexture('sign_xoi'));
+    xoiSign.position.set(XOI_BOUNDS.left * TILE_SIZE, (XOI_BOUNDS.top - 1) * TILE_SIZE);
+    xoiSign.zIndex = XOI_BOUNDS.top * TILE_SIZE;
+    this.wallLayer.addChild(xoiSign);
+    this.swaySigns.push(xoiSign);
+
+    // Quán nước (drink building)
+    const drinkSign = new Sprite(this.textures.getTexture('sign_drink'));
+    drinkSign.position.set(DRINK_BOUNDS.left * TILE_SIZE, (DRINK_BOUNDS.top - 1) * TILE_SIZE);
+    drinkSign.zIndex = DRINK_BOUNDS.top * TILE_SIZE;
+    this.wallLayer.addChild(drinkSign);
+    this.swaySigns.push(drinkSign);
 
     this.buildXoiFacade();
     this.buildBuildingFacade('drink');
@@ -1013,6 +1020,12 @@ export class PixiGameViewport {
 
     this.playerContainer.addChild(this.playerGear.container);
     this.entitiesLayer.addChild(this.playerContainer);
+
+    // Home entrance doormat at HOME_DOOR_TILE (3, 12)
+    const homeMat = new Graphics();
+    homeMat.rect(3 * 32 + 2, 12 * 32 + 18, 28, 12).fill({ color: 0x824d28 }).stroke({ color: 0x3d1f0f, width: 1 });
+    homeMat.rect(3 * 32 + 5, 12 * 32 + 21, 22, 6).fill({ color: 0xd9a76a });
+    this.groundLayer.addChild(homeMat);
   }
 
   /** Chủ tiệm đứng sau quầy thu ngân; bong bóng "Tính tiền" hiện khi đang phục vụ khách. */
@@ -1154,8 +1167,37 @@ export class PixiGameViewport {
     const mode = isMoving ? 'walk' : 'idle';
     const frame = reducedMotion ? 0 : Math.floor(this.animTimer * (isMoving ? 8 : 1.5)) % (isMoving ? 4 : 2);
     this.playerSprite.texture = this.textures.getTexture(`player_${playerData.direction}_${mode}_${frame}`);
-    this.playerContainer.position.set(Math.round(playerData.position.x), Math.round(playerData.position.y));
-    this.playerContainer.zIndex = playerData.position.y;
+
+    if (this.simulation.isDailyRoutineEnabled()) {
+      const routineState = this.simulation.getDailyRoutineState();
+      const clockTime = this.simulation.getTime();
+      const currentMin = clockTime.hour * 60 + clockTime.minute;
+      if (routineState === 'SLEEPING') {
+        this.playerSprite.rotation = Math.PI / 2;
+        this.playerSprite.x = 10;
+      } else if (routineState === 'AT_HOME' && currentMin < 7 * 60 + 5) {
+        const wakeT = Math.min(1, Math.max(0, (currentMin - 420) / 4));
+        if (wakeT < 0.5) {
+          this.playerSprite.rotation = (Math.PI / 2) * (1 - wakeT * 2);
+          this.playerSprite.x = 10 * (1 - wakeT * 2);
+        } else {
+          this.playerSprite.rotation = 0;
+          this.playerSprite.x = 0;
+        }
+      } else {
+        this.playerSprite.rotation = 0;
+        this.playerSprite.x = 0;
+      }
+    } else {
+      this.playerSprite.rotation = 0;
+      this.playerSprite.x = 0;
+    }
+
+    // Vẽ nội suy giữa hai bước mô phỏng, rồi chốt về lưới điểm ảnh màn hình (1/zoom) để khớp camera; không còn nhảy 0/1/2 bước mỗi khung.
+    const renderPos = this.simulation.getPlayerRenderPosition(this.simulationRunner.getAlpha());
+    const zoomNow = this.camera.zoom || 1;
+    this.playerContainer.position.set(Math.round(renderPos.x * zoomNow) / zoomNow, Math.round(renderPos.y * zoomNow) / zoomNow);
+    this.playerContainer.zIndex = renderPos.y;
     setRoofProximity(roofProximity(playerData.position.x, playerData.position.y));
     const gearDay = getDebugVisualTime()?.day ?? this.simulation.getTime().day;
     const fxSettingsEnabled = getWeatherFxSettings().enabled;
@@ -1197,7 +1239,7 @@ export class PixiGameViewport {
       this.shopkeeper.bubble.visible = keeper.serving;
     }
 
-    const customers = this.simulation.getCustomers();
+    const customers = this.simulation.peekCustomers(); // không sao chép sâu mỗi khung; vòng vẽ chỉ đọc
     const activeCustomerKeys = new Set<string>();
 
     for (let idx = 0; idx < customers.length; idx++) {
@@ -1246,12 +1288,16 @@ export class PixiGameViewport {
 
       if (cust.regularName) {
         entry.regularTag.container.visible = true;
-        entry.regularTag.text.text = `♥ ${cust.regularName}`;
-        const tagWidth = Math.max(32, Math.ceil(entry.regularTag.text.width) + 8);
-        entry.regularTag.bg.clear();
-        entry.regularTag.bg.rect(-tagWidth / 2, -78, tagWidth, 12);
-        entry.regularTag.bg.fill({ color: 0x8b5cf6, alpha: 0.95 });
-        entry.regularTag.bg.stroke({ color: 0xffffff, width: 1 });
+        const tagLabel = `♥ ${cust.regularName}`;
+        if (entry.regularTag.drawn !== tagLabel) { // chỉ đo chữ và vẽ nền khi tên đổi, không mỗi khung
+          entry.regularTag.drawn = tagLabel;
+          entry.regularTag.text.text = tagLabel;
+          const tagWidth = Math.max(32, Math.ceil(entry.regularTag.text.width) + 8);
+          entry.regularTag.bg.clear();
+          entry.regularTag.bg.rect(-tagWidth / 2, -78, tagWidth, 12);
+          entry.regularTag.bg.fill({ color: 0x8b5cf6, alpha: 0.95 });
+          entry.regularTag.bg.stroke({ color: 0xffffff, width: 1 });
+        }
       } else {
         entry.regularTag.container.visible = false;
       }
@@ -1272,7 +1318,7 @@ export class PixiGameViewport {
       }
     }
 
-    const workers = this.simulation.getStaff().slice(0, 4);
+    const workers = this.simulation.peekStaff().slice(0, 4); // không sao chép từng nhân viên mỗi khung; chỉ đọc
     const workerIds = new Set(workers.map((worker) => worker.id));
     workers.forEach((worker, idx) => {
       const position = worker.position ?? { x: 300 + idx * TILE_SIZE, y: 300 };
@@ -1370,23 +1416,26 @@ export class PixiGameViewport {
       }
     }
 
-    // Render ambient street vehicles flowing along alley
+    // Xe chạy trên mạng đường của khu phố (đường chính + đường phụ): chỉ dựng sprite cho xe trong tầm nhìn, xe ngoài tầm
+    // là dữ liệu thuần (không sprite) nên khu phố rộng không tốn thêm khi zoom gần.
     const streetVehicles = this.simulation.getStreetVehicles();
     const activeStreetKeys = new Set<string>();
     this.vehicleLightSources.length = 0;
+    const camLeft = this.camera.x;
+    const camTop = this.camera.y;
+    const camRight = camLeft + this.app.screen.width / this.camera.zoom;
+    const camBottom = camTop + this.app.screen.height / this.camera.zoom;
     for (const veh of streetVehicles) {
+      const vx = veh.position.x, vy = veh.position.y;
+      if (vx < camLeft - 220 || vx > camRight + 220 || vy < camTop - 140 || vy > camBottom + 140) continue;
       activeStreetKeys.add(veh.id);
       let sprite = this.streetTrafficSprites.get(veh.id);
-      let textureKey = `vehicle_car_${veh.direction}`;
-      if (veh.type === 'motorbike') {
-        textureKey = `vehicle_motorbike_rider_${veh.variant ?? 0}_${veh.direction}`;
-      } else if (veh.type === 'bicycle') {
-        textureKey = `vehicle_bicycle_rider_${veh.direction}`;
-      } else if (veh.type === 'minibus') {
-        textureKey = `vehicle_minibus_${veh.variant ?? 0}_${veh.direction}`;
-      } else {
-        textureKey = `vehicle_car_${veh.direction}`;
-      }
+      let textureKey: string;
+      if (veh.type === 'motorbike') textureKey = `vehicle_motorbike_rider_${veh.variant ?? 0}_${veh.direction}`;
+      else if (veh.type === 'bicycle') textureKey = `vehicle_bicycle_rider_${veh.direction}`;
+      else if (veh.type === 'minibus') textureKey = `vehicle_minibus_${veh.variant ?? 0}_${veh.direction}`;
+      else if (veh.type === 'truck') textureKey = `truck_${TRUCK_KINDS[(veh.variant ?? 0) % TRUCK_KINDS.length]}_${veh.direction}`;
+      else textureKey = (veh.variant ?? 0) === 0 ? `vehicle_car_${veh.direction}` : `vehicle_car_v${veh.variant}_${veh.direction}`;
 
       if (!sprite) {
         sprite = new Sprite(this.textures.getTexture(textureKey));
@@ -1396,18 +1445,10 @@ export class PixiGameViewport {
       } else {
         sprite.texture = this.textures.getTexture(textureKey);
       }
-      sprite.x = Math.round(veh.position.x);
-      sprite.y = Math.round(veh.position.y);
-      sprite.zIndex = veh.position.y;
-
-      // Hiệu ứng mờ dần khi xe tới gần hai mép bản đồ (không biến mất đột ngột)
-      const EDGE_FADE_PX = 56;
-      const distFromEdge = Math.min(veh.position.x, MAP_WIDTH * TILE_SIZE - veh.position.x);
-      if (distFromEdge < EDGE_FADE_PX) {
-        sprite.alpha = Math.max(0, Math.min(1, distFromEdge / EDGE_FADE_PX));
-      } else {
-        sprite.alpha = 1;
-      }
+      sprite.x = Math.round(vx);
+      sprite.y = Math.round(vy);
+      sprite.zIndex = vy;
+      sprite.alpha = 1;
       this.vehicleLightSources.push({ x: sprite.x, y: sprite.y, direction: veh.direction === 'left' ? 'left' : 'right', type: veh.type, alpha: sprite.alpha });
     }
     for (const [id, sprite] of this.streetTrafficSprites.entries()) {
@@ -1582,6 +1623,17 @@ export class PixiGameViewport {
     this.syncFixtureSprites();
     this.syncDecor();
     const allFixtures = this.simulation.getFixtures();
+    // Đọc một lần mỗi khung: getInventory/getPendingOrders sao chép sâu, trước đây gọi lại cho từng kệ kho mỗi khung (rác cho GC).
+    const pp = playerData.position;
+    let warehouseCounts: { cold: number; dry: number; orders: number } | null = null;
+    const countsForWarehouse = () => {
+      if (warehouseCounts) return warehouseCounts;
+      let cold = 0, dry = 0;
+      for (const item of this.simulation.getInventory()) {
+        if (PRODUCT_MAP[item.productId]?.storageType === 'cold') cold += item.quantity; else dry += item.quantity;
+      }
+      return (warehouseCounts = { cold, dry, orders: this.simulation.getPendingOrders().length });
+    };
     for (const fix of allFixtures) {
       if (fix.parentId) continue;
       const entry = this.fixtureSprites.get(fix.id);
@@ -1594,7 +1646,6 @@ export class PixiGameViewport {
         entry.container.rotation = fix.rotation * Math.PI / 180;
         entry.container.zIndex = (fix.tileY + dimensions.heightTiles) * TILE_SIZE; // mép dưới kệ = mốc sắp xếp theo Y
         // Nhân vật đứng sau kệ (phía trên, trong dải sprite cao) thì làm mờ kệ để vẫn nhìn thấy.
-        const pp = this.simulation.getPlayerData().position;
         const fx = fix.tileX * TILE_SIZE, fy = fix.tileY * TILE_SIZE;
         const behind = pp.x > fx - 6 && pp.x < fx + dimensions.widthTiles * TILE_SIZE + 6
           && pp.y > fy - TILE_SIZE * 1.6 && pp.y <= fy + 4;
@@ -1603,7 +1654,8 @@ export class PixiGameViewport {
         if(isWarehouseFixture(fix)) {
           const cold=fix.type==='warehouse_cold';
           const receiving=fix.type==='warehouse_receiving';
-          const count=receiving?this.simulation.getPendingOrders().length:this.simulation.getInventory().reduce((n,i)=>n+((PRODUCT_MAP[i.productId]?.storageType==='cold')===cold?i.quantity:0),0);
+          const counts=countsForWarehouse();
+          const count=receiving?counts.orders:cold?counts.cold:counts.dry;
           const state=count===0?'empty':count<=(cold?16:10)?'low':'full';
           const key=`${entry.textureKey}:none:${state}`;
           if(entry.lastState!==key){entry.sprite.texture=this.textures.getTexture(key);entry.lastState=key;entry.dotMarker.clear().rect(5,38,6,6).fill(state==='empty'?0xb64c3d:0x357f72);}
@@ -1660,12 +1712,30 @@ export class PixiGameViewport {
     // 6. Update Camera
     const inWarehouse=isInWarehouse(playerData.position);
     // A small room fits in the default view: keep its north/south edges visible.
-    this.camera.follow(inWarehouse?{x:playerData.position.x,y:WAREHOUSE_CENTER.y}:playerData.position, dt, inWarehouse?0:undefined);
+    this.camera.follow(inWarehouse?{x:renderPos.x,y:WAREHOUSE_CENTER.y}:renderPos, elapsed, inWarehouse?0:undefined);
     const camOffset = this.camera.getRenderOffset();
     this.worldContainer.scale.set(this.camera.zoom);
     const shake = fxSettings.enabled ? this.weatherFx.shakeOffset(this.camera.zoom, reducedMotion) : { x: 0, y: 0 };
     this.worldContainer.x = camOffset.x + shake.x;
     this.worldContainer.y = camOffset.y + shake.y;
+
+    // 6b. Khu phố mở rộng: đồi/đèn đêm theo thời tiết + dân cư nền (NPC, hội thoại, chim). Ngân sách theo chất lượng đồ họa.
+    {
+      const quality = resolveWeatherQuality(fxSettings);
+      if (quality !== this.trafficBudgetQuality) { this.trafficBudgetQuality = quality; this.simulation.setTrafficBudgetScale(NEIGHBORHOOD_QUALITY[quality].vehicles); }
+      const viewW = this.app.screen.width / this.camera.zoom;
+      const viewH = this.app.screen.height / this.camera.zoom;
+      this.neighborhood.update({ artificial: light.artificial, outdoor: light.outdoor, weather: this.lastWeather, time: this.animTimer, camX: this.camera.x, camY: this.camera.y, viewW, viewH, reducedMotion });
+      const lifeTime = debugTime ?? { day: timeNow.day, hour: timeNow.hour, minute: timeNow.minute, rain: undefined };
+      this.actors.update({
+        dt: elapsed, time: this.animTimer, zoom: this.camera.zoom,
+        view: { x0: this.camera.x, y0: this.camera.y, x1: this.camera.x + viewW, y1: this.camera.y + viewH },
+        weather: this.lastWeather,
+        life: { hour: lifeTime.hour, minute: lifeTime.minute, day: lifeTime.day, weekday: weekdayOf(lifeTime.day), rain: rainNow, weatherId: this.simulation.getEffectiveWeatherId(), vehicles: streetVehicles },
+        vehicles: streetVehicles, quality, sun: light.sun, gearEnabled: gearOn, windEffects: fxSettingsEnabled, reducedMotion, mobile: this.app.screen.width < 768,
+      });
+      this.simulation.setStreetCrossings(this.actors.life.getCrossings());
+    }
 
     // 7. Update Interaction Bubble
     const activeFixture = this.simulation.getActiveFixture();

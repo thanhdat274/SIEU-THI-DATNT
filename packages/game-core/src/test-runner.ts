@@ -9,6 +9,7 @@ import { runTaxRegistryTests, runAnnualRevenueTests } from './tax/registry.test'
 import { runTaxAuditTests } from './tax/audit.test';
 import { runInputTests } from './input.test';
 import {runWarehouseTests} from './warehouse.test';
+import { runPathfindingTests } from './pathfinding.test';
 import { runMultiplayerSchemaTests } from '@game/shared/src/multiplayer.test';
 import { runCoreRuntimeTests } from './runner.test';
 import { runAvatarTests } from './avatars.test';
@@ -74,6 +75,7 @@ import { runCheckoutLaneTests } from './checkout-lanes.test';
 import { runRegularsTests } from './regulars.test';
 import { runDayRhythmTests } from './day-rhythm.test';
 import { runStreetTrafficTests } from './street-traffic.test';
+import { runNeighborhoodTests } from './neighborhood.test';
 import { runPartyOrderTests } from './party-orders.test';
 import { runGoalTests } from './goals.test';
 import { runStoryTests } from './story.test';
@@ -81,6 +83,7 @@ import { runSkillTests } from './skills.test';
 import { runPerkBehaviorTests } from './perks.test';
 import { runTitlesTests } from './titles.test';
 import { runStoreLogisticsTests } from './store-logistics.test';
+import { runDailyRoutineTests } from './daily-routine.test';
 import { runWarehouseTierTests, runStorageRackTests, runTotalWarehouseCellsTests, runWarehouseCellRoundingTests } from './warehouse-tiers.test';
 import { runChildCapacityTests } from './child-capacity.test';
 
@@ -170,6 +173,7 @@ export async function runTests(): Promise<void> {
   runTaxRegistryTests();
   runInputTests();
   runWarehouseTests();
+  runPathfindingTests();
   runMultiplayerSchemaTests();
   await runPersistenceTests();
   runTransferRegressionTests();
@@ -177,6 +181,7 @@ export async function runTests(): Promise<void> {
   runRegularsTests();
   runDayRhythmTests();
   runStreetTrafficTests();
+  runNeighborhoodTests();
   runPartyOrderTests();
   runGoalTests();
   runStoryTests();
@@ -184,6 +189,7 @@ export async function runTests(): Promise<void> {
   runPerkBehaviorTests();
   runTitlesTests();
   runStoreLogisticsTests();
+  runDailyRoutineTests();
   console.log('\n--- Test core headless runtime ---');
   runCoreRuntimeTests();
   runAvatarTests();
