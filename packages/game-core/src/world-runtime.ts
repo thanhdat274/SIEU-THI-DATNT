@@ -186,11 +186,40 @@ export class WorldRuntime {
     return true;
   }
 
+  /**
+   * Có người rời hẻm (đóng tab, mất kết nối) khi đang bỏ phiếu: không hủy phiếu mà xét lại ngay với những người còn lại.
+   * Mọi người còn lại đã đồng ý (vd người kia out, chỉ còn người đề nghị) thì thực hiện tức thì; không còn ai đã đồng ý thì hủy.
+   * Kết quả để `takeVoteChange` giao cho gateway phát lại cho máy khách.
+   */
+  private resolveVoteAfterLeave(): void {
+    const vote = this.activeTimeVote;
+    if (!vote) return;
+    const remaining = [...this.activeSessions.keys()];
+    if (remaining.length === 0) { this.activeTimeVote = null; return; }
+    if (!remaining.every((id) => vote.approvals.has(id))) {
+      // Người đề nghị đã rời mà người còn lại chưa đồng ý: phiếu mồ côi, hủy.
+      if (!remaining.some((id) => vote.approvals.has(id))) { this.activeTimeVote = null; this.voteChange = { executed: false, status: 'rejected' }; }
+      return;
+    }
+    this.activeTimeVote = null;
+    if (vote.type === 'advance_day') this.simulation.getClock().advanceToNextDay();
+    else if (vote.type === 'change_speed' && typeof vote.targetSpeed === 'number') this.simulation.getClock().setTimeScale(vote.targetSpeed * 90);
+    this.triggerCheckpoint();
+    this.voteChange = { executed: true, status: 'executed' };
+  }
+
+  private voteChange: { executed: boolean; status: 'executed' | 'rejected' } | null = null;
+
+  /** Phiếu vừa được tự thực hiện/hủy do có người rời (một lần); gateway dùng để báo cho máy khách còn lại. */
+  takeVoteChange(): { executed: boolean; status: 'executed' | 'rejected' } | null {
+    const change = this.voteChange;
+    this.voteChange = null;
+    return change;
+  }
+
   unregisterSession(accountId: string): void {
     this.activeSessions.delete(accountId);
-    if (this.activeTimeVote) {
-      this.activeTimeVote = null;
-    }
+    this.resolveVoteAfterLeave();
     if (this.activeSessions.size === 0) {
       this.isPaused = true;
       this.triggerCheckpoint();
@@ -228,12 +257,9 @@ export class WorldRuntime {
       if (nowMs - session.lastHeartbeatMs > this.heartbeatTimeoutMs) {
         this.activeSessions.delete(accId);
         timedOutAccounts.push(accId);
-        // If an active vote was ongoing, cancel it because participant list changed
-        if (this.activeTimeVote) {
-          this.activeTimeVote = null;
-        }
       }
     }
+    if (timedOutAccounts.length) this.resolveVoteAfterLeave();
 
     // 2. Check if active time vote expired
     if (this.activeTimeVote && nowMs > this.activeTimeVote.expiresAtMs) {
@@ -421,7 +447,24 @@ export class WorldRuntime {
     void this.onCheckpoint?.(this.currentWorld, this.currentBusiness);
   }
 
+  /** Trạng thái sống chỉ làm mới tối đa mỗi 250 ms (gateway gửi snapshot 500 ms/lần; export ~1 ms). */
+  private static readonly LIVE_SNAPSHOT_MIN_MS = 250;
+  private lastLiveSnapshotAt = 0;
+
+  /**
+   * Snapshot lấy từ mô phỏng đang chạy, không từ checkpoint: checkpoint (ghi DB, mặc định 30 s) quá thưa nên giờ/ngày, kho, tiền
+   * ở máy khách bị cũ cả chục giây, và sang ngày mới (cả hai đã ngủ) chậm tới 30 s với màn hình tối.
+   */
+  private refreshLiveState(): void {
+    const now = Date.now();
+    if (this.isPaused || now - this.lastLiveSnapshotAt < WorldRuntime.LIVE_SNAPSHOT_MIN_MS) return;
+    this.lastLiveSnapshotAt = now;
+    this.currentBusiness.save = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
+    this.currentWorld.worldTime = this.simulation.getTime();
+  }
+
   getSnapshot(serverTime = new Date().toISOString()): GameSnapshot {
+    this.refreshLiveState();
     return {
       protocolVersion: MULTIPLAYER_PROTOCOL_VERSION,
       world: structuredClone(this.currentWorld),

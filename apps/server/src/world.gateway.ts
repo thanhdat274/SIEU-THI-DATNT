@@ -73,6 +73,7 @@ function startTickLoop() {
     const elapsedSeconds = TICK_INTERVAL_MS / 1000;
     for (const [, entry] of worldRuntimes) {
       const timedOut = entry.runtime.tick(elapsedSeconds);
+      broadcastVoteChange(entry);
       for (const accountId of timedOut) {
         for (const socket of entry.sockets) {
           if (socket._accountId !== accountId) continue;
@@ -100,6 +101,16 @@ function startTickLoop() {
 function stopTickLoop() {
   if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
   if (snapshotTimer) { clearInterval(snapshotTimer); snapshotTimer = null; }
+}
+
+/** Người rời hẻm làm phiếu thời gian tự thực hiện/hủy: báo ngay cho máy còn lại để hộp bình chọn đóng và tốc độ cập nhật. */
+function broadcastVoteChange(entry: { runtime: WorldRuntime; sockets: Set<AuthenticatedSocket> }) {
+  const result = entry.runtime.takeVoteChange();
+  if (!result || !entry.sockets.size) return;
+  const payload = JSON.stringify({ event: 'time-vote:update', data: { result, status: entry.runtime.getActiveTimeVote(), snapshot: entry.runtime.getSnapshot() } });
+  for (const sock of entry.sockets) {
+    if (sock.readyState === 1 /* OPEN */) sock.send(payload);
+  }
 }
 
 function broadcastToWorld(worldId: string, event: string, data: unknown) {
@@ -211,6 +222,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
     const removed = entry.sockets.delete(socket);
     if (removed && ![...entry.sockets].some(active => active._accountId === accountId)) {
       entry.runtime.unregisterSession(accountId);
+      broadcastVoteChange(entry);
     }
 
     // Evict only after the last paused checkpoint succeeds. If a new session joins

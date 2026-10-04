@@ -921,6 +921,7 @@ export const App: React.FC = () => {
       const direction = inputManagerRef.current?.getMovementVector();
       // Update simulation coop player manual input state
       if (sim?.isCoopMode() && onlineUidRef.current) {
+        sim.setCoopLocalPlayer(onlineUidRef.current); // lịch ngày (23:30 tự về nhà ngủ) áp lên nhân vật của mình
         sim.setCoopPlayerManualInput(onlineUidRef.current, !!direction && (Math.abs(direction.x) > 0.05 || Math.abs(direction.y) > 0.05));
       }
     }, 100);
