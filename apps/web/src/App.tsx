@@ -817,7 +817,12 @@ export const App: React.FC = () => {
       const priorDay = current.world.worldTime.day;
       const priorHour = current.world.worldTime.hour;
       const priorMinute = current.world.worldTime.minute;
-      const updated = { ...current, world: snapshot.world, businesses: snapshot.businesses };
+      // Snapshot từ runtime có thể thiếu avatar của người vừa vào hẻm; giữ avatar đã biết của thành viên còn lại để không chớp tắt.
+      const avatars = [...(snapshot.world.avatars ?? [])];
+      for (const known of current.world.avatars) {
+        if (!avatars.some(item => item.accountId === known.accountId) && snapshot.world.memberships.some(m => m.accountId === known.accountId)) avatars.push(known);
+      }
+      const updated = { ...current, world: { ...snapshot.world, avatars }, businesses: snapshot.businesses };
       onlineWorldRef.current = updated;
       setOnlineWorld(updated);
       if (snapshot.world.revision > revisionRef.current && snapshot.businesses[0]?.save && simulationRef.current) {

@@ -240,6 +240,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
     }
   }
 
+  async function handleRemoveWorld(world: WorldSummary) {
+    const isOwner = world.role === 'owner';
+    const message = isOwner
+      ? `Xóa hẻm "${world.name}"? Toàn bộ tiệm và tiến trình của hẻm này sẽ mất vĩnh viễn, mọi thành viên bị đưa ra khỏi hẻm.`
+      : `Rời hẻm "${world.name}"?`;
+    if (!window.confirm(message)) return;
+    triggerSound(300);
+    setBusy(true);
+    try {
+      const token = await getIdToken();
+      const { deleteOnlineWorld, leaveOnlineWorld } = await import('../services/api');
+      if (isOwner) await deleteOnlineWorld(token, world.id);
+      else await leaveOnlineWorld(token, world.id);
+      setUserWorlds((list) => list.filter((item) => item.id !== world.id));
+    } catch (err) {
+      console.error(err);
+      setFeedbackMsg(err instanceof Error ? err.message : 'Không thực hiện được thao tác với hẻm.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleSelectWorld(worldId: string) {
     triggerSound(520);
     setBusy(true);
@@ -970,6 +992,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
                             onClick={() => void handleSelectWorld(w.id)}
                           >
                             Vào Hẻm
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-join-world btn-danger-world"
+                            disabled={busy}
+                            onClick={() => void handleRemoveWorld(w)}
+                          >
+                            {w.role === 'owner' ? 'Xóa' : 'Rời'}
                           </button>
                         </li>
                       ))}

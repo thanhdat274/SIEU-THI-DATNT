@@ -71,6 +71,16 @@ export async function runWorldRuntimeTests() {
   assert.equal(runtime.getActiveSessionsCount(), 0);
   assert.equal(runtime.getIsPaused(), true, 'Stale session pauses world');
 
+  // Vào lại hẻm: client đếm sequence từ 0 nhưng runtime vẫn nhớ mốc cũ; phiên mới phải di chuyển được.
+  const reNow = Date.now() + 1000;
+  runtime.registerSession('owner-1', reNow);
+  runtime.applyInputIntent('owner-1', { sequence: 50, direction: { x: 1, y: 0 } }, reNow + 20);
+  runtime.registerSession('owner-1', reNow + 100);
+  const beforeRejoin = runtime.getSnapshot().world.avatars.find(item => item.accountId === 'owner-1')!.position.x;
+  const afterRejoin = runtime.applyInputIntent('owner-1', { sequence: 1, direction: { x: 1, y: 0 } }, reNow + 120);
+  assert.ok(afterRejoin, 'input sequence 1 sau khi vào lại phải được nhận');
+  assert.notEqual(afterRejoin.world.avatars.find(item => item.accountId === 'owner-1')?.position.x, beforeRejoin, 'vào lại hẻm vẫn di chuyển được');
+
   // 4. Register outsider is rejected
   const stranger = runtime.registerSession('stranger-999');
   assert.equal(stranger, false, 'Non-member session rejected');

@@ -153,13 +153,11 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
         startTickLoop();
       }
 
-      let joined = entry.runtime.registerSession(account.uid);
-      if (!joined) {
-        // The member may have joined over HTTP after this runtime was loaded.
-        const fresh = await worldRepository.getForMember(worldId, account.uid);
-        entry.runtime.syncMembers(fresh.world);
-        joined = entry.runtime.registerSession(account.uid);
-      }
+      // Luôn đối chiếu với bản đã lưu: người vào hẻm bằng HTTP sau khi runtime nạp phải có mặt trong snapshot
+      // gửi cho mọi người, nếu không bạn cùng hẻm sẽ biến mất khỏi màn hình của nhau.
+      const fresh = await worldRepository.getForMember(worldId, account.uid);
+      entry.runtime.syncMembers(fresh.world);
+      const joined = entry.runtime.registerSession(account.uid);
       if (!joined) {
         socket.close(4003, 'Not a member of this world');
         return;
@@ -276,6 +274,22 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
       }
     }
+  }
+
+  /** Đóng mọi kết nối và bỏ runtime của hẻm đã bị xóa (không checkpoint nữa, document đã mất). */
+  static async closeWorld(worldId: string, reason: string): Promise<void> {
+    const entry = worldRuntimes.get(worldId);
+    if (!entry) return;
+    worldRuntimes.delete(worldId);
+    checkpointQueues.delete(worldId);
+    for (const sock of entry.sockets) {
+      try {
+        sock.send(JSON.stringify({ event: 'session:kicked', data: { reason } }));
+        sock.close(4003, reason);
+      } catch { /* ignore already closed */ }
+    }
+    entry.sockets.clear();
+    if (worldRuntimes.size === 0) stopTickLoop();
   }
 
   /** Get active session count for a world (used by WorldRepository to include in health/status) */

@@ -78,6 +78,11 @@ export class GameController {
     WorldGateway.kickMemberSession(worldId, request.gameAccount.uid, 'Đã rời khỏi hẻm');
     return res;
   }
+  async deleteWorld(request: AuthenticatedRequest, worldId: string) {
+    const res = await worldRepository.deleteWorld(worldId, request.gameAccount.uid);
+    await WorldGateway.closeWorld(worldId, 'Chủ hẻm đã xóa hẻm này');
+    return res;
+  }
   resetWorld(request: AuthenticatedRequest, worldId: string, body: { confirmation?: unknown }) {
     if (body?.confirmation !== worldId) throw new BadRequestException('confirmation must equal worldId');
     return worldRepository.reset(worldId, request.gameAccount.uid);
@@ -286,6 +291,7 @@ route(Post, 'createWorld', 'worlds'); requestParam('createWorld', 0); bodyParam(
 route(Get, 'getWorld', 'worlds/:worldId'); requestParam('getWorld', 0); namedParam('getWorld', 'worldId', 1);
 route(Post, 'createInvite', 'worlds/:worldId/invites'); requestParam('createInvite', 0); namedParam('createInvite', 'worldId', 1);
 route(Delete, 'revokeInvite', 'worlds/:worldId/invites/:inviteId'); requestParam('revokeInvite', 0); namedParam('revokeInvite', 'worldId', 1); namedParam('revokeInvite', 'inviteId', 2);
+route(Delete, 'deleteWorld', 'worlds/:worldId'); requestParam('deleteWorld', 0); namedParam('deleteWorld', 'worldId', 1);
 route(Post, 'joinWorld', 'worlds/join'); requestParam('joinWorld', 0); bodyParam('joinWorld', 1);
 route(Delete, 'kickMember', 'worlds/:worldId/members/:memberId'); requestParam('kickMember', 0); namedParam('kickMember', 'worldId', 1); namedParam('kickMember', 'memberId', 2);
 route(Delete, 'leaveWorld', 'worlds/:worldId/membership'); requestParam('leaveWorld', 0); namedParam('leaveWorld', 'worldId', 1);

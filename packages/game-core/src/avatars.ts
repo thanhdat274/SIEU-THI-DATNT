@@ -28,6 +28,13 @@ export class WorldAvatarController {
     this.sequences.set(avatar.accountId, -1);
   }
 
+  /** Phiên mới của cùng một người (vào lại hẻm): client đếm sequence từ 0, nên bỏ mốc cũ để input không bị coi là cũ. */
+  resetInputSession(accountId: string): void {
+    if (!this.avatars.has(accountId)) return;
+    this.sequences.set(accountId, -1);
+    this.receivedAt.delete(accountId);
+  }
+
   applyInput(intent: GameInputIntent, serverReceivedAtMs: number): GameAvatar | null {
     const current = this.avatars.get(intent.accountId);
     if (!current || !Number.isSafeInteger(intent.sequence) || intent.sequence < 0 ||

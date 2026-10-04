@@ -1624,6 +1624,12 @@
   cursor: pointer;
 }
 
+.btn-join-world.btn-danger-world {
+  background: #8c2f2a;
+  border-color: #5c1b18;
+  margin-left: 6px;
+}
+
 .action-form-section {
   border-top: 2px dashed #cca474;
   padding-top: 12px;

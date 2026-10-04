@@ -81,6 +81,7 @@ export class WorldRuntime {
     if (!isMember) return false;
 
     this.activeSessions.set(accountId, { lastHeartbeatMs: nowMs });
+    this.avatarController.resetInputSession(accountId);
     if (this.isPaused) {
       this.isPaused = false;
     }
