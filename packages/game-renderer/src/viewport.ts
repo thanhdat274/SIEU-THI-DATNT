@@ -1,5 +1,5 @@
 import { furnitureSpriteTexture, STOCK_ART_SHOP_IDS } from './fixture-preview';
-import { Application, Container, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
+import { Application, Container, RenderTexture, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
 import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, weekdayOf, hashSeed, type WeatherVisualState, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
@@ -75,6 +75,10 @@ export class PixiGameViewport {
 
   // Containers
   private worldContainer!: Container;
+  /** Zoom lẻ: thế giới vẽ vào `worldTexture` ở bội số nguyên của điểm ảnh thiết bị rồi `worldPresent` co nhẹ lên màn hình (xem `presentWorld`). */
+  private worldTexture: RenderTexture | null = null;
+  private worldTextureN = 0;
+  private worldPresent: Sprite | null = null;
   private groundLayer!: Container;
   private entitiesLayer!: Container;
   private decorKey = '';
@@ -265,7 +269,7 @@ export class PixiGameViewport {
     this.resizeObserver = new ResizeObserver(() => {
       this.app.resize();
       this.camera.setViewportSize(this.app.screen.width, this.app.screen.height);
-      this.onZoomChange?.(this.camera.zoom);
+      this.onZoomChange?.(this.camera.targetZoom);
     });
     if (this.canvas.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
     // Hook Ticker
@@ -331,15 +335,24 @@ export class PixiGameViewport {
     }
   };
 
+  /** ~12% mỗi nấc cuộn chuột thường (deltaY ≈ 100); touchpad pinch (ctrlKey) gửi delta nhỏ nên nhân hệ số lớn hơn. */
+  private static readonly WHEEL_ZOOM_RATE = Math.log(1.12) / 100;
+  private static readonly PINCH_WHEEL_ZOOM_RATE = 0.01;
+
+  private canvasPoint(clientX: number, clientY: number): { x: number; y: number } {
+    const rect = this.canvas.getBoundingClientRect();
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  }
+
   private handleWheel = (e: WheelEvent): void => {
     e.preventDefault();
-    if (e.deltaY < 0) {
-      this.camera.zoomIn(1);
-      this.onZoomChange?.(this.camera.zoom);
-    } else if (e.deltaY > 0) {
-      this.camera.zoomOut(1);
-      this.onZoomChange?.(this.camera.zoom);
-    }
+    if (e.deltaY === 0) return;
+    // deltaMode 1 = dòng, 2 = trang: quy về px; chặn delta quá lớn để một cú vuốt không nhảy hết dải zoom.
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1;
+    const delta = Math.max(-150, Math.min(150, e.deltaY * unit));
+    const rate = e.ctrlKey ? PixiGameViewport.PINCH_WHEEL_ZOOM_RATE : PixiGameViewport.WHEEL_ZOOM_RATE;
+    this.camera.zoomBy(Math.exp(-delta * rate), this.canvasPoint(e.clientX, e.clientY));
+    this.onZoomChange?.(this.camera.targetZoom);
   };
 
   private handleTouchStart = (e: TouchEvent): void => {
@@ -348,7 +361,7 @@ export class PixiGameViewport {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       this.initialPinchDistance = Math.hypot(dx, dy);
-      this.initialPinchZoom = this.camera.zoom;
+      this.initialPinchZoom = this.camera.targetZoom;
     }
   };
 
@@ -359,8 +372,10 @@ export class PixiGameViewport {
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       const currentDistance = Math.hypot(dx, dy);
       const scaleFactor = currentDistance / this.initialPinchDistance;
-      this.camera.setZoom(this.initialPinchZoom * scaleFactor);
-      this.onZoomChange?.(this.camera.zoom);
+      // Giữ điểm giữa hai ngón đứng yên, giống zoom theo con trỏ.
+      const mid = this.canvasPoint((e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2);
+      this.camera.zoomTo(this.initialPinchZoom * scaleFactor, mid);
+      this.onZoomChange?.(this.camera.targetZoom);
     }
   };
 
@@ -374,7 +389,7 @@ export class PixiGameViewport {
     if (!this.app || !this.app.renderer) return;
     this.updateResponsiveSettings();
     this.camera.setViewportSize(this.app.screen.width, this.app.screen.height);
-    this.onZoomChange?.(this.camera.zoom);
+    this.onZoomChange?.(this.camera.targetZoom);
   };
 
   /**
@@ -1158,6 +1173,8 @@ export class PixiGameViewport {
     const elapsed = Math.min(this.app.ticker.deltaMS / 1000, 0.25);
     const dt = 1 / 60;
     this.animTimer += elapsed;
+    // Zoom liên tục: trượt mượt về mức đích do cuộn chuột/pinch đặt.
+    this.camera.updateZoom(elapsed);
     this.simulationRunner.advance(elapsed);
 
     const playerData = this.simulation.getPlayerData();
@@ -1721,11 +1738,8 @@ export class PixiGameViewport {
     const inWarehouse=isInWarehouse(playerData.position);
     // A small room fits in the default view: keep its north/south edges visible.
     this.camera.follow(inWarehouse?{x:renderPos.x,y:WAREHOUSE_CENTER.y}:renderPos, elapsed, inWarehouse?0:undefined);
-    const camOffset = this.camera.getRenderOffset();
-    this.worldContainer.scale.set(this.camera.zoom);
     const shake = fxSettings.enabled ? this.weatherFx.shakeOffset(this.camera.zoom, reducedMotion) : { x: 0, y: 0 };
-    this.worldContainer.x = camOffset.x + shake.x;
-    this.worldContainer.y = camOffset.y + shake.y;
+    this.presentWorld(shake);
 
     // 6b. Khu phố mở rộng: đồi/đèn đêm theo thời tiết + dân cư nền (NPC, hội thoại, chim). Ngân sách theo chất lượng đồ họa.
     {
@@ -2141,14 +2155,15 @@ export class PixiGameViewport {
     return this.camera.zoomOut(delta);
   }
 
+  /** Zoom đích (mức người chơi đang chọn); zoom hiển thị có thể còn đang trượt tới đó. */
   public getZoom(): number {
-    return this.camera.zoom;
+    return this.camera.targetZoom;
   }
 
   public locateWarehouse(): void {
     const p=this.simulation.getPlayerData().position;
     const inWarehouse=isInWarehouse(p);
-    const targetY=this.camera.zoom===1&&this.app.screen.height>=450?128:WAREHOUSE_CENTER.y;
+    const targetY=this.camera.zoom<=1.25&&this.app.screen.height>=450?128:WAREHOUSE_CENTER.y;
     this.camera.panOffsetX=WAREHOUSE_CENTER.x-p.x;
     this.camera.panOffsetY=targetY-(inWarehouse?WAREHOUSE_CENTER.y:p.y)+(inWarehouse?0:this.app.screen.height>=450?70:20);
     this.locatingWarehouse=true;this.warehouseLocator.visible=true;
@@ -2156,6 +2171,67 @@ export class PixiGameViewport {
 
   public setZoom(zoom: number): void {
     this.camera.setZoom(zoom);
+  }
+
+  /**
+   * Đưa thế giới lên màn hình sắc nét ở mọi mức zoom (kiểu "sharp bilinear").
+   * Zoom làm mỗi điểm ảnh thiết bị tròn số (vd 2×, hoặc 1,5× trên màn DPR 2): vẽ thẳng, giữ đường cũ.
+   * Zoom lẻ: vẽ thế giới vào texture ở bội nguyên N = ceil(zoom × DPR) (nearest, mỗi điểm ảnh sprite = N×N điểm ảnh texture, đều nhau),
+   * rồi co texture xuống zoom/N (≈ 0,5–1) bằng lọc tuyến tính: viền điểm ảnh chỉ mờ chưa tới một điểm ảnh thiết bị thay vì rộng hẹp không đều.
+   */
+  private presentWorld(shake: { x: number; y: number }): void {
+    const zoom = this.camera.zoom;
+    const res = this.app.renderer.resolution || 1;
+    const device = zoom * res;
+    const nearest = Math.round(device);
+    const direct = Math.abs(device - nearest) < 1e-3 && nearest >= 1;
+    const stage = this.app.stage;
+
+    if (direct) {
+      if (this.worldPresent?.parent) stage.removeChild(this.worldPresent);
+      if (this.worldContainer.parent !== stage) stage.addChild(this.worldContainer);
+      const camOffset = this.camera.getRenderOffset();
+      this.worldContainer.scale.set(zoom);
+      this.worldContainer.x = camOffset.x + shake.x;
+      this.worldContainer.y = camOffset.y + shake.y;
+      return;
+    }
+
+    const n = Math.max(1, Math.ceil(device - 1e-3));
+    const scale = zoom / n; // px CSS màn hình trên mỗi điểm ảnh texture
+    const screenW = this.app.screen.width;
+    const screenH = this.app.screen.height;
+    const needW = Math.ceil(screenW / scale) + 2;
+    const needH = Math.ceil(screenH / scale) + 2;
+    let tex = this.worldTexture;
+    // Chỉ cấp lại khi đổi N hoặc thiếu chỗ (hoặc thừa quá nhiều): scale đổi liên tục khi zoom nên chừa dư để không cấp lại mỗi khung.
+    if (!tex || this.worldTextureN !== n || tex.width < needW || tex.height < needH || tex.width > needW * 2 || tex.height > needH * 2) {
+      tex?.destroy(true);
+      const pad = (v: number): number => Math.ceil(v * 1.25 / 64) * 64;
+      tex = RenderTexture.create({ width: pad(needW), height: pad(needH), resolution: 1, scaleMode: 'linear' });
+      this.worldTexture = tex;
+      this.worldTextureN = n;
+      this.worldPresent?.destroy();
+      this.worldPresent = new Sprite(tex);
+    }
+    const present = this.worldPresent!;
+    if (present.texture !== tex) present.texture = tex;
+
+    // Góc trái-trên vùng nhìn tính theo điểm ảnh texture (nguyên): phần lẻ chuyển sang vị trí sprite để cuộn mượt mà không rung.
+    const tx = Math.floor(this.camera.x * n);
+    const ty = Math.floor(this.camera.y * n);
+    this.worldContainer.scale.set(n);
+    this.worldContainer.position.set(-tx, -ty);
+    if (this.worldContainer.parent) this.worldContainer.parent.removeChild(this.worldContainer);
+    this.app.renderer.render({ container: this.worldContainer, target: tex, clear: true, clearColor: 0x5c7a52 });
+
+    present.scale.set(scale);
+    // Làm tròn về điểm ảnh thiết bị để biên điểm ảnh không bị lọc nửa chừng khi camera trượt.
+    present.position.set(
+      Math.round(((tx / n - this.camera.x) * zoom + shake.x) * res) / res,
+      Math.round(((ty / n - this.camera.y) * zoom + shake.y) * res) / res,
+    );
+    if (present.parent !== stage) stage.addChild(present);
   }
 
   public destroy(): void {
@@ -2180,6 +2256,9 @@ export class PixiGameViewport {
     this.loadingDockTrolley?.destroy();
     this.loadingDockTrolley = null;
     if (this.app) {
+      if (this.worldContainer && !this.worldContainer.parent) this.worldContainer.destroy({ children: true });
+      this.worldTexture?.destroy(true);
+      this.worldTexture = null;
       this.app.destroy(true, { children: true, texture: false });
     }
     this.workerSprites.clear();

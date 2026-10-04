@@ -1732,7 +1732,7 @@ export const App: React.FC = () => {
                 </button>
               </div>
             )}
-            <div className="world-tools" aria-label="Góc nhìn bản đồ"><PixelButton icon="warehouse" aria-label="Định vị nhà kho" onClick={locateWarehouse}/><PixelButton icon="minus" aria-label="Thu nhỏ bản đồ" disabled={zoomLevel<=ZOOM_MIN} onClick={handleZoomOut}/><span className="zoom-value">{zoomLevel}×</span><PixelButton icon="plus" aria-label="Phóng to bản đồ" disabled={zoomLevel>=ZOOM_MAX} onClick={handleZoomIn}/></div>
+            <div className="world-tools" aria-label="Góc nhìn bản đồ"><PixelButton icon="warehouse" aria-label="Định vị nhà kho" onClick={locateWarehouse}/><PixelButton icon="minus" aria-label="Thu nhỏ bản đồ" disabled={zoomLevel<=ZOOM_MIN} onClick={handleZoomOut}/><span className="zoom-value">{Number(zoomLevel.toFixed(2))}×</span><PixelButton icon="plus" aria-label="Phóng to bản đồ" disabled={zoomLevel>=ZOOM_MAX} onClick={handleZoomIn}/></div>
             {!hasModal && (!isWarehouseDockOpen || controlMode === 'touch') && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
           </>}
         </div>

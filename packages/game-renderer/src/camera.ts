@@ -1,5 +1,5 @@
 import { Vector2D, TILE_SIZE } from '@game/shared';
-import { NEIGHBORHOOD_PX, ZOOM_LEVELS, ZOOM_MAX, ZOOM_MIN, snapZoom } from '@game/data';
+import { NEIGHBORHOOD_PX, ZOOM_LEVELS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
 
 export class PixelCamera {
   public x: number = 0;
@@ -38,17 +38,38 @@ export class PixelCamera {
       } else {
         this.zoom = 2;
       }
+      this.targetZoom = this.zoom;
     }
   }
 
-  /** Chỉ nhận các mức zoom giữ pixel nguyên (0,5/1/2/3): giá trị khác được kéo về mức gần nhất theo tỉ lệ. */
-  public setZoom(newZoom: number): void {
+  /** Zoom đích: `zoom` trượt dần về đây (xem `updateZoom`). Nút +/− và nhãn UI đọc giá trị này. */
+  public targetZoom: number = 2.0;
+  /** Điểm màn hình (px CSS, tính từ góc trên-trái canvas) được giữ đứng yên khi zoom; null = tâm màn hình. */
+  private zoomAnchor: { x: number; y: number } | null = null;
+
+  /** Đặt zoom tức thì, liên tục (không kéo về mức nguyên): dùng cho pinch và hook QA. */
+  public setZoom(newZoom: number, anchor?: { x: number; y: number }): void {
     this.isCustomZoom = true;
-    this.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, snapZoom(newZoom)));
-    this.clampPan();
+    if (anchor) this.zoomAnchor = anchor;
+    const z = this.clampZoom(newZoom);
+    this.targetZoom = z;
+    this.applyZoom(z);
   }
 
-  /** Bước lên mức zoom kế tiếp (gần hơn); `steps` mức mỗi lần. */
+  /** Đặt zoom đích; `zoom` trượt dần tới đó và giữ điểm `anchor` dưới con trỏ đứng yên. */
+  public zoomTo(target: number, anchor?: { x: number; y: number } | null): void {
+    this.isCustomZoom = true;
+    if (anchor !== undefined) this.zoomAnchor = anchor;
+    this.targetZoom = this.clampZoom(target);
+  }
+
+  /** Nhân zoom đích với `factor` (>1 gần hơn), tính từ đích hiện tại để các nấc cuộn liên tiếp cộng dồn mượt. */
+  public zoomBy(factor: number, anchor?: { x: number; y: number } | null): void {
+    if (!Number.isFinite(factor) || factor <= 0) return;
+    this.zoomTo(this.targetZoom * factor, anchor);
+  }
+
+  /** Bước lên mức zoom kế tiếp (gần hơn) tính từ zoom đích; `steps` mức mỗi lần. Zoom quanh tâm màn hình. */
   public zoomIn(steps: number = 1): number {
     return this.stepZoom(Math.max(1, Math.round(steps)));
   }
@@ -59,15 +80,51 @@ export class PixelCamera {
   }
 
   private stepZoom(steps: number): number {
-    // Tìm vị trí hiện tại trong danh sách mức (zoom mặc định 1,25/1,5 trên điện thoại nằm giữa hai mức).
-    let next = this.zoom;
+    let next = this.targetZoom;
     for (let i = 0; i < Math.abs(steps); i++) {
       const levels = ZOOM_LEVELS;
-      if (steps > 0) next = levels.find((l) => l > next + 1e-6) ?? levels[levels.length - 1];
-      else next = [...levels].reverse().find((l) => l < next - 1e-6) ?? levels[0];
+      if (steps > 0) next = levels.find((l) => l > next + 1e-3) ?? levels[levels.length - 1];
+      else next = [...levels].reverse().find((l) => l < next - 1e-3) ?? levels[0];
     }
-    this.setZoom(next);
-    return this.zoom;
+    this.zoomTo(next, null);
+    return this.targetZoom;
+  }
+
+  /** Trượt `zoom` về `targetZoom` theo hàm mũ trong không gian log (độc lập số khung/giây). Trả về true nếu zoom vừa đổi. */
+  public updateZoom(dt: number): boolean {
+    if (this.zoom === this.targetZoom) return false;
+    const diff = Math.log(this.targetZoom / this.zoom);
+    if (Math.abs(diff) < 0.002) {
+      this.applyZoom(this.targetZoom);
+      return true;
+    }
+    const k = 1 - Math.exp(-18 * Math.max(0, dt));
+    this.applyZoom(this.zoom * Math.exp(diff * k));
+    return true;
+  }
+
+  private clampZoom(z: number): number {
+    if (!Number.isFinite(z) || z <= 0) return this.zoom;
+    return Math.max(this.minZoom, Math.min(this.maxZoom, z));
+  }
+
+  /**
+   * Đổi `zoom` và bù camera để điểm màn hình `zoomAnchor` vẫn nhìn vào cùng một điểm thế giới.
+   * Camera bám người chơi theo `follow` (x đích = người + pan − nửa khung/zoom) nên phải dịch cả `x/y` hiện tại lẫn `panOffset`,
+   * nếu không `follow` sẽ kéo điểm đó trôi đi.
+   */
+  private applyZoom(z1: number): void {
+    const z0 = this.zoom;
+    if (z1 === z0) return;
+    const sx = this.zoomAnchor?.x ?? this.viewportWidth / 2;
+    const sy = this.zoomAnchor?.y ?? this.viewportHeight / 2;
+    const d = 1 / z0 - 1 / z1;
+    this.x += sx * d;
+    this.y += sy * d;
+    this.panOffsetX += (sx - this.viewportWidth / 2) * d;
+    this.panOffsetY += (sy - this.viewportHeight / 2) * d;
+    this.zoom = z1;
+    this.clampPan();
   }
 
   /** Khoảng kéo tối đa (px thế giới): đủ để kéo tới mọi góc khu phố (người chơi đi được khắp khu phố); nút về tiệm đặt lại bằng `resetPan`. */

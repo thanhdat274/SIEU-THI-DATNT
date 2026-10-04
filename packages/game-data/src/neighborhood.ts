@@ -13,8 +13,8 @@ const T = 32;
 // ---------------------------------------------------------------------------------------------------------------------
 
 /**
- * Các mức zoom cho phép. Chỉ dùng hệ số 0,5 / 1 / 2 / 3 để mỗi điểm ảnh sprite luôn thành 1/2, 1, 2 hoặc 3 điểm ảnh màn hình
- * (nearest-neighbor, không làm mờ hay méo). Mức 0,5 là "xa": thấy cả khu phố.
+ * Các mức zoom mốc (nút +/− nhảy theo đây; cuộn chuột/pinch zoom liên tục trong [ZOOM_MIN, ZOOM_MAX]). Ở mốc 0,5 / 1 / 2 / 3
+ * mỗi điểm ảnh sprite thành 1/2, 1, 2 hoặc 3 điểm ảnh màn hình đều nhau. Mức 0,5 là "xa": thấy cả khu phố.
  */
 export const ZOOM_LEVELS: readonly number[] = [0.5, 1, 2, 3];
 export const ZOOM_MIN = ZOOM_LEVELS[0];

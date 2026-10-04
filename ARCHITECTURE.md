@@ -43,7 +43,7 @@ SIEU-THI-DATNT/
 
 ### 1.3 Game Renderer (`packages/game-renderer`)
 - Wrapper quanh PixiJS v8 `Application`, `Container`, `Sprite`, `Graphics`.
-- **PixelCamera**: Bám theo vị trí người chơi với nội suy mượt (lerp), zoom theo bậc nguyên (1x, 2x, 3x) tránh vỡ hạt pixel.
+- **PixelCamera**: Bám theo vị trí người chơi với nội suy mượt (lerp), zoom liên tục 0,5×–3× theo nấc cuộn chuột, giữ điểm dưới con trỏ; sprite dùng nearest-neighbor.
 - **TiledMapRenderer**: Đọc định dạng bản đồ tương thích Tiled JSON, vẽ các lớp:
   - `ground`: Nền gạch bông, vỉa hè, lòng đường.
   - `walls`: Tường vôi vàng, cửa sổ chấn song gỗ, cửa ra vào.
