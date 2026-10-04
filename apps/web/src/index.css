@@ -332,3 +332,121 @@ html[data-controls="touch"] .touch-controls{display:block}
 html[data-controls="keyboard"] .touch-controls{display:none}
 .control-mode-options{display:flex;gap:8px;flex-wrap:wrap}
 .control-mode-options button{padding:6px 10px;cursor:pointer}.control-mode-options button.active{font-weight:700;outline:2px solid currentColor}
+
+/* Daily Routine: Night Fade Overlay */
+.daily-routine-fade {
+  position: fixed;
+  inset: 0;
+  background-color: #0d0f18;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.7s ease-in-out;
+  z-index: 9999;
+}
+.daily-routine-fade.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Daily Routine: Inventory Summary Card */
+.inventory-summary-card {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 290px;
+  background: var(--bg-surface, #fff9f0);
+  border: 3px solid #3b2518;
+  box-shadow: 4px 4px 0 #281810;
+  z-index: 1000;
+  font-family: inherit;
+  animation: slideInUp 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+@keyframes slideInUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.inventory-summary-card .summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #3b2518;
+  color: #fce0bf;
+  padding: 6px 10px;
+}
+.inventory-summary-card .summary-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.inventory-summary-card .summary-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.inventory-summary-card .summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.inventory-summary-card .summary-label {
+  color: #5c4333;
+}
+.inventory-summary-card .summary-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.inventory-summary-card .summary-value.summary-warn {
+  color: #d97706;
+}
+.inventory-summary-card .summary-value.summary-danger {
+  color: #dc2626;
+}
+.inventory-summary-card .summary-divider {
+  height: 1px;
+  background: #d8c4ae;
+  margin: 4px 0;
+}
+.inventory-summary-card .summary-row.summary-highlight {
+  font-size: 14px;
+}
+.inventory-summary-card .summary-value.summary-revenue {
+  color: #059669;
+}
+.inventory-summary-card .summary-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px 10px;
+  background: #fbf3e6;
+  border-top: 1px dashed #d8c4ae;
+}
+.inventory-summary-card .summary-check {
+  font-size: 12px;
+  font-weight: 600;
+  color: #059669;
+}
+.inventory-summary-card .btn-summary-close {
+  background: #3b2518;
+  color: #fff;
+  border: 1px solid #1a1008;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.inventory-summary-card .btn-summary-close:hover {
+  background: #543722;
+}
+@media (max-width: 600px) {
+  .inventory-summary-card {
+    right: 12px;
+    bottom: 74px;
+    width: calc(100% - 24px);
+    max-width: 320px;
+  }
+}
+
