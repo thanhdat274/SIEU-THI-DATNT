@@ -1,11 +1,11 @@
 import React, { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { ALL_PRODUCTS, DRINK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, STORE_TYPES, WEATHER_MAP, XOI_DISH_IDS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
-import { InputManager, GameSimulation, ambientMix, getTutorialChecklist } from '@game/core';
+import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES } from '@game/core';
 import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
 import { PixiGameViewport, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
-import { BranchPolicy, CustomerState, GameSnapshot, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
+import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
 
 import { getActiveSlotId, loadOrCreateSave, persistSave, writeEmergencySave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
 import { releaseSlotLock } from './slot-lock';
@@ -45,6 +45,22 @@ import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, Save
 const CHAIN_UNLOCK_LEVEL = Math.min(...STORE_TYPES.map(type => type.unlockLevel));
 
 const NO_CUSTOMERS: CustomerState[] = [];
+
+/**
+ * Hợp danh sách avatar: mỗi người lấy bản MỚI HƠN (updatedAt). Snapshot đầy đủ đến chậm hơn kênh vị trí riêng,
+ * nên không được để nó kéo bạn cùng hẻm giật lùi; avatar đã biết của thành viên còn trong hẻm không bị rơi mất.
+ */
+function mergeAvatars(known: GameAvatar[], incoming: GameAvatar[], memberships?: WorldMembership[]): GameAvatar[] {
+  const result = new Map<string, GameAvatar>();
+  for (const avatar of known) {
+    if (!memberships || memberships.some(m => m.accountId === avatar.accountId)) result.set(avatar.accountId, avatar);
+  }
+  for (const avatar of incoming) {
+    const prior = result.get(avatar.accountId);
+    if (!prior || Date.parse(avatar.updatedAt) >= Date.parse(prior.updatedAt) || !Number.isFinite(Date.parse(prior.updatedAt))) result.set(avatar.accountId, avatar);
+  }
+  return [...result.values()];
+}
 
 export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -398,11 +414,13 @@ export const App: React.FC = () => {
 
   const onlineUidRef = useRef<string | null>(null);
   const spawnPlacedForRef = useRef<string | null>(null);
+  const commitsInFlightRef = useRef(0);
+  const lastSentPositionRef = useRef<{ x: number; y: number; at: number } | null>(null);
 
   // Vị trí đứng là của riêng từng người chơi; save dùng chung không được kéo người kia về chỗ cũ.
-  const importOnlineSave = useCallback((sim: GameSimulation, save: Parameters<GameSimulation['importSaveData']>[0]) => {
+  const importOnlineSave = useCallback((sim: GameSimulation, save: Parameters<GameSimulation['importSaveData']>[0], live = false) => {
     const { position, direction } = sim.getPlayerData();
-    sim.importSaveData(save);
+    sim.importSaveData(save, { live });
     sim.setPlayerPosition(position, direction);
   }, []);
 
@@ -647,18 +665,14 @@ export const App: React.FC = () => {
         simulation.setCoopMode(true);
         // Register players based on world avatars
         const curWorld = onlineWorld;
-        const myUid = onlineUidRef.current;
-        if (myUid && curWorld.world.avatars.length > 0) {
-          // Register each avatar as a coop player
-          for (const avatar of curWorld.world.avatars) {
-            const homeDoorTile = avatar.accountId === myUid
-              ? { x: 3, y: 12 } // Player 1 home
-              : { x: 5, y: 12 }; // Player 2 home
+        if (curWorld.world.avatars.length > 0) {
+          // Cửa nhà theo thứ tự trong hẻm (giống server), không theo "mình/người kia": server cần thấy mọi người về đúng nhà mới sang ngày.
+          curWorld.world.avatars.forEach((avatar, index) => {
             simulation.registerCoopPlayer({
               playerId: avatar.accountId,
-              homeDoorTile,
+              homeDoorTile: COOP_HOME_DOOR_TILES[Math.min(index, COOP_HOME_DOOR_TILES.length - 1)],
             } as CoopPlayerRoutineConfig);
-          }
+          });
         }
       }
       ownedSimulation = simulation;
@@ -809,43 +823,49 @@ export const App: React.FC = () => {
         }
       }
     },
+    onAvatars: (value) => {
+      const current = onlineWorldRef.current;
+      if (!current || !Array.isArray(value)) return;
+      const avatars = mergeAvatars(current.world.avatars, value as GameAvatar[]);
+      onlineWorldRef.current = { ...current, world: { ...current.world, avatars } };
+      const sim = simulationRef.current;
+      if (sim?.isCoopMode()) {
+        for (const avatar of avatars) sim.setCoopPlayerPosition(avatar.accountId, avatar.position);
+      }
+    },
+    // Server là nguồn sự thật: mỗi snapshot (vài lần mỗi giây) là trạng thái tiệm hiện tại, máy này chỉ nhận và hiển thị.
     onSnapshot: (value) => {
       if (!value || typeof value !== 'object' || !('world' in value)) return;
       const snapshot = value as GameSnapshot;
       const current = onlineWorldRef.current;
       if (!current || snapshot.world.id !== current.world.id) return;
-      const priorDay = current.world.worldTime.day;
-      const priorHour = current.world.worldTime.hour;
-      const priorMinute = current.world.worldTime.minute;
-      // Snapshot từ runtime có thể thiếu avatar của người vừa vào hẻm; giữ avatar đã biết của thành viên còn lại để không chớp tắt.
-      const avatars = [...(snapshot.world.avatars ?? [])];
-      for (const known of current.world.avatars) {
-        if (!avatars.some(item => item.accountId === known.accountId) && snapshot.world.memberships.some(m => m.accountId === known.accountId)) avatars.push(known);
-      }
+      const avatars = mergeAvatars(current.world.avatars, snapshot.world.avatars ?? [], snapshot.world.memberships);
       // Snapshot cũ hơn bản đã có (revision thấp hơn) không được kéo revision/save lùi, nếu không lệnh kế tiếp bị server từ chối.
       const stale = snapshot.world.revision < current.world.revision;
       const updated = stale
         ? { ...current, world: { ...current.world, avatars, worldTime: snapshot.world.worldTime } }
         : { ...current, world: { ...snapshot.world, avatars }, businesses: snapshot.businesses };
       onlineWorldRef.current = updated;
-      setOnlineWorld(updated);
-      if (snapshot.world.revision > revisionRef.current && snapshot.businesses[0]?.save && simulationRef.current) {
-        importOnlineSave(simulationRef.current, snapshot.businesses[0].save);
-        revisionRef.current = snapshot.world.revision;
-        setCurrentRevision(snapshot.world.revision);
-        syncFromSimulation(simulationRef.current);
-      } else if (snapshot.world.worldTime.day !== priorDay || snapshot.world.worldTime.hour !== priorHour || snapshot.world.worldTime.minute !== priorMinute) {
-        const sim = simulationRef.current;
-        if (sim) {
-          sim.getClock().setTime(snapshot.world.worldTime);
-          syncFromSimulation(sim);
+      // Chỉ báo React khi có gì hiển thị trong khung thay đổi; cập nhật 4 lần/giây không được dựng lại cả ứng dụng.
+      if (updated.world.revision !== current.world.revision || updated.world.avatars.length !== current.world.avatars.length || updated.world.memberships.length !== current.world.memberships.length) {
+        setOnlineWorld(updated);
+      }
+      const sim = simulationRef.current;
+      const save = snapshot.businesses[0]?.save;
+      // Đang chờ server xác nhận một lệnh của mình thì bỏ qua snapshot này (kết quả lệnh sẽ được nhận ngay sau đó) để không chớp hình.
+      if (sim && save && !stale && commitsInFlightRef.current === 0) {
+        importOnlineSave(sim, save, true);
+        if (snapshot.world.revision > revisionRef.current) {
+          revisionRef.current = snapshot.world.revision;
+          setCurrentRevision(snapshot.world.revision);
         }
+        syncFromSimulation(sim);
       }
       // Sync coop player positions from snapshot avatars
-      if (snapshot.world.avatars && simulationRef.current?.isCoopMode()) {
-        for (const avatar of snapshot.world.avatars) {
-          simulationRef.current.setCoopPlayerPosition(avatar.accountId, avatar.position);
-          simulationRef.current.setCoopPlayerOnline(avatar.accountId, true);
+      if (sim?.isCoopMode()) {
+        for (const avatar of avatars) {
+          sim.setCoopPlayerPosition(avatar.accountId, avatar.position);
+          sim.setCoopPlayerOnline(avatar.accountId, true);
         }
       }
     },
@@ -886,10 +906,18 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (!gameStarted || !onlineWorld || !worldSocket.connected) return;
     const interval = setInterval(() => {
-      const direction = inputManagerRef.current?.getMovementVector();
-      if (direction) worldSocket.sendInput(direction);
-      // Update simulation coop player manual input state
       const sim = simulationRef.current;
+      // Mô phỏng của mình chạy trên máy này nên báo vị trí thật lên server (không để server tự đoán từ phím bấm).
+      if (sim) {
+        const me = sim.getPlayerData();
+        const last = lastSentPositionRef.current;
+        const now = performance.now();
+        if (!last || last.x !== me.position.x || last.y !== me.position.y || now - last.at > 1000) {
+          if (worldSocket.sendPosition(me.position, me.direction)) lastSentPositionRef.current = { x: me.position.x, y: me.position.y, at: now };
+        }
+      }
+      const direction = inputManagerRef.current?.getMovementVector();
+      // Update simulation coop player manual input state
       if (sim?.isCoopMode() && onlineUidRef.current) {
         sim.setCoopPlayerManualInput(onlineUidRef.current, !!direction && (Math.abs(direction.x) > 0.05 || Math.abs(direction.y) > 0.05));
       }
@@ -934,6 +962,7 @@ export const App: React.FC = () => {
       addToast('Mất kết nối hẻm chung. Thao tác không được lưu — đang chờ kết nối lại...', 'warn');
       return false;
     }
+    commitsInFlightRef.current += 1;
     try {
       const { gameAuth } = await import('./services/firebase');
       const user = gameAuth().currentUser;
@@ -994,6 +1023,8 @@ export const App: React.FC = () => {
       await resyncOnlineWorldAfterReject(curWorld);
       addToast(err instanceof Error ? err.message : 'Không thể lưu lên hẻm chung.', 'warn');
       return false;
+    } finally {
+      commitsInFlightRef.current = Math.max(0, commitsInFlightRef.current - 1);
     }
   };
 

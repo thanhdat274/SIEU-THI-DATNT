@@ -91,6 +91,35 @@ async function run() {
     assert.deepEqual(moved.data.world.avatars.find((avatar: any) => avatar.accountId === memberId).position, initialMember.position,
       'Client supplied accountId cannot move another member');
 
+    // Vị trí thật do client báo: người kia nhận ngay qua kênh avatar gọn, không chờ snapshot đầy đủ.
+    const reportedAt = { x: moved.data.world.avatars.find((avatar: any) => avatar.accountId === owner.id).position.x + 12, y: 400 };
+    const memberSeesOwner = nextEvent(memberSocket, message => message.event === 'avatars:update' &&
+      message.data.avatars.some((avatar: any) => avatar.accountId === owner.id && avatar.position.x === reportedAt.x));
+    ownerSocket.send(JSON.stringify({ event: 'position', data: { position: reportedAt, direction: 'right' } }));
+    await memberSeesOwner;
+
+    // Lệnh qua HTTP chạy trên runtime đang sống: người kia nhận ngay snapshot mới (revision + trạng thái tiệm) qua WebSocket.
+    {
+      const { GameController } = await import('./bootstrap.js');
+      const controller = new GameController();
+      const request = { gameAccount: { uid: owner.id, name: 'Gateway owner', email: null } };
+      const current = await controller.getWorld(request as any, seeded.world.id);
+      const wasOpen = current.businesses[0].save.worldTime.isStoreOpen;
+      const liveBefore = WorldGateway.getLiveRuntime(seeded.world.id)!;
+      assert.ok(liveBefore, 'có runtime sống khi có người online');
+      const expected = liveBefore.getRevision();
+      const memberGetsCommit = nextEvent(memberSocket, message => message.event === 'world:snapshot' &&
+        message.data.world.revision === expected + 1 && message.data.businesses[0].save.worldTime.isStoreOpen === !wasOpen);
+      await controller.commitCommand(request as any, seeded.world.id, {
+        expectedRevision: expected,
+        receipt: { commandId: `live-${suffix}`, actorId: owner.id, status: 'accepted', revision: expected + 1, payloadJson: JSON.stringify({ type: 'store_status', isOpen: !wasOpen }), createdAt: new Date().toISOString() },
+        updatedBusiness: current.businesses[0],
+      });
+      await memberGetsCommit;
+      assert.equal(WorldGateway.getLiveRuntime(seeded.world.id)!.getRevision(), expected + 1, 'runtime sống theo đúng revision DB');
+      assert.equal((await controller.getWorld(request as any, seeded.world.id)).world.revision, expected + 1);
+    }
+
     const ownerVoteEvent = nextEvent(ownerSocket, message => message.event === 'time-vote:update');
     const memberVoteEvent = nextEvent(memberSocket, message => message.event === 'time-vote:update' && message.data.result?.status === 'executed');
     const dayBefore = moved.data.world.worldTime.day;

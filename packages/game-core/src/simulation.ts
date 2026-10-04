@@ -5136,7 +5136,16 @@ export class GameSimulation {
   /**
    * Import saved game data
    */
-  public importSaveData(saveData: SaveGameData): void {
+  /** Khóa hình học bố cục + đất + quầy: đổi khóa nghĩa là bản đồ/đường đi phải dựng lại. */
+  private layoutKey(): string {
+    return JSON.stringify([this.fixtures.map((f) => [f.id, f.tileX, f.tileY, f.rotation]), this.unlockedPlotIds, this.stalls.owned]);
+  }
+
+  /**
+   * `live`: trạng thái server gửi liên tục trong hẻm chung (vài lần mỗi giây). Bản đồ chỉ báo đổi khi bố cục đổi, không thì renderer dựng lại liên tục.
+   */
+  public importSaveData(saveData: SaveGameData, options: { live?: boolean } = {}): void {
+    const previousLayoutKey = options.live ? this.layoutKey() : '';
     this.restockJobClaims.clear();
     this.playerData = normalizePlayerProgression(saveData.player);
     this.warehouseTier = saveData.warehouseTier ?? 0;
@@ -5213,11 +5222,15 @@ export class GameSimulation {
         if (post) member.position = post;
       }
     }
+    const layoutUnchanged = !!options.live && previousLayoutKey === this.layoutKey();
     this.customerManager.restoreDiningRoutes(this.tileMap, this.fixtures);
-    this.callbacks.onMapChanged?.(this.tileMap);
+    if (!layoutUnchanged) this.callbacks.onMapChanged?.(this.tileMap);
     this.ensureSafePlayerPosition();
+    // Khách không lưu đường đi trong save: luôn dựng lại từ vị trí hiện tại (rẻ, vài khách) để họ tiếp tục bước, không đứng khựng.
     this.customerManager.rerouteAll(this.tileMap, this.fixtures);
-    this.activeFixture = null;
+    // Hẻm chung nhận trạng thái từ server nhiều lần mỗi giây: giữ món đồ đang tương tác (nếu còn) để cửa sổ không bị đóng.
+    const keptFixtureId = this.activeFixture?.id;
+    this.activeFixture = keptFixtureId ? this.fixtures.find((f) => f.id === keptFixtureId) ?? null : null;
     this.notifyStateChanged();
   }
 

@@ -60,7 +60,9 @@ const checkpointQueues = new Map<string, Promise<void>>();
 
 /** Tick interval for all active runtimes (shared, 250ms per tick = 4fps headless sim) */
 const TICK_INTERVAL_MS = 250;
-const SNAPSHOT_INTERVAL_MS = 500;
+const SNAPSHOT_INTERVAL_MS = 250;
+/** Bản phát gần nhất theo hẻm: không gửi lại khi mô phỏng không đổi (không ai làm gì, đang tạm dừng...). */
+const lastSnapshotPayload = new Map<string, string>();
 let tickTimer: ReturnType<typeof setInterval> | null = null;
 let snapshotTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -83,7 +85,13 @@ function startTickLoop() {
   }, TICK_INTERVAL_MS);
   snapshotTimer = setInterval(() => {
     for (const [worldId, entry] of worldRuntimes) {
-      if (entry.sockets.size) broadcastToWorld(worldId, 'world:snapshot', entry.runtime.getSnapshot());
+      if (!entry.sockets.size) continue;
+      // serverTime đổi mỗi lần nên để trống khi so sánh; avatar đi kênh riêng 'avatars:update' nên không làm snapshot đổi liên tục.
+      const snapshot = entry.runtime.getSnapshot('');
+      const body = JSON.stringify(snapshot);
+      if (lastSnapshotPayload.get(worldId) === body) continue;
+      lastSnapshotPayload.set(worldId, body);
+      broadcastToWorld(worldId, 'world:snapshot', { ...snapshot, serverTime: new Date().toISOString() });
     }
   }, SNAPSHOT_INTERVAL_MS);
 }
@@ -220,7 +228,21 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const entry = worldRuntimes.get(socket._worldId);
     if (!entry) return;
     const snapshot = entry.runtime.applyInputIntent(socket._accountId, body);
-    if (snapshot) broadcastToWorld(socket._worldId, 'world:snapshot', snapshot);
+    if (snapshot) broadcastToWorld(socket._worldId, 'avatars:update', { avatars: snapshot.world.avatars });
+  }
+
+  /** Client báo vị trí thật của chính mình (~10 lần/giây); server kiểm rồi phát gọn danh sách avatar cho cả hẻm. */
+  @SubscribeMessage('position')
+  handlePosition(@ConnectedSocket() socket: AuthenticatedSocket, @MessageBody() body: unknown) {
+    if (!allowSocketMessage(socket)) return;
+    if (!socket._worldId || !socket._accountId || !socket._sessionOk || !body || typeof body !== 'object') return;
+    const entry = worldRuntimes.get(socket._worldId);
+    if (!entry) return;
+    const report = body as { position?: { x?: unknown; y?: unknown }; direction?: unknown };
+    const position = report.position;
+    if (!position || typeof position.x !== 'number' || typeof position.y !== 'number') return;
+    if (!entry.runtime.reportPosition(socket._accountId, { x: position.x, y: position.y }, report.direction)) return;
+    broadcastToWorld(socket._worldId, 'avatars:update', { avatars: entry.runtime.getAvatars() });
   }
 
   @SubscribeMessage('time-vote')
@@ -260,7 +282,9 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
   static notifyCommit(worldId: string, snapshot: unknown, committed?: { revision: number; business: BusinessState }) {
     const entry = worldRuntimes.get(worldId);
     // Runtime phải theo kịp bản vừa commit rồi mới phát, để người kia nhận ngay trạng thái mới (tiền, hàng, kệ...) không chờ vòng hỏi lại.
-    if (entry && committed && entry.runtime.adoptCommitted(committed.revision, committed.business)) {
+    if (entry && committed) entry.runtime.adoptCommitted(committed.revision, committed.business);
+    if (entry) {
+      lastSnapshotPayload.delete(worldId);
       broadcastToWorld(worldId, 'world:snapshot', entry.runtime.getSnapshot());
     }
     broadcastToWorld(worldId, 'world:update', snapshot);
@@ -282,11 +306,17 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /** Runtime đang chạy của hẻm (nguồn sự thật duy nhất khi có người online); undefined nếu chưa ai kết nối. */
+  static getLiveRuntime(worldId: string): WorldRuntime | undefined {
+    return worldRuntimes.get(worldId)?.runtime;
+  }
+
   /** Đóng mọi kết nối và bỏ runtime của hẻm đã bị xóa (không checkpoint nữa, document đã mất). */
   static async closeWorld(worldId: string, reason: string): Promise<void> {
     const entry = worldRuntimes.get(worldId);
     if (!entry) return;
     worldRuntimes.delete(worldId);
+    lastSnapshotPayload.delete(worldId);
     checkpointQueues.delete(worldId);
     for (const sock of entry.sockets) {
       try {
@@ -316,6 +346,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (entry.checkpointError) return;
     if (worldRuntimes.get(worldId) !== entry || entry.sockets.size > 0) return;
     worldRuntimes.delete(worldId);
+    lastSnapshotPayload.delete(worldId);
     if (checkpointQueues.get(worldId) === entry.checkpointQueue) checkpointQueues.delete(worldId);
     if (worldRuntimes.size === 0) stopTickLoop();
   }

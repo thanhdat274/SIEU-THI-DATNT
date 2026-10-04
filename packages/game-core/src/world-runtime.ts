@@ -1,10 +1,17 @@
-import { GameWorld, BusinessState, GameSnapshot, GameInputIntent, MULTIPLAYER_PROTOCOL_VERSION } from '@game/shared';
+import { GameWorld, BusinessState, GameSnapshot, GameInputIntent, GameAvatar, Direction, MULTIPLAYER_PROTOCOL_VERSION } from '@game/shared';
 import { GameSimulation } from './simulation';
 import { WorldAvatarController } from './avatars';
 import { GameCommandCoordinator, CommandResult } from './commands';
 import { FixedStepSimulationRunner } from './runner';
-import { generateStarterTileMap } from '@game/data';
+import { HOME_DOOR_TILE } from './daily-routine';
+import { generateStarterTileMap, NEIGHBORHOOD_WALK_BOUNDS } from '@game/data';
 import { applyStoreLayoutActions, moveStoreFixture, retrieveStoreFixture, storeFixture, buyWarehouseTier, buyStorageRack } from './store-layout';
+
+/** Trần tốc độ chấp nhận khi client báo vị trí (đi bộ 130 px/s, chừa dư cho chạy/lag). */
+const MAX_REPORTED_SPEED = 600;
+
+/** Cửa nhà của từng người chơi theo thứ tự trong hẻm (chủ hẻm trước). Client và server phải dùng cùng bảng này để ngày chỉ chuyển khi mọi người đã về đúng nhà. */
+export const COOP_HOME_DOOR_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 3, y: 12 }, { x: 5, y: 12 }];
 
 export interface WorldRuntimeOptions {
   heartbeatTimeoutMs?: number;
@@ -30,6 +37,7 @@ export class WorldRuntime {
   private activeTimeVote: ActiveTimeVote | null = null;
   private readonly heartbeatTimeoutMs: number;
   private readonly checkpointIntervalSeconds: number;
+  private readonly positionReportedAt = new Map<string, number>();
   private timeSinceLastCheckpoint = 0;
   private isPaused = true;
   private currentWorld: GameWorld;
@@ -74,6 +82,30 @@ export class WorldRuntime {
     );
 
     this.runner = new FixedStepSimulationRunner(this.simulation);
+
+    // Server giữ đồng hồ/lịch ngày chung (mở cửa, đóng cửa, kiểm kê, ngủ rồi sang ngày); client chỉ nhận.
+    this.simulation.setCoopMode(true);
+    this.currentWorld.avatars.forEach((avatar, index) => this.registerCoopAvatar(avatar, index));
+  }
+
+  private registerCoopAvatar(avatar: GameAvatar, index: number): void {
+    const homeDoorTile = COOP_HOME_DOOR_TILES[Math.min(index, COOP_HOME_DOOR_TILES.length - 1)];
+    this.simulation.registerCoopPlayer({ playerId: avatar.accountId, homeDoorTile } as Parameters<GameSimulation['registerCoopPlayer']>[0]);
+    this.simulation.setCoopPlayerPosition(avatar.accountId, { ...avatar.position });
+  }
+
+  /** Đưa vị trí/trạng thái online thật của từng người vào lịch ngày; người offline được tự về nhà để ngày không kẹt. */
+  private feedCoopInputs(): void {
+    this.currentWorld.avatars.forEach((avatar) => {
+      const online = this.activeSessions.has(avatar.accountId);
+      this.simulation.setCoopPlayerOnline(avatar.accountId, online);
+      if (online) {
+        this.simulation.setCoopPlayerPosition(avatar.accountId, { ...avatar.position });
+      } else {
+        // Lịch ngày hiện đưa mọi người về HOME_DOOR_TILE (cấu hình cửa nhà riêng chưa được coop-routine dùng), nên người offline đứng ở đó.
+        this.simulation.setCoopPlayerPosition(avatar.accountId, { x: (HOME_DOOR_TILE.x + 0.5) * 32, y: (HOME_DOOR_TILE.y + 0.5) * 32 });
+      }
+    });
   }
 
   registerSession(accountId: string, nowMs = Date.now()): boolean {
@@ -103,19 +135,50 @@ export class WorldRuntime {
       if (this.currentWorld.avatars.some((a) => a.accountId === avatar.accountId)) continue;
       this.currentWorld.avatars.push(structuredClone(avatar));
       this.avatarController.addAvatar(avatar);
+      this.registerCoopAvatar(avatar, this.currentWorld.avatars.length - 1);
     }
+  }
+
+  getRevision(): number { return this.currentWorld.revision; }
+
+  /**
+   * Client báo vị trí thật của chính mình (mô phỏng chạy trên máy họ, nên server không tự suy ra từ input).
+   * Chỉ nhận trong vùng đi được và giới hạn quãng nhảy theo thời gian; sai thì bỏ qua và giữ vị trí cũ.
+   */
+  reportPosition(accountId: string, position: { x: number; y: number }, direction: unknown, nowMs = Date.now()): GameAvatar | null {
+    if (!this.activeSessions.has(accountId) || !position || !Number.isFinite(position.x) || !Number.isFinite(position.y)) return null;
+    const bounds = NEIGHBORHOOD_WALK_BOUNDS;
+    if (position.x < bounds.x0 || position.x > bounds.x1 || position.y < bounds.y0 || position.y > bounds.y1) return null;
+    const index = this.currentWorld.avatars.findIndex(item => item.accountId === accountId);
+    if (index < 0) return null;
+    const current = this.currentWorld.avatars[index];
+    const lastAt = this.positionReportedAt.get(accountId);
+    const dtSeconds = lastAt === undefined ? Infinity : Math.max(0, (nowMs - lastAt) / 1000);
+    if (dtSeconds <= 1.5) {
+      const maxJump = MAX_REPORTED_SPEED * dtSeconds + 48;
+      if (Math.hypot(position.x - current.position.x, position.y - current.position.y) > maxJump) return null;
+    }
+    const facing: Direction = direction === 'up' || direction === 'down' || direction === 'left' || direction === 'right' ? direction : current.direction;
+    const next: GameAvatar = { ...current, position: { x: position.x, y: position.y }, direction: facing, updatedAt: new Date(nowMs).toISOString() };
+    this.currentWorld.avatars[index] = next;
+    this.positionReportedAt.set(accountId, nowMs);
+    return { ...next, position: { ...next.position } };
+  }
+
+  getAvatars(): GameAvatar[] {
+    return structuredClone(this.currentWorld.avatars);
   }
 
   /**
    * Nhận trạng thái đã commit qua HTTP. Không có bước này runtime giữ save/revision cũ, nên snapshot 0,5 giây
    * gửi cho mọi người là dữ liệu cũ (bạn cùng hẻm không thấy hàng/tiền mới) và checkpoint ghi đè ngược.
    */
-  adoptCommitted(revision: number, business: BusinessState): boolean {
-    if (revision <= this.currentWorld.revision) return false;
+  adoptCommitted(revision: number, business: BusinessState, force = false): boolean {
+    if (!force && revision <= this.currentWorld.revision) return false;
     this.simulation.importSaveData(structuredClone(business.save));
     this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds()), this.simulation.getFixtures());
     this.currentWorld.revision = revision;
-    this.commandCoordinator.setRevision(revision);
+    this.commandCoordinator.setRevision(revision, force);
     this.currentBusiness = structuredClone(business);
     this.currentBusiness.save = this.simulation.exportSaveData(business.save.id, revision);
     this.currentWorld.worldTime = this.simulation.getTime();
@@ -189,6 +252,7 @@ export class WorldRuntime {
     this.isPaused = false;
 
     // 4. Advance simulation
+    this.feedCoopInputs();
     this.runner.advance(elapsedSeconds);
 
     // 5. Checkpoint check
@@ -268,17 +332,9 @@ export class WorldRuntime {
       } else if (p.type === 'store_status') {
         success = this.simulation.setStoreOpen(p.isOpen);
       } else if (p.type === 'advance_day') {
-        // Co-op mode: tự động chuyển ngày khi cả hai player ngủ (simulation.update() xử lý)
-        // Single player hoặc manual vote: cho phép advance ngay
-        if (this.simulation.isCoopMode()) {
-          // Trong co-op, simulation.update() sẽ tự advance khi both sleeping
-          // Lệnh này chỉ dùng để force advance nếu cần (ví dụ: một player disconnect)
-          success = true;
-          this.simulation.getClock().advanceToNextDay();
-        } else {
-          success = this.currentWorld.memberships.length <= 1;
-          if (success) this.simulation.getClock().advanceToNextDay();
-        }
+        // Hẻm nhiều người: ngày chỉ sang khi mọi người đã ngủ (lịch ngày của server) hoặc qua bỏ phiếu thời gian, không ép bằng lệnh.
+        success = this.currentWorld.memberships.length <= 1;
+        if (success) this.simulation.getClock().advanceToNextDay();
       } else if (p.type === 'stow') {
         success = this.simulation.stowHoldingItem(p.holdingId).success;
       } else if (p.type === 'stow_all') {

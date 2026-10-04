@@ -25,16 +25,18 @@ export interface WorldSocketOptions {
   token: string | null;
   onWorldUpdate?: (data: { revision: number; receipt: unknown }) => void;
   onSnapshot?: (snapshot: unknown) => void;
+  onAvatars?: (avatars: unknown) => void;
   onTimeVote?: (data: unknown) => void;
   onSessionEnded?: (event: 'kicked' | 'replaced' | 'timeout', data: unknown) => void;
 }
 
-export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onTimeVote, onSessionEnded }: WorldSocketOptions) {
+export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAvatars, onTimeVote, onSessionEnded }: WorldSocketOptions) {
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onWorldUpdateRef = useRef(onWorldUpdate);
   const onSnapshotRef = useRef(onSnapshot);
+  const onAvatarsRef = useRef(onAvatars);
   const onTimeVoteRef = useRef(onTimeVote);
   const onSessionEndedRef = useRef(onSessionEnded);
   const sequenceRef = useRef(0);
@@ -42,6 +44,7 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onTi
   // Keep callbacks up to date without re-triggering the effect
   useEffect(() => { onWorldUpdateRef.current = onWorldUpdate; }, [onWorldUpdate]);
   useEffect(() => { onSnapshotRef.current = onSnapshot; }, [onSnapshot]);
+  useEffect(() => { onAvatarsRef.current = onAvatars; }, [onAvatars]);
   useEffect(() => { onTimeVoteRef.current = onTimeVote; }, [onTimeVote]);
   useEffect(() => { onSessionEndedRef.current = onSessionEnded; }, [onSessionEnded]);
 
@@ -82,6 +85,8 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onTi
           onSnapshotRef.current?.(msg.data);
         } else if (msg.event === 'world:snapshot') {
           onSnapshotRef.current?.(msg.data);
+        } else if (msg.event === 'avatars:update') {
+          onAvatarsRef.current?.((msg.data as { avatars?: unknown })?.avatars);
         } else if (msg.event === 'world:update') {
           onWorldUpdateRef.current?.(msg.data as { revision: number; receipt: unknown });
         } else if (msg.event === 'time-vote:update') {
@@ -124,6 +129,14 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onTi
     return true;
   }, []);
 
+  /** Báo vị trí thật của mình (mô phỏng chạy cục bộ); server kiểm rồi phát cho bạn cùng hẻm. */
+  const sendPosition = useCallback((position: { x: number; y: number }, direction: string) => {
+    const socket = wsRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+    socket.send(JSON.stringify({ event: 'position', data: { position, direction } }));
+    return true;
+  }, []);
+
   const submitTimeVote = useCallback((vote: { type: 'advance_day' } | { type: 'change_speed'; targetSpeed: 1 | 2 | 4 }) => {
     const socket = wsRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return false;
@@ -138,5 +151,5 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onTi
     return true;
   }, []);
 
-  return { connected, sendInput, submitTimeVote, cancelTimeVote };
+  return { connected, sendInput, sendPosition, submitTimeVote, cancelTimeVote };
 }
