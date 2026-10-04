@@ -4,7 +4,9 @@ import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 
 /** Tăng khi luật mô phỏng đổi theo cách làm kết quả cùng đầu vào khác đi; replay cũ sẽ bị từ chối. */
-export const SIMULATION_VERSION = 'sim-2026-10-02.1';
+// 04/10/2026: A* mới (đường cùng độ dài nhưng có thể khác hình), thứ tự cập nhật xe theo làn, giá/giá vốn theo thùng, mở thùng không nhân đôi hàng.
+// .2: hàng còn nguyên thùng không châm kệ được (chỉ hàng lẻ), gộp lô giữ số thùng.
+export const SIMULATION_VERSION = 'sim-2026-10-04.2';
 export const REPLAY_SCHEMA = 1;
 
 export type ReplayCommand =
@@ -12,7 +14,8 @@ export type ReplayCommand =
   | { type: 'unstock'; fixtureId: string; quantity: number }
   | { type: 'set_price'; productId: string; price: number | null }
   | { type: 'start_production'; recipeId: string; stationId: string }
-  | { type: 'clean_dining_table'; fixtureId: string };
+  | { type: 'clean_dining_table'; fixtureId: string }
+  | { type: 'open_case'; productId: string; count: number };
 
 export interface DayReplay {
   schema: number;
@@ -58,6 +61,7 @@ function apply(sim: GameSimulation, command: ReplayCommand): void {
     case 'set_price': sim.setSellingPrice(command.productId, command.price); break;
     case 'start_production': sim.startProduction(command.recipeId, command.stationId); break;
     case 'clean_dining_table': sim.cleanDiningTable(command.fixtureId); break;
+    case 'open_case': sim.unpackMultipleCases(command.productId, command.count); break;
   }
 }
 

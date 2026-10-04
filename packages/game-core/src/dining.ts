@@ -1,5 +1,5 @@
 import type { InventoryItem } from '@game/shared';
-import { DINING, type DiningAddOnRule } from '@game/data';
+import { DINING, PRODUCT_MAP, type DiningAddOnRule } from '@game/data';
 import { normalizeLots, sumLots, takeLots } from './stock';
 import { Mulberry32Rng, daySeed } from './staff';
 import { hashSeed } from './weather';
@@ -30,7 +30,7 @@ export function takeInventoryUnits(inventory: InventoryItem[], productId: string
   const expired = lots.filter(lot => lot.expiresOnDay <= day);
   const fresh = lots.filter(lot => lot.expiresOnDay > day);
   if (sumLots(fresh) < quantity) return undefined;
-  const taken = takeLots(fresh, quantity);
+  const taken = takeLots(fresh, quantity, { caseSize: PRODUCT_MAP[productId]?.caseSize });
   slot.lots = [...expired, ...fresh].sort((a, b) => a.expiresOnDay - b.expiresOnDay);
   slot.quantity = sumLots(slot.lots);
   return { cost: taken.reduce((sum, lot) => sum + lot.quantity * (lot.unitCost ?? 0), 0) };

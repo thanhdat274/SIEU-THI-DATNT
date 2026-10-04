@@ -75,7 +75,7 @@ export function runBranchDay(input: BranchDayInput): BranchDayResult {
     const sold = Math.min(demand, sumLots(lots));
     if (sold < demand) stockouts.push(productId);
     if (sold <= 0) continue;
-    for (const lot of takeLots(lots, sold)) cogs += lot.quantity * (lot.unitCost ?? product.purchasePrice);
+    for (const lot of takeLots(lots, sold, { caseSize: product.caseSize })) cogs += lot.quantity * (lot.unitCost ?? product.purchasePrice);
     setLots(branch.stock, productId, lots);
     revenue += Math.round(sold * product.baseSellingPrice * mode.priceFactor);
     unitsSold += sold;

@@ -174,7 +174,7 @@ function moveStock(from: InventoryItem[], to: InventoryItem[], wanted: Map<strin
   for (const [productId, quantity] of wanted) {
     const lots = lotsOf(source.find((i) => i.productId === productId), day);
     if (sumLots(lots) < quantity) return fail(`Không đủ ${PRODUCT_MAP[productId]?.name ?? productId} để chuyển.`);
-    const moved = takeLots(lots, quantity);
+    const moved = takeLots(lots, quantity, { caseSize: PRODUCT_MAP[productId]?.caseSize });
     setLots(source, productId, lots);
     const targetLots = lotsOf(target.find((i) => i.productId === productId), day);
     mergeLots(targetLots, moved);

@@ -210,7 +210,15 @@ export const StorePlanogramModal: React.FC<Props> = ({
   const compatibleProducts = useMemo(() => {
     if (!slotToChange) return [];
     const isCold = slotToChange.parent.type === 'refrigerator';
-    return SELLABLE_PRODUCTS.filter(p => isCold ? p.storageType === 'cold' : p.storageType === 'ambient');
+    return SELLABLE_PRODUCTS.filter(p => {
+      if (isCold) {
+        // Vào tủ lạnh: cho phép cold (kể cả coldOnly và không coldOnly)
+        return p.storageType === 'cold';
+      } else {
+        // Vào kệ nhiệt độ thường: cho phép ambient HOẶC cold (không coldOnly)
+        return p.storageType === 'ambient' || (p.storageType === 'cold' && !p.coldOnly);
+      }
+    });
   }, [slotToChange]);
 
   const handleSelectNewProduct = (productId: string) => {
@@ -366,7 +374,12 @@ export const StorePlanogramModal: React.FC<Props> = ({
                     if (inv.quantity <= 0) return false;
                     const p = PRODUCT_MAP[inv.productId];
                     if (!p) return false;
-                    if ((p.storageType === 'cold') !== isCold) return false;
+                    // Tủ lạnh: chỉ cold. Kệ nhiệt độ thường: ambient HOẶC cold (không coldOnly)
+                    if (isCold) {
+                      if (p.storageType !== 'cold') return false;
+                    } else {
+                      if (p.storageType === 'cold' && p.coldOnly) return false;
+                    }
                     // Kệ xôi: chỉ cho phép món xôi
                     if (xoiIds.length > 0 && fixtureBuilding(mainFix) === 'xoi' && !xoiIds.includes(inv.productId)) return false;
             if (drinkIds.length > 0 && fixtureBuilding(mainFix) === 'drink' && !drinkIds.includes(inv.productId)) return false;

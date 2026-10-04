@@ -57,6 +57,10 @@ export interface Product {
   intermediate?: boolean;
   /** Số ô kho chiếm cho mỗi UNITS_PER_WAREHOUSE_CELL đơn vị. Thiếu = suy từ shelfCapacity (hàng cồng kềnh = 2). */
   warehouseSize?: number;
+  /** Nếu true: sản phẩm cold chỉ được bày vào tủ lạnh (không được vào kệ nhiệt độ thường). Default: false. */
+  coldOnly?: boolean;
+  /** Số lượng đơn vị trong 1 thùng/nhập nguyên kiện. Undefined = không bán theo thùng. */
+  caseSize?: number;
 }
 
 export interface InventoryItem {
@@ -85,6 +89,8 @@ export interface StockLot {
   provenance?: 'estimated' | 'known';
   /** Phần hao hạn chưa tròn ngày (0..1) tích lũy theo điều kiện bảo quản; thiếu = 0. */
   decayCarry?: number;
+  /** Số thùng/case đang giữ (0 = không có case). Khi mở case: case giảm, quantity += caseSize. */
+  caseCount?: number;
 }
 
 export interface SupplierConfig {
@@ -131,6 +137,8 @@ export interface SupplierCartLine {
   unitPrice: number; // đơn giá thực sau giá sỉ động, ưu đãi số lượng và chiết khấu mối
   lineTotal: number;
   bulkDiscount: number; // tỉ lệ ưu đãi số lượng lớn đã áp dụng
+  /** Số case/thùng trong line này (0 = mua lẻ). */
+  caseCount?: number;
 }
 
 export interface SupplierCartValidationResult {
@@ -231,6 +239,8 @@ export interface SupplierOrder {
   supplierId?: string;
   delivered?: boolean;
   deliveryDay?: number;
+  /** Số case/thùng trong đơn hàng này. */
+  caseCount?: number;
 }
 
 export interface BasketItem {
@@ -244,11 +254,13 @@ export type CustomerArrivalMode = 'walk' | 'motorbike' | 'car';
 
 export interface StreetVehicleState {
   id: string;
-  type: 'motorbike' | 'car' | 'bicycle' | 'minibus';
+  type: 'motorbike' | 'car' | 'bicycle' | 'minibus' | 'truck';
   variant: number;
   direction: 'left' | 'right';
   position: Vector2D;
   speed: number;
+  /** Đường (id trong `TRAFFIC_ROADS`) xe đang chạy; thiếu = đường chính. */
+  roadId?: string;
   hornTimer?: number;
   /** Tốc độ hiện tại (px/s) khi đang giảm tốc/dừng/tăng tốc; thiếu thì bằng `speed` (tốc độ chạy thông thường). */
   currentSpeed?: number;
@@ -637,6 +649,8 @@ export type PlanogramApplyReason =
   | 'storage_type_mismatch'
   | 'product_mismatch'
   | 'no_inventory'
+  /** Kho chỉ còn hàng nguyên thùng, cần mở thùng trước. */
+  | 'in_cases'
   | 'fixture_full';
 
 export interface PlanogramApplyResult {
@@ -1156,6 +1170,8 @@ export type GameCommandPayload =
   | { type: 'set_staff_shift'; staffId: string; shift: StaffShift }
   | { type: 'assign_refill_job'; staffId: string; fixtureId: string }
   | { type: 'dispose_stock'; productId: string; quantity: number }
+  /** Mở thùng trong kho: chỉ đổi thùng thành hàng lẻ, tổng hàng không đổi. */
+  | { type: 'open_case'; productId: string; count: number }
   | { type: 'store_status'; isOpen: boolean }
   | { type: 'set_tax_declaration'; underDeclare: boolean }
   | { type: 'open_branch'; storeType: string; name?: string; branchId?: string }
@@ -1346,7 +1362,9 @@ export function restoreSaveBackupSnapshot(backup: SaveGameData, targetId = 'loca
 export interface TransferShelfResult {
   success: boolean;
   actualQuantity: number;
-  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'fixture_broken' | 'invalid_amount' | 'product_locked' | 'storage_mismatch' | 'no_inventory' | 'product_mismatch' | 'no_space' | 'success';
+  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'fixture_broken' | 'invalid_amount' | 'product_locked' | 'storage_mismatch' | 'no_inventory' | 'product_mismatch' | 'no_space' | 'success'
+    /** Kho còn hàng nhưng toàn nguyên thùng: phải mở thùng trong kho rồi mới châm kệ được. */
+    | 'in_cases';
 }
 
 export interface UnstockShelfResult {
@@ -1431,6 +1449,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'planogram_assignment': return nonEmptyString(p.fixtureId) && (p.productId === null || nonEmptyString(p.productId));
     case 'planogram_restock': return nonEmptyString(p.fixtureId);
     case 'dispose_stock': return nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
+    case 'open_case': return nonEmptyString(p.productId) && Number.isSafeInteger(p.count) && Number(p.count) > 0;
     case 'order_supplier': return nonEmptyString(p.supplierId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 64 && p.items.every(item => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
     case 'respond_party_order': return nonEmptyString(p.orderId) && typeof p.accept === 'boolean';
     case 'fulfill_party_order': return nonEmptyString(p.orderId);

@@ -1,6 +1,7 @@
 import { DEFAULT_INITIAL_SAVE, generateStarterTileMap, PRODUCT_MAP, SUPPLIERS, SUPPLIER_MAP } from '@game/data';
-import { COLD_WAREHOUSE_CAPACITY, SaveGameData } from '@game/shared';
+import { COLD_WAREHOUSE_CAPACITY, SaveGameData, type StockLot } from '@game/shared';
 import { InputManager } from './input';
+import { looseUnits, mergeLots, sealedCases, sumLots, takeLots } from './stock';
 import { GameSimulation } from './simulation';
 
 function assert(condition: boolean, message: string): void {
@@ -93,23 +94,93 @@ export function runSupplierTests(): void {
   sim.addExperience(500); // lên cấp 2
   sim.addMoney(500000);
   const moneyBeforeWholesale = sim.getPlayerData().money;
-  // Đặt 40 gói mì (40 * 3000 = 120.000 ₫); từ 24 món chợ đầu mối giảm thêm 3% số lượng lớn => 116.400 ₫ >= 100.000 ₫
+  // Đặt 40 gói mì (40 * 3000 = 120.000 ₫); từ 24 món chợ đầu mối giảm thêm 3% số lượng lớn => 116.400 ₫;
+  // 40 gói = đúng 1 thùng (caseSize 40) nên giảm thêm 5% theo thùng, CỘNG DỒN với ưu đãi số lượng lớn (quyết định 04/10/2026)
+  // => round(3000 * 0.97 * 40 * 0.95) = 110.580 ₫ >= 100.000 ₫
   const validWholesale = sim.validateSupplierCart('cho_dau_moi', [
     { productId: 'mi_hao_hao', quantity: 40 },
   ]);
   assert(validWholesale.valid, 'Giỏ sỉ đạt chuẩn hợp lệ');
-  assert(validWholesale.subtotal === 116400, 'Subtotal đúng 116.400 ₫ (đã gồm ưu đãi số lượng lớn 3%)');
-  assert(validWholesale.discountAmount === 11640, 'Chiết khấu 10% đúng 11.640 ₫');
-  assert(validWholesale.totalCost === 104760, 'Tổng thanh toán sau giảm đúng 104.760 ₫');
+  assert(validWholesale.subtotal === 110580, 'Subtotal đúng 110.580 ₫ (ưu đãi số lượng lớn 3% cộng dồn giảm 5% theo thùng)');
+  assert(validWholesale.discountAmount === 11058, 'Chiết khấu 10% đúng 11.058 ₫');
+  assert(validWholesale.totalCost === 99522, 'Tổng thanh toán sau giảm đúng 99.522 ₫');
 
   const commitWholesale = sim.orderSupplierCart('cho_dau_moi', [
     { productId: 'mi_hao_hao', quantity: 40 },
   ]);
   assert(commitWholesale.success, 'Đặt giỏ hàng sỉ thành công');
-  assert(sim.getPlayerData().money === moneyBeforeWholesale - 104760, 'Tiền trừ đúng số tiền đã chiết khấu');
+  assert(sim.getPlayerData().money === moneyBeforeWholesale - 99522, 'Tiền trừ đúng số tiền đã chiết khấu');
   const wholesaleOrder = sim.getPendingOrders().find((o) => o.supplierId === 'cho_dau_moi')!;
   assert(!!wholesaleOrder, 'Có đơn sỉ chợ đầu mối');
-  assert(wholesaleOrder.unitCost === Math.round(3000 * 0.97 * 0.9), 'Đơn giá lưu sau ưu đãi số lượng lớn và chiết khấu là 2.619 ₫');
+  // Đủ 1 thùng: giá vốn lô = tiền thật của dòng / số món = round(99.522 / 40) = 2.488 ₫ (không còn 2.619 ₫ của giá lẻ).
+  assert(wholesaleOrder.unitCost === Math.round(99522 / 40), `Giá vốn lô theo giá thùng là 2.488 ₫ (hiện ${wholesaleOrder.unitCost})`);
+  assert(Math.abs(wholesaleOrder.unitCost * 40 - 99522) < 40, 'Giá vốn lô × số món khớp tiền đã trả (sai số làm tròn < 1 ₫/món)');
+  // Hàng lẻ (không đủ thùng) giữ đơn giá sỉ như trước.
+  const looseMoney = sim.getPlayerData().money;
+  assert(sim.orderFromSupplier('mi_hao_hao', 5), 'Đặt lẻ 5 gói thành công');
+  const looseOrder = sim.getPendingOrders()[sim.getPendingOrders().length - 1];
+  assert(looseOrder.unitCost * 5 === looseMoney - sim.getPlayerData().money, 'Hàng lẻ: giá vốn lô × số món = tiền đã trả');
+
+  // Test 4.2b: Mở thùng không sinh thêm hàng (quantity lô đã gồm hàng trong thùng)
+  {
+    console.log('\n--- Test 4.2b: Mở thùng chỉ đổi thùng thành hàng lẻ, tổng hàng không đổi ---');
+    const caseSave = structuredClone(DEFAULT_INITIAL_SAVE);
+    caseSave.inventory = caseSave.inventory.filter((item) => item.productId !== 'mi_hao_hao');
+    caseSave.inventory.push({ productId: 'mi_hao_hao', quantity: 120, lots: [
+      { quantity: 40, expiresOnDay: 20, unitCost: 2488, caseCount: 1 },
+      { quantity: 80, expiresOnDay: 30, unitCost: 2488, caseCount: 2 },
+    ] });
+    const caseSim = new GameSimulation(caseSave, generateStarterTileMap(), new InputManager());
+    const mi = () => caseSim.getInventory().find((item) => item.productId === 'mi_hao_hao')!;
+    const cases = () => (mi().lots ?? []).reduce((n, lot) => n + (lot.caseCount ?? 0), 0);
+    const one = caseSim.unpackCase('mi_hao_hao');
+    assert(one.success && one.openedCases === 1, 'Mở 1 thùng thành công');
+    assert(mi().quantity === 120 && cases() === 2, `Mở 1 thùng: tổng vẫn 120 gói, còn 2 thùng (hiện ${mi().quantity} gói, ${cases()} thùng)`);
+    assert(!caseSim.unpackMultipleCases('mi_hao_hao', 0).success && !caseSim.unpackMultipleCases('mi_hao_hao', Number.NaN).success && !caseSim.unpackMultipleCases('mi_hao_hao', 1.5).success, 'Số thùng không hợp lệ bị từ chối');
+    assert(cases() === 2 && mi().quantity === 120, 'Từ chối thì không đổi kho');
+    const many = caseSim.unpackMultipleCases('mi_hao_hao', 5);
+    assert(many.success && many.openedCases === 2, 'Mở nhiều hơn số thùng có: chỉ mở số thùng còn lại');
+    assert(mi().quantity === 120 && cases() === 0, `Mở hết thùng: tổng vẫn 120 gói (hiện ${mi().quantity})`);
+    assert(!caseSim.unpackCase('mi_hao_hao').success, 'Hết thùng thì không mở được nữa');
+  }
+
+  // Test 4.2c: Hàng còn nguyên thùng không châm kệ được; mở thùng rồi mới châm
+  {
+    console.log('\n--- Test 4.2c: Chỉ hàng lẻ được châm kệ, hàng nguyên thùng phải mở trước ---');
+    // Hàm lô: lấy hàng lẻ, kẹp số thùng, gộp lô giữ thùng
+    const lots: StockLot[] = [
+      { quantity: 50, expiresOnDay: 10, unitCost: 1, caseCount: 1 }, // 10 lẻ + 1 thùng 40
+      { quantity: 40, expiresOnDay: 20, unitCost: 1, caseCount: 1 }, // 0 lẻ + 1 thùng
+    ];
+    assert(looseUnits(lots, 40) === 10 && sealedCases(lots) === 2, 'Đếm 10 lẻ, 2 thùng');
+    const looseTaken = takeLots(lots, 30, { caseSize: 40, looseOnly: true });
+    assert(sumLots(looseTaken) === 10 && sumLots(lots) === 80 && sealedCases(lots) === 2, 'Lấy hàng lẻ: chỉ được 10, thùng còn nguyên');
+    const anyTaken = takeLots(lots, 5, { caseSize: 40 });
+    assert(sumLots(anyTaken) === 5 && sealedCases(lots) === 1 && lots.every((lot) => (lot.caseCount ?? 0) * 40 <= lot.quantity), 'Lấy thường từ lô toàn thùng thì khui thùng: còn 1 thùng, số thùng không vượt số hàng');
+    const merged: StockLot[] = [{ quantity: 40, expiresOnDay: 30, unitCost: 2, caseCount: 1 }];
+    mergeLots(merged, [{ quantity: 40, expiresOnDay: 30, unitCost: 2, caseCount: 1 }]);
+    assert(merged.length === 1 && merged[0].quantity === 80 && merged[0].caseCount === 2, 'Gộp lô cộng cả số thùng');
+
+    // Mô phỏng: châm tay, việc châm kệ và mở thùng
+    const shelfSave = structuredClone(DEFAULT_INITIAL_SAVE);
+    shelfSave.inventory = shelfSave.inventory.filter((item) => item.productId !== 'mi_hao_hao');
+    shelfSave.inventory.push({ productId: 'mi_hao_hao', quantity: 45, lots: [{ quantity: 45, expiresOnDay: 40, unitCost: 2488, provenance: 'known', caseCount: 1 }] });
+    const noodleShelf = shelfSave.storeLayout.fixtures.find((f) => f.id === 'shelf_wooden_noodles')!;
+    noodleShelf.currentStock = 0; noodleShelf.stockLots = []; noodleShelf.assignedProductId = 'mi_hao_hao';
+    const shelfSim = new GameSimulation(shelfSave, generateStarterTileMap(), new InputManager());
+    const miSlot = () => shelfSim.getInventory().find((item) => item.productId === 'mi_hao_hao')!;
+    const first = shelfSim.transferToShelf('shelf_wooden_noodles', 'mi_hao_hao', 30);
+    assert(first.success && first.actualQuantity === 5, `Chỉ 5 gói lẻ lên kệ (hiện ${first.actualQuantity})`);
+    assert(miSlot().quantity === 40 && sealedCases(miSlot().lots) === 1, 'Thùng 40 gói vẫn nguyên trong kho');
+    const blocked = shelfSim.transferToShelf('shelf_wooden_noodles', 'mi_hao_hao', 10);
+    assert(!blocked.success && blocked.reason === 'in_cases', 'Hết hàng lẻ: báo lý do in_cases, không lấy hàng trong thùng');
+    shelfSim.setPlanogram({ shelf_wooden_noodles: 'mi_hao_hao' });
+    const target = shelfSim.getRestockJobTargets().find((t) => t.fixtureId === 'shelf_wooden_noodles');
+    assert(!target || target.availableInInventory === 0, 'Việc châm kệ không tính hàng nguyên thùng là hàng có sẵn');
+    assert(shelfSim.unpackCase('mi_hao_hao').success, 'Mở thùng');
+    const after = shelfSim.transferToShelf('shelf_wooden_noodles', 'mi_hao_hao', 10);
+    assert(after.success && after.actualQuantity === 10, 'Mở thùng xong châm kệ được');
+  }
 
   // Test 4.3: Delivery once, holding overflow, stow & spoilage
   console.log('\n--- Test 4.3: Giao hàng một lần, Hàng chờ (Holding Area) & Cất kho (Stow) ---');

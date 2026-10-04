@@ -83,7 +83,7 @@ export const REVIEW_BY_REASON: Record<string, readonly string[]> = {
   wait: [
     'Đứng chờ tính tiền mãi không ai ra, tôi bỏ về.',
     'Chờ hơn {wait} giây vẫn chưa tới lượt, hết kiên nhẫn.',
-    'Khách ít thế mà cũng để排队, tiếc quá.',
+    'Khách ít thế mà cũng để xếp hàng, tiếc quá.',
     'Tôi thấy chủ tiệm bận quá, tính tiền chậm nên về luôn.',
     'Đứng ngoài nhìn vào, ai cũng chờ, tôi không chịu nổi.',
     'Tiệm nhỏ thì nên chuẩn bị thêm người bán hàng.',

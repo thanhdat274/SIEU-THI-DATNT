@@ -643,6 +643,35 @@ export const SupplierModal: React.FC<Props> = ({
                   max={Math.max(0, maxQtyFor(product.id))}
                   onChange={(n) => setCartQty(product.id, n)}
                 />
+                {product.caseSize && !locked && maxQtyFor(product.id) > 0 && (
+                  <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                    <PixelButton
+                      variant="paper"
+                      onClick={() => {
+                        const caseQty = product.caseSize!;
+                        const currentQty = quantities[product.id] ?? 0;
+                        const newQty = Math.min(currentQty + caseQty, maxQtyFor(product.id));
+                        setCartQty(product.id, newQty);
+                      }}
+                      style={{ fontSize: '10px', padding: '2px 6px' }}
+                    >
+                      +1 thùng ({product.caseSize})
+                    </PixelButton>
+                    {quantity >= (product.caseSize ?? 0) && (
+                      <PixelButton
+                        variant="paper"
+                        onClick={() => {
+                          const currentQty = quantities[product.id] ?? 0;
+                          const newQty = Math.max(0, currentQty - (product.caseSize ?? 0));
+                          setCartQty(product.id, newQty);
+                        }}
+                        style={{ fontSize: '10px', padding: '2px 6px' }}
+                      >
+                        -1 thùng
+                      </PixelButton>
+                    )}
+                  </div>
+                )}
                 {quantity > 0 && (
                   <span style={{ fontSize: '10px', color: 'var(--teal-dark)', fontWeight: 700, whiteSpace: 'nowrap' }}>
                     ✓ Đã chọn

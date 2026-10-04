@@ -245,9 +245,17 @@ export class WorldRuntime {
       } else if (p.type === 'store_status') {
         success = this.simulation.setStoreOpen(p.isOpen);
       } else if (p.type === 'advance_day') {
-        // Hẻm 2 người phải qua phiếu bầu thời gian (WebSocket); lệnh trực tiếp chỉ dành cho hẻm một thành viên.
-        success = this.currentWorld.memberships.length <= 1;
-        if (success) this.simulation.getClock().advanceToNextDay();
+        // Co-op mode: tự động chuyển ngày khi cả hai player ngủ (simulation.update() xử lý)
+        // Single player hoặc manual vote: cho phép advance ngay
+        if (this.simulation.isCoopMode()) {
+          // Trong co-op, simulation.update() sẽ tự advance khi both sleeping
+          // Lệnh này chỉ dùng để force advance nếu cần (ví dụ: một player disconnect)
+          success = true;
+          this.simulation.getClock().advanceToNextDay();
+        } else {
+          success = this.currentWorld.memberships.length <= 1;
+          if (success) this.simulation.getClock().advanceToNextDay();
+        }
       } else if (p.type === 'stow') {
         success = this.simulation.stowHoldingItem(p.holdingId).success;
       } else if (p.type === 'stow_all') {
@@ -261,6 +269,8 @@ export class WorldRuntime {
         success = this.simulation.autoRestockShelves() > 0;
       } else if (p.type === 'dispose_stock') {
         success = this.simulation.disposeStock(p.productId, p.quantity).success;
+      } else if (p.type === 'open_case') {
+        success = this.simulation.unpackMultipleCases(p.productId, p.count).success;
       } else if (p.type === 'claim_quest') {
         success = this.simulation.claimQuest(p.questId).success;
       } else if (p.type === 'respond_party_order') {

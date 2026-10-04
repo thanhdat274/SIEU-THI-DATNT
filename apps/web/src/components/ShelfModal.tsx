@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StoreFixture, InventoryItem } from '@game/shared';
 import { PRODUCT_MAP, effectiveShelfCapacity } from '@game/data';
+import { looseUnits, sealedCases } from '@game/core';
 import { useGameStore } from '../store/useGameStore';
 import { PixelDialog, PixelButton, ProductSlot, PixelProgress, EmptyState, money } from './pixel';
 
@@ -45,7 +46,16 @@ export const ShelfModal: React.FC<Props> = ({
   const product = fixture.assignedProductId ? PRODUCT_MAP[fixture.assignedProductId] : null;
   useEffect(() => setPriceDraft(sellingPrice ?? product?.baseSellingPrice ?? 0), [fixture.id, product?.id, product?.baseSellingPrice, sellingPrice]);
   const limit = product ? effectiveShelfCapacity(fixture.maxCapacity, product.shelfCapacity, capacityBonus) : fixture.maxCapacity;
-  const inBag = inventory.find((i) => i.productId === product?.id)?.quantity ?? 0;
+  // Chỉ hàng lẻ bày lên kệ được; hàng còn nguyên thùng phải mở ở kho trước.
+  const stockOf = (item: InventoryItem | undefined) => {
+    const caseSize = item ? PRODUCT_MAP[item.productId]?.caseSize : undefined;
+    const loose = item ? (item.lots ? looseUnits(item.lots, caseSize) : item.quantity) : 0;
+    return { loose, cases: item?.lots ? sealedCases(item.lots) : 0, caseSize };
+  };
+  const stockLabel = (stock: ReturnType<typeof stockOf>) =>
+    stock.cases > 0 ? `${stock.loose} lẻ · ${stock.cases} thùng (${stock.cases * (stock.caseSize ?? 0)} món trong thùng)` : `${stock.loose} món`;
+  const bagStock = stockOf(inventory.find((i) => i.productId === product?.id));
+  const inBag = bagStock.loose;
   const siblingCategory = slots.filter(o => o.id !== fixture.id && o.currentStock > 0 && o.assignedProductId)
     .map(o => PRODUCT_MAP[o.assignedProductId!]?.category)[0];
   const compatible = inventory.filter(
@@ -55,19 +65,21 @@ export const ShelfModal: React.FC<Props> = ({
       (!siblingCategory || PRODUCT_MAP[i.productId].category === siblingCategory) &&
       (fixture.type === 'refrigerator'
         ? PRODUCT_MAP[i.productId].storageType === 'cold'
-        : PRODUCT_MAP[i.productId].storageType === 'ambient')
+        : PRODUCT_MAP[i.productId].storageType === 'ambient' || (PRODUCT_MAP[i.productId].storageType === 'cold' && !PRODUCT_MAP[i.productId].coldOnly))
   );
 
   const planogramProductId = planogram[fixture.id];
   const planogramProduct = planogramProductId ? PRODUCT_MAP[planogramProductId] : null;
   const isMismatchPlanogram = product && planogramProductId && planogramProductId !== product.id;
 
-  const reason = fixture.currentStock >= limit ? 'Kệ đã đầy.' : inBag <= 0 ? 'Trong kho không còn hàng này để bày thêm.' : '';
+  const reason = fixture.currentStock >= limit ? 'Kệ đã đầy.'
+    : inBag <= 0 && bagStock.cases > 0 ? 'Hàng còn nguyên thùng trong kho — mở thùng ở kho rồi mới bày lên kệ.'
+    : inBag <= 0 ? 'Trong kho không còn hàng này để bày thêm.' : '';
 
   return (
     <PixelDialog
       title={fixture.label}
-      subtitle={fixture.type === 'refrigerator' ? 'Chỉ bày hàng cần giữ lạnh' : 'Chăm chút từng kệ hàng'}
+      subtitle={fixture.type === 'refrigerator' ? 'Bày hàng giữ lạnh (sữa, trứng...)' : 'Chăm chút từng kệ hàng (sữa tiệt trùng để nhiệt độ thường cũng được)'}
       icon={fixture.type === 'refrigerator' ? 'cold' : 'warehouse'}
       onClose={onClose}
     >
@@ -150,7 +162,7 @@ export const ShelfModal: React.FC<Props> = ({
                 Giá gợi ý {money(product.baseSellingPrice)} · Giá bán {money(sellingPrice ?? product.baseSellingPrice)} · Vốn {money(product.purchasePrice)}
               </p>
               <p>
-                Trong kho: <strong>{inBag}</strong> món
+                Trong kho: <strong>{stockLabel(bagStock)}</strong>
               </p>
               {fixture.stockLots?.[0] && (
                 <p>
@@ -194,23 +206,25 @@ export const ShelfModal: React.FC<Props> = ({
         <>
           <p className="muted">Kệ đang trống. Chọn hàng phù hợp trong kho để bắt đầu bày.</p>
           {compatible.length ? (
-            compatible.map((i) => (
+            compatible.map((i) => { const stock = stockOf(i); return (
               <div className="product-row" key={i.productId}>
                 <ProductSlot productId={i.productId} />
                 <div className="product-info">
                   <h3>{PRODUCT_MAP[i.productId].name}</h3>
                   <p>
-                    Trong kho {i.quantity} · Bán {money(PRODUCT_MAP[i.productId].baseSellingPrice)}
+                    Trong kho {stockLabel(stock)} · Bán {money(PRODUCT_MAP[i.productId].baseSellingPrice)}
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '4px' }}>
                   <PixelButton
                     variant="teal"
+                    disabled={stock.loose <= 0}
+                    title={stock.loose <= 0 ? 'Còn nguyên thùng — mở thùng ở kho trước' : undefined}
                     onClick={() =>
                       onRestock(
                         fixture.id,
                         i.productId,
-                        Math.min(i.quantity, effectiveShelfCapacity(fixture.maxCapacity, PRODUCT_MAP[i.productId].shelfCapacity, capacityBonus))
+                        Math.min(stock.loose, effectiveShelfCapacity(fixture.maxCapacity, PRODUCT_MAP[i.productId].shelfCapacity, capacityBonus))
                       )
                     }
                   >
@@ -227,7 +241,7 @@ export const ShelfModal: React.FC<Props> = ({
                   )}
                 </div>
               </div>
-            ))
+            ); })
           ) : (
             <EmptyState title="Chưa có hàng phù hợp">
               Ghé đại lý để nhập hàng cho {fixture.type === 'refrigerator' ? 'tủ mát' : 'kệ'}.

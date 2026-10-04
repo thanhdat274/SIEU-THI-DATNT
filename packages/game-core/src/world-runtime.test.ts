@@ -130,6 +130,8 @@ export async function runWorldRuntimeTests() {
   questSeed.world.memberships.push({ accountId: 'member-2', role: 'member', joinedAt: new Date().toISOString(), lastSeenRevision: 0 });
   questSeed.business.save.statistics.totalCustomersServed = 10;
   questSeed.business.save.inventory.push({ productId: 'rau_cai_xanh', quantity: 6, lots: [{ quantity: 6, expiresOnDay: 99, unitCost: 6000, provenance: 'known' }] });
+  questSeed.business.save.inventory = questSeed.business.save.inventory.filter(item => item.productId !== 'mi_hao_hao');
+  questSeed.business.save.inventory.push({ productId: 'mi_hao_hao', quantity: 80, lots: [{ quantity: 80, expiresOnDay: 99, unitCost: 2488, provenance: 'known', caseCount: 2 }] });
   const questRuntime = new WorldRuntime(questSeed.world, questSeed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
   const questMoney = questRuntime.getSimulation().getPlayerData().money;
   const claimCommand = (commandId: string, questId: string) => ({
@@ -166,6 +168,22 @@ export async function runWorldRuntimeTests() {
   assert.equal((await questRuntime.executeCommand('owner-1', dispose('dispose-2', 50))).status, 'accepted', 'Hủy phần còn lại');
   assert.equal((await questRuntime.executeCommand('owner-1', dispose('dispose-3', 1))).status, 'rejected', 'Hết hàng thì từ chối, không ghi sổ');
   assert.equal(spoilageEntries(), 2);
+
+  // Co-op mở thùng: lệnh open_case được server phát lại, đổi thùng thành hàng lẻ một lần, tổng hàng không đổi.
+  const openCase = (commandId: string, count: number) => ({ ...claimCommand(commandId, 'x'), payload: { type: 'open_case', productId: 'mi_hao_hao', count } });
+  const miStock = () => {
+    const item = questRuntime.getSimulation().getInventory().find(entry => entry.productId === 'mi_hao_hao');
+    return { quantity: item?.quantity, cases: (item?.lots ?? []).reduce((n, lot) => n + (lot.caseCount ?? 0), 0) };
+  };
+  assert.equal(isGameCommand(openCase('case-bad', 0) as never), false, 'Số thùng 0 không phải lệnh hợp lệ');
+  assert.equal(isGameCommand(openCase('case-bad', 1.5) as never), false, 'Số thùng lẻ không phải lệnh hợp lệ');
+  assert.equal((await questRuntime.executeCommand('member-2', openCase('case-1', 1))).status, 'accepted');
+  assert.deepEqual(miStock(), { quantity: 80, cases: 1 }, 'Mở 1 thùng: còn 1 thùng, tổng vẫn 80 gói');
+  await questRuntime.executeCommand('member-2', openCase('case-1', 1));
+  assert.deepEqual(miStock(), { quantity: 80, cases: 1 }, 'Gửi lại cùng ID lệnh không mở thêm thùng');
+  assert.equal((await questRuntime.executeCommand('owner-1', openCase('case-2', 5))).status, 'accepted', 'Mở nhiều hơn số thùng còn: mở phần còn lại');
+  assert.deepEqual(miStock(), { quantity: 80, cases: 0 });
+  assert.equal((await questRuntime.executeCommand('owner-1', openCase('case-3', 1))).status, 'rejected', 'Hết thùng thì từ chối');
 
   // Chuỗi chi nhánh (branch-chain): cả hai thành viên cùng quyền, ví/kho chung, replay trên mô phỏng của server.
   {

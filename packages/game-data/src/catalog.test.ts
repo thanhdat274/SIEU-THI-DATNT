@@ -10,15 +10,15 @@ function assert(condition: boolean, message: string): void {
 }
 
 export function runCatalogTests(): void {
-  console.log('\n--- Test Group 3: B — Catalog chọn lọc toàn diện (290 sản phẩm gốc + 11 sản phẩm theo mùa = 301 món) ---');
+  console.log('\n--- Test Group 3: B — Catalog chọn lọc toàn diện (291 sản phẩm gốc + 11 sản phẩm theo mùa = 302 món) ---');
 
-  // 1. Kiểm tra tổng số lượng 290 sản phẩm gốc và không mất 36 món legacy
-  assert(ALL_PRODUCTS.length === 290 + SEASONAL_PRODUCTS.length + EXPANSION_PRODUCTS.length, `Catalog tổng = 290 món gốc + ${SEASONAL_PRODUCTS.length} món theo mùa + ${EXPANSION_PRODUCTS.length} món mở rộng (hiện có ${ALL_PRODUCTS.length})`);
+  // 1. Kiểm tra tổng số lượng 291 sản phẩm gốc (290 + sữa tươi thanh trùng 04/10/2026) và không mất 36 món legacy
+  assert(ALL_PRODUCTS.length === 291 + SEASONAL_PRODUCTS.length + EXPANSION_PRODUCTS.length, `Catalog tổng = 291 món gốc + ${SEASONAL_PRODUCTS.length} món theo mùa + ${EXPANSION_PRODUCTS.length} món mở rộng (hiện có ${ALL_PRODUCTS.length})`);
   assert(EXPANSION_PRODUCTS.length === 182, `Có đúng 182 sản phẩm mở rộng cấp 5–30 (hiện có ${EXPANSION_PRODUCTS.length})`);
   assert(SEASONAL_PRODUCTS.length === 11, `Có đúng 11 sản phẩm theo mùa/lễ hội (hiện có ${SEASONAL_PRODUCTS.length})`);
   assert(STARTER_PRODUCTS.length === 5, 'Có đúng 5 sản phẩm khởi đầu');
   assert(ADDITIONAL_PRODUCTS.length === 31, 'Có đúng 31 sản phẩm mở rộng ban đầu');
-  assert(CURATED_PRODUCTS.length === 254, `Có đúng 254 sản phẩm chọn lọc từ game tham khảo (hiện có ${CURATED_PRODUCTS.length})`);
+  assert(CURATED_PRODUCTS.length === 255, `Có đúng 255 sản phẩm chọn lọc từ game tham khảo (hiện có ${CURATED_PRODUCTS.length})`);
 
   // 2. Kiểm tra tính duy nhất của ID sản phẩm
   const idSet = new Set(ALL_PRODUCTS.map((p) => p.id));
