@@ -238,6 +238,15 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
           badgeVariant: 'gold' as const,
         },
         {
+          id: 'weather-fx',
+          label: weatherFx.enabled ? 'Tắt hiệu ứng thời tiết' : 'Bật hiệu ứng thời tiết',
+          desc: 'Chỉ ẩn/hiện hiệu ứng hình ảnh (mưa, mây, nước chảy mái hiên); thời tiết vẫn diễn ra và ảnh hưởng khách',
+          icon: (weatherFx.enabled ? 'sun' : 'cold') as IconName,
+          action: () => setWeatherFx({ enabled: !weatherFx.enabled }),
+          badge: weatherFx.enabled ? undefined : 'Đang tắt',
+          badgeVariant: 'gold' as const,
+        },
+        {
           id: 'weather-quality',
           label: `Chất lượng thời tiết: ${WEATHER_QUALITY_LABEL[weatherFx.quality ?? 'auto']}`,
           desc: 'Mật độ mưa, mây, lá bay. Tự động: điện thoại = Vừa, máy tính = Cao. Bấm để đổi vòng Tự động → Thấp → Vừa → Cao',

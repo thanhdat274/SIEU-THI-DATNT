@@ -1,4 +1,3 @@
-import { useWeatherFx } from '../hooks/useWeatherFx';
 import React, { useState } from 'react';
 import { PRESTIGE_XP_PER_STAR, getSeasonForDay, seasonDaysLeft } from '@game/data';
 import { describeRainForecast, type RainForecast } from '@game/core';
@@ -43,7 +42,6 @@ interface HUDProps {
   emptySlotsCount?: number;
 }
 const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0}) => {
-  const [weatherFx, setWeatherFx] = useWeatherFx();
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore(useShallow((s) => ({player: s.player, worldTime: s.worldTime, timeString: s.timeString, toggleSaveModal: s.toggleSaveModal})));
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const season = getSeasonForDay(worldTime.day);
@@ -97,15 +95,6 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
               <span className="button-label">Sắp xếp</span>
             </PixelButton>
           )}
-          <PixelButton
-            icon={weatherFx.enabled ? 'sun' : 'cold'}
-            variant={weatherFx.enabled ? 'paper' : 'wood'}
-            onClick={() => setWeatherFx({ enabled: !weatherFx.enabled })}
-            aria-pressed={weatherFx.enabled}
-            aria-label={weatherFx.enabled ? 'Hiệu ứng thời tiết: bật' : 'Hiệu ứng thời tiết: tắt'}
-            title={weatherFx.enabled ? 'Hiệu ứng thời tiết đang bật (bấm để tắt). Chỉ ẩn hiệu ứng hình ảnh, thời tiết vẫn diễn ra.' : 'Hiệu ứng thời tiết đang tắt (bấm để bật)'}
-            className="btn-weather-fx"
-          />
           <PixelButton icon="speed" onClick={onToggleGameSpeed} aria-label={`Tốc độ ${gameSpeed}x`} title={`Tốc độ thời gian ${gameSpeed}x`}>{gameSpeed}×</PixelButton>
           <PixelButton icon="warehouse" onClick={onToggleWarehouseDock} aria-label="Kho hàng" aria-expanded={isWarehouseDockOpen} title="Kho hàng sau tiệm">
             <span className="button-label">Kho</span>
