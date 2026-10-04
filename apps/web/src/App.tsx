@@ -852,6 +852,8 @@ export const App: React.FC = () => {
       }
       const sim = simulationRef.current;
       const save = snapshot.businesses[0]?.save;
+      // Tốc độ do server quyết định (bỏ phiếu chung): cập nhật nút ×1/×2/×4 theo snapshot, không chỉ theo lần bấm cục bộ.
+      if (save?.worldTime?.timeScale && !stale) setGameSpeed(Math.max(1, Math.round(save.worldTime.timeScale / 90)));
       // Đang chờ server xác nhận một lệnh của mình thì bỏ qua snapshot này (kết quả lệnh sẽ được nhận ngay sau đó) để không chớp hình.
       if (sim && save && !stale && commitsInFlightRef.current === 0) {
         importOnlineSave(sim, save, true);

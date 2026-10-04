@@ -5203,11 +5203,14 @@ export class GameSimulation {
     } else {
       this.currentDayRecord = this.createEmptyDailyRecord(saveData.worldTime.day);
     }
+    const previousCustomers = options.live ? this.customerManager.getCustomers() : [];
     this.customerManager = new CustomerManager(
       saveData.customers ?? (saveData.customer ? [saveData.customer] : []),
       saveData.customerSequence ?? 0,
       saveData.customerSpawnCooldown ?? 4
     );
+    // Khách đang đi: không giật lùi về vị trí server mỗi snapshot, chỉ hiệu chỉnh dần (lệch quá 2 ô thì nhận hẳn vị trí server).
+    this.customerManager.blendPositionsFrom(previousCustomers, 0.25, TILE_SIZE * 2);
     this.statistics = { ...saveData.statistics };
     this.createdAt = saveData.createdAt;
     this.hydrateStock(saveData.worldTime.day);
