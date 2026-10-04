@@ -600,7 +600,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
 
               <p className="spotlight-summary-text">
                 {hasSave
-                  ? 'Bà con chòm xóm đang chờ bạn mở cửa tiệm. Hãy kiểm tra kho, châm đầy hàng lên kệ và tính tiền cho khách quen nhé!'
+                  ? 'Bà con chòm xóm đang chờ bạn mở cửa tiệm. Hãy kiểm tra kho, bày hàng lên kệ và tính tiền cho khách quen nhé!'
                   : 'Chào bạn đến với tiệm tạp hóa đầu hẻm. Hãy đặt đơn hàng đầu tiên từ đại lý, bày trí lên kệ gỗ và đón vị khách mở hàng may mắn.'}
               </p>
 

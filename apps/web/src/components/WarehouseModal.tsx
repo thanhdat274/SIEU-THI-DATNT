@@ -150,9 +150,9 @@ export const WarehouseModal: React.FC<Props> = ({
         )) : <p className="muted">Chưa có đơn đang giao.</p>}
       </section>
 
-      {!canRestock && <p className="action-reason" style={{ marginTop: '12px' }}>Chưa có kệ thiếu hàng phù hợp để châm từ kho. Chọn hàng tại kệ trống để bày món mới.</p>}
+      {!canRestock && <p className="action-reason" style={{ marginTop: '12px' }}>Chưa có kệ thiếu hàng phù hợp để bày từ kho. Chọn hàng tại kệ trống để bày món mới.</p>}
       <div className="save-actions" style={{ marginTop: '16px' }}>
-        <PixelButton icon="plus" variant="teal" disabled={!canRestock} onClick={onRestock}>Châm các kệ từ kho</PixelButton>
+        <PixelButton icon="plus" variant="teal" disabled={!canRestock} onClick={onRestock}>Bày hàng lên kệ</PixelButton>
         <PixelButton icon="truck" onClick={onOpenSupplier}>Ghé đại lý nhập hàng</PixelButton>
       </div>
     </PixelDialog>

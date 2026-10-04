@@ -55,6 +55,8 @@ export interface SuggestionEngineParams {
   supplierStockOf?: (productId: string) => number | undefined;
   /** Kho thường: số ô trống và số đơn vị món đang giữ trong kho (giống kiểm tra khi đặt giỏ). Thiếu = không giới hạn. */
   ambient?: { freeCells: number; heldOf: (productId: string) => number };
+  /** Nguyên liệu quầy ăn uống đã mở cần mỗi ngày (đơn vị/ngày); > 0 = luôn ưu tiên giữ đủ tồn trong kho, kể cả chưa từng bán ở kệ. */
+  stallNeedOf?: (productId: string) => number;
 }
 
 /**
@@ -207,6 +209,8 @@ interface CandidateItem {
   storageType: 'ambient' | 'cold';
   /** Thứ tự trong nhóm: hàng đang bán theo tốc độ bán, hàng mới theo độ phổ biến (kệ trống sẵn được ưu tiên). */
   score: number;
+  /** Nguyên liệu cho quầy ăn uống: xếp trước mọi món khác. */
+  forStall?: boolean;
 }
 
 const formatMoney = (n: number) => `${n.toLocaleString('vi-VN')} ₫`;
@@ -276,7 +280,7 @@ export function generateRestockSuggestions(
   const percentReserve = Math.floor((money * reservePct) / 100);
   const obligationReserve = params.options?.protectObligations === false ? 0 : Math.max(0, Math.floor(params.obligations?.total ?? 0));
   const reserved = Math.min(money, Math.max(percentReserve, obligationReserve));
-  const moneyCap = Math.max(0, Math.min(params.budget ?? money, money - reserved));
+  let moneyCap = Math.max(0, Math.min(params.budget ?? money, money - reserved));
   if (reserved > 0) {
     const ob = params.obligations;
     if (obligationReserve > percentReserve && ob) {
@@ -343,7 +347,9 @@ export function generateRestockSuggestions(
       params.holdingArea
     );
     const incoming = getIncomingOrdersCount(product.id, params.pendingOrders) + (cartQty.get(product.id) ?? 0);
-    const effectiveStock = usableStock + incoming;
+    const stallNeed = Math.max(0, params.stallNeedOf?.(product.id) ?? 0);
+    // Quầy ăn uống lấy nguyên liệu từ kho nên chỉ tính tồn kho + hàng đang về.
+    const effectiveStock = stallNeed > 0 && params.ambient ? params.ambient.heldOf(product.id) + incoming : usableStock + incoming;
 
     // Sales velocity: 7 days & 3 days
     const v7 = calculateSalesVelocity(product.id, params.dailyRecords, params.currentDayRecord, 7);
@@ -352,10 +358,10 @@ export function generateRestockSuggestions(
     // Món từng bán trước đây (xa hơn 7 ngày) vẫn là hàng đã có lịch sử, không phải hàng mới: nhập theo tốc độ bán cũ.
     const lifetime = soldRecently ? undefined : calculateSalesVelocity(product.id, params.dailyRecords, params.currentDayRecord, HISTORY_DAYS);
     const soldBefore = (lifetime?.totalSold ?? 0) > 0;
-    const hadSales = soldRecently || soldBefore;
+    const hadSales = soldRecently || soldBefore || stallNeed > 0;
     const demandMultiplier = Math.max(0.1, Math.min(4.0, params.demandMultiplierOf?.(product.id) ?? 1.0));
     const baseVelocity = soldBefore ? lifetime!.velocity : Math.max(v7.velocity, v3.velocity);
-    const trendVelocity = (soldRecently ? params.expectedDailyOf?.(product.id) : undefined) ?? (baseVelocity * demandMultiplier);
+    const trendVelocity = Math.max(stallNeed, (soldRecently ? params.expectedDailyOf?.(product.id) : undefined) ?? (baseVelocity * demandMultiplier));
 
     const assignedFixture = params.fixtures.find(
       (f) => isSalesFixture(f) && f.assignedProductId === product.id
@@ -370,7 +376,8 @@ export function generateRestockSuggestions(
       // Hàng đang bán: đủ 2.5 ngày bán; lấp kệ nhưng không vượt MAX_COVER_DAYS ngày bán để hàng chậm không bị nhập tràn.
       const slow = trendVelocity < SLOW_SELLER_VELOCITY;
       let target = Math.ceil(trendVelocity * 2.5);
-      if (shelfCap !== undefined) {
+      if (stallNeed > 0) target = Math.max(target, Math.ceil(stallNeed * 3));
+      if (shelfCap !== undefined && stallNeed <= 0) {
         target = Math.max(target, Math.min(shelfCap, Math.ceil(trendVelocity * MAX_COVER_DAYS)));
       }
       // Perishable constraint: fresh items must not exceed shelf life
@@ -378,7 +385,8 @@ export function generateRestockSuggestions(
         target = Math.min(target, Math.max(2, Math.ceil(Math.max(trendVelocity, 1) * daysToSpoil)));
       }
 
-      const wantQuantity = Math.max(0, target - effectiveStock);
+      let wantQuantity = Math.max(0, target - effectiveStock);
+      if (product.caseSize) wantQuantity = Math.ceil(wantQuantity / product.caseSize) * product.caseSize;
       if (wantQuantity <= 0) {
         if (effectiveStock > 0 && (slow || effectiveStock >= trendVelocity * MAX_COVER_DAYS)) reducedSlow.push(product.name);
         continue;
@@ -389,7 +397,8 @@ export function generateRestockSuggestions(
         group: 'proven',
         wantQuantity,
         unitPrice,
-        reason: effectiveStock === 0 ? 'out_of_stock' : slow ? 'slow_seller' : trendVelocity >= 2 ? 'best_seller' : 'low_stock',
+        forStall: stallNeed > 0 || undefined,
+        reason: effectiveStock === 0 || (stallNeed > 0 && effectiveStock < stallNeed) ? 'out_of_stock' : slow ? 'slow_seller' : trendVelocity >= 2 ? 'best_seller' : 'low_stock',
         salesVelocity: trendVelocity,
         daysOfStockLeft: trendVelocity > 0 ? Number((effectiveStock / trendVelocity).toFixed(1)) : effectiveStock > 0 ? 99 : 0,
         storageType: product.storageType,
@@ -401,9 +410,10 @@ export function generateRestockSuggestions(
         waitingTrialCount++;
         continue;
       }
-      // Hàng mới: nhập thử lượng nhỏ theo độ phổ biến × hệ số mùa/thời tiết.
+    // Hàng mới: nhập thử lượng nhỏ theo độ phổ biến × hệ số mùa/thời tiết;
+    // đủ ít nhất một kiện để có thể bày bán sau khi mở thùng.
       const basePop = product.demandProfile?.basePopularity ?? 0.5;
-      let target = Math.max(2, Math.round(basePop * 5 * demandMultiplier));
+      let target = Math.max(product.caseSize ?? 2, Math.round(basePop * 5 * demandMultiplier));
       if (shelfCap !== undefined) target = Math.min(target, shelfCap);
       if (daysToSpoil <= 7) target = Math.min(target, Math.max(2, daysToSpoil));
       if (target <= 0) continue;
@@ -427,7 +437,7 @@ export function generateRestockSuggestions(
     slow_seller: 4,
     fallback_trial: 5,
   };
-  proven.sort((a, b) => priorityOrder[a.reason] - priorityOrder[b.reason] || b.score - a.score || a.unitPrice - b.unitPrice);
+  proven.sort((a, b) => Number(!!b.forStall) - Number(!!a.forStall) || priorityOrder[a.reason] - priorityOrder[b.reason] || b.score - a.score || a.unitPrice - b.unitPrice);
   trials.sort((a, b) => b.score - a.score || a.unitPrice - b.unitPrice);
 
   // ===== Phân bổ ngân sách 40/60 =====
@@ -447,9 +457,14 @@ export function generateRestockSuggestions(
   /** Thêm tối đa `qty` đơn vị của `cand` (không vượt nhu cầu trừ khi `overWant`), trả về số thực thêm. */
   const take = (cand: CandidateItem, qty: number, pool: SuggestionGroup | 'shared', overWant = false): number => {
     const product = PRODUCT_MAP[cand.productId]!;
+    const packSize = product.caseSize ?? 1;
     const already = picked.get(cand.productId)?.quantity ?? 0;
     let q = overWant ? qty : Math.min(qty, cand.wantQuantity - already);
     if (q <= 0) return 0;
+
+    // Ngân sách gợi ý 40/60 là mục tiêu phân bổ; một kiện nguyên có thể vượt mục tiêu nhóm.
+    const firstCaseCost = packSize * cand.unitPrice;
+    const useSharedPool = pool === 'shared' || (already === 0 && packSize > 1 && pools[pool] < firstCaseCost && Math.max(pools.proven, pools.trial) >= firstCaseCost);
 
     const room = supplierRoom(cand.productId) - already;
     if (q > room) { markLimit(cand.productId, 'supplier'); q = Math.max(0, room); }
@@ -458,16 +473,23 @@ export function generateRestockSuggestions(
       const fit = unitsFittingInCells(product, ambientHeld(cand.productId) + already, ambientFree, q);
       if (fit < q) { markLimit(cand.productId, 'ambient'); q = fit; }
     }
-    const budgetLeft = pool === 'shared' ? pools.proven + pools.trial : pools[pool];
+    // A full case may exceed the current pool by less than one case; let the candidate
+    // use the combined remaining budget when that is the only way to order a full pack.
+    const budgetLeft = useSharedPool ? pools.proven + pools.trial : pools[pool];
     const affordable = Math.floor(budgetLeft / cand.unitPrice);
     if (q > affordable) { markLimit(cand.productId, 'budget'); q = affordable; }
+    // Các mặt hàng có quy cách chỉ được gợi ý theo kiện nguyên, đúng như thao tác nhập tay.
+    q = Math.floor(q / packSize) * packSize;
     if (q <= 0) return 0;
 
     const cost = q * cand.unitPrice;
-    if (pool === 'shared') {
-      const fromProven = Math.min(pools.proven, cost);
+    if (useSharedPool) {
+      const useOther = useSharedPool && pool !== 'shared';
+      const fundingPool = useOther ? (pools.proven >= pools.trial ? 'proven' : 'trial') : pool;
+      const fromProven = fundingPool === 'shared' || fundingPool === 'proven' ? Math.min(pools.proven, cost) : 0;
       pools.proven -= fromProven;
-      pools.trial -= cost - fromProven;
+      const fromTrial = fundingPool === 'shared' || fundingPool === 'trial' ? Math.min(pools.trial, cost - fromProven) : Math.max(0, cost - fromProven);
+      pools.trial -= fromTrial;
     } else {
       pools[pool] -= cost;
     }
@@ -517,6 +539,31 @@ export function generateRestockSuggestions(
     }
   };
 
+  // 0) Nguyên liệu quầy ăn uống: lấy trước từ cả hai phần ngân sách; thiếu tiền thì được dùng thêm phần quỹ dự phòng
+  // (không chạm khoản nợ lương/thuế đã đến hạn trả) để quầy đã mở không phải dừng vì thiếu hàng.
+  const stallCands = proven.filter((c) => c.forStall);
+  if (stallCands.length > 0) {
+    const stallWant = stallCands.reduce((sum, c) => sum + c.wantQuantity * c.unitPrice, 0);
+    const dueNow = Math.min(money, Math.max(params.obligations?.wageDebt ?? 0, 0) + Math.max(params.obligations?.taxDebt ?? 0, 0));
+    const reservable = Math.max(0, Math.min(reserved, money - dueNow - cartCost - spendable));
+    const boost = Math.min(reservable, Math.max(0, stallWant - spendable));
+    if (boost > 0) {
+      pools.proven += boost;
+      const before = pools.proven + pools.trial;
+      for (const cand of stallCands) take(cand, cand.wantQuantity, 'shared');
+      const spent = before - (pools.proven + pools.trial);
+      const used = Math.min(boost, Math.max(0, spent - spendable));
+      let unused = boost - used;
+      const fromProven = Math.min(pools.proven, unused);
+      pools.proven -= fromProven;
+      unused -= fromProven;
+      pools.trial = Math.max(0, pools.trial - unused);
+      moneyCap += used;
+      if (used > 0) appliedConstraints.push(`Dùng ${formatMoney(used)} từ quỹ dự phòng để nhập nguyên liệu cho quầy ăn uống`);
+    } else {
+      for (const cand of stallCands) take(cand, cand.wantQuantity, 'shared');
+    }
+  }
   // 1) Hàng đang bán trong phần 40%.
   for (const cand of proven) take(cand, cand.wantQuantity, 'proven');
   // 2) Hàng mới trong phần 60%: chia đều cho nhiều mẫu mã trước, sau đó nhập đủ lượng thử.
@@ -619,6 +666,8 @@ export function generateRestockSuggestions(
   } else {
     explanation = `Gợi ý ${items.length} mặt hàng (${totalQuantity} sản phẩm) từ ${supplier.name} với tổng chi phí ${formatMoney(totalCost)} (tiền đang có ${formatMoney(money)}).`;
     explanation += ` Phân bổ: hàng đang bán ${formatMoney(budget.provenSpent)} · hàng mới nhập thử nghiệm ${formatMoney(budget.trialSpent)} (mục tiêu ${Math.round(provenShare * 100)}/${Math.round((1 - provenShare) * 100)}; nhóm dùng không hết thì nhường cho nhóm kia).`;
+    const stallCount = items.filter((item) => proven.some((c) => c.productId === item.productId && c.forStall)).length;
+    if (stallCount > 0) explanation += ` Ưu tiên ${stallCount} nguyên liệu cho quầy ăn uống đã mở.`;
     if (reducedSlow.length > 0) {
       explanation += ` ${reducedSlow.length} mặt hàng bán chậm/tồn nhiều được giảm hoặc bỏ nhập.`;
     }

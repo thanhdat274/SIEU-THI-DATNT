@@ -1162,6 +1162,14 @@ export const App: React.FC = () => {
     addToast(res.success ? 'Đã đổi cách điều hành chi nhánh; có hiệu lực từ khi sang ngày.' : (res.reason ?? 'Không đổi được.'), res.success ? 'success' : 'warn');
   };
 
+  const handleRestockStall = async (stallId: string) => {
+    const sim = simulationRef.current;
+    if (!sim) return;
+    const plan = sim.planStallRestock(stallId);
+    if ('reason' in plan) { addToast(plan.reason, 'warn'); return; }
+    await handleSupplierCartOrder(plan.supplierId, plan.items);
+  };
+
   const handleBuyStall = async (stallId: string) => {
     const sim = simulationRef.current;
     if (!sim || blockOfflineOnlineMutation()) return;
@@ -1620,7 +1628,7 @@ export const App: React.FC = () => {
         </div>
         {!isLoading && <WarehouseDock coldCapacity={simulationRef.current?.getColdCapacity()} ambientCapacity={simulationRef.current?.getAmbientCapacity()} ambientUsed={simulationRef.current?.getAmbientCellsUsed()} capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onOpenPlanogram={() => setIsPlanogramOpen(true)} onLocateWarehouse={locateWarehouse} onStowHolding={handleStowHolding} currentDay={worldTime.day}/>}
       </main>
-      {!isLoading && <BottomBar onOpenSupplier={openSupplierModal} onOpenCashier={openCashier}/>}
+      {!isLoading && <BottomBar onOpenSupplier={openSupplierModal} onOpenCashier={openCashier} onOpenStalls={() => setStallOpen(true)}/>}
     </div>
     {isLoading && (
       <div className="loading-screen" role="status">
@@ -1717,7 +1725,7 @@ export const App: React.FC = () => {
       />
     )}
     {isMarketOpen && simulationRef.current && <MarketModal summary={simulationRef.current.getMarketSummary()} prices={simulationRef.current.getPriceMarket()} plans={marketPlans.plans} trending={marketPlans.trending} day={worldTime.day} onClose={() => setMarketOpen(false)}/>}
-    {isStallOpen && simulationRef.current && <StallModal stalls={simulationRef.current.getStalls()} season={simulationRef.current.getSeason()} stock={Object.fromEntries(simulationRef.current.getInventory().map(item => [item.productId, item.quantity]))} report={simulationRef.current.getStallReport()} onBuy={handleBuyStall} onClose={() => setStallOpen(false)}/>}
+    {isStallOpen && simulationRef.current && <StallModal stalls={simulationRef.current.getStalls()} season={simulationRef.current.getSeason()} stock={Object.fromEntries(simulationRef.current.getInventory().map(item => [item.productId, item.quantity]))} report={simulationRef.current.getStallReport()} onBuy={handleBuyStall} onRestock={handleRestockStall} getRestockItems={(id) => simulationRef.current!.getStallRestockItems(id)} onClose={() => setStallOpen(false)}/>}
     {isQuestOpen && simulationRef.current && (
       <QuestModal
         {...simulationRef.current.getQuests()}

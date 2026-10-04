@@ -31,6 +31,7 @@ interface Props {
   onSetStaffShift: (staffId: string, shift: StaffShift) => boolean;
   restockTargets?: RestockJobTarget[];
   onAssignRefillJob?: (staffId: string, fixtureId: string) => { success: boolean; reason?: string };
+  onAssignAutoRestockJob?: (staffId: string) => { success: boolean; reason?: string };
   onClose: () => void;
   initialShowStaff?: boolean;
 }
@@ -55,6 +56,7 @@ export const CashierModal: React.FC<Props> = ({
   onSetStaffShift,
   restockTargets = [],
   onAssignRefillJob,
+  onAssignAutoRestockJob,
   onClose,
   initialShowStaff = false,
 }) => {
@@ -114,6 +116,7 @@ export const CashierModal: React.FC<Props> = ({
       onSetShift={onSetStaffShift}
       restockTargets={restockTargets}
       onAssignRefillJob={onAssignRefillJob}
+      onAssignAutoRestockJob={onAssignAutoRestockJob}
       onClose={() => (initialShowStaff ? onClose() : setShowStaff(false))}
     />;
   }

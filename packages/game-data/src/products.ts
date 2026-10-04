@@ -1,7 +1,7 @@
 import { PRODUCED_PRODUCTS } from './recipes';
 import { Product, ProductCategory, StorageType } from '@game/shared';
 import { nullProto } from './safe-map';
-import { EXPANSION_PRODUCTS } from './products-expansion';
+import { EXPANSION_PRODUCTS, EXTRA_EXPANSION_PRODUCTS } from './products-expansion';
 
 export const STARTER_PRODUCTS: Product[] = [
   {
@@ -21,7 +21,7 @@ export const STARTER_PRODUCTS: Product[] = [
       basePopularity: 0.95,
     },
     description: 'Mì tôm chua cay huyền thoại tuổi thơ. Hàng bán chạy nhất xóm, già trẻ lớn bé ai cũng thích.',
-    caseSize: 40, // 1 thùng = 40 gói
+    caseSize: 30, // Co.op Online: Hảo Hảo 30 gói/thùng
   },
   {
     id: 'xa_xi_chuong_duong',
@@ -76,6 +76,7 @@ export const STARTER_PRODUCTS: Product[] = [
       basePopularity: 0.75,
     },
     description: 'Hộp sữa đặc có đường nắp giật, không thể thiếu cho ly cà phê sữa đá buổi sáng.',
+    caseSize: 24, // Vinamilk/Co.op: Ông Thọ đỏ hộp giấy 380g thùng 24; game giá/unit khớp 1 hộp
   },
   {
     id: 'banh_mi_que',
@@ -143,8 +144,16 @@ export const ADDITIONAL_PRODUCTS: Product[] = ADDITIONAL_ROWS.map(([
   expirationRules: { daysToSpoil },
   demandProfile: { basePopularity: 0.6 },
   description: `${name} quen thuộc ở tiệm tạp hóa đầu hẻm.`,
-  // Case size cho sản phẩm nhập theo thùng
-  ...(id.startsWith('coca_') || id.startsWith('pepsi_') || id.startsWith('7up_') || id.startsWith('sprite_') || id.startsWith('mirinda_') || id.startsWith('sting_') || id === 'nuoc_suoi' || id === 'nuoc_khoang' || id === 'nuoc_tinh_khiet' || id.startsWith('mi_') || id === 'bim_bim_oishi' || id === 'banh_poca' ? { caseSize: 24 } : {}),
+  // Only attach a case size when the actual sell unit/package has been verified.
+  ...(
+    id.startsWith('mi_') && id !== 'mi_ly_modern_bo_ham'
+      ? { caseSize: 30 }
+      : id === 'mi_ly_modern_bo_ham'
+        ? { caseSize: 24 }
+        : ['nuoc_suoi', 'nuoc_khoang', 'nuoc_tinh_khiet'].includes(id)
+          ? { caseSize: 24 }
+          : {}
+  ),
 }));
 
 export const CURATED_PRODUCTS: Product[] = [
@@ -840,6 +849,7 @@ export const CURATED_PRODUCTS: Product[] = [
     unlockLevel: 1,
     demandProfile: { basePopularity: 0.9 },
     description: 'Hộp sữa lúa mạch Milo sô cô la thơm béo giàu canxi, tiếp năng lượng cho trẻ năng động.',
+    caseSize: 48, // Co.op Online: Milo hộp 180ml, thùng 48
   },
   {
     id: 'nuoc_dua_hop',
@@ -3769,7 +3779,7 @@ export const ALL_PRODUCTS: Product[] = [
   ...ADDITIONAL_PRODUCTS,
   ...CURATED_PRODUCTS,
   ...SEASONAL_PRODUCTS,
-].map(reclassify).concat(EXPANSION_PRODUCTS);
+].map(reclassify).concat(EXPANSION_PRODUCTS, EXTRA_EXPANSION_PRODUCTS);
 
 /** Hàng bán được: catalog nhập từ nhà cung cấp + hàng bếp tự sản xuất (dùng cho nhu cầu và chọn hàng lên kệ). */
 export const SELLABLE_PRODUCTS: Product[] = [...ALL_PRODUCTS, ...PRODUCED_PRODUCTS].filter(product => !product.intermediate);

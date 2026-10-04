@@ -14,10 +14,11 @@ interface Props {
   onSetShift: (staffId: string, shift: StaffShift) => boolean;
   restockTargets?: RestockJobTarget[];
   onAssignRefillJob?: (staffId: string, fixtureId: string) => { success: boolean; reason?: string };
+  onAssignAutoRestockJob?: (staffId: string) => { success: boolean; reason?: string };
   onClose: () => void;
 }
 
-export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wageDebt, onHire, onSetShift, restockTargets = [], onAssignRefillJob, onClose }) => {
+export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wageDebt, onHire, onSetShift, restockTargets = [], onAssignRefillJob, onAssignAutoRestockJob, onClose }) => {
   const slots = getMaxStaffSlots(player.level);
   const hiredIds = new Set(staff.map((member) => member.id));
 
@@ -35,7 +36,7 @@ export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wa
             <div className="product-info">
               <h3>{member.name} · {STAFF_ROLE_INFO[member.role].label}</h3>
               <p>Lương đủ ngày {money(member.dailyWage)} · Tốc độ {member.speed} · Chính xác {member.accuracy} · Sức bền {member.stamina}</p>
-              <p className="muted">{member.workerTask ? `Đang châm kệ ${member.workerTask.fixtureId}` : member.currentCheckoutId ? 'Đang phục vụ khách tại quầy' : member.lastWorkerError ?? 'Đang rảnh'}</p>
+              <p className="muted">{member.workerTask ? `Đang bày kệ ${member.workerTask.fixtureId}` : member.currentCheckoutId ? 'Đang phục vụ khách tại quầy' : member.lastWorkerError ?? 'Đang rảnh'}</p>
             </div>
             <label style={{ display: 'grid', gap: 4, minWidth: 170 }}>
               Ca làm
@@ -43,14 +44,14 @@ export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wa
                 {Object.values(STAFF_SHIFTS).map((shift) => <option key={shift.id} value={shift.id}>{shift.name}</option>)}
               </select>
             </label>
-            {member.role === 'refill' && onAssignRefillJob && restockTargets.length > 0 && (
-              <label style={{ display: 'grid', gap: 4, minWidth: 190 }}>
-                Giao việc châm kệ
-                <select aria-label={`Giao việc châm kệ cho ${member.name}`} value="" onChange={(event) => event.target.value && onAssignRefillJob(member.id, event.target.value)}>
-                  <option value="">Chọn kệ đang thiếu hàng</option>
-                  {restockTargets.map((target) => <option key={target.fixtureId} value={target.fixtureId}>{target.fixtureId} · {target.needed} món thiếu</option>)}
-                </select>
-              </label>
+            {member.role === 'refill' && onAssignAutoRestockJob && (
+              <PixelButton
+                variant="teal"
+                disabled={!!member.workerTask || restockTargets.length === 0}
+                onClick={() => onAssignAutoRestockJob(member.id)}
+              >
+                {member.workerTask ? 'Đang bày kệ' : restockTargets.length === 0 ? 'Không có kệ thiếu' : 'Tự động bày kệ (tất cả)'}
+              </PixelButton>
             )}
           </article>
         ))}

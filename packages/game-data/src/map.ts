@@ -289,8 +289,6 @@ export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STAR
     }
   }
 
-  // Chủ tiệm là vật cản đứng sau quầy thu ngân.
-  collisionLayer[(SHOPKEEPER_TILE.y - MAP_ORIGIN_Y) * MAP_WIDTH + SHOPKEEPER_TILE.x] = true;
 
   // Quầy ăn uống đã mở chặn đường đi như một vật cản trên vỉa hè.
   const stalls = STALLS.filter(stall => ownedStallIds.includes(stall.id));

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { UNITS_PER_WAREHOUSE_CELL, getFixtureDimensions, slotGroup, type SaveGameData, type StoreFixture } from '@game/shared';
-import { BUILDING_MAP, BUILDINGS, DECOR, DECOR_ATTRACTION_MAX, FIXTURE_SHOP, LAND_PLOTS, MAX_STORAGE_RACKS, NORTH_EXPANSION_ROWS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, fixtureBuilding, generateStarterTileMap, type BuildingId } from '@game/data';
+import { BUILDING_MAP, BUILDINGS, DECOR, DECOR_ATTRACTION_MAX, FIXTURE_SHOP, LAND_PLOTS, MAX_STORAGE_RACKS, NORTH_EXPANSION_ROWS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, fixtureBuilding, generateStarterTileMap, buildingAt, type BuildingId, type LandPlotDefinition } from '@game/data';
 import { applyStoreLayoutActions, coldWarehouseCapacity, decorAttraction, decorTrafficMultiplier, rotateStoreFixture, totalWarehouseCells, type StoreLayoutAction } from '@game/core';
 import { fixturePreviewUrl } from '@game/renderer';
 import { PixelButton } from './pixel';
@@ -80,6 +80,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [previewCell, setPreviewCell] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
 
   const escapeRef = useRef({ selectMode, selectedId, buyId, retrieveId, onClose });
   escapeRef.current = { selectMode, selectedId, buyId, retrieveId, onClose };
@@ -296,6 +297,20 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
     return x >= 0 && x < map.width && ly >= 0 && ly < map.height ? ground[ly * map.width + x] : 0;
   };
 
+  /** Tìm mảnh đất (LAND_PLOTS) chứa ô (x, y). Chỉ áp dụng cho các plot có `tiles` định nghĩa rõ. */
+  const findPlotForTile = (x: number, y: number): LandPlotDefinition | undefined => {
+    for (const plot of LAND_PLOTS) {
+      if (!plot.tiles || plot.tiles.length === 0) continue;
+      if (plot.tiles.some(t => t.x === x && t.y === y)) return plot;
+    }
+    return undefined;
+  };
+
+  /** Tìm tòa nhà chứa ô (x, y). */
+  const findBuildingForTile = (x: number, y: number): BuildingId | undefined => {
+    return buildingAt(x, y);
+  };
+
   const retrieveFixture = retrieveId ? (draft.storeLayout.storedFixtures ?? []).find(item => item.id === retrieveId) ?? null : null;
   const placing = !!buyItem || !!retrieveFixture;
   const retrieveSize = retrieveFixture ? getFixtureDimensions(retrieveFixture) : null;
@@ -402,6 +417,55 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
 
             {/* Board Container */}
             <div className="layout-board-container">
+              {/* Tooltip hiển thị thông tin mảnh đất khi hover vào ô "×" */}
+              {hoveredCell && (() => {
+                const { x, y } = hoveredCell;
+                const floor = tileKind(x, y) === 3 && !map.collisionLayer[(y - (map.originTileY ?? 0)) * map.width + x];
+                if (floor) return null;
+                const plot = findPlotForTile(x, y);
+                const building = findBuildingForTile(x, y);
+                return (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 'calc(100% + 8px)',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: '#2A1C12',
+                    color: '#FFF3DC',
+                    padding: '6px 10px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    whiteSpace: 'nowrap',
+                    zIndex: 100,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    border: '1px solid #F4C24D',
+                  }}>
+                    {plot ? (
+                      <>
+                        📍 Ô ({x}, {y}) — Mảnh: <strong>{plot.name}</strong> ({plot.id})
+                        {plot.buildingId && <span style={{ color: '#FFD77A' }}> · Tòa {BUILDINGS.find(b => b.id === plot.buildingId)?.name ?? plot.buildingId}</span>}
+                      </>
+                    ) : building ? (
+                      <>
+                        📍 Ô ({x}, {y}) — Thuộc tòa <strong>{BUILDINGS.find(b => b.id === building)?.name ?? building}</strong> (chưa mở sàn)
+                      </>
+                    ) : (
+                      <>
+                        📍 Ô ({x}, {y}) — Ngoài phạm vi mảnh đất đã mở
+                      </>
+                    )}
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      border: '6px solid transparent',
+                      borderTopColor: '#2A1C12',
+                    }} />
+                  </div>
+                );
+              })()}
               {extraBuildingOwned && (
                 <div className="layout-building-tabs" role="tablist" aria-label="Chọn tòa nhà">
                   {ownedBuildings.map(id => (
@@ -431,6 +495,19 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                   const previewInvalid = previewCovered && (!floor || !(buyItem ? buyPreview?.save : retrievePreview?.save));
                   const isCurrentSelectedFixtureTile = fixture?.id === selectedId;
 
+                  // Tìm thông tin mảnh đất cho ô "×"
+                  const plotInfo = !floor ? findPlotForTile(x, y) : undefined;
+                  const buildingInfo = !floor ? findBuildingForTile(x, y) : undefined;
+                  const tileLabel = fixture
+                    ? `${catalogName(fixture)} tại ô ${x}, ${y}`
+                    : floor
+                      ? `Ô ${x}, ${y}`
+                      : plotInfo
+                        ? `Ô ${x}, ${y} — thuộc mảnh "${plotInfo.name}" (${plotInfo.id})`
+                        : buildingInfo
+                          ? `Ô ${x}, ${y} — thuộc tòa ${BUILDINGS.find(b => b.id === buildingInfo)?.name ?? buildingInfo} (chưa mở sàn)`
+                          : `Ô ${x}, ${y} chưa mở`;
+
                   return (
                     <button
                       key={`${x}-${y}`}
@@ -438,8 +515,15 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                       role="gridcell"
                       data-layout-cell={`${x},${y}`}
                       className={`layout-cell ${floor ? 'is-floor' : 'is-locked'} ${fixture ? 'has-fixture' : ''} ${isCurrentSelectedFixtureTile ? 'is-selected' : ''} ${retrieveId || buyItem ? 'is-drop-target' : ''} ${previewCovered ? (previewInvalid ? 'is-preview-invalid' : 'is-preview-valid') : ''}`}
-                      aria-label={fixture ? `${catalogName(fixture)} tại ô ${x}, ${y}` : `Ô ${x}, ${y}${floor ? '' : ' chưa mở'}`}
-                      onPointerEnter={() => { if (placing) setPreviewCell({ x, y }); }}
+                      aria-label={tileLabel}
+                      onPointerEnter={() => {
+                        if (placing) setPreviewCell({ x, y });
+                        setHoveredCell({ x, y });
+                      }}
+                      onPointerLeave={() => {
+                        if (!previewCovered) setPreviewCell(null);
+                        setHoveredCell(null);
+                      }}
                       onClick={() => handleCellClick(x, y)}
                     >
                       {fixture ? null : floor ? '' : '×'}

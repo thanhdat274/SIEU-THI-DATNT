@@ -167,7 +167,7 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
         onOpenPlanogram && {
           id: 'planogram',
           label: 'Sơ đồ & Bày hàng',
-          desc: 'Xem tổng quan tất cả kệ tiệm, châm hàng nhanh hoặc đặt thêm từ đại lý',
+          desc: 'Xem tổng quan tất cả kệ tiệm, bày hàng nhanh hoặc đặt thêm từ đại lý',
           icon: 'warehouse' as IconName,
           action: () => handleSelect(onOpenPlanogram),
           badge: emptySlotsCount > 0 ? `${emptySlotsCount} ô hết` : undefined,

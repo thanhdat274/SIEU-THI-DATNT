@@ -124,7 +124,7 @@ import { validateSupplierCart as validateSupplierCartPure } from './supplier-car
 import { receiveDeliveredOrders } from './delivery';
 import { advancePriceIndex, clampSellingPrice, computePriceTargets, demandPriceFactor, keepChance, priceRatio, productSensitivity } from './price';
 import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
-import { emptyStallState, normalizeStallState, planStallDay } from './stalls';
+import { emptyStallState, normalizeStallState, planStallDay, stallDemand } from './stalls';
 import { emptyQuestState, findClaimableQuest, getDailyQuests, getStoryQuest, markQuestClaimed, normalizeQuestState, type QuestContext, type QuestProgress, type QuestReward } from './quests';
 import { generateCandidatesForDay, validateHireStaff, calculatePayroll, Mulberry32Rng } from './staff';
 import {
@@ -2859,6 +2859,75 @@ export class GameSimulation {
     return { wageDebt, nextWages, taxDue, taxDebt, total: wageDebt + nextWages + taxDue + taxDebt };
   }
 
+  /** Đơn vị nguyên liệu/ngày mà các quầy ăn uống đã mở dùng (theo nhu cầu hôm nay), để gợi ý nhập hàng ưu tiên. */
+  private stallIngredientNeedPerDay(productId: string): number {
+    const day = this.clock.getTime().day;
+    let need = 0;
+    for (const stallId of this.stalls.owned) {
+      const stall = STALL_MAP[stallId];
+      const perServing = stall?.ingredients.find((ing) => ing.productId === productId)?.perServing;
+      if (stall && perServing) need += stallDemand(stallId, day, this.playerData.reputation) * perServing;
+    }
+    return need;
+  }
+
+  /** Giỏ nhập nhanh nguyên liệu cho một quầy: bù đủ ~3 ngày nhu cầu (tính theo tồn kho), làm tròn theo kiện. */
+  public getStallRestockItems(stallId: string, days = 3): { productId: string; quantity: number }[] {
+    const stall = STALL_MAP[stallId];
+    if (!stall || !this.stalls.owned.includes(stallId)) return [];
+    const demand = stallDemand(stallId, this.clock.getTime().day, this.playerData.reputation);
+    const items: { productId: string; quantity: number }[] = [];
+    for (const ing of stall.ingredients) {
+      const incoming = this.pendingOrders.filter(o => !o.delivered && o.productId === ing.productId).reduce((sum, o) => sum + o.quantity, 0);
+      let want = Math.ceil(demand * ing.perServing * days) - this.warehouseUnits(ing.productId) - incoming;
+      if (want <= 0) continue;
+      const pack = PRODUCT_MAP[ing.productId]?.caseSize ?? 1;
+      want = Math.ceil(want / pack) * pack;
+      items.push({ productId: ing.productId, quantity: want });
+    }
+    return items;
+  }
+
+  /**
+   * Chọn đại lý còn đủ hàng cho giỏ nhập nhanh của quầy: thử từng đại lý đã mở khóa, cắt theo tồn của đại lý,
+   * tự tăng số lượng cho đủ đơn tối thiểu, rồi lấy giỏ hợp lệ rẻ nhất. Không có đại lý nào đặt được thì trả lý do.
+   */
+  public planStallRestock(stallId: string): { supplierId: string; items: { productId: string; quantity: number }[]; totalCost: number } | { reason: string } {
+    const need = this.getStallRestockItems(stallId);
+    if (need.length === 0) return { reason: 'Kho đã đủ nguyên liệu cho quầy này.' };
+    let best: { supplierId: string; items: { productId: string; quantity: number }[]; totalCost: number } | undefined;
+    let lastReason = 'Không có đại lý nào còn đủ nguyên liệu.';
+    for (const supplier of SUPPLIERS) {
+      if (supplier.unlockLevel > this.playerData.level) continue;
+      const quotes = this.getSupplierQuotes(supplier.id).quotes;
+      const items: { productId: string; quantity: number }[] = [];
+      for (const line of need) {
+        const quote = quotes[line.productId];
+        if (!quote || quote.unavailable) continue;
+        const pack = PRODUCT_MAP[line.productId]?.caseSize ?? 1;
+        const cap = quote.stockLeft === undefined ? line.quantity : Math.floor(quote.stockLeft / pack) * pack;
+        const quantity = Math.min(line.quantity, cap);
+        if (quantity > 0) items.push({ productId: line.productId, quantity });
+      }
+      if (items.length === 0) { lastReason = `${supplier.name} không còn nguyên liệu quầy cần.`; continue; }
+      let check = this.validateSupplierCart(supplier.id, items);
+      // Đơn dưới mức tối thiểu: tăng dần món còn tồn nhiều nhất cho tới khi hợp lệ.
+      for (let i = 0; i < 40 && !check.valid && check.totalCost < this.playerData.money; i++) {
+        const target = items.find(it => {
+          const quote = quotes[it.productId]!;
+          const pack = PRODUCT_MAP[it.productId]?.caseSize ?? 1;
+          return quote.stockLeft === undefined || it.quantity + pack <= quote.stockLeft;
+        });
+        if (!target) break;
+        target.quantity += PRODUCT_MAP[target.productId]?.caseSize ?? 1;
+        check = this.validateSupplierCart(supplier.id, items);
+      }
+      if (!check.valid) { lastReason = check.reasons[0] ?? lastReason; continue; }
+      if (!best || check.totalCost < best.totalCost) best = { supplierId: supplier.id, items, totalCost: check.totalCost };
+    }
+    return best ?? { reason: lastReason };
+  }
+
   public suggestRestock(supplierId?: string, budget?: number, existingCart?: Record<string, number>, options: RestockSuggestionOptions | undefined = this.restockOptions): RestockSuggestionResult {
     const effectiveSupplierId = supplierId ?? DEFAULT_SUPPLIER_ID;
     const expected = new Map(this.getProductPlans(effectiveSupplierId).map((plan) => [plan.productId, plan.expectedTomorrow]));
@@ -2889,6 +2958,7 @@ export class GameSimulation {
       budget,
       unitPriceOf: supplierId ? (productId: string) => this.wholesaleUnitPrice(supplierId, productId) : undefined,
       expectedDailyOf: (productId: string) => expected.get(productId),
+      stallNeedOf: (productId: string) => this.stallIngredientNeedPerDay(productId),
       demandMultiplierOf: (productId: string) => this.refreshDemandTable().perProduct[productId]?.multiplier ?? 1.0,
     });
   }

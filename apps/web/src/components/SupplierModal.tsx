@@ -90,6 +90,8 @@ interface ProductRowProps {
  * (trước đây mỗi lần đổi số lượng cả ~300 dòng cùng biểu tượng SVG được dựng lại).
  */
 const SupplierProductRow = React.memo(function SupplierProductRow({ product, quantity, unitPrice, locked, discountRate, supplierName, maxQty, changePct, reasonsText, stockLeft, unavailable, onSetQty }: ProductRowProps) {
+  const packSize = product.caseSize ?? 1;
+  const packCount = quantity / packSize;
   const cost = quantity * unitPrice;
   const hasQuote = changePct !== undefined;
   const reason = locked ? `Mở khóa ở cấp ${product.unlockLevel}` : unavailable ? `${supplierName} tạm ngừng cung` : '';
@@ -114,7 +116,7 @@ const SupplierProductRow = React.memo(function SupplierProductRow({ product, qua
               (-{Math.round(discountRate * 100)}%)
             </span>
           ) : null}
-          {quantity > 0 && (
+          {quantity > 0 && !product.caseSize && (
             <span style={{ marginLeft: 6, color: 'var(--teal-dark)', fontWeight: 700 }}>
               · Tổng <strong>{money(cost)}</strong>
             </span>
@@ -129,36 +131,17 @@ const SupplierProductRow = React.memo(function SupplierProductRow({ product, qua
         )}
         {reason && <p className="action-reason">{reason}</p>}
       </div>
-      {/* Chỉ có stepper — không có nút Đặt hàng riêng */}
+      {/* Số lượng ở đây là số thùng/vỉ, được đổi sang đơn vị bán lẻ khi đặt. */}
       <div className="product-actions">
         <QuantityStepper
-          label={`Số lượng ${product.name}`}
-          value={quantity}
+          label={`Số ${product.caseSize ? 'thùng' : 'món'} ${product.name}`}
+          value={packCount}
           min={0}
           disabled={locked || maxQty <= 0}
-          max={Math.max(0, maxQty)}
-          onChange={(n) => onSetQty(product.id, n)}
+          max={Math.floor(Math.max(0, maxQty) / packSize)}
+          onChange={(n) => onSetQty(product.id, n * packSize)}
         />
-        {product.caseSize && !locked && maxQty > 0 && (
-          <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
-            <PixelButton
-              variant="paper"
-              onClick={() => onSetQty(product.id, Math.min(quantity + product.caseSize!, maxQty))}
-              style={{ fontSize: '10px', padding: '2px 6px' }}
-            >
-              +1 thùng ({product.caseSize})
-            </PixelButton>
-            {quantity >= product.caseSize && (
-              <PixelButton
-                variant="paper"
-                onClick={() => onSetQty(product.id, Math.max(0, quantity - product.caseSize!))}
-                style={{ fontSize: '10px', padding: '2px 6px' }}
-              >
-                -1 thùng
-              </PixelButton>
-            )}
-          </div>
-        )}
+        <span style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>{quantity} món</span>
         {quantity > 0 && (
           <span style={{ fontSize: '10px', color: 'var(--teal-dark)', fontWeight: 700, whiteSpace: 'nowrap' }}>
             ✓ Đã chọn
@@ -231,8 +214,33 @@ export const SupplierModal: React.FC<Props> = ({
     try { localStorage.setItem(SUGGEST_OPTIONS_KEY, JSON.stringify(next)); } catch { /* không lưu được thì bỏ qua */ }
     onSaveRestockOptions?.(next);
   };
-  const updateSuggestOption = (key: 'provenSharePct' | 'maxTrialProducts' | 'cashReservePct', value: number, min: number, max: number) =>
-    saveSuggestOptions({ ...suggestOptions, [key]: Math.min(max, Math.max(min, Number.isFinite(value) ? Math.round(value) : min)) });
+  // Ô nhập giữ dạng chuỗi để xóa trống/gõ dở không bị ép về 0; chỉ áp dụng khi bấm Lưu (hoặc Gợi ý nhập hàng).
+  const [suggestDraft, setSuggestDraft] = useState(() => ({
+    provenSharePct: String(suggestOptions.provenSharePct),
+    maxTrialProducts: String(suggestOptions.maxTrialProducts),
+    cashReservePct: String(suggestOptions.cashReservePct),
+  }));
+  const setDraftField = (key: keyof typeof suggestDraft, value: string) => setSuggestDraft((d) => ({ ...d, [key]: value }));
+  const commitSuggestDraft = (): Required<RestockSuggestionOptions> => {
+    const parse = (raw: string, fallback: number) => (raw.trim() === '' || !Number.isFinite(Number(raw)) ? fallback : Number(raw));
+    const next = normalizeRestockOptions({
+      ...suggestOptions,
+      provenSharePct: parse(suggestDraft.provenSharePct, suggestOptions.provenSharePct),
+      maxTrialProducts: parse(suggestDraft.maxTrialProducts, suggestOptions.maxTrialProducts),
+      cashReservePct: parse(suggestDraft.cashReservePct, suggestOptions.cashReservePct),
+    });
+    setSuggestDraft({
+      provenSharePct: String(next.provenSharePct),
+      maxTrialProducts: String(next.maxTrialProducts),
+      cashReservePct: String(next.cashReservePct),
+    });
+    saveSuggestOptions(next);
+    return next;
+  };
+  const draftDirty =
+    suggestDraft.provenSharePct !== String(suggestOptions.provenSharePct) ||
+    suggestDraft.maxTrialProducts !== String(suggestOptions.maxTrialProducts) ||
+    suggestDraft.cashReservePct !== String(suggestOptions.cashReservePct);
 
   // Suggested Cart state
   const suggestionRef = useRef<HTMLElement>(null);
@@ -251,6 +259,17 @@ export const SupplierModal: React.FC<Props> = ({
   const currentSupplier = SUPPLIER_MAP[selectedSupplierId] ?? SUPPLIERS[0];
   const discountRate = currentSupplier.discountRate ?? 0;
   const board = getQuotes?.(selectedSupplierId);
+  const unitPriceFor = useCallback((productId: string, quantity: number) => getUnitPrice
+    ? getUnitPrice(selectedSupplierId, productId, Math.max(1, quantity))
+    : Math.round((PRODUCT_MAP[productId]?.purchasePrice ?? 1) * (1 - discountRate)), [getUnitPrice, selectedSupplierId, discountRate]);
+  const estimateCartCost = useCallback((items: SupplierCartItem[]) => items.reduce((sum, item) => {
+    const product = PRODUCT_MAP[item.productId];
+    const unit = unitPriceFor(item.productId, item.quantity);
+    const packs = product?.caseSize ? Math.floor(item.quantity / product.caseSize) : 0;
+    const remainder = product?.caseSize ? item.quantity % product.caseSize : item.quantity;
+    const casePrice = product?.caseSize ? Math.round(unit * product.caseSize * 0.95) : 0;
+    return sum + (packs ? packs * casePrice + remainder * unit : item.quantity * unit);
+  }, 0), [unitPriceFor]);
 
   const coldUsed = inventory.reduce(
     (n, i) => n + (PRODUCT_MAP[i.productId]?.storageType === 'cold' ? i.quantity : 0),
@@ -284,14 +303,12 @@ export const SupplierModal: React.FC<Props> = ({
       .filter((p) => (quantities[p.id] ?? 0) > 0)
       .map((p) => {
         const qty = quantities[p.id]!;
-        const discountedUnitPrice = getUnitPrice
-          ? getUnitPrice(selectedSupplierId, p.id, qty)
-          : Math.round(p.purchasePrice * (1 - discountRate));
-        return { product: p, qty, unitPrice: discountedUnitPrice, total: qty * discountedUnitPrice };
+        const discountedUnitPrice = unitPriceFor(p.id, qty);
+        return { product: p, qty, packs: p.caseSize ? qty / p.caseSize : qty, unitPrice: discountedUnitPrice, total: estimateCartCost([{ productId: p.id, quantity: qty }]) };
       });
-  }, [quantities, selectedSupplierId, discountRate, getUnitPrice]);
+  }, [quantities, estimateCartCost, unitPriceFor]);
 
-  const cartTotal = cartItems.reduce((sum, it) => sum + it.total, 0);
+  const cartTotal = estimateCartCost(cartItems.map((it) => ({ productId: it.product.id, quantity: it.qty })));
   const cartColdUnits = cartItems
     .filter((it) => it.product.storageType === 'cold')
     .reduce((sum, it) => sum + it.qty, 0);
@@ -323,7 +340,8 @@ export const SupplierModal: React.FC<Props> = ({
   const maxQtyFor = (productId: string): number => {
     const quote = board?.quotes[productId];
     if (quote?.unavailable) return 0;
-    return quote?.stockLeft ?? 99;
+    const stock = quote?.stockLeft ?? 99;
+    return Math.floor(stock / (PRODUCT_MAP[productId]?.caseSize ?? 1)) * (PRODUCT_MAP[productId]?.caseSize ?? 1);
   };
 
   // Nguồn sự thật duy nhất của số lượng đặt: `quantities`. Luôn kẹp theo tồn NCC.
@@ -345,7 +363,7 @@ export const SupplierModal: React.FC<Props> = ({
   const handleGenerateSuggestion = () => {
     if (!onGetSuggestions) return;
     // Truyền giỏ đang soạn để gợi ý chỉ tiêu phần tiền còn lại (bấm nhiều lần không cộng dồn vượt tiền).
-    const res = onGetSuggestions(selectedSupplierId, quantities, suggestOptions);
+    const res = onGetSuggestions(selectedSupplierId, quantities, draftDirty ? commitSuggestDraft() : suggestOptions);
     setSuggestedCart({
       items: res.items.map((it) => ({ ...it })),
       constraints: res.appliedConstraints,
@@ -374,7 +392,7 @@ export const SupplierModal: React.FC<Props> = ({
       <details className="auto-buy-panel" style={{ marginBottom: 14, padding: 12, border: '2px solid var(--teal)', background: 'var(--paper-light)' }} aria-label="Tự nhập hàng" open={autoBuyConfig.enabled || autoBuyConfig.rules.length > 0}>
         <summary style={{ cursor: 'pointer', fontWeight: 700, marginBottom: 8 }}>Tự nhập hàng · {autoBuyConfig.enabled ? 'đang bật' : 'đang tắt'} · {autoBuyConfig.rules.length} quy tắc</summary>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div><strong>Tự nhập hàng</strong><p className="muted" style={{ margin: '4px 0 0' }}>Tự đặt mua theo tồn kho mỗi sáng. Chức năng này đang {autoBuyConfig.enabled ? 'bật' : 'tắt'}; khác với nhân viên châm hàng từ kho.</p></div>
+          <div><strong>Tự nhập hàng</strong><p className="muted" style={{ margin: '4px 0 0' }}>Tự đặt mua theo tồn kho mỗi sáng. Chức năng này đang {autoBuyConfig.enabled ? 'bật' : 'tắt'}; khác với nhân viên bày hàng từ kho.</p></div>
           <PixelButton variant={autoBuyConfig.enabled ? 'brick' : 'teal'} disabled={!onUpdateAutoBuy} onClick={() => onUpdateAutoBuy?.(!autoBuyConfig.enabled, autoBuyConfig.rules)}>{autoBuyConfig.enabled ? 'Tắt tự nhập' : 'Bật tự nhập'}</PixelButton>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: 8, marginTop: 12 }}>
@@ -464,19 +482,23 @@ export const SupplierModal: React.FC<Props> = ({
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '6px', fontSize: '11px' }}>
               <label title="% ngân sách cho hàng đang bán; phần còn lại nhập thử hàng mới">
                 Hàng đang bán{' '}
-                <input type="number" min={0} max={100} value={suggestOptions.provenSharePct} style={{ ...SUGGEST_INPUT_STYLE, width: 52 }} aria-label="Phần trăm ngân sách cho hàng đang bán"
-                  onChange={(e) => updateSuggestOption('provenSharePct', Number(e.target.value), 0, 100)} />% · mới {100 - suggestOptions.provenSharePct}%
+                <input type="number" min={0} max={100} value={suggestDraft.provenSharePct} style={{ ...SUGGEST_INPUT_STYLE, width: 52 }} aria-label="Phần trăm ngân sách cho hàng đang bán"
+                  onChange={(e) => setDraftField('provenSharePct', e.target.value)} />% · mới {100 - suggestOptions.provenSharePct}%
               </label>
               <label title="Số mặt hàng mới nhập thử tối đa mỗi lần gợi ý">
                 Món mới tối đa{' '}
-                <input type="number" min={0} max={20} value={suggestOptions.maxTrialProducts} style={{ ...SUGGEST_INPUT_STYLE, width: 46 }} aria-label="Số món mới nhập thử tối đa"
-                  onChange={(e) => updateSuggestOption('maxTrialProducts', Number(e.target.value), 0, 20)} />
+                <input type="number" min={0} max={20} value={suggestDraft.maxTrialProducts} style={{ ...SUGGEST_INPUT_STYLE, width: 46 }} aria-label="Số món mới nhập thử tối đa"
+                  onChange={(e) => setDraftField('maxTrialProducts', e.target.value)} />
               </label>
               <label title="% tiền mặt giữ lại cho lương/thuế, không đưa vào gợi ý">
                 Giữ lại quỹ{' '}
-                <input type="number" min={0} max={90} value={suggestOptions.cashReservePct} style={{ ...SUGGEST_INPUT_STYLE, width: 52 }} aria-label="Phần trăm tiền mặt giữ lại"
-                  onChange={(e) => updateSuggestOption('cashReservePct', Number(e.target.value), 0, 90)} />%
+                <input type="number" min={0} max={90} value={suggestDraft.cashReservePct} style={{ ...SUGGEST_INPUT_STYLE, width: 52 }} aria-label="Phần trăm tiền mặt giữ lại"
+                  onChange={(e) => setDraftField('cashReservePct', e.target.value)} />%
               </label>
+              <button type="button" className="pixel-btn" disabled={!draftDirty} onClick={commitSuggestDraft}
+                style={{ fontSize: '11px', padding: '2px 8px' }} aria-label="Lưu thông số gợi ý">
+                {draftDirty ? 'Lưu thông số' : 'Đã lưu ✓'}
+              </button>
               <label title="Giữ đủ tiền trả nợ lương, lương kỳ tới và thuế sắp nộp (lấy mức lớn hơn giữa khoản này và % bên trên)">
                 <input type="checkbox" checked={suggestOptions.protectObligations} aria-label="Chừa tiền lương và thuế"
                   onChange={(e) => saveSuggestOptions({ ...suggestOptions, protectObligations: e.target.checked })} />{' '}
@@ -592,7 +614,7 @@ export const SupplierModal: React.FC<Props> = ({
                         <strong style={{ fontSize: '12px' }}>{prod?.name ?? item.productId}</strong>
                         <span style={{ marginLeft: '5px', background: badgeColor, color: '#fff', fontSize: '10px', padding: '1px 4px', borderRadius: '3px' }}>{badgeLabel}</span>
                         <div style={{ fontSize: '11px', color: 'var(--ink-light)' }}>
-                          Tiệm còn {shopStock} · NCC còn {maxQty >= 99 ? '∞' : maxQty} · Gợi ý {item.quantity} · Tối đa {maxQty}
+                          Tiệm còn {shopStock} món · NCC còn {maxQty >= 99 ? '∞' : maxQty} món · Gợi ý {item.quantity} món ({prod?.caseSize ? `${Math.ceil(item.quantity / prod.caseSize)} thùng` : 'món lẻ'}) · Tối đa {maxQty} món
                         </div>
                       </div>
                     </div>
@@ -716,7 +738,7 @@ export const SupplierModal: React.FC<Props> = ({
       </div>
 
 
-      {/* Product List — mỗi dòng chỉ có stepper (+/-), không có nút Đặt hàng riêng */}
+      {/* Chọn số thùng theo quy cách; tồn kho sau nhận vẫn tính bằng món lẻ. */}
       {filteredProducts.length === 0 ? (
         <EmptyState title="Không tìm thấy mặt hàng" icon="bag">
           Không có sản phẩm nào khớp với tìm kiếm hoặc bộ lọc nhóm hàng hiện tại.
@@ -733,7 +755,7 @@ export const SupplierModal: React.FC<Props> = ({
             <SupplierProductRow
               product={product}
               quantity={quantity}
-              unitPrice={unitPrice}
+              unitPrice={product.caseSize ? Math.round(estimateCartCost([{ productId: product.id, quantity: product.caseSize }]) / product.caseSize) : unitPrice}
               locked={product.unlockLevel > player.level}
               discountRate={discountRate}
               supplierName={currentSupplier.name}
@@ -771,7 +793,7 @@ export const SupplierModal: React.FC<Props> = ({
                   🛒 Giỏ đặt hàng · {cartItems.length} loại · {cartItems.reduce((s, it) => s + it.qty, 0)} đơn vị
                 </strong>
                 <div style={{ fontSize: '11px', color: 'var(--ink-light)', marginTop: '2px' }}>
-                  {cartItems.map((it) => `${it.product.name} ×${it.qty}`).join(' · ')}
+                  {cartItems.map((it) => `${it.product.name} ×${it.packs} ${it.product.caseSize ? 'thùng' : 'món'} (${it.qty} món)`).join(' · ')}
                 </div>
               </div>
               <PixelButton
