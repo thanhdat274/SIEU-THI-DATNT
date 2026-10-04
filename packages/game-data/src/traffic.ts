@@ -6,9 +6,9 @@
 export const TRAFFIC_SIGNAL = {
   greenSec: 26,
   yellowSec: 3,
-  redSec: 15,
+  redSec: 10,
   pedLeadSec: 1,
-  pedWalkSec: 9,
+  pedWalkSec: 5,
 } as const;
 
 export const TRAFFIC_SIGNAL_CYCLE_SEC = TRAFFIC_SIGNAL.greenSec + TRAFFIC_SIGNAL.yellowSec + TRAFFIC_SIGNAL.redSec;
@@ -26,7 +26,7 @@ export const STREET_VEHICLE_RULES = {
   stopMarginPx: 6,
   followGapPx: 14,
   decel: 140,
-  accel: 80,
+  accel: 140,
   halfLength: { motorbike: 31, car: 65, bicycle: 32, minibus: 96, truck: 90 },
   /** Nửa chiều dài theo trục y của xe chạy đường dọc (nhìn trước/sau, ngắn hơn khi nhìn nghiêng). */
   halfLengthY: { motorbike: 22, car: 30, bicycle: 22, minibus: 44, truck: 48 },

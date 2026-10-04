@@ -98,6 +98,7 @@
 /* TIER 1: thu gọn HUD theo bề ngang thật của thanh (không phải cửa sổ) để nút không đè lên ô cấp/đánh giá */
 @container hud (max-width:1800px){
   .hud-actions .button-label{display:none}
+  .hud-actions .btn-warehouse .button-label{display:inline}
   .hud-season-badge,.hud-event-badge{display:none}
   .brand-copy .eyebrow{display:none}
 }
