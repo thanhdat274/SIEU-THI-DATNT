@@ -10,6 +10,7 @@ export * from './reviews';
 export * from './security';
 export * from './land';
 export * from './pixel-art';
+export * from './pixel-art-cold';
 export * from './online-world';
 export * from './catalog-manifest';
 export * from './catalog.test';
