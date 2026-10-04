@@ -105,13 +105,14 @@ async function run() {
     await assert.rejects(send(member, 'claim-festival-again', commands[4].payload, revision));
     assert.equal((await snapshotFor(member)).world.revision, revision, 'lệnh bị từ chối không đổi revision');
 
-    // Hai client gửi hai lệnh mới cùng expectedRevision: đúng một lệnh thắng.
+    // Hai client gửi hai lệnh server-replay cùng expectedRevision: server xếp nối tiếp trên trạng thái mới nhất, cả hai đều được nhận.
     const race = await Promise.allSettled([
       send(owner, 'race-title-a', { type: 'set_title', titleId: undefined }, revision),
       send(member, 'race-title-b', { type: 'set_title', titleId: undefined }, revision),
     ]);
-    assert.equal(race.filter(r => r.status === 'fulfilled').length, 1, 'tranh chấp cùng revision: đúng một thắng');
-    assert.equal((await snapshotFor(owner)).world.revision, revision + 1);
+    const raceWins = race.filter(r => r.status === 'fulfilled').length;
+    assert.ok(raceWins >= 1, 'tranh chấp cùng revision: ít nhất một lệnh được nhận');
+    assert.equal((await snapshotFor(owner)).world.revision, revision + raceWins, 'mỗi lệnh được nhận nâng revision đúng một bậc');
 
     // Thành viên (không phải chủ hẻm) cũng được sửa bố cục cửa hàng qua layout_batch.
     await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.worldTime.isStoreOpen': false } }); // layout chỉ sửa được khi đóng cửa
@@ -241,6 +242,13 @@ async function run() {
     let after = await ops('ops-store-status', { type: 'store_status', isOpen: !wasOpen });
     assert.equal(after.worldTime.isStoreOpen, !wasOpen, 'store_status đổi trạng thái mở/đóng ở server');
     after = await ops('ops-store-status-back', { type: 'store_status', isOpen: wasOpen });
+    assert.equal(after.worldTime.isStoreOpen, wasOpen);
+
+    // Revision client chậm một nhịp (người kia vừa commit): lệnh server-replay vẫn được nhận, không bị 400 "stale".
+    const staleResult = await send(owner, 'ops-store-status-stale', { type: 'store_status', isOpen: !wasOpen }, Math.max(0, opsRevision - 1));
+    assert.equal(staleResult.committed, true, 'store_status với expectedRevision cũ vẫn được commit');
+    opsRevision = staleResult.revision;
+    after = await ops('ops-store-status-stale-back', { type: 'store_status', isOpen: wasOpen });
     assert.equal(after.worldTime.isStoreOpen, wasOpen);
 
     // Cài đặt gợi ý nhập hàng: lệnh server-replay, lưu vào save chung; payload sai bị chặn trước khi chạm save.

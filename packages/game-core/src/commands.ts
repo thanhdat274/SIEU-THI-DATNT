@@ -35,6 +35,11 @@ export class GameCommandCoordinator {
 
   getRevision(): number { return this.revision; }
 
+  /** Theo kịp revision đã commit qua đường khác (HTTP) để lệnh sau không bị coi là cũ. */
+  setRevision(revision: number, force = false): void {
+    if (Number.isSafeInteger(revision) && (force || revision > this.revision)) this.revision = revision;
+  }
+
   addMember(accountId: string): void { this.members.add(accountId); }
 
   submit(

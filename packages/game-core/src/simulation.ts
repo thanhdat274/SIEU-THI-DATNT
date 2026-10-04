@@ -311,6 +311,9 @@ export class GameSimulation {
   private dailyRoutine: DailyRoutineSystem;
   private coopRoutine: CoopRoutineSystem | null = null;
   private coopMode = false;
+  private coopLocalPlayerId: string | null = null;
+  private coopLocalState: DailyRoutineState | null = null;
+  private coopSeenDay: number | null = null;
   private routineEnabled = false;
   private trafficWarmed = false;
   private logisticsManager = new StoreLogisticsManager();
@@ -506,12 +509,8 @@ export class GameSimulation {
         this.callbacks.onRoutineStateChanged?.(state, previous);
         this.notifyStateChanged();
       },
-      onSleep: () => {
-        // Co-op: chỉ advance day khi cả hai player sleeping
-        if (this.coopRoutine?.isAllPlayersSleeping()) {
-          this.clock.advanceToNextDay();
-        }
-      },
+      // Ngày chỉ được chốt ở `update` (khi cả hai đã ngủ, và chỉ ở server): chốt cả ở đây làm ngày nhảy hai lần.
+      onSleep: () => {},
       getActivePlayerCount: () => this.getActiveCoopPlayers(),
       getActivePlayerIds: () => this.getCoopPlayerIds(),
       isPlayerSleepReady: (pid) => this.isPlayerSleepReady(pid),
@@ -3633,7 +3632,21 @@ export class GameSimulation {
 
   public isDailyRoutineEnabled(): boolean { return this.routineEnabled; }
 
-  public getDailyRoutineState(): DailyRoutineState { return this.dailyRoutine.getState(); }
+  public getDailyRoutineState(): DailyRoutineState {
+    if (this.coopMode && this.coopLocalPlayerId) return this.coopRoutine?.getState(this.coopLocalPlayerId) ?? this.dailyRoutine.getState();
+    return this.dailyRoutine.getState();
+  }
+
+  /** Báo đổi trạng thái lịch ngày của người chơi cục bộ trong hẻm chung (UI chuyển tối, khóa nút mở cửa...), như chơi đơn. */
+  private trackCoopLocalState(): void {
+    if (!this.coopMode || !this.coopLocalPlayerId) return;
+    const state = this.coopRoutine?.getState(this.coopLocalPlayerId) ?? null;
+    if (!state || state === this.coopLocalState) return;
+    const previous = this.coopLocalState ?? state;
+    this.coopLocalState = state;
+    this.callbacks.onRoutineStateChanged?.(state, previous);
+    this.notifyStateChanged();
+  }
 
   private tickDailyRoutine(dt: number, manual: Vector2D): RoutineTickOutput {
     if (!this.routineEnabled) return { move: null, controlLocked: false, speedMultiplier: 1, gear: 'none' };
@@ -3651,6 +3664,13 @@ export class GameSimulation {
   private tickCoopRoutine(dt: number): CoopRoutineTickOutput | null {
     if (!this.coopMode || !this.coopRoutine) return null;
     const time = this.clock.getTime();
+    // Sang ngày (server chốt, hoặc snapshot đổi giờ): đưa mọi người về AT_HOME, bỏ cờ "đã ngủ" của hôm qua.
+    if (this.coopSeenDay !== null && this.coopSeenDay !== time.day) this.resetCoopForNewDay();
+    this.coopSeenDay = time.day;
+    // Người chơi cục bộ dùng vị trí thật của mô phỏng này (vị trí avatar từ snapshot luôn trễ vài khung).
+    if (this.coopLocalPlayerId && this.coopPlayerPositions.has(this.coopLocalPlayerId)) {
+      this.coopPlayerPositions.set(this.coopLocalPlayerId, { ...this.playerData.position });
+    }
     const players: Record<string, { position: Vector2D; manualInput: boolean; isOnline: boolean }> = {};
     for (const playerId of this.coopPlayerPositions.keys()) {
       players[playerId] = {
@@ -3719,6 +3739,17 @@ export class GameSimulation {
   }
 
   public isCoopMode(): boolean { return this.coopMode; }
+
+  /**
+   * Máy khách hẻm chung: người chơi của tài khoản này. Đặt thì lịch ngày áp lên nhân vật cục bộ (23:30 khóa điều khiển, tự đi bộ về nhà,
+   * báo đổi trạng thái cho UI) và máy này KHÔNG tự chốt ngày: server chốt khi cả hai đã ngủ rồi gửi qua snapshot.
+   * Server (runtime không đầu) không đặt: vị trí các avatar do máy khách báo lên.
+   */
+  public setCoopLocalPlayer(playerId: string | null): void {
+    if (this.coopLocalPlayerId === playerId) return;
+    this.coopLocalPlayerId = playerId;
+    this.coopLocalState = null;
+  }
 
   public registerCoopPlayer(config: CoopPlayerRoutineConfig): void {
     if (!this.coopRoutine) return;
@@ -3825,7 +3856,13 @@ export class GameSimulation {
     
     // 1.6. Co-op Routine (nếu bật): xử lý nhiều player, tự động chuyển ngày khi cả hai ngủ
     const coopTick = this.tickCoopRoutine(dt);
-    if (coopTick?.allPlayersSleeping && !this.clock.getTime().isStoreOpen) {
+    this.trackCoopLocalState();
+    const localId = this.coopLocalPlayerId;
+    const coopDrive: RoutineTickOutput | null = coopTick && localId && localId in coopTick.moves
+      ? { move: coopTick.moves[localId], controlLocked: coopTick.controlLocked[localId], speedMultiplier: coopTick.speedMultipliers[localId], gear: coopTick.gears[localId] }
+      : null;
+    const driveTick = coopDrive ?? routineTick;
+    if (coopTick?.allPlayersSleeping && !this.clock.getTime().isStoreOpen && !localId) {
       // Cả hai player đã ngủ → chuyển ngày
       this.clock.advanceToNextDay();
       this.resetCoopForNewDay();
@@ -3945,8 +3982,8 @@ export class GameSimulation {
     for (const checkoutId of autoCheckoutIds) this.completeCustomerCheckout(checkoutId);
 
     // 2. Process player movement
-    const moveVec = routineTick.controlLocked ? (routineTick.move ?? { x: 0, y: 0 }) : (routineTick.move ?? manualMove);
-    const moveSpeedScale = routineTick.move ? routineTick.speedMultiplier : 1;
+    const moveVec = driveTick.controlLocked ? (driveTick.move ?? { x: 0, y: 0 }) : (driveTick.move ?? manualMove);
+    const moveSpeedScale = driveTick.move ? driveTick.speedMultiplier : 1;
     this.isMoving = Math.abs(moveVec.x) > 0.05 || Math.abs(moveVec.y) > 0.05;
 
     this.prevPlayerPosition = this.isMoving ? { x: this.playerData.position.x, y: this.playerData.position.y } : null;
@@ -3973,7 +4010,7 @@ export class GameSimulation {
 
     // 4. Handle input action requests
     if (this.inputManager.consumeInteract()) {
-      if (this.activeFixture && this.callbacks.onOpenFixtureModal && !routineTick.controlLocked) {
+      if (this.activeFixture && this.callbacks.onOpenFixtureModal && !driveTick.controlLocked) {
         this.callbacks.onOpenFixtureModal(this.activeFixture);
       }
     }
@@ -5136,7 +5173,16 @@ export class GameSimulation {
   /**
    * Import saved game data
    */
-  public importSaveData(saveData: SaveGameData): void {
+  /** Khóa hình học bố cục + đất + quầy: đổi khóa nghĩa là bản đồ/đường đi phải dựng lại. */
+  private layoutKey(): string {
+    return JSON.stringify([this.fixtures.map((f) => [f.id, f.tileX, f.tileY, f.rotation]), this.unlockedPlotIds, this.stalls.owned]);
+  }
+
+  /**
+   * `live`: trạng thái server gửi liên tục trong hẻm chung (vài lần mỗi giây). Bản đồ chỉ báo đổi khi bố cục đổi, không thì renderer dựng lại liên tục.
+   */
+  public importSaveData(saveData: SaveGameData, options: { live?: boolean } = {}): void {
+    const previousLayoutKey = options.live ? this.layoutKey() : '';
     this.restockJobClaims.clear();
     this.playerData = normalizePlayerProgression(saveData.player);
     this.warehouseTier = saveData.warehouseTier ?? 0;
@@ -5194,11 +5240,14 @@ export class GameSimulation {
     } else {
       this.currentDayRecord = this.createEmptyDailyRecord(saveData.worldTime.day);
     }
+    const previousCustomers = options.live ? this.customerManager.getCustomers() : [];
     this.customerManager = new CustomerManager(
       saveData.customers ?? (saveData.customer ? [saveData.customer] : []),
       saveData.customerSequence ?? 0,
       saveData.customerSpawnCooldown ?? 4
     );
+    // Khách đang đi: không giật lùi về vị trí server mỗi snapshot, chỉ hiệu chỉnh dần (lệch quá 2 ô thì nhận hẳn vị trí server).
+    this.customerManager.blendPositionsFrom(previousCustomers, 0.25, TILE_SIZE * 2);
     this.statistics = { ...saveData.statistics };
     this.createdAt = saveData.createdAt;
     this.hydrateStock(saveData.worldTime.day);
@@ -5213,11 +5262,15 @@ export class GameSimulation {
         if (post) member.position = post;
       }
     }
+    const layoutUnchanged = !!options.live && previousLayoutKey === this.layoutKey();
     this.customerManager.restoreDiningRoutes(this.tileMap, this.fixtures);
-    this.callbacks.onMapChanged?.(this.tileMap);
+    if (!layoutUnchanged) this.callbacks.onMapChanged?.(this.tileMap);
     this.ensureSafePlayerPosition();
+    // Khách không lưu đường đi trong save: luôn dựng lại từ vị trí hiện tại (rẻ, vài khách) để họ tiếp tục bước, không đứng khựng.
     this.customerManager.rerouteAll(this.tileMap, this.fixtures);
-    this.activeFixture = null;
+    // Hẻm chung nhận trạng thái từ server nhiều lần mỗi giây: giữ món đồ đang tương tác (nếu còn) để cửa sổ không bị đóng.
+    const keptFixtureId = this.activeFixture?.id;
+    this.activeFixture = keptFixtureId ? this.fixtures.find((f) => f.id === keptFixtureId) ?? null : null;
     this.notifyStateChanged();
   }
 

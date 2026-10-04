@@ -31,7 +31,8 @@ class HealthController {
       const db = await connectDatabase();
       await db.command({ ping: 1 });
       return { status: 'ok', database: 'connected' };
-    } catch {
+    } catch (error) {
+      console.error('[mongo] /ready lỗi:', (error instanceof Error ? error.message : String(error)).replace(/mongodb(\+srv)?:\/\/\S+/gi, 'mongodb://<redacted>'));
       throw new ServiceUnavailableException('Database unavailable or not configured');
     }
   }
@@ -78,6 +79,11 @@ export class GameController {
     WorldGateway.kickMemberSession(worldId, request.gameAccount.uid, 'Đã rời khỏi hẻm');
     return res;
   }
+  async deleteWorld(request: AuthenticatedRequest, worldId: string) {
+    const res = await worldRepository.deleteWorld(worldId, request.gameAccount.uid);
+    await WorldGateway.closeWorld(worldId, 'Chủ hẻm đã xóa hẻm này');
+    return res;
+  }
   resetWorld(request: AuthenticatedRequest, worldId: string, body: { confirmation?: unknown }) {
     if (body?.confirmation !== worldId) throw new BadRequestException('confirmation must equal worldId');
     return worldRepository.reset(worldId, request.gameAccount.uid);
@@ -103,6 +109,7 @@ export class GameController {
     if (typeof payload?.type !== 'string' || !ALLOWED_COMMAND_TYPES.has(payload.type)) {
       throw new BadRequestException('Loại lệnh không được hỗ trợ.');
     }
+    let usedLiveRuntime: WorldRuntime | undefined;
     const serverReplayedCommands = new Set([
       'checkout', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production', 'respond_party_order', 'fulfill_party_order', 'rush_fulfill_party_order', 'claim_goal',
       'claim_weekly_quest', 'claim_festival_goal', 'begin_story_chapter', 'claim_story_chapter', 'choose_perk', 'set_title', 'maintain_fixture', 'security_action',
@@ -124,7 +131,17 @@ export class GameController {
           updatedBusiness: commandBusiness,
         };
       }
-      const runtime = new WorldRuntime(commandWorld.world, commandBusiness);
+      // Lệnh server phát lại luôn chạy trên trạng thái chuẩn mới nhất của server, nên không bắt client khớp revision:
+      // hai người cùng hẻm thao tác xen kẽ thì revision client dễ chậm một nhịp và lệnh hợp lệ bị 400 "stale" oan.
+      body.expectedRevision = commandWorld.world.revision;
+      // Có người đang online thì lệnh chạy trên runtime đang sống (nguồn sự thật duy nhất, đã chạy khách/giờ/giao hàng);
+      // dựng runtime mới từ DB sẽ bỏ mất tối đa vài giây mô phỏng chưa checkpoint.
+      const liveRuntime = WorldGateway.getLiveRuntime(worldId);
+      if (liveRuntime && liveRuntime.getRevision() !== commandWorld.world.revision) {
+        liveRuntime.adoptCommitted(commandWorld.world.revision, commandBusiness, true);
+      }
+      usedLiveRuntime = liveRuntime;
+      const runtime = liveRuntime ?? new WorldRuntime(commandWorld.world, commandBusiness);
       const commandResult = await runtime.executeCommand(request.gameAccount.uid, {
         protocolVersion: typeof body.protocolVersion === 'number' ? body.protocolVersion : commandWorld.world.protocolVersion,
         worldId,
@@ -136,6 +153,7 @@ export class GameController {
       if (commandResult.status !== 'accepted') {
         console.warn(`[command] từ chối type=${payload.type} status=${commandResult.status} reason=${commandResult.reason ?? '(không có)'} world=${worldId} business=${commandBusiness.id} expectedRevision=${body.expectedRevision} serverRevision=${commandWorld.world.revision}`);
       }
+      if (commandResult.status === 'accepted') console.log(`[command] nhận type=${payload.type} world=${worldId} account=${request.gameAccount.uid} revision=${commandWorld.world.revision}`);
       if (commandResult.status !== 'accepted') throw new BadRequestException(commandResult.reason ?? 'Lệnh không hợp lệ hoặc trạng thái đã thay đổi.');
       const canonicalSave = runtime.getSnapshot().businesses[0].save;
       canonicalSave.id = commandBusiness.save.id;
@@ -210,18 +228,28 @@ export class GameController {
         if (violation) throw new BadRequestException(`Save không hợp lệ: ${violation}`);
       }
     }
-    const result = await worldRepository.commitCommand({
-      worldId,
-      actorId: request.gameAccount.uid,
-      expectedRevision: body.expectedRevision,
-      protocolVersion: typeof body.protocolVersion === 'number' ? body.protocolVersion : undefined,
-      receipt: body.receipt,
-      updatedBusiness: body.updatedBusiness,
-      activity: body.activity,
-    });
+    let result: Awaited<ReturnType<typeof worldRepository.commitCommand>>;
+    try {
+      result = await worldRepository.commitCommand({
+        worldId,
+        actorId: request.gameAccount.uid,
+        expectedRevision: body.expectedRevision,
+        protocolVersion: typeof body.protocolVersion === 'number' ? body.protocolVersion : undefined,
+        receipt: body.receipt,
+        updatedBusiness: body.updatedBusiness,
+        activity: body.activity,
+      });
+    } catch (error) {
+      console.error(`[command] lưu DB lỗi type=${payload?.type} world=${worldId} account=${request.gameAccount.uid}:`, error instanceof Error ? error.message : error);
+      // Runtime sống đã chạy lệnh nhưng DB không nhận: đưa runtime về đúng bản đã lưu để không lệch DB.
+      if (usedLiveRuntime) usedLiveRuntime.adoptCommitted(commandWorld.world.revision, commandBusiness, true);
+      throw error;
+    }
+    if (!result.committed) console.warn(`[command] commit bị từ chối type=${payload?.type} world=${worldId} account=${request.gameAccount.uid} revision=${commandWorld.world.revision}${usedLiveRuntime ? ' (runtime sống bị ép về bản đã lưu)' : ''}`);
+    if (!result.committed && usedLiveRuntime) usedLiveRuntime.adoptCommitted(commandWorld.world.revision, commandBusiness, true);
     // Push instant world:update to all WS clients (skip if no WS clients connected)
     if (result.committed) {
-      WorldGateway.notifyCommit(worldId, { revision: result.revision, receipt: result.receipt });
+      WorldGateway.notifyCommit(worldId, { revision: result.revision, receipt: result.receipt }, { revision: result.revision, business: body.updatedBusiness });
     }
     return payload?.type === 'layout_batch' || serverReplayedCommands.has(payload?.type)
       ? { ...result, updatedBusiness: body.updatedBusiness }
@@ -286,6 +314,7 @@ route(Post, 'createWorld', 'worlds'); requestParam('createWorld', 0); bodyParam(
 route(Get, 'getWorld', 'worlds/:worldId'); requestParam('getWorld', 0); namedParam('getWorld', 'worldId', 1);
 route(Post, 'createInvite', 'worlds/:worldId/invites'); requestParam('createInvite', 0); namedParam('createInvite', 'worldId', 1);
 route(Delete, 'revokeInvite', 'worlds/:worldId/invites/:inviteId'); requestParam('revokeInvite', 0); namedParam('revokeInvite', 'worldId', 1); namedParam('revokeInvite', 'inviteId', 2);
+route(Delete, 'deleteWorld', 'worlds/:worldId'); requestParam('deleteWorld', 0); namedParam('deleteWorld', 'worldId', 1);
 route(Post, 'joinWorld', 'worlds/join'); requestParam('joinWorld', 0); bodyParam('joinWorld', 1);
 route(Delete, 'kickMember', 'worlds/:worldId/members/:memberId'); requestParam('kickMember', 0); namedParam('kickMember', 'worldId', 1); namedParam('kickMember', 'memberId', 2);
 route(Delete, 'leaveWorld', 'worlds/:worldId/membership'); requestParam('leaveWorld', 0); namedParam('leaveWorld', 'worldId', 1);
@@ -310,6 +339,7 @@ export async function createServer() {
   // Giới hạn theo IP trước khi xác thực (bảo vệ bước verify token Firebase). Sau reverse proxy cần cấu hình trust proxy riêng.
   app.use((req: { ip?: string; socket?: { remoteAddress?: string } }, res: { status: (code: number) => { json: (body: unknown) => void } }, next: () => void) => {
     if (httpIpLimiter.take(req.ip ?? req.socket?.remoteAddress ?? 'unknown')) return next();
+    console.warn(`[rate-limit] chặn IP ${req.ip ?? req.socket?.remoteAddress ?? 'unknown'}`);
     res.status(429).json({ statusCode: 429, message: 'Quá nhiều yêu cầu, vui lòng thử lại sau.' });
   });
   app.useWebSocketAdapter(new WsAdapter(app));

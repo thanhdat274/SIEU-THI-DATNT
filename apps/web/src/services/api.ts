@@ -77,6 +77,10 @@ export async function leaveOnlineWorld(idToken: string, worldId: string): Promis
   });
 }
 
+export async function deleteOnlineWorld(idToken: string, worldId: string): Promise<{ deleted: boolean }> {
+  return fetchWithAuth(`/api/v1/worlds/${worldId}`, idToken, { method: 'DELETE' });
+}
+
 export async function resetOnlineWorld(idToken: string, worldId: string): Promise<{ reset: boolean; revision: number }> {
   return fetchWithAuth(`/api/v1/worlds/${worldId}/reset`, idToken, {
     method: 'POST',

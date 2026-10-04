@@ -881,6 +881,23 @@ export class CustomerManager {
     });
   }
 
+  /**
+   * Hẻm chung: snapshot server (4 lần/giây) ghi đè khách, còn máy này tự bước khách 60 lần/giây nên vị trí bị kéo giật lùi mỗi lần nhận.
+   * Với khách cùng id/giai đoạn/đích đã có ở máy này, giữ vị trí cục bộ rồi chỉ kéo dần (`pull`) về vị trí server; lệch quá `snapDistance` thì nhận hẳn vị trí server.
+   */
+  public blendPositionsFrom(previous: readonly Readonly<CustomerState>[], pull: number, snapDistance: number): void {
+    if (!previous.length) return;
+    const before = new Map(previous.map((c) => [c.id, c]));
+    for (const customer of this.customers) {
+      const old = before.get(customer.id);
+      if (!old || old.stage !== customer.stage || old.targetFixtureId !== customer.targetFixtureId) continue;
+      const dx = customer.position.x - old.position.x;
+      const dy = customer.position.y - old.position.y;
+      if (Math.hypot(dx, dy) > snapDistance) continue;
+      customer.position = { x: old.position.x + dx * pull, y: old.position.y + dy * pull };
+    }
+  }
+
   public addTestCustomer(customer: CustomerState): void {
     customer.basket ??= [];
     this.customers.push(customer);

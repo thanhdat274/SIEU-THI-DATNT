@@ -249,6 +249,18 @@ export class WorldRepository {
     return { reset: true, revision: 0 };
   }
 
+  /** Chỉ chủ hẻm được xóa; xóa cả tiệm, lời mời, biên nhận và hoạt động trong cùng document. */
+  async deleteWorld(worldId: string, ownerId: string) {
+    const collection = (await connectDatabase()).collection<WorldDocument>(collectionName);
+    const result = await collection.deleteOne({ _id: worldId, 'world.memberships': { $elemMatch: { accountId: ownerId, role: 'owner' } } });
+    if (!result.deletedCount) {
+      const exists = await collection.findOne({ _id: worldId }, { projection: { _id: 1 } });
+      if (!exists) throw new NotFoundException('Không tìm thấy hẻm.');
+      throw new ForbiddenException('Chỉ chủ hẻm mới xóa được hẻm.');
+    }
+    return { deleted: true };
+  }
+
   async leave(worldId: string, accountId: string) {
     const result = await (await connectDatabase()).collection<WorldDocument>(collectionName).updateOne({
       _id: worldId,

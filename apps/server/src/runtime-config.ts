@@ -19,6 +19,8 @@ export function readRuntimeConfig(env: NodeJS.ProcessEnv = process.env) {
     port,
     host: env.HOST ?? '127.0.0.1',
     webOrigin: env.WEB_ORIGIN ?? 'http://localhost:5173',
+    /** Giây giữa hai lần ghi trạng thái mô phỏng vào Mongo (lệnh người chơi vẫn ghi ngay). Mặc định 30, tối thiểu 5. */
+    checkpointSeconds: Math.max(5, Number(env.WORLD_CHECKPOINT_SECONDS) || 30),
     mongoUri,
     // Explicit MONGODB_DATABASE wins, then the name in the URI path, so a URI that names a
     // database is never silently ignored in favour of a different default.

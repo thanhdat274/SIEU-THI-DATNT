@@ -71,6 +71,55 @@ export async function runWorldRuntimeTests() {
   assert.equal(runtime.getActiveSessionsCount(), 0);
   assert.equal(runtime.getIsPaused(), true, 'Stale session pauses world');
 
+  // Vào lại hẻm: client đếm sequence từ 0 nhưng runtime vẫn nhớ mốc cũ; phiên mới phải di chuyển được.
+  const reNow = Date.now() + 1000;
+  runtime.registerSession('owner-1', reNow);
+  runtime.applyInputIntent('owner-1', { sequence: 50, direction: { x: 1, y: 0 } }, reNow + 20);
+  runtime.registerSession('owner-1', reNow + 100);
+  const beforeRejoin = runtime.getSnapshot().world.avatars.find(item => item.accountId === 'owner-1')!.position.x;
+  const afterRejoin = runtime.applyInputIntent('owner-1', { sequence: 1, direction: { x: 1, y: 0 } }, reNow + 120);
+  assert.ok(afterRejoin, 'input sequence 1 sau khi vào lại phải được nhận');
+  assert.notEqual(afterRejoin.world.avatars.find(item => item.accountId === 'owner-1')?.position.x, beforeRejoin, 'vào lại hẻm vẫn di chuyển được');
+
+  // Commit qua HTTP: runtime phải nhận save + revision mới để snapshot gửi cho người kia không bị cũ.
+  const committed = structuredClone(runtime.getSnapshot().businesses[0]);
+  committed.save.player.money += 12345;
+  const nextRevision = runtime.getSnapshot().world.revision + 3;
+  assert.equal(runtime.adoptCommitted(nextRevision, committed), true);
+  assert.equal(runtime.getSnapshot().world.revision, nextRevision, 'revision runtime theo kịp commit HTTP');
+  assert.equal(runtime.getSnapshot().businesses[0].save.player.money, committed.save.player.money, 'tiền mới có trong snapshot');
+  assert.equal(runtime.adoptCommitted(nextRevision, committed), false, 'revision không mới hơn thì bỏ qua');
+
+  // Client báo vị trí thật: nhận trong vùng đi được, bỏ qua giá trị sai hoặc nhảy xa vô lý.
+  const posNow = Date.now() + 5000;
+  runtime.registerSession('member-2', posNow);
+  const startPos = runtime.getAvatars().find(item => item.accountId === 'owner-1')!.position;
+  assert.ok(runtime.reportPosition('owner-1', { x: startPos.x + 10, y: startPos.y }, 'right', posNow), 'vị trí hợp lệ được nhận');
+  assert.equal(runtime.reportPosition('owner-1', { x: startPos.x + 5000, y: startPos.y }, 'right', posNow + 100), null, 'nhảy quá xa bị bỏ qua');
+  assert.equal(runtime.reportPosition('owner-1', { x: Number.NaN, y: 0 }, 'up', posNow + 200), null, 'NaN bị bỏ qua');
+  assert.equal(runtime.reportPosition('stranger-999', { x: 400, y: 400 }, 'up', posNow), null, 'người ngoài phiên bị bỏ qua');
+  assert.equal(runtime.getAvatars().find(item => item.accountId === 'owner-1')!.direction, 'right');
+  runtime.unregisterSession('member-2');
+
+  // Lịch ngày do server giữ: cả hai về nhà lúc 23:30 thì server tự sang ngày mới.
+  {
+    const rt = new WorldRuntime(structuredClone(seeded.world), structuredClone(seeded.business), { heartbeatTimeoutMs: 600000, checkpointIntervalSeconds: 9999 });
+    rt.registerSession('owner-1');
+    rt.registerSession('member-2');
+    const sim = rt.getSimulation();
+    const time = sim.getTime();
+    sim.getClock().setTime({ ...time, hour: 23, minute: 20, isStoreOpen: false });
+    const dayBefore = sim.getTime().day;
+    const homes = [{ x: 3.5 * 32, y: 12.5 * 32 }, { x: 3.5 * 32, y: 12.5 * 32 }];
+    const t0 = Date.now();
+    for (let i = 0; i < 400 && sim.getTime().day === dayBefore; i++) {
+      rt.reportPosition('owner-1', homes[0], 'down', t0 + i * 1000);
+      rt.reportPosition('member-2', homes[1], 'down', t0 + i * 1000);
+      rt.tick(0.25, t0 + i * 250);
+    }
+    assert.ok(sim.getTime().day > dayBefore, 'cả hai về nhà thì server tự chuyển ngày');
+  }
+
   // 4. Register outsider is rejected
   const stranger = runtime.registerSession('stranger-999');
   assert.equal(stranger, false, 'Non-member session rejected');

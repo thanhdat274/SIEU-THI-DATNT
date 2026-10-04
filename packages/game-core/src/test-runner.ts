@@ -85,6 +85,7 @@ import { runPerkBehaviorTests } from './perks.test';
 import { runTitlesTests } from './titles.test';
 import { runStoreLogisticsTests } from './store-logistics.test';
 import { runDailyRoutineTests } from './daily-routine.test';
+import { runCoopDayTests } from './coop-day.test';
 import { runWarehouseTierTests, runStorageRackTests, runTotalWarehouseCellsTests, runWarehouseCellRoundingTests } from './warehouse-tiers.test';
 import { runChildCapacityTests } from './child-capacity.test';
 
@@ -192,6 +193,7 @@ export async function runTests(): Promise<void> {
   runTitlesTests();
   runStoreLogisticsTests();
   runDailyRoutineTests();
+  runCoopDayTests();
   console.log('\n--- Test core headless runtime ---');
   runCoreRuntimeTests();
   runAvatarTests();
