@@ -278,7 +278,15 @@ async function run() {
     opsRevision = (await snapshotFor(owner)).world.revision;
     after = await ops('ops-auto-restock', { type: 'auto_restock' });
     assert.ok(stockOf(after) > 0, 'auto_restock châm kệ từ kho');
-    assert.equal(noodleQty(after) + stockOf(after), 30, 'auto_restock bảo toàn số lượng');
+    // auto_restock còn tự gán + bày sang các ô trống khác, nên bảo toàn tính trên mọi kệ chứa mì.
+    const noodleOnShelves = (after.storeLayout.fixtures as any[]).filter((f) => f.assignedProductId === noodle).reduce((sum, f) => sum + (f.currentStock as number), 0);
+    assert.equal(noodleQty(after) + noodleOnShelves, 30, 'auto_restock bảo toàn số lượng');
+
+    await gameDb.updateOne({ _id: world.id }, { $set: { [`businesses.0.save.storeLayout.fixtures.${shelfIndex}.currentStock`]: 0, [`businesses.0.save.storeLayout.fixtures.${shelfIndex}.stockLots`]: [], 'businesses.0.save.inventory': [{ productId: noodle, quantity: 30, lots: [lot(30)] }] } });
+    opsRevision = (await snapshotFor(owner)).world.revision;
+    after = await ops('ops-auto-fill-shelf', { type: 'auto_fill_shelf', fixtureId: noodleShelf });
+    assert.ok(stockOf(after) > 0, 'auto_fill_shelf bày hàng lên đúng kệ');
+    assert.equal(noodleQty(after) + stockOf(after), 30, 'auto_fill_shelf bảo toàn số lượng');
 
     const heldBefore = (after.holdingArea ?? []).length;
     assert.equal(heldBefore, 1, 'có đúng một mục hàng chờ');

@@ -14,7 +14,7 @@ import {
   AutoBuyReport,
 } from '@game/shared';
 import { ALL_PRODUCTS, PRODUCT_MAP, PRODUCT_CATEGORY_LABELS, SUPPLIERS, SUPPLIER_MAP, DEFAULT_SUPPLIER_ID } from '@game/data';
-import { normalizeRestockOptions } from '@game/core';
+import { normalizeRestockOptions, SAME_DAY_SUPPLIER_CUTOFF_HOUR } from '@game/core';
 import { addRecommendation, setCartQuantity } from './supplier-cart';
 import { PixelDialog, PixelStat, PixelButton, ProductSlot, QuantityStepper, money, EmptyState } from './pixel';
 
@@ -180,6 +180,7 @@ export interface Props {
   pendingOrders: SupplierOrder[];
   inventory: InventoryItem[];
   currentDay: number;
+  currentHour?: number;
   onOrder: (id: string, n: number) => void;
   onOrderCart?: (supplierId: string, items: SupplierCartItem[]) => void;
   /** Cài đặt gợi ý đã lưu trong save (thiếu = đọc localStorage cũ). */
@@ -201,6 +202,7 @@ export const SupplierModal: React.FC<Props> = ({
   pendingOrders,
   inventory,
   currentDay,
+  currentHour,
   onOrder,
   onOrderCart,
   onGetSuggestions,
@@ -436,6 +438,7 @@ export const SupplierModal: React.FC<Props> = ({
       <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
         {SUPPLIERS.map((sup) => {
           const locked = sup.unlockLevel > player.level;
+          const closed = !locked && sup.delayDays === 0 && currentHour !== undefined && currentHour >= SAME_DAY_SUPPLIER_CUTOFF_HOUR;
           const isSelected = sup.id === selectedSupplierId;
           return (
             <PixelButton
@@ -449,7 +452,7 @@ export const SupplierModal: React.FC<Props> = ({
               }}
               style={{ flex: '1 1 140px', fontSize: '12px' }}
             >
-              {sup.name} {locked ? `(Cấp ${sup.unlockLevel})` : ''}
+              {sup.name} {locked ? `(Cấp ${sup.unlockLevel})` : closed ? `(đã nghỉ sau ${SAME_DAY_SUPPLIER_CUTOFF_HOUR}h)` : ''}
             </PixelButton>
           );
         })}

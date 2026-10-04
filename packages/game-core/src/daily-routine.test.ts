@@ -18,7 +18,7 @@ function makeSim() {
 }
 
 /** Chạy tới khi điều kiện đúng (tối đa `limit` bước 1 giây thực = 1 phút game); trả về số bước đã chạy. */
-function runUntil(sim: GameSimulation, done: () => boolean, limit = 6000, dt = 1): number {
+function runUntil(sim: GameSimulation, done: () => boolean, limit = 12000, dt = 0.5): number {
   let steps = 0;
   while (!done() && steps < limit) { sim.update(dt); steps++; }
   return steps;
@@ -45,7 +45,7 @@ export function runDailyRoutineTests(): void {
   {
     const clock = new GameClock({ day: 1, hour: 7, minute: 0, isStoreOpen: false, timeScale: 60 });
     clock.setRoutineMode(true);
-    clock.update(30); // 30 giây thực = 30 phút game
+    clock.update(20); // 20 giây thực = 30 phút game (timeScale 60 cũ quy đổi thành 90)
     assert.equal(clock.getTime().hour, 7);
     assert.equal(clock.getTime().minute, 30, 'routine: cửa đóng vẫn chạy');
     clock.update(GameClock.MAX_UPDATE_SECONDS);

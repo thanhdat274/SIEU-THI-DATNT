@@ -492,6 +492,14 @@ export interface StallState {
   owned: string[]; // id quầy đã mở
   processedDayIds: number[]; // ngày đã tính doanh thu quầy (idempotent)
   lastReport?: StallDayReport; // kết quả ngày gần nhất để hiển thị
+  progress?: StallDayProgress; // ngày đang bán dở: doanh thu cộng dần theo giờ
+}
+
+/** Tiến độ bán của quầy trong ngày chưa chốt (lưu để nạp lại giữa ngày không bán trùng). */
+export interface StallDayProgress {
+  day: number;
+  slots: number; // số khung giờ bán đã tính (0–14, từ 08:00)
+  entries: Record<string, { demand: number; servings: number; revenue: number; cogs: number; units: Record<string, number> }>;
 }
 
 export interface StallDayReport {
@@ -1157,6 +1165,7 @@ export type GameCommandPayload =
   | { type: 'clean_dining_table'; fixtureId: string }
   | { type: 'assign_dining_cleanup'; staffId: string; fixtureId: string }
   | { type: 'set_price'; productId: string; price: number | null }
+  | { type: 'reset_prices' }
   | { type: 'layout_move'; fixtureId: string; tileX: number; tileY: number; rotation: 0 | 90 | 180 | 270 }
   | { type: 'layout_store'; fixtureId: string }
   | { type: 'layout_retrieve'; fixtureId: string; tileX: number; tileY: number }
@@ -1192,6 +1201,7 @@ export type GameCommandPayload =
   | { type: 'planogram_assignment'; fixtureId: string; productId: string | null }
   | { type: 'planogram_restock'; fixtureId: string }
   | { type: 'auto_restock' }
+  | { type: 'auto_fill_shelf'; fixtureId: string }
   | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> }
   | { type: 'set_restock_options'; options: RestockSuggestionOptions }
   | { type: 'set_auto_buy_stalls'; enabled: boolean }
@@ -1428,6 +1438,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'set_restock_options': return isRestockSuggestionOptions(p.options);
     case 'set_auto_buy_stalls': return typeof p.enabled === 'boolean';
     case 'auto_buy_sync': return true;
+    case 'reset_prices': return true;
     case 'set_price': return nonEmptyString(p.productId) && (p.price === null || (Number.isSafeInteger(p.price) && Number(p.price) > 0));
     case 'layout_move': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.tileX) && Number.isSafeInteger(p.tileY) && [0, 90, 180, 270].includes(p.rotation as number);
     case 'layout_store': return nonEmptyString(p.fixtureId);
@@ -1459,7 +1470,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'advance_day': case 'stow_all': case 'auto_restock': return true;
     case 'stow': return nonEmptyString(p.holdingId);
     case 'planogram_assignment': return nonEmptyString(p.fixtureId) && (p.productId === null || nonEmptyString(p.productId));
-    case 'planogram_restock': return nonEmptyString(p.fixtureId);
+    case 'planogram_restock': case 'auto_fill_shelf': return nonEmptyString(p.fixtureId);
     case 'dispose_stock': return nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0;
     case 'open_case': return nonEmptyString(p.productId) && Number.isSafeInteger(p.count) && Number(p.count) > 0;
     case 'order_supplier': return nonEmptyString(p.supplierId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 64 && p.items.every(item => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);

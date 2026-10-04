@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { DRINK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, STORE_TYPES, WEATHER_MAP, XOI_DISH_IDS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
+import { ALL_PRODUCTS, DRINK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, STORE_TYPES, WEATHER_MAP, XOI_DISH_IDS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
 import { InputManager, GameSimulation, ambientMix, getTutorialChecklist } from '@game/core';
 import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
@@ -39,7 +39,7 @@ import type { StoreLayoutAction } from '@game/core';
 import { money, PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
 
-import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, SecurityModal } from './lazy-modals';
+import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal } from './lazy-modals';
 
 /** Cấp thấp nhất mở được một loại chi nhánh; dưới cấp này (và chưa có chi nhánh) ẩn mục Chuỗi chi nhánh. */
 const CHAIN_UNLOCK_LEVEL = Math.min(...STORE_TYPES.map(type => type.unlockLevel));
@@ -77,6 +77,7 @@ export const App: React.FC = () => {
   const [isMaintenanceOpen, setMaintenanceOpen] = useState(false);
   const [isChainOpen, setChainOpen] = useState(false);
   const [isReviewsOpen, setReviewsOpen] = useState(false);
+  const [isPricesOpen, setPricesOpen] = useState(false);
   const [isSecurityOpen, setSecurityOpen] = useState(false);
   const [isAnalyticsOpen, setAnalyticsOpen] = useState(false);
   const audioRef = useRef<AmbientAudioEngine | null>(null);
@@ -310,7 +311,7 @@ export const App: React.FC = () => {
       setCurrentRevision(freshSave.revision);
       revisionRef.current = freshSave.revision;
       setLastSavedTime(freshSave.updatedAt);
-      setGameSpeed(Math.max(1, freshSave.worldTime.timeScale / 60));
+      setGameSpeed(Math.max(1, freshSave.worldTime.timeScale / 90));
       addToast('Đã khởi tạo lại tiệm mới thành công!', 'info');
       return true;
     } catch (err) {
@@ -363,7 +364,7 @@ export const App: React.FC = () => {
       setCurrentRevision(stored.revision);
       revisionRef.current = stored.revision;
       setLastSavedTime(stored.updatedAt);
-      setGameSpeed(Math.max(1, stored.worldTime.timeScale / 60));
+      setGameSpeed(Math.max(1, stored.worldTime.timeScale / 90));
       addToast('Đã nhập bản lưu. Bản cũ được giữ làm bản dự phòng.', 'success');
       return true;
     } catch (err) {
@@ -534,7 +535,7 @@ export const App: React.FC = () => {
       setCurrentRevision(initialSave.revision);
       revisionRef.current = initialSave.revision;
       setLastSavedTime(initialSave.updatedAt);
-      setGameSpeed(Math.max(1, initialSave.worldTime.timeScale / 60));
+      setGameSpeed(Math.max(1, initialSave.worldTime.timeScale / 90));
 
       // 2. Setup inputs
       const inputManager = new InputManager();
@@ -1025,6 +1026,21 @@ export const App: React.FC = () => {
     addToast(`Đã đặt giá ${productName}: ${result.price?.toLocaleString('vi-VN')}₫.`, 'success');
   };
 
+  const handleResetAllSellingPrices = async () => {
+    const sim = simulationRef.current;
+    if (!sim) return;
+    if (blockOfflineOnlineMutation()) return;
+    const result = sim.resetSellingPrices();
+    if (result.reset === 0) { if (result.blocked) addToast('Không đổi giá khi khách đang thanh toán món này.', 'warn'); return; }
+    syncFromSimulation(sim);
+    if (onlineWorldRef.current) {
+      await commitBusinessChange({ type: 'reset_prices' }, 'Đưa mọi món về giá gợi ý', 'Đặt giá');
+    } else {
+      await handleSaveGame(false);
+    }
+    addToast(result.blocked ? `Đã đưa ${result.reset} món về giá gợi ý; ${result.blocked} món đang có khách thanh toán nên giữ nguyên.` : 'Đã đưa mọi món về giá gợi ý.', result.blocked ? 'warn' : 'success');
+  };
+
   const handleRestock = async (fixtureId: string, productId: string, amount: number) => {
     if (blockOfflineOnlineMutation()) return;
     if (!simulationRef.current) return;
@@ -1333,10 +1349,10 @@ export const App: React.FC = () => {
 
   const handleToggleGameSpeed = async () => {
     if (blockOfflineOnlineMutation()) return;
-    const nextSpeed = gameSpeed === 1 ? 2 : 1;
+    const nextSpeed = gameSpeed === 1 ? 2 : gameSpeed === 2 ? 4 : 1;
     const curWorld = onlineWorldRef.current;
     if (curWorld && curWorld.world.memberships.length > 1) {
-      const sent = worldSocket.submitTimeVote({ type: 'change_speed', targetSpeed: nextSpeed as 1 | 2 });
+      const sent = worldSocket.submitTimeVote({ type: 'change_speed', targetSpeed: nextSpeed as 1 | 2 | 4 });
       if (!sent) { addToast('Chưa kết nối realtime; không gửi được phiếu.', 'warn'); return; }
       const { gameAuth } = await import('./services/firebase');
       const user = gameAuth().currentUser;
@@ -1354,7 +1370,7 @@ export const App: React.FC = () => {
 
     setGameSpeed(nextSpeed);
     if (simulationRef.current) {
-      simulationRef.current.getClock().setTimeScale(nextSpeed === 1 ? 60 : 120);
+      simulationRef.current.getClock().setTimeScale(nextSpeed * 90);
     }
     addToast(`Tốc độ thời gian: ${nextSpeed}x`, 'info');
   };
@@ -1607,6 +1623,7 @@ export const App: React.FC = () => {
     onOpenMaintenance: () => setMaintenanceOpen(true),
     onOpenChain: (player.level >= CHAIN_UNLOCK_LEVEL || (simulationRef.current?.getChain().branches.length ?? 0) > 0) ? () => setChainOpen(true) : undefined,
     onOpenReviews: () => setReviewsOpen(true),
+    onOpenPrices: () => setPricesOpen(true),
     onOpenAnalytics: () => setAnalyticsOpen(true),
     onToggleAudioMute: () => { const next = !audioMuted; audioRef.current?.setMuted(next); setAudioMuted(next); },
     onOpenSecurity: (player.level >= SECURITY_RULES.unlockLevel) ? () => setSecurityOpen(true) : undefined,
@@ -1644,7 +1661,7 @@ export const App: React.FC = () => {
           ⚠️ Mất kết nối hẻm chung — thao tác bị tạm dừng, đang kết nối lại...
         </div>
       )}
-      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={hudHandlers.onOpenMarket} onOpenTax={hudHandlers.onOpenTax} onOpenRegulars={hudHandlers.onOpenRegulars} onOpenSkills={hudHandlers.onOpenSkills} onOpenTitles={hudHandlers.onOpenTitles} maintenanceAlerts={simulationRef.current?.getMaintenanceList().filter(e => e.status !== 'good').length ?? 0} onOpenMaintenance={hudHandlers.onOpenMaintenance} onOpenChain={hudHandlers.onOpenChain} onOpenReviews={hudHandlers.onOpenReviews} onOpenAnalytics={hudHandlers.onOpenAnalytics} audioMuted={audioMuted} onToggleAudioMute={hudHandlers.onToggleAudioMute} onOpenSecurity={hudHandlers.onOpenSecurity} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onOpenStaff={hudHandlers.onOpenStaff} onOpenStalls={hudHandlers.onOpenStalls} onOpenQuests={hudHandlers.onOpenQuests} onOpenLevelRoadmap={hudHandlers.onOpenLevelRoadmap} onOpenPlanogram={hudHandlers.onOpenPlanogram} emptySlotsCount={fixtures.filter(f => isSalesFixture(f) && f.currentStock === 0).length} onToggleStoreStatus={hudHandlers.onToggleStoreStatus} onOpenLayout={hudHandlers.onOpenLayout} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={hudHandlers.onToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={hudHandlers.onToggleWarehouseDock} isWarehouseDockOpen={isWarehouseDockOpen} lastSavedAt={lastSavedTime}/>}
+      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={hudHandlers.onOpenMarket} onOpenPrices={hudHandlers.onOpenPrices} onOpenTax={hudHandlers.onOpenTax} onOpenRegulars={hudHandlers.onOpenRegulars} onOpenSkills={hudHandlers.onOpenSkills} onOpenTitles={hudHandlers.onOpenTitles} maintenanceAlerts={simulationRef.current?.getMaintenanceList().filter(e => e.status !== 'good').length ?? 0} onOpenMaintenance={hudHandlers.onOpenMaintenance} onOpenChain={hudHandlers.onOpenChain} onOpenReviews={hudHandlers.onOpenReviews} onOpenAnalytics={hudHandlers.onOpenAnalytics} audioMuted={audioMuted} onToggleAudioMute={hudHandlers.onToggleAudioMute} onOpenSecurity={hudHandlers.onOpenSecurity} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onOpenStaff={hudHandlers.onOpenStaff} onOpenStalls={hudHandlers.onOpenStalls} onOpenQuests={hudHandlers.onOpenQuests} onOpenLevelRoadmap={hudHandlers.onOpenLevelRoadmap} onOpenPlanogram={hudHandlers.onOpenPlanogram} emptySlotsCount={fixtures.filter(f => isSalesFixture(f) && f.currentStock === 0).length} onToggleStoreStatus={hudHandlers.onToggleStoreStatus} onOpenLayout={hudHandlers.onOpenLayout} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={hudHandlers.onToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={hudHandlers.onToggleWarehouseDock} isWarehouseDockOpen={isWarehouseDockOpen} lastSavedAt={lastSavedTime}/>}
       <main className="game-main">
         <div className="world-viewport">
           <canvas ref={canvasRef} aria-label="Bản đồ Tiệm Tạp Hóa Đầu Hẻm"/>
@@ -1753,6 +1770,7 @@ export const App: React.FC = () => {
         pendingOrders={pendingOrders}
         inventory={inventory}
         currentDay={worldTime.day}
+        currentHour={worldTime.hour}
         onOrder={handleSupplierOrder}
         onOrderCart={handleSupplierCartOrder}
         getQuotes={(supplierId) => simulationRef.current!.getSupplierQuotes(supplierId)}
@@ -1777,7 +1795,7 @@ export const App: React.FC = () => {
       />
     )}
     {isMarketOpen && simulationRef.current && <MarketModal summary={simulationRef.current.getMarketSummary()} prices={simulationRef.current.getPriceMarket()} plans={marketPlans.plans} trending={marketPlans.trending} day={worldTime.day} onClose={() => setMarketOpen(false)}/>}
-    {isStallOpen && simulationRef.current && <StallModal stalls={simulationRef.current.getStalls()} season={simulationRef.current.getSeason()} stock={Object.fromEntries(simulationRef.current.getInventory().map(item => [item.productId, item.quantity]))} report={simulationRef.current.getStallReport()} onBuy={handleBuyStall} onRestock={handleRestockStall} getRestockItems={(id) => simulationRef.current!.getStallRestockItems(id)} onClose={() => setStallOpen(false)}/>}
+    {isStallOpen && simulationRef.current && <StallModal stalls={simulationRef.current.getStalls()} season={simulationRef.current.getSeason()} stock={Object.fromEntries(simulationRef.current.getInventory().map(item => [item.productId, item.quantity]))} incoming={simulationRef.current.getPendingOrders().filter(o => !o.delivered).reduce<Record<string, number>>((acc, o) => ({ ...acc, [o.productId]: (acc[o.productId] ?? 0) + o.quantity }), {})} report={simulationRef.current.getStallReport()} onBuy={handleBuyStall} onRestock={handleRestockStall} getRestockItems={(id) => simulationRef.current!.getStallRestockItems(id)} onClose={() => setStallOpen(false)}/>}
     {isQuestOpen && simulationRef.current && (
       <QuestModal
         {...simulationRef.current.getQuests()}
@@ -1941,6 +1959,25 @@ export const App: React.FC = () => {
         onClose={() => setSecurityOpen(false)}
       />
     )}
+    {isPricesOpen && simulationRef.current && (() => {
+      const sim = simulationRef.current;
+      const yesterday = worldTime.day - 1;
+      const complaints: Record<string, number> = {};
+      for (const review of sim.getReviews()) {
+        if (review.reason === 'price' && review.productId && review.day === yesterday) complaints[review.productId] = (complaints[review.productId] ?? 0) + 1;
+      }
+      return (
+        <PricesModal
+          products={ALL_PRODUCTS.filter(product => product.unlockLevel <= player.level && !product.intermediate)}
+          sellingPrice={productId => sim.sellingPrice(productId)}
+          bounds={productId => sim.sellingPriceBounds(productId)}
+          complaints={complaints}
+          onSetPrice={handleSetSellingPrice}
+          onResetAll={handleResetAllSellingPrices}
+          onClose={() => setPricesOpen(false)}
+        />
+      );
+    })()}
     {isReviewsOpen && simulationRef.current && (
       <ReviewsModal reviews={simulationRef.current.getReviews()} summary={simulationRef.current.getReviewSummary()} onClose={() => setReviewsOpen(false)} />
     )}
@@ -2019,16 +2056,20 @@ export const App: React.FC = () => {
           if (res.filled > 0 || res.assigned) {
             setInventory(sim.getInventory());
             setFixtures(sim.getFixtures());
+            if (onlineWorldRef.current) void commitBusinessChange({ type: 'auto_fill_shelf', fixtureId }, `Tự động bày kệ ${fixtureId}`, 'Bày hàng tự động');
           }
           return res;
         }}
         onAutoFillAll={() => {
           const sim = simulationRef.current;
           if (!sim) return { totalFilled: 0, newAssignments: 0, skipped: 0 };
+          // Khớp lệnh `auto_restock` ở server: châm kệ đã gán trước, rồi tự gán + bày ô trống.
+          const refilled = sim.autoRestockShelves();
           const res = sim.autoFillAllShelves();
-          if (res.totalFilled > 0 || res.newAssignments > 0) {
+          if (refilled + res.totalFilled > 0 || res.newAssignments > 0) {
             setInventory(sim.getInventory());
             setFixtures(sim.getFixtures());
+            if (onlineWorldRef.current) void commitBusinessChange({ type: 'auto_restock' }, `Tự động bày ${refilled + res.totalFilled} món hàng lên kệ`, 'Bày hàng tự động');
             if (res.newAssignments > 0) {
               addToast(`⚡ Đã tự gán & bày ${res.newAssignments} ô mới · ${res.totalFilled} đơn vị lên kệ`, 'success');
             }
@@ -2050,7 +2091,7 @@ export const App: React.FC = () => {
         onApprove={async () => {
           const sent = activeTimeVote.type === 'advance_day'
             ? worldSocket.submitTimeVote({ type: 'advance_day' })
-            : worldSocket.submitTimeVote({ type: 'change_speed', targetSpeed: activeTimeVote.targetSpeed === 2 ? 2 : 1 });
+            : worldSocket.submitTimeVote({ type: 'change_speed', targetSpeed: activeTimeVote.targetSpeed === 4 ? 4 : activeTimeVote.targetSpeed === 2 ? 2 : 1 });
           if (!sent) addToast('Mất kết nối realtime; chưa gửi được phiếu.', 'warn');
         }}
         onCancel={() => {

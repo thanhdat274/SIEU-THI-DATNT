@@ -89,7 +89,8 @@ export function runProductionTests(): void {
   };
   const solo = timeToFinish(false);
   const staffed = timeToFinish(true);
-  assert.ok(solo >= recipe.durationSeconds - 1 && solo <= recipe.durationSeconds + 1, `Không nhân viên: ~${recipe.durationSeconds}s (thực tế ${solo}s)`);
+  const expectedSolo = recipe.durationSeconds * 60 / DEFAULT_INITIAL_SAVE.worldTime.timeScale; // công thức chạy theo thời gian game (1x = timeScale 90)
+  assert.ok(solo >= expectedSolo - 1 && solo <= expectedSolo + 1, `Không nhân viên: ~${expectedSolo}s (thực tế ${solo}s)`);
   assert.ok(staffed < solo, `Có nhân viên trong ca nấu nhanh hơn (${staffed}s < ${solo}s)`);
   // Quầy nước: máy ép mía, máy xay, quầy nước là trạm chạy được.
   for (const [shopId, recipeId, inputs, outId] of [

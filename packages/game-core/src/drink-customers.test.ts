@@ -150,8 +150,8 @@ export function runDrinkCustomerTests(): void {
     const sim = newSim(expanded);
     let reachedNorth = false;
     const ledger0 = sim.getLedger().length;
-    for (let i = 0; i < 2400 && !(reachedNorth && sim.getLedger().slice(ledger0).some(e => e.type === 'sale')); i++) {
-      sim.update(1);
+    for (let i = 0; i < 4800 && !(reachedNorth && sim.getLedger().slice(ledger0).some(e => e.type === 'sale')); i++) {
+      sim.update(0.5);
       for (const customer of live(sim)) if (customer.buildingId === 'drink' && customer.position.y < 3 * 32 && customer.position.y > 0 && inDrink({ ...customer, position: { x: customer.position.x, y: DRINK_BOUNDS.top * 32 + 40 } })) reachedNorth = true;
     }
     assert.ok(reachedNorth, 'khách đi vào vùng sàn mở rộng phía bắc');

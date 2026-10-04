@@ -262,10 +262,10 @@ export const QuestModal: React.FC<QuestModalProps> = ({
                           <PixelButton
                             variant="teal"
                             disabled={cost < 0}
-                            title="Nhập phần còn thiếu giao ngay trong ngày (phụ phí hỏa tốc +30%), rồi giao đơn luôn"
+                            title="Nhập phần còn thiếu giao ngay trong ngày (phụ phí hỏa tốc +30%, đại lý nghỉ sau 22:00), rồi giao đơn luôn"
                             onClick={() => onRushFulfillPartyOrder(ord.orderId)}
                           >
-                            {cost < 0 ? 'Không có nguồn hàng' : `${ord.status === 'pending' ? 'Nhận đơn + ' : ''}Nhập hỏa tốc & giao (${money(cost)})`}
+                            {cost < 0 ? 'Không có nguồn hàng (hỏa tốc nghỉ sau 22h)' : `${ord.status === 'pending' ? 'Nhận đơn + ' : ''}Nhập hỏa tốc & giao (${money(cost)})`}
                           </PixelButton>
                         );
                       })()}

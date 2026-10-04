@@ -203,6 +203,8 @@ export class WorldRuntime {
         success = this.simulation.assignDiningCleanup(p.staffId, p.fixtureId);
       } else if (p.type === 'set_price') {
         success = this.simulation.setSellingPrice(p.productId, p.price).success;
+      } else if (p.type === 'reset_prices') {
+        success = this.simulation.resetSellingPrices().success;
       } else if (p.type === 'layout_move') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
         const next = moveStoreFixture(current, p.fixtureId, p.tileX, p.tileY, p.rotation, generateStarterTileMap(current.storeLayout.unlockedPlotIds ?? []));
@@ -269,7 +271,11 @@ export class WorldRuntime {
         const res = this.simulation.applyPlanogramEntry(p.fixtureId);
         success = res.applied && res.actualQuantity > 0;
       } else if (p.type === 'auto_restock') {
-        success = this.simulation.autoRestockShelves() > 0;
+        // Phải khớp client (handleAutoRestock): châm kệ đã gán rồi tự gán + bày các ô trống.
+        success = this.simulation.autoRestockShelves() + this.simulation.autoFillAllShelves().totalFilled > 0;
+      } else if (p.type === 'auto_fill_shelf') {
+        const res = this.simulation.autoFillShelf(p.fixtureId);
+        success = res.filled > 0 || res.assigned;
       } else if (p.type === 'dispose_stock') {
         success = this.simulation.disposeStock(p.productId, p.quantity).success;
       } else if (p.type === 'open_case') {
@@ -394,7 +400,7 @@ export class WorldRuntime {
       if (params.type === 'advance_day') {
         this.simulation.getClock().advanceToNextDay();
       } else if (params.type === 'change_speed' && typeof params.targetSpeed === 'number') {
-        this.simulation.getClock().setTimeScale(params.targetSpeed * 60);
+        this.simulation.getClock().setTimeScale(params.targetSpeed * 90);
       }
       this.triggerCheckpoint();
       return { executed: true, status: 'executed' };
@@ -444,7 +450,7 @@ export class WorldRuntime {
       if (voteType === 'advance_day') {
         this.simulation.getClock().advanceToNextDay();
       } else if (voteType === 'change_speed' && typeof speed === 'number') {
-        this.simulation.getClock().setTimeScale(speed * 60);
+        this.simulation.getClock().setTimeScale(speed * 90);
       }
       this.triggerCheckpoint();
       return { executed: true, status: 'executed' };

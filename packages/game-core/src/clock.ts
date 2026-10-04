@@ -7,9 +7,17 @@ export class GameClock {
   private onTimeChanged?: () => void;
 
   constructor(initialTime: WorldTime, onDayChanged?: (newDay: number) => void, onTimeChanged?: () => void) {
-    this.time = { ...initialTime };
+    this.time = GameClock.migrateTime(initialTime);
     this.onDayChanged = onDayChanged;
     this.onTimeChanged = onTimeChanged;
+  }
+
+  /** Tốc độ 1x = timeScale 90 (ngày 15 giờ game = 10 phút thực). Save cũ lưu 60 (1x) / 120 (2x) được quy đổi sang 90 / 180. */
+  public static readonly BASE_TIME_SCALE = 90;
+
+  private static migrateTime(t: WorldTime): WorldTime {
+    const timeScale = t.timeScale === 60 ? 90 : t.timeScale === 120 ? 180 : t.timeScale;
+    return { ...t, timeScale };
   }
 
   public getTime(): WorldTime {
@@ -17,7 +25,7 @@ export class GameClock {
   }
 
   public setTime(newTime: WorldTime): void {
-    this.time = { ...newTime };
+    this.time = GameClock.migrateTime(newTime);
     this.accumulatedSeconds = 0;
     this.onTimeChanged?.();
   }
@@ -80,8 +88,8 @@ export class GameClock {
     this.accumulatedSeconds += Math.min(dt, GameClock.MAX_UPDATE_SECONDS);
 
     // Advance 1 game minute every (60 / timeScale) real seconds
-    // Default timeScale = 60 means 1 real second = 1 game minute
-    const realSecPerGameMin = 60 / (this.time.timeScale || 60);
+    // Mặc định timeScale = 90: 1 giây thực = 1,5 phút game
+    const realSecPerGameMin = 60 / (this.time.timeScale || GameClock.BASE_TIME_SCALE);
 
     while (this.accumulatedSeconds >= realSecPerGameMin) {
       this.accumulatedSeconds -= realSecPerGameMin;

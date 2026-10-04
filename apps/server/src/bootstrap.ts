@@ -43,11 +43,11 @@ Get('ready')(HealthController.prototype, 'readiness', Object.getOwnPropertyDescr
 /** Loại lệnh được commit. Chỉ một phần được server phát lại; phần còn lại vẫn tin save client (I-01, xem THONG-KE.md). */
 const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
   'respond_party_order', 'fulfill_party_order', 'rush_fulfill_party_order', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'begin_story_chapter', 'claim_story_chapter', 'choose_perk', 'set_title', 'layout_batch', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production',
-  'set_price', 'set_restock_options', 'set_auto_buy_stalls', 'auto_buy_sync', 'restock', 'unstock', 'buy_stall', 'claim_quest',
+  'set_price', 'reset_prices', 'set_restock_options', 'set_auto_buy_stalls', 'auto_buy_sync', 'restock', 'unstock', 'buy_stall', 'claim_quest',
   'checkout',
   'hire_staff', 'set_staff_shift', 'assign_refill_job', 'dispose_stock', 'open_case', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve', 'maintain_fixture', 'security_action',
   'buy_warehouse_tier', 'buy_storage_rack',
-  'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock',
+  'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',
   'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
 ]);
 
@@ -107,10 +107,10 @@ export class GameController {
       'checkout', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production', 'respond_party_order', 'fulfill_party_order', 'rush_fulfill_party_order', 'claim_goal',
       'claim_weekly_quest', 'claim_festival_goal', 'begin_story_chapter', 'claim_story_chapter', 'choose_perk', 'set_title', 'maintain_fixture', 'security_action',
       'order_supplier', 'buy_stall', 'dispose_stock', 'open_case', 'claim_quest',
-      'restock', 'unstock', 'set_price', 'set_restock_options', 'set_auto_buy_stalls',
+      'restock', 'unstock', 'set_price', 'reset_prices', 'set_restock_options', 'set_auto_buy_stalls',
       'hire_staff', 'set_staff_shift', 'assign_refill_job',
       'buy_plot', 'buy_warehouse_tier', 'buy_storage_rack',
-      'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock',
+      'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',
       'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
     ]);
     if (serverReplayedCommands.has(payload?.type)) {
@@ -133,6 +133,9 @@ export class GameController {
         expectedRevision: body.expectedRevision,
         payload,
       });
+      if (commandResult.status !== 'accepted') {
+        console.warn(`[command] từ chối type=${payload.type} status=${commandResult.status} reason=${commandResult.reason ?? '(không có)'} world=${worldId} business=${commandBusiness.id} expectedRevision=${body.expectedRevision} serverRevision=${commandWorld.world.revision}`);
+      }
       if (commandResult.status !== 'accepted') throw new BadRequestException(commandResult.reason ?? 'Lệnh không hợp lệ hoặc trạng thái đã thay đổi.');
       const canonicalSave = runtime.getSnapshot().businesses[0].save;
       canonicalSave.id = commandBusiness.save.id;

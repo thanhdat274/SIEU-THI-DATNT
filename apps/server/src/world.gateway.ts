@@ -232,7 +232,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!entry) return;
     const vote = body as { type?: unknown; targetSpeed?: unknown };
     if (vote.type !== 'advance_day' && vote.type !== 'change_speed') return;
-    if (vote.type === 'change_speed' && vote.targetSpeed !== 1 && vote.targetSpeed !== 2) return;
+    if (vote.type === 'change_speed' && vote.targetSpeed !== 1 && vote.targetSpeed !== 2 && vote.targetSpeed !== 4) return;
     const result = entry.runtime.submitTimeVote(socket._accountId, {
       type: vote.type,
       ...(vote.type === 'change_speed' ? { targetSpeed: vote.targetSpeed as number } : {}),

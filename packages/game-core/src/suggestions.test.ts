@@ -605,6 +605,65 @@ export function runSuggestionTests(): void {
     }
   }
 
+  // 3d2. Kho trống hôm nay: phần thiếu cho hôm nay lấy ở đại lý hỏa tốc; hàng đang về sáng mai không làm nút báo "đủ"
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 2000000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    (sim as any).stalls.owned.push('cafe_vot');
+    const plan = sim.planStallRestock('cafe_vot');
+    assert.ok('orders' in plan, `Có kế hoạch: ${'reason' in plan ? plan.reason : ''}`);
+    if ('orders' in plan) {
+      const rushQty = plan.orders.filter(o => o.supplierId === 'giao_hoa_toc').flatMap(o => o.items).reduce((s, it) => s + it.quantity, 0);
+      assert.ok(rushQty > 0, 'Phần thiếu hôm nay đặt ở đại lý hỏa tốc');
+      for (const order of plan.orders) sim.orderSupplierCart(order.supplierId, order.items);
+      assert.equal(sim.getStallRestockItems('cafe_vot').length, 0, 'Đặt xong thì nút báo đủ nguyên liệu');
+    }
+  }
+
+  // 3d3. Sau 22:00 đại lý Hỏa Tốc nghỉ: không đặt được, kế hoạch nhập nhanh chuyển sang đại lý thường
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 2000000 };
+    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    (sim as any).stalls.owned.push('cafe_vot');
+    const now = (sim as any).clock.getTime();
+    (sim as any).clock.setTime({ ...now, hour: 22, minute: 0 });
+    const rushRes = sim.validateSupplierCart('giao_hoa_toc', sim.getStallRestockItems('cafe_vot'));
+    assert.equal(rushRes.valid, false, 'Hỏa tốc không nhận đơn lúc 22:00');
+    assert.ok(rushRes.reasons.some(r => r.includes('đã nghỉ')), 'Có lý do đại lý đã nghỉ');
+    const plan = sim.planStallRestock('cafe_vot');
+    if ('orders' in plan) assert.ok(plan.orders.every(o => o.supplierId !== 'giao_hoa_toc'), 'Kế hoạch không dùng hỏa tốc sau 22h');
+  }
+
+  // 3d4. Quầy bán dần theo giờ: doanh thu vào sổ hôm nay tăng từng giờ, 22:00 chốt, sang ngày không tính lại
+  {
+    const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
+    save.player = { ...save.player, level: 8, money: 2000000 };
+    save.inventory = [];
+    const sim: any = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    sim.stalls.owned.push('cafe_vot');
+    for (const item of sim.getStallRestockItems('cafe_vot')) sim.inventory.push({ productId: item.productId, quantity: item.quantity, lots: [{ quantity: item.quantity, expiresOnDay: 99, unitCost: 1000 }] });
+    const day = sim.clock.getTime().day;
+    const setHour = (hour: number) => sim.clock.setTime({ ...sim.clock.getTime(), hour, minute: 0 });
+    const money0 = sim.playerData.money;
+    setHour(8);
+    assert.equal(sim.currentDayRecord.revenue, 0, '08:00 chưa bán gì');
+    setHour(12);
+    const noon = sim.currentDayRecord.revenue;
+    assert.ok(noon > 0, '12:00 đã có doanh thu quầy trong sổ hôm nay');
+    assert.equal(sim.playerData.money - money0, noon, 'Tiền cộng cùng lúc với doanh thu');
+    assert.ok(!sim.stalls.processedDayIds.includes(day), 'Chưa chốt trước 22:00');
+    setHour(16);
+    assert.ok(sim.currentDayRecord.revenue > noon, 'Doanh thu tăng dần theo giờ');
+    setHour(22);
+    const full = sim.currentDayRecord.revenue;
+    assert.equal(sim.stalls.lastReport.entries[0].revenue, full, '22:00 chốt đủ báo cáo');
+    assert.ok(sim.stalls.processedDayIds.includes(day), 'Đã chốt');
+    sim.processStalls(day);
+    assert.equal(sim.currentDayRecord.revenue, full, 'Chốt đúng một lần');
+  }
+
   // 3e. Thiếu tiền cho đủ 3 ngày: vẫn mua trước phần làm được và báo món còn thiếu
   {
     const save: any = structuredClone(DEFAULT_INITIAL_SAVE);

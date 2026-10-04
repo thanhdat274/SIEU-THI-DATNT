@@ -120,7 +120,7 @@ import { calculateSalesVelocity, generateRestockSuggestions, normalizeRestockOpt
 import { buildProductPlans, type ProductPlan, type ProductPlanInput } from './forecast';
 import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, weekdayOf, type MarketNotice } from './market';
 import { computeSupplierDay, nextDeliveryDay, wholesaleQuote } from './supplier-market';
-import { validateSupplierCart as validateSupplierCartPure } from './supplier-cart';
+import { validateSupplierCart as validateSupplierCartPure, SAME_DAY_SUPPLIER_CUTOFF_HOUR } from './supplier-cart';
 import { receiveDeliveredOrders } from './delivery';
 import { advancePriceIndex, clampSellingPrice, computePriceTargets, demandPriceFactor, keepChance, priceRatio, productSensitivity } from './price';
 import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
@@ -571,7 +571,7 @@ export class GameSimulation {
         this.callbacks.onDayChanged(day);
       }
       this.notifyStateChanged();
-    }, () => { this.callbacks.onTimeChanged?.(); this.topUpStallShortfalls(); });
+    }, () => { this.callbacks.onTimeChanged?.(); this.topUpStallShortfalls(); this.settleStallsHourly(); });
   }
 
   /** Đặt lại vị trí nhân vật (dùng khi chơi chung: vị trí không theo save dùng chung). */
@@ -1091,6 +1091,26 @@ export class GameSimulation {
     return { success: true, price };
   }
 
+  /** Đưa mọi món về giá gợi ý trong một lần; món đang có khách thanh toán được giữ nguyên giá. */
+  public resetSellingPrices(): { success: boolean; reset: number; blocked: number } {
+    const checkingOut = new Set<string>();
+    for (const customer of this.customerManager.getCustomers()) {
+      if (customer.stage === 'checkout') for (const item of customer.basket ?? []) checkingOut.add(item.productId);
+    }
+    let reset = 0;
+    let blocked = 0;
+    for (const productId of Object.keys(this.sellingPrices)) {
+      if (checkingOut.has(productId)) { blocked++; continue; }
+      delete this.sellingPrices[productId];
+      reset++;
+    }
+    if (reset > 0) {
+      this.demandTable = undefined;
+      this.notifyStateChanged();
+    }
+    return { success: blocked === 0, reset, blocked };
+  }
+
   public sellingPriceBounds(productId: string): { min: number; max: number; step: number } | null {
     const suggested = PRODUCT_MAP[productId]?.baseSellingPrice;
     if (!suggested) return null;
@@ -1473,44 +1493,93 @@ export class GameSimulation {
     return this.inventory.find(item => item.productId === productId)?.quantity ?? 0;
   }
 
+  /** Số khung giờ bán của quầy trong một ngày (08:00–22:00); mỗi giờ qua đi bán thêm 1/14 nhu cầu. */
+  private static readonly STALL_SELL_SLOTS = 14;
+  private static readonly STALL_FIRST_HOUR = 8;
+
+  private stallProgress(day: number): NonNullable<StallState['progress']> {
+    if (this.stalls.progress?.day !== day) this.stalls.progress = { day, slots: 0, entries: {} };
+    return this.stalls.progress;
+  }
+
   /**
-   * Tính quầy ăn uống của `day` đúng một lần: lấy nguyên liệu từ kho nhà theo FEFO,
-   * giá vốn = giá lô thực lấy + nguyên liệu tiền mặt; thiếu nguyên liệu thì bán ít suất hơn.
+   * Bán tới khung giờ `slots` của `day`: mỗi quầy được bán dần theo giờ (mục tiêu cộng dồn = nhu cầu × slots/14),
+   * lấy nguyên liệu từ kho nhà theo FEFO đúng phần vừa bán, cộng tiền và doanh thu vào sổ ngay.
+   * Giờ nào thiếu nguyên liệu thì phần chưa bán được dồn sang giờ sau khi hàng về.
    */
-  private processStalls(day: number): void {
-    if (day < 1 || this.stalls.processedDayIds.includes(day)) return;
-    this.stalls.processedDayIds.push(day);
+  private sellStalls(day: number, slots: number): void {
+    const progress = this.stallProgress(day);
+    const target = Math.min(GameSimulation.STALL_SELL_SLOTS, Math.max(0, slots));
+    if (target <= progress.slots) return;
+    progress.slots = target;
     const record = day === this.currentDayRecord.day ? this.currentDayRecord : (this.dailyRecords[day] ?? this.createEmptyDailyRecord(day));
-    const report: StallDayReport = { day, entries: [] };
     for (const stallId of this.stalls.owned) {
       const stall = STALL_MAP[stallId];
-      const plan = planStallDay(stallId, day, this.playerData.reputation, id => this.warehouseUnits(id));
-      if (!stall || !plan) continue;
-      let cogs = plan.servings * stall.cashCostPerServing;
-      for (const [productId, units] of Object.entries(plan.ingredientUnits)) {
+      if (!stall) continue;
+      const entry = progress.entries[stallId] ??= { demand: stallDemand(stallId, day, this.playerData.reputation), servings: 0, revenue: 0, cogs: 0, units: {} };
+      const goal = Math.min(entry.demand, Math.round(entry.demand * target / GameSimulation.STALL_SELL_SLOTS));
+      const unitsFor = (total: number, productId: string, perServing: number) => Math.ceil(total * perServing - 1e-9) - (entry.units[productId] ?? 0);
+      let add = goal - entry.servings;
+      while (add > 0 && stall.ingredients.some(ing => unitsFor(entry.servings + add, ing.productId, ing.perServing) > this.warehouseUnits(ing.productId))) add--;
+      if (add <= 0) continue;
+      let cogs = add * stall.cashCostPerServing;
+      for (const ing of stall.ingredients) {
+        const units = unitsFor(entry.servings + add, ing.productId, ing.perServing);
         if (units <= 0) continue;
-        const slot = this.inventory.find(item => item.productId === productId);
+        const slot = this.inventory.find(item => item.productId === ing.productId);
         if (!slot) continue;
-        slot.lots ??= normalizeLots(slot.quantity, undefined, productId, this.clock.getTime().day);
-        for (const lot of takeLots(slot.lots, units, { caseSize: PRODUCT_MAP[productId]?.caseSize })) cogs += lot.quantity * (lot.unitCost ?? PRODUCT_MAP[productId]?.purchasePrice ?? 0);
+        slot.lots ??= normalizeLots(slot.quantity, undefined, ing.productId, this.clock.getTime().day);
+        for (const lot of takeLots(slot.lots, units, { caseSize: PRODUCT_MAP[ing.productId]?.caseSize })) cogs += lot.quantity * (lot.unitCost ?? PRODUCT_MAP[ing.productId]?.purchasePrice ?? 0);
         slot.quantity = sumLots(slot.lots);
+        entry.units[ing.productId] = (entry.units[ing.productId] ?? 0) + units;
       }
       this.inventory = this.inventory.filter(item => item.quantity > 0);
-      const revenue = plan.servings * stall.servingPrice;
-      report.entries.push({ stallId, demand: plan.demand, servings: plan.servings, revenue, cogs, limitedBy: plan.limitedBy });
-      if (plan.servings <= 0) continue;
+      const revenue = add * stall.servingPrice;
+      entry.servings += add;
+      entry.revenue += revenue;
+      entry.cogs += cogs;
       this.playerData.money += revenue;
       this.statistics.totalRevenue += revenue;
       record.revenue += revenue;
       record.cogs += cogs;
-      record.itemsSold += plan.servings;
-      record.stallServings = { ...record.stallServings, [stallId]: (record.stallServings?.[stallId] ?? 0) + plan.servings };
-      this.recordLedger({ day, type: 'sale', amount: revenue, cogs, quantity: plan.servings, description: `${stall.name}: bán ${plan.servings}/${plan.demand} suất` });
+      record.itemsSold += add;
+      record.stallServings = { ...record.stallServings, [stallId]: (record.stallServings?.[stallId] ?? 0) + add };
     }
     record.grossProfit = record.revenue - record.cogs;
     record.netProfit = record.grossProfit - record.spoilageCost - record.wagesPaid - (record.maintenanceCost ?? 0) - (record.theftCost ?? 0) + (record.theftRecovered ?? 0) - (record.counterfeitLoss ?? 0) - (record.badDebtCost ?? 0);
     if (record !== this.currentDayRecord) this.dailyRecords[day] = record;
+  }
+
+  /** Chốt quầy của `day` đúng một lần: bán nốt các khung giờ còn lại, lập báo cáo và dòng sổ cái. */
+  private processStalls(day: number): void {
+    if (day < 1 || this.stalls.processedDayIds.includes(day)) return;
+    this.sellStalls(day, GameSimulation.STALL_SELL_SLOTS);
+    this.stalls.processedDayIds.push(day);
+    const progress = this.stallProgress(day);
+    const report: StallDayReport = { day, entries: [] };
+    for (const stallId of this.stalls.owned) {
+      const stall = STALL_MAP[stallId];
+      const entry = progress.entries[stallId];
+      if (!stall || !entry) continue;
+      const limitedBy = entry.servings < entry.demand
+        ? stall.ingredients.find(ing => Math.ceil((entry.servings + 1) * ing.perServing - 1e-9) - (entry.units[ing.productId] ?? 0) > this.warehouseUnits(ing.productId))?.productId
+        : undefined;
+      report.entries.push({ stallId, demand: entry.demand, servings: entry.servings, revenue: entry.revenue, cogs: entry.cogs, limitedBy });
+      if (entry.servings > 0) this.recordLedger({ day, type: 'sale', amount: entry.revenue, cogs: entry.cogs, quantity: entry.servings, description: `${stall.name}: bán ${entry.servings}/${entry.demand} suất` });
+    }
+    this.stalls.progress = undefined;
     this.stalls.lastReport = report;
+  }
+
+  /** Mỗi lần đồng hồ đổi: bán thêm các khung giờ đã qua; đến 22:00 thì chốt quầy hôm nay. */
+  private settleStallsHourly(): void {
+    const time = this.clock.getTime();
+    if (this.stalls.owned.length === 0 || this.stalls.processedDayIds.includes(time.day)) return;
+    const slots = Math.min(GameSimulation.STALL_SELL_SLOTS, Math.max(0, time.hour - GameSimulation.STALL_FIRST_HOUR));
+    if (slots <= (this.stalls.progress?.day === time.day ? this.stalls.progress.slots : 0)) return;
+    this.sellStalls(time.day, slots);
+    if (slots >= GameSimulation.STALL_SELL_SLOTS) this.processStalls(time.day);
+    this.notifyStateChanged();
   }
 
   private questContext(): QuestContext {
@@ -1624,6 +1693,7 @@ export class GameSimulation {
     const level = this.playerData.level;
     const lines: Array<{ productId: string; missing: number; supplierId: string; unitPrice: number; lineTotal: number }> = [];
     let totalCost = 0;
+    if (this.clock.getTime().hour >= SAME_DAY_SUPPLIER_CUTOFF_HOUR) return { lines, totalCost: -1 }; // đại lý đã nghỉ, không có hàng giao ngay
     for (const item of def?.items ?? []) {
       const inv = this.inventory.find((i) => i.productId === item.productId);
       const usable = inv?.lots?.length ? inv.lots.reduce((sum, lot) => sum + (lot.expiresOnDay > day ? lot.quantity : 0), 0) : (inv?.quantity ?? 0);
@@ -1656,6 +1726,7 @@ export class GameSimulation {
     const day = this.clock.getTime().day;
     if (order.status === 'accepted' && day > order.deadlineDay) return fail('Đơn tiệc đã quá hạn chót.');
 
+    if (this.clock.getTime().hour >= SAME_DAY_SUPPLIER_CUTOFF_HOUR) return fail(`Đại lý đã nghỉ sau ${SAME_DAY_SUPPLIER_CUTOFF_HOUR}:00, không nhập hỏa tốc được. Hãy thử lại sáng mai.`);
     const quote = this.getPartyOrderRushQuote(orderId);
     if (quote.totalCost < 0) return fail('Chưa có nhà cung cấp nào bán được món còn thiếu.');
     if (quote.totalCost > this.playerData.money) return fail(`Không đủ tiền nhập hỏa tốc (cần ${quote.totalCost.toLocaleString('vi-VN')} ₫).`);
@@ -2992,6 +3063,13 @@ export class GameSimulation {
     return need;
   }
 
+  /** Đơn vị nguyên liệu còn thiếu trong kho để các quầy bán đủ hôm nay (chỉ hàng giao ngay trong ngày mới kịp). */
+  private stallTodayGap(productId: string): number {
+    const progress = this.stalls.progress?.day === this.clock.getTime().day ? this.stalls.progress : undefined;
+    const taken = Object.values(progress?.entries ?? {}).reduce((sum, entry) => sum + (entry.units[productId] ?? 0), 0);
+    return Math.max(0, Math.ceil(this.stallIngredientNeedPerDay(productId) - 1e-9) - taken - this.warehouseUnits(productId));
+  }
+
   /** Giỏ nhập nhanh nguyên liệu cho một quầy: bù đủ ~3 ngày nhu cầu (tính theo tồn kho), làm tròn theo kiện. */
   public getStallRestockItems(stallId: string, days = 3): { productId: string; quantity: number }[] {
     const stall = STALL_MAP[stallId];
@@ -3000,7 +3078,8 @@ export class GameSimulation {
     const items: { productId: string; quantity: number }[] = [];
     for (const ing of stall.ingredients) {
       const incoming = this.pendingOrders.filter(o => !o.delivered && o.productId === ing.productId).reduce((sum, o) => sum + o.quantity, 0);
-      let want = Math.ceil(demand * ing.perServing * days) - this.warehouseUnits(ing.productId) - incoming;
+      // Hàng đang về (giao sáng mai) không kịp bán hôm nay: phần thiếu cho hôm nay vẫn phải nhập thêm.
+      let want = Math.max(Math.ceil(demand * ing.perServing * days) - this.warehouseUnits(ing.productId) - incoming, this.stallTodayGap(ing.productId));
       if (want <= 0) continue;
       const pack = PRODUCT_MAP[ing.productId]?.caseSize ?? 1;
       want = Math.ceil(want / pack) * pack;
@@ -3039,7 +3118,8 @@ export class GameSimulation {
 
   private planStallRestockFor(need: { productId: string; quantity: number }[]): StallRestockPlan | { reason: string } {
     type Line = { productId: string; quantity: number };
-    const suppliers = SUPPLIERS.filter(sup => sup.unlockLevel <= this.playerData.level);
+    const hour = this.clock.getTime().hour;
+    const suppliers = SUPPLIERS.filter(sup => sup.unlockLevel <= this.playerData.level && !(sup.delayDays === 0 && hour >= SAME_DAY_SUPPLIER_CUTOFF_HOUR));
     const quotes = new Map(suppliers.map(sup => [sup.id, this.getSupplierQuotes(sup.id).quotes]));
     const packOf = (productId: string) => PRODUCT_MAP[productId]?.caseSize ?? 1;
     const roomOf = (supId: string, productId: string): number => {
@@ -3089,20 +3169,41 @@ export class GameSimulation {
     // Phương án chia: mỗi món lấy ở đại lý rẻ nhất còn hàng, thiếu thì lấy nốt ở đại lý đắt hơn kế tiếp.
     const split = new Map<string, Line[]>();
     let splitOk = true;
+    // Phần thiếu cho hôm nay phải lấy ở đại lý giao ngay trong ngày, vì quầy tính doanh thu lúc sang ngày mới.
+    const rushSuppliers = suppliers.filter(sup => sup.delayDays === 0);
+    const addLine = (supId: string, productId: string, quantity: number) => {
+      const lines = split.get(supId) ?? [];
+      const existing = lines.find(it => it.productId === productId);
+      if (existing) existing.quantity += quantity; else lines.push({ productId, quantity });
+      split.set(supId, lines);
+    };
+    let rushUsed = false;
     for (const line of need) {
       let left = line.quantity;
-      for (const sup of [...suppliers].sort((a, b) => priceOf(a.id, line.productId) - priceOf(b.id, line.productId))) {
-        const take = Math.min(left, roomOf(sup.id, line.productId));
+      let urgent = Math.min(left, this.stallTodayGap(line.productId));
+      for (const sup of rushSuppliers) {
+        if (urgent <= 0) break;
+        const take = Math.min(urgent, roomOf(sup.id, line.productId));
         if (take <= 0) continue;
-        split.set(sup.id, [...(split.get(sup.id) ?? []), { productId: line.productId, quantity: take }]);
+        addLine(sup.id, line.productId, take);
+        urgent -= take;
         left -= take;
+        rushUsed = true;
+      }
+      for (const sup of [...suppliers].sort((a, b) => priceOf(a.id, line.productId) - priceOf(b.id, line.productId))) {
         if (left <= 0) break;
+        const room = roomOf(sup.id, line.productId) - (split.get(sup.id)?.find(it => it.productId === line.productId)?.quantity ?? 0);
+        const take = Math.min(left, room);
+        if (take <= 0) continue;
+        addLine(sup.id, line.productId, take);
+        left -= take;
       }
       if (left > 0) splitOk = false;
     }
     const candidates: Map<string, Line[]>[] = [];
     if (splitOk) candidates.push(split);
     for (const sup of suppliers) {
+      if (rushUsed && sup.delayDays !== 0) continue; // đã có phần cần hàng ngay hôm nay thì không chọn đại lý giao sáng mai
       const lines = need.map(line => ({ productId: line.productId, quantity: Math.min(line.quantity, roomOf(sup.id, line.productId)) })).filter(line => line.quantity > 0);
       if (lines.length === need.length) candidates.push(new Map([[sup.id, lines]]));
     }
@@ -3732,7 +3833,7 @@ export class GameSimulation {
     }
     
     // Khách và nhân viên chạy theo thời gian game: 2× đồng hồ thì họ cũng hoạt động nhanh gấp đôi (người chơi vẫn đi bộ bình thường).
-    const worldDt = dt * Math.max(0.25, (this.clock.getTime().timeScale || 60) / 60);
+    const worldDt = dt * Math.max(0.25, (this.clock.getTime().timeScale || 90) / 60);
       this.customerManager.outdoorSpeedMultiplier = rainSpeedMultiplier(this.getRainIntensity());
       this.customerManager.update(
       worldDt,
@@ -4520,6 +4621,7 @@ export class GameSimulation {
       level: this.playerData.level,
       money: this.playerData.money,
       day: this.clock.getTime().day,
+      hour: this.clock.getTime().hour,
       supplierState: this.market.suppliers?.[supplierId],
       coldCapacity: this.getColdCapacity(),
       reservedColdCount: this.reservedColdWarehouseCount(),
