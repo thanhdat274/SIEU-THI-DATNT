@@ -31,7 +31,8 @@ class HealthController {
       const db = await connectDatabase();
       await db.command({ ping: 1 });
       return { status: 'ok', database: 'connected' };
-    } catch {
+    } catch (error) {
+      console.error('[mongo] /ready lỗi:', (error instanceof Error ? error.message : String(error)).replace(/mongodb(\+srv)?:\/\/\S+/gi, 'mongodb://<redacted>'));
       throw new ServiceUnavailableException('Database unavailable or not configured');
     }
   }
@@ -152,6 +153,7 @@ export class GameController {
       if (commandResult.status !== 'accepted') {
         console.warn(`[command] từ chối type=${payload.type} status=${commandResult.status} reason=${commandResult.reason ?? '(không có)'} world=${worldId} business=${commandBusiness.id} expectedRevision=${body.expectedRevision} serverRevision=${commandWorld.world.revision}`);
       }
+      if (commandResult.status === 'accepted') console.log(`[command] nhận type=${payload.type} world=${worldId} account=${request.gameAccount.uid} revision=${commandWorld.world.revision}`);
       if (commandResult.status !== 'accepted') throw new BadRequestException(commandResult.reason ?? 'Lệnh không hợp lệ hoặc trạng thái đã thay đổi.');
       const canonicalSave = runtime.getSnapshot().businesses[0].save;
       canonicalSave.id = commandBusiness.save.id;
@@ -238,10 +240,12 @@ export class GameController {
         activity: body.activity,
       });
     } catch (error) {
+      console.error(`[command] lưu DB lỗi type=${payload?.type} world=${worldId} account=${request.gameAccount.uid}:`, error instanceof Error ? error.message : error);
       // Runtime sống đã chạy lệnh nhưng DB không nhận: đưa runtime về đúng bản đã lưu để không lệch DB.
       if (usedLiveRuntime) usedLiveRuntime.adoptCommitted(commandWorld.world.revision, commandBusiness, true);
       throw error;
     }
+    if (!result.committed) console.warn(`[command] commit bị từ chối type=${payload?.type} world=${worldId} account=${request.gameAccount.uid} revision=${commandWorld.world.revision}${usedLiveRuntime ? ' (runtime sống bị ép về bản đã lưu)' : ''}`);
     if (!result.committed && usedLiveRuntime) usedLiveRuntime.adoptCommitted(commandWorld.world.revision, commandBusiness, true);
     // Push instant world:update to all WS clients (skip if no WS clients connected)
     if (result.committed) {
@@ -335,6 +339,7 @@ export async function createServer() {
   // Giới hạn theo IP trước khi xác thực (bảo vệ bước verify token Firebase). Sau reverse proxy cần cấu hình trust proxy riêng.
   app.use((req: { ip?: string; socket?: { remoteAddress?: string } }, res: { status: (code: number) => { json: (body: unknown) => void } }, next: () => void) => {
     if (httpIpLimiter.take(req.ip ?? req.socket?.remoteAddress ?? 'unknown')) return next();
+    console.warn(`[rate-limit] chặn IP ${req.ip ?? req.socket?.remoteAddress ?? 'unknown'}`);
     res.status(429).json({ statusCode: 429, message: 'Quá nhiều yêu cầu, vui lòng thử lại sau.' });
   });
   app.useWebSocketAdapter(new WsAdapter(app));

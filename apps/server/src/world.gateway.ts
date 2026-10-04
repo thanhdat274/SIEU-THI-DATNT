@@ -151,7 +151,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
             const checkpoint = structuredClone({ world, business });
             current.checkpointQueue = current.checkpointQueue.then(() =>
               worldRepository.saveCheckpoint(worldId, checkpoint.world, checkpoint.business)
-            ).then(() => { current.checkpointError = null; }).catch(err => {
+            ).then(() => { current.checkpointError = null; console.log(`[WorldRuntime] checkpoint đã lưu world=${worldId}`); }).catch(err => {
               current.checkpointError = err;
               console.error('[WorldRuntime] Checkpoint save failed:', err);
             });
