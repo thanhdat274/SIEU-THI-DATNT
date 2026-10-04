@@ -196,7 +196,17 @@ export const QuestModal: React.FC<QuestModalProps> = ({
               Hiện chưa có đơn tiệc nào từ bà con trong hẻm. Hãy tiếp tục kinh doanh và mở cửa tiệm mỗi ngày!
             </div>
           ) : (
-            partyOrders.map((ord) => {
+            [...partyOrders]
+              .map((ord, index) => ({ ord, index }))
+              .sort((a, b) => {
+                const activeA = a.ord.status === 'pending' || a.ord.status === 'accepted' ? 0 : 1;
+                const activeB = b.ord.status === 'pending' || b.ord.status === 'accepted' ? 0 : 1;
+                if (activeA !== activeB) return activeA - activeB;
+                if (a.ord.availableDay !== b.ord.availableDay) return b.ord.availableDay - a.ord.availableDay;
+                return b.index - a.index;
+              })
+              .map(({ ord }) => ord)
+              .map((ord) => {
               const def = PARTY_ORDER_MAP[ord.orderId];
               if (!def) return null;
               const hasStock = checkOrderStock(ord.orderId);
