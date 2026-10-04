@@ -40,6 +40,7 @@ interface ManagementModalProps {
   canEditLayout?: boolean;
   isStoreOpen?: boolean;
   onToggleSaveModal?: () => void;
+  lastSavedAt?: string;
 }
 
 export const ManagementModal: React.FC<ManagementModalProps> = ({
@@ -67,8 +68,11 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
   canEditLayout = false,
   isStoreOpen = false,
   onToggleSaveModal,
+  lastSavedAt,
 }) => {
   const [weatherFx, setWeatherFx] = useWeatherFx();
+  const savedDate = lastSavedAt ? new Date(lastSavedAt) : null;
+  const savedText = savedDate && !Number.isNaN(savedDate.getTime()) ? `Lưu gần nhất: ${savedDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} ${savedDate.toLocaleDateString("vi-VN")}.` : "Chưa có mốc lưu trong phiên này.";
   const [updateStatus, setUpdateStatus] = React.useState<AppUpdateResult | 'checking' | null>(null);
   const updateText: Record<AppUpdateResult | 'checking', string> = {
     checking: 'Đang kiểm tra…',
@@ -224,7 +228,7 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
         onToggleSaveModal && {
           id: 'save',
           label: 'Lưu tiến trình',
-          desc: 'Lưu thủ công save game và quản lý dữ liệu máy chủ',
+          desc: `Lưu thủ công, xuất/nhập file, đồng bộ đám mây. ${savedText}`,
           icon: 'save' as IconName,
           action: () => handleSelect(onToggleSaveModal),
         },
