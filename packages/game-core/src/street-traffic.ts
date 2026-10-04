@@ -1,6 +1,9 @@
 import { StreetPedestrianState, StreetVehicleState, TILE_SIZE, TrafficSignalState, Vector2D } from '@game/shared';
-import { CROSSWALK, MAP_WIDTH, STREET_PEDESTRIANS, STREET_VEHICLE_RULES, TRAFFIC_SIGNAL_CYCLE_SEC } from '@game/data';
+import { CROSSWALK, MAP_WIDTH, shelterZoneAt, STREET_PEDESTRIANS, STREET_VEHICLE_RULES, TRAFFIC_SIGNAL_CYCLE_SEC } from '@game/data';
 import { Mulberry32Rng } from './staff';
+import { hashSeed } from './weather';
+import { rainSpeedMultiplier } from './rain-protection';
+import { newShelterSeek, stepShelterSeek, type ShelterSeek } from './shelter-seek';
 import { pedestrianWalkSecondsLeft, trafficSignalAt } from './traffic-signal';
 
 export const STREET_LANE_RIGHT_Y = 14.6 * TILE_SIZE; // 467px (làn bên phải, đi từ trái qua phải)
@@ -24,6 +27,10 @@ interface Pedestrian {
   stopX?: number;
   pauseLeft?: number;
   stopped?: boolean;
+  /** Trạng thái trú mưa của người đi bộ vỉa hè. */
+  shelter?: ShelterSeek;
+  /** Hướng đi ban đầu, để đi tiếp đúng chiều sau khi trú xong. */
+  heading?: 'left' | 'right';
 }
 
 export class StreetTrafficManager {
@@ -38,6 +45,8 @@ export class StreetTrafficManager {
   private vehicleSequence = 0;
   private pedestrianSequence = 0;
   private signalClock = 0;
+  /** Cường độ mưa của nhịp cập nhật hiện tại (cho hành vi trú mưa). */
+  private rain = 0;
   private readonly maxConcurrent = 4;
 
   constructor(initialVehicles: StreetVehicleState[] = []) {
@@ -147,6 +156,15 @@ export class StreetTrafficManager {
     for (let i = this.pedestrians.length - 1; i >= 0; i--) {
       const p = this.pedestrians[i];
       if (p.direction === 'left' || p.direction === 'right') {
+        // Trú mưa: chỉ người đi vỉa hè không đang ghé quầy; đi tới mái hiên gần, đứng chờ, rồi đi tiếp đúng chiều cũ.
+        const atStall = p.stopX !== undefined && !p.stopped;
+        const sh = (p.shelter ??= newShelterSeek((hashSeed(p.id) % 1000) / 1000));
+        p.heading ??= p.direction;
+        const act = stepShelterSeek(sh, p.x, this.rain, dt, !atStall && p.state === 'walking', p.speed ?? defaultSpeed * 0.85);
+        if (act.action === 'seek' && act.targetX !== undefined) p.direction = act.targetX > p.x ? 'right' : 'left';
+        else if (act.action === 'arrived' && act.targetX !== undefined) { p.x = this.freeStandingX(p, act.targetX); sh.targetX = p.x; p.state = 'waiting'; }
+        else if (act.action === 'leave') { p.direction = p.heading; p.state = 'walking'; }
+        if (sh.phase === 'sheltered') { p.state = 'waiting'; continue; }
         if (p.state === 'waiting') {
           p.pauseLeft = (p.pauseLeft ?? 0) - dt;
           if (p.pauseLeft <= 0) {
@@ -334,13 +352,35 @@ export class StreetTrafficManager {
     });
   }
 
+  /**
+   * Chọn điểm đứng gần `x` trong khu trú sao cho cách người đã trú gần nhất ít nhất 12 px (cùng làn); khi mái đã đông thì lấy điểm
+   * thoáng nhất còn lại, không bao giờ để hai người đứng cùng một điểm nếu còn chỗ.
+   */
+  private freeStandingX(self: Pedestrian, x: number): number {
+    const zone = shelterZoneAt(x, self.y);
+    const lo = (zone?.x0 ?? x) + 10;
+    const hi = (zone?.x1 ?? x) - 10;
+    const others = this.pedestrians.filter((o) => o !== self && o.shelter?.phase === 'sheltered' && Math.abs(o.y - self.y) < 8);
+    const gapAt = (cx: number) => others.reduce((m, o) => Math.min(m, Math.abs(o.x - cx)), Infinity);
+    let best = Math.max(lo, Math.min(hi, x));
+    let bestGap = gapAt(best);
+    if (bestGap >= 12) return best;
+    for (let cx = lo; cx <= hi; cx += 3) {
+      const g = gapAt(cx);
+      // Đủ thoáng thì lấy điểm gần x nhất; còn không thì giữ điểm thoáng nhất.
+      if (g > bestGap + 0.5 || (g >= 12 && Math.abs(cx - x) < Math.abs(best - x))) { best = cx; bestGap = g; }
+    }
+    return best;
+  }
+
   public update(dt: number, hour: number, rainIntensity = 0, seedNumber = 12345): void {
+    this.rain = rainIntensity;
     let remaining = dt;
     while (remaining > 1e-9) {
       const step = Math.min(MAX_STEP, remaining);
       remaining -= step;
       this.signalClock = (this.signalClock + step) % TRAFFIC_SIGNAL_CYCLE_SEC;
-      this.stepPedestrians(step);
+      this.stepPedestrians(step * rainSpeedMultiplier(rainIntensity));
       this.stepVehicles(step);
     }
 

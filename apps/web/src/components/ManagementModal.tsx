@@ -1,3 +1,4 @@
+import { useWeatherFx, WEATHER_QUALITY_LABEL, WEATHER_QUALITY_ORDER } from '../hooks/useWeatherFx';
 import React from 'react';
 import { PixelDialog, PixelIcon, type IconName } from './pixel';
 import { applyAppUpdate, checkForAppUpdate, isAppUpdateReady, subscribeAppUpdate, type AppUpdateResult } from '../services/app-update';
@@ -67,6 +68,7 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
   isStoreOpen = false,
   onToggleSaveModal,
 }) => {
+  const [weatherFx, setWeatherFx] = useWeatherFx();
   const [updateStatus, setUpdateStatus] = React.useState<AppUpdateResult | 'checking' | null>(null);
   const updateText: Record<AppUpdateResult | 'checking', string> = {
     checking: 'Đang kiểm tra…',
@@ -234,6 +236,13 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
           action: () => onToggleAudioMute(),
           badge: audioMuted ? 'Đang tắt' : undefined,
           badgeVariant: 'gold' as const,
+        },
+        {
+          id: 'weather-quality',
+          label: `Chất lượng thời tiết: ${WEATHER_QUALITY_LABEL[weatherFx.quality ?? 'auto']}`,
+          desc: 'Mật độ mưa, mây, lá bay. Tự động: điện thoại = Vừa, máy tính = Cao. Bấm để đổi vòng Tự động → Thấp → Vừa → Cao',
+          icon: 'cold' as IconName,
+          action: () => setWeatherFx({ quality: WEATHER_QUALITY_ORDER[(WEATHER_QUALITY_ORDER.indexOf(weatherFx.quality) + 1) % WEATHER_QUALITY_ORDER.length] }),
         },
         {
           id: 'check-update',

@@ -89,6 +89,8 @@ export interface CustomerMovementPath {
 
 export class CustomerManager {
   private customers: CustomerState[] = [];
+  /** Hệ số đi nhanh của khách ngoài trời khi mưa (đặt bởi mô phỏng mỗi nhịp); 1 = bình thường. */
+  public outdoorSpeedMultiplier = 1;
   private paths = new Map<string, Vector2D[]>();
   private customerSequence = 0;
   private spawnCooldown = 5.5;
@@ -513,7 +515,8 @@ export class CustomerManager {
         const dx = next.x - customer.position.x;
         const dy = next.y - customer.position.y;
         const distance = Math.hypot(dx, dy);
-        const step = 72 * dt;
+        // Mưa to thì khách ngoài trời đi nhanh hơn một chút (trong tiệm giữ nguyên).
+        const step = 72 * dt * (customer.position.y >= (STORE_BOUNDS.bottom + 1) * TILE_SIZE ? this.outdoorSpeedMultiplier : 1);
 
         if (distance <= step) {
           customer.position = { ...next };

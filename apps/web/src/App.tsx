@@ -4,7 +4,7 @@ import { InputManager, GameSimulation, ambientMix, getTutorialChecklist } from '
 import type { TutorialItem } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
-import { PixiGameViewport } from '@game/renderer';
+import { PixiGameViewport, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
 import { BranchPolicy, GameSnapshot, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
 
 import { getActiveSlotId, loadOrCreateSave, persistSave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
@@ -86,12 +86,21 @@ export const App: React.FC = () => {
       const sim = simulationRef.current;
       if (!sim) return;
       setTutorialItems(getTutorialChecklist(sim.exportSaveData('tutorial', 0)));
+    };
+    // Âm mưa/gió bám theo trạng thái hiệu ứng đã làm mượt (fade vào/ra), cập nhật mỗi giây; sấm phát ngay khi tới hạn.
+    const refreshAudio = () => {
+      const sim = simulationRef.current;
+      if (!sim) return;
       const time = sim.getTime();
-      engine?.setMix(ambientMix({ rainIntensity: sim.getRainIntensity(), hour: time.hour, isStoreOpen: time.isStoreOpen }));
+      const visual = getWeatherVisualState();
+      engine?.setMix(ambientMix({ rainIntensity: visual?.rainIntensity ?? sim.getRainIntensity(), windIntensity: visual?.windIntensity, cloudIntensity: visual?.cloudIntensity, roofProximity: getRoofProximity(), hour: time.hour, isStoreOpen: time.isStoreOpen }));
     };
     refresh();
+    refreshAudio();
     const timer = window.setInterval(refresh, 5000);
-    return () => { window.clearInterval(timer); engine?.detach(); };
+    const audioTimer = window.setInterval(refreshAudio, 1000);
+    const offThunder = onThunder((e) => engine?.thunder(e.strength));
+    return () => { window.clearInterval(timer); window.clearInterval(audioTimer); offThunder(); engine?.detach(); };
   }, [gameStarted]);
   const [daySummaryRecord, setDaySummaryRecord] = useState<DailyRecord | null>(null);
   // Bảng kế hoạch chỉ tính khi mở bảng Thị trường hoặc sang ngày mới, không mỗi khung hình.
@@ -537,6 +546,8 @@ export const App: React.FC = () => {
         simulation,
         onZoomChange: setZoomLevel,
         getPartnerAvatar: () => {
+          // Dev/QA: giả lập bạn co-op để kiểm hình ảnh mà không cần hai trình duyệt (window.__debugPartner = { position, direction, isMoving }).
+          if (import.meta.env.DEV) { const dbg = (window as unknown as { __debugPartner?: { position: { x: number; y: number }; direction: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; name?: string } }).__debugPartner; if (dbg) return dbg; }
           const curWorld = onlineWorldRef.current;
           if (!curWorld || curWorld.world.avatars.length <= 1) return null;
           // Partner is the avatar that does not belong to the signed-in account
@@ -546,6 +557,8 @@ export const App: React.FC = () => {
         },
       });
       ownedViewport = viewport;
+      // Dev/QA: lối vào mô phỏng để dựng cảnh kiểm thử (đặt vị trí người chơi, đếm khách...). Không có trong bản production.
+      if (import.meta.env.DEV) (window as unknown as { __gameDebug?: unknown }).__gameDebug = { simulation };
 
       await viewport.initialize();
       if (isCancelled) return;

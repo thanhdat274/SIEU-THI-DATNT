@@ -35,3 +35,6 @@ export * from './titles';
 export * from './decor';
 export * from './logistics';
 export * from './store-types';
+export * from './weather-visual';
+export * from './shelter';
+export * from './weather-sprite-layout';

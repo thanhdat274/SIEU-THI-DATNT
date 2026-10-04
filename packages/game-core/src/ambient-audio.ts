@@ -2,6 +2,12 @@ export interface AmbientInput {
   rainIntensity: number;
   hour: number;
   isStoreOpen: boolean;
+  /** Cường độ gió 0..1 từ lớp hiệu ứng thời tiết; bỏ trống = lặng gió. */
+  windIntensity?: number;
+  /** Độ dày mây 0..1 (giảm tiếng chim); bỏ trống = theo mưa. */
+  cloudIntensity?: number;
+  /** Gần mái nhà 0..1 (1 = đứng dưới mái): tăng tiếng mưa trên mái, giảm tiếng mưa ngoài trời. */
+  roofProximity?: number;
 }
 
 export interface AmbientMix {
@@ -11,6 +17,12 @@ export interface AmbientMix {
   street: number;
   /** Tiếng côn trùng ban đêm 0..1. */
   night: number;
+  /** Tiếng gió 0..1. */
+  wind: number;
+  /** Tiếng chim ban ngày 0..1 (nhỏ dần khi nhiều mây/mưa, im khi giông). */
+  birds: number;
+  /** Tiếng mưa rơi trên mái 0..1. */
+  roof: number;
 }
 
 export interface AudioSettings {
@@ -27,9 +39,12 @@ const clamp01 = (v: number) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v))
 export function ambientMix(input: AmbientInput): AmbientMix {
   const day = input.hour >= 6 && input.hour < 19;
   return {
-    rain: clamp01(input.rainIntensity) * 0.8,
+    rain: clamp01(input.rainIntensity) * 0.8 * (1 - 0.35 * clamp01(input.roofProximity ?? 0)),
     street: day ? (input.isStoreOpen ? 0.35 : 0.2) : 0.05,
     night: day ? 0 : 0.3,
+    wind: clamp01(input.windIntensity ?? 0) * 0.7,
+    birds: day ? clamp01(1 - clamp01(input.cloudIntensity ?? 0) * 0.55 - clamp01(input.rainIntensity) * 1.6 - clamp01(input.windIntensity ?? 0) * 0.3) ** 1.5 * 0.5 : 0,
+    roof: clamp01(input.rainIntensity) * clamp01(input.roofProximity ?? 0) * 0.9,
   };
 }
 

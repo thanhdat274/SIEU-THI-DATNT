@@ -1,11 +1,11 @@
 import { furnitureSpriteTexture, STOCK_ART_SHOP_IDS } from './fixture-preview';
 import { Application, Container, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
-import { FixedStepSimulationRunner, GameSimulation, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
+import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, type WeatherVisualState, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
-import { DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, BUILDING_MAP, type BuildingId} from '@game/data';
+import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, BUILDING_MAP, type BuildingId} from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -18,6 +18,10 @@ export interface PixiGameViewportOptions {
 
 import { getDebugVisualTime } from './debug-time';
 import { buildRoadSurface, type RoadSurface } from './road-surface';
+import { WeatherEffects, swaySkew } from './weather-effects';
+import { RainGear, roofProximity, type GearFacing } from './rain-gear';
+import { loadWeatherSprites } from './weather-sprites';
+import { emitThunder, setRoofProximity, getWeatherFxSettings, publishWeatherVisual, resolveWeatherQuality } from './weather-settings';
 import { buildTrafficSignalHeads, createPedestrianSprite, placePedestrian, type TrafficSignalHeads } from './street-signal';
 
 /** Điểm gốc bóng so với góc trên-trái sprite cây 80x100 (px): chân thân cây, để bóng đổ từ mặt đất chứ không từ tán. */
@@ -53,8 +57,8 @@ const LOGISTICS_BOX_CARRY_Y = -12;
 
 /** Mặt tiền các tòa phụ: biên, tên biển, màu mái hiên/biển, vị trí mái hiên (ô). */
 const FACADES = {
-  xoi: { bounds: XOI_BOUNDS, name: 'TIỆM XÔI', awning: 0xc0392b, board: 0x7a2f1d, trim: 0xe0b85a, text: 0xffe9b0, awningStart: XOI_BOUNDS.left + 0.5, awningTiles: 3.5 },
-  drink: { bounds: DRINK_BOUNDS, name: 'QUÁN NƯỚC', awning: 0x1f6f8b, board: 0x14506a, trim: 0x8fd3e8, text: 0xd9f4ff, awningStart: 29, awningTiles: 4 },
+  xoi: { bounds: XOI_BOUNDS, name: 'TIỆM XÔI', awning: 0xc0392b, board: 0x7a2f1d, trim: 0xe0b85a, text: 0xffe9b0, awningStart: AWNING_SPANS.xoi.x0 / TILE_SIZE, awningTiles: (AWNING_SPANS.xoi.x1 - AWNING_SPANS.xoi.x0) / TILE_SIZE },
+  drink: { bounds: DRINK_BOUNDS, name: 'QUÁN NƯỚC', awning: 0x1f6f8b, board: 0x14506a, trim: 0x8fd3e8, text: 0xd9f4ff, awningStart: AWNING_SPANS.drink.x0 / TILE_SIZE, awningTiles: (AWNING_SPANS.drink.x1 - AWNING_SPANS.drink.x0) / TILE_SIZE },
 } as const;
 
 export class PixiGameViewport {
@@ -104,6 +108,7 @@ export class PixiGameViewport {
   private onZoomChange?: (zoom: number) => void;
   private ambientSprites: Array<{sprite: Sprite; key: string; frames: number}> = [];
   private stallSprites: Sprite[] = [];
+  private vendorSprites: Container[] = [];
   private eastDecorSprites: Array<Sprite | Graphics | Text> = [];
   /** Quầng sáng bóng đèn của hai cột đèn trang trí phía đông: chỉ sáng khi trời tối như đèn đường. */
   private decorLampGlows: Graphics[] = [];
@@ -151,6 +156,7 @@ export class PixiGameViewport {
     this.canvas = options.canvas;
     this.tileMap = options.tileMap;
     this.simulation = options.simulation;
+    this.weatherModel = new WeatherVisualModel(options.simulation.getWeatherSeed());
     this.simulationRunner = new FixedStepSimulationRunner(options.simulation);
     this.textures = new PixelTextureFactory();
     this.camera = new PixelCamera(this.tileMap.width, this.tileMap.height);
@@ -173,6 +179,7 @@ export class PixiGameViewport {
     });
 
     this.camera.setViewportSize(this.app.screen.width, this.app.screen.height);
+    void loadWeatherSprites(); // sprite ô/áo mưa: nạp nền, chưa xong thì chưa vẽ đồ che
 
     // Build Scene Graph
     this.worldContainer = new Container();
@@ -188,8 +195,12 @@ export class PixiGameViewport {
     // Thứ tự: nền, bóng nắng, tường, thực thể, nhân màu ánh sáng, quầng đèn cộng, nhãn UI.
     this.worldContainer.addChild(this.groundLayer);
     this.worldContainer.addChild(this.shadowLayer);
+    this.worldContainer.addChild(this.weatherFx.groundLayer);
     this.worldContainer.addChild(this.wallLayer);
     this.worldContainer.addChild(this.entitiesLayer);
+    // Nước chảy từ mái hiên nằm trước mặt tiền (entitiesLayer không tự sắp theo zIndex nên đặt lớp riêng ngay sau nó).
+    this.worldContainer.addChild(this.weatherFx.roofLayer);
+    this.worldContainer.addChild(this.weatherFx.darknessLayer);
     this.worldContainer.addChild(this.tintLayer);
     this.worldContainer.addChild(this.lightLayer);
     this.worldContainer.addChild(this.uiOverlayLayer);
@@ -200,9 +211,7 @@ export class PixiGameViewport {
     // Build Tile Layers
     this.buildMapLayers();
     this.lighting.rebuildMap(this.tileMap);
-    this.rainOverlay = new Graphics();
-    this.rainOverlay.eventMode = 'none';
-    this.worldContainer.addChild(this.rainOverlay);
+    this.worldContainer.addChild(this.weatherFx.topLayer);
     // Build Fixtures
     this.buildFixtures();
     this.buildStalls();
@@ -257,7 +266,6 @@ export class PixiGameViewport {
     for (const child of this.wallLayer.removeChildren()) child.destroy({ children: true });
     this.buildMapLayers();
     this.lighting.rebuildMap(this.tileMap);
-    this.rainOverlay.clear();
     this.buildStalls();
   }
 
@@ -669,6 +677,9 @@ export class PixiGameViewport {
     const shopSign = new Sprite(this.textures.getTexture('tile_signboard'));
     shopSign.position.set((WAREHOUSE_BOUNDS.left + 2) * TILE_SIZE, WAREHOUSE_BOUNDS.top * TILE_SIZE - 28);
     this.wallLayer.addChild(shopSign);
+    // Bản đồ dựng lại (mua tòa, quầy...) hủy biển cũ: bỏ chúng khỏi danh sách để không ghi vào sprite đã hủy mỗi khung hình.
+    this.swaySigns = this.swaySigns.filter((sign) => !sign.destroyed);
+    this.swaySigns.push(shopSign);
 
     // Warehouse sign located on the arch/transom right above the warehouse door
     const warehouseSign = new Sprite(this.textures.getTexture('warehouse_sign'));
@@ -777,12 +788,14 @@ export class PixiGameViewport {
 
     // Cozy Alley Shade Tree on sidewalk
     this.trafficSignalHeads = buildTrafficSignalHeads(this.entitiesLayer);
+    this.treeSprites = this.treeSprites.filter(({ sprite }) => !sprite.destroyed); // bỏ cây đã bị hủy khi dựng lại bản đồ
     for (const prop of TREE_PROPS) {
       const tree = new Sprite(this.textures.getTexture('tile_tree'));
       tree.position.set((prop.tileX + TREE_SPRITE_OFFSET.tilesX) * TILE_SIZE + TREE_SPRITE_OFFSET.pixelsX, (prop.tileY + TREE_SPRITE_OFFSET.tilesY) * TILE_SIZE + TREE_SPRITE_OFFSET.pixelsY);
       tree.zIndex = tree.y + 100;
       this.entitiesLayer.addChild(buildTreePlanter(prop.tileX * TILE_SIZE, prop.tileY * TILE_SIZE));
       this.entitiesLayer.addChild(tree);
+      this.treeSprites.push({ sprite: tree, baseX: tree.position.x });
       const shadow = new Graphics();
       shadow.eventMode = 'none';
       this.shadowLayer.addChild(shadow);
@@ -823,6 +836,9 @@ export class PixiGameViewport {
   private buildStalls(): void {
     for (const sprite of this.stallSprites) sprite.destroy();
     this.stallSprites = [];
+    for (const v of this.vendorSprites) v.destroy({ children: true });
+    this.vendorSprites = [];
+    this.vendorGears = [];
     for (const stall of this.tileMap.stalls ?? []) {
       const sprite = new Sprite(this.textures.getTexture(`stall_${stall.id}`));
       sprite.position.set(stall.tileX * TILE_SIZE, (stall.tileY + 1) * TILE_SIZE - 48);
@@ -831,12 +847,16 @@ export class PixiGameViewport {
       this.stallSprites.push(sprite);
 
       // Người bán quầy phụ đứng sau quầy
-      const vendor = new Sprite(this.textures.getTexture('npc_1_down_idle_0'));
-      vendor.anchor.set(0.5, 1);
+      const vendorSprite = new Sprite(this.textures.getTexture('npc_1_down_idle_0'));
+      vendorSprite.anchor.set(0.5, 1);
+      const gear = new RainGear();
+      const vendor = new Container();
+      vendor.addChild(vendorSprite, gear.container);
       vendor.position.set((stall.tileX + 1) * TILE_SIZE, (stall.tileY + 0.6) * TILE_SIZE);
       vendor.zIndex = stall.tileY * TILE_SIZE;
       this.entitiesLayer.addChild(vendor);
-      this.stallSprites.push(vendor);
+      this.vendorSprites.push(vendor);
+      this.vendorGears.push({ id: `vendor-${stall.id}`, gear, container: vendor });
     }
   }
 
@@ -991,6 +1011,7 @@ export class PixiGameViewport {
     tagText.y = -56;
     this.playerContainer.addChild(tagText);
 
+    this.playerContainer.addChild(this.playerGear.container);
     this.entitiesLayer.addChild(this.playerContainer);
   }
 
@@ -1032,7 +1053,7 @@ export class PixiGameViewport {
 
     this.partnerSprite = new Sprite(this.textures.getTexture('player_down_idle_0'));
     this.partnerSprite.anchor.set(0.5, 1);
-    this.partnerContainer.addChild(this.partnerSprite);
+    this.partnerContainer.addChild(this.partnerSprite, this.partnerGear.container);
 
     this.partnerTagBg = new Graphics();
     this.partnerContainer.addChild(this.partnerTagBg);
@@ -1065,7 +1086,17 @@ export class PixiGameViewport {
   private trafficSignalHeads: TrafficSignalHeads | null = null;
   private pedestrianSprites = new Map<string, Container>();
   private treeShadows: Array<{ prop: TreeProp; graphic: Graphics; last: TreeShadowSnapshot | null }> = [];
-  private rainOverlay!: Graphics;
+  private weatherFx = new WeatherEffects();
+  private weatherModel!: WeatherVisualModel;
+  private lastWeather: WeatherVisualState | null = null;
+  private playerGear = new RainGear();
+  private customerGear = new Map<string, RainGear>();
+  private pedestrianGear = new Map<string, RainGear>();
+  private workerGear = new Map<string, RainGear>();
+  private partnerGear = new RainGear();
+  private vendorGears: Array<{ id: string; gear: RainGear; container: Container }> = [];
+  private treeSprites: Array<{ sprite: Sprite; baseX: number }> = [];
+  private swaySigns: Sprite[] = [];
 
   /** Băm cố định theo ô để cỏ/hoa không nhấp nháy giữa các lần dựng. */
   private tileHash(x: number, y: number): number {
@@ -1125,6 +1156,11 @@ export class PixiGameViewport {
     this.playerSprite.texture = this.textures.getTexture(`player_${playerData.direction}_${mode}_${frame}`);
     this.playerContainer.position.set(Math.round(playerData.position.x), Math.round(playerData.position.y));
     this.playerContainer.zIndex = playerData.position.y;
+    setRoofProximity(roofProximity(playerData.position.x, playerData.position.y));
+    const gearDay = getDebugVisualTime()?.day ?? this.simulation.getTime().day;
+    const fxSettingsEnabled = getWeatherFxSettings().enabled;
+    const gearOn = true; // đồ che mưa là hành vi của nhân vật, không phụ thuộc nút bật/tắt hiệu ứng
+    this.playerGear.update({ dt: elapsed, time: this.animTimer, characterId: 'player', day: gearDay, x: playerData.position.x, y: playerData.position.y, facing: (playerData.direction === 'left' || playerData.direction === 'right' || playerData.direction === 'up') ? playerData.direction : 'down', walking: isMoving, weather: this.lastWeather, enabled: gearOn, reducedMotion, windEffects: fxSettingsEnabled });
 
     // Render partner avatar if in online co-op session
     const partner = this.getPartnerAvatar?.();
@@ -1145,6 +1181,8 @@ export class PixiGameViewport {
       this.partnerSprite.texture = this.textures.getTexture(`player_${partner.direction || 'down'}_${partnerMode}_${partnerFrame}`);
       this.partnerContainer.position.set(Math.round(shown.x), Math.round(shown.y));
       this.partnerContainer.zIndex = shown.y;
+      const partnerDir = partner.direction === 'left' || partner.direction === 'right' || partner.direction === 'up' ? partner.direction : 'down';
+      this.partnerGear.update({ dt: elapsed, time: this.animTimer, characterId: 'partner', day: gearDay, x: shown.x, y: shown.y, facing: partnerDir, walking: partnerMoving, weather: this.lastWeather, enabled: gearOn, reducedMotion, windEffects: fxSettingsEnabled });
     } else if (this.partnerContainer) {
       this.partnerContainer.visible = false;
       this.partnerShown = null;
@@ -1193,6 +1231,10 @@ export class PixiGameViewport {
       entry.sprite.texture = this.textures.getTexture(`npc_${entry.npcVariant}_${entry.npcDirection}_${walking ? 'walk' : 'idle'}_${npcFrame}`);
       entry.container.position.set(Math.round(cust.position.x), Math.round(cust.position.y));
       entry.container.zIndex = cust.position.y;
+      const gearKey = key;
+      let gear = this.customerGear.get(gearKey);
+      if (!gear) { gear = new RainGear(); this.customerGear.set(gearKey, gear); entry.container.addChild(gear.container); }
+      gear.update({ dt: elapsed, time: this.animTimer, characterId: gearKey, day: gearDay, x: cust.position.x, y: cust.position.y, facing: entry.npcDirection as GearFacing, walking, weather: this.lastWeather, enabled: gearOn, reducedMotion, windEffects: fxSettingsEnabled });
 
       const target = this.simulation.getFixtures().find((f) => f.id === cust.targetFixtureId);
       const iconKey = cust.stage === 'to_shelf'
@@ -1226,6 +1268,7 @@ export class PixiGameViewport {
         this.entitiesLayer.removeChild(entry.container);
         entry.container.destroy({ children: true });
         this.customerSprites.delete(key);
+        this.customerGear.delete(key);
       }
     }
 
@@ -1271,6 +1314,9 @@ export class PixiGameViewport {
       entry.sprite.texture = this.textures.getTexture(`npc_${entry.variant}_${entry.direction}_${walking ? 'walk' : 'idle'}_${frame}`);
       entry.container.position.set(Math.round(position.x), Math.round(position.y));
       entry.container.zIndex = position.y + 1;
+      let wGear = this.workerGear.get(worker.id);
+      if (!wGear) { wGear = new RainGear(); this.workerGear.set(worker.id, wGear); entry.container.addChildAt(wGear.container, 1); }
+      wGear.update({ dt: elapsed, time: this.animTimer, characterId: worker.id, day: gearDay, x: position.x, y: position.y, facing: entry.direction as GearFacing, walking, weather: this.lastWeather, enabled: gearOn, reducedMotion, windEffects: fxSettingsEnabled });
       entry.status.text = worker.lastWorkerError
         ? 'kẹt'
         : worker.role === 'security'
@@ -1285,9 +1331,13 @@ export class PixiGameViewport {
         this.entitiesLayer.removeChild(entry.container);
         entry.container.destroy({ children: true });
         this.workerSprites.delete(id);
+        this.workerGear.delete(id);
       }
     }
 
+    for (const v of this.vendorGears) {
+      v.gear.update({ dt: elapsed, time: this.animTimer, characterId: v.id, day: gearDay, x: v.container.x, y: v.container.y, facing: 'down', walking: false, weather: this.lastWeather, enabled: gearOn, reducedMotion, windEffects: fxSettingsEnabled });
+    }
     for (const ambient of this.ambientSprites) {
       ambient.sprite.texture = this.textures.getTexture(`${ambient.key}${reducedMotion ? 0 : Math.floor(this.animTimer * (ambient.key === 'tile_fan_' ? 5 : 1)) % ambient.frames}`);
     }
@@ -1381,6 +1431,9 @@ export class PixiGameViewport {
         this.pedestrianSprites.set(ped.id, sprite);
       }
       placePedestrian(sprite, ped, this.animTimer, getPedTexture, reducedMotion);
+      let pedGear = this.pedestrianGear.get(ped.id);
+      if (!pedGear) { pedGear = new RainGear(); this.pedestrianGear.set(ped.id, pedGear); sprite.addChild(pedGear.container); }
+      pedGear.update({ dt: elapsed, time: this.animTimer, characterId: ped.id, day: gearDay, x: ped.position.x, y: ped.position.y, facing: ped.direction === 'south' ? 'down' : ped.direction === 'north' ? 'up' : ped.direction, walking: ped.state === 'crossing' || ped.state === 'walking', weather: this.lastWeather, enabled: gearOn, reducedMotion, windEffects: fxSettingsEnabled });
       const pedDist = Math.min(ped.position.x, MAP_WIDTH * TILE_SIZE - ped.position.x);
       if (pedDist < 48) {
         sprite.alpha = Math.max(0, Math.min(1, pedDist / 48));
@@ -1393,6 +1446,7 @@ export class PixiGameViewport {
         this.entitiesLayer.removeChild(sprite);
         sprite.destroy({ children: true });
         this.pedestrianSprites.delete(id);
+        this.pedestrianGear.delete(id);
       }
     }
 
@@ -1415,13 +1469,32 @@ export class PixiGameViewport {
     this.lighting.updateActorShadows(feet, light);
     this.sunBeamGraphic.alpha = light.sun;
     this.app.renderer.background.color = light.sky;
-    const rain = debugTime?.rain ?? this.simulation.getRainIntensity();
-    this.roadSurface?.setWetness(debugTime?.rain !== undefined ? Math.min(1, rain * 1.5) : this.simulation.getRoadWetness());
+    const fxSettings = getWeatherFxSettings();
+    const dbgRain = debugTime?.rain;
+    const timeNow = debugTime ?? time;
+    const rainNow = dbgRain ?? this.simulation.getRainIntensity();
+    const weatherState = this.weatherModel.update(elapsed, {
+      rain: rainNow,
+      rainAhead: dbgRain ?? this.simulation.getRainIntensityAhead(WEATHER_CONFIG.lookAheadMinutes),
+      weatherId: this.simulation.getEffectiveWeatherId(),
+      day: timeNow.day,
+      wetness: dbgRain !== undefined ? Math.min(1, dbgRain * 1.5) : this.simulation.getRoadWetness(),
+    });
+    publishWeatherVisual(weatherState, this.weatherModel);
+    this.lastWeather = weatherState;
+    for (const thunder of this.weatherModel.consumeThunders()) {
+      emitThunder(thunder);
+      this.weatherFx.onThunder(thunder.strength);
+    }
+    // Mưa cho bóng/đường dùng cường độ đã làm mượt; tắt hiệu ứng thì quay về cường độ thô của mô phỏng.
+    const rain = fxSettings.enabled ? weatherState.rainIntensity : rainNow;
+    this.roadSurface?.setWetness(fxSettings.enabled ? weatherState.puddleLevel : (dbgRain !== undefined ? Math.min(1, rain * 1.5) : this.simulation.getRoadWetness()));
+    const shadowSoftness = fxSettings.enabled ? Math.max(rain, weatherState.sunOcclusion * 0.5) : rain;
     for (const entry of this.treeShadows) {
-      const snapshot = { azimuth: light.sunAzimuth, elevation: light.sunElevation, sun: light.sun, rain };
+      const snapshot = { azimuth: light.sunAzimuth, elevation: light.sunElevation, sun: light.sun, rain: shadowSoftness };
       if (!treeShadowNeedsRedraw(entry.last, snapshot)) continue;
       entry.last = snapshot;
-      const shape = computeTreeShadow(entry.prop, light, rain);
+      const shape = computeTreeShadow(entry.prop, light, shadowSoftness);
       const g = entry.graphic;
       g.clear();
       g.visible = shape.visible;
@@ -1432,17 +1505,27 @@ export class PixiGameViewport {
       g.rotation = shape.angle;
       g.ellipse(0, 0, shape.radiusAlong * TILE_SIZE, shape.radiusAcross * TILE_SIZE).fill({ color: 0x26190e, alpha: shape.alpha });
     }
-    this.rainOverlay.clear();
-    if (rain > 0.01) {
-      const width = this.app.screen.width / this.camera.zoom;
-      const height = this.app.screen.height / this.camera.zoom;
-      const left = this.camera.x - width / 2;
-      const top = this.camera.y - height / 2;
-      this.rainOverlay.position.set(left, top);
-      for (let i = 0; i < 44; i++) {
-        const x = ((i * 67 + this.animTimer * (85 + rain * 130)) % (width + 24)) - 12;
-        const y = ((i * 43 + this.animTimer * (155 + rain * 190)) % (height + 24)) - 12;
-        this.rainOverlay.moveTo(x, y).lineTo(x - 5, y + 10 + rain * 5).stroke({ color: 0xb9d8e8, alpha: rain * 0.48, width: 1 });
+    this.weatherFx.groundLayer.visible = this.weatherFx.roofLayer.visible = this.weatherFx.darknessLayer.visible = this.weatherFx.topLayer.visible = fxSettings.enabled;
+    if (fxSettings.enabled) {
+      const viewW = this.app.screen.width / this.camera.zoom;
+      const viewH = this.app.screen.height / this.camera.zoom;
+      const frameCtx = {
+        dt: elapsed, time: this.animTimer, sun: light.sun, night: streetStrength, quality: resolveWeatherQuality(fxSettings),
+        userIntensity: fxSettings.intensity, reducedMotion, mapWidthPx: MAP_WIDTH * TILE_SIZE, mapHeightPx: MAP_HEIGHT * TILE_SIZE, actors: feet,
+      };
+      this.weatherFx.update(weatherState, { left: this.camera.x, top: this.camera.y, width: viewW, height: viewH }, frameCtx);
+      this.weatherFx.stepActors(weatherState, frameCtx);
+      // Gió lay cây và biển hiệu (vật nhẹ phản ứng nhiều hơn vật nặng; công trình không rung).
+      if (!reducedMotion) {
+        this.treeSprites.forEach(({ sprite, baseX }, i) => {
+          const skew = swaySkew('tree', weatherState.windIntensity, weatherState.windDirection, this.animTimer, i * 1.9);
+          sprite.skew.x = skew;
+          // Skew quanh góc trên-trái: bù vị trí để gốc cây đứng yên, chỉ ngọn nghiêng.
+          sprite.x = baseX - skew * sprite.height;
+        });
+        this.swaySigns.forEach((sign, i) => {
+          sign.skew.x = swaySkew('sign', weatherState.windIntensity, weatherState.windDirection, this.animTimer, 0.7 + i * 2.3);
+        });
       }
     }
 
@@ -1580,8 +1663,9 @@ export class PixiGameViewport {
     this.camera.follow(inWarehouse?{x:playerData.position.x,y:WAREHOUSE_CENTER.y}:playerData.position, dt, inWarehouse?0:undefined);
     const camOffset = this.camera.getRenderOffset();
     this.worldContainer.scale.set(this.camera.zoom);
-    this.worldContainer.x = camOffset.x;
-    this.worldContainer.y = camOffset.y;
+    const shake = fxSettings.enabled ? this.weatherFx.shakeOffset(this.camera.zoom, reducedMotion) : { x: 0, y: 0 };
+    this.worldContainer.x = camOffset.x + shake.x;
+    this.worldContainer.y = camOffset.y + shake.y;
 
     // 7. Update Interaction Bubble
     const activeFixture = this.simulation.getActiveFixture();

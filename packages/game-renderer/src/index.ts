@@ -5,3 +5,4 @@ export * from './debug-time';
 export * from './road-surface';
 export * from './street-signal';
 export * from './fixture-preview';
+export * from './weather-settings';

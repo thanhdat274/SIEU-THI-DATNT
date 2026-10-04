@@ -7,6 +7,12 @@ const WET_ROWS = 6;
 /** Chỉ vẽ lại lớp ướt khi độ ướt đổi ít nhất ngần này, tránh vẽ lại mỗi frame. */
 const WET_REDRAW_STEP = 0.02;
 
+/** Kích thước vũng nước quanh cửa thu nước theo độ ướt 0..1; dùng chung cho vẽ vũng và gợn/phản chiếu. */
+export function puddleGeometry(wet: number): { level: number; rx: number; ry: number } {
+  const level = Math.max(0, (wet - 0.3) / 0.7);
+  return { level, rx: 10 + 26 * level, ry: 3 + 7 * level };
+}
+
 export interface RoadSurface {
   /** Độ ướt mặt đường 0..1; vẽ lại lớp đường ướt và vũng nước khi đổi đủ lớn. */
   setWetness(wetness: number): void;
@@ -66,13 +72,11 @@ export function buildRoadSurface(layer: Container, widthTiles: number): RoadSurf
         wetLayer.rect(sx, sy, len, 1).fill({ color: 0xcfe3f0, alpha: 0.12 * wet });
       }
       // Vũng nước gần cửa thu nước, lớn dần khi mưa nặng.
-      const level = Math.max(0, (wet - 0.3) / 0.7);
+      const { level, rx, ry } = puddleGeometry(wet);
       if (level > 0) {
         for (const drain of STORM_DRAINS) {
           const px = drain.tileX * TILE_SIZE + 16;
           const py = kerbY + 14;
-          const rx = 10 + 26 * level;
-          const ry = 3 + 7 * level;
           wetLayer.ellipse(px, py, rx, ry).fill({ color: 0x8db3c7, alpha: 0.28 + 0.22 * level });
           wetLayer.ellipse(px - rx * 0.25, py - ry * 0.3, rx * 0.5, ry * 0.4).fill({ color: 0xe2f0f7, alpha: 0.25 * level });
         }

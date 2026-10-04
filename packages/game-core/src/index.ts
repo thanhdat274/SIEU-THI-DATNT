@@ -57,3 +57,6 @@ export * from './production';
 export * from './analytics';
 export * from './ambient-audio';
 export * from './replay';
+export * from './weather-visual';
+export * from './rain-protection';
+export * from './shelter-seek';

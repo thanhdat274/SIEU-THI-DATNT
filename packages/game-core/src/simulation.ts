@@ -1,3 +1,4 @@
+import { rainSpeedMultiplier } from './rain-protection';
 import {
   GameTileMap,
   InventoryItem,
@@ -153,6 +154,7 @@ import {
   getSkillModifier,
   hasPerk,
 } from './skills';
+import { setAwningOpen } from '@game/data';
 import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, fixtureBuilding, XOI_DISH_IDS } from '@game/data';
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS } from '@game/data';
@@ -1086,6 +1088,21 @@ export class GameSimulation {
     const weatherId = effectiveWeatherId(this.market, time.day);
     return rainIntensityAt(this.weatherSeed, time.day, time.hour, time.minute, weatherId);
   }
+
+  /** Cường độ mưa sau `minutes` phút game (trong cùng ngày), để hiệu ứng mây/gió lên trước khi mưa đến. */
+  public getRainIntensityAhead(minutes: number): number {
+    const time = this.clock.getTime();
+    const total = Math.min(24 * 60 - 1, time.hour * 60 + time.minute + Math.max(0, minutes));
+    return rainIntensityAt(this.weatherSeed, time.day, Math.floor(total / 60), total % 60, effectiveWeatherId(this.market, time.day));
+  }
+
+  /** Loại thời tiết hiệu lực của hôm nay (id trong WEATHER_TYPES), dùng cho lớp hiệu ứng thời tiết. */
+  public getEffectiveWeatherId(): string {
+    return effectiveWeatherId(this.market, this.clock.getTime().day);
+  }
+
+  /** Hạt giống thời tiết (tái hiện sấm chớp khi debug). */
+  public getWeatherSeed(): string { return this.weatherSeed; }
 
   /** Độ ướt mặt đường 0..1 (mưa + khô dần sau mưa), dùng cho đường ướt và vũng nước. */
   public getRoadWetness(): number {
@@ -2763,6 +2780,7 @@ export class GameSimulation {
     this.clock.update(dt);
     // Khách và nhân viên chạy theo thời gian game: 2× đồng hồ thì họ cũng hoạt động nhanh gấp đôi (người chơi vẫn đi bộ bình thường).
     const worldDt = dt * Math.max(0.25, (this.clock.getTime().timeScale || 60) / 60);
+      this.customerManager.outdoorSpeedMultiplier = rainSpeedMultiplier(this.getRainIntensity());
       this.customerManager.update(
       worldDt,
       this.clock.getTime().isStoreOpen,
@@ -2839,6 +2857,7 @@ export class GameSimulation {
     if (spawned?.id && rollShoplifter(this.clock.getTime().day, spawned.id, this.playerData.level, !!spawned.regularId)) spawned.thief = true;
 
     this.streetTraffic.setStallStops(this.stalls.owned.flatMap(id => STALL_MAP[id] ? [(STALL_MAP[id].tileX + STALL_MAP[id].widthTiles / 2) * TILE_SIZE] : []));
+    for (const id of ['xoi', 'drink'] as const) setAwningOpen(id, this.tileMap.buildings?.find((b) => b.id === id)?.open ?? false);
     this.streetTraffic.update(worldDt, this.clock.getTime().hour, this.getRainIntensity(), this.clock.getTime().day * 1337);
     this.logisticsManager.update(worldDt, this.clock.getTime().hour);
 

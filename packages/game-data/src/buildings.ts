@@ -162,3 +162,27 @@ export const DRINK_DEFAULT_FIXTURES: readonly StoreFixture[] = [
   { id: 'drink_table_b', type: 'dining_table', tileX: 33, tileY: 8, widthTiles: 1, heightTiles: 1, rotation: 0, currentStock: 0, maxCapacity: 0, label: 'Bàn nước 2 chỗ', shopId: 'drink_table_2', slotCount: 1 },
   { id: 'drink_cashier_counter', type: 'cashier_counter', tileX: 28, tileY: 8, widthTiles: 2, heightTiles: 1, rotation: 0, currentStock: 0, maxCapacity: 0, label: 'Quầy thu ngân quán nước' },
 ];
+
+/**
+ * Mép mái/mái hiên nơi nước mưa chảy xuống (px). Tọa độ ước lượng theo mặt tiền từng tòa; chỉnh ở đây nếu lệch hình.
+ * `y` là mép dưới mái hiên; nước rơi khoảng `roofWater.dropHeight` px xuống vỉa hè.
+ */
+/**
+ * Bề ngang mái hiên mặt tiền (px) — một nguồn duy nhất cho hình vẽ mặt tiền (viewport), khu trú mưa (shelter.ts) và nước chảy
+ * (ROOF_EAVES). Tiệm chính: sprite `tile_awning` 128 px bắt đầu ở ô 7; tiệm xôi/quán nước: `awningStart`/`awningTiles` của FACADES.
+ */
+export const AWNING_SPANS = {
+  main: { x0: 7 * 32, x1: 7 * 32 + 128 },
+  xoi: { x0: (XOI_BOUNDS.left + 0.5) * 32, x1: (XOI_BOUNDS.left + 0.5 + 3.5) * 32 },
+  drink: { x0: 29 * 32, x1: (29 + 4) * 32 },
+} as const;
+export type AwningId = keyof typeof AWNING_SPANS;
+
+export const ROOF_EAVES: ReadonlyArray<{ id: string; awning: AwningId; x0: number; x1: number; y: number }> = [
+  { id: 'main-awning', awning: 'main', x0: AWNING_SPANS.main.x0 + 8, x1: AWNING_SPANS.main.x1 - 8, y: 328 },
+  { id: 'xoi-front', awning: 'xoi', x0: AWNING_SPANS.xoi.x0 + 8, x1: AWNING_SPANS.xoi.x1 - 8, y: 11 * 32 - 10 },
+  { id: 'drink-front', awning: 'drink', x0: AWNING_SPANS.drink.x0 + 8, x1: AWNING_SPANS.drink.x1 - 8, y: 11 * 32 - 10 },
+];
+
+/** Bản sao WAREHOUSE_BOUNDS (map.ts) dưới dạng hằng, để `shelter.ts` không import vòng; giữ khớp công thức ở map.ts. */
+export const WAREHOUSE_BOUNDS_FOR_SHELTER = { left: MAIN_STORE_BOUNDS.left, right: MAIN_STORE_BOUNDS.right, top: MAIN_STORE_BOUNDS.top - 6, bottom: MAIN_STORE_BOUNDS.top };
