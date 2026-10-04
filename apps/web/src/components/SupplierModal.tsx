@@ -31,6 +31,45 @@ function loadSuggestOptions(saved?: RestockSuggestionOptions): Required<RestockS
 
 const SUGGEST_INPUT_STYLE: React.CSSProperties = { height: 28, border: '2px solid var(--wood-light)', background: '#FFFAEE', color: 'var(--ink)', textAlign: 'center', fontWeight: 700, borderRadius: 0, margin: '0 2px' };
 
+/** Một IntersectionObserver dùng chung cho mọi dòng, tránh tạo hàng trăm observer. */
+const lazyCallbacks = new WeakMap<Element, (visible: boolean) => void>();
+const lazyObservers = new WeakMap<Element, IntersectionObserver>();
+function observeLazy(el: Element, cb: (visible: boolean) => void): () => void {
+  if (typeof IntersectionObserver === 'undefined') { cb(true); return () => undefined; }
+  // Phải lấy khung cuộn làm root: với root mặc định thì rootMargin không nới được vùng bị cắt bởi khung cuộn.
+  const root = el.closest('.dialog-content');
+  const key = root ?? document.documentElement;
+  let observer = lazyObservers.get(key);
+  if (!observer) {
+    observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) lazyCallbacks.get(entry.target)?.(entry.isIntersecting);
+    }, { root, rootMargin: '600px 0px' });
+    lazyObservers.set(key, observer);
+  }
+  lazyCallbacks.set(el, cb);
+  observer.observe(el);
+  return () => { lazyCallbacks.delete(el); observer.unobserve(el); };
+}
+
+/**
+ * Chỉ dựng nội dung dòng khi nó nằm gần vùng nhìn thấy (đệm 600px); dòng ở xa được thay bằng khung trống
+ * có đúng chiều cao đã đo nên thanh cuộn không nhảy. Danh sách ~480 dòng chỉ còn vài chục dòng thật trong DOM.
+ */
+function LazyRow({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  const heightRef = useRef(120);
+  useEffect(() => (ref.current ? observeLazy(ref.current, setVisible) : undefined), []);
+  useEffect(() => {
+    if (visible && ref.current) heightRef.current = ref.current.offsetHeight || heightRef.current;
+  });
+  return (
+    <div ref={ref} style={{ display: 'flow-root', minHeight: visible ? undefined : heightRef.current }}>
+      {visible ? children : null}
+    </div>
+  );
+}
+
 interface ProductRowProps {
   product: (typeof ALL_PRODUCTS)[number];
   quantity: number;
@@ -690,8 +729,8 @@ export const SupplierModal: React.FC<Props> = ({
             ? getUnitPrice(selectedSupplierId, product.id, Math.max(1, quantity))
             : Math.round(product.purchasePrice * (1 - discountRate));
           return (
+            <LazyRow key={product.id}>
             <SupplierProductRow
-              key={product.id}
               product={product}
               quantity={quantity}
               unitPrice={unitPrice}
@@ -705,6 +744,7 @@ export const SupplierModal: React.FC<Props> = ({
               unavailable={quote?.unavailable}
               onSetQty={setCartQty}
             />
+            </LazyRow>
           );
         })
       )}
