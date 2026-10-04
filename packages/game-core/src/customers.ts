@@ -1,4 +1,3 @@
-import { slotCategoryConflict } from './shelf-slots';
 import {
   CustomerState,
   CheckoutResult,
@@ -649,7 +648,7 @@ export class CustomerManager {
           const prod = PRODUCT_MAP[item.productId];
           const shelfCap = prod ? effectiveShelfCapacity(matchingShelf?.maxCapacity ?? 0, prod.shelfCapacity, shelfCapacityMultiplier - 1) : 0;
 
-          if (matchingShelf && isSalesFixture(matchingShelf) && (!matchingShelf.assignedProductId || matchingShelf.assignedProductId === item.productId) && !slotCategoryConflict(fixtures, matchingShelf, item.productId) && matchingShelf.currentStock < shelfCap) {
+          if (matchingShelf && isSalesFixture(matchingShelf) && (!matchingShelf.assignedProductId || matchingShelf.assignedProductId === item.productId) && matchingShelf.currentStock < shelfCap) {
             matchingShelf.assignedProductId = item.productId;
             matchingShelf.stockLots ??= [];
             mergeLots(matchingShelf.stockLots, [lot]);

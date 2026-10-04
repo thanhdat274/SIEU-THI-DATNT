@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { StoreFixture, InventoryItem, isSalesFixture, isUsableSalesFixture, slotGroup } from '@game/shared';
-import { PRODUCT_MAP, SELLABLE_PRODUCTS, effectiveShelfCapacity, FIXTURE_SHOP, fixtureBuilding } from '@game/data';
+import { PRODUCT_MAP, SELLABLE_PRODUCTS, effectiveShelfCapacity, FIXTURE_SHOP, fixtureBuilding, refrigerationAccepts } from '@game/data';
 import { fixturePreviewUrl } from '@game/renderer';
 import { PixelDialog, PixelButton, PixelIcon, ProductSlot, PixelProgress, EmptyState } from './pixel';
 import './store-planogram.css';
@@ -15,9 +15,9 @@ export interface Props {
   onUnstock: (fixtureId: string, quantity: number) => void;
   onSetPlanogramAssignment?: (fixtureId: string, productId?: string) => void;
   onOpenSupplier?: (preferredProductId?: string) => void;
-  /** Tự động gán sản phẩm + châm đầy một kệ (kể cả khi chưa gán sản phẩm). */
+  /** Tự động gán sản phẩm + bày đầy một kệ (kể cả khi chưa gán sản phẩm). */
   onAutoFill?: (fixtureId: string) => { assigned: boolean; productId: string | null; filled: number; reason: string };
-  /** Tự động gán + châm đầy toàn bộ kệ. */
+  /** Tự động gán + bày đầy toàn bộ kệ. */
   onAutoFillAll?: () => { totalFilled: number; newAssignments: number; skipped: number };
   /** ID các món xôi để UI biết khi nào chỉ chấp nhận món xôi cho kệ xôi. */
   xoiProductIds?: readonly string[];
@@ -103,7 +103,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
             if (inv.quantity <= 0) return false;
             const p = PRODUCT_MAP[inv.productId];
             if (!p) return false;
-            if ((p.storageType === 'cold') !== isColdFix) return false;
+            if (isColdFix ? !refrigerationAccepts(mainFix, p, fixtures) : p.storageType === 'cold') return false;
             // Kệ xôi: chỉ cho phép món xôi
             if (xoiIds.length > 0 && fixtureBuilding(mainFix) === 'xoi' && !xoiIds.includes(inv.productId)) return false;
             if (drinkIds.length > 0 && fixtureBuilding(mainFix) === 'drink' && !drinkIds.includes(inv.productId)) return false;
@@ -154,7 +154,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
     });
   }, [mainFixtures, filter, fixtures, planogram, capacityBonus, searchQuery]);
 
-  // Hành động: Châm đầy tất cả các kệ (kể cả ô trống chưa gán → tự động gán + châm)
+  // Hành động: Bày đầy tất cả các kệ (kể cả ô trống chưa gán → tự động gán + bày)
   const handleRestockAll = () => {
     if (onAutoFillAll) {
       onAutoFillAll();
@@ -179,7 +179,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
     }
   };
 
-  // Hành động: Châm đầy 1 kệ cụ thể (kể cả ô trống chưa gán → tự động gán + châm)
+  // Hành động: Bày đầy 1 kệ cụ thể (kể cả ô trống chưa gán → tự động gán + bày)
   const handleRestockFixture = (mainFix: StoreFixture) => {
     if (mainFix.broken) return;
     if (onAutoFill) {
@@ -212,8 +212,8 @@ export const StorePlanogramModal: React.FC<Props> = ({
     const isCold = slotToChange.parent.type === 'refrigerator';
     return SELLABLE_PRODUCTS.filter(p => {
       if (isCold) {
-        // Vào tủ lạnh: cho phép cold (kể cả coldOnly và không coldOnly)
-        return p.storageType === 'cold';
+        // Vào tủ lạnh: hàng cần lạnh và hàng thường nên bày lạnh (nước uống, trái cây...)
+        return refrigerationAccepts(slotToChange.parent, p, fixtures);
       } else {
         // Vào kệ nhiệt độ thường: cho phép ambient HOẶC cold (không coldOnly)
         return p.storageType === 'ambient' || (p.storageType === 'cold' && !p.coldOnly);
@@ -250,12 +250,12 @@ export const StorePlanogramModal: React.FC<Props> = ({
   return (
     <PixelDialog
       title="Sơ đồ & Bày hàng tiệm"
-      subtitle="Xem toàn bộ kệ & tủ mát trong tiệm, kiểm tra tồn hàng, châm hàng nhanh hoặc đặt thêm từ đại lý"
+      subtitle="Xem toàn bộ kệ & tủ mát trong tiệm, kiểm tra tồn hàng, bày hàng nhanh hoặc đặt thêm từ đại lý"
       icon="warehouse"
       onClose={onClose}
     >
       <div className="planogram-container">
-        {/* Thanh thống kê & Nút châm nhanh toàn tiệm */}
+        {/* Thanh thống kê & Nút bày nhanh toàn tiệm */}
         <div className="planogram-summary-bar">
           <div className="summary-stats">
             <span className="summary-stat-item">
@@ -280,9 +280,9 @@ export const StorePlanogramModal: React.FC<Props> = ({
               className="btn-restock-all"
               disabled={stats.canRestockCount === 0}
               onClick={handleRestockAll}
-              title={stats.canRestockCount > 0 ? `Châm hàng cho ${stats.canRestockCount} ô có sẵn đồ trong kho` : 'Kho chưa có hàng phù hợp để châm'}
+              title={stats.canRestockCount > 0 ? `Bày hàng cho ${stats.canRestockCount} ô có sẵn đồ trong kho` : 'Kho chưa có hàng phù hợp để bày'}
             >
-              ⚡ Châm đầy tất cả các kệ ({stats.canRestockCount})
+              ⚡ Bày hàng lên kệ ({stats.canRestockCount})
             </PixelButton>
 
             {onOpenSupplier && (
@@ -312,7 +312,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
               className={`filter-btn ${filter === 'needs_stock' ? 'is-active' : ''}`}
               onClick={() => setFilter('needs_stock')}
             >
-              🔴 Cần châm hàng
+              🔴 Cần bày hàng
             </button>
             <button
               type="button"
@@ -376,7 +376,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
                     if (!p) return false;
                     // Tủ lạnh: chỉ cold. Kệ nhiệt độ thường: ambient HOẶC cold (không coldOnly)
                     if (isCold) {
-                      if (p.storageType !== 'cold') return false;
+                      if (!refrigerationAccepts(mainFix, p, fixtures)) return false;
                     } else {
                       if (p.storageType === 'cold' && p.coldOnly) return false;
                     }
@@ -431,9 +431,9 @@ export const StorePlanogramModal: React.FC<Props> = ({
                         className="btn-restock-fixture"
                         disabled={!canRestockThisFixture || !!mainFix.broken}
                         onClick={() => handleRestockFixture(mainFix)}
-                        title="Châm đầy tất cả các ô của kệ này nếu kho có hàng"
+                        title="Bày hàng lên kệ này nếu kho có hàng"
                       >
-                        ⚡ Châm đầy kệ này
+                        ⚡ Bày hàng lên kệ
                       </PixelButton>
                     </div>
                   </header>
@@ -505,9 +505,9 @@ export const StorePlanogramModal: React.FC<Props> = ({
                                   className="btn-slot-quick is-fill"
                                   disabled={canAdd <= 0 || !!mainFix.broken}
                                   onClick={() => onRestock(slot.id, product.id, canAdd)}
-                                  title={canAdd > 0 ? `Châm +${canAdd} món từ kho vào kệ` : inBag === 0 ? 'Kho hết hàng này' : 'Kệ đã đầy'}
+                                  title={canAdd > 0 ? `Bày ${canAdd} món từ kho vào kệ` : inBag === 0 ? 'Kho hết hàng này' : 'Kệ đã đầy'}
                                 >
-                                  + Châm đầy {canAdd > 0 ? `(+${canAdd})` : ''}
+                                  + Bày hàng lên kệ {canAdd > 0 ? `(+${canAdd})` : ''}
                                 </button>
 
                                 <button
@@ -549,7 +549,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
                                     onClick={() => onAutoFill(slot.id)}
                                     title="Tự động chọn sản phẩm phù hợp từ kho và bày lên kệ này"
                                   >
-                                    ⚡ Châm tự động
+                                    ⚡ Bày hàng tự động
                                   </button>
                                 ) : null}
                                 <button
@@ -587,7 +587,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
                 <h3>Chọn món bày vào {slotToChange.parent.label}</h3>
                 <p>
                   {slotToChange.parent.type === 'refrigerator'
-                    ? 'Chỉ chọn các mặt hàng tươi sống & đồ uống cần giữ lạnh'
+                    ? 'Hàng tươi sống, đồ uống lạnh, sữa, trái cây, sô-cô-la... bày được ở tủ lạnh'
                     : 'Chỉ chọn các mặt hàng bảo quản khô ở nhiệt độ thường'}
                 </p>
               </div>

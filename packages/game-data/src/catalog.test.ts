@@ -1,5 +1,5 @@
 import { ALL_PRODUCTS, SEASONAL_PRODUCTS, STARTER_PRODUCTS, ADDITIONAL_PRODUCTS, CURATED_PRODUCTS, PRODUCT_MAP, PRODUCT_CATEGORY_LABELS } from './products';
-import { EXPANSION_PRODUCTS } from './products-expansion';
+import { EXPANSION_PRODUCTS, EXTRA_EXPANSION_PRODUCTS } from './products-expansion';
 import { CATALOG_SOURCE_MANIFEST, EXPANSION_MANIFEST } from './catalog-manifest';
 
 function assert(condition: boolean, message: string): void {
@@ -13,8 +13,9 @@ export function runCatalogTests(): void {
   console.log('\n--- Test Group 3: B — Catalog chọn lọc toàn diện (291 sản phẩm gốc + 11 sản phẩm theo mùa = 302 món) ---');
 
   // 1. Kiểm tra tổng số lượng 291 sản phẩm gốc (290 + sữa tươi thanh trùng 04/10/2026) và không mất 36 món legacy
-  assert(ALL_PRODUCTS.length === 291 + SEASONAL_PRODUCTS.length + EXPANSION_PRODUCTS.length, `Catalog tổng = 291 món gốc + ${SEASONAL_PRODUCTS.length} món theo mùa + ${EXPANSION_PRODUCTS.length} món mở rộng (hiện có ${ALL_PRODUCTS.length})`);
-  assert(EXPANSION_PRODUCTS.length === 182, `Có đúng 182 sản phẩm mở rộng cấp 5–30 (hiện có ${EXPANSION_PRODUCTS.length})`);
+  assert(ALL_PRODUCTS.length === 291 + SEASONAL_PRODUCTS.length + EXPANSION_PRODUCTS.length + EXTRA_EXPANSION_PRODUCTS.length, `Catalog tổng gồm hàng gốc, theo mùa và ${EXPANSION_PRODUCTS.length + EXTRA_EXPANSION_PRODUCTS.length} món mở rộng (hiện có ${ALL_PRODUCTS.length})`);
+  assert(EXPANSION_PRODUCTS.length === 182, `Có đúng 182 sản phẩm mở rộng ban đầu (hiện có ${EXPANSION_PRODUCTS.length})`);
+  assert(EXTRA_EXPANSION_PRODUCTS.length === 217, `Có đúng 217 SKU mới (200 + 17 hàng lạnh; hiện có ${EXTRA_EXPANSION_PRODUCTS.length})`);
   assert(SEASONAL_PRODUCTS.length === 11, `Có đúng 11 sản phẩm theo mùa/lễ hội (hiện có ${SEASONAL_PRODUCTS.length})`);
   assert(STARTER_PRODUCTS.length === 5, 'Có đúng 5 sản phẩm khởi đầu');
   assert(ADDITIONAL_PRODUCTS.length === 31, 'Có đúng 31 sản phẩm mở rộng ban đầu');
@@ -23,6 +24,7 @@ export function runCatalogTests(): void {
   // 2. Kiểm tra tính duy nhất của ID sản phẩm
   const idSet = new Set(ALL_PRODUCTS.map((p) => p.id));
   assert(idSet.size === ALL_PRODUCTS.length, 'Toàn bộ mã ID sản phẩm không trùng lặp');
+  assert(EXTRA_EXPANSION_PRODUCTS.every((p) => !p.caseSize), 'SKU mới nhập lẻ đến khi xác minh đúng thương hiệu, dung lượng/khối lượng và đơn vị đóng gói');
 
   // 3. Kiểm tra tính toàn vẹn của 36 sản phẩm legacy
   const legacyIds = [...STARTER_PRODUCTS, ...ADDITIONAL_PRODUCTS].map((p) => p.id);

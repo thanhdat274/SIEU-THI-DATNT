@@ -107,7 +107,6 @@ import { runBranchDay } from './branch-ops';
 import { applyAuditToState, emptyTaxState, normalizeTaxState, resolveAudit, shouldAudit, splitDeclared } from './tax/audit';
 import { composeReview, sanitizeReviews, summarizeReviews, ReviewsManager } from './reviews';
 import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, staffServiceTargets, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
-import { slotCategoryConflict } from './shelf-slots';
 import { decorAttraction, decorTrafficMultiplier } from './decor';
 import { buyLandPlot, relocateMisplacedFixtures, upgradeFixtureSlots, validateStoreLayout, totalWarehouseCells, coldWarehouseCapacity, warehouseCellsFor, unitsFittingInCells, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
@@ -168,7 +167,7 @@ import { ProductionManager } from './production-manager';
 import { SecurityManager } from './security-manager';
 import { StallsMarketsManager } from './stalls-markets-manager';
 import { QuestManager } from './quest-manager';
-import { BUILDING_MAP } from '@game/data';
+import { BUILDING_MAP, chilledDisplayAppeal, fridgeShelfLifeBonus, isChilledDisplayItem, refrigerationAccepts } from '@game/data';
 import { DailyRoutineSystem, HOME_DOOR_TILE, type DailyRoutineState, type InventorySummary, type RoutineTickOutput } from './daily-routine';
 import { CoopRoutineSystem, type CoopPlayerRoutineConfig, type CoopRoutineTickInput, type CoopRoutineTickOutput } from './coop-routine';
 
@@ -1124,6 +1123,17 @@ export class GameSimulation {
     this.market = { ...this.market, priceIndex: advancePriceIndex(this.market.priceIndex, targets), priceTargets: targets };
   }
 
+  /** Sản phẩm thường (đồ uống, trái cây...) đang có hàng trong tủ mát: khách thấy "lạnh sẵn" nên mua nhiều và chịu giá hơn. */
+  private chilledOnDisplayIds(): Set<string> {
+    const ids = new Set<string>();
+    for (const fixture of this.fixtures) {
+      if (fixture.type !== 'refrigerator' || fixture.currentStock <= 0 || !fixture.assignedProductId || fixture.broken) continue;
+      const product = PRODUCT_MAP[fixture.assignedProductId];
+      if (product && isChilledDisplayItem(product)) ids.add(product.id);
+    }
+    return ids;
+  }
+
   private customerPricing() {
     const time = this.clock.getTime();
     const ctx = buildMarketContext(this.market, time.day, time.hour);
@@ -1131,7 +1141,10 @@ export class GameSimulation {
       priceOf: (productId: string) => this.sellingPrice(productId),
       keepChance: (productId: string) => {
         const product = PRODUCT_MAP[productId];
-        return product ? keepChance(priceRatio(this.sellingPrice(productId), this.referencePrice(productId)), productSensitivity(product, ctx)) : 1;
+        if (!product) return 1;
+        // Đồ uống/hàng thường đang bày lạnh: khách chịu trả cao hơn một chút (nóng càng chịu).
+        const tolerance = this.chilledOnDisplayIds().has(productId) ? 1 + (chilledDisplayAppeal(ctx.weatherId) - 1) * 0.4 : 1;
+        return keepChance(priceRatio(this.sellingPrice(productId), this.referencePrice(productId)) / tolerance, productSensitivity(product, ctx));
       },
       onReject: () => { this.currentDayRecord.priceWalkouts = (this.currentDayRecord.priceWalkouts ?? 0) + 1; },
     };
@@ -2243,7 +2256,12 @@ export class GameSimulation {
         source.lots ??= normalizeLots(source.quantity, undefined, task.productId, this.clock.getTime().day);
         // Chỉ mang hàng lẻ ra kệ; hàng còn nguyên thùng phải được mở trong kho trước.
         const caseSize = PRODUCT_MAP[task.productId]?.caseSize;
-        const loose = looseUnits(source.lots, caseSize);
+        let loose = looseUnits(source.lots, caseSize);
+        const wanted = Math.min(4, valid.target.needed);
+        if (caseSize && loose < wanted) {
+          this.unpackMultipleCases(task.productId, Math.ceil((wanted - loose) / caseSize));
+          loose = looseUnits(source.lots, caseSize);
+        }
         if (loose <= 0) {
           member.lastWorkerError = 'Hàng còn nguyên thùng — mở thùng trong kho để châm kệ.';
           this.finishStaffJob(member, true);
@@ -2269,7 +2287,7 @@ export class GameSimulation {
       const shelf = this.fixtures.find((item) => item.id === task.fixtureId);
       const product = PRODUCT_MAP[task.productId];
       if (!shelf || !isSalesFixture(shelf) || !product ||
-          (shelf.currentStock > 0 && shelf.assignedProductId !== task.productId) || slotCategoryConflict(this.fixtures, shelf, task.productId)) {
+          (shelf.currentStock > 0 && shelf.assignedProductId !== task.productId)) {
         member.lastWorkerError = 'Kệ không còn khớp với việc được giao.';
         this.finishStaffJob(member, true);
         continue;
@@ -3093,7 +3111,13 @@ export class GameSimulation {
       item.lots?.sort((a, b) => a.expiresOnDay - b.expiresOnDay);
     }
     for (const fixture of this.fixtures) {
-      const rate = rateOf(fixture.assignedProductId) + coldBreakExtraDecay(fixture);
+      let rate = rateOf(fixture.assignedProductId) + coldBreakExtraDecay(fixture);
+      const shelfProduct = fixture.assignedProductId ? PRODUCT_MAP[fixture.assignedProductId] : undefined;
+      if (shelfProduct && fixture.type === 'refrigerator' && isChilledDisplayItem(shelfProduct)) {
+        // Hàng thường để tủ mát: không chịu hao do trời nóng và tươi lâu hơn; mất điện thì hao như hàng lạnh.
+        const coldRate = spoilageRate(ctx, { ...shelfProduct, storageType: 'cold' });
+        rate = Math.max(0.6, 1 + (coldRate - 1) * (1 - getSkillModifier(this.skills, 'spoilage_reduction')) + coldBreakExtraDecay(fixture) - fridgeShelfLifeBonus(shelfProduct));
+      }
       for (const lot of fixture.stockLots ?? []) decayLot(lot, rate);
       fixture.stockLots?.sort((a, b) => a.expiresOnDay - b.expiresOnDay);
     }
@@ -3491,6 +3515,8 @@ export class GameSimulation {
       (diner) => this.serveDiningAddOns(diner)
     );
     const demandTable = this.refreshDemandTable();
+    const chilledIds = this.chilledOnDisplayIds();
+    const chilledAppeal = chilledIds.size ? chilledDisplayAppeal(buildMarketContext(this.market, this.clock.getTime().day, this.clock.getTime().hour).weatherId) : 1;
     const availability = availabilityFactor(demandTable, this.fixtures.filter(isSalesFixture).map(shelf => ({
       productId: shelf.assignedProductId ?? this.planogram[shelf.id],
       inStock: shelf.currentStock > 0 && !shelf.broken,
@@ -3507,7 +3533,7 @@ export class GameSimulation {
       {
         traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * (1 + getSkillModifier(this.skills, 'traffic_boost')) * prestigeTrafficMultiplier(this.playerData.prestigeStars ?? 0) * hourlyStoreTrafficMultiplier(this.clock.getTime().hour), this.playerData.level),
         maxConcurrentCustomers: maxActiveCustomersForLevel(this.playerData.level),
-        weightOf: (productId) => demandTable.perProduct[productId]?.demand ?? 0.01,
+        weightOf: (productId) => (demandTable.perProduct[productId]?.demand ?? 0.01) * (chilledIds.has(productId) ? chilledAppeal : 1),
       },
       regularCandidate,
       this.getRainIntensity(),
@@ -3618,7 +3644,7 @@ export class GameSimulation {
   /**
    * Transfer items to a sales shelf with detailed result.
    */
-  public transferToShelf(fixtureId: string, productId: string, amount: number = 1): TransferShelfResult {
+  public transferToShelf(fixtureId: string, productId: string, amount: number = 1, autoOpenCases = false): TransferShelfResult {
     const fixture = this.fixtures.find((f) => f.id === fixtureId);
     if (!fixture || !isSalesFixture(fixture)) {
       return { success: false, actualQuantity: 0, reason: !fixture ? 'fixture_not_found' : 'not_sales_fixture' };
@@ -3637,8 +3663,11 @@ export class GameSimulation {
     if (product.storageType === 'cold' && product.coldOnly && fixture.type !== 'refrigerator') {
       return { success: false, actualQuantity: 0, reason: 'storage_mismatch' };
     }
-    // Chặn sản phẩm ambient (nhiệt độ thường) vào tủ lạnh
-    if (product.storageType !== 'cold' && fixture.type === 'refrigerator') {
+    // Hàng đông lạnh chỉ vào tủ đông; tủ mát nhận hàng lạnh + hàng thường nên bày lạnh.
+    if (product.category === 'frozen' && !(fixture.type === 'refrigerator' && (fixture.shopId ?? this.fixtures.find((item) => item.id === fixture.parentId)?.shopId) === 'freezer')) {
+      return { success: false, actualQuantity: 0, reason: 'storage_mismatch' };
+    }
+    if (fixture.type === 'refrigerator' && !refrigerationAccepts(fixture, product, this.fixtures)) {
       return { success: false, actualQuantity: 0, reason: 'storage_mismatch' };
     }
 
@@ -3651,9 +3680,6 @@ export class GameSimulation {
     if (fixture.assignedProductId && fixture.assignedProductId !== productId && fixture.currentStock > 0) {
       return { success: false, actualQuantity: 0, reason: 'product_mismatch' };
     }
-    if (slotCategoryConflict(this.fixtures, fixture, productId)) {
-      return { success: false, actualQuantity: 0, reason: 'product_mismatch' };
-    }
 
     const effectiveCapacity = effectiveShelfCapacity(fixture.maxCapacity, product.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
     const availableSpace = effectiveCapacity - fixture.currentStock;
@@ -3663,7 +3689,13 @@ export class GameSimulation {
 
     // Chỉ hàng lẻ lên kệ: hàng còn nguyên thùng ở lại kho cho tới khi mở thùng (WarehouseModal / lệnh open_case).
     inventorySlot.lots ??= normalizeLots(inventorySlot.quantity, undefined, productId, this.clock.getTime().day);
-    const loose = looseUnits(inventorySlot.lots, product.caseSize);
+    let loose = looseUnits(inventorySlot.lots, product.caseSize);
+    // Bày tự động: thiếu hàng lẻ thì tự mở đúng số thùng cần dùng.
+    if (autoOpenCases && product.caseSize && loose < Math.min(amount, availableSpace)) {
+      const wanted = Math.min(amount, availableSpace);
+      this.unpackMultipleCases(productId, Math.ceil((wanted - loose) / product.caseSize));
+      loose = looseUnits(inventorySlot.lots, product.caseSize);
+    }
     if (loose <= 0) {
       return { success: false, actualQuantity: 0, reason: 'in_cases' };
     }
@@ -3887,7 +3919,7 @@ export class GameSimulation {
     }
     const isColdFixture = fix.type === 'refrigerator';
     const isColdProduct = prod.storageType === 'cold';
-    if (isColdFixture !== isColdProduct) {
+    if (isColdFixture ? !refrigerationAccepts(fix, prod, this.fixtures) : isColdProduct) {
       return { success: false, reason: 'storage_type_mismatch' };
     }
     this.planogram[fixtureId] = productId;
@@ -3918,7 +3950,7 @@ export class GameSimulation {
       }
       const isColdFixture = fix.type === 'refrigerator';
       const isColdProduct = prod.storageType === 'cold';
-      if (isColdFixture !== isColdProduct) {
+      if (isColdFixture ? !refrigerationAccepts(fix, prod, this.fixtures) : isColdProduct) {
         errors.push({ fixtureId, reason: 'storage_type_mismatch' });
         continue;
       }
@@ -3951,7 +3983,7 @@ export class GameSimulation {
     }
     const isColdFixture = fix.type === 'refrigerator';
     const isColdProduct = prod.storageType === 'cold';
-    if (isColdFixture !== isColdProduct) {
+    if (isColdFixture ? !refrigerationAccepts(fix, prod, this.fixtures) : isColdProduct) {
       return { fixtureId, productId, applied: false, actualQuantity: 0, reason: 'storage_type_mismatch' };
     }
 
@@ -3959,9 +3991,6 @@ export class GameSimulation {
     // WHEN áp dụng sơ đồ chỉ định A vào kệ còn B
     // THEN B và lô giữ nguyên, kệ bị bỏ qua với lý do
     if (fix.currentStock > 0 && fix.assignedProductId && fix.assignedProductId !== productId) {
-      return { fixtureId, productId, applied: false, actualQuantity: 0, reason: 'product_mismatch' };
-    }
-    if (slotCategoryConflict(this.fixtures, fix, productId)) {
       return { fixtureId, productId, applied: false, actualQuantity: 0, reason: 'product_mismatch' };
     }
 
@@ -3981,7 +4010,7 @@ export class GameSimulation {
       return { fixtureId, productId, applied: false, actualQuantity: 0, reason: 'no_inventory' };
     }
 
-    const res = this.transferToShelf(fixtureId, productId, needed);
+    const res = this.transferToShelf(fixtureId, productId, needed, true);
     if (res.success && res.actualQuantity > 0) {
       return { fixtureId, productId, applied: true, actualQuantity: res.actualQuantity, reason: 'success' };
     }
@@ -4030,7 +4059,7 @@ export class GameSimulation {
 
     // Kệ đã có sản phẩm và còn hàng → chỉ châm thêm
     if (fix.assignedProductId && fix.currentStock > 0) {
-      const res = this.transferToShelf(fixtureId, fix.assignedProductId, 999);
+      const res = this.transferToShelf(fixtureId, fix.assignedProductId, 999, true);
       return {
         assigned: false,
         productId: fix.assignedProductId,
@@ -4053,15 +4082,20 @@ export class GameSimulation {
         const prod = PRODUCT_MAP[inv.productId];
         if (!prod) return false;
         // Đúng loại kệ (lạnh/thường)
-        const needsCold = prod.storageType === 'cold';
-        if (needsCold !== isColdFixture) return false;
-        // Món xôi nấu ở quầy xôi chỉ tự châm vào kệ của tiệm xôi; kệ tiệm xôi chỉ tự nhận món xôi (tránh đổ đồ tạp hóa làm kệ bị khóa nhóm hàng).
+        if (isColdFixture ? !refrigerationAccepts(fix, prod, this.fixtures) : prod.storageType === 'cold') return false;
+        // Món xôi nấu ở quầy xôi chỉ tự châm vào kệ của tiệm xôi; kệ tiệm xôi chỉ tự nhận món xôi (giữ kệ tiệm xôi chỉ có món xôi).
         if (isXoiShelf !== XOI_DISH_IDS.has(inv.productId)) return false;
         // Kệ quán nước chỉ tự nhận đồ uống của quán; kệ tòa khác không tự nhận thành phẩm riêng của quán nước (vẫn bày tay được).
         if (isDrinkShelf && !DRINK_SHOP_PRODUCT_IDS.has(inv.productId)) return false;
         return true;
       })
       .sort((a, b) => {
+        // Tủ mát: hàng bắt buộc giữ lạnh được xếp trước hàng thường chỉ bày lạnh cho tiện.
+        if (isColdFixture) {
+          const aCold = PRODUCT_MAP[a.productId]?.storageType === 'cold' ? 1 : 0;
+          const bCold = PRODUCT_MAP[b.productId]?.storageType === 'cold' ? 1 : 0;
+          if (aCold !== bCold) return bCold - aCold;
+        }
         // Ưu tiên 1: sản phẩm chưa có trên kệ nào (mới)
         const aNew = alreadyOnShelf.has(a.productId) ? 0 : 1;
         const bNew = alreadyOnShelf.has(b.productId) ? 0 : 1;
@@ -4076,8 +4110,7 @@ export class GameSimulation {
 
     // Thử từng ứng viên
     for (const candidate of candidates) {
-      if (slotCategoryConflict(this.fixtures, fix, candidate.productId)) continue;
-      const res = this.transferToShelf(fixtureId, candidate.productId, 999);
+      const res = this.transferToShelf(fixtureId, candidate.productId, 999, true);
       if (res.success && res.actualQuantity > 0) {
         // Cập nhật planogram để lần sau nhớ
         this.planogram[fixtureId] = candidate.productId;
@@ -4124,15 +4157,14 @@ export class GameSimulation {
       if (!prod) continue;
       // Shelf must not be blocked by another product with remaining stock
       if (fix.currentStock > 0 && fix.assignedProductId && fix.assignedProductId !== productId) continue;
-      if (slotCategoryConflict(this.fixtures, fix, productId)) continue;
 
       const effectiveCap = effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
       const needed = Math.max(0, effectiveCap - fix.currentStock);
       if (needed <= 0) continue;
 
       const invSlot = this.inventory.find((i) => i.productId === productId);
-      // Chỉ hàng lẻ châm kệ được; còn nguyên thùng thì không phải việc châm kệ (cần mở thùng trước).
-      const available = invSlot ? (invSlot.lots ? looseUnits(invSlot.lots, prod.caseSize) : invSlot.quantity) : 0;
+      // Hàng nguyên thùng vẫn tính là có sẵn: bày tự động sẽ mở thùng khi cần.
+      const available = invSlot?.quantity ?? 0;
 
       targets.push({
         fixtureId,
@@ -4147,12 +4179,12 @@ export class GameSimulation {
     for (const fix of this.fixtures) {
       if (!isSalesFixture(fix) || fix.broken || !fix.assignedProductId || this.planogram[fix.id]) continue;
       const prod = PRODUCT_MAP[fix.assignedProductId];
-      if (!prod || slotCategoryConflict(this.fixtures, fix, fix.assignedProductId)) continue;
+      if (!prod) continue;
       const effectiveCap = effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
       const needed = Math.max(0, effectiveCap - fix.currentStock);
       if (needed <= 0) continue;
       const invSlot = this.inventory.find((i) => i.productId === fix.assignedProductId);
-      const available = invSlot ? (invSlot.lots ? looseUnits(invSlot.lots, prod.caseSize) : invSlot.quantity) : 0;
+      const available = invSlot?.quantity ?? 0;
       targets.push({ fixtureId: fix.id, productId: fix.assignedProductId, currentStock: fix.currentStock, maxCapacity: effectiveCap, needed, availableInInventory: available });
     }
     return targets;
@@ -4410,7 +4442,7 @@ export class GameSimulation {
       const needed = cap - fix.currentStock;
       const have = this.getInventory().find((i) => i.productId === fix.assignedProductId);
       if (needed > 0 && have && have.quantity > 0) {
-        const res = this.transferToShelf(fix.id, fix.assignedProductId, Math.min(needed, have.quantity));
+        const res = this.transferToShelf(fix.id, fix.assignedProductId, Math.min(needed, have.quantity), true);
         if (res.success && res.actualQuantity > 0) restocked += res.actualQuantity;
       }
     }

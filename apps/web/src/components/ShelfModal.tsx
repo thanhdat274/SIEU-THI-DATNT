@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StoreFixture, InventoryItem } from '@game/shared';
-import { PRODUCT_MAP, effectiveShelfCapacity } from '@game/data';
+import { PRODUCT_MAP, effectiveShelfCapacity, refrigerationAccepts } from '@game/data';
 import { looseUnits, sealedCases } from '@game/core';
 import { useGameStore } from '../store/useGameStore';
 import { PixelDialog, PixelButton, ProductSlot, PixelProgress, EmptyState, money } from './pixel';
@@ -56,16 +56,13 @@ export const ShelfModal: React.FC<Props> = ({
     stock.cases > 0 ? `${stock.loose} lẻ · ${stock.cases} thùng (${stock.cases * (stock.caseSize ?? 0)} món trong thùng)` : `${stock.loose} món`;
   const bagStock = stockOf(inventory.find((i) => i.productId === product?.id));
   const inBag = bagStock.loose;
-  const siblingCategory = slots.filter(o => o.id !== fixture.id && o.currentStock > 0 && o.assignedProductId)
-    .map(o => PRODUCT_MAP[o.assignedProductId!]?.category)[0];
   const compatible = inventory.filter(
     (i) =>
       i.quantity > 0 &&
       PRODUCT_MAP[i.productId] &&
-      (!siblingCategory || PRODUCT_MAP[i.productId].category === siblingCategory) &&
       (fixture.type === 'refrigerator'
-        ? PRODUCT_MAP[i.productId].storageType === 'cold'
-        : PRODUCT_MAP[i.productId].storageType === 'ambient' || (PRODUCT_MAP[i.productId].storageType === 'cold' && !PRODUCT_MAP[i.productId].coldOnly))
+        ? refrigerationAccepts(fixture, PRODUCT_MAP[i.productId], slots)
+        : (PRODUCT_MAP[i.productId].category !== 'frozen') && PRODUCT_MAP[i.productId].storageType === 'ambient' || (PRODUCT_MAP[i.productId].storageType === 'cold' && !PRODUCT_MAP[i.productId].coldOnly))
   );
 
   const planogramProductId = planogram[fixture.id];
@@ -79,7 +76,7 @@ export const ShelfModal: React.FC<Props> = ({
   return (
     <PixelDialog
       title={fixture.label}
-      subtitle={fixture.type === 'refrigerator' ? 'Bày hàng giữ lạnh (sữa, trứng...)' : 'Chăm chút từng kệ hàng (sữa tiệt trùng để nhiệt độ thường cũng được)'}
+      subtitle={fixture.type === 'refrigerator' ? 'Bày hàng giữ lạnh (sữa, trứng, nước uống lạnh, trái cây...)' : 'Chăm chút từng kệ hàng (sữa tiệt trùng để nhiệt độ thường cũng được)'}
       icon={fixture.type === 'refrigerator' ? 'cold' : 'warehouse'}
       onClose={onClose}
     >
@@ -88,7 +85,6 @@ export const ShelfModal: React.FC<Props> = ({
           Ô {index + 1}: {slot.assignedProductId ? `${PRODUCT_MAP[slot.assignedProductId]?.name ?? slot.assignedProductId} (${slot.currentStock})` : 'trống'}
         </PixelButton>)}
       </div>}
-      {siblingCategory && <p className="muted">Các ô cùng kệ chỉ bày hàng cùng nhóm với ô đang có hàng.</p>}
       <div className="info-card">
         <div className="section-label">
           <strong>Sức chứa ô này</strong>
@@ -121,7 +117,7 @@ export const ShelfModal: React.FC<Props> = ({
                 <PixelButton
                   variant="teal"
                   onClick={() => onApplyPlanogram(fixture.id)}
-                  title="Châm hàng theo sơ đồ"
+                  title="Bày hàng theo sơ đồ"
                 >
                   Áp dụng
                 </PixelButton>
@@ -192,7 +188,7 @@ export const ShelfModal: React.FC<Props> = ({
               disabled={!!reason}
               onClick={() => onRestock(fixture.id, product.id, Math.min(inBag, limit - fixture.currentStock))}
             >
-              Bày đầy kệ
+              ⚡ Bày hàng lên kệ
             </PixelButton>
             <PixelButton icon="minus" disabled={fixture.currentStock <= 0} onClick={() => onUnstock(fixture.id, 1)}>
               Cất lại 1

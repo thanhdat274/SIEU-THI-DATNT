@@ -1,4 +1,5 @@
 export * from './products';
+export * from './fridge';
 export * from './recipes';
 export * from './buildings';
 export * from './map';

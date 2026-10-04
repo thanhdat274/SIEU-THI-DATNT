@@ -698,7 +698,7 @@ export interface StoreFixture {
   wear?: number;
   /** Đang hỏng: nhẹ (sửa được) hoặc nặng (phải mua mới). Kệ hỏng không bán và không châm hàng được. */
   broken?: 'minor' | 'major';
-  /** Ô phụ của một kệ/tủ: dùng chung vị trí với kệ cha, mỗi ô giữ một sản phẩm (cùng nhóm hàng với các ô khác). */
+  /** Ô phụ của một kệ/tủ: dùng chung vị trí với kệ cha, mỗi ô giữ một sản phẩm (các ô cùng kệ được bày khác nhóm hàng). */
   parentId?: string;
   /** Mã món trong danh mục mua thêm (để chọn ảnh/nhãn). */
   shopId?: string;
@@ -856,12 +856,13 @@ export interface AutoBuyReport {
 }
 
 export interface StaffWorkerTask {
-  fixtureId: string;
-  productId: string;
+  fixtureId: string; /** ID của kệ đang châm (hoặc 'auto' cho chế độ tự động). */
+  productId: string; /** productId của kệ hiện tại (dùng khi fixtureId='auto'). */
   stage: 'to_warehouse' | 'to_shelf';
   route: Vector2D[];
   carriedLots: StockLot[];
   assignedBuilding?: StaffBuilding; /** Tòa nhà của task (giúp nhân viên biết nơi làm việc). */
+  autoRestock?: boolean; /** Nếu true, nhân viên tự động châm tất cả kệ thiếu hàng. */
 }
 
 export interface StaffCandidate {
