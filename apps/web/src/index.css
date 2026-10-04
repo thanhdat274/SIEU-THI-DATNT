@@ -148,7 +148,7 @@
 @media(max-width:720px){
   .hud-weather-badge{max-width:9ch}
   .hud-actions .btn-store-toggle{min-width:36px}
-  .hud-actions .btn-store-toggle span,.hud-actions .btn-planogram .hud-management-badge{display:none}
+  .hud-actions .btn-store-toggle span,.hud-actions .btn-warehouse .hud-management-badge{display:none}
 }
 /* TIER 4: Ultra Compact Phone Landscape (max-width: 640px) */
 @media(max-width:640px){

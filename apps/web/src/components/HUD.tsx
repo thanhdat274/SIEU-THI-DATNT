@@ -98,23 +98,12 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
             </PixelButton>
           )}
           <PixelButton icon="speed" onClick={onToggleGameSpeed} aria-label={`Tốc độ ${gameSpeed}x`} title={`Tốc độ thời gian ${gameSpeed}x`}>{gameSpeed}×</PixelButton>
-          <PixelButton icon="warehouse" onClick={onToggleWarehouseDock} aria-label="Kho hàng" aria-expanded={isWarehouseDockOpen} title="Kho hàng sau tiệm">
+          <PixelButton icon="warehouse" onClick={onToggleWarehouseDock} aria-label={emptySlotsCount > 0 ? `Kho hàng, ${emptySlotsCount} ô kệ hết hàng` : 'Kho hàng'} aria-expanded={isWarehouseDockOpen} title="Kho hàng sau tiệm: xem tồn kho, mở sơ đồ kệ và châm hàng nhanh" className="btn-warehouse">
             <span className="button-label">Kho</span>
+            {emptySlotsCount > 0 && (
+              <span className="hud-management-badge" title={`${emptySlotsCount} ô kệ hết hàng`}>({emptySlotsCount})</span>
+            )}
           </PixelButton>
-          {onOpenPlanogram && (
-            <PixelButton
-              icon="warehouse"
-              onClick={onOpenPlanogram}
-              aria-label="Sơ đồ kệ hàng"
-              title="Sơ đồ bày hàng & Châm hàng nhanh"
-              className="btn-planogram"
-            >
-              <span className="button-label">Kệ hàng</span>
-              {emptySlotsCount > 0 && (
-                <span className="hud-management-badge" title={`${emptySlotsCount} ô hết hàng`}>({emptySlotsCount})</span>
-              )}
-            </PixelButton>
-          )}
           <PixelButton icon="star" onClick={onOpenQuests} aria-label="Nhiệm vụ" title="Nhiệm vụ buôn bán">
             <span className="button-label">Nhiệm vụ</span>
           </PixelButton>
