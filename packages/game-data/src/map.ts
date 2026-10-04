@@ -67,10 +67,8 @@ export const STREET_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
  * Hai làn trùng với STREET_LANE_LEFT_Y/STREET_LANE_RIGHT_Y trong game-core/street-traffic.ts.
  */
 export const ROAD_PROFILE = { kerbTileY: 13, centerLineTileY: 14, laneRows: 2 } as const;
-/** Cửa thu nước mưa trong rãnh sát bó vỉa (ô x, ở hàng kerbTileY); tránh vạch qua đường trước cửa tiệm. */
+/** Cửa thu nước mưa trong rãnh sát bó vỉa (ô x, ở hàng kerbTileY). */
 export const STORM_DRAINS: ReadonlyArray<{ tileX: number }> = [{ tileX: 4 }, { tileX: 12 }, { tileX: 17 }, { tileX: 22 }];
-/** Vạch qua đường ngay trước cửa tiệm (cửa ở ô x = 9..10), phủ hai làn. */
-export const CROSSWALK = { tileX: 1, widthTiles: 2, firstRow: 13, rows: 2 } as const;
 
 /**
  * Chỗ đỗ ô tô của khách trên vỉa hè phía đông (rộng hơn chỗ xe máy, chân xe tại y px), giữa các cột đèn x = 15, 21 và

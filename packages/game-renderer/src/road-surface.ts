@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import { TILE_SIZE } from '@game/shared';
-import { CROSSWALK, ROAD_PROFILE, STORM_DRAINS } from '@game/data';
+import { ROAD_PROFILE, STORM_DRAINS } from '@game/data';
 
 /** Số hàng mặt đường vẽ lớp ướt: hàng bó vỉa (13) tới hết vùng nhựa đường hiển thị dưới bản đồ. */
 const WET_ROWS = 6;
@@ -19,8 +19,8 @@ export interface RoadSurface {
 }
 
 /**
- * Mặt cắt lòng đường (chỉ hình ảnh, không va chạm): bó vỉa + rãnh, vạch giữa đường, cửa thu nước, vạch qua đường trước
- * cửa tiệm; kèm lớp đường ướt và vũng nước gần cửa thu nước khi trời mưa.
+ * Mặt cắt lòng đường (chỉ hình ảnh, không va chạm): bó vỉa + rãnh, vạch giữa đường, cửa thu nước (vạch qua đường nằm ở các ngã tư,
+ * xem neighborhood-scene); kèm lớp đường ướt và vũng nước gần cửa thu nước khi trời mưa.
  */
 export function buildRoadSurface(layer: Container, widthTiles: number): RoadSurface {
   const widthPx = widthTiles * TILE_SIZE;
@@ -41,11 +41,6 @@ export function buildRoadSurface(layer: Container, widthTiles: number): RoadSurf
     fixed.rect(gx, kerbY + 3, 16, 6).fill(0x2d3836);
     for (let bar = 0; bar < 4; bar++) fixed.rect(gx + 2 + bar * 4, kerbY + 3, 1, 6).fill({ color: 0x6a7a75, alpha: 0.9 });
   }
-  // Vạch qua đường: thanh song song hướng xe chạy, xếp dọc theo hướng người đi bộ.
-  const cx0 = CROSSWALK.tileX * TILE_SIZE;
-  const cy0 = CROSSWALK.firstRow * TILE_SIZE + 12;
-  const cy1 = (CROSSWALK.firstRow + CROSSWALK.rows) * TILE_SIZE - 4;
-  for (let y = cy0; y + 4 <= cy1; y += 8) fixed.rect(cx0, y, CROSSWALK.widthTiles * TILE_SIZE, 4).fill({ color: 0xfff0cf, alpha: 0.8 });
   layer.addChild(fixed);
 
   const wetLayer = new Graphics();

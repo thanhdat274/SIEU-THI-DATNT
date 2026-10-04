@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { CROSSWALK, MAP_WIDTH, ROAD_PROFILE, STORE_BOUNDS, STORM_DRAINS, STREET_PARKING_SPOTS, generateStarterTileMap } from '@game/data';
+import { MAP_WIDTH, ROAD_PROFILE, STORM_DRAINS, generateStarterTileMap } from '@game/data';
 import { STREET_LANE_LEFT_Y, STREET_LANE_RIGHT_Y } from './street-traffic';
 import { rainDayProfile, roadWetnessAt, ROAD_DRY_TAU_MINUTES } from './weather';
 
@@ -17,23 +17,12 @@ export function runRoadTests(): void {
   assert.equal(Math.floor(STREET_LANE_RIGHT_Y / 32), ROAD_PROFILE.centerLineTileY, 'Làn phải nằm ngay dưới vạch giữa');
   assert.equal(ROAD_PROFILE.centerLineTileY, ROAD_PROFILE.kerbTileY + 1, 'Vạch giữa ở biên hai làn');
 
-  // Cửa thu nước: trong bản đồ, không trùng nhau, không nằm trong vạch qua đường hay trước cửa tiệm.
+  // Cửa thu nước: trong bản đồ và không trùng nhau.
   assert.equal(new Set(STORM_DRAINS.map(d => d.tileX)).size, STORM_DRAINS.length, 'Cửa thu nước không trùng ô');
   for (const drain of STORM_DRAINS) {
     assert.ok(drain.tileX > 0 && drain.tileX < MAP_WIDTH - 1, 'Cửa thu nước trong bản đồ');
-    assert.ok(drain.tileX < CROSSWALK.tileX || drain.tileX >= CROSSWALK.tileX + CROSSWALK.widthTiles, 'Cửa thu nước không nằm trong vạch qua đường');
   }
 
-  // Vạch qua đường nằm trước cửa tiệm (cửa ở x = 9..10), trên mặt đường, và không chồng ô đỗ xe.
-  assert.deepEqual([CROSSWALK.tileX, CROSSWALK.tileX + CROSSWALK.widthTiles - 1], [1, 2], 'Vạch qua đường ở đầu hẻm');
-  assert.ok(CROSSWALK.tileX < STORE_BOUNDS.left, 'Vạch và đèn nằm ngoài mặt tiền tiệm');
-  for (let row = CROSSWALK.firstRow; row < CROSSWALK.firstRow + CROSSWALK.rows; row++) {
-    assert.equal(tileAt(CROSSWALK.tileX, row), 1, 'Vạch qua đường nằm trên mặt đường');
-  }
-  for (const spot of STREET_PARKING_SPOTS) {
-    const x = Math.floor(spot.x / 32);
-    assert.ok(x < CROSSWALK.tileX || x >= CROSSWALK.tileX + CROSSWALK.widthTiles, 'Ô đỗ xe không nằm trên vạch qua đường');
-  }
 
   // Độ ướt mặt đường.
   assert.equal(roadWetnessAt('s', 4, 12 * 60, 'sunny'), 0, 'Ngày khô thì mặt đường khô');

@@ -94,6 +94,7 @@ import { buildMorningBrief, type MorningBrief } from './day-rhythm';
 import { buildMarketSummary } from './market-summary';
 import { pickAvailableRegular, processRegularCheckout, processRegularWalkout } from './regulars';
 import { StreetTrafficManager } from './street-traffic';
+import type { IntersectionSignals } from './traffic-signal';
 import { StoreLogisticsManager } from './store-logistics';
 import { CollisionSystem } from './collision';
 import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
@@ -977,8 +978,8 @@ export class GameSimulation {
     return this.streetTraffic.getPedestrians();
   }
 
-  public getTrafficSignal(): TrafficSignalState {
-    return this.streetTraffic.getSignal();
+  public getIntersectionSignals(): Array<{ id: string; signals: IntersectionSignals }> {
+    return this.streetTraffic.getIntersectionSignals();
   }
 
   /** Bảng nhu cầu lưu đệm; chỉ tính lại khi bối cảnh đổi (ngày, khung giờ, thời tiết, mùa, sự kiện, bậc uy tín), không mỗi khung hình. */

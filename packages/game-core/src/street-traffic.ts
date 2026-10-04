@@ -1,10 +1,10 @@
-import { StreetPedestrianState, StreetVehicleState, TILE_SIZE, TrafficSignalState, Vector2D } from '@game/shared';
-import { CROSSWALK, MAP_WIDTH, ROAD_MAP, roadLaneY, shelterZoneAt, STREET_PEDESTRIANS, STREET_VEHICLE_RULES, TRAFFIC_ROADS, TRAFFIC_SIGNAL_CYCLE_SEC, TRAFFIC_X_RANGE, TRUCK_KINDS, CAR_VARIANTS, VEHICLE_BUDGET, trafficDensity, trafficRainSpeedFactor, vehicleMix, type RoadDef, type StreetVehicleKind } from '@game/data';
+import { StreetPedestrianState, StreetVehicleState, TILE_SIZE, Vector2D } from '@game/shared';
+import { INTERSECTIONS, MAP_WIDTH, ROAD_MAP, roadLaneCoord, shelterZoneAt, STREET_PEDESTRIANS, STREET_VEHICLE_RULES, VEHICLE_ROADS, VEHICLE_ROAD_MAP, TRAFFIC_SIGNAL_CYCLE_SEC, TRAFFIC_X_RANGE, TRUCK_KINDS, CAR_VARIANTS, VEHICLE_BUDGET, trafficDensity, trafficRainSpeedFactor, vehicleMix, type IntersectionDef, type RoadDef, type StreetVehicleKind } from '@game/data';
 import { Mulberry32Rng } from './staff';
 import { hashSeed } from './weather';
 import { rainSpeedMultiplier } from './rain-protection';
 import { newShelterSeek, stepShelterSeek, type ShelterSeek } from './shelter-seek';
-import { pedestrianWalkSecondsLeft, trafficSignalAt } from './traffic-signal';
+import { intersectionSignalsAt, type IntersectionSignals } from './traffic-signal';
 
 export const STREET_LANE_RIGHT_Y = 14.6 * TILE_SIZE; // 467px (làn bên phải, đi từ trái qua phải)
 export const STREET_LANE_LEFT_Y = 13.4 * TILE_SIZE;  // 428px (làn bên trái, đi từ phải qua trái)
@@ -16,14 +16,13 @@ export interface TrafficClockContext { minute?: number; weekday?: number }
 
 /** Bước con tối đa (giây) khi tích phân chuyển động, để một lần update dt lớn vẫn dừng đúng vạch. */
 const MAX_STEP = 0.1;
-const CROSS_DISTANCE = STREET_PEDESTRIANS.southCurbY - STREET_PEDESTRIANS.northCurbY;
-const CROSS_SECONDS = CROSS_DISTANCE / STREET_PEDESTRIANS.speed;
 
+/** Người đi bộ nền trên vỉa hè (không còn vạch qua đường riêng trước tiệm: người qua đường dùng vạch ở các ngã tư). */
 interface Pedestrian {
   id: string;
   variant: number;
-  direction: 'south' | 'north' | 'left' | 'right';
-  state: 'waiting' | 'crossing' | 'walking';
+  direction: 'left' | 'right';
+  state: 'waiting' | 'walking';
   activity?: 'stroll' | 'grocery' | 'jog' | 'student' | 'dog';
   x: number;
   y: number;
@@ -43,7 +42,6 @@ export class StreetTrafficManager {
   private pedestrians: Pedestrian[] = [];
   /** Hạn chờ sinh xe tiếp theo của từng đường (giây). */
   private spawnCooldowns: Record<string, number> = {};
-  private pedestrianCooldown = 7;
   private sidewalkPedestrianCooldown = 8;
   private stallVisitorCooldown = 6;
   private stallStops: number[] = [];
@@ -109,8 +107,9 @@ export class StreetTrafficManager {
     return this.stallVisitsCompleted;
   }
 
-  public getSignal(): TrafficSignalState {
-    return trafficSignalAt(this.signalClock);
+  /** Đèn hiện tại của từng ngã tư đường dọc (id trong `INTERSECTIONS`), cho renderer vẽ đèn. */
+  public getIntersectionSignals(): Array<{ id: string; signals: IntersectionSignals }> {
+    return INTERSECTIONS.map((x) => ({ id: x.id, signals: intersectionSignalsAt(this.signalClock + x.signalOffsetSec) }));
   }
 
   /** Đặt đồng hồ đèn (giây trong chu kỳ); dùng cho kiểm thử và để căn pha khi tải. */
@@ -119,17 +118,15 @@ export class StreetTrafficManager {
   }
 
   /** Thêm người đi bộ (kiểm thử và dựng cảnh). */
-  public addPedestrian(p: { stopX?: number; pauseSec?: number; id: string; direction: 'south' | 'north' | 'left' | 'right'; state?: 'waiting' | 'crossing' | 'walking'; activity?: 'stroll' | 'grocery' | 'jog' | 'student' | 'dog'; x: number; y?: number; variant?: number; speed?: number }): void {
-    const isSidewalk = p.direction === 'left' || p.direction === 'right';
-    const defY = isSidewalk ? (p.y ?? 11.8 * TILE_SIZE) : (p.direction === 'south' ? STREET_PEDESTRIANS.northCurbY : STREET_PEDESTRIANS.southCurbY);
+  public addPedestrian(p: { stopX?: number; pauseSec?: number; id: string; direction: 'left' | 'right'; state?: 'waiting' | 'walking'; activity?: 'stroll' | 'grocery' | 'jog' | 'student' | 'dog'; x: number; y?: number; variant?: number; speed?: number }): void {
     this.pedestrians.push({
       id: p.id,
       variant: p.variant ?? 0,
       direction: p.direction,
-      state: p.state ?? (isSidewalk ? 'walking' : 'waiting'),
+      state: p.state ?? 'walking',
       activity: p.activity,
       x: p.x,
-      y: p.y ?? defY,
+      y: p.y ?? 11.8 * TILE_SIZE,
       speed: p.speed,
       ...(p.stopX !== undefined ? { stopX: p.stopX, pauseLeft: p.pauseSec ?? 4 } : {}),
     });
@@ -155,7 +152,6 @@ export class StreetTrafficManager {
     this.vehicles = [];
     this.pedestrians = [];
     this.spawnCooldowns = {};
-    this.pedestrianCooldown = 7;
     this.sidewalkPedestrianCooldown = 8;
     this.stallVisitorCooldown = 6;
     this.stallVisitsCompleted = 0;
@@ -164,32 +160,33 @@ export class StreetTrafficManager {
 
   /** Đường của xe (mặc định đường chính). */
   private roadOf(v: StreetVehicleState): RoadDef {
-    return ROAD_MAP[v.roadId ?? 'main'] ?? ROAD_MAP.main;
+    return VEHICLE_ROAD_MAP[v.roadId ?? 'main'] ?? ROAD_MAP.main;
   }
 
+  /** Nửa chiều dài xe theo trục chạy (xe đường dọc nhìn trước/sau nên ngắn hơn). */
   private halfLength(v: StreetVehicleState): number {
-    return STREET_VEHICLE_RULES.halfLength[v.type] ?? 24;
+    return (v.axis === 'y' ? STREET_VEHICLE_RULES.halfLengthY[v.type] : STREET_VEHICLE_RULES.halfLength[v.type]) ?? 24;
   }
 
-  private anyPedestrianCrossing(): boolean {
-    return this.pedestrians.some((p) => p.state === 'crossing');
+  /** Tọa độ của xe trên trục chạy (x với đường ngang, y với đường dọc). */
+  private along(v: StreetVehicleState): number {
+    return v.axis === 'y' ? v.position.y : v.position.x;
   }
 
-  private anyVehicleInCrosswalk(): boolean {
-    const crossLeft = CROSSWALK.tileX * TILE_SIZE;
-    const crossRight = (CROSSWALK.tileX + CROSSWALK.widthTiles) * TILE_SIZE;
-    return this.vehicles.some((v) => {
-      if (!this.roadOf(v).signal) return false; // xe trên đường khác không qua vạch này
-      const half = this.halfLength(v);
-      return v.position.x + half > crossLeft && v.position.x - half < crossRight;
-    });
+  /** Xe `o` (khác trục với `ix`) đã vào hộp giao lộ (kể cả hàng vỉa hè hai bên) nên xe đường kia chưa được vào. */
+  private occupiesConflictZone(o: StreetVehicleState, ix: IntersectionDef): boolean {
+    const half = this.halfLength(o);
+    const p = this.along(o);
+    return o.axis === 'y'
+      ? o.roadId === ix.avenueRoadId && p + half > ix.crossTop && p - half < ix.crossBottom
+      : (o.roadId ?? 'main') === ix.roadId && p + half > ix.crossLeft && p - half < ix.crossRight;
   }
 
   private stepPedestrians(dt: number): void {
     const defaultSpeed = STREET_PEDESTRIANS.speed;
     for (let i = this.pedestrians.length - 1; i >= 0; i--) {
       const p = this.pedestrians[i];
-      if (p.direction === 'left' || p.direction === 'right') {
+      {
         // Trú mưa: chỉ người đi vỉa hè không đang ghé quầy; đi tới mái hiên gần, đứng chờ, rồi đi tiếp đúng chiều cũ.
         const atStall = p.stopX !== undefined && !p.stopped;
         const sh = (p.shelter ??= newShelterSeek((hashSeed(p.id) % 1000) / 1000));
@@ -219,51 +216,38 @@ export class StreetTrafficManager {
         if (p.x < -40 || p.x > MAP_WIDTH * TILE_SIZE + 40) {
           this.pedestrians.splice(i, 1);
         }
-        continue;
-      }
-
-      if (p.state === 'waiting') {
-        if (this.getSignal().pedestrian === 'walk' && pedestrianWalkSecondsLeft(this.signalClock) >= CROSS_SECONDS + 0.5 && !this.anyVehicleInCrosswalk()) {
-          p.state = 'crossing';
-        }
-        continue;
-      }
-      const targetY = p.direction === 'south' ? STREET_PEDESTRIANS.southCurbY : STREET_PEDESTRIANS.northCurbY;
-      const step = defaultSpeed * dt;
-      const remaining = targetY - p.y;
-      if (Math.abs(remaining) <= step) {
-        this.pedestrians.splice(i, 1);
-      } else {
-        p.y += Math.sign(remaining) * step;
       }
     }
   }
 
   /** `lane`: chỉ số các xe cùng đường + cùng hướng (chỉ những xe này có thể chắn đầu xe `v`). */
-  private desiredSpeed(v: StreetVehicleState, index: number, lane: readonly number[], signal: TrafficSignalState, pedestrianCrossing: boolean): number {
+  private desiredSpeed(v: StreetVehicleState, index: number, lane: readonly number[]): number {
     const sign = v.direction === 'right' ? 1 : -1;
     const half = this.halfLength(v);
-    const front = v.position.x + sign * half;
+    const pos = this.along(v);
+    const front = pos + sign * half;
     const current = v.currentSpeed ?? v.speed;
     const { decel, stopMarginPx, followGapPx } = STREET_VEHICLE_RULES;
     let desired = v.speed;
 
-    const crossLeft = CROSSWALK.tileX * TILE_SIZE;
-    const crossRight = (CROSSWALK.tileX + CROSSWALK.widthTiles) * TILE_SIZE;
-    const stopFront = sign > 0 ? crossLeft - stopMarginPx : crossRight + stopMarginPx;
-    const distance = sign > 0 ? stopFront - front : front - stopFront;
-    const signalled = this.roadOf(v).signal;
-    const mustStop = signalled && (signal.vehicle !== 'green' || pedestrianCrossing);
-    const enteredCrosswalk = sign > 0 ? front > crossLeft : front < crossRight;
-    const passedCrosswalk = sign > 0 ? front > crossRight : front < crossLeft;
-    if (mustStop) {
-      if (!enteredCrosswalk) {
-        const brake = (current * current) / (2 * decel);
-        const committed = signal.vehicle === 'yellow' && !pedestrianCrossing && current >= v.speed - 1 && distance < brake * 0.6;
-        if (!committed) desired = Math.min(desired, Math.sqrt(2 * decel * Math.max(0, distance)));
-      } else if (pedestrianCrossing && !passedCrosswalk) {
-        desired = 0; // xe đã qua hẳn vạch thì cứ chạy, nếu không sẽ đứng giữa đường và kéo cả hàng phía sau
-      }
+    // Ngã tư: xe dừng trước vạch dừng khi đèn đỏ/vàng, hoặc khi xe đường kia còn đang đè lên vùng xung đột; đã vào hộp giao lộ
+    // thì chạy tiếp cho thoáng. Xe đường ngang theo đèn `main`, xe đường dọc theo đèn `avenue`.
+    const vertical = v.axis === 'y';
+    for (const x of INTERSECTIONS) {
+      if (vertical ? x.avenueRoadId !== v.roadId : x.roadId !== (v.roadId ?? 'main')) continue;
+      const lo = vertical ? x.crossTop : x.crossLeft;
+      const hi = vertical ? x.crossBottom : x.crossRight;
+      const entered = sign > 0 ? front > lo : front < hi;
+      if (entered) continue;
+      const signals = intersectionSignalsAt(this.signalClock + x.signalOffsetSec);
+      const lamp = vertical ? signals.avenue : signals.main;
+      const stop = sign > 0 ? lo - stopMarginPx : hi + stopMarginPx;
+      const gap = Math.max(0, sign > 0 ? stop - front : front - stop);
+      const brake = (current * current) / (2 * decel);
+      // Vàng mà đã quá gần vạch để phanh kịp thì chạy luôn, tránh phanh gấp giữa ngã tư.
+      const committed = lamp.vehicle === 'yellow' && current >= v.speed - 1 && gap < brake * 0.6;
+      const blocked = lamp.vehicle !== 'green' ? !committed : this.vehicles.some((o) => o !== v && (o.axis === 'y') !== vertical && this.occupiesConflictZone(o, x));
+      if (blocked) desired = Math.min(desired, Math.sqrt(2 * decel * gap));
     }
 
     for (const c of this.externalCrossings) {
@@ -278,9 +262,10 @@ export class StreetTrafficManager {
     for (const j of lane) {
       if (j === index) continue;
       const other = this.vehicles[j];
-      const ahead = sign > 0 ? other.position.x > v.position.x : other.position.x < v.position.x;
+      const otherPos = this.along(other);
+      const ahead = sign > 0 ? otherPos > pos : otherPos < pos;
       if (!ahead) continue;
-      const otherRear = other.position.x - sign * this.halfLength(other);
+      const otherRear = otherPos - sign * this.halfLength(other);
       const gap = (sign > 0 ? otherRear - front : front - otherRear) - followGapPx;
       desired = Math.min(desired, Math.sqrt(2 * decel * Math.max(0, gap)));
     }
@@ -297,22 +282,21 @@ export class StreetTrafficManager {
       const lane = lanes.get(key);
       if (lane) lane.push(i); else lanes.set(key, [i]);
     });
-    const signal = this.getSignal();
-    const pedestrianCrossing = this.anyPedestrianCrossing();
     for (const key of [...lanes.keys()].sort()) {
       const lane = lanes.get(key)!;
       lane.sort((a, b) => {
         const va = this.vehicles[a], vb = this.vehicles[b];
-        const ahead = va.direction === 'right' ? vb.position.x - va.position.x : va.position.x - vb.position.x;
+        const ahead = va.direction === 'right' ? this.along(vb) - this.along(va) : this.along(va) - this.along(vb);
         return ahead !== 0 ? ahead : a - b;
       });
       for (const i of lane) {
         const v = this.vehicles[i];
-        const desired = this.desiredSpeed(v, i, lane, signal, pedestrianCrossing);
+        const desired = this.desiredSpeed(v, i, lane);
         const cruise = v.currentSpeed ?? v.speed;
         const next = Math.max(0, Math.min(cruise + accel * dt, desired));
         v.currentSpeed = next;
-        v.position.x += (v.direction === 'right' ? 1 : -1) * next * dt;
+        const travelled = (v.direction === 'right' ? 1 : -1) * next * dt;
+        if (v.axis === 'y') v.position.y += travelled; else v.position.x += travelled;
 
         if (v.isDeparting) {
           const targetLaneY = v.direction === 'right' ? STREET_LANE_RIGHT_Y : STREET_LANE_LEFT_Y;
@@ -332,29 +316,15 @@ export class StreetTrafficManager {
     }
     for (let i = this.vehicles.length - 1; i >= 0; i--) {
       const v = this.vehicles[i];
-      const outOfBounds =
-        (v.direction === 'right' && v.position.x > TRAFFIC_X_RANGE.max) ||
-        (v.direction === 'left' && v.position.x < TRAFFIC_X_RANGE.min);
+      const span = v.axis === 'y' ? this.roadOf(v).span : undefined;
+      const min = span?.min ?? TRAFFIC_X_RANGE.min, max = span?.max ?? TRAFFIC_X_RANGE.max;
+      const p = this.along(v);
+      const outOfBounds = (v.direction === 'right' && p > max) || (v.direction === 'left' && p < min);
       if (outOfBounds) this.vehicles.splice(i, 1);
     }
   }
 
   private spawnPedestrian(dt: number, hour: number, rainIntensity: number, seedNumber: number): void {
-    this.pedestrianCooldown -= dt;
-    if (this.pedestrianCooldown <= 0) {
-      const rng = new Mulberry32Rng(seedNumber + this.pedestrianSequence * 57 + 11);
-      this.pedestrianCooldown = STREET_PEDESTRIANS.minCooldownSec + rng.next() * (STREET_PEDESTRIANS.maxCooldownSec - STREET_PEDESTRIANS.minCooldownSec);
-      this.pedestrianSequence++;
-      const awake = hour >= 5 && hour < 22;
-      const crossingCount = this.pedestrians.filter(p => p.direction === 'south' || p.direction === 'north').length;
-      if (awake && rainIntensity <= STREET_PEDESTRIANS.maxRainCrossing && crossingCount < STREET_PEDESTRIANS.maxConcurrent) {
-        const direction: 'south' | 'north' = rng.next() < 0.5 ? 'south' : 'north';
-        const left = CROSSWALK.tileX * TILE_SIZE + 10;
-        const x = left + rng.next() * (CROSSWALK.widthTiles * TILE_SIZE - 20);
-        this.addPedestrian({ id: `ped-${seedNumber}-${this.pedestrianSequence}`, direction, x, variant: Math.floor(rng.next() * 5) });
-      }
-    }
-
     this.sidewalkPedestrianCooldown -= dt;
     if (this.sidewalkPedestrianCooldown <= 0) {
       const rng2 = new Mulberry32Rng(seedNumber + this.pedestrianSequence * 79 + 33);
@@ -443,7 +413,7 @@ export class StreetTrafficManager {
     this.spawnPedestrian(dt, hour, rainIntensity, seedNumber);
     this.spawnStallVisitor(dt, hour, rainIntensity, seedNumber);
 
-    for (const road of TRAFFIC_ROADS) this.spawnOnRoad(road, dt, hour, rainIntensity, seedNumber, ctx);
+    for (const road of VEHICLE_ROADS) this.spawnOnRoad(road, dt, hour, rainIntensity, seedNumber, ctx);
   }
 
   /**
@@ -452,7 +422,7 @@ export class StreetTrafficManager {
    */
   private spawnOnRoad(road: RoadDef, dt: number, hour: number, rainIntensity: number, seedNumber: number, ctx: TrafficClockContext): void {
     const density = trafficDensity(hour, ctx.minute ?? 0, ctx.weekday ?? 2, rainIntensity, road);
-    const rng = new Mulberry32Rng(seedNumber + this.vehicleSequence * 101 + TRAFFIC_ROADS.indexOf(road) * 977);
+    const rng = new Mulberry32Rng(seedNumber + this.vehicleSequence * 101 + VEHICLE_ROADS.indexOf(road) * 977);
     // Lần đầu: hẹn xe đầu tiên theo đúng mật độ giờ đó (đêm thì phải chờ lâu, giờ cao điểm vài giây).
     const left = (this.spawnCooldowns[road.id] ?? ((4.5 + rng.next() * 2) / Math.max(density, 0.008) * (road.id === 'main' ? 0.5 : 1))) - dt;
     this.spawnCooldowns[road.id] = left;
@@ -480,9 +450,12 @@ export class StreetTrafficManager {
     const speedVariation = (rng.next() - 0.5) * 16;
     const speed = Math.max(34, (speedBase + speedVariation) * road.speedMul * trafficRainSpeedFactor(rainIntensity));
 
-    const startX = direction === 'right' ? TRAFFIC_X_RANGE.min + 40 : TRAFFIC_X_RANGE.max - 40;
-    const blocked = this.vehicles.some((other) => other.direction === direction && this.roadOf(other) === road && Math.abs(other.position.x - startX) < 140);
+    const vertical = road.axis === 'y';
+    const lo = road.span?.min ?? TRAFFIC_X_RANGE.min, hi = road.span?.max ?? TRAFFIC_X_RANGE.max;
+    const start = direction === 'right' ? lo + 40 : hi - 40;
+    const blocked = this.vehicles.some((other) => other.direction === direction && this.roadOf(other) === road && Math.abs(this.along(other) - start) < (vertical ? 90 : 140));
     if (blocked) { this.spawnCooldowns[road.id] = 1.0; return; }
+    const lane = roadLaneCoord(road, direction);
 
     this.vehicles.push({
       id: `traffic-${seedNumber}-${this.vehicleSequence}`,
@@ -490,7 +463,8 @@ export class StreetTrafficManager {
       variant,
       direction,
       roadId: road.id,
-      position: { x: startX, y: roadLaneY(road, direction) },
+      ...(vertical ? { axis: 'y' as const } : {}),
+      position: vertical ? { x: lane, y: start } : { x: start, y: lane },
       speed,
       hornTimer: type !== 'bicycle' && rng.next() < 0.3 ? 2.5 : 0,
     });

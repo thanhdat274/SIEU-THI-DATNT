@@ -5,7 +5,7 @@ import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, weekdayO
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
-import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, TRUCK_KINDS, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, BUILDING_MAP, type BuildingId} from '@game/data';
+import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, BUILDING_MAP, type BuildingId} from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -24,7 +24,7 @@ import { loadWeatherSprites } from './weather-sprites';
 import { emitThunder, setRoofProximity, getWeatherFxSettings, publishWeatherVisual, resolveWeatherQuality } from './weather-settings';
 import { NeighborhoodScene } from './neighborhood-scene';
 import { NeighborhoodActors } from './neighborhood-actors';
-import { buildTrafficSignalHeads, createPedestrianSprite, placePedestrian, type TrafficSignalHeads } from './street-signal';
+import { buildIntersectionSignalHeads, createPedestrianSprite, placePedestrian } from './street-signal';
 
 /** Điểm gốc bóng so với góc trên-trái sprite cây 80x100 (px): chân thân cây, để bóng đổ từ mặt đất chứ không từ tán. */
 const TREE_SHADOW_ORIGIN_PX = { x: 40, y: 90 } as const;
@@ -794,7 +794,7 @@ export class PixiGameViewport {
     this.entitiesLayer.addChild(crates);
 
     // Cozy Alley Shade Tree on sidewalk
-    this.trafficSignalHeads = buildTrafficSignalHeads(this.entitiesLayer);
+    this.intersectionSignalHeads = buildIntersectionSignalHeads(this.entitiesLayer);
     this.treeSprites = this.treeSprites.filter(({ sprite }) => !sprite.destroyed); // bỏ cây đã bị hủy khi dựng lại bản đồ
     for (const prop of TREE_PROPS) {
       const tree = new Sprite(this.textures.getTexture('tile_tree'));
@@ -1096,7 +1096,7 @@ export class PixiGameViewport {
   private lightLayer!: Container;
   private sunBeamGraphic!: Graphics;
   private roadSurface: RoadSurface | null = null;
-  private trafficSignalHeads: TrafficSignalHeads | null = null;
+  private intersectionSignalHeads: ReturnType<typeof buildIntersectionSignalHeads> | null = null;
   private pedestrianSprites = new Map<string, Container>();
   private treeShadows: Array<{ prop: TreeProp; graphic: Graphics; last: TreeShadowSnapshot | null }> = [];
   private weatherFx = new WeatherEffects();
@@ -1434,7 +1434,9 @@ export class PixiGameViewport {
       activeStreetKeys.add(veh.id);
       let sprite = this.streetTrafficSprites.get(veh.id);
       let textureKey: string;
-      if (veh.type === 'motorbike') textureKey = `vehicle_motorbike_rider_${veh.variant ?? 0}_${veh.direction}`;
+      const vertical = veh.axis === 'y';
+      if (vertical) textureKey = `vehicle_ns_${veh.type}_${veh.variant ?? 0}_${veh.direction === 'right' ? 'down' : 'up'}`;
+      else if (veh.type === 'motorbike') textureKey = `vehicle_motorbike_rider_${veh.variant ?? 0}_${veh.direction}`;
       else if (veh.type === 'bicycle') textureKey = `vehicle_bicycle_rider_${veh.direction}`;
       else if (veh.type === 'minibus') textureKey = `vehicle_minibus_${veh.variant ?? 0}_${veh.direction}`;
       else if (veh.type === 'truck') textureKey = `truck_${TRUCK_KINDS[(veh.variant ?? 0) % TRUCK_KINDS.length]}_${veh.direction}`;
@@ -1448,11 +1450,13 @@ export class PixiGameViewport {
       } else {
         sprite.texture = this.textures.getTexture(textureKey);
       }
+      // Xe đường dọc: vị trí là tâm vệt bánh, đáy sprite lùi nửa chiều dài về phía nam.
+      const footY = vertical ? vy + STREET_VEHICLE_RULES.halfLengthY[veh.type] : vy;
       sprite.x = Math.round(vx);
-      sprite.y = Math.round(vy);
-      sprite.zIndex = vy;
+      sprite.y = Math.round(footY);
+      sprite.zIndex = footY;
       sprite.alpha = 1;
-      this.vehicleLightSources.push({ x: sprite.x, y: sprite.y, direction: veh.direction === 'left' ? 'left' : 'right', type: veh.type, alpha: sprite.alpha });
+      if (!vertical) this.vehicleLightSources.push({ x: sprite.x, y: sprite.y, direction: veh.direction === 'left' ? 'left' : 'right', type: veh.type, alpha: sprite.alpha });
     }
     for (const [id, sprite] of this.streetTrafficSprites.entries()) {
       if (!activeStreetKeys.has(id)) {
@@ -1463,7 +1467,7 @@ export class PixiGameViewport {
     }
 
     // Đèn tín hiệu và người đi bộ qua vạch trước cửa tiệm (ambient, không phải khách)
-    this.trafficSignalHeads?.update(this.simulation.getTrafficSignal());
+    this.intersectionSignalHeads?.update(this.simulation.getIntersectionSignals());
     const activePedestrians = new Set<string>();
     const getPedTexture = (key: string) => this.textures.getTexture(key);
     for (const ped of this.simulation.getStreetPedestrians()) {
@@ -1477,7 +1481,7 @@ export class PixiGameViewport {
       placePedestrian(sprite, ped, this.animTimer, getPedTexture, reducedMotion);
       let pedGear = this.pedestrianGear.get(ped.id);
       if (!pedGear) { pedGear = new RainGear(); this.pedestrianGear.set(ped.id, pedGear); sprite.addChild(pedGear.container); }
-      pedGear.update({ dt: elapsed, time: this.animTimer, characterId: ped.id, day: gearDay, x: ped.position.x, y: ped.position.y, facing: ped.direction === 'south' ? 'down' : ped.direction === 'north' ? 'up' : ped.direction, walking: ped.state === 'crossing' || ped.state === 'walking', weather: this.lastWeather, enabled: gearOn, reducedMotion, windEffects: fxSettingsEnabled });
+      pedGear.update({ dt: elapsed, time: this.animTimer, characterId: ped.id, day: gearDay, x: ped.position.x, y: ped.position.y, facing: ped.direction, walking: ped.state === 'walking', weather: this.lastWeather, enabled: gearOn, reducedMotion, windEffects: fxSettingsEnabled });
       const pedDist = Math.min(ped.position.x, MAP_WIDTH * TILE_SIZE - ped.position.x);
       if (pedDist < 48) {
         sprite.alpha = Math.max(0, Math.min(1, pedDist / 48));

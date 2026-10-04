@@ -256,24 +256,26 @@ export interface StreetVehicleState {
   id: string;
   type: 'motorbike' | 'car' | 'bicycle' | 'minibus' | 'truck';
   variant: number;
+  /** Chiều chạy: 'right' = tăng tọa độ trục chạy (sang đông / xuôi nam), 'left' = giảm (sang tây / ngược bắc). */
   direction: 'left' | 'right';
   position: Vector2D;
   speed: number;
-  /** Đường (id trong `TRAFFIC_ROADS`) xe đang chạy; thiếu = đường chính. */
+  /** Đường (id trong `VEHICLE_ROADS`) xe đang chạy; thiếu = đường chính. */
   roadId?: string;
+  /** Trục chạy: thiếu = 'x' (đường ngang); 'y' = đường dọc (xe nhìn trước/sau, `direction` 'right' = xuôi nam). */
+  axis?: 'x' | 'y';
   hornTimer?: number;
   /** Tốc độ hiện tại (px/s) khi đang giảm tốc/dừng/tăng tốc; thiếu thì bằng `speed` (tốc độ chạy thông thường). */
   currentSpeed?: number;
   isDeparting?: boolean;
 }
 
-/** Người đi bộ băng qua đường tại vạch trước cửa tiệm (chỉ hình ảnh, không phải khách). */
+/** Người đi bộ nền trên vỉa hè (chỉ hình ảnh, không phải khách). */
 export interface StreetPedestrianState {
   id: string;
   variant: number;
-  /** Hướng băng qua: từ vỉa hè phía bắc sang nam hoặc ngược lại. */
-  direction: 'south' | 'north' | 'left' | 'right';
-  state: 'waiting' | 'crossing' | 'walking';
+  direction: 'left' | 'right';
+  state: 'waiting' | 'walking';
   activity?: 'stroll' | 'grocery' | 'jog' | 'student' | 'dog';
   position: Vector2D;
 }

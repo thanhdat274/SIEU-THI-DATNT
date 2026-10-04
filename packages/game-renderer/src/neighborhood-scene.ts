@@ -1,7 +1,7 @@
 import { Container, Graphics, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
 import type { WeatherVisualState } from '@game/core';
 import {
-  APARTMENT_PARKING, AVENUES, NEIGHBORHOOD_LOTS, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, PARK, PARK_BENCHES, PARK_LAMPS, PARK_PATHS, SCHOOL, STREET_LAMP_TILES,
+  APARTMENT_PARKING, AVENUES, INTERSECTIONS, NEIGHBORHOOD_LOTS, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, PARK, PARK_BENCHES, PARK_LAMPS, PARK_PATHS, SCHOOL, STREET_LAMP_TILES,
   TRAFFIC_ROADS, type NeighborhoodLot, type NeighborhoodQuality, type RoadDef,
 } from '@game/data';
 import type { PixelTextureFactory } from './textures';
@@ -200,26 +200,73 @@ export class NeighborhoodScene {
     for (const road of TRAFFIC_ROADS) for (const a of AVENUES) {
       this.tile(g, 'tile_street', (a.x0 - 1) * T, road.topRow * T, (a.x1 - a.x0 + 2) * T, 3 * T);
     }
+    const YELLOW = { color: 0xf0d48a, alpha: 0.85 };
+    const WHITE = { color: 0xfff0cf, alpha: 0.82 };
+    /** Hộp giao lộ (px) của từng đường ngang: bó vỉa và vạch giữa không chạy xuyên qua. */
+    const boxesOf = (road: RoadDef) => INTERSECTIONS.filter((x) => x.roadId === road.id);
+    /** Vạch giữa đôi vàng liền (cấm vượt) 3 ô trước mỗi ngã tư, nét đứt ở đoạn còn lại. */
+    const NO_PASS = 3 * T;
     for (const road of TRAFFIC_ROADS) {
       const y = road.topRow * T;
-      marks.rect(X0, y, width, 3).fill({ color: 0xb9b2a0, alpha: 0.9 });
-      marks.rect(X0, y + 3 * T - 3, width, 3).fill({ color: 0xb9b2a0, alpha: 0.9 });
+      const boxes = boxesOf(road);
+      // Bó vỉa hai bên lòng đường, đứt đoạn ở miệng đường dọc.
+      for (const edgeY of [y, y + 3 * T - 3]) {
+        let from = X0;
+        for (const b of [...boxes].sort((p, q) => p.crossLeft - q.crossLeft)) {
+          marks.rect(from, edgeY, b.crossLeft - from, 3).fill({ color: 0xb9b2a0, alpha: 0.9 });
+          from = b.crossRight;
+        }
+        marks.rect(from, edgeY, X1 - from, 3).fill({ color: 0xb9b2a0, alpha: 0.9 });
+      }
       const cy = (road.topRow + 1) * T - 1;
       for (let x = X0; x < X1; x += T) {
-        if (AVENUES.some((a) => x + T > (a.x0 - 1) * T && x < (a.x1 + 1) * T)) continue;
-        marks.rect(x + 6, cy, 20, 2).fill({ color: 0xf0d48a, alpha: 0.7 });
+        if (boxes.some((b) => x + T > b.crossLeft - NO_PASS && x < b.crossRight + NO_PASS)) continue;
+        marks.rect(x + 6, cy, 20, 2).fill(YELLOW);
+      }
+      for (const b of boxes) {
+        for (const [x0, x1] of [[b.crossLeft - NO_PASS, b.crossLeft - 12], [b.crossRight + 12, b.crossRight + NO_PASS]]) {
+          marks.rect(x0, cy - 2, x1 - x0, 2).fill(YELLOW);
+          marks.rect(x0, cy + 1, x1 - x0, 2).fill(YELLOW);
+        }
+        // Vạch đi bộ qua đường ngang ở hai cột vỉa hè của đường dọc (thanh song song hướng xe chạy).
+        for (const zx of [b.crossLeft, b.crossRight - T]) {
+          for (let yy = b.roadTop + 3; yy + 4 <= b.roadBottom - 3; yy += 8) marks.rect(zx + 4, yy, T - 8, 4).fill(WHITE);
+        }
+        // Vạch dừng xe: làn nam (đi sang đông) dừng trước vạch phía tây, làn bắc (đi sang tây) trước vạch phía đông.
+        marks.rect(b.crossLeft - 10, b.roadTop + T + 2, 4, T - 4).fill(WHITE);
+        marks.rect(b.crossRight + 6, b.roadTop + 2, 4, T - 4).fill(WHITE);
+        // Mũi tên chỉ chiều từng làn ngay sau vạch dừng.
+        const arrow = (ax: number, ay: number, dir: 1 | -1) => {
+          marks.rect(ax - 6 * dir, ay - 1, 12, 2).fill(WHITE);
+          marks.poly([ax + 8 * dir, ay, ax + 2 * dir, ay - 4, ax + 2 * dir, ay + 4]).fill(WHITE);
+        };
+        arrow(b.crossLeft - 30, b.roadTop + T + T / 2, 1);
+        arrow(b.crossRight + 30, b.roadTop + T / 2, -1);
       }
     }
     for (const a of AVENUES) {
       const cx = ((a.x0 + a.x1) / 2) * T - 1;
+      const crosses = INTERSECTIONS.filter((x) => x.avenueId === a.id);
       for (let y = a.y0 * T; y < a.y1 * T; y += T) {
-        if (TRAFFIC_ROADS.some((r) => y + T > (r.topRow - 1) * T && y < (r.topRow + 4) * T)) continue;
-        marks.rect(cx, y + 6, 2, 20).fill({ color: 0xf0d48a, alpha: 0.7 });
+        if (TRAFFIC_ROADS.some((r) => y + T > (r.topRow - 1 - 3) * T && y < (r.topRow + 4 + 3) * T)) continue;
+        marks.rect(cx, y + 6, 2, 20).fill(YELLOW);
       }
-      // Vạch qua đường ở mỗi giao cắt: bên bắc và bên nam của đường ngang
       for (const road of TRAFFIC_ROADS) {
-        for (const yy of [(road.topRow - 1) * T + 10, (road.topRow + 3) * T + 2]) {
-          for (let x = a.x0 * T + 2; x < a.x1 * T - 4; x += 8) marks.rect(x, yy, 4, 20).fill({ color: 0xfff0cf, alpha: 0.78 });
+        const northY = (road.topRow - 1) * T + 10; // vạch đi bộ qua đường dọc, bên bắc đường ngang
+        const southY = (road.topRow + 3) * T + 2;
+        const hasNorth = road.topRow - 1 >= a.y0;
+        for (const yy of hasNorth ? [northY, southY] : [southY]) {
+          for (let x = a.x0 * T + 2; x < a.x1 * T - 4; x += 8) marks.rect(x, yy, 4, 20).fill(WHITE);
+        }
+        if (!crosses.some((x) => x.roadId === road.id)) continue;
+        // Đường dọc 2 chiều: vạch giữa đôi vàng liền ở 3 ô gần ngã tư, vạch dừng bên phải mỗi chiều (xuôi nam = nửa tây).
+        // Vạch dừng khớp chỗ xe dừng: mũi xe cách mép hộp giao lộ `stopMarginPx` (6 px).
+        const stopN = (road.topRow - 1) * T - 10, stopS = (road.topRow + 4) * T + 2;
+        marks.rect(a.x0 * T + 2, stopN, cx - a.x0 * T - 3, 4).fill(WHITE);
+        marks.rect(cx + 4, stopS, a.x1 * T - cx - 6, 4).fill(WHITE);
+        for (const [y0, y1] of [[stopN - NO_PASS + 12, stopN + 4], [stopS, stopS + NO_PASS - 12]]) {
+          marks.rect(cx - 2, y0, 2, y1 - y0).fill(YELLOW);
+          marks.rect(cx + 1, y0, 2, y1 - y0).fill(YELLOW);
         }
       }
     }

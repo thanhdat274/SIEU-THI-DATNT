@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
+import type { StreetVehicleState } from '@game/shared';
 import {
-  AVENUES, NEIGHBORHOOD_LOTS, NEIGHBORHOOD_PX, NEIGHBORHOOD_QUALITY, NPC_BUDGET, PARK, ROAD_MAP, STREET_VEHICLE_RULES, TRAFFIC_X_RANGE, VEHICLE_BUDGET,
+  AVENUES, NEIGHBORHOOD_LOTS, NEIGHBORHOOD_PX, NEIGHBORHOOD_QUALITY, NPC_BUDGET, PARK, ROAD_MAP, STREET_VEHICLE_RULES, TRAFFIC_X_RANGE, VEHICLE_BUDGET, VEHICLE_ROAD_MAP, roadLaneCoord,
   ZOOM_LEVELS, detailForZoom, npcRingOf, parkAppeal, roadLaneY, snapZoom, trafficDensity, vehicleMix, DIALOGUE_TOPICS, dialogueWeatherOf,
 } from '@game/data';
 import { StreetTrafficManager } from './street-traffic';
@@ -74,13 +75,20 @@ export function runNeighborhoodTests(): void {
       maxCount = Math.max(maxCount, vs.length);
       for (const v of vs) {
         if (!seen.has(v.id)) { seen.add(v.id); types.set(v.type, (types.get(v.type) ?? 0) + 1); }
-        const road = ROAD_MAP[v.roadId ?? 'main'];
-        if (!v.isDeparting && v.position.y !== roadLaneY(road, v.direction)) offLane++;
-        assert.ok(v.position.x >= TRAFFIC_X_RANGE.min - 1 && v.position.x <= TRAFFIC_X_RANGE.max + 1, 'Xe không ra ngoài biên');
+        const road = VEHICLE_ROAD_MAP[v.roadId ?? 'main'];
+        const vertical = v.axis === 'y';
+        assert.equal(vertical, road.axis === 'y', 'Xe đường dọc có trục y, xe đường ngang không');
+        const lane = vertical ? v.position.x : v.position.y;
+        if (!v.isDeparting && lane !== roadLaneCoord(road, v.direction)) offLane++;
+        const along = vertical ? v.position.y : v.position.x;
+        const lo = road.span?.min ?? TRAFFIC_X_RANGE.min, hi = road.span?.max ?? TRAFFIC_X_RANGE.max;
+        assert.ok(along >= lo - 1 && along <= hi + 1, 'Xe không ra ngoài biên');
       }
+      const alongOf = (v: StreetVehicleState) => (v.axis === 'y' ? v.position.y : v.position.x);
+      const halfOf = (v: StreetVehicleState) => (v.axis === 'y' ? STREET_VEHICLE_RULES.halfLengthY[v.type] : STREET_VEHICLE_RULES.halfLength[v.type]);
       for (const a of vs) for (const b of vs) {
         if (a.id >= b.id || a.direction !== b.direction || (a.roadId ?? 'main') !== (b.roadId ?? 'main')) continue;
-        const gap = Math.abs(a.position.x - b.position.x) - STREET_VEHICLE_RULES.halfLength[a.type] - STREET_VEHICLE_RULES.halfLength[b.type];
+        const gap = Math.abs(alongOf(a) - alongOf(b)) - halfOf(a) - halfOf(b);
         if (gap < -1) overlaps++;
       }
     }

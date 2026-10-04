@@ -98,14 +98,16 @@ export interface RoadDef {
   density: number;
   /** Hệ số tốc độ cho phép (nhân tốc độ cơ bản của xe). */
   speedMul: number;
-  /** Có đèn tín hiệu qua đường trước cửa tiệm (chỉ đường chính). */
-  signal: boolean;
+  /** Trục xe chạy: thiếu = 'x' (đường ngang); 'y' = đường dọc, khi đó `topRow` là cột ô trái của lòng đường (3 cột). */
+  axis?: 'x' | 'y';
+  /** Đường dọc: đoạn xe chạy (px theo trục y) từ chỗ sinh xe phía bắc tới chỗ biến mất phía nam. */
+  span?: { min: number; max: number };
 }
 
 export const TRAFFIC_ROADS: readonly RoadDef[] = [
-  { id: 'main', kind: 'main', topRow: 13, density: 1, speedMul: 1, signal: true },
-  { id: 'school', kind: 'collector', topRow: -20, density: 0.45, speedMul: 0.9, signal: false },
-  { id: 'south', kind: 'residential', topRow: 25, density: 0.22, speedMul: 0.75, signal: false },
+  { id: 'main', kind: 'main', topRow: 13, density: 1, speedMul: 1 },
+  { id: 'school', kind: 'collector', topRow: -20, density: 0.45, speedMul: 0.9 },
+  { id: 'south', kind: 'residential', topRow: 25, density: 0.22, speedMul: 0.75 },
 ];
 export const ROAD_MAP: Readonly<Record<string, RoadDef>> = Object.fromEntries(TRAFFIC_ROADS.map((r) => [r.id, r]));
 
@@ -118,6 +120,65 @@ export const AVENUES: readonly AvenueDef[] = [
   { id: 'west', x0: -7, x1: -4, y0: -20, y1: 44 },
   { id: 'east', x0: 38, x1: 41, y0: -20, y1: 44 },
 ];
+
+/** Đường dọc cho xe chạy (xe đi bên phải: chiều 'right' = xuôi nam chạy nửa tây, 'left' = ngược bắc chạy nửa đông). */
+export const AVENUE_ROADS: readonly RoadDef[] = AVENUES.map((a) => ({
+  id: `avenue-${a.id}`, kind: 'collector', topRow: a.x0, density: 0.35, speedMul: 0.85,
+  axis: 'y', span: { min: a.y0 * T + 24, max: a.y1 * T },
+}));
+
+/** Mọi đường xe chạy được: đường ngang và đường dọc. */
+export const VEHICLE_ROADS: readonly RoadDef[] = [...TRAFFIC_ROADS, ...AVENUE_ROADS];
+export const VEHICLE_ROAD_MAP: Readonly<Record<string, RoadDef>> = Object.fromEntries(VEHICLE_ROADS.map((r) => [r.id, r]));
+
+/** Tọa độ vuông góc với chiều chạy của làn: y (px) với đường ngang, x (px) với đường dọc (nửa tây xuôi nam, nửa đông ngược bắc). */
+export const roadLaneCoord = (road: RoadDef, direction: 'left' | 'right'): number =>
+  road.axis === 'y' ? (road.topRow + (direction === 'right' ? 0.75 : 2.25)) * T : roadLaneY(road, direction);
+
+/**
+ * Ngã tư có đèn: nơi đường dọc cắt hẳn đường ngang (đường dọc kéo dài cả hai phía; ngã ba đường trường không tính).
+ * Hộp giao lộ gồm 3 cột lòng đường dọc + 2 cột vỉa hè hai bên (`crossLeft..crossRight`, px) × 3 hàng lòng đường ngang.
+ * Vạch đi bộ qua đường ngang nằm ở hai cột vỉa hè; xe dừng trước vạch dừng cách mép hộp `STREET_VEHICLE_RULES.stopMarginPx`.
+ */
+export interface IntersectionDef {
+  id: string;
+  roadId: string;
+  avenueId: string;
+  /** Id đường xe chạy của đường dọc (trong `VEHICLE_ROADS`). */
+  avenueRoadId: string;
+  /** Mép trái/phải hộp giao lộ (px), đã gồm cột vỉa hè hai bên. */
+  crossLeft: number;
+  crossRight: number;
+  /** Mép trên/dưới hộp giao lộ (px), đã gồm hàng vỉa hè bắc và nam của đường ngang. */
+  crossTop: number;
+  crossBottom: number;
+  /** Mép trái/phải lòng đường dọc (px), không gồm vỉa hè. */
+  avenueLeft: number;
+  avenueRight: number;
+  /** Mép trên lòng đường ngang (px) và mép dưới (px, hết 3 hàng). */
+  roadTop: number;
+  roadBottom: number;
+  /** Lệch pha đèn (giây) so với đồng hồ chung, để các ngã tư không đổi đèn cùng lúc. */
+  signalOffsetSec: number;
+}
+
+export const INTERSECTIONS: readonly IntersectionDef[] = TRAFFIC_ROADS.flatMap((road, ri) => AVENUES
+  .filter((a) => road.topRow - 1 >= a.y0 && road.topRow + 4 <= a.y1)
+  .map((a, ai): IntersectionDef => ({
+    id: `${road.id}-${a.id}`,
+    roadId: road.id,
+    avenueId: a.id,
+    avenueRoadId: `avenue-${a.id}`,
+    crossLeft: (a.x0 - 1) * T,
+    crossRight: (a.x1 + 1) * T,
+    crossTop: (road.topRow - 1) * T,
+    crossBottom: (road.topRow + 4) * T,
+    avenueLeft: a.x0 * T,
+    avenueRight: a.x1 * T,
+    roadTop: road.topRow * T,
+    roadBottom: (road.topRow + 3) * T,
+    signalOffsetSec: 17 * ai + 11 * ri,
+  })));
 
 /** Biên spawn/despawn của xe trên đường (px): ngoài hẳn vùng nhìn thấy khi zoom xa nhất. */
 export const TRAFFIC_ENTRY_MARGIN_PX = 140;

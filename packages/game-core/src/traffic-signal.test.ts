@@ -1,12 +1,9 @@
 import assert from 'node:assert/strict';
-import { CROSSWALK, STREET_PEDESTRIANS, STREET_VEHICLE_RULES, TRAFFIC_SIGNAL, TRAFFIC_SIGNAL_CYCLE_SEC } from '@game/data';
-import { StreetVehicleState, TILE_SIZE } from '@game/shared';
+import { INTERSECTIONS, VEHICLE_ROAD_MAP, roadLaneCoord, STREET_VEHICLE_RULES, TRAFFIC_SIGNAL, TRAFFIC_SIGNAL_CYCLE_SEC } from '@game/data';
+import { StreetVehicleState } from '@game/shared';
 import { StreetTrafficManager, STREET_LANE_RIGHT_Y } from './street-traffic';
-import { pedestrianWalkSecondsLeft, trafficSignalAt } from './traffic-signal';
+import { intersectionSignalsAt, trafficSignalAt } from './traffic-signal';
 
-const crossLeft = CROSSWALK.tileX * TILE_SIZE;
-const crossRight = (CROSSWALK.tileX + CROSSWALK.widthTiles) * TILE_SIZE;
-const stopFront = crossLeft - STREET_VEHICLE_RULES.stopMarginPx;
 const RED_START = TRAFFIC_SIGNAL.greenSec + TRAFFIC_SIGNAL.yellowSec;
 const car = (id: string, x: number, speed = 85): StreetVehicleState => ({ id, type: 'car', variant: 0, direction: 'right', position: { x, y: STREET_LANE_RIGHT_Y }, speed });
 const frontOf = (v: StreetVehicleState) => v.position.x + STREET_VEHICLE_RULES.halfLength[v.type];
@@ -14,7 +11,7 @@ const find = (m: StreetTrafficManager, id: string) => m.getVehicles().find(v => 
 const run = (m: StreetTrafficManager, seconds: number, hour = 12, rain = 0, seed = 1) => { for (let t = 0; t < seconds - 1e-9; t += 0.1) m.update(0.1, hour, rain, seed); };
 
 export function runTrafficSignalTests(): void {
-  console.log('\n--- Đèn giao thông, xe dừng trước vạch và nhường người đi bộ ---');
+  console.log('\n--- Đèn giao thông ngã tư, xe dừng trước vạch, xe đường dọc ---');
 
   // Chu kỳ đèn.
   const order: string[] = [];
@@ -23,129 +20,97 @@ export function runTrafficSignalTests(): void {
     if (order[order.length - 1] !== s.vehicle) order.push(s.vehicle);
     if (s.pedestrian === 'walk') assert.equal(s.vehicle, 'red', 'Người đi bộ chỉ được đi khi xe đỏ');
     if (s.vehicle !== 'red') assert.equal(s.pedestrian, 'dont_walk', 'Xe xanh/vàng thì người đi bộ phải chờ');
-    assert.ok((pedestrianWalkSecondsLeft(t) > 0) === (s.pedestrian === 'walk'), 'Giây còn lại khớp pha đi bộ');
   }
   assert.deepEqual(order, ['green', 'yellow', 'red', 'green', 'yellow', 'red'], 'Thứ tự xanh → vàng → đỏ lặp lại');
   assert.deepEqual(trafficSignalAt(3), trafficSignalAt(3 + TRAFFIC_SIGNAL_CYCLE_SEC), 'Chu kỳ tuần hoàn');
   assert.equal(TRAFFIC_SIGNAL.greenSec + TRAFFIC_SIGNAL.yellowSec + TRAFFIC_SIGNAL.redSec, TRAFFIC_SIGNAL_CYCLE_SEC);
   assert.ok(TRAFFIC_SIGNAL.pedLeadSec + TRAFFIC_SIGNAL.pedWalkSec < TRAFFIC_SIGNAL.redSec, 'Có pha nhấp nháy dọn đường trước khi xe xanh');
 
-  // Xe dừng trước vạch khi đèn đỏ, xe sau giữ khoảng cách, rồi cùng đi khi xanh.
-  {
-    const m = new StreetTrafficManager([car('a', stopFront - STREET_VEHICLE_RULES.halfLength.car - 20), car('b', stopFront - STREET_VEHICLE_RULES.halfLength.car - 180)]);
-    m.setSignalClock(RED_START);
-    run(m, 9);
-    const a = find(m, 'a'), b = find(m, 'b');
-    assert.ok(frontOf(a) <= crossLeft, 'Xe đầu dừng trước vạch khi đỏ');
-    assert.ok((a.currentSpeed ?? a.speed) < 1, 'Xe đầu đứng yên');
-    assert.ok(frontOf(b) <= a.position.x - STREET_VEHICLE_RULES.halfLength.car + 0.5, 'Xe sau không chồng lên xe trước');
-    m.setSignalClock(0);
-    run(m, 9);
-    const aAfter = m.getVehicles().find(v => v.id === 'a');
-    assert.ok(!aAfter || aAfter.position.x - STREET_VEHICLE_RULES.halfLength.car > crossRight, 'Khi xanh xe đầu đi qua vạch (hoặc đã rời bản đồ)');
-  }
-
-  // Đèn xanh, không người qua đường: xe không giảm tốc.
-  {
-    const m = new StreetTrafficManager([car('a', crossRight + 50)]);
-    m.setSignalClock(0.5);
-    let minSpeed = Infinity;
-    for (let t = 0; t < 4; t += 0.1) { m.update(0.1, 12, 0, 1); const a = m.getVehicles().find(v => v.id === 'a'); if (a) minSpeed = Math.min(minSpeed, a.currentSpeed ?? a.speed); }
-    assert.ok(minSpeed >= 84, 'Đèn xanh thì xe giữ tốc độ');
-  }
-
-  // Lưỡng lự lúc đèn vàng: xe quá gần thì đi qua, xe còn xa thì dừng.
-  {
-    const near = new StreetTrafficManager([car('n', stopFront - STREET_VEHICLE_RULES.halfLength.car - 8)]);
-    near.setSignalClock(TRAFFIC_SIGNAL.greenSec + 0.1);
-    run(near, 3);
-    assert.ok(frontOf(find(near, 'n')) > stopFront + 20, 'Xe quá gần vạch lúc vàng đi tiếp');
-    const far = new StreetTrafficManager([car('f', stopFront - STREET_VEHICLE_RULES.halfLength.car - 160)]);
-    far.setSignalClock(TRAFFIC_SIGNAL.greenSec + 0.1);
-    run(far, 8);
-    assert.ok(frontOf(find(far, 'f')) <= crossLeft, 'Xe còn xa lúc vàng dừng trước vạch');
-  }
-
-  // Nhường người đang qua đường kể cả khi đèn xe xanh.
-  {
-    const m = new StreetTrafficManager([car('a', stopFront - STREET_VEHICLE_RULES.halfLength.car - 30)]);
-    m.setSignalClock(5);
-    m.addPedestrian({ id: 'p1', direction: 'south', state: 'crossing', x: crossLeft + 15 });
-    run(m, 1);
-    const a = find(m, 'a');
-    assert.ok(frontOf(a) <= crossLeft && (a.currentSpeed ?? a.speed) < 60, 'Xe nhường người đang qua đường dù đèn xanh');
-    run(m, 4);
-    assert.equal(m.getPedestrians().length, 0, 'Người đi bộ qua xong thì rời cảnh');
-    assert.ok(frontOf(find(m, 'a')) > crossRight, 'Người qua xong thì xe đi tiếp');
-  }
-
-  // Xe đã qua hẳn vạch thì không bị kẹt lại khi có người qua đường (từng đứng yên giữa phố).
-  {
-    const m = new StreetTrafficManager([car('past', crossRight + 150)]);
-    m.setSignalClock(RED_START + 2);
-    m.addPedestrian({ id: 'p1', direction: 'south', state: 'crossing', x: crossLeft + 15 });
-    const x0 = find(m, 'past').position.x;
-    run(m, 1);
-    const past = find(m, 'past');
-    assert.ok((past.currentSpeed ?? past.speed) > 60 && past.position.x > x0 + 40, 'Xe đã qua vạch vẫn chạy khi người đang qua đường');
-  }
-
-  // Người đi bộ chờ đến pha đi, không bắt đầu qua khi sắp hết pha.
-  {
-    const m = new StreetTrafficManager();
-    m.addPedestrian({ id: 'p1', direction: 'north', x: crossLeft + 20 });
-    m.setSignalClock(3);
-    run(m, 10, 3, 0, 5); // hour 3: không sinh thêm người
-    assert.equal(m.getPedestrians()[0]?.state, 'waiting', 'Đèn xanh cho xe thì người đi bộ chờ');
-    m.setSignalClock(RED_START + TRAFFIC_SIGNAL.pedLeadSec + 0.05);
-    run(m, 0.2, 3, 0, 5);
-    assert.equal(m.getPedestrians()[0]?.state, 'crossing', 'Đến pha đi thì bắt đầu qua');
-    run(m, 3, 3, 0, 5);
-    assert.equal(m.getPedestrians().length, 0, 'Qua xong thì rời cảnh');
-    const late = new StreetTrafficManager();
-    late.addPedestrian({ id: 'p2', direction: 'south', x: crossLeft + 20 });
-    late.setSignalClock(RED_START + TRAFFIC_SIGNAL.pedLeadSec + TRAFFIC_SIGNAL.pedWalkSec - 1);
-    run(late, 0.3, 3, 0, 5);
-    assert.equal(late.getPedestrians()[0]?.state, 'waiting', 'Sắp hết pha đi thì người chờ không bắt đầu qua');
-  }
-
-  // Sinh người đi bộ: không ban đêm, không mưa lớn, không quá giới hạn.
+  // Người đi bộ nền trên vỉa hè: không ban đêm, không mưa lớn, không quá 3 người cùng lúc (không còn vạch qua đường riêng trước tiệm).
   {
     const night = new StreetTrafficManager();
     run(night, 400, 3, 0, 9);
-    assert.equal(night.getPedestrians().length, 0, 'Ban đêm không có người qua đường');
+    assert.equal(night.getPedestrians().length, 0, 'Ban đêm không có người đi vỉa hè');
     const storm = new StreetTrafficManager();
     run(storm, 400, 12, 0.9, 9);
-    assert.equal(storm.getPedestrians().length, 0, 'Mưa lớn không có người qua đường');
+    assert.equal(storm.getPedestrians().length, 0, 'Mưa lớn không có người đi vỉa hè');
     const day = new StreetTrafficManager();
     let seen = 0, max = 0;
-    for (let t = 0; t < 600; t += 0.1) { day.update(0.1, 12, 0, 9); const n = day.getPedestrians().filter(p => p.direction === 'south' || p.direction === 'north').length; seen += n > 0 ? 1 : 0; max = Math.max(max, n); }
-    assert.ok(seen > 0, 'Ban ngày có người qua đường');
-    assert.ok(max <= STREET_PEDESTRIANS.maxConcurrent, 'Không vượt số người tối đa');
+    for (let t = 0; t < 600; t += 0.1) { day.update(0.1, 12, 0, 9); const n = day.getPedestrians().length; seen += n > 0 ? 1 : 0; max = Math.max(max, n); }
+    assert.ok(seen > 0, 'Ban ngày có người đi vỉa hè');
+    assert.ok(max <= 3, 'Không vượt số người đi vỉa hè tối đa');
   }
 
-  // Bất biến khi mô phỏng dài: xe và người không cùng ở vạch; xe cùng làn không chồng nhau.
+
+  // Ngã tư đường dọc: hai pha xen kẽ, không bao giờ cùng xanh; xe dừng trước vạch dừng khi đường ngang đỏ rồi đi tiếp.
   {
-    const m = new StreetTrafficManager();
-    let conflicts = 0, overlaps = 0, stoppedAtRed = 0;
-    for (let t = 0; t < 1800; t += 0.1) {
-      m.update(0.1, 8, 0, 4242);
-      const vehicles = m.getVehicles().filter(v => (v.roadId ?? 'main') === 'main'); // vạch qua đường chỉ ở đường chính
-      const crossing = m.getPedestrians().some(p => p.state === 'crossing');
-      for (const v of vehicles) {
-        const half = STREET_VEHICLE_RULES.halfLength[v.type];
-        if (crossing && v.position.x + half > crossLeft && v.position.x - half < crossRight) conflicts++;
-        if ((v.currentSpeed ?? v.speed) < 1 && m.getSignal().vehicle === 'red') stoppedAtRed++;
-      }
-      for (const a of vehicles) for (const b of vehicles) {
-        if (a.id >= b.id || a.direction !== b.direction) continue;
-        const gap = Math.abs(a.position.x - b.position.x) - STREET_VEHICLE_RULES.halfLength[a.type] - STREET_VEHICLE_RULES.halfLength[b.type];
-        if (gap < -1) overlaps++;
+    assert.ok(INTERSECTIONS.length >= 2 && INTERSECTIONS.every((x) => x.roadId !== 'school'), 'Có ngã tư ở đường chính/đường phía nam, ngã ba đường trường không có đèn');
+    let avenueGreenSeen = false;
+    for (let t = 0; t < TRAFFIC_SIGNAL_CYCLE_SEC * 2; t += 0.1) {
+      const { main, avenue } = intersectionSignalsAt(t);
+      assert.ok(!(main.vehicle !== 'red' && avenue.vehicle !== 'red'), 'Đường ngang và đường dọc không cùng được đi');
+      if (main.pedestrian === 'walk') assert.equal(avenue.pedestrian, 'dont_walk', 'Qua đường ngang thì không đồng thời qua đường dọc');
+      if (avenue.vehicle === 'green') avenueGreenSeen = true;
+    }
+    assert.ok(avenueGreenSeen, 'Đường dọc có pha xanh');
+
+    const ix = INTERSECTIONS.find((x) => x.roadId === 'main' && x.avenueId === 'west')!;
+    const stop = ix.crossLeft - STREET_VEHICLE_RULES.stopMarginPx;
+    const half = STREET_VEHICLE_RULES.halfLength.car;
+    const m = new StreetTrafficManager([car('x', stop - half - 40), car('y', stop - half - 200)]);
+    m.setSignalClock(RED_START + 1 - ix.signalOffsetSec);
+    assert.equal(m.getIntersectionSignals().find((s) => s.id === ix.id)!.signals.main.vehicle, 'red', 'Chuẩn bị: ngã tư đang đỏ cho đường ngang');
+    run(m, 6);
+    const x = find(m, 'x'), y = find(m, 'y');
+    assert.ok(frontOf(x) <= ix.crossLeft && (x.currentSpeed ?? x.speed) < 1, 'Xe dừng trước vạch dừng ngã tư khi đèn đỏ');
+    assert.ok(frontOf(y) <= x.position.x - half + 0.5, 'Xe sau xếp hàng sau xe đầu');
+    m.setSignalClock(-ix.signalOffsetSec + 0.5);
+    run(m, 8);
+    const after = m.getVehicles().find((v) => v.id === 'x');
+    assert.ok(!after || after.position.x - half > ix.crossRight, 'Xanh thì xe đi hết ngã tư');
+  }
+
+  // Xe đường dọc: chạy đúng làn bên phải, dừng trước vạch khi đường dọc đỏ, đi tiếp khi xanh, không bao giờ cùng ở hộp giao lộ với xe đường ngang.
+  {
+    const ix = INTERSECTIONS.find((x) => x.roadId === 'main' && x.avenueId === 'west')!;
+    const road = VEHICLE_ROAD_MAP[ix.avenueRoadId];
+    assert.equal(road.axis, 'y', 'Đường dọc chạy theo trục y');
+    const halfY = STREET_VEHICLE_RULES.halfLengthY.car;
+    const southbound = (id: string, y: number): StreetVehicleState => ({ id, type: 'car', variant: 0, direction: 'right', roadId: ix.avenueRoadId, axis: 'y', position: { x: roadLaneCoord(road, 'right'), y }, speed: 70 });
+    assert.ok(roadLaneCoord(road, 'right') < roadLaneCoord(road, 'left'), 'Xuôi nam chạy nửa tây, ngược bắc chạy nửa đông (đi bên phải)');
+    const stop = ix.crossTop - STREET_VEHICLE_RULES.stopMarginPx;
+    const m = new StreetTrafficManager([southbound('s', stop - halfY - 40), southbound('t', stop - halfY - 160)]);
+    m.setSignalClock(-ix.signalOffsetSec + 0.5); // đường ngang xanh → đường dọc đỏ
+    assert.equal(m.getIntersectionSignals().find((s) => s.id === ix.id)!.signals.avenue.vehicle, 'red');
+    run(m, 6);
+    const s = find(m, 's'), t = find(m, 't');
+    assert.ok(s.position.y + halfY <= ix.crossTop && (s.currentSpeed ?? s.speed) < 1, 'Xe đường dọc dừng trước vạch khi đỏ');
+    assert.equal(s.position.x, roadLaneCoord(road, 'right'), 'Xe giữ nguyên làn');
+    assert.ok(t.position.y + halfY <= s.position.y - halfY + 0.5, 'Xe sau xếp hàng sau xe đầu');
+    m.setSignalClock(RED_START + 4 - ix.signalOffsetSec); // đường dọc xanh
+    run(m, 10);
+    const after = m.getVehicles().find((v) => v.id === 's');
+    assert.ok(!after || after.position.y - halfY > ix.crossBottom, 'Đường dọc xanh thì xe đi hết ngã tư');
+
+    // Mô phỏng dài: không có xe hai trục cùng đè lên một hộp giao lộ; đường dọc có xe chạy cả hai chiều.
+    const sim = new StreetTrafficManager();
+    let clashes = 0;
+    const seen = new Set<string>();
+    for (let tick = 0; tick < 3600; tick += 0.1) {
+      sim.update(0.1, 8, 0, 777);
+      const vs = sim.getVehicles();
+      for (const v of vs) if (v.axis === 'y') seen.add(`${v.roadId}|${v.direction}`);
+      for (const x of INTERSECTIONS) {
+        const along = (v: StreetVehicleState) => (v.axis === 'y' ? v.position.y : v.position.x);
+        const hl = (v: StreetVehicleState) => (v.axis === 'y' ? STREET_VEHICLE_RULES.halfLengthY[v.type] : STREET_VEHICLE_RULES.halfLength[v.type]);
+        const inX = vs.filter((v) => v.axis !== 'y' && (v.roadId ?? 'main') === x.roadId && along(v) + hl(v) > x.avenueLeft && along(v) - hl(v) < x.avenueRight);
+        const inY = vs.filter((v) => v.axis === 'y' && v.roadId === x.avenueRoadId && along(v) + hl(v) > x.roadTop && along(v) - hl(v) < x.roadBottom);
+        if (inX.length && inY.length) clashes++;
       }
     }
-    assert.equal(conflicts, 0, 'Không bao giờ có xe ở vạch lúc người đang qua đường');
-    assert.equal(overlaps, 0, 'Xe cùng làn không chồng nhau');
-    assert.ok(stoppedAtRed > 0, 'Trong 30 phút mô phỏng có xe đã dừng chờ đèn đỏ');
+    assert.equal(clashes, 0, 'Xe đường ngang và đường dọc không cùng ở vùng xung đột của ngã tư');
+    assert.ok(seen.has('avenue-west|right') || seen.has('avenue-east|right'), 'Có xe xuôi nam trên đường dọc');
+    assert.ok(seen.has('avenue-west|left') || seen.has('avenue-east|left'), 'Có xe ngược bắc trên đường dọc');
   }
-  console.log('  ✓ Passed: Đèn giao thông, xe dừng và nhường người đi bộ tại vạch qua đường');
+  console.log('  ✓ Passed: Đèn ngã tư, xe dừng trước vạch, xe đường dọc không xung đột');
 }

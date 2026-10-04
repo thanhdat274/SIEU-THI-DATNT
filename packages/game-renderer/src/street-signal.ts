@@ -1,70 +1,72 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { StreetPedestrianState, TILE_SIZE, TrafficSignalState } from '@game/shared';
-import { CROSSWALK, STREET_PEDESTRIANS } from '@game/data';
-
-/**
- * Bố trí 2 cột đèn tín hiệu thực tế ở 2 bên đối diện của trục đường 2 chiều:
- * - Cột 1 (Lề Nam): Đặt ở mép phía nam đường (y = southCurbY), đón đầu chiều xe chạy từ Tây sang Đông (dừng trước vạch phía tây ở làn nam).
- * - Cột 2 (Vỉa hè Bắc): Đặt ở mép vỉa hè phía bắc (y = northCurbY), đón đầu chiều xe chạy ngược lại từ Đông sang Tây (dừng trước vạch phía đông ở làn bắc).
- * Mỗi bên đường chỉ có duy nhất 1 cột đèn điều tiết chiều xe tương ứng và hướng dẫn người đi bộ sang đường.
- */
-export const TRAFFIC_SIGNAL_POLES = [
-  {
-    x: CROSSWALK.tileX * TILE_SIZE - 10,
-    y: STREET_PEDESTRIANS.southCurbY,
-    description: 'South curb pole (serving eastbound traffic on south lane)',
-  },
-  {
-    x: (CROSSWALK.tileX + CROSSWALK.widthTiles) * TILE_SIZE + 10,
-    y: STREET_PEDESTRIANS.northCurbY,
-    description: 'North sidewalk curb pole (serving westbound traffic on north lane)',
-  },
-] as const;
+import { INTERSECTIONS, ROAD_MAP } from '@game/data';
 
 const OFF = 0x2a2f2c;
 const RED = 0xe0533f, YELLOW = 0xf2c74a, GREEN = 0x5fd17a;
 
-export interface TrafficSignalHeads {
-  /** Vẽ lại hai đèn khi trạng thái đổi (xanh/vàng/đỏ, đi/chờ/nhấp nháy). */
-  update(state: TrafficSignalState): void;
+/** Vẽ một cột đèn (gốc tại chân cột): đầu đèn xe theo `vehicle.vehicle`, đầu đèn người đi bộ theo `walk.pedestrian`. */
+function drawSignalPole(g: Graphics, vehicle: TrafficSignalState, walk: TrafficSignalState, blinkOn: boolean): void {
+  g.clear();
+  // Chân đế nhỏ tiếp đất và bóng đổ
+  g.ellipse(0, 0, 3, 1.2).fill({ color: 0x1a211e, alpha: 0.35 });
+  // Thân cột kim loại
+  g.rect(-1, -26, 2, 26).fill(0x31443c);
+  // Hộp đèn xe (3 bóng: đỏ, vàng, xanh) kèm gờ che nắng
+  g.roundRect(-4, -48, 8, 22, 2).fill(0x1d2420);
+  g.rect(-5, -49, 10, 1).fill(0x111614);
+  g.circle(0, -43, 2.2).fill(vehicle.vehicle === 'red' ? RED : OFF);
+  g.circle(0, -37, 2.2).fill(vehicle.vehicle === 'yellow' ? YELLOW : OFF);
+  g.circle(0, -31, 2.2).fill(vehicle.vehicle === 'green' ? GREEN : OFF);
+  // Đèn người đi bộ: trên đỏ (dừng), dưới xanh (đi) kèm gờ che
+  g.roundRect(-4, -24, 8, 10, 2).fill(0x1d2420);
+  g.rect(-5, -25, 10, 1).fill(0x111614);
+  const stopOn = walk.pedestrian === 'dont_walk' || (walk.pedestrian === 'clearing' && blinkOn);
+  g.rect(-2, -22.5, 4, 3).fill(stopOn ? RED : OFF);
+  g.rect(-2, -18.5, 4, 3).fill(walk.pedestrian === 'walk' ? GREEN : OFF);
 }
 
-/** Đèn giao thông cho xe (3 bóng) và đèn người đi bộ (2 ô) trên 2 cột đối diện 2 bên đường. Chỉ hình ảnh. */
-export function buildTrafficSignalHeads(layer: Container): TrafficSignalHeads {
-  const heads = TRAFFIC_SIGNAL_POLES.map((pole) => {
-    const g = new Graphics();
-    g.eventMode = 'none';
-    g.position.set(pole.x, pole.y);
-    g.zIndex = pole.y + 40;
-    layer.addChild(g);
-    return g;
+/** Trạng thái đèn ngã tư (cho `main` = đường ngang, `avenue` = đường dọc), cùng kiểu với `IntersectionSignals` của game-core. */
+export interface IntersectionLamps { main: TrafficSignalState; avenue: TrafficSignalState }
+
+/**
+ * Bốn cột đèn ở bốn góc mỗi ngã tư (xe đi bên phải: cột đặt ở góc bên phải của chiều xe tới). Cột đường ngang (ĐB/TN) hiện
+ * đèn xe `main` và đèn đi bộ `avenue` (đi bộ qua đường dọc cùng lúc xe đường ngang chạy); cột đường dọc ngược lại.
+ */
+export function buildIntersectionSignalHeads(layer: Container): { update(signals: ReadonlyArray<{ id: string; signals: IntersectionLamps }>): void } {
+  const poles = INTERSECTIONS.flatMap((x) => {
+    const road = ROAD_MAP[x.roadId];
+    const top = (road.topRow - 1) * TILE_SIZE + 28; // đáy hàng vỉa hè phía bắc đường ngang
+    const bottom = x.roadBottom + 24; // hàng vỉa hè phía nam, lệch vào trong ô
+    const west = x.crossLeft + 16;
+    const east = x.crossRight - 16;
+    return [
+      { id: x.id, onMain: true, x: west, y: bottom },  // góc TN: đón xe đi sang đông
+      { id: x.id, onMain: true, x: east, y: top },     // góc ĐB: đón xe đi sang tây
+      { id: x.id, onMain: false, x: west, y: top },    // góc TB: đón xe xuôi nam
+      { id: x.id, onMain: false, x: east, y: bottom }, // góc ĐN: đón xe ngược bắc
+    ].map((p) => {
+      const g = new Graphics();
+      g.eventMode = 'none';
+      g.position.set(p.x, p.y);
+      g.zIndex = p.y + 40;
+      layer.addChild(g);
+      return { ...p, g };
+    });
   });
-  let drawnKey = '';
+  const drawn = new Map<Graphics, string>();
   return {
-    update(state: TrafficSignalState): void {
-      // Nhấp nháy dọn đường: đổi 2 lần mỗi giây theo thời gian còn lại của pha.
-      const blinkOn = state.pedestrian !== 'clearing' || Math.floor(state.secondsLeft * 2) % 2 === 0;
-      const key = `${state.vehicle}|${state.pedestrian}|${blinkOn}`;
-      if (key === drawnKey) return;
-      drawnKey = key;
-      for (const g of heads) {
-        g.clear();
-        // Chân đế nhỏ tiếp đất và bóng đổ
-        g.ellipse(0, 0, 3, 1.2).fill({ color: 0x1a211e, alpha: 0.35 });
-        // Thân cột kim loại
-        g.rect(-1, -26, 2, 26).fill(0x31443c);
-        // Hộp đèn xe (3 bóng: đỏ, vàng, xanh) kèm gờ che nắng
-        g.roundRect(-4, -48, 8, 22, 2).fill(0x1d2420);
-        g.rect(-5, -49, 10, 1).fill(0x111614);
-        g.circle(0, -43, 2.2).fill(state.vehicle === 'red' ? RED : OFF);
-        g.circle(0, -37, 2.2).fill(state.vehicle === 'yellow' ? YELLOW : OFF);
-        g.circle(0, -31, 2.2).fill(state.vehicle === 'green' ? GREEN : OFF);
-        // Đèn người đi bộ: trên đỏ (dừng), dưới xanh (đi) kèm gờ che
-        g.roundRect(-4, -24, 8, 10, 2).fill(0x1d2420);
-        g.rect(-5, -25, 10, 1).fill(0x111614);
-        const stopOn = state.pedestrian === 'dont_walk' || (state.pedestrian === 'clearing' && blinkOn);
-        g.rect(-2, -22.5, 4, 3).fill(stopOn ? RED : OFF);
-        g.rect(-2, -18.5, 4, 3).fill(state.pedestrian === 'walk' ? GREEN : OFF);
+    update(all): void {
+      for (const p of poles) {
+        const s = all.find((a) => a.id === p.id)?.signals;
+        if (!s) continue;
+        const vehicle = p.onMain ? s.main : s.avenue;
+        const walk = p.onMain ? s.avenue : s.main;
+        const blinkOn = walk.pedestrian !== 'clearing' || Math.floor(walk.secondsLeft * 2) % 2 === 0;
+        const key = `${vehicle.vehicle}|${walk.pedestrian}|${blinkOn}`;
+        if (drawn.get(p.g) === key) continue;
+        drawn.set(p.g, key);
+        drawSignalPole(p.g, vehicle, walk, blinkOn);
       }
     },
   };
@@ -129,7 +131,7 @@ export function createPedestrianSprite(variant: number, activity: string | undef
 
 /** Đặt vị trí, hướng nhìn và khung hình đi/đứng; nhún nhẹ khi đang đi. */
 export function placePedestrian(sprite: Container, p: StreetPedestrianState, time: number, getTexture: PedestrianTextureGetter, reducedMotion = false): void {
-  const isMoving = p.state === 'crossing' || p.state === 'walking';
+  const isMoving = p.state === 'walking';
   const speed = p.activity === 'jog' ? 16 : 9;
   const bob = isMoving && !reducedMotion ? Math.abs(Math.sin(time * speed)) * (p.activity === 'jog' ? 2 : 1.2) : 0;
   sprite.position.set(Math.round(p.position.x), Math.round(p.position.y - bob));
@@ -138,7 +140,7 @@ export function placePedestrian(sprite: Container, p: StreetPedestrianState, tim
   const body = sprite.children[1] as Sprite;
   const accessory = sprite.children[2] as Graphics;
   const bag = sprite.children[3] as Graphics;
-  const dir = p.direction === 'south' ? 'down' : p.direction === 'north' ? 'up' : p.direction;
+  const dir = p.direction;
   const frame = reducedMotion ? 0 : Math.floor(time * (isMoving ? 8 : 1.5)) % (isMoving ? 4 : 2);
   body.texture = getTexture(`npc_${sprite.label}_${dir}_${isMoving ? 'walk' : 'idle'}_${frame}`);
   // Đồ kèm (túi, cún) lật theo chiều ngang; khi băng qua đường thì giữ phía hướng phải.

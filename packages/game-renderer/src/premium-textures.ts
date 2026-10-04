@@ -955,7 +955,114 @@ function logisticsPropTexture(key: string): HTMLCanvasElement | null {
   return null;
 }
 
+/**
+ * Xe chạy đường dọc nhìn thẳng từ phía trước (`down`, xe xuôi nam) hoặc phía sau (`up`, xe ngược bắc):
+ * khóa `vehicle_ns_<loại>_<biến thể>_<down|up>`; neo giữa-đáy, đáy canvas là mặt đường.
+ */
+function vehicleNsTexture(key: string): HTMLCanvasElement | null {
+  const m = /^vehicle_ns_(motorbike|bicycle|car|minibus|truck)_(\d+)_(down|up)$/.exec(key);
+  if (!m) return null;
+  const type = m[1];
+  const variant = Number(m[2]);
+  const front = m[3] === 'down';
+  const DARK = '#1a1815';
+  const SKIN = '#f1c8a0';
+  const GLASS = '#8ec6e6';
+  const SIZE: Record<string, [number, number]> = { motorbike: [32, 60], bicycle: [28, 56], car: [52, 44], minibus: [60, 66], truck: [60, 68] };
+  const [w, h] = SIZE[type];
+  const { canvas, ctx } = surface(w, h);
+  const r = (x: number, y: number, rw: number, rh: number, c: string) => { ctx.fillStyle = c; ctx.fillRect(x, y, rw, rh); };
+  const shadow = () => { r(2, h - 4, w - 4, 4, '#26190e40'); r(4, h - 5, w - 8, 3, '#26190e25'); };
+
+  if (type === 'motorbike' || type === 'bicycle') {
+    const bike = type === 'motorbike';
+    const v = variant % 3;
+    const jacket = v === 2 ? { main: '#3a6ea5', light: '#5f95c9', dark: '#274f7a' } : { main: '#2e8b3e', light: '#4cb25d', dark: '#1f6a2d' };
+    const pal = [{ main: '#3f9b4a', light: '#6fcb7a' }, { main: '#3a7ca5', light: '#6aa6cc' }, { main: '#c0392b', light: '#e8604f' }][v];
+    const cx = w / 2;
+    shadow();
+    // Bánh xe (phía trước thì bánh trước, phía sau thì bánh sau), phuộc/khung
+    const tw = bike ? 6 : 4;
+    r(cx - tw / 2, h - 18, tw, 16, DARK); r(cx - tw / 2 + 1, h - 17, tw - 2, 14, '#2d2a27');
+    r(cx - 1, h - 30, 2, 14, '#9aa0a6');
+    // Chân
+    r(cx - 6, h - 30, 4, 14, DARK); r(cx - 5, h - 29, 2, 12, '#3b4e4e'); r(cx + 2, h - 30, 4, 14, DARK); r(cx + 3, h - 29, 2, 12, '#3b4e4e');
+    if (bike && !front && v === 0) { r(cx - 8, h - 38, 16, 10, DARK); r(cx - 7, h - 37, 14, 8, pal.main); r(cx - 7, h - 37, 14, 2, pal.light); }
+    // Thân, tay, ghi-đông
+    const top = bike ? 14 : 12;
+    r(cx - 7, top + 2, 14, 20, DARK); r(cx - 6, top + 3, 12, 18, jacket.main); r(cx - 6, top + 3, 3, 18, jacket.light); r(cx + 3, top + 3, 3, 18, jacket.dark);
+    if (!front) r(cx - 3, top + 2, 6, 2, '#f4f4f4');
+    r(cx - 12, top + 8, 6, 12, DARK); r(cx - 11, top + 9, 4, 10, jacket.main); r(cx + 6, top + 8, 6, 12, DARK); r(cx + 7, top + 9, 4, 10, jacket.main);
+    r(cx - 11, top + 19, 4, 3, SKIN); r(cx + 7, top + 19, 4, 3, SKIN);
+    r(cx - 13, top + 21, 26, 2, DARK);
+    // Đèn: pha trắng ở phía trước, đèn hậu đỏ ở phía sau
+    if (front) { r(cx - 3, h - 36, 6, 4, DARK); r(cx - 2, h - 35, 4, 2, '#ffe27a'); } else r(cx - 2, h - 20, 4, 3, '#e74c3c');
+    // Đầu + mũ (xe máy: mũ vải rộng vành; xe đạp: nón lá)
+    r(cx - 5, top - 8, 10, 10, DARK); r(cx - 4, top - 7, 8, 8, front ? SKIN : '#1a1815');
+    if (front) { r(cx - 4, top - 7, 8, 2, '#1a1815'); r(cx - 3, top - 4, 1, 2, '#1a1815'); r(cx + 2, top - 4, 1, 2, '#1a1815'); r(cx - 1, top - 1, 2, 1, '#b5594a'); }
+    if (bike) { r(cx - 5, top - 14, 10, 7, DARK); r(cx - 4, top - 13, 8, 5, '#e4c485'); r(cx - 9, top - 9, 18, 3, DARK); r(cx - 8, top - 9, 16, 2, '#d1ab62'); }
+    else { r(cx - 1, 0, 2, 1, DARK); r(cx - 4, 1, 8, 1, '#f0e2a0'); r(cx - 7, 2, 14, 1, '#e9d792'); r(cx - 10, 3, 20, 1, '#f0e2a0'); r(cx - 12, 4, 24, 2, '#d9c581'); }
+    if (!bike && front) { r(cx - 7, h - 40, 14, 8, DARK); r(cx - 6, h - 39, 12, 6, '#c89b5c'); r(cx - 5, h - 42, 6, 3, '#4cae3b'); }
+    return canvas;
+  }
+
+  if (type === 'car') {
+    const BODY = [
+      { body: '#e4bd48', hi: '#f4d97a', lo: '#c79a2c' }, { body: '#e6eaed', hi: '#ffffff', lo: '#b9c1c8' }, { body: '#b4bcc4', hi: '#d6dce2', lo: '#8c949c' },
+      { body: '#c0392b', hi: '#e8604f', lo: '#8f2a20' }, { body: '#2e6fa8', hi: '#5f9cd0', lo: '#215582' }, { body: '#343a41', hi: '#5a626b', lo: '#22272c' },
+    ][variant % 6];
+    shadow();
+    r(3, 33, 8, 9, DARK); r(41, 33, 8, 9, DARK);
+    r(9, 4, 34, 22, DARK); r(10, 5, 32, 5, BODY.body); r(10, 5, 32, 1, BODY.hi);
+    r(10, 10, 32, 14, front ? GLASS : '#5a8fb0'); r(12, 11, 5, 2, '#d6eefb');
+    if (front) { r(23, 14, 8, 8, SKIN); r(22, 13, 10, 3, '#2a1c14'); r(23, 22, 8, 2, '#2e86c1'); }
+    r(2, 22, 48, 16, DARK); r(3, 23, 46, 14, BODY.body); r(3, 23, 46, 3, BODY.hi); r(3, 31, 46, 6, BODY.lo);
+    if (variant % 6 === 0) r(17, 1, 18, 5, '#ffffff'), r(21, 2, 10, 3, '#e74c3c');
+    if (front) { r(5, 26, 8, 4, '#fff3b0'); r(39, 26, 8, 4, '#fff3b0'); r(18, 29, 16, 5, '#2b2f33'); r(20, 31, 12, 1, '#5d6368'); }
+    else { r(4, 25, 9, 4, '#e74c3c'); r(39, 25, 9, 4, '#e74c3c'); r(20, 28, 12, 3, BODY.lo); }
+    r(4, 35, 44, 3, '#4a4540'); r(22, 34, 8, 3, '#f4f4f4');
+    return canvas;
+  }
+
+  if (type === 'minibus') {
+    const COLORS = ['#f4f6f7', '#4cae3b', '#f4c542', '#c0392b'];
+    const body = COLORS[variant % 4];
+    shadow();
+    r(5, h - 14, 10, 12, DARK); r(w - 15, h - 14, 10, 12, DARK);
+    r(2, 6, w - 4, 50, DARK); r(3, 7, w - 6, 48, body); r(3, 7, w - 6, 3, '#ffffff55');
+    r(6, 12, w - 12, front ? 20 : 15, DARK); r(7, 13, w - 14, front ? 18 : 13, front ? GLASS : '#5a8fb0');
+    r(w / 2 - 1, 13, 2, front ? 18 : 13, DARK);
+    if (front) { r(12, 17, 7, 7, SKIN); r(11, 16, 9, 2, '#2a1c14'); r(w - 20, 17, 7, 7, SKIN); r(w - 21, 16, 9, 2, '#2a1c14'); }
+    r(3, 36, w - 6, 8, '#00000022'); r(3, 40, w - 6, 3, '#2e6da4');
+    if (front) { r(6, 44, 9, 5, '#fff3b0'); r(w - 15, 44, 9, 5, '#fff3b0'); r(20, 45, w - 40, 5, '#2b2f33'); }
+    else { r(6, 44, 9, 5, '#e74c3c'); r(w - 15, 44, 9, 5, '#e74c3c'); r(w / 2 - 4, 34, 8, 4, '#f4f4f4'); }
+    r(4, 50, w - 8, 4, '#4a4540'); r(w / 2 - 5, 50, 10, 3, '#f4f4f4');
+    r(w / 2 - 12, 2, 24, 5, DARK); r(w / 2 - 11, 3, 22, 3, '#bdc3c7');
+    return canvas;
+  }
+
+  // truck
+  const BOX = ['#d9b36a', '#e05a47', '#e6f0f5', '#6fb35a'][variant % 4];
+  shadow();
+  r(5, h - 14, 10, 12, DARK); r(w - 15, h - 14, 10, 12, DARK);
+  if (front) {
+    r(2, 0, w - 4, 38, DARK); r(3, 1, w - 6, 36, BOX); r(3, 1, w - 6, 3, '#ffffff55'); r(3, 30, w - 6, 6, '#00000022');
+    r(7, 28, w - 14, 28, DARK); r(8, 29, w - 16, 26, '#e8ecef');
+    r(10, 32, w - 20, 12, GLASS); r(w / 2 - 1, 32, 2, 12, DARK);
+    r(14, 36, 7, 6, SKIN); r(13, 35, 9, 2, '#2a1c14');
+    r(8, 47, 9, 5, '#fff3b0'); r(w - 17, 47, 9, 5, '#fff3b0'); r(21, 47, w - 42, 6, '#2b2f33');
+    r(6, 54, w - 12, 4, '#4a4540'); r(w / 2 - 5, 54, 10, 3, '#f4f4f4');
+  } else {
+    r(2, 2, w - 4, 52, DARK); r(3, 3, w - 6, 50, BOX); r(3, 3, w - 6, 3, '#ffffff55');
+    r(w / 2 - 1, 5, 2, 46, DARK); r(w / 2 - 4, 26, 2, 5, '#9aa0a6'); r(w / 2 + 2, 26, 2, 5, '#9aa0a6');
+    r(5, 44, 8, 5, '#e74c3c'); r(w - 13, 44, 8, 5, '#e74c3c');
+    r(4, 54, w - 8, 4, '#4a4540'); r(w / 2 - 5, 54, 10, 3, '#f4f4f4');
+  }
+  return canvas;
+}
+
 function vehicleTexture(key: string): HTMLCanvasElement | null {
+  if (key.startsWith('vehicle_ns_')) return vehicleNsTexture(key);
   // Tỉ lệ ~20-22 px/mét như xe tải: ô tô dài 100 px (4,5 m) cao ~35 px, xe máy dài ~52 px (1,9 m).
   // Mọi mẫu vẽ quay mặt sang phải rồi lật ngang khi hướng trái; neo giữa-đáy, đáy canvas ~ mặt đường.
   const DARK = '#1a1815';
