@@ -2425,31 +2425,42 @@ export class GameSimulation {
 
   private refillIdleRoutes = new Map<string, Vector2D[]>();
   private refillIdleWait = new Map<string, number>();
+  /** Kệ mà nhân viên rảnh đã chọn để đứng; `done` = đã tới nơi, không dò đường lại. */
+  private refillIdleShelf = new Map<string, { fixtureId: string; done: boolean }>();
 
-  /** Nhân viên bổ sung kệ hết việc thì đi ra đứng cạnh quầy thu ngân thay vì kẹt trong kho. */
+  /** Nhân viên bổ sung kệ hết việc thì đi ra đứng cạnh một kệ bán hàng bất kỳ thay vì kẹt trong kho. */
   private updateRefillIdleWorkers(dt: number): void {
     for (const member of this.staff) {
       if (member.role !== 'refill') continue;
-      if (member.workerTask || member.diningTask || !this.isStaffOnShift(member)) { this.refillIdleRoutes.delete(member.id); this.refillIdleWait.set(member.id, 0); continue; }
+      if (member.workerTask || member.diningTask || !this.isStaffOnShift(member)) {
+        this.refillIdleRoutes.delete(member.id);
+        this.refillIdleShelf.delete(member.id);
+        this.refillIdleWait.set(member.id, 0);
+        continue;
+      }
       const idleFor = (this.refillIdleWait.get(member.id) ?? 0) + dt;
       this.refillIdleWait.set(member.id, idleFor);
       if (idleFor < 2) continue;
-      const post = this.getCashierPost();
-      if (!post) continue;
       const position = member.position ?? { ...WAREHOUSE_ENTRANCE };
       member.position = position;
+      let choice = this.refillIdleShelf.get(member.id);
+      if (choice && !this.fixtures.some((fixture) => fixture.id === choice!.fixtureId)) choice = undefined;
+      if (!choice) {
+        const shelves = this.fixtures.filter((fixture) => isSalesFixture(fixture));
+        if (!shelves.length) continue;
+        choice = { fixtureId: shelves[(Array.from(member.id).reduce((h, c) => h + c.charCodeAt(0), 0) + Math.floor(this.clock.getTime().hour)) % shelves.length].id, done: false };
+        this.refillIdleShelf.set(member.id, choice);
+      }
+      if (choice.done) continue;
       let route = this.refillIdleRoutes.get(member.id);
       if (!route) {
-        if (Math.hypot(post.x - position.x, post.y - position.y) < 0.5 * TILE_SIZE) continue;
-        const path = findPathToAny(this.tileMap, this.collisionSystem,
-          { x: Math.floor(position.x / TILE_SIZE), y: Math.floor(position.y / TILE_SIZE) },
-          [{ x: Math.floor(post.x / TILE_SIZE), y: Math.floor(post.y / TILE_SIZE) }]);
-        if (path.length < 2) continue;
-        route = path.slice(1).map(tileCenter);
+        const shelf = this.fixtures.find((fixture) => fixture.id === choice!.fixtureId)!;
+        route = this.routeToFixture(position, shelf);
+        if (!route) { choice.done = true; continue; }
         this.refillIdleRoutes.set(member.id, route);
       }
       const waypoint = route[0];
-      if (!waypoint) { this.refillIdleRoutes.delete(member.id); continue; }
+      if (!waypoint) { this.refillIdleRoutes.delete(member.id); choice.done = true; continue; }
       const dx = waypoint.x - position.x, dy = waypoint.y - position.y, distance = Math.hypot(dx, dy);
       const step = Math.max(35, member.speed * 16) * (1 + getSkillModifier(this.skills, 'staff_speed')) * Math.max(0, dt);
       if (distance <= step) { member.position = { ...waypoint }; route.shift(); }
