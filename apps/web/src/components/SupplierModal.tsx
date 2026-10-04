@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   PlayerData,
   InventoryItem,
@@ -30,6 +30,105 @@ function loadSuggestOptions(saved?: RestockSuggestionOptions): Required<RestockS
 }
 
 const SUGGEST_INPUT_STYLE: React.CSSProperties = { height: 28, border: '2px solid var(--wood-light)', background: '#FFFAEE', color: 'var(--ink)', textAlign: 'center', fontWeight: 700, borderRadius: 0, margin: '0 2px' };
+
+interface ProductRowProps {
+  product: (typeof ALL_PRODUCTS)[number];
+  quantity: number;
+  unitPrice: number;
+  locked: boolean;
+  discountRate: number;
+  supplierName: string;
+  maxQty: number;
+  changePct?: number;
+  reasonsText?: string;
+  stockLeft?: number;
+  unavailable?: boolean;
+  onSetQty: (productId: string, n: number) => void;
+}
+
+/**
+ * Một dòng sản phẩm trong danh sách nhập. Đóng gói và memo để bấm +/- chỉ vẽ lại đúng dòng đó
+ * (trước đây mỗi lần đổi số lượng cả ~300 dòng cùng biểu tượng SVG được dựng lại).
+ */
+const SupplierProductRow = React.memo(function SupplierProductRow({ product, quantity, unitPrice, locked, discountRate, supplierName, maxQty, changePct, reasonsText, stockLeft, unavailable, onSetQty }: ProductRowProps) {
+  const cost = quantity * unitPrice;
+  const hasQuote = changePct !== undefined;
+  const reason = locked ? `Mở khóa ở cấp ${product.unlockLevel}` : unavailable ? `${supplierName} tạm ngừng cung` : '';
+  return (
+    <article
+      className={`product-row ${locked ? 'is-locked' : ''} ${quantity > 0 ? 'in-cart' : ''}`}
+      aria-label={product.name}
+      style={quantity > 0 ? { background: 'rgba(53,127,114,0.07)', borderLeft: '3px solid var(--teal)' } : undefined}
+    >
+      <ProductSlot productId={product.id} />
+      <div className="product-info">
+        <h3>{product.name}</h3>
+        <p>
+          {PRODUCT_CATEGORY_LABELS[product.category]}
+          {product.storageType === 'cold' ? ' · Giữ mát' : ''}
+        </p>
+        <p>
+          Giá sỉ <strong>{money(unitPrice)}</strong>
+          {discountRate > 0 ? (
+            <span style={{ fontSize: '11px', color: 'var(--teal)' }}>
+              {' '}
+              (-{Math.round(discountRate * 100)}%)
+            </span>
+          ) : null}
+          {quantity > 0 && (
+            <span style={{ marginLeft: 6, color: 'var(--teal-dark)', fontWeight: 700 }}>
+              · Tổng <strong>{money(cost)}</strong>
+            </span>
+          )}
+        </p>
+        {hasQuote && (changePct !== 0 || !!reasonsText || stockLeft !== undefined) && (
+          <p className="muted" style={{ fontSize: '11px' }}>
+            {changePct !== 0 && <strong style={{ color: changePct! > 0 ? 'var(--brick, #b64c3d)' : 'var(--teal)' }}>{changePct! > 0 ? '↑' : '↓'} {changePct! > 0 ? '+' : ''}{changePct}% so với hôm qua </strong>}
+            {reasonsText && <span>· {reasonsText} </span>}
+            {stockLeft !== undefined && !unavailable && <span>· Còn {stockLeft} hôm nay</span>}
+          </p>
+        )}
+        {reason && <p className="action-reason">{reason}</p>}
+      </div>
+      {/* Chỉ có stepper — không có nút Đặt hàng riêng */}
+      <div className="product-actions">
+        <QuantityStepper
+          label={`Số lượng ${product.name}`}
+          value={quantity}
+          min={0}
+          disabled={locked || maxQty <= 0}
+          max={Math.max(0, maxQty)}
+          onChange={(n) => onSetQty(product.id, n)}
+        />
+        {product.caseSize && !locked && maxQty > 0 && (
+          <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+            <PixelButton
+              variant="paper"
+              onClick={() => onSetQty(product.id, Math.min(quantity + product.caseSize!, maxQty))}
+              style={{ fontSize: '10px', padding: '2px 6px' }}
+            >
+              +1 thùng ({product.caseSize})
+            </PixelButton>
+            {quantity >= product.caseSize && (
+              <PixelButton
+                variant="paper"
+                onClick={() => onSetQty(product.id, Math.max(0, quantity - product.caseSize!))}
+                style={{ fontSize: '10px', padding: '2px 6px' }}
+              >
+                -1 thùng
+              </PixelButton>
+            )}
+          </div>
+        )}
+        {quantity > 0 && (
+          <span style={{ fontSize: '10px', color: 'var(--teal-dark)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+            ✓ Đã chọn
+          </span>
+        )}
+      </div>
+    </article>
+  );
+});
 
 export interface SupplierQuoteBoard {
   quotes: Record<string, { unitPrice: number; previousUnitPrice: number; changePct: number; reasons: string[]; stockLeft?: number; unavailable: boolean }>;
@@ -189,8 +288,11 @@ export const SupplierModal: React.FC<Props> = ({
   };
 
   // Nguồn sự thật duy nhất của số lượng đặt: `quantities`. Luôn kẹp theo tồn NCC.
-  const setCartQty = (productId: string, n: number) =>
-    setQuantities((old) => setCartQuantity(old, productId, n, maxQtyFor(productId)));
+  // Danh tính ổn định (đọc maxQtyFor mới nhất qua ref) để các dòng memo không vẽ lại khi cha vẽ lại.
+  const maxQtyForRef = useRef(maxQtyFor);
+  maxQtyForRef.current = maxQtyFor;
+  const setCartQty = useCallback((productId: string, n: number) =>
+    setQuantities((old) => setCartQuantity(old, productId, n, maxQtyForRef.current(productId))), []);
 
   const clearCart = () => {
     setQuantities({});
@@ -584,101 +686,25 @@ export const SupplierModal: React.FC<Props> = ({
         filteredProducts.map((product) => {
           const quantity = quantities[product.id] ?? 0;
           const quote = board?.quotes[product.id];
-          const discountedUnitPrice = getUnitPrice
+          const unitPrice = getUnitPrice
             ? getUnitPrice(selectedSupplierId, product.id, Math.max(1, quantity))
             : Math.round(product.purchasePrice * (1 - discountRate));
-          const cost = quantity * discountedUnitPrice;
-          const locked = product.unlockLevel > player.level;
-
-          const reason = locked
-            ? `Mở khóa ở cấp ${product.unlockLevel}`
-            : quote?.unavailable
-            ? `${currentSupplier.name} tạm ngừng cung`
-            : '';
-
           return (
-            <article
+            <SupplierProductRow
               key={product.id}
-              className={`product-row ${locked ? 'is-locked' : ''} ${quantity > 0 ? 'in-cart' : ''}`}
-              aria-label={product.name}
-              style={quantity > 0 ? { background: 'rgba(53,127,114,0.07)', borderLeft: '3px solid var(--teal)' } : undefined}
-            >
-              <ProductSlot productId={product.id} />
-              <div className="product-info">
-                <h3>{product.name}</h3>
-                <p>
-                  {PRODUCT_CATEGORY_LABELS[product.category]}
-                  {product.storageType === 'cold' ? ' · Giữ mát' : ''}
-                </p>
-                <p>
-                  Giá sỉ <strong>{money(discountedUnitPrice)}</strong>
-                  {discountRate > 0 ? (
-                    <span style={{ fontSize: '11px', color: 'var(--teal)' }}>
-                      {' '}
-                      (-{Math.round(discountRate * 100)}%)
-                    </span>
-                  ) : null}
-                  {quantity > 0 && (
-                    <span style={{ marginLeft: 6, color: 'var(--teal-dark)', fontWeight: 700 }}>
-                      · Tổng <strong>{money(cost)}</strong>
-                    </span>
-                  )}
-                </p>
-                {quote && (quote.changePct !== 0 || quote.reasons.length > 0 || quote.stockLeft !== undefined) && (
-                  <p className="muted" style={{ fontSize: '11px' }}>
-                    {quote.changePct !== 0 && <strong style={{ color: quote.changePct > 0 ? 'var(--brick, #b64c3d)' : 'var(--teal)' }}>{quote.changePct > 0 ? '↑' : '↓'} {quote.changePct > 0 ? '+' : ''}{quote.changePct}% so với hôm qua </strong>}
-                    {quote.reasons.length > 0 && <span>· {quote.reasons.join('; ')} </span>}
-                    {quote.stockLeft !== undefined && !quote.unavailable && <span>· Còn {quote.stockLeft} hôm nay</span>}
-                  </p>
-                )}
-                {reason && <p className="action-reason">{reason}</p>}
-              </div>
-              {/* Chỉ có stepper — không có nút Đặt hàng riêng */}
-              <div className="product-actions">
-                <QuantityStepper
-                  label={`Số lượng ${product.name}`}
-                  value={quantity}
-                  min={0}
-                  disabled={locked || maxQtyFor(product.id) <= 0}
-                  max={Math.max(0, maxQtyFor(product.id))}
-                  onChange={(n) => setCartQty(product.id, n)}
-                />
-                {product.caseSize && !locked && maxQtyFor(product.id) > 0 && (
-                  <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
-                    <PixelButton
-                      variant="paper"
-                      onClick={() => {
-                        const caseQty = product.caseSize!;
-                        const currentQty = quantities[product.id] ?? 0;
-                        const newQty = Math.min(currentQty + caseQty, maxQtyFor(product.id));
-                        setCartQty(product.id, newQty);
-                      }}
-                      style={{ fontSize: '10px', padding: '2px 6px' }}
-                    >
-                      +1 thùng ({product.caseSize})
-                    </PixelButton>
-                    {quantity >= (product.caseSize ?? 0) && (
-                      <PixelButton
-                        variant="paper"
-                        onClick={() => {
-                          const currentQty = quantities[product.id] ?? 0;
-                          const newQty = Math.max(0, currentQty - (product.caseSize ?? 0));
-                          setCartQty(product.id, newQty);
-                        }}
-                        style={{ fontSize: '10px', padding: '2px 6px' }}
-                      >
-                        -1 thùng
-                      </PixelButton>
-                    )}
-                  </div>
-                )}
-                {quantity > 0 && (
-                  <span style={{ fontSize: '10px', color: 'var(--teal-dark)', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                    ✓ Đã chọn
-                  </span>
-                )}
-              </div>
-            </article>
+              product={product}
+              quantity={quantity}
+              unitPrice={unitPrice}
+              locked={product.unlockLevel > player.level}
+              discountRate={discountRate}
+              supplierName={currentSupplier.name}
+              maxQty={maxQtyFor(product.id)}
+              changePct={quote?.changePct}
+              reasonsText={quote?.reasons.join('; ')}
+              stockLeft={quote?.stockLeft}
+              unavailable={quote?.unavailable}
+              onSetQty={setCartQty}
+            />
           );
         })
       )}

@@ -1152,6 +1152,9 @@ export class PixiGameViewport {
   }
 
   private renderTick = (): void => {
+    // Có hộp thoại phủ màn hình (PixelDialog đặt data-dialogs): hạ trần khung hình để giao diện cuộn mượt hơn.
+    const targetMaxFps = document.documentElement.dataset.dialogs ? 20 : 0;
+    if (this.app.ticker.maxFPS !== targetMaxFps) this.app.ticker.maxFPS = targetMaxFps;
     const elapsed = Math.min(this.app.ticker.deltaMS / 1000, 0.25);
     const dt = 1 / 60;
     this.animTimer += elapsed;

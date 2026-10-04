@@ -42,10 +42,10 @@ export function PixelProgress({value, max, label}: {value: number; max: number; 
   const safeMax = Math.max(1, max), safeValue = Math.max(0, Math.min(safeMax, value));
   return <div className="pixel-progress" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={safeMax} aria-valuenow={safeValue}><span style={{width:`${safeValue / safeMax * 100}%`}}/></div>;
 }
-export function ProductIcon({productId, size = 40}: {productId?: string; size?: number}) {
+export const ProductIcon = React.memo(function ProductIcon({productId, size = 40}: {productId?: string; size?: number}) {
   return <svg width={size} height={size} viewBox="0 0 16 16" shapeRendering="crispEdges" aria-hidden="true" className="product-icon">{productPixels(productId ? PRODUCT_MAP[productId] : undefined).map((p, i) => <rect key={i} x={p.x} y={p.y} width={p.w} height={p.h} fill={p.color}/>)}</svg>;
-}
-export function ProductSlot({productId, quantity}: {productId?: string; quantity?: number}) {return <div className="product-slot"><ProductIcon productId={productId}/>{quantity !== undefined && <strong className="slot-count">{quantity}</strong>}</div>;}
+});
+export const ProductSlot = React.memo(function ProductSlot({productId, quantity}: {productId?: string; quantity?: number}) {return <div className="product-slot"><ProductIcon productId={productId}/>{quantity !== undefined && <strong className="slot-count">{quantity}</strong>}</div>;});
 export function QuantityStepper({value, min = 1, max = 99, onChange, label, disabled = false}: {value: number; min?: number; max?: number; onChange: (n:number)=>void; label: string; disabled?:boolean}) {
   const clamp = (n: number) => Math.max(min, Math.min(max, Number.isFinite(n) ? Math.trunc(n) : min));
   const id = useId();
@@ -70,8 +70,11 @@ export function PixelDialog({title, subtitle, icon, onClose, children, footer}: 
       }
     };
     const focus = (e:FocusEvent) => {if(!node.contains(e.target as Node)) (focusable()[0] ?? node).focus();};
+    // Báo cho renderer giảm khung hình khi có hộp thoại che màn hình (đỡ tranh CPU/GPU với việc cuộn danh sách).
+    const root = document.documentElement;
+    root.dataset.dialogs = String(Number(root.dataset.dialogs ?? '0') + 1);
     document.addEventListener('keydown',keys,true); document.addEventListener('focusin',focus);
-    return ()=>{document.removeEventListener('keydown',keys,true);document.removeEventListener('focusin',focus); if(previous?.isConnected) previous.focus();};
+    return ()=>{const left = Number(root.dataset.dialogs ?? '1') - 1; if (left > 0) root.dataset.dialogs = String(left); else delete root.dataset.dialogs; document.removeEventListener('keydown',keys,true);document.removeEventListener('focusin',focus); if(previous?.isConnected) previous.focus();};
   }, []);
   return <div className="dialog-backdrop"><section ref={ref} className="pixel-panel pixel-dialog" role="dialog" aria-modal="true" aria-labelledby={id} tabIndex={-1}><header className="dialog-header"><div className="dialog-heading"><PixelIcon name={icon} size={28}/><div><h2 id={id}>{title}</h2>{subtitle && <p>{subtitle}</p>}</div></div><PixelButton icon="close" variant="wood" aria-label="Đóng" data-dialog-close onClick={onClose}/></header><div className="dialog-content">{children}</div><footer className="dialog-footer">{footer ?? <><span className="muted">Esc để trở về tiệm</span><PixelButton onClick={onClose}>Trở về tiệm</PixelButton></>}</footer></section></div>;
 }
