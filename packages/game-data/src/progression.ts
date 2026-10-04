@@ -17,7 +17,7 @@ export const STAFF_SLOT_MILESTONES: Readonly<Record<number, number>> = {
 
 /** Hệ số lưu lượng theo các mốc cao cấp; giá trị tham khảo được giới hạn ở nhịp spawn trong core. */
 export const LEVEL_TRAFFIC_MILESTONES: Readonly<Record<number, number>> = {
-  1: 1, 10: 1.6, 11: 1.9, 12: 3, 13: 3.3, 14: 3.6, 15: 4, 16: 4.3,
+  1: 1, 2: 1.1, 3: 1.2, 4: 1.3, 5: 1.4, 6: 1.5, 7: 1.6, 8: 1.7, 9: 1.8, 10: 2, 11: 2.3, 12: 3, 13: 3.3, 14: 3.6, 15: 4, 16: 4.3,
   17: 4.6, 18: 4.9, 19: 5.2, 20: 5.5, 21: 5.7, 22: 5.9, 23: 6.1,
   24: 6.3, 25: 6.5, 26: 6.7, 27: 6.9, 28: 7.1, 29: 7.3, 30: 7.5,
   31: 7.7, 32: 7.9, 33: 8.1, 34: 8.3, 35: 8.5,
@@ -52,7 +52,7 @@ export function getLevelTrafficMultiplier(level: number): number {
 
 /** Nới sức chứa theo mốc để tiệm đông dần mà lối đi nhỏ vẫn đọc được. */
 export function maxActiveCustomersForLevel(level: number): number {
-  return level >= 20 ? 5 : level >= 10 ? 4 : level >= 5 ? 3 : 2;
+  return level >= 20 ? 6 : level >= 15 ? 5 : level >= 10 ? 4 : level >= 5 ? 3 : 2;
 }
 
 /** XP từ bán hàng giảm ở cấp cao để đường cong không tăng tốc quá mức. */

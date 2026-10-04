@@ -229,8 +229,8 @@ export class CustomerManager {
     if (cooldown > 0) { this.setStreamCooldown(streamId, cooldown); return null; }
     // Match the reference game's ~5.5s baseline while keeping high traffic
     // readable and preventing a very high level multiplier from flooding the shop.
-    // Tòa phụ: cùng công thức rồi chia cho `factor` (cả trần 1,5 s), để nhịp sinh khách tỉ lệ đúng với tiệm chính kể cả khi lưu lượng đã chạm trần.
-    this.setStreamCooldown(streamId, Math.max(1.5, 5.5 / Math.max(0.25, demand?.traffic ?? 1)) / factor);
+    // Tòa phụ: cùng công thức rồi chia cho `factor` (cả trần 1 s), để nhịp sinh khách tỉ lệ đúng với tiệm chính kể cả khi lưu lượng đã chạm trần.
+    this.setStreamCooldown(streamId, Math.max(1, 5.5 / Math.max(0.25, demand?.traffic ?? 1)) / factor);
 
     const stockedShelves = fixtures.filter(
       (f) => isSalesFixture(f) && !f.broken && f.currentStock > 0 && f.assignedProductId && (fixtureBuilding(f) ?? 'main') === streamId
