@@ -407,6 +407,9 @@ export class WorldRuntime {
     });
   }
 
+  /** Ghi ngay trạng thái hiện tại (tắt server, đổi phiên bản...). */
+  flushCheckpoint(): void { this.triggerCheckpoint(); }
+
   private triggerCheckpoint(): void {
     const updatedSave = this.simulation.exportSaveData(
       this.currentBusiness.save.id,

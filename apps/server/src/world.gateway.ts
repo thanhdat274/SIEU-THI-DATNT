@@ -1,3 +1,4 @@
+import type { BeforeApplicationShutdown } from '@nestjs/common';
 import { WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer } from '@nestjs/websockets';
 import type { Server, WebSocket } from 'ws';
 import { worldRepository } from './world.repository.js';
@@ -115,7 +116,7 @@ function broadcastToWorld(worldId: string, event: string, data: unknown) {
   maxPayload: MAX_WS_PAYLOAD_BYTES, // thông điệp lớn hơn bị ws đóng kết nối (mã 1009)
   cors: { origin: '*' }, // narrowed by main.ts CORS for HTTP; WS has separate origin handling
 })
-export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, BeforeApplicationShutdown {
   @WebSocketServer()
   server!: Server;
 
@@ -143,7 +144,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const worldData = await worldRepository.getForMember(worldId, account.uid);
         const runtime = new WorldRuntime(worldData.world, worldData.businesses[0], {
           heartbeatTimeoutMs: 15000,
-          checkpointIntervalSeconds: 5,
+          checkpointIntervalSeconds: readRuntimeConfig().checkpointSeconds,
           onCheckpoint: (world, business) => {
             const current = worldRuntimes.get(worldId);
             if (!current) return;
@@ -192,6 +193,12 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.warn('[WS] Auth failed:', err instanceof Error ? err.message : err);
       socket.close(4001, 'Unauthorized');
     }
+  }
+
+  /** Checkpoint thưa (mặc định 30 giây) nên khi tắt server phải ghi nốt, nếu không mất phần mô phỏng chưa lưu. */
+  async beforeApplicationShutdown(): Promise<void> {
+    for (const entry of worldRuntimes.values()) entry.runtime.flushCheckpoint();
+    await Promise.allSettled([...worldRuntimes.values()].map(entry => entry.checkpointQueue));
   }
 
   handleDisconnect(socket: AuthenticatedSocket) {
