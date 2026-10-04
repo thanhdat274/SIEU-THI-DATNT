@@ -1017,7 +1017,7 @@ function vehicleNsTexture(key: string): HTMLCanvasElement | null {
     r(10, 10, 32, 14, front ? GLASS : '#5a8fb0'); r(12, 11, 5, 2, '#d6eefb');
     if (front) { r(23, 14, 8, 8, SKIN); r(22, 13, 10, 3, '#2a1c14'); r(23, 22, 8, 2, '#2e86c1'); }
     r(2, 22, 48, 16, DARK); r(3, 23, 46, 14, BODY.body); r(3, 23, 46, 3, BODY.hi); r(3, 31, 46, 6, BODY.lo);
-    if (variant % 6 === 0) r(17, 1, 18, 5, '#ffffff'), r(21, 2, 10, 3, '#e74c3c');
+    if (variant % 6 === 0) { r(17, 1, 18, 5, '#ffffff'); r(21, 2, 10, 3, '#e74c3c'); }
     if (front) { r(5, 26, 8, 4, '#fff3b0'); r(39, 26, 8, 4, '#fff3b0'); r(18, 29, 16, 5, '#2b2f33'); r(20, 31, 12, 1, '#5d6368'); }
     else { r(4, 25, 9, 4, '#e74c3c'); r(39, 25, 9, 4, '#e74c3c'); r(20, 28, 12, 3, BODY.lo); }
     r(4, 35, 44, 3, '#4a4540'); r(22, 34, 8, 3, '#f4f4f4');
