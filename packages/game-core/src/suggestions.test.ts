@@ -636,22 +636,32 @@ export function runSuggestionTests(): void {
     if ('orders' in plan) assert.ok(plan.orders.every(o => o.supplierId !== 'giao_hoa_toc'), 'Kế hoạch không dùng hỏa tốc sau 22h');
   }
 
-  // 3d4. 22:00 chốt quầy: doanh thu vào sổ hôm nay ngay, sang ngày không tính lại
+  // 3d4. Quầy bán dần theo giờ: doanh thu vào sổ hôm nay tăng từng giờ, 22:00 chốt, sang ngày không tính lại
   {
     const save: any = structuredClone(DEFAULT_INITIAL_SAVE);
     save.player = { ...save.player, level: 8, money: 2000000 };
     save.inventory = [];
-    const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
-    (sim as any).stalls.owned.push('cafe_vot');
-    for (const item of sim.getStallRestockItems('cafe_vot')) (sim as any).inventory.push({ productId: item.productId, quantity: item.quantity, lots: [{ quantity: item.quantity, expiresOnDay: 99, unitCost: 1000 }] });
-    const day = (sim as any).clock.getTime().day;
-    const before = (sim as any).currentDayRecord.revenue;
-    (sim as any).clock.setTime({ ...(sim as any).clock.getTime(), hour: 22, minute: 0 }); // đổi giờ kích hoạt chốt quầy
-    assert.ok((sim as any).currentDayRecord.revenue > before, 'Doanh thu quầy cộng vào sổ hôm nay lúc 22:00');
-    const after = (sim as any).currentDayRecord.revenue;
-    (sim as any).settleStallsAtClose();
-    (sim as any).processStalls(day);
-    assert.equal((sim as any).currentDayRecord.revenue, after, 'Chốt đúng một lần');
+    const sim: any = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    sim.stalls.owned.push('cafe_vot');
+    for (const item of sim.getStallRestockItems('cafe_vot')) sim.inventory.push({ productId: item.productId, quantity: item.quantity, lots: [{ quantity: item.quantity, expiresOnDay: 99, unitCost: 1000 }] });
+    const day = sim.clock.getTime().day;
+    const setHour = (hour: number) => sim.clock.setTime({ ...sim.clock.getTime(), hour, minute: 0 });
+    const money0 = sim.playerData.money;
+    setHour(8);
+    assert.equal(sim.currentDayRecord.revenue, 0, '08:00 chưa bán gì');
+    setHour(12);
+    const noon = sim.currentDayRecord.revenue;
+    assert.ok(noon > 0, '12:00 đã có doanh thu quầy trong sổ hôm nay');
+    assert.equal(sim.playerData.money - money0, noon, 'Tiền cộng cùng lúc với doanh thu');
+    assert.ok(!sim.stalls.processedDayIds.includes(day), 'Chưa chốt trước 22:00');
+    setHour(16);
+    assert.ok(sim.currentDayRecord.revenue > noon, 'Doanh thu tăng dần theo giờ');
+    setHour(22);
+    const full = sim.currentDayRecord.revenue;
+    assert.equal(sim.stalls.lastReport.entries[0].revenue, full, '22:00 chốt đủ báo cáo');
+    assert.ok(sim.stalls.processedDayIds.includes(day), 'Đã chốt');
+    sim.processStalls(day);
+    assert.equal(sim.currentDayRecord.revenue, full, 'Chốt đúng một lần');
   }
 
   // 3e. Thiếu tiền cho đủ 3 ngày: vẫn mua trước phần làm được và báo món còn thiếu

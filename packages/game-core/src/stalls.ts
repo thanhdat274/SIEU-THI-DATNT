@@ -7,6 +7,7 @@ export function normalizeStallState(state: StallState | undefined): StallState {
   return {
     owned: (state?.owned ?? []).filter(id => !!STALL_MAP[id]),
     processedDayIds: [...(state?.processedDayIds ?? [])],
+    ...(state?.progress ? { progress: structuredClone(state.progress) } : {}),
     lastReport: state?.lastReport ? { day: state.lastReport.day, entries: state.lastReport.entries.map(entry => ({ ...entry })) } : undefined,
   };
 }

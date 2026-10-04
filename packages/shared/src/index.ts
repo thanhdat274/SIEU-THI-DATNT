@@ -492,6 +492,14 @@ export interface StallState {
   owned: string[]; // id quầy đã mở
   processedDayIds: number[]; // ngày đã tính doanh thu quầy (idempotent)
   lastReport?: StallDayReport; // kết quả ngày gần nhất để hiển thị
+  progress?: StallDayProgress; // ngày đang bán dở: doanh thu cộng dần theo giờ
+}
+
+/** Tiến độ bán của quầy trong ngày chưa chốt (lưu để nạp lại giữa ngày không bán trùng). */
+export interface StallDayProgress {
+  day: number;
+  slots: number; // số khung giờ bán đã tính (0–14, từ 08:00)
+  entries: Record<string, { demand: number; servings: number; revenue: number; cogs: number; units: Record<string, number> }>;
 }
 
 export interface StallDayReport {
