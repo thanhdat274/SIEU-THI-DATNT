@@ -113,7 +113,7 @@ export function runCoopRoutineTests(): void {
     callbacks.setStoreOpen = (open) => { storeOpen = open; };
     
     // Simulate day passing... at 22:00
-    let input = createInput(22 * 60, 1, {
+    const input = createInput(22 * 60, 1, {
       p1: { position: { x: 300, y: 300 }, manualInput: true, isOnline: true },
       p2: { position: { x: 320, y: 300 }, manualInput: true, isOnline: true },
     });
@@ -144,7 +144,7 @@ export function runCoopRoutineTests(): void {
     const mockCollision = { isColliding: () => false } as any;
     system.setWorld({ tileMap: mockTileMap, collision: mockCollision, storeDoorTile: { x: 10, y: 10 }, playerConfigs: {} });
     
-    let input = createInput(23 * 60 + 30, 1, {
+    const input = createInput(23 * 60 + 30, 1, {
       p1: { position: { x: 300, y: 300 }, manualInput: true, isOnline: true },
       p2: { position: { x: 320, y: 300 }, manualInput: true, isOnline: true },
     });
@@ -198,7 +198,7 @@ export function runCoopRoutineTests(): void {
     system.setWorld({ tileMap: mockTileMap, collision: mockCollision, storeDoorTile: { x: 10, y: 10 }, playerConfigs: {} });
     
     // p2 disconnects
-    let input = createInput(23 * 60 + 30, 1, {
+    const input = createInput(23 * 60 + 30, 1, {
       p1: { position: { x: 300, y: 300 }, manualInput: true, isOnline: true },
       p2: { position: { x: 320, y: 300 }, manualInput: false, isOnline: false },
     });

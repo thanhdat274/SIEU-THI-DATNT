@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { DEFAULT_INITIAL_SAVE, generateStarterTileMap } from '@game/data';
-import { GameSimulation } from './simulation';
+import { GameSimulation, hourlyStoreTrafficMultiplier } from './simulation';
 import { InputManager } from './input';
 import { GameClock } from './clock';
 import { DAILY_SCHEDULE, HOME_DOOR_TILE, parseClockMinutes } from './daily-routine';
@@ -120,7 +120,6 @@ export function runDailyRoutineTests(): void {
 
   // Đường cong khách mua hàng theo giờ (Hourly traffic curve).
   {
-    const { hourlyStoreTrafficMultiplier } = require('./simulation');
     assert.equal(hourlyStoreTrafficMultiplier(8), 1.0);
     assert.equal(hourlyStoreTrafficMultiplier(9), 1.0);
     assert.equal(hourlyStoreTrafficMultiplier(11), 1.25);
