@@ -57,13 +57,13 @@ export const PARTY_ORDERS: readonly PartyOrderDef[] = [
     id: 'party_mung_tho',
     title: 'Lễ mừng thọ Bác Tám',
     customerName: 'Bà Năm Bán Xôi',
-    description: 'Bà con lối xóm chung tay làm lễ mừng thọ cho Bác Tám Tổ Trưởng, cần gạo ngon ST25, trứng gà và dầu ăn nấu cỗ chay.',
+    description: 'Bà con lối xóm chung tay làm lễ mừng thọ cho Bác Tám Tổ Trưởng, cần gạo thơm, trứng gà và dầu ăn nấu cỗ chay.',
     minPlayerLevel: 3,
     durationDays: 3,
     items: [
-      { productId: 'gao_st25', quantity: 5 },
-      { productId: 'trung_ga_ta', quantity: 10 },
-      { productId: 'dau_an_tuong_an', quantity: 3 },
+      { productId: 'gao', quantity: 5 },
+      { productId: 'trung_ga', quantity: 10 },
+      { productId: 'dau_an', quantity: 3 },
     ],
     reward: {
       money: 320000,
@@ -79,7 +79,7 @@ export const PARTY_ORDERS: readonly PartyOrderDef[] = [
     minPlayerLevel: 4,
     durationDays: 3,
     items: [
-      { productId: 'nuoc_mam_nam_ngu', quantity: 5 },
+      { productId: 'nuoc_mam', quantity: 5 },
       { productId: 'mi_hao_hao', quantity: 20 },
       { productId: 'xa_xi_chuong_duong', quantity: 12 },
     ],

@@ -277,6 +277,8 @@ export class WorldRuntime {
         success = this.simulation.respondPartyOrder(p.orderId, p.accept).success;
       } else if (p.type === 'fulfill_party_order') {
         success = this.simulation.fulfillPartyOrder(p.orderId).success;
+      } else if (p.type === 'rush_fulfill_party_order') {
+        success = this.simulation.rushFulfillPartyOrder(p.orderId).success;
       } else if (p.type === 'claim_goal') {
         success = this.simulation.claimGoal(p.goalId).success;
       } else if (p.type === 'claim_weekly_quest') {

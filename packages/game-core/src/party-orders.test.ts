@@ -7,7 +7,7 @@ import {
 } from './party-orders';
 import { InventoryItem } from '@game/shared';
 import { GameSimulation } from './simulation';
-import { DEFAULT_INITIAL_SAVE, generateStarterTileMap } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, PARTY_ORDERS, PARTY_ORDER_MAP, PRODUCT_MAP, generateStarterTileMap } from '@game/data';
 import { InputManager } from './input';
 
 export function runPartyOrderTests(): void {
@@ -178,6 +178,50 @@ export function runPartyOrderTests(): void {
     assert.equal(partyEntry.type, 'sale');
   }
   console.log('  ✓ GameSimulation tích hợp mượt mà với sổ cái và cộng thưởng');
+  console.log('\n--- Test: Món của đơn tiệc phải có trong catalog và mở khóa kịp cấp mở đơn ---');
+  for (const def of PARTY_ORDERS) {
+    for (const item of def.items) {
+      const product = PRODUCT_MAP[item.productId];
+      assert.ok(product, `${def.id}: sản phẩm ${item.productId} phải tồn tại trong catalog`);
+      assert.ok(product.unlockLevel <= def.minPlayerLevel, `${def.id}: ${item.productId} mở khóa cấp ${product.unlockLevel} > cấp mở đơn ${def.minPlayerLevel}`);
+    }
+  }
+  console.log('  ✓ Mọi món đơn tiệc đều có thật và đã mở khóa khi đơn xuất hiện');
+
+
+  console.log('\n--- Test: Nhập hỏa tốc rồi giao đơn tiệc ---');
+  {
+    const makeSim = (money: number) => {
+      const save = structuredClone(DEFAULT_INITIAL_SAVE);
+      save.player.money = money;
+      save.player.level = 2;
+      save.inventory = [];
+      return new GameSimulation(save, generateStarterTileMap(), new InputManager());
+    };
+
+    const sim = makeSim(5_000_000);
+    const order = sim.getPartyOrderState().available[0];
+    assert.equal(order.status, 'pending');
+    const quote = sim.getPartyOrderRushQuote(order.orderId);
+    assert.ok(quote.totalCost > 0 && quote.lines.length > 0, 'Kho trống nên có báo giá hỏa tốc');
+    const reward = PARTY_ORDER_MAP[order.orderId].reward.money;
+    const before = sim.getPlayerData().money;
+    const res = sim.rushFulfillPartyOrder(order.orderId);
+    assert.equal(res.success, true, res.reason ?? '');
+    assert.equal(sim.getPlayerData().money, before - quote.totalCost + reward, 'Trừ tiền nhập hỏa tốc và cộng thưởng đơn');
+    assert.ok(sim.getPartyOrderState().completedOrderIds.includes(order.orderId), 'Đơn được nhận và giao trong một lệnh');
+    assert.ok(sim.getLedger().some((e) => e.type === 'purchase' && e.description.includes('hỏa tốc')), 'Sổ cái ghi dòng nhập hỏa tốc');
+    assert.equal(sim.rushFulfillPartyOrder(order.orderId).success, false, 'Đơn đã giao thì không nhập hỏa tốc lần hai');
+
+    const poor = makeSim(10);
+    const poorOrder = poor.getPartyOrderState().available[0];
+    const poorRes = poor.rushFulfillPartyOrder(poorOrder.orderId);
+    assert.equal(poorRes.success, false, 'Thiếu tiền thì từ chối');
+    assert.equal(poor.getPartyOrderState().available[0].status, 'pending', 'Từ chối không làm đơn bị nhận ngầm');
+    assert.equal(poor.getPlayerData().money, 10, 'Không trừ tiền khi từ chối');
+    assert.equal(poor.getInventory().length, 0, 'Không để lại hàng khi từ chối');
+  }
+  console.log('  ✓ Nhập hỏa tốc nguyên tử: đủ tiền thì nhận+giao, thiếu tiền thì không đổi gì');
 
   console.log('\n🎉 TOÀN BỘ CÁC BÀI KIỂM THỬ ĐƠN TIỆC ĐÃ ĐẠT!');
 }

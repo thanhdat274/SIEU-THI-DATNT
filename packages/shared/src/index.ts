@@ -1189,6 +1189,7 @@ export type GameCommandPayload =
   | { type: 'set_restock_options'; options: RestockSuggestionOptions }
   | { type: 'respond_party_order'; orderId: string; accept: boolean }
   | { type: 'fulfill_party_order'; orderId: string }
+  | { type: 'rush_fulfill_party_order'; orderId: string }
   | { type: 'claim_goal'; goalId: string }
   | { type: 'claim_weekly_quest'; questId: string }
   | { type: 'claim_festival_goal'; goalId: string }
@@ -1453,6 +1454,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'order_supplier': return nonEmptyString(p.supplierId) && Array.isArray(p.items) && p.items.length > 0 && p.items.length <= 64 && p.items.every(item => isRecord(item) && nonEmptyString(item.productId) && Number.isSafeInteger(item.quantity) && Number(item.quantity) > 0);
     case 'respond_party_order': return nonEmptyString(p.orderId) && typeof p.accept === 'boolean';
     case 'fulfill_party_order': return nonEmptyString(p.orderId);
+    case 'rush_fulfill_party_order': return nonEmptyString(p.orderId);
     case 'claim_goal': return nonEmptyString(p.goalId);
     case 'claim_weekly_quest': return nonEmptyString(p.questId);
     case 'claim_festival_goal': return nonEmptyString(p.goalId);

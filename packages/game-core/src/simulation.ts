@@ -111,7 +111,7 @@ import { decorAttraction, decorTrafficMultiplier } from './decor';
 import { buyLandPlot, relocateMisplacedFixtures, upgradeFixtureSlots, validateStoreLayout, totalWarehouseCells, coldWarehouseCapacity, warehouseCellsFor, unitsFittingInCells, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
-import { looseUnits, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
+import { expiryDay, looseUnits, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
 import { decayLot, spoilageRate, withBackupPower } from './spoilage';
 import { findPathToAny, GridPoint, tileCenter } from './pathfinding';
 import { normalizePlayerProgression, saleExperienceMultiplier, trafficAtLevel } from './progression';
@@ -1572,6 +1572,108 @@ export class GameSimulation {
       this.notifyStateChanged();
     }
 
+    return res;
+  }
+
+  /** Phụ phí giao hỏa tốc so với giá sỉ thường (hàng về ngay trong ngày, không chờ lịch nhà cung cấp). */
+  public static readonly RUSH_SURCHARGE = 0.3;
+
+  /**
+   * Báo giá nhập hỏa tốc phần hàng còn thiếu của một đơn tiệc: mỗi món thiếu lấy nhà cung cấp rẻ nhất đã mở khóa,
+   * cộng phụ phí hỏa tốc. Chỉ tính lô còn hạn, khớp điều kiện của `fulfillPartyOrder`. `totalCost < 0` nghĩa là không có nguồn cung.
+   */
+  public getPartyOrderRushQuote(orderId: string): {
+    lines: Array<{ productId: string; missing: number; supplierId: string; unitPrice: number; lineTotal: number }>;
+    totalCost: number;
+  } {
+    const def = PARTY_ORDER_MAP[orderId];
+    const day = this.clock.getTime().day;
+    const level = this.playerData.level;
+    const lines: Array<{ productId: string; missing: number; supplierId: string; unitPrice: number; lineTotal: number }> = [];
+    let totalCost = 0;
+    for (const item of def?.items ?? []) {
+      const inv = this.inventory.find((i) => i.productId === item.productId);
+      const usable = inv?.lots?.length ? inv.lots.reduce((sum, lot) => sum + (lot.expiresOnDay > day ? lot.quantity : 0), 0) : (inv?.quantity ?? 0);
+      const missing = item.quantity - usable;
+      if (missing <= 0) continue;
+      let best: { supplierId: string; unit: number } | null = null;
+      for (const supplier of SUPPLIERS) {
+        if (supplier.unlockLevel > level || this.market.suppliers?.[supplier.id]?.unavailable.includes(item.productId)) continue;
+        const unit = this.wholesaleUnitPrice(supplier.id, item.productId, missing);
+        if (unit > 0 && (!best || unit < best.unit)) best = { supplierId: supplier.id, unit };
+      }
+      if (!best) return { lines: [], totalCost: -1 };
+      const unitPrice = Math.ceil(best.unit * (1 + GameSimulation.RUSH_SURCHARGE));
+      lines.push({ productId: item.productId, missing, supplierId: best.supplierId, unitPrice, lineTotal: unitPrice * missing });
+      totalCost += unitPrice * missing;
+    }
+    return { lines, totalCost };
+  }
+
+  /**
+   * Nhận (nếu còn chờ duyệt) + nhập hỏa tốc phần thiếu + giao đơn tiệc trong một lệnh.
+   * Atomic: kiểm tiền và chỗ kho trước khi đổi gì; thiếu chỗ thì khôi phục kho và không nhận đơn.
+   */
+  public rushFulfillPartyOrder(orderId: string): FulfillPartyOrderResult {
+    const fail = (reason: string): FulfillPartyOrderResult => ({ success: false, cogs: 0, reason });
+    const order = this.partyOrders.available.find((o) => o.orderId === orderId);
+    const def = PARTY_ORDER_MAP[orderId];
+    if (!order || !def) return fail('Không tìm thấy đơn tiệc.');
+    if (order.status !== 'pending' && order.status !== 'accepted') return fail('Đơn tiệc không còn ở trạng thái có thể giao.');
+    const day = this.clock.getTime().day;
+    if (order.status === 'accepted' && day > order.deadlineDay) return fail('Đơn tiệc đã quá hạn chót.');
+
+    const quote = this.getPartyOrderRushQuote(orderId);
+    if (quote.totalCost < 0) return fail('Chưa có nhà cung cấp nào bán được món còn thiếu.');
+    if (quote.totalCost > this.playerData.money) return fail(`Không đủ tiền nhập hỏa tốc (cần ${quote.totalCost.toLocaleString('vi-VN')} ₫).`);
+
+    const snapshot = structuredClone(this.inventory);
+    const freshExtraDays = getSkillModifier(this.skills, 'fresh_extra_day');
+    for (const line of quote.lines) {
+      const product = PRODUCT_MAP[line.productId];
+      const fits = product?.storageType === 'cold'
+        ? this.reservedColdWarehouseCount() + line.missing <= this.getColdCapacity()
+        : this.ambientFitQuantity(line.productId, line.missing) >= line.missing;
+      if (!fits) {
+        this.inventory = snapshot;
+        return fail(`Kho không đủ chỗ chứa ${product?.name ?? line.productId} nhập hỏa tốc.`);
+      }
+      const lot: StockLot = { quantity: line.missing, expiresOnDay: expiryDay(line.productId, day) + freshExtraDays, unitCost: line.unitPrice, provenance: 'known', caseCount: 0 };
+      const slot = this.inventory.find((i) => i.productId === line.productId);
+      if (slot) {
+        slot.lots = slot.lots ?? [];
+        mergeLots(slot.lots, [lot]);
+        slot.quantity = sumLots(slot.lots);
+      } else {
+        this.inventory.push({ productId: line.productId, quantity: line.missing, lots: [lot] });
+      }
+    }
+
+    if (order.status === 'pending') {
+      const accepted = this.respondPartyOrder(orderId, true);
+      if (!accepted.success) {
+        this.inventory = snapshot;
+        return fail(accepted.reason ?? 'Không nhận được đơn tiệc.');
+      }
+    }
+    const res = this.fulfillPartyOrder(orderId);
+    if (!res.success) {
+      this.inventory = snapshot;
+      return res;
+    }
+
+    if (quote.totalCost > 0) {
+      this.playerData.money -= quote.totalCost;
+      this.currentDayRecord.purchaseTotal += quote.totalCost;
+      this.recordLedger({
+        day,
+        type: 'purchase',
+        amount: quote.totalCost,
+        quantity: quote.lines.reduce((sum, line) => sum + line.missing, 0),
+        description: `Nhập hỏa tốc cho đơn tiệc: ${def.title}`,
+      });
+      this.notifyStateChanged();
+    }
     return res;
   }
 

@@ -1729,6 +1729,19 @@ export const App: React.FC = () => {
             addToast(res.reason ?? 'Không thể giao đơn tiệc.', 'warn');
           }
         }}
+        rushQuote={(orderId) => simulationRef.current?.getPartyOrderRushQuote(orderId).totalCost ?? -1}
+        onRushFulfillPartyOrder={async (orderId) => {
+          const res = await persistSimulationMutation(
+            { type: 'rush_fulfill_party_order', orderId }, 'Nhập hỏa tốc & giao đơn tiệc', 'Đơn tiệc',
+            simulation => simulation.rushFulfillPartyOrder(orderId),
+          );
+          if (!res) return;
+          if (res.success) {
+            addToast(`Đã nhập hỏa tốc và giao đơn tiệc! +${money(res.reward?.money ?? 0)}`, 'success');
+          } else {
+            addToast(res.reason ?? 'Không thể nhập hỏa tốc cho đơn tiệc.', 'warn');
+          }
+        }}
         inventory={inventory}
         goals={simulationRef.current.getGoalProgressList()}
         weeklyQuests={simulationRef.current.getWeeklyQuestProgressList()}
