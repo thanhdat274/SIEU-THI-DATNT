@@ -142,6 +142,7 @@
 - Cập nhật kiểm tra Firebase/MongoDB: typecheck/build, HTTP health và token thiếu/sai 401 PASS. MongoDB đã kết nối thật nhưng là standalone (hello không có replicaSet/mongos), transaction code 20; (lỗi thời: task 1.1 đã đóng sau khi bỏ yêu cầu transaction).
 - Đã nối project Firebase hem-buon: AccountBar Google popup/logout, Admin credentials qua `FIREBASE_PROJECT_ID`/`FIREBASE_CLIENT_EMAIL`/`FIREBASE_PRIVATE_KEY` và /api/v1/me; có fallback file local cũ trong giai đoạn chuyển đổi. Chưa nghiệm thu OAuth thật, chưa world ACL/cloud save nên tasks 3.1/4.1 chưa xong. Không import key Admin vào web; key được ignore Git.
 - Task 1.1 đang làm: NestJS /health, /ready, MongoDB pool/.env và script transaction đã có; typecheck và HTTP health PASS. (Lỗi thời: MONGO_URI đã có, task 1.1 đã đóng, không còn cần transaction.) Không cần Docker theo yêu cầu mới; chờ chủ dự án chỉ file cấu hình cluster chung/database riêng.
+- [>] OpenSpec `multiplayer-voice-chat` (05/10/2026): voice P2P cho hẻm chung có code, typecheck/test/gateway PASS; còn task 4.2 thử thật hai client/hai mạng, TURN để sau.
 - [x] Tạo proposal/design/ba delta specs/tasks tại `openspec/changes/shared-alley-multiplayer`; đây là tài liệu kế hoạch, chưa là multiplayer chạy thật.
 - [ ] Triển khai theo tasks của change: schema world/cơ sở → core headless/giao dịch → server/auth/persistence → client hai người → nghiệm thu reconnect/chơi lệch giờ.
 - [ ] Bản đầu: một tiệm chung, tối đa hai thành viên, owner offline member vẫn chơi; tất cả offline world pause; giữ save local riêng.

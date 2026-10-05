@@ -98,6 +98,21 @@ async function run() {
     ownerSocket.send(JSON.stringify({ event: 'position', data: { position: reportedAt, direction: 'right' } }));
     await memberSeesOwner;
 
+    // Voice: tín hiệu tới đúng người kia với `from` do server gán; kind lạ không được chuyển; người gửi không nhận lại bản của mình.
+    {
+      const memberGetsSignal = nextEvent(memberSocket, message => message.event === 'voice:signal');
+      let ownerEchoed = false;
+      const onOwnerMessage = (raw: WebSocket.RawData) => { if (raw.toString().includes('voice:signal')) ownerEchoed = true; };
+      ownerSocket.on('message', onOwnerMessage);
+      ownerSocket.send(JSON.stringify({ event: 'voice:signal', data: { kind: 'hangup', payload: {} } }));
+      ownerSocket.send(JSON.stringify({ event: 'voice:signal', data: { kind: 'offer', payload: { sdp: 'v=0' }, from: 'forged' } }));
+      const signal = await memberGetsSignal;
+      assert.deepEqual(signal.data, { from: owner.id, kind: 'offer', payload: { sdp: 'v=0' } }, 'from do server gán; kind lạ bị bỏ');
+      await new Promise(resolve => setTimeout(resolve, 150));
+      ownerSocket.off('message', onOwnerMessage);
+      assert.equal(ownerEchoed, false, 'người gửi không nhận lại tín hiệu của mình');
+    }
+
     // Lệnh qua HTTP chạy trên runtime đang sống: người kia nhận ngay snapshot mới (revision + trạng thái tiệm) qua WebSocket.
     {
       const { GameController } = await import('./bootstrap.js');

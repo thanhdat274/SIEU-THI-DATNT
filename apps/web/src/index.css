@@ -451,3 +451,13 @@ html[data-controls="keyboard"] .touch-controls{display:none}
   }
 }
 
+
+/* Voice chat (hẻm chung) */
+.voice-panel{position:fixed;left:14px;bottom:72px;z-index:19;background:#FFF2D6EB;border:2px solid var(--wood-dark);box-shadow:3px 3px 0 #593A2B33;padding:6px 8px;max-width:min(320px,calc(100vw - 28px))}
+.voice-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.voice-btn{width:40px;height:40px;border:2px solid var(--wood-dark);background:var(--paper);font-size:18px;line-height:1;display:grid;place-items:center;padding:0;box-shadow:0 2px 0 var(--wood-dark)}
+.voice-btn.is-on{background:var(--teal-dark)}.voice-btn.is-speaking{outline:3px solid var(--sun);outline-offset:1px}.voice-btn:disabled{opacity:.5}
+.voice-status{font-size:12px;color:var(--muted);font-weight:700}.voice-status-connected{color:var(--teal-dark)}.voice-status-failed{color:#88392F}
+.voice-link{background:none;border:none;padding:4px;font-size:12px;font-weight:800;color:var(--teal-dark);text-decoration:underline}
+.voice-error{margin-top:4px;font-size:12px;color:#88392F;line-height:1.35}
+@media (pointer:coarse){.voice-panel{bottom:128px}}

@@ -28,9 +28,13 @@ export interface WorldSocketOptions {
   onAvatars?: (avatars: unknown) => void;
   onTimeVote?: (data: unknown) => void;
   onSessionEnded?: (event: 'kicked' | 'replaced' | 'timeout', data: unknown) => void;
+  /** Voice chat: tín hiệu offer/answer/candidate từ người kia (`from` do server gán). */
+  onVoiceSignal?: (data: unknown) => void;
+  /** Voice chat: người kia vào/ra hẻm. */
+  onVoicePeer?: (data: unknown) => void;
 }
 
-export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAvatars, onTimeVote, onSessionEnded }: WorldSocketOptions) {
+export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAvatars, onTimeVote, onSessionEnded, onVoiceSignal, onVoicePeer }: WorldSocketOptions) {
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -39,6 +43,8 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
   const onAvatarsRef = useRef(onAvatars);
   const onTimeVoteRef = useRef(onTimeVote);
   const onSessionEndedRef = useRef(onSessionEnded);
+  const onVoiceSignalRef = useRef(onVoiceSignal);
+  const onVoicePeerRef = useRef(onVoicePeer);
   const sequenceRef = useRef(0);
 
   // Keep callbacks up to date without re-triggering the effect
@@ -47,6 +53,8 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
   useEffect(() => { onAvatarsRef.current = onAvatars; }, [onAvatars]);
   useEffect(() => { onTimeVoteRef.current = onTimeVote; }, [onTimeVote]);
   useEffect(() => { onSessionEndedRef.current = onSessionEnded; }, [onSessionEnded]);
+  useEffect(() => { onVoiceSignalRef.current = onVoiceSignal; }, [onVoiceSignal]);
+  useEffect(() => { onVoicePeerRef.current = onVoicePeer; }, [onVoicePeer]);
 
   const disconnect = useCallback(() => {
     if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
@@ -91,6 +99,10 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
           onWorldUpdateRef.current?.(msg.data as { revision: number; receipt: unknown });
         } else if (msg.event === 'time-vote:update') {
           onTimeVoteRef.current?.(msg.data);
+        } else if (msg.event === 'voice:signal') {
+          onVoiceSignalRef.current?.(msg.data);
+        } else if (msg.event === 'voice:peer') {
+          onVoicePeerRef.current?.(msg.data);
         } else if (msg.event === 'session:kicked') {
           onSessionEndedRef.current?.('kicked', msg.data);
         } else if (msg.event === 'session:replaced') {
@@ -151,5 +163,13 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
     return true;
   }, []);
 
-  return { connected, sendInput, sendPosition, submitTimeVote, cancelTimeVote };
+  /** Voice chat: gửi offer/answer/candidate cho người kia qua server. */
+  const sendVoiceSignal = useCallback((kind: 'offer' | 'answer' | 'candidate', payload: object) => {
+    const socket = wsRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+    socket.send(JSON.stringify({ event: 'voice:signal', data: { kind, payload } }));
+    return true;
+  }, []);
+
+  return { connected, sendVoiceSignal, sendInput, sendPosition, submitTimeVote, cancelTimeVote };
 }

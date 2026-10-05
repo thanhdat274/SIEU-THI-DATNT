@@ -38,6 +38,8 @@ import { feedbackReasonLabel, levelUnlockToast } from '@game/core';
 import type { StoreLayoutAction } from '@game/core';
 import { money, PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
+import { useVoiceChat } from './hooks/useVoiceChat';
+import { VoicePanel } from './components/VoicePanel';
 
 import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal } from './lazy-modals';
 
@@ -413,6 +415,9 @@ export const App: React.FC = () => {
   }, [handleSaveGame, uploadIfLinked, uploadCloud, downloadCloud]);
 
   const onlineUidRef = useRef<string | null>(null);
+  const [onlineUid, setOnlineUid] = useState<string | null>(null);
+  // Cầu nối tới voice chat: useVoiceChat cần kết quả của useWorldSocket nên callback đi qua ref để tránh phụ thuộc vòng.
+  const voiceHandlersRef = useRef<{ onSignal: (data: unknown) => void; onPeer: (data: unknown) => void } | null>(null);
   const spawnPlacedForRef = useRef<string | null>(null);
   const commitsInFlightRef = useRef(0);
   const lastSentPositionRef = useRef<{ x: number; y: number; at: number } | null>(null);
@@ -433,6 +438,7 @@ export const App: React.FC = () => {
         const user = gameAuth().currentUser;
         if (user) {
           onlineUidRef.current = user.uid;
+          setOnlineUid(user.uid);
           user.getIdToken().then((token: string) => {
             setOnlineToken(token);
             touchWorldSession(token, onlineWorldDetail.world.id).catch(() => {});
@@ -800,6 +806,8 @@ export const App: React.FC = () => {
   const worldSocket = useWorldSocket({
     worldId: onlineWorld?.world.id ?? null,
     token: onlineToken,
+    onVoiceSignal: (data) => voiceHandlersRef.current?.onSignal(data),
+    onVoicePeer: (data) => voiceHandlersRef.current?.onPeer(data),
     onWorldUpdate: async (data) => {
       const curWorld = onlineWorldRef.current;
       if (!curWorld || !simulationRef.current) return;
@@ -904,6 +912,9 @@ export const App: React.FC = () => {
     }, 300);
     return () => clearInterval(timer);
   }, [gameStarted, onlineWorld?.world.id]);
+
+  const voice = useVoiceChat({ selfId: onlineUid, connected: worldSocket.connected, sendSignal: worldSocket.sendVoiceSignal });
+  voiceHandlersRef.current = { onSignal: voice.onSignal, onPeer: voice.onPeer };
 
   useEffect(() => {
     if (!gameStarted || !onlineWorld || !worldSocket.connected) return;
@@ -1684,6 +1695,15 @@ export const App: React.FC = () => {
 
   return <div className="game-shell">
     <CoopSleepNotification />
+    {gameStarted && onlineWorld && worldSocket.connected && (
+      <VoicePanel
+        status={voice.status} partnerPresent={voice.partnerPresent} micOn={voice.micOn} micError={voice.micError}
+        remoteMuted={voice.remoteMuted} localSpeaking={voice.localSpeaking} remoteSpeaking={voice.remoteSpeaking}
+        needsPlayGesture={voice.needsPlayGesture}
+        onToggleMic={() => { void voice.toggleMic(); }} onToggleRemoteMute={voice.toggleRemoteMute}
+        onRetry={voice.retry} onResumePlayback={voice.resumePlayback}
+      />
+    )}
     <div style={{display:'contents'}} inert={hasModal}>
       {!isLoading && (
         <AccountBar
