@@ -3680,6 +3680,7 @@ export class GameSimulation {
       };
     }
     if (Object.keys(players).length === 0) return null;
+    this.coopRoutine.afkHomeGraceSeconds = this.coopLocalPlayerId ? Number.POSITIVE_INFINITY : 30; // chỉ server (không có người chơi cục bộ) tự đưa người AFK về ngủ
     this.coopRoutine.setWorld({
       tileMap: this.tileMap,
       collision: this.collisionSystem,

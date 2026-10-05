@@ -49,6 +49,21 @@ const CHAIN_UNLOCK_LEVEL = Math.min(...STORE_TYPES.map(type => type.unlockLevel)
 const NO_CUSTOMERS: CustomerState[] = [];
 
 /**
+ * Danh sách trạng thái ngủ cho dòng "chờ người kia": lấy hiện diện và trạng thái ngủ của người khác từ server (máy này không tự mô phỏng được họ),
+ * bỏ người đã out khỏi cuộc chờ. Chưa có dữ liệu server thì giữ nguyên bản mô phỏng cục bộ.
+ */
+function withServerPresence<T extends { playerId: string; isOnline: boolean; isSleeping: boolean }>(states: T[], server: Array<{ accountId: string; online: boolean; sleeping: boolean }> | null, selfId: string | null): T[] {
+  if (!server) return states;
+  return states
+    .map((state) => {
+      const remote = server.find((p) => p.accountId === state.playerId);
+      if (!remote || state.playerId === selfId) return state;
+      return { ...state, isOnline: remote.online, isSleeping: remote.sleeping };
+    })
+    .filter((state) => state.isOnline || state.playerId === selfId);
+}
+
+/**
  * Hợp danh sách avatar: mỗi người lấy bản MỚI HƠN (updatedAt). Snapshot đầy đủ đến chậm hơn kênh vị trí riêng,
  * nên không được để nó kéo bạn cùng hẻm giật lùi; avatar đã biết của thành viên còn trong hẻm không bị rơi mất.
  */
@@ -233,6 +248,7 @@ export const App: React.FC = () => {
    */
   // Thao tác của người chơi (offline) lưu vào máy sau 1 giây yên lặng, để F5 không làm mất tiến trình; autosave 30 giây vẫn chạy song song.
   const persistSoonRef = useRef<() => void>(() => {});
+  const serverCoopRef = useRef<NonNullable<GameSnapshot['coop']>['players'] | null>(null);
   const syncFromSimulation = useCallback((sim: GameSimulation, heavy = true, persist = true) => {
     if (persist) persistSoonRef.current();
     const time = sim.getTime();
@@ -249,7 +265,7 @@ export const App: React.FC = () => {
       nearbyFixture: sim.getActiveFixture(),
       routineState: sim.getDailyRoutineState(),
       ...(heavy ? { dailyRecords: sim.getDailyRecords(), ledger: sim.getLedger() } : {}),
-      ...(sim.isCoopMode() ? { coopRoutineStates: sim.getCoopRoutineStates() } : {}),
+      ...(sim.isCoopMode() ? { coopRoutineStates: withServerPresence(sim.getCoopRoutineStates(), serverCoopRef.current, onlineUidRef.current) } : {}),
     });
     // Giữ tham chiếu cũ khi nội dung không đổi để không kích hoạt render thừa.
     const orders = sim.getPendingOrders();
@@ -860,11 +876,20 @@ export const App: React.FC = () => {
       }
       const sim = simulationRef.current;
       const save = snapshot.businesses[0]?.save;
+      serverCoopRef.current = snapshot.coop?.players ?? null;
+      const dayBefore = sim?.getTime().day ?? 0;
       // Tốc độ do server quyết định (bỏ phiếu chung): cập nhật nút ×1/×2/×4 theo snapshot, không chỉ theo lần bấm cục bộ.
       if (save?.worldTime?.timeScale && !stale) setGameSpeed(Math.max(1, Math.round(save.worldTime.timeScale / 90)));
       // Đang chờ server xác nhận một lệnh của mình thì bỏ qua snapshot này (kết quả lệnh sẽ được nhận ngay sau đó) để không chớp hình.
       if (sim && save && !stale && commitsInFlightRef.current === 0) {
         importOnlineSave(sim, save, true);
+        // Máy khách không tự chốt ngày nên `onDayChanged` không chạy: ngày mới đến từ snapshot thì mở bảng tổng kết ngày vừa qua tại đây.
+        const dayAfter = sim.getTime().day;
+        if (dayBefore > 0 && dayAfter > dayBefore) {
+          const completed = sim.getDailyRecords()[dayAfter - 1];
+          addToast(`Bình minh Ngày ${dayAfter}! Chúc tiệm một ngày buôn bán đắt hàng! `, 'success');
+          if (completed) setDaySummaryRecord({ ...completed });
+        }
         if (snapshot.world.revision > revisionRef.current) {
           revisionRef.current = snapshot.world.revision;
           setCurrentRevision(snapshot.world.revision);
@@ -875,7 +900,8 @@ export const App: React.FC = () => {
       if (sim?.isCoopMode()) {
         for (const avatar of avatars) {
           sim.setCoopPlayerPosition(avatar.accountId, avatar.position);
-          sim.setCoopPlayerOnline(avatar.accountId, true);
+          // Hiện diện thật do server báo; bản server cũ không gửi thì coi như online như trước.
+          sim.setCoopPlayerOnline(avatar.accountId, snapshot.coop?.players.find((p) => p.accountId === avatar.accountId)?.online ?? true);
         }
       }
     },
