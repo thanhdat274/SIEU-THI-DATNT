@@ -89,6 +89,53 @@ export function runCoopDayTests(): void {
     assert.equal(snapshot.world.worldTime.day, startDay + 1, 'snapshot: giờ thế giới là giờ sống');
   }
 
+  // Người kia đã out (không có phiên): server tự cho họ về nhà ngủ, người còn lại về nhà là sang ngày ngay như chơi đơn.
+  {
+    const seeded = createInitialOnlineWorld({ id: 'o1', displayName: 'O', photoUrl: null }, 'offline-partner-world');
+    seeded.world.memberships.push({ accountId: 'm2', role: 'member', joinedAt: new Date().toISOString(), lastSeenRevision: 0 });
+    seeded.world.avatars.push({ accountId: 'm2', position: { x: 400, y: 400 }, direction: 'down', updatedAt: new Date().toISOString() });
+    const runtime = new WorldRuntime(seeded.world, seeded.business, { checkpointIntervalSeconds: 30 });
+    let now = Date.now();
+    runtime.registerSession('o1', now); // m2 không đăng ký phiên = đã out
+    const sim = runtime.getSimulation();
+    sim.getClock().setTime({ ...sim.getClock().getTime(), hour: 23, minute: 29, isStoreOpen: false });
+    const startDay = sim.getClock().getTime().day;
+    for (let i = 0; i < 40 && sim.getClock().getTime().day === startDay; i++) {
+      now += 250;
+      runtime.reportPosition('o1', { ...homeCenter }, 'down', now);
+      runtime.tick(0.25, now);
+    }
+    assert.equal(sim.getClock().getTime().day, startDay + 1, 'người kia out: ngày vẫn sang khi mình về nhà');
+  }
+
+  // Người kia online nhưng AFK ở xa nhà: sau ~30 s thực server tự cho họ ngủ, ngày vẫn sang; snapshot báo đúng hiện diện.
+  {
+    const seeded = createInitialOnlineWorld({ id: 'o1', displayName: 'O', photoUrl: null }, 'afk-partner-world');
+    seeded.world.memberships.push({ accountId: 'm2', role: 'member', joinedAt: new Date().toISOString(), lastSeenRevision: 0 });
+    seeded.world.avatars.push({ accountId: 'm2', position: { x: 400, y: 400 }, direction: 'down', updatedAt: new Date().toISOString() });
+    const runtime = new WorldRuntime(seeded.world, seeded.business, { checkpointIntervalSeconds: 30, heartbeatTimeoutMs: 10 * 60 * 1000 });
+    let now = Date.now();
+    runtime.registerSession('o1', now);
+    runtime.registerSession('m2', now);
+    const sim = runtime.getSimulation();
+    sim.getClock().setTime({ ...sim.getClock().getTime(), hour: 23, minute: 29, isStoreOpen: false });
+    const startDay = sim.getClock().getTime().day;
+    let dayAtHalf = startDay;
+    for (let i = 0; i < 400 && sim.getClock().getTime().day === startDay; i++) {
+      now += 250;
+      runtime.heartbeat('o1', now);
+      runtime.heartbeat('m2', now);
+      runtime.reportPosition('o1', { ...homeCenter }, 'down', now); // m2 đứng yên ở (400,400)
+      runtime.tick(0.25, now);
+      if (i === 80) dayAtHalf = sim.getClock().getTime().day;
+    }
+    assert.equal(dayAtHalf, startDay, 'AFK: chưa tới 30 s thì vẫn chờ');
+    assert.equal(sim.getClock().getTime().day, startDay + 1, 'AFK: quá 30 s thì ngày vẫn sang');
+    const presence = runtime.getSnapshot().coop?.players ?? [];
+    assert.equal(presence.length, 2, 'snapshot có hiện diện hai người');
+    assert.ok(presence.every((p) => p.online), 'cả hai đều còn phiên');
+  }
+
   // Bỏ phiếu đổi tốc độ: người kia rời thì phiếu đang chờ tự thực hiện ngay; đã vắng sẵn thì đổi luôn không cần phiếu.
   {
     const seeded = createInitialOnlineWorld({ id: 'o1', displayName: 'O', photoUrl: null }, 'vote-world');

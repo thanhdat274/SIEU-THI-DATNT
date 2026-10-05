@@ -1241,6 +1241,8 @@ export interface GameSnapshot {
   world: GameWorld;
   businesses: BusinessState[];
   serverTime: string;
+  /** Hiện diện thật của từng người trong lịch ngày chung (server tính); hẻm cũ/bản cũ có thể thiếu. */
+  coop?: { players: Array<{ accountId: string; online: boolean; sleeping: boolean }> };
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

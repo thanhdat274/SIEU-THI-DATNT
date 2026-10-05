@@ -38,6 +38,8 @@ import { feedbackReasonLabel, levelUnlockToast } from '@game/core';
 import type { StoreLayoutAction } from '@game/core';
 import { money, PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
+import { useVoiceChat } from './hooks/useVoiceChat';
+import { VoicePanel } from './components/VoicePanel';
 
 import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal } from './lazy-modals';
 
@@ -45,6 +47,21 @@ import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, Save
 const CHAIN_UNLOCK_LEVEL = Math.min(...STORE_TYPES.map(type => type.unlockLevel));
 
 const NO_CUSTOMERS: CustomerState[] = [];
+
+/**
+ * Danh sách trạng thái ngủ cho dòng "chờ người kia": lấy hiện diện và trạng thái ngủ của người khác từ server (máy này không tự mô phỏng được họ),
+ * bỏ người đã out khỏi cuộc chờ. Chưa có dữ liệu server thì giữ nguyên bản mô phỏng cục bộ.
+ */
+function withServerPresence<T extends { playerId: string; isOnline: boolean; isSleeping: boolean }>(states: T[], server: Array<{ accountId: string; online: boolean; sleeping: boolean }> | null, selfId: string | null): T[] {
+  if (!server) return states;
+  return states
+    .map((state) => {
+      const remote = server.find((p) => p.accountId === state.playerId);
+      if (!remote || state.playerId === selfId) return state;
+      return { ...state, isOnline: remote.online, isSleeping: remote.sleeping };
+    })
+    .filter((state) => state.isOnline || state.playerId === selfId);
+}
 
 /**
  * Hợp danh sách avatar: mỗi người lấy bản MỚI HƠN (updatedAt). Snapshot đầy đủ đến chậm hơn kênh vị trí riêng,
@@ -231,6 +248,7 @@ export const App: React.FC = () => {
    */
   // Thao tác của người chơi (offline) lưu vào máy sau 1 giây yên lặng, để F5 không làm mất tiến trình; autosave 30 giây vẫn chạy song song.
   const persistSoonRef = useRef<() => void>(() => {});
+  const serverCoopRef = useRef<NonNullable<GameSnapshot['coop']>['players'] | null>(null);
   const syncFromSimulation = useCallback((sim: GameSimulation, heavy = true, persist = true) => {
     if (persist) persistSoonRef.current();
     const time = sim.getTime();
@@ -247,7 +265,7 @@ export const App: React.FC = () => {
       nearbyFixture: sim.getActiveFixture(),
       routineState: sim.getDailyRoutineState(),
       ...(heavy ? { dailyRecords: sim.getDailyRecords(), ledger: sim.getLedger() } : {}),
-      ...(sim.isCoopMode() ? { coopRoutineStates: sim.getCoopRoutineStates() } : {}),
+      ...(sim.isCoopMode() ? { coopRoutineStates: withServerPresence(sim.getCoopRoutineStates(), serverCoopRef.current, onlineUidRef.current) } : {}),
     });
     // Giữ tham chiếu cũ khi nội dung không đổi để không kích hoạt render thừa.
     const orders = sim.getPendingOrders();
@@ -413,6 +431,9 @@ export const App: React.FC = () => {
   }, [handleSaveGame, uploadIfLinked, uploadCloud, downloadCloud]);
 
   const onlineUidRef = useRef<string | null>(null);
+  const [onlineUid, setOnlineUid] = useState<string | null>(null);
+  // Cầu nối tới voice chat: useVoiceChat cần kết quả của useWorldSocket nên callback đi qua ref để tránh phụ thuộc vòng.
+  const voiceHandlersRef = useRef<{ onSignal: (data: unknown) => void; onPeer: (data: unknown) => void } | null>(null);
   const spawnPlacedForRef = useRef<string | null>(null);
   const commitsInFlightRef = useRef(0);
   const lastSentPositionRef = useRef<{ x: number; y: number; at: number } | null>(null);
@@ -433,6 +454,7 @@ export const App: React.FC = () => {
         const user = gameAuth().currentUser;
         if (user) {
           onlineUidRef.current = user.uid;
+          setOnlineUid(user.uid);
           user.getIdToken().then((token: string) => {
             setOnlineToken(token);
             touchWorldSession(token, onlineWorldDetail.world.id).catch(() => {});
@@ -800,6 +822,8 @@ export const App: React.FC = () => {
   const worldSocket = useWorldSocket({
     worldId: onlineWorld?.world.id ?? null,
     token: onlineToken,
+    onVoiceSignal: (data) => voiceHandlersRef.current?.onSignal(data),
+    onVoicePeer: (data) => voiceHandlersRef.current?.onPeer(data),
     onWorldUpdate: async (data) => {
       const curWorld = onlineWorldRef.current;
       if (!curWorld || !simulationRef.current) return;
@@ -852,11 +876,20 @@ export const App: React.FC = () => {
       }
       const sim = simulationRef.current;
       const save = snapshot.businesses[0]?.save;
+      serverCoopRef.current = snapshot.coop?.players ?? null;
+      const dayBefore = sim?.getTime().day ?? 0;
       // Tốc độ do server quyết định (bỏ phiếu chung): cập nhật nút ×1/×2/×4 theo snapshot, không chỉ theo lần bấm cục bộ.
       if (save?.worldTime?.timeScale && !stale) setGameSpeed(Math.max(1, Math.round(save.worldTime.timeScale / 90)));
       // Đang chờ server xác nhận một lệnh của mình thì bỏ qua snapshot này (kết quả lệnh sẽ được nhận ngay sau đó) để không chớp hình.
       if (sim && save && !stale && commitsInFlightRef.current === 0) {
         importOnlineSave(sim, save, true);
+        // Máy khách không tự chốt ngày nên `onDayChanged` không chạy: ngày mới đến từ snapshot thì mở bảng tổng kết ngày vừa qua tại đây.
+        const dayAfter = sim.getTime().day;
+        if (dayBefore > 0 && dayAfter > dayBefore) {
+          const completed = sim.getDailyRecords()[dayAfter - 1];
+          addToast(`Bình minh Ngày ${dayAfter}! Chúc tiệm một ngày buôn bán đắt hàng! `, 'success');
+          if (completed) setDaySummaryRecord({ ...completed });
+        }
         if (snapshot.world.revision > revisionRef.current) {
           revisionRef.current = snapshot.world.revision;
           setCurrentRevision(snapshot.world.revision);
@@ -867,7 +900,8 @@ export const App: React.FC = () => {
       if (sim?.isCoopMode()) {
         for (const avatar of avatars) {
           sim.setCoopPlayerPosition(avatar.accountId, avatar.position);
-          sim.setCoopPlayerOnline(avatar.accountId, true);
+          // Hiện diện thật do server báo; bản server cũ không gửi thì coi như online như trước.
+          sim.setCoopPlayerOnline(avatar.accountId, snapshot.coop?.players.find((p) => p.accountId === avatar.accountId)?.online ?? true);
         }
       }
     },
@@ -904,6 +938,9 @@ export const App: React.FC = () => {
     }, 300);
     return () => clearInterval(timer);
   }, [gameStarted, onlineWorld?.world.id]);
+
+  const voice = useVoiceChat({ selfId: onlineUid, connected: worldSocket.connected, sendSignal: worldSocket.sendVoiceSignal });
+  voiceHandlersRef.current = { onSignal: voice.onSignal, onPeer: voice.onPeer };
 
   useEffect(() => {
     if (!gameStarted || !onlineWorld || !worldSocket.connected) return;
@@ -1684,6 +1721,15 @@ export const App: React.FC = () => {
 
   return <div className="game-shell">
     <CoopSleepNotification />
+    {gameStarted && onlineWorld && worldSocket.connected && (
+      <VoicePanel
+        status={voice.status} partnerPresent={voice.partnerPresent} micOn={voice.micOn} micError={voice.micError}
+        remoteMuted={voice.remoteMuted} localSpeaking={voice.localSpeaking} remoteSpeaking={voice.remoteSpeaking}
+        needsPlayGesture={voice.needsPlayGesture}
+        onToggleMic={() => { void voice.toggleMic(); }} onToggleRemoteMute={voice.toggleRemoteMute}
+        onRetry={voice.retry} onResumePlayback={voice.resumePlayback}
+      />
+    )}
     <div style={{display:'contents'}} inert={hasModal}>
       {!isLoading && (
         <AccountBar

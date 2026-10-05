@@ -45,6 +45,8 @@ export interface CoopPlayerState {
   stuckSeconds: number;
   sleepReady: boolean;
   sleeping: boolean;
+  /** Số giây thực người chơi online đã ở trạng thái RETURNING_HOME mà chưa tới nhà (đứng AFK, tab treo). */
+  returningSeconds: number;
 }
 
 export interface CoopRoutineCallbacks extends DailyRoutineCallbacks {
@@ -121,6 +123,11 @@ export class CoopRoutineSystem {
   private routineMode = false;
   private dayAdvanceTriggered = -1;
   private offlinePlayers = new Set<CoopPlayerId>();
+  /**
+   * Người online mà sau chừng này giây thực kể từ 23:30 vẫn chưa về tới nhà (AFK, tab treo) thì coi như đã về ngủ để không giữ cả hẻm.
+   * Chỉ server bật (Infinity = tắt): máy khách tự đi bộ về nên không được kết luận thay.
+   */
+  public afkHomeGraceSeconds = Number.POSITIVE_INFINITY;
 
   constructor(private readonly callbacks: CoopRoutineCallbacks) {
     this.playerStates = new Map();
@@ -155,6 +162,7 @@ export class CoopRoutineSystem {
       stuckSeconds: 0,
       sleepReady: false,
       sleeping: false,
+      returningSeconds: 0,
     });
   }
 
@@ -205,6 +213,7 @@ export class CoopRoutineSystem {
         s.state = 'AT_HOME';
         s.sleepReady = false;
         s.sleeping = false;
+        s.returningSeconds = 0;
         s.openedDay = -1;
         s.closedDay = -1;
         s.inventoryDay = -1;
@@ -276,7 +285,8 @@ export class CoopRoutineSystem {
           move = this.followPlayer(playerId, playerState, 'store', playerInput.position, dt);
         } else if (playerState.state === 'RETURNING_HOME') {
           move = this.followPlayer(playerId, playerState, 'home', playerInput.position, dt);
-          if (this.reachedPlayer(playerId, playerState, 'home', playerInput.position)) {
+          playerState.returningSeconds += dt;
+          if (this.reachedPlayer(playerId, playerState, 'home', playerInput.position) || playerState.returningSeconds >= this.afkHomeGraceSeconds) {
             playerState.state = 'GOING_TO_SLEEP';
             playerState.sleepReady = true;
             this.callbacks.setPlayerSleeping(playerId, true);

@@ -470,6 +470,7 @@ export class WorldRuntime {
       world: structuredClone(this.currentWorld),
       businesses: [structuredClone(this.currentBusiness)],
       serverTime,
+      coop: { players: this.simulation.getCoopRoutineStates().map((state) => ({ accountId: state.playerId, online: state.isOnline, sleeping: state.isSleeping })) },
     };
   }
 

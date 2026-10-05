@@ -7,6 +7,7 @@ import type { BusinessState } from '@game/shared';
 import { consumeWebSocketTicket } from './firebase-admin.js';
 import { readRuntimeConfig } from './runtime-config.js';
 import { MAX_WS_PAYLOAD_BYTES, RATE_LIMITS, RateLimiter } from './rate-limit.js';
+import { buildVoicePeerMessage, buildVoiceSignalMessage, parseVoiceSignal } from './voice-signal.js';
 
 /**
  * WS gateway for real-time world sessions.
@@ -113,6 +114,13 @@ function broadcastVoteChange(entry: { runtime: WorldRuntime; sockets: Set<Authen
   }
 }
 
+/** Gửi một thông điệp đã dựng sẵn cho mọi socket của hẻm trừ tài khoản `exceptAccountId`. */
+function sendToOthers(entry: { sockets: Set<AuthenticatedSocket> }, exceptAccountId: string, payload: string) {
+  for (const sock of entry.sockets) {
+    if (sock._accountId !== exceptAccountId && sock.readyState === 1 /* OPEN */) sock.send(payload);
+  }
+}
+
 function broadcastToWorld(worldId: string, event: string, data: unknown) {
   const entry = worldRuntimes.get(worldId);
   if (!entry) return;
@@ -199,6 +207,12 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
       const snapshot = entry.runtime.getSnapshot();
       socket.send(JSON.stringify({ event: 'session:joined', data: snapshot }));
 
+      // Voice: báo cho người mới ai đang có mặt và báo cho người kia (gửi lại present=true khi cùng tài khoản đổi phiên để dựng lại kết nối).
+      for (const other of entry.sockets) {
+        if (other._accountId && other._accountId !== account.uid) socket.send(buildVoicePeerMessage(other._accountId, true));
+      }
+      sendToOthers(entry, account.uid, buildVoicePeerMessage(account.uid, true));
+
       console.log(`[WS] ${account.uid} joined world ${worldId} (${entry.sockets.size} active)`);
     } catch (err) {
       console.warn('[WS] Auth failed:', err instanceof Error ? err.message : err);
@@ -223,6 +237,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
     if (removed && ![...entry.sockets].some(active => active._accountId === accountId)) {
       entry.runtime.unregisterSession(accountId);
       broadcastVoteChange(entry);
+      sendToOthers(entry, accountId, buildVoicePeerMessage(accountId, false));
     }
 
     // Evict only after the last paused checkpoint succeeds. If a new session joins
@@ -262,6 +277,18 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
     if (!position || typeof position.x !== 'number' || typeof position.y !== 'number') return;
     if (!entry.runtime.reportPosition(socket._accountId, { x: position.x, y: position.y }, report.direction)) return;
     broadcastToWorld(socket._worldId, 'avatars:update', { avatars: entry.runtime.getAvatars() });
+  }
+
+  /** Voice chat: chuyển offer/answer/candidate tới người kia cùng hẻm. Server không đọc nội dung, chỉ kiểm hình dạng và gán `from`. */
+  @SubscribeMessage('voice:signal')
+  handleVoiceSignal(@ConnectedSocket() socket: AuthenticatedSocket, @MessageBody() body: unknown) {
+    if (!allowSocketMessage(socket)) return;
+    if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
+    const entry = worldRuntimes.get(socket._worldId);
+    if (!entry || !entry.sockets.has(socket)) return;
+    const signal = parseVoiceSignal(body);
+    if (!signal) return;
+    sendToOthers(entry, socket._accountId, buildVoiceSignalMessage(socket._accountId, signal));
   }
 
   @SubscribeMessage('time-vote')
