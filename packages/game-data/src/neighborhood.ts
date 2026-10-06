@@ -3,7 +3,8 @@
  * Mọi tọa độ `*Tile*`/`x0..y1` ở đây tính theo ô 32 px trong HỆ TỌA ĐỘ THẾ GIỚI sẵn có (ô (0,-6) là góc trên-trái bản đồ chơi,
  * đường chính nằm ở hàng 13..15). Dữ liệu thuần: renderer và game-core cùng đọc, không import Pixi.
  */
-import { AWNING_SPANS, MAIN_STORE_BOUNDS } from './buildings';
+import { AWNING_SPANS, MAIN_STORE_BOUNDS, awningShelterBand } from './buildings';
+import { PLAY_REGION } from './world/world-grid';
 import { MAP_HEIGHT, MAP_ORIGIN_Y, MAP_WIDTH } from './map';
 
 const T = 32;
@@ -56,7 +57,7 @@ export const NEIGHBORHOOD_PX = {
   x0: NEIGHBORHOOD_TILES.x0 * T, x1: NEIGHBORHOOD_TILES.x1 * T, y0: NEIGHBORHOOD_TILES.y0 * T, y1: NEIGHBORHOOD_TILES.y1 * T,
 } as const;
 /** Bản đồ chơi (px) để nơi khác loại trừ. */
-export const PLAY_MAP_PX = { x0: 0, y0: MAP_ORIGIN_Y * T, x1: MAP_WIDTH * T, y1: (MAP_ORIGIN_Y + MAP_HEIGHT) * T } as const;
+export const PLAY_MAP_PX = { x0: PLAY_REGION.x0 * T, y0: MAP_ORIGIN_Y * T, x1: (PLAY_REGION.x0 + MAP_WIDTH) * T, y1: (MAP_ORIGIN_Y + MAP_HEIGHT) * T } as const;
 
 export type NeighborhoodQuality = 'low' | 'medium' | 'high';
 
@@ -406,7 +407,7 @@ export const AVENUE_WALK_X = { west: -7.5 * T, westInner: -3.5 * T, east: 37.5 *
 export const WORK_PORTALS = { west: NEIGHBORHOOD_PX.x0 + 40, east: NEIGHBORHOOD_PX.x1 - 40 } as const;
 
 /** Mái hiên cửa tiệm chính (px): dùng chung với hệ trú mưa sẵn có, NPC nền có thể trú dưới đây. */
-export const SHOP_AWNING_PX = { x0: AWNING_SPANS.main.x0, x1: AWNING_SPANS.main.x1, y0: 352, y1: 396 } as const;
+export const SHOP_AWNING_PX = { x0: AWNING_SPANS.main.x0, x1: AWNING_SPANS.main.x1, ...awningShelterBand('main') } as const;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Loại NPC và lịch sinh hoạt (hàm theo giờ game hiện có)

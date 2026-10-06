@@ -365,7 +365,7 @@ export interface CustomerState {
   diningTimeLeft?: number;
   /** Món đã mua ngay trước khi ngồi bàn; dùng để quyết định gọi thêm đồ uống kèm (giỏ hàng đã được xóa sau thanh toán). */
   diningProductIds?: string[];
-  /** Tòa nhà khách đang mua sắm ('main' | 'xoi'); thiếu = tiệm chính (save cũ). */
+  /** Tòa nhà khách đang mua sắm ('main' | 'xoi' | 'drink' | 'snack'); thiếu = tiệm chính (save cũ). */
   buildingId?: string;
 }
 
@@ -642,6 +642,8 @@ export interface DailyRecord {
   spoilageCount: number; // Total units spoiled
   productSales?: Record<string, number>; // Units sold per productId on this day
   stallServings?: Record<string, number>; // Suất bán ra theo id quầy ăn uống trong ngày (tính vào mục tiêu ngày hội)
+  stallRevenue?: Record<string, number>; // Doanh thu theo id quầy trong ngày (đã nằm trong `revenue`; thiếu ở ngày cũ)
+  stallCogs?: Record<string, number>; // Giá vốn theo id quầy trong ngày (đã nằm trong `cogs`; thiếu ở ngày cũ)
   outOfStockWalkouts?: number; // Khách bỏ về vì kệ món đã chọn hết hàng
   priceWalkouts?: number; // Khách bỏ hàng vì giá cao hơn giá thị trường
   averageStars?: number;
@@ -803,7 +805,7 @@ export interface WorldTime {
 export type StaffRole = 'cashier' | 'refill' | 'security' | 'drink_staff' | 'drink_security';
 
 /** Tòa nhà mà nhân viên phụ trách (undefined = tất cả tòa). */
-export type StaffBuilding = 'main' | 'xoi' | 'drink' | undefined;
+export type StaffBuilding = 'main' | 'xoi' | 'drink' | 'snack' | undefined;
 
 export type StaffShift = 'morning' | 'afternoon' | 'full_day';
 
@@ -905,6 +907,46 @@ export interface StoreLayout {
   unlockedPlotIds: string[];
   /** Đồ trang trí tường/biển/quầy đã mua (đồ sàn là fixture type 'decor'). */
   decorOwned?: string[];
+  /**
+   * Vị trí đặt các tòa (OpenSpec `open-world-land-grid`). Thiếu = vị trí đặt mặc định (save cũ). Ý nghĩa (tòa trùng, lô sai,
+   * ô sàn mở rộng hợp lệ) do `validatePlacements`/`validateFootprint` của game-data kiểm.
+   */
+  buildingPlacements?: BuildingPlacementRecord[];
+}
+
+export interface BuildingPlacementRecord {
+  buildingId: string;
+  parcelId: string;
+  originX: number;
+  originY: number;
+  /** Lô đã sở hữu (ban đầu = 1 lô; D7b mở rộng sang lô kề thì thêm vào danh sách). */
+  parcelIds?: string[];
+  /**
+   * Ô sàn đã xây thêm ngoài sàn gốc của mẫu tòa (tọa độ thế giới; OpenSpec `open-world-main-expansion`, schema 5).
+   * Thiếu = chưa mở rộng. Chỉ tiệm chính dùng ở Bước 2.
+   */
+  floorTiles?: Array<{ x: number; y: number }>;
+  /** Tòa đang thi công sau khi dời (OpenSpec `open-world-building-relocation`): cửa bị chặn, không sinh khách; mở lại khi ngày ≥ giá trị này. */
+  constructionUntilDay?: number;
+}
+
+/** Vị trí chọn khi mua tòa (lô + gốc x), tùy chọn. */
+export const isPlotPlacement = (value: unknown): boolean =>
+  value === undefined || (isRecord(value) && nonEmptyString(value.parcelId) && Number.isSafeInteger(value.originX));
+
+/** Số ô sàn mở rộng tối đa chấp nhận trong một save (chặn save sửa tay phình to; ngân sách thật nhỏ hơn nhiều). */
+export const MAX_FOOTPRINT_TILES = 400;
+
+/** Vị trí đặt tòa đúng hình dạng (chuỗi id không rỗng, gốc là số nguyên, ô sàn mở rộng là cặp số nguyên). */
+export function isBuildingPlacementRecord(value: unknown): value is BuildingPlacementRecord {
+  if (!isRecord(value) || !nonEmptyString(value.buildingId) || !nonEmptyString(value.parcelId)
+    || !Number.isSafeInteger(value.originX) || !Number.isSafeInteger(value.originY)) return false;
+  if (value.constructionUntilDay !== undefined && !(Number.isSafeInteger(value.constructionUntilDay) && Number(value.constructionUntilDay) >= 1)) return false;
+  // parcelIds là danh sách id lô (tùy chọn)
+  if (value.parcelIds !== undefined && (!Array.isArray(value.parcelIds) || value.parcelIds.some(id => !nonEmptyString(id)))) return false;
+  const tiles = value.floorTiles;
+  return tiles === undefined || (Array.isArray(tiles) && tiles.length <= MAX_FOOTPRINT_TILES
+    && tiles.every(tile => isRecord(tile) && Number.isSafeInteger(tile.x) && Number.isSafeInteger(tile.y)));
 }
 
 /** Một lần cơ quan thuế kiểm tra bất ngờ. */
@@ -1092,6 +1134,8 @@ export interface TileMapLayer {
 }
 
 export interface GameTileMap {
+  /** World tile column represented by local array column 0; omitted means 0 (thế giới mở: vùng chơi có thể bắt đầu ở cột âm). */
+  originTileX?: number;
   /** World tile row represented by local array row 0; omitted means 0. */
   originTileY?: number;
   width: number;
@@ -1103,9 +1147,40 @@ export interface GameTileMap {
   storeBounds?: { left: number; right: number; top: number; bottom: number };
   /** Các tòa nhà trên bản đồ và trạng thái mở (hình học nằm ở BUILDINGS của game-data). */
   /** `top` = hàng tường sau hiện tại của tòa (đã tính mảnh mở rộng phía bắc); thiếu = biên gốc. */
-  buildings?: Array<{ id: string; open: boolean; top?: number }>;
+  buildings?: MapBuilding[];
   /** Quầy ăn uống đã mở, để renderer vẽ; va chạm đã nằm sẵn trong collisionLayer. */
   stalls?: Array<{ id: string; tileX: number; tileY: number; widthTiles: number }>;
+}
+
+/** Một tòa đã đặt trên bản đồ (OpenSpec `open-world-building-relocation`): hình học suy từ vị trí đặt; tòa chưa mua không có mục. */
+export interface MapBuilding {
+  id: string;
+  open: boolean;
+  top?: number;
+  /** Biên gốc, biên tối đa (gồm mở rộng bắc), ô cửa, ô vỉa hè trước cửa. */
+  bounds?: { left: number; right: number; top: number; bottom: number };
+  maxBounds?: { left: number; right: number; top: number; bottom: number };
+  doorTiles?: Array<{ x: number; y: number }>;
+  entranceTile?: { x: number; y: number };
+  /** Mái hiên mặt tiền (px) và mép dưới mái nơi nước mưa chảy (px). */
+  awning?: { x0: number; x1: number };
+  eaveY?: number;
+  /** Tòa phụ có sàn mở rộng: ô sàn thêm (kể cả ngoài `maxBounds`), để tra tòa theo ô. */
+  floorTiles?: Array<{ x: number; y: number }>;
+}
+
+type TileMapFrame = Pick<GameTileMap, 'width' | 'height' | 'originTileX' | 'originTileY'>;
+
+/** Ô thế giới (x, y) nằm trong mảng ô của bản đồ. */
+export function tileInMap(map: TileMapFrame, x: number, y: number): boolean {
+  const lx = x - (map.originTileX ?? 0);
+  const ly = y - (map.originTileY ?? 0);
+  return lx >= 0 && lx < map.width && ly >= 0 && ly < map.height;
+}
+
+/** Chỉ số mảng của ô thế giới (x, y); không kiểm biên (gọi `tileInMap` trước nếu ô có thể nằm ngoài). */
+export function tileIndex(map: TileMapFrame, x: number, y: number): number {
+  return (y - (map.originTileY ?? 0)) * map.width + (x - (map.originTileX ?? 0));
 }
 
 // Online domain records are intentionally versioned separately from the legacy local save.
@@ -1173,16 +1248,19 @@ export type GameCommandPayload =
       | { type: 'move'; fixtureId: string; tileX: number; tileY: number; rotation: 0 | 90 | 180 | 270 }
       | { type: 'store'; fixtureId: string }
       | { type: 'retrieve'; fixtureId: string; tileX: number; tileY: number }
-      | { type: 'buy_plot'; plotId: string }
+      | { type: 'buy_plot'; plotId: string; placement?: { parcelId: string; originX: number } }
+      | { type: 'expand_footprint'; buildingId: string; tiles: Array<{ x: number; y: number }> }
+      | { type: 'relocate_building'; buildingId: string; placement: { parcelId: string; originX: number } }
       | { type: 'buy_decor'; decorId: string }
       | { type: 'buy_fixture'; shopId: string; tileX: number; tileY: number; rotation: 0 | 90 | 180 | 270 }
       | { type: 'buy_warehouse_tier'; tier: number }
       | { type: 'buy_storage_rack' }
     > }
-  | { type: 'buy_plot'; plotId: string }
+  | { type: 'buy_plot'; plotId: string; placement?: { parcelId: string; originX: number } }
   | { type: 'claim_quest'; questId: string }
   | { type: 'buy_stall'; stallId: string }
   | { type: 'hire_staff'; candidateId: string }
+  | { type: 'pay_wage_debt' }
   | { type: 'set_staff_shift'; staffId: string; shift: StaffShift }
   | { type: 'assign_refill_job'; staffId: string; fixtureId: string }
   | { type: 'dispose_stock'; productId: string; quantity: number }
@@ -1205,6 +1283,7 @@ export type GameCommandPayload =
   | { type: 'order_supplier'; supplierId: string; items: Array<{ productId: string; quantity: number }> }
   | { type: 'set_restock_options'; options: RestockSuggestionOptions }
   | { type: 'set_auto_buy_stalls'; enabled: boolean }
+  | { type: 'set_auto_buy_config'; enabled: boolean; rules: AutoBuyRule[] }
   | { type: 'auto_buy_sync' }
   | { type: 'respond_party_order'; orderId: string; accept: boolean }
   | { type: 'fulfill_party_order'; orderId: string }
@@ -1270,7 +1349,7 @@ export function isGameAvatar(value: unknown): value is GameAvatar {
     (value.displayName === undefined || (typeof value.displayName === 'string' && value.displayName.length <= 64));
 }
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 4;
+export const CURRENT_SAVE_SCHEMA_VERSION = 6;
 
 export interface SaveValidationResult {
   valid: boolean;
@@ -1280,7 +1359,14 @@ export interface SaveValidationResult {
 }
 
 const OPTIONAL_SAVE_ARRAYS = ['staff', 'processedPayrollDayIds', 'pendingOrders', 'holdingArea', 'closedDayIds', 'completedCheckoutIds', 'processedAutoBuyDayIds', 'autoBuyRules', 'customerCredits', 'ledger'] as const;
-const OPTIONAL_LAYOUT_ARRAYS = ['storedFixtures', 'unlockedPlotIds', 'decorOwned'] as const;
+const OPTIONAL_LAYOUT_ARRAYS = ['storedFixtures', 'unlockedPlotIds', 'decorOwned', 'buildingPlacements'] as const;
+
+/** Quy tắc tự nhập đúng hình dạng; nội dung (sản phẩm, nhà cung cấp, giới hạn) do `setAutoBuyConfig` kiểm tiếp. */
+export function isAutoBuyRule(value: unknown): value is AutoBuyRule {
+  if (!isRecord(value)) return false;
+  return nonEmptyString(value.id) && nonEmptyString(value.productId) && nonEmptyString(value.supplierId)
+    && (['threshold', 'quantity', 'priority', 'maxBudget'] as const).every(key => typeof value[key] === 'number' && Number.isFinite(value[key]));
+}
 
 /** Cài đặt gợi ý nhập hàng hợp lệ: mọi trường tùy chọn, số hữu hạn / công tắc đúng kiểu (giá trị ngoài khoảng được kẹp khi áp dụng). */
 export function isRestockSuggestionOptions(value: unknown): value is RestockSuggestionOptions {
@@ -1299,7 +1385,7 @@ export function isChainState(value: unknown): value is ChainState {
 }
 
 export function isSaveGameData(value: unknown): value is SaveGameData {
-  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
     return false;
   }
@@ -1320,6 +1406,7 @@ export function isSaveGameData(value: unknown): value is SaveGameData {
   // Trường mảng tùy chọn: nếu có thì phải là mảng, để nạp save không sập ở `.map`/`for…of` (save hỏng hoặc sửa tay).
   for (const key of OPTIONAL_SAVE_ARRAYS) if (value[key] !== undefined && !Array.isArray(value[key])) return false;
   for (const key of OPTIONAL_LAYOUT_ARRAYS) if (sl[key] !== undefined && !Array.isArray(sl[key])) return false;
+  if (Array.isArray(sl.buildingPlacements) && !sl.buildingPlacements.every(isBuildingPlacementRecord)) return false;
   if (value.restockOptions !== undefined && !isRestockSuggestionOptions(value.restockOptions)) return false;
   if (value.chain !== undefined && !isChainState(value.chain)) return false;
   if (value.sellingPrices !== undefined && (!isRecord(value.sellingPrices) || !Object.values(value.sellingPrices).every(price => Number.isSafeInteger(price) && Number(price) > 0))) return false;
@@ -1344,8 +1431,9 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
       error: `Bản lưu thuộc phiên bản tương lai (${value.schemaVersion}) chưa được hỗ trợ`,
     };
   }
-  // v1/v2/v3 chỉ thiếu các trường tùy chọn; simulation tự chuẩn hóa khi nạp (lô hàng, kệ, kho...).
-  if ((value.schemaVersion === 1 || value.schemaVersion === 2 || value.schemaVersion === 3) && isSaveGameData(value)) {
+  // v1–v5 chỉ thiếu các trường tùy chọn (v6: vị trí đặt tòa phụ, tòa chưa mua không có vỏ nhà); simulation tự chuẩn hóa khi nạp (lô hàng, kệ, kho, ô sàn mở rộng...). Cánh đông `east-wing-a/b`
+  // của save cũ vẫn nằm trong `unlockedPlotIds` và được bản đồ đọc như ô sàn mở rộng đã dùng (xem `mainFloorTiles` ở game-data).
+  if ((value.schemaVersion === 1 || value.schemaVersion === 2 || value.schemaVersion === 3 || value.schemaVersion === 4 || value.schemaVersion === 5) && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrated.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
     migrated.storeLayout.storedFixtures = migrated.storeLayout.storedFixtures ?? [];
@@ -1386,7 +1474,9 @@ export interface TransferShelfResult {
   actualQuantity: number;
   reason?: 'fixture_not_found' | 'not_sales_fixture' | 'fixture_broken' | 'invalid_amount' | 'product_locked' | 'storage_mismatch' | 'no_inventory' | 'product_mismatch' | 'no_space' | 'success'
     /** Kho còn hàng nhưng toàn nguyên thùng: phải mở thùng trong kho rồi mới châm kệ được. */
-    | 'in_cases';
+    | 'in_cases'
+    /** Phần còn lại trong kho đã giữ cho nguyên liệu quầy ăn uống: bày tự động không lấy. */
+    | 'reserved_for_stall';
 }
 
 export interface UnstockShelfResult {
@@ -1439,6 +1529,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'assign_dining_cleanup': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
     case 'set_restock_options': return isRestockSuggestionOptions(p.options);
     case 'set_auto_buy_stalls': return typeof p.enabled === 'boolean';
+    case 'set_auto_buy_config': return typeof p.enabled === 'boolean' && Array.isArray(p.rules) && p.rules.length <= 100 && p.rules.every(isAutoBuyRule);
     case 'auto_buy_sync': return true;
     case 'reset_prices': return true;
     case 'set_price': return nonEmptyString(p.productId) && (p.price === null || (Number.isSafeInteger(p.price) && Number(p.price) > 0));
@@ -1450,15 +1541,19 @@ export function isGameCommand(value: unknown): value is GameCommand {
       if (action.type === 'move') return nonEmptyString(action.fixtureId) && Number.isSafeInteger(action.tileX) && Number.isSafeInteger(action.tileY) && [0,90,180,270].includes(action.rotation as number);
       if (action.type === 'store') return nonEmptyString(action.fixtureId);
       if (action.type === 'retrieve') return nonEmptyString(action.fixtureId) && Number.isSafeInteger(action.tileX) && Number.isSafeInteger(action.tileY);
-      if (action.type === 'buy_plot') return nonEmptyString(action.plotId);
+      if (action.type === 'buy_plot') return nonEmptyString(action.plotId) && isPlotPlacement(action.placement);
+      if (action.type === 'relocate_building') return nonEmptyString(action.buildingId) && isRecord(action.placement) && isPlotPlacement(action.placement);
+      if (action.type === 'expand_footprint') return nonEmptyString(action.buildingId) && Array.isArray(action.tiles) && action.tiles.length > 0 && action.tiles.length <= MAX_FOOTPRINT_TILES
+        && action.tiles.every(tile => isRecord(tile) && Number.isSafeInteger(tile.x) && Number.isSafeInteger(tile.y));
       if (action.type === 'buy_decor') return nonEmptyString(action.decorId);
       if (action.type === 'buy_fixture') return nonEmptyString(action.shopId) && Number.isSafeInteger(action.tileX) && Number.isSafeInteger(action.tileY) && [0,90,180,270].includes(action.rotation as number);
       return false;
     });
-    case 'buy_plot': return nonEmptyString(p.plotId);
+    case 'buy_plot': return nonEmptyString(p.plotId) && isPlotPlacement(p.placement);
     case 'claim_quest': return nonEmptyString(p.questId);
     case 'buy_stall': return nonEmptyString(p.stallId);
     case 'hire_staff': return nonEmptyString(p.candidateId);
+    case 'pay_wage_debt': return true;
     case 'set_staff_shift': return nonEmptyString(p.staffId) && (p.shift === 'morning' || p.shift === 'afternoon' || p.shift === 'full_day');
     case 'assign_refill_job': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
     case 'store_status': return typeof p.isOpen === 'boolean';

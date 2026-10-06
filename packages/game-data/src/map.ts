@@ -1,88 +1,51 @@
-import { GameTileMap, StoreFixture, SaveGameData, Vector2D } from '@game/shared';
-import { LAND_PLOTS, STARTER_OWNED_PLOT_IDS } from './land';
+import { GameTileMap, StoreFixture, SaveGameData, Vector2D, tileIndex, tileInMap, type BuildingPlacementRecord } from '@game/shared';
+import { STARTER_OWNED_PLOT_IDS } from './land';
 import { STALLS } from './stalls';
-import { BUILDINGS, BUILDING_MAP, DRINK_BOUNDS, DRINK_PLOT_ID, MAIN_STORE_BOUNDS, XOI_BOUNDS, XOI_PLOT_ID, buildingTop } from './buildings';
+import { MAIN_STORE_BOUNDS } from './buildings';
+import { DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, layoutBuildings, resolvePlacements, placementFloor, placementGeometry, placementTop, warehouseGeometry } from './world/placements';
+import { tileBox, tileKey, wallRing } from './world/footprint';
 import { xpToNextLevel } from './progression';
+import { PLAY_REGION, rectHeight, rectWidth } from './world/world-grid';
+import { TREE_PROPS } from './world/infrastructure';
 
-/** Chủ tiệm đứng sau quầy thu ngân (phía bắc), nhìn ra chỗ khách xếp hàng ở ô (9,8). */
-export const SHOPKEEPER_TILE = { x: 8, y: 7 };
+/** Chủ tiệm đứng sau quầy thu ngân (phía bắc), nhìn ra chỗ khách xếp hàng; ô tương đối (2,4) của tiệm chính, mặc định (8,7). */
+const MAIN_GEOMETRY = DEFAULT_GEOMETRY.main;
+export const SHOPKEEPER_TILE = { x: MAIN_GEOMETRY.bounds.left + 2, y: MAIN_GEOMETRY.bounds.top + 4 };
 export const SHOPKEEPER_POSITION = { x: (SHOPKEEPER_TILE.x + 0.5) * 32, y: (SHOPKEEPER_TILE.y + 1) * 32 - 2 };
 
-export const MAP_WIDTH = 36;
-export const MAP_HEIGHT = 22;
-export const MAP_ORIGIN_Y = -6;
+/** Kích thước bản đồ chơi suy từ vùng chơi đợt 0 (`world/world-grid.ts`): 36×22, gốc y = −6. */
+export const MAP_WIDTH: number = rectWidth(PLAY_REGION);
+export const MAP_HEIGHT: number = rectHeight(PLAY_REGION);
+export const MAP_ORIGIN_Y: number = PLAY_REGION.y0;
 export const STORE_BOUNDS = MAIN_STORE_BOUNDS;
 /** Điểm xuất hiện của người chơi trong hẻm chung: vỉa hè ngay ngoài cửa tiệm (cửa ở x=9..10, y=10). Chỉnh ở đây để đổi chỗ xuất hiện; chủ hẻm lấy mục 0, thành viên mục 1. */
 export const ONLINE_SPAWN_POINTS: readonly { x: number; y: number }[] = [
-  { x: 8.5 * 32, y: 12.5 * 32 },
-  { x: 11.5 * 32, y: 12.5 * 32 },
+  { x: (MAIN_GEOMETRY.entranceTile.x - 0.5) * 32, y: (MAIN_GEOMETRY.entranceTile.y + 1.5) * 32 },
+  { x: (MAIN_GEOMETRY.entranceTile.x + 2.5) * 32, y: (MAIN_GEOMETRY.entranceTile.y + 1.5) * 32 },
 ];
-/** Hàng rào thấp ở hàng y=10 giữa cỏ và vỉa hè (trừ mặt tiền tiệm); dùng chung cho va chạm và renderer. */
-export const isFenceTile = (x: number, worldY: number, mapWidth: number): boolean =>
-  worldY === 10 && x > XOI_BOUNDS.right && x < mapWidth - 1 && x >= STORE_BOUNDS.right + 2 && (x < DRINK_BOUNDS.left || x > DRINK_BOUNDS.right);
-/** Đèn đường trên vỉa hè sát lòng đường; cột đèn chỉ chặn phần chân cột (`STREET_LAMP_COLLIDER`). Không đặt cột đèn chéo sát một cây (cột ở hàng 12, cây ở hàng 11, lệch một cột) vì hai vật cản chạm góc sẽ bịt kín cả vỉa hè; `sidewalk-passable.test.ts` kiểm tra. */
-export const STREET_LAMP_TILES: ReadonlyArray<{ x: number; y: number }> = [{ x: 9, y: 12 }, { x: 15, y: 12 }, { x: 21, y: 12 }];
-// Cột đèn đầu hẻm trước ở x=3 sát cột đèn tín hiệu phía bắc vạch qua đường (x≈106 px), nên dời sang x=9: cách đều cột tín hiệu và cột x=15 (~195 px).
+/** Hàng rào nằm ở hàng tường mặt tiền của tiệm chính (y=10), giữa cỏ và vỉa hè. */
+const FENCE_ROW = MAIN_GEOMETRY.bounds.bottom;
 /**
- * Va chạm của cột đèn: chỉ phần chân cột (khớp sprite `deco_lamp_pole` 32x64: thân rộng ~10 px quanh x=10..20, chân cột
- * cao ~10 px sát đáy ô), không chặn cả ô 32x32 như tường. Tọa độ pixel tương đối góc trên-trái của ô cột đèn.
+ * Hàng rào thấp ở hàng y=10 giữa cỏ và vỉa hè (trừ mặt tiền các tòa phụ đang có); dùng chung cho va chạm và renderer. Cách tường lõi tiệm
+ * chính hai cột về cả hai phía (cánh đông chưa mua vẫn có rào), trong khoảng bản đồ trừ cột viền. `buildings` = các tòa đang có
+ * (`GameTileMap.buildings`); thiếu = cả ba tòa phụ ở vị trí mặc định. Lô trống (tòa chưa mua) có rào như đoạn đất không có tiệm.
  */
-export const STREET_LAMP_COLLIDER = { offsetX: 10, offsetY: 22, width: 12, height: 10 } as const;
-/** Hộp va chạm (pixel thế giới) của mọi cột đèn đường. */
-export const streetLampBoxes = (): Array<{ x: number; y: number; width: number; height: number }> =>
-  STREET_LAMP_TILES.map(l => ({ x: l.x * 32 + STREET_LAMP_COLLIDER.offsetX, y: l.y * 32 + STREET_LAMP_COLLIDER.offsetY, width: STREET_LAMP_COLLIDER.width, height: STREET_LAMP_COLLIDER.height }));
+export const isFenceTileFor = (buildings: ReadonlyArray<{ id: string; bounds?: { left: number; right: number } }> | undefined, x: number, worldY: number, mapWidth: number): boolean => {
+  if (worldY !== FENCE_ROW || x <= PLAY_REGION.x0 || x >= PLAY_REGION.x0 + mapWidth - 1) return false;
+  if (!(x >= STORE_BOUNDS.right + 2 || x <= STORE_BOUNDS.left - 2)) return false;
+  const secondary = buildings ?? DEFAULT_PLACEMENTS.map(placement => ({ id: placement.buildingId, bounds: DEFAULT_GEOMETRY[placement.buildingId].bounds }));
+  return !secondary.some(building => building.id !== 'main' && building.bounds && x >= building.bounds.left && x <= building.bounds.right);
+};
+/** Hàng rào khi cả ba tòa phụ ở vị trí mặc định (golden Bước 1 và mã cũ chưa biết bản đồ). */
+export const isFenceTile = (x: number, worldY: number, mapWidth: number): boolean => isFenceTileFor(undefined, x, worldY, mapWidth);
+// Hạ tầng đợt 0 nằm ở world/infrastructure.ts; giữ export cũ từ đây.
+export { STREET_LAMP_TILES, STREET_LAMP_COLLIDER, streetLampBoxes, TREE_PROPS, TREE_SPRITE_OFFSET, STREET_PARKING_SPOTS, ROAD_PROFILE, STORM_DRAINS, CAR_PARKING_SPOTS, type TreeProp } from './world/infrastructure';
 
-/**
- * Cây trên vỉa hè. `tileX/tileY` là ô gốc cây (có va chạm, tường loại 7); sprite và bóng bám theo ô này.
- * `height` (ô) quyết định độ dài bóng, `crownRadius` (ô) là bán kính tán. Thêm cây = thêm một dòng; cần tự kiểm
- * không chặn cửa tiệm, ô đỗ xe, cột đèn hay lối đi.
- */
-export interface TreeProp { id: string; tileX: number; tileY: number; height: number; crownRadius: number }
-export const TREE_PROPS: ReadonlyArray<TreeProp> = [
-  // Cây hiện có phía tây
-  { id: 'alley_shade_tree', tileX: 5, tileY: 11, height: 2.4, crownRadius: 1.1 },
-  // Cây mới phía đông (gần quán nước)
-  { id: 'east_tree_small', tileX: 19, tileY: 11, height: 1.8, crownRadius: 0.8 },  // Giữa tiệm xôi và quán nước
-  { id: 'east_tree_tall', tileX: 25, tileY: 11, height: 2.6, crownRadius: 1.2 },   // Trước quán nước bên trái
-  { id: 'east_tree_bush', tileX: 28, tileY: 11, height: 1.5, crownRadius: 1.0 },   // Trước quán nước, sát phía tây cửa (x=30..31) nhưng cách cửa 1 ô; tách khỏi cây ở mép đông (trước đây ở x=33 dính cây x=34)
-  { id: 'east_tree_cluster', tileX: 34, tileY: 11, height: 2.0, crownRadius: 0.9 }, // Mép đông bản đồ
-];
-/** Vị trí góc trên-trái của sprite cây so với ô gốc (đơn vị ô) và độ dịch bằng pixel. `pixelsX` = 8 đặt thân cây (sprite 80 px, thân tâm ở x=40) đúng giữa ô gốc để bồn cây vừa khít ô có va chạm (`TREE_PLANTER`). */
-export const TREE_SPRITE_OFFSET = { tilesX: -1, tilesY: -2, pixelsX: 8, pixelsY: -4 } as const;
-
-/** Điểm đỗ xe máy lề đường trước tiệm (trên vỉa hè sát lòng đường, không chặn cửa tiệm hay cột đèn). */
-export const STREET_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
-  // Xe máy dài ~62 px nên hai chỗ cạnh nhau cách ~64 px (trước đây 32 px khi xe dài 44 px).
-  { x: 196, y: 12 * 32 + 10 },
-  { x: 260, y: 12 * 32 + 10 },
-  { x: 392, y: 12 * 32 + 10 },
-  { x: 456, y: 12 * 32 + 10 },
-  // Trước quán nước (cửa ở x=30..31): xe máy đỗ gần cửa, khách không phải đi bộ từ đầu hẻm.
-  { x: 880, y: 12 * 32 + 10 },
-  { x: 944, y: 12 * 32 + 10 },
-];
-/**
- * Mặt cắt lòng đường (chỉ hình ảnh, không đổi va chạm hay đường đi): vỉa hè (y 11-12) → bó vỉa + rãnh thoát nước →
- * làn bắc (y 13, đi sang trái) → vạch giữa (biên y 14) → làn nam (y 14, đi sang phải) → mặt đường còn lại.
- * Hai làn trùng với STREET_LANE_LEFT_Y/STREET_LANE_RIGHT_Y trong game-core/street-traffic.ts.
- */
-export const ROAD_PROFILE = { kerbTileY: 13, centerLineTileY: 14, laneRows: 2 } as const;
-/** Cửa thu nước mưa trong rãnh sát bó vỉa (ô x, ở hàng kerbTileY). */
-export const STORM_DRAINS: ReadonlyArray<{ tileX: number }> = [{ tileX: 4 }, { tileX: 12 }, { tileX: 17 }, { tileX: 22 }];
-
-/**
- * Chỗ đỗ ô tô của khách trên vỉa hè phía đông (rộng hơn chỗ xe máy, chân xe tại y px), giữa các cột đèn x = 15, 21 và
- * mép bản đồ; ô tô neo giữa-đáy tại điểm này (sprite 130x65, nửa dài 65 px: cách cột đèn > 73 px, cách chỗ xe máy > 96 px, nằm trong bản đồ). Không chặn cửa tiệm, ô đỗ xe máy hay vạch qua đường.
- */
-export const CAR_PARKING_SPOTS: ReadonlyArray<Vector2D> = [
-  { x: 592, y: 12 * 32 + 14 },
-  { x: 772, y: 12 * 32 + 14 },
-  { x: 1060, y: 12 * 32 + 14 },
-];
-
-export const WAREHOUSE_BOUNDS = {left:STORE_BOUNDS.left,right:STORE_BOUNDS.right,top:STORE_BOUNDS.top-6,bottom:STORE_BOUNDS.top};
-export const WAREHOUSE_CENTER = {x:(WAREHOUSE_BOUNDS.left+WAREHOUSE_BOUNDS.right+1)*16,y:(WAREHOUSE_BOUNDS.top+WAREHOUSE_BOUNDS.bottom+1)*16};
-export const WAREHOUSE_DOOR_LEFT = Math.floor(WAREHOUSE_CENTER.x/32)-1;
+/** Nhà kho sau tiệm chính, suy từ vị trí đặt mặc định (`warehouseGeometry`): x 6..13, y −3..3, cửa 2 ô ở giữa tường sau tiệm. */
+const DEFAULT_WAREHOUSE = warehouseGeometry(DEFAULT_GEOMETRY.main);
+export const WAREHOUSE_BOUNDS = DEFAULT_WAREHOUSE.bounds;
+export const WAREHOUSE_CENTER = DEFAULT_WAREHOUSE.center;
+export const WAREHOUSE_DOOR_LEFT = DEFAULT_WAREHOUSE.doorLeft;
 export const isInWarehouse=(p:Vector2D)=>p.x>=WAREHOUSE_BOUNDS.left*32&&p.x<(WAREHOUSE_BOUNDS.right+1)*32&&p.y>=WAREHOUSE_BOUNDS.top*32&&p.y<WAREHOUSE_BOUNDS.bottom*32;
 
 /**
@@ -164,20 +127,36 @@ export const INITIAL_REFRIGERATOR = INITIAL_FIXTURES.find((fixture) => fixture.t
 /**
  * Map arrays use local rows; world coordinates retain the old sales-floor origin.
  */
-export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STARTER_OWNED_PLOT_IDS, ownedStallIds: readonly string[] = []): GameTileMap {
+export function generateStarterTileMap(
+  unlockedPlotIds: readonly string[] = STARTER_OWNED_PLOT_IDS,
+  ownedStallIds: readonly string[] = [],
+  placements: readonly BuildingPlacementRecord[] | undefined = DEFAULT_PLACEMENTS,
+): GameTileMap {
   const groundData: number[] = new Array(MAP_WIDTH * MAP_HEIGHT).fill(1); // Street default
   const wallData: number[] = new Array(MAP_WIDTH * MAP_HEIGHT).fill(0);
   const collisionLayer: boolean[] = new Array(MAP_WIDTH * MAP_HEIGHT).fill(false);
   const purchased = new Set(unlockedPlotIds);
-  const east = purchased.has('east-wing-a') ? (purchased.has('east-wing-b') ? 21 : 17) : STORE_BOUNDS.right;
+  const frame = { width: MAP_WIDTH, height: MAP_HEIGHT, originTileX: PLAY_REGION.x0, originTileY: MAP_ORIGIN_Y };
+  const at = (x: number, y: number) => tileIndex(frame, x, y);
+  const resolved = resolvePlacements(placements, purchased);
+  const geometries = resolved.map(placement => placementGeometry(placement));
+  const infos = layoutBuildings(resolved, purchased);
+  // Tòa có kho (tiệm chính) dựng cùng lượt nền vì sàn của nó quyết định hàng rào; các tòa khác dựng sau kho.
+  const primary = geometries.find(geo => geo.template.hasWarehouse) ?? geometries[0];
+  const core = primary.coreBounds;
+  // Footprint tiệm chính theo ô: sàn gốc ∪ cánh đông cũ ∪ ô sàn mở rộng; tường = ô kề 8 hướng của sàn.
+  const floor = placementFloor(resolved[geometries.indexOf(primary)], purchased);
+  const ring = wallRing(floor);
+  const isPrimaryDoor = (x: number, y: number) => primary.doorTiles.some(tile => tile.x === x && tile.y === y);
 
   for (let localY = 0; localY < MAP_HEIGHT; localY++) {
-    const y=localY+MAP_ORIGIN_Y;
-    for (let x = 0; x < MAP_WIDTH; x++) {
-      const idx = localY * MAP_WIDTH + x;
+    const y = localY + MAP_ORIGIN_Y;
+    for (let localX = 0; localX < MAP_WIDTH; localX++) {
+      const x = localX + PLAY_REGION.x0;
+      const idx = at(x, y);
 
       // Outer boundary collision
-      if (x === 0 || x === MAP_WIDTH - 1 || localY === 0 || localY === MAP_HEIGHT - 1) {
+      if (localX === 0 || localX === MAP_WIDTH - 1 || localY === 0 || localY === MAP_HEIGHT - 1) {
         collisionLayer[idx] = true;
       }
 
@@ -186,33 +165,20 @@ export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STAR
         groundData[idx] = 2; // Sidewalk
       } else if (y >= 13) {
         groundData[idx] = 1; // Street
-      } else if (y >= STORE_BOUNDS.top && y <= STORE_BOUNDS.bottom && x >= STORE_BOUNDS.left && x <= east) {
+      } else if (floor.has(tileKey(x, y)) || ring.has(tileKey(x, y))) {
         groundData[idx] = 3; // Vintage flower tile inside store
       } else {
         groundData[idx] = 2; // Sidewalk / Alley ground
       }
 
-      if (groundData[idx] === 2 && isFenceTile(x, y, MAP_WIDTH)) { // cột đèn dùng hộp va chạm hẹp riêng (streetLampBoxes), không nằm trong collisionLayer
+      if (groundData[idx] === 2 && isFenceTileFor(infos, x, y, MAP_WIDTH)) { // cột đèn dùng hộp va chạm hẹp riêng (streetLampBoxes), không nằm trong collisionLayer
         collisionLayer[idx] = true;
       }
 
-      // Store Walls (yellow plaster walls)
-      // Store spans x: 6..13, y: 3..10
-      if (y === STORE_BOUNDS.top && x >= STORE_BOUNDS.left && x <= east) {
+      // Tường tiệm chính (vôi vàng): viền quanh footprint; cửa theo mẫu tòa.
+      if (ring.has(tileKey(x, y)) && !isPrimaryDoor(x, y)) {
         wallData[idx] = 4;
         collisionLayer[idx] = true;
-      } else if (x === STORE_BOUNDS.left && y >= STORE_BOUNDS.top && y <= STORE_BOUNDS.bottom) {
-        wallData[idx] = 4;
-        collisionLayer[idx] = true;
-      } else if (x === east && y >= STORE_BOUNDS.top && y <= STORE_BOUNDS.bottom) {
-        wallData[idx] = 4;
-        collisionLayer[idx] = true;
-      } else if (y === STORE_BOUNDS.bottom && x >= STORE_BOUNDS.left && x <= east) {
-        // Doorway at x = 9 and x = 10
-        if (x !== 9 && x !== 10) {
-          wallData[idx] = 4;
-          collisionLayer[idx] = true;
-        }
       }
 
       // Ambient tree outside on sidewalk
@@ -224,79 +190,71 @@ export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STAR
   }
 
   // Rear room shares the complete back wall with the shop, with a central door.
-  for(let y=WAREHOUSE_BOUNDS.top;y<=WAREHOUSE_BOUNDS.bottom;y++) for(let x=WAREHOUSE_BOUNDS.left;x<=WAREHOUSE_BOUNDS.right;x++) {
-    const idx=(y-MAP_ORIGIN_Y)*MAP_WIDTH+x;
-    groundData[idx]=9;
-    const boundary=y===WAREHOUSE_BOUNDS.top||y===WAREHOUSE_BOUNDS.bottom||x===WAREHOUSE_BOUNDS.left||x===WAREHOUSE_BOUNDS.right;
-    const door=y===STORE_BOUNDS.top&&(x===WAREHOUSE_DOOR_LEFT||x===WAREHOUSE_DOOR_LEFT+1);
-    wallData[idx]=boundary&&!door?10:0;
-    collisionLayer[idx]=boundary&&!door;
-  }
-
-  // Tiệm xôi: tòa thứ hai ở dải tây, tường đông x=6 dùng chung với tiệm chính (đã dựng ở trên). Luôn có vỏ nhà;
-  // chưa mua thì cửa và sàn trong bị chặn (renderer vẽ cửa cuốn), mua rồi mới đi vào/đặt nội thất được.
-  const xoiOpen = purchased.has(XOI_PLOT_ID);
-  const xoiDoors = BUILDING_MAP.xoi.doorTiles;
-  const xoiTop = buildingTop('xoi', purchased);
-  for (let y = xoiTop; y <= XOI_BOUNDS.bottom; y++) {
-    for (let x = XOI_BOUNDS.left; x < XOI_BOUNDS.right; x++) {
-      const idx = (y - MAP_ORIGIN_Y) * MAP_WIDTH + x;
-      const door = xoiDoors.some(tile => tile.x === x && tile.y === y);
-      const wall = !door && (y === xoiTop || y === XOI_BOUNDS.bottom || x === XOI_BOUNDS.left);
-      groundData[idx] = 3;
-      wallData[idx] = wall ? 4 : 0;
-      collisionLayer[idx] = wall || !xoiOpen;
+  if (primary.template.hasWarehouse) {
+    const warehouse = warehouseGeometry(primary);
+    const wb = warehouse.bounds;
+    for (let y = wb.top; y <= wb.bottom; y++) for (let x = wb.left; x <= wb.right; x++) {
+      const idx = at(x, y);
+      groundData[idx] = 9;
+      const boundary = y === wb.top || y === wb.bottom || x === wb.left || x === wb.right;
+      const door = y === core.top && (x === warehouse.doorLeft || x === warehouse.doorLeft + 1);
+      wallData[idx] = boundary && !door ? 10 : 0;
+      collisionLayer[idx] = boundary && !door;
     }
   }
 
-  // Quán nước: tòa thứ ba đứng riêng ở dải đông, đủ bốn tường; chưa mua thì cửa và sàn trong bị chặn như tiệm xôi.
-  const drinkOpen = purchased.has(DRINK_PLOT_ID);
-  const drinkDoors = BUILDING_MAP.drink.doorTiles;
-  const drinkTop = buildingTop('drink', purchased);
-  for (let y = drinkTop; y <= DRINK_BOUNDS.bottom; y++) {
-    for (let x = DRINK_BOUNDS.left; x <= DRINK_BOUNDS.right && x < MAP_WIDTH; x++) {
-      const idx = (y - MAP_ORIGIN_Y) * MAP_WIDTH + x;
-      const door = drinkDoors.some(tile => tile.x === x && tile.y === y);
-      const wall = !door && (y === drinkTop || y === DRINK_BOUNDS.bottom || x === DRINK_BOUNDS.left || x === DRINK_BOUNDS.right);
-      groundData[idx] = 3;
-      wallData[idx] = wall ? 4 : 0;
-      collisionLayer[idx] = wall || !drinkOpen;
-    }
-  }
-
-  for (const plot of LAND_PLOTS) {
-    if (!purchased.has(plot.id)) continue;
-    for (const { x, y } of plot.tiles) {
-      const idx = (y - MAP_ORIGIN_Y) * MAP_WIDTH + x;
-      const isCurrentWall = x === east || y === STORE_BOUNDS.top || y === STORE_BOUNDS.bottom;
-      if (isCurrentWall) {
-        groundData[idx] = 3;
-        wallData[idx] = 4;
-        collisionLayer[idx] = true;
-      } else if (x < east) {
+  // Các tòa phụ đã mua (tiệm xôi, quán nước, quán ăn vặt…) theo thứ tự ưu tiên của vị trí đặt: đủ bốn tường riêng, đi vào được. Tòa chưa mua
+  // không có vỏ nhà (lô trống). Ô đã có tường của tòa đứng trước (tường chung, tường kho) được giữ nguyên.
+  for (const [index, geo] of geometries.entries()) {
+    if (geo === primary) continue;
+    // Tòa phụ có ô sàn mở rộng: sàn = sàn gốc ∪ floorTiles, tường = vòng ô kề (như tiệm chính); ô cửa theo mẫu tòa; ô đã có tường của tòa trước giữ nguyên.
+    if (resolved[index].floorTiles?.length) {
+      const own = placementFloor(resolved[index], purchased);
+      const ownRing = wallRing(own);
+      for (const key of own) {
+        const [x, y] = key.split(',').map(Number);
+        if (!tileInMap(frame, x, y)) continue;
+        const idx = at(x, y);
         groundData[idx] = 3;
         wallData[idx] = 0;
         collisionLayer[idx] = false;
       }
+      for (const key of ownRing) {
+        const [x, y] = key.split(',').map(Number);
+        if (!tileInMap(frame, x, y)) continue;
+        const idx = at(x, y);
+        if (wallData[idx] !== 0) continue;
+        const door = geo.doorTiles.some(tile => tile.x === x && tile.y === y);
+        groundData[idx] = 3;
+        wallData[idx] = door ? 0 : 4;
+        collisionLayer[idx] = !door || !!resolved[index].constructionUntilDay;
+      }
+      continue;
+    }
+    const top = placementTop(geo, purchased);
+    const { left, right, bottom } = geo.bounds;
+    for (let y = top; y <= bottom; y++) {
+      for (let x = left; x <= right; x++) {
+        if (!tileInMap(frame, x, y)) continue;
+        const idx = at(x, y);
+        if (wallData[idx] !== 0) continue;
+        const door = geo.doorTiles.some(tile => tile.x === x && tile.y === y);
+        const wall = !door && (y === top || y === bottom || x === left || x === right);
+        groundData[idx] = 3;
+        wallData[idx] = wall ? 4 : 0;
+        collisionLayer[idx] = wall || (door && !!resolved[index].constructionUntilDay);
+      }
     }
   }
-  if (purchased.has('east-wing-a')) {
-    for (let y = STORE_BOUNDS.top + 1; y < STORE_BOUNDS.bottom; y++) {
-      const idx = (y - MAP_ORIGIN_Y) * MAP_WIDTH + STORE_BOUNDS.right;
-      wallData[idx] = 0;
-      collisionLayer[idx] = false;
-      groundData[idx] = 3;
-    }
-  }
-
 
   // Quầy ăn uống đã mở chặn đường đi như một vật cản trên vỉa hè.
   const stalls = STALLS.filter(stall => ownedStallIds.includes(stall.id));
   for (const stall of stalls) {
-    for (let x = stall.tileX; x < stall.tileX + stall.widthTiles; x++) collisionLayer[(stall.tileY - MAP_ORIGIN_Y) * MAP_WIDTH + x] = true;
+    for (let x = stall.tileX; x < stall.tileX + stall.widthTiles; x++) collisionLayer[at(x, stall.tileY)] = true;
   }
 
   return {
+    originTileX: PLAY_REGION.x0,
     originTileY:MAP_ORIGIN_Y,
     width: MAP_WIDTH,
     height: MAP_HEIGHT,
@@ -321,15 +279,15 @@ export function generateStarterTileMap(unlockedPlotIds: readonly string[] = STAR
       },
     ],
     collisionLayer,
-    storeBounds: { left: STORE_BOUNDS.left, right: east, top: STORE_BOUNDS.top, bottom: STORE_BOUNDS.bottom },
-    buildings: BUILDINGS.map(building => ({ id: building.id, open: !building.plotId || purchased.has(building.plotId), top: buildingTop(building.id, purchased) })),
+    storeBounds: tileBox([...floor, ...ring]) ?? { left: core.left, right: core.right, top: core.top, bottom: core.bottom },
+    buildings: infos,
     stalls: stalls.map(stall => ({ id: stall.id, tileX: stall.tileX, tileY: stall.tileY, widthTiles: stall.widthTiles })),
   };
 }
 
 export const DEFAULT_INITIAL_SAVE: SaveGameData = {
   id: 'local_save_default',
-  schemaVersion: 4,
+  schemaVersion: 6,
   revision: 1,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -340,7 +298,7 @@ export const DEFAULT_INITIAL_SAVE: SaveGameData = {
     experienceToNextLevel: xpToNextLevel(1),
     money: 150000, // 150,000 VND starting capital
     reputation: 10,
-    position: { x: 9.5 * 32, y: 8.5 * 32 },
+    position: { x: (MAIN_GEOMETRY.doorTiles[0].x + 0.5) * 32, y: (MAIN_GEOMETRY.doorTiles[0].y - 1.5) * 32 }, // hai ô trong cửa tiệm chính, mặc định (9,8)
     direction: 'down',
   },
   worldTime: {

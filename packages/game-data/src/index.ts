@@ -2,6 +2,16 @@ export * from './products';
 export * from './fridge';
 export * from './recipes';
 export * from './buildings';
+// Mô hình thế giới mở (OpenSpec `open-world-land-grid`): tên trùng (BuildingBounds, BuildingId, *_PLOT_ID…) đã re-export qua `./buildings`.
+export * from './world/world-grid';
+export * from './world/parcels';
+export * from './world/infrastructure';
+export {
+  DEFAULT_PLACEMENTS, DEFAULT_GEOMETRY, placementGeometry, mainEastWingTiles, validatePlacements, normalizePlacements, placementsProblem, placementTop, placementEastWall, placementFloor, footprintBlockers, mainBlockedRects, warehouseGeometry, resolvePlacements, validatePlacement, layoutBuildings, defaultPlacementOf, placedBuildingIds, type BuildingInfo, type BuildingPlacement, type PlacementGeometry,
+} from './world/placements';
+export { adjacentParcels } from './world/parcels';
+export * from './world/footprint';
+export { BUILDING_TEMPLATES, MAIN_EAST_WING_PLOT_IDS, MAIN_EAST_WING_COLUMNS, type BuildingTemplate, type RelTile } from './world/building-templates';
 export * from './map';
 export * from './traffic';
 export * from './arrival-modes';
