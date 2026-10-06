@@ -284,6 +284,7 @@ export class PixiGameViewport {
     this.canvas.addEventListener('pointerdown', this.handlePointerDown);
     window.addEventListener('pointermove', this.handlePointerMove);
     window.addEventListener('pointerup', this.handlePointerUp);
+    window.addEventListener('pointercancel', this.handlePointerUp);
 
     this.resizeObserver = new ResizeObserver(() => {
       this.app.resize();
@@ -326,12 +327,16 @@ export class PixiGameViewport {
 
   private isPointerDown: boolean = false;
   private isPointerDragging: boolean = false;
+  /** Chỉ con trỏ đã bấm xuống thế giới mới kéo camera: ngón khác (vd. đang kéo cần xoay) không được làm camera nhảy. */
+  private activePointerId: number | null = null;
   private pointerStartX: number = 0;
   private pointerStartY: number = 0;
 
   private handlePointerDown = (e: PointerEvent): void => {
     // Only primary button (left click) or middle button
     if (e.button !== 0 && e.button !== 1) return;
+    if (this.isPointerDown && e.pointerId !== this.activePointerId) return;
+    this.activePointerId = e.pointerId;
     this.isPointerDown = true;
     this.isPointerDragging = false;
     this.pointerStartX = e.clientX;
@@ -339,7 +344,7 @@ export class PixiGameViewport {
   };
 
   private handlePointerMove = (e: PointerEvent): void => {
-    if (!this.isPointerDown) return;
+    if (!this.isPointerDown || e.pointerId !== this.activePointerId) return;
 
     const dx = e.clientX - this.pointerStartX;
     const dy = e.clientY - this.pointerStartY;
@@ -360,7 +365,9 @@ export class PixiGameViewport {
     }
   };
 
-  private handlePointerUp = (_e: PointerEvent): void => {
+  private handlePointerUp = (e: PointerEvent): void => {
+    if (this.isPointerDown && e.pointerId !== this.activePointerId) return;
+    this.activePointerId = null;
     this.isPointerDown = false;
     this.isPointerDragging = false;
     this.camera.isDragging = false;
@@ -2378,6 +2385,7 @@ export class PixiGameViewport {
     this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
     window.removeEventListener('pointermove', this.handlePointerMove);
     window.removeEventListener('pointerup', this.handlePointerUp);
+    window.removeEventListener('pointercancel', this.handlePointerUp);
     if (this.loadingDockBoxesContainer) {
       this.entitiesLayer.removeChild(this.loadingDockBoxesContainer);
       this.loadingDockBoxesContainer.destroy({ children: true });

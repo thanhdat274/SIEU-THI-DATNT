@@ -83,13 +83,13 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
           {onOpenReviews
             ? <button type="button" onClick={onOpenReviews} title="Xem lời khách nhận xét" aria-label={`Đánh giá khách ${customerRating.toFixed(1)} sao, xem nhận xét`} className="hud-rating"><PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/></button>
             : <PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/>}
-          <button type="button" className="hud-level" data-hud="optional" onClick={onOpenLevelRoadmap} title="Xem tiến độ XP và các mốc mở khóa" aria-label={`Cấp ${player.level}, xem lộ trình cấp`}>
-            <strong>Cấp {player.level}{(player.prestigeStars ?? 0) > 0 ? ` · ★${player.prestigeStars}` : ''}</strong>
+          <button type="button" className="hud-level" data-hud="important" onClick={onOpenLevelRoadmap} title="Xem tiến độ XP và các mốc mở khóa" aria-label={`Cấp ${player.level}, xem lộ trình cấp`}>
+            <strong><span className="hud-lv-full">Cấp </span><span className="hud-lv-short">Lv</span>{player.level}{(player.prestigeStars ?? 0) > 0 ? ` · ★${player.prestigeStars}` : ''}</strong>
             <span className="muted"> · {player.experienceToNextLevel > 0 ? `${player.experience}/${player.experienceToNextLevel}` : `Prestige ${player.prestigeXp ?? 0}/${PRESTIGE_XP_PER_STAR}`}</span>
             <PixelProgress label="Kinh nghiệm" value={player.experienceToNextLevel > 0 ? player.experience : (player.prestigeXp ?? 0)} max={player.experienceToNextLevel > 0 ? player.experienceToNextLevel : PRESTIGE_XP_PER_STAR}/>
           </button>
           {wageDebt > 0 && <><button type="button" className="hud-debt" onClick={onOpenStaff} title="Nợ lương nhân viên: bấm để xem" aria-label={`Nợ lương ${money(wageDebt)}`}><PixelIcon name="coin" size={16}/><span>Nợ lương {money(wageDebt)}</span></button>{onPayWageDebt && <button type="button" className="hud-debt" onClick={onPayWageDebt} disabled={player.money <= 0} title="Trả nợ lương ngay bằng tiền đang có" aria-label="Trả nợ lương"><span style={{display:'inline'}}>Trả nợ</span></button>}</>}
-          <div className="hud-customers" data-hud="optional"><PixelStat label="Khách trong tiệm" value={activeCustomers} icon="person"/></div>
+          <div className="hud-customers" data-hud="important" title="Khách trong tiệm"><PixelStat label="Khách trong tiệm" value={activeCustomers} icon="person"/></div>
         </div>
         <nav className="hud-actions" aria-label="Điều hành tiệm">
           <PixelButton icon="door" variant={worldTime.isStoreOpen ? 'teal' : 'brick'} onClick={onToggleStoreStatus} aria-label={worldTime.isStoreOpen ? 'Đóng cửa tiệm' : 'Mở cửa đón khách'} title={worldTime.isStoreOpen ? 'Đang mở cửa (Bấm để đóng)' : 'Đang đóng cửa (Bấm để mở)'} className="btn-store-toggle">

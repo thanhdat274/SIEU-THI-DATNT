@@ -57,10 +57,11 @@ html[data-input="touch"] .account-bar-btn { min-height: 34px; padding-inline: 12
 .hud-store-status, .hud-season-badge, .hud-weather-badge, .hud-event-badge, .hud-level-header span { font-size: var(--fs-xs); }
 /* Compact: bớt viền/đổ bóng trang trí của hai thanh trên, không giảm vùng chạm. */
 html[data-density="compact"] .account-bar { border-bottom-width: 1px; padding-block: 1px; }
-html[data-density="compact"] .game-hud { border-bottom-width: 2px; box-shadow: inset 0 2px 0 var(--wood-light); padding-block: 2px; min-height: 0; }
+html[data-density="compact"] .game-hud { padding-inline: var(--space-2); border-bottom-width: 2px; box-shadow: inset 0 2px 0 var(--wood-light); padding-block: 2px; min-height: 0; }
 .game-hud { flex-wrap: nowrap; row-gap: var(--space-1); padding: var(--space-2) var(--space-3); }
 @media (max-width: 640px) and (orientation: portrait) { .game-hud { flex-wrap: wrap; } }
 .hud-level { min-height: var(--touch); }
+.hud-lv-short { display: none; }
 .hud-actions .pixel-button { min-width: var(--touch); min-height: var(--touch); font-size: var(--fs-sm); padding: 0 0.6em; }
 .hud-actions { gap: var(--space-1); }
 .hud-stats .pixel-stat-body, .hud-clock > div { min-width: max-content; }
@@ -69,7 +70,7 @@ html[data-density="compact"] .game-hud { border-bottom-width: 2px; box-shadow: i
  * Ưu tiên thông tin HUD (data-hud trên phần tử, ba nhóm; còn lại là thiết yếu và luôn hiện):
  *   decor    trang trí (biển hiệu, biểu tượng nắng/trăng) — bỏ trước tiên
  *   detail   chữ phụ của thông tin thiết yếu (trạng thái tiệm, XP chi tiết, nhãn phụ) — rút gọn khi hẹp
- *   optional thông tin quan trọng nhưng không cần mọi lúc (cấp, số khách; xem trong modal) — ẩn khi rất hẹp
+ *   important thông tin gameplay có giá trị (Cấp, số khách): KHÔNG ẩn theo bề ngang, chỉ thu gọn (Cấp→Lv, bỏ XP chữ, bỏ icon trùng nghĩa của tiền/đánh giá)
  * Thiết yếu: ngày giờ, tiền, đánh giá, nợ lương, các nút điều hành. Quyết định theo bề ngang thực của thanh HUD (container), không theo cửa sổ.
  */
 .hud-icon-wrap { display: contents; }
@@ -80,11 +81,13 @@ html[data-density="compact"] .game-hud { border-bottom-width: 2px; box-shadow: i
 }
 /* Chữ phụ (nhãn dưới số, trạng thái tiệm) rút trước vì số/biểu tượng đã đủ nghĩa; ở 1280 thanh HUD đã chạm sát nên cần rút sớm hơn phần trang trí. */
 @container hud (max-width: 1400px) {
-  [data-hud="detail"], .hud-level-header span, .pixel-stat .muted { display: none; }
+  [data-hud="detail"], .hud-level-header span, .hud-level .muted, .pixel-stat .muted { display: none; }
 }
 @container hud (max-width: 1080px) {
   [data-hud="decor"] { display: none; }
   .brand-copy h1 { font-size: var(--fs-sm); }
+  .hud-lv-full { display: none; }
+  .hud-lv-short { display: inline; }
   .hud-level { min-width: 65px; }
 }
 @container hud (max-width: 900px) {
@@ -92,14 +95,20 @@ html[data-density="compact"] .game-hud { border-bottom-width: 2px; box-shadow: i
   .hud-level { min-width: 48px; }
 }
 @container hud (max-width: 860px) {
-  [data-hud="optional"] { display: none; }
+  /* Icon đồng/tim trùng nghĩa với ₫ và ★ trong số; giữ icon người của số khách vì con số trần không rõ nghĩa. */
+  .hud-stats > .pixel-stat > .pixel-icon, .hud-rating .pixel-stat > .pixel-icon { display: none; }
+  .hud-level { min-width: 40px; max-width: 64px; }
   .hud-weather-badge { max-width: 9ch; }
   .hud-actions .btn-store-toggle span, .hud-actions .btn-warehouse .hud-management-badge { display: none; }
   .hud-actions .btn-store-toggle { min-width: var(--touch); }
   .hud-stats { gap: var(--space-2); }
 }
 /* Rất hẹp (điện thoại ngang nhỏ, hoặc inset lớn): nén chữ số và khoảng cách thay vì tạo thêm hàng; các nút điều hành giữ vùng chạm. */
-@container hud (max-width: 620px) {
+@container hud (max-width: 700px) {
+  /* Giữ Cấp + số khách, nhường chỗ cho số tiền dài (8 chữ số): bỏ thanh XP mini và nhãn "Kho" (nút vẫn có biểu tượng + title), không giảm vùng chạm. */
+  .hud-level .pixel-progress { display: none; }
+  .hud-level { min-width: 0; max-width: none; }
+  .hud-actions .btn-warehouse .button-label { display: none; }
   .hud-stats { gap: var(--space-1); }
   .hud-stats .pixel-stat { gap: var(--space-1); }
   .hud-stats .pixel-stat strong, .hud-clock strong { font-size: var(--fs-sm); }
