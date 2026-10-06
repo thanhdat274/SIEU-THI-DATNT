@@ -2,6 +2,19 @@
 
 > Ghi chú: `pnpm-workspace.yaml` ở Giai đoạn 0 là lịch sử; dự án dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
 
+## Thế giới mở: tiệm nhỏ → thành phố — kế hoạch 05/10/2026
+
+- Hướng dài hạn mới (chủ dự án chốt): co-op chung một thành phố, biên 120×80 ô, đường cố định theo đợt khai hoang; người chơi tự chọn hướng mở rộng và vị trí tòa. Chưa có code.
+- [>] Bước 0+1 `open-world-land-grid`: mô hình thế giới/lô/tòa/nội thất, refactor không đổi gameplay (golden test). 05/10/2026: có code, golden + test + build PASS; còn QA trình duyệt và `test:coop`.
+- [>] Bước 2 `open-world-main-expansion`: mở rộng tiệm chính theo ô, ngân sách theo cấp, chế độ quy hoạch. 05/10/2026: có code + test + build PASS; Xây thật hình T + lưu/nạp thử trên desktop. 06/10/2026: tab Mở rộng có chạm/kéo cho điện thoại, heatmap theo vị trí đặt tòa (hàm thuần có test); còn nhìn bằng mắt (đèn đêm, heatmap) và thiết bị chạm thật.
+- [>] Bước 3 `open-world-building-relocation`: đặt/dời tòa phụ vào lô tự chọn. 06/10/2026: lát A+B+C có code + test + build + `test:coop` PASS (đặt/dời/thi công/lô trống, mở rộng theo ô, mảnh bắc → `floorTiles`, ngân sách chung, mở sang lô kề, tòa thi công không khách + nhân viên chờ ở kho); còn nhìn bằng mắt trong trình duyệt và mobile thật. Hạn chế: dời quán nước và mở rộng tòa không kho chờ Bước 4.
+- [ ] Bước 4 `open-world-land-reclamation`: khai hoang W1–W4, giá/khách theo mặt tiền, thành phố đông dần. Chi nhánh = tòa ở đợt xa (chốt 05/10/2026); `branch-chain` tạm dừng, viết lại sau bước này.
+- [ ] Bước 5 `open-world-coop-land`: giữ chỗ quy hoạch, quyền, phiếu chi lớn. Cần kiểm chứng nền co-op (Mongo, hai trình duyệt) trước.
+- [ ] Bước 6a `open-world-building-types`: loại tòa theo dữ liệu, nhiều tòa cùng loại (chi nhánh), chi nhánh tạp hóa/cà phê/bãi giữ xe, sổ cái theo tòa, giao hàng nội bộ (thay phần còn dùng của `branch-chain`).
+- [ ] Bước 6b `open-world-land-lease`: thuê đất theo ngày, mua có khấu trừ, giá đất động theo thành phố.
+- [ ] Bước 6c `open-world-coop-contracts`: người phụ trách tòa, hợp đồng cung ứng nội bộ, thành tích theo người. Đã chốt giữ quỹ chung (05/10/2026).
+- [ ] Bước 6d `open-world-districts-city-goals`: khu vực có bản sắc (qua `modifiers.ts`), cấp và mục tiêu thành phố, ký ức thành phố.
+
 ## Khu phố mở rộng quanh tiệm — 04/10/2026
 
 - MVP môi trường sống quanh cửa hàng (bắc: nhà dân + trường xa; đông: chung cư + bãi xe; tây: công viên + vườn hoa; nam: nhà phố; nền: đồi núi) đã có code, test logic và kiểm bằng mắt trên Browser pane; zoom xa 0,5× giữ pixel nguyên. Bước tiếp đề xuất: xe chạy đường dọc, A* trên lưới vỉa hè, đồng bộ NPC nền ở co-op, nội thất trường/chung cư, đo FPS trên thiết bị thật.

@@ -1,5 +1,7 @@
 # Design: Chuỗi chi nhánh
 
+> **Đổi hướng 05/10/2026 (chủ dự án đồng ý):** bỏ ý "mỗi chi nhánh là một save/bản đồ/`GameSimulation` riêng chạy nền" (D1, D3, D5, D8 bên dưới không còn áp dụng). Chi nhánh = **tòa đặt ở các đợt khai hoang xa trên cùng một thành phố**, theo OpenSpec `open-world-land-reclamation` (D9). Giữ lại để làm sau Bước 4 thế giới mở: kho tổng + lệnh chuyển kho (D4), sổ cái có nhãn chi nhánh/tòa, loại hình theo dữ liệu (D6), thuế (D7), chương 7 đếm chi nhánh. Change này chờ viết lại phạm vi sau khi `open-world-land-reclamation` xong; không apply theo nội dung cũ.
+
 ## Hiện trạng đã kiểm tra
 
 - `GameSimulation` (`packages/game-core/src/simulation.ts`, ≈3.800 dòng) là một cơ sở: một `playerData.money` (34 chỗ dùng trong `game-core`), một kho + `warehouse` (≈45 chỗ), một sổ cái qua `recordLedger` (≈20 chỗ), `staff`, `fixtures`, `dailyRecords`, `stalls`, `regulars`. Không có khái niệm nhiều cơ sở.
