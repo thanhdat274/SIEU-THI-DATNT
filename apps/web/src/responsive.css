@@ -265,3 +265,16 @@ html[data-input="touch"] .layout-board { min-width: calc(var(--layout-cols, 16) 
 @media (max-height: 499px) and (orientation: landscape) {
   html[data-input="touch"] .world-tools { flex-direction: row; align-items: center; }
 }
+
+/* ---------- Mật độ hộp thoại (dùng chung data-density của Đợt 5) ---------- */
+.dialog-heading p { font-size: var(--fs-sm); }
+/* Compact (màn thấp/hẹp): giảm phần phụ trước — phụ đề rút một dòng, gợi ý Esc (vô nghĩa với cảm ứng) ẩn, khoảng cách đầu/chân gọn.
+   Tiêu đề, nội dung cuộn và nút chính (vùng chạm 44px) giữ nguyên. */
+html[data-density="compact"] .dialog-header { padding-block: var(--space-2); border-bottom-width: 2px; gap: var(--space-2); }
+html[data-density="compact"] .dialog-heading p { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; margin-top: 0; }
+html[data-density="compact"] .dialog-footer { padding-block: var(--space-1); }
+html[data-density="compact"] .dialog-footer .dialog-hint { display: none; }
+html[data-density="compact"] .dialog-footer:has(.dialog-hint) { justify-content: flex-end; }
+html[data-density="compact"] .dialog-content { padding-block: var(--space-2); }
+/* Comfortable: chỉ nới khoảng cách, không làm hộp thoại cao hơn khung (max-height vẫn do --dialog-h/100% giới hạn). */
+html[data-density="comfortable"] .dialog-content { padding-block: var(--space-3); }

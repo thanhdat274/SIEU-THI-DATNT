@@ -182,6 +182,20 @@ export const App: React.FC = () => {
   }, [gameStarted]);
   // Vào game là một cử chỉ của người chơi: thời điểm hợp lệ để thử khóa màn ngang (thất bại thì RotateOverlay lo).
   useEffect(() => { if (gameStarted) void lockLandscape(); }, [gameStarted]);
+  // Chỉ dev (QA bố cục): mở modal không cần điều kiện gameplay; chỉ đổi state hiển thị, không đụng mô phỏng. Phiếu giờ/tóm tắt ngày dùng dữ liệu mẫu chỉ để dựng UI.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const open: Record<string, () => void> = {
+      chain: () => setChainOpen(true), security: () => setSecurityOpen(true), analytics: () => setAnalyticsOpen(true), planogram: () => setIsPlanogramOpen(true), layout: () => setIsLayoutOpen(true),
+      timeVote: () => setActiveTimeVote({ type: 'advance_day', initiatedBy: 'qa', expiresInMs: 30000, approvalsCount: 1, totalRequired: 2 }),
+      daySummary: () => {
+        const recs = Object.values(simulationRef.current?.getDailyRecords() ?? {}); const last = recs[recs.length - 1];
+        setDaySummaryRecord(last ? { ...last } : { day: 1, revenue: 120000, cogs: 70000, purchaseTotal: 90000, spoilageCost: 5000, wagesPaid: 20000, grossProfit: 50000, netProfit: 25000, customersServed: 12, transactionsCount: 14, itemsSold: 40, spoilageCount: 2 } as DailyRecord);
+      },
+    };
+    (window as unknown as { __openModal?: (name: string) => void }).__openModal = (name) => open[name]?.();
+    return () => { delete (window as unknown as { __openModal?: unknown }).__openModal; };
+  }, []);
 
   // Chọn đúng các trường App dùng (so sánh nông): dòng cập nhật không đụng tới chúng thì App không render lại.
   const {
