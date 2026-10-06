@@ -71,10 +71,15 @@ html[data-input="touch"] .account-bar-btn { min-height: 34px; padding-inline: 12
   .hud-debt span { display: none; }
 }
 @container hud (max-width: 760px) {
+  .brand { display: none; }
   .hud-level, .hud-customers { display: none; }
   .hud-weather-badge { max-width: 9ch; }
   .hud-actions .btn-store-toggle span, .hud-actions .btn-warehouse .hud-management-badge { display: none; }
   .hud-actions .btn-store-toggle { min-width: var(--touch); }
+}
+@container hud (max-width: 720px) {
+  .hud-clock > .pixel-icon { display: none; }
+  .hud-stats { gap: var(--space-2); }
 }
 /* Hẹp (điện thoại dọc): thanh nút xuống hàng thứ hai, chia đều bề ngang để dễ chạm. */
 @container hud (max-width: 600px) {
@@ -207,3 +212,32 @@ html[data-input="touch"] :where(.dialog-header, .layout-heading, .change-product
 /* Sơ đồ sàn: ô lưới cảm ứng không nhỏ hơn ~28px; sàn rộng thì cuộn ngang trong khung thay vì nén ô. */
 .layout-board-container { overflow-x: auto; align-items: flex-start; max-width: 100%; }
 html[data-input="touch"] .layout-board { min-width: calc(var(--layout-cols, 16) * 28px); }
+
+/* ---------- Màn dọc: chỉ hướng dẫn xoay ngang (không duy trì bố cục gameplay dọc) ---------- */
+.rotate-screen { display: none; z-index: 200; background: rgba(36, 29, 23, 0.9); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); color: var(--paper); }
+.rotate-screen p { color: #F1DCAE; }
+.rotate-hint-icon { color: var(--sun); animation: rotate-hint 2.4s ease-in-out infinite; }
+@keyframes rotate-hint { 0%, 30% { transform: rotate(0); } 70%, 100% { transform: rotate(-90deg); } }
+@media (orientation: portrait) { html[data-input="touch"] .rotate-screen { display: flex; } }
+
+/* ---------- Màn đăng nhập/menu chính ở điện thoại ngang (thấp): gọn header, giữ hai cột ---------- */
+@media (max-height: 499px) and (orientation: landscape) {
+  .deck-header { flex-direction: row; align-items: center; padding: 6px 14px; gap: 10px; }
+  .brand-display-title { font-size: 18px; }
+  .brand-badge-seal { width: 36px; height: 36px; }
+  .deck-content-split { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); padding: 10px 14px; gap: 12px; }
+  .deck-top-actions { justify-content: flex-end; }
+}
+
+/* ---------- Điện thoại ngang (thấp): hộp thoại sơ đồ dành chỗ cho bảng, sidebar sang bên phải ---------- */
+@media (max-height: 499px) and (orientation: landscape) {
+  .store-layout-dialog .layout-heading { padding: 4px 12px; }
+  .store-layout-dialog .layout-heading .eyebrow, .store-layout-dialog .layout-icon { display: none; }
+  .store-layout-dialog .layout-footer { padding: 4px 12px; }
+  .store-layout-dialog .layout-workspace { grid-template-columns: minmax(0, 1fr) minmax(190px, 32%); padding: 8px 12px; gap: 10px; }
+}
+
+/* Điện thoại ngang (thấp): nút góc nhìn thành một hàng ở góc trên phải để không đụng nút Xem ở góc dưới. */
+@media (max-height: 499px) and (orientation: landscape) {
+  html[data-input="touch"] .world-tools { flex-direction: row; align-items: center; }
+}

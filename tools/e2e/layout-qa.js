@@ -1,7 +1,12 @@
 // QA bố cục responsive (không chạy tự động): dán vào console khi game đang chạy (hoặc nạp bằng eval) rồi gọi `await __sweep()` ở từng viewport.
 // Kết quả `bad` rỗng = mọi hộp thoại nằm trong khung nhìn, không tràn ngang, nút đạt vùng chạm (chế độ cảm ứng). `__chrome()` kiểm HUD/footer/điều khiển.
 window.__sleep = ms => new Promise(r => setTimeout(r, ms));
-window.__esc = async () => { for (let i = 0; i < 3; i++) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await __sleep(250); } };
+window.__esc = async () => {
+  for (let i = 0; i < 3; i++) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await __sleep(250); }
+  // Hộp thoại Sắp xếp cửa hàng không đóng bằng Escape: bấm Hủy/Đóng.
+  const l = document.querySelector('.store-layout-dialog');
+  if (l) { const b = [...l.querySelectorAll('button')].find(x => /Hủy|Đóng/.test(x.textContent)); if (b) b.click(); await __sleep(300); }
+};
 window.__dlg = () => {
   const root = document.querySelector('.store-layout-dialog,.change-product-modal,.pixel-dialog');
   if (!root) return null;
@@ -50,3 +55,25 @@ window.__chrome = () => {
   return { W, H, sw: rs.scrollWidth, size: rs.dataset.size, or: rs.dataset.orient, world: Math.round(wv.width) + 'x' + Math.round(wv.height), bad: bad.slice(0, 5) };
 };
 'qa ok';
+
+// Chồng lấn giữa các thành phần UI độc lập (HUD, nút HUD, điều khiển cảm ứng, rail footer, chip hướng dẫn, voice).
+window.__overlap = () => {
+  const groups = {
+    hud: [...document.querySelectorAll('.game-hud > *:not(.brand)')],
+    hudBtn: [...document.querySelectorAll('.hud-actions button')],
+    ctl: ['.joystick', '.touch-interact', '.world-tools', '.game-footer', '.voice-panel', '.tutorial-chip'].map(s => document.querySelector(s)).filter(Boolean),
+  };
+  const out = [];
+  for (const [g, els] of Object.entries(groups)) {
+    const rs = els.map(e => [e, e.getBoundingClientRect()]).filter(([, r]) => r.width && r.height);
+    for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+      const a = rs[i][1], b = rs[j][1];
+      const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left), oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      if (ox > 2 && oy > 2) out.push(g + ':' + (rs[i][0].className || rs[i][0].tagName).toString().slice(0, 18) + '×' + (rs[j][0].className || rs[j][0].tagName).toString().slice(0, 18));
+    }
+  }
+  const wv = document.querySelector('.world-viewport').getBoundingClientRect();
+  return { overlaps: out.slice(0, 6), worldShare: Math.round(wv.height / innerHeight * 100) + '%', world: Math.round(wv.width) + 'x' + Math.round(wv.height) };
+};
+// Một lượt kiểm nhanh: khung chính + chồng lấn (+ modal nếu truyền true).
+window.__quick = async (withModals) => ({ chrome: __chrome(), ...__overlap(), ...(withModals ? { modals: await __sweep() } : {}) });

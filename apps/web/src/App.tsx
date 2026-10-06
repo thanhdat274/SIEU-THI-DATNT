@@ -29,6 +29,8 @@ import { InventoryModal } from './components/InventoryModal';
 import { VirtualJoystick } from './components/VirtualJoystick';
 import { useControlMode } from './control-mode';
 import { OVERLAY_DOCK_QUERY } from './responsive';
+import { lockLandscape } from './orientation';
+import { RotateOverlay } from './components/RotateOverlay';
 import { ToastContainer } from './components/ToastContainer';
 import { InventorySummaryCard } from './components/InventorySummaryCard';
 import { BottomBar } from './components/BottomBar';
@@ -178,6 +180,8 @@ export const App: React.FC = () => {
     }, 7000);
     return () => clearTimeout(timer);
   }, [gameStarted]);
+  // Vào game là một cử chỉ của người chơi: thời điểm hợp lệ để thử khóa màn ngang (thất bại thì RotateOverlay lo).
+  useEffect(() => { if (gameStarted) void lockLandscape(); }, [gameStarted]);
 
   // Chọn đúng các trường App dùng (so sánh nông): dòng cập nhật không đụng tới chúng thì App không render lại.
   const {
@@ -2221,7 +2225,7 @@ export const App: React.FC = () => {
       />
     )}
     <div className={`daily-routine-fade ${isNightFading ? 'active' : ''}`} aria-hidden="true" />
-    <ToastContainer/>
+    <RotateOverlay/><ToastContainer/>
   </div>;
 };
 export default App;
