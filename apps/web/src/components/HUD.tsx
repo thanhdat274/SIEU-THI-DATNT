@@ -61,7 +61,7 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
   return (
     <>
       <header className="game-hud">
-        <div className="brand" title="Tiệm Tạp Hóa Đầu Hẻm">
+        <div className="brand" data-hud="decor" title="Tiệm Tạp Hóa Đầu Hẻm">
           <div className="brand-sign"><PixelIcon name="warehouse" size={26}/></div>
           <div className="brand-copy">
             {player.activeTitle ? <p className="eyebrow" style={{ cursor: onOpenTitles ? 'pointer' : 'default', color: '#ffd56b' }} onClick={onOpenTitles} title="Bấm để xem/đổi danh hiệu">{player.activeTitle}</p> : <p className="eyebrow">Một góc nhỏ · Một đời vui</p>}
@@ -69,10 +69,10 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
           </div>
         </div>
         <div className="hud-clock" title={`Ngày ${worldTime.day} · ${timeString} (${worldTime.isStoreOpen ? 'Đang mở cửa' : 'Nghỉ bán'})`}>
-          <PixelIcon name={worldTime.hour >= 18 ? 'moon' : 'sun'} size={24}/>
+          <span className="hud-icon-wrap" data-hud="decor"><PixelIcon name={worldTime.hour >= 18 ? 'moon' : 'sun'} size={24}/></span>
           <div>
             <strong className="tabular">Ngày {worldTime.day} · {timeString}</strong>
-            <span className="muted hud-store-status">{worldTime.isStoreOpen ? 'Bà con đang ghé tiệm' : 'Tiệm đang nghỉ bán'}</span>
+            <span className="muted hud-store-status" data-hud="detail">{worldTime.isStoreOpen ? 'Bà con đang ghé tiệm' : 'Tiệm đang nghỉ bán'}</span>
             {weather && <span className="muted hud-weather-badge" title={`Hôm nay${todayRainText}. Dự báo: ${forecastText}`}>{weather.icon} {weather.label} · mai {forecastFirst}</span>}
             {market?.events?.map(event => <span key={event.id} className="muted hud-event-badge" title={event.notice}>{event.status === 'active' ? '⚡' : '⏳'} {event.label}{event.status === 'upcoming' ? ` · sau ${event.startsIn} ngày` : ''}</span>)}
             {season && <span className="muted hud-season-badge" title={season.blurb}>🎉 {season.name} · còn {seasonDaysLeft(worldTime.day)} ngày</span>}
@@ -83,13 +83,13 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
           {onOpenReviews
             ? <button type="button" onClick={onOpenReviews} title="Xem lời khách nhận xét" aria-label={`Đánh giá khách ${customerRating.toFixed(1)} sao, xem nhận xét`} className="hud-rating"><PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/></button>
             : <PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/>}
-          <button type="button" className="hud-level" onClick={onOpenLevelRoadmap} title="Xem tiến độ XP và các mốc mở khóa" aria-label={`Cấp ${player.level}, xem lộ trình cấp`}>
+          <button type="button" className="hud-level" data-hud="optional" onClick={onOpenLevelRoadmap} title="Xem tiến độ XP và các mốc mở khóa" aria-label={`Cấp ${player.level}, xem lộ trình cấp`}>
             <strong>Cấp {player.level}{(player.prestigeStars ?? 0) > 0 ? ` · ★${player.prestigeStars}` : ''}</strong>
             <span className="muted"> · {player.experienceToNextLevel > 0 ? `${player.experience}/${player.experienceToNextLevel}` : `Prestige ${player.prestigeXp ?? 0}/${PRESTIGE_XP_PER_STAR}`}</span>
             <PixelProgress label="Kinh nghiệm" value={player.experienceToNextLevel > 0 ? player.experience : (player.prestigeXp ?? 0)} max={player.experienceToNextLevel > 0 ? player.experienceToNextLevel : PRESTIGE_XP_PER_STAR}/>
           </button>
           {wageDebt > 0 && <><button type="button" className="hud-debt" onClick={onOpenStaff} title="Nợ lương nhân viên: bấm để xem" aria-label={`Nợ lương ${money(wageDebt)}`}><PixelIcon name="coin" size={16}/><span>Nợ lương {money(wageDebt)}</span></button>{onPayWageDebt && <button type="button" className="hud-debt" onClick={onPayWageDebt} disabled={player.money <= 0} title="Trả nợ lương ngay bằng tiền đang có" aria-label="Trả nợ lương"><span style={{display:'inline'}}>Trả nợ</span></button>}</>}
-          <div className="hud-customers"><PixelStat label="Khách trong tiệm" value={activeCustomers} icon="person"/></div>
+          <div className="hud-customers" data-hud="optional"><PixelStat label="Khách trong tiệm" value={activeCustomers} icon="person"/></div>
         </div>
         <nav className="hud-actions" aria-label="Điều hành tiệm">
           <PixelButton icon="door" variant={worldTime.isStoreOpen ? 'teal' : 'brick'} onClick={onToggleStoreStatus} aria-label={worldTime.isStoreOpen ? 'Đóng cửa tiệm' : 'Mở cửa đón khách'} title={worldTime.isStoreOpen ? 'Đang mở cửa (Bấm để đóng)' : 'Đang đóng cửa (Bấm để mở)'} className="btn-store-toggle">
