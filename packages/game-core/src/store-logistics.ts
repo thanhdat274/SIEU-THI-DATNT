@@ -8,7 +8,7 @@ import {
   TILE_SIZE,
   Vector2D,
 } from '@game/shared';
-import { LOADING_DOCK_CONFIG, LOGISTICS_TIMING, MAP_WIDTH, PRODUCT_MAP } from '@game/data';
+import { LOADING_DOCK_CONFIG, LOGISTICS_TIMING, PLAY_REGION, PRODUCT_MAP } from '@game/data';
 
 export interface EnqueueDeliveryOptions {
   type: 'supplier_delivery' | 'outbound_party_order' | 'ambient_restock';
@@ -73,7 +73,7 @@ export class StoreLogisticsManager {
     const totalBoxes = Math.min(6, Math.max(2, Math.ceil(totalQty / 5) || 3));
 
     // Điểm bắt đầu lái vào: từ mép phải bản đồ chạy vào bãi đỗ ở góc đông
-    const startX = MAP_WIDTH * TILE_SIZE + 60;
+    const startX = (PLAY_REGION.x1 + 1) * TILE_SIZE + 60; // ngoài mép đông vùng chơi
     const startY = LOADING_DOCK_CONFIG.truckStopPosition.y;
 
     const boxType = truckType === 'truck_refrigerated'

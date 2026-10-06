@@ -55,7 +55,7 @@ export class WorldRuntime {
     this.checkpointIntervalSeconds = options.checkpointIntervalSeconds ?? 5;
     this.onCheckpoint = options.onCheckpoint;
 
-    const tileMap = generateStarterTileMap(business.save.storeLayout.unlockedPlotIds ?? []);
+    const tileMap = generateStarterTileMap(business.save.storeLayout.unlockedPlotIds ?? [], [], business.save.storeLayout.buildingPlacements);
     const headlessInput = {
       getMovementVector: () => ({ x: 0, y: 0 }),
       consumeInteract: () => false,
@@ -176,7 +176,7 @@ export class WorldRuntime {
   adoptCommitted(revision: number, business: BusinessState, force = false): boolean {
     if (!force && revision <= this.currentWorld.revision) return false;
     this.simulation.importSaveData(structuredClone(business.save));
-    this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds()), this.simulation.getFixtures());
+    this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds(), [], this.simulation.getBuildingPlacements()), this.simulation.getFixtures());
     this.currentWorld.revision = revision;
     this.commandCoordinator.setRevision(revision, force);
     this.currentBusiness = structuredClone(business);
@@ -315,7 +315,7 @@ export class WorldRuntime {
         success = this.simulation.resetSellingPrices().success;
       } else if (p.type === 'layout_move') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
-        const next = moveStoreFixture(current, p.fixtureId, p.tileX, p.tileY, p.rotation, generateStarterTileMap(current.storeLayout.unlockedPlotIds ?? []));
+        const next = moveStoreFixture(current, p.fixtureId, p.tileX, p.tileY, p.rotation, generateStarterTileMap(current.storeLayout.unlockedPlotIds ?? [], [], current.storeLayout.buildingPlacements));
         success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       } else if (p.type === 'layout_store') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
@@ -323,13 +323,15 @@ export class WorldRuntime {
         success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       } else if (p.type === 'layout_retrieve') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
-        const next = retrieveStoreFixture(current, p.fixtureId, p.tileX, p.tileY, generateStarterTileMap(current.storeLayout.unlockedPlotIds ?? []));
+        const next = retrieveStoreFixture(current, p.fixtureId, p.tileX, p.tileY, generateStarterTileMap(current.storeLayout.unlockedPlotIds ?? [], [], current.storeLayout.buildingPlacements));
         success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       } else if (p.type === 'buy_plot') {
-        success = !!this.simulation.purchaseLand(p.plotId).save;
+        success = !!this.simulation.purchaseLand(p.plotId, p.placement).save;
       } else if (p.type === 'set_restock_options') {
         this.simulation.setRestockOptions(p.options);
         success = true;
+      } else if (p.type === 'set_auto_buy_config') {
+        success = this.simulation.setAutoBuyConfig(p.enabled, p.rules).success;
       } else if (p.type === 'set_auto_buy_stalls') {
         this.simulation.setAutoBuyStalls(p.enabled);
         success = true;
@@ -339,6 +341,8 @@ export class WorldRuntime {
         success = this.simulation.buyStall(p.stallId).success;
       } else if (p.type === 'hire_staff') {
         success = this.simulation.hireStaff(p.candidateId).success;
+      } else if (p.type === 'pay_wage_debt') {
+        success = this.simulation.payWageDebt().success;
       } else if (p.type === 'set_staff_shift') {
         success = this.simulation.setStaffShift(p.staffId, p.shift);
       } else if (p.type === 'assign_refill_job') {
@@ -408,7 +412,7 @@ export class WorldRuntime {
         success = p.action === 'buy_camera' ? this.simulation.buyCamera().success : this.simulation.setCallPolice(p.action === 'police_on').success;
       } else if (p.type === 'layout_batch') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
-        const next = applyStoreLayoutActions(current, p.actions, ids => generateStarterTileMap(ids));
+        const next = applyStoreLayoutActions(current, p.actions, (ids, placements) => generateStarterTileMap(ids, [], placements));
         success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       } else if (p.type === 'buy_warehouse_tier') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
@@ -421,7 +425,7 @@ export class WorldRuntime {
       }
 
       if (success) {
-        this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds()), this.simulation.getFixtures());
+        this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds(), [], this.simulation.getBuildingPlacements()), this.simulation.getFixtures());
         this.currentWorld.revision = this.commandCoordinator.getRevision() + 1;
         this.currentBusiness.save = this.simulation.exportSaveData(
           this.currentBusiness.save.id,

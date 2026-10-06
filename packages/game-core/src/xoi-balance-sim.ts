@@ -1,5 +1,5 @@
 /**
- * Mô phỏng headless có tiệm xôi: cùng mô phỏng thật của game (GameSimulation), cấp 30, kệ luôn đầy,
+ * Mô phỏng headless có tiệm xôi: cùng mô phỏng thật của game (GameSimulation), cấp 40, kệ luôn đầy,
  * so sánh có/không mua tiệm xôi để thấy khách và doanh thu tăng thêm từ tiệm xôi.
  * Số đo từ mô phỏng, KHÔNG thay thế playtest thật; harness giữ kệ đầy nên không đo thiếu hàng/chuỗi sản xuất.
  * Chạy: yarn --ignore-engines workspace @game/core tsx src/xoi-balance-sim.ts
@@ -24,7 +24,7 @@ function runScenario(withXoi: boolean): Totals {
   const totals: Totals = { days: 0, customers: 0, revenue: 0, netProfit: 0, xoiUnits: 0 };
   for (const seed of SEEDS) {
     let save: SaveGameData = { ...structuredClone(DEFAULT_INITIAL_SAVE), market: createMarketState(seed, 1) };
-    save.player = { ...save.player, level: 30, money: 5_000_000 };
+    save.player = { ...save.player, level: 40, money: 5_000_000 };
     save.worldTime = { ...save.worldTime, isStoreOpen: false };
     if (withXoi) save = applyStoreLayoutActions(save, [{ type: 'buy_plot', plotId: XOI_PLOT_ID }], mapFor).save!;
     const sim = new GameSimulation(save, mapFor(save.storeLayout.unlockedPlotIds ?? []), new InputManager(), {});
@@ -67,7 +67,7 @@ const without = runScenario(false);
 const withShop = runScenario(true);
 const perDay = (t: Totals, key: 'customers' | 'revenue' | 'netProfit' | 'xoiUnits') => t[key] / Math.max(1, t.days);
 
-console.log(`Mô phỏng xôi: ${SEEDS.length} hạt giống × ${DAYS} ngày, cấp 30, kệ luôn đầy (số ngày ghi nhận: ${without.days} / ${withShop.days})`);
+console.log(`Mô phỏng xôi: ${SEEDS.length} hạt giống × ${DAYS} ngày, cấp 40, kệ luôn đầy (số ngày ghi nhận: ${without.days} / ${withShop.days})`);
 console.log('Chỉ số/ngày          | Không tiệm xôi | Có tiệm xôi | Tăng thêm');
 for (const [label, key] of [['Khách phục vụ', 'customers'], ['Doanh thu (₫)', 'revenue'], ['Lãi ròng (₫)', 'netProfit'], ['Phần xôi bán', 'xoiUnits']] as const) {
   const a = perDay(without, key), b = perDay(withShop, key);

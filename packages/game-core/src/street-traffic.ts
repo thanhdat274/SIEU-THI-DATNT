@@ -1,5 +1,5 @@
 import { StreetPedestrianState, StreetVehicleState, TILE_SIZE, Vector2D } from '@game/shared';
-import { INTERSECTIONS, MAP_WIDTH, ROAD_MAP, roadLaneCoord, shelterZoneAt, STREET_PEDESTRIANS, STREET_VEHICLE_RULES, VEHICLE_ROADS, VEHICLE_ROAD_MAP, TRAFFIC_SIGNAL_CYCLE_SEC, TRAFFIC_X_RANGE, TRUCK_KINDS, CAR_VARIANTS, VEHICLE_BUDGET, trafficDensity, trafficRainSpeedFactor, vehicleMix, type IntersectionDef, type RoadDef, type StreetVehicleKind } from '@game/data';
+import { INTERSECTIONS, PLAY_REGION, ROAD_MAP, roadLaneCoord, shelterZoneAt, STREET_PEDESTRIANS, STREET_VEHICLE_RULES, VEHICLE_ROADS, VEHICLE_ROAD_MAP, TRAFFIC_SIGNAL_CYCLE_SEC, TRAFFIC_X_RANGE, TRUCK_KINDS, CAR_VARIANTS, VEHICLE_BUDGET, trafficDensity, trafficRainSpeedFactor, vehicleMix, type IntersectionDef, type RoadDef, type StreetVehicleKind } from '@game/data';
 import { Mulberry32Rng } from './staff';
 import { hashSeed } from './weather';
 import { rainSpeedMultiplier } from './rain-protection';
@@ -10,6 +10,9 @@ export const STREET_LANE_RIGHT_Y = 14.6 * TILE_SIZE; // 467px (làn bên phải,
 export const STREET_LANE_LEFT_Y = 13.4 * TILE_SIZE;  // 428px (làn bên trái, đi từ phải qua trái)
 
 /** Thời gian mô phỏng (giây) chạy trước khi bắt đầu để đường không trống rỗng lúc mở game (xe sinh ở rìa khu phố, cách xa). */
+/** Mép tây/đông vùng chơi (px): người đi bộ trên vỉa hè xuất hiện/biến mất ngoài hai mép này. */
+const PLAY_WEST_PX = PLAY_REGION.x0 * TILE_SIZE;
+const PLAY_EAST_PX = (PLAY_REGION.x1 + 1) * TILE_SIZE;
 const WARM_UP_SECONDS = 70;
 /** Thông tin thời gian cho mật độ giao thông; thiếu thì coi là phút 0, ngày thường. */
 export interface TrafficClockContext { minute?: number; weekday?: number }
@@ -143,7 +146,7 @@ export class StreetTrafficManager {
   /** Chuyển khách mua sắm xong lên xe và lái xe rời tiệm, hòa vào dòng giao thông. */
   public addDepartingVehicle(spot: Vector2D, type: 'motorbike' | 'car', variant: number): void {
     this.vehicleSequence++;
-    const direction: 'left' | 'right' = spot.x > (MAP_WIDTH * TILE_SIZE * 0.75) ? 'left' : 'right';
+    const direction: 'left' | 'right' = spot.x > PLAY_WEST_PX + (PLAY_EAST_PX - PLAY_WEST_PX) * 0.75 ? 'left' : 'right';
     this.vehicles.push({
       id: `departing-${this.vehicleSequence}`,
       type,
@@ -221,7 +224,7 @@ export class StreetTrafficManager {
           p.x = p.stopX;
           p.state = 'waiting';
         }
-        if (p.x < -40 || p.x > MAP_WIDTH * TILE_SIZE + 40) {
+        if (p.x < PLAY_WEST_PX - 40 || p.x > PLAY_EAST_PX + 40) {
           this.pedestrians.splice(i, 1);
         }
       }
@@ -358,7 +361,7 @@ export class StreetTrafficManager {
       if (awake && rainIntensity <= STREET_PEDESTRIANS.maxRainSidewalk && sidewalkCount < 3) {
         this.pedestrianSequence++;
         const dir: 'left' | 'right' = rng2.next() < 0.5 ? 'right' : 'left';
-        const startX = dir === 'right' ? -20 : MAP_WIDTH * TILE_SIZE + 20;
+        const startX = dir === 'right' ? PLAY_WEST_PX - 20 : PLAY_EAST_PX + 20;
         const sidewalkY = (11.6 + rng2.next() * 0.6) * TILE_SIZE;
         const acts: Array<'stroll' | 'grocery' | 'jog' | 'student' | 'dog'> = ['stroll', 'grocery', 'jog', 'student', 'dog'];
         const activity = acts[Math.floor(rng2.next() * acts.length)];
@@ -393,7 +396,7 @@ export class StreetTrafficManager {
       direction: dir,
       state: 'walking',
       activity: 'stroll',
-      x: dir === 'right' ? -20 : MAP_WIDTH * TILE_SIZE + 20,
+      x: dir === 'right' ? PLAY_WEST_PX - 20 : PLAY_EAST_PX + 20,
       y: (11.7 + rng.next() * 0.3) * TILE_SIZE,
       variant: Math.floor(rng.next() * 5),
       speed: 28 + rng.next() * 8,

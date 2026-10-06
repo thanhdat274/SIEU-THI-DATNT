@@ -71,6 +71,8 @@ import {
   isShiftWithinStoreHours,
   STALLS,
   STALL_MAP,
+  STALL_OPEN_HOUR,
+  stallSellSlots,
   ALL_PRODUCTS,
   PRICED_CATEGORIES,
   PRODUCT_CATEGORY_LABELS,
@@ -108,7 +110,7 @@ import { applyAuditToState, emptyTaxState, normalizeTaxState, resolveAudit, shou
 import { composeReview, sanitizeReviews, summarizeReviews, ReviewsManager } from './reviews';
 import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, staffServiceTargets, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { decorAttraction, decorTrafficMultiplier } from './decor';
-import { buyLandPlot, relocateMisplacedFixtures, upgradeFixtureSlots, validateStoreLayout, totalWarehouseCells, coldWarehouseCapacity, warehouseCellsFor, unitsFittingInCells, type LayoutResult } from './store-layout';
+import { buyLandPlot, expandFootprint, relocateBuilding, relocateMisplacedFixtures, upgradeFixtureSlots, validateStoreLayout, totalWarehouseCells, coldWarehouseCapacity, warehouseCellsFor, unitsFittingInCells, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
 import { expiryDay, looseUnits, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
@@ -126,7 +128,7 @@ import { advancePriceIndex, clampSellingPrice, computePriceTargets, demandPriceF
 import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffic, type DemandTable, type ProductDemand } from './demand';
 import { emptyStallState, normalizeStallState, planStallDay, stallDemand } from './stalls';
 import { emptyQuestState, findClaimableQuest, getDailyQuests, getStoryQuest, markQuestClaimed, normalizeQuestState, type QuestContext, type QuestProgress, type QuestReward } from './quests';
-import { generateCandidatesForDay, validateHireStaff, calculatePayroll, Mulberry32Rng } from './staff';
+import { generateCandidatesForDay, validateHireStaff, calculatePayroll, Mulberry32Rng, describeWorkerError } from './staff';
 import {
   createInitialPartyOrderState,
   refreshAvailablePartyOrders,
@@ -154,8 +156,8 @@ import {
   getSkillModifier,
   hasPerk,
 } from './skills';
-import { setAwningOpen } from '@game/data';
-import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, fixtureBuilding, XOI_DISH_IDS } from '@game/data';
+import { applyBuildingLayout, setAwningOpen } from '@game/data';
+import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS } from '@game/data';
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS } from '@game/data';
 import { RestockClaimManager } from './restock-claims';
@@ -177,7 +179,7 @@ import { aggregateHeatmap, appendPricePoint, pruneHeatmap, sanitizeHeatmap, sani
 import { addProductionOutput, consumeIngredients, missingIngredients, sanitizeProductionJobs } from './production';
 import { LONG_TERM_GOALS, WEEKLY_QUESTS, PARTY_ORDER_MAP, TITLES, effectiveShelfCapacity, SECURITY_RULES } from '@game/data';
 import { getUnlockedTitles, setActiveTitle, type TitleContext } from './titles';
-import { getFixtureDimensions, syncSlotChildren, type TitleDef } from '@game/shared';
+import { getFixtureDimensions, syncSlotChildren, type BuildingPlacementRecord, type TitleDef } from '@game/shared';
 
 function normalizeStaffSchedule(
   schedule: Record<string, StaffShift> | undefined,
@@ -210,6 +212,8 @@ export interface GameSimulationCallbacks {
   onStateChanged?: () => void;
   onPlayerRelocated?: () => void;
   onMapChanged?: (map: GameTileMap) => void;
+  /** Tập quầy đang hết vé/ngừng bán (hiện biển HẾT); phát khi tập đổi. */
+  onStallStatusChanged?: (soldOutStallIds: string[]) => void;
   onOrdersDelivered?: (quantity:number) => void;
   onLevelUp?: (level: number) => void;
   onWeatherChanged?: (weatherId: string) => void;
@@ -262,6 +266,8 @@ export class GameSimulation {
   private fixtures: StoreFixture[];
   private storedFixtures: StoreFixture[];
   private unlockedPlotIds: string[];
+  /** Vị trí đặt tòa + ô sàn mở rộng (chỉ có khi save có trường này); nguồn của bản đồ cùng `unlockedPlotIds`. */
+  private buildingPlacements: BuildingPlacementRecord[] | undefined;
   private decorOwned: string[];
   private inventory: InventoryItem[];
   private holdingArea: HoldingItem[];
@@ -315,6 +321,8 @@ export class GameSimulation {
   private coopLocalState: DailyRoutineState | null = null;
   private coopSeenDay: number | null = null;
   private routineEnabled = false;
+  /** Hệ số tăng lượng khách vào tiệm (nhân vào lưu lượng trước khi áp trần theo cấp); 1 = nhịp cũ. */
+  private static readonly STORE_TRAFFIC_BOOST = 1.25;
   private trafficWarmed = false;
   private logisticsManager = new StoreLogisticsManager();
   private storageManager: StorageManager;
@@ -425,6 +433,7 @@ export class GameSimulation {
     this.fixtures = initialSave.storeLayout.fixtures.map((f) => ({ ...f }));
     this.storedFixtures = (initialSave.storeLayout.storedFixtures ?? []).map(f => ({ ...f }));
     this.unlockedPlotIds = [...(initialSave.storeLayout.unlockedPlotIds ?? [])];
+    this.buildingPlacements = initialSave.storeLayout.buildingPlacements ? structuredClone(initialSave.storeLayout.buildingPlacements) : undefined;
     this.decorOwned = [...(initialSave.storeLayout.decorOwned ?? [])];
     this.inventory = initialSave.inventory.map((i) => ({ ...i }));
     this.holdingArea = (initialSave.holdingArea ?? []).map((h) => ({ ...h }));
@@ -465,7 +474,7 @@ export class GameSimulation {
     this.skills = initialSave.skills ? structuredClone(initialSave.skills) : createInitialSkillState();
     this.stallsMarketsManager = new StallsMarketsManager(initialSave);
     this.ensureSupplierMarket(initialSave.worldTime.day);
-    this.tileMap = this.stalls.owned.length ? generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned) : tileMap;
+    this.tileMap = this.stalls.owned.length || this.buildingPlacements?.length ? this.buildTileMap() : tileMap;
     this.inputManager = inputManager;
     this.callbacks = callbacks;
     this.customerManager = new CustomerManager(
@@ -570,7 +579,7 @@ export class GameSimulation {
         this.callbacks.onDayChanged(day);
       }
       this.notifyStateChanged();
-    }, () => { this.callbacks.onTimeChanged?.(); this.topUpStallShortfalls(); this.settleStallsHourly(); });
+    }, () => { this.callbacks.onTimeChanged?.(); this.topUpStallShortfalls(); this.settleStallsHourly(); this.emitStallStatus(); });
   }
 
   /** Đặt lại vị trí nhân vật (dùng khi chơi chung: vị trí không theo save dùng chung). */
@@ -668,6 +677,9 @@ export class GameSimulation {
 
   public getStoredFixtures(): StoreFixture[] { return structuredClone(this.storedFixtures); }
   public getUnlockedPlotIds(): string[] { return [...this.unlockedPlotIds]; }
+  public getBuildingPlacements(): BuildingPlacementRecord[] | undefined { return this.buildingPlacements ? structuredClone(this.buildingPlacements) : undefined; }
+  /** Bản đồ theo đất đã mua, quầy đã mở và vị trí đặt/ô sàn mở rộng hiện tại. */
+  private buildTileMap(): GameTileMap { return generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned, this.buildingPlacements); }
   public getDecorOwned(): string[] { return [...this.decorOwned]; }
   /** Điểm thu hút từ trang trí và hệ số khách tương ứng. */
   public getDecorAttraction(): { points: number; trafficMultiplier: number } {
@@ -679,7 +691,7 @@ export class GameSimulation {
     if (this.clock.getTime().isStoreOpen || this.customerManager.getCustomers().some(customer => customer.stage !== 'leaving') || this.staff.some(member => !!member.workerTask || !!member.diningTask)) {
       return { error: 'store_open' };
     }
-    const nextMap = generateStarterTileMap(save.storeLayout.unlockedPlotIds ?? [], this.stalls.owned);
+    const nextMap = generateStarterTileMap(save.storeLayout.unlockedPlotIds ?? [], this.stalls.owned, save.storeLayout.buildingPlacements);
     const valid = validateStoreLayout(save, nextMap);
     if (valid.error) return valid;
     this.tileMap = nextMap;
@@ -689,8 +701,38 @@ export class GameSimulation {
     return { save: this.exportSaveData(save.id, Math.max(0, save.revision - 1)) };
   }
 
-  public purchaseLand(plotId: string): LayoutResult {
-    const result = buyLandPlot(this.exportSaveData(), plotId);
+  public purchaseLand(plotId: string, placement?: { parcelId: string; originX: number }): LayoutResult {
+    const result = buyLandPlot(this.exportSaveData(), plotId, placement);
+    if (!result.save || result.error) return result;
+    return this.applyStoreLayout(result.save);
+  }
+
+  /** Dời một tòa phụ sang lô/gốc x khác (xem `relocateBuilding`): trừ phí, dịch nội thất, tòa thi công tới sáng hôm sau. */
+  public relocateBuilding(buildingId: string, placement: { parcelId: string; originX: number }): LayoutResult {
+    const result = relocateBuilding(this.exportSaveData(), buildingId, placement);
+    if (!result.save || result.error) return result;
+    return this.applyStoreLayout(result.save);
+  }
+
+  /** Tòa dời xong thi công khi sang ngày `constructionUntilDay`: mở lại cửa, dựng lại bản đồ. */
+  private finishConstruction(): void {
+    const day = this.clock.getTime().day;
+    if (!this.buildingPlacements?.some(placement => placement.constructionUntilDay && day >= placement.constructionUntilDay)) return;
+    this.buildingPlacements = this.buildingPlacements.map(placement => {
+      if (!placement.constructionUntilDay || day < placement.constructionUntilDay) return placement;
+      const reopened = { ...placement };
+      delete reopened.constructionUntilDay;
+      return reopened;
+    });
+    this.tileMap = this.buildTileMap();
+    this.collisionSystem.updateTileMap(this.tileMap);
+    this.customerManager.rerouteAll(this.tileMap, this.fixtures);
+    this.callbacks.onMapChanged?.(this.tileMap);
+  }
+
+  /** Mở rộng sàn thêm các ô `tiles` cho `buildingId` (xem `expandFootprint`): trừ tiền, dựng lại bản đồ và đường đi. */
+  public expandFootprint(buildingId: string, tiles: ReadonlyArray<{ x: number; y: number }>): LayoutResult {
+    const result = expandFootprint(this.exportSaveData(), buildingId, tiles);
     if (!result.save || result.error) return result;
     return this.applyStoreLayout(result.save);
   }
@@ -914,7 +956,7 @@ export class GameSimulation {
 
   /** Bàn trống (sạch, còn chỗ) trong đúng tòa nhà của khách; không dùng bàn của tòa kia. */
   private availableDiningTableId(buildingId = 'main'): string | undefined {
-    return this.fixtures.find(fixture => fixture.type === 'dining_table' && (fixtureBuilding(fixture) ?? 'main') === buildingId && !this.diningDirtyTableIds.has(fixture.id)
+    return this.fixtures.find(fixture => fixture.type === 'dining_table' && (fixtureBuilding(fixture, this.tileMap.buildings) ?? 'main') === buildingId && !this.diningDirtyTableIds.has(fixture.id)
       && this.customerManager.diningOccupancy(fixture.id) < (fixture.shopId === 'food_table_4' ? 4 : 2))?.id;
   }
 
@@ -1474,11 +1516,12 @@ export class GameSimulation {
     if (!stall.buyable) return { success: false, reason: stall.reason };
     this.playerData.money -= stall.price;
     this.stalls.owned.push(stall.id);
-    this.tileMap = generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned);
+    this.tileMap = this.buildTileMap();
     this.collisionSystem.updateTileMap(this.tileMap);
     this.ensureSafePlayerPosition();
     this.customerManager.rerouteAll(this.tileMap, this.fixtures);
     this.callbacks.onMapChanged?.(this.tileMap);
+    this.emitStallStatus(true);
     this.notifyStateChanged();
     return { success: true };
   }
@@ -1494,7 +1537,8 @@ export class GameSimulation {
 
   /** Số khung giờ bán của quầy trong một ngày (08:00–22:00); mỗi giờ qua đi bán thêm 1/14 nhu cầu. */
   private static readonly STALL_SELL_SLOTS = 14;
-  private static readonly STALL_FIRST_HOUR = 8;
+  private static readonly STALL_FIRST_HOUR = STALL_OPEN_HOUR;
+  private lastStallStatusKey = '';
 
   private stallProgress(day: number): NonNullable<StallState['progress']> {
     if (this.stalls.progress?.day !== day) this.stalls.progress = { day, slots: 0, entries: {} };
@@ -1516,7 +1560,8 @@ export class GameSimulation {
       const stall = STALL_MAP[stallId];
       if (!stall) continue;
       const entry = progress.entries[stallId] ??= { demand: stallDemand(stallId, day, this.playerData.reputation), servings: 0, revenue: 0, cogs: 0, units: {} };
-      const goal = Math.min(entry.demand, Math.round(entry.demand * target / GameSimulation.STALL_SELL_SLOTS));
+      const stallSlots = stallSellSlots(stall);
+      const goal = Math.min(entry.demand, Math.round(entry.demand * Math.min(target, stallSlots) / stallSlots));
       const unitsFor = (total: number, productId: string, perServing: number) => Math.ceil(total * perServing - 1e-9) - (entry.units[productId] ?? 0);
       let add = goal - entry.servings;
       while (add > 0 && stall.ingredients.some(ing => unitsFor(entry.servings + add, ing.productId, ing.perServing) > this.warehouseUnits(ing.productId))) add--;
@@ -1537,12 +1582,19 @@ export class GameSimulation {
       entry.servings += add;
       entry.revenue += revenue;
       entry.cogs += cogs;
-      this.playerData.money += revenue;
+      // Tiền mặt nhập hàng của quầy (vé số, cà phê, than...) trừ khỏi ví ngay lúc bán; nguyên liệu lấy từ kho đã trả lúc nhập kho.
+      this.playerData.money += revenue - add * stall.cashCostPerServing;
       this.statistics.totalRevenue += revenue;
       record.revenue += revenue;
       record.cogs += cogs;
       record.itemsSold += add;
       record.stallServings = { ...record.stallServings, [stallId]: (record.stallServings?.[stallId] ?? 0) + add };
+      record.stallRevenue = { ...record.stallRevenue, [stallId]: (record.stallRevenue?.[stallId] ?? 0) + revenue };
+      record.stallCogs = { ...record.stallCogs, [stallId]: (record.stallCogs?.[stallId] ?? 0) + cogs };
+      // Mỗi suất là một khách và một lượt bán: dùng chung bộ đếm với quầy thu ngân (nhiệm vụ, story, mục tiêu, thống kê tổng).
+      record.customersServed += add;
+      record.transactionsCount += add;
+      this.statistics.totalCustomersServed += add;
     }
     record.grossProfit = record.revenue - record.cogs;
     record.netProfit = record.grossProfit - record.spoilageCost - record.wagesPaid - (record.maintenanceCost ?? 0) - (record.theftCost ?? 0) + (record.theftRecovered ?? 0) - (record.counterfeitLoss ?? 0) - (record.badDebtCost ?? 0);
@@ -1579,6 +1631,27 @@ export class GameSimulation {
     this.sellStalls(time.day, slots);
     if (slots >= GameSimulation.STALL_SELL_SLOTS) this.processStalls(time.day);
     this.notifyStateChanged();
+  }
+
+  /** Quầy có giờ ngừng bán đang hết vé: đã qua giờ ngừng bán hôm nay, hoặc đã bán đủ nhu cầu hôm nay. */
+  public getSoldOutStalls(): string[] {
+    const time = this.clock.getTime();
+    const progress = this.stalls.progress?.day === time.day ? this.stalls.progress : undefined;
+    return this.stalls.owned.filter(id => {
+      const stall = STALL_MAP[id];
+      if (!stall || stall.sellUntilHour === undefined) return false;
+      if (time.hour >= stall.sellUntilHour) return true;
+      const entry = progress?.entries[id];
+      return !!entry && entry.demand > 0 && entry.servings >= entry.demand;
+    });
+  }
+
+  private emitStallStatus(force = false): void {
+    const ids = this.getSoldOutStalls();
+    const key = ids.join(',');
+    if (!force && key === this.lastStallStatusKey) return;
+    this.lastStallStatusKey = key;
+    this.callbacks.onStallStatusChanged?.(ids);
   }
 
   private questContext(): QuestContext {
@@ -2123,6 +2196,23 @@ export class GameSimulation {
     return this.wageDebt;
   }
 
+  /** Trả nợ lương ngay bằng tiền đang có (không chờ kết ngày): trừ min(nợ, tiền), ghi sổ cái loại wage. */
+  public payWageDebt(): { success: boolean; paid: number; remaining: number; reason?: string } {
+    const debt = Math.max(0, this.wageDebt);
+    if (debt <= 0) return { success: false, paid: 0, remaining: 0, reason: 'Hiện không có nợ lương.' };
+    const paid = Math.min(debt, Math.max(0, Math.floor(this.playerData.money)));
+    if (paid <= 0) return { success: false, paid: 0, remaining: debt, reason: 'Không đủ tiền để trả nợ lương.' };
+    this.playerData.money -= paid;
+    this.wageDebt = debt - paid;
+    const day = this.clock.getTime().day;
+    this.recordLedger({ day, type: 'wage', amount: paid, description: `Trả nợ lương nhân viên${this.wageDebt > 0 ? `; còn nợ ${this.wageDebt.toLocaleString('vi-VN')} ₫` : ''}` });
+    const record = day === this.currentDayRecord.day ? this.currentDayRecord : (this.dailyRecords[day] ??= this.createEmptyDailyRecord(day));
+    record.wagesPaid += paid;
+    record.netProfit = record.revenue - record.cogs - record.spoilageCost - record.wagesPaid - (record.maintenanceCost ?? 0) - (record.theftCost ?? 0) + (record.theftRecovered ?? 0) - (record.counterfeitLoss ?? 0) - (record.badDebtCost ?? 0);
+    this.notifyStateChanged();
+    return { success: true, paid, remaining: this.wageDebt };
+  }
+
   public getStaffCandidates(day = this.clock.getTime().day): StaffCandidate[] {
     return generateCandidatesForDay(day);
   }
@@ -2250,23 +2340,28 @@ export class GameSimulation {
     if (!member || !this.isActorAvailableForRestock(staffId)) return { success: false, reason: 'actor_unavailable' };
     if (member.workerTask) return { success: false, reason: 'staff_busy' };
 
-    const targets = this.getRestockJobTargets();
-    if (targets.length === 0) return { success: false, reason: 'no_targets' };
-
-    // Lấy kệ đầu tiên cần châm
-    const firstTarget = targets[0];
+    // Mỗi nhân viên nhắm một kệ trống khác nhau (kệ người khác đang giữ thì bỏ qua), lệch theo thứ tự nhân viên để không dồn vào cùng kệ.
+    const free = this.getRestockJobTargets().filter((t) => {
+      if (t.availableInInventory <= 0) return false;
+      const claim = this.restockJobClaims.get(t.fixtureId);
+      return !claim || claim.actorId === staffId || !this.isActorAvailableForRestock(claim.actorId);
+    });
+    if (free.length === 0) return { success: false, reason: 'no_targets' };
+    const refillIndex = this.staff.filter((item) => item.role === 'refill').findIndex((item) => item.id === staffId);
+    const firstTarget = free[Math.max(0, refillIndex) % free.length];
+    if (!this.claimRestockJob(staffId, firstTarget.fixtureId).claimed) return { success: false, reason: 'target_claimed' };
     const product = PRODUCT_MAP[firstTarget.productId];
     const warehouse = this.fixtures.find((fixture) => fixture.id === (product.storageType === 'cold' ? 'warehouse_cold_storage' : 'warehouse_dry_rack'));
-    if (!warehouse) return { success: false, reason: 'warehouse_missing' };
+    if (!warehouse) { this.releaseRestockJob(staffId, firstTarget.fixtureId); return { success: false, reason: 'warehouse_missing' }; }
 
     const position = member.position ?? { ...WAREHOUSE_ENTRANCE };
     const route = this.routeToFixture(position, warehouse);
-    if (!route) return { success: false, reason: 'no_path_to_warehouse' };
+    if (!route) { this.releaseRestockJob(staffId, firstTarget.fixtureId); return { success: false, reason: 'no_path_to_warehouse' }; }
 
     member.position = { ...position };
     member.lastWorkerError = undefined;
     member.workerTask = {
-      fixtureId: 'auto',
+      fixtureId: firstTarget.fixtureId,
       productId: firstTarget.productId,
       stage: 'to_warehouse',
       route,
@@ -2277,18 +2372,32 @@ export class GameSimulation {
   }
 
   /** Lấy kệ tiếp theo cần châm khi ở chế độ auto-restock. Trả undefined nếu không còn kệ nào. */
-  private getNextAutoRestockTarget(currentFixtureId: string, currentProductId: string): RestockJobTarget | undefined {
+  private getNextAutoRestockTarget(actorId: string, currentFixtureId: string, currentProductId: string): RestockJobTarget | undefined {
     const targets = this.getRestockJobTargets();
     const currentIdx = targets.findIndex((t) => t.fixtureId === currentFixtureId && t.productId === currentProductId);
+    // Bỏ qua kệ đã có nhân viên khác giữ chỗ.
+    const free = (t: RestockJobTarget) => {
+      if (t.availableInInventory <= 0) return false;
+      const claim = this.restockJobClaims.get(t.fixtureId);
+      return !claim || claim.actorId === actorId || !this.isActorAvailableForRestock(claim.actorId);
+    };
     // Tìm kệ tiếp theo trong danh sách
     for (let i = currentIdx + 1; i < targets.length; i++) {
-      if (targets[i].availableInInventory > 0) return targets[i];
+      if (free(targets[i])) return targets[i];
     }
     // Nếu không còn, quay lại từ đầu (vòng lặp)
     for (let i = 0; i < targets.length; i++) {
-      if (targets[i].availableInInventory > 0) return targets[i];
+      if (free(targets[i])) return targets[i];
     }
     return undefined;
+  }
+
+  /** Chuyển việc tự động sang kệ mới: nhả kệ cũ và giữ chỗ kệ mới (revalidateRestockJob đòi có claim). */
+  private claimAutoRestockTarget(member: StaffMember, target: RestockJobTarget): boolean {
+    const task = member.workerTask;
+    if (!task) return false;
+    if (task.fixtureId !== target.fixtureId) this.releaseRestockJob(member.id, task.fixtureId);
+    return this.claimRestockJob(member.id, target.fixtureId).claimed;
   }
 
   private returnWorkerCargo(member: StaffMember): void {
@@ -2326,6 +2435,61 @@ export class GameSimulation {
     return true;
   }
 
+  /** Câu trạng thái hiển thị khi nhân viên đứng chờ ở kho vì tòa được gán đang thi công (L3-C6). */
+  private static readonly CONSTRUCTION_WAITING_MESSAGE = 'Tòa đang thi công — tạm đứng chờ ở kho.';
+
+  /** Tòa theo vị trí đặt của một nội thất; undefined khi nội thất không nằm trong tòa nào (vd. kho sau tiệm). */
+  private buildingOfFixture(fixture: StoreFixture | undefined): string | undefined {
+    return fixture ? fixtureBuilding(fixture, this.tileMap.buildings) : undefined;
+  }
+
+  /**
+   * Tòa đang thi công sau khi dời (`placement.constructionUntilDay` → `MapBuilding.open = false`): cửa bị chặn
+   * nên nội thất bên trong chưa dùng được và nhân viên không vào được (L3-C5/L3-C6).
+   */
+  private isBuildingUnderConstruction(buildingId: string | undefined): boolean {
+    if (!buildingId) return false;
+    return this.tileMap.buildings?.some(building => building.id === buildingId && !building.open) ?? false;
+  }
+
+  private isFixtureUnderConstruction(fixture: StoreFixture | undefined): boolean {
+    return this.isBuildingUnderConstruction(this.buildingOfFixture(fixture));
+  }
+
+  /** Đưa nhân viên về đứng chờ ở cửa kho: trả hàng đang mang, bỏ việc châm kệ/dọn bàn. */
+  private parkWorkerAtWarehouse(member: StaffMember): void {
+    if (member.workerTask) this.finishStaffJob(member, true);
+    member.workerTask = undefined;
+    member.diningTask = undefined;
+    member.position = { ...WAREHOUSE_ENTRANCE };
+    member.lastWorkerError = GameSimulation.CONSTRUCTION_WAITING_MESSAGE;
+  }
+
+  /** Nhân viên đang chờ ở kho vì tòa được gán đang thi công (id nhân viên → id tòa). */
+  private staffWaitingForConstruction = new Map<string, string>();
+
+  /**
+   * L3-C6: nhân viên gán vào kệ của tòa đang thi công (tòa dời xong, cửa bị chặn) không có đường vào nội thất.
+   * Bỏ gán kệ, trả hàng đang mang và cho đứng chờ ở kho tiệm chính tới khi tòa mở lại (sáng hôm sau).
+   */
+  private updateConstructionWaitingStaff(): void {
+    for (const member of this.staff) {
+      const waitingBuilding = this.staffWaitingForConstruction.get(member.id);
+      if (waitingBuilding) {
+        if (this.isBuildingUnderConstruction(waitingBuilding)) { this.parkWorkerAtWarehouse(member); continue; }
+        this.staffWaitingForConstruction.delete(member.id);
+        if (member.lastWorkerError === GameSimulation.CONSTRUCTION_WAITING_MESSAGE) member.lastWorkerError = undefined;
+      }
+      if (member.role !== 'refill') continue;
+      const assignedFixture = member.assignedFixtureId ? this.fixtures.find(fixture => fixture.id === member.assignedFixtureId) : undefined;
+      if (!this.isFixtureUnderConstruction(assignedFixture)) continue;
+      const building = this.buildingOfFixture(assignedFixture)!;
+      member.assignedFixtureId = undefined;
+      this.staffWaitingForConstruction.set(member.id, building);
+      this.parkWorkerAtWarehouse(member);
+    }
+  }
+
   private updateStaffWorkers(dt: number): void {
     for (const member of this.staff) {
       const diningTask = member.diningTask;
@@ -2352,6 +2516,13 @@ export class GameSimulation {
       }
       const task = member.workerTask;
       if (!task) continue;
+      // Kệ mục tiêu nằm trong tòa đang thi công: bỏ việc, trả hàng và đứng chờ ở kho (L3-C6).
+      if (this.isFixtureUnderConstruction(this.fixtures.find(fixture => fixture.id === task.fixtureId))) {
+        member.lastWorkerError = GameSimulation.CONSTRUCTION_WAITING_MESSAGE;
+        this.finishStaffJob(member, true);
+        member.position = { ...WAREHOUSE_ENTRANCE };
+        continue;
+      }
       if (!this.isActorAvailableForRestock(member.id)) {
         this.finishStaffJob(member, true);
         continue;
@@ -2375,9 +2546,11 @@ export class GameSimulation {
       }
 
       // Revalidate: nếu auto-restock thì tìm kệ tiếp theo, nếu không thì validate kệ cụ thể
-      if (task.autoRestock) {
-        const nextTarget = this.getNextAutoRestockTarget(task.fixtureId, task.productId);
-        if (!nextTarget) {
+      if (task.autoRestock && task.stage === 'to_warehouse') {
+        // Ưu tiên kệ đang nhắm (nếu còn thiếu hàng và chưa ai khác giữ), không thì lấy kệ kế tiếp.
+        const current = this.getRestockJobTargets().find((t) => t.fixtureId === task.fixtureId && t.productId === task.productId && t.availableInInventory > 0);
+        const nextTarget = current ?? this.getNextAutoRestockTarget(member.id, task.fixtureId, task.productId);
+        if (!nextTarget || !this.claimAutoRestockTarget(member, nextTarget)) {
           member.lastWorkerError = 'Đã châm hết kệ cần thiết.';
           this.finishStaffJob(member, true);
           continue;
@@ -2388,7 +2561,7 @@ export class GameSimulation {
       }
       const valid = this.revalidateRestockJob(member.id, task.fixtureId);
       if (!valid.valid || !valid.target) {
-        member.lastWorkerError = valid.reason ?? 'Kệ hoặc đường đi không còn hợp lệ.';
+        member.lastWorkerError = describeWorkerError(valid.reason) ?? 'Kệ hoặc đường đi không còn hợp lệ.';
         this.finishStaffJob(member, true);
         continue;
       }
@@ -2399,11 +2572,17 @@ export class GameSimulation {
           this.finishStaffJob(member, true);
           continue;
         }
+        const shelvable = this.shelvableUnits(task.productId);
+        if (shelvable <= 0) {
+          member.lastWorkerError = describeWorkerError('reserved_for_stall');
+          this.finishStaffJob(member, true);
+          continue;
+        }
         source.lots ??= normalizeLots(source.quantity, undefined, task.productId, this.clock.getTime().day);
         // Chỉ mang hàng lẻ ra kệ; hàng còn nguyên thùng phải được mở trong kho trước.
         const caseSize = PRODUCT_MAP[task.productId]?.caseSize;
         let loose = looseUnits(source.lots, caseSize);
-        const wanted = Math.min(4, valid.target.needed);
+        const wanted = Math.min(4, valid.target.needed, shelvable);
         if (caseSize && loose < wanted) {
           this.unpackMultipleCases(task.productId, Math.ceil((wanted - loose) / caseSize));
           loose = looseUnits(source.lots, caseSize);
@@ -2413,7 +2592,7 @@ export class GameSimulation {
           this.finishStaffJob(member, true);
           continue;
         }
-        const quantity = Math.min(4, valid.target.needed, loose);
+        const quantity = Math.min(4, valid.target.needed, loose, shelvable);
         task.carriedLots = takeLots(source.lots, quantity, { caseSize, looseOnly: true });
         source.quantity = sumLots(source.lots);
         this.inventory = this.inventory.filter((item) => item.quantity > 0);
@@ -2442,6 +2621,8 @@ export class GameSimulation {
       const moved = Math.min(Math.max(0, capacity - shelf.currentStock), sumLots(task.carriedLots));
       if (moved > 0) {
         const movedLots = takeLots(task.carriedLots, moved);
+        // Kệ vừa được nhân viên tự chọn món: nhớ vào sơ đồ như nút "bày tất cả".
+        if (!shelf.assignedProductId && !this.planogram[shelf.id]) this.planogram[shelf.id] = task.productId;
         shelf.assignedProductId = task.productId;
         shelf.stockLots ??= [];
         mergeLots(shelf.stockLots, movedLots);
@@ -2449,14 +2630,14 @@ export class GameSimulation {
       }
       // Nếu auto-restock, tìm kệ tiếp theo; nếu không còn thì mới finish
       if (task.autoRestock) {
-        const nextTarget = this.getNextAutoRestockTarget(task.fixtureId, task.productId);
+        const nextTarget = this.getNextAutoRestockTarget(member.id, task.fixtureId, task.productId);
         if (nextTarget) {
           // Tiếp tục với kệ tiếp theo
           const nextProduct = PRODUCT_MAP[nextTarget.productId];
           const warehouse = this.fixtures.find((fixture) => fixture.id === (nextProduct.storageType === 'cold' ? 'warehouse_cold_storage' : 'warehouse_dry_rack'));
           if (warehouse) {
             const route = this.routeToFixture(member.position, warehouse);
-            if (route) {
+            if (route && this.claimAutoRestockTarget(member, nextTarget)) {
               task.fixtureId = nextTarget.fixtureId;
               task.productId = nextTarget.productId;
               task.stage = 'to_warehouse';
@@ -2487,9 +2668,12 @@ export class GameSimulation {
     this.autoRefillTimer = 3;
     for (const member of this.staff) {
       if (member.role !== 'refill' || member.workerTask || member.diningTask) continue;
+      // Tòa được gán đang thi công: đứng chờ ở kho, không nhận việc khác (L3-C6).
+      if (this.staffWaitingForConstruction.has(member.id)) continue;
       if (!this.isActorAvailableForRestock(member.id)) continue;
       if (!this.getRestockJobTargets().some((target) => target.availableInInventory > 0)) return;
-      this.assignAutoRestockJob(member.id);
+      // Mỗi nhịp chỉ giao cho một người: các nhân viên xuất phát lệch nhau thay vì đi dính cục từ kho ra.
+      if (this.assignAutoRestockJob(member.id).success) return;
     }
   }
 
@@ -2502,7 +2686,7 @@ export class GameSimulation {
   private updateRefillIdleWorkers(dt: number): void {
     for (const member of this.staff) {
       if (member.role !== 'refill') continue;
-      if (member.workerTask || member.diningTask || !this.isStaffOnShift(member)) {
+      if (member.workerTask || member.diningTask || !this.isStaffOnShift(member) || this.staffWaitingForConstruction.has(member.id)) {
         this.refillIdleRoutes.delete(member.id);
         this.refillIdleShelf.delete(member.id);
         this.refillIdleWait.set(member.id, 0);
@@ -2516,7 +2700,7 @@ export class GameSimulation {
       let choice = this.refillIdleShelf.get(member.id);
       if (choice && !this.fixtures.some((fixture) => fixture.id === choice!.fixtureId)) choice = undefined;
       if (!choice) {
-        const shelves = this.fixtures.filter((fixture) => isSalesFixture(fixture));
+        const shelves = this.fixtures.filter((fixture) => isSalesFixture(fixture) && !this.isFixtureUnderConstruction(fixture));
         if (!shelves.length) continue;
         choice = { fixtureId: shelves[(Array.from(member.id).reduce((h, c) => h + c.charCodeAt(0), 0) + Math.floor(this.clock.getTime().hour)) % shelves.length].id, done: false };
         this.refillIdleShelf.set(member.id, choice);
@@ -2542,6 +2726,7 @@ export class GameSimulation {
 
   /** Bảo vệ trong ca đi tuần: ra đường trước tiệm, vào cửa, đi sâu vào trong tiệm rồi quay ra. */
   private updateSecurityPatrol(dt: number): void {
+    // Tiệm chính cố định ở vị trí mặc định (`main_fixed` trong `placementsProblem`) nên tra tĩnh là đúng.
     const door = BUILDING_MAP.main.entranceTile;
     const stops: GridPoint[] = [{ x: 4, y: 13 }, { x: door.x, y: door.y }, { x: door.x - 2, y: door.y - 3 }, { x: door.x, y: door.y }];
     for (const member of this.staff) {
@@ -2659,6 +2844,11 @@ export class GameSimulation {
     if (member.workerTask || member.diningTask) return;
     const post = this.getCashierPost(member.id);
     if (!post) return;
+    // Quầy nằm trong tòa đang thi công: thu ngân đứng chờ ở kho tới khi tòa mở lại (L3-C6).
+    if (this.isBuildingUnderConstruction(buildingAt(Math.floor(post.x / TILE_SIZE), Math.floor(post.y / TILE_SIZE), this.tileMap.buildings))) {
+      member.position = { ...WAREHOUSE_ENTRANCE };
+      return;
+    }
     const position = member.position ?? { ...WAREHOUSE_ENTRANCE };
     const dx = post.x - position.x, dy = post.y - position.y, distance = Math.hypot(dx, dy);
     if (distance < 0.5) return;
@@ -3062,6 +3252,41 @@ export class GameSimulation {
     return need;
   }
 
+  /**
+   * Nhu cầu nguyên liệu quầy cho gợi ý nhập hàng: lấy mức cao nhất giữa nhu cầu hôm nay, nhu cầu ngày mai (hàng nhập về sáng mai)
+   * và số suất thực bán trung bình 7 ngày gần nhất trong sổ, để không nhập thiếu khi quầy đang bán chạy hơn mô hình.
+   */
+  private stallIngredientForecastPerDay(productId: string): number {
+    const day = this.clock.getTime().day;
+    let need = 0;
+    for (const stallId of this.stalls.owned) {
+      const stall = STALL_MAP[stallId];
+      const perServing = stall?.ingredients.find((ing) => ing.productId === productId)?.perServing;
+      if (!stall || !perServing) continue;
+      let sold = 0;
+      let days = 0;
+      for (let d = Math.max(1, day - 7); d < day; d++) {
+        const rec = this.dailyRecords[d];
+        if (rec?.stallServings) { sold += rec.stallServings[stallId] ?? 0; days++; }
+      }
+      const observed = days > 0 ? sold / days : 0;
+      const demand = Math.max(stallDemand(stallId, day, this.playerData.reputation), stallDemand(stallId, day + 1, this.playerData.reputation));
+      need += Math.max(demand, observed) * perServing;
+    }
+    return need;
+  }
+
+  /** Số đơn vị kho giữ lại cho nguyên liệu quầy ăn uống (một ngày nhu cầu dự báo): bày kệ tự động không được lấy phần này. */
+  private stallReservedUnits(productId: string): number {
+    return this.stalls.owned.length ? Math.ceil(this.stallIngredientForecastPerDay(productId) - 1e-9) : 0;
+  }
+
+  /** Số đơn vị của món trong kho được phép đem bày lên kệ (đã trừ phần giữ cho quầy). */
+  private shelvableUnits(productId: string): number {
+    const quantity = this.inventory.find((item) => item.productId === productId)?.quantity ?? 0;
+    return Math.max(0, quantity - this.stallReservedUnits(productId));
+  }
+
   /** Đơn vị nguyên liệu còn thiếu trong kho để các quầy bán đủ hôm nay (chỉ hàng giao ngay trong ngày mới kịp). */
   private stallTodayGap(productId: string): number {
     const progress = this.stalls.progress?.day === this.clock.getTime().day ? this.stalls.progress : undefined;
@@ -3257,7 +3482,7 @@ export class GameSimulation {
       budget,
       unitPriceOf: supplierId ? (productId: string) => this.wholesaleUnitPrice(supplierId, productId) : undefined,
       expectedDailyOf: (productId: string) => expected.get(productId),
-      stallNeedOf: (productId: string) => this.stallIngredientNeedPerDay(productId),
+      stallNeedOf: (productId: string) => this.stallIngredientForecastPerDay(productId),
       demandMultiplierOf: (productId: string) => this.refreshDemandTable().perProduct[productId]?.multiplier ?? 1.0,
     });
   }
@@ -3390,7 +3615,7 @@ export class GameSimulation {
       const lots = normalizeLots(item.quantity, item.lots, item.productId, day);
       return { productId: item.productId, quantity: sumLots(lots), lots };
     }).filter((item) => item.quantity > 0);
-    const relocated = relocateMisplacedFixtures(this.fixtures, this.storedFixtures);
+    const relocated = relocateMisplacedFixtures(this.fixtures, this.storedFixtures, this.tileMap.buildings);
     this.fixtures = relocated.fixtures;
     this.storedFixtures = relocated.stored;
     if (relocated.movedIds.length) this.callbacks.onToast?.(`${relocated.movedIds.length} nội thất đặt sai tòa nhà đã được cất vào kho nội thất.`, 'warn');
@@ -3650,6 +3875,7 @@ export class GameSimulation {
 
   private tickDailyRoutine(dt: number, manual: Vector2D): RoutineTickOutput {
     if (!this.routineEnabled) return { move: null, controlLocked: false, speedMultiplier: 1, gear: 'none' };
+    // Cửa tiệm chính cho lộ trình sinh hoạt: tiệm chính cố định ở vị trí mặc định (`main_fixed`) nên tra tĩnh là đúng.
     this.dailyRoutine.setWorld({ tileMap: this.tileMap, collision: this.collisionSystem, storeDoorTile: BUILDING_MAP.main.entranceTile, homeDoorTile: HOME_DOOR_TILE });
     const time = this.clock.getTime();
     return this.dailyRoutine.update(dt, {
@@ -3850,6 +4076,7 @@ export class GameSimulation {
     if (this.isPaused) { this.prevPlayerPosition = null; return; }
     // 1. Advance game clock
     this.clock.update(dt);
+    this.finishConstruction();
     
     // 1.5. Daily Routine (chỉ khi bật): một máy trạng thái theo phút game; autopilot trả vector di chuyển, không teleport.
     const manualMove = this.inputManager.getMovementVector();
@@ -3939,7 +4166,7 @@ export class GameSimulation {
       this.clock.getTime().day,
       this.statistics.totalCustomersServed,
       {
-        traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * (1 + getSkillModifier(this.skills, 'traffic_boost')) * prestigeTrafficMultiplier(this.playerData.prestigeStars ?? 0) * hourlyStoreTrafficMultiplier(this.clock.getTime().hour), this.playerData.level),
+        traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * (1 + getSkillModifier(this.skills, 'traffic_boost')) * prestigeTrafficMultiplier(this.playerData.prestigeStars ?? 0) * hourlyStoreTrafficMultiplier(this.clock.getTime().hour) * GameSimulation.STORE_TRAFFIC_BOOST, this.playerData.level),
         maxConcurrentCustomers: maxActiveCustomersForLevel(this.playerData.level),
         weightOf: (productId) => (demandTable.perProduct[productId]?.demand ?? 0.01) * (chilledIds.has(productId) ? chilledAppeal : 1),
       },
@@ -3951,7 +4178,8 @@ export class GameSimulation {
     if (spawned?.id && rollShoplifter(this.clock.getTime().day, spawned.id, this.playerData.level, !!spawned.regularId)) spawned.thief = true;
 
     this.streetTraffic.setStallStops(this.stalls.owned.flatMap(id => STALL_MAP[id] ? [(STALL_MAP[id].tileX + STALL_MAP[id].widthTiles / 2) * TILE_SIZE] : []));
-    for (const id of ['xoi', 'drink'] as const) setAwningOpen(id, this.tileMap.buildings?.find((b) => b.id === id)?.open ?? false);
+    applyBuildingLayout(this.tileMap.buildings);
+    for (const id of ['xoi', 'drink', 'snack'] as const) setAwningOpen(id, this.tileMap.buildings?.find((b) => b.id === id)?.open ?? false);
     const trafficTime = this.clock.getTime();
     const trafficCtx = { minute: trafficTime.minute, weekday: weekdayOf(trafficTime.day) };
     if (!this.trafficWarmed) {
@@ -3964,6 +4192,7 @@ export class GameSimulation {
     this.logisticsManager.update(worldDt, this.clock.getTime().hour);
 
     this.recordHeatmap();
+    this.updateConstructionWaitingStaff();
     this.updateAutoRefillWorkers(worldDt);
     this.updateStaffWorkers(worldDt);
     this.updateRefillIdleWorkers(worldDt);
@@ -4083,6 +4312,12 @@ export class GameSimulation {
     const inventorySlot = this.inventory.find((i) => i.productId === productId);
     if (!inventorySlot || inventorySlot.quantity <= 0) {
       return { success: false, actualQuantity: 0, reason: 'no_inventory' };
+    }
+    // Bày tự động (sơ đồ, "bày tất cả", châm kệ) chừa nguyên liệu cho quầy ăn uống đã mở; người chơi bày tay thì tự quyết.
+    if (autoOpenCases) {
+      const shelvable = this.shelvableUnits(productId);
+      if (shelvable <= 0) return { success: false, actualQuantity: 0, reason: 'reserved_for_stall' };
+      amount = Math.min(amount, shelvable);
     }
 
     // If shelf already has a different product, can't mix
@@ -4450,42 +4685,25 @@ export class GameSimulation {
   }
 
   /**
-   * Tự động gán sản phẩm phù hợp và châm đầy kệ (smart auto-fill).
-   * - Kệ đã gán sản phẩm và còn hàng: chỉ châm thêm từ kho.
-   * - Kệ trống hoặc hết hàng và chưa gán: tìm sản phẩm phù hợp từ kho (đúng loại nóng/lạnh),
-   *   ưu tiên sản phẩm chưa có trên kệ nào, sau đó theo tồn kho nhiều nhất, rồi gán và châm đầy.
-   * Logic tham khảo từ tap-hoa-dau-hem/autorestock.js (assignSlot + refillSlot).
+   * Món trong kho hợp với một kệ chưa gán/trống, xếp theo độ ưu tiên (món chưa nằm trên kệ nào trước, rồi tồn nhiều nhất).
+   * `alsoTaken`: món đã được chọn cho kệ trống khác trong cùng đợt, tính như đã nằm trên kệ để chia đều món mới.
    */
-  public autoFillShelf(fixtureId: string): { assigned: boolean; productId: string | null; filled: number; reason: string } {
-    const fix = this.fixtures.find((f) => f.id === fixtureId);
-    if (!fix || !isSalesFixture(fix)) return { assigned: false, productId: null, filled: 0, reason: 'not_found' };
-    if (fix.broken) return { assigned: false, productId: null, filled: 0, reason: 'broken' };
-
+  private autoFillCandidates(fix: StoreFixture, alsoTaken: ReadonlySet<string> = new Set()): InventoryItem[] {
+    const fixtureId = fix.id;
     const isColdFixture = fix.type === 'refrigerator';
-    const shelfBuilding = fixtureBuilding(fix);
+    const shelfBuilding = fixtureBuilding(fix, this.tileMap.buildings);
     const isXoiShelf = shelfBuilding === 'xoi';
     const isDrinkShelf = shelfBuilding === 'drink';
-
-    // Kệ đã có sản phẩm và còn hàng → chỉ châm thêm
-    if (fix.assignedProductId && fix.currentStock > 0) {
-      const res = this.transferToShelf(fixtureId, fix.assignedProductId, 999, true);
-      return {
-        assigned: false,
-        productId: fix.assignedProductId,
-        filled: res.actualQuantity,
-        reason: res.success ? 'refilled' : (res.reason ?? 'no_inventory'),
-      };
-    }
-
-    // Kệ trống / chưa gán → tìm sản phẩm tốt nhất từ kho
+    const isSnackShelf = shelfBuilding === 'snack';
     // Các sản phẩm đang được bày ở kệ khác (ưu tiên thấp hơn để tránh trùng)
     const alreadyOnShelf = new Set(
       this.fixtures
         .filter((f) => isSalesFixture(f) && (f as typeof fix).assignedProductId && f.id !== fixtureId)
         .map((f) => (f as typeof fix).assignedProductId as string)
+        .concat([...alsoTaken])
     );
 
-    const candidates = this.inventory
+    return this.inventory
       .filter((inv) => {
         if (inv.quantity <= 0) return false;
         const prod = PRODUCT_MAP[inv.productId];
@@ -4496,6 +4714,8 @@ export class GameSimulation {
         if (isXoiShelf !== XOI_DISH_IDS.has(inv.productId)) return false;
         // Kệ quán nước chỉ tự nhận đồ uống của quán; kệ tòa khác không tự nhận thành phẩm riêng của quán nước (vẫn bày tay được).
         if (isDrinkShelf && !DRINK_SHOP_PRODUCT_IDS.has(inv.productId)) return false;
+        // Kệ quán ăn vặt chỉ tự nhận món chiên/xào của quán (gồm bánh tráng trộn); kệ tòa khác không tự nhận chúng (vẫn bày tay được).
+        if (isSnackShelf && !SNACK_SHOP_PRODUCT_IDS.has(inv.productId)) return false;
         return true;
       })
       .sort((a, b) => {
@@ -4512,6 +4732,33 @@ export class GameSimulation {
         // Ưu tiên 2: tồn kho nhiều nhất
         return b.quantity - a.quantity;
       });
+  }
+
+  /**
+   * Tự động gán sản phẩm phù hợp và châm đầy kệ (smart auto-fill).
+   * - Kệ đã gán sản phẩm và còn hàng: chỉ châm thêm từ kho.
+   * - Kệ trống hoặc hết hàng và chưa gán: tìm sản phẩm phù hợp từ kho (đúng loại nóng/lạnh),
+   *   ưu tiên sản phẩm chưa có trên kệ nào, sau đó theo tồn kho nhiều nhất, rồi gán và châm đầy.
+   * Logic tham khảo từ tap-hoa-dau-hem/autorestock.js (assignSlot + refillSlot).
+   */
+  public autoFillShelf(fixtureId: string): { assigned: boolean; productId: string | null; filled: number; reason: string } {
+    const fix = this.fixtures.find((f) => f.id === fixtureId);
+    if (!fix || !isSalesFixture(fix)) return { assigned: false, productId: null, filled: 0, reason: 'not_found' };
+    if (fix.broken) return { assigned: false, productId: null, filled: 0, reason: 'broken' };
+
+    // Kệ đã có sản phẩm và còn hàng → chỉ châm thêm
+    if (fix.assignedProductId && fix.currentStock > 0) {
+      const res = this.transferToShelf(fixtureId, fix.assignedProductId, 999, true);
+      return {
+        assigned: false,
+        productId: fix.assignedProductId,
+        filled: res.actualQuantity,
+        reason: res.success ? 'refilled' : (res.reason ?? 'no_inventory'),
+      };
+    }
+
+    // Kệ trống / chưa gán → tìm sản phẩm tốt nhất từ kho
+    const candidates = this.autoFillCandidates(fix);
 
     if (candidates.length === 0) {
       return { assigned: false, productId: null, filled: 0, reason: 'no_compatible_inventory' };
@@ -4559,9 +4806,11 @@ export class GameSimulation {
    */
   public getRestockJobTargets(): RestockJobTarget[] {
     const targets: RestockJobTarget[] = [];
+    // Kệ trong tòa đang thi công (cửa bị chặn) không giao việc được cho tới khi tòa mở lại (L3-C6).
+    const usable = (fix: StoreFixture) => !this.isFixtureUnderConstruction(fix);
     for (const [fixtureId, productId] of Object.entries(this.planogram)) {
       const fix = this.fixtures.find((f) => f.id === fixtureId);
-      if (!fix || !isSalesFixture(fix) || fix.broken) continue;
+      if (!fix || !isSalesFixture(fix) || fix.broken || !usable(fix)) continue;
       const prod = PRODUCT_MAP[productId];
       if (!prod) continue;
       // Shelf must not be blocked by another product with remaining stock
@@ -4571,9 +4820,8 @@ export class GameSimulation {
       const needed = Math.max(0, effectiveCap - fix.currentStock);
       if (needed <= 0) continue;
 
-      const invSlot = this.inventory.find((i) => i.productId === productId);
-      // Hàng nguyên thùng vẫn tính là có sẵn: bày tự động sẽ mở thùng khi cần.
-      const available = invSlot?.quantity ?? 0;
+      // Hàng nguyên thùng vẫn tính là có sẵn (bày tự động sẽ mở thùng khi cần), trừ phần giữ cho quầy ăn uống.
+      const available = this.shelvableUnits(productId);
 
       targets.push({
         fixtureId,
@@ -4586,15 +4834,32 @@ export class GameSimulation {
     }
     // Kệ đã có món (không nằm trong sơ đồ) mà vơi hàng: nhân viên cũng tự châm lại từ kho.
     for (const fix of this.fixtures) {
-      if (!isSalesFixture(fix) || fix.broken || !fix.assignedProductId || this.planogram[fix.id]) continue;
+      if (!isSalesFixture(fix) || fix.broken || !fix.assignedProductId || this.planogram[fix.id] || !usable(fix)) continue;
       const prod = PRODUCT_MAP[fix.assignedProductId];
       if (!prod) continue;
       const effectiveCap = effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
       const needed = Math.max(0, effectiveCap - fix.currentStock);
       if (needed <= 0) continue;
-      const invSlot = this.inventory.find((i) => i.productId === fix.assignedProductId);
-      const available = invSlot?.quantity ?? 0;
+      const available = this.shelvableUnits(fix.assignedProductId);
       targets.push({ fixtureId: fix.id, productId: fix.assignedProductId, currentStock: fix.currentStock, maxCapacity: effectiveCap, needed, availableInInventory: available });
+    }
+    // Kệ trống chưa gán món và không có trong sơ đồ: nhân viên tự chọn món mới từ kho (cùng luật với "bày tất cả"), chia đều món cho các kệ.
+    const taken = new Set<string>();
+    for (const fix of this.fixtures) {
+      if (!isSalesFixture(fix) || fix.broken || fix.assignedProductId || fix.currentStock > 0 || this.planogram[fix.id] || !usable(fix)) continue;
+      const candidate = this.autoFillCandidates(fix, taken).find((inv) => {
+        const prod = PRODUCT_MAP[inv.productId];
+        if (!prod || prod.unlockLevel > this.playerData.level || this.shelvableUnits(inv.productId) <= 0) return false;
+        if (prod.storageType === 'cold' && prod.coldOnly && fix.type !== 'refrigerator') return false;
+        if (prod.category === 'frozen' && !(fix.type === 'refrigerator' && (fix.shopId ?? this.fixtures.find((item) => item.id === fix.parentId)?.shopId) === 'freezer')) return false;
+        return true;
+      });
+      const prod = candidate ? PRODUCT_MAP[candidate.productId] : undefined;
+      if (!candidate || !prod) continue;
+      taken.add(candidate.productId);
+      const effectiveCap = effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
+      if (effectiveCap <= 0) continue;
+      targets.push({ fixtureId: fix.id, productId: candidate.productId, currentStock: 0, maxCapacity: effectiveCap, needed: effectiveCap, availableInInventory: this.shelvableUnits(candidate.productId) });
     }
     return targets;
   }
@@ -5106,7 +5371,7 @@ export class GameSimulation {
   public exportSaveData(existingSaveId?: string, currentRevision: number = 1): SaveGameData {
     return {
       id: existingSaveId || 'local_save_default',
-      schemaVersion: 4,
+      schemaVersion: 6,
       revision: currentRevision + 1,
       createdAt: this.createdAt,
       updatedAt: new Date().toISOString(),
@@ -5122,6 +5387,7 @@ export class GameSimulation {
         storedFixtures: this.storedFixtures.map(f => ({ ...f, stockLots: f.stockLots?.map(lot => ({ ...lot })) })),
         unlockedPlotIds: [...this.unlockedPlotIds],
         decorOwned: [...this.decorOwned],
+        ...(this.buildingPlacements ? { buildingPlacements: structuredClone(this.buildingPlacements) } : {}),
       },
       inventory: this.getInventory(),
       holdingArea: this.getHoldingArea(),
@@ -5176,7 +5442,7 @@ export class GameSimulation {
    */
   /** Khóa hình học bố cục + đất + quầy: đổi khóa nghĩa là bản đồ/đường đi phải dựng lại. */
   private layoutKey(): string {
-    return JSON.stringify([this.fixtures.map((f) => [f.id, f.tileX, f.tileY, f.rotation]), this.unlockedPlotIds, this.stalls.owned]);
+    return JSON.stringify([this.fixtures.map((f) => [f.id, f.tileX, f.tileY, f.rotation]), this.unlockedPlotIds, this.stalls.owned, this.buildingPlacements]);
   }
 
   /**
@@ -5192,6 +5458,7 @@ export class GameSimulation {
     this.fixtures = saveData.storeLayout.fixtures.map((f) => ({ ...f }));
     this.storedFixtures = (saveData.storeLayout.storedFixtures ?? []).map(f => ({ ...f }));
     this.unlockedPlotIds = [...(saveData.storeLayout.unlockedPlotIds ?? [])];
+    this.buildingPlacements = saveData.storeLayout.buildingPlacements ? structuredClone(saveData.storeLayout.buildingPlacements) : undefined;
     this.decorOwned = [...(saveData.storeLayout.decorOwned ?? [])];
     this.inventory = saveData.inventory.map((i) => ({ ...i }));
     this.holdingArea = (saveData.holdingArea ?? []).map((h) => ({ ...h }));
@@ -5254,7 +5521,7 @@ export class GameSimulation {
     this.hydrateStock(saveData.worldTime.day);
     this.clock.setTime(saveData.worldTime);
     this.collisionSystem.updateFixtures(this.fixtures);
-    this.tileMap = generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned);
+    this.tileMap = this.buildTileMap();
     this.collisionSystem.updateTileMap(this.tileMap);
     // Cập nhật vị trí nhân viên thu ngân nếu quầy thu ngân đã di chuyển/xoay
     for (const member of this.staff) {

@@ -17,14 +17,16 @@ interface OpenNode { index: number; f: number; h: number; order: number }
  */
 export function findPathToAny(map: GameTileMap, collision: CollisionSystem, start: GridPoint, goals: readonly GridPoint[]): GridPoint[] {
   const { width, height } = map;
+  const originX = map.originTileX ?? 0;
   const originY = map.originTileY ?? 0;
-  const indexOf = (x: number, y: number) => (y - originY) * width + x;
+  const indexOf = (x: number, y: number) => (y - originY) * width + (x - originX);
   // 0 = chưa xét, 1 = đi được, 2 = bị chặn.
   const passCache = new Uint8Array(width * height);
   const passable = (x: number, y: number): boolean => {
+    const localX = x - originX;
     const localY = y - originY;
-    if (x < 0 || localY < 0 || x >= width || localY >= height) return false;
-    const i = localY * width + x;
+    if (localX < 0 || localY < 0 || localX >= width || localY >= height) return false;
+    const i = localY * width + localX;
     if (passCache[i] === 0) {
       const center = tileCenter({ x, y });
       passCache[i] = collision.isColliding({ x: center.x - 10, y: center.y - 4, width: 20, height: 14 }) ? 2 : 1;
@@ -88,10 +90,10 @@ export function findPathToAny(map: GameTileMap, collision: CollisionSystem, star
     closed[current.index] = 1;
     if (goalSet.has(current.index)) {
       const path: GridPoint[] = [];
-      for (let i = current.index; i !== -1; i = cameFrom[i]) path.push({ x: i % width, y: Math.floor(i / width) + originY });
+      for (let i = current.index; i !== -1; i = cameFrom[i]) path.push({ x: (i % width) + originX, y: Math.floor(i / width) + originY });
       return path.reverse();
     }
-    const cx = current.index % width;
+    const cx = (current.index % width) + originX;
     const cy = Math.floor(current.index / width) + originY;
     const nextCost = cost[current.index] + 1;
     for (const [dx, dy] of steps) {

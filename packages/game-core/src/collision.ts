@@ -1,4 +1,4 @@
-import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D } from '@game/shared';
+import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, tileIndex, tileInMap } from '@game/shared';
 import { hitsNeighborhood, isFenceTile, streetLampBoxes } from '@game/data';
 
 export interface BoundingBox {
@@ -40,12 +40,11 @@ export class CollisionSystem {
     for (let ty = topTile; ty <= bottomTile; ty++) {
       for (let tx = leftTile; tx <= rightTile; tx++) {
         // Outside map is solid
-        const localY=ty-(this.tileMap.originTileY??0);
-        if (tx < 0 || tx >= this.tileMap.width || localY < 0 || localY >= this.tileMap.height) {
+        if (!tileInMap(this.tileMap, tx, ty)) {
           return true;
         }
 
-        const idx = localY * this.tileMap.width + tx;
+        const idx = tileIndex(this.tileMap, tx, ty);
         if (this.tileMap.collisionLayer[idx]) {
           return true;
         }
@@ -82,14 +81,16 @@ export class CollisionSystem {
     const topTile = Math.floor(box.y / TILE_SIZE);
     const bottomTile = Math.floor((box.y + box.height - 0.001) / TILE_SIZE);
     const wallLayer = this.tileMap.layers.find((l) => l.name === 'walls');
+    const originX = this.tileMap.originTileX ?? 0;
     const originY = this.tileMap.originTileY ?? 0;
     for (let ty = topTile; ty <= bottomTile; ty++) {
       for (let tx = leftTile; tx <= rightTile; tx++) {
+        if (!tileInMap(this.tileMap, tx, ty)) continue; // ngoài bản đồ ô: xét vật cản khu phố bên dưới
+        const localX = tx - originX;
         const localY = ty - originY;
-        if (tx < 0 || tx >= this.tileMap.width || localY < 0 || localY >= this.tileMap.height) continue; // ngoài bản đồ ô: xét vật cản khu phố bên dưới
-        const idx = localY * this.tileMap.width + tx;
+        const idx = tileIndex(this.tileMap, tx, ty);
         if (!this.tileMap.collisionLayer[idx]) continue;
-        const ring = tx === 0 || tx === this.tileMap.width - 1 || localY === 0 || localY === this.tileMap.height - 1;
+        const ring = localX === 0 || localX === this.tileMap.width - 1 || localY === 0 || localY === this.tileMap.height - 1;
         // Ô viền chỉ là tường giữ chân khách; viền không có tường/cây/hàng rào thì người chơi bước qua được.
         if (ring && !(wallLayer && wallLayer.data[idx]) && !isFenceTile(tx, ty, this.tileMap.width)) continue;
         return true;

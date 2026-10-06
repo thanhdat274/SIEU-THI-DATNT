@@ -18,7 +18,7 @@ const warehouse = (): InventoryItem[] => [
   { productId: 'tra_xanh', quantity: 10, lots: [lot(10, 60, 6500)] },
   { productId: nonDrinkId(), quantity: 5, lots: [lot(5, 99, 1000)] },
 ];
-const ctx = (over: Partial<ChainContext> = {}): ChainContext => ({ money: 5_000_000, warehouse: warehouse(), chain: undefined, day: 5, level: 40, ...over });
+const ctx = (over: Partial<ChainContext> = {}): ChainContext => ({ money: 5_000_000, warehouse: warehouse(), chain: undefined, day: 5, level: 60, ...over });
 function mustOk<T extends { ok: boolean }>(result: T): Extract<T, { ok: true }> {
   assert.equal(result.ok, true, JSON.stringify(result));
   return result as Extract<T, { ok: true }>;
@@ -248,7 +248,7 @@ export function runChainSaveTests(): void {
 /** Chuỗi nối vào `GameSimulation`: ví chung, kho tổng, sổ cái `branchId`, qua ngày, lưu/nạp. */
 export function runChainSimulationTests(): void {
   const save = structuredClone(DEFAULT_INITIAL_SAVE);
-  save.player.level = 35; save.player.money = 5_000_000;
+  save.player.level = 60; save.player.money = 5_000_000;
   save.inventory = [
     { productId: 'nuoc_suoi', quantity: 80, lots: [lot(80, 9999, 3000)] },
     { productId: 'tra_xanh', quantity: 30, lots: [lot(30, 9999, 6500)] },
@@ -369,7 +369,7 @@ export function runBranchPolicyTests(): void {
 /** Lệnh `set_branch_policy` qua `GameSimulation`: không đổi ví, đi qua save/nạp. */
 export function runBranchPolicySimulationTests(): void {
   const save = structuredClone(DEFAULT_INITIAL_SAVE);
-  save.player.level = 40; save.player.money = 5_000_000;
+  save.player.level = 60; save.player.money = 5_000_000;
   const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager(), {});
   assert.equal(sim.openBranch('drink_shop', 'Quán B', 'branch-1').success, true);
   const money = sim.getPlayerData().money;

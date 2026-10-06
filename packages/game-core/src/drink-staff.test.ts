@@ -11,7 +11,7 @@ const lot = (quantity: number) => ({ quantity, expiresOnDay: 400, unitCost: 3_00
 /** Quán nước đã mua (kèm các mảnh mở rộng nếu có), mở cửa, hai nhân viên: bổ sung hàng và thu ngân. */
 const baseSave = (extraPlots: string[] = []): SaveGameData => {
   const base = structuredClone(DEFAULT_INITIAL_SAVE);
-  base.player.level = 35;
+  base.player.level = 60;
   base.player.money = 10_000_000;
   base.worldTime.isStoreOpen = false;
   const bought = applyStoreLayoutActions(base, [DRINK_PLOT_ID, ...extraPlots].map(plotId => ({ type: 'buy_plot' as const, plotId })), mapFor).save!;
@@ -68,6 +68,41 @@ export function runDrinkStaffTests(): void {
     assert.ok(sim.getFixtures().find(f => f.id === 'drink_shelf')!.currentStock > 2, 'kệ nước được châm thêm');
     assert.ok(run.sawStreet, 'nhân viên đi ra vỉa hè giữa các tòa nhà');
     assert.ok(run.reachedDoor, 'nhân viên đi qua cửa quán nước');
+  }
+
+  // Việc "tự động bày kệ" phải giữ chỗ kệ nó chọn, nếu không revalidate báo claim_lost và hàng không bao giờ lên kệ.
+  {
+    const save = baseSave();
+    const shelf = save.storeLayout.fixtures.find(f => f.id === 'drink_shelf')!;
+    shelf.assignedProductId = 'nuoc_suoi';
+    shelf.currentStock = 2;
+    shelf.stockLots = [lot(2)];
+    save.inventory = [{ productId: 'nuoc_suoi', quantity: 30, lots: [lot(30)] }];
+    save.planogram = { drink_shelf: 'nuoc_suoi' };
+    const sim = newSim(save);
+    assert.equal(sim.assignAutoRestockJob('refill-1').success, true, 'giao việc tự động bày kệ');
+    let peak = 2;
+    for (let i = 0; i < 600 && peak <= 2; i++) {
+      sim.update(1);
+      peak = Math.max(peak, sim.getFixtures().find(f => f.id === 'drink_shelf')!.currentStock);
+    }
+    assert.ok(peak > 2, 'tự động bày kệ thật sự đưa hàng lên kệ nước');
+    assert.notEqual(sim.getStaff().find(s => s.id === 'refill-1')!.lastWorkerError, 'Kệ đã có người khác nhận hoặc không còn cần châm.', 'không mất claim giữa chừng');
+  }
+
+  // Nhiều nhân viên bổ sung kệ: mỗi người nhắm một kệ khác nhau và được giao việc lệch nhịp, không đi dính cục.
+  {
+    const save = baseSave();
+    save.staff = ['a', 'b', 'c'].map(id => ({ id: `refill-${id}`, name: id, role: 'refill' as const, speed: 5, accuracy: 5, stamina: 5, dailyWage: 30_000, hiredOnDay: 1, shift: 'full_day' as const }));
+    save.inventory = [{ productId: 'nuoc_suoi', quantity: 90, lots: [lot(90)] }];
+    const sim = newSim(save);
+    sim.update(3.1);
+    const busy = sim.getStaff().filter(s => s.workerTask);
+    assert.equal(busy.length, 1, 'mỗi nhịp chỉ giao việc cho một nhân viên');
+    for (let i = 0; i < 40; i++) sim.update(1);
+    const targets = sim.getStaff().filter(s => s.workerTask).map(s => s.workerTask!.fixtureId);
+    assert.equal(new Set(targets).size, targets.length, `các nhân viên nhắm kệ khác nhau (${targets.join(',')})`);
+    assert.ok(targets.length >= 2, 'các nhân viên lần lượt nhận việc');
   }
 
   // Vùng mở rộng phía bắc: nhân viên đi vào được sâu hơn hàng y=3 (trước đây bị coi là hậu trường) và châm kệ ở đó.

@@ -113,6 +113,24 @@ export function runStaffTests(): void {
   assert.equal(hiringSim.setStaffShift(dailyCandidate.id, 'afternoon'), true);
   assert.equal(hiringSim.exportSaveData().staff?.[0].shift, 'afternoon', 'Đổi ca được lưu vào nhân viên');
 
+  const debtSave = structuredClone(DEFAULT_INITIAL_SAVE);
+  debtSave.player.money = 30_000;
+  debtSave.wageDebt = 50_000;
+  const debtSim = new GameSimulation(debtSave, generateStarterTileMap(), new InputManager());
+  const partial = debtSim.payWageDebt();
+  assert.deepEqual([partial.success, partial.paid, partial.remaining], [true, 30_000, 20_000], 'Trả một phần khi tiền không đủ');
+  assert.equal(debtSim.getPlayerData().money, 0);
+  assert.equal(debtSim.payWageDebt().success, false, 'Hết tiền thì không trả được');
+  const fullSave = debtSim.exportSaveData();
+  fullSave.player.money = 100_000;
+  const fullSim = new GameSimulation(fullSave, generateStarterTileMap(), new InputManager());
+  const full = fullSim.payWageDebt();
+  assert.deepEqual([full.success, full.paid, full.remaining], [true, 20_000, 0], 'Trả hết nợ khi đủ tiền');
+  assert.equal(fullSim.getWageDebt(), 0);
+  assert.equal(fullSim.getPlayerData().money, 80_000);
+  assert.equal(fullSim.getLedger().filter((entry) => entry.type === 'wage').length, 2, 'Mỗi lần trả ghi sổ cái loại wage');
+  assert.equal(fullSim.payWageDebt().success, false, 'Hết nợ thì không trả nữa');
+  console.log('  ✓ Nhân viên: trả nợ lương ngay (một phần/đủ), ghi sổ cái, không trả khi hết nợ');
   console.log('  ✓ Nhân viên: seed ứng viên ổn định, vai trò/ca hợp lệ và điều kiện tuyển');
   console.log('  ✓ Nhân viên: migration save cũ rỗng và save/reload giữ staff, lịch, nợ lương, payroll IDs');
   console.log('  ✓ Nhân viên: payroll theo ca, nợ khi thiếu tiền và idempotency qua reload');

@@ -8,9 +8,11 @@ import {
   TILE_SIZE,
   Vector2D,
   InventoryItem,
-  CustomerArrivalMode
+  CustomerArrivalMode,
+  tileIndex,
+  tileInMap,
 } from '@game/shared';
-import { BUILDING_MAP, BUILDING_TRAFFIC_SHARE, MAP_WIDTH, buildingAt, fixtureBuilding, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS, type BuildingId } from '@game/data';
+import { BUILDING_MAP, BUILDING_TRAFFIC_SHARE, foodClusterMultiplier, PLAY_REGION, buildingAt, entranceOf, fixtureBuilding, inMainExpansionZone, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS, type BuildingId } from '@game/data';
 import { arrivalModeWeights, pickArrivalMode } from './arrival-mode';
 import { CollisionSystem } from './collision';
 import { findPath, findPathToAny, GridPoint, tileCenter } from './pathfinding';
@@ -20,16 +22,30 @@ import { Mulberry32Rng, daySeed } from './staff';
 import { hashSeed } from './weather';
 import type { CustomerFeedbackReason } from './reputation';
 
+/** Hàng chờ thu ngân cũ của tiệm chính: cột cửa trái, từ hai ô trong cửa ra tới ô cửa (vị trí mặc định: (9,8), (9,9), (9,10)).
+ *  Tiệm chính cố định ở vị trí mặc định (`main_fixed` trong `placementsProblem`) nên tra tĩnh là đúng; tòa phụ đọc ô cửa từ bản đồ. */
+const MAIN_DOOR = BUILDING_MAP.main.doorTiles[0];
 export const CASHIER_QUEUE_TILES: GridPoint[] = [
-  { x: 9, y: 8 },  // Position 0: front of checkout counter
-  { x: 9, y: 9 },  // Position 1: behind pos 0
-  { x: 9, y: 10 }, // Position 2: behind pos 1
+  { x: MAIN_DOOR.x, y: MAIN_DOOR.y - 2 }, // Position 0: front of checkout counter
+  { x: MAIN_DOOR.x, y: MAIN_DOOR.y - 1 }, // Position 1: behind pos 0
+  { x: MAIN_DOOR.x, y: MAIN_DOOR.y },     // Position 2: behind pos 1
 ];
 
-export const ENTRANCE_TILE: GridPoint = { x: 9, y: 11 };
+/** Ô vỉa hè trước cửa tiệm chính, suy từ vị trí đặt (mặc định (9,11)). */
+export const ENTRANCE_TILE: GridPoint = { ...BUILDING_MAP.main.entranceTile };
+/** Cột vỉa hè hai mép vùng chơi nơi khách đi bộ xuất hiện/rời đi (trong viền va chạm một ô). */
+const WALK_EDGE_WEST = PLAY_REGION.x0 + 1;
+const WALK_EDGE_EAST = PLAY_REGION.x1 - 1;
 
 const QUEUE_LENGTH = CASHIER_QUEUE_TILES.length;
 const tileKey = (x: number, y: number) => `${x},${y}`;
+
+/**
+ * Tòa có dòng khách không: tòa đã mua và đang mở cửa. Tòa đang thi công sau khi dời có `open: false`
+ * (`layoutBuildings` đặt `open = !placement.constructionUntilDay`) nên không sinh khách cho tới sáng hôm sau (L3-C5).
+ */
+export const buildingSpawnsCustomers = (buildings: GameTileMap['buildings'], buildingId: BuildingId): boolean =>
+  !buildings || buildings.some(building => building.id === buildingId && building.open);
 
 /** Các quầy thu ngân đang đặt trên sàn, theo thứ tự ổn định (quầy gốc đứng trước). */
 export const cashierCounters = (fixtures: readonly StoreFixture[]): StoreFixture[] =>
@@ -48,9 +64,8 @@ export function queueTilesForCounter(counter: StoreFixture, tileMap: GameTileMap
     for (let dx = 0; dx < widthTiles; dx++) for (let dy = 0; dy < heightTiles; dy++) blocked.add(tileKey(fixture.tileX + dx, fixture.tileY + dy));
   }
   const walkable = (x: number, y: number) => {
-    const localY = y - (tileMap.originTileY ?? 0);
-    const index = localY * tileMap.width + x;
-    return x >= 0 && x < tileMap.width && localY >= 0 && localY < tileMap.height && ground[index] === 3
+    const index = tileIndex(tileMap, x, y);
+    return tileInMap(tileMap, x, y) && ground[index] === 3
       && !tileMap.collisionLayer[index] && !blocked.has(tileKey(x, y)) && !taken.has(tileKey(x, y));
   };
   const { widthTiles, heightTiles } = getFixtureDimensions(counter);
@@ -200,8 +215,13 @@ export class CustomerManager {
     arrivalContext?: { hour: number; weekday: number }
   ): CustomerState | null {
     if (!isStoreOpen) return null;
-    const streams: Array<readonly [BuildingId, number]> = [['main', 1], ...BUILDING_TRAFFIC_SHARE];
+    // Cụm ẩm thực: càng nhiều tòa phụ đang mở thì các tòa phụ càng đông khách (tiệm chính giữ nhịp cũ).
+    const openSecondary = tileMap.buildings?.filter(building => building.id !== 'main' && building.open).length ?? 0;
+    const cluster = foodClusterMultiplier(openSecondary);
+    const streams: Array<readonly [BuildingId, number]> = [['main', 1], ...BUILDING_TRAFFIC_SHARE.map(([id, share]) => [id, share * cluster] as const)];
     for (const [streamId, factor] of streams) {
+      // Chỉ tòa đang có và không thi công mới sinh khách (tòa chưa mua/đang dời không có dòng khách).
+      if (!buildingSpawnsCustomers(tileMap.buildings, streamId)) continue;
       const spawned = this.spawnForBuilding(streamId, factor, dt, fixtures, tileMap, currentDay, customersServed, demand, streamId === 'main' ? regularCandidate : null, rainIntensity, hasBikeSecurity, arrivalContext);
       if (spawned) return spawned;
     }
@@ -233,7 +253,7 @@ export class CustomerManager {
     this.setStreamCooldown(streamId, Math.max(1, 5.5 / Math.max(0.25, demand?.traffic ?? 1)) / factor);
 
     const stockedShelves = fixtures.filter(
-      (f) => isSalesFixture(f) && !f.broken && f.currentStock > 0 && f.assignedProductId && (fixtureBuilding(f) ?? 'main') === streamId
+      (f) => isSalesFixture(f) && !f.broken && f.currentStock > 0 && f.assignedProductId && (fixtureBuilding(f, tileMap.buildings) ?? 'main') === streamId
     );
     if (!stockedShelves.length) return null;
 
@@ -252,7 +272,7 @@ export class CustomerManager {
     const checkoutId = `checkout-${currentDay}-${this.customerSequence}`;
 
     // Khách vào đúng tòa nhà của kệ mục tiêu (kệ trong tiệm xôi thì vào cửa tiệm xôi); xe đỗ ở chỗ gần cửa tòa đó.
-    const buildingId = fixtureBuilding(target) ?? 'main';
+    const buildingId = fixtureBuilding(target, tileMap.buildings) ?? 'main';
 
     // Xác định phương thức ghé tiệm (arrivalMode)
     let arrivalMode: CustomerArrivalMode = 'walk';
@@ -265,7 +285,7 @@ export class CustomerManager {
         .map((c) => `${Math.round(c.vehicleSpot!.x)},${Math.round(c.vehicleSpot!.y)}`)
     );
     const isFree = (s: Vector2D) => !occupiedSpots.has(`${Math.round(s.x)},${Math.round(s.y)}`);
-    const entrance = BUILDING_MAP[buildingId].entranceTile;
+    const entrance = entranceOf(buildingId, tileMap.buildings);
     const distanceToDoor = (s: Vector2D) => Math.abs(s.x / TILE_SIZE - (entrance.x + 0.5));
     // Chỉ chỗ đỗ trong vòng 15 ô tới cửa tòa; tiệm chính giữ cách chọn cũ (xoay vòng), tòa phụ chọn chỗ gần cửa nhất.
     const nearDoor = (spots: ReadonlyArray<Vector2D>) => spots.filter(isFree).filter(s => distanceToDoor(s) <= 15).sort((a, b) => buildingId === 'main' ? 0 : distanceToDoor(a) - distanceToDoor(b));
@@ -321,8 +341,8 @@ export class CustomerManager {
       startPos = { ...vehicleSpot };
     } else {
       const doorTileX = entrance.x;
-      const leftX = 1;
-      const rightX = MAP_WIDTH - 2;
+      const leftX = WALK_EDGE_WEST;
+      const rightX = WALK_EDGE_EAST;
       let fromLeft = this.customerSequence % 2 === 0;
       if (Math.abs((fromLeft ? leftX : rightX) - doorTileX) > 16) fromLeft = Math.abs(leftX - doorTileX) <= Math.abs(rightX - doorTileX);
       startPos = tileCenter({ x: fromLeft ? leftX : rightX, y: 12 });
@@ -400,7 +420,7 @@ export class CustomerManager {
     } else if (stage === 'to_checkout' || stage === 'checkout') {
       // Chỉ dùng quầy thu ngân của đúng tòa nhà khách đang ở.
       const home = customer.buildingId ?? 'main';
-      const counters = cashierCounters(fixtures).filter((counter) => (fixtureBuilding(counter) ?? 'main') === home);
+      const counters = cashierCounters(fixtures).filter((counter) => (fixtureBuilding(counter, tileMap.buildings) ?? 'main') === home);
       const lanes = this.laneTiles(counters, tileMap, fixtures);
       if (counters.length && lanes.size) {
         if (!customer.cashierFixtureId || !lanes.has(customer.cashierFixtureId)) customer.cashierFixtureId = this.leastBusyCounter(counters, lanes, customer);
@@ -418,18 +438,21 @@ export class CustomerManager {
           y: Math.floor(customer.vehicleSpot.y / TILE_SIZE),
         });
       } else {
-        const exitX = (customer.id ? customer.id.charCodeAt(customer.id.length - 1) : 0) % 2 === 0 ? 1 : MAP_WIDTH - 2;
+        const exitX = (customer.id ? customer.id.charCodeAt(customer.id.length - 1) : 0) % 2 === 0 ? WALK_EDGE_WEST : WALK_EDGE_EAST;
         goals.push({ x: exitX, y: 12 });
       }
     }
 
-    // Khách không vào kho/phía sau tiệm chính (hàng y <= STORE_BOUNDS.top), trừ phần mở rộng phía bắc của tòa phụ (sàn tòa mở).
+    // Khách không vào kho/phía sau tiệm chính (hàng y <= STORE_BOUNDS.top), trừ phần mở rộng phía bắc của tòa phụ (sàn tòa mở)
+    // và ô sàn tiệm chính đã mở rộng lên phía bắc (ground 3, ngoài nhà kho).
+    const groundLayer = tileMap.layers.find(layer => layer.name === 'ground')?.data;
     const customerMap = {
       ...tileMap,
       collisionLayer: tileMap.collisionLayer.map((solid, i) => {
         const y = Math.floor(i / tileMap.width) + (tileMap.originTileY ?? 0);
         if (solid || y > STORE_BOUNDS.top) return solid;
-        const building = buildingAt(i % tileMap.width, y);
+        if (groundLayer?.[i] === 3 && inMainExpansionZone((i % tileMap.width) + (tileMap.originTileX ?? 0), y)) return false;
+        const building = buildingAt((i % tileMap.width) + (tileMap.originTileX ?? 0), y, tileMap.buildings);
         return !building || building === 'main'; // cửa kho nằm ở hàng tường sau tiệm chính nên vẫn chặn
       }),
     };
@@ -453,7 +476,7 @@ export class CustomerManager {
     }
     if (!chosenPath && stage === 'leaving') {
       // Không có đường ra mép/tới xe: đi tới cửa tòa nhà rồi mới rời (xe, nếu có, chạy đi từ chỗ đỗ qua onCustomerDepart).
-      const door = findPath(customerMap, customerCollision, start, BUILDING_MAP[(customer.buildingId as BuildingId | undefined) ?? 'main']?.entranceTile ?? ENTRANCE_TILE);
+      const door = findPath(customerMap, customerCollision, start, entranceOf((customer.buildingId as BuildingId | undefined) ?? 'main', tileMap.buildings) ?? ENTRANCE_TILE);
       if (door.length) chosenPath = door;
     }
     const waypoints = chosenPath?.map(tileCenter).slice(1) ?? [];

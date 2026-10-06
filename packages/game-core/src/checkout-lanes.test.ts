@@ -13,7 +13,7 @@ const customer = (id: string): CustomerState => ({
 export function runCheckoutLaneTests() {
   console.log('\n--- Hai quầy thu ngân: hàng đợi riêng từng quầy ---');
   const save = structuredClone(DEFAULT_INITIAL_SAVE);
-  save.worldTime.isStoreOpen = false; save.player.level = 30; save.player.money = 1_000_000;
+  save.worldTime.isStoreOpen = false; save.player.level = 60; save.player.money = 1_000_000;
   const map = generateStarterTileMap([]);
   const solo = save.storeLayout.fixtures;
   const first = cashierCounters(solo)[0];

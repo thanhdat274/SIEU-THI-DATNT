@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import { STALL_MAP } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, generateStarterTileMap, STALLS, STALL_MAP, stallSellSlots } from '@game/data';
+import { InputManager } from './input';
+import { GameSimulation } from './simulation';
 import { emptyStallState, normalizeStallState, planStallDay, stallDemand } from './stalls';
 import { StorageManager } from './storage';
 
@@ -51,4 +53,54 @@ export function runStallsStorageTests(): void {
   assert.deepEqual(legacy.export(), { warehouseTier: 0, storageRackCount: 0 }, 'save cũ thiếu trường mặc định 0');
   mgr.load({ warehouseTier: 5 } as never);
   assert.deepEqual(mgr.export(), { warehouseTier: 5, storageRackCount: 0 }, 'load lại ghi đè hoàn toàn');
+}
+
+export function runVeSoStallTests(): void {
+  const veSo = STALL_MAP['ve_so'];
+  assert.ok(veSo && veSo.ingredients.length === 0 && veSo.unlockLevel === 6 && veSo.price === 250000, 'Quầy vé số: cấp 6, 250.000, không nguyên liệu');
+  assert.equal(stallSellSlots(veSo), 9, 'Vé số bán 08:00–17:00');
+  assert.equal(stallSellSlots(STALL_MAP['cafe_vot']), 14, 'Quầy cũ vẫn bán tới 22:00');
+
+  // Hình học: trong bản đồ và không chồng nhau theo cột
+  for (const a of STALLS) {
+    assert.ok(a.tileX >= 0 && a.tileX + a.widthTiles <= 36, `${a.id} nằm trong bản đồ`);
+    for (const b of STALLS) if (a !== b) assert.ok(a.tileX + a.widthTiles <= b.tileX || b.tileX + b.widthTiles <= a.tileX, `${a.id} không chồng ${b.id}`);
+  }
+
+  // Không nguyên liệu: kho trống vẫn bán đủ nhu cầu, không báo thiếu
+  const plan = planStallDay('ve_so', 10, 50, () => 0)!;
+  assert.equal(plan.servings, plan.demand);
+  assert.ok(plan.demand > 0 && plan.demand <= veSo.maxServings);
+  assert.equal(plan.limitedBy, undefined);
+
+  // Tích hợp: mua, bán dần tới 17:00 rồi hết vé; quầy cũ không đổi
+  const save = structuredClone(DEFAULT_INITIAL_SAVE);
+  save.player.money = 1_000_000;
+  save.player.level = 6;
+  save.inventory = [];
+  const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+  const events: string[][] = [];
+  (sim as unknown as { callbacks: { onStallStatusChanged?: (ids: string[]) => void } }).callbacks.onStallStatusChanged = ids => events.push(ids);
+  const before = sim.getPlayerData().money;
+  assert.equal(sim.buyStall('ve_so').success, true);
+  assert.equal(sim.getPlayerData().money, before - veSo.price);
+  assert.deepEqual(sim.getSoldOutStalls(), [], 'Mới mở, đầu ngày chưa hết vé');
+  const t = sim.getTime();
+  const at = (hour: number) => sim.getClock().setTime({ ...t, hour, minute: 0 });
+  at(12);
+  const mid = sim.getPlayerData().money;
+  assert.ok(mid > before - veSo.price, 'Bán dần theo giờ, có doanh thu giữa ngày');
+  assert.deepEqual(sim.getSoldOutStalls(), []);
+  at(17);
+  assert.deepEqual(sim.getSoldOutStalls(), ['ve_so'], '17:00 hết vé');
+  const sold = sim.getPlayerData().money;
+  const expected = stallDemand('ve_so', t.day, sim.getPlayerData().reputation);
+  assert.equal(sold - (before - veSo.price), expected * (veSo.servingPrice - veSo.cashCostPerServing), 'Bán đủ nhu cầu ngày: ví chỉ tăng phần hoa hồng (giá vé trừ vốn nhập)');
+  at(20);
+  assert.equal(sim.getPlayerData().money, sold, 'Sau giờ ngừng bán không bán thêm');
+  assert.ok(events.some(ids => ids.includes('ve_so')), 'Phát onStallStatusChanged khi hết vé');
+  sim.getClock().advanceToNextDay();
+  at(8);
+  assert.deepEqual(sim.getSoldOutStalls(), [], 'Sang ngày mới đầu giờ thì mở lại');
+  console.log('  ✓ Passed: Quầy vé số (không nguyên liệu, giờ ngừng bán, biển HẾT, hình học)');
 }

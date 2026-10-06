@@ -168,3 +168,20 @@ export function calculatePayroll(params: {
     newDebt,
   };
 }
+
+const WORKER_ERROR_TEXT: Record<string, string> = {
+  claim_lost: 'Kệ đã có người khác nhận hoặc không còn cần châm.',
+  actor_unavailable: 'Hết ca hoặc đang bận việc khác.',
+  target_invalid: 'Kệ đã đủ hàng hoặc kho không còn hàng cho kệ này.',
+  target_claimed: 'Kệ đang được người khác châm.',
+  staff_busy: 'Đang bận việc khác.',
+  no_targets: 'Không có kệ nào cần châm.',
+  warehouse_missing: 'Không tìm thấy kho chứa món này.',
+  no_path_to_warehouse: 'Không tìm thấy đường vào kho.',
+  reserved_for_stall: 'Kho chỉ còn hàng giữ lại cho quầy ăn uống.',
+};
+
+/** Đổi mã lỗi việc châm kệ (kể cả mã thô trong save cũ) thành câu tiếng Việt để hiển thị. */
+export function describeWorkerError(error: string | undefined): string | undefined {
+  return error === undefined ? undefined : WORKER_ERROR_TEXT[error] ?? error;
+}

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { DEFAULT_INITIAL_SAVE, generateStarterTileMap } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
-import { HEATMAP_RETENTION_DAYS, PRICE_HISTORY_MAX_POINTS, aggregateHeatmap, appendPricePoint, buildProductSeries, getTutorialChecklist, sanitizeHeatmap, sanitizePriceHistory } from './analytics';
+import { HEATMAP_RETENTION_DAYS, PRICE_HISTORY_MAX_POINTS, aggregateHeatmap, appendPricePoint, buildProductSeries, getTutorialChecklist, heatmapFrame, sanitizeHeatmap, sanitizePriceHistory } from './analytics';
 import { ambientMix, masterGain, sanitizeAudioSettings } from './ambient-audio';
 import { SIMULATION_VERSION, recordDayReplay, runDayReplay } from './replay';
 
@@ -50,6 +50,15 @@ export function runAnalyticsTests(): void {
   assert.deepEqual(aggregateHeatmap({ 5: { '1,1': 2 }, 6: { '1,1': 3, '2,2': 1 } }, 6, 2), { '1,1': 5, '2,2': 1 });
   assert.deepEqual(aggregateHeatmap({ 5: { '1,1': 2 }, 6: { '1,1': 3 } }, 6, 1), { '1,1': 3 });
   assert.deepEqual(sanitizeHeatmap({ 1: { '0,0': 1 }, 20: { '1,1': 2, bad: 3, '2,2': -1 } }), { 20: { '1,1': 2 } });
+  // B2-4: khung lưới heatmap bao tòa theo VỊ TRÍ ĐẶT (tòa dời sang lô khác) và mở rộng theo ô có lượt khách.
+  const store = { left: 6, right: 21, top: 3, bottom: 10 };
+  const defaultFrames = [{ left: 6, right: 21 }, { left: 0, right: 6 }, { left: 21, right: 26 }, { left: 26, right: 35 }];
+  const defaultFrame = heatmapFrame({}, store, defaultFrames);
+  assert.deepEqual(defaultFrame, { x0: 0, x1: 35, y0: 2, y1: 13 }, 'mặc định: khung bao mọi tòa đang có (xôi 0..6, quán nước 26..35)');
+  const relocatedFrame = heatmapFrame({}, store, [{ left: 6, right: 21 }, { left: 0, right: 5 }, { left: 21, right: 26 }, { left: 28, right: 37 }]);
+  assert.deepEqual(relocatedFrame, { x0: 0, x1: 37, y0: 2, y1: 13 }, 'tòa dời sang phải làm khung phải rộng theo vị trí mới');
+  assert.equal(heatmapFrame({}, store, []).x0, store.left - 2, 'không có tòa nào: lề quanh hộp tiệm chính');
+  assert.deepEqual(heatmapFrame({ '30,1': 4 }, store, defaultFrames), { x0: 0, x1: 35, y0: 1, y1: 13 }, 'ô khách ngoài hộp tòa (sàn mở rộng) cũng nằm trong khung');
 
   // 5.3 Checklist suy ra từ trạng thái thật.
   const base = structuredClone(DEFAULT_INITIAL_SAVE);

@@ -3,7 +3,9 @@ import { isSalesFixture } from '@game/shared';
 import { ALL_PRODUCTS, DEFAULT_INITIAL_SAVE, generateStarterTileMap, getSeasonForDay, getDayOfYear, SEASON_EVENTS, SEASON_YEAR_DAYS, STALL_MAP, SEASONAL_DECOR, seasonalDecorForDay } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
-import { planStallDay } from './stalls';
+import { planStallDay, stallDemand } from './stalls';
+import { describeWorkerError } from './staff';
+import { buildDayChannelBreakdown } from './day-rhythm';
 import { CustomerManager } from './customers';
 
 const dayOf = (id: string, offset = 0) => {
@@ -78,6 +80,16 @@ export function runSeasonAndStallTests(): void {
   assert.equal(sim.buyStall('cafe_vot').success, false, 'Không mở trùng');
   assert.equal(sim.buyStall('khong_co').success, false);
 
+  // Bày kệ tự động chừa nguyên liệu cho quầy đã mở; bày tay vẫn tự quyết.
+  const perServing = coffee.ingredients.find(ing => ing.productId === 'sua_ong_tho')!.perServing;
+  const reserved = Math.ceil(Math.max(stallDemand('cafe_vot', sim.getTime().day, sim.getPlayerData().reputation), stallDemand('cafe_vot', sim.getTime().day + 1, sim.getPlayerData().reputation)) * perServing - 1e-9);
+  const shelf = sim.getFixtures().find(f => isSalesFixture(f) && !f.broken && f.type !== 'refrigerator')!;
+  const autoRes = sim.transferToShelf(shelf.id, 'sua_ong_tho', 5, true);
+  const left = sim.getInventory().find(i => i.productId === 'sua_ong_tho')?.quantity ?? 0;
+  assert.ok(left >= Math.min(5, reserved), `Bày tự động không lấy phần dành cho quầy (còn ${left}, giữ ${reserved}, kết quả ${autoRes.reason})`);
+  if (reserved >= 5) assert.equal(autoRes.reason, 'reserved_for_stall', 'Kho chỉ đủ cho quầy thì bày tự động từ chối');
+  assert.equal(describeWorkerError('claim_lost')?.includes('claim_lost'), false, 'Mã lỗi châm kệ được dịch sang tiếng Việt');
+
   // Ngày 1: chỉ có sữa đặc, thiếu đường -> không đủ nguyên liệu để bán.
   const moneyBeforeDay = sim.getPlayerData().money;
   sim.getClock().advanceToNextDay();
@@ -98,12 +110,24 @@ export function runSeasonAndStallTests(): void {
   sim.getClock().advanceToNextDay();
   const revenue = plan.servings * coffee.servingPrice;
   const cogs = plan.servings * coffee.cashCostPerServing + plan.ingredientUnits['sua_ong_tho'] * 17000 + plan.ingredientUnits['duong_cat'] * 11000;
-  assert.equal(sim.getPlayerData().money - moneyDay2, revenue, 'Tiền tăng đúng doanh thu quầy');
+  assert.equal(sim.getPlayerData().money - moneyDay2, revenue - plan.servings * coffee.cashCostPerServing, 'Ví tăng doanh thu trừ tiền mặt nhập hàng của quầy');
   const saleEntry = sim.getLedger().find(entry => entry.description.includes('Quầy cà phê vợt') && entry.day === day);
   assert.ok(saleEntry && saleEntry.cogs === cogs && saleEntry.amount === revenue, 'Quầy ghi sổ với giá vốn theo lô kho');
   assert.equal(sim.getInventory().find(i => i.productId === 'sua_ong_tho')?.quantity ?? 0, 5 - plan.ingredientUnits['sua_ong_tho'], 'Trừ đúng nguyên liệu trong kho');
   assert.ok(sim.getDailyRecords()[day]?.revenue >= revenue, 'Doanh thu quầy vào báo cáo ngày');
   assert.equal(sim.getDailyRecords()[day]?.stallServings?.cafe_vot, plan.servings, 'Số suất quầy được ghi theo ngày để tính mục tiêu ngày hội');
+  assert.equal(sim.getDailyRecords()[day]?.stallRevenue?.cafe_vot, revenue, 'Doanh thu theo quầy được ghi vào sổ ngày');
+  assert.equal(sim.getDailyRecords()[day]?.stallCogs?.cafe_vot, cogs, 'Giá vốn theo quầy được ghi vào sổ ngày');
+  const channels = buildDayChannelBreakdown(sim.getDailyRecords()[day]);
+  assert.equal(channels.stalls[0]?.revenue, revenue, 'Báo cáo kênh bán tách doanh thu quầy');
+  assert.equal(sim.getDailyRecords()[day].customersServed, plan.servings, 'Suất quầy tính vào số khách chung');
+  assert.equal(channels.totalCustomers, plan.servings, 'Tổng khách không cộng trùng suất quầy');
+  assert.equal(channels.shopCustomers, 0, 'Không có khách thu ngân nào');
+  const legacy = buildDayChannelBreakdown({ ...sim.getDailyRecords()[day], stallRevenue: undefined, stallCogs: undefined, customersServed: 0, transactionsCount: 0 });
+  assert.equal(legacy.stalls[0]?.estimated, true, 'Ngày cũ ghi ước');
+  assert.ok(legacy.stalls[0]!.cogs > 0, 'Ngày cũ có giá vốn ước');
+  assert.equal(legacy.totalCustomers, plan.servings, 'Ngày cũ cộng suất quầy vào số khách');
+  assert.equal(channels.shopRevenue + channels.stallRevenue, sim.getDailyRecords()[day].revenue, 'Tiệm + quầy = tổng doanh thu');
 
   const reloaded = new GameSimulation(sim.exportSaveData(), generateStarterTileMap(), new InputManager());
   assert.equal(reloaded.getStalls().find(item => item.id === 'cafe_vot')?.owned, true, 'Quầy được lưu/tải');
