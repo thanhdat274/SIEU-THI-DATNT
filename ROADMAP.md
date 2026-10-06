@@ -133,7 +133,7 @@ Phase 7 giữ định hướng Firebase/NestJS/MongoDB, triển khai phần cầ
 - [x] Giao diện túi đồ / kho hàng (Inventory UI) hiển thị sức chứa, số lượng và thông tin chi tiết.
 - [x] Hệ thống đồng hồ thời gian trong game (Game Clock) và chu kỳ ngày.
 - [x] Chức năng Lưu / Tải game cục bộ qua IndexedDB (Dexie) kèm thông báo Autosave.
-- [x] Hỗ trợ Responsive đa nền tảng (Desktop & Mobile) (06/10/2026: Landscape-first, portrait chỉ hiện RotateOverlay hướng dẫn xoay; xem `tổng hợp.md`; QA máy thật vẫn NOT TESTED; Đợt 5–7: UI density, HUD priority, modal density, top UI hợp nhất xong trong emulation).
+- [x] Hỗ trợ Responsive đa nền tảng (Desktop & Mobile) (06/10/2026: Landscape-first, portrait chỉ hiện RotateOverlay hướng dẫn xoay; xem `tổng hợp.md`; QA máy thật vẫn NOT TESTED; Đợt 5–8: UI density, HUD priority, modal density, top UI hợp nhất, QA hiệu năng emulator xong; FPS/DPR thật NOT TESTED).
 
 ---
 
