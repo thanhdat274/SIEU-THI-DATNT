@@ -219,6 +219,7 @@ export const SupplierModal: React.FC<Props> = ({
   // quantities: mặc định 0 — người chơi bấm + để thêm vào giỏ
   const [quantities, setQuantities] = useState<Record<string, number>>(loadSavedCart);
   const [category, setCategory] = useState<ProductCategory | 'all'>('all');
+  const [cartDetailOpen, setCartDetailOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [autoProductId, setAutoProductId] = useState(ALL_PRODUCTS[0]?.id ?? '');
   const [autoSupplierId, setAutoSupplierId] = useState(DEFAULT_SUPPLIER_ID);
@@ -807,31 +808,42 @@ export const SupplierModal: React.FC<Props> = ({
           border: '2px solid var(--teal)',
           borderRadius: '4px',
           marginTop: '16px',
-          padding: '12px 16px',
+          padding: '8px 12px',
           zIndex: 10,
         }}
         aria-label="Giỏ đặt hàng"
       >
         {cartHasItems ? (
           <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
-              <div>
-                <strong style={{ color: 'var(--teal-dark)' }}>
-                  🛒 Giỏ đặt hàng · {cartItems.length} loại · {cartItems.reduce((s, it) => s + it.qty, 0)} đơn vị
-                </strong>
-                <div style={{ fontSize: '11px', color: 'var(--ink-light)', marginTop: '2px' }}>
-                  {cartItems.map((it) => `${it.product.name} ×${it.packs} ${it.product.caseSize ? 'thùng' : 'món'} (${it.qty} món)`).join(' · ')}
-                </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', gap: '6px' }}>
+              <strong style={{ color: 'var(--teal-dark)', fontSize: '13px' }}>
+                🛒 Giỏ đặt hàng · {cartItems.length} loại · {cartItems.reduce((s, it) => s + it.qty, 0)} đơn vị
+              </strong>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <PixelButton
+                  variant="paper"
+                  onClick={() => setCartDetailOpen((open) => !open)}
+                  style={{ fontSize: '11px', padding: '4px 8px' }}
+                  aria-expanded={cartDetailOpen}
+                  aria-label={cartDetailOpen ? 'Ẩn chi tiết giỏ' : 'Xem chi tiết giỏ'}
+                >
+                  {cartDetailOpen ? 'Ẩn chi tiết ▾' : 'Chi tiết ▸'}
+                </PixelButton>
+                <PixelButton
+                  variant="paper"
+                  onClick={clearCart}
+                  style={{ fontSize: '11px', padding: '4px 8px' }}
+                  aria-label="Xóa giỏ hàng"
+                >
+                  Xóa giỏ
+                </PixelButton>
               </div>
-              <PixelButton
-                variant="paper"
-                onClick={clearCart}
-                style={{ fontSize: '11px', padding: '4px 8px' }}
-                aria-label="Xóa giỏ hàng"
-              >
-                Xóa giỏ
-              </PixelButton>
             </div>
+            {cartDetailOpen && (
+              <div style={{ fontSize: '11px', color: 'var(--ink-light)', maxHeight: '96px', overflowY: 'auto', marginBottom: '6px', lineHeight: 1.4 }}>
+                {cartItems.map((it) => `${it.product.name} ×${it.packs} ${it.product.caseSize ? 'thùng' : 'món'} (${it.qty} món)`).join(' · ')}
+              </div>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', borderTop: '1px solid var(--wood-light)', paddingTop: '8px' }}>
               <div>
                 <strong style={{ fontSize: '15px' }}>Tổng: {money(cartTotal)}</strong>

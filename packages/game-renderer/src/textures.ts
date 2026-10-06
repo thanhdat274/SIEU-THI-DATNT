@@ -78,6 +78,8 @@ export class PixelTextureFactory {
         return this.createXoiSignTexture();
       case 'sign_drink':
         return this.createDrinkSignTexture();
+      case 'sign_snack':
+        return this.createSnackSignTexture();
       case 'sign_general':
         return this.createGeneralStoreSignTexture();
       case 'tile_plant_pot':
@@ -435,6 +437,32 @@ export class PixelTextureFactory {
     ctx.font = '9px sans-serif';
     ctx.fillStyle = '#aed6f1';
     ctx.fillText('NƯỚC ÉP - TRÁI CÂY', 64, 24);
+
+    return canvas;
+  }
+
+  /**
+   * Signboard "QUÁN ĂN VẶT" (128x32) - Snack shop
+   */
+  private createSnackSignTexture(): HTMLCanvasElement {
+    const canvas = createCanvas(128, 32);
+    const ctx = canvas.getContext('2d')!;
+
+    ctx.fillStyle = '#d9822b';
+    ctx.fillRect(0, 0, 128, 32);
+
+    ctx.strokeStyle = '#fff0c8';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, 126, 30);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('QUÁN ĂN VẶT', 64, 14);
+    ctx.font = '9px sans-serif';
+    ctx.fillStyle = '#ffe2a8';
+    ctx.fillText('BẮP XÀO - CÁ VIÊN', 64, 24);
 
     return canvas;
   }

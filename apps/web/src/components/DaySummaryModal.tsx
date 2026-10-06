@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { DailyRecord } from '@game/shared';
-import { buildDaySummary, type MorningBrief } from '@game/core';
+import { buildDaySummary, buildDayChannelBreakdown, type MorningBrief } from '@game/core';
 import { PRODUCT_MAP } from '@game/data';
 import { money, PixelDialog, PixelStat, PixelButton } from './pixel';
 
@@ -13,6 +13,7 @@ export interface Props {
 export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose }) => {
   const [tab, setTab] = useState<'summary' | 'morning'>('summary');
   const summary = buildDaySummary(record);
+  const channels = buildDayChannelBreakdown(record);
 
   return (
     <PixelDialog
@@ -53,6 +54,14 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
 
           <div className="pixel-panel" style={{ padding: 12, marginTop: 10, display: 'grid', gap: 6 }}>
             <div>Doanh thu: <strong>{money(summary.revenue)}</strong></div>
+            {channels.stalls.length > 0 && (
+              <div className="muted" style={{ fontSize: 11, paddingLeft: 10, display: 'grid', gap: 2 }}>
+                <div>· Tiệm (thu ngân): {money(channels.shopRevenue)} · lãi gộp {money(channels.shopGrossProfit)}</div>
+                {channels.stalls.map(line => (
+                  <div key={line.stallId}>· {line.name}: {money(line.revenue)} · {line.servings} suất · lãi gộp {money(line.grossProfit)}{line.estimated ? ' (ước)' : ''}</div>
+                ))}
+              </div>
+            )}
             <div>Giá vốn: <strong style={{ color: 'var(--rust, #b44a2c)' }}>- {money(summary.cogs)}</strong></div>
             <div>Lãi gộp: <strong>{money(summary.grossProfit)}</strong></div>
             <div>Hàng hỏng: <strong style={{ color: 'var(--rust, #b44a2c)' }}>- {money(summary.spoilageCost)}</strong></div>

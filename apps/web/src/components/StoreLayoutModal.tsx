@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { UNITS_PER_WAREHOUSE_CELL, getFixtureDimensions, slotGroup, type SaveGameData, type StoreFixture } from '@game/shared';
-import { BUILDING_MAP, BUILDINGS, DECOR, DECOR_ATTRACTION_MAX, FIXTURE_SHOP, LAND_PLOTS, MAX_STORAGE_RACKS, NORTH_EXPANSION_ROWS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, fixtureBuilding, generateStarterTileMap, buildingAt, type BuildingId, type LandPlotDefinition } from '@game/data';
-import { applyStoreLayoutActions, coldWarehouseCapacity, decorAttraction, decorTrafficMultiplier, rotateStoreFixture, totalWarehouseCells, type StoreLayoutAction } from '@game/core';
+import { UNITS_PER_WAREHOUSE_CELL, getFixtureDimensions, slotGroup, tileIndex, tileInMap, type SaveGameData, type StoreFixture } from '@game/shared';
+import { BUILDING_MAP, BUILDINGS, PARCEL_MAP, DECOR, DECOR_ATTRACTION_MAX, FIXTURE_SHOP, LAND_PLOTS, EXPANSION_TILE_PRICE, MAIN_EAST_WING_PLOT_IDS, MAX_STORAGE_RACKS, NORTH_EXPANSION_ROWS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, fixtureBuilding, generateStarterTileMap, buildingAt, inMainExpansionZone, defaultPlacementOf, normalizePlacements, placementFloor, tileKey, wallRing, type BuildingId, type LandPlotDefinition } from '@game/data';
+import { applyStoreLayoutActions, coldWarehouseCapacity, decorAttraction, decorTrafficMultiplier, expandFootprint, expansionPrice, placementOptions, relocationFee, rotateStoreFixture, sharedExpansionBudget, totalWarehouseCells, type StoreLayoutAction } from '@game/core';
 import { fixturePreviewUrl } from '@game/renderer';
 import { PixelButton } from './pixel';
 import './store-layout.css';
@@ -12,15 +12,17 @@ export interface Props {
   onClose: () => void;
 }
 
-type SidebarTab = 'shop' | 'decor' | 'stored' | 'plots' | 'warehouse';
+type SidebarTab = 'shop' | 'decor' | 'stored' | 'plots' | 'expand' | 'warehouse';
 type SelectMode = 'inspect' | 'adjust';
 
 /** Lưới sàn hiển thị theo tòa nhà đang chỉnh: gốc, số cột/hàng (tính cả tường, khớp BUILDINGS). */
 const BOARD_VIEWS: Record<BuildingId, { x0: number; cols: number; y0: number; rows: number; label: string }> = {
-  main: { x0: 6, cols: 16, y0: 3, rows: 8, label: 'Tiệm chính' },
+  // Tiệm chính hiển thị cả vùng có thể mở rộng lên phía bắc (lô tiệm chính y −3..10); ô ngoài sàn là ô khóa.
+  main: { x0: 6, cols: 16, y0: -3, rows: 14, label: 'Tiệm chính' },
   // Tiệm xôi/quán nước lùi tường sau lên 3 hàng mỗi mảnh mở rộng phía bắc (tối đa 2 mảnh): bảng hiển thị tới hàng y=-3, hàng chưa mua là ô khóa.
   xoi: { x0: 0, cols: 7, y0: -3, rows: 14, label: 'Tiệm xôi' },
   drink: { x0: 26, cols: 10, y0: -3, rows: 14, label: 'Quán nước' },
+  snack: { x0: 21, cols: 6, y0: -3, rows: 14, label: 'Quán ăn vặt' },
 };
 
 const FixtureArt: React.FC<{ type: StoreFixture['type']; shopId?: string; doubleWide?: boolean; className?: string }> = ({ type, shopId, doubleWide, className }) => {
@@ -50,6 +52,9 @@ const fixtureGoods = (fixtures: readonly StoreFixture[], fixture: StoreFixture) 
   return names.length ? names.join(' · ') : 'Chưa bày hàng';
 };
 
+/** Tên lô đợt 0 hiển thị khi chọn vị trí tòa. */
+const LOT_LABELS: Record<string, string> = { 'lot-west': 'Lô tây', 'lot-east-1': 'Lô đông 1 (cạnh tiệm chính)', 'lot-east-2': 'Lô đông 2' };
+
 const actionIsBuyFixture = (action: StoreLayoutAction) => action.type === 'buy_fixture';
 
 const errorMessage = (error: string | undefined, action: StoreLayoutAction, blocked?: string[]) => {
@@ -64,6 +69,17 @@ const errorMessage = (error: string | undefined, action: StoreLayoutAction, bloc
   if (error === 'overlap') return 'Vị trí đang bị nội thất khác chiếm.';
   if (error === 'path_blocked') return `Bố cục chặn lối tới: ${blocked?.join(', ')}`;
   if (error === 'prerequisite') return 'Cần mở khu đất liền trước hoặc giữ quầy thu ngân.';
+  if (error === 'not_adjacent') return 'Các ô chọn chưa kề sàn tiệm hiện có.';
+  if (error === 'disconnected') return 'Có ô chọn tách rời, không nối liền với sàn tiệm.';
+  if (error === 'outside_parcel') return 'Có ô nằm ngoài lô đất của tiệm chính hoặc sát tường biên (cần chừa một hàng cho tường).';
+  if (error === 'blocked_by_building') return 'Có ô nằm trong nhà kho, không xây sàn ở đó được.';
+  if (error === 'over_budget') return 'Vượt số ô mở rộng được phép ở cấp hiện tại.';
+  if (error === 'invalid_tiles') return 'Danh sách ô không hợp lệ (trống hoặc trùng).';
+  if (error === 'store_open') return 'Cần đóng cửa tiệm và đợi khách/nhân viên làm xong việc rồi mới sắp xếp được.';
+  if (error === 'parcel_occupied') return 'Lô này đã có tòa khác.';
+  if (error === 'door_blocked') return 'Cửa tòa bị cây vỉa hè chắn ở vị trí này.';
+  if (error === 'invalid_placement') return 'Không đặt tòa ở vị trí này được.';
+  if (error === 'plot_locked') return 'Mảnh này đã được thay bằng mở rộng theo ô.';
   return 'Không thể áp dụng thao tác này.';
 };
 
@@ -79,8 +95,15 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
   const [view, setView] = useState<BuildingId>('main');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  /** Lô và gốc x chọn cho từng tòa sắp mở (theo id mảnh đất); thiếu = vị trí mặc định nếu còn trống, không thì lựa chọn đầu tiên. */
+  const [placeChoice, setPlaceChoice] = useState<Record<string, { parcelId: string; originX: number }>>({});
   const [previewCell, setPreviewCell] = useState<{ x: number; y: number } | null>(null);
+  /** Ô đang chọn trong chế độ quy hoạch mở rộng (chưa trừ tiền cho tới khi bấm Xây). */
+  const [planTiles, setPlanTiles] = useState<Array<{ x: number; y: number }>>([]);
   const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
+  /** Chạm trên điện thoại (B2-1): chặn `click` giả phát lại và nhớ ô vừa chạm để kéo qua nhiều ô. */
+  const touchPaintUntil = useRef(0);
+  const touchPaintCell = useRef('');
 
   const escapeRef = useRef({ selectMode, selectedId, buyId, retrieveId, onClose });
   escapeRef.current = { selectMode, selectedId, buyId, retrieveId, onClose };
@@ -141,13 +164,17 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
     };
   }, [onClose]);
 
-  const map = useMemo(() => generateStarterTileMap(draft.storeLayout.unlockedPlotIds ?? []), [draft.storeLayout.unlockedPlotIds]);
+  const map = useMemo(() => generateStarterTileMap(draft.storeLayout.unlockedPlotIds ?? [], [], draft.storeLayout.buildingPlacements), [draft.storeLayout.unlockedPlotIds, draft.storeLayout.buildingPlacements]);
   const selected = draft.storeLayout.fixtures.find(item => item.id === selectedId) ?? null;
   const owned = new Set(draft.storeLayout.unlockedPlotIds ?? []);
-  const ownedBuildings = BUILDINGS.filter(building => !building.plotId || owned.has(building.plotId)).map(building => building.id);
+  const ownedBuildings = (map.buildings ?? []).map(building => building.id as BuildingId);
   const extraBuildingOwned = ownedBuildings.length > 1;
   const activeView: BuildingId = ownedBuildings.includes(view) ? view : 'main';
-  const board = BOARD_VIEWS[activeView];
+  const activeInfo = map.buildings?.find(building => building.id === activeView);
+  // Bảng của tòa phụ theo vị trí đặt hiện tại: cột đầu = mép trái tòa, bề rộng theo biên tòa.
+  const baseBoard = activeView !== 'main' && activeInfo?.bounds
+    ? { ...BOARD_VIEWS[activeView], x0: activeInfo.bounds.left, cols: activeInfo.bounds.right - activeInfo.bounds.left + 1 }
+    : BOARD_VIEWS[activeView];
   const stored = (draft.storeLayout.storedFixtures ?? []).filter(fixture => !fixture.parentId);
   const attraction = decorAttraction(draft.storeLayout.decorOwned, draft.storeLayout.fixtures);
 
@@ -156,7 +183,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
     return x >= fixture.tileX && x < fixture.tileX + widthTiles && y >= fixture.tileY && y < fixture.tileY + heightTiles;
   };
 
-  const layoutResult = (nextActions: StoreLayoutAction[]) => applyStoreLayoutActions(save, nextActions, ids => generateStarterTileMap(ids));
+  const layoutResult = (nextActions: StoreLayoutAction[]) => applyStoreLayoutActions(save, nextActions, (ids, placements) => generateStarterTileMap(ids, [], placements));
   const buyItem = FIXTURE_SHOP.find(item => item.id === buyId) ?? null;
 
   const applyAction = (action: StoreLayoutAction) => {
@@ -171,6 +198,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
     setDraft(result.save);
     setError('');
     setPreviewCell(null);
+    if (action.type === 'expand_footprint') setPlanTiles([]);
 
     if (action.type === 'move') {
       setSelectedId(action.fixtureId);
@@ -292,10 +320,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
   }, []);
 
   const ground = map.layers.find(layer => layer.name === 'ground')!.data;
-  const tileKind = (x: number, y: number) => {
-    const ly = y - (map.originTileY ?? 0);
-    return x >= 0 && x < map.width && ly >= 0 && ly < map.height ? ground[ly * map.width + x] : 0;
-  };
+  const tileKind = (x: number, y: number) => (tileInMap(map, x, y) ? ground[tileIndex(map, x, y)] : 0);
 
   /** Tìm mảnh đất (LAND_PLOTS) chứa ô (x, y). Chỉ áp dụng cho các plot có `tiles` định nghĩa rõ. */
   const findPlotForTile = (x: number, y: number): LandPlotDefinition | undefined => {
@@ -308,7 +333,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
 
   /** Tìm tòa nhà chứa ô (x, y). */
   const findBuildingForTile = (x: number, y: number): BuildingId | undefined => {
-    return buildingAt(x, y);
+    return buildingAt(x, y, map.buildings);
   };
 
   const retrieveFixture = retrieveId ? (draft.storeLayout.storedFixtures ?? []).find(item => item.id === retrieveId) ?? null : null;
@@ -325,7 +350,69 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
 
   const selectedSize = selected ? getFixtureDimensions(selected) : null;
 
+  // Quy hoạch mở rộng tiệm chính: ô sàn hiện có, tường hiện tại/sau khi xây, ngân sách và kết quả kiểm tra của lệnh (cùng luật với server).
+  const planning = tab === 'expand';
+  const planKeys = new Set(planTiles.map(tile => tileKey(tile.x, tile.y)));
+  const planFloor = useMemo(() => {
+    const placement = normalizePlacements(draft.storeLayout.buildingPlacements, owned).find(item => item.buildingId === activeView);
+    return placement ? placementFloor(placement, owned) : new Set<string>();
+  }, [draft.storeLayout.buildingPlacements, draft.storeLayout.unlockedPlotIds, activeView]);
+  /** Ô có thể xin xây sàn: tiệm chính theo `inMainExpansionZone`; tòa phụ trong phần ruột của lô mình (luật đầy đủ do `expandFootprint` kiểm). */
+  const planParcel = PARCEL_MAP[normalizePlacements(draft.storeLayout.buildingPlacements, owned).find(item => item.buildingId === activeView)?.parcelId ?? ''];
+  const inPlanZone = (x: number, y: number) => activeView === 'main'
+    ? inMainExpansionZone(x, y)
+    : !!planParcel && x > planParcel.rect.x0 && x < planParcel.rect.x1 && y > planParcel.rect.y0 && y < planParcel.rect.y1;
+  const planRingNow = useMemo(() => wallRing(planFloor), [planFloor]);
+  const planRingNext = planning && planTiles.length ? wallRing(new Set([...planFloor, ...planKeys])) : planRingNow;
+  const planBudget = sharedExpansionBudget(draft);
+  const planResult = planning && planTiles.length ? expandFootprint(draft, activeView, planTiles) : null;
+  const planPrice = expansionPrice(planTiles.length);
+  // Bảng tiệm chính chỉ kéo lên phía bắc (tới hàng −3) khi đang quy hoạch hoặc footprint đã lên phía bắc; còn lại giữ gọn như cũ.
+  const northmost = Math.min(...[...planFloor].map(key => Number(key.split(',')[1])));
+  const board = activeView === 'main' && (tab === 'expand' || northmost <= baseBoard.y0 + 6)
+    ? baseBoard
+    : activeView === 'main' ? { ...baseBoard, y0: 3, rows: 8 } : baseBoard;
+
+  const togglePlanTile = (x: number, y: number) => {
+    const key = tileKey(x, y);
+    if (planKeys.has(key)) { setPlanTiles(planTiles.filter(tile => tileKey(tile.x, tile.y) !== key)); setError(''); return; }
+    if (planFloor.has(key)) { setError('Ô này đã là sàn tiệm.'); return; }
+    if (!inPlanZone(x, y)) { setError('Ô này không xây sàn được (tường biên lô, hàng mặt tiền hoặc nhà kho).'); return; }
+    if (planTiles.length >= planBudget.remaining) { setError(`Chỉ còn ${planBudget.remaining} ô trong ngân sách mở rộng ở cấp ${draft.player.level}.`); return; }
+    setPlanTiles([...planTiles, { x, y }]);
+    setError('');
+  };
+
+  /** Ô của bảng theo điểm chạm (điện thoại): đọc `data-layout-cell` của ô nằm dưới ngón tay. */
+  const planCellFromTouch = (touch: React.Touch | undefined): { x: number; y: number } | null => {
+    if (!touch) return null;
+    const element = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement | null;
+    const attr = element?.closest?.('[data-layout-cell]')?.getAttribute('data-layout-cell');
+    if (!attr) return null;
+    const [x, y] = attr.split(',').map(Number);
+    return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+  };
+
+  /**
+   * Chạm/kéo trên điện thoại trong tab "📐 Mở rộng": chạm một ô là bật/tắt ngay, kéo qua nhiều ô thì bật liên tục
+   * (chuột dùng `onClick`; trình duyệt phát lại một `click` sau khi chạm nên `handleCellClick` bỏ qua cú click giả đó).
+   */
+  const handleBoardTouch = (event: React.TouchEvent) => {
+    if (!planning || !event.touches.length) return;
+    const cell = planCellFromTouch(event.touches[0]);
+    if (!cell) return;
+    touchPaintUntil.current = Date.now() + 500;
+    setHoveredCell(cell);
+    const key = tileKey(cell.x, cell.y);
+    if (touchPaintCell.current === key) return;
+    touchPaintCell.current = key;
+    togglePlanTile(cell.x, cell.y);
+  };
+
   const handleCellClick = (x: number, y: number) => {
+    // Cú `click` phát lại sau khi chạm đã được `handleBoardTouch` xử lý (B2-1: mobile chạm để bật/tắt ô).
+    if (Date.now() < touchPaintUntil.current) return;
+    if (planning) { togglePlanTile(x, y); return; }
     if (retrieveId) {
       applyAction({ type: 'retrieve', fixtureId: retrieveId, tileX: x, tileY: y });
       return;
@@ -335,7 +422,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
       return;
     }
 
-    const clickedFixture = draft.storeLayout.fixtures.find(item => !item.parentId && inFootprint(item, x, y));
+    const clickedFixture = draft.storeLayout.fixtures.find(item => !item.parentId && !item.type.startsWith('warehouse_') && inFootprint(item, x, y));
     if (clickedFixture) {
       if (clickedFixture.id === selectedId) {
         if (selectMode === 'adjust') {
@@ -420,7 +507,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
               {/* Tooltip hiển thị thông tin mảnh đất khi hover vào ô "×" */}
               {hoveredCell && (() => {
                 const { x, y } = hoveredCell;
-                const floor = tileKind(x, y) === 3 && !map.collisionLayer[(y - (map.originTileY ?? 0)) * map.width + x];
+                const floor = tileKind(x, y) === 3 && !map.collisionLayer[tileIndex(map, x, y)];
                 if (floor) return null;
                 const plot = findPlotForTile(x, y);
                 const building = findBuildingForTile(x, y);
@@ -469,7 +556,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
               {extraBuildingOwned && (
                 <div className="layout-building-tabs" role="tablist" aria-label="Chọn tòa nhà">
                   {ownedBuildings.map(id => (
-                    <button key={id} type="button" role="tab" aria-selected={activeView === id} className={activeView === id ? 'is-active' : ''} onClick={() => { setView(id); setSelectedId(null); }}>
+                    <button key={id} type="button" role="tab" aria-selected={activeView === id} className={activeView === id ? 'is-active' : ''} onClick={() => { setView(id); setSelectedId(null); setPlanTiles([]); setError(''); }}>
                       {BOARD_VIEWS[id].label}
                     </button>
                   ))}
@@ -482,23 +569,33 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
               )}
 
               <div
-                className="layout-board"
+                className={`layout-board ${planning ? 'is-planning' : ''}`}
                 role="grid"
                 aria-label={`Lưới bố trí ${board.label.toLowerCase()}`}
+                onTouchStart={handleBoardTouch}
+                onTouchMove={handleBoardTouch}
+                onTouchEnd={() => { touchPaintCell.current = ''; }}
+                onTouchCancel={() => { touchPaintCell.current = ''; }}
                 style={{ '--layout-cols': board.cols, aspectRatio: `${board.cols} / ${board.rows}`, maxWidth: board.cols === 16 ? undefined : 380 } as React.CSSProperties}
               >
                 {Array.from({ length: board.rows }, (_, row) => Array.from({ length: board.cols }, (_, col) => {
                   const x = board.x0 + col, y = board.y0 + row;
-                  const fixture = draft.storeLayout.fixtures.find(item => !item.parentId && inFootprint(item, x, y));
-                  const floor = tileKind(x, y) === 3 && !map.collisionLayer[(y - (map.originTileY ?? 0)) * map.width + x];
+                  const fixture = draft.storeLayout.fixtures.find(item => !item.parentId && !item.type.startsWith('warehouse_') && inFootprint(item, x, y));
+                  const floor = tileKind(x, y) === 3 && !map.collisionLayer[tileIndex(map, x, y)];
                   const previewCovered = placing && !!previewCell && x >= previewCell.x && x < previewCell.x + previewWidth && y >= previewCell.y && y < previewCell.y + previewHeight;
                   const previewInvalid = previewCovered && (!floor || !(buyItem ? buyPreview?.save : retrievePreview?.save));
                   const isCurrentSelectedFixtureTile = fixture?.id === selectedId;
+                  const cellKey = tileKey(x, y);
+                  const planned = planning && planKeys.has(cellKey);
+                  const plannedWall = planning && !floor && !planned && planRingNext.has(cellKey) && !planRingNow.has(cellKey);
+                  const expandable = planning && !floor && !planned && inPlanZone(x, y);
 
                   // Tìm thông tin mảnh đất cho ô "×"
                   const plotInfo = !floor ? findPlotForTile(x, y) : undefined;
                   const buildingInfo = !floor ? findBuildingForTile(x, y) : undefined;
-                  const tileLabel = fixture
+                  const tileLabel = planned
+                    ? `Ô ${x}, ${y} — đang chọn để xây sàn`
+                    : fixture
                     ? `${catalogName(fixture)} tại ô ${x}, ${y}`
                     : floor
                       ? `Ô ${x}, ${y}`
@@ -514,7 +611,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                       type="button"
                       role="gridcell"
                       data-layout-cell={`${x},${y}`}
-                      className={`layout-cell ${floor ? 'is-floor' : 'is-locked'} ${fixture ? 'has-fixture' : ''} ${isCurrentSelectedFixtureTile ? 'is-selected' : ''} ${retrieveId || buyItem ? 'is-drop-target' : ''} ${previewCovered ? (previewInvalid ? 'is-preview-invalid' : 'is-preview-valid') : ''}`}
+                      className={`layout-cell ${floor ? 'is-floor' : 'is-locked'} ${planned ? 'is-plan' : ''} ${plannedWall ? 'is-plan-wall' : ''} ${expandable ? 'is-expandable' : ''} ${fixture ? 'has-fixture' : ''} ${isCurrentSelectedFixtureTile ? 'is-selected' : ''} ${retrieveId || buyItem ? 'is-drop-target' : ''} ${previewCovered ? (previewInvalid ? 'is-preview-invalid' : 'is-preview-valid') : ''}`}
                       aria-label={tileLabel}
                       onPointerEnter={() => {
                         if (placing) setPreviewCell({ x, y });
@@ -526,14 +623,14 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                       }}
                       onClick={() => handleCellClick(x, y)}
                     >
-                      {fixture ? null : floor ? '' : '×'}
+                      {fixture ? null : planned ? '+' : floor ? '' : plannedWall ? '▒' : '×'}
                     </button>
                   );
                 }))}
 
                 {/* Fixture Art overlay */}
                 <div className="layout-art" aria-hidden="true">
-                  {draft.storeLayout.fixtures.filter(item => !item.parentId && !item.type.startsWith('warehouse_') && (fixtureBuilding(item) ?? 'main') === activeView).map(item => {
+                  {draft.storeLayout.fixtures.filter(item => !item.parentId && !item.type.startsWith('warehouse_') && (fixtureBuilding(item, map.buildings) ?? 'main') === activeView).map(item => {
                     const { widthTiles: w, heightTiles: h } = getFixtureDimensions(item);
                     const turned = item.rotation === 90 || item.rotation === 270;
                     const isSel = item.id === selectedId;
@@ -575,7 +672,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
               </div>
 
               <div className="board-landmark is-entrance">
-                <span>🚪 {activeView !== 'main' ? `Lối vào ${board.label.toLowerCase()} (cửa ở ô ${BUILDING_MAP[activeView].doorTiles.map(door => door.x).join('–')})` : 'Lối vào tiệm (khách đi vào từ đây)'}</span>
+                <span>🚪 {activeView !== 'main' ? `Lối vào ${board.label.toLowerCase()} (cửa ở ô ${(activeInfo?.doorTiles ?? BUILDING_MAP[activeView].doorTiles).map(door => door.x).join('–')})` : 'Lối vào tiệm (khách đi vào từ đây)'}</span>
               </div>
             </div>
 
@@ -750,6 +847,9 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
               <button type="button" className={tab === 'plots' ? 'is-active' : ''} onClick={() => setTab('plots')}>
                 🚩 Mở đất
               </button>
+              <button type="button" className={tab === 'expand' ? 'is-active' : ''} onClick={() => { setTab('expand'); setPlanTiles([]); setSelectedId(null); setBuyId(null); setRetrieveId(null); setPreviewCell(null); setError(''); }}>
+                📐 Mở rộng
+              </button>
               <button type="button" className={tab === 'warehouse' ? 'is-active' : ''} onClick={() => setTab('warehouse')}>
                 🏭 Nhà kho
               </button>
@@ -907,13 +1007,42 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                 );
               })()}
 
+              {tab === 'expand' && (
+                <div className="layout-expand-section">
+                  <p className="plots-heading-help">
+                    Chọn các ô cỏ ngay cạnh sàn của <strong>{BOARD_VIEWS[activeView].label}</strong> (đổi tòa ở các tab phía trên bảng; hướng nào cũng được, kể cả lên phía bắc) rồi bấm <strong>Xây</strong>. Ngân sách ô là chung cho mọi tòa. Tường tự dựng quanh phần mới; chưa tốn tiền cho tới khi xây.
+                  </p>
+                  <dl className="expand-stats">
+                    <div><dt>Đã dùng</dt><dd>{planBudget.used} / {planBudget.max} ô</dd></div>
+                    <div><dt>Còn lại</dt><dd>{planBudget.remaining} ô</dd></div>
+                    <div><dt>Giá mỗi ô</dt><dd>{EXPANSION_TILE_PRICE.toLocaleString('vi-VN')} đ</dd></div>
+                    <div><dt>Đang chọn</dt><dd>{planTiles.length} ô · {planPrice.toLocaleString('vi-VN')} đ</dd></div>
+                  </dl>
+                  {planBudget.max === 0 && <p className="layout-error" role="status">Đạt cấp 5 để mở ngân sách ô mở rộng đầu tiên.</p>}
+                  {planResult?.error && <p className="layout-error" role="status">⚠️ {errorMessage(planResult.error, { type: 'expand_footprint', buildingId: activeView, tiles: planTiles }, planResult.blockedFixtureIds)}</p>}
+                  <div className="expand-actions">
+                    <PixelButton variant="teal" disabled={busy || !planTiles.length || !!planResult?.error} onClick={() => applyAction({ type: 'expand_footprint', buildingId: activeView, tiles: planTiles })}>
+                      Xây {planTiles.length || ''} ô
+                    </PixelButton>
+                    <PixelButton disabled={busy || !planTiles.length} onClick={() => { setPlanTiles([]); setError(''); }}>Bỏ chọn</PixelButton>
+                  </div>
+                  <p className="plots-heading-help">Ô <span className="expand-key is-plan">+</span> sẽ thành sàn, ô <span className="expand-key is-wall">▒</span> sẽ thành tường mới. Nhà kho (góc trên bên trái) và hàng mặt tiền không xây sàn được.</p>
+                </div>
+              )}
+
               {tab === 'plots' && (
                 <div className="layout-plots-section">
-                  <p className="plots-heading-help">Mở rộng mặt bằng sang hướng đông, hoặc mở tiệm xôi riêng ở dải đất phía tây, cạnh tiệm chính.</p>
+                  <p className="plots-heading-help">Mở tiệm xôi riêng ở dải đất phía tây, quán ăn vặt, quán nước, hoặc mở rộng các tòa phụ về phía bắc. Mở rộng tiệm chính theo ô ở tab Mở rộng.</p>
                   <div className="plots-card-list">
-                    {LAND_PLOTS.map(plot => {
+                    {LAND_PLOTS.filter(plot => !(MAIN_EAST_WING_PLOT_IDS as readonly string[]).includes(plot.id) || owned.has(plot.id)).map(plot => {
                       const unlocked = owned.has(plot.id);
-                      const blocked = draft.player.level < plot.level || (plot.prerequisitePlotId && !owned.has(plot.prerequisitePlotId)) || draft.player.money < plot.cost;
+                      const options = plot.buildingId && !unlocked ? placementOptions(draft, plot.buildingId) : [];
+                      const def = plot.buildingId ? defaultPlacementOf(plot.buildingId) : undefined;
+                      const picked = placeChoice[plot.id];
+                      const chosenLot = options.find(option => option.parcelId === picked?.parcelId) ?? options.find(option => option.parcelId === def?.parcelId) ?? options[0];
+                      const chosenX = chosenLot && (chosenLot.originXs.includes(picked?.originX ?? NaN) ? picked!.originX : chosenLot.originXs.includes(def?.originX ?? NaN) ? def!.originX : chosenLot.originXs[0]);
+                      const noRoom = !!plot.buildingId && !unlocked && !chosenLot;
+                      const blocked = noRoom || draft.player.level < plot.level || (plot.prerequisitePlotId && !owned.has(plot.prerequisitePlotId)) || draft.player.money < plot.cost;
                       return (
                         <article key={plot.id} className={`layout-plot-card ${unlocked ? 'is-owned' : ''}`}>
                           <div className="plot-card-header">
@@ -930,15 +1059,67 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                           </div>
                           <div className="plot-card-action">
                             {unlocked ? (
+                              <>
                               <span className="plot-owned-tag">{plot.buildingId ? '✓ Tiệm đã mở' : plot.expandsBuilding ? '✓ Đã mở rộng' : '✓ Đã mở mặt bằng'}</span>
+                              {plot.buildingId && (() => {
+                                const info = map.buildings?.find(building => building.id === plot.buildingId);
+                                const targets = placementOptions(draft, plot.buildingId)
+                                  .map(option => ({ ...option, originXs: option.originXs.filter(x => x !== info?.bounds?.left) }))
+                                  .filter(option => option.originXs.length > 0);
+                                if (info && !info.open) return <p className="plots-heading-help">🚧 Đang thi công, mở lại sáng hôm sau.</p>;
+                                if (!targets.length) return null;
+                                const key = `move-${plot.id}`;
+                                const picked = placeChoice[key];
+                                const lot = targets.find(option => option.parcelId === picked?.parcelId) ?? targets[0];
+                                const x = lot.originXs.includes(picked?.originX ?? NaN) ? picked!.originX : lot.originXs[0];
+                                const fee = relocationFee(draft, plot.buildingId);
+                                return (
+                                  <div className="plot-place-picker">
+                                    <label>Dời tới{' '}
+                                      <select value={lot.parcelId} onChange={event => setPlaceChoice({ ...placeChoice, [key]: { parcelId: event.target.value, originX: targets.find(option => option.parcelId === event.target.value)!.originXs[0] } })}>
+                                        {targets.map(option => <option key={option.parcelId} value={option.parcelId}>{LOT_LABELS[option.parcelId] ?? option.parcelId}</option>)}
+                                      </select>
+                                    </label>
+                                    {lot.originXs.length > 1 && (
+                                      <label>Cột bắt đầu{' '}
+                                        <select value={x} onChange={event => setPlaceChoice({ ...placeChoice, [key]: { parcelId: lot.parcelId, originX: Number(event.target.value) } })}>
+                                          {lot.originXs.map(value => <option key={value} value={value}>x = {value}</option>)}
+                                        </select>
+                                      </label>
+                                    )}
+                                    <PixelButton disabled={busy || draft.player.money < fee} onClick={() => applyAction({ type: 'relocate_building', buildingId: plot.buildingId!, placement: { parcelId: lot.parcelId, originX: x } })}>
+                                      Dời tòa ({fee.toLocaleString('vi-VN')} đ, thi công 1 ngày)
+                                    </PixelButton>
+                                  </div>
+                                );
+                              })()}
+                              </>
                             ) : (
+                              <>
+                              {plot.buildingId && (noRoom ? <p className="plots-heading-help">Không còn lô trống vừa tòa này.</p> : (
+                                <div className="plot-place-picker">
+                                  <label>Lô{' '}
+                                    <select value={chosenLot?.parcelId} onChange={event => setPlaceChoice({ ...placeChoice, [plot.id]: { parcelId: event.target.value, originX: options.find(option => option.parcelId === event.target.value)!.originXs[0] } })}>
+                                      {options.map(option => <option key={option.parcelId} value={option.parcelId}>{LOT_LABELS[option.parcelId] ?? option.parcelId}</option>)}
+                                    </select>
+                                  </label>
+                                  {chosenLot && chosenLot.originXs.length > 1 && (
+                                    <label>Cột bắt đầu{' '}
+                                      <select value={chosenX} onChange={event => setPlaceChoice({ ...placeChoice, [plot.id]: { parcelId: chosenLot.parcelId, originX: Number(event.target.value) } })}>
+                                        {chosenLot.originXs.map(x => <option key={x} value={x}>x = {x}</option>)}
+                                      </select>
+                                    </label>
+                                  )}
+                                </div>
+                              ))}
                               <PixelButton
                                 variant="teal"
                                 disabled={busy || !!blocked}
-                                onClick={() => applyAction({ type: 'buy_plot', plotId: plot.id })}
+                                onClick={() => applyAction(plot.buildingId && chosenLot ? { type: 'buy_plot', plotId: plot.id, placement: { parcelId: chosenLot.parcelId, originX: chosenX! } } : { type: 'buy_plot', plotId: plot.id })}
                               >
                                 {plot.buildingId ? 'Mở tiệm này' : plot.expandsBuilding ? 'Mở rộng' : 'Mở khu này'}
                               </PixelButton>
+                              </>
                             )}
                           </div>
                         </article>

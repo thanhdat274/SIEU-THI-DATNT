@@ -364,6 +364,19 @@ Object.assign(FURNITURE_SPRITES, {
     '..kBttttttttBk..', '..kBttttttttBk..', '..kBBBBBBBBBBk..',
     '...kkkkkkkkkk...', '....kBkk..kkB...', '....kkkk..kkkk..',
   ]),
+  // Quán ăn vặt: chảo xào trên bếp lửa, nồi chiên ngập dầu; footprint 1×1 nên đứng cạnh nhau không chồng.
+  chao_xao: fitFurnitureSprite(16, [
+    '..kkkkkkkkkkkk..', '.kddddddddddddk.', 'kdYYtYYYtYYYtYdk',
+    'kdtYYrYYYrYYYtdk', '.kddddddddddddk.', '..kkkkkkkkkkkk..',
+    '..kBBBBBBBBBBk..', '..kBrrBYYBrrBk..', '..kBBBBBBBBBBk..',
+    '..kkkkkkkkkkkk..', '..kBkk....kkBk..', '..kkkk....kkkk..',
+  ]),
+  chao_chien: fitFurnitureSprite(16, [
+    '..kkkkkkkkkkkk..', '.ksssssssssssSk.', 'ksiiiiiiiiiiiisk',
+    'ksiYYtYYtYYtYisk', 'ksiiiiiiiiiiiisk', '.kSSSSSSSSSSSSk.',
+    '..kBBBBBBBBBBk..', '..kBddddddddBk..', '..kkkkkkkkkkkk..',
+    '..kBkk....kkBk..', '..kkkk....kkkk..',
+  ]),
   xung_hap: fitFurnitureSprite(16, [
     '......kYk.......', '.....k...k......', '......k.k.......',
     '...kkkkkkkkkk...', '..kssssssssssk..', '.ksiiiiiiiiisk.',

@@ -187,6 +187,11 @@
   user-select: none;
 }
 
+/* Chế độ quy hoạch mở rộng: chạm/kéo trên điện thoại để bật/tắt ô (B2-1), không cuộn trang khi kéo ngang bảng. */
+.layout-board.is-planning {
+  touch-action: none;
+}
+
 .layout-cell {
   position: relative;
   min-width: 0;
@@ -254,6 +259,79 @@
   position: absolute;
   color: #C84C40;
   font-size: 14px;
+}
+
+/* Quy hoạch mở rộng tiệm chính (OpenSpec open-world-main-expansion) */
+.layout-cell.is-expandable {
+  background: #9DB87A;
+  color: #4C6B34;
+}
+
+.layout-cell.is-expandable:hover {
+  filter: brightness(1.12);
+}
+
+.layout-cell.is-plan {
+  background: #8FD0B6;
+  color: #1D5E49;
+  box-shadow: inset 0 0 0 3px #2C956F;
+}
+
+.layout-cell.is-plan-wall {
+  background: #A98B5E;
+  color: #5A4326;
+}
+
+.layout-expand-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expand-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+  margin: 0;
+}
+
+.expand-stats div {
+  display: flex;
+  flex-direction: column;
+}
+
+.expand-stats dt {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.expand-stats dd {
+  margin: 0;
+  font-weight: 900;
+}
+
+.expand-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.expand-key {
+  display: inline-block;
+  min-width: 18px;
+  text-align: center;
+  font-weight: 900;
+  border-radius: 3px;
+}
+
+.expand-key.is-plan {
+  background: #8FD0B6;
+  color: #1D5E49;
+}
+
+.expand-key.is-wall {
+  background: #A98B5E;
+  color: #5A4326;
 }
 
 /* Fixtures rendered on board */
@@ -1054,4 +1132,18 @@
 .layout-building-tabs button.is-active {
   background: #255845;
   color: #D4F4E4;
+}
+
+/* Chọn lô/cột khi mở tòa phụ (OpenSpec open-world-building-relocation) */
+.plot-place-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.plot-place-picker select {
+  font: inherit;
+  padding: 2px 4px;
 }

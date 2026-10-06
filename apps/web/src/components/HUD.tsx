@@ -18,6 +18,7 @@ interface HUDProps {
   onOpenQuests: () => void;
   onOpenStalls: () => void;
   onOpenStaff: () => void;
+  onPayWageDebt?: () => void;
   wageDebt?: number;
   market?: { weather: { label: string; icon: string; rain?: RainForecast | null }; forecast: Array<{ label: string; rain?: RainForecast | null }>; events?: Array<{ id: string; label: string; status: string; startsIn: number; notice: string }> };
   onOpenMarket?: () => void;
@@ -45,7 +46,7 @@ interface HUDProps {
   /** Mốc lưu gần nhất (ISO) để hiện trong mục Lưu tiến trình của sổ quản lý. */
   lastSavedAt?: string;
 }
-const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenPrices, onOpenTax, onOpenStaff, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0, lastSavedAt}) => {
+const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenPrices, onOpenTax, onOpenStaff, onPayWageDebt, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0, lastSavedAt}) => {
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore(useShallow((s) => ({player: s.player, worldTime: s.worldTime, timeString: s.timeString, toggleSaveModal: s.toggleSaveModal})));
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const season = getSeasonForDay(worldTime.day);
@@ -87,7 +88,7 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
             <span className="muted"> · {player.experienceToNextLevel > 0 ? `${player.experience}/${player.experienceToNextLevel}` : `Prestige ${player.prestigeXp ?? 0}/${PRESTIGE_XP_PER_STAR}`}</span>
             <PixelProgress label="Kinh nghiệm" value={player.experienceToNextLevel > 0 ? player.experience : (player.prestigeXp ?? 0)} max={player.experienceToNextLevel > 0 ? player.experienceToNextLevel : PRESTIGE_XP_PER_STAR}/>
           </button>
-          {wageDebt > 0 && <button type="button" className="hud-debt" onClick={onOpenStaff} title="Nợ lương nhân viên: bấm để xem" aria-label={`Nợ lương ${money(wageDebt)}`}><PixelIcon name="coin" size={16}/><span>Nợ lương {money(wageDebt)}</span></button>}
+          {wageDebt > 0 && <><button type="button" className="hud-debt" onClick={onOpenStaff} title="Nợ lương nhân viên: bấm để xem" aria-label={`Nợ lương ${money(wageDebt)}`}><PixelIcon name="coin" size={16}/><span>Nợ lương {money(wageDebt)}</span></button>{onPayWageDebt && <button type="button" className="hud-debt" onClick={onPayWageDebt} disabled={player.money <= 0} title="Trả nợ lương ngay bằng tiền đang có" aria-label="Trả nợ lương"><span style={{display:'inline'}}>Trả nợ</span></button>}</>}
           <div className="hud-customers"><PixelStat label="Khách trong tiệm" value={activeCustomers} icon="person"/></div>
         </div>
         <nav className="hud-actions" aria-label="Điều hành tiệm">

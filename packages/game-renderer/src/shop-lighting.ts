@@ -1,7 +1,10 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { LightingState, lerpColor } from '@game/core';
 import { GameTileMap, StoreFixture, TILE_SIZE, getFixtureDimensions, isWarehouseFixture } from '@game/shared';
-import { BUILDING_MAP, DRINK_BOUNDS, NEIGHBORHOOD_PX, STORE_BOUNDS, STREET_LAMP_TILES, WAREHOUSE_BOUNDS, XOI_BOUNDS } from '@game/data';
+import { BUILDING_MAP, DRINK_BOUNDS, NEIGHBORHOOD_PX, SNACK_BOUNDS, STORE_BOUNDS, STREET_LAMP_TILES, WAREHOUSE_BOUNDS, XOI_BOUNDS, inMainExpansionZone } from '@game/data';
+
+/** Ô cửa trái tiệm chính (mặc định (9,10)): tiệm chính cố định vị trí nên đèn/nắng mặt tiền đặt tương đối theo hằng số này. */
+const MAIN_DOOR = BUILDING_MAP.main.doorTiles[0];
 
 type LightKind = 'artificial' | 'sun' | 'street';
 
@@ -91,7 +94,7 @@ export class ShopLighting {
   private mapKey = '';
   private warehouseLightProgress = 0;
 
-  constructor(tintLayer: Container, private readonly lightLayer: Container, private readonly shadowLayer: Container) {
+  constructor(tintLayer: Container, private readonly lightLayer: Container, private readonly shadowLayer: Container, private readonly depthLayer?: Container) {
     for (const tint of [this.outdoorTint, this.indoorTint, this.warehouseTint]) {
       tint.blendMode = 'multiply';
       tint.eventMode = 'none';
@@ -99,22 +102,56 @@ export class ShopLighting {
     }
   }
 
+  private mainExtraLights: Array<{ x: number; y: number }> = [];
   private xoiOpen = false;
   private drinkOpen = false;
+  private snackOpen = false;
+  private xoiBox = { ...XOI_BOUNDS };
+  private drinkBox = { ...DRINK_BOUNDS };
+  private snackBox = { ...SNACK_BOUNDS };
+  private doors: Record<'xoi' | 'drink' | 'snack', { x: number; y: number }> = { xoi: BUILDING_MAP.xoi.doorTiles[0], drink: BUILDING_MAP.drink.doorTiles[0], snack: BUILDING_MAP.snack.doorTiles[0] };
   private xoiTop = XOI_BOUNDS.top;
   private drinkTop = DRINK_BOUNDS.top;
+  private snackTop = SNACK_BOUNDS.top;
 
   /** Dựng lại lớp tint và các đèn cố định khi bản đồ đổi (ví dụ mua đất hoặc mở quầy vỉa hè). */
   public rebuildMap(tileMap: GameTileMap): void {
+    const originX = tileMap.originTileX ?? 0;
     const originY = tileMap.originTileY ?? 0;
     const ground = tileMap.layers.find((l) => l.name === 'ground')?.data;
     const stallsKey = (tileMap.stalls ?? []).map((s) => `${s.id}:${s.tileX}`).join(',');
+    // Sàn tiệm chính đã mở rộng (ngoài phòng gốc, vùng `inMainExpansionZone`): mỗi ô lưới 3×3 một đèn trần để phần mới cũng sáng ban đêm.
+    this.mainExtraLights = [];
+    const walls = tileMap.layers.find((l) => l.name === 'walls')?.data;
+    if (ground && walls) {
+      for (let row = 0; row < tileMap.height; row++) for (let col = 0; col < tileMap.width; col++) {
+        const x = col + originX, y = row + originY, i = row * tileMap.width + col;
+        const inOriginalRoom = x >= STORE_BOUNDS.left && x <= STORE_BOUNDS.right && y >= STORE_BOUNDS.top && y <= STORE_BOUNDS.bottom;
+        if (ground[i] === 3 && !walls[i] && !inOriginalRoom && inMainExpansionZone(x, y) && x % 3 === 1 && y % 3 === 1) this.mainExtraLights.push({ x, y });
+      }
+    }
+    // Tòa phụ mở rộng sang hai bên (ô sàn ngoài bề ngang gốc): lưới đèn theo `top` chỉ phủ bề ngang gốc nên thêm đèn trần cho phần lấn ngang.
+    for (const info of tileMap.buildings ?? []) {
+      if (info.id === 'main' || !info.bounds || !info.floorTiles?.length) continue;
+      for (const tile of info.floorTiles) {
+        if (tile.x > info.bounds.left && tile.x < info.bounds.right) continue;
+        if (tile.x % 3 === 1 && tile.y % 3 === 1) this.mainExtraLights.push({ x: tile.x, y: tile.y });
+      }
+    }
     // Tiệm xôi mở/đóng không đổi nền (vỏ nhà luôn có sàn) nên phải đưa trạng thái mở vào khóa dựng lại.
     this.xoiOpen = tileMap.buildings?.find((building) => building.id === 'xoi')?.open ?? false;
     this.drinkOpen = tileMap.buildings?.find((building) => building.id === 'drink')?.open ?? false;
+    for (const id of ['xoi', 'drink', 'snack'] as const) {
+      const info = tileMap.buildings?.find((building) => building.id === id);
+      const fallback = { xoi: XOI_BOUNDS, drink: DRINK_BOUNDS, snack: SNACK_BOUNDS }[id];
+      this[`${id}Box`] = { ...(info?.bounds ?? fallback) };
+      this.doors[id] = info?.doorTiles?.[0] ?? BUILDING_MAP[id].doorTiles[0];
+    }
     this.xoiTop = tileMap.buildings?.find((building) => building.id === 'xoi')?.top ?? XOI_BOUNDS.top;
     this.drinkTop = tileMap.buildings?.find((building) => building.id === 'drink')?.top ?? DRINK_BOUNDS.top;
-    const key = `${tileMap.width}x${tileMap.height}:${ground ? ground.join('') : ''}:${stallsKey}:xoi${this.xoiOpen ? 1 : 0}@${this.xoiTop}:drink${this.drinkOpen ? 1 : 0}@${this.drinkTop}`;
+    this.snackOpen = tileMap.buildings?.find((building) => building.id === 'snack')?.open ?? false;
+    this.snackTop = tileMap.buildings?.find((building) => building.id === 'snack')?.top ?? SNACK_BOUNDS.top;
+    const key = `${tileMap.width}x${tileMap.height}:main${this.mainExtraLights.length}:${ground ? ground.join('') : ''}:${stallsKey}:xoi${this.xoiOpen ? 1 : 0}@${this.xoiTop}:drink${this.drinkOpen ? 1 : 0}@${this.drinkTop}:snack${this.snackOpen ? 1 : 0}@${this.snackTop}:box${this.xoiBox.left},${this.drinkBox.left},${this.snackBox.left}`;
     if (key === this.mapKey) return;
     this.mapKey = key;
     const pad = 18 * T;
@@ -122,8 +159,8 @@ export class ShopLighting {
     this.indoorTint.clear();
     this.warehouseTint.clear();
     // Phủ cả khu phố mở rộng (nhà, đường, công viên, trường, đồi) bằng cùng một lớp nhân màu ngoài trời để ngày/đêm liền mạch.
-    const nx0 = Math.min(-pad, NEIGHBORHOOD_PX.x0 - 400), ny0 = Math.min(originY * T - pad, NEIGHBORHOOD_PX.y0 - 400);
-    const nx1 = Math.max(tileMap.width * T + pad, NEIGHBORHOOD_PX.x1 + 400), ny1 = Math.max((originY + tileMap.height) * T + pad, NEIGHBORHOOD_PX.y1 + 400);
+    const nx0 = Math.min(originX * T - pad, NEIGHBORHOOD_PX.x0 - 400), ny0 = Math.min(originY * T - pad, NEIGHBORHOOD_PX.y0 - 400);
+    const nx1 = Math.max((originX + tileMap.width) * T + pad, NEIGHBORHOOD_PX.x1 + 400), ny1 = Math.max((originY + tileMap.height) * T + pad, NEIGHBORHOOD_PX.y1 + 400);
     this.outdoorTint.rect(nx0, ny0, nx1 - nx0, ny1 - ny0).fill(0xffffff);
 
     // Khu vực nhà kho phủ riêng bằng warehouseTint (để bật/tắt độc lập với tiệm)
@@ -142,14 +179,14 @@ export class ShopLighting {
           if (!ALL_INDOOR.has(ground[y * tileMap.width + x])) { x++; continue; }
           const start = x;
           while (x < tileMap.width && ALL_INDOOR.has(ground[y * tileMap.width + x])) x++;
-          this.outdoorTint.rect(start * T, worldY * T, (x - start) * T, T).cut();
+          this.outdoorTint.rect((start + originX) * T, worldY * T, (x - start) * T, T).cut();
         }
         x = 0;
         while (x < tileMap.width) {
           if (ground[y * tileMap.width + x] !== 3) { x++; continue; }
           const start = x;
           while (x < tileMap.width && ground[y * tileMap.width + x] === 3) x++;
-          this.indoorTint.rect(start * T, worldY * T, (x - start) * T, T).fill(0xffffff);
+          this.indoorTint.rect((start + originX) * T, worldY * T, (x - start) * T, T).fill(0xffffff);
         }
       }
     }
@@ -165,17 +202,17 @@ export class ShopLighting {
     for (const stall of stalls) {
       // Hai bóng đèn treo dưới mái hiên sọc (mái ở ~đỉnh sprite 64x48 đặt tại (tileY+1)*T-48).
       for (const dx of [0.5, 1.5].map((k) => k * T * (stall.widthTiles / 2))) {
-        this.addLamp(stall.tileX * T + dx, (stall.tileY + 1) * T - 48 + 24, false, true);
+        this.addLamp(stall.tileX * T + dx, (stall.tileY + 1) * T - 48 + 24, false, true, (stall.tileY + 1) * T + 4);
       }
       // Đèn vàng ấm treo dưới mái hiên sọc của quầy tỏa ánh sáng xuống bàn pha/lò nướng
       this.add(
         this.stallLights,
         (stall.tileX + 1) * T,
         (stall.tileY + 1) * T - 26,
-        2.5 * T,
-        2.1 * T,
+        2.2 * T,
+        1.8 * T,
         0xffca70,
-        1,
+        0.4,
         'artificial',
         0.04
       );
@@ -229,11 +266,13 @@ export class ShopLighting {
   }
 
   /** Bóng đèn treo: dây + chao + bóng; màu bóng đổi theo trạng thái bật/tắt mỗi khung. */
-  private addLamp(x: number, y: number, warehouse: boolean, stall = false): void {
+  private addLamp(x: number, y: number, warehouse: boolean, stall = false, zIndex?: number): void {
     const g = new Graphics();
     g.eventMode = 'none';
     g.position.set(x, y);
-    this.lightLayer.addChild(g);
+    // Bóng đèn quầy nằm cùng lớp sắp theo độ sâu với sprite quầy/xe để xe chạy trước quầy che được bóng; thiếu lớp thì rơi về lớp ánh sáng.
+    if (stall && zIndex !== undefined && this.depthLayer) { g.zIndex = zIndex; this.depthLayer.addChild(g); }
+    else this.lightLayer.addChild(g);
     this.lampBulbs.push({ g, warehouse, stall });
   }
 
@@ -267,6 +306,7 @@ export class ShopLighting {
         this.add(out, (STORE_BOUNDS.left + 1.6 + gx * 2.6) * T, (STORE_BOUNDS.top + 1.6 + gy * 2.6) * T, 1.9 * T, 1.7 * T, 0xffeccc, 0.16 + hash(gx, gy) * 0.08);
       }
     }
+    for (const tile of this.mainExtraLights) this.add(out, (tile.x + 0.5) * T, (tile.y + 0.5) * T, 1.9 * T, 1.7 * T, 0xffeccc, 0.16 + hash(tile.x, tile.y) * 0.08);
     // Đèn kho: Đèn tuýp huỳnh quang sáng mát dịu, phòng sáng rõ và sạch sẽ không bị chói lóa
     for (let gx = 0; gx < 2; gx++) {
       for (let gy = 0; gy < 2; gy++) {
@@ -287,47 +327,61 @@ export class ShopLighting {
     for (let gx = 0; gx < 3; gx++) this.addLamp((STORE_BOUNDS.left + 2.6 + gx * 2.6) * T, (STORE_BOUNDS.top + 1.1) * T, false);
     // Biển hiệu: neon ấm cho tiệm, lạnh cho kho; đèn tường hai bên cửa chính.
     this.add(out, (WAREHOUSE_BOUNDS.left + 3.4) * T, WAREHOUSE_BOUNDS.top * T - 12, 2.6 * T, 1.0 * T, 0xffc37a, 0.32, 'artificial', 0.04);
-    this.add(out, 10 * T, STORE_BOUNDS.top * T - 4, 1.6 * T, 0.8 * T, 0xbfe6ff, 0.26);
-    for (const x of [8.4, 11.6]) this.add(out, x * T, (STORE_BOUNDS.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xffd9a0, 0.26);
+    this.add(out, (MAIN_DOOR.x + 1) * T, STORE_BOUNDS.top * T - 4, 1.6 * T, 0.8 * T, 0xbfe6ff, 0.26);
+    for (const x of [MAIN_DOOR.x - 0.6, MAIN_DOOR.x + 2.6]) this.add(out, x * T, (STORE_BOUNDS.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xffd9a0, 0.26);
     // Ánh sáng tiệm lọt ra ngoài: cửa kính rọi xuống vỉa hè, cửa sổ trái rọi ra cỏ.
-    this.add(out, 10 * T, (STORE_BOUNDS.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xffdfa8, 0.30);
+    this.add(out, (MAIN_DOOR.x + 1) * T, (STORE_BOUNDS.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xffdfa8, 0.30);
     if (this.xoiOpen) {
       // Tiệm xôi: đèn trần trắng ấm, đèn tường hai bên cửa và ánh sáng lọt ra vỉa hè.
-      const xoiRows = Math.max(2, Math.round((XOI_BOUNDS.bottom - this.xoiTop - 2) / 2.6));
+      const xoiRows = Math.max(2, Math.round((this.xoiBox.bottom - this.xoiTop - 2) / 2.6));
       for (let gx = 0; gx < 2; gx++) {
         for (let gy = 0; gy < xoiRows; gy++) {
-          this.add(out, (XOI_BOUNDS.left + 1.4 + gx * 2.3) * T, (this.xoiTop + 1.6 + gy * 2.6) * T, 1.8 * T, 1.7 * T, 0xffeccc, 0.18 + hash(gx + 5, gy) * 0.08);
+          this.add(out, (this.xoiBox.left + 1.4 + gx * 2.3) * T, (this.xoiTop + 1.6 + gy * 2.6) * T, 1.8 * T, 1.7 * T, 0xffeccc, 0.18 + hash(gx + 5, gy) * 0.08);
         }
       }
-      for (let gx = 0; gx < 2; gx++) this.addLamp((XOI_BOUNDS.left + 1.8 + gx * 2.3) * T, (this.xoiTop + 1.1) * T, false);
-      const door = BUILDING_MAP.xoi.doorTiles[0];
-      this.add(out, (door.x + 1) * T, XOI_BOUNDS.bottom * T - 8, 3.4 * T, 0.9 * T, 0xffc37a, 0.3, 'artificial', 0.04);
-      for (const x of [door.x - 0.6, door.x + 2.6]) this.add(out, x * T, (XOI_BOUNDS.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xffd9a0, 0.26);
-      this.add(out, (door.x + 1) * T, (XOI_BOUNDS.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xffdfa8, 0.30);
+      for (let gx = 0; gx < 2; gx++) this.addLamp((this.xoiBox.left + 1.8 + gx * 2.3) * T, (this.xoiTop + 1.1) * T, false);
+      const door = this.doors.xoi;
+      this.add(out, (door.x + 1) * T, this.xoiBox.bottom * T - 8, 3.4 * T, 0.9 * T, 0xffc37a, 0.3, 'artificial', 0.04);
+      for (const x of [door.x - 0.6, door.x + 2.6]) this.add(out, x * T, (this.xoiBox.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xffd9a0, 0.26);
+      this.add(out, (door.x + 1) * T, (this.xoiBox.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xffdfa8, 0.30);
     }
     if (this.drinkOpen) {
       // Quán nước: đèn trần trắng hơi lạnh, đèn tường hai bên cửa và ánh sáng lọt ra vỉa hè.
-      const drinkRows = Math.max(2, Math.round((DRINK_BOUNDS.bottom - this.drinkTop - 2) / 2.6));
+      const drinkRows = Math.max(2, Math.round((this.drinkBox.bottom - this.drinkTop - 2) / 2.6));
       for (let gx = 0; gx < 3; gx++) {
         for (let gy = 0; gy < drinkRows; gy++) {
-          this.add(out, (DRINK_BOUNDS.left + 1.6 + gx * 2.7) * T, (this.drinkTop + 1.6 + gy * 2.6) * T, 1.8 * T, 1.7 * T, 0xeaf6ff, 0.18 + hash(gx + 9, gy) * 0.08);
+          this.add(out, (this.drinkBox.left + 1.6 + gx * 2.7) * T, (this.drinkTop + 1.6 + gy * 2.6) * T, 1.8 * T, 1.7 * T, 0xeaf6ff, 0.18 + hash(gx + 9, gy) * 0.08);
         }
       }
-      for (let gx = 0; gx < 3; gx++) this.addLamp((DRINK_BOUNDS.left + 2 + gx * 2.7) * T, (this.drinkTop + 1.1) * T, false);
-      const door = BUILDING_MAP.drink.doorTiles[0];
-      this.add(out, (door.x + 1) * T, DRINK_BOUNDS.bottom * T - 8, 3.4 * T, 0.9 * T, 0xbfe6ff, 0.3, 'artificial', 0.04);
-      for (const x of [door.x - 0.6, door.x + 2.6]) this.add(out, x * T, (DRINK_BOUNDS.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xd6f0ff, 0.26);
-      this.add(out, (door.x + 1) * T, (DRINK_BOUNDS.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xd2eeff, 0.30);
+      for (let gx = 0; gx < 3; gx++) this.addLamp((this.drinkBox.left + 2 + gx * 2.7) * T, (this.drinkTop + 1.1) * T, false);
+      const door = this.doors.drink;
+      this.add(out, (door.x + 1) * T, this.drinkBox.bottom * T - 8, 3.4 * T, 0.9 * T, 0xbfe6ff, 0.3, 'artificial', 0.04);
+      for (const x of [door.x - 0.6, door.x + 2.6]) this.add(out, x * T, (this.drinkBox.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xd6f0ff, 0.26);
+      this.add(out, (door.x + 1) * T, (this.drinkBox.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xd2eeff, 0.30);
+    }
+    if (this.snackOpen) {
+      // Quán ăn vặt: đèn trần vàng ấm hơn tiệm xôi, đèn tường hai bên cửa và ánh sáng lọt ra vỉa hè.
+      const snackRows = Math.max(2, Math.round((this.snackBox.bottom - this.snackTop - 2) / 2.6));
+      for (let gx = 0; gx < 2; gx++) {
+        for (let gy = 0; gy < snackRows; gy++) {
+          this.add(out, (this.snackBox.left + 1.4 + gx * 2.1) * T, (this.snackTop + 1.6 + gy * 2.6) * T, 1.6 * T, 1.7 * T, 0xffe1b0, 0.18 + hash(gx + 13, gy) * 0.08);
+        }
+      }
+      for (let gx = 0; gx < 2; gx++) this.addLamp((this.snackBox.left + 1.8 + gx * 2.1) * T, (this.snackTop + 1.1) * T, false);
+      const door = this.doors.snack;
+      this.add(out, (door.x + 1) * T, this.snackBox.bottom * T - 8, 3.4 * T, 0.9 * T, 0xffc37a, 0.3, 'artificial', 0.04);
+      for (const x of [door.x - 0.6, door.x + 2.6]) this.add(out, x * T, (this.snackBox.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xffd9a0, 0.26);
+      this.add(out, (door.x + 1) * T, (this.snackBox.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xffdfa8, 0.30);
     }
     for (const lamp of STREET_LAMP_TILES) this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 50, 3.1 * T, 3.1 * T, 0xffd98a, 0.75, 'street', 0.03);
     // Nắng lọt qua cửa vào và cửa sổ (chỉ ban ngày); vệt nắng dịch theo giờ.
-    this.sunPatch = this.add(out, 10 * T, (STORE_BOUNDS.bottom - 1.4) * T, 1.9 * T, 1.5 * T, 0xffe9b0, 0.5, 'sun');
-    this.add(out, (STORE_BOUNDS.left + 1.6) * T, 5.7 * T, 1.6 * T, 0.9 * T, 0xfff0c0, 0.35, 'sun');
+    this.sunPatch = this.add(out, (MAIN_DOOR.x + 1) * T, (STORE_BOUNDS.bottom - 1.4) * T, 1.9 * T, 1.5 * T, 0xffe9b0, 0.5, 'sun');
+    this.add(out, (STORE_BOUNDS.left + 1.6) * T, (STORE_BOUNDS.top + 2.7) * T, 1.6 * T, 0.9 * T, 0xfff0c0, 0.35, 'sun');
     // Vệt phản chiếu trên kính cửa: dải chéo sáng, chỉ ban ngày.
     for (let i = 0; i < 2; i++) {
       const glint = new Graphics();
       glint.poly([0, 0, 7, 0, -3, 22, -10, 22]).fill({ color: 0xffffff, alpha: 1 });
-      glint.position.set(9 * T + 16 + i * 26, STORE_BOUNDS.bottom * T + 4);
+      glint.position.set(MAIN_DOOR.x * T + 16 + i * 26, STORE_BOUNDS.bottom * T + 4);
       glint.blendMode = 'add';
       glint.alpha = 0;
       glint.eventMode = 'none';
@@ -368,9 +422,9 @@ export class ShopLighting {
       l.sprite.alpha = this.warehouseLightProgress * l.base * wobble;
     }
 
-    if (this.sunPatch) this.sunPatch.x = (10 - state.shadowLean * 0.8) * T;
+    if (this.sunPatch) this.sunPatch.x = (MAIN_DOOR.x + 1 - state.shadowLean * 0.8) * T;
     const drift = reducedMotion ? 0 : Math.sin(timeSeconds * 0.4) * 2;
-    this.glints.forEach((g, i) => { g.alpha = state.sun * (i === 0 ? 0.32 : 0.19); g.x = 9 * T + 16 + i * 26 + drift; });
+    this.glints.forEach((g, i) => { g.alpha = state.sun * (i === 0 ? 0.32 : 0.19); g.x = MAIN_DOOR.x * T + 16 + i * 26 + drift; });
     // Bóng đổ nắng: dài và ngả theo giờ, nhạt đi khi nắng yếu.
     const dx = state.shadowLean * (6 + state.shadowLength * 9);
     const drop = 3 + state.shadowLength * 5;
