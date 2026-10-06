@@ -44,7 +44,7 @@ export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wa
               <p>Lương đủ ngày {money(member.dailyWage)} · Tốc độ {member.speed} · Chính xác {member.accuracy} · Sức bền {member.stamina}</p>
               <p className="muted">{member.workerTask ? `Đang bày kệ ${member.workerTask.fixtureId}` : member.currentCheckoutId ? 'Đang phục vụ khách tại quầy' : describeWorkerError(member.lastWorkerError) ?? 'Đang rảnh'}</p>
             </div>
-            <label style={{ display: 'grid', gap: 4, minWidth: 170 }}>
+            <label style={{ display: 'grid', gap: 4, minWidth: 'min(170px, 100%)' }}>
               Ca làm
               <select aria-label={`Ca làm của ${member.name}`} value={member.shift} onChange={(event) => onSetShift(member.id, event.target.value as StaffShift)}>
                 {Object.values(STAFF_SHIFTS).map((shift) => <option key={shift.id} value={shift.id}>{shift.name}</option>)}

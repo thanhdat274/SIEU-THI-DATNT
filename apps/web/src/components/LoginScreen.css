@@ -10,8 +10,8 @@
 .login-screen-vintage {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -329,7 +329,7 @@
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: min(1360px, 98vw);
+  width: min(1360px, 100%);
   height: 480px;
   z-index: 1;
   pointer-events: none;
@@ -683,7 +683,7 @@
 .login-control-deck {
   position: relative;
   z-index: 10;
-  width: min(940px, 96vw);
+  width: min(940px, 100%);
   margin: auto 0;
   background: linear-gradient(135deg, rgba(255, 252, 244, 0.96) 0%, rgba(247, 237, 219, 0.94) 100%);
   backdrop-filter: blur(16px);
@@ -1279,8 +1279,8 @@
 
 /* ANTIQUE LEATHERBOUND NOTEBOOK (SỔ TAY CHỦ TIỆM) */
 .vintage-notebook-card {
-  width: min(820px, 96vw);
-  max-height: min(88vh, 840px);
+  width: min(820px, 100%);
+  max-height: min(100%, 840px);
   display: flex;
   flex-direction: column;
   background: #fdf8eb;
@@ -1523,7 +1523,7 @@
    8. WOODEN MODAL CARDS (Notice Board, Leaderboard, Ledger)
    -------------------------------------------------------------------------- */
 .vintage-wood-card {
-  width: min(500px, 94vw);
+  width: min(500px, 100%);
   background: #faf2dc;
   border: 4px solid #573a2a;
   border-radius: 12px;

@@ -607,7 +607,7 @@ export const SupplierModal: React.FC<Props> = ({
           {suggestedCart.items.length === 0 ? (
             <p className="muted">Không có mặt hàng nào cần nhập lúc này.</p>
           ) : (
-            <div style={{ maxHeight: '140px', overflowY: 'auto' }}>
+            <div style={{ maxHeight: 'min(140px, calc(var(--dialog-avail-h) * 0.35))', overflowY: 'auto' }}>
               {suggestedCart.items.map((item) => {
                 const prod = PRODUCT_MAP[item.productId];
                 const badgeLabel =

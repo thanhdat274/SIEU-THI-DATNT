@@ -354,7 +354,7 @@ export const CashierModal: React.FC<Props> = ({
                 Khi qua ngày mới lúc 22:00 hoặc bấm nút Qua ngày mới, sổ sách ngày hiện tại sẽ được tự động chốt an toàn và lưu trữ vào lịch sử.
               </EmptyState>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 'min(220px, calc(var(--dialog-avail-h) * 0.45))', overflowY: 'auto' }}>
                 {pastDays.map((rec) => { const ch = buildDayChannelBreakdown(rec); return (
                   <div
                     key={rec.day}
@@ -372,7 +372,7 @@ export const CashierModal: React.FC<Props> = ({
                         Chốt lúc: {rec.closedAt ? new Date(rec.closedAt).toLocaleTimeString('vi-VN') : 'Đã chốt'}
                       </span>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 96px), 1fr))', gap: 4 }}>
                       <div>Doanh thu: <strong>{money(rec.revenue)}</strong></div>
                       <div>Giá vốn: <span style={{ color: '#b64c3d' }}>{money(rec.cogs)}</span></div>
                       <div>Lãi ròng: <strong style={{ color: rec.netProfit >= 0 ? '#2a7a43' : '#b64c3d' }}>{money(rec.netProfit)}</strong></div>

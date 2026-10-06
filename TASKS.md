@@ -31,7 +31,8 @@
   - ✅ **Rain Optimization:** Giảm tải cho `rainOverlay` khi không có mưa hoặc mưa nhỏ.
 - [x] **Responsive Design:**
   - ✅ **Camera Zoom:** Tự động điều chỉnh zoom (1.25x mobile dọc, 1.5x ngang, 2x-3x desktop) trong `camera.ts`.
-  - ✅ **Resolution:** Giảm `resolution` xuống `1` trên mobile để tăng FPS trong `viewport.ts`.
+  - ⚠️ **Resolution (đổi 06/10/2026):** không còn ép `resolution=1` trên mobile; dùng `min(DPR,2)` để pixel-art không mờ trên Retina. Chưa đo FPS trên máy thật.
+  - ✅ **Responsive UI dùng chung (06/10/2026):** `apps/web/src/responsive.ts` + `responsive.css`, bỏ màn nhắc xoay ngang; xem `tổng hợp.md` mục "Hệ thống responsive/adaptive UI dùng chung". Chưa kiểm máy thật.
   - ✅ **CSS Layers:** Thêm các `@media` query mới trong `index.css` cho giao diện HUD và Modal.
 - [x] **Build & QA:** `yarn typecheck` PASS, `yarn build` PASS. Sản phẩm sẵn sàng deploy.
 

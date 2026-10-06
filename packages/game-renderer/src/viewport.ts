@@ -128,6 +128,10 @@ export class PixiGameViewport {
   /** Xe đang chạy trong khung hình hiện tại, để ShopLighting bật đèn pha/đèn hậu ban đêm. */
   private vehicleLightSources: VehicleLightSource[] = [];
   private resizeObserver?: ResizeObserver;
+  /** Trần độ phân giải thích ứng: chỉ hạ khi máy chậm kéo dài (xem adaptResolution), không hạ theo loại thiết bị. */
+  private qualityCap = 2;
+  private frameEma = 16;
+  private slowFrames = 0;
   private onZoomChange?: (zoom: number) => void;
   private ambientSprites: Array<{sprite: Sprite; key: string; frames: number}> = [];
   private stallSprites: Sprite[] = [];
@@ -426,9 +430,8 @@ export class PixiGameViewport {
    * Responsive Settings: Optimize resolution and default zoom for mobile devices.
    */
   private updateResponsiveSettings(): void {
-    const isMobile = window.innerWidth < 768;
-    // Reduce resolution on mobile to prevent overheating and frame drops
-    const targetRes = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+    // Giữ DPR thật (tối đa 2) trên mọi thiết bị: ép DPR 1 trên điện thoại làm pixel-art mờ ở màn Retina.
+    const targetRes = Math.min(window.devicePixelRatio || 1, 2, this.qualityCap);
     if (this.app.renderer && this.app.renderer.resolution !== targetRes) {
       this.app.renderer.resize(this.app.screen.width, this.app.screen.height, targetRes);
     }
@@ -1278,7 +1281,26 @@ export class PixiGameViewport {
     this.uiOverlayLayer.addChild(this.interactionBubble);
   }
 
+  /**
+   * DPR thích ứng: chỉ khi khung hình chậm liên tục (~3 giây ở dưới ~33 FPS) mới hạ độ phân giải một bậc (2 → 1,5 → 1).
+   * Không tính lúc có hộp thoại (đã hạ trần FPS) hoặc tab ẩn; không tự tăng lại để tránh dao động.
+   */
+  private adaptResolution(): void {
+    if (document.documentElement.dataset.dialogs || document.hidden) { this.slowFrames = 0; return; }
+    const ms = this.app.ticker.deltaMS;
+    if (ms > 250) return;
+    this.frameEma = this.frameEma * 0.95 + ms * 0.05;
+    const res = this.app.renderer.resolution;
+    if (res <= 1 || this.frameEma < 30) { this.slowFrames = 0; return; }
+    if (++this.slowFrames < 180) return;
+    this.slowFrames = 0;
+    this.frameEma = 16;
+    this.qualityCap = res > 1.5 ? 1.5 : 1;
+    this.updateResponsiveSettings();
+  }
+
   private renderTick = (): void => {
+    this.adaptResolution();
     // Có hộp thoại phủ màn hình (PixelDialog đặt data-dialogs): hạ trần khung hình để giao diện cuộn mượt hơn.
     const targetMaxFps = document.documentElement.dataset.dialogs ? 20 : 0;
     if (this.app.ticker.maxFPS !== targetMaxFps) this.app.ticker.maxFPS = targetMaxFps;

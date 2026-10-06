@@ -81,7 +81,7 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
         <div className="hud-stats">
           <PixelStat label="Tiền trong hòm" value={money(player.money)} icon="coin"/>
           {onOpenReviews
-            ? <button type="button" onClick={onOpenReviews} title="Xem lời khách nhận xét" aria-label={`Đánh giá khách ${customerRating.toFixed(1)} sao, xem nhận xét`} style={{ all: 'unset', cursor: 'pointer' }}><PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/></button>
+            ? <button type="button" onClick={onOpenReviews} title="Xem lời khách nhận xét" aria-label={`Đánh giá khách ${customerRating.toFixed(1)} sao, xem nhận xét`} className="hud-rating"><PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/></button>
             : <PixelStat label="Đánh giá khách" value={`${customerRating.toFixed(1)} ★`} icon="heart"/>}
           <button type="button" className="hud-level" onClick={onOpenLevelRoadmap} title="Xem tiến độ XP và các mốc mở khóa" aria-label={`Cấp ${player.level}, xem lộ trình cấp`}>
             <strong>Cấp {player.level}{(player.prestigeStars ?? 0) > 0 ? ` · ★${player.prestigeStars}` : ''}</strong>

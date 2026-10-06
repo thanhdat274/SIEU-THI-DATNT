@@ -6,8 +6,11 @@ import { getWeatherVisualModel, getWeatherVisualState, setDebugVisualTime } from
 import { installPerfOverlay } from './services/perf-overlay';
 import { watchAppUpdates } from './services/app-update';
 import './index.css';
+import './responsive.css';
+import { installResponsive } from './responsive';
 
 installPerfOverlay();
+installResponsive();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -30,7 +30,7 @@ export const LevelRoadmapModal: React.FC<Props> = ({ player, onClose }) => {
     </section>
 
     <h3>Các mốc mở khóa</h3>
-    <ol style={{ listStyle: 'none', padding: 0, margin: '8px 0', display: 'grid', gap: 8, maxHeight: '55vh', overflowY: 'auto' }}>
+    <ol style={{ listStyle: 'none', padding: 0, margin: '8px 0', display: 'grid', gap: 8, maxHeight: 'calc(var(--dialog-avail-h) * 0.55)', overflowY: 'auto' }}>
       {rows.map(({ level: targetLevel, xpFromCurrent, unlocks }) => {
         const reached = targetLevel <= level;
         const hasUnlock = unlocks.products.length + unlocks.suppliers.length + unlocks.stalls.length + unlocks.plots.length + unlocks.staffSlots + unlocks.customerCapacity > 0 || unlocks.trafficMultiplier > 0 || targetLevel === MAX_PLAYER_LEVEL;

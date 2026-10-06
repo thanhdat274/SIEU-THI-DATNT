@@ -33,7 +33,7 @@ export const TutorialChecklist: React.FC<{ items: TutorialItem[] }> = ({ items }
   const [hidden, setHidden] = useState(readHidden);
   const [expanded, setExpanded] = useState(false);
   const top = useHudBottom();
-  const anchor: React.CSSProperties = { position: 'fixed', left: 8, top, zIndex: 20 };
+  const anchor: React.CSSProperties = { position: 'fixed', left: 'max(8px, var(--safe-l, 0px))', top, zIndex: 20 };
   const remaining = items.filter(item => !item.done);
   if (remaining.length === 0) return null;
   const doneCount = items.length - remaining.length;
@@ -50,7 +50,7 @@ export const TutorialChecklist: React.FC<{ items: TutorialItem[] }> = ({ items }
       </button>
       <button type="button" onClick={() => { setHidden(true); writeHidden(true); }} aria-label="Ẩn checklist hướng dẫn">Ẩn</button>
     </div>
-    {expanded && <ul style={{ margin: '6px 0 0', paddingLeft: 18, maxHeight: '40vh', overflowY: 'auto' }}>
+    {expanded && <ul style={{ margin: '6px 0 0', paddingLeft: 18, maxHeight: 'calc(var(--dialog-avail-h) * 0.4)', overflowY: 'auto' }}>
       {items.map(item => <li key={item.id} style={{ textDecoration: item.done ? 'line-through' : undefined, opacity: item.done ? 0.6 : 1, fontWeight: item === next ? 700 : 400 }}>{item.label}</li>)}
     </ul>}
   </aside>;

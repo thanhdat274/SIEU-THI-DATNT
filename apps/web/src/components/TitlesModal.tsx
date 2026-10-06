@@ -58,7 +58,7 @@ export const TitlesModal: React.FC<TitlesModalProps> = ({
       </div>
 
       {/* Danh sách các danh hiệu */}
-      <div style={{ display: 'grid', gap: 8, maxHeight: 380, overflowY: 'auto', paddingRight: 4 }}>
+      <div style={{ display: 'grid', gap: 8, maxHeight: 'min(380px, calc(var(--dialog-avail-h) * 0.6))', overflowY: 'auto', paddingRight: 4 }}>
         {titles.map((title) => {
           return (
             <div

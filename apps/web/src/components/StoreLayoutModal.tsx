@@ -1137,7 +1137,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
           <div className="footer-summary">
             <span className="draft-badge">📝 {actions.length} thay đổi trong bản nháp</span>
           </div>
-          <div className="footer-actions">
+          <div className="layout-footer-actions">
             <PixelButton disabled={!actions.length || busy} onClick={undo}>
               ↺ Hoàn tác
             </PixelButton>

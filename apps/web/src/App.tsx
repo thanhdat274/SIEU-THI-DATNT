@@ -28,7 +28,7 @@ import { CashierModal } from './components/CashierModal';
 import { InventoryModal } from './components/InventoryModal';
 import { VirtualJoystick } from './components/VirtualJoystick';
 import { useControlMode } from './control-mode';
-import { RotateOverlay } from './components/RotateOverlay';
+import { OVERLAY_DOCK_QUERY } from './responsive';
 import { ToastContainer } from './components/ToastContainer';
 import { InventorySummaryCard } from './components/InventorySummaryCard';
 import { BottomBar } from './components/BottomBar';
@@ -151,7 +151,7 @@ export const App: React.FC = () => {
     // planDay is a deliberate cache-buster: plans must refresh when the day changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMarketOpen, planDay]);
-  const [isWarehouseDockOpen, setWarehouseDockOpen] = useState(() => !window.matchMedia('(max-width: 1023px), (max-height: 499px)').matches);
+  const [isWarehouseDockOpen, setWarehouseDockOpen] = useState(() => !window.matchMedia(OVERLAY_DOCK_QUERY).matches);
   const [gameSpeed, setGameSpeed] = useState<number>(1);
   const [isLayoutOpen, setIsLayoutOpen] = useState(false);
   const [isPlanogramOpen, setIsPlanogramOpen] = useState(false);
@@ -1697,7 +1697,7 @@ export const App: React.FC = () => {
     return unsubscribe;
   }, []);
   useEffect(() => {
-    const query = window.matchMedia('(max-width: 1023px), (max-height: 499px)');
+    const query = window.matchMedia(OVERLAY_DOCK_QUERY);
     const adapt = () => { if(query.matches) setWarehouseDockOpen(false); };
     query.addEventListener('change', adapt);
     return () => query.removeEventListener('change', adapt);
@@ -1760,7 +1760,7 @@ export const App: React.FC = () => {
       )}
       {!isLoading && onlineWorld && !onlineConnected && (
         <div role="alert" style={{
-          position: 'fixed', top: 48, left: 0, right: 0, zIndex: 9999,
+          position: 'fixed', top: 'calc(var(--safe-t) + var(--account-h))', left: 0, right: 0, zIndex: 9999,
           background: '#c0392b', color: '#fff', fontSize: 13, padding: '6px 16px',
           textAlign: 'center', fontFamily: 'var(--font-pixel, monospace)',
           borderBottom: '2px solid #922b21',
@@ -1769,7 +1769,7 @@ export const App: React.FC = () => {
         </div>
       )}
       {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={hudHandlers.onOpenMarket} onOpenPrices={hudHandlers.onOpenPrices} onOpenTax={hudHandlers.onOpenTax} onOpenRegulars={hudHandlers.onOpenRegulars} onOpenSkills={hudHandlers.onOpenSkills} onOpenTitles={hudHandlers.onOpenTitles} maintenanceAlerts={simulationRef.current?.getMaintenanceList().filter(e => e.status !== 'good').length ?? 0} onOpenMaintenance={hudHandlers.onOpenMaintenance} onOpenChain={hudHandlers.onOpenChain} onOpenReviews={hudHandlers.onOpenReviews} onOpenAnalytics={hudHandlers.onOpenAnalytics} audioMuted={audioMuted} onToggleAudioMute={hudHandlers.onToggleAudioMute} onOpenSecurity={hudHandlers.onOpenSecurity} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onPayWageDebt={hudHandlers.onPayWageDebt} onOpenStaff={hudHandlers.onOpenStaff} onOpenStalls={hudHandlers.onOpenStalls} onOpenQuests={hudHandlers.onOpenQuests} onOpenLevelRoadmap={hudHandlers.onOpenLevelRoadmap} onOpenPlanogram={hudHandlers.onOpenPlanogram} emptySlotsCount={fixtures.filter(f => isSalesFixture(f) && f.currentStock === 0).length} onToggleStoreStatus={hudHandlers.onToggleStoreStatus} onOpenLayout={hudHandlers.onOpenLayout} canEditLayout gameSpeed={gameSpeed} onToggleGameSpeed={hudHandlers.onToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={hudHandlers.onToggleWarehouseDock} isWarehouseDockOpen={isWarehouseDockOpen} lastSavedAt={lastSavedTime}/>}
-      <main className="game-main">
+      <div className="game-body"><main className="game-main">
         <div className="world-viewport">
           <canvas ref={canvasRef} aria-label="Bản đồ Tiệm Tạp Hóa Đầu Hẻm"/>
           {!isLoading && <>
@@ -1804,6 +1804,7 @@ export const App: React.FC = () => {
         {!isLoading && <WarehouseDock coldCapacity={simulationRef.current?.getColdCapacity()} ambientCapacity={simulationRef.current?.getAmbientCapacity()} ambientUsed={simulationRef.current?.getAmbientCellsUsed()} capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onOpenPlanogram={() => setIsPlanogramOpen(true)} onLocateWarehouse={locateWarehouse} onStowHolding={handleStowHolding} currentDay={worldTime.day}/>}
       </main>
       {!isLoading && <BottomBar onOpenSupplier={openSupplierModal} onOpenCashier={openCashier} onOpenStalls={() => setStallOpen(true)}/>}
+      </div>
     </div>
     {isLoading && (
       <div className="loading-screen" role="status">
@@ -2220,7 +2221,7 @@ export const App: React.FC = () => {
       />
     )}
     <div className={`daily-routine-fade ${isNightFading ? 'active' : ''}`} aria-hidden="true" />
-    <RotateOverlay/><ToastContainer/>
+    <ToastContainer/>
   </div>;
 };
 export default App;
