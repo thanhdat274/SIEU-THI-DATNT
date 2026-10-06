@@ -48,8 +48,10 @@ export function runShelterTests(): void {
   for (const e of ROOF_EAVES) assert.ok(e.x0 >= AWNING_SPANS[e.awning].x0 && e.x1 <= AWNING_SPANS[e.awning].x1, 'Nước chảy nằm trong mái hiên: ' + e.id);
 
   // Độ gần mái: xa nhỏ, gần lớn, dưới mái = 1, ra xa lại giảm đều (đây là đầu vào của tiếng mưa trên mái).
-  const prox = [640, 520, 440, 380, 352, 300].map((x) => roofProximityAt(x, 384));
-  assert.equal(prox[0], 0);
+  // Quán ăn vặt (x≥21) nằm sát phía đông nên ở vỉa hè x=640 đã gần mái của nó; mốc "xa" lấy ở lòng đường phía nam.
+  const prox = [560, 520, 440, 380, 352, 300].map((x) => roofProximityAt(x, 384));
+  assert.equal(roofProximityAt(640, 600), 0, 'Xa mọi mái: 0');
+  assert.ok(prox[0] < 0.5, 'Xa mái hơn mốc gần: ' + prox[0]);
   for (let i = 1; i < prox.length; i++) assert.ok(prox[i] >= prox[i - 1], 'Càng gần mái càng lớn: ' + prox.join(','));
   assert.equal(roofProximityAt(300, 384), 1);
   assert.equal(roofProximityAt(300, 200), 1, 'Trong cửa hàng');

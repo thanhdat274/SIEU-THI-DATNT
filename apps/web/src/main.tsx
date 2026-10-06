@@ -6,8 +6,14 @@ import { getWeatherVisualModel, getWeatherVisualState, setDebugVisualTime } from
 import { installPerfOverlay } from './services/perf-overlay';
 import { watchAppUpdates } from './services/app-update';
 import './index.css';
+import './responsive.css';
+import { installResponsive } from './responsive';
+import { installOrientationLock } from './orientation';
+import { useGameStore } from './store/useGameStore';
 
 installPerfOverlay();
+installResponsive();
+installOrientationLock();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -38,6 +44,8 @@ if (import.meta.env.DEV) {
   // Dev: điều khiển thời tiết từ console/kịch bản kiểm thử, ví dụ weatherModel().transitionWeather('storm', 2000).
   w.weatherModel = getWeatherVisualModel;
   w.weatherState = getWeatherVisualState;
+  // Dev/QA responsive: mở modal theo tòa/đồ vật mà không cần chơi tới (xem tools/e2e/layout-qa.js).
+  w.__store = useGameStore;
   const raw = new URLSearchParams(window.location.search).get('debugTime');
   if (raw) {
     const [day, hour, minute, rain] = raw.split(':').map(Number);

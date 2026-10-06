@@ -1,0 +1,315 @@
+/*
+ * Hệ thống responsive dùng chung (nạp sau index.css). Quy ước:
+ *  - Token (--fs-*, --space-*, --touch, --joy, --safe-*) là nguồn kích thước duy nhất cho HUD, footer, modal, toast, cảm ứng.
+ *  - Bố cục quyết định theo: bề ngang thực của từng thanh (container query), chiều cao khung nhìn, hướng màn hình,
+ *    kiểu con trỏ (html[data-input]) và safe-area. Không có nhánh theo tên/model thiết bị.
+ *  - Các biến --hud-bottom/--footer-h/--account-h do responsive.ts đo thật, nên mọi thứ neo theo thanh UI không lệch khi thanh đổi cao.
+ */
+
+/* ---------- Token ---------- */
+:root {
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+
+  /* Chữ co giãn theo bề ngang: ~13px điện thoại, ~14–15px laptop, lớn dần tới ~21px ở 4K. */
+  font-size: clamp(13px, calc(11px + 0.25vw), 22px);
+  --fs-sm: 0.8rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.25rem;
+  --space-1: clamp(4px, 0.4vw, 8px);
+  --space-2: clamp(6px, 0.8vw, 12px);
+  --space-3: clamp(10px, 1.2vw, 18px);
+  /* Vùng chạm tối thiểu: chuột 36px, cảm ứng 44px, đều nở theo rem ở màn rất lớn. */
+  --touch: max(36px, 2.55rem);
+  --joy: clamp(84px, 24vmin, 132px);
+  --content-max: 1800px;
+  --dialog-w: 780px;
+  --dialog-h: 760px;
+
+  /* Giá trị khởi đầu trước khi responsive.ts đo được. */
+  --hud-bottom: 64px;
+  --footer-h: 54px;
+  --account-h: 32px;
+  --top-ui-height: 96px;
+  --account-chip-h: 0px; /* chỗ chừa cho nút tài khoản nổi (chỉ màn thấp) */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+html[data-input="touch"] { --touch: max(44px, 3.1rem); }
+:root { --fs-xs: 0.72rem; }
+/* Mật độ UI: chỉ đổi token khoảng cách/chữ; kích thước vùng chạm giữ nguyên. */
+html[data-density="compact"] { --space-1: 3px; --space-2: 5px; --space-3: 8px; }
+html[data-density="comfortable"] { --space-3: clamp(14px, 1.1vw, 24px); --fs-sm: 0.85rem; --fs-xs: 0.78rem; }
+@media (min-width: 640px) { :root { --dialog-w: 820px; } }
+@media (min-width: 1600px) and (min-height: 900px) { :root { --dialog-w: 900px; --dialog-h: 840px; } }
+
+/* Khung nhìn dùng chiều cao động: không bị thanh địa chỉ di động che. */
+.game-shell { height: 100dvh; }
+
+/* ---------- Thanh trên: tài khoản + HUD ---------- */
+.account-bar { padding-block: var(--space-1); padding-inline: var(--space-3); font-size: var(--fs-sm); }
+html[data-input="touch"] .account-bar-btn { min-height: 34px; padding-inline: 12px; }
+.account-bar-name, .account-bar-status { font-size: var(--fs-sm); }
+.account-bar-badge { font-size: var(--fs-xs); }
+.brand-copy h1 { font-size: clamp(var(--fs-sm), 1.1vw, 1.2rem); }
+.hud-store-status, .hud-season-badge, .hud-weather-badge, .hud-event-badge, .hud-level-header span { font-size: var(--fs-xs); }
+/* Compact: bớt viền/đổ bóng trang trí của hai thanh trên, không giảm vùng chạm. */
+html[data-density="compact"] .account-bar { border-bottom-width: 1px; padding-block: 1px; }
+html[data-density="compact"] .game-hud { padding-inline: var(--space-2); border-bottom-width: 2px; box-shadow: inset 0 2px 0 var(--wood-light); padding-block: 2px; min-height: 0; }
+.game-hud { flex-wrap: nowrap; row-gap: var(--space-1); padding: var(--space-2) var(--space-3); }
+@media (max-width: 640px) and (orientation: portrait) { .game-hud { flex-wrap: wrap; } }
+.hud-level { min-height: var(--touch); }
+.hud-lv-short { display: none; }
+.hud-actions .pixel-button { min-width: var(--touch); min-height: var(--touch); font-size: var(--fs-sm); padding: 0 0.6em; }
+.hud-actions { gap: var(--space-1); }
+.hud-stats .pixel-stat-body, .hud-clock > div { min-width: max-content; }
+
+/*
+ * Ưu tiên thông tin HUD (data-hud trên phần tử, ba nhóm; còn lại là thiết yếu và luôn hiện):
+ *   decor    trang trí (biển hiệu, biểu tượng nắng/trăng) — bỏ trước tiên
+ *   detail   chữ phụ của thông tin thiết yếu (trạng thái tiệm, XP chi tiết, nhãn phụ) — rút gọn khi hẹp
+ *   important thông tin gameplay có giá trị (Cấp, số khách): KHÔNG ẩn theo bề ngang, chỉ thu gọn (Cấp→Lv, bỏ XP chữ, bỏ icon trùng nghĩa của tiền/đánh giá)
+ * Thiết yếu: ngày giờ, tiền, đánh giá, nợ lương, các nút điều hành. Quyết định theo bề ngang thực của thanh HUD (container), không theo cửa sổ.
+ */
+.hud-icon-wrap { display: contents; }
+@container hud (max-width: 1800px) {
+  .hud-actions .button-label { display: none; }
+  .hud-actions .btn-warehouse .button-label { display: inline; }
+  .hud-season-badge, .hud-event-badge, .brand-copy .eyebrow { display: none; }
+}
+/* Chữ phụ (nhãn dưới số, trạng thái tiệm) rút trước vì số/biểu tượng đã đủ nghĩa; ở 1280 thanh HUD đã chạm sát nên cần rút sớm hơn phần trang trí. */
+@container hud (max-width: 1400px) {
+  [data-hud="detail"], .hud-level-header span, .hud-level .muted, .pixel-stat .muted { display: none; }
+}
+@container hud (max-width: 1080px) {
+  [data-hud="decor"] { display: none; }
+  .brand-copy h1 { font-size: var(--fs-sm); }
+  .hud-lv-full { display: none; }
+  .hud-lv-short { display: inline; }
+  .hud-level { min-width: 65px; }
+}
+@container hud (max-width: 900px) {
+  .hud-debt span { display: none; }
+  .hud-level { min-width: 48px; }
+}
+@container hud (max-width: 860px) {
+  /* Icon đồng/tim trùng nghĩa với ₫ và ★ trong số; giữ icon người của số khách vì con số trần không rõ nghĩa. */
+  .hud-stats > .pixel-stat > .pixel-icon, .hud-rating .pixel-stat > .pixel-icon { display: none; }
+  .hud-level { min-width: 40px; max-width: 64px; }
+  .hud-weather-badge { max-width: 9ch; }
+  .hud-actions .btn-store-toggle span, .hud-actions .btn-warehouse .hud-management-badge { display: none; }
+  .hud-actions .btn-store-toggle { min-width: var(--touch); }
+  .hud-stats { gap: var(--space-2); }
+}
+/* Rất hẹp (điện thoại ngang nhỏ, hoặc inset lớn): nén chữ số và khoảng cách thay vì tạo thêm hàng; các nút điều hành giữ vùng chạm. */
+@container hud (max-width: 700px) {
+  /* Giữ Cấp + số khách, nhường chỗ cho số tiền dài (8 chữ số): bỏ thanh XP mini và nhãn "Kho" (nút vẫn có biểu tượng + title), không giảm vùng chạm. */
+  .hud-level .pixel-progress { display: none; }
+  .hud-level { min-width: 0; max-width: none; }
+  .hud-actions .btn-warehouse .button-label { display: none; }
+  .hud-stats { gap: var(--space-1); }
+  .hud-stats .pixel-stat { gap: var(--space-1); }
+  .hud-stats .pixel-stat strong, .hud-clock strong { font-size: var(--fs-sm); }
+  .hud-clock { gap: var(--space-1); }
+  .hud-actions { gap: 2px; }
+}
+/* Hẹp thật sự (cửa sổ máy tính thu nhỏ dạng dọc; điện thoại dọc đã có RotateOverlay): nút xuống hàng thứ hai. Điện thoại ngang giữ một hàng. */
+@media (orientation: portrait) {
+  @container hud (max-width: 600px) {
+    .hud-clock { flex: 1 1 auto; min-width: 0; }
+    .hud-stats { flex: 0 1 auto; margin-left: auto; }
+    .hud-actions { order: 3; flex: 1 1 100%; justify-content: space-between; }
+    .hud-actions .pixel-button { flex: 1 1 0; min-width: var(--touch); padding-inline: 0; }
+  }
+}
+
+/* ---------- Thân game và thanh dưới ---------- */
+.game-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.game-footer { container: footer / inline-size; min-height: calc(var(--touch) + var(--space-2) * 2); padding: var(--space-2) var(--space-3); }
+.footer-actions .pixel-button { min-height: var(--touch); min-width: var(--touch); }
+@container footer (max-width: 1100px) { .footer-context .keyboard-hint { display: none; } }
+@container footer (max-width: 900px) { .footer-actions .button-label { display: none; } .footer-context p { display: none; } }
+/* Điện thoại dọc: nút chia đều, nhãn ngữ cảnh rút gọn. */
+@container footer (max-width: 520px) {
+  .footer-context { flex: 1 1 0; }
+  .footer-actions { flex: 0 0 auto; gap: var(--space-1); }
+}
+
+/* Điện thoại ngang (thấp): thanh dưới thành cột bên phải để thế giới dùng trọn chiều cao còn lại. */
+@media (max-height: 499px) {
+  .game-hud { flex-wrap: nowrap; padding-block: 3px; min-height: 0; }
+  .game-body { flex-direction: row; }
+  .game-body > .game-main { flex: 1; min-width: 0; }
+  .game-footer {
+    flex: 0 0 auto; flex-direction: column; justify-content: center; width: calc(var(--touch) + var(--space-2) * 2);
+    padding: var(--space-1); border-top: 0; border-left: 4px solid var(--wood-dark); min-height: 0;
+  }
+  .footer-context { display: none; }
+  .footer-actions { flex-direction: column; gap: var(--space-1); }
+  .footer-actions .pixel-button { padding: 0; }
+  .dialog-header { padding: 4px 12px; }
+  .dialog-content { padding: 8px 12px; }
+  .dialog-footer { padding: 4px 12px; }
+}
+@media (max-width: 1080px) { .world-caption { display: none !important; } }
+
+/* Màn rất rộng: HUD/footer co về vùng an toàn ở giữa, thế giới vẫn tràn màn hình. */
+@media (min-width: 1900px) {
+  .account-bar, .game-hud, .game-footer { padding-inline: max(var(--space-3), calc((100% - var(--content-max)) / 2)); }
+}
+
+/* ---------- Kho hàng (ngăn kéo / bottom-sheet / cột) ---------- */
+.warehouse-dock { width: clamp(270px, 24vw, 380px); }
+@media (max-width: 1023px), (max-height: 499px) {
+  .warehouse-dock { position: absolute; right: 0; top: 0; bottom: 0; width: min(330px, 86%); box-shadow: -8px 0 20px rgba(0, 0, 0, 0.45); }
+}
+@media (max-width: 639px) and (orientation: portrait) {
+  .warehouse-dock { top: auto; left: 0; width: auto; max-height: 68%; border-left: 0; border-top: 4px solid var(--wood-dark); box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.45); padding-bottom: var(--safe-b); }
+}
+
+/* ---------- Hộp thoại ---------- */
+.dialog-backdrop { padding: max(var(--space-2), var(--safe-t)) max(var(--space-2), var(--safe-r)) max(var(--space-2), var(--safe-b)) max(var(--space-2), var(--safe-l)); }
+.pixel-dialog { width: min(var(--dialog-w), 100%); max-height: min(100%, var(--dialog-h)); }
+.dialog-header { padding-inline: var(--space-3); }
+.dialog-header h2 { font-size: var(--fs-lg); }
+.dialog-content { padding: var(--space-3) calc(var(--space-3) + 4px); overflow-wrap: break-word; }
+.dialog-footer { padding: var(--space-2) var(--space-3); flex-wrap: wrap; }
+/* Điện thoại dọc: hộp thoại thành bottom-sheet sát đáy, ngón cái với tới được. */
+@media (max-width: 639px) and (orientation: portrait) {
+  .dialog-backdrop { align-items: flex-end; padding-inline: 0; padding-top: max(var(--space-2), var(--safe-t)); }
+  .pixel-dialog { width: 100%; max-height: 100%; border-inline-width: 0; padding-bottom: 0; }
+  .dialog-footer { padding-bottom: max(var(--space-2), var(--safe-b)); }
+  .management-grid { grid-template-columns: 1fr; }
+  .action-grid, .inventory-grid { grid-template-columns: 1fr; }
+}
+.management-grid { grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); }
+
+/* ---------- Toast ---------- */
+.toast-stack { top: calc(var(--top-ui-height) + var(--space-2)); width: min(460px, calc(100% - var(--space-3) * 2 - var(--safe-l) - var(--safe-r))); }
+@media (max-width: 560px), (max-height: 499px) {
+  .toast-stack { gap: 4px; }
+  .toast { gap: 6px; padding: 4px 8px; font-size: var(--fs-sm); line-height: 1.25; }
+  .toast > span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .toast .pixel-icon, .toast svg { width: 16px; height: 16px; flex: none; }
+  .toast .pixel-button { min-height: 36px; min-width: 36px; padding: 2px; }
+}
+
+/* ---------- Điều khiển cảm ứng ---------- */
+.touch-controls { display: none; }
+html[data-input="touch"] .touch-controls { display: block; }
+.joystick { left: var(--space-3); bottom: var(--space-3); width: var(--joy); height: var(--joy); }
+.joystick-knob { width: calc(var(--joy) * 0.44); height: calc(var(--joy) * 0.44); }
+.touch-interact { right: var(--space-3); bottom: var(--space-3); min-width: calc(var(--joy) * 0.85); min-height: calc(var(--joy) * 0.7); font-size: var(--fs-base); }
+/* Cảm ứng: nút zoom lên góc trên bên phải, tránh nút Xem và cần xoay ở hai góc dưới. */
+html[data-input="touch"] .world-tools { top: var(--space-2); bottom: auto; right: var(--space-3); flex-direction: column; align-items: stretch; transform: none; }
+html[data-input="touch"] .world-tools .pixel-button { min-width: var(--touch); min-height: var(--touch); }
+.world-tools { right: max(var(--space-3), calc((100% - var(--content-max)) / 2)); bottom: var(--space-3); }
+.world-tools .zoom-value { min-width: var(--touch); }
+
+/* ---------- Lớp phủ neo theo thanh UI đo thật ---------- */
+.voice-panel { left: max(var(--space-3), var(--safe-l)); bottom: calc(var(--footer-h) + var(--safe-b) + var(--space-2)); max-width: min(320px, calc(100vw - var(--space-3) * 2)); }
+html[data-input="touch"] .voice-panel { bottom: calc(var(--footer-h) + var(--safe-b) + var(--joy) + var(--space-3) * 2); }
+.inventory-summary-card { right: max(var(--space-3), var(--safe-r)); bottom: calc(var(--footer-h) + var(--safe-b) + var(--space-3)); width: min(290px, calc(100% - var(--space-3) * 2)); }
+html[data-input="touch"] .inventory-summary-card { bottom: calc(var(--footer-h) + var(--safe-b) + var(--joy) * 0.7 + var(--space-3) * 2); }
+.loading-screen, .rotate-screen { padding: max(24px, var(--safe-t)) max(24px, var(--safe-r)) max(24px, var(--safe-b)) max(24px, var(--safe-l)); overflow-y: auto; }
+
+/* Pixel-art: không làm mờ bitmap khi co/giãn. */
+.pixel-icon, .product-icon, canvas { image-rendering: pixelated; }
+
+/* Nút trần (không khung) vẫn phải đủ vùng chạm. */
+.hud-rating { appearance: none; background: none; border: 0; padding: 0 2px; margin: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; display: inline-flex; align-items: center; min-height: var(--touch); }
+.hud-rating:focus-visible { outline: 2px solid #b7791f; outline-offset: 2px; }
+.tutorial-chip { min-height: var(--touch); padding-inline: 10px; }
+
+/* ---------- Mọi lớp phủ modal đi qua cùng kiến trúc (hộp thoại chung, sơ đồ cửa hàng, đổi sản phẩm, sổ tay đăng nhập) ---------- */
+:root { --dialog-avail-h: calc(100dvh - var(--safe-t) - var(--safe-b) - var(--space-2) * 2); }
+.change-product-modal-backdrop, .vintage-modal-overlay {
+  padding: max(var(--space-2), var(--safe-t)) max(var(--space-2), var(--safe-r)) max(var(--space-2), var(--safe-b)) max(var(--space-2), var(--safe-l));
+}
+.change-product-modal, .vintage-notebook-card, .vintage-wood-card { max-height: min(100%, var(--dialog-h)); }
+.store-layout-dialog { max-height: 100%; }
+.store-layout-dialog, .change-product-modal, .vintage-notebook-card, .vintage-wood-card { min-height: 0; overflow-wrap: break-word; }
+
+.management-card { padding: var(--space-2) var(--space-3); }
+/* Cảm ứng: mọi nút trong lớp phủ đủ vùng chạm (nút xoá ô lưu cỡ nhỏ có vùng chạm riêng). */
+html[data-input="touch"] :where(.dialog-backdrop, .change-product-modal-backdrop, .vintage-modal-overlay) button:not(.save-slot-delete, .layout-cell) { min-height: var(--touch); }
+html[data-input="touch"] :where(.dialog-header, .layout-heading, .change-product-header) button { min-width: var(--touch); }
+/* Điện thoại dọc: các lớp phủ riêng cũng thành bottom-sheet như hộp thoại chung. */
+@media (max-width: 639px) and (orientation: portrait) {
+  .change-product-modal-backdrop, .vintage-modal-overlay { place-items: end center; padding-inline: 0; padding-bottom: 0; }
+  .store-layout-dialog, .change-product-modal, .vintage-notebook-card, .vintage-wood-card { width: 100%; max-height: 100%; border-bottom-width: 0; border-radius: 6px 6px 0 0; padding-bottom: var(--safe-b); }
+}
+/* Sơ đồ sàn: ô lưới cảm ứng không nhỏ hơn ~28px; sàn rộng thì cuộn ngang trong khung thay vì nén ô. */
+.layout-board-container { overflow-x: auto; align-items: flex-start; max-width: 100%; }
+html[data-input="touch"] .layout-board { min-width: calc(var(--layout-cols, 16) * 28px); }
+
+/* ---------- Màn dọc: chỉ hướng dẫn xoay ngang (không duy trì bố cục gameplay dọc) ---------- */
+.rotate-screen { display: none; z-index: 200; background: rgba(36, 29, 23, 0.9); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); color: var(--paper); }
+.rotate-screen p { color: #F1DCAE; }
+.rotate-hint-icon { color: var(--sun); animation: rotate-hint 2.4s ease-in-out infinite; }
+@keyframes rotate-hint { 0%, 30% { transform: rotate(0); } 70%, 100% { transform: rotate(-90deg); } }
+@media (orientation: portrait) { html[data-input="touch"] .rotate-screen { display: flex; } }
+
+/* ---------- Màn đăng nhập/menu chính ở điện thoại ngang (thấp): gọn header, giữ hai cột ---------- */
+@media (max-height: 499px) and (orientation: landscape) {
+  .deck-header { flex-direction: row; align-items: center; padding: 6px 14px; gap: 10px; }
+  .brand-display-title { font-size: 18px; }
+  .brand-badge-seal { width: 36px; height: 36px; }
+  .deck-content-split { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); padding: 10px 14px; gap: 12px; }
+  .deck-top-actions { justify-content: flex-end; }
+}
+
+/* ---------- Điện thoại ngang (thấp): hộp thoại sơ đồ dành chỗ cho bảng, sidebar sang bên phải ---------- */
+@media (max-height: 499px) and (orientation: landscape) {
+  .store-layout-dialog .layout-heading { padding: 4px 12px; }
+  .store-layout-dialog .layout-heading .eyebrow, .store-layout-dialog .layout-icon { display: none; }
+  .store-layout-dialog .layout-footer { padding: 4px 12px; }
+  .store-layout-dialog .layout-workspace { grid-template-columns: minmax(0, 1fr) minmax(190px, 32%); padding: 8px 12px; gap: 10px; }
+}
+
+/* Điện thoại ngang (thấp): nút góc nhìn thành một hàng ở góc trên phải để không đụng nút Xem ở góc dưới. */
+@media (max-height: 499px) and (orientation: landscape) {
+  html[data-input="touch"] .world-tools { flex-direction: row; align-items: center; }
+}
+
+/* ---------- Mật độ hộp thoại (dùng chung data-density của Đợt 5) ---------- */
+.dialog-heading p { font-size: var(--fs-sm); }
+/* Compact (màn thấp/hẹp): giảm phần phụ trước — phụ đề rút một dòng, gợi ý Esc (vô nghĩa với cảm ứng) ẩn, khoảng cách đầu/chân gọn.
+   Tiêu đề, nội dung cuộn và nút chính (vùng chạm 44px) giữ nguyên. */
+html[data-density="compact"] .dialog-header { padding-block: var(--space-2); border-bottom-width: 2px; gap: var(--space-2); }
+html[data-density="compact"] .dialog-heading p { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; margin-top: 0; }
+html[data-density="compact"] .dialog-footer { padding-block: var(--space-1); }
+html[data-density="compact"] .dialog-footer .dialog-hint { display: none; }
+html[data-density="compact"] .dialog-footer:has(.dialog-hint) { justify-content: flex-end; }
+html[data-density="compact"] .dialog-content { padding-block: var(--space-2); }
+/* Comfortable: chỉ nới khoảng cách, không làm hộp thoại cao hơn khung (max-height vẫn do --dialog-h/100% giới hạn). */
+html[data-density="comfortable"] .dialog-content { padding-block: var(--space-3); }
+
+/* ---------- Đợt 7: màn thấp — thanh tài khoản thành nút tròn nổi, không chiếm chiều cao của thế giới ----------
+ * Kiểm tra bề ngang: HUD thiết yếu (ngày giờ, tiền, đánh giá, 6 nút 44px) đã ~540px nên không thể chia hàng với thanh tài khoản ở điện thoại ngang.
+ * Vì vậy chỉ còn nút tròn (vùng chạm = --touch) ở góc trên-trái thế giới; chạm mở bảng đầy đủ (tên, chế độ, Về màn hình chính, Đăng nhập…) với nút đủ cỡ chạm. */
+.account-bar-toggle { display: none; }
+@media (max-height: 499px) {
+  .game-shell { position: relative; }
+  :root { --account-chip-h: calc(var(--touch) + var(--space-1) * 2); }
+  html[data-density] .account-bar {
+    position: absolute; top: calc(var(--hud-bottom) + var(--space-1)); left: calc(var(--safe-l, 0px) + var(--space-2)); z-index: 60;
+    flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: var(--space-1);
+    padding: 0; border: 0; background: none; box-shadow: none; width: auto; max-width: min(440px, calc(100% - var(--safe-l, 0px) - var(--safe-r, 0px) - var(--space-2) * 2));
+  }
+  .account-bar-toggle {
+    display: grid; place-items: center; width: var(--touch); height: var(--touch); flex: none; padding: 0; cursor: pointer;
+    border-radius: 50%; border: 2px solid #d4a956; background: var(--teal-dark); color: #fff9ea; font: inherit; font-weight: 900; opacity: 0.88;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  }
+  .account-bar[data-open="false"] .account-bar-info, .account-bar[data-open="false"] .account-bar-actions { display: none; }
+  .account-bar[data-open="true"] .account-bar-toggle { opacity: 1; }
+  html[data-density] .account-bar[data-open="true"] > .account-bar-info, html[data-density] .account-bar[data-open="true"] > .account-bar-actions {
+    background: linear-gradient(180deg, #422d20 0%, #321f15 100%); border: 2px solid #5a3c2a; border-radius: 8px; padding: var(--space-2);
+  }
+  .account-bar[data-open="true"] .account-bar-actions { flex-wrap: wrap; }
+  .account-bar-btn, html[data-input="touch"] .account-bar-btn { min-height: var(--touch); }
+  .account-bar-status { display: none; }
+}

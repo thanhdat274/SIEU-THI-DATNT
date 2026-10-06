@@ -3,6 +3,7 @@ import { PlayerData, StaffCandidate, StaffMember, StaffShift, STAFF_SHIFTS } fro
 import { getMaxStaffSlots, STAFF_ROLE_INFO } from '@game/data';
 import { PixelButton, PixelDialog, money } from './pixel';
 import { RestockJobTarget } from '@game/shared';
+import { describeWorkerError } from '@game/core';
 
 interface Props {
   player: PlayerData;
@@ -12,13 +13,13 @@ interface Props {
   wageDebt: number;
   onHire: (candidateId: string) => { success: boolean; reason?: string };
   onSetShift: (staffId: string, shift: StaffShift) => boolean;
+  onPayWageDebt?: () => void;
   restockTargets?: RestockJobTarget[];
   onAssignRefillJob?: (staffId: string, fixtureId: string) => { success: boolean; reason?: string };
-  onAssignAutoRestockJob?: (staffId: string) => { success: boolean; reason?: string };
   onClose: () => void;
 }
 
-export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wageDebt, onHire, onSetShift, restockTargets = [], onAssignRefillJob, onAssignAutoRestockJob, onClose }) => {
+export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wageDebt, onHire, onSetShift, onPayWageDebt, restockTargets = [], onAssignRefillJob, onClose }) => {
   const slots = getMaxStaffSlots(player.level);
   const hiredIds = new Set(staff.map((member) => member.id));
 
@@ -26,7 +27,12 @@ export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wa
     <PixelDialog title="Nhân viên tiệm" subtitle={`Ứng viên ngày ${day} · ${staff.length}/${slots} vị trí`} icon="person" onClose={onClose}>
       <section style={{ marginBottom: 16, padding: 12, background: '#f5efe6', border: '1px solid #d1c4b2' }}>
         <strong>Quỹ lương và công nợ</strong>
-        <p className="muted" style={{ marginBottom: 0 }}>Nợ lương hiện tại: <strong>{money(wageDebt)}</strong></p>
+        <p className="muted" style={{ marginBottom: wageDebt > 0 && onPayWageDebt ? 8 : 0 }}>Nợ lương hiện tại: <strong>{money(wageDebt)}</strong></p>
+        {wageDebt > 0 && onPayWageDebt && (
+          <PixelButton variant="teal" disabled={player.money <= 0} onClick={onPayWageDebt} title="Trả ngay bằng tiền đang có, không cần chờ kết ngày">
+            Trả nợ lương{player.money < wageDebt ? ` (một phần ${money(Math.floor(player.money))})` : ` ${money(wageDebt)}`}
+          </PixelButton>
+        )}
       </section>
 
       <section style={{ marginBottom: 18 }}>
@@ -36,23 +42,14 @@ export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wa
             <div className="product-info">
               <h3>{member.name} · {STAFF_ROLE_INFO[member.role].label}</h3>
               <p>Lương đủ ngày {money(member.dailyWage)} · Tốc độ {member.speed} · Chính xác {member.accuracy} · Sức bền {member.stamina}</p>
-              <p className="muted">{member.workerTask ? `Đang bày kệ ${member.workerTask.fixtureId}` : member.currentCheckoutId ? 'Đang phục vụ khách tại quầy' : member.lastWorkerError ?? 'Đang rảnh'}</p>
+              <p className="muted">{member.workerTask ? `Đang bày kệ ${member.workerTask.fixtureId}` : member.currentCheckoutId ? 'Đang phục vụ khách tại quầy' : describeWorkerError(member.lastWorkerError) ?? 'Đang rảnh'}</p>
             </div>
-            <label style={{ display: 'grid', gap: 4, minWidth: 170 }}>
+            <label style={{ display: 'grid', gap: 4, minWidth: 'min(170px, 100%)' }}>
               Ca làm
               <select aria-label={`Ca làm của ${member.name}`} value={member.shift} onChange={(event) => onSetShift(member.id, event.target.value as StaffShift)}>
                 {Object.values(STAFF_SHIFTS).map((shift) => <option key={shift.id} value={shift.id}>{shift.name}</option>)}
               </select>
             </label>
-            {member.role === 'refill' && onAssignAutoRestockJob && (
-              <PixelButton
-                variant="teal"
-                disabled={!!member.workerTask || restockTargets.length === 0}
-                onClick={() => onAssignAutoRestockJob(member.id)}
-              >
-                {member.workerTask ? 'Đang bày kệ' : restockTargets.length === 0 ? 'Không có kệ thiếu' : 'Tự động bày kệ (tất cả)'}
-              </PixelButton>
-            )}
           </article>
         ))}
       </section>

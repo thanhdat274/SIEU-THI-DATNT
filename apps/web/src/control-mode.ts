@@ -18,7 +18,12 @@ let current: ControlMode = read();
 
 /** CSS đọc thuộc tính này trên <html> để hiện/ẩn `.touch-controls`. */
 export function applyControlMode(mode: ControlMode = current): void {
-  if (typeof document !== 'undefined') document.documentElement.dataset.controls = mode;
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  root.dataset.controls = mode;
+  // CSS chỉ cần kết quả cuối: touch (hiện cần xoay, chạm là chính) hay mouse. auto theo con trỏ chính của thiết bị.
+  const coarse = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
+  root.dataset.input = mode === 'touch' || (mode === 'auto' && coarse) ? 'touch' : 'mouse';
 }
 
 export function getControlMode(): ControlMode { return current; }
@@ -36,3 +41,5 @@ export function useControlMode(): ControlMode {
 }
 
 applyControlMode();
+// Cắm/rút chuột hoặc đổi chế độ thiết bị làm con trỏ chính đổi: tính lại.
+if (typeof window !== 'undefined') window.matchMedia?.('(pointer: coarse)').addEventListener?.('change', () => applyControlMode());

@@ -29,9 +29,9 @@ export const RegularsModal: React.FC<Props> = ({ regulars, onClose }) => {
       subtitle="Xây dựng tình làng nghĩa xóm · Khám phá sở thích & mở khóa đặc quyền"
       onClose={onClose}
     >
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 190px) 1fr', gap: 12, maxHeight: '65vh', overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 12, maxHeight: 'none' }}>
         {/* Cột trái: Danh sách khách quen */}
-        <div style={{ display: 'grid', gap: 6, overflowY: 'auto', paddingRight: 4 }}>
+        <div style={{ display: 'grid', gap: 6, overflowY: 'auto', paddingRight: 4, maxHeight: 'calc(var(--dialog-avail-h) * 0.6)', alignContent: 'start' }}>
           {REGULAR_CUSTOMERS.map((reg) => {
             const prog = regulars[reg.id];
             const pts = prog?.friendship ?? 0;

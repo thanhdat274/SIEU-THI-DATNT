@@ -1,0 +1,2965 @@
+{
+ "maps": {
+  "(none)": "fc3536bfcec3b629cbf34c07ed1250097dd4eee3",
+  "(none)|stalls": "f919d8ea09b0221015d72c2580b8d0fd1759e56f",
+  "east-wing-a": "dfb97e14113f9f7a6aa5ad19f45f9c53e680016d",
+  "east-wing-a|stalls": "48ec1322bc7eb735c2684bc115663cfc8fbbb2e4",
+  "east-wing-a+east-wing-b": "cea655fb9a01e949b00e9c1f6b80d703cedd3525",
+  "east-wing-a+east-wing-b|stalls": "8f4e164c755e5da57c96e472ad0c1ec8cafccda3",
+  "building-xoi": "e7c1dc1b81c5325a4d36edc264ed8113ec9a2682",
+  "building-xoi|stalls": "840e4cfd1da9d11f35a3fd05b680b6777d302f5e",
+  "east-wing-a+building-xoi": "d145c1dba7d4d6a706eadcd0381fba2c42e40cc7",
+  "east-wing-a+building-xoi|stalls": "f190d6e26429dd02e0632b0e266f720e35fc7f27",
+  "east-wing-a+east-wing-b+building-xoi": "f6666dff2bb455f7b6b27b115eea46c0f22e938e",
+  "east-wing-a+east-wing-b+building-xoi|stalls": "7db460563abfd31de5020aca42cdec9aede58790",
+  "building-drink": "76540cde57d4004657f5e17aa5338629993b271b",
+  "building-drink|stalls": "6699ebf1e2b5f01111fa17633a77f0770a8e32c8",
+  "east-wing-a+building-drink": "dec24bdcfe8bddbc7fb68ffe9caf581a07761b3b",
+  "east-wing-a+building-drink|stalls": "a1dccdfe6476df7cc1e389c0adcd8428c436cc4a",
+  "east-wing-a+east-wing-b+building-drink": "c04f4220dc2347922fa4808bfb35433175a9a682",
+  "east-wing-a+east-wing-b+building-drink|stalls": "fd381cc7045f40bd1fba7a14376473126cce0a1c",
+  "building-xoi+building-drink": "09c9f38c40bbf95cf4286b3b89730c2afc9d7a7f",
+  "building-xoi+building-drink|stalls": "2dd9ed748ed84067c86d70e4a962182d3071f643",
+  "east-wing-a+building-xoi+building-drink": "5cc3c5bfd902053a2345c809bb2aef53af8f0905",
+  "east-wing-a+building-xoi+building-drink|stalls": "87dbc239d3de622506d927f1cc70be83eef8d0f3",
+  "east-wing-a+east-wing-b+building-xoi+building-drink": "bd0fd6f26008427bc2ce8fab263b282859826d25",
+  "east-wing-a+east-wing-b+building-xoi+building-drink|stalls": "de7252a50346f7868684b9c48ed58537644e4476",
+  "building-snack": "d7c447097266d5dae5b27a148337b1699b17837e",
+  "building-snack|stalls": "e3c8300320b93c7c9ae3dfad01344f0470b643d9",
+  "east-wing-a+building-snack": "e01589de84470ac4d0d31220d185fdebeb37e1e3",
+  "east-wing-a+building-snack|stalls": "cdfe68c609740f4351704092566193410a1afb62",
+  "east-wing-a+east-wing-b+building-snack": "53af32e93bfad655595241d6d0c6eec0c9680b37",
+  "east-wing-a+east-wing-b+building-snack|stalls": "39af21096fdc980407e7ea567496f399a80e0794",
+  "building-xoi+building-snack": "88841cb79ca0319e0c96efa72bbb297ab47e7069",
+  "building-xoi+building-snack|stalls": "0df7ac243df0994b645f287da69183c51640e636",
+  "east-wing-a+building-xoi+building-snack": "3dc91f2920bd9b5fa426e5373ef4091d8235c36f",
+  "east-wing-a+building-xoi+building-snack|stalls": "39287e6db711f9de4fb4adbb082d3b128711ef2f",
+  "east-wing-a+east-wing-b+building-xoi+building-snack": "f9632c5590d3f21bd7171063eebd86828bf704b0",
+  "east-wing-a+east-wing-b+building-xoi+building-snack|stalls": "655ce18eb7cf24b98c72698e8641bf36fa2009aa",
+  "building-drink+building-snack": "21c996ff21273d5ce2de1ee9a57b13468db04706",
+  "building-drink+building-snack|stalls": "7d316002293be9eb528144012c99c50cee96b22c",
+  "east-wing-a+building-drink+building-snack": "e8927ffaf2a4b5425d236d207e1ea75fb7acf5cf",
+  "east-wing-a+building-drink+building-snack|stalls": "5a894fa69d7a46b036324ad12b7f16f48b103725",
+  "east-wing-a+east-wing-b+building-drink+building-snack": "0d68cb229ddd0995e167486e3c0bb6c75cb26089",
+  "east-wing-a+east-wing-b+building-drink+building-snack|stalls": "009f998dd1e62edfa99e71f6eb6432ab928aa03e",
+  "building-xoi+building-drink+building-snack": "bdd1d34daf8234c6d4ce14232150d35599320fbf",
+  "building-xoi+building-drink+building-snack|stalls": "42b31dcca5b8e3ebaed99b3f52afdb571c8b26fb",
+  "east-wing-a+building-xoi+building-drink+building-snack": "e9bd226bcd8b0be85881b1a214f55895baa7f206",
+  "east-wing-a+building-xoi+building-drink+building-snack|stalls": "8bcea669bb5a002a6754b96691b0b7c41e6251dd",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack": "0299f58152ea40911e01013f43f0d25d3a0fba35",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack|stalls": "71802fbdc675f90d3c7284b124e1637b7cb7f9ac",
+  "building-xoi+xoi-north-a": "3dcb126bb3c004fa0685fc105df4b67a96f3e2f0",
+  "building-xoi+xoi-north-a|stalls": "9a14e6c6e5fcf331e4c130f3b5687a9e900c6694",
+  "east-wing-a+building-xoi+xoi-north-a": "d72a951a7bb272f6bb9535542854e1a748f0246e",
+  "east-wing-a+building-xoi+xoi-north-a|stalls": "780773c4c4d5eea1b32b1d9ba043c1a43abdc3e3",
+  "east-wing-a+east-wing-b+building-xoi+xoi-north-a": "51e475f179d2d617ca5e642e2fdb60f3cb5e6371",
+  "east-wing-a+east-wing-b+building-xoi+xoi-north-a|stalls": "70ceb7ce32da083dcc5105ebbec1400af497ff5b",
+  "building-xoi+building-drink+xoi-north-a": "dee93b0be3ddcfd89a1aa0a0756b75aa40e20362",
+  "building-xoi+building-drink+xoi-north-a|stalls": "fbf1d68c0b58a6af99f5d47196438904772532cf",
+  "east-wing-a+building-xoi+building-drink+xoi-north-a": "9795fee9be10e78ad7d546cdf17811b15bbb171f",
+  "east-wing-a+building-xoi+building-drink+xoi-north-a|stalls": "ee1b6a663861b73a263eb5b4b697eedb21bb0d49",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a": "6100948551f69b937543cf540e50f20589c5277c",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a|stalls": "66b6d11997dc4ff47dcf7a42a571a376d8d3c7db",
+  "building-xoi+building-snack+xoi-north-a": "3b92649203307fe4b95b3d86379094108348c2bb",
+  "building-xoi+building-snack+xoi-north-a|stalls": "2a54f50a154525fa801ad70bd15a21e75d11e41d",
+  "east-wing-a+building-xoi+building-snack+xoi-north-a": "f2bbaf5fc82f3c5d7099715ad62c350109563675",
+  "east-wing-a+building-xoi+building-snack+xoi-north-a|stalls": "cd5a07b02daed7eb7d9d23054c5feb936eba6e89",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a": "bedf1f8b1f9fe2fafb446923c494adbccc992041",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a|stalls": "122f332d8cc8a48ccfbbb951d7269666a593c293",
+  "building-xoi+building-drink+building-snack+xoi-north-a": "8d319be87b79662694b86cd71d9e099c0c1b7904",
+  "building-xoi+building-drink+building-snack+xoi-north-a|stalls": "aa0a4de579be7d547bdf1a3099cc11715be8e4a2",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a": "f03adf4bd572fe4d60675cdaeb757d1304f2fa9b",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a|stalls": "c839cad30c846cb21f28cd9308cc10db8cfdf306",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a": "b4e5328bdf235c6dbfe8772c30731add51ce294a",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a|stalls": "4b7b35e43afb1c4dd68a1ac7d2bc64146cb8fc5f",
+  "building-xoi+xoi-north-a+xoi-north-b": "4f80545215b94fb3dc64fd24056b0136eebaedf6",
+  "building-xoi+xoi-north-a+xoi-north-b|stalls": "b8f651cef66d32a7fc86ba23707c95cfef1f07a6",
+  "east-wing-a+building-xoi+xoi-north-a+xoi-north-b": "069371319e6a9f1e85d99a09b8892d57260cbb9c",
+  "east-wing-a+building-xoi+xoi-north-a+xoi-north-b|stalls": "5b21b6d3cb83826b6527c42c9c125278de3d543c",
+  "east-wing-a+east-wing-b+building-xoi+xoi-north-a+xoi-north-b": "bddbae7b133d0e819931a79f64caffcfb5f06d15",
+  "east-wing-a+east-wing-b+building-xoi+xoi-north-a+xoi-north-b|stalls": "747365344bd180a203bd6d4174847b70848d28fb",
+  "building-xoi+building-drink+xoi-north-a+xoi-north-b": "14ca155d6a3ae633d0f7efdaa4cc6f7ec362f60d",
+  "building-xoi+building-drink+xoi-north-a+xoi-north-b|stalls": "6cce9e7a1a539b71abbf39f18f33b9244ceef7da",
+  "east-wing-a+building-xoi+building-drink+xoi-north-a+xoi-north-b": "69253e72e3afd6a96077eaef05fd994d592133e6",
+  "east-wing-a+building-xoi+building-drink+xoi-north-a+xoi-north-b|stalls": "a8fa12d0381dbef7beb642736e31ecb068f9a90b",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+xoi-north-b": "6d5604c4eb7fafd917b20f77395347fa37a4310c",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+xoi-north-b|stalls": "23ab9f24fcc2ca6d659f11c06c5cd338cdcc7f89",
+  "building-xoi+building-snack+xoi-north-a+xoi-north-b": "d1b217d79a6843e588244d5ba4a711864228b4f1",
+  "building-xoi+building-snack+xoi-north-a+xoi-north-b|stalls": "10003f6db3e16ab72805688bbb98c2591ac52194",
+  "east-wing-a+building-xoi+building-snack+xoi-north-a+xoi-north-b": "2c5c30428a059024ad110b46ef3bd8fec8bb3a56",
+  "east-wing-a+building-xoi+building-snack+xoi-north-a+xoi-north-b|stalls": "11d29f203d99eca140f7435fdfd1feae28510bc2",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+xoi-north-b": "e9a51000ebcb36c448f683fdb75a889046a45b0c",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+xoi-north-b|stalls": "2bcabf3cce1c59b07633c5932804964a8daeaa05",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b": "cb2c5cf50348c7c1fbc9dcaa856ec6320c5811b7",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b|stalls": "f908681c877eecb366f5fc7bef6255ceac1f7eec",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b": "0f2b0fa324c087d58a3fa33ed2e53eec92a2a906",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b|stalls": "c02be032b6c8b6e2208c210c2d8e2756768c9419",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b": "da891b8177223cb29c967a45ffad78341117056f",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b|stalls": "218d3329094dd339da554e3b0e27848c3ad58988",
+  "building-drink+drink-north-a": "9c1c225a8506a301a5a158577bffecac6629b4e0",
+  "building-drink+drink-north-a|stalls": "bf855497d20ac44afbe1f0275f293112d083c734",
+  "east-wing-a+building-drink+drink-north-a": "195138515fb9bb58768dfb4bc9ad6c91855ae5d5",
+  "east-wing-a+building-drink+drink-north-a|stalls": "194fe4c09c48fe6386047d79be138a9dff2ea84e",
+  "east-wing-a+east-wing-b+building-drink+drink-north-a": "f4999685d1fa3c0a4549872557d3c8dd8e396f29",
+  "east-wing-a+east-wing-b+building-drink+drink-north-a|stalls": "0dd3b6fe21d8c196f3c45dd729204e1d257e3233",
+  "building-xoi+building-drink+drink-north-a": "c1826b5807bf2bfea2e711d9471c3a6475ba63bf",
+  "building-xoi+building-drink+drink-north-a|stalls": "b98d4394e13d76d7b568cb01df9330ff0c3f9f4a",
+  "east-wing-a+building-xoi+building-drink+drink-north-a": "895b1f4cc0b69540ab2788c6f4743fc46c18790f",
+  "east-wing-a+building-xoi+building-drink+drink-north-a|stalls": "d8195a03f739dda35c001a08298007378f04c1c0",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+drink-north-a": "05510243b0411d9d69d9055e8e5e99f5d7d50c90",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+drink-north-a|stalls": "b715ac9895635d59d7da951519da8e2a8d6694aa",
+  "building-drink+building-snack+drink-north-a": "95bf2da60817b8a4a163f5fdc5165b46f9423c03",
+  "building-drink+building-snack+drink-north-a|stalls": "014b65c426f618f013f219ff7e83756f63e08658",
+  "east-wing-a+building-drink+building-snack+drink-north-a": "4a3f6076db5c92e027869f45b0db401d7e93bfbe",
+  "east-wing-a+building-drink+building-snack+drink-north-a|stalls": "9485a6e9d209ad06e7df1bd6940d33064e4a5519",
+  "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a": "767c71f7392665de08f9ac18edb76f28a330d6fe",
+  "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a|stalls": "bb8d3eb58accaca6e3b5eefd67f00236142b132f",
+  "building-xoi+building-drink+building-snack+drink-north-a": "824f94b5bb46a4e2cf21db3b6106147bb875f8a4",
+  "building-xoi+building-drink+building-snack+drink-north-a|stalls": "823021577ca3126c9bd81144adb0803489de89e6",
+  "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a": "6a761c4495efda1e8c3a2c31627f4b60286a6d84",
+  "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a|stalls": "c39e31846bc7c4f99a7cc461663d54c21c368bbb",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a": "4a81fe3438e85bc5774d99da4edb721d6e6e07dc",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a|stalls": "24a2561914048f4744e1ca985a830728cdd8fa0e",
+  "building-xoi+building-drink+xoi-north-a+drink-north-a": "c62154ca8221d040d566adcbc40278cd2174da36",
+  "building-xoi+building-drink+xoi-north-a+drink-north-a|stalls": "9dcba7420ff3fdfd77867984317aca7f6602fa42",
+  "east-wing-a+building-xoi+building-drink+xoi-north-a+drink-north-a": "401bd45e79ce03acc64901a63b447f13ddce32cc",
+  "east-wing-a+building-xoi+building-drink+xoi-north-a+drink-north-a|stalls": "2b8d5e8f8ae3ff3e5f0ef2a991fe24e9522b324f",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+drink-north-a": "ba663c8c42929b3eebdd6d478dbbfecbea40ae19",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+drink-north-a|stalls": "35418cf08729b5d0c51a3ea27b5af92701479182",
+  "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a": "94b62a1501cf51935921700bbbc6a0df694231b2",
+  "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a|stalls": "c45f7cf6dc818abaa0aa49e42f707f99ab3712e8",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a": "f1059c047f03fab1c27ada2cf300e0e5dec6729b",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a|stalls": "2ae060cb837997fc93c2803bb19328cd73cef410",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a": "6d3ba0a16893d2b3cf1acdc21e8ca863aac4561f",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a|stalls": "64778d89c17762185865555d86c0cfe32757278f",
+  "building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a": "c8b91540581f6f325230fa32caa29dbe29378906",
+  "building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a|stalls": "d289ae87336ebcb1980887f1e1644c9b1c368fec",
+  "east-wing-a+building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a": "04a50e8a76830b3f921babae68b276e2e068b530",
+  "east-wing-a+building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a|stalls": "671f5d97cbbd73605fb5eb90995c9ad8fc6ae750",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a": "8cbd8025fbb2aa8d470cae8ca275dd6f7e51c56f",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a|stalls": "db8427fcd3fca61469417bb2b679b7425d55ad50",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a": "ba330a32a6b403765f1f1213e99c354e92e3f2fd",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a|stalls": "f0cb03dca52662f6b719452551b04ccf1622d2ef",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a": "deb1736a66f94f0e0f99aaa1540c399a4e51a403",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a|stalls": "6b7178bb4406b1f4fb947a6cc76cbdee4470e10f",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a": "cb49f100d1f1d6169c94a9cd2758dd4b5a13fb19",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a|stalls": "c73c8dd78c5917d37c28b9ee5cae51fda54a3bba",
+  "building-drink+drink-north-a+drink-north-b": "717edae417e6de5f9cccd3bc1c5d7929fba90666",
+  "building-drink+drink-north-a+drink-north-b|stalls": "df954232cdf33127b08ed37216efc737a379f0a0",
+  "east-wing-a+building-drink+drink-north-a+drink-north-b": "85dcad7283d49072c0d023c5b0b3d297ed216938",
+  "east-wing-a+building-drink+drink-north-a+drink-north-b|stalls": "26a0675517b93df56db21f24325efe3809dd2503",
+  "east-wing-a+east-wing-b+building-drink+drink-north-a+drink-north-b": "31d3fe23cfdd314d11ca9cfb1f6f454a167bc43f",
+  "east-wing-a+east-wing-b+building-drink+drink-north-a+drink-north-b|stalls": "dc39d0d634975997de75bcd264a05cd87d7340ad",
+  "building-xoi+building-drink+drink-north-a+drink-north-b": "296fc55aaf1f38dd0c3fab441288a31bf16d2d5e",
+  "building-xoi+building-drink+drink-north-a+drink-north-b|stalls": "e4ef48a9887164badf78e07c1246e1ea5b86e8b3",
+  "east-wing-a+building-xoi+building-drink+drink-north-a+drink-north-b": "77934cbd3d4971242a8e8fa6f13692c5a075aa3a",
+  "east-wing-a+building-xoi+building-drink+drink-north-a+drink-north-b|stalls": "04d2964719fea1ffee3ef7b2940bad127e8b57c3",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+drink-north-a+drink-north-b": "ee1a533850985d55c50ae31bb74795c38b3c35de",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+drink-north-a+drink-north-b|stalls": "300d0ffaa6c8be2b06dc3629afb588531cc2f447",
+  "building-drink+building-snack+drink-north-a+drink-north-b": "a1b857ec8b6ff6014f6ba2850a230888efcd1a7e",
+  "building-drink+building-snack+drink-north-a+drink-north-b|stalls": "017ed4ebcb4e3698f3a61ac6aed62525a0471935",
+  "east-wing-a+building-drink+building-snack+drink-north-a+drink-north-b": "f4fc92d67fd55d16585d1284d15b49b8d00e4ff3",
+  "east-wing-a+building-drink+building-snack+drink-north-a+drink-north-b|stalls": "207e10e9e6627e0012f2344502e91f5c58fadf33",
+  "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+drink-north-b": "75ba028a956b9fdd9e901c5d4cf5823291f70910",
+  "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+drink-north-b|stalls": "3d1e70507adbec967f49e3b85e759088d2c8e7ef",
+  "building-xoi+building-drink+building-snack+drink-north-a+drink-north-b": "d5119fb82cc0374188cb725400ebf5a493099c55",
+  "building-xoi+building-drink+building-snack+drink-north-a+drink-north-b|stalls": "87101baeb952996727a13c27fc7ea990c8ec9daf",
+  "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b": "506394dabe5e81e2a90036afa65055b9bc23e403",
+  "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b|stalls": "0be675516606bd29004b7abd8fa541a79953a135",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b": "b10c482696e7c5b4d5662aef3ba9816680b26c27",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b|stalls": "321cb69876063816ad7ca48e6f5161fc6621af1c",
+  "building-xoi+building-drink+xoi-north-a+drink-north-a+drink-north-b": "cd7a783c93b0c6c49b2f73e545696d45ceafc7c8",
+  "building-xoi+building-drink+xoi-north-a+drink-north-a+drink-north-b|stalls": "5325786d5d23ff854af73b38bfbdfa98d699eab1",
+  "east-wing-a+building-xoi+building-drink+xoi-north-a+drink-north-a+drink-north-b": "74a07fbd19849866a81632ce0605d067947d25e6",
+  "east-wing-a+building-xoi+building-drink+xoi-north-a+drink-north-a+drink-north-b|stalls": "8a8a9af9bdbc2dae401d750585daacf6726a4082",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+drink-north-a+drink-north-b": "fdfbd85f1183f9dc45dc06a960ac1fe735c2d4a2",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+drink-north-a+drink-north-b|stalls": "7854e4d8c428281b0e7a5044d9063ee4ac1d796c",
+  "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b": "22f304852049ef77aec1744df2ad4f3e18eddfcd",
+  "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b|stalls": "9aee1fbafb44003d2f31ea3072fc31ba56e92906",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b": "cd887f4fdc8c3d2194ccf08ab582d25bf7552fd9",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b|stalls": "63e861658cf38783c46dfde3097189a728cfab41",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b": "13b1f34e25888db0d43e145b3a996054bf2a371b",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b|stalls": "dfddfdeed761b12e220c5e34f72adfb672b5c801",
+  "building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b": "e8fc4c0d1e4a6624d56de7e1dbf8ddc067324948",
+  "building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b|stalls": "c99ea084f6f14f22f6d4694096fd06ae01e645a6",
+  "east-wing-a+building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b": "4a81df97076eb236ed9dcb6f6a8d2c29fa868015",
+  "east-wing-a+building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b|stalls": "33fe5a572bfa72e09834ac9a716b98828e8dc603",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b": "98072816667e40fe3b0fa131bcc6d4005c5e20c4",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b|stalls": "d6fcf5647214b6e7d2c064531482a0e99328175c",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b": "ead3fda68890a23b22b87a53183158e0323157d4",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b|stalls": "6b6fd65464be63649888a62b777e3ca0d097010a",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b": "f798183200170af070d895211cd1746846554d03",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b|stalls": "be4704d285fa41a1ff68cbed032afee3c52e51a2",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b": "2eb66500869c3b6efb35a6e143754640122f2b2e",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b|stalls": "4f65e5c9cb5727116fd0349e23f1cf8b1e7df06d",
+  "building-snack+snack-north-a": "fef52a528dc475430ab1f018b5bfc73a8b67662b",
+  "building-snack+snack-north-a|stalls": "6ac48b856f1bd48f8a3bd00b4fe5db0ae942ea0d",
+  "east-wing-a+building-snack+snack-north-a": "9e726d761e2419541675c58ffcfbebe569c01bab",
+  "east-wing-a+building-snack+snack-north-a|stalls": "31a04842c04adc1827e0513f354d39690e4ef3e9",
+  "east-wing-a+east-wing-b+building-snack+snack-north-a": "6ff0f4928b70af6bb3fb6d337c11a6be28b7525f",
+  "east-wing-a+east-wing-b+building-snack+snack-north-a|stalls": "e61c7f51585f87ee365374cefdf3ad5732f81edb",
+  "building-xoi+building-snack+snack-north-a": "7b15f2bd9565913653fe565222e76872acc4227f",
+  "building-xoi+building-snack+snack-north-a|stalls": "53160a9b778a34d5194fabcba950af07db2a5ff1",
+  "east-wing-a+building-xoi+building-snack+snack-north-a": "efca9ff3dd713b16c9cfde1972b5af8b14830bf3",
+  "east-wing-a+building-xoi+building-snack+snack-north-a|stalls": "c9062d269a44715677eaa848e52a7f4732f3dfbc",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+snack-north-a": "c1c83b4a265eeeb301e7a7e2edbe091d87e5b851",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+snack-north-a|stalls": "ebe7791eee0a07b88e8301e188e9259a6fceeecc",
+  "building-drink+building-snack+snack-north-a": "1c942fa2e4ca361f611f9f4f7da6063028f442ff",
+  "building-drink+building-snack+snack-north-a|stalls": "4a4d90481f51ee15a66944e25e3742fcc5a46c6c",
+  "east-wing-a+building-drink+building-snack+snack-north-a": "1b1a4ee86abdbeb29775c5255165c9cc1ae25aad",
+  "east-wing-a+building-drink+building-snack+snack-north-a|stalls": "0d4e9d33921ed2aa2b883133f51ee6f9838b796f",
+  "east-wing-a+east-wing-b+building-drink+building-snack+snack-north-a": "8faf7321a9dea10dd41dc87704adf9a3a6a50277",
+  "east-wing-a+east-wing-b+building-drink+building-snack+snack-north-a|stalls": "fb463a56722bb609e8626663a2ce306831949fcf",
+  "building-xoi+building-drink+building-snack+snack-north-a": "8c62261cd6aa6b7a1038bf9b1a8da3b606c681a5",
+  "building-xoi+building-drink+building-snack+snack-north-a|stalls": "5b5b6d7d9e2c1e5a8e067b05ad1c0023cef40937",
+  "east-wing-a+building-xoi+building-drink+building-snack+snack-north-a": "0ecd7083d49073f4764943c300e938dbd4e0271e",
+  "east-wing-a+building-xoi+building-drink+building-snack+snack-north-a|stalls": "85d43cf4b948666f4c8e040545fb7b60c8520c8e",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+snack-north-a": "5b3983a9df1944907eda38ae8a2dea31b0673c49",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+snack-north-a|stalls": "f791c0bb74d134edec4035a25bbc0bf047e4b9ef",
+  "building-xoi+building-snack+xoi-north-a+snack-north-a": "4f5dae3a47e9a0b588870f53ce467627cb858088",
+  "building-xoi+building-snack+xoi-north-a+snack-north-a|stalls": "d6d9447dbf8575a3aed9c4355f8d7382ec3d49f9",
+  "east-wing-a+building-xoi+building-snack+xoi-north-a+snack-north-a": "1e7a2c79e1b7f5f70793b9f34d5702d6cf68a03e",
+  "east-wing-a+building-xoi+building-snack+xoi-north-a+snack-north-a|stalls": "319ce8225852d0aa7f1e50e32a0e1bf6ee240732",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+snack-north-a": "cd17590a9f066d1bf4d3e3e13373430141c6975d",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+snack-north-a|stalls": "5431dbab72983048bcf79ba25d7aadd2ebab584b",
+  "building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a": "7e34d714a6c703f8b88c4cb3e9ab24f0ab71be58",
+  "building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a|stalls": "cb482c44253a13bc89b93028443ecdf4756d83f5",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a": "841dfeeea527298adb6356a9f93432056ad06c88",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a|stalls": "34ccc24a74f2194bc9d4006fb5db6cab1b71af87",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a": "64ca92f4d183e1cca599edd79b5fbf951d07fb13",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a|stalls": "e06b094ff8ad620da82b8356e5e0a4cd8d2c7abf",
+  "building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a": "038ab2aae0ede4de8de3cb5b069683e19e388ad0",
+  "building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a|stalls": "c73cc66cd5c14a841bb4d7c4b74db0ce7ca92e07",
+  "east-wing-a+building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a": "460480fcc4ee6c33d948793e30eacd9a109c399b",
+  "east-wing-a+building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a|stalls": "ca9e600800515c089d74cff075f3a159ea50db64",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a": "db9df5c7d1e4c91d5695284b92f26a5eca84a6b3",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a|stalls": "7ec9fea602c7011da9a74f4c43f93e54017355d9",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a": "5d26fab81118cff7f7078818db438315992a5c99",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a|stalls": "1dbc00954c1997d2d5132cccd8d9d39a5626cd40",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a": "556a65af231aebff3ba3053721084298e1eff1af",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a|stalls": "6458881465a3b4f45ef113f4ae1a6219d1985e3a",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a": "310cae465542576c5ad4fa5502a164831b8a3079",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a|stalls": "476fda7ff90199341807d1bc6d4fd6991f2018b9",
+  "building-drink+building-snack+drink-north-a+snack-north-a": "84a54d5934227550babf65f323ef3e36df6cbaa7",
+  "building-drink+building-snack+drink-north-a+snack-north-a|stalls": "6010e5fea6940e2f9247213e44dca52b715b462f",
+  "east-wing-a+building-drink+building-snack+drink-north-a+snack-north-a": "4cd89284fbb5bd7059dfa663cde589af89e3b0e3",
+  "east-wing-a+building-drink+building-snack+drink-north-a+snack-north-a|stalls": "c21c4be7418a63aab7af626dc0fc3fd0b2216dee",
+  "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+snack-north-a": "6817bd7dde632f8ab76c70f3f1b0c3c42633ef65",
+  "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+snack-north-a|stalls": "f12d2fbbeee2a76eedfedb4fc2042aeb1aee58aa",
+  "building-xoi+building-drink+building-snack+drink-north-a+snack-north-a": "0b650443ca4edc7fb5e0a9b49202d702d4a2cf00",
+  "building-xoi+building-drink+building-snack+drink-north-a+snack-north-a|stalls": "ce1cb2fc6c8d2f5b46e8852938dab39dc0e2bcb4",
+  "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+snack-north-a": "54ca3e0d419649411ba9abef74bbbd8a93e372cf",
+  "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+snack-north-a|stalls": "bc3cc90247593b06d74b241c02e9c4a7b65f93e2",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+snack-north-a": "c2704ad34a4bc259834bc886b6bd540a3b33a72f",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+snack-north-a|stalls": "f3ba4560287e7f10bf5f0e789ada1e31a97f480c",
+  "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a": "10e5ffd2fbcc21ad5cacaef7ee45d155129f46f0",
+  "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a|stalls": "cb5b49ea3c00654e4dfd4c03eac087bcdae85f6d",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a": "eb164283073def02b311ef1fed6e8b679dfcaedd",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a|stalls": "b8f7fa88d90ebb60370479b56ccb7c03952f14c8",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a": "9f3653c63c175b756739e07475a4605d63798174",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a|stalls": "a7a9b37de42146a6999f22fb8fedc144ecdacaf2",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a": "79e4bbbe67b457fd2373f230f4c2a8777cb6cbd6",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a|stalls": "0c37ae991083f973b37af8ca0f8e5be1ca53c674",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a": "5c6dd914c0b927143d4b3f5408901d97c599a5fb",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a|stalls": "d692e4379c89928f1443c6d768e5e80ea23473d2",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a": "4a1f1f9aeab8512ac9d4232cca2fab326579a240",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a|stalls": "3e2d04a8e88a40027a2bf6f94b527f46a8ddd169",
+  "building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a": "78b618f386725c8addce06cc8486a58c3a9b655f",
+  "building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a|stalls": "bdd62adb8d106b18ad6228b4d4b18f7deebf5ecb",
+  "east-wing-a+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a": "13f423a63ec3990e07fc377bd6c25d544c69b900",
+  "east-wing-a+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a|stalls": "ccab667c7b0d87dbf32fece0781fdb200a168e17",
+  "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a": "2314094db2b6a642932237210459ac23d0162dfb",
+  "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a|stalls": "fc3f405ec9ee0525c79e20b065909dd39fe476ff",
+  "building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a": "66e89c4edc977ca24bdc312612397fa7b5e0fd11",
+  "building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a|stalls": "b1599893797b563a295317e7aad1dc40ec9a13e7",
+  "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a": "3614ddbef466b9700b9aa16715a7179be851c7a3",
+  "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a|stalls": "1a4f19054a4415fa451eba96c52344461f6f4ecf",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a": "55b1a5e034f32722f352641d24682a7926dea77b",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a|stalls": "2c7a06adaa3f78e39cd716dc49deca4bb4ce685c",
+  "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a": "d932f514082b54644336869883da80da31b88484",
+  "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a|stalls": "695c19eb7c0f2334f52196ec29dbbbc197da1e43",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a": "06c086738ab5533319db82bbcd33092edf9acaa2",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a|stalls": "40fbdbbc16f11791fc7701dfaa66301435c57a5e",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a": "2ed13c229dd5688355c1a1e04ed3a459429c3923",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a|stalls": "c089bec5bea8ece0ee411522f0be9deb221a3830",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a": "11ac9bfb564eca18cfee7cc4d4e24ba0782e1c85",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a|stalls": "212351e7d840f55561895781149b500bbb2c4a4e",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a": "ae5c3ab50b4f2c9e19c724b79cd1aab44139c561",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a|stalls": "65ccda6788dd09c6acf1f22ff53554bc6a4f0a64",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a": "2680d6fe840dfc0443b66320a44932e7074f0b5f",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a|stalls": "979a707f33f715ab80883211013974be03e329a2",
+  "building-snack+snack-north-a+snack-north-b": "348d42020f5fecdf014042e6ad97837140fe3238",
+  "building-snack+snack-north-a+snack-north-b|stalls": "d482b800d8024bf86d9486de27e78afbb2e8d93c",
+  "east-wing-a+building-snack+snack-north-a+snack-north-b": "8d659c34808a65242be9f4d0deb002938bd58ef3",
+  "east-wing-a+building-snack+snack-north-a+snack-north-b|stalls": "b34054edd97a930d2f2cf941b9c9b1802930e77a",
+  "east-wing-a+east-wing-b+building-snack+snack-north-a+snack-north-b": "be6b1008e2608f4082b66091e6abca7ddd8249c2",
+  "east-wing-a+east-wing-b+building-snack+snack-north-a+snack-north-b|stalls": "1f993694b3659a16007e4eb4943f39061a35ef44",
+  "building-xoi+building-snack+snack-north-a+snack-north-b": "07b2fd83fb3baca121be346c23588d916fe9243b",
+  "building-xoi+building-snack+snack-north-a+snack-north-b|stalls": "aeeb44d0db4886011ff261915c9c715b92541a3d",
+  "east-wing-a+building-xoi+building-snack+snack-north-a+snack-north-b": "c13b94747765b7ba40745befeb0e3a6b61e59493",
+  "east-wing-a+building-xoi+building-snack+snack-north-a+snack-north-b|stalls": "1e79fdd7850c4ba4f8921c1be67cbcfe06669c9b",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+snack-north-a+snack-north-b": "04ebb9a8435f0e1fe7603303e973746640c81645",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+snack-north-a+snack-north-b|stalls": "fade6fc8b78aa9924f36c0f707e3faa0db20032e",
+  "building-drink+building-snack+snack-north-a+snack-north-b": "5b323b2a2614e34be515056cbb5aeeae966f6243",
+  "building-drink+building-snack+snack-north-a+snack-north-b|stalls": "57628f2f9c2d1d98658dee34541b3e90bae2cadc",
+  "east-wing-a+building-drink+building-snack+snack-north-a+snack-north-b": "0c60a0935a4be09f69dbe320067f0ed72428e70b",
+  "east-wing-a+building-drink+building-snack+snack-north-a+snack-north-b|stalls": "4fa562e440383833cccb9dbe48fbfc59942f62f1",
+  "east-wing-a+east-wing-b+building-drink+building-snack+snack-north-a+snack-north-b": "f48e02630257b54c3249a27ed59ff1245f1ab4ed",
+  "east-wing-a+east-wing-b+building-drink+building-snack+snack-north-a+snack-north-b|stalls": "3614249494eb01f898886db62f471a8af49bcc88",
+  "building-xoi+building-drink+building-snack+snack-north-a+snack-north-b": "a735df2afb3072b3f10903fb6e5199d8b0cac0d6",
+  "building-xoi+building-drink+building-snack+snack-north-a+snack-north-b|stalls": "1f156ee9ce7d3d336b02ff74b216193ce0a5d2be",
+  "east-wing-a+building-xoi+building-drink+building-snack+snack-north-a+snack-north-b": "d9583341d2f9241d9398e16b4d0192d7f3595129",
+  "east-wing-a+building-xoi+building-drink+building-snack+snack-north-a+snack-north-b|stalls": "f563e9cd78f748fd32e39933fa81656f36705f46",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+snack-north-a+snack-north-b": "798e127b693c72c1efd21959624b6e605c891e31",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+snack-north-a+snack-north-b|stalls": "7b699936931d08984e9fcf14c6e566e99e13b5fb",
+  "building-xoi+building-snack+xoi-north-a+snack-north-a+snack-north-b": "42cffb3fb87a86ea8321440a6dd97ca4329a2861",
+  "building-xoi+building-snack+xoi-north-a+snack-north-a+snack-north-b|stalls": "9aa7a32ba7c4bb01473b432a69dd560b944b0490",
+  "east-wing-a+building-xoi+building-snack+xoi-north-a+snack-north-a+snack-north-b": "5a76a5460240e4a921b710369cec8d85f4e09a83",
+  "east-wing-a+building-xoi+building-snack+xoi-north-a+snack-north-a+snack-north-b|stalls": "98c56c9b412c47af123a16bc762b8178c7c7ee82",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+snack-north-a+snack-north-b": "4ef0ac6ddedaff24b3dfde5198088942d5afbb59",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+snack-north-a+snack-north-b|stalls": "4ee6ae8c05ff26ac9ea526a52da0cb2bed8b68d5",
+  "building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a+snack-north-b": "3f9de3728689465a13cf44b5b52b2e380a7d2f42",
+  "building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a+snack-north-b|stalls": "ccdcdb5be864f8d60a74359ad12ae4a0b3b93e4c",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a+snack-north-b": "a461e3770152a7966b06807becee8b8aef7ae256",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a+snack-north-b|stalls": "5bf1caea4767e3ee459adb4f6f318e4c098a7c25",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a+snack-north-b": "ca78b308f10ad791f83019d5f36f3071570c4909",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a+snack-north-b|stalls": "ab07f8efd2a75d2c075cfae6f99b86b19f8ef8b6",
+  "building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b": "fc7134e398f4bf7696bdd580e80fca6b62f523b1",
+  "building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b|stalls": "a14cb16fc2bcab375bac5869faa97ff71d4c9337",
+  "east-wing-a+building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b": "4d48d5ff5033a7967f0d85e968ee26b6ec5c32fd",
+  "east-wing-a+building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b|stalls": "490aea53b9c6a2c57e920c5db155cb196de4d91a",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b": "b9a0d227611d4c9c5e309f1fa611f54e29a73c58",
+  "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b|stalls": "5b9c3d2bf76586671826a1b584d002f9a0eff55c",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b": "5ac207b153d367d7cbfa79ed53d57dd962a196ac",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b|stalls": "083f45b3e9c500b091b3e6be37cd8303c919111d",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b": "859304ddffcd830cbefd622b1a8112a63157bf9d",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b|stalls": "8629d6a6fd9b21dd882dfd7617330fb755c99699",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b": "f8281573b7c0a03dd255a4723d8cf5f858986cf1",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b|stalls": "cd04ebfe64598045e1f510f4a541f3535765f522",
+  "building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b": "3ed2522b43513a0cb3864a37bf05f26723cdb9f7",
+  "building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b|stalls": "8967fbdda4d6cfbef0fc056ded7d3d3c4142bac2",
+  "east-wing-a+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b": "0b8dfff5fd63abafad9fb2682a02c356b83c8134",
+  "east-wing-a+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b|stalls": "43f1c5dd3af9cab656e8905789a2b3955b493204",
+  "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b": "2e1fd12628a103ec68ebde1c37f0a5eac23870a7",
+  "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b|stalls": "3cc63795076589e72f8cd93e5f89283f5e606151",
+  "building-xoi+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b": "b7f61ac07205524f6704824d5500e671776d1f72",
+  "building-xoi+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b|stalls": "9a88f2ba2635be7226b7fa8c300425086baad3cb",
+  "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b": "54c24dc3cd296529dd3a200f8f117259b2bc47cb",
+  "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b|stalls": "af8b8092a7567f3125d5940677e3f3b9ec0cf001",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b": "7b8806f7ef21c51a494879057b06245039af4005",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b|stalls": "d693d7b91686dfe4e0a6b2841e6bb12dcb865469",
+  "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a+snack-north-b": "fd130b9108c0b1c21c368eca0cc067bbc8b3fae1",
+  "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a+snack-north-b|stalls": "def697bc2a832c149d263175feb19634e613df11",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a+snack-north-b": "0f515f15a767c876ea6c23d848f4d2b50f425482",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a+snack-north-b|stalls": "efe27e2a03ff1b231cac302b9187a30770e2d277",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a+snack-north-b": "ead16b839077f777909708a9416d9ec3450d768d",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a+snack-north-b|stalls": "780f4294f128c2be088d6f5b7332c11b2e256792",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a+snack-north-b": "9995172c235dbc78e47486be255858b530face07",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a+snack-north-b|stalls": "60deed14af9d9692f958d215610a57340d6115d4",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a+snack-north-b": "fd9f58cf91f1c12809b8b6f55fe5c820f3298716",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a+snack-north-b|stalls": "18dd57224587a1bcb4eae73f2bda18fd321e8ca8",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a+snack-north-b": "2e4a54d8c2706ce52b4a1de86afbd3024311c1d5",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a+snack-north-b|stalls": "b58adf91df850d57ac125478ffec27466d2f881f",
+  "building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b": "f876fc8605966966322e9472b07dec8aad705a71",
+  "building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b|stalls": "a4f505ca1c080941414394f7eb68a22a62ee88a3",
+  "east-wing-a+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b": "4c17ab5031810345bd59deb28da4eab03123e487",
+  "east-wing-a+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b|stalls": "0b0e08d90d750d269f66557ceee01b2176831a76",
+  "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b": "8e57f2eabc5e7b1f278e71626e2b79bbfbc91204",
+  "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b|stalls": "b1458abbba09dab19b64c4f3995773aa7bf20fc5",
+  "building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b": "d61d57b8fa482ed42e3fe5b7659183b12b930e14",
+  "building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b|stalls": "a4ec1212311ba9574ed348238f177d3039cc8d8d",
+  "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b": "3d64275f14500c7c341a02798f331253d251e119",
+  "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b|stalls": "8691f31583cae5afa5a6368d6b6c40c87aa19138",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b": "7a8e9acfb7acb8e001d84c3aceb034dd3fb9e24e",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b|stalls": "c8cf7eb50b427880e32698e19bd1fac56b2214b4",
+  "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a+snack-north-b": "8f485f264c5c65500e11b3fe7cafa4b827f7fa67",
+  "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a+snack-north-b|stalls": "7364530b602a004bdcded3697ad2400f03838901",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a+snack-north-b": "898e8ae80db0a5166d967a70b65384f750dfd0ca",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a+snack-north-b|stalls": "7a7ca6b1ba37d89d27a350a3245556e9785d3a59",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a+snack-north-b": "dcfea4a11c5947f6384357f24f60e8e474f09476",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a+snack-north-b|stalls": "844c6353d6dfc4582ac0648b0ba120d53c95e09e",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a+snack-north-b": "372e85871019a71643a1ff990b60a339221ea821",
+  "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a+snack-north-b|stalls": "2db08ead223dd0d9f41b2b83a3f699109d3f5276",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a+snack-north-b": "4d7c8a7f996291f23f27894be94c656b2a63a643",
+  "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a+snack-north-b|stalls": "f5bb07c43f139e995b9a6d9ef9d9a35ddacdc45c",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a+snack-north-b": "aa45bd187c4a91d48b0cd23cb4a5bd0ba201964c",
+  "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a+snack-north-b|stalls": "0a49baea6937fe6b4d0e06bbe08ba470b1ed6e3b"
+ },
+ "buildingAt": [
+  "....................................",
+  "....................................",
+  "....................................",
+  "xxxxxxx..............sssssdddddddddd",
+  "xxxxxxx..............sssssdddddddddd",
+  "xxxxxxx..............sssssdddddddddd",
+  "xxxxxxx..............sssssdddddddddd",
+  "xxxxxxx..............sssssdddddddddd",
+  "xxxxxxx..............sssssdddddddddd",
+  "xxxxxxmmmmmmmmmmmmmmmmssssdddddddddd",
+  "xxxxxxmmmmmmmmmmmmmmmmssssdddddddddd",
+  "xxxxxxmmmmmmmmmmmmmmmmssssdddddddddd",
+  "xxxxxxmmmmmmmmmmmmmmmmssssdddddddddd",
+  "xxxxxxmmmmmmmmmmmmmmmmssssdddddddddd",
+  "xxxxxxmmmmmmmmmmmmmmmmssssdddddddddd",
+  "xxxxxxmmmmmmmmmmmmmmmmssssdddddddddd",
+  "xxxxxxmmmmmmmmmmmmmmmmssssdddddddddd",
+  "....................................",
+  "....................................",
+  "....................................",
+  "....................................",
+  "...................................."
+ ],
+ "buildingOfTiles": [
+  "....................................",
+  "....................................",
+  "....................................",
+  "....................................",
+  ".xxxxx................ssss.dddddddd.",
+  ".xxxxx................ssss.dddddddd.",
+  ".xxxxx................ssss.dddddddd.",
+  ".xxxxx................ssss.dddddddd.",
+  ".xxxxx................ssss.dddddddd.",
+  ".xxxxxmmmmmmmmmmmmmmmmssss.dddddddd.",
+  ".xxxxxmmmmmmmmmmmmmmmmssss.dddddddd.",
+  ".xxxxxmmmmmmmmmmmmmmmmssss.dddddddd.",
+  ".xxxxxmmmmmmmmmmmmmmmmssss.dddddddd.",
+  ".xxxxxmmmmmmmmmmmmmmmmssss.dddddddd.",
+  ".xxxxxmmmmmmmmmmmmmmmmssss.dddddddd.",
+  ".xxxxxmmmmmmmmmmmmmmmmssss.dddddddd.",
+  "......mmmmmmmmmmmmmmmm..............",
+  "....................................",
+  "....................................",
+  "....................................",
+  "....................................",
+  "...................................."
+ ],
+ "paths": {
+  "none:main:west": {
+   "length": 13,
+   "digest": "8579b70e7101463918f955b549aee1e2e7a7a752"
+  },
+  "none:main:east": {
+   "length": 32,
+   "digest": "bd3446389eecba18c5a30abacaf3b5ad62456902"
+  },
+  "all:main:west": {
+   "length": 13,
+   "digest": "8579b70e7101463918f955b549aee1e2e7a7a752"
+  },
+  "all:main:east": {
+   "length": 32,
+   "digest": "bd3446389eecba18c5a30abacaf3b5ad62456902"
+  },
+  "all:xoi:west": {
+   "length": 5,
+   "digest": "2abe2e9a72f2855551925639bdbfee042b3450b7"
+  },
+  "all:xoi:east": {
+   "length": 40,
+   "digest": "8084f3d596caa8c515999cf5b182a1485c7f4133"
+  },
+  "all:drink:west": {
+   "length": 36,
+   "digest": "d21b55fefc03db92e3c33171fa2dcf804811e69b"
+  },
+  "all:drink:east": {
+   "length": 9,
+   "digest": "a4184394a9ae2833dcc76947573790f0386d9576"
+  },
+  "all:snack:west": {
+   "length": 28,
+   "digest": "d8bc667a7911ee6a4feaa88ae9953a07ec21e0a9"
+  },
+  "all:snack:east": {
+   "length": 17,
+   "digest": "7768fde731d4f815aa86025f9d51c4b553234273"
+  }
+ },
+ "geometry": "0d001b25b789b244b93f7aeb68c1de1be02a2ed8",
+ "geometryDump": {
+  "map": {
+   "MAP_WIDTH": 36,
+   "MAP_HEIGHT": 22,
+   "MAP_ORIGIN_Y": -6,
+   "STORE_BOUNDS": {
+    "left": 6,
+    "right": 13,
+    "top": 3,
+    "bottom": 10
+   },
+   "PLAY_MAP_PX": {
+    "x0": 0,
+    "y0": -192,
+    "x1": 1152,
+    "y1": 512
+   }
+  },
+  "buildings": [
+   {
+    "id": "main",
+    "bounds": {
+     "left": 6,
+     "right": 21,
+     "top": 3,
+     "bottom": 10
+    },
+    "maxBounds": {
+     "left": 6,
+     "right": 21,
+     "top": 3,
+     "bottom": 10
+    },
+    "doorTiles": [
+     {
+      "x": 9,
+      "y": 10
+     },
+     {
+      "x": 10,
+      "y": 10
+     }
+    ],
+    "entranceTile": {
+     "x": 9,
+     "y": 11
+    }
+   },
+   {
+    "id": "xoi",
+    "bounds": {
+     "left": 0,
+     "right": 6,
+     "top": 3,
+     "bottom": 10
+    },
+    "maxBounds": {
+     "left": 0,
+     "right": 6,
+     "top": -3,
+     "bottom": 10
+    },
+    "doorTiles": [
+     {
+      "x": 1,
+      "y": 10
+     },
+     {
+      "x": 2,
+      "y": 10
+     }
+    ],
+    "entranceTile": {
+     "x": 1,
+     "y": 11
+    },
+    "plotId": "building-xoi",
+    "expansionPlotIds": [
+     "xoi-north-a",
+     "xoi-north-b"
+    ]
+   },
+   {
+    "id": "drink",
+    "bounds": {
+     "left": 26,
+     "right": 35,
+     "top": 3,
+     "bottom": 10
+    },
+    "maxBounds": {
+     "left": 26,
+     "right": 35,
+     "top": -3,
+     "bottom": 10
+    },
+    "doorTiles": [
+     {
+      "x": 30,
+      "y": 10
+     },
+     {
+      "x": 31,
+      "y": 10
+     }
+    ],
+    "entranceTile": {
+     "x": 30,
+     "y": 11
+    },
+    "plotId": "building-drink",
+    "expansionPlotIds": [
+     "drink-north-a",
+     "drink-north-b"
+    ]
+   },
+   {
+    "id": "snack",
+    "bounds": {
+     "left": 21,
+     "right": 26,
+     "top": 3,
+     "bottom": 10
+    },
+    "maxBounds": {
+     "left": 21,
+     "right": 26,
+     "top": -3,
+     "bottom": 10
+    },
+    "doorTiles": [
+     {
+      "x": 22,
+      "y": 10
+     },
+     {
+      "x": 23,
+      "y": 10
+     }
+    ],
+    "entranceTile": {
+     "x": 22,
+     "y": 11
+    },
+    "plotId": "building-snack",
+    "expansionPlotIds": [
+     "snack-north-a",
+     "snack-north-b"
+    ]
+   }
+  ],
+  "buildingTop": [
+   [
+    "",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-xoi",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-drink",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-drink",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-drink",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-snack",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-snack",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-snack",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-snack",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-snack",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-snack",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-drink+building-snack",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-drink+building-snack",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-drink+building-snack",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack",
+    [
+     3,
+     3,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+xoi-north-a",
+    [
+     3,
+     0,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+xoi-north-a",
+    [
+     3,
+     0,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+xoi-north-a",
+    [
+     3,
+     0,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+xoi-north-a",
+    [
+     3,
+     0,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+xoi-north-a",
+    [
+     3,
+     0,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a",
+    [
+     3,
+     0,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-snack+xoi-north-a",
+    [
+     3,
+     0,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-snack+xoi-north-a",
+    [
+     3,
+     0,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a",
+    [
+     3,
+     0,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a",
+    [
+     3,
+     0,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a",
+    [
+     3,
+     0,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a",
+    [
+     3,
+     0,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+xoi-north-a+xoi-north-b",
+    [
+     3,
+     -3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+xoi-north-a+xoi-north-b",
+    [
+     3,
+     -3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+xoi-north-a+xoi-north-b",
+    [
+     3,
+     -3,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+xoi-north-a+xoi-north-b",
+    [
+     3,
+     -3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+xoi-north-a+xoi-north-b",
+    [
+     3,
+     -3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+xoi-north-b",
+    [
+     3,
+     -3,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-snack+xoi-north-a+xoi-north-b",
+    [
+     3,
+     -3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-snack+xoi-north-a+xoi-north-b",
+    [
+     3,
+     -3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+xoi-north-b",
+    [
+     3,
+     -3,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b",
+    [
+     3,
+     -3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b",
+    [
+     3,
+     -3,
+     3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b",
+    [
+     3,
+     -3,
+     3,
+     3
+    ]
+   ],
+   [
+    "building-drink+drink-north-a",
+    [
+     3,
+     3,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-drink+drink-north-a",
+    [
+     3,
+     3,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-drink+drink-north-a",
+    [
+     3,
+     3,
+     0,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+drink-north-a",
+    [
+     3,
+     3,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+drink-north-a",
+    [
+     3,
+     3,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+drink-north-a",
+    [
+     3,
+     3,
+     0,
+     3
+    ]
+   ],
+   [
+    "building-drink+building-snack+drink-north-a",
+    [
+     3,
+     3,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-drink+building-snack+drink-north-a",
+    [
+     3,
+     3,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a",
+    [
+     3,
+     3,
+     0,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+drink-north-a",
+    [
+     3,
+     3,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a",
+    [
+     3,
+     3,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a",
+    [
+     3,
+     3,
+     0,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+xoi-north-a+drink-north-a",
+    [
+     3,
+     0,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+xoi-north-a+drink-north-a",
+    [
+     3,
+     0,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+drink-north-a",
+    [
+     3,
+     0,
+     0,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a",
+    [
+     3,
+     0,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a",
+    [
+     3,
+     0,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a",
+    [
+     3,
+     0,
+     0,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a",
+    [
+     3,
+     -3,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a",
+    [
+     3,
+     -3,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a",
+    [
+     3,
+     -3,
+     0,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a",
+    [
+     3,
+     -3,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a",
+    [
+     3,
+     -3,
+     0,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a",
+    [
+     3,
+     -3,
+     0,
+     3
+    ]
+   ],
+   [
+    "building-drink+drink-north-a+drink-north-b",
+    [
+     3,
+     3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-drink+drink-north-a+drink-north-b",
+    [
+     3,
+     3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-drink+drink-north-a+drink-north-b",
+    [
+     3,
+     3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+drink-north-a+drink-north-b",
+    [
+     3,
+     3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+drink-north-a+drink-north-b",
+    [
+     3,
+     3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+drink-north-a+drink-north-b",
+    [
+     3,
+     3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "building-drink+building-snack+drink-north-a+drink-north-b",
+    [
+     3,
+     3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-drink+building-snack+drink-north-a+drink-north-b",
+    [
+     3,
+     3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+drink-north-b",
+    [
+     3,
+     3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+drink-north-a+drink-north-b",
+    [
+     3,
+     3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b",
+    [
+     3,
+     3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b",
+    [
+     3,
+     3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+xoi-north-a+drink-north-a+drink-north-b",
+    [
+     3,
+     0,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+xoi-north-a+drink-north-a+drink-north-b",
+    [
+     3,
+     0,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+drink-north-a+drink-north-b",
+    [
+     3,
+     0,
+     -3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b",
+    [
+     3,
+     0,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b",
+    [
+     3,
+     0,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b",
+    [
+     3,
+     0,
+     -3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b",
+    [
+     3,
+     -3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b",
+    [
+     3,
+     -3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b",
+    [
+     3,
+     -3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b",
+    [
+     3,
+     -3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b",
+    [
+     3,
+     -3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b",
+    [
+     3,
+     -3,
+     -3,
+     3
+    ]
+   ],
+   [
+    "building-snack+snack-north-a",
+    [
+     3,
+     3,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-snack+snack-north-a",
+    [
+     3,
+     3,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-snack+snack-north-a",
+    [
+     3,
+     3,
+     3,
+     0
+    ]
+   ],
+   [
+    "building-xoi+building-snack+snack-north-a",
+    [
+     3,
+     3,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-snack+snack-north-a",
+    [
+     3,
+     3,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-snack+snack-north-a",
+    [
+     3,
+     3,
+     3,
+     0
+    ]
+   ],
+   [
+    "building-drink+building-snack+snack-north-a",
+    [
+     3,
+     3,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-drink+building-snack+snack-north-a",
+    [
+     3,
+     3,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-drink+building-snack+snack-north-a",
+    [
+     3,
+     3,
+     3,
+     0
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+snack-north-a",
+    [
+     3,
+     3,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+snack-north-a",
+    [
+     3,
+     3,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+snack-north-a",
+    [
+     3,
+     3,
+     3,
+     0
+    ]
+   ],
+   [
+    "building-xoi+building-snack+xoi-north-a+snack-north-a",
+    [
+     3,
+     0,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-snack+xoi-north-a+snack-north-a",
+    [
+     3,
+     0,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+snack-north-a",
+    [
+     3,
+     0,
+     3,
+     0
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a",
+    [
+     3,
+     0,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a",
+    [
+     3,
+     0,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a",
+    [
+     3,
+     0,
+     3,
+     0
+    ]
+   ],
+   [
+    "building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a",
+    [
+     3,
+     -3,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a",
+    [
+     3,
+     -3,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a",
+    [
+     3,
+     -3,
+     3,
+     0
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a",
+    [
+     3,
+     -3,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a",
+    [
+     3,
+     -3,
+     3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a",
+    [
+     3,
+     -3,
+     3,
+     0
+    ]
+   ],
+   [
+    "building-drink+building-snack+drink-north-a+snack-north-a",
+    [
+     3,
+     3,
+     0,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-drink+building-snack+drink-north-a+snack-north-a",
+    [
+     3,
+     3,
+     0,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+snack-north-a",
+    [
+     3,
+     3,
+     0,
+     0
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+drink-north-a+snack-north-a",
+    [
+     3,
+     3,
+     0,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+snack-north-a",
+    [
+     3,
+     3,
+     0,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+snack-north-a",
+    [
+     3,
+     3,
+     0,
+     0
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a",
+    [
+     3,
+     0,
+     0,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a",
+    [
+     3,
+     0,
+     0,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a",
+    [
+     3,
+     0,
+     0,
+     0
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a",
+    [
+     3,
+     -3,
+     0,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a",
+    [
+     3,
+     -3,
+     0,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a",
+    [
+     3,
+     -3,
+     0,
+     0
+    ]
+   ],
+   [
+    "building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a",
+    [
+     3,
+     3,
+     -3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a",
+    [
+     3,
+     3,
+     -3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a",
+    [
+     3,
+     3,
+     -3,
+     0
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a",
+    [
+     3,
+     3,
+     -3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a",
+    [
+     3,
+     3,
+     -3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a",
+    [
+     3,
+     3,
+     -3,
+     0
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a",
+    [
+     3,
+     0,
+     -3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a",
+    [
+     3,
+     0,
+     -3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a",
+    [
+     3,
+     0,
+     -3,
+     0
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a",
+    [
+     3,
+     -3,
+     -3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a",
+    [
+     3,
+     -3,
+     -3,
+     0
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a",
+    [
+     3,
+     -3,
+     -3,
+     0
+    ]
+   ],
+   [
+    "building-snack+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-snack+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-snack+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "building-xoi+building-snack+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-snack+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-snack+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "building-drink+building-snack+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-drink+building-snack+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-drink+building-snack+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "building-xoi+building-snack+xoi-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     0,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-snack+xoi-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     0,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     0,
+     3,
+     -3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     0,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     0,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     0,
+     3,
+     -3
+    ]
+   ],
+   [
+    "building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     -3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     -3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     -3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     -3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     -3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     -3,
+     3,
+     -3
+    ]
+   ],
+   [
+    "building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     0,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     0,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     0,
+     -3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     0,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     0,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     0,
+     -3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     0,
+     0,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     0,
+     0,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     0,
+     0,
+     -3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     -3,
+     0,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     -3,
+     0,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+snack-north-a+snack-north-b",
+    [
+     3,
+     -3,
+     0,
+     -3
+    ]
+   ],
+   [
+    "building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     -3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     -3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     -3,
+     -3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     -3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     -3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+drink-north-a+drink-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     3,
+     -3,
+     -3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     0,
+     -3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     0,
+     -3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+drink-north-a+drink-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     0,
+     -3,
+     -3
+    ]
+   ],
+   [
+    "building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     -3,
+     -3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     -3,
+     -3,
+     -3
+    ]
+   ],
+   [
+    "east-wing-a+east-wing-b+building-xoi+building-drink+building-snack+xoi-north-a+xoi-north-b+drink-north-a+drink-north-b+snack-north-a+snack-north-b",
+    [
+     3,
+     -3,
+     -3,
+     -3
+    ]
+   ]
+  ],
+  "AWNING_SPANS": {
+   "main": {
+    "x0": 224,
+    "x1": 352
+   },
+   "xoi": {
+    "x0": 16,
+    "x1": 128
+   },
+   "drink": {
+    "x0": 928,
+    "x1": 1056
+   },
+   "snack": {
+    "x0": 688,
+    "x1": 816
+   }
+  },
+  "ROOF_EAVES": [
+   {
+    "id": "main-awning",
+    "awning": "main",
+    "x0": 232,
+    "x1": 344,
+    "y": 328
+   },
+   {
+    "id": "xoi-front",
+    "awning": "xoi",
+    "x0": 24,
+    "x1": 120,
+    "y": 342
+   },
+   {
+    "id": "drink-front",
+    "awning": "drink",
+    "x0": 936,
+    "x1": 1048,
+    "y": 342
+   },
+   {
+    "id": "snack-front",
+    "awning": "snack",
+    "x0": 696,
+    "x1": 808,
+    "y": 342
+   }
+  ],
+  "SHELTER_ZONES": [
+   {
+    "id": "store-inside",
+    "kind": "building",
+    "x0": 192,
+    "y0": 96,
+    "x1": 448,
+    "y1": 352,
+    "priority": 3
+   },
+   {
+    "id": "warehouse-inside",
+    "kind": "building",
+    "x0": 192,
+    "y0": -96,
+    "x1": 448,
+    "y1": 128,
+    "priority": 3
+   },
+   {
+    "id": "xoi-inside",
+    "kind": "building",
+    "x0": 0,
+    "y0": 96,
+    "x1": 224,
+    "y1": 352,
+    "priority": 3
+   },
+   {
+    "id": "drink-inside",
+    "kind": "building",
+    "x0": 832,
+    "y0": 96,
+    "x1": 1152,
+    "y1": 352,
+    "priority": 3
+   },
+   {
+    "id": "snack-inside",
+    "kind": "building",
+    "x0": 672,
+    "y0": 96,
+    "x1": 864,
+    "y1": 352,
+    "priority": 3
+   },
+   {
+    "id": "store-awning",
+    "kind": "awning",
+    "awning": "main",
+    "x0": 224,
+    "y0": 352,
+    "x1": 352,
+    "y1": 396,
+    "priority": 2
+   },
+   {
+    "id": "xoi-awning",
+    "kind": "awning",
+    "awning": "xoi",
+    "x0": 16,
+    "y0": 352,
+    "x1": 128,
+    "y1": 396,
+    "priority": 1
+   },
+   {
+    "id": "drink-awning",
+    "kind": "awning",
+    "awning": "drink",
+    "x0": 928,
+    "y0": 352,
+    "x1": 1056,
+    "y1": 396,
+    "priority": 1
+   },
+   {
+    "id": "snack-awning",
+    "kind": "awning",
+    "awning": "snack",
+    "x0": 688,
+    "y0": 352,
+    "x1": 816,
+    "y1": 396,
+    "priority": 1
+   }
+  ],
+  "SHOP_FRONT": {
+   "x": 304,
+   "y": 378
+  },
+  "SHOP_AWNING_PX": {
+   "x0": 224,
+   "x1": 352,
+   "y0": 352,
+   "y1": 396
+  },
+  "WAREHOUSE_BOUNDS": {
+   "left": 6,
+   "right": 13,
+   "top": -3,
+   "bottom": 3
+  },
+  "WAREHOUSE_CENTER": {
+   "x": 320,
+   "y": 16
+  },
+  "WAREHOUSE_DOOR_LEFT": 9,
+  "WAREHOUSE_ENTRANCE": {
+   "x": 320,
+   "y": 112
+  },
+  "WAREHOUSE_FIXTURES": [
+   {
+    "id": "warehouse_dry_rack",
+    "type": "warehouse_dry",
+    "tileX": 7,
+    "tileY": -1,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Nhà kho · Giá hàng khô"
+   },
+   {
+    "id": "warehouse_cold_storage",
+    "type": "warehouse_cold",
+    "tileX": 11,
+    "tileY": -1,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Nhà kho · Góc bảo quản lạnh"
+   },
+   {
+    "id": "warehouse_receiving_desk",
+    "type": "warehouse_receiving",
+    "tileX": 11,
+    "tileY": 1,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Nhà kho · Bàn nhận hàng"
+   }
+  ],
+  "SHOPKEEPER_TILE": {
+   "x": 8,
+   "y": 7
+  },
+  "SHOPKEEPER_POSITION": {
+   "x": 272,
+   "y": 254
+  },
+  "ONLINE_SPAWN_POINTS": [
+   {
+    "x": 272,
+    "y": 400
+   },
+   {
+    "x": 368,
+    "y": 400
+   }
+  ],
+  "ENTRANCE_TILE": {
+   "x": 9,
+   "y": 11
+  },
+  "INITIAL_FIXTURES": [
+   {
+    "id": "shelf_wooden_noodles",
+    "type": "shelf_wooden",
+    "tileX": 8,
+    "tileY": 5,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "assignedProductId": "mi_hao_hao",
+    "currentStock": 12,
+    "maxCapacity": 20,
+    "label": "Kệ Gỗ 01 - Mì Gói & Lương Khô"
+   },
+   {
+    "id": "shelf_wooden_drinks",
+    "type": "shelf_wooden",
+    "tileX": 11,
+    "tileY": 5,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "assignedProductId": "xa_xi_chuong_duong",
+    "currentStock": 8,
+    "maxCapacity": 20,
+    "label": "Kệ Gỗ 02 - Nước Ngọt & Bánh Kẹo"
+   },
+   {
+    "id": "cashier_counter_wood",
+    "type": "cashier_counter",
+    "tileX": 7,
+    "tileY": 8,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Bàn Thu Ngân & Hòm Tiền Lẻ"
+   },
+   {
+    "id": "refrigerator_small",
+    "type": "refrigerator",
+    "tileX": 11,
+    "tileY": 7,
+    "widthTiles": 1,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 12,
+    "label": "Tủ mát nhỏ"
+   }
+  ],
+  "XOI_DEFAULT_FIXTURES": [
+   {
+    "id": "xoi_thung_ngam",
+    "type": "kitchen_station",
+    "tileX": 1,
+    "tileY": 4,
+    "widthTiles": 1,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Thùng ngâm nếp",
+    "shopId": "thung_ngam",
+    "slotCount": 1
+   },
+   {
+    "id": "xoi_xung_hap",
+    "type": "kitchen_station",
+    "tileX": 2,
+    "tileY": 4,
+    "widthTiles": 1,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Xửng hấp xôi",
+    "shopId": "xung_hap",
+    "slotCount": 1
+   },
+   {
+    "id": "xoi_quay_xoi",
+    "type": "kitchen_station",
+    "tileX": 3,
+    "tileY": 4,
+    "widthTiles": 1,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Quầy xôi",
+    "shopId": "quay_xoi",
+    "slotCount": 1
+   },
+   {
+    "id": "xoi_shelf",
+    "type": "shelf_wooden",
+    "tileX": 4,
+    "tileY": 4,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 20,
+    "label": "Kệ xôi",
+    "shopId": "shelf",
+    "slotCount": 12
+   },
+   {
+    "id": "xoi_table",
+    "type": "dining_table",
+    "tileX": 5,
+    "tileY": 6,
+    "widthTiles": 1,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Bàn 2 chỗ",
+    "shopId": "food_table_2",
+    "slotCount": 1
+   },
+   {
+    "id": "xoi_cashier_counter",
+    "type": "cashier_counter",
+    "tileX": 2,
+    "tileY": 8,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Quầy thu ngân tiệm xôi"
+   }
+  ],
+  "DRINK_DEFAULT_FIXTURES": [
+   {
+    "id": "drink_counter_1",
+    "type": "kitchen_station",
+    "tileX": 27,
+    "tileY": 4,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Quầy nước",
+    "shopId": "drink_counter",
+    "slotCount": 1
+   },
+   {
+    "id": "drink_blender_1",
+    "type": "kitchen_station",
+    "tileX": 29,
+    "tileY": 4,
+    "widthTiles": 1,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Máy xay",
+    "shopId": "blender",
+    "slotCount": 1
+   },
+   {
+    "id": "drink_press_1",
+    "type": "kitchen_station",
+    "tileX": 30,
+    "tileY": 4,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Máy ép mía",
+    "shopId": "sugarcane_press",
+    "slotCount": 1
+   },
+   {
+    "id": "drink_shelf",
+    "type": "shelf_wooden",
+    "tileX": 33,
+    "tileY": 4,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 20,
+    "label": "Kệ nước",
+    "shopId": "shelf",
+    "slotCount": 12
+   },
+   {
+    "id": "drink_table_a",
+    "type": "dining_table",
+    "tileX": 33,
+    "tileY": 7,
+    "widthTiles": 1,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Bàn nước 2 chỗ",
+    "shopId": "drink_table_2",
+    "slotCount": 1
+   },
+   {
+    "id": "drink_table_b",
+    "type": "dining_table",
+    "tileX": 33,
+    "tileY": 8,
+    "widthTiles": 1,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Bàn nước 2 chỗ",
+    "shopId": "drink_table_2",
+    "slotCount": 1
+   },
+   {
+    "id": "drink_cashier_counter",
+    "type": "cashier_counter",
+    "tileX": 28,
+    "tileY": 8,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Quầy thu ngân quán nước"
+   }
+  ],
+  "SNACK_DEFAULT_FIXTURES": [
+   {
+    "id": "snack_chao_xao",
+    "type": "kitchen_station",
+    "tileX": 22,
+    "tileY": 4,
+    "widthTiles": 1,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Chảo xào",
+    "shopId": "chao_xao",
+    "slotCount": 1
+   },
+   {
+    "id": "snack_chao_chien",
+    "type": "kitchen_station",
+    "tileX": 23,
+    "tileY": 4,
+    "widthTiles": 1,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Chảo chiên",
+    "shopId": "chao_chien",
+    "slotCount": 1
+   },
+   {
+    "id": "snack_shelf",
+    "type": "shelf_wooden",
+    "tileX": 24,
+    "tileY": 4,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 20,
+    "label": "Kệ ăn vặt",
+    "shopId": "shelf",
+    "slotCount": 12
+   },
+   {
+    "id": "snack_table",
+    "type": "dining_table",
+    "tileX": 25,
+    "tileY": 6,
+    "widthTiles": 1,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Bàn 2 chỗ",
+    "shopId": "food_table_2",
+    "slotCount": 1
+   },
+   {
+    "id": "snack_cashier_counter",
+    "type": "cashier_counter",
+    "tileX": 24,
+    "tileY": 8,
+    "widthTiles": 2,
+    "heightTiles": 1,
+    "rotation": 0,
+    "currentStock": 0,
+    "maxCapacity": 0,
+    "label": "Quầy thu ngân quán ăn vặt"
+   }
+  ],
+  "fence": [
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "...............######...............",
+   "....................................",
+   "....................................",
+   "....................................",
+   "....................................",
+   "...................................."
+  ]
+ },
+ "simulation": {
+  "base": {
+   "days": [
+    {
+     "day": 1,
+     "customersServed": 228,
+     "revenue": 4169500,
+     "netProfit": 1234500,
+     "sales": "e526b479465fbd86a4041e654f4c59c5a866befc"
+    },
+    {
+     "day": 2,
+     "customersServed": 233,
+     "revenue": 4528000,
+     "netProfit": 1305000,
+     "sales": "f3899b23e9506588e274e0f45b89b00abeb8ea58"
+    },
+    {
+     "day": 3,
+     "customersServed": 231,
+     "revenue": 3866000,
+     "netProfit": 1026000,
+     "sales": "51eadc2f26551f7bf8db5f7e6d85ed0bbcbf9afb"
+    }
+   ],
+   "money": 22553500,
+   "fixtures": "c9afa8cb47a3f771695ac61c5c0385e08baadb9e"
+  },
+  "allBuildings": {
+   "days": [
+    {
+     "day": 1,
+     "customersServed": 321,
+     "revenue": 5550000,
+     "netProfit": 1623000,
+     "sales": "c8ce6b8f812ece270b9b03e5a17d66ee55408186"
+    },
+    {
+     "day": 2,
+     "customersServed": 316,
+     "revenue": 5762500,
+     "netProfit": 1714500,
+     "sales": "74a9ff5c147f07d8e9e91245777f2fdb7fdf5835"
+    },
+    {
+     "day": 3,
+     "customersServed": 314,
+     "revenue": 6057000,
+     "netProfit": 1665000,
+     "sales": "fcc678f0bceffce3c50c5b110caa10888095a9fe"
+    }
+   ],
+   "money": 24729500,
+   "fixtures": "13c1b27e648a4413a578277e27625839471941f1"
+  }
+ }
+}

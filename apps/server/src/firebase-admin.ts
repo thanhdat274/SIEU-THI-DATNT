@@ -23,10 +23,31 @@ export function firebaseAdminAuth() {
   return getAuth(app);
 }
 
+type VerifiedAccount = { uid: string; name: string | null; email: string | null };
+/** verifyIdToken(…, checkRevoked=true) gọi mạng sang Firebase mỗi request (~0.5–1s); nhớ kết quả ngắn hạn theo token để các request liên tiếp không trả phí đó. */
+const VERIFIED_TOKEN_TTL_MS = 60_000;
+const VERIFIED_TOKEN_MAX = 500;
+const verifiedTokens = new Map<string, { account: VerifiedAccount; until: number }>();
+const pendingVerifications = new Map<string, Promise<VerifiedAccount>>();
+
 export async function verifyAccount(header?: string) {
   if (!header?.startsWith('Bearer ') || header.length > 16384) throw new Error('Unauthorized');
-  const token = await firebaseAdminAuth().verifyIdToken(header.slice(7), true);
-  return { uid: token.uid, name: token.name ?? null, email: token.email ?? null };
+  const idToken = header.slice(7);
+  const now = Date.now();
+  const hit = verifiedTokens.get(idToken);
+  if (hit && hit.until > now) return hit.account;
+  if (hit) verifiedTokens.delete(idToken);
+  let pending = pendingVerifications.get(idToken);
+  if (!pending) {
+    pending = firebaseAdminAuth().verifyIdToken(idToken, true).then(decoded => {
+      const account = { uid: decoded.uid, name: decoded.name ?? null, email: decoded.email ?? null };
+      if (verifiedTokens.size >= VERIFIED_TOKEN_MAX) verifiedTokens.delete(verifiedTokens.keys().next().value as string);
+      verifiedTokens.set(idToken, { account, until: Math.min(Date.now() + VERIFIED_TOKEN_TTL_MS, decoded.exp * 1000) });
+      return account;
+    }).finally(() => pendingVerifications.delete(idToken));
+    pendingVerifications.set(idToken, pending);
+  }
+  return pending;
 }
 
 interface WebSocketTicketDoc {

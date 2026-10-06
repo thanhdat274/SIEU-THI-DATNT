@@ -11,7 +11,7 @@ const lot = (quantity: number) => ({ quantity, expiresOnDay: 400, unitCost: 3_00
 /** Quán nước đã mua; chỉ kệ quán nước có hàng nên mọi khách phải chọn quán nước. */
 const drinkOnlySave = (extraPlots: string[] = []): SaveGameData => {
   const base = structuredClone(DEFAULT_INITIAL_SAVE);
-  base.player.level = 35;
+  base.player.level = 60;
   base.player.money = 10_000_000;
   base.worldTime.isStoreOpen = false;
   const bought = applyStoreLayoutActions(base, [...extraPlots, DRINK_PLOT_ID].map(plotId => ({ type: 'buy_plot' as const, plotId })), mapFor).save!;
@@ -36,7 +36,7 @@ export function runDrinkCustomerTests(): void {
 
   // Dữ liệu: tỷ lệ khách các tòa phụ hợp lệ và thứ tự xét cố định.
   {
-    assert.deepEqual(BUILDING_TRAFFIC_SHARE.map(([id]) => id), ['xoi', 'drink']);
+    assert.deepEqual(BUILDING_TRAFFIC_SHARE.map(([id]) => id), ['xoi', 'drink', 'snack']);
     assert.ok(BUILDING_TRAFFIC_SHARE.reduce((sum, [, share]) => sum + share, 0) < 1, 'luôn còn phần cho tiệm chính');
     for (const id of ['nuoc_suoi', 'tra_xanh', 'sua_tuoi', 'nuoc_mia', 'sinh_to_trai_cay', 'ca_phe_sua_pha']) assert.ok(DRINK_SHOP_PRODUCT_IDS.has(id), `${id} là hàng quán nước`);
     for (const id of XOI_DISH_IDS) assert.equal(DRINK_SHOP_PRODUCT_IDS.has(id), false, `${id} (món xôi) không phải hàng quán nước`);
@@ -163,7 +163,7 @@ export function runDrinkCustomerTests(): void {
     const stocked = (withDrink: boolean) => {
       const save = withDrink ? drinkOnlySave() : (() => {
         const plain = structuredClone(DEFAULT_INITIAL_SAVE);
-        plain.player.level = 35; plain.player.money = 10_000_000;
+        plain.player.level = 60; plain.player.money = 10_000_000;
         plain.worldTime = { ...plain.worldTime, isStoreOpen: true, hour: 8 };
         return plain;
       })();

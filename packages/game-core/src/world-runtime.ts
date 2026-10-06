@@ -3,7 +3,6 @@ import { GameSimulation } from './simulation';
 import { WorldAvatarController } from './avatars';
 import { GameCommandCoordinator, CommandResult } from './commands';
 import { FixedStepSimulationRunner } from './runner';
-import { HOME_DOOR_TILE } from './daily-routine';
 import { generateStarterTileMap, NEIGHBORHOOD_WALK_BOUNDS } from '@game/data';
 import { applyStoreLayoutActions, moveStoreFixture, retrieveStoreFixture, storeFixture, buyWarehouseTier, buyStorageRack } from './store-layout';
 
@@ -55,7 +54,7 @@ export class WorldRuntime {
     this.checkpointIntervalSeconds = options.checkpointIntervalSeconds ?? 5;
     this.onCheckpoint = options.onCheckpoint;
 
-    const tileMap = generateStarterTileMap(business.save.storeLayout.unlockedPlotIds ?? []);
+    const tileMap = generateStarterTileMap(business.save.storeLayout.unlockedPlotIds ?? [], [], business.save.storeLayout.buildingPlacements);
     const headlessInput = {
       getMovementVector: () => ({ x: 0, y: 0 }),
       consumeInteract: () => false,
@@ -96,14 +95,15 @@ export class WorldRuntime {
 
   /** Đưa vị trí/trạng thái online thật của từng người vào lịch ngày; người offline được tự về nhà để ngày không kẹt. */
   private feedCoopInputs(): void {
-    this.currentWorld.avatars.forEach((avatar) => {
+    this.currentWorld.avatars.forEach((avatar, index) => {
       const online = this.activeSessions.has(avatar.accountId);
       this.simulation.setCoopPlayerOnline(avatar.accountId, online);
       if (online) {
         this.simulation.setCoopPlayerPosition(avatar.accountId, { ...avatar.position });
       } else {
-        // Lịch ngày hiện đưa mọi người về HOME_DOOR_TILE (cấu hình cửa nhà riêng chưa được coop-routine dùng), nên người offline đứng ở đó.
-        this.simulation.setCoopPlayerPosition(avatar.accountId, { x: (HOME_DOOR_TILE.x + 0.5) * 32, y: (HOME_DOOR_TILE.y + 0.5) * 32 });
+        // Người offline đứng ở cửa nhà riêng của mình để ngày không kẹt.
+        const door = COOP_HOME_DOOR_TILES[Math.min(index, COOP_HOME_DOOR_TILES.length - 1)];
+        this.simulation.setCoopPlayerPosition(avatar.accountId, { x: (door.x + 0.5) * 32, y: (door.y + 0.5) * 32 });
       }
     });
   }
@@ -176,7 +176,7 @@ export class WorldRuntime {
   adoptCommitted(revision: number, business: BusinessState, force = false): boolean {
     if (!force && revision <= this.currentWorld.revision) return false;
     this.simulation.importSaveData(structuredClone(business.save));
-    this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds()), this.simulation.getFixtures());
+    this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds(), [], this.simulation.getBuildingPlacements()), this.simulation.getFixtures());
     this.currentWorld.revision = revision;
     this.commandCoordinator.setRevision(revision, force);
     this.currentBusiness = structuredClone(business);
@@ -313,23 +313,16 @@ export class WorldRuntime {
         success = this.simulation.setSellingPrice(p.productId, p.price).success;
       } else if (p.type === 'reset_prices') {
         success = this.simulation.resetSellingPrices().success;
-      } else if (p.type === 'layout_move') {
-        const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
-        const next = moveStoreFixture(current, p.fixtureId, p.tileX, p.tileY, p.rotation, generateStarterTileMap(current.storeLayout.unlockedPlotIds ?? []));
-        success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
-      } else if (p.type === 'layout_store') {
-        const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
-        const next = storeFixture(current, p.fixtureId);
-        success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
-      } else if (p.type === 'layout_retrieve') {
-        const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
-        const next = retrieveStoreFixture(current, p.fixtureId, p.tileX, p.tileY, generateStarterTileMap(current.storeLayout.unlockedPlotIds ?? []));
-        success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       } else if (p.type === 'buy_plot') {
-        success = !!this.simulation.purchaseLand(p.plotId).save;
+        success = !!this.simulation.purchaseLand(p.plotId, p.placement).save;
       } else if (p.type === 'set_restock_options') {
         this.simulation.setRestockOptions(p.options);
         success = true;
+      } else if (p.type === 'auto_buy_sync') {
+        // Mô phỏng của server tự đặt đơn nhập tự động khi sang ngày; máy khách chỉ báo "đã có đơn", save của nó không được tin nên không áp gì.
+        success = true;
+      } else if (p.type === 'set_auto_buy_config') {
+        success = this.simulation.setAutoBuyConfig(p.enabled, p.rules).success;
       } else if (p.type === 'set_auto_buy_stalls') {
         this.simulation.setAutoBuyStalls(p.enabled);
         success = true;
@@ -339,6 +332,8 @@ export class WorldRuntime {
         success = this.simulation.buyStall(p.stallId).success;
       } else if (p.type === 'hire_staff') {
         success = this.simulation.hireStaff(p.candidateId).success;
+      } else if (p.type === 'pay_wage_debt') {
+        success = this.simulation.payWageDebt().success;
       } else if (p.type === 'set_staff_shift') {
         success = this.simulation.setStaffShift(p.staffId, p.shift);
       } else if (p.type === 'assign_refill_job') {
@@ -408,7 +403,7 @@ export class WorldRuntime {
         success = p.action === 'buy_camera' ? this.simulation.buyCamera().success : this.simulation.setCallPolice(p.action === 'police_on').success;
       } else if (p.type === 'layout_batch') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
-        const next = applyStoreLayoutActions(current, p.actions, ids => generateStarterTileMap(ids));
+        const next = applyStoreLayoutActions(current, p.actions, (ids, placements) => generateStarterTileMap(ids, [], placements));
         success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       } else if (p.type === 'buy_warehouse_tier') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
@@ -421,7 +416,7 @@ export class WorldRuntime {
       }
 
       if (success) {
-        this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds()), this.simulation.getFixtures());
+        this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds(), [], this.simulation.getBuildingPlacements()), this.simulation.getFixtures());
         this.currentWorld.revision = this.commandCoordinator.getRevision() + 1;
         this.currentBusiness.save = this.simulation.exportSaveData(
           this.currentBusiness.save.id,

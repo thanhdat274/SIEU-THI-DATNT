@@ -1,5 +1,5 @@
 /**
- * Mô phỏng headless có quán nước: cùng mô phỏng thật của game (GameSimulation), cấp ${process.env.DRINK_LEVEL ?? 32}, kệ luôn đầy,
+ * Mô phỏng headless có quán nước: cùng mô phỏng thật của game (GameSimulation), cấp ${process.env.DRINK_LEVEL ?? 46}, kệ luôn đầy,
  * so sánh có/không mua quán nước (kèm tùy chọn mở rộng phía bắc) để thấy khách và doanh thu tăng thêm.
  * Số đo từ mô phỏng, KHÔNG thay thế playtest thật; harness giữ kệ đầy nên không đo thiếu hàng/chuỗi sản xuất.
  * Chạy: yarn --ignore-engines workspace @game/core tsx src/drink-balance-sim.ts   (DRINK_SEEDS, DRINK_DAYS, DRINK_PLOTS tùy chọn)
@@ -26,7 +26,7 @@ function runScenario(withDrink: boolean): Totals {
   const totals: Totals = { days: 0, customers: 0, revenue: 0, netProfit: 0, drinkUnits: 0 };
   for (const seed of SEEDS) {
     let save: SaveGameData = { ...structuredClone(DEFAULT_INITIAL_SAVE), market: createMarketState(seed, 1) };
-    save.player = { ...save.player, level: Number(process.env.DRINK_LEVEL ?? 32), money: 10_000_000 };
+    save.player = { ...save.player, level: Number(process.env.DRINK_LEVEL ?? 46), money: 10_000_000 };
     save.worldTime = { ...save.worldTime, isStoreOpen: false };
     if (withDrink) save = applyStoreLayoutActions(save, [DRINK_PLOT_ID, ...EXTRA_PLOTS].map(plotId => ({ type: 'buy_plot' as const, plotId })), mapFor).save!;
     // Một thu ngân tự động phục vụ mọi hàng đợi (không có thì khách quán phụ phụ thuộc vị trí người chơi, làm lệch số đo).
@@ -71,7 +71,7 @@ const without = runScenario(false);
 const withShop = runScenario(true);
 const perDay = (t: Totals, key: 'customers' | 'revenue' | 'netProfit' | 'drinkUnits') => t[key] / Math.max(1, t.days);
 
-console.log(`Mô phỏng quán nước: ${SEEDS.length} hạt giống × ${DAYS} ngày, cấp ${process.env.DRINK_LEVEL ?? 32}, kệ luôn đầy, mảnh mở rộng: [${EXTRA_PLOTS.join(', ')}] (số ngày ghi nhận: ${without.days} / ${withShop.days})`);
+console.log(`Mô phỏng quán nước: ${SEEDS.length} hạt giống × ${DAYS} ngày, cấp ${process.env.DRINK_LEVEL ?? 46}, kệ luôn đầy, mảnh mở rộng: [${EXTRA_PLOTS.join(', ')}] (số ngày ghi nhận: ${without.days} / ${withShop.days})`);
 console.log('Chỉ số/ngày          | Không quán nước | Có quán nước | Tăng thêm');
 for (const [label, key] of [['Khách phục vụ', 'customers'], ['Doanh thu (₫)', 'revenue'], ['Lãi ròng (₫)', 'netProfit'], ['Đồ uống bán', 'drinkUnits']] as const) {
   const a = perDay(without, key), b = perDay(withShop, key);

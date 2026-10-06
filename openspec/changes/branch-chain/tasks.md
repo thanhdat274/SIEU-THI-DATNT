@@ -2,6 +2,8 @@
 
 Quy ước: chỉ đánh `[x]` khi code và kiểm chứng tương ứng đã chạy thật; ghi kết quả (lệnh, ngày) vào `tổng hợp.md`. Build/test PASS không thay cho browser QA. Không bắt đầu mục 2 trở đi khi các câu hỏi mở ở `design.md` chưa được chủ dự án trả lời.
 
+**Tạm dừng 05/10/2026:** chủ dự án đồng ý đổi hướng chi nhánh thành tòa trên cùng thành phố (xem đầu `design.md`). Các mục bên dưới viết theo mô hình bản đồ riêng, cần viết lại sau khi `open-world-land-reclamation` xong; không làm theo danh sách cũ.
+
 ## 1. Khảo sát và chốt quyết định
 
 - [>] 1.1 Chủ dự án đã trả lời 4/5 câu hỏi (03/10/2026, ghi ở `design.md`); còn mở: quyền sở hữu chi nhánh trong co-op 2 người và câu hỏi đóng/bán chi nhánh.

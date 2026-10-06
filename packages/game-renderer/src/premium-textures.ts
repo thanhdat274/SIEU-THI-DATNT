@@ -1,5 +1,6 @@
 import { PRODUCT_MAP, productPixels } from '@game/data';
 import {warehouseTexture} from './warehouse-textures';
+import {propFixtureTexture} from './prop-fixtures';
 
 function surface(w:number,h:number){const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d')!;ctx.imageSmoothingEnabled=false;return {canvas,ctx};}
 const C={ink:'#33251D',dark:'#593A2B',wood:'#936044',light:'#C69464',paper:'#FFF2D6',shade:'#E7CE9F',teal:'#357F72',tealDark:'#24584F',sun:'#E9B95D',brick:'#B64C3D'};
@@ -72,7 +73,40 @@ export function createPremiumTexture(key:string):HTMLCanvasElement|null{
   }
   return canvas;
  }
+ if(key==='stall_sold_out_sign'){
+  const {canvas,ctx}=surface(24,12);
+  const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
+  r(0,0,24,12,C.ink);r(1,1,22,10,C.brick);r(1,1,22,1,'#D8695A');
+  const W=C.paper;
+  r(6,4,1,5,W);r(8,4,1,5,W);r(6,6,3,1,W);                           // H
+  r(11,4,1,5,W);r(11,4,3,1,W);r(11,6,3,1,W);r(11,8,3,1,W);          // E
+  r(12,2,1,1,W);r(11,3,1,1,W);r(13,3,1,1,W);                        // dấu mũ
+  r(15,4,3,1,W);r(16,5,1,4,W);                                       // T
+  return canvas;
+ }
+ if(key==='stall_ve_so'){
+  const {canvas,ctx}=surface(64,48);
+  const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
+  const awning=['#C8372D','#FFF2D6'];
+  r(3,14,3,30,C.dark);r(58,14,3,30,C.dark);                           // cột đỡ mái
+  for(let x=0;x<64;x+=8){r(x,2,8,10,awning[(x/8)%2]);r(x,12,8,3,awning[(x/8)%2]);}
+  r(0,1,64,2,C.ink);r(0,14,64,1,C.ink);
+  r(6,26,52,18,C.wood);r(6,26,52,3,C.light);r(6,43,52,2,C.dark);      // quầy gỗ
+  r(2,46,60,2,'#26190E');
+  // Bảng treo các tờ vé nhiều màu phía sau quầy
+  r(8,16,48,9,C.paper);r(8,16,48,1,C.ink);r(8,24,48,1,C.ink);r(8,16,1,9,C.ink);r(55,16,1,9,C.ink);
+  const cols=['#E9B95D','#357F72','#B64C3D','#4C7FC8','#E9B95D','#357F72','#B64C3D','#4C7FC8'];
+  cols.forEach((c,i)=>{r(10+i*6,18,5,6,c);r(11+i*6,19,3,1,C.paper);r(11+i*6,21,3,1,C.paper);});
+  // Tấm ghi "VÉ SỐ" đỏ trên mặt quầy + xấp vé
+  r(8,31,22,9,'#C8372D');r(8,31,22,1,'#E5675B');r(8,39,22,1,C.ink);
+  r(11,33,1,4,C.paper);r(15,33,1,4,C.paper);r(12,37,3,1,C.paper);r(13,38,1,1,C.paper);   // V
+  r(18,33,4,1,C.paper);r(18,33,1,4,C.paper);r(18,35,3,1,C.paper);r(18,37,4,1,C.paper);r(19,32,1,1,C.paper);r(20,31,1,1,C.paper); // É
+  r(34,32,10,7,C.paper);r(35,33,8,1,'#E9B95D');r(35,35,8,1,'#357F72');r(35,37,8,1,'#B64C3D'); // xấp vé
+  r(47,34,8,5,C.shade);r(48,35,6,3,C.sun);                                                      // hộp tiền lẻ
+  return canvas;
+ }
  if(key.startsWith('player_')||key.startsWith('npc_')) return character(key);
+ if(key.startsWith('fixture_prop_')) return propFixtureTexture(key.slice('fixture_prop_'.length).split(':')[0]);
  if(key.startsWith('fixture_')) return fixture(key);
  if(key.startsWith('wall_')) return wallTexture(key);
  if(key.startsWith('vehicle_')) return vehicleTexture(key);
@@ -506,15 +540,40 @@ function character(key:string):HTMLCanvasElement{
 function fixture(key:string):HTMLCanvasElement{
  const [type,productId='none',state='empty']=key.split(':');
  const coldSingle=type==='fixture_refrigerator_single';
- const coldDouble=type==='fixture_refrigerator';
+ const freezer=type==='fixture_freezer';
+ const coldDouble=type==='fixture_refrigerator'||freezer;
  const cold=coldSingle||coldDouble;
  const cash=type==='fixture_cashier';
- const {canvas,ctx}=surface(coldSingle?32:64,48),w=canvas.width;
+ const cashSingle=type==='fixture_cashier_single';
+ const woodSingle=type==='fixture_shelf_wooden_single';
+ const glassCase=type==='fixture_shelf_glass';
+ const {canvas,ctx}=surface(coldSingle||cashSingle||woodSingle?32:64,48),w=canvas.width;
  const r=(x:number,y:number,a:number,b:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(x,y,a,b);};
 
  // 2.5D Ambient drop shadow beneath the fixture onto the floor
  r(4,42,w-6,5,'#26190E45');
  r(2,44,w-2,3,'#26190E22');
+
+ if(cashSingle){
+   // Quầy tự thanh toán 1 ô (32px): cùng gỗ sồi, viền tối và máy tính tiền xanh như quầy thu ngân 2 ô
+   r(1,4,30,40,'#2B1B12');
+   r(2,5,28,9,'#D6A870');
+   r(2,5,28,2,'#F3D09E');
+   r(2,13,28,2,'#8E5830');
+   r(2,15,28,27,'#A2693E');
+   r(3,16,26,2,'#7A4822');
+   r(5,21,22,19,'#28180F');
+   r(6,22,20,17,'#8B552F');
+   r(6,22,20,1,'#B27B50');
+   r(14,29,4,2,'#EAD0A0'); // Tay nắm đồng
+   r(5,0,22,13,'#1D2B29');
+   r(6,1,20,3,'#355952');
+   r(6,4,20,6,'#213C36');
+   r(8,5,16,2,'#7EBA6E'); // Màn LCD xanh
+   r(6,10,20,3,'#457065');
+   for(let kx=8;kx<=22;kx+=3) r(kx,11,2,1,'#F7F2D8');
+   return canvas;
+ }
 
  if(cash){
    // Cashier Counter with 2.5D top bevel, polished wood counter, drawers, and register
@@ -603,7 +662,7 @@ function fixture(key:string):HTMLCanvasElement{
    r(4,6,w-8,33,'#4D2B15'); // Recessed dark shadow depth behind goods
  }
 
- const cols=coldDouble?4:coldSingle?2:5;
+ const cols=coldDouble?4:coldSingle||woodSingle?2:5;
  const maxUnits=cols*3;
  const quantity=state==='full'?maxUnits:state==='low'?Math.max(1,Math.floor(maxUnits/3)):0;
  const product=PRODUCT_MAP[productId],pixels=productPixels(product);
@@ -643,7 +702,23 @@ function fixture(key:string):HTMLCanvasElement{
    }
  }
 
- r(1,3,w-2,1,cold?'#EAF8F4':'#F2CA97'); // Topmost rim highlight
+ if(freezer){
+   // Tủ đông: cùng khung 2 cánh với tủ mát nhưng phủ sương giá, nóc xanh băng và vài bông tuyết
+   r(2,4,w-4,38,'rgba(205, 230, 255, 0.2)');
+   r(1,3,w-2,3,'#9CCBEB');
+   r(3,4,w-6,1,'#E6F4FF');
+   for(const [fx,fy] of [[8,12],[19,30],[40,16],[52,34],[26,20],[46,28]]) { r(fx,fy,3,1,'rgba(240,250,255,0.85)'); r(fx+1,fy-1,1,3,'rgba(240,250,255,0.85)'); }
+   r(4,38,26,3,'rgba(235,246,255,0.55)'); r(34,38,26,3,'rgba(235,246,255,0.55)');
+ }
+ if(glassCase){
+   // Tủ kính trưng bày: khung gỗ sồi như kệ gỗ, mặt kính trong phía trước, nóc đồng
+   r(4,6,w-8,33,'rgba(190, 226, 238, 0.24)');
+   r(5,7,2,31,'rgba(255, 255, 255, 0.38)');
+   r(10,7,1,29,'rgba(255, 255, 255, 0.16)');
+   r(w-8,7,1,31,'rgba(255, 255, 255, 0.2)');
+   r(1,3,w-2,2,'#E5B338');
+ }
+ r(1,3,w-2,1,cold?'#EAF8F4':glassCase?'#F7DE8A':'#F2CA97'); // Topmost rim highlight
  r(1,42,w-2,2,'#1A1009'); // Bottom baseboard
  r(4,44,6,2,'#1A1009');
  if(coldDouble) r(29,44,6,2,'#1A1009'); // Chân đỡ giữa cho tủ 2 cánh

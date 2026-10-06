@@ -1,11 +1,11 @@
-import { furnitureSpriteTexture, STOCK_ART_SHOP_IDS } from './fixture-preview';
+import { furnitureSpriteTexture, fixtureTextureKey, STOCK_ART_SHOP_IDS } from './fixture-preview';
 import { Application, Container, RenderTexture, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
 import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, weekdayOf, hashSeed, type WeatherVisualState, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
-import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTile, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, BUILDING_MAP, type BuildingId} from '@game/data';
+import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId} from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -57,11 +57,25 @@ function buildTreePlanter(x: number, y: number): Graphics {
 /** Đáy thùng so với chân nhân viên: thấp hơn đầu/vai để không che mặt. */
 const LOGISTICS_BOX_CARRY_Y = -12;
 
-/** Mặt tiền các tòa phụ: biên, tên biển, màu mái hiên/biển, vị trí mái hiên (ô). */
+/** Hình học mặc định của tiệm chính và quán nước (mô hình thế giới mở): trang trí mặt tiền đặt tương đối theo đây. */
+const MAIN_B = DEFAULT_GEOMETRY.main.bounds;
+const MAIN_CORE = DEFAULT_GEOMETRY.main.coreBounds;
+const MAIN_DOOR = DEFAULT_GEOMETRY.main.doorTiles[0];
+const MAIN_DOOR_TILES = DEFAULT_GEOMETRY.main.doorTiles;
+/** Vùng sàn tiệm chính có thể có: trong lô của nó, thu vào một ô cho hàng tường (không lẫn sàn tiệm xôi/quán ăn vặt cạnh tường chung). */
+const MAIN_FLOOR_RECT = PARCEL_MAP[DEFAULT_PLACEMENTS[0].parcelId].rect;
+
+/** Mặt tiền các tòa phụ: tên biển, màu mái hiên/biển. Hình học (biên, cửa, mái hiên) lấy từ `GameTileMap.buildings` theo vị trí đặt. */
 const FACADES = {
-  xoi: { bounds: XOI_BOUNDS, name: 'TIỆM XÔI', awning: 0xc0392b, board: 0x7a2f1d, trim: 0xe0b85a, text: 0xffe9b0, awningStart: AWNING_SPANS.xoi.x0 / TILE_SIZE, awningTiles: (AWNING_SPANS.xoi.x1 - AWNING_SPANS.xoi.x0) / TILE_SIZE },
-  drink: { bounds: DRINK_BOUNDS, name: 'QUÁN NƯỚC', awning: 0x1f6f8b, board: 0x14506a, trim: 0x8fd3e8, text: 0xd9f4ff, awningStart: AWNING_SPANS.drink.x0 / TILE_SIZE, awningTiles: (AWNING_SPANS.drink.x1 - AWNING_SPANS.drink.x0) / TILE_SIZE },
+  xoi: { name: 'TIỆM XÔI', awning: 0xc0392b, board: 0x7a2f1d, trim: 0xe0b85a, text: 0xffe9b0 },
+  snack: { name: 'QUÁN ĂN VẶT', awning: 0xd9822b, board: 0x8a4b12, trim: 0xf3c969, text: 0xfff0c8 },
+  drink: { name: 'QUÁN NƯỚC', awning: 0x1f6f8b, board: 0x14506a, trim: 0x8fd3e8, text: 0xd9f4ff },
 } as const;
+
+/** Một tòa phụ đã đặt: biên hiện tại (đã tính mở rộng bắc), cửa, mái hiên (px). */
+interface PlacedBuilding { id: Exclude<BuildingId, 'main'>; open: boolean; bounds: { left: number; right: number; top: number; bottom: number }; doorTiles: Array<{ x: number; y: number }>; awning: { x0: number; x1: number };
+  /** Chỉ tòa phụ có sàn mở rộng: khóa "x,y" mọi ô sàn (sàn gốc ∪ ô mở rộng), để tự chọn texture tường theo ô sàn kề. */
+  floor?: Set<string> }
 
 export class PixiGameViewport {
   private app!: Application;
@@ -114,9 +128,14 @@ export class PixiGameViewport {
   /** Xe đang chạy trong khung hình hiện tại, để ShopLighting bật đèn pha/đèn hậu ban đêm. */
   private vehicleLightSources: VehicleLightSource[] = [];
   private resizeObserver?: ResizeObserver;
+  /** Trần độ phân giải thích ứng: chỉ hạ khi máy chậm kéo dài (xem adaptResolution), không hạ theo loại thiết bị. */
+  private qualityCap = 2;
+  private frameEma = 16;
+  private slowFrames = 0;
   private onZoomChange?: (zoom: number) => void;
   private ambientSprites: Array<{sprite: Sprite; key: string; frames: number}> = [];
   private stallSprites: Sprite[] = [];
+  private stallSoldOut = new Set<string>();
   private vendorSprites: Container[] = [];
   private eastDecorSprites: Array<Sprite | Graphics | Text> = [];
   /** Quầng sáng bóng đèn của hai cột đèn trang trí phía đông: chỉ sáng khi trời tối như đèn đường. */
@@ -222,7 +241,7 @@ export class PixiGameViewport {
     this.worldContainer.addChild(this.neighborhood.labels);
     this.worldContainer.addChild(this.uiOverlayLayer);
     this.actors = new NeighborhoodActors(this.textures, this.entitiesLayer, this.uiOverlayLayer, hashSeed(String(this.simulation.getWeatherSeed())));
-    this.lighting = new ShopLighting(this.tintLayer, this.lightLayer, this.shadowLayer);
+    this.lighting = new ShopLighting(this.tintLayer, this.lightLayer, this.shadowLayer, this.entitiesLayer);
 
     this.app.stage.addChild(this.worldContainer);
 
@@ -265,6 +284,7 @@ export class PixiGameViewport {
     this.canvas.addEventListener('pointerdown', this.handlePointerDown);
     window.addEventListener('pointermove', this.handlePointerMove);
     window.addEventListener('pointerup', this.handlePointerUp);
+    window.addEventListener('pointercancel', this.handlePointerUp);
 
     this.resizeObserver = new ResizeObserver(() => {
       this.app.resize();
@@ -287,17 +307,36 @@ export class PixiGameViewport {
     this.buildStalls();
   }
 
+  /** Tòa phụ đang có trên bản đồ (theo thứ tự ưu tiên); tòa chưa mua không có mặt. */
+  private placedBuildings(): PlacedBuilding[] {
+    const result: PlacedBuilding[] = [];
+    for (const building of this.tileMap.buildings ?? []) {
+      if (building.id === 'main' || !building.bounds || !building.doorTiles || !building.awning) continue;
+      let floor: Set<string> | undefined;
+      if (building.floorTiles?.length) {
+        floor = new Set(building.floorTiles.map(tile => `${tile.x},${tile.y}`));
+        for (let y = building.bounds.top + 1; y < building.bounds.bottom; y++) for (let x = building.bounds.left + 1; x < building.bounds.right; x++) floor.add(`${x},${y}`);
+      }
+      result.push({ id: building.id as PlacedBuilding['id'], open: building.open, bounds: { ...building.bounds, top: building.top ?? building.bounds.top }, doorTiles: building.doorTiles, awning: building.awning, ...(floor ? { floor } : {}) });
+    }
+    return result;
+  }
+
   private initialPinchDistance: number | null = null;
   private initialPinchZoom: number = 2.0;
 
   private isPointerDown: boolean = false;
   private isPointerDragging: boolean = false;
+  /** Chỉ con trỏ đã bấm xuống thế giới mới kéo camera: ngón khác (vd. đang kéo cần xoay) không được làm camera nhảy. */
+  private activePointerId: number | null = null;
   private pointerStartX: number = 0;
   private pointerStartY: number = 0;
 
   private handlePointerDown = (e: PointerEvent): void => {
     // Only primary button (left click) or middle button
     if (e.button !== 0 && e.button !== 1) return;
+    if (this.isPointerDown && e.pointerId !== this.activePointerId) return;
+    this.activePointerId = e.pointerId;
     this.isPointerDown = true;
     this.isPointerDragging = false;
     this.pointerStartX = e.clientX;
@@ -305,7 +344,7 @@ export class PixiGameViewport {
   };
 
   private handlePointerMove = (e: PointerEvent): void => {
-    if (!this.isPointerDown) return;
+    if (!this.isPointerDown || e.pointerId !== this.activePointerId) return;
 
     const dx = e.clientX - this.pointerStartX;
     const dy = e.clientY - this.pointerStartY;
@@ -326,7 +365,9 @@ export class PixiGameViewport {
     }
   };
 
-  private handlePointerUp = (_e: PointerEvent): void => {
+  private handlePointerUp = (e: PointerEvent): void => {
+    if (this.isPointerDown && e.pointerId !== this.activePointerId) return;
+    this.activePointerId = null;
     this.isPointerDown = false;
     this.isPointerDragging = false;
     this.camera.isDragging = false;
@@ -396,9 +437,8 @@ export class PixiGameViewport {
    * Responsive Settings: Optimize resolution and default zoom for mobile devices.
    */
   private updateResponsiveSettings(): void {
-    const isMobile = window.innerWidth < 768;
-    // Reduce resolution on mobile to prevent overheating and frame drops
-    const targetRes = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+    // Giữ DPR thật (tối đa 2) trên mọi thiết bị: ép DPR 1 trên điện thoại làm pixel-art mờ ở màn Retina.
+    const targetRes = Math.min(window.devicePixelRatio || 1, 2, this.qualityCap);
     if (this.app.renderer && this.app.renderer.resolution !== targetRes) {
       this.app.renderer.resize(this.app.screen.width, this.app.screen.height, targetRes);
     }
@@ -408,17 +448,16 @@ export class PixiGameViewport {
    * Mặt tiền tiệm xôi (tòa thứ hai ở dải đất phía tây): biển hiệu, mái hiên sọc, khung cửa; chưa mua thì cửa cuốn đóng
    * và biển "CHO THUÊ". Vẽ vào groundLayer/wallLayer nên được dựng lại mỗi lần bản đồ đổi (mua tiệm).
    */
-  private buildXoiFacade(): void { this.buildBuildingFacade('xoi'); }
 
   /** Mặt tiền tòa phụ (tiệm xôi, quán nước); dữ liệu màu/biển theo `FACADES`. */
-  private buildBuildingFacade(id: Exclude<BuildingId, 'main'>): void {
-    const facade = FACADES[id];
-    const xoi = BUILDING_MAP[id];
-    const open = this.tileMap.buildings?.find(building => building.id === id)?.open ?? false;
-    const bounds = { ...facade.bounds, top: this.tileMap.buildings?.find(building => building.id === id)?.top ?? facade.bounds.top };
+  private buildBuildingFacade(placed: PlacedBuilding): void {
+    const facade = FACADES[placed.id];
+    const { bounds } = placed;
     const frontY = bounds.bottom * TILE_SIZE;
-    const doorX = xoi.doorTiles[0].x * TILE_SIZE;
-    const doorW = xoi.doorTiles.length * TILE_SIZE;
+    const doorX = placed.doorTiles[0].x * TILE_SIZE;
+    const doorW = placed.doorTiles.length * TILE_SIZE;
+    const awningStart = placed.awning.x0 / TILE_SIZE;
+    const awningTiles = (placed.awning.x1 - placed.awning.x0) / TILE_SIZE;
 
     // Bóng đổ trong sàn như tiệm chính.
     const shadows = new Graphics();
@@ -433,38 +472,70 @@ export class PixiGameViewport {
     frame.rect(doorX, frontY + TILE_SIZE - 2, doorW, 2).fill(0xbfa993);
     this.groundLayer.addChild(frame);
 
-    if (open) {
-      // Mái hiên sọc đỏ trắng phía trên cửa.
-      const awning = new Graphics();
-      // Mái hiên và biển chỉ rộng `awningTiles` ô để không che tán cây hay tòa bên cạnh.
-      const awningX = facade.awningStart * TILE_SIZE;
-      const stripes = 7;
-      const stripeW = (facade.awningTiles * TILE_SIZE) / stripes;
-      for (let i = 0; i < stripes; i++) awning.rect(awningX + i * stripeW, frontY - 6, stripeW, 9).fill(i % 2 === 0 ? facade.awning : 0xf5ecd8);
-      awning.rect(awningX, frontY + 3, stripes * stripeW, 2).fill({ color: 0x26190e, alpha: 0.35 });
-      awning.zIndex = 360;
-      this.wallLayer.addChild(awning);
-    } else {
-      // Cửa cuốn đóng: tấm sắt có rãnh ngang và ổ khóa.
-      const shutter = new Graphics();
-      shutter.rect(doorX, frontY, doorW, TILE_SIZE).fill(0x8f989f);
-      for (let y = 4; y < TILE_SIZE; y += 5) shutter.rect(doorX, frontY + y, doorW, 1).fill({ color: 0x4d555b, alpha: 0.7 });
-      shutter.rect(doorX + doorW / 2 - 2, frontY + TILE_SIZE - 7, 4, 4).fill(0x2f3438);
-      this.wallLayer.addChild(shutter);
+    if (!placed.open) {
+      // Đang thi công sau khi dời: rào chắn sọc vàng đen chắn cửa và biển "ĐANG THI CÔNG" (mở lại sáng hôm sau).
+      const barrier = new Graphics();
+      barrier.rect(doorX - 4, frontY + 8, doorW + 8, 10).fill(0xf2c230);
+      for (let i = 0; i < (doorW + 8) / 10; i++) barrier.poly([doorX - 4 + i * 10, frontY + 8, doorX - 4 + i * 10 + 5, frontY + 8, doorX - 4 + i * 10 + 10, frontY + 18, doorX - 4 + i * 10 + 5, frontY + 18]).fill(0x26190e);
+      barrier.zIndex = 360;
+      this.wallLayer.addChild(barrier);
+      const closedBoard = new Graphics();
+      const closedW = awningTiles * TILE_SIZE;
+      closedBoard.roundRect(0, 0, closedW, 14, 2).fill(0x6b6f73).stroke({ color: 0xf2c230, width: 1 });
+      closedBoard.position.set(awningStart * TILE_SIZE, frontY - 22);
+      closedBoard.zIndex = 361;
+      this.wallLayer.addChild(closedBoard);
+      const closedLabel = new Text({ text: 'ĐANG THI CÔNG', style: new TextStyle({ fontFamily: 'Arial', fontSize: 9, fontWeight: 'bold', fill: 0xf2c230 }) });
+      closedLabel.anchor.set(0.5);
+      closedLabel.position.set(closedBoard.x + closedW / 2, closedBoard.y + 7.5);
+      closedLabel.zIndex = 362;
+      this.wallLayer.addChild(closedLabel);
+      return;
     }
 
+    // Mái hiên sọc phía trên cửa; mái hiên và biển chỉ rộng `awningTiles` ô để không che tán cây hay tòa bên cạnh.
+    const awning = new Graphics();
+    const awningX = awningStart * TILE_SIZE;
+    const stripes = 7;
+    const stripeW = (awningTiles * TILE_SIZE) / stripes;
+    for (let i = 0; i < stripes; i++) awning.rect(awningX + i * stripeW, frontY - 6, stripeW, 9).fill(i % 2 === 0 ? facade.awning : 0xf5ecd8);
+    awning.rect(awningX, frontY + 3, stripes * stripeW, 2).fill({ color: 0x26190e, alpha: 0.35 });
+    awning.zIndex = 360;
+    this.wallLayer.addChild(awning);
+
     // Biển hiệu trên cửa.
-    const boardW = facade.awningTiles * TILE_SIZE;
+    const boardW = awningTiles * TILE_SIZE;
     const board = new Graphics();
-    board.roundRect(0, 0, boardW, 14, 2).fill(open ? facade.board : 0x6b6f73).stroke({ color: open ? facade.trim : 0x9aa0a4, width: 1 });
-    board.position.set(facade.awningStart * TILE_SIZE, frontY - 22);
+    board.roundRect(0, 0, boardW, 14, 2).fill(facade.board).stroke({ color: facade.trim, width: 1 });
+    board.position.set(awningStart * TILE_SIZE, frontY - 22);
     board.zIndex = 361;
     this.wallLayer.addChild(board);
-    const label = new Text({ text: open ? facade.name : 'CHO THUÊ', style: new TextStyle({ fontFamily: 'Arial', fontSize: 10, fontWeight: 'bold', fill: open ? facade.text : 0xe5e8ea }) });
+    const label = new Text({ text: facade.name, style: new TextStyle({ fontFamily: 'Arial', fontSize: 10, fontWeight: 'bold', fill: facade.text }) });
     label.anchor.set(0.5);
     label.position.set(board.x + boardW / 2, board.y + 7.5);
     label.zIndex = 362;
     this.wallLayer.addChild(label);
+  }
+
+  /** Lô trống (tòa chưa mua / đã dời đi): cửa cuốn không còn, chỉ có biển "ĐẤT TRỐNG" ở mặt tiền lô. */
+  private buildVacantLotSigns(): void {
+    const placed = this.placedBuildings();
+    for (const parcel of LAND_PARCELS) {
+      if (parcel.id === DEFAULT_PLACEMENTS[0].parcelId) continue;
+      if (placed.some(building => building.bounds.left >= parcel.rect.x0 && building.bounds.right <= parcel.rect.x1)) continue;
+      const width = Math.min(4, parcel.rect.x1 - parcel.rect.x0 - 1) * TILE_SIZE;
+      const x = ((parcel.rect.x0 + parcel.rect.x1 + 1) / 2) * TILE_SIZE - width / 2;
+      const board = new Graphics();
+      board.roundRect(0, 0, width, 14, 2).fill(0x6b6f73).stroke({ color: 0x9aa0a4, width: 1 });
+      board.position.set(x, parcel.rect.y1 * TILE_SIZE - 6);
+      board.zIndex = 361;
+      this.wallLayer.addChild(board);
+      const label = new Text({ text: 'ĐẤT TRỐNG', style: new TextStyle({ fontFamily: 'Arial', fontSize: 9, fontWeight: 'bold', fill: 0xe5e8ea }) });
+      label.anchor.set(0.5);
+      label.position.set(board.x + width / 2, board.y + 7.5);
+      label.zIndex = 362;
+      this.wallLayer.addChild(label);
+    }
   }
 
   /**
@@ -472,8 +543,13 @@ export class PixiGameViewport {
    * Vẽ vào entitiesLayer để cùng hệ thống với sprite cây/bóng.
    */
   private buildEastDecorations(): void {
-    const drinkOpen = this.tileMap.buildings?.find(b => b.id === 'drink')?.open ?? false;
-    if (!drinkOpen) return; // Chưa mở quán nước thì không hiển thị decor
+    for (const sprite of this.eastDecorSprites) sprite.destroy();
+    this.eastDecorSprites = [];
+    this.decorLampGlows = [];
+    const drink = this.placedBuildings().find(building => building.id === 'drink');
+    if (!drink || !drink.open) return; // Chưa mua hoặc đang thi công thì không hiển thị decor
+    const DRINK_BOUNDS = drink.bounds;
+    const drinkOpen = true;
 
     // 1. Biển hiệu "QUÁN NƯỚC" (đặt trên hiên, phía đông tiệm chính)
     const signBoard = new Graphics();
@@ -490,8 +566,8 @@ export class PixiGameViewport {
     signText.zIndex = 362;
     this.wallLayer.addChild(signText);
 
-    // 2. Cột đèn đường phía đông (2 cột: x=19 và x=33)
-    for (const lampX of [19, 33]) {
+    // 2. Cột đèn đường phía đông (2 cột, cách tường tây quán nước 7 ô về hai phía: mặc định x=19 và x=33)
+    for (const lampX of [DRINK_BOUNDS.left - 7, DRINK_BOUNDS.left + 7]) {
       const pole = new Sprite(this.textures.getTexture('deco_lamp_pole'));
       pole.anchor.set(0, 1);
       pole.x = lampX * TILE_SIZE;
@@ -513,15 +589,15 @@ export class PixiGameViewport {
     if (drinkOpen) {
       for (let i = 0; i < 3; i++) {
         const lantern = new Sprite(this.textures.getTexture('deco_lantern'));
-        lantern.position.set((28 + i * 2) * TILE_SIZE, (DRINK_BOUNDS.bottom + 1) * TILE_SIZE - 20 - i * 3);
+        lantern.position.set((DRINK_BOUNDS.left + 2 + i * 2) * TILE_SIZE, (DRINK_BOUNDS.bottom + 1) * TILE_SIZE - 20 - i * 3);
         lantern.zIndex = lantern.y - 50;
         this.entitiesLayer.addChild(lantern);
         this.eastDecorSprites.push(lantern);
       }
     }
 
-    // 4. Chậu cây cảnh (x=27 và x=35)
-    for (const potX of [27, 35]) {
+    // 4. Chậu cây cảnh (ô trong đầu tiên và tường đông quán nước: mặc định x=27 và x=35)
+    for (const potX of [DRINK_BOUNDS.left + 1, DRINK_BOUNDS.right]) {
       const pot = new Sprite(this.textures.getTexture('tile_plant_pot'));
       pot.position.set(potX * TILE_SIZE + 8, 11 * TILE_SIZE);
       pot.zIndex = pot.y + 50;
@@ -532,7 +608,7 @@ export class PixiGameViewport {
     // 5. Biển menu bảng gỗ (x=28)
     const menuBoard = new Graphics();
     menuBoard.roundRect(0, 0, 64, 40, 2).fill(0x8b5a2b).stroke({ color: 0x5c3a1a, width: 1 });
-    menuBoard.position.set(28 * TILE_SIZE, (DRINK_BOUNDS.bottom + 1) * TILE_SIZE - 52);
+    menuBoard.position.set((DRINK_BOUNDS.left + 2) * TILE_SIZE, (DRINK_BOUNDS.bottom + 1) * TILE_SIZE - 52);
     menuBoard.zIndex = 363;
     this.wallLayer.addChild(menuBoard);
     const menuText = new Text({
@@ -549,6 +625,7 @@ export class PixiGameViewport {
     const storeBounds = this.tileMap.storeBounds ?? STORE_BOUNDS;
     const width = this.tileMap.width;
     const height = this.tileMap.height;
+    const originX = this.tileMap.originTileX ?? 0;
     const originY=this.tileMap.originTileY??0;
 
     // Mặt đất ngoài bản đồ chơi do NeighborhoodScene dựng (cỏ, đường, vỉa hè, nhà, công viên...), không còn vành đai ô cỏ riêng.
@@ -559,8 +636,9 @@ export class PixiGameViewport {
     // Ground Layer
     if (groundLayerData) {
       for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          const tileId = groundLayerData[y * width + x];
+        for (let lx = 0; lx < width; lx++) {
+          const x = lx + originX; // cột thế giới; `lx` là chỉ số mảng
+          const tileId = groundLayerData[y * width + lx];
           let textureKey = 'tile_sidewalk';
 
           if (tileId === 3) textureKey = 'tile_store_floor';
@@ -586,10 +664,11 @@ export class PixiGameViewport {
     // Trang trí ngoài trời (chỉ hình ảnh): hoa rải rác trên cỏ và hàng rào thấp giữa cỏ với vỉa hè.
     if (groundLayerData) {
       for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          if (groundLayerData[y * width + x] !== 2 || y + originY >= 11) continue;
+        for (let lx = 0; lx < width; lx++) {
+          const x = lx + originX;
+          if (groundLayerData[y * width + lx] !== 2 || y + originY >= 11) continue;
           const h = this.tileHash(x + 91, y + 17);
-          if (isFenceTile(x, y + originY, width)) {
+          if (isFenceTileFor(this.tileMap.buildings, x, y + originY, width)) {
             const fence = new Sprite(this.textures.getTexture('deco_fence'));
             fence.x = x * TILE_SIZE;
             fence.y = (y + originY) * TILE_SIZE;
@@ -617,27 +696,68 @@ export class PixiGameViewport {
     // Bãi bốc dỡ & tiếp nhận hàng hóa phía Đông (Dedicated Loading Dock - Phương án 1)
     this.buildLoadingDock();
 
+    // Ô sàn tiệm chính (ground 3, không tường, không phải ô cửa): tường tiệm chính chọn texture theo ô sàn kề (auto-tiling), nên footprint
+    // hình chữ L/T vẫn có tường đúng hướng. Với hình chữ nhật cho đúng texture của logic cũ (xem `mainWallTexture`).
+    const isMainFloor = (wx: number, wy: number): boolean => {
+      const col = wx - originX, row = wy - originY;
+      if (!groundLayerData || !wallLayerData || col < 0 || row < 0 || col >= width || row >= height) return false;
+      if (wx <= MAIN_FLOOR_RECT.x0 || wx >= MAIN_FLOOR_RECT.x1 || wy <= MAIN_FLOOR_RECT.y0 || wy >= MAIN_FLOOR_RECT.y1) return false;
+      const index = row * width + col;
+      return groundLayerData[index] === 3 && !wallLayerData[index] && !MAIN_DOOR_TILES.some(door => door.x === wx && door.y === wy);
+    };
+    const mainWallTexture = (wx: number, wy: number): string | undefined => {
+      const north = isMainFloor(wx, wy - 1), south = isMainFloor(wx, wy + 1), west = isMainFloor(wx - 1, wy), east = isMainFloor(wx + 1, wy);
+      if (north || (east && west)) return 'wall_store_front';
+      if (east) return 'wall_store_left';
+      if (west) return 'wall_store_right';
+      if (south) return wx <= WAREHOUSE_DOOR_LEFT ? 'wall_partition_left' : 'wall_partition_right';
+      if (isMainFloor(wx + 1, wy - 1)) return 'wall_store_corner_bl';
+      if (isMainFloor(wx - 1, wy - 1)) return 'wall_store_corner_br';
+      if (isMainFloor(wx + 1, wy + 1)) return 'wall_partition_left';
+      if (isMainFloor(wx - 1, wy + 1)) return 'wall_partition_right';
+      return undefined;
+    };
+
+    const placedNow = this.placedBuildings();
+    // Tòa phụ có sàn mở rộng: tường chọn texture theo ô sàn kề của chính tòa đó (giống tiệm chính), nên L/T và dải hẹp vẫn đúng hướng.
+    const extendedBuildings = placedNow.filter(building => !!building.floor);
+    const extendedWallTexture = (building: PlacedBuilding, wx: number, wy: number): string | undefined => {
+      const floor = building.floor!;
+      const has = (x: number, y: number) => floor.has(`${x},${y}`) && !building.doorTiles.some(door => door.x === x && door.y === y);
+      const north = has(wx, wy - 1), south = has(wx, wy + 1), west = has(wx - 1, wy), east = has(wx + 1, wy);
+      const partition = building.id === 'xoi' ? 'wall_partition_left' : 'wall_partition_right';
+      if (north || (east && west)) return 'wall_store_front';
+      if (east) return 'wall_store_left';
+      if (west) return 'wall_store_right';
+      if (south) return partition;
+      if (has(wx + 1, wy - 1)) return 'wall_store_corner_bl';
+      if (has(wx - 1, wy - 1)) return 'wall_store_corner_br';
+      if (has(wx + 1, wy + 1) || has(wx - 1, wy + 1)) return partition;
+      return undefined;
+    };
     if (wallLayerData) {
       for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          const tileId = wallLayerData[y * width + x];
+        for (let lx = 0; lx < width; lx++) {
+          const x = lx + originX;
+          const tileId = wallLayerData[y * width + lx];
           if (tileId === 4 || tileId === 10) {
             const worldY = y + originY;
             let textureKey = tileId === 10 ? 'warehouse_wall' : 'tile_yellow_wall';
 
-            // 2.5D Stardew Valley slim walls:
-            const drinkTop = this.tileMap.buildings?.find(building => building.id === 'drink')?.top ?? DRINK_BOUNDS.top;
-            const xoiTop = this.tileMap.buildings?.find(building => building.id === 'xoi')?.top ?? XOI_BOUNDS.top;
-            if (x >= DRINK_BOUNDS.left && worldY >= drinkTop && worldY <= DRINK_BOUNDS.bottom) {
-              // Quán nước (dải phía đông): đủ bốn tường riêng, kiểu tường tiệm; tường sau là vách ngăn.
-              if (worldY === drinkTop) textureKey = 'wall_partition_right';
-              else if (worldY === DRINK_BOUNDS.bottom) textureKey = x === DRINK_BOUNDS.left ? 'wall_store_corner_bl' : x === DRINK_BOUNDS.right ? 'wall_store_corner_br' : 'wall_store_front';
-              else textureKey = x === DRINK_BOUNDS.left ? 'wall_store_left' : 'wall_store_right';
-            } else if (x < STORE_BOUNDS.left && worldY >= xoiTop && worldY <= XOI_BOUNDS.bottom) {
-              // Tiệm xôi (dải phía tây): tường sau là vách ngăn, tường trái và mặt tiền dùng kiểu tường tiệm.
-              if (worldY === xoiTop) textureKey = 'wall_partition_left';
-              else if (worldY === XOI_BOUNDS.bottom) textureKey = x === XOI_BOUNDS.left ? 'wall_store_corner_bl' : 'wall_store_front';
-              else textureKey = 'wall_store_left';
+            // 2.5D Stardew Valley slim walls: tường tòa phụ theo vị trí đặt (tòa đứng trước thắng ở cột tường chung);
+            // ô sát sàn tiệm chính thuộc tiệm chính (auto-tiling bên dưới).
+            const touchesMainFloor = [-1, 0, 1].some(dy => [-1, 0, 1].some(dx => (dx !== 0 || dy !== 0) && isMainFloor(x + dx, worldY + dy)));
+            const secondary = placedNow.find(building => x >= building.bounds.left && x <= building.bounds.right && worldY >= building.bounds.top && worldY <= building.bounds.bottom);
+            const extended = tileId === 4 && !touchesMainFloor ? extendedBuildings.map(building => ({ building, texture: extendedWallTexture(building, x, worldY) })).find(entry => !!entry.texture) : undefined;
+            if (extended) {
+              textureKey = extended.texture!;
+            } else if (tileId === 4 && secondary && !touchesMainFloor) {
+              const box = secondary.bounds;
+              if (worldY === box.top) textureKey = secondary.id === 'xoi' ? 'wall_partition_left' : 'wall_partition_right';
+              else if (worldY === box.bottom) textureKey = x === box.left ? 'wall_store_corner_bl' : x === box.right ? 'wall_store_corner_br' : 'wall_store_front';
+              else textureKey = x === box.left ? 'wall_store_left' : 'wall_store_right';
+            } else if (tileId === 4 && mainWallTexture(x, worldY)) {
+              textureKey = mainWallTexture(x, worldY)!;
             } else if (worldY < STORE_BOUNDS.top) {
               if (worldY === WAREHOUSE_BOUNDS.top) {
                 if (x === WAREHOUSE_BOUNDS.left) textureKey = 'wall_warehouse_corner_tl';
@@ -693,23 +813,18 @@ export class PixiGameViewport {
     warehouseSign.position.set(WAREHOUSE_DOOR_LEFT * TILE_SIZE, STORE_BOUNDS.top * TILE_SIZE - 20);
     this.wallLayer.addChild(warehouseSign);
 
-    // === BIỂN HIỆU MỚI: Đặt trên các tòa nhà thực tế ===
-    // Tiệm xôi (xoi building)
-    const xoiSign = new Sprite(this.textures.getTexture('sign_xoi'));
-    xoiSign.position.set(XOI_BOUNDS.left * TILE_SIZE, (XOI_BOUNDS.top - 1) * TILE_SIZE);
-    xoiSign.zIndex = XOI_BOUNDS.top * TILE_SIZE;
-    this.wallLayer.addChild(xoiSign);
-    this.swaySigns.push(xoiSign);
+    // === BIỂN HIỆU: đặt trên tòa phụ đang có, theo vị trí đặt ===
+    for (const placed of this.placedBuildings()) {
+      const sign = new Sprite(this.textures.getTexture(`sign_${placed.id}`));
+      // Quán ăn vặt: biển ngay trên tường sau, rộng 4 ô trên sàn trong (lệch một ô so với mép trái).
+      sign.position.set((placed.bounds.left + (placed.id === 'snack' ? 1 : 0)) * TILE_SIZE, (placed.bounds.top - 1) * TILE_SIZE);
+      sign.zIndex = placed.bounds.top * TILE_SIZE;
+      this.wallLayer.addChild(sign);
+      this.swaySigns.push(sign);
+    }
 
-    // Quán nước (drink building)
-    const drinkSign = new Sprite(this.textures.getTexture('sign_drink'));
-    drinkSign.position.set(DRINK_BOUNDS.left * TILE_SIZE, (DRINK_BOUNDS.top - 1) * TILE_SIZE);
-    drinkSign.zIndex = DRINK_BOUNDS.top * TILE_SIZE;
-    this.wallLayer.addChild(drinkSign);
-    this.swaySigns.push(drinkSign);
-
-    this.buildXoiFacade();
-    this.buildBuildingFacade('drink');
+    for (const placed of this.placedBuildings()) this.buildBuildingFacade(placed);
+    this.buildVacantLotSigns();
 
     // Clean warehouse doorway frame and wood threshold
     const doorway = new Graphics();
@@ -739,14 +854,14 @@ export class PixiGameViewport {
 
     // 1. Wall fan mounted cleanly on the store partition wall (y = 3)
     const fan = new Sprite(this.textures.getTexture('tile_fan_0'));
-    fan.position.set(7 * TILE_SIZE, 3 * TILE_SIZE + 6);
+    fan.position.set((MAIN_B.left + 1) * TILE_SIZE, MAIN_B.top * TILE_SIZE + 6);
     this.wallLayer.addChild(fan);
     this.ambientSprites.push({ sprite: fan, key: 'tile_fan_', frames: 4 });
 
     // 2. Standing pedestal fan (quạt cây) located beside the cashier counter on floor
     const standingFan = new Sprite(this.textures.getTexture('standing_fan_0'));
-    standingFan.position.set(6 * TILE_SIZE + 18, 8 * TILE_SIZE + 6);
-    standingFan.zIndex = (8 * TILE_SIZE + 6) + 32;
+    standingFan.position.set(MAIN_B.left * TILE_SIZE + 18, (MAIN_B.bottom - 2) * TILE_SIZE + 6);
+    standingFan.zIndex = ((MAIN_B.bottom - 2) * TILE_SIZE + 6) + 32;
     this.entitiesLayer.addChild(standingFan);
     this.ambientSprites.push({ sprite: standingFan, key: 'standing_fan_', frames: 4 });
 
@@ -754,17 +869,17 @@ export class PixiGameViewport {
     // Window placed on LEFT side wall (x=6) of the shop, facing the exterior street
     // The window texture shows the inside-looking-out view → correct orientation on left wall
     const storeWindow = new Sprite(this.textures.getTexture('store_window'));
-    storeWindow.position.set(6 * TILE_SIZE, 5 * TILE_SIZE);
+    storeWindow.position.set(MAIN_B.left * TILE_SIZE, (MAIN_B.top + 2) * TILE_SIZE);
     this.wallLayer.addChild(storeWindow);
 
     // Warm morning sunlight beam casting through left-wall window aperture into shop interior (east direction)
     const sunBeam = new Graphics();
     this.sunBeamGraphic = sunBeam;
     sunBeam.poly([
-      6 * TILE_SIZE + 29, 5 * TILE_SIZE + 6,
-      6 * TILE_SIZE + 29, 5 * TILE_SIZE + 22,
-      9 * TILE_SIZE,      7 * TILE_SIZE,
-      9 * TILE_SIZE,      6 * TILE_SIZE,
+      MAIN_B.left * TILE_SIZE + 29, (MAIN_B.top + 2) * TILE_SIZE + 6,
+      MAIN_B.left * TILE_SIZE + 29, (MAIN_B.top + 2) * TILE_SIZE + 22,
+      (MAIN_B.left + 3) * TILE_SIZE, (MAIN_B.top + 4) * TILE_SIZE,
+      (MAIN_B.left + 3) * TILE_SIZE, (MAIN_B.top + 3) * TILE_SIZE,
     ]).fill({ color: 0xfff3c4, alpha: 0.12 });
     this.groundLayer.addChild(sunBeam);
 
@@ -772,17 +887,17 @@ export class PixiGameViewport {
     // Positioned at x = 7 * TILE_SIZE (centered over the 9..10 entrance and adjacent wall)
     // and elevated above the door transom (y = 10 * TILE_SIZE - 20) with high zIndex so it looks natural and doesn't cut across the door
     const awning = new Sprite(this.textures.getTexture('tile_awning'));
-    awning.position.set(7 * TILE_SIZE, 10 * TILE_SIZE - 22);
+    awning.position.set(AWNING_SPANS.main.x0, MAIN_B.bottom * TILE_SIZE - 22);
     awning.zIndex = 360;
     this.entitiesLayer.addChild(awning);
 
     // Front store entrance doors (vintage Vietnamese glass-wood double doors with brass chime bell)
     const frontDoorSill = new Graphics();
-    frontDoorSill.rect(9 * TILE_SIZE, (10 + 1) * TILE_SIZE - 2, 64, 2).fill(0x8a7762);
+    frontDoorSill.rect(MAIN_DOOR.x * TILE_SIZE, (MAIN_DOOR.y + 1) * TILE_SIZE - 2, 64, 2).fill(0x8a7762);
     this.groundLayer.addChild(frontDoorSill);
 
     this.storeDoorContainer = new Container();
-    this.storeDoorContainer.position.set(9 * TILE_SIZE, 10 * TILE_SIZE);
+    this.storeDoorContainer.position.set(MAIN_DOOR.x * TILE_SIZE, MAIN_DOOR.y * TILE_SIZE);
     this.storeDoorContainer.zIndex = 345;
 
     this.storeDoorLeft = new Sprite(this.textures.getTexture('store_door_left'));
@@ -804,7 +919,7 @@ export class PixiGameViewport {
 
     // Sidewalk Produce Crates - placed naturally along the sidewalk
     const crates = new Sprite(this.textures.getTexture('tile_crates'));
-    crates.position.set(6 * TILE_SIZE, 11 * TILE_SIZE + 4); // ô 5 là bồn cây nên thùng hàng dời sang ô 6
+    crates.position.set(MAIN_B.left * TILE_SIZE, (MAIN_B.bottom + 1) * TILE_SIZE + 4); // ô 5 là bồn cây nên thùng hàng dời sang ô 6
     crates.zIndex = crates.y + 32;
     this.entitiesLayer.addChild(crates);
 
@@ -829,29 +944,36 @@ export class PixiGameViewport {
 
     const wires = new Graphics();
     const wireY=(WAREHOUSE_BOUNDS.top-1)*TILE_SIZE;
-    wires.moveTo(2*TILE_SIZE,wireY).lineTo(5*TILE_SIZE,wireY+16).lineTo(14*TILE_SIZE,wireY).stroke({color:0x593a2b,width:1});
+    wires.moveTo((MAIN_B.left-4)*TILE_SIZE,wireY).lineTo((MAIN_B.left-1)*TILE_SIZE,wireY+16).lineTo((MAIN_CORE.right+1)*TILE_SIZE,wireY).stroke({color:0x593a2b,width:1});
     this.wallLayer.addChild(wires);
 
     // Flanking Potted Plants & Baskets on either side of the entrance
     const plant1 = new Sprite(this.textures.getTexture('tile_plant_pot'));
-    plant1.x = 7 * TILE_SIZE + 8;
-    plant1.y = 10 * TILE_SIZE;
+    plant1.x = (MAIN_B.left + 1) * TILE_SIZE + 8;
+    plant1.y = MAIN_B.bottom * TILE_SIZE;
     plant1.zIndex = plant1.y + 40;
     this.ambientSprites.push({sprite:plant1,key:'tile_plant_',frames:2});
     this.entitiesLayer.addChild(plant1);
 
     const plant2 = new Sprite(this.textures.getTexture('tile_plant_pot'));
-    plant2.x = 11 * TILE_SIZE + 8;
-    plant2.y = 10 * TILE_SIZE;
+    plant2.x = (MAIN_DOOR.x + 2) * TILE_SIZE + 8;
+    plant2.y = MAIN_B.bottom * TILE_SIZE;
     plant2.zIndex = plant2.y + 40;
     this.ambientSprites.push({sprite:plant2,key:'tile_plant_',frames:2});
     this.entitiesLayer.addChild(plant2);
 
     const baskets = new Sprite(this.textures.getTexture('tile_shopping_baskets'));
-    baskets.x = 8 * TILE_SIZE + 4;
-    baskets.y = 10 * TILE_SIZE + 6;
+    baskets.x = (MAIN_DOOR.x - 1) * TILE_SIZE + 4;
+    baskets.y = MAIN_B.bottom * TILE_SIZE + 6;
     baskets.zIndex = baskets.y + 32;
     this.entitiesLayer.addChild(baskets);
+  }
+
+  /** Quầy hết vé/ngừng bán hiện biển HẾT; gọi mỗi khi tập đổi, và vẽ lại ngay. */
+  public setStallSoldOut(ids: readonly string[]): void {
+    if (ids.length === this.stallSoldOut.size && ids.every(id => this.stallSoldOut.has(id))) return;
+    this.stallSoldOut = new Set(ids);
+    this.buildStalls();
   }
 
   /** Quầy ăn uống trên vỉa hè; chỉ vẽ, va chạm đã có trong collisionLayer của bản đồ. */
@@ -867,6 +989,13 @@ export class PixiGameViewport {
       sprite.zIndex = (stall.tileY + 1) * TILE_SIZE + 2;
       this.entitiesLayer.addChild(sprite);
       this.stallSprites.push(sprite);
+      if (this.stallSoldOut.has(stall.id)) {
+        const sign = new Sprite(this.textures.getTexture('stall_sold_out_sign'));
+        sign.position.set(sprite.x + (stall.widthTiles * TILE_SIZE - 24) / 2, sprite.y + 29);
+        sign.zIndex = sprite.zIndex + 1;
+        this.entitiesLayer.addChild(sign);
+        this.stallSprites.push(sign);
+      }
 
       // Người bán quầy phụ đứng sau quầy
       const vendorSprite = new Sprite(this.textures.getTexture('npc_1_down_idle_0'));
@@ -942,14 +1071,7 @@ export class PixiGameViewport {
       container.y = fix.tileY * TILE_SIZE + dimensions.heightTiles * TILE_SIZE / 2;
       container.rotation = fix.rotation * Math.PI / 180;
 
-      let textureKey = 'fixture_shelf_wooden';
-      if (fix.type === 'cashier_counter') {
-        textureKey = 'fixture_cashier';
-      } else if (fix.type === 'refrigerator') {
-        textureKey = fix.widthTiles >= 2 ? 'fixture_refrigerator' : 'fixture_refrigerator_single';
-      } else if(isWarehouseFixture(fix)) {
-        textureKey = `fixture_${fix.type}`;
-      }
+      const textureKey = isWarehouseFixture(fix) ? `fixture_${fix.type}` : fixtureTextureKey(fix.type, fix.widthTiles, fix.shopId);
 
       // Nội thất mua thêm không có bản vẽ theo lượng hàng: dùng sprite danh mục (tỉ lệ nguyên theo bề rộng ô).
       const art = fix.shopId && !STOCK_ART_SHOP_IDS.has(fix.shopId) ? furnitureSpriteTexture(fix.shopId) : null;
@@ -1166,7 +1288,26 @@ export class PixiGameViewport {
     this.uiOverlayLayer.addChild(this.interactionBubble);
   }
 
+  /**
+   * DPR thích ứng: chỉ khi khung hình chậm liên tục (~3 giây ở dưới ~33 FPS) mới hạ độ phân giải một bậc (2 → 1,5 → 1).
+   * Không tính lúc có hộp thoại (đã hạ trần FPS) hoặc tab ẩn; không tự tăng lại để tránh dao động.
+   */
+  private adaptResolution(): void {
+    if (document.documentElement.dataset.dialogs || document.hidden) { this.slowFrames = 0; return; }
+    const ms = this.app.ticker.deltaMS;
+    if (ms > 250) return;
+    this.frameEma = this.frameEma * 0.95 + ms * 0.05;
+    const res = this.app.renderer.resolution;
+    if (res <= 1 || this.frameEma < 30) { this.slowFrames = 0; return; }
+    if (++this.slowFrames < 180) return;
+    this.slowFrames = 0;
+    this.frameEma = 16;
+    this.qualityCap = res > 1.5 ? 1.5 : 1;
+    this.updateResponsiveSettings();
+  }
+
   private renderTick = (): void => {
+    this.adaptResolution();
     // Có hộp thoại phủ màn hình (PixelDialog đặt data-dialogs): hạ trần khung hình để giao diện cuộn mượt hơn.
     const targetMaxFps = document.documentElement.dataset.dialogs ? 20 : 0;
     if (this.app.ticker.maxFPS !== targetMaxFps) this.app.ticker.maxFPS = targetMaxFps;
@@ -1339,7 +1480,7 @@ export class PixiGameViewport {
       }
     }
 
-    const workers = this.simulation.peekStaff().slice(0, 4); // không sao chép từng nhân viên mỗi khung; chỉ đọc
+    const workers = this.simulation.peekStaff(); // vẽ đủ mọi nhân viên (tối đa theo số vị trí); không sao chép từng nhân viên mỗi khung; chỉ đọc
     const workerIds = new Set(workers.map((worker) => worker.id));
     workers.forEach((worker, idx) => {
       const position = worker.position ?? { x: 300 + idx * TILE_SIZE, y: 300 };
@@ -1596,7 +1737,7 @@ export class PixiGameViewport {
     }
 
     // 2b. Update Doors & Entrance Animation
-    const storeDoorCenter = { x: 304, y: 336 };
+    const storeDoorCenter = { x: (MAIN_DOOR.x + 0.5) * TILE_SIZE, y: (MAIN_DOOR.y + 0.5) * TILE_SIZE }; // mặc định (304, 336)
     // Trigger from the whole doorway, not a circle around its center. The player
     // collider is wider than a single tile, so the edge can cross the threshold
     // while the player's center is still outside the old radius.
@@ -1686,7 +1827,7 @@ export class PixiGameViewport {
           if(entry.lastState!==key){entry.sprite.texture=this.textures.getTexture(key);entry.lastState=key;entry.dotMarker.clear().rect(5,38,6,6).fill(state==='empty'?0xb64c3d:0x357f72);}
           entry.stockText.text=receiving?`${count} đơn`:cold?`${count}/40`:`${count} món`;
           entry.stockText.visible=true;entry.dotMarker.visible=true;
-        } else if (fix.type !== 'cashier_counter' && fix.type !== 'decor' && fix.type !== 'kitchen_station') {
+        } else if (fix.type !== 'cashier_counter' && fix.type !== 'decor' && fix.type !== 'kitchen_station' && fix.type !== 'dining_table') {
           const group = allFixtures.filter(item => item.id === fix.id || item.parentId === fix.id);
           const limit = group.reduce((sum, item) => sum + effectiveShelfCapacity(item.maxCapacity, (item.assignedProductId && PRODUCT_MAP[item.assignedProductId]?.shelfCapacity) || item.maxCapacity, this.simulation.getShelfCapacityBonus()), 0);
           const stock = group.reduce((sum, item) => sum + item.currentStock, 0);
@@ -1697,7 +1838,7 @@ export class PixiGameViewport {
           entry.wearMarker.visible = worn;
           const stateKey = `${key}|${fix.broken ?? ''}`;
           if(entry.lastState !== stateKey) {
-            if (!entry.staticArt) entry.sprite.texture = this.textures.getTexture(key);
+            if (!entry.staticArt && !entry.textureKey.startsWith('fixture_prop_')) entry.sprite.texture = this.textures.getTexture(key);
             entry.lastState = stateKey;
             entry.sprite.tint = fix.broken ? (fix.broken === 'major' ? 0x7a6a6a : 0xb5a29c) : 0xffffff;
             entry.dotMarker.clear().rect(entry.dotX, 38, 6, 6).fill({color: fix.broken ? 0x6f2a1e : state==='empty'?0xd9381e:state==='low'?0xf4a261:0x2a7a43});
@@ -2244,6 +2385,7 @@ export class PixiGameViewport {
     this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
     window.removeEventListener('pointermove', this.handlePointerMove);
     window.removeEventListener('pointerup', this.handlePointerUp);
+    window.removeEventListener('pointercancel', this.handlePointerUp);
     if (this.loadingDockBoxesContainer) {
       this.entitiesLayer.removeChild(this.loadingDockBoxesContainer);
       this.loadingDockBoxesContainer.destroy({ children: true });

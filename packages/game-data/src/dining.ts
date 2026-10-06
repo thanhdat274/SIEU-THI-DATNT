@@ -25,4 +25,10 @@ export const DINING_ADD_ON_RULES: readonly DiningAddOnRule[] = [
     whenProductIds: ['xoi_dau_xanh_tp', 'xoi_man_tp', 'xoi_trung_tp', 'xoi_dua_tp'],
     addOns: [{ productId: 'tra_da', chance: 0.45 }, { productId: 'sua_dau_nanh', chance: 0.2 }],
   },
+  // Quán ăn vặt: khách ngồi bàn gọi thêm nước giải khát. Đồ uống lấy thẳng từ kho (chưa đi qua quán nước).
+  {
+    id: 'snack',
+    whenProductIds: ['bap_xao_tp', 'ca_vien_chien_tp', 'banh_trang_tron_tp'],
+    addOns: [{ productId: 'tra_da', chance: 0.4 }, { productId: 'nuoc_mia', chance: 0.25 }],
+  },
 ];

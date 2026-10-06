@@ -51,6 +51,17 @@ export function runCoopRoutineTests(): void {
     console.log('✓ Test 1: Basic initialization');
   }
 
+  // Test 1b: mỗi người giữ cửa nhà riêng
+  {
+    const system = new CoopRoutineSystem(createMockCallbacks());
+    system.registerPlayer({ playerId: 'p1', homeDoorTile: { x: 3, y: 12 } });
+    system.registerPlayer({ playerId: 'p2', homeDoorTile: { x: 5, y: 12 } });
+    const doors = Object.fromEntries(system.getCoopRoutineStates().map((s) => [s.playerId, s.homeDoorTile]));
+    assert.deepEqual(doors.p1, { x: 3, y: 12 });
+    assert.deepEqual(doors.p2, { x: 5, y: 12 });
+    console.log('✓ Test 1b: Cửa nhà riêng từng người');
+  }
+
   // Test 2: Morning routine - both players wake up and go to work
   {
     const callbacks = createMockCallbacks();

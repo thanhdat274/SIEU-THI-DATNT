@@ -3,7 +3,7 @@ import { DEFAULT_INITIAL_SAVE, generateStarterTileMap } from '@game/data';
 import { GameSimulation } from './simulation';
 import { InputManager } from './input';
 import { HOME_DOOR_TILE } from './daily-routine';
-import { WorldRuntime } from './world-runtime';
+import { WorldRuntime, COOP_HOME_DOOR_TILES } from './world-runtime';
 import { createInitialOnlineWorld } from '@game/data';
 
 const homeCenter = { x: (HOME_DOOR_TILE.x + 0.5) * 32, y: (HOME_DOOR_TILE.y + 0.5) * 32 };
@@ -80,7 +80,7 @@ export function runCoopDayTests(): void {
     for (let i = 0; i < 20; i++) {
       now += 250;
       runtime.reportPosition('o1', { ...homeCenter }, 'down', now);
-      runtime.reportPosition('m2', { ...homeCenter }, 'down', now);
+      runtime.reportPosition('m2', { x: (COOP_HOME_DOOR_TILES[1].x + 0.5) * 32, y: (COOP_HOME_DOOR_TILES[1].y + 0.5) * 32 }, 'down', now); // cửa nhà riêng của người thứ hai
       runtime.tick(0.25, now);
     }
     assert.equal(sim.getClock().getTime().day, startDay + 1, 'runtime: cả hai về nhà thì sang ngày mới');

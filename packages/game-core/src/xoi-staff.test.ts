@@ -10,7 +10,7 @@ const lot = (quantity: number) => ({ quantity, expiresOnDay: 400, unitCost: 5_00
 
 const baseSave = (): SaveGameData => {
   const base = structuredClone(DEFAULT_INITIAL_SAVE);
-  base.player.level = 30;
+  base.player.level = 60;
   base.player.money = 5_000_000;
   base.worldTime.isStoreOpen = false;
   const bought = applyStoreLayoutActions(base, [{ type: 'buy_plot', plotId: XOI_PLOT_ID }], mapFor).save!;

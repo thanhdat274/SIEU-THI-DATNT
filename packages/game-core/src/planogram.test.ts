@@ -173,5 +173,18 @@ export function runPlanogramTests(): void {
   const manualTransfer = manualSim.transferToShelf('shelf_wooden_noodles', 'mi_hao_hao', 2);
   assert(manualTransfer.success, 'Thao tác tay châm hàng vẫn hoạt động độc lập bình thường');
 
+  // Nhân viên tự chọn món mới cho kệ trống chưa gán, song song với thao tác tay của người chơi.
+  const newSave = structuredClone(DEFAULT_INITIAL_SAVE);
+  newSave.staff = [{ id: 'refiller-2', name: 'Anh Phúc', role: 'refill', speed: 6, accuracy: 5, stamina: 7, dailyWage: 30000, hiredOnDay: 1, shift: 'full_day' }];
+  newSave.planogram = {};
+  newSave.inventory = [{ productId: 'mi_hao_hao', quantity: 20 }];
+  const newSim = new GameSimulation(newSave, generateStarterTileMap(), new InputManager());
+  const emptyTargets = newSim.getRestockJobTargets();
+  assert(emptyTargets.length > 0, 'Kệ trống chưa gán vẫn có việc cho nhân viên khi kho có món mới');
+  assert(emptyTargets.some((t) => t.currentStock === 0 && t.productId === 'mi_hao_hao' && t.availableInInventory > 0), 'Có target kệ trống, món lấy từ kho');
+  assert(newSim.assignAutoRestockJob('refiller-2').success, 'Nhân viên nhận việc tự bày món mới');
+  const manualOnNew = newSim.transferToShelf(emptyTargets[emptyTargets.length - 1].fixtureId, 'mi_hao_hao', 2);
+  assert(manualOnNew.reason !== undefined, 'Người chơi vẫn bày tay song song');
+
   console.log('🎉 TOÀN BỘ KIỂM THỬ NHÓM 5 ĐẠT CHUẨN!\n');
 }

@@ -19,7 +19,7 @@ const diner = (id: string, productId: string): CustomerState => ({
 
 const newSim = (customer: CustomerState, inventory: InventoryItem[]) => {
   const save = structuredClone(DEFAULT_INITIAL_SAVE);
-  save.player.level = 30;
+  save.player.level = 60;
   save.player.money = 1_000_000;
   save.worldTime.isStoreOpen = true;
   save.worldTime.hour = 10;

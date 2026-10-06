@@ -1,4 +1,4 @@
-import type { SaveGameData, StaffMember, StaffShift } from '@game/shared';
+import type { SaveGameData, StaffBuilding, StaffMember, StaffShift } from '@game/shared';
 import { isShiftWithinStoreHours } from '@game/data';
 
 export function normalizeStaffSchedule(
@@ -152,7 +152,7 @@ export class StaffManager {
   }
 
   /** Kiểm tra bảo vệ cho tòa nhà cụ thể (hoặc bảo vệ chung). */
-  public hasSecurityForBuilding(building: 'main' | 'xoi' | 'drink' | undefined, getShift: (id: string) => StaffShift | undefined): boolean {
+  public hasSecurityForBuilding(building: StaffBuilding, getShift: (id: string) => StaffShift | undefined): boolean {
     return this.staff.some(
       (s) =>
         ((s.role === 'security' && !s.assignedBuilding) || // Bảo vệ chung
@@ -177,7 +177,7 @@ export class StaffManager {
   }
 
   /** Tìm tất cả nhân viên cho tòa nhà cụ thể. */
-  public getStaffForBuilding(building: 'main' | 'xoi' | 'drink' | undefined): StaffMember[] {
+  public getStaffForBuilding(building: StaffBuilding): StaffMember[] {
     return this.staff.filter(
       (s) => !s.assignedBuilding || s.assignedBuilding === building
     );
@@ -220,7 +220,7 @@ export class StaffManager {
   }
 
   /** Cập nhật building assignment cho nhân viên. */
-  public updateStaffBuilding(staffId: string, building: 'main' | 'xoi' | 'drink' | undefined): boolean {
+  public updateStaffBuilding(staffId: string, building: StaffBuilding): boolean {
     const member = this.staff.find((m) => m.id === staffId);
     if (!member) return false;
     member.assignedBuilding = building;

@@ -88,7 +88,7 @@ const TransferPanel: React.FC<{
         ? <EmptyState title={direction === 'send' ? 'Kho tổng không có hàng phù hợp' : 'Chi nhánh đang hết hàng'}>
           {direction === 'send' ? `Nhập thêm đồ ${type?.name ?? ''} bán về kho trước.` : 'Không có gì để trả về.'}
         </EmptyState>
-        : <div style={{ display: 'grid', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
+        : <div style={{ display: 'grid', gap: 6, maxHeight: 'min(260px, calc(var(--dialog-avail-h) * 0.45))', overflowY: 'auto' }}>
           {rows.map((item) => (
             <div key={item.productId} style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between', flexWrap: 'wrap' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>

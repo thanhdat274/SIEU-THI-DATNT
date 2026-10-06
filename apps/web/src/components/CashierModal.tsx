@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StoreFixture, PlayerData, WorldTime, SaveGameData, CustomerState } from '@game/shared';
 import { PRODUCT_MAP } from '@game/data';
-import { summarizeAnnualRevenue } from '@game/core';
+import { summarizeAnnualRevenue, buildDayChannelBreakdown } from '@game/core';
 import { PixelDialog, PixelStat, PixelButton, ProductSlot, EmptyState, money } from './pixel';
 import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../store/useGameStore';
@@ -29,9 +29,9 @@ interface Props {
   wageDebt: number;
   onHireStaff: (candidateId: string) => { success: boolean; reason?: string };
   onSetStaffShift: (staffId: string, shift: StaffShift) => boolean;
+  onPayWageDebt?: () => void;
   restockTargets?: RestockJobTarget[];
   onAssignRefillJob?: (staffId: string, fixtureId: string) => { success: boolean; reason?: string };
-  onAssignAutoRestockJob?: (staffId: string) => { success: boolean; reason?: string };
   onClose: () => void;
   initialShowStaff?: boolean;
 }
@@ -54,9 +54,9 @@ export const CashierModal: React.FC<Props> = ({
   wageDebt,
   onHireStaff,
   onSetStaffShift,
+  onPayWageDebt,
   restockTargets = [],
   onAssignRefillJob,
-  onAssignAutoRestockJob,
   onClose,
   initialShowStaff = false,
 }) => {
@@ -101,6 +101,7 @@ export const CashierModal: React.FC<Props> = ({
   }
 
   // Sorted past days descending
+  const todayChannels = currentDayRecord ? buildDayChannelBreakdown(currentDayRecord) : null;
   const pastDays = Object.values(dailyRecords)
     .filter((r) => r.day < worldTime.day || !!r.closedAt)
     .sort((a, b) => b.day - a.day);
@@ -114,9 +115,9 @@ export const CashierModal: React.FC<Props> = ({
       wageDebt={wageDebt}
       onHire={onHireStaff}
       onSetShift={onSetStaffShift}
+      onPayWageDebt={onPayWageDebt}
       restockTargets={restockTargets}
       onAssignRefillJob={onAssignRefillJob}
-      onAssignAutoRestockJob={onAssignAutoRestockJob}
       onClose={() => (initialShowStaff ? onClose() : setShowStaff(false))}
     />;
   }
@@ -290,8 +291,8 @@ export const CashierModal: React.FC<Props> = ({
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8, marginBottom: 12 }}>
-              <PixelStat label="Số khách" value={`${currentDayRecord?.customersServed ?? 0} người`} icon="person" />
-              <PixelStat label="Giao dịch" value={`${currentDayRecord?.transactionsCount ?? 0} lượt`} icon="book" />
+              <PixelStat label="Số khách" value={`${todayChannels?.totalCustomers ?? 0} người`} icon="person" />
+              <PixelStat label="Giao dịch" value={`${todayChannels?.totalTransactions ?? 0} lượt`} icon="book" />
               <PixelStat label="Món đã bán" value={`${currentDayRecord?.itemsSold ?? 0} cái`} icon="bag" />
             </div>
 
@@ -300,6 +301,20 @@ export const CashierModal: React.FC<Props> = ({
                 <span className="muted">Doanh thu bán hàng:</span>
                 <strong>{money(currentDayRecord?.revenue ?? 0)}</strong>
               </div>
+              {todayChannels && todayChannels.stalls.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingLeft: 10, fontSize: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span className="muted">· Tiệm (quầy thu ngân) — {todayChannels.shopCustomers} khách</span>
+                    <span>{money(todayChannels.shopRevenue)} <span className="muted">(lãi gộp {money(todayChannels.shopGrossProfit)})</span></span>
+                  </div>
+                  {todayChannels.stalls.map(line => (
+                    <div key={line.stallId} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span className="muted">· {line.name} — {line.servings} suất</span>
+                      <span>{money(line.revenue)} <span className="muted">(lãi gộp {money(line.grossProfit)}{line.estimated ? ', ước' : ''})</span></span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span className="muted">Giá vốn hàng bán (COGS):</span>
                 <span style={{ color: '#b64c3d' }}>- {money(currentDayRecord?.cogs ?? 0)}</span>
@@ -339,8 +354,8 @@ export const CashierModal: React.FC<Props> = ({
                 Khi qua ngày mới lúc 22:00 hoặc bấm nút Qua ngày mới, sổ sách ngày hiện tại sẽ được tự động chốt an toàn và lưu trữ vào lịch sử.
               </EmptyState>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto' }}>
-                {pastDays.map((rec) => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 'min(220px, calc(var(--dialog-avail-h) * 0.45))', overflowY: 'auto' }}>
+                {pastDays.map((rec) => { const ch = buildDayChannelBreakdown(rec); return (
                   <div
                     key={rec.day}
                     style={{
@@ -357,16 +372,21 @@ export const CashierModal: React.FC<Props> = ({
                         Chốt lúc: {rec.closedAt ? new Date(rec.closedAt).toLocaleTimeString('vi-VN') : 'Đã chốt'}
                       </span>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 96px), 1fr))', gap: 4 }}>
                       <div>Doanh thu: <strong>{money(rec.revenue)}</strong></div>
                       <div>Giá vốn: <span style={{ color: '#b64c3d' }}>{money(rec.cogs)}</span></div>
                       <div>Lãi ròng: <strong style={{ color: rec.netProfit >= 0 ? '#2a7a43' : '#b64c3d' }}>{money(rec.netProfit)}</strong></div>
                     </div>
                     <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
-                      {rec.customersServed} khách · {rec.transactionsCount} giao dịch · {rec.itemsSold} món bán {rec.spoilageCount > 0 ? `· Hỏng ${rec.spoilageCount} món` : ''}
+                      {ch.totalCustomers} khách · {ch.totalTransactions} giao dịch · {rec.itemsSold} món bán {rec.spoilageCount > 0 ? `· Hỏng ${rec.spoilageCount} món` : ''}
                     </div>
+                    {ch.stalls.length > 0 && (
+                      <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>
+                        Tiệm {money(ch.shopRevenue)} · {ch.stalls.map(line => `${line.name} ${money(line.revenue)} (${line.servings} suất)`).join(' · ')}
+                      </div>
+                    )}
                   </div>
-                ))}
+                ); })}
               </div>
             )}
           </div>

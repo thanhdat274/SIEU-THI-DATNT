@@ -6,8 +6,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 80vh;
-  overflow-y: auto;
+  container: plano / inline-size;
   padding: 4px 6px 12px;
 }
 
@@ -518,8 +517,8 @@
 }
 
 .change-product-modal {
-  width: min(580px, 94vw);
-  max-height: 80vh;
+  width: min(580px, 100%);
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   background: #FFF8E7;
@@ -558,7 +557,7 @@
   gap: 6px;
   padding: 10px 14px;
   overflow-y: auto;
-  max-height: calc(80vh - 80px);
+  max-height: calc(var(--dialog-avail-h) - 80px);
 }
 
 .product-select-card {
@@ -633,7 +632,7 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@container plano (max-width: 768px) {
   .fixture-slots-grid {
     grid-template-columns: 1fr;
   }

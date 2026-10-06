@@ -36,7 +36,7 @@ export function levelXpCost(level: number): number {
 }
 
 export function saleExperienceMultiplier(level: number): number {
-  return level >= 30 ? 0.55 : level >= 20 ? 0.7 : 1;
+  return level >= 40 ? 0.55 : level >= 20 ? 0.7 : 1;
 }
 
 export function levelProgress(player: Pick<PlayerData, 'level' | 'experience' | 'experienceToNextLevel'>): number {

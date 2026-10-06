@@ -49,7 +49,7 @@ export class WorldRepository {
 
   async list(accountId: string) {
     const docs = await (await connectDatabase()).collection<WorldDocument>(collectionName)
-      .find({ 'world.memberships.accountId': accountId }, { projection: { world: 1 } }).toArray();
+      .find({ 'world.memberships.accountId': accountId }, { projection: { 'world.id': 1, 'world.name': 1, 'world.revision': 1, 'world.memberships.accountId': 1, 'world.memberships.role': 1 } }).toArray();
     return docs.map(doc => ({ id: doc.world.id, name: doc.world.name ?? 'Hẻm', role: doc.world.memberships.find(m => m.accountId === accountId)?.role, revision: doc.world.revision }));
   }
 

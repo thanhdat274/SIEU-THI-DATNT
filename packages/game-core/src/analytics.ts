@@ -77,6 +77,31 @@ export function aggregateHeatmap(heatmap: SaveGameData['heatmap'], currentDay: n
 
 export interface TutorialItem { id: string; label: string; done: boolean }
 
+/** Khung lưới của bản đồ nhiệt lưu lượng khách (ô, gồm biên). */
+export interface HeatmapFrame { x0: number; x1: number; y0: number; y1: number }
+
+/**
+ * Khung lưới heatmap: bao mọi tòa theo VỊ TRÍ ĐẶT (`buildingBounds`, tòa có thể đã dời/mua ở lô khác) cộng lề quanh tiệm chính,
+ * rồi mở rộng theo mọi ô có lượt khách (sàn tiệm chính mở rộng lên bắc/đông nằm ngoài hộp tiệm cũ). Thuần, dễ kiểm thử.
+ */
+export function heatmapFrame(
+  counts: Record<string, number>,
+  storeBounds: { left: number; right: number; top: number; bottom: number },
+  buildingBounds: ReadonlyArray<{ left: number; right: number }>,
+): HeatmapFrame {
+  const seen = Object.keys(counts)
+    .map(key => key.split(',').map(Number))
+    .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+  const lefts = buildingBounds.map(bounds => bounds.left);
+  const rights = buildingBounds.map(bounds => bounds.right);
+  return {
+    x0: Math.min(storeBounds.left - 2, ...lefts, ...seen.map(([x]) => x)),
+    x1: Math.max(storeBounds.right + 2, ...rights, ...seen.map(([x]) => x)),
+    y0: Math.min(storeBounds.top - 1, ...seen.map(([, y]) => y)),
+    y1: storeBounds.bottom + 3,
+  };
+}
+
 /** Checklist suy ra từ trạng thái save thật: mục chỉ xong khi điều kiện gameplay thỏa. */
 export function getTutorialChecklist(save: Pick<SaveGameData, 'storeLayout' | 'staff' | 'statistics' | 'ledger' | 'pendingOrders' | 'dailyRecords' | 'player'>): TutorialItem[] {
   const stocked = save.storeLayout.fixtures.some(f => (f.type === 'shelf_wooden' || f.type === 'shelf_glass' || f.type === 'refrigerator') && f.currentStock > 0);

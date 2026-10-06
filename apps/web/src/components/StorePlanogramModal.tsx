@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { StoreFixture, InventoryItem, isSalesFixture, isUsableSalesFixture, slotGroup } from '@game/shared';
+import { StoreFixture, InventoryItem, type GameTileMap, isSalesFixture, isUsableSalesFixture, slotGroup } from '@game/shared';
 import { PRODUCT_MAP, SELLABLE_PRODUCTS, effectiveShelfCapacity, FIXTURE_SHOP, fixtureBuilding, refrigerationAccepts } from '@game/data';
 import { fixturePreviewUrl } from '@game/renderer';
 import { PixelDialog, PixelButton, PixelIcon, ProductSlot, PixelProgress, EmptyState } from './pixel';
@@ -7,6 +7,8 @@ import './store-planogram.css';
 
 export interface Props {
   fixtures: StoreFixture[];
+  /** Tòa đang có theo vị trí đặt (`GameTileMap.buildings`) để biết kệ thuộc tòa nào; thiếu = vị trí mặc định. */
+  buildings?: GameTileMap['buildings'];
   inventory: InventoryItem[];
   planogram?: Record<string, string>;
   capacityBonus?: number;
@@ -23,6 +25,7 @@ export interface Props {
   xoiProductIds?: readonly string[];
   /** Món của quán nước: kệ trong quán nước chỉ nhận các món này (khớp `autoFillShelf`). */
   drinkProductIds?: readonly string[];
+  snackProductIds?: readonly string[];
   onClose: () => void;
 }
 
@@ -38,6 +41,7 @@ const catalogName = (fixture: StoreFixture) => {
 
 export const StorePlanogramModal: React.FC<Props> = ({
   fixtures,
+  buildings,
   inventory,
   planogram = {},
   capacityBonus = 0,
@@ -50,10 +54,12 @@ export const StorePlanogramModal: React.FC<Props> = ({
   onAutoFillAll,
   xoiProductIds,
   drinkProductIds,
+  snackProductIds,
   onClose,
 }) => {
   const xoiIds = xoiProductIds ?? [];
   const drinkIds = drinkProductIds ?? [];
+  const snackIds = snackProductIds ?? [];
   const [filter, setFilter] = useState<FixtureFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [slotToChange, setSlotToChange] = useState<{ slot: StoreFixture; parent: StoreFixture } | null>(null);
@@ -105,8 +111,9 @@ export const StorePlanogramModal: React.FC<Props> = ({
             if (!p) return false;
             if (isColdFix ? !refrigerationAccepts(mainFix, p, fixtures) : p.storageType === 'cold') return false;
             // Kệ xôi: chỉ cho phép món xôi
-            if (xoiIds.length > 0 && fixtureBuilding(mainFix) === 'xoi' && !xoiIds.includes(inv.productId)) return false;
-            if (drinkIds.length > 0 && fixtureBuilding(mainFix) === 'drink' && !drinkIds.includes(inv.productId)) return false;
+            if (xoiIds.length > 0 && fixtureBuilding(mainFix, buildings) === 'xoi' && !xoiIds.includes(inv.productId)) return false;
+            if (drinkIds.length > 0 && fixtureBuilding(mainFix, buildings) === 'drink' && !drinkIds.includes(inv.productId)) return false;
+            if (snackIds.length > 0 && fixtureBuilding(mainFix, buildings) === 'snack' && !snackIds.includes(inv.productId)) return false;
             return true;
           });
           if (hasCompatible) canRestockCount++;
@@ -381,8 +388,9 @@ export const StorePlanogramModal: React.FC<Props> = ({
                       if (p.storageType === 'cold' && p.coldOnly) return false;
                     }
                     // Kệ xôi: chỉ cho phép món xôi
-                    if (xoiIds.length > 0 && fixtureBuilding(mainFix) === 'xoi' && !xoiIds.includes(inv.productId)) return false;
-            if (drinkIds.length > 0 && fixtureBuilding(mainFix) === 'drink' && !drinkIds.includes(inv.productId)) return false;
+                    if (xoiIds.length > 0 && fixtureBuilding(mainFix, buildings) === 'xoi' && !xoiIds.includes(inv.productId)) return false;
+            if (drinkIds.length > 0 && fixtureBuilding(mainFix, buildings) === 'drink' && !drinkIds.includes(inv.productId)) return false;
+            if (snackIds.length > 0 && fixtureBuilding(mainFix, buildings) === 'snack' && !snackIds.includes(inv.productId)) return false;
                     return true;
                   });
                 }

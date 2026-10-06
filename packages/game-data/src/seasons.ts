@@ -45,7 +45,7 @@ export const SEASON_EVENTS: readonly SeasonEvent[] = [
     endDayOfYear: 9,
     demandMultiplier: 1.5,
     preferredCategories: ['snacks', 'candy', 'soft_drinks', 'cooking_ingredients', 'eggs'],
-    stallMultiplier: { cafe_vot: 1.3, banh_mi_muoi_ot: 0.8 },
+    stallMultiplier: { cafe_vot: 1.3, banh_mi_muoi_ot: 0.8, ve_so: 1.3 },
     demandByTag: { fresh: 1.3, meat: 1.4, alcohol: 1.4 },
     seasonalProductIds: ['banh_chung_tet', 'cau_doi_do', 'dua_hau_tet', 'thit_heo_tuoi', 'rau_cai_xanh'],
     supplier: { priceMultiplier: 1.1, stockMultiplier: 0.85 },

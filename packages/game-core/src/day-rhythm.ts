@@ -1,5 +1,5 @@
 import type { DailyRecord } from '@game/shared';
-import { PRODUCT_MAP } from '@game/data';
+import { PRODUCT_MAP, STALL_MAP } from '@game/data';
 
 export interface DaySummary {
   day: number;
@@ -20,9 +20,77 @@ export interface DaySummary {
   walkouts: number;
 }
 
+export interface StallChannelLine {
+  stallId: string;
+  name: string;
+  servings: number;
+  revenue: number;
+  cogs: number;
+  grossProfit: number;
+  /** Ngày lưu từ bản cũ chưa ghi doanh thu theo quầy: doanh thu ước = suất × giá, giá vốn chưa rõ (0). */
+  estimated: boolean;
+}
+
+/** Doanh thu/giá vốn theo kênh bán của một ngày: tiệm (thu ngân) và từng quầy. Chỉ đọc, `revenue`/`cogs` của record đã gồm cả hai kênh. */
+export interface DayChannelBreakdown {
+  shopRevenue: number;
+  shopCogs: number;
+  shopGrossProfit: number;
+  stalls: StallChannelLine[];
+  stallRevenue: number;
+  stallCogs: number;
+  stallServings: number;
+  /** Khách thu ngân + suất quầy (mỗi suất tính một khách/một lượt bán). */
+  totalCustomers: number;
+  totalTransactions: number;
+  /** Khách riêng quầy thu ngân của tiệm. */
+  shopCustomers: number;
+}
+
+/** Giá vốn ước cho ngày lưu cũ chưa ghi `stallCogs`: tiền mặt mỗi suất + nguyên liệu theo giá nhập chuẩn. */
+function estimateStallCogs(stallId: string, servings: number): number {
+  const def = STALL_MAP[stallId];
+  if (!def) return 0;
+  const perServing = def.cashCostPerServing + def.ingredients.reduce((sum, ing) => sum + ing.perServing * (PRODUCT_MAP[ing.productId]?.purchasePrice ?? 0), 0);
+  return Math.round(servings * perServing);
+}
+
+export function buildDayChannelBreakdown(record: DailyRecord): DayChannelBreakdown {
+  const stalls: StallChannelLine[] = [];
+  for (const [stallId, servings] of Object.entries(record.stallServings ?? {})) {
+    if (!(servings > 0)) continue;
+    const def = STALL_MAP[stallId];
+    const known = record.stallRevenue?.[stallId] !== undefined;
+    const revenue = known ? record.stallRevenue![stallId] : servings * (def?.servingPrice ?? 0);
+    const cogs = record.stallCogs?.[stallId] ?? estimateStallCogs(stallId, servings);
+    stalls.push({ stallId, name: def?.name ?? stallId, servings, revenue, cogs, grossProfit: revenue - cogs, estimated: !known });
+  }
+  stalls.sort((a, b) => b.revenue - a.revenue);
+  const stallRevenue = stalls.reduce((sum, s) => sum + s.revenue, 0);
+  const stallCogs = stalls.reduce((sum, s) => sum + s.cogs, 0);
+  const stallServings = stalls.reduce((sum, s) => sum + s.servings, 0);
+  const includesStalls = record.stallRevenue !== undefined;
+  const shopRevenue = Math.max(0, record.revenue - stallRevenue);
+  const shopCogs = Math.max(0, record.cogs - stallCogs);
+  return {
+    shopRevenue,
+    shopCogs,
+    shopGrossProfit: shopRevenue - shopCogs,
+    stalls,
+    stallRevenue,
+    stallCogs,
+    stallServings,
+    // Ngày mới đã cộng suất quầy vào bộ đếm chung (có `stallRevenue`); ngày cũ thì cộng thêm ở đây.
+    totalCustomers: includesStalls ? record.customersServed : record.customersServed + stallServings,
+    totalTransactions: includesStalls ? record.transactionsCount : record.transactionsCount + stallServings,
+    shopCustomers: includesStalls ? Math.max(0, record.customersServed - stallServings) : record.customersServed,
+  };
+}
+
 /** Read-only summary derived from the closed daily record; never changes ledger or cash. */
 export function buildDaySummary(record: DailyRecord): DaySummary {
   const bestSellingProductId = Object.entries(record.productSales ?? {}).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const channels = buildDayChannelBreakdown(record);
   return {
     day: record.day,
     revenue: record.revenue,
@@ -32,8 +100,8 @@ export function buildDaySummary(record: DailyRecord): DaySummary {
     wagesPaid: record.wagesPaid,
     ...(record.maintenanceCost ? { maintenanceCost: record.maintenanceCost } : {}),
     netProfit: record.netProfit,
-    customersServed: record.customersServed,
-    transactionsCount: record.transactionsCount,
+    customersServed: channels.totalCustomers,
+    transactionsCount: channels.totalTransactions,
     itemsSold: record.itemsSold,
     averageStars: record.averageStars,
     ratingCount: record.ratingCount ?? 0,

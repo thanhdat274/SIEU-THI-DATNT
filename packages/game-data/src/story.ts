@@ -48,10 +48,10 @@ export const STORY_CHAPTERS: readonly StoryChapterDef[] = [
   { id: 'rival_supermarket', chapter: 5, title: 'Siêu thị đối diện', unlockLevel: 24, portrait: '🏬',
     dialog: ['Siêu thị mới khai trương bên kia đường, khách vãng lai giảm thấy rõ.', 'Trong 10 ngày, giữ danh tiếng cao và xây cộng đồng khách quen.'],
     goal: 'Hết 10 ngày: danh tiếng ≥ 75 và có 10 khách quen', objective: { kind: 'rival', reputation: 75, regulars: 10 }, rewardMoney: 300000, rewardExp: 800, rivalDays: 10 },
-  { id: 'grandma_visit', chapter: 6, title: 'Bà về thăm tiệm', unlockLevel: 28, portrait: '👵',
+  { id: 'grandma_visit', chapter: 6, title: 'Bà về thăm tiệm', unlockLevel: 30, portrait: '👵',
     dialog: ['Bà ghé thăm và thấy góc đồ ăn đông vui quá.', 'Bà nhờ cháu chuẩn bị vài món quen cho xóm mình.'],
     goal: 'Bán 10 suất ở các quầy ăn uống', objective: { kind: 'stallServings', target: 10 }, rewardMoney: 250000, rewardExp: 600 },
-  { id: 'open_second_shop', chapter: 7, title: 'Mở thêm cơ sở', unlockLevel: 29, portrait: '👵',
+  { id: 'open_second_shop', chapter: 7, title: 'Mở thêm cơ sở', unlockLevel: 36, portrait: '👵',
     dialog: ['Tiệm đứng vững rồi, bà muốn cháu nghĩ xa hơn một gian hàng.', 'Mở thêm tiệm xôi sát bên: thêm một cơ sở là thêm một nguồn thu cho cả xóm.'],
     goal: 'Mở tiệm xôi (cơ sở thứ hai)', objective: { kind: 'buildingsOpened', target: 2 }, rewardMoney: 500000, rewardExp: 1000 },
 ];

@@ -34,7 +34,7 @@ export function runXoiTests(): void {
   assert.ok(SELLABLE_PRODUCTS.some(product => product.id === 'xoi_man_tp'), 'xôi thành phẩm bán được');
 
   const save = structuredClone(DEFAULT_INITIAL_SAVE);
-  save.player.level = 29;
+  save.player.level = 36;
   save.inventory = [
     { productId: 'nep', quantity: 10, lots: [lot(10, 28_000)] },
     { productId: 'dau_xanh', quantity: 5, lots: [lot(5, 2_500)] },
@@ -81,7 +81,7 @@ export function runXoiTests(): void {
 
   // Save/load giữa chừng một mẻ ngâm.
   const saveMid = structuredClone(DEFAULT_INITIAL_SAVE);
-  saveMid.player.level = 29;
+  saveMid.player.level = 36;
   saveMid.inventory = [{ productId: 'nep', quantity: 5, lots: [lot(5, 28_000)] }];
   saveMid.storeLayout.fixtures.push(station('st_soak', 'thung_ngam', 1));
   const mid = new GameSimulation(saveMid, map, new InputManager(), {});
@@ -92,9 +92,9 @@ export function runXoiTests(): void {
   runUntilIdle(reloaded, 400);
   assert.equal(reloaded.getInventory().find(item => item.productId === 'nep_ngam')?.quantity, 5);
 
-  // Dưới cấp 29 không nấu được.
+  // Dưới cấp 36 không nấu được.
   const lowSave = structuredClone(saveMid);
-  lowSave.player.level = 28;
+  lowSave.player.level = 35;
   assert.equal(new GameSimulation(lowSave, map, new InputManager(), {}).startProduction('recipe_ngam_nep_5', 'st_soak').success, false);
   console.log('Chuỗi xôi: PASS');
 }

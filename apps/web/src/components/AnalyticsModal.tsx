@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import type { DailyRecord } from '@game/shared';
-import { DRINK_BOUNDS, PRODUCT_MAP, SELLABLE_PRODUCTS, STORE_BOUNDS, XOI_BOUNDS } from '@game/data';
-import { buildProductSeries } from '@game/core';
+import type { DailyRecord, MapBuilding } from '@game/shared';
+import { BUILDINGS, PRODUCT_MAP, SELLABLE_PRODUCTS, STORE_BOUNDS } from '@game/data';
+import { buildProductSeries, heatmapFrame } from '@game/core';
 import { PixelButton, PixelDialog } from './pixel';
 
 export interface Props {
@@ -9,6 +9,8 @@ export interface Props {
   records: Record<number, DailyRecord>;
   getPriceHistory: (productId: string) => Array<{ day: number; price: number }>;
   getHeatmap: (days: number) => Record<string, number>;
+  /** Tòa đang có theo vị trí đặt (mô hình thế giới mở); thiếu = bốn tòa ở vị trí mặc định. */
+  buildings?: readonly MapBuilding[];
   onClose: () => void;
 }
 
@@ -48,9 +50,11 @@ const PriceSalesChart: React.FC<{ productId: string } & Pick<Props, 'day' | 'rec
   </div>;
 };
 
-const Heatmap: React.FC<{ counts: Record<string, number> }> = ({ counts }) => {
+const Heatmap: React.FC<{ counts: Record<string, number>; buildings?: readonly MapBuilding[] }> = ({ counts, buildings }) => {
   // Gộp cả ba tòa nhà (tiệm xôi ở dải phía tây, quán nước ở dải phía đông) vào một bản đồ nhiệt.
-  const x0 = Math.min(STORE_BOUNDS.left - 2, XOI_BOUNDS.left), x1 = Math.max(STORE_BOUNDS.right + 2, DRINK_BOUNDS.right), y0 = STORE_BOUNDS.top - 1, y1 = STORE_BOUNDS.bottom + 3;
+  // Khung lưới tính từ VỊ TRÍ ĐẶT của tòa (tòa có thể đã dời/mua ở lô khác) + mọi ô có lượt khách (xem `heatmapFrame`).
+  const frames = (buildings ?? BUILDINGS).map(building => building.bounds).filter((bounds): bounds is NonNullable<typeof bounds> => !!bounds);
+  const { x0, x1, y0, y1 } = heatmapFrame(counts, STORE_BOUNDS, frames);
   const max = Math.max(1, ...Object.values(counts));
   const cols = x1 - x0 + 1;
   const cells: React.ReactNode[] = [];
@@ -64,7 +68,7 @@ const Heatmap: React.FC<{ counts: Record<string, number> }> = ({ counts }) => {
   </div>;
 };
 
-export const AnalyticsModal: React.FC<Props> = ({ day, records, getPriceHistory, getHeatmap, onClose }) => {
+export const AnalyticsModal: React.FC<Props> = ({ day, records, getPriceHistory, getHeatmap, buildings, onClose }) => {
   const [tab, setTab] = useState<'sales' | 'heat'>('sales');
   const [heatDays, setHeatDays] = useState(1);
   const sold = useMemo(() => {
@@ -86,7 +90,7 @@ export const AnalyticsModal: React.FC<Props> = ({ day, records, getPriceHistory,
     </>}
     {tab === 'heat' && <>
       <label>Khoảng <select value={heatDays} onChange={e => setHeatDays(Number(e.target.value))}><option value={1}>Hôm nay</option><option value={3}>3 ngày</option><option value={7}>7 ngày</option></select></label>
-      <Heatmap counts={getHeatmap(heatDays)} />
+      <Heatmap counts={getHeatmap(heatDays)} buildings={buildings} />
       <p className="muted">Mỗi ô đếm số lượt khách bước vào ô đó; chỉ lưu tổng hợp 7 ngày gần nhất, không lưu đường đi từng khách.</p>
     </>}
   </PixelDialog>;

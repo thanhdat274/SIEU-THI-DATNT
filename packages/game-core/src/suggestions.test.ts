@@ -4,6 +4,7 @@ import {
   DEFAULT_INITIAL_SAVE,
   generateStarterTileMap,
   PRODUCT_MAP,
+  STALL_MAP,
 } from '@game/data';
 import { isSaveGameData } from '@game/shared';
 import { GameSimulation } from './simulation';
@@ -652,7 +653,7 @@ export function runSuggestionTests(): void {
     setHour(12);
     const noon = sim.currentDayRecord.revenue;
     assert.ok(noon > 0, '12:00 đã có doanh thu quầy trong sổ hôm nay');
-    assert.equal(sim.playerData.money - money0, noon, 'Tiền cộng cùng lúc với doanh thu');
+    assert.equal(sim.playerData.money - money0, noon - sim.stalls.progress.entries.cafe_vot.servings * STALL_MAP.cafe_vot.cashCostPerServing, 'Tiền cộng cùng lúc với doanh thu, đã trừ tiền mặt nhập hàng của quầy');
     assert.ok(!sim.stalls.processedDayIds.includes(day), 'Chưa chốt trước 22:00');
     setHour(16);
     assert.ok(sim.currentDayRecord.revenue > noon, 'Doanh thu tăng dần theo giờ');
@@ -716,7 +717,8 @@ export function runSuggestionTests(): void {
     (sim as any).playerData.money += 1000000;
     (sim as any).lastStallTopUpKey = '';
     (sim as any).topUpStallShortfalls();
-    assert.ok((sim as any).pendingOrders.length > afterMorning, 'Có tiền giữa ngày thì tự mua nốt');
+    // Đại lý hỏa tốc giao ngay trong ngày nên đơn có thể vào kho luôn thay vì nằm trong hàng chờ.
+    assert.ok((sim as any).pendingOrders.length > afterMorning || sim.getInventory().some((item) => item.productId === 'banh_mi_goi'), 'Có tiền giữa ngày thì tự mua nốt');
     assert.equal((sim as any).stallShortfall.size, 0, 'Hết thiếu sau khi mua nốt');
 
     const reloaded = new GameSimulation(structuredClone(sim.exportSaveData('slot', 1)) as any, generateStarterTileMap(), new InputManager());

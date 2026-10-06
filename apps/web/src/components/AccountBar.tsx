@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { User } from 'firebase/auth';
 
 interface AccountBarProps {
@@ -12,6 +12,9 @@ interface AccountBarProps {
 export function AccountBar({ onlineWorldName, isOnlineOwner, onInvite, onLeaveOnline, onReturnHome }: AccountBarProps = {}) {
   const [user, setUser] = useState<User | null>(null);
   const [busy, setBusy] = useState(false);
+  // Chỉ có tác dụng khi màn thấp (CSS biến thanh thành nút tròn nổi): mở/đóng bảng tài khoản. Ở màn thường CSS bỏ qua.
+  const [open, setOpen] = useState(false);
+  const barRef = useRef<HTMLElement>(null);
   const [message, setMessage] = useState('Tiến trình hiện lưu an toàn trên máy này.');
 
   useEffect(() => {
@@ -29,6 +32,13 @@ export function AccountBar({ onlineWorldName, isOnlineOwner, onInvite, onLeaveOn
       unsubscribe?.();
     };
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => { if (!barRef.current?.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  }, [open]);
 
   async function toggleAccount() {
     setBusy(true);
@@ -57,7 +67,8 @@ export function AccountBar({ onlineWorldName, isOnlineOwner, onInvite, onLeaveOn
   const avatarLetter = (user?.displayName || user?.email || 'N').slice(0, 1).toUpperCase();
 
   return (
-    <aside className="account-bar" aria-label="Thông tin tài khoản">
+    <aside ref={barRef} className="account-bar" data-open={open} aria-label="Thông tin tài khoản" onClick={(e) => { if ((e.target as HTMLElement).closest('.account-bar-btn')) setOpen(false); }}>
+      <button type="button" className="account-bar-toggle" aria-expanded={open} aria-label="Tài khoản và kết nối" title={displayName} onClick={() => setOpen(v => !v)}>{avatarLetter}</button>
       <div className="account-bar-info">
         <div className="account-bar-avatar" title={displayName}>
           {user?.photoURL ? (

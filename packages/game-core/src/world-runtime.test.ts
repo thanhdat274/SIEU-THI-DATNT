@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { MAINTENANCE_RULES, SECURITY_RULES, createInitialOnlineWorld } from '@game/data';
+import { ALL_PRODUCTS, MAINTENANCE_RULES, SECURITY_RULES, SNACK_PLOT_ID, SUPPLIER_MAP, createInitialOnlineWorld } from '@game/data';
 import { MULTIPLAYER_PROTOCOL_VERSION, isGameCommand } from '@game/shared';
 import { WorldRuntime } from './world-runtime';
 
@@ -237,7 +237,7 @@ export async function runWorldRuntimeTests() {
   // Chuỗi chi nhánh (branch-chain): cả hai thành viên cùng quyền, ví/kho chung, replay trên mô phỏng của server.
   {
     const sim = questRuntime.getSimulation();
-    while (sim.getPlayerData().level < 32) sim.addExperience(50_000);
+    while (sim.getPlayerData().level < 46) sim.addExperience(50_000);
     sim.addMoney(5_000_000);
     const send = (actor: string, commandId: string, payload: unknown) => questRuntime.executeCommand(actor, {
       protocolVersion: MULTIPLAYER_PROTOCOL_VERSION,
@@ -384,6 +384,68 @@ export async function runWorldRuntimeTests() {
     assert.equal(rt.getSimulation().exportSaveData().autoBuyStalls, true, 'Cờ nằm trong save chung');
     const bad = await rt.executeCommand('owner-1', cmd('abs-bad', 'yes'));
     assert.equal(bad.status, 'invalid', 'Giá trị không phải boolean bị từ chối');
+  }
+
+  // Co-op: cấu hình tự nhập theo quy tắc là lệnh server-replay, kiểm hình dạng ở guard và nội dung ở mô phỏng.
+  {
+    const seed = createInitialOnlineWorld(owner, 'world-auto-buy-config');
+    const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    const productId = ALL_PRODUCTS[0].id;
+    const supplierId = Object.keys(SUPPLIER_MAP)[0];
+    const rule = { id: 'r1', productId, threshold: 5, quantity: 10, supplierId, priority: 0, maxBudget: 500_000 };
+    const cmd = (commandId: string, payload: unknown) => ({
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId,
+      expectedRevision: rt.getSnapshot().world.revision, payload,
+    });
+    const ok = await rt.executeCommand('owner-1', cmd('abc-1', { type: 'set_auto_buy_config', enabled: true, rules: [rule] }));
+    assert.equal(ok.status, 'accepted');
+    assert.equal(rt.getSimulation().getAutoBuyConfig().enabled, true);
+    assert.deepEqual(rt.getSimulation().exportSaveData().autoBuyRules, [rule], 'Quy tắc nằm trong save chung');
+    const badShape = await rt.executeCommand('owner-1', cmd('abc-bad1', { type: 'set_auto_buy_config', enabled: true, rules: [{ id: 'x' }] }));
+    assert.equal(badShape.status, 'invalid', 'Quy tắc sai hình dạng bị từ chối');
+    const badProduct = await rt.executeCommand('owner-1', cmd('abc-bad2', { type: 'set_auto_buy_config', enabled: false, rules: [{ ...rule, productId: 'khong_co' }] }));
+    assert.equal(badProduct.status, 'rejected', 'Sản phẩm không tồn tại bị mô phỏng từ chối');
+    assert.equal(rt.getSimulation().getAutoBuyConfig().enabled, true, 'Lệnh sai không đổi cấu hình');
+    const off = await rt.executeCommand('owner-1', cmd('abc-off', { type: 'set_auto_buy_config', enabled: false, rules: [] }));
+    assert.equal(off.status, 'accepted');
+    assert.equal(rt.getSimulation().getAutoBuyConfig().rules.length, 0);
+  }
+
+  // Co-op: tòa Quán ăn vặt, quầy Vé số và trả nợ lương chạy qua đường lệnh server-replay như chơi riêng.
+  {
+    const seed = createInitialOnlineWorld(owner, 'world-snack-stall-wage');
+    seed.business.save.player.level = 60;
+    seed.business.save.player.money = 10_000_000;
+    seed.business.save.wageDebt = 300_000;
+    seed.business.save.worldTime.isStoreOpen = false;
+    const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    const cmd = (commandId: string, payload: unknown) => ({
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId,
+      expectedRevision: rt.getSnapshot().world.revision, payload,
+    });
+    const sim = rt.getSimulation();
+    const snackFixtures = () => sim.getFixtures().filter(f => f.id.startsWith('snack_')).length;
+    assert.equal(snackFixtures(), 0, 'Chưa mua tòa thì chưa có vật dụng quán ăn vặt');
+    const bought = await rt.executeCommand('owner-1', cmd('snack-1', { type: 'layout_batch', actions: [{ type: 'buy_plot', plotId: SNACK_PLOT_ID }] }));
+    assert.equal(bought.status, 'accepted', 'Mua tòa Quán ăn vặt qua layout_batch');
+    assert.ok(snackFixtures() > 0, 'Tòa mới có vật dụng mặc định');
+    assert.ok(rt.getSnapshot().businesses[0].save.storeLayout.unlockedPlotIds?.includes(SNACK_PLOT_ID), 'Save chung ghi nhận ô đất đã mua');
+    const moneyAfterSnack = sim.getPlayerData().money;
+    await rt.executeCommand('owner-1', cmd('snack-2', { type: 'layout_batch', actions: [{ type: 'buy_plot', plotId: SNACK_PLOT_ID }] }));
+    assert.equal(sim.getPlayerData().money, moneyAfterSnack, 'Mua lại ô đã có không trừ tiền lần nữa');
+
+    assert.equal(sim.getStalls().find(s => s.id === 've_so')?.owned, false);
+    const stall = await rt.executeCommand('owner-1', cmd('stall-1', { type: 'buy_stall', stallId: 've_so' }));
+    assert.equal(stall.status, 'accepted', 'Mở quầy Vé số');
+    assert.equal(sim.getStalls().find(s => s.id === 've_so')?.owned, true);
+    assert.equal((await rt.executeCommand('owner-1', cmd('stall-2', { type: 'buy_stall', stallId: 've_so' }))).status, 'rejected', 'Mua quầy lần hai bị từ chối');
+
+    const moneyBefore = sim.getPlayerData().money;
+    const wage = await rt.executeCommand('owner-1', cmd('wage-1', { type: 'pay_wage_debt' }));
+    assert.equal(wage.status, 'accepted', 'Trả nợ lương');
+    assert.equal(sim.getWageDebt(), 0);
+    assert.equal(sim.getPlayerData().money, moneyBefore - 300_000);
+    assert.equal((await rt.executeCommand('owner-1', cmd('wage-2', { type: 'pay_wage_debt' }))).status, 'rejected', 'Hết nợ thì lệnh bị từ chối');
   }
 
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');

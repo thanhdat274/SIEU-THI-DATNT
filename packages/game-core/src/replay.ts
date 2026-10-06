@@ -74,7 +74,7 @@ export function runDayReplay(replay: DayReplay, version = SIMULATION_VERSION): R
   if (replay.schema !== REPLAY_SCHEMA) return { ok: false, reason: `Replay schema ${replay.schema} không được hỗ trợ.` };
   if (replay.simulationVersion !== version) return { ok: false, reason: `Không thể xác minh replay: ghi bằng ${replay.simulationVersion}, hiện là ${version}.` };
   if (!Number.isSafeInteger(replay.steps) || replay.steps < 0 || replay.steps > MAX_REPLAY_STEPS || !Number.isFinite(replay.dt) || !(replay.dt > 0) || replay.dt > MAX_REPLAY_DT) return { ok: false, reason: 'Replay không hợp lệ.' };
-  const sim = new GameSimulation(structuredClone(replay.startSave), generateStarterTileMap(replay.startSave.storeLayout.unlockedPlotIds ?? []), new InputManager(), {});
+  const sim = new GameSimulation(structuredClone(replay.startSave), generateStarterTileMap(replay.startSave.storeLayout.unlockedPlotIds ?? [], [], replay.startSave.storeLayout.buildingPlacements), new InputManager(), {});
   const commands = [...replay.commands].sort((a, b) => a.step - b.step);
   let next = 0;
   for (let step = 0; step < replay.steps; step++) {

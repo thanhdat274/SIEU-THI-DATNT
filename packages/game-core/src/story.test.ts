@@ -56,17 +56,17 @@ export function runStoryTests(): void {
     const ch7 = STORY_CHAPTERS.find(c => c.id === 'open_second_shop')!;
     assert.equal(ch7.chapter, 7);
     const state = normalizeStoryState({ startedChapters: {}, claimedChapters: STORY_CHAPTERS.slice(0, 5).map(c => c.id) });
-    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 29 })).status, 'locked', 'chương 6 chưa nhận');
+    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 36 })).status, 'locked', 'chương 6 chưa nhận');
     state.claimedChapters.push('grandma_visit');
-    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 28 })).status, 'locked', 'thiếu cấp');
-    assert.equal(beginChapter(state, ch7.id, ctxAt({ level: 29 })).success, true);
-    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 29, buildingsOpened: 1 })).status, 'started', 'chưa mở tiệm xôi');
-    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 29, buildingsOpened: 2 })).status, 'completed');
-    assert.equal(claimChapter(state, ch7.id, ctxAt({ level: 29, buildingsOpened: 2 })).success, true);
+    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 35 })).status, 'locked', 'thiếu cấp');
+    assert.equal(beginChapter(state, ch7.id, ctxAt({ level: 36 })).success, true);
+    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 36, buildingsOpened: 1 })).status, 'started', 'chưa mở tiệm xôi');
+    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 36, buildingsOpened: 2 })).status, 'completed');
+    assert.equal(claimChapter(state, ch7.id, ctxAt({ level: 36, buildingsOpened: 2 })).success, true);
 
     // Qua simulation: mua mảnh đất tiệm xôi thì đếm là cơ sở thứ hai
     const save = structuredClone(DEFAULT_INITIAL_SAVE);
-    save.player.level = 29;
+    save.player.level = 36;
     const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
     const before = sim.getStoryProgressList().find(p => p.chapterId === ch7.id)!;
     assert.equal(before.current, 1);
@@ -117,7 +117,7 @@ export function runStoryTests(): void {
   // Bắt đầu chương đối thủ: thêm sự kiện 10 ngày vào lịch thị trường và còn sau save/load
   {
     const save = structuredClone(DEFAULT_INITIAL_SAVE);
-    save.player.level = 30;
+    save.player.level = 60;
     save.goals = { claimedGoalIds: [], claimedWeeklyQuestIds: {}, story: { startedChapters: {}, claimedChapters: STORY_CHAPTERS.slice(0, 4).map(c => c.id) } };
     const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
     const day = sim.getTime().day;

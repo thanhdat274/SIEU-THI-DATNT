@@ -154,7 +154,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 - **Còn lại / giới hạn:** doanh thu là số do client báo, server mới kiểm bất biến ở mức rộng (I-01 hướng B: có thể tăng tới 20.000₫/phút game), nên bảng **chưa chống gian lận**; chưa có opt-out hiển thị tên hẻm (tên hẻm do người chơi đặt, hiện công khai với mọi tài khoản đăng nhập, chưa lọc từ ngữ); chỉ tổng doanh thu mọi thời gian (chưa có theo tuần/mùa); aggregate quét toàn bộ collection mỗi lần gọi (chưa có chỉ mục/bộ nhớ đệm, ổn với quy mô nhỏ); tiệm chơi một mình không lên bảng; **chưa kiểm đường đăng nhập thật** (cần Firebase) nên mới xem được trạng thái chưa đăng nhập trong Browser pane (không còn dữ liệu giả); Browser pane ghi hai lỗi tải tài nguyên 500 chưa xác định nguồn (mọi module chính trả 200; có thể do dev server lúc việc khác đang sửa file), chưa xác nhận liên quan.
 - **Verification:** `test:leaderboard` PASS (Mongo thật), `tsc` server/web sạch, `eslint` sạch.
 
-### Issue: I-03 Quyền sửa bố cục chuyển từ chủ hẻm sang mọi thành viên (đã commit 46f7466; còn thiếu quyết định thiết kế)
+### Issue: I-03 Quyền sửa bố cục chuyển từ chủ hẻm sang mọi thành viên (đã chốt hướng B 06/10/2026: mọi thành viên; UI đã khớp server; đã thêm khóa mềm 06/10/2026, chưa QA 2 trình duyệt)
 
 - **Current State:** `git diff` cho thấy `layout_batch` giờ cho mọi `membership` sửa bố cục và mua đất; test mới trong `coop-commands.test.ts` cố ý kiểm điều đó.
 - **Expected State:** Quyết định thiết kế được ghi nhận (OpenSpec/tài liệu), vì mua đất tiêu **quỹ chung**.

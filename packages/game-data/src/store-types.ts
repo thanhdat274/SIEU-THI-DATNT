@@ -27,7 +27,7 @@ export const STORE_TYPES: readonly StoreTypeDef[] = [
   {
     id: 'drink_shop',
     name: 'Quán nước',
-    unlockLevel: 32,
+    unlockLevel: 46,
     openCost: 1_500_000,
     maxBranches: 3,
     staffWagePerDay: 60_000,
