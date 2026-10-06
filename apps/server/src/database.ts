@@ -15,6 +15,9 @@ export async function connectDatabase() {
     });
     connecting = candidate.connect().then(() => {
       client = candidate;
+      // Danh sách hẻm tra theo thành viên; không có chỉ mục thì mỗi lần là quét toàn bộ collection.
+      void candidate.db(settings.databaseName).collection('game_worlds').createIndex({ 'world.memberships.accountId': 1 })
+        .catch((err: unknown) => console.warn('[mongo] createIndex failed:', err instanceof Error ? err.message : err));
       return candidate;
     }).catch(async (err: unknown) => {
       connecting = undefined;

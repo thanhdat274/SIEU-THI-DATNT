@@ -58,7 +58,7 @@ assert.equal(check(hired, 'set_staff_shift', n), null, 'đổi ca không đổi 
 
 // Mua tiệm xôi (buy_plot): tiền chỉ giảm đúng giá, nội thất mặc định được thêm; không bị chặn bởi bất biến.
 {
-  const prev = clone(); prev.player.level = 29; prev.player.money = 2_000_000; prev.worldTime.isStoreOpen = false;
+  const prev = clone(); prev.player.level = 36; prev.player.money = 2_000_000; prev.worldTime.isStoreOpen = false;
   const bought = buyLandPlot(prev, XOI_PLOT_ID).save!;
   assert.equal(bought.player.money, prev.player.money - 700_000, 'trừ đúng giá tiệm xôi');
   assert.ok(bought.storeLayout.fixtures.some(fixture => fixture.id === 'xoi_cashier_counter'), 'có bố cục mặc định');

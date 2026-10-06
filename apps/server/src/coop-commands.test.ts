@@ -139,6 +139,24 @@ async function run() {
     await assert.rejects(send(owner, 'unknown-type', { type: 'give_money', amount: 1_000_000 }, unknownRevision), /không được hỗ trợ/);
     assert.equal((await snapshotFor(owner)).world.revision, unknownRevision, 'lệnh lạ không làm đổi revision');
 
+    // open-world-land-grid: save client mang vị trí đặt tòa khác mặc định (đổi quán ăn vặt sang lô tây) bị từ chối, save đã lưu giữ nguyên.
+    const placementBase = await snapshotFor(owner);
+    const movedBusiness = structuredClone(placementBase.businesses[0]);
+    movedBusiness.save.storeLayout.buildingPlacements = [
+      { buildingId: 'main', parcelId: 'lot-center', originX: 6, originY: 3 },
+      { buildingId: 'xoi', parcelId: 'lot-east-2', originX: 26, originY: 3 },
+      { buildingId: 'drink', parcelId: 'lot-east-1', originX: 21, originY: 3 },
+      { buildingId: 'snack', parcelId: 'lot-west', originX: 0, originY: 3 },
+    ];
+    await assert.rejects(controller.commitCommand(owner as any, world.id, {
+      expectedRevision: placementBase.world.revision,
+      receipt: { commandId: 'placement-moved', actorId: owner.gameAccount.uid, status: 'accepted', revision: placementBase.world.revision + 1, payloadJson: JSON.stringify({ type: 'auto_buy_sync' }), createdAt: new Date().toISOString() },
+      updatedBusiness: movedBusiness,
+    }), /Vị trí đặt tòa không hợp lệ|Thay đổi bố cục phải dùng/);
+    const afterPlacement = await snapshotFor(owner);
+    assert.equal(afterPlacement.world.revision, placementBase.world.revision, 'vị trí đặt sai không làm đổi revision');
+    assert.equal(afterPlacement.businesses[0].save.storeLayout.buildingPlacements, undefined, 'save đã lưu không nhận vị trí đặt của client');
+
     // I-01 hướng B: lệnh kinh tế được server replay rồi lưu save chuẩn của server, bỏ qua save máy khách; tiền cộng thêm không vào được.
     const cheatBase = await snapshotFor(owner);
     const cheatBusiness = structuredClone(cheatBase.businesses[0]) as any;
@@ -181,7 +199,7 @@ async function run() {
     assert.equal(afterRack.businesses[0].save.storageRackCount, racksBefore + 1, 'owner thấy thêm đúng một storage rack qua server replay');
 
     // Tiệm xôi riêng (OpenSpec xoi-shop-same-land-strip): mua qua buy_plot như đất, server replay và hai client cùng thấy.
-    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.worldTime.isStoreOpen': false, 'businesses.0.save.player.level': 30, 'businesses.0.save.player.money': 5_000_000 } });
+    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.worldTime.isStoreOpen': false, 'businesses.0.save.player.level': 40, 'businesses.0.save.player.money': 5_000_000 } });
     const xoiRevision = (await snapshotFor(owner)).world.revision;
     const xoiResult = await send(owner, 'buy-xoi', { type: 'buy_plot', plotId: 'building-xoi' }, xoiRevision);
     assert.equal(xoiResult.committed, true, 'mua tiệm xôi được commit');
@@ -316,7 +334,7 @@ async function run() {
     assert.equal((await snapshotFor(owner)).world.revision, opsRevision, 'lệnh bị từ chối không đổi revision');
 
     // Chuỗi chi nhánh (branch-chain): cả hai thành viên cùng quyền, ví chung, server replay; tiền giả trong save client không có tác dụng.
-    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.player.level': 35, 'businesses.0.save.player.money': 5_000_000 } });
+    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.player.level': 60, 'businesses.0.save.player.money': 5_000_000 } });
     const chainSeed = await snapshotFor(owner);
     const chainMoney = chainSeed.businesses[0].save.player.money;
     const chainOpen = await send(member, 'chain-open', { type: 'open_branch', storeType: 'drink_shop', name: 'Quán chung', branchId: 'branch-1' }, chainSeed.world.revision);
@@ -332,7 +350,7 @@ async function run() {
     assert.equal((await snapshotFor(owner)).world.revision, afterChainOpen.world.revision + 1, 'lệnh bị từ chối không đổi revision');
 
     // Quán nước (tòa thứ ba, cùng dải bản đồ mở rộng): mua qua buy_plot như tiệm xôi, server replay, hai client cùng thấy.
-    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.worldTime.isStoreOpen': false, 'businesses.0.save.player.level': 35, 'businesses.0.save.player.money': 5_000_000 } });
+    await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.worldTime.isStoreOpen': false, 'businesses.0.save.player.level': 60, 'businesses.0.save.player.money': 5_000_000 } });
     const drinkRevision = (await snapshotFor(owner)).world.revision;
     const drinkResult = await send(member, 'buy-drink', { type: 'buy_plot', plotId: 'building-drink' }, drinkRevision);
     assert.equal(drinkResult.committed, true, 'mua quán nước được commit');
@@ -344,7 +362,80 @@ async function run() {
     assert.equal(drinkRetry.committed, true, 'gửi lại cùng lệnh idempotent');
     assert.equal((await snapshotFor(owner)).businesses[0].save.player.money, 5_000_000 - 1_500_000, 'gửi lại không trừ tiền lần hai');
 
-    console.log('PASS co-op: 10 lệnh server-replay + lệnh vận hành (store_status, planogram, advance_day, stow_all) qua GameController.commitCommand');
+    // open-world-main-expansion: mở rộng sàn tiệm chính qua layout_batch (server phát lại); ô sàn do client tự kèm theo lệnh khác bị từ chối.
+    const expandTiles = [14, 15, 16].flatMap(x => [2, 3].map(y => ({ x, y })));
+    const expandBase = await snapshotFor(owner);
+    const moneyBeforeExpand = expandBase.businesses[0].save.player.money;
+    const expandResult = await send(member, 'expand-main', { type: 'layout_batch', actions: [{ type: 'expand_footprint', buildingId: 'main', tiles: expandTiles }] }, expandBase.world.revision);
+    assert.equal(expandResult.committed, true, 'thành viên mở rộng tiệm chính qua layout_batch');
+    const expandedSave = (await snapshotFor(owner)).businesses[0].save;
+    assert.equal(expandedSave.storeLayout.buildingPlacements?.find((p: any) => p.buildingId === 'main')?.floorTiles?.length, 6, 'owner thấy 6 ô sàn mới');
+    assert.equal(expandedSave.player.money, moneyBeforeExpand - 6 * 8_000, 'ví chung bị trừ 8.000 ₫ mỗi ô');
+    const badExpandBase = await snapshotFor(owner);
+    await assert.rejects(send(owner, 'expand-bad', { type: 'layout_batch', actions: [{ type: 'expand_footprint', buildingId: 'main', tiles: [{ x: 19, y: 0 }] }] }, badExpandBase.world.revision), /Bố cục không hợp lệ/);
+    const forgedBusiness = structuredClone(badExpandBase.businesses[0]);
+    forgedBusiness.save.storeLayout.buildingPlacements!.find((p: any) => p.buildingId === 'main')!.floorTiles!.push({ x: 15, y: 1 });
+    await assert.rejects(controller.commitCommand(owner as any, world.id, {
+      expectedRevision: badExpandBase.world.revision,
+      receipt: { commandId: 'expand-forged', actorId: owner.gameAccount.uid, status: 'accepted', revision: badExpandBase.world.revision + 1, payloadJson: JSON.stringify({ type: 'auto_buy_sync' }), createdAt: new Date().toISOString() },
+      updatedBusiness: forgedBusiness,
+    }), /bố cục|Vị trí đặt/i);
+    const afterForged = await snapshotFor(owner);
+    assert.equal(afterForged.world.revision, badExpandBase.world.revision, 'ô sàn giả không đổi revision');
+    assert.equal(afterForged.businesses[0].save.storeLayout.buildingPlacements!.find((p: any) => p.buildingId === 'main')!.floorTiles!.length, 6, 'save đã lưu giữ nguyên 6 ô');
+
+    // open-world-building-relocation: mua quán ăn vặt kèm vị trí qua buy_plot; lô tây đã có tiệm xôi nên vị trí đó bị từ chối. Vị trí không mặc định có ở test lõi.
+    const snackBase = await snapshotFor(owner);
+    const snackMoney = snackBase.businesses[0].save.player.money;
+    await assert.rejects(send(owner, 'snack-bad-lot', { type: 'buy_plot', plotId: 'building-snack', placement: { parcelId: 'lot-west', originX: 1 } }, snackBase.world.revision));
+    const snackResult = await send(member, 'snack-east', { type: 'buy_plot', plotId: 'building-snack', placement: { parcelId: 'lot-east-1', originX: 21 } }, snackBase.world.revision);
+    assert.equal(snackResult.committed, true, 'mua quán ăn vặt kèm vị trí hợp lệ được commit');
+    const snackSave = (await snapshotFor(owner)).businesses[0].save;
+    assert.equal(snackSave.player.money, snackMoney - 400_000);
+    assert.ok(snackSave.storeLayout.fixtures.some((f: { id: string; tileX: number }) => f.id === 'snack_shelf' && f.tileX === 24), 'nội thất mặc định theo gốc 21');
+
+    // B2-2: co-op dời tòa (`relocate_building` qua layout_batch). Dùng thế giới riêng vì hẻm chính đã hết lô trống để dời tới.
+    const { world: moveWorld } = await controller.createWorld(owner as any, { name: 'Co-op relocation' });
+    const moveInvite = await controller.createInvite(owner as any, moveWorld.id);
+    await controller.joinWorld(member as any, { token: moveInvite.token });
+    const moveCollection = client.db(testDbName).collection<{ _id: string }>('game_worlds');
+    await moveCollection.updateOne({ _id: moveWorld.id }, { $set: {
+      'businesses.0.save.worldTime.isStoreOpen': false,
+      'businesses.0.save.worldTime.hour': 10,
+      'businesses.0.save.player.level': 60,
+      'businesses.0.save.player.money': 3_000_000,
+    } });
+    const moveSnapshot = async (request: typeof owner) => controller.getWorld(request as any, moveWorld.id);
+    const moveSend = async (request: typeof owner, commandId: string, payload: unknown) => {
+      const current = await moveSnapshot(request);
+      return controller.commitCommand(request as any, moveWorld.id, {
+        expectedRevision: current.world.revision,
+        receipt: { commandId, actorId: request.gameAccount.uid, status: 'accepted', revision: current.world.revision + 1, payloadJson: JSON.stringify(payload), createdAt: new Date().toISOString() },
+        updatedBusiness: current.businesses[0],
+      });
+    };
+    const boughtSnack = await moveSend(owner, 'move-buy-snack', { type: 'buy_plot', plotId: 'building-snack' });
+    assert.equal(boughtSnack.committed, true, 'mua quán ăn vặt ở lô đông 1 trong hẻm mới');
+    const beforeMove = (await moveSnapshot(owner)).businesses[0].save;
+    const snackShelfX = beforeMove.storeLayout.fixtures.find((f: { id: string }) => f.id === 'snack_shelf')!.tileX;
+    const moneyBeforeMove = beforeMove.player.money;
+    // Tiệm chính cố định và lô đã có tòa khác: dời bị từ chối, không đổi revision.
+    const moveRejectRevision = (await moveSnapshot(owner)).world.revision;
+    await assert.rejects(moveSend(member, 'move-snack-center', { type: 'layout_batch', actions: [{ type: 'relocate_building', buildingId: 'snack', placement: { parcelId: 'lot-center', originX: 6 } }] }), 'dời tòa vào lô tiệm chính bị từ chối');
+    await assert.rejects(moveSend(member, 'move-main', { type: 'layout_batch', actions: [{ type: 'relocate_building', buildingId: 'main', placement: { parcelId: 'lot-west', originX: 1 } }] }), 'tiệm chính không dời được');
+    assert.equal((await moveSnapshot(owner)).world.revision, moveRejectRevision, 'lệnh dời bị từ chối không đổi revision');
+    const moveResult = await moveSend(member, 'move-snack-west', { type: 'layout_batch', actions: [{ type: 'relocate_building', buildingId: 'snack', placement: { parcelId: 'lot-west', originX: 1 } }] });
+    assert.equal(moveResult.committed, true, 'thành viên dời quán ăn vặt sang lô tây qua layout_batch');
+    const afterMove = (await moveSnapshot(owner)).businesses[0].save;
+    const movedPlacement = afterMove.storeLayout.buildingPlacements!.find((p: { buildingId: string }) => p.buildingId === 'snack')!;
+    assert.equal(movedPlacement.parcelId, 'lot-west', 'owner thấy quán ăn vặt ở lô tây');
+    assert.equal(movedPlacement.originX, 1);
+    assert.equal(movedPlacement.constructionUntilDay, afterMove.worldTime.day + 1, 'tòa đang thi công tới sáng hôm sau');
+    assert.equal(afterMove.player.money, moneyBeforeMove - 120_000, 'ví chung trừ phí dời 30% × giá mở tòa');
+    assert.equal(afterMove.storeLayout.fixtures.find((f: { id: string }) => f.id === 'snack_shelf')!.tileX, snackShelfX - 20, 'nội thất quán ăn vặt dịch theo dx = −20');
+    assert.deepEqual((await moveSnapshot(member)).businesses[0].save.storeLayout.buildingPlacements, afterMove.storeLayout.buildingPlacements, 'thành viên gửi lệnh thấy cùng vị trí đặt');
+
+    console.log('PASS co-op: 10 lệnh server-replay + lệnh vận hành (store_status, planogram, advance_day, stow_all) + layout_batch (mở rộng sàn, dời tòa) qua GameController.commitCommand');
     await closeDatabase();
   } finally {
     await client.db(testDbName).dropDatabase();

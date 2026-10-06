@@ -6,8 +6,8 @@ import {
 import { NestFactory } from '@nestjs/core';
 import { WsAdapter } from '@nestjs/platform-ws';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { isSaveGameData, type GameAccount, type SaveGameData } from '@game/shared';
-import { generateStarterTileMap } from '@game/data';
+import { isSaveGameData, type BuildingPlacementRecord, type GameAccount, type SaveGameData } from '@game/shared';
+import { generateStarterTileMap, placementsProblem } from '@game/data';
 import { applyStoreLayoutActions, GameSimulation, validateStoreLayout, WorldRuntime } from '@game/core';
 import { readRuntimeConfig } from './runtime-config.js';
 import { checkSaveInvariants } from './save-invariants.js';
@@ -44,9 +44,9 @@ Get('ready')(HealthController.prototype, 'readiness', Object.getOwnPropertyDescr
 /** Loại lệnh được commit. Chỉ một phần được server phát lại; phần còn lại vẫn tin save client (I-01, xem THONG-KE.md). */
 const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
   'respond_party_order', 'fulfill_party_order', 'rush_fulfill_party_order', 'claim_goal', 'claim_weekly_quest', 'claim_festival_goal', 'begin_story_chapter', 'claim_story_chapter', 'choose_perk', 'set_title', 'layout_batch', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production',
-  'set_price', 'reset_prices', 'set_restock_options', 'set_auto_buy_stalls', 'auto_buy_sync', 'restock', 'unstock', 'buy_stall', 'claim_quest',
+  'set_price', 'reset_prices', 'set_restock_options', 'set_auto_buy_stalls', 'set_auto_buy_config', 'auto_buy_sync', 'restock', 'unstock', 'buy_stall', 'claim_quest',
   'checkout',
-  'hire_staff', 'set_staff_shift', 'assign_refill_job', 'dispose_stock', 'open_case', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve', 'maintain_fixture', 'security_action',
+  'hire_staff', 'pay_wage_debt', 'set_staff_shift', 'assign_refill_job', 'dispose_stock', 'open_case', 'buy_plot', 'order_supplier', 'layout_move', 'layout_store', 'layout_retrieve', 'maintain_fixture', 'security_action',
   'buy_warehouse_tier', 'buy_storage_rack',
   'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',
   'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
@@ -114,8 +114,8 @@ export class GameController {
       'checkout', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production', 'respond_party_order', 'fulfill_party_order', 'rush_fulfill_party_order', 'claim_goal',
       'claim_weekly_quest', 'claim_festival_goal', 'begin_story_chapter', 'claim_story_chapter', 'choose_perk', 'set_title', 'maintain_fixture', 'security_action',
       'order_supplier', 'buy_stall', 'dispose_stock', 'open_case', 'claim_quest',
-      'restock', 'unstock', 'set_price', 'reset_prices', 'set_restock_options', 'set_auto_buy_stalls',
-      'hire_staff', 'set_staff_shift', 'assign_refill_job',
+      'restock', 'unstock', 'set_price', 'reset_prices', 'set_restock_options', 'set_auto_buy_stalls', 'set_auto_buy_config',
+      'hire_staff', 'pay_wage_debt', 'set_staff_shift', 'assign_refill_job',
       'buy_plot', 'buy_warehouse_tier', 'buy_storage_rack',
       'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',
       'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
@@ -180,6 +180,8 @@ export class GameController {
         fixtures: layout.fixtures.map(place),
         storedFixtures: layout.storedFixtures.map((f) => f.id),
         unlockedPlotIds: layout.unlockedPlotIds,
+        // Vị trí đặt tòa và ô sàn mở rộng chỉ đổi qua layout_batch/buy_plot đã kiểm; lệnh khác không được mang theo bản khác save đã lưu.
+        placements: layout.buildingPlacements ?? [],
       };
     };
     if (payload?.type === 'layout_batch') {
@@ -191,13 +193,13 @@ export class GameController {
         throw new BadRequestException('Cửa hàng phải đóng, không còn khách phục vụ hoặc nhân viên đang làm việc.');
       }
       const normalizedCurrent = { ...currentBusiness.save, schemaVersion: 3, storeLayout: normalizeLayout(currentBusiness.save) } as SaveGameData;
-      const mapFor = (ids: readonly string[]) => generateStarterTileMap(ids);
+      const mapFor = (ids: readonly string[], placements?: readonly BuildingPlacementRecord[]) => generateStarterTileMap(ids, [], placements);
       const headlessInput = { getMovementVector: () => ({ x: 0, y: 0 }), consumeInteract: () => false, consumeInventoryToggle: () => false };
-      const canonicalSave = new GameSimulation(normalizedCurrent, mapFor(normalizedCurrent.storeLayout.unlockedPlotIds ?? []), headlessInput)
+      const canonicalSave = new GameSimulation(normalizedCurrent, mapFor(normalizedCurrent.storeLayout.unlockedPlotIds ?? [], normalizedCurrent.storeLayout.buildingPlacements), headlessInput)
         .exportSaveData(normalizedCurrent.id, body.expectedRevision);
       const expected = applyStoreLayoutActions(canonicalSave, payload.actions, mapFor);
       if (!expected.save) throw new BadRequestException(`Bố cục không hợp lệ: ${expected.error ?? 'unknown'}`);
-      const validation = validateStoreLayout(expected.save, mapFor(expected.save.storeLayout.unlockedPlotIds ?? []));
+      const validation = validateStoreLayout(expected.save, mapFor(expected.save.storeLayout.unlockedPlotIds ?? [], expected.save.storeLayout.buildingPlacements));
       if (validation.error) throw new BadRequestException(`Bố cục không hợp lệ: ${validation.error}`);
       expected.save.id = currentBusiness.save.id;
       expected.save.revision = body.expectedRevision + 1;
@@ -206,6 +208,9 @@ export class GameController {
       body.updatedBusiness = { ...body.updatedBusiness, ownerAccountIds: [...currentBusiness.ownerAccountIds], save: expected.save };
     } else {
       const nextSave = body.updatedBusiness.save as SaveGameData | undefined;
+      // Vị trí đặt tòa (open-world-land-grid): bước này chỉ nhận vị trí mặc định; vị trí khác/hỏng bị từ chối, giữ save hiện tại.
+      const placementIssue = isSaveGameData(nextSave) ? placementsProblem(nextSave.storeLayout.buildingPlacements, nextSave.storeLayout.unlockedPlotIds ?? []) : null;
+      if (placementIssue) throw new BadRequestException(`Vị trí đặt tòa không hợp lệ: ${placementIssue}`);
       const sameLayout = () => {
         if (!isSaveGameData(nextSave)) return false;
         const submitted = JSON.stringify(layoutGeometry(nextSave));
@@ -213,7 +218,7 @@ export class GameController {
         // Save cũ/seed chưa qua simulation: lần load đầu migrate thêm fixture mặc định (kho...), nên so với bản đã chuẩn hóa.
         const baseline = new GameSimulation(
           { ...commandBusiness.save, schemaVersion: 3, storeLayout: normalizeLayout(commandBusiness.save) } as SaveGameData,
-          generateStarterTileMap(commandBusiness.save.storeLayout.unlockedPlotIds ?? []),
+          generateStarterTileMap(commandBusiness.save.storeLayout.unlockedPlotIds ?? [], [], commandBusiness.save.storeLayout.buildingPlacements),
           { getMovementVector: () => ({ x: 0, y: 0 }), consumeInteract: () => false, consumeInventoryToggle: () => false },
         ).exportSaveData(commandBusiness.save.id, body.expectedRevision);
         return JSON.stringify(layoutGeometry(baseline)) === submitted;
