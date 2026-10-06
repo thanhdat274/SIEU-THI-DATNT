@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import type { TutorialItem } from '@game/core';
 
 const KEY = 'tiem-tap-hoa:tutorial-hidden';
@@ -10,30 +10,15 @@ const writeHidden = (hidden: boolean): void => {
   try { if (hidden) localStorage.setItem(KEY, '1'); else localStorage.removeItem(KEY); } catch { /* bỏ qua: trình duyệt chặn lưu trữ */ }
 };
 
-// Neo ở góc trên trái, ngay dưới HUD: hai góc dưới dành cho cần xoay ảo (trái) và nút tương tác/zoom (phải).
-// Chiều cao HUD đổi theo cỡ màn hình (có thể xuống dòng) nên đo thật thay vì số cố định.
-const useHudBottom = (): number => {
-  const [bottom, setBottom] = useState(76);
-  useEffect(() => {
-    const hud = document.querySelector<HTMLElement>('.game-hud');
-    if (!hud) return;
-    const measure = () => setBottom(Math.ceil(hud.getBoundingClientRect().bottom) + 8);
-    measure();
-    window.addEventListener('resize', measure);
-    if (typeof ResizeObserver === 'undefined') return () => window.removeEventListener('resize', measure);
-    const observer = new ResizeObserver(measure);
-    observer.observe(hud);
-    return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
-  }, []);
-  return bottom;
-};
+// Neo ở góc trên trái, ngay dưới khối UI phía trên (--top-ui-height do responsive.ts đo; --account-chip-h chừa chỗ nút tài khoản nổi ở màn thấp).
+// Hai góc dưới dành cho cần xoay ảo (trái) và nút tương tác/zoom (phải).
+const TOP_ANCHOR = 'calc(var(--top-ui-height, 76px) + var(--space-2, 8px) + var(--account-chip-h, 0px))';
 
 /** Checklist nhỏ; mặc định chỉ hiện bước tiếp theo, bấm để mở cả danh sách. Trạng thái từng mục đến từ save, chỉ việc ẩn/hiện được nhớ cục bộ. */
 export const TutorialChecklist: React.FC<{ items: TutorialItem[] }> = ({ items }) => {
   const [hidden, setHidden] = useState(readHidden);
   const [expanded, setExpanded] = useState(false);
-  const top = useHudBottom();
-  const anchor: React.CSSProperties = { position: 'fixed', left: 'max(8px, var(--safe-l, 0px))', top, zIndex: 20 };
+  const anchor: React.CSSProperties = { position: 'fixed', left: 'max(8px, var(--safe-l, 0px))', top: TOP_ANCHOR, zIndex: 20 };
   const remaining = items.filter(item => !item.done);
   if (remaining.length === 0) return null;
   const doneCount = items.length - remaining.length;

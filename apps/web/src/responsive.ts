@@ -10,7 +10,8 @@
  * data-short   "true" khi chiều cao < 500px (điện thoại ngang): CSS gom thanh dưới thành cột bên phải
  *   --hud-bottom toạ độ đáy của HUD; toast/chip hướng dẫn neo theo biến này thay vì số cố định
  *   --footer-h   chiều cao thanh dưới (0 khi nó là cột bên phải); voice/thẻ tóm tắt neo phía trên nó
- *   --account-h  chiều cao thanh tài khoản
+ *   --top-ui-height chiều cao khối UI phía trên thế giới (nguồn duy nhất; --hud-bottom là bí danh giữ tương thích)
+ *   --account-h  chiều cao thanh tài khoản trong luồng (0 khi nó là nút nổi ở màn thấp)
  * Canvas thế giới có hệ thống scale riêng (game-renderer) nên không bị ảnh hưởng ở đây.
  */
 
@@ -61,8 +62,10 @@ export function installResponsive(): void {
     const hud = document.querySelector<HTMLElement>('.game-hud');
     const footer = document.querySelector<HTMLElement>('.game-footer');
     const account = document.querySelector<HTMLElement>('.account-bar');
-    if (hud) setVar('--hud-bottom', `${Math.ceil(hud.getBoundingClientRect().bottom)}px`);
-    if (account) setVar('--account-h', `${Math.ceil(account.getBoundingClientRect().height)}px`);
+    // Nguồn duy nhất cho chiều cao khối UI phía trên thế giới (gồm safe-area trên và thanh tài khoản nếu còn nằm trong luồng).
+    if (hud) { const bottom = `${Math.ceil(hud.getBoundingClientRect().bottom)}px`; setVar('--top-ui-height', bottom); setVar('--hud-bottom', bottom); }
+    // Màn thấp: thanh tài khoản nổi (position:absolute) nên không chiếm chiều cao.
+    if (account) setVar('--account-h', getComputedStyle(account).position === 'absolute' ? '0px' : `${Math.ceil(account.getBoundingClientRect().height)}px`);
     if (footer) {
       const r = footer.getBoundingClientRect();
       // Cột bên phải (điện thoại ngang): không chiếm chiều cao của thế giới.

@@ -32,6 +32,8 @@
   --hud-bottom: 64px;
   --footer-h: 54px;
   --account-h: 32px;
+  --top-ui-height: 96px;
+  --account-chip-h: 0px; /* chỗ chừa cho nút tài khoản nổi (chỉ màn thấp) */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -89,7 +91,7 @@ html[data-density="compact"] .game-hud { border-bottom-width: 2px; box-shadow: i
   .hud-debt span { display: none; }
   .hud-level { min-width: 48px; }
 }
-@container hud (max-width: 760px) {
+@container hud (max-width: 860px) {
   [data-hud="optional"] { display: none; }
   .hud-weather-badge { max-width: 9ch; }
   .hud-actions .btn-store-toggle span, .hud-actions .btn-warehouse .hud-management-badge { display: none; }
@@ -128,9 +130,6 @@ html[data-density="compact"] .game-hud { border-bottom-width: 2px; box-shadow: i
 
 /* Điện thoại ngang (thấp): thanh dưới thành cột bên phải để thế giới dùng trọn chiều cao còn lại. */
 @media (max-height: 499px) {
-  .account-bar { padding-block: 2px; min-height: 0; }
-  .account-bar-status, .account-bar-divider { display: none; }
-  html[data-input="touch"] .account-bar-btn, .account-bar-btn { min-height: 28px; }
   .game-hud { flex-wrap: nowrap; padding-block: 3px; min-height: 0; }
   .game-body { flex-direction: row; }
   .game-body > .game-main { flex: 1; min-width: 0; }
@@ -179,7 +178,7 @@ html[data-density="compact"] .game-hud { border-bottom-width: 2px; box-shadow: i
 .management-grid { grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); }
 
 /* ---------- Toast ---------- */
-.toast-stack { top: calc(var(--hud-bottom) + var(--space-2)); width: min(460px, calc(100% - var(--space-3) * 2 - var(--safe-l) - var(--safe-r))); }
+.toast-stack { top: calc(var(--top-ui-height) + var(--space-2)); width: min(460px, calc(100% - var(--space-3) * 2 - var(--safe-l) - var(--safe-r))); }
 @media (max-width: 560px), (max-height: 499px) {
   .toast-stack { gap: 4px; }
   .toast { gap: 6px; padding: 4px 8px; font-size: var(--fs-sm); line-height: 1.25; }
@@ -278,3 +277,30 @@ html[data-density="compact"] .dialog-footer:has(.dialog-hint) { justify-content:
 html[data-density="compact"] .dialog-content { padding-block: var(--space-2); }
 /* Comfortable: chỉ nới khoảng cách, không làm hộp thoại cao hơn khung (max-height vẫn do --dialog-h/100% giới hạn). */
 html[data-density="comfortable"] .dialog-content { padding-block: var(--space-3); }
+
+/* ---------- Đợt 7: màn thấp — thanh tài khoản thành nút tròn nổi, không chiếm chiều cao của thế giới ----------
+ * Kiểm tra bề ngang: HUD thiết yếu (ngày giờ, tiền, đánh giá, 6 nút 44px) đã ~540px nên không thể chia hàng với thanh tài khoản ở điện thoại ngang.
+ * Vì vậy chỉ còn nút tròn (vùng chạm = --touch) ở góc trên-trái thế giới; chạm mở bảng đầy đủ (tên, chế độ, Về màn hình chính, Đăng nhập…) với nút đủ cỡ chạm. */
+.account-bar-toggle { display: none; }
+@media (max-height: 499px) {
+  .game-shell { position: relative; }
+  :root { --account-chip-h: calc(var(--touch) + var(--space-1) * 2); }
+  html[data-density] .account-bar {
+    position: absolute; top: calc(var(--hud-bottom) + var(--space-1)); left: calc(var(--safe-l, 0px) + var(--space-2)); z-index: 60;
+    flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: var(--space-1);
+    padding: 0; border: 0; background: none; box-shadow: none; width: auto; max-width: min(440px, calc(100% - var(--safe-l, 0px) - var(--safe-r, 0px) - var(--space-2) * 2));
+  }
+  .account-bar-toggle {
+    display: grid; place-items: center; width: var(--touch); height: var(--touch); flex: none; padding: 0; cursor: pointer;
+    border-radius: 50%; border: 2px solid #d4a956; background: var(--teal-dark); color: #fff9ea; font: inherit; font-weight: 900; opacity: 0.88;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  }
+  .account-bar[data-open="false"] .account-bar-info, .account-bar[data-open="false"] .account-bar-actions { display: none; }
+  .account-bar[data-open="true"] .account-bar-toggle { opacity: 1; }
+  html[data-density] .account-bar[data-open="true"] > .account-bar-info, html[data-density] .account-bar[data-open="true"] > .account-bar-actions {
+    background: linear-gradient(180deg, #422d20 0%, #321f15 100%); border: 2px solid #5a3c2a; border-radius: 8px; padding: var(--space-2);
+  }
+  .account-bar[data-open="true"] .account-bar-actions { flex-wrap: wrap; }
+  .account-bar-btn, html[data-input="touch"] .account-bar-btn { min-height: var(--touch); }
+  .account-bar-status { display: none; }
+}

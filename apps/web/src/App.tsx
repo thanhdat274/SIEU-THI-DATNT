@@ -1778,7 +1778,7 @@ export const App: React.FC = () => {
       )}
       {!isLoading && onlineWorld && !onlineConnected && (
         <div role="alert" style={{
-          position: 'fixed', top: 'calc(var(--safe-t) + var(--account-h))', left: 0, right: 0, zIndex: 9999,
+          position: 'fixed', top: 'var(--top-ui-height)', left: 0, right: 0, zIndex: 9999,
           background: '#c0392b', color: '#fff', fontSize: 13, padding: '6px 16px',
           textAlign: 'center', fontFamily: 'var(--font-pixel, monospace)',
           borderBottom: '2px solid #922b21',
