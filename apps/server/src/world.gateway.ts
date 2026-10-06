@@ -130,6 +130,8 @@ function broadcastToWorld(worldId: string, event: string, data: unknown) {
   }
 }
 
+import { layoutLocks } from './layout-lock';
+
 @WebSocketGateway({
   path: '/ws',
   maxPayload: MAX_WS_PAYLOAD_BYTES, // thông điệp lớn hơn bị ws đóng kết nối (mã 1009)
@@ -236,6 +238,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
     const removed = entry.sockets.delete(socket);
     if (removed && ![...entry.sockets].some(active => active._accountId === accountId)) {
       entry.runtime.unregisterSession(accountId);
+      if (layoutLocks.release(worldId, accountId)) broadcastToWorld(worldId, 'layout-lock:update', { holderId: null });
       broadcastVoteChange(entry);
       sendToOthers(entry, accountId, buildVoicePeerMessage(accountId, false));
     }
@@ -253,6 +256,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
     if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
     const entry = worldRuntimes.get(socket._worldId);
     if (entry) entry.runtime.heartbeat(socket._accountId);
+    layoutLocks.renew(socket._worldId, socket._accountId);
   }
 
   @SubscribeMessage('input')
@@ -311,6 +315,23 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
     });
   }
 
+  /** Xin khóa sửa bố cục: chỉ một người trong hẻm giữ được; trả kết quả cho người xin, báo cả hẻm khi đổi. */
+  @SubscribeMessage('layout-lock:acquire')
+  handleLayoutLockAcquire(@ConnectedSocket() socket: AuthenticatedSocket) {
+    if (!allowSocketMessage(socket)) return;
+    if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
+    const granted = layoutLocks.acquire(socket._worldId, socket._accountId);
+    socket.send(JSON.stringify({ event: 'layout-lock:result', data: { granted, holderId: layoutLocks.holder(socket._worldId) } }));
+    if (granted) broadcastToWorld(socket._worldId, 'layout-lock:update', { holderId: socket._accountId });
+  }
+
+  @SubscribeMessage('layout-lock:release')
+  handleLayoutLockRelease(@ConnectedSocket() socket: AuthenticatedSocket) {
+    if (!allowSocketMessage(socket)) return;
+    if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
+    if (layoutLocks.release(socket._worldId, socket._accountId)) broadcastToWorld(socket._worldId, 'layout-lock:update', { holderId: null });
+  }
+
   @SubscribeMessage('time-vote:cancel')
   handleCancelTimeVote(@ConnectedSocket() socket: AuthenticatedSocket) {
     if (!allowSocketMessage(socket)) return;
@@ -353,6 +374,11 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
   }
 
   /** Runtime đang chạy của hẻm (nguồn sự thật duy nhất khi có người online); undefined nếu chưa ai kết nối. */
+  /** Người đang giữ khóa sửa bố cục của hẻm (null nếu không ai). */
+  static getLayoutLockHolder(worldId: string): string | null {
+    return layoutLocks.holder(worldId);
+  }
+
   static getLiveRuntime(worldId: string): WorldRuntime | undefined {
     return worldRuntimes.get(worldId)?.runtime;
   }

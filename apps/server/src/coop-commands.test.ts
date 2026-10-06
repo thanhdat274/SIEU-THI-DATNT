@@ -148,13 +148,13 @@ async function run() {
       { buildingId: 'drink', parcelId: 'lot-east-1', originX: 21, originY: 3 },
       { buildingId: 'snack', parcelId: 'lot-west', originX: 0, originY: 3 },
     ];
-    await assert.rejects(controller.commitCommand(owner as any, world.id, {
+    // auto_buy_sync được server phát lại nên save máy khách bị bỏ qua hoàn toàn (không còn bị từ chối, chỉ không có tác dụng).
+    await controller.commitCommand(owner as any, world.id, {
       expectedRevision: placementBase.world.revision,
       receipt: { commandId: 'placement-moved', actorId: owner.gameAccount.uid, status: 'accepted', revision: placementBase.world.revision + 1, payloadJson: JSON.stringify({ type: 'auto_buy_sync' }), createdAt: new Date().toISOString() },
       updatedBusiness: movedBusiness,
-    }), /Vị trí đặt tòa không hợp lệ|Thay đổi bố cục phải dùng/);
+    });
     const afterPlacement = await snapshotFor(owner);
-    assert.equal(afterPlacement.world.revision, placementBase.world.revision, 'vị trí đặt sai không làm đổi revision');
     assert.equal(afterPlacement.businesses[0].save.storeLayout.buildingPlacements, undefined, 'save đã lưu không nhận vị trí đặt của client');
 
     // I-01 hướng B: lệnh kinh tế được server replay rồi lưu save chuẩn của server, bỏ qua save máy khách; tiền cộng thêm không vào được.
@@ -375,13 +375,12 @@ async function run() {
     await assert.rejects(send(owner, 'expand-bad', { type: 'layout_batch', actions: [{ type: 'expand_footprint', buildingId: 'main', tiles: [{ x: 19, y: 0 }] }] }, badExpandBase.world.revision), /Bố cục không hợp lệ/);
     const forgedBusiness = structuredClone(badExpandBase.businesses[0]);
     forgedBusiness.save.storeLayout.buildingPlacements!.find((p: any) => p.buildingId === 'main')!.floorTiles!.push({ x: 15, y: 1 });
-    await assert.rejects(controller.commitCommand(owner as any, world.id, {
+    await controller.commitCommand(owner as any, world.id, {
       expectedRevision: badExpandBase.world.revision,
       receipt: { commandId: 'expand-forged', actorId: owner.gameAccount.uid, status: 'accepted', revision: badExpandBase.world.revision + 1, payloadJson: JSON.stringify({ type: 'auto_buy_sync' }), createdAt: new Date().toISOString() },
       updatedBusiness: forgedBusiness,
-    }), /bố cục|Vị trí đặt/i);
+    });
     const afterForged = await snapshotFor(owner);
-    assert.equal(afterForged.world.revision, badExpandBase.world.revision, 'ô sàn giả không đổi revision');
     assert.equal(afterForged.businesses[0].save.storeLayout.buildingPlacements!.find((p: any) => p.buildingId === 'main')!.floorTiles!.length, 6, 'save đã lưu giữ nguyên 6 ô');
 
     // open-world-building-relocation: mua quán ăn vặt kèm vị trí qua buy_plot; lô tây đã có tiệm xôi nên vị trí đó bị từ chối. Vị trí không mặc định có ở test lõi.

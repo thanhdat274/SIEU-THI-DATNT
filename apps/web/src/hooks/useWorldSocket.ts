@@ -12,6 +12,7 @@
  * The hook:
  *   - Connects on mount / worldId+token change
  *   - Sends 'heartbeat' every 10s to keep session alive
+ *   - Tự nối lại (backoff 1 s → 10 s) khi mất kết nối
  *   - Disconnects on unmount
  */
 
@@ -46,6 +47,8 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
   const onVoiceSignalRef = useRef(onVoiceSignal);
   const onVoicePeerRef = useRef(onVoicePeer);
   const sequenceRef = useRef(0);
+  const lockWaitersRef = useRef<Array<(granted: boolean) => void>>([]);
+  const [layoutLockHolderId, setLayoutLockHolderId] = useState<string | null>(null);
 
   // Keep callbacks up to date without re-triggering the effect
   useEffect(() => { onWorldUpdateRef.current = onWorldUpdate; }, [onWorldUpdate]);
@@ -66,8 +69,16 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
     if (!worldId || !token) return disconnect;
 
     let cancelled = false;
+    let attempt = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     const apiBase = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:3001').replace(/\/$/, '');
-    void fetch(`${apiBase}/api/v1/ws-ticket`, {
+    // Mạng chớp hoặc server khởi động lại: thử nối lại với độ trễ tăng dần 1 s → 10 s, ticket mới mỗi lần.
+    const scheduleRetry = () => {
+      if (cancelled || retryTimer) return;
+      const delay = Math.min(10_000, 1000 * 2 ** attempt++);
+      retryTimer = setTimeout(() => { retryTimer = null; if (!cancelled) connect(); }, delay);
+    };
+    const connect = () => void fetch(`${apiBase}/api/v1/ws-ticket`, {
       method: 'POST', headers: { Authorization: `Bearer ${token}` },
     }).then(async response => {
       if (!response.ok) throw new Error('Không thể xác thực phiên realtime.');
@@ -77,6 +88,7 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
       wsRef.current = socket;
 
     socket.onopen = () => {
+      attempt = 0;
       setConnected(true);
       // Heartbeat every 10s
       heartbeatRef.current = setInterval(() => {
@@ -97,6 +109,11 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
           onAvatarsRef.current?.((msg.data as { avatars?: unknown })?.avatars);
         } else if (msg.event === 'world:update') {
           onWorldUpdateRef.current?.(msg.data as { revision: number; receipt: unknown });
+        } else if (msg.event === 'layout-lock:result') {
+          const granted = !!(msg.data as { granted?: boolean })?.granted;
+          lockWaitersRef.current.splice(0).forEach(resolve => resolve(granted));
+        } else if (msg.event === 'layout-lock:update') {
+          setLayoutLockHolderId((msg.data as { holderId?: string | null })?.holderId ?? null);
         } else if (msg.event === 'time-vote:update') {
           onTimeVoteRef.current?.(msg.data);
         } else if (msg.event === 'voice:signal') {
@@ -118,6 +135,8 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
     socket.onclose = () => {
       if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
       setConnected(false);
+      if (wsRef.current === socket) wsRef.current = null;
+      scheduleRetry();
     };
 
     socket.onerror = (e) => {
@@ -128,10 +147,13 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
       if (!cancelled) {
         console.warn('[WS] Ticket acquisition failed:', error);
         setConnected(false);
+        scheduleRetry();
       }
     });
 
-    return () => { cancelled = true; disconnect(); };
+    connect();
+
+    return () => { cancelled = true; if (retryTimer) clearTimeout(retryTimer); disconnect(); };
   }, [worldId, token, disconnect]);
 
   const sendInput = useCallback((direction: { x: number; y: number }) => {
@@ -171,5 +193,20 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
     return true;
   }, []);
 
-  return { connected, sendVoiceSignal, sendInput, sendPosition, submitTimeVote, cancelTimeVote };
+  /** Xin khóa sửa bố cục của hẻm; false nếu người kia đang giữ, mất kết nối hoặc server không trả lời trong 3 s. */
+  const acquireLayoutLock = useCallback((): Promise<boolean> => new Promise(resolve => {
+    const socket = wsRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) { resolve(false); return; }
+    const timer = setTimeout(() => finish(false), 3000);
+    const finish = (granted: boolean) => { clearTimeout(timer); lockWaitersRef.current = lockWaitersRef.current.filter(w => w !== finish); resolve(granted); };
+    lockWaitersRef.current.push(finish);
+    socket.send(JSON.stringify({ event: 'layout-lock:acquire', data: {} }));
+  }), []);
+
+  const releaseLayoutLock = useCallback(() => {
+    const socket = wsRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ event: 'layout-lock:release', data: {} }));
+  }, []);
+
+  return { connected, layoutLockHolderId, acquireLayoutLock, releaseLayoutLock, sendVoiceSignal, sendInput, sendPosition, submitTimeVote, cancelTimeVote };
 }

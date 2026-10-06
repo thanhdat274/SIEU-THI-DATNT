@@ -3,7 +3,6 @@ import { GameSimulation } from './simulation';
 import { WorldAvatarController } from './avatars';
 import { GameCommandCoordinator, CommandResult } from './commands';
 import { FixedStepSimulationRunner } from './runner';
-import { HOME_DOOR_TILE } from './daily-routine';
 import { generateStarterTileMap, NEIGHBORHOOD_WALK_BOUNDS } from '@game/data';
 import { applyStoreLayoutActions, moveStoreFixture, retrieveStoreFixture, storeFixture, buyWarehouseTier, buyStorageRack } from './store-layout';
 
@@ -96,14 +95,15 @@ export class WorldRuntime {
 
   /** Đưa vị trí/trạng thái online thật của từng người vào lịch ngày; người offline được tự về nhà để ngày không kẹt. */
   private feedCoopInputs(): void {
-    this.currentWorld.avatars.forEach((avatar) => {
+    this.currentWorld.avatars.forEach((avatar, index) => {
       const online = this.activeSessions.has(avatar.accountId);
       this.simulation.setCoopPlayerOnline(avatar.accountId, online);
       if (online) {
         this.simulation.setCoopPlayerPosition(avatar.accountId, { ...avatar.position });
       } else {
-        // Lịch ngày hiện đưa mọi người về HOME_DOOR_TILE (cấu hình cửa nhà riêng chưa được coop-routine dùng), nên người offline đứng ở đó.
-        this.simulation.setCoopPlayerPosition(avatar.accountId, { x: (HOME_DOOR_TILE.x + 0.5) * 32, y: (HOME_DOOR_TILE.y + 0.5) * 32 });
+        // Người offline đứng ở cửa nhà riêng của mình để ngày không kẹt.
+        const door = COOP_HOME_DOOR_TILES[Math.min(index, COOP_HOME_DOOR_TILES.length - 1)];
+        this.simulation.setCoopPlayerPosition(avatar.accountId, { x: (door.x + 0.5) * 32, y: (door.y + 0.5) * 32 });
       }
     });
   }
@@ -313,22 +313,13 @@ export class WorldRuntime {
         success = this.simulation.setSellingPrice(p.productId, p.price).success;
       } else if (p.type === 'reset_prices') {
         success = this.simulation.resetSellingPrices().success;
-      } else if (p.type === 'layout_move') {
-        const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
-        const next = moveStoreFixture(current, p.fixtureId, p.tileX, p.tileY, p.rotation, generateStarterTileMap(current.storeLayout.unlockedPlotIds ?? [], [], current.storeLayout.buildingPlacements));
-        success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
-      } else if (p.type === 'layout_store') {
-        const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
-        const next = storeFixture(current, p.fixtureId);
-        success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
-      } else if (p.type === 'layout_retrieve') {
-        const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
-        const next = retrieveStoreFixture(current, p.fixtureId, p.tileX, p.tileY, generateStarterTileMap(current.storeLayout.unlockedPlotIds ?? [], [], current.storeLayout.buildingPlacements));
-        success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       } else if (p.type === 'buy_plot') {
         success = !!this.simulation.purchaseLand(p.plotId, p.placement).save;
       } else if (p.type === 'set_restock_options') {
         this.simulation.setRestockOptions(p.options);
+        success = true;
+      } else if (p.type === 'auto_buy_sync') {
+        // Mô phỏng của server tự đặt đơn nhập tự động khi sang ngày; máy khách chỉ báo "đã có đơn", save của nó không được tin nên không áp gì.
         success = true;
       } else if (p.type === 'set_auto_buy_config') {
         success = this.simulation.setAutoBuyConfig(p.enabled, p.rules).success;

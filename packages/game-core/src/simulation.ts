@@ -3911,7 +3911,7 @@ export class GameSimulation {
       tileMap: this.tileMap,
       collision: this.collisionSystem,
       storeDoorTile: BUILDING_MAP.main.entranceTile,
-      playerConfigs: {}, // Configs registered via registerCoopPlayer
+      playerConfigs: {}, // cửa nhà từng người do CoopRoutineSystem giữ từ registerCoopPlayer
     });
     const output = this.coopRoutine.update(dt, {
       minute: time.hour * 60 + time.minute,
@@ -4040,7 +4040,7 @@ export class GameSimulation {
         tileMap: this.tileMap,
         collision: this.collisionSystem,
         storeDoorTile: BUILDING_MAP.main.entranceTile,
-        playerConfigs: {}, // Will be populated via registerCoopPlayer
+        playerConfigs: {}, // cửa nhà từng người do CoopRoutineSystem giữ từ registerCoopPlayer
       });
     }
   }

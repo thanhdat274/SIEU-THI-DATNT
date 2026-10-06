@@ -1241,9 +1241,6 @@ export type GameCommandPayload =
   | { type: 'assign_dining_cleanup'; staffId: string; fixtureId: string }
   | { type: 'set_price'; productId: string; price: number | null }
   | { type: 'reset_prices' }
-  | { type: 'layout_move'; fixtureId: string; tileX: number; tileY: number; rotation: 0 | 90 | 180 | 270 }
-  | { type: 'layout_store'; fixtureId: string }
-  | { type: 'layout_retrieve'; fixtureId: string; tileX: number; tileY: number }
   | { type: 'layout_batch'; actions: Array<
       | { type: 'move'; fixtureId: string; tileX: number; tileY: number; rotation: 0 | 90 | 180 | 270 }
       | { type: 'store'; fixtureId: string }
@@ -1533,9 +1530,6 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'auto_buy_sync': return true;
     case 'reset_prices': return true;
     case 'set_price': return nonEmptyString(p.productId) && (p.price === null || (Number.isSafeInteger(p.price) && Number(p.price) > 0));
-    case 'layout_move': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.tileX) && Number.isSafeInteger(p.tileY) && [0, 90, 180, 270].includes(p.rotation as number);
-    case 'layout_store': return nonEmptyString(p.fixtureId);
-    case 'layout_retrieve': return nonEmptyString(p.fixtureId) && Number.isSafeInteger(p.tileX) && Number.isSafeInteger(p.tileY);
     case 'layout_batch': return Array.isArray(p.actions) && p.actions.length > 0 && p.actions.length <= 64 && p.actions.every(action => {
       if (!isRecord(action) || !nonEmptyString(action.type)) return false;
       if (action.type === 'move') return nonEmptyString(action.fixtureId) && Number.isSafeInteger(action.tileX) && Number.isSafeInteger(action.tileY) && [0,90,180,270].includes(action.rotation as number);

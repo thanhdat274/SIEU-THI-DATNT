@@ -1217,7 +1217,19 @@ export const App: React.FC = () => {
     }
   };
 
-  const openLayoutEditor = () => {
+  // Mọi đường đóng trình sửa (xác nhận, hủy, đóng hết modal) đều nhả khóa; heartbeat gia hạn khóa nên không được để rò.
+  const layoutLockHeldRef = useRef(false);
+  useEffect(() => {
+    if (isLayoutOpen) { layoutLockHeldRef.current = !!onlineWorldRef.current; return; }
+    if (layoutLockHeldRef.current) { layoutLockHeldRef.current = false; worldSocket.releaseLayoutLock(); }
+  }, [isLayoutOpen, worldSocket.releaseLayoutLock]);
+
+  const openLayoutEditor = async () => {
+    if (onlineWorldRef.current) {
+      if (blockOfflineOnlineMutation()) return;
+      const granted = await worldSocket.acquireLayoutLock();
+      if (!granted) { addToast('Người cùng hẻm đang sửa bố cục — thử lại sau khi họ xong.', 'warn'); return; }
+    }
     simulationRef.current?.setPaused(true);
     inputManagerRef.current?.setEnabled(false);
     setIsLayoutOpen(true);
@@ -1756,7 +1768,7 @@ export const App: React.FC = () => {
           ⚠️ Mất kết nối hẻm chung — thao tác bị tạm dừng, đang kết nối lại...
         </div>
       )}
-      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={hudHandlers.onOpenMarket} onOpenPrices={hudHandlers.onOpenPrices} onOpenTax={hudHandlers.onOpenTax} onOpenRegulars={hudHandlers.onOpenRegulars} onOpenSkills={hudHandlers.onOpenSkills} onOpenTitles={hudHandlers.onOpenTitles} maintenanceAlerts={simulationRef.current?.getMaintenanceList().filter(e => e.status !== 'good').length ?? 0} onOpenMaintenance={hudHandlers.onOpenMaintenance} onOpenChain={hudHandlers.onOpenChain} onOpenReviews={hudHandlers.onOpenReviews} onOpenAnalytics={hudHandlers.onOpenAnalytics} audioMuted={audioMuted} onToggleAudioMute={hudHandlers.onToggleAudioMute} onOpenSecurity={hudHandlers.onOpenSecurity} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onPayWageDebt={hudHandlers.onPayWageDebt} onOpenStaff={hudHandlers.onOpenStaff} onOpenStalls={hudHandlers.onOpenStalls} onOpenQuests={hudHandlers.onOpenQuests} onOpenLevelRoadmap={hudHandlers.onOpenLevelRoadmap} onOpenPlanogram={hudHandlers.onOpenPlanogram} emptySlotsCount={fixtures.filter(f => isSalesFixture(f) && f.currentStock === 0).length} onToggleStoreStatus={hudHandlers.onToggleStoreStatus} onOpenLayout={hudHandlers.onOpenLayout} canEditLayout={!onlineWorld || onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0]} gameSpeed={gameSpeed} onToggleGameSpeed={hudHandlers.onToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={hudHandlers.onToggleWarehouseDock} isWarehouseDockOpen={isWarehouseDockOpen} lastSavedAt={lastSavedTime}/>}
+      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={hudHandlers.onOpenMarket} onOpenPrices={hudHandlers.onOpenPrices} onOpenTax={hudHandlers.onOpenTax} onOpenRegulars={hudHandlers.onOpenRegulars} onOpenSkills={hudHandlers.onOpenSkills} onOpenTitles={hudHandlers.onOpenTitles} maintenanceAlerts={simulationRef.current?.getMaintenanceList().filter(e => e.status !== 'good').length ?? 0} onOpenMaintenance={hudHandlers.onOpenMaintenance} onOpenChain={hudHandlers.onOpenChain} onOpenReviews={hudHandlers.onOpenReviews} onOpenAnalytics={hudHandlers.onOpenAnalytics} audioMuted={audioMuted} onToggleAudioMute={hudHandlers.onToggleAudioMute} onOpenSecurity={hudHandlers.onOpenSecurity} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onPayWageDebt={hudHandlers.onPayWageDebt} onOpenStaff={hudHandlers.onOpenStaff} onOpenStalls={hudHandlers.onOpenStalls} onOpenQuests={hudHandlers.onOpenQuests} onOpenLevelRoadmap={hudHandlers.onOpenLevelRoadmap} onOpenPlanogram={hudHandlers.onOpenPlanogram} emptySlotsCount={fixtures.filter(f => isSalesFixture(f) && f.currentStock === 0).length} onToggleStoreStatus={hudHandlers.onToggleStoreStatus} onOpenLayout={hudHandlers.onOpenLayout} canEditLayout gameSpeed={gameSpeed} onToggleGameSpeed={hudHandlers.onToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={hudHandlers.onToggleWarehouseDock} isWarehouseDockOpen={isWarehouseDockOpen} lastSavedAt={lastSavedTime}/>}
       <main className="game-main">
         <div className="world-viewport">
           <canvas ref={canvasRef} aria-label="Bản đồ Tiệm Tạp Hóa Đầu Hẻm"/>
@@ -2148,6 +2160,7 @@ export const App: React.FC = () => {
         onAutoFill={(fixtureId) => {
           const sim = simulationRef.current;
           if (!sim) return { assigned: false, productId: null, filled: 0, reason: 'no_sim' };
+          if (blockOfflineOnlineMutation()) return { assigned: false, productId: null, filled: 0, reason: 'offline' };
           const res = sim.autoFillShelf(fixtureId);
           if (res.filled > 0 || res.assigned) {
             setInventory(sim.getInventory());
@@ -2159,6 +2172,7 @@ export const App: React.FC = () => {
         onAutoFillAll={() => {
           const sim = simulationRef.current;
           if (!sim) return { totalFilled: 0, newAssignments: 0, skipped: 0 };
+          if (blockOfflineOnlineMutation()) return { totalFilled: 0, newAssignments: 0, skipped: 0 };
           // Khớp lệnh `auto_restock` ở server: châm kệ đã gán trước, rồi tự gán + bày ô trống.
           const refilled = sim.autoRestockShelves();
           const res = sim.autoFillAllShelves();

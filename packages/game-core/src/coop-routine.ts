@@ -120,6 +120,7 @@ export class CoopRoutineSystem {
 
   private world: CoopRoutineWorld | null = null;
   private storeDoorTile: GridPoint;
+  private readonly homeDoors = new Map<CoopPlayerId, GridPoint>();
   private routineMode = false;
   private dayAdvanceTriggered = -1;
   private offlinePlayers = new Set<CoopPlayerId>();
@@ -146,6 +147,7 @@ export class CoopRoutineSystem {
   }
 
   public registerPlayer(config: CoopPlayerRoutineConfig): void {
+    this.homeDoors.set(config.playerId, config.homeDoorTile);
     if (this.playerStates.has(config.playerId)) return;
     this.playerStates.set(config.playerId, {
       state: 'AT_HOME',
@@ -169,6 +171,7 @@ export class CoopRoutineSystem {
   public unregisterPlayer(playerId: CoopPlayerId): void {
     this.playerStates.delete(playerId);
     this.offlinePlayers.delete(playerId);
+    this.homeDoors.delete(playerId);
   }
 
   public getState(playerId: CoopPlayerId): DailyRoutineState | null {
@@ -425,7 +428,7 @@ export class CoopRoutineSystem {
         state: state.state,
         isOnline: true, // Will be overridden by simulation
         isSleeping: state.sleeping,
-        homeDoorTile: this.world?.playerConfigs[playerId]?.homeDoorTile ?? HOME_DOOR_TILE,
+        homeDoorTile: this.homeDoorOf(playerId),
       });
     }
     return states;
@@ -443,8 +446,11 @@ export class CoopRoutineSystem {
 
   private targetTileForPlayer(playerId: CoopPlayerId, kind: 'store' | 'home'): GridPoint {
     if (kind === 'store') return this.storeDoorTile;
-    const config = this.world?.playerConfigs[playerId];
-    return config?.homeDoorTile ?? HOME_DOOR_TILE;
+    return this.homeDoorOf(playerId);
+  }
+
+  private homeDoorOf(playerId: CoopPlayerId): GridPoint {
+    return this.homeDoors.get(playerId) ?? this.world?.playerConfigs[playerId]?.homeDoorTile ?? HOME_DOOR_TILE;
   }
 
   private reachedPlayer(playerId: CoopPlayerId, state: CoopPlayerState, kind: 'store' | 'home', player: Vector2D): boolean {
