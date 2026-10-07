@@ -213,7 +213,34 @@ export const App: React.FC = () => {
       },
     };
     (window as unknown as { __openModal?: (name: string) => void }).__openModal = (name) => open[name]?.();
-    return () => { delete (window as unknown as { __openModal?: unknown }).__openModal; };
+    // QA ép hao mòn/hỏng kệ để nghiệm thu màn "Sửa chữa & bảo trì" (fixture-maintenance 4.2 cần kệ hỏng
+    // trong save thử). Chỉ bật khi URL có ?qa; KHÔNG đụng người chơi thường. Sửa trực tiếp KỆ CHÍNH
+    // (bỏ ô phụ #sN — chúng dùng chung wear/broken của kệ cha).
+    const setFixturesFromSim = () => {
+      const sim = simulationRef.current;
+      if (sim) useGameStore.getState().setFixtures(sim.getFixtures());
+    };
+    (window as unknown as { __forceWear?: (fixtureId: string, wear: number) => boolean }).__forceWear = (fixtureId, wear) => {
+      const sim = simulationRef.current; if (!sim) return false;
+      const f = sim.getFixtures().find((x) => x.id === fixtureId && !x.parentId);
+      if (!f || !isSalesFixture(f)) return false;
+      f.wear = Math.max(0, Math.min(100, wear || 0)); delete f.broken;
+      setFixturesFromSim();
+      return true;
+    };
+    (window as unknown as { __breakFixture?: (fixtureId: string, severity?: 'minor' | 'major') => boolean }).__breakFixture = (fixtureId, severity) => {
+      const sim = simulationRef.current; if (!sim) return false;
+      const f = sim.getFixtures().find((x) => x.id === fixtureId && !x.parentId);
+      if (!f || !isSalesFixture(f)) return false;
+      f.broken = severity ?? 'minor'; if (f.wear === undefined) f.wear = 90;
+      setFixturesFromSim();
+      return true;
+    };
+    return () => {
+      delete (window as unknown as { __openModal?: unknown }).__openModal;
+      delete (window as unknown as { __forceWear?: unknown }).__forceWear;
+      delete (window as unknown as { __breakFixture?: unknown }).__breakFixture;
+    };
   }, []);
 
   // Chọn đúng các trường App dùng (so sánh nông): dòng cập nhật không đụng tới chúng thì App không render lại.
