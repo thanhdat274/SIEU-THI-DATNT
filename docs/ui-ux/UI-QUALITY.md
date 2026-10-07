@@ -98,3 +98,6 @@ Không phát hiện. Round 7 presentation-only; `typecheck` PASS · `eslint` Ana
 
 ## Đóng phiên (08/10/2026)
 Chủ dự án ký duyệt thủ công ở 89/100 (gate tự động FAIL <90, chấp nhận có điều kiện). Rủi ro còn lại: co-op A04, hiệu năng thiết bị thật, màu trạng thái chưa xem mắt, P3 D10/hex xám.
+
+## Quyết định hướng màn hình (08/10/2026)
+- Quyết định chủ dự án (08/10/2026): game CHỈ hỗ trợ màn hình ngang trên điện thoại/cảm ứng; màn dọc bị chặn chủ đích bằng lớp "Xoay ngang" (RotateOverlay). Không thiết kế/test layout dọc cho điện thoại; viewport dọc 320/393/430 không còn là rủi ro. Audit chỉ dùng cạnh dài khi xoay ngang (568, 667, 844, 852, 932…). Rủi ro "320/393/430" ở Round 12–17 được đóng theo quyết định này.

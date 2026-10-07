@@ -52,3 +52,6 @@ Không tạo class trùng; nếu thiếu, thêm hook `className` + rule trong `r
 
 - Rule responsive rò sang desktop; breakpoint mới song song; hard-code thiết bị; class mồ côi (có hook không rule / có rule không hook).
 - Rescue cách viết inline style cứng đè rule compact (đã từng gây lỗi Đợt 14F).
+
+## Hướng màn hình
+- Quyết định chủ dự án (08/10/2026): game CHỈ hỗ trợ màn hình ngang trên điện thoại/cảm ứng; màn dọc bị chặn chủ đích bằng lớp "Xoay ngang" (RotateOverlay). Không thiết kế/test layout dọc cho điện thoại; viewport dọc 320/393/430 không còn là rủi ro. Audit chỉ dùng cạnh dài khi xoay ngang (568, 667, 844, 852, 932…).
