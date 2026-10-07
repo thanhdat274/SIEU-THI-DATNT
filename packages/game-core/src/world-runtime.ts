@@ -369,8 +369,12 @@ export class WorldRuntime {
         const res = this.simulation.applyPlanogramEntry(p.fixtureId);
         success = res.applied && res.actualQuantity > 0;
       } else if (p.type === 'auto_restock') {
-        // Phải khớp client (handleAutoRestock): châm kệ đã gán rồi tự gán + bày các ô trống.
-        success = this.simulation.autoRestockShelves() + this.simulation.autoFillAllShelves().totalFilled > 0;
+        // Phải khớp client (onAutoFillAll, App.tsx): châm kệ đã gán trước, rồi tự gán + bày các ô trống.
+        // Server phải tính CẢ `newAssignments` (tự gán sơ đồ) — nếu không, lệnh chỉ gán ô mới chưa bày
+        // đơn vị (newAssignments>0, totalFilled=0) sẽ bị tính success=false → từ chối → rollback save client.
+        const refilled = this.simulation.autoRestockShelves();
+        const res = this.simulation.autoFillAllShelves();
+        success = refilled + res.totalFilled > 0 || res.newAssignments > 0;
       } else if (p.type === 'auto_fill_shelf') {
         const res = this.simulation.autoFillShelf(p.fixtureId);
         success = res.filled > 0 || res.assigned;

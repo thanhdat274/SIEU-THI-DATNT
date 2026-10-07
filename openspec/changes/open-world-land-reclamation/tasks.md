@@ -22,7 +22,7 @@ Trạng thái 05/10/2026: mới có kế hoạch, chưa có code. Phụ thuộc 
 
 ## 3. Save và server
 
-- [ ] 3.1 Schema 7 + migration 6→7 ở `shared`, `apps/web`, server; test.
+- [x] 3.1 Schema 7 + migration 6→7 ở `shared`, `apps/web`, server; test. **(07/10/2026, CÓ CODE + verify typecheck + chạy hàm thuần:** `shared/index.ts` `CURRENT_SAVE_SCHEMA_VERSION=7`, type `WorldOpenState`/`ownedParcelIds`, `isWorldOpenState`, `defaultWorldOpenState`/`ownedParcelIdsDefault` (4 lô W0), migration `migrateToW7` cho v1–5→7 và v6→7; `game-core/simulation.ts` giờ khởi tạo + xuất/nạp đầy đủ `world`/`storeLayout.ownedParcelIds` và `schemaVersion: CURRENT` (cho nên save round-trip v7 không còn bị re-migrate mỗi lần); `game-data/map.ts` `DEFAULT_INITIAL_SAVE` nâng v7 + gieo `world`/`ownedParcelIds`; `apps/web/db.ts` và `apps/server/world-migrations.ts` tự chạy migration qua `CURRENT_SAVE_SCHEMA_VERSION`. Verify: `yarn typecheck` PASS; chạy node trực tiếp hàm `validateSaveGameData` (v6→7 hợp lệ, v7→supported giữ nguyên state, v8→unsupported_future) PASS; cập nhật test `persistence.test.ts`/`footprint.test.ts`/`test-runner.ts`. **Lưu ý:** KHÔNG chạy được toàn suite `yarn test` trong sandbox này (spawn EPERM) nên chưa tuyên bố PASS test — chỉ typecheck + hàm thuần.)**
 - [ ] 3.2 Server: `reclaim_wave`, `buy_parcel` vào lệnh phát lại; `coop-commands.test.ts`.
 
 ## 4. Renderer và giao diện

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { isSaveGameData, tileIndex, type SaveGameData } from '@game/shared';
+import { isSaveGameData, tileIndex, CURRENT_SAVE_SCHEMA_VERSION, type SaveGameData } from '@game/shared';
 import {
   DEFAULT_INITIAL_SAVE, EXPANSION_TILE_PRICE, MAIN_EAST_WING_PLOT_IDS, checkFootprintTiles, expansionBudgetAtLevel, expansionTilesUsed, footprintFloor,
   generateStarterTileMap, normalizePlacements, placementsProblem, wallRing, adjacentParcels, buildingAt, buildingOfTiles,
@@ -144,7 +144,7 @@ export function runFootprintTests(): void {
   const sim = new GameSimulation(structuredClone(base), mapOf(base), new InputManager(), {});
   assert.ok(sim.expandFootprint('main', rect(13, 14, 4, 9)).save, 'simulation mở rộng');
   const exported = sim.exportSaveData('footprint-test', 1);
-  assert.equal(exported.schemaVersion, 6);
+  assert.equal(exported.schemaVersion, CURRENT_SAVE_SCHEMA_VERSION);
   assert.equal(exported.storeLayout.buildingPlacements?.find(p => p.buildingId === 'main')?.floorTiles?.length, 12, 'save xuất có ô sàn mở rộng');
   assert.equal(exported.player.money, 5_000_000 - 12 * EXPANSION_TILE_PRICE);
   const reloaded = new GameSimulation(structuredClone(exported), mapOf(exported), new InputManager(), {});

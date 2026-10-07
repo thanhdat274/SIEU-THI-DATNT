@@ -1213,6 +1213,44 @@
   transform: translateX(3px);
 }
 
+/* Chế độ khách dev (localhost 2 người) — thẻ Hẻm Chơi Cùng bổ sung khi chạy vite dev */
+.dev-guest-picker {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 6px;
+  flex-wrap: wrap;
+}
+.dev-guest-chip {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: #236348;
+  background: #eef7f2;
+  border: 1.5px solid #c3dfd2;
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  min-height: 30px;
+}
+.dev-guest-chip:hover:not(:disabled) { background: #e2f3ea; }
+.dev-guest-chip.is-active { background: #1b6852; color: #fff; border-color: #1b6852; }
+.dev-guest-enter {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: #1b6852;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  width: 100%;
+  min-height: 38px;
+}
+.dev-guest-enter:hover:not(:disabled) { background: #155e49; }
+.dev-guest-enter:disabled { opacity: 0.6; cursor: wait; }
+
+
 /* --------------------------------------------------------------------------
    6. DECK FOOTER BAR
    -------------------------------------------------------------------------- */

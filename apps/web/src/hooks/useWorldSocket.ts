@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { devGuestHeader } from '../services/dev-guest';
 
 const WS_BASE = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:3001')
   .replace(/^http/, 'ws');
@@ -79,7 +80,7 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
       retryTimer = setTimeout(() => { retryTimer = null; if (!cancelled) connect(); }, delay);
     };
     const connect = () => void fetch(`${apiBase}/api/v1/ws-ticket`, {
-      method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      method: 'POST', headers: { ...devGuestHeader(), Authorization: `Bearer ${token}` },
     }).then(async response => {
       if (!response.ok) throw new Error('Không thể xác thực phiên realtime.');
       const body = await response.json() as { ticket: string };

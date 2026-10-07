@@ -4,6 +4,7 @@ import { deleteSaveSlot, getActiveSlotId, listSaveSlots, loadExistingSave, reset
 import { acquireSlotLock, releaseSlotLock, slotsLockedElsewhere } from '../slot-lock';
 import { listUserWorlds, createOnlineWorld, joinOnlineWorld, getLeaderboard, type WorldSummary, type WorldDetail, type ActivitiesResponse, type LeaderboardResponse } from '../services/api';
 import { useControlMode, setControlMode, type ControlMode } from '../control-mode';
+import { devGuestIsEnabled, getDevGuest, setDevGuestClientId, devGuestToken } from '../services/dev-guest';
 import './LoginScreen.css';
 
 interface LoginScreenProps {
@@ -55,6 +56,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   const [showAbsenceModal, setShowAbsenceModal] = useState<boolean>(false);
   const [selectedWorldDetail, setSelectedWorldDetail] = useState<WorldDetail | null>(null);
   const [activeGuideTab, setActiveGuideTab] = useState<'daily' | 'controls' | 'stock' | 'features' | 'coop'>('daily');
+  // Chế độ khách dev (localhost 2 người): cho phép mở Hẻm Chơi Cùng không cần đăng nhập Google.
+  const isDevGuest = devGuestIsEnabled();
+  const [devGuestId, setDevGuestId] = useState<string>(() => getDevGuest().clientId);
+  const handlePickDevGuest = (id: string) => {
+    triggerSound(420);
+    setDevGuestId(setDevGuestClientId(id).clientId);
+  };
 
   // UI-AUDIT-2026-001 D04: bấm Escape ở 3 modal tùy chỉnh (Hẻm chơi cùng / Bảng vàng / Nhật ký vắng) để đóng —
   // trước đó các modal này không có hành vi phím nên khó thao tác bằng bàn phím (a11y).
@@ -181,6 +189,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   };
 
   async function getIdToken(): Promise<string> {
+    if (devGuestIsEnabled()) return devGuestToken(); // chế độ khách dev (localhost 2 người): token giả, server gán guest_<id> qua header
     if (!user) throw new Error('Cần đăng nhập tài khoản trước.');
     return user.getIdToken();
   }
@@ -202,7 +211,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
 
   async function handleOpenMultiplayer() {
     triggerSound(400);
-    if (!user) {
+    if (!user && !devGuestIsEnabled()) {
       setFeedbackMsg('Vui lòng đăng nhập Google trước để chơi chế độ Hẻm online!');
       return;
     }
@@ -689,6 +698,33 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
               </div>
               <span className="card-arrow-mark">›</span>
             </button>
+
+            {isDevGuest && (
+              <div className="deck-action-card card-multiplayer">
+                <span className="card-symbol-badge badge-teal">🧪</span>
+                <div className="card-text-body">
+                  <div className="card-heading-row">
+                    <strong>Hẻm Chơi Cùng (Khách dev)</strong>
+                    <span className="badge-tag-online">2 người · localhost</span>
+                  </div>
+                  <small>Thử co-op + voice 2 người không cần đăng nhập Google. Chọn định danh khách để mỗi cửa sổ trình duyệt là một tài khoản riêng.</small>
+                  <div className="dev-guest-picker" role="group" aria-label="Chọn định danh khách">
+                    {['a', 'b', 'c'].map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        className={`dev-guest-chip${devGuestId === id ? ' is-active' : ''}`}
+                        aria-pressed={devGuestId === id}
+                        onClick={() => handlePickDevGuest(id)}
+                      >Khách {id.toUpperCase()}</button>
+                    ))}
+                  </div>
+                  <button type="button" className="dev-guest-enter" disabled={busy} onClick={() => void handleOpenMultiplayer()}>
+                    Vào Hẻm Chơi Cùng (khách {devGuestId.toUpperCase()})
+                  </button>
+                </div>
+              </div>
+            )}
 
             <button
               type="button"

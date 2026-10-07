@@ -56,7 +56,11 @@ import {
   PartyOrderState,
   GoalState,
   SkillState,
-  SkillType
+  SkillType,
+  WorldOpenState,
+  CURRENT_SAVE_SCHEMA_VERSION,
+  defaultWorldOpenState,
+  ownedParcelIdsDefault
 } from '@game/shared';
 import {
   INITIAL_REFRIGERATOR,
@@ -269,6 +273,10 @@ export class GameSimulation {
   /** Vị trí đặt tòa + ô sàn mở rộng (chỉ có khi save có trường này); nguồn của bản đồ cùng `unlockedPlotIds`. */
   private buildingPlacements: BuildingPlacementRecord[] | undefined;
   private decorOwned: string[];
+  /** Các lô ĐÃ MUA (thế giới mở, schema 7). W0 gieo 4 lô mặc định; lô đợt mới chỉ thêm sau `buy_parcel`. */
+  private ownedParcelIds: string[];
+  /** Trạng thái thế giới mở (schema 7): đợt đã mở & đang thi công. */
+  private worldOpenState: WorldOpenState;
   private inventory: InventoryItem[];
   private holdingArea: HoldingItem[];
   private planogram: Record<string, string> = dict();
@@ -435,6 +443,8 @@ export class GameSimulation {
     this.unlockedPlotIds = [...(initialSave.storeLayout.unlockedPlotIds ?? [])];
     this.buildingPlacements = initialSave.storeLayout.buildingPlacements ? structuredClone(initialSave.storeLayout.buildingPlacements) : undefined;
     this.decorOwned = [...(initialSave.storeLayout.decorOwned ?? [])];
+    this.ownedParcelIds = initialSave.storeLayout.ownedParcelIds ? [...initialSave.storeLayout.ownedParcelIds] : ownedParcelIdsDefault();
+    this.worldOpenState = initialSave.world ? structuredClone(initialSave.world) : defaultWorldOpenState();
     this.inventory = initialSave.inventory.map((i) => ({ ...i }));
     this.holdingArea = (initialSave.holdingArea ?? []).map((h) => ({ ...h }));
     this.planogram = dict(initialSave.planogram);
@@ -5196,7 +5206,8 @@ export class GameSimulation {
           const currentDay = this.clock.getTime().day;
           const regRes = processRegularCheckout(regDef, this.regulars[customer.regularId], basketPids, currentDay);
           this.regulars[customer.regularId] = regRes.updatedProgress;
-          if (regRes.tipBonusRatio > 0) {
+          if (!onCredit && regRes.tipBonusRatio > 0) {
+            // Khách quen chỉ boa khi TRẢ TIỀN MẶT thật; bán chịu không có dòng tiền vào nên không boa (tránh bơm tiền từ không).
             const regularTip = Math.round(res.paidTotal * regRes.tipBonusRatio);
             this.playerData.money += regularTip;
             this.callbacks.onToast?.(`${regDef.name} boa thêm ${regularTip.toLocaleString('vi-VN')} VND!`);
@@ -5235,7 +5246,8 @@ export class GameSimulation {
         quantity: res.itemCount,
         description: `${onCredit ? `Bán chịu ${creditId}` : 'Bán lẻ'} cho khách hàng #${checkoutId} (${res.itemCount} món)`,
       });
-      this.awardSkillTip(res.paidTotal);
+      // Tiền boa chỉ có khi khách TRẢ TIỀN MẶT thật — bán chịu không có dòng tiền vào nên không boa (tránh bơm tiền từ không).
+      if (!onCredit) this.awardSkillTip(res.paidTotal);
 
       this.notifyStateChanged();
       return true;
@@ -5296,7 +5308,8 @@ export class GameSimulation {
         productId: product.id,
         description: `${onCredit ? `Bán chịu ${creditId}` : 'Bán lẻ'} cho khách hàng #${checkoutId} (${product.name})`,
       });
-      this.awardSkillTip(salePrice);
+      // Tiền boa chỉ khi khách TRẢ TIỀN MẶT thật — bán chịu không có dòng tiền vào nên không boa.
+      if (!onCredit) this.awardSkillTip(salePrice);
 
       this.notifyStateChanged();
       return true;
@@ -5386,7 +5399,7 @@ export class GameSimulation {
   public exportSaveData(existingSaveId?: string, currentRevision: number = 1): SaveGameData {
     return {
       id: existingSaveId || 'local_save_default',
-      schemaVersion: 6,
+      schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
       revision: currentRevision + 1,
       createdAt: this.createdAt,
       updatedAt: new Date().toISOString(),
@@ -5402,6 +5415,7 @@ export class GameSimulation {
         storedFixtures: this.storedFixtures.map(f => ({ ...f, stockLots: f.stockLots?.map(lot => ({ ...lot })) })),
         unlockedPlotIds: [...this.unlockedPlotIds],
         decorOwned: [...this.decorOwned],
+        ownedParcelIds: [...this.ownedParcelIds],
         ...(this.buildingPlacements ? { buildingPlacements: structuredClone(this.buildingPlacements) } : {}),
       },
       inventory: this.getInventory(),
@@ -5449,6 +5463,7 @@ export class GameSimulation {
       goals: structuredClone(this.goals),
       skills: structuredClone(this.skills),
       statistics: { ...this.statistics },
+      world: structuredClone(this.worldOpenState),
     };
   }
 
@@ -5475,6 +5490,8 @@ export class GameSimulation {
     this.unlockedPlotIds = [...(saveData.storeLayout.unlockedPlotIds ?? [])];
     this.buildingPlacements = saveData.storeLayout.buildingPlacements ? structuredClone(saveData.storeLayout.buildingPlacements) : undefined;
     this.decorOwned = [...(saveData.storeLayout.decorOwned ?? [])];
+    this.ownedParcelIds = saveData.storeLayout.ownedParcelIds ? [...saveData.storeLayout.ownedParcelIds] : ownedParcelIdsDefault();
+    this.worldOpenState = saveData.world ? structuredClone(saveData.world) : defaultWorldOpenState();
     this.inventory = saveData.inventory.map((i) => ({ ...i }));
     this.holdingArea = (saveData.holdingArea ?? []).map((h) => ({ ...h }));
     this.planogram = dict(saveData.planogram);

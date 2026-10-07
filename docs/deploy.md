@@ -28,7 +28,7 @@ Node >= 22, Yarn 1 (`yarn install --frozen-lockfile`).
 | `HOST` | Không | Mặc định `127.0.0.1` (chỉ máy chủ nghe). Sau reverse proxy giữ nguyên; muốn mở ra ngoài đặt `0.0.0.0`. |
 | `PORT` | Không | Mặc định `3001`. |
 | `WEB_ORIGIN` | Có ở production | Origin được CORS cho phép (mặc định `http://localhost:5173`). Phải khớp domain web. |
-| `GOOGLE_AUTH_BYPASS` | **Không bao giờ đặt ở production** | `true` bỏ qua xác minh Firebase và cấp tài khoản khách. Chỉ để thử cục bộ. |
+| `GOOGLE_AUTH_BYPASS` | **Không bao giờ đặt ở production** | `true` bỏ qua xác minh Firebase và cấp tài khoản khách. Chỉ để thử cục bộ. Khi bật, server đọc header `X-Dev-Client-Id` để cấp tài khoản khách **ổn định** `guest_<id>` (phục vụ test 2 người trên localhost); không gửi header thì rơi về khách random mỗi request. |
 
 ### Web (build time, `apps/web/.env.local` hoặc biến CI)
 
@@ -48,6 +48,7 @@ Sai định dạng hoặc rỗng thì rơi về STUN mặc định. `credential`
 - **Bắt buộc cấu hình TURN** để phần lớn cặp người chơi thật nối được: chỉ STUN (P2P trực tiếp) sẽ fail với nhiều cặp sau NAT đối xứng/mạng di động → hiện "không kết nối được voice".
 - Cách triển khai TURN: chạy [coturn](https://github.com/coturn/coturn) (hoặc TURN dịch vụ như Cloudflare Calls / Metered / Twilio TURN), mở cổng UDP/TCP (3478 + dải relay) gửi tới Internet, rồi set `VITE_ICE_SERVERS` ở bước build web như trên.
 - Âm thanh đi **trực tiếp P2P giữa hai trình duyệt**, server chỉ chuyển tiếp tín hiệu offer/answer/candidate qua WS — không lưu âm thanh. Server không cần config đặc biệt cho voice ngoài việc WS đã bật ở `/ws` (xem mục Mạng).
+- **Nghiệm thu 2 người trên localhost (không cần Firebase):** chạy server với `GOOGLE_AUTH_BYPASS=true` + web bằng `yarn --cwd apps/web dev`, rồi mở 2 cửa sổ trình duyệt (một cái Ẩn danh) và dùng thẻ **"Hẻm Chơi Cùng (Khách dev)"** — chọn Khách A / Khách B. Hướng dẫn từng bước: **`docs/voice-test-2client.md`**.
 
 ## Kiểm tra sau khi chạy
 

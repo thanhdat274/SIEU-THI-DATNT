@@ -1763,7 +1763,15 @@ export class PixiGameViewport {
         this.swaySigns.forEach((sign, i) => {
           sign.skew.x = swaySkew('sign', weatherState.windIntensity, weatherState.windDirection, this.animTimer, 0.7 + i * 2.3);
         });
+      } else {
+        // Giảm chuyển động: trả cây/biển về gốc để không bị nghiêng đè từ lần trước.
+        this.treeSprites.forEach(({ sprite, baseX }) => { sprite.skew.x = 0; sprite.x = baseX; });
+        this.swaySigns.forEach((sign) => { sign.skew.x = 0; });
       }
+    } else {
+      // Tắt hiệu ứng thời tiết: cây/biển có thể đã bị nghiêng ở khung trước → trả về gốc.
+      this.treeSprites.forEach(({ sprite, baseX }) => { sprite.skew.x = 0; sprite.x = baseX; });
+      this.swaySigns.forEach((sign) => { sign.skew.x = 0; });
     }
 
     // 2b. Update Doors & Entrance Animation
@@ -2244,6 +2252,8 @@ export class PixiGameViewport {
     let item: { container: Container; life: number; maxLife: number };
     if (this.floatingTextPool.length > 0) {
       item = this.floatingTextPool.pop()!;
+      // container đã bị removeChild khi hết hạn (:1901) → phải addChild lại để vào lại display list, nếu không text sẽ vô hình.
+      this.uiOverlayLayer.addChild(item.container);
       item.container.visible = true;
     } else {
       const container = new Container();

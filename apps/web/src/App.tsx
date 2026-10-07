@@ -42,6 +42,7 @@ import { money, PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
 import { useVoiceChat } from './hooks/useVoiceChat';
 import { VoicePanel } from './components/VoicePanel';
+import { getDevGuest, devGuestToken } from './services/dev-guest';
 
 import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal } from './lazy-modals';
 
@@ -509,6 +510,19 @@ export const App: React.FC = () => {
     sim.setPlayerPosition(position, direction);
   }, []);
 
+  /** Lấy token gọi API online: Firebase khi có user; trong chế độ khách dev (localhost 2 người) dùng token giả. Trả null nếu không sẵn sàng. */
+  const getOnlineIdToken = useCallback(async (): Promise<string | null> => {
+    const dev = getDevGuest();
+    if (dev.active) return devGuestToken();
+    try {
+      const { gameAuth } = await import('./services/firebase');
+      const user = gameAuth().currentUser;
+      return user ? await user.getIdToken() : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const handleEnterGame = (onlineWorldDetail?: WorldDetail) => {
     if (onlineWorldDetail) {
       setOnlineWorld(onlineWorldDetail);
@@ -523,6 +537,18 @@ export const App: React.FC = () => {
             setOnlineToken(token);
             touchWorldSession(token, onlineWorldDetail.world.id).catch(() => {});
           });
+        } else {
+          // Chế độ khách dev (localhost 2 người, server GOOGLE_AUTH_BYPASS=true): không có Firebase user,
+          // dùng định danh khách ổn định + token giả — server gán tài khoản guest_<id> qua X-Dev-Client-Id.
+          const dev = getDevGuest();
+          if (dev.active) {
+            const guestUid = `guest_${dev.clientId}`;
+            onlineUidRef.current = guestUid;
+            setOnlineUid(guestUid);
+            const token = devGuestToken();
+            setOnlineToken(token);
+            touchWorldSession(token, onlineWorldDetail.world.id).catch(() => {});
+          }
         }
       });
     } else {
@@ -537,10 +563,8 @@ export const App: React.FC = () => {
   const handleOnlineInvite = async () => {
     if (!onlineWorld) return;
     try {
-      const { gameAuth } = await import('./services/firebase');
-      const user = gameAuth().currentUser;
-      if (!user) throw new Error('Cần đăng nhập.');
-      const token = await user.getIdToken();
+      const token = await getOnlineIdToken();
+      if (!token) throw new Error('Cần đăng nhập.');
       const invite = await createWorldInvite(token, onlineWorld.world.id);
       navigator.clipboard?.writeText(invite.token);
       window.prompt('Mã mời tham gia hẻm (đã sao chép vào bộ nhớ tạm):', invite.token);
@@ -831,10 +855,8 @@ export const App: React.FC = () => {
       const curWorld = onlineWorldRef.current;
       if (!curWorld) return;
       try {
-        const { gameAuth } = await import('./services/firebase');
-        const user = gameAuth().currentUser;
-        if (!user) return;
-        const token = await user.getIdToken();
+        const token = await getOnlineIdToken();
+        if (!token) return;
         const updated = await getOnlineWorld(token, curWorld.world.id);
         onlineWorldRef.current = updated;
         setOnlineWorld(updated);
@@ -895,10 +917,8 @@ export const App: React.FC = () => {
       if (!curWorld || !simulationRef.current) return;
       if (data.revision > revisionRef.current) {
         try {
-          const { gameAuth } = await import('./services/firebase');
-          const user = gameAuth().currentUser;
-          if (!user) return;
-          const token = await user.getIdToken();
+          const token = await getOnlineIdToken();
+          if (!token) return;
           const updated = await getOnlineWorld(token, curWorld.world.id);
           onlineWorldRef.current = updated;
           setOnlineWorld(updated);

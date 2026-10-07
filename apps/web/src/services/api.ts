@@ -1,5 +1,6 @@
 import type { GameWorld, BusinessState, SaveGameData } from '@game/shared';
 import { MULTIPLAYER_PROTOCOL_VERSION } from '@game/shared';
+import { devGuestHeader } from './dev-guest';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3001';
 
@@ -20,6 +21,7 @@ export async function fetchWithAuth(path: string, idToken: string, options: Requ
     ...options,
     headers: {
       ...options.headers,
+      ...devGuestHeader(), // thêm X-Dev-Client-Id khi ở chế độ khách dev (localhost 2 người)
       'Content-Type': 'application/json',
       Authorization: `Bearer ${idToken}`,
     },

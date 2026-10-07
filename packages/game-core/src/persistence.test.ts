@@ -5,6 +5,7 @@ import {
   isSaveGameData,
   restoreSaveBackupSnapshot,
   validateSaveGameData,
+  CURRENT_SAVE_SCHEMA_VERSION,
   type SaveGameData
 } from '@game/shared';
 import { GameSimulation } from './simulation';
@@ -34,7 +35,7 @@ export async function runPersistenceTests() {
 
   // 3. Future unsupported version
   const futureSave = structuredClone(validSave);
-  futureSave.schemaVersion = 7;
+  futureSave.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION + 1;
   const futureResult = validateSaveGameData(futureSave);
   assert.equal(futureResult.valid, false, 'Future schema version fails validation');
   assert.equal(futureResult.versionStatus, 'unsupported_future', 'Version marked unsupported_future');
@@ -56,18 +57,18 @@ export async function runPersistenceTests() {
   schema3Save.schemaVersion = 3;
   const schema3Result = validateSaveGameData(schema3Save);
   assert.equal(schema3Result.valid, true);
-  assert.equal(schema3Result.data?.schemaVersion, 6, 'Schema 3 migrate lên 6');
+  assert.equal(schema3Result.data?.schemaVersion, CURRENT_SAVE_SCHEMA_VERSION, 'Schema 3 migrate lên 7');
   const schema4Save = structuredClone(validSave);
   schema4Save.schemaVersion = 4;
   const schema4Result = validateSaveGameData(schema4Save);
   assert.equal(schema4Result.valid, true, 'Schema 4 nạp được');
   assert.equal(schema4Result.versionStatus, 'legacy_migrate', 'Schema 4 đánh dấu cần chuyển');
-  assert.equal(schema4Result.data?.schemaVersion, 6, 'Schema 4 migrate lên 6 (chỉ thêm trường tùy chọn)');
+  assert.equal(schema4Result.data?.schemaVersion, CURRENT_SAVE_SCHEMA_VERSION, 'Schema 4 migrate lên 7 (chỉ thêm trường tùy chọn)');
   const schema5Save = structuredClone(validSave);
   schema5Save.schemaVersion = 5;
   const schema5Result = validateSaveGameData(schema5Save);
   assert.equal(schema5Result.valid, true, 'Schema 5 nạp được');
-  assert.equal(schema5Result.data?.schemaVersion, 6, 'Schema 5 migrate lên 6');
+  assert.equal(schema5Result.data?.schemaVersion, CURRENT_SAVE_SCHEMA_VERSION, 'Schema 5 migrate lên 7');
 
   // 5. Backup snapshot keeps sequential revision
   const backup = createSaveBackupSnapshot(validSave, 'backup-test-key');

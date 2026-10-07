@@ -1,4 +1,4 @@
-import { GameTileMap, StoreFixture, SaveGameData, Vector2D, tileIndex, tileInMap, type BuildingPlacementRecord } from '@game/shared';
+import { GameTileMap, StoreFixture, SaveGameData, Vector2D, tileIndex, tileInMap, defaultWorldOpenState, ownedParcelIdsDefault, type BuildingPlacementRecord } from '@game/shared';
 import { STARTER_OWNED_PLOT_IDS } from './land';
 import { STALLS } from './stalls';
 import { MAIN_STORE_BOUNDS } from './buildings';
@@ -287,7 +287,7 @@ export function generateStarterTileMap(
 
 export const DEFAULT_INITIAL_SAVE: SaveGameData = {
   id: 'local_save_default',
-  schemaVersion: 6,
+  schemaVersion: 7,
   revision: 1,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -314,7 +314,9 @@ export const DEFAULT_INITIAL_SAVE: SaveGameData = {
     fixtures: INITIAL_FIXTURES,
     storedFixtures: [],
     unlockedPlotIds: STARTER_OWNED_PLOT_IDS,
+    ownedParcelIds: ownedParcelIdsDefault(),
   },
+  world: defaultWorldOpenState(),
   warehouseTier: 2,
   storageRackCount: 5,
   inventory: [

@@ -1,5 +1,5 @@
 import { generateStarterTileMap, STARTER_PRODUCTS, ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP, DEFAULT_INITIAL_SAVE, runCatalogTests, runExpansionCatalogTests, runExpansionManifestTests } from '@game/data';
-import { COLD_WAREHOUSE_CAPACITY } from '@game/shared';
+import { COLD_WAREHOUSE_CAPACITY, CURRENT_SAVE_SCHEMA_VERSION } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { CollisionSystem } from './collision';
@@ -362,7 +362,7 @@ export async function runTests(): Promise<void> {
   const migrated = new GameSimulation(legacySave, tileMap, input);
   assert(migrated.getFixtures().some((fixture) => fixture.type === 'refrigerator'), 'Bản lưu cũ được bổ sung tủ mát');
   assert(migrated.getInventory().every((item) => item.lots?.length), 'Hàng trong bản lưu cũ được gắn hạn dùng');
-  assert(migrated.exportSaveData('test_save_id', 4).schemaVersion === 6, 'Bản lưu mới dùng schema version 6');
+  assert(migrated.exportSaveData('test_save_id', 4).schemaVersion === CURRENT_SAVE_SCHEMA_VERSION, 'Bản lưu mới dùng schema version hiện tại');
   const partialSave = structuredClone(DEFAULT_INITIAL_SAVE);
   partialSave.inventory[0].lots = [];
   assert(new GameSimulation(partialSave, tileMap, input).getInventory()[0].quantity === partialSave.inventory[0].quantity, 'Bản lưu thiếu lô không làm mất hàng');
