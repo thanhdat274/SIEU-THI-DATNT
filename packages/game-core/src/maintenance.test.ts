@@ -132,6 +132,46 @@ export function runMaintenanceTests(): void {
   const r = reloaded.getFixtures().find(f => f.id === fx.id)!;
   assert.deepEqual([r.wear, r.broken], [77, 'minor'], 'Lưu rồi tải giữ nguyên hao mòn và hỏng');
 
+  // Bảo trì tất cả: chỉ bảo trì KỆ CHÍNH (bỏ ô phụ #sN) — một kệ vật lý KHÔNG bị tính phí/nhân theo số ô phụ.
+  const allSave = structuredClone(save);
+  allSave.player.money = 5_000_000;
+  const allSim = new GameSimulation(allSave, map, new InputManager());
+  const allRoots = allSim.getFixtures().filter(f => isSalesFixture(f) && !f.parentId);
+  assert.ok(allRoots.length >= 2, 'Có ít nhất 2 kệ chính');
+  const groupOf = (rootId: string) => allSim.getFixtures().filter(f => isSalesFixture(f) && (f.id === rootId || f.parentId === rootId));
+  for (const f of allSim.getFixtures()) { f.wear = 0; f.broken = undefined; }
+  const root0 = allRoots[0];
+  // Làm mòn cả NHÓM kệ 0 (kệ chính + 11 ô phụ #sN): trước khi sửa lỗi đây sẽ tính phí 12 lần.
+  const group0 = groupOf(root0.id);
+  assert.ok(group0.length > 1, 'Kệ chính có ô phụ đi kèm (mới có nguy cơ bị tính phí nhiều lần)');
+  for (const f of group0) f.wear = 70;
+  const root1 = allRoots[1];
+  // Kệ 1 còn mới, mòn nhẹ (không cần bảo trì).
+  groupOf(root1.id).forEach(f => { f.wear = 10; });
+  const expectedTotal = fixtureRepairCost(root0);
+  const moneyBefore = allSim.getPlayerData().money;
+  const ledgerBefore = allSim.getLedger().filter(e => e.type === 'maintenance').length;
+  // Chỉ 1 KỆ CHÍNH cần bảo trì dù nhóm kệ 0 có 12 đồ "mòn" — KHÔNG nhân theo ô phụ.
+  const allRes = allSim.maintainAllServices();
+  assert.equal(allRes.success, true);
+  assert.equal(allRes.count, 1, 'Chỉ bảo trì KỆ CHÍNH, không nhân theo ô phụ #sN');
+  assert.equal(allRes.totalCost, expectedTotal);
+  assert.equal(allSim.getPlayerData().money, moneyBefore - expectedTotal, 'Trừ đúng phí 1 lần, không nhân theo ô phụ');
+  assert.equal(allSim.getLedger().filter(e => e.type === 'maintenance').length, ledgerBefore + 1, 'Ghi sổ cái 1 lần theo KỆ, không theo ô phụ');
+  assert.ok((allSim.getFixtures().find(x => x.id === root0.id)!.wear ?? 0) <= MAINTENANCE_RULES.repairWear, 'Kệ chính được bảo trì về mức sau sửa');
+  // Kệ mới (không cần) và kệ hỏng (không bảo trì được) không được tính.
+  assert.equal(allRes.count, 1, 'Kệ còn mới không bị tính vào số đã bảo trì');
+  const root1Now = allSim.getFixtures().find(x => x.id === root1.id)!;
+  root1Now.wear = 90; root1Now.broken = 'minor';
+  assert.equal(allSim.maintainAllServices().count, 0, 'Kệ hỏng không bị bảo trì');
+  assert.equal((allSim.getFixtures().find(x => x.id === root1.id)!.broken), 'minor', 'Kệ hỏng vẫn hỏng sau khi bảo trì tất cả');
+
+  // Bảo trì tất cả khi chưa mở khóa.
+  const lowAllSave = structuredClone(save);
+  lowAllSave.player.level = 1;
+  const lowAllSim = new GameSimulation(lowAllSave, map, new InputManager());
+  assert.deepEqual(lowAllSim.maintainAllServices(), { success: false, count: 0, totalCost: 0, skipped: 0 }, 'Cấp thấp thì không bảo trì được');
+
   // Qua đêm thật: kệ mòn nặng cuối cùng hỏng và có thông báo; cấp thấp thì không hao mòn.
   const nightSave = structuredClone(save);
   const nightSim = new GameSimulation(nightSave, map, new InputManager(), { onMaintenanceNotice: ns => noticesSeen.push(ns) });
@@ -178,8 +218,11 @@ export function runMaintenanceTests(): void {
       sv.player.money = money;
       sv.staff = withStaff ? [{ id: 'refill-1', name: 'Chị Hai', role: 'refill', speed: 5, accuracy: 5, stamina: 5, dailyWage: 0, hiredOnDay: 1, shift: 'full_day' }] : [];
       const sm = new GameSimulation(sv, map, new InputManager());
-      for (const f of sm.getFixtures().filter(isSalesFixture)) f.wear = 0;
-      const targets = sm.getFixtures().filter(isSalesFixture).slice(0, 3);
+      // Chỉ KỆ CHÍNH là đối tượng bảo trì (ô phụ #sN dùng chung wear kệ cha) nên khai 3 kệ chính khác nhau.
+      const roots = sm.getFixtures().filter(f => isSalesFixture(f) && !f.parentId);
+      assert.ok(roots.length >= 3, 'Có ít nhất 3 kệ chính để thử nhân viên bảo trì');
+      for (const f of sm.getFixtures()) f.wear = 0;
+      const targets = roots.slice(0, 3);
       targets.forEach((f, i) => { f.wear = 50 - i; });
       sm.getClock().advanceToNextDay();
       return { sm, ids: targets.map(f => f.id) };

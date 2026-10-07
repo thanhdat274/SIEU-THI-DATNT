@@ -108,7 +108,7 @@ import { createChain, normalizeChain, openBranch as openBranchPure, returnStock 
 import { runBranchDay } from './branch-ops';
 import { applyAuditToState, emptyTaxState, normalizeTaxState, resolveAudit, shouldAudit, splitDeclared } from './tax/audit';
 import { composeReview, sanitizeReviews, summarizeReviews, ReviewsManager } from './reviews';
-import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, staffServiceTargets, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
+import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, staffServiceTargets, needsService, maintenanceUnlocked, isWearable, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { decorAttraction, decorTrafficMultiplier } from './decor';
 import { buyLandPlot, expandFootprint, relocateBuilding, relocateMisplacedFixtures, upgradeFixtureSlots, validateStoreLayout, totalWarehouseCells, coldWarehouseCapacity, warehouseCellsFor, unitsFittingInCells, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
@@ -1475,6 +1475,21 @@ export class GameSimulation {
   /** Bảo trì, sửa nhẹ hoặc mua mới một kệ/tủ mát; trừ tiền, ghi sổ cái và chi phí ngày. Mua mới giữ chỗ đặt và hàng đang bày. */
   public maintainFixture(fixtureId: string, action: MaintenanceAction): { success: boolean; reason?: string; cost?: number } {
     return this.applyMaintenanceAction(fixtureId, action, false);
+  }
+
+  /** Bảo trì (service) toàn bộ kệ/tủ mát đang mòn chưa hỏng; trừ tiền, ghi sổ cái theo từng món. */
+  public maintainAllServices(): { success: boolean; count: number; totalCost: number; skipped: number } {
+    if (!maintenanceUnlocked(this.playerData.level)) return { success: false, count: 0, totalCost: 0, skipped: 0 };
+    const targets = this.fixtures
+      .filter((f) => isWearable(f) && !f.broken && needsService(f))
+      .sort((a, b) => (b.wear ?? 0) - (a.wear ?? 0) || (a.id < b.id ? -1 : 1));
+    let count = 0, total = 0, skipped = 0;
+    for (const f of targets) {
+      const res = this.applyMaintenanceAction(f.id, 'service', false);
+      if (res.success) { count += 1; total += res.cost ?? 0; }
+      else skipped += 1;
+    }
+    return { success: count > 0, count, totalCost: total, skipped };
   }
 
   /** Nhân viên châm hàng tự bảo trì đồ đã mòn trước khi đêm làm hỏng; trả phí như người chơi. */

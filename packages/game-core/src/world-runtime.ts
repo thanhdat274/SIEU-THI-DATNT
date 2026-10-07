@@ -312,7 +312,10 @@ export class WorldRuntime {
       } else if (p.type === 'set_price') {
         success = this.simulation.setSellingPrice(p.productId, p.price).success;
       } else if (p.type === 'reset_prices') {
-        success = this.simulation.resetSellingPrices().success;
+        // Khớp hợp đồng của client (handleResetAllSellingPrices): client commit khi reset>0 dù có khách
+        // đang thanh toán phải bỏ qua (blocked). Nếu dùng .success (= blocked===0) sẽ từ chối đúng phép
+        // đặt lại một phần hợp lệ → client rollback cả lô. Dùng reset>0 để server chấp nhận phần đã làm.
+        success = this.simulation.resetSellingPrices().reset > 0;
       } else if (p.type === 'buy_plot') {
         success = !!this.simulation.purchaseLand(p.plotId, p.placement).save;
       } else if (p.type === 'set_restock_options') {
@@ -399,6 +402,8 @@ export class WorldRuntime {
         success = this.simulation.setActiveTitle(p.titleId).success;
       } else if (p.type === 'maintain_fixture') {
         success = this.simulation.maintainFixture(p.fixtureId, p.action).success;
+      } else if (p.type === 'maintain_all_service') {
+        success = this.simulation.maintainAllServices().success;
       } else if (p.type === 'security_action') {
         success = p.action === 'buy_camera' ? this.simulation.buyCamera().success : this.simulation.setCallPolice(p.action === 'police_on').success;
       } else if (p.type === 'layout_batch') {

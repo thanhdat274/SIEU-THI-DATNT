@@ -1293,6 +1293,7 @@ export type GameCommandPayload =
   | { type: 'choose_perk'; perkId: string }
   | { type: 'set_title'; titleId?: string }
   | { type: 'maintain_fixture'; fixtureId: string; action: 'service' | 'repair' | 'replace' }
+  | { type: 'maintain_all_service' }
   | { type: 'security_action'; action: 'buy_camera' | 'police_on' | 'police_off' }
   | { type: 'buy_warehouse_tier'; tier: number }
   | { type: 'buy_storage_rack' };
@@ -1577,6 +1578,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'set_title': return p.titleId === undefined || nonEmptyString(p.titleId);
     case 'security_action': return p.action === 'buy_camera' || p.action === 'police_on' || p.action === 'police_off';
     case 'maintain_fixture': return nonEmptyString(p.fixtureId) && (p.action === 'service' || p.action === 'repair' || p.action === 'replace');
+    case 'maintain_all_service': return true;
     case 'buy_warehouse_tier': return Number.isSafeInteger(p.tier) && Number(p.tier) >= 1 && Number(p.tier) <= 3;
     case 'buy_storage_rack': return true;
     default: return false;

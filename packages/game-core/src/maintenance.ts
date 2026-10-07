@@ -26,7 +26,9 @@ export interface MaintenanceNotice {
 }
 
 export const maintenanceUnlocked = (level: number): boolean => level >= MAINTENANCE_RULES.unlockLevel;
-export const isWearable = (fixture: Pick<StoreFixture, 'type'>): boolean => isSalesFixture(fixture);
+// Chỉ kệ/tủ mát CHÍNH (root) là vật lý riêng chịu hao mòn; các ô phụ (`#sN`, có parentId) chỉ là bản ghi dữ liệu
+// dùng chung wear/broken của kệ cha (syncSlotChildren) nên KHÔNG được tính là đối tượng bảo trì riêng.
+export const isWearable = (fixture: Pick<StoreFixture, 'type' | 'parentId'>): boolean => isSalesFixture(fixture) && !fixture.parentId;
 export const needsService = (fixture: Pick<StoreFixture, 'wear' | 'broken'>): boolean => !fixture.broken && (fixture.wear ?? 0) >= MAINTENANCE_RULES.breakFrom * MAINTENANCE_RULES.serviceFraction;
 
 /** Hạn dùng mất thêm mỗi đêm của hàng trong tủ mát đang hỏng (0 nếu không phải tủ mát hoặc còn chạy). */
