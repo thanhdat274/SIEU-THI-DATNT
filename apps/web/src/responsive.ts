@@ -58,6 +58,14 @@ export function installResponsive(): void {
     setAttr('data-density', densityFor(width, height));
     setAttr('data-short', height < 500 ? 'true' : 'false');
     setVar('--app-h', `${Math.round(height)}px`);
+    // Bàn phím ảo (di động): chiều cao bị che phủ = layout viewport − visual viewport.
+    // Modals neo theo đáy (bottom-sheet hoặc nội dung cuộn) dùng --kb-h để nâng lên khỏi bàn phím.
+    const vv = window.visualViewport;
+    const vb = Math.max(0, Math.round((height - (vv ? vv.height : height))));
+    setVar('--kb-h', `${vb}px`);
+    // Chiều cao hiển thị thật (visual viewport, không có bàn phím/thanh địa chỉ): overlay modal dùng làm
+    // giới hạn cao nhất để không bị bàn phím/Home Indicator che trên iOS (layout viewport không co lại).
+    setVar('--vb-h', `${Math.max(vv && vv.height ? Math.round(vv.height) : height, 1)}px`);
 
     const hud = document.querySelector<HTMLElement>('.game-hud');
     const footer = document.querySelector<HTMLElement>('.game-footer');

@@ -88,7 +88,7 @@ Quy ước trạng thái: ✅ Completed · 🟡 Partial · 🔴 Needs Fix · ⚪
 | S36 | Firebase Auth (Google/khách) | 🔍 | `services/firebase.ts`, `LoginScreen.tsx`, `auth.guard.ts` | Chưa nghiệm thu Google OAuth/Authorized domains thật; test server không qua token thật. |
 | S37 | PWA (manifest + service worker) | 🔍 | `apps/web/public/manifest.webmanifest`, `sw.js`, `main.tsx` | **Có code** (đăng ký ở production). Tài liệu cũ ghi "chưa có PWA". Chưa kiểm cài đặt/offline/cập nhật. |
 | S38 | Multiplayer đầu–cuối 2 trình duyệt | 🔍 | `useWorldSocket.ts`, `App.tsx`, OpenSpec `shared-alley-multiplayer` (11 mở) | Reconnect, mất mạng, restart server, interpolation partner, UI phiếu chưa kiểm. |
-| S39 | Hiệu năng, responsive mobile, cân bằng kinh tế | 🔍 | toàn bộ | Chưa có số đo trên máy thật; headless cũ p95 ~67–83 ms. |
+| S39 | Hiệu năng, responsive mobile, cân bằng kinh tế | 🔍 | toàn bộ | Chưa có số đo trên máy thật; headless cũ p95 ~67–83 ms. **Đợt 14D (10/10/2026):** đã giao mobile-first UI cho mọi feature P0/P1 (1 nguồn `data-density="compact"` + `--touch`/`data-input=touch` + container query; action chính sticky footer; tab 1 hàng cuộn; KPI 2 cột; Regulars stack; Planogram/StoreLayout canvas-first); 5 audit static PASS + typecheck/eslint/postcss/diff-check PASS (chi tiết `tổng hợp.md`/`TASKS.md`). Vẫn `🔍` vì **chưa browser QA thật** (sandbox không chạy được trình duyệt) → phần responsive mobile = NOT MOBILE READY cho tới khi QA mắt trên máy thật. |
 | S40 | Âm thanh trong game | ⚪ | — | Không có hệ phát âm thanh. Chỉ có chime Web Audio ở `LoginScreen.tsx:11-33`. |
 | S41 | Engine tính/nộp thuế | ⚪ | `docs/tax/*` | Phụ thuộc thẩm định pháp lý (TAX-0). |
 | S42 | Content editor (catalog/map) | ⚪ | `tools/content-editor/README.md` | Chỉ README. |

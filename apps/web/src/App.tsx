@@ -182,11 +182,30 @@ export const App: React.FC = () => {
   }, [gameStarted]);
   // Vào game là một cử chỉ của người chơi: thời điểm hợp lệ để thử khóa màn ngang (thất bại thì RotateOverlay lo).
   useEffect(() => { if (gameStarted) void lockLandscape(); }, [gameStarted]);
-  // Chỉ dev (QA bố cục): mở modal không cần điều kiện gameplay; chỉ đổi state hiển thị, không đụng mô phỏng. Phiếu giờ/tóm tắt ngày dùng dữ liệu mẫu chỉ để dựng UI.
+  // Chỉ QA bố cục (bật khi URL có ?qa): mở modal không cần điều kiện gameplay; chỉ đổi state hiển thị,
+  // không đụng mô phỏng. Phiếu giờ/tóm tắt ngày dùng dữ liệu mẫu chỉ để dựng UI.
+  // KHÔNG ảnh hưởng người chơi thường: hook chỉ gắn khi query string có 'qa'.
   useEffect(() => {
-    if (!import.meta.env.DEV) return;
+    const isQA = new URLSearchParams(window.location.search).has('qa');
+    if (!isQA) return;
+    const fixtureOf = (type: string) => {
+      const fs = useGameStore.getState().fixtures;
+      return fs.find((f) => f.type === type) ?? fs.find((f) => (isSalesFixture(f) || isWarehouseFixture(f)) && !f.parentId);
+    };
     const open: Record<string, () => void> = {
       chain: () => setChainOpen(true), security: () => setSecurityOpen(true), analytics: () => setAnalyticsOpen(true), planogram: () => setIsPlanogramOpen(true), layout: () => setIsLayoutOpen(true),
+      quest: () => setQuestOpen(true), stall: () => setStallOpen(true), market: () => setMarketOpen(true), tax: () => setTaxOpen(true),
+      regulars: () => setRegularsOpen(true), skills: () => setSkillsOpen(true), titles: () => setTitlesOpen(true),
+      maintenance: () => setMaintenanceOpen(true), reviews: () => setReviewsOpen(true), prices: () => setPricesOpen(true),
+      levelRoadmap: () => setLevelRoadmapOpen(true),
+      inventory: () => useGameStore.getState().toggleInventoryModal(),
+      save: () => useGameStore.getState().toggleSaveModal(),
+      supplier: () => useGameStore.getState().openSupplierModal(),
+      cashier: () => { const f = fixtureOf('cashier_counter'); if (f) openFixtureModal(f); },
+      warehouse: () => { const fs = useGameStore.getState().fixtures; const f = fs.find(isWarehouseFixture) ?? fs[0]; if (f) openFixtureModal(f); },
+      shelf: () => { const fs = useGameStore.getState().fixtures; const f = fs.find(isSalesFixture) ?? fs[0]; if (f) openFixtureModal(f); },
+      kitchen: () => { const f = fixtureOf('kitchen_station'); if (f) openFixtureModal(f); },
+      dining: () => { const f = fixtureOf('dining_table'); if (f) openFixtureModal(f); },
       timeVote: () => setActiveTimeVote({ type: 'advance_day', initiatedBy: 'qa', expiresInMs: 30000, approvalsCount: 1, totalRequired: 2 }),
       daySummary: () => {
         const recs = Object.values(simulationRef.current?.getDailyRecords() ?? {}); const last = recs[recs.length - 1];
@@ -646,7 +665,7 @@ export const App: React.FC = () => {
         onCustomerRated: ({ stars, average, reason, review }) => {
           const why = reason ? ` · ${feedbackReasonLabel(reason)}` : '';
           const quote = review ? `${review.author}: “${review.text}” ` : '';
-          addToast(`${quote}${stars}★${why} · trung bình ${average.toFixed(1)}★`, stars <= 2 ? 'warn' : 'info');
+          addToast(`${quote}${stars}★${why} · trung bình ${average.toFixed(1)}★`, stars <= 2 ? 'warn' : 'info', 'rating');
         },
         onToast: (message, type) => addToast(message, type),
         onPlayerRelocated: ()=>addToast('Đã đưa bạn tới cửa hậu của nhà kho mới; tiền và hàng được giữ nguyên.','info'),
@@ -1778,7 +1797,7 @@ export const App: React.FC = () => {
       )}
       {!isLoading && onlineWorld && !onlineConnected && (
         <div role="alert" style={{
-          position: 'fixed', top: 'var(--top-ui-height)', left: 0, right: 0, zIndex: 9999,
+          position: 'fixed', top: 'var(--top-ui-height)', left: 'max(0px, var(--safe-l, 0px))', right: 'max(0px, var(--safe-r, 0px))', zIndex: 150,
           background: '#c0392b', color: '#fff', fontSize: 13, padding: '6px 16px',
           textAlign: 'center', fontFamily: 'var(--font-pixel, monospace)',
           borderBottom: '2px solid #922b21',
@@ -1822,6 +1841,7 @@ export const App: React.FC = () => {
         {!isLoading && <WarehouseDock coldCapacity={simulationRef.current?.getColdCapacity()} ambientCapacity={simulationRef.current?.getAmbientCapacity()} ambientUsed={simulationRef.current?.getAmbientCellsUsed()} capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} isOpen={isWarehouseDockOpen} onToggle={()=>setWarehouseDockOpen(v=>!v)} onAutoRestock={handleAutoRestock} onOpenSupplier={openSupplierModal} onOpenPlanogram={() => setIsPlanogramOpen(true)} onLocateWarehouse={locateWarehouse} onStowHolding={handleStowHolding} currentDay={worldTime.day}/>}
       </main>
       {!isLoading && <BottomBar onOpenSupplier={openSupplierModal} onOpenCashier={openCashier} onOpenStalls={() => setStallOpen(true)}/>}
+      {gameStarted && !isLoading && simulationRef.current && <TutorialChecklist items={tutorialItems}/>}
       </div>
     </div>
     {isLoading && (
@@ -2059,7 +2079,6 @@ export const App: React.FC = () => {
       />
     )}
     {isAnalyticsOpen && simulationRef.current && <AnalyticsModal day={simulationRef.current.getTime().day} records={simulationRef.current.getDailyRecords()} buildings={simulationRef.current.getTileMap().buildings} getPriceHistory={id => simulationRef.current?.getPriceHistory(id) ?? []} getHeatmap={days => simulationRef.current?.getHeatmap(days) ?? {}} onClose={() => setAnalyticsOpen(false)}/>}
-    {gameStarted && !isLoading && simulationRef.current && <TutorialChecklist items={tutorialItems}/>}
     {isSecurityOpen && simulationRef.current && (
       <SecurityModal
         security={simulationRef.current.getSecurityState()}
@@ -2136,6 +2155,18 @@ export const App: React.FC = () => {
             addToast(action === 'replace' ? 'Đã mua mới.' : action === 'repair' ? 'Đã sửa xong.' : 'Đã bảo trì xong.', 'success');
           } else {
             addToast(res.reason ?? 'Không thể xử lý.', 'warn');
+          }
+        }}
+        onMaintainAll={async () => {
+          const res = await persistSimulationMutation(
+            { type: 'maintain_all_service' }, 'Bảo trì tất cả nội thất', 'Sửa chữa',
+            simulation => simulation.maintainAllServices(),
+          );
+          if (!res) return;
+          if (res.success) {
+            addToast(`Đã bảo trì ${res.count} món nội thất (${(res.totalCost ?? 0).toLocaleString('vi-VN')}₫).`, 'success');
+          } else {
+            addToast(res.skipped ? `Không đủ tiền, chỉ bảo trì ${res.count} món.` : 'Không có đồ nào cần bảo trì.', 'warn');
           }
         }}
         onClose={() => setMaintenanceOpen(false)}
@@ -2232,7 +2263,7 @@ export const App: React.FC = () => {
       />
     )}
     </Suspense>
-    {inventorySummary && (
+    {inventorySummary && !daySummaryRecord && !hasModal && (
       <InventorySummaryCard
         summary={inventorySummary}
         onClose={() => setInventorySummary(null)}

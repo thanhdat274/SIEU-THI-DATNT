@@ -47,12 +47,12 @@ export const SkillsModal: React.FC<SkillsModalProps> = ({
   return (
     <PixelDialog
       icon="star"
-      title="KỸ NĂNG & ĐẶC QUYỀN"
+      title="Kỹ năng & đặc quyền"
       subtitle="Bồi dưỡng tay nghề và mở khóa bí quyết kinh doanh"
       onClose={onClose}
     >
       {/* Tab bar chọn cây kỹ năng */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+      <div className="feature-tabs" style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
         {(['management', 'marketing', 'storage'] as SkillType[]).map((st) => {
           const info = SKILL_NAMES[st];
           const active = selectedSkill === st;
@@ -109,7 +109,7 @@ export const SkillsModal: React.FC<SkillsModalProps> = ({
           return (
             <div
               key={perk.id}
-              className="pixel-panel"
+              className="pixel-panel perk-row"
               style={{
                 padding: 10,
                 display: 'flex',
@@ -117,7 +117,7 @@ export const SkillsModal: React.FC<SkillsModalProps> = ({
                 alignItems: 'center',
                 gap: 8,
                 background: unlocked ? 'rgba(78, 175, 124, 0.08)' : undefined,
-                borderLeft: unlocked ? '3px solid #4eaf7c' : undefined,
+                borderLeft: unlocked ? '3px solid var(--teal)' : undefined,
               }}
             >
               <div style={{ flex: 1 }}>
@@ -127,14 +127,14 @@ export const SkillsModal: React.FC<SkillsModalProps> = ({
                     (Bậc {perk.tier} · Cần cấp {reqLevel})
                   </span>
                 </div>
-                <div className="muted" style={{ fontSize: '0.85rem', marginTop: 2 }}>
+                <div className="muted perk-desc" style={{ fontSize: '0.85rem', marginTop: 2 }}>
                   {perk.description}
                 </div>
               </div>
 
-              <div>
+              <div className="perk-action">
                 {unlocked ? (
-                  <span style={{ color: '#4eaf7c', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                  <span style={{ color: 'var(--teal)', fontWeight: 'bold', fontSize: '0.85rem' }}>
                     ✓ Đã mở
                   </span>
                 ) : (

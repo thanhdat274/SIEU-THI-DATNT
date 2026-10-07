@@ -69,7 +69,9 @@ export function PixelDialog({title, subtitle, icon, onClose, children, footer}: 
         else if(!e.shiftKey && (document.activeElement===last || !node.contains(document.activeElement))) {e.preventDefault(); first.focus();}
       }
     };
-    const focus = (e:FocusEvent) => {if(!node.contains(e.target as Node)) (focusable()[0] ?? node).focus();};
+    // Chỉ hộp thoại trên cùng giữ focus; nếu hai hộp thoại cùng mount, handler của cả hai sẽ giành focus lẫn nhau → đệ quy vô hạn.
+    const isTop = () => { const all = document.querySelectorAll('.pixel-dialog'); return all[all.length - 1] === node; };
+    const focus = (e:FocusEvent) => {if(isTop() && !node.contains(e.target as Node)) (focusable()[0] ?? node).focus();};
     // Báo cho renderer giảm khung hình khi có hộp thoại che màn hình (đỡ tranh CPU/GPU với việc cuộn danh sách).
     const root = document.documentElement;
     root.dataset.dialogs = String(Number(root.dataset.dialogs ?? '0') + 1);

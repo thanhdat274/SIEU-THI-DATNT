@@ -211,7 +211,7 @@ export const ShelfModal: React.FC<Props> = ({
                     Trong kho {stockLabel(stock)} · Bán {money(PRODUCT_MAP[i.productId].baseSellingPrice)}
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: '4px' }}>
+                <div className="product-actions" style={{ display: 'flex', gap: '4px' }}>
                   <PixelButton
                     variant="teal"
                     disabled={stock.loose <= 0}

@@ -64,7 +64,11 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
         <div className="brand" data-hud="decor" title="Tiệm Tạp Hóa Đầu Hẻm">
           <div className="brand-sign"><PixelIcon name="warehouse" size={26}/></div>
           <div className="brand-copy">
-            {player.activeTitle ? <p className="eyebrow" style={{ cursor: onOpenTitles ? 'pointer' : 'default', color: '#ffd56b' }} onClick={onOpenTitles} title="Bấm để xem/đổi danh hiệu">{player.activeTitle}</p> : <p className="eyebrow">Một góc nhỏ · Một đời vui</p>}
+            {player.activeTitle
+              ? (onOpenTitles
+                  ? <button type="button" className="eyebrow" style={{ cursor: 'pointer', color: 'var(--sun)', background: 'none', border: 0, padding: 0, font: 'inherit', textAlign: 'left' }} onClick={onOpenTitles} title="Bấm để xem/đổi danh hiệu">{player.activeTitle}</button>
+                  : <p className="eyebrow" style={{ color: 'var(--sun)' }}>{player.activeTitle}</p>)
+              : <p className="eyebrow">Một góc nhỏ · Một đời vui</p>}
             <h1>Tiệm Tạp Hóa Đầu Hẻm</h1>
           </div>
         </div>

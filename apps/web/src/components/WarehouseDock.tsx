@@ -69,20 +69,20 @@ export const WarehouseDock: React.FC<Props> = ({
       </header>
 
       {totalHolding > 0 && (
-        <div style={{ padding: '8px 12px', background: '#FFF0D4', borderBottom: '2px solid #D5B98E' }}>
+        <div className="dock-holding-strip" style={{ padding: '8px 12px', background: '#FFF0D4', borderBottom: '2px solid #D5B98E' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <strong style={{ fontSize: '12px', color: '#88392F' }}>Hàng chờ cất: {totalHolding} món</strong>
             {onStowHolding && (
               <PixelButton
                 variant="teal"
-                style={{ minHeight: '28px', padding: '4px 8px', fontSize: '12px' }}
+                style={{ padding: '4px 8px', fontSize: '12px' }}
                 onClick={() => onStowHolding()}
               >
                 Cất vào kho
               </PixelButton>
             )}
           </div>
-          <div style={{ maxHeight: '80px', overflowY: 'auto', marginTop: '4px', fontSize: '11px' }}>
+          <div className="dock-holding-list" style={{ maxHeight: '80px', overflowY: 'auto', marginTop: '4px', fontSize: '11px' }}>
             {holdingArea.map((h) => (
               <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                 <span>{PRODUCT_MAP[h.productId]?.name ?? h.productId}</span>

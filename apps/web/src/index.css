@@ -13,7 +13,7 @@
   --color-retro-blue: #1d3557;
   --font-retro: "Courier New", Courier, monospace, sans-serif;
 }
-:root{--ink:#33251D;--wood-dark:#593A2B;--wood:#936044;--wood-light:#C69464;--paper:#FFF2D6;--paper-shade:#E7CE9F;--teal:#357F72;--teal-dark:#24584F;--brick:#B64C3D;--sun:#E9B95D;--muted:#725A47;font-family:'Be Vietnam Pro','Segoe UI',Arial,sans-serif;color:var(--ink);font-size:14px}
+:root{--ink:#33251D;--wood-dark:#593A2B;--wood:#936044;--wood-light:#C69464;--paper:#FFF2D6;--paper-shade:#E7CE9F;--teal:#357F72;--teal-dark:#24584F;--brick:#B64C3D;--sun:#E9B95D;--muted:#725A47;--success:#2A7A43;--warn:#A86B12;--warn-bright:#E09F3E;font-family:'Be Vietnam Pro','Segoe UI',Arial,sans-serif;color:var(--ink);font-size:14px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;width:100%;height:100%;overflow:hidden}body{background:var(--wood-dark)}button,input,select{font:inherit;touch-action:manipulation}button{cursor:pointer}button:disabled{cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--teal-dark);outline-offset:3px}h1,h2,h3,p{margin:0}h2{font-size:20px;line-height:1.3}h3{font-size:16px}strong{font-weight:750}.muted{color:var(--muted)}.eyebrow{font-weight:800;letter-spacing:2px;font-size:11px;text-transform:uppercase}.tabular{font-variant-numeric:tabular-nums}
 .pixel-icon{flex-shrink:0;display:inline-block}.icon-coin,.icon-sun,.icon-star{color:#9B6526}.icon-heart{color:var(--brick)}.product-icon{image-rendering:pixelated;flex-shrink:0}
 .pixel-panel{background:var(--paper);border:3px solid var(--wood-dark);box-shadow:inset 2px 2px 0 #FFF9EC,inset -2px -2px 0 var(--wood-light),4px 4px 0 #33251D33;position:relative}
@@ -84,7 +84,7 @@
 .dock-product{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #D5B98E;align-items:center}.dock-product .product-slot{width:40px;height:40px}.dock-product .product-icon{width:28px;height:28px}.dock-product strong{display:block;font-size:13px}.dock-product p{color:var(--muted);font-size:12px;margin-top:2px}.dock-count{margin-left:auto;font-weight:800}.dock-actions{padding:12px 14px;border-top:2px solid var(--paper-shade);display:grid;gap:8px}.dock-actions p{font-size:12px;color:var(--muted);line-height:1.35}
 .game-footer{min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 16px;border-top:4px solid var(--wood-dark);background:var(--paper);flex-shrink:0;z-index:20}.footer-context{display:flex;gap:10px;align-items:center;min-width:0;overflow:hidden}.footer-context strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.footer-context p{color:var(--muted);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.footer-actions{display:flex;gap:8px;flex-shrink:0}kbd{font-family:inherit;font-weight:750;border:1px solid var(--wood-light);padding:2px 5px;background:#F1DCAE;box-shadow:0 2px 0 var(--wood-light)}
 .dialog-backdrop{position:fixed;inset:0;z-index:50;background:rgba(36,29,23,0.72);display:flex;justify-content:center;align-items:center;padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
-.pixel-dialog{width:min(780px,100%);max-height:min(94vh,740px);display:flex;flex-direction:column;overflow:hidden;box-shadow:6px 6px 0 #241D1780}
+.pixel-dialog{width:min(var(--dialog-w, 780px),100%);max-height:min(calc(100% - var(--kb-h, 0px)),var(--dialog-h, 760px));display:flex;flex-direction:column;overflow:hidden;box-shadow:6px 6px 0 #241D1780}
 .dialog-header{background:var(--wood-dark);color:var(--paper);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-shrink:0;border-bottom:4px solid var(--wood-light)}.dialog-heading{display:flex;gap:10px;align-items:center}.dialog-heading>.pixel-icon{color:var(--sun)}.dialog-heading p{color:#F1DCAE;font-size:13px;margin-top:2px}.dialog-header .pixel-button{border-color:var(--wood-light)}
 .dialog-content{padding:16px 20px;overflow-y:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;line-height:1.5}.dialog-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 16px;background:#F2DFB7;border-top:2px solid var(--wood-light);flex-shrink:0}
 .summary-row{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;background:#F2DFB7;border:1px solid var(--wood-light);margin-bottom:14px}.section-label{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}.section-label h3{font-size:16px}.section-label span{color:var(--muted)}.form-filter{display:flex;align-items:center;gap:12px;margin:10px 0 14px;font-weight:700}.form-filter select{min-height:40px;max-width:100%;background:var(--paper);border:2px solid var(--wood-light);padding:6px 8px;color:var(--ink);border-radius:0}
@@ -231,6 +231,17 @@ h3{font-weight:750}.quantity-stepper .pixel-button{min-width:44px}
   padding: 1px 5px;
   border-radius: 2px;
   white-space: nowrap;
+}
+/* Base class cho <span class="badge"> trần (Quest trạng thái đơn, Skills cấp) — trước đây không có rule
+   nên render thành chữ thường không nền. Presentation-only, dùng token có sẵn (UI-AUDIT-2026-001 D03). */
+.badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 2px;
+  white-space: nowrap;
+  background: var(--wood-light, #cba67b);
+  color: var(--wood-dark, #3b2518);
 }
 .management-badge.badge-brick {
   background: var(--brick, #a4532b);

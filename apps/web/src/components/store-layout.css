@@ -598,6 +598,10 @@
   transition: transform 0.05s ease, filter 0.05s ease;
 }
 
+/* Cảm ứng: nút di chuyển ô (dpad) hiện 34px phải đạt vùng chạm --touch (44px) trên màn hình cảm ứng. */
+html[data-input="touch"] .layout-dpad-grid { grid-template-columns: repeat(3, var(--touch, 44px)); grid-template-rows: repeat(3, var(--touch, 44px)); }
+html[data-input="touch"] .dpad-cell, html[data-input="touch"] .dpad-empty, html[data-input="touch"] .dpad-btn { width: var(--touch, 44px); height: var(--touch, 44px); }
+
 .dpad-btn:hover:not(:disabled) {
   filter: brightness(1.08);
 }
@@ -747,6 +751,12 @@
   overflow-y: auto;
   max-height: calc(var(--dialog-avail-h) - 230px);
   padding-right: 4px;
+}
+
+/* Màn ngang thấp: hằng số -230px tính theo header/footer desktop làm khung danh mục thu lại chỉ ~70px.
+   Dùng một tỷ lệ theo chiều cao khả dụng để danh mục vẫn dùng được (không biến thành hộp bé tí). */
+@media (max-height: 499px) {
+  .layout-fixtures { max-height: min(var(--dialog-avail-h), 44vh); }
 }
 
 .layout-shop {

@@ -25,13 +25,13 @@ export const TitlesModal: React.FC<TitlesModalProps> = ({
   return (
     <PixelDialog
       icon="star"
-      title="DANH HIỆU CHỦ TIỆM"
+      title="Danh hiệu chủ tiệm"
       subtitle="Ghi nhận thành tựu và phong cách quản lý tiệm"
       onClose={onClose}
     >
       {/* Khung danh hiệu đang dùng */}
       <div
-        className="pixel-panel"
+        className="pixel-panel titles-banner"
         style={{
           padding: '10px 14px',
           marginBottom: 12,
@@ -58,12 +58,12 @@ export const TitlesModal: React.FC<TitlesModalProps> = ({
       </div>
 
       {/* Danh sách các danh hiệu */}
-      <div style={{ display: 'grid', gap: 8, maxHeight: 'min(380px, calc(var(--dialog-avail-h) * 0.6))', overflowY: 'auto', paddingRight: 4 }}>
+      <div className="title-list" style={{ display: 'grid', gap: 8, maxHeight: 'min(380px, calc(var(--dialog-avail-h) * 0.6))', overflowY: 'auto', paddingRight: 4 }}>
         {titles.map((title) => {
           return (
             <div
               key={title.id}
-              className="pixel-panel"
+              className="pixel-panel title-row"
               style={{
                 padding: '10px 12px',
                 display: 'flex',
@@ -74,7 +74,7 @@ export const TitlesModal: React.FC<TitlesModalProps> = ({
                 border: title.isActive ? '2px solid #b85d19' : '1px solid #d4c5b3',
               }}
             >
-              <div style={{ flex: 1, marginRight: 12 }}>
+              <div className="title-main" style={{ flex: 1, marginRight: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{ fontSize: 16 }}>{title.icon}</span>
                   <strong style={{ fontSize: 13, color: title.unlocked ? '#2c1e13' : '#777777' }}>
@@ -85,7 +85,7 @@ export const TitlesModal: React.FC<TitlesModalProps> = ({
                       style={{
                         fontSize: 10,
                         padding: '1px 6px',
-                        background: '#357f72',
+                        background: 'var(--teal)',
                         color: '#fff',
                         borderRadius: 3,
                         fontWeight: 'bold',

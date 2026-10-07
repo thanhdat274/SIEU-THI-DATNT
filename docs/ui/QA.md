@@ -1,5 +1,44 @@
 # Nắng Hẻm — kiểm tra giao diện
 
+## §25.1 Technical Fit ≠ Usability Fit
+
+**Quy tắc báo trạng thái mobile (chuẩn chủ dự án).** Một chức năng có thể đạt *Technical Fit* mà vẫn **chưa** đạt *Usability Fit*. Việc vượt qua:
+
+- TypeScript;
+- ESLint;
+- CSS parsing;
+- static overflow analysis;
+- responsive rules;
+- viewport constraints;
+
+**không chứng minh mobile UX đúng.**
+
+### Technical Fit
+- Khớp viewport (không tràn ngang ngoài ý muốn);
+- tôn trọng chiều cao khả dụng;
+- dùng responsive sizing;
+- tôn trọng `--touch`;
+- tránh fixed dimension nguy hiểm;
+- giữ kiến trúc responsive hiện có.
+
+### Usability Fit
+- Đọc được, dễ thao tác bằng chạm;
+- giữ hệ thống phân cấp thông tin rõ ràng;
+- thông tin P0 hiểu ngay được;
+- action chính hiển nhiên;
+- không làm nội dung quan trọng quá nhỏ;
+- không thu nhỏ canvas/board/map dưới mức thao tác thực dụng;
+- không cuộn quá nhiều;
+- không đòi tap chính xác lên control bé;
+- giữ được tầm nhìn gameplay;
+- hiểu được mà không phụ thuộc giả định layout desktop.
+
+**No overflow ≠ good mobile UX** và **Responsive CSS ≠ Mobile Ready**.
+
+Một chức năng chỉ được coi **mobile-ready** khi **cả hai** `Technical Fit + Usability Fit` đều thoả. Nếu không thể render browser, **Usability Fit không thể được xác minh** nên trạng thái đúng là **`NOT TESTED`**, không phải `PASS` hay `Mobile Ready`.
+
+> Áp dụng: mọi kết luận "đạt static / typecheck / eslint / postcss / không overflow / responsive" chỉ là điều kiện Technical Fit (nền tảng code). Khi môi trường không chạy được browser/nghiệm thu mắt, feature phải được báo **NOT TESTED** (không ghi PASS / Mobile Ready). Ghi rõ nguồn bằng chứng tĩnh và còn thiếu gì để đạt Usability Fit.
+
 ## Baseline 30/09/2026
 
 Typecheck, 10 nhóm kiểm thử core + registry thuế, server/web production build đều pass. Cảnh báo có trước: chunk JS 629.23 kB vượt 500 kB. Ảnh baseline HUD/kho và đại lý desktop/mobile ở `qa/baseline-*.png`.

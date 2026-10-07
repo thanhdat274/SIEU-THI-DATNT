@@ -25,14 +25,14 @@ const reportLine = (report: StallDayReport, stallId: string, unit: string) => {
 };
 
 export const StallModal: React.FC<StallModalProps> = ({ stalls, season, stock, incoming, report, onBuy, onRestock, getRestockItems, onClose }) => (
-  <PixelDialog icon="coin" title="QUẦY ĂN UỐNG" subtitle="Bán trước hiên tiệm, bán dần theo giờ từ 08:00, doanh thu cộng vào sổ hôm nay, chốt lúc 22:00" onClose={onClose}>
+  <PixelDialog icon="coin" title="Quầy ăn uống" subtitle="Bán trước hiên tiệm, bán dần theo giờ từ 08:00, doanh thu cộng vào sổ hôm nay, chốt lúc 22:00" onClose={onClose}>
     {season && <p className="pixel-panel" style={{ padding: 8 }}><strong>{season.name}</strong> — {season.blurb}</p>}
     <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0', display: 'grid', gap: 8 }}>
       {stalls.map(stall => {
         const boost = season?.stallMultiplier[stall.id];
         const unit = stall.ingredients.length === 0 ? 'vé' : 'suất';
         return (
-          <li key={stall.id} className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 4 }}>
+          <li key={stall.id} className="pixel-panel stall-row" style={{ padding: 8, display: 'grid', gap: 4 }}>
             <strong>{stall.name}</strong>
             <span className="muted">{stall.description}</span>
             <span className="tabular">
@@ -41,7 +41,7 @@ export const StallModal: React.FC<StallModalProps> = ({ stalls, season, stock, i
             </span>
             {stall.ingredients.length > 0 && <span className="muted">Nguyên liệu từ kho: {stall.ingredients.map(item => `${PRODUCT_MAP[item.productId]?.name ?? item.productId} ×${item.perServing}/suất (kho còn ${stock[item.productId] ?? 0}${incoming?.[item.productId] ? `, đang về ${incoming[item.productId]}` : ''})`).join('; ')}</span>}
             {stall.owned && lastEntry(report, stall.id) && <span className="tabular">{reportLine(report!, stall.id, unit)}</span>}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div className="stall-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <span className="muted">{stall.owned ? 'Đang bán mỗi ngày' : stall.reason ?? `Giá mở quầy ${money(stall.price)}`}</span>
               {stall.owned && onRestock && stall.ingredients.length > 0 && (() => {
                 const need = getRestockItems?.(stall.id) ?? [];

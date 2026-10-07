@@ -34,6 +34,8 @@
   --account-h: 32px;
   --top-ui-height: 96px;
   --account-chip-h: 0px; /* chỗ chừa cho nút tài khoản nổi (chỉ màn thấp) */
+  --kb-h: 0px; /* chiều cao bàn phím ảo che (responsive.ts đo từ visualViewport); overlay nâng đáy lên khỏi bàn phím */
+  --vb-h: 100dvh; /* chiều cao hiển thị thật (visual viewport, có keyboard/thanh toolbar); overlay modal dùng làm giới hạn */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -50,7 +52,7 @@ html[data-density="comfortable"] { --space-3: clamp(14px, 1.1vw, 24px); --fs-sm:
 
 /* ---------- Thanh trên: tài khoản + HUD ---------- */
 .account-bar { padding-block: var(--space-1); padding-inline: var(--space-3); font-size: var(--fs-sm); }
-html[data-input="touch"] .account-bar-btn { min-height: 34px; padding-inline: 12px; }
+html[data-input="touch"] .account-bar-btn { min-height: var(--touch); padding-inline: 12px; }
 .account-bar-name, .account-bar-status { font-size: var(--fs-sm); }
 .account-bar-badge { font-size: var(--fs-xs); }
 .brand-copy h1 { font-size: clamp(var(--fs-sm), 1.1vw, 1.2rem); }
@@ -169,9 +171,24 @@ html[data-density="compact"] .game-hud { padding-inline: var(--space-2); border-
   .warehouse-dock { top: auto; left: 0; width: auto; max-height: 68%; border-left: 0; border-top: 4px solid var(--wood-dark); box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.45); padding-bottom: var(--safe-b); }
 }
 
+/* Đợt 14D — Kho (WarehouseDock, màn chính): trên mobile landscape (height<500 → data-density="compact")
+   dock là overlay phải 330px, footer .dock-actions xếp dọc 5 điều khiển + đoạn trạng thái ăn hết chiều cao
+   → gom actions thành hàng ngang wrap, nén dòng sản phẩm/header để dành chiều cao cho danh sách hàng.
+   Chỉ presentation trên data-density="compact", không đổi logic. */
+html[data-density="compact"] .warehouse-dock { width: min(86vw, 320px); }
+html[data-density="compact"] .dock-heading { padding: 8px 10px 6px; }
+html[data-density="compact"] .dock-title h2 { font-size: 14px; }
+html[data-density="compact"] .dock-meta { font-size: 11px; flex-wrap: wrap; gap: 2px 8px; }
+html[data-density="compact"] .dock-list { padding: 6px 10px; }
+html[data-density="compact"] .dock-product { padding: 6px 0; gap: 8px; }
+html[data-density="compact"] .dock-actions { padding: 8px 10px; gap: 6px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html[data-density="compact"] .dock-actions p { font-size: 11px; line-height: 1.25; grid-column: 1 / -1; }
+html[data-density="compact"] .dock-actions .pixel-button { width: 100%; }
+html[data-input="touch"] .dock-actions .pixel-button { min-height: var(--touch); white-space: nowrap; }
+
 /* ---------- Hộp thoại ---------- */
-.dialog-backdrop { padding: max(var(--space-2), var(--safe-t)) max(var(--space-2), var(--safe-r)) max(var(--space-2), var(--safe-b)) max(var(--space-2), var(--safe-l)); }
-.pixel-dialog { width: min(var(--dialog-w), 100%); max-height: min(100%, var(--dialog-h)); }
+.dialog-backdrop { height: var(--vb-h, 100dvh); padding: max(var(--space-2), var(--safe-t)) max(var(--space-2), var(--safe-r)) max(var(--space-2), var(--safe-b), var(--kb-h, 0px)) max(var(--space-2), var(--safe-l)); }
+.pixel-dialog { width: min(var(--dialog-w), 100%); max-height: min(calc(100% - var(--kb-h, 0px)), var(--dialog-h)); }
 .dialog-header { padding-inline: var(--space-3); }
 .dialog-header h2 { font-size: var(--fs-lg); }
 .dialog-content { padding: var(--space-3) calc(var(--space-3) + 4px); overflow-wrap: break-word; }
@@ -180,7 +197,7 @@ html[data-density="compact"] .game-hud { padding-inline: var(--space-2); border-
 @media (max-width: 639px) and (orientation: portrait) {
   .dialog-backdrop { align-items: flex-end; padding-inline: 0; padding-top: max(var(--space-2), var(--safe-t)); }
   .pixel-dialog { width: 100%; max-height: 100%; border-inline-width: 0; padding-bottom: 0; }
-  .dialog-footer { padding-bottom: max(var(--space-2), var(--safe-b)); }
+  .dialog-footer { padding-bottom: max(var(--space-2), var(--safe-b), var(--kb-h, 0px)); }
   .management-grid { grid-template-columns: 1fr; }
   .action-grid, .inventory-grid { grid-template-columns: 1fr; }
 }
@@ -188,13 +205,47 @@ html[data-density="compact"] .game-hud { padding-inline: var(--space-2); border-
 
 /* ---------- Toast ---------- */
 .toast-stack { top: calc(var(--top-ui-height) + var(--space-2)); width: min(460px, calc(100% - var(--space-3) * 2 - var(--safe-l) - var(--safe-r))); }
+
+/*
+ * Thông báo cập nhật (UpdateBanner): xuất hiện cả ở màn đăng nhập và trong game.
+ * Đăng nhập: neo trên vùng an toàn dưới. Trong game (có .game-footer): nhấc lên trên thanh
+ * footer (--footer-h đo thật = 0 khi footer là cột bên phải), trên cảm ứng thêm khỏi cần xoay/nút Xem.
+ * Ngang: lùi vào theo safe-area trái/phải (landscape Dynamic Island/notch ở 2 cạnh).
+ */
+.update-banner {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 2000;
+  width: min(420px, calc(100% - max(24px, var(--safe-l, 0px)) - max(24px, var(--safe-r, 0px))));
+  bottom: max(12px, var(--safe-b, 0px));
+  flex-wrap: wrap;
+}
+body:has(.game-footer) .update-banner {
+  bottom: calc(var(--footer-h, 0px) + max(12px, var(--safe-b, 0px)));
+}
+html[data-input="touch"] body:has(.game-footer) .update-banner {
+  bottom: calc(var(--footer-h, 0px) + max(12px, var(--safe-b, 0px)) + var(--joy, 0px) + var(--space-3, 0px) * 2);
+}
 @media (max-width: 560px), (max-height: 499px) {
   .toast-stack { gap: 4px; }
   .toast { gap: 6px; padding: 4px 8px; font-size: var(--fs-sm); line-height: 1.25; }
   .toast > span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
   .toast .pixel-icon, .toast svg { width: 16px; height: 16px; flex: none; }
-  .toast .pixel-button { min-height: 36px; min-width: 36px; padding: 2px; }
+  html[data-input="mouse"] .toast .pixel-button { min-height: 36px; min-width: 36px; padding: 2px; }
 }
+html[data-input="touch"] .toast .pixel-button { min-height: var(--touch); min-width: var(--touch); }
+html[data-density="compact"] .toast-stack { top: calc(var(--top-ui-height) + var(--space-1)); width: min(360px, calc(100% - var(--space-3) * 2 - var(--safe-l) - var(--safe-r))); }
+html[data-density="compact"] .toast { padding: 4px 8px; }
+/* Toast đánh giá khách: chỉ 1 cái/lúc + tự tắt nhanh (store 2000ms) → ưu tiên bé, 1 dòng, không che play-area. */
+html[data-density="compact"] .toast-rating { padding: 2px 8px; }
+html[data-density="compact"] .toast-rating > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-density="compact"] .toast-rating .pixel-icon, html[data-density="compact"] .toast-rating svg { width: 13px; height: 13px; flex: none; }
+html[data-density="compact"] .toast-rating .pixel-button { min-width: var(--touch); min-height: var(--touch); }
+/* Báo cáo ngày (Sổ bán hàng Cô Năm) — nén panel trên mobile. */
+html[data-density="compact"] .day-report-panel { padding: 8px !important; }
+html[data-density="compact"] .day-report-panel > div { font-size: 12px; }
+html[data-density="compact"] .day-report-panel .feature-kpis { margin-bottom: 8px; }
+/* Tự nhập hàng (màn Nhập hàng) — nén panel trên mobile. */
+html[data-density="compact"] .auto-buy-panel { padding: 8px !important; }
+html[data-density="compact"] .auto-buy-panel .pixel-panel { padding: 8px !important; }
 
 /* ---------- Điều khiển cảm ứng ---------- */
 .touch-controls { display: none; }
@@ -211,8 +262,23 @@ html[data-input="touch"] .world-tools .pixel-button { min-width: var(--touch); m
 /* ---------- Lớp phủ neo theo thanh UI đo thật ---------- */
 .voice-panel { left: max(var(--space-3), var(--safe-l)); bottom: calc(var(--footer-h) + var(--safe-b) + var(--space-2)); max-width: min(320px, calc(100vw - var(--space-3) * 2)); }
 html[data-input="touch"] .voice-panel { bottom: calc(var(--footer-h) + var(--safe-b) + var(--joy) + var(--space-3) * 2); }
+/* Nút voice và liên kết trong bảng thoại đủ vùng chạm cảm ứng (index.css đặt 40px / padding nhỏ). */
+html[data-input="touch"] .voice-btn { width: var(--touch); height: var(--touch); }
+html[data-input="touch"] .voice-link { min-height: var(--touch); display: inline-flex; align-items: center; padding-inline: 8px; }
+html[data-input="touch"] .voice-btn:disabled { min-height: var(--touch); width: var(--touch); }
 .inventory-summary-card { right: max(var(--space-3), var(--safe-r)); bottom: calc(var(--footer-h) + var(--safe-b) + var(--space-3)); width: min(290px, calc(100% - var(--space-3) * 2)); }
 html[data-input="touch"] .inventory-summary-card { bottom: calc(var(--footer-h) + var(--safe-b) + var(--joy) * 0.7 + var(--space-3) * 2); }
+/* Màn ngang thấp (568x320/640x320...): thẻ neo đáy có thể cao tới khi đỉnh trồi lên dưới HUD.
+   Giới hạn chiều cao theo vùng còn lại phía trên điểm neo đáy (giữ an toàn với --top-ui-height)
+   và cho phần nội dung cuộn trong, thay vì làm thẻ cao hơn khung. */
+@media (max-height: 499px) {
+  .inventory-summary-card {
+    display: flex; flex-direction: column;
+    max-height: calc(var(--vb-h, 100dvh) - var(--top-ui-height, 96px) - var(--footer-h, 0px) - var(--safe-b, 0px) - var(--joy, 0px) * 0.7 - var(--space-3, 16px) * 2 - var(--space-2, 8px));
+  }
+  .inventory-summary-card .summary-body { overflow-y: auto; min-height: 0; padding: 6px 10px; gap: 3px; }
+  .inventory-summary-card { width: min(240px, calc(100% - var(--space-3) * 2)); }
+}
 .loading-screen, .rotate-screen { padding: max(24px, var(--safe-t)) max(24px, var(--safe-r)) max(24px, var(--safe-b)) max(24px, var(--safe-l)); overflow-y: auto; }
 
 /* Pixel-art: không làm mờ bitmap khi co/giãn. */
@@ -222,13 +288,22 @@ html[data-input="touch"] .inventory-summary-card { bottom: calc(var(--footer-h) 
 .hud-rating { appearance: none; background: none; border: 0; padding: 0 2px; margin: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; display: inline-flex; align-items: center; min-height: var(--touch); }
 .hud-rating:focus-visible { outline: 2px solid #b7791f; outline-offset: 2px; }
 .tutorial-chip { min-height: var(--touch); padding-inline: 10px; }
+/* Checklist mở rộng: các nút trong khung (mở/đóng, Ẩn) phải đủ vùng chạm cảm ứng (--touch). */
+html[data-input="touch"] .tutorial-checklist button { min-height: var(--touch); }
+/* Các nút chức năng nhỏ vẫn phải đủ vùng chạm (>= --touch) trên màn hình cảm ứng: nợ lương trong HUD,
+   nút "Cập nhật/Để sau" của banner cập nhật, và nút đóng thẻ kho hàng. */
+html[data-input="touch"] .hud-debt,
+html[data-input="touch"] .btn-summary-close,
+html[data-input="touch"] .update-banner button,
+html[data-input="touch"] .update-banner .pixel-button { min-width: var(--touch); min-height: var(--touch); }
 
 /* ---------- Mọi lớp phủ modal đi qua cùng kiến trúc (hộp thoại chung, sơ đồ cửa hàng, đổi sản phẩm, sổ tay đăng nhập) ---------- */
 :root { --dialog-avail-h: calc(100dvh - var(--safe-t) - var(--safe-b) - var(--space-2) * 2); }
 .change-product-modal-backdrop, .vintage-modal-overlay {
-  padding: max(var(--space-2), var(--safe-t)) max(var(--space-2), var(--safe-r)) max(var(--space-2), var(--safe-b)) max(var(--space-2), var(--safe-l));
+  height: var(--vb-h, 100dvh);
+  padding: max(var(--space-2), var(--safe-t)) max(var(--space-2), var(--safe-r)) max(var(--space-2), var(--safe-b), var(--kb-h, 0px)) max(var(--space-2), var(--safe-l));
 }
-.change-product-modal, .vintage-notebook-card, .vintage-wood-card { max-height: min(100%, var(--dialog-h)); }
+.change-product-modal, .vintage-notebook-card, .vintage-wood-card { max-height: min(calc(100% - var(--kb-h, 0px)), var(--dialog-h)); }
 .store-layout-dialog { max-height: 100%; }
 .store-layout-dialog, .change-product-modal, .vintage-notebook-card, .vintage-wood-card { min-height: 0; overflow-wrap: break-word; }
 
@@ -239,7 +314,7 @@ html[data-input="touch"] :where(.dialog-header, .layout-heading, .change-product
 /* Điện thoại dọc: các lớp phủ riêng cũng thành bottom-sheet như hộp thoại chung. */
 @media (max-width: 639px) and (orientation: portrait) {
   .change-product-modal-backdrop, .vintage-modal-overlay { place-items: end center; padding-inline: 0; padding-bottom: 0; }
-  .store-layout-dialog, .change-product-modal, .vintage-notebook-card, .vintage-wood-card { width: 100%; max-height: 100%; border-bottom-width: 0; border-radius: 6px 6px 0 0; padding-bottom: var(--safe-b); }
+  .store-layout-dialog, .change-product-modal, .vintage-notebook-card, .vintage-wood-card { width: 100%; max-height: 100%; border-bottom-width: 0; border-radius: 6px 6px 0 0; padding-bottom: max(var(--safe-b), var(--kb-h, 0px)); }
 }
 /* Sơ đồ sàn: ô lưới cảm ứng không nhỏ hơn ~28px; sàn rộng thì cuộn ngang trong khung thay vì nén ô. */
 .layout-board-container { overflow-x: auto; align-items: flex-start; max-width: 100%; }
@@ -287,6 +362,16 @@ html[data-density="compact"] .dialog-content { padding-block: var(--space-2); }
 /* Comfortable: chỉ nới khoảng cách, không làm hộp thoại cao hơn khung (max-height vẫn do --dialog-h/100% giới hạn). */
 html[data-density="comfortable"] .dialog-content { padding-block: var(--space-3); }
 
+/* Đợt 14 — Mật độ compact lan tới header/thân của các feature modal dùng lớp riêng (không phải .dialog-*):
+   giảm padding dọc thay vì ép khung đổi kích thước. Không đổi vùng chạm (nút vẫn do --touch/rule touch riêng). */
+html[data-density="compact"] .notebook-leather-header,
+html[data-density="compact"] .vintage-wood-card,
+html[data-density="compact"] .change-product-header,
+html[data-density="compact"] .layout-heading,
+html[data-density="compact"] .layout-footer,
+html[data-density="compact"] .planogram-summary-bar { padding-block: var(--space-2); }
+
+
 /* ---------- Đợt 7: màn thấp — thanh tài khoản thành nút tròn nổi, không chiếm chiều cao của thế giới ----------
  * Kiểm tra bề ngang: HUD thiết yếu (ngày giờ, tiền, đánh giá, 6 nút 44px) đã ~540px nên không thể chia hàng với thanh tài khoản ở điện thoại ngang.
  * Vì vậy chỉ còn nút tròn (vùng chạm = --touch) ở góc trên-trái thế giới; chạm mở bảng đầy đủ (tên, chế độ, Về màn hình chính, Đăng nhập…) với nút đủ cỡ chạm. */
@@ -295,7 +380,7 @@ html[data-density="comfortable"] .dialog-content { padding-block: var(--space-3)
   .game-shell { position: relative; }
   :root { --account-chip-h: calc(var(--touch) + var(--space-1) * 2); }
   html[data-density] .account-bar {
-    position: absolute; top: calc(var(--hud-bottom) + var(--space-1)); left: calc(var(--safe-l, 0px) + var(--space-2)); z-index: 60;
+    position: absolute; top: calc(var(--hud-bottom) + var(--space-1)); left: calc(var(--safe-l, 0px) + var(--space-2)); z-index: 49; /* dưới .dialog-backdrop (50): modal không bị nút tài khoản nổi đè */
     flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: var(--space-1);
     padding: 0; border: 0; background: none; box-shadow: none; width: auto; max-width: min(440px, calc(100% - var(--safe-l, 0px) - var(--safe-r, 0px) - var(--space-2) * 2));
   }
@@ -313,3 +398,586 @@ html[data-density="comfortable"] .dialog-content { padding-block: var(--space-3)
   .account-bar-btn, html[data-input="touch"] .account-bar-btn { min-height: var(--touch); }
   .account-bar-status { display: none; }
 }
+
+/* ---------- Đợt 14B — Per-feature compact mobile-landscape (không phải desktop-thu-nhỏ) ----------
+ * Semantics: mỗi feature modal phải trả lời "người chơi cần biết gì ngay" trước, đưa thông tin phụ ra sau.
+ * Khi data-density=compact (mọi điện thoại ngang nhỏ: height<500 hoặc width<640 — khớp toàn bộ
+ * 568x320...932x430 của ma trận Đợt 14B), nén các KHỐI XÂY DỰNG CHUNG của feature modal:
+ * dòng sản phẩm/kệ dẹp lại, KPI gọn 2 cột, tab bar 1 hàng không tràn, inventory chuyển 1 cột dày,
+ * bỏ khoảng trống/padding desktop thừa. KHÔNG giảm vùng chạm (nút vẫn do --touch / touch rule), không đổi gameplay.
+ */
+html[data-density="compact"] .dialog-content { padding-block: var(--space-2); }
+
+/* --- Dòng sản phẩm chung (Kho/Warehouse, Nhà cung cấp/Supplier, Nhân viên/Staff, Thu ngân/Cashier) ---
+   Desktop: [ảnh lớn] nhiều metadata + nhiều nút. Compact: [icon] tên + tồn + action; metadata co gọn */
+html[data-density="compact"] .product-row {
+  padding: 7px 9px; gap: 9px; margin-bottom: 6px;
+  contain-intrinsic-size: auto 74px;
+}
+html[data-density="compact"] .product-info h3 { font-size: 13px; line-height: 1.25; }
+html[data-density="compact"] .product-info p { font-size: 12px; line-height: 1.3; margin-top: 1px; }
+html[data-density="compact"] .product-actions { gap: 3px; }
+html[data-density="compact"] .product-actions > .pixel-button { min-width: 84px; }
+/* Nén dòng món thành dạng mobile thực sự: [icon] tên + giá · [+/−] cùng hàng gọn, ẩn dòng phụ.
+   Áp dụng chung cho mọi dòng món (Kho/NCC/Thu ngân/Nhân viên) như khối product-row compact sẵn. */
+html[data-density="compact"] .product-row { padding: 4px 8px; gap: 8px; margin-bottom: 4px; align-items: center; contain-intrinsic-size: auto 56px; }
+html[data-density="compact"] .product-info { min-width: 0; flex: 1 1 0; }
+html[data-density="compact"] .product-info h3 { font-size: 12px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-density="compact"] .product-info p { font-size: 11px; line-height: 1.25; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-density="compact"] .product-info p.muted { display: none; }
+html[data-density="compact"] .product-actions > span { display: none; }
+html[data-density="compact"] .product-actions > .pixel-button { min-width: 0; }
+
+/* --- Thanh tóm tắt + nhãn mục --- */
+html[data-density="compact"] .summary-row { padding: 7px 10px; gap: 8px; margin-bottom: 8px; }
+html[data-density="compact"] .section-label { margin-bottom: 4px; }
+html[data-density="compact"] .section-label h3 { font-size: 14px; }
+
+/* --- Tìm kiếm + bộ lọc (Kho, NCC): khoảng cách nhỏ, không nén ô nhập/select --- */
+html[data-density="compact"] .form-filter { margin: 4px 0 10px; gap: 6px; font-size: var(--fs-sm); }
+
+/* --- Khu nhận hàng / Đơn đang giao --- */
+html[data-density="compact"] .pending-orders { margin-top: 12px; }
+html[data-density="compact"] .pending-item { padding: 5px 0; gap: 10px; }
+
+/* --- Inventory: lưới 2 cột card desktop -> danh sách 1 cột, mỗi dòng thấp, xem được nhiều hàng --- */
+html[data-density="compact"] .inventory-grid { grid-template-columns: 1fr; gap: 6px; }
+html[data-density="compact"] .inventory-card { padding: 6px 9px; min-height: 0; gap: 9px; }
+html[data-density="compact"] .inventory-card h3 { font-size: 13px; }
+html[data-density="compact"] .inventory-card p { font-size: 11px; margin-top: 1px; }
+html[data-density="compact"] .inventory-detail { margin-top: 8px; }
+
+/* --- Quản lý (Management): card gọn, icon nhỏ, mô tả 1 dòng — vùng chạm giữ nguyên --- */
+html[data-density="compact"] .management-card { padding: 6px 9px; gap: 9px; min-height: 0; }
+html[data-density="compact"] .management-card-icon { width: 32px; height: 32px; }
+html[data-density="compact"] .management-card-title { font-size: 12.5px; }
+html[data-density="compact"] .management-card-desc { font-size: 10.5px; -webkit-line-clamp: 1; }
+
+/* --- Base (desktop) layout cho tab bar — D11: trước đây chỉ có rule compact; bố cục tab desktop
+   đều phụ thuộc inline style mỗi component. Thêm base rule để nơi nào chưa đặt inline (hoặc cần nhất
+   quán) vẫn có display:flex + gap + wrap nhất định; mọi inline style vẫn thắng (không đổi desktop),
+   rule compact phủ lên trên mobile nên hành vi 568–430 không đổi. */
+.feature-tabs,
+.feature-scroll-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.feature-tabs { margin-bottom: 12px; }
+
+/* --- Tab bar chức năng (Skills/Cashier/DaySummary/Chain): 1 HÀNG NGANG CUỘN ĐƯỢC trên mobile (§12) ---
+   Thay vì wrap thành nhiều hàng tốn chiều cao: nowrap + overflow-x:auto, mỗi tab giữ bề ngang tự nhiên
+   (min-width:max-content) nên nhãn dài không bị cắt nor wrap cao; quá rộng thì cuộn ngang bằng ngón tay.
+   (!important duy nhất ở khoảng cách vì component đang cố ý đặt marginBottom inline) */
+html[data-density="compact"] .feature-tabs { margin-bottom: 8px !important; flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; }
+html[data-density="compact"] .feature-tabs .pixel-button,
+html[data-density="compact"] .feature-tabs .pixel-btn {
+  flex: 0 0 auto !important; min-width: max-content !important; text-align: center; line-height: 1.15; padding-inline: 6px; font-size: var(--fs-sm);
+}
+
+/* --- KPI grid (Cashier/Daysummary/Chain): hiển thị 2 cột vừa gọn thay vì để auto-fit dãn to khi hẹp --- */
+html[data-density="compact"] .feature-kpis,
+html[data-density="compact"] .summary-kpis,
+html[data-density="compact"] .chain-kpis {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+html[data-density="compact"] .feature-kpis .pixel-stat,
+html[data-density="compact"] .summary-kpis .pixel-stat,
+html[data-density="compact"] .chain-kpis .pixel-stat { gap: 6px; }
+html[data-density="compact"] .feature-kpis .pixel-stat strong,
+html[data-density="compact"] .summary-kpis .pixel-stat strong,
+html[data-density="compact"] .chain-kpis .pixel-stat strong { font-size: clamp(13px, 1vw, 16px); }
+
+/* --- Khách quen (Regulars): bỏ 2 cột master/detail + scroll trong, thành 1 cột:
+   danh sách thành dải chip ngang, chi tiết cuộn theo hộp thoại (bỏ scroll lồng) --- */
+html[data-density="compact"] .regulars-split { grid-template-columns: 1fr !important; gap: 8px; }
+html[data-density="compact"] .regulars-list {
+  max-height: 96px !important; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+}
+html[data-density="compact"] .regulars-detail { max-height: none !important; overflow-y: visible; }
+
+/* --- Sơ đồ & Bày hàng (Planogram): gọn card kệ + slot, toolbar/header thấp, grid dày hơn --- */
+html[data-density="compact"] .planogram-summary-bar { padding: 6px 9px; gap: 8px; }
+html[data-density="compact"] .planogram-toolbar { gap: 6px; }
+html[data-density="compact"] .fixture-card-header { padding: 5px 9px; gap: 8px; }
+html[data-density="compact"] .fixture-thumb-box { width: 30px; height: 30px; }
+html[data-density="compact"] .fixture-name { font-size: 13px; }
+html[data-density="compact"] .fixture-slots-grid { padding: 6px 9px; gap: 6px; }
+html[data-density="compact"] .slot-card { padding: 6px; gap: 5px; }
+html[data-density="compact"] .slot-product-name { font-size: 12px; }
+html[data-density="compact"] .planogram-fixture-list { gap: 10px; }
+/* 14D: dãy quick-action của ô kệ giữ nút nguyên khối (không bị bể chữ thành 2 dòng trên nền hẹp),
+   wrap thoải mái theo chiều ngang để mỗi nút dễ chạm; không đổi logic/lưới */
+html[data-density="compact"] .slot-actions-row { flex-wrap: wrap; gap: 6px; }
+html[data-density="compact"] .btn-slot-quick { white-space: nowrap; }
+
+/* Đợt 14C — không để toolbar/filter dồn cột (container query <768px) làm tốn chiều cao mobile:
+   giữ summary-bar + toolbar nằm ngang, wrap khi hẹp => nhiều diện tích hơn cho grid/kệ */
+html[data-density="compact"] .planogram-summary-bar { flex-direction: row; flex-wrap: wrap; align-items: center; }
+html[data-density="compact"] .summary-actions { flex: 1 1 auto; justify-content: flex-end; }
+html[data-density="compact"] .planogram-toolbar { flex-direction: row; flex-wrap: wrap; align-items: center; }
+html[data-density="compact"] .planogram-search-input { width: min(100%, 150px); }
+
+/* --- Vùng chạm cảm ứng: nâng các nút điều khiển nhỏ còn non-44px của Planogram và select kho ---
+   (không thu nhỏ nút; chỉ kéo lớn vùng chạm) */
+html[data-input="touch"] .form-filter select { min-height: var(--touch); }
+html[data-input="touch"] .planogram-filters .filter-btn,
+html[data-input="touch"] .btn-slot-quick,
+html[data-input="touch"] .planogram-search-input,
+html[data-input="touch"] .search-clear-btn {
+  min-height: var(--touch);
+}
+html[data-input="touch"] .btn-restock-fixture { min-height: var(--touch); }
+
+/* --- Sắp xếp tiệm (Store Layout): canvas-first — cảm ứng tab/danh mục đủ vùng chạm, sidebar không lấn board --- */
+html[data-input="touch"] .layout-tabs button,
+html[data-input="touch"] .layout-fixtures .fixture-pick,
+html[data-input="touch"] .layout-fixtures button,
+html[data-input="touch"] .shop-card { min-height: var(--touch); }
+html[data-density="compact"] .layout-sidebar { padding: 6px; gap: 6px; }
+html[data-density="compact"] .layout-workspace { padding: 8px; gap: 10px; }
+html[data-density="compact"] .layout-status-bar { padding: 5px 10px; font-size: 12px; }
+
+/* ========== Đợt 14C — Mobile-first vertical-space optimization ==========
+ * Trọng tâm: CHIỀU CAO viewport (320–430px) — mỗi pixel nên dành cho content/thao tác.
+ * Giảm chiều cao header, padding empty-state/info-card, khoảng cách section;
+ * action chính (footer) luôn neo đáy + chiếm trọn bề ngang khi là 1 nút. KHÔNG giảm vùng chạm,
+ * không giảm chữ chính dưới mức đọc được. Chỉ đổi presentation trên data-density="compact".
+ */
+html[data-density="compact"] .dialog-header { padding: 6px 10px; gap: 10px; }
+html[data-density="compact"] .dialog-heading > .pixel-icon { width: 22px; height: 22px; }
+html[data-density="compact"] .dialog-heading > div { line-height: 1.2; }
+html[data-density="compact"] .dialog-heading h2 { font-size: 15px; }
+html[data-density="compact"] .dialog-heading p { font-size: 11px; margin-top: 1px; }
+
+/* Footer (sticky bottom action): nút chính âm toàn bề ngang khi là 1 nút; footer không cao lãng phí */
+html[data-density="compact"] .dialog-footer { padding: 6px 10px; gap: 8px; }
+html[data-density="compact"] .dialog-footer > .pixel-button { flex: 1 1 auto; }
+html[data-density="compact"] .dialog-footer .dialog-hint { font-size: 11px; }
+
+/* Empty state / info card: bớt padding dọc cho nội dung phụ */
+html[data-density="compact"] .empty-state { padding: 12px 12px; gap: 6px; }
+html[data-density="compact"] .empty-state p { font-size: 13px; }
+html[data-density="compact"] .info-card { padding: 8px 10px; margin-bottom: 8px; }
+html[data-density="compact"] .info-card .pixel-progress { margin: 4px 0; }
+
+/* Section + label + thanh tiến trình: khoảng cách dọc gọn (P0/P1 quản lý) */
+html[data-density="compact"] .pixel-progress { height: 8px; }
+html[data-density="compact"] .action-grid { gap: 6px; margin-top: 8px; }
+html[data-density="compact"] .save-actions { gap: 6px; }
+
+/* ========== Đợt 14D — Mobile-first continuation (P0:P1) ==========
+ * Supplier: danh sách nhà cung cấp / category thành HÀNG NGANG CUỘN ĐƯỢC thay vì wrap thành nhiều
+ * hàng (tiết kiệm chiều cao, §6/§12); panel "Gợi ý thông minh" gọn lại, ẩn mô tả dài trên mobile.
+ */
+html[data-density="compact"] .feature-scroll-tabs { flex-wrap: nowrap !important; overflow-x: auto; padding-bottom: 4px; }
+html[data-density="compact"] .feature-scroll-tabs > .pixel-button { flex: 0 0 auto !important; min-width: max-content !important; }
+/* Bộ lọc danh mục mặt hàng (Nhập hàng) — dùng nút <button> thường (không phải PixelButton) nên cần rule riêng:
+   trên compact thành 1 hàng ngang cuộn được thay vì wrap thành nhiều dòng cao. */
+html[data-density="compact"] .supplier-cats { flex-wrap: nowrap !important; overflow-x: auto; padding-bottom: 4px; overscroll-behavior-x: contain; }
+html[data-density="compact"] .supplier-cats > button { flex: 0 0 auto; }
+/* Đầu trang Nhập hàng: nén khối tiền + ngày giao, ẩn các dòng phụ (kho mát / ưu đãi / đơn tối thiểu)
+   để danh sách món lên sớm hơn trên mobile landscape. Phạm vi riêng .supplier-info, không đụng .summary-row khác. */
+html[data-density="compact"] .supplier-info .muted { display: none; }
+/* "Gợi ý thông minh" (Nhập hàng) — gom thành accordion (Pattern D): trên mobile chỉ hiện 1 dòng tiêu đề,
+   mở ra khi cần, nhường chỗ cho thanh tìm kiếm + danh sách món. Desktop vẫn mở sẵn (details open). */
+html[data-density="compact"] .feature-suggest-detail { margin-bottom: 8px; }
+html[data-density="compact"] .feature-suggest-detail > .feature-suggest-summary { list-style: none; cursor: pointer; font-weight: 700; font-size: 12px; padding: 8px 10px; border: 2px solid var(--wood-light); background: var(--paper-light); border-radius: 4px; display: flex; align-items: center; gap: 6px; }
+html[data-density="compact"] .feature-suggest-detail > .feature-suggest-summary::-webkit-details-marker { display: none; }
+html[data-density="compact"] .feature-suggest-detail[open] > .feature-suggest-summary { margin-bottom: 8px; }
+/* ShelfModal: tab chọn ô trên kệ (tủ lạnh nhiều ô) — tránh wrap thành cột cao trên mobile, cuộn ngang 1 hàng */
+html[data-density="compact"] .shelf-slot-tabs { flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+html[data-density="compact"] .shelf-slot-tabs .pixel-button { flex: 0 0 auto !important; min-width: max-content !important; white-space: nowrap; }
+html[data-density="compact"] .feature-suggest { padding: 6px 10px !important; margin-bottom: 8px !important; gap: 4px; }
+html[data-density="compact"] .feature-suggest .muted { display: none; }
+html[data-density="compact"] .feature-suggest input[type="number"] { height: var(--touch); }
+
+/* Staff (P0): metadata phụ trên dòng (lương/tốc độ/...) gọn xuống 1 dòng, action nổi bật */
+html[data-density="compact"] .product-info p { line-height: 1.25; }
+html[data-density="compact"] .product-row select { max-width: 100%; }
+html[data-density="compact"] section > h3 { font-size: 14px; margin: 2px 0 6px; }
+
+/* Chain (P0): dòng chuyển hàng / branch card gọn, thông tin dự phòng không dãn dọc */
+html[data-density="compact"] .pixel-panel .pixel-button { min-height: var(--touch); }
+
+/* Staff (P0 §7): điều khiển "Ca làm" thành 1 dòng ngang gọn (label + select kề nhau), select đủ vùng chạm */
+html[data-density="compact"] .staff-shift { display: flex !important; flex-direction: row; align-items: center; gap: 6px; min-width: 0 !important; white-space: nowrap; }
+html[data-density="compact"] .staff-shift select { min-height: var(--touch); }
+
+/* Đợt 14D — Warehouse (Kho sau tiệm) mobile-first:
+   secondary info (case + từng lô) gom gọn metadata, action per-item gọn, không đổi logic/hàng */
+html[data-density="compact"] .warehouse-lots p { font-size: 11px; line-height: 1.3; margin: 1px 0; }
+html[data-density="compact"] .warehouse-item-actions { flex-wrap: wrap; gap: 6px !important; }
+
+/* ========== Đợt 14F — Mobile-First hoàn thiện MỌI màn còn "desktop thu nhỏ" ==========
+ * Các pattern còn sót khiến màn chức năng nhìn như desktop thu nhỏ trên điện thoại ngang
+ * (852×393 và 568×320…932×430, luôn data-density="compact"):
+ *  1) Khối .pixel-panel/.summary-row/.info-card bị đè inline `padding: 8/10/12px`
+ *     → CSS compact trước đó KHÔNG co lại được (inline style thắng rule). Kẹp về padding gọn.
+ *  2) Hàng nút (tab/lọc/action) dùng flexWrap:wrap → trên nền hẹp xếp thành NHIỀU HÀNG cao
+ *     thay vì 1 hàng cuộn ngang.
+ *  3) Các dòng mục/chrome còn bỏ sót class hook (nút footer bọc div, strip holding, cart bar,
+ *     perk row, payroll section, kitchen station tabs, store-layout tabs).
+ * Chỉ presentation trên data-density="compact" / data-input="touch"; KHÔNG đổi logic/gameplay.
+ * Phạm vi .dialog-content để không đụng .pixel-dialog (khung hộp thoại, ngoài vùng này). */
+
+/* (1) Kẹp padding khối nội dung (inline 8/10/12px -> 6px 8px gọn mobile). */
+html[data-density="compact"] .dialog-content .pixel-panel:not(.pixel-dialog) { padding: 6px 8px !important; }
+html[data-density="compact"] .dialog-content .pixel-panel:not(.pixel-dialog) .pixel-panel { padding: 6px !important; }
+/* (2) Hàng nút tab/lọc/chip: CHỈ những hàng có nút con trực tiếp (chứa button/select) mới
+   thành 1 hàng cuộn ngang trên compact — không đụng các hàng text/meta cần wrap bình thường. */
+html[data-density="compact"] .dialog-content [style*="flex-wrap"]:has(> button, > select),
+html[data-density="compact"] .dialog-content [style*="flexWrap"]:has(> button, > select) {
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+html[data-density="compact"] .dialog-content [style*="flex-wrap"]:has(> button, > select) > *,
+html[data-density="compact"] .dialog-content [style*="flexWrap"]:has(> button, > select) > * { flex: 0 0 auto; }
+
+/* (3a) Nút footer bị bọc trong <div> trung gian (WarehouseModal) mất full-width compact:
+   nới rule full-width cho mọi nút con trực tiếp của footer. */
+html[data-density="compact"] .dialog-footer > *,
+html[data-density="compact"] .dialog-footer > * > .pixel-button { flex: 1 1 auto; width: 100%; }
+
+/* (3b) Nút "Cất vào kho" của thanh kho (WarehouseDock) ngoài .dialog-backdrop nên rule touch
+   chung không chạm tới; tự nâng vùng chạm riêng. */
+html[data-input="touch"] .warehouse-dock button { min-height: var(--touch); }
+
+/* (3c) Strip "hàng chờ cất" + danh sách holding của thanh kho: gọn trên compact để dành chiều cao cho kệ. */
+html[data-density="compact"] .warehouse-dock .dock-holding-strip { padding: 4px 8px !important; }
+html[data-density="compact"] .warehouse-dock .dock-holding-list { max-height: 48px !important; }
+
+/* (3d) Nút tab phân trạm bếp (KitchenStation): 1 hàng cuộn ngang như feature-scroll-tabs. */
+html[data-density="compact"] .kitchen-station-tabs { flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 4px; }
+html[data-density="compact"] .kitchen-station-tabs > .pixel-button { flex: 0 0 auto !important; min-width: max-content !important; }
+
+/* (3e) Nhân viên — khối "Quỹ lương và công nợ" (đầu màn, tốn chiều cao nhất): gọn padding/margin. */
+html[data-density="compact"] .staff-fund { padding: 6px 10px !important; margin-bottom: 8px !important; }
+html[data-density="compact"] .staff-fund p { margin-bottom: 6px !important; }
+
+/* (3f) Bí quyết (Skills) — dòng perk: trên nền hẹp thành 1 cột (thông tin trên, nút full-width dưới),
+   mô tả clamp 2 dòng để không đẩy cao. */
+html[data-density="compact"] .perk-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
+html[data-density="compact"] .perk-row .perk-desc { -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+html[data-density="compact"] .perk-row .perk-action { width: 100%; }
+html[data-density="compact"] .perk-row .perk-action .pixel-button { width: 100%; }
+
+/* (3g) Sắp xếp tiệm (StoreLayout): sidebar tab 6 nút đang grid 4 cột -> wrap 2 hàng cao;
+   compact ép 1 hàng cuộn ngang. Thanh trạng thái clamp 1 dòng để board lên sớm.
+   Footer dùng `.layout-footer` (không phải .dialog-footer), `.layout-footer-actions` là flex-wrap
+   qua CSS (không inline) nên rule hệ thống `[style*=flex-wrap]` không chạm — ép 1 hàng riêng để
+   nút chính "Áp dụng bố cục" không rớt hàng/che bảng trên màn thấp (khớp rule .dialog-footer 14F). */
+html[data-density="compact"] .layout-tabs { grid-template-columns: repeat(6, minmax(max-content, 1fr)) !important; flex-wrap: nowrap !important; overflow-x: auto; }
+html[data-density="compact"] .layout-status-bar > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-density="compact"] .layout-footer-actions { flex-wrap: nowrap !important; }
+html[data-density="compact"] .layout-footer-actions .pixel-button { flex: 0 1 auto; }
+
+/* (3h) Nhập hàng — giỏ đặt hàng sticky (chrome cuối màn): gọn padding/font nút to. */
+html[data-density="compact"] .cart-bar { padding: 6px 10px !important; gap: 6px !important; }
+html[data-density="compact"] .cart-bar .pixel-button { padding: 4px 10px !important; font-size: var(--fs-sm) !important; }
+
+/* (3i) Footer action chính (Thu ngân/Cashier, etc.): container nút trong .dialog-footer.
+   UI-AUDIT B02: trên màn thấp với footer dùng inline `flex-wrap` (chủ yếu Cashier — tới 3 nút
+   "Thu tiền/Bán chịu/Ăn tại bàn"), cho phép wrap sang hàng 2 khi chật (thay vì ép nowrap làm
+   label secondary co/tràn) để nút chính "Thu tiền" (primary teal) luôn đủ rộng dễ chạm; giữ --touch. */
+html[data-density="compact"] .dialog-footer [style*="flex-wrap"]:has(> .pixel-button),
+html[data-density="compact"] .dialog-footer [style*="flexWrap"]:has(> .pixel-button) {
+  flex-wrap: wrap !important;
+}
+html[data-density="compact"] .dialog-footer [style*="flex-wrap"]:has(> .pixel-button) .pixel-button,
+html[data-density="compact"] .dialog-footer [style*="flexWrap"]:has(> .pixel-button) .pixel-button {
+  flex: 0 1 auto !important; white-space: nowrap; min-width: 0;
+}
+
+/* (3j) Cách điều khiển (Save modal / Login): 3 nút dùng class .control-mode-options (flex-wrap wrap
+   qua CSS, KHÔNG inline) nên rule hệ thống (2) không chạm; thành 1 hàng cuộn ngang trên compact. */
+html[data-density="compact"] .control-mode-options { flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 2px; }
+html[data-density="compact"] .control-mode-options > .pixel-button { flex: 0 0 auto !important; min-width: max-content !important; }
+
+/* --- Inventory mobile (Đợt 15): dòng 1 hàng + chi tiết mở ngay dưới món (accordion), KPI 1 dải --- */
+.inventory-detail { grid-column: 1 / -1; }
+.inventory-chevron { margin-left: auto; align-self: center; font-size: 18px; opacity: .6; }
+html[data-density="compact"] .inventory-card { align-items: center; }
+html[data-density="compact"] .inventory-card > div:not(.product-slot) { min-width: 0; flex: 1; }
+html[data-density="compact"] .inventory-card h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-density="compact"] .inventory-meta { display: none; }
+html[data-density="compact"] .inventory-detail { margin: -2px 0 4px; padding: 6px 10px; }
+html[data-density="compact"] .inventory-detail p { margin: 0 0 3px; font-size: 12px; }
+html[data-density="compact"] .inventory-card .product-slot { width: 40px; height: 40px; }
+html[data-density="compact"] .inventory-card .product-icon { width: 28px; height: 28px; }
+html[data-density="compact"] .inventory-card { padding: 4px 8px; }
+/* Cấp/XP là P2 trong Inventory (đã có ở HUD) — ẩn trên màn compact để danh sách lên sớm */
+html[data-density="compact"] .inventory-summary { padding: 4px 10px; margin-bottom: 6px; }
+html[data-density="compact"] .inventory-summary > div:last-child { display: none; }
+
+/* --- Supplier mobile (Đợt 15): danh sách món lên đầu --- */
+/* Gợi ý + Tự nhập hàng: 2 nút cạnh nhau trên 1 hàng, mở ra thì chiếm cả hàng */
+html[data-density="compact"] .supplier-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; align-items: start; }
+html[data-density="compact"] .supplier-tools > details[open] { grid-column: 1 / -1; }
+html[data-density="compact"] .supplier-tools > details { margin: 0 !important; }
+html[data-density="compact"] .auto-buy-panel { padding: 0 !important; border-width: 2px !important; }
+html[data-density="compact"] .auto-buy-panel > summary { margin: 0 !important; padding: 8px 10px; font-size: 12px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-density="compact"] .auto-buy-panel[open] > :not(summary) { margin-left: 8px; margin-right: 8px; }
+html[data-density="compact"] .auto-buy-panel[open] { padding-bottom: 8px !important; }
+html[data-density="compact"] .feature-suggest-detail > .feature-suggest-summary { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-density="compact"] .feature-scroll-tabs { margin-bottom: 6px !important; }
+html[data-density="compact"] .summary-row.supplier-summary { margin-bottom: 6px; }
+/* Thanh giỏ nằm trong footer sticky, thay "Trở về tiệm" (đã có nút ✕ ở header); giỏ rỗng thì ẩn cả footer */
+html[data-density="compact"] .dialog-footer:has(.cart-bar) { padding: 0; border-top: 0; background: none; }
+html[data-density="compact"] .dialog-footer:has(.cart-bar-empty) { display: none; }
+html[data-density="compact"] .dialog-footer .cart-bar { position: static !important; margin: 0 !important; width: 100%; border-radius: 0 !important; border-width: 2px 0 0 !important; }
+/* Tìm kiếm + danh mục trên cùng 1 hàng (ô tìm 36%, chip cuộn ngang phần còn lại) */
+html[data-density="compact"] .supplier-filter { display: flex; align-items: center; gap: 6px; margin-bottom: 6px !important; }
+html[data-density="compact"] .supplier-search { flex: 0 0 34%; width: auto !important; min-width: 0; min-height: var(--touch) !important; margin-bottom: 0 !important; }
+html[data-density="compact"] .supplier-filter .supplier-cats { flex: 1 1 auto; min-width: 0; padding-bottom: 0; scrollbar-width: none; }
+html[data-density="compact"] .supplier-filter .supplier-cats::-webkit-scrollbar { display: none; }
+html[data-density="compact"] .supplier-summary { padding-block: 3px; }
+/* Giỏ có hàng: gọn 2 hàng thấp — tiêu đề + nút phụ trên, tổng + Đặt hàng dưới */
+html[data-density="compact"] .dialog-footer .cart-bar { padding: 4px 10px !important; }
+html[data-density="compact"] .dialog-footer .cart-bar > div:first-child { margin-bottom: 2px !important; }
+html[data-density="compact"] .dialog-footer .cart-bar > div:first-child .pixel-button { min-height: 30px; padding: 2px 8px !important; }
+html[data-density="compact"] .dialog-footer .cart-bar > div:last-child { border-top: 0 !important; padding-top: 0 !important; flex-wrap: nowrap !important; }
+html[data-density="compact"] .dialog-footer .cart-bar > div:last-child > .pixel-button { min-height: var(--touch); padding: 4px 14px !important; font-size: 13px !important; white-space: nowrap; }
+html[data-density="compact"] .feature-suggest { flex-wrap: wrap !important; }
+/* Giỏ có hàng: 1 hàng duy nhất [Tổng] [Chi tiết|Xóa] [Đặt hàng]; danh sách chi tiết (khi mở) trải cả hàng */
+html[data-density="compact"] .dialog-footer .cart-bar:not(.cart-bar-empty) { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 6px; }
+html[data-density="compact"] .dialog-footer .cart-bar > div:first-child,
+html[data-density="compact"] .dialog-footer .cart-bar > div:last-child { display: contents; }
+html[data-density="compact"] .dialog-footer .cart-bar > div:first-child > strong { display: none; }
+html[data-density="compact"] .dialog-footer .cart-bar > div:first-child > div { order: 2; display: flex; gap: 4px; }
+html[data-density="compact"] .dialog-footer .cart-bar > div:last-child > div { order: 1; min-width: 0; }
+html[data-density="compact"] .dialog-footer .cart-bar > div:last-child > .pixel-button { order: 3; }
+html[data-density="compact"] .dialog-footer .cart-bar > div:not(:first-child):not(:last-child) { order: 4; grid-column: 1 / -1; }
+html[data-density="compact"] .supplier-summary .pixel-stat-body { display: flex; align-items: baseline; gap: 6px; }
+html[data-density="compact"] .supplier-summary { margin-bottom: 4px; padding-block: 2px; }
+html[data-density="compact"] .supplier-tools { margin-bottom: 4px; }
+html[data-density="compact"] .supplier-tools > details > summary, html[data-density="compact"] .supplier-tools .feature-suggest-summary { min-height: 34px; }
+
+/* Supplier trên màn rất thấp (<=340px: 568×320): bỏ phụ đề header (giao hàng/đơn tối thiểu đã có ở dải tiền) */
+@media (max-height: 340px) {
+  html[data-density="compact"] .pixel-dialog:has(.supplier-tools) .dialog-header p { display: none; }
+  html[data-density="compact"] .pixel-dialog:has(.supplier-tools) .dialog-header { padding-block: 4px; }
+  html[data-density="compact"] .pixel-dialog:has(.supplier-tools) .feature-scroll-tabs { margin-bottom: 4px !important; padding-bottom: 0; }
+  html[data-density="compact"] .pixel-dialog:has(.supplier-tools) .supplier-tools > details > summary,
+  html[data-density="compact"] .pixel-dialog:has(.supplier-tools) .feature-suggest-summary { min-height: 30px; padding-block: 4px; }
+}
+
+/* Supplier 568×320: tab đại lý + dải tiền chung 1 hàng — tiền/ngày giao xếp 2 dòng bên trái, tab cuộn ngang bên phải */
+.supplier-head { display: contents; }
+@media (max-height: 340px) {
+  html[data-density="compact"] .supplier-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  html[data-density="compact"] .supplier-head .feature-scroll-tabs { order: 2; flex: 1 1 auto; min-width: 0; margin-bottom: 0 !important; }
+  html[data-density="compact"] .supplier-head .supplier-summary { order: 1; flex: 0 0 auto; flex-direction: column; align-items: flex-start; gap: 0; margin: 0; padding: 2px 8px; }
+  html[data-density="compact"] .supplier-head .supplier-summary .pixel-stat .muted { display: none; }
+  html[data-density="compact"] .supplier-head .supplier-summary strong { font-size: 11px; white-space: nowrap; }
+}
+
+/* Staff mobile (Đợt 15): ứng viên lên đầu. Chưa có nhân viên → ẩn khối "đang làm" (phụ đề header đã ghi x/y vị trí);
+   quỹ lương không nợ chuyển xuống cuối (P2); có nợ thì vẫn ở đầu. */
+html[data-density="compact"] .staff-hired-empty { display: none; }
+html[data-density="compact"] .staff-hired { margin-bottom: 8px !important; }
+html[data-density="compact"] .staff-hired > h3,
+html[data-density="compact"] .staff-candidates > h3 { font-size: 13px; margin: 0 0 4px; }
+html[data-density="compact"] .staff-fund { margin-top: 8px; }
+
+/* ==========================================================================
+   Đợt 16 — Audit tất cả modal theo chuẩn Mobile UI/UX; nhóm fix presentation-only
+   (Save/Prices/Regulars/Market + các màn sau). Không đổi logic/state/API/gameplay.
+   ========================================================================== */
+
+/* ---- Save modal: hàng xác nhận (.save-confirm > div) dùng flex-wrap qua CSS (không inline)
+        nên rule hệ thống [style*=flex-wrap] không chạm -> có thể wrap 2 hàng trên nền hẹp.
+        Ép 1 hàng để primary (Đồng ý...) đủ vùng chạm và không tốn chiều cao. ---- */
+html[data-density="compact"] .save-confirm > div { flex-wrap: nowrap !important; }
+html[data-density="compact"] .save-confirm > div .pixel-button { flex: 1 1 auto; white-space: nowrap; }
+/* Metadata/helper P2 trong .info-card ẩn trên compact -> khối lời dẫn (cách điều khiển, tự lưu,
+   cloud) không chiếm chiều cao đỉnh màn, primary "Lưu tiến trình ngay" lên sớm. */
+html[data-density="compact"] .info-card .muted { display: none; }
+
+/* ---- Prices modal: nút "Về giá gợi ý tất cả" là action batch (P2) — khi DISABLED (chưa đổi giá
+        nào) ẩn hẳn hàng trống chiếm chỗ đầu màn; khi có thay đổi thì nút hiện ra. ---- */
+html[data-density="compact"] .prices-reset-row { margin-bottom: 4px !important; }
+html[data-density="compact"] .prices-reset-row:has(button:disabled) { display: none; }
+/* Dòng hint giá trong từng card: "vốn" là metadata P1/P2 — clamp 1 dòng ellipsis để không làm
+   card cao nhiều dòng trên màn ngang thấp. */
+html[data-density="compact"] .prices-card-hint { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- Regulars modal: danh sách khách quen khẽo wrap thành 2 hàng (grid auto-fill + cap 96px)
+        -> nested scroll; đổi thành 1 hàng chip cuộn ngang đúng chuẩn chip/tab. ---- */
+html[data-density="compact"] .regulars-list {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  max-height: none !important;
+  align-items: stretch;
+}
+html[data-density="compact"] .regulars-list .pixel-btn { flex: 0 0 auto; white-space: nowrap; }
+/* Detail: inline overflowY:'auto' thắng rule compact — ép vô hiệu hẳn để bỏ scroll lồng (đúng ý định). */
+html[data-density="compact"] .regulars-detail { max-height: none !important; overflow-y: visible !important; overflow-x: visible !important; }
+
+/* ---- Market modal: 2 đoạn helper .muted giải thích (P2) ẩn trên compact; chi tiết note/reasons
+        trong kế hoạch tồn kho (span.muted) ẩn để mỗi <li> không wrap khối cao 3-4 dòng. ---- */
+html[data-density="compact"] .market-helper { display: none; }
+html[data-density="compact"] ul[aria-label="Món cần chú ý"] li .muted { display: none; }
+
+/* ---- Đợt 16 · Batch 2: DiningTable/Security/TimeVote/Stall/Maintenance/StorePlanogram/Tax ---- */
+
+/* DiningTable: rule hệ thống `[style*=flex-wrap]:has(>button)` ép hàng "Tự dọn bàn + giao việc" thành 1 strip
+   cuộn ngang -> primary bị đẩy ra phải. Tách: primary chiếm cả dòng, flow giao việc (P2) là dòng riêng cuộn. */
+html[data-density="compact"] .dining-actions { flex-wrap: wrap !important; overflow-x: visible !important; }
+html[data-density="compact"] .dining-actions > .pixel-button { flex: 1 1 100%; }
+html[data-density="compact"] .dining-assign { flex: 1 1 100%; display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; }
+html[data-density="compact"] .dining-assign select { min-height: var(--touch); }
+
+/* Security: 3 card "text + nút" (Camera/Bảo vệ/Báo công an) có inline flexWrap:wrap + con nút -> rule hệ thống
+   ép 1 strip cuộn ngang, làm mô tả dài bị cắt. Cho wrap trở lại, nút giữ nguyên bên phải. */
+html[data-density="compact"] .security-grid .pixel-panel { flex-wrap: wrap !important; overflow-x: visible !important; }
+html[data-density="compact"] .security-grid .muted { display: block; }
+html[data-density="compact"] .security-grid .pixel-panel > .pixel-button { flex: 0 0 auto; }
+
+/* TimeVote: gọn padding box + ẩn ghi chú quy tắc (P2) để modal bình chọn không cao trên màn ngang thấp. */
+html[data-density="compact"] .timevote-box { padding: 8px 10px !important; }
+html[data-density="compact"] .timevote-note { display: none; }
+
+/* Stall: dòng stats + nguyên liệu (muted) và desc clamp 1 dòng; hàng action (Nhập nhanh/Mở quầy) wrap gọn,
+   nút không bị dồn sát nhau. */
+html[data-density="compact"] .stall-row .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-density="compact"] .stall-row .tabular { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-density="compact"] .stall-actions { flex-wrap: wrap; justify-content: flex-start; gap: 6px; }
+html[data-density="compact"] .stall-actions .pixel-button { flex: 1 1 auto; white-space: nowrap; }
+
+/* Maintenance: hàng nút bảo trì/sửa/mua — rule hệ thống ép 1 strip cuộn; cho wrap tự nhiên (nút ngắn). */
+html[data-density="compact"] .maintenance-actions { flex-wrap: wrap !important; overflow-x: visible !important; }
+
+/* Maintenance: hàng "Bảo trì tất cả" + tổng phí — gọn 1 hàng, nút đủ chạm, tổng không bị tách dòng. */
+html[data-density="compact"] .maintenance-batch { flex-wrap: wrap !important; gap: 6px 8px; }
+html[data-density="compact"] .maintenance-batch .pixel-button { flex: 0 0 auto; white-space: nowrap; }
+html[data-density="compact"] .maintenance-batch .muted { white-space: nowrap; }
+
+/* StorePlanogram: bộ lọc 5 nút -> 1 hàng cuộn ngang; dải thống kê giữ 1 hàng (không đẩy nút Bày hàng xuống);
+   helper header modal đổi món clamp 1-2 dòng. */
+html[data-density="compact"] .planogram-filters { flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; }
+html[data-density="compact"] .planogram-filters .filter-btn { flex: 0 0 auto; white-space: nowrap; }
+html[data-density="compact"] .summary-stats { flex-wrap: nowrap !important; overflow-x: auto; }
+html[data-density="compact"] .summary-stats .summary-stat-item { flex: 0 0 auto; white-space: nowrap; }
+html[data-density="compact"] .change-product-header p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Tax: clamp đoạn văn giải thích dài (P2) trong mục Kiểm tra thuế (chỉ riêng màn Thuế — không đụng section khác). */
+html[data-density="compact"] [aria-labelledby="tax-audit-heading"] p,
+html[data-density="compact"] [aria-labelledby="tax-status-heading"] p { line-height: 1.35; margin: 4px 0; }
+/* Staff có nợ lương: 1 hàng [thông tin | Trả nợ] thay vì accordion mở sẵn; mô tả phụ ẩn trên compact */
+html[data-density="compact"] .staff-debt { padding: 6px 10px !important; margin-bottom: 8px !important; gap: 6px !important; }
+html[data-density="compact"] .staff-debt-info .muted { display: none; }
+html[data-density="compact"] .staff-debt-info { flex-basis: 140px !important; }
+
+/* ---- Đợt 16 · Batch 3: Warehouse/DaySummary/Management/LevelRoadmap/Titles/Chain ---- */
+
+/* Warehouse: search + bộ lọc 2 cạnh nhau trên compact (tiết kiệm chiều cao); helper "khu nhận hàng" (P2) ẩn;
+   hàng hành động 1 ô (Mở 1/Mở hết/Tiêu hủy) gộp 2-up, nút tách riêng 1 hàng. */
+html[data-density="compact"] .warehouse-filter-row { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; }
+html[data-density="compact"] .warehouse-filter-row .form-filter { margin: 0; }
+html[data-density="compact"] .warehouse-item-actions { display: grid !important; grid-template-columns: 1fr 1fr; }
+html[data-density="compact"] .pending-orders > p.muted { display: none; }
+
+/* DaySummary: đoạn chân trang tổng kết (P2) clamp 1-2 dòng; KPI giữ 2 cột trên màn hẹp. */
+html[data-density="compact"] .summary-kpis { grid-template-columns: repeat(2, 1fr) !important; }
+html[data-density="compact"] .day-summary-foot { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Management: đây là lưới card đã chuẩn mobile — chỉ giữ touch min-height cho các nút card. */
+html[data-density="compact"] .management-card { min-height: var(--touch); }
+html[data-density="compact"] .management-card-title { line-height: 1.2; }
+
+/* LevelRoadmap: ẩn đoạn dòng cuối "Mở khóa là quyền sử dụng…" (P2) trên compact. */
+html[data-density="compact"] .level-roadmap-note { display: none; }
+
+/* Titles: tên danh hiệu dài + badge không tràn ngang — cho dòng tên wrap, tên clamp 1 dòng, mô tả clamp 2 dòng;
+   banner "đang hiển thị" không dồn button. */
+html[data-density="compact"] .title-row { flex-wrap: wrap; }
+html[data-density="compact"] .title-row > .title-main { flex: 1 1 100%; margin-right: 0 !important; margin-bottom: 4px; }
+html[data-density="compact"] .title-row .title-main > div { flex-wrap: wrap; }
+html[data-density="compact"] .title-row .title-main strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-density="compact"] .title-row .title-main div:last-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+html[data-density="compact"] .titles-banner { flex-wrap: wrap; gap: 6px; }
+
+/* Chain: prose giải thích dài (P2) clamp 2 dòng trong bảng chuyển hàng và mở chi nhánh. */
+html[data-density="compact"] .chain-kpis { grid-template-columns: repeat(2, 1fr) !important; }
+
+/* --- Warehouse mobile (Đợt 15): danh sách lên đầu; dung lượng/chú thích/thao tác phụ là P2 --- */
+.warehouse-ambient { display: none; }
+html:not([data-density="compact"]) .warehouse-more > summary { display: none; }
+html[data-density="compact"] .warehouse-summary { padding-block: 3px; margin-bottom: 4px; }
+html[data-density="compact"] .warehouse-summary .muted { display: none; }
+html[data-density="compact"] .warehouse-summary .warehouse-ambient { display: block; margin: 0; font-size: 11px; }
+html[data-density="compact"] .warehouse-capacity,
+html[data-density="compact"] .warehouse-hint { display: none; }
+html[data-density="compact"] .warehouse-filter-row { margin-bottom: 6px !important; gap: 6px !important; }
+html[data-density="compact"] .warehouse-filter-row .form-filter-label { display: none; }
+html[data-density="compact"] .warehouse-filter-row .form-filter { flex: 1 1 0 !important; }
+html[data-density="compact"] .warehouse-filter-row input[type="search"] { min-height: var(--touch) !important; padding: 4px 8px !important; }
+html[data-density="compact"] .warehouse-filter-row select { min-height: var(--touch); }
+/* Dòng hàng: tên + loại/số lượng; lô, thùng và nút Mở thùng/Tiêu hủy gom trong accordion */
+html[data-density="compact"] .product-row:has(.warehouse-more) { align-items: flex-start; }
+html[data-density="compact"] .warehouse-more > summary { cursor: pointer; font-size: 11px; font-weight: 700; color: var(--teal-dark, #1f5f57); padding: 2px 0; min-height: 28px; display: flex; align-items: center; list-style: none; }
+html[data-density="compact"] .warehouse-more > summary::-webkit-details-marker { display: none; }
+html[data-density="compact"] .warehouse-more > summary::before { content: '▸ '; margin-right: 4px; }
+html[data-density="compact"] .warehouse-more[open] > summary::before { content: '▾ '; }
+html[data-density="compact"] .warehouse-more[open] > summary { margin-bottom: 4px; }
+/* Footer: "Bày hàng lên kệ" là hành động chính (rộng gấp đôi), "Ghé đại lý" là phụ */
+html[data-density="compact"] .warehouse-actions { flex-wrap: nowrap !important; }
+html[data-density="compact"] .dialog-footer .warehouse-actions > .pixel-button:first-child { flex: 2 1 0 !important; width: auto; min-width: 0; }
+html[data-density="compact"] .dialog-footer .warehouse-actions > .pixel-button:not(:first-child) { flex: 1 1 0 !important; width: auto; min-width: 0; padding-inline: 6px; }
+
+/* ---- Đợt 16 · Batch 4: Quest/Analytics (Cashier/Inventory/Shelf/KitchenStation/Skills đã hook sẵn từ 14C-16) ---- */
+
+/* Quest: hàng thưởng+nút (QuestRow) bị rule hệ thống `:has(>button)` ép thành 1 strip cuộn làm con số thưởng
+   có thể bị đẩy ra ngoài màn — cho wrap 2 dòng (thưởng dòng trên, nút dòng dưới). */
+html[data-density="compact"] .quest-reward-row { flex-wrap: wrap !important; overflow-x: visible !important; }
+html[data-density="compact"] .quest-reward-row > * { flex: 1 1 auto; }
+html[data-density="compact"] .quest-reward-row .pixel-button { flex: 0 0 auto; }
+
+/* Analytics: select chọn mặt hàng/khoảng on compact có đủ chiều cao chạm (touch) thay vì kẹp nhỏ. */
+html[data-density="compact"] .dialog-content select { min-height: var(--touch, 38px); }
+
+/* ---- Đợt 16 · Hardening theo "check kỹ từng kích thước" (568×320…932×430): 2 subagent audit tĩnh 28 modal
+        không phát hiện overflow nào (mọi hằng số lớn đều là max-cap responsive / --dialog-avail-h).
+        Ba rule phòng thủ dưới đây bổ sung lớp compact cho những chỗ vốn chỉ dựa vào @container hoặc min() ----- */
+
+/* (a) StorePlanogram .fixture-slots-grid vốn chỉ được cứu bởi @container plano(max-width:768px) — bổ sung
+        vào lớp compact để không phụ thuộc riêng container query (tránh fallback vỡ nếu CSS refactor). */
+html[data-density="compact"] .fixture-slots-grid { grid-template-columns: 1fr !important; }
+
+/* (b) TitlesModal list — bỏ mốc px thừa, chỉ giới hạn theo --dialog-avail-h (vẫn nằm trong min() ở inline). */
+html[data-density="compact"] .title-list { max-height: calc(var(--dialog-avail-h) * 0.6) !important; }
+
+/* (c) ChainModal transfer list — cùng pattern, clamp theo --dialog-avail-h. */
+html[data-density="compact"] .chain-transfer-list { max-height: calc(var(--dialog-avail-h) * 0.45) !important; }
+
+/* ---- Đợt 17 · Warehouse "Khu nhận hàng" nhiều đơn + Cashier báo cáo năm (presentation-only) ---- */
+
+/* Warehouse "Khu nhận hàng" (mục cuối modal, trước footer): xử lý danh sách NHIỀU đơn đang giao.
+   - Tên món dài không tràn ngang: giới hạn bằng ellipsis, nhãn "Giao ngày X" luôn neo phải.
+   - Giữ dòng gọn (padding/gap đã nén ở 14C) để nhiều đơn không ăn quá nhiều chiều cao; danh
+     sách nằm trong dòng cuộn của hộp thoại nên số đơn lớn không bị cắt. */
+html[data-density="compact"] .pending-item strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-density="compact"] .pending-item span { flex-shrink: 0; }
+
+/* Cashier — tab "Báo cáo ngày & Lãi lỗ": đoạn giải thích thuế dài (P2) clamp 2 dòng trên compact
+   để phần Báo cáo năm không tốn nhiều chiều cao trước báo cáo hôm nay. */
+html[data-density="compact"] .cashier-annual-prose { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0 !important; }
+
+/* ---- UI-AUDIT-2026-001 · TASK-007 (D05/D06): vùng chạm cho link & ô nhập trong dialog trên touch.
+   Trước đây rule touch chỉ nâng button/select; thêm cho <a> (Tax căn cứ pháp lý) và input[type=text]
+   (Chain tên chi nhánh) để đạt --touch. Presentation/CSS-only — không đụng desktop. ---- */
+html[data-input="touch"] .dialog-content a { min-height: var(--touch, 44px); display: inline-flex; align-items: center; padding-inline: 6px; }
+html[data-input="touch"] .dialog-content input[type="text"] { min-height: var(--touch, 44px); }
+
+/* ---- UI-AUDIT-2026-001 · C07: nền compact — chống microtext <11px cho StoreLayout (dpad-title 10px,
+   dpad-hint 9px, finish-hint 10px) nâng lên floor đọc 11px. Compact-only; không đụng desktop/chuột. ---- */
+html[data-density="compact"] .dpad-title,
+html[data-density="compact"] .dpad-hint,
+html[data-density="compact"] .finish-hint { font-size: 11px !important; }

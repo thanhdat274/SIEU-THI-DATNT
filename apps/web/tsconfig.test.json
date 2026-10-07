@@ -1,7 +1,7 @@
 {
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": { "@game/data": ["./src/test-stubs/game-data.ts"] }
-  }
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": { "@game/data": ["./src/test-stubs/game-data.ts"] }
+	}
 }

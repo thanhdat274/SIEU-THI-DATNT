@@ -8,28 +8,39 @@ export interface MaintenanceModalProps {
   playerMoney: number;
   playerLevel: number;
   onAction: (fixtureId: string, action: MaintenanceAction) => void | Promise<void>;
+  onMaintainAll: () => void | Promise<void>;
   onClose: () => void;
 }
 
 const STATUS_LABEL: Record<MaintenanceEntry['status'], { text: string; color: string }> = {
-  good: { text: 'Còn tốt', color: '#2a7a43' },
-  worn: { text: 'Đã mòn, nên bảo trì', color: '#a86b12' },
-  broken_minor: { text: 'Hỏng nhẹ: sửa được', color: '#b64c3d' },
+  good: { text: 'Còn tốt', color: 'var(--success)' },
+  worn: { text: 'Đã mòn, nên bảo trì', color: 'var(--warn)' },
+  broken_minor: { text: 'Hỏng nhẹ: sửa được', color: 'var(--brick)' },
   broken_major: { text: 'Hỏng nặng: phải mua mới', color: '#8a1f12' },
 };
 
 const TYPE_LABEL: Record<string, string> = { shelf_wooden: 'Kệ gỗ', shelf_glass: 'Kệ kính', refrigerator: 'Tủ mát' };
 
 /** Danh sách kệ/tủ mát kèm độ mòn; bảo trì, sửa nhẹ hoặc mua mới ngay tại đây. */
-export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({ entries, playerMoney, playerLevel, onAction, onClose }) => {
+export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({ entries, playerMoney, playerLevel, onAction, onMaintainAll, onClose }) => {
   const unlocked = playerLevel >= MAINTENANCE_RULES.unlockLevel;
   const sorted = [...entries].sort((a, b) => Number(b.status === 'broken_major') - Number(a.status === 'broken_major') || Number(!!b.broken) - Number(!!a.broken) || b.wear - a.wear);
+  const serviceable = entries.filter((e) => e.serviceCost !== undefined);
+  const serviceTotal = serviceable.reduce((sum, e) => sum + (e.serviceCost ?? 0), 0);
   return (
-    <PixelDialog icon="warning" title="SỬA CHỮA & BẢO TRÌ" subtitle="Kệ và tủ mát mòn dần mỗi đêm; hỏng thì không bán và không bày hàng được. Nhân viên bày hàng tự bảo trì đồ đã mòn mỗi đêm (có phí)" onClose={onClose}>
+    <PixelDialog icon="warning" title="Sửa chữa & bảo trì" subtitle="Kệ và tủ mát mòn dần mỗi đêm; hỏng thì không bán và không bày hàng được. Nhân viên bày hàng tự bảo trì đồ đã mòn mỗi đêm (có phí)" onClose={onClose}>
       {!unlocked && (
         <p className="pixel-panel" style={{ padding: 8 }}>Hao mòn bắt đầu từ cấp {MAINTENANCE_RULES.unlockLevel}; cấp hiện tại {playerLevel}.</p>
       )}
       {unlocked && !sorted.length && <p className="muted">Chưa có kệ hay tủ mát nào.</p>}
+      {unlocked && serviceable.length > 0 && (
+        <div className="maintenance-batch" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <PixelButton variant="teal" disabled={!unlocked || serviceTotal <= 0 || playerMoney < serviceTotal} onClick={onMaintainAll}>
+            Bảo trì tất cả ({serviceable.length})
+          </PixelButton>
+          <span className="muted" style={{ fontSize: 12 }}>Tổng phí bảo trì: <strong style={{ color: 'var(--success)' }}>{money(serviceTotal)}</strong></span>
+        </div>
+      )}
       <div style={{ display: 'grid', gap: 8 }}>
         {sorted.map((entry) => {
           const status = STATUS_LABEL[entry.status];
@@ -41,9 +52,9 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({ entries, pla
               </div>
               <div role="progressbar" aria-label={`Độ mòn ${entry.wear}%`} aria-valuenow={entry.wear} aria-valuemin={0} aria-valuemax={100}
                 style={{ height: 8, background: '#e5d8c4', border: '1px solid #bfa993' }}>
-                <div style={{ width: `${Math.min(100, entry.wear)}%`, height: '100%', background: entry.wear >= MAINTENANCE_RULES.breakFrom ? '#b64c3d' : entry.status === 'worn' ? '#e09f3e' : '#2a7a43' }} />
+                <div style={{ width: `${Math.min(100, entry.wear)}%`, height: '100%', background: entry.wear >= MAINTENANCE_RULES.breakFrom ? 'var(--brick)' : entry.status === 'worn' ? 'var(--warn-bright)' : 'var(--success)' }} />
               </div>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div className="maintenance-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                 <span className="muted" style={{ fontSize: 11 }}>Mòn {entry.wear}%</span>
                 {entry.serviceCost !== undefined && (
                   <PixelButton variant="teal" disabled={!unlocked || playerMoney < entry.serviceCost} onClick={() => onAction(entry.fixtureId, 'service')}>

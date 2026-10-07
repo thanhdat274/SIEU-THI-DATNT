@@ -56,6 +56,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   const [selectedWorldDetail, setSelectedWorldDetail] = useState<WorldDetail | null>(null);
   const [activeGuideTab, setActiveGuideTab] = useState<'daily' | 'controls' | 'stock' | 'features' | 'coop'>('daily');
 
+  // UI-AUDIT-2026-001 D04: bấm Escape ở 3 modal tùy chỉnh (Hẻm chơi cùng / Bảng vàng / Nhật ký vắng) để đóng —
+  // trước đó các modal này không có hành vi phím nên khó thao tác bằng bàn phím (a11y).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showMultiplayerModal) setShowMultiplayerModal(false);
+      if (showLeaderboard) setShowLeaderboard(false);
+      if (showAbsenceModal) { setShowAbsenceModal(false); if (selectedWorldDetail) onEnter(selectedWorldDetail); }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showMultiplayerModal, showLeaderboard, showAbsenceModal, selectedWorldDetail]);
+
   const [slots, setSlots] = useState<SaveSlotInfo[]>([]);
   const [activeSlot, setActiveSlot] = useState<SaveSlotId>(getActiveSlotId());
   const [lockedSlots, setLockedSlots] = useState<Set<SaveSlotId>>(new Set());
@@ -953,10 +967,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
       {/* MODAL: HẺM CHƠI CÙNG (COMMUNITY NOTICE BOARD) */}
       {showMultiplayerModal && (
         <div className="vintage-modal-overlay" onClick={() => setShowMultiplayerModal(false)}>
-          <div className="vintage-wood-card notice-board-card" onClick={(e) => e.stopPropagation()}>
+          <div className="vintage-wood-card notice-board-card" role="dialog" aria-modal="true" aria-labelledby="modal-title-coop" onClick={(e) => e.stopPropagation()}>
             <header className="notice-board-header">
               <span className="board-pin">📌</span>
-              <h3>🌐 HẺM CHƠI CÙNG (2 NGƯỜI)</h3>
+              <h3 id="modal-title-coop">🌐 HẺM CHƠI CÙNG (2 NGƯỜI)</h3>
               <p>Chung tay buôn bán trong một con hẻm thân tình với bạn bè.</p>
             </header>
 
@@ -1069,10 +1083,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
       {/* MODAL: BẢNG XẾP HẠNG / BẢNG VÀNG DANH DỰ */}
       {showLeaderboard && (
         <div className="vintage-modal-overlay" onClick={() => setShowLeaderboard(false)}>
-          <div className="vintage-wood-card golden-honor-card" onClick={(e) => e.stopPropagation()}>
+          <div className="vintage-wood-card golden-honor-card" role="dialog" aria-modal="true" aria-labelledby="modal-title-leaderboard" onClick={(e) => e.stopPropagation()}>
             <header className="honor-header">
               <span className="honor-medal">🏆</span>
-              <h3>BẢNG VÀNG THÀNH TÍCH</h3>
+              <h3 id="modal-title-leaderboard">BẢNG VÀNG THÀNH TÍCH</h3>
               <p>Những tiệm tạp hóa buôn may bán đắt nhất phố</p>
             </header>
 
@@ -1128,10 +1142,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
             if (selectedWorldDetail) onEnter(selectedWorldDetail);
           }}
         >
-          <div className="vintage-wood-card ledger-card" onClick={(e) => e.stopPropagation()}>
+          <div className="vintage-wood-card ledger-card" role="dialog" aria-modal="true" aria-labelledby="modal-title-absence" onClick={(e) => e.stopPropagation()}>
             <header className="ledger-header">
               <span className="ledger-quill">📜</span>
-              <h3>NHẬT KÝ TRONG LÚC BẠN VẮNG</h3>
+              <h3 id="modal-title-absence">NHẬT KÝ TRONG LÚC BẠN VẮNG</h3>
               <p>Bạn đồng hành trong hẻm đã thực hiện các giao dịch sau:</p>
             </header>
 

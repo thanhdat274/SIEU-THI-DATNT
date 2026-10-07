@@ -27,7 +27,7 @@ export const TimeVoteModal: React.FC<TimeVoteModalProps> = ({
   return (
     <PixelDialog
       icon="clock"
-      title="BÌNH CHỌN THỜI GIAN HẺM"
+      title="Bình chọn thời gian hẻm"
       subtitle={`Yêu cầu hết hạn sau ${remainingSeconds} giây`}
       onClose={onCancel}
       footer={
@@ -56,6 +56,7 @@ export const TimeVoteModal: React.FC<TimeVoteModalProps> = ({
           )}
         </p>
         <div
+          className="timevote-box"
           style={{
             background: '#f5ecd7',
             padding: '10px',
@@ -67,7 +68,7 @@ export const TimeVoteModal: React.FC<TimeVoteModalProps> = ({
           <div>
             Số người đã đồng ý: <strong>{vote.approvalsCount} / {vote.totalRequired}</strong>
           </div>
-          <div style={{ fontSize: '11px', color: '#7a5a41', marginTop: '4px' }}>
+          <div className="timevote-note" style={{ fontSize: '11px', color: '#7a5a41', marginTop: '4px' }}>
             * Cả hai người phải cùng đồng ý trong 30 giây để xác nhận. Nếu một người rời hẻm hoặc hết giờ, yêu cầu sẽ tự động hủy.
           </div>
         </div>

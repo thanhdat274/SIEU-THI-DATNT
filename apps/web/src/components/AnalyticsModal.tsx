@@ -38,15 +38,20 @@ const PriceSalesChart: React.FC<{ productId: string } & Pick<Props, 'day' | 'rec
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Doanh số và giá ${PRODUCT_MAP[productId]?.name ?? productId} ${RANGE} ngày gần nhất`} style={{ width: '100%', maxWidth: W }}>
       {points.map((p, i) => p.units === null
         ? <text key={p.day} x={x(i)} y={H - PAD - 4} textAnchor="middle" fontSize="10" fill="currentColor" opacity="0.5">—</text>
-        : <rect key={p.day} x={x(i) - step * 0.3} width={step * 0.6} y={H - PAD - (H - PAD * 2) * (p.units / maxUnits)} height={(H - PAD * 2) * (p.units / maxUnits)} fill="#357f72"><title>{`Ngày ${p.day}: bán ${p.units}`}</title></rect>)}
-      {segments.map((seg, i) => <polyline key={i} points={seg} fill="none" stroke="#b64c3d" strokeWidth="2" />)}
-      {points.map((p, i) => p.price !== null && <circle key={`pt${p.day}`} cx={x(i)} cy={yPrice(p.price)} r="3" fill="#b64c3d"><title>{`Ngày ${p.day}: giá ${p.price.toLocaleString('vi-VN')}`}</title></circle>)}
+        : <rect key={p.day} x={x(i) - step * 0.3} width={step * 0.6} y={H - PAD - (H - PAD * 2) * (p.units / maxUnits)} height={(H - PAD * 2) * (p.units / maxUnits)} fill="var(--teal)"><title>{`Ngày ${p.day}: bán ${p.units}`}</title></rect>)}
+      {segments.map((seg, i) => <polyline key={i} points={seg} fill="none" stroke="var(--brick)" strokeWidth="2" />)}
+      {points.map((p, i) => p.price !== null && <circle key={`pt${p.day}`} cx={x(i)} cy={yPrice(p.price)} r="3" fill="var(--brick)"><title>{`Ngày ${p.day}: giá ${p.price.toLocaleString('vi-VN')}`}</title></circle>)}
       {points.map((p, i) => (i % 2 === 0) && <text key={`d${p.day}`} x={x(i)} y={H - 8} textAnchor="middle" fontSize="10" fill="currentColor">{p.day}</text>)}
-      <text x={PAD} y={12} fontSize="10" fill="#357f72">Cột: số bán/ngày (tối đa {maxUnits})</text>
-      {prices.length > 0 && <text x={W - PAD} y={12} fontSize="10" textAnchor="end" fill="#b64c3d">Đường: giá chốt ngày ({minPrice.toLocaleString('vi-VN')}–{maxPrice.toLocaleString('vi-VN')})</text>}
     </svg>
-    {prices.length === 0 && <p className="muted">Chưa có điểm giá được lưu trong {RANGE} ngày này; giá chỉ được ghi từ khi đóng ngày. Giá hiện tại không được dùng thay cho lịch sử.</p>}
-    {points.some(p => p.units === null) && <p className="muted">Dấu — là ngày không có bản ghi doanh số (thiếu dữ liệu, không phải 0).</p>}
+    {/* D07: nhãn + legend dời ra khỏi SVG để không bị co giãn theo viewBox xuống dưới floor đọc trên
+        nền hẹp; dùng text HTML hệ responsive font. Chỉ presentation, không đổi dữ liệu. */}
+    <p className="muted" style={{ margin: '4px 0 0', fontSize: 12 }}>
+      {maxUnits > 1 && <>Cột: số bán/ngày (tối đa {maxUnits}). </>}
+      {prices.length > 0
+        ? <>Đường: giá chốt ngày ({minPrice.toLocaleString('vi-VN')}–{maxPrice.toLocaleString('vi-VN')}). </>
+        : <>Chưa có điểm giá được lưu trong {RANGE} ngày này; giá chỉ được ghi từ khi đóng ngày. </>}
+      {points.some(p => p.units === null) ? 'Dấu — là ngày không có bản ghi doanh số (thiếu dữ liệu, không phải 0).' : null}
+    </p>
   </div>;
 };
 
@@ -64,6 +69,9 @@ const Heatmap: React.FC<{ counts: Record<string, number>; buildings?: readonly M
   }
   return <div>
     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, maxWidth: 480 }}>{cells}</div>
+    {Object.keys(counts).length > 0 && (
+      <p className="muted" style={{ margin: '6px 0 0', fontSize: 11 }}>Màu đậm = nhiều lượt hơn · ô cao nhất: {max} lượt. Chạm/lướt ô để xem số cụ thể.</p>
+    )}
     {Object.keys(counts).length === 0 && <p className="muted">Chưa có lượt khách nào được ghi trong khoảng này.</p>}
   </div>;
 };
@@ -80,7 +88,7 @@ export const AnalyticsModal: React.FC<Props> = ({ day, records, getPriceHistory,
   const [productId, setProductId] = useState('');
   const selected = options.some(p => p.id === productId) ? productId : options[0]?.id ?? '';
   return <PixelDialog title="Phân tích tiệm" subtitle="Dữ liệu đã lưu, chỉ xem — không ảnh hưởng gameplay" icon="book" onClose={onClose}>
-    <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+    <div className="feature-tabs" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
       <PixelButton variant={tab === 'sales' ? 'teal' : 'wood'} onClick={() => setTab('sales')}>Giá & doanh số</PixelButton>
       <PixelButton variant={tab === 'heat' ? 'teal' : 'wood'} onClick={() => setTab('heat')}>Lưu lượng khách</PixelButton>
     </div>

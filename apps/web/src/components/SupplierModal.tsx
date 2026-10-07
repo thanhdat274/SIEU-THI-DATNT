@@ -405,38 +405,106 @@ export const SupplierModal: React.FC<Props> = ({
     ? 'Vượt dung lượng kho mát'
     : `Đặt hàng · ${money(cartTotal)}`;
 
+  const cartBar = (
+      <section
+        className={cartHasItems ? 'cart-bar' : 'cart-bar cart-bar-empty'}
+        style={{
+          position: 'sticky',
+          bottom: 0,
+          background: 'var(--paper)',
+          border: '2px solid var(--teal)',
+          borderRadius: '4px',
+          marginTop: '16px',
+          padding: '8px 12px',
+          zIndex: 10,
+        }}
+        aria-label="Giỏ đặt hàng"
+      >
+        {cartHasItems ? (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', gap: '6px' }}>
+              <strong style={{ color: 'var(--teal-dark)', fontSize: '13px' }}>
+                🛒 Giỏ đặt hàng · {cartItems.length} loại · {cartItems.reduce((s, it) => s + it.qty, 0)} đơn vị
+              </strong>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <PixelButton
+                  variant="paper"
+                  onClick={() => setCartDetailOpen((open) => !open)}
+                  style={{ fontSize: '11px', padding: '4px 8px' }}
+                  aria-expanded={cartDetailOpen}
+                  aria-label={cartDetailOpen ? 'Ẩn chi tiết giỏ' : 'Xem chi tiết giỏ'}
+                >
+                  {cartDetailOpen ? 'Ẩn chi tiết ▾' : 'Chi tiết ▸'}
+                </PixelButton>
+                <PixelButton
+                  variant="paper"
+                  onClick={clearCart}
+                  style={{ fontSize: '11px', padding: '4px 8px' }}
+                  aria-label="Xóa giỏ hàng"
+                >
+                  Xóa giỏ
+                </PixelButton>
+              </div>
+            </div>
+            {cartDetailOpen && (
+              <div style={{ fontSize: '11px', color: 'var(--ink-light)', maxHeight: '96px', overflowY: 'auto', marginBottom: '6px', lineHeight: 1.4 }}>
+                {cartItems.map((it) => `${it.product.name} ×${it.packs} ${it.product.caseSize ? 'thùng' : 'món'} (${it.qty} món)`).join(' · ')}
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', borderTop: '1px solid var(--wood-light)', paddingTop: '8px' }}>
+              <div>
+                <strong style={{ fontSize: '15px' }}>Tổng: {money(cartTotal)}</strong>
+                {cartColdUnits > 0 && (
+                  <span style={{ fontSize: '11px', marginLeft: '8px', color: 'var(--ink-light)' }}>
+                    (Hàng lạnh: {cartColdUnits} món)
+                  </span>
+                )}
+                {!cartBudgetOk && (
+                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--brick)' }}>
+                    Thiếu {money(cartTotal - player.money)}
+                  </span>
+                )}
+                {!cartMinOrderMet && cartBudgetOk && (
+                  <span style={{ display: 'block', fontSize: '11px', color: '#856404' }}>
+                    Chưa đạt đơn tối thiểu {money(currentSupplier.minOrderValue ?? 0)}
+                  </span>
+                )}
+                {!cartColdOk && cartColdUnits > 0 && (
+                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--brick)' }}>
+                    Vượt sức chứa kho mát ({cartColdUnits}/{availableCold})
+                  </span>
+                )}
+              </div>
+              <PixelButton
+                variant="teal"
+                disabled={!cartBudgetOk || !cartMinOrderMet || !cartColdOk}
+                onClick={handlePlaceCartOrder}
+                aria-label="Xác nhận đặt toàn bộ giỏ hàng"
+                style={{ fontSize: '14px', padding: '10px 20px', fontWeight: 700 }}
+              >
+                {cartOrderLabel}
+              </PixelButton>
+            </div>
+          </>
+        ) : (
+          <p className="muted" style={{ margin: 0, textAlign: 'center', padding: '4px 0' }}>
+            🛒 Giỏ trống — bấm <strong>+</strong> vào sản phẩm để thêm vào giỏ, rồi đặt một lần
+          </p>
+        )}
+      </section>
+  );
+
   return (
     <PixelDialog
       title={currentSupplier.name}
       subtitle={currentSupplier.description}
       icon="truck"
       onClose={onClose}
+      footer={cartBar}
     >
-      {/* Auto Buy Panel */}
-      <details className="auto-buy-panel" style={{ marginBottom: 14, padding: 12, border: '2px solid var(--teal)', background: 'var(--paper-light)' }} aria-label="Tự nhập hàng" open={autoBuyConfig.enabled || !!autoBuyConfig.stalls || autoBuyConfig.rules.length > 0}>
-        <summary style={{ cursor: 'pointer', fontWeight: 700, marginBottom: 8 }}>Tự nhập hàng · {autoBuyConfig.enabled ? 'đang bật' : 'đang tắt'} · {autoBuyConfig.rules.length} quy tắc</summary>
-        <label style={{ display: 'block', margin: '0 0 8px', fontSize: 12 }} title="Mỗi sáng nếu kho thiếu nguyên liệu cho quầy cà phê/bánh mì đã mở, game tự chọn đại lý, đặt đủ ~3 ngày và trừ tiền (vẫn chừa lương/thuế; thiếu tiền thì mua phần làm được)">
-          <input type="checkbox" checked={!!autoBuyConfig.stalls} disabled={!onToggleAutoBuyStalls} onChange={(e) => onToggleAutoBuyStalls?.(e.target.checked)} /> Tự nhập nguyên liệu cho quầy ăn uống mỗi sáng
-        </label>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div><strong>Tự nhập hàng</strong><p className="muted" style={{ margin: '4px 0 0' }}>Tự đặt mua theo tồn kho mỗi sáng. Chức năng này đang {autoBuyConfig.enabled ? 'bật' : 'tắt'}; khác với nhân viên bày hàng từ kho.</p></div>
-          <PixelButton variant={autoBuyConfig.enabled ? 'brick' : 'teal'} disabled={!onUpdateAutoBuy} onClick={() => onUpdateAutoBuy?.(!autoBuyConfig.enabled, autoBuyConfig.rules)}>{autoBuyConfig.enabled ? 'Tắt tự nhập' : 'Bật tự nhập'}</PixelButton>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: 8, marginTop: 12 }}>
-          <label>Mặt hàng<select value={autoProductId} onChange={(e) => setAutoProductId(e.target.value)}>{ALL_PRODUCTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
-          <label>Nhà cung cấp<select value={autoSupplierId} onChange={(e) => setAutoSupplierId(e.target.value)}>{SUPPLIERS.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
-          <label>Mua khi tồn ≤<input type="number" min={0} value={autoThreshold} onChange={(e) => setAutoThreshold(Math.max(0, Number(e.target.value)))} /></label>
-          <label>Số lượng mua<input type="number" min={1} value={autoQuantity} onChange={(e) => setAutoQuantity(Math.max(1, Number(e.target.value)))} /></label>
-          <label>Ngân sách quy tắc<input type="number" min={1} value={autoBudget} onChange={(e) => setAutoBudget(Math.max(1, Number(e.target.value)))} /></label>
-          <label>Ưu tiên (số nhỏ trước)<input type="number" min={0} value={autoPriority} onChange={(e) => setAutoPriority(Math.max(0, Number(e.target.value)))} /></label>
-        </div>
-        <PixelButton variant="wood" disabled={!onUpdateAutoBuy} onClick={() => onUpdateAutoBuy?.(autoBuyConfig.enabled, [...autoBuyConfig.rules, { id: `auto-${autoProductId}-${Date.now()}`, productId: autoProductId, threshold: autoThreshold, quantity: autoQuantity, supplierId: autoSupplierId, priority: autoPriority, maxBudget: autoBudget }])}>Thêm quy tắc</PixelButton>
-        {autoBuyConfig.rules.map((rule) => <div className="pending-item" key={rule.id} style={{ marginTop: 6 }}><span>Ưu tiên {rule.priority}: {PRODUCT_MAP[rule.productId]?.name ?? rule.productId}, tồn ≤ {rule.threshold}, mua {rule.quantity}, tối đa {money(rule.maxBudget)} ({SUPPLIER_MAP[rule.supplierId]?.name ?? rule.supplierId})</span><PixelButton variant="brick" onClick={() => onUpdateAutoBuy?.(autoBuyConfig.enabled, autoBuyConfig.rules.filter((item) => item.id !== rule.id))}>Xóa</PixelButton></div>)}
-        {Object.values(autoBuyConfig.reports).sort((a, b) => b.day - a.day).slice(0, 3).map((report) => <p className="muted" key={report.day}>Ngày {report.day}: đã đặt {report.placed.length} dòng ({money(report.placed.reduce((n, item) => n + item.paidTotal, 0))}); bỏ qua {report.skipped.map((item) => item.reason).join(' · ') || 'không có'}.</p>)}
-      </details>
-
+      <div className="supplier-head">
       {/* Supplier Selection Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+      <div className="feature-scroll-tabs" style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
         {SUPPLIERS.map((sup) => {
           const locked = sup.unlockLevel > player.level;
           const closed = !locked && sup.delayDays === 0 && currentHour !== undefined && currentHour >= SAME_DAY_SUPPLIER_CUTOFF_HOUR;
@@ -459,9 +527,9 @@ export const SupplierModal: React.FC<Props> = ({
         })}
       </div>
 
-      <div className="summary-row">
+      <div className="summary-row supplier-summary">
         <PixelStat label="Tiền vốn hiện có" value={money(player.money)} icon="coin" />
-        <div>
+        <div className="supplier-info">
           <strong>
             {board
               ? (board.deliveryDay <= currentDay ? 'Giao hàng ngay hôm nay' : `Giao sáng ngày ${board.deliveryDay} (${board.deliveryWeekday})`)
@@ -485,15 +553,24 @@ export const SupplierModal: React.FC<Props> = ({
           ) : null}
         </div>
       </div>
+      </div>
 
-      {/* Suggest Restock Button */}
+      <div className="supplier-tools">
+      {/* Suggest Restock Button — nén gọn thành accordion trên mobile (Pattern D), desktop vẫn mở sẵn */}
       {onGetSuggestions && (
+        <details
+          className="feature-suggest-detail"
+          open={typeof document !== 'undefined' ? document.documentElement.dataset.density !== 'compact' : true}
+          title="Tính hộ số lượng cần nhập theo tồn kho"
+        >
+          <summary className="feature-suggest-summary">💡 Gợi ý thông minh · đặt hộ theo tồn kho</summary>
         <div
+          className="feature-suggest"
           style={{
             background: 'var(--paper-light)',
             border: '2px solid var(--wood-light)',
             padding: '10px 14px',
-            marginBottom: '14px',
+            marginBottom: '0',
             borderRadius: '4px',
             display: 'flex',
             alignItems: 'center',
@@ -543,7 +620,36 @@ export const SupplierModal: React.FC<Props> = ({
             Gợi ý nhập hàng
           </PixelButton>
         </div>
+        </details>
       )}
+
+      {/* Auto Buy Panel */}
+      <details className="auto-buy-panel" style={{ marginBottom: 14, padding: 12, border: '2px solid var(--teal)', background: 'var(--paper-light)' }} aria-label="Tự nhập hàng"
+        open={typeof document !== 'undefined' && document.documentElement.dataset.density === 'compact'
+          ? false
+          : (autoBuyConfig.enabled || !!autoBuyConfig.stalls || autoBuyConfig.rules.length > 0)}>
+        <summary style={{ cursor: 'pointer', fontWeight: 700, marginBottom: 8 }}>Tự nhập hàng · {autoBuyConfig.enabled ? 'đang bật' : 'đang tắt'} · {autoBuyConfig.rules.length} quy tắc</summary>
+        <label style={{ display: 'block', margin: '0 0 8px', fontSize: 12 }} title="Mỗi sáng nếu kho thiếu nguyên liệu cho quầy cà phê/bánh mì đã mở, game tự chọn đại lý, đặt đủ ~3 ngày và trừ tiền (vẫn chừa lương/thuế; thiếu tiền thì mua phần làm được)">
+          <input type="checkbox" checked={!!autoBuyConfig.stalls} disabled={!onToggleAutoBuyStalls} onChange={(e) => onToggleAutoBuyStalls?.(e.target.checked)} /> Tự nhập nguyên liệu cho quầy ăn uống mỗi sáng
+        </label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div><strong>Tự nhập hàng</strong><p className="muted" style={{ margin: '4px 0 0' }}>Tự đặt mua theo tồn kho mỗi sáng. Chức năng này đang {autoBuyConfig.enabled ? 'bật' : 'tắt'}; khác với nhân viên bày hàng từ kho.</p></div>
+          <PixelButton variant={autoBuyConfig.enabled ? 'brick' : 'teal'} disabled={!onUpdateAutoBuy} onClick={() => onUpdateAutoBuy?.(!autoBuyConfig.enabled, autoBuyConfig.rules)}>{autoBuyConfig.enabled ? 'Tắt tự nhập' : 'Bật tự nhập'}</PixelButton>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: 8, marginTop: 12 }}>
+          <label>Mặt hàng<select value={autoProductId} onChange={(e) => setAutoProductId(e.target.value)}>{ALL_PRODUCTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+          <label>Nhà cung cấp<select value={autoSupplierId} onChange={(e) => setAutoSupplierId(e.target.value)}>{SUPPLIERS.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+          <label>Mua khi tồn ≤<input type="number" min={0} value={autoThreshold} onChange={(e) => setAutoThreshold(Math.max(0, Number(e.target.value)))} /></label>
+          <label>Số lượng mua<input type="number" min={1} value={autoQuantity} onChange={(e) => setAutoQuantity(Math.max(1, Number(e.target.value)))} /></label>
+          <label>Ngân sách quy tắc<input type="number" min={1} value={autoBudget} onChange={(e) => setAutoBudget(Math.max(1, Number(e.target.value)))} /></label>
+          <label>Ưu tiên (số nhỏ trước)<input type="number" min={0} value={autoPriority} onChange={(e) => setAutoPriority(Math.max(0, Number(e.target.value)))} /></label>
+        </div>
+        <PixelButton variant="wood" disabled={!onUpdateAutoBuy} onClick={() => onUpdateAutoBuy?.(autoBuyConfig.enabled, [...autoBuyConfig.rules, { id: `auto-${autoProductId}-${Date.now()}`, productId: autoProductId, threshold: autoThreshold, quantity: autoQuantity, supplierId: autoSupplierId, priority: autoPriority, maxBudget: autoBudget }])}>Thêm quy tắc</PixelButton>
+        {autoBuyConfig.rules.map((rule) => <div className="pending-item" key={rule.id} style={{ marginTop: 6 }}><span>Ưu tiên {rule.priority}: {PRODUCT_MAP[rule.productId]?.name ?? rule.productId}, tồn ≤ {rule.threshold}, mua {rule.quantity}, tối đa {money(rule.maxBudget)} ({SUPPLIER_MAP[rule.supplierId]?.name ?? rule.supplierId})</span><PixelButton variant="brick" onClick={() => onUpdateAutoBuy?.(autoBuyConfig.enabled, autoBuyConfig.rules.filter((item) => item.id !== rule.id))}>Xóa</PixelButton></div>)}
+        {Object.values(autoBuyConfig.reports).sort((a, b) => b.day - a.day).slice(0, 3).map((report) => <p className="muted" key={report.day}>Ngày {report.day}: đã đặt {report.placed.length} dòng ({money(report.placed.reduce((n, item) => n + item.paidTotal, 0))}); bỏ qua {report.skipped.map((item) => item.reason).join(' · ') || 'không có'}.</p>)}
+      </details>
+
+      </div>
 
       {/* Suggested Cart Review Drawer — chỉ hiển thị giải thích, không có nút đặt riêng nữa */}
       {suggestedCart && (
@@ -673,10 +779,10 @@ export const SupplierModal: React.FC<Props> = ({
       )}
 
       {/* Tìm kiếm + Bộ lọc danh mục dạng nút nhanh */}
-      <div style={{ marginBottom: '14px' }}>
+      <div className="supplier-filter" style={{ marginBottom: '14px' }}>
         {/* Ô tìm kiếm */}
         <input
-          type="search"
+          type="search" className="supplier-search"
           placeholder="🔍 Tìm theo tên hoặc mã..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -693,11 +799,12 @@ export const SupplierModal: React.FC<Props> = ({
         />
 
         {/* Nút phân loại nhanh */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        <div className="supplier-cats" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
           {/* Nút "Tất cả" */}
           <button
             type="button"
             onClick={() => setCategory('all')}
+            aria-pressed={category === 'all'}
             style={{
               padding: '5px 12px',
               fontSize: '12px',
@@ -742,6 +849,7 @@ export const SupplierModal: React.FC<Props> = ({
                 key={id}
                 type="button"
                 onClick={() => setCategory(isActive ? 'all' : id)}
+                aria-pressed={isActive}
                 title={`${name} · ${count} sản phẩm`}
                 style={{
                   padding: '5px 10px',
@@ -798,93 +906,6 @@ export const SupplierModal: React.FC<Props> = ({
           );
         })
       )}
-
-      {/* ===== GIỎ HÀNG & NÚT ĐẶT HÀNG DUY NHẤT ===== */}
-      <section
-        style={{
-          position: 'sticky',
-          bottom: 0,
-          background: 'var(--paper)',
-          border: '2px solid var(--teal)',
-          borderRadius: '4px',
-          marginTop: '16px',
-          padding: '8px 12px',
-          zIndex: 10,
-        }}
-        aria-label="Giỏ đặt hàng"
-      >
-        {cartHasItems ? (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', gap: '6px' }}>
-              <strong style={{ color: 'var(--teal-dark)', fontSize: '13px' }}>
-                🛒 Giỏ đặt hàng · {cartItems.length} loại · {cartItems.reduce((s, it) => s + it.qty, 0)} đơn vị
-              </strong>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <PixelButton
-                  variant="paper"
-                  onClick={() => setCartDetailOpen((open) => !open)}
-                  style={{ fontSize: '11px', padding: '4px 8px' }}
-                  aria-expanded={cartDetailOpen}
-                  aria-label={cartDetailOpen ? 'Ẩn chi tiết giỏ' : 'Xem chi tiết giỏ'}
-                >
-                  {cartDetailOpen ? 'Ẩn chi tiết ▾' : 'Chi tiết ▸'}
-                </PixelButton>
-                <PixelButton
-                  variant="paper"
-                  onClick={clearCart}
-                  style={{ fontSize: '11px', padding: '4px 8px' }}
-                  aria-label="Xóa giỏ hàng"
-                >
-                  Xóa giỏ
-                </PixelButton>
-              </div>
-            </div>
-            {cartDetailOpen && (
-              <div style={{ fontSize: '11px', color: 'var(--ink-light)', maxHeight: '96px', overflowY: 'auto', marginBottom: '6px', lineHeight: 1.4 }}>
-                {cartItems.map((it) => `${it.product.name} ×${it.packs} ${it.product.caseSize ? 'thùng' : 'món'} (${it.qty} món)`).join(' · ')}
-              </div>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', borderTop: '1px solid var(--wood-light)', paddingTop: '8px' }}>
-              <div>
-                <strong style={{ fontSize: '15px' }}>Tổng: {money(cartTotal)}</strong>
-                {cartColdUnits > 0 && (
-                  <span style={{ fontSize: '11px', marginLeft: '8px', color: 'var(--ink-light)' }}>
-                    (Hàng lạnh: {cartColdUnits} món)
-                  </span>
-                )}
-                {!cartBudgetOk && (
-                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--brick)' }}>
-                    Thiếu {money(cartTotal - player.money)}
-                  </span>
-                )}
-                {!cartMinOrderMet && cartBudgetOk && (
-                  <span style={{ display: 'block', fontSize: '11px', color: '#856404' }}>
-                    Chưa đạt đơn tối thiểu {money(currentSupplier.minOrderValue ?? 0)}
-                  </span>
-                )}
-                {!cartColdOk && cartColdUnits > 0 && (
-                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--brick)' }}>
-                    Vượt sức chứa kho mát ({cartColdUnits}/{availableCold})
-                  </span>
-                )}
-              </div>
-              <PixelButton
-                variant="teal"
-                disabled={!cartBudgetOk || !cartMinOrderMet || !cartColdOk}
-                onClick={handlePlaceCartOrder}
-                aria-label="Xác nhận đặt toàn bộ giỏ hàng"
-                style={{ fontSize: '14px', padding: '10px 20px', fontWeight: 700 }}
-              >
-                {cartOrderLabel}
-              </PixelButton>
-            </div>
-          </>
-        ) : (
-          <p className="muted" style={{ margin: 0, textAlign: 'center', padding: '4px 0' }}>
-            🛒 Giỏ trống — bấm <strong>+</strong> vào sản phẩm để thêm vào giỏ, rồi đặt một lần
-          </p>
-        )}
-      </section>
 
       {/* Đơn hàng đang giao */}
       <section className="pending-orders" style={{ marginTop: '16px' }}>

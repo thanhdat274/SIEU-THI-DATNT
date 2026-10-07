@@ -348,12 +348,13 @@ export const StorePlanogramModal: React.FC<Props> = ({
             <input
               type="text"
               placeholder="🔍 Tìm món hoặc tên kệ..."
+              aria-label="Tìm món hoặc tên kệ"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="planogram-search-input"
             />
             {searchQuery && (
-              <button type="button" className="search-clear-btn" onClick={() => setSearchQuery('')}>✕</button>
+              <button type="button" className="search-clear-btn" aria-label="Xoá tìm kiếm" onClick={() => setSearchQuery('')}>✕</button>
             )}
           </div>
         </div>

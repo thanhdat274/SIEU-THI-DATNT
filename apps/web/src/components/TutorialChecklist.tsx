@@ -26,8 +26,8 @@ export const TutorialChecklist: React.FC<{ items: TutorialItem[] }> = ({ items }
     return <button type="button" className="tutorial-chip" onClick={() => { setHidden(false); writeHidden(false); }} aria-label="Hiện checklist hướng dẫn" style={anchor}>Hướng dẫn ({remaining.length})</button>;
   }
   const next = remaining[0];
-  const box: React.CSSProperties = { ...anchor, width: 'min(200px, calc(100vw - 16px))', padding: 8, background: 'var(--paper, #f3e8d3)', border: '2px solid var(--wood-dark, #5a3b24)', color: 'var(--ink, #2b2118)', fontSize: 13, opacity: 0.96 };
-  return <aside aria-label="Checklist hướng dẫn" style={box}>
+  const box: React.CSSProperties = { ...anchor, width: 'min(200px, calc(100vw - 16px))', padding: 8, background: 'var(--paper, #f3e8d3)', border: '2px solid var(--wood-dark, #5a3b24)', color: 'var(--ink, #2b2118)', fontSize: 'var(--fs-sm, 0.8rem)', opacity: 0.96 };
+  return <aside aria-label="Checklist hướng dẫn" className="tutorial-checklist" style={box}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
       <button type="button" onClick={() => setExpanded(e => !e)} aria-expanded={expanded} style={{ flex: 1, textAlign: 'left', background: 'none', border: 0, padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer' }}>
         <strong>Hướng dẫn ({doneCount}/{items.length}) {expanded ? '▾' : '▸'}</strong>

@@ -122,12 +122,44 @@ export const CashierModal: React.FC<Props> = ({
     />;
   }
 
+  // Đợt 14D — Cashier action-first: khi đang bán (tab quầy + có khách), đưa action chính “Thu tiền”
+  // vào sticky footer để luôn dễ chạm khi cuộn; không đổi bất kỳ logic thu ngân.
+  // UI-AUDIT B05: giữ footer (và nút “Thu tiền” disabled + hint) khi có khách nhưng cửa đóng —
+  // trước kia footer ẩn hẳn → mất nút thu tiền, khó hiểu. Không đổi luồng tiền.
+  const checkoutFooter = activeTab === 'checkout' && activeCustomer ? (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', flex: 1 }}>
+      <PixelButton variant="teal" disabled={!worldTime.isStoreOpen} title={!worldTime.isStoreOpen ? 'Cửa đang đóng — mở cửa để thu tiền' : undefined} onClick={() => onCheckout(activeCustomer.targetFixtureId, activeCustomer.checkoutId)} aria-label={`Thu tiền ${money(totalBill)}`}>
+        Thu tiền {money(totalBill)}
+      </PixelButton>
+      {worldTime.isStoreOpen && activeCustomer.regularId && creditTerms?.(activeCustomer.regularId).eligible && (
+        <PixelButton
+          variant="wood"
+          disabled={totalBill > creditTerms(activeCustomer.regularId).available}
+          title={totalBill > creditTerms(activeCustomer.regularId).available ? `Vượt hạn mức mua chịu (còn ${money(creditTerms(activeCustomer.regularId).available)})` : undefined}
+          onClick={() => onCheckout(activeCustomer.targetFixtureId, activeCustomer.checkoutId, true)}
+          aria-label={`Bán chịu ${money(totalBill)}`}
+        >
+          Bán chịu
+        </PixelButton>
+      )}
+      {worldTime.isStoreOpen && canDineIn?.(activeCustomer) && (
+        <PixelButton variant="wood" onClick={() => onCheckout(activeCustomer.targetFixtureId, activeCustomer.checkoutId, false, true)} aria-label="Thanh toán và ăn tại bàn">
+          Ăn tại bàn
+        </PixelButton>
+      )}
+      {!worldTime.isStoreOpen && (
+        <span className="muted" style={{ fontSize: 11 }}>Cửa đang đóng — mở cửa để thu tiền.</span>
+      )}
+    </div>
+  ) : undefined;
+
   return (
     <PixelDialog
       title="Sổ bán hàng của Cô Năm"
       subtitle="Từng món bán đi, từng niềm vui ở lại"
       icon="book"
       onClose={onClose}
+      footer={checkoutFooter}
     >
       <div className="summary-row">
         <PixelStat label="Tiền trong hòm" value={money(player.money)} icon="coin" />
@@ -135,7 +167,7 @@ export const CashierModal: React.FC<Props> = ({
         <PixelStat label="Cấp cửa tiệm" value={player.level} icon="star" />
       </div>
 
-      <div style={{ display: 'flex', gap: 8, margin: '12px 0 16px 0', borderBottom: '2px solid #583c28', paddingBottom: 8 }}>
+      <div className="feature-tabs" style={{ display: 'flex', gap: 8, margin: '12px 0 16px 0', borderBottom: '2px solid #583c28', paddingBottom: 8 }}>
         <PixelButton
           variant={activeTab === 'checkout' ? 'wood' : 'paper'}
           icon="bag"
@@ -190,7 +222,7 @@ export const CashierModal: React.FC<Props> = ({
                       Số lượng: {item.quantity} · Đơn giá: {money(item.unitPrice)}
                     </p>
                   </div>
-                  <span style={{ fontWeight: 'bold', color: '#2a7a43' }}>
+                  <span style={{ fontWeight: 'bold', color: 'var(--success)' }}>
                     {money(item.quantity * item.unitPrice)}
                   </span>
                 </div>
@@ -206,23 +238,8 @@ export const CashierModal: React.FC<Props> = ({
                   borderTop: '1px dashed #d1c4b2',
                 }}
               >
-                <div>
-                  <span className="muted">Tổng hóa đơn: </span>
-                  <strong style={{ fontSize: 16, color: '#b64c3d' }}>{money(totalBill)}</strong>
-                </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                  <PixelButton variant="teal" disabled={!worldTime.isStoreOpen} onClick={() => onCheckout(activeCustomer.targetFixtureId, activeCustomer.checkoutId)} aria-label={`Thu tiền ${money(totalBill)}`}>
-                    Thu tiền {money(totalBill)}
-                  </PixelButton>
-                  {activeCustomer.regularId && creditTerms?.(activeCustomer.regularId).eligible && (
-                    <PixelButton variant="wood" disabled={!worldTime.isStoreOpen || totalBill > creditTerms(activeCustomer.regularId).available} onClick={() => onCheckout(activeCustomer.targetFixtureId, activeCustomer.checkoutId, true)} aria-label={`Bán chịu ${money(totalBill)}`}>
-                      Bán chịu {money(totalBill)}
-                    </PixelButton>
-                  )}
-                  {canDineIn?.(activeCustomer) && <PixelButton variant="wood" disabled={!worldTime.isStoreOpen} onClick={() => onCheckout(activeCustomer.targetFixtureId, activeCustomer.checkoutId, false, true)} aria-label={`Thanh toán và ăn tại bàn ${money(totalBill)}`}>
-                    Ăn tại bàn {money(totalBill)}
-                  </PixelButton>}
-                </div>
+                <span className="muted">Tổng hóa đơn: </span>
+                <strong style={{ fontSize: 16, color: '#b64c3d' }}>{money(totalBill)}</strong>
               </div>
             </div>
           ) : (
@@ -275,7 +292,7 @@ export const CashierModal: React.FC<Props> = ({
               <div className="summary-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }} aria-label="Doanh thu năm">
                 <strong>Doanh thu năm {annual.year}: {money(annual.revenue)}</strong>
                 <div className="pixel-progress"><span style={{ width: `${Math.min(100, Math.round(annual.progress * 100))}%` }} /></div>
-                <p className="muted" style={{ margin: 0 }}>
+                <p className="muted cashier-annual-prose" style={{ margin: 0 }}>
                   {annual.taxActive
                     ? `Đang chịu thuế GTGT + TNCN — thuế ước tính: ${money(annual.estimatedTax)} (đã khấu trừ: ${money(annual.taxPaidYear)})`
                     : `Chưa vượt ngưỡng miễn thuế ${money(annual.threshold)}/năm. Vượt ngưỡng sẽ nộp GTGT ${annual.policy.vatRate * 100}% + TNCN ${annual.policy.pitRate * 100}%.`}
@@ -284,13 +301,13 @@ export const CashierModal: React.FC<Props> = ({
             );
           })()}
           {/* Current day live report */}
-          <div style={{ background: '#f5efe6', padding: 12, borderRadius: 4, border: '1px solid #d1c4b2' }}>
+          <div className="day-report-panel" style={{ background: '#f5efe6', padding: 12, borderRadius: 4, border: '1px solid #d1c4b2' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <h3 style={{ margin: 0, color: '#4a2e18' }}>Báo cáo hôm nay (Ngày {worldTime.day})</h3>
               <span className="muted">Đang mở sổ</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8, marginBottom: 12 }}>
+            <div className="feature-kpis" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8, marginBottom: 12 }}>
               <PixelStat label="Số khách" value={`${todayChannels?.totalCustomers ?? 0} người`} icon="person" />
               <PixelStat label="Giao dịch" value={`${todayChannels?.totalTransactions ?? 0} lượt`} icon="book" />
               <PixelStat label="Món đã bán" value={`${currentDayRecord?.itemsSold ?? 0} cái`} icon="bag" />
@@ -321,7 +338,7 @@ export const CashierModal: React.FC<Props> = ({
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #d1c4b2', paddingTop: 4 }}>
                 <strong>Lợi nhuận gộp:</strong>
-                <strong style={{ color: (currentDayRecord?.grossProfit ?? 0) >= 0 ? '#2a7a43' : '#b64c3d' }}>
+                <strong style={{ color: (currentDayRecord?.grossProfit ?? 0) >= 0 ? 'var(--success)' : '#b64c3d' }}>
                   {money(currentDayRecord?.grossProfit ?? 0)}
                 </strong>
               </div>
@@ -335,7 +352,7 @@ export const CashierModal: React.FC<Props> = ({
               </div>}
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px double #583c28', paddingTop: 4, fontWeight: 'bold' }}>
                 <span>Lợi nhuận ròng:</span>
-                <span style={{ color: (currentDayRecord?.netProfit ?? 0) >= 0 ? '#2a7a43' : '#b64c3d', fontSize: 14 }}>
+                <span style={{ color: (currentDayRecord?.netProfit ?? 0) >= 0 ? 'var(--success)' : '#b64c3d', fontSize: 14 }}>
                   {money(currentDayRecord?.netProfit ?? 0)}
                 </span>
               </div>
@@ -375,7 +392,7 @@ export const CashierModal: React.FC<Props> = ({
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 96px), 1fr))', gap: 4 }}>
                       <div>Doanh thu: <strong>{money(rec.revenue)}</strong></div>
                       <div>Giá vốn: <span style={{ color: '#b64c3d' }}>{money(rec.cogs)}</span></div>
-                      <div>Lãi ròng: <strong style={{ color: rec.netProfit >= 0 ? '#2a7a43' : '#b64c3d' }}>{money(rec.netProfit)}</strong></div>
+                      <div>Lãi ròng: <strong style={{ color: rec.netProfit >= 0 ? 'var(--success)' : '#b64c3d' }}>{money(rec.netProfit)}</strong></div>
                     </div>
                     <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
                       {ch.totalCustomers} khách · {ch.totalTransactions} giao dịch · {rec.itemsSold} món bán {rec.spoilageCount > 0 ? `· Hỏng ${rec.spoilageCount} món` : ''}

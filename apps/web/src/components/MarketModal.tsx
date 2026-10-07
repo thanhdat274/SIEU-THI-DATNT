@@ -50,7 +50,7 @@ const nameOf = (productId: string) => PRODUCT_MAP[productId]?.name ?? productId;
 export const MarketModal: React.FC<MarketModalProps> = ({ summary, prices, plans, trending, day, onClose }) => {
   const attention = (plans ?? []).filter(plan => (plan.stock > 0 || plan.soldRecently > 0 || plan.incoming > 0) && (plan.flags.lowStock || plan.flags.slowMoving || plan.flags.expiring)).slice(0, 12);
   return (
-  <PixelDialog icon="sun" title="THỊ TRƯỜNG HẺM" subtitle={`${summary.weekday} · ${summary.timeBand.label} · ${summary.climate.name}`} onClose={onClose}>
+  <PixelDialog icon="sun" title="Thị trường hẻm" subtitle={`${summary.weekday} · ${summary.timeBand.label} · ${summary.climate.name}`} onClose={onClose}>
     <h3>Thời tiết</h3>
     <p className="pixel-panel" style={{ padding: 8 }}>
       <strong>Hôm nay: {summary.weather.icon} {summary.weather.label}{summary.weather.rain ? ` (${describeRainForecast(summary.weather.rain)})` : ''}</strong>
@@ -71,7 +71,7 @@ export const MarketModal: React.FC<MarketModalProps> = ({ summary, prices, plans
     </ul>
     {prices && prices.length > 0 && <>
       <h3>Giá thị trường theo nhóm hàng</h3>
-      <p className="muted">Giá tham chiếu so với giá gợi ý; đổi dần mỗi ngày. Giá bán hiện cố định theo giá gợi ý, nên khi thị trường đắt hơn khách dễ lấy hàng, khi rẻ hơn khách có thể bỏ hàng.</p>
+      <p className="market-helper muted">Giá tham chiếu so với giá gợi ý; đổi dần mỗi ngày. Giá bán hiện cố định theo giá gợi ý, nên khi thị trường đắt hơn khách dễ lấy hàng, khi rẻ hơn khách có thể bỏ hàng.</p>
       <ul style={{ margin: '4px 0', paddingLeft: 18 }}>
         {prices.map(row => {
           const reasons = [
@@ -92,7 +92,7 @@ export const MarketModal: React.FC<MarketModalProps> = ({ summary, prices, plans
     </>}
     {plans && <>
       <h3>Kế hoạch tồn kho</h3>
-      <p className="muted">Chỉ để tham khảo: bảng này không tự đặt hàng hay đổi giá. Nhu cầu dự kiến là số món/ngày, tính cho ngày mai theo dự báo.</p>
+      <p className="market-helper muted">Chỉ để tham khảo: bảng này không tự đặt hàng hay đổi giá. Nhu cầu dự kiến là số món/ngày, tính cho ngày mai theo dự báo.</p>
       {attention.length === 0
         ? <p className="muted">Chưa có món nào cần chú ý.</p>
         : <ul style={{ margin: '4px 0', paddingLeft: 18 }} aria-label="Món cần chú ý">

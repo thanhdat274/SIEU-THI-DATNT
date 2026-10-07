@@ -16,12 +16,12 @@ export interface SecurityModalProps {
 }
 
 const KIND_LABEL: Record<SecurityIncident['kind'], { icon: string; color: string }> = {
-  burglary: { icon: '🌙', color: '#b64c3d' },
-  burglary_repelled: { icon: '💂', color: '#2a7a43' },
-  shoplift_caught: { icon: '🕵️', color: '#2a7a43' },
-  shoplift_escaped: { icon: '🧺', color: '#b64c3d' },
-  police_recovered: { icon: '🚓', color: '#2a7a43' },
-  police_closed: { icon: '🚓', color: '#a86b12' },
+  burglary: { icon: '🌙', color: 'var(--brick)' },
+  burglary_repelled: { icon: '💂', color: 'var(--success)' },
+  shoplift_caught: { icon: '🕵️', color: 'var(--success)' },
+  shoplift_escaped: { icon: '🧺', color: 'var(--brick)' },
+  police_recovered: { icon: '🚓', color: 'var(--success)' },
+  police_closed: { icon: '🚓', color: 'var(--warn)' },
 };
 
 /** An ninh tiệm: camera, bảo vệ, báo công an và các sự cố gần đây. */
@@ -31,13 +31,13 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({ security, level, p
   const totalRecovered = security.incidents.reduce((sum, i) => sum + (i.recovered ?? 0), 0);
   const shown = [...security.incidents].reverse();
   return (
-    <PixelDialog icon="person" title="AN NINH TIỆM" subtitle="Trộm lẻ giờ bán và trộm đột nhập ban đêm; bảo vệ và camera giúp phòng ngừa" onClose={onClose}>
+    <PixelDialog icon="person" title="An ninh tiệm" subtitle="Trộm lẻ giờ bán và trộm đột nhập ban đêm; bảo vệ và camera giúp phòng ngừa" onClose={onClose}>
       {!unlocked && <p className="pixel-panel" style={{ padding: 8 }}>Trộm cắp bắt đầu từ cấp {SECURITY_RULES.unlockLevel}; cấp hiện tại {level}.</p>}
-      <div style={{ display: 'grid', gap: 8, marginBottom: 8 }}>
+      <div className="security-grid" style={{ display: 'grid', gap: 8, marginBottom: 8 }}>
         <div className="pixel-panel" style={{ padding: 8, display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <span><strong>📷 Camera</strong> <span className="muted">phát hiện trộm lẻ {Math.round(SECURITY_RULES.detect.camera * 100)}%, giảm một nửa trộm đột nhập, tăng cơ hội công an bắt được</span></span>
           {security.camera
-            ? <strong style={{ color: '#2a7a43' }}>Đã lắp</strong>
+            ? <strong style={{ color: 'var(--success)' }}>Đã lắp</strong>
             : <PixelButton variant="teal" disabled={!unlocked || playerMoney < SECURITY_RULES.cameraCost} onClick={() => onBuyCamera()}>Lắp camera {money(SECURITY_RULES.cameraCost)}</PixelButton>}
         </div>
         <div className="pixel-panel" style={{ padding: 8 }}>

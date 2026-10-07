@@ -94,7 +94,7 @@ export const KitchenStationModal: React.FC<Props> = ({ fixture, recipes, job, in
   return <PixelDialog title={fixture.label} subtitle={stationSubtitle} icon="coin" onClose={onClose}>
     {/* Station Tabs */}
     {stationTabs && stationTabs.length > 0 && (
-      <div style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap' }}>
+      <div className="kitchen-station-tabs" style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap' }}>
         {stationTabs.map(tab => (
           <PixelButton
             key={tab.id}

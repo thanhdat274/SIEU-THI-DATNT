@@ -29,7 +29,7 @@ export const ReviewsModal: React.FC<ReviewsModalProps> = ({ reviews, summary, on
     .filter((r) => filter === 'all' || (filter === 'praise' ? r.stars >= 4 && !r.reason : r.stars <= 2 || !!r.reason));
   const max = Math.max(1, ...summary.byStars);
   return (
-    <PixelDialog icon="heart" title="LỜI KHÁCH NHẬN XÉT" subtitle="Khách chấm sao và để lại vài lời sau mỗi lượt ghé tiệm" onClose={onClose}>
+    <PixelDialog icon="heart" title="Lời khách nhận xét" subtitle="Khách chấm sao và để lại vài lời sau mỗi lượt ghé tiệm" onClose={onClose}>
       {summary.count === 0 ? (
         <p className="muted">Chưa có lời nhận xét nào. Khách sẽ để lại lời sau khi mua xong hoặc bỏ về.</p>
       ) : (
@@ -40,7 +40,7 @@ export const ReviewsModal: React.FC<ReviewsModalProps> = ({ reviews, summary, on
               <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
                 <span style={{ width: 22 }}>{n}★</span>
                 <div style={{ flex: 1, height: 6, background: '#e5d8c4', border: '1px solid #bfa993' }}>
-                  <div style={{ width: `${(summary.byStars[n - 1] / max) * 100}%`, height: '100%', background: n >= 4 ? '#2a7a43' : n === 3 ? '#e09f3e' : '#b64c3d' }} />
+                  <div style={{ width: `${(summary.byStars[n - 1] / max) * 100}%`, height: '100%', background: n >= 4 ? 'var(--success)' : n === 3 ? 'var(--warn-bright)' : '#b64c3d' }} />
                 </div>
                 <span style={{ width: 20, textAlign: 'right' }}>{summary.byStars[n - 1]}</span>
               </div>
@@ -49,9 +49,9 @@ export const ReviewsModal: React.FC<ReviewsModalProps> = ({ reviews, summary, on
               <span className="muted" style={{ fontSize: 11 }}>Khách bỏ về nhiều nhất vì: {feedbackReasonLabel(summary.topReason.reason)} ({summary.topReason.count} lần)</span>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+          <div className="feature-scroll-tabs" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
             {FILTERS.map((f) => (
-              <PixelButton key={f.id} variant={filter === f.id ? 'teal' : 'paper'} onClick={() => setFilter(f.id)}>{f.label}</PixelButton>
+              <PixelButton key={f.id} aria-pressed={filter === f.id} variant={filter === f.id ? 'teal' : 'paper'} onClick={() => setFilter(f.id)}>{f.label}</PixelButton>
             ))}
           </div>
           {shown.length === 0 && <p className="muted">Không có lời nào trong mục này.</p>}
@@ -60,7 +60,7 @@ export const ReviewsModal: React.FC<ReviewsModalProps> = ({ reviews, summary, on
               <article key={r.id} className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 4 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                   <strong>{r.author}{r.regularId ? ' ♥' : ''}</strong>
-                  <span style={{ color: r.stars >= 4 ? '#2a7a43' : r.stars === 3 ? '#a86b12' : '#b64c3d' }} aria-label={`${r.stars} sao`}>{stars(r.stars)}</span>
+                  <span style={{ color: r.stars >= 4 ? 'var(--success)' : r.stars === 3 ? 'var(--warn)' : '#b64c3d' }} aria-label={`${r.stars} sao`}>{stars(r.stars)}</span>
                 </div>
                 <p style={{ margin: 0 }}>“{r.text}”</p>
                 <div className="muted" style={{ fontSize: 10 }}>

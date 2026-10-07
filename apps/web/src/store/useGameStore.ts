@@ -12,6 +12,8 @@ export interface ToastMessage {
   id: string;
   message: string;
   type: 'info' | 'success' | 'warn';
+  /** Phân loại phụ chỉ để tinh chỉnh hiển thị toast (kích thước/thời gian tự tắt) — không phải trạng thái game. */
+  kind?: 'rating';
 }
 
 /** So sánh cấu trúc cho dữ liệu JSON thuần (số, chuỗi, mảng, đối tượng); dùng để giữ nguyên tham chiếu khi nội dung không đổi. */
@@ -155,7 +157,7 @@ export interface GameStoreState {
   toggleSaveModal: () => void;
   openSupplierModal: () => void;
   closeAllModals: () => void;
-  addToast: (message: string, type?: 'info' | 'success' | 'warn') => void;
+  addToast: (message: string, type?: 'info' | 'success' | 'warn', kind?: 'rating') => void;
   removeToast: (id: string) => void;
 }
 
@@ -302,17 +304,23 @@ export const useGameStore = create<GameStoreState>((set) => ({
       isSupplierModalOpen: false,
     }),
 
-  addToast: (message, type = 'info') => {
+  addToast: (message, type = 'info', kind) => {
     const id = Math.random().toString(36).substring(2, 9);
-    set((state) => ({
-      toasts: [...state.toasts.slice(-2), { id, message, type }],
-    }));
+    set((state) => {
+      if (kind === 'rating') {
+        // Toast đánh giá khách: chỉ 1 cái một lúc (bỏ các toast đánh giá cũ, giữ nội dung khác).
+        return { toasts: [...state.toasts.filter((t) => t.kind !== 'rating').slice(-1), { id, message, type, kind }] };
+      }
+      // Toast thường: giữ tối đa 2 như trước, chỉ rút ngắn thời gian tự tắt.
+      return { toasts: [...state.toasts.slice(-2), { id, message, type, kind }] };
+    });
 
+    const ttl = kind === 'rating' ? 2000 : 3000;
     setTimeout(() => {
       set((state) => ({
         toasts: state.toasts.filter((t) => t.id !== id),
       }));
-    }, 3500);
+    }, ttl);
   },
 
   removeToast: (id) =>
