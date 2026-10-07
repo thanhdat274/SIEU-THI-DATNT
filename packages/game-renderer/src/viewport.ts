@@ -119,7 +119,7 @@ export class PixiGameViewport {
     npcVariant: number;
     npcDirection: string;
   }>();
-  private workerSprites = new Map<string, { container: Container; sprite: Sprite; bubble: Container; status: Text; lastPosition: Vector2D | null; variant: number; direction: string }>();
+  private workerSprites = new Map<string, { container: Container; sprite: Sprite; box: Sprite | null; bubble: Container; status: Text; lastPosition: Vector2D | null; variant: number; direction: string }>();
   private parkedMotorbikeSprites = new Map<string, Sprite>();
   private streetTrafficSprites = new Map<string, Sprite>();
   private neighborhood!: NeighborhoodScene;
@@ -1429,7 +1429,19 @@ export class PixiGameViewport {
       if (walking) {
         entry.npcDirection = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
       } else if (cust.stage === 'checkout') {
-        entry.npcDirection = 'left'; // dừng ở quầy thì quay mặt vào quầy thu ngân
+        // Quay mặt vào quầy thu ngân TƯƠNG ỨNG (không gán cứng 'left'): với quầy tòa phụ (xôi/quán nước/snack)
+        // hàng xếp có thể ở phía phải/trái/trên/dưới quầy nên cần sang hướng từ vị trí khách tới tâm quầy.
+        const counter = this.simulation.getFixtures().find((f) => f.id === cust.cashierFixtureId);
+        if (counter) {
+          const { widthTiles, heightTiles } = getFixtureDimensions(counter);
+          const ccx = (counter.tileX + widthTiles / 2) * TILE_SIZE;
+          const ccy = (counter.tileY + heightTiles / 2) * TILE_SIZE;
+          const adx = ccx - cust.position.x;
+          const ady = ccy - cust.position.y;
+          entry.npcDirection = Math.abs(adx) > Math.abs(ady) ? (adx > 0 ? 'right' : 'left') : (ady > 0 ? 'down' : 'up');
+        } else {
+          entry.npcDirection = 'left'; // dừng ở quầy thì quay mặt vào quầy thu ngân
+        }
       }
       const npcFrame = reducedMotion ? 0 : Math.floor(this.animTimer * (walking ? 8 : 1.5)) % (walking ? 4 : 2);
       entry.sprite.texture = this.textures.getTexture(`npc_${entry.npcVariant}_${entry.npcDirection}_${walking ? 'walk' : 'idle'}_${npcFrame}`);
@@ -1490,6 +1502,13 @@ export class PixiGameViewport {
         const sprite = new Sprite(this.textures.getTexture(`npc_${idx % 3}_down_idle_0`));
         sprite.anchor.set(0.5, 1);
         container.addChild(sprite);
+        // Kiện hàng nhân viên bê (châm kệ): như nhân viên bốc dỡ ở bãi, ôm thùng trước ngực, mặc định ẩn.
+        // Thêm TRƯỚC bubble để thùng nằm sau bong bóng trạng thái (tránh che chữ "châm kệ").
+        const box = new Sprite(this.textures.getTexture('prop_cargo_carton'));
+        box.anchor.set(0.5, 1);
+        box.y = LOGISTICS_BOX_CARRY_Y;
+        box.visible = false;
+        container.addChild(box);
         const bubble = new Container();
         const background = new Graphics();
         background.roundRect(-25, -70, 50, 18, 3);
@@ -1502,7 +1521,7 @@ export class PixiGameViewport {
         bubble.addChild(status);
         container.addChild(bubble);
         this.entitiesLayer.addChild(container);
-        entry = { container, sprite, bubble, status, lastPosition: null, variant: idx % 3, direction: 'down' };
+        entry = { container, sprite, box, bubble, status, lastPosition: null, variant: idx % 3, direction: 'down' };
         this.workerSprites.set(worker.id, entry);
       }
 
@@ -1522,6 +1541,17 @@ export class PixiGameViewport {
       entry.sprite.texture = this.textures.getTexture(`npc_${entry.variant}_${entry.direction}_${walking ? 'walk' : 'idle'}_${frame}`);
       entry.container.position.set(Math.round(position.x), Math.round(position.y));
       entry.container.zIndex = position.y + 1;
+      // Kiện hàng khi nhân viên châm kệ đang bê (stage 'to_shelf' + có carriedLots):
+      // ôm thùng trước ngực, lệch nhẹ theo hướng đi, nhún nhẹ như nhân viên bốc dỡ ở bãi.
+      if (entry.box) {
+        const carrying = worker.workerTask?.stage === 'to_shelf' && (worker.workerTask.carriedLots?.length ?? 0) > 0;
+        entry.box.visible = carrying;
+        if (carrying) {
+          entry.box.texture = this.textures.getTexture('prop_cargo_carton');
+          entry.box.x = entry.direction === 'right' ? 3 : -3;
+          entry.box.y = LOGISTICS_BOX_CARRY_Y + (reducedMotion ? 0 : Math.round(Math.sin(this.animTimer * 8)));
+        }
+      }
       let wGear = this.workerGear.get(worker.id);
       if (!wGear) { wGear = new RainGear(); this.workerGear.set(worker.id, wGear); entry.container.addChildAt(wGear.container, 1); }
       wGear.update({ dt: elapsed, time: this.animTimer, characterId: worker.id, day: gearDay, x: position.x, y: position.y, facing: entry.direction as GearFacing, walking, weather: this.lastWeather, enabled: gearOn, reducedMotion, windEffects: fxSettingsEnabled });
@@ -1913,6 +1943,16 @@ export class PixiGameViewport {
       this.interactionBubble.x = fixCenterX;
       this.interactionBubble.y = (isWarehouseFixture(activeFixture)?fixTopY+100:fixTopY-44) + bubbleFloat;
 
+      // Giữ bong bóng tương tác trong vùng nhìn theo trục dọc: bong bóng là UI world-space trong viewport
+      // (canvas nằm dưới thanh HUD DOM nên chỉ cần không rơi ra ngoài khung nhìn). Viên nền ("[E] ...") nằm
+      // ~36px (world) phía trên container và cao 24px, nên kẹp container để viên nền không bị cắt trên đầu
+      // hoặc trượt dưới mép dưới viewport khi kệ/quầy ở sát biên bản đồ.
+      const viewTopY = this.camera.y; // world tọa độ mép trên viewport
+      const zoomNow = this.camera.zoom || 1;
+      const topLimit = viewTopY + 36 + 4 / zoomNow;
+      const bottomLimit = viewTopY + this.app.screen.height / zoomNow - 8 / zoomNow + 12;
+      this.interactionBubble.y = Math.min(bottomLimit, Math.max(topLimit, this.interactionBubble.y));
+
       const textNode = this.interactionBubble.children[2] as Text;
       if(isWarehouseFixture(activeFixture)) {
         textNode.text='[E] Kiểm kê kho';
@@ -1931,6 +1971,17 @@ export class PixiGameViewport {
         bubbleBg.fill({ color: 0xfcf4dc, alpha: 0.96 });
         bubbleBg.stroke({ color: 0x8b5a2b, width: 2 });
       }
+
+      // Kẹp theo trục ngang: bong bóng (rộng ~bubbleWidth/2 về mỗi bên tâm) giữ trong khung nhìn khi
+      // kệ/quầy ở sát biên trái/phải bản đồ (đặc biệt quan trọng ở landscape nơi notch/island nằm ở 2 cạnh).
+      // HÌNH HỌC bong bóng nằm trong toạ độ THẾ GIỚI (con của worldContainer scale=zoom), nên nửa bề rộng
+      // thế giới là bubbleWidth/2 — KHÔNG chia cho zoom. Màn hình = (world - camera) * zoom nên viewport
+      // rộng tính theo đơn vị thế giới là screenW/zoom (đã đúng); nửa bong bóng phải là nguyên không đổi.
+      const viewLeftX = this.camera.x;
+      const halfW = bubbleWidth / 2;
+      const leftLimit = viewLeftX + halfW;
+      const rightLimit = viewLeftX + this.app.screen.width / zoomNow - halfW;
+      this.interactionBubble.x = Math.min(rightLimit, Math.max(leftLimit, this.interactionBubble.x));
     } else {
       this.interactionBubble.visible = false;
     }
