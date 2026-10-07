@@ -23,6 +23,6 @@ Trạng thái 01/10/2026: nhóm 1–3 đã có code và test tự động (`yarn
 
 - [x] 4.1 `yarn typecheck`, `yarn test`, `yarn build` PASS (01/10/2026).
 - [ ] 4.2 Browser QA: mới xem tooltip HUD với ngày nắng (không có dòng mưa, đúng); chưa thấy được một ngày mưa trong UI vì save hiện tại ở ngày 1 nắng và hai ngày tới không mưa. Cần mở Thị trường hẻm, DaySummary/bản tin sáng khi có dự báo mưa, desktop và mobile.
-- [ ] 4.3 Xem lại chữ hiển thị trùng ("Mưa to (Mưa to 13:00–15:00)") và quyết định có đổi nhãn dải.
+- [x] 4.3 Xem lại chữ hiển thị trùng ("Mưa to (Mưa to 13:00–15:00)") và quyết định có đổi nhãn dải. **Đã đóng 07/10/2026:** giữ nguyên nhãn dải ("Mưa to") nhưng bỏ nhãn dải ở chuỗi ghép khi trùng nhãn thời tiết — `describeRainForecast(forecast, { omitWhenMatchingWeatherLabel: label })` ở `game-core/weather.ts`; bật ở `MarketModal` (hôm nay + hai ngày), tooltip HUD và bản tin sáng (`simulation.ts`): "Mưa to (13:00–15:00)". Test `rain.test.ts` thêm 3 ca (trùng → bỏ, khác → giữ, không truyền → giữ). `yarn typecheck` toàn workspace PASS.
 - [ ] 4.4 Quyết định có thêm độ bất định cho dự báo và có đổi hành vi khách/xe theo dải mưa (thuộc change sau).
 - [ ] 4.5 Cập nhật `TASKS.md`/`ROADMAP.md` khi chốt nghiệm thu.

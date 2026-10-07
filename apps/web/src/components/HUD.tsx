@@ -51,9 +51,9 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const season = getSeasonForDay(worldTime.day);
   const weather = market?.weather;
-  const rainNote = (rain?: RainForecast | null) => (rain ? ` (${describeRainForecast(rain)})` : '');
-  const forecastText = market?.forecast.map(item => `${item.label}${rainNote(item.rain)}`).join(', ') ?? '';
-  const todayRainText = rainNote(weather?.rain);
+  const rainNote = (label: string, rain?: RainForecast | null) => (rain ? ` (${describeRainForecast(rain, { omitWhenMatchingWeatherLabel: label })})` : '');
+  const forecastText = market?.forecast.map(item => `${item.label}${rainNote(item.label, item.rain)}`).join(', ') ?? '';
+  const todayRainText = rainNote(weather?.label ?? '', weather?.rain);
   const forecastFirst = market?.forecast[0]?.label ?? '';
 
   const hasUrgentAlert = (maintenanceAlerts ?? 0) > 0 || wageDebt > 0;

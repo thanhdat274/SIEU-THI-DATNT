@@ -3507,7 +3507,7 @@ export class GameSimulation {
     const season = this.getSeason();
     const weather = this.getMarketSummary().weather;
     const tomorrow = this.getMarketSummary().forecast[0];
-    const forecastTomorrow = tomorrow ? tomorrow.rain ? `${tomorrow.label} (${describeRainForecast(tomorrow.rain)})` : tomorrow.label : undefined;
+    const forecastTomorrow = tomorrow ? tomorrow.rain ? `${tomorrow.label} (${describeRainForecast(tomorrow.rain, { omitWhenMatchingWeatherLabel: tomorrow.label })})` : tomorrow.label : undefined;
     const arrivingOrders = this.pendingOrders.filter((o) => !o.delivered && o.arrivalDay <= day);
     const lowStockItems = this.fixtures
       .filter((f) => isSalesFixture(f) && f.assignedProductId && f.currentStock <= 2)

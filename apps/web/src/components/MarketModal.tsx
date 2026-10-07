@@ -53,8 +53,8 @@ export const MarketModal: React.FC<MarketModalProps> = ({ summary, prices, plans
   <PixelDialog icon="sun" title="Thị trường hẻm" subtitle={`${summary.weekday} · ${summary.timeBand.label} · ${summary.climate.name}`} onClose={onClose}>
     <h3>Thời tiết</h3>
     <p className="pixel-panel" style={{ padding: 8 }}>
-      <strong>Hôm nay: {summary.weather.icon} {summary.weather.label}{summary.weather.rain ? ` (${describeRainForecast(summary.weather.rain)})` : ''}</strong>
-      {summary.forecast.map((item, index) => <span key={index} className="muted"> · {index === 0 ? 'Ngày mai' : 'Ngày kia'}: {item.icon} {item.label}{item.rain ? ` (${describeRainForecast(item.rain)})` : ''}</span>)}
+      <strong>Hôm nay: {summary.weather.icon} {summary.weather.label}{summary.weather.rain ? ` (${describeRainForecast(summary.weather.rain, { omitWhenMatchingWeatherLabel: summary.weather.label })})` : ''}</strong>
+      {summary.forecast.map((item, index) => <span key={index} className="muted"> · {index === 0 ? 'Ngày mai' : 'Ngày kia'}: {item.icon} {item.label}{item.rain ? ` (${describeRainForecast(item.rain, { omitWhenMatchingWeatherLabel: item.label })})` : ''}</span>)}
     </p>
     <h3>Sự kiện trong hẻm</h3>
     {summary.events.length
