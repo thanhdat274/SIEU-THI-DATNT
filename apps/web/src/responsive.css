@@ -327,14 +327,12 @@ html[data-input="touch"] .layout-board { min-width: calc(var(--layout-cols, 16) 
 @keyframes rotate-hint { 0%, 30% { transform: rotate(0); } 70%, 100% { transform: rotate(-90deg); } }
 @media (orientation: portrait) { html[data-input="touch"] .rotate-screen { display: flex; } }
 
-/* ---------- Màn đăng nhập/menu chính ở điện thoại ngang (thấp): gọn header, giữ hai cột ---------- */
-@media (max-height: 499px) and (orientation: landscape) {
-  .deck-header { flex-direction: row; align-items: center; padding: 6px 14px; gap: 10px; }
-  .brand-display-title { font-size: 18px; }
-  .brand-badge-seal { width: 36px; height: 36px; }
-  .deck-content-split { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); padding: 10px 14px; gap: 12px; }
-  .deck-top-actions { justify-content: flex-end; }
-}
+/* ---------- Màn đăng nhập/menu chính ----------
+ * KHÔNG đặt rule responsive cho màn đăng nhập ở đây nữa. Toàn bộ bố cục đăng nhập
+ * (deck-header / deck-content-split / brand-display-title / brand-badge-seal / landscape thấp)
+ * là nội bộ của LoginScreen.css — là nguồn duy nhất. Những rule này nạp trong responsive.css
+ * từng đè/trùng lệnh với LoginScreen.css (2 hệ threshold khác nhau), gây Login phá layout trên mobile.
+ * (Xem ghi chú sửa 07/10/2026 trong tổng hợp.md.) */
 
 /* ---------- Điện thoại ngang (thấp): hộp thoại sơ đồ dành chỗ cho bảng, sidebar sang bên phải ---------- */
 @media (max-height: 499px) and (orientation: landscape) {
@@ -363,9 +361,10 @@ html[data-density="compact"] .dialog-content { padding-block: var(--space-2); }
 html[data-density="comfortable"] .dialog-content { padding-block: var(--space-3); }
 
 /* Đợt 14 — Mật độ compact lan tới header/thân của các feature modal dùng lớp riêng (không phải .dialog-*):
-   giảm padding dọc thay vì ép khung đổi kích thước. Không đổi vùng chạm (nút vẫn do --touch/rule touch riêng). */
-html[data-density="compact"] .notebook-leather-header,
-html[data-density="compact"] .vintage-wood-card,
+   giảm padding dọc thay vì ép khung đổi kích thước. Không đổi vùng chạm (nút vẫn do --touch/rule touch riêng).
+   KHÔNG thêm .notebook-leather-header / .vintage-wood-card (lớp CHỈ thuộc màn đăng nhập): padding của chúng
+   (gồm safe-area + bàn phím ở đáy) do LoginScreen.css quản lý; rule compact chung từng đè padding-bottom
+   của .vintage-wood-card → modal login bị dính đáy/che Home Indicator/keyboard trên mobile. */
 html[data-density="compact"] .change-product-header,
 html[data-density="compact"] .layout-heading,
 html[data-density="compact"] .layout-footer,
