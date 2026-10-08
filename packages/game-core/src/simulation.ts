@@ -4395,7 +4395,7 @@ export class GameSimulation {
   /**
    * Transfer items to a sales shelf with detailed result.
    */
-  public transferToShelf(fixtureId: string, productId: string, amount: number = 1, autoOpenCases = false): TransferShelfResult {
+  public transferToShelf(fixtureId: string, productId: string, amount: number = 1, autoOpenCases = false, respectStallReserve = autoOpenCases): TransferShelfResult {
     const fixture = this.fixtures.find((f) => f.id === fixtureId);
     if (!fixture || !isSalesFixture(fixture)) {
       return { success: false, actualQuantity: 0, reason: !fixture ? 'fixture_not_found' : 'not_sales_fixture' };
@@ -4427,7 +4427,7 @@ export class GameSimulation {
       return { success: false, actualQuantity: 0, reason: 'no_inventory' };
     }
     // Bày tự động (sơ đồ, "bày tất cả", châm kệ) chừa nguyên liệu cho quầy ăn uống đã mở; người chơi bày tay thì tự quyết.
-    if (autoOpenCases) {
+    if (respectStallReserve) {
       const shelvable = this.shelvableUnits(productId);
       if (shelvable <= 0) return { success: false, actualQuantity: 0, reason: 'reserved_for_stall' };
       amount = Math.min(amount, shelvable);
@@ -4482,7 +4482,7 @@ export class GameSimulation {
    * Restock a shelf from player's inventory
    */
   public restockShelf(fixtureId: string, productId: string, amount: number = 1): boolean {
-    return this.transferToShelf(fixtureId, productId, amount).success;
+    return this.transferToShelf(fixtureId, productId, amount, true, false).success;
   }
 
   /**
@@ -5235,6 +5235,37 @@ export class GameSimulation {
       }
     }
     return restocked;
+  }
+
+  /** Kệ bán đang trống mà kho có món bày tự động được (đúng loại kệ/tòa, không bị giữ cho quầy ăn uống). */
+  public countFillableEmptyShelves(): number {
+    return this.fixtures.filter((fix) => isSalesFixture(fix) && !fix.broken && fix.currentStock === 0
+      && this.autoFillCandidates(fix).some((inv) => this.shelvableUnits(inv.productId) > 0)).length;
+  }
+
+  /** Lý do thật khi "Bày hàng lên kệ" không bày được món nào (để báo đúng thay vì luôn đổ cho hàng nguyên thùng). */
+  public explainAutoRestockFailure(): string {
+    const stocked = this.inventory.filter((item) => item.quantity > 0);
+    if (!stocked.length) return 'Kho hàng không có sẵn sản phẩm phù hợp để bày kệ.';
+    const allSales = this.fixtures.filter((fix) => isSalesFixture(fix));
+    const sales = allSales.filter((fix) => !fix.broken);
+    if (allSales.length && !sales.length) return 'Mọi kệ bán đang hỏng — sửa kệ ở mục Bảo trì rồi mới bày hàng được.';
+    const needsMore = sales.filter((fix) => {
+      if (!fix.assignedProductId) return fix.currentStock === 0;
+      const prod = PRODUCT_MAP[fix.assignedProductId];
+      const cap = prod ? effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, this.getShelfCapacityBonus()) : fix.maxCapacity;
+      return fix.currentStock < cap;
+    });
+    if (!needsMore.length) return 'Các kệ bán còn dùng được đều đã đầy' + (allSales.length > sales.length ? ' (một số kệ đang hỏng, cần sửa ở mục Bảo trì).' : '.');
+    const reserved = stocked.some((item) => this.stallReservedUnits(item.productId) > 0 && this.shelvableUnits(item.productId) <= 0);
+    if (reserved) return 'Hàng trong kho đang được giữ làm nguyên liệu cho quầy ăn uống — bày tay nếu muốn lấy ra.';
+    const hasSealed = stocked.some((item) => (item.lots ?? []).some((lot) => (lot.caseCount ?? 0) > 0));
+    const emptyOnly = needsMore.every((fix) => !fix.assignedProductId);
+    if (emptyOnly) {
+      return 'Các kệ còn trống thuộc quán xôi/nước/ăn vặt hoặc tủ lạnh, chỉ nhận món riêng của chúng; kho chưa có món hợp.'
+        + (hasSealed ? ' Có hàng còn thùng nhưng không thuộc loại kệ đó.' : '');
+    }
+    return 'Kho chưa có món trùng với các kệ đang cần châm.' + (hasSealed ? ' Hàng còn thùng không khớp kệ nào.' : '');
   }
 
   /** Complete one in-store sale from customer basket at the cashier counter. */

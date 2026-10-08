@@ -1,5 +1,5 @@
 import { DEFAULT_INITIAL_SAVE, generateStarterTileMap, PRODUCT_MAP, SUPPLIERS, SUPPLIER_MAP } from '@game/data';
-import { COLD_WAREHOUSE_CAPACITY, SaveGameData, type StockLot } from '@game/shared';
+import { COLD_WAREHOUSE_CAPACITY, SaveGameData, isSalesFixture, type StockLot } from '@game/shared';
 import { InputManager } from './input';
 import { looseUnits, mergeLots, sealedCases, sumLots, takeLots } from './stock';
 import { GameSimulation } from './simulation';
@@ -177,6 +177,34 @@ export function runSupplierTests(): void {
     assert(!!target && target.availableInInventory > 0, 'Việc châm kệ tính cả hàng nguyên thùng là hàng có sẵn (bày tự động sẽ mở thùng)');
     const auto = shelfSim.transferToShelf('shelf_wooden_noodles', 'mi_hao_hao', 10, true);
     assert(auto.success && auto.actualQuantity === 10 && sealedCases(miSlot().lots) === 0, 'Bày tự động tự mở thùng khi hết hàng lẻ');
+  }
+
+  // Test 4.2d: Lý do báo khi bày tự động không được + chỉ đếm kệ trống thật sự bày được
+  {
+    console.log('\n--- Test 4.2d: Báo đúng lý do bày tự động thất bại, đếm kệ trống bày được ---');
+    const emptySave = structuredClone(DEFAULT_INITIAL_SAVE);
+    emptySave.inventory = [];
+    const emptySim = new GameSimulation(emptySave, generateStarterTileMap(), new InputManager());
+    assert(emptySim.countFillableEmptyShelves() === 0, 'Kho trống: không kệ nào bày được');
+    assert(emptySim.explainAutoRestockFailure().includes('Kho hàng không có'), 'Kho trống: báo kho không có hàng');
+
+    const caseSave = structuredClone(DEFAULT_INITIAL_SAVE);
+    caseSave.inventory = [{ productId: 'mi_hao_hao', quantity: 40, lots: [{ quantity: 40, expiresOnDay: 99, unitCost: 2488, caseCount: 1 }] }];
+    const caseSim = new GameSimulation(caseSave, generateStarterTileMap(), new InputManager());
+    const before = caseSim.countFillableEmptyShelves();
+    assert(before > 0, 'Có thùng mì trong kho: kệ tạp hóa trống được tính là bày được (tự mở thùng)');
+    const filled = caseSim.autoFillAllShelves().totalFilled;
+    assert(filled > 0, 'Bày hàng lên kệ tự mở thùng và bày được mì');
+    assert(sealedCases(caseSim.getInventory().find((i) => i.productId === 'mi_hao_hao')?.lots) === 0 || caseSim.getInventory().every((i) => i.productId !== 'mi_hao_hao'), 'Thùng đã được mở');
+    assert(!caseSim.explainAutoRestockFailure().includes('mở thùng ở kho trước'), 'Lý do báo không còn đổ cho hàng nguyên thùng');
+
+    // Bày tay từng ô (nút trong Sơ đồ kệ / Shelf) cũng tự mở thùng; mọi kệ hỏng thì báo kệ hỏng
+    const manualSave = structuredClone(DEFAULT_INITIAL_SAVE);
+    manualSave.inventory = [{ productId: 'mi_hao_hao', quantity: 40, lots: [{ quantity: 40, expiresOnDay: 99, unitCost: 2488, caseCount: 1 }] }];
+    const manualSim = new GameSimulation(manualSave, generateStarterTileMap(), new InputManager());
+    assert(manualSim.restockShelf('shelf_wooden_noodles', 'mi_hao_hao', 10), 'restockShelf (bày từng ô) tự mở thùng khi chỉ có hàng nguyên thùng');
+    for (const f of manualSim.getFixtures()) if (isSalesFixture(f)) f.broken = 'major';
+    assert(manualSim.explainAutoRestockFailure().includes('hỏng'), 'Mọi kệ hỏng: lý do báo kệ hỏng');
   }
 
   // Test 4.3: Delivery once, holding overflow, stow & spoilage

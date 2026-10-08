@@ -11,6 +11,7 @@ interface Props {
   inventory: InventoryItem[];
   holdingArea?: HoldingItem[];
   fixtures: StoreFixture[];
+  fillableEmptyShelves?: number;
   isOpen: boolean;
   onToggle: () => void;
   onAutoRestock: () => void;
@@ -25,6 +26,7 @@ export const WarehouseDock: React.FC<Props> = ({
   inventory,
   holdingArea = [],
   fixtures,
+  fillableEmptyShelves = 0,
   isOpen,
   onToggle,
   onAutoRestock,
@@ -48,7 +50,7 @@ export const WarehouseDock: React.FC<Props> = ({
       f.currentStock < effectiveShelfCapacity(f.maxCapacity, PRODUCT_MAP[f.assignedProductId]?.shelfCapacity ?? f.maxCapacity, capacityBonus) &&
       items.some((i) => i.productId === f.assignedProductId && i.quantity > 0)
   );
-  const empty = fixtures.filter((f) => isSalesFixture(f) && f.currentStock === 0).length;
+  const empty = fillableEmptyShelves;
   const totalHolding = holdingArea.reduce((sum, h) => sum + h.quantity, 0);
 
   return (

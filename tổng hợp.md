@@ -1,3 +1,9 @@
+# Sửa thông báo "Bày hàng lên kệ" và đếm kệ trống (08/10/2026)
+- **Vấn đề:** nút "Bày hàng lên kệ" báo "mở thùng ở kho trước" dù bày tự động đã tự mở thùng (`transferToShelf(..., autoOpenCases)`); thông báo đổ cho hàng nguyên thùng mỗi khi bày được 0 món. Số "N kệ đang trống" đếm cả kệ quán xôi/nước/ăn vặt/tủ lạnh vốn không nhận hàng tạp hóa.
+- **Đã làm (có code):** `simulation.ts` thêm `explainAutoRestockFailure()` (kho trống / kệ đã đầy / hàng giữ cho quầy ăn uống / kệ trống chỉ nhận món riêng của quán / không khớp kệ) và `countFillableEmptyShelves()`; `App.tsx` dùng chúng cho toast và số kệ trống ở HUD; `WarehouseDock.tsx` nhận prop `fillableEmptyShelves`. Test mới 4.2d trong `suppliers.test.ts`.
+- **Bổ sung cùng ngày:** bày từng ô (nút "+ Bày hàng lên kệ" trong Sơ đồ kệ, `ShelfModal`) cũng tự mở thùng: `transferToShelf` thêm tham số `respectStallReserve`; `restockShelf` (đường replay/server) và `handleRestock` gọi `(…, true, false)` — tự mở thùng nhưng vẫn không bị chặn bởi phần giữ cho quầy ăn uống như bày tay trước đây. Ảnh chủ dự án cho thấy Kệ gỗ có thẻ "Kệ đang hỏng" nên mọi nút bày của kệ đó bị tắt: số "(31)" ở Sơ đồ kệ giờ không đếm kệ hỏng, tooltip nói rõ cần sửa ở Bảo trì, và `explainAutoRestockFailure` báo "mọi kệ hỏng".
+- **Kiểm chứng:** `typecheck` game-core + web PASS; `yarn test` game-core exit 0, 4.2d PASS kèm 2 assert mới (bày từng ô tự mở thùng, báo kệ hỏng) (08/10/2026). Chưa xem bằng mắt trên save thật của chủ dự án; nguyên nhân thật trên save đó vẫn là suy luận từ code, chưa xác nhận.
+
 # Art Direction Reset — "Vietnamese Neighborhood Pixel" (08/10/2026)
 - **Việc:** Thay hướng nghệ thuật UI (không chỉ đổi hex): bỏ cảm giác "beige dashboard/báo cũ", cream chỉ còn là bề mặt phụ; mỏ neo thị giác là xanh đậm, cỏ, ngói, trời/nước, nắng, gỗ. Chỉ đổi CSS/token, không đổi sprite/map/gameplay/logic/data.
 - **Đã làm (có code):**
