@@ -567,6 +567,23 @@ export function runSuggestionTests(): void {
     assert.ok(res.totalCost <= 100000);
   }
 
+  // 2b. NCC chỉ còn 1 sản phẩm mỗi món: số gợi ý không bao giờ vượt tồn NCC (không tự chọn 2), hàng thùng không bị lẻ.
+  {
+    const res = generateRestockSuggestions({
+      ...base,
+      options: { cashReservePct: 0 },
+      playerMoney: 5000000,
+      fixtures: [noodleShelf(0)],
+      dailyRecords: weekOf(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [d, { mi_hao_hao: 60 }]))),
+      supplierStockOf: () => 1,
+    });
+    for (const item of res.items) {
+      const caseSize = PRODUCT_MAP[item.productId]?.caseSize ?? 1;
+      assert.ok(item.quantity <= 1, `${item.productId}: NCC còn 1 nhưng gợi ý ${item.quantity}`);
+      assert.ok(caseSize === 1 || item.quantity % caseSize === 0, `${item.productId}: hàng thùng ${caseSize} không được gợi ý lẻ ${item.quantity}`);
+    }
+  }
+
   // 3. Hàng bán chậm/tồn nhiều không bị lấp đầy kệ; hàng chưa bán mà còn tồn thì chờ, không nhập thêm.
   {
     const res = generateRestockSuggestions({

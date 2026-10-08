@@ -34,8 +34,9 @@ export const CASHIER_QUEUE_TILES: GridPoint[] = [
 /** Ô vỉa hè trước cửa tiệm chính, suy từ vị trí đặt (mặc định (9,11)). */
 export const ENTRANCE_TILE: GridPoint = { ...BUILDING_MAP.main.entranceTile };
 /** Cột vỉa hè hai mép vùng chơi nơi khách đi bộ xuất hiện/rời đi (trong viền va chạm một ô). */
-const WALK_EDGE_WEST = PLAY_REGION.x0 + 1;
-const WALK_EDGE_EAST = PLAY_REGION.x1 - 1;
+/** Mép đi bộ theo bản đồ hiện tại (vùng chơi lớn lên khi khai hoang); bản đồ 36×22 cho đúng 1 và 34 như cũ. */
+const walkEdgeWest = (tileMap: GameTileMap): number => (tileMap.originTileX ?? PLAY_REGION.x0) + 1;
+const walkEdgeEast = (tileMap: GameTileMap): number => (tileMap.originTileX ?? PLAY_REGION.x0) + tileMap.width - 2;
 
 const QUEUE_LENGTH = CASHIER_QUEUE_TILES.length;
 const tileKey = (x: number, y: number) => `${x},${y}`;
@@ -212,13 +213,16 @@ export class CustomerManager {
     regularCandidate?: RegularCustomerDefinition | null,
     rainIntensity = 0,
     hasBikeSecurity = false,
-    arrivalContext?: { hour: number; weekday: number }
+    arrivalContext?: { hour: number; weekday: number },
+    parcelMultiplierFor?: (buildingId: BuildingId) => number
   ): CustomerState | null {
     if (!isStoreOpen) return null;
     // Cụm ẩm thực: càng nhiều tòa phụ đang mở thì các tòa phụ càng đông khách (tiệm chính giữ nhịp cũ).
+    // D5 (open-world-land-reclamation): nhịp sinh khách mỗi tòa phụ ngoài share còn nhân hệ số khách của LÔ tòa đứng
+    // (`parcelMultiplierFor`). Lô W0 mặt đường chính hệ số 1 → golden không đổi; khi tham số thiếu mặc định 1.
     const openSecondary = tileMap.buildings?.filter(building => building.id !== 'main' && building.open).length ?? 0;
     const cluster = foodClusterMultiplier(openSecondary);
-    const streams: Array<readonly [BuildingId, number]> = [['main', 1], ...BUILDING_TRAFFIC_SHARE.map(([id, share]) => [id, share * cluster] as const)];
+    const streams: Array<readonly [BuildingId, number]> = [['main', 1], ...BUILDING_TRAFFIC_SHARE.map(([id, share]) => [id, share * cluster * (parcelMultiplierFor?.(id) ?? 1)] as const)];
     for (const [streamId, factor] of streams) {
       // Chỉ tòa đang có và không thi công mới sinh khách (tòa chưa mua/đang dời không có dòng khách).
       if (!buildingSpawnsCustomers(tileMap.buildings, streamId)) continue;
@@ -341,8 +345,8 @@ export class CustomerManager {
       startPos = { ...vehicleSpot };
     } else {
       const doorTileX = entrance.x;
-      const leftX = WALK_EDGE_WEST;
-      const rightX = WALK_EDGE_EAST;
+      const leftX = walkEdgeWest(tileMap);
+      const rightX = walkEdgeEast(tileMap);
       let fromLeft = this.customerSequence % 2 === 0;
       if (Math.abs((fromLeft ? leftX : rightX) - doorTileX) > 16) fromLeft = Math.abs(leftX - doorTileX) <= Math.abs(rightX - doorTileX);
       startPos = tileCenter({ x: fromLeft ? leftX : rightX, y: 12 });
@@ -438,7 +442,7 @@ export class CustomerManager {
           y: Math.floor(customer.vehicleSpot.y / TILE_SIZE),
         });
       } else {
-        const exitX = (customer.id ? customer.id.charCodeAt(customer.id.length - 1) : 0) % 2 === 0 ? WALK_EDGE_WEST : WALK_EDGE_EAST;
+        const exitX = (customer.id ? customer.id.charCodeAt(customer.id.length - 1) : 0) % 2 === 0 ? walkEdgeWest(tileMap) : walkEdgeEast(tileMap);
         goals.push({ x: exitX, y: 12 });
       }
     }

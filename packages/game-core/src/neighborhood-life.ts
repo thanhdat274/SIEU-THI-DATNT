@@ -1,6 +1,6 @@
 import { StreetVehicleState } from '@game/shared';
 import {
-  APARTMENT_PARKING, AVENUE_WALK_X, STREET_VEHICLE_RULES, NEIGHBORHOOD_LOD, NEIGHBORHOOD_LOTS, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_SHELTERS, NPC_BUDGET, NPC_TYPES,
+  APARTMENT_PARKING, AVENUE_WALK_X, STREET_VEHICLE_RULES, NEIGHBORHOOD_LOD, NEIGHBORHOOD_LOTS, decorLotsOutsideWaves, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_SHELTERS, NPC_BUDGET, NPC_TYPES,
   PARK, PARK_BENCHES, PARK_PATHS, ROAD_MAP, SCHOOL, SCHOOL_GATE_PX, SHOP_AWNING_PX, SHOP_FRONT, TRAFFIC_ROADS, WALK_LINES, WORK_PORTALS,
   dialoguePhaseOf, dialogueWeatherOf, npcRingOf, parkAppeal, activeShelterZones, type DetailLevel, type NeighborNpcType, type NeighborhoodLot,
   type NeighborhoodQuality, type NpcRing, type NpcTypeDef,
@@ -126,6 +126,9 @@ export const shelterCapacity = (r: { x0: number; x1: number }): number => Math.m
 export class NeighborhoodLife {
   private npcs: Npc[] = [];
   private day = -1;
+  /** Nhà còn lại sau khi các đợt khai hoang đã mở gỡ nhà trang trí (land-reclamation 1.3). */
+  private lots: readonly NeighborhoodLot[] = NEIGHBORHOOD_LOTS;
+  private openedWavesKey = '';
   private seeded = false;
   private quality: NeighborhoodQuality = 'high';
   private lastHour = 7;
@@ -136,6 +139,14 @@ export class NeighborhoodLife {
   private crossings: Array<{ roadId: string; x0: number; x1: number }> = [];
 
   constructor(private readonly seed = 20260504) {}
+
+  public setOpenedWaves(openedWaves: readonly string[]): void {
+    const key = [...openedWaves].sort().join(',');
+    if (key === this.openedWavesKey) return;
+    this.openedWavesKey = key;
+    this.lots = decorLotsOutsideWaves(openedWaves);
+    if (this.seeded) this.populate();
+  }
 
   public setQuality(q: NeighborhoodQuality): void {
     if (q === this.quality && this.seeded) return;
@@ -172,7 +183,7 @@ export class NeighborhoodLife {
     const target = Math.round((NPC_BUDGET.near + NPC_BUDGET.middle + NPC_BUDGET.far) * scale * 1.9);
     const rng = new Mulberry32Rng(hashSeed(`neighborhood:${this.seed}`));
     const totalWeight = NPC_TYPES.reduce((sum, t) => sum + t.weight, 0);
-    const homes = NEIGHBORHOOD_LOTS;
+    const homes = this.lots;
     for (let i = 0; i < target; i++) {
       let pick = rng.next() * totalWeight;
       let def = NPC_TYPES[0];
@@ -293,7 +304,7 @@ export class NeighborhoodLife {
       case 'shop_trip': s.push({ kind: 'appear', at: home }, { kind: 'go', to: SHOP_PT }, dw(10, 22), ...goHome); break;
       case 'park_visit': s.push({ kind: 'appear', at: home }, { kind: 'go', to: this.benchPt(rng) }, dw(60, 180, 'sit'), { kind: 'go', to: parkGatePt() }, ...goHome); break;
       case 'stroll': {
-        const other = NEIGHBORHOOD_LOTS[Math.floor(rng.next() * NEIGHBORHOOD_LOTS.length)];
+        const other = this.lots[Math.floor(rng.next() * this.lots.length)];
         s.push({ kind: 'appear', at: home }, { kind: 'go', to: { x: other.door.x, y: LINE_Y[bandLine(other.id)], line: bandLine(other.id) } });
         if (rng.next() < 0.5) s.push({ kind: 'go', to: SHOP_PT }, dw(6, 14));
         s.push(...goHome);
@@ -311,7 +322,7 @@ export class NeighborhoodLife {
       case 'courier_run': {
         s.push({ kind: 'appear', at: SHOP_PT });
         for (let i = 0; i < 3; i++) {
-          const target = NEIGHBORHOOD_LOTS[Math.floor(rng.next() * NEIGHBORHOOD_LOTS.length)];
+          const target = this.lots[Math.floor(rng.next() * this.lots.length)];
           s.push({ kind: 'go', to: { x: target.door.x, y: LINE_Y[bandLine(target.id)], line: bandLine(target.id) } }, dw(3, 6));
         }
         s.push({ kind: 'go', to: this.portalPt(rng) }, { kind: 'vanish' });

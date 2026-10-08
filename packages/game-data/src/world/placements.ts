@@ -294,12 +294,17 @@ const overlap = (a: BuildingBounds, b: BuildingBounds): BuildingBounds | null =>
 /**
  * Luật đặt một tòa phụ (D3): đúng hàng mặt tiền, nằm trọn trong lô, không đè tòa khác (chỉ được chung một cột tường), mỗi lô một tòa,
  * ô vỉa hè trước cửa không có cây. `others` là các vị trí đặt còn lại (tiệm chính + tòa phụ khác đang có). Trả mã lỗi hoặc null.
+ * `ownedParcelIds` (open-world-land-reclamation D4): lô đợt mới (wave !== 0) phải đã MUA bằng `buy_parcel` mới đặt được tòa;
+ * lô W0 coi như đã sở hữu. Thiếu tham số → không kiểm sở hữu (giữ hành vi cũ để golden không đổi).
  */
-export function validatePlacement(candidate: BuildingPlacementRecord, others: readonly BuildingPlacement[]): string | null {
+export function validatePlacement(candidate: BuildingPlacementRecord, others: readonly BuildingPlacement[], ownedParcelIds: Iterable<string> = []): string | null {
+  const ownedParcels = new Set(ownedParcelIds);
   const template = Object.prototype.hasOwnProperty.call(BUILDING_TEMPLATES, candidate.buildingId) ? BUILDING_TEMPLATES[candidate.buildingId as BuildingId] : undefined;
   if (!template) return `unknown_building:${candidate.buildingId}`;
   const parcel = PARCEL_MAP[candidate.parcelId];
   if (!parcel) return `unknown_parcel:${candidate.parcelId}`;
+  // D4: lô đợt mới (không phải W0) phải thuộc sở hữu đã mua trước khi đặt tòa; W0 luôn hợp lệ.
+  if (parcel.wave !== 0 && !ownedParcels.has(candidate.parcelId)) return 'parcel_not_owned';
   if (!Number.isSafeInteger(candidate.originX) || !Number.isSafeInteger(candidate.originY)) return `invalid_origin:${candidate.buildingId}`;
   const geo = placementGeometry(candidate as BuildingPlacement);
   // Đợt 0: mặt tiền nằm ở hàng y=10 (vỉa hè y 11–12) nên gốc y cố định theo mẫu tòa.
@@ -326,7 +331,7 @@ export function validatePlacement(candidate: BuildingPlacementRecord, others: re
  * Lỗi của vị trí đặt trong save, hoặc null nếu dùng được. Tiệm chính cố định ở lô/gốc mặc định (dời tiệm chính ngoài phạm vi Bước 3), kèm
  * `floorTiles` hợp lệ (`checkFootprintTiles`). Tòa phụ đã mua đặt được ở bất kỳ lô nào qua `validatePlacement`. Bản ghi của tòa chưa mua bị bỏ qua.
  */
-export function placementsProblem(placements: readonly BuildingPlacementRecord[] | undefined, ownedPlotIds: Iterable<string> = []): string | null {
+export function placementsProblem(placements: readonly BuildingPlacementRecord[] | undefined, ownedPlotIds: Iterable<string> = [], ownedParcelIds: Iterable<string> = []): string | null {
   if (!placements || placements.length === 0) return null;
   const owned = new Set(ownedPlotIds);
   const present = new Set<string>(placedBuildingIds(owned));
@@ -344,7 +349,7 @@ export function placementsProblem(placements: readonly BuildingPlacementRecord[]
   if (!main) placed.unshift(defaultPlacementOf('main'));
   for (const record of relevant) {
     if (record.buildingId === 'main') continue;
-    const problem = validatePlacement(record, placed.filter(other => other.buildingId !== record.buildingId));
+    const problem = validatePlacement(record, placed.filter(other => other.buildingId !== record.buildingId), ownedParcelIds);
     if (problem) return problem;
   }
   // D7b: lô đã lấn (`parcelIds`) phải có thật và không thuộc tòa khác.

@@ -73,7 +73,7 @@ export const hash = (...n: number[]): number => {
 export const rnd = (...n: number[]): number => (hash(...n) % 100000) / 100000;
 
 /** Một sprite đồ vật: `y` là đáy sprite, `anchorX` 0 (x là mép trái) hoặc 0,5 (x là giữa), `bias` cộng vào thứ tự vẽ; `solid` là hộp chân chặn người chơi. */
-export interface PropPlacement { key: string; x: number; y: number; anchorX: 0 | 0.5; bias: number; solid?: WorldBox }
+export interface PropPlacement { key: string; x: number; y: number; anchorX: 0 | 0.5; bias: number; solid?: WorldBox; /** Đồ vật trước một nhà trang trí: ẩn cùng nhà khi đợt khai hoang mở. */ lotId?: string }
 
 /** Rộng sprite (px) từng loại và hộp chân (rộng × cao, căn giữa sprite, sát đáy). */
 const PROP_FOOT = {
@@ -143,9 +143,11 @@ export const NEIGHBORHOOD_PROPS: readonly PropPlacement[] = (() => {
     if (lot.kind === 'apartment') continue;
     const h = hash(lot.x, lot.frontY, 7);
     const lx = lot.x * T, bottom = lot.frontY * T + 4;
+    const mark = out.length;
     if (h % 3 !== 0) out.push(prop(`vehicle_motorbike_parked_${h % 3}`, lx + 40 + (h % 5) * 12, bottom + 18, 0.5, 0, 'bike'));
     if (h % 5 === 0) out.push(prop('nb_bin', lx + lot.w * T - 22, bottom + 14, 0, 0, 'bin'));
     if (h % 7 === 0) out.push(prop(`nb_pot_${h % 3}`, lx + 6, bottom + 12, 0, 0, 'pot'));
+    for (let i = mark; i < out.length; i++) out[i].lotId = lot.id;
   }
   // Cây: hàng phía nam đường chính, hàng dọc đường trường (phía bắc) và quanh bãi xe chung cư.
   for (const x of NEIGHBORHOOD_SOUTH_TREE_X) out.push(prop(`nb_tree_round_${(x + 100) % 3}`, x * T, STREET_TREE_Y_TILES * T, 0.5, 0, 'tree'));
@@ -174,11 +176,6 @@ export const NEIGHBORHOOD_OBSTACLES: readonly WorldBox[] = (() => {
   const add = (x: number, y: number, width: number, height: number) => { if (width > 0 && height > 0) out.push({ x, y, width, height }); };
 
   // Nhà dân, nhà phố, chung cư: cả khối sprite từ mái tới chân tường.
-  for (const lot of NEIGHBORHOOD_LOTS) {
-    const bottom = lot.frontY * T + 4;
-    const h = lotHeightPx(lot);
-    add(lot.x * T, bottom - h, lot.w * T, h - 6);
-  }
 
   // Tòa nhà trường + hàng rào (chừa cổng) + hai biên.
   const bd = SCHOOL.building;
@@ -206,7 +203,19 @@ export const NEIGHBORHOOD_OBSTACLES: readonly WorldBox[] = (() => {
   const lamp = (xt: number, bottom: number) => add(xt * T + STREET_LAMP_COLLIDER.offsetX, bottom - T + STREET_LAMP_COLLIDER.offsetY, STREET_LAMP_COLLIDER.width, STREET_LAMP_COLLIDER.height);
   for (const l of NEIGHBORHOOD_STREET_LAMPS) lamp(l.x, l.y * T + l.bottomOffset);
   for (const l of PARK_LAMPS) lamp(l.x, (l.y + 1) * T);
-  for (const p of NEIGHBORHOOD_PROPS) if (p.solid) add(p.solid.x, p.solid.y, p.solid.width, p.solid.height);
+  for (const p of NEIGHBORHOOD_PROPS) if (p.solid && !p.lotId) add(p.solid.x, p.solid.y, p.solid.width, p.solid.height);
+  return out;
+})();
+
+/** Hộp chặn gắn với một nhà trang trí (thân nhà + đồ vật trước nhà); bỏ qua khi nhà bị ẩn bởi đợt khai hoang. */
+export const NEIGHBORHOOD_LOT_OBSTACLES: ReadonlyArray<WorldBox & { lotId: string }> = (() => {
+  const out: Array<WorldBox & { lotId: string }> = [];
+  for (const lot of NEIGHBORHOOD_LOTS) {
+    const bottom = lot.frontY * T + 4;
+    const h = lotHeightPx(lot);
+    out.push({ x: lot.x * T, y: bottom - h, width: lot.w * T, height: h - 6, lotId: lot.id });
+  }
+  for (const p of NEIGHBORHOOD_PROPS) if (p.solid && p.lotId) out.push({ ...p.solid, lotId: p.lotId });
   return out;
 })();
 
@@ -216,8 +225,12 @@ export const isOutsideNeighborhood = (box: WorldBox): boolean =>
   || box.x + box.width > NEIGHBORHOOD_WALK_BOUNDS.x1 || box.y + box.height > NEIGHBORHOOD_WALK_BOUNDS.y1;
 
 /** Hộp chạm vật cản khu phố hoặc ra ngoài vùng đi được. */
-export function hitsNeighborhood(box: WorldBox): boolean {
+export function hitsNeighborhood(box: WorldBox, hiddenLotIds?: ReadonlySet<string>): boolean {
   if (isOutsideNeighborhood(box)) return true;
+  for (const o of NEIGHBORHOOD_LOT_OBSTACLES) {
+    if (hiddenLotIds?.has(o.lotId)) continue;
+    if (box.x < o.x + o.width && box.x + box.width > o.x && box.y < o.y + o.height && box.y + box.height > o.y) return true;
+  }
   for (const o of NEIGHBORHOOD_OBSTACLES) {
     if (box.x < o.x + o.width && box.x + box.width > o.x && box.y < o.y + o.height && box.y + box.height > o.y) return true;
   }

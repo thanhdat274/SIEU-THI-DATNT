@@ -1,5 +1,5 @@
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, tileIndex, tileInMap } from '@game/shared';
-import { hitsNeighborhood, isFenceTile, streetLampBoxes } from '@game/data';
+import { hiddenDecorLotIds, hitsNeighborhood, isFenceTile, streetLampBoxes } from '@game/data';
 
 export interface BoundingBox {
   x: number;
@@ -13,6 +13,8 @@ const LAMP_BOXES = streetLampBoxes();
 export class CollisionSystem {
   private tileMap: GameTileMap;
   private fixtures: StoreFixture[];
+  /** Nhà trang trí đã bị đợt khai hoang gỡ: không còn chặn người chơi (land-reclamation 1.3). */
+  private hiddenLotIds: ReadonlySet<string> | undefined;
 
   constructor(tileMap: GameTileMap, fixtures: StoreFixture[]) {
     this.tileMap = tileMap;
@@ -21,6 +23,11 @@ export class CollisionSystem {
 
   public updateFixtures(fixtures: StoreFixture[]): void {
     this.fixtures = fixtures;
+  }
+
+  public setOpenedWaves(openedWaves: readonly string[]): void {
+    const hidden = hiddenDecorLotIds(openedWaves);
+    this.hiddenLotIds = hidden.size > 0 ? hidden : undefined;
   }
 
   public updateTileMap(tileMap: GameTileMap): void {
@@ -106,7 +113,7 @@ export class CollisionSystem {
       const rotated = fix.rotation === 90 || fix.rotation === 270;
       if (box.x < left + (rotated ? fix.heightTiles : fix.widthTiles) * TILE_SIZE && box.y < top + (rotated ? fix.widthTiles : fix.heightTiles) * TILE_SIZE) return true;
     }
-    return hitsNeighborhood(box);
+    return hitsNeighborhood(box, this.hiddenLotIds);
   }
 
   /**

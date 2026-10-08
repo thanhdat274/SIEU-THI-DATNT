@@ -161,9 +161,9 @@ import {
   hasPerk,
 } from './skills';
 import { applyBuildingLayout, setAwningOpen } from '@game/data';
-import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS } from '@game/data';
+import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS } from '@game/data';
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
-import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS } from '@game/data';
+import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS, RECLAMATION_WAVE_MAP } from '@game/data';
 import { RestockClaimManager } from './restock-claims';
 import { StorageManager } from './storage';
 import { LedgerManager } from './ledger';
@@ -176,6 +176,7 @@ import { QuestManager } from './quest-manager';
 import { BUILDING_MAP, chilledDisplayAppeal, fridgeShelfLifeBonus, isChilledDisplayItem, refrigerationAccepts } from '@game/data';
 import { DailyRoutineSystem, HOME_DOOR_TILE, type DailyRoutineState, type InventorySummary, type RoutineTickOutput } from './daily-routine';
 import { CoopRoutineSystem, type CoopPlayerRoutineConfig, type CoopRoutineTickInput, type CoopRoutineTickOutput } from './coop-routine';
+import { reclaimWaveAllowed, startReclaimWave, buyParcelAllowed, customerTrafficMultiplier } from './reclamation';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
@@ -504,6 +505,7 @@ export class GameSimulation {
     this.hydrateStock(initialSave.worldTime.day);
 
     this.collisionSystem = new CollisionSystem(this.tileMap, this.fixtures);
+    this.collisionSystem.setOpenedWaves(this.worldOpenState.openedWaves);
     this.dailyRoutine = new DailyRoutineSystem({
       onToast: (message, type) => this.callbacks.onToast?.(message, type),
       setStoreOpen: (open) => { if (this.clock.getTime().isStoreOpen !== open) this.clock.toggleStoreStatus(); },
@@ -548,6 +550,8 @@ export class GameSimulation {
       this.customerManager.abandonAllBaskets(this.tileMap, this.fixtures, this.inventory, (cnt) => {
         this.statistics.totalSpoiled = (this.statistics.totalSpoiled ?? 0) + cnt;
       }, day - 1, 1 + getSkillModifier(this.skills, 'shelf_capacity_bonus'));
+      // Khai hoang: đầu ngày — đợt hết thi công (wavesUnderConstruction[waveId] <= day) mở vùng chơi (D3).
+      this.finishReclaimedWaves(day);
       for (const member of this.staff) { this.finishStaffJob(member, true); member.diningTask = undefined; }
       this.processPayroll(day - 1);
       this.processStalls(day - 1);
@@ -688,8 +692,23 @@ export class GameSimulation {
   public getStoredFixtures(): StoreFixture[] { return structuredClone(this.storedFixtures); }
   public getUnlockedPlotIds(): string[] { return [...this.unlockedPlotIds]; }
   public getBuildingPlacements(): BuildingPlacementRecord[] | undefined { return this.buildingPlacements ? structuredClone(this.buildingPlacements) : undefined; }
+  /**
+   * D5 (open-world-land-reclamation): hệ số khách theo LÔ cho từng tòa để nhân nhịp sinh khách tòa phụ trong `maybeSpawnCustomer`.
+   * Nguồn vị trí = `buildingPlacements` (vị trí đã lưu) hoặc `DEFAULT_PLACEMENTS` (bố trí mặc định). Tòa chưa đặt / lô không
+   * tìm thấy → mặc định 1. Bốn lô W0 đều mặt đường chính (hệ số 1) nên tích bằng `BUILDING_TRAFFIC_SHARE` cũ → golden không đổi.
+   */
+  private buildingParcelTrafficMultiplier(): (buildingId: string) => number {
+    const placements = this.buildingPlacements ?? DEFAULT_PLACEMENTS;
+    return (buildingId: string) => {
+      const p = placements.find(bp => bp.buildingId === buildingId);
+      return p ? customerTrafficMultiplier(p.parcelId) : 1;
+    };
+  }
   /** Bản đồ theo đất đã mua, quầy đã mở và vị trí đặt/ô sàn mở rộng hiện tại. */
-  private buildTileMap(): GameTileMap { return generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned, this.buildingPlacements); }
+  private buildTileMap(): GameTileMap { return generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned, this.buildingPlacements, this.worldOpenState.openedWaves); }
+  public getWorldOpenState(): WorldOpenState { return structuredClone(this.worldOpenState); }
+  public getOwnedParcelIds(): string[] { return [...this.ownedParcelIds]; }
+  public getOpenedWaves(): string[] { return [...this.worldOpenState.openedWaves]; }
   public getDecorOwned(): string[] { return [...this.decorOwned]; }
   /** Điểm thu hút từ trang trí và hệ số khách tương ứng. */
   public getDecorAttraction(): { points: number; trafficMultiplier: number } {
@@ -701,7 +720,7 @@ export class GameSimulation {
     if (this.clock.getTime().isStoreOpen || this.customerManager.getCustomers().some(customer => customer.stage !== 'leaving') || this.staff.some(member => !!member.workerTask || !!member.diningTask)) {
       return { error: 'store_open' };
     }
-    const nextMap = generateStarterTileMap(save.storeLayout.unlockedPlotIds ?? [], this.stalls.owned, save.storeLayout.buildingPlacements);
+    const nextMap = generateStarterTileMap(save.storeLayout.unlockedPlotIds ?? [], this.stalls.owned, save.storeLayout.buildingPlacements, save.world?.openedWaves);
     const valid = validateStoreLayout(save, nextMap);
     if (valid.error) return valid;
     this.tileMap = nextMap;
@@ -715,6 +734,74 @@ export class GameSimulation {
     const result = buyLandPlot(this.exportSaveData(), plotId, placement);
     if (!result.save || result.error) return result;
     return this.applyStoreLayout(result.save);
+  }
+
+  /**
+   * Mở đợt khai hoang (lệnh `reclaim_wave`, D3): kiểm cấp + tiền, trừ tiền MỘT LẦN, đưa đợt vào thi công
+   * (`wavesUnderConstruction[waveId] = day + constructionDays`). Đợt chỉ vào `openedWaves` khi HẾT thi công
+   * (đầu ngày hoàn thành — xem `finishReclaimedWaves` chạy trong callback đổi ngày của đồng hồ).
+   * State đợt đọc/ghi trực tiếp trên `worldOpenState` (nguồn duy nhất, đã xuất/nạp save schema 7).
+   */
+  public reclaimWave(waveId: string): { success: boolean; reason?: string } {
+    const common = {
+      level: this.playerData.level,
+      money: this.playerData.money,
+      openedWaves: this.worldOpenState.openedWaves,
+      wavesUnderConstruction: this.worldOpenState.wavesUnderConstruction,
+      day: this.clock.getTime().day,
+    };
+    const check = reclaimWaveAllowed(common, waveId);
+    if (!check.ok) return { success: false, reason: check.reason };
+    const wave = RECLAMATION_WAVE_MAP[waveId];
+    if (!wave) return { success: false, reason: 'unknown_wave' };
+    this.playerData.money -= wave.cost;
+    this.worldOpenState.wavesUnderConstruction = startReclaimWave(common, waveId, this.clock.getTime().day).wavesUnderConstruction;
+    this.notifyStateChanged();
+    return { success: true };
+  }
+
+  /**
+   * Mua lô đợt mới (lệnh `buy_parcel`, D4): kiểm đợt MỞ XONG + lô chưa sở hữu + đủ tiền, trừ giá
+   * (`PARCEL_BASE_PRICE × số ô × landValueMultiplier`), thêm vào `ownedParcelIds`. Lô W0 coi như đã sở hữu
+   * nên không mua được (trả `already_owned`).
+   */
+  public buyParcel(parcelId: string): { success: boolean; reason?: string; price?: number } {
+    const check = buyParcelAllowed({
+      level: this.playerData.level,
+      money: this.playerData.money,
+      openedWaves: this.worldOpenState.openedWaves,
+      wavesUnderConstruction: this.worldOpenState.wavesUnderConstruction,
+      day: this.clock.getTime().day,
+      ownedParcelIds: this.ownedParcelIds,
+    }, parcelId);
+    if (!check.ok) return { success: false, reason: check.reason };
+    if (typeof check.price !== 'number') return { success: false, reason: 'unknown_parcel' };
+    this.playerData.money -= check.price;
+    this.ownedParcelIds = [...this.ownedParcelIds, parcelId];
+    this.notifyStateChanged();
+    return { success: true, price: check.price };
+  }
+
+  /**
+   * Đầu ngày mới (callback đổi ngày của đồng hồ): đợt hết thi công (`wavesUnderConstruction[waveId] <= day`)
+   * chuyển sang `openedWaves` (mở vùng chơi) và xóa khỏi `wavesUnderConstruction`. Idempotent.
+   */
+  private finishReclaimedWaves(day: number): void {
+    const wuc = this.worldOpenState.wavesUnderConstruction;
+    const completed = Object.keys(wuc).filter(waveId => wuc[waveId] <= day);
+    if (completed.length === 0) return;
+    const next = { ...wuc };
+    for (const waveId of completed) delete next[waveId];
+    const opened = [...this.worldOpenState.openedWaves];
+    for (const waveId of completed) if (!opened.includes(waveId)) opened.push(waveId);
+    this.worldOpenState.openedWaves = opened;
+    this.worldOpenState.wavesUnderConstruction = next;
+    this.collisionSystem.setOpenedWaves(opened);
+    // Vùng chơi lớn lên (D2): dựng lại bản đồ, va chạm, đường đi khách; renderer nhận qua onMapChanged.
+    this.tileMap = this.buildTileMap();
+    this.collisionSystem.updateTileMap(this.tileMap);
+    this.customerManager.rerouteAll(this.tileMap, this.fixtures);
+    this.callbacks.onMapChanged?.(this.tileMap);
   }
 
   /** Dời một tòa phụ sang lô/gốc x khác (xem `relocateBuilding`): trừ phí, dịch nội thất, tòa thi công tới sáng hôm sau. */
@@ -4198,7 +4285,8 @@ export class GameSimulation {
       regularCandidate,
       this.getRainIntensity(),
       this.hasSecurityGuardOnShift(),
-      { hour: this.clock.getTime().hour, weekday: weekdayOf(this.clock.getTime().day) }
+      { hour: this.clock.getTime().hour, weekday: weekdayOf(this.clock.getTime().day) },
+      this.buildingParcelTrafficMultiplier()
     );
     if (spawned?.id && rollShoplifter(this.clock.getTime().day, spawned.id, this.playerData.level, !!spawned.regularId)) spawned.thief = true;
 
@@ -5492,6 +5580,7 @@ export class GameSimulation {
     this.decorOwned = [...(saveData.storeLayout.decorOwned ?? [])];
     this.ownedParcelIds = saveData.storeLayout.ownedParcelIds ? [...saveData.storeLayout.ownedParcelIds] : ownedParcelIdsDefault();
     this.worldOpenState = saveData.world ? structuredClone(saveData.world) : defaultWorldOpenState();
+    this.collisionSystem?.setOpenedWaves(this.worldOpenState.openedWaves);
     this.inventory = saveData.inventory.map((i) => ({ ...i }));
     this.holdingArea = (saveData.holdingArea ?? []).map((h) => ({ ...h }));
     this.planogram = dict(saveData.planogram);
