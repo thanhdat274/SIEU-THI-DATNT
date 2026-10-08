@@ -1,7 +1,7 @@
 import { Container, Graphics, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
 import type { WeatherVisualState } from '@game/core';
 import {
-  APARTMENT_PARKING, AVENUES, INTERSECTIONS, NEIGHBORHOOD_LOTS, NEIGHBORHOOD_PROPS, hash, rnd, NEIGHBORHOOD_STREET_LAMPS, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, PARK, PARK_LAMPS, PARK_PATHS, SCHOOL,
+  APARTMENT_PARKING, AVENUES, INTERSECTIONS, NEIGHBORHOOD_LOTS, decorLotsOutsideWaves, RECLAMATION_WAVES, NEIGHBORHOOD_PROPS, hash, rnd, NEIGHBORHOOD_STREET_LAMPS, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, PARK, PARK_LAMPS, PARK_PATHS, SCHOOL,
   TRAFFIC_ROADS, type NeighborhoodLot, type NeighborhoodQuality, type RoadDef,
 } from '@game/data';
 import type { PixelTextureFactory } from './textures';
@@ -64,6 +64,13 @@ export class NeighborhoodScene {
   private windowGlow = new Graphics();
   private lampGlows: Sprite[] = [];
   private built = false;
+  /** Sprite nhà + khung cửa sổ sáng theo id nhà, để ẩn nhà nằm trong đợt khai hoang đã mở (land-reclamation 1.3). */
+  private lotSprites = new Map<string, Sprite>();
+  private lotProps = new Map<string, Sprite[]>();
+  /** Xe đỗ/đồ vật bãi xe chung cư: ẩn khi vùng đó đã được khai hoang. */
+  private parkingProps: Array<{ sprite: Sprite; tx: number; ty: number }> = [];
+  private lotWindows = new Map<string, Array<[number, number, number, number]>>();
+  private visibleLotIds: ReadonlySet<string> | null = null;
   private readonly hillParallax = [0.32, 0.5, 0.7];
   private lastSkyKey = '';
 
@@ -359,6 +366,25 @@ export class NeighborhoodScene {
   private buildLots(): void {
     const litCount = { n: 0 };
     for (const lot of NEIGHBORHOOD_LOTS) this.addLot(lot, litCount);
+    this.redrawLotWindows();
+  }
+
+  /** Ẩn nhà trang trí trong vùng các đợt đã mở (dùng `decorLotsOutsideWaves`), vẽ lại cửa sổ sáng. */
+  public setOpenedWaves(openedWaves: readonly string[]): void {
+    this.visibleLotIds = new Set(decorLotsOutsideWaves(openedWaves).map((l) => l.id));
+    for (const [id, sprite] of this.lotSprites) sprite.visible = this.visibleLotIds.has(id);
+    for (const [id, sprites] of this.lotProps) for (const sprite of sprites) sprite.visible = this.visibleLotIds.has(id);
+    const regions = RECLAMATION_WAVES.filter((w) => openedWaves.includes(w.id)).map((w) => w.region);
+    for (const { sprite, tx, ty } of this.parkingProps) sprite.visible = !regions.some((r) => tx >= r.x0 && tx <= r.x1 && ty >= r.y0 && ty <= r.y1);
+    this.redrawLotWindows();
+  }
+
+  private redrawLotWindows(): void {
+    this.windowGlow.clear();
+    for (const [id, rects] of this.lotWindows) {
+      if (this.visibleLotIds && !this.visibleLotIds.has(id)) continue;
+      for (const [x, y, w, h] of rects) this.windowGlow.rect(x, y, w, h).fill({ color: 0xffd980, alpha: 0.55 });
+    }
   }
 
   private lotKey(lot: NeighborhoodLot): string {
@@ -369,7 +395,9 @@ export class NeighborhoodScene {
   private addLot(lot: NeighborhoodLot, litCount: { n: number }): void {
     const x = lot.x * T;
     const bottom = lot.frontY * T + 4;
-    this.sprite(this.props, this.lotKey(lot), x, bottom, 0, 0);
+    this.lotSprites.set(lot.id, this.sprite(this.props, this.lotKey(lot), x, bottom, 0, 0));
+    const rects: Array<[number, number, number, number]> = [];
+    this.lotWindows.set(lot.id, rects);
     // Cửa sổ sáng đèn khi tối: một phần cửa sổ bật sáng, cố định theo nhà
     if (lot.kind !== 'apartment') {
       const wins = houseLitWindows(lot.variant, lot.floors, lot.w);
@@ -377,7 +405,7 @@ export class NeighborhoodScene {
       for (let i = 0; i < wins.length; i++) {
         if (rnd(lot.x, lot.frontY, i, 61) > 0.5) continue;
         const w = wins[i];
-        this.windowGlow.rect(x + w.x, spriteTop + w.y, w.w, w.h).fill({ color: 0xffd980, alpha: 0.55 });
+        rects.push([x + w.x, spriteTop + w.y, w.w, w.h]);
         litCount.n++;
       }
     } else {
@@ -385,7 +413,7 @@ export class NeighborhoodScene {
       for (let f = 0; f < lot.floors; f++) for (let i = 0; i < 6; i++) {
         if (rnd(lot.x, f, i, 71) > 0.35) continue;
         const wx = (i < 3 ? 16 + i * 40 : 160 + 28 + (i - 3) * 40);
-        this.windowGlow.rect(x + wx, top + 22 + f * 36 + 6, 16, 18).fill({ color: 0xffd980, alpha: 0.55 });
+        rects.push([x + wx, top + 22 + f * 36 + 6, 16, 18]);
       }
     }
   }
@@ -434,14 +462,23 @@ export class NeighborhoodScene {
 
   /** Mọi đồ vật rải trong khu phố vẽ theo `NEIGHBORHOOD_PROPS`; cùng danh sách đó cho va chạm người chơi. */
   private buildProps(): void {
-    for (const p of NEIGHBORHOOD_PROPS) if (p.key) this.sprite(this.props, p.key, p.x, p.y, p.anchorX, p.bias);
+    for (const p of NEIGHBORHOOD_PROPS) {
+      if (!p.key) continue;
+      const sprite = this.sprite(this.props, p.key, p.x, p.y, p.anchorX, p.bias);
+      const ptx = p.x / T, pty = p.y / T;
+      if (!p.lotId && ptx >= APARTMENT_PARKING.x0 && ptx <= APARTMENT_PARKING.x1 + 1 && pty >= APARTMENT_PARKING.y0 && pty <= APARTMENT_PARKING.y1 + 1) this.parkingProps.push({ sprite, tx: Math.floor(ptx), ty: Math.floor(pty) });
+      if (p.lotId) {
+        const list = this.lotProps.get(p.lotId);
+        if (list) list.push(sprite); else this.lotProps.set(p.lotId, [sprite]);
+      }
+    }
   }
 
   // ------------------------------------------------------------------ biển hiệu chữ  // ------------------------------------------------------------------ biển hiệu chữ
 
   private buildLabels(): void {
     const mk = (text: string, x: number, y: number, size: number, fill: number, stroke?: number) => {
-      const t = new Text({ text, style: { fontFamily: 'Arial', fontSize: size, fontWeight: 'bold', fill, ...(stroke !== undefined ? { stroke: { color: stroke, width: 2 } } : {}), align: 'center' } });
+      const t = new Text({ text, style: { fontFamily: 'VT323, Arial, sans-serif', fontSize: Math.round(size * 1.35), fontWeight: 'bold', fill, ...(stroke !== undefined ? { stroke: { color: stroke, width: 2 } } : {}), align: 'center' } });
       t.anchor.set(0.5);
       t.position.set(Math.round(x), Math.round(y));
       this.labels.addChild(t);

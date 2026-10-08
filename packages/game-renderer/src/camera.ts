@@ -18,6 +18,12 @@ export class PixelCamera {
     this.mapHeightPixels = mapHeightTiles * TILE_SIZE;
   }
 
+  /** Vùng chơi lớn lên khi khai hoang đợt mới (land-reclamation 2.1). */
+  public setMapSize(mapWidthTiles: number, mapHeightTiles: number): void {
+    this.mapWidthPixels = mapWidthTiles * TILE_SIZE;
+    this.mapHeightPixels = mapHeightTiles * TILE_SIZE;
+  }
+
   private isCustomZoom: boolean = false;
   /** Zoom xa nhất 0,5× (thấy cả khu phố): mỗi điểm ảnh sprite = nửa điểm ảnh màn hình, vẫn nearest-neighbor, không méo. */
   public minZoom: number = ZOOM_MIN;

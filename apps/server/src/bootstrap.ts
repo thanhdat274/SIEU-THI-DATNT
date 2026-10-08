@@ -48,6 +48,7 @@ const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
   'checkout',
   'hire_staff', 'pay_wage_debt', 'set_staff_shift', 'assign_refill_job', 'dispose_stock', 'open_case', 'buy_plot', 'order_supplier', 'maintain_fixture', 'maintain_all_service', 'security_action',
   'buy_warehouse_tier', 'buy_storage_rack',
+  'reclaim_wave', 'buy_parcel',
   'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',
   'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
 ]);
@@ -117,6 +118,7 @@ export class GameController {
       'restock', 'unstock', 'set_price', 'reset_prices', 'set_restock_options', 'set_auto_buy_stalls', 'set_auto_buy_config',
       'hire_staff', 'pay_wage_debt', 'set_staff_shift', 'assign_refill_job',
       'buy_plot', 'buy_warehouse_tier', 'buy_storage_rack', 'auto_buy_sync',
+      'reclaim_wave', 'buy_parcel',
       'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',
       'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
     ]);
@@ -195,13 +197,13 @@ export class GameController {
         throw new BadRequestException('Cửa hàng phải đóng, không còn khách phục vụ hoặc nhân viên đang làm việc.');
       }
       const normalizedCurrent = { ...currentBusiness.save, schemaVersion: 3, storeLayout: normalizeLayout(currentBusiness.save) } as SaveGameData;
-      const mapFor = (ids: readonly string[], placements?: readonly BuildingPlacementRecord[]) => generateStarterTileMap(ids, [], placements);
+      const mapFor = (ids: readonly string[], placements?: readonly BuildingPlacementRecord[]) => generateStarterTileMap(ids, [], placements, normalizedCurrent.world?.openedWaves);
       const headlessInput = { getMovementVector: () => ({ x: 0, y: 0 }), consumeInteract: () => false, consumeInventoryToggle: () => false };
       const canonicalSave = new GameSimulation(normalizedCurrent, mapFor(normalizedCurrent.storeLayout.unlockedPlotIds ?? [], normalizedCurrent.storeLayout.buildingPlacements), headlessInput)
         .exportSaveData(normalizedCurrent.id, body.expectedRevision);
       const expected = applyStoreLayoutActions(canonicalSave, payload.actions, mapFor);
       if (!expected.save) throw new BadRequestException(`Bố cục không hợp lệ: ${expected.error ?? 'unknown'}`);
-      const validation = validateStoreLayout(expected.save, mapFor(expected.save.storeLayout.unlockedPlotIds ?? [], expected.save.storeLayout.buildingPlacements));
+      const validation = validateStoreLayout(expected.save, generateStarterTileMap(expected.save.storeLayout.unlockedPlotIds ?? [], [], expected.save.storeLayout.buildingPlacements, expected.save.world?.openedWaves));
       if (validation.error) throw new BadRequestException(`Bố cục không hợp lệ: ${validation.error}`);
       expected.save.id = currentBusiness.save.id;
       expected.save.revision = body.expectedRevision + 1;
@@ -220,7 +222,7 @@ export class GameController {
         // Save cũ/seed chưa qua simulation: lần load đầu migrate thêm fixture mặc định (kho...), nên so với bản đã chuẩn hóa.
         const baseline = new GameSimulation(
           { ...commandBusiness.save, schemaVersion: 3, storeLayout: normalizeLayout(commandBusiness.save) } as SaveGameData,
-          generateStarterTileMap(commandBusiness.save.storeLayout.unlockedPlotIds ?? [], [], commandBusiness.save.storeLayout.buildingPlacements),
+          generateStarterTileMap(commandBusiness.save.storeLayout.unlockedPlotIds ?? [], [], commandBusiness.save.storeLayout.buildingPlacements, commandBusiness.save.world?.openedWaves),
           { getMovementVector: () => ({ x: 0, y: 0 }), consumeInteract: () => false, consumeInventoryToggle: () => false },
         ).exportSaveData(commandBusiness.save.id, body.expectedRevision);
         return JSON.stringify(layoutGeometry(baseline)) === submitted;
@@ -357,7 +359,9 @@ async function main() {
   const config = readRuntimeConfig();
   const app = await createServer();
   app.enableShutdownHooks();
-  app.enableCors({ origin: config.webOrigin, allowedHeaders: ['Content-Type', 'Authorization'], methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] });
+  // Khách dev (hai client trên localhost) gửi thêm X-Dev-Client-Id; chỉ mở khi server đang bypass Google.
+  const corsHeaders = process.env.GOOGLE_AUTH_BYPASS === 'true' ? ['Content-Type', 'Authorization', 'X-Dev-Client-Id'] : ['Content-Type', 'Authorization'];
+  app.enableCors({ origin: config.webOrigin, allowedHeaders: corsHeaders, methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] });
   await app.listen(config.port, config.host);
   console.log(`Server listening on ${config.host}:${config.port} — WS at ws://${config.host}:${config.port}/ws`);
 }

@@ -5,7 +5,7 @@ import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, weekdayO
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
-import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId} from '@game/data';
+import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, type LandParcel} from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -134,6 +134,9 @@ export class PixiGameViewport {
   private slowFrames = 0;
   private onZoomChange?: (zoom: number) => void;
   private ambientSprites: Array<{sprite: Sprite; key: string; frames: number}> = [];
+  /** Biển lô đợt khai hoang + công trường (land-reclamation 4.2/4.3); dựng lại khi trạng thái thế giới đổi. */
+  private waveDecor: Container | null = null;
+  private worldStateKey = '';
   private stallSprites: Sprite[] = [];
   private stallSoldOut = new Set<string>();
   private vendorSprites: Container[] = [];
@@ -163,6 +166,9 @@ export class PixiGameViewport {
   private loadingDockPallet: Sprite | null = null;
   private loadingDockTrolley: Sprite | null = null;
   private loadingDockBoxesContainer: Container | null = null;
+
+  // QA overlay: vùng khai hoang + lô (open-world-land-reclamation 0.2) — chỉ bật qua window.__showWaveOverlay.
+  private waveOverlay: Container | null = null;
 
   // Doors & animations
   private warehouseDoorContainer!: Container;
@@ -199,7 +205,7 @@ export class PixiGameViewport {
     await this.app.init({
       canvas: this.canvas,
       resizeTo: this.canvas.parentElement || window,
-      backgroundColor: 0x5c7a52, // màu cỏ khu phố: lộ ra ngoài vùng vẽ cũng liền mạch (nền cỏ vô hạn trong NeighborhoodScene)
+      backgroundColor: 0x418231, // màu cỏ khu phố: lộ ra ngoài vùng vẽ cũng liền mạch (nền cỏ vô hạn trong NeighborhoodScene)
       resolution: Math.min(window.devicePixelRatio || 1, 2),
       autoDensity: true,
       roundPixels: true,
@@ -266,7 +272,7 @@ export class PixiGameViewport {
     this.buildInteractionBubble();
     this.warehouseLocator = new Container();
     const locatorBg=new Graphics().rect(-48,-18,96,24).fill(0xfff2d6).stroke({color:0x357f72,width:2});
-    const locatorText=new Text({text:'CỬA NHÀ KHO ↑',style:{fontFamily:'Arial',fontSize:10,fontWeight:'bold',fill:0x24584f}});
+    const locatorText=new Text({text:'CỬA NHÀ KHO ↑',style:{fontFamily: 'VT323, Arial, sans-serif',fontSize: 14,fontWeight:'bold',fill:0x24584f}});
     locatorText.anchor.set(.5);locatorText.y=-6;
     this.warehouseLocator.addChild(locatorBg,locatorText);
     this.warehouseLocator.position.set(WAREHOUSE_ENTRANCE.x,WAREHOUSE_ENTRANCE.y+40);
@@ -298,8 +304,74 @@ export class PixiGameViewport {
     this.isInitialized = true;
   }
 
+  /** Đồng bộ đợt khai hoang từ mô phỏng: ẩn nhà/xe đỗ cũ, vẽ công trường và biển lô. Chỉ dựng lại khi trạng thái đổi. */
+  private syncWorldState(): void {
+    const world = this.simulation.getWorldOpenState();
+    const owned = this.simulation.getOwnedParcelIds();
+    const day = this.simulation.getTime().day;
+    const key = JSON.stringify([world.openedWaves, world.wavesUnderConstruction, owned, Object.keys(world.wavesUnderConstruction).length ? day : 0, this.placedBuildings().map(b => b.id + b.bounds.left)]);
+    if (key === this.worldStateKey) return;
+    this.worldStateKey = key;
+    this.neighborhood.setOpenedWaves(world.openedWaves);
+    this.actors?.life.setOpenedWaves(world.openedWaves);
+    this.waveDecor?.removeFromParent();
+    this.waveDecor?.destroy({ children: true });
+    const deco = this.waveDecor = new Container();
+    deco.zIndex = 360;
+    const T = TILE_SIZE;
+    const placed = this.placedBuildings();
+    const sign = (text: string, cx: number, y: number, w: number, color: number): void => {
+      const board = new Graphics();
+      board.roundRect(0, 0, w, 14, 2).fill(color).stroke({ color: 0x9aa0a4, width: 1 });
+      board.position.set(cx - w / 2, y);
+      deco.addChild(board);
+      const label = new Text({ text, style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 13, fontWeight: 'bold', fill: 0xf5f5f0 }) });
+      label.anchor.set(0.5);
+      label.position.set(cx, y + 7.5);
+      deco.addChild(label);
+    };
+    for (const [index, wave] of RECLAMATION_WAVES.entries()) {
+      if (index === 0) continue;
+      const doneDay = world.wavesUnderConstruction[wave.id];
+      const r = wave.region;
+      if (doneDay !== undefined && !world.openedWaves.includes(wave.id)) {
+        // Công trường: nền đất, rào sọc vàng-đen quanh vùng, biển còn N ngày.
+        const x = r.x0 * T, y = r.y0 * T, w = (r.x1 - r.x0 + 1) * T, h = (r.y1 - r.y0 + 1) * T;
+        const g = new Graphics();
+        g.rect(x, y, w, h).fill({ color: 0x8a6b45, alpha: 0.55 });
+        const stripe = 16;
+        for (let sx = 0; sx < w; sx += stripe * 2) g.rect(x + sx, y, Math.min(stripe, w - sx), 6).fill(0xf2c230).rect(x + sx, y + h - 6, Math.min(stripe, w - sx), 6).fill(0xf2c230);
+        for (let sy = 0; sy < h; sy += stripe * 2) g.rect(x, y + sy, 6, Math.min(stripe, h - sy)).fill(0xf2c230).rect(x + w - 6, y + sy, 6, Math.min(stripe, h - sy)).fill(0xf2c230);
+        // Máy xúc tượng trưng (khối vàng + gầu) rải trong vùng.
+        for (let i = 0; i < 3; i++) {
+          const mx = x + w * (0.2 + 0.3 * i), my = y + h * 0.5;
+          g.rect(mx, my, 34, 16).fill(0xf2c230).stroke({ color: 0x3a3a3a, width: 1 }).rect(mx - 12, my + 4, 12, 4).fill(0x3a3a3a).rect(mx + 6, my - 8, 14, 8).fill(0x7c8085);
+        }
+        deco.addChild(g);
+        sign(`ĐANG THI CÔNG · còn ${Math.max(0, doneDay - day)} ngày`, x + w / 2, y + h / 2 - 30, 190, 0x8a1c1c);
+        continue;
+      }
+      if (!world.openedWaves.includes(wave.id)) continue;
+      for (const raw of wave.parcels) {
+        if (placed.some(b => b.bounds.left >= raw.rect.x0 && b.bounds.right <= raw.rect.x1 + 1 && b.bounds.bottom >= raw.rect.y0 && b.bounds.bottom <= raw.rect.y1 + 1)) continue;
+        const isOwned = owned.includes(raw.id);
+        const cx = ((raw.rect.x0 + raw.rect.x1 + 1) / 2) * T;
+        const parcel: LandParcel = { id: raw.id, rect: raw.rect, wave: index, frontageRoadId: raw.frontageRoadId ?? wave.frontageRoadId, frontage: { corner: raw.corner ?? false } };
+        const border = new Graphics();
+        border.rect(raw.rect.x0 * T + 1, raw.rect.y0 * T + 1, (raw.rect.x1 - raw.rect.x0 + 1) * T - 2, (raw.rect.y1 - raw.rect.y0 + 1) * T - 2).stroke({ color: isOwned ? 0x3fbf5f : raw.corner ? 0xffa500 : 0xd8d2c0, width: 1, alpha: 0.7 });
+        deco.addChild(border);
+        sign(isOwned ? 'ĐẤT TRỐNG' : `LÔ BÁN · ${Math.round(parcelPrice(parcel) / 1000)}k`, cx, raw.rect.y1 * T - 6, isOwned ? 4 * T : 5 * T, isOwned ? 0x6b6f73 : 0x2f6f5f);
+      }
+    }
+    this.worldContainer.addChild(deco);
+  }
+
+  /** Ẩn nhà trang trí khu phố nằm trong vùng đợt khai hoang đã mở. */
+  public setOpenedWaves(openedWaves: readonly string[]): void { this.neighborhood.setOpenedWaves(openedWaves); this.actors?.life.setOpenedWaves(openedWaves); }
+
   public updateTileMap(tileMap: GameTileMap): void {
     this.tileMap = tileMap;
+    this.camera.setMapSize(tileMap.width, tileMap.height);
     for (const child of this.groundLayer.removeChildren()) child.destroy({ children: true });
     for (const child of this.wallLayer.removeChildren()) child.destroy({ children: true });
     this.buildMapLayers();
@@ -485,7 +557,7 @@ export class PixiGameViewport {
       closedBoard.position.set(awningStart * TILE_SIZE, frontY - 22);
       closedBoard.zIndex = 361;
       this.wallLayer.addChild(closedBoard);
-      const closedLabel = new Text({ text: 'ĐANG THI CÔNG', style: new TextStyle({ fontFamily: 'Arial', fontSize: 9, fontWeight: 'bold', fill: 0xf2c230 }) });
+      const closedLabel = new Text({ text: 'ĐANG THI CÔNG', style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 13, fontWeight: 'bold', fill: 0xf2c230 }) });
       closedLabel.anchor.set(0.5);
       closedLabel.position.set(closedBoard.x + closedW / 2, closedBoard.y + 7.5);
       closedLabel.zIndex = 362;
@@ -510,7 +582,7 @@ export class PixiGameViewport {
     board.position.set(awningStart * TILE_SIZE, frontY - 22);
     board.zIndex = 361;
     this.wallLayer.addChild(board);
-    const label = new Text({ text: facade.name, style: new TextStyle({ fontFamily: 'Arial', fontSize: 10, fontWeight: 'bold', fill: facade.text }) });
+    const label = new Text({ text: facade.name, style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 14, fontWeight: 'bold', fill: facade.text }) });
     label.anchor.set(0.5);
     label.position.set(board.x + boardW / 2, board.y + 7.5);
     label.zIndex = 362;
@@ -530,7 +602,7 @@ export class PixiGameViewport {
       board.position.set(x, parcel.rect.y1 * TILE_SIZE - 6);
       board.zIndex = 361;
       this.wallLayer.addChild(board);
-      const label = new Text({ text: 'ĐẤT TRỐNG', style: new TextStyle({ fontFamily: 'Arial', fontSize: 9, fontWeight: 'bold', fill: 0xe5e8ea }) });
+      const label = new Text({ text: 'ĐẤT TRỐNG', style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 13, fontWeight: 'bold', fill: 0xe5e8ea }) });
       label.anchor.set(0.5);
       label.position.set(board.x + width / 2, board.y + 7.5);
       label.zIndex = 362;
@@ -559,7 +631,7 @@ export class PixiGameViewport {
     this.wallLayer.addChild(signBoard);
     const signText = new Text({
       text: 'QUÁN NƯỚC',
-      style: new TextStyle({ fontFamily: 'Arial', fontSize: 12, fontWeight: 'bold', fill: 0xd9f4ff })
+      style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 17, fontWeight: 'bold', fill: 0xd9f4ff })
     });
     signText.anchor.set(0.5);
     signText.position.set(signBoard.x + 64, signBoard.y + 10);
@@ -613,7 +685,7 @@ export class PixiGameViewport {
     this.wallLayer.addChild(menuBoard);
     const menuText = new Text({
       text: 'MENU',
-      style: new TextStyle({ fontFamily: 'Arial', fontSize: 8, fontWeight: 'bold', fill: 0xd9f4ff })
+      style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 11, fontWeight: 'bold', fill: 0xd9f4ff })
     });
     menuText.anchor.set(0.5);
     menuText.position.set(menuBoard.x + 32, menuBoard.y + 20);
@@ -673,7 +745,17 @@ export class PixiGameViewport {
             fence.x = x * TILE_SIZE;
             fence.y = (y + originY) * TILE_SIZE;
             this.groundLayer.addChild(fence);
-          } else if (h % 7 === 0) {
+          } else if (h % 11 === 3) {
+            const bush = new Sprite(this.textures.getTexture(`deco_bush_${(h >>> 5) % 2}`));
+            bush.x = x * TILE_SIZE;
+            bush.y = (y + originY) * TILE_SIZE;
+            this.groundLayer.addChild(bush);
+          } else if (h % 6 === 1) {
+            const tuft = new Sprite(this.textures.getTexture('deco_tuft'));
+            tuft.x = x * TILE_SIZE;
+            tuft.y = (y + originY) * TILE_SIZE;
+            this.groundLayer.addChild(tuft);
+          } else if (h % 4 === 0) {
             const flowers = new Sprite(this.textures.getTexture(`deco_flowers_${(h >>> 4) % 3}`));
             flowers.x = x * TILE_SIZE;
             flowers.y = (y + originY) * TILE_SIZE;
@@ -944,7 +1026,7 @@ export class PixiGameViewport {
 
     const wires = new Graphics();
     const wireY=(WAREHOUSE_BOUNDS.top-1)*TILE_SIZE;
-    wires.moveTo((MAIN_B.left-4)*TILE_SIZE,wireY).lineTo((MAIN_B.left-1)*TILE_SIZE,wireY+16).lineTo((MAIN_CORE.right+1)*TILE_SIZE,wireY).stroke({color:0x593a2b,width:1});
+    wires.moveTo((MAIN_B.left-4)*TILE_SIZE,wireY).lineTo((MAIN_B.left-1)*TILE_SIZE,wireY+16).lineTo((MAIN_CORE.right+1)*TILE_SIZE,wireY).stroke({color:0x4a2b16,width:1});
     this.wallLayer.addChild(wires);
 
     // Flanking Potted Plants & Baskets on either side of the entrance
@@ -974,6 +1056,56 @@ export class PixiGameViewport {
     if (ids.length === this.stallSoldOut.size && ids.every(id => this.stallSoldOut.has(id))) return;
     this.stallSoldOut = new Set(ids);
     this.buildStalls();
+  }
+
+  // ---------------------------------------------------------------------------
+  // QA overlay khai hoang (open-world-land-reclamation task 0.2):
+  // vẽ ranh giới từng vùng đợt + từng lô (tọa độ thế giới) để chụp ảnh chốt lô.
+  // Chỉ bật qua `window.__showWaveOverlay(true/false)` khi ?qa — không ảnh hưởng người chơi thường.
+  // ---------------------------------------------------------------------------
+  /** Bật/tắt overlay vùng khai hoang W0–W4 (dùng cho chụp ảnh chốt 0.2). Trả false nếu chưa sẵn sàng. */
+  public showWaveOverlay(show: boolean): boolean {
+    if (!this.uiOverlayLayer) return false;
+    if (show) {
+      if (!this.waveOverlay) {
+        this.waveOverlay = new Container();
+        this.uiOverlayLayer.addChild(this.waveOverlay);
+      }
+      this.redrawWaveOverlay(this.waveOverlay);
+    } else {
+      this.waveOverlay?.removeFromParent();
+      this.waveOverlay?.destroy({ children: true });
+      this.waveOverlay = null;
+    }
+    return true;
+  }
+
+  private redrawWaveOverlay(container: Container): void {
+    container.removeChildren().forEach((c) => c.destroy());
+    const g = new Graphics();
+    container.addChild(g);
+    const T = 32;
+    const labelStyle = new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 17, fill: 0xffffff });
+    for (const wave of RECLAMATION_WAVES) {
+      const r = wave.region;
+      const x0 = r.x0 * T, y0 = r.y0 * T, w = (r.x1 - r.x0 + 1) * T, h = (r.y1 - r.y0 + 1) * T;
+      // Viền vùng đợt: xanh lam.
+      g.rect(x0, y0, w, h).stroke({ width: 2, color: 0x4aa3ff, alpha: 0.9 });
+      // Nhãn vùng: góc trên-trái.
+      const label = new Text({ text: `${wave.id.toUpperCase()} (x${r.x0}..${r.x1}, y${r.y0}..${r.y1})`, style: labelStyle });
+      label.position.set(x0, Math.max(0, y0 - 18));
+      container.addChild(label);
+      for (const p of wave.parcels) {
+        const px = p.rect.x0 * T, py = p.rect.y0 * T, pw = (p.rect.x1 - p.rect.x0 + 1) * T, ph = (p.rect.y1 - p.rect.y0 + 1) * T;
+        // Lô: nền mờ + viền; lô góc ngã tư viền cam.
+        const fillColor = p.corner ? 0xffa500 : 0x3fbf5f;
+        const strokeColor = p.corner ? 0xff8800 : 0x1f9c4a;
+        g.rect(px, py, pw, ph).fill({ color: fillColor, alpha: 0.28 }).stroke({ width: 2, color: strokeColor, alpha: 1 });
+        const pid = new Text({ text: p.id, style: labelStyle });
+        pid.position.set(px + 2, py + 2);
+        container.addChild(pid);
+      }
+    }
   }
 
   /** Quầy ăn uống trên vỉa hè; chỉ vẽ, va chạm đã có trong collisionLayer của bản đồ. */
@@ -1112,8 +1244,8 @@ export class PixiGameViewport {
       container.addChild(wearMarker);
 
       const style = new TextStyle({
-        fontFamily: '"Courier New", Courier, monospace',
-        fontSize: 9,
+        fontFamily: 'VT323, Arial, sans-serif',
+        fontSize: 13,
         fontWeight: 'bold',
         fill: 0x43382f,
       });
@@ -1144,8 +1276,8 @@ export class PixiGameViewport {
     this.playerContainer.addChild(tagBg);
 
     const tagStyle = new TextStyle({
-      fontFamily: '"Courier New", Courier, monospace',
-      fontSize: 8,
+      fontFamily: 'VT323, Arial, sans-serif',
+      fontSize: 11,
       fontWeight: 'bold',
       fill: 0xffffff,
     });
@@ -1174,10 +1306,10 @@ export class PixiGameViewport {
     const bubble = new Container();
     const background = new Graphics();
     background.roundRect(-28, -70, 56, 18, 3);
-    background.fill({ color: 0xfff7df, alpha: 0.95 });
-    background.stroke({ color: 0x593a2b, width: 1 });
+    background.fill({ color: 0xf3e4cb, alpha: 0.95 });
+    background.stroke({ color: 0x4a2b16, width: 1 });
     bubble.addChild(background);
-    const label = new Text({ text: 'Tính tiền', style: new TextStyle({ fontFamily: 'Arial', fontSize: 9, fill: 0x263d35, align: 'center' }) });
+    const label = new Text({ text: 'Tính tiền', style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 13, fill: 0x263d35, align: 'center' }) });
     label.anchor.set(0.5);
     label.y = -61;
     bubble.addChild(label);
@@ -1210,8 +1342,8 @@ export class PixiGameViewport {
     this.setPartnerTag('BẠN CÙNG HẺM');
 
     const tagStyle = new TextStyle({
-      fontFamily: '"Courier New", Courier, monospace',
-      fontSize: 8,
+      fontFamily: 'VT323, Arial, sans-serif',
+      fontSize: 11,
       fontWeight: 'bold',
       fill: 0xffffff,
     });
@@ -1273,8 +1405,8 @@ export class PixiGameViewport {
     this.interactionBubble.addChild(bg);
 
     const style = new TextStyle({
-      fontFamily: '"Courier New", Courier, monospace',
-      fontSize: 10,
+      fontFamily: 'VT323, Arial, sans-serif',
+      fontSize: 14,
       fontWeight: 'bold',
       fill: 0x38200e,
     });
@@ -1512,10 +1644,10 @@ export class PixiGameViewport {
         const bubble = new Container();
         const background = new Graphics();
         background.roundRect(-25, -70, 50, 18, 3);
-        background.fill({ color: 0xfff7df, alpha: 0.95 });
-        background.stroke({ color: 0x593a2b, width: 1 });
+        background.fill({ color: 0xf3e4cb, alpha: 0.95 });
+        background.stroke({ color: 0x4a2b16, width: 1 });
         bubble.addChild(background);
-        const status = new Text({ text: '', style: new TextStyle({ fontFamily: 'Arial', fontSize: 8, fill: 0x263d35, align: 'center' }) });
+        const status = new Text({ text: '', style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 11, fill: 0x263d35, align: 'center' }) });
         status.anchor.set(0.5);
         status.y = -61;
         bubble.addChild(status);
@@ -1748,7 +1880,7 @@ export class PixiGameViewport {
       const viewH = this.app.screen.height / this.camera.zoom;
       const frameCtx = {
         dt: elapsed, time: this.animTimer, sun: light.sun, night: streetStrength, quality: resolveWeatherQuality(fxSettings),
-        userIntensity: fxSettings.intensity, reducedMotion, mapWidthPx: MAP_WIDTH * TILE_SIZE, mapHeightPx: MAP_HEIGHT * TILE_SIZE, actors: feet,
+        userIntensity: fxSettings.intensity, reducedMotion, mapWidthPx: this.tileMap.width * TILE_SIZE, mapHeightPx: this.tileMap.height * TILE_SIZE, actors: feet,
       };
       this.weatherFx.update(weatherState, { left: this.camera.x, top: this.camera.y, width: viewW, height: viewH }, frameCtx);
       this.weatherFx.stepActors(weatherState, frameCtx);
@@ -1918,6 +2050,7 @@ export class PixiGameViewport {
     // A small room fits in the default view: keep its north/south edges visible.
     this.camera.follow(inWarehouse?{x:renderPos.x,y:WAREHOUSE_CENTER.y}:renderPos, elapsed, inWarehouse?0:undefined);
     const shake = fxSettings.enabled ? this.weatherFx.shakeOffset(this.camera.zoom, reducedMotion) : { x: 0, y: 0 };
+    this.syncWorldState();
     this.presentWorld(shake);
 
     // 6b. Khu phố mở rộng: đồi/đèn đêm theo thời tiết + dân cư nền (NPC, hội thoại, chim). Ngân sách theo chất lượng đồ họa.
@@ -2213,7 +2346,7 @@ export class PixiGameViewport {
         const bg = new Graphics();
         this.logisticsToastContainer.addChild(bg);
         this.logisticsToastText = new Text({ text: '', style: new TextStyle({
-          fontFamily: 'Arial', fontSize: 9, fontWeight: 'bold',
+          fontFamily: 'VT323, Arial, sans-serif', fontSize: 13, fontWeight: 'bold',
           fill: 0xe8f4d4, align: 'center', wordWrap: true, wordWrapWidth: 200,
         }) });
         this.logisticsToastText.anchor.set(0.5, 1);
@@ -2261,8 +2394,8 @@ export class PixiGameViewport {
       container.y = y;
 
       const style = new TextStyle({
-        fontFamily: '"Courier New", Courier, monospace',
-        fontSize: 11,
+        fontFamily: 'VT323, Arial, sans-serif',
+        fontSize: 15,
         fontWeight: 'bold',
         fill: color,
       });
@@ -2294,7 +2427,7 @@ export class PixiGameViewport {
     const bubBg = new Graphics();
     bubBg.rect(-12, -66, 24, 24);
     bubBg.fill({ color: 0xffffff, alpha: 0.95 });
-    bubBg.stroke({ color: 0x593a2b, width: 1 });
+    bubBg.stroke({ color: 0x4a2b16, width: 1 });
     bubble.addChild(bubBg);
 
     const bubbleIcon = new Sprite(this.textures.getTexture('product:mi_hao_hao'));
@@ -2308,8 +2441,8 @@ export class PixiGameViewport {
     const regularTagBg = new Graphics();
     regularTag.addChild(regularTagBg);
     const regularTagStyle = new TextStyle({
-      fontFamily: '"Courier New", Courier, monospace',
-      fontSize: 8,
+      fontFamily: 'VT323, Arial, sans-serif',
+      fontSize: 11,
       fontWeight: 'bold',
       fill: 0xffffff,
     });
@@ -2425,7 +2558,7 @@ export class PixiGameViewport {
     this.worldContainer.scale.set(n);
     this.worldContainer.position.set(-tx, -ty);
     if (this.worldContainer.parent) this.worldContainer.parent.removeChild(this.worldContainer);
-    this.app.renderer.render({ container: this.worldContainer, target: tex, clear: true, clearColor: 0x5c7a52 });
+    this.app.renderer.render({ container: this.worldContainer, target: tex, clear: true, clearColor: 0x418231 });
 
     present.scale.set(scale);
     // Làm tròn về điểm ảnh thiết bị để biên điểm ảnh không bị lọc nửa chừng khi camera trượt.
@@ -2471,3 +2604,4 @@ export class PixiGameViewport {
     this.textures.destroy();
   }
 }
+

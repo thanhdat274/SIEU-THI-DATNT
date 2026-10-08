@@ -321,7 +321,7 @@ export function playgroundTexture(): HTMLCanvasElement {
 export function bushTexture(v: number): HTMLCanvasElement {
   const { canvas, r } = surface(36, 26);
   r(3, 20, 30, 4, '#26190e44');
-  const g = [['#2f6b3a', '#4ea05a', '#79c67f'], ['#3a7a45', '#5cb066', '#8bd48f'], ['#2b5f33', '#44903f', '#6fb25a']][v % 3];
+  const g = [['#3F8434', '#62A442', '#98CC6E'], ['#4A8A3A', '#72AE50', '#A8D880'], ['#37722E', '#5C9C40', '#8CC264']][v % 3];
   for (const [x, y, w, h] of [[2, 8, 14, 13], [10, 3, 16, 17], [20, 8, 14, 13]] as const) { r(x - 1, y - 1, w + 2, h + 2, INK); r(x, y, w, h, g[0]); r(x + 1, y + 1, w - 5, h - 6, g[1]); r(x + 2, y + 2, 3, 2, g[2]); }
   return canvas;
 }
@@ -330,7 +330,7 @@ export function roundTreeTexture(v: number): HTMLCanvasElement {
   const { canvas, r } = surface(56, 72);
   r(10, 62, 36, 6, '#26190e44');
   r(24, 36, 8, 30, INK); r(25, 36, 6, 29, '#6e4125'); r(25, 36, 2, 29, '#99623c');
-  const g = [['#2f6b3a', '#4ea05a', '#79c67f'], ['#3f7d3a', '#68b255', '#9bd870'], ['#2b5f4a', '#3f8f6a', '#6ec59a']][v % 3];
+  const g = [['#3F8434', '#62A442', '#98CC6E'], ['#4A8A3A', '#78B456', '#A8D880'], ['#2F7A52', '#4F9F72', '#86CCA0']][v % 3];
   for (const [x, y, w, h] of [[2, 18, 30, 24], [22, 16, 32, 26], [10, 2, 38, 28], [4, 28, 24, 18], [30, 28, 24, 18]] as const) { r(x - 1, y - 1, w + 2, h + 2, INK); r(x, y, w, h, g[0]); r(x + 2, y + 2, w - 9, h - 10, g[1]); r(x + 4, y + 3, 6, 3, g[2]); }
   return canvas;
 }
@@ -348,14 +348,14 @@ export function flowerbedTexture(v: number): HTMLCanvasElement {
   r(2, 21, 60, 4, '#26190e44');
   r(1, 8, 62, 14, INK); r(2, 9, 60, 12, '#6b4a2f'); r(2, 9, 60, 2, '#8a6a47');
   const cols = [['#e8527a', '#f4a3bd', '#ffd1e0'], ['#f4c430', '#ffe48a', '#fff3b0'], ['#8e5bd6', '#c3a3ef', '#ffffff']][v % 3];
-  for (let x = 4; x < 60; x += 5) for (let y = 3; y < 17; y += 5) { const h = hash(x, y, v); r(x, y + 3, 1, 5, '#2f6b3a'); r(x - 1, y, 3, 3, cols[h % 3]); r(x, y + 1, 1, 1, '#ffffff'); }
+  for (let x = 4; x < 60; x += 5) for (let y = 3; y < 17; y += 5) { const h = hash(x, y, v); r(x, y + 3, 1, 5, '#468A38'); r(x - 1, y, 3, 3, cols[h % 3]); r(x, y + 1, 1, 1, '#ffffff'); }
   return canvas;
 }
 
 export function hedgeTexture(): HTMLCanvasElement {
   const { canvas, r } = surface(32, 20);
   r(0, 15, 32, 4, '#26190e44');
-  r(0, 4, 32, 13, INK); r(1, 5, 30, 11, '#2f6b3a'); r(1, 5, 30, 3, '#4ea05a'); for (let x = 3; x < 30; x += 6) r(x, 9, 3, 2, '#1f4d29');
+  r(0, 4, 32, 13, INK); r(1, 5, 30, 11, '#3F8434'); r(1, 5, 30, 3, '#62A442'); for (let x = 3; x < 30; x += 6) r(x, 9, 3, 2, '#1f4d29');
   return canvas;
 }
 
