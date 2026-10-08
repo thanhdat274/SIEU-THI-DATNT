@@ -72,8 +72,8 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
             {summary.maintenanceCost ? <div>Sửa chữa, bảo trì: <strong style={{ color: 'var(--brick)' }}>- {money(summary.maintenanceCost)}</strong></div> : null}
             {record.counterfeitLoss ? <div>Tiền giả nhận nhầm: <strong style={{ color: 'var(--brick)' }}>- {money(record.counterfeitLoss)}</strong></div> : null}
             {record.badDebtCost ? <div>Nợ xấu đã xóa: <strong style={{ color: 'var(--brick)' }}>- {money(record.badDebtCost)}</strong></div> : null}
-            <div style={{ borderTop: '1px solid var(--wood, #a88)', paddingTop: 6, fontSize: 13 }}>
-              Lãi ròng: <strong style={{ color: summary.netProfit >= 0 ? 'var(--success)' : 'var(--brick)' }}>{money(summary.netProfit)}</strong>
+            <div style={{ borderTop: '1px solid var(--color-outline-soft)', paddingTop: 6, fontSize: 13 }}>
+              Lãi ròng: <strong style={{ color: summary.netProfit >= 0 ? 'var(--color-green-dark)' : 'var(--color-brick)' }}>{money(summary.netProfit)}</strong>
             </div>
           </div>
 
@@ -96,14 +96,14 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
                 <div className="muted" style={{ fontSize: 10, marginTop: 2 }}>Dự báo ngày mai: {morningBrief.forecastTomorrow}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <span style={{ color: 'var(--brick)', fontWeight: 'bold', fontSize: 11 }}>🎉 {morningBrief.seasonName}</span>
+                <span style={{ color: 'var(--color-brick)', fontWeight: 'bold', fontSize: 11 }}>🎉 {morningBrief.seasonName}</span>
                 <div className="muted" style={{ fontSize: 10 }}>Còn {morningBrief.seasonDaysLeft} ngày trong mùa</div>
               </div>
             </div>
           </div>
 
           <div className="pixel-panel" style={{ padding: 12 }}>
-            <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--brick)' }}>TÌNH HÌNH HÀNG HÓA SÁNG NAY</h4>
+            <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--color-wood-light)' }}>TÌNH HÌNH HÀNG HÓA SÁNG NAY</h4>
             <div style={{ display: 'grid', gap: 4, fontSize: 11 }}>
               <div>
                 📦 <strong>Đơn hàng giao:</strong>{' '}
@@ -112,7 +112,7 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
                   : 'Không có chuyến hàng giao sáng nay.'}
               </div>
               {morningBrief.lowStockItems.length > 0 && (
-                <div style={{ color: 'var(--warn)' }}>
+                <div style={{ color: 'var(--color-warning-dark)' }}>
                   ⚠️ <strong>Kệ sắp hết hàng:</strong>{' '}
                   {morningBrief.lowStockItems.map(pid => PRODUCT_MAP[pid]?.name ?? pid).join(', ')}
                 </div>
@@ -120,8 +120,8 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
             </div>
           </div>
 
-          <div className="pixel-panel" style={{ padding: 12, background: 'rgba(59, 130, 246, 0.05)', borderColor: '#93c5fd' }}>
-            <h4 style={{ margin: '0 0 6px', fontSize: 11, color: '#1d4ed8' }}>LỜI KHUYÊN ĐẦU NGÀY</h4>
+          <div className="pixel-panel" style={{ padding: 12, background: 'rgba(57, 131, 154, 0.14)', borderColor: 'var(--color-blue)' }}>
+            <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--color-blue)' }}>LỜI KHUYÊN ĐẦU NGÀY</h4>
             <ul style={{ margin: 0, paddingLeft: 18, fontSize: 11, display: 'grid', gap: 4 }}>
               {morningBrief.tips.map((tip, idx) => (
                 <li key={idx}>{tip}</li>

@@ -32,7 +32,7 @@ function soonestExpiryDays(item: InventoryItem, day: number): number | undefined
 const ExpiryTag: React.FC<{ days?: number }> = ({ days }) => {
   if (days === undefined) return null;
   const label = days <= 0 ? 'Hết hạn hôm nay' : `Còn ${days} ngày`;
-  return <span style={{ fontSize: 11, color: days <= 1 ? '#b64c3d' : '#7a6a58' }}>{label}</span>;
+  return <span style={{ fontSize: 11, color: days <= 1 ? 'var(--color-terracotta)' : 'var(--color-text-muted)' }}>{label}</span>;
 };
 
 /** Bảng chọn số lượng chuyển hàng giữa kho tổng và một chi nhánh. */
@@ -108,7 +108,7 @@ const TransferPanel: React.FC<{
         <PixelButton variant="brick" disabled={!picked.length || overCapacity || busy} onClick={submit}>
           {direction === 'send' ? 'Chuyển hàng' : 'Trả về kho'} ({pickedUnits})
         </PixelButton>
-        {overCapacity && <span role="alert" style={{ color: '#b64c3d', fontSize: 12 }}>Vượt chỗ trống của chi nhánh ({capacityLeft}).</span>}
+        {overCapacity && <span role="alert" style={{ color: 'var(--color-terracotta)', fontSize: 12 }}>Vượt chỗ trống của chi nhánh ({capacityLeft}).</span>}
       </div>
     </div>
   );
@@ -179,7 +179,7 @@ const BranchCard: React.FC<{
           bán <strong className="tabular">{last.unitsSold}</strong> món, doanh thu <strong className="tabular">{money(last.revenue)}</strong>,
           lãi gộp <strong className="tabular">{money(last.revenue - last.cogs)}</strong>, lương {money(last.wages)}
           {last.spoilageLoss > 0 && <>, hao hụt {money(last.spoilageLoss)}</>}
-          {last.stockouts.length > 0 && <div style={{ color: '#b64c3d' }}>Bán hụt (hết hàng): {last.stockouts.map(nameOf).join(', ')}</div>}
+          {last.stockouts.length > 0 && <div style={{ color: 'var(--color-terracotta)' }}>Bán hụt (hết hàng): {last.stockouts.map(nameOf).join(', ')}</div>}
         </div>
         : <span className="muted" style={{ fontSize: 13 }}>Chi nhánh chạy nền từ ngày kế tiếp; chưa có báo cáo ngày.</span>}
       {lowStock && <span style={{ color: 'var(--warn)', fontSize: 13 }}>Kho chi nhánh trống: chuyển hàng từ kho tổng để có hàng bán.</span>}

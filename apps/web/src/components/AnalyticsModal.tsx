@@ -37,7 +37,7 @@ const PriceSalesChart: React.FC<{ productId: string } & Pick<Props, 'day' | 'rec
   return <div>
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Doanh số và giá ${PRODUCT_MAP[productId]?.name ?? productId} ${RANGE} ngày gần nhất`} style={{ width: '100%', maxWidth: W }}>
       {points.map((p, i) => p.units === null
-        ? <text key={p.day} x={x(i)} y={H - PAD - 4} textAnchor="middle" fontSize="10" fill="currentColor" opacity="0.5">—</text>
+        ? <text key={p.day} x={x(i)} y={H - PAD - 4} textAnchor="middle" fontSize="10" fill="currentColor" opacity="0.8">—</text>
         : <rect key={p.day} x={x(i) - step * 0.3} width={step * 0.6} y={H - PAD - (H - PAD * 2) * (p.units / maxUnits)} height={(H - PAD * 2) * (p.units / maxUnits)} fill="var(--teal)"><title>{`Ngày ${p.day}: bán ${p.units}`}</title></rect>)}
       {segments.map((seg, i) => <polyline key={i} points={seg} fill="none" stroke="var(--brick)" strokeWidth="2" />)}
       {points.map((p, i) => p.price !== null && <circle key={`pt${p.day}`} cx={x(i)} cy={yPrice(p.price)} r="3" fill="var(--brick)"><title>{`Ngày ${p.day}: giá ${p.price.toLocaleString('vi-VN')}`}</title></circle>)}

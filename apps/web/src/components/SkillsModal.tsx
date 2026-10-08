@@ -80,7 +80,7 @@ export const SkillsModal: React.FC<SkillsModalProps> = ({
         </p>
 
         {isMaxLevel ? (
-          <div className="tabular" style={{ color: 'var(--color-primary)' }}>
+          <div className="tabular" style={{ color: 'var(--color-green-dark)' }}>
             ★ Đã đạt cấp tối đa
           </div>
         ) : (
@@ -116,8 +116,8 @@ export const SkillsModal: React.FC<SkillsModalProps> = ({
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 gap: 8,
-                background: unlocked ? 'rgba(78, 175, 124, 0.08)' : undefined,
-                borderLeft: unlocked ? '3px solid var(--teal)' : undefined,
+                background: unlocked ? 'rgba(79, 135, 63, 0.12)' : undefined,
+                borderLeft: unlocked ? '3px solid var(--color-green)' : undefined,
               }}
             >
               <div style={{ flex: 1 }}>
@@ -134,7 +134,7 @@ export const SkillsModal: React.FC<SkillsModalProps> = ({
 
               <div className="perk-action">
                 {unlocked ? (
-                  <span style={{ color: 'var(--teal)', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                  <span style={{ color: 'var(--color-green-dark)', fontWeight: 'bold', fontSize: '0.85rem' }}>
                     ✓ Đã mở
                   </span>
                 ) : (
