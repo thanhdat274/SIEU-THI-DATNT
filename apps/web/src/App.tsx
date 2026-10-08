@@ -5,7 +5,7 @@ import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
 import { PixiGameViewport, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
-import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
+import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
 
 import { getActiveSlotId, loadOrCreateSave, persistSave, writeEmergencySave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
 import { releaseSlotLock } from './slot-lock';
@@ -44,7 +44,7 @@ import { useVoiceChat } from './hooks/useVoiceChat';
 import { VoicePanel } from './components/VoicePanel';
 import { getDevGuest, devGuestToken } from './services/dev-guest';
 
-import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal } from './lazy-modals';
+import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, CityModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal } from './lazy-modals';
 
 /** Cấp thấp nhất mở được một loại chi nhánh; dưới cấp này (và chưa có chi nhánh) ẩn mục Chuỗi chi nhánh. */
 const CHAIN_UNLOCK_LEVEL = Math.min(...STORE_TYPES.map(type => type.unlockLevel));
@@ -104,6 +104,7 @@ export const App: React.FC = () => {
   const [statistics, setStatistics] = useState<SaveGameData['statistics']>({ totalRevenue: 0, totalCustomersServed: 0, totalDaysPassed: 0 });
   const [isQuestOpen, setQuestOpen] = useState(false);
   const [isLevelRoadmapOpen, setLevelRoadmapOpen] = useState(false);
+  const [isCityOpen, setCityOpen] = useState(false);
   const [isStallOpen, setStallOpen] = useState(false);
   const [isMarketOpen, setMarketOpen] = useState(false);
   const [isTaxOpen, setTaxOpen] = useState(false);
@@ -198,7 +199,7 @@ export const App: React.FC = () => {
       quest: () => setQuestOpen(true), stall: () => setStallOpen(true), market: () => setMarketOpen(true), tax: () => setTaxOpen(true),
       regulars: () => setRegularsOpen(true), skills: () => setSkillsOpen(true), titles: () => setTitlesOpen(true),
       maintenance: () => setMaintenanceOpen(true), reviews: () => setReviewsOpen(true), prices: () => setPricesOpen(true),
-      levelRoadmap: () => setLevelRoadmapOpen(true),
+      levelRoadmap: () => setLevelRoadmapOpen(true), city: () => setCityOpen(true),
       inventory: () => useGameStore.getState().toggleInventoryModal(),
       save: () => useGameStore.getState().toggleSaveModal(),
       supplier: () => useGameStore.getState().openSupplierModal(),
@@ -237,10 +238,24 @@ export const App: React.FC = () => {
       setFixturesFromSim();
       return true;
     };
+    // QA overlay khai hoang (open-world-land-reclamation task 0.2): bật/tắt hiển thị vùng W0–W4 + lô để chụp.
+    const showOverlay = (show: boolean) => viewportRef.current?.showWaveOverlay(show) ?? false;
+    (window as unknown as { __showWaveOverlay?: (show: boolean) => boolean }).__showWaveOverlay = showOverlay;
+    // TỰ BẬT overlay khi viewport đã init (khỏi gõ lệnh): chờ tới khi viewportRef có giá trị rồi bật đúng 1 lần.
+    let autoEnabled = false;
+    const enableTimer = window.setInterval(() => {
+      if (!viewportRef.current) return;
+      if (autoEnabled) { window.clearInterval(enableTimer); return; }
+      autoEnabled = true;
+      showOverlay(true);
+      window.clearInterval(enableTimer);
+    }, 250);
     return () => {
+      window.clearInterval(enableTimer);
       delete (window as unknown as { __openModal?: unknown }).__openModal;
       delete (window as unknown as { __forceWear?: unknown }).__forceWear;
       delete (window as unknown as { __breakFixture?: unknown }).__breakFixture;
+      delete (window as unknown as { __showWaveOverlay?: unknown }).__showWaveOverlay;
     };
   }, []);
 
@@ -674,11 +689,11 @@ export const App: React.FC = () => {
       inputManagerRef.current = inputManager;
 
       // 3. Setup map
-      const tileMap = generateStarterTileMap(initialSave.storeLayout.unlockedPlotIds ?? [], [], initialSave.storeLayout.buildingPlacements);
+      const tileMap = generateStarterTileMap(initialSave.storeLayout.unlockedPlotIds ?? [], [], initialSave.storeLayout.buildingPlacements, initialSave.world?.openedWaves);
 
       // 4. Setup simulation
       const simulation = new GameSimulation(initialSave, tileMap, inputManager, {
-        onMapChanged: (map) => viewportRef.current?.updateTileMap(map),
+        onMapChanged: (map) => { viewportRef.current?.updateTileMap(map); viewportRef.current?.setOpenedWaves(simulationRef.current?.getOpenedWaves() ?? ['w0']); },
         onStallStatusChanged: (ids) => viewportRef.current?.setStallSoldOut(ids),
         onInteractionAvailable: (fixture) => {
           setNearbyFixture(fixture);
@@ -820,6 +835,7 @@ export const App: React.FC = () => {
 
       viewportRef.current = viewport;
       viewport.setStallSoldOut(simulation.getSoldOutStalls());
+      viewport.setOpenedWaves(simulation.getOpenedWaves());
       // Chỉ dev: `__viewport` để QA đặt zoom/pan, đặt giờ và thời tiết khi kiểm khu phố mở rộng.
       if (import.meta.env.DEV) (window as unknown as { __viewport?: unknown }).__viewport = viewport;
       setZoomLevel(viewport.getZoom());
@@ -1391,6 +1407,24 @@ export const App: React.FC = () => {
     addToast(res.success ? 'Đã đổi cách điều hành chi nhánh; có hiệu lực từ khi sang ngày.' : (res.reason ?? 'Không đổi được.'), res.success ? 'success' : 'warn');
   };
 
+  const handleReclaimWave = async (waveId: string) => {
+    const res = await persistSimulationMutation(
+      { type: 'reclaim_wave', waveId }, 'Khai hoang', 'Thành phố',
+      simulation => simulation.reclaimWave(waveId),
+    );
+    if (!res) return;
+    addToast(res.success ? 'Đã bắt đầu khai hoang; công trường xong sau vài ngày.' : (res.reason ?? 'Không khai hoang được.'), res.success ? 'success' : 'warn');
+  };
+
+  const handleBuyParcel = async (parcelId: string) => {
+    const res = await persistSimulationMutation(
+      { type: 'buy_parcel', parcelId }, 'Mua lô đất', 'Thành phố',
+      simulation => simulation.buyParcel(parcelId),
+    );
+    if (!res) return;
+    addToast(res.success ? 'Đã mua lô đất. Có thể đặt tòa lên lô này trong Bố cục.' : (res.reason ?? 'Không mua được lô.'), res.success ? 'success' : 'warn');
+  };
+
   const handleRestockStall = async (stallId: string) => {
     const sim = simulationRef.current;
     if (!sim) return;
@@ -1813,6 +1847,7 @@ export const App: React.FC = () => {
     onOpenStalls: () => setStallOpen(true),
     onOpenQuests: () => setQuestOpen(true),
     onOpenLevelRoadmap: () => setLevelRoadmapOpen(true),
+    onOpenCity: () => setCityOpen(true),
     onOpenPlanogram: () => setIsPlanogramOpen(true),
     onToggleStoreStatus: handleToggleStoreStatus,
     onOpenLayout: openLayoutEditor,
@@ -2238,6 +2273,10 @@ export const App: React.FC = () => {
         onClose={() => setTitlesOpen(false)}
       />
     )}
+    {isCityOpen && simulationRef.current && (() => {
+      const snap = simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
+      return <CityModal world={snap.world ?? defaultWorldOpenState()} ownedParcelIds={snap.storeLayout.ownedParcelIds ?? []} playerLevel={player.level} playerMoney={player.money} day={simulationRef.current.getTime().day} buildingCount={snap.storeLayout.buildingPlacements?.length ?? 3} onReclaim={handleReclaimWave} onBuyParcel={handleBuyParcel} onClose={() => setCityOpen(false)}/>;
+    })()}
     {isLevelRoadmapOpen && <LevelRoadmapModal player={player} onClose={() => setLevelRoadmapOpen(false)}/>}
     {daySummaryRecord && <DaySummaryModal record={daySummaryRecord} morningBrief={simulationRef.current?.getMorningBrief()} onClose={() => setDaySummaryRecord(null)}/>}
     {isTaxOpen && <TaxModal day={worldTime.day} worldTime={worldTime} dailyRecords={dailyRecords} currentDayRecord={currentDayRecord} taxState={simulationRef.current?.getTaxState()} onSetUnderDeclare={async (underDeclare) => { const res = await persistSimulationMutation({ type: 'set_tax_declaration', underDeclare }, underDeclare ? 'Chọn khai bớt thuế' : 'Chọn kê khai đủ thuế', 'Thuế', simulation => simulation.setTaxUnderDeclare(underDeclare)); if (!res?.success) addToast(res?.reason ?? 'Không đổi được cách kê khai.', 'warn'); }} onClose={() => setTaxOpen(false)}/>}

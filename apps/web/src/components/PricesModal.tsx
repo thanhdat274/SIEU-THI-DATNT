@@ -52,14 +52,14 @@ export const PricesModal: React.FC<PricesModalProps> = ({ products, sellingPrice
                 <div style={{ minWidth: 0 }}>
                   <strong>{product.name}</strong>
                   <div className="prices-card-hint muted" style={{ fontSize: 11 }}>Gợi ý {money(product.baseSellingPrice)} · vốn {money(product.purchasePrice)}</div>
-                  {complained > 0 && <div style={{ fontSize: 11, color: '#b64c3d' }}>Hôm qua {complained} khách chê đắt</div>}
+                  {complained > 0 && <div style={{ fontSize: 11, color: 'var(--color-brick)' }}>Hôm qua {complained} khách chê đắt</div>}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <PixelButton variant="wood" aria-label={`Giảm giá ${product.name}`} disabled={!range || price <= range.min} onClick={() => range && onSetPrice(product.id, price - range.step)}>−</PixelButton>
                 <div style={{ textAlign: 'center' }}>
                   <strong>{money(price)}</strong>
-                  <div style={{ fontSize: 11, color: pct > 0 ? '#b64c3d' : pct < 0 ? 'var(--success)' : undefined }} className={pct === 0 ? 'muted' : undefined}>{pctLabel(pct)}</div>
+                  <div style={{ fontSize: 11, color: pct > 0 ? 'var(--color-brick)' : pct < 0 ? 'var(--color-green-dark)' : undefined }} className={pct === 0 ? 'muted' : undefined}>{pctLabel(pct)}</div>
                 </div>
                 <PixelButton variant="teal" aria-label={`Tăng giá ${product.name}`} disabled={!range || price >= range.max} onClick={() => range && onSetPrice(product.id, price + range.step)}>+</PixelButton>
               </div>

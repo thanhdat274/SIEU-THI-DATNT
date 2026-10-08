@@ -34,6 +34,7 @@ interface ManagementModalProps {
   onOpenMaintenance?: () => void;
   onOpenChain?: () => void;
   onOpenLevelRoadmap?: () => void;
+  onOpenCity?: () => void;
   onOpenPlanogram?: () => void;
   emptySlotsCount?: number;
   onOpenLayout?: () => void;
@@ -62,6 +63,7 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
   onOpenMaintenance,
   onOpenChain,
   onOpenLevelRoadmap,
+  onOpenCity,
   onOpenPlanogram,
   emptySlotsCount = 0,
   onOpenLayout,
@@ -143,6 +145,13 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
           desc: 'Danh hiệu chủ tiệm và các mốc thành tựu đạt được',
           icon: 'star' as IconName,
           action: () => handleSelect(onOpenTitles),
+        },
+        onOpenCity && {
+          id: 'city',
+          label: 'Thành phố',
+          desc: 'Khai hoang đợt đất mới, mua lô để mở rộng',
+          icon: 'door' as IconName,
+          action: () => handleSelect(onOpenCity),
         },
         onOpenLevelRoadmap && {
           id: 'level-roadmap',

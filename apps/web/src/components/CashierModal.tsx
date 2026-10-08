@@ -167,7 +167,7 @@ export const CashierModal: React.FC<Props> = ({
         <PixelStat label="Cấp cửa tiệm" value={player.level} icon="star" />
       </div>
 
-      <div className="feature-tabs" style={{ display: 'flex', gap: 8, margin: '12px 0 16px 0', borderBottom: '2px solid #583c28', paddingBottom: 8 }}>
+      <div className="feature-tabs" style={{ display: 'flex', gap: 8, margin: '12px 0 16px 0', borderBottom: '2px solid var(--color-outline-soft)', paddingBottom: 8 }}>
         <PixelButton
           variant={activeTab === 'checkout' ? 'wood' : 'paper'}
           icon="bag"
@@ -222,7 +222,7 @@ export const CashierModal: React.FC<Props> = ({
                       Số lượng: {item.quantity} · Đơn giá: {money(item.unitPrice)}
                     </p>
                   </div>
-                  <span style={{ fontWeight: 'bold', color: 'var(--success)' }}>
+                  <span style={{ fontWeight: 'bold', color: 'var(--color-green)' }}>
                     {money(item.quantity * item.unitPrice)}
                   </span>
                 </div>
@@ -235,11 +235,11 @@ export const CashierModal: React.FC<Props> = ({
                   alignItems: 'center',
                   marginTop: 12,
                   paddingTop: 8,
-                  borderTop: '1px dashed #d1c4b2',
+                  borderTop: '1px dashed var(--color-panel-dark)',
                 }}
               >
                 <span className="muted">Tổng hóa đơn: </span>
-                <strong style={{ fontSize: 16, color: '#b64c3d' }}>{money(totalBill)}</strong>
+                <strong style={{ fontSize: 16, color: 'var(--color-text)' }}>{money(totalBill)}</strong>
               </div>
             </div>
           ) : (
@@ -301,9 +301,9 @@ export const CashierModal: React.FC<Props> = ({
             );
           })()}
           {/* Current day live report */}
-          <div className="day-report-panel" style={{ background: '#f5efe6', padding: 12, borderRadius: 4, border: '1px solid #d1c4b2' }}>
+          <div className="day-report-panel" style={{ background: 'var(--color-panel)', padding: 12, borderRadius: 4, border: '1px solid var(--color-outline-soft)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <h3 style={{ margin: 0, color: '#4a2e18' }}>Báo cáo hôm nay (Ngày {worldTime.day})</h3>
+              <h3 style={{ margin: 0, color: 'var(--color-text)' }}>Báo cáo hôm nay (Ngày {worldTime.day})</h3>
               <span className="muted">Đang mở sổ</span>
             </div>
 
@@ -313,7 +313,7 @@ export const CashierModal: React.FC<Props> = ({
               <PixelStat label="Món đã bán" value={`${currentDayRecord?.itemsSold ?? 0} cái`} icon="bag" />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, borderTop: '1px solid #e0d5c5', paddingTop: 8, fontSize: 13 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, borderTop: '1px solid var(--color-panel-dark)', paddingTop: 8, fontSize: 13 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span className="muted">Doanh thu bán hàng:</span>
                 <strong>{money(currentDayRecord?.revenue ?? 0)}</strong>
@@ -334,29 +334,29 @@ export const CashierModal: React.FC<Props> = ({
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span className="muted">Giá vốn hàng bán (COGS):</span>
-                <span style={{ color: '#b64c3d' }}>- {money(currentDayRecord?.cogs ?? 0)}</span>
+                <span style={{ color: 'var(--color-brick)' }}>- {money(currentDayRecord?.cogs ?? 0)}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #d1c4b2', paddingTop: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed var(--color-panel-dark)', paddingTop: 4 }}>
                 <strong>Lợi nhuận gộp:</strong>
-                <strong style={{ color: (currentDayRecord?.grossProfit ?? 0) >= 0 ? 'var(--success)' : '#b64c3d' }}>
+                <strong style={{ color: (currentDayRecord?.grossProfit ?? 0) >= 0 ? 'var(--color-green)' : 'var(--color-brick)' }}>
                   {money(currentDayRecord?.grossProfit ?? 0)}
                 </strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span className="muted">Tổn thất hàng quá hạn:</span>
-                <span style={{ color: '#b64c3d' }}>- {money(currentDayRecord?.spoilageCost ?? 0)} ({currentDayRecord?.spoilageCount ?? 0} món)</span>
+                <span style={{ color: 'var(--color-brick)' }}>- {money(currentDayRecord?.spoilageCost ?? 0)} ({currentDayRecord?.spoilageCount ?? 0} món)</span>
               </div>
               {(currentDayRecord?.counterfeitLoss ?? 0) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span className="muted">Tiền giả nhận nhầm:</span>
-                <span style={{ color: '#b64c3d' }}>- {money(currentDayRecord?.counterfeitLoss ?? 0)}</span>
+                <span style={{ color: 'var(--color-brick)' }}>- {money(currentDayRecord?.counterfeitLoss ?? 0)}</span>
               </div>}
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px double #583c28', paddingTop: 4, fontWeight: 'bold' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid var(--color-outline)', paddingTop: 4, fontWeight: 'bold' }}>
                 <span>Lợi nhuận ròng:</span>
-                <span style={{ color: (currentDayRecord?.netProfit ?? 0) >= 0 ? 'var(--success)' : '#b64c3d', fontSize: 14 }}>
+                <span style={{ color: (currentDayRecord?.netProfit ?? 0) >= 0 ? 'var(--color-green)' : 'var(--color-brick)', fontSize: 14 }}>
                   {money(currentDayRecord?.netProfit ?? 0)}
                 </span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 4, borderTop: '1px dotted #ccc', fontSize: 11, color: '#776655' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 4, borderTop: '1px dotted var(--color-outline-soft)', fontSize: 11, color: 'var(--color-text-muted)' }}>
                 <span>Tiền mua nhập hàng hôm nay (cashflow):</span>
                 <span>{money(currentDayRecord?.purchaseTotal ?? 0)}</span>
               </div>
@@ -365,7 +365,7 @@ export const CashierModal: React.FC<Props> = ({
 
           {/* Past days history */}
           <div>
-            <h3 style={{ margin: '8px 0 6px 0', color: '#4a2e18' }}>Lịch sử ngày trước đã chốt</h3>
+            <h3 style={{ margin: '8px 0 6px 0', color: 'var(--color-text)' }}>Lịch sử ngày trước đã chốt</h3>
             {pastDays.length === 0 ? (
               <EmptyState title="Chưa có ngày chốt sổ">
                 Khi qua ngày mới lúc 22:00 hoặc bấm nút Qua ngày mới, sổ sách ngày hiện tại sẽ được tự động chốt an toàn và lưu trữ vào lịch sử.
@@ -376,10 +376,10 @@ export const CashierModal: React.FC<Props> = ({
                   <div
                     key={rec.day}
                     style={{
-                      background: '#fffdfa',
+                      background: 'var(--color-panel-hover)',
                       padding: '8px 12px',
                       borderRadius: 4,
-                      border: '1px solid #e0d5c5',
+                      border: '1px solid var(--color-outline-soft)',
                       fontSize: 12,
                     }}
                   >
@@ -391,8 +391,8 @@ export const CashierModal: React.FC<Props> = ({
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 96px), 1fr))', gap: 4 }}>
                       <div>Doanh thu: <strong>{money(rec.revenue)}</strong></div>
-                      <div>Giá vốn: <span style={{ color: '#b64c3d' }}>{money(rec.cogs)}</span></div>
-                      <div>Lãi ròng: <strong style={{ color: rec.netProfit >= 0 ? 'var(--success)' : '#b64c3d' }}>{money(rec.netProfit)}</strong></div>
+                      <div>Giá vốn: <span style={{ color: 'var(--color-brick)' }}>{money(rec.cogs)}</span></div>
+                      <div>Lãi ròng: <strong style={{ color: rec.netProfit >= 0 ? 'var(--color-green)' : 'var(--color-brick)' }}>{money(rec.netProfit)}</strong></div>
                     </div>
                     <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
                       {ch.totalCustomers} khách · {ch.totalTransactions} giao dịch · {rec.itemsSold} món bán {rec.spoilageCount > 0 ? `· Hỏng ${rec.spoilageCount} món` : ''}

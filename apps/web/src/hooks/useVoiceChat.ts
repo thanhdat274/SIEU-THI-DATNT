@@ -92,10 +92,13 @@ export function useVoiceChat({ selfId, connected, sendSignal }: VoiceChatOptions
     const hasTurn = (iceServersRef.current ?? []).some(srv =>
       (typeof srv.urls === 'string' ? [srv.urls] : srv.urls ?? []).some(url => url.startsWith('turn:') || url.startsWith('turns:'))
     );
+    // Chi tiết kỹ thuật chỉ ghi console cho người làm game; người chơi thấy lời hướng dẫn việc cần làm.
     if (!hasTurn) {
-      setMicError('Không kết nối được voice: chưa cấu hình TURN relay nên không tìm được đường nối qua mạng/NAT. Cần bổ sung TURN server (xem docs/deploy.md).');
+      console.warn('[voice] ICE không tìm được đường nối trực tiếp và chưa cấu hình TURN relay (xem docs/deploy.md, VITE_ICE_SERVERS).');
+      setMicError('Mạng đang chặn kết nối tiếng. Thử Wi-Fi hoặc 4G khác rồi bấm "Thử lại".');
     } else {
-      setMicError('Không kết nối được voice ngay cả khi đã có TURN. Bấm "Thử lại" hoặc kiểm tra mạng/HTTPS.');
+      console.warn('[voice] ICE thất bại dù đã cấu hình TURN relay.');
+      setMicError('Vẫn chưa nối được tiếng. Kiểm tra mạng của bạn rồi bấm "Thử lại".');
     }
     setStatus('failed');
   }, [clearTimer]);
@@ -135,7 +138,7 @@ export function useVoiceChat({ selfId, connected, sendSignal }: VoiceChatOptions
     closePeer();
     setMicError(null);
     if (typeof window === 'undefined' || typeof RTCPeerConnection === 'undefined') {
-      setMicError('Trình duyệt/webview này không hỗ trợ WebRTC nên không nói chuyện được qua mic. Hãy mở trên trình duyệt hiện đại (Chrome/Firefox/Safari).');
+      setMicError('Trình duyệt này chưa hỗ trợ mic. Hãy mở game bằng Chrome, Safari hoặc Firefox bản mới.');
       setStatus('failed');
       throw new Error('WebRTC không được hỗ trợ');
     }

@@ -96,7 +96,7 @@ export const WarehouseModal: React.FC<Props> = ({
             placeholder="Tìm theo tên hoặc mã..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            style={{ minHeight: '44px', width: '100%', background: 'var(--paper)', border: '2px solid var(--wood-light)', padding: '8px', color: 'var(--ink)' }}
+            style={{ minHeight: '44px', width: '100%', background: 'var(--color-panel)', border: '2px solid var(--color-outline)', padding: '8px', color: 'var(--color-text)' }}
           />
         </label>
         <label className="form-filter" style={{ flex: '1 1 200px', margin: 0 }}>
@@ -122,7 +122,7 @@ export const WarehouseModal: React.FC<Props> = ({
                 <summary>Lô, thùng và thao tác</summary>
               <div className="warehouse-lots">
                 {totalCases > 0 && product?.caseSize && (
-                  <p style={{ color: 'var(--teal)', fontWeight: 'bold' }}>📦 {totalCases} thùng ({totalCases * product.caseSize} lẻ)</p>
+                  <p style={{ color: 'var(--color-green-dark)', fontWeight: 'bold' }}>📦 {totalCases} thùng ({totalCases * product.caseSize} lẻ)</p>
                 )}
                 {i.lots?.map(l => (
                   <p key={l.expiresOnDay}>Lô {l.quantity} món · Hạn ngày {l.expiresOnDay} · còn {Math.max(0, l.expiresOnDay - currentDay)} ngày{l.caseCount ? ` · ${l.caseCount} thùng` : ''}</p>

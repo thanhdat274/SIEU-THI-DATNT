@@ -13,7 +13,7 @@ export const UpdateBanner: React.FC = () => {
       className="update-banner"
       style={{
         display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', fontSize: 13, lineHeight: 1.3,
-        background: '#33251D', color: '#FFF3D6', border: '2px solid #F2B84B', boxShadow: '3px 3px 0 #33251D55',
+        background: 'var(--color-green-dark)', color: 'var(--color-bg)', border: '2px solid var(--color-wheat)', boxShadow: '3px 3px 0 var(--color-outline)',
       }}
     >
       <span style={{ flex: 1 }}>Đã có bản cập nhật mới. Bấm cập nhật để lưu tiến trình và tải lại game.</span>

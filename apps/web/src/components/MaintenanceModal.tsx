@@ -13,10 +13,10 @@ export interface MaintenanceModalProps {
 }
 
 const STATUS_LABEL: Record<MaintenanceEntry['status'], { text: string; color: string }> = {
-  good: { text: 'Còn tốt', color: 'var(--success)' },
-  worn: { text: 'Đã mòn, nên bảo trì', color: 'var(--warn)' },
-  broken_minor: { text: 'Hỏng nhẹ: sửa được', color: 'var(--brick)' },
-  broken_major: { text: 'Hỏng nặng: phải mua mới', color: '#8a1f12' },
+  good: { text: 'Còn tốt', color: 'var(--color-green-dark)' },
+  worn: { text: 'Đã mòn, nên bảo trì', color: 'var(--color-warning-dark)' },
+  broken_minor: { text: 'Hỏng nhẹ: sửa được', color: 'var(--color-brick)' },
+  broken_major: { text: 'Hỏng nặng: phải mua mới', color: 'var(--color-brick-dark)' },
 };
 
 const TYPE_LABEL: Record<string, string> = { shelf_wooden: 'Kệ gỗ', shelf_glass: 'Kệ kính', refrigerator: 'Tủ mát' };
@@ -38,7 +38,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({ entries, pla
           <PixelButton variant="teal" disabled={!unlocked || serviceTotal <= 0 || playerMoney < serviceTotal} onClick={onMaintainAll}>
             Bảo trì tất cả ({serviceable.length})
           </PixelButton>
-          <span className="muted" style={{ fontSize: 12 }}>Tổng phí bảo trì: <strong style={{ color: 'var(--success)' }}>{money(serviceTotal)}</strong></span>
+          <span className="muted" style={{ fontSize: 12 }}>Tổng phí bảo trì: <strong style={{ color: 'var(--color-green-dark)' }}>{money(serviceTotal)}</strong></span>
         </div>
       )}
       <div style={{ display: 'grid', gap: 8 }}>
@@ -51,8 +51,8 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({ entries, pla
                 <span style={{ color: status.color, fontWeight: 'bold' }}>{status.text}</span>
               </div>
               <div role="progressbar" aria-label={`Độ mòn ${entry.wear}%`} aria-valuenow={entry.wear} aria-valuemin={0} aria-valuemax={100}
-                style={{ height: 8, background: '#e5d8c4', border: '1px solid #bfa993' }}>
-                <div style={{ width: `${Math.min(100, entry.wear)}%`, height: '100%', background: entry.wear >= MAINTENANCE_RULES.breakFrom ? 'var(--brick)' : entry.status === 'worn' ? 'var(--warn-bright)' : 'var(--success)' }} />
+                style={{ height: 8, background: 'var(--color-panel-dark)', border: '1px solid var(--color-outline-soft)' }}>
+                <div style={{ width: `${Math.min(100, entry.wear)}%`, height: '100%', background: entry.wear >= MAINTENANCE_RULES.breakFrom ? 'var(--color-brick)' : entry.status === 'worn' ? 'var(--color-wheat)' : 'var(--color-green)' }} />
               </div>
               <div className="maintenance-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                 <span className="muted" style={{ fontSize: 11 }}>Mòn {entry.wear}%</span>

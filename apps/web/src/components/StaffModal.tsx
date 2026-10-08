@@ -25,7 +25,7 @@ export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wa
 
   const hasDebt = wageDebt > 0 && !!onPayWageDebt;
   const debtRow = (
-    <div className="staff-debt" style={{ marginBottom: 12, padding: 12, background: '#f5efe6', border: '1px solid #d1c4b2', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+    <div className="staff-debt" style={{ marginBottom: 12, padding: 12, background: 'var(--color-panel-selected)', border: '1px solid var(--color-outline-soft)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
       <div className="staff-debt-info" style={{ flex: '1 1 200px' }}>
         <strong>Quỹ lương và công nợ · nợ {money(wageDebt)}</strong>
         <p className="muted" style={{ margin: '4px 0 0' }}>Trả ngay bằng tiền đang có, không cần chờ kết ngày.</p>
@@ -37,7 +37,7 @@ export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wa
   );
 
   const fundPanel = (
-      <details className="staff-fund" style={{ marginBottom: 16, padding: 12, background: '#f5efe6', border: '1px solid #d1c4b2' }}>
+      <details className="staff-fund" style={{ marginBottom: 16, padding: 12, background: 'var(--color-panel)', border: '1px solid var(--color-outline-soft)' }}>
         <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Quỹ lương và công nợ · nợ {money(wageDebt)}</summary>
       </details>
   );

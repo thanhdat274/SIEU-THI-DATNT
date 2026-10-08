@@ -69,9 +69,9 @@ export const WarehouseDock: React.FC<Props> = ({
       </header>
 
       {totalHolding > 0 && (
-        <div className="dock-holding-strip" style={{ padding: '8px 12px', background: '#FFF0D4', borderBottom: '2px solid #D5B98E' }}>
+        <div className="dock-holding-strip" style={{ padding: '8px 12px', background: 'var(--color-panel-hover)', borderBottom: '2px solid var(--color-panel-dark)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <strong style={{ fontSize: '12px', color: '#88392F' }}>Hàng chờ cất: {totalHolding} món</strong>
+            <strong style={{ fontSize: '12px', color: 'var(--color-brick)' }}>Hàng chờ cất: {totalHolding} món</strong>
             {onStowHolding && (
               <PixelButton
                 variant="teal"

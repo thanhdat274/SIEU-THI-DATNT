@@ -39,10 +39,10 @@ export const ReviewsModal: React.FC<ReviewsModalProps> = ({ reviews, summary, on
             {[5, 4, 3, 2, 1].map((n) => (
               <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
                 <span style={{ width: 22 }}>{n}★</span>
-                <div style={{ flex: 1, height: 6, background: '#e5d8c4', border: '1px solid #bfa993' }}>
-                  <div style={{ width: `${(summary.byStars[n - 1] / max) * 100}%`, height: '100%', background: n >= 4 ? 'var(--success)' : n === 3 ? 'var(--warn-bright)' : '#b64c3d' }} />
+                <div style={{ flex: 1, height: 6, background: 'var(--color-panel-dark)', border: '1px solid var(--color-outline-soft)' }}>
+                  <div style={{ width: `${(summary.byStars[n - 1] / max) * 100}%`, height: '100%', background: n >= 4 ? 'var(--color-green)' : n === 3 ? 'var(--color-wheat)' : 'var(--color-brick)' }} />
                 </div>
-                <span style={{ width: 20, textAlign: 'right' }}>{summary.byStars[n - 1]}</span>
+                <span style={{ width: 20, textAlign: 'right', color: 'var(--color-text)' }}>{summary.byStars[n - 1]}</span>
               </div>
             ))}
             {summary.topReason && (
@@ -60,7 +60,7 @@ export const ReviewsModal: React.FC<ReviewsModalProps> = ({ reviews, summary, on
               <article key={r.id} className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 4 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                   <strong>{r.author}{r.regularId ? ' ♥' : ''}</strong>
-                  <span style={{ color: r.stars >= 4 ? 'var(--success)' : r.stars === 3 ? 'var(--warn)' : '#b64c3d' }} aria-label={`${r.stars} sao`}>{stars(r.stars)}</span>
+                  <span style={{ color: r.stars >= 4 ? 'var(--color-green-dark)' : r.stars === 3 ? 'var(--color-wheat-dark)' : 'var(--color-brick)' }} aria-label={`${r.stars} sao`}>{stars(r.stars)}</span>
                 </div>
                 <p style={{ margin: 0 }}>“{r.text}”</p>
                 <div className="muted" style={{ fontSize: 10 }}>

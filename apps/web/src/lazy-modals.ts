@@ -9,6 +9,7 @@ const DiningTableModal = lazyModal<React.ComponentProps<typeof import('./compone
 const SaveModal = lazyModal<React.ComponentProps<typeof import('./components/SaveModal').SaveModal>>(() => import('./components/SaveModal'), 'SaveModal');
 const SupplierModal = lazyModal<React.ComponentProps<typeof import('./components/SupplierModal').SupplierModal>>(() => import('./components/SupplierModal'), 'SupplierModal');
 const TimeVoteModal = lazyModal<React.ComponentProps<typeof import('./components/TimeVoteModal').TimeVoteModal>>(() => import('./components/TimeVoteModal'), 'TimeVoteModal');
+const CityModal = lazyModal<React.ComponentProps<typeof import('./components/CityModal').CityModal>>(() => import('./components/CityModal'), 'CityModal');
 const StoreLayoutModal = lazyModal<React.ComponentProps<typeof import('./components/StoreLayoutModal').StoreLayoutModal>>(() => import('./components/StoreLayoutModal'), 'StoreLayoutModal');
 const StorePlanogramModal = lazyModal<React.ComponentProps<typeof import('./components/StorePlanogramModal').StorePlanogramModal>>(() => import('./components/StorePlanogramModal'), 'StorePlanogramModal');
 const QuestModal = lazyModal<React.ComponentProps<typeof import('./components/QuestModal').QuestModal>>(() => import('./components/QuestModal'), 'QuestModal');
@@ -26,4 +27,4 @@ const ReviewsModal = lazyModal<React.ComponentProps<typeof import('./components/
 const SecurityModal = lazyModal<React.ComponentProps<typeof import('./components/SecurityModal').SecurityModal>>(() => import('./components/SecurityModal'), 'SecurityModal');
 const ChainModal = lazyModal<React.ComponentProps<typeof import('./components/ChainModal').ChainModal>>(() => import('./components/ChainModal'), 'ChainModal');
 
-export { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal };
+export { CityModal, ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal };

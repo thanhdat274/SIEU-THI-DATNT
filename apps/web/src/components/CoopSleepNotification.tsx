@@ -26,7 +26,7 @@ export const CoopSleepNotification: React.FC = () => {
         left: '50%',
         transform: 'translateX(-50%)',
         maxWidth: 'min(440px, calc(100% - var(--space-3, 16px) * 2 - var(--safe-l, 0px) - var(--safe-r, 0px)))',
-        backgroundColor: 'var(--paper, #f5efe6)',
+        backgroundColor: 'var(--paper, #F5EFE6)',
         color: 'var(--ink, #2a1f14)',
         padding: 'var(--space-2) var(--space-3)',
         border: '3px solid var(--wood-dark, #3b2518)',
