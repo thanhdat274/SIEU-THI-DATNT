@@ -101,7 +101,7 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
   const categories = [
     {
       id: 'hr_social',
-      title: '👥 Nhân sự & Khách hàng',
+      title: 'Nhân sự & Khách hàng',
       items: [
         {
           id: 'staff',
@@ -130,7 +130,7 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
     },
     {
       id: 'growth',
-      title: '⭐ Phát triển & Kỹ năng',
+      title: 'Phát triển & Kỹ năng',
       items: [
         onOpenSkills && {
           id: 'skills',
@@ -164,7 +164,7 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
     },
     {
       id: 'business',
-      title: '📊 Kinh doanh & Vận hành',
+      title: 'Kinh doanh & Vận hành',
       items: [
         onOpenAnalytics && {
           id: 'analytics',

@@ -18,11 +18,11 @@
   gap: 12px;
   padding: 10px 14px;
   flex-wrap: wrap;
-  background: var(--color-water-panel);
-  color: #fff;
-  border: 3px solid var(--color-ink);
+  background: var(--color-deep-green);
+  color: var(--color-cream);
+  border: 2px solid var(--color-ink);
   border-radius: 0;
-  box-shadow: 4px 4px 0 var(--color-ink);
+  box-shadow: 2px 2px 0 var(--color-ink);
 }
 
 .summary-stats {
@@ -312,8 +312,8 @@
   padding: 10px;
   transition: all 0.1s ease;
   background: var(--color-cream);
-  border: 2px solid var(--color-ink);
-  border-left: 6px solid var(--color-grass);
+  border: 2px solid var(--color-deep-green);
+  border-left: 5px solid var(--color-deep-green);
   border-radius: 0;
   box-shadow: 2px 2px 0 var(--color-ink);
 }
@@ -325,8 +325,8 @@
   font-size: 10px;
   font-weight: 800;
   padding: 1px 5px;
-  background: var(--color-sun);
-  border: 2px solid var(--color-ink);
+  background: var(--color-panel-dark);
+  border: 2px solid var(--color-deep-green);
   border-radius: 0;
   color: var(--color-ink);
 }
@@ -556,8 +556,8 @@
   cursor: pointer;
   text-align: left;
   transition: all 0.08s ease;
-  border: 2px solid var(--color-ink);
-  border-left: 6px solid var(--color-water);
+  border: 2px solid var(--color-deep-green);
+  border-left: 5px solid var(--color-deep-green);
   border-radius: 0;
   box-shadow: 2px 2px 0 var(--color-ink);
 }
@@ -651,20 +651,15 @@
 /* ==========================================================================
    Vietnamese Neighborhood Pixel — viền cứng, màu ngữ nghĩa (08/10/2026)
    ========================================================================== */
-.filter-btn:nth-child(5n+2) { background: #E7A59A; }
-.filter-btn:nth-child(5n+3) { background: #E2BE8F; }
-.filter-btn:nth-child(5n+4) { background: #A9D2E0; }
-.filter-btn:nth-child(5n+5) { background: #B9D8F0; }
-.filter-btn.is-active { background: var(--color-deep-green); color: var(--color-sun); border-color: var(--color-ink); box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.35), 0 1px 0 var(--color-ink); text-shadow: 1px 1px 0 var(--color-ink); }
-.slot-card:hover { border-color: var(--color-ink); border-left-color: var(--color-grass); box-shadow: 3px 3px 0 var(--color-ink); }
-.slot-card.is-empty { border-color: var(--color-ink); border-left-color: var(--color-terracotta); background: #F3DCCD; }
-.slot-card.is-full { border-color: var(--color-ink); border-left-color: var(--color-grass); }
-.btn-slot-quick.is-fill, .btn-slot-quick.is-assign-new { background: var(--color-grass-btn); color: #fff; border-color: var(--color-ink); text-shadow: 1px 1px 0 var(--color-deep-green); }
-.btn-slot-quick.is-order { background: var(--color-sun); border-color: var(--color-ink); }
-.btn-slot-quick.is-change { background: var(--color-sky); border-color: var(--color-ink); }
-.btn-slot-quick.is-unstock { background: var(--color-warm-gray); border-color: var(--color-ink); }
+.filter-btn.is-active { background: var(--color-deep-green); color: var(--color-cream); border-color: var(--color-deep-green); box-shadow: inset 0 -2px 0 var(--color-wood-light); text-shadow: none; }
+.slot-card:hover { border-color: var(--color-deep-green); border-left-color: var(--color-deep-green); box-shadow: 2px 2px 0 var(--color-ink); }
+.slot-card.is-empty { border-color: var(--color-deep-green); border-left-color: var(--color-deep-green); background: var(--color-cream); }
+.slot-card.is-full { border-color: var(--color-deep-green); border-left-color: var(--color-deep-green); }
+.btn-slot-quick.is-fill, .btn-slot-quick.is-assign-new { background: var(--color-green-dark); color: var(--color-cream); border-color: var(--color-deep-green); text-shadow: none; }
+.btn-slot-quick.is-order, .btn-slot-quick.is-change { background: var(--color-panel-dark); color: var(--color-text); border-color: var(--color-deep-green); text-shadow: none; }
+.btn-slot-quick.is-unstock { background: var(--color-panel-dark); border-color: var(--color-deep-green); }
 .product-select-card:hover { background: var(--color-panel-selected); }
-.summary-stat-item.is-danger { background: var(--color-terracotta); }
+.summary-stat-item.is-danger { background: var(--color-brick); }
 .summary-stat-item.is-warning { background: var(--color-sun); }
 
 /* Landscape thấp (≤380px, vd 568×320): gom tóm tắt + bộ lọc + tìm kiếm để danh sách kệ hiện sớm hơn */
@@ -683,3 +678,12 @@
   html[data-density="compact"] .planogram-search { flex: 0 0 110px; }
 }
 .fixture-type-tag.is-cold { background: var(--color-cream); color: var(--color-water-dark); border: 2px solid var(--color-ink); border-radius: 0; }
+
+/* Muted filters and compact wood/green accents keep the shelf grid in focus. */
+.filter-btn, .filter-btn:nth-child(n) { background: var(--color-panel-dark); color: var(--color-text); border-color: var(--color-deep-green); box-shadow: 1px 1px 0 var(--color-ink); }
+.filter-btn.is-active { background: var(--color-deep-green); color: var(--color-cream); border-color: var(--color-deep-green); box-shadow: inset 0 -2px 0 var(--color-wood-light); text-shadow: none; }
+.planogram-summary-bar { box-shadow: 2px 2px 0 var(--color-ink); }
+.slot-card { border-color: var(--color-deep-green); box-shadow: 1px 1px 0 var(--color-ink); }
+.slot-card:hover { border-color: var(--color-deep-green); box-shadow: 2px 2px 0 var(--color-ink); }
+.slot-card.is-empty, .slot-card.is-full { border-color: var(--color-deep-green); border-left-color: var(--color-deep-green); }
+.btn-slot-quick.is-change, .btn-slot-quick.is-order { background: var(--color-panel-dark); color: var(--color-text); border-color: var(--color-deep-green); }
