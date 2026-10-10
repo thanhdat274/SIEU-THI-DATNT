@@ -7,13 +7,38 @@ const C={ink:'#33251D',dark:'#593A2B',wood:'#936044',light:'#C69464',paper:'#FFF
 export function createPremiumTexture(key:string):HTMLCanvasElement|null{
  const warehouse=warehouseTexture(key);if(warehouse)return warehouse;
  if(key.startsWith('tile_grass_v')){
-  // 3 biến thể cỏ (nền #5c7a52) để mặt đất không lặp một ô; nhiễu cố định theo biến thể
+  // 3 biến thể cỏ xanh tươi kiểu Stardew: nền 2 tông, cụm lá nhỏ tối/sáng, vài bông hoa; không lặp một ô
   const v=Number(key.slice(-1)),{canvas,ctx}=surface(32,32);
-  ctx.fillStyle=['#5c7a52','#5f7f55','#587650'][v]??'#5c7a52';ctx.fillRect(0,0,32,32);
-  const dark='#4c6843',light='#78a06a';
+  ctx.fillStyle=['#5B9A3A','#5F9F3E','#569536'][v]??'#5B9A3A';ctx.fillRect(0,0,32,32);
+  ctx.fillStyle='#4E8C32';for(const [x,y,w,h] of [[[2,4,10,6],[18,20,12,7]],[[14,2,10,6],[2,18,11,7]],[[20,8,9,6],[4,24,12,6]]][v]??[])ctx.fillRect(x,y,w,h);
   const spots=[[[4,8],[18,16],[10,24],[26,4]],[[7,3],[22,12],[3,20],[16,27]],[[12,10],[27,22],[5,15],[20,2]]][v]??[];
-  ctx.fillStyle=dark;for(const [x,y] of spots){ctx.fillRect(x,y,4,2);ctx.fillRect(x+1,y-1,2,1);}
-  ctx.fillStyle=light;for(const [x,y] of spots){ctx.fillRect(x+6,y+4,1,3);ctx.fillRect(x+7,y+3,1,2);}
+  for(const [x,y] of spots){
+   ctx.fillStyle='#3C7A2A';ctx.fillRect(x,y+2,1,2);ctx.fillRect(x+2,y+2,1,2);ctx.fillRect(x+1,y,1,4);
+   ctx.fillStyle='#86C760';ctx.fillRect(x+1,y,1,1);ctx.fillRect(x+3,y+3,1,1);
+  }
+  const fl=[['#EDCB5A',14,12],['#FFFFFF',6,24],['#FF8FB5',24,18]][v];
+  if(fl){ctx.fillStyle=fl[0] as string;ctx.fillRect(fl[1] as number,fl[2] as number,2,2);ctx.fillStyle='#F2A02A';ctx.fillRect((fl[1] as number)+0,(fl[2] as number)+0,1,1);}
+  return canvas;
+ }
+ if(key.startsWith('deco_bush_')){
+  // bụi cây tròn 32x32: viền xanh đậm, thân 3 tông, quả đỏ ở biến thể 1; bóng đổ dưới chân
+  const v=Number(key.slice(-1)),{canvas,ctx}=surface(32,32);
+  ctx.fillStyle='#26190E40';ctx.fillRect(3,26,26,4);
+  for(const [x,y,w,h] of [[4,12,12,13],[10,5,15,17],[18,12,11,13]] as const){
+   ctx.fillStyle='#25502A';ctx.fillRect(x-1,y-1,w+2,h+2);
+   ctx.fillStyle='#468A38';ctx.fillRect(x,y,w,h);
+   ctx.fillStyle='#6AA84A';ctx.fillRect(x+1,y+1,w-5,h-6);
+   ctx.fillStyle='#9AD070';ctx.fillRect(x+3,y+2,3,2);
+  }
+  if(v===1){ctx.fillStyle='#E8344A';for(const [x,y] of [[9,15],[20,17],[15,10],[24,21]])ctx.fillRect(x,y,2,2);ctx.fillStyle='#FF9AA8';for(const [x,y] of [[9,15],[20,17],[15,10]])ctx.fillRect(x,y,1,1);}
+  return canvas;
+ }
+ if(key==='deco_tuft'){
+  // cụm cỏ cao 32x32 (lá nhọn 3 màu) làm mặt cỏ có chiều cao
+  const {canvas,ctx}=surface(32,32);
+  for(const [x,h] of [[10,10],[13,14],[16,9],[19,12],[22,8]] as const){
+   ctx.fillStyle='#3A7A2C';ctx.fillRect(x,26-h,2,h);ctx.fillStyle='#6AAE46';ctx.fillRect(x,26-h,1,h-2);ctx.fillStyle='#98CC6E';ctx.fillRect(x,26-h,1,2);
+  }
   return canvas;
  }
  if(key.startsWith('deco_flowers_')){
@@ -253,7 +278,7 @@ export function createPremiumTexture(key:string):HTMLCanvasElement|null{
 
    // Translucent mint-cyan daylight glass
    r(18,7,10,15,'#8FC5BB');
-   r(18,7,2,15,'#FFF6D8');  // Warm sunlight entering from street
+   r(18,7,2,15,'#FBECCB');  // Warm sunlight entering from street
    r(20,7,7,15,'#AEE0D6');  // Daylight sky highlight
    r(26,7,2,3,'#629E92');   // Top-right corner shade
 
@@ -362,12 +387,12 @@ export function createPremiumTexture(key:string):HTMLCanvasElement|null{
 
   // Multi-layered lush pixel canopy clusters (Stardew Valley foliage style)
   const canopy: Array<[number, number, number, number, string, string, string]> = [
-    [8, 22, 64, 46, '#265C2E', '#3D8243', '#16381C'],
-    [14, 8, 52, 40, '#2F6E36', '#49964F', '#1B4722'],
-    [22, 2, 36, 32, '#388241', '#5DB563', '#1E5427'],
-    [4, 34, 40, 32, '#235229', '#38783C', '#143018'],
-    [38, 30, 38, 36, '#235229', '#38783C', '#143018'],
-    [26, 44, 28, 22, '#1E4723', '#2F6E36', '#102613']
+    [8, 22, 64, 46, '#4A8A3A', '#6AA84A', '#2F6428'],
+    [14, 8, 52, 40, '#559A40', '#82BC5A', '#35702C'],
+    [22, 2, 36, 32, '#62A845', '#98CC6E', '#3B7A30'],
+    [4, 34, 40, 32, '#3F8434', '#62A442', '#2B5F26'],
+    [38, 30, 38, 36, '#3F8434', '#62A442', '#2B5F26'],
+    [26, 44, 28, 22, '#37722E', '#559A40', '#102613']
   ];
   for(const [cx,cy,cw,ch,base,light,dark] of canopy){
     r(cx,cy,cw,ch,'#122415');
@@ -432,9 +457,9 @@ export function createPremiumTexture(key:string):HTMLCanvasElement|null{
  }else if(key==='tile_yellow_wall'){
    ctx.fillStyle='#E5B85C';ctx.fillRect(0,0,32,32);ctx.fillStyle='#FAF0C8';ctx.fillRect(0,0,32,3);ctx.fillStyle='#F2DC9B';ctx.fillRect(0,3,32,4);ctx.fillStyle='#CFA253';ctx.fillRect(0,7,32,2);ctx.fillStyle='#357F72';ctx.fillRect(0,23,32,2);ctx.fillStyle='#5C3617';ctx.fillRect(0,25,32,7);ctx.fillStyle='#825026';ctx.fillRect(0,25,32,1);
  }else if(key==='tile_street'){
-   ctx.fillStyle='#8E9184';ctx.fillRect(0,0,32,32);ctx.fillStyle='#7D8073';ctx.fillRect(5,6,3,1);ctx.fillRect(21,25,4,1);ctx.fillStyle='#A1A18F';ctx.fillRect(18,13,2,1);
+   ctx.fillStyle='#7E8895';ctx.fillRect(0,0,32,32);ctx.fillStyle='#6C7683';ctx.fillRect(5,6,3,1);ctx.fillRect(21,25,4,1);ctx.fillStyle='#98A2AF';ctx.fillRect(18,13,2,1);
  }else{
-   ctx.fillStyle=key==='tile_sidewalk'?'#C8C3AD':'#BBBCA8';ctx.fillRect(0,0,32,32);ctx.fillStyle='#A8AA98';ctx.fillRect(0,0,32,1);ctx.fillRect(0,0,1,32);ctx.fillRect(0,16,32,1);ctx.fillRect(16,0,1,32);ctx.fillStyle='#D6D1B9';ctx.fillRect(1,1,30,1);ctx.fillStyle='#AAA996';ctx.fillRect(7,11,2,1);ctx.fillRect(23,27,2,1);
+   ctx.fillStyle=key==='tile_sidewalk'?'#D2C39C':'#C6BA9A';ctx.fillRect(0,0,32,32);ctx.fillStyle='#AE9F78';ctx.fillRect(0,0,32,1);ctx.fillRect(0,0,1,32);ctx.fillRect(0,16,32,1);ctx.fillRect(16,0,1,32);ctx.fillStyle='#E2D6B4';ctx.fillRect(1,1,30,1);ctx.fillStyle='#A89A74';ctx.fillRect(7,11,2,1);ctx.fillRect(23,27,2,1);
  }
  return canvas;
 }
@@ -1207,7 +1232,7 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
       r(3, 32, 25, 16, DARK); r(4, 33, 23, 14, pal.main); r(4, 33, 23, 3, pal.light); r(4, 44, 23, 3, pal.dark);
       r(9, 38, 11, 3, '#cfd8dc'); r(9, 38, 11, 1, '#ffffff');                        // tấm ốp bên
       r(5, 28, 25, 5, DARK); r(6, 28, 23, 3, '#2b3340'); r(6, 28, 23, 1, '#47536a');  // yên
-      r(27, 45, 18, 4, DARK); r(28, 45, 16, 2, '#8a5a33');                           // sàn để chân
+      r(27, 45, 18, 4, DARK); r(28, 45, 16, 2, '#8A5F3D');                           // sàn để chân
     }
     // cổ + tấm chắn chân, phuộc, chắn bùn trước, ghi-đông, đèn
     r(44, 26, 8, 22, DARK); r(45, 27, 6, 20, pal.main); r(45, 27, 2, 20, pal.light);
@@ -1251,7 +1276,7 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
     // Chân: đùi trên yên, cẳng chân xuống bàn đạp, giày nâu
     r(20, 33, 16, 7, DARK); r(21, 34, 14, 5, PANTS); r(21, 34, 14, 1, '#567373');
     r(33, 36, 9, 13, DARK); r(34, 37, 7, 11, PANTS);
-    r(31, 47, 13, 6, DARK); r(32, 48, 11, 4, '#8a5a33'); r(32, 48, 11, 1, '#b07a4a');
+    r(31, 47, 13, 6, DARK); r(32, 48, 11, 4, '#8A5F3D'); r(32, 48, 11, 1, '#b07a4a');
     // Thân áo khoác xanh lá, cổ áo trắng, túi áo
     r(18, 16, 15, 20, DARK); r(19, 17, 13, 18, j.main); r(19, 17, 3, 18, j.light); r(28, 17, 4, 18, j.dark);
     r(25, 16, 6, 3, '#f4f4f4'); r(22, 27, 5, 4, j.dark); r(22, 27, 5, 1, j.light);
@@ -1391,7 +1416,7 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
     // Người đạp: chân → thân → tay → đầu → nón lá
     r(22, 36, 13, 7, DARK); r(23, 37, 11, 5, PANTS);                  // đùi
     r(31, 39, 7, 11, DARK); r(32, 40, 5, 9, PANTS);                   // cẳng chân
-    r(29, 48, 11, 5, DARK); r(30, 49, 9, 3, '#8a5a33'); r(30, 49, 9, 1, '#b07a4a');   // giày
+    r(29, 48, 11, 5, DARK); r(30, 49, 9, 3, '#8A5F3D'); r(30, 49, 9, 1, '#b07a4a');   // giày
     r(20, 18, 16, 19, DARK); r(21, 19, 14, 17, J.main); r(21, 19, 3, 17, J.light); r(31, 19, 4, 17, J.dark);
     r(28, 18, 6, 3, '#f4f4f4');                                       // cổ áo
     r(32, 21, 9, 6, DARK); r(33, 22, 7, 4, J.main);                   // cánh tay

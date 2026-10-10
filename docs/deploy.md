@@ -28,11 +28,27 @@ Node >= 22, Yarn 1 (`yarn install --frozen-lockfile`).
 | `HOST` | Không | Mặc định `127.0.0.1` (chỉ máy chủ nghe). Sau reverse proxy giữ nguyên; muốn mở ra ngoài đặt `0.0.0.0`. |
 | `PORT` | Không | Mặc định `3001`. |
 | `WEB_ORIGIN` | Có ở production | Origin được CORS cho phép (mặc định `http://localhost:5173`). Phải khớp domain web. |
-| `GOOGLE_AUTH_BYPASS` | **Không bao giờ đặt ở production** | `true` bỏ qua xác minh Firebase và cấp tài khoản khách. Chỉ để thử cục bộ. |
+| `GOOGLE_AUTH_BYPASS` | **Không bao giờ đặt ở production** | `true` bỏ qua xác minh Firebase và cấp tài khoản khách. Chỉ để thử cục bộ. Khi bật, server đọc header `X-Dev-Client-Id` để cấp tài khoản khách **ổn định** `guest_<id>` (phục vụ test 2 người trên localhost); không gửi header thì rơi về khách random mỗi request. |
 
 ### Web (build time, `apps/web/.env.local` hoặc biến CI)
 
 `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` (ba biến `API_KEY`, `PROJECT_ID`, `APP_ID` là bắt buộc để bật đăng nhập), và `VITE_API_URL` (URL server; mặc định `http://127.0.0.1:3001`, **phải đặt khi build cho production**). Các biến `VITE_*` nằm trong bundle công khai nên không đặt bí mật vào đó.
+
+`VITE_ICE_SERVERS` (không bắt buộc): JSON mảng `RTCIceServer` dùng cho voice chat WebRTC. Mặc định chỉ có STUN công cộng. **Để voice hoạt động ổn định giữa hai máy thật (qua NAT/firewall) bắt buộc thêm TURN relay.** Ví dụ:
+
+```json
+[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:turn.example.com:3478","username":"user","credential":"pass"}]
+```
+
+Sai định dạng hoặc rỗng thì rơi về STUN mặc định. `credential`/`username` của TURN nằm trong bundle công khai; nếu không muốn lộ tài khoản, hãy dùng cặp tạm thời (short-lived) hoặc chấp nhận rủi ro cho TURN tự host với phạm vi hẹp.
+
+## Voice chat (mic giữa hai người chơi chung hẻm)
+
+- **Bắt buộc HTTPS** để trình duyệt cho phép dùng mic (`getUserMedia`). localhost được miễn; deploy phải qua HTTPS.
+- **Bắt buộc cấu hình TURN** để phần lớn cặp người chơi thật nối được: chỉ STUN (P2P trực tiếp) sẽ fail với nhiều cặp sau NAT đối xứng/mạng di động → hiện "không kết nối được voice".
+- Cách triển khai TURN: chạy [coturn](https://github.com/coturn/coturn) (hoặc TURN dịch vụ như Cloudflare Calls / Metered / Twilio TURN), mở cổng UDP/TCP (3478 + dải relay) gửi tới Internet, rồi set `VITE_ICE_SERVERS` ở bước build web như trên.
+- Âm thanh đi **trực tiếp P2P giữa hai trình duyệt**, server chỉ chuyển tiếp tín hiệu offer/answer/candidate qua WS — không lưu âm thanh. Server không cần config đặc biệt cho voice ngoài việc WS đã bật ở `/ws` (xem mục Mạng).
+- **Nghiệm thu 2 người trên localhost (không cần Firebase):** chạy server với `GOOGLE_AUTH_BYPASS=true` + web bằng `yarn --cwd apps/web dev`, rồi mở 2 cửa sổ trình duyệt (một cái Ẩn danh) và dùng thẻ **"Hẻm Chơi Cùng (Khách dev)"** — chọn Khách A / Khách B. Hướng dẫn từng bước: **`docs/voice-test-2client.md`**.
 
 ## Kiểm tra sau khi chạy
 

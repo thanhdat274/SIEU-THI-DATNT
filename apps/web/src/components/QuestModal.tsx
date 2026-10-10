@@ -43,7 +43,7 @@ const QuestRow: React.FC<{ quest: QuestProgress; onClaim: ClaimHandler; disabled
     <strong>{quest.title}</strong>
     <span className="muted">{quest.description}</span>
     <PixelProgress label={quest.title} value={quest.current} max={quest.target} />
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+    <div className="quest-reward-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
       <span className="tabular">Thưởng {money(quest.reward.money)}{quest.reward.experience > 0 ? ` · ${quest.reward.experience} XP` : ''}</span>
       <PixelButton variant="teal" disabled={disabled || !quest.done || quest.claimed} onClick={() => void onClaim(quest.id)}>
         {quest.claimed ? 'Đã nhận' : quest.done ? 'Nhận thưởng' : 'Chưa xong'}
@@ -133,34 +133,34 @@ export const QuestModal: React.FC<QuestModalProps> = ({
   ]);
 
   return (
-    <PixelDialog icon="star" title="SỔ NHIỆM VỤ & MỤC TIÊU" subtitle="Việc trong ngày, đơn tiệc xóm và hoài bão phát triển" onClose={onClose}>
+    <PixelDialog icon="star" title="Sổ nhiệm vụ & mục tiêu" subtitle="Việc trong ngày, đơn tiệc xóm và hoài bão phát triển" onClose={onClose}>
       {/* Tab bar */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+      <div className="feature-scroll-tabs" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
         <PixelButton
           variant={activeTab === 'daily' ? 'teal' : 'paper'}
           onClick={() => setActiveTab('daily')}
-          style={{ flex: 1, padding: '6px 4px', fontSize: '0.85rem' }}
+          style={{ padding: '6px 4px', fontSize: '0.85rem', flexShrink: 0 }}
         >
           Nhiệm vụ ngày
         </PixelButton>
         <PixelButton
           variant={activeTab === 'party' ? 'teal' : 'paper'}
           onClick={() => setActiveTab('party')}
-          style={{ flex: 1, padding: '6px 4px', fontSize: '0.85rem' }}
+          style={{ padding: '6px 4px', fontSize: '0.85rem', flexShrink: 0 }}
         >
           Đơn tiệc {pendingOrdersCount > 0 ? `(${pendingOrdersCount})` : ''}
         </PixelButton>
         <PixelButton
           variant={activeTab === 'goals' ? 'teal' : 'paper'}
           onClick={() => setActiveTab('goals')}
-          style={{ flex: 1, padding: '6px 4px', fontSize: '0.85rem' }}
+          style={{ padding: '6px 4px', fontSize: '0.85rem', flexShrink: 0 }}
         >
           Mục tiêu & Tuần {claimableGoalsCount > 0 ? `(${claimableGoalsCount})` : ''}
         </PixelButton>
         <PixelButton
           variant={activeTab === 'chapters' ? 'teal' : 'paper'}
           onClick={() => setActiveTab('chapters')}
-          style={{ flex: 1, padding: '6px 4px', fontSize: '0.85rem' }}
+          style={{ padding: '6px 4px', fontSize: '0.85rem', flexShrink: 0 }}
         >
           Cốt truyện {claimableChapters.length > 0 ? `(${claimableChapters.length})` : ''}
         </PixelButton>
@@ -242,7 +242,7 @@ export const QuestModal: React.FC<QuestModalProps> = ({
                         const curQty = inv?.quantity ?? 0;
                         const isEnough = curQty >= it.quantity;
                         return (
-                          <li key={it.productId} style={{ color: isEnough ? 'inherit' : '#d9534f' }}>
+                          <li key={it.productId} style={{ color: isEnough ? 'inherit' : 'var(--brick)' }}>
                             {prod?.name ?? it.productId}: <strong>{curQty}/{it.quantity}</strong> {isEnough ? '✓' : '(thiếu hàng)'}
                           </li>
                         );

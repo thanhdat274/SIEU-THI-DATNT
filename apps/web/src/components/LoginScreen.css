@@ -19,9 +19,11 @@
   align-items: center;
   justify-content: flex-start;
   isolation: isolate;
-  padding: 16px 20px 36px;
+  /* Vùng an toàn: notch/Dynamic Island (trên, landscape: trái/phải), camera hole, Home Indicator/gesture (dưới),
+     bàn phím ảo (tự co qua 100dvh + --kb-h do responsive.ts đo). Không hard-code theo thiết bị. */
+  padding: max(16px, var(--safe-t, 0px)) max(20px, var(--safe-r, 0px)) max(36px, var(--safe-b, 0px)) max(20px, var(--safe-l, 0px));
   background: #233438;
-  color: #33251d;
+  color: #3E2A1A;
   font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   user-select: none;
   box-sizing: border-box;
@@ -36,15 +38,13 @@
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    #2a4449 0%,
-    #42615a 22%,
-    #7a745c 42%,
-    #c49767 62%,
-    #e5b47a 80%,
-    #b2835a 100%
-  );
+  /* Trời xanh tươi + 3 lớp đồi cỏ (xa -> gần) kiểu cảnh nông thôn pixel */
+  background:
+    radial-gradient(ellipse 55% 24% at 12% 100%, #6FA843 0 98%, transparent 100%),
+    radial-gradient(ellipse 60% 28% at 82% 100%, #5F9B3A 0 98%, transparent 100%),
+    radial-gradient(ellipse 80% 30% at 45% 88%, #3F8A5E 0 98%, transparent 100%),
+    radial-gradient(ellipse 90% 26% at 70% 78%, #3D7F86 0 98%, transparent 100%),
+    linear-gradient(180deg, #5E9FD8 0%, #8CC4E8 38%, #B7DDEE 62%, #CDE6EA 100%);
 }
 
 /* Golden Sunset Sun with Layered Luminous Halos */
@@ -98,10 +98,10 @@
 
 .vintage-cloud {
   position: absolute;
-  background: #fbf5e6;
-  border-radius: 40px;
-  opacity: 0.65;
-  filter: drop-shadow(0 8px 12px rgba(95, 78, 52, 0.15));
+  background: #ffffff;
+  border-radius: 0;
+  opacity: 0.92;
+  filter: drop-shadow(0 6px 0 rgba(120, 180, 230, 0.35));
 }
 
 .vintage-cloud::before,
@@ -127,7 +127,7 @@
   height: 52px;
   top: 26%;
   left: -280px;
-  opacity: 0.45;
+  opacity: 0.8;
   animation: cloud-drift-slow 95s linear infinite;
   animation-delay: -30s;
 }
@@ -139,7 +139,7 @@
   height: 36px;
   top: 8%;
   left: -160px;
-  opacity: 0.35;
+  opacity: 0.75;
   animation: cloud-drift-medium 80s linear infinite;
   animation-delay: -50s;
 }
@@ -151,7 +151,7 @@
   height: 48px;
   top: 34%;
   left: -220px;
-  opacity: 0.3;
+  opacity: 0.65;
   animation: cloud-drift-slow 110s linear infinite;
   animation-delay: -75s;
 }
@@ -200,7 +200,7 @@
   height: 10px;
   background: #544437;
   border: 2px solid #281e18;
-  border-radius: 2px;
+  border-radius: 0;
 }
 
 .wire-svg {
@@ -228,7 +228,7 @@
   width: 11px;
   height: 9px;
   background: #2a201b;
-  border-radius: 50% 60% 40% 50%;
+  border-radius: 0;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
@@ -277,15 +277,15 @@
 .foliage {
   position: absolute;
   border-radius: 50%;
-  background: #3b5239;
-  opacity: 0.75;
+  background: #468A38;
+  opacity: 1;
   filter: drop-shadow(4px 4px 10px rgba(25, 38, 24, 0.25));
   animation: tree-sway 6s ease-in-out infinite alternate;
 }
 
-.foliage-1 { width: 180px; height: 140px; top: 10px; left: 20px; background: #334832; }
-.foliage-2 { width: 140px; height: 110px; top: 50px; left: 110px; background: #446142; animation-delay: -2s; }
-.foliage-3 { width: 110px; height: 90px; top: 90px; left: 50px; background: #4d6e4b; animation-delay: -4s; }
+.foliage-1 { width: 180px; height: 140px; top: 10px; left: 20px; background: #3F8434; }
+.foliage-2 { width: 140px; height: 110px; top: 50px; left: 110px; background: #5F9B3A; animation-delay: -2s; }
+.foliage-3 { width: 110px; height: 90px; top: 90px; left: 50px; background: #6AA84A; animation-delay: -4s; }
 
 @keyframes tree-sway {
   0% { transform: rotate(0deg) scale(1); }
@@ -357,7 +357,7 @@
   right: 5%;
   height: 12px;
   background: #4a2119;
-  border-radius: 4px 4px 0 0;
+  border-radius: 0 0 0;
 }
 
 .roof-shingles {
@@ -457,7 +457,7 @@
 .signboard-frame {
   background: #5a2018;
   border: 5px solid #d4a956;
-  border-radius: 6px;
+  border-radius: 0;
   padding: 8px 16px;
   box-shadow: 0 8px 0 #31110c, 0 14px 25px rgba(0, 0, 0, 0.45);
   text-align: center;
@@ -480,7 +480,7 @@
 
 .sign-headline {
   margin: 2px 0;
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: inherit;
   font-size: clamp(24px, 3.8vw, 38px);
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -519,7 +519,7 @@
   background: linear-gradient(135deg, #74a08c 0%, #4e7865 100%);
   border: 6px solid #574334;
   border-bottom: 0;
-  border-radius: 4px 4px 0 0;
+  border-radius: 0 0 0;
   position: relative;
   overflow: hidden;
   box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.35);
@@ -536,7 +536,7 @@
 .shelf-tier {
   height: 28px;
   border-bottom: 4px solid #6b4d36;
-  border-radius: 2px;
+  border-radius: 0;
 }
 
 .tier-drinks {
@@ -621,7 +621,7 @@
   height: 32px;
   background: #f7f4ea;
   border: 3px solid #8c826f;
-  border-radius: 3px;
+  border-radius: 0;
   position: relative;
 }
 .prop-planter-box::before {
@@ -637,7 +637,7 @@
   height: 38px;
   background: #2563eb;
   border: 3px solid #1e3a8a;
-  border-radius: 4px 4px 2px 2px;
+  border-radius: 0;
   position: relative;
 }
 .prop-tea-jug::after {
@@ -658,7 +658,7 @@
   height: 34px;
   background: #dc2626;
   border: 3px solid #991b1b;
-  border-radius: 3px 3px 0 0;
+  border-radius: 0 0 0;
 }
 
 .prop-chalk-sign {
@@ -666,7 +666,7 @@
   height: 50px;
   background: #1f2937;
   border: 4px solid #78350f;
-  border-radius: 3px;
+  border-radius: 0;
   color: #fef08a;
   padding: 4px 2px;
   text-align: center;
@@ -684,18 +684,17 @@
   position: relative;
   z-index: 10;
   width: min(940px, 100%);
-  margin: auto 0;
-  background: linear-gradient(135deg, rgba(255, 252, 244, 0.96) 0%, rgba(247, 237, 219, 0.94) 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 4px solid #593a2b;
-  border-radius: 18px;
-  box-shadow:
-    0 24px 60px rgba(22, 14, 10, 0.55),
-    0 4px 0 #3a2217,
-    inset 0 2px 0 rgba(255, 255, 255, 0.9);
+  margin: 0 auto;
+  /* Không co theo chiều cao viewport: cha là flex column có overflow-y:auto; nếu deck co (shrink) thì
+     overflow:hidden của nó cắt nội dung thay vì để màn đăng nhập cuộn (lỗi 852×393, 360×800). */
+  flex: 0 0 auto;
+  border-radius: 0;
   overflow: hidden;
   transition: all 0.25s ease;
+  background: var(--color-deep-green);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 0 0 4px var(--color-sun), 8px 10px 0 4px var(--color-ink);
 }
 
 /* Deck Header: Brand & Utilities */
@@ -705,8 +704,11 @@
   justify-content: space-between;
   gap: 16px;
   padding: 16px 24px;
-  background: linear-gradient(180deg, #fffdf8 0%, #f7eee0 100%);
-  border-bottom: 2px solid #deceb4;
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.0) 0 22px, rgba(0, 0, 0, 0.12) 22px 24px),
+    var(--color-wood);
+  color: var(--color-cream);
+  border-bottom: 4px solid var(--color-ink);
+  box-shadow: inset 0 -4px 0 var(--color-sun);
 }
 
 .deck-brand-lockup {
@@ -720,15 +722,15 @@
   width: 50px;
   height: 50px;
   flex: none;
-  background: radial-gradient(circle, #8a2a1f 0%, #601c14 100%);
-  border: 3px solid #d4a956;
-  border-radius: 12px;
+  border-radius: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #fff2cf;
-  box-shadow: 0 3px 0 #3d100b, 0 4px 8px rgba(0, 0, 0, 0.2);
+  color: #FFF2CF;
+  background: var(--color-roof-red);
+  border: 3px solid var(--color-sun);
+  box-shadow: 3px 3px 0 var(--color-ink);
 }
 
 .seal-star { font-size: 15px; line-height: 1; color: #ffd670; }
@@ -740,23 +742,21 @@
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.16em;
-  color: #8c7155;
   text-transform: uppercase;
+  color: var(--color-text-on-dark-muted);
 }
 
 .brand-display-title {
   margin: 2px 0 0;
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: inherit;
   font-size: clamp(22px, 3.2vw, 30px);
   font-weight: 900;
-  letter-spacing: -0.01em;
-  color: #33251d;
   line-height: 1.15;
+  color: var(--color-sun);
+  letter-spacing: .04em;
 }
 
 .brand-display-title em {
-  font-style: italic;
-  color: #9c3325;
   margin-left: 4px;
 }
 
@@ -772,33 +772,30 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  justify-content: center;
+  min-width: var(--touch, 44px);
+  min-height: var(--touch, 44px);
   padding: 7px 12px;
-  border: 2px solid #bfa588;
-  border-radius: 20px;
-  background: #fbf7ee;
-  color: #554032;
+  border: 2px solid var(--color-outline-soft);
+  border-radius: 0;
+  background: var(--color-panel);
+  color: var(--color-text);
   font-size: 12px;
   font-weight: 750;
   cursor: pointer;
-  box-shadow: 0 2px 0 #ad9273;
+  box-shadow: 0 2px 0 var(--color-outline);
   transition: all 0.15s ease;
 }
 
 .sound-switch-btn:hover {
-  background: #fff;
-  border-color: #8f6c49;
+  background: var(--color-panel-hover);
+  border-color: var(--color-green);
   transform: translateY(-1px);
 }
 
 .sound-switch-btn:active {
   transform: translateY(1px);
-  box-shadow: 0 0 0 #ad9273;
-}
-
-.sound-switch-btn.sound-on {
-  border-color: #437d5c;
-  background: #eef7f0;
-  color: #235438;
+  box-shadow: 0 0 0 var(--color-outline);
 }
 
 .sound-disc-icon {
@@ -807,8 +804,8 @@
 }
 
 .sound-on .sound-disc-icon {
-  color: #2e7d32;
   animation: disc-spin 3s linear infinite;
+  color: var(--color-deep-green);
 }
 
 @keyframes disc-spin {
@@ -822,19 +819,19 @@
   align-items: center;
   gap: 8px;
   padding: 4px 6px 4px 4px;
-  border: 2px solid #bfa588;
-  border-radius: 24px;
-  background: #fbf7ee;
-  color: #3e2e23;
-  box-shadow: 0 2px 0 #ad9273;
+  border: 2px solid var(--color-outline-soft);
+  border-radius: 0;
+  background: var(--color-panel);
+  color: var(--color-text);
+  box-shadow: 0 2px 0 var(--color-outline);
 }
 
 .auth-avatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #3e6b52;
-  color: #fff9ea;
+  background: var(--color-green-dark);
+  color: #FFF9EA;
   display: grid;
   place-items: center;
   font-size: 13px;
@@ -854,7 +851,7 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #94683c;
+  color: var(--color-text-muted);
 }
 
 .auth-username {
@@ -863,48 +860,48 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #33251d;
+  color: var(--color-text);
 }
 
 .auth-btn-logout {
   padding: 4px 8px;
   font-size: 11px;
   font-weight: 750;
-  color: #8c3022;
-  background: #fff;
-  border: 1px solid #d4b49b;
-  border-radius: 12px;
+  color: var(--color-brick);
+  background: var(--color-panel);
+  border: 1px solid var(--color-brick);
+  border-radius: 0;
   cursor: pointer;
   transition: background 0.12s;
 }
 
-.auth-btn-logout:hover { background: #ffebe8; }
+.auth-btn-logout:hover { background: rgba(185, 78, 61, 0.15); }
 
 .auth-btn-google {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 7px 14px;
-  border: 2px solid #bfa588;
-  border-radius: 20px;
-  background: #fff;
-  color: #3c2e24;
+  border: 2px solid var(--color-outline-soft);
+  border-radius: 0;
+  background: var(--color-panel);
+  color: var(--color-text);
   font-size: 12px;
   font-weight: 750;
   cursor: pointer;
-  box-shadow: 0 2px 0 #ad9273;
+  box-shadow: 0 2px 0 var(--color-outline);
   transition: all 0.15s ease;
 }
 
 .auth-btn-google:hover {
-  background: #fefcf7;
-  border-color: #8f6c49;
+  background: var(--color-panel-hover);
+  border-color: var(--color-green);
   transform: translateY(-1px);
 }
 
 .auth-btn-google:active {
   transform: translateY(1px);
-  box-shadow: 0 0 0 #ad9273;
+  box-shadow: 0 0 0 var(--color-outline);
 }
 
 .google-icon-wrapper {
@@ -919,21 +916,22 @@
   gap: 10px;
   margin: 12px 24px 0;
   padding: 9px 14px;
-  background: #fff8e8;
-  border: 1.5px solid #e0c28b;
-  border-left: 5px solid #d97706;
-  border-radius: 6px;
+  border-radius: 0;
   font-size: 12px;
-  color: #78350f;
+  background: var(--color-sun);
+  border: 2px solid var(--color-ink);
+  border-left: 8px solid var(--color-terracotta);
+  color: var(--color-ink);
+  box-shadow: 3px 3px 0 var(--color-ink);
 }
 
 .feedback-msg-text { flex: 1; }
 .feedback-dismiss-btn {
   background: transparent;
   border: 0;
-  color: #92400e;
   font-size: 15px;
   cursor: pointer;
+  color: var(--color-ink);
 }
 
 /* --------------------------------------------------------------------------
@@ -944,28 +942,29 @@
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   gap: 20px;
   padding: 22px 24px 16px;
+  background: transparent;
 }
 
 /* Left Column: Primary Save State & Grand Launch Button */
 .deck-save-spotlight {
   position: relative;
-  background: #fffdf9;
-  border: 2px solid #dacdb8;
-  border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(60, 40, 25, 0.08);
+  border-radius: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background: var(--color-cream);
+  border: 3px solid var(--color-ink);
+  box-shadow: 5px 5px 0 var(--color-ink);
 }
 
 .spotlight-ribbon-tag {
-  background: linear-gradient(90deg, #872e21 0%, #aa3d2c 100%);
-  color: #fff6de;
-  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.16em;
-  padding: 6px 16px;
   text-transform: uppercase;
+  background: var(--color-grass);
+  color: var(--color-cream);
+  border-bottom: 3px solid var(--color-ink);
+  box-shadow: inset 0 -3px 0 var(--color-leaf);
 }
 
 .spotlight-inner-box {
@@ -985,13 +984,14 @@
 .spotlight-shop-icon {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
-  background: #ebf5ee;
-  border: 2px solid #8ec5a1;
+  border-radius: 0;
   display: grid;
   place-items: center;
   font-size: 24px;
   flex: none;
+  background: var(--color-sun);
+  border: 3px solid var(--color-ink);
+  box-shadow: 2px 2px 0 var(--color-ink);
 }
 
 .spotlight-title-group { min-width: 0; }
@@ -999,25 +999,25 @@
   display: block;
   font-size: 10px;
   font-weight: 850;
-  color: #7b8571;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--color-brick);
 }
 
 .spotlight-heading {
   margin: 2px 0 0;
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: inherit;
   font-size: clamp(19px, 2.2vw, 23px);
   font-weight: 800;
-  color: #2b4534;
   line-height: 1.2;
+  color: var(--color-deep-green);
 }
 
 .spotlight-summary-text {
   margin: 0 0 16px;
   font-size: 13px;
   line-height: 1.6;
-  color: #696556;
+  color: var(--color-text-muted);
   flex: 1;
 }
 
@@ -1029,18 +1029,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  border: 2px solid #1a4d38;
-  border-radius: 10px;
-  background: linear-gradient(180deg, #327a56 0%, #1e5a3c 100%);
-  color: #fff9ea;
+  border-radius: 0;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  box-shadow:
-    0 4px 0 #123826,
-    0 8px 18px rgba(30, 90, 60, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
   transition: all 0.15s ease;
+  background: var(--color-deep-green);
+  border: 3px solid var(--color-ink);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.18), 0 4px 0 var(--color-ink);
+  color: var(--color-cream);
 }
 
 .btn-hero-launch::before {
@@ -1061,16 +1058,14 @@
 }
 
 .btn-hero-launch:hover:not(:disabled) {
-  background: linear-gradient(180deg, #3a8a62 0%, #246645 100%);
   transform: translateY(-2px);
-  box-shadow:
-    0 6px 0 #123826,
-    0 12px 24px rgba(30, 90, 60, 0.45);
+  background: var(--color-grass);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.25), 0 6px 0 var(--color-ink);
 }
 
 .btn-hero-launch:active:not(:disabled) {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 #123826;
+  box-shadow: 0 1px 0 var(--color-ink);
 }
 
 .btn-hero-launch:disabled {
@@ -1089,22 +1084,21 @@
   font-size: 16px;
   font-weight: 850;
   letter-spacing: 0.04em;
-  color: #fff9ea;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  color: var(--color-cream);
 }
 
 .launch-action-sub {
   font-size: 11px;
   font-weight: 550;
-  color: #c9e8d4;
   margin-top: 2px;
+  color: var(--color-text-on-dark-muted);
 }
 
 .launch-play-symbol {
-  font-size: 18px;
-  color: #ffd670;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
   transition: transform 0.15s ease;
+  color: var(--color-sun);
+  font-size: 24px;
+  filter: drop-shadow(2px 2px 0 var(--color-ink));
 }
 
 .btn-hero-launch:hover .launch-play-symbol {
@@ -1123,20 +1117,13 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: #fffdf9;
-  border: 1.5px solid #ded5c2;
-  border-radius: 10px;
+  border-radius: 0;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(60, 40, 25, 0.05);
   transition: all 0.14s ease;
-}
-
-.deck-action-card:hover:not(:disabled) {
-  transform: translateX(4px);
-  border-color: #a48c6e;
-  background: #ffffff;
-  box-shadow: 0 4px 10px rgba(60, 40, 25, 0.12);
+  --ac: var(--color-grass);
+  background: var(--color-cream);
+  box-shadow: 4px 4px 0 var(--color-ink);
 }
 
 .deck-action-card:active:not(:disabled) {
@@ -1151,18 +1138,18 @@
 .card-symbol-badge {
   width: 38px;
   height: 38px;
-  border-radius: 9px;
+  border-radius: 0;
   display: grid;
   place-items: center;
   font-size: 18px;
   flex: none;
 }
 
-.badge-bronze { background: #fbeee0; color: #a25227; border: 1.5px solid #dfc1a4; }
-.badge-teal   { background: #e3f2ec; color: #236348; border: 1.5px solid #a8d5c2; }
-.badge-amber  { background: #fdf5df; color: #946914; border: 1.5px solid #e8d197; }
-.badge-gold   { background: #fcf1d8; color: #a37912; border: 1.5px solid #ecd38c; }
-.badge-silver { background: #f0f4f8; color: #475569; border: 1.5px solid #cbd5e1; }
+.badge-bronze { background: var(--color-panel-dark); color: var(--color-wood); border: 1.5px solid var(--color-outline-soft); }
+.badge-teal   { background: rgba(79, 135, 63, 0.15); color: var(--color-green-dark); border: 1.5px solid var(--color-green); }
+.badge-amber  { background: var(--color-panel-selected); color: var(--color-wheat-dark); border: 1.5px solid var(--color-wheat); }
+.badge-gold   { background: var(--color-panel-selected); color: var(--color-wheat-dark); border: 1.5px solid var(--color-wheat); }
+.badge-silver { background: var(--color-panel-dark); color: var(--color-text-muted); border: 1.5px solid var(--color-outline-soft); }
 
 .card-text-body {
   flex: 1;
@@ -1179,22 +1166,22 @@
   font-size: 9px;
   font-weight: 800;
   text-transform: uppercase;
-  color: #1b6852;
-  background: #cff3e7;
   padding: 2px 6px;
-  border-radius: 10px;
+  border-radius: 0;
+  background: var(--color-water-panel);
+  color: #fff;
+  border: 2px solid var(--color-ink);
 }
 
 .card-text-body strong {
   display: block;
   font-size: 13px;
-  color: #3b2a20;
 }
 
 .card-text-body small {
   display: block;
   font-size: 11px;
-  color: #827564;
+  color: var(--color-text-muted);
   margin-top: 2px;
   line-height: 1.35;
 }
@@ -1202,14 +1189,52 @@
 .card-arrow-mark {
   font-size: 22px;
   font-weight: 400;
-  color: #b5a995;
+  color: var(--color-outline-soft);
   transition: transform 0.14s ease, color 0.14s ease;
 }
 
 .deck-action-card:hover .card-arrow-mark {
-  color: #694b34;
   transform: translateX(3px);
+  color: var(--color-ink);
 }
+
+/* Chế độ khách dev (localhost 2 người) — thẻ Hẻm Chơi Cùng bổ sung khi chạy vite dev */
+.dev-guest-picker {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 6px;
+  flex-wrap: wrap;
+}
+.dev-guest-chip {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 0;
+  padding: 5px 10px;
+  cursor: pointer;
+  min-height: 30px;
+  background: var(--color-warm-gray);
+  color: var(--color-ink);
+  border: 2px solid var(--color-ink);
+  box-shadow: 0 2px 0 var(--color-ink);
+}
+.dev-guest-chip:hover:not(:disabled) { background: var(--color-panel-hover); }
+.dev-guest-enter {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  border-radius: 0;
+  padding: 8px 12px;
+  cursor: pointer;
+  width: 100%;
+  min-height: 38px;
+  background: var(--color-water-panel);
+  border: 2px solid var(--color-ink);
+  box-shadow: 0 3px 0 var(--color-ink);
+}
+.dev-guest-enter:disabled { opacity: 0.6; cursor: wait; }
+
 
 /* --------------------------------------------------------------------------
    6. DECK FOOTER BAR
@@ -1221,25 +1246,26 @@
   flex-wrap: wrap;
   gap: 12px;
   padding: 12px 24px;
-  background: #f7ede0;
-  border-top: 1.5px solid #e1d3bf;
   font-size: 11px;
-  color: #796b5b;
+  background: var(--color-ink);
+  border-top: 4px solid var(--color-sun);
+  color: var(--color-text-on-dark-muted);
 }
 
 .footer-save-guarantee {
   display: flex;
   align-items: center;
   gap: 8px;
+  color: var(--color-cream);
 }
 
 .status-ping-green {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #34a853;
-  box-shadow: 0 0 0 3px rgba(52, 168, 83, 0.25);
   animation: ping-pulse 2.5s infinite;
+  background: var(--color-leaf);
+  box-shadow: 0 0 0 3px rgba(118, 169, 79, 0.35);
 }
 
 @keyframes ping-pulse {
@@ -1263,13 +1289,14 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(18, 12, 9, 0.72);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: grid;
   place-items: center;
-  padding: 20px;
+  /* Vùng an toàn + bàn phím ảo: giữ overlay/khung trong vùng hiển thị thật (notch/island/home indicator). */
+  padding: max(20px, var(--safe-t, 0px)) max(20px, var(--safe-r, 0px)) max(20px, var(--safe-b, 0px), var(--kb-h, 0px)) max(20px, var(--safe-l, 0px));
   animation: fade-in-overlay 0.18s ease-out;
+  background: rgba(28, 41, 32, 0.8);
 }
 
 @keyframes fade-in-overlay {
@@ -1280,15 +1307,15 @@
 /* ANTIQUE LEATHERBOUND NOTEBOOK (SỔ TAY CHỦ TIỆM) */
 .vintage-notebook-card {
   width: min(820px, 100%);
-  max-height: min(100%, 840px);
+  max-height: min(calc(100% - var(--kb-h, 0px)), var(--dialog-h));
   display: flex;
   flex-direction: column;
-  background: #fdf8eb;
-  border: 5px solid #573a2a;
-  border-radius: 14px;
+  background: var(--color-panel);
+  border: 5px solid var(--color-outline);
+  border-radius: 0;
   box-shadow:
     0 24px 60px rgba(0, 0, 0, 0.6),
-    0 6px 0 #2b170e;
+    0 6px 0 var(--color-outline);
   overflow: hidden;
   position: relative;
 }
@@ -1299,16 +1326,16 @@
   bottom: 0;
   left: 0;
   width: 14px;
-  background: linear-gradient(90deg, #3d2317 0%, #5a3826 60%, #43281b 100%);
-  border-right: 2px solid #caa275;
+  background: linear-gradient(90deg, var(--color-wood-dark) 0%, var(--color-wood) 60%, var(--color-wood-dark) 100%);
+  border-right: 2px solid var(--color-outline-soft);
   z-index: 5;
 }
 
 .notebook-leather-header {
   padding: 20px 24px 18px 36px;
-  background: linear-gradient(135deg, #7c261b 0%, #521811 100%);
-  color: #fff4dc;
-  border-bottom: 4px solid #caa275;
+  background: var(--color-green-dark);
+  color: var(--color-bg);
+  border-bottom: 4px solid var(--color-outline);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1318,12 +1345,12 @@
 .header-emboss-seal {
   width: 44px;
   height: 44px;
-  border: 2px solid #ffd670;
+  border: 2px solid var(--color-wheat);
   border-radius: 50%;
   display: grid;
   place-items: center;
   font-size: 20px;
-  color: #ffd670;
+  color: var(--color-wheat);
   background: rgba(0, 0, 0, 0.25);
   flex: none;
 }
@@ -1334,26 +1361,26 @@
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.16em;
-  color: #fed7aa;
+  color: var(--color-wheat);
 }
 
 .header-emboss-copy h3 {
   margin: 3px 0 2px;
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: inherit;
   font-size: 22px;
-  color: #fff9ea;
+  color: var(--color-bg);
 }
 
 .header-emboss-copy p {
   margin: 0;
   font-size: 12px;
-  color: #fbd6b4;
+  color: var(--color-panel);
 }
 
 .notebook-close-btn {
   background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 240, 200, 0.4);
-  color: #fff5dd;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -1362,6 +1389,9 @@
   display: grid;
   place-items: center;
   transition: all 0.15s ease;
+  flex: 0 0 auto;
+  min-width: var(--touch, 36px);
+  min-height: var(--touch, 36px);
 }
 
 .notebook-close-btn:hover {
@@ -1374,30 +1404,32 @@
   display: flex;
   gap: 4px;
   padding: 10px 20px 0 36px;
-  background: #ede1cb;
-  border-bottom: 2px solid #c9b497;
+  background: var(--color-bg);
+  border-bottom: 2px solid var(--color-outline-soft);
   overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .notebook-tab-item {
   padding: 8px 14px;
   font-size: 12px;
   font-weight: 750;
-  color: #654e3d;
-  background: #dfcfb4;
-  border: 2px solid #c9b497;
+  color: var(--color-text-muted);
+  background: var(--color-panel-dark);
+  border: 2px solid var(--color-outline-soft);
   border-bottom: 0;
-  border-radius: 8px 8px 0 0;
+  border-radius: 0 0 0;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.12s ease;
+  flex: 0 0 auto;
 }
 
-.notebook-tab-item:hover { background: #ebdcc4; }
+.notebook-tab-item:hover { background: var(--color-panel-hover); }
 .notebook-tab-item.is-active {
-  background: #fdf8eb;
-  color: #8c251d;
-  border-color: #573a2a;
+  background: var(--color-panel);
+  color: var(--color-text);
+  border-color: var(--color-outline);
   padding-bottom: 10px;
   margin-bottom: -2px;
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.08);
@@ -1408,19 +1440,19 @@
   flex: 1;
   overflow-y: auto;
   padding: 22px 28px 22px 42px;
-  background: #fdf8eb;
+  background: var(--color-panel);
   background-image: repeating-linear-gradient(
     180deg,
     transparent 0 27px,
-    rgba(195, 172, 137, 0.22) 27px 28px
+    rgba(109, 102, 88, 0.15) 27px 28px
   );
 }
 
 .notebook-tab-panel h4 {
   margin: 0 0 14px;
-  color: #7b291d;
+  color: var(--color-text);
   font-size: 16px;
-  border-bottom: 2px dashed #d5be9b;
+  border-bottom: 2px dashed var(--color-outline-soft);
   padding-bottom: 6px;
 }
 
@@ -1429,22 +1461,22 @@
   margin: 0;
   line-height: 1.65;
   font-size: 13px;
-  color: #433123;
+  color: var(--color-text);
 }
 
 .parchment-flow-list li { margin-bottom: 10px; }
-.parchment-flow-list strong { color: #872e21; }
+.parchment-flow-list strong { color: var(--color-green-dark); }
 
 .parchment-bullet-list {
   padding-left: 20px;
   margin: 0;
   line-height: 1.65;
   font-size: 13px;
-  color: #433123;
+  color: var(--color-text);
 }
 
 .parchment-bullet-list li { margin-bottom: 8px; }
-.parchment-bullet-list strong { color: #235438; }
+.parchment-bullet-list strong { color: var(--color-green-dark); }
 
 .key-guide-grid {
   display: grid;
@@ -1454,9 +1486,9 @@
 }
 
 .key-guide-item {
-  background: #fffefb;
-  border: 1.5px solid #ddcca9;
-  border-radius: 8px;
+  background: var(--color-panel);
+  border: 1.5px solid var(--color-outline-soft);
+  border-radius: 0;
   padding: 10px 12px;
 }
 
@@ -1464,21 +1496,21 @@
 .key-badges kbd {
   display: inline-block;
   padding: 2px 6px;
-  background: #f1dfbc;
-  border: 1.5px solid #9f7d54;
+  background: var(--color-panel-dark);
+  border: 1.5px solid var(--color-outline-soft);
   border-bottom-width: 3px;
-  border-radius: 4px;
+  border-radius: 0;
   font-family: inherit;
   font-size: 11px;
   font-weight: 800;
-  color: #3b281b;
+  color: var(--color-text);
   margin-right: 4px;
 }
 
 .key-guide-item p {
   margin: 0;
   font-size: 12px;
-  color: #63503f;
+  color: var(--color-text-muted);
   line-height: 1.45;
 }
 
@@ -1487,11 +1519,11 @@
   gap: 10px;
   align-items: flex-start;
   padding: 10px 14px;
-  background: #f2ebd7;
-  border: 1.5px solid #d4c19d;
-  border-radius: 8px;
+  background: var(--color-panel);
+  border: 1.5px solid var(--color-outline-soft);
+  border-radius: 0;
   font-size: 12px;
-  color: #554130;
+  color: var(--color-text-muted);
   line-height: 1.5;
 }
 
@@ -1499,46 +1531,50 @@
 
 .notebook-footer-bar {
   padding: 12px 24px;
-  background: #ede1cb;
-  border-top: 2px solid #d6c1a5;
+  background: var(--color-bg);
+  border-top: 2px solid var(--color-outline-soft);
   display: flex;
   justify-content: flex-end;
 }
 
 .btn-notebook-close {
   padding: 9px 18px;
-  background: #7c261b;
-  color: #fff5dc;
-  border: 2px solid #521811;
-  border-radius: 8px;
+  background: var(--color-panel-dark);
+  color: var(--color-text);
+  border: 2px solid var(--color-outline);
+  border-radius: 0;
   font-weight: 750;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 3px 0 #3b100b;
+  box-shadow: 0 3px 0 var(--color-outline);
 }
 
-.btn-notebook-close:hover { background: #962f22; }
+.btn-notebook-close:hover { background: var(--color-panel-hover); }
 
 /* --------------------------------------------------------------------------
    8. WOODEN MODAL CARDS (Notice Board, Leaderboard, Ledger)
    -------------------------------------------------------------------------- */
 .vintage-wood-card {
   width: min(500px, 100%);
-  background: #faf2dc;
-  border: 4px solid #573a2a;
-  border-radius: 12px;
+  background: var(--color-panel);
+  border: 4px solid var(--color-outline);
+  border-radius: 0;
   box-shadow:
     0 24px 60px rgba(0, 0, 0, 0.6),
-    0 6px 0 #2b170e;
-  overflow: hidden;
+    0 6px 0 var(--color-outline);
+  /* Cuộn trong để không bị cắt trên màn ngang thấp / khi bàn phím mở (nội dung có input, danh sách, nút). */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 20px;
-  color: #3e2c1e;
+  padding-bottom: calc(20px + max(0px, var(--safe-b, 0px), var(--kb-h, 0px)));
+  color: var(--color-text);
 }
 
 .notice-board-header, .honor-header, .ledger-header {
   text-align: center;
   margin-bottom: 16px;
-  border-bottom: 2px dashed #cca474;
+  border-bottom: 2px dashed var(--color-outline-soft);
   padding-bottom: 12px;
 }
 
@@ -1551,25 +1587,26 @@
 
 .notice-board-header h3, .honor-header h3, .ledger-header h3 {
   margin: 0;
-  color: #8c251d;
+  color: var(--color-text);
   font-size: 19px;
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: inherit;
 }
 
 .notice-board-header p, .honor-header p, .ledger-header p {
   margin: 4px 0 0;
   font-size: 12px;
-  color: #795d46;
+  color: var(--color-text-muted);
 }
 
 .notice-independence-alert {
   display: flex;
   gap: 8px;
   padding: 8px 12px;
-  background: #f1dfbd;
-  border-radius: 6px;
+  background: var(--color-panel-selected);
+  border: 1px solid var(--color-warning);
+  border-radius: 0;
   font-size: 11px;
-  color: #664324;
+  color: var(--color-warning-dark);
   margin-bottom: 14px;
   line-height: 1.4;
 }
@@ -1578,16 +1615,16 @@
 .section-title {
   margin: 0 0 6px;
   font-size: 13px;
-  color: #872e21;
+  color: var(--color-text);
 }
 
 .empty-worlds-box {
-  background: #f4e8cf;
-  border: 1px dashed #bfa17c;
-  border-radius: 6px;
+  background: var(--color-panel-dark);
+  border: 1px dashed var(--color-outline-soft);
+  border-radius: 0;
   padding: 10px;
   font-size: 12px;
-  color: #7d654f;
+  color: var(--color-text-muted);
   text-align: center;
 }
 
@@ -1605,33 +1642,33 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: #f4e7cf;
-  border: 1.5px solid #c9a77b;
-  border-radius: 6px;
+  background: var(--color-panel);
+  border: 1.5px solid var(--color-outline-soft);
+  border-radius: 0;
 }
 
-.world-item-meta strong { font-size: 13px; color: #3b281b; }
-.role-tag { font-size: 11px; color: #826343; margin-left: 6px; }
+.world-item-meta strong { font-size: 13px; color: var(--color-text); }
+.role-tag { font-size: 11px; color: var(--color-text-muted); margin-left: 6px; }
 
 .btn-join-world {
   padding: 5px 12px;
-  background: #235438;
-  color: #fff9ea;
-  border: 1.5px solid #163624;
-  border-radius: 6px;
+  background: var(--color-green);
+  color: #fff;
+  border: 1.5px solid var(--color-green-dark);
+  border-radius: 0;
   font-size: 12px;
   font-weight: 750;
   cursor: pointer;
 }
 
 .btn-join-world.btn-danger-world {
-  background: #8c2f2a;
-  border-color: #5c1b18;
+  background: var(--color-brick);
+  border-color: var(--color-brick-dark);
   margin-left: 6px;
 }
 
 .action-form-section {
-  border-top: 2px dashed #cca474;
+  border-top: 2px dashed var(--color-outline-soft);
   padding-top: 12px;
   margin-top: 12px;
 }
@@ -1644,21 +1681,21 @@
 .vintage-text-input {
   flex: 1;
   padding: 8px 10px;
-  border: 2px solid #573a2a;
-  border-radius: 6px;
-  background: #fffdf8;
-  color: #33251d;
+  border: 2px solid var(--color-outline);
+  border-radius: 0;
+  background: var(--color-panel);
+  color: var(--color-text);
   font-family: inherit;
   font-size: 13px;
 }
 
 .vintage-text-input:focus {
-  outline: 2px solid #235438;
+  outline: 2px solid var(--color-green);
 }
 
 .btn-form-action {
   padding: 8px 14px;
-  border-radius: 6px;
+  border-radius: 0;
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
@@ -1666,31 +1703,31 @@
 }
 
 .btn-wood-teal {
-  background: #24584f;
-  color: #fff7e4;
-  border: 2px solid #163832;
-  box-shadow: 0 2px 0 #102622;
+  background: var(--color-green);
+  color: #FFF;
+  border: 2px solid var(--color-green-dark);
+  box-shadow: 0 2px 0 var(--color-outline);
 }
 
 .btn-wood-brick {
-  background: #973d31;
-  color: #fff7e4;
-  border: 2px solid #63241b;
-  box-shadow: 0 2px 0 #451711;
+  background: var(--color-brick);
+  color: #FFF;
+  border: 2px solid var(--color-brick-dark);
+  box-shadow: 0 2px 0 var(--color-outline);
 }
 
 .btn-board-dismiss {
   width: 100%;
   padding: 9px;
   margin-top: 16px;
-  background: #573a2a;
-  color: #fff4dc;
-  border: 2px solid #3c2417;
-  border-radius: 8px;
+  background: var(--color-panel-dark);
+  color: var(--color-text);
+  border: 2px solid var(--color-outline);
+  border-radius: 0;
   font-size: 13px;
   font-weight: 750;
   cursor: pointer;
-  box-shadow: 0 3px 0 #28170e;
+  box-shadow: 0 3px 0 var(--color-outline);
 }
 
 /* LEADERBOARD CARDS */
@@ -1706,7 +1743,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: 0;
   border: 2px solid #d4b88d;
 }
 
@@ -1730,7 +1767,7 @@
   height: 28px;
   border-radius: 50%;
   background: #3e281b;
-  color: #fff2cf;
+  color: #FFF2CF;
   display: grid;
   place-items: center;
   font-weight: 900;
@@ -1769,9 +1806,9 @@
 
 .ledger-item {
   padding: 8px 12px;
-  background: #fffefb;
+  background: #FFFEFB;
   border: 1px solid #d9c7aa;
-  border-radius: 6px;
+  border-radius: 0;
 }
 
 .ledger-type-badge {
@@ -1779,7 +1816,7 @@
   padding: 2px 6px;
   background: #eef2ff;
   color: #3730a3;
-  border-radius: 4px;
+  border-radius: 0;
   font-size: 10px;
   font-weight: 800;
   margin-bottom: 4px;
@@ -1823,7 +1860,7 @@
 
 @media (max-width: 600px) {
   .login-screen-vintage {
-    padding: 8px 10px 24px;
+    padding: max(8px, var(--safe-t, 0px)) max(10px, var(--safe-r, 0px)) max(24px, var(--safe-b, 0px)) max(10px, var(--safe-l, 0px));
   }
 
   .brand-badge-seal {
@@ -1857,7 +1894,7 @@
 
 @media (max-height: 720px) and (min-width: 821px) {
   .login-screen-vintage {
-    padding: 8px 16px;
+    padding: max(8px, var(--safe-t, 0px)) max(16px, var(--safe-r, 0px)) max(8px, var(--safe-b, 0px)) max(16px, var(--safe-l, 0px));
   }
 
   .deck-header {
@@ -1881,11 +1918,286 @@
 /* Ô lưu cục bộ */
 .save-slot-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; }
 .save-slot-chip { position: relative; flex: 1 1 140px; min-width: 120px; }
-.save-slot-chip > button:first-child { width: 100%; text-align: left; padding: 8px 28px 8px 10px; border: 2px solid #d4b88d; border-radius: 8px; background: #fff8e7; color: #3b281b; cursor: pointer; }
-.save-slot-chip.is-active > button:first-child { border-color: #10b981; background: #ecfdf5; }
+.save-slot-chip > button:first-child { width: 100%; text-align: left; padding: 8px 28px 8px 10px; border-radius: 0; color: var(--color-text); cursor: pointer;
+  background: var(--color-warm-gray);
+  border: 2px solid var(--color-ink);
+  box-shadow: 2px 2px 0 var(--color-ink); }
 .save-slot-chip > button:first-child strong { display: block; font-size: 13px; }
-.save-slot-chip > button:first-child small { display: block; font-size: 11px; color: #7a634e; margin-top: 2px; }
+.save-slot-chip > button:first-child small { display: block; font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
 .save-slot-chip > button:disabled { opacity: 0.6; cursor: default; }
-.save-slot-delete { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; line-height: 18px; border: 1px solid #c27a6e; border-radius: 50%; background: #fff; color: #88392f; cursor: pointer; font-size: 14px; }
+.save-slot-delete { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; line-height: 18px; cursor: pointer; font-size: 14px;
+  border: 2px solid var(--color-ink);
+  background: var(--color-terracotta);
+  color: #fff;
+  border-radius: 0; }
 
-.save-slot-more { align-self: flex-start; margin: 2px 0 10px; padding: 0; border: 0; background: none; color: #7a634e; font-size: 12px; text-decoration: underline; cursor: pointer; }
+.save-slot-more { align-self: flex-start; margin: 2px 0 10px; padding: 0; border: 0; background: none; color: var(--color-text-muted); font-size: 12px; text-decoration: underline; cursor: pointer; }
+
+/* --------------------------------------------------------------------------
+   10. RESPONSIVE — MÀN ĐĂNG NHẬP DÙNG CHUNG TOKEN (--safe-* / --touch / --kb-h)
+   (File này nạp sau responsive.css nên thắng các quy tắc có cùng độ đặc hiệu.)
+   -------------------------------------------------------------------------- */
+
+/* Màn ngang thấp (568×320, 640×320, 640×360, 852×393...): storefront trang trí không tràn/thu hẹp
+   để deck giữ đủ chỗ; header gọn hơn. NGUỒN DUY NHẤT cho bố cục đăng nhập landscape — responsive.css
+   không còn đặt rule đăng nhập nữa. Ngưỡng dùng max-height:499px (khớp "màn thấp" của hệ thống) để
+   không chừa khoảng trống 421–499px từng bị rule trùng của responsive.css xử lý khác đi. */
+/* ===== ĐIỆN THOẠI: MÀN CHÍNH KHÔNG CUỘN (thiết kế Figma "Menu chính — iPhone landscape/portrait") =====
+   Deck = đúng 1 màn hình; cột trái = hồ sơ + nút TIẾP TỤC BUÔN BÁN ghim đáy (luôn thấy); cột phải = lưới
+   chức năng chia đều chiều cao. Chỉ thân hồ sơ (spotlight-inner-box) cuộn nội bộ khi mở danh sách ô lưu.
+   NGUỒN DUY NHẤT cho bố cục đăng nhập trên điện thoại — responsive.css không đặt rule đăng nhập.
+   Landscape = max-height:499px (khớp "màn thấp" của hệ thống). */
+@media (max-height: 499px) and (orientation: landscape), (max-width: 600px) and (orientation: portrait) {
+  .login-screen-vintage { overflow-y: hidden; }
+  .storefront-stage { display: none; }
+  .login-control-deck { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border-width: 3px; border-radius: 0; }
+  .deck-header { flex: none; flex-direction: row; align-items: center; justify-content: space-between; padding: 6px 12px; gap: 8px; }
+  .brand-badge-seal { width: 36px; height: 36px; }
+  .brand-mini-eyebrow { font-size: 7px; }
+  .brand-display-title { font-size: 16px; line-height: 1.15; }
+  .deck-top-actions { gap: 8px; justify-content: flex-end; }
+  .deck-feedback-bar { flex: none; }
+  .deck-content-split { flex: 1 1 auto; min-height: 0; padding: 8px 10px; gap: 10px; }
+  .deck-save-spotlight { min-height: 0; }
+  .spotlight-ribbon-tag { padding: 5px 14px; font-size: 9px; }
+  .spotlight-inner-box { min-height: 0; overflow-y: auto; padding: 10px 14px 12px; gap: 6px; }
+  .spotlight-badge-row { margin-bottom: 0; gap: 10px; }
+  .spotlight-shop-icon { width: 38px; height: 38px; font-size: 20px; }
+  .spotlight-kicker { font-size: 8px; }
+  .spotlight-heading { font-size: 18px; margin: 0; }
+  .spotlight-summary-text { margin: 0; font-size: 10.5px; line-height: 1.45; }
+  .save-slot-more { margin: 0; }
+  /* Nút nằm trong thân hồ sơ (cuộn được): sticky để khi 3 ô lưu + thanh tài khoản làm thân dài hơn khung, nút vẫn ghim đáy, không bị đẩy ra ngoài. */
+  .btn-hero-launch { flex: none; margin-top: auto; min-height: 52px; padding: 0 12px 0 14px; position: sticky; bottom: 0; z-index: 2; }
+  .launch-action-main { font-size: 15px; }
+  .deck-options-grid { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(0, 1fr); gap: 8px; min-height: 0; }
+  .deck-options-grid:has(div.deck-action-card) { grid-template-rows: 1fr 1fr 1.3fr; }
+  .deck-action-card { flex-direction: row; text-align: left; align-items: center; gap: 10px; padding: 8px 10px; min-height: 0; border-radius: 0; border-width: 2px; overflow: hidden; }
+  .card-arrow-mark, .badge-tag-online, .badge-tag-local { display: none; }
+  .card-symbol-badge { width: 40px; height: 40px; border-radius: 0; }
+  .card-text-body strong { font-size: 13px; line-height: 1.2; }
+  .card-text-body small { font-size: 10px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  div.deck-action-card { order: 10; flex-direction: column; align-items: stretch; gap: 4px; justify-content: center; padding: 6px 10px; }
+  div.deck-action-card .card-symbol-badge, div.deck-action-card .card-text-body > small { display: none; }
+  div.deck-action-card .card-text-body { display: flex; flex-direction: column; gap: 4px; }
+  div.deck-action-card .card-heading-row strong { font-size: 12px; }
+  .dev-guest-picker { margin: 0; gap: 4px; flex-wrap: nowrap; }
+  .dev-guest-chip { flex: 1 1 0; min-width: var(--touch, 44px); min-height: 30px; padding: 0; font-size: 11px; }
+  .dev-guest-enter { min-height: 28px; padding: 0 6px; font-size: 11px; }
+  .deck-footer-bar { flex: none; flex-wrap: nowrap; padding: 4px 12px; gap: 8px; font-size: 9px; }
+  .footer-save-guarantee span:last-child, .footer-copyright-tag { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* Landscape thấp: hai cột (hồ sơ | lưới chức năng). */
+@media (max-height: 499px) and (orientation: landscape) {
+  .login-screen-vintage { padding: max(10px, var(--safe-t, 0px)) max(10px, var(--safe-r, 0px)) max(8px, var(--safe-b, 0px)) max(10px, var(--safe-l, 0px)); }
+  .deck-content-split { grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr); grid-template-rows: minmax(0, 1fr); }
+}
+
+/* Landscape rất thấp (≤380px: 640×360, 568×320): bỏ dòng mô tả ô chức năng + mô tả hồ sơ để mọi thứ vẫn vừa một màn. */
+@media (max-height: 380px) and (orientation: landscape) {
+  .card-text-body small, .spotlight-summary-text { display: none; }
+  .deck-header { padding: 4px 10px; }
+  .btn-hero-launch { min-height: 46px; }
+  .spotlight-inner-box { padding: 8px 12px 10px; }
+}
+
+/* Portrait điện thoại: hồ sơ phía trên (co giãn), lưới chức năng 2 cột phía dưới. */
+@media (max-width: 600px) and (orientation: portrait) {
+  .login-screen-vintage { padding: max(12px, var(--safe-t, 0px)) max(12px, var(--safe-r, 0px)) max(12px, var(--safe-b, 0px)) max(12px, var(--safe-l, 0px)); }
+  .deck-content-split { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .deck-options-grid { grid-auto-rows: minmax(64px, auto); }
+  .deck-options-grid:has(div.deck-action-card) { grid-template-rows: none; }
+  .auth-credentials, .sound-text-status, .brand-mini-eyebrow { display: none; }
+  .brand-display-title { font-size: 14px; line-height: 1.1; }
+  .brand-display-title em { display: block; }
+  .deck-brand-lockup { gap: 8px; min-width: 0; flex: 1 1 auto; }
+  .deck-top-actions { gap: 6px; }
+  .auth-btn-google { padding-inline: 10px; font-size: 11px; white-space: nowrap; }
+  .deck-options-grid .card-text-body strong { font-size: 12px; }
+  /* Dòng bản quyền trang trí nhường chỗ cho dòng bảo đảm lưu (thay vì bị cắt cụt giữa chữ). */
+  .footer-copyright-tag { display: none; }
+  .footer-save-guarantee { min-width: 0; }
+}
+
+/* Cảm ứng: mọi nút/từ khóa nhập trên màn đăng nhập đạt vùng chạm tối thiểu (44px).
+   (Các nút trong .vintage-modal-overlay đã được responsive.css nâng lên --touch.) */
+html[data-input="touch"] .login-control-deck button:not(.save-slot-delete),
+html[data-input="touch"] .login-screen-vintage button:not(.save-slot-delete) {
+  min-height: var(--touch);
+}
+html[data-input="touch"] .vintage-text-input { min-height: var(--touch); }
+html[data-input="touch"] .feedback-dismiss-btn { min-width: var(--touch); min-height: var(--touch); padding: 0; }
+html[data-input="touch"] .save-slot-more { display: inline-flex; align-items: center; min-height: var(--touch); }
+/* Nút xóa một ô lưu cục bộ hiện chỉ 22×22px; trên màn hình cảm ứng phải đủ vùng chạm (--touch) để
+   người dùng không bấm nhầm. Giữ vị trí absolute trong chip như cũ. */
+
+/* Portraits: overlay login thành bottom-sheet sát đáy (ngón cái với tới), không ở dưới
+   Home Indicator và nâng lên khỏi bàn phím ảo khi mở. */
+@media (max-width: 639px) and (orientation: portrait) {
+  .vintage-modal-overlay { place-items: end center; padding-inline: 0; padding-bottom: max(var(--safe-b, 0px), var(--kb-h, 0px)); }
+  .vintage-notebook-card, .vintage-wood-card { width: 100%; max-height: calc(100% - var(--safe-t, 0px)); border-radius: 0 0 0; padding-bottom: max(16px, var(--safe-b, 0px), var(--kb-h, 0px)); }
+}
+
+/* --------------------------------------------------------------------------
+   11. SỔ TAY CHỦ TIỆM + HẺM CHƠI CÙNG TRÊN ĐIỆN THOẠI NGANG
+   - Sổ tay: hàng tab là phần tử flex nên bị co lại (26px) trong khi nút tab cao theo --touch → chữ bị cắt.
+     Header/tab/chân trang không được co; chỉ vùng giấy được cuộn.
+   - Màn thấp: header gọn, bỏ chân trang trùng nút ✕ → chừa chỗ cho nội dung.
+   - Hẻm chơi cùng: gọn lại để vừa một màn (không phải kéo mới thấy ô nhập mã).
+   -------------------------------------------------------------------------- */
+.notebook-leather-header, .notebook-tabs-bar, .notebook-footer-bar { flex: 0 0 auto; }
+.notebook-tabs-bar::-webkit-scrollbar { display: none; }
+
+@media (max-height: 499px) and (orientation: landscape) {
+  .vintage-modal-overlay { padding: max(8px, var(--safe-t, 0px)) max(12px, var(--safe-r, 0px)) max(8px, var(--safe-b, 0px), var(--kb-h, 0px)) max(12px, var(--safe-l, 0px)); }
+
+  .vintage-notebook-card { max-height: 100%; border-width: 4px; }
+  .notebook-leather-header { padding: 8px 14px 8px 26px; gap: 10px; border-bottom-width: 3px; }
+  .header-emboss-seal { width: 32px; height: 32px; font-size: 15px; }
+  .emboss-kicker, .header-emboss-copy p { display: none; }
+  .header-emboss-copy h3 { margin: 0; font-size: 17px; line-height: 1.2; }
+  .notebook-tabs-bar { padding: 6px 12px 0 26px; }
+  .notebook-tab-item { padding: 6px 12px; }
+  .notebook-parchment-content { padding: 12px 18px 12px 26px; }
+  .notebook-footer-bar { display: none; }
+
+  .notice-board-card { width: min(780px, 100%); padding: 10px 16px calc(10px + max(0px, var(--safe-b, 0px), var(--kb-h, 0px))); }
+  .notice-board-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; padding-bottom: 6px; text-align: left; }
+  .notice-board-header .board-pin, .notice-board-header p, .notice-independence-alert { display: none; }
+  .notice-board-header h3 { margin: 0; font-size: 16px; line-height: 1.2; }
+  .notice-board-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 14px; align-items: start; }
+  .notice-board-content > .world-list-section, .notice-board-content > .board-loading-state { grid-column: 1 / -1; }
+  .notice-board-content .section-title { margin: 0 0 4px; font-size: 13px; }
+  .notice-board-content .empty-worlds-box { padding: 8px 12px; }
+  .notice-board-content .empty-worlds-box p { margin: 0; font-size: 12px; }
+  .notice-board-content .action-form-section { margin: 0; padding-top: 0; border-top: 0; }
+  .notice-board-footer { margin-top: 8px; }
+}
+
+/* 12. Nút đóng Sổ tay: không để flex ép hẹp hơn vùng chạm */
+
+/* 13. Nút xóa ô lưu: hình nhỏ 22px (không che chữ ô lưu), vùng chạm 44px mở rộng bằng ::after */
+html[data-input="touch"] .save-slot-delete { min-width: 22px; min-height: 22px; width: 22px; height: 22px; padding: 0; }
+html[data-input="touch"] .save-slot-delete::after { content: ''; position: absolute; inset: -11px; }
+
+/* 14. Landscape thấp: 3 ô lưu thành 1 hàng (không xếp dọc 190px đè nút ghim) và hàng thẻ dưới co theo nội dung (thẻ khách dev không bị cắt tiêu đề) */
+@media (max-height: 499px) and (orientation: landscape) {
+  .save-slot-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+  .save-slot-chip { min-width: 0; }
+  .save-slot-chip > button:first-child { padding: 6px 6px 6px 8px; min-height: 0; }
+  .save-slot-chip > button:first-child strong { font-size: 12px; padding-right: 20px; }
+  .save-slot-chip > button:first-child small { font-size: 10px; line-height: 1.3; }
+  .deck-options-grid:has(div.deck-action-card) { grid-template-rows: 1fr 1fr minmax(min-content, 1.3fr); }
+}
+
+/* 15. Landscape rất thấp (≤380px, vd 568×320): nút CTA 1 dòng, bỏ icon+kicker ở đầu hồ sơ để 3 ô lưu + nút vừa vùng nhìn, chip khách dev không bị cắt */
+@media (max-height: 380px) and (orientation: landscape) {
+  .launch-action-sub, .spotlight-shop-icon, .spotlight-kicker { display: none; }
+  .launch-action-main { font-size: 13px; white-space: nowrap; }
+  .btn-hero-launch { min-height: 44px; }
+  .spotlight-heading { font-size: 15px; }
+  .dev-guest-chip { min-width: 0; font-size: 10px; }
+}
+@media (max-height: 380px) and (orientation: landscape) {
+  /* Thẻ khách dev (chỉ cho lập trình viên): bỏ tiêu đề, chip + nút 28px (không áp 44px vì không phải tính năng người chơi) */
+  div.deck-action-card .card-heading-row { display: none; }
+  div.deck-action-card .card-text-body { gap: 4px; }
+  html[data-input] div.deck-action-card .dev-guest-chip, html[data-input] div.deck-action-card .dev-guest-enter { min-height: 28px; height: 28px; }
+}
+
+/* 16. Hướng "tươi trẻ" (bỏ cổ điển): bỏ cột điện/dây điện/bụi vàng hoàng hôn */
+.telegraph-pole, .wires-container, .golden-motes { display: none; }
+
+/* 17. VIETNAMESE NEIGHBORHOOD PIXEL — màn đăng nhập: bảng hiệu gỗ + khung xanh đậm, thẻ kem chỉ là bề mặt phụ */
+.login-control-deck {
+  border: 4px solid var(--color-ink);
+}
+/* Header = bảng hiệu tiệm: gỗ tối, viền nắng, tiêu đề màu */
+.deck-header {
+  padding-bottom: 20px;
+}
+.brand-display-title { text-shadow: 3px 3px 0 var(--color-ink); }
+.brand-display-title em { color: var(--color-orange); font-style: normal; }
+.sound-switch-btn, .auth-btn-google, .auth-profile-pill {
+  background: var(--color-cream);
+  border: 2px solid var(--color-ink);
+  box-shadow: 0 3px 0 var(--color-ink);
+}
+.auth-btn-google:hover, .sound-switch-btn:hover { background: #fff; border-color: var(--color-ink); }
+.sound-switch-btn.sound-on { background: var(--color-leaf); color: var(--color-ink); border-color: var(--color-ink); }
+
+/* Cột trái: thẻ hồ sơ — thân kem, đầu xanh cỏ */
+.spotlight-ribbon-tag { text-shadow: 1px 1px 0 var(--color-deep-green); padding: 8px 16px; font-size: 11px;
+  background: var(--color-grass-btn); }
+.save-slot-chip.is-active > button:first-child { background: #F6DE8E; border-color: var(--color-ink); box-shadow: 2px 2px 0 var(--color-ink), inset 0 0 0 3px var(--color-sun); }
+.save-slot-chip > button:first-child strong { color: var(--color-deep-green); }
+
+/* Nút Tiếp tục: xanh đậm + mũi tên vàng */
+.launch-action-main { text-shadow: 2px 2px 0 var(--color-ink); }
+
+/* Cột phải: mỗi thẻ một màu ngữ nghĩa (viền trái + ô biểu tượng) */
+.deck-action-card {
+  border: 3px solid var(--color-ink);
+  border-left: 10px solid var(--ac);
+}
+.deck-action-card:hover:not(:disabled) { background: #FBF3D6; border-color: var(--color-ink); border-left-color: var(--ac); transform: translate(2px, -1px); box-shadow: 5px 5px 0 var(--color-ink); }
+.deck-action-card .card-symbol-badge { background: var(--ac); border: 2px solid var(--color-ink); color: #fff; box-shadow: 2px 2px 0 var(--color-ink); }
+.deck-action-card .card-arrow-mark { color: var(--ac); font-weight: 900; }
+.card-new-game { --ac: var(--color-leaf); }
+.card-multiplayer { --ac: var(--color-water); }
+.card-local { --ac: var(--color-terracotta); }
+.card-guide { --ac: var(--color-sun); }
+.card-guide .card-symbol-badge { color: var(--color-ink); }
+.card-rankings { --ac: var(--color-orange); }
+.card-rankings .card-symbol-badge { color: var(--color-ink); }
+div.deck-action-card.card-multiplayer:has(.dev-guest-picker) { --ac: var(--color-sky); }
+.card-text-body strong { color: var(--color-deep-green); }
+.dev-guest-chip.is-active { background: var(--color-sun); color: var(--color-ink); border-color: var(--color-ink); }
+.dev-guest-enter:hover:not(:disabled) { background: var(--color-sky); color: var(--color-ink); }
+
+/* Footer tối + chữ nắng */
+
+/* Hộp thoại phụ của màn đăng nhập: cùng ngôn ngữ cứng + màu */
+.vintage-notebook-card, .vintage-wood-card { border: 4px solid var(--color-ink); box-shadow: 6px 6px 0 var(--color-ink); }
+
+/* Landscape thấp: giữ lớp màu mới nhưng thu padding để hồ sơ + nút Tiếp tục không chồng nhau */
+@media (max-height: 499px) and (orientation: landscape) {
+  .deck-header { padding-block: 8px 12px; box-shadow: inset 0 -3px 0 var(--color-sun); }
+  .spotlight-ribbon-tag { padding: 4px 12px; }
+  .deck-save-spotlight { box-shadow: 3px 3px 0 var(--color-ink); }
+  .btn-hero-launch { border-width: 2px; }
+  .deck-action-card { border-left-width: 6px; box-shadow: 3px 3px 0 var(--color-ink); }
+}
+@media (max-height: 380px) and (orientation: landscape) {
+  .spotlight-inner-box { padding: 6px 8px 8px; }
+  .spotlight-ribbon-tag { padding: 3px 8px; font-size: 9px; letter-spacing: .1em; }
+  .save-slot-chip > button:first-child { border-width: 2px; box-shadow: 1px 1px 0 var(--color-ink); padding: 4px 16px 4px 5px; }
+  .save-slot-chip > button:first-child strong { font-size: 11px; white-space: nowrap; padding-right: 0; }
+  .save-slot-chip > button:first-child small { font-size: 9px; }
+  .save-slot-delete { width: 16px; height: 16px; line-height: 12px; font-size: 10px; top: 2px; right: 2px; }
+  .deck-content-split { gap: 10px; padding: 10px 12px 8px; }
+}
+
+/* Portrait hẹp: thẻ menu gọn lại để hồ sơ + nút Tiếp tục không bị ép về 0 (320×568: lưới thẻ từng chiếm hết chiều cao) */
+@media (max-width: 600px) and (orientation: portrait) {
+  .deck-options-grid { gap: 6px; grid-auto-rows: minmax(0, auto); }
+  .deck-action-card { padding: 6px 8px; gap: 8px; border-width: 2px; border-left-width: 6px; box-shadow: 2px 2px 0 var(--color-ink); }
+  .deck-action-card .card-symbol-badge { width: 30px; height: 30px; font-size: 15px; border-width: 2px; box-shadow: 1px 1px 0 var(--color-ink); }
+  .deck-action-card .card-arrow-mark { display: none; }
+  .deck-action-card .card-text-body small { display: none; }
+  .deck-content-split { gap: 8px; padding: 8px; }
+  .deck-save-spotlight { min-height: 150px; }
+}
+@media (max-width: 360px) and (orientation: portrait) {
+  .deck-header { padding-block: 6px 10px; box-shadow: inset 0 -3px 0 var(--color-sun); }
+  .deck-options-grid .card-text-body strong { font-size: 11px; line-height: 1.15; }
+}
+
+/* Tương phản (đo WCAG 08/10/2026) */
+.card-new-game .card-symbol-badge { color: var(--color-ink); }
+.card-multiplayer .card-symbol-badge { background: var(--color-water-panel); }
+.deck-footer-bar, .deck-footer-bar span, .deck-footer-bar small { color: var(--color-text-on-dark-muted); }
+.deck-footer-bar .footer-save-guarantee, .deck-footer-bar .footer-save-guarantee span { color: var(--color-cream); }
+.spotlight-ribbon-tag { color: #fff; }
+.sound-on .sound-disc-icon { color: var(--color-ink); }

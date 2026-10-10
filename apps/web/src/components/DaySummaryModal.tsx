@@ -21,31 +21,34 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
       title={`NHỊP SỐNG HẺM — NGÀY ${summary.day}`}
       subtitle="Sổ kết quả buôn bán & Bản tin sáng đầu hẻm"
       onClose={onClose}
+      footer={<PixelButton variant="teal" onClick={onClose}>{tab === 'morning' ? 'Bắt đầu bán hàng →' : 'Tiếp tục →'}</PixelButton>}
     >
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button
+      <div className="feature-tabs" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <PixelButton
           type="button"
-          className={`pixel-btn ${tab === 'summary' ? 'active' : ''}`}
+          aria-pressed={tab === 'summary'}
+          variant={tab === 'summary' ? 'teal' : 'paper'}
           onClick={() => setTab('summary')}
           style={{ flex: 1, padding: '6px 12px', fontWeight: 'bold' }}
         >
           📊 Tổng kết ngày qua
-        </button>
+        </PixelButton>
         {morningBrief && (
-          <button
+          <PixelButton
             type="button"
-            className={`pixel-btn ${tab === 'morning' ? 'active' : ''}`}
+            aria-pressed={tab === 'morning'}
+            variant={tab === 'morning' ? 'teal' : 'paper'}
             onClick={() => setTab('morning')}
             style={{ flex: 1, padding: '6px 12px', fontWeight: 'bold' }}
           >
             🌅 Bản tin sáng nay
-          </button>
+          </PixelButton>
         )}
       </div>
 
       {tab === 'summary' ? (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8 }}>
+          <div className="summary-kpis" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8 }}>
             <PixelStat label="Khách phục vụ" value={summary.customersServed} icon="person" />
             <PixelStat label="Đánh giá" value={summary.ratingCount ? `${summary.averageStars?.toFixed(1)} ★` : 'Chưa có'} icon="heart" />
             <PixelStat label="Giao dịch" value={summary.transactionsCount} icon="book" />
@@ -62,19 +65,19 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
                 ))}
               </div>
             )}
-            <div>Giá vốn: <strong style={{ color: 'var(--rust, #b44a2c)' }}>- {money(summary.cogs)}</strong></div>
+            <div>Giá vốn: <strong style={{ color: 'var(--brick)' }}>- {money(summary.cogs)}</strong></div>
             <div>Lãi gộp: <strong>{money(summary.grossProfit)}</strong></div>
-            <div>Hàng hỏng: <strong style={{ color: 'var(--rust, #b44a2c)' }}>- {money(summary.spoilageCost)}</strong></div>
-            <div>Lương nhân viên: <strong style={{ color: 'var(--rust, #b44a2c)' }}>- {money(summary.wagesPaid)}</strong></div>
-            {summary.maintenanceCost ? <div>Sửa chữa, bảo trì: <strong style={{ color: 'var(--rust, #b44a2c)' }}>- {money(summary.maintenanceCost)}</strong></div> : null}
-            {record.counterfeitLoss ? <div>Tiền giả nhận nhầm: <strong style={{ color: 'var(--rust, #b44a2c)' }}>- {money(record.counterfeitLoss)}</strong></div> : null}
-            {record.badDebtCost ? <div>Nợ xấu đã xóa: <strong style={{ color: 'var(--rust, #b44a2c)' }}>- {money(record.badDebtCost)}</strong></div> : null}
-            <div style={{ borderTop: '1px solid var(--wood, #a88)', paddingTop: 6, fontSize: 13 }}>
-              Lãi ròng: <strong style={{ color: summary.netProfit >= 0 ? '#16a34a' : '#dc2626' }}>{money(summary.netProfit)}</strong>
+            <div>Hàng hỏng: <strong style={{ color: 'var(--brick)' }}>- {money(summary.spoilageCost)}</strong></div>
+            <div>Lương nhân viên: <strong style={{ color: 'var(--brick)' }}>- {money(summary.wagesPaid)}</strong></div>
+            {summary.maintenanceCost ? <div>Sửa chữa, bảo trì: <strong style={{ color: 'var(--brick)' }}>- {money(summary.maintenanceCost)}</strong></div> : null}
+            {record.counterfeitLoss ? <div>Tiền giả nhận nhầm: <strong style={{ color: 'var(--brick)' }}>- {money(record.counterfeitLoss)}</strong></div> : null}
+            {record.badDebtCost ? <div>Nợ xấu đã xóa: <strong style={{ color: 'var(--brick)' }}>- {money(record.badDebtCost)}</strong></div> : null}
+            <div style={{ borderTop: '1px solid var(--color-outline-soft)', paddingTop: 6, fontSize: 13 }}>
+              Lãi ròng: <strong style={{ color: summary.netProfit >= 0 ? 'var(--color-green-dark)' : 'var(--color-brick)' }}>{money(summary.netProfit)}</strong>
             </div>
           </div>
 
-          <p className="muted" style={{ margin: '10px 0 0', fontSize: 11 }}>
+          <p className="muted day-summary-foot" style={{ margin: '10px 0 0', fontSize: 11 }}>
             {summary.bestSellingProductId
               ? `Món bán chạy nhất: ${PRODUCT_MAP[summary.bestSellingProductId]?.name ?? summary.bestSellingProductId}. `
               : 'Hôm nay chưa ghi nhận món bán. '}
@@ -93,14 +96,14 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
                 <div className="muted" style={{ fontSize: 10, marginTop: 2 }}>Dự báo ngày mai: {morningBrief.forecastTomorrow}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <span style={{ color: 'var(--rust, #b44a2c)', fontWeight: 'bold', fontSize: 11 }}>🎉 {morningBrief.seasonName}</span>
+                <span style={{ color: 'var(--color-brick)', fontWeight: 'bold', fontSize: 11 }}>🎉 {morningBrief.seasonName}</span>
                 <div className="muted" style={{ fontSize: 10 }}>Còn {morningBrief.seasonDaysLeft} ngày trong mùa</div>
               </div>
             </div>
           </div>
 
           <div className="pixel-panel" style={{ padding: 12 }}>
-            <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--rust, #b44a2c)' }}>TÌNH HÌNH HÀNG HÓA SÁNG NAY</h4>
+            <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--color-wood-light)' }}>TÌNH HÌNH HÀNG HÓA SÁNG NAY</h4>
             <div style={{ display: 'grid', gap: 4, fontSize: 11 }}>
               <div>
                 📦 <strong>Đơn hàng giao:</strong>{' '}
@@ -109,7 +112,7 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
                   : 'Không có chuyến hàng giao sáng nay.'}
               </div>
               {morningBrief.lowStockItems.length > 0 && (
-                <div style={{ color: '#d97706' }}>
+                <div style={{ color: 'var(--color-warning-dark)' }}>
                   ⚠️ <strong>Kệ sắp hết hàng:</strong>{' '}
                   {morningBrief.lowStockItems.map(pid => PRODUCT_MAP[pid]?.name ?? pid).join(', ')}
                 </div>
@@ -117,8 +120,8 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
             </div>
           </div>
 
-          <div className="pixel-panel" style={{ padding: 12, background: 'rgba(59, 130, 246, 0.05)', borderColor: '#93c5fd' }}>
-            <h4 style={{ margin: '0 0 6px', fontSize: 11, color: '#1d4ed8' }}>LỜI KHUYÊN ĐẦU NGÀY</h4>
+          <div className="pixel-panel" style={{ padding: 12, background: 'rgba(57, 131, 154, 0.14)', borderColor: 'var(--color-blue)' }}>
+            <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--color-blue)' }}>LỜI KHUYÊN ĐẦU NGÀY</h4>
             <ul style={{ margin: 0, paddingLeft: 18, fontSize: 11, display: 'grid', gap: 4 }}>
               {morningBrief.tips.map((tip, idx) => (
                 <li key={idx}>{tip}</li>
@@ -127,12 +130,6 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
           </div>
         </div>
       ) : null}
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-        <PixelButton variant="teal" onClick={onClose}>
-          {tab === 'morning' ? 'Bắt đầu bán hàng →' : 'Tiếp tục →'}
-        </PixelButton>
-      </div>
     </PixelDialog>
   );
 };

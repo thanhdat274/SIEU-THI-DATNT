@@ -5,11 +5,12 @@
  * Chạy: yarn --ignore-engines workspace @game/core tsx src/drink-balance-sim.ts   (DRINK_SEEDS, DRINK_DAYS, DRINK_PLOTS tùy chọn)
  */
 import { isSalesFixture, type SaveGameData } from '@game/shared';
-import { DEFAULT_INITIAL_SAVE, DRINK_PLOT_ID, PRODUCT_MAP, generateStarterTileMap } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, DRINK_PLOT_ID, DRINK_TRAFFIC_SHARE, PRODUCT_MAP, generateStarterTileMap, type LandParcel } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { createMarketState } from './market';
 import { applyStoreLayoutActions } from './store-layout';
+import { effectiveSecondaryBuildingTrafficShare } from './reclamation';
 
 const SEEDS = (process.env.DRINK_SEEDS ?? 'drink-a,drink-b,drink-c').split(',');
 const DAYS = Number(process.env.DRINK_DAYS ?? 12);
@@ -80,3 +81,29 @@ for (const [label, key] of [['Khách phục vụ', 'customers'], ['Doanh thu (�
 const extraNet = perDay(withShop, 'netProfit') - perDay(without, 'netProfit');
 const cost = 1_500_000 + EXTRA_PLOTS.reduce((sum, id) => sum + (id.endsWith('-a') ? 500_000 : id.endsWith('-b') ? 750_000 : 0), 0);
 console.log(extraNet > 0 ? `Lãi ròng tăng thêm ≈ ${vnd(extraNet)} ₫/ngày → hoàn vốn ${vnd(cost)} ₫ sau ≈ ${(cost / extraNet).toFixed(1)} ngày (chưa tính nguyên liệu thật, nhân viên).` : 'Quán nước không tăng lãi ròng trong mô phỏng này.');
+
+/** D5 (open-world-land-reclamation): khách theo vị trí LÔ — so ba vị trí (spec "Location value"). */
+export function compareDrinkPositions(): Array<{ label: string; multiplier: number; effectiveShare: number }> {
+  // Lô W1..W4 chưa đặt được tòa THẬT (chưa vào PARCEL_MAP, chưa renderer) nên đây là TÍNH THUẦN trên lô tổng hợp
+  // (LandParcel chế với frontageRoadId/corner) qua `effectiveSecondaryBuildingTrafficShare` — chứng minh TỈ LỆ cân bằng, số PROVISIONAL.
+  const synthetic = (id: string, frontageRoadId: string, corner: boolean): LandParcel =>
+    ({ id, rect: { x0: 42, x1: 47, y0: 8, y1: 12 }, wave: 1, frontageRoadId, frontage: { corner } });
+  const rows = [
+    { label: 'Góc ngã tư đường CHÍNH', parcel: synthetic('sim-drink-corner-main', 'main', true) },
+    { label: 'Mặt đường CHÍNH (W0)', parcel: synthetic('sim-drink-face-main', 'main', false) },
+    { label: 'Mặt đường NAM', parcel: synthetic('sim-drink-face-south', 'south', false) },
+  ];
+  return rows.map(({ label, parcel }) => {
+    const multiplier = effectiveSecondaryBuildingTrafficShare('drink', parcel) / DRINK_TRAFFIC_SHARE;
+    return { label, multiplier, effectiveShare: effectiveSecondaryBuildingTrafficShare('drink', parcel) };
+  });
+}
+const drinkPositions = compareDrinkPositions();
+console.log('So vị trí lô (D5, provisional): nhịp sinh khách quán nước = BUILDING_TRAFFIC_SHARE × hệ số khách lô');
+console.log('Vị trí lô                 | Hệ số khách | Share × hệ số | Khách/ngày tương đối');
+for (const r of drinkPositions) {
+  console.log(`${r.label.padEnd(25)} | ${String(r.multiplier).padEnd(11)} | ${r.effectiveShare.toFixed(4).padEnd(13)} | ${Math.round(26 * r.multiplier)} ≈ khách W0 (26) × ${r.multiplier}`);
+}
+const [corner, faceMain, faceSouth] = drinkPositions;
+const ordering = corner.multiplier > faceMain.multiplier && faceMain.multiplier > faceSouth.multiplier;
+console.log(`Kết luận (đúng D5): góc chính > mặt chính > đường nam → ${ordering ? 'ĐÚNG' : 'SAI'}`);

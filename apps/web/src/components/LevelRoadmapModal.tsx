@@ -17,7 +17,7 @@ export const LevelRoadmapModal: React.FC<Props> = ({ player, onClose }) => {
     unlocks: getLevelUnlocks(targetLevel),
   }));
 
-  return <PixelDialog icon="star" title="LỘ TRÌNH CẤP ĐỘ" subtitle={`Tiến trình đến cấp ${MAX_PLAYER_LEVEL} · xem XP và từng mốc mở khóa`} onClose={onClose}>
+  return <PixelDialog icon="star" title="Lộ trình cấp độ" subtitle={`Tiến trình đến cấp ${MAX_PLAYER_LEVEL} · xem XP và từng mốc mở khóa`} onClose={onClose}>
     <section className="pixel-panel" style={{ padding: 12, marginBottom: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
         <strong>{capped ? `Cấp tối đa ${MAX_PLAYER_LEVEL}` : `Cấp ${level} → ${level + 1}`}</strong>
@@ -57,6 +57,6 @@ export const LevelRoadmapModal: React.FC<Props> = ({ player, onClose }) => {
       })}
     </ol>
     <p className="muted">XP tích lũy để đạt từng cấp: {LEVEL_XP_THRESHOLDS.slice(1).map((threshold, index) => `C${index + 2}: ${threshold.toLocaleString('vi-VN')}`).join(' · ')}.</p>
-    <p className="muted">Mở khóa là quyền sử dụng; mua đất/quầy vẫn cần đủ tiền và điều kiện. Lưu lượng spawn được giới hạn trong core để giữ nhịp chơi và bản đồ hiện tại.</p>
+    <p className="muted level-roadmap-note">Mở khóa là quyền sử dụng; mua đất/quầy vẫn cần đủ tiền và điều kiện. Lưu lượng spawn được giới hạn trong core để giữ nhịp chơi và bản đồ hiện tại.</p>
   </PixelDialog>;
 };

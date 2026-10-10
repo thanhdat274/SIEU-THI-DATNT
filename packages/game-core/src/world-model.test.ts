@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { isSaveGameData, tileIndex, validateSaveGameData } from '@game/shared';
 import {
   BUILDINGS, DEFAULT_INITIAL_SAVE, DEFAULT_PLACEMENTS, LAND_PARCELS, MAP_HEIGHT, MAP_ORIGIN_Y, MAP_WIDTH, PARCEL_MAP, PLAY_REGION, WORLD_BOUNDS,
+  FRONTAGE_TRAFFIC, FRONTAGE_VALUE, PARCEL_BASE_PRICE, WAVE_EXPANSION_BONUS, parcelLandValueMultiplier, parcelPrice, parcelTrafficMultiplier,
+  RECLAMATION_WAVES, validateReclamationWaves,
   generateStarterTileMap, normalizePlacements, placementGeometry, placementsProblem, rectContains, rectHeight, rectWidth, validatePlacement, validatePlacements, type BuildingPlacement,
 } from '@game/data';
 
@@ -73,5 +75,26 @@ export function runWorldModelTests(): void {
   const allPlots = ['east-wing-a', 'east-wing-b', 'building-xoi', 'building-drink', 'building-snack'];
   assert.deepEqual(generateStarterTileMap(allPlots, [], migrated.data?.storeLayout.buildingPlacements), generateStarterTileMap(allPlots), 'save cũ dựng ra đúng bản đồ mặc định');
   assert.deepEqual(generateStarterTileMap(allPlots, [], withSnackWest), generateStarterTileMap(allPlots), 'vị trí xung đột bị bỏ, không làm đổi bản đồ');
+
+  // Đợt khai hoang (open-world-land-reclamation 1.1/1.2): vùng không chồng, trong biên, hệ số vị trí, giá lô.
+  assert.deepEqual(validateReclamationWaves(), [], 'RECLAMATION_WAVES hợp lệ: mọi vùng trong 120×80, không chồng nhau');
+  assert.ok(RECLAMATION_WAVES.length >= 5, 'w0 + 4 đợt khai hoang');
+  for (const wave of RECLAMATION_WAVES) assert.ok(wave.unlockLevel >= 1 && wave.cost >= 0 && wave.constructionDays >= 0, `đợt ${wave.id} có điều kiện hợp lệ`);
+  assert.equal(RECLAMATION_WAVES.length, 5, 'đúng 5 đợt (w0..w4)');
+
+  // Hệ số vị trí D5: bản đồ ban đầu (W0, mặt đường chính) ra 1 → golden trước không đổi.
+  for (const parcel of LAND_PARCELS) {
+    assert.equal(parcelLandValueMultiplier(parcel), 1, `${parcel.id} (W0) hệ số giá = 1`);
+    assert.equal(parcelTrafficMultiplier(parcel), 1, `${parcel.id} (W0) hệ số khách = 1`);
+  }
+  // Góc đường chính > mặt đường chính > đường phụ (D5, "Corner beats side street" phần dữ liệu).
+  const mainCorner = FRONTAGE_VALUE['main-corner'];
+  const mainFace = FRONTAGE_VALUE['main-face'];
+  const sideFace = FRONTAGE_VALUE['side-face'];
+  assert.ok(mainCorner > mainFace && mainFace > sideFace, 'hệ số giá: góc chính > mặt chính > đường phụ');
+  assert.deepEqual([mainCorner, mainFace, sideFace], [1.6, 1.0, 0.6], 'hệ số giá D5 chính xác');
+  assert.equal(FRONTAGE_TRAFFIC['main-corner'], 1.25, 'hệ số khách góc đường chính 1.25');
+  assert.equal(parcelPrice(({ ...LAND_PARCELS[0], frontage: { corner: true } } as any)), Math.round(PARCEL_BASE_PRICE * rectWidth(LAND_PARCELS[0].rect) * rectHeight(LAND_PARCELS[0].rect) * 1.6), 'giá lô = gốc × số ô × hệ số giá');
+  assert.ok(WAVE_EXPANSION_BONUS.w0 === 0 && WAVE_EXPANSION_BONUS.w1 > 0, 'thưởng ngân sách mở rộng: đợt 0 = 0, đợt sau > 0');
   console.log('  ✓ biên 120×80, vùng chơi, 4 lô, vị trí đặt mặc định, kiểm hợp lệ, trường save và save cũ');
 }

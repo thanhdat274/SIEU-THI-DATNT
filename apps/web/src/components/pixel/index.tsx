@@ -33,8 +33,10 @@ export function PixelIcon({ name, size = 20 }: {name: IconName; size?: number}) 
   </svg>;
 }
 export const money = (value: number) => `${value.toLocaleString('vi-VN')} ₫`;
-export function PixelButton({icon, variant = 'paper', className = '', children, ...props}: React.ButtonHTMLAttributes<HTMLButtonElement> & {icon?: IconName; variant?: 'paper'|'teal'|'brick'|'wood'}) {
-  return <button type="button" {...props} className={`pixel-button button-${variant} ${className}`}>{icon && <PixelIcon name={icon}/>} {children}</button>;
+export type ButtonVariant = 'paper' | 'teal' | 'brick' | 'wood' | 'wheat' | 'primary' | 'secondary' | 'danger' | 'green' | 'water' | 'sun' | 'olive';
+export function PixelButton({icon, variant = 'paper', className = '', children, ...props}: React.ButtonHTMLAttributes<HTMLButtonElement> & {icon?: IconName; variant?: ButtonVariant}) {
+  const resolvedVariant = variant === 'primary' ? 'green' : variant === 'secondary' ? 'paper' : variant === 'danger' ? 'brick' : variant === 'wheat' ? 'sun' : variant === 'teal' ? 'green' : variant;
+  return <button type="button" {...props} className={`pixel-button button-${resolvedVariant} ${className}`}>{icon && <PixelIcon name={icon}/>} {children}</button>;
 }
 export function PixelPanel({children, className = ''}: React.PropsWithChildren<{className?: string}>) {return <section className={`pixel-panel ${className}`}>{children}</section>;}
 export function PixelStat({label, value, icon}: {label: string; value: React.ReactNode; icon: IconName}) {return <div className="pixel-stat"><PixelIcon name={icon} size={22}/><div className="pixel-stat-body"><span className="muted">{label}</span><strong>{value}</strong></div></div>;}
@@ -69,12 +71,20 @@ export function PixelDialog({title, subtitle, icon, onClose, children, footer}: 
         else if(!e.shiftKey && (document.activeElement===last || !node.contains(document.activeElement))) {e.preventDefault(); first.focus();}
       }
     };
-    const focus = (e:FocusEvent) => {if(!node.contains(e.target as Node)) (focusable()[0] ?? node).focus();};
+    // Chỉ hộp thoại trên cùng giữ focus; nếu hai hộp thoại cùng mount, handler của cả hai sẽ giành focus lẫn nhau → đệ quy vô hạn.
+    const isTop = () => { const all = document.querySelectorAll('.pixel-dialog'); return all[all.length - 1] === node; };
+    const focus = (e:FocusEvent) => {if(isTop() && !node.contains(e.target as Node)) (focusable()[0] ?? node).focus();};
     // Báo cho renderer giảm khung hình khi có hộp thoại che màn hình (đỡ tranh CPU/GPU với việc cuộn danh sách).
     const root = document.documentElement;
     root.dataset.dialogs = String(Number(root.dataset.dialogs ?? '0') + 1);
     document.addEventListener('keydown',keys,true); document.addEventListener('focusin',focus);
-    return ()=>{const left = Number(root.dataset.dialogs ?? '1') - 1; if (left > 0) root.dataset.dialogs = String(left); else delete root.dataset.dialogs; document.removeEventListener('keydown',keys,true);document.removeEventListener('focusin',focus); if(previous?.isConnected) previous.focus();};
+    // Chiều cao chân hộp thoại (0 khi bị ẩn) để toast nằm trên nút hành động chính thay vì đè lên.
+    const footer = node.querySelector<HTMLElement>('.dialog-footer');
+    const syncFooter = () => root.style.setProperty('--dialog-footer-h', `${footer && footer.getClientRects().length ? Math.round(footer.getBoundingClientRect().height) : 0}px`);
+    const footerObserver = footer && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(syncFooter) : undefined;
+    if (footer) footerObserver?.observe(footer);
+    syncFooter();
+    return ()=>{footerObserver?.disconnect(); root.style.removeProperty('--dialog-footer-h'); const left = Number(root.dataset.dialogs ?? '1') - 1; if (left > 0) root.dataset.dialogs = String(left); else delete root.dataset.dialogs; document.removeEventListener('keydown',keys,true);document.removeEventListener('focusin',focus); if(previous?.isConnected) previous.focus();};
   }, []);
   return <div className="dialog-backdrop"><section ref={ref} className="pixel-panel pixel-dialog" role="dialog" aria-modal="true" aria-labelledby={id} tabIndex={-1}><header className="dialog-header"><div className="dialog-heading"><PixelIcon name={icon} size={28}/><div><h2 id={id}>{title}</h2>{subtitle && <p>{subtitle}</p>}</div></div><PixelButton icon="close" variant="wood" aria-label="Đóng" data-dialog-close onClick={onClose}/></header><div className="dialog-content">{children}</div><footer className="dialog-footer">{footer ?? <><span className="muted dialog-hint">Esc để trở về tiệm</span><PixelButton onClick={onClose}>Trở về tiệm</PixelButton></>}</footer></section></div>;
 }

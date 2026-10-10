@@ -96,15 +96,15 @@ export const ShelfModal: React.FC<Props> = ({
       </div>
 
       {/* Sơ đồ bày kệ (Planogram) status card */}
-      <div className="info-card" style={{ background: '#fdfbf7', border: '1px solid #d4c5b9' }}>
+      <div className="info-card" style={{ background: 'var(--color-panel-hover)', border: '1px solid var(--color-outline-soft)' }}>
         <div className="section-label">
           <strong>Sơ đồ bày kệ (Planogram)</strong>
           {planogramProduct ? (
-            <span style={{ color: isMismatchPlanogram ? '#c0392b' : '#27ae60', fontWeight: 'bold' }}>
+            <span style={{ color: isMismatchPlanogram ? 'var(--color-brick)' : 'var(--color-success-text)', fontWeight: 'bold' }}>
               {isMismatchPlanogram ? '⚠️ Khác sơ đồ' : '✓ Đúng sơ đồ'}
             </span>
           ) : (
-            <span style={{ color: '#7f8c8d' }}>Chưa thiết lập</span>
+            <span style={{ color: 'var(--color-text-muted)' }}>Chưa thiết lập</span>
           )}
         </div>
         {planogramProduct ? (
@@ -211,7 +211,7 @@ export const ShelfModal: React.FC<Props> = ({
                     Trong kho {stockLabel(stock)} · Bán {money(PRODUCT_MAP[i.productId].baseSellingPrice)}
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: '4px' }}>
+                <div className="product-actions" style={{ display: 'flex', gap: '4px' }}>
                   <PixelButton
                     variant="teal"
                     disabled={stock.loose <= 0}

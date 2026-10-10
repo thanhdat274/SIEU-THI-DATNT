@@ -44,7 +44,6 @@ function loadSuggestOptions(saved?: RestockSuggestionOptions): Required<RestockS
   }
 }
 
-const SUGGEST_INPUT_STYLE: React.CSSProperties = { height: 28, border: '2px solid var(--wood-light)', background: '#FFFAEE', color: 'var(--ink)', textAlign: 'center', fontWeight: 700, borderRadius: 0, margin: '0 2px' };
 
 /** Một IntersectionObserver dùng chung cho mọi dòng, tránh tạo hàng trăm observer. */
 const lazyCallbacks = new WeakMap<Element, (visible: boolean) => void>();
@@ -114,7 +113,7 @@ const SupplierProductRow = React.memo(function SupplierProductRow({ product, qua
     <article
       className={`product-row ${locked ? 'is-locked' : ''} ${quantity > 0 ? 'in-cart' : ''}`}
       aria-label={product.name}
-      style={quantity > 0 ? { background: 'rgba(53,127,114,0.07)', borderLeft: '3px solid var(--teal)' } : undefined}
+      style={quantity > 0 ? { background: 'rgba(79, 135, 63, 0.1)', borderLeft: '3px solid var(--color-green)' } : undefined}
     >
       <ProductSlot productId={product.id} />
       <div className="product-info">
@@ -126,20 +125,20 @@ const SupplierProductRow = React.memo(function SupplierProductRow({ product, qua
         <p>
           Giá sỉ <strong>{money(unitPrice)}</strong>
           {discountRate > 0 ? (
-            <span style={{ fontSize: '11px', color: 'var(--teal)' }}>
+            <span style={{ fontSize: '11px', color: 'var(--color-green)' }}>
               {' '}
               (-{Math.round(discountRate * 100)}%)
             </span>
           ) : null}
           {quantity > 0 && !product.caseSize && (
-            <span style={{ marginLeft: 6, color: 'var(--teal-dark)', fontWeight: 700 }}>
+            <span style={{ marginLeft: 6, color: 'var(--color-green-dark)', fontWeight: 700 }}>
               · Tổng <strong>{money(cost)}</strong>
             </span>
           )}
         </p>
         {hasQuote && (changePct !== 0 || !!reasonsText || stockLeft !== undefined) && (
           <p className="muted" style={{ fontSize: '11px' }}>
-            {changePct !== 0 && <strong style={{ color: changePct! > 0 ? 'var(--brick, #b64c3d)' : 'var(--teal)' }}>{changePct! > 0 ? '↑' : '↓'} {changePct! > 0 ? '+' : ''}{changePct}% so với hôm qua </strong>}
+            {changePct !== 0 && <strong style={{ color: changePct! > 0 ? 'var(--color-brick)' : 'var(--color-green)' }}>{changePct! > 0 ? '↑' : '↓'} {changePct! > 0 ? '+' : ''}{changePct}% so với hôm qua </strong>}
             {reasonsText && <span>· {reasonsText} </span>}
             {stockLeft !== undefined && !unavailable && <span>· Còn {stockLeft} hôm nay</span>}
           </p>
@@ -405,38 +404,106 @@ export const SupplierModal: React.FC<Props> = ({
     ? 'Vượt dung lượng kho mát'
     : `Đặt hàng · ${money(cartTotal)}`;
 
+  const cartBar = (
+      <section
+        className={cartHasItems ? 'cart-bar' : 'cart-bar cart-bar-empty'}
+        style={{
+          position: 'sticky',
+          bottom: 0,
+          background: 'var(--color-panel)',
+          border: '2px solid var(--color-green)',
+          borderRadius: '4px',
+          marginTop: '16px',
+          padding: '8px 12px',
+          zIndex: 10,
+        }}
+        aria-label="Giỏ đặt hàng"
+      >
+        {cartHasItems ? (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', gap: '6px' }}>
+              <strong style={{ color: 'var(--color-green-dark)', fontSize: '13px' }}>
+                🛒 Giỏ đặt hàng · {cartItems.length} loại · {cartItems.reduce((s, it) => s + it.qty, 0)} đơn vị
+              </strong>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <PixelButton
+                  variant="paper"
+                  onClick={() => setCartDetailOpen((open) => !open)}
+                  style={{ fontSize: '11px', padding: '4px 8px' }}
+                  aria-expanded={cartDetailOpen}
+                  aria-label={cartDetailOpen ? 'Ẩn chi tiết giỏ' : 'Xem chi tiết giỏ'}
+                >
+                  {cartDetailOpen ? 'Ẩn chi tiết ▾' : 'Chi tiết ▸'}
+                </PixelButton>
+                <PixelButton
+                  variant="paper"
+                  onClick={clearCart}
+                  style={{ fontSize: '11px', padding: '4px 8px' }}
+                  aria-label="Xóa giỏ hàng"
+                >
+                  Xóa giỏ
+                </PixelButton>
+              </div>
+            </div>
+            {cartDetailOpen && (
+              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', maxHeight: '96px', overflowY: 'auto', marginBottom: '6px', lineHeight: 1.4 }}>
+                {cartItems.map((it) => `${it.product.name} ×${it.packs} ${it.product.caseSize ? 'thùng' : 'món'} (${it.qty} món)`).join(' · ')}
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', borderTop: '1px solid var(--color-outline-soft)', paddingTop: '8px' }}>
+              <div>
+                <strong style={{ fontSize: '15px' }}>Tổng: {money(cartTotal)}</strong>
+                {cartColdUnits > 0 && (
+                  <span style={{ fontSize: '11px', marginLeft: '8px', color: 'var(--ink-light)' }}>
+                    (Hàng lạnh: {cartColdUnits} món)
+                  </span>
+                )}
+                {!cartBudgetOk && (
+                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--brick)' }}>
+                    Thiếu {money(cartTotal - player.money)}
+                  </span>
+                )}
+                {!cartMinOrderMet && cartBudgetOk && (
+                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--color-warning-dark)' }}>
+                    Chưa đạt đơn tối thiểu {money(currentSupplier.minOrderValue ?? 0)}
+                  </span>
+                )}
+                {!cartColdOk && cartColdUnits > 0 && (
+                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--brick)' }}>
+                    Vượt sức chứa kho mát ({cartColdUnits}/{availableCold})
+                  </span>
+                )}
+              </div>
+              <PixelButton
+                variant="teal"
+                disabled={!cartBudgetOk || !cartMinOrderMet || !cartColdOk}
+                onClick={handlePlaceCartOrder}
+                aria-label="Xác nhận đặt toàn bộ giỏ hàng"
+                style={{ fontSize: '14px', padding: '10px 20px', fontWeight: 700 }}
+              >
+                {cartOrderLabel}
+              </PixelButton>
+            </div>
+          </>
+        ) : (
+          <p className="muted" style={{ margin: 0, textAlign: 'center', padding: '4px 0' }}>
+            🛒 Giỏ trống — bấm <strong>+</strong> vào sản phẩm để thêm vào giỏ, rồi đặt một lần
+          </p>
+        )}
+      </section>
+  );
+
   return (
     <PixelDialog
       title={currentSupplier.name}
       subtitle={currentSupplier.description}
       icon="truck"
       onClose={onClose}
+      footer={cartBar}
     >
-      {/* Auto Buy Panel */}
-      <details className="auto-buy-panel" style={{ marginBottom: 14, padding: 12, border: '2px solid var(--teal)', background: 'var(--paper-light)' }} aria-label="Tự nhập hàng" open={autoBuyConfig.enabled || !!autoBuyConfig.stalls || autoBuyConfig.rules.length > 0}>
-        <summary style={{ cursor: 'pointer', fontWeight: 700, marginBottom: 8 }}>Tự nhập hàng · {autoBuyConfig.enabled ? 'đang bật' : 'đang tắt'} · {autoBuyConfig.rules.length} quy tắc</summary>
-        <label style={{ display: 'block', margin: '0 0 8px', fontSize: 12 }} title="Mỗi sáng nếu kho thiếu nguyên liệu cho quầy cà phê/bánh mì đã mở, game tự chọn đại lý, đặt đủ ~3 ngày và trừ tiền (vẫn chừa lương/thuế; thiếu tiền thì mua phần làm được)">
-          <input type="checkbox" checked={!!autoBuyConfig.stalls} disabled={!onToggleAutoBuyStalls} onChange={(e) => onToggleAutoBuyStalls?.(e.target.checked)} /> Tự nhập nguyên liệu cho quầy ăn uống mỗi sáng
-        </label>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div><strong>Tự nhập hàng</strong><p className="muted" style={{ margin: '4px 0 0' }}>Tự đặt mua theo tồn kho mỗi sáng. Chức năng này đang {autoBuyConfig.enabled ? 'bật' : 'tắt'}; khác với nhân viên bày hàng từ kho.</p></div>
-          <PixelButton variant={autoBuyConfig.enabled ? 'brick' : 'teal'} disabled={!onUpdateAutoBuy} onClick={() => onUpdateAutoBuy?.(!autoBuyConfig.enabled, autoBuyConfig.rules)}>{autoBuyConfig.enabled ? 'Tắt tự nhập' : 'Bật tự nhập'}</PixelButton>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: 8, marginTop: 12 }}>
-          <label>Mặt hàng<select value={autoProductId} onChange={(e) => setAutoProductId(e.target.value)}>{ALL_PRODUCTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
-          <label>Nhà cung cấp<select value={autoSupplierId} onChange={(e) => setAutoSupplierId(e.target.value)}>{SUPPLIERS.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
-          <label>Mua khi tồn ≤<input type="number" min={0} value={autoThreshold} onChange={(e) => setAutoThreshold(Math.max(0, Number(e.target.value)))} /></label>
-          <label>Số lượng mua<input type="number" min={1} value={autoQuantity} onChange={(e) => setAutoQuantity(Math.max(1, Number(e.target.value)))} /></label>
-          <label>Ngân sách quy tắc<input type="number" min={1} value={autoBudget} onChange={(e) => setAutoBudget(Math.max(1, Number(e.target.value)))} /></label>
-          <label>Ưu tiên (số nhỏ trước)<input type="number" min={0} value={autoPriority} onChange={(e) => setAutoPriority(Math.max(0, Number(e.target.value)))} /></label>
-        </div>
-        <PixelButton variant="wood" disabled={!onUpdateAutoBuy} onClick={() => onUpdateAutoBuy?.(autoBuyConfig.enabled, [...autoBuyConfig.rules, { id: `auto-${autoProductId}-${Date.now()}`, productId: autoProductId, threshold: autoThreshold, quantity: autoQuantity, supplierId: autoSupplierId, priority: autoPriority, maxBudget: autoBudget }])}>Thêm quy tắc</PixelButton>
-        {autoBuyConfig.rules.map((rule) => <div className="pending-item" key={rule.id} style={{ marginTop: 6 }}><span>Ưu tiên {rule.priority}: {PRODUCT_MAP[rule.productId]?.name ?? rule.productId}, tồn ≤ {rule.threshold}, mua {rule.quantity}, tối đa {money(rule.maxBudget)} ({SUPPLIER_MAP[rule.supplierId]?.name ?? rule.supplierId})</span><PixelButton variant="brick" onClick={() => onUpdateAutoBuy?.(autoBuyConfig.enabled, autoBuyConfig.rules.filter((item) => item.id !== rule.id))}>Xóa</PixelButton></div>)}
-        {Object.values(autoBuyConfig.reports).sort((a, b) => b.day - a.day).slice(0, 3).map((report) => <p className="muted" key={report.day}>Ngày {report.day}: đã đặt {report.placed.length} dòng ({money(report.placed.reduce((n, item) => n + item.paidTotal, 0))}); bỏ qua {report.skipped.map((item) => item.reason).join(' · ') || 'không có'}.</p>)}
-      </details>
-
+      <div className="supplier-head">
       {/* Supplier Selection Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+      <div className="feature-scroll-tabs" style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
         {SUPPLIERS.map((sup) => {
           const locked = sup.unlockLevel > player.level;
           const closed = !locked && sup.delayDays === 0 && currentHour !== undefined && currentHour >= SAME_DAY_SUPPLIER_CUTOFF_HOUR;
@@ -459,9 +526,9 @@ export const SupplierModal: React.FC<Props> = ({
         })}
       </div>
 
-      <div className="summary-row">
+      <div className="summary-row supplier-summary">
         <PixelStat label="Tiền vốn hiện có" value={money(player.money)} icon="coin" />
-        <div>
+        <div className="supplier-info">
           <strong>
             {board
               ? (board.deliveryDay <= currentDay ? 'Giao hàng ngay hôm nay' : `Giao sáng ngày ${board.deliveryDay} (${board.deliveryWeekday})`)
@@ -485,15 +552,24 @@ export const SupplierModal: React.FC<Props> = ({
           ) : null}
         </div>
       </div>
+      </div>
 
-      {/* Suggest Restock Button */}
+      <div className="supplier-tools">
+      {/* Suggest Restock Button — nén gọn thành accordion trên mobile (Pattern D), desktop vẫn mở sẵn */}
       {onGetSuggestions && (
+        <details
+          className="feature-suggest-detail"
+          open={typeof document !== 'undefined' ? document.documentElement.dataset.density !== 'compact' : true}
+          title="Tính hộ số lượng cần nhập theo tồn kho"
+        >
+          <summary className="feature-suggest-summary">💡 Gợi ý thông minh · đặt hộ theo tồn kho</summary>
         <div
+          className="feature-suggest"
           style={{
             background: 'var(--paper-light)',
             border: '2px solid var(--wood-light)',
             padding: '10px 14px',
-            marginBottom: '14px',
+            marginBottom: '0',
             borderRadius: '4px',
             display: 'flex',
             alignItems: 'center',
@@ -507,43 +583,81 @@ export const SupplierModal: React.FC<Props> = ({
             <p className="muted" style={{ margin: 0, fontSize: '11px' }}>
               Phân tích tốc độ bán 3–7 ngày, tồn kho &amp; đơn chờ. Chia tiền theo tỷ lệ bên dưới (hàng đang bán / hàng mới nhập thử), luôn chừa quỹ dự phòng và không vượt tiền đang có.
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '6px', fontSize: '11px' }}>
-              <label title="% ngân sách cho hàng đang bán; phần còn lại nhập thử hàng mới">
-                Hàng đang bán{' '}
-                <input type="number" min={0} max={100} value={suggestDraft.provenSharePct} style={{ ...SUGGEST_INPUT_STYLE, width: 52 }} aria-label="Phần trăm ngân sách cho hàng đang bán"
-                  onChange={(e) => setDraftField('provenSharePct', e.target.value)} />% · mới {100 - suggestOptions.provenSharePct}%
+            <div className="suggest-params">
+              <label className="suggest-field" title="% ngân sách cho hàng đang bán; phần còn lại nhập thử hàng mới">
+                <span>Hàng đang bán</span>
+                <span className="suggest-value">
+                  <input className="suggest-input" type="number" inputMode="numeric" min={0} max={100} value={suggestDraft.provenSharePct} aria-label="Phần trăm ngân sách cho hàng đang bán"
+                    onChange={(e) => setDraftField('provenSharePct', e.target.value)} />
+                  <small>% · mới {100 - suggestOptions.provenSharePct}%</small>
+                </span>
               </label>
-              <label title="Số mặt hàng mới nhập thử tối đa mỗi lần gợi ý">
-                Món mới tối đa{' '}
-                <input type="number" min={0} max={20} value={suggestDraft.maxTrialProducts} style={{ ...SUGGEST_INPUT_STYLE, width: 46 }} aria-label="Số món mới nhập thử tối đa"
-                  onChange={(e) => setDraftField('maxTrialProducts', e.target.value)} />
+              <label className="suggest-field" title="Số mặt hàng mới nhập thử tối đa mỗi lần gợi ý">
+                <span>Món mới tối đa</span>
+                <span className="suggest-value">
+                  <input className="suggest-input" type="number" inputMode="numeric" min={0} max={20} value={suggestDraft.maxTrialProducts} aria-label="Số món mới nhập thử tối đa"
+                    onChange={(e) => setDraftField('maxTrialProducts', e.target.value)} />
+                </span>
               </label>
-              <label title="% tiền mặt giữ lại cho lương/thuế, không đưa vào gợi ý">
-                Giữ lại quỹ{' '}
-                <input type="number" min={0} max={90} value={suggestDraft.cashReservePct} style={{ ...SUGGEST_INPUT_STYLE, width: 52 }} aria-label="Phần trăm tiền mặt giữ lại"
-                  onChange={(e) => setDraftField('cashReservePct', e.target.value)} />%
+              <label className="suggest-field" title="% tiền mặt giữ lại cho lương/thuế, không đưa vào gợi ý">
+                <span>Giữ lại quỹ</span>
+                <span className="suggest-value">
+                  <input className="suggest-input" type="number" inputMode="numeric" min={0} max={90} value={suggestDraft.cashReservePct} aria-label="Phần trăm tiền mặt giữ lại"
+                    onChange={(e) => setDraftField('cashReservePct', e.target.value)} />
+                  <small>%</small>
+                </span>
               </label>
-              <button type="button" className="pixel-btn" disabled={!draftDirty} onClick={commitSuggestDraft}
-                style={{ fontSize: '11px', padding: '2px 8px' }} aria-label="Lưu thông số gợi ý">
-                {draftDirty ? 'Lưu thông số' : 'Đã lưu ✓'}
-              </button>
-              <label title="Giữ đủ tiền trả nợ lương, lương kỳ tới và thuế sắp nộp (lấy mức lớn hơn giữa khoản này và % bên trên)">
+              <label className="suggest-check" title="Giữ đủ tiền trả nợ lương, lương kỳ tới và thuế sắp nộp (lấy mức lớn hơn giữa khoản này và % bên trên)">
                 <input type="checkbox" checked={suggestOptions.protectObligations} aria-label="Chừa tiền lương và thuế"
-                  onChange={(e) => saveSuggestOptions({ ...suggestOptions, protectObligations: e.target.checked })} />{' '}
-                Chừa tiền lương &amp; thuế
+                  onChange={(e) => saveSuggestOptions({ ...suggestOptions, protectObligations: e.target.checked })} />
+                <span>Chừa tiền lương &amp; thuế</span>
               </label>
+              <PixelButton className="suggest-save" disabled={!draftDirty} onClick={commitSuggestDraft} aria-label="Lưu thông số gợi ý">
+                {draftDirty ? 'Lưu thông số' : 'Đã lưu ✓'}
+              </PixelButton>
             </div>
           </div>
           <PixelButton
             variant="teal"
             icon="truck"
+            className="suggest-cta"
             onClick={handleGenerateSuggestion}
             aria-label="Tạo gợi ý nhập hàng"
           >
             Gợi ý nhập hàng
           </PixelButton>
         </div>
+        </details>
       )}
+
+      {/* Auto Buy Panel */}
+      <details className="auto-buy-panel" aria-label="Tự nhập hàng"
+        open={typeof document !== 'undefined' && document.documentElement.dataset.density === 'compact'
+          ? false
+          : (autoBuyConfig.enabled || !!autoBuyConfig.stalls || autoBuyConfig.rules.length > 0)}>
+        <summary>Tự nhập hàng · {autoBuyConfig.enabled ? 'đang bật' : 'đang tắt'} · {autoBuyConfig.rules.length} quy tắc</summary>
+        <label className="suggest-check" title="Mỗi sáng nếu kho thiếu nguyên liệu cho quầy cà phê/bánh mì đã mở, game tự chọn đại lý, đặt đủ ~3 ngày và trừ tiền (vẫn chừa lương/thuế; thiếu tiền thì mua phần làm được)">
+          <input type="checkbox" checked={!!autoBuyConfig.stalls} disabled={!onToggleAutoBuyStalls} onChange={(e) => onToggleAutoBuyStalls?.(e.target.checked)} />
+          <span>Tự nhập nguyên liệu cho quầy ăn uống mỗi sáng</span>
+        </label>
+        <div className="auto-head">
+          <div><strong>Tự nhập hàng</strong><p className="muted">Tự đặt mua theo tồn kho mỗi sáng. Chức năng này đang {autoBuyConfig.enabled ? 'bật' : 'tắt'}; khác với nhân viên bày hàng từ kho.</p></div>
+          <PixelButton variant={autoBuyConfig.enabled ? 'brick' : 'teal'} disabled={!onUpdateAutoBuy} onClick={() => onUpdateAutoBuy?.(!autoBuyConfig.enabled, autoBuyConfig.rules)}>{autoBuyConfig.enabled ? 'Tắt tự nhập' : 'Bật tự nhập'}</PixelButton>
+        </div>
+        <div className="auto-grid">
+          <label>Mặt hàng<select value={autoProductId} onChange={(e) => setAutoProductId(e.target.value)}>{ALL_PRODUCTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+          <label>Nhà cung cấp<select value={autoSupplierId} onChange={(e) => setAutoSupplierId(e.target.value)}>{SUPPLIERS.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+          <label>Mua khi tồn ≤<input type="number" min={0} value={autoThreshold} onChange={(e) => setAutoThreshold(Math.max(0, Number(e.target.value)))} /></label>
+          <label>Số lượng mua<input type="number" min={1} value={autoQuantity} onChange={(e) => setAutoQuantity(Math.max(1, Number(e.target.value)))} /></label>
+          <label>Ngân sách quy tắc<input type="number" min={1} value={autoBudget} onChange={(e) => setAutoBudget(Math.max(1, Number(e.target.value)))} /></label>
+          <label>Ưu tiên (số nhỏ trước)<input type="number" min={0} value={autoPriority} onChange={(e) => setAutoPriority(Math.max(0, Number(e.target.value)))} /></label>
+        </div>
+        <PixelButton variant="wood" className="auto-add" disabled={!onUpdateAutoBuy} onClick={() => onUpdateAutoBuy?.(autoBuyConfig.enabled, [...autoBuyConfig.rules, { id: `auto-${autoProductId}-${Date.now()}`, productId: autoProductId, threshold: autoThreshold, quantity: autoQuantity, supplierId: autoSupplierId, priority: autoPriority, maxBudget: autoBudget }])}>Thêm quy tắc</PixelButton>
+        {autoBuyConfig.rules.map((rule) => <div className="pending-item auto-rule" key={rule.id}><span>Ưu tiên {rule.priority}: {PRODUCT_MAP[rule.productId]?.name ?? rule.productId}, tồn ≤ {rule.threshold}, mua {rule.quantity}, tối đa {money(rule.maxBudget)} ({SUPPLIER_MAP[rule.supplierId]?.name ?? rule.supplierId})</span><PixelButton variant="brick" onClick={() => onUpdateAutoBuy?.(autoBuyConfig.enabled, autoBuyConfig.rules.filter((item) => item.id !== rule.id))}>Xóa</PixelButton></div>)}
+        {Object.values(autoBuyConfig.reports).sort((a, b) => b.day - a.day).slice(0, 3).map((report) => <p className="muted auto-report" key={report.day}>Ngày {report.day}: đã đặt {report.placed.length} dòng ({money(report.placed.reduce((n, item) => n + item.paidTotal, 0))}); bỏ qua {report.skipped.map((item) => item.reason).join(' · ') || 'không có'}.</p>)}
+      </details>
+
+      </div>
 
       {/* Suggested Cart Review Drawer — chỉ hiển thị giải thích, không có nút đặt riêng nữa */}
       {suggestedCart && (
@@ -575,6 +689,11 @@ export const SupplierModal: React.FC<Props> = ({
             {suggestedCart.explanation}
           </p>
 
+          {((suggestedCart.budget && suggestedCart.budget.spendable > 0) || suggestedCart.constraints.length > 0) && (
+          <details className="suggest-notes">
+            <summary>
+              {suggestedCart.constraints.length > 0 ? `${suggestedCart.constraints.length} ghi chú về ngân sách và hàng bị bỏ` : 'Chi tiết ngân sách'}
+            </summary>
           {suggestedCart.budget && suggestedCart.budget.spendable > 0 && (
             <p className="muted" style={{ fontSize: '11px', margin: '0 0 8px' }}>
               Tiền dùng cho gợi ý {money(suggestedCart.budget.spendable)}{suggestedCart.budget.reserved > 0 ? ` (giữ lại ${money(suggestedCart.budget.reserved)}${suggestedCart.budget.obligations ? ' cho lương/thuế' : ''})` : ''} · Hàng đang bán {money(suggestedCart.budget.provenSpent)} / {money(suggestedCart.budget.provenTarget)} ({Math.round(suggestedCart.budget.provenShare * 100)}%) · Hàng mới thử {money(suggestedCart.budget.trialSpent)} / {money(suggestedCart.budget.trialTarget)} ({100 - Math.round(suggestedCart.budget.provenShare * 100)}%)
@@ -588,9 +707,9 @@ export const SupplierModal: React.FC<Props> = ({
                   key={idx}
                   style={{
                     display: 'inline-block',
-                    background: '#fff3cd',
-                    color: '#856404',
-                    border: '1px solid #ffeeba',
+                    background: 'var(--color-panel-selected)',
+                    color: 'var(--color-warning-dark)',
+                    border: '1px solid var(--color-outline-soft)',
                     fontSize: '11px',
                     padding: '2px 6px',
                     marginRight: '6px',
@@ -602,6 +721,8 @@ export const SupplierModal: React.FC<Props> = ({
                 </span>
               ))}
             </div>
+          )}
+          </details>
           )}
 
           {suggestedCart.items.length === 0 ? (
@@ -617,11 +738,11 @@ export const SupplierModal: React.FC<Props> = ({
                   : item.reason === 'slow_seller' ? 'Bán chậm'
                   : 'Hàng mới thử';
                 const badgeColor =
-                  item.reason === 'out_of_stock' ? '#d90429'
-                  : item.reason === 'best_seller' ? '#b5838d'
-                  : item.reason === 'low_stock' ? '#e07a5f'
-                  : item.reason === 'slow_seller' ? '#6c757d'
-                  : '#3d5a80';
+                  item.reason === 'out_of_stock' ? 'var(--color-brick)'
+                  : item.reason === 'best_seller' ? 'var(--color-wheat-dark)'
+                  : item.reason === 'low_stock' ? 'var(--color-warning-dark)'
+                  : item.reason === 'slow_seller' ? 'var(--color-text-muted)'
+                  : 'var(--color-blue)';
                 const inCart = quantities[item.productId] ?? 0;
                 const maxQty = maxQtyFor(item.productId);
                 const shopStock = inventory.find((i) => i.productId === item.productId)?.quantity ?? 0;
@@ -633,15 +754,15 @@ export const SupplierModal: React.FC<Props> = ({
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       padding: '4px 0',
-                      borderBottom: '1px dashed var(--wood-light)',
+                      borderBottom: '1px dashed var(--color-panel-dark)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <ProductSlot productId={item.productId} />
                       <div>
-                        <strong style={{ fontSize: '12px' }}>{prod?.name ?? item.productId}</strong>
-                        <span style={{ marginLeft: '5px', background: badgeColor, color: '#fff', fontSize: '10px', padding: '1px 4px', borderRadius: '3px' }}>{badgeLabel}</span>
-                        <div style={{ fontSize: '11px', color: 'var(--ink-light)' }}>
+                        <strong style={{ fontSize: '12px', color: 'var(--color-text)' }}>{prod?.name ?? item.productId}</strong>
+                        <span style={{ marginLeft: '5px', background: badgeColor, color: 'var(--color-panel)', fontSize: '10px', padding: '1px 4px', borderRadius: '3px' }}>{badgeLabel}</span>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
                           Tiệm còn {shopStock} món · NCC còn {maxQty >= 99 ? '∞' : maxQty} món · Gợi ý {item.quantity} món ({prod?.caseSize ? `${Math.ceil(item.quantity / prod.caseSize)} thùng` : 'món lẻ'}) · Tối đa {maxQty} món
                         </div>
                       </div>
@@ -673,16 +794,16 @@ export const SupplierModal: React.FC<Props> = ({
       )}
 
       {/* Tìm kiếm + Bộ lọc danh mục dạng nút nhanh */}
-      <div style={{ marginBottom: '14px' }}>
+      <div className="supplier-filter" style={{ marginBottom: '14px' }}>
         {/* Ô tìm kiếm */}
         <input
-          type="search"
+          type="search" className="supplier-search"
           placeholder="🔍 Tìm theo tên hoặc mã..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
             width: '100%',
-            minHeight: '40px',
+            minHeight: 'max(40px, var(--touch, 40px))',
             background: 'var(--paper)',
             border: '2px solid var(--wood-light)',
             padding: '6px 10px',
@@ -693,11 +814,12 @@ export const SupplierModal: React.FC<Props> = ({
         />
 
         {/* Nút phân loại nhanh */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        <div className="supplier-cats" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
           {/* Nút "Tất cả" */}
           <button
             type="button"
             onClick={() => setCategory('all')}
+            aria-pressed={category === 'all'}
             style={{
               padding: '5px 12px',
               fontSize: '12px',
@@ -706,9 +828,9 @@ export const SupplierModal: React.FC<Props> = ({
               borderRadius: '4px',
               border: '2px solid',
               transition: 'all 0.15s',
-              borderColor: category === 'all' ? 'var(--teal-dark)' : 'var(--wood-light)',
-              background: category === 'all' ? 'var(--teal)' : 'var(--paper)',
-              color: category === 'all' ? '#fff' : 'var(--ink)',
+              borderColor: category === 'all' ? 'var(--color-green-dark)' : 'var(--color-outline-soft)',
+              background: category === 'all' ? 'var(--color-grass-btn)' : 'var(--color-panel)',
+              color: category === 'all' ? '#fff' : 'var(--color-text)',
             }}
           >
             Tất cả ({ALL_PRODUCTS.length})
@@ -742,6 +864,7 @@ export const SupplierModal: React.FC<Props> = ({
                 key={id}
                 type="button"
                 onClick={() => setCategory(isActive ? 'all' : id)}
+                aria-pressed={isActive}
                 title={`${name} · ${count} sản phẩm`}
                 style={{
                   padding: '5px 10px',
@@ -751,14 +874,14 @@ export const SupplierModal: React.FC<Props> = ({
                   borderRadius: '4px',
                   border: '2px solid',
                   transition: 'all 0.15s',
-                  borderColor: isActive ? 'var(--teal-dark)' : 'var(--wood-light)',
-                  background: isActive ? 'var(--teal)' : 'var(--paper-light)',
-                  color: isActive ? '#fff' : 'var(--ink)',
+                  borderColor: isActive ? 'var(--color-green-dark)' : 'var(--color-outline-soft)',
+                  background: isActive ? 'var(--color-grass-btn)' : 'var(--color-panel)',
+                  color: isActive ? '#fff' : 'var(--color-text)',
                   whiteSpace: 'nowrap',
                 }}
               >
                 {emoji[id] ?? '📦'} {name}
-                <span style={{ marginLeft: '4px', fontSize: '10px', opacity: 0.75 }}>({count})</span>
+                <span style={{ marginLeft: '4px', fontSize: '10px', opacity: isActive ? 1 : 0.75 }}>({count})</span>
               </button>
             );
           })}
@@ -798,93 +921,6 @@ export const SupplierModal: React.FC<Props> = ({
           );
         })
       )}
-
-      {/* ===== GIỎ HÀNG & NÚT ĐẶT HÀNG DUY NHẤT ===== */}
-      <section
-        style={{
-          position: 'sticky',
-          bottom: 0,
-          background: 'var(--paper)',
-          border: '2px solid var(--teal)',
-          borderRadius: '4px',
-          marginTop: '16px',
-          padding: '8px 12px',
-          zIndex: 10,
-        }}
-        aria-label="Giỏ đặt hàng"
-      >
-        {cartHasItems ? (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', gap: '6px' }}>
-              <strong style={{ color: 'var(--teal-dark)', fontSize: '13px' }}>
-                🛒 Giỏ đặt hàng · {cartItems.length} loại · {cartItems.reduce((s, it) => s + it.qty, 0)} đơn vị
-              </strong>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <PixelButton
-                  variant="paper"
-                  onClick={() => setCartDetailOpen((open) => !open)}
-                  style={{ fontSize: '11px', padding: '4px 8px' }}
-                  aria-expanded={cartDetailOpen}
-                  aria-label={cartDetailOpen ? 'Ẩn chi tiết giỏ' : 'Xem chi tiết giỏ'}
-                >
-                  {cartDetailOpen ? 'Ẩn chi tiết ▾' : 'Chi tiết ▸'}
-                </PixelButton>
-                <PixelButton
-                  variant="paper"
-                  onClick={clearCart}
-                  style={{ fontSize: '11px', padding: '4px 8px' }}
-                  aria-label="Xóa giỏ hàng"
-                >
-                  Xóa giỏ
-                </PixelButton>
-              </div>
-            </div>
-            {cartDetailOpen && (
-              <div style={{ fontSize: '11px', color: 'var(--ink-light)', maxHeight: '96px', overflowY: 'auto', marginBottom: '6px', lineHeight: 1.4 }}>
-                {cartItems.map((it) => `${it.product.name} ×${it.packs} ${it.product.caseSize ? 'thùng' : 'món'} (${it.qty} món)`).join(' · ')}
-              </div>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', borderTop: '1px solid var(--wood-light)', paddingTop: '8px' }}>
-              <div>
-                <strong style={{ fontSize: '15px' }}>Tổng: {money(cartTotal)}</strong>
-                {cartColdUnits > 0 && (
-                  <span style={{ fontSize: '11px', marginLeft: '8px', color: 'var(--ink-light)' }}>
-                    (Hàng lạnh: {cartColdUnits} món)
-                  </span>
-                )}
-                {!cartBudgetOk && (
-                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--brick)' }}>
-                    Thiếu {money(cartTotal - player.money)}
-                  </span>
-                )}
-                {!cartMinOrderMet && cartBudgetOk && (
-                  <span style={{ display: 'block', fontSize: '11px', color: '#856404' }}>
-                    Chưa đạt đơn tối thiểu {money(currentSupplier.minOrderValue ?? 0)}
-                  </span>
-                )}
-                {!cartColdOk && cartColdUnits > 0 && (
-                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--brick)' }}>
-                    Vượt sức chứa kho mát ({cartColdUnits}/{availableCold})
-                  </span>
-                )}
-              </div>
-              <PixelButton
-                variant="teal"
-                disabled={!cartBudgetOk || !cartMinOrderMet || !cartColdOk}
-                onClick={handlePlaceCartOrder}
-                aria-label="Xác nhận đặt toàn bộ giỏ hàng"
-                style={{ fontSize: '14px', padding: '10px 20px', fontWeight: 700 }}
-              >
-                {cartOrderLabel}
-              </PixelButton>
-            </div>
-          </>
-        ) : (
-          <p className="muted" style={{ margin: 0, textAlign: 'center', padding: '4px 0' }}>
-            🛒 Giỏ trống — bấm <strong>+</strong> vào sản phẩm để thêm vào giỏ, rồi đặt một lần
-          </p>
-        )}
-      </section>
 
       {/* Đơn hàng đang giao */}
       <section className="pending-orders" style={{ marginTop: '16px' }}>

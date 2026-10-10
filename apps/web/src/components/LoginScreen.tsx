@@ -4,6 +4,7 @@ import { deleteSaveSlot, getActiveSlotId, listSaveSlots, loadExistingSave, reset
 import { acquireSlotLock, releaseSlotLock, slotsLockedElsewhere } from '../slot-lock';
 import { listUserWorlds, createOnlineWorld, joinOnlineWorld, getLeaderboard, type WorldSummary, type WorldDetail, type ActivitiesResponse, type LeaderboardResponse } from '../services/api';
 import { useControlMode, setControlMode, type ControlMode } from '../control-mode';
+import { devGuestIsEnabled, getDevGuest, setDevGuestClientId, devGuestToken } from '../services/dev-guest';
 import './LoginScreen.css';
 
 interface LoginScreenProps {
@@ -55,6 +56,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   const [showAbsenceModal, setShowAbsenceModal] = useState<boolean>(false);
   const [selectedWorldDetail, setSelectedWorldDetail] = useState<WorldDetail | null>(null);
   const [activeGuideTab, setActiveGuideTab] = useState<'daily' | 'controls' | 'stock' | 'features' | 'coop'>('daily');
+  // Chế độ khách dev (localhost 2 người): cho phép mở Hẻm Chơi Cùng không cần đăng nhập Google.
+  const isDevGuest = devGuestIsEnabled();
+  const [devGuestId, setDevGuestId] = useState<string>(() => getDevGuest().clientId);
+  const handlePickDevGuest = (id: string) => {
+    triggerSound(420);
+    setDevGuestId(setDevGuestClientId(id).clientId);
+  };
+
+  // UI-AUDIT-2026-001 D04: bấm Escape ở 3 modal tùy chỉnh (Hẻm chơi cùng / Bảng vàng / Nhật ký vắng) để đóng —
+  // trước đó các modal này không có hành vi phím nên khó thao tác bằng bàn phím (a11y).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showMultiplayerModal) setShowMultiplayerModal(false);
+      if (showLeaderboard) setShowLeaderboard(false);
+      if (showAbsenceModal) { setShowAbsenceModal(false); if (selectedWorldDetail) onEnter(selectedWorldDetail); }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showMultiplayerModal, showLeaderboard, showAbsenceModal, selectedWorldDetail]);
 
   const [slots, setSlots] = useState<SaveSlotInfo[]>([]);
   const [activeSlot, setActiveSlot] = useState<SaveSlotId>(getActiveSlotId());
@@ -167,6 +189,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
   };
 
   async function getIdToken(): Promise<string> {
+    if (devGuestIsEnabled()) return devGuestToken(); // chế độ khách dev (localhost 2 người): token giả, server gán guest_<id> qua header
     if (!user) throw new Error('Cần đăng nhập tài khoản trước.');
     return user.getIdToken();
   }
@@ -188,7 +211,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
 
   async function handleOpenMultiplayer() {
     triggerSound(400);
-    if (!user) {
+    if (!user && !devGuestIsEnabled()) {
       setFeedbackMsg('Vui lòng đăng nhập Google trước để chơi chế độ Hẻm online!');
       return;
     }
@@ -676,6 +699,33 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
               <span className="card-arrow-mark">›</span>
             </button>
 
+            {isDevGuest && (
+              <div className="deck-action-card card-multiplayer">
+                <span className="card-symbol-badge badge-teal">🧪</span>
+                <div className="card-text-body">
+                  <div className="card-heading-row">
+                    <strong>Hẻm Chơi Cùng (Khách dev)</strong>
+                    <span className="badge-tag-online">2 người · localhost</span>
+                  </div>
+                  <small>Thử co-op + voice 2 người không cần đăng nhập Google. Chọn định danh khách để mỗi cửa sổ trình duyệt là một tài khoản riêng.</small>
+                  <div className="dev-guest-picker" role="group" aria-label="Chọn định danh khách">
+                    {['a', 'b', 'c'].map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        className={`dev-guest-chip${devGuestId === id ? ' is-active' : ''}`}
+                        aria-pressed={devGuestId === id}
+                        onClick={() => handlePickDevGuest(id)}
+                      >Khách {id.toUpperCase()}</button>
+                    ))}
+                  </div>
+                  <button type="button" className="dev-guest-enter" disabled={busy} onClick={() => void handleOpenMultiplayer()}>
+                    Vào Hẻm Chơi Cùng (khách {devGuestId.toUpperCase()})
+                  </button>
+                </div>
+              </div>
+            )}
+
             <button
               type="button"
               className="deck-action-card card-local"
@@ -953,10 +1003,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
       {/* MODAL: HẺM CHƠI CÙNG (COMMUNITY NOTICE BOARD) */}
       {showMultiplayerModal && (
         <div className="vintage-modal-overlay" onClick={() => setShowMultiplayerModal(false)}>
-          <div className="vintage-wood-card notice-board-card" onClick={(e) => e.stopPropagation()}>
+          <div className="vintage-wood-card notice-board-card" role="dialog" aria-modal="true" aria-labelledby="modal-title-coop" onClick={(e) => e.stopPropagation()}>
             <header className="notice-board-header">
               <span className="board-pin">📌</span>
-              <h3>🌐 HẺM CHƠI CÙNG (2 NGƯỜI)</h3>
+              <h3 id="modal-title-coop">🌐 HẺM CHƠI CÙNG (2 NGƯỜI)</h3>
               <p>Chung tay buôn bán trong một con hẻm thân tình với bạn bè.</p>
             </header>
 
@@ -1069,10 +1119,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
       {/* MODAL: BẢNG XẾP HẠNG / BẢNG VÀNG DANH DỰ */}
       {showLeaderboard && (
         <div className="vintage-modal-overlay" onClick={() => setShowLeaderboard(false)}>
-          <div className="vintage-wood-card golden-honor-card" onClick={(e) => e.stopPropagation()}>
+          <div className="vintage-wood-card golden-honor-card" role="dialog" aria-modal="true" aria-labelledby="modal-title-leaderboard" onClick={(e) => e.stopPropagation()}>
             <header className="honor-header">
               <span className="honor-medal">🏆</span>
-              <h3>BẢNG VÀNG THÀNH TÍCH</h3>
+              <h3 id="modal-title-leaderboard">BẢNG VÀNG THÀNH TÍCH</h3>
               <p>Những tiệm tạp hóa buôn may bán đắt nhất phố</p>
             </header>
 
@@ -1128,10 +1178,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
             if (selectedWorldDetail) onEnter(selectedWorldDetail);
           }}
         >
-          <div className="vintage-wood-card ledger-card" onClick={(e) => e.stopPropagation()}>
+          <div className="vintage-wood-card ledger-card" role="dialog" aria-modal="true" aria-labelledby="modal-title-absence" onClick={(e) => e.stopPropagation()}>
             <header className="ledger-header">
               <span className="ledger-quill">📜</span>
-              <h3>NHẬT KÝ TRONG LÚC BẠN VẮNG</h3>
+              <h3 id="modal-title-absence">NHẬT KÝ TRONG LÚC BẠN VẮNG</h3>
               <p>Bạn đồng hành trong hẻm đã thực hiện các giao dịch sau:</p>
             </header>
 

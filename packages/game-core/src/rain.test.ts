@@ -45,6 +45,11 @@ export function runRainTests(): void {
   assert.equal(formatMinuteOfDay(14 * 60 + 15), '14:15');
   assert.equal(describeRainForecast(null), '');
   assert.equal(describeRainForecast({ band: 'moderate', bandLabel: 'Mưa vừa', peak: 0.4, startMinute: 14 * 60, endMinute: 16 * 60 + 15 }), 'Mưa vừa 14:00–16:15');
+  // Bỏ nhãn dải khi trùng nhãn thời tiết (rain-intensity-forecast 4.3): "Mưa to (Mưa to 13:00–15:00)" → "Mưa to (13:00–15:00)".
+  const heavy = { band: 'heavy' as const, bandLabel: 'Mưa to', peak: 0.6, startMinute: 13 * 60, endMinute: 15 * 60 };
+  assert.equal(describeRainForecast(heavy, { omitWhenMatchingWeatherLabel: 'Mưa to' }), '13:00–15:00', 'Nhãn dải trùng nhãn thời tiết thì bỏ nhãn dải');
+  assert.equal(describeRainForecast(heavy, { omitWhenMatchingWeatherLabel: 'Mưa' }), 'Mưa to 13:00–15:00', 'Nhãn dải khác nhãn thời tiết thì giữ nguyên');
+  assert.equal(describeRainForecast(heavy), 'Mưa to 13:00–15:00', 'Không truyền label thì giữ nguyên');
   // Dự báo ngày mai trong simulation khớp với thực tế khi sang ngày.
   let checked = 0;
   for (let n = 0; n < 40 && checked < 2; n++) {

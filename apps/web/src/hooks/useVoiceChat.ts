@@ -39,6 +39,9 @@ export function useVoiceChat({ selfId, connected, sendSignal }: VoiceChatOptions
   const peerIdRef = useRef<string | null>(null);
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ICE quá lâu không tìm được đường nối (STUN-only thường gặp khi cả hai sau NAT đối xứng).
+  const iceFailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const iceFailTimerActiveRef = useRef(false);
   const localStreamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const remoteMutedRef = useRef(false);
@@ -76,9 +79,29 @@ export function useVoiceChat({ selfId, connected, sendSignal }: VoiceChatOptions
     ref.current = null;
   };
 
-  const clearTimer = () => {
+  const clearTimer = useCallback(() => {
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
-  };
+    if (iceFailTimerRef.current) { clearTimeout(iceFailTimerRef.current); iceFailTimerRef.current = null; }
+    iceFailTimerActiveRef.current = false;
+  }, []);
+
+  /** Báo lỗi kết nối voice rõ ràng hơn: lý do hay gặp nhất là cần TURN relay khi ICE không tìm được đường trực tiếp. */
+  const failWithReason = useCallback(() => {
+    if (!pcRef.current) return;
+    clearTimer();
+    const hasTurn = (iceServersRef.current ?? []).some(srv =>
+      (typeof srv.urls === 'string' ? [srv.urls] : srv.urls ?? []).some(url => url.startsWith('turn:') || url.startsWith('turns:'))
+    );
+    // Chi tiết kỹ thuật chỉ ghi console cho người làm game; người chơi thấy lời hướng dẫn việc cần làm.
+    if (!hasTurn) {
+      console.warn('[voice] ICE không tìm được đường nối trực tiếp và chưa cấu hình TURN relay (xem docs/deploy.md, VITE_ICE_SERVERS).');
+      setMicError('Mạng đang chặn kết nối tiếng. Thử Wi-Fi hoặc 4G khác rồi bấm "Thử lại".');
+    } else {
+      console.warn('[voice] ICE thất bại dù đã cấu hình TURN relay.');
+      setMicError('Vẫn chưa nối được tiếng. Kiểm tra mạng của bạn rồi bấm "Thử lại".');
+    }
+    setStatus('failed');
+  }, [clearTimer]);
 
   /** Đóng kết nối tới người kia; giữ nguyên mic cục bộ để nối lại khi họ vào lại. */
   const closePeer = useCallback(() => {
@@ -88,14 +111,14 @@ export function useVoiceChat({ selfId, connected, sendSignal }: VoiceChatOptions
     transceiverRef.current = null;
     pendingCandidatesRef.current = [];
     if (pc) {
-      pc.onicecandidate = null; pc.ontrack = null; pc.onconnectionstatechange = null;
+      pc.onicecandidate = null; pc.ontrack = null; pc.onconnectionstatechange = null; pc.oniceconnectionstatechange = null;
       try { pc.close(); } catch { /* đã đóng */ }
     }
     if (audioRef.current) { audioRef.current.srcObject = null; }
     dropMeter(remoteMeterRef);
     setRemoteSpeaking(false);
     setNeedsPlayGesture(false);
-  }, []);
+  }, [clearTimer]);
 
   /** Dừng hẳn mic và giải phóng mọi thứ (socket đóng, rời hẻm, unmount). */
   const stopAll = useCallback(() => {
@@ -113,6 +136,12 @@ export function useVoiceChat({ selfId, connected, sendSignal }: VoiceChatOptions
 
   const createPeer = useCallback((peerId: string): RTCPeerConnection => {
     closePeer();
+    setMicError(null);
+    if (typeof window === 'undefined' || typeof RTCPeerConnection === 'undefined') {
+      setMicError('Trình duyệt này chưa hỗ trợ mic. Hãy mở game bằng Chrome, Safari hoặc Firefox bản mới.');
+      setStatus('failed');
+      throw new Error('WebRTC không được hỗ trợ');
+    }
     iceServersRef.current ??= parseIceServers(import.meta.env.VITE_ICE_SERVERS as string | undefined);
     const pc = new RTCPeerConnection({ iceServers: iceServersRef.current });
     pcRef.current = pc;
@@ -141,14 +170,33 @@ export function useVoiceChat({ selfId, connected, sendSignal }: VoiceChatOptions
     pc.onconnectionstatechange = () => {
       if (pcRef.current !== pc) return;
       if (pc.connectionState === 'connected') { clearTimer(); setStatus('connected'); }
-      else if (pc.connectionState === 'failed') { clearTimer(); setStatus('failed'); }
+      else if (pc.connectionState === 'failed') { clearTimer(); failWithReason(); }
       else if (pc.connectionState === 'disconnected') setStatus('connecting');
     };
+    // Một số trình duyệt báo ICE failed trong khi connectionState vẫn 'connecting' tới lúc timeout.
+    // Bắt sớm để người chơi biết ngay và có lời khuyên về TURN.
+    pc.oniceconnectionstatechange = () => {
+      if (pcRef.current !== pc) return;
+      const ice = pc.iceConnectionState;
+      if (ice === 'connected' || ice === 'completed') { clearTimer(); setStatus('connected'); }
+      else if (ice === 'failed') { clearTimer(); failWithReason(); }
+    };
     timeoutRef.current = setTimeout(() => {
-      if (pcRef.current === pc && pc.connectionState !== 'connected') setStatus('failed');
+      if (pcRef.current === pc && pc.connectionState !== 'connected' && pc.iceConnectionState !== 'connected' && pc.iceConnectionState !== 'completed') {
+        clearTimer();
+        failWithReason();
+      }
     }, CONNECT_TIMEOUT_MS);
+    // ICE gathering nhanh chóng kết bằng 'failed' nhưng browser không bắn luôn; áp trần phụ.
+    iceFailTimerRef.current = setTimeout(() => {
+      if (pcRef.current !== pc) return;
+      if (pc.connectionState !== 'connected' && (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected')) {
+        failWithReason();
+      }
+    }, CONNECT_TIMEOUT_MS + 2000);
+    iceFailTimerActiveRef.current = true;
     return pc;
-  }, [closePeer, makeMeter]);
+  }, [closePeer, makeMeter, failWithReason, clearTimer]);
 
   const startOffer = useCallback(async (peerId: string) => {
     const pc = createPeer(peerId);

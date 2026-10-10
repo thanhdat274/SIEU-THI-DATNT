@@ -26,6 +26,7 @@ interface HUDProps {
   onOpenPrices?: () => void;
   onOpenTax?: () => void;
   onOpenLevelRoadmap: () => void;
+  onOpenCity?: () => void;
   customerRating?: number;
   onOpenRegulars?: () => void;
   onOpenSkills?: () => void;
@@ -46,14 +47,14 @@ interface HUDProps {
   /** Mốc lưu gần nhất (ISO) để hiện trong mục Lưu tiến trình của sổ quản lý. */
   lastSavedAt?: string;
 }
-const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenPrices, onOpenTax, onOpenStaff, onPayWageDebt, onOpenLevelRoadmap, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0, lastSavedAt}) => {
+const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenPrices, onOpenTax, onOpenStaff, onPayWageDebt, onOpenLevelRoadmap, onOpenCity, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0, lastSavedAt}) => {
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore(useShallow((s) => ({player: s.player, worldTime: s.worldTime, timeString: s.timeString, toggleSaveModal: s.toggleSaveModal})));
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const season = getSeasonForDay(worldTime.day);
   const weather = market?.weather;
-  const rainNote = (rain?: RainForecast | null) => (rain ? ` (${describeRainForecast(rain)})` : '');
-  const forecastText = market?.forecast.map(item => `${item.label}${rainNote(item.rain)}`).join(', ') ?? '';
-  const todayRainText = rainNote(weather?.rain);
+  const rainNote = (label: string, rain?: RainForecast | null) => (rain ? ` (${describeRainForecast(rain, { omitWhenMatchingWeatherLabel: label })})` : '');
+  const forecastText = market?.forecast.map(item => `${item.label}${rainNote(item.label, item.rain)}`).join(', ') ?? '';
+  const todayRainText = rainNote(weather?.label ?? '', weather?.rain);
   const forecastFirst = market?.forecast[0]?.label ?? '';
 
   const hasUrgentAlert = (maintenanceAlerts ?? 0) > 0 || wageDebt > 0;
@@ -64,7 +65,11 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
         <div className="brand" data-hud="decor" title="Tiệm Tạp Hóa Đầu Hẻm">
           <div className="brand-sign"><PixelIcon name="warehouse" size={26}/></div>
           <div className="brand-copy">
-            {player.activeTitle ? <p className="eyebrow" style={{ cursor: onOpenTitles ? 'pointer' : 'default', color: '#ffd56b' }} onClick={onOpenTitles} title="Bấm để xem/đổi danh hiệu">{player.activeTitle}</p> : <p className="eyebrow">Một góc nhỏ · Một đời vui</p>}
+            {player.activeTitle
+              ? (onOpenTitles
+                  ? <button type="button" className="eyebrow" style={{ cursor: 'pointer', color: 'var(--color-wheat-dark)', background: 'none', border: 0, padding: 0, font: 'inherit', textAlign: 'left' }} onClick={onOpenTitles} title="Bấm để xem/đổi danh hiệu">{player.activeTitle}</button>
+                  : <p className="eyebrow" style={{ color: 'var(--color-wheat-dark)' }}>{player.activeTitle}</p>)
+              : <p className="eyebrow">Một góc nhỏ · Một đời vui</p>}
             <h1>Tiệm Tạp Hóa Đầu Hẻm</h1>
           </div>
         </div>
@@ -153,6 +158,7 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
           onOpenMaintenance={onOpenMaintenance}
           onOpenChain={onOpenChain}
           onOpenLevelRoadmap={onOpenLevelRoadmap}
+          onOpenCity={onOpenCity}
           onOpenPlanogram={onOpenPlanogram}
           emptySlotsCount={emptySlotsCount}
           onOpenLayout={onOpenLayout}

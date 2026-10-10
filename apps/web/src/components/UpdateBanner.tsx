@@ -10,11 +10,10 @@ export const UpdateBanner: React.FC = () => {
   return (
     <div
       role="status"
+      className="update-banner"
       style={{
-        position: 'fixed', left: '50%', transform: 'translateX(-50%)', zIndex: 2000,
-        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)', width: 'min(420px, calc(100% - 24px))',
         display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', fontSize: 13, lineHeight: 1.3,
-        background: '#33251D', color: '#FFF3D6', border: '2px solid #F2B84B', boxShadow: '3px 3px 0 #33251D55',
+        background: 'var(--color-green-dark)', color: 'var(--color-bg)', border: '2px solid var(--color-wheat)', boxShadow: '3px 3px 0 var(--color-outline)',
       }}
     >
       <span style={{ flex: 1 }}>Đã có bản cập nhật mới. Bấm cập nhật để lưu tiến trình và tải lại game.</span>

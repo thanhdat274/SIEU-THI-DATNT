@@ -11,6 +11,7 @@ interface Props {
   inventory: InventoryItem[];
   holdingArea?: HoldingItem[];
   fixtures: StoreFixture[];
+  fillableEmptyShelves?: number;
   isOpen: boolean;
   onToggle: () => void;
   onAutoRestock: () => void;
@@ -25,6 +26,7 @@ export const WarehouseDock: React.FC<Props> = ({
   inventory,
   holdingArea = [],
   fixtures,
+  fillableEmptyShelves = 0,
   isOpen,
   onToggle,
   onAutoRestock,
@@ -48,7 +50,7 @@ export const WarehouseDock: React.FC<Props> = ({
       f.currentStock < effectiveShelfCapacity(f.maxCapacity, PRODUCT_MAP[f.assignedProductId]?.shelfCapacity ?? f.maxCapacity, capacityBonus) &&
       items.some((i) => i.productId === f.assignedProductId && i.quantity > 0)
   );
-  const empty = fixtures.filter((f) => isSalesFixture(f) && f.currentStock === 0).length;
+  const empty = fillableEmptyShelves;
   const totalHolding = holdingArea.reduce((sum, h) => sum + h.quantity, 0);
 
   return (
@@ -69,20 +71,20 @@ export const WarehouseDock: React.FC<Props> = ({
       </header>
 
       {totalHolding > 0 && (
-        <div style={{ padding: '8px 12px', background: '#FFF0D4', borderBottom: '2px solid #D5B98E' }}>
+        <div className="dock-holding-strip" style={{ padding: '8px 12px', background: 'var(--color-panel-hover)', borderBottom: '2px solid var(--color-panel-dark)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <strong style={{ fontSize: '12px', color: '#88392F' }}>Hàng chờ cất: {totalHolding} món</strong>
+            <strong style={{ fontSize: '12px', color: 'var(--color-brick)' }}>Hàng chờ cất: {totalHolding} món</strong>
             {onStowHolding && (
               <PixelButton
                 variant="teal"
-                style={{ minHeight: '28px', padding: '4px 8px', fontSize: '12px' }}
+                style={{ padding: '4px 8px', fontSize: '12px' }}
                 onClick={() => onStowHolding()}
               >
                 Cất vào kho
               </PixelButton>
             )}
           </div>
-          <div style={{ maxHeight: '80px', overflowY: 'auto', marginTop: '4px', fontSize: '11px' }}>
+          <div className="dock-holding-list" style={{ maxHeight: '80px', overflowY: 'auto', marginTop: '4px', fontSize: '11px' }}>
             {holdingArea.map((h) => (
               <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                 <span>{PRODUCT_MAP[h.productId]?.name ?? h.productId}</span>

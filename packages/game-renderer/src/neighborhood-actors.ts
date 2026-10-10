@@ -175,7 +175,7 @@ export class NeighborhoodActors {
     const container = new Container();
     container.eventMode = 'none';
     const bg = new Graphics();
-    const text = new Text({ text: '', style: { fontFamily: 'Arial', fontSize: 9, fontWeight: 'bold', fill: 0x2b2118, wordWrap: true, wordWrapWidth: 112, align: 'center', lineHeight: 11 }, resolution: 3 });
+    const text = new Text({ text: '', style: { fontFamily: 'VT323, Arial, sans-serif', fontSize: 12.6, fontWeight: 'bold', fill: 0x2b2118, wordWrap: true, wordWrapWidth: 112, align: 'center', lineHeight: 11 }, resolution: 3 });
     text.anchor.set(0.5, 1);
     container.addChild(bg, text);
     container.visible = false;

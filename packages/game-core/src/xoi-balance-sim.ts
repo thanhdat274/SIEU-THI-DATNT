@@ -5,11 +5,12 @@
  * Chạy: yarn --ignore-engines workspace @game/core tsx src/xoi-balance-sim.ts
  */
 import { isSalesFixture, type SaveGameData } from '@game/shared';
-import { DEFAULT_INITIAL_SAVE, PRODUCT_MAP, XOI_PLOT_ID, generateStarterTileMap } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, PRODUCT_MAP, XOI_PLOT_ID, XOI_TRAFFIC_SHARE, generateStarterTileMap, type LandParcel } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { createMarketState } from './market';
 import { applyStoreLayoutActions } from './store-layout';
+import { effectiveSecondaryBuildingTrafficShare } from './reclamation';
 
 const SEEDS = (process.env.XOI_SEEDS ?? 'xoi-a,xoi-b,xoi-c').split(',');
 const DAYS = Number(process.env.XOI_DAYS ?? 12);
@@ -75,3 +76,26 @@ for (const [label, key] of [['Khách phục vụ', 'customers'], ['Doanh thu (�
 }
 const extraNet = perDay(withShop, 'netProfit') - perDay(without, 'netProfit');
 console.log(extraNet > 0 ? `Lãi ròng tăng thêm ≈ ${vnd(extraNet)} ₫/ngày → hoàn vốn mua tiệm 700.000 ₫ sau ≈ ${(700_000 / extraNet).toFixed(1)} ngày (chưa tính trạm, nguyên liệu thật).` : 'Tiệm xôi không tăng lãi ròng trong mô phỏng này.');
+
+/** D5 (open-world-land-reclamation): khách theo vị trí LÔ — so ba vị trí (spec "Location value"). */
+export function compareXoiPositions(): Array<{ label: string; multiplier: number; effectiveShare: number }> {
+  // Thuần trên lô tổng hợp (W1..W4 chưa đặt được tòa THẬT — chưa vào PARCEL_MAP, chưa renderer), số PROVISIONAL.
+  const synthetic = (id: string, frontageRoadId: string, corner: boolean): LandParcel =>
+    ({ id, rect: { x0: 42, x1: 47, y0: 8, y1: 12 }, wave: 1, frontageRoadId, frontage: { corner } });
+  const rows = [
+    { label: 'Góc ngã tư đường CHÍNH', parcel: synthetic('sim-xoi-corner-main', 'main', true) },
+    { label: 'Mặt đường CHÍNH (W0)', parcel: synthetic('sim-xoi-face-main', 'main', false) },
+    { label: 'Mặt đường NAM', parcel: synthetic('sim-xoi-face-south', 'south', false) },
+  ];
+  return rows.map(({ label, parcel }) => {
+    const effectiveShare = effectiveSecondaryBuildingTrafficShare('xoi', parcel);
+    return { label, multiplier: effectiveShare / XOI_TRAFFIC_SHARE, effectiveShare };
+  });
+}
+const xoiPositions = compareXoiPositions();
+console.log('So vị trí lô (D5, provisional): nhịp sinh khách tiệm xôi = BUILDING_TRAFFIC_SHARE × hệ số khách lô');
+for (const r of xoiPositions) {
+  console.log(`${r.label.padEnd(25)} | hệ số ${String(r.multiplier).padEnd(6)} | share×hệ số ${r.effectiveShare.toFixed(4)}`);
+}
+const [xc, xm, xs] = xoiPositions;
+console.log(`Kết luận (đúng D5): góc chính > mặt chính > đường nam → ${xc.multiplier > xm.multiplier && xm.multiplier > xs.multiplier ? 'ĐÚNG' : 'SAI'}`);

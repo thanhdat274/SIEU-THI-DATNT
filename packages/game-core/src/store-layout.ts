@@ -3,13 +3,16 @@ import {
   BUILDINGS, DECOR_MAP, EXPANSION_TILE_PRICE, LAND_PARCELS, FIXTURE_SHOP, LAND_PLOTS, MAIN_EAST_WING_PLOT_IDS, MAP_ORIGIN_Y, PARCEL_MAP, STORE_BOUNDS, WAREHOUSE_DOOR_LEFT, WAREHOUSE_TIERS, STORAGE_RACK_CELL_BONUS, MAX_STORAGE_RACKS,
   buildingOfTiles, checkFootprintTiles, placementsProblem, defaultPlacementOf, entranceOf, layoutBuildings, resolvePlacements, validatePlacement, expansionBudgetAtLevel, expansionTilesUsed, generateStarterTileMap, normalizePlacements, placementFloor, placementGeometry, type BuildingId, type BuildingPlacement,
   baseFloorTiles, legacyWingFloorTiles, tileKey, inRect, adjacentParcels, footprintBlockers,
+  RECLAMATION_WAVES, WAVE_EXPANSION_BONUS,
 } from '@game/data';
 
 export type LayoutFailure = 'fixture_missing' | 'plot_locked' | 'outside_floor' | 'overlap' | 'path_blocked' | 'invalid_rotation' | 'store_open' | 'level' | 'money' | 'prerequisite' | 'unknown_item' | 'unavailable' | 'owned' | 'wrong_building'
   // Mở rộng tiệm theo ô (OpenSpec `open-world-main-expansion`)
   | 'not_adjacent' | 'disconnected' | 'outside_parcel' | 'blocked_by_building' | 'over_budget' | 'invalid_tiles'
   // Đặt tòa phụ vào lô (OpenSpec `open-world-building-relocation`)
-  | 'parcel_occupied' | 'door_blocked' | 'invalid_placement';
+  | 'parcel_occupied' | 'door_blocked' | 'invalid_placement'
+  // Lô đợt mới chưa mua (OpenSpec `open-world-land-reclamation` D4)
+  | 'parcel_not_owned';
 
 export interface LayoutResult {
   save?: SaveGameData;
@@ -230,13 +233,14 @@ export function buildingsOfSave(save: Pick<SaveGameData, 'storeLayout'>): NonNul
 /** Lô và gốc x hợp lệ để đặt `buildingId` (tòa phụ) theo luật `validatePlacement`, cho giao diện chọn vị trí. Rỗng = không còn chỗ. */
 export function placementOptions(save: Pick<SaveGameData, 'storeLayout'>, buildingId: BuildingId): Array<{ parcelId: string; originXs: number[] }> {
   const owned = new Set(save.storeLayout.unlockedPlotIds ?? []);
+  const ownedParcels = save.storeLayout.ownedParcelIds ?? [];
   const others = resolvePlacements(save.storeLayout.buildingPlacements, owned).filter(placement => placement.buildingId !== buildingId);
   const def = defaultPlacementOf(buildingId);
   const options: Array<{ parcelId: string; originXs: number[] }> = [];
   for (const parcel of LAND_PARCELS) {
     const originXs: number[] = [];
     for (let originX = parcel.rect.x0; originX <= parcel.rect.x1; originX++) {
-      if (validatePlacement({ buildingId, parcelId: parcel.id, originX, originY: def.originY }, others) === null) originXs.push(originX);
+      if (validatePlacement({ buildingId, parcelId: parcel.id, originX, originY: def.originY }, others, ownedParcels) === null) originXs.push(originX);
     }
     if (originXs.length) options.push({ parcelId: parcel.id, originXs });
   }
@@ -250,6 +254,7 @@ const placementFailure = (problem: string): LayoutFailure => {
   if (code === 'outside_parcel') return 'outside_parcel';
   if (code === 'door_blocked') return 'door_blocked';
   if (code === 'overlap') return 'overlap';
+  if (code === 'parcel_not_owned') return 'parcel_not_owned';
   return 'invalid_placement';
 };
 
@@ -285,10 +290,10 @@ export function relocateBuilding(save: SaveGameData, buildingId: string, placeme
   // Ô sàn mở rộng dời cùng tòa (cùng `dx`, cùng hàng); lô đã lấn (`parcelIds`) trả lại, tòa chỉ giữ lô mới.
   const dxMove = candidate.originX - old.originX;
   if (old.floorTiles?.length) candidate.floorTiles = old.floorTiles.map(tile => ({ x: tile.x + dxMove, y: tile.y }));
-  const problem = validatePlacement(candidate, current.filter(item => item.buildingId !== id));
+  const problem = validatePlacement(candidate, current.filter(item => item.buildingId !== id), save.storeLayout.ownedParcelIds ?? []);
   if (problem) return { error: placementFailure(problem) };
   const rest = current.filter(item => item.buildingId !== id);
-  const footprintProblem = placementsProblem([...rest, candidate].map(item => ({ buildingId: item.buildingId, parcelId: item.parcelId, originX: item.originX, originY: item.originY, ...(item.parcelIds && item.parcelIds.length > 1 ? { parcelIds: item.parcelIds } : {}), ...(item.floorTiles?.length ? { floorTiles: item.floorTiles } : {}) })), owned);
+  const footprintProblem = placementsProblem([...rest, candidate].map(item => ({ buildingId: item.buildingId, parcelId: item.parcelId, originX: item.originX, originY: item.originY, ...(item.parcelIds && item.parcelIds.length > 1 ? { parcelIds: item.parcelIds } : {}), ...(item.floorTiles?.length ? { floorTiles: item.floorTiles } : {}) })), owned, save.storeLayout.ownedParcelIds ?? []);
   if (footprintProblem) return { error: 'invalid_placement' };
   const fee = relocationFee(save, id);
   if (save.player.money < fee) return { error: 'money' };
@@ -339,7 +344,7 @@ export function buyLandPlot(save: SaveGameData, plotId: string, placement?: { pa
     current = resolvePlacements(save.storeLayout.buildingPlacements, owned);
     const def = defaultPlacementOf(plot.buildingId);
     chosen = placement ? { buildingId: plot.buildingId, parcelId: placement.parcelId, originX: placement.originX, originY: def.originY } : def;
-    const problem = validatePlacement(chosen, current);
+    const problem = validatePlacement(chosen, current, save.storeLayout.ownedParcelIds ?? []);
     if (problem) return { error: placementFailure(problem) };
   }
   const next = structuredClone(save);
@@ -393,19 +398,37 @@ export function totalExpansionTilesUsed(save: SaveGameData): number {
   return total;
 }
 
-/** Ngân sách ô mở rộng chung cho mọi tòa: đã dùng (cánh đông cũ + floorTiles của từng tòa), tối đa theo cấp, và còn lại. */
+/**
+ * Thưởng ngân sách ô mở rộng theo từng đợt đã mở (open-world-land-reclamation D6): cộng `WAVE_EXPANSION_BONUS[waveId]`
+ * cho mỗi đợt trong `world.openedWaves`. W0 bonus 0 nên save chỉ có ['w0'] giữ nguyên hạn mức cũ (golden không đổi).
+ * Khớp logic `expansionBudgetAt` ở `reclamation.ts` (cùng duyệt `RECLAMATION_WAVES`).
+ */
+function waveExpansionBonus(openedWaves: readonly string[] | undefined): number {
+  let bonus = 0;
+  for (const wave of RECLAMATION_WAVES) {
+    if (openedWaves?.includes(wave.id)) bonus += WAVE_EXPANSION_BONUS[wave.id] ?? 0;
+  }
+  return bonus;
+}
+
+/** Hạn mức ô mở rộng = mốc theo cấp + thưởng theo đợt đã mở (D6). */
+function expansionBudgetMax(save: SaveGameData): number {
+  return expansionBudgetAtLevel(save.player.level) + waveExpansionBonus(save.world?.openedWaves);
+}
+
+/** Ngân sách ô mở rộng chung cho mọi tòa: đã dùng (cánh đông cũ + floorTiles của từng tòa), tối đa theo cấp + đợt đã mở, và còn lại. */
 export function sharedExpansionBudget(save: SaveGameData): { used: number; max: number; remaining: number } {
   const used = totalExpansionTilesUsed(save);
-  const max = expansionBudgetAtLevel(save.player.level);
+  const max = expansionBudgetMax(save);
   return { used, max, remaining: Math.max(0, max - used) };
 }
 
-/** Ngân sách ô mở rộng của tiệm chính (giữ nguyên cho UI cũ): đã dùng (cánh đông cũ + ô sàn mở rộng), tối đa theo cấp, và còn lại. */
+/** Ngân sách ô mở rộng của tiệm chính (giữ nguyên cho UI cũ): đã dùng (cánh đông cũ + ô sàn mở rộng), tối đa theo cấp + đợt đã mở, và còn lại. */
 export function expansionBudget(save: SaveGameData): { used: number; max: number; remaining: number } {
   const owned = new Set(save.storeLayout.unlockedPlotIds ?? []);
   const main = normalizePlacements(save.storeLayout.buildingPlacements, owned).find(placement => placement.buildingId === 'main') as BuildingPlacement;
   const used = expansionTilesUsed(placementGeometry(main).coreBounds, owned, main.floorTiles);
-  const max = expansionBudgetAtLevel(save.player.level);
+  const max = expansionBudgetMax(save);
   return { used, max, remaining: Math.max(0, max - used) };
 }
 
@@ -462,7 +485,7 @@ export function expandFootprint(save: SaveGameData, buildingId: string, tiles: R
     return { ...placement, floorTiles };
   });
   storePlacements(next.storeLayout, newPlacements);
-  const valid = validateStoreLayout(next, generateStarterTileMap(next.storeLayout.unlockedPlotIds ?? [], [], next.storeLayout.buildingPlacements));
+  const valid = validateStoreLayout(next, generateStarterTileMap(next.storeLayout.unlockedPlotIds ?? [], [], next.storeLayout.buildingPlacements, next.world?.openedWaves));
   if (valid.error) return { error: 'path_blocked', blockedFixtureIds: valid.blockedFixtureIds };
   return { save: next };
 }

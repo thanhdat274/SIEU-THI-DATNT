@@ -58,8 +58,45 @@ export class AmbientAudioEngine {
     }
   }
 
+  // --- Côn trùng ban đêm (dế) ---
+  // Thay vì nhiễu trắng lọc bandpass 4200Hz (nghe như tiếng "xì xì xì" rè liên tục),
+  // tạo tiếng dế thật: chuỗi "chirp" ngắn (vài nốt ~5.2–6.1kHz, âm lượng nhỏ, ngắt quãng).
+  private cricketTimer?: number;
+  private scheduleCricket(): void {
+    window.clearTimeout(this.cricketTimer);
+    this.cricketTimer = window.setTimeout(() => {
+      const ctx = this.ctx;
+      if (ctx && ctx.state === 'running' && this.layers.night && this.mix.night > 0.02) {
+        this.cricketChirp(ctx, this.layers.night);
+      }
+      if (this.ctx) this.scheduleCricket();
+    }, 600 + Math.random() * 900);
+  }
+
+  private cricketChirp(ctx: AudioContext, destination: AudioNode): void {
+    const notes = 2 + Math.floor(Math.random() * 3);
+    const base = 5200 + Math.random() * 900; // âm dế cao, ấm (~5.2–6.1kHz)
+    let t = ctx.currentTime + 0.01;
+    for (let i = 0; i < notes; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square'; // họa âm giàu hơn sine, nghe "dế" thật hơn nhiễu trắng
+      const f0 = base * (0.96 + Math.random() * 0.08);
+      osc.frequency.setValueAtTime(f0, t);
+      const len = 0.045 + Math.random() * 0.04; // chirp rất ngắn ~45–85ms
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.06, t + 0.006);
+      gain.gain.exponentialRampToValueAtTime(0.0008, t + len);
+      osc.connect(gain).connect(destination);
+      osc.start(t);
+      osc.stop(t + len + 0.01);
+      t += len + 0.06 + Math.random() * 0.1; // ngắt quãng giữa các nốt
+    }
+  }
+
   detach(): void {
     window.clearTimeout(this.birdTimer);
+    window.clearTimeout(this.cricketTimer);
     window.removeEventListener('pointerdown', this.onGesture);
     window.removeEventListener('keydown', this.onGesture);
     document.removeEventListener('visibilitychange', this.onVisibility);
@@ -131,7 +168,10 @@ export class AmbientAudioEngine {
       this.master.connect(this.ctx.destination);
       this.layers.rain = this.noiseLayer(this.ctx, this.master, 'highpass', 1500);
       this.layers.street = this.noiseLayer(this.ctx, this.master, 'lowpass', 400);
-      this.layers.night = this.noiseLayer(this.ctx, this.master, 'bandpass', 4200);
+      // Côn trùng ban đêm: không còn nhiễu liên tục (gây "xì xì xì"); dùng gain node cho các chirp dế.
+      this.layers.night = this.ctx.createGain();
+      this.layers.night.gain.value = 0;
+      this.layers.night.connect(this.master);
       this.layers.wind = this.noiseLayer(this.ctx, this.master, 'bandpass', 520);
       // Mưa trên mái: nhiễu dải giữa-cao, gõ lách tách khác tiếng mưa ngoài trời.
       this.layers.roof = this.noiseLayer(this.ctx, this.master, 'bandpass', 2600);
@@ -139,6 +179,7 @@ export class AmbientAudioEngine {
       this.layers.birds.gain.value = 0;
       this.layers.birds.connect(this.master);
       this.scheduleBird();
+      this.scheduleCricket();
     }
     this.apply();
   }
@@ -151,7 +192,7 @@ export class AmbientAudioEngine {
     this.master.gain.setTargetAtTime(gain * 0.25, now, 0.2);
     this.layers.rain?.gain.setTargetAtTime(this.mix.rain, now, 0.5);
     this.layers.street?.gain.setTargetAtTime(this.mix.street, now, 0.5);
-    this.layers.night?.gain.setTargetAtTime(this.mix.night * 0.3, now, 0.5);
+    this.layers.night?.gain.setTargetAtTime(this.mix.night, now, 0.5);
     this.layers.wind?.gain.setTargetAtTime(this.mix.wind * 0.9, now, 0.8);
     this.layers.roof?.gain.setTargetAtTime(this.mix.roof * 0.7, now, 0.6);
     this.layers.birds?.gain.setTargetAtTime(this.mix.birds, now, 2.5);

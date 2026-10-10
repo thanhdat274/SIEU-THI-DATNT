@@ -164,7 +164,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
     };
   }, [onClose]);
 
-  const map = useMemo(() => generateStarterTileMap(draft.storeLayout.unlockedPlotIds ?? [], [], draft.storeLayout.buildingPlacements), [draft.storeLayout.unlockedPlotIds, draft.storeLayout.buildingPlacements]);
+  const map = useMemo(() => generateStarterTileMap(draft.storeLayout.unlockedPlotIds ?? [], [], draft.storeLayout.buildingPlacements, draft.world?.openedWaves), [draft.storeLayout.unlockedPlotIds, draft.storeLayout.buildingPlacements, draft.world?.openedWaves]);
   const selected = draft.storeLayout.fixtures.find(item => item.id === selectedId) ?? null;
   const owned = new Set(draft.storeLayout.unlockedPlotIds ?? []);
   const ownedBuildings = (map.buildings ?? []).map(building => building.id as BuildingId);
@@ -183,7 +183,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
     return x >= fixture.tileX && x < fixture.tileX + widthTiles && y >= fixture.tileY && y < fixture.tileY + heightTiles;
   };
 
-  const layoutResult = (nextActions: StoreLayoutAction[]) => applyStoreLayoutActions(save, nextActions, (ids, placements) => generateStarterTileMap(ids, [], placements));
+  const layoutResult = (nextActions: StoreLayoutAction[]) => applyStoreLayoutActions(save, nextActions, (ids, placements) => generateStarterTileMap(ids, [], placements, save.world?.openedWaves));
   const buyItem = FIXTURE_SHOP.find(item => item.id === buyId) ?? null;
 
   const applyAction = (action: StoreLayoutAction) => {
@@ -517,8 +517,8 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                     bottom: 'calc(100% + 8px)',
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    background: '#2A1C12',
-                    color: '#FFF3DC',
+                    background: 'var(--color-green-dark)',
+                    color: 'var(--color-bg)',
                     padding: '6px 10px',
                     borderRadius: '4px',
                     fontSize: '11px',
@@ -526,12 +526,12 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                     whiteSpace: 'nowrap',
                     zIndex: 100,
                     boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                    border: '1px solid #F4C24D',
+                    border: '1px solid var(--color-wheat)',
                   }}>
                     {plot ? (
                       <>
                         📍 Ô ({x}, {y}) — Mảnh: <strong>{plot.name}</strong> ({plot.id})
-                        {plot.buildingId && <span style={{ color: '#FFD77A' }}> · Tòa {BUILDINGS.find(b => b.id === plot.buildingId)?.name ?? plot.buildingId}</span>}
+                        {plot.buildingId && <span style={{ color: 'var(--color-wheat)' }}> · Tòa {BUILDINGS.find(b => b.id === plot.buildingId)?.name ?? plot.buildingId}</span>}
                       </>
                     ) : building ? (
                       <>
@@ -548,7 +548,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                       left: '50%',
                       transform: 'translateX(-50%)',
                       border: '6px solid transparent',
-                      borderTopColor: '#2A1C12',
+                      borderTopColor: 'var(--color-green-dark)',
                     }} />
                   </div>
                 );

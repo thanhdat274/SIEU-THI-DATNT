@@ -128,6 +128,23 @@ export const MARKET_EVENTS: readonly MarketEventDef[] = [
     ],
   },
   {
+    // Additive (07/10/2026) — chợ đêm : khách đông về tối cuối tuần.
+    id: 'night_market', kind: 'local', label: 'Chợ đêm xóm', notice: 'Chợ đêm mở trong xóm cuối tuần: bà con ăn xong ghé tiệm mua thêm đồ uống và ăn vặt.',
+    durationDays: 1, trigger: { weekdays: [5, 6], chancePerDay: 0.12, minGapDays: 14 }, warnDaysBefore: 0,
+    effects: [
+      { label: 'khách ghé về đêm đông', effects: { traffic: 1.4 } },
+      { label: 'đồ uống mát, ăn vặt', target: { tags: ['cold_drink', 'snack'] }, effects: { demand: 1.3 } },
+    ],
+  },
+  {
+    // Additive (07/10/2026) — giờ kiểm tra vệ sinh : khách dè chừng, hàng rời tạm đóng kệ.
+    id: 'health_inspection', kind: 'local', label: 'Kiểm tra vệ sinh', notice: 'Hôm nay đoàn kiểm tra vệ sinh ghé: khách dè chừng hơn, lưu ý nhập bớt hàng rời.',
+    durationDays: 1, trigger: { chancePerDay: 0.03, minGapDays: 30 }, warnDaysBefore: 0,
+    effects: [
+      { label: 'khách ngại ghé trong lúc kiểm tra', effects: { traffic: 0.8 } },
+    ],
+  },
+  {
     // Không tự xuất hiện (chancePerDay 0): do chương cốt truyện "Siêu thị đối diện" kích hoạt (xem game-core/story.ts).
     id: 'supermarket_rival', kind: 'local', label: 'Siêu thị đối diện', notice: 'Siêu thị bên kia đường khai trương: khách vãng lai giảm trong 10 ngày.',
     durationDays: 10, manual: true, trigger: { chancePerDay: 0, minGapDays: 10 }, warnDaysBefore: 0,

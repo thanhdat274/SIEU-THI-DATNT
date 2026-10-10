@@ -16,14 +16,14 @@ export interface Props {
 const TaxStatusBadge: React.FC<{ active: boolean; progress: number; thresholdLabel: string }> = ({ active, progress, thresholdLabel }) => {
   if (active) {
     return (
-      <span style={{ display: 'inline-block', background: '#fef3c7', color: '#92400e', padding: '2px 10px', borderRadius: 4, fontWeight: 'bold', fontSize: 13 }}>
+      <span style={{ display: 'inline-block', background: 'var(--color-panel-selected)', color: 'var(--color-warning-dark)', padding: '2px 10px', borderRadius: 4, fontWeight: 'bold', fontSize: 13, border: '1px solid var(--color-warning)' }}>
         ⚠️ Đang chịu thuế GTGT + TNCN
       </span>
     );
   }
   const pct = Math.round(progress * 100);
   return (
-    <span style={{ display: 'inline-block', background: progress > 0.7 ? '#fef3c7' : '#ecfdf5', color: progress > 0.7 ? '#92400e' : '#065f46', padding: '2px 10px', borderRadius: 4, fontWeight: 'bold', fontSize: 13 }}>
+    <span style={{ display: 'inline-block', background: progress > 0.7 ? 'var(--color-panel-selected)' : 'rgba(79, 135, 63, 0.15)', color: progress > 0.7 ? 'var(--color-warning-dark)' : 'var(--color-green-dark)', padding: '2px 10px', borderRadius: 4, fontWeight: 'bold', fontSize: 13, border: `1px solid ${progress > 0.7 ? 'var(--color-warning)' : 'var(--color-green)'}` }}>
       {pct}% — còn {100 - pct}% so với {thresholdLabel}
     </span>
   );
@@ -50,14 +50,14 @@ export const TaxModal: React.FC<Props> = ({ day, worldTime, dailyRecords, curren
             <span>{Math.min(100, Math.round(annual.progress * 100))}%</span>
           </div>
           <div className="pixel-progress" role="progressbar" aria-label="Tiến độ so với ngưỡng miễn thuế" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.round(annual.progress * 100))}>
-            <span style={{ width: `${Math.min(100, annual.progress * 100)}%`, background: annual.taxActive ? '#f59e0b' : undefined }} />
+            <span style={{ width: `${Math.min(100, annual.progress * 100)}%`, background: annual.taxActive ? 'var(--color-warning)' : undefined }} />
           </div>
         </div>
 
         {/* Tax summary when active */}
         {annual.taxActive ? (
-          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: 10 }}>
-            <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', color: '#92400e' }}>📊 Đang chịu thuế hộ kinh doanh</p>
+          <div style={{ background: 'var(--color-panel)', border: '1px solid var(--color-warning)', borderRadius: 6, padding: 10 }}>
+            <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', color: 'var(--color-warning-dark)' }}>📊 Đang chịu thuế hộ kinh doanh</p>
             <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
               <li>Doanh thu năm: {money(annual.revenue)}</li>
               <li>GTGT {(annual.policy.vatRate * 100).toFixed(1).replace('.0', '')}%: {money(annual.vat)}</li>

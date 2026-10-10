@@ -22,5 +22,5 @@
 ## 4. Kiểm chứng và tài liệu
 
 - [x] 4.1 `yarn typecheck`, `yarn test:all` PASS.
-- [ ] 4.2 Thử thật hai client (hai trình duyệt/hai máy, dùng tai nghe): bật mic, nghe nhau, tắt tiếng, rời/vào lại, từ chối quyền. Ghi đúng kết quả; nếu chỉ thử được một máy thì ghi là chưa kiểm chứng qua hai mạng khác nhau.
+- [ ] 4.2 Thử thật hai client (hai trình duyệt/hai máy, dùng tai nghe): bật mic, nghe nhau, tắt tiếng, rời/vào lại, từ chối quyền. Ghi đúng kết quả; nếu chỉ thử được một máy thì ghi là chưa kiểm chứng qua hai mạng khác nhau. **Điều kiện để chạy:** phải có TURN server + set `VITE_ICE_SERVERS` (JSON) khi build web + chạy qua HTTPS/localhost — hướng dẫn ở `docs/deploy.md` (mục "Voice chat"). Chỉ STUN (mặc định) sẽ fail với nhiều cặp sau NAT đối xứng.
 - [x] 4.3 Cập nhật `tổng hợp.md` (chức năng, giới hạn: không TURN/cần HTTPS/lộ IP, bằng chứng kiểm tra thật, lịch sử) và đồng bộ `TASKS.md`, `ROADMAP.md` nếu liên quan.

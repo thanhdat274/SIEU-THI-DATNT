@@ -54,7 +54,7 @@ export class WorldRuntime {
     this.checkpointIntervalSeconds = options.checkpointIntervalSeconds ?? 5;
     this.onCheckpoint = options.onCheckpoint;
 
-    const tileMap = generateStarterTileMap(business.save.storeLayout.unlockedPlotIds ?? [], [], business.save.storeLayout.buildingPlacements);
+    const tileMap = generateStarterTileMap(business.save.storeLayout.unlockedPlotIds ?? [], [], business.save.storeLayout.buildingPlacements, business.save.world?.openedWaves);
     const headlessInput = {
       getMovementVector: () => ({ x: 0, y: 0 }),
       consumeInteract: () => false,
@@ -176,7 +176,7 @@ export class WorldRuntime {
   adoptCommitted(revision: number, business: BusinessState, force = false): boolean {
     if (!force && revision <= this.currentWorld.revision) return false;
     this.simulation.importSaveData(structuredClone(business.save));
-    this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds(), [], this.simulation.getBuildingPlacements()), this.simulation.getFixtures());
+    this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds(), [], this.simulation.getBuildingPlacements(), this.simulation.getOpenedWaves()), this.simulation.getFixtures());
     this.currentWorld.revision = revision;
     this.commandCoordinator.setRevision(revision, force);
     this.currentBusiness = structuredClone(business);
@@ -312,7 +312,10 @@ export class WorldRuntime {
       } else if (p.type === 'set_price') {
         success = this.simulation.setSellingPrice(p.productId, p.price).success;
       } else if (p.type === 'reset_prices') {
-        success = this.simulation.resetSellingPrices().success;
+        // Khớp hợp đồng của client (handleResetAllSellingPrices): client commit khi reset>0 dù có khách
+        // đang thanh toán phải bỏ qua (blocked). Nếu dùng .success (= blocked===0) sẽ từ chối đúng phép
+        // đặt lại một phần hợp lệ → client rollback cả lô. Dùng reset>0 để server chấp nhận phần đã làm.
+        success = this.simulation.resetSellingPrices().reset > 0;
       } else if (p.type === 'buy_plot') {
         success = !!this.simulation.purchaseLand(p.plotId, p.placement).save;
       } else if (p.type === 'set_restock_options') {
@@ -366,8 +369,12 @@ export class WorldRuntime {
         const res = this.simulation.applyPlanogramEntry(p.fixtureId);
         success = res.applied && res.actualQuantity > 0;
       } else if (p.type === 'auto_restock') {
-        // Phải khớp client (handleAutoRestock): châm kệ đã gán rồi tự gán + bày các ô trống.
-        success = this.simulation.autoRestockShelves() + this.simulation.autoFillAllShelves().totalFilled > 0;
+        // Phải khớp client (onAutoFillAll, App.tsx): châm kệ đã gán trước, rồi tự gán + bày các ô trống.
+        // Server phải tính CẢ `newAssignments` (tự gán sơ đồ) — nếu không, lệnh chỉ gán ô mới chưa bày
+        // đơn vị (newAssignments>0, totalFilled=0) sẽ bị tính success=false → từ chối → rollback save client.
+        const refilled = this.simulation.autoRestockShelves();
+        const res = this.simulation.autoFillAllShelves();
+        success = refilled + res.totalFilled > 0 || res.newAssignments > 0;
       } else if (p.type === 'auto_fill_shelf') {
         const res = this.simulation.autoFillShelf(p.fixtureId);
         success = res.filled > 0 || res.assigned;
@@ -399,11 +406,13 @@ export class WorldRuntime {
         success = this.simulation.setActiveTitle(p.titleId).success;
       } else if (p.type === 'maintain_fixture') {
         success = this.simulation.maintainFixture(p.fixtureId, p.action).success;
+      } else if (p.type === 'maintain_all_service') {
+        success = this.simulation.maintainAllServices().success;
       } else if (p.type === 'security_action') {
         success = p.action === 'buy_camera' ? this.simulation.buyCamera().success : this.simulation.setCallPolice(p.action === 'police_on').success;
       } else if (p.type === 'layout_batch') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
-        const next = applyStoreLayoutActions(current, p.actions, (ids, placements) => generateStarterTileMap(ids, [], placements));
+        const next = applyStoreLayoutActions(current, p.actions, (ids, placements) => generateStarterTileMap(ids, [], placements, this.simulation.getOpenedWaves()));
         success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
       } else if (p.type === 'buy_warehouse_tier') {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
@@ -413,10 +422,14 @@ export class WorldRuntime {
         const current = this.simulation.exportSaveData(this.currentBusiness.save.id, this.currentWorld.revision);
         const next = buyStorageRack(current);
         success = !!next.save && !!this.simulation.applyStoreLayout(next.save).save;
+      } else if (p.type === 'reclaim_wave') {
+        success = this.simulation.reclaimWave(p.waveId).success;
+      } else if (p.type === 'buy_parcel') {
+        success = this.simulation.buyParcel(p.parcelId).success;
       }
 
       if (success) {
-        this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds(), [], this.simulation.getBuildingPlacements()), this.simulation.getFixtures());
+        this.avatarController.updateMap(generateStarterTileMap(this.simulation.getUnlockedPlotIds(), [], this.simulation.getBuildingPlacements(), this.simulation.getOpenedWaves()), this.simulation.getFixtures());
         this.currentWorld.revision = this.commandCoordinator.getRevision() + 1;
         this.currentBusiness.save = this.simulation.exportSaveData(
           this.currentBusiness.save.id,

@@ -1,0 +1,151 @@
+[
+  {
+    "round": 1,
+    "session": "UI-AUDIT-2026-001",
+    "qualityGate": "FAIL",
+    "score": 72,
+    "scoreAfterPenalty": 52,
+    "confidence": "LOW",
+    "issuesFound": 31,
+    "issuesFixedStatic": 14,
+    "issuesRemaining": 17,
+    "regression": "none (static)",
+    "artifacts": [
+      "SESSION.md","DESIGN-AUDIT.md","BA-SPEC.md","DEV-REPORT.md","TEST-REPORT.md","QA-REPORT.md","QUALITY-SCORE.md","UI-QUALITY.md"
+    ],
+    "envEvidence": {
+      "typecheck": "PASS","eslint":"PASS (0 err)","postcss":"PASS",
+      "webBuild":"FAIL (spawn EPERM)","browser":"UNAVAILABLE -> Usability Fit NOT TESTED"
+    },
+    "blockerForPass": "browser unavailable for Usability Fit verification + P1 (C01,C02) unresolved",
+    "nextRoundActions": [
+      "QA mắt browser thật: C01,C02,B02,C07,D07,A04-A06",
+      "Lead duyệt: B03,B04,D09,D10",
+      "Implement: C06,D04",
+      "iterate -> recalc score"
+    ]
+  },
+  {
+    "round": 2,
+    "session": "UI-AUDIT-2026-001",
+    "qualityGate": "FAIL",
+    "score": 72,
+    "scoreAfterPenalty": 52,
+    "confidence": "LOW",
+    "issuesFound": 31,
+    "issuesFixedStatic": 16,
+    "issuesRemaining": 15,
+    "regression": "none (static)",
+    "newStaticFixesThisRound": ["D04", "B06"],
+    "envEvidence": {
+      "typecheck": "PASS","eslint":"PASS (0 err)","postcss":"PASS",
+      "webBuild":"FAIL (spawn EPERM)","browser":"UNAVAILABLE -> Usability Fit NOT TESTED"
+    },
+    "blockerForPass": "browser unavailable for Usability Fit verification + P1 (C01,C02) unresolved (persistent)",
+    "nextRoundActions": [
+      "QA mắt browser thật: C01,C02,P1 + D07 -> resolve P1",
+      "Lead duyệt B04/D09 (success token) -> unlock C06 (facility modals)",
+      "Implement P3 còn: B02/B05/C07",
+      "iterate -> recalc score"
+    ]
+  },
+  {
+    "round": 4,
+    "session": "UI-AUDIT-2026-001",
+    "qualityGate": "FAIL",
+    "score": 72,
+    "scoreAfterPenalty": 52,
+    "confidence": "LOW",
+    "issuesFound": 31,
+    "issuesFixedStatic": 17,
+    "issuesRemaining": 14,
+    "regression": "none (static)",
+    "newStaticFixesThisRound": ["C06-partial (#b64c3d->var(--brick) Maintenamce + Security)"],
+    "envEvidence": {
+      "typecheck": "PASS","eslint":"PASS (0 err)","postcss":"PASS",
+      "webBuild":"FAIL (spawn EPERM)","browser":"UNAVAILABLE -> Usability Fit NOT TESTED"
+    },
+    "blockerForPass": "browser unavailable for Usability Fit verification + P1 (C01,C02) unresolved (persistent)",
+    "nextRoundActions": [
+      "QA mắt browser thật: C01,C02 + D07 -> resolve P1",
+      "Lead duyệt B04/D09 (success token) -> hoàn nốt C06",
+      "Implement P3 còn: B02/B05/C07; rà soát A04-A06",
+      "iterate -> recalc score"
+    ]
+  },
+  {
+    "round": 5,
+    "session": "UI-AUDIT-2026-001",
+    "qualityGate": "FAIL",
+    "score": 72,
+    "scoreAfterPenalty": 52,
+    "confidence": "LOW",
+    "issuesFound": 31,
+    "issuesFixedStatic": 20,
+    "issuesRemaining": 11,
+    "regression": "none (static)",
+    "newStaticFixesThisRound": ["B05", "B02", "C07-floor"],
+    "envEvidence": {
+      "typecheck": "PASS","eslint":"PASS (0 err)","postcss":"PASS",
+      "webBuild":"FAIL (spawn EPERM)","browser":"UNAVAILABLE -> Usability Fit NOT TESTED"
+    },
+    "blockerForPass": "browser unavailable for Usability Fit verification + P1 (C01,C02) unresolved (persistent)",
+    "nextRoundActions": [
+      "QA mắt browser thật: C01,C02 + D07 + đúng khớp B02/C07 -> resolve P1",
+      "Lead duyệt B04/D09 (success token) -> hoàn nốt C06; design-decision B03/D10",
+      "A04/A05/A06 là layering cần QA mắt",
+      "iterate -> recalc score"
+    ]
+  },
+  {
+    "round": 6,
+    "session": "UI-AUDIT-2026-001",
+    "qualityGate": "NEAR_PASS",
+    "score": 84,
+    "scoreAfterPenalty": 84,
+    "confidence": "MEDIUM",
+    "issuesFound": 31,
+    "p1": 0,
+    "issuesFixedStatic": 20,
+    "issuesRemaining": 9,
+    "regression": "none (static + browser no page overflow)",
+    "newStaticFixesThisRound": ["B05", "B02", "C07-floor"],
+    "envEvidence": {
+      "typecheck": "PASS","eslint":"PASS (0 err)","postcss":"PASS","webBuild":"PASS (danger-full-access, rolldown+tsc 0 err)"
+    },
+    "browserQAResult": "RUN (Playwright+Edge: docOverflowX=0 mobile/tablet/desktop; C01/C02 resolved non-defect; dialog/board fit)",
+    "blockerForPass": "Remaining P2/P3 cosmetic eye-QA (D07,A04-A06) + design-decision (B04/D09/B03/D10) -> score >=90 for PASS",
+    "nextRoundActions": [
+      "Chủ dự án eye-QA ảnh .qa/shots/ (568/852/932/1280) -> chốt D07/A04-A06",
+      "Lead duyệt B04/D09/B03/D10 -> hoàn C06 success token",
+      "Implement D11 (base rule feature-tabs) sau QA mắt desktop",
+      "recalc score -> >=90 -> PASS chính thức"
+    ]
+  },
+  {
+    "round": 7,
+    "session": "UI-AUDIT-2026-001",
+    "qualityGate": "FAIL -> CONTINUE",
+    "score": 84,
+    "scoreAfterPenalty": 84,
+    "confidence": "MEDIUM",
+    "issuesFound": 31,
+    "p0": 0,
+    "p1": 0,
+    "issuesFixedStatic": 23,
+    "issuesRemaining": 8,
+    "regression": "none (static; browser round 6 no page overflow)",
+    "newStaticFixesThisRound": ["D11 (feature-tabs base rule)", "D07-part (legend -> HTML readable)", "D09/C06-safe (#357f72->teal, #b64c3d->brick)"],
+    "envEvidence": {
+      "typecheck": "PASS","eslint":"PASS (0 err)","postcss":"PASS",
+      "webBuild":"NOT re-run (this session)","browser":"NOT re-run (spawn EPERM in workspace-write; needs danger-full-access)"
+    },
+    "blockerForPass": "Score 84<90 + Game UX 20/25<21/25 (min-category §28.18) + chưa chạy lại browser cho fix mới/eye-QA D07 A04-A06 + design-decision B03/B04/D09/D10 chưa chốt",
+    "nextRoundActions": [
+      "UI/UX Lead chốt design-decision B03 (title-case), B04/D09 (token màu), D10 (emoji->PixelIcon)",
+      "Eye-QA A04/A05/A06 (VoicePanel-inert, joystick-dock, toast-world-tools)",
+      "Chủ dự án chạy lại build + browser QA (danger-full-access): xác nhận D11/D07/D09 không regression + chốt D07 label >=9-10px + tablet 768/820 + desktop 1440/1920",
+      "recalc -> >=90 + GameUX>=21 -> PASS chính thức (Confidence HIGH)"
+    ]
+  }
+]

@@ -1,12 +1,14 @@
-import { GameTileMap, StoreFixture, SaveGameData, Vector2D, tileIndex, tileInMap, type BuildingPlacementRecord } from '@game/shared';
+import { GameTileMap, StoreFixture, SaveGameData, Vector2D, tileIndex, tileInMap, defaultWorldOpenState, ownedParcelIdsDefault, CURRENT_SAVE_SCHEMA_VERSION, type BuildingPlacementRecord } from '@game/shared';
 import { STARTER_OWNED_PLOT_IDS } from './land';
 import { STALLS } from './stalls';
 import { MAIN_STORE_BOUNDS } from './buildings';
 import { DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, layoutBuildings, resolvePlacements, placementFloor, placementGeometry, placementTop, warehouseGeometry } from './world/placements';
 import { tileBox, tileKey, wallRing } from './world/footprint';
 import { xpToNextLevel } from './progression';
-import { PLAY_REGION, rectHeight, rectWidth } from './world/world-grid';
+import { PLAY_REGION, rectHeight, rectWidth, rectHas, playRegionForWaves, type WorldRect } from './world/world-grid';
 import { TREE_PROPS } from './world/infrastructure';
+import { RECLAMATION_WAVES } from './world/waves';
+import { LAND_PARCELS } from './world/parcels';
 
 /** Chủ tiệm đứng sau quầy thu ngân (phía bắc), nhìn ra chỗ khách xếp hàng; ô tương đối (2,4) của tiệm chính, mặc định (8,7). */
 const MAIN_GEOMETRY = DEFAULT_GEOMETRY.main;
@@ -131,12 +133,21 @@ export function generateStarterTileMap(
   unlockedPlotIds: readonly string[] = STARTER_OWNED_PLOT_IDS,
   ownedStallIds: readonly string[] = [],
   placements: readonly BuildingPlacementRecord[] | undefined = DEFAULT_PLACEMENTS,
+  openedWaves: readonly string[] = ['w0'],
 ): GameTileMap {
-  const groundData: number[] = new Array(MAP_WIDTH * MAP_HEIGHT).fill(1); // Street default
-  const wallData: number[] = new Array(MAP_WIDTH * MAP_HEIGHT).fill(0);
-  const collisionLayer: boolean[] = new Array(MAP_WIDTH * MAP_HEIGHT).fill(false);
+  // Vùng chơi = hộp hợp các đợt đã mở (D2). ['w0'] → đúng 36×22 như cũ (golden không đổi); origin luôn 0/−6.
+  const region = playRegionForWaves(openedWaves);
+  const MAP_W = rectWidth(region);
+  const MAP_H = rectHeight(region);
+  const extended = MAP_W !== MAP_WIDTH || MAP_H !== MAP_HEIGHT;
+  const openedRegions = openedWaves.map(id => RECLAMATION_WAVES.find(w => w.id === id)).filter((w): w is NonNullable<typeof w> => !!w);
+  const inOpenedWave = (x: number, y: number): boolean => openedRegions.some(w => rectHas(w.region, x, y));
+  const parcelRects = openedRegions.flatMap(w => w.parcels.map(p => p.rect));
+  const groundData: number[] = new Array(MAP_W * MAP_H).fill(1); // Street default
+  const wallData: number[] = new Array(MAP_W * MAP_H).fill(0);
+  const collisionLayer: boolean[] = new Array(MAP_W * MAP_H).fill(false);
   const purchased = new Set(unlockedPlotIds);
-  const frame = { width: MAP_WIDTH, height: MAP_HEIGHT, originTileX: PLAY_REGION.x0, originTileY: MAP_ORIGIN_Y };
+  const frame = { width: MAP_W, height: MAP_H, originTileX: PLAY_REGION.x0, originTileY: MAP_ORIGIN_Y };
   const at = (x: number, y: number) => tileIndex(frame, x, y);
   const resolved = resolvePlacements(placements, purchased);
   const geometries = resolved.map(placement => placementGeometry(placement));
@@ -149,15 +160,22 @@ export function generateStarterTileMap(
   const ring = wallRing(floor);
   const isPrimaryDoor = (x: number, y: number) => primary.doorTiles.some(tile => tile.x === x && tile.y === y);
 
-  for (let localY = 0; localY < MAP_HEIGHT; localY++) {
+  for (let localY = 0; localY < MAP_H; localY++) {
     const y = localY + MAP_ORIGIN_Y;
-    for (let localX = 0; localX < MAP_WIDTH; localX++) {
+    for (let localX = 0; localX < MAP_W; localX++) {
       const x = localX + PLAY_REGION.x0;
       const idx = at(x, y);
 
       // Outer boundary collision
-      if (localX === 0 || localX === MAP_WIDTH - 1 || localY === 0 || localY === MAP_HEIGHT - 1) {
+      if (localX === 0 || localX === MAP_W - 1 || localY === 0 || localY === MAP_H - 1) {
         collisionLayer[idx] = true;
+      }
+
+      if (extended && !rectHas(PLAY_REGION, x, y)) {
+        // Ngoài bản đồ gốc: chỉ ô thuộc đợt đã mở mới đi được; ô trong hộp mà chưa khai hoang là đất trống chặn (D2).
+        if (!inOpenedWave(x, y)) { groundData[idx] = 0; collisionLayer[idx] = true; continue; }
+        groundData[idx] = parcelRects.some(r => rectHas(r, x, y)) ? 3 : y >= 13 && y <= 15 ? 1 : 2;
+        continue;
       }
 
       // Vỉa hè & lòng đường
@@ -256,24 +274,24 @@ export function generateStarterTileMap(
   return {
     originTileX: PLAY_REGION.x0,
     originTileY:MAP_ORIGIN_Y,
-    width: MAP_WIDTH,
-    height: MAP_HEIGHT,
+    width: MAP_W,
+    height: MAP_H,
     tileWidth: 32,
     tileHeight: 32,
     layers: [
       {
         name: 'ground',
         data: groundData,
-        width: MAP_WIDTH,
-        height: MAP_HEIGHT,
+        width: MAP_W,
+        height: MAP_H,
         visible: true,
         opacity: 1.0,
       },
       {
         name: 'walls',
         data: wallData,
-        width: MAP_WIDTH,
-        height: MAP_HEIGHT,
+        width: MAP_W,
+        height: MAP_H,
         visible: true,
         opacity: 1.0,
       },
@@ -285,9 +303,102 @@ export function generateStarterTileMap(
   };
 }
 
+/**
+ * (OpenSpec `open-world-land-reclamation`, task 2.1) Tạo `GameTileMap` CHO VÙNG CHƠI MỞ RỘNG theo các đợt đã mở.
+ *
+ * ⚠️ BƯỚC NÀY CHỈ LÀ PHẦN DỮ LIỆU MAP (thuần, không nối renderer/simulation):
+ *  - width/height = hộp chữ nhật nhỏ nhất hợp `region` các đợt đã mở (`playRegionForWaves`).
+ *  - originTileX/Y giữ `PLAY_REGION.x0` (0) / `MAP_ORIGIN_Y` (−6) — cùng chuẩn như `generateStarterTileMap`.
+ *  - Dựng nền street/sidewalk cho toàn vùng, boundary collision ở mép ngoài hộp, đánh dấu nền các LÔ ĐÃ MỞ
+ *    (W0 `LAND_PARCELS` + lô provisional từ `RECLAMATION_WAVES.parcels`).
+ *  - Ô trong hộp nhưng ngoài mọi đợt đã mở (D2): CHƯA khai hoang → đánh va chạm (ground = void 0).
+ *
+ * Với ['w0'] cho kết quả cùng width/height/origin như `generateStarterTileMap` (36×22, 0/−6) để nơi dùng có thể
+ * thay dần mà không đổi golden. Với ['w0','w1'] → width tăng lên 61 (x0=0, x1=60), origin vẫn 0/−6.
+ *
+ * ⚠️ NỐI VÀO HỆ SAU (ngoài scope vòng này, chờ máy thật có test/browser): dùng map động khi `openedWaves` thay đổi
+ * trong simulation/renderer, pathfinding, collision và vẽ hạ tầng/lô chi tiết (hạ tầng W1–W4 thuộc task 1.1/teammate
+ * `wave-infrastructure`, chưa chốt ảnh task 0.2).
+ */
+export function generateTileMapForWaves(
+  openedWaves: readonly string[] = ['w0'],
+): GameTileMap {
+  const region = playRegionForWaves(openedWaves);
+  const width = rectWidth(region);
+  const height = rectHeight(region);
+  const originTileX = PLAY_REGION.x0; // 0
+  const originTileY = MAP_ORIGIN_Y;   // −6
+  const frame = { width, height, originTileX, originTileY };
+
+  // Các vùng đợt đã mở — dùng để phân biệt đất khai hoang với vùng chưa mở trong hộp (D2).
+  const openedRegions = openedWaves
+    .map(id => RECLAMATION_WAVES.find(w => w.id === id)?.region)
+    .filter((r): r is WorldRect => r !== undefined);
+  const isOpened = (x: number, y: number): boolean => openedRegions.some(r => rectHas(r, x, y));
+
+  // Tất cả lô đã "sở hữu/mở": W0 (coi như đã sở hữu) + lô provisional của các đợt đã mở — để đánh dấu nền lô.
+  const openedParcelRects: WorldRect[] = [];
+  for (const p of LAND_PARCELS) openedParcelRects.push(p.rect);
+  for (const wave of RECLAMATION_WAVES) {
+    if (!openedWaves.includes(wave.id)) continue;
+    for (const parcel of wave.parcels) openedParcelRects.push(parcel.rect);
+  }
+  const inOpenedParcel = (x: number, y: number): boolean => openedParcelRects.some(r => rectHas(r, x, y));
+
+  const groundData: number[] = new Array(width * height).fill(0);
+  const wallData: number[] = new Array(width * height).fill(0);
+  const collisionLayer: boolean[] = new Array(width * height).fill(false);
+  const at = (x: number, y: number) => tileIndex(frame, x, y);
+
+  for (let ly = 0; ly < height; ly++) {
+    const y = ly + originTileY;
+    for (let lx = 0; lx < width; lx++) {
+      const x = lx + originTileX;
+      const idx = at(x, y);
+      const boundary = lx === 0 || lx === width - 1 || ly === 0 || ly === height - 1;
+
+      // Ô trong hộp nhưng ngoài mọi đợt đã mở: chưa khai hoang → va chạm, ground void (D2).
+      if (!isOpened(x, y)) {
+        groundData[idx] = 0;
+        collisionLayer[idx] = true;
+        continue;
+      }
+
+      // Boundary collision ở mép ngoài hộp.
+      if (boundary) collisionLayer[idx] = true;
+
+      // Nền đất lô đã mở (gạch hoa 3) — dữ liệu tối thiểu cho lô; render chi tiết để bước sau.
+      if (inOpenedParcel(x, y)) {
+        groundData[idx] = 3;
+      } else if (y >= 13) {
+        groundData[idx] = 1; // lòng đường
+      } else {
+        groundData[idx] = 2; // vỉa hè / khu phố
+      }
+    }
+  }
+
+  return {
+    originTileX,
+    originTileY,
+    width,
+    height,
+    tileWidth: 32,
+    tileHeight: 32,
+    layers: [
+      { name: 'ground', data: groundData, width, height, visible: true, opacity: 1.0 },
+      { name: 'walls', data: wallData, width, height, visible: true, opacity: 1.0 },
+    ],
+    collisionLayer,
+    storeBounds: STORE_BOUNDS, // bước dữ liệu: giữ biên tiệm chính; renderer/pathfinding nối sau.
+    buildings: [],
+    stalls: [],
+  };
+}
+
 export const DEFAULT_INITIAL_SAVE: SaveGameData = {
   id: 'local_save_default',
-  schemaVersion: 6,
+  schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
   revision: 1,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -314,7 +425,9 @@ export const DEFAULT_INITIAL_SAVE: SaveGameData = {
     fixtures: INITIAL_FIXTURES,
     storedFixtures: [],
     unlockedPlotIds: STARTER_OWNED_PLOT_IDS,
+    ownedParcelIds: ownedParcelIdsDefault(),
   },
+  world: defaultWorldOpenState(),
   warehouseTier: 2,
   storageRackCount: 5,
   inventory: [

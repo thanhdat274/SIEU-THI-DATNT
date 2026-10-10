@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import type { StreetVehicleState } from '@game/shared';
 import {
-  AVENUES, NEIGHBORHOOD_LOTS, NEIGHBORHOOD_PX, NEIGHBORHOOD_QUALITY, NPC_BUDGET, PARK, ROAD_MAP, STREET_VEHICLE_RULES, TRAFFIC_X_RANGE, VEHICLE_BUDGET, VEHICLE_ROAD_MAP, roadLaneCoord,
+  AVENUES, NEIGHBORHOOD_LOTS, decorLotsOutsideWaves, NEIGHBORHOOD_PX, NEIGHBORHOOD_QUALITY, NPC_BUDGET, PARK, ROAD_MAP, STREET_VEHICLE_RULES, TRAFFIC_X_RANGE, VEHICLE_BUDGET, VEHICLE_ROAD_MAP, roadLaneCoord,
   ZOOM_LEVELS, detailForZoom, npcRingOf, parkAppeal, roadLaneY, snapZoom, trafficDensity, vehicleMix, DIALOGUE_TOPICS, dialogueWeatherOf,
 } from '@game/data';
 import { StreetTrafficManager } from './street-traffic';
@@ -139,6 +139,12 @@ export function runNeighborhoodTests(): void {
   }
 
   // ---- Bố cục
+  assert.strictEqual(decorLotsOutsideWaves(['w0']).length, NEIGHBORHOOD_LOTS.length, 'W0 không bỏ nhà trang trí nào');
+  {
+    const w4 = decorLotsOutsideWaves(['w0', 'w4']);
+    assert.ok(w4.length < NEIGHBORHOOD_LOTS.length, 'Mở W4 bỏ các nhà phố s2 trong vùng đợt');
+    assert.ok(w4.every((l) => !(l.frontY === 24 && l.x + l.w - 1 >= 42 && l.x <= 76)), 'Không còn nhà trong vùng W4');
+  }
   assert.ok(NEIGHBORHOOD_LOTS.length >= 50, 'Có nhiều nhà trong khu phố');
   assert.ok(new Set(NEIGHBORHOOD_LOTS.map((l) => l.kind)).size === 3, 'Có nhà dân, nhà phố và chung cư');
   for (const l of NEIGHBORHOOD_LOTS) {

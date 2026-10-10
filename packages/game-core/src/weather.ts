@@ -100,15 +100,13 @@ export function formatMinuteOfDay(minute: number): string {
 }
 
 /** Chuỗi hiển thị, ví dụ "Mưa vừa 14:00–16:15"; chuỗi rỗng nếu không mưa. */
-export function describeRainForecast(forecast: RainForecast | null, options?: { omitWhenMatchingWeatherLabel?: boolean }): string {
+export function describeRainForecast(forecast: RainForecast | null, options?: { omitWhenMatchingWeatherLabel?: string }): string {
   if (!forecast) return '';
-  const text = `${forecast.bandLabel} ${formatMinuteOfDay(forecast.startMinute)}–${formatMinuteOfDay(forecast.endMinute)}`;
-  if (options?.omitWhenMatchingWeatherLabel) {
-    // Strip duplicate weather category word: "Mưa to (Mưa to HH:MM–HH:MM)" → "Mưa to HH:MM–HH:MM"
-    const match = text.match(/^(Mưa(?: to| vừa| nhỏ)?)\s+\1/);
-    if (match) return text.slice(match[0].length);
-    const match2 = text.match(/^(Mưa(?: to| vừa| nhỏ)?)\s+(Mưa(?: to| vừa| nhỏ)?)/);
-    if (match2 && match2[1] === match2[2]) return text.slice(match2[0].length);
+  let text = `${forecast.bandLabel} ${formatMinuteOfDay(forecast.startMinute)}–${formatMinuteOfDay(forecast.endMinute)}`;
+  // Bỏ nhãn dải khi TRÙNG nhãn thời tiết ở ngoài: "Mưa to (Mưa to 13:00–15:00)" → "Mưa to (13:00–15:00)".
+  // (Nhãn dải mưa có thể trùng nhãn loại thời tiết, e.g. dải "Mưa to" và loại "Mưa to".)
+  if (options?.omitWhenMatchingWeatherLabel && forecast.bandLabel === options.omitWhenMatchingWeatherLabel) {
+    text = text.slice(forecast.bandLabel.length).trim();
   }
   return text;
 }

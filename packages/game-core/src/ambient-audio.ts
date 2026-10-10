@@ -15,7 +15,7 @@ export interface AmbientMix {
   rain: number;
   /** Tiếng phố ban ngày 0..1. */
   street: number;
-  /** Tiếng côn trùng ban đêm 0..1. */
+  /** Tiếng côn trùng ban đêm 0..1 (mức nền của tiếng dế, đã là chirp ngắt quãng nên dịu hơn). */
   night: number;
   /** Tiếng gió 0..1. */
   wind: number;
@@ -41,7 +41,7 @@ export function ambientMix(input: AmbientInput): AmbientMix {
   return {
     rain: clamp01(input.rainIntensity) * 0.8 * (1 - 0.35 * clamp01(input.roofProximity ?? 0)),
     street: day ? (input.isStoreOpen ? 0.35 : 0.2) : 0.05,
-    night: day ? 0 : 0.3,
+    night: day ? 0 : 0.18,
     wind: clamp01(input.windIntensity ?? 0) * 0.7,
     birds: day ? clamp01(1 - clamp01(input.cloudIntensity ?? 0) * 0.55 - clamp01(input.rainIntensity) * 1.6 - clamp01(input.windIntensity ?? 0) * 0.3) ** 1.5 * 0.5 : 0,
     roof: clamp01(input.rainIntensity) * clamp01(input.roofProximity ?? 0) * 0.9,

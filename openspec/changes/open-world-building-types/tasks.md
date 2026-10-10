@@ -1,6 +1,14 @@
 # Tasks
 
-Trạng thái 05/10/2026: mới có kế hoạch, chưa có code. Phụ thuộc `open-world-land-reclamation` xong.
+Trạng thái 07/10/2026: phần THUẦN AN TOÀN của các task 1.1, 2.2b(D9), 2.3, 5.1(D8)/schema9 ĐÃ CÓ CODE (module + test), CÓ CỨU trong test-runner, typecheck workspace PASS; phần refactor 1.2 `BuildingId→string` + 2.1 pipeline + 2.2 renderer + D5/D6/D7 + build/browser QA CHỜ MÁY THẬT (không an toàn trong sandbox vì không chạy được renderer/browser/golden test). Phụ thuộc `open-world-land-reclamation` (mở đang làm, renderer/browser của nó cũng chờ máy thật).
+
+**Ghi chú phần thuần vòng 3 đã làm (4 subagent, 07/10/2026):**
+- 1.1 THUẦN: `game-data/world/building-types.ts` — `BuildingTypeDef` registry + 4 loại cũ + 4 loại mới (grocery_branch/cafe/parking_lot/com_restaurant, PROVISIONAL theo D4); KHÔNG đổi kiểu `BuildingId` hiện tại (refactor 1.2 để sau). Test `runBuildingTypesTests`.
+- 2.2b/D9 THUẦN: `game-data/world/store-tiers.ts` — 5 hạng theo diện tích sàn (<60 ×1.0 … ≥240 ×1.7, ngưỡng Siêu thị >160, chốt >126), `storeTierFromFloorTiles` (clamp maxTier), `storeTierTrafficMultiplier`. Test `runStoreTiersTests`.
+- 2.3 THUẦN: `game-core/building-types-balance-sim.ts` — mô phỏng PROVISIONAL 4 loại mới + hạng D9 (peak giờ theo D4, parking không khách quầy nhưng doanh thu xe >0). Test `runBuildingTypesBalanceSimTests`.
+- 5.1/D8 THUẦN: shared `typeId?: string` optional + validator + `migrateToW9` (map main→grocery_main…, không ghi đè custom, buildingId lạ giữ nguyên); bump `CURRENT_SAVE_SCHEMA_VERSION` 8→9; gọi migrateToW9 sau W8; `isSaveGameData` nhận 1–9 (thêm `!== 8`). Đã sửa `schema8.test.ts` (assert 8→9 để không fail runtime). Test `runSchema9Tests`.
+- Wire: game-data index export building-types + store-tiers (module + test); test-runner nối 4 test (runBuildingTypesTests/runStoreTiersTests/runSchema9Tests/runBuildingTypesBalanceSimTests). `yarn typecheck` toàn workspace PASS; `git diff --check` sạch. Runtime chờ máy thật `yarn --cwd packages/game-core test` (sandbox spawn EPERM; các subagent verify logic bằng node strip-types/CJS — assert PASS, KHÔNG qua suite chuẩn).
+- CHỜ MÁY THẬT (chưa làm — ngoài phạm vi sandbox): 1.2 refactor `BuildingId→string` + `buildingPlacements[].typeId` (đụng buildings/sim/customers/staff/viewport/shop-lighting/UI modal/renderer ~20+ file); nối `FIXTURE_SHOP.allowedBuildings` theo typeId + `FIXTURE_SHOP.minTier` (tiers); 2.1 `open_building` pipeline + server replay; 2.2 hình ảnh/renderer 4 loại; D5 sổ cái/báo cáo theo tòa (`buildingInstanceId`); D6 giao hàng nội bộ (`internal_delivery`); D7 cốt truyện ch7 (`buildingsOpened` → đếm grocery_branch + tòa W1+); `yarn test`/`build`/browser QA (2 quán nước + 3 loại mới) + co-op.
 
 ## 1. Registry và instance
 

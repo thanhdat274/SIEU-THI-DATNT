@@ -21,6 +21,17 @@ export function runNeighborhoodWalkTests(): void {
   // Vật cản khu phố.
   const lot = NEIGHBORHOOD_LOTS.find((l) => l.kind === 'house')!;
   assert.ok(!free((lot.x + lot.w / 2) * T, lot.frontY * T - 40), 'Không đi xuyên nhà dân');
+  {
+    // Đợt khai hoang gỡ nhà trang trí (land-reclamation 1.3): nhà phố s2 trong vùng W4 hết chặn, nhà ngoài vùng vẫn chặn.
+    const inW4 = NEIGHBORHOOD_LOTS.find((l) => l.frontY === 24 && l.x >= 42 && l.x + l.w - 1 <= 76)!;
+    const px = (inW4.x + inW4.w / 2) * T, py = inW4.frontY * T - 40;
+    assert.ok(!free(px, py), 'Trước khi mở W4 nhà phố còn chặn');
+    collision.setOpenedWaves(['w0', 'w4']);
+    assert.ok(free(px, py), 'Mở W4 → nhà phố trong vùng không còn chặn');
+    assert.ok(!free((lot.x + lot.w / 2) * T, lot.frontY * T - 40), 'Nhà dân ngoài vùng đợt vẫn chặn');
+    collision.setOpenedWaves(['w0']);
+    assert.ok(!free(px, py), 'Về lại chỉ W0 → nhà chặn lại');
+  }
   assert.ok(lotHeightPx(lot) > 60, 'Chiều cao nhà tính từ số tầng');
   assert.ok(!free(SCHOOL.building.x * T + 100, SCHOOL.building.frontY * T - 40), 'Không đi xuyên tòa nhà trường');
   assert.ok(!free(((PARK.pond.x0 + PARK.pond.x1) / 2) * T, ((PARK.pond.y0 + PARK.pond.y1) / 2) * T), 'Không đi xuống ao');

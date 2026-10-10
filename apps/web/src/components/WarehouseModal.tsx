@@ -61,32 +61,47 @@ export const WarehouseModal: React.FC<Props> = ({
   }, [items, group, searchTerm]);
 
   return (
-    <PixelDialog title="Nhà kho sau tiệm" subtitle="Nhận hàng · Kiểm kê · Chuẩn bị lên kệ" icon="warehouse" onClose={onClose}>
-      <div className="summary-row">
+    <PixelDialog
+      title="Nhà kho sau tiệm"
+      subtitle="Nhận hàng · Kiểm kê · Chuẩn bị lên kệ"
+      icon="warehouse"
+      onClose={onClose}
+      footer={
+        <div className="warehouse-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1 }}>
+          <PixelButton icon="plus" variant="teal" disabled={!canRestock} onClick={onRestock}>Bày hàng lên kệ</PixelButton>
+          <PixelButton icon="truck" onClick={onOpenSupplier}>Ghé đại lý nhập hàng</PixelButton>
+        </div>
+      }
+    >
+      <div className="summary-row warehouse-summary">
         <PixelStat label="Hàng dự trữ" value={`${items.reduce((n, i) => n + i.quantity, 0)} món`} icon="warehouse" />
         <div>
           <strong>Kho mát {cold}/{coldCapacity}</strong>
           <p className="muted">Đơn chờ giữ {reserved} chỗ · Còn {Math.max(0, coldCapacity - cold - reserved)} chỗ</p>
+          {ambientCapacity !== undefined && <p className="warehouse-ambient">Kho thường {ambientUsed}/{ambientCapacity} ô</p>}
         </div>
       </div>
-      {ambientCapacity !== undefined && <PixelProgress label={`Kho thường ${ambientUsed}/${ambientCapacity} ô`} value={ambientUsed} max={ambientCapacity} />}
-      <PixelProgress label="Chỗ kho mát đã dùng và giữ" value={cold + reserved} max={coldCapacity} />
-      <p className="muted" style={{ margin: '8px 0 12px' }}>Hàng dự trữ dùng chung với sổ kho. Bày lên kệ lấy hàng từ đây; cất khỏi kệ trả hàng về kho.</p>
+      <div className="warehouse-capacity">
+        {ambientCapacity !== undefined && <PixelProgress label={`Kho thường ${ambientUsed}/${ambientCapacity} ô`} value={ambientUsed} max={ambientCapacity} />}
+        <PixelProgress label="Chỗ kho mát đã dùng và giữ" value={cold + reserved} max={coldCapacity} />
+      </div>
+      <p className="muted warehouse-hint" style={{ margin: '8px 0 12px' }}>Hàng dự trữ dùng chung với sổ kho. Bày lên kệ lấy hàng từ đây; cất khỏi kệ trả hàng về kho.</p>
 
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
+      <div className="warehouse-filter-row" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
         <label className="form-filter" style={{ flex: '1 1 200px', margin: 0 }}>
-          Tìm kiếm
+          <span className="form-filter-label">Tìm kiếm</span>
           <input
             type="search"
+            aria-label="Tìm kiếm"
             placeholder="Tìm theo tên hoặc mã..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            style={{ minHeight: '44px', width: '100%', background: 'var(--paper)', border: '2px solid var(--wood-light)', padding: '8px', color: 'var(--ink)' }}
+            style={{ minHeight: '44px', width: '100%', background: 'var(--color-panel)', border: '2px solid var(--color-outline)', padding: '8px', color: 'var(--color-text)' }}
           />
         </label>
         <label className="form-filter" style={{ flex: '1 1 200px', margin: 0 }}>
-          Khu bảo quản
-          <select value={group} onChange={e => setGroup(e.target.value as typeof group)} style={{ width: '100%' }}>
+          <span className="form-filter-label">Khu bảo quản</span>
+          <select aria-label="Khu bảo quản" value={group} onChange={e => setGroup(e.target.value as typeof group)} style={{ width: '100%' }}>
             <option value="all">Toàn bộ nhà kho</option>
             <option value="ambient">Giá hàng khô</option>
             <option value="cold">Góc bảo quản lạnh</option>
@@ -103,14 +118,18 @@ export const WarehouseModal: React.FC<Props> = ({
             <div className="product-info">
               <h3>{product?.name ?? i.productId}</h3>
               <p>{product?.storageType === 'cold' ? 'Giữ lạnh' : 'Hàng khô'} · {i.quantity} món</p>
-              {totalCases > 0 && product?.caseSize && (
-                <p style={{ color: 'var(--teal)', fontWeight: 'bold' }}>📦 {totalCases} thùng ({totalCases * product.caseSize} lẻ)</p>
-              )}
-              {i.lots?.map(l => (
-                <p key={l.expiresOnDay}>Lô {l.quantity} món · Hạn ngày {l.expiresOnDay} · còn {Math.max(0, l.expiresOnDay - currentDay)} ngày{l.caseCount ? ` · ${l.caseCount} thùng` : ''}</p>
-              ))}
+              <details className="warehouse-more" open={typeof document === 'undefined' || document.documentElement.dataset.density !== 'compact'}>
+                <summary>Lô, thùng và thao tác</summary>
+              <div className="warehouse-lots">
+                {totalCases > 0 && product?.caseSize && (
+                  <p style={{ color: 'var(--color-green-dark)', fontWeight: 'bold' }}>📦 {totalCases} thùng ({totalCases * product.caseSize} lẻ)</p>
+                )}
+                {i.lots?.map(l => (
+                  <p key={l.expiresOnDay}>Lô {l.quantity} món · Hạn ngày {l.expiresOnDay} · còn {Math.max(0, l.expiresOnDay - currentDay)} ngày{l.caseCount ? ` · ${l.caseCount} thùng` : ''}</p>
+                ))}
+              </div>
               {totalCases > 0 && onDisposeStock && onOpenCase && (
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <div className="warehouse-item-actions" style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                   <PixelButton variant="teal" onClick={() => {
                     if (window.confirm(`Mở 1 thùng ${product?.name}? Thùng sẽ thành ${product.caseSize} lẻ.`)) {
                       onOpenCase(i.productId, 1);
@@ -129,6 +148,7 @@ export const WarehouseModal: React.FC<Props> = ({
                   if (window.confirm(`Tiêu hủy toàn bộ ${i.quantity} ${name} trong kho? Hàng gần hạn bị hủy trước và ghi vào sổ cái như một khoản lỗ.`)) onDisposeStock(i.productId, i.quantity);
                 }}>Tiêu hủy hàng</PixelButton>
               )}
+              </details>
             </div>
           </div>
         );
@@ -151,10 +171,6 @@ export const WarehouseModal: React.FC<Props> = ({
       </section>
 
       {!canRestock && <p className="action-reason" style={{ marginTop: '12px' }}>Chưa có kệ thiếu hàng phù hợp để bày từ kho. Chọn hàng tại kệ trống để bày món mới.</p>}
-      <div className="save-actions" style={{ marginTop: '16px' }}>
-        <PixelButton icon="plus" variant="teal" disabled={!canRestock} onClick={onRestock}>Bày hàng lên kệ</PixelButton>
-        <PixelButton icon="truck" onClick={onOpenSupplier}>Ghé đại lý nhập hàng</PixelButton>
-      </div>
     </PixelDialog>
   );
 };

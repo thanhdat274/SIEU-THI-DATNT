@@ -89,6 +89,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
       const slots = slotGroup(fixtures, mainFix);
       for (const slot of slots) {
         totalSlots++;
+        const canStockHere = !mainFix.broken;
         const pId = slot.assignedProductId || planogram[slot.id];
         const prod = pId ? PRODUCT_MAP[pId] : null;
         const limit = prod ? effectiveShelfCapacity(slot.maxCapacity, prod.shelfCapacity, capacityBonus) : slot.maxCapacity;
@@ -101,8 +102,8 @@ export const StorePlanogramModal: React.FC<Props> = ({
 
         if (prod && slot.currentStock < limit) {
           const inBag = inventoryMap.get(prod.id) ?? 0;
-          if (inBag > 0) canRestockCount++;
-        } else if (!pId) {
+          if (inBag > 0 && canStockHere) canRestockCount++;
+        } else if (!pId && canStockHere) {
           // Ô chưa gán: kiểm tra kho có hàng phù hợp không (cho nút auto-fill)
           const isColdFix = mainFix.type === 'refrigerator';
           const hasCompatible = inventory.some(inv => {
@@ -348,12 +349,13 @@ export const StorePlanogramModal: React.FC<Props> = ({
             <input
               type="text"
               placeholder="🔍 Tìm món hoặc tên kệ..."
+              aria-label="Tìm món hoặc tên kệ"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="planogram-search-input"
             />
             {searchQuery && (
-              <button type="button" className="search-clear-btn" onClick={() => setSearchQuery('')}>✕</button>
+              <button type="button" className="search-clear-btn" aria-label="Xoá tìm kiếm" onClick={() => setSearchQuery('')}>✕</button>
             )}
           </div>
         </div>
@@ -439,7 +441,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
                         className="btn-restock-fixture"
                         disabled={!canRestockThisFixture || !!mainFix.broken}
                         onClick={() => handleRestockFixture(mainFix)}
-                        title="Bày hàng lên kệ này nếu kho có hàng"
+                        title={mainFix.broken ? 'Kệ đang hỏng — sửa ở mục Bảo trì trước' : 'Bày hàng lên kệ này nếu kho có hàng (tự mở thùng nếu cần)'}
                       >
                         ⚡ Bày hàng lên kệ
                       </PixelButton>
@@ -513,7 +515,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
                                   className="btn-slot-quick is-fill"
                                   disabled={canAdd <= 0 || !!mainFix.broken}
                                   onClick={() => onRestock(slot.id, product.id, canAdd)}
-                                  title={canAdd > 0 ? `Bày ${canAdd} món từ kho vào kệ` : inBag === 0 ? 'Kho hết hàng này' : 'Kệ đã đầy'}
+                                  title={mainFix.broken ? 'Kệ đang hỏng — sửa ở mục Bảo trì trước' : canAdd > 0 ? `Bày ${canAdd} món từ kho vào kệ (tự mở thùng nếu cần)` : inBag === 0 ? 'Kho hết hàng này' : 'Kệ đã đầy'}
                                 >
                                   + Bày hàng lên kệ {canAdd > 0 ? `(+${canAdd})` : ''}
                                 </button>

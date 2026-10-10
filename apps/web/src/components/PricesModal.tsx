@@ -28,14 +28,14 @@ export const PricesModal: React.FC<PricesModalProps> = ({ products, sellingPrice
   const shown = products.filter((p) => filter === 'all' || p.category === filter);
   const changed = products.some((p) => sellingPrice(p.id) !== p.baseSellingPrice);
   return (
-    <PixelDialog icon="coin" title="GIÁ BÁN" subtitle="Giá cao dễ bị chê, giá thấp hút khách" onClose={onClose}>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+    <PixelDialog icon="coin" title="Giá bán" subtitle="Giá cao dễ bị chê, giá thấp hút khách" onClose={onClose}>
+      <div className="prices-reset-row" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
         <PixelButton variant="wood" onClick={onResetAll} disabled={!changed}>↺ Về giá gợi ý tất cả</PixelButton>
       </div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-        <PixelButton variant={filter === 'all' ? 'teal' : 'paper'} onClick={() => setFilter('all')}>Tất cả</PixelButton>
+      <div className="feature-scroll-tabs" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+        <PixelButton aria-pressed={filter === 'all'} variant={filter === 'all' ? 'teal' : 'paper'} onClick={() => setFilter('all')}>Tất cả</PixelButton>
         {categories.map((id) => (
-          <PixelButton key={id} variant={filter === id ? 'teal' : 'paper'} onClick={() => setFilter(id)}>{PRODUCT_CATEGORY_LABELS[id]}</PixelButton>
+          <PixelButton key={id} aria-pressed={filter === id} variant={filter === id ? 'teal' : 'paper'} onClick={() => setFilter(id)}>{PRODUCT_CATEGORY_LABELS[id]}</PixelButton>
         ))}
       </div>
       {shown.length === 0 && <p className="muted">Chưa có mặt hàng trong nhóm này.</p>}
@@ -51,15 +51,15 @@ export const PricesModal: React.FC<PricesModalProps> = ({ products, sellingPrice
                 <ProductSlot productId={product.id} />
                 <div style={{ minWidth: 0 }}>
                   <strong>{product.name}</strong>
-                  <div className="muted" style={{ fontSize: 11 }}>Gợi ý {money(product.baseSellingPrice)} · vốn {money(product.purchasePrice)}</div>
-                  {complained > 0 && <div style={{ fontSize: 11, color: '#b64c3d' }}>Hôm qua {complained} khách chê đắt</div>}
+                  <div className="prices-card-hint muted" style={{ fontSize: 11 }}>Gợi ý {money(product.baseSellingPrice)} · vốn {money(product.purchasePrice)}</div>
+                  {complained > 0 && <div style={{ fontSize: 11, color: 'var(--color-brick)' }}>Hôm qua {complained} khách chê đắt</div>}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <PixelButton variant="wood" aria-label={`Giảm giá ${product.name}`} disabled={!range || price <= range.min} onClick={() => range && onSetPrice(product.id, price - range.step)}>−</PixelButton>
                 <div style={{ textAlign: 'center' }}>
                   <strong>{money(price)}</strong>
-                  <div style={{ fontSize: 11, color: pct > 0 ? '#b64c3d' : pct < 0 ? '#2a7a43' : undefined }} className={pct === 0 ? 'muted' : undefined}>{pctLabel(pct)}</div>
+                  <div style={{ fontSize: 11, color: pct > 0 ? 'var(--color-brick)' : pct < 0 ? 'var(--color-green-dark)' : undefined }} className={pct === 0 ? 'muted' : undefined}>{pctLabel(pct)}</div>
                 </div>
                 <PixelButton variant="teal" aria-label={`Tăng giá ${product.name}`} disabled={!range || price >= range.max} onClick={() => range && onSetPrice(product.id, price + range.step)}>+</PixelButton>
               </div>

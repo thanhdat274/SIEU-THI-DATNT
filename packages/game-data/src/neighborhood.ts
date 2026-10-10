@@ -5,6 +5,7 @@
  */
 import { AWNING_SPANS, MAIN_STORE_BOUNDS, awningShelterBand } from './buildings';
 import { PLAY_REGION } from './world/world-grid';
+import { RECLAMATION_WAVES } from './world/waves';
 import { MAP_HEIGHT, MAP_ORIGIN_Y, MAP_WIDTH } from './map';
 
 const T = 32;
@@ -74,6 +75,59 @@ export type NpcRing = keyof typeof NPC_BUDGET;
 export const NPC_RING_RADIUS_PX = { near: 640, middle: 1500 } as const;
 /** Số xe tối đa cùng lúc trên toàn bộ đường (chất lượng cao). */
 export const VEHICLE_BUDGET = 24;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Thành phố lớn dần theo đợt khai hoang (open-world-land-reclamation D7, PROVISIONAL)
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** Cấp thành phố tối đa 0..5. */
+export const CITY_TIER_MAX = 5;
+
+/**
+ * Cấp thành phố 0..5 theo tiến độ "mở thế giới" = số đợt đã mở (ngoài đợt 0) + số tòa đã mở.
+ * ĐƠN ĐIỆU tăng theo cả hai biến: thêm đợt hoặc thêm tòa không bao giờ làm tier giảm.
+ * D7: tier CHỈ đổi cảnh quan (NPC/xe/tầng nhà trang trí), KHÔNG đổi kinh tế.
+ */
+export function cityTierFrom(openedWaves: readonly string[], buildingCount: number): number {
+  const openedCount = openedWaves.filter((id) => /^w\d+$/.test(id) && id !== 'w0').length;
+  const buildingScore = buildingCount >= 16 ? 2 : buildingCount >= 8 ? 1 : 0;
+  return Math.min(CITY_TIER_MAX, openedCount + buildingScore);
+}
+
+const CITY_GROWTH_MIN = 0.6;
+const CITY_GROWTH_MAX = 1.4;
+
+const cityTierClamped = (tier: number): number => Math.max(0, Math.min(CITY_TIER_MAX, Number.isFinite(tier) ? tier : 0));
+
+/** Trần NC/xe dưới (tier 0) 0,6 ×, trên (tier 5) 1,4 ×; nội suy tuyến tính theo tier (D7, PROVISIONAL — chốt sau playtest). */
+export function cityGrowthFactor(tier: number): number {
+  const t = cityTierClamped(tier);
+  return CITY_GROWTH_MIN + (CITY_GROWTH_MAX - CITY_GROWTH_MIN) * (t / CITY_TIER_MAX);
+}
+
+/**
+ * Số tầng tối thiểu tăng thêm cho nhà trang trí theo tier (D7, PROVISIONAL): tier <3 → +0, tier 3–4 → +1, tier 5 → +2.
+ * Bản thân tầng nền vẫn deterministic theo seed; hệ số này cộng thêm, biến nhà 1 tầng thành 2–3 tầng.
+ */
+export function cityFloorBonus(tier: number): number {
+  const t = cityTierClamped(tier);
+  return t >= 5 ? 2 : t >= 3 ? 1 : 0;
+}
+
+/** Ngân sách NPC nền theo tier: bản nhân độc lập của `NPC_BUDGET` (KHÔNG sửa hằng số gốc, vốn có hiệu lực toàn cục). */
+export function scaledNpcBudget(tier: number): { near: number; middle: number; far: number } {
+  const f = cityGrowthFactor(tier);
+  return {
+    near: Math.round(NPC_BUDGET.near * f),
+    middle: Math.round(NPC_BUDGET.middle * f),
+    far: Math.round(NPC_BUDGET.far * f),
+  };
+}
+
+/** Ngân sách xe theo tier: bản nhân của `VEHICLE_BUDGET` (KHÔNG sửa hằng số gốc). */
+export function scaledVehicleBudget(tier: number): number {
+  return Math.round(VEHICLE_BUDGET * cityGrowthFactor(tier));
+}
 
 /** Điểm trước cửa tiệm chính (vỉa hè phía bắc đường chính), nơi NPC ghé mua đồ. */
 export const SHOP_FRONT = { x: ((MAIN_STORE_BOUNDS.left + MAIN_STORE_BOUNDS.right + 1) / 2) * T - 16, y: 12 * T - 6 } as const;
@@ -334,6 +388,23 @@ const APARTMENT_LOTS: readonly NeighborhoodLot[] = [42, 53, 64].map((x, i) => ({
 }));
 
 export const NEIGHBORHOOD_LOTS: readonly NeighborhoodLot[] = [...BANDS.flatMap(generateBand), ...APARTMENT_LOTS];
+
+/**
+ * (OpenSpec `open-world-land-reclamation` 1.3) Nhà trang trí còn lại khi các đợt `openedWaves` đã khai hoang:
+ * bỏ nhà có hàng nền mặt tiền (`frontY`, các ô x..x+w−1) nằm trong vùng của một đợt đã mở. W0 là bản đồ chơi
+ * (không trùng nhà nào) nên `['w0']`/rỗng giữ nguyên toàn bộ. Thuần; chưa nối renderer/va chạm (task 2.1/4.x).
+ */
+export function decorLotsOutsideWaves(openedWaves: readonly string[]): readonly NeighborhoodLot[] {
+  const regions = RECLAMATION_WAVES.filter((w) => openedWaves.includes(w.id)).map((w) => w.region);
+  if (regions.length === 0) return NEIGHBORHOOD_LOTS;
+  return NEIGHBORHOOD_LOTS.filter((lot) => !regions.some((r) => lot.x <= r.x1 && lot.x + lot.w - 1 >= r.x0 && lot.frontY >= r.y0 && lot.frontY <= r.y1));
+}
+
+/** Id các nhà trang trí bị ẩn (nằm trong vùng đợt đã mở) — dùng cho va chạm/đồ vật trước nhà. */
+export function hiddenDecorLotIds(openedWaves: readonly string[]): ReadonlySet<string> {
+  const visible = new Set(decorLotsOutsideWaves(openedWaves).map((l) => l.id));
+  return new Set(NEIGHBORHOOD_LOTS.filter((l) => !visible.has(l.id)).map((l) => l.id));
+}
 
 /** Hình chữ nhật (ô). */
 export interface TileRect { x0: number; y0: number; x1: number; y1: number }

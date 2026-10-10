@@ -20,13 +20,15 @@ export const DiningTableModal: React.FC<Props> = ({ fixture, state, staff, onCle
         <strong>{state.dirty ? 'Cần dọn' : state.occupied > 0 ? 'Đang có khách' : 'Bàn sạch, đang trống'}</strong>
         <p className="muted">Sức chứa {state.seats} chỗ · {state.occupied} khách đang ngồi</p>
       </div>
-      {state.dirty && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      {state.dirty && <div className="dining-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <PixelButton variant="teal" disabled={state.occupied > 0} onClick={onClean}>Tự dọn bàn</PixelButton>
-        <select aria-label="Chọn nhân viên dọn bàn" value={staffId} onChange={event => setStaffId(event.target.value)}>
-          <option value="">Chọn nhân viên bổ sung hàng</option>
-          {cleaners.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
-        </select>
-        <PixelButton variant="wood" disabled={!staffId || state.occupied > 0} onClick={() => onAssignCleaner(staffId)}>Giao việc dọn</PixelButton>
+        <span className="dining-assign" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <select aria-label="Chọn nhân viên dọn bàn" value={staffId} onChange={event => setStaffId(event.target.value)}>
+            <option value="">Chọn nhân viên bổ sung hàng</option>
+            {cleaners.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
+          </select>
+          <PixelButton variant="wood" disabled={!staffId || state.occupied > 0} onClick={() => onAssignCleaner(staffId)}>Giao việc dọn</PixelButton>
+        </span>
       </div>}
     </div>
     {!state.dirty && state.occupied === 0 && <p className="muted">Khách mua món ăn đóng gói có thể chọn dùng bàn tại quầy thu ngân.</p>}

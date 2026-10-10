@@ -25,13 +25,13 @@ export const RegularsModal: React.FC<Props> = ({ regulars, onClose }) => {
   return (
     <PixelDialog
       icon="star"
-      title="SỔ KHÁCH QUEN ĐẦU HẺM"
+      title="Sổ khách quen đầu hẻm"
       subtitle="Xây dựng tình làng nghĩa xóm · Khám phá sở thích & mở khóa đặc quyền"
       onClose={onClose}
     >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 12, maxHeight: 'none' }}>
+      <div className="regulars-split" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 12, maxHeight: 'none' }}>
         {/* Cột trái: Danh sách khách quen */}
-        <div style={{ display: 'grid', gap: 6, overflowY: 'auto', paddingRight: 4, maxHeight: 'calc(var(--dialog-avail-h) * 0.6)', alignContent: 'start' }}>
+        <div className="regulars-list" style={{ display: 'grid', gap: 6, overflowY: 'auto', paddingRight: 4, maxHeight: 'calc(var(--dialog-avail-h) * 0.6)', alignContent: 'start' }}>
           {REGULAR_CUSTOMERS.map((reg) => {
             const prog = regulars[reg.id];
             const pts = prog?.friendship ?? 0;
@@ -43,47 +43,48 @@ export const RegularsModal: React.FC<Props> = ({ regulars, onClose }) => {
                 key={reg.id}
                 onClick={() => setSelectedId(reg.id)}
                 className={`pixel-btn ${isSelected ? 'active' : ''}`}
+                aria-current={isSelected ? 'true' : undefined}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'flex-start',
                   padding: '6px 8px',
                   textAlign: 'left',
-                  background: isSelected ? 'var(--sand-light, #fbf4e2)' : undefined,
-                  borderColor: isSelected ? 'var(--rust, #b44a2c)' : undefined,
+                  background: isSelected ? 'var(--color-panel-selected)' : undefined,
+                  borderColor: isSelected ? 'var(--color-green)' : undefined,
                 }}
               >
                 <div style={{ fontWeight: 'bold', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span style={{ color: '#ec4899' }}>{'♥'.repeat(h)}</span>
+                  <span style={{ color: 'var(--color-brick)' }}>{'♥'.repeat(h)}</span>
                   <span>{reg.name}</span>
                 </div>
-                <div style={{ fontSize: 9, color: 'var(--muted, #666)', marginTop: 2 }}>{reg.roleTitle}</div>
+                <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 2 }}>{reg.roleTitle}</div>
               </button>
             );
           })}
         </div>
 
         {/* Cột phải: Chi tiết khách quen đang chọn */}
-        <div style={{ overflowY: 'auto', paddingRight: 4, display: 'grid', gap: 10 }}>
+        <div className="regulars-detail" style={{ overflowY: 'auto', paddingRight: 4, display: 'grid', gap: 10 }}>
           {/* Thông tin cá nhân & Thân thiết */}
           <div className="pixel-panel" style={{ padding: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 6 }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: 14 }}>{selectedDef.name}</h3>
-                <span className="muted" style={{ fontSize: 10 }}>{selectedDef.roleTitle}</span>
+                <h3 style={{ margin: 0, fontSize: 14, color: 'var(--color-text)' }}>{selectedDef.name}</h3>
+                <span className="muted" style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>{selectedDef.roleTitle}</span>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 13, color: '#ec4899', letterSpacing: 2 }}>{heartString}</div>
-                <div style={{ fontSize: 9, color: 'var(--muted, #666)' }}>{progress.friendship} / 100 điểm thân thiết</div>
+                <div style={{ fontSize: 13, color: 'var(--color-brick)', letterSpacing: 2 }}>{heartString}</div>
+                <div style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>{progress.friendship} / 100 điểm thân thiết</div>
               </div>
             </div>
 
-            <p style={{ margin: '8px 0', fontSize: 11, fontStyle: 'italic', color: '#444' }}>
+            <p style={{ margin: '8px 0', fontSize: 11, fontStyle: 'italic', color: 'var(--color-text-muted)' }}>
               &ldquo;{selectedDef.bio}&rdquo;
             </p>
 
             <PixelProgress label="Mức độ thân thiết" value={progress.friendship % 20} max={20} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--muted, #666)', marginTop: 2 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--color-text-muted)', marginTop: 2 }}>
               <span>Đã ghé tiệm: {progress.totalVisits} lần</span>
               <span>Độ kiên nhẫn: {selectedDef.patienceSeconds}s</span>
             </div>
@@ -91,7 +92,7 @@ export const RegularsModal: React.FC<Props> = ({ regulars, onClose }) => {
 
           {/* Món ăn ưa thích */}
           <div className="pixel-panel" style={{ padding: 10 }}>
-            <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--rust, #b44a2c)' }}>SỞ THÍCH MÓN HÀNG</h4>
+            <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--color-wood-light)' }}>SỞ THÍCH MÓN HÀNG</h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 6 }}>
               {selectedDef.favoriteProductIds.map((pid) => {
                 const isDiscovered = progress.discoveredProductIds.includes(pid);
@@ -102,22 +103,22 @@ export const RegularsModal: React.FC<Props> = ({ regulars, onClose }) => {
                     key={pid}
                     style={{
                       padding: 6,
-                      background: isDiscovered ? 'rgba(42, 122, 67, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+                      background: isDiscovered ? 'rgba(79, 135, 63, 0.12)' : 'var(--color-panel-dark)',
                       border: '1px dashed',
-                      borderColor: isDiscovered ? '#2a7a43' : '#ccc',
+                      borderColor: isDiscovered ? 'var(--color-green)' : 'var(--color-outline-soft)',
                       borderRadius: 3,
                       fontSize: 10,
                     }}
                   >
                     {isDiscovered ? (
                       <>
-                        <div style={{ fontWeight: 'bold', color: '#2a7a43' }}>✓ {prod?.name ?? pid}</div>
-                        <div style={{ fontSize: 9, color: '#666' }}>Món ruột đã biết</div>
+                        <div style={{ fontWeight: 'bold', color: 'var(--color-green-dark)' }}>✓ {prod?.name ?? pid}</div>
+                        <div style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>Món ruột đã biết</div>
                       </>
                     ) : (
                       <>
-                        <div style={{ color: '#888', fontWeight: 'bold' }}>? ? ? ? ?</div>
-                        <div style={{ fontSize: 8, color: '#999' }}>Bán thử để khám phá</div>
+                        <div style={{ color: 'var(--color-text-muted)', fontWeight: 'bold' }}>? ? ? ? ?</div>
+                        <div style={{ fontSize: 8, color: 'var(--color-text-muted)' }}>Bán thử để khám phá</div>
                       </>
                     )}
                   </div>
@@ -128,7 +129,7 @@ export const RegularsModal: React.FC<Props> = ({ regulars, onClose }) => {
 
           {/* Đặc quyền thân thiết */}
           <div className="pixel-panel" style={{ padding: 10 }}>
-            <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--rust, #b44a2c)' }}>ĐẶC QUYỀN MỞ KHÓA</h4>
+            <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--color-wood-light)' }}>ĐẶC QUYỀN MỞ KHÓA</h4>
             <div style={{ display: 'grid', gap: 6 }}>
               {selectedDef.perks.map((perk) => {
                 const isUnlocked = progress.unlockedPerks.includes(perk.title) || progress.friendship >= perk.threshold;
@@ -138,21 +139,21 @@ export const RegularsModal: React.FC<Props> = ({ regulars, onClose }) => {
                     key={perk.title}
                     style={{
                       padding: 6,
-                      background: isUnlocked ? 'rgba(147, 51, 234, 0.08)' : 'rgba(0, 0, 0, 0.02)',
+                      background: isUnlocked ? 'rgba(79, 135, 63, 0.1)' : 'var(--color-panel-dark)',
                       border: '1px solid',
-                      borderColor: isUnlocked ? '#9333ea' : '#e5e5e5',
+                      borderColor: isUnlocked ? 'var(--color-green)' : 'var(--color-outline-soft)',
                       borderRadius: 3,
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 'bold', fontSize: 10, color: isUnlocked ? '#7e22ce' : '#777' }}>
+                      <span style={{ fontWeight: 'bold', fontSize: 10, color: isUnlocked ? 'var(--color-green-dark)' : 'var(--color-text-muted)' }}>
                         {isUnlocked ? '★ ' : '🔒 '}{perk.title}
                       </span>
-                      <span style={{ fontSize: 9, color: isUnlocked ? '#16a34a' : '#888' }}>
+                      <span style={{ fontSize: 9, color: isUnlocked ? 'var(--color-green-dark)' : 'var(--color-text-muted)' }}>
                         {isUnlocked ? 'ĐÃ MỞ' : `Cần ${perk.threshold} điểm`}
                       </span>
                     </div>
-                    <div style={{ fontSize: 9, color: '#555', marginTop: 2 }}>{perk.description}</div>
+                    <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginTop: 2 }}>{perk.description}</div>
                   </div>
                 );
               })}

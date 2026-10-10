@@ -9,3 +9,4 @@ dist
 *.tsbuildinfo
 *-firebase-adminsdk-*.json
 bash.exe.stackdump
+.qa

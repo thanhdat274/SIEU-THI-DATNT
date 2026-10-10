@@ -32,7 +32,7 @@ function soonestExpiryDays(item: InventoryItem, day: number): number | undefined
 const ExpiryTag: React.FC<{ days?: number }> = ({ days }) => {
   if (days === undefined) return null;
   const label = days <= 0 ? 'Hết hạn hôm nay' : `Còn ${days} ngày`;
-  return <span style={{ fontSize: 11, color: days <= 1 ? '#b64c3d' : '#7a6a58' }}>{label}</span>;
+  return <span style={{ fontSize: 11, color: days <= 1 ? 'var(--color-terracotta)' : 'var(--color-text-muted)' }}>{label}</span>;
 };
 
 /** Bảng chọn số lượng chuyển hàng giữa kho tổng và một chi nhánh. */
@@ -75,7 +75,7 @@ const TransferPanel: React.FC<{
 
   return (
     <div className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 8 }}>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} role="tablist" aria-label="Hướng chuyển hàng">
+      <div className="feature-tabs" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} role="tablist" aria-label="Hướng chuyển hàng">
         <PixelButton variant={direction === 'send' ? 'teal' : 'paper'} role="tab" aria-selected={direction === 'send'} onClick={() => switchDirection('send')}>Kho tổng → {branch.name}</PixelButton>
         <PixelButton variant={direction === 'return' ? 'teal' : 'paper'} role="tab" aria-selected={direction === 'return'} onClick={() => switchDirection('return')}>{branch.name} → kho tổng</PixelButton>
       </div>
@@ -88,7 +88,7 @@ const TransferPanel: React.FC<{
         ? <EmptyState title={direction === 'send' ? 'Kho tổng không có hàng phù hợp' : 'Chi nhánh đang hết hàng'}>
           {direction === 'send' ? `Nhập thêm đồ ${type?.name ?? ''} bán về kho trước.` : 'Không có gì để trả về.'}
         </EmptyState>
-        : <div style={{ display: 'grid', gap: 6, maxHeight: 'min(260px, calc(var(--dialog-avail-h) * 0.45))', overflowY: 'auto' }}>
+        : <div className="chain-transfer-list" style={{ display: 'grid', gap: 6, maxHeight: 'min(260px, calc(var(--dialog-avail-h) * 0.45))', overflowY: 'auto' }}>
           {rows.map((item) => (
             <div key={item.productId} style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between', flexWrap: 'wrap' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
@@ -108,7 +108,7 @@ const TransferPanel: React.FC<{
         <PixelButton variant="brick" disabled={!picked.length || overCapacity || busy} onClick={submit}>
           {direction === 'send' ? 'Chuyển hàng' : 'Trả về kho'} ({pickedUnits})
         </PixelButton>
-        {overCapacity && <span role="alert" style={{ color: '#b64c3d', fontSize: 12 }}>Vượt chỗ trống của chi nhánh ({capacityLeft}).</span>}
+        {overCapacity && <span role="alert" style={{ color: 'var(--color-terracotta)', fontSize: 12 }}>Vượt chỗ trống của chi nhánh ({capacityLeft}).</span>}
       </div>
     </div>
   );
@@ -126,7 +126,7 @@ const PolicyPanel: React.FC<{ branch: BranchSave; onPolicy: ChainModalProps['onP
   return (
     <div className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 6 }}>
       <strong>Điều hành</strong>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} role="radiogroup" aria-label="Mức giá chi nhánh">
+      <div className="feature-tabs" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} role="radiogroup" aria-label="Mức giá chi nhánh">
         {(Object.keys(BRANCH_PRICE_MODES) as BranchPriceMode[]).map((mode) => (
           <PixelButton key={mode} variant={policy.priceMode === mode ? 'teal' : 'paper'} role="radio" aria-checked={policy.priceMode === mode} disabled={busy}
             onClick={() => policy.priceMode !== mode && apply({ ...policy, priceMode: mode })}>
@@ -179,10 +179,10 @@ const BranchCard: React.FC<{
           bán <strong className="tabular">{last.unitsSold}</strong> món, doanh thu <strong className="tabular">{money(last.revenue)}</strong>,
           lãi gộp <strong className="tabular">{money(last.revenue - last.cogs)}</strong>, lương {money(last.wages)}
           {last.spoilageLoss > 0 && <>, hao hụt {money(last.spoilageLoss)}</>}
-          {last.stockouts.length > 0 && <div style={{ color: '#b64c3d' }}>Bán hụt (hết hàng): {last.stockouts.map(nameOf).join(', ')}</div>}
+          {last.stockouts.length > 0 && <div style={{ color: 'var(--color-terracotta)' }}>Bán hụt (hết hàng): {last.stockouts.map(nameOf).join(', ')}</div>}
         </div>
         : <span className="muted" style={{ fontSize: 13 }}>Chi nhánh chạy nền từ ngày kế tiếp; chưa có báo cáo ngày.</span>}
-      {lowStock && <span style={{ color: '#a86b12', fontSize: 13 }}>Kho chi nhánh trống: chuyển hàng từ kho tổng để có hàng bán.</span>}
+      {lowStock && <span style={{ color: 'var(--warn)', fontSize: 13 }}>Kho chi nhánh trống: chuyển hàng từ kho tổng để có hàng bán.</span>}
       <PolicyPanel branch={branch} onPolicy={onPolicy} />
       <div><PixelButton variant="teal" aria-expanded={expanded} onClick={onToggle}>{expanded ? 'Đóng chuyển hàng' : 'Chuyển hàng'}</PixelButton></div>
       {expanded && <TransferPanel branch={branch} warehouse={warehouse} day={day} onTransfer={onTransfer} onReturn={onReturn} />}
@@ -217,9 +217,9 @@ export const ChainModal: React.FC<ChainModalProps> = ({ chain, warehouse, player
   };
 
   return (
-    <PixelDialog icon="warehouse" title="CHUỖI CHI NHÁNH" subtitle="Ví và kho tổng dùng chung. Chi nhánh tự chạy nền mỗi khi sang ngày; hãy chuyển hàng cho chi nhánh để có thứ bán" onClose={onClose}>
+    <PixelDialog icon="warehouse" title="Chuỗi chi nhánh" subtitle="Ví và kho tổng dùng chung. Chi nhánh tự chạy nền mỗi khi sang ngày; hãy chuyển hàng cho chi nhánh để có thứ bán" onClose={onClose}>
       <div style={{ display: 'grid', gap: 8 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 6 }}>
+        <div className="chain-kpis" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 6 }}>
           <PixelStat label="Ví chung" value={money(playerMoney)} icon="coin" />
           <PixelStat label="Kho tổng" value={`${warehouseTotals.units} món · ${money(warehouseTotals.value)}`} icon="warehouse" />
           <PixelStat label="Chi nhánh" value={`${chain.branches.length}/${MAX_CHAIN_BRANCHES}`} icon="door" />

@@ -129,26 +129,33 @@ export class PixelTextureFactory {
    * Supermarket / Grocery floor tile (Matching user reference image)
    * Warm beige/cream tile with soft grid grout
    */
-  private createStoreFloorTile(): HTMLCanvasElement {
+    private createStoreFloorTile(): HTMLCanvasElement {
     const canvas = createCanvas(32, 32);
     const ctx = canvas.getContext('2d')!;
 
-    // Soft warm tile base
-    ctx.fillStyle = '#eee5d6';
+    // Warm wood plank base
+    ctx.fillStyle = '#b57849'; // darker wood
     ctx.fillRect(0, 0, 32, 32);
 
-    // Subtle marble/grit variation
-    ctx.fillStyle = '#e5dbcb';
-    ctx.fillRect(4, 6, 8, 8);
-    ctx.fillRect(18, 16, 10, 10);
-    ctx.fillStyle = '#f5ede0';
-    ctx.fillRect(14, 4, 12, 6);
-    ctx.fillRect(2, 20, 8, 8);
+    // Planks
+    ctx.fillStyle = '#a6693a';
+    ctx.fillRect(0, 8, 32, 1);
+    ctx.fillRect(0, 16, 32, 1);
+    ctx.fillRect(0, 24, 32, 1);
 
-    // Grout lines (Crisp 1px pixel border)
-    ctx.fillStyle = '#d5c8b5';
-    ctx.fillRect(0, 0, 32, 1);
-    ctx.fillRect(0, 0, 1, 32);
+    // Wood grain lines
+    ctx.fillStyle = '#c78a5c';
+    ctx.fillRect(2, 2, 8, 1);
+    ctx.fillRect(14, 10, 10, 1);
+    ctx.fillRect(6, 18, 12, 1);
+    ctx.fillRect(20, 26, 8, 1);
+
+    // Dark gaps
+    ctx.fillStyle = '#7a4521';
+    ctx.fillRect(12, 0, 1, 8);
+    ctx.fillRect(24, 8, 1, 8);
+    ctx.fillRect(8, 16, 1, 8);
+    ctx.fillRect(18, 24, 1, 8);
 
     return canvas;
   }
@@ -186,22 +193,24 @@ export class PixelTextureFactory {
   /**
    * Sidewalk pavement (Vỉa hè xi măng / ngõ phố)
    */
-  private createSidewalkTile(): HTMLCanvasElement {
+    private createSidewalkTile(): HTMLCanvasElement {
     const canvas = createCanvas(32, 32);
     const ctx = canvas.getContext('2d')!;
 
-    ctx.fillStyle = '#c7beaf';
+    // Warm dirt path
+    ctx.fillStyle = '#cfa065';
     ctx.fillRect(0, 0, 32, 32);
 
-    ctx.fillStyle = '#b5ab9c';
+    ctx.fillStyle = '#ba8b51';
     for (let i = 0; i < 32; i += 8) {
       ctx.fillRect(i, 0, 1, 32);
       ctx.fillRect(0, i, 32, 1);
     }
 
-    ctx.fillStyle = '#9c9284';
+    ctx.fillStyle = '#8f6838';
     ctx.fillRect(6, 10, 2, 2);
     ctx.fillRect(22, 22, 2, 2);
+    ctx.fillRect(12, 14, 3, 1);
 
     return canvas;
   }
@@ -256,22 +265,31 @@ export class PixelTextureFactory {
   /**
    * Grass / Moss patch around neighborhood trees
    */
-  private createGrassPatchTile(): HTMLCanvasElement {
+    private createGrassPatchTile(): HTMLCanvasElement {
     const canvas = createCanvas(32, 32);
     const ctx = canvas.getContext('2d')!;
 
-    ctx.fillStyle = '#5c7a52';
+    ctx.fillStyle = '#418231';
     ctx.fillRect(0, 0, 32, 32);
 
-    ctx.fillStyle = '#4c6843';
+    ctx.fillStyle = '#5c9945';
     ctx.fillRect(4, 8, 4, 3);
     ctx.fillRect(18, 16, 5, 3);
     ctx.fillRect(10, 24, 6, 2);
+    ctx.fillRect(26, 4, 3, 2);
 
-    ctx.fillStyle = '#6e9163';
+    ctx.fillStyle = '#2f6323';
     ctx.fillRect(12, 6, 3, 2);
     ctx.fillRect(24, 10, 3, 3);
     ctx.fillRect(6, 20, 2, 3);
+
+    // Some small flowers
+    ctx.fillStyle = '#ffde59';
+    ctx.fillRect(5, 7, 2, 2);
+    ctx.fillRect(20, 15, 2, 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(25, 23, 2, 2);
+    ctx.fillRect(11, 23, 2, 2);
 
     return canvas;
   }
@@ -1003,3 +1021,5 @@ export class PixelTextureFactory {
     return canvas;
   }
 }
+
+

@@ -434,6 +434,65 @@ async function run() {
     assert.equal(afterMove.storeLayout.fixtures.find((f: { id: string }) => f.id === 'snack_shelf')!.tileX, snackShelfX - 20, 'nội thất quán ăn vặt dịch theo dx = −20');
     assert.deepEqual((await moveSnapshot(member)).businesses[0].save.storeLayout.buildingPlacements, afterMove.storeLayout.buildingPlacements, 'thành viên gửi lệnh thấy cùng vị trí đặt');
 
+    // open-world-land-reclamation (D3/D4): reclaim_wave và buy_parcel là lệnh server-replay.
+    const landDb = client.db(testDbName).collection<{ _id: string }>('game_worlds');
+    const landSet = (fields: Record<string, unknown>) => landDb.updateOne({ _id: world.id }, { $set: { ...fields } });
+
+    // reclaim_wave W1 thành công: đủ cấp (25 ≥ 20) + tiền (5M ≥ 800k) → trừ đúng 800k, W1 thi công xong đầu ngày day+2, CHƯA mở.
+    await landSet({
+      'businesses.0.save.player.level': 25,
+      'businesses.0.save.player.money': 5_000_000,
+      'businesses.0.save.world.openedWaves': ['w0'],
+      'businesses.0.save.world.wavesUnderConstruction': {},
+    });
+    const reclaimSeed = await snapshotFor(owner);
+    const reclaimDay = reclaimSeed.businesses[0].save.worldTime.day;
+    const reclaimMoney = reclaimSeed.businesses[0].save.player.money;
+    const reclaimResult = await send(owner, 'reclaim-w1', { type: 'reclaim_wave', waveId: 'w1' }, reclaimSeed.world.revision);
+    assert.equal(reclaimResult.committed, true, 'reclaim_wave hợp lệ được commit');
+    const afterReclaim = (await snapshotFor(member)).businesses[0].save;
+    assert.equal(afterReclaim.player.money, reclaimMoney - 800_000, 'reclaim_wave trừ đúng 800.000 ₫ một lần');
+    assert.equal(afterReclaim.world!.wavesUnderConstruction.w1, reclaimDay + 2, 'W1 thi công xong đầu ngày day+2');
+    assert.ok(!afterReclaim.world!.openedWaves.includes('w1'), 'W1 chưa vào openedWaves khi còn thi công');
+
+    // reclaim_wave W2 thiếu cấp (cấp 5 < 30) → từ chối, không đổi revision.
+    await landSet({ 'businesses.0.save.player.level': 5, 'businesses.0.save.player.money': 9_000_000 });
+    const lowLevelRev = (await snapshotFor(owner)).world.revision;
+    await assert.rejects(send(owner, 'reclaim-w2-low-level', { type: 'reclaim_wave', waveId: 'w2' }, lowLevelRev), 'reclaim_wave thiếu cấp bị từ chối');
+    assert.equal((await snapshotFor(owner)).world.revision, lowLevelRev, 'reclaim thiếu cấp không đổi revision');
+
+    // reclaim_wave W2 thiếu tiền (cấp 40, chỉ 100k < 1.2M) → từ chối.
+    await landSet({ 'businesses.0.save.player.level': 40, 'businesses.0.save.player.money': 100_000 });
+    const lowMoneyRev = (await snapshotFor(owner)).world.revision;
+    await assert.rejects(send(owner, 'reclaim-w2-low-money', { type: 'reclaim_wave', waveId: 'w2' }, lowMoneyRev), 'reclaim_wave thiếu tiền bị từ chối');
+    assert.equal((await snapshotFor(owner)).world.revision, lowMoneyRev, 'reclaim thiếu tiền không đổi revision');
+
+    // buy_parcel "w1-corner" thành công sau khi đã MỞ đợt W1 (openedWaves = ['w0','w1'], không còn thi công).
+    await landSet({
+      'businesses.0.save.player.level': 25,
+      'businesses.0.save.player.money': 5_000_000,
+      'businesses.0.save.world.openedWaves': ['w0', 'w1'],
+      'businesses.0.save.world.wavesUnderConstruction': {},
+    });
+    const parcelSeed = await snapshotFor(owner);
+    const parcelMoney = parcelSeed.businesses[0].save.player.money;
+    const w1CornerPrice = 12_000 * 6 * 5 * 1.6; // PARCEL_BASE_PRICE × 30 ô × hệ số góc đường chính (D5)
+    const parcelResult = await send(member, 'buy-parcel-corner', { type: 'buy_parcel', parcelId: 'w1-corner' }, parcelSeed.world.revision);
+    assert.equal(parcelResult.committed, true, 'buy_parcel lô W1 góc hợp lệ được commit');
+    const afterParcel = (await snapshotFor(owner)).businesses[0].save;
+    assert.equal(afterParcel.player.money, parcelMoney - w1CornerPrice, 'buy_parcel trừ đúng giá lô góc');
+    assert.ok(afterParcel.storeLayout.ownedParcelIds?.includes('w1-corner'), 'owner thấy lô W1 đã mua qua server replay');
+
+    // buy_parcel lô đã mua lại → already_owned, không commit.
+    const ownedRev = (await snapshotFor(owner)).world.revision;
+    await assert.rejects(send(owner, 'buy-parcel-corner-again', { type: 'buy_parcel', parcelId: 'w1-corner' }, ownedRev), 'buy_parcel lô đã mua bị từ chối');
+    assert.equal((await snapshotFor(owner)).world.revision, ownedRev, 'buy_parcel đã mua không đổi revision');
+
+    // buy_parcel lô đợt CHƯA mở (W3) → wave_not_open, không commit.
+    const notOpenRev = (await snapshotFor(owner)).world.revision;
+    await assert.rejects(send(owner, 'buy-parcel-w3', { type: 'buy_parcel', parcelId: 'w3-1' }, notOpenRev), 'buy_parcel lô đợt chưa mở bị từ chối');
+    assert.equal((await snapshotFor(owner)).world.revision, notOpenRev, 'buy_parcel đợt chưa mở không đổi revision');
+
     console.log('PASS co-op: 10 lệnh server-replay + lệnh vận hành (store_status, planogram, advance_day, stow_all) + layout_batch (mở rộng sàn, dời tòa) qua GameController.commitCommand');
     await closeDatabase();
   } finally {

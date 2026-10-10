@@ -50,7 +50,7 @@ export function rmsLevel(samples: ArrayLike<number>): number {
 
 /** Thông báo lỗi mic dễ hiểu từ lỗi getUserMedia. */
 export function describeMicError(error: unknown, hasMediaDevices: boolean): string {
-  if (!hasMediaDevices) return 'Trình duyệt chỉ cho dùng mic trên HTTPS hoặc localhost.';
+  if (!hasMediaDevices) return 'Mic chỉ dùng được khi mở game bằng địa chỉ HTTPS (có ổ khóa).';
   const name = error && typeof error === 'object' ? (error as { name?: string }).name : undefined;
   if (name === 'NotAllowedError' || name === 'SecurityError') return 'Bạn đã từ chối quyền dùng mic. Hãy cho phép mic trong cài đặt trình duyệt rồi thử lại.';
   if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'Không tìm thấy micro trên thiết bị.';
