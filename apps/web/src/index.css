@@ -1,37 +1,37 @@
 @import "tailwindcss";
 @source "../index.html";
 @theme {
-  --color-bg: #D0C8AE;
-  --color-panel: #F0E6C8;
-  --color-panel-dark: #DCD1AC;
-  --color-panel-hover: #E6DBB6;
-  --color-panel-selected: #E9D9A0;
+  --color-bg: #BDAE94;
+  --color-panel: #F2D79D;
+  --color-panel-dark: #DDB66F;
+  --color-panel-hover: #EAC985;
+  --color-panel-selected: #E2BD76;
 
-  --color-text: #26352B;
-  --color-text-muted: #574F42;
+  --color-text: #3B2A1F;
+  --color-text-muted: #66513E;
 
-  --color-green: #4F873F;
-  --color-green-dark: #294D32;
-  --color-green-light: #76A94F;
+  --color-green: #60794A;
+  --color-green-dark: #405A35;
+  --color-green-light: #788B5E;
 
-  --color-olive: #6E8F3C;
-  --color-olive-dark: #46612A;
+  --color-olive: #6C8050;
+  --color-olive-dark: #4B603D;
 
-  --color-brick: #983728;
-  --color-brick-dark: #7A2D22;
+  --color-brick: #A45645;
+  --color-brick-dark: #7D4036;
 
-  --color-sun: #F2C84B;
-  --color-sun-dark: #8A5A12;
+  --color-sun: #E3B95E;
+  --color-sun-dark: #755020;
 
-  --color-water: #39839A;
-  --color-water-dark: #245F72;
+  --color-water: #5E8790;
+  --color-water-dark: #3E626A;
 
-  --color-wood: #714B35;
-  --color-wood-dark: #4A3123;
+  --color-wood: #86552F;
+  --color-wood-dark: #553722;
 
-  --color-outline: #26352B;
-  --color-outline-soft: #8A8468;
-  --color-outline-light: #B8B096;
+  --color-outline: #63432E;
+  --color-outline-soft: #92775A;
+  --color-outline-light: #B9A487;
 
   --font-retro: "Courier New", Courier, monospace, sans-serif;
 
@@ -50,67 +50,68 @@
 
 :root {
   /* Primitive Tokens - World-First Palette */
-  --color-bg: #D0C8AE;
-  --color-panel: #F0E6C8;
-  --color-panel-dark: #DCD1AC;
-  --color-panel-hover: #E6DBB6;
-  --color-panel-selected: #E9D9A0;
+  --color-bg: #BDAE94;
+  --color-panel: #F2D79D;
+  --color-panel-dark: #DDB66F;
+  --color-panel-hover: #EAC985;
+  --color-panel-selected: #E2BD76;
 
-  --color-text: #26352B;
-  --color-text-muted: #574F42;
+  --color-text: #3B2A1F;
+  --color-text-muted: #66513E;
 
-  --color-green: #4F873F;
-  --color-green-dark: #294D32;
-  --color-green-light: #76A94F;
-  --color-green-hover: #76A94F;
-  --color-green-active: #294D32;
+  --color-green: #60794A;
+  --color-green-dark: #405A35;
+  --color-green-light: #788B5E;
+  --color-green-hover: #788B5E;
+  --color-green-active: #405A35;
 
-  --color-olive: #6E8F3C;
-  --color-olive-dark: #46612A;
+  --color-olive: #6C8050;
+  --color-olive-dark: #4B603D;
 
-  --color-wood: #714B35;
-  --color-wood-dark: #4A3123;
-  --color-wood-light: #714B35;
+  --color-wood: #86552F;
+  --color-wood-dark: #553722;
+  --color-wood-light: #A36A37;
 
-  --color-brick: #983728;
-  --color-brick-dark: #7A2D22;
+  --color-brick: #A45645;
+  --color-brick-dark: #7D4036;
 
-  --color-sun: #F2C84B;
-  --color-sun-dark: #8A5A12;
+  --color-sun: #E3B95E;
+  --color-sun-dark: #755020;
   
-  --color-wheat: #F2C84B; /* Legacy map to sun */
-  --color-wheat-dark: #8A5A12;
+  --color-wheat: var(--color-sun); /* Legacy alias to the restrained sun accent */
+  --color-wheat-dark: var(--color-sun-dark);
 
-  --color-water: #39839A;
-  --color-water-dark: #245F72;
-  --color-blue: #39839A; /* Legacy map to water */
+  --color-water: #5E8790;
+  --color-water-dark: #3E626A;
+  --color-blue: var(--color-water); /* Legacy alias to water */
 
-  --color-outline: #26352B;
-  --color-outline-soft: #8A8468;
-  --color-outline-light: #B8B096;
+  --color-outline: #63432E;
+  --color-outline-soft: #92775A;
+  --color-outline-light: #B9A487;
 
   /* Vietnamese Neighborhood Pixel — palette lấy từ thế giới game */
-  --color-ink: #26352B;
-  --color-deep-green: #294D32;
-  --color-grass: #4F873F;
-  --color-leaf: #76A94F;
-  --color-terracotta: #B94E3D;
-  --color-roof-red: #8F382F;
-  --color-sky: #62A8C7;
-  --color-orange: #E59A3A;
-  --color-cream: #F0E6C8;
-  --color-warm-gray: #D0C8AE;
-  --color-dark-surface: #3B4937;
-  --color-blue-dark: #245F72;
+  --color-ink: #39271C;
+  /* Legacy token name: shared frame color follows the coffee-brown trim in the reference image. */
+  --color-deep-green: #65442E;
+  --color-grass: #60794A;
+  --color-leaf: #788B5E;
+  --color-terracotta: #A34E39;
+  --color-roof-red: #783B2E;
+  --color-sky: #7899A0;
+  --color-orange: #B77C3E;
+  --color-cream: #F2D79D;
+  --color-warm-gray: #CFC0A1;
+  --color-dark-surface: #3A2A21;
+  --color-blue-dark: #3E626A;
   /* Nền đặc có chữ sáng: đạt WCAG AA (trắng/kem trên các nền này ≥ 4.5:1); các màu palette gốc giữ cho viền/icon/khối lớn */
-  --color-water-panel: #2D6E84;
-  --color-grass-btn: #3E7733;
-  --color-success-text: #2A5F24;
-  --color-text-on-dark: #F0E6C8;
-  --color-text-on-dark-muted: #DAD3B5;
+  --color-water-panel: #4D737B;
+  --color-grass-btn: #426337;
+  --color-success-text: #405B36;
+  --color-text-on-dark: #F2D79D;
+  --color-text-on-dark-muted: #D5C29E;
   /* Viền + bóng cứng kiểu pixel */
   --px-border: 2px solid var(--color-deep-green);
-  --px-shadow: 3px 3px 0 var(--color-ink);
+  --px-shadow: 2px 2px 0 #39271C;
 
   /* Semantic Tokens */
   --color-primary: var(--color-green);
@@ -593,6 +594,20 @@ strong { font-weight: 750; }
 .dock-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
 .dock-title h2 { font-size: 16px; }
 .dock-title > div { display: flex; align-items: center; gap: 8px; }
+.dock-title .dock-close-button {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 6px;
+  color: var(--color-roof-red);
+  background: var(--color-cream);
+  border: 3px solid var(--color-ink);
+  box-shadow: 2px 2px 0 var(--color-ink);
+}
+.dock-title .dock-close-button:hover:not(:disabled) { color: var(--color-ink); background: var(--color-panel-hover); filter: none; }
+.dock-title .dock-close-button:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+.dock-title .dock-close-button .pixel-icon { width: 22px; height: 22px; color: var(--color-brick-dark); }
 .dock-meta { display: flex; justify-content: space-between; font-size: 12px;
   color: var(--color-text-on-dark-muted); }
 .dock-list {
@@ -963,16 +978,15 @@ kbd {
   font: inherit;
   color: inherit;
   border: 2px solid var(--color-ink);
-  border-left-width: 8px;
+  border-left-width: 5px;
   box-shadow: 3px 3px 0 var(--color-ink);
-  --mc: var(--color-grass);
-  border-left-color: var(--mc);
+  border-left-color: var(--color-deep-green);
 }
 .management-card:hover:not(:disabled) {
   background: var(--color-panel-hover);
   transform: translateY(-2px);
   border-color: var(--color-ink);
-  border-left-color: var(--mc);
+  border-left-color: var(--color-deep-green);
 }
 .management-card:active:not(:disabled) {
   transform: translateY(1px);
@@ -991,7 +1005,8 @@ kbd {
   height: 38px;
   border: 2px solid var(--color-outline-soft);
   flex-shrink: 0;
-  color: #fff;
+  color: var(--color-deep-green);
+  background: var(--color-panel-dark);
 }
 .management-card-info { flex: 1; min-width: 0; }
 .management-card-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
@@ -1216,12 +1231,10 @@ body, .game-shell { background: var(--color-dark-surface); }
   border: var(--px-border);
   box-shadow: 2px 2px 0 var(--color-ink);
 }
-.info-card { border-left: 6px solid var(--color-grass); }
-.product-row { border-left: 6px solid var(--color-water); }
-.inventory-card { border-left: 6px solid var(--color-orange); }
+.info-card, .product-row, .inventory-card { border-left: 5px solid var(--color-deep-green); }
 .inventory-card:hover, .product-row:hover { background: var(--color-panel-selected); }
 .inventory-card[aria-pressed="true"] { outline: 3px solid var(--color-sun); outline-offset: -3px; background: var(--color-panel-selected); }
-.summary-row { background: var(--color-water-panel); }
+.summary-row { background: var(--color-panel-dark); color: var(--color-text); }
 .summary-row .muted, .summary-row strong { color: inherit; }
 .product-slot, .management-card-icon { border: 2px solid var(--color-deep-green); }
 .slot-count { background: var(--color-sun); }
@@ -1234,10 +1247,9 @@ kbd { background: var(--color-sun); border: 2px solid var(--color-ink); }
 .button-paper { background: var(--color-warm-gray); color: var(--color-ink); border-color: var(--color-ink); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.4), 0 3px 0 var(--color-ink); }
 .button-paper:hover:not(:disabled) { background: var(--color-cream); }
 .button-green, .button-teal { background: var(--color-grass-btn); color: #fff; border-color: var(--color-ink); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.28), 0 3px 0 var(--color-deep-green), 0 4px 0 var(--color-ink); text-shadow: 1px 1px 0 var(--color-deep-green); }
-.button-water { background: var(--color-water-panel); color: #fff; border-color: var(--color-ink); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.28), 0 3px 0 var(--color-water-dark), 0 4px 0 var(--color-ink); text-shadow: 1px 1px 0 var(--color-water-dark); }
-.button-sun { background: var(--color-sun); color: var(--color-ink); border-color: var(--color-ink); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.4), 0 3px 0 var(--color-sun-dark), 0 4px 0 var(--color-ink); }
-.button-brick { background: var(--color-terracotta); color: #fff; border-color: var(--color-ink); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.25), 0 3px 0 var(--color-roof-red), 0 4px 0 var(--color-ink); text-shadow: 1px 1px 0 var(--color-roof-red); }
-.button-wood { background: var(--color-wood); color: var(--color-cream); border-color: var(--color-ink); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.22), 0 3px 0 var(--color-ink); }
+.button-water, .button-sun { background: var(--color-panel-dark); color: var(--color-text); border-color: var(--color-deep-green); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2), 0 2px 0 var(--color-deep-green); text-shadow: none; }
+.button-brick { background: var(--color-panel-dark); color: var(--color-brick-dark); border-color: var(--color-deep-green); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2), 0 2px 0 var(--color-deep-green); text-shadow: none; }
+.button-wood { background: var(--color-panel-dark); color: var(--color-text); border-color: var(--color-deep-green); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2), 0 2px 0 var(--color-deep-green); }
 .pixel-button:disabled { background: var(--color-warm-gray); color: var(--color-text-muted); border-color: var(--color-outline-soft); box-shadow: none; text-shadow: none; }
 .pixel-progress { background: var(--color-warm-gray); }
 .pixel-progress > span { background: linear-gradient(180deg, var(--color-leaf) 0 50%, var(--color-grass) 50% 100%); }
@@ -1257,17 +1269,15 @@ kbd { background: var(--color-sun); border: 2px solid var(--color-ink); }
 .game-hud .hud-season-badge { color: var(--color-orange); }
 .game-hud .hud-event-badge { color: var(--color-sun); }
 .game-hud .pixel-icon, .game-hud .icon-coin, .game-hud .icon-star { color: var(--color-sun); }
-.game-hud .icon-heart { color: #E8806E; }
+.game-hud .icon-heart { color: var(--color-cream); }
 .game-hud .hud-level .pixel-progress { background: var(--color-ink); border-color: var(--color-ink); }
 .game-hud .hud-level .pixel-progress > span { background: var(--color-sun); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4); }
 .game-hud .eyebrow[style] { color: var(--color-sun) !important; }
 .game-hud .pixel-button .pixel-icon { color: inherit; }
 .hud-debt { background: var(--color-terracotta); }
 /* Nút HUD mang màu ngữ nghĩa riêng */
-.hud-actions .pixel-button[aria-label^="Giá bán"] { background: var(--color-sun); color: var(--color-ink); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.4), 0 3px 0 var(--color-sun-dark), 0 4px 0 var(--color-ink); }
-.hud-actions .pixel-button[aria-label^="Nhiệm vụ"] { background: var(--color-orange); color: var(--color-ink); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.35), 0 3px 0 #A76A1F, 0 4px 0 var(--color-ink); }
-.hud-actions .pixel-button[aria-label^="Kho"] { background: var(--color-water-panel); color: #fff; box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.28), 0 3px 0 var(--color-water-dark), 0 4px 0 var(--color-ink); text-shadow: 1px 1px 0 var(--color-water-dark); }
-.hud-actions .pixel-button[aria-label^="Tốc độ"] { background: var(--color-sky); color: var(--color-ink); }
+.hud-actions .pixel-button { background: var(--color-panel-dark); color: var(--color-text); border-color: var(--color-deep-green); box-shadow: inset 0 2px 0 rgba(255,255,255,.2), 0 2px 0 var(--color-deep-green); text-shadow: none; }
+.hud-actions .pixel-button.btn-store-toggle { background: var(--color-green-dark); color: var(--color-cream); }
 
 /* Thế giới: chú thích + công cụ zoom */
 .world-caption { background: var(--color-cream); }
@@ -1300,16 +1310,9 @@ kbd { background: var(--color-sun); border: 2px solid var(--color-ink); }
 .loading-screen, .rotate-screen { background: var(--color-deep-green); }
 .loading-screen > p, .rotate-screen p { color: var(--color-text-on-dark-muted); }
 
-/* Management: mỗi thẻ một màu ngữ nghĩa xoay vòng (xanh, nước, nắng, ngói, gỗ) */
-.management-card:nth-child(5n+2) { --mc: var(--color-water); }
-.management-card:nth-child(5n+3) { --mc: var(--color-sun); }
-.management-card:nth-child(5n+4) { --mc: var(--color-terracotta); }
-.management-card:nth-child(5n+5) { --mc: var(--color-wood); }
-.management-card-icon { background: var(--mc); border-color: var(--color-ink); }
-.management-card:nth-child(5n+3) .management-card-icon { color: var(--color-ink); }
-.management-card:hover:not(:disabled) { box-shadow: 3px 5px 0 var(--color-ink); }
-.management-card:hover:not(:disabled) .management-card-icon { background: var(--mc); filter: brightness(1.12); border-color: var(--color-ink); color: #fff; }
-.management-card:nth-child(5n+3):hover:not(:disabled) .management-card-icon { color: var(--color-ink); }
+.management-card-icon { background: var(--color-panel-dark); border-color: var(--color-outline-soft); color: var(--color-deep-green); }
+.management-card:hover:not(:disabled) { box-shadow: 2px 3px 0 var(--color-ink); }
+.management-card:hover:not(:disabled) .management-card-icon { background: var(--color-panel-selected); border-color: var(--color-deep-green); color: var(--color-deep-green); }
 .management-badge.badge-brick { background: var(--color-terracotta); }
 .inventory-summary-card .summary-header { color: var(--color-sun); }
 .inventory-summary-card .summary-title { color: var(--color-sun); }
@@ -1330,3 +1333,26 @@ kbd { background: var(--color-sun); border: 2px solid var(--color-ink); }
 .button-green:hover:not(:disabled), .button-teal:hover:not(:disabled) { background: var(--color-grass); }
 .summary-row span[style*="inline-block"] { background: var(--color-cream) !important; color: var(--color-ink) !important; border-color: var(--color-ink) !important; }
 .inventory-summary-card .summary-check, .inventory-summary-card .summary-value.summary-revenue, .summary-check, .save-status { color: var(--color-success-text); }
+
+/* Art direction refinement: restrained neighborhood palette (08/10/2026).
+   Keep the pixel silhouette, but reserve strong color for the primary action and state. */
+.pixel-panel { border-color: var(--color-deep-green); box-shadow: inset 1px 1px 0 rgba(255,255,255,.25), 2px 2px 0 var(--color-ink); }
+.pixel-button { box-shadow: inset 0 2px 0 rgba(255,255,255,.2), 0 2px 0 var(--color-deep-green); }
+.button-green, .button-teal { background: var(--color-green-dark); border-color: var(--color-deep-green); box-shadow: inset 0 2px 0 rgba(255,255,255,.18), 0 2px 0 var(--color-ink); text-shadow: none; }
+.button-green:hover:not(:disabled), .button-teal:hover:not(:disabled) { background: var(--color-grass-btn); }
+.button-water, .button-sun { background: var(--color-panel-dark); color: var(--color-text); border-color: var(--color-deep-green); box-shadow: inset 0 2px 0 rgba(255,255,255,.2), 0 2px 0 var(--color-deep-green); text-shadow: none; }
+.button-brick { background: var(--color-panel-dark); color: var(--color-brick-dark); border-color: var(--color-deep-green); box-shadow: inset 0 2px 0 rgba(255,255,255,.2), 0 2px 0 var(--color-deep-green); text-shadow: none; }
+.button-wood { background: var(--color-panel-dark); color: var(--color-text); border-color: var(--color-deep-green); box-shadow: inset 0 2px 0 rgba(255,255,255,.2), 0 2px 0 var(--color-deep-green); }
+.button-paper { box-shadow: inset 0 2px 0 rgba(255,255,255,.25), 0 2px 0 var(--color-outline); }
+.dialog-header h2, .brand-copy h1, .dock-title h2 { text-shadow: 1px 1px 0 rgba(24,35,27,.55); }
+.game-hud { background: var(--color-dark-surface); }
+.game-hud .brand-copy .eyebrow, .game-hud .hud-event-badge, .game-hud .hud-season-badge { color: var(--color-text-on-dark-muted); }
+.brand-sign { background: #B99455; }
+.account-bar { border-bottom-color: var(--color-wood-light); }
+.management-card, .info-card, .product-row, .inventory-card { box-shadow: 2px 2px 0 var(--color-ink); }
+.management-card:hover:not(:disabled) { box-shadow: 2px 3px 0 var(--color-ink); }
+.info-card, .product-row, .inventory-card { border-left-color: var(--color-deep-green); }
+.inventory-card[aria-pressed="true"] { outline-color: var(--color-deep-green); background: var(--color-panel-hover); }
+.slot-count { background: var(--color-sun); }
+.toast-success { border-left-width: 6px; }
+.toast-warn { border-left-width: 6px; }

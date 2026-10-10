@@ -61,7 +61,7 @@ export const WarehouseDock: React.FC<Props> = ({
             <PixelIcon name="warehouse" />
             <h2>Kho sau tiệm</h2>
           </div>
-          <PixelButton icon="close" aria-label="Thu gọn kho" onClick={onToggle} />
+          <PixelButton className="dock-close-button" icon="close" aria-label="Thu gọn kho" title="Thu gọn kho" onClick={onToggle} />
         </div>
         <div className="dock-meta">
           <span>{items.reduce((n, i) => n + i.quantity, 0)} món hàng</span>

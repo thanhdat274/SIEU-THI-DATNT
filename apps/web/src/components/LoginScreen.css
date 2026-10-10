@@ -1121,9 +1121,9 @@
   text-align: left;
   cursor: pointer;
   transition: all 0.14s ease;
-  --ac: var(--color-grass);
-  background: var(--color-cream);
-  box-shadow: 4px 4px 0 var(--color-ink);
+  background: var(--color-panel);
+  border: 2px solid var(--color-deep-green);
+  box-shadow: 2px 2px 0 var(--color-ink);
 }
 
 .deck-action-card:active:not(:disabled) {
@@ -2129,32 +2129,25 @@ html[data-input="touch"] .save-slot-delete::after { content: ''; position: absol
 
 /* Cột trái: thẻ hồ sơ — thân kem, đầu xanh cỏ */
 .spotlight-ribbon-tag { text-shadow: 1px 1px 0 var(--color-deep-green); padding: 8px 16px; font-size: 11px;
-  background: var(--color-grass-btn); }
-.save-slot-chip.is-active > button:first-child { background: #F6DE8E; border-color: var(--color-ink); box-shadow: 2px 2px 0 var(--color-ink), inset 0 0 0 3px var(--color-sun); }
+  background: var(--color-wood); }
+.save-slot-chip.is-active > button:first-child { background: var(--color-green-dark); color: var(--color-cream); border-color: var(--color-deep-green); box-shadow: 2px 2px 0 var(--color-ink), inset 0 0 0 2px var(--color-leaf); }
+.save-slot-chip.is-active > button:first-child strong { color: var(--color-cream); }
 .save-slot-chip > button:first-child strong { color: var(--color-deep-green); }
 
 /* Nút Tiếp tục: xanh đậm + mũi tên vàng */
 .launch-action-main { text-shadow: 2px 2px 0 var(--color-ink); }
 
-/* Cột phải: mỗi thẻ một màu ngữ nghĩa (viền trái + ô biểu tượng) */
+/* All menu tiles share one surface and icon treatment; action identity is carried by label/icon. */
 .deck-action-card {
-  border: 3px solid var(--color-ink);
-  border-left: 10px solid var(--ac);
+  border: 2px solid var(--color-deep-green);
+  border-left-width: 5px;
 }
-.deck-action-card:hover:not(:disabled) { background: #FBF3D6; border-color: var(--color-ink); border-left-color: var(--ac); transform: translate(2px, -1px); box-shadow: 5px 5px 0 var(--color-ink); }
-.deck-action-card .card-symbol-badge { background: var(--ac); border: 2px solid var(--color-ink); color: #fff; box-shadow: 2px 2px 0 var(--color-ink); }
-.deck-action-card .card-arrow-mark { color: var(--ac); font-weight: 900; }
-.card-new-game { --ac: var(--color-leaf); }
-.card-multiplayer { --ac: var(--color-water); }
-.card-local { --ac: var(--color-terracotta); }
-.card-guide { --ac: var(--color-sun); }
-.card-guide .card-symbol-badge { color: var(--color-ink); }
-.card-rankings { --ac: var(--color-orange); }
-.card-rankings .card-symbol-badge { color: var(--color-ink); }
-div.deck-action-card.card-multiplayer:has(.dev-guest-picker) { --ac: var(--color-sky); }
+.deck-action-card:hover:not(:disabled) { background: var(--color-panel-hover); border-color: var(--color-deep-green); transform: translate(1px, -1px); box-shadow: 3px 3px 0 var(--color-ink); }
+.deck-action-card .card-symbol-badge { background: var(--color-panel-dark); border: 2px solid var(--color-outline-soft); color: var(--color-deep-green); box-shadow: 1px 1px 0 var(--color-ink); filter: grayscale(1); }
+.deck-action-card .card-arrow-mark { color: var(--color-text-muted); font-weight: 900; }
 .card-text-body strong { color: var(--color-deep-green); }
-.dev-guest-chip.is-active { background: var(--color-sun); color: var(--color-ink); border-color: var(--color-ink); }
-.dev-guest-enter:hover:not(:disabled) { background: var(--color-sky); color: var(--color-ink); }
+.dev-guest-chip.is-active { background: var(--color-green-dark); color: var(--color-cream); border-color: var(--color-deep-green); }
+.dev-guest-enter:hover:not(:disabled) { background: var(--color-panel-hover); color: var(--color-text); }
 
 /* Footer tối + chữ nắng */
 
@@ -2167,7 +2160,7 @@ div.deck-action-card.card-multiplayer:has(.dev-guest-picker) { --ac: var(--color
   .spotlight-ribbon-tag { padding: 4px 12px; }
   .deck-save-spotlight { box-shadow: 3px 3px 0 var(--color-ink); }
   .btn-hero-launch { border-width: 2px; }
-  .deck-action-card { border-left-width: 6px; box-shadow: 3px 3px 0 var(--color-ink); }
+  .deck-action-card { border-left-width: 5px; box-shadow: 2px 2px 0 var(--color-ink); }
 }
 @media (max-height: 380px) and (orientation: landscape) {
   .spotlight-inner-box { padding: 6px 8px 8px; }
@@ -2182,7 +2175,7 @@ div.deck-action-card.card-multiplayer:has(.dev-guest-picker) { --ac: var(--color
 /* Portrait hẹp: thẻ menu gọn lại để hồ sơ + nút Tiếp tục không bị ép về 0 (320×568: lưới thẻ từng chiếm hết chiều cao) */
 @media (max-width: 600px) and (orientation: portrait) {
   .deck-options-grid { gap: 6px; grid-auto-rows: minmax(0, auto); }
-  .deck-action-card { padding: 6px 8px; gap: 8px; border-width: 2px; border-left-width: 6px; box-shadow: 2px 2px 0 var(--color-ink); }
+  .deck-action-card { padding: 6px 8px; gap: 8px; border-width: 2px; border-left-width: 5px; box-shadow: 2px 2px 0 var(--color-ink); }
   .deck-action-card .card-symbol-badge { width: 30px; height: 30px; font-size: 15px; border-width: 2px; box-shadow: 1px 1px 0 var(--color-ink); }
   .deck-action-card .card-arrow-mark { display: none; }
   .deck-action-card .card-text-body small { display: none; }
@@ -2194,10 +2187,25 @@ div.deck-action-card.card-multiplayer:has(.dev-guest-picker) { --ac: var(--color
   .deck-options-grid .card-text-body strong { font-size: 11px; line-height: 1.15; }
 }
 
-/* Tương phản (đo WCAG 08/10/2026) */
-.card-new-game .card-symbol-badge { color: var(--color-ink); }
-.card-multiplayer .card-symbol-badge { background: var(--color-water-panel); }
+/* Shared card treatment: every entry uses the same muted icon tile. */
 .deck-footer-bar, .deck-footer-bar span, .deck-footer-bar small { color: var(--color-text-on-dark-muted); }
 .deck-footer-bar .footer-save-guarantee, .deck-footer-bar .footer-save-guarantee span { color: var(--color-cream); }
 .spotlight-ribbon-tag { color: #fff; }
 .sound-on .sound-disc-icon { color: var(--color-ink); }
+
+/* Restrained neighborhood sign palette: fewer competing color blocks. */
+.deck-header { box-shadow: inset 0 -3px 0 var(--color-wood-light); }
+.deck-header, .deck-footer-bar { border-color: var(--color-ink); }
+.deck-action-card { border-color: var(--color-deep-green); border-left-width: 5px; box-shadow: 2px 2px 0 var(--color-ink); }
+.deck-action-card:hover:not(:disabled) { background: var(--color-panel-hover); box-shadow: 3px 3px 0 var(--color-ink); transform: translate(1px, -1px); }
+.deck-action-card .card-symbol-badge { border-color: var(--color-ink); box-shadow: 1px 1px 0 var(--color-ink); }
+.deck-action-card .card-symbol-badge { background: var(--color-panel-dark); color: var(--color-deep-green); }
+.deck-action-card .card-arrow-mark { color: var(--color-text-muted); }
+.launch-action-main { text-shadow: none; }
+.deck-header h1, .deck-header .deck-title { text-shadow: 1px 1px 0 rgba(28,39,29,.45); }
+.deck-save-spotlight { box-shadow: 2px 2px 0 var(--color-ink); }
+.btn-hero-launch { background: var(--color-green-dark); border-color: var(--color-ink); box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 2px 0 var(--color-ink); transition: transform .08s, background-color .08s; }
+.btn-hero-launch::before { display: none; }
+.btn-hero-launch:hover:not(:disabled) { background: var(--color-grass-btn); box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 3px 0 var(--color-ink); transform: translateY(-1px); }
+.btn-hero-launch:active:not(:disabled) { box-shadow: 0 1px 0 var(--color-ink); transform: translateY(1px); }
+.vintage-notebook-card, .vintage-wood-card { border-color: var(--color-ink); box-shadow: 3px 3px 0 var(--color-ink); }

@@ -320,28 +320,28 @@ export const StorePlanogramModal: React.FC<Props> = ({
               className={`filter-btn ${filter === 'needs_stock' ? 'is-active' : ''}`}
               onClick={() => setFilter('needs_stock')}
             >
-              🔴 Cần bày hàng
+              Cần bày hàng
             </button>
             <button
               type="button"
               className={`filter-btn ${filter === 'shelf_wooden' ? 'is-active' : ''}`}
               onClick={() => setFilter('shelf_wooden')}
             >
-              🪵 Kệ gỗ
+              Kệ gỗ
             </button>
             <button
               type="button"
               className={`filter-btn ${filter === 'refrigerator' ? 'is-active' : ''}`}
               onClick={() => setFilter('refrigerator')}
             >
-              ❄️ Tủ lạnh/mát
+              Tủ lạnh/mát
             </button>
             <button
               type="button"
               className={`filter-btn ${filter === 'shelf_glass' ? 'is-active' : ''}`}
               onClick={() => setFilter('shelf_glass')}
             >
-              🪟 Kệ kính
+              Kệ kính
             </button>
           </div>
 
