@@ -5,7 +5,7 @@ Nguồn: https://kenney.nl/assets/roguelike-modern-city (Tilemap/tilemap_packed.
 Mọi sprite được phóng 2x (nearest) để cùng cỡ điểm ảnh với game. Ghi ra
 apps/web/public/assets/sprites/city/{city.png,city.json,LICENSE.txt}. Cần Pillow.
 """
-import json, sys
+import json, re, sys
 from pathlib import Path
 from PIL import Image
 
@@ -22,7 +22,9 @@ CAR_FACE_RIGHT = {'green': (34, 16, 36, 17), 'grey': (34, 20, 36, 21), 'orange':
 CAR_UP = {'green': (31, 18, 32, 19), 'grey': (31, 22, 32, 23), 'orange': (31, 26, 32, 27)}  # nhìn từ sau (đèn đỏ) = đi lên
 CAR_DOWN = {'green': (33, 18, 34, 19), 'grey': (33, 22, 34, 23), 'orange': (33, 26, 34, 27)}  # nhìn từ trước (đèn trắng) = đi xuống
 # Biến thể xe trong game -> màu Kenney (0 taxi, 1 sedan trắng, 2 hatchback bạc, 3 hatchback đỏ, 4 sedan xanh, 5 SUV đen)
-VARIANT_COLOR = ['orange', 'grey', 'grey', 'orange', 'green', 'grey']
+VARIANT_COLOR = ['orange', 'orange', 'grey', 'orange', 'green', 'grey']
+# Tô lại 3 sắc thân xe (khớp đúng màu gốc) theo biến thể: (hue độ, độ bão hòa tuyệt đối, hệ số sáng); None = giữ nguyên
+VARIANT_RECOLOR = [(47, 0.85, 1.22), (0, 0.04, 1.2), None, (2, 0.78, 1.0), (212, 0.62, 0.95), (0, 0.08, 0.5)]
 SPRITES = {}
 for v, color in enumerate(VARIANT_COLOR):
     for d, region in (('left', CAR_FACE_LEFT), ('right', CAR_FACE_RIGHT)):
@@ -83,6 +85,27 @@ def cut(sheet, c0, r0, c1, r1, flip, canvas):
         img = out
     return img
 
+BODY_SHADES = {  # sắc thân gốc của từng màu xe Kenney (rgb)
+    'orange': {(0xc6, 0x65, 0x27), (0x97, 0x4c, 0x1e), (0xb4, 0x5c, 0x24)},
+    'green': {(0x4b, 0xa8, 0x6d), (0x30, 0x7e, 0x4d), (0x40, 0x9c, 0x62)},
+    'grey': {(0x84, 0x92, 0x9a), (0x5c, 0x67, 0x6d), (0x72, 0x80, 0x87)},
+}
+
+
+def recolor_car(img, src_color, spec):
+    import colorsys
+    hue, sat, mul = spec
+    px = img.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b, a = px[x, y]
+            if a and (r, g, b) in BODY_SHADES[src_color]:
+                v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)[2]
+                nr, ng, nb = colorsys.hsv_to_rgb(hue / 360, sat, min(1.0, v * mul))
+                px[x, y] = (round(nr * 255), round(ng * 255), round(nb * 255), a)
+    return img
+
+
 def main(src: str) -> None:
     sheet = Image.open(Path(src) / 'Tilemap/tilemap_packed.png').convert('RGBA')
     items = {}
@@ -90,6 +113,11 @@ def main(src: str) -> None:
         items[key] = sheet.crop((c * 16, r * 16, c * 16 + 16, r * 16 + 16)).resize((16 * SCALE, 16 * SCALE), Image.NEAREST)
     for key, spec in SPRITES.items():
         items[key] = cut(sheet, *spec)
+        m = re.match(r'vehicle_(?:ns_car_(\d)_|car(?:_v(\d))?_)', key)
+        if m:
+            v = int(m.group(1) or m.group(2) or 0)
+            if VARIANT_RECOLOR[v]:
+                recolor_car(items[key], VARIANT_COLOR[v], VARIANT_RECOLOR[v])
     for key, comp in COMPOSITES.items():
         out = Image.new('RGBA', comp['canvas'], (0, 0, 0, 0))
         if 'posts' in comp:  # cột gỗ 6 px: viền tối + lõi sáng, màu lấy từ ô cột gỗ (21,12) của pack
