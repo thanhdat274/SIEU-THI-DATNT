@@ -1889,7 +1889,7 @@ export class PixiGameViewport {
       sprite.y = Math.round(footY);
       sprite.zIndex = footY;
       sprite.alpha = 1;
-      if (!vertical) this.vehicleLightSources.push({ x: sprite.x, y: sprite.y, direction: veh.direction === 'left' ? 'left' : 'right', type: veh.type, alpha: sprite.alpha });
+      if (!vertical) this.vehicleLightSources.push({ x: sprite.x, y: sprite.y, direction: veh.direction === 'left' ? 'left' : 'right', type: veh.type, halfLength: sprite.texture.width / 2, alpha: sprite.alpha });
     }
     for (const [id, sprite] of this.streetTrafficSprites.entries()) {
       if (!activeStreetKeys.has(id)) {
