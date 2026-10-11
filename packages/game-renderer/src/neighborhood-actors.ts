@@ -1,3 +1,4 @@
+import { walkerLook } from './sprite-atlas';
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import { NeighborhoodLife, type LifeContext, type NeighborNpcView, type NpcFacing, type WeatherVisualState } from '@game/core';
 import { NEIGHBORHOOD_QUALITY, PARK, SCHOOL, detailForZoom, type NeighborhoodQuality } from '@game/data';
@@ -144,7 +145,7 @@ export class NeighborhoodActors {
     const dir = n.facing;
     const hz = detail === 'far' ? 4 : 8;
     const frame = f.reducedMotion ? 0 : Math.floor(f.time * (walking ? hz : 1.5)) % (walking ? 4 : 2);
-    const key = `npc_${n.spriteVariant}_${sitting ? 'down' : dir}_${walking ? 'walk' : 'idle'}_${frame}`;
+    const key = `npc_${walkerLook(n.spriteVariant)}_${sitting ? 'down' : dir}_${walking ? 'walk' : 'idle'}_${frame}`;
     entry.body.texture = this.textures.getTexture(key);
     entry.body.tint = n.tint;
     const bob = walking && !f.reducedMotion ? Math.abs(Math.sin(f.time * (n.type === 'jogger' ? 16 : 9) + n.x * 0.05)) * (n.type === 'jogger' ? 2 : 1.2) : 0;

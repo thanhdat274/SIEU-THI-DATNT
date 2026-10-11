@@ -5,6 +5,7 @@ import {
   TRAFFIC_ROADS, NEIGHBORHOOD_SIGNS, type NeighborhoodLot, type NeighborhoodQuality, type RoadDef,
 } from '@game/data';
 import type { PixelTextureFactory } from './textures';
+import { lampLift } from './sprite-atlas';
 import { houseLitWindows } from './neighborhood-textures';
 
 const T = 32;
@@ -473,26 +474,25 @@ export class NeighborhoodScene {
 
   private buildLamps(): void {
     const glowTex = this.tex('nb_glow');
+    // Mỗi cột đèn có quầng nhỏ ở đầu đèn và một vũng sáng dẹt trên mặt đất quanh chân cột (ánh đèn chiếu xuống).
+    const addGlows = (cx: number, footY: number) => {
+      const halo = new Sprite(glowTex);
+      halo.anchor.set(0.5);
+      halo.scale.set(0.55);
+      halo.position.set(cx, footY - 52 - lampLift());
+      const pool = new Sprite(glowTex);
+      pool.anchor.set(0.5);
+      pool.scale.set(1.5, 0.62);
+      pool.position.set(cx, footY - 6);
+      for (const gl of [pool, halo]) { gl.alpha = 0; this.lampGlows.push(gl); this.glow.addChild(gl); }
+    };
     const place = (xt: number, yt: number, bottomOffset = 0) => {
-      const s = this.sprite(this.props, 'deco_lamp_pole', xt * T, yt * T + bottomOffset, 0, 3);
-      const gl = new Sprite(glowTex);
-      gl.anchor.set(0.5);
-      gl.position.set(xt * T + 16, yt * T + bottomOffset - 52);
-      gl.alpha = 0;
-      this.lampGlows.push(gl);
-      this.glow.addChild(gl);
-      void s;
+      this.sprite(this.props, 'deco_lamp_pole', xt * T, yt * T + bottomOffset, 0, 3);
+      addGlows(xt * T + 16, yt * T + bottomOffset);
     };
     // Đèn dọc vỉa hè hai bên đường chính ngoài bản đồ chơi (trong bản đồ đã có đèn riêng), đường trường và đường phía nam.
     for (const l of NEIGHBORHOOD_STREET_LAMPS) place(l.x, l.y, l.bottomOffset);
-    for (const l of PARK_LAMPS) {
-      const gl = new Sprite(glowTex);
-      gl.anchor.set(0.5);
-      gl.position.set(l.x * T + 16, (l.y + 1) * T - 52);
-      gl.alpha = 0;
-      this.lampGlows.push(gl);
-      this.glow.addChild(gl);
-    }
+    for (const l of PARK_LAMPS) addGlows(l.x * T + 16, (l.y + 1) * T);
   }
 
   // ------------------------------------------------------------------ đồ vật (danh sách dùng chung với va chạm)

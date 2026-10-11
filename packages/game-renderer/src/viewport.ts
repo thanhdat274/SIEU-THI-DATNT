@@ -3,6 +3,7 @@ import { Application, Container, RenderTexture, Sprite, Graphics, Text, TextStyl
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
 import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, weekdayOf, hashSeed, type WeatherVisualState, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
+import { loadSpriteAtlases, headLift, lampLift, walkerLook } from './sprite-atlas';
 import { PixelCamera } from './camera';
 import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
 import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, parcelTrafficMultiplier, type LandParcel} from '@game/data';
@@ -116,6 +117,7 @@ export class PixiGameViewport {
     sprite: Sprite;
     bubble: Container;
     bubbleIcon: Sprite;
+    requestBadge: Container;
     regularTag: { container: Container; text: Text; bg: Graphics; drawn?: string };
     lastPosition: Vector2D | null;
     npcVariant: number;
@@ -220,6 +222,7 @@ export class PixiGameViewport {
     });
 
     this.camera.setViewportSize(this.app.screen.width, this.app.screen.height);
+    await loadSpriteAtlases(); // spritesheet PNG ghi đè hình vẽ bằng code; phải xong trước khi dựng cảnh vì texture được cache theo khóa
     void loadWeatherSprites(); // sprite ô/áo mưa: nạp nền, chưa xong thì chưa vẽ đồ che
 
     // Build Scene Graph
@@ -739,7 +742,7 @@ export class PixiGameViewport {
       // Bóng đèn phát sáng (vẽ Graphics)
       const lampLight = new Graphics();
       lampLight.circle(16, 4, 6).fill({ color: 0xfff3c4, alpha: 0.6 });
-      lampLight.position.set(lampX * TILE_SIZE + 16, 11 * TILE_SIZE - 12);
+      lampLight.position.set(lampX * TILE_SIZE + 16, 11 * TILE_SIZE - 12 - lampLift());
       lampLight.zIndex = lampLight.y;
       this.entitiesLayer.addChild(lampLight);
       this.eastDecorSprites.push(lampLight);
@@ -1268,6 +1271,19 @@ export class PixiGameViewport {
       this.entitiesLayer.addChild(text);
       this.decorSprites.push(text);
     });
+    // Trang trí ngoài phố: biểu tượng lễ hội treo trên đỉnh cột đèn, xen kẽ hai món của mùa.
+    if (seasonal.length > 0) {
+      STREET_LAMP_TILES.forEach((lamp, index) => {
+        const item = seasonal[index % seasonal.length];
+        const text = new Text({ text: item.icon, style: new TextStyle({ fontSize: 18 }) });
+        text.anchor.set(0.5);
+        text.x = lamp.x * TILE_SIZE + TILE_SIZE / 2;
+        text.y = (lamp.y - 0.7) * TILE_SIZE;
+        text.zIndex = (lamp.y + 1) * TILE_SIZE + 40;
+        this.entitiesLayer.addChild(text);
+        this.decorSprites.push(text);
+      });
+    }
   }
 
   /** Thêm sprite cho nội thất mới mua / lấy lại, và bỏ sprite của nội thất đã cất (trước đây chỉ dựng một lần lúc vào game). */
@@ -1359,7 +1375,7 @@ export class PixiGameViewport {
 
     // Vietnamese Overhead "BẠN" Tag (Ảnh 4 - Tạp hóa đầu hẻm)
     const tagBg = new Graphics();
-    tagBg.rect(-12, -62, 24, 11);
+    tagBg.rect(-12, -62 - headLift(), 24, 11);
     tagBg.fill({ color: 0xd9381e });
     tagBg.stroke({ color: 0xffffff, width: 1 });
     this.playerContainer.addChild(tagBg);
@@ -1373,7 +1389,7 @@ export class PixiGameViewport {
     const tagText = new Text({ text: 'BẠN', style: tagStyle });
     tagText.anchor.set(0.5);
     tagText.x = 0;
-    tagText.y = -56;
+    tagText.y = -56 - headLift();
     this.playerContainer.addChild(tagText);
 
     this.playerContainer.addChild(this.playerGear.container);
@@ -1394,13 +1410,13 @@ export class PixiGameViewport {
     container.addChild(sprite);
     const bubble = new Container();
     const background = new Graphics();
-    background.roundRect(-28, -70, 56, 18, 3);
+    background.roundRect(-28, -70 - headLift(), 56, 18, 3);
     background.fill({ color: 0xf3e4cb, alpha: 0.95 });
     background.stroke({ color: 0x4a2b16, width: 1 });
     bubble.addChild(background);
     const label = new Text({ text: 'Tính tiền', style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 13, fill: 0x263d35, align: 'center' }) });
     label.anchor.set(0.5);
-    label.y = -61;
+    label.y = -61 - headLift();
     bubble.addChild(label);
     bubble.visible = false;
     container.addChild(bubble);
@@ -1414,7 +1430,7 @@ export class PixiGameViewport {
     this.partnerTagText.text = label;
     const width = Math.max(32, Math.ceil(this.partnerTagText.width) + 10);
     this.partnerTagBg.clear();
-    this.partnerTagBg.rect(-width / 2, -62, width, 11);
+    this.partnerTagBg.rect(-width / 2, -62 - headLift(), width, 11);
     this.partnerTagBg.fill({ color: 0x2b6cb0 });
     this.partnerTagBg.stroke({ color: 0xffffff, width: 1 });
   }
@@ -1422,7 +1438,7 @@ export class PixiGameViewport {
   private buildPartner(): void {
     this.partnerContainer = new Container();
 
-    this.partnerSprite = new Sprite(this.textures.getTexture('player_down_idle_0'));
+    this.partnerSprite = new Sprite(this.textures.getTexture('partner_down_idle_0'));
     this.partnerSprite.anchor.set(0.5, 1);
     this.partnerContainer.addChild(this.partnerSprite, this.partnerGear.container);
 
@@ -1439,7 +1455,7 @@ export class PixiGameViewport {
     this.partnerTagText = new Text({ text: this.partnerTagLabel, style: tagStyle });
     this.partnerTagText.anchor.set(0.5);
     this.partnerTagText.x = 0;
-    this.partnerTagText.y = -56;
+    this.partnerTagText.y = -56 - headLift();
     this.partnerContainer.addChild(this.partnerTagText);
     this.setPartnerTag(this.partnerTagLabel);
 
@@ -1602,7 +1618,7 @@ export class PixiGameViewport {
       const partnerMoving = partner.isMoving ?? gap > 1.5;
       const partnerMode = partnerMoving ? 'walk' : 'idle';
       const partnerFrame = reducedMotion ? 0 : Math.floor(this.animTimer * (partnerMoving ? 8 : 1.5)) % (partnerMoving ? 4 : 2);
-      this.partnerSprite.texture = this.textures.getTexture(`player_${partner.direction || 'down'}_${partnerMode}_${partnerFrame}`);
+      this.partnerSprite.texture = this.textures.getTexture(`partner_${partner.direction || 'down'}_${partnerMode}_${partnerFrame}`);
       this.partnerContainer.position.set(Math.round(shown.x), Math.round(shown.y));
       this.partnerContainer.zIndex = shown.y;
       const partnerDir = partner.direction === 'left' || partner.direction === 'right' || partner.direction === 'up' ? partner.direction : 'down';
@@ -1623,6 +1639,7 @@ export class PixiGameViewport {
     }
 
     const customers = this.simulation.peekCustomers(); // không sao chép sâu mỗi khung; vòng vẽ chỉ đọc
+    const requestCustomerIds = this.simulation.getSpecialRequestCustomerIds();
     const activeCustomerKeys = new Set<string>();
 
     for (let idx = 0; idx < customers.length; idx++) {
@@ -1632,7 +1649,7 @@ export class PixiGameViewport {
 
       let entry = this.customerSprites.get(key);
       if (!entry) {
-        entry = this.createCustomerSprite(idx % 3);
+        entry = this.createCustomerSprite(walkerLook(cust.lookSeed ?? idx));
         this.customerSprites.set(key, entry);
       }
 
@@ -1681,6 +1698,10 @@ export class PixiGameViewport {
         : (cust.basket?.[0]?.productId ? `product:${cust.basket[0].productId}` : 'pixel_coin');
       entry.bubbleIcon.texture = this.textures.getTexture(iconKey);
 
+      const wantsRequest = !!cust.id && requestCustomerIds.has(cust.id);
+      entry.requestBadge.visible = wantsRequest;
+      if (wantsRequest) entry.requestBadge.y = reducedMotion ? 0 : Math.round(Math.sin(this.animTimer * 4) * 2);
+
       if (cust.regularName) {
         entry.regularTag.container.visible = true;
         const tagLabel = `♥ ${cust.regularName}`;
@@ -1689,7 +1710,7 @@ export class PixiGameViewport {
           entry.regularTag.text.text = tagLabel;
           const tagWidth = Math.max(32, Math.ceil(entry.regularTag.text.width) + 8);
           entry.regularTag.bg.clear();
-          entry.regularTag.bg.rect(-tagWidth / 2, -78, tagWidth, 12);
+          entry.regularTag.bg.rect(-tagWidth / 2, -78 - headLift(), tagWidth, 12);
           entry.regularTag.bg.fill({ color: 0x8b5cf6, alpha: 0.95 });
           entry.regularTag.bg.stroke({ color: 0xffffff, width: 1 });
         }
@@ -1732,13 +1753,13 @@ export class PixiGameViewport {
         container.addChild(box);
         const bubble = new Container();
         const background = new Graphics();
-        background.roundRect(-25, -70, 50, 18, 3);
+        background.roundRect(-25, -70 - headLift(), 50, 18, 3);
         background.fill({ color: 0xf3e4cb, alpha: 0.95 });
         background.stroke({ color: 0x4a2b16, width: 1 });
         bubble.addChild(background);
         const status = new Text({ text: '', style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 11, fill: 0x263d35, align: 'center' }) });
         status.anchor.set(0.5);
-        status.y = -61;
+        status.y = -61 - headLift();
         bubble.addChild(status);
         container.addChild(bubble);
         this.entitiesLayer.addChild(container);
@@ -1846,7 +1867,9 @@ export class PixiGameViewport {
       let textureKey: string;
       const vertical = veh.axis === 'y';
       if (vertical) textureKey = `vehicle_ns_${veh.type}_${veh.variant ?? 0}_${veh.direction === 'right' ? 'down' : 'up'}`;
-      else if (veh.type === 'motorbike') textureKey = `vehicle_motorbike_rider_${veh.variant ?? 0}_${veh.direction}`;
+      else if (veh.type === 'motorbike') textureKey = veh.riderLook !== undefined
+        ? `vehicle_motorbike_custrider_${(veh.variant ?? 0) % 3}_${walkerLook(veh.riderLook)}_${veh.direction}`
+        : `vehicle_motorbike_rider_${veh.variant ?? 0}_${veh.direction}`;
       else if (veh.type === 'bicycle') textureKey = `vehicle_bicycle_rider_${veh.direction}`;
       else if (veh.type === 'minibus') textureKey = `vehicle_minibus_${veh.variant ?? 0}_${veh.direction}`;
       else if (veh.type === 'truck') textureKey = `truck_${TRUCK_KINDS[(veh.variant ?? 0) % TRUCK_KINDS.length]}_${veh.direction}`;
@@ -2515,17 +2538,31 @@ export class PixiGameViewport {
 
     const bubble = new Container();
     const bubBg = new Graphics();
-    bubBg.rect(-12, -66, 24, 24);
+    bubBg.rect(-12, -66 - headLift(), 24, 24);
     bubBg.fill({ color: 0xffffff, alpha: 0.95 });
     bubBg.stroke({ color: 0x4a2b16, width: 1 });
     bubble.addChild(bubBg);
 
     const bubbleIcon = new Sprite(this.textures.getTexture('product:mi_hao_hao'));
     bubbleIcon.anchor.set(0.5);
-    bubbleIcon.y = -54;
+    bubbleIcon.y = -54 - headLift();
     bubble.addChild(bubbleIcon);
 
     container.addChild(bubble);
+
+    // Bong bóng "!" vàng báo khách quen đang có yêu cầu đặc biệt; nằm cao hơn thẻ tên khách quen.
+    const requestBadge = new Container();
+    const requestBadgeBg = new Graphics();
+    requestBadgeBg.circle(0, -100 - headLift(), 9);
+    requestBadgeBg.fill({ color: 0xf5b82e });
+    requestBadgeBg.stroke({ color: 0x4a2b16, width: 2 });
+    requestBadge.addChild(requestBadgeBg);
+    const requestBadgeText = new Text({ text: '!', style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 16, fontWeight: 'bold', fill: 0x4a2b16 }) });
+    requestBadgeText.anchor.set(0.5);
+    requestBadgeText.y = -100 - headLift();
+    requestBadge.addChild(requestBadgeText);
+    requestBadge.visible = false;
+    container.addChild(requestBadge);
 
     const regularTag = new Container();
     const regularTagBg = new Graphics();
@@ -2538,7 +2575,7 @@ export class PixiGameViewport {
     });
     const regularTagText = new Text({ text: '', style: regularTagStyle });
     regularTagText.anchor.set(0.5);
-    regularTagText.y = -72;
+    regularTagText.y = -72 - headLift();
     regularTag.addChild(regularTagText);
     regularTag.visible = false;
     container.addChild(regularTag);
@@ -2550,6 +2587,7 @@ export class PixiGameViewport {
       sprite,
       bubble,
       bubbleIcon,
+      requestBadge,
       regularTag: { container: regularTag, text: regularTagText, bg: regularTagBg },
       lastPosition: null as Vector2D | null,
       npcVariant: variant,

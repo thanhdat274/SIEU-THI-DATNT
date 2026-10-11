@@ -11,8 +11,8 @@ export type WeatherSpriteDir = (typeof WEATHER_SPRITE_DIRS)[number];
 export const UMBRELLA_COLOR_NAMES = ['blue', 'red', 'yellow', 'green', 'purple'] as const;
 export const RAINCOAT_COLOR_NAMES = ['yellow', 'blue', 'green', 'orange', 'red'] as const;
 
-/** Khung nhân vật (cùng `character()` trong premium-textures). */
-export const CHARACTER_FRAME = { w: 32, h: 48 } as const;
+/** Khung nhân vật: nhân vật LimeZu trong atlas `sprites/chars` (32×51, chân cách đáy 4 hàng; xem tools/sprite-atlas/build-limezu-chars.py). Bản vẽ code cũ (`character()`) là 32×48. */
+export const CHARACTER_FRAME = { w: 32, h: 51 } as const;
 
 /** Tư thế nhân vật bên dưới áo mưa: áo mưa phải khớp tay/chân của đúng khung đó. */
 export const RAINCOAT_POSES = ['idle0', 'idle1', 'walk0', 'walk1', 'walk2', 'walk3'] as const;
@@ -45,17 +45,17 @@ export const UMBRELLA_FRAME = { w: 80, h: 56, gripX: 40, gripY: 48 } as const;
  * nhìn thẳng tay phải ở rìa phải thân; nhìn lưng tay phải ở rìa trái; nhìn ngang tay nằm giữa thân (hướng trái lật gương).
  */
 export const UMBRELLA_ATTACHMENT: Record<WeatherSpriteDir, { x: number; y: number }> = {
-  down: { x: 9, y: -15 },
-  up: { x: -9, y: -15 },
-  left: { x: 1, y: -15 },
-  right: { x: -1, y: -15 },
+  down: { x: 9, y: -24 },
+  up: { x: -9, y: -24 },
+  left: { x: 1, y: -24 },
+  right: { x: -1, y: -24 },
 };
 
 /** Tâm vòm ô lệch so với điểm nắm theo hướng nhìn, để vòm nằm đúng trên đầu (đầu rộng 16 px, tâm đầu ở x=0). */
 export const UMBRELLA_CANOPY_DX: Record<WeatherSpriteDir, number> = { down: -8, up: 9, left: -1, right: 1 };
 
 /** Phần cán đi qua sau đầu (nhìn ngang): ẩn từ y này (px so với chân) tới cằm để cán không cắt ngang mặt. */
-export const UMBRELLA_HEAD_MASK_Y = { top: -41, bottom: -26 } as const;
+export const UMBRELLA_HEAD_MASK_Y = { top: -50, bottom: -35 } as const;
 
 /** Khoảng lệch tay khi đi bộ (px) theo khung đi 0..3, dùng để cán ô đi theo tay. Nhìn ngang: tay vung ngang; nhìn thẳng/lưng: tay lên xuống. */
 export const UMBRELLA_WALK_HAND: Record<WeatherSpriteDir, ReadonlyArray<{ dx: number; dy: number }>> = {

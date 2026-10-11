@@ -1,5 +1,6 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { LightingState, lerpColor } from '@game/core';
+import { lampLift } from './sprite-atlas';
 import { GameTileMap, StoreFixture, TILE_SIZE, getFixtureDimensions, isWarehouseFixture } from '@game/shared';
 import { BUILDING_MAP, DRINK_BOUNDS, NEIGHBORHOOD_PX, SNACK_BOUNDS, STORE_BOUNDS, STREET_LAMP_TILES, WAREHOUSE_BOUNDS, XOI_BOUNDS, inMainExpansionZone } from '@game/data';
 
@@ -34,11 +35,11 @@ export interface VehicleLightSource {
  * front/rear = khoảng cách ngang từ tâm tới đèn trước/sau, headY/tailY = độ cao đèn, beam = độ dài vệt sáng trước đầu xe.
  */
 const VEHICLE_LIGHTS: Record<VehicleLightSource['type'], { front: number; rear: number; headY: number; tailY: number; beam: number; spread: number; power: number }> = {
-  car: { front: 61, rear: 61, headY: 23, tailY: 23, beam: 78, spread: 34, power: 1 },
+  car: { front: 41, rear: 41, headY: 14, tailY: 14, beam: 66, spread: 28, power: 1 },  // xe Kenney 72×48: đèn pha ở mép đầu xe, cao ~15 px so với mặt đường
   motorbike: { front: 27, rear: 29, headY: 29, tailY: 21, beam: 56, spread: 26, power: 0.85 },
   bicycle: { front: 30, rear: 28, headY: 28, tailY: 20, beam: 34, spread: 18, power: 0.4 },
-  minibus: { front: 94, rear: 94, headY: 27, tailY: 26, beam: 100, spread: 44, power: 1.1 },
-  truck: { front: 86, rear: 88, headY: 45, tailY: 30, beam: 120, spread: 54, power: 1.1 },
+  minibus: { front: 64, rear: 64, headY: 17, tailY: 17, beam: 80, spread: 34, power: 1 },
+  truck: { front: 86, rear: 86, headY: 18, tailY: 18, beam: 100, spread: 40, power: 1.1 },
 };
 
 const T = TILE_SIZE;
@@ -373,7 +374,10 @@ export class ShopLighting {
       for (const x of [door.x - 0.6, door.x + 2.6]) this.add(out, x * T, (this.snackBox.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xffd9a0, 0.26);
       this.add(out, (door.x + 1) * T, (this.snackBox.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xffdfa8, 0.30);
     }
-    for (const lamp of STREET_LAMP_TILES) this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 50, 3.1 * T, 3.1 * T, 0xffd98a, 0.75, 'street', 0.03);
+    for (const lamp of STREET_LAMP_TILES) {
+      this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 10, 3.4 * T, 1.9 * T, 0xffd98a, 0.75, 'street', 0.03); // vũng sáng trên mặt đất quanh chân cột
+      this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 50 - lampLift(), 1.1 * T, 1.1 * T, 0xffe9a8, 0.55, 'street', 0.03); // quầng nhỏ ở đầu đèn
+    }
     // Nắng lọt qua cửa vào và cửa sổ (chỉ ban ngày); vệt nắng dịch theo giờ.
     this.sunPatch = this.add(out, (MAIN_DOOR.x + 1) * T, (STORE_BOUNDS.bottom - 1.4) * T, 1.9 * T, 1.5 * T, 0xffe9b0, 0.5, 'sun');
     this.add(out, (STORE_BOUNDS.left + 1.6) * T, (STORE_BOUNDS.top + 2.7) * T, 1.6 * T, 0.9 * T, 0xfff0c0, 0.35, 'sun');

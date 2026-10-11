@@ -268,6 +268,8 @@ export interface StreetVehicleState {
   /** Tốc độ hiện tại (px/s) khi đang giảm tốc/dừng/tăng tốc; thiếu thì bằng `speed` (tốc độ chạy thông thường). */
   currentSpeed?: number;
   isDeparting?: boolean;
+  /** Khách rời tiệm bằng xe: `lookSeed` của khách để vẽ đúng nhân vật đó trên xe. */
+  riderLook?: number;
 }
 
 /** Người đi bộ nền trên vỉa hè (chỉ hình ảnh, không phải khách). */
@@ -359,6 +361,8 @@ export interface CustomerState {
   arrivalMode?: CustomerArrivalMode;
   vehicleSpot?: Vector2D;
   vehicleVariant?: number;
+  /** Số nguyên cố định theo khách để chọn kiểu nhân vật (renderer: `walkerLook`); khách rời tiệm bằng xe máy giữ đúng kiểu này. */
+  lookSeed?: number;
   /** Kẻ trộm lẻ: lấy hàng mà không trả tiền nếu không bị phát hiện ở quầy. Khách quen không bao giờ là kẻ trộm. */
   thief?: boolean;
   diningTableId?: string;
@@ -515,6 +519,27 @@ export interface QuestState {
 // ==========================================
 // Party Orders (Đơn tiệc có hạn)
 // ==========================================
+
+export interface SpecialRequestSaveItem {
+  instanceId: string;
+  defId: string;
+  status: 'active' | 'completed' | 'expired';
+  openDay: number;
+  openMinute: number;
+  expiresMinute: number;
+  completedDay?: number;
+  completedMinute?: number;
+  customerId?: string;
+  regularId?: string;
+}
+
+export interface SpecialRequestSaveState {
+  active: SpecialRequestSaveItem[];
+  completedInstanceIds: string[];
+  vexedCount: number;
+  lastRolledDay?: number;
+  openedToday: number;
+}
 
 export type PartyOrderStatus = 'pending' | 'accepted' | 'completed' | 'declined' | 'expired';
 
@@ -823,6 +848,9 @@ export const STAFF_SHIFTS: Record<StaffShift, ShiftConfig> = {
   full_day: { id: 'full_day', name: 'Cả ngày (06:00 - 22:00)', startHour: 6, endHour: 22, wageMultiplier: 1.0 },
 };
 
+/** Chuyên môn riêng của nhân viên (tuỳ chọn; nhân viên cũ trong save không có). */
+export type StaffSpecialty = 'quick_hands' | 'sharp_eye' | 'swift_legs' | 'patrol_ace';
+
 export interface StaffMember {
   id: string;
   name: string;
@@ -833,6 +861,7 @@ export interface StaffMember {
   dailyWage: number;
   hiredOnDay: number;
   shift: StaffShift;
+  specialty?: StaffSpecialty;
   assignedFixtureId?: string;
   assignedBuilding?: StaffBuilding; /** Tòa nhà nhân viên phụ trách (undefined = tất cả). */
   position?: Vector2D;
@@ -884,6 +913,7 @@ export interface StaffCandidate {
   stamina: number;
   dailyWage: number;
   hiringFee: number;
+  specialty?: StaffSpecialty;
   assignedBuilding?: StaffBuilding; /** Tòa nhà đề xuất nhân viên này phụ trách. */
 }
 
@@ -1106,6 +1136,8 @@ export interface SaveGameData {
   /** Số lượt khách bước vào từng ô (khóa "x,y") theo ngày, giữ tối đa 7 ngày gần nhất; chỉ tổng hợp, không lưu đường đi cá nhân. */
   heatmap?: Record<number, Record<string, number>>;
   partyOrders?: PartyOrderState;
+  /** Yêu cầu đặc biệt của khách VIP (hằng số cân bằng PROVISIONAL, cần playtest). */
+  specialRequests?: SpecialRequestSaveState;
   goals?: GoalState;
   skills?: SkillState;
   /** Lời đánh giá gần đây của khách (tối đa 60), mới nhất ở cuối. */

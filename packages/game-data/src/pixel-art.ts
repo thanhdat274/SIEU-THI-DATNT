@@ -1,5 +1,6 @@
 import { Product } from '@game/shared';
 import { drawColdProductIcon } from './pixel-art-cold';
+import { FOOD_ICON_BY_PRODUCT, FOOD_ICON_RECTS } from './product-icons-food';
 
 /** Original 16px product silhouettes, shared by DOM icons and world shelf stock. */
 export interface PixelRect { x: number; y: number; w: number; h: number; color: string }
@@ -9,6 +10,8 @@ export function productPixels(product?: Pick<Product, 'id' | 'category'>): Pixel
   const ink = '#593A2B', paper = '#FFF2D6', gold = '#E9B95D', teal = '#357F72';
   const category = product?.category;
   if (drawColdProductIcon(product?.id, rect)) return p;
+  const foodIcon = product ? FOOD_ICON_RECTS[FOOD_ICON_BY_PRODUCT[product.id]] : undefined; // icon thực phẩm Kenney cho các món hợp hình
+  if (foodIcon) { for (const [x, y, w, h, color] of foodIcon) rect(x, y, w, h, color); return p; }
   if (product?.id === 'bap_xao_tp') { // ly bắp xào: bắp vàng xào hành trong ly giấy
     rect(3, 6, 10, 9, ink); rect(4, 7, 8, 7, paper); rect(4, 4, 8, 3, ink); rect(5, 3, 6, 3, '#F2C94C'); rect(6, 2, 2, 2, '#F7DC73'); rect(9, 3, 2, 2, '#E9B95D');
     rect(5, 4, 1, 1, '#F7DC73'); rect(10, 4, 1, 1, '#F7DC73'); rect(6, 8, 4, 2, '#F2C94C'); rect(7, 11, 2, 1, '#418E3A');

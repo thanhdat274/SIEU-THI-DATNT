@@ -144,7 +144,7 @@ export class StreetTrafficManager {
   }
 
   /** Chuyển khách mua sắm xong lên xe và lái xe rời tiệm, hòa vào dòng giao thông. */
-  public addDepartingVehicle(spot: Vector2D, type: 'motorbike' | 'car', variant: number): void {
+  public addDepartingVehicle(spot: Vector2D, type: 'motorbike' | 'car', variant: number, riderLook?: number): void {
     this.vehicleSequence++;
     const direction: 'left' | 'right' = spot.x > PLAY_WEST_PX + (PLAY_EAST_PX - PLAY_WEST_PX) * 0.75 ? 'left' : 'right';
     this.vehicles.push({
@@ -156,6 +156,7 @@ export class StreetTrafficManager {
       speed: type === 'motorbike' ? 82 : 72,
       currentSpeed: 28,
       isDeparting: true,
+      ...(riderLook !== undefined ? { riderLook } : {}),
     });
   }
 
@@ -468,7 +469,7 @@ export class StreetTrafficManager {
     for (const k of kinds) { pick -= mix[k]; if (pick <= 0) { type = k; break; } }
 
     const direction: 'left' | 'right' = rng.next() < 0.5 ? 'right' : 'left';
-    let variant = Math.floor(rng.next() * 3);
+    let variant = Math.floor(rng.next() * (type === 'motorbike' ? 12 : 3)); // xe máy: 3 kiểu xe × 4 kiểu người lái
     if (type === 'minibus') variant = Math.floor(rng.next() * 4); // 4 kiểu dáng xe buýt / xe khách theo đúng thiết kế
     else if (type === 'truck') variant = Math.floor(rng.next() * TRUCK_KINDS.length);
     else if (type === 'car') variant = Math.floor(rng.next() * CAR_VARIANTS);

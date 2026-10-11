@@ -5,9 +5,8 @@
  * seed/ngày/phút), chạy hết hạn theo đồng hồ game, hoàn thành idempotent khi đủ hàng, và tính thưởng/phạt.
  * Dữ liệu template lấy từ catalog `@game/data/world/special-requests` (cùng cấu trúc `party-orders`).
  *
- * KHÔNG nối vào luồng khách có sẵn (`customers.ts`/`simulation.ts`), KHÔNG ghi save/UI, KHÔNG trừ kho thật
- * (giao `customers`/`stock` xử lý FEFO — như `party-orders`). Trạng thái là object thuần được truyền vào/ra
- * để sau này persist lên save hoặc render trên UI — phần nối đó ghi rõ CHỜ MÁY THẬT (xem `tổng hợp.md`).
+ * Lõi vẫn thuần; `GameSimulation` nối vào đồng hồ game và save. Hàm `consumeSpecialRequestItems` trừ kho
+ * FEFO (bỏ lô hết hạn) trên bản sao kho, giống `party-orders`. UI hiển thị chưa có (xem `tổng hợp.md`).
  */
 import {
   MAX_CONCURRENT_SPECIAL_REQUESTS,
@@ -16,6 +15,7 @@ import {
   SPECIAL_REQUEST_UNLOCK_LEVEL,
   type SpecialRequestDef,
 } from '@game/data';
+import type { InventoryItem, StockLot } from '@game/shared';
 
 /** Phút trong một ngày game (0..1439). */
 export const MINUTES_PER_DAY = 1440;
@@ -39,6 +39,9 @@ export interface ActiveSpecialRequest {
   expiresMinute: number;
   completedDay?: number;
   completedMinute?: number;
+  /** Khách quen đang đưa ra yêu cầu (bong bóng trên đầu); rời tiệm thì yêu cầu hết hiệu lực. */
+  customerId?: string;
+  regularId?: string;
 }
 
 /** Trạng thái toàn cục của hệ yêu cầu đặc biệt (object thuần). */
@@ -247,4 +250,42 @@ export function fulfillSpecialRequest(
       defId: def.id,
     },
   };
+}
+
+/**
+ * Trừ kho FEFO cho các món của một yêu cầu, trên bản sao (không đụng kho gốc). Lô đã hết hạn không dùng được.
+ * Trả `ok:false` + lý do nếu thiếu hàng; `cogs` là giá vốn thực theo `unitCost` của lô.
+ */
+export function consumeSpecialRequestItems(
+  inventory: InventoryItem[],
+  items: ReadonlyArray<{ productId: string; quantity: number }>,
+  day: number
+): { ok: true; inventory: InventoryItem[]; cogs: number } | { ok: false; reason: string } {
+  const next: InventoryItem[] = JSON.parse(JSON.stringify(inventory));
+  let cogs = 0;
+  for (const req of items) {
+    const inv = next.find((i) => i.productId === req.productId);
+    if (!inv) return { ok: false, reason: `Kho không có ${req.productId}` };
+    const usable = inv.lots && inv.lots.length > 0
+      ? inv.lots.filter((l) => l.expiresOnDay > day).reduce((n, l) => n + l.quantity, 0)
+      : inv.quantity;
+    if (usable < req.quantity) return { ok: false, reason: `Không đủ ${req.productId} (cần ${req.quantity}, có ${usable})` };
+    let left = req.quantity;
+    if (inv.lots && inv.lots.length > 0) {
+      const fresh = inv.lots.filter((l) => l.expiresOnDay > day).sort((a, b) => a.expiresOnDay - b.expiresOnDay);
+      const expired = inv.lots.filter((l) => l.expiresOnDay <= day);
+      const kept: StockLot[] = [];
+      for (const lot of fresh) {
+        const take = Math.min(lot.quantity, left);
+        left -= take;
+        cogs += take * (lot.unitCost ?? 0);
+        if (lot.quantity > take) kept.push({ ...lot, quantity: lot.quantity - take });
+      }
+      inv.lots = [...kept, ...expired];
+      inv.quantity = inv.lots.reduce((n, l) => n + l.quantity, 0);
+    } else {
+      inv.quantity -= left;
+    }
+  }
+  return { ok: true, inventory: next.filter((i) => i.quantity > 0), cogs };
 }

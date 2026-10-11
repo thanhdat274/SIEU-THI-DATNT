@@ -1,4 +1,4 @@
-import { StaffRole, StaffShift, STAFF_SHIFTS } from '@game/shared';
+import { StaffRole, StaffShift, StaffSpecialty, STAFF_SHIFTS } from '@game/shared';
 import { STAFF_SLOT_MILESTONES, staffSlotsAtLevel } from './progression';
 
 export const STAFF_SLOTS_BY_LEVEL: Record<number, number> = { ...STAFF_SLOT_MILESTONES };
@@ -85,4 +85,33 @@ export const CANDIDATE_NAMES: string[] = [
 export function isShiftWithinStoreHours(shift: StaffShift): boolean {
   const cfg = STAFF_SHIFTS[shift];
   return cfg !== undefined && cfg.startHour >= 6 && cfg.endHour <= 22;
+}
+
+export interface StaffSpecialtyInfo {
+  id: StaffSpecialty;
+  label: string;
+  icon: string;
+  description: string;
+  roles: readonly StaffRole[];
+  /** Nhân với thời gian phục vụ một khách tại quầy (nhỏ hơn 1 = nhanh hơn). */
+  checkoutTimeFactor?: number;
+  /** Cộng vào chỉ số chính xác khi soi tiền giả. */
+  detectAccuracyBonus?: number;
+  /** Nhân với tốc độ di chuyển khi làm việc. */
+  moveSpeedFactor?: number;
+  /** Phụ phí lương mỗi ngày cho chuyên môn. */
+  wageBonus: number;
+}
+
+export const STAFF_SPECIALTIES: Record<StaffSpecialty, StaffSpecialtyInfo> = {
+  quick_hands: { id: 'quick_hands', label: 'Tay nhanh', icon: '⚡', description: 'Tính tiền nhanh hơn 20%, hàng khách không phải chờ lâu.', roles: ['cashier'], checkoutTimeFactor: 0.8, wageBonus: 5000 },
+  sharp_eye: { id: 'sharp_eye', label: 'Mắt tinh', icon: '👁', description: 'Soi tiền giả tốt hơn hẳn người thường.', roles: ['cashier'], detectAccuracyBonus: 3, wageBonus: 5000 },
+  swift_legs: { id: 'swift_legs', label: 'Chân nhanh', icon: '👟', description: 'Di chuyển bổ sung kệ nhanh hơn 25%.', roles: ['refill', 'drink_staff'], moveSpeedFactor: 1.25, wageBonus: 5000 },
+  patrol_ace: { id: 'patrol_ace', label: 'Tuần tra giỏi', icon: '🔦', description: 'Đi tuần nhanh hơn 30%, phủ được nhiều khu hơn.', roles: ['security', 'drink_security'], moveSpeedFactor: 1.3, wageBonus: 5000 },
+};
+
+export const STAFF_SPECIALTY_IDS = Object.keys(STAFF_SPECIALTIES) as StaffSpecialty[];
+
+export function staffSpecialtyInfo(member: { specialty?: StaffSpecialty }): StaffSpecialtyInfo | undefined {
+  return member.specialty ? STAFF_SPECIALTIES[member.specialty] : undefined;
 }

@@ -11,6 +11,7 @@ import {
   absMinute,
   advanceSpecialRequests,
   canFulfillSpecialRequest,
+  consumeSpecialRequestItems,
   createSpecialRequestState,
   fulfillSpecialRequest,
   isFulfillable,
@@ -25,6 +26,7 @@ import {
  */
 
 export function runSpecialRequestTests(): void {
+  runConsumeItemsTests();
   // ---- Data catalog nhất quán ----
   assert.deepEqual(validateSpecialRequests(), [], 'catalog yêu cầu đặc biệt hợp lệ (không lỗi)');
   assert.ok(SPECIAL_REQUESTS.length >= 3, 'có ít nhất vài template');
@@ -168,4 +170,23 @@ export function runSpecialRequestTests(): void {
     assert.equal(late.success, false, 'yêu cầu hết hạn → không hoàn thành được');
     assert.equal(isFulfillable(st2, 'r1'), false, 'hết hạn → không còn fulfillable');
   }
+}
+
+function runConsumeItemsTests(): void {
+  const inv = [
+    { productId: 'mi_hao_hao', quantity: 6, lots: [
+      { quantity: 2, expiresOnDay: 2, unitCost: 100 },
+      { quantity: 4, expiresOnDay: 9, unitCost: 200 },
+    ] },
+  ] as never;
+  // Lô hết hạn (ngày 2 khi day=2) không dùng được; chỉ lô 4 cái còn dùng.
+  const ok = consumeSpecialRequestItems(inv, [{ productId: 'mi_hao_hao', quantity: 3 }], 2);
+  assert.ok(ok.ok);
+  if (ok.ok) {
+    assert.equal(ok.cogs, 600, 'COGS theo lô còn hạn');
+    assert.equal(ok.inventory[0].quantity, 3, '1 còn hạn + 2 lô hết hạn giữ nguyên');
+  }
+  const short = consumeSpecialRequestItems(inv, [{ productId: 'mi_hao_hao', quantity: 5 }], 2);
+  assert.equal(short.ok, false, 'thiếu hàng còn hạn thì từ chối');
+  assert.equal((inv as { quantity: number }[])[0].quantity, 6, 'không đụng kho gốc');
 }

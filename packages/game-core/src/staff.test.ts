@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { DEFAULT_INITIAL_SAVE, generateStarterTileMap } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, generateStarterTileMap, STAFF_SPECIALTIES, STAFF_SPECIALTY_IDS } from '@game/data';
 import { STAFF_SHIFTS, StaffShift } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
@@ -14,6 +14,14 @@ export function runStaffTests(): void {
   assert.ok(first.some((candidate) => candidate.role === 'refill'));
   assert.ok(first.every((candidate) => candidate.dailyWage > 0 && candidate.hiringFee > 0));
   assert.notDeepEqual(generateCandidatesForDay(5), first, 'Ngày khác phải có danh sách ứng viên khác');
+
+  // Chuyên môn: hợp vai trò, ổn định theo ngày, có phụ phí lương; ít nhất một số ứng viên có chuyên môn.
+  const pool = Array.from({ length: 40 }, (_, day) => generateCandidatesForDay(day + 1, 6)).flat();
+  const withSpecialty = pool.filter(item => item.specialty);
+  assert.ok(withSpecialty.length > 0 && withSpecialty.length < pool.length, 'Một phần ứng viên có chuyên môn');
+  for (const item of withSpecialty) assert.ok(STAFF_SPECIALTIES[item.specialty!].roles.includes(item.role), `${item.specialty} hợp vai trò ${item.role}`);
+  assert.ok(STAFF_SPECIALTY_IDS.every(id => pool.some(item => item.specialty === id)), 'Mọi chuyên môn đều xuất hiện');
+  assert.deepEqual(generateCandidatesForDay(9, 6), generateCandidatesForDay(9, 6), 'Chuyên môn ổn định theo ngày');
 
   for (const shift of Object.keys(STAFF_SHIFTS) as StaffShift[]) {
     assert.equal(isShiftWithinStoreHours(shift), true, `${shift} phải nằm trong khung 06–22`);

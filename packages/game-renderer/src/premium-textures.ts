@@ -1085,7 +1085,7 @@ function vehicleNsTexture(key: string): HTMLCanvasElement | null {
   if (type === 'motorbike' || type === 'bicycle') {
     const bike = type === 'motorbike';
     const v = variant % 3;
-    const jacket = v === 2 ? { main: '#3a6ea5', light: '#5f95c9', dark: '#274f7a' } : { main: '#2e8b3e', light: '#4cb25d', dark: '#1f6a2d' };
+    const jacket = [{ main: '#2e8b3e', light: '#4cb25d', dark: '#1f6a2d' }, { main: '#3a6ea5', light: '#5f95c9', dark: '#274f7a' }, { main: '#b8453a', light: '#d8695d', dark: '#8a2f27' }, { main: '#d49a2c', light: '#ecbc58', dark: '#a87617' }][(Math.floor(variant / 3) + v) % 4];
     const pal = [{ main: '#3f9b4a', light: '#6fcb7a' }, { main: '#3a7ca5', light: '#6aa6cc' }, { main: '#c0392b', light: '#e8604f' }][v];
     const cx = w / 2;
     shadow();
@@ -1108,7 +1108,11 @@ function vehicleNsTexture(key: string): HTMLCanvasElement | null {
     // Đầu + mũ (xe máy: mũ vải rộng vành; xe đạp: nón lá)
     r(cx - 5, top - 8, 10, 10, DARK); r(cx - 4, top - 7, 8, 8, front ? SKIN : '#1a1815');
     if (front) { r(cx - 4, top - 7, 8, 2, '#1a1815'); r(cx - 3, top - 4, 1, 2, '#1a1815'); r(cx + 2, top - 4, 1, 2, '#1a1815'); r(cx - 1, top - 1, 2, 1, '#b5594a'); }
-    if (bike) { r(cx - 5, top - 14, 10, 7, DARK); r(cx - 4, top - 13, 8, 5, '#e4c485'); r(cx - 9, top - 9, 18, 3, DARK); r(cx - 8, top - 9, 16, 2, '#d1ab62'); }
+    if (bike) {  // mũ bảo hiểm nửa đầu, màu theo biến thể (trắng/đỏ/xanh dương/đen)
+      const hm = [{ m: '#eef0f2', h: '#ffffff' }, { m: '#c9402f', h: '#e8604f' }, { m: '#2f6fb0', h: '#5f9cd0' }, { m: '#2b2f36', h: '#4a515c' }][Math.floor(variant / 3) % 4];
+      r(cx - 6, top - 12, 12, 10, DARK); r(cx - 5, top - 11, 10, 8, hm.m); r(cx - 5, top - 11, 10, 2, hm.h);
+      if (front) { r(cx - 4, top - 5, 8, 1, '#1a1815'); } else r(cx - 6, top - 5, 12, 5, DARK), r(cx - 5, top - 5, 10, 4, hm.m);
+    }
     else { r(cx - 1, 0, 2, 1, DARK); r(cx - 4, 1, 8, 1, '#f0e2a0'); r(cx - 7, 2, 14, 1, '#e9d792'); r(cx - 10, 3, 20, 1, '#f0e2a0'); r(cx - 12, 4, 24, 2, '#d9c581'); }
     if (!bike && front) { r(cx - 7, h - 40, 14, 8, DARK); r(cx - 6, h - 39, 12, 6, '#c89b5c'); r(cx - 5, h - 42, 6, 3, '#4cae3b'); }
     return canvas;
@@ -1210,45 +1214,45 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
       r(cx - half, cy + dy, half * 2 + 1, 1, col);
     }
   };
-  const chunkyWheel = (r: R4, cx: number, cy: number) => {
-    disc(r, cx, cy, 9, DARK);
-    // gai lốp nhô quanh bánh
-    for (const [dx, dy, w, h] of [[-1, -10, 2, 1], [-1, 10, 2, 1], [-10, -1, 1, 2], [10, -1, 1, 2], [6, -8, 2, 2], [-8, -8, 2, 2], [6, 7, 2, 2], [-8, 7, 2, 2]] as const) r(cx + dx, cy + dy, w, h, DARK);
-    disc(r, cx, cy, 7, '#3a3631');
-    disc(r, cx, cy, 6, '#eef1f3');
-    disc(r, cx, cy, 4, '#c8cdd2');
-    r(cx - 5, cy, 11, 1, '#9aa5ad'); r(cx, cy - 5, 1, 11, '#9aa5ad');
-    disc(r, cx, cy, 2, '#5d6368'); r(cx - 1, cy - 1, 2, 2, '#2c3e50');
-  };
-  // Vẽ xe (không người) với mặt đường ở y=58; r đã bao gồm độ lệch dọc. kind: 'cub' (xe số, hộp giao hàng) hoặc 'scooter'.
+  // Vẽ xe (không người) trực tiếp trên lưới thô 2×2 (toạ độ p = nửa toạ độ canvas), mặt đường ở y=58 px (29 ô). kind: 'cub' (xe số, hộp giao hàng) hoặc 'scooter'.
   const drawBike = (r: R4, kind: 'cub' | 'scooter', pal: Pal, box: boolean) => {
-    r(3, 56, 56, 4, '#26190e40'); r(8, 55, 46, 3, '#26190e25');
-    r(2, 47, 16, 3, '#6b7078'); r(2, 47, 16, 1, '#9aa0a6');                 // ống xả
-    chunkyWheel(r, 13, 49);
-    chunkyWheel(r, 47, 49);
+    const p: R4 = (x, y, w, h, c) => r(x * 2, y * 2, w * 2, h * 2, c);
+    const coarseDisc = (cx: number, cy: number, rad: number, col: string) => {
+      for (let dy = -rad; dy <= rad; dy++) {
+        const half = Math.round(Math.sqrt(rad * rad - dy * dy + 0.5));
+        p(cx - half, cy + dy, half * 2 + 1, 1, col);
+      }
+    };
+    const wheel = (cx: number, cy: number) => {
+      coarseDisc(cx, cy, 4, DARK); coarseDisc(cx, cy, 3, '#4a443d'); coarseDisc(cx, cy, 2, '#e6eaed'); coarseDisc(cx, cy, 1, '#8d969c');
+      p(cx, cy, 1, 1, '#2c3e50');
+    };
+    p(2, 28, 27, 2, '#26190e40');
+    p(1, 24, 8, 2, DARK); p(1, 24, 8, 1, '#9aa0a6');                                  // ống xả
+    wheel(7, 24); wheel(23, 24);
     if (kind === 'cub') {
-      r(2, 39, 22, 3, DARK); r(2, 39, 22, 1, pal.light); r(3, 40, 20, 1, pal.main);   // chắn bùn sau
-      r(14, 38, 26, 10, DARK); r(15, 39, 24, 8, pal.main); r(15, 39, 24, 2, pal.light); r(15, 44, 24, 3, pal.dark);
-      r(24, 45, 12, 6, '#4a4540'); r(25, 46, 10, 2, '#6b7078');                      // block máy
-      r(10, 34, 26, 5, DARK); r(11, 34, 24, 3, '#5a3a24'); r(11, 34, 24, 1, '#7a5436'); // yên
+      p(2, 19, 10, 2, DARK); p(2, 19, 10, 1, pal.light);                               // chắn bùn sau
+      p(7, 19, 13, 5, DARK); p(8, 20, 11, 3, pal.main); p(8, 20, 11, 1, pal.light); p(8, 22, 11, 1, pal.dark);
+      p(12, 23, 6, 2, '#4a4540'); p(13, 23, 4, 1, '#6b7078');                           // block máy
+      p(5, 17, 13, 2, DARK); p(5, 17, 12, 1, '#7a5436'); p(5, 18, 12, 1, '#5a3a24');   // yên
       if (box) {
-        r(2, 35, 24, 2, '#6b7078');                                                  // baga
-        r(3, 21, 22, 14, DARK); r(4, 22, 20, 12, '#d9b37b'); r(4, 22, 20, 3, '#ecd0a0'); r(4, 31, 20, 3, '#bf9a64');
-        r(12, 22, 3, 12, '#f0e8d8'); r(4, 27, 20, 2, '#f0e8d8');                     // băng keo
+        p(1, 16, 13, 1, '#6b7078');                                                     // baga
+        p(1, 9, 13, 7, DARK); p(2, 10, 11, 5, '#d9b37b'); p(2, 10, 11, 1, '#ecd0a0'); p(2, 14, 11, 1, '#bf9a64');
+        p(7, 10, 1, 5, '#f0e8d8'); p(2, 12, 11, 1, '#f0e8d8');                         // băng keo
       }
     } else {
-      r(3, 32, 25, 16, DARK); r(4, 33, 23, 14, pal.main); r(4, 33, 23, 3, pal.light); r(4, 44, 23, 3, pal.dark);
-      r(9, 38, 11, 3, '#cfd8dc'); r(9, 38, 11, 1, '#ffffff');                        // tấm ốp bên
-      r(5, 28, 25, 5, DARK); r(6, 28, 23, 3, '#2b3340'); r(6, 28, 23, 1, '#47536a');  // yên
-      r(27, 45, 18, 4, DARK); r(28, 45, 16, 2, '#8A5F3D');                           // sàn để chân
+      p(2, 15, 13, 9, DARK); p(3, 16, 11, 7, pal.main); p(3, 16, 11, 1, pal.light); p(3, 21, 11, 2, pal.dark);
+      p(5, 19, 5, 1, '#cfd8dc');                                                        // tấm ốp bên
+      p(2, 13, 14, 2, DARK); p(3, 13, 12, 1, '#47536a'); p(3, 14, 12, 1, '#2b3340');   // yên
+      p(14, 23, 9, 2, DARK); p(15, 23, 7, 1, '#8A5F3D');                                // sàn để chân
     }
-    // cổ + tấm chắn chân, phuộc, chắn bùn trước, ghi-đông, đèn
-    r(44, 26, 8, 22, DARK); r(45, 27, 6, 20, pal.main); r(45, 27, 2, 20, pal.light);
-    r(46, 40, 3, 10, '#8a9199');
-    r(42, 41, 15, 3, DARK); r(43, 41, 13, 2, pal.main);
-    r(42, 23, 13, 3, DARK); r(44, 20, 2, 3, DARK); r(42, 17, 7, 3, '#9aa0a6'); r(52, 23, 4, 3, '#2a2a2a');
-    r(53, 28, 7, 7, DARK); r(54, 29, 5, 5, '#ffe27a'); r(57, 30, 2, 2, '#ffffff');
-    r(1, 40, 3, 4, '#e74c3c'); r(1, 44, 3, 3, '#f4f4f4');
+    // cổ + phuộc, chắn bùn trước, ghi-đông, đèn pha, đèn hậu
+    p(21, 13, 4, 11, DARK); p(22, 14, 2, 9, pal.main); p(22, 14, 1, 9, pal.light);
+    p(23, 20, 2, 6, '#8a9199');
+    p(21, 21, 7, 1, DARK); p(21, 22, 7, 1, pal.main);
+    p(20, 11, 6, 2, DARK); p(21, 9, 3, 2, '#9aa0a6'); p(25, 11, 2, 2, '#2a2a2a');
+    p(26, 14, 3, 3, DARK); p(27, 14, 2, 2, '#ffe27a'); p(28, 15, 1, 1, '#ffffff');
+    p(0, 18, 1, 2, '#e74c3c');
   };
   // Cấu hình theo biến thể: xe số xanh + hộp giao hàng, tay ga xanh dương, xe số đỏ
   const bikeFor = (v: number): { kind: 'cub' | 'scooter'; pal: Pal; box: boolean } => {
@@ -1265,41 +1269,67 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
     return canvas;
   }
 
+  // Xe máy + chân người ngồi (không thân/đầu): `textures.ts` ghép nhân vật khách (atlas) lên trên cho khách rời tiệm bằng xe máy.
+  if (key.startsWith('vehicle_motorbike_bike_')) {
+    const isRight = key.endsWith('right');
+    const variantMatch = key.match(/_(\d+)_(?:left|right)$/);
+    const { canvas, r: r0 } = makeSurface(62, 65, !isRight);
+    const r: R4 = (x, y, w, h, c) => r0(x, y + 3, w, h, c);
+    const b = bikeFor((variantMatch ? Number(variantMatch[1]) : 0) % 3);
+    drawBike(r, b.kind, b.pal, b.box);
+    r(20, 33, 16, 7, DARK); r(21, 34, 14, 5, '#3b4e4e'); r(21, 34, 14, 1, '#567373');
+    r(33, 36, 9, 13, DARK); r(34, 37, 7, 11, '#3b4e4e');
+    r(31, 47, 13, 6, DARK); r(32, 48, 11, 4, '#8A5F3D'); r(32, 48, 11, 1, '#b07a4a');
+    return canvas;
+  }
+
   if (key.startsWith('vehicle_motorbike_rider_')) {
     const isRight = key.endsWith('right');
     const variantMatch = key.match(/_(\d+)_(?:left|right)$/);
-    const variant = variantMatch ? Number(variantMatch[1]) % 3 : 0;
+    const rawVariant = variantMatch ? Number(variantMatch[1]) : 0;
+    const variant = rawVariant % 3;                    // kiểu xe
+    const look = Math.floor(rawVariant / 3) % 4;       // kiểu người lái: 0 mũ bảo hiểm, 1 nón vải, 2 tóc trần, 3 mũ lưỡi trai
     const { canvas, r: r0 } = makeSurface(62, 65, !isRight);
     const r: R4 = (x, y, w, h, c) => r0(x, y + 3, w, h, c);
     const b = bikeFor(variant);
     drawBike(r, b.kind, b.pal, b.box);
     const jackets = [
       { main: '#2e8b3e', light: '#4cb25d', dark: '#1f6a2d' },
-      { main: '#2e8b3e', light: '#4cb25d', dark: '#1f6a2d' },
       { main: '#3a6ea5', light: '#5f95c9', dark: '#274f7a' },
+      { main: '#b8453a', light: '#d8695d', dark: '#8a2f27' },
+      { main: '#8a6bb0', light: '#a98cce', dark: '#654a88' },
+      { main: '#d49a2c', light: '#ecbc58', dark: '#a87617' },
+      { main: '#4a5560', light: '#6c7a88', dark: '#343d46' },
     ];
-    const j = jackets[variant];
-    const SKIN = '#f1c8a0';
+    const j = jackets[(look * 2 + variant) % jackets.length];
+    const SKIN = ['#f1c8a0', '#e0ac7e', '#f4d2b0', '#c98f64'][(look + variant) % 4];
+    const HAIR = ['#1a1815', '#3b2a1c', '#1a1815', '#5a3a24'][(look + variant * 2) % 4];
     const PANTS = '#3b4e4e';
     // Chân: đùi trên yên, cẳng chân xuống bàn đạp, giày nâu
     r(20, 33, 16, 7, DARK); r(21, 34, 14, 5, PANTS); r(21, 34, 14, 1, '#567373');
     r(33, 36, 9, 13, DARK); r(34, 37, 7, 11, PANTS);
     r(31, 47, 13, 6, DARK); r(32, 48, 11, 4, '#8A5F3D'); r(32, 48, 11, 1, '#b07a4a');
-    // Thân áo khoác xanh lá, cổ áo trắng, túi áo
+    // Thân áo khoác, cổ áo trắng, túi áo
     r(18, 16, 15, 20, DARK); r(19, 17, 13, 18, j.main); r(19, 17, 3, 18, j.light); r(28, 17, 4, 18, j.dark);
     r(25, 16, 6, 3, '#f4f4f4'); r(22, 27, 5, 4, j.dark); r(22, 27, 5, 1, j.light);
     // Tay cầm ghi-đông
     r(29, 19, 8, 6, DARK); r(30, 20, 6, 4, j.main);
     r(35, 22, 8, 6, DARK); r(36, 23, 6, 4, j.main);
     r(41, 23, 9, 6, DARK); r(42, 24, 7, 4, SKIN);
-    // Đầu chibi: tóc, mặt, mắt, má hồng
-    r(23, 5, 17, 15, DARK); r(24, 6, 15, 13, SKIN);
-    r(23, 8, 4, 10, '#1a1815'); r(24, 6, 15, 3, '#1a1815');
-    r(31, 11, 3, 4, '#1a1815'); r(36, 11, 3, 4, '#1a1815'); r(32, 12, 1, 1, '#ffffff'); r(37, 12, 1, 1, '#ffffff');
-    r(29, 15, 4, 2, '#e8907a'); r(36, 15, 3, 2, '#e8907a'); r(34, 17, 3, 1, '#b5594a');
-    // Mũ vải rộng vành màu be
-    r(24, -1, 15, 9, DARK); r(25, 0, 13, 7, '#e4c485'); r(25, 0, 13, 2, '#f2dca8'); r(25, 5, 13, 2, '#cba965');
-    r(20, 6, 26, 4, DARK); r(21, 6, 24, 3, '#d1ab62'); r(21, 6, 24, 1, '#e4c485'); r(21, 9, 24, 1, '#a88445');
+    // Đầu nhỏ vừa phải (tỉ lệ gần nhân vật LimeZu): mặt, mắt, miệng
+    r(26, 7, 12, 12, DARK); r(27, 8, 10, 10, SKIN);
+    r(34, 12, 2, 2, '#1a1815'); r(35, 12, 1, 1, '#ffffff'); r(33, 16, 3, 1, '#b5594a');
+    // Mọi người lái đều đội mũ bảo hiểm (màu theo kiểu): 0 trắng kín đầu, 1 đỏ nửa đầu, 2 xanh dương nửa đầu, 3 đen sọc vàng
+    const HELM = [{ m: '#eef0f2', h: '#ffffff', d: '#c9ced3' }, { m: '#c9402f', h: '#e8604f', d: '#8f2b20' }, { m: '#2f6fb0', h: '#5f9cd0', d: '#214f80' }, { m: '#2b2f36', h: '#4a515c', d: '#1a1d22' }][look];
+    if (look === 0) {          // kín đầu, kính chắn tối
+      r(25, 3, 14, 11, DARK); r(26, 4, 12, 9, HELM.m); r(26, 4, 12, 2, HELM.h); r(26, 10, 12, 2, HELM.d);
+      r(32, 8, 6, 3, '#26323f'); r(26, 7, 5, 1, '#d6453a');
+    } else {                   // nửa đầu: vỏ mũ trùm đỉnh + gáy, lưỡi trai nhỏ phía trước
+      r(25, 3, 14, 9, DARK); r(26, 4, 12, 7, HELM.m); r(26, 4, 12, 2, HELM.h); r(26, 9, 12, 2, HELM.d);
+      r(25, 9, 4, 7, DARK); r(26, 10, 2, 5, HELM.m);
+      r(34, 8, 7, 3, DARK); r(35, 8, 5, 2, HELM.d);
+      if (look === 3) r(26, 6, 12, 1, '#e9b73a');
+    }
     return canvas;
   }
 

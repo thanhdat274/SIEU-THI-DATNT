@@ -75,6 +75,11 @@ export const SEASONAL_DECOR: Record<SeasonId, readonly SeasonalDecorItem[]> = {
   mua_mua: [{ id: 'mua_o', name: 'Ô che mưa treo hiên', icon: '☂️' }, { id: 'mua_ech', name: 'Ếch mùa mưa', icon: '🐸' }],
   tuu_truong: [{ id: 'tt_cap', name: 'Cặp sách ngày khai giảng', icon: '🎒' }, { id: 'tt_sach', name: 'Sách vở mới', icon: '📚' }],
   trung_thu: [{ id: 'tr_long_den', name: 'Lồng đèn ông sao', icon: '⭐' }, { id: 'tr_banh', name: 'Bánh trung thu', icon: '🥮' }],
+  quoc_te_phu_nu: [{ id: 'pn_hoa', name: 'Bó hoa mùng 8/3', icon: '💐' }, { id: 'pn_qua', name: 'Hộp quà tặng', icon: '🎁' }],
+  nghi_le_30_4: [{ id: 'nl_co', name: 'Cờ ngày thống nhất', icon: '🇻🇳' }, { id: 'nl_non', name: 'Nón đi chơi lễ', icon: '👒' }],
+  quoc_khanh: [{ id: 'qk_co', name: 'Cờ đỏ sao vàng', icon: '🇻🇳' }, { id: 'qk_sao', name: 'Ngôi sao vàng', icon: '⭐' }],
+  phu_nu_vn: [{ id: 'pv_hoa', name: 'Bó hoa 20/10', icon: '🌹' }, { id: 'pv_thiep', name: 'Thiệp chúc mừng', icon: '💌' }],
+  giang_sinh: [{ id: 'gs_thong', name: 'Cây thông Noel', icon: '🎄' }, { id: 'gs_tat', name: 'Tất Giáng sinh', icon: '🧦' }],
 };
 
 export function seasonalDecorForDay(day: number): readonly SeasonalDecorItem[] {

@@ -141,14 +141,39 @@ function windFor(state: 'idle' | 'walk' | RaincoatWindState, phase: number, lean
   return CALM;
 }
 
+/**
+ * Nhân vật LimeZu (đầu to hơn và cao hơn nhân vật vẽ bằng code): vẽ áo như cũ rồi nới mũ trùm cho vừa đầu bằng cách nhân đôi
+ * cột giữa (đối xứng, giữ tâm) và thêm vài hàng giữa mũ để đỉnh mũ cao ngang đỉnh đầu mới. Thân áo giữ nguyên.
+ */
+const HOOD_WIDEN: Record<'down' | 'up' | 'right', number> = { down: 6, up: 6, right: 4 };
+const HOOD_EXTRA_ROWS = CHARACTER_FRAME.h - 48;
+const HOOD_SPLIT_ROW = 8; // hàng mũ được nhân lên (vùng trơn, không chi tiết)
+const HOOD_LAST_ROW = 20; // hàng cuối của mũ trùm trong khung gốc 32×48
+
+function fitToWiderHead(img: Img, dir: 'down' | 'up' | 'right'): Img {
+  const out = new Img(img.w, img.h + HOOD_EXTRA_ROWS);
+  const dx = HOOD_WIDEN[dir]; const half = dx / 2;
+  for (let y = 0; y < out.h; y++) {
+    const sy = y <= HOOD_SPLIT_ROW ? y : y <= HOOD_SPLIT_ROW + HOOD_EXTRA_ROWS ? HOOD_SPLIT_ROW : y - HOOD_EXTRA_ROWS;
+    const hood = sy <= HOOD_LAST_ROW;
+    for (let x = 0; x < out.w; x++) {
+      let sx = x;
+      if (hood) { const nx = x + half; sx = nx <= 15 ? nx : nx <= 15 + half ? 15 : nx <= 15 + dx ? 16 : nx - dx; }
+      const c = img.get(sx, sy);
+      if (c[3]) out.set(x, y, c);
+    }
+  }
+  return out;
+}
+
 export function raincoatFrame(dir: WeatherSpriteDir, pose: RaincoatPose, state: 'idle' | 'walk' | RaincoatWindState, lean: WindLean | '-', phase: number, base: Rgba): Img {
   const p = poseOf(pose);
   const w = windFor(state, phase, lean);
   const walkHem = state === 'walk' ? [0, 1, 0, -1][Number(pose.slice(4))] : 0;
   const pal = palette(base);
   // Hướng trái là hướng phải lật gương: đảo dấu gió/nhún vạt trước khi lật để lean vẫn tính theo màn hình.
-  if (dir === 'left') return drawCoat('right', p, { ...w, sign: -w.sign }, -walkHem, pal).mirrored();
-  return drawCoat(dir, p, w, walkHem, pal);
+  if (dir === 'left') return fitToWiderHead(drawCoat('right', p, { ...w, sign: -w.sign }, -walkHem, pal), 'right').mirrored();
+  return fitToWiderHead(drawCoat(dir, p, w, walkHem, pal), dir);
 }
 
 export function raincoatSheetFrames(color: string): { rows: SheetFrame[][] } {

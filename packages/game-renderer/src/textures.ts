@@ -1,6 +1,7 @@
 import { Texture } from 'pixi.js';
 import { createPremiumTexture } from './premium-textures';
 import { createNeighborhoodTexture } from './neighborhood-textures';
+import { atlasTexture } from './sprite-atlas';
 
 /**
  * Procedural Pixel Art Generator for "Tiệm Tạp Hóa Đầu Hẻm"
@@ -19,11 +20,45 @@ function createCanvas(width: number, height: number): HTMLCanvasElement {
   return canvas;
 }
 
+/** Xe vẽ bằng code (xe buýt, xe tải, xe đạp, xe máy, xe làn dọc) dùng điểm ảnh 1×1 mịn hơn nhân vật và xe Kenney (điểm ảnh 2×2): gộp về lưới 2×2 cho cùng độ thô. */
+const CHUNKY_KEYS = /^(vehicle_minibus_|truck_|vehicle_ns_|vehicle_bicycle_|vehicle_motorbike_)/;
+
+function chunkyPixels(src: HTMLCanvasElement): HTMLCanvasElement {
+  const w = src.width, h = src.height;
+  const sctx = src.getContext('2d');
+  if (!sctx) return src;
+  const data = sctx.getImageData(0, 0, w, h).data;
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  const octx = out.getContext('2d')!;
+  const dst = octx.createImageData(w, h);
+  const lum = (i: number) => data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
+  for (let by = 0; by < h; by += 2) {
+    for (let bx = 0; bx < w; bx += 2) {
+      // Chọn điểm đậm đặc nhất trong khối 2×2 (ưu tiên có màu, rồi tối nhất) để giữ viền mảnh.
+      let best = -1;
+      for (let dy = 0; dy < 2 && by + dy < h; dy++) for (let dx = 0; dx < 2 && bx + dx < w; dx++) {
+        const i = ((by + dy) * w + bx + dx) * 4;
+        if (best < 0 || data[i + 3] > data[best + 3] || (data[i + 3] === data[best + 3] && lum(i) < lum(best))) best = i;
+      }
+      for (let dy = 0; dy < 2 && by + dy < h; dy++) for (let dx = 0; dx < 2 && bx + dx < w; dx++) {
+        const j = ((by + dy) * w + bx + dx) * 4;
+        dst.data[j] = data[best]; dst.data[j + 1] = data[best + 1]; dst.data[j + 2] = data[best + 2]; dst.data[j + 3] = data[best + 3];
+      }
+    }
+  }
+  octx.putImageData(dst, 0, 0);
+  return out;
+}
+
 export class PixelTextureFactory {
   private textures: Map<string, Texture> = new Map();
+  /** Khóa lấy từ atlas dùng chung toàn cục: không destroy khi factory hủy. */
+  private atlasKeys: Set<string> = new Set();
 
   public destroy(): void {
-    for (const texture of this.textures.values()) texture.destroy(true);
+    for (const [key, texture] of this.textures) if (!this.atlasKeys.has(key)) texture.destroy(true);
+    this.atlasKeys.clear();
     this.textures.clear();
   }
 
@@ -33,11 +68,58 @@ export class PixelTextureFactory {
   }
 
   public getTexture(key: string): Texture {
+    // `partner_*` (đối tác co-op) có ảnh riêng trong atlas; chưa có thì dùng chung hình người chơi như trước.
+    if (key.startsWith('partner_') && !atlasTexture(key)) key = `player_${key.slice('partner_'.length)}`;
     const existing = this.textures.get(key);
     if (existing) return existing;
 
-    const texture = this.generateTexture(key);
+    // Khách rời tiệm bằng xe máy: ghép nửa trên nhân vật khách (atlas) lên xe + chân, để người lên xe đúng là người vừa mua hàng.
+    const cust = /^vehicle_motorbike_custrider_(\d+)_(\d+)_(left|right)$/.exec(key);
+    if (cust) {
+      const composed = this.composeCustomerRider(Number(cust[1]), Number(cust[2]), cust[3] as 'left' | 'right');
+      if (composed) { this.textures.set(key, composed); return composed; }
+      const fallback = this.getTexture(`vehicle_motorbike_rider_${cust[1]}_${cust[3]}`);
+      this.textures.set(key, fallback);
+      return fallback;
+    }
+
+    // Ưu tiên ảnh từ spritesheet (nếu có khung cùng khóa); không có thì vẽ bằng code như trước.
+    const fromAtlas = atlasTexture(key);
+    const texture = fromAtlas ?? this.generateTexture(key);
+    if (fromAtlas) this.atlasKeys.add(key);
     this.textures.set(key, texture);
+    return texture;
+  }
+
+  /** Xe máy + chân (canvas premium) với nửa trên nhân vật `npc_<look>_<hướng>_idle_0` của atlas; null nếu atlas chưa có khung đó. */
+  private composeCustomerRider(variant: number, look: number, dir: 'left' | 'right'): Texture | null {
+    const npc = atlasTexture(`npc_${look}_${dir}_idle_0`);
+    const res = npc?.source.resource as CanvasImageSource | undefined;
+    if (!npc || !res) return null;
+    const canvas = this.createCanvasForKey(`vehicle_motorbike_bike_${variant}_${dir}`);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.imageSmoothingEnabled = false;
+    const k = npc.source.resolution;
+    const f = npc.frame;
+    const TORSO = 33;                                       // hàng nhân vật tính từ đỉnh tới hông
+    const cx = dir === 'right' ? 27 : 62 - 27;             // hông trên yên
+    ctx.drawImage(res, f.x * k, f.y * k, f.width * k, TORSO * k, Math.round(cx - f.width / 2), 36 - TORSO, f.width, TORSO);
+    // Mũ bảo hiểm nửa đầu phủ lên tóc nhân vật (màu theo kiểu nhân vật), mặt vẫn hiện.
+    const HELM = [['#eef0f2', '#c9ced3'], ['#c9402f', '#8f2b20'], ['#2f6fb0', '#214f80'], ['#2b2f36', '#1a1d22']][look % 4];
+    const px = (x: number, y: number, w: number, h: number, c: string) => {
+      ctx.fillStyle = c;
+      ctx.fillRect(dir === 'right' ? x : 62 - x - w, y, w, h);
+    };
+    // Vỏ mũ theo hình đầu nhân vật (hàng/cột trong khung 32 px của nhân vật, bố cục hướng phải, px lật lại cho hướng trái)
+    const ox = 27 - 16, oy = 36 - TORSO;
+    for (const [row, h, x0, w] of [[4, 2, 8, 14], [6, 2, 6, 18], [8, 2, 4, 22], [10, 2, 4, 24], [12, 2, 2, 28], [14, 2, 2, 28]] as const) {
+      px(ox + x0 - 1, oy + row, w + 2, h, '#1a1815');
+      px(ox + x0, oy + row, w, h, row >= 14 ? HELM[1] : HELM[0]);
+    }
+    px(ox + 9, oy + 4, 12, 2, '#ffffff55');
+    const texture = Texture.from(canvas);
+    texture.source.scaleMode = 'nearest';
     return texture;
   }
 
@@ -52,7 +134,7 @@ export class PixelTextureFactory {
     const neighborhood = createNeighborhoodTexture(key);
     if (neighborhood) return neighborhood;
     const premium = createPremiumTexture(key);
-    if (premium) return premium;
+    if (premium) return CHUNKY_KEYS.test(key) ? chunkyPixels(premium) : premium;
     switch (key) {
       case 'tile_store_floor':
         return this.createStoreFloorTile();

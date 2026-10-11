@@ -30,6 +30,13 @@ export function runSeasonAndStallTests(): void {
     }
   }
 
+  // Năm có 9 lễ, không chồng lấn, lễ mới có đủ trang trí và nằm trong năm.
+  assert.equal(SEASON_EVENTS.length, 9, 'Chín lễ trong năm game');
+  for (const id of ['quoc_te_phu_nu', 'nghi_le_30_4', 'quoc_khanh', 'phu_nu_vn', 'giang_sinh'] as const) {
+    assert.equal(getSeasonForDay(dayOf(id))?.id, id, `${id} xuất hiện đúng ngày`);
+    assert.equal(SEASONAL_DECOR[id].length, 2, `${id} có 2 trang trí`);
+  }
+
   // Khách mùa ưu tiên nhóm hàng theo mùa.
   const map = generateStarterTileMap();
   const sim0 = new GameSimulation(structuredClone(DEFAULT_INITIAL_SAVE), map, new InputManager());

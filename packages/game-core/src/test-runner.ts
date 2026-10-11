@@ -96,6 +96,7 @@ import { runDiningAddonTests } from './dining-addons.test';
 import { runPrestigeTests } from './prestige.test';
 import { runAnalyticsTests } from './analytics.test';
 import { runWaveATests } from './wave-a.test';
+import { runSpecialRequestSimTests } from './special-request-sim.test';
 import { runIntegrationTests, runOutdoorPropTests } from './integration.test';
 import { runStoreLayoutTests } from './store-layout.test';
 import { runShelfSlotTests } from './shelf-slots.test';
@@ -229,6 +230,7 @@ export async function runTests(): Promise<void> {
   runPrestigeTests();
   runAnalyticsTests();
   runWaveATests();
+  runSpecialRequestSimTests();
   runOutdoorPropTests();
   runAnnualRevenueTests();
   runTaxAuditTests();
