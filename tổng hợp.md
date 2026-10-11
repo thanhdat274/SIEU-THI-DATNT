@@ -1,3 +1,11 @@
+# Kéo camera tới toàn khu phố (11/10/2026)
+- **Vấn đề:** kéo bản đồ không trôi ra ngoài vùng tiệm/đợt đang mở; chỉ xem được ô đất đang mở.
+- **Nguyên nhân:** giới hạn camera `setPlayBounds` trong `refreshCameraBounds()` (`viewport.ts`) dùng hộp vùng chơi + lề 8 ô và kẹp theo đợt khai hoang kế tiếp (`camera.ts` `clampToBounds`).
+- **Đã làm (có code):** `viewport.ts` `refreshCameraBounds()` dùng `NEIGHBORHOOD_TILES` làm hộp, lề 0. Bỏ tham số đợt khai hoang. `camera.ts` không đổi.
+- **Đã kiểm chứng:** `tsc --noEmit` renderer PASS; `vite build` web PASS; trên bản build `vite preview` (cổng 5174), kéo sang đông (thấy đường phố), kéo lên bắc (thấy dãy nhà) đều trôi tới được.
+- **Chưa kiểm chứng:** chưa kiểm tra mép đông/tây/nam tới cùng; chưa test trên cảm ứng; khóa đợt khai hoang chưa còn ở camera (nếu cần khóa xem trước thì phải làm lại).
+- **Ghi chú:** `camera.ts`, `viewport.ts` đang là thay đổi chưa commit của phiên khai hoang lô đất; lượt này chỉ sửa `refreshCameraBounds()` trong đó.
+
 # Tiếng bước chân bảo vệ, tên xưng hô NPC và biển hiệu khu phố (11/10/2026)
 - **Nguồn ý tưởng:** game "Rao — Đêm câu trộm" (https://rao-game.vercel.app/play), chỉ lấy cơ chế và ý tưởng. Không bê sprite, code hay văn bản của họ.
 - **Đã làm (có code):**
@@ -1905,3 +1913,25 @@ Chỉ ghi PASS khi đã đo/chụp thật trong Browser pane (giả lập viewpo
 
 | 2026-10-11 | `open-world-land-reclamation` 2.2, 2.4, 4.4 tick: camera kẹp theo vùng chơi + lề 8 ô; minimap `MiniMap.tsx` (chỉ xem); kiểm trình duyệt dev: khai hoang W1 −800.000 ₫, mua lô −576.000 ₫, ngân sách mở rộng 84→108 và modal hiện đúng. `yarn typecheck` PASS, game-core test 111/0. Chưa kiểm mobile/cảm ứng, co-op. |
 | 11/10/2026 | Chỉnh tiếp đường/vỉa hè theo yêu cầu: vỉa hè sáng hơn (`tile_sidewalk` nền #E2DED0/#D3CFC0), bó vỉa dày 5 → 9 px (`kerbRun`, `road-surface.ts`). | `yarn typecheck` PASS. | **Chưa xem bằng mắt bản này**: ô lưu lại báo đang mở ở thẻ khác nên Browser pane không vào game; bản trước (mỏng/tối hơn) đã xem. Chỉnh màu/độ dày ở các hằng số trên nếu chưa ưng. |
+
+| 2026-10-11 | `open-world-land-reclamation` 4.3 (một phần): chạm lô chưa mua trên bản đồ → `ParcelBuyModal` → lệnh `buy_parcel` (viewport `onParcelTap`). Kiểm trình duyệt dev: mua `w1-east-1` trừ 360.000 ₫. typecheck PASS. Chưa: hiển thị đợt khóa trên bản đồ, hệ số vị trí trên biển lô, cảm ứng/mobile. |
+
+| 2026-10-11 | `open-world-land-reclamation` 4.3 tick: đợt khóa hiện trên bản đồ (phủ tối + viền + biển điều kiện), biển lô có hệ số khách, camera nới vùng đợt kế tiếp. Kiểm ảnh chụp trình duyệt dev; typecheck PASS. Chưa kiểm mobile/cảm ứng, đêm/mưa. |
+
+| 2026-10-11 | `open-world-land-reclamation` 4.1: ĐO chi phí khung trong trình duyệt dev — 61×22: ~3,1 ms (p90 4,9); 77×31 (đủ W0–W4): ~4,5–4,7 ms (p90 ≤7,2), zoom 0,5× và 2×. Không cần chia khối/culling theo số đo này; chưa đo mobile/máy yếu/đêm/mưa/co-op nên 4.1 chưa tick, chờ chủ dự án chốt. Không đổi code. |
+
+| 2026-10-11 | `open-world-land-reclamation` 4.1 đóng theo quyết định bỏ chia khối (có số đo). 4.2 tick: công nhân đi lại + máy xúc chuyển động + nhà mờ dần theo tiến độ thi công (`viewport.ts`, `neighborhood-scene.ts`). Kiểm trình duyệt dev (alpha 0,86/0,48, tay máy xoay); typecheck PASS, game-core test 111/0. Chưa kiểm mobile/đêm/mưa. |
+
+| 2026-10-11 | `open-world-land-reclamation` 5.1: `yarn typecheck` PASS, `yarn test` 111/0, `yarn build` PASS. 5.3: đồng bộ `TASKS.md`, `ROADMAP.md`. Còn 5.2 browser QA đầy đủ (mobile, co-op, đêm/mưa, server thật). |
+
+| 2026-10-11 | `open-world-land-reclamation` 5.2 QA desktop (chưa tick): khai hoang/mua lô/lưu-nạp/đêm+bão ĐẠT; PHÁT HIỆN không đặt được tòa (quán nước) lên lô W1–W4 — `placementOptions` chỉ duyệt 4 lô W0, `PARCEL_MAP` thiếu lô đợt mới, `validatePlacement` ép hàng mặt tiền y=10. Cần quyết định thiết kế. Chưa kiểm: qua ngã tư, khách tới, mobile, co-op, server thật. |
+
+| 2026-10-11 | Tách change mới `open-world-new-parcel-buildings` (proposal/design/tasks/spec; chưa có code) cho việc đặt tòa lên lô W1–W4, theo quyết định của chủ dự án sau QA 5.2. `land-reclamation` còn 5.2 mobile/co-op/server thật. Cần chốt hình học lô (design Q1) trước khi làm. |
+
+| 2026-10-11 | `open-world-new-parcel-buildings` (hướng A): lô W1/W3 nới thành y 3..10 (W1: `w1-corner` x42..51, `w1-east` x52..60; W3: `w3-1` x61..70, `w3-2` x71..76), `resolveParcel`/`ALL_PARCELS`, `placementOptions`/`validatePlacement` chạy trên lô đợt mới, UI "Mở đất" liệt kê lô mới. Kiểm trình duyệt dev: mở quán nước ở w1-corner thành công, tòa hiện trên bản đồ; mô phỏng headless: đồ uống bán +26–29% so lot-east-2. typecheck/test 111-0/build PASS. W2/W4 CHƯA làm được (9 hàng giữa hai đường < 8 hàng tòa + 2 hàng vỉa hè); id `w1-east-1/2` đổi thành `w1-east` nên save QA cũ có id mồ côi (vô hại). Giá lô `w1-corner` tăng 576.000 → 1.536.000 ₫ do lô lớn hơn (provisional). |
+
+| 2026-10-11 | `open-world-new-parcel-buildings` W2/W4 (hướng 2): lô đường nam y 16..23 (cao 8 hàng), một hàng vỉa hè y=24, region W2/W4 mở rộng y 16..25 (bó vỉa = hàng biên) để hàng cửa đi được (trước đó y=24 là biên chặn → khách không tới được: mô phỏng 0 đồ uống). `placementOriginY` + front row = đáy lô; dời tòa dịch cả `dy`; kiểm overlap dùng hộp tòa gốc cho lô đợt mới. Bản đồ lớn nhất 77×32. Test game-core 111/0, typecheck/build PASS; mô phỏng: quán nước W2 150 vs 191 (W0), W4 góc 176; ảnh chụp quán ăn vặt ở w2-2. Chưa kiểm: server test, mobile thật, W4 khi chỉ mở W0+W4 (không tới được vì không có đường nối). |
+
+| 2026-10-11 | Test server `buy_plot` trên lô đợt mới (`coop-commands.test.ts`, chạy THẬT với Mongo local, PASS) + LỖI THẬT đã sửa: `apps/server/src/bootstrap.ts` gọi `placementsProblem` không truyền `ownedParcelIds` → mọi `buy_plot` lên lô W1–W4 bị từ chối `parcel_not_owned`. Sửa số giá `w1-corner` trong test cũ (1.536.000). Cũng PASS: `test:unit`, `test:worlds`, `test:gateway`. |
+
+| 2026-10-11 | ARCHIVE `open-world-new-parcel-buildings` → `openspec/changes/archive/2026-10-11-open-world-new-parcel-buildings` (không đồng bộ main specs: thư mục `openspec/specs` trống theo thực tế dự án). typecheck/test 111-0/build/`test:coop` PASS. Hoãn (ghi trong tasks.md của change): ảnh chụp chỉnh hạ tầng W1/W2 (0.2), balance-sim sang lô thật (2.3), minimap/Thành phố phản ánh tòa (4.2), mobile/cảm ứng, co-op hai trình duyệt. |

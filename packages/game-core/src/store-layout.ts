@@ -1,7 +1,7 @@
 import { COLD_WAREHOUSE_CAPACITY, MAX_FOOTPRINT_TILES, UNITS_PER_WAREHOUSE_CELL, getFixtureDimensions, type Product, isSalesFixture, isSlotChild, syncSlotChildren, tileIndex, tileInMap, type BuildingPlacementRecord, type GameTileMap, type SaveGameData, type StoreFixture } from '@game/shared';
 import {
-  BUILDINGS, DECOR_MAP, EXPANSION_TILE_PRICE, LAND_PARCELS, FIXTURE_SHOP, LAND_PLOTS, MAIN_EAST_WING_PLOT_IDS, MAP_ORIGIN_Y, PARCEL_MAP, STORE_BOUNDS, WAREHOUSE_DOOR_LEFT, WAREHOUSE_TIERS, STORAGE_RACK_CELL_BONUS, MAX_STORAGE_RACKS,
-  buildingOfTiles, checkFootprintTiles, placementsProblem, defaultPlacementOf, entranceOf, layoutBuildings, resolvePlacements, validatePlacement, expansionBudgetAtLevel, expansionTilesUsed, generateStarterTileMap, normalizePlacements, placementFloor, placementGeometry, type BuildingId, type BuildingPlacement,
+  BUILDINGS, DECOR_MAP, EXPANSION_TILE_PRICE, ALL_PARCELS, resolveParcel, FIXTURE_SHOP, LAND_PLOTS, MAIN_EAST_WING_PLOT_IDS, MAP_ORIGIN_Y, PARCEL_MAP, STORE_BOUNDS, WAREHOUSE_DOOR_LEFT, WAREHOUSE_TIERS, STORAGE_RACK_CELL_BONUS, MAX_STORAGE_RACKS,
+  buildingOfTiles, checkFootprintTiles, placementsProblem, placementOriginY, defaultPlacementOf, entranceOf, layoutBuildings, resolvePlacements, validatePlacement, expansionBudgetAtLevel, expansionTilesUsed, generateStarterTileMap, normalizePlacements, placementFloor, placementGeometry, type BuildingId, type BuildingPlacement,
   baseFloorTiles, legacyWingFloorTiles, tileKey, inRect, adjacentParcels, footprintBlockers,
   RECLAMATION_WAVES, WAVE_EXPANSION_BONUS,
 } from '@game/data';
@@ -237,10 +237,10 @@ export function placementOptions(save: Pick<SaveGameData, 'storeLayout'>, buildi
   const others = resolvePlacements(save.storeLayout.buildingPlacements, owned).filter(placement => placement.buildingId !== buildingId);
   const def = defaultPlacementOf(buildingId);
   const options: Array<{ parcelId: string; originXs: number[] }> = [];
-  for (const parcel of LAND_PARCELS) {
+  for (const parcel of ALL_PARCELS) {
     const originXs: number[] = [];
     for (let originX = parcel.rect.x0; originX <= parcel.rect.x1; originX++) {
-      if (validatePlacement({ buildingId, parcelId: parcel.id, originX, originY: def.originY }, others, ownedParcels) === null) originXs.push(originX);
+      if (validatePlacement({ buildingId, parcelId: parcel.id, originX, originY: placementOriginY(buildingId, parcel.id) }, others, ownedParcels) === null) originXs.push(originX);
     }
     if (originXs.length) options.push({ parcelId: parcel.id, originXs });
   }
@@ -285,11 +285,11 @@ export function relocateBuilding(save: SaveGameData, buildingId: string, placeme
   const current = resolvePlacements(save.storeLayout.buildingPlacements, owned);
   const old = current.find(item => item.buildingId === id);
   if (!old) return { error: 'plot_locked' };
-  const candidate: BuildingPlacement = { buildingId: id, parcelId: placement.parcelId, originX: placement.originX, originY: old.originY };
+  const candidate: BuildingPlacement = { buildingId: id, parcelId: placement.parcelId, originX: placement.originX, originY: placementOriginY(id, placement.parcelId) };
   if (candidate.parcelId === old.parcelId && candidate.originX === old.originX) return { error: 'invalid_placement' };
   // Ô sàn mở rộng dời cùng tòa (cùng `dx`, cùng hàng); lô đã lấn (`parcelIds`) trả lại, tòa chỉ giữ lô mới.
   const dxMove = candidate.originX - old.originX;
-  if (old.floorTiles?.length) candidate.floorTiles = old.floorTiles.map(tile => ({ x: tile.x + dxMove, y: tile.y }));
+  if (old.floorTiles?.length) candidate.floorTiles = old.floorTiles.map(tile => ({ x: tile.x + dxMove, y: tile.y + (candidate.originY - old.originY) }));
   const problem = validatePlacement(candidate, current.filter(item => item.buildingId !== id), save.storeLayout.ownedParcelIds ?? []);
   if (problem) return { error: placementFailure(problem) };
   const rest = current.filter(item => item.buildingId !== id);
@@ -302,10 +302,11 @@ export function relocateBuilding(save: SaveGameData, buildingId: string, placeme
   next.player.money -= fee;
   const before = layoutBuildings(current, owned);
   const dx = candidate.originX - old.originX;
+  const dy = candidate.originY - old.originY;
   const roots = next.storeLayout.fixtures.filter(fixture => !fixture.parentId && !fixture.type.startsWith('warehouse_') && buildingOfTiles(footprint(fixture), before) === id);
   const moving = new Set(roots.map(fixture => fixture.id));
   for (const fixture of next.storeLayout.fixtures) {
-    if (moving.has(fixture.id) || (fixture.parentId && moving.has(fixture.parentId))) fixture.tileX += dx;
+    if (moving.has(fixture.id) || (fixture.parentId && moving.has(fixture.parentId))) { fixture.tileX += dx; fixture.tileY += dy; }
   }
   syncLayoutSlots(next);
   candidate.constructionUntilDay = save.worldTime.day + 1;
@@ -343,7 +344,7 @@ export function buyLandPlot(save: SaveGameData, plotId: string, placement?: { pa
   if (plot.buildingId) {
     current = resolvePlacements(save.storeLayout.buildingPlacements, owned);
     const def = defaultPlacementOf(plot.buildingId);
-    chosen = placement ? { buildingId: plot.buildingId, parcelId: placement.parcelId, originX: placement.originX, originY: def.originY } : def;
+    chosen = placement ? { buildingId: plot.buildingId, parcelId: placement.parcelId, originX: placement.originX, originY: placementOriginY(plot.buildingId, placement.parcelId) } : def;
     const problem = validatePlacement(chosen, current, save.storeLayout.ownedParcelIds ?? []);
     if (problem) return { error: placementFailure(problem) };
   }
@@ -448,7 +449,7 @@ export function expandFootprint(save: SaveGameData, buildingId: string, tiles: R
   const placements = normalizePlacements(save.storeLayout.buildingPlacements, owned);
   const building = placements.find(placement => placement.buildingId === buildingId) as BuildingPlacement;
   if (!building) return { error: 'invalid_tiles' };
-  const parcel = PARCEL_MAP[building.parcelId];
+  const parcel = resolveParcel(building.parcelId);
   if (!parcel) return { error: 'outside_parcel' };
   // D7b: tính lô kề trống (không có tòa nào đang dùng)
   const ownedParcels = building.parcelIds ?? [building.parcelId];
@@ -468,7 +469,7 @@ export function expandFootprint(save: SaveGameData, buildingId: string, tiles: R
   // D7b: nếu mở rộng sang lô kề, thêm vào parcelIds
   const newlyClaimable = freeAdjacent.filter(pid => !ownedParcels.includes(pid));
   const tilesInAdjacent = newlyClaimable.some((pid: string) => {
-    const p = PARCEL_MAP[pid];
+    const p = resolveParcel(pid);
     return tiles.some(t => p && inRect(p.rect, t.x, t.y));
   });
   const newPlacements = placements.map(placement => {
@@ -477,7 +478,7 @@ export function expandFootprint(save: SaveGameData, buildingId: string, tiles: R
     if (tilesInAdjacent && newParcelIds) {
       // Thêm các lô kề có chứa tile được mở rộng
       const added = newlyClaimable.filter((pid: string) => {
-        const p = PARCEL_MAP[pid];
+        const p = resolveParcel(pid);
         return p && tiles.some(t => inRect(p.rect, t.x, t.y));
       });
       return { ...placement, floorTiles, parcelIds: [...newParcelIds, ...added.filter((pid: string) => !newParcelIds!.includes(pid))] };

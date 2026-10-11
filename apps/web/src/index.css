@@ -1356,3 +1356,6 @@ kbd { background: var(--color-sun); border: 2px solid var(--color-ink); }
 .slot-count { background: var(--color-sun); }
 .toast-success { border-left-width: 6px; }
 .toast-warn { border-left-width: 6px; }
+
+.mini-map { position: absolute; left: var(--space-3, 12px); bottom: var(--space-3, 12px); z-index: 17; border: 2px solid var(--wood-dark, #4a2f18); border-radius: 4px; pointer-events: none; image-rendering: pixelated; }
+@media (max-height: 420px) { .mini-map { display: none; } }

@@ -24,7 +24,7 @@ export function runReclamationMapTests(): void {
 
   // 2.3: hệ số khách theo lô THẬT W1..W4 (không còn lô tổng hợp): góc chính > mặt chính > đường nam, W0 = 1.
   const corner = customerTrafficMultiplier('w1-corner');
-  const faceMain = customerTrafficMultiplier('w1-east-1');
+  const faceMain = customerTrafficMultiplier('w1-east');
   const faceSouth = customerTrafficMultiplier('w2-1');
   const cornerSouth = customerTrafficMultiplier('w4-corner');
   assert.ok(corner > faceMain && faceMain > faceSouth, `góc chính (${corner}) > mặt chính (${faceMain}) > đường nam (${faceSouth})`);

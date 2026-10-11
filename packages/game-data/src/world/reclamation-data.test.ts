@@ -8,6 +8,7 @@ import {
   CITY_TIER_MAX, NPC_BUDGET, VEHICLE_BUDGET,
 } from '../neighborhood';
 import { RECLAMATION_WAVES, validateReclamationWaves } from './waves';
+import { BUILDING_TEMPLATES } from './building-templates';
 import { rectContains, rectHeight, rectWidth, WORLD_BOUNDS } from './world-grid';
 
 export function runReclamationDataTests(): void {
@@ -91,7 +92,7 @@ export function runReclamationDataTests(): void {
   // --- Lô W1–W4: nằm trong vùng đợt, không chồng lô khác, đúng biên thế giới, mặt tiền phía bắc đường ---
   assert.deepEqual(validateReclamationWaves(), [], 'RECLAMATION_WAVES hợp lệ: vùng trong 120×80, không chồng, lô trong vùng, lô không chồng, lô mặt phía bắc đường');
   // Mỗi đợt mới có số lô đúng theo design D1.
-  const expectedCounts: Record<string, number> = { w0: 0, w1: 3, w2: 4, w3: 2, w4: 4 };
+  const expectedCounts: Record<string, number> = { w0: 0, w1: 2, w2: 4, w3: 2, w4: 4 };
   for (const wave of RECLAMATION_WAVES) {
     assert.ok(rectContains(WORLD_BOUNDS, wave.region), `vùng ${wave.id} nằm trong biên thế giới`);
     if (expectedCounts[wave.id] !== undefined) {
@@ -115,12 +116,24 @@ export function runReclamationDataTests(): void {
   // Lô góc ngã tư đúng chỗ (W1 x 42..47, W4 x 42..47) và đánh dấu corner.
   const w1 = RECLAMATION_WAVES.find((w) => w.id === 'w1')!;
   const w1Corner = w1.parcels.find((p) => p.id === 'w1-corner')!;
-  assert.deepEqual([w1Corner.rect.x0, w1Corner.rect.x1], [42, 47], 'W1 góc ngã tư đông nằm x 42..47 (D1)');
+  assert.deepEqual([w1Corner.rect.x0, w1Corner.rect.x1], [42, 51], 'W1 góc ngã tư đông nằm x 42..51 (open-world-new-parcel-buildings: đủ chứa quán nước rộng 10)');
   assert.equal(w1Corner.corner, true, 'W1 góc ngã tư đánh dấu corner');
   const w4 = RECLAMATION_WAVES.find((w) => w.id === 'w4')!;
   const w4Corner = w4.parcels.find((p) => p.id === 'w4-corner')!;
-  assert.deepEqual([w4Corner.rect.x0, w4Corner.rect.x1], [42, 47], 'W4 góc ngã tư nam nằm x 42..47 (D1)');
+  assert.deepEqual([w4Corner.rect.x0, w4Corner.rect.x1], [42, 51], 'W4 góc ngã tư nam nằm x 42..51 (đủ chứa quán nước)');
   assert.equal(w4Corner.corner, true, 'W4 góc ngã tư đánh dấu corner');
+  // open-world-new-parcel-buildings: lô W1/W3 (mặt đường chính) đủ chứa ít nhất một tòa phụ, hàng mặt tiền y=10 như W0; lô corner W1 chứa được quán nước.
+  const smallestBuildingWidth = Math.min(...(['xoi', 'drink', 'snack'] as const).map((id) => BUILDING_TEMPLATES[id].width));
+  // W1/W3 (đường chính) có hàng mặt tiền y=10; W2/W4 (đường nam) y=23 và chỉ chừa một hàng vỉa hè y=24 (hướng 2).
+  const frontRowOf: Record<string, number> = { w1: 10, w3: 10, w2: 23, w4: 23 };
+  for (const waveId of ['w1', 'w2', 'w3', 'w4']) {
+    for (const p of RECLAMATION_WAVES.find((w) => w.id === waveId)!.parcels) {
+      assert.ok(rectWidth(p.rect) >= smallestBuildingWidth && rectHeight(p.rect) >= BUILDING_TEMPLATES.snack.height, `lô ${p.id} chứa vừa ít nhất một tòa phụ`);
+      assert.equal(p.rect.y1, frontRowOf[waveId], `lô ${p.id} có hàng mặt tiền y=${frontRowOf[waveId]}`);
+      assert.equal(rectHeight(p.rect), BUILDING_TEMPLATES.snack.height, `lô ${p.id} cao đúng 8 hàng`);
+    }
+  }
+  assert.ok(rectWidth(w1Corner.rect) >= BUILDING_TEMPLATES.drink.width, 'w1-corner chứa vừa quán nước');
   console.log('  ✓ cityTier đơn điệu, growth factor 0.6–1.4, floor bonus 0–2, scaled budget không phá hằng số, lô W1–W4 hợp lệ');
 }
 

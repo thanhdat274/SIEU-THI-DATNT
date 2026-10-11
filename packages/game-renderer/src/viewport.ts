@@ -5,7 +5,7 @@ import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, weekdayO
 import { PixelTextureFactory } from './textures';
 import { PixelCamera } from './camera';
 import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
-import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, type LandParcel} from '@game/data';
+import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, parcelTrafficMultiplier, type LandParcel} from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -13,6 +13,8 @@ export interface PixiGameViewportOptions {
   simulation: GameSimulation;
   onResize?: (width: number, height: number) => void;
   onZoomChange?: (zoom: number) => void;
+  /** Chạm (không kéo) vào lô đất đợt đã mở mà chưa mua (land-reclamation 4.3). */
+  onParcelTap?: (parcelId: string) => void;
   getPartnerAvatar?: () => { position: Vector2D; direction: string; isMoving?: boolean; name?: string } | null;
 }
 
@@ -133,9 +135,12 @@ export class PixiGameViewport {
   private frameEma = 16;
   private slowFrames = 0;
   private onZoomChange?: (zoom: number) => void;
+  private onParcelTap?: (parcelId: string) => void;
   private ambientSprites: Array<{sprite: Sprite; key: string; frames: number}> = [];
   /** Biển lô đợt khai hoang + công trường (land-reclamation 4.2/4.3); dựng lại khi trạng thái thế giới đổi. */
   private waveDecor: Container | null = null;
+  private constructionAnims: Array<(time: number, still: boolean) => void> = [];
+  private constructionFadeKey = '';
   private worldStateKey = '';
   private stallSprites: Sprite[] = [];
   private stallSoldOut = new Set<string>();
@@ -194,7 +199,9 @@ export class PixiGameViewport {
     this.simulationRunner = new FixedStepSimulationRunner(options.simulation);
     this.textures = new PixelTextureFactory();
     this.camera = new PixelCamera(this.tileMap.width, this.tileMap.height);
+    this.refreshCameraBounds();
     this.onZoomChange = options.onZoomChange;
+    this.onParcelTap = options.onParcelTap;
     this.getPartnerAvatar = options.getPartnerAvatar;
   }
 
@@ -305,6 +312,26 @@ export class PixiGameViewport {
   }
 
   /** Đồng bộ đợt khai hoang từ mô phỏng: ẩn nhà/xe đỗ cũ, vẽ công trường và biển lô. Chỉ dựng lại khi trạng thái đổi. */
+  /** Nhà trang trí trong vùng thi công mờ dần theo tiến độ (ngày + giờ trong ngày); công trường chuyển động theo `animTimer`. */
+  private updateConstruction(reducedMotion: boolean): void {
+    const world = this.simulation.getWorldOpenState();
+    const items: Array<{ region: { x0: number; y0: number; x1: number; y1: number }; alpha: number }> = [];
+    const t = this.simulation.getTime();
+    const now = t.day + (t.hour * 60 + t.minute) / 1440;
+    for (const wave of RECLAMATION_WAVES) {
+      const doneDay = world.wavesUnderConstruction[wave.id];
+      if (doneDay === undefined || world.openedWaves.includes(wave.id) || wave.constructionDays <= 0) continue;
+      const progress = Math.max(0, Math.min(1, 1 - (doneDay - now) / wave.constructionDays));
+      items.push({ region: wave.region, alpha: Math.round((1 - 0.75 * progress) * 50) / 50 });
+    }
+    const key = items.map(i => i.alpha).join(',');
+    if (key !== this.constructionFadeKey) {
+      this.constructionFadeKey = key;
+      this.neighborhood.setConstructionFades(items);
+    }
+    for (const animate of this.constructionAnims) animate(this.animTimer, reducedMotion);
+  }
+
   private syncWorldState(): void {
     const world = this.simulation.getWorldOpenState();
     const owned = this.simulation.getOwnedParcelIds();
@@ -312,8 +339,10 @@ export class PixiGameViewport {
     const key = JSON.stringify([world.openedWaves, world.wavesUnderConstruction, owned, Object.keys(world.wavesUnderConstruction).length ? day : 0, this.placedBuildings().map(b => b.id + b.bounds.left)]);
     if (key === this.worldStateKey) return;
     this.worldStateKey = key;
+    this.refreshCameraBounds();
     this.neighborhood.setOpenedWaves(world.openedWaves);
     this.actors?.life.setOpenedWaves(world.openedWaves);
+    this.constructionAnims = [];
     this.waveDecor?.removeFromParent();
     this.waveDecor?.destroy({ children: true });
     const deco = this.waveDecor = new Container();
@@ -345,13 +374,45 @@ export class PixiGameViewport {
         // Máy xúc tượng trưng (khối vàng + gầu) rải trong vùng.
         for (let i = 0; i < 3; i++) {
           const mx = x + w * (0.2 + 0.3 * i), my = y + h * 0.5;
-          g.rect(mx, my, 34, 16).fill(0xf2c230).stroke({ color: 0x3a3a3a, width: 1 }).rect(mx - 12, my + 4, 12, 4).fill(0x3a3a3a).rect(mx + 6, my - 8, 14, 8).fill(0x7c8085);
+          g.rect(mx, my, 34, 16).fill(0xf2c230).stroke({ color: 0x3a3a3a, width: 1 }).rect(mx - 12, my + 4, 12, 4).fill(0x3a3a3a);
         }
         deco.addChild(g);
+        // Hoạt cảnh: tay máy xúc đung đưa + công nhân đi lại trong rào (animateConstruction).
+        for (let i = 0; i < 3; i++) {
+          const mx = x + w * (0.2 + 0.3 * i), my = y + h * 0.5;
+          const arm = new Graphics();
+          arm.rect(0, -2, 24, 4).fill(0x7c8085).rect(20, -2, 7, 9).fill(0x3a3a3a);
+          arm.position.set(mx + 14, my + 3);
+          deco.addChild(arm);
+          this.constructionAnims.push(t => { arm.rotation = -0.55 + 0.5 * Math.sin(t * 1.6 + i * 1.7); });
+        }
+        for (let i = 0; i < 3; i++) {
+          const worker = new Graphics();
+          worker.rect(-3, -14, 6, 3).fill(0xff8c1a).rect(-2, -11, 4, 3).fill(0xe0b48c).rect(-3, -8, 6, 6).fill(0x2f6f9f).rect(-3, -2, 2, 3).fill(0x3a3a3a).rect(1, -2, 2, 3).fill(0x3a3a3a);
+          const span = Math.max(0, w - 90), baseX = x + 45, baseY = y + h * (0.72 + 0.08 * i), phase = i * 2.1;
+          worker.position.set(baseX, baseY);
+          deco.addChild(worker);
+          this.constructionAnims.push((t, still) => {
+            const u = still ? 0.5 + i * 0.1 : 0.5 + 0.5 * Math.sin(t * 0.3 + phase);
+            worker.position.x = baseX + span * u;
+            worker.position.y = baseY - (still ? 0 : Math.abs(Math.sin(t * 7 + phase)) * 2);
+            worker.scale.x = still || Math.cos(t * 0.3 + phase) >= 0 ? 1 : -1;
+          });
+        }
         sign(`ĐANG THI CÔNG · còn ${Math.max(0, doneDay - day)} ngày`, x + w / 2, y + h / 2 - 30, 190, 0x8a1c1c);
         continue;
       }
-      if (!world.openedWaves.includes(wave.id)) continue;
+      if (!world.openedWaves.includes(wave.id)) {
+        // Đợt còn khóa: phủ tối nhẹ + viền nét đứt + biển điều kiện mở.
+        const x = r.x0 * T, y = r.y0 * T, w = (r.x1 - r.x0 + 1) * T, h = (r.y1 - r.y0 + 1) * T;
+        const g = new Graphics();
+        g.rect(x, y, w, h).fill({ color: 0x1c2430, alpha: 0.28 });
+        for (let sx = 0; sx < w; sx += 24) g.rect(x + sx, y, 12, 3).fill(0xd8d2c0).rect(x + sx, y + h - 3, 12, 3).fill(0xd8d2c0);
+        for (let sy = 0; sy < h; sy += 24) g.rect(x, y + sy, 3, 12).fill(0xd8d2c0).rect(x + w - 3, y + sy, 3, 12).fill(0xd8d2c0);
+        deco.addChild(g);
+        sign(`ĐỢT ${wave.id.slice(1)} · KHÓA · CẤP ${wave.unlockLevel} · ${(wave.cost / 1e6).toLocaleString('vi-VN')}tr`, x + w / 2, y + h / 2 - 7, 230, 0x4a4f57);
+        continue;
+      }
       for (const raw of wave.parcels) {
         if (placed.some(b => b.bounds.left >= raw.rect.x0 && b.bounds.right <= raw.rect.x1 + 1 && b.bounds.bottom >= raw.rect.y0 && b.bounds.bottom <= raw.rect.y1 + 1)) continue;
         const isOwned = owned.includes(raw.id);
@@ -360,10 +421,15 @@ export class PixiGameViewport {
         const border = new Graphics();
         border.rect(raw.rect.x0 * T + 1, raw.rect.y0 * T + 1, (raw.rect.x1 - raw.rect.x0 + 1) * T - 2, (raw.rect.y1 - raw.rect.y0 + 1) * T - 2).stroke({ color: isOwned ? 0x3fbf5f : raw.corner ? 0xffa500 : 0xd8d2c0, width: 1, alpha: 0.7 });
         deco.addChild(border);
-        sign(isOwned ? 'ĐẤT TRỐNG' : `LÔ BÁN · ${Math.round(parcelPrice(parcel) / 1000)}k`, cx, raw.rect.y1 * T - 6, isOwned ? 4 * T : 5 * T, isOwned ? 0x6b6f73 : 0x2f6f5f);
+        sign(isOwned ? 'ĐẤT TRỐNG' : `LÔ BÁN · ${Math.round(parcelPrice(parcel) / 1000)}k · ×${parcelTrafficMultiplier(parcel)}`, cx, raw.rect.y1 * T - 6, isOwned ? 4 * T : 5 * T, isOwned ? 0x6b6f73 : 0x2f6f5f);
       }
     }
     this.worldContainer.addChild(deco);
+  }
+
+  /** Giới hạn camera: toàn khu phố, để kéo tới mọi góc (không chỉ vùng tiệm đang mở). */
+  private refreshCameraBounds(): void {
+    this.camera.setPlayBounds(NEIGHBORHOOD_TILES.x0, NEIGHBORHOOD_TILES.y0, NEIGHBORHOOD_TILES.x1 - NEIGHBORHOOD_TILES.x0, NEIGHBORHOOD_TILES.y1 - NEIGHBORHOOD_TILES.y0, undefined, 0);
   }
 
   /** Ẩn nhà trang trí khu phố nằm trong vùng đợt khai hoang đã mở. */
@@ -372,6 +438,7 @@ export class PixiGameViewport {
   public updateTileMap(tileMap: GameTileMap): void {
     this.tileMap = tileMap;
     this.camera.setMapSize(tileMap.width, tileMap.height);
+    this.refreshCameraBounds();
     for (const child of this.groundLayer.removeChildren()) child.destroy({ children: true });
     for (const child of this.wallLayer.removeChildren()) child.destroy({ children: true });
     this.buildMapLayers();
@@ -437,8 +504,30 @@ export class PixiGameViewport {
     }
   };
 
+  /** Lô chưa mua của đợt đã mở tại điểm màn hình (client px), hoặc null. */
+  private unownedParcelAt(clientX: number, clientY: number): string | null {
+    const p = this.canvasPoint(clientX, clientY);
+    const tx = Math.floor((this.camera.x + p.x / this.camera.zoom) / TILE_SIZE);
+    const ty = Math.floor((this.camera.y + p.y / this.camera.zoom) / TILE_SIZE);
+    const opened = this.simulation.getWorldOpenState().openedWaves;
+    const owned = this.simulation.getOwnedParcelIds();
+    for (const wave of RECLAMATION_WAVES) {
+      if (!opened.includes(wave.id)) continue;
+      for (const raw of wave.parcels) {
+        if (owned.includes(raw.id)) continue;
+        const r = raw.rect;
+        if (tx >= r.x0 && tx <= r.x1 && ty >= r.y0 && ty <= r.y1) return raw.id;
+      }
+    }
+    return null;
+  }
+
   private handlePointerUp = (e: PointerEvent): void => {
     if (this.isPointerDown && e.pointerId !== this.activePointerId) return;
+    if (this.isPointerDown && !this.isPointerDragging && e.type === 'pointerup' && e.target === this.canvas && this.onParcelTap) {
+      const parcelId = this.unownedParcelAt(e.clientX, e.clientY);
+      if (parcelId) this.onParcelTap(parcelId);
+    }
     this.activePointerId = null;
     this.isPointerDown = false;
     this.isPointerDragging = false;
@@ -2051,6 +2140,7 @@ export class PixiGameViewport {
     this.camera.follow(inWarehouse?{x:renderPos.x,y:WAREHOUSE_CENTER.y}:renderPos, elapsed, inWarehouse?0:undefined);
     const shake = fxSettings.enabled ? this.weatherFx.shakeOffset(this.camera.zoom, reducedMotion) : { x: 0, y: 0 };
     this.syncWorldState();
+    this.updateConstruction(reducedMotion);
     this.presentWorld(shake);
 
     // 6b. Khu phố mở rộng: đồi/đèn đêm theo thời tiết + dân cư nền (NPC, hội thoại, chim). Ngân sách theo chất lượng đồ họa.
@@ -2491,6 +2581,23 @@ export class PixiGameViewport {
   }
 
   /** Zoom đích (mức người chơi đang chọn); zoom hiển thị có thể còn đang trượt tới đó. */
+  /** Ảnh chụp cho minimap (ô thế giới): hộp camera đang nhìn, vị trí người chơi, bản đồ chơi và đợt/lô đã mở. */
+  public getMinimapSnapshot(): { view: { x0: number; y0: number; x1: number; y1: number }; player: { x: number; y: number }; map: { x0: number; y0: number; x1: number; y1: number }; openedWaves: readonly string[]; owned: readonly string[] } {
+    const c = this.camera;
+    const T = TILE_SIZE;
+    const vs = c.viewSize();
+    const pos = this.simulation.getPlayerRenderPosition(this.simulationRunner.getAlpha());
+    const ox = this.tileMap.originTileX ?? 0;
+    const oy = this.tileMap.originTileY ?? 0;
+    return {
+      view: { x0: c.x / T, y0: c.y / T, x1: (c.x + vs.w) / T, y1: (c.y + vs.h) / T },
+      player: { x: pos.x / T, y: pos.y / T },
+      map: { x0: ox, y0: oy, x1: ox + this.tileMap.width, y1: oy + this.tileMap.height },
+      openedWaves: this.simulation.getWorldOpenState().openedWaves,
+      owned: this.simulation.getOwnedParcelIds(),
+    };
+  }
+
   public getZoom(): number {
     return this.camera.targetZoom;
   }

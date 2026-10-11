@@ -476,7 +476,7 @@ async function run() {
     });
     const parcelSeed = await snapshotFor(owner);
     const parcelMoney = parcelSeed.businesses[0].save.player.money;
-    const w1CornerPrice = 12_000 * 6 * 5 * 1.6; // PARCEL_BASE_PRICE × 30 ô × hệ số góc đường chính (D5)
+    const w1CornerPrice = 12_000 * 10 * 8 * 1.6; // PARCEL_BASE_PRICE × 80 ô (lô 10×8, open-world-new-parcel-buildings) × hệ số góc đường chính (D5)
     const parcelResult = await send(member, 'buy-parcel-corner', { type: 'buy_parcel', parcelId: 'w1-corner' }, parcelSeed.world.revision);
     assert.equal(parcelResult.committed, true, 'buy_parcel lô W1 góc hợp lệ được commit');
     const afterParcel = (await snapshotFor(owner)).businesses[0].save;
@@ -492,6 +492,73 @@ async function run() {
     const notOpenRev = (await snapshotFor(owner)).world.revision;
     await assert.rejects(send(owner, 'buy-parcel-w3', { type: 'buy_parcel', parcelId: 'w3-1' }, notOpenRev), 'buy_parcel lô đợt chưa mở bị từ chối');
     assert.equal((await snapshotFor(owner)).world.revision, notOpenRev, 'buy_parcel đợt chưa mở không đổi revision');
+
+    // open-world-new-parcel-buildings: buy_plot kèm vị trí trên lô đợt khai hoang mới + dời tòa giữa hai lô mới, qua server replay.
+    const { world: plotWorld } = await controller.createWorld(owner as any, { name: 'New-parcel placement' });
+    const plotSnapshot = async () => controller.getWorld(owner as any, plotWorld.id);
+    const plotBase = await plotSnapshot();
+    await landDb.updateOne({ _id: plotWorld.id }, { $set: {
+      'businesses.0.save.player.level': 60,
+      'businesses.0.save.player.money': 30_000_000,
+      'businesses.0.save.worldTime.isStoreOpen': false,
+      'businesses.0.save.world.openedWaves': ['w0', 'w1', 'w2'],
+      'businesses.0.save.world.wavesUnderConstruction': {},
+      'businesses.0.save.storeLayout.ownedParcelIds': [...(plotBase.businesses[0].save.storeLayout.ownedParcelIds ?? []), 'w1-corner', 'w2-2', 'w2-3'],
+    } });
+    const plotSend = async (commandId: string, payload: unknown) => {
+      const current = await plotSnapshot();
+      return controller.commitCommand(owner as any, plotWorld.id, {
+        expectedRevision: current.world.revision,
+        receipt: { commandId, actorId: owner.gameAccount.uid, status: 'accepted', revision: current.world.revision + 1, payloadJson: JSON.stringify(payload), createdAt: new Date().toISOString() },
+        updatedBusiness: current.businesses[0],
+      });
+    };
+    const plotRejected = async (commandId: string, payload: unknown, why: string) => {
+      const before = (await plotSnapshot()).world.revision;
+      await assert.rejects(plotSend(commandId, payload), why);
+      assert.equal((await plotSnapshot()).world.revision, before, `${why}: không đổi revision`);
+    };
+
+    // Từ chối: lô đợt mới chưa mua, lô thuộc đợt chưa mở, tòa vượt lô, sai gốc x.
+    await plotRejected('plot-unowned', { type: 'buy_plot', plotId: 'building-drink', placement: { parcelId: 'w1-east', originX: 52 } }, 'buy_plot lên lô đợt mới chưa mua bị từ chối');
+    await plotRejected('plot-closed-wave', { type: 'buy_plot', plotId: 'building-drink', placement: { parcelId: 'w3-1', originX: 61 } }, 'buy_plot lên lô đợt chưa mở bị từ chối');
+    await plotRejected('plot-too-wide', { type: 'buy_plot', plotId: 'building-drink', placement: { parcelId: 'w2-2', originX: 10 } }, 'quán nước 10 ô không vừa lô w2-2 rộng 8');
+    await plotRejected('plot-bad-origin', { type: 'buy_plot', plotId: 'building-drink', placement: { parcelId: 'w1-corner', originX: 43 } }, 'gốc x làm tòa vượt lô bị từ chối');
+
+    // Quán nước trên w1-corner (đường chính, hàng mặt tiền y=10).
+    const drinkMoney = (await plotSnapshot()).businesses[0].save.player.money;
+    const drinkOnNew = await plotSend('plot-drink-w1', { type: 'buy_plot', plotId: 'building-drink', placement: { parcelId: 'w1-corner', originX: 42 } });
+    assert.equal(drinkOnNew.committed, true, 'buy_plot quán nước lên w1-corner được commit');
+    const afterDrink = (await plotSnapshot()).businesses[0].save;
+    const drinkPlacement = afterDrink.storeLayout.buildingPlacements!.find((p: { buildingId: string }) => p.buildingId === 'drink')!;
+    assert.deepEqual([drinkPlacement.parcelId, drinkPlacement.originX, drinkPlacement.originY], ['w1-corner', 42, 3], 'server ghi quán nước ở w1-corner gốc (42,3)');
+    assert.equal(afterDrink.player.money, drinkMoney - 1_500_000, 'trừ đúng giá mở quán nước');
+    assert.ok(afterDrink.storeLayout.fixtures.some((f: { id: string; tileX: number }) => f.id.startsWith('drink_') && f.tileX >= 42 && f.tileX <= 51), 'nội thất mặc định của quán nước nằm trong lô mới');
+    // Mua lại tòa đã có là no-op (không trừ tiền, không đổi vị trí), giống tiệm xôi ở trên.
+    await plotSend('plot-drink-again', { type: 'buy_plot', plotId: 'building-drink', placement: { parcelId: 'w1-corner', originX: 42 } });
+    const afterRebuy = (await plotSnapshot()).businesses[0].save;
+    assert.equal(afterRebuy.player.money, afterDrink.player.money, 'mua lại quán nước không trừ tiền');
+    assert.deepEqual(afterRebuy.storeLayout.buildingPlacements, afterDrink.storeLayout.buildingPlacements, 'mua lại không đổi vị trí');
+
+    // Quán ăn vặt trên w2-2 (đường nam, hàng mặt tiền y=23 → gốc y=16).
+    const snackOnSouth = await plotSend('plot-snack-w2', { type: 'buy_plot', plotId: 'building-snack', placement: { parcelId: 'w2-2', originX: 10 } });
+    assert.equal(snackOnSouth.committed, true, 'buy_plot quán ăn vặt lên w2-2 được commit');
+    const afterSnack = (await plotSnapshot()).businesses[0].save;
+    const snackPlacement = afterSnack.storeLayout.buildingPlacements!.find((p: { buildingId: string }) => p.buildingId === 'snack')!;
+    assert.deepEqual([snackPlacement.parcelId, snackPlacement.originX, snackPlacement.originY], ['w2-2', 10, 16], 'server ghi quán ăn vặt ở w2-2 gốc (10,16)');
+    const snackShelf = afterSnack.storeLayout.fixtures.find((f: { id: string }) => f.id === 'snack_shelf')!;
+    assert.ok(snackShelf.tileY >= 16 && snackShelf.tileY <= 23, 'nội thất quán ăn vặt nằm trong lô đường nam (y 16..23)');
+
+    // Dời tòa giữa hai lô mới cùng hàng mặt tiền: w2-2 → w2-3 (dx = +8, dy = 0), nội thất dịch theo.
+    const shelfXBefore = snackShelf.tileX;
+    const moveOnNew = await plotSend('plot-move-snack', { type: 'layout_batch', actions: [{ type: 'relocate_building', buildingId: 'snack', placement: { parcelId: 'w2-3', originX: 18 } }] });
+    assert.equal(moveOnNew.committed, true, 'dời quán ăn vặt w2-2 → w2-3 qua layout_batch');
+    const afterMoveNew = (await plotSnapshot()).businesses[0].save;
+    const movedNew = afterMoveNew.storeLayout.buildingPlacements!.find((p: { buildingId: string }) => p.buildingId === 'snack')!;
+    assert.deepEqual([movedNew.parcelId, movedNew.originX, movedNew.originY], ['w2-3', 18, 16], 'quán ăn vặt ở w2-3 gốc (18,16)');
+    assert.equal(afterMoveNew.storeLayout.fixtures.find((f: { id: string }) => f.id === 'snack_shelf')!.tileX, shelfXBefore + 8, 'nội thất dịch theo dx = +8');
+    // Dời tới lô chưa mua bị từ chối.
+    await plotRejected('plot-move-unowned', { type: 'layout_batch', actions: [{ type: 'relocate_building', buildingId: 'snack', placement: { parcelId: 'w2-4', originX: 26 } }] }, 'dời tòa tới lô chưa mua bị từ chối');
 
     console.log('PASS co-op: 10 lệnh server-replay + lệnh vận hành (store_status, planogram, advance_day, stow_all) + layout_batch (mở rộng sàn, dời tòa) qua GameController.commitCommand');
     await closeDatabase();

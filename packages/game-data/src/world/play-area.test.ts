@@ -27,7 +27,7 @@ export function runPlayAreaTests(): void {
   const p01234 = playRegionForWaves(['w0', 'w1', 'w2', 'w3', 'w4']);
   // x0 = 0, x1 = max(35, 60, 35, 76, 76) = 76; y0 = -6, y1 = max(15,15,24,15,24) = 24
   assert.equal(rectWidth(p01234), 77, 'tất cả đợt → width 77 (x0=0..x1=76)');
-  assert.equal(rectHeight(p01234), 31, 'tất cả đợt → height 31 (y0=-6..y1=24)');
+  assert.equal(rectHeight(p01234), 32, 'tất cả đợt → height 32 (y0=-6..y1=25, gồm bó vỉa đường nam)');
 
   // --- generateTileMapForWaves(['w0']): cùng kích thước/origin như bản đồ khởi tạo (không đổi golden) ---
   const g0 = generateTileMapForWaves(['w0']);
@@ -97,7 +97,7 @@ export function runPlayAreaTests(): void {
   assert.equal(s01.collisionLayer[sIdx(s01, 45, 0)], true, 'ô trong hộp nhưng ngoài đợt đã mở (45,0) chặn');
   assert.equal(s01.collisionLayer[sIdx(s01, 35, 12)], false, 'lối W0→W1 (35,12) thông (không còn viền chặn giữa)');
   const s02 = generateStarterTileMap(undefined, [], undefined, ['w0', 'w2']);
-  assert.equal(s02.height, 31, "starter ['w0','w2'] height 31");
+  assert.equal(s02.height, 32, "starter ['w0','w2'] height 32");
   assert.equal(s02.collisionLayer[sIdx(s02, 10, 20)], false, 'đất W2 (10,20) đi được');
   console.log("  ✓ playRegionForWaves hộp hợp đúng; ['w0'] giữ 36×22 & origin 0/−6; mảng khớp size; boundary mép đúng");
 }

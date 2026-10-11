@@ -10,7 +10,7 @@ export * from './world/infrastructure';
 export * from './world/wave-infrastructure';
 export * from './world/wave-infrastructure.test';
 export {
-  DEFAULT_PLACEMENTS, DEFAULT_GEOMETRY, placementGeometry, mainEastWingTiles, validatePlacements, normalizePlacements, placementsProblem, placementTop, placementEastWall, placementFloor, footprintBlockers, mainBlockedRects, warehouseGeometry, resolvePlacements, validatePlacement, layoutBuildings, defaultPlacementOf, placedBuildingIds, type BuildingInfo, type BuildingPlacement, type PlacementGeometry,
+  DEFAULT_PLACEMENTS, DEFAULT_GEOMETRY, placementGeometry, mainEastWingTiles, validatePlacements, normalizePlacements, placementsProblem, placementTop, placementEastWall, placementFloor, footprintBlockers, mainBlockedRects, warehouseGeometry, resolvePlacements, validatePlacement, layoutBuildings, defaultPlacementOf, placementOriginY, placedBuildingIds, type BuildingInfo, type BuildingPlacement, type PlacementGeometry,
 } from './world/placements';
 export { adjacentParcels } from './world/parcels';
 export * from './world/footprint';

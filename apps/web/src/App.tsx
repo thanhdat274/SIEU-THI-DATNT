@@ -4,6 +4,8 @@ import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HO
 import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
+import { MiniMap } from './components/MiniMap';
+import { ParcelBuyModal } from './components/ParcelBuyModal';
 import { PixiGameViewport, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
 import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
 
@@ -105,6 +107,7 @@ export const App: React.FC = () => {
   const [isQuestOpen, setQuestOpen] = useState(false);
   const [isLevelRoadmapOpen, setLevelRoadmapOpen] = useState(false);
   const [isCityOpen, setCityOpen] = useState(false);
+  const [parcelPromptId, setParcelPromptId] = useState<string | null>(null);
   const [isStallOpen, setStallOpen] = useState(false);
   const [isMarketOpen, setMarketOpen] = useState(false);
   const [isTaxOpen, setTaxOpen] = useState(false);
@@ -830,6 +833,7 @@ export const App: React.FC = () => {
         tileMap: simulation.getTileMap(),
         simulation,
         onZoomChange: setZoomLevel,
+        onParcelTap: setParcelPromptId,
         getPartnerAvatar: () => {
           // Dev/QA: giả lập bạn co-op để kiểm hình ảnh mà không cần hai trình duyệt (window.__debugPartner = { position, direction, isMoving }).
           if (import.meta.env.DEV) { const dbg = (window as unknown as { __debugPartner?: { position: { x: number; y: number }; direction: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; name?: string } }).__debugPartner; if (dbg) return dbg; }
@@ -1804,6 +1808,7 @@ export const App: React.FC = () => {
   };
 
   const [zoomLevel, setZoomLevel] = useState<number>(2.0);
+  const getMinimapSnapshot = useCallback(() => viewportRef.current?.getMinimapSnapshot() ?? null, []);
 
   const handleZoomIn = () => {
     if (viewportRef.current) {
@@ -1929,6 +1934,7 @@ export const App: React.FC = () => {
                 </button>
               </div>
             )}
+            {!hasModal && <MiniMap getSnapshot={getMinimapSnapshot} />}
             <div className="world-tools" aria-label="Góc nhìn bản đồ"><PixelButton icon="warehouse" aria-label="Định vị nhà kho" onClick={locateWarehouse}/><PixelButton icon="minus" aria-label="Thu nhỏ bản đồ" disabled={zoomLevel<=ZOOM_MIN} onClick={handleZoomOut}/><span className="zoom-value">{Number(zoomLevel.toFixed(2))}×</span><PixelButton icon="plus" aria-label="Phóng to bản đồ" disabled={zoomLevel>=ZOOM_MAX} onClick={handleZoomIn}/></div>
             {!hasModal && (!isWarehouseDockOpen || controlMode === 'touch') && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
           </>}
@@ -2286,6 +2292,7 @@ export const App: React.FC = () => {
         onClose={() => setTitlesOpen(false)}
       />
     )}
+    {parcelPromptId && <ParcelBuyModal parcelId={parcelPromptId} playerMoney={player.money} onBuy={handleBuyParcel} onClose={() => setParcelPromptId(null)}/>}
     {isCityOpen && simulationRef.current && (() => {
       const snap = simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
       return <CityModal world={snap.world ?? defaultWorldOpenState()} ownedParcelIds={snap.storeLayout.ownedParcelIds ?? []} playerLevel={player.level} playerMoney={player.money} day={simulationRef.current.getTime().day} buildingCount={snap.storeLayout.buildingPlacements?.length ?? 3} onReclaim={handleReclaimWave} onBuyParcel={handleBuyParcel} onClose={() => setCityOpen(false)}/>;

@@ -3,7 +3,7 @@
  * tường = mọi ô kề 8 hướng của sàn nằm ngoài sàn. Hàm thuần, không phụ thuộc vị trí đặt: nơi gọi truyền vào biên lõi, lô và vùng cấm.
  */
 import { MAIN_EAST_WING_COLUMNS, MAIN_EAST_WING_PLOT_IDS } from './building-templates';
-import { PARCEL_MAP } from './parcels';
+import { resolveParcel } from './parcels';
 import type { WorldRect } from './world-grid';
 
 export interface Tile { x: number; y: number }
@@ -116,7 +116,7 @@ export function checkFootprintTiles(opts: { floor: ReadonlySet<string>; tiles: r
     proposed.add(key);
   }
   // D7b: ô và hàng tường quanh nó (ô chéo kề) phải nằm trong hợp của lô gốc và các lô trống được phép lấn.
-  const allowed = [parcelId, ...(freeParcelIds ?? [])].map(pid => PARCEL_MAP[pid]).filter(Boolean);
+  const allowed = [parcelId, ...(freeParcelIds ?? [])].map(pid => resolveParcel(pid)).filter((parcel): parcel is NonNullable<typeof parcel> => !!parcel);
   const inAllowed = (x: number, y: number) => allowed.some(parcel => inRect(parcel.rect, x, y));
   for (const tile of tiles) {
     if (!inAllowed(tile.x, tile.y) || !inAllowed(tile.x - 1, tile.y - 1) || !inAllowed(tile.x + 1, tile.y + 1)) return 'outside_parcel';

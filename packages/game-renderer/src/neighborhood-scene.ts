@@ -392,10 +392,34 @@ export class NeighborhoodScene {
     this.redrawLotWindows();
   }
 
+  private fadedLotIds = new Set<string>();
+
+  /** Nhà/đồ vật/xe đỗ trong vùng đang thi công mờ dần theo tiến độ (alpha 1 → ~0,25); danh sách rỗng = trả lại bình thường. */
+  public setConstructionFades(items: ReadonlyArray<{ region: { x0: number; y0: number; x1: number; y1: number }; alpha: number }>): void {
+    this.fadedLotIds.clear();
+    const alphaOf = (lot: NeighborhoodLot): number => {
+      for (const { region: r, alpha } of items) if (lot.x <= r.x1 && lot.x + lot.w - 1 >= r.x0 && lot.frontY >= r.y0 && lot.frontY <= r.y1) return alpha;
+      return 1;
+    };
+    for (const lot of NEIGHBORHOOD_LOTS) {
+      const a = alphaOf(lot);
+      if (a < 1) this.fadedLotIds.add(lot.id);
+      const sprite = this.lotSprites.get(lot.id);
+      if (sprite) sprite.alpha = a;
+      for (const prop of this.lotProps.get(lot.id) ?? []) prop.alpha = a;
+    }
+    for (const { sprite, tx, ty } of this.parkingProps) {
+      const hit = items.find(({ region: r }) => tx >= r.x0 && tx <= r.x1 && ty >= r.y0 && ty <= r.y1);
+      sprite.alpha = hit ? hit.alpha : 1;
+    }
+    this.redrawLotWindows();
+  }
+
   private redrawLotWindows(): void {
     this.windowGlow.clear();
     for (const [id, rects] of this.lotWindows) {
       if (this.visibleLotIds && !this.visibleLotIds.has(id)) continue;
+      if (this.fadedLotIds.has(id)) continue;
       for (const [x, y, w, h] of rects) this.windowGlow.rect(x, y, w, h).fill({ color: 0xffd980, alpha: 0.55 });
     }
   }
@@ -502,6 +526,7 @@ export class NeighborhoodScene {
     mk('CÔNG VIÊN HOA SỮA', ((PARK.area.x0 + PARK.area.x1) / 2) * T, (PARK.area.y1 - 0.2) * T - 14, 10, 0xffffff, 0x2f6b3a);
     for (let i = 0; i < 3; i++) mk('CHUNG CƯ SEN', (42 + i * 11 + 5) * T, 2 * T - 36 + 4, 7, 0xffffff);
     mk('HẺM 12', 12.5 * T, 17.4 * T, 8, 0x4a3a2a);
+    for (const s of NEIGHBORHOOD_SIGNS) mk(s.text, s.x * T, s.y * T, s.size, s.fill, s.stroke);
   }
 
   // ------------------------------------------------------------------ cập nhật mỗi khung
@@ -526,7 +551,6 @@ export class NeighborhoodScene {
       const x = Math.round(f.camX - 100);
       h.width = viewW;
       h.x = x;
-    for (const s of NEIGHBORHOOD_SIGNS) mk(s.text, s.x * T, s.y * T, s.size, s.fill, s.stroke);
       h.tilePosition.x = -Math.round(f.camX * this.hillParallax[i]);
       // Lớp xa mờ hơn khi nhiều mây/mưa (không blur, chỉ pha màu về xám-xanh nhạt và bớt bão hòa).
       const haze = Math.min(0.75, cloud * 0.35 + rain * 0.45 + i * 0.0) * (1 - i * 0.18);

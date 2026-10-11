@@ -86,6 +86,7 @@ import { runConstructionStaffTests } from './construction-staff.test';
 import { runSidewalkPassableTests } from './sidewalk-passable.test';
 import { runNeighborhoodWalkTests } from './neighborhood-walk.test';
 import { runReclamationMapTests } from './reclamation-map.test';
+import { runNewParcelPlacementTests } from './new-parcel-placement.test';
 import { runXoiCustomerTests } from './xoi-customers.test';
 import { runDrinkCustomerTests } from './drink-customers.test';
 import { runDrinkStaffTests } from './drink-staff.test';
@@ -149,8 +150,8 @@ export async function runTests(): Promise<void> {
   runStallsStorageTests();
   runVeSoStallTests();
   runAmbientAudioTests();
-  runWeatherVisualTests();
   runFootstepTests();
+  runWeatherVisualTests();
   runRainProtectionTests();
   runRainReactionTests();
   runShelterTests();
@@ -174,6 +175,7 @@ export async function runTests(): Promise<void> {
   runTrafficSignalTests();
   runNeighborhoodWalkTests();
   runReclamationMapTests();
+  runNewParcelPlacementTests();
   runDeterministicIdTests();
   runArrivalModeTests();
   runMaintenanceTests();
@@ -250,9 +252,9 @@ export async function runTests(): Promise<void> {
   runDayRhythmTests();
   runStreetTrafficTests();
   runNeighborhoodTests();
+  runNeighborNameTests();
   runPartyOrderTests();
   runGoalTests();
-  runNeighborNameTests();
   runStoryTests();
   runSkillTests();
   runPerkBehaviorTests();
