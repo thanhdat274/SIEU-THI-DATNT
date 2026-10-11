@@ -142,6 +142,15 @@ import {
   type FulfillPartyOrderResult,
 } from './party-orders';
 import {
+  absMinute,
+  advanceSpecialRequests,
+  consumeSpecialRequestItems,
+  createSpecialRequestState,
+  fulfillSpecialRequest,
+  maybeOpenSpecialRequest,
+  type SpecialRequestState,
+} from './special-request';
+import {
   createInitialGoalState,
   getGoalProgress,
   claimGoal,
@@ -161,7 +170,7 @@ import {
   getSkillModifier,
   hasPerk,
 } from './skills';
-import { applyBuildingLayout, setAwningOpen } from '@game/data';
+import { applyBuildingLayout, setAwningOpen, SPECIAL_REQUEST_MAP } from '@game/data';
 import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS } from '@game/data';
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS, RECLAMATION_WAVE_MAP } from '@game/data';
@@ -298,6 +307,11 @@ export class GameSimulation {
   private orderSequence = 0;
   private ledgerManager: LedgerManager;
   private questsManager: QuestManager;
+  /** Yêu cầu đặc biệt của khách VIP; roll mỗi 30 phút game khi tiệm mở cửa. */
+  private specialRequests: SpecialRequestState = createSpecialRequestState();
+  private lastSpecialRequestSlot = -1;
+  private lastSpecialRequestRollSlot = -1;
+  private static readonly SPECIAL_REQUEST_ROLL_MINUTES = 30;
   private stallsMarketsManager: StallsMarketsManager;
   private createdAt: string;
   private tileMap: GameTileMap;
@@ -483,6 +497,9 @@ export class GameSimulation {
     this.reviewsManager = new ReviewsManager(initialSave.reviews);
     this.securityManager = new SecurityManager(initialSave.security);
     this.questsManager = new QuestManager(initialSave);
+    this.specialRequests = initialSave.specialRequests
+      ? { ...createSpecialRequestState(), ...structuredClone(initialSave.specialRequests) }
+      : createSpecialRequestState();
     this.skills = initialSave.skills ? structuredClone(initialSave.skills) : createInitialSkillState();
     this.stallsMarketsManager = new StallsMarketsManager(initialSave);
     this.ensureSupplierMarket(initialSave.worldTime.day);
@@ -1800,6 +1817,134 @@ export class GameSimulation {
   // ==========================================
   // Party Orders (Đơn tiệc có hạn)
   // ==========================================
+
+  // ==========================================
+  // Yêu cầu đặc biệt của khách VIP
+  // ==========================================
+
+  public getSpecialRequestState(): SpecialRequestState {
+    return structuredClone(this.specialRequests);
+  }
+
+  /**
+   * Mỗi 30 phút game (tiệm mở): xử lý hết hạn + phạt uy tín VIP bị bỏ rơi. Yêu cầu mới chỉ được roll khi có
+   * khách quen (VIP) đang ở trong tiệm; mỗi khung 30 phút chỉ roll một lần và chỉ tính khi có khách quen.
+   */
+  private tickSpecialRequests(): void {
+    const t = this.clock.getTime();
+    this.expireRequestsOfDepartedCustomers();
+    if (!t.isStoreOpen) return;
+    const now = { day: t.day, minute: t.hour * 60 + t.minute };
+    const slot = Math.floor(absMinute(now.day, now.minute) / GameSimulation.SPECIAL_REQUEST_ROLL_MINUTES);
+    const expireDue = slot !== this.lastSpecialRequestSlot;
+    const regularInStore = this.customerManager.peekCustomers().find((c) => c.regularId && REGULAR_CUSTOMERS_MAP[c.regularId]);
+    const rollDue = !!regularInStore && slot !== this.lastSpecialRequestRollSlot;
+    if (!expireDue && !rollDue) return;
+    this.lastSpecialRequestSlot = slot;
+    if (rollDue) this.lastSpecialRequestRollSlot = slot;
+
+    const before = this.specialRequests;
+    let next = advanceSpecialRequests(before, now);
+    if (next !== before) {
+      const prevStatus = new Map(before.active.map((a) => [a.instanceId, a.status]));
+      for (const a of next.active) {
+        if (a.status !== 'expired' || prevStatus.get(a.instanceId) !== 'active') continue;
+        const def = SPECIAL_REQUEST_MAP[a.defId];
+        if (!def) continue;
+        this.playerData.reputation = Math.max(0, this.playerData.reputation - def.penaltyReputation);
+        this.callbacks.onToast?.(`Khách VIP bỏ về vì không kịp yêu cầu "${def.title}"`, 'warn');
+      }
+    }
+    if (rollDue && regularInStore?.regularId) {
+      const opened = maybeOpenSpecialRequest(next, {
+        day: now.day,
+        minute: now.minute,
+        worldSeed: this.market.seed,
+        playerLevel: this.playerData.level,
+      });
+      next = opened.state;
+      if (opened.opened) {
+        // Gắn yêu cầu vào đúng khách quen để vẽ bong bóng trên đầu họ.
+        const stamped = { ...opened.opened, customerId: regularInStore.id, regularId: regularInStore.regularId };
+        next = { ...next, active: next.active.map((a) => (a.instanceId === stamped.instanceId ? stamped : a)) };
+        const def = SPECIAL_REQUEST_MAP[opened.opened.defId];
+        const who = REGULAR_CUSTOMERS_MAP[regularInStore.regularId].name;
+        this.callbacks.onToast?.(`${who} có yêu cầu đặc biệt${def ? `: ${def.title}` : ''}`, 'info');
+      }
+    }
+    if (next !== before) {
+      this.specialRequests = next;
+      this.notifyStateChanged();
+    }
+  }
+
+  /** Id khách đang có bong bóng yêu cầu (renderer đọc mỗi khung). */
+  public getSpecialRequestCustomerIds(): ReadonlySet<string> {
+    const ids = new Set<string>();
+    for (const a of this.specialRequests.active) if (a.status === 'active' && a.customerId) ids.add(a.customerId);
+    return ids;
+  }
+
+  /** Khách đưa yêu cầu đã rời tiệm trước khi được giao: yêu cầu hết hiệu lực, bị phạt uy tín như hết hạn. */
+  private expireRequestsOfDepartedCustomers(): void {
+    const pending = this.specialRequests.active.filter((a) => a.status === 'active' && a.customerId);
+    if (pending.length === 0) return;
+    const present = new Set(this.customerManager.peekCustomers().map((c) => c.id));
+    const gone = pending.filter((a) => !present.has(a.customerId!));
+    if (gone.length === 0) return;
+    const goneIds = new Set(gone.map((a) => a.instanceId));
+    let vexed = 0;
+    for (const a of gone) {
+      const def = SPECIAL_REQUEST_MAP[a.defId];
+      if (!def) continue;
+      if (def.tier.includes('vip')) vexed += 1;
+      this.playerData.reputation = Math.max(0, this.playerData.reputation - def.penaltyReputation);
+      this.callbacks.onToast?.(`Khách bỏ về khi chưa nhận được "${def.title}"`, 'warn');
+    }
+    this.specialRequests = {
+      ...this.specialRequests,
+      active: this.specialRequests.active.map((a) => (goneIds.has(a.instanceId) ? { ...a, status: 'expired' as const } : a)),
+      vexedCount: this.specialRequests.vexedCount + vexed,
+    };
+    this.notifyStateChanged();
+  }
+
+  /** Giao yêu cầu: trừ kho FEFO, cộng tiền/uy tín, ghi sổ. Idempotent theo `instanceId`. */
+  public fulfillSpecialRequest(instanceId: string): { success: boolean; reason?: string } {
+    const t = this.clock.getTime();
+    const now = { day: t.day, minute: t.hour * 60 + t.minute };
+    const request = this.specialRequests.active.find((a) => a.instanceId === instanceId);
+    const def = request ? SPECIAL_REQUEST_MAP[request.defId] : undefined;
+    if (!request || !def) return { success: false, reason: 'Không thấy yêu cầu' };
+    if (request.status !== 'active') return { success: false, reason: `Yêu cầu đã ${request.status}` };
+    if (absMinute(now.day, now.minute) > request.expiresMinute) return { success: false, reason: 'Quá hạn' };
+
+    const consumed = consumeSpecialRequestItems(this.inventory, def.requiredItems, now.day);
+    if (!consumed.ok) return { success: false, reason: consumed.reason };
+    const res = fulfillSpecialRequest(this.specialRequests, instanceId, now);
+    if (!res.success || !res.reward) return { success: false, reason: res.reason };
+
+    this.inventory = consumed.inventory;
+    this.specialRequests = res.state;
+    this.playerData.money += res.reward.money;
+    this.playerData.reputation = Math.min(100, this.playerData.reputation + res.reward.reputation);
+    const units = def.requiredItems.reduce((n, i) => n + i.quantity, 0);
+    this.currentDayRecord.revenue += res.reward.money;
+    this.currentDayRecord.cogs += consumed.cogs;
+    this.currentDayRecord.itemsSold += units;
+    this.statistics.totalRevenue += res.reward.money;
+    this.recordLedger({
+      day: now.day,
+      type: 'sale',
+      amount: res.reward.money,
+      cogs: consumed.cogs,
+      quantity: units,
+      description: `Yêu cầu đặc biệt: ${def.title}`,
+    });
+    this.callbacks.onToast?.(`Hoàn thành "${def.title}": +${res.reward.money.toLocaleString('vi-VN')} VND`, 'success');
+    this.notifyStateChanged();
+    return { success: true };
+  }
 
   public getPartyOrderState(): PartyOrderState {
     return structuredClone(this.partyOrders);
@@ -4193,6 +4338,7 @@ export class GameSimulation {
     // 1. Advance game clock
     this.clock.update(dt);
     this.finishConstruction();
+    this.tickSpecialRequests();
     
     // 1.5. Daily Routine (chỉ khi bật): một máy trạng thái theo phút game; autopilot trả vector di chuyển, không teleport.
     const manualMove = this.inputManager.getMovementVector();
@@ -5583,6 +5729,7 @@ export class GameSimulation {
       reviews: this.reviewsManager.exportReviews(),
       security: { ...this.security, incidents: this.security.incidents.map(i => ({ ...i })), policeCases: this.security.policeCases.map(c => ({ ...c })) },
       partyOrders: structuredClone(this.partyOrders),
+      specialRequests: structuredClone(this.specialRequests),
       goals: structuredClone(this.goals),
       skills: structuredClone(this.skills),
       statistics: { ...this.statistics },

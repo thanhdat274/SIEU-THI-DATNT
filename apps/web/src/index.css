@@ -1359,3 +1359,15 @@ kbd { background: var(--color-sun); border: 2px solid var(--color-ink); }
 
 .mini-map { position: absolute; left: var(--space-3, 12px); bottom: var(--space-3, 12px); z-index: 17; border: 2px solid var(--wood-dark, #4a2f18); border-radius: 4px; pointer-events: none; image-rendering: pixelated; }
 @media (max-height: 420px) { .mini-map { display: none; } }
+
+/* Yêu cầu đặc biệt của khách VIP: chip gọn góc trên-trái, mở ra danh sách thẻ nhỏ. */
+.special-requests { position: absolute; top: var(--space-2, 8px); left: 50%; transform: translateX(-50%); z-index: 18; display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(320px, calc(100% - 160px)); pointer-events: none; }
+.special-requests > * { pointer-events: auto; }
+.special-requests-chip { display: inline-flex; align-items: center; gap: 6px; min-height: var(--touch, 44px); padding: 4px 10px; font: inherit; color: var(--color-text); background: var(--color-cream); border: 3px solid var(--color-ink); border-left: 8px solid var(--color-sun, #e0a526); box-shadow: 3px 3px 0 var(--color-ink); cursor: pointer; }
+.special-requests-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow-y: auto; }
+.special-request-card { width: 100%; box-sizing: border-box; background: var(--color-cream); border: 3px solid var(--color-ink); box-shadow: 3px 3px 0 var(--color-ink); padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+.special-request-card header, .special-request-card footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; }
+.special-request-items { display: flex; flex-wrap: wrap; gap: 8px; }
+.special-request-items span { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; }
+.special-request-items .short { color: var(--color-brick, #b3412c); }
+.special-request-card .pixel-button { min-height: var(--touch, 44px); }

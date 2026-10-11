@@ -39,6 +39,7 @@ export * from './supplier-market';
 export * from './regulars';
 export * from './street-traffic';
 export * from './party-orders';
+export * from './special-request';
 export * from './goals';
 export * from './dining';
 export * from './dining-manager';

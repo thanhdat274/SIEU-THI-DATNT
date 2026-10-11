@@ -117,6 +117,7 @@ export class PixiGameViewport {
     sprite: Sprite;
     bubble: Container;
     bubbleIcon: Sprite;
+    requestBadge: Container;
     regularTag: { container: Container; text: Text; bg: Graphics; drawn?: string };
     lastPosition: Vector2D | null;
     npcVariant: number;
@@ -1638,6 +1639,7 @@ export class PixiGameViewport {
     }
 
     const customers = this.simulation.peekCustomers(); // không sao chép sâu mỗi khung; vòng vẽ chỉ đọc
+    const requestCustomerIds = this.simulation.getSpecialRequestCustomerIds();
     const activeCustomerKeys = new Set<string>();
 
     for (let idx = 0; idx < customers.length; idx++) {
@@ -1695,6 +1697,10 @@ export class PixiGameViewport {
         ? 'pixel_coin'
         : (cust.basket?.[0]?.productId ? `product:${cust.basket[0].productId}` : 'pixel_coin');
       entry.bubbleIcon.texture = this.textures.getTexture(iconKey);
+
+      const wantsRequest = !!cust.id && requestCustomerIds.has(cust.id);
+      entry.requestBadge.visible = wantsRequest;
+      if (wantsRequest) entry.requestBadge.y = reducedMotion ? 0 : Math.round(Math.sin(this.animTimer * 4) * 2);
 
       if (cust.regularName) {
         entry.regularTag.container.visible = true;
@@ -2542,6 +2548,20 @@ export class PixiGameViewport {
 
     container.addChild(bubble);
 
+    // Bong bóng "!" vàng báo khách quen đang có yêu cầu đặc biệt; nằm cao hơn thẻ tên khách quen.
+    const requestBadge = new Container();
+    const requestBadgeBg = new Graphics();
+    requestBadgeBg.circle(0, -100 - headLift(), 9);
+    requestBadgeBg.fill({ color: 0xf5b82e });
+    requestBadgeBg.stroke({ color: 0x4a2b16, width: 2 });
+    requestBadge.addChild(requestBadgeBg);
+    const requestBadgeText = new Text({ text: '!', style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 16, fontWeight: 'bold', fill: 0x4a2b16 }) });
+    requestBadgeText.anchor.set(0.5);
+    requestBadgeText.y = -100 - headLift();
+    requestBadge.addChild(requestBadgeText);
+    requestBadge.visible = false;
+    container.addChild(requestBadge);
+
     const regularTag = new Container();
     const regularTagBg = new Graphics();
     regularTag.addChild(regularTagBg);
@@ -2565,6 +2585,7 @@ export class PixiGameViewport {
       sprite,
       bubble,
       bubbleIcon,
+      requestBadge,
       regularTag: { container: regularTag, text: regularTagText, bg: regularTagBg },
       lastPosition: null as Vector2D | null,
       npcVariant: variant,

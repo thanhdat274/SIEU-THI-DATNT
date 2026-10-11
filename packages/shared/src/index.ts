@@ -516,6 +516,27 @@ export interface QuestState {
 // Party Orders (Đơn tiệc có hạn)
 // ==========================================
 
+export interface SpecialRequestSaveItem {
+  instanceId: string;
+  defId: string;
+  status: 'active' | 'completed' | 'expired';
+  openDay: number;
+  openMinute: number;
+  expiresMinute: number;
+  completedDay?: number;
+  completedMinute?: number;
+  customerId?: string;
+  regularId?: string;
+}
+
+export interface SpecialRequestSaveState {
+  active: SpecialRequestSaveItem[];
+  completedInstanceIds: string[];
+  vexedCount: number;
+  lastRolledDay?: number;
+  openedToday: number;
+}
+
 export type PartyOrderStatus = 'pending' | 'accepted' | 'completed' | 'declined' | 'expired';
 
 export interface PartyOrderItem {
@@ -1111,6 +1132,8 @@ export interface SaveGameData {
   /** Số lượt khách bước vào từng ô (khóa "x,y") theo ngày, giữ tối đa 7 ngày gần nhất; chỉ tổng hợp, không lưu đường đi cá nhân. */
   heatmap?: Record<number, Record<string, number>>;
   partyOrders?: PartyOrderState;
+  /** Yêu cầu đặc biệt của khách VIP (hằng số cân bằng PROVISIONAL, cần playtest). */
+  specialRequests?: SpecialRequestSaveState;
   goals?: GoalState;
   skills?: SkillState;
   /** Lời đánh giá gần đây của khách (tối đa 60), mới nhất ở cuối. */
