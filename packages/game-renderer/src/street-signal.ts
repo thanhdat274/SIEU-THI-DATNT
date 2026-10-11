@@ -1,5 +1,6 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { StreetPedestrianState, TILE_SIZE, TrafficSignalState } from '@game/shared';
+import { walkerLook } from './sprite-atlas';
 import { INTERSECTIONS, ROAD_MAP } from '@game/data';
 
 const OFF = 0x2a2f2c;
@@ -72,7 +73,6 @@ export function buildIntersectionSignalHeads(layer: Container): { update(signals
   };
 }
 
-const NPC_VARIANTS = 3;
 
 /** Hàm lấy texture theo khóa (cùng kho texture với nhân vật chính và khách). */
 export type PedestrianTextureGetter = (key: string) => Texture;
@@ -85,7 +85,7 @@ export type PedestrianTextureGetter = (key: string) => Texture;
 export function createPedestrianSprite(variant: number, activity: string | undefined, getTexture: PedestrianTextureGetter): Container {
   const c = new Container();
   c.eventMode = 'none';
-  const npc = ((variant % NPC_VARIANTS) + NPC_VARIANTS) % NPC_VARIANTS;
+  const npc = walkerLook(variant);
   c.label = String(npc);
 
   const shadow = new Graphics();

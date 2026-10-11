@@ -6,4 +6,4 @@ export * from './road-surface';
 export * from './street-signal';
 export * from './fixture-preview';
 export * from './weather-settings';
-export { loadSpriteAtlases, spriteAtlasKeyCount, headLift } from './sprite-atlas';
+export { loadSpriteAtlases, spriteAtlasKeyCount, headLift, walkerLook } from './sprite-atlas';

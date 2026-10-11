@@ -192,7 +192,7 @@ export class NeighborhoodLife {
       const line = bandLine(home.id);
       const homePt: Pt = { x: home.door.x + (rng.next() - 0.5) * 16, y: home.door.y, line };
       this.npcs.push({
-        id: `nb-${this.seed}-${i}`, def, home, homePt, ring: npcRingOf(home.door.x, home.door.y), spriteVariant: Math.floor(rng.next() * 3),
+        id: `nb-${this.seed}-${i}`, def, home, homePt, ring: npcRingOf(home.door.x, home.door.y), spriteVariant: Math.floor(rng.next() * 8),
         tint: def.tints[Math.floor(rng.next() * def.tints.length)], x: homePt.x, y: homePt.y, facing: 'down', pose: 'idle', active: false,
         steps: [], route: [], dwell: 0, dwellPose: 'idle', errands: [], holdUntil: 0, chat: null, chatCooldown: rng.next() * 20, shelter: null,
         crossing: null, waiting: false, acc: rng.next(), decideCooldown: rng.next() * 3, bubble: null, bubbleAge: 0, parkAppealRoll: rng.next(), curPt: homePt,
