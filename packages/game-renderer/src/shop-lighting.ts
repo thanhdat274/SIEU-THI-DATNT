@@ -374,7 +374,10 @@ export class ShopLighting {
       for (const x of [door.x - 0.6, door.x + 2.6]) this.add(out, x * T, (this.snackBox.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xffd9a0, 0.26);
       this.add(out, (door.x + 1) * T, (this.snackBox.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xffdfa8, 0.30);
     }
-    for (const lamp of STREET_LAMP_TILES) this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 50 - lampLift(), 3.1 * T, 3.1 * T, 0xffd98a, 0.75, 'street', 0.03);
+    for (const lamp of STREET_LAMP_TILES) {
+      this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 10, 3.4 * T, 1.9 * T, 0xffd98a, 0.75, 'street', 0.03); // vũng sáng trên mặt đất quanh chân cột
+      this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 50 - lampLift(), 1.1 * T, 1.1 * T, 0xffe9a8, 0.55, 'street', 0.03); // quầng nhỏ ở đầu đèn
+    }
     // Nắng lọt qua cửa vào và cửa sổ (chỉ ban ngày); vệt nắng dịch theo giờ.
     this.sunPatch = this.add(out, (MAIN_DOOR.x + 1) * T, (STORE_BOUNDS.bottom - 1.4) * T, 1.9 * T, 1.5 * T, 0xffe9b0, 0.5, 'sun');
     this.add(out, (STORE_BOUNDS.left + 1.6) * T, (STORE_BOUNDS.top + 2.7) * T, 1.6 * T, 0.9 * T, 0xfff0c0, 0.35, 'sun');
