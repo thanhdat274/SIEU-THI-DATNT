@@ -26,10 +26,7 @@ VARIANT_COLOR = ['orange', 'orange', 'grey', 'orange', 'green', 'grey']
 # Tô lại 3 sắc thân xe (khớp đúng màu gốc) theo biến thể: (hue độ, độ bão hòa tuyệt đối, hệ số sáng); None = giữ nguyên
 VARIANT_RECOLOR = [(47, 0.85, 1.22), (0, 0.04, 1.2), None, (2, 0.78, 1.0), (212, 0.62, 0.95), (0, 0.08, 0.5)]
 SPRITES = {}
-for v, color in enumerate(VARIANT_COLOR):
-    for d, region in (('left', CAR_FACE_LEFT), ('right', CAR_FACE_RIGHT)):
-        key = f'vehicle_car_{d}' if v == 0 else f'vehicle_car_v{v}_{d}'
-        SPRITES[key] = (*region[color], False, None)
+# Ô tô nhìn ngang đã chuyển sang atlas vehicles (build-kenney-vehicles.py); ở đây chỉ còn xe làn dọc (nhìn trước/sau).
 for v in range(6):
     color = VARIANT_COLOR[v]
     SPRITES[f'vehicle_ns_car_{v}_up'] = (*CAR_UP[color], False, None)

@@ -12,6 +12,9 @@ SCALE = 3
 # khóa texture của game -> tên file trong PNG/Cars. Xe buýt (minibus) 4 kiểu; xe tải theo TRUCK_KINDS (game-data neighborhood.ts).
 MINIBUS = ['bus', 'bus_school', 'van_large', 'van']
 TRUCK = {'dry_goods': 'truck', 'beverage_sweets': 'truckdark', 'refrigerated': 'truckdelivery', 'fresh_produce': 'van_flat'}
+# Ô tô nhìn ngang: biến thể game 0..5 -> file (0 taxi vàng, 1 xanh lá, 2 xanh dương, 3 đỏ, 4 cam, 5 xanh dương + thùng đen)
+CAR = ['taxi', 'sedan', 'sedan_blue', 'suv', 'suv_large', 'suv_closed']
+# Xe tay ga (scooter 15x9) của pack quá nhỏ so với nhân vật LimeZu 2x nên KHÔNG dùng; xe máy giữ bản vẽ code.
 OUT = Path(__file__).resolve().parents[2] / 'apps/web/public/assets/sprites/vehicles'
 
 
@@ -26,6 +29,8 @@ def main(src: str) -> None:
         add(f'vehicle_minibus_{v}_{{d}}', name)
     for kind, name in TRUCK.items():
         add(f'truck_{kind}_{{d}}', name)
+    for v, name in enumerate(CAR):
+        add('vehicle_car_{d}' if v == 0 else f'vehicle_car_v{v}_{{d}}', name)
     width, x, y, row_h, frames, placed = 512, 0, 0, 0, {}, []
     for key, img in items.items():
         if x + img.width > width:

@@ -97,6 +97,78 @@
    "y": 278,
    "w": 111,
    "h": 51
+  },
+  "vehicle_car_right": {
+   "x": 226,
+   "y": 278,
+   "w": 99,
+   "h": 42
+  },
+  "vehicle_car_left": {
+   "x": 327,
+   "y": 278,
+   "w": 99,
+   "h": 42
+  },
+  "vehicle_car_v1_right": {
+   "x": 0,
+   "y": 331,
+   "w": 87,
+   "h": 39
+  },
+  "vehicle_car_v1_left": {
+   "x": 89,
+   "y": 331,
+   "w": 87,
+   "h": 39
+  },
+  "vehicle_car_v2_right": {
+   "x": 178,
+   "y": 331,
+   "w": 87,
+   "h": 39
+  },
+  "vehicle_car_v2_left": {
+   "x": 267,
+   "y": 331,
+   "w": 87,
+   "h": 39
+  },
+  "vehicle_car_v3_right": {
+   "x": 356,
+   "y": 331,
+   "w": 93,
+   "h": 45
+  },
+  "vehicle_car_v3_left": {
+   "x": 0,
+   "y": 378,
+   "w": 93,
+   "h": 45
+  },
+  "vehicle_car_v4_right": {
+   "x": 95,
+   "y": 378,
+   "w": 99,
+   "h": 45
+  },
+  "vehicle_car_v4_left": {
+   "x": 196,
+   "y": 378,
+   "w": 99,
+   "h": 45
+  },
+  "vehicle_car_v5_right": {
+   "x": 297,
+   "y": 378,
+   "w": 84,
+   "h": 45
+  },
+  "vehicle_car_v5_left": {
+   "x": 383,
+   "y": 378,
+   "w": 84,
+   "h": 45
   }
  }
 }
