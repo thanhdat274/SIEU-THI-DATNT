@@ -10,6 +10,7 @@ import {
 import { RECLAMATION_WAVES, validateReclamationWaves } from './waves';
 import { BUILDING_TEMPLATES } from './building-templates';
 import { rectContains, rectHeight, rectWidth, WORLD_BOUNDS } from './world-grid';
+import { generateTileMapForWaves } from '../map';
 
 export function runReclamationDataTests(): void {
   console.log('\n--- Dữ liệu khai hoang (D7 cityTier + lô W1–W4) ---');
@@ -134,7 +135,39 @@ export function runReclamationDataTests(): void {
     }
   }
   assert.ok(rectWidth(w1Corner.rect) >= BUILDING_TEMPLATES.drink.width, 'w1-corner chứa vừa quán nước');
+  // connectedVia (W4 cần W1 hoặc W3): BFS trên bản đồ động từ mép đi bộ (y=12) tới hàng vỉa hè trước lô W4 phải khớp luật.
+  const reachesW4 = (opened: string[]): boolean => {
+    const map = generateTileMapForWaves(opened);
+    const ox = map.originTileX ?? 0;
+    const oy = map.originTileY ?? 0;
+    const walk = (x: number, y: number) => {
+      const lx = x - ox;
+      const ly = y - oy;
+      return lx >= 0 && ly >= 0 && lx < map.width && ly < map.height && !map.collisionLayer[ly * map.width + lx];
+    };
+    const seen = new Set<string>();
+    const queue: Array<[number, number]> = [];
+    for (const start of [[ox + 1, 12], [ox + map.width - 2, 12]]) {
+      if (walk(start[0], start[1])) { seen.add(start.join(',')); queue.push([start[0], start[1]]); }
+    }
+    for (let i = 0; i < queue.length; i++) {
+      const [x, y] = queue[i];
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const key = `${x + dx},${y + dy}`;
+        if (!seen.has(key) && walk(x + dx, y + dy)) { seen.add(key); queue.push([x + dx, y + dy]); }
+      }
+    }
+    const w4Lot = RECLAMATION_WAVES.find((w) => w.id === 'w4')!.parcels[0];
+    return seen.has(`${w4Lot.rect.x0 + 1},${w4Lot.rect.y1 + 1}`);
+  };
+  const w4Connected = RECLAMATION_WAVES.find((w) => w.id === 'w4')!.connectedVia ?? [];
+  assert.deepEqual(w4Connected, ['w1', 'w3'], 'W4 khai báo nối qua W1/W3');
+  assert.equal(reachesW4(['w0', 'w4']), false, 'w0+w4: lô W4 không tới được (khớp luật)');
+  assert.equal(reachesW4(['w0', 'w2', 'w4']), false, 'w0+w2+w4: W2 không nối được W4 (khớp luật)');
+  assert.equal(reachesW4(['w0', 'w1', 'w4']), true, 'w0+w1+w4: lô W4 tới được (khớp luật)');
+  assert.equal(reachesW4(['w0', 'w3', 'w4']), true, 'w0+w3+w4: lô W4 tới được (khớp luật)');
   console.log('  ✓ cityTier đơn điệu, growth factor 0.6–1.4, floor bonus 0–2, scaled budget không phá hằng số, lô W1–W4 hợp lệ');
+  console.log('  ✓ connectedVia W4 khớp BFS trên bản đồ động (W2 không nối W4)');
 }
 
 declare const process: any;
