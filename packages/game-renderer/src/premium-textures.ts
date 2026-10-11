@@ -1085,7 +1085,7 @@ function vehicleNsTexture(key: string): HTMLCanvasElement | null {
   if (type === 'motorbike' || type === 'bicycle') {
     const bike = type === 'motorbike';
     const v = variant % 3;
-    const jacket = v === 2 ? { main: '#3a6ea5', light: '#5f95c9', dark: '#274f7a' } : { main: '#2e8b3e', light: '#4cb25d', dark: '#1f6a2d' };
+    const jacket = [{ main: '#2e8b3e', light: '#4cb25d', dark: '#1f6a2d' }, { main: '#3a6ea5', light: '#5f95c9', dark: '#274f7a' }, { main: '#b8453a', light: '#d8695d', dark: '#8a2f27' }, { main: '#d49a2c', light: '#ecbc58', dark: '#a87617' }][(Math.floor(variant / 3) + v) % 4];
     const pal = [{ main: '#3f9b4a', light: '#6fcb7a' }, { main: '#3a7ca5', light: '#6aa6cc' }, { main: '#c0392b', light: '#e8604f' }][v];
     const cx = w / 2;
     shadow();
@@ -1268,38 +1268,51 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
   if (key.startsWith('vehicle_motorbike_rider_')) {
     const isRight = key.endsWith('right');
     const variantMatch = key.match(/_(\d+)_(?:left|right)$/);
-    const variant = variantMatch ? Number(variantMatch[1]) % 3 : 0;
+    const rawVariant = variantMatch ? Number(variantMatch[1]) : 0;
+    const variant = rawVariant % 3;                    // kiểu xe
+    const look = Math.floor(rawVariant / 3) % 4;       // kiểu người lái: 0 mũ bảo hiểm, 1 nón vải, 2 tóc trần, 3 mũ lưỡi trai
     const { canvas, r: r0 } = makeSurface(62, 65, !isRight);
     const r: R4 = (x, y, w, h, c) => r0(x, y + 3, w, h, c);
     const b = bikeFor(variant);
     drawBike(r, b.kind, b.pal, b.box);
     const jackets = [
       { main: '#2e8b3e', light: '#4cb25d', dark: '#1f6a2d' },
-      { main: '#2e8b3e', light: '#4cb25d', dark: '#1f6a2d' },
       { main: '#3a6ea5', light: '#5f95c9', dark: '#274f7a' },
+      { main: '#b8453a', light: '#d8695d', dark: '#8a2f27' },
+      { main: '#8a6bb0', light: '#a98cce', dark: '#654a88' },
+      { main: '#d49a2c', light: '#ecbc58', dark: '#a87617' },
+      { main: '#4a5560', light: '#6c7a88', dark: '#343d46' },
     ];
-    const j = jackets[variant];
-    const SKIN = '#f1c8a0';
+    const j = jackets[(look * 2 + variant) % jackets.length];
+    const SKIN = ['#f1c8a0', '#e0ac7e', '#f4d2b0', '#c98f64'][(look + variant) % 4];
+    const HAIR = ['#1a1815', '#3b2a1c', '#1a1815', '#5a3a24'][(look + variant * 2) % 4];
     const PANTS = '#3b4e4e';
     // Chân: đùi trên yên, cẳng chân xuống bàn đạp, giày nâu
     r(20, 33, 16, 7, DARK); r(21, 34, 14, 5, PANTS); r(21, 34, 14, 1, '#567373');
     r(33, 36, 9, 13, DARK); r(34, 37, 7, 11, PANTS);
     r(31, 47, 13, 6, DARK); r(32, 48, 11, 4, '#8A5F3D'); r(32, 48, 11, 1, '#b07a4a');
-    // Thân áo khoác xanh lá, cổ áo trắng, túi áo
+    // Thân áo khoác, cổ áo trắng, túi áo
     r(18, 16, 15, 20, DARK); r(19, 17, 13, 18, j.main); r(19, 17, 3, 18, j.light); r(28, 17, 4, 18, j.dark);
     r(25, 16, 6, 3, '#f4f4f4'); r(22, 27, 5, 4, j.dark); r(22, 27, 5, 1, j.light);
     // Tay cầm ghi-đông
     r(29, 19, 8, 6, DARK); r(30, 20, 6, 4, j.main);
     r(35, 22, 8, 6, DARK); r(36, 23, 6, 4, j.main);
     r(41, 23, 9, 6, DARK); r(42, 24, 7, 4, SKIN);
-    // Đầu chibi: tóc, mặt, mắt, má hồng
-    r(23, 5, 17, 15, DARK); r(24, 6, 15, 13, SKIN);
-    r(23, 8, 4, 10, '#1a1815'); r(24, 6, 15, 3, '#1a1815');
-    r(31, 11, 3, 4, '#1a1815'); r(36, 11, 3, 4, '#1a1815'); r(32, 12, 1, 1, '#ffffff'); r(37, 12, 1, 1, '#ffffff');
-    r(29, 15, 4, 2, '#e8907a'); r(36, 15, 3, 2, '#e8907a'); r(34, 17, 3, 1, '#b5594a');
-    // Mũ vải rộng vành màu be
-    r(24, -1, 15, 9, DARK); r(25, 0, 13, 7, '#e4c485'); r(25, 0, 13, 2, '#f2dca8'); r(25, 5, 13, 2, '#cba965');
-    r(20, 6, 26, 4, DARK); r(21, 6, 24, 3, '#d1ab62'); r(21, 6, 24, 1, '#e4c485'); r(21, 9, 24, 1, '#a88445');
+    // Đầu nhỏ vừa phải (tỉ lệ gần nhân vật LimeZu): mặt, mắt, miệng
+    r(26, 7, 12, 12, DARK); r(27, 8, 10, 10, SKIN);
+    r(34, 12, 2, 2, '#1a1815'); r(35, 12, 1, 1, '#ffffff'); r(33, 16, 3, 1, '#b5594a');
+    if (look === 0) {          // mũ bảo hiểm trắng, kính chắn tối, sọc đỏ
+      r(25, 3, 14, 11, DARK); r(26, 4, 12, 9, '#eef0f2'); r(26, 4, 12, 2, '#ffffff'); r(26, 10, 12, 2, '#c9ced3');
+      r(32, 8, 6, 3, '#26323f'); r(26, 7, 5, 1, '#d6453a');
+    } else if (look === 1) {   // nón vải rộng vành màu be
+      r(26, 1, 12, 8, DARK); r(27, 2, 10, 6, '#e4c485'); r(27, 2, 10, 2, '#f2dca8'); r(27, 6, 10, 2, '#cba965');
+      r(21, 7, 23, 3, DARK); r(22, 7, 21, 2, '#d1ab62'); r(22, 7, 21, 1, '#e4c485');
+    } else if (look === 2) {   // tóc trần, mái ngôi
+      r(26, 5, 12, 6, DARK); r(27, 6, 10, 4, HAIR); r(26, 8, 4, 8, HAIR); r(27, 6, 10, 1, '#ffffff30');
+    } else {                   // mũ lưỡi trai xanh
+      r(26, 4, 12, 6, DARK); r(27, 5, 10, 4, '#2f5f9a'); r(27, 5, 10, 1, '#5588c4');
+      r(34, 8, 8, 3, DARK); r(35, 8, 6, 2, '#2f5f9a'); r(26, 9, 3, 6, HAIR);
+    }
     return canvas;
   }
 

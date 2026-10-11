@@ -468,7 +468,7 @@ export class StreetTrafficManager {
     for (const k of kinds) { pick -= mix[k]; if (pick <= 0) { type = k; break; } }
 
     const direction: 'left' | 'right' = rng.next() < 0.5 ? 'right' : 'left';
-    let variant = Math.floor(rng.next() * 3);
+    let variant = Math.floor(rng.next() * (type === 'motorbike' ? 12 : 3)); // xe máy: 3 kiểu xe × 4 kiểu người lái
     if (type === 'minibus') variant = Math.floor(rng.next() * 4); // 4 kiểu dáng xe buýt / xe khách theo đúng thiết kế
     else if (type === 'truck') variant = Math.floor(rng.next() * TRUCK_KINDS.length);
     else if (type === 'car') variant = Math.floor(rng.next() * CAR_VARIANTS);
