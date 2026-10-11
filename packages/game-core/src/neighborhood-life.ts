@@ -5,7 +5,7 @@ import {
   dialoguePhaseOf, dialogueWeatherOf, npcRingOf, parkAppeal, activeShelterZones, type DetailLevel, type NeighborNpcType, type NeighborhoodLot,
   type NeighborhoodQuality, type NpcRing, type NpcTypeDef,
 } from '@game/data';
-import { pickConversation, type ChatPlace } from './neighborhood-chat';
+import { fillNames, pickConversation, type ChatPlace } from './neighborhood-chat';
 import { Mulberry32Rng } from './staff';
 import { hashSeed } from './weather';
 
@@ -664,12 +664,13 @@ export class NeighborhoodLife {
     const lines = pickConversation({
       phase: dialoguePhaseOf(this.lastHour), weather: dialogueWeatherOf(ctx.weatherId, ctx.rain), place: this.placeOf(a), typeA: a.def.id, typeB: b.def.id,
     }, () => rng.next());
-    a.chat = { partner: b, lines, index: 0, timer: 2.4, speaker: true };
-    b.chat = { partner: a, lines, index: 0, timer: 2.4, speaker: false };
+    const named = fillNames(lines, a.id, b.id);
+    a.chat = { partner: b, lines: named, index: 0, timer: 2.4, speaker: true };
+    b.chat = { partner: a, lines: named, index: 0, timer: 2.4, speaker: false };
     a.pose = b.pose = 'chatting';
     a.facing = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y) ? (b.x > a.x ? 'right' : 'left') : (b.y > a.y ? 'down' : 'up');
     b.facing = a.facing === 'right' ? 'left' : a.facing === 'left' ? 'right' : a.facing === 'down' ? 'up' : 'down';
-    a.bubble = lines[0]; a.bubbleAge = 0; b.bubble = null;
+    a.bubble = named[0]; a.bubbleAge = 0; b.bubble = null;
     this.activeChats++;
     this.stats.chatsStarted++;
   }

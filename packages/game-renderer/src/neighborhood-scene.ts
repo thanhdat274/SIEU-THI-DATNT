@@ -2,7 +2,7 @@ import { Container, Graphics, Sprite, Text, Texture, TilingSprite } from 'pixi.j
 import type { WeatherVisualState } from '@game/core';
 import {
   APARTMENT_PARKING, AVENUES, INTERSECTIONS, NEIGHBORHOOD_LOTS, decorLotsOutsideWaves, RECLAMATION_WAVES, NEIGHBORHOOD_PROPS, hash, rnd, NEIGHBORHOOD_STREET_LAMPS, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, PARK, PARK_LAMPS, PARK_PATHS, SCHOOL,
-  TRAFFIC_ROADS, type NeighborhoodLot, type NeighborhoodQuality, type RoadDef,
+  TRAFFIC_ROADS, NEIGHBORHOOD_SIGNS, type NeighborhoodLot, type NeighborhoodQuality, type RoadDef,
 } from '@game/data';
 import type { PixelTextureFactory } from './textures';
 import { houseLitWindows } from './neighborhood-textures';
@@ -526,6 +526,7 @@ export class NeighborhoodScene {
       const x = Math.round(f.camX - 100);
       h.width = viewW;
       h.x = x;
+    for (const s of NEIGHBORHOOD_SIGNS) mk(s.text, s.x * T, s.y * T, s.size, s.fill, s.stroke);
       h.tilePosition.x = -Math.round(f.camX * this.hillParallax[i]);
       // Lớp xa mờ hơn khi nhiều mây/mưa (không blur, chỉ pha màu về xám-xanh nhạt và bớt bão hòa).
       const haze = Math.min(0.75, cloud * 0.35 + rain * 0.45 + i * 0.0) * (1 - i * 0.18);

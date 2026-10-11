@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { ALL_PRODUCTS, DRINK_SHOP_PRODUCT_IDS, SNACK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, STORE_TYPES, WEATHER_MAP, XOI_DISH_IDS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
-import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES } from '@game/core';
+import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES, FootstepTracker, footstepCue } from '@game/core';
 import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
@@ -144,7 +144,22 @@ export const App: React.FC = () => {
     const timer = window.setInterval(refresh, 5000);
     const audioTimer = window.setInterval(refreshAudio, 1000);
     const offThunder = onThunder((e) => engine?.thunder(e.strength));
-    return () => { window.clearInterval(timer); window.clearInterval(audioTimer); offThunder(); engine?.detach(); };
+    // Bước chân bảo vệ đi tuần: lấy mẫu vị trí nhanh (0,2 s) để đếm đúng quãng đường; nghe theo hướng so với người chơi.
+    const footsteps = new FootstepTracker();
+    const footstepTimer = window.setInterval(() => {
+      const sim = simulationRef.current;
+      if (!sim) return;
+      const guards = sim.peekStaff().filter((s) => s.role === 'security' && s.position);
+      footsteps.retain(guards.map((g) => g.id));
+      const listener = sim.getPlayerData().position;
+      for (const guard of guards) {
+        const steps = footsteps.advance(guard.id, guard.position!);
+        if (steps === 0) continue;
+        const cue = footstepCue(listener, guard.position!);
+        if (cue) for (let i = 0; i < steps; i++) engine?.footstep(cue);
+      }
+    }, 200);
+    return () => { window.clearInterval(timer); window.clearInterval(audioTimer); window.clearInterval(footstepTimer); offThunder(); engine?.detach(); };
   }, [gameStarted]);
   const [daySummaryRecord, setDaySummaryRecord] = useState<DailyRecord | null>(null);
   // Bảng kế hoạch chỉ tính khi mở bảng Thị trường hoặc sang ngày mới, không mỗi khung hình.

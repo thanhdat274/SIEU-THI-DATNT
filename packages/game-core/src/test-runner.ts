@@ -53,7 +53,7 @@ import { runHostileIdTests, runHostileRuntimeKeyTests } from './hostile-ids.test
 import { runCounterfeitTests } from './counterfeit.test';
 import { runReplayTests } from './replay.test';
 import { runStallsStorageTests, runVeSoStallTests } from './stalls.test';
-import { runAmbientAudioTests } from './ambient-audio.test';
+import { runAmbientAudioTests, runFootstepTests } from './ambient-audio.test';
 import { runWeatherVisualTests } from './weather-visual.test';
 import { runRainProtectionTests, runRainReactionTests } from './rain-protection.test';
 import { runShelterTests } from './shelter.test';
@@ -102,7 +102,7 @@ import { runCheckoutLaneTests } from './checkout-lanes.test';
 import { runRegularsTests } from './regulars.test';
 import { runDayRhythmTests } from './day-rhythm.test';
 import { runStreetTrafficTests } from './street-traffic.test';
-import { runNeighborhoodTests } from './neighborhood.test';
+import { runNeighborhoodTests, runNeighborNameTests } from './neighborhood.test';
 import { runPartyOrderTests } from './party-orders.test';
 import { runGoalTests } from './goals.test';
 import { runStoryTests } from './story.test';
@@ -150,6 +150,7 @@ export async function runTests(): Promise<void> {
   runVeSoStallTests();
   runAmbientAudioTests();
   runWeatherVisualTests();
+  runFootstepTests();
   runRainProtectionTests();
   runRainReactionTests();
   runShelterTests();
@@ -251,6 +252,7 @@ export async function runTests(): Promise<void> {
   runNeighborhoodTests();
   runPartyOrderTests();
   runGoalTests();
+  runNeighborNameTests();
   runStoryTests();
   runSkillTests();
   runPerkBehaviorTests();

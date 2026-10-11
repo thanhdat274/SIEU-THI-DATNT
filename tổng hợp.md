@@ -1,3 +1,23 @@
+# Tiếng bước chân bảo vệ, tên xưng hô NPC và biển hiệu khu phố (11/10/2026)
+- **Nguồn ý tưởng:** game "Rao — Đêm câu trộm" (https://rao-game.vercel.app/play), chỉ lấy cơ chế và ý tưởng. Không bê sprite, code hay văn bản của họ.
+- **Đã làm (có code):**
+  - Biển hiệu mới: `packages/game-data/src/neighborhood.ts` có `NEIGHBORHOOD_SIGNS` (3 biển: PHỐ HÀNG QUÁN, NGÕ GÁNH GỒNG, VỰA VE CHAI, mực nâu cỡ 8 như HẺM 12). `packages/game-renderer/src/neighborhood-scene.ts` `buildLabels` vẽ chúng cùng nhãn cũ. Biển đặt ở dải vỉa hè phía nam đường chính (hàng ô 17.4). Đây là hình ảnh, không chặn đường.
+  - `packages/game-core/src/ambient-audio.ts`: `FOOTSTEP_RULES`, `footstepCue()` (lệch trái/phải theo vị trí so với người chơi, nhỏ dần theo khoảng cách, tầm nghe 192px = 6 ô), `FootstepTracker` (đếm bước theo quãng đường 26px, bỏ qua khi nhảy quá 128px, tối đa 2 bước mỗi lần lấy mẫu).
+  - `apps/web/src/services/ambient-audio-engine.ts`: `footstep(cue)` là tiếng thụp 90ms lọc thấp 900Hz qua `StereoPannerNode`. Điều kiện phát giống sấm: đã có gesture, không tắt tiếng, tab đang hiện.
+  - `apps/web/src/App.tsx`: interval 200ms quét nhân viên `role === 'security'` có vị trí, rồi phát bước chân theo vị trí so với `getPlayerData().position`.
+  - Tên xưng hô NPC: `packages/game-data/src/neighborhood-dialogue.ts` có `NEIGHBOR_NAMES` (16 tên) và chủ đề `call-name` dùng placeholder `{ten}`. `packages/game-core/src/neighborhood-chat.ts` có `neighborNameOf()` (tên cố định theo id NPC) và `fillNames()`. `neighborhood-life.ts` `beginChat` điền tên trước khi gán bong bóng.
+- **Còn thiếu / giới hạn:**
+  - Tiếng bước chân chỉ có cho bảo vệ trong tiệm đang đi tuần (`simulation.ts` `updateSecurityPatrol`). Chưa có tiếng bước cho NPC khu phố hay người chơi. Chưa kiểm chứng bảo vệ có đi tuần vào ca đêm không.
+  - Tầm nghe, lệch trái/phải và âm lượng là số thiết kế, chưa cân chỉnh bằng tai.
+- **Đã kiểm chứng:**
+  - game-core: `npx tsx src/test-runner.ts` → 111 pass, 0 fail. Gồm `runFootstepTests` và `runNeighborNameTests` mới.
+  - `tsc --noEmit` của game-core và web: PASS.
+  - `yarn --cwd apps/web build`: PASS. Cảnh báo có sẵn: `INEFFECTIVE_DYNAMIC_IMPORT` ở `api.ts`, chunk > 500 kB.
+- **Đã xem bằng mắt (bản build qua `vite preview` cổng 5174, lần trước khi dời biển):** `NGÕ GÁNH GỒNG`, `VỰA VE CHAI` và `HẺM 12` hiển thị đúng dải vỉa hè phía nam, không đè nhà. `PHỐ HÀNG QUÁN` được dời từ x −1,5 sang 2,5 để tránh thanh bản đồ nhỏ; **sau khi dời chưa xem lại** vì camera lần đó không đọc được chữ.
+- **Chưa kiểm chứng:** bong bóng tên trong hội thoại chưa được xem trên trình duyệt. Tiếng bước chân chưa được nghe thật. Cổng 5173 của dev server đã có process khác và không mở được bằng Browser pane. Không tuyên bố PASS QA cho phần này.
+- **Test game-core sau đó (cùng ngày, sau khi file world/reclamation đổi ở phiên khác):** lần chạy đầu 111/0 PASS. Hai lần chạy lại: lần 1 có test đo thời gian `buildDemandTable` (performance.test.ts) quá ngưỡng 7ms; lần 2 có 1 fail `reclamation.test.ts` (giá lô W1 mua được) do `reclamation.ts`/`parcels.ts`/`footprint.ts` đang sửa dở ở phiên khác. Chưa xác định nguyên nhân trong code của lượt này; lượt này không chạm các file đó.
+- **Ghi chú môi trường:** `typecheck` của renderer báo lỗi `packages/game-data/src/world/footprint.ts(120)` (TS18048). File này đang sửa dở ở phiên khác, không thuộc lượt này.
+
 # Sửa nút thu gọn kho khó nhận biết (08/10/2026)
 - **Vấn đề:** nút X trên header Kho có nền và icon ít tương phản với dải header, kích thước điểm bấm nhìn nhỏ nên khó hiểu/chạm.
 - **Có code:** `WarehouseDock.tsx` gắn class riêng và tooltip “Thu gọn kho”; `index.css` dùng nút vuông 40px, nền vàng kem, icon đỏ đất đậm, viền/bóng nâu cà phê và focus ring rõ. Chỉ đổi presentation/accessibility label, không đổi hành vi đóng/mở.
