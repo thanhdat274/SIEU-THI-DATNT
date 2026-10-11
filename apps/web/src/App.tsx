@@ -4,7 +4,6 @@ import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HO
 import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
-import { MiniMap } from './components/MiniMap';
 import { ParcelBuyModal } from './components/ParcelBuyModal';
 import { PixiGameViewport, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
 import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
@@ -1808,7 +1807,6 @@ export const App: React.FC = () => {
   };
 
   const [zoomLevel, setZoomLevel] = useState<number>(2.0);
-  const getMinimapSnapshot = useCallback(() => viewportRef.current?.getMinimapSnapshot() ?? null, []);
 
   const handleZoomIn = () => {
     if (viewportRef.current) {
@@ -1934,7 +1932,6 @@ export const App: React.FC = () => {
                 </button>
               </div>
             )}
-            {!hasModal && <MiniMap getSnapshot={getMinimapSnapshot} />}
             <div className="world-tools" aria-label="Góc nhìn bản đồ"><PixelButton icon="warehouse" aria-label="Định vị nhà kho" onClick={locateWarehouse}/><PixelButton icon="minus" aria-label="Thu nhỏ bản đồ" disabled={zoomLevel<=ZOOM_MIN} onClick={handleZoomOut}/><span className="zoom-value">{Number(zoomLevel.toFixed(2))}×</span><PixelButton icon="plus" aria-label="Phóng to bản đồ" disabled={zoomLevel>=ZOOM_MAX} onClick={handleZoomIn}/></div>
             {!hasModal && (!isWarehouseDockOpen || controlMode === 'touch') && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
           </>}
