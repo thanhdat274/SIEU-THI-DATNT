@@ -20,6 +20,37 @@ function createCanvas(width: number, height: number): HTMLCanvasElement {
   return canvas;
 }
 
+/** Xe vẽ bằng code (xe buýt, xe tải, xe đạp, xe máy, xe làn dọc) dùng điểm ảnh 1×1 mịn hơn nhân vật và xe Kenney (điểm ảnh 2×2): gộp về lưới 2×2 cho cùng độ thô. */
+const CHUNKY_KEYS = /^(vehicle_minibus_|truck_|vehicle_ns_|vehicle_bicycle_|vehicle_motorbike_)/;
+
+function chunkyPixels(src: HTMLCanvasElement): HTMLCanvasElement {
+  const w = src.width, h = src.height;
+  const sctx = src.getContext('2d');
+  if (!sctx) return src;
+  const data = sctx.getImageData(0, 0, w, h).data;
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  const octx = out.getContext('2d')!;
+  const dst = octx.createImageData(w, h);
+  const lum = (i: number) => data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
+  for (let by = 0; by < h; by += 2) {
+    for (let bx = 0; bx < w; bx += 2) {
+      // Chọn điểm đậm đặc nhất trong khối 2×2 (ưu tiên có màu, rồi tối nhất) để giữ viền mảnh.
+      let best = -1;
+      for (let dy = 0; dy < 2 && by + dy < h; dy++) for (let dx = 0; dx < 2 && bx + dx < w; dx++) {
+        const i = ((by + dy) * w + bx + dx) * 4;
+        if (best < 0 || data[i + 3] > data[best + 3] || (data[i + 3] === data[best + 3] && lum(i) < lum(best))) best = i;
+      }
+      for (let dy = 0; dy < 2 && by + dy < h; dy++) for (let dx = 0; dx < 2 && bx + dx < w; dx++) {
+        const j = ((by + dy) * w + bx + dx) * 4;
+        dst.data[j] = data[best]; dst.data[j + 1] = data[best + 1]; dst.data[j + 2] = data[best + 2]; dst.data[j + 3] = data[best + 3];
+      }
+    }
+  }
+  octx.putImageData(dst, 0, 0);
+  return out;
+}
+
 export class PixelTextureFactory {
   private textures: Map<string, Texture> = new Map();
   /** Khóa lấy từ atlas dùng chung toàn cục: không destroy khi factory hủy. */
@@ -103,7 +134,7 @@ export class PixelTextureFactory {
     const neighborhood = createNeighborhoodTexture(key);
     if (neighborhood) return neighborhood;
     const premium = createPremiumTexture(key);
-    if (premium) return premium;
+    if (premium) return CHUNKY_KEYS.test(key) ? chunkyPixels(premium) : premium;
     switch (key) {
       case 'tile_store_floor':
         return this.createStoreFloorTile();
