@@ -144,7 +144,7 @@ export class StreetTrafficManager {
   }
 
   /** Chuyển khách mua sắm xong lên xe và lái xe rời tiệm, hòa vào dòng giao thông. */
-  public addDepartingVehicle(spot: Vector2D, type: 'motorbike' | 'car', variant: number): void {
+  public addDepartingVehicle(spot: Vector2D, type: 'motorbike' | 'car', variant: number, riderLook?: number): void {
     this.vehicleSequence++;
     const direction: 'left' | 'right' = spot.x > PLAY_WEST_PX + (PLAY_EAST_PX - PLAY_WEST_PX) * 0.75 ? 'left' : 'right';
     this.vehicles.push({
@@ -156,6 +156,7 @@ export class StreetTrafficManager {
       speed: type === 'motorbike' ? 82 : 72,
       currentSpeed: 28,
       isDeparting: true,
+      ...(riderLook !== undefined ? { riderLook } : {}),
     });
   }
 

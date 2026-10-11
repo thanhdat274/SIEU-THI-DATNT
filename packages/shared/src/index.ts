@@ -268,6 +268,8 @@ export interface StreetVehicleState {
   /** Tốc độ hiện tại (px/s) khi đang giảm tốc/dừng/tăng tốc; thiếu thì bằng `speed` (tốc độ chạy thông thường). */
   currentSpeed?: number;
   isDeparting?: boolean;
+  /** Khách rời tiệm bằng xe: `lookSeed` của khách để vẽ đúng nhân vật đó trên xe. */
+  riderLook?: number;
 }
 
 /** Người đi bộ nền trên vỉa hè (chỉ hình ảnh, không phải khách). */
@@ -359,6 +361,8 @@ export interface CustomerState {
   arrivalMode?: CustomerArrivalMode;
   vehicleSpot?: Vector2D;
   vehicleVariant?: number;
+  /** Số nguyên cố định theo khách để chọn kiểu nhân vật (renderer: `walkerLook`); khách rời tiệm bằng xe máy giữ đúng kiểu này. */
+  lookSeed?: number;
   /** Kẻ trộm lẻ: lấy hàng mà không trả tiền nếu không bị phát hiện ở quầy. Khách quen không bao giờ là kẻ trộm. */
   thief?: boolean;
   diningTableId?: string;

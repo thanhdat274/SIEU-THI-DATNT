@@ -1649,7 +1649,7 @@ export class PixiGameViewport {
 
       let entry = this.customerSprites.get(key);
       if (!entry) {
-        entry = this.createCustomerSprite(walkerLook(idx));
+        entry = this.createCustomerSprite(walkerLook(cust.lookSeed ?? idx));
         this.customerSprites.set(key, entry);
       }
 
@@ -1867,7 +1867,9 @@ export class PixiGameViewport {
       let textureKey: string;
       const vertical = veh.axis === 'y';
       if (vertical) textureKey = `vehicle_ns_${veh.type}_${veh.variant ?? 0}_${veh.direction === 'right' ? 'down' : 'up'}`;
-      else if (veh.type === 'motorbike') textureKey = `vehicle_motorbike_rider_${veh.variant ?? 0}_${veh.direction}`;
+      else if (veh.type === 'motorbike') textureKey = veh.riderLook !== undefined
+        ? `vehicle_motorbike_custrider_${(veh.variant ?? 0) % 3}_${walkerLook(veh.riderLook)}_${veh.direction}`
+        : `vehicle_motorbike_rider_${veh.variant ?? 0}_${veh.direction}`;
       else if (veh.type === 'bicycle') textureKey = `vehicle_bicycle_rider_${veh.direction}`;
       else if (veh.type === 'minibus') textureKey = `vehicle_minibus_${veh.variant ?? 0}_${veh.direction}`;
       else if (veh.type === 'truck') textureKey = `truck_${TRUCK_KINDS[(veh.variant ?? 0) % TRUCK_KINDS.length]}_${veh.direction}`;

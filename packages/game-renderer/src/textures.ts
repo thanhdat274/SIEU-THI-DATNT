@@ -42,11 +42,40 @@ export class PixelTextureFactory {
     const existing = this.textures.get(key);
     if (existing) return existing;
 
+    // Khách rời tiệm bằng xe máy: ghép nửa trên nhân vật khách (atlas) lên xe + chân, để người lên xe đúng là người vừa mua hàng.
+    const cust = /^vehicle_motorbike_custrider_(\d+)_(\d+)_(left|right)$/.exec(key);
+    if (cust) {
+      const composed = this.composeCustomerRider(Number(cust[1]), Number(cust[2]), cust[3] as 'left' | 'right');
+      if (composed) { this.textures.set(key, composed); return composed; }
+      const fallback = this.getTexture(`vehicle_motorbike_rider_${cust[1]}_${cust[3]}`);
+      this.textures.set(key, fallback);
+      return fallback;
+    }
+
     // Ưu tiên ảnh từ spritesheet (nếu có khung cùng khóa); không có thì vẽ bằng code như trước.
     const fromAtlas = atlasTexture(key);
     const texture = fromAtlas ?? this.generateTexture(key);
     if (fromAtlas) this.atlasKeys.add(key);
     this.textures.set(key, texture);
+    return texture;
+  }
+
+  /** Xe máy + chân (canvas premium) với nửa trên nhân vật `npc_<look>_<hướng>_idle_0` của atlas; null nếu atlas chưa có khung đó. */
+  private composeCustomerRider(variant: number, look: number, dir: 'left' | 'right'): Texture | null {
+    const npc = atlasTexture(`npc_${look}_${dir}_idle_0`);
+    const res = npc?.source.resource as CanvasImageSource | undefined;
+    if (!npc || !res) return null;
+    const canvas = this.createCanvasForKey(`vehicle_motorbike_bike_${variant}_${dir}`);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.imageSmoothingEnabled = false;
+    const k = npc.source.resolution;
+    const f = npc.frame;
+    const TORSO = 33;                                       // hàng nhân vật tính từ đỉnh tới hông
+    const cx = dir === 'right' ? 27 : 62 - 27;             // hông trên yên
+    ctx.drawImage(res, f.x * k, f.y * k, f.width * k, TORSO * k, Math.round(cx - f.width / 2), 36 - TORSO, f.width, TORSO);
+    const texture = Texture.from(canvas);
+    texture.source.scaleMode = 'nearest';
     return texture;
   }
 

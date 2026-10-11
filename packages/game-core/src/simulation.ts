@@ -4398,7 +4398,8 @@ export class GameSimulation {
           this.streetTraffic.addDepartingVehicle(
             departingCustomer.vehicleSpot,
             departingCustomer.arrivalMode === 'car' ? 'car' : 'motorbike',
-            departingCustomer.vehicleVariant ?? 0
+            departingCustomer.vehicleVariant ?? 0,
+            departingCustomer.lookSeed
           );
         }
       },

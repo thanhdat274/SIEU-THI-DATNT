@@ -368,6 +368,7 @@ export class CustomerManager {
       arrivalMode,
       vehicleSpot,
       vehicleVariant,
+      lookSeed: this.customerSequence,
     };
 
     this.customers.push(newCustomer);

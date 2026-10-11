@@ -1265,6 +1265,20 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
     return canvas;
   }
 
+  // Xe máy + chân người ngồi (không thân/đầu): `textures.ts` ghép nhân vật khách (atlas) lên trên cho khách rời tiệm bằng xe máy.
+  if (key.startsWith('vehicle_motorbike_bike_')) {
+    const isRight = key.endsWith('right');
+    const variantMatch = key.match(/_(\d+)_(?:left|right)$/);
+    const { canvas, r: r0 } = makeSurface(62, 65, !isRight);
+    const r: R4 = (x, y, w, h, c) => r0(x, y + 3, w, h, c);
+    const b = bikeFor((variantMatch ? Number(variantMatch[1]) : 0) % 3);
+    drawBike(r, b.kind, b.pal, b.box);
+    r(20, 33, 16, 7, DARK); r(21, 34, 14, 5, '#3b4e4e'); r(21, 34, 14, 1, '#567373');
+    r(33, 36, 9, 13, DARK); r(34, 37, 7, 11, '#3b4e4e');
+    r(31, 47, 13, 6, DARK); r(32, 48, 11, 4, '#8A5F3D'); r(32, 48, 11, 1, '#b07a4a');
+    return canvas;
+  }
+
   if (key.startsWith('vehicle_motorbike_rider_')) {
     const isRight = key.endsWith('right');
     const variantMatch = key.match(/_(\d+)_(?:left|right)$/);
