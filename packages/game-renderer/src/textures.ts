@@ -74,6 +74,19 @@ export class PixelTextureFactory {
     const TORSO = 33;                                       // hàng nhân vật tính từ đỉnh tới hông
     const cx = dir === 'right' ? 27 : 62 - 27;             // hông trên yên
     ctx.drawImage(res, f.x * k, f.y * k, f.width * k, TORSO * k, Math.round(cx - f.width / 2), 36 - TORSO, f.width, TORSO);
+    // Mũ bảo hiểm nửa đầu phủ lên tóc nhân vật (màu theo kiểu nhân vật), mặt vẫn hiện.
+    const HELM = [['#eef0f2', '#c9ced3'], ['#c9402f', '#8f2b20'], ['#2f6fb0', '#214f80'], ['#2b2f36', '#1a1d22']][look % 4];
+    const px = (x: number, y: number, w: number, h: number, c: string) => {
+      ctx.fillStyle = c;
+      ctx.fillRect(dir === 'right' ? x : 62 - x - w, y, w, h);
+    };
+    // Vỏ mũ theo hình đầu nhân vật (hàng/cột trong khung 32 px của nhân vật, bố cục hướng phải, px lật lại cho hướng trái)
+    const ox = 27 - 16, oy = 36 - TORSO;
+    for (const [row, h, x0, w] of [[4, 2, 8, 14], [6, 2, 6, 18], [8, 2, 4, 22], [10, 2, 4, 24], [12, 2, 2, 28], [14, 2, 2, 28]] as const) {
+      px(ox + x0 - 1, oy + row, w + 2, h, '#1a1815');
+      px(ox + x0, oy + row, w, h, row >= 14 ? HELM[1] : HELM[0]);
+    }
+    px(ox + 9, oy + 4, 12, 2, '#ffffff55');
     const texture = Texture.from(canvas);
     texture.source.scaleMode = 'nearest';
     return texture;
