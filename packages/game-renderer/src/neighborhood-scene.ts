@@ -178,6 +178,19 @@ export class NeighborhoodScene {
     return { nTop: r.topRow - 2, sTop: r.topRow + 3 };
   }
 
+  /** Bó vỉa nổi: gờ đá sáng phía vỉa hè (có mép sáng + bóng đổ) và rãnh thoát nước sẫm sát lòng đường. `edgeY` = mép lòng đường. */
+  private kerbRun(g: Graphics, x0: number, x1: number, edgeY: number, north: boolean): void {
+    const w = x1 - x0;
+    if (w <= 0) return;
+    const gutterY = north ? edgeY : edgeY - 3;
+    const faceY = north ? edgeY - 9 : edgeY;
+    g.rect(x0, gutterY, w, 3).fill({ color: 0x3d444d, alpha: 0.6 });
+    g.rect(x0, faceY, w, 9).fill(0xe6e2d4);
+    g.rect(x0, north ? faceY : faceY + 8, w, 1).fill(north ? 0xfbf9f1 : 0x8f8a7c);
+    g.rect(x0, north ? faceY + 8 : faceY, w, 1).fill(north ? 0x8f8a7c : 0xfbf9f1);
+    g.rect(x0, faceY + 4, w, 1).fill({ color: 0xb4afa0, alpha: 0.35 });
+  }
+
   private buildRoads(X0: number, X1: number): void {
     const g = this.ground;
     const marks = new Graphics();
@@ -211,18 +224,18 @@ export class NeighborhoodScene {
       const y = road.topRow * T;
       const boxes = boxesOf(road);
       // Bó vỉa hai bên lòng đường, đứt đoạn ở miệng đường dọc.
-      for (const edgeY of [y, y + 3 * T - 3]) {
+      for (const north of [true, false]) {
         let from = X0;
         for (const b of [...boxes].sort((p, q) => p.crossLeft - q.crossLeft)) {
-          marks.rect(from, edgeY, b.crossLeft - from, 3).fill({ color: 0xb9b2a0, alpha: 0.9 });
+          this.kerbRun(marks, from, b.crossLeft, north ? y : y + 3 * T, north);
           from = b.crossRight;
         }
-        marks.rect(from, edgeY, X1 - from, 3).fill({ color: 0xb9b2a0, alpha: 0.9 });
+        this.kerbRun(marks, from, X1, north ? y : y + 3 * T, north);
       }
       const cy = (road.topRow + 1) * T - 1;
       for (let x = X0; x < X1; x += T) {
         if (boxes.some((b) => x + T > b.crossLeft - NO_PASS && x < b.crossRight + NO_PASS)) continue;
-        marks.rect(x + 6, cy, 20, 2).fill(YELLOW);
+        marks.rect(x + 6, cy, 20, 2).fill(WHITE);
       }
       for (const b of boxes) {
         for (const [x0, x1] of [[b.crossLeft - NO_PASS, b.crossLeft - 12], [b.crossRight + 12, b.crossRight + NO_PASS]]) {
@@ -250,7 +263,7 @@ export class NeighborhoodScene {
       const crosses = INTERSECTIONS.filter((x) => x.avenueId === a.id);
       for (let y = a.y0 * T; y < a.y1 * T; y += T) {
         if (TRAFFIC_ROADS.some((r) => y + T > (r.topRow - 1 - 3) * T && y < (r.topRow + 4 + 3) * T)) continue;
-        marks.rect(cx, y + 6, 2, 20).fill(YELLOW);
+        marks.rect(cx, y + 6, 2, 20).fill(WHITE);
       }
       for (const road of TRAFFIC_ROADS) {
         const northY = (road.topRow - 1) * T + 10; // vạch đi bộ qua đường dọc, bên bắc đường ngang

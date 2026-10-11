@@ -457,9 +457,17 @@ export function createPremiumTexture(key:string):HTMLCanvasElement|null{
  }else if(key==='tile_yellow_wall'){
    ctx.fillStyle='#E5B85C';ctx.fillRect(0,0,32,32);ctx.fillStyle='#FAF0C8';ctx.fillRect(0,0,32,3);ctx.fillStyle='#F2DC9B';ctx.fillRect(0,3,32,4);ctx.fillStyle='#CFA253';ctx.fillRect(0,7,32,2);ctx.fillStyle='#357F72';ctx.fillRect(0,23,32,2);ctx.fillStyle='#5C3617';ctx.fillRect(0,25,32,7);ctx.fillStyle='#825026';ctx.fillRect(0,25,32,1);
  }else if(key==='tile_street'){
-   ctx.fillStyle='#7E8895';ctx.fillRect(0,0,32,32);ctx.fillStyle='#6C7683';ctx.fillRect(5,6,3,1);ctx.fillRect(21,25,4,1);ctx.fillStyle='#98A2AF';ctx.fillRect(18,13,2,1);
+   ctx.fillStyle='#5E6670';ctx.fillRect(0,0,32,32);ctx.fillStyle='#545C66';for(const [x,y,w,h] of [[3,4,5,3],[19,9,6,2],[10,20,4,4],[24,24,5,3],[1,14,3,2]])ctx.fillRect(x,y,w,h);ctx.fillStyle='#6C747E';for(const [x,y] of [[14,3],[27,15],[6,27],[20,18],[11,11]])ctx.fillRect(x,y,2,1);ctx.fillStyle='#474E58';ctx.fillRect(8,14,1,1);ctx.fillRect(25,5,1,1);ctx.fillRect(16,29,1,1);
  }else{
-   ctx.fillStyle=key==='tile_sidewalk'?'#D2C39C':'#C6BA9A';ctx.fillRect(0,0,32,32);ctx.fillStyle='#AE9F78';ctx.fillRect(0,0,32,1);ctx.fillRect(0,0,1,32);ctx.fillRect(0,16,32,1);ctx.fillRect(16,0,1,32);ctx.fillStyle='#E2D6B4';ctx.fillRect(1,1,30,1);ctx.fillStyle='#A89A74';ctx.fillRect(7,11,2,1);ctx.fillRect(23,27,2,1);
+   if(key==='tile_sidewalk'){
+     // Vỉa hè lát phiến xám ấm 16 px, so le sáng/tối như ảnh tham chiếu.
+     ctx.fillStyle='#E2DED0';ctx.fillRect(0,0,32,32);ctx.fillStyle='#D3CFC0';ctx.fillRect(0,0,16,16);ctx.fillRect(16,16,16,16);
+     ctx.fillStyle='#B2AD9F';ctx.fillRect(0,0,32,1);ctx.fillRect(0,0,1,32);ctx.fillRect(0,16,32,1);ctx.fillRect(16,0,1,32);
+     ctx.fillStyle='#F2EFE4';ctx.fillRect(1,1,14,1);ctx.fillRect(17,1,14,1);ctx.fillRect(1,17,14,1);ctx.fillRect(17,17,14,1);
+     ctx.fillStyle='#ABA698';ctx.fillRect(6,9,2,1);ctx.fillRect(24,6,1,1);ctx.fillRect(10,25,2,1);ctx.fillRect(27,27,2,1);
+     return canvas;
+   }
+   ctx.fillStyle='#C6BA9A';ctx.fillRect(0,0,32,32);ctx.fillStyle='#AE9F78';ctx.fillRect(0,0,32,1);ctx.fillRect(0,0,1,32);ctx.fillRect(0,16,32,1);ctx.fillRect(16,0,1,32);ctx.fillStyle='#E2D6B4';ctx.fillRect(1,1,30,1);ctx.fillStyle='#A89A74';ctx.fillRect(7,11,2,1);ctx.fillRect(23,27,2,1);
  }
  return canvas;
 }

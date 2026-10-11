@@ -30,10 +30,14 @@ export function buildRoadSurface(layer: Container, widthTiles: number): RoadSurf
   const fixed = new Graphics();
   fixed.eventMode = 'none';
   // Bó vỉa sáng rồi rãnh thoát nước sẫm sát lòng đường.
-  fixed.rect(0, kerbY, widthPx, 3).fill({ color: 0xb9b2a0, alpha: 0.9 });
-  fixed.rect(0, kerbY + 3, widthPx, 6).fill({ color: 0x5d6a68, alpha: 0.55 });
+  fixed.rect(0, kerbY, widthPx, 3).fill({ color: 0x3d444d, alpha: 0.55 });
+  fixed.rect(0, kerbY - 9, widthPx, 9).fill(0xe6e2d4);
+  fixed.rect(0, kerbY - 9, widthPx, 1).fill(0xfbf9f1);
+  fixed.rect(0, kerbY - 5, widthPx, 1).fill({ color: 0xb4afa0, alpha: 0.35 });
+  fixed.rect(0, kerbY - 1, widthPx, 1).fill(0x8f8a7c);
+  fixed.rect(0, kerbY + 3, widthPx, 6).fill({ color: 0x4a5560, alpha: 0.4 });
   // Vạch phân làn giữa hai chiều, nét đứt.
-  for (let x = 0; x < widthTiles; x++) fixed.rect(x * TILE_SIZE + 6, centerY - 1, 20, 2).fill({ color: 0xf0d48a, alpha: 0.7 });
+  for (let x = 0; x < widthTiles; x++) fixed.rect(x * TILE_SIZE + 6, centerY - 1, 20, 2).fill({ color: 0xf4f1e6, alpha: 0.85 });
   // Cửa thu nước (song chắn) trong rãnh.
   for (const drain of STORM_DRAINS) {
     const gx = drain.tileX * TILE_SIZE + 8;
