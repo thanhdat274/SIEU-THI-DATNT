@@ -89,6 +89,7 @@ import {
   WEEKDAY_LABELS,
   SHOPKEEPER_POSITION,
   getSeasonForDay,
+  staffSpecialtyInfo,
   seasonDaysLeft,
   SPOILAGE_RULES,
   FORECAST_RULES,
@@ -1441,7 +1442,7 @@ export class GameSimulation {
   private counterfeitCashLoss(customer: CustomerState, checkoutId: string, saleTotal: number): number {
     const cashier = customer.cashierStaffId ? this.staff.find((staff) => staff.id === customer.cashierStaffId) : undefined;
     const outcome = assessCounterfeit(this.clock.getTime().day, checkoutId, saleTotal,
-      cashier ? { kind: 'staff', accuracy: cashier.accuracy } : { kind: 'player' });
+      cashier ? { kind: 'staff', accuracy: cashier.accuracy + (staffSpecialtyInfo(cashier)?.detectAccuracyBonus ?? 0) } : { kind: 'player' });
     if (!outcome.counterfeit) return 0;
     if (outcome.detected) {
       this.callbacks.onToast?.(`${cashier?.name ?? 'Bạn'} phát hiện tờ tiền giả ${outcome.faceValue.toLocaleString('vi-VN')} đ; khách đổi sang tiền hợp lệ.`, 'success');
@@ -2374,6 +2375,7 @@ export class GameSimulation {
       accuracy: candidate.accuracy,
       stamina: candidate.stamina,
       dailyWage: candidate.dailyWage,
+      specialty: candidate.specialty,
       hiredOnDay: this.clock.getTime().day,
       shift: 'full_day',
       position: candidate.role === 'cashier'
@@ -2545,7 +2547,7 @@ export class GameSimulation {
     if (!customer?.checkoutId) return false;
     member.currentCheckoutId = customer.checkoutId;
     this.customerManager.assignCashier(customer.checkoutId, staffId);
-    member.checkoutServiceRemaining = Math.max(0.6, 2.4 - member.accuracy * 0.15) * (1 - getSkillModifier(this.skills, 'cashier_speed')) * (1 - getSkillModifier(this.skills, 'staff_speed'));
+    member.checkoutServiceRemaining = Math.max(0.6, 2.4 - member.accuracy * 0.15) * (staffSpecialtyInfo(member)?.checkoutTimeFactor ?? 1) * (1 - getSkillModifier(this.skills, 'cashier_speed')) * (1 - getSkillModifier(this.skills, 'staff_speed'));
     return true;
   }
 
@@ -2615,7 +2617,7 @@ export class GameSimulation {
           const waypoint = diningTask.route[0];
           if (waypoint) {
             const dx = waypoint.x - position.x, dy = waypoint.y - position.y, distance = Math.hypot(dx, dy);
-            const step = Math.max(35, member.speed * 16) * (1 + getSkillModifier(this.skills, 'staff_speed')) * dt;
+            const step = Math.max(35, member.speed * 16) * (staffSpecialtyInfo(member)?.moveSpeedFactor ?? 1) * (1 + getSkillModifier(this.skills, 'staff_speed')) * dt;
             if (distance <= step) { member.position = { ...waypoint }; diningTask.route.shift(); }
             else if (distance > 0) member.position = { x: position.x + dx / distance * step, y: position.y + dy / distance * step };
           } else {
@@ -2649,7 +2651,7 @@ export class GameSimulation {
         const dx = waypoint.x - position.x;
         const dy = waypoint.y - position.y;
         const distance = Math.hypot(dx, dy);
-        const step = Math.max(35, member.speed * 16) * (1 + getSkillModifier(this.skills, 'staff_speed')) * Math.max(0, dt);
+        const step = Math.max(35, member.speed * 16) * (staffSpecialtyInfo(member)?.moveSpeedFactor ?? 1) * (1 + getSkillModifier(this.skills, 'staff_speed')) * Math.max(0, dt);
         if (distance <= step) {
           member.position = { ...waypoint };
           task.route.shift();
@@ -2830,7 +2832,7 @@ export class GameSimulation {
       const waypoint = route[0];
       if (!waypoint) { this.refillIdleRoutes.delete(member.id); choice.done = true; continue; }
       const dx = waypoint.x - position.x, dy = waypoint.y - position.y, distance = Math.hypot(dx, dy);
-      const step = Math.max(35, member.speed * 16) * (1 + getSkillModifier(this.skills, 'staff_speed')) * Math.max(0, dt);
+      const step = Math.max(35, member.speed * 16) * (staffSpecialtyInfo(member)?.moveSpeedFactor ?? 1) * (1 + getSkillModifier(this.skills, 'staff_speed')) * Math.max(0, dt);
       if (distance <= step) { member.position = { ...waypoint }; route.shift(); }
       else member.position = { x: position.x + dx / distance * step, y: position.y + dy / distance * step };
     }
@@ -2860,7 +2862,7 @@ export class GameSimulation {
       }
       const waypoint = patrol.route[0];
       const dx = waypoint.x - position.x, dy = waypoint.y - position.y, distance = Math.hypot(dx, dy);
-      const step = Math.max(35, member.speed * 12) * dt;
+      const step = Math.max(35, member.speed * 12) * (staffSpecialtyInfo(member)?.moveSpeedFactor ?? 1) * dt;
       if (distance <= step) {
         member.position = { ...waypoint };
         patrol.route.shift();
@@ -2966,7 +2968,7 @@ export class GameSimulation {
     const position = member.position ?? { ...WAREHOUSE_ENTRANCE };
     const dx = post.x - position.x, dy = post.y - position.y, distance = Math.hypot(dx, dy);
     if (distance < 0.5) return;
-    const step = Math.max(35, member.speed * 16) * (1 + getSkillModifier(this.skills, 'staff_speed')) * Math.max(0, dt);
+    const step = Math.max(35, member.speed * 16) * (staffSpecialtyInfo(member)?.moveSpeedFactor ?? 1) * (1 + getSkillModifier(this.skills, 'staff_speed')) * Math.max(0, dt);
     member.position = distance <= step || distance > 12 * TILE_SIZE
       ? { ...post }
       : { x: position.x + dx / distance * step, y: position.y + dy / distance * step };
@@ -3949,7 +3951,7 @@ export class GameSimulation {
       const dx = waypoint.x - position.x;
       const dy = waypoint.y - position.y;
       const distance = Math.hypot(dx, dy);
-      const step = Math.max(35, member.speed * 16) * (1 + getSkillModifier(this.skills, 'staff_speed')) * dt;
+      const step = Math.max(35, member.speed * 16) * (staffSpecialtyInfo(member)?.moveSpeedFactor ?? 1) * (1 + getSkillModifier(this.skills, 'staff_speed')) * dt;
 
       if (distance <= step) {
         member.position = { ...waypoint };

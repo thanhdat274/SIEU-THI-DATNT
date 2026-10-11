@@ -3,6 +3,7 @@ import { Application, Container, RenderTexture, Sprite, Graphics, Text, TextStyl
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
 import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, weekdayOf, hashSeed, type WeatherVisualState, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
+import { loadSpriteAtlases } from './sprite-atlas';
 import { PixelCamera } from './camera';
 import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
 import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, parcelTrafficMultiplier, type LandParcel} from '@game/data';
@@ -220,6 +221,7 @@ export class PixiGameViewport {
     });
 
     this.camera.setViewportSize(this.app.screen.width, this.app.screen.height);
+    await loadSpriteAtlases(); // spritesheet PNG ghi đè hình vẽ bằng code; phải xong trước khi dựng cảnh vì texture được cache theo khóa
     void loadWeatherSprites(); // sprite ô/áo mưa: nạp nền, chưa xong thì chưa vẽ đồ che
 
     // Build Scene Graph
@@ -1268,6 +1270,19 @@ export class PixiGameViewport {
       this.entitiesLayer.addChild(text);
       this.decorSprites.push(text);
     });
+    // Trang trí ngoài phố: biểu tượng lễ hội treo trên đỉnh cột đèn, xen kẽ hai món của mùa.
+    if (seasonal.length > 0) {
+      STREET_LAMP_TILES.forEach((lamp, index) => {
+        const item = seasonal[index % seasonal.length];
+        const text = new Text({ text: item.icon, style: new TextStyle({ fontSize: 18 }) });
+        text.anchor.set(0.5);
+        text.x = lamp.x * TILE_SIZE + TILE_SIZE / 2;
+        text.y = (lamp.y - 0.7) * TILE_SIZE;
+        text.zIndex = (lamp.y + 1) * TILE_SIZE + 40;
+        this.entitiesLayer.addChild(text);
+        this.decorSprites.push(text);
+      });
+    }
   }
 
   /** Thêm sprite cho nội thất mới mua / lấy lại, và bỏ sprite của nội thất đã cất (trước đây chỉ dựng một lần lúc vào game). */

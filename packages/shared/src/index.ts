@@ -823,6 +823,9 @@ export const STAFF_SHIFTS: Record<StaffShift, ShiftConfig> = {
   full_day: { id: 'full_day', name: 'Cả ngày (06:00 - 22:00)', startHour: 6, endHour: 22, wageMultiplier: 1.0 },
 };
 
+/** Chuyên môn riêng của nhân viên (tuỳ chọn; nhân viên cũ trong save không có). */
+export type StaffSpecialty = 'quick_hands' | 'sharp_eye' | 'swift_legs' | 'patrol_ace';
+
 export interface StaffMember {
   id: string;
   name: string;
@@ -833,6 +836,7 @@ export interface StaffMember {
   dailyWage: number;
   hiredOnDay: number;
   shift: StaffShift;
+  specialty?: StaffSpecialty;
   assignedFixtureId?: string;
   assignedBuilding?: StaffBuilding; /** Tòa nhà nhân viên phụ trách (undefined = tất cả). */
   position?: Vector2D;
@@ -884,6 +888,7 @@ export interface StaffCandidate {
   stamina: number;
   dailyWage: number;
   hiringFee: number;
+  specialty?: StaffSpecialty;
   assignedBuilding?: StaffBuilding; /** Tòa nhà đề xuất nhân viên này phụ trách. */
 }
 

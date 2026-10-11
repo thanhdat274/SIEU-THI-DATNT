@@ -9,6 +9,8 @@ import {
   CANDIDATE_NAMES,
   DEFAULT_HIRING_FEE,
   getMaxStaffSlots,
+  STAFF_SPECIALTIES,
+  STAFF_SPECIALTY_IDS,
 } from '@game/data';
 
 /** Mulberry32 PRNG for deterministic daily candidate generation */
@@ -88,6 +90,12 @@ export function generateCandidatesForDay(day: number, count = 3): StaffCandidate
       assignedBuilding = rng.pick(['main', 'xoi'] as StaffBuilding[]);
     }
 
+    // Chuyên môn dùng RNG riêng để không làm lệch chuỗi ứng viên cũ; khoảng 45% ứng viên có chuyên môn hợp vai trò.
+    const specialtyRng = new Mulberry32Rng(daySeed(day * 31 + i, 0x5bec));
+    const options = STAFF_SPECIALTY_IDS.filter(id => STAFF_SPECIALTIES[id].roles.includes(role));
+    const specialty = options.length > 0 && specialtyRng.next() < 0.45 ? specialtyRng.pick(options) : undefined;
+    const finalWage = specialty ? dailyWage + STAFF_SPECIALTIES[specialty].wageBonus : dailyWage;
+
     candidates.push({
       id: `cand_d${day}_${i + 1}`,
       name: namePool[i % namePool.length],
@@ -95,8 +103,9 @@ export function generateCandidatesForDay(day: number, count = 3): StaffCandidate
       speed,
       accuracy,
       stamina,
-      dailyWage,
+      dailyWage: finalWage,
       hiringFee: DEFAULT_HIRING_FEE,
+      specialty,
       assignedBuilding,
     });
   }
