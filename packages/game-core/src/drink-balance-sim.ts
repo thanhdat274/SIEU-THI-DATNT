@@ -5,7 +5,7 @@
  * Chạy: yarn --ignore-engines workspace @game/core tsx src/drink-balance-sim.ts   (DRINK_SEEDS, DRINK_DAYS, DRINK_PLOTS tùy chọn)
  */
 import { isSalesFixture, type SaveGameData } from '@game/shared';
-import { DEFAULT_INITIAL_SAVE, DRINK_PLOT_ID, DRINK_TRAFFIC_SHARE, PRODUCT_MAP, generateStarterTileMap, type LandParcel } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, DRINK_PLOT_ID, DRINK_TRAFFIC_SHARE, PRODUCT_MAP, generateStarterTileMap, resolveParcel, type LandParcel } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { createMarketState } from './market';
@@ -84,14 +84,16 @@ console.log(extraNet > 0 ? `Lãi ròng tăng thêm ≈ ${vnd(extraNet)} ₫/ngà
 
 /** D5 (open-world-land-reclamation): khách theo vị trí LÔ — so ba vị trí (spec "Location value"). */
 export function compareDrinkPositions(): Array<{ label: string; multiplier: number; effectiveShare: number }> {
-  // Lô W1..W4 chưa đặt được tòa THẬT (chưa vào PARCEL_MAP, chưa renderer) nên đây là TÍNH THUẦN trên lô tổng hợp
-  // (LandParcel chế với frontageRoadId/corner) qua `effectiveSecondaryBuildingTrafficShare` — chứng minh TỈ LỆ cân bằng, số PROVISIONAL.
-  const synthetic = (id: string, frontageRoadId: string, corner: boolean): LandParcel =>
-    ({ id, rect: { x0: 42, x1: 47, y0: 8, y1: 12 }, wave: 1, frontageRoadId, frontage: { corner } });
+  // Lô THẬT (W1 góc ngã tư, W1 mặt đường chính, W2 mặt đường nam — `resolveParcel`); số PROVISIONAL.
+  const lot = (id: string): LandParcel => {
+    const parcel = resolveParcel(id);
+    if (!parcel) throw new Error(`lô ${id} chưa có trong game-data`);
+    return parcel;
+  };
   const rows = [
-    { label: 'Góc ngã tư đường CHÍNH', parcel: synthetic('sim-drink-corner-main', 'main', true) },
-    { label: 'Mặt đường CHÍNH (W0)', parcel: synthetic('sim-drink-face-main', 'main', false) },
-    { label: 'Mặt đường NAM', parcel: synthetic('sim-drink-face-south', 'south', false) },
+    { label: 'Góc ngã tư đường CHÍNH (w1-corner)', parcel: lot('w1-corner') },
+    { label: 'Mặt đường CHÍNH (w1-east)', parcel: lot('w1-east') },
+    { label: 'Mặt đường NAM (w2-1)', parcel: lot('w2-1') },
   ];
   return rows.map(({ label, parcel }) => {
     const multiplier = effectiveSecondaryBuildingTrafficShare('drink', parcel) / DRINK_TRAFFIC_SHARE;

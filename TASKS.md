@@ -1,3 +1,11 @@
+## Khai hoang — nốt mục "còn hoãn" (11/10/2026)
+
+- [x] **W4 cần W1/W3 đã mở để có đường nối** (`connectedVia`, `reclaimWaveAllowed` → `not_connected`). Đo lại bằng BFS: W2 KHÔNG nối được W4, ghi chú cũ sai. Test `reclamation.test.ts` + `reclamation-data.test.ts` PASS (game-core 112/0).
+- [x] **Bảng Thành phố + minimap phản ánh tòa đã đặt:** lô có tòa hiện "🏪 Có tòa: <tên>"; minimap vẽ lô W1–W4 (trước chỉ 4 lô W0) và tô lô có tòa. Kiểm trình duyệt dev desktop + đo pixel canvas.
+- [x] **Balance-sim sang lô thật:** `drink-balance-sim.ts`, `xoi-balance-sim.ts` dùng `resolveParcel` (w1-corner/w1-east/w2-1); thứ tự góc > mặt chính > đường nam đúng. `snack-balance-sim.ts` không có so sánh vị trí lô.
+- [x] **Verify:** typecheck PASS; `yarn --cwd apps/server test:coop` PASS (Mongo thật); `apps/web` test PASS; eslint 0 lỗi (file đã sửa).
+- [ ] **Chưa làm (cần chủ dự án / máy thật):** chỉnh hạ tầng W1/W2 theo ảnh overlay (task 0.2, ảnh không có trong repo); qua ngã tư W0↔W1 bằng nhân vật; mobile/cảm ứng thật (568×320 chỉ giả lập); co-op hai trình duyệt.
+
 # BẢNG THEO DÕI CÔNG VIỆC (TASKS PROGRESS)
 
 ## 4 yêu cầu chủ dự án: lời chê truyền miệng, sự kiện thành phố, giá gợi ý (LÕI THUẦN đã làm + verify); chain DEFER (07/10/2026)

@@ -1,3 +1,23 @@
+# Khai hoang: W4 cần đường nối, bảng Thành phố/minimap hiện lô có tòa, sim cân bằng dùng lô thật (11/10/2026)
+- **Vấn đề (mục "còn hoãn" sau `open-world-new-parcel-buildings`):** (a) W4 chỉ có khách khi đã mở đợt nối; (b) `drink/xoi-balance-sim.ts` còn so vị trí trên lô tổng hợp; (c) bảng Thành phố và minimap chưa phản ánh tòa đã đặt; (d) hạ tầng W1/W2 theo ảnh, mobile, co-op, qua ngã tư.
+- **Đo lại (BFS trên lưới va chạm của `generateTileMapForWaves`, từ mép đi bộ y=12 tới hàng vỉa hè trước lô W4):** `w0+w4` ✗, `w0+w2+w4` ✗, `w0+w1+w4` ✓, `w0+w3+w4` ✓. **Ghi chú cũ "W4 có khách khi mở W1/W3 hoặc W2" SAI ở W2:** W2 (x0..35) và W4 (x42..76) cách nhau dải x36..41 chưa thuộc đợt nào (void) nên W2 không nối được W4.
+- **Đã làm (có code):**
+  - Luật nối: `game-data/src/world/waves.ts` thêm `ReclamationWave.connectedVia` (W4 = `['w1','w3']`); `game-core/src/reclamation.ts` `reclaimWaveAllowed` trả `not_connected` khi chưa mở đợt nối. Test: `reclamation.test.ts` (ca W4 với W0/W2/W1/W3) và `reclamation-data.test.ts` (BFS khớp luật với 4 tổ hợp).
+  - Bảng Thành phố (`apps/web/src/components/CityModal.tsx`): W4 khóa hiện "🔒 Cần mở Đợt 1 hoặc Đợt 3 trước (đường nối)", nút "Chưa nối đường"; lô đã mua hiện "🏪 Có tòa: <tên>" hoặc "Đất trống — chưa đặt tòa". Nguồn: `occupiedParcelBuildings` (`reclamation.ts`) qua `simulation.getOccupiedParcelBuildings()` → `App.tsx`.
+  - Minimap (`MiniMap.tsx`, snapshot `built` trong `packages/game-renderer/src/viewport.ts`): trước đây chỉ vẽ viền 4 lô W0 (`LAND_PARCELS`) nên lô W1–W4 đã mua KHÔNG hiện; nay vẽ `ALL_PARCELS`, lô có tòa tô cam đặc.
+  - Sim cân bằng: `drink-balance-sim.ts`/`xoi-balance-sim.ts` (`compare*Positions`) chuyển từ lô tổng hợp sang lô thật (`resolveParcel`: `w1-corner`, `w1-east`, `w2-1`). Chạy thật: quán nước 1.25 / 1 / 0.75, tiệm xôi 1.25 / 1 / 0.75, đúng thứ tự góc > mặt chính > đường nam. `snack-balance-sim.ts` không có so sánh vị trí lô nên không đổi.
+- **Kiểm chứng (chạy thật, 11/10/2026):**
+  - `yarn typecheck` PASS (10.19s). `packages/game-core` test-runner: **112 pass / 0 fail**. `apps/web` test PASS. `yarn --cwd apps/server test:coop` **PASS** (Mongo thật; gồm reclaim_wave/buy_parcel/buy_plot trên lô đợt mới). Eslint 5 file đã sửa: 0 lỗi (còn warning có sẵn ở file khác). `git diff --check` sạch.
+  - Trình duyệt dev, desktop: lúc chưa mở W1/W3, W4 hiện khóa đúng lý do; sau khi mở W1, mua `w1-corner` và đặt quán nước (`building-drink`): bảng hiện "🏪 Có tòa: Quán nước", `w1-east` còn "Mua 864.000 ₫"; minimap có 341 px cam (đo pixel canvas, không đo bằng mắt vì 132×88 quá nhỏ). Giả lập 568×320: bảng Thành phố không tràn ngang (scrollWidth = clientWidth).
+- **Còn thiếu / chưa kiểm:**
+  - Hạ tầng W1/W2 theo ảnh overlay (task 0.2): CHƯA chỉnh. Ảnh chủ dự án gửi không có trong repo nên không đối chiếu được. Đối chiếu số liệu: vỉa hè W1/W3 (hàng 11–12) và lô (hàng 3..10) không chồng nhau; W2/W4 vỉa hè hàng 24, lô 16..23.
+  - Qua ngã tư W0↔W1: CHƯA đi bằng nhân vật trong trình duyệt. Chỉ BFS trên lưới va chạm: w0+w1 nối được tới `w1-corner`/`w1-east`.
+  - Mobile/cảm ứng thật: CHƯA (chỉ giả lập). Nút "Mua 864.000 ₫" cao 36px khi giả lập không cảm ứng (ngưỡng 44px áp khi `pointer: coarse`), cần kiểm trên máy thật.
+  - Co-op hai trình duyệt: CHƯA. `test:coop` chỉ kiểm controller + Mongo trong một tiến trình.
+  - Lô W1–W4 vẫn PROVISIONAL (rect chưa chốt bằng ảnh, task 0.2).
+- **Không commit, không push.**
+
+
 # Kéo camera tới toàn khu phố (11/10/2026)
 - **Vấn đề:** kéo bản đồ không trôi ra ngoài vùng tiệm/đợt đang mở; chỉ xem được ô đất đang mở.
 - **Nguyên nhân:** giới hạn camera `setPlayBounds` trong `refreshCameraBounds()` (`viewport.ts`) dùng hộp vùng chơi + lề 8 ô và kẹp theo đợt khai hoang kế tiếp (`camera.ts` `clampToBounds`).
@@ -1935,3 +1955,4 @@ Chỉ ghi PASS khi đã đo/chụp thật trong Browser pane (giả lập viewpo
 | 2026-10-11 | Test server `buy_plot` trên lô đợt mới (`coop-commands.test.ts`, chạy THẬT với Mongo local, PASS) + LỖI THẬT đã sửa: `apps/server/src/bootstrap.ts` gọi `placementsProblem` không truyền `ownedParcelIds` → mọi `buy_plot` lên lô W1–W4 bị từ chối `parcel_not_owned`. Sửa số giá `w1-corner` trong test cũ (1.536.000). Cũng PASS: `test:unit`, `test:worlds`, `test:gateway`. |
 
 | 2026-10-11 | ARCHIVE `open-world-new-parcel-buildings` → `openspec/changes/archive/2026-10-11-open-world-new-parcel-buildings` (không đồng bộ main specs: thư mục `openspec/specs` trống theo thực tế dự án). typecheck/test 111-0/build/`test:coop` PASS. Hoãn (ghi trong tasks.md của change): ảnh chụp chỉnh hạ tầng W1/W2 (0.2), balance-sim sang lô thật (2.3), minimap/Thành phố phản ánh tòa (4.2), mobile/cảm ứng, co-op hai trình duyệt. |
+| 2026-10-11 | Khai hoang: W4 cần W1/W3 nối đường (`connectedVia`, BFS đo lại: W2 KHÔNG nối W4 — ghi chú cũ sai); bảng Thành phố hiện khóa W4 + tòa trên lô; minimap vẽ lô W1–W4 (trước chỉ 4 lô W0) và tô lô có tòa; drink/xoi-balance-sim dùng lô thật. typecheck PASS, game-core 112/0, `test:coop` PASS (Mongo thật), web test PASS, trình duyệt dev desktop kiểm khóa W4/tòa/minimap. Chưa: hạ tầng theo ảnh 0.2, qua ngã tư bằng nhân vật, mobile thật, co-op 2 trình duyệt. |

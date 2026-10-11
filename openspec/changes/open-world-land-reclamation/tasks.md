@@ -53,4 +53,5 @@ Trạng thái 07/10/2026: đã có code nối simulation + server replay (teamma
  - Đêm + mưa bão ở khu W1/W2: ĐẠT bằng mắt (ảnh chụp, biển lô/rào thi công vẫn thấy rõ); không có lỗi console mới (lỗi 404/500 Vite CSS cũ do sửa file song song).
  - FPS: xem 4.1 (3–5 ms/khung).
  - Mobile/cảm ứng, co-op/online, server thật: CHƯA kiểm (cần thiết bị/môi trường của chủ dự án).)**
+ - **(11/10/2026, vòng 2):** W4 yêu cầu W1/W3 đã mở để có đường nối (`connectedVia`; BFS đo: W2 không nối W4). Bảng Thành phố hiện tòa trên lô + khóa W4 có lý do; minimap vẽ lô W1–W4 và tô lô có tòa (kiểm trình duyệt + pixel canvas); drink/xoi-balance-sim dùng lô thật. Vẫn CHƯA: hạ tầng theo ảnh 0.2, qua ngã tư bằng nhân vật, mobile/cảm ứng thật, co-op hai trình duyệt.
 - [x] 5.3 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`. **(11/10/2026: đã đồng bộ các tiến độ tới thời điểm này; cần cập nhật lại sau khi 5.2 QA xong.)**

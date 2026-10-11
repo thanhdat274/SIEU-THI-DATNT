@@ -2582,7 +2582,7 @@ export class PixiGameViewport {
 
   /** Zoom đích (mức người chơi đang chọn); zoom hiển thị có thể còn đang trượt tới đó. */
   /** Ảnh chụp cho minimap (ô thế giới): hộp camera đang nhìn, vị trí người chơi, bản đồ chơi và đợt/lô đã mở. */
-  public getMinimapSnapshot(): { view: { x0: number; y0: number; x1: number; y1: number }; player: { x: number; y: number }; map: { x0: number; y0: number; x1: number; y1: number }; openedWaves: readonly string[]; owned: readonly string[] } {
+  public getMinimapSnapshot(): { view: { x0: number; y0: number; x1: number; y1: number }; player: { x: number; y: number }; map: { x0: number; y0: number; x1: number; y1: number }; openedWaves: readonly string[]; owned: readonly string[]; built: Readonly<Record<string, string>> } {
     const c = this.camera;
     const T = TILE_SIZE;
     const vs = c.viewSize();
@@ -2595,6 +2595,7 @@ export class PixiGameViewport {
       map: { x0: ox, y0: oy, x1: ox + this.tileMap.width, y1: oy + this.tileMap.height },
       openedWaves: this.simulation.getWorldOpenState().openedWaves,
       owned: this.simulation.getOwnedParcelIds(),
+      built: this.simulation.getOccupiedParcelBuildings(),
     };
   }
 

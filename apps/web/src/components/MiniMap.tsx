@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { LAND_PARCELS, RECLAMATION_WAVES, WORLD_BOUNDS } from '@game/data';
+import { ALL_PARCELS, RECLAMATION_WAVES, WORLD_BOUNDS } from '@game/data';
 
 type Snapshot = ReturnType<import('@game/renderer').PixiGameViewport['getMinimapSnapshot']>;
 
@@ -43,9 +43,14 @@ export function MiniMap({ getSnapshot }: { getSnapshot: () => Snapshot | null })
       }
       ctx.strokeStyle = 'rgba(224, 128, 48, 0.95)';
       ctx.lineWidth = 1;
-      for (const parcel of LAND_PARCELS) {
+      // Lô đã mua: viền cam; lô đã có tòa: tô đặc (W0 + lô khai hoang W1–W4 đều vẽ, không chỉ 4 lô gốc).
+      for (const parcel of ALL_PARCELS) {
         if (!snap.owned.includes(parcel.id)) continue;
         const r = parcel.rect;
+        if (snap.built[parcel.id]) {
+          ctx.fillStyle = 'rgba(224, 128, 48, 0.85)';
+          ctx.fillRect(px(r.x0), py(r.y0), (r.x1 - r.x0 + 1) * k, (r.y1 - r.y0 + 1) * k);
+        }
         ctx.strokeRect(px(r.x0) + 0.5, py(r.y0) + 0.5, (r.x1 - r.x0 + 1) * k - 1, (r.y1 - r.y0 + 1) * k - 1);
       }
       ctx.strokeStyle = '#ffffff';

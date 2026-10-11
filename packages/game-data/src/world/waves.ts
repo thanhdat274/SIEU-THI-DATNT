@@ -30,6 +30,11 @@ export interface ReclamationWave {
   constructionDays: number;
   /** Các lô mới của đợt — tạm để trống cho tới khi chốt ảnh (task 0.2). */
   parcels: ReclamationParcel[];
+  /**
+   * Đợt phải có ÍT NHẤT MỘT trong các đợt này đã mở thì mới có đường đi bộ nối tới đợt (đo bằng BFS trên
+   * `generateTileMapForWaves`, xem test `reclamation-data.test.ts`). Thiếu = đợt mở nhưng khách không tới được.
+   */
+  connectedVia?: readonly string[];
 }
 
 export const RECONSTRUCTION_DAYS = 2;
@@ -55,7 +60,8 @@ export const RECLAMATION_WAVES: readonly ReclamationWave[] = [
     { id: 'w3-2', rect: { x0: 71, x1: 76, y0: 3, y1: 10 } },
   ] },
   // W4 Nam đông (D1): 4 lô mặt đường phía nam; lô `w4-corner` (x 42..47) là góc ngã tư đường nam (D5).
-  { id: 'w4', region: { x0: 42, x1: 76, y0: 16, y1: 25 }, frontageRoadId: 'south', unlockLevel: 50, cost: 3_000_000, constructionDays: RECONSTRUCTION_DAYS, parcels: [
+  // W4 cần W1 hoặc W3 đã mở để có đường nối (dải x36..41 giữa W2 và W4 chưa thuộc đợt nào → void; BFS đo: w0+w4, w0+w2+w4 không tới lô W4).
+  { id: 'w4', region: { x0: 42, x1: 76, y0: 16, y1: 25 }, frontageRoadId: 'south', unlockLevel: 50, cost: 3_000_000, constructionDays: RECONSTRUCTION_DAYS, connectedVia: ['w1', 'w3'], parcels: [
     { id: 'w4-corner', rect: { x0: 42, x1: 51, y0: 16, y1: 23 }, corner: true },
     { id: 'w4-2', rect: { x0: 52, x1: 59, y0: 16, y1: 23 } },
     { id: 'w4-3', rect: { x0: 60, x1: 67, y0: 16, y1: 23 } },

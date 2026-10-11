@@ -176,7 +176,7 @@ import { QuestManager } from './quest-manager';
 import { BUILDING_MAP, chilledDisplayAppeal, fridgeShelfLifeBonus, isChilledDisplayItem, refrigerationAccepts } from '@game/data';
 import { DailyRoutineSystem, HOME_DOOR_TILE, type DailyRoutineState, type InventorySummary, type RoutineTickOutput } from './daily-routine';
 import { CoopRoutineSystem, type CoopPlayerRoutineConfig, type CoopRoutineTickInput, type CoopRoutineTickOutput } from './coop-routine';
-import { reclaimWaveAllowed, startReclaimWave, buyParcelAllowed, customerTrafficMultiplier } from './reclamation';
+import { reclaimWaveAllowed, startReclaimWave, buyParcelAllowed, customerTrafficMultiplier, occupiedParcelBuildings } from './reclamation';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
@@ -708,6 +708,8 @@ export class GameSimulation {
   private buildTileMap(): GameTileMap { return generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned, this.buildingPlacements, this.worldOpenState.openedWaves); }
   public getWorldOpenState(): WorldOpenState { return structuredClone(this.worldOpenState); }
   public getOwnedParcelIds(): string[] { return [...this.ownedParcelIds]; }
+  /** Lô đã có tòa → id loại tòa (minimap và bảng Thành phố hiện lô đã dùng). */
+  public getOccupiedParcelBuildings(): Record<string, string> { return occupiedParcelBuildings(this.buildingPlacements); }
   public getOpenedWaves(): string[] { return [...this.worldOpenState.openedWaves]; }
   public getDecorOwned(): string[] { return [...this.decorOwned]; }
   /** Điểm thu hút từ trang trí và hệ số khách tương ứng. */

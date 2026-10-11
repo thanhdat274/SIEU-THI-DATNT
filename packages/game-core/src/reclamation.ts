@@ -70,6 +70,15 @@ export function resolveLandParcel(parcelId: string): LandParcel | undefined {
 }
 
 // ==========================================
+/** Lô → id loại tòa đặt trên đó (tòa chính + lô mở rộng D7b). Thuần; lô không có tòa thì không có khóa. */
+export function occupiedParcelBuildings(placements: ReadonlyArray<{ buildingId: string; parcelId: string; parcelIds?: readonly string[] }> | undefined): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const placement of placements ?? []) {
+    for (const parcelId of [placement.parcelId, ...(placement.parcelIds ?? [])]) out[parcelId] = placement.buildingId;
+  }
+  return out;
+}
+
 // 1) reclaimWaveAllowed: điều kiện mở đợt (cấp + tiền) nhưng CHƯA tính vào thi công
 // ==========================================
 
@@ -79,6 +88,7 @@ export function reclaimWaveAllowed(state: ReclaimState, waveId: string): { ok: b
   if (state.openedWaves.includes(waveId)) return { ok: false, reason: 'already_open' };
   const completion = state.wavesUnderConstruction[waveId];
   if (completion !== undefined && state.day < completion) return { ok: false, reason: 'under_construction' };
+  if (wave.connectedVia && !wave.connectedVia.some(id => state.openedWaves.includes(id))) return { ok: false, reason: 'not_connected' };
   if (state.level < wave.unlockLevel) return { ok: false, reason: 'not_enough_level' };
   if (state.money < wave.cost) return { ok: false, reason: 'not_enough_money' };
   return { ok: true };

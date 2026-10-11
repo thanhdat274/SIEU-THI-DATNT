@@ -69,6 +69,13 @@ export function runReclamationTests(): void {
     it('từ chối đợt không tồn tại', () => {
       assert.deepEqual(reclaimWaveAllowed(baseState(), 'w99'), { ok: false, reason: 'unknown_wave' });
     });
+    it('W4 cần W1 hoặc W3 đã mở để có đường nối (W2 không đủ — dải x36..41 còn void)', () => {
+      assert.deepEqual(reclaimWaveAllowed(baseState(), 'w4'), { ok: false, reason: 'not_connected' });
+      const onlyW2 = { ...baseState(), openedWaves: ['w0', 'w2'] };
+      assert.deepEqual(reclaimWaveAllowed(onlyW2, 'w4'), { ok: false, reason: 'not_connected' });
+      assert.deepEqual(reclaimWaveAllowed({ ...baseState(), openedWaves: ['w0', 'w1'] }, 'w4'), { ok: true });
+      assert.deepEqual(reclaimWaveAllowed({ ...baseState(), openedWaves: ['w0', 'w3'] }, 'w4'), { ok: true });
+    });
   });
 
   describe('startReclaimWave + isWaveConstructing', () => {
