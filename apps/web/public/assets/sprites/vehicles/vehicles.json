@@ -1,0 +1,102 @@
+{
+ "image": "vehicles.png",
+ "resolution": 1,
+ "frames": {
+  "vehicle_minibus_0_right": {
+   "x": 0,
+   "y": 0,
+   "w": 135,
+   "h": 63
+  },
+  "vehicle_minibus_0_left": {
+   "x": 137,
+   "y": 0,
+   "w": 135,
+   "h": 63
+  },
+  "vehicle_minibus_1_right": {
+   "x": 274,
+   "y": 0,
+   "w": 138,
+   "h": 63
+  },
+  "vehicle_minibus_1_left": {
+   "x": 0,
+   "y": 65,
+   "w": 138,
+   "h": 63
+  },
+  "vehicle_minibus_2_right": {
+   "x": 140,
+   "y": 65,
+   "w": 105,
+   "h": 57
+  },
+  "vehicle_minibus_2_left": {
+   "x": 247,
+   "y": 65,
+   "w": 105,
+   "h": 57
+  },
+  "vehicle_minibus_3_right": {
+   "x": 354,
+   "y": 65,
+   "w": 99,
+   "h": 51
+  },
+  "vehicle_minibus_3_left": {
+   "x": 0,
+   "y": 130,
+   "w": 99,
+   "h": 51
+  },
+  "truck_dry_goods_right": {
+   "x": 101,
+   "y": 130,
+   "w": 177,
+   "h": 72
+  },
+  "truck_dry_goods_left": {
+   "x": 280,
+   "y": 130,
+   "w": 177,
+   "h": 72
+  },
+  "truck_beverage_sweets_right": {
+   "x": 0,
+   "y": 204,
+   "w": 111,
+   "h": 63
+  },
+  "truck_beverage_sweets_left": {
+   "x": 113,
+   "y": 204,
+   "w": 111,
+   "h": 63
+  },
+  "truck_refrigerated_right": {
+   "x": 226,
+   "y": 204,
+   "w": 132,
+   "h": 72
+  },
+  "truck_refrigerated_left": {
+   "x": 360,
+   "y": 204,
+   "w": 132,
+   "h": 72
+  },
+  "truck_fresh_produce_right": {
+   "x": 0,
+   "y": 278,
+   "w": 111,
+   "h": 51
+  },
+  "truck_fresh_produce_left": {
+   "x": 113,
+   "y": 278,
+   "w": 111,
+   "h": 51
+  }
+ }
+}

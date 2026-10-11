@@ -38,8 +38,8 @@ const VEHICLE_LIGHTS: Record<VehicleLightSource['type'], { front: number; rear: 
   car: { front: 35, rear: 35, headY: 15, tailY: 15, beam: 62, spread: 28, power: 1 },  // xe Kenney 72×48: đèn pha ở mép đầu xe, cao ~15 px so với mặt đường
   motorbike: { front: 27, rear: 29, headY: 29, tailY: 21, beam: 56, spread: 26, power: 0.85 },
   bicycle: { front: 30, rear: 28, headY: 28, tailY: 20, beam: 34, spread: 18, power: 0.4 },
-  minibus: { front: 94, rear: 94, headY: 27, tailY: 26, beam: 100, spread: 44, power: 1.1 },
-  truck: { front: 86, rear: 88, headY: 45, tailY: 30, beam: 120, spread: 54, power: 1.1 },
+  minibus: { front: 64, rear: 64, headY: 17, tailY: 17, beam: 80, spread: 34, power: 1 },
+  truck: { front: 86, rear: 86, headY: 18, tailY: 18, beam: 100, spread: 40, power: 1.1 },
 };
 
 const T = TILE_SIZE;
