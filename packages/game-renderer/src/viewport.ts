@@ -1222,7 +1222,7 @@ export class PixiGameViewport {
       }
 
       // Người bán quầy phụ đứng sau quầy
-      const vendorSprite = new Sprite(this.textures.getTexture('npc_1_down_idle_0'));
+      const vendorSprite = new Sprite(this.textures.getTexture(`npc_${walkerLook(this.vendorSprites.length + 5)}_down_idle_0`));
       vendorSprite.anchor.set(0.5, 1);
       const gear = new RainGear();
       const vendor = new Container();
@@ -1741,7 +1741,7 @@ export class PixiGameViewport {
       let entry = this.workerSprites.get(worker.id);
       if (!entry) {
         const container = new Container();
-        const sprite = new Sprite(this.textures.getTexture(`npc_${idx % 3}_down_idle_0`));
+        const sprite = new Sprite(this.textures.getTexture(`npc_${walkerLook(idx + 3)}_down_idle_0`));
         sprite.anchor.set(0.5, 1);
         container.addChild(sprite);
         // Kiện hàng nhân viên bê (châm kệ): như nhân viên bốc dỡ ở bãi, ôm thùng trước ngực, mặc định ẩn.
@@ -1763,7 +1763,7 @@ export class PixiGameViewport {
         bubble.addChild(status);
         container.addChild(bubble);
         this.entitiesLayer.addChild(container);
-        entry = { container, sprite, box, bubble, status, lastPosition: null, variant: idx % 3, direction: 'down' };
+        entry = { container, sprite, box, bubble, status, lastPosition: null, variant: walkerLook(idx + 3), direction: 'down' };
         this.workerSprites.set(worker.id, entry);
       }
 
@@ -2363,7 +2363,7 @@ export class PixiGameViewport {
     if (ev.worker && (ev.phase === 'unloading' || ev.phase === 'loading')) {
       if (!this.logisticsWorkerContainer) {
         this.logisticsWorkerContainer = new Container();
-        this.logisticsWorkerSprite = new Sprite(this.textures.getTexture('npc_0_right_walk_0'));
+        this.logisticsWorkerSprite = new Sprite(this.textures.getTexture(`npc_${walkerLook(6)}_right_walk_0`));
         this.logisticsWorkerSprite.anchor.set(0.5, 1);
         this.logisticsWorkerContainer.addChild(this.logisticsWorkerSprite);
         this.logisticsBoxSprite = new Sprite(this.textures.getTexture('prop_cargo_carton'));
@@ -2376,7 +2376,7 @@ export class PixiGameViewport {
       const walkFrame = reducedMotion ? 0 : Math.floor(this.animTimer * 8) % 4;
       const dir = w.direction === 'right' ? 'right' : 'left';
       if (this.logisticsWorkerSprite) {
-        this.logisticsWorkerSprite.texture = this.textures.getTexture('npc_0_' + dir + '_walk_' + walkFrame);
+        this.logisticsWorkerSprite.texture = this.textures.getTexture(`npc_${walkerLook(6)}_${dir}_walk_${walkFrame}`);
       }
       this.logisticsWorkerContainer.position.set(Math.round(w.x), Math.round(w.y));
       // Đảm bảo nhân viên đứng ngoài cửa vẫn hiện phía trước sprite cửa chính.
