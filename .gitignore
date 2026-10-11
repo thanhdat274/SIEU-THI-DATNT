@@ -10,3 +10,5 @@ dist
 *-firebase-adminsdk-*.json
 bash.exe.stackdump
 .qa
+# Atlas nhân vật LimeZu (bản free, cấm thương mại/không phát tán): giữ cục bộ, sinh lại bằng tools/sprite-atlas/build-limezu-chars.py
+apps/web/public/assets/sprites/chars/

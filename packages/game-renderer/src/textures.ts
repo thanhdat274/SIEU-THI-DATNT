@@ -1,6 +1,7 @@
 import { Texture } from 'pixi.js';
 import { createPremiumTexture } from './premium-textures';
 import { createNeighborhoodTexture } from './neighborhood-textures';
+import { atlasTexture } from './sprite-atlas';
 
 /**
  * Procedural Pixel Art Generator for "Tiệm Tạp Hóa Đầu Hẻm"
@@ -21,9 +22,12 @@ function createCanvas(width: number, height: number): HTMLCanvasElement {
 
 export class PixelTextureFactory {
   private textures: Map<string, Texture> = new Map();
+  /** Khóa lấy từ atlas dùng chung toàn cục: không destroy khi factory hủy. */
+  private atlasKeys: Set<string> = new Set();
 
   public destroy(): void {
-    for (const texture of this.textures.values()) texture.destroy(true);
+    for (const [key, texture] of this.textures) if (!this.atlasKeys.has(key)) texture.destroy(true);
+    this.atlasKeys.clear();
     this.textures.clear();
   }
 
@@ -33,10 +37,15 @@ export class PixelTextureFactory {
   }
 
   public getTexture(key: string): Texture {
+    // `partner_*` (đối tác co-op) có ảnh riêng trong atlas; chưa có thì dùng chung hình người chơi như trước.
+    if (key.startsWith('partner_') && !atlasTexture(key)) key = `player_${key.slice('partner_'.length)}`;
     const existing = this.textures.get(key);
     if (existing) return existing;
 
-    const texture = this.generateTexture(key);
+    // Ưu tiên ảnh từ spritesheet (nếu có khung cùng khóa); không có thì vẽ bằng code như trước.
+    const fromAtlas = atlasTexture(key);
+    const texture = fromAtlas ?? this.generateTexture(key);
+    if (fromAtlas) this.atlasKeys.add(key);
     this.textures.set(key, texture);
     return texture;
   }

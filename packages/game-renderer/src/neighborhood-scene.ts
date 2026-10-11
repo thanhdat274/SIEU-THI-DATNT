@@ -5,6 +5,7 @@ import {
   TRAFFIC_ROADS, NEIGHBORHOOD_SIGNS, type NeighborhoodLot, type NeighborhoodQuality, type RoadDef,
 } from '@game/data';
 import type { PixelTextureFactory } from './textures';
+import { lampLift } from './sprite-atlas';
 import { houseLitWindows } from './neighborhood-textures';
 
 const T = 32;
@@ -477,7 +478,7 @@ export class NeighborhoodScene {
       const s = this.sprite(this.props, 'deco_lamp_pole', xt * T, yt * T + bottomOffset, 0, 3);
       const gl = new Sprite(glowTex);
       gl.anchor.set(0.5);
-      gl.position.set(xt * T + 16, yt * T + bottomOffset - 52);
+      gl.position.set(xt * T + 16, yt * T + bottomOffset - 52 - lampLift());
       gl.alpha = 0;
       this.lampGlows.push(gl);
       this.glow.addChild(gl);
@@ -488,7 +489,7 @@ export class NeighborhoodScene {
     for (const l of PARK_LAMPS) {
       const gl = new Sprite(glowTex);
       gl.anchor.set(0.5);
-      gl.position.set(l.x * T + 16, (l.y + 1) * T - 52);
+      gl.position.set(l.x * T + 16, (l.y + 1) * T - 52 - lampLift());
       gl.alpha = 0;
       this.lampGlows.push(gl);
       this.glow.addChild(gl);

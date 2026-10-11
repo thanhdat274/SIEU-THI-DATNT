@@ -1,5 +1,6 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { LightingState, lerpColor } from '@game/core';
+import { lampLift } from './sprite-atlas';
 import { GameTileMap, StoreFixture, TILE_SIZE, getFixtureDimensions, isWarehouseFixture } from '@game/shared';
 import { BUILDING_MAP, DRINK_BOUNDS, NEIGHBORHOOD_PX, SNACK_BOUNDS, STORE_BOUNDS, STREET_LAMP_TILES, WAREHOUSE_BOUNDS, XOI_BOUNDS, inMainExpansionZone } from '@game/data';
 
@@ -373,7 +374,7 @@ export class ShopLighting {
       for (const x of [door.x - 0.6, door.x + 2.6]) this.add(out, x * T, (this.snackBox.bottom + 0.05) * T, 1.1 * T, 1.1 * T, 0xffd9a0, 0.26);
       this.add(out, (door.x + 1) * T, (this.snackBox.bottom + 1.9) * T, 2.8 * T, 1.8 * T, 0xffdfa8, 0.30);
     }
-    for (const lamp of STREET_LAMP_TILES) this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 50, 3.1 * T, 3.1 * T, 0xffd98a, 0.75, 'street', 0.03);
+    for (const lamp of STREET_LAMP_TILES) this.add(out, lamp.x * T + 16, (lamp.y + 1) * T - 50 - lampLift(), 3.1 * T, 3.1 * T, 0xffd98a, 0.75, 'street', 0.03);
     // Nắng lọt qua cửa vào và cửa sổ (chỉ ban ngày); vệt nắng dịch theo giờ.
     this.sunPatch = this.add(out, (MAIN_DOOR.x + 1) * T, (STORE_BOUNDS.bottom - 1.4) * T, 1.9 * T, 1.5 * T, 0xffe9b0, 0.5, 'sun');
     this.add(out, (STORE_BOUNDS.left + 1.6) * T, (STORE_BOUNDS.top + 2.7) * T, 1.6 * T, 0.9 * T, 0xfff0c0, 0.35, 'sun');
