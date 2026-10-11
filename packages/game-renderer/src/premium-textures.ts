@@ -1214,45 +1214,45 @@ function vehicleTexture(key: string): HTMLCanvasElement | null {
       r(cx - half, cy + dy, half * 2 + 1, 1, col);
     }
   };
-  const chunkyWheel = (r: R4, cx: number, cy: number) => {
-    disc(r, cx, cy, 9, DARK);
-    // gai lốp nhô quanh bánh
-    for (const [dx, dy, w, h] of [[-1, -10, 2, 1], [-1, 10, 2, 1], [-10, -1, 1, 2], [10, -1, 1, 2], [6, -8, 2, 2], [-8, -8, 2, 2], [6, 7, 2, 2], [-8, 7, 2, 2]] as const) r(cx + dx, cy + dy, w, h, DARK);
-    disc(r, cx, cy, 7, '#3a3631');
-    disc(r, cx, cy, 6, '#eef1f3');
-    disc(r, cx, cy, 4, '#c8cdd2');
-    r(cx - 5, cy, 11, 1, '#9aa5ad'); r(cx, cy - 5, 1, 11, '#9aa5ad');
-    disc(r, cx, cy, 2, '#5d6368'); r(cx - 1, cy - 1, 2, 2, '#2c3e50');
-  };
-  // Vẽ xe (không người) với mặt đường ở y=58; r đã bao gồm độ lệch dọc. kind: 'cub' (xe số, hộp giao hàng) hoặc 'scooter'.
+  // Vẽ xe (không người) trực tiếp trên lưới thô 2×2 (toạ độ p = nửa toạ độ canvas), mặt đường ở y=58 px (29 ô). kind: 'cub' (xe số, hộp giao hàng) hoặc 'scooter'.
   const drawBike = (r: R4, kind: 'cub' | 'scooter', pal: Pal, box: boolean) => {
-    r(3, 56, 56, 4, '#26190e40'); r(8, 55, 46, 3, '#26190e25');
-    r(2, 47, 16, 3, '#6b7078'); r(2, 47, 16, 1, '#9aa0a6');                 // ống xả
-    chunkyWheel(r, 13, 49);
-    chunkyWheel(r, 47, 49);
+    const p: R4 = (x, y, w, h, c) => r(x * 2, y * 2, w * 2, h * 2, c);
+    const coarseDisc = (cx: number, cy: number, rad: number, col: string) => {
+      for (let dy = -rad; dy <= rad; dy++) {
+        const half = Math.round(Math.sqrt(rad * rad - dy * dy + 0.5));
+        p(cx - half, cy + dy, half * 2 + 1, 1, col);
+      }
+    };
+    const wheel = (cx: number, cy: number) => {
+      coarseDisc(cx, cy, 4, DARK); coarseDisc(cx, cy, 3, '#4a443d'); coarseDisc(cx, cy, 2, '#e6eaed'); coarseDisc(cx, cy, 1, '#8d969c');
+      p(cx, cy, 1, 1, '#2c3e50');
+    };
+    p(2, 28, 27, 2, '#26190e40');
+    p(1, 24, 8, 2, DARK); p(1, 24, 8, 1, '#9aa0a6');                                  // ống xả
+    wheel(7, 24); wheel(23, 24);
     if (kind === 'cub') {
-      r(2, 39, 22, 3, DARK); r(2, 39, 22, 1, pal.light); r(3, 40, 20, 1, pal.main);   // chắn bùn sau
-      r(14, 38, 26, 10, DARK); r(15, 39, 24, 8, pal.main); r(15, 39, 24, 2, pal.light); r(15, 44, 24, 3, pal.dark);
-      r(24, 45, 12, 6, '#4a4540'); r(25, 46, 10, 2, '#6b7078');                      // block máy
-      r(10, 34, 26, 5, DARK); r(11, 34, 24, 3, '#5a3a24'); r(11, 34, 24, 1, '#7a5436'); // yên
+      p(2, 19, 10, 2, DARK); p(2, 19, 10, 1, pal.light);                               // chắn bùn sau
+      p(7, 19, 13, 5, DARK); p(8, 20, 11, 3, pal.main); p(8, 20, 11, 1, pal.light); p(8, 22, 11, 1, pal.dark);
+      p(12, 23, 6, 2, '#4a4540'); p(13, 23, 4, 1, '#6b7078');                           // block máy
+      p(5, 17, 13, 2, DARK); p(5, 17, 12, 1, '#7a5436'); p(5, 18, 12, 1, '#5a3a24');   // yên
       if (box) {
-        r(2, 35, 24, 2, '#6b7078');                                                  // baga
-        r(3, 21, 22, 14, DARK); r(4, 22, 20, 12, '#d9b37b'); r(4, 22, 20, 3, '#ecd0a0'); r(4, 31, 20, 3, '#bf9a64');
-        r(12, 22, 3, 12, '#f0e8d8'); r(4, 27, 20, 2, '#f0e8d8');                     // băng keo
+        p(1, 16, 13, 1, '#6b7078');                                                     // baga
+        p(1, 9, 13, 7, DARK); p(2, 10, 11, 5, '#d9b37b'); p(2, 10, 11, 1, '#ecd0a0'); p(2, 14, 11, 1, '#bf9a64');
+        p(7, 10, 1, 5, '#f0e8d8'); p(2, 12, 11, 1, '#f0e8d8');                         // băng keo
       }
     } else {
-      r(3, 32, 25, 16, DARK); r(4, 33, 23, 14, pal.main); r(4, 33, 23, 3, pal.light); r(4, 44, 23, 3, pal.dark);
-      r(9, 38, 11, 3, '#cfd8dc'); r(9, 38, 11, 1, '#ffffff');                        // tấm ốp bên
-      r(5, 28, 25, 5, DARK); r(6, 28, 23, 3, '#2b3340'); r(6, 28, 23, 1, '#47536a');  // yên
-      r(27, 45, 18, 4, DARK); r(28, 45, 16, 2, '#8A5F3D');                           // sàn để chân
+      p(2, 15, 13, 9, DARK); p(3, 16, 11, 7, pal.main); p(3, 16, 11, 1, pal.light); p(3, 21, 11, 2, pal.dark);
+      p(5, 19, 5, 1, '#cfd8dc');                                                        // tấm ốp bên
+      p(2, 13, 14, 2, DARK); p(3, 13, 12, 1, '#47536a'); p(3, 14, 12, 1, '#2b3340');   // yên
+      p(14, 23, 9, 2, DARK); p(15, 23, 7, 1, '#8A5F3D');                                // sàn để chân
     }
-    // cổ + tấm chắn chân, phuộc, chắn bùn trước, ghi-đông, đèn
-    r(44, 26, 8, 22, DARK); r(45, 27, 6, 20, pal.main); r(45, 27, 2, 20, pal.light);
-    r(46, 40, 3, 10, '#8a9199');
-    r(42, 41, 15, 3, DARK); r(43, 41, 13, 2, pal.main);
-    r(42, 23, 13, 3, DARK); r(44, 20, 2, 3, DARK); r(42, 17, 7, 3, '#9aa0a6'); r(52, 23, 4, 3, '#2a2a2a');
-    r(53, 28, 7, 7, DARK); r(54, 29, 5, 5, '#ffe27a'); r(57, 30, 2, 2, '#ffffff');
-    r(1, 40, 3, 4, '#e74c3c'); r(1, 44, 3, 3, '#f4f4f4');
+    // cổ + phuộc, chắn bùn trước, ghi-đông, đèn pha, đèn hậu
+    p(21, 13, 4, 11, DARK); p(22, 14, 2, 9, pal.main); p(22, 14, 1, 9, pal.light);
+    p(23, 20, 2, 6, '#8a9199');
+    p(21, 21, 7, 1, DARK); p(21, 22, 7, 1, pal.main);
+    p(20, 11, 6, 2, DARK); p(21, 9, 3, 2, '#9aa0a6'); p(25, 11, 2, 2, '#2a2a2a');
+    p(26, 14, 3, 3, DARK); p(27, 14, 2, 2, '#ffe27a'); p(28, 15, 1, 1, '#ffffff');
+    p(0, 18, 1, 2, '#e74c3c');
   };
   // Cấu hình theo biến thể: xe số xanh + hộp giao hàng, tay ga xanh dương, xe số đỏ
   const bikeFor = (v: number): { kind: 'cub' | 'scooter'; pal: Pal; box: boolean } => {
