@@ -1,6 +1,9 @@
 import { Vector2D, TILE_SIZE } from '@game/shared';
 import { NEIGHBORHOOD_PX, ZOOM_LEVELS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
 
+/** Lề (ô) quanh vùng chơi mà camera còn được nhìn ra khu phố. */
+const CAMERA_MARGIN_TILES = 8;
+
 export class PixelCamera {
   public x: number = 0;
   public y: number = 0;
@@ -23,6 +26,38 @@ export class PixelCamera {
     this.mapWidthPixels = mapWidthTiles * TILE_SIZE;
     this.mapHeightPixels = mapHeightTiles * TILE_SIZE;
   }
+
+  /** Hộp vùng chơi (px thế giới) + lề khu phố; null = không giới hạn (land-reclamation 4.4). */
+  private bounds: { x0: number; y0: number; x1: number; y1: number } | null = null;
+
+  /** Giới hạn camera theo vùng chơi hiện tại cộng lề `marginTiles` ô để còn thấy khu phố quanh đó. */
+  public setPlayBounds(originTileX: number, originTileY: number, widthTiles: number, heightTiles: number, extra?: { x0: number; y0: number; x1: number; y1: number }, marginTiles: number = CAMERA_MARGIN_TILES): void {
+    const m = marginTiles * TILE_SIZE;
+    // `extra` (ô, x1/y1 bao gồm): vùng xem trước, vd. đợt khai hoang kế tiếp còn khóa.
+    this.bounds = {
+      x0: Math.min(originTileX, extra?.x0 ?? originTileX) * TILE_SIZE - m,
+      y0: Math.min(originTileY, extra?.y0 ?? originTileY) * TILE_SIZE - m,
+      x1: Math.max(originTileX + widthTiles, (extra?.x1 ?? -Infinity) + 1) * TILE_SIZE + m,
+      y1: Math.max(originTileY + heightTiles, (extra?.y1 ?? -Infinity) + 1) * TILE_SIZE + m,
+    };
+  }
+
+  /** Kẹp góc trên-trái camera vào hộp; nếu khung nhìn rộng hơn hộp thì căn giữa hộp. */
+  private clampToBounds(): void {
+    const b = this.bounds;
+    if (!b) return;
+    const viewW = this.viewportWidth / this.zoom;
+    const viewH = this.viewportHeight / this.zoom;
+    const fit = (value: number, lo: number, hi: number, view: number): number =>
+      hi - lo <= view ? (lo + hi - view) / 2 : Math.max(lo, Math.min(hi - view, value));
+    this.x = fit(this.x, b.x0, b.x1, viewW);
+    this.y = fit(this.y, b.y0, b.y1, viewH);
+    this.targetX = fit(this.targetX, b.x0, b.x1, viewW);
+    this.targetY = fit(this.targetY, b.y0, b.y1, viewH);
+  }
+
+  /** Kích thước khung nhìn theo px thế giới (cho minimap). */
+  public viewSize(): { w: number; h: number } { return { w: this.viewportWidth / this.zoom, h: this.viewportHeight / this.zoom }; }
 
   private isCustomZoom: boolean = false;
   /** Zoom xa nhất 0,5× (thấy cả khu phố): mỗi điểm ảnh sprite = nửa điểm ảnh màn hình, vẫn nearest-neighbor, không méo. */
@@ -176,6 +211,7 @@ export class PixelCamera {
     const lerpSpeed = this.isDragging ? 1.0 : 1 - Math.exp(-10.0 * Math.max(0, dt));
     this.x += (this.targetX - this.x) * lerpSpeed;
     this.y += (this.targetY - this.y) * lerpSpeed;
+    this.clampToBounds();
   }
 
   /**

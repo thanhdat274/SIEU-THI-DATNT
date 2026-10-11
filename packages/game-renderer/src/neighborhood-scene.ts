@@ -2,7 +2,7 @@ import { Container, Graphics, Sprite, Text, Texture, TilingSprite } from 'pixi.j
 import type { WeatherVisualState } from '@game/core';
 import {
   APARTMENT_PARKING, AVENUES, INTERSECTIONS, NEIGHBORHOOD_LOTS, decorLotsOutsideWaves, RECLAMATION_WAVES, NEIGHBORHOOD_PROPS, hash, rnd, NEIGHBORHOOD_STREET_LAMPS, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, PARK, PARK_LAMPS, PARK_PATHS, SCHOOL,
-  TRAFFIC_ROADS, type NeighborhoodLot, type NeighborhoodQuality, type RoadDef,
+  TRAFFIC_ROADS, NEIGHBORHOOD_SIGNS, type NeighborhoodLot, type NeighborhoodQuality, type RoadDef,
 } from '@game/data';
 import type { PixelTextureFactory } from './textures';
 import { houseLitWindows } from './neighborhood-textures';
@@ -178,6 +178,19 @@ export class NeighborhoodScene {
     return { nTop: r.topRow - 2, sTop: r.topRow + 3 };
   }
 
+  /** Bó vỉa nổi: gờ đá sáng phía vỉa hè (có mép sáng + bóng đổ) và rãnh thoát nước sẫm sát lòng đường. `edgeY` = mép lòng đường. */
+  private kerbRun(g: Graphics, x0: number, x1: number, edgeY: number, north: boolean): void {
+    const w = x1 - x0;
+    if (w <= 0) return;
+    const gutterY = north ? edgeY : edgeY - 3;
+    const faceY = north ? edgeY - 9 : edgeY;
+    g.rect(x0, gutterY, w, 3).fill({ color: 0x3d444d, alpha: 0.6 });
+    g.rect(x0, faceY, w, 9).fill(0xe6e2d4);
+    g.rect(x0, north ? faceY : faceY + 8, w, 1).fill(north ? 0xfbf9f1 : 0x8f8a7c);
+    g.rect(x0, north ? faceY + 8 : faceY, w, 1).fill(north ? 0x8f8a7c : 0xfbf9f1);
+    g.rect(x0, faceY + 4, w, 1).fill({ color: 0xb4afa0, alpha: 0.35 });
+  }
+
   private buildRoads(X0: number, X1: number): void {
     const g = this.ground;
     const marks = new Graphics();
@@ -211,18 +224,18 @@ export class NeighborhoodScene {
       const y = road.topRow * T;
       const boxes = boxesOf(road);
       // Bó vỉa hai bên lòng đường, đứt đoạn ở miệng đường dọc.
-      for (const edgeY of [y, y + 3 * T - 3]) {
+      for (const north of [true, false]) {
         let from = X0;
         for (const b of [...boxes].sort((p, q) => p.crossLeft - q.crossLeft)) {
-          marks.rect(from, edgeY, b.crossLeft - from, 3).fill({ color: 0xb9b2a0, alpha: 0.9 });
+          this.kerbRun(marks, from, b.crossLeft, north ? y : y + 3 * T, north);
           from = b.crossRight;
         }
-        marks.rect(from, edgeY, X1 - from, 3).fill({ color: 0xb9b2a0, alpha: 0.9 });
+        this.kerbRun(marks, from, X1, north ? y : y + 3 * T, north);
       }
       const cy = (road.topRow + 1) * T - 1;
       for (let x = X0; x < X1; x += T) {
         if (boxes.some((b) => x + T > b.crossLeft - NO_PASS && x < b.crossRight + NO_PASS)) continue;
-        marks.rect(x + 6, cy, 20, 2).fill(YELLOW);
+        marks.rect(x + 6, cy, 20, 2).fill(WHITE);
       }
       for (const b of boxes) {
         for (const [x0, x1] of [[b.crossLeft - NO_PASS, b.crossLeft - 12], [b.crossRight + 12, b.crossRight + NO_PASS]]) {
@@ -250,7 +263,7 @@ export class NeighborhoodScene {
       const crosses = INTERSECTIONS.filter((x) => x.avenueId === a.id);
       for (let y = a.y0 * T; y < a.y1 * T; y += T) {
         if (TRAFFIC_ROADS.some((r) => y + T > (r.topRow - 1 - 3) * T && y < (r.topRow + 4 + 3) * T)) continue;
-        marks.rect(cx, y + 6, 2, 20).fill(YELLOW);
+        marks.rect(cx, y + 6, 2, 20).fill(WHITE);
       }
       for (const road of TRAFFIC_ROADS) {
         const northY = (road.topRow - 1) * T + 10; // vạch đi bộ qua đường dọc, bên bắc đường ngang
@@ -379,10 +392,34 @@ export class NeighborhoodScene {
     this.redrawLotWindows();
   }
 
+  private fadedLotIds = new Set<string>();
+
+  /** Nhà/đồ vật/xe đỗ trong vùng đang thi công mờ dần theo tiến độ (alpha 1 → ~0,25); danh sách rỗng = trả lại bình thường. */
+  public setConstructionFades(items: ReadonlyArray<{ region: { x0: number; y0: number; x1: number; y1: number }; alpha: number }>): void {
+    this.fadedLotIds.clear();
+    const alphaOf = (lot: NeighborhoodLot): number => {
+      for (const { region: r, alpha } of items) if (lot.x <= r.x1 && lot.x + lot.w - 1 >= r.x0 && lot.frontY >= r.y0 && lot.frontY <= r.y1) return alpha;
+      return 1;
+    };
+    for (const lot of NEIGHBORHOOD_LOTS) {
+      const a = alphaOf(lot);
+      if (a < 1) this.fadedLotIds.add(lot.id);
+      const sprite = this.lotSprites.get(lot.id);
+      if (sprite) sprite.alpha = a;
+      for (const prop of this.lotProps.get(lot.id) ?? []) prop.alpha = a;
+    }
+    for (const { sprite, tx, ty } of this.parkingProps) {
+      const hit = items.find(({ region: r }) => tx >= r.x0 && tx <= r.x1 && ty >= r.y0 && ty <= r.y1);
+      sprite.alpha = hit ? hit.alpha : 1;
+    }
+    this.redrawLotWindows();
+  }
+
   private redrawLotWindows(): void {
     this.windowGlow.clear();
     for (const [id, rects] of this.lotWindows) {
       if (this.visibleLotIds && !this.visibleLotIds.has(id)) continue;
+      if (this.fadedLotIds.has(id)) continue;
       for (const [x, y, w, h] of rects) this.windowGlow.rect(x, y, w, h).fill({ color: 0xffd980, alpha: 0.55 });
     }
   }
@@ -489,6 +526,7 @@ export class NeighborhoodScene {
     mk('CÔNG VIÊN HOA SỮA', ((PARK.area.x0 + PARK.area.x1) / 2) * T, (PARK.area.y1 - 0.2) * T - 14, 10, 0xffffff, 0x2f6b3a);
     for (let i = 0; i < 3; i++) mk('CHUNG CƯ SEN', (42 + i * 11 + 5) * T, 2 * T - 36 + 4, 7, 0xffffff);
     mk('HẺM 12', 12.5 * T, 17.4 * T, 8, 0x4a3a2a);
+    for (const s of NEIGHBORHOOD_SIGNS) mk(s.text, s.x * T, s.y * T, s.size, s.fill, s.stroke);
   }
 
   // ------------------------------------------------------------------ cập nhật mỗi khung

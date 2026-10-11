@@ -74,7 +74,7 @@ export function runSpecialRequestTests(): void {
 
   // ---- Sinh: tôn trọng trần đồng thời & trần mỗi ngày ----
   {
-    let st = createSpecialRequestState();
+    const st = createSpecialRequestState();
     // Nhồi đầy trần đồng thời bằng yêu cầu sống (active) thủ công.
     const fakeDef = Object.values(SPECIAL_REQUEST_MAP)[0];
     const fill: ActiveSpecialRequest[] = [];
@@ -88,7 +88,7 @@ export function runSpecialRequestTests(): void {
         expiresMinute: absMinute(1, 600),
       });
     }
-    let stFull: SpecialRequestState = { ...st, active: fill };
+    const stFull: SpecialRequestState = { ...st, active: fill };
     const capRes = maybeOpenSpecialRequest(stFull, { day: 1, minute: 120, worldSeed: 's', playerLevel: 20 });
     assert.equal(capRes.opened, null, 'Đạt trần đồng thời → không mở thêm');
 
@@ -106,7 +106,7 @@ export function runSpecialRequestTests(): void {
 
   // ---- Vòng đời: hết hạn (advance) ----
   {
-    let st: SpecialRequestState = {
+    const st: SpecialRequestState = {
       ...createSpecialRequestState(),
       active: [
         { instanceId: 'a', defId: 'sr_qua_tang_ho_hao', status: 'active', openDay: 1, openMinute: absMinute(1, 0), expiresMinute: absMinute(1, 6) },
@@ -145,7 +145,7 @@ export function runSpecialRequestTests(): void {
 
   // ---- fulfill: thành công / idempotent / quá hạn / trạng thái sai ----
   {
-    let st: SpecialRequestState = {
+    const st: SpecialRequestState = {
       ...createSpecialRequestState(),
       active: [
         { instanceId: 'r1', defId: 'sr_qua_tang_ho_hao', status: 'active', openDay: 1, openMinute: absMinute(1, 0), expiresMinute: absMinute(1, 6) },

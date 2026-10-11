@@ -69,6 +69,13 @@ export function runReclamationTests(): void {
     it('từ chối đợt không tồn tại', () => {
       assert.deepEqual(reclaimWaveAllowed(baseState(), 'w99'), { ok: false, reason: 'unknown_wave' });
     });
+    it('W4 cần W1 hoặc W3 đã mở để có đường nối (W2 không đủ — dải x36..41 còn void)', () => {
+      assert.deepEqual(reclaimWaveAllowed(baseState(), 'w4'), { ok: false, reason: 'not_connected' });
+      const onlyW2 = { ...baseState(), openedWaves: ['w0', 'w2'] };
+      assert.deepEqual(reclaimWaveAllowed(onlyW2, 'w4'), { ok: false, reason: 'not_connected' });
+      assert.deepEqual(reclaimWaveAllowed({ ...baseState(), openedWaves: ['w0', 'w1'] }, 'w4'), { ok: true });
+      assert.deepEqual(reclaimWaveAllowed({ ...baseState(), openedWaves: ['w0', 'w3'] }, 'w4'), { ok: true });
+    });
   });
 
   describe('startReclaimWave + isWaveConstructing', () => {
@@ -150,8 +157,8 @@ export function runReclamationTests(): void {
     it('mua được lô W1 đã mở xong với đúng giá góc đường chính', () => {
       const s = baseState();
       s.openedWaves = ['w0', 'w1'];
-      const price = parcelPrice({ id: 'w1-corner', rect: { x0: 42, x1: 47, y0: 8, y1: 12 }, wave: 1, frontageRoadId: 'main', frontage: { corner: true } });
-      assert.equal(price, 12_000 * 6 * 5 * 1.6, 'giá = PARCEL_BASE_PRICE × số ô × hệ số góc đường chính');
+      const price = parcelPrice({ id: 'w1-corner', rect: { x0: 42, x1: 51, y0: 3, y1: 10 }, wave: 1, frontageRoadId: 'main', frontage: { corner: true } });
+      assert.equal(price, 12_000 * 10 * 8 * 1.6, 'giá = PARCEL_BASE_PRICE × số ô × hệ số góc đường chính');
       assert.deepEqual(buyParcelAllowed(s, 'w1-corner'), { ok: true, price });
     });
     it('đã sở hữu lô W1 → already_owned', () => {

@@ -6,7 +6,8 @@ import {
 } from '@game/data';
 import { StreetTrafficManager } from './street-traffic';
 import { NeighborhoodLife, shelterCapacity, type LifeContext, type NeighborNpcView } from './neighborhood-life';
-import { pickConversation, topicScore } from './neighborhood-chat';
+import { fillNames, neighborNameOf, pickConversation, topicScore } from './neighborhood-chat';
+import { NEIGHBOR_NAMES } from '@game/data';
 import { Mulberry32Rng } from './staff';
 
 const VIEW_ALL = { x0: NEIGHBORHOOD_PX.x0, y0: NEIGHBORHOOD_PX.y0, x1: NEIGHBORHOOD_PX.x1, y1: NEIGHBORHOOD_PX.y1 };
@@ -311,4 +312,16 @@ export function runNeighborhoodTests(): void {
   robust.forEachVisible((n) => { assert.ok(Number.isFinite(n.x) && Number.isFinite(n.y), 'Tọa độ NPC hữu hạn'); });
 
   console.log('  ✓ Passed: Khu phố mở rộng — zoom/LOD, mật độ và loại xe, đường phụ, nhường vạch NPC, dân cư theo lịch, trường/công viên theo giờ và thời tiết, trú mưa, hội thoại');
+}
+
+/** Tên xưng hô của NPC: cố định theo id, luôn lấy từ bộ tên, và {ten} được thay đúng người. */
+export function runNeighborNameTests(): void {
+  assert.equal(neighborNameOf('npc-7'), neighborNameOf('npc-7'), 'Cùng id thì cùng tên');
+  for (let i = 0; i < 50; i++) assert.ok(NEIGHBOR_NAMES.includes(neighborNameOf(`npc-${i}`)), 'Tên lấy từ bộ tên');
+  const a = 'npc-a', b = 'npc-b';
+  const named = fillNames(['Chào {ten}!', 'Ủa, chào {ten}.', 'Tạm biệt.'], a, b);
+  assert.equal(named[0], `Chào ${neighborNameOf(b)}!`, 'A nói thì gọi B');
+  assert.equal(named[1], `Ủa, chào ${neighborNameOf(a)}.`, 'B nói thì gọi A');
+  assert.equal(named[2], 'Tạm biệt.', 'Câu không có placeholder giữ nguyên');
+  assert.ok(named.every((l) => !l.includes('{ten}')), 'Không còn placeholder sót');
 }

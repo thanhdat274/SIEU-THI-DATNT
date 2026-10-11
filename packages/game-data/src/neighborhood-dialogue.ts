@@ -22,6 +22,15 @@ export interface DialogueTopic {
   lines: ReadonlyArray<readonly string[]>;
 }
 
+/**
+ * Tên gọi xóm (chú/cô/bác…) để NPC xưng hô với nhau trong hội thoại. Mỗi NPC nhận một tên cố định theo id,
+ * thay cho placeholder `{ten}` trong lời thoại (tên của người được gọi). Chỉ là văn bản, không đổi gameplay.
+ */
+export const NEIGHBOR_NAMES: readonly string[] = [
+  'cô Thúy', 'chú Năm', 'bác Sáu', 'anh Tài', 'chị Hạnh', 'bé Tí', 'cậu Bình', 'dì Ba', 'chú Tư', 'anh Khang',
+  'cô Lan', 'bác Hòa', 'chị Yến', 'anh Phát', 'bà Bảy', 'cu Bo',
+];
+
 export const DIALOGUE_TOPICS: readonly DialogueTopic[] = [
   { id: 'greet-morning', phases: ['morning'], lines: [
     ['Chào buổi sáng!', 'Chào bạn, dậy sớm ghê.', 'Ừ, đi làm kẻo trễ.'],
@@ -107,6 +116,10 @@ export const DIALOGUE_TOPICS: readonly DialogueTopic[] = [
     ['Cuối ngày rồi, cố lên!', 'Ừ, về ăn cơm thôi.'],
   ] },
   // --- Hội thoại nâng cao ---
+  { id: 'call-name', lines: [
+    ['Chào {ten}!', 'Ủa, chào {ten}. Đi đâu vậy?', 'Ghé tiệm mua chút đồ nha.'],
+    ['{ten} ơi, khỏe không?', 'Khỏe, cảm ơn {ten} nhiều.'],
+  ] },
   { id: 'neighbor-greet', types: ['elder', 'walker'], lines: [
     ['Chào chú bác!', 'Cháu chào cô ạ.', 'Con chào bác nhé.'],
     ['Hôm nay khỏe không?', 'Khỏe lắm, cảm ơn cháu.'],

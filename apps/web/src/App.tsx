@@ -1,9 +1,11 @@
 import React, { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { ALL_PRODUCTS, DRINK_SHOP_PRODUCT_IDS, SNACK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, STORE_TYPES, WEATHER_MAP, XOI_DISH_IDS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
-import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES } from '@game/core';
+import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES, FootstepTracker, footstepCue } from '@game/core';
 import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
+import { MiniMap } from './components/MiniMap';
+import { ParcelBuyModal } from './components/ParcelBuyModal';
 import { PixiGameViewport, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
 import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
 
@@ -105,6 +107,7 @@ export const App: React.FC = () => {
   const [isQuestOpen, setQuestOpen] = useState(false);
   const [isLevelRoadmapOpen, setLevelRoadmapOpen] = useState(false);
   const [isCityOpen, setCityOpen] = useState(false);
+  const [parcelPromptId, setParcelPromptId] = useState<string | null>(null);
   const [isStallOpen, setStallOpen] = useState(false);
   const [isMarketOpen, setMarketOpen] = useState(false);
   const [isTaxOpen, setTaxOpen] = useState(false);
@@ -144,7 +147,22 @@ export const App: React.FC = () => {
     const timer = window.setInterval(refresh, 5000);
     const audioTimer = window.setInterval(refreshAudio, 1000);
     const offThunder = onThunder((e) => engine?.thunder(e.strength));
-    return () => { window.clearInterval(timer); window.clearInterval(audioTimer); offThunder(); engine?.detach(); };
+    // Bước chân bảo vệ đi tuần: lấy mẫu vị trí nhanh (0,2 s) để đếm đúng quãng đường; nghe theo hướng so với người chơi.
+    const footsteps = new FootstepTracker();
+    const footstepTimer = window.setInterval(() => {
+      const sim = simulationRef.current;
+      if (!sim) return;
+      const guards = sim.peekStaff().filter((s) => s.role === 'security' && s.position);
+      footsteps.retain(guards.map((g) => g.id));
+      const listener = sim.getPlayerData().position;
+      for (const guard of guards) {
+        const steps = footsteps.advance(guard.id, guard.position!);
+        if (steps === 0) continue;
+        const cue = footstepCue(listener, guard.position!);
+        if (cue) for (let i = 0; i < steps; i++) engine?.footstep(cue);
+      }
+    }, 200);
+    return () => { window.clearInterval(timer); window.clearInterval(audioTimer); window.clearInterval(footstepTimer); offThunder(); engine?.detach(); };
   }, [gameStarted]);
   const [daySummaryRecord, setDaySummaryRecord] = useState<DailyRecord | null>(null);
   // Bảng kế hoạch chỉ tính khi mở bảng Thị trường hoặc sang ngày mới, không mỗi khung hình.
@@ -815,6 +833,7 @@ export const App: React.FC = () => {
         tileMap: simulation.getTileMap(),
         simulation,
         onZoomChange: setZoomLevel,
+        onParcelTap: setParcelPromptId,
         getPartnerAvatar: () => {
           // Dev/QA: giả lập bạn co-op để kiểm hình ảnh mà không cần hai trình duyệt (window.__debugPartner = { position, direction, isMoving }).
           if (import.meta.env.DEV) { const dbg = (window as unknown as { __debugPartner?: { position: { x: number; y: number }; direction: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; name?: string } }).__debugPartner; if (dbg) return dbg; }
@@ -1789,6 +1808,7 @@ export const App: React.FC = () => {
   };
 
   const [zoomLevel, setZoomLevel] = useState<number>(2.0);
+  const getMinimapSnapshot = useCallback(() => viewportRef.current?.getMinimapSnapshot() ?? null, []);
 
   const handleZoomIn = () => {
     if (viewportRef.current) {
@@ -1914,6 +1934,7 @@ export const App: React.FC = () => {
                 </button>
               </div>
             )}
+            {!hasModal && <MiniMap getSnapshot={getMinimapSnapshot} />}
             <div className="world-tools" aria-label="Góc nhìn bản đồ"><PixelButton icon="warehouse" aria-label="Định vị nhà kho" onClick={locateWarehouse}/><PixelButton icon="minus" aria-label="Thu nhỏ bản đồ" disabled={zoomLevel<=ZOOM_MIN} onClick={handleZoomOut}/><span className="zoom-value">{Number(zoomLevel.toFixed(2))}×</span><PixelButton icon="plus" aria-label="Phóng to bản đồ" disabled={zoomLevel>=ZOOM_MAX} onClick={handleZoomIn}/></div>
             {!hasModal && (!isWarehouseDockOpen || controlMode === 'touch') && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
           </>}
@@ -2271,9 +2292,10 @@ export const App: React.FC = () => {
         onClose={() => setTitlesOpen(false)}
       />
     )}
+    {parcelPromptId && <ParcelBuyModal parcelId={parcelPromptId} playerMoney={player.money} onBuy={handleBuyParcel} onClose={() => setParcelPromptId(null)}/>}
     {isCityOpen && simulationRef.current && (() => {
       const snap = simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
-      return <CityModal world={snap.world ?? defaultWorldOpenState()} ownedParcelIds={snap.storeLayout.ownedParcelIds ?? []} playerLevel={player.level} playerMoney={player.money} day={simulationRef.current.getTime().day} buildingCount={snap.storeLayout.buildingPlacements?.length ?? 3} onReclaim={handleReclaimWave} onBuyParcel={handleBuyParcel} onClose={() => setCityOpen(false)}/>;
+      return <CityModal world={snap.world ?? defaultWorldOpenState()} ownedParcelIds={snap.storeLayout.ownedParcelIds ?? []} builtParcels={simulationRef.current.getOccupiedParcelBuildings()} playerLevel={player.level} playerMoney={player.money} day={simulationRef.current.getTime().day} buildingCount={snap.storeLayout.buildingPlacements?.length ?? 3} onReclaim={handleReclaimWave} onBuyParcel={handleBuyParcel} onClose={() => setCityOpen(false)}/>;
     })()}
     {isLevelRoadmapOpen && <LevelRoadmapModal player={player} onClose={() => setLevelRoadmapOpen(false)}/>}
     {daySummaryRecord && <DaySummaryModal record={daySummaryRecord} morningBrief={simulationRef.current?.getMorningBrief()} onClose={() => setDaySummaryRecord(null)}/>}

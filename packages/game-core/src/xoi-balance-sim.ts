@@ -5,7 +5,7 @@
  * Chạy: yarn --ignore-engines workspace @game/core tsx src/xoi-balance-sim.ts
  */
 import { isSalesFixture, type SaveGameData } from '@game/shared';
-import { DEFAULT_INITIAL_SAVE, PRODUCT_MAP, XOI_PLOT_ID, XOI_TRAFFIC_SHARE, generateStarterTileMap, type LandParcel } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, PRODUCT_MAP, XOI_PLOT_ID, XOI_TRAFFIC_SHARE, generateStarterTileMap, resolveParcel, type LandParcel } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { createMarketState } from './market';
@@ -79,13 +79,16 @@ console.log(extraNet > 0 ? `Lãi ròng tăng thêm ≈ ${vnd(extraNet)} ₫/ngà
 
 /** D5 (open-world-land-reclamation): khách theo vị trí LÔ — so ba vị trí (spec "Location value"). */
 export function compareXoiPositions(): Array<{ label: string; multiplier: number; effectiveShare: number }> {
-  // Thuần trên lô tổng hợp (W1..W4 chưa đặt được tòa THẬT — chưa vào PARCEL_MAP, chưa renderer), số PROVISIONAL.
-  const synthetic = (id: string, frontageRoadId: string, corner: boolean): LandParcel =>
-    ({ id, rect: { x0: 42, x1: 47, y0: 8, y1: 12 }, wave: 1, frontageRoadId, frontage: { corner } });
+  // Lô THẬT (W1 góc ngã tư, W1 mặt đường chính, W2 mặt đường nam — `resolveParcel`); số PROVISIONAL.
+  const lot = (id: string): LandParcel => {
+    const parcel = resolveParcel(id);
+    if (!parcel) throw new Error(`lô ${id} chưa có trong game-data`);
+    return parcel;
+  };
   const rows = [
-    { label: 'Góc ngã tư đường CHÍNH', parcel: synthetic('sim-xoi-corner-main', 'main', true) },
-    { label: 'Mặt đường CHÍNH (W0)', parcel: synthetic('sim-xoi-face-main', 'main', false) },
-    { label: 'Mặt đường NAM', parcel: synthetic('sim-xoi-face-south', 'south', false) },
+    { label: 'Góc ngã tư đường CHÍNH (w1-corner)', parcel: lot('w1-corner') },
+    { label: 'Mặt đường CHÍNH (w1-east)', parcel: lot('w1-east') },
+    { label: 'Mặt đường NAM (w2-1)', parcel: lot('w2-1') },
   ];
   return rows.map(({ label, parcel }) => {
     const effectiveShare = effectiveSecondaryBuildingTrafficShare('xoi', parcel);

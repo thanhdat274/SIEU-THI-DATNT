@@ -1,4 +1,5 @@
-import { DIALOGUE_TOPICS, type DialoguePhase, type DialoguePlace, type DialogueWeather, type NeighborNpcType } from '@game/data';
+import { DIALOGUE_TOPICS, NEIGHBOR_NAMES, type DialoguePhase, type DialoguePlace, type DialogueWeather, type NeighborNpcType } from '@game/data';
+import { hashSeed } from './weather';
 
 export type ChatPlace = DialoguePlace;
 
@@ -11,6 +12,18 @@ export interface ChatContext {
 }
 
 const FALLBACK: readonly string[] = ['Chào bạn!', 'Chào bạn nhé.'];
+
+/** Tên xưng hô cố định của một NPC (theo id, không đổi giữa các lần tải lại). */
+export function neighborNameOf(npcId: string): string {
+  return NEIGHBOR_NAMES[hashSeed(`name:${npcId}`) % NEIGHBOR_NAMES.length];
+}
+
+/** Thay `{ten}` bằng tên người được gọi. Dòng chẵn do A nói nên gọi B, dòng lẻ do B nói nên gọi A. */
+export function fillNames(lines: readonly string[], idA: string, idB: string): string[] {
+  const nameA = neighborNameOf(idA);
+  const nameB = neighborNameOf(idB);
+  return lines.map((line, i) => line.replace(/{ten}/g, i % 2 === 0 ? nameB : nameA));
+}
 
 /** Số điều kiện cụ thể mà chủ đề khớp với ngữ cảnh; -1 nếu có điều kiện không khớp (loại). */
 export function topicScore(topic: (typeof DIALOGUE_TOPICS)[number], ctx: ChatContext): number {

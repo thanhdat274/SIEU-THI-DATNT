@@ -1,3 +1,11 @@
+## Khai hoang — nốt mục "còn hoãn" (11/10/2026)
+
+- [x] **W4 cần W1/W3 đã mở để có đường nối** (`connectedVia`, `reclaimWaveAllowed` → `not_connected`). Đo lại bằng BFS: W2 KHÔNG nối được W4, ghi chú cũ sai. Test `reclamation.test.ts` + `reclamation-data.test.ts` PASS (game-core 112/0).
+- [x] **Bảng Thành phố + minimap phản ánh tòa đã đặt:** lô có tòa hiện "🏪 Có tòa: <tên>"; minimap vẽ lô W1–W4 (trước chỉ 4 lô W0) và tô lô có tòa. Kiểm trình duyệt dev desktop + đo pixel canvas.
+- [x] **Balance-sim sang lô thật:** `drink-balance-sim.ts`, `xoi-balance-sim.ts` dùng `resolveParcel` (w1-corner/w1-east/w2-1); thứ tự góc > mặt chính > đường nam đúng. `snack-balance-sim.ts` không có so sánh vị trí lô.
+- [x] **Verify:** typecheck PASS; `yarn --cwd apps/server test:coop` PASS (Mongo thật); `apps/web` test PASS; eslint 0 lỗi (file đã sửa).
+- [ ] **Chưa làm (cần chủ dự án / máy thật):** chỉnh hạ tầng W1/W2 theo ảnh overlay (task 0.2, ảnh không có trong repo); qua ngã tư W0↔W1 bằng nhân vật; mobile/cảm ứng thật (568×320 chỉ giả lập); co-op hai trình duyệt.
+
 # BẢNG THEO DÕI CÔNG VIỆC (TASKS PROGRESS)
 
 ## 4 yêu cầu chủ dự án: lời chê truyền miệng, sự kiện thành phố, giá gợi ý (LÕI THUẦN đã làm + verify); chain DEFER (07/10/2026)
@@ -33,6 +41,13 @@
 - [>] **Lead review + nối test vào suite:** rà `git diff` toàn bộ (khớp D1/D3/D4/D5/D6/D7, thêm-tối-thiểu giữ golden); nối `runReclamationDataTests()` + `runReclamationTests()` vào `packages/game-core/src/test-runner.ts` + export từ game-data index; `git diff --check` sạch.
 - [ ] **VERIFY chưa làm được trong sandbox (`spawn EPERM`):** `yarn --cwd packages/game-core test` và `yarn --cwd apps/server test:coop` (+ cần Mongo) → **KHÔNG tuyên bố PASS test**; cần chủ dự án chạy trên máy thật. `yarn typecheck` toàn workspace PASS (đã chạy nhiều lần).
 - [ ] **Còn mở (ngoài scope đợt này):** 2.1 vùng chơi/GameTileMap, 2.3 khách theo hệ số vị trí + balance-sim, 2.4 nối ngân sách vào expand UI, 4.x renderer (công trường/quy hoạch/minimap), 1.1 hạ tầng + chốt lô bằng ảnh (0.2 external), 5.x verify + browser QA.
+
+## Cập nhật 11/10/2026 — open-world-land-reclamation (nhóm 4 + 5.1)
+
+- [x] **2.2, 2.4, 4.1, 4.2, 4.3, 4.4 đóng** (chi tiết + bằng chứng trong `openspec/changes/open-world-land-reclamation/tasks.md`): camera kẹp theo vùng chơi + minimap (`MiniMap.tsx`, chỉ xem); chạm lô chưa mua để mua (`ParcelBuyModal.tsx`); đợt khóa + hệ số khách hiện trên bản đồ; công trường có công nhân/máy xúc chuyển động + nhà mờ dần; 4.1 đo FPS (~3–5 ms/khung, bản đồ 77×31) rồi chủ dự án chốt BỎ chia khối/culling.
+- [x] **5.1 verify:** `yarn typecheck` PASS, `yarn test` (game-core) 111 pass / 0 fail, `yarn build` PASS (11/10/2026; cảnh báo chunk >500 kB của vendor-pixi và INEFFECTIVE_DYNAMIC_IMPORT api.ts là có sẵn, không phải lỗi).
+- [x] **Change `open-world-new-parcel-buildings` ĐÃ ARCHIVE (11/10/2026)** → `openspec/changes/archive/2026-10-11-open-world-new-parcel-buildings`: đặt/mở/dời tòa lên lô W1–W4 (W1/W3 lô y 3..10; W2/W4 lô y 16..23 + một hàng vỉa hè), kiểm trình duyệt + mô phỏng + `test:coop` PASS, sửa lỗi `bootstrap.ts`. **Hoãn (còn mở):** ảnh chụp chỉnh hạ tầng W1/W2, `*-balance-sim.ts` sang lô thật, minimap/Thành phố phản ánh tòa, mobile/cảm ứng, co-op hai trình duyệt.
+- [ ] **Còn lại (5.2):** browser QA đầy đủ từng mục — mở W1 → qua ngã tư → mua lô góc → đặt quán nước → khách tới → lưu/nạp → mobile/cảm ứng → co-op/online. Chưa kiểm: mobile, co-op, đêm/mưa, mua lô qua server thật, `yarn --cwd apps/server test:coop` (cần Mongo).
 
 ## Vòng 1 (07/10/2026) — hoàn nốt phần code sandbox được của land-reclamation (Agent Team 4 teammate, rời scope)
 

@@ -1,4 +1,4 @@
-import { AmbientMix, AudioSettings, DEFAULT_AUDIO_SETTINGS, masterGain, sanitizeAudioSettings } from '@game/core';
+import { AmbientMix, AudioSettings, DEFAULT_AUDIO_SETTINGS, FootstepCue, masterGain, sanitizeAudioSettings } from '@game/core';
 
 const SETTINGS_KEY = 'tiem-tap-hoa:audio';
 
@@ -138,6 +138,31 @@ export class AmbientAudioEngine {
     gain.gain.linearRampToValueAtTime(0.9 * level, now + 0.08);
     gain.gain.exponentialRampToValueAtTime(0.001, now + length);
     source.connect(filter).connect(gain).connect(this.master);
+    source.start(now);
+  }
+
+  /** Bước chân bảo vệ: tiếng thụp ngắn lọc thấp, đặt trái/phải theo `cue.pan`. Cùng điều kiện phát với sấm. */
+  footstep(cue: FootstepCue): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.master || ctx.state !== 'running') return;
+    if (masterGain(this.settings, { userGestured: this.gestured, pageVisible: document.visibilityState === 'visible' }) === 0) return;
+    const length = 0.09;
+    const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * length), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 900;
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.35 * cue.gain, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + length);
+    const panner = ctx.createStereoPanner();
+    panner.pan.value = Math.max(-1, Math.min(1, cue.pan));
+    source.connect(filter).connect(gain).connect(panner).connect(this.master);
     source.start(now);
   }
 

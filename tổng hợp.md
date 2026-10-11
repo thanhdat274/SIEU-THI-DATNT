@@ -1,3 +1,51 @@
+# Khai hoang: W4 cần đường nối, bảng Thành phố/minimap hiện lô có tòa, sim cân bằng dùng lô thật (11/10/2026)
+- **Vấn đề (mục "còn hoãn" sau `open-world-new-parcel-buildings`):** (a) W4 chỉ có khách khi đã mở đợt nối; (b) `drink/xoi-balance-sim.ts` còn so vị trí trên lô tổng hợp; (c) bảng Thành phố và minimap chưa phản ánh tòa đã đặt; (d) hạ tầng W1/W2 theo ảnh, mobile, co-op, qua ngã tư.
+- **Đo lại (BFS trên lưới va chạm của `generateTileMapForWaves`, từ mép đi bộ y=12 tới hàng vỉa hè trước lô W4):** `w0+w4` ✗, `w0+w2+w4` ✗, `w0+w1+w4` ✓, `w0+w3+w4` ✓. **Ghi chú cũ "W4 có khách khi mở W1/W3 hoặc W2" SAI ở W2:** W2 (x0..35) và W4 (x42..76) cách nhau dải x36..41 chưa thuộc đợt nào (void) nên W2 không nối được W4.
+- **Đã làm (có code):**
+  - Luật nối: `game-data/src/world/waves.ts` thêm `ReclamationWave.connectedVia` (W4 = `['w1','w3']`); `game-core/src/reclamation.ts` `reclaimWaveAllowed` trả `not_connected` khi chưa mở đợt nối. Test: `reclamation.test.ts` (ca W4 với W0/W2/W1/W3) và `reclamation-data.test.ts` (BFS khớp luật với 4 tổ hợp).
+  - Bảng Thành phố (`apps/web/src/components/CityModal.tsx`): W4 khóa hiện "🔒 Cần mở Đợt 1 hoặc Đợt 3 trước (đường nối)", nút "Chưa nối đường"; lô đã mua hiện "🏪 Có tòa: <tên>" hoặc "Đất trống — chưa đặt tòa". Nguồn: `occupiedParcelBuildings` (`reclamation.ts`) qua `simulation.getOccupiedParcelBuildings()` → `App.tsx`.
+  - Minimap (`MiniMap.tsx`, snapshot `built` trong `packages/game-renderer/src/viewport.ts`): trước đây chỉ vẽ viền 4 lô W0 (`LAND_PARCELS`) nên lô W1–W4 đã mua KHÔNG hiện; nay vẽ `ALL_PARCELS`, lô có tòa tô cam đặc.
+  - Sim cân bằng: `drink-balance-sim.ts`/`xoi-balance-sim.ts` (`compare*Positions`) chuyển từ lô tổng hợp sang lô thật (`resolveParcel`: `w1-corner`, `w1-east`, `w2-1`). Chạy thật: quán nước 1.25 / 1 / 0.75, tiệm xôi 1.25 / 1 / 0.75, đúng thứ tự góc > mặt chính > đường nam. `snack-balance-sim.ts` không có so sánh vị trí lô nên không đổi.
+- **Kiểm chứng (chạy thật, 11/10/2026):**
+  - `yarn typecheck` PASS (10.19s). `packages/game-core` test-runner: **112 pass / 0 fail**. `apps/web` test PASS. `yarn --cwd apps/server test:coop` **PASS** (Mongo thật; gồm reclaim_wave/buy_parcel/buy_plot trên lô đợt mới). Eslint 5 file đã sửa: 0 lỗi (còn warning có sẵn ở file khác). `git diff --check` sạch.
+  - Trình duyệt dev, desktop: lúc chưa mở W1/W3, W4 hiện khóa đúng lý do; sau khi mở W1, mua `w1-corner` và đặt quán nước (`building-drink`): bảng hiện "🏪 Có tòa: Quán nước", `w1-east` còn "Mua 864.000 ₫"; minimap có 341 px cam (đo pixel canvas, không đo bằng mắt vì 132×88 quá nhỏ). Giả lập 568×320: bảng Thành phố không tràn ngang (scrollWidth = clientWidth).
+- **Còn thiếu / chưa kiểm:**
+  - Hạ tầng W1/W2 theo ảnh overlay (task 0.2): CHƯA chỉnh. Ảnh chủ dự án gửi không có trong repo nên không đối chiếu được. Đối chiếu số liệu: vỉa hè W1/W3 (hàng 11–12) và lô (hàng 3..10) không chồng nhau; W2/W4 vỉa hè hàng 24, lô 16..23.
+  - Qua ngã tư W0↔W1: CHƯA đi bằng nhân vật trong trình duyệt. Chỉ BFS trên lưới va chạm: w0+w1 nối được tới `w1-corner`/`w1-east`.
+  - Mobile/cảm ứng thật: CHƯA (chỉ giả lập). Nút "Mua 864.000 ₫" cao 36px khi giả lập không cảm ứng (ngưỡng 44px áp khi `pointer: coarse`), cần kiểm trên máy thật.
+  - Co-op hai trình duyệt: CHƯA. `test:coop` chỉ kiểm controller + Mongo trong một tiến trình.
+  - Lô W1–W4 vẫn PROVISIONAL (rect chưa chốt bằng ảnh, task 0.2).
+- **Không commit, không push.**
+
+
+# Kéo camera tới toàn khu phố (11/10/2026)
+- **Vấn đề:** kéo bản đồ không trôi ra ngoài vùng tiệm/đợt đang mở; chỉ xem được ô đất đang mở.
+- **Nguyên nhân:** giới hạn camera `setPlayBounds` trong `refreshCameraBounds()` (`viewport.ts`) dùng hộp vùng chơi + lề 8 ô và kẹp theo đợt khai hoang kế tiếp (`camera.ts` `clampToBounds`).
+- **Đã làm (có code):** `viewport.ts` `refreshCameraBounds()` dùng `NEIGHBORHOOD_TILES` làm hộp, lề 0. Bỏ tham số đợt khai hoang. `camera.ts` không đổi.
+- **Đã kiểm chứng:** `tsc --noEmit` renderer PASS; `vite build` web PASS; trên bản build `vite preview` (cổng 5174), kéo sang đông (thấy đường phố), kéo lên bắc (thấy dãy nhà) đều trôi tới được.
+- **Chưa kiểm chứng:** chưa kiểm tra mép đông/tây/nam tới cùng; chưa test trên cảm ứng; khóa đợt khai hoang chưa còn ở camera (nếu cần khóa xem trước thì phải làm lại).
+- **Ghi chú:** `camera.ts`, `viewport.ts` đang là thay đổi chưa commit của phiên khai hoang lô đất; lượt này chỉ sửa `refreshCameraBounds()` trong đó.
+
+# Tiếng bước chân bảo vệ, tên xưng hô NPC và biển hiệu khu phố (11/10/2026)
+- **Nguồn ý tưởng:** game "Rao — Đêm câu trộm" (https://rao-game.vercel.app/play), chỉ lấy cơ chế và ý tưởng. Không bê sprite, code hay văn bản của họ.
+- **Đã làm (có code):**
+  - Biển hiệu mới: `packages/game-data/src/neighborhood.ts` có `NEIGHBORHOOD_SIGNS` (3 biển: PHỐ HÀNG QUÁN, NGÕ GÁNH GỒNG, VỰA VE CHAI, mực nâu cỡ 8 như HẺM 12). `packages/game-renderer/src/neighborhood-scene.ts` `buildLabels` vẽ chúng cùng nhãn cũ. Biển đặt ở dải vỉa hè phía nam đường chính (hàng ô 17.4). Đây là hình ảnh, không chặn đường.
+  - `packages/game-core/src/ambient-audio.ts`: `FOOTSTEP_RULES`, `footstepCue()` (lệch trái/phải theo vị trí so với người chơi, nhỏ dần theo khoảng cách, tầm nghe 192px = 6 ô), `FootstepTracker` (đếm bước theo quãng đường 26px, bỏ qua khi nhảy quá 128px, tối đa 2 bước mỗi lần lấy mẫu).
+  - `apps/web/src/services/ambient-audio-engine.ts`: `footstep(cue)` là tiếng thụp 90ms lọc thấp 900Hz qua `StereoPannerNode`. Điều kiện phát giống sấm: đã có gesture, không tắt tiếng, tab đang hiện.
+  - `apps/web/src/App.tsx`: interval 200ms quét nhân viên `role === 'security'` có vị trí, rồi phát bước chân theo vị trí so với `getPlayerData().position`.
+  - Tên xưng hô NPC: `packages/game-data/src/neighborhood-dialogue.ts` có `NEIGHBOR_NAMES` (16 tên) và chủ đề `call-name` dùng placeholder `{ten}`. `packages/game-core/src/neighborhood-chat.ts` có `neighborNameOf()` (tên cố định theo id NPC) và `fillNames()`. `neighborhood-life.ts` `beginChat` điền tên trước khi gán bong bóng.
+- **Còn thiếu / giới hạn:**
+  - Tiếng bước chân chỉ có cho bảo vệ trong tiệm đang đi tuần (`simulation.ts` `updateSecurityPatrol`). Chưa có tiếng bước cho NPC khu phố hay người chơi. Chưa kiểm chứng bảo vệ có đi tuần vào ca đêm không.
+  - Tầm nghe, lệch trái/phải và âm lượng là số thiết kế, chưa cân chỉnh bằng tai.
+- **Đã kiểm chứng:**
+  - game-core: `npx tsx src/test-runner.ts` → 111 pass, 0 fail. Gồm `runFootstepTests` và `runNeighborNameTests` mới.
+  - `tsc --noEmit` của game-core và web: PASS.
+  - `yarn --cwd apps/web build`: PASS. Cảnh báo có sẵn: `INEFFECTIVE_DYNAMIC_IMPORT` ở `api.ts`, chunk > 500 kB.
+- **Đã xem bằng mắt (bản build qua `vite preview` cổng 5174, lần trước khi dời biển):** `NGÕ GÁNH GỒNG`, `VỰA VE CHAI` và `HẺM 12` hiển thị đúng dải vỉa hè phía nam, không đè nhà. `PHỐ HÀNG QUÁN` được dời từ x −1,5 sang 2,5 để tránh thanh bản đồ nhỏ; **sau khi dời chưa xem lại** vì camera lần đó không đọc được chữ.
+- **Chưa kiểm chứng:** bong bóng tên trong hội thoại chưa được xem trên trình duyệt. Tiếng bước chân chưa được nghe thật. Cổng 5173 của dev server đã có process khác và không mở được bằng Browser pane. Không tuyên bố PASS QA cho phần này.
+- **Test game-core sau đó (cùng ngày, sau khi file world/reclamation đổi ở phiên khác):** lần chạy đầu 111/0 PASS. Hai lần chạy lại: lần 1 có test đo thời gian `buildDemandTable` (performance.test.ts) quá ngưỡng 7ms; lần 2 có 1 fail `reclamation.test.ts` (giá lô W1 mua được) do `reclamation.ts`/`parcels.ts`/`footprint.ts` đang sửa dở ở phiên khác. Chưa xác định nguyên nhân trong code của lượt này; lượt này không chạm các file đó.
+- **Ghi chú môi trường:** `typecheck` của renderer báo lỗi `packages/game-data/src/world/footprint.ts(120)` (TS18048). File này đang sửa dở ở phiên khác, không thuộc lượt này.
+
 # Sửa nút thu gọn kho khó nhận biết (08/10/2026)
 - **Vấn đề:** nút X trên header Kho có nền và icon ít tương phản với dải header, kích thước điểm bấm nhìn nhỏ nên khó hiểu/chạm.
 - **Có code:** `WarehouseDock.tsx` gắn class riêng và tooltip “Thu gọn kho”; `index.css` dùng nút vuông 40px, nền vàng kem, icon đỏ đất đậm, viền/bóng nâu cà phê và focus ring rõ. Chỉ đổi presentation/accessibility label, không đổi hành vi đóng/mở.
@@ -1881,3 +1929,30 @@ Chỉ ghi PASS khi đã đo/chụp thật trong Browser pane (giả lập viewpo
 - Sửa lỗi hiển thị số lượng thông báo kệ trống trên nút Kho (chuyển từ chữ trắng chìm vào nền sang dạng badge đỏ nổi bật để dễ đọc).
 
 - Cập nhật lại màu nền UI (bỏ tông màu vàng nâu 'tờ báo cũ' sang tông giấy/gỗ ấm kiểu Stardew Valley truyền thống nhưng giảm sáng để không lóa). Đổi màu số lượng thông báo thành chữ đen (ink) để dễ nhìn hơn theo yêu cầu.
+| 11/10/2026 | Đường/vỉa hè theo ảnh tham chiếu (chỉ hình ảnh): nhựa đường xám xanh sẫm có vệt (`premium-textures.ts` `tile_street`), vỉa hè lát phiến xám ấm so le (`tile_sidewalk`), bó vỉa nổi có mép sáng + bóng đổ + rãnh sẫm (`neighborhood-scene.ts` `kerbRun`, `road-surface.ts`), vạch giữa đứt nét đổi sang trắng (vạch đôi vàng gần ngã tư giữ nguyên). | `yarn typecheck` PASS. | Đã xem bằng Browser pane (bản đồ chính, ban ngày, zoom 0,84×): đường xám sẫm, bó vỉa nổi, vạch trắng đứt, vỉa hè phiến xám ấm hiển thị đúng. Chưa xem ban đêm/mưa/khu phố mở rộng; nếu chưa giống ảnh thì chỉnh màu/độ dày ở các hằng số trên nếu chưa giống ảnh. Chưa làm vạch đi bộ dày hơn, hàng cây/chậu cây ven đường. |
+
+| 2026-10-11 | `open-world-land-reclamation` 2.2, 2.4, 4.4 tick: camera kẹp theo vùng chơi + lề 8 ô; minimap `MiniMap.tsx` (chỉ xem); kiểm trình duyệt dev: khai hoang W1 −800.000 ₫, mua lô −576.000 ₫, ngân sách mở rộng 84→108 và modal hiện đúng. `yarn typecheck` PASS, game-core test 111/0. Chưa kiểm mobile/cảm ứng, co-op. |
+| 11/10/2026 | Chỉnh tiếp đường/vỉa hè theo yêu cầu: vỉa hè sáng hơn (`tile_sidewalk` nền #E2DED0/#D3CFC0), bó vỉa dày 5 → 9 px (`kerbRun`, `road-surface.ts`). | `yarn typecheck` PASS. | **Chưa xem bằng mắt bản này**: ô lưu lại báo đang mở ở thẻ khác nên Browser pane không vào game; bản trước (mỏng/tối hơn) đã xem. Chỉnh màu/độ dày ở các hằng số trên nếu chưa ưng. |
+
+| 2026-10-11 | `open-world-land-reclamation` 4.3 (một phần): chạm lô chưa mua trên bản đồ → `ParcelBuyModal` → lệnh `buy_parcel` (viewport `onParcelTap`). Kiểm trình duyệt dev: mua `w1-east-1` trừ 360.000 ₫. typecheck PASS. Chưa: hiển thị đợt khóa trên bản đồ, hệ số vị trí trên biển lô, cảm ứng/mobile. |
+
+| 2026-10-11 | `open-world-land-reclamation` 4.3 tick: đợt khóa hiện trên bản đồ (phủ tối + viền + biển điều kiện), biển lô có hệ số khách, camera nới vùng đợt kế tiếp. Kiểm ảnh chụp trình duyệt dev; typecheck PASS. Chưa kiểm mobile/cảm ứng, đêm/mưa. |
+
+| 2026-10-11 | `open-world-land-reclamation` 4.1: ĐO chi phí khung trong trình duyệt dev — 61×22: ~3,1 ms (p90 4,9); 77×31 (đủ W0–W4): ~4,5–4,7 ms (p90 ≤7,2), zoom 0,5× và 2×. Không cần chia khối/culling theo số đo này; chưa đo mobile/máy yếu/đêm/mưa/co-op nên 4.1 chưa tick, chờ chủ dự án chốt. Không đổi code. |
+
+| 2026-10-11 | `open-world-land-reclamation` 4.1 đóng theo quyết định bỏ chia khối (có số đo). 4.2 tick: công nhân đi lại + máy xúc chuyển động + nhà mờ dần theo tiến độ thi công (`viewport.ts`, `neighborhood-scene.ts`). Kiểm trình duyệt dev (alpha 0,86/0,48, tay máy xoay); typecheck PASS, game-core test 111/0. Chưa kiểm mobile/đêm/mưa. |
+
+| 2026-10-11 | `open-world-land-reclamation` 5.1: `yarn typecheck` PASS, `yarn test` 111/0, `yarn build` PASS. 5.3: đồng bộ `TASKS.md`, `ROADMAP.md`. Còn 5.2 browser QA đầy đủ (mobile, co-op, đêm/mưa, server thật). |
+
+| 2026-10-11 | `open-world-land-reclamation` 5.2 QA desktop (chưa tick): khai hoang/mua lô/lưu-nạp/đêm+bão ĐẠT; PHÁT HIỆN không đặt được tòa (quán nước) lên lô W1–W4 — `placementOptions` chỉ duyệt 4 lô W0, `PARCEL_MAP` thiếu lô đợt mới, `validatePlacement` ép hàng mặt tiền y=10. Cần quyết định thiết kế. Chưa kiểm: qua ngã tư, khách tới, mobile, co-op, server thật. |
+
+| 2026-10-11 | Tách change mới `open-world-new-parcel-buildings` (proposal/design/tasks/spec; chưa có code) cho việc đặt tòa lên lô W1–W4, theo quyết định của chủ dự án sau QA 5.2. `land-reclamation` còn 5.2 mobile/co-op/server thật. Cần chốt hình học lô (design Q1) trước khi làm. |
+
+| 2026-10-11 | `open-world-new-parcel-buildings` (hướng A): lô W1/W3 nới thành y 3..10 (W1: `w1-corner` x42..51, `w1-east` x52..60; W3: `w3-1` x61..70, `w3-2` x71..76), `resolveParcel`/`ALL_PARCELS`, `placementOptions`/`validatePlacement` chạy trên lô đợt mới, UI "Mở đất" liệt kê lô mới. Kiểm trình duyệt dev: mở quán nước ở w1-corner thành công, tòa hiện trên bản đồ; mô phỏng headless: đồ uống bán +26–29% so lot-east-2. typecheck/test 111-0/build PASS. W2/W4 CHƯA làm được (9 hàng giữa hai đường < 8 hàng tòa + 2 hàng vỉa hè); id `w1-east-1/2` đổi thành `w1-east` nên save QA cũ có id mồ côi (vô hại). Giá lô `w1-corner` tăng 576.000 → 1.536.000 ₫ do lô lớn hơn (provisional). |
+
+| 2026-10-11 | `open-world-new-parcel-buildings` W2/W4 (hướng 2): lô đường nam y 16..23 (cao 8 hàng), một hàng vỉa hè y=24, region W2/W4 mở rộng y 16..25 (bó vỉa = hàng biên) để hàng cửa đi được (trước đó y=24 là biên chặn → khách không tới được: mô phỏng 0 đồ uống). `placementOriginY` + front row = đáy lô; dời tòa dịch cả `dy`; kiểm overlap dùng hộp tòa gốc cho lô đợt mới. Bản đồ lớn nhất 77×32. Test game-core 111/0, typecheck/build PASS; mô phỏng: quán nước W2 150 vs 191 (W0), W4 góc 176; ảnh chụp quán ăn vặt ở w2-2. Chưa kiểm: server test, mobile thật, W4 khi chỉ mở W0+W4 (không tới được vì không có đường nối). |
+
+| 2026-10-11 | Test server `buy_plot` trên lô đợt mới (`coop-commands.test.ts`, chạy THẬT với Mongo local, PASS) + LỖI THẬT đã sửa: `apps/server/src/bootstrap.ts` gọi `placementsProblem` không truyền `ownedParcelIds` → mọi `buy_plot` lên lô W1–W4 bị từ chối `parcel_not_owned`. Sửa số giá `w1-corner` trong test cũ (1.536.000). Cũng PASS: `test:unit`, `test:worlds`, `test:gateway`. |
+
+| 2026-10-11 | ARCHIVE `open-world-new-parcel-buildings` → `openspec/changes/archive/2026-10-11-open-world-new-parcel-buildings` (không đồng bộ main specs: thư mục `openspec/specs` trống theo thực tế dự án). typecheck/test 111-0/build/`test:coop` PASS. Hoãn (ghi trong tasks.md của change): ảnh chụp chỉnh hạ tầng W1/W2 (0.2), balance-sim sang lô thật (2.3), minimap/Thành phố phản ánh tòa (4.2), mobile/cảm ứng, co-op hai trình duyệt. |
+| 2026-10-11 | Khai hoang: W4 cần W1/W3 nối đường (`connectedVia`, BFS đo lại: W2 KHÔNG nối W4 — ghi chú cũ sai); bảng Thành phố hiện khóa W4 + tòa trên lô; minimap vẽ lô W1–W4 (trước chỉ 4 lô W0) và tô lô có tòa; drink/xoi-balance-sim dùng lô thật. typecheck PASS, game-core 112/0, `test:coop` PASS (Mongo thật), web test PASS, trình duyệt dev desktop kiểm khóa W4/tòa/minimap. Chưa: hạ tầng theo ảnh 0.2, qua ngã tư bằng nhân vật, mobile thật, co-op 2 trình duyệt. |

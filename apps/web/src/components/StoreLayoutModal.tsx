@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { UNITS_PER_WAREHOUSE_CELL, getFixtureDimensions, slotGroup, tileIndex, tileInMap, type SaveGameData, type StoreFixture } from '@game/shared';
-import { BUILDING_MAP, BUILDINGS, PARCEL_MAP, DECOR, DECOR_ATTRACTION_MAX, FIXTURE_SHOP, LAND_PLOTS, EXPANSION_TILE_PRICE, MAIN_EAST_WING_PLOT_IDS, MAX_STORAGE_RACKS, NORTH_EXPANSION_ROWS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, fixtureBuilding, generateStarterTileMap, buildingAt, inMainExpansionZone, defaultPlacementOf, normalizePlacements, placementFloor, tileKey, wallRing, type BuildingId, type LandPlotDefinition } from '@game/data';
+import { BUILDING_MAP, BUILDINGS, resolveParcel, DECOR, DECOR_ATTRACTION_MAX, FIXTURE_SHOP, LAND_PLOTS, EXPANSION_TILE_PRICE, MAIN_EAST_WING_PLOT_IDS, MAX_STORAGE_RACKS, NORTH_EXPANSION_ROWS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, fixtureBuilding, generateStarterTileMap, buildingAt, inMainExpansionZone, defaultPlacementOf, normalizePlacements, placementFloor, tileKey, wallRing, type BuildingId, type LandPlotDefinition } from '@game/data';
 import { applyStoreLayoutActions, coldWarehouseCapacity, decorAttraction, decorTrafficMultiplier, expandFootprint, expansionPrice, placementOptions, relocationFee, rotateStoreFixture, sharedExpansionBudget, totalWarehouseCells, type StoreLayoutAction } from '@game/core';
 import { fixturePreviewUrl } from '@game/renderer';
 import { PixelButton } from './pixel';
@@ -54,6 +54,12 @@ const fixtureGoods = (fixtures: readonly StoreFixture[], fixture: StoreFixture) 
 
 /** Tên lô đợt 0 hiển thị khi chọn vị trí tòa. */
 const LOT_LABELS: Record<string, string> = { 'lot-west': 'Lô tây', 'lot-east-1': 'Lô đông 1 (cạnh tiệm chính)', 'lot-east-2': 'Lô đông 2' };
+/** Nhãn lô: lô W0 theo tên riêng, lô đợt khai hoang mới theo đợt + loại (vd. "Lô góc đợt 1 · w1-corner"). */
+const lotLabel = (parcelId: string): string => {
+  if (LOT_LABELS[parcelId]) return LOT_LABELS[parcelId];
+  const parcel = resolveParcel(parcelId);
+  return parcel ? `${parcel.frontage?.corner ? 'Lô góc' : 'Lô'} đợt ${parcel.wave} · ${parcelId}` : parcelId;
+};
 
 const actionIsBuyFixture = (action: StoreLayoutAction) => action.type === 'buy_fixture';
 
@@ -358,7 +364,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
     return placement ? placementFloor(placement, owned) : new Set<string>();
   }, [draft.storeLayout.buildingPlacements, draft.storeLayout.unlockedPlotIds, activeView]);
   /** Ô có thể xin xây sàn: tiệm chính theo `inMainExpansionZone`; tòa phụ trong phần ruột của lô mình (luật đầy đủ do `expandFootprint` kiểm). */
-  const planParcel = PARCEL_MAP[normalizePlacements(draft.storeLayout.buildingPlacements, owned).find(item => item.buildingId === activeView)?.parcelId ?? ''];
+  const planParcel = resolveParcel(normalizePlacements(draft.storeLayout.buildingPlacements, owned).find(item => item.buildingId === activeView)?.parcelId ?? '');
   const inPlanZone = (x: number, y: number) => activeView === 'main'
     ? inMainExpansionZone(x, y)
     : !!planParcel && x > planParcel.rect.x0 && x < planParcel.rect.x1 && y > planParcel.rect.y0 && y < planParcel.rect.y1;
@@ -1077,7 +1083,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                                   <div className="plot-place-picker">
                                     <label>Dời tới{' '}
                                       <select value={lot.parcelId} onChange={event => setPlaceChoice({ ...placeChoice, [key]: { parcelId: event.target.value, originX: targets.find(option => option.parcelId === event.target.value)!.originXs[0] } })}>
-                                        {targets.map(option => <option key={option.parcelId} value={option.parcelId}>{LOT_LABELS[option.parcelId] ?? option.parcelId}</option>)}
+                                        {targets.map(option => <option key={option.parcelId} value={option.parcelId}>{lotLabel(option.parcelId)}</option>)}
                                       </select>
                                     </label>
                                     {lot.originXs.length > 1 && (
@@ -1100,7 +1106,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                                 <div className="plot-place-picker">
                                   <label>Lô{' '}
                                     <select value={chosenLot?.parcelId} onChange={event => setPlaceChoice({ ...placeChoice, [plot.id]: { parcelId: event.target.value, originX: options.find(option => option.parcelId === event.target.value)!.originXs[0] } })}>
-                                      {options.map(option => <option key={option.parcelId} value={option.parcelId}>{LOT_LABELS[option.parcelId] ?? option.parcelId}</option>)}
+                                      {options.map(option => <option key={option.parcelId} value={option.parcelId}>{lotLabel(option.parcelId)}</option>)}
                                     </select>
                                   </label>
                                   {chosenLot && chosenLot.originXs.length > 1 && (

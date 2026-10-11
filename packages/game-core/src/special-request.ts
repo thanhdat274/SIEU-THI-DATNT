@@ -118,7 +118,7 @@ export function maybeOpenSpecialRequest(
   ctx: SpawnRequestContext
 ): SpawnRequestResult {
   const { day, minute, worldSeed, playerLevel } = ctx;
-  let openedToday = state.lastRolledDay === day ? state.openedToday : 0;
+  const openedToday = state.lastRolledDay === day ? state.openedToday : 0;
 
   // Chọn template hợp lệ theo cấp, chưa từng đồng thời mở.
   const activeDefIds = new Set(state.active.map((a) => a.defId));

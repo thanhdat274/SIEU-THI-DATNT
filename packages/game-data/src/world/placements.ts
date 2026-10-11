@@ -6,7 +6,7 @@ import type { BuildingPlacementRecord, StoreFixture } from '@game/shared';
 import { BUILDING_TEMPLATES, MAIN_EAST_WING_COLUMNS, NORTH_EXPANSION_ROWS, type BuildingId, type BuildingTemplate, type RelTile } from './building-templates';
 import { baseFloorTiles, checkFootprintTiles, footprintFloor, tileKey, type Tile } from './footprint';
 import { TREE_PROPS } from './infrastructure';
-import { PARCEL_MAP } from './parcels';
+import { ALL_PARCELS, resolveParcel } from './parcels';
 import { rectContains, type WorldRect } from './world-grid';
 
 /** Biên một tòa nhà (ô, tính cả tường). */
@@ -111,6 +111,21 @@ export function mainEastWingTiles(index: number, placement: BuildingPlacement = 
 
 const toRect = (b: BuildingBounds): WorldRect => ({ x0: b.left, x1: b.right, y0: b.top, y1: b.bottom });
 
+/**
+ * Hộp tòa phải nằm trọn trong lô. Lô W0 (cao 14 hàng) chừa sẵn chỗ cho các hàng mở rộng phía bắc nên dùng `maxBounds`;
+ * lô đợt mới chỉ cao đúng 8 hàng của tòa (open-world-new-parcel-buildings) nên chỉ đòi `bounds` gốc — mở rộng phía bắc
+ * ở đó được kiểm riêng bằng `checkFootprintTiles` khi mua (vượt lô → `outside_parcel`).
+ */
+const parcelFitBounds = (parcel: { wave: number }, geo: PlacementGeometry): BuildingBounds => (parcel.wave === 0 ? geo.maxBounds : geo.bounds);
+
+/** Gốc y của tòa đặt trên lô: đáy tòa trùng đáy lô (hàng mặt tiền). Lô không tồn tại → gốc mặc định của tòa. */
+export function placementOriginY(buildingId: BuildingId, parcelId: string): number {
+  const parcel = resolveParcel(parcelId);
+  const def = DEFAULT_PLACEMENTS.find(p => p.buildingId === buildingId) ?? DEFAULT_PLACEMENTS[0];
+  if (!parcel) return def.originY;
+  return parcel.rect.y1 - (BUILDING_TEMPLATES[buildingId].height - 1);
+}
+
 /** Lỗi đầu tiên của danh sách vị trí đặt (tòa trùng, lô không tồn tại/trùng, tòa vượt lô), hoặc null nếu hợp lệ. */
 export function validatePlacements(placements: readonly BuildingPlacementRecord[]): string | null {
   const buildings = new Set<string>();
@@ -119,12 +134,12 @@ export function validatePlacements(placements: readonly BuildingPlacementRecord[
     if (!Object.prototype.hasOwnProperty.call(BUILDING_TEMPLATES, placement.buildingId)) return `unknown_building:${placement.buildingId}`;
     if (buildings.has(placement.buildingId)) return `duplicate_building:${placement.buildingId}`;
     buildings.add(placement.buildingId);
-    const parcel = PARCEL_MAP[placement.parcelId];
+    const parcel = resolveParcel(placement.parcelId);
     if (!parcel) return `unknown_parcel:${placement.parcelId}`;
     if (parcels.has(placement.parcelId)) return `parcel_occupied:${placement.parcelId}`;
     parcels.add(placement.parcelId);
     if (!Number.isSafeInteger(placement.originX) || !Number.isSafeInteger(placement.originY)) return `invalid_origin:${placement.buildingId}`;
-    if (!rectContains(parcel.rect, toRect(placementGeometry(placement as BuildingPlacement).maxBounds))) return `outside_parcel:${placement.buildingId}`;
+    if (!rectContains(parcel.rect, toRect(parcelFitBounds(parcel, placementGeometry(placement as BuildingPlacement))))) return `outside_parcel:${placement.buildingId}`;
   }
   return null;
 }
@@ -258,7 +273,8 @@ const mergeTiles = (a: readonly Tile[], b: readonly Tile[]): Tile[] => {
 export function resolvePlacements(records: readonly BuildingPlacementRecord[] | undefined, ownedPlotIds: Iterable<string> = []): readonly BuildingPlacement[] {
   const owned = new Set(ownedPlotIds);
   const ids = placedBuildingIds(owned);
-  const usable = !!records?.length && placementsProblem(records, owned) === null;
+  // Dựng bản đồ/hình học không bỏ vị trí đã lưu vì thiếu danh sách lô sở hữu: quyền sở hữu lô được kiểm lúc đặt (`validatePlacement` với `ownedParcelIds` thật), nên ở đây coi mọi lô là hợp lệ.
+  const usable = !!records?.length && placementsProblem(records, owned, ALL_PARCELS.map(parcel => parcel.id)) === null;
   const chosen = ids.map((id): BuildingPlacement => {
     const def = defaultPlacementOf(id);
     const found = usable ? (records!.find(p => p.buildingId === id) as BuildingPlacement | undefined) : undefined;
@@ -301,22 +317,24 @@ export function validatePlacement(candidate: BuildingPlacementRecord, others: re
   const ownedParcels = new Set(ownedParcelIds);
   const template = Object.prototype.hasOwnProperty.call(BUILDING_TEMPLATES, candidate.buildingId) ? BUILDING_TEMPLATES[candidate.buildingId as BuildingId] : undefined;
   if (!template) return `unknown_building:${candidate.buildingId}`;
-  const parcel = PARCEL_MAP[candidate.parcelId];
+  const parcel = resolveParcel(candidate.parcelId);
   if (!parcel) return `unknown_parcel:${candidate.parcelId}`;
   // D4: lô đợt mới (không phải W0) phải thuộc sở hữu đã mua trước khi đặt tòa; W0 luôn hợp lệ.
   if (parcel.wave !== 0 && !ownedParcels.has(candidate.parcelId)) return 'parcel_not_owned';
   if (!Number.isSafeInteger(candidate.originX) || !Number.isSafeInteger(candidate.originY)) return `invalid_origin:${candidate.buildingId}`;
   const geo = placementGeometry(candidate as BuildingPlacement);
   // Đợt 0: mặt tiền nằm ở hàng y=10 (vỉa hè y 11–12) nên gốc y cố định theo mẫu tòa.
-  if (geo.bounds.bottom !== DEFAULT_GEOMETRY.main.bounds.bottom) return `front_row:${candidate.buildingId}`;
-  if (!rectContains(parcel.rect, toRect(geo.maxBounds))) return `outside_parcel:${candidate.buildingId}`;
+  // Hàng mặt tiền = đáy lô (W0 và W1/W3: y=10; W2/W4 đường nam: y=23, chỉ chừa một hàng vỉa hè y=24).
+  if (geo.bounds.bottom !== parcel.rect.y1) return `front_row:${candidate.buildingId}`;
+  if (!rectContains(parcel.rect, toRect(parcelFitBounds(parcel, geo)))) return `outside_parcel:${candidate.buildingId}`;
   for (const other of others) {
     if (other.buildingId === candidate.buildingId) continue;
     if (other.parcelId === candidate.parcelId || other.parcelIds?.includes(candidate.parcelId)) return `parcel_occupied:${candidate.parcelId}`;
     const otherGeo = placementGeometry(other);
-    const boxes = [otherGeo.maxBounds, ...(otherGeo.template.hasWarehouse ? [warehouseGeometry(otherGeo).bounds] : [])];
+    const otherParcel = resolveParcel(other.parcelId);
+    const boxes = [otherParcel ? parcelFitBounds(otherParcel, otherGeo) : otherGeo.maxBounds, ...(otherGeo.template.hasWarehouse ? [warehouseGeometry(otherGeo).bounds] : [])];
     for (const box of boxes) {
-      const shared = overlap(geo.maxBounds, box);
+      const shared = overlap(parcelFitBounds(parcel, geo), box);
       // Chỉ được chung đúng một cột tường (tường đông của tòa này là tường tây của tòa kia).
       if (shared && shared.left !== shared.right) return `overlap:${candidate.buildingId}:${other.buildingId}`;
     }
@@ -355,7 +373,7 @@ export function placementsProblem(placements: readonly BuildingPlacementRecord[]
   // D7b: lô đã lấn (`parcelIds`) phải có thật và không thuộc tòa khác.
   for (const record of relevant) {
     for (const pid of record.parcelIds ?? []) {
-      if (!PARCEL_MAP[pid]) return `unknown_parcel:${pid}`;
+      if (!resolveParcel(pid)) return `unknown_parcel:${pid}`;
       if (pid === record.parcelId) continue;
       if (relevant.some(other => other !== record && (other.parcelId === pid || other.parcelIds?.includes(pid)))) return `parcel_occupied:${pid}`;
     }

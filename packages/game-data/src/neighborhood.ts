@@ -426,6 +426,17 @@ export const PARK = {
 export const PARK_BENCHES: ReadonlyArray<{ x: number; y: number }> = [
   { x: -27, y: 6 }, { x: -24, y: 6 }, { x: -16, y: 6 }, { x: -10, y: 8 }, { x: -22, y: 4 }, { x: -14, y: 1 }, { x: -26, y: 9 },
 ];
+/**
+ * Biển hiệu chữ tự do trên khu phố (tâm ô, đơn vị ô). Chỉ là hình ảnh: không chặn đường, không đổi gameplay.
+ * Màu/cỡ theo nhãn "HẺM 12" (mực nâu, không viền) để không lấn át biển chính.
+ */
+export interface NeighborhoodSign { id: string; text: string; x: number; y: number; size: number; fill: number; stroke?: number }
+export const NEIGHBORHOOD_SIGNS: readonly NeighborhoodSign[] = [
+  { id: 'pho-hang-quan', text: 'PHỐ HÀNG QUÁN', x: 2.5, y: 17.4, size: 8, fill: 0x4a3a2a },
+  { id: 'ngo-ganh-gong', text: 'NGÕ GÁNH GỒNG', x: 22.5, y: 17.4, size: 8, fill: 0x4a3a2a },
+  { id: 'vua-ve-chai', text: 'VỰA VE CHAI', x: 58.5, y: 17.4, size: 8, fill: 0x4a3a2a },
+];
+
 export const PARK_LAMPS: ReadonlyArray<{ x: number; y: number }> = [{ x: -28, y: 5 }, { x: -22, y: 5 }, { x: -15, y: 5 }, { x: -9, y: 1 }, { x: -25, y: 9 }];
 /** Đường dạo trong công viên (ô): dải lát đá. Phần tử thứ hai là đường ngang chính (hàng 5..7). */
 export const PARK_PATHS: readonly TileRect[] = [

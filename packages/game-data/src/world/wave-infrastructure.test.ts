@@ -56,10 +56,11 @@ export function runWaveInfrastructureTests(): void {
     const insideAnyParcel = (x: number, y: number): boolean =>
       wave.parcels.some(p => p.rect.x0 <= x && x <= p.rect.x1 && p.rect.y0 <= y && y <= p.rect.y1);
 
-    // Vỉa hè: trong biên + trong region, số hơn 0, đủ 2 hàng.
+    // Vỉa hè: trong biên + trong region, số hơn 0; đường chính 2 hàng, đường nam 1 hàng (lô nới lên 8 hàng, hướng 2).
     assert.ok(infra.sidewalk.length > 0, `w${waveId} có vỉa hè`);
     const sideRows = new Set(infra.sidewalk.map(c => c.y));
-    assert.equal(sideRows.size, 2, `w${waveId} vỉa hè 2 hàng`);
+    const expectedSideRows = kerb === 25 ? 1 : 2;
+    assert.equal(sideRows.size, expectedSideRows, `w${waveId} vỉa hè ${expectedSideRows} hàng`);
     for (const c of infra.sidewalk) {
       assert.ok(inBounds(c.x, c.y), `vỉa hè w${waveId} (${c.x},${c.y}) trong WORID_BOUNDS`);
       assert.ok(rectHas(region, c.x, c.y), `vỉa hè w${waveId} (${c.x},${c.y}) trong region`);

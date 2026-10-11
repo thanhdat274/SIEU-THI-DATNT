@@ -3,6 +3,7 @@
  * nhau và dùng chung tường (chủ dự án đồng ý 05/10/2026). Rect tính cả tường; tường chung x=6, 21, 26 thuộc cả hai lô.
  */
 import { rectHeight, rectWidth, type WorldRect } from './world-grid';
+import { RECLAMATION_WAVES } from './waves';
 
 export interface LandParcel {
   id: string;
@@ -85,6 +86,29 @@ export const LAND_PARCELS: readonly LandParcel[] = [
 export const PARCEL_MAP: Readonly<Record<string, LandParcel>> = Object.freeze(
   Object.assign(Object.create(null) as Record<string, LandParcel>, Object.fromEntries(LAND_PARCELS.map(parcel => [parcel.id, parcel]))),
 );
+
+/** Lô của các đợt khai hoang W1–W4 (chuyển từ `RECLAMATION_WAVES[*].parcels`, gắn `wave` = chỉ số đợt, mặt tiền theo đợt). */
+export const WAVE_LAND_PARCELS: readonly LandParcel[] = Object.freeze(
+  RECLAMATION_WAVES.flatMap((wave, waveIndex) => wave.parcels.map((raw): LandParcel => ({
+    id: raw.id,
+    rect: raw.rect,
+    wave: waveIndex,
+    frontageRoadId: raw.frontageRoadId ?? wave.frontageRoadId,
+    frontage: { corner: raw.corner ?? false },
+  }))),
+);
+
+/** Mọi lô: 4 lô W0 + lô các đợt khai hoang. `LAND_PARCELS`/`PARCEL_MAP` vẫn chỉ là W0 để dữ liệu cũ không đổi. */
+export const ALL_PARCELS: readonly LandParcel[] = Object.freeze([...LAND_PARCELS, ...WAVE_LAND_PARCELS]);
+
+const ALL_PARCEL_MAP: Readonly<Record<string, LandParcel>> = Object.freeze(
+  Object.assign(Object.create(null) as Record<string, LandParcel>, Object.fromEntries(ALL_PARCELS.map(parcel => [parcel.id, parcel]))),
+);
+
+/** Tra lô theo id trong cả W0 lẫn các đợt khai hoang (open-world-new-parcel-buildings Q3). */
+export function resolveParcel(parcelId: string): LandParcel | undefined {
+  return ALL_PARCEL_MAP[parcelId];
+}
 
 /**
  * D7b: Tìm các lô kề nhau (chạm cạnh, không chỉ góc) với `parcelId`. Dùng để cho phép mở rộng sang lô trống.

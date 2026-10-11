@@ -213,7 +213,7 @@ export class GameController {
     } else {
       const nextSave = body.updatedBusiness.save as SaveGameData | undefined;
       // Vị trí đặt tòa (open-world-land-grid): bước này chỉ nhận vị trí mặc định; vị trí khác/hỏng bị từ chối, giữ save hiện tại.
-      const placementIssue = isSaveGameData(nextSave) ? placementsProblem(nextSave.storeLayout.buildingPlacements, nextSave.storeLayout.unlockedPlotIds ?? []) : null;
+      const placementIssue = isSaveGameData(nextSave) ? placementsProblem(nextSave.storeLayout.buildingPlacements, nextSave.storeLayout.unlockedPlotIds ?? [], nextSave.storeLayout.ownedParcelIds ?? []) : null;
       if (placementIssue) throw new BadRequestException(`Vị trí đặt tòa không hợp lệ: ${placementIssue}`);
       const sameLayout = () => {
         if (!isSaveGameData(nextSave)) return false;

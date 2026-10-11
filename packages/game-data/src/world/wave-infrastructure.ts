@@ -17,8 +17,8 @@
  * hoặc mặt tiền lô. Việc bố trí dày đặc hơn sẽ thực hiện khi chốt hình (0.2).
  *
  * Rãnh thoát nước (`stormDrains`) đặt ở bó vỉa (kerb): với đợt W1/W3 vùng đợt GỒM cả lòng đường `main`
- * (region y3..15 chứa hàng 13) nên có rãnh; với W2/W4 vùng đợt (y16..24) NẰM PHÍA BẮC đường `south`
- * (kerb hàng 25 NGOÀI region) nên đợt không khai báo rãnh — rãnh đường nam là hạ tầng đường có sẵn.
+ * (region y3..15 chứa hàng 13) nên có rãnh; với W2/W4 vùng đợt (y16..25) gồm cả bó vỉa hàng 25 của
+ * đường `south` (hàng biên bản đồ) nên cũng khai báo rãnh; vỉa hè phía bắc đường nam chỉ còn một hàng y=24.
  */
 import type { Vector2D } from '@game/shared';
 import type { TreeProp } from './infrastructure';
@@ -57,6 +57,11 @@ function sidewalkStrip(x0: number, x1: number, kerb: number): Array<{ x: number;
   ];
 }
 
+/** Một hàng vỉa hè ngay sát bó vỉa (đường nam sau khi lô nới lên 8 hàng chỉ còn y=24). */
+function sidewalkSingleRow(x0: number, x1: number, kerb: number): Array<{ x: number; y: number }> {
+  return cells({ x0, x1, y0: kerb - 1, y1: kerb - 1 });
+}
+
 /** Hằng số bó vỉa theo đường, đồng nhất `FRONTAGE_ROAD_TOPROW`/TRAFFIC_ROADS (main 13, south 25). */
 const KERB_ROW: Readonly<Record<string, number>> = { main: ROAD_PROFILE.kerbTileY, south: 25 } as const;
 
@@ -92,33 +97,31 @@ export const WAVE_INFRASTRUCTURE: Readonly<Record<string, WaveInfrastructure>> =
     carParking: Object.freeze([]),
     stormDrains: Object.freeze([{ tileX: 64 }, { tileX: 70 }, { tileX: 74 }]),
   }),
-  // W2 — Nam hẻm, đường `south` (vỉa hè south hàng 23–24, kerb 25). Region x0..35, y16..24; lô x0..31 (khe: 32–35).
-  // Kerb 25 NGOÀI region (region y0..y1 = 16..24) nên đợt không khai báo rãnh.
+  // W2 — Nam hẻm, đường `south` (vỉa hè south hàng 23–24, kerb 25). Region x0..35, y16..25 (hàng 25 = bó vỉa, cũng là hàng biên bản đồ chặn để hàng vỉa hè y=24 đi được); lô x0..35, y16..23.
   w2: Object.freeze({
     waveId: 'w2',
-    sidewalk: sidewalkStrip(0, 35, SOUTH_KERB),
+    sidewalk: sidewalkSingleRow(0, 35, SOUTH_KERB),
     streetLamps: Object.freeze([{ x: 32, y: 24 }]),
     trees: Object.freeze([
-      { id: 'w2_east_tree', tileX: 35, tileY: 23, height: 1.8, crownRadius: 0.8 },
+      { id: 'w2_east_tree', tileX: 35, tileY: 24, height: 1.8, crownRadius: 0.8 },
     ]),
     // Chỗ đỗ xe máy ở khe đông lô (hàng vỉa hè y=24, ô 33–34) — khe 4 ô không kịp ô tô nên chỉ xe máy.
     streetParking: Object.freeze([{ x: 34 * 32, y: 24 * 32 + 10 }]),
     carParking: Object.freeze([]),
-    stormDrains: Object.freeze([]),
+    stormDrains: Object.freeze([{ tileX: 5 }, { tileX: 20 }, { tileX: 33 }]),
   }),
-  // W4 — Nam đông, đường `south` (vỉa hè south hàng 23–24, kerb 25). Region x42..76, y16..24; lô x42..71 (khe: 72–76).
-  // Kerb 25 NGOÀI region → đợt không khai báo rãnh (rãnh đường nam là hạ tầng đường có sẵn).
+  // W4 — Nam đông, đường `south` (vỉa hè south hàng 23–24, kerb 25). Region x42..76, y16..25 (hàng 25 = bó vỉa + hàng biên bản đồ); lô x42..76, y16..23, chỉ còn MỘT hàng vỉa hè y=24 (hướng 2 của open-world-new-parcel-buildings).
   w4: Object.freeze({
     waveId: 'w4',
-    sidewalk: sidewalkStrip(42, 76, SOUTH_KERB),
+    sidewalk: sidewalkSingleRow(42, 76, SOUTH_KERB),
     streetLamps: Object.freeze([{ x: 72, y: 24 }]),
     trees: Object.freeze([
-      { id: 'w4_east_tree', tileX: 76, tileY: 23, height: 1.8, crownRadius: 0.8 },
+      { id: 'w4_east_tree', tileX: 76, tileY: 24, height: 1.8, crownRadius: 0.8 },
     ]),
     // Chỗ đỗ xe máy ở khe đông lô (hàng vỉa hè y=24, ô 74–75); khe 5 ô hẹp cho ô tô nên chỉ xe máy (provisional).
     streetParking: Object.freeze([{ x: 75 * 32, y: 24 * 32 + 10 }]),
     carParking: Object.freeze([]),
-    stormDrains: Object.freeze([]),
+    stormDrains: Object.freeze([{ tileX: 46 }, { tileX: 60 }, { tileX: 74 }]),
   }),
 });
 
