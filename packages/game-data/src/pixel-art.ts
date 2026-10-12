@@ -7,11 +7,52 @@ export interface PixelRect { x: number; y: number; w: number; h: number; color: 
 export function productPixels(product?: Pick<Product, 'id' | 'category'>): PixelRect[] {
   const p: PixelRect[] = [];
   const rect = (x: number, y: number, w: number, h: number, color: string) => p.push({ x, y, w, h, color });
-  const ink = '#593A2B', paper = '#FFF2D6', gold = '#E9B95D', teal = '#357F72';
+  const ink = '#3A3A50', paper = '#FFF2D6', gold = '#E9B95D', teal = '#357F72';
   const category = product?.category;
   if (drawColdProductIcon(product?.id, rect)) return p;
   const foodIcon = product ? FOOD_ICON_RECTS[FOOD_ICON_BY_PRODUCT[product.id]] : undefined; // icon thực phẩm Kenney cho các món hợp hình
   if (foodIcon) { for (const [x, y, w, h, color] of foodIcon) rect(x, y, w, h, color); return p; }
+  if (product?.id === 'keo_mut') { // kẹo mút: kẹo xoắn đỏ trắng tròn trên que trắng
+    rect(7, 8, 2, 7, '#E8E1D9');
+    rect(4, 1, 8, 8, ink);
+    rect(5, 2, 6, 6, '#D63629');
+    rect(6, 3, 4, 4, '#FFF2D6');
+    rect(7, 4, 2, 2, '#D63629');
+    return p;
+  }
+  if (product?.id === 'keo_cao_su') { // thanh kẹo cao su gói giấy bạc xanh lá bạc hà
+    rect(2, 4, 12, 8, ink);
+    rect(3, 5, 10, 6, '#2E8B57');
+    rect(3, 7, 10, 2, '#DCE1E7');
+    rect(5, 5, 6, 2, '#6EE7B7');
+    return p;
+  }
+  if (product?.id === 'keo_big_babol') { // kẹo cao su Big Babol thổi bóng hồng dâu
+    rect(3, 3, 10, 10, ink);
+    rect(4, 4, 8, 8, '#EC4899');
+    rect(5, 5, 6, 3, '#F472B6');
+    rect(5, 5, 2, 2, '#FFF1F2');
+    rect(6, 9, 4, 2, '#3B82F6');
+    return p;
+  }
+  if (product?.id === 'keo_bac_ha') { // kẹo ngậm bạc hà oval sọc xanh băng tuyết
+    rect(3, 4, 10, 8, ink);
+    rect(4, 5, 8, 6, '#FFFFFF');
+    rect(6, 5, 2, 6, '#0EA5E9');
+    rect(9, 5, 2, 6, '#0EA5E9');
+    rect(4, 5, 8, 1, '#BAE6FD');
+    return p;
+  }
+  if (product?.id === 'keo_lac') { // thanh kẹo lạc mật mía vàng giòn đính hạt lạc
+    rect(2, 4, 12, 8, ink);
+    rect(3, 5, 10, 6, '#B45309');
+    rect(4, 6, 3, 2, '#FDE68A');
+    rect(9, 6, 3, 2, '#FDE68A');
+    rect(6, 8, 3, 2, '#FDE68A');
+    rect(4, 9, 1, 1, '#FFFBEB');
+    rect(8, 5, 1, 1, '#FFFBEB');
+    return p;
+  }
   if (product?.id === 'bap_xao_tp') { // ly bắp xào: bắp vàng xào hành trong ly giấy
     rect(3, 6, 10, 9, ink); rect(4, 7, 8, 7, paper); rect(4, 4, 8, 3, ink); rect(5, 3, 6, 3, '#F2C94C'); rect(6, 2, 2, 2, '#F7DC73'); rect(9, 3, 2, 2, '#E9B95D');
     rect(5, 4, 1, 1, '#F7DC73'); rect(10, 4, 1, 1, '#F7DC73'); rect(6, 8, 4, 2, '#F2C94C'); rect(7, 11, 2, 1, '#418E3A');

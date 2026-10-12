@@ -23,6 +23,7 @@ import { runPlanningReservationTests } from './planning-reservation.test';
 import { runLandPermissionTests, runLandVoteTests } from './land-core-coop.test';
 import { runOpenWorldCoopLandPureTests } from './city-journal.test';
 import { runBuildingTypesBalanceSimTests } from './building-types-balance-sim.test';
+import { runHolidayBalanceSimTests } from './holiday-balance-sim.test';
 import { runParcelPriceTests } from './parcel-price.test';
 import { runLandLeaseSimTests } from './land-lease-sim.test';
 import { runSupplyContractTests } from './supply-contract.test';
@@ -201,6 +202,7 @@ export async function runTests(): Promise<void> {
   runStoreTiersTests();
   runSchema9Tests();
   runBuildingTypesBalanceSimTests();
+  runHolidayBalanceSimTests();
   runLandLeaseTests();
   runParcelPriceTests();
   runLandLeaseSimTests();

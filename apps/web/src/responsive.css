@@ -41,8 +41,8 @@
 }
 html[data-input="touch"] { --touch: max(44px, 3.1rem); }
 :root { --fs-xs: 0.72rem; }
-/* Mật độ UI: chỉ đổi token khoảng cách/chữ; kích thước vùng chạm giữ nguyên. */
-html[data-density="compact"] { --space-1: 3px; --space-2: 5px; --space-3: 8px; }
+/* Mật độ UI: đổi token khoảng cách/chữ; trên màn hình nhỏ/cầm tay đảm bảo vùng chạm chuẩn >= 44px. */
+html[data-density="compact"] { --space-1: 3px; --space-2: 5px; --space-3: 8px; --touch: max(44px, 3.1rem); }
 html[data-density="comfortable"] { --space-3: clamp(14px, 1.1vw, 24px); --fs-sm: 0.85rem; --fs-xs: 0.78rem; }
 @media (min-width: 640px) { :root { --dialog-w: 820px; } }
 @media (min-width: 1600px) and (min-height: 900px) { :root { --dialog-w: 900px; --dialog-h: 840px; } }

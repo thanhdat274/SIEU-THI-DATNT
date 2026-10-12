@@ -1490,10 +1490,13 @@ export class GameSimulation {
   /** Kẻ trộm lẻ tới quầy: bị phát hiện thì trả lại hàng và nộp phạt, không thì mang hàng đi mà không trả tiền. */
   private resolveShoplifter(customer: CustomerState, checkoutId: string): boolean {
     const day = this.clock.getTime().day;
+    const guard = this.staff.find((s) => s.role === 'security' && this.isStaffOnShift(s));
+    const guardBonus = guard ? (staffSpecialtyInfo(guard)?.thiefCatchBonus ?? 0) : 0;
     const chance = shopliftDetectChance({
-      guardOnShift: this.hasSecurityGuardOnShift(),
+      guardOnShift: !!guard,
       camera: this.security.camera,
       refillOnShift: this.staff.some((s) => s.role === 'refill' && this.isStaffOnShift(s)),
+      guardBonus,
     });
     const caught = shopliftCaught(day, customer.id ?? checkoutId, chance);
     const totals = this.customerManager.finishShoplifter(checkoutId, caught, this.tileMap, this.fixtures, this.inventory, (spoiled) => {

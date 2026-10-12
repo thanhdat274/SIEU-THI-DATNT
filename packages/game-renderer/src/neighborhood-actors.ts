@@ -7,7 +7,7 @@ import type { PixelTextureFactory } from './textures';
 import { RainGear, type GearFacing } from './rain-gear';
 
 const T = 32;
-const INK = 0x1f1a16;
+const INK = 0x3a3a50;
 
 export interface ActorsFrame {
   dt: number;
@@ -45,21 +45,112 @@ function drawAccessory(g: Graphics, kind: string, facing: NpcFacing, tint: numbe
   // Vẽ trên lưới thô 2×2 (p = nửa toạ độ pixel) cho cùng độ thô với nhân vật LimeZu phóng 2×.
   const p = (x: number, y: number, w: number, h: number, color: number) => { g.rect(x * 2, y * 2, w * 2, h * 2).fill(color); };
   switch (kind) {
-    case 'backpack':
-      if (facing === 'down') return; // đeo sau lưng: nhìn từ phía trước không thấy
-      if (lateral) { p(-side * 5 - 2, -17, 4, 7, INK); p(-side * 5 - 1, -16, 2, 5, tint === 0xffffff ? 0x2e7dbf : 0xd9533a); }
-      else { p(-4, -17, 8, 8, INK); p(-3, -16, 6, 6, 0x2e7dbf); }
+    case 'backpack': {
+      // Cặp học sinh / sinh viên: xanh cobalt hoặc đỏ mận, viền INK, có quai đeo và ngăn khóa
+      const bpMain = tint === 0xffffff ? 0x2563eb : 0xdc2626;
+      const bpDark = tint === 0xffffff ? 0x1d4ed8 : 0xb91c1c;
+      const bpLight = tint === 0xffffff ? 0x60a5fa : 0xf87171;
+      const zip = 0xf1f5f9;
+
+      if (facing === 'down') {
+        // Nhìn từ phía trước: 2 quai đeo ôm qua 2 vai xuống ngực kèm chốt ngực
+        p(-3, -15, 1, 5, INK); p(-3, -14, 1, 4, bpMain);
+        p(2, -15, 1, 5, INK); p(2, -14, 1, 4, bpMain);
+        p(-2, -12, 4, 1, INK); p(-1, -12, 2, 1, zip);
+      } else if (lateral) {
+        // Nhìn nghiêng: cặp đeo sát lưng (y = -15 đến -9), có quai ôm qua ngực và quai xách
+        const bx = side === 1 ? -5 : 1;
+        p(bx, -15, 4, 7, INK);
+        p(bx + 1, -14, 2, 5, bpMain);
+        p(bx + 1, -14, 2, 1, bpLight); // highlight nắp trên
+        p(bx + 1, -11, 2, 2, bpDark);  // ngăn phụ dưới
+        p(bx + 1, -11, 1, 1, zip);     // khóa kéo
+        p(bx + 1, -16, 2, 1, INK);     // quai xách đỉnh
+        // Quai đeo vai ôm qua ngực
+        p(side === 1 ? -1 : 0, -14, 1, 1, INK);
+        const sx = side === 1 ? 1 : -2;
+        p(sx, -13, 1, 3, INK);
+        p(sx, -12, 1, 2, bpMain);
+      } else {
+        // Nhìn từ sau lưng (facing === 'up'): thấy trọn vẹn lưng cặp
+        p(-2, -16, 4, 1, INK); // quai xách chữ U
+        p(-3, -15, 6, 7, INK);
+        p(-2, -14, 4, 5, bpMain);
+        p(-2, -14, 4, 1, bpLight); // nắp trên
+        p(-2, -11, 4, 2, bpDark);  // ngăn phụ
+        p(-1, -11, 2, 1, zip);     // khóa kéo bạc
+      }
       break;
+    }
     case 'briefcase':
       p(side * 5 - 2, -7, 5, 4, INK); p(side * 5 - 1, -6, 3, 2, 0x6b4a2f); p(side * 5, -8, 1, 1, INK);
       break;
     case 'bag':
       p(side * 5 - 2, -8, 4, 5, INK); p(side * 5 - 1, -7, 2, 3, 0xe03a2e);
       break;
-    case 'box':
-      if (lateral) { p(-side * 5 - 3, -20, 7, 8, INK); p(-side * 5 - 2, -19, 5, 6, 0xe9a33a); p(-side * 5 - 2, -17, 5, 1, 0xb67a20); }
-      else { p(-5, -19, 10, 7, INK); p(-4, -18, 8, 5, 0xe9a33a); }
+    case 'box': {
+      // Balo giao hàng shipper chuyên nghiệp: balo giữ nhiệt cam năng động + dải phản quang + quai đeo ngực + mũ lưỡi trai
+      const boxMain = 0xf57c00;
+      const boxDark = 0xc2410c;
+      const boxLight = 0xffb74d;
+      const reflector = 0xf8fafc;
+
+      if (facing === 'down') {
+        // Nhìn từ phía trước:
+        // 1. Quai đeo balo 2 bên vai + đai ngực phản quang
+        p(-3, -15, 1, 5, INK); p(-3, -14, 1, 4, boxMain);
+        p(2, -15, 1, 5, INK); p(2, -14, 1, 4, boxMain);
+        p(-2, -12, 4, 1, INK); p(-1, -12, 2, 1, reflector);
+        // Thân balo nhô nhẹ 2 bên hông sau lưng
+        p(-4, -14, 1, 4, INK); p(-4, -13, 1, 3, boxDark);
+        p(3, -14, 1, 4, INK); p(3, -13, 1, 3, boxDark);
+        // 2. Mũ shipper lưỡi trai đội trên đầu nhìn chính diện
+        p(-3, -24, 6, 3, INK); p(-2, -23, 4, 2, boxMain);
+        p(-4, -21, 8, 1, INK); p(-3, -21, 6, 1, boxDark); // vành lưỡi trai
+        p(0, -25, 1, 1, INK); // nút chóp nón
+      } else if (lateral) {
+        // Nhìn nghiêng:
+        // 1. Thân balo shipper đứng dáng, áp sát lưng (y = -16 đến -8)
+        const bx = side === 1 ? -6 : 1;
+        p(bx + 1, -16, 3, 1, INK); // bo tròn góc đỉnh
+        p(bx, -15, 5, 7, INK);     // khung balo
+        p(bx + 1, -8, 3, 1, INK);  // bo góc đáy
+        p(bx + 1, -15, 3, 6, boxMain);
+        p(bx + 1, -15, 3, 1, boxLight);  // nắp mở highlight
+        p(bx + 1, -12, 3, 1, reflector); // dải phản quang an toàn
+        p(bx + 1, -10, 3, 2, boxDark);   // đáy balo bóng đổ
+        p(bx + 2, -17, 2, 1, INK);       // quai xách đỉnh
+        // Quai đeo ôm từ vai ra trước ngực
+        p(side === 1 ? -1 : 0, -15, 2, 1, INK);
+        const sx = side === 1 ? 1 : -2;
+        p(sx, -14, 1, 4, INK);
+        p(sx, -13, 1, 2, boxMain);
+        p(sx, -12, 1, 1, reflector); // khóa ngực bạc
+        // 2. Mũ shipper lưỡi trai chìa về phía trước
+        p(-2, -24, 5, 3, INK);
+        p(-1, -23, 4, 2, boxMain);
+        const vx = side === 1 ? 2 : -5;
+        p(vx, -21, 4, 1, INK);
+        p(vx + (side === 1 ? 0 : 1), -21, 3, 1, boxDark); // lưỡi trai chìa ra
+        p(0, -25, 1, 1, INK); // chóp nón
+      } else {
+        // Nhìn từ sau lưng (facing === 'up'):
+        // 1. Thân balo trọn vẹn
+        p(-2, -17, 4, 1, INK); // quai xách đỉnh
+        p(-4, -16, 8, 9, INK);
+        p(-3, -15, 6, 7, boxMain);
+        p(-3, -15, 6, 1, boxLight);  // nắp trên
+        p(-3, -12, 6, 1, reflector); // dải phản quang
+        p(-3, -10, 6, 2, boxDark);   // phần đáy
+        p(-2, -14, 1, 5, INK);       // 2 đai lưng
+        p(1, -14, 1, 5, INK);
+        // 2. Mũ shipper nhìn từ sau lưng
+        p(-3, -24, 6, 3, INK); p(-2, -23, 4, 2, boxMain);
+        p(-1, -21, 2, 1, INK); // chốt cài nón sau gáy
+        p(0, -25, 1, 1, INK);
+      }
       break;
+    }
     case 'cart': {
       // nón lá + xe đẩy bên cạnh
       for (let i = 0; i < 6; i++) p(-1 - i, -26 + i, 2 + 2 * i, 1, i === 0 ? INK : 0xe4c485);
@@ -147,7 +238,8 @@ export class NeighborhoodActors {
     const dir = n.facing;
     const hz = detail === 'far' ? 4 : 8;
     const frame = f.reducedMotion ? 0 : Math.floor(f.time * (walking ? hz : 1.5)) % (walking ? 4 : 2);
-    const key = `npc_${walkerLook(n.spriteVariant)}_${sitting ? 'down' : dir}_${walking ? 'walk' : 'idle'}_${frame}`;
+    const visualFacing: NpcFacing = sitting ? 'down' : dir;
+    const key = `npc_${walkerLook(n.spriteVariant)}_${visualFacing}_${walking ? 'walk' : 'idle'}_${frame}`;
     entry.body.texture = this.textures.getTexture(key);
     entry.body.tint = n.tint;
     const bob = walking && !f.reducedMotion ? Math.abs(Math.sin(f.time * (n.type === 'jogger' ? 16 : 9) + n.x * 0.05)) * (n.type === 'jogger' ? 2 : 1.2) : 0;
@@ -155,9 +247,9 @@ export class NeighborhoodActors {
     entry.container.position.set(Math.round(n.x), Math.round(n.y - bob + (sitting ? 5 : 0)));
     entry.container.zIndex = n.y + (sitting ? 6 : 0);
     entry.shadow.visible = !sitting;
-    const accKey = `${n.accessory}|${dir}|${n.tint}`;
-    if (entry.accKey !== accKey) { entry.accKey = accKey; drawAccessory(entry.accessory, n.accessory, dir, n.tint); }
-    entry.accessory.y = sitting ? 0 : 0;
+    const accKey = `${n.accessory}|${visualFacing}|${n.tint}`;
+    if (entry.accKey !== accKey) { entry.accKey = accKey; drawAccessory(entry.accessory, n.accessory, visualFacing, n.tint); }
+    entry.accessory.y = sitting ? 1 : 0;
     // Ô/áo mưa: dùng chung RainGear với người chơi/khách (chỉ khi đang mưa và hiệu ứng bật)
     const raining = (f.weather?.rainIntensity ?? 0) > 0.02;
     if (raining && f.gearEnabled && !n.sheltered) {

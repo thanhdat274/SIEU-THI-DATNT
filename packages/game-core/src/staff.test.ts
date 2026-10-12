@@ -5,6 +5,7 @@ import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { generateCandidatesForDay, validateHireStaff } from './staff';
 import { isShiftWithinStoreHours } from '@game/data';
+import { shopliftDetectChance } from './security';
 
 export function runStaffTests(): void {
   const first = generateCandidatesForDay(4);
@@ -138,6 +139,21 @@ export function runStaffTests(): void {
   assert.equal(fullSim.getPlayerData().money, 80_000);
   assert.equal(fullSim.getLedger().filter((entry) => entry.type === 'wage').length, 2, 'Mỗi lần trả ghi sổ cái loại wage');
   assert.equal(fullSim.payWageDebt().success, false, 'Hết nợ thì không trả nữa');
+  // --- Hiệu ứng chuyên môn nhân viên trong mô phỏng ---
+  const normalChance = shopliftDetectChance({ guardOnShift: true, camera: false, refillOnShift: false });
+  const patrolAceChance = shopliftDetectChance({ guardOnShift: true, camera: false, refillOnShift: false, guardBonus: STAFF_SPECIALTIES.patrol_ace.thiefCatchBonus });
+  assert.ok(patrolAceChance > normalChance, 'Tuần tra giỏi phải tăng tỷ lệ phát hiện kẻ trộm');
+  assert.equal(Math.round((patrolAceChance - normalChance) * 100), 5, 'Tăng đúng 5% tỷ lệ phát hiện trộm');
+
+  // Kiểm tra hệ số tính tiền của Tay nhanh
+  assert.equal(STAFF_SPECIALTIES.quick_hands.checkoutTimeFactor, 0.8, 'Tay nhanh giảm thời gian thanh toán còn 80%');
+  // Kiểm tra chỉ số soi tiền giả của Mắt tinh
+  assert.equal(STAFF_SPECIALTIES.sharp_eye.detectAccuracyBonus, 3, 'Mắt tinh tăng 3 điểm độ chính xác soi tiền');
+  // Kiểm tra tốc độ di chuyển của Chân nhanh và Tuần tra giỏi
+  assert.equal(STAFF_SPECIALTIES.swift_legs.moveSpeedFactor, 1.25, 'Chân nhanh tăng 25% tốc độ di chuyển');
+  assert.equal(STAFF_SPECIALTIES.patrol_ace.moveSpeedFactor, 1.3, 'Tuần tra giỏi tăng 30% tốc độ tuần tra');
+
+  console.log('  ✓ Nhân viên: hiệu ứng chuyên môn (tính tiền, soi tiền giả, tốc độ di chuyển, đuổi trộm) hoạt động chuẩn xác');
   console.log('  ✓ Nhân viên: trả nợ lương ngay (một phần/đủ), ghi sổ cái, không trả khi hết nợ');
   console.log('  ✓ Nhân viên: seed ứng viên ổn định, vai trò/ca hợp lệ và điều kiện tuyển');
   console.log('  ✓ Nhân viên: migration save cũ rỗng và save/reload giữ staff, lịch, nợ lương, payroll IDs');

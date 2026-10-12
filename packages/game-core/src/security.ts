@@ -14,10 +14,13 @@ export function rollShoplifter(day: number, customerId: string, level: number, i
 }
 
 /** Xác suất phát hiện kẻ trộm lẻ từ các nguồn đang có. */
-export function shopliftDetectChance(sources: { guardOnShift: boolean; camera: boolean; refillOnShift: boolean }): number {
+export function shopliftDetectChance(sources: { guardOnShift: boolean; camera: boolean; refillOnShift: boolean; guardBonus?: number }): number {
   const d = SECURITY_RULES.detect;
   let miss = 1;
-  if (sources.guardOnShift) miss *= 1 - d.guard;
+  if (sources.guardOnShift) {
+    const guardChance = Math.min(0.98, d.guard + (sources.guardBonus ?? 0));
+    miss *= 1 - guardChance;
+  }
   if (sources.camera) miss *= 1 - d.camera;
   if (sources.refillOnShift) miss *= 1 - d.refill;
   return 1 - miss;

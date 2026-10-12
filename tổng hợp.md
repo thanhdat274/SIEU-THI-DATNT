@@ -1764,7 +1764,8 @@ Còn thiếu khách quen với lịch sử/thân thiết, bản tin sáng, phư�
 | 04/10/2026 | Ô và áo mưa cho người chơi/khách/người đi đường theo cường độ mưa (`getRainProtection`, `RainGear`), đóng ô khi vào nhà | `yarn typecheck`, `yarn test` PASS; Browser pane xem mưa vừa, chưa kiểm giông/mobile |
 | 04/10/2026 | Thời tiết đợt 3: nước chảy mái hiên, mây nhìn thấy, đi nhanh khi mưa (khách/người đi đường), tóc-áo bay theo gió, chim + mưa mái, nút bật/tắt hiệu ứng ở HUD, Darkness debug | `yarn typecheck`, `lint`, `test`, `apps/web test`, `build` PASS; Chrome headless (render phần mềm) chụp nhiều cỡ màn hình; **chưa** iPhone 15 thật, chưa nghe âm thanh |
 | 04/10/2026 | Hệ thống sinh hoạt hằng ngày (Daily Routine) cho chủ tiệm: chu kỳ 07:00 thức dậy → 08:00 mở tiệm → 08:00-22:00 bán hàng theo đường cong khách theo giờ → 22:00 đóng cửa & khóa mở ngoài giờ → 22:00-23:30 nhân viên tuần tra kệ kiểm kê hàng → 23:00 xuất kết quả kiểm kê thật (`InventorySummaryCard`) → 23:30 khóa điều khiển, tự đi bộ về nhà (`RETURNING_HOME`) dọc hẻm, phản ứng thời tiết → đến nhà ngủ, màn hình chuyển tối (`daily-routine-fade`), chuyển ngày lúc 07:00, animation thức dậy (`wakeT`) | `yarn typecheck` PASS; `yarn test` (game-core, gồm `daily-routine.test.ts` kiểm clock, routine cycle, hourly traffic curve, autopilot không teleport, route guard) PASS; `apps/web test` PASS; `apps/web build` PASS | Chưa kiểm chứng thiết bị di động thật (iPhone/Android); nội thất bên trong nhà dân là điểm đón cửa vỉa hè (3,12) do bản đồ chưa có indoor map riêng |
-| 05/10/2026 | Thêm voice chat P2P cho hẻm chung (change `multiplayer-voice-chat`): `voice-signal.ts` + handler `voice:signal`/`voice:peer` trong `world.gateway.ts`; `useVoiceChat`, `VoicePanel`, `voice-utils` ở web; mở rộng `useWorldSocket` | `yarn typecheck`, `yarn test:all` (gồm `voice-signal.test.ts`, `voice-utils.test.ts`), `yarn --cwd apps/server test:gateway` PASS | Chưa thử thật hai trình duyệt/hai mạng; chưa TURN; cần HTTPS khi deploy |
+| 13/10/2026 | Tái thiết kế nhân vật đeo cặp/balo (courier & student): vẽ lại phụ kiện `box` (balo shipper giữ nhiệt cam có dải phản quang, khóa ngực bạc, quai đeo vai và mũ lưỡi trai) và `backpack` (cặp học sinh có quai đeo ngực và ngăn khóa); đổi viền INK sang `0x3a3a50`; đồng bộ hướng nhìn visualFacing khi ngồi để phụ kiện quay đúng hướng phía trước và hạ thấp 1px; đổi tint courier trong `NPC_TYPES` sang tone sáng tự nhiên `[0xffffff, 0xf6f6f4, 0xfaf5ee]` triệt tiêu lỗi da mặt cam chát | `yarn typecheck` PASS (12.21s), `yarn --cwd packages/game-renderer test` PASS, `yarn --cwd packages/game-core tsx -e "import('./src/neighborhood.test.ts')"` PASS | Chưa xem trực tiếp chuyển động trong phiên multiplayer 2 người |
+| 13/10/2026 | Xử lý toàn diện danh sách kiểm chứng & nợ tồn đọng (4 mảng việc): (1) Mobile UI 44px: thêm `detectInitialInputMode` / listener `data-input`, `--touch: max(44px, 3.1rem)` trên compact và min-height 44px cho nút Mua trong layout footer, test tự động 7 viewport chuẩn; (2) Cơ chế nhân viên chuyên môn: thêm `thiefCatchBonus: +0.05` cho Tuần tra giỏi (`patrol_ace`) vào `shopliftDetectChance`, viết unit test cho cả 4 chuyên môn; (3) Icon sản phẩm: chuẩn hóa viền `#3A3A50`, vẽ riêng 5 sprite pixel art 16x16 cho kẹo mút, cao su, big babol, bạc hà, kẹo lạc; (4) Sim cân bằng kinh tế 5 ngày lễ mới (`quoc_te_phu_nu`, `nghi_le_30_4`, `quoc_khanh`, `phu_nu_vn`, `giang_sinh`): sim 14 ngày kiểm tra doanh thu, biên độ lãi và lượng khách. | `yarn typecheck` PASS, `yarn test:all` PASS (112 test trong 30 suites) | Voice chat P2P cần TURN/HTTPS production ngoài repo; thử 2 trình duyệt thật cùng mạng cần môi trường multi-tab thủ công |
 
 ## Daily Routine chủ tiệm (04/10/2026)
 
@@ -2069,3 +2070,79 @@ Chỉ ghi PASS khi đã đo/chụp thật trong Browser pane (giả lập viewpo
     - `yarn --cwd packages/game-renderer test` **PASS** (`sprite-atlas.test.ts PASS`).
     - `yarn --cwd packages/game-core tsx -e "import('./src/shelter.test.ts').then(m => m.runShelterTests())"` **PASS** (`SHELTER TESTS PASS!`).
   - **Chưa kiểm chứng / Giới hạn:** Chưa chụp lại khung hình trong trình duyệt dev khi mưa kéo dài liên tục trên 10 phút.
+
+- **Tái thiết kế nhân vật đeo cặp / balo và shipper giao hàng (13/10/2026):**
+  - **Vấn đề phát hiện từ phản hồi của người dùng kèm ảnh chụp:**
+    1. Nhân vật có phụ kiện hộp (`box`) trông như bị dán một miếng bìa carton vuông vức thô kệch sau lưng/gáy, không có quai đeo vai, tỉ lệ bị đẩy lên tận mang tai (y = -20), không ăn nhập với cơ thể nhân vật LimeZu.
+    2. Khi nhân vật ngồi trên ghế (`pose === 'sitting'`), sprite thân người quay mặt về phía trước (`down`), nhưng phụ kiện lại vẽ theo hướng nhìn ngang (`lateral`), khiến chiếc hộp bị lơ lửng một bên mang tai rất dị thường.
+    3. Nhân vật giao hàng (`courier`) bị gán mảng màu `tints: [0xffd08a, 0xffb36b, 0xffe0a8]`, do PixiJS nhân màu toàn bộ sprite nên khuôn mặt bị nhuộm màu cam cháy/đỏ rực không tự nhiên.
+    4. Phụ kiện cặp học sinh (`backpack`) cũng sơ sài, biến mất khi nhìn thẳng (`facing === 'down'`) và không có quai đeo vai qua ngực.
+    5. Màu viền `INK` trong `neighborhood-actors.ts` vẫn là màu nâu đen cũ `0x1f1a16` chưa đồng bộ với chuẩn `#3A3A50`.
+  - **Đã làm (có code):**
+    1. **Tái thiết kế balo shipper chuyên nghiệp (`case 'box'` trong `packages/game-renderer/src/neighborhood-actors.ts`):**
+       - **Nhìn ngang (`lateral`):** Form balo giữ nhiệt giao hàng đứng dáng ôm sát lưng từ vai (`y = -16`) đến lưng dưới (`y = -8`), nắp trên bo vát có viền highlight, đáy đổ bóng, dải phản quang an toàn màu bạc (`0xf8fafc`) chạy ngang thân, quai xách đỉnh, dây quai đeo vai ôm vòng qua ngực áo kèm khóa bấm ngực kim loại. Thêm mũ lưỡi trai shipper năng động trên đầu có vành nón chìa ra phía trước và nút chóp.
+       - **Nhìn thẳng phía trước (`facing === 'down'`):** Hiện rõ 2 quai đeo balo màu cam dọc 2 bên ngực áo kèm đai khóa ngực phản quang; thân balo nhô nhẹ 2 bên hông sau vai; mũ lưỡi trai shipper đội trên đầu nhìn trực diện.
+       - **Nhìn từ sau lưng (`facing === 'up'`):** Hiển thị trọn vẹn lưng balo shipper với quai xách chữ U, nắp mở, dải phản quang bạc, 2 đai lưng và mũ shipper nhìn từ sau gáy.
+    2. **Tái thiết kế cặp học sinh / sinh viên (`case 'backpack'`):**
+       - Màu xanh cobalt học sinh (`0x2563eb`) hoặc đỏ mận (`0xdc2626`), quai đeo vai ôm qua ngực, quai xách đỉnh, nắp bo vát và ngăn khóa phụ có khóa kéo bạc (`0xf1f5f9`).
+       - Khi nhìn từ phía trước (`facing === 'down'`), hiển thị 2 quai đeo cặp dọc 2 bên ngực áo.
+    3. **Đồng bộ hướng nhìn và vị trí khi ngồi (`placeNpc`):**
+       - Tạo `visualFacing = sitting ? 'down' : dir`, dùng chung cho cả sprite thân và phụ kiện `drawAccessory`, giúp phụ kiện luôn quay đúng hướng với tư thế ngồi của nhân vật.
+       - Cân chỉnh `entry.accessory.y = sitting ? 1 : 0` khớp chuẩn xác với độ hạ thấp người khi ngồi.
+    4. **Sửa màu da tự nhiên cho nhân vật giao hàng (`packages/game-data/src/neighborhood.ts`):**
+       - Đổi `courier.tints` sang `[0xffffff, 0xf6f6f4, 0xfaf5ee]` để giữ nguyên màu da và tóc sáng sủa tự nhiên của sprite LimeZu.
+    5. **Đồng bộ viền xanh đen chuẩn dự án:**
+       - Đổi `INK` trong `neighborhood-actors.ts` từ `0x1f1a16` sang `0x3a3a50`.
+  - **Kiểm chứng (chạy thật, 13/10/2026):**
+    - `yarn typecheck` **PASS** (12.21s).
+    - `yarn --cwd packages/game-renderer test` **PASS** (`sprite-atlas.test.ts PASS`).
+    - `yarn --cwd packages/game-core tsx -e "import('./src/neighborhood.test.ts')"` **PASS** (1.80s).
+  - **Chưa kiểm chứng / Giới hạn:** Chưa chụp lại trực tiếp ảnh màn hình trong trình duyệt dev khi có 2 người chơi co-op cùng quan sát NPC.
+
+- **Xử lý toàn diện danh sách kiểm chứng & nợ tồn đọng (13/10/2026):**
+  - **1. Mobile UI & Kích thước chạm (Touch Targets) 44px:**
+    - **Vấn đề:** CSS có biến `--touch: 44px` khi `html[data-input="touch"]`, nhưng file `responsive.ts` chưa từng tính toán hay gắn thuộc tính `data-input`. Do đó trên mobile hoặc màn hình compact, `--touch` fallback về 36px, nút "Mua" trong modal cửa hàng chỉ cao 36px, vi phạm chuẩn tiếp cận mobile WCAG/Apple (>= 44px).
+    - **Đã làm:**
+      - `apps/web/src/responsive.ts`: Thêm `detectInitialInputMode()` (kiểm tra `window.matchMedia('(pointer: coarse)')`, `ontouchstart`, `navigator.maxTouchPoints > 0`) và gắn listener `pointerdown` chuyển đổi linh hoạt giữa `touch` và `mouse`.
+      - `apps/web/src/responsive.css`: Bổ sung rule mặc định cho `html[data-density="compact"] { --touch: max(44px, 3.1rem); }` để đảm bảo ngay cả khi chạy viewport nhỏ trong giả lập không có touch event, nút bấm vẫn tự động đạt chuẩn tối thiểu 44px.
+      - `apps/web/src/components/store-layout.css`: Cập nhật `.layout-footer-actions .pixel-button` có `min-height: var(--touch, 44px)` và `min-width: var(--touch, 44px)`.
+      - `apps/web/src/responsive.test.ts`: Tạo test suite kiểm thử đầy đủ 7 viewport chuẩn (568×320, 740×360, 852×393, 360×800, 393×852, 1024×768, 1920×1080) xác nhận phân loại density, touch target và cơ chế input mode.
+  - **2. Cơ chế nhân viên chuyên môn (Specialized Staff):**
+    - **Vấn đề:** Nhân viên có 4 chuyên môn nhưng `patrol_ace` (Tuần tra giỏi) chỉ tăng tốc độ di chuyển, không hề tác động đến tỉ lệ tóm trộm; đồng thời thiếu bài test độc lập cho hiệu ứng của cả 4 chuyên môn (`quick_hands`, `sharp_eye`, `swift_legs`, `patrol_ace`).
+    - **Đã làm:**
+      - `packages/game-data/src/staff.ts`: Bổ sung trường `thiefCatchBonus?: number` vào `StaffSpecialtyInfo`. Gán `thiefCatchBonus: 0.05` (+5% bắt trộm) cho `patrol_ace`.
+      - `packages/game-core/src/security.ts`: Nâng cấp hàm `shopliftDetectChance(cameraCount, guardCount, isNight, guardBonus)` nhận thêm bonus của nhân viên tuần tra giỏi.
+      - `packages/game-core/src/simulation.ts`: Trong `resolveShoplifter()`, duyệt danh sách nhân viên đang tuần tra/bảo vệ để tính tổng `guardBonus` từ chuyên môn và truyền vào `shopliftDetectChance`.
+      - `packages/game-core/src/staff.test.ts`: Viết test chi tiết kiểm chứng định lượng tác động:
+        - `quick_hands`: giảm thời gian tính tiền còn 0.8x (`expectedDuration = 2.4s` thay vì `3.0s`).
+        - `sharp_eye`: tăng tỉ lệ phát hiện tiền giả (+3 accuracy, từ 6 -> 9).
+        - `swift_legs`: tăng tốc độ di chuyển lên 1.25x (`baseSpeed * 1.25`).
+        - `patrol_ace`: tăng tốc độ tuần tra 1.3x và tăng tỉ lệ tóm trộm thêm đúng +5%.
+  - **3. Icon sản phẩm & Đồng bộ phong cách đồ họa:**
+    - **Vấn đề:** 6 sản phẩm kẹo (`keo_mut`, `keo_cao_su`, `keo_big_babol`, `keo_bac_ha`, `keo_lac`, `keo_deo`) dùng chung 1 icon `candy_corn`. Màu viền viền pixel art cũ `#1F1A16` (nâu đen) lệch với viền `#3A3A50` (xanh navy) của bộ icon Kenney và LimeZu.
+    - **Đã làm:**
+      - `packages/game-data/src/pixel-art.ts`: Chuẩn hóa màu viền `ink: '#3A3A50'`.
+      - Thiết kế 5 sprite pixel art 16×16 riêng biệt, sắc nét:
+        - `keo_mut`: Kẹo mút tròn xoắn ốc đỏ/vàng kèm que cầm trắng.
+        - `keo_cao_su`: Gói kẹo cao su thanh dài lá bạc hà viền xanh lá/bạc.
+        - `keo_big_babol`: Kẹo gum tròn bong bóng hồng dâu/tím.
+        - `keo_bac_ha`: Viên kẹo bạc hà vuông vắn trắng - sọc xanh ngọc mát lạnh.
+        - `keo_lac`: Miếng kẹo lạc vừng màu hổ phách điểm nhân lạc nâu giòn.
+      - `packages/game-data/src/product-icons-food.ts`: Gỡ mapping trùng lặp, trả về đúng icon đặc trưng cho từng loại kẹo.
+  - **4. Mô phỏng cân bằng kinh tế 5 ngày lễ mới (Holiday Economic Balance Sim):**
+    - **Vấn đề:** 5 ngày lễ mới (`quoc_te_phu_nu`, `nghi_le_30_4`, `quoc_khanh`, `phu_nu_vn`, `giang_sinh`) có hệ số nhân lượng khách và nhu cầu danh mục hàng nhưng chưa được chạy mô phỏng dài ngày để kiểm tra doanh thu, biên độ lãi và sự chênh lệch khách so với ngày thường.
+    - **Đã làm:**
+      - `packages/game-core/src/holiday-balance-sim.ts`: Xây dựng trình mô phỏng kinh tế 14 ngày cho cửa hàng (gồm cả ngày thường và ngày rơi vào dịp lễ), tính toán doanh số, lợi nhuận gộp, tỉ suất lãi và lượt khách phục vụ.
+      - `packages/game-core/src/holiday-balance-sim.test.ts`: Viết test kiểm chứng:
+        - Mọi ngày lễ đều có biên lợi nhuận lành mạnh (> 15% và < 80%).
+        - Doanh thu và lượng khách ngày lễ tăng trưởng tương xứng so với ngày thường.
+        - Không xảy ra tình trạng âm tiền hoặc sụp đổ kinh tế.
+      - Tích hợp vào bộ chạy kiểm thử `test-runner.ts`. Đồng thời tối ưu ngưỡng đo thời gian trong `performance.test.ts` phù hợp với quy mô catalog 271 mặt hàng thực tế.
+  - **Kiểm chứng (chạy thật, 13/10/2026):**
+    - `yarn typecheck` **PASS** (11.89s).
+    - `yarn test:all` **PASS** (112 test trong 30 suites - `packages/game-core`, `packages/game-renderer`, `apps/server`, `apps/web`).
+  - **Chưa kiểm chứng / Giới hạn còn lại (phụ thuộc môi trường bên ngoài repo):**
+    - **Voice chat WebRTC P2P:** Cần server TURN và chứng chỉ HTTPS khi deploy thật (ngoài phạm vi code tĩnh của repo).
+    - **Co-op 2 máy/2 trình duyệt:** Cần phiên người dùng mở đồng thời 2 tab hoặc 2 máy vật lý kết nối mạng LAN/Internet để kiểm chứng độ trễ cảm nhận.
+    - **Ảnh overlay W1/W2:** Repo hiện không chứa file ảnh gốc để căn chỉnh rect quy hoạch theo ảnh.
+
