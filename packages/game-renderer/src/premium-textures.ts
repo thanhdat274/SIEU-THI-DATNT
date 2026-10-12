@@ -69,66 +69,129 @@ export function createPremiumTexture(key:string):HTMLCanvasElement|null{
  if(key.startsWith('product:')) {const {canvas,ctx}=surface(16,16);for(const p of productPixels(PRODUCT_MAP[key.slice(8)])){ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.w,p.h);}return canvas;}
  if(key==='pixel_coin') {const {canvas,ctx}=surface(16,16);ctx.fillStyle=C.dark;ctx.fillRect(3,2,10,12);ctx.fillRect(2,4,12,8);ctx.fillStyle=C.sun;ctx.fillRect(4,3,8,10);ctx.fillRect(3,5,10,6);ctx.fillStyle=C.paper;ctx.fillRect(5,4,2,7);ctx.fillStyle=C.wood;ctx.fillRect(8,5,2,6);return canvas;}
  if(key==='stall_cafe_vot'||key==='stall_banh_mi_muoi_ot'){
-  const coffee=key==='stall_cafe_vot',{canvas,ctx}=surface(64,48);
-  const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
-  const awning=coffee?['#357F72','#FFF2D6']:['#B64C3D','#FFF2D6'];
-  r(3,14,3,30,C.dark);r(58,14,3,30,C.dark);                 // cột đỡ mái
-  for(let x=0;x<64;x+=8){r(x,2,8,10,awning[(x/8)%2]);r(x,12,8,3,awning[(x/8)%2]);}  // mái che sọc
-  r(0,1,64,2,C.ink);r(0,14,64,1,C.ink);
-  r(6,26,52,18,C.wood);r(6,26,52,3,C.light);r(6,43,52,2,C.dark);    // quầy gỗ
-  r(8,30,48,1,C.dark);
-  r(2,46,60,2,'#26190E');                                            // bóng đổ
-  // Bóng đèn tròn vàng treo lủng lẳng dưới mái hiên quầy
-  r(31,14,1,5,'#1E1A16');                                            // dây điện đen
-  r(30,18,3,2,'#4A3B2C');                                            // đui đèn đồng kim loại
-  r(29,20,5,4,'#FFCA58');                                            // bóng đèn tròn vàng ấm
-  r(30,21,3,2,'#FFFDE8');                                            // tim đèn phát sáng rực rỡ
-  r(28,20,1,4,'rgba(255,212,112,0.4)');r(34,20,1,4,'rgba(255,212,112,0.4)'); // quầng phản quang
-  r(29,19,5,1,'rgba(255,212,112,0.3)');r(29,24,5,1,'rgba(255,212,112,0.3)');
-  if(coffee){
-   r(12,18,8,8,C.dark);r(13,19,6,6,'#E9B95D');r(16,22,1,5,'#FFF2D6'); // bình nước sôi
-   r(26,21,6,5,C.paper);r(27,22,4,3,'#6B4423');                        // ly cà phê
-   r(36,22,8,4,'#C69464');r(37,19,2,3,C.dark);                         // vợt pha
-   r(46,21,6,5,C.paper);r(47,22,4,3,'#3B2415');
-  }else{
-   r(10,20,18,6,'#4A4A4A');r(12,19,14,1,'#8A8A8A');r(14,22,10,2,'#E0562B');  // lò than
-   r(32,22,8,4,'#E7CE9F');r(33,21,6,1,'#F4E4BC');                          // ổ bánh mì
-   r(42,21,6,5,'#B64C3D');r(43,22,4,3,'#E0562B');                          // hũ muối ớt
-   r(50,22,6,4,'#E7CE9F');
-  }
-  return canvas;
+   const coffee=key==='stall_cafe_vot',{canvas,ctx}=surface(64,48);
+   const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(Math.floor(x/2)*2,Math.floor(y/2)*2,Math.max(2,Math.ceil((x+w)/2)*2-Math.floor(x/2)*2),Math.max(2,Math.ceil((y+h)/2)*2-Math.floor(y/2)*2));};
+   const OUT='#3A3A50';
+   const SHADOW='rgba(167, 151, 150, 0.7)';
+   // Flat drop shadow
+   r(2,44,60,4,SHADOW);
+
+   // Cột chống quầy 2 bên (2px)
+   r(4,14,2,30,OUT); r(58,14,2,30,OUT);
+
+   // Mái hiên sọc 2 màu (awning)
+   const awning=coffee?['#357F72','#FBF5EF']:['#C84C3D','#FBF5EF'];
+   for(let x=0;x<64;x+=8){
+     const col=awning[(x/8)%2];
+     r(x,2,8,12,col);
+     r(x,2,8,2,'#FFFFFF40');
+   }
+   // Viền mái hiên trên & dưới
+   r(0,0,64,2,OUT);
+   r(0,14,64,2,OUT);
+   // Viền 2 cạnh mái
+   r(0,2,2,12,OUT); r(62,2,2,12,OUT);
+
+   // Thân quầy gỗ (x=6..58, y=26..44)
+   r(6,26,52,18,OUT);
+   r(8,28,48,14,'#C68A4C');
+   r(8,28,48,2,'#E5B378'); // quầy highlight
+   r(8,40,48,2,'#8E562A'); // quầy shadow
+   // Khe gỗ ngang
+   r(8,34,48,2,'#A06836');
+
+   // Bóng đèn vàng treo giữa mái
+   r(31,14,2,6,OUT);
+   r(30,20,4,2,'#8E562A');
+   r(28,22,8,6,'#FCD062');
+   r(30,24,4,2,'#FFFDE8');
+   r(26,22,2,6,'rgba(252,208,98,0.3)'); r(36,22,2,6,'rgba(252,208,98,0.3)');
+
+   if(coffee){
+     // Bình pha / phích nước sôi inox xám tím
+     r(12,18,8,8,OUT); r(14,20,4,6,'#D2D8E4'); r(14,20,2,6,'#F2F5FA');
+     // Ly cà phê
+     r(26,20,6,6,OUT); r(28,22,2,4,'#5C3617');
+     // Vợt vải pha cà phê
+     r(36,20,8,6,OUT); r(38,22,4,4,'#E8DCBE');
+     // Ly mang đi
+     r(46,20,6,6,OUT); r(48,22,2,4,'#422813');
+   }else{
+     // Lò than nướng bánh mì
+     r(10,20,18,6,OUT); r(12,22,14,4,'#7D7A8C'); r(14,22,10,2,'#E0562B');
+     // Ổ bánh mì vàng giòn
+     r(32,20,8,6,OUT); r(34,22,4,4,'#E8B868');
+     // Hũ muối ớt
+     r(42,20,6,6,OUT); r(44,22,2,4,'#C84C3D');
+     // Ổ bánh mì thứ 2
+     r(50,20,8,6,OUT); r(52,22,4,4,'#E8B868');
+   }
+   return canvas;
  }
  if(key==='stall_sold_out_sign'){
-  const {canvas,ctx}=surface(24,12);
-  const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
-  r(0,0,24,12,C.ink);r(1,1,22,10,C.brick);r(1,1,22,1,'#D8695A');
-  const W=C.paper;
-  r(6,4,1,5,W);r(8,4,1,5,W);r(6,6,3,1,W);                           // H
-  r(11,4,1,5,W);r(11,4,3,1,W);r(11,6,3,1,W);r(11,8,3,1,W);          // E
-  r(12,2,1,1,W);r(11,3,1,1,W);r(13,3,1,1,W);                        // dấu mũ
-  r(15,4,3,1,W);r(16,5,1,4,W);                                       // T
-  return canvas;
+   const {canvas,ctx}=surface(24,12);
+   const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(Math.floor(x/2)*2,Math.floor(y/2)*2,Math.max(2,Math.ceil((x+w)/2)*2-Math.floor(x/2)*2),Math.max(2,Math.ceil((y+h)/2)*2-Math.floor(y/2)*2));};
+   const OUT='#3A3A50', W='#FBF5EF';
+   r(0,0,24,12,OUT);
+   r(2,2,20,8,'#C84C3D');
+   r(2,2,20,2,'#E86C5D');
+   // Chữ HẾT 2px
+   r(4,4,2,4,W); r(8,4,2,4,W); r(4,6,6,2,W); // H
+   r(11,4,2,4,W); r(11,4,4,2,W); r(11,6,4,2,W); // E
+   r(12,2,2,2,W); // dấu
+   r(16,4,4,2,W); r(17,6,2,2,W); // T
+   return canvas;
  }
  if(key==='stall_ve_so'){
-  const {canvas,ctx}=surface(64,48);
-  const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
-  const awning=['#C8372D','#FFF2D6'];
-  r(3,14,3,30,C.dark);r(58,14,3,30,C.dark);                           // cột đỡ mái
-  for(let x=0;x<64;x+=8){r(x,2,8,10,awning[(x/8)%2]);r(x,12,8,3,awning[(x/8)%2]);}
-  r(0,1,64,2,C.ink);r(0,14,64,1,C.ink);
-  r(6,26,52,18,C.wood);r(6,26,52,3,C.light);r(6,43,52,2,C.dark);      // quầy gỗ
-  r(2,46,60,2,'#26190E');
-  // Bảng treo các tờ vé nhiều màu phía sau quầy
-  r(8,16,48,9,C.paper);r(8,16,48,1,C.ink);r(8,24,48,1,C.ink);r(8,16,1,9,C.ink);r(55,16,1,9,C.ink);
-  const cols=['#E9B95D','#357F72','#B64C3D','#4C7FC8','#E9B95D','#357F72','#B64C3D','#4C7FC8'];
-  cols.forEach((c,i)=>{r(10+i*6,18,5,6,c);r(11+i*6,19,3,1,C.paper);r(11+i*6,21,3,1,C.paper);});
-  // Tấm ghi "VÉ SỐ" đỏ trên mặt quầy + xấp vé
-  r(8,31,22,9,'#C8372D');r(8,31,22,1,'#E5675B');r(8,39,22,1,C.ink);
-  r(11,33,1,4,C.paper);r(15,33,1,4,C.paper);r(12,37,3,1,C.paper);r(13,38,1,1,C.paper);   // V
-  r(18,33,4,1,C.paper);r(18,33,1,4,C.paper);r(18,35,3,1,C.paper);r(18,37,4,1,C.paper);r(19,32,1,1,C.paper);r(20,31,1,1,C.paper); // É
-  r(34,32,10,7,C.paper);r(35,33,8,1,'#E9B95D');r(35,35,8,1,'#357F72');r(35,37,8,1,'#B64C3D'); // xấp vé
-  r(47,34,8,5,C.shade);r(48,35,6,3,C.sun);                                                      // hộp tiền lẻ
-  return canvas;
+   const {canvas,ctx}=surface(64,48);
+   const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(Math.floor(x/2)*2,Math.floor(y/2)*2,Math.max(2,Math.ceil((x+w)/2)*2-Math.floor(x/2)*2),Math.max(2,Math.ceil((y+h)/2)*2-Math.floor(y/2)*2));};
+   const OUT='#3A3A50';
+   const SHADOW='rgba(167, 151, 150, 0.7)';
+   r(2,44,60,4,SHADOW);
+
+   // Cột quầy
+   r(4,14,2,30,OUT); r(58,14,2,30,OUT);
+
+   // Mái che đỏ trắng
+   const awning=['#C84C3D','#FBF5EF'];
+   for(let x=0;x<64;x+=8){
+     const col=awning[(x/8)%2];
+     r(x,2,8,12,col);
+     r(x,2,8,2,'#FFFFFF40');
+   }
+   r(0,0,64,2,OUT); r(0,14,64,2,OUT);
+   r(0,2,2,12,OUT); r(62,2,2,12,OUT);
+
+   // Thân quầy gỗ
+   r(6,26,52,18,OUT);
+   r(8,28,48,14,'#C68A4C');
+   r(8,28,48,2,'#E5B378');
+   r(8,40,48,2,'#8E562A');
+   r(8,34,48,2,'#A06836');
+
+   // Bảng kẹp vé số sau quầy
+   r(8,16,48,10,OUT);
+   r(10,18,44,6,'#FBF5EF');
+   const cols=['#FCD062','#357F72','#C84C3D','#4C7FC8','#FCD062','#357F72','#C84C3D'];
+   cols.forEach((c,i)=>{
+     r(12+i*6,18,4,6,c);
+   });
+
+   // Tấm biển "VÉ SỐ" trên mặt quầy
+   r(8,30,22,10,OUT);
+   r(10,32,18,6,'#C84C3D');
+   r(10,32,18,2,'#E86C5D');
+   // Chữ VS đơn giản
+   r(12,34,2,2,'#FBF5EF'); r(14,36,2,2,'#FBF5EF'); r(16,34,2,2,'#FBF5EF');
+   r(20,34,4,2,'#FBF5EF'); r(20,36,4,2,'#FBF5EF');
+
+   // Xấp vé số trên quầy
+   r(34,32,10,6,OUT);
+   r(36,34,6,2,'#FCD062');
+   // Hộp tiền lẻ
+   r(48,32,8,6,OUT);
+   r(50,34,4,2,'#8E562A');
+   return canvas;
  }
  if(key.startsWith('player_')||key.startsWith('npc_')) return character(key);
  if(key.startsWith('fixture_prop_')) return propFixtureTexture(key.slice('fixture_prop_'.length).split(':')[0]);
@@ -198,249 +261,187 @@ export function createPremiumTexture(key:string):HTMLCanvasElement|null{
    return canvas;
  }
  if(key.startsWith('tile_fan_')){
-   const {canvas,ctx}=surface(28,28),frame=Number(key.slice(-1))%4;
-   const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
-   r(12,0,4,6,C.dark);r(13,1,2,4,'#24584F');
-   r(13,16,1,8,'#827B6E');r(12,24,3,3,'#B64C3D');
-   r(10,5,8,6,C.dark);r(11,6,6,4,'#357F72');
-   for(const [x,y,w,h] of [[6,2,16,2],[4,4,20,2],[3,6,22,8],[4,14,20,2],[6,16,16,2]]){
-     r(x,y,w,h,'#24584F');
-   }
-   for(const [x,y,w,h] of [[7,4,14,2],[5,6,18,8],[7,14,14,2]]){
-     r(x,y,w,h,'#1E3B35');
-   }
-   r(13,3,2,14,'#2D524A');r(4,9,20,2,'#2D524A');
-   const angles=[0, Math.PI/2, Math.PI/4, (3*Math.PI)/4];
-   const a=angles[frame];
-   for(let b=0;b<3;b++){
-     const rad=a + (b*Math.PI*2)/3;
-     const bx=Math.round(14+Math.cos(rad)*5),by=Math.round(10+Math.sin(rad)*5);
-     r(bx-1,by-1,3,3,'#78A89A');r(bx,by,2,2,'#FAF0C8');
-   }
-   r(12,8,4,4,C.dark);r(13,9,2,2,'#FAF0C8');
-   return canvas;
- }
- if(key.startsWith('standing_fan_')){
-   const {canvas,ctx}=surface(24,36),frame=Number(key.slice(-1))%4;
-   const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
-   r(5,32,14,3,C.dark);r(6,31,12,2,'#24584F');r(8,30,8,1,'#357F72');
-   r(11,15,2,16,'#7A776E');r(11,15,1,16,'#A8A59C');
-   r(10,22,4,2,C.dark);
-   r(9,9,6,6,C.dark);r(10,10,4,4,'#357F72');
-   for(const [x,y,w,h] of [[5,2,14,2],[3,4,18,2],[2,6,20,6],[3,12,18,2],[5,14,14,2]]){
-     r(x,y,w,h,'#24584F');
-   }
-   for(const [x,y,w,h] of [[6,4,12,2],[4,6,16,6],[6,12,12,2]]){
-     r(x,y,w,h,'#1E3B35');
-   }
-   r(11,3,2,12,'#2D524A');r(3,8,18,2,'#2D524A');
-   const angles=[0, Math.PI/2, Math.PI/4, (3*Math.PI)/4];
-   const a=angles[frame];
-   for(let b=0;b<3;b++){
-     const rad=a + (b*Math.PI*2)/3;
-     const bx=Math.round(12+Math.cos(rad)*5),by=Math.round(9+Math.sin(rad)*5);
-     r(bx-1,by-1,3,3,'#78A89A');r(bx,by,2,2,'#FAF0C8');
-   }
-   r(11,8,3,3,C.dark);r(11,8,2,2,'#FAF0C8');
-   return canvas;
- }
- if(key==='store_window'){
-   // 2.5D Stardew Valley-inspired side-wall window for shop left wall (32x32)
-   // Seamlessly integrates with wall_store_left:
-   // - x=0..13: transparent (reveals outdoor alley sidewalk cleanly)
-   // - x=14..15: exterior wooden trim & casing
-   // - x=16..29: window aperture cut into wall thickness with 3D jamb reveals
-   // - Vintage Vietnamese 4-pane crossbars, soft mint daylight glass with glares
-   // - Polished warm sunlit wooden sill projecting slightly into store (x=15..30)
-   // - Charming miniature potted succulent perched in morning sunlight
-   const {canvas,ctx}=surface(32,32);
-   const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
-
-   // Exterior casing on alley side (x=14..15)
-   r(14,4,2,21,'#3E220D');
-   r(14,5,1,19,'#6B3D1B');
-   r(13,23,2,2,'#3E220D');
-
-   // Wall cap above window (y=0..3)
-   r(16,0,14,2,'#FAF0C8'); // capTop
-   r(16,2,14,1,'#F2DC9B'); // capBevel
-   r(16,3,14,1,'#BF8B32'); // wallDark
-
-   // Wooden lintel / upper casing (y=4..5)
-   r(15,4,15,1,'#3E220D');
-   r(15,5,14,1,'#6B3D1B');
-
-   // Window niche & jamb reveals (y=6..21)
-   // Left jamb: thickness of exterior wall seen in 3/4 perspective
-   r(16,6,1,16,'#361F10');
-   r(17,6,1,16,'#4A2A16');
-   r(17,6,11,1,'#26190E45'); // Top reveal shadow
-
-   // Translucent mint-cyan daylight glass
-   r(18,7,10,15,'#8FC5BB');
-   r(18,7,2,15,'#FBECCB');  // Warm sunlight entering from street
-   r(20,7,7,15,'#AEE0D6');  // Daylight sky highlight
-   r(26,7,2,3,'#629E92');   // Top-right corner shade
-
-   // Vintage wooden muntins / security crossbars (nan gỗ chấn song)
-   r(22,6,1,16,'#3E220D');
-   r(23,6,1,16,'#6B3D1B');
-   r(18,13,10,1,'#3E220D');
-   r(18,14,10,1,'#6B3D1B');
-
-   // Glass glare streaks (vệt phản chiếu bóng kính)
-   r(19,8,2,1,'#FFFFFF');
-   r(20,9,2,1,'#FFFFFF');
-   r(21,10,1,1,'#E8F7F3');
-   r(19,16,2,1,'#E8F7F3');
-   r(20,17,2,1,'#E8F7F3');
-   r(24,15,2,1,'#FFFFFF');
-   r(25,16,2,1,'#FFFFFF');
-
-   // Right frame / room-side reveal
-   r(28,5,1,17,'#5C3617');
-   r(29,5,1,17,'#3E220D');
-
-   // Polished warm sunlit wooden sill (y=22..25, x=15..30)
-   r(15,22,15,1,'#DB975C'); // Sunlit top highlight
-   r(15,23,15,1,'#8F542A'); // Wood sill body
-   r(15,24,15,1,'#5C3617'); // Sill bevel
-   r(16,25,14,1,'#331B0A'); // Underside drop shadow
-
-   // Miniature terracotta potted succulent on windowsill (x=24..28, y=16..22)
-   r(25,20,4,1,'#DB845C');  // Clay pot rim
-   r(25,21,3,2,'#B05731');  // Pot body
-   r(28,21,1,2,'#7A3519');  // Pot shaded edge
-   r(26,19,2,1,'#331B0A');  // Pot soil
-   r(25,17,2,2,'#7AC765');  // Bright succulent leaf
-   r(26,16,2,2,'#4E9240');  // Central leaf
-   r(24,18,2,2,'#387332');  // Left leaf
-   r(27,18,2,2,'#2D5E24');  // Right leaf
-
-   // Lower wall & baseboard under window sill (y=26..31)
-   r(16,26,13,1,'#D4A346'); // wallBase
-   r(16,27,13,1,'#357F72'); // tealAccent
-   r(16,28,13,1,'#825026'); // skirtLine
-   r(16,29,13,3,'#5C3617'); // skirtWood baseboard
-   r(29,22,1,10,'#3E220D'); // skirtShade
-   r(30,22,2,10,'#26190E40'); // ambient floor shadow
-   return canvas;
- }
- if(key==='tile_plant_pot'||key.startsWith('tile_plant_')){
-  // Stardew Valley 2.5D Terracotta Potted Plant (32x40) with lush layered leaves & soft drop shadow
-  const {canvas,ctx}=surface(32,40),frame=key.endsWith('1')?1:0;
-  const r=(x:number,y:number,w:number,h:number,col:string)=>{ctx.fillStyle=col;ctx.fillRect(x,y,w,h);};
-
-  // 2.5D Oval contact drop shadow on floor
-  r(4,36,24,4,'#26190E45');
-  r(7,35,18,5,'#26190E30');
-
-  // Terracotta clay pot with 2.5D rim and base bevel
-  r(8,23,16,14,'#28160E');  // Pot outline
-  r(9,24,14,12,'#B05731');  // Pot terracotta base
-  r(9,24,3,12,'#CE754D');   // Left curved highlight
-  r(20,24,3,12,'#7A3519');  // Right shaded curve
-  r(7,21,18,4,'#28160E');   // Pot rim outline
-  r(8,22,16,2,'#DB845C');   // Rim top highlight
-  r(8,24,16,1,'#873D1E');   // Rim underside shadow
-  r(10,21,12,2,'#3E2519');  // Dark soil inside pot
-
-  // Central plant stem
-  r(15,10,2,12,'#284218');
-  r(16,10,1,12,'#46692E');
-
-  // Stardew Valley lush green leaves in 3D clusters (swaying slightly with ambient frame)
-  const leaves: Array<[number, number, number, number, string, string, string]> = [
-    [3+frame, 12, 10, 6, '#387332', '#5DA84C', '#1E471C'],
-    [18-frame, 10, 11, 7, '#387332', '#5DA84C', '#1E471C'],
-    [6, 5+frame, 9, 8, '#2F662A', '#529643', '#1A3D18'],
-    [17, 3+frame, 9, 7, '#48873C', '#6EBA59', '#255220'],
-    [10, 1, 12, 8, '#529643', '#7AC765', '#2C5E24'],
-    [19+frame, 18, 9, 5, '#2B5E26', '#498C3F', '#163614'],
-    [4-frame, 20, 9, 5, '#2B5E26', '#498C3F', '#163614']
-  ];
-  for(const [lx,ly,lw,lh,base,light,dark] of leaves){
-    r(lx,ly,lw,lh,'#142410');
-    r(lx+1,ly+1,lw-2,lh-2,base);
-    r(lx+1,ly+1,lw-4,2,light);
-    r(lx+2,ly+lh-3,lw-3,1,dark);
+    const {canvas,ctx}=surface(28,28),frame=Number(key.slice(-1))%4;
+    const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(Math.floor(x/2)*2,Math.floor(y/2)*2,Math.max(2,Math.ceil((x+w)/2)*2-Math.floor(x/2)*2),Math.max(2,Math.ceil((y+h)/2)*2-Math.floor(y/2)*2));};
+    const OUT='#3A3A50';
+    // Ceiling mount
+    r(12,0,4,6,OUT); r(12,2,4,4,'#2D524A');
+    r(12,16,2,8,'#7D7A8C'); r(10,24,4,4,OUT); r(10,24,4,2,'#C84C3D');
+    // Casing
+    r(10,4,8,8,OUT); r(10,6,8,4,'#357F72');
+    for(const [x,y,w,h] of [[6,2,16,2],[4,4,20,2],[2,6,24,8],[4,14,20,2],[6,16,16,2]]){
+      r(x,y,w,h,'#20443D');
+    }
+    for(const [x,y,w,h] of [[6,4,16,2],[4,6,20,8],[6,14,16,2]]){
+      r(x,y,w,h,'#1A322C');
+    }
+    r(12,2,2,16,'#2D524A'); r(2,8,24,2,'#2D524A');
+    const angles=[0, Math.PI/2, Math.PI/4, (3*Math.PI)/4];
+    const a=angles[frame];
+    for(let b=0;b<3;b++){
+      const rad=a + (b*Math.PI*2)/3;
+      const bx=Math.round(14+Math.cos(rad)*5),by=Math.round(10+Math.sin(rad)*5);
+      r(bx-2,by-2,4,4,'#78A89A'); r(bx,by,2,2,'#FBF5EF');
+    }
+    r(12,8,4,4,OUT); r(12,8,2,2,'#FBF5EF');
+    return canvas;
   }
-  // Delicate leaf dew highlights
-  r(13,3,2,2,'#B8F2A2');
-  r(20,6,2,2,'#B8F2A2');
-  r(7,14,2,1,'#B8F2A2');
-  return canvas;
-}
- if(key==='tile_tree'){
-  // Stardew Valley 2.5D Cozy Neighborhood Shade Tree (80x100)
-  const {canvas,ctx}=surface(80,100);
-  const r=(x:number,y:number,w:number,h:number,col:string)=>{ctx.fillStyle=col;ctx.fillRect(x,y,w,h);};
-
-  // Gnarled wood trunk & roots
-  r(32,46,16,46,'#26160E'); // Trunk outline
-  r(34,48,12,42,'#6E4125'); // Trunk base wood
-  r(34,48,3,42,'#99623C');  // Trunk left highlight
-  r(43,48,3,42,'#472714');  // Trunk right shadow
-  // Roots spreading into ground
-  r(28,88,8,6,'#26160E'); r(29,89,6,4,'#6E4125');
-  r(45,88,9,6,'#26160E'); r(46,89,7,4,'#472714');
-
-  // Multi-layered lush pixel canopy clusters (Stardew Valley foliage style)
-  const canopy: Array<[number, number, number, number, string, string, string]> = [
-    [8, 22, 64, 46, '#4A8A3A', '#6AA84A', '#2F6428'],
-    [14, 8, 52, 40, '#559A40', '#82BC5A', '#35702C'],
-    [22, 2, 36, 32, '#62A845', '#98CC6E', '#3B7A30'],
-    [4, 34, 40, 32, '#3F8434', '#62A442', '#2B5F26'],
-    [38, 30, 38, 36, '#3F8434', '#62A442', '#2B5F26'],
-    [26, 44, 28, 22, '#37722E', '#559A40', '#102613']
-  ];
-  for(const [cx,cy,cw,ch,base,light,dark] of canopy){
-    r(cx,cy,cw,ch,'#122415');
-    r(cx+2,cy+2,cw-4,ch-4,base);
-    r(cx+4,cy+3,cw-10,Math.floor(ch*0.35),light);
-    r(cx+3,cy+ch-8,cw-6,5,dark);
+  if(key.startsWith('standing_fan_')){
+    const {canvas,ctx}=surface(24,36),frame=Number(key.slice(-1))%4;
+    const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(Math.floor(x/2)*2,Math.floor(y/2)*2,Math.max(2,Math.ceil((x+w)/2)*2-Math.floor(x/2)*2),Math.max(2,Math.ceil((y+h)/2)*2-Math.floor(y/2)*2));};
+    const OUT='#3A3A50';
+    const SHADOW='rgba(167, 151, 150, 0.7)';
+    // Base shadow
+    r(4,32,16,4,SHADOW);
+    // Base
+    r(4,30,16,4,OUT); r(6,30,12,2,'#357F72');
+    // Pole
+    r(10,14,4,16,OUT); r(10,14,2,16,'#7D7A8C'); r(12,14,2,16,'#A4A0B2');
+    r(10,22,4,2,OUT);
+    // Motor housing
+    r(8,8,8,8,OUT); r(10,10,4,4,'#357F72');
+    // Guard cage
+    for(const [x,y,w,h] of [[4,2,16,2],[2,4,20,2],[0,6,24,8],[2,14,20,2],[4,16,16,2]]){
+      r(x,y,w,h,'#20443D');
+    }
+    for(const [x,y,w,h] of [[4,4,16,2],[2,6,20,8],[4,14,16,2]]){
+      r(x,y,w,h,'#1A322C');
+    }
+    r(10,2,2,16,'#2D524A'); r(2,8,20,2,'#2D524A');
+    const angles=[0, Math.PI/2, Math.PI/4, (3*Math.PI)/4];
+    const a=angles[frame];
+    for(let b=0;b<3;b++){
+      const rad=a + (b*Math.PI*2)/3;
+      const bx=Math.round(12+Math.cos(rad)*5),by=Math.round(9+Math.sin(rad)*5);
+      r(bx-2,by-2,4,4,'#78A89A'); r(bx,by,2,2,'#FBF5EF');
+    }
+    r(10,8,4,4,OUT); r(10,8,2,2,'#FBF5EF');
+    return canvas;
   }
-  // Soft leaf dapples & highlights
-  r(28,10,12,4,'#82D988'); r(44,14,10,3,'#82D988');
-  r(16,28,12,4,'#67BD6D'); r(54,34,10,4,'#67BD6D');
-  r(32,24,14,4,'#82D988'); r(24,38,12,3,'#67BD6D');
-  return canvas;
-}
- if(key==='tile_crates'){
-  // Stardew Valley 2.5D Stacked Wooden Crates (48x34) with timber grain, iron bands & drop shadow
-  const {canvas,ctx}=surface(48,34);
-  const r=(x:number,y:number,w:number,h:number,col:string)=>{ctx.fillStyle=col;ctx.fillRect(x,y,w,h);};
-
-  // 2.5D drop shadow under crates
-  r(2,29,44,5,'#26190E45');
-  r(6,30,36,3,'#26190E25');
-
-  // Lower Main Crate (32x22)
-  r(1,10,32,22,'#26160E');
-  r(2,11,30,20,'#8E5A35');
-  r(2,11,30,2,'#D19B6C'); // Top edge highlight
-  // Crate wood planks horizontal
-  r(2,17,30,1,'#5E361B'); r(2,18,30,1,'#BA8254');
-  r(2,24,30,1,'#5E361B'); r(2,25,30,1,'#BA8254');
-  // Iron reinforced corner brackets
-  r(1,11,4,20,'#33251D'); r(2,12,2,18,'#6B5C54');
-  r(29,11,4,20,'#33251D'); r(30,12,2,18,'#6B5C54');
-  // Silver rivet nails
-  r(2,13,2,2,'#C2B8B2'); r(2,27,2,2,'#C2B8B2');
-  r(30,13,2,2,'#C2B8B2'); r(30,27,2,2,'#C2B8B2');
-
-  // Upper Stacked Produce Box (26x16) slightly offset
-  r(20,0,26,16,'#26160E');
-  r(21,1,24,14,'#B0774D');
-  r(21,1,24,2,'#E5B588'); // Top bevel
-  r(21,7,24,1,'#734526');
-  // Red/yellow apples or citrus showing in crate
-  r(23,3,4,4,'#BA3030'); r(24,3,2,2,'#F26868');
-  r(28,2,4,4,'#E89127'); r(29,2,2,2,'#FAC36B');
-  r(33,3,4,4,'#BA3030'); r(34,3,2,2,'#F26868');
-  r(38,2,4,4,'#E89127'); r(39,2,2,2,'#FAC36B');
-  return canvas;
-}
+  if(key==='store_window'){
+    const {canvas,ctx}=surface(32,32);
+    const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(Math.floor(x/2)*2,Math.floor(y/2)*2,Math.max(2,Math.ceil((x+w)/2)*2-Math.floor(x/2)*2),Math.max(2,Math.ceil((y+h)/2)*2-Math.floor(y/2)*2));};
+    const OUT='#3A3A50';
+    // Wall cap
+    r(16,0,14,4,'#FAF0C8'); r(16,2,14,2,'#E5B378');
+    // Outer wooden lintel & frame
+    r(14,4,2,22,OUT);
+    r(14,4,16,2,OUT);
+    r(28,4,2,22,OUT);
+    // Mint daylight glass
+    r(16,6,12,16,'#A5D6CF');
+    r(16,6,4,16,'#E6F4F1'); // Left bright daylight reflection
+    // Crossbars 2px
+    r(21,6,2,16,OUT);
+    r(16,13,12,2,OUT);
+    // Glare highlights
+    r(17,8,2,2,'#FFFFFF'); r(23,15,2,2,'#FFFFFF');
+    // Wooden sill
+    r(14,22,16,4,OUT);
+    r(14,22,16,2,'#E5B378');
+    // Terracotta succulent pot
+    r(24,18,6,4,OUT); r(24,18,4,2,'#C86A45');
+    r(24,14,6,4,'#569C4E'); r(26,14,2,2,'#7BC872');
+    // Lower baseboard
+    r(16,26,14,6,'#8E562A');
+    r(16,26,14,2,'#C68A4C');
+    r(28,26,2,6,OUT);
+    return canvas;
+  }
+  if(key==='tile_plant_pot'||key.startsWith('tile_plant_')){
+    const {canvas,ctx}=surface(32,40),frame=key.endsWith('1')?1:0;
+    const r=(x:number,y:number,w:number,h:number,col:string)=>{ctx.fillStyle=col;ctx.fillRect(Math.floor(x/2)*2,Math.floor(y/2)*2,Math.max(2,Math.ceil((x+w)/2)*2-Math.floor(x/2)*2),Math.max(2,Math.ceil((y+h)/2)*2-Math.floor(y/2)*2));};
+    const OUT='#3A3A50';
+    const SHADOW='rgba(167, 151, 150, 0.7)';
+    // Drop shadow
+    r(4,36,24,4,SHADOW);
+    // Pot rim & body
+    r(6,20,20,6,OUT); r(8,22,16,2,'#E2875E');
+    r(8,24,16,14,OUT); r(10,26,12,10,'#C05B35');
+    r(10,26,4,10,'#E2875E'); r(18,26,4,10,'#8A3516');
+    r(10,20,12,2,'#3A241C'); // Soil
+    // Stem
+    r(15,10,2,12,'#284218');
+    // Foliage clusters
+    const leaves: Array<[number, number, number, number, string, string]> = [
+      [2+frame, 12, 10, 6, '#387332', '#6EBA59'],
+      [18-frame, 10, 12, 8, '#387332', '#6EBA59'],
+      [6, 4+frame, 10, 8, '#2F662A', '#6EBA59'],
+      [16, 2+frame, 10, 8, '#48873C', '#7AC765'],
+      [10, 0, 12, 8, '#529643', '#82D988'],
+      [18+frame, 18, 10, 6, '#2B5E26', '#529643'],
+      [4-frame, 20, 10, 6, '#2B5E26', '#529643']
+    ];
+    for(const [lx,ly,lw,lh,base,light] of leaves){
+      r(lx,ly,lw,lh,OUT);
+      r(lx+2,ly+2,lw-4,lh-4,base);
+      r(lx+2,ly+2,lw-6,2,light);
+    }
+    // Dew
+    r(12,2,2,2,'#D8FCD0'); r(20,6,2,2,'#D8FCD0');
+    return canvas;
+  }
+  if(key==='tile_tree'){
+    const {canvas,ctx}=surface(80,100);
+    const r=(x:number,y:number,w:number,h:number,col:string)=>{ctx.fillStyle=col;ctx.fillRect(Math.floor(x/2)*2,Math.floor(y/2)*2,Math.max(2,Math.ceil((x+w)/2)*2-Math.floor(x/2)*2),Math.max(2,Math.ceil((y+h)/2)*2-Math.floor(y/2)*2));};
+    const OUT='#3A3A50';
+    const SHADOW='rgba(167, 151, 150, 0.7)';
+    // Drop shadow under tree
+    r(16,88,48,8,SHADOW);
+    // Trunk & roots
+    r(32,46,16,46,OUT);
+    r(34,48,12,42,'#6E4125');
+    r(34,48,4,42,'#99623C');
+    r(42,48,4,42,'#472714');
+    r(28,88,8,6,OUT); r(30,88,4,4,'#6E4125');
+    r(44,88,10,6,OUT); r(46,88,6,4,'#472714');
+    // Canopy clusters
+    const canopy: Array<[number, number, number, number, string, string, string]> = [
+      [8, 22, 64, 46, '#4A8A3A', '#6AA84A', '#2F6428'],
+      [14, 8, 52, 40, '#559A40', '#82BC5A', '#35702C'],
+      [22, 2, 36, 32, '#62A845', '#98CC6E', '#3B7A30'],
+      [4, 34, 40, 32, '#3F8434', '#62A442', '#2B5F26'],
+      [38, 30, 38, 36, '#3F8434', '#62A442', '#2B5F26'],
+      [26, 44, 28, 22, '#37722E', '#559A40', '#102613']
+    ];
+    for(const [cx,cy,cw,ch,base,light,dark] of canopy){
+      r(cx,cy,cw,ch,OUT);
+      r(cx+2,cy+2,cw-4,ch-4,base);
+      r(cx+4,cy+2,cw-8,Math.floor(ch*0.35),light);
+      r(cx+4,cy+ch-8,cw-8,6,dark);
+    }
+    // Leaf highlights
+    r(28,10,12,4,'#82D988'); r(44,14,10,4,'#82D988');
+    r(16,28,12,4,'#67BD6D'); r(54,34,10,4,'#67BD6D');
+    return canvas;
+  }
+  if(key==='tile_crates'){
+    const {canvas,ctx}=surface(48,34);
+    const r=(x:number,y:number,w:number,h:number,col:string)=>{ctx.fillStyle=col;ctx.fillRect(Math.floor(x/2)*2,Math.floor(y/2)*2,Math.max(2,Math.ceil((x+w)/2)*2-Math.floor(x/2)*2),Math.max(2,Math.ceil((y+h)/2)*2-Math.floor(y/2)*2));};
+    const OUT='#3A3A50';
+    const SHADOW='rgba(167, 151, 150, 0.7)';
+    // Drop shadow
+    r(2,28,44,6,SHADOW);
+    // Lower crate
+    r(2,10,32,22,OUT);
+    r(4,12,28,18,'#8E5A35');
+    r(4,12,28,2,'#D19B6C');
+    r(4,18,28,2,'#5E361B'); r(4,24,28,2,'#5E361B');
+    // Iron brackets
+    r(2,12,4,18,'#3A3A50'); r(4,12,2,18,'#6B5C54');
+    r(30,12,4,18,'#3A3A50'); r(30,12,2,18,'#6B5C54');
+    // Upper produce box
+    r(20,0,26,16,OUT);
+    r(22,2,22,12,'#B0774D');
+    r(22,2,22,2,'#E5B378');
+    r(22,8,22,2,'#734526');
+    // Apples & oranges
+    r(24,4,4,4,'#BA3030'); r(24,4,2,2,'#F26868');
+    r(28,2,4,4,'#E89127'); r(28,2,2,2,'#FAC36B');
+    r(34,4,4,4,'#BA3030'); r(34,4,2,2,'#F26868');
+    r(38,2,4,4,'#E89127'); r(38,2,2,2,'#FAC36B');
+    return canvas;
+  }
  if(!['tile_store_floor','tile_encaustic','tile_yellow_wall','tile_sidewalk','tile_street','tile_pavement_alley'].includes(key))return null;
  const {canvas,ctx}=surface(32,32);
  if(key==='tile_store_floor'||key==='tile_encaustic'){
@@ -1140,35 +1141,37 @@ function vehicleNsTexture(key: string): HTMLCanvasElement | null {
     const COLORS = ['#f4f6f7', '#4cae3b', '#f4c542', '#c0392b'];
     const body = COLORS[variant % 4];
     shadow();
-    r(5, h - 14, 10, 12, DARK); r(w - 15, h - 14, 10, 12, DARK);
-    r(2, 6, w - 4, 50, DARK); r(3, 7, w - 6, 48, body); r(3, 7, w - 6, 3, '#ffffff55');
-    r(6, 12, w - 12, front ? 20 : 15, DARK); r(7, 13, w - 14, front ? 18 : 13, front ? GLASS : '#5a8fb0');
-    r(w / 2 - 1, 13, 2, front ? 18 : 13, DARK);
-    if (front) { r(12, 17, 7, 7, SKIN); r(11, 16, 9, 2, '#2a1c14'); r(w - 20, 17, 7, 7, SKIN); r(w - 21, 16, 9, 2, '#2a1c14'); }
-    r(3, 36, w - 6, 8, '#00000022'); r(3, 40, w - 6, 3, '#2e6da4');
-    if (front) { r(6, 44, 9, 5, '#fff3b0'); r(w - 15, 44, 9, 5, '#fff3b0'); r(20, 45, w - 40, 5, '#2b2f33'); }
-    else { r(6, 44, 9, 5, '#e74c3c'); r(w - 15, 44, 9, 5, '#e74c3c'); r(w / 2 - 4, 34, 8, 4, '#f4f4f4'); }
-    r(4, 50, w - 8, 4, '#4a4540'); r(w / 2 - 5, 50, 10, 3, '#f4f4f4');
-    r(w / 2 - 12, 2, 24, 5, DARK); r(w / 2 - 11, 3, 22, 3, '#bdc3c7');
+    const OUT = '#3A3A50';
+    r(4, h - 14, 10, 12, OUT); r(w - 14, h - 14, 10, 12, OUT);
+    r(2, 6, w - 4, 50, OUT); r(4, 8, w - 8, 46, body); r(4, 8, w - 8, 4, '#ffffff55');
+    r(6, 12, w - 12, front ? 20 : 16, OUT); r(8, 14, w - 16, front ? 16 : 12, front ? GLASS : '#5a8fb0');
+    r(w / 2 - 1, 14, 2, front ? 16 : 12, OUT);
+    if (front) { r(12, 18, 6, 6, SKIN); r(12, 16, 8, 2, OUT); r(w - 18, 18, 6, 6, SKIN); r(w - 20, 16, 8, 2, OUT); }
+    r(4, 36, w - 8, 8, '#00000022'); r(4, 40, w - 8, 4, '#2e6da4');
+    if (front) { r(6, 44, 10, 6, '#fff3b0'); r(w - 16, 44, 10, 6, '#fff3b0'); r(20, 44, w - 40, 6, OUT); }
+    else { r(6, 44, 10, 6, '#e74c3c'); r(w - 16, 44, 10, 6, '#e74c3c'); r(w / 2 - 4, 34, 8, 4, '#f4f4f4'); }
+    r(4, 50, w - 8, 4, '#4a4540'); r(w / 2 - 6, 50, 12, 4, '#f4f4f4');
+    r(w / 2 - 12, 2, 24, 6, OUT); r(w / 2 - 10, 4, 20, 2, '#bdc3c7');
     return canvas;
   }
 
   // truck
   const BOX = ['#d9b36a', '#e05a47', '#e6f0f5', '#6fb35a'][variant % 4];
   shadow();
-  r(5, h - 14, 10, 12, DARK); r(w - 15, h - 14, 10, 12, DARK);
+  const OUT = '#3A3A50';
+  r(4, h - 14, 10, 12, OUT); r(w - 14, h - 14, 10, 12, OUT);
   if (front) {
-    r(2, 0, w - 4, 38, DARK); r(3, 1, w - 6, 36, BOX); r(3, 1, w - 6, 3, '#ffffff55'); r(3, 30, w - 6, 6, '#00000022');
-    r(7, 28, w - 14, 28, DARK); r(8, 29, w - 16, 26, '#e8ecef');
-    r(10, 32, w - 20, 12, GLASS); r(w / 2 - 1, 32, 2, 12, DARK);
-    r(14, 36, 7, 6, SKIN); r(13, 35, 9, 2, '#2a1c14');
-    r(8, 47, 9, 5, '#fff3b0'); r(w - 17, 47, 9, 5, '#fff3b0'); r(21, 47, w - 42, 6, '#2b2f33');
-    r(6, 54, w - 12, 4, '#4a4540'); r(w / 2 - 5, 54, 10, 3, '#f4f4f4');
+    r(2, 0, w - 4, 38, OUT); r(4, 2, w - 8, 34, BOX); r(4, 2, w - 8, 4, '#ffffff55'); r(4, 30, w - 8, 6, '#00000022');
+    r(6, 28, w - 12, 28, OUT); r(8, 30, w - 16, 24, '#e8ecef');
+    r(10, 32, w - 20, 12, GLASS); r(w / 2 - 1, 32, 2, 12, OUT);
+    r(14, 36, 6, 6, SKIN); r(14, 34, 8, 2, OUT);
+    r(8, 46, 10, 6, '#fff3b0'); r(w - 18, 46, 10, 6, '#fff3b0'); r(20, 46, w - 40, 6, OUT);
+    r(6, 54, w - 12, 4, '#4a4540'); r(w / 2 - 6, 54, 12, 4, '#f4f4f4');
   } else {
-    r(2, 2, w - 4, 52, DARK); r(3, 3, w - 6, 50, BOX); r(3, 3, w - 6, 3, '#ffffff55');
-    r(w / 2 - 1, 5, 2, 46, DARK); r(w / 2 - 4, 26, 2, 5, '#9aa0a6'); r(w / 2 + 2, 26, 2, 5, '#9aa0a6');
-    r(5, 44, 8, 5, '#e74c3c'); r(w - 13, 44, 8, 5, '#e74c3c');
-    r(4, 54, w - 8, 4, '#4a4540'); r(w / 2 - 5, 54, 10, 3, '#f4f4f4');
+    r(2, 2, w - 4, 52, OUT); r(4, 4, w - 8, 48, BOX); r(4, 4, w - 8, 4, '#ffffff55');
+    r(w / 2 - 1, 4, 2, 48, OUT); r(w / 2 - 4, 26, 2, 6, '#9aa0a6'); r(w / 2 + 2, 26, 2, 6, '#9aa0a6');
+    r(6, 44, 8, 6, '#e74c3c'); r(w - 14, 44, 8, 6, '#e74c3c');
+    r(4, 54, w - 8, 4, '#4a4540'); r(w / 2 - 6, 54, 12, 4, '#f4f4f4');
   }
   return canvas;
 }

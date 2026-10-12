@@ -2009,3 +2009,63 @@ Chỉ ghi PASS khi đã đo/chụp thật trong Browser pane (giả lập viewpo
 - **Sàn tiệm và nhà kho LimeZu (12/10/2026, đã xem trong game):** thêm vào atlas `furniture`: `tile_store_floor` (gạch vàng nhạt từ `Room_Builder_free_32x32.png`), `warehouse_floor` (gạch xám), `fixture_warehouse_dry` (kệ), `fixture_warehouse_cold` (tủ mát), `fixture_warehouse_receiving` (bàn nhận hàng có màn hình). `viewport.ts` không đổi texture kho theo trạng thái khi có ảnh atlas. **Chưa thay:** tường tiệm (`wall_store_*`, mặt cắt tường vẽ riêng nên không ghép được ô LimeZu), mái hiên, tường kho, đồ bếp (bếp xào, chảo, lò nướng, máy xay, xửng hấp, quầy xôi, bể cá, máy phát điện) vì pack free không có món Việt tương ứng.
 - **Đưa màu đồ vẽ code về bảng màu LimeZu (12/10/2026):** `textures.ts` `toneToLimezu` + `LIMEZU_PALETTE` (64 màu lấy từ nội thất LimeZu đang dùng + 6 màu xanh/teal cho mái hiên) áp trong `generateTexture` cho khóa `TONE_KEYS` (`wall_*`, `warehouse_wall/sign`, `tile_awning`, `tile_signboard`, `stall_*`, `fixture_prop_*`, `fixture_warehouse_*` khi không có ảnh atlas). Giữ độ trong suốt. **Đã xem:** tường và mái hiên tiệm (xanh trắng giữ đúng, hợp tông). **Chưa xem:** các đồ bếp (bếp xào, chảo, xửng hấp, quầy xôi, máy xay, bể cá, máy phát điện) sau khi đổi màu. Giới hạn: chỉ đổi màu, không đổi hình; ánh sáng ban đêm vẫn tác động như cũ.
 - **Đồ bếp theo kiểu LimeZu (12/10/2026):** `prop-fixtures.ts` đổi hằng màu (viền `#3A3A50`, gỗ cam vàng, thép xám tím, kính xanh nhạt), `r()` bám lưới 2 px (viền 1 px thành 2 px như LimeZu phóng 2×) và bóng đổ phẳng xám tím `rgba(167,151,150,0.7)`. Áp cho 19 đạo cụ `fixture_prop_*` còn vẽ code (bếp nướng, ấm, máy xay, chảo, xửng, quầy xôi, thùng ngâm, máy ép mía, bể cá, máy phát điện, quầy nước, ghế...). **Đã xem trong game (đặt thử 10 món, ảnh thu nhỏ):** viền và bóng cùng kiểu với kệ/quầy. **Giới hạn:** chỉ đổi màu, độ dày viền và bóng, không vẽ lại hình dáng từng món nên chưa tinh xảo như LimeZu; chưa xem ban đêm/mưa; chưa xem ghế nghỉ, quầy nước, bàn nước, cây cảnh sau đổi.
+- **Vẽ lại hình dáng 19 đạo cụ thủ công theo chuẩn pixel art LimeZu (12/10/2026):**
+  - **Mục tiêu:** Khắc phục triệt để giới hạn của bản vẽ cũ ("Hình dáng từng món vẫn là bản vẽ cũ, chưa tinh xảo như LimeZu"). Vẽ lại thủ công toàn bộ 19 đạo cụ trong `packages/game-renderer/src/prop-fixtures.ts` với hình dáng, tỷ lệ, bo góc (vát góc 2px), bóng khối 2.5D và chi tiết đặc trưng đúng chất LimeZu:
+    1. `food_grill` (bếp nướng 2 ô): Vỏ bếp inox bo góc vát 2px, vỉ nướng đen có rãnh than hồng rực đỏ/cam/vàng (`#8E2018`, `#D64527`, `#FFE27A`), bảng điều khiển bên phải có 2 núm vặn kim loại/đồng, khe tản nhiệt và khói trắng mờ bốc lên.
+    2. `hot_kettle` (ấm đun 1 ô): Đế gỗ nâng cao, đĩa đun tiếp điện inox, ấm đun siêu tốc bo cong công thái học, cửa sổ vạch nước trong suốt `GLASS`, vòi rót nhô dứt khoát, nắp núm mở và tay cầm đen cong chữ C, đèn báo nhiệt đỏ, làn hơi nước uốn lượn.
+    3. `food_table_2` (bàn ăn 2 chỗ 1 ô): Mặt bàn gỗ 2.5D bo góc sáng màu `WOOD_LT`/`WOOD_HI`, cạnh bàn dày bóng `WOOD_DK`, chân bàn gỗ đôi có thanh giằng ngang và mút chân bọc kim loại.
+    4. `food_table_4` (bàn ăn 4 chỗ 2 ô): Mặt bàn gỗ dài phẳng bo góc 4 mép, chân đôi 2 bên và thanh giằng gỗ dài.
+    5. `drink_table_2` (bàn nước 1 ô): Bàn cafe tròn kiểu pastel mòng két/ngọc bích (`#4FA3C7`, highlight `#9EE2F5`), chân trụ inox ở giữa và đế đĩa tròn 4 chân xoè.
+    6. `drink_counter` (quầy nước 2 ô): Quầy bar gỗ panel xanh navy sang trọng (`#28465C`) có 2 hộc tủ tay nắm đồng, mặt quầy gỗ sáng, 2 bình dispenser thủy tinh chứa nước cam vàng `#F29E38` và trà xanh `#6BB347` kèm nắp đồng + vòi rót inox, chồng cốc thủy tinh xếp gọn.
+    7. `blender` (máy xay sinh tố 1 ô): Khối đế vuông bo góc màu xám thép hiện đại, núm xoay tốc độ vàng đồng và nút nguồn đỏ, cối thủy tinh hình nón thon gọn trong suốt chứa sinh tố bơ mát mắt (`#72B543`, highlight `#9FE06E`), tay cầm cối và nắp cao su đen.
+    8. `sugarcane_press` (máy ép mía 2 ô): Thùng xe inox bóng loáng bo góc, khoang kính trong suốt để lộ 3 quả lô lăn ép khía rãnh thép, khay hứng nước mía và vòi xả, bảng công tắc đỏ/xanh; bên phải có bàn phụ đặt ly nước mía xanh ngát có ống hút đỏ và bó mía tươi gióng vàng cắm thẳng.
+    9. `thung_ngam` (thùng ngâm nếp 1 ô): Dáng thùng gỗ tròn bầu, nan gỗ ghép dọc với 2 đai sắt đen nẹp ngang viền đinh tán, miệng thùng tròn nhìn xiên để lộ mặt nước ngâm nếp trắng đục sữa lấp lánh hạt nếp chìm.
+    10. `xung_hap` (xửng hấp xôi 1 ô): Tầng nồi đáy inox đun sôi có quai xách 2 bên, tầng chõ hấp tre vàng ấm đan nan dọc mắt cáo, nắp chóp nón tre có quai xách gỗ, khói thơm nghi ngút.
+    11. `quay_xoi` (quầy bán xôi 1 ô): Bàn gỗ có ngăn kéo núm đồng, tủ kính 3 mặt trong suốt phản quang vệt chéo 45 độ, bên trong bày 2 thau xôi đầy đặn: xôi gấc đỏ cam và xôi xéo vàng ruộm trên thảm lá chuối xanh ngắt.
+    12. `chao_xao` (chảo xào 1 ô): Bếp gas công nghiệp inox có núm vặn đỏ, kiềng gang chịu nhiệt, ngọn lửa gas xanh biếc rực rỡ (`#3288D8`, `#76CEFF`), chảo wok lòng sâu tay cầm gỗ chứa thức ăn xào nóng hổi.
+    13. `chao_chien` (chảo chiên 1 ô): Bếp chiên nhúng inox đôi có đèn báo nhiệt, khoang dầu sôi vàng ươm sủi bọt tăm li ti, rổ lưới nhúng mạ crom gác trên thành.
+    14. `generator` (máy phát điện 2 ô): Khung lồng bảo vệ ống thép đỏ bo góc, khối máy động cơ đen có rãnh tản nhiệt ngang, bình xăng vàng trên nắp, bảng đồng hồ volt và ổ cắm, ống xả khí nhỏ.
+    15. `storage_rack` (kệ kho hàng 1 ô): Kệ sắt 4 trụ 3 tầng mặt đỡ chịu lực, các thùng carton vuông vắn màu cát có băng keo dán niêm phong và tem nhãn mã vạch trắng.
+    16. `ghe_nghi_khach` (ghế nghỉ khách 1 ô): Ghế tựa nan gỗ LimeZu với nệm nỉ cam ấm (`#D67D42`), khung tựa nan dọc thanh thoát, chân ghế tiện có thanh giằng ngang.
+    17. `cay_kieng_lon` (cây cảnh lớn 1 ô): Chậu gốm nung terracotta bo miệng có lớp đất dinh dưỡng, thân cây gỗ vươn lên các chùm tán lá phân tầng khối pixel đặc trưng LimeZu.
+    18. `be_ca_koi` (bể cá koi 1 ô): Bể kính mini thành mỏng siêu trong có nắp máng đèn nhôm, bệ gỗ đáy, lớp cát vàng, cụm rong rêu xanh tươi và 2 chú cá koi bơi lượn (koi cam trắng và koi Kohaku trắng đốm đỏ).
+    19. `chau_cay` (chậu cây nhỏ 1 ô): Chậu sứ đất nung nhỏ để bàn với tán lá xanh tươi và nụ hoa vàng sáng.
+  - **Kiểm chứng (chạy thật, 12/10/2026):**
+    - `yarn typecheck` PASS (2.24s).
+    - `yarn --cwd packages/game-renderer test` PASS (`sprite-atlas.test.ts`).
+    - `yarn --cwd packages/game-core test` PASS (112/112 pass / 0 fail, 30 suites).
+    - Đã kết xuất ảnh lưới toàn bộ 19 món và đối chiếu trực quan: tỷ lệ hài hòa, viền 2px đều đặn, góc vát mềm mại, bóng đổ phẳng xám tím đồng nhất, chi tiết món ăn và phụ kiện sắc nét.
+  - **Chưa kiểm chứng / Giới hạn:** Chưa xem trực tiếp trong game vào ban đêm hoặc trời mưa to để kiểm tra độ tương phản ánh sáng.
+- **Đồng bộ toàn bộ đạo cụ, quầy hàng, môi trường và xe cộ còn lại theo chuẩn LimeZu & Kenney 2× (12/10/2026):**
+  - **Mục tiêu:** Thực hiện yêu cầu đồng bộ toàn diện toàn bộ các yếu tố hình ảnh vẽ bằng code còn lại trong game (từ quầy hàng ẩm thực, đạo cụ môi trường, quạt trần, quạt cây, cửa sổ kính, chậu cây, cây bóng mát công viên, thùng hàng, chim chóc cho tới xe buýt/xe tải làn dọc) theo ngôn ngữ pixel art thô 2×, viền xanh đen `#3A3A50` và bóng đổ phẳng xám tím `rgba(167, 151, 150, 0.7)`.
+  - **Đã làm (có code):**
+    1. **Mở rộng bộ lọc Atlas & Texture (`packages/game-renderer/src/textures.ts`):** Mở rộng `CHUNKY_KEYS` và `TONE_KEYS` để tự động lọc và căn chỉnh các texture vẽ code sang bảng màu chuẩn và lưới 2×2 bao gồm: `standing_fan_`, `store_window`, `tile_tree`, `tile_crates`, `tile_plant_`, `nb_`.
+    2. **Đồng bộ đồ họa khu phố & chim chóc (`packages/game-renderer/src/neighborhood-textures.ts`):** Đổi màu mực `INK` từ nâu đen `#1f1a16` sang xanh đen `#3A3A50`. Vẽ lại chim bồ câu `birdTexture` bám lưới 2px, mỏ cam, phân tách khung hình đập cánh sắc nét.
+    3. **Vẽ lại toàn bộ 3 quầy hàng vỉa hè (`packages/game-renderer/src/premium-textures.ts`):**
+       - `stall_cafe_vot` (quầy cafe vợt): Mái bạt sọc teal/kem, cột quầy 2px, thân quầy gỗ cam vàng vát cạnh, phích nước sôi inox xám tím, ly cafe nâu đậm, vợt vải kem nhạt, đèn treo phát sáng ấm.
+       - `stall_banh_mi_muoi_ot` (quầy bánh mì nướng muối ớt): Mái bạt sọc đỏ/kem, lò than nướng rực lửa cam đỏ, ổ bánh mì vàng giòn rực rỡ, hũ muối ớt cay nồng.
+       - `stall_sold_out_sign` (biển báo HẾT): Khung viền xanh đen dày dặn, nền đỏ cam gạch, chữ HẾT 2px ngay ngắn.
+       - `stall_ve_so` (quầy vé số): Khung bảng kẹp vé số sau quầy nhiều màu rực rỡ, tấm biển VÉ SỐ đỏ rực trên mặt bàn, xấp vé số nhiều tầng và hộp tiền lẻ gỗ.
+    4. **Đồng bộ đạo cụ môi trường (`packages/game-renderer/src/premium-textures.ts`):**
+       - `standing_fan_*` (quạt đứng) & `tile_fan_*` (quạt trần): Bám lưới 2px, lồng quạt teal đậm viền xanh đen, cánh quạt xoay 4 góc mượt mà, chân đế có bóng đổ phẳng.
+       - `store_window` (cửa sổ kính tiệm 32×32): Khung bao gỗ bo viền, kính xanh ngọc daylight trong suốt có vệt chói trắng, chấn song gỗ chữ thập 2px, chậu sen đá terracotta đón nắng bên bậu cửa.
+       - `tile_plant_pot` / `tile_plant_*` (chậu cây cảnh 32×40): Chậu đất nung vát khối nổi bật, đất màu nâu xám, 7 cụm tán lá xanh phân tầng kiểu Stardew/LimeZu có đốm sương mai và bóng đổ elip dẹt.
+       - `tile_tree` (cây bóng mát khu phố 80×100): Thân và rễ gồ ghề viền `#3A3A50`, 6 cụm tán lá vòm tầng lớp đa chiều, điểm xuyết đốm lá đón nắng.
+       - `tile_crates` (thùng gỗ xếp chồng 48×34): Vân gỗ ngang 2px, nẹp sắt góc và đinh tán bạc viền xanh đen, hộp trái cây trên hé lộ táo đỏ và cam chín.
+    5. **Đồng bộ xe buýt & xe tải làn dọc (`vehicleNsTexture`):** Căn chỉnh minibus và truck trục dọc bắc-nam theo lưới 2px, viền viền ngoài `#3A3A50`, kính xe xanh lơ, cabin và thùng hàng đồng bộ bảng màu xe Kenney và nhân vật LimeZu.
+  - **Kiểm chứng (chạy thật, 12/10/2026):**
+    - `yarn typecheck` **PASS** (2.82s).
+    - `yarn --cwd packages/game-renderer test` **PASS** (`sprite-atlas.test.ts PASS`).
+    - `yarn --cwd packages/game-core test` **PASS** (112/112 pass, 30 suites, 0 fail).
+  - **Chưa kiểm chứng / Giới hạn:** Chưa xem trực tiếp hiệu ứng chuyển động quạt và góc nhìn xe làn dọc trong phiên chơi multiplayer co-op thực tế.- **Khắc phục lỗi hiển thị ô dưới mái hiên và thời gian chờ trú mưa (13/10/2026):**
+  - **Vấn đề phát hiện từ phản hồi của người dùng kèm ảnh chụp:**
+    1. Hình chiếc ô màu tím gập lại bị treo lơ lửng ngoài không trung cạnh người đi bộ khi họ đứng trú mưa dưới mái hiên cửa hàng (do `holdsClosed = true` kích hoạt sprite `closed` nhưng điểm gắn nằm xa cạnh người).
+    2. Người đi bộ đứng trú mưa quá lâu dưới mái hiên (tối đa tới 90s trong `SHELTER_RULES.maxShelterSec`), gây cảm giác nhân vật bị đứng đơ không chịu di chuyển.
+  - **Đã làm (có code):**
+    1. **Ẩn ô khi đứng dưới mái hiên (`packages/game-renderer/src/rain-gear.ts`):** Điều chỉnh `showUmbrella = weatherSpritesReady() && this.open > 0.03`. Khi nhân vật đã vào khu vực có mái che (`shelter === 'awning'`), ô cụp lại hoàn toàn và được cất đi thay vì hiển thị sprite ô gập lơ lửng cạnh người. Khi bước ra ngoài mưa ô sẽ mở ra lại bình thường.
+    2. **Giảm thời gian trú mưa tối đa (`packages/game-data/src/shelter.ts`):** Giảm `maxShelterSec` từ 90 giây xuống 15 giây. Người đi bộ vào trú mưa một lát rồi sẽ tiếp tục lộ trình đi bộ trên vỉa hè, tạo nhịp sống đô thị sinh động và không bị đứng đọng.
+  - **Kiểm chứng (chạy thật, 13/10/2026):**
+    - `yarn typecheck` **PASS** (18.93s).
+    - `yarn --cwd packages/game-renderer test` **PASS** (`sprite-atlas.test.ts PASS`).
+    - `yarn --cwd packages/game-core tsx -e "import('./src/shelter.test.ts').then(m => m.runShelterTests())"` **PASS** (`SHELTER TESTS PASS!`).
+  - **Chưa kiểm chứng / Giới hạn:** Chưa chụp lại khung hình trong trình duyệt dev khi mưa kéo dài liên tục trên 10 phút.

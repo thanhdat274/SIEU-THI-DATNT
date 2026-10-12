@@ -21,13 +21,13 @@ function createCanvas(width: number, height: number): HTMLCanvasElement {
 }
 
 /** Vẽ bằng code 1 px → gộp 2×2 cho cùng độ thô với nhân vật LimeZu và xe Kenney. */
-const CHUNKY_KEYS = /^(vehicle_minibus_|truck_|vehicle_ns_|vehicle_bicycle_|vehicle_motorbike_|fixture_|fixture_prop_|stall_|prop_|wall_|tile_crates|tile_shopping_baskets|tile_signboard|tile_awning|tile_fan_|tile_plant_|deco_(bush|tuft|flowers|lamp_pole|fence)|pixel_)/;
+const CHUNKY_KEYS = /^(vehicle_minibus_|truck_|vehicle_ns_|vehicle_bicycle_|vehicle_motorbike_|fixture_|fixture_prop_|stall_|prop_|wall_|tile_crates|tile_shopping_baskets|tile_signboard|tile_awning|tile_fan_|standing_fan_|store_window|tile_tree|tile_plant_|deco_(bush|tuft|flowers|lamp_pole|fence)|pixel_|nb_)/;
 
 /** Bảng màu lấy từ nội thất LimeZu đang dùng (viền xanh đen 0x3a3a50, gỗ vàng, đỏ gạch...). */
 const LIMEZU_PALETTE = [0x3a3a50,0xfaf6ee,0xc3aa57,0xe0b870,0xa74e47,0xca8854,0xa79796,0xccc2bc,0xd1b24e,0x4985cc,0xc78c59,0xe8e1d9,0xb7ffee,0x95e3e3,0x787878,0xb0b0a0,0x505068,0xa7acaf,0xa9afb0,0xdac9be,0x1e1e2e,0xb35e3f,0xd5cc96,0xe8e8a8,0xb5754d,0xb05469,0x989ea5,0x83b5b9,0xa4d5d5,0xf8f8f8,0x979ca3,0xbdf1e5,0xe0d898,0xd8ffb7,0x7ea9b0,0xb5a5a2,0xf0f0c8,0xdac683,0x2b792b,0xe07070,0xc4dae8,0xccb580,0xb0dad7,0xace89b,0xdaa463,0xec5555,0xa85f46,0x6e92a2,0x78a1d1,0xd9a16a,0x7bc0cc,0xffffff,0xf1d188,0xd8d0e0,0xf1ce8e,0x6b5052,0xdfdbae,0xec6c55,0x46465e,0x615f5f,0x808088,0xb95d72,0xc3a9a5,0xd56868,0x357f72,0x2a6a5f,0x1f5248,0x4aa05a,0x6fbf73,0x9fd9a0].map((c) => [(c >> 16) & 255, (c >> 8) & 255, c & 255] as const);
 
 /** Đồ còn vẽ bằng code nằm cạnh đồ LimeZu: đưa màu về bảng màu LimeZu cho cùng tông (giữ nguyên độ trong suốt). */
-const TONE_KEYS = /^(wall_|warehouse_wall|warehouse_sign|tile_awning|tile_signboard|stall_|fixture_prop_|fixture_warehouse_)/;
+const TONE_KEYS = /^(wall_|warehouse_wall|warehouse_sign|tile_awning|tile_signboard|stall_|fixture_prop_|fixture_warehouse_|store_window|tile_tree|tile_fan_|standing_fan_|tile_crates|tile_plant_|nb_)/;
 
 function toneToLimezu(src: HTMLCanvasElement): HTMLCanvasElement {
   const ctx = src.getContext('2d');
