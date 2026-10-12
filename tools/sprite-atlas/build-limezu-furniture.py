@@ -25,6 +25,25 @@ COUNTER = (160, 1770, 224, 1814)      # quầy gỗ có ngăn kéo 64x44
 MONITOR = (96, 276, 128, 301)         # màn hình máy tính tiền 32x25
 
 
+# Đạo cụ 1-2 ô (`fixture_prop_<mã>`): (khung cắt, bề rộng ô vẽ); ảnh được cắt sát rồi đặt giữa, sát đáy.
+PROPS = {
+    'chau_cay': ((384, 1440, 416, 1492), 32),          # chậu cây nhỏ
+    'cay_kieng_lon': ((332, 1422, 374, 1492), 36),     # cây cảnh lớn trong hộp gỗ
+    'storage_rack': ((0, 1896, 34, 1944), 32),         # tủ gỗ thấp
+    'food_table_2': ((32, 1832, 64, 1878), 32),        # bàn gỗ nhỏ có ngăn kéo
+    'drink_table_2': ((32, 1832, 64, 1878), 32),
+    'food_table_4': ((158, 1896, 226, 1944), 64),      # quầy gỗ dài dùng làm bàn
+}
+
+
+def prop(sheet, box, width):
+    art = sheet.crop(box)
+    art = art.crop(art.getbbox())
+    out = Image.new('RGBA', (width, art.height), (0, 0, 0, 0))
+    out.alpha_composite(art, ((width - art.width) // 2, 0))
+    return out
+
+
 def splice(img):
     """Bản 1 ô (32 px) từ bản 2 ô: nửa trái + nửa phải."""
     out = Image.new('RGBA', (32, img.height), (0, 0, 0, 0))
@@ -46,6 +65,8 @@ def main(src: str) -> None:
         'fixture_refrigerator': fridge, 'fixture_freezer': fridge, 'fixture_refrigerator_single': sheet.crop(FRIDGE_SINGLE),
         'fixture_cashier': cashier, 'fixture_cashier_single': splice(cashier),
     }
+    for pid, (box, w) in PROPS.items():
+        items[f'fixture_prop_{pid}'] = prop(sheet, box, w)
     width, x, y, row_h, frames = 256, 0, 0, 0, {}
     placed = []
     for key, img in items.items():

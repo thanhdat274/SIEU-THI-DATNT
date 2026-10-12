@@ -81,7 +81,7 @@ interface PlacedBuilding { id: Exclude<BuildingId, 'main'>; open: boolean; bound
   floor?: Set<string> }
 
 /** Kệ, tủ mát, quầy thu ngân có thể là ảnh atlas tĩnh (cao hơn bản code 48 px, không đổi hình theo mức hàng). */
-const ATLAS_FIXTURE_KEY = /^fixture_(shelf_|refrigerator|freezer|cashier)/;
+const ATLAS_FIXTURE_KEY = /^fixture_(shelf_|refrigerator|freezer|cashier|prop_(chau_cay|cay_kieng_lon|storage_rack|food_table_2|drink_table_2|food_table_4)$)/;
 export class PixiGameViewport {
   private app!: Application;
   private canvas: HTMLCanvasElement;
