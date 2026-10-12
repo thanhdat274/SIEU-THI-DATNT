@@ -20,8 +20,8 @@ function createCanvas(width: number, height: number): HTMLCanvasElement {
   return canvas;
 }
 
-/** Xe vẽ bằng code (xe buýt, xe tải, xe đạp, xe máy, xe làn dọc) dùng điểm ảnh 1×1 mịn hơn nhân vật và xe Kenney (điểm ảnh 2×2): gộp về lưới 2×2 cho cùng độ thô. */
-const CHUNKY_KEYS = /^(vehicle_minibus_|truck_|vehicle_ns_|vehicle_bicycle_|vehicle_motorbike_)/;
+/** Vẽ bằng code 1 px → gộp 2×2 cho cùng độ thô với nhân vật LimeZu và xe Kenney. */
+const CHUNKY_KEYS = /^(vehicle_minibus_|truck_|vehicle_ns_|vehicle_bicycle_|vehicle_motorbike_|fixture_|fixture_prop_|stall_|prop_|wall_|tile_crates|tile_shopping_baskets|tile_signboard|tile_awning|tile_fan_|tile_plant_|deco_(bush|tuft|flowers|lamp_pole|fence)|pixel_)/;
 
 function chunkyPixels(src: HTMLCanvasElement): HTMLCanvasElement {
   const w = src.width, h = src.height;
