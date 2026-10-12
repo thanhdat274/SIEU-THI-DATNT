@@ -57,12 +57,15 @@ def main(src: str) -> None:
     wood = crop(sheet, SHELF_WOOD)
     fridge = sheet.crop(FRIDGE)
     counter = sheet.crop(COUNTER)
+    floor = Image.open(Path(src).with_name('Room_Builder_free_32x32.png')).convert('RGBA').crop((352, 224, 448, 416))
     cashier = Image.new('RGBA', (64, counter.height + 14), (0, 0, 0, 0))
     cashier.alpha_composite(counter, (0, 14))
     cashier.alpha_composite(sheet.crop(MONITOR), (6, 1))
     items = {
         'fixture_shelf_wooden': wood, 'fixture_shelf_wooden_single': splice(wood), 'fixture_shelf_glass': crop(sheet, SHELF_GLASS),
         'fixture_refrigerator': fridge, 'fixture_freezer': fridge, 'fixture_refrigerator_single': sheet.crop(FRIDGE_SINGLE),
+        'fixture_warehouse_dry': crop(sheet, (382, 2285)), 'fixture_warehouse_cold': fridge, 'fixture_warehouse_receiving': cashier,
+        'tile_store_floor': floor.crop((32, 0, 64, 32)), 'warehouse_floor': floor.crop((32, 128, 64, 160)),
         'fixture_cashier': cashier, 'fixture_cashier_single': splice(cashier),
     }
     for pid, (box, w) in PROPS.items():

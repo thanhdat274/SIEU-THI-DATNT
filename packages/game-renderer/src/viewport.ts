@@ -81,7 +81,7 @@ interface PlacedBuilding { id: Exclude<BuildingId, 'main'>; open: boolean; bound
   floor?: Set<string> }
 
 /** Kệ, tủ mát, quầy thu ngân có thể là ảnh atlas tĩnh (cao hơn bản code 48 px, không đổi hình theo mức hàng). */
-const ATLAS_FIXTURE_KEY = /^fixture_(shelf_|refrigerator|freezer|cashier|prop_(chau_cay|cay_kieng_lon|storage_rack|food_table_2|drink_table_2|food_table_4)$)/;
+const ATLAS_FIXTURE_KEY = /^fixture_(shelf_|refrigerator|freezer|cashier|warehouse_(dry|cold|receiving)$|prop_(chau_cay|cay_kieng_lon|storage_rack|food_table_2|drink_table_2|food_table_4)$)/;
 export class PixiGameViewport {
   private app!: Application;
   private canvas: HTMLCanvasElement;
@@ -2112,7 +2112,7 @@ export class PixiGameViewport {
           const count=receiving?counts.orders:cold?counts.cold:counts.dry;
           const state=count===0?'empty':count<=(cold?16:10)?'low':'full';
           const key=`${entry.textureKey}:none:${state}`;
-          if(entry.lastState!==key){entry.sprite.texture=this.textures.getTexture(key);entry.lastState=key;entry.dotMarker.clear().rect(5,38,6,6).fill(state==='empty'?0xb64c3d:0x357f72);}
+          if(entry.lastState!==key){if(!atlasTexture(entry.textureKey))entry.sprite.texture=this.textures.getTexture(key);entry.lastState=key;entry.dotMarker.clear().rect(5,38,6,6).fill(state==='empty'?0xb64c3d:0x357f72);}
           entry.stockText.text=receiving?`${count} đơn`:cold?`${count}/40`:`${count} món`;
           entry.stockText.visible=true;entry.dotMarker.visible=true;
         } else if (fix.type !== 'cashier_counter' && fix.type !== 'decor' && fix.type !== 'kitchen_station' && fix.type !== 'dining_table') {
