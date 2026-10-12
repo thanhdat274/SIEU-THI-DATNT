@@ -3,7 +3,7 @@ import { Application, Container, RenderTexture, Sprite, Graphics, Text, TextStyl
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
 import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, weekdayOf, hashSeed, type WeatherVisualState, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
-import { loadSpriteAtlases, headLift, lampLift, walkerLook } from './sprite-atlas';
+import { loadSpriteAtlases, headLift, lampLift, walkerLook, atlasTexture } from './sprite-atlas';
 import { PixelCamera } from './camera';
 import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
 import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, parcelTrafficMultiplier, type LandParcel} from '@game/data';
@@ -1317,7 +1317,11 @@ export class PixiGameViewport {
         const scale = Math.max(1, Math.round(fix.widthTiles * TILE_SIZE / art.width));
         sprite.scale.set(scale);
         sprite.y = fix.heightTiles * TILE_SIZE - art.height * scale;
-      } else sprite.y = -16;
+      } else {
+        // Kệ từ atlas cao hơn bản vẽ code (48 px): giữ chân kệ ở y = 44 của bản code, phần thừa nhô lên trên.
+        const tex = sprite.texture;
+        sprite.y = textureKey.startsWith('fixture_shelf_') && tex.height > 48 ? -16 + 44 - tex.height : -16;
+      }
       container.zIndex = (fix.tileY + dimensions.heightTiles) * TILE_SIZE;
       container.addChild(sprite);
 
@@ -2120,7 +2124,7 @@ export class PixiGameViewport {
           entry.wearMarker.visible = worn;
           const stateKey = `${key}|${fix.broken ?? ''}`;
           if(entry.lastState !== stateKey) {
-            if (!entry.staticArt && !entry.textureKey.startsWith('fixture_prop_')) entry.sprite.texture = this.textures.getTexture(key);
+            if (!entry.staticArt && !entry.textureKey.startsWith('fixture_prop_') && !(entry.textureKey.startsWith('fixture_shelf_') && atlasTexture(entry.textureKey))) entry.sprite.texture = this.textures.getTexture(key);
             entry.lastState = stateKey;
             entry.sprite.tint = fix.broken ? (fix.broken === 'major' ? 0x7a6a6a : 0xb5a29c) : 0xffffff;
             entry.dotMarker.clear().rect(entry.dotX, 38, 6, 6).fill({color: fix.broken ? 0x6f2a1e : state==='empty'?0xd9381e:state==='low'?0xf4a261:0x2a7a43});
