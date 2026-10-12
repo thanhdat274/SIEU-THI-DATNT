@@ -5,8 +5,9 @@
  */
 type Draw = (r: (x: number, y: number, w: number, h: number, c: string) => void, w: number) => void;
 
-const OUT = '#2B1B12', WOOD = '#A2693E', WOOD_DK = '#7A4822', WOOD_LT = '#D6A870', WOOD_HI = '#F3D09E', BRASS = '#EAD0A0';
-const STEEL = '#B7C0C4', STEEL_DK = '#4B4F52', STEEL_HI = '#E3E9EC', GLASS = 'rgba(190, 226, 238, 0.4)', GLASS_HI = 'rgba(255, 255, 255, 0.4)';
+// Bảng màu LimeZu (viền xanh đen 2 px, gỗ cam vàng, thép xám tím) để đồ bếp nằm cạnh kệ/quầy LimeZu không lệch tông.
+const OUT = '#3A3A50', WOOD = '#CA8854', WOOD_DK = '#B5754D', WOOD_LT = '#E0B870', WOOD_HI = '#F1D188', BRASS = '#F1D188';
+const STEEL = '#B0B0A0', STEEL_DK = '#787878', STEEL_HI = '#E8E1D9', GLASS = 'rgba(183, 255, 238, 0.45)', GLASS_HI = 'rgba(255, 255, 255, 0.55)';
 
 /** Món trong danh mục dùng bản vẽ này, kèm bề rộng (ô). */
 const PROP_WIDTH: Record<string, number> = {
@@ -200,10 +201,14 @@ export function propFixtureTexture(shopId: string): HTMLCanvasElement | null {
   const ctx = canvas.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
   const w = canvas.width;
-  const r = (x: number, y: number, a: number, b: number, c: string) => { ctx.fillStyle = c; ctx.fillRect(x, y, a, b); };
-  // Bóng đổ nhẹ dưới sàn như kệ và quầy
-  r(4, 42, w - 6, 5, '#26190E45');
-  r(2, 44, w - 2, 3, '#26190E22');
+  // Mọi khối chữ nhật bám lưới 2 px (viền 1 px thành 2 px) như pixel art LimeZu phóng 2×.
+  const r = (x: number, y: number, a: number, b: number, c: string) => {
+    const x0 = Math.floor(x / 2) * 2, y0 = Math.floor(y / 2) * 2;
+    ctx.fillStyle = c;
+    ctx.fillRect(x0, y0, Math.max(2, Math.ceil((x + a) / 2) * 2 - x0), Math.max(2, Math.ceil((y + b) / 2) * 2 - y0));
+  };
+  // Bóng đổ phẳng xám tím dưới chân đồ, giống bóng của đồ LimeZu
+  r(2, 44, w - 4, 4, 'rgba(167, 151, 150, 0.7)');
   draw(r, w);
   return canvas;
 }
