@@ -80,6 +80,8 @@ interface PlacedBuilding { id: Exclude<BuildingId, 'main'>; open: boolean; bound
   /** Chỉ tòa phụ có sàn mở rộng: khóa "x,y" mọi ô sàn (sàn gốc ∪ ô mở rộng), để tự chọn texture tường theo ô sàn kề. */
   floor?: Set<string> }
 
+/** Kệ, tủ mát, quầy thu ngân có thể là ảnh atlas tĩnh (cao hơn bản code 48 px, không đổi hình theo mức hàng). */
+const ATLAS_FIXTURE_KEY = /^fixture_(shelf_|refrigerator|freezer|cashier)/;
 export class PixiGameViewport {
   private app!: Application;
   private canvas: HTMLCanvasElement;
@@ -1320,7 +1322,7 @@ export class PixiGameViewport {
       } else {
         // Kệ từ atlas cao hơn bản vẽ code (48 px): giữ chân kệ ở y = 44 của bản code, phần thừa nhô lên trên.
         const tex = sprite.texture;
-        sprite.y = textureKey.startsWith('fixture_shelf_') && tex.height > 48 ? -16 + 44 - tex.height : -16;
+        sprite.y = ATLAS_FIXTURE_KEY.test(textureKey) && tex.height > 48 ? -16 + 44 - tex.height : -16;
       }
       container.zIndex = (fix.tileY + dimensions.heightTiles) * TILE_SIZE;
       container.addChild(sprite);
@@ -2124,7 +2126,7 @@ export class PixiGameViewport {
           entry.wearMarker.visible = worn;
           const stateKey = `${key}|${fix.broken ?? ''}`;
           if(entry.lastState !== stateKey) {
-            if (!entry.staticArt && !entry.textureKey.startsWith('fixture_prop_') && !(entry.textureKey.startsWith('fixture_shelf_') && atlasTexture(entry.textureKey))) entry.sprite.texture = this.textures.getTexture(key);
+            if (!entry.staticArt && !entry.textureKey.startsWith('fixture_prop_') && !(ATLAS_FIXTURE_KEY.test(entry.textureKey) && atlasTexture(entry.textureKey))) entry.sprite.texture = this.textures.getTexture(key);
             entry.lastState = stateKey;
             entry.sprite.tint = fix.broken ? (fix.broken === 'major' ? 0x7a6a6a : 0xb5a29c) : 0xffffff;
             entry.dotMarker.clear().rect(entry.dotX, 38, 6, 6).fill({color: fix.broken ? 0x6f2a1e : state==='empty'?0xd9381e:state==='low'?0xf4a261:0x2a7a43});

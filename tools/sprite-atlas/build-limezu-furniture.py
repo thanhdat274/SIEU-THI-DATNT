@@ -1,7 +1,7 @@
 """Cắt kệ hàng từ LimeZu "Modern Interiors Free" (32x32) thành atlas nội thất cho renderer.
 
 Dùng:  python tools/sprite-atlas/build-limezu-furniture.py <đường dẫn Interiors_free_32x32.png>
-Kệ 64x68 (2 ô ngang); bản 1 ô ghép nửa trái + nửa phải. Ghi ra apps/web/public/assets/sprites/furniture/ (gitignore, giấy phép LimeZu
+Kệ hàng, tủ mát và quầy thu ngân (monitor đặt lên quầy gỗ); bản 1 ô ghép nửa trái + nửa phải của bản 2 ô. Ghi ra apps/web/public/assets/sprites/furniture/ (gitignore, giấy phép LimeZu
 không cho phát hành lại). Cần Pillow.
 """
 import json, sys
@@ -19,19 +19,45 @@ def crop(sheet, xy):
     return sheet.crop((xy[0], xy[1], xy[0] + SIZE[0], xy[1] + SIZE[1]))
 
 
+FRIDGE = (128, 592, 192, 658)         # tủ mát kính trắng có nước ngọt/đồ ăn, 64x66
+FRIDGE_SINGLE = (64, 592, 96, 658)    # nguyên một ngăn (32x66)
+COUNTER = (160, 1770, 224, 1814)      # quầy gỗ có ngăn kéo 64x44
+MONITOR = (96, 276, 128, 301)         # màn hình máy tính tiền 32x25
+
+
+def splice(img):
+    """Bản 1 ô (32 px) từ bản 2 ô: nửa trái + nửa phải."""
+    out = Image.new('RGBA', (32, img.height), (0, 0, 0, 0))
+    out.alpha_composite(img.crop((0, 0, 16, img.height)), (0, 0))
+    out.alpha_composite(img.crop((img.width - 16, 0, img.width, img.height)), (16, 0))
+    return out
+
+
 def main(src: str) -> None:
     sheet = Image.open(src).convert('RGBA')
     wood = crop(sheet, SHELF_WOOD)
-    single = Image.new('RGBA', (32, SIZE[1]), (0, 0, 0, 0))
-    single.alpha_composite(wood.crop((0, 0, 16, SIZE[1])), (0, 0))
-    single.alpha_composite(wood.crop((SIZE[0] - 16, 0, SIZE[0], SIZE[1])), (16, 0))
-    items = {'fixture_shelf_wooden': wood, 'fixture_shelf_wooden_single': single, 'fixture_shelf_glass': crop(sheet, SHELF_GLASS)}
-    width, x, frames = 256, 0, {}
-    atlas = Image.new('RGBA', (width, SIZE[1]), (0, 0, 0, 0))
+    fridge = sheet.crop(FRIDGE)
+    counter = sheet.crop(COUNTER)
+    cashier = Image.new('RGBA', (64, counter.height + 14), (0, 0, 0, 0))
+    cashier.alpha_composite(counter, (0, 14))
+    cashier.alpha_composite(sheet.crop(MONITOR), (6, 1))
+    items = {
+        'fixture_shelf_wooden': wood, 'fixture_shelf_wooden_single': splice(wood), 'fixture_shelf_glass': crop(sheet, SHELF_GLASS),
+        'fixture_refrigerator': fridge, 'fixture_freezer': fridge, 'fixture_refrigerator_single': sheet.crop(FRIDGE_SINGLE),
+        'fixture_cashier': cashier, 'fixture_cashier_single': splice(cashier),
+    }
+    width, x, y, row_h, frames = 256, 0, 0, 0, {}
+    placed = []
     for key, img in items.items():
-        atlas.alpha_composite(img, (x, 0))
-        frames[key] = {'x': x, 'y': 0, 'w': img.width, 'h': img.height}
+        if x + img.width > width:
+            x, y, row_h = 0, y + row_h + 2, 0
+        placed.append((img, x, y))
+        frames[key] = {'x': x, 'y': y, 'w': img.width, 'h': img.height}
         x += img.width + 2
+        row_h = max(row_h, img.height)
+    atlas = Image.new('RGBA', (width, y + row_h), (0, 0, 0, 0))
+    for img, px, py in placed:
+        atlas.alpha_composite(img, (px, py))
     OUT.mkdir(parents=True, exist_ok=True)
     atlas.save(OUT / 'furniture.png')
     (OUT / 'furniture.json').write_text(json.dumps({'image': 'furniture.png', 'resolution': 1, 'frames': frames}, indent=1) + '\n', encoding='utf8')
