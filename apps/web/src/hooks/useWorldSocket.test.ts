@@ -105,7 +105,7 @@ function testMaxRetries() {
 
   const MAX_RETRIES = 20;
   let attempts = 0;
-  let finalState: ConnectionState = 'disconnected';
+  const finalState: ConnectionState = 'disconnected';
 
   // Simulate the reconnect loop: each close event triggers scheduleRetry
   // First close → attempt 1, second close → attempt 2, ..., attempt 20 → disconnected, attempt 21+ → no-op

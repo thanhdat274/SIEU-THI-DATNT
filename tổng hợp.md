@@ -1,3 +1,91 @@
+# GIAI ĐOẠN 1 — CỦNG CỐ NỀN KỸ THUẬT — BÁO CÁO CUỐI (15/10/2026)
+
+## Tổng kết
+
+| Mục | Trạng thái | Ghi chú |
+|-----|-----------|---------|
+| 1.1 Reconnect WS + stop local customers | ✅ HOÀN THÀNH | Backoff jitter, max 20 retries, connectionState, serverAuthoritative |
+| 1.2 Tests renderer/web | ✅ HOÀN THÀNH | building-visual.test, useToastStore.test, useWorldSocket.test |
+| 1.3 Tách module | ⚠️ PHẦN NÀO | viewport.ts → input (7.7KB); simulation.ts/App.tsx chưa tách |
+| 1.4 Giảm vendor-pixi | ⚠️ KHÔNG ĐO ĐƯỢC | Sandbox chặn build — không tạo được bundle analysis |
+
+## 1.1 WebSocket Reconnect + Stop Local Customers
+
+**File thay đổi:**
+- `packages/game-core/src/simulation.ts` — Thêm `serverAuthoritative` flag + getter/setter, wrap customer spawning
+- `apps/web/src/hooks/useWorldSocket.ts` — Exponential backoff + jitter, max 20 retries, exposes `connectionState`/`reconnectAttempt`
+- `apps/web/src/App.tsx` — Wire `onConnectionStateChange` → `setServerAuthoritative()`
+
+**Tests:**
+- `useWorldSocket.test.ts` — 4/4 PASS (backoff, state machine, max retries, jitter uniqueness)
+
+## 1.2 Tests Renderer/Web
+
+**File mới:**
+- `packages/game-renderer/src/building-visual.test.ts` — Color schemes, icon styles, display names (3 tests)
+- `apps/web/src/store/useToastStore.test.ts` — Max toasts, remove, rating replacement, types (4 tests)
+- `apps/web/src/hooks/useWorldSocket.test.ts` — Backoff + state machine (4 tests)
+
+## 1.3 Tách Module
+
+**Đã làm:**
+- `packages/game-renderer/src/viewport/viewport-input.ts` (7.7 KB) — Pointer/touch/wheel/resize handlers
+- viewport.ts giảm từ 152.4 KB → 149.8 KB (-2.5 KB)
+
+**Chưa làm (rủi ro cao, cần test coverage):**
+- `simulation.ts` (315.1 KB) — Cần tách customer, inventory, rent, financial, events, coop, staff, market
+- `App.tsx` (137.7 KB) — JSX inline-heavy, khó tách không động markup
+
+## 1.4 Giảm vendor-pixi
+
+**Phân tích:**
+- PixiJS v8.1.6: `pixi.min.js` 809 KB
+- Bundler: Vite + Rollup (rolldown)
+- ManualChunks đã tách `vendor-pixi` riêng
+
+**Không đo được:**
+- Sandbox chặn `vite build` (EPERM spawn)
+- Không thể chạy `vite build --mode production` để đo bundle size
+
+**Giải pháp khả thi (chỉ test trên máy thật):**
+- Lazy-load renderer (không import pixi.js khi app load)
+- Split vendor-pixi thành: vendor-pixi-core + vendor-pixi-scene
+- Tree-shake: không dùng pixi.js/app (dùng Renderer trực tiếp)
+
+## Kết quả cuối cùng
+
+| Lệnh | Kết quả | Ghi chú |
+|------|---------|---------|
+| `yarn typecheck` | ✅ PASS (2.34s) | Toàn workspace |
+| `yarn lint` | ✅ 0 errors, 154 warnings | Pre-existing |
+| `yarn test` | ❌ EPERM | Sandbox |
+| `yarn build` | ❌ EPERM | Sandbox |
+
+## Commit history giai đoạn 1
+
+| Commit | Nội dung |
+|--------|----------|
+| `45161f6` | feat(core): dừng sinh khách cục bộ khi server authoritative |
+| `4de913d` | feat(web): reconnect WS với exponential backoff + jitter |
+| `e11af6e` | test(renderer,web): building-visual.test, useToastStore.test |
+| `eb2a631` | refactor(renderer): tách viewport-input.ts |
+| `d3e92a9` | feat(renderer,data,core): icon riêng 6 món cà phê/cơm |
+
+## Rủi ro và giới hạn còn lại
+
+1. **Chưa chạy test thật trên máy thật** — sandbox chặn `tsx`/`vite build`
+2. **Chưa browser QA** — cần dev server + hai trình duyệt
+3. **Chưa giảm vendor-pixi** — chưa đo được size
+4. **simulation.ts còn 315 KB** — chưa tách module
+5. **App.tsx còn 137 KB** — chưa tách module
+
+## Đề xuất bước kế tiếp
+
+- **Giai đoạn 2:** Hoàn thành code còn thiếu theo OpenSpec (2.1-2.6, TAX-1..8)
+- Cần máy thật để chạy test/build/browser QA trước khi tiếp tục
+
+---
+
 # CẬP NHẬT 15/10/2026 (rà soát + dọn lint)
 
 - `yarn typecheck` PASS; `yarn test` 112/112 PASS; web test, server test:unit, renderer test PASS.
