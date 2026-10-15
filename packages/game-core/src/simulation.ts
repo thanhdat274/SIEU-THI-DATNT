@@ -902,8 +902,8 @@ export class GameSimulation {
 
   /**
    * Thuê lô đất (lệnh `lease_parcel`, OpenSpec `open-world-land-lease` 2.1):
-   * kiểm lô chưa owned/leased, tính tiền thuê (parcelPrice × leaseDailyRate × 30 ngày), trừ tiền,
-   * ghi tenure schema 10 (`parcelTenure[parcelId] = { kind: 'leased', day, paidTotal }`).
+   * kiểm lô chưa owned/leased + đủ tiền cho MỘT ngày thuê, KHÔNG thu trước (spec D2: chỉ thu `dailyRent` đầu mỗi ngày
+   * qua `collectDailyRent`; chủ dự án chốt 16/10/2026), ghi tenure schema 10 (`parcelTenure[parcelId] = { kind: 'leased', day, paidTotal }`).
    */
   public leaseParcel(parcelId: string): { success: boolean; reason?: string; rent?: number } {
     const day = this.clock.getTime().day;
@@ -921,15 +921,12 @@ export class GameSimulation {
     const existing = this.parcelTenure[parcelId];
     if (existing && (existing.kind === 'owned' || existing.kind === 'leased')) return { success: false, reason: existing.kind === 'owned' ? 'owned' : 'leased' };
     if (this.ownedParcelIds.includes(parcelId)) return { success: false, reason: 'owned' };
-    // Tính tiền thuê (30 ngày game)
-    const basePrice = parcelPrice(parcel);
-    const monthlyRent = Math.floor(basePrice * LAND_LEASE_CONSTANTS.leaseDailyRate * 30);
-    if (this.playerData.money < monthlyRent) return { success: false, reason: 'money' };
-    // Trừ tiền + ghi tenure schema 10
-    this.playerData.money -= monthlyRent;
-    this.parcelTenure[parcelId] = { kind: 'leased', day, paidTotal: monthlyRent };
+    // Không thu trước: chỉ cần đủ tiền cho ngày thuê đầu tiên (thu sáng hôm sau); `paidTotal` tích lũy từ tiền thuê ngày.
+    const dailyRent = Math.max(1, Math.ceil(parcelPrice(parcel) * LAND_LEASE_CONSTANTS.leaseDailyRate));
+    if (this.playerData.money < dailyRent) return { success: false, reason: 'money' };
+    this.parcelTenure[parcelId] = { kind: 'leased', day, paidTotal: 0 };
     this.notifyStateChanged();
-    return { success: true, rent: monthlyRent };
+    return { success: true, rent: dailyRent };
   }
 
   /**

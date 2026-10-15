@@ -4,7 +4,7 @@
 
 ## Giai đoạn 3 kiểm chứng thật (16/10/2026)
 
-- [>] QA trình duyệt thật cho thuê đất/nợ/mua khấu trừ/lưu-tải, 7 viewport (đo DOM), co-op 2 client + nối lại WS: ĐẠT; sửa 4 lỗi. Chưa Mobile Ready (chưa duyệt mắt hết), chưa đo FPS/OAuth/voice, BUG-1 chờ quyết, city goals/cluster/district chưa nối vào game. Chi tiết: `tổng hợp.md` đầu file.
+- [>] QA trình duyệt thật cho thuê đất/nợ/mua khấu trừ/lưu-tải, 7 viewport (đo DOM), co-op 2 client + nối lại WS: ĐẠT; sửa 4 lỗi. Chưa Mobile Ready (chưa duyệt mắt hết), chưa đo FPS/OAuth/voice, city goals/cluster/district chưa nối vào game. Chi tiết: `tổng hợp.md` đầu file.
 
 ## 4 yêu cầu: lời chê truyền miệng, sự kiện thành phố, giá gợi ý — LÕI THUẦN đã làm + verify; chain DEFER (07/10/2026)
 

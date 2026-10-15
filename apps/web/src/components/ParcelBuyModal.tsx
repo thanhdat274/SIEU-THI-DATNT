@@ -20,7 +20,7 @@ export interface Props {
 
 const ROAD_LABEL: Record<string, string> = { main: 'đường chính', south: 'đường nam' };
 
-/** Hộp quản lý lô đất: mua đứt, thuê 30 ngày, trả nợ thuê hoặc mở tòa nhà mới (land-reclamation & land-lease). */
+/** Hộp quản lý lô đất: mua đứt, thuê theo ngày, trả nợ thuê hoặc mở tòa nhà mới (land-reclamation & land-lease). */
 export const ParcelBuyModal: React.FC<Props> = ({
   parcelId,
   playerMoney,
@@ -52,9 +52,8 @@ export const ParcelBuyModal: React.FC<Props> = ({
   const credit = isLeased ? Math.min(leasePaidTotal * LAND_LEASE_CONSTANTS.leaseCreditRate, Math.floor(basePrice * 0.5)) : 0;
   const price = Math.max(0, basePrice - credit);
   const poorBuy = playerMoney < price;
-  const rentPrice = Math.floor(basePrice * LAND_LEASE_CONSTANTS.leaseDailyRate * 30);
-  const poorLease = playerMoney < rentPrice;
   const dailyRent = Math.max(1, Math.ceil(basePrice * LAND_LEASE_CONSTANTS.leaseDailyRate));
+  const poorLease = playerMoney < dailyRent;
   const debtAmount = leaseDebtDays * dailyRent;
   const poorPayDebt = playerMoney < debtAmount;
   const canLease = wave.id !== 'W0' && !isOwned && !isLeased;
@@ -169,7 +168,7 @@ export const ParcelBuyModal: React.FC<Props> = ({
                   onClose();
                 }}
               >
-                {poorLease ? 'Thiếu tiền thuê' : `Thuê 30 ngày (${money(rentPrice)})`}
+                {poorLease ? 'Thiếu tiền thuê' : `Thuê (${money(dailyRent)}/ngày)`}
               </PixelButton>
             )}
             <PixelButton

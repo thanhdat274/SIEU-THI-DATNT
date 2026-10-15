@@ -2,7 +2,7 @@
  * Quét kinh tế mở rộng (headless, Giai đoạn 3.6): nhiều hạt giống × kịch bản "mở tòa trên lô thuê".
  * Với mỗi seed: tiệm chính chạy kèm một tòa phụ (chi nhánh / cà phê / quán cơm / bãi xe) trên lô góc W1 đã thuê,
  * kệ luôn đầy (như `balance-sweep.ts`, nên số khách KHÔNG bị chặn bởi hàng — đây là TRẦN, không phải kỳ vọng).
- * In: doanh thu/lãi gộp theo tòa mỗi ngày (p10/p50/p90), tiền thuê/ngày, ngày hoàn vốn (chi phí mở + tiền thuê trả trước),
+ * In: doanh thu/lãi gộp theo tòa mỗi ngày (p10/p50/p90), tiền thuê/ngày, ngày hoàn vốn (chi phí mở),
  * tỷ lệ seed phá sản (lãi gộp tòa < tiền thuê/ngày suốt cả kỳ).
  * Đây là số đo từ mô phỏng, KHÔNG thay thế playtest thật.
  * Chạy: yarn --cwd packages/game-core economy-qa
@@ -39,7 +39,7 @@ function run(typeId: (typeof SCENARIOS)[number], seed: string): RunResult {
   if (!lease.success || !open.success) throw new Error(`setup lỗi ${typeId}: lease=${lease.reason} open=${open.reason}`);
   const instanceId = open.instanceId!;
   const dailyRent = Math.max(1, Math.ceil(parcelPrice(parcel) * LAND_LEASE_CONSTANTS.leaseDailyRate));
-  const setupCost = (lease.rent ?? 0) + BUILDING_TYPE_DEFS[typeId].openCost;
+  const setupCost = BUILDING_TYPE_DEFS[typeId].openCost; // thuê không còn thu trước (spec D2)
   const refill = () => sim.getFixtures().filter(isSalesFixture).forEach((shelf, i) => {
     shelf.assignedProductId = shelf.assignedProductId ?? PRODUCTS[i % PRODUCTS.length];
     shelf.currentStock = Math.max(shelf.currentStock ?? 0, 14);
@@ -79,7 +79,7 @@ for (const typeId of SCENARIOS) {
   const rent = results[0].rentPerDay, setup = results[0].setupCost;
   const loss = results.filter(r => r.gross.reduce((a, b) => a + b, 0) < r.rentPerDay * r.gross.length).length;
   const payback = results.map(r => r.paybackDay).filter((x): x is number => x !== null);
-  console.log(`\n== ${typeId} (openCost ${vnd(BUILDING_TYPE_DEFS[typeId].openCost)}, thuê trả trước ${vnd(setup - BUILDING_TYPE_DEFS[typeId].openCost)}, thuê/ngày ${vnd(rent)})`);
+  console.log(`\n== ${typeId} (openCost ${vnd(BUILDING_TYPE_DEFS[typeId].openCost)}, thuê/ngày ${vnd(rent)})`);
   console.log(`  doanh thu/ngày p10/p50/p90: ${vnd(quantile(rev, .1))} / ${vnd(quantile(rev, .5))} / ${vnd(quantile(rev, .9))}`);
   console.log(`  (cùng harness) doanh thu tiệm chính/ngày p50: ${vnd(quantile(results.flatMap(r => r.mainRevenue), .5))}; thuê/doanh thu tòa p50: ${(rent / Math.max(1, quantile(rev, .5)) * 100).toFixed(1)}%`);
   console.log(`  lãi gộp/ngày  p10/p50/p90: ${vnd(quantile(gross, .1))} / ${vnd(quantile(gross, .5))} / ${vnd(quantile(gross, .9))}`);

@@ -27,17 +27,17 @@ export function runLandLeaseCoreTests(): void {
 
     const parcel = resolveParcel('w1-corner')!;
     const basePrice = parcelPrice(parcel);
-    const expectedRent = Math.floor(basePrice * LAND_LEASE_CONSTANTS.leaseDailyRate * 30);
+    const expectedRent = Math.ceil(basePrice * LAND_LEASE_CONSTANTS.leaseDailyRate);
 
     const initialMoney = sim.getPlayerData().money;
     const res = sim.leaseParcel('w1-corner');
     assert.ok(res.success, 'Thuê lô W1 thành công');
-    assert.equal(res.rent, expectedRent, 'Trừ đúng tiền thuê 30 ngày');
-    assert.equal(sim.getPlayerData().money, initialMoney - expectedRent, 'Số dư ví trừ đúng tiền');
+    assert.equal(res.rent, expectedRent, 'Báo giá thuê một ngày');
+    assert.equal(sim.getPlayerData().money, initialMoney, 'Spec D2: thuê không thu trước, ví giữ nguyên');
 
     const tenure = (sim as unknown as { parcelTenure: Record<string, { kind: string; paidTotal?: number }> }).parcelTenure['w1-corner'];
     assert.equal(tenure?.kind, 'leased', 'Tenure là leased');
-    assert.equal(tenure?.paidTotal, expectedRent, 'Ghi nhận paidTotal');
+    assert.equal(tenure?.paidTotal, 0, 'paidTotal bắt đầu từ 0');
 
     // Không cho thuê lại lô đã thuê
     assert.equal(sim.leaseParcel('w1-corner').reason, 'leased', 'Không cho thuê lại');

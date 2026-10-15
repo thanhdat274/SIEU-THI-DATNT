@@ -1540,7 +1540,7 @@ export const App: React.FC = () => {
       simulation => simulation.leaseParcel(parcelId),
     );
     if (!res) return;
-    addToast(res.success ? 'Đã thuê lô đất 30 ngày. Có thể đặt cơ sở lên lô này.' : (res.reason ?? 'Không thuê được lô.'), res.success ? 'success' : 'warn');
+    addToast(res.success ? 'Đã thuê lô đất (thu tiền thuê mỗi sáng). Có thể đặt cơ sở lên lô này.' : (res.reason ?? 'Không thuê được lô.'), res.success ? 'success' : 'warn');
   };
 
   const handleEndLease = async (parcelId: string) => {

@@ -23,7 +23,7 @@ Kịch bản và kết quả từng bước: `.qa/phase3-playthrough-scenario.md
 
 | # | Lỗi | Trạng thái |
 |---|-----|-----------|
-| BUG-1 | `leaseParcel` thu TRẢ TRƯỚC 30 ngày (921.600 ₫ lô góc W1) cộng thêm tiền thuê ngày; spec D2 chỉ có tiền thuê ngày. Test `land-lease-core.test.ts` đang khóa hành vi trả trước. | **CHƯA SỬA — chờ chủ dự án quyết** (cọc hay bỏ) |
+| BUG-1 | `leaseParcel` thu TRẢ TRƯỚC 30 ngày (921.600 ₫ lô góc W1) cộng tiền thuê ngày, lệch spec D2 | ĐÃ SỬA 16/10/2026 theo quyết định chủ dự án: bỏ thu trước, chỉ thu tiền thuê ngày đầu mỗi sáng (`collectDailyRent`); thuê chỉ cần đủ tiền một ngày; `paidTotal` bắt đầu 0 nên khấu trừ khi mua đứt tăng dần theo tiền thuê đã trả. Sửa `simulation.ts`, `ParcelBuyModal.tsx` (nút "Thuê (x/ngày)"), toast, test `land-lease-core.test.ts`. Chưa nhìn lại UI nút thuê bằng trình duyệt |
 | BUG-2 | Thuê được lô của đợt chưa mở (mất tiền, không tới được) | ĐÃ SỬA + test (`wave_not_open`) |
 | BUG-3 | `endLease` khi còn nợ → xóa nợ miễn phí (trái D5) | ĐÃ SỬA + test (`rent_debt`) + toast |
 | BUG-6 | Tổng kết ngày thiếu dòng tiền thuê đất → số không cộng ra lãi ròng | ĐÃ SỬA (`DaySummaryModal.tsx`), nhìn thấy trên UI |
@@ -36,7 +36,7 @@ Kiểm bằng grep 16/10/2026: `claimCityGoal`/`CityProgressState` chỉ nằm t
 
 ## Kinh tế (sweep headless, `yarn --cwd packages/game-core economy-qa`)
 
-Harness giữ kệ luôn đầy ⇒ số là TRẦN, không phải kỳ vọng người chơi; level 60, tòa phụ trên lô thuê `w1-corner`. Chi nhánh tạp hóa, 8 seed × 30 ngày: doanh thu tòa/ngày p10/p50/p90 = 1,79 / 2,01 / 2,29 triệu ₫; lãi gộp p50 1,58 triệu; tiền thuê 30.720 ₫/ngày = 1,5% doanh thu tòa; 0/8 seed lỗ, 0 ngày đóng vì nợ; hoàn vốn (mở 1,5 tr + thuê trả trước 0,92 tr) p50 sau 2 ngày. Cà phê/quán cơm/bãi xe: xem file `.qa/economy-qa-sweep-2026-10-16.txt` (nếu thiếu = sweep chưa chạy xong). Nhận xét: trong harness, thuê đất gần như không là áp lực; tiền thuê đủ nhỏ để giá thuê/hằng số `leaseDailyRate` cần playtest thật. **KHÔNG đổi hằng số PROVISIONAL nào** vì chưa có số từ playtest thật; sweep chỉ cho thấy khoảng cách quá lớn giữa doanh thu trần và tiền thuê.
+Harness giữ kệ luôn đầy ⇒ số là TRẦN, không phải kỳ vọng người chơi; level 60, tòa phụ trên lô thuê `w1-corner`. Chi nhánh tạp hóa, 8 seed × 30 ngày: doanh thu tòa/ngày p10/p50/p90 = 1,79 / 2,01 / 2,29 triệu ₫; lãi gộp p50 1,58 triệu; tiền thuê 30.720 ₫/ngày = 1,5% doanh thu tòa; 0/8 seed lỗ, 0 ngày đóng vì nợ; hoàn vốn p50 sau 2 ngày. (Số này đo TRƯỚC khi bỏ thu trước 30 ngày; chi phí ban đầu giờ chỉ còn phí mở tòa 1,5 tr, nên hoàn vốn còn nhanh hơn.) Cà phê/quán cơm/bãi xe: xem file `.qa/economy-qa-sweep-2026-10-16.txt` (nếu thiếu = sweep chưa chạy xong). Nhận xét: trong harness, thuê đất gần như không là áp lực; tiền thuê đủ nhỏ để giá thuê/hằng số `leaseDailyRate` cần playtest thật. **KHÔNG đổi hằng số PROVISIONAL nào** vì chưa có số từ playtest thật; sweep chỉ cho thấy khoảng cách quá lớn giữa doanh thu trần và tiền thuê.
 
 ## CHƯA kiểm chứng — hướng dẫn tự chạy
 
