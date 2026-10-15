@@ -29,6 +29,17 @@ import { NeighborhoodScene } from './neighborhood-scene';
 import { NeighborhoodActors } from './neighborhood-actors';
 import { planningOverlaySignature, type PlanningOverlay } from './planning-overlay';
 import { buildIntersectionSignalHeads, createPedestrianSprite, placePedestrian } from './street-signal';
+import {
+  handlePointerDown,
+  handlePointerMove,
+  handlePointerUp,
+  handleWheel,
+  handleTouchStart,
+  handleTouchMove,
+  handleTouchEnd,
+  handleResize,
+  canvasPoint,
+} from './viewport/viewport-input';
 
 /** Điểm gốc bóng so với góc trên-trái sprite cây 80x100 (px): chân thân cây, để bóng đổ từ mặt đất chứ không từ tán. */
 const TREE_SHADOW_ORIGIN_PX = { x: 40, y: 90 } as const;
@@ -495,41 +506,16 @@ export class PixiGameViewport {
   private pointerStartY: number = 0;
 
   private handlePointerDown = (e: PointerEvent): void => {
-    // Only primary button (left click) or middle button
-    if (e.button !== 0 && e.button !== 1) return;
-    if (this.isPointerDown && e.pointerId !== this.activePointerId) return;
-    this.activePointerId = e.pointerId;
-    this.isPointerDown = true;
-    this.isPointerDragging = false;
-    this.pointerStartX = e.clientX;
-    this.pointerStartY = e.clientY;
+    handlePointerDown(this as any, e);
   };
 
   private handlePointerMove = (e: PointerEvent): void => {
-    if (!this.isPointerDown || e.pointerId !== this.activePointerId) return;
-
-    const dx = e.clientX - this.pointerStartX;
-    const dy = e.clientY - this.pointerStartY;
-
-    // Small threshold to differentiate between a click and a drag
-    if (!this.isPointerDragging && Math.hypot(dx, dy) > 4) {
-      this.isPointerDragging = true;
-      this.camera.isDragging = true;
-      if (this.canvas) {
-        this.canvas.style.cursor = 'grabbing';
-      }
-    }
-
-    if (this.isPointerDragging) {
-      this.camera.pan(dx, dy);
-      this.pointerStartX = e.clientX;
-      this.pointerStartY = e.clientY;
-    }
+    handlePointerMove(this as any, e);
   };
 
   /** Lô chưa mua của đợt đã mở tại điểm màn hình (client px), hoặc null. */
   private unownedParcelAt(clientX: number, clientY: number): string | null {
-    const p = this.canvasPoint(clientX, clientY);
+    const p = canvasPoint(this.canvas, clientX, clientY);
     const tx = Math.floor((this.camera.x + p.x / this.camera.zoom) / TILE_SIZE);
     const ty = Math.floor((this.camera.y + p.y / this.camera.zoom) / TILE_SIZE);
     const opened = this.simulation.getWorldOpenState().openedWaves;
@@ -546,18 +532,7 @@ export class PixiGameViewport {
   }
 
   private handlePointerUp = (e: PointerEvent): void => {
-    if (this.isPointerDown && e.pointerId !== this.activePointerId) return;
-    if (this.isPointerDown && !this.isPointerDragging && e.type === 'pointerup' && e.target === this.canvas && this.onParcelTap) {
-      const parcelId = this.unownedParcelAt(e.clientX, e.clientY);
-      if (parcelId) this.onParcelTap(parcelId);
-    }
-    this.activePointerId = null;
-    this.isPointerDown = false;
-    this.isPointerDragging = false;
-    this.camera.isDragging = false;
-    if (this.canvas) {
-      this.canvas.style.cursor = 'default';
-    }
+    handlePointerUp(this as any, e, (cx: number, cy: number) => canvasPoint(this.canvas, cx, cy), this.simulation);
   };
 
   /** ~12% mỗi nấc cuộn chuột thường (deltaY ≈ 100); touchpad pinch (ctrlKey) gửi delta nhỏ nên nhân hệ số lớn hơn. */
@@ -565,56 +540,27 @@ export class PixiGameViewport {
   private static readonly PINCH_WHEEL_ZOOM_RATE = 0.01;
 
   private canvasPoint(clientX: number, clientY: number): { x: number; y: number } {
-    const rect = this.canvas.getBoundingClientRect();
-    return { x: clientX - rect.left, y: clientY - rect.top };
+    return canvasPoint(this.canvas, clientX, clientY);
   }
 
   private handleWheel = (e: WheelEvent): void => {
-    e.preventDefault();
-    if (e.deltaY === 0) return;
-    // deltaMode 1 = dòng, 2 = trang: quy về px; chặn delta quá lớn để một cú vuốt không nhảy hết dải zoom.
-    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1;
-    const delta = Math.max(-150, Math.min(150, e.deltaY * unit));
-    const rate = e.ctrlKey ? PixiGameViewport.PINCH_WHEEL_ZOOM_RATE : PixiGameViewport.WHEEL_ZOOM_RATE;
-    this.camera.zoomBy(Math.exp(-delta * rate), this.canvasPoint(e.clientX, e.clientY));
-    this.onZoomChange?.(this.camera.targetZoom);
+    handleWheel(this as any, e, (cx: number, cy: number) => canvasPoint(this.canvas, cx, cy));
   };
 
   private handleTouchStart = (e: TouchEvent): void => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      this.initialPinchDistance = Math.hypot(dx, dy);
-      this.initialPinchZoom = this.camera.targetZoom;
-    }
+    handleTouchStart(this as any, e, (cx: number, cy: number) => canvasPoint(this.canvas, cx, cy));
   };
 
   private handleTouchMove = (e: TouchEvent): void => {
-    if (e.touches.length === 2 && this.initialPinchDistance) {
-      e.preventDefault();
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const currentDistance = Math.hypot(dx, dy);
-      const scaleFactor = currentDistance / this.initialPinchDistance;
-      // Giữ điểm giữa hai ngón đứng yên, giống zoom theo con trỏ.
-      const mid = this.canvasPoint((e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2);
-      this.camera.zoomTo(this.initialPinchZoom * scaleFactor, mid);
-      this.onZoomChange?.(this.camera.targetZoom);
-    }
+    handleTouchMove(this as any, e, (cx: number, cy: number) => canvasPoint(this.canvas, cx, cy));
   };
 
   private handleTouchEnd = (e: TouchEvent): void => {
-    if (e.touches.length < 2) {
-      this.initialPinchDistance = null;
-    }
+    handleTouchEnd(this as any, e);
   };
 
   private handleResize = (): void => {
-    if (!this.app || !this.app.renderer) return;
-    this.updateResponsiveSettings();
-    this.camera.setViewportSize(this.app.screen.width, this.app.screen.height);
-    this.onZoomChange?.(this.camera.targetZoom);
+    handleResize(this as any);
   };
 
   /**
