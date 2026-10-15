@@ -8,7 +8,7 @@ import { WsAdapter } from '@nestjs/platform-ws';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { isSaveGameData, type BuildingPlacementRecord, type GameAccount, type SaveGameData } from '@game/shared';
 import { generateStarterTileMap, placementsProblem } from '@game/data';
-import { applyStoreLayoutActions, GameSimulation, validateStoreLayout, WorldRuntime } from '@game/core';
+import { applyStoreLayoutActions, GameSimulation, landErrorMessage, validateStoreLayout, WorldRuntime } from '@game/core';
 import { readRuntimeConfig } from './runtime-config.js';
 import { checkSaveInvariants } from './save-invariants.js';
 import { commitLimiter, httpIpLimiter, MAX_HTTP_BODY } from './rate-limit.js';
@@ -109,6 +109,12 @@ export class GameController {
     // Danh sách loại lệnh được phép commit: gồm cả lệnh client đang gửi nhưng server chưa phát lại (I-01), để chặn loại lệnh lạ.
     if (typeof payload?.type !== 'string' || !ALLOWED_COMMAND_TYPES.has(payload.type)) {
       throw new BadRequestException('Loại lệnh không được hỗ trợ.');
+    }
+    // Lệnh đất đụng vùng đang được người khác giữ chỗ quy hoạch: từ chối kèm tên người giữ (open-world-coop-land 1.2).
+    const reservation = WorldGateway.getLiveRuntime(worldId)?.checkPlanningConflict(request.gameAccount.uid, payload);
+    if (reservation?.conflict) {
+      const holder = reservation.by?.name ?? reservation.by?.accountId;
+      throw new BadRequestException({ statusCode: 400, error: 'Bad Request', code: 'reserved_by_other', by: reservation.by, message: landErrorMessage('reserved_by_other', { name: holder }) });
     }
     let usedLiveRuntime: WorldRuntime | undefined;
     const serverReplayedCommands = new Set([

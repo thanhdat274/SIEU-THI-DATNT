@@ -1405,6 +1405,19 @@ export interface GameInputIntent {
   direction: Vector2D;
 }
 
+/** Giữ chỗ quy hoạch đất của một người trong hẻm chung (trạng thái tạm của runtime, không lưu save; xem game-core `planning-reservation`). */
+export interface PlanningReservationSnapshot {
+  accountId: string;
+  name?: string;
+  kind: 'tiles' | 'parcels' | 'placement' | 'wave';
+  targets:
+    | { kind: 'tiles'; tiles: Array<{ x: number; y: number }> }
+    | { kind: 'parcels'; parcelIds: string[] }
+    | { kind: 'placement'; placement: { buildingId: string; parcelId: string; originX: number } }
+    | { kind: 'wave'; waveId: string };
+  expiresAt: number;
+}
+
 export interface GameSnapshot {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
   world: GameWorld;
@@ -1412,6 +1425,8 @@ export interface GameSnapshot {
   serverTime: string;
   /** Hiện diện thật của từng người trong lịch ngày chung (server tính); hẻm cũ/bản cũ có thể thiếu. */
   coop?: { players: Array<{ accountId: string; online: boolean; sleeping: boolean }> };
+  /** Giữ chỗ quy hoạch đất đang hiệu lực của mọi người (client tự lọc phần của mình); thiếu = không ai giữ. */
+  planning?: PlanningReservationSnapshot[];
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

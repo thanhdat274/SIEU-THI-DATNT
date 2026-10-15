@@ -4,6 +4,8 @@ import { WorldAvatarController } from './avatars';
 import { GameCommandCoordinator, CommandResult } from './commands';
 import { FixedStepSimulationRunner } from './runner';
 import { generateStarterTileMap, NEIGHBORHOOD_WALK_BOUNDS } from '@game/data';
+import { DEFAULT_PLANNING_TTL, activeReservationFor, extendReservation, pruneExpired, releaseReservation, reservationConflictsWith, setReservation, type PlanningReservation, type PlanningTargets } from './planning-reservation';
+import { landCommandTargets } from './land-command-targets';
 import { applyStoreLayoutActions, moveStoreFixture, retrieveStoreFixture, storeFixture, buyWarehouseTier, buyStorageRack } from './store-layout';
 
 /** Trần tốc độ chấp nhận khi client báo vị trí (đi bộ 130 px/s, chừa dư cho chạy/lag). */
@@ -38,6 +40,8 @@ export class WorldRuntime {
   private readonly checkpointIntervalSeconds: number;
   private readonly positionReportedAt = new Map<string, number>();
   private timeSinceLastCheckpoint = 0;
+  /** Giữ chỗ quy hoạch đất (OpenSpec `open-world-coop-land` D1): chỉ trong bộ nhớ, không vào save/checkpoint. */
+  private planning: PlanningReservation[] = [];
   private isPaused = true;
   private currentWorld: GameWorld;
   private currentBusiness: BusinessState;
@@ -219,6 +223,7 @@ export class WorldRuntime {
 
   unregisterSession(accountId: string): void {
     this.activeSessions.delete(accountId);
+    this.planning = releaseReservation(this.planning, accountId);
     this.resolveVoteAfterLeave();
     if (this.activeSessions.size === 0) {
       this.isPaused = true;
@@ -479,14 +484,58 @@ export class WorldRuntime {
     this.currentWorld.worldTime = this.simulation.getTime();
   }
 
+  /** Tên hiển thị của người chơi cho thông báo giữ chỗ (rơi về id khi hẻm cũ thiếu tên). */
+  private displayNameOf(accountId: string): string {
+    return this.currentWorld.avatars.find(avatar => avatar.accountId === accountId)?.displayName ?? accountId;
+  }
+
+  /** Đặt/thay giữ chỗ quy hoạch của `accountId` (mỗi người tối đa một). Chỉ thành viên đang có phiên mới được giữ. */
+  reservePlanning(accountId: string, targets: PlanningTargets, now = Date.now()): boolean {
+    if (!this.activeSessions.has(accountId)) return false;
+    this.planning = setReservation(pruneExpired(this.planning, now), { accountId, kind: targets.kind, targets, expiresAt: 0, name: this.displayNameOf(accountId) }, DEFAULT_PLANNING_TTL, now);
+    return true;
+  }
+
+  /** Gia hạn giữ chỗ của `accountId`; false nếu không có giữ chỗ còn hiệu lực. */
+  extendPlanning(accountId: string, now = Date.now()): boolean {
+    if (!activeReservationFor(this.planning, accountId, now)) return false;
+    this.planning = extendReservation(pruneExpired(this.planning, now), accountId, now);
+    return true;
+  }
+
+  releasePlanning(accountId: string): void {
+    this.planning = releaseReservation(this.planning, accountId);
+  }
+
+  /** Giữ chỗ còn hiệu lực của mọi người (dùng cho snapshot). */
+  getPlanningReservations(now = Date.now()): PlanningReservation[] {
+    this.planning = pruneExpired(this.planning, now);
+    return this.planning.map(reservation => structuredClone(reservation));
+  }
+
+  /**
+   * Lệnh đất của `accountId` có đụng giữ chỗ của NGƯỜI KHÁC không (`reserved_by_other`, kèm tên người giữ).
+   * Lệnh không phải lệnh đất, hoặc khi chỉ có một người, luôn không xung đột.
+   */
+  checkPlanningConflict(accountId: string, payload: unknown, now = Date.now()): { conflict: boolean; by?: { accountId: string; name?: string } } {
+    this.planning = pruneExpired(this.planning, now);
+    for (const targets of landCommandTargets(payload)) {
+      const result = reservationConflictsWith(this.planning, accountId, targets, now);
+      if (result.conflict) return result;
+    }
+    return { conflict: false };
+  }
+
   getSnapshot(serverTime = new Date().toISOString()): GameSnapshot {
     this.refreshLiveState();
+    const planning = this.getPlanningReservations();
     return {
       protocolVersion: MULTIPLAYER_PROTOCOL_VERSION,
       world: structuredClone(this.currentWorld),
       businesses: [structuredClone(this.currentBusiness)],
       serverTime,
       coop: { players: this.simulation.getCoopRoutineStates().map((state) => ({ accountId: state.playerId, online: state.isOnline, sleeping: state.isSleeping })) },
+      ...(planning.length ? { planning } : {}),
     };
   }
 

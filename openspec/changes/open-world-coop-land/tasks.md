@@ -16,8 +16,8 @@ Trạng thái 07/10/2026: phần THUẦN của các task 1.1, 2.1, 2.2, 3.1, 3.2
 
 ## 1. Giữ chỗ quy hoạch
 
-- [ ] 1.1 Runtime: `PlanningReservation`, TTL 60 giây, xóa khi ngắt; socket `planning:reserve`/`planning:release`; snapshot mang giữ chỗ của người khác.
-- [ ] 1.2 Server từ chối lệnh đất đụng giữ chỗ của người khác (`reserved_by_other`); test gateway.
+- [ ] 1.1 **(15/10/2026: ĐÃ nối runtime + socket + snapshot, test thuần PASS; CHƯA chạy với Mongo/hai trình duyệt.)** Runtime: `PlanningReservation`, TTL 60 giây, xóa khi ngắt; socket `planning:reserve`/`planning:release`; snapshot mang giữ chỗ của người khác.
+- [ ] 1.2 **(15/10/2026: ĐÃ làm ở `bootstrap.ts` + test runtime; CHƯA test gateway/HTTP thật.)** Server từ chối lệnh đất đụng giữ chỗ của người khác (`reserved_by_other`); test gateway.
 - [ ] 1.3 Client: gửi/gia hạn giữ chỗ khi ở chế độ quy hoạch; renderer vẽ bóng mờ + tên người kia.
 
 ## 2. Quyền và phiếu

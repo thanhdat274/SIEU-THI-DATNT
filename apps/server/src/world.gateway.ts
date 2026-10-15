@@ -2,7 +2,7 @@ import type { BeforeApplicationShutdown } from '@nestjs/common';
 import { WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer } from '@nestjs/websockets';
 import type { Server, WebSocket } from 'ws';
 import { worldRepository } from './world.repository.js';
-import { WorldRuntime } from '@game/core';
+import { WorldRuntime, parsePlanningTargets } from '@game/core';
 import type { BusinessState } from '@game/shared';
 import { consumeWebSocketTicket } from './firebase-admin.js';
 import { readRuntimeConfig } from './runtime-config.js';
@@ -313,6 +313,36 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
       status: entry.runtime.getActiveTimeVote(),
       snapshot: entry.runtime.getSnapshot(),
     });
+  }
+
+  /**
+   * Giữ chỗ quy hoạch đất (OpenSpec `open-world-coop-land` D1): thay giữ chỗ cũ của chính người gửi, hết hạn sau 60 giây nếu không gia hạn.
+   * Giữ chỗ không cấp quyền gì; lệnh thật vẫn kiểm đủ luật và bị từ chối nếu đụng giữ chỗ của người khác. Snapshot sau đó mang danh sách này.
+   */
+  @SubscribeMessage('planning:reserve')
+  handlePlanningReserve(@ConnectedSocket() socket: AuthenticatedSocket, @MessageBody() body: unknown) {
+    if (!allowSocketMessage(socket)) return;
+    if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
+    const entry = worldRuntimes.get(socket._worldId);
+    if (!entry) return;
+    const targets = parsePlanningTargets(body);
+    if (!targets) return;
+    entry.runtime.reservePlanning(socket._accountId, targets);
+  }
+
+  /** Gia hạn giữ chỗ (client đang mở quy hoạch gửi mỗi ~20 giây). */
+  @SubscribeMessage('planning:extend')
+  handlePlanningExtend(@ConnectedSocket() socket: AuthenticatedSocket) {
+    if (!allowSocketMessage(socket)) return;
+    if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
+    worldRuntimes.get(socket._worldId)?.runtime.extendPlanning(socket._accountId);
+  }
+
+  @SubscribeMessage('planning:release')
+  handlePlanningRelease(@ConnectedSocket() socket: AuthenticatedSocket) {
+    if (!allowSocketMessage(socket)) return;
+    if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
+    worldRuntimes.get(socket._worldId)?.runtime.releasePlanning(socket._accountId);
   }
 
   /** Xin khóa sửa bố cục: chỉ một người trong hẻm giữ được; trả kết quả cho người xin, báo cả hẻm khi đổi. */
