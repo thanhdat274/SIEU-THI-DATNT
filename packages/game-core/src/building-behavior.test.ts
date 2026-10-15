@@ -99,6 +99,41 @@ export function runBuildingBehaviorTests(): void {
   const fill = sim.autoFillShelf('cafe-1_shelf');
   assert.equal(fill.productId, 'ca_phe_den_da_tp', 'Kệ quán cà phê tự nhận cà phê, bỏ qua nước suối');
 
+  // Mở quán cơm: kiểm tra sản xuất món cơm ở bếp nướng và nồi canh
+  (manager as unknown as { customers: unknown[] }).customers = [];
+  sim.setStoreOpen(false);
+  sim.reclaimWave('w2');
+  (sim as unknown as { finishReclaimedWaves(day: number): void }).finishReclaimedWaves(5);
+  assert.ok(sim.buyParcel('w2-1').success, 'Mua lô w2-1 để mở quán cơm');
+  const comRes = sim.openBuilding('com_restaurant', 'w2-1', 0, 16);
+  assert.ok(comRes.success, `Mở quán cơm (${comRes.reason ?? ''})`);
+  const comFixtures = sim.getFixtures().filter(f => f.id.startsWith('com_restaurant-1_') && !f.parentId);
+  assert.equal(comFixtures.length, BUILDING_TYPE_DEFS.com_restaurant.template.defaultFixtures.length, 'Quán cơm có đủ nội thất mặc định');
+
+  (sim as unknown as { inventory: unknown[] }).inventory.push(
+    stock('gao', 10), stock('suon_heo', 10), stock('rau_cai', 10), stock('nuoc_tuong', 10),
+    stock('trung_ga', 10), stock('hanh_la', 10), stock('rau_muong', 10), stock('thit_xay', 10),
+  );
+  // Bếp nướng quán cơm: nấu cơm sườn nướng
+  const comSuon = sim.startProduction('recipe_com_suon_nuong', 'com_restaurant-1_grill');
+  assert.ok(comSuon.success, `Nấu cơm sườn nướng ở bếp nướng quán cơm (${comSuon.reason ?? ''})`);
+  // Bếp nướng từ chối nấu cà phê hay canh
+  assert.equal(sim.startProduction('recipe_ca_phe_den_da', 'com_restaurant-1_grill').success, false, 'Bếp nướng từ chối pha cà phê');
+  assert.equal(sim.startProduction('recipe_canh_rau_thit', 'com_restaurant-1_grill').success, false, 'Bếp nướng từ chối nấu canh');
+
+  // Nồi canh quán cơm: nấu canh rau thịt bằm
+  const canhRau = sim.startProduction('recipe_canh_rau_thit', 'com_restaurant-1_kettle');
+  assert.ok(canhRau.success, `Nấu canh rau thịt bằm ở nồi canh quán cơm (${canhRau.reason ?? ''})`);
+
+  // Tủ trưng bày quán cơm: tự châm món cơm, bỏ qua nước suối
+  (sim as unknown as { inventory: unknown[] }).inventory.push(stock('com_suon_nuong_tp', 4), stock('nuoc_suoi', 10));
+  const comDisplay = comFixtures.find(f => f.id === 'com_restaurant-1_display')!;
+  comDisplay.currentStock = 0;
+  comDisplay.assignedProductId = undefined;
+  delete (sim as unknown as { planogram: Record<string, string> }).planogram['com_restaurant-1_display'];
+  const fillCom = sim.autoFillShelf('com_restaurant-1_display');
+  assert.equal(fillCom.productId, 'com_suon_nuong_tp', 'Tủ quán cơm tự nhận món cơm, bỏ qua nước suối');
+
   // Nợ thuê đóng bãi xe thì mất thưởng và phí
   const placement = (sim as unknown as { buildingPlacements?: Array<{ buildingId: string; closedForRent?: boolean }> }).buildingPlacements?.find(p => p.buildingId === 'parking_lot-1');
   assert.ok(placement, 'Có placement bãi xe');

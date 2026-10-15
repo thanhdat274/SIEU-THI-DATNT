@@ -26,6 +26,23 @@ export function runDataIntegrityTests(): void {
   assert(['com_suon_nuong_tp', 'com_chien_trung_tp', 'canh_rau_thit_tp'].every(id => COM_RESTAURANT_DISH_IDS.has(id)), 'Món cơm riêng thuộc danh mục quán cơm');
   assert(PRODUCED_PRODUCTS.every(p => p.intermediate || RECIPES.some(r => r.outputProductId === p.id)), 'Mọi thành phẩm đều có công thức tạo ra');
 
+  // Kiểm tra cân bằng giá và spriteId 6 món mới (cà phê / cơm)
+  const balancedItems = [
+    { id: 'ca_phe_den_da_tp', expectedCost: 3000, spriteId: 'item_ca_phe_den_da_tp' },
+    { id: 'bac_xiu_tp', expectedCost: 4500, spriteId: 'item_bac_xiu_tp' },
+    { id: 'ca_phe_trung_tp', expectedCost: 7275, spriteId: 'item_ca_phe_trung_tp' },
+    { id: 'com_suon_nuong_tp', expectedCost: 26250, spriteId: 'item_com_suon_nuong_tp' },
+    { id: 'com_chien_trung_tp', expectedCost: 5280, spriteId: 'item_com_chien_trung_tp' },
+    { id: 'canh_rau_thit_tp', expectedCost: 7000, spriteId: 'item_canh_rau_thit_tp' },
+  ];
+  for (const item of balancedItems) {
+    const p = PRODUCT_MAP[item.id];
+    assert(!!p, `Món ${item.id} có trong PRODUCT_MAP`);
+    assert(p.spriteId === item.spriteId, `spriteId của ${item.id} là ${item.spriteId} (thực tế: ${p?.spriteId})`);
+    assert(p.purchasePrice === item.expectedCost, `Giá vốn của ${item.id} cân bằng chuẩn ${item.expectedCost} ₫ (thực tế: ${p?.purchasePrice} ₫)`);
+    assert(p.baseSellingPrice > p.purchasePrice, `Giá bán ${p?.baseSellingPrice} > giá vốn ${p?.purchasePrice} cho ${item.id}`);
+  }
+
   // Nhà cung cấp
   assert(new Set(SUPPLIERS.map(s => s.id)).size === SUPPLIERS.length, 'Id nhà cung cấp không trùng');
   assert(!!SUPPLIER_MAP[DEFAULT_SUPPLIER_ID], 'Nhà cung cấp mặc định tồn tại');
