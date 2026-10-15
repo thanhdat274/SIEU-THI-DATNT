@@ -1503,7 +1503,7 @@ export function isChainState(value: unknown): value is ChainState {
 }
 
 export function isSaveGameData(value: unknown): value is SaveGameData {
-  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.schemaVersion !== 7 && value.schemaVersion !== 8 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.schemaVersion !== 7 && value.schemaVersion !== 8 && value.schemaVersion !== 9 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
     return false;
   }

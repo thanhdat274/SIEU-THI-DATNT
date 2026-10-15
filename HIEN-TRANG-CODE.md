@@ -72,7 +72,7 @@ Không thay đổi nhiều so với trước: tiền giả, production/bếp, di
 
 ---
 
-> **15/10/2026 — Bước 6a (`open-world-building-types`):** `open_building` nay tạo hình học tòa thật (tường/cửa/va chạm, qua lưu/nạp, kiểm vị trí). **Còn thiếu:** nội thất mặc định rỗng cho 4 loại mới, hình/biển riêng ở renderer, hành vi cà phê (trạm pha + công thức) và bãi xe (phí xe), `FIXTURE_SHOP.allowedBuildings`, browser QA. Lọc món theo loại tòa (1.3) chỉ áp cho chi nhánh tạp hóa và bãi xe.
+> **15/10/2026 — Bước 6a (`open-world-building-types`):** `open_building` nay tạo hình học tòa thật (tường/cửa/va chạm, qua lưu/nạp, kiểm vị trí). **Đã có (15/10, task 2.2 phần logic):** nội thất mặc định, dòng khách theo giờ cao điểm, bãi xe thưởng khách + thu phí. **Còn thiếu:** hình/biển riêng ở renderer, công thức cà phê riêng, UI chỉnh phí xe, `FIXTURE_SHOP.allowedBuildings`, cân bằng, browser QA. Lọc món theo loại tòa (1.3) chỉ áp cho chi nhánh tạp hóa và bãi xe.
 
 ## 4. OPENSPEC — TASK MỞ (đếm lại trong lượt này)
 

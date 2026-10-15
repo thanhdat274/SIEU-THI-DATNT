@@ -1,5 +1,5 @@
 import { generateStarterTileMap, STARTER_PRODUCTS, ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP, DEFAULT_INITIAL_SAVE, runCatalogTests, runExpansionCatalogTests, runExpansionManifestTests, runReclamationDataTests, runPlayAreaTests, runWaveInfrastructureTests, runBuildingTypesTests, runStoreTiersTests, runLandLeaseTests, runDistrictsTests, runCityGoalsTests, runSpecialRequestDataTests, runMarketEventDataTests, runDataIntegrityTests } from '@game/data';
-import { COLD_WAREHOUSE_CAPACITY, CURRENT_SAVE_SCHEMA_VERSION } from '@game/shared';
+import { COLD_WAREHOUSE_CAPACITY, CURRENT_SAVE_SCHEMA_VERSION, validateSaveGameData } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { CollisionSystem } from './collision';
@@ -90,6 +90,7 @@ import { runReclamationMapTests } from './reclamation-map.test';
 import { runNewParcelPlacementTests } from './new-parcel-placement.test';
 import { runLandLeaseCoreTests } from './land-lease-core.test';
 import { runBuildingProductFilterTests } from './building-product-filter.test';
+import { runBuildingBehaviorTests } from './building-behavior.test';
 import { runXoiCustomerTests } from './xoi-customers.test';
 import { runDrinkCustomerTests } from './drink-customers.test';
 import { runDrinkStaffTests } from './drink-staff.test';
@@ -182,6 +183,7 @@ export async function runTests(): Promise<void> {
   runNewParcelPlacementTests();
   runLandLeaseCoreTests();
   runBuildingProductFilterTests();
+  runBuildingBehaviorTests();
   runDeterministicIdTests();
   runArrivalModeTests();
   runMaintenanceTests();
@@ -427,6 +429,11 @@ export async function runTests(): Promise<void> {
   assert(migrated.getFixtures().some((fixture) => fixture.type === 'refrigerator'), 'Bản lưu cũ được bổ sung tủ mát');
   assert(migrated.getInventory().every((item) => item.lots?.length), 'Hàng trong bản lưu cũ được gắn hạn dùng');
   assert(migrated.exportSaveData('test_save_id', 4).schemaVersion === CURRENT_SAVE_SCHEMA_VERSION, 'Bản lưu mới dùng schema version hiện tại');
+  const v9Save = structuredClone(DEFAULT_INITIAL_SAVE) as unknown as Record<string, unknown>;
+  v9Save.schemaVersion = 9;
+  (v9Save.storeLayout as Record<string, unknown>).parcelTenure = undefined;
+  const v9Result = validateSaveGameData(v9Save);
+  assert(v9Result.valid && v9Result.data?.schemaVersion === CURRENT_SAVE_SCHEMA_VERSION && !!v9Result.data.storeLayout.parcelTenure, 'Bản lưu schema 9 được nâng lên schema hiện tại');
   const partialSave = structuredClone(DEFAULT_INITIAL_SAVE);
   partialSave.inventory[0].lots = [];
   assert(new GameSimulation(partialSave, tileMap, input).getInventory()[0].quantity === partialSave.inventory[0].quantity, 'Bản lưu thiếu lô không làm mất hàng');

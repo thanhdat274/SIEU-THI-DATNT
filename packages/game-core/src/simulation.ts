@@ -68,6 +68,8 @@ import {
   generateStarterTileMap,
   resolvePlacements,
   validatePlacement,
+  placementGeometry,
+  type BuildingPlacement,
   WAREHOUSE_FIXTURES,
   WAREHOUSE_ENTRANCE,
   STORE_BOUNDS,
@@ -118,14 +120,14 @@ import { applyAuditToState, emptyTaxState, normalizeTaxState, resolveAudit, shou
 import { composeReview, sanitizeReviews, summarizeReviews, ReviewsManager } from './reviews';
 import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, staffServiceTargets, needsService, maintenanceUnlocked, isWearable, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { decorAttraction, decorTrafficMultiplier } from './decor';
-import { buyLandPlot, expandFootprint, relocateBuilding, relocateMisplacedFixtures, upgradeFixtureSlots, validateStoreLayout, totalWarehouseCells, coldWarehouseCapacity, warehouseCellsFor, unitsFittingInCells, type LayoutResult } from './store-layout';
+import { buyLandPlot, expandFootprint, relocateBuilding, relocateMisplacedFixtures, upgradeFixtureSlots, validateStoreLayout, syncLayoutSlots, totalWarehouseCells, coldWarehouseCapacity, warehouseCellsFor, unitsFittingInCells, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
 import { expiryDay, looseUnits, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
 import { decayLot, spoilageRate, withBackupPower } from './spoilage';
 import { findPathToAny, GridPoint, tileCenter } from './pathfinding';
 import { normalizePlayerProgression, saleExperienceMultiplier, trafficAtLevel } from './progression';
-import { CustomerManager } from './customers';
+import { CustomerManager, PARKING_FEE, openParkingLots, parkingLotFor } from './customers';
 import { calculateSalesVelocity, generateRestockSuggestions, normalizeRestockOptions, getIncomingOrdersCount, getUsableStock } from './suggestions';
 import { buildProductPlans, type ProductPlan, type ProductPlanInput } from './forecast';
 import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, weekdayOf, type MarketNotice } from './market';
@@ -879,16 +881,15 @@ export class GameSimulation {
     const accessibleParcels = [...this.ownedParcelIds, ...Object.entries(this.parcelTenure).filter(([, t]) => t.kind === 'owned' || t.kind === 'leased').map(([id]) => id)];
     const problem = validatePlacement(candidate, resolvePlacements(this.buildingPlacements, this.unlockedPlotIds), accessibleParcels);
     if (problem) return { success: false, reason: problem.split(':')[0] };
-    // Trừ tiền
-    this.playerData.money -= typeDef.openCost;
-    // Tạo placement (typeId cố định, buildingId = instanceId)
-    const newPlacement = { buildingId: instanceId, parcelId, originX, originY, typeId: buildingTypeId };
-    this.buildingPlacements = [...(this.buildingPlacements ?? []), newPlacement];
-    // Dựng lại bản đồ để tòa mới có tường, cửa, va chạm và đường đi khách; renderer nhận qua onMapChanged.
-    this.tileMap = this.buildTileMap();
-    this.collisionSystem.updateTileMap(this.tileMap);
-    this.customerManager.rerouteAll(this.tileMap, this.fixtures);
-    this.callbacks.onMapChanged?.(this.tileMap);
+    // Áp placement + nội thất mặc định của loại qua đường áp bố cục chuẩn (dựng lại bản đồ, va chạm, kiểm đường đi) rồi mới trừ tiền.
+    const next = this.exportSaveData();
+    next.storeLayout.buildingPlacements = [...(next.storeLayout.buildingPlacements ?? []), candidate];
+    const used = new Set([...next.storeLayout.fixtures, ...(next.storeLayout.storedFixtures ?? [])].map(fixture => fixture.id));
+    for (const fixture of placementGeometry(candidate as BuildingPlacement).defaultFixtures) if (!used.has(fixture.id)) next.storeLayout.fixtures.push(structuredClone(fixture));
+    syncLayoutSlots(next);
+    next.player.money -= typeDef.openCost;
+    const applied = this.applyStoreLayout(next);
+    if (applied.error) return { success: false, reason: applied.error };
     this.notifyStateChanged();
     return { success: true, instanceId };
   }
@@ -4034,6 +4035,18 @@ export class GameSimulation {
     return this.ledgerManager.recordLedger(entry);
   }
 
+  /** Bãi giữ xe đang mở trong bán kính của tòa khách ghé thu phí theo lượt xe tới (PROVISIONAL); ghi doanh thu cho chính bãi xe. */
+  private collectParkingFee(customer: CustomerState): void {
+    const buildings = this.tileMap.buildings;
+    const lot = parkingLotFor(customer.buildingId ?? 'main', buildings, openParkingLots(buildings));
+    if (!lot) return;
+    const fee = PARKING_FEE[customer.arrivalMode === 'car' ? 'car' : 'motorbike'];
+    this.playerData.money += fee;
+    this.statistics.totalRevenue += fee;
+    this.ledgerManager.recordSale(fee, 0, 0, lot.id);
+    this.recordLedger({ day: this.clock.getTime().day, type: 'sale', amount: fee, cogs: 0, quantity: 0, description: `Phí gửi xe (${customer.arrivalMode === 'car' ? 'ô tô' : 'xe máy'})`, buildingInstanceId: lot.id });
+  }
+
   private awardSkillTip(saleAmount: number): void {
     const tip = Math.round(saleAmount * getSkillModifier(this.skills, 'tip_bonus'));
     if (tip <= 0) return;
@@ -4685,6 +4698,7 @@ export class GameSimulation {
       { hour: this.clock.getTime().hour, weekday: weekdayOf(this.clock.getTime().day) },
       this.buildingParcelTrafficMultiplier()
     );
+    if (spawned && (spawned.arrivalMode === 'motorbike' || spawned.arrivalMode === 'car')) this.collectParkingFee(spawned);
     if (spawned?.id && rollShoplifter(this.clock.getTime().day, spawned.id, this.playerData.level, !!spawned.regularId)) spawned.thief = true;
 
     this.streetTraffic.setStallStops(this.stalls.owned.flatMap(id => STALL_MAP[id] ? [(STALL_MAP[id].tileX + STALL_MAP[id].widthTiles / 2) * TILE_SIZE] : []));

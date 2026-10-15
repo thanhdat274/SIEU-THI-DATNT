@@ -12,7 +12,7 @@ import {
   tileIndex,
   tileInMap,
 } from '@game/shared';
-import { BUILDING_MAP, BUILDING_TRAFFIC_SHARE, foodClusterMultiplier, PLAY_REGION, buildingAt, entranceOf, fixtureBuilding, inMainExpansionZone, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS, type BuildingId, DEFAULT_PLACEMENTS, buildingTypeOfInstance } from '@game/data';
+import { BUILDING_MAP, BUILDING_TRAFFIC_SHARE, foodClusterMultiplier, PLAY_REGION, buildingAt, entranceOf, fixtureBuilding, inMainExpansionZone, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS, type BuildingId, DEFAULT_PLACEMENTS, buildingTypeOfInstance, isExtraInstanceId } from '@game/data';
 import { arrivalModeWeights, pickArrivalMode } from './arrival-mode';
 import { CollisionSystem } from './collision';
 import { findPath, findPathToAny, GridPoint, tileCenter } from './pathfinding';
@@ -101,6 +101,47 @@ export interface CustomerMovementPath {
   customerId: string;
   waypoints: Vector2D[];
 }
+
+/** Nhân nhịp khách của tòa mở thêm trong khung giờ cao điểm của loại (PROVISIONAL). */
+export const EXTRA_PEAK_MULTIPLIER = 1.5;
+export function extraBuildingPeakMultiplier(peaks: ReadonlyArray<{ fromHour: number; toHour: number }> | undefined, hour: number | undefined): number {
+  if (!peaks?.length || hour === undefined) return 1;
+  return peaks.some(p => hour >= p.fromHour && hour < p.toHour) ? EXTRA_PEAK_MULTIPLIER : 1;
+}
+
+/** Bãi giữ xe đang mở (không thi công, không đóng vì nợ thuê): vị trí cửa + bán kính + mức tăng khách đi xe. */
+export function openParkingLots(buildings: GameTileMap['buildings']): Array<{ id: string; x: number; y: number; radius: number; bonus: number }> {
+  const lots: Array<{ id: string; x: number; y: number; radius: number; bonus: number }> = [];
+  for (const b of buildings ?? []) {
+    if (!b.open || !isExtraInstanceId(b.id)) continue;
+    const def = buildingTypeOfInstance(b.id);
+    if (def?.typeId !== 'parking_lot') continue;
+    const entrance = entranceOf(b.id, buildings);
+    lots.push({ id: b.id, x: entrance.x, y: entrance.y, radius: def.effects?.carRadiusTiles ?? 0, bonus: def.effects?.carCustomerBonus ?? 0 });
+  }
+  return lots;
+}
+
+/** Bãi xe phục vụ tòa `buildingId`: bãi gần nhất có cửa nằm trong bán kính; undefined nếu không có (bãi không tự phục vụ chính nó). */
+export function parkingLotFor(buildingId: string, buildings: GameTileMap['buildings'], lots: ReturnType<typeof openParkingLots>): ReturnType<typeof openParkingLots>[number] | undefined {
+  if (!buildings?.some(b => b.id === buildingId) || lots.some(l => l.id === buildingId)) return undefined;
+  const target = entranceOf(buildingId, buildings);
+  let best: ReturnType<typeof openParkingLots>[number] | undefined;
+  let bestDist = Infinity;
+  for (const lot of lots) {
+    const dist = Math.hypot(target.x - lot.x, target.y - lot.y);
+    if (dist <= lot.radius && dist < bestDist) { best = lot; bestDist = dist; }
+  }
+  return best;
+}
+
+/** Mức tăng khách của tòa nhờ bãi xe phục vụ nó (không cộng dồn nhiều bãi); 0 nếu không có. */
+export function parkingBonusFor(buildingId: string, buildings: GameTileMap['buildings'], lots: ReturnType<typeof openParkingLots>): number {
+  return parkingLotFor(buildingId, buildings, lots)?.bonus ?? 0;
+}
+
+/** Phí gửi xe mỗi lượt (PROVISIONAL, ₫): xe máy rẻ hơn ô tô. */
+export const PARKING_FEE: Readonly<Record<'motorbike' | 'car', number>> = { motorbike: 3_000, car: 15_000 };
 
 export class CustomerManager {
   private customers: CustomerState[] = [];
@@ -223,6 +264,21 @@ export class CustomerManager {
     const openSecondary = tileMap.buildings?.filter(building => building.id !== 'main' && building.open).length ?? 0;
     const cluster = foodClusterMultiplier(openSecondary);
     const streams: Array<readonly [BuildingId, number]> = [['main', 1], ...BUILDING_TRAFFIC_SHARE.map(([id, share]) => [id, share * cluster * (parcelMultiplierFor?.(id) ?? 1)] as const)];
+    // Tòa mở thêm (chi nhánh, cà phê, quán cơm): nhịp = trafficShare của loại × giờ cao điểm × lô; bãi xe không có khách quầy.
+    for (const building of tileMap.buildings ?? []) {
+      if (!isExtraInstanceId(building.id)) continue;
+      const def = buildingTypeOfInstance(building.id);
+      if (!def || def.trafficShare <= 0) continue;
+      streams.push([building.id, def.trafficShare * extraBuildingPeakMultiplier(def.effects?.peakHours, arrivalContext?.hour) * (parcelMultiplierFor?.(building.id) ?? 1)] as const);
+    }
+    // Bãi giữ xe đang mở: tòa có cửa trong bán kính nhận thêm khách đi xe.
+    const lots = openParkingLots(tileMap.buildings);
+    if (lots.length) {
+      for (const stream of streams) {
+        const bonus = parkingBonusFor(stream[0], tileMap.buildings, lots);
+        if (bonus > 0) (stream as unknown as [BuildingId, number])[1] = stream[1] * (1 + bonus);
+      }
+    }
     for (const [streamId, factor] of streams) {
       // Chỉ tòa đang có và không thi công mới sinh khách (tòa chưa mua/đang dời không có dòng khách).
       if (!buildingSpawnsCustomers(tileMap.buildings, streamId)) continue;

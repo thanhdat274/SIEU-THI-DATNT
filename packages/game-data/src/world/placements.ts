@@ -87,7 +87,8 @@ export function placementGeometry(placement: BuildingPlacement): PlacementGeomet
     entranceTile: abs(placement, template.entranceTile),
     awning: { x0: (ox + template.awning.startTiles) * 32, x1: (ox + template.awning.startTiles) * 32 + template.awning.widthTiles * 32 },
     eaveY: (bounds.bottom + 1) * 32 - template.eaveOffsetPx,
-    defaultFixtures: template.defaultFixtures.map(fixture => ({ ...fixture, tileX: fixture.tileX + ox, tileY: fixture.tileY + oy })),
+    // Tòa mở thêm: tiền tố id theo instance để nhiều tòa cùng loại không trùng id nội thất.
+    defaultFixtures: template.defaultFixtures.map(fixture => ({ ...fixture, ...(isExtraInstanceId(placement.buildingId) ? { id: `${placement.buildingId}_${fixture.id}` } : {}), tileX: fixture.tileX + ox, tileY: fixture.tileY + oy })),
   };
 }
 

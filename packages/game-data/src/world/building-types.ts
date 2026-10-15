@@ -124,8 +124,38 @@ const mainExceptColdFilter: BuildingProductFilter = (productId) => {
 // Mẫu tòa PROVISIONAL cho 4 loại mới (D4). Chưa chốt ảnh/hình học thật — chỉ đủ dữ liệu
 // để registry hoàn chỉnh; renderer/placement thật nối sau (2.2, chờ máy thật).
 // ---------------------------------------------------------------------------
+const fx = (id: string, type: StoreFixture['type'], tileX: number, tileY: number, widthTiles: number, label: string, shopId?: string, slotCount?: number, maxCapacity = 0): StoreFixture =>
+  ({ id, type, tileX, tileY, widthTiles, heightTiles: 1, rotation: 0, currentStock: 0, maxCapacity, label, ...(shopId ? { shopId } : {}), ...(slotCount ? { slotCount } : {}) } as StoreFixture);
+const shelfFx = (id: string, x: number, y: number, label: string) => fx(id, 'shelf_wooden', x, y, 2, label, 'shelf', 12, 20);
+const cashierFx = (x: number, y: number, label: string) => fx('cashier_counter', 'cashier_counter', x, y, 2, label);
+
+/** Nội thất mặc định (PROVISIONAL, tọa độ tương đối; id được tiền tố theo instance khi đặt tòa). Cửa ở hàng cuối, chừa cột giữa làm lối đi. */
+const GROCERY_BRANCH_FIXTURES: StoreFixture[] = [
+  shelfFx('shelf_1', 1, 1, 'Kệ 1'), shelfFx('shelf_2', 3, 1, 'Kệ 2'), shelfFx('shelf_3', 5, 1, 'Kệ 3'),
+  shelfFx('shelf_4', 1, 3, 'Kệ 4'), shelfFx('shelf_5', 5, 3, 'Kệ 5'),
+  cashierFx(1, 5, 'Quầy thu ngân chi nhánh'),
+  fx('fridge_1', 'refrigerator', 5, 5, 2, 'Tủ mát', 'fridge', 24, 20),
+];
+const CAFE_FIXTURES: StoreFixture[] = [
+  fx('counter', 'kitchen_station', 1, 1, 2, 'Quầy pha', 'drink_counter', 1),
+  fx('blender', 'kitchen_station', 3, 1, 1, 'Máy xay', 'blender', 1),
+  fx('kettle', 'kitchen_station', 4, 1, 1, 'Ấm nước nóng', 'hot_kettle', 1),
+  shelfFx('shelf', 5, 1, 'Kệ bánh, đồ uống'),
+  fx('table_1', 'dining_table', 1, 3, 1, 'Bàn 2 chỗ', 'food_table_2', 1), fx('table_2', 'dining_table', 6, 3, 1, 'Bàn 2 chỗ', 'food_table_2', 1),
+  fx('table_3', 'dining_table', 1, 4, 1, 'Bàn 2 chỗ', 'food_table_2', 1), fx('table_4', 'dining_table', 6, 4, 1, 'Bàn 2 chỗ', 'food_table_2', 1),
+  cashierFx(5, 5, 'Quầy thu ngân quán cà phê'),
+];
+const COM_RESTAURANT_FIXTURES: StoreFixture[] = [
+  fx('grill', 'kitchen_station', 1, 1, 2, 'Bếp nướng', 'food_grill', 1),
+  fx('kettle', 'kitchen_station', 3, 1, 1, 'Nồi canh', 'hot_kettle', 1),
+  fx('display', 'shelf_glass', 5, 1, 2, 'Tủ trưng bày món', 'bread_case', 12, 18),
+  fx('table_1', 'dining_table', 1, 3, 2, 'Bàn 4 chỗ', 'food_table_4', 1), fx('table_2', 'dining_table', 4, 3, 2, 'Bàn 4 chỗ', 'food_table_4', 1),
+  fx('table_3', 'dining_table', 7, 3, 2, 'Bàn 4 chỗ', 'food_table_4', 1),
+  cashierFx(7, 5, 'Quầy thu ngân nhà hàng'),
+];
+
 const provisionalTemplate = (
-  id: string, name: string, width: number, height: number,
+  id: string, name: string, width: number, height: number, defaultFixtures: StoreFixture[] = [],
 ): BuildingTemplate => ({
   // id phải thuộc union `BuildingId` cố định; các loại mới chưa có id thật trong union đó
   // (refactor 1.2 mới cho string) nên tạm cast. Đây là dữ liệu PROVISIONAL.
@@ -134,13 +164,13 @@ const provisionalTemplate = (
   entranceTile: { x: Math.floor(width / 2) - 1, y: height },
   awning: { startTiles: Math.max(1, Math.floor(width / 4)), widthTiles: Math.max(2, Math.floor(width / 2)) },
   eaveOffsetPx: 10,
-  defaultFixtures: [],
+  defaultFixtures,
 });
 
-const GROCERY_BRANCH_TEMPLATE = provisionalTemplate('grocery_branch', 'Chi nhánh tạp hóa', 8, 8);
-const CAFE_TEMPLATE = provisionalTemplate('cafe', 'Quán cà phê', 8, 8);
+const GROCERY_BRANCH_TEMPLATE = provisionalTemplate('grocery_branch', 'Chi nhánh tạp hóa', 8, 8, GROCERY_BRANCH_FIXTURES);
+const CAFE_TEMPLATE = provisionalTemplate('cafe', 'Quán cà phê', 8, 8, CAFE_FIXTURES);
 const PARKING_LOT_TEMPLATE = provisionalTemplate('parking_lot', 'Bãi giữ xe', 6, 6);
-const COM_RESTAURANT_TEMPLATE = provisionalTemplate('com_restaurant', 'Quán cơm / nhà hàng', 10, 8);
+const COM_RESTAURANT_TEMPLATE = provisionalTemplate('com_restaurant', 'Quán cơm / nhà hàng', 10, 8, COM_RESTAURANT_FIXTURES);
 
 // ---------------------------------------------------------------------------
 // Registry loại tòa
@@ -236,7 +266,7 @@ export const BUILDING_TYPE_DEFS: Record<BuildingTypeId, BuildingTypeDef> = {
     name: 'Quán cà phê',
     template: CAFE_TEMPLATE,
     defaultFixtures: [],
-    allowedStationIds: ['cafe_pha_che'],
+    allowedStationIds: ['drink_counter', 'blender', 'hot_kettle'],
     productFilter: allProductsFilter,
     trafficShare: 0.06,
     unlockLevel: 34,
