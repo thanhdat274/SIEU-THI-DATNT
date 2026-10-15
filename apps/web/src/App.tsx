@@ -828,8 +828,9 @@ export const App: React.FC = () => {
       if (!onlineWorld) {
         simulation.setDailyRoutineEnabled(true);
       } else {
-        // Co-op mode: enable for multiplayer
+        // Co-op mode: enable for multiplayer; server authoritative = stop local customer spawning
         simulation.setCoopMode(true);
+        simulation.setServerAuthoritative(true);
         // Register players based on world avatars
         const curWorld = onlineWorld;
         if (curWorld.world.avatars.length > 0) {
@@ -970,6 +971,13 @@ export const App: React.FC = () => {
     token: onlineToken,
     onVoiceSignal: (data) => voiceHandlersRef.current?.onSignal(data),
     onVoicePeer: (data) => voiceHandlersRef.current?.onPeer(data),
+    onConnectionStateChange: (state) => {
+      // Khi online: server là nguồn sự thật → stop local customer spawning
+      // Khi disconnect (reconnecting/disconnected): cho phép sinh khách offline (chế độ solo)
+      if (simulationRef.current) {
+        simulationRef.current.setServerAuthoritative(state === 'connected' || state === 'connecting');
+      }
+    },
     onWorldUpdate: async (data) => {
       const curWorld = onlineWorldRef.current;
       if (!curWorld || !simulationRef.current) return;
