@@ -339,7 +339,7 @@ export function relocateBuilding(save: SaveGameData, buildingId: string, placeme
 
 /** Lưu danh sách vị trí đặt: về `undefined` khi mọi tòa ở vị trí mặc định và không có ô sàn mở rộng (save mặc định giữ nguyên dạng cũ). */
 function storePlacements(layout: SaveGameData['storeLayout'], placements: readonly BuildingPlacement[]): void {
-  const plain = placements.every(placement => !placement.floorTiles?.length && !placement.constructionUntilDay && JSON.stringify([placement.parcelId, placement.originX, placement.originY]) === JSON.stringify([defaultPlacementOf(placement.buildingId).parcelId, defaultPlacementOf(placement.buildingId).originX, defaultPlacementOf(placement.buildingId).originY]));
+  const plain = placements.every(placement => !!DEFAULT_PLACEMENTS.find(def => def.buildingId === placement.buildingId) && !placement.floorTiles?.length && !placement.constructionUntilDay && JSON.stringify([placement.parcelId, placement.originX, placement.originY]) === JSON.stringify([defaultPlacementOf(placement.buildingId).parcelId, defaultPlacementOf(placement.buildingId).originX, defaultPlacementOf(placement.buildingId).originY]));
   if (plain) delete layout.buildingPlacements;
   else layout.buildingPlacements = placements.map((placement): BuildingPlacementRecord => ({
     buildingId: placement.buildingId, parcelId: placement.parcelId, originX: placement.originX, originY: placement.originY,

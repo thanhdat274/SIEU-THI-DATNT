@@ -66,6 +66,8 @@ import {
   INITIAL_REFRIGERATOR,
   PRODUCT_MAP,
   generateStarterTileMap,
+  resolvePlacements,
+  validatePlacement,
   WAREHOUSE_FIXTURES,
   WAREHOUSE_ENTRANCE,
   STORE_BOUNDS,
@@ -172,7 +174,7 @@ import {
   hasPerk,
 } from './skills';
 import { applyBuildingLayout, setAwningOpen, SPECIAL_REQUEST_MAP } from '@game/data';
-import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS, WAREHOUSE_CENTER } from '@game/data';
+import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS, WAREHOUSE_CENTER, buildingTypeOfInstance } from '@game/data';
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS, RECLAMATION_WAVE_MAP } from '@game/data';
 import { dailySupplyExecution, type InternalDelivery, type SupplyContract, type SupplyStockLot } from './supply-execution';
@@ -872,11 +874,21 @@ export class GameSimulation {
     // Tạo instance ID
     const nextN = existing.length + 1;
     const instanceId = `${buildingTypeId}-${nextN}`;
+    // Vị trí phải hợp lệ (đúng hàng mặt tiền, nằm trong lô, không đè tòa khác) trước khi trừ tiền
+    const candidate = { buildingId: instanceId, parcelId, originX, originY, typeId: buildingTypeId };
+    const accessibleParcels = [...this.ownedParcelIds, ...Object.entries(this.parcelTenure).filter(([, t]) => t.kind === 'owned' || t.kind === 'leased').map(([id]) => id)];
+    const problem = validatePlacement(candidate, resolvePlacements(this.buildingPlacements, this.unlockedPlotIds), accessibleParcels);
+    if (problem) return { success: false, reason: problem.split(':')[0] };
     // Trừ tiền
     this.playerData.money -= typeDef.openCost;
     // Tạo placement (typeId cố định, buildingId = instanceId)
     const newPlacement = { buildingId: instanceId, parcelId, originX, originY, typeId: buildingTypeId };
     this.buildingPlacements = [...(this.buildingPlacements ?? []), newPlacement];
+    // Dựng lại bản đồ để tòa mới có tường, cửa, va chạm và đường đi khách; renderer nhận qua onMapChanged.
+    this.tileMap = this.buildTileMap();
+    this.collisionSystem.updateTileMap(this.tileMap);
+    this.customerManager.rerouteAll(this.tileMap, this.fixtures);
+    this.callbacks.onMapChanged?.(this.tileMap);
     this.notifyStateChanged();
     return { success: true, instanceId };
   }
@@ -4778,6 +4790,17 @@ export class GameSimulation {
   }
 
   /**
+   * Loại tòa mới (chi nhánh tạp hóa, bãi xe) lọc món bày theo `productFilter` của registry (open-world-building-types 1.3).
+   * 4 loại cũ giữ luật riêng sẵn có (xôi/nước/ăn vặt tự châm; tòa chính vẫn bày tay được), nên không lọc ở đây.
+   */
+  private shelfProductAllowed(fixture: StoreFixture, productId: string): boolean {
+    const building = fixtureBuilding(fixture, this.tileMap.buildings);
+    const def = building ? buildingTypeOfInstance(building) : undefined;
+    if (!def || (def.typeId !== 'grocery_branch' && def.typeId !== 'parking_lot')) return true;
+    return def.productFilter(productId);
+  }
+
+  /**
    * Transfer items to a sales shelf with detailed result.
    */
   public transferToShelf(fixtureId: string, productId: string, amount: number = 1, autoOpenCases = false, respectStallReserve = autoOpenCases): TransferShelfResult {
@@ -4793,6 +4816,9 @@ export class GameSimulation {
     const product = PRODUCT_MAP[productId];
     if (!product || product.unlockLevel > this.playerData.level) {
       return { success: false, actualQuantity: 0, reason: 'product_locked' };
+    }
+    if (!this.shelfProductAllowed(fixture, productId)) {
+      return { success: false, actualQuantity: 0, reason: 'product_not_allowed' };
     }
     // Chỉ chặn nếu: sản phẩm cold-only mà không vào tủ lạnh
     // Sản phẩm cold bình thường (như sữa tiệt trùng) có thể vào cả tủ lạnh HOẶC kệ nhiệt độ thường
@@ -5045,7 +5071,7 @@ export class GameSimulation {
   public setPlanogramAssignment(
     fixtureId: string,
     productId?: string
-  ): { success: boolean; reason?: 'fixture_not_found' | 'not_sales_fixture' | 'invalid_product' | 'storage_type_mismatch' } {
+  ): { success: boolean; reason?: 'fixture_not_found' | 'not_sales_fixture' | 'invalid_product' | 'storage_type_mismatch' | 'product_not_allowed' } {
     const fix = this.fixtures.find((f) => f.id === fixtureId);
     if (!fix || !isSalesFixture(fix)) {
       return { success: false, reason: !fix ? 'fixture_not_found' : 'not_sales_fixture' };
@@ -5058,6 +5084,9 @@ export class GameSimulation {
     const prod = PRODUCT_MAP[productId];
     if (!prod) {
       return { success: false, reason: 'invalid_product' };
+    }
+    if (!this.shelfProductAllowed(fix, productId)) {
+      return { success: false, reason: 'product_not_allowed' };
     }
     const isColdFixture = fix.type === 'refrigerator';
     const isColdProduct = prod.storageType === 'cold';
@@ -5214,6 +5243,7 @@ export class GameSimulation {
         if (isDrinkShelf && !DRINK_SHOP_PRODUCT_IDS.has(inv.productId)) return false;
         // Kệ quán ăn vặt chỉ tự nhận món chiên/xào của quán (gồm bánh tráng trộn); kệ tòa khác không tự nhận chúng (vẫn bày tay được).
         if (isSnackShelf && !SNACK_SHOP_PRODUCT_IDS.has(inv.productId)) return false;
+        if (!this.shelfProductAllowed(fix, inv.productId)) return false;
         return true;
       })
       .sort((a, b) => {

@@ -1747,6 +1747,8 @@ export const App: React.FC = () => {
       addToast(
         res.reason === 'storage_type_mismatch'
           ? 'Không thể gán: điều kiện bảo quản không phù hợp!'
+          : res.reason === 'product_not_allowed'
+          ? 'Không thể gán: loại tòa này không bán món đó!'
           : 'Không thể thiết lập sơ đồ cho kệ này.',
         'warn'
       );

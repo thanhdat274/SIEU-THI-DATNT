@@ -61,6 +61,9 @@ export interface PlacementGeometry {
 
 const abs = (p: BuildingPlacement, t: RelTile) => ({ x: p.originX + t.x, y: p.originY + t.y });
 
+/** Tòa mở thêm (`${typeId}-${n}`, vd. `grocery_branch-1`): không thuộc 4 tòa gốc nhưng tra được loại tòa trong registry. */
+export const isExtraInstanceId = (id: string): boolean => !Object.prototype.hasOwnProperty.call(BUILDING_TEMPLATES, id) && !!buildingTypeOfInstance(id);
+
 /** Lấy mẫu tòa cho placement: BUILDING_TEMPLATES (4 tòa gốc) → fallback buildingTypeOfInstance.typeId (tòa mới). */
 const templateForPlacement = (placement: BuildingPlacement): BuildingTemplate | undefined => {
   const direct = BUILDING_TEMPLATES[placement.buildingId];
@@ -142,7 +145,8 @@ export function placementOriginY(buildingId: BuildingId, parcelId: string): numb
   const parcel = resolveParcel(parcelId);
   const def = DEFAULT_PLACEMENTS.find(p => p.buildingId === buildingId) ?? DEFAULT_PLACEMENTS[0];
   if (!parcel) return def.originY;
-  return parcel.rect.y1 - (BUILDING_TEMPLATES[buildingId].height - 1);
+  const template = Object.prototype.hasOwnProperty.call(BUILDING_TEMPLATES, buildingId) ? BUILDING_TEMPLATES[buildingId] : buildingTypeOfInstance(buildingId)?.template;
+  return parcel.rect.y1 - ((template?.height ?? 8) - 1);
 }
 
 /** Lỗi đầu tiên của danh sách vị trí đặt (tòa trùng, lô không tồn tại/trùng, tòa vượt lô), hoặc null nếu hợp lệ. */
@@ -150,7 +154,7 @@ export function validatePlacements(placements: readonly BuildingPlacementRecord[
   const buildings = new Set<string>();
   const parcels = new Set<string>();
   for (const placement of placements) {
-    if (!Object.prototype.hasOwnProperty.call(BUILDING_TEMPLATES, placement.buildingId)) return `unknown_building:${placement.buildingId}`;
+    if (!Object.prototype.hasOwnProperty.call(BUILDING_TEMPLATES, placement.buildingId) && !isExtraInstanceId(placement.buildingId)) return `unknown_building:${placement.buildingId}`;
     if (buildings.has(placement.buildingId)) return `duplicate_building:${placement.buildingId}`;
     buildings.add(placement.buildingId);
     const parcel = resolveParcel(placement.parcelId);
@@ -311,9 +315,23 @@ export function resolvePlacements(records: readonly BuildingPlacementRecord[] | 
       ...(found?.closedForRent ? { closedForRent: true } : {}),
     };
   });
+  // Tòa mở thêm (`open_building`): giữ theo bản ghi đã lưu, sau 4 tòa gốc.
+  if (usable) {
+    for (const record of records!) {
+      if (!isExtraInstanceId(record.buildingId)) continue;
+      chosen.push({
+        buildingId: record.buildingId, parcelId: record.parcelId, originX: record.originX, originY: record.originY,
+        ...(record.typeId ? { typeId: record.typeId as BuildingTypeId } : {}),
+        ...(record.parcelIds && record.parcelIds.length > 1 ? { parcelIds: [...record.parcelIds] } : {}),
+        ...(record.floorTiles?.length ? { floorTiles: record.floorTiles.map(tile => ({ x: tile.x, y: tile.y })) } : {}),
+        ...(record.constructionUntilDay ? { constructionUntilDay: record.constructionUntilDay } : {}),
+        ...(record.closedForRent ? { closedForRent: true } : {}),
+      });
+    }
+  }
   // Migration có thể làm chosen khác DEFAULT_PLACEMENTS → không cache nếu có floorTiles
-  const hasNorthTiles = chosen.some(p => p.floorTiles?.length && !defaultPlacementOf(p.buildingId).floorTiles?.length);
-  const isDefault = chosen.every(p => { const def = defaultPlacementOf(p.buildingId); return !p.floorTiles && !p.constructionUntilDay && samePlacement(p, def); });
+  const hasNorthTiles = chosen.some(p => p.floorTiles?.length && !defaultPlacementOf(p.buildingId)?.floorTiles?.length);
+  const isDefault = chosen.every(p => { const def = defaultPlacementOf(p.buildingId); return !!def && !p.floorTiles && !p.constructionUntilDay && samePlacement(p, def); });
   // Mặc định + đủ bốn tòa trả về chính hằng số (so sánh bằng tham chiếu ở nơi cache).
   return hasNorthTiles || !isDefault || chosen.length !== DEFAULT_PLACEMENTS.length ? chosen : DEFAULT_PLACEMENTS;
 }
@@ -335,7 +353,7 @@ const overlap = (a: BuildingBounds, b: BuildingBounds): BuildingBounds | null =>
  */
 export function validatePlacement(candidate: BuildingPlacementRecord, others: readonly BuildingPlacement[], ownedParcelIds: Iterable<string> = []): string | null {
   const ownedParcels = new Set(ownedParcelIds);
-  const template = Object.prototype.hasOwnProperty.call(BUILDING_TEMPLATES, candidate.buildingId) ? BUILDING_TEMPLATES[candidate.buildingId as BuildingId] : undefined;
+  const template = Object.prototype.hasOwnProperty.call(BUILDING_TEMPLATES, candidate.buildingId) ? BUILDING_TEMPLATES[candidate.buildingId as BuildingId] : buildingTypeOfInstance(candidate.buildingId)?.template;
   if (!template) return `unknown_building:${candidate.buildingId}`;
   const parcel = resolveParcel(candidate.parcelId);
   if (!parcel) return `unknown_parcel:${candidate.parcelId}`;
@@ -373,9 +391,10 @@ export function placementsProblem(placements: readonly BuildingPlacementRecord[]
   if (!placements || placements.length === 0) return null;
   const owned = new Set(ownedPlotIds);
   const present = new Set<string>(placedBuildingIds(owned));
+  for (const record of placements) if (isExtraInstanceId(record.buildingId)) present.add(record.buildingId);
   const seen = new Set<string>();
   for (const record of placements) {
-    if (!Object.prototype.hasOwnProperty.call(BUILDING_TEMPLATES, record.buildingId)) return `unknown_building:${record.buildingId}`;
+    if (!Object.prototype.hasOwnProperty.call(BUILDING_TEMPLATES, record.buildingId) && !isExtraInstanceId(record.buildingId)) return `unknown_building:${record.buildingId}`;
     if (seen.has(record.buildingId)) return `duplicate_building:${record.buildingId}`;
     seen.add(record.buildingId);
   }

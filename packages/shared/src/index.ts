@@ -1677,7 +1677,7 @@ export function restoreSaveBackupSnapshot(backup: SaveGameData, targetId = 'loca
 export interface TransferShelfResult {
   success: boolean;
   actualQuantity: number;
-  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'fixture_broken' | 'invalid_amount' | 'product_locked' | 'storage_mismatch' | 'no_inventory' | 'product_mismatch' | 'no_space' | 'success'
+  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'fixture_broken' | 'invalid_amount' | 'product_locked' | 'storage_mismatch' | 'product_not_allowed' | 'no_inventory' | 'product_mismatch' | 'no_space' | 'success'
     /** Kho còn hàng nhưng toàn nguyên thùng: phải mở thùng trong kho rồi mới châm kệ được. */
     | 'in_cases'
     /** Phần còn lại trong kho đã giữ cho nguyên liệu quầy ăn uống: bày tự động không lấy. */
