@@ -349,6 +349,8 @@ export class GameSimulation {
   private dailyRoutine: DailyRoutineSystem;
   private coopRoutine: CoopRoutineSystem | null = null;
   private coopMode = false;
+  /** Khi online/co-op, server là nguồn sự thật: client KHÔNG tự sinh khách để tránh trùng/lệch state. */
+  private serverAuthoritative = false;
   private coopLocalPlayerId: string | null = null;
   private coopLocalState: DailyRoutineState | null = null;
   private coopSeenDay: number | null = null;
@@ -4491,6 +4493,10 @@ export class GameSimulation {
 
   public isCoopMode(): boolean { return this.coopMode; }
 
+  /** Khi online, server là nguồn sự thật: client KHÔNG tự sinh khách (trùng/lệch state). */
+  public setServerAuthoritative(enabled: boolean): void { this.serverAuthoritative = enabled; }
+  public isServerAuthoritative(): boolean { return this.serverAuthoritative; }
+
   /**
    * Máy khách hẻm chung: người chơi của tài khoản này. Đặt thì lịch ngày áp lên nhân vật cục bộ (23:30 khóa điều khiển, tự đi bộ về nhà,
    * báo đổi trạng thái cho UI) và máy này KHÔNG tự chốt ngày: server chốt khi cả hai đã ngủ rồi gửi qua snapshot.
@@ -4684,27 +4690,29 @@ export class GameSimulation {
     })));
     const inStoreRegularIds = this.customerManager.peekCustomers().map(c => c.regularId).filter((id): id is string => Boolean(id));
     const regularCandidate = pickAvailableRegular(this.clock.getTime().day, this.market.seed, inStoreRegularIds, this.regulars);
-    const spawned = this.customerManager.maybeSpawnCustomer(
-      worldDt,
-      this.clock.getTime().isStoreOpen,
-      this.fixtures,
-      this.tileMap,
-      this.clock.getTime().day,
-      this.statistics.totalCustomersServed,
-      {
-        traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * (1 + getSkillModifier(this.skills, 'traffic_boost')) * prestigeTrafficMultiplier(this.playerData.prestigeStars ?? 0) * hourlyStoreTrafficMultiplier(this.clock.getTime().hour) * GameSimulation.STORE_TRAFFIC_BOOST, this.playerData.level),
-        maxConcurrentCustomers: maxActiveCustomersForLevel(this.playerData.level),
-        weightOf: (productId) => (demandTable.perProduct[productId]?.demand ?? 0.01) * (chilledIds.has(productId) ? chilledAppeal : 1),
-      },
-      regularCandidate,
-      this.getRainIntensity(),
-      this.hasSecurityGuardOnShift(),
-      { hour: this.clock.getTime().hour, weekday: weekdayOf(this.clock.getTime().day) },
-      this.buildingParcelTrafficMultiplier()
-    );
-    if (spawned && (spawned.arrivalMode === 'motorbike' || spawned.arrivalMode === 'car')) this.collectParkingFee(spawned);
-    if (spawned?.id && rollShoplifter(this.clock.getTime().day, spawned.id, this.playerData.level, !!spawned.regularId)) spawned.thief = true;
-
+    // Khi server authoritative (online/co-op), client KHÔNG tự sinh khách để tránh trùng/lệch so với server.
+    if (!this.serverAuthoritative) {
+      const spawned = this.customerManager.maybeSpawnCustomer(
+        worldDt,
+        this.clock.getTime().isStoreOpen,
+        this.fixtures,
+        this.tileMap,
+        this.clock.getTime().day,
+        this.statistics.totalCustomersServed,
+        {
+          traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * (1 + getSkillModifier(this.skills, 'traffic_boost')) * prestigeTrafficMultiplier(this.playerData.prestigeStars ?? 0) * hourlyStoreTrafficMultiplier(this.clock.getTime().hour) * GameSimulation.STORE_TRAFFIC_BOOST, this.playerData.level),
+          maxConcurrentCustomers: maxActiveCustomersForLevel(this.playerData.level),
+          weightOf: (productId) => (demandTable.perProduct[productId]?.demand ?? 0.01) * (chilledIds.has(productId) ? chilledAppeal : 1),
+        },
+        regularCandidate,
+        this.getRainIntensity(),
+        this.hasSecurityGuardOnShift(),
+        { hour: this.clock.getTime().hour, weekday: weekdayOf(this.clock.getTime().day) },
+        this.buildingParcelTrafficMultiplier()
+      );
+      if (spawned && (spawned.arrivalMode === 'motorbike' || spawned.arrivalMode === 'car')) this.collectParkingFee(spawned);
+      if (spawned?.id && rollShoplifter(this.clock.getTime().day, spawned.id, this.playerData.level, !!spawned.regularId)) spawned.thief = true;
+    }
     this.streetTraffic.setStallStops(this.stalls.owned.flatMap(id => STALL_MAP[id] ? [(STALL_MAP[id].tileX + STALL_MAP[id].widthTiles / 2) * TILE_SIZE] : []));
     applyBuildingLayout(this.tileMap.buildings);
     for (const id of ['xoi', 'drink', 'snack'] as const) setAwningOpen(id, this.tileMap.buildings?.find((b) => b.id === id)?.open ?? false);
