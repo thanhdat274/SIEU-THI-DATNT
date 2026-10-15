@@ -68,7 +68,7 @@ Vẫn đúng như báo cáo trước (41 nhóm gameplay + co-op + hạ tầng), 
 
 Không thay đổi nhiều so với trước: tiền giả, production/bếp, dining, prestige, bảo trì, kiểm tra thuế/khai bớt, cloud save, trang trí mùa, tutorial checklist, PWA, đèn tín hiệu, bóng cây, quán nước/tiệm xôi (co-op 2 client), voice chat.
 
-**Khoảng trống test (không đổi):** `game-renderer` 0 test; `game-data` 1 test; `apps/web` chỉ 6 file test (không test component); không có `simulation.test.ts`.
+**Khoảng trống test (cập nhật 15/10/2026):** `game-data` thực tế có 12 file test (chạy qua runner của `game-core`, thêm `data-integrity.test.ts`: công thức, nhà cung cấp, hao hụt, lịch mùa); `game-renderer` có 3 test (atlas, `camera.test.ts`, `weather-settings.test.ts`), chưa test Pixi/viewport/sprite vẽ; `apps/web` có 8 file test, **mới 1 test component** (`TutorialChecklist`, render phía server bằng `react-dom/server`, chưa có jsdom nên chưa test tương tác click/state); vẫn không có `simulation.test.ts` riêng.
 
 ---
 

@@ -3,6 +3,7 @@
 - `yarn typecheck` PASS; `yarn test` 112/112 PASS; web test, server test:unit, renderer test PASS.
 - `yarn lint`: 0 lỗi, 139 cảnh báo sau khi thêm `.qa/**` vào ignores và sửa lỗi thật ở `premium-textures.ts`. Trước đó 3306 lỗi đều do quét profile Chrome trong `.qa`.
 - `HIEN-TRANG-CODE.md`: sửa số dòng file lớn; 6.3 (quyền sửa bố cục) và 6.6 (reconnect WS) đã lỗi thời nên chuyển sang "đã có".
+- Bổ sung test 15/10/2026: `data-integrity.test.ts` (game-data, trong `yarn test`), `camera.test.ts` + `weather-settings.test.ts` (renderer), `TutorialChecklist.test.tsx` (web, render server). Tất cả PASS; typecheck PASS, lint 0 lỗi. Chưa có test tương tác component (cần jsdom) và chưa test viewport/Pixi.
 - Còn mở (chưa làm): client online vẫn chạy mô phỏng sinh khách cục bộ (6.7); chưa browser QA/co-op 2 trình duyệt; khoảng trống test renderer/game-data/component web.
 
 # REVIEW TOÀN BỘ DỰ ÁN — 13/10/2026
