@@ -27,6 +27,7 @@ import { loadWeatherSprites } from './weather-sprites';
 import { emitThunder, setRoofProximity, getWeatherFxSettings, publishWeatherVisual, resolveWeatherQuality } from './weather-settings';
 import { NeighborhoodScene } from './neighborhood-scene';
 import { NeighborhoodActors } from './neighborhood-actors';
+import { planningOverlaySignature, type PlanningOverlay } from './planning-overlay';
 import { buildIntersectionSignalHeads, createPedestrianSprite, placePedestrian } from './street-signal';
 
 /** Điểm gốc bóng so với góc trên-trái sprite cây 80x100 (px): chân thân cây, để bóng đổ từ mặt đất chứ không từ tán. */
@@ -190,6 +191,9 @@ export class PixiGameViewport {
 
   // QA overlay: vùng khai hoang + lô (open-world-land-reclamation 0.2) — chỉ bật qua window.__showWaveOverlay.
   private waveOverlay: Container | null = null;
+  // Bóng mờ giữ chỗ quy hoạch của người khác (open-world-coop-land 1.3).
+  private planningLayer: Container | null = null;
+  private planningSignature = '';
 
   // Doors & animations
   private warehouseDoorContainer!: Container;
@@ -1271,6 +1275,37 @@ export class PixiGameViewport {
   // Chỉ bật qua `window.__showWaveOverlay(true/false)` khi ?qa — không ảnh hưởng người chơi thường.
   // ---------------------------------------------------------------------------
   /** Bật/tắt overlay vùng khai hoang W0–W4 (dùng cho chụp ảnh chốt 0.2). Trả false nếu chưa sẵn sàng. */
+  /**
+   * Vẽ bóng mờ + tên người đang quy hoạch (giữ chỗ của NGƯỜI KHÁC, đã lọc ở `planningOverlays`).
+   * Chỉ vẽ lại khi nội dung đổi; danh sách rỗng thì gỡ lớp.
+   */
+  public setPlanningReservations(overlays: readonly PlanningOverlay[]): void {
+    if (!this.uiOverlayLayer) return;
+    const signature = planningOverlaySignature(overlays);
+    if (signature === this.planningSignature) return;
+    this.planningSignature = signature;
+    if (!overlays.length) {
+      this.planningLayer?.removeFromParent();
+      this.planningLayer?.destroy({ children: true });
+      this.planningLayer = null;
+      return;
+    }
+    if (!this.planningLayer) {
+      this.planningLayer = new Container();
+      this.planningLayer.zIndex = 900;
+      this.uiOverlayLayer.addChild(this.planningLayer);
+    }
+    this.planningLayer.removeChildren().forEach(child => child.destroy());
+    const g = new Graphics();
+    this.planningLayer.addChild(g);
+    for (const overlay of overlays) {
+      for (const box of overlay.boxes) g.rect(box.x, box.y, box.w, box.h).fill({ color: overlay.color, alpha: 0.22 }).stroke({ width: 2, color: overlay.color, alpha: 0.95 });
+      const tag = new Text({ text: overlay.label, style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 16, fontWeight: 'bold', fill: 0xffffff, stroke: { color: overlay.color, width: 4 } }) });
+      tag.position.set(overlay.labelAt.x, overlay.labelAt.y);
+      this.planningLayer.addChild(tag);
+    }
+  }
+
   public showWaveOverlay(show: boolean): boolean {
     if (!this.uiOverlayLayer) return false;
     if (show) {

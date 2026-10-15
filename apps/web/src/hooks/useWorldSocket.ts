@@ -209,5 +209,25 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
     if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ event: 'layout-lock:release', data: {} }));
   }, []);
 
-  return { connected, layoutLockHolderId, acquireLayoutLock, releaseLayoutLock, sendVoiceSignal, sendInput, sendPosition, submitTimeVote, cancelTimeVote };
+  /** Giữ chỗ quy hoạch đất (thay giữ chỗ cũ của mình); server hết hạn sau 60 s nếu không gia hạn. */
+  const reservePlanning = useCallback((targets: { kind: 'parcels'; parcelIds: string[] } | { kind: 'wave'; waveId: string } | { kind: 'tiles'; tiles: Array<{ x: number; y: number }> } | { kind: 'placement'; placement: { buildingId: string; parcelId: string; originX: number } }) => {
+    const socket = wsRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+    socket.send(JSON.stringify({ event: 'planning:reserve', data: targets }));
+    return true;
+  }, []);
+
+  const extendPlanning = useCallback(() => {
+    const socket = wsRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+    socket.send(JSON.stringify({ event: 'planning:extend', data: {} }));
+    return true;
+  }, []);
+
+  const releasePlanning = useCallback(() => {
+    const socket = wsRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ event: 'planning:release', data: {} }));
+  }, []);
+
+  return { connected, layoutLockHolderId, reservePlanning, extendPlanning, releasePlanning, acquireLayoutLock, releaseLayoutLock, sendVoiceSignal, sendInput, sendPosition, submitTimeVote, cancelTimeVote };
 }

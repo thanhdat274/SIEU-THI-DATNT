@@ -18,7 +18,7 @@ Trạng thái 07/10/2026: phần THUẦN của các task 1.1, 2.1, 2.2, 3.1, 3.2
 
 - [ ] 1.1 **(15/10/2026: ĐÃ nối runtime + socket + snapshot, test thuần PASS; CHƯA chạy với Mongo/hai trình duyệt.)** Runtime: `PlanningReservation`, TTL 60 giây, xóa khi ngắt; socket `planning:reserve`/`planning:release`; snapshot mang giữ chỗ của người khác.
 - [ ] 1.2 **(15/10/2026: ĐÃ làm ở `bootstrap.ts` + test runtime; CHƯA test gateway/HTTP thật.)** Server từ chối lệnh đất đụng giữ chỗ của người khác (`reserved_by_other`); test gateway.
-- [ ] 1.3 Client: gửi/gia hạn giữ chỗ khi ở chế độ quy hoạch; renderer vẽ bóng mờ + tên người kia.
+- [ ] 1.3 **(15/10/2026: ĐÃ làm cho bảng lô (parcels) + bóng mờ kèm tên, nhìn desktop OK; CHƯA nối tiles/placement/wave ở UI, CHƯA thử hai trình duyệt thật.)** Client: gửi/gia hạn giữ chỗ khi ở chế độ quy hoạch; renderer vẽ bóng mờ + tên người kia.
 
 ## 2. Quyền và phiếu
 
@@ -32,7 +32,7 @@ Trạng thái 07/10/2026: phần THUẦN của các task 1.1, 2.1, 2.2, 3.1, 3.2
 
 ## 4. Thông báo
 
-- [ ] 4.1 Ánh xạ `reserved_by_other`, `stale_revision` (lệnh đất), `vote_rejected`, `forbidden` sang toast có tên; tự làm mới quy hoạch.
+- [ ] 4.1 **(15/10/2026: ĐÃ ánh xạ `reserved_by_other` thành toast có tên khi commit bị từ chối; CÒN `stale_revision`/`vote_rejected`/`forbidden` và tự làm mới quy hoạch.)** Ánh xạ `reserved_by_other`, `stale_revision` (lệnh đất), `vote_rejected`, `forbidden` sang toast có tên; tự làm mới quy hoạch.
 
 ## 5. Kiểm chứng và tài liệu
 

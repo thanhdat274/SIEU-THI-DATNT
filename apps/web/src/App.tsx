@@ -1,12 +1,12 @@
 import React, { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { ALL_PRODUCTS, DRINK_SHOP_PRODUCT_IDS, SNACK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, STORE_TYPES, WEATHER_MAP, XOI_DISH_IDS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
-import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES, FootstepTracker, footstepCue } from '@game/core';
+import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES, landErrorMessage, FootstepTracker, footstepCue } from '@game/core';
 import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
 import { ParcelBuyModal } from './components/ParcelBuyModal';
 import { OpenBuildingModal } from './components/OpenBuildingModal';
-import { PixiGameViewport, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
+import { PixiGameViewport, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
 import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
 
 import { getActiveSlotId, loadOrCreateSave, persistSave, writeEmergencySave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
@@ -1000,6 +1000,8 @@ export const App: React.FC = () => {
       const sim = simulationRef.current;
       const save = snapshot.businesses[0]?.save;
       serverCoopRef.current = snapshot.coop?.players ?? null;
+      // Giữ chỗ quy hoạch đất của người khác: vẽ bóng mờ + tên (giữ chỗ của chính mình không vẽ).
+      viewportRef.current?.setPlanningReservations(planningOverlays(snapshot.planning, onlineUidRef.current));
       const dayBefore = sim?.getTime().day ?? 0;
       // Tốc độ do server quyết định (bỏ phiếu chung): cập nhật nút ×1/×2/×4 theo snapshot, không chỉ theo lần bấm cục bộ.
       if (save?.worldTime?.timeScale && !stale) setGameSpeed(Math.max(1, Math.round(save.worldTime.timeScale / 90)));
@@ -1046,6 +1048,18 @@ export const App: React.FC = () => {
       }
     },
   });
+
+  // Giữ chỗ quy hoạch (open-world-coop-land 1.3): đang mở bảng một lô (mua/thuê/mở tòa) trong hẻm chung thì báo cho bạn cùng hẻm,
+  // gia hạn mỗi 20 s (server hết hạn sau 60 s) và thả khi đóng bảng hoặc mất kết nối.
+  const planningParcelId = openBuildingParcelId ?? parcelPromptId;
+  const planningOnline = !!onlineWorld && worldSocket.connected;
+  const { reservePlanning, extendPlanning, releasePlanning } = worldSocket;
+  useEffect(() => {
+    if (!planningOnline || !planningParcelId) return;
+    reservePlanning({ kind: 'parcels', parcelIds: [planningParcelId] });
+    const timer = setInterval(() => { extendPlanning(); }, 20_000);
+    return () => { clearInterval(timer); releasePlanning(); };
+  }, [planningOnline, planningParcelId, reservePlanning, extendPlanning, releasePlanning]);
 
   useEffect(() => {
     const worldId = onlineWorld?.world.id;
@@ -1184,7 +1198,10 @@ export const App: React.FC = () => {
     } catch (err) {
       console.error('Online commit error:', err);
       await resyncOnlineWorldAfterReject(curWorld);
-      addToast(err instanceof Error ? err.message : 'Không thể lưu lên hẻm chung.', 'warn');
+      // Lệnh đất đụng vùng bạn cùng hẻm đang quy hoạch: thông báo kèm tên người giữ (open-world-coop-land 4.1).
+      const body = (err as { body?: { code?: string; by?: { name?: string; accountId?: string } } } | null)?.body;
+      if (body?.code === 'reserved_by_other') addToast(landErrorMessage('reserved_by_other', { name: body.by?.name ?? body.by?.accountId }), 'warn');
+      else addToast(err instanceof Error ? err.message : 'Không thể lưu lên hẻm chung.', 'warn');
       return false;
     } finally {
       commitsInFlightRef.current = Math.max(0, commitsInFlightRef.current - 1);

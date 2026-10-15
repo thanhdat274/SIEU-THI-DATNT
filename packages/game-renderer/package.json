@@ -6,7 +6,7 @@
   "types": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "tsx src/sprite-atlas.test.ts && tsx src/camera.test.ts && tsx src/weather-settings.test.ts"
+    "test": "tsx src/sprite-atlas.test.ts && tsx src/camera.test.ts && tsx src/weather-settings.test.ts && tsx src/planning-overlay.test.ts"
   },
   "dependencies": {
     "@game/shared": "*",
