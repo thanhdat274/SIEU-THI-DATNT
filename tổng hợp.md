@@ -1,3 +1,57 @@
+# GIAI ĐOẠN 3 — KIỂM CHỨNG THẬT — BÁO CÁO (16/10/2026)
+
+Kịch bản và kết quả từng bước: `.qa/phase3-playthrough-scenario.md`. Số liệu kinh tế: `.qa/economy-qa-sweep-2026-10-16.txt`.
+
+## Kết quả lệnh (chạy thật 16/10/2026)
+
+| Lệnh | Kết quả |
+|------|---------|
+| `yarn typecheck` | PASS |
+| `eslint . --quiet` | 0 lỗi (đã sửa 1 lỗi `require()` ở `city-goals-sim.ts`); còn ~156 cảnh báo cũ |
+| `yarn test:all` | PASS: game-core 112/112, renderer, server unit, web |
+| `yarn --cwd apps/server test:db` (Mongo thật, DB test riêng) | PASS (worlds, gateway, coop, leaderboard) |
+| `yarn build` | PASS; `vendor-pixi` 588 kB (vẫn >500 kB → mục 1.4 Giai đoạn 1 CHƯA đạt) |
+
+## Đã kiểm chứng bằng trình duyệt thật (built-in browser, dev server)
+
+- Playthrough thuê đất W1 → mở cà phê → nợ 3 ngày đóng tòa → trả nợ → mua khấu trừ → xuất/nạp save (schema 10): đạt, bảng trong file kịch bản. Dùng lối tắt QA (ép cấp/tiền, `advanceToNextDay`).
+- 7 viewport (568×320 … 932×430) × 11 modal (city, cashier, supplier, warehouse, quest, tax, analytics, market, save, planogram, daySummary): không tràn ngang trang, modal vừa chiều dọc, không nút <32 px. Ngoại lệ P2: modal Đặt hàng tại 568×320 có một span tràn 13 px. Đây là kiểm bằng đo DOM + vài ảnh, chưa phải duyệt mắt từng modal → **chưa gọi là "Mobile Ready"**; modal `layout` không mở qua hook `?qa`.
+- Co-op 2 client (khách dev A và B, hai tab cùng origin, đổi `localStorage.devGuestClientId`): cùng ngày/giờ/tiền/revision, không khách trùng. Ngắt socket (close 4000): nối lại lần 1 sau 1 s, state hội tụ.
+- Hộp tổng kết ngày hiện dòng "Tiền thuê đất".
+
+## Lỗi tìm được
+
+| # | Lỗi | Trạng thái |
+|---|-----|-----------|
+| BUG-1 | `leaseParcel` thu TRẢ TRƯỚC 30 ngày (921.600 ₫ lô góc W1) cộng thêm tiền thuê ngày; spec D2 chỉ có tiền thuê ngày. Test `land-lease-core.test.ts` đang khóa hành vi trả trước. | **CHƯA SỬA — chờ chủ dự án quyết** (cọc hay bỏ) |
+| BUG-2 | Thuê được lô của đợt chưa mở (mất tiền, không tới được) | ĐÃ SỬA + test (`wave_not_open`) |
+| BUG-3 | `endLease` khi còn nợ → xóa nợ miễn phí (trái D5) | ĐÃ SỬA + test (`rent_debt`) + toast |
+| BUG-6 | Tổng kết ngày thiếu dòng tiền thuê đất → số không cộng ra lãi ròng | ĐÃ SỬA (`DaySummaryModal.tsx`), nhìn thấy trên UI |
+| BUG-7 | Sổ cái `rent` thiếu `buildingInstanceId`, báo cáo tòa không trừ thuê (D2) | ĐÃ SỬA: `recordRentCharge`, `BuildingDailyReport.rentCost`; test trong `land-lease-core.test.ts`. Chưa hiển thị `rentCost` ở `AnalyticsModal` |
+| P2 | Lỗi lint `require()` trong `city-goals-sim.ts` (báo cáo GĐ2 ghi "0 errors" là sai) | ĐÃ SỬA |
+
+## Đính chính báo cáo Giai đoạn 2 (CÓ CODE nhưng CHƯA NỐI vào game)
+
+Kiểm bằng grep 16/10/2026: `claimCityGoal`/`CityProgressState` chỉ nằm trong `city-goals-sim.ts` + test, KHÔNG có lệnh `claim_city_goal`, simulation, server hay UI; `clusterMultiplierFor` (proximity cluster) không được `customers.ts`/`demand.ts` gọi; `districtId` của district modifier cần `ctx.districtId` nhưng `simulation.ts` không truyền → modifier khu chưa tác dụng trong game. Các mục 2.1–2.3 của báo cáo GĐ2 vì vậy chỉ là "logic thuần + test", không phải "HOÀN THÀNH" chạy thật. `CityModal` chưa có giao diện thuê/mục tiêu thành phố (thuê nằm ở `ParcelBuyModal`).
+
+## Kinh tế (sweep headless, `yarn --cwd packages/game-core economy-qa`)
+
+Harness giữ kệ luôn đầy ⇒ số là TRẦN, không phải kỳ vọng người chơi; level 60, tòa phụ trên lô thuê `w1-corner`. Chi nhánh tạp hóa, 8 seed × 30 ngày: doanh thu tòa/ngày p10/p50/p90 = 1,79 / 2,01 / 2,29 triệu ₫; lãi gộp p50 1,58 triệu; tiền thuê 30.720 ₫/ngày = 1,5% doanh thu tòa; 0/8 seed lỗ, 0 ngày đóng vì nợ; hoàn vốn (mở 1,5 tr + thuê trả trước 0,92 tr) p50 sau 2 ngày. Cà phê/quán cơm/bãi xe: xem file `.qa/economy-qa-sweep-2026-10-16.txt` (nếu thiếu = sweep chưa chạy xong). Nhận xét: trong harness, thuê đất gần như không là áp lực; tiền thuê đủ nhỏ để giá thuê/hằng số `leaseDailyRate` cần playtest thật. **KHÔNG đổi hằng số PROVISIONAL nào** vì chưa có số từ playtest thật; sweep chỉ cho thấy khoảng cách quá lớn giữa doanh thu trần và tiền thuê.
+
+## CHƯA kiểm chứng — hướng dẫn tự chạy
+
+1. FPS điện thoại tầm trung: build `yarn build`, `yarn --cwd apps/web preview --host`, mở trên điện thoại cùng Wi-Fi, bật overlay hiệu năng (`services/perf-overlay.ts`), ghi FPS ở zoom mặc định và zoom xa.
+2. OAuth Google thật: cần `.env` Firebase hợp lệ, chạy `yarn dev`, bấm "Đăng nhập Google" ở trình duyệt thường.
+3. Voice chat 2 client: hai trình duyệt khác profile (hoặc máy khác) vào cùng hẻm, cho phép micro, nghe hai chiều.
+4. Co-op land vote/giữ chỗ bằng UI: cần cấp 20 trong hẻm online để mở khai hoang; server-side đã có test (`test:coop`, `test:landvote`) nhưng UI chưa nhìn.
+5. Hai khách dev trên 2 tab cùng origin chia sẻ `localStorage` định danh → tab nối lại WS sẽ lấy định danh của tab kia; dùng hai profile trình duyệt cho QA co-op đúng nghĩa. Server chỉ cho CORS `http://localhost:5173`.
+6. Hẻm "QA Phase3" đã tạo trong Mongo dev khi thử co-op; xóa tay nếu không cần.
+
+## Việc đề xuất tiếp
+Quyết BUG-1; nối thật city goals/cluster/district vào simulation (re-open 2.1–2.3); hiển thị `rentCost` ở `AnalyticsModal`; playtest tay để chỉnh PROVISIONAL; giảm `vendor-pixi`.
+
+---
+
 # GIAI ĐOẠN 2 — HOÀN THIỆN CODE CÒN THIẾU THEO OPSPEC — BÁO CÁO CUỐI (15/10/2026)
 
 ## Tổng kết

@@ -1,3 +1,5 @@
+> **Cập nhật 16/10/2026 (Giai đoạn 3):** QA thật đã chạy một phần — xem đầu `tổng hợp.md`. Sửa BUG-2/3/6/7 (thuê đất/báo cáo). BUG-1 (thu trước 30 ngày tiền thuê) chờ chủ dự án quyết. Mục city goals/cluster/district của GĐ2 chỉ là logic thuần, chưa nối vào game. FPS điện thoại, OAuth, voice, UI bỏ phiếu đất co-op: CHƯA kiểm chứng.
+
 ## Thuê đất và mua khấu trừ — Bước 6b thế giới mở (14/10/2026)
 
 - [x] **Lệnh core:** `lease_parcel` (thuê 30 ngày, ghi tenure schema 10), `end_lease` (hủy thuê khi đất trống, chặn nếu có tòa), `pay_rent_debt` (trả nợ thuê, mở lại tòa), `buyParcel` khấu trừ `min(paidTotal × 0.5, 50% giá)` khi mua lô đang thuê.

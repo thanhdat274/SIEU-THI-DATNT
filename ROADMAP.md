@@ -2,6 +2,10 @@
 
 > Ghi chú: `pnpm-workspace.yaml` ở Giai đoạn 0 là lịch sử; dự án dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
 
+## Giai đoạn 3 kiểm chứng thật (16/10/2026)
+
+- [>] QA trình duyệt thật cho thuê đất/nợ/mua khấu trừ/lưu-tải, 7 viewport (đo DOM), co-op 2 client + nối lại WS: ĐẠT; sửa 4 lỗi. Chưa Mobile Ready (chưa duyệt mắt hết), chưa đo FPS/OAuth/voice, BUG-1 chờ quyết, city goals/cluster/district chưa nối vào game. Chi tiết: `tổng hợp.md` đầu file.
+
 ## 4 yêu cầu: lời chê truyền miệng, sự kiện thành phố, giá gợi ý — LÕI THUẦN đã làm + verify; chain DEFER (07/10/2026)
 
 - [>] **#1 Lời chê/bad reputation** (`game-core/word-of-mouth.ts`, CÓ sẵn + verify): rút vexation từ VIP bò qua → cửa sổ 1–2 ngày, hệ số 0.7–0.9 deterministic theo (seed,openDay); `wordOfMouthEffect` theo ngày. **Sửa 2 lỗi test ẩn**, Verify PASS. Nối luồng khách CHỜ MÁY THẬT.
