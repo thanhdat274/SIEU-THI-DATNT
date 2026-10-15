@@ -1112,7 +1112,7 @@ function vehicleNsTexture(key: string): HTMLCanvasElement | null {
     if (bike) {  // mũ bảo hiểm nửa đầu, màu theo biến thể (trắng/đỏ/xanh dương/đen)
       const hm = [{ m: '#eef0f2', h: '#ffffff' }, { m: '#c9402f', h: '#e8604f' }, { m: '#2f6fb0', h: '#5f9cd0' }, { m: '#2b2f36', h: '#4a515c' }][Math.floor(variant / 3) % 4];
       r(cx - 6, top - 12, 12, 10, DARK); r(cx - 5, top - 11, 10, 8, hm.m); r(cx - 5, top - 11, 10, 2, hm.h);
-      if (front) { r(cx - 4, top - 5, 8, 1, '#1a1815'); } else r(cx - 6, top - 5, 12, 5, DARK), r(cx - 5, top - 5, 10, 4, hm.m);
+      if (front) { r(cx - 4, top - 5, 8, 1, '#1a1815'); } else { r(cx - 6, top - 5, 12, 5, DARK); r(cx - 5, top - 5, 10, 4, hm.m); }
     }
     else { r(cx - 1, 0, 2, 1, DARK); r(cx - 4, 1, 8, 1, '#f0e2a0'); r(cx - 7, 2, 14, 1, '#e9d792'); r(cx - 10, 3, 20, 1, '#f0e2a0'); r(cx - 12, 4, 24, 2, '#d9c581'); }
     if (!bike && front) { r(cx - 7, h - 40, 14, 8, DARK); r(cx - 6, h - 39, 12, 6, '#c89b5c'); r(cx - 5, h - 42, 6, 3, '#4cae3b'); }

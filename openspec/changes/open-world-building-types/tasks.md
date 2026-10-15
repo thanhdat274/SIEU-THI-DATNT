@@ -13,7 +13,7 @@ Trạng thái 07/10/2026: phần THUẦN AN TOÀN của các task 1.1, 2.2b(D9),
 ## 1. Registry và instance
 
 - [ ] 1.1 `BuildingTypeDef` + registry (gộp `STORE_TYPES`); 4 loại cũ khai báo lại, golden PASS.
-- [ ] 1.2 `BuildingId` → string; `buildingPlacements[].typeId`; grep và thay mọi so sánh id cố định (`buildings.ts`, `store-layout.ts`, `simulation.ts`, `customers.ts`, `staff*.ts`, `viewport.ts`, `shop-lighting.ts`, `StoreLayoutModal`, `StorePlanogramModal`, `App.tsx`).
+- [ ] 1.2 **(13/10/2026: ĐÃ làm 1.2 + 2.1 — typecheck PASS. CÒN: renderer 4 loại, browser QA, test runtime, FIXTURE_SHOP.allowedBuildings→typeId + minTier.)** `BuildingId` → string; `buildingPlacements[].typeId`; grep và thay mọi so sánh id cố định (`buildings.ts`, `store-layout.ts`, `simulation.ts`, `customers.ts`, `staff*.ts`, `viewport.ts`, `shop-lighting.ts`, `StoreLayoutModal`, `StorePlanogramModal`, `App.tsx`). **2.1 `open_building`**: payload `{ type: 'open_building'; buildingTypeId; parcelId; originX; originY }` trong shared; `simulation.openBuilding()` kiểm typeId + trần + tiền/cấp/ownership; wire world-runtime + server replay. `yarn typecheck` **PASS** (2.48s, 13/10/2026). **CHƯA browser QA, CHƯA test runtime.**
 - [ ] 1.3 `FIXTURE_SHOP[].allowedBuildings` theo typeId; lọc món kệ theo `productFilter` của loại.
 
 ## 2. Mở tòa và loại mới

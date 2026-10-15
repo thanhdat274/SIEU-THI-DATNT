@@ -6,7 +6,7 @@ import { PixelTextureFactory } from './textures';
 import { loadSpriteAtlases, headLift, lampLift, walkerLook, atlasTexture } from './sprite-atlas';
 import { PixelCamera } from './camera';
 import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
-import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, parcelTrafficMultiplier, type LandParcel} from '@game/data';
+import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, parcelTrafficMultiplier, type LandParcel, buildingTypeOfInstance } from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -68,12 +68,23 @@ const MAIN_DOOR_TILES = DEFAULT_GEOMETRY.main.doorTiles;
 /** Vùng sàn tiệm chính có thể có: trong lô của nó, thu vào một ô cho hàng tường (không lẫn sàn tiệm xôi/quán ăn vặt cạnh tường chung). */
 const MAIN_FLOOR_RECT = PARCEL_MAP[DEFAULT_PLACEMENTS[0].parcelId].rect;
 
-/** Mặt tiền các tòa phụ: tên biển, màu mái hiên/biển. Hình học (biên, cửa, mái hiên) lấy từ `GameTileMap.buildings` theo vị trí đặt. */
-const FACADES = {
+/** Mặt tiền các tòa phụ: tên biển, màu mái hiên/biển. Hình học (biên, cửa, mái hiên) lấy từ `GameTileMap.buildings` theo vị trí đặt.
+ *  Key = buildingId (xoi/snack/drink) HOẶC typeId (grocery_branch/cafe/com_restaurant). parking_lot không có mặt tiền. */
+const FACADES: Readonly<Record<string, { name: string; awning: number; board: number; trim: number; text: number }>> = {
   xoi: { name: 'TIỆM XÔI', awning: 0xc0392b, board: 0x7a2f1d, trim: 0xe0b85a, text: 0xffe9b0 },
   snack: { name: 'QUÁN ĂN VẶT', awning: 0xd9822b, board: 0x8a4b12, trim: 0xf3c969, text: 0xfff0c8 },
   drink: { name: 'QUÁN NƯỚC', awning: 0x1f6f8b, board: 0x14506a, trim: 0x8fd3e8, text: 0xd9f4ff },
+  // --- 4 loại mới PROVISIONAL (6a.2 renderer) ---
+  grocery_branch: { name: 'CHI NHÁNH TẠP HÓA', awning: 0x27ae60, board: 0x1e8449, trim: 0x82e0aa, text: 0xd5f5e3 },
+  cafe: { name: 'QUÁN CÀ PHÊ', awning: 0x8b4513, board: 0x5d2e0c, trim: 0xd4a574, text: 0xfdebd0 },
+  com_restaurant: { name: 'QUÁN CƠM', awning: 0xc0392b, board: 0x922b21, trim: 0xf1948a, text: 0xfadbd8 },
+  // parking_lot: không có mặt tiền (bãi xe trống).
 } as const;
+const FALLBACK_FACADE = { name: 'CỬA HÀNG', awning: 0x4a6b8a, board: 0x2f4558, trim: 0xb8d0e6, text: 0xeaf4ff };
+
+/** Resolve typeId từ buildingId: DEFAULT_PLACEMENTS (4 tòa gốc) → fallback buildingTypeOfInstance (tòa mở thêm). */
+const DEFAULT_TYPEID_MAP = Object.fromEntries(DEFAULT_PLACEMENTS.map(p => [p.buildingId, p.typeId])) as Record<string, string | undefined>;
+const resolveTypeId = (buildingId: string): string | undefined => DEFAULT_TYPEID_MAP[buildingId] ?? buildingTypeOfInstance(buildingId)?.typeId;
 
 /** Một tòa phụ đã đặt: biên hiện tại (đã tính mở rộng bắc), cửa, mái hiên (px). */
 interface PlacedBuilding { id: Exclude<BuildingId, 'main'>; open: boolean; bounds: { left: number; right: number; top: number; bottom: number }; doorTiles: Array<{ x: number; y: number }>; awning: { x0: number; x1: number };
@@ -455,7 +466,9 @@ export class PixiGameViewport {
   private placedBuildings(): PlacedBuilding[] {
     const result: PlacedBuilding[] = [];
     for (const building of this.tileMap.buildings ?? []) {
-      if (building.id === 'main' || !building.bounds || !building.doorTiles || !building.awning) continue;
+      // Bỏ tiệm chính (typeId = grocery_main); chỉ xử lý tòa phụ (xoi, drink, snack, grocery_branch-N, cafe-N, com_restaurant-N, parking_lot-N).
+      if (resolveTypeId(building.id) === 'grocery_main') continue;
+      if (!building.bounds || !building.doorTiles || !building.awning) continue;
       let floor: Set<string> | undefined;
       if (building.floorTiles?.length) {
         floor = new Set(building.floorTiles.map(tile => `${tile.x},${tile.y}`));
@@ -615,9 +628,10 @@ export class PixiGameViewport {
    * và biển "CHO THUÊ". Vẽ vào groundLayer/wallLayer nên được dựng lại mỗi lần bản đồ đổi (mua tiệm).
    */
 
-  /** Mặt tiền tòa phụ (tiệm xôi, quán nước); dữ liệu màu/biển theo `FACADES`. */
+  /** Mặt tiền tòa phụ (tiệm xôi, quán nước); dữ liệu màu/biển theo `FACADES` tra theo typeId. */
   private buildBuildingFacade(placed: PlacedBuilding): void {
-    const facade = FACADES[placed.id];
+    const typeId = resolveTypeId(placed.id) ?? 'grocery_main';
+    const facade = FACADES[typeId] ?? FACADES[placed.id] ?? FALLBACK_FACADE;
     const { bounds } = placed;
     const frontY = bounds.bottom * TILE_SIZE;
     const doorX = placed.doorTiles[0].x * TILE_SIZE;
@@ -712,7 +726,7 @@ export class PixiGameViewport {
     for (const sprite of this.eastDecorSprites) sprite.destroy();
     this.eastDecorSprites = [];
     this.decorLampGlows = [];
-    const drink = this.placedBuildings().find(building => building.id === 'drink');
+    const drink = this.placedBuildings().find(building => resolveTypeId(building.id) === 'drink_shop');
     if (!drink || !drink.open) return; // Chưa mua hoặc đang thi công thì không hiển thị decor
     const DRINK_BOUNDS = drink.bounds;
     const drinkOpen = true;
@@ -901,7 +915,7 @@ export class PixiGameViewport {
       const floor = building.floor!;
       const has = (x: number, y: number) => floor.has(`${x},${y}`) && !building.doorTiles.some(door => door.x === x && door.y === y);
       const north = has(wx, wy - 1), south = has(wx, wy + 1), west = has(wx - 1, wy), east = has(wx + 1, wy);
-      const partition = building.id === 'xoi' ? 'wall_partition_left' : 'wall_partition_right';
+      const partition = resolveTypeId(building.id) === 'xoi_shop' ? 'wall_partition_left' : 'wall_partition_right';
       if (north || (east && west)) return 'wall_store_front';
       if (east) return 'wall_store_left';
       if (west) return 'wall_store_right';
@@ -929,7 +943,7 @@ export class PixiGameViewport {
               textureKey = extended.texture!;
             } else if (tileId === 4 && secondary && !touchesMainFloor) {
               const box = secondary.bounds;
-              if (worldY === box.top) textureKey = secondary.id === 'xoi' ? 'wall_partition_left' : 'wall_partition_right';
+              if (worldY === box.top) textureKey = resolveTypeId(secondary.id) === 'xoi_shop' ? 'wall_partition_left' : 'wall_partition_right';
               else if (worldY === box.bottom) textureKey = x === box.left ? 'wall_store_corner_bl' : x === box.right ? 'wall_store_corner_br' : 'wall_store_front';
               else textureKey = x === box.left ? 'wall_store_left' : 'wall_store_right';
             } else if (tileId === 4 && mainWallTexture(x, worldY)) {
@@ -993,7 +1007,9 @@ export class PixiGameViewport {
     for (const placed of this.placedBuildings()) {
       const sign = new Sprite(this.textures.getTexture(`sign_${placed.id}`));
       // Quán ăn vặt: biển ngay trên tường sau, rộng 4 ô trên sàn trong (lệch một ô so với mép trái).
-      sign.position.set((placed.bounds.left + (placed.id === 'snack' ? 1 : 0)) * TILE_SIZE, (placed.bounds.top - 1) * TILE_SIZE);
+      const typeId = resolveTypeId(placed.id);
+      const isSnack = typeId === 'snack_shop';
+      sign.position.set((placed.bounds.left + (isSnack ? 1 : 0)) * TILE_SIZE, (placed.bounds.top - 1) * TILE_SIZE);
       sign.zIndex = placed.bounds.top * TILE_SIZE;
       this.wallLayer.addChild(sign);
       this.swaySigns.push(sign);
@@ -2756,4 +2772,3 @@ export class PixiGameViewport {
     this.textures.destroy();
   }
 }
-

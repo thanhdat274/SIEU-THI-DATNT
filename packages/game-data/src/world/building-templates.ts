@@ -4,7 +4,10 @@
  */
 import type { StoreFixture } from '@game/shared';
 
-export type BuildingId = 'main' | 'xoi' | 'drink' | 'snack';
+/** Bốn tòa gốc (id cố định, có bảng dữ liệu riêng). */
+export type CoreBuildingId = 'main' | 'xoi' | 'drink' | 'snack';
+/** Id instance tòa: 4 id gốc hoặc `${typeId}-${n}` của tòa mở thêm (OpenSpec `open-world-building-types` D2). */
+export type BuildingId = string;
 
 export interface RelTile { x: number; y: number }
 
@@ -102,4 +105,7 @@ const SNACK: BuildingTemplate = {
   ],
 };
 
-export const BUILDING_TEMPLATES: Readonly<Record<BuildingId, BuildingTemplate>> = { main: MAIN, xoi: XOI, drink: DRINK, snack: SNACK };
+const CORE_TEMPLATES: Readonly<Record<CoreBuildingId, BuildingTemplate>> = { main: MAIN, xoi: XOI, drink: DRINK, snack: SNACK };
+/** Mẫu theo id instance; id không có (tòa mở thêm chưa đăng ký mẫu) tra ra undefined — dùng `hasOwnProperty` hoặc `buildingTemplateOf`. */
+export const BUILDING_TEMPLATES: Readonly<Record<BuildingId, BuildingTemplate>> = CORE_TEMPLATES;
+export const buildingTemplateOf = (id: BuildingId): BuildingTemplate | undefined => Object.prototype.hasOwnProperty.call(CORE_TEMPLATES, id) ? CORE_TEMPLATES[id as CoreBuildingId] : undefined;

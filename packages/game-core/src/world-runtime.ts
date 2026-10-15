@@ -426,6 +426,14 @@ export class WorldRuntime {
         success = this.simulation.reclaimWave(p.waveId).success;
       } else if (p.type === 'buy_parcel') {
         success = this.simulation.buyParcel(p.parcelId).success;
+      } else if (p.type === 'open_building') {
+        success = this.simulation.openBuilding(p.buildingTypeId, p.parcelId, p.originX, p.originY).success;
+      } else if (p.type === 'lease_parcel') {
+        success = this.simulation.leaseParcel(p.parcelId).success;
+      } else if (p.type === 'end_lease') {
+        success = this.simulation.endLease(p.parcelId).success;
+      } else if (p.type === 'pay_rent_debt') {
+        success = this.simulation.payRentDebt(p.parcelId).success;
       }
 
       if (success) {

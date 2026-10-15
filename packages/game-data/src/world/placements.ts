@@ -3,11 +3,14 @@
  * được SUY RA từ mẫu tòa + gốc vị trí đặt. Với `DEFAULT_PLACEMENTS`, mọi giá trị trùng hằng số trước refactor (golden).
  */
 import type { BuildingPlacementRecord, StoreFixture } from '@game/shared';
+import { BUILDING_TYPE_DEFS, type BuildingTypeId, buildingTypeOfInstance } from './building-types';
 import { BUILDING_TEMPLATES, MAIN_EAST_WING_COLUMNS, NORTH_EXPANSION_ROWS, type BuildingId, type BuildingTemplate, type RelTile } from './building-templates';
 import { baseFloorTiles, checkFootprintTiles, footprintFloor, tileKey, type Tile } from './footprint';
 import { TREE_PROPS } from './infrastructure';
 import { ALL_PARCELS, resolveParcel } from './parcels';
 import { rectContains, type WorldRect } from './world-grid';
+/** Re-export buildingTypeOfInstance để dùng qua @game/data. */
+export { buildingTypeOfInstance };
 
 /** Biên một tòa nhà (ô, tính cả tường). */
 export interface BuildingBounds { left: number; right: number; top: number; bottom: number }
@@ -18,20 +21,27 @@ export interface BuildingPlacement {
   /** Gốc = góc trên-trái biên gốc của tòa (tọa độ thế giới). */
   originX: number;
   originY: number;
+  /**
+   * Kiểu tòa (OpenSpec `open-world-building-types` 1.2): 'grocery_main' | 'xoi_shop' | 'drink_shop' | 'snack_shop'
+   * | 'grocery_branch' | 'cafe' | 'parking_lot' | 'com_restaurant'. Thiếu = suy từ buildingId (golden).
+   */
+  typeId?: BuildingTypeId;
   /** Lô đã sở hữu (ban đầu = 1 lô; D7b mở rộng sang lô kề thì thêm vào danh sách). */
   parcelIds?: string[];
   /** Ô sàn đã xây thêm ngoài sàn gốc (tọa độ thế giới); chỉ tiệm chính dùng (OpenSpec `open-world-main-expansion`). */
   floorTiles?: Tile[];
   /** Đang thi công sau khi dời: mở lại khi ngày ≥ giá trị này (xem `relocateBuilding` ở game-core). */
   constructionUntilDay?: number;
+  /** Tòa bị đóng cửa vì nợ tiền thuê đất ≥ 3 ngày (OpenSpec `open-world-land-lease` 2.2). */
+  closedForRent?: boolean;
 }
 
 /** Thứ tự = thứ tự ưu tiên khi hai tòa chạm cùng một ô (tường chung thuộc tòa đứng trước). */
 export const DEFAULT_PLACEMENTS: readonly BuildingPlacement[] = [
-  { buildingId: 'main', parcelId: 'lot-center', originX: 6, originY: 3 },
-  { buildingId: 'xoi', parcelId: 'lot-west', originX: 0, originY: 3 },
-  { buildingId: 'drink', parcelId: 'lot-east-2', originX: 26, originY: 3 },
-  { buildingId: 'snack', parcelId: 'lot-east-1', originX: 21, originY: 3 },
+  { buildingId: 'main', parcelId: 'lot-center', originX: 6, originY: 3, typeId: 'grocery_main' },
+  { buildingId: 'xoi', parcelId: 'lot-west', originX: 0, originY: 3, typeId: 'xoi_shop' },
+  { buildingId: 'drink', parcelId: 'lot-east-2', originX: 26, originY: 3, typeId: 'drink_shop' },
+  { buildingId: 'snack', parcelId: 'lot-east-1', originX: 21, originY: 3, typeId: 'snack_shop' },
 ];
 
 export interface PlacementGeometry {
@@ -51,8 +61,17 @@ export interface PlacementGeometry {
 
 const abs = (p: BuildingPlacement, t: RelTile) => ({ x: p.originX + t.x, y: p.originY + t.y });
 
+/** Lấy mẫu tòa cho placement: BUILDING_TEMPLATES (4 tòa gốc) → fallback buildingTypeOfInstance.typeId (tòa mới). */
+const templateForPlacement = (placement: BuildingPlacement): BuildingTemplate | undefined => {
+  const direct = BUILDING_TEMPLATES[placement.buildingId];
+  if (direct) return direct;
+  const typeDef = buildingTypeOfInstance(placement.buildingId);
+  return typeDef?.template;
+};
+
 export function placementGeometry(placement: BuildingPlacement): PlacementGeometry {
-  const template = BUILDING_TEMPLATES[placement.buildingId];
+  const template = templateForPlacement(placement);
+  if (!template) throw new Error(`No template for ${placement.buildingId}`);
   const { originX: ox, originY: oy } = placement;
   const bounds: BuildingBounds = { left: ox, right: ox + template.width - 1, top: oy, bottom: oy + template.height - 1 };
   const northRows = NORTH_EXPANSION_ROWS * (template.expansionPlotIds?.length ?? 0);
@@ -289,6 +308,7 @@ export function resolvePlacements(records: readonly BuildingPlacementRecord[] | 
       ...(found?.floorTiles?.length ? { floorTiles: found.floorTiles.map(tile => ({ x: tile.x, y: tile.y })) } : {}),
       ...(northTiles?.length ? { floorTiles: mergeTiles(found?.floorTiles ?? [], northTiles) } : {}),
       ...(found?.constructionUntilDay ? { constructionUntilDay: found.constructionUntilDay } : {}),
+      ...(found?.closedForRent ? { closedForRent: true } : {}),
     };
   });
   // Migration có thể làm chosen khác DEFAULT_PLACEMENTS → không cache nếu có floorTiles
@@ -360,14 +380,20 @@ export function placementsProblem(placements: readonly BuildingPlacementRecord[]
     seen.add(record.buildingId);
   }
   const relevant = placements.filter(record => present.has(record.buildingId));
-  const main = relevant.find(record => record.buildingId === 'main');
+  // Xác định typeId: có typeId trong bản ghi thì dùng, không thì tra buildingTypeOfInstance (4 tòa gốc) → fallback typeId của loại.
+  const getTypeId = (r: BuildingPlacementRecord): BuildingTypeId | undefined => {
+    if (r.typeId) return r.typeId as BuildingTypeId;
+    return buildingTypeOfInstance(r.buildingId)?.typeId;
+  };
+  const isMain = (r: BuildingPlacementRecord) => getTypeId(r) === 'grocery_main';
+  const main = relevant.find(isMain);
   if (main && !samePlacement(main, defaultPlacementOf('main'))) return 'main_fixed';
-  const resolved = (record: BuildingPlacementRecord): BuildingPlacement => ({ buildingId: record.buildingId as BuildingId, parcelId: record.parcelId, originX: record.originX, originY: record.originY, ...(record.parcelIds ? { parcelIds: record.parcelIds } : {}), ...(record.floorTiles ? { floorTiles: record.floorTiles } : {}) });
-  const placed = [...relevant.filter(record => record.buildingId === 'main' || present.has(record.buildingId)).map(resolved)];
+  const resolved = (record: BuildingPlacementRecord): BuildingPlacement => ({ buildingId: record.buildingId as BuildingId, parcelId: record.parcelId, originX: record.originX, originY: record.originY, typeId: record.typeId as BuildingTypeId | undefined, ...(record.parcelIds ? { parcelIds: record.parcelIds } : {}), ...(record.floorTiles ? { floorTiles: record.floorTiles } : {}) });
+  const placed = [...relevant.filter(r => isMain(r) || present.has(r.buildingId)).map(resolved)];
   if (!main) placed.unshift(defaultPlacementOf('main'));
   for (const record of relevant) {
-    if (record.buildingId === 'main') continue;
-    const problem = validatePlacement(record, placed.filter(other => other.buildingId !== record.buildingId), ownedParcelIds);
+    if (isMain(record)) continue;
+    const problem = validatePlacement(record, placed.filter(other => getTypeId(other) !== 'grocery_main'), ownedParcelIds);
     if (problem) return problem;
   }
   // D7b: lô đã lấn (`parcelIds`) phải có thật và không thuộc tòa khác.
@@ -393,7 +419,7 @@ export function layoutBuildings(placements: readonly BuildingPlacement[], ownedP
     const extra = geo.template.hasWarehouse ? undefined : placement.floorTiles;
     const top = extra?.length ? Math.min(placementTop(geo, ownedPlotIds), ...extra.map(tile => tile.y - 1)) : placementTop(geo, ownedPlotIds);
     return {
-      id: placement.buildingId, open: !placement.constructionUntilDay, top, bounds: geo.bounds, maxBounds: geo.maxBounds,
+      id: placement.buildingId, open: !placement.constructionUntilDay && !placement.closedForRent, top, bounds: geo.bounds, maxBounds: geo.maxBounds,
       doorTiles: geo.doorTiles, entranceTile: geo.entranceTile, awning: geo.awning, eaveY: geo.eaveY,
       ...(extra?.length ? { floorTiles: extra.map(tile => ({ x: tile.x, y: tile.y })) } : {}),
     };

@@ -2,7 +2,7 @@ import { COLD_WAREHOUSE_CAPACITY, MAX_FOOTPRINT_TILES, UNITS_PER_WAREHOUSE_CELL,
 import {
   BUILDINGS, DECOR_MAP, EXPANSION_TILE_PRICE, ALL_PARCELS, resolveParcel, FIXTURE_SHOP, LAND_PLOTS, MAIN_EAST_WING_PLOT_IDS, MAP_ORIGIN_Y, PARCEL_MAP, STORE_BOUNDS, WAREHOUSE_DOOR_LEFT, WAREHOUSE_TIERS, STORAGE_RACK_CELL_BONUS, MAX_STORAGE_RACKS,
   buildingOfTiles, checkFootprintTiles, placementsProblem, placementOriginY, defaultPlacementOf, entranceOf, layoutBuildings, resolvePlacements, validatePlacement, expansionBudgetAtLevel, expansionTilesUsed, generateStarterTileMap, normalizePlacements, placementFloor, placementGeometry, type BuildingId, type BuildingPlacement,
-  baseFloorTiles, legacyWingFloorTiles, tileKey, inRect, adjacentParcels, footprintBlockers,
+  baseFloorTiles, legacyWingFloorTiles, tileKey, inRect, adjacentParcels, footprintBlockers, DEFAULT_PLACEMENTS, buildingTypeOfInstance,
   RECLAMATION_WAVES, WAVE_EXPANSION_BONUS,
 } from '@game/data';
 
@@ -63,10 +63,13 @@ export function relocateMisplacedFixtures(fixtures: StoreFixture[], stored: Stor
   const misplaced = new Set<string>();
   for (const fixture of fixtures) {
     if (fixture.parentId || fixture.type.startsWith('warehouse_') || !fixture.shopId) continue;
-    const allowed = FIXTURE_SHOP.find(item => item.id === fixture.shopId)?.allowedBuildings;
-    if (!allowed) continue;
+    const shopItem = FIXTURE_SHOP.find(item => item.id === fixture.shopId);
+    const typeIds = shopItem?.typeIds;
+    if (!typeIds) continue;
     const home = buildingOfTiles(footprint(fixture), buildings);
-    if (home && !allowed.includes(home)) misplaced.add(fixture.id);
+    if (!home) continue;
+    const typeDef = buildingTypeOfInstance(home);
+    if (!typeDef || !typeIds.includes(typeDef.typeId)) misplaced.add(fixture.id);
   }
   if (misplaced.size === 0) return { fixtures, stored, movedIds: [] };
   const moving = (fixture: StoreFixture) => misplaced.has(fixture.id) || (!!fixture.parentId && misplaced.has(fixture.parentId));
@@ -111,7 +114,10 @@ export function validateStoreLayout(save: SaveGameData, map: GameTileMap): Layou
     const home = buildingOfTiles(footprint(fixture), map.buildings);
     if (!home) return { error: 'outside_floor' };
     const shopItem = fixture.shopId ? FIXTURE_SHOP.find(item => item.id === fixture.shopId) : undefined;
-    if (shopItem?.allowedBuildings && !shopItem.allowedBuildings.includes(home)) return { error: 'wrong_building', blockedFixtureIds: [fixture.id] };
+    if (shopItem?.typeIds) {
+      const typeDef = buildingTypeOfInstance(home);
+      if (!typeDef || !shopItem.typeIds.includes(typeDef.typeId)) return { error: 'wrong_building', blockedFixtureIds: [fixture.id] };
+    }
     buildingOf.set(fixture.id, home);
   }
   // Mỗi tòa mua thêm đã mở phải có quầy thu ngân riêng (mỗi tòa một quầy và một hàng đợi).
@@ -166,7 +172,7 @@ export function validateStoreLayout(save: SaveGameData, map: GameTileMap): Layou
     const idx = tileIndex(frame, x, y);
     return tileInMap(frame, x, y) && ground[idx] === 3 && !map.collisionLayer[idx];
   });
-  if (warehouseDoorWalkable && ![WAREHOUSE_DOOR_LEFT, WAREHOUSE_DOOR_LEFT + 1].some(x => reachFrom('main').has(key(x, STORE_BOUNDS.top + 1)))) invalid.push('warehouse_door');
+  if (warehouseDoorWalkable && ![WAREHOUSE_DOOR_LEFT, WAREHOUSE_DOOR_LEFT + 1].some(x => reachFrom('main').has(key(x, STORE_BOUNDS.top + 1)) || reachFrom('main').has(key(x, STORE_BOUNDS.top)))) invalid.push('warehouse_door');
   return invalid.length ? { error: 'path_blocked', blockedFixtureIds: invalid } : {};
 }
 
@@ -278,7 +284,9 @@ export function relocationFee(save: Pick<SaveGameData, 'storeLayout'>, buildingI
 export function relocateBuilding(save: SaveGameData, buildingId: string, placement: { parcelId: string; originX: number }): LayoutResult {
   if (save.worldTime.isStoreOpen) return { error: 'store_open' };
   const plot = LAND_PLOTS.find(item => item.buildingId === buildingId);
-  if (!plot || buildingId === 'main') return { error: 'invalid_placement' };
+  // Tiệm chính không dời được (Bước 3): kiểm theo typeId (loại grocery_main) thay vì string cố định.
+  const mainType = DEFAULT_PLACEMENTS.find(p => p.buildingId === buildingId)?.typeId ?? buildingTypeOfInstance(buildingId)?.typeId;
+  if (!plot || mainType === 'grocery_main') return { error: 'invalid_placement' };
   const id = buildingId as BuildingId;
   const owned = new Set(save.storeLayout.unlockedPlotIds ?? []);
   if (!owned.has(plot.id)) return { error: 'plot_locked' };
@@ -287,9 +295,23 @@ export function relocateBuilding(save: SaveGameData, buildingId: string, placeme
   if (!old) return { error: 'plot_locked' };
   const candidate: BuildingPlacement = { buildingId: id, parcelId: placement.parcelId, originX: placement.originX, originY: placementOriginY(id, placement.parcelId) };
   if (candidate.parcelId === old.parcelId && candidate.originX === old.originX) return { error: 'invalid_placement' };
-  // Ô sàn mở rộng dời cùng tòa (cùng `dx`, cùng hàng); lô đã lấn (`parcelIds`) trả lại, tòa chỉ giữ lô mới.
+  // Ô sàn mở rộng dời cùng tòa (cùng `dx`, cùng hàng); cập nhật parcelIds tương ứng các ô sàn sau khi dời.
   const dxMove = candidate.originX - old.originX;
-  if (old.floorTiles?.length) candidate.floorTiles = old.floorTiles.map(tile => ({ x: tile.x + dxMove, y: tile.y + (candidate.originY - old.originY) }));
+  if (old.floorTiles?.length) {
+    candidate.floorTiles = old.floorTiles.map(tile => ({ x: tile.x + dxMove, y: tile.y + (candidate.originY - old.originY) }));
+    const covered = new Set<string>([candidate.parcelId]);
+    for (const tile of candidate.floorTiles) {
+      for (const pid of (save.storeLayout.ownedParcelIds ?? [])) {
+        const p = resolveParcel(pid);
+        if (p && inRect(p.rect, tile.x, tile.y)) {
+          covered.add(pid);
+        }
+      }
+    }
+    if (covered.size > 1) {
+      candidate.parcelIds = [...covered];
+    }
+  }
   const problem = validatePlacement(candidate, current.filter(item => item.buildingId !== id), save.storeLayout.ownedParcelIds ?? []);
   if (problem) return { error: placementFailure(problem) };
   const rest = current.filter(item => item.buildingId !== id);
@@ -427,7 +449,7 @@ export function sharedExpansionBudget(save: SaveGameData): { used: number; max: 
 /** Ngân sách ô mở rộng của tiệm chính (giữ nguyên cho UI cũ): đã dùng (cánh đông cũ + ô sàn mở rộng), tối đa theo cấp + đợt đã mở, và còn lại. */
 export function expansionBudget(save: SaveGameData): { used: number; max: number; remaining: number } {
   const owned = new Set(save.storeLayout.unlockedPlotIds ?? []);
-  const main = normalizePlacements(save.storeLayout.buildingPlacements, owned).find(placement => placement.buildingId === 'main') as BuildingPlacement;
+  const main = normalizePlacements(save.storeLayout.buildingPlacements, owned).find(placement => buildingTypeOfInstance(placement.buildingId)?.typeId === 'grocery_main') as BuildingPlacement;
   const used = expansionTilesUsed(placementGeometry(main).coreBounds, owned, main.floorTiles);
   const max = expansionBudgetMax(save);
   return { used, max, remaining: Math.max(0, max - used) };

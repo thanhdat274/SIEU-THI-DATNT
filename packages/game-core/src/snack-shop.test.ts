@@ -117,7 +117,7 @@ export function runSnackShopTests(): void {
   {
     for (const id of ['chao_xao', 'chao_chien']) {
       const item = FIXTURE_SHOP.find(x => x.id === id)!;
-      assert.deepEqual(item.allowedBuildings, ['snack']);
+      assert.deepEqual(item.typeIds, ['snack_shop']);
       assert.equal(item.functional, true);
     }
     for (const id of ['bap_xao_tp', 'ca_vien_chien_tp']) {

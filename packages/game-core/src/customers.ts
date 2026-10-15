@@ -12,7 +12,7 @@ import {
   tileIndex,
   tileInMap,
 } from '@game/shared';
-import { BUILDING_MAP, BUILDING_TRAFFIC_SHARE, foodClusterMultiplier, PLAY_REGION, buildingAt, entranceOf, fixtureBuilding, inMainExpansionZone, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS, type BuildingId } from '@game/data';
+import { BUILDING_MAP, BUILDING_TRAFFIC_SHARE, foodClusterMultiplier, PLAY_REGION, buildingAt, entranceOf, fixtureBuilding, inMainExpansionZone, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS, type BuildingId, DEFAULT_PLACEMENTS, buildingTypeOfInstance } from '@game/data';
 import { arrivalModeWeights, pickArrivalMode } from './arrival-mode';
 import { CollisionSystem } from './collision';
 import { findPath, findPathToAny, GridPoint, tileCenter } from './pathfinding';
@@ -277,6 +277,9 @@ export class CustomerManager {
 
     // Khách vào đúng tòa nhà của kệ mục tiêu (kệ trong tiệm xôi thì vào cửa tiệm xôi); xe đỗ ở chỗ gần cửa tòa đó.
     const buildingId = fixtureBuilding(target, tileMap.buildings) ?? 'main';
+    // Xác định typeId: DEFAULT_PLACEMENTS (4 tòa gốc) → fallback buildingTypeOfInstance (tòa mở thêm).
+    const defaultPlacement = DEFAULT_PLACEMENTS.find(p => p.buildingId === buildingId);
+    const typeId = defaultPlacement?.typeId ?? buildingTypeOfInstance(buildingId)?.typeId;
 
     // Xác định phương thức ghé tiệm (arrivalMode)
     let arrivalMode: CustomerArrivalMode = 'walk';
@@ -292,7 +295,7 @@ export class CustomerManager {
     const entrance = entranceOf(buildingId, tileMap.buildings);
     const distanceToDoor = (s: Vector2D) => Math.abs(s.x / TILE_SIZE - (entrance.x + 0.5));
     // Chỉ chỗ đỗ trong vòng 15 ô tới cửa tòa; tiệm chính giữ cách chọn cũ (xoay vòng), tòa phụ chọn chỗ gần cửa nhất.
-    const nearDoor = (spots: ReadonlyArray<Vector2D>) => spots.filter(isFree).filter(s => distanceToDoor(s) <= 15).sort((a, b) => buildingId === 'main' ? 0 : distanceToDoor(a) - distanceToDoor(b));
+    const nearDoor = (spots: ReadonlyArray<Vector2D>) => spots.filter(isFree).filter(s => distanceToDoor(s) <= 15).sort((a, b) => typeId === 'grocery_main' ? 0 : distanceToDoor(a) - distanceToDoor(b));
     const availableSpots = nearDoor(STREET_PARKING_SPOTS);
     const availableCarSpots = nearDoor(CAR_PARKING_SPOTS);
 
@@ -324,14 +327,14 @@ export class CustomerManager {
 
     if (arrivalMode === 'motorbike') {
       if (availableSpots.length > 0) {
-        vehicleSpot = availableSpots[buildingId === 'main' ? this.customerSequence % availableSpots.length : 0];
+        vehicleSpot = availableSpots[typeId === 'grocery_main' ? this.customerSequence % availableSpots.length : 0];
         vehicleVariant = this.customerSequence % 3;
       } else {
         arrivalMode = 'walk';
       }
     } else if (arrivalMode === 'car') {
       if (availableCarSpots.length > 0) {
-        vehicleSpot = availableCarSpots[buildingId === 'main' ? this.customerSequence % availableCarSpots.length : 0];
+        vehicleSpot = availableCarSpots[typeId === 'grocery_main' ? this.customerSequence % availableCarSpots.length : 0];
         vehicleVariant = this.customerSequence % 3;
       } else {
         arrivalMode = 'walk';

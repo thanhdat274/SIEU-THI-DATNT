@@ -424,7 +424,7 @@ export interface SecurityState {
   policeCases: PoliceCase[];
 }
 
-export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit' | 'tax';
+export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit' | 'tax' | 'rent';
 
 export interface LedgerEntry {
   id: string;
@@ -438,6 +438,8 @@ export interface LedgerEntry {
   timestamp: string;
   /** Chi nhánh phát sinh dòng này; thiếu = hub (`branch-chain`). */
   branchId?: string;
+  /** Mã thực thể tòa nhà phát sinh dòng này (D5); ví dụ 'main', 'snack-1', 'xoi_shop', v.v. */
+  buildingInstanceId?: string;
 }
 
 /** Thị trường động: mọi khóa là chuỗi để thêm thời tiết/sự kiện/thẻ bằng dữ liệu, không sửa lõi. */
@@ -642,6 +644,16 @@ export interface SkillState {
   chosenPerks: string[];
 }
 
+export interface BuildingDailyReport {
+  buildingInstanceId: string;
+  revenue: number;
+  cogs: number;
+  transactionsCount: number;
+  itemsSold: number;
+  grossProfit: number;
+  netProfit: number;
+}
+
 export interface DailyRecord {
   day: number;
   closedAt?: string;
@@ -651,6 +663,8 @@ export interface DailyRecord {
   spoilageCost: number; // Value of goods spoiled on this day
   wagesPaid: number; // Wages paid to staff on this day
   maintenanceCost?: number; // Chi phí bảo trì/sửa/mua mới nội thất trong ngày (thiếu = 0)
+  equipmentCost?: number; // Chi phí thiết bị / mua camera an ninh / máy móc ngoài bảo trì định kỳ (thiếu = 0)
+  rentCost?: number; // Tiền thuê đất trong ngày (thiếu = 0)
   theftCost?: number; // Giá vốn hàng và tiền bị trộm trong ngày (thiếu = 0)
   theftRecovered?: number; // Tiền thu hồi từ phạt kẻ trộm và công an trong ngày (thiếu = 0)
   counterfeitLoss?: number; // Mệnh giá tiền giả nhận nhầm trong ngày (thiếu = 0)
@@ -660,7 +674,7 @@ export interface DailyRecord {
   taxBackPaid?: number; // Thuế truy thu khi kiểm tra, ghi vào ngày bị kiểm tra
   taxPenalty?: number; // Tiền phạt khi kiểm tra thuế trong ngày
   grossProfit: number; // revenue - cogs
-  netProfit: number; // revenue - cogs - spoilageCost - wagesPaid
+  netProfit: number; // revenue - cogs - spoilageCost - wagesPaid - maintenanceCost - equipmentCost - theft - tax...
   customersServed: number; // Distinct customers served
   transactionsCount: number; // Distinct sales transactions
   itemsSold: number; // Total units of items sold
@@ -669,6 +683,7 @@ export interface DailyRecord {
   stallServings?: Record<string, number>; // Suất bán ra theo id quầy ăn uống trong ngày (tính vào mục tiêu ngày hội)
   stallRevenue?: Record<string, number>; // Doanh thu theo id quầy trong ngày (đã nằm trong `revenue`; thiếu ở ngày cũ)
   stallCogs?: Record<string, number>; // Giá vốn theo id quầy trong ngày (đã nằm trong `cogs`; thiếu ở ngày cũ)
+  buildingReports?: Record<string, BuildingDailyReport>; // Báo cáo kinh doanh theo từng tòa (D5)
   outOfStockWalkouts?: number; // Khách bỏ về vì kệ món đã chọn hết hàng
   priceWalkouts?: number; // Khách bỏ hàng vì giá cao hơn giá thị trường
   averageStars?: number;
@@ -947,6 +962,12 @@ export interface StoreLayout {
    * đưa cả 4 lô W0 vào đây; lô đợt mới chỉ thêm sau khi `buy_parcel`. Thiếu = chưa ghi (save cũ).
    */
   ownedParcelIds?: string[];
+  /**
+   * Quyền sử dụng lô đất (OpenSpec open-world-land-lease 3.1 schema 10).
+   * Key = parcelId, value = { kind: 'owned' | 'leased', ... }.
+   * Migration 9→10 điền từ ownedParcelIds (tất cả = owned).
+   */
+  parcelTenure?: Record<string, { kind: 'owned' | 'leased'; boughtBy?: string; day?: number; leasedBy?: string; sinceDay?: number; paidTotal?: number; debtDays?: number }>;
 }
 
 export interface BuildingPlacementRecord {
@@ -975,6 +996,8 @@ export interface BuildingPlacementRecord {
    * dùng typeId làm nguồn là việc SAU (chờ máy thật), KHÔNG ở task thuần schema này.
    */
   typeId?: string;
+  /** Tòa bị đóng cửa vì nợ tiền thuê đất ≥ 3 ngày (OpenSpec `open-world-land-lease` 2.2). Trả nợ xong sẽ mở lại. */
+  closedForRent?: boolean;
 }
 
 /** Vị trí chọn khi mua tòa (lô + gốc x), tùy chọn. */
@@ -989,6 +1012,7 @@ export function isBuildingPlacementRecord(value: unknown): value is BuildingPlac
   if (!isRecord(value) || !nonEmptyString(value.buildingId) || !nonEmptyString(value.parcelId)
     || !Number.isSafeInteger(value.originX) || !Number.isSafeInteger(value.originY)) return false;
   if (value.constructionUntilDay !== undefined && !(Number.isSafeInteger(value.constructionUntilDay) && Number(value.constructionUntilDay) >= 1)) return false;
+  if (value.closedForRent !== undefined && typeof value.closedForRent !== 'boolean') return false;
   // parcelIds là danh sách id lô (tùy chọn)
   if (value.parcelIds !== undefined && (!Array.isArray(value.parcelIds) || value.parcelIds.some(id => !nonEmptyString(id)))) return false;
   // builtBy là accountId/'local' của người xây (tùy chọn — nếu có phải là chuỗi không rỗng)
@@ -1092,6 +1116,7 @@ export interface SaveGameData {
   staffSchedule?: Record<string, StaffShift>;
   wageDebt?: number;
   processedPayrollDayIds?: number[];
+  processedRentDayIds?: number[];
   autoBuyEnabled?: boolean;
   /** Mỗi sáng tự nhập nguyên liệu cho quầy ăn uống đã mở (độc lập với quy tắc theo mặt hàng). */
   autoBuyStalls?: boolean;
@@ -1357,7 +1382,13 @@ export type GameCommandPayload =
   | { type: 'buy_storage_rack' }
   // Khai hoang đất (OpenSpec `open-world-land-reclamation` D3/D4)
   | { type: 'reclaim_wave'; waveId: string }
-  | { type: 'buy_parcel'; parcelId: string };
+  | { type: 'buy_parcel'; parcelId: string }
+  // Mở tòa loại mới (OpenSpec `open-world-building-types` 2.1)
+  | { type: 'open_building'; buildingTypeId: string; parcelId: string; originX: number; originY: number }
+  // Thuê đất (OpenSpec `open-world-land-lease` 2.1)
+  | { type: 'lease_parcel'; parcelId: string }
+  | { type: 'end_lease'; parcelId: string }
+  | { type: 'pay_rent_debt'; parcelId: string };
 
 export interface GameCommand {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
@@ -1408,7 +1439,7 @@ export function isGameAvatar(value: unknown): value is GameAvatar {
     (value.displayName === undefined || (typeof value.displayName === 'string' && value.displayName.length <= 64));
 }
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 9;
+export const CURRENT_SAVE_SCHEMA_VERSION = 10;
 
 /** Trạng thái thế giới mở (OpenSpec `open-world-land-reclamation`): đợt đã mở & đang thi công. */
 export interface WorldOpenState {
@@ -1445,7 +1476,7 @@ export interface SaveValidationResult {
   data?: SaveGameData;
 }
 
-const OPTIONAL_SAVE_ARRAYS = ['staff', 'processedPayrollDayIds', 'pendingOrders', 'holdingArea', 'closedDayIds', 'completedCheckoutIds', 'processedAutoBuyDayIds', 'autoBuyRules', 'customerCredits', 'ledger'] as const;
+const OPTIONAL_SAVE_ARRAYS = ['staff', 'processedPayrollDayIds', 'processedRentDayIds', 'pendingOrders', 'holdingArea', 'closedDayIds', 'completedCheckoutIds', 'processedAutoBuyDayIds', 'autoBuyRules', 'customerCredits', 'ledger'] as const;
 const OPTIONAL_LAYOUT_ARRAYS = ['storedFixtures', 'unlockedPlotIds', 'decorOwned', 'buildingPlacements', 'ownedParcelIds'] as const;
 
 /** Quy tắc tự nhập đúng hình dạng; nội dung (sản phẩm, nhà cung cấp, giới hạn) do `setAutoBuyConfig` kiểm tiếp. */
@@ -1523,7 +1554,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
   // của save cũ vẫn nằm trong `unlockedPlotIds` và được bản đồ đọc như ô sàn mở rộng đã dùng (xem `mainFloorTiles` ở game-data).
   // Nâng lên schema hiện tại + gieo trường world-open (đợt 0 đã mở, 4 lô W0 đã sở hữu) cho v6–v7 và v1–v5.
   const migrateToW7 = (m: SaveGameData): void => {
-    m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+    m.schemaVersion = 7;
     m.storeLayout.storedFixtures = m.storeLayout.storedFixtures ?? [];
     m.storeLayout.unlockedPlotIds = m.storeLayout.unlockedPlotIds ?? [];
     m.storeLayout.ownedParcelIds = m.storeLayout.ownedParcelIds ?? ownedParcelIdsDefault();
@@ -1534,7 +1565,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
   // `ownedParcelIds` GIỮ string[] như trước (KHÔNG đổi thành bản ghi {id,boughtBy,day}) để tương thích land-reclamation đã
   // implement (`simulation.buyParcel` push string, `store-layout` đọc string[]); bản ghi lô đầy đủ theo D4 đạt qua field bổ sung/ghi chú, không breaking.
   const migrateToW8 = (m: SaveGameData): void => {
-    m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+    m.schemaVersion = 8;
     for (const p of m.storeLayout.buildingPlacements ?? []) {
       if (p.builtBy === undefined) p.builtBy = 'local';
     }
@@ -1543,7 +1574,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
   // chờ máy thật — task này CHỈ chuẩn bị schema). Chỉ điền khi CHƯA có (KHÔNG ghi đè typeId do custom/dữ liệu đặt).
   // Các buildingId khác giữ nguyên, không suy diễn.
   const migrateToW9 = (m: SaveGameData): void => {
-    m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+    m.schemaVersion = 9;
     const TYPEID_BY_LEGACY_BUILDING: Record<string, string> = {
       main: 'grocery_main',
       xoi: 'xoi_shop',
@@ -1556,11 +1587,31 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
       }
     }
   };
+  // 9 → 10 (open-world-land-lease 3.1): điền `parcelTenure` từ `ownedParcelIds` (mọi lô = owned).
+  // Migration 9→10 chỉ điền khi CHƯA có `parcelTenure`; nếu đã có (save thử schema 10) thì giữ nguyên.
+  // `ownedParcelIds` giữ nguyên để tương thích land-reclamation (`simulation.buyParcel` push string).
+  const migrateToW10 = (m: SaveGameData): void => {
+    m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+    if (m.storeLayout.parcelTenure) return; // Đã có (save schema 10+)
+    const owned = m.storeLayout.ownedParcelIds ?? [];
+    const tenure: Record<string, { kind: 'owned'; day: number; boughtBy: string }> = {};
+    for (const pid of owned) {
+      tenure[pid] = { kind: 'owned', day: 1, boughtBy: 'local' };
+    }
+    // W0 luôn owned: gieo 4 lô mặc định nếu parcelTenure rỗng
+    if (Object.keys(tenure).length === 0) {
+      for (const pid of W0_OWNED_PARCEL_IDS) {
+        tenure[pid] = { kind: 'owned', day: 1, boughtBy: 'local' };
+      }
+    }
+    m.storeLayout.parcelTenure = tenure;
+  };
   if ((value.schemaVersion === 1 || value.schemaVersion === 2 || value.schemaVersion === 3 || value.schemaVersion === 4 || value.schemaVersion === 5) && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW7(migrated);
     migrateToW8(migrated);
     migrateToW9(migrated);
+    migrateToW10(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v6 → v7 (open-world-land-reclamation): save cũ không có `world`/`ownedParcelIds` → chỉ mở đợt 0 và W0 đã sở hữu.
@@ -1569,20 +1620,29 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW7(migrated);
     migrateToW8(migrated);
     migrateToW9(migrated);
+    migrateToW10(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v7 → hiện tại (open-world-coop-land D4): save v7 ĐÃ có `world`/`ownedParcelIds` (v6 đã gieo), chỉ cần điền
-  // `builtBy` (W8) + `typeId` (W9). Trả `data` như v6 để caller nạp được save đã migrate.
+  // `builtBy` (W8) + `typeId` (W9) + `parcelTenure` (W10). Trả `data` như v6 để caller nạp được save đã migrate.
   if (value.schemaVersion === 7 && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW8(migrated);
     migrateToW9(migrated);
+    migrateToW10(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
-  // v8 → hiện tại (open-world-building-types D8): save v8 đã có `builtBy`, chỉ cần gắn `typeId` (W9).
+  // v8 → hiện tại (open-world-building-types D8): save v8 đã có `builtBy`, chỉ cần gắn `typeId` (W9) + `parcelTenure` (W10).
   if (value.schemaVersion === 8 && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW9(migrated);
+    migrateToW10(migrated);
+    return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
+  }
+  // v9 → 10 (open-world-land-lease 3.1): save v9 có typeId, chỉ cần điền `parcelTenure` (W10).
+  if (value.schemaVersion === 9 && isSaveGameData(value)) {
+    const migrated = structuredClone(value) as SaveGameData;
+    migrateToW10(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   if (value.schemaVersion < CURRENT_SAVE_SCHEMA_VERSION) {
@@ -1733,6 +1793,10 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'buy_storage_rack': return true;
     case 'reclaim_wave': return nonEmptyString(p.waveId);
     case 'buy_parcel': return nonEmptyString(p.parcelId);
+    case 'open_building': return nonEmptyString(p.buildingTypeId) && nonEmptyString(p.parcelId) && Number.isSafeInteger(p.originX) && Number.isSafeInteger(p.originY);
+    case 'lease_parcel': return nonEmptyString(p.parcelId);
+    case 'end_lease': return nonEmptyString(p.parcelId);
+    case 'pay_rent_debt': return nonEmptyString(p.parcelId);
     default: return false;
   }
 }

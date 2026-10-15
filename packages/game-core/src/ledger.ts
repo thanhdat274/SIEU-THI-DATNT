@@ -194,13 +194,31 @@ export class LedgerManager {
     this.currentDayRecord.customersServed += count;
   }
 
-  /** Ghi stats cho 1 giao dịch bán hàng. */
-  public recordSale(paidTotal: number, cogs: number, itemCount: number): void {
+  /** Ghi stats cho 1 giao dịch bán hàng. Có buildingInstanceId sẽ ghi vào buildingReports (D5). */
+  public recordSale(paidTotal: number, cogs: number, itemCount: number, buildingInstanceId?: string): void {
     this.currentDayRecord.transactionsCount += 1;
     this.currentDayRecord.itemsSold += itemCount;
     this.currentDayRecord.revenue += paidTotal;
     this.currentDayRecord.cogs += cogs;
     this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
+    if (buildingInstanceId) {
+      this.currentDayRecord.buildingReports ??= {};
+      const rep = (this.currentDayRecord.buildingReports[buildingInstanceId] ??= {
+        buildingInstanceId,
+        revenue: 0,
+        cogs: 0,
+        transactionsCount: 0,
+        itemsSold: 0,
+        grossProfit: 0,
+        netProfit: 0,
+      });
+      rep.revenue += paidTotal;
+      rep.cogs += cogs;
+      rep.transactionsCount += 1;
+      rep.itemsSold += itemCount;
+      rep.grossProfit = rep.revenue - rep.cogs;
+      rep.netProfit = rep.grossProfit;
+    }
     this.recalcNetProfit();
   }
 
@@ -215,6 +233,12 @@ export class LedgerManager {
   /** Ghi chi phí bảo trì. */
   public addMaintenanceCost(cost: number): void {
     this.currentDayRecord.maintenanceCost = (this.currentDayRecord.maintenanceCost ?? 0) + cost;
+    this.recalcNetProfit();
+  }
+
+  /** Ghi chi phí thiết bị (camera an ninh, máy móc). */
+  public addEquipmentCost(cost: number): void {
+    this.currentDayRecord.equipmentCost = (this.currentDayRecord.equipmentCost ?? 0) + cost;
     this.recalcNetProfit();
   }
 
@@ -270,15 +294,7 @@ export class LedgerManager {
   // --- Recalculate ---
 
   public recalcNetProfit(): void {
-    this.currentDayRecord.netProfit =
-      this.currentDayRecord.grossProfit
-      - this.currentDayRecord.spoilageCost
-      - this.currentDayRecord.wagesPaid
-      - (this.currentDayRecord.maintenanceCost ?? 0)
-      - (this.currentDayRecord.theftCost ?? 0)
-      + (this.currentDayRecord.theftRecovered ?? 0)
-      - (this.currentDayRecord.counterfeitLoss ?? 0)
-      - (this.currentDayRecord.badDebtCost ?? 0);
+    this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
   }
 
   /** Tính netProfit cuối ngày dựa trên revenue đã cập nhật. */
@@ -337,4 +353,27 @@ export class LedgerManager {
 function parseLedgerSuffix(id: string): number {
   const match = id.match(/^led-(\d+)$/);
   return match ? parseInt(match[1], 10) : 0;
+}
+
+/**
+ * Tính lợi nhuận ròng chuẩn mực cho một DailyRecord, bao gồm đầy đủ chi phí:
+ * doanh thu - giá vốn - hàng hỏng - lương - bảo trì - thiết bị - tổn thất trộm
+ * + thu hồi trộm - tiền giả - nợ xấu - thuế đã nộp - truy thu thuế - phạt thuế.
+ */
+export function computeNetProfit(r: DailyRecord): number {
+  return (
+    r.grossProfit
+    - r.spoilageCost
+    - r.wagesPaid
+    - (r.maintenanceCost ?? 0)
+    - (r.equipmentCost ?? 0)
+    - (r.theftCost ?? 0)
+    + (r.theftRecovered ?? 0)
+    - (r.counterfeitLoss ?? 0)
+    - (r.badDebtCost ?? 0)
+    - (r.taxPaid ?? 0)
+    - (r.taxBackPaid ?? 0)
+    - (r.taxPenalty ?? 0)
+    - (r.rentCost ?? 0)
+  );
 }

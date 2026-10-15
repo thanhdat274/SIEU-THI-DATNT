@@ -5,6 +5,7 @@ import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
 import { ParcelBuyModal } from './components/ParcelBuyModal';
+import { OpenBuildingModal } from './components/OpenBuildingModal';
 import { PixiGameViewport, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
 import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
 
@@ -108,6 +109,7 @@ export const App: React.FC = () => {
   const [isLevelRoadmapOpen, setLevelRoadmapOpen] = useState(false);
   const [isCityOpen, setCityOpen] = useState(false);
   const [parcelPromptId, setParcelPromptId] = useState<string | null>(null);
+  const [openBuildingParcelId, setOpenBuildingParcelId] = useState<string | null>(null);
   const [isStallOpen, setStallOpen] = useState(false);
   const [isMarketOpen, setMarketOpen] = useState(false);
   const [isTaxOpen, setTaxOpen] = useState(false);
@@ -1444,6 +1446,42 @@ export const App: React.FC = () => {
     addToast(res.success ? 'Đã mua lô đất. Có thể đặt tòa lên lô này trong Bố cục.' : (res.reason ?? 'Không mua được lô.'), res.success ? 'success' : 'warn');
   };
 
+  const handleLeaseParcel = async (parcelId: string) => {
+    const res = await persistSimulationMutation(
+      { type: 'lease_parcel', parcelId }, 'Thuê lô đất', 'Thành phố',
+      simulation => simulation.leaseParcel(parcelId),
+    );
+    if (!res) return;
+    addToast(res.success ? 'Đã thuê lô đất 30 ngày. Có thể đặt cơ sở lên lô này.' : (res.reason ?? 'Không thuê được lô.'), res.success ? 'success' : 'warn');
+  };
+
+  const handleEndLease = async (parcelId: string) => {
+    const res = await persistSimulationMutation(
+      { type: 'end_lease', parcelId }, 'Hủy thuê lô đất', 'Thành phố',
+      simulation => simulation.endLease(parcelId),
+    );
+    if (!res) return;
+    addToast(res.success ? 'Đã hủy thuê lô đất.' : (res.reason === 'building_present' ? 'Vui lòng dời công trình trước khi hủy thuê.' : (res.reason ?? 'Không hủy thuê được.')), res.success ? 'info' : 'warn');
+  };
+
+  const handlePayRentDebt = async (parcelId: string) => {
+    const res = await persistSimulationMutation(
+      { type: 'pay_rent_debt', parcelId }, 'Trả nợ thuê đất', 'Thành phố',
+      simulation => simulation.payRentDebt(parcelId),
+    );
+    if (!res) return;
+    addToast(res.success ? 'Đã thanh toán nợ tiền thuê đất thành công!' : (res.reason ?? 'Không thanh toán được.'), res.success ? 'success' : 'warn');
+  };
+
+  const handleOpenBuilding = async (buildingTypeId: string, parcelId: string, originX: number, originY: number) => {
+    const res = await persistSimulationMutation(
+      { type: 'open_building', buildingTypeId, parcelId, originX, originY }, 'Mở cơ sở mới', 'Thành phố',
+      simulation => simulation.openBuilding(buildingTypeId, parcelId, originX, originY),
+    );
+    if (!res) return;
+    addToast(res.success ? 'Đã mở cơ sở mới thành công!' : (res.reason ?? 'Không mở được cơ sở.'), res.success ? 'success' : 'warn');
+  };
+
   const handleRestockStall = async (stallId: string) => {
     const sim = simulationRef.current;
     if (!sim) return;
@@ -2291,7 +2329,44 @@ export const App: React.FC = () => {
         onClose={() => setTitlesOpen(false)}
       />
     )}
-    {parcelPromptId && <ParcelBuyModal parcelId={parcelPromptId} playerMoney={player.money} onBuy={handleBuyParcel} onClose={() => setParcelPromptId(null)}/>}
+    {parcelPromptId && simulationRef.current && (() => {
+      const sim = simulationRef.current;
+      const snap = sim.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
+      const tenure = snap.storeLayout.parcelTenure?.[parcelPromptId];
+      const isOwned = (snap.storeLayout.ownedParcelIds ?? []).includes(parcelPromptId) || tenure?.kind === 'owned';
+      const isLeased = tenure?.kind === 'leased';
+      const occupied = sim.getOccupiedParcelBuildings?.()?.[parcelPromptId];
+      return (
+        <ParcelBuyModal
+          parcelId={parcelPromptId}
+          playerMoney={player.money}
+          isOwned={isOwned}
+          isLeased={isLeased}
+          leasePaidTotal={tenure?.kind === 'leased' ? tenure.paidTotal : undefined}
+          leaseDebtDays={tenure?.kind === 'leased' ? tenure.debtDays : undefined}
+          occupiedBuildingName={occupied}
+          onBuy={handleBuyParcel}
+          onLease={handleLeaseParcel}
+          onEndLease={handleEndLease}
+          onPayRentDebt={handlePayRentDebt}
+          onOpenBuildingPrompt={(pid) => setOpenBuildingParcelId(pid)}
+          onClose={() => setParcelPromptId(null)}
+        />
+      );
+    })()}
+    {openBuildingParcelId && simulationRef.current && (() => {
+      const snap = simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
+      return (
+        <OpenBuildingModal
+          parcelId={openBuildingParcelId}
+          playerMoney={player.money}
+          playerLevel={player.level}
+          existingPlacements={snap.storeLayout.buildingPlacements}
+          onOpenBuilding={handleOpenBuilding}
+          onClose={() => setOpenBuildingParcelId(null)}
+        />
+      );
+    })()}
     {isCityOpen && simulationRef.current && (() => {
       const snap = simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
       return <CityModal world={snap.world ?? defaultWorldOpenState()} ownedParcelIds={snap.storeLayout.ownedParcelIds ?? []} builtParcels={simulationRef.current.getOccupiedParcelBuildings()} playerLevel={player.level} playerMoney={player.money} day={simulationRef.current.getTime().day} buildingCount={snap.storeLayout.buildingPlacements?.length ?? 3} onReclaim={handleReclaimWave} onBuyParcel={handleBuyParcel} onClose={() => setCityOpen(false)}/>;

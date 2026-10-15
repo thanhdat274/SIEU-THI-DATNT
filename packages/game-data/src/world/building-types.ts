@@ -29,9 +29,6 @@ import { SNACK_SHOP_PRODUCT_IDS } from '../recipes';
 import {
   BUILDING_TEMPLATES, type BuildingId, type BuildingTemplate,
 } from './building-templates';
-import {
-  DRINK_DEFAULT_FIXTURES, SNACK_DEFAULT_FIXTURES, XOI_DEFAULT_FIXTURES,
-} from '../buildings';
 
 /** Loại hình tòa nhà (đích tới của khái niệm `BuildingId` sau refactor 1.2). */
 export type BuildingTypeId =
@@ -176,7 +173,7 @@ export const BUILDING_TYPE_DEFS: Record<BuildingTypeId, BuildingTypeDef> = {
     typeId: 'xoi_shop',
     name: BUILDING_TEMPLATES.xoi.name,
     template: BUILDING_TEMPLATES.xoi,
-    defaultFixtures: XOI_DEFAULT_FIXTURES,
+    defaultFixtures: BUILDING_TEMPLATES.xoi.defaultFixtures,
     allowedStationIds: ['thung_ngam', 'xung_hap', 'quay_xoi'],
     productFilter: allProductsFilter,
     trafficShare: 0.02,
@@ -190,7 +187,7 @@ export const BUILDING_TYPE_DEFS: Record<BuildingTypeId, BuildingTypeDef> = {
     typeId: 'drink_shop',
     name: BUILDING_TEMPLATES.drink.name,
     template: BUILDING_TEMPLATES.drink,
-    defaultFixtures: DRINK_DEFAULT_FIXTURES,
+    defaultFixtures: BUILDING_TEMPLATES.drink.defaultFixtures,
     allowedStationIds: ['drink_counter', 'blender', 'sugarcane_press'],
     productFilter: inSetFilter(DRINK_SHOP_PRODUCT_IDS),
     trafficShare: 0.05,
@@ -204,7 +201,7 @@ export const BUILDING_TYPE_DEFS: Record<BuildingTypeId, BuildingTypeDef> = {
     typeId: 'snack_shop',
     name: BUILDING_TEMPLATES.snack.name,
     template: BUILDING_TEMPLATES.snack,
-    defaultFixtures: SNACK_DEFAULT_FIXTURES,
+    defaultFixtures: BUILDING_TEMPLATES.snack.defaultFixtures,
     allowedStationIds: ['chao_xao', 'chao_chien'],
     productFilter: inSetFilter(SNACK_SHOP_PRODUCT_IDS),
     trafficShare: 0.03,
@@ -293,9 +290,22 @@ export function buildingTypeOf(typeId: string): BuildingTypeDef | undefined {
  * Tra loại tòa theo id instance cũ (`main`/`xoi`/`drink`/`snack`, sau này cả `${typeId}-${n}`).
  * Đây là phép ánh xạ phụ: 4 loại cũ có `id === typeId`? Không — `id` là id instance cũ
  * ('main'...), `typeId` khác ('grocery_main'...). Hàm này giúp tìm loại từ id instance.
+ * Tòa mở thêm (`${typeId}-${n}`) tra qua `typeId` để tìm loại tương ứng.
  */
 export function buildingTypeOfInstance(id: string): BuildingTypeDef | undefined {
-  return BUILDING_TYPES.find((def) => def.id === id);
+  // Thử khớp id instance cũ
+  const exact = BUILDING_TYPES.find((def) => def.id === id);
+  if (exact) return exact;
+  // Tòa mở thêm: `${typeId}-${n}` → tra typeId
+  const dashIdx = id.lastIndexOf('-');
+  if (dashIdx > 0) {
+    const candidate = id.slice(0, dashIdx);
+    const numeric = id.slice(dashIdx + 1);
+    if (Number.isSafeInteger(Number(numeric)) && safeBuildingType(candidate)) {
+      return BUILDING_TYPE_DEFS[candidate as BuildingTypeId];
+    }
+  }
+  return undefined;
 }
 
 /**

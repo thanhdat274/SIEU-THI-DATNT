@@ -88,6 +88,7 @@ import { runSidewalkPassableTests } from './sidewalk-passable.test';
 import { runNeighborhoodWalkTests } from './neighborhood-walk.test';
 import { runReclamationMapTests } from './reclamation-map.test';
 import { runNewParcelPlacementTests } from './new-parcel-placement.test';
+import { runLandLeaseCoreTests } from './land-lease-core.test';
 import { runXoiCustomerTests } from './xoi-customers.test';
 import { runDrinkCustomerTests } from './drink-customers.test';
 import { runDrinkStaffTests } from './drink-staff.test';
@@ -178,6 +179,7 @@ export async function runTests(): Promise<void> {
   runNeighborhoodWalkTests();
   runReclamationMapTests();
   runNewParcelPlacementTests();
+  runLandLeaseCoreTests();
   runDeterministicIdTests();
   runArrivalModeTests();
   runMaintenanceTests();

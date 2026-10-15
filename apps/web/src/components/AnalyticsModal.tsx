@@ -76,8 +76,74 @@ const Heatmap: React.FC<{ counts: Record<string, number>; buildings?: readonly M
   </div>;
 };
 
+const buildingName = (id: string): string => {
+  if (id === 'main' || id === 'grocery_main') return 'Tiệm chính';
+  if (id === 'xoi' || id === 'xoi_shop') return 'Tiệm xôi';
+  if (id === 'drink' || id === 'drink_shop') return 'Quán nước';
+  if (id === 'snack' || id === 'snack_shop') return 'Tiệm ăn vặt';
+  if (id.startsWith('grocery_branch')) return `Chi nhánh (${id})`;
+  if (id.startsWith('cafe')) return `Quán cà phê (${id})`;
+  if (id.startsWith('parking_lot')) return `Bãi giữ xe (${id})`;
+  if (id.startsWith('com_restaurant')) return `Quán cơm (${id})`;
+  return id;
+};
+
+const BuildingReportsView: React.FC<{ day: number; records: Record<number, DailyRecord> }> = ({ day, records }) => {
+  const [selectedDay, setSelectedDay] = useState(day);
+  const availableDays = useMemo(() => {
+    return Object.keys(records).map(Number).sort((a, b) => b - a);
+  }, [records]);
+  const currentRecord = records[selectedDay];
+  const reports = currentRecord?.buildingReports ? Object.values(currentRecord.buildingReports) : [];
+
+  return <div>
+    <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <label>Ngày báo cáo:
+        <select value={selectedDay} onChange={e => setSelectedDay(Number(e.target.value))} style={{ marginLeft: 6 }}>
+          {availableDays.length > 0
+            ? availableDays.map(d => <option key={d} value={d}>Ngày {d}{d === day ? ' (Hôm nay)' : ''}</option>)
+            : <option value={day}>Ngày {day} (Hôm nay)</option>}
+        </select>
+      </label>
+    </div>
+    {reports.length === 0 ? (
+      <p className="muted">Chưa có giao dịch theo tòa nào được ghi nhận cho Ngày {selectedDay}.</p>
+    ) : (
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
+          <thead>
+            <tr style={{ borderBottom: '2px solid rgba(0,0,0,0.15)' }}>
+              <th style={{ padding: '6px 8px' }}>Tòa nhà</th>
+              <th style={{ padding: '6px 8px', textAlign: 'right' }}>Doanh thu</th>
+              <th style={{ padding: '6px 8px', textAlign: 'right' }}>Giá vốn</th>
+              <th style={{ padding: '6px 8px', textAlign: 'right' }}>Lợi nhuận</th>
+              <th style={{ padding: '6px 8px', textAlign: 'center' }}>Số đơn</th>
+              <th style={{ padding: '6px 8px', textAlign: 'center' }}>Món bán</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reports.map(r => (
+              <tr key={r.buildingInstanceId} style={{ borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+                <td style={{ padding: '6px 8px', fontWeight: 'bold' }}>{buildingName(r.buildingInstanceId)}</td>
+                <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--teal)' }}>{r.revenue.toLocaleString('vi-VN')} ₫</td>
+                <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--brick)' }}>{r.cogs.toLocaleString('vi-VN')} ₫</td>
+                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>{(r.revenue - r.cogs).toLocaleString('vi-VN')} ₫</td>
+                <td style={{ padding: '6px 8px', textAlign: 'center' }}>{r.transactionsCount}</td>
+                <td style={{ padding: '6px 8px', textAlign: 'center' }}>{r.itemsSold}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+    <p className="muted" style={{ marginTop: 10, fontSize: 11 }}>
+      Báo cáo ghi nhận doanh thu và giá vốn từ các giao dịch bán lẻ phát sinh tại từng tòa (D5).
+    </p>
+  </div>;
+};
+
 export const AnalyticsModal: React.FC<Props> = ({ day, records, getPriceHistory, getHeatmap, buildings, onClose }) => {
-  const [tab, setTab] = useState<'sales' | 'heat'>('sales');
+  const [tab, setTab] = useState<'sales' | 'heat' | 'buildings'>('sales');
   const [heatDays, setHeatDays] = useState(1);
   const sold = useMemo(() => {
     const ids = new Set<string>();
@@ -91,6 +157,7 @@ export const AnalyticsModal: React.FC<Props> = ({ day, records, getPriceHistory,
     <div className="feature-tabs" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
       <PixelButton variant={tab === 'sales' ? 'teal' : 'wood'} onClick={() => setTab('sales')}>Giá & doanh số</PixelButton>
       <PixelButton variant={tab === 'heat' ? 'teal' : 'wood'} onClick={() => setTab('heat')}>Lưu lượng khách</PixelButton>
+      <PixelButton variant={tab === 'buildings' ? 'teal' : 'wood'} onClick={() => setTab('buildings')}>Theo tòa nhà</PixelButton>
     </div>
     {tab === 'sales' && <>
       <label>Mặt hàng <select value={selected} onChange={e => setProductId(e.target.value)}>{options.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
@@ -101,5 +168,6 @@ export const AnalyticsModal: React.FC<Props> = ({ day, records, getPriceHistory,
       <Heatmap counts={getHeatmap(heatDays)} buildings={buildings} />
       <p className="muted">Mỗi ô đếm số lượt khách bước vào ô đó; chỉ lưu tổng hợp 7 ngày gần nhất, không lưu đường đi từng khách.</p>
     </>}
+    {tab === 'buildings' && <BuildingReportsView day={day} records={records} />}
   </PixelDialog>;
 };

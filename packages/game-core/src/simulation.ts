@@ -97,6 +97,7 @@ import {
   type StallDefinition,
   REGULAR_CUSTOMERS_MAP
   } from '@game/data';
+import { BUILDING_TYPE_DEFS, resolveParcel, LAND_LEASE_CONSTANTS, parcelPrice } from '@game/data';
 import { buildMorningBrief, type MorningBrief } from './day-rhythm';
 import { buildMarketSummary } from './market-summary';
 import { pickAvailableRegular, processRegularCheckout, processRegularWalkout } from './regulars';
@@ -171,12 +172,13 @@ import {
   hasPerk,
 } from './skills';
 import { applyBuildingLayout, setAwningOpen, SPECIAL_REQUEST_MAP } from '@game/data';
-import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS } from '@game/data';
+import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS, WAREHOUSE_CENTER } from '@game/data';
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS, RECLAMATION_WAVE_MAP } from '@game/data';
+import { dailySupplyExecution, type InternalDelivery, type SupplyContract, type SupplyStockLot } from './supply-execution';
 import { RestockClaimManager } from './restock-claims';
 import { StorageManager } from './storage';
-import { LedgerManager } from './ledger';
+import { LedgerManager, computeNetProfit } from './ledger';
 import { StaffManager } from './staff-manager';
 import { DiningManager } from './dining-manager';
 import { ProductionManager } from './production-manager';
@@ -286,6 +288,8 @@ export class GameSimulation {
   private decorOwned: string[];
   /** Các lô ĐÃ MUA (thế giới mở, schema 7). W0 gieo 4 lô mặc định; lô đợt mới chỉ thêm sau `buy_parcel`. */
   private ownedParcelIds: string[];
+  /** Trạng thái sở hữu/thuê lô (schema 10): `parcelTenure[parcelId] = { kind: 'owned'|'leased', ... }`. */
+  private parcelTenure: Record<string, { kind: 'owned' | 'leased'; day?: number; paidTotal?: number; debtDays?: number }>;
   /** Trạng thái thế giới mở (schema 7): đợt đã mở & đang thi công. */
   private worldOpenState: WorldOpenState;
   private inventory: InventoryItem[];
@@ -350,6 +354,7 @@ export class GameSimulation {
   private trafficWarmed = false;
   private logisticsManager = new StoreLogisticsManager();
   private storageManager: StorageManager;
+  private processedRentDayIds: Set<number> = new Set();
 
   /** Proxy đến staffManager cho staff list (đọc). */
   private get staff(): StaffMember[] { return this.staffManager.getStaffRef(); }
@@ -373,6 +378,8 @@ export class GameSimulation {
 
   private warehouseTier: number;
   private storageRackCount: number;
+  private internalDeliveries: InternalDelivery[] = [];
+  private supplyContracts: SupplyContract[] = [];
 
   /** Proxy đến stallsMarketsManager cho stalls (đọc/ghi). */
   private get stalls(): StallState { return this.stallsMarketsManager.getStallsRef(); }
@@ -460,6 +467,7 @@ export class GameSimulation {
     this.buildingPlacements = initialSave.storeLayout.buildingPlacements ? structuredClone(initialSave.storeLayout.buildingPlacements) : undefined;
     this.decorOwned = [...(initialSave.storeLayout.decorOwned ?? [])];
     this.ownedParcelIds = initialSave.storeLayout.ownedParcelIds ? [...initialSave.storeLayout.ownedParcelIds] : ownedParcelIdsDefault();
+    this.parcelTenure = initialSave.storeLayout.parcelTenure ? { ...initialSave.storeLayout.parcelTenure } : this.buildTenureFromOwned();
     this.worldOpenState = initialSave.world ? structuredClone(initialSave.world) : defaultWorldOpenState();
     this.inventory = initialSave.inventory.map((i) => ({ ...i }));
     this.holdingArea = (initialSave.holdingArea ?? []).map((h) => ({ ...h }));
@@ -520,6 +528,7 @@ export class GameSimulation {
       this.currentDayRecord = this.createEmptyDailyRecord(initialSave.worldTime.day);
     }
     this.completedCheckoutIds = new Set(initialSave.completedCheckoutIds ?? []);
+    this.processedRentDayIds = new Set(initialSave.processedRentDayIds ?? []);
     this.hydrateStock(initialSave.worldTime.day);
 
     this.collisionSystem = new CollisionSystem(this.tileMap, this.fixtures);
@@ -570,6 +579,7 @@ export class GameSimulation {
       }, day - 1, 1 + getSkillModifier(this.skills, 'shelf_capacity_bonus'));
       // Khai hoang: đầu ngày — đợt hết thi công (wavesUnderConstruction[waveId] <= day) mở vùng chơi (D3).
       this.finishReclaimedWaves(day);
+      this.collectDailyRent(day);
       for (const member of this.staff) { this.finishStaffJob(member, true); member.diningTask = undefined; }
       this.processPayroll(day - 1);
       this.processStalls(day - 1);
@@ -596,6 +606,7 @@ export class GameSimulation {
       const spoiled = this.expireStock(day);
       this.deliverOrders(day);
       this.processAutoBuy(day);
+      this.executeDailyInternalDeliveries(day);
       this.questsManager.advanceToDay(day, this.playerData.level);
       this.statistics.totalDaysPassed = Math.max(this.statistics.totalDaysPassed, day - 1);
       if (spoiled > 0) this.callbacks.onStockExpired?.(spoiled);
@@ -726,7 +737,19 @@ export class GameSimulation {
   private buildTileMap(): GameTileMap { return generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned, this.buildingPlacements, this.worldOpenState.openedWaves); }
   public getWorldOpenState(): WorldOpenState { return structuredClone(this.worldOpenState); }
   public getOwnedParcelIds(): string[] { return [...this.ownedParcelIds]; }
-  /** Lô đã có tòa → id loại tòa (minimap và bảng Thành phố hiện lô đã dùng). */
+  /** Xây parcelTenure từ ownedParcelIds (schema ≤9 migrate lên 10). */
+  private buildTenureFromOwned(): Record<string, { kind: 'owned' | 'leased'; day?: number; paidTotal?: number; debtDays?: number }> {
+    const tenure: Record<string, { kind: 'owned' | 'leased'; day?: number; paidTotal?: number; debtDays?: number }> = {};
+    for (const pid of this.ownedParcelIds) {
+      tenure[pid] = { kind: 'owned' };
+    }
+    return tenure;
+  }
+  /** Lô nào đang thuê (schema 10 tenure). */
+  public getLeasedParcelIds(): string[] {
+    return Object.keys(this.parcelTenure).filter(pid => this.parcelTenure[pid].kind === 'leased');
+  }
+  /** Bản đồ theo đất đã mua, quầy đã mở và vị trí đặt/ô sàn mở rộng hiện tại. */
   public getOccupiedParcelBuildings(): Record<string, string> { return occupiedParcelBuildings(this.buildingPlacements); }
   public getOpenedWaves(): string[] { return [...this.worldOpenState.openedWaves]; }
   public getDecorOwned(): string[] { return [...this.decorOwned]; }
@@ -785,7 +808,7 @@ export class GameSimulation {
    * (`PARCEL_BASE_PRICE × số ô × landValueMultiplier`), thêm vào `ownedParcelIds`. Lô W0 coi như đã sở hữu
    * nên không mua được (trả `already_owned`).
    */
-  public buyParcel(parcelId: string): { success: boolean; reason?: string; price?: number } {
+  public buyParcel(parcelId: string): { success: boolean; reason?: string; price?: number; credit?: number } {
     const check = buyParcelAllowed({
       level: this.playerData.level,
       money: this.playerData.money,
@@ -796,10 +819,200 @@ export class GameSimulation {
     }, parcelId);
     if (!check.ok) return { success: false, reason: check.reason };
     if (typeof check.price !== 'number') return { success: false, reason: 'unknown_parcel' };
-    this.playerData.money -= check.price;
+
+    const tenure = this.parcelTenure[parcelId];
+    const isLeasedParcel = tenure && tenure.kind === 'leased';
+    const basePrice = check.price;
+    let finalPrice = basePrice;
+    let credit = 0;
+    if (isLeasedParcel) {
+      credit = Math.min((tenure.paidTotal ?? 0) * LAND_LEASE_CONSTANTS.leaseCreditRate, Math.floor(basePrice * 0.5));
+      finalPrice = Math.max(0, basePrice - credit);
+    }
+    if (this.playerData.money < finalPrice) return { success: false, reason: 'not_enough_money', price: finalPrice };
+
+    this.playerData.money -= finalPrice;
     this.ownedParcelIds = [...this.ownedParcelIds, parcelId];
+    const day = this.clock.getTime().day;
+    this.parcelTenure[parcelId] = { kind: 'owned', day };
+    // Mở lại các tòa trên lô nếu đang bị closedForRent do nợ thuê
+    for (const p of this.buildingPlacements ?? []) {
+      if (p.parcelId === parcelId && p.closedForRent) {
+        p.closedForRent = false;
+      }
+    }
     this.notifyStateChanged();
-    return { success: true, price: check.price };
+    return { success: true, price: finalPrice, credit: credit > 0 ? credit : undefined };
+  }
+
+  /**
+   * Mở tòa loại mới (lệnh `open_building`, OpenSpec `open-world-building-types` 2.1):
+   * kiểm typeId hợp lệ + đủ cấp/tiền + trần instance + lô đã sở hữu + vị trí hợp lệ,
+   * tạo bản ghi placement với buildingId `${typeId}-${n}`, trả về instanceId.
+   */
+  public openBuilding(buildingTypeId: string, parcelId: string, originX: number, originY: number): { success: boolean; reason?: string; instanceId?: string } {
+    if (this.clock.getTime().isStoreOpen) return { success: false, reason: 'store_open' };
+    // Tra định nghĩa loại tòa
+    const typeDef = BUILDING_TYPE_DEFS[buildingTypeId as keyof typeof BUILDING_TYPE_DEFS];
+    if (!typeDef) return { success: false, reason: 'unknown_type' };
+    // Kiểm trần instance
+    const existing = (this.buildingPlacements ?? []).filter(p => p.buildingId.startsWith(`${buildingTypeId}-`));
+    if (existing.length >= typeDef.maxInstances) return { success: false, reason: 'max_instances' };
+    // Kiểm loại cũ (maxInstances=1) không cho mở thêm
+    if (typeDef.maxInstances === 1) return { success: false, reason: 'single_instance' };
+    // Kiểm lô đã sở hữu (wave !== 0)
+    const parcel = resolveParcel(parcelId);
+    if (!parcel) return { success: false, reason: 'unknown_parcel' };
+    const tenure = this.parcelTenure[parcelId];
+    const hasAccess = parcel.wave === 0 || this.ownedParcelIds.includes(parcelId) || (tenure && (tenure.kind === 'owned' || tenure.kind === 'leased'));
+    if (!hasAccess) return { success: false, reason: 'parcel_not_owned' };
+    // Kiểm tiền + cấp
+    if (this.playerData.money < typeDef.openCost) return { success: false, reason: 'money' };
+    if (this.playerData.level < typeDef.unlockLevel) return { success: false, reason: 'level' };
+    // Tạo instance ID
+    const nextN = existing.length + 1;
+    const instanceId = `${buildingTypeId}-${nextN}`;
+    // Trừ tiền
+    this.playerData.money -= typeDef.openCost;
+    // Tạo placement (typeId cố định, buildingId = instanceId)
+    const newPlacement = { buildingId: instanceId, parcelId, originX, originY, typeId: buildingTypeId };
+    this.buildingPlacements = [...(this.buildingPlacements ?? []), newPlacement];
+    this.notifyStateChanged();
+    return { success: true, instanceId };
+  }
+
+  /**
+   * Thuê lô đất (lệnh `lease_parcel`, OpenSpec `open-world-land-lease` 2.1):
+   * kiểm lô chưa owned/leased, tính tiền thuê (parcelPrice × leaseDailyRate × 30 ngày), trừ tiền,
+   * ghi tenure schema 10 (`parcelTenure[parcelId] = { kind: 'leased', day, paidTotal }`).
+   */
+  public leaseParcel(parcelId: string): { success: boolean; reason?: string; rent?: number } {
+    const day = this.clock.getTime().day;
+    if (day < 1) return { success: false, reason: 'invalid_day' };
+    const parcel = resolveParcel(parcelId);
+    if (!parcel) return { success: false, reason: 'unknown_parcel' };
+    // W0 không cho thuê (luôn owned)
+    if (parcel.wave === 0) return { success: false, reason: 'w0_owned' };
+    // Kiểm tenure schema 10 (ưu tiên) hoặc ownedParcelIds schema ≤9
+    const existing = this.parcelTenure[parcelId];
+    if (existing && (existing.kind === 'owned' || existing.kind === 'leased')) return { success: false, reason: existing.kind === 'owned' ? 'owned' : 'leased' };
+    if (this.ownedParcelIds.includes(parcelId)) return { success: false, reason: 'owned' };
+    // Tính tiền thuê (30 ngày game)
+    const basePrice = parcelPrice(parcel);
+    const monthlyRent = Math.floor(basePrice * LAND_LEASE_CONSTANTS.leaseDailyRate * 30);
+    if (this.playerData.money < monthlyRent) return { success: false, reason: 'money' };
+    // Trừ tiền + ghi tenure schema 10
+    this.playerData.money -= monthlyRent;
+    this.parcelTenure[parcelId] = { kind: 'leased', day, paidTotal: monthlyRent };
+    this.notifyStateChanged();
+    return { success: true, rent: monthlyRent };
+  }
+
+  /**
+   * Hủy thuê lô đất (lệnh `end_lease`, OpenSpec `open-world-land-lease` 2.1):
+   * Chỉ cho phép hủy khi không có tòa nhà nào đang đặt trên lô đó (cần dời/phá tòa trước).
+   */
+  public endLease(parcelId: string): { success: boolean; reason?: string } {
+    const tenure = this.parcelTenure[parcelId];
+    if (!tenure || tenure.kind !== 'leased') return { success: false, reason: 'not_leased' };
+    const hasBuilding = (this.buildingPlacements ?? []).some(p => p.parcelId === parcelId);
+    if (hasBuilding) return { success: false, reason: 'building_present' };
+
+    delete this.parcelTenure[parcelId];
+    this.notifyStateChanged();
+    return { success: true };
+  }
+
+  /**
+   * Trả nợ tiền thuê đất (lệnh `pay_rent_debt`, OpenSpec `open-world-land-lease` 2.1/2.2):
+   * Tính số nợ = debtDays × dailyRent; trừ tiền, xóa nợ, mở lại tòa trên lô nếu đang bị closedForRent.
+   */
+  public payRentDebt(parcelId: string): { success: boolean; reason?: string; amount?: number } {
+    const tenure = this.parcelTenure[parcelId];
+    if (!tenure || tenure.kind !== 'leased') return { success: false, reason: 'not_leased' };
+    const debtDays = tenure.debtDays ?? 0;
+    if (debtDays <= 0) return { success: false, reason: 'no_debt' };
+    const parcel = resolveParcel(parcelId);
+    if (!parcel) return { success: false, reason: 'unknown_parcel' };
+    const basePrice = parcelPrice(parcel);
+    const dailyRent = Math.max(1, Math.ceil(basePrice * LAND_LEASE_CONSTANTS.leaseDailyRate));
+    const debtAmount = debtDays * dailyRent;
+
+    if (this.playerData.money < debtAmount) return { success: false, reason: 'not_enough_money' };
+    this.playerData.money -= debtAmount;
+    tenure.debtDays = 0;
+    tenure.paidTotal = (tenure.paidTotal ?? 0) + debtAmount;
+
+    // Mở lại các tòa trên lô nếu đang bị closedForRent
+    for (const p of this.buildingPlacements ?? []) {
+      if (p.parcelId === parcelId && p.closedForRent) {
+        p.closedForRent = false;
+      }
+    }
+    const currentDay = this.clock.getTime().day;
+    this.recordLedger({
+      day: currentDay,
+      type: 'rent',
+      amount: debtAmount,
+      description: `Trả nợ tiền thuê đất lô ${parcelId} (${debtDays} ngày, ngày ${currentDay})`,
+    });
+    this.currentDayRecord.rentCost = (this.currentDayRecord.rentCost ?? 0) + debtAmount;
+    this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
+    this.notifyStateChanged();
+    return { success: true, amount: debtAmount };
+  }
+
+  /**
+   * Thu tiền thuê đất đầu ngày (OpenSpec `open-world-land-lease` 2.2, D2/D3):
+   * Idempotent (không thu 2 lần cùng ngày qua processedRentDayIds).
+   * Mỗi lô leased: thu dailyRent = ceil(parcelPrice × leaseDailyRate).
+   * Đủ tiền: trừ tiền, tăng paidTotal, giảm debtDays, ghi ledger 'rent' + rentCost.
+   * Thiếu tiền: tăng debtDays; nếu debtDays ≥ 3 thì đóng cửa tòa trên lô (closedForRent = true).
+   */
+  public collectDailyRent(day: number): void {
+    if (day < 1) return;
+    if (this.processedRentDayIds.has(day)) return;
+    this.processedRentDayIds.add(day);
+
+    let anyChanged = false;
+    for (const [parcelId, tenure] of Object.entries(this.parcelTenure)) {
+      if (!tenure || tenure.kind !== 'leased') continue;
+      const parcel = resolveParcel(parcelId);
+      if (!parcel) continue;
+      const basePrice = parcelPrice(parcel);
+      const dailyRent = Math.max(1, Math.ceil(basePrice * LAND_LEASE_CONSTANTS.leaseDailyRate));
+
+      if (this.playerData.money >= dailyRent) {
+        this.playerData.money -= dailyRent;
+        tenure.paidTotal = (tenure.paidTotal ?? 0) + dailyRent;
+        if (tenure.debtDays && tenure.debtDays > 0) {
+          tenure.debtDays = Math.max(0, tenure.debtDays - 1);
+        }
+        this.recordLedger({
+          day,
+          type: 'rent',
+          amount: dailyRent,
+          description: `Tiền thuê đất lô ${parcelId} (ngày ${day})`,
+        });
+        this.currentDayRecord.rentCost = (this.currentDayRecord.rentCost ?? 0) + dailyRent;
+        this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
+        anyChanged = true;
+      } else {
+        tenure.debtDays = (tenure.debtDays ?? 0) + 1;
+        anyChanged = true;
+        if (tenure.debtDays >= LAND_LEASE_CONSTANTS.debtClosureDays) {
+          // Đóng cửa tòa đặt trên lô này
+          const placements = this.buildingPlacements ?? [];
+          for (const p of placements) {
+            if (p.parcelId === parcelId && !p.closedForRent) {
+              p.closedForRent = true;
+              this.callbacks.onToast?.(`Tòa ${p.buildingId} trên lô ${parcelId} bị đóng cửa do nợ tiền thuê ${tenure.debtDays} ngày!`, 'warn');
+            }
+          }
+        }
+      }
+    }
+    if (anyChanged) this.notifyStateChanged();
   }
 
   /**
@@ -1115,6 +1328,7 @@ export class GameSimulation {
     record.revenue += totalRevenue;
     record.cogs += totalCogs;
     record.itemsSold += totalItems;
+    record.transactionsCount += 1;
     record.grossProfit = record.revenue - record.cogs;
     record.netProfit = record.grossProfit - record.spoilageCost - record.wagesPaid - (record.maintenanceCost ?? 0) - (record.theftCost ?? 0) + (record.theftRecovered ?? 0) - (record.counterfeitLoss ?? 0) - (record.badDebtCost ?? 0);
     this.notifyStateChanged();
@@ -1430,8 +1644,8 @@ export class GameSimulation {
     if (this.playerData.money < cost) return { success: false, reason: 'Không đủ tiền.' };
     this.playerData.money -= cost;
     this.security.camera = true;
-    this.currentDayRecord.maintenanceCost = (this.currentDayRecord.maintenanceCost ?? 0) + cost;
-    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
+    this.currentDayRecord.equipmentCost = (this.currentDayRecord.equipmentCost ?? 0) + cost;
+    this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
     this.recordLedger({ day: this.clock.getTime().day, type: 'maintenance', amount: cost, description: 'Lắp camera an ninh' });
     this.notifyStateChanged();
     return { success: true, cost };
@@ -1629,7 +1843,7 @@ export class GameSimulation {
     const day = this.clock.getTime().day;
     this.playerData.money -= result.cost;
     this.currentDayRecord.maintenanceCost = (this.currentDayRecord.maintenanceCost ?? 0) + result.cost;
-    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
+    this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
     const verb = action === 'replace' ? 'Mua mới' : action === 'repair' ? 'Sửa' : 'Bảo trì';
     this.recordLedger({ day, type: 'maintenance', amount: result.cost, description: `${verb} ${fixture!.label}${byStaff ? ' (nhân viên)' : ''}` });
     this.notifyStateChanged();
@@ -2227,7 +2441,9 @@ export class GameSimulation {
       reputation: this.playerData.reputation,
       regularsCount: Object.keys(this.regulars).length,
       stallServings,
-      buildingsOpened: 1 + BUILDINGS.filter(building => building.plotId && this.unlockedPlotIds.includes(building.plotId)).length,
+      buildingsOpened: 1
+        + BUILDINGS.filter(building => building.plotId && this.unlockedPlotIds.includes(building.plotId)).length
+        + (this.buildingPlacements ?? []).filter(p => !['main', 'xoi', 'drink', 'snack'].includes(p.buildingId)).length,
     };
   }
 
@@ -2868,6 +3084,21 @@ export class GameSimulation {
           this.finishStaffJob(member, false);
           continue;
         }
+        // D6: Kệ ở tòa cách kho > 30 ô tạo chuyến giao nội bộ internal_delivery
+        const distFromWarehouse = shelf ? Math.hypot(shelf.tileX - WAREHOUSE_CENTER.x, shelf.tileY - WAREHOUSE_CENTER.y) : 0;
+        if (distFromWarehouse > 30) {
+          const buildingId = fixtureBuilding(shelf!, this.tileMap.buildings) ?? 'branch';
+          this.internalDeliveries.push({
+            id: `delivery-${Date.now()}-${task.fixtureId}`,
+            fromBuildingId: 'main',
+            toBuildingId: buildingId,
+            productId: task.productId,
+            lines: task.carriedLots.map((l, i) => ({ lotId: `lot-${i}`, qty: l.quantity })),
+            totalQty: sumLots(task.carriedLots),
+            fromDay: this.clock.getTime().day,
+            day: this.clock.getTime().day,
+          });
+        }
         task.stage = 'to_shelf';
         task.route = route;
         continue;
@@ -3366,7 +3597,7 @@ export class GameSimulation {
     const rec = this.dailyRecords[day] ?? { ...this.currentDayRecord, day };
     rec.closedAt = rec.closedAt ?? new Date().toISOString();
     rec.grossProfit = rec.revenue - rec.cogs;
-    rec.netProfit = rec.grossProfit - rec.spoilageCost - rec.wagesPaid - (rec.maintenanceCost ?? 0) - (rec.theftCost ?? 0) + (rec.theftRecovered ?? 0) - (rec.counterfeitLoss ?? 0) - (rec.badDebtCost ?? 0);
+    rec.netProfit = computeNetProfit(rec);
 
     // Thuế 1% khoán hộ cá thể: chỉ tính khi đóng ngày hiện tại
     if (day === this.clock.getTime().day) {
@@ -3799,7 +4030,7 @@ export class GameSimulation {
     this.statistics.totalRevenue += tip;
     this.currentDayRecord.revenue += tip;
     this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
-    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
+    this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
     this.recordLedger({ day, type: 'sale', amount: tip, cogs: 0, quantity: 0, description: 'Tiền boa từ kỹ năng bán hàng' });
   }
 
@@ -3945,7 +4176,7 @@ export class GameSimulation {
   private recordSpoilageLoss(day: number, quantity: number, cost: number, description: string): void {
     this.currentDayRecord.spoilageCount += quantity;
     this.currentDayRecord.spoilageCost += cost;
-    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
+    this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
     this.recordLedger({ day, type: 'spoilage', amount: cost, quantity, description });
   }
 
@@ -5297,6 +5528,45 @@ export class GameSimulation {
     this.notifyStateChanged();
   }
 
+  /** Thực thi các hợp đồng cung ứng nội bộ vào đầu mỗi ngày theo FEFO (D6). */
+  public executeDailyInternalDeliveries(day: number): void {
+    if (!this.supplyContracts.length) return;
+    const stockMap: Record<string, SupplyStockLot[]> = {};
+    for (const item of this.inventory) {
+      if (!item.lots?.length) continue;
+      stockMap[item.productId] = item.lots.map((l, idx) => ({
+        lotId: `${item.productId}-${l.expiresOnDay}-${idx}`,
+        productId: item.productId,
+        qty: l.quantity,
+        expiryDay: l.expiresOnDay,
+      }));
+    }
+    const res = dailySupplyExecution(this.supplyContracts, stockMap, day);
+    if (res.deliveries.length > 0) {
+      this.internalDeliveries.push(...res.deliveries);
+      for (const d of res.deliveries) {
+        const inv = this.inventory.find(i => i.productId === d.productId);
+        if (inv && inv.lots) {
+          takeLots(inv.lots, d.totalQty);
+          inv.quantity = sumLots(inv.lots);
+        }
+      }
+      this.inventory = this.inventory.filter(i => i.quantity > 0);
+    }
+  }
+
+  public getInternalDeliveries(): InternalDelivery[] {
+    return [...this.internalDeliveries];
+  }
+
+  public getSupplyContracts(): SupplyContract[] {
+    return [...this.supplyContracts];
+  }
+
+  public addSupplyContract(contract: SupplyContract): void {
+    this.supplyContracts.push(contract);
+  }
+
   /**
    * Stow an item from the holding area into the warehouse inventory.
    * Cold items stow up to available cold capacity.
@@ -5492,13 +5762,9 @@ export class GameSimulation {
       }
 
       const cogs = res.cogs ?? 0;
+      const buildingId = customer.buildingId ?? 'main';
       this.currentDayRecord.customersServed += 1;
-      this.currentDayRecord.transactionsCount += 1;
-      this.currentDayRecord.itemsSold += res.itemCount;
-      this.currentDayRecord.revenue += res.paidTotal;
-      this.currentDayRecord.cogs += cogs;
-      this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
-      this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
+      this.ledgerManager.recordSale(res.paidTotal, cogs, res.itemCount, buildingId);
 
       if (res.items) {
         for (const it of res.items) {
@@ -5518,6 +5784,7 @@ export class GameSimulation {
         cogs,
         quantity: res.itemCount,
         description: `${onCredit ? `Bán chịu ${creditId}` : 'Bán lẻ'} cho khách hàng #${checkoutId} (${res.itemCount} món)`,
+        buildingInstanceId: buildingId,
       });
       // Tiền boa chỉ có khi khách TRẢ TIỀN MẶT thật — bán chịu không có dòng tiền vào nên không boa (tránh bơm tiền từ không).
       if (!onCredit) this.awardSkillTip(res.paidTotal);
@@ -5558,13 +5825,9 @@ export class GameSimulation {
       this.addExperience(Math.round(5 * saleExperienceMultiplier(this.playerData.level)));
 
       const cogs = (taken[0]?.unitCost ?? product.purchasePrice) * 1;
+      const buildingId = customer.buildingId ?? 'main';
       this.currentDayRecord.customersServed += 1;
-      this.currentDayRecord.transactionsCount += 1;
-      this.currentDayRecord.itemsSold += 1;
-      this.currentDayRecord.revenue += salePrice;
-      this.currentDayRecord.cogs += cogs;
-      this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
-      this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
+      this.ledgerManager.recordSale(salePrice, cogs, 1, buildingId);
       this.recordProductSale(product.id, 1);
 
       let creditId: string | undefined;
@@ -5580,6 +5843,7 @@ export class GameSimulation {
         quantity: 1,
         productId: product.id,
         description: `${onCredit ? `Bán chịu ${creditId}` : 'Bán lẻ'} cho khách hàng #${checkoutId} (${product.name})`,
+        buildingInstanceId: buildingId,
       });
       // Tiền boa chỉ khi khách TRẢ TIỀN MẶT thật — bán chịu không có dòng tiền vào nên không boa.
       if (!onCredit) this.awardSkillTip(salePrice);
@@ -5689,6 +5953,7 @@ export class GameSimulation {
         unlockedPlotIds: [...this.unlockedPlotIds],
         decorOwned: [...this.decorOwned],
         ownedParcelIds: [...this.ownedParcelIds],
+        parcelTenure: this.parcelTenure ? { ...this.parcelTenure } : undefined,
         ...(this.buildingPlacements ? { buildingPlacements: structuredClone(this.buildingPlacements) } : {}),
       },
       inventory: this.getInventory(),
@@ -5698,6 +5963,7 @@ export class GameSimulation {
       staffSchedule: { ...this.staffSchedule },
       wageDebt: this.wageDebt,
       processedPayrollDayIds: [...this.processedPayrollDayIds],
+      processedRentDayIds: [...this.processedRentDayIds],
       autoBuyEnabled: this.autoBuyEnabled,
       autoBuyStalls: this.autoBuyStalls,
       stallShortfall: [...this.stallShortfall],
@@ -5765,6 +6031,7 @@ export class GameSimulation {
     this.buildingPlacements = saveData.storeLayout.buildingPlacements ? structuredClone(saveData.storeLayout.buildingPlacements) : undefined;
     this.decorOwned = [...(saveData.storeLayout.decorOwned ?? [])];
     this.ownedParcelIds = saveData.storeLayout.ownedParcelIds ? [...saveData.storeLayout.ownedParcelIds] : ownedParcelIdsDefault();
+    this.parcelTenure = saveData.storeLayout.parcelTenure ? { ...saveData.storeLayout.parcelTenure } : this.buildTenureFromOwned();
     this.worldOpenState = saveData.world ? structuredClone(saveData.world) : defaultWorldOpenState();
     this.collisionSystem?.setOpenedWaves(this.worldOpenState.openedWaves);
     this.inventory = saveData.inventory.map((i) => ({ ...i }));
@@ -5781,6 +6048,7 @@ export class GameSimulation {
     this.autoBuyRules = this.validateAutoBuyRules(saveData.autoBuyRules ?? []);
     this.restockOptions = saveData.restockOptions ? normalizeRestockOptions(saveData.restockOptions) : undefined;
     this.processedAutoBuyDayIds = new Set(saveData.processedAutoBuyDayIds ?? []);
+    this.processedRentDayIds = new Set(saveData.processedRentDayIds ?? []);
     this.autoBuyReports = structuredClone(saveData.autoBuyReports ?? {});
     this.questsManager.load(saveData);
     this.stallsMarketsManager.load(saveData);

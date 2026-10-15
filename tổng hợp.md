@@ -1,3 +1,182 @@
+# CẬP NHẬT 15/10/2026 (rà soát + dọn lint)
+
+- `yarn typecheck` PASS; `yarn test` 112/112 PASS; web test, server test:unit, renderer test PASS.
+- `yarn lint`: 0 lỗi, 139 cảnh báo sau khi thêm `.qa/**` vào ignores và sửa lỗi thật ở `premium-textures.ts`. Trước đó 3306 lỗi đều do quét profile Chrome trong `.qa`.
+- `HIEN-TRANG-CODE.md`: sửa số dòng file lớn; 6.3 (quyền sửa bố cục) và 6.6 (reconnect WS) đã lỗi thời nên chuyển sang "đã có".
+- Còn mở (chưa làm): client online vẫn chạy mô phỏng sinh khách cục bộ (6.7); chưa browser QA/co-op 2 trình duyệt; khoảng trống test renderer/game-data/component web.
+
+# REVIEW TOÀN BỘ DỰ ÁN — 13/10/2026
+
+## Xác nhận: Nhiều P1 issue đã được fix từ 06→13/10
+
+| Issue | Mức | Trạng thái | Chi tiết |
+|---|---|---|---|
+| **6.1** homeDoorTile co-op sai | 🔴 P1 | ✅ **Đã fix** | `registerCoopAvatar` truyền `homeDoorTile` từ `COOP_HOME_DOOR_TILES`; `coop-routine.homeDoors` map đúng; người offline đặt đúng vị trí |
+| **6.2** layout_move/store/retrieve đường chết | 🟠 P2 | ✅ **Đã fix** | Đã xóa khỏi `ALLOWED_COMMAND_TYPES` + `serverReplayedCommands` trong `bootstrap.ts` |
+| **6.4** auto-fill thiếu guard offline | 🟠 P2 | ✅ **Đã fix** | `onAutoFill`/`onAutoFillAll` gọi `blockOfflineOnlineMutation()` trước simulation mutation |
+| **6.5** Dead code `useOnlineSync` | 🟠 P2 | ✅ **Đã fix** | File đã xóa; grep = 0 matches |
+| **I-11** `main.ts` lỗi thời | 🟠 P2 | ✅ **Đã fix** | File đã xóa khỏi repo |
+| **6.10** Comment lệch | 🟢 P3 | ✅ **Đã đúng** | Comment "cửa nhà riêng" khớp code |
+
+## Kết quả kiểm tra 14/10/2026 (Phiên 4)
+
+- `yarn typecheck`: ✅ **PASS** (4.07s, 0 lỗi)
+- `npx tsx packages/game-core/src/land-lease-core.test.ts`: ✅ **PASS** (toàn bộ luồng thuê, nợ 3 ngày đóng tòa, trả nợ mở lại, khấu trừ mua đứt, hủy thuê đất)
+- `yarn --cwd apps/web test`: ✅ **PASS** (7 suites)
+- `yarn --cwd apps/server test:unit`: ✅ **PASS** (7 suites)
+- **Đã hoàn thành toàn diện Bước 6b (`open-world-land-lease`):**
+  - ✅ **Lệnh `lease_parcel`, `end_lease`, `pay_rent_debt` & Mua khấu trừ:**
+    - `buyParcel`: tự động khấu trừ `min(paidTotal * LEASE_CREDIT_RATE, Math.floor(basePrice * 0.5))` khi mua lô đang thuê; chuyển tenure thành `owned`; mở lại tòa nếu đang bị `closedForRent`.
+    - `endLease`: từ chối `building_present` nếu còn công trình trên lô; dọn sạch tenure nếu đất trống.
+    - `payRentDebt`: tính tổng nợ `debtDays * dailyRent`, trừ tiền, xóa nợ, mở lại tòa trên lô (`closedForRent = false`), ghi sổ cái `type: 'rent'`.
+  - ✅ **Thu tiền thuê đầu ngày (`collectDailyRent`) & Cơ chế đóng cửa vì nợ (`closedForRent`):**
+    - Idempotent: lưu vết qua `processedRentDayIds` (lưu cả trong save) tránh thu 2 lần trong ngày.
+    - Mỗi sáng thu `dailyRent = Math.ceil(basePrice * leaseDailyRate)`, ghi sổ cái `type: 'rent'`, cập nhật `rentCost` và `netProfit`.
+    - Khi thiếu tiền: tăng `debtDays`; nợ ≥ 3 ngày (`debtClosureDays = 3`) tự động đặt `closedForRent = true` trên placement; `layoutBuildings` đóng cửa tòa, không sinh khách nhưng bảo toàn nguyên vẹn nội thất/kho hàng.
+  - ✅ **Cập nhật UI `ParcelBuyModal.tsx` & `App.tsx`:**
+    - Hiển thị tiền thuê/ngày, tổng đã trả, số tiền khấu trừ khi mua đứt.
+    - Cảnh báo nợ ngày và cảnh báo đóng cửa tòa nhà khi nợ ≥ 3 ngày.
+    - Bổ sung nút "Trả nợ thuê (<số tiền> ₫)", nút "Hủy thuê đất", nút "Mua đứt (đã khấu trừ)".
+    - Wire `handleEndLease` (`end_lease`) và `handlePayRentDebt` (`pay_rent_debt`) qua `persistSimulationMutation`.
+  - ✅ **Server & Shared:**
+    - Thêm `rentCost` vào `DailyRecord`, thêm `'rent'` vào `LedgerEntryType`, thêm `closedForRent` vào `BuildingPlacementRecord`.
+    - Đăng ký `end_lease` và `pay_rent_debt` vào `bootstrap.ts` server replay.
+    - Thêm `processedRentDayIds` vào `SaveGameData` và `OPTIONAL_SAVE_ARRAYS`.
+  - ✅ **Tài liệu & OpenSpec:** Đã cập nhật `openspec/changes/open-world-land-lease/tasks.md` hoàn thành 100% phần core/server/UI/test (chỉ còn browser QA máy thật).
+
+## Kết quả kiểm tra 13/10/2026 (Phiên 3)
+
+- `yarn typecheck`: ✅ **PASS** (3.52s, 0 lỗi)
+- `yarn test` (game-core + game-data): ✅ **PASS** (112 tests, 30 suites, 125s)
+- `yarn --cwd apps/web test`: ✅ **PASS** (7 suites)
+- `yarn --cwd apps/server test:unit`: ✅ **PASS** (7 suites)
+- **Đã hoàn thành D5, D6 và các issue Nhóm 3 (P2):**
+  - ✅ **D5 (Sổ cái & Báo cáo theo tòa):**
+    - Bổ sung `buildingInstanceId?: string` vào `LedgerEntry`.
+    - Thêm `BuildingDailyReport` và `buildingReports?: Record<string, BuildingDailyReport>` vào `DailyRecord`.
+    - `simulation.ts` và `ledger.ts`: luồng thanh toán ghi nhận chính xác theo tòa `customer.buildingId ?? 'main'`.
+    - `AnalyticsModal.tsx`: bổ sung tab "Theo tòa nhà" cho phép chọn ngày và xem chi tiết Doanh thu, Giá vốn, Lợi nhuận, Số đơn, Món bán của từng tòa.
+  - ✅ **D6 (Giao hàng nội bộ `internal_delivery`):**
+    - `simulation.ts`: tích hợp `dailySupplyExecution` thực thi FEFO kho chung mỗi sáng vào `executeDailyInternalDeliveries(day)`.
+    - Nhân viên châm kệ thuộc tòa cách kho > 30 ô tạo chuyến `internal_delivery` ghi nhận trạng thái vận chuyển.
+    - Bổ sung `getInternalDeliveries()`, `getSupplyContracts()`, `addSupplyContract()`.
+  - ✅ **NetProfit chuẩn hóa & trừ thuế (P2 Issue 1):**
+    - Xuất hàm chuẩn `computeNetProfit(record)` bao gồm đầy đủ thuế (`taxPaid`, `taxBackPaid`, `taxPenalty`) và chi phí thiết bị (`equipmentCost`).
+    - Quy chuẩn toàn bộ các chỗ tính `netProfit` trong `simulation.ts` và `ledger.ts` về `computeNetProfit`.
+  - ✅ **Chi phí Camera an ninh (P2 Issue 5):**
+    - Tách phí lắp camera khỏi `maintenanceCost` sang `equipmentCost`, trừ vào `netProfit` chuẩn xác.
+  - ✅ **Kiểm tra đối xứng tường footprint (P2 Issue 4):**
+    - `footprint.ts:checkFootprintTiles`: kiểm tra đủ cả 4 góc chéo `(tile.x ± 1, tile.y ± 1)` đảm bảo đối xứng tường bao quanh ô sàn mở rộng.
+  - ✅ **Cửa kho đi được (P2 Issue 7):**
+    - `store-layout.ts:warehouseDoorWalkable`: chấp nhận cả hai hàng lối vào cửa kho (`STORE_BOUNDS.top` và `STORE_BOUNDS.top + 1`) tránh lỗi báo kẹt cửa kho.
+  - ✅ **Bảo toàn parcelIds khi dời tòa (P2 Issue 3):**
+    - `store-layout.ts:relocateBuilding`: tự động tính toán và bảo toàn `candidate.parcelIds` bao phủ các lô kề sau khi dời ô sàn mở rộng.
+  - ✅ **UI Thuê đất & Mở cơ sở mới (`lease_parcel` & `open_building`):**
+    - `ParcelBuyModal.tsx`: bổ sung nút "Thuê 30 ngày" (chi phí = `parcelPrice * leaseDailyRate * 30`), nút "Mở cơ sở mới" khi chạm lô đất đã sở hữu/thuê.
+    - `OpenBuildingModal.tsx`: tạo component giao diện chọn loại cơ sở kinh doanh (`grocery_branch`, `cafe`, `parking_lot`, `com_restaurant`), kiểm tra cấp độ/tiền/trần số lượng và dispatch lệnh `open_building`.
+    - `App.tsx`: wire đầy đủ `handleLeaseParcel` và `handleOpenBuilding` qua `persistSimulationMutation`.
+
+## Kết quả kiểm tra 13/10/2026 (Phiên 2)
+
+- `yarn typecheck`: ✅ **PASS** (4.38s, 0 lỗi)
+- `yarn test` (game-core + game-data): ✅ **PASS** (112 tests, 30 suites, 119s)
+- `yarn --cwd apps/web test`: ✅ **PASS** (7 suites)
+- `yarn --cwd apps/server test:unit`: ✅ **PASS** (4 suites)
+- **Đã hoàn thành dọn dặm & fix P2:**
+  - ✅ Schema 10 + lease_parcel: `parcelTenure` nối hoàn chỉnh vào `openBuilding` (cho phép mở tòa trên cả lô thuê và sở hữu), lưu/nạp bảo toàn trong `applyStoreLayout` / `exportSaveData`.
+  - ✅ `FIXTURE_SHOP`: Thêm `minTier` vào `FixtureShopItem`, cấu hình `minTier: 2/3` cho các kệ/quầy lớn (`counter2`, `shelf_double`, `shelf_3`, `shelf_4`, `glass_case`, `self_checkout`).
+  - ✅ `StoreLayoutModal`: Tính `activeTier` từ footprint ô sàn tòa đang xem qua `storeTierFromFloorTiles`, khóa nút và hiển thị huy hiệu "Cần <tên hạng>".
+  - ✅ Sửa lỗi import vòng: Gỡ bỏ import `../buildings` trong `building-types.ts`, dùng trực tiếp `BUILDING_TEMPLATES[id].defaultFixtures`, fix triệt để `ReferenceError: Cannot access 'XOI_DEFAULT_FIXTURES' before initialization`.
+  - ✅ Cốt truyện ch7 (D7): `buildingsOpened` trong `simulation.getStoryContext()` đếm cả các tòa mở thêm (`grocery_branch`, v.v.).
+  - ✅ Bug P2: `serveDiningAddOns` tăng `transactionsCount += 1` khi khách gọi thêm món ăn/uống tại bàn.
+  - ✅ Test regression: Cập nhật `schema8.test.ts` & `schema9.test.ts` tương thích chuẩn với schema 10.
+
+## Kết quả kiểm tra 13/10/2026 (Phiên 1)
+
+- `yarn typecheck`: ✅ **PASS** (2.64s, 0 lỗi)
+- `yarn test` (game-core): ✅ **PASS**
+- `yarn --cwd apps/web test`: ✅ **PASS** 6 file
+- `yarn --cwd apps/server test:unit`: ✅ **PASS** 4/4
+- Dead code temp đã xóa: `temp_tail.md`, `total_temp.md`, `bash.exe.stackdump`
+- HIEN-TRANG-CODE.md đã cập nhật với hiện trạng mới
+
+## Tổng quan dự án
+
+- **Game**: "Tiệm Tạp Hóa Đầu Hẻm" —模拟 tạp hóa Việt Nam thập niên 90, co-op 2 người
+- **Tech**: TS strict · React 19 · PixiJS 8 · Vite 8 · Dexie 4 · Firebase · NestJS 12 · Mongo · Yarn 1
+- **Kiến trúc**: Monorepo ~31k dòng TS/TSX
+- **Tiến độ**: ~161 task `[ ]` + 22 task `[>]` trong 29 OpenSpec change
+- **Không hoàn tất 100%** — còn QA trình duyệt/playtest là chủ yếu
+
+---
+
+# 6a.1 + 6a.2 + 6a.8 + 6b: typeId, open_building, renderer, schema 10, lease_parcel (13/10/2026)
+
+## 6a.1 + 6a.2: typeId trên buildingPlacements + lệnh open_building
+
+- **Mục tiêu:** (6a.1) Đưa `typeId` vào `BuildingPlacement` để code so sánh theo loại tòa thay vì id instance cố định; (6a.2) lệnh `open_building` mở thêm tòa mới (grocery_branch, cafe, parking_lot, com_restaurant).
+- **Đã làm (có code):**
+  - `packages/game-data/src/world/placements.ts`: thêm `typeId?: BuildingTypeId` vào `BuildingPlacement`; `DEFAULT_PLACEMENTS` điền typeId (grocery_main, xoi_shop, drink_shop, snack_shop); `templateForPlacement()` fallback `buildingTypeOfInstance.typeId` khi `BUILDING_TEMPLATES[buildingId]` không có; `buildingTypeOfInstance` nhận `${typeId}-${n}` (tòa mở thêm); `placementsProblem` dùng `buildingTypeOfInstance?.typeId` thay `buildingId === 'main'`; export `buildingTypeOfInstance` qua `@game/data`.
+  - `packages/game-data/src/world/building-types.ts`: `buildingTypeOfInstance(id)` nhận `${typeId}-${n}` (tách phần numeric sau dấu `-`, tra typeId để tìm typeDef).
+  - `packages/game-core/src/customers.ts`: 3 chỗ `buildingId === 'main'` → `typeId === 'grocery_main'` (nearDoor sort, motorbike/car spot selection). Resolve typeId từ DEFAULT_PLACEMENTS → fallback buildingTypeOfInstance.
+  - `packages/game-core/src/store-layout.ts`: `relocateBuilding` kiểm `mainType === 'grocery_main'` thay `buildingId === 'main'`; `expansionBudget` find bằng `buildingTypeOfInstance?.typeId === 'grocery_main'`.
+  - `packages/shared/src/index.ts`: payload `{ type: 'open_building'; buildingTypeId: string; parcelId: string; originX: number; originY: number }` trong `GameCommandPayload`; validation trong `isGameCommand`.
+  - `packages/game-core/src/simulation.ts`: `openBuilding(buildingTypeId, parcelId, originX, originY)`: kiểm store đóng, tra BUILDING_TYPE_DEFS, trần instance, maxInstances=1 (single_instance), parcel ownership (wave≠0), tiền/cấp, tạo instance `${typeId}-${n}`, trừ tiền, push placement.
+  - `packages/game-core/src/world-runtime.ts`: wire `open_building` command → `simulation.openBuilding()`.
+  - `apps/server/src/bootstrap.ts`: thêm `open_building` vào `ALLOWED_COMMAND_TYPES` + `serverReplayedCommands`.
+
+## 6a.8: Renderer 4 loại tòa mới
+
+- **Đã làm:** `packages/game-renderer/src/viewport.ts`: thêm facade grocery_branch/cafe/com_restaurant vào FACADES (parking_lot không mặt tiền); `resolveTypeId(buildingId)` fallback `buildingTypeOfInstance`; thay 5 chỗ so sánh buildingId cố định (`'main'`, `'xoi'`, `'drink'`, `'snack'`) bằng typeId check.
+- **Chi tiết:**
+  - Line 459: `building.id === 'main'` → `resolveTypeId(building.id) === 'grocery_main'`
+  - Line 621: `FACADES[placed.id]` → `FACADES[typeId] ?? FACADES[placed.id] ?? FALLBACK_FACADE`
+  - Line 729: `building.id === 'drink'` → `resolveTypeId(building.id) === 'drink_shop'`
+  - Line 918: `building.id === 'xoi'` → `resolveTypeId(building.id) === 'xoi_shop'`
+  - Line 946: `secondary.id === 'xoi'` → `resolveTypeId(secondary.id) === 'xoi_shop'`
+  - Line 997: `placed.id === 'snack'` → `resolveTypeId(placed.id) === 'snack_shop'`
+
+## 6b: Schema 10 + migration 9→10 + lệnh lease_parcel
+
+- **Schema 10:** `packages/shared/src/index.ts`: `CURRENT_SAVE_SCHEMA_VERSION` 9→10; thêm `parcelTenure?: Record<string, ParcelTenure>` vào `SaveGameData`; `migrateToW7→migrateToW10` chain (migrateToW7 set 7, W8→8, W9→9, W10 điền tenure từ ownedParcelIds); `isSaveGameData` chấp nhận schema 10 (dùng CURRENT_SAVE_SCHEMA_VERSION).
+- **MigrateToW10:** điền `parcelTenure` từ `ownedParcelIds` (tất cả = owned). Nếu đã có `parcelTenure` (save thử schema 10) thì giữ nguyên. `ownedParcelIds` giữ nguyên để tương thích land-reclamation.
+- **Lệnh lease_parcel:** payload `{ type: 'lease_parcel'; parcelId: string }` trong shared; validation trong `isGameCommand`; `simulation.leaseParcel()`: kiểm day≥1, parcel tồn tại, wave≠0 (W0 không cho thuê), owned/leased, tiền; trừ tiền thuê 30 ngày (parcelPrice × leaseDailyRate × 30); **tenure schema 10 chưa nối applyStoreLayout** — placeholder.
+- **Server replay:** `bootstrap.ts` thêm `open_building` và `lease_parcel` vào `ALLOWED_COMMAND_TYPES` + `serverReplayedCommands`.
+- **Kiểm chứng:** `yarn typecheck` **PASS** (1.92s). CHƯA chạy `yarn test` (sandbox EPERM), CHƯA browser QA.
+
+- **Còn thiếu / giới hạn:**
+  - Tenure schema 10 (parcelTenure) chưa nối vào `simulation.leaseParcel()` — cần `exportSaveData` → `applyStoreLayout` hoặc property trực tiếp trên simulation.
+  - Renderer 4 loại tòa: FACADES chỉ có màu/biển, chưa có sprite riêng (cần asset).
+  - `FIXTURE_SHOP.allowedBuildings` đổi sang typeId + `minTier` theo hạng.
+  - D5: sổ cái/báo cáo theo tòa (`buildingInstanceId`).
+  - D6: giao hàng nội bộ (`internal_delivery`).
+  - D7: cốt truyện ch7 (`buildingsOpened` → đếm chi nhánh).
+  - Browser QA và co-op test.
+  - Cân bằng kinh tế các giá trị openCost PROVISIONAL.
+
+
+# 6a.1 + 6a.2: typeId trên buildingPlacements + lệnh open_building (13/10/2026)
+
+- **Mục tiêu:** (6a.1) Đưa `typeId` vào `BuildingPlacement` để code so sánh theo loại tòa thay vì id instance cố định; (6a.2) lệnh `open_building` mở thêm tòa mới (grocery_branch, cafe, parking_lot, com_restaurant).
+- **Đã làm (có code, `yarn typecheck` PASS 2.48s):**
+  - `packages/game-data/src/world/placements.ts`: thêm `typeId?: BuildingTypeId` vào `BuildingPlacement`; `DEFAULT_PLACEMENTS` điền typeId (grocery_main, xoi_shop, drink_shop, snack_shop); `templateForPlacement()` fallback `buildingTypeOfInstance.typeId` khi `BUILDING_TEMPLATES[buildingId]` không có; `buildingTypeOfInstance` nhận `${typeId}-${n}` (tòa mở thêm); `placementsProblem` dùng `buildingTypeOfInstance?.typeId` thay `buildingId === 'main'`; export `buildingTypeOfInstance` qua `@game/data`.
+  - `packages/game-data/src/world/building-types.ts`: `buildingTypeOfInstance(id)` nhận `${typeId}-${n}` (tách phần numeric sau dấu `-`, tra typeId để tìm typeDef).
+  - `packages/game-core/src/customers.ts`: 3 chỗ `buildingId === 'main'` → `typeId === 'grocery_main'` (nearDoor sort, motorbike/car spot selection). Resolve typeId từ DEFAULT_PLACEMENTS → fallback buildingTypeOfInstance.
+  - `packages/game-core/src/store-layout.ts`: `relocateBuilding` kiểm `mainType === 'grocery_main'` thay `buildingId === 'main'`; `expansionBudget` find bằng `buildingTypeOfInstance?.typeId === 'grocery_main'`.
+  - `packages/shared/src/index.ts`: payload `{ type: 'open_building'; buildingTypeId: string; parcelId: string; originX: number; originY: number }` trong `GameCommandPayload`; validation trong `isGameCommand`.
+  - `packages/game-core/src/simulation.ts`: `openBuilding(buildingTypeId, parcelId, originX, originY)`: kiểm store đóng, tra BUILDING_TYPE_DEFS, trần instance, maxInstances=1 (single_instance), parcel ownership (wave≠0), tiền/cấp, tạo instance `${typeId}-${n}`, trừ tiền, push placement.
+  - `packages/game-core/src/world-runtime.ts`: wire `open_building` command → `simulation.openBuilding()`.
+  - `apps/server/src/bootstrap.ts`: thêm `open_building` vào `ALLOWED_COMMAND_TYPES` + `serverReplayedCommands`.
+- **Kiểm chứng:** `yarn typecheck` **PASS** (2.48s). CHƯA chạy `yarn test` (sandbox EPERM), CHƯA browser QA.
+- **Còn thiếu / giới hạn:**
+  - Renderer 4 loại tòa mới (grocery_branch, cafe, parking_lot, com_restaurant) — hình ảnh tối thiểu (biển, mái hiên, màu sắc).
+  - `FIXTURE_SHOP.allowedBuildings` đổi sang typeId + `minTier` theo hạng.
+  - D5: sổ cái/báo cáo theo tòa (`buildingInstanceId`).
+  - D6: giao hàng nội bộ (`internal_delivery`).
+  - D7: cốt truyện ch7 (`buildingsOpened` → đếm chi nhánh).
+  - Browser QA và co-op test.
+  - Cân bằng kinh tế các giá trị openCost PROVISIONAL.
+
 # Hạ tầng nạp spritesheet PNG (11/10/2026)
 - **Mục tiêu:** chuẩn bị để thay hình vẽ bằng code (PixiJS `Graphics`/canvas, không có file ảnh) bằng pixel art PNG mà không sửa nơi gọi `getTexture`. CHƯA có asset thật nào; game vẫn chạy 100% bằng hình vẽ code.
 - **Đã làm (có code):**
@@ -2145,4 +2324,3 @@ Chỉ ghi PASS khi đã đo/chụp thật trong Browser pane (giả lập viewpo
     - **Voice chat WebRTC P2P:** Cần server TURN và chứng chỉ HTTPS khi deploy thật (ngoài phạm vi code tĩnh của repo).
     - **Co-op 2 máy/2 trình duyệt:** Cần phiên người dùng mở đồng thời 2 tab hoặc 2 máy vật lý kết nối mạng LAN/Internet để kiểm chứng độ trễ cảm nhận.
     - **Ảnh overlay W1/W2:** Repo hiện không chứa file ảnh gốc để căn chỉnh rect quy hoạch theo ảnh.
-

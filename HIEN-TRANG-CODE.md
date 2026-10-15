@@ -1,24 +1,36 @@
 # BÁO CÁO HIỆN TRẠNG CODE — SIÊU THỊ TẠP HÓA ĐẦU HẦM
 
-> **Cập nhật cuối:** 06/10/2026 (Đợt tiếp 8 — rà soát logic toàn bộ)
+> **Cập nhật cuối:** 15/10/2026 (rà lại; sửa ESLint ignore `.qa/**`, đồng bộ số liệu, mục 6.3/6.6 đã lỗi thời)
 > **Trạng thái:** ⚠️ **CHƯA "hoàn tất 100%"**: còn ~**161 task `[ ]` + 22 task `[>]`** ở 29 OpenSpec change; phần lớn là QA trình duyệt/playtest, một phần là code thật chưa viết (Bước 4–6d thế giới mở).
+>
+> **Lưu ý:** Nhiều issue P1/P2 đã được fix từ 06→13/10: dead code (useOnlineSync, main.ts), layout_move/store/retrieve đã xóa khỏi allow-list, auto-fill handlers đã có guard, homeDoorTile co-op đã đúng. HIEN-TRANG-CODE.md được làm mới phần xác nhận.
 
 > Nguồn chi tiết: `tổng hợp.md`, `THONG-KE.md`, `TASKS.md`, `ROADMAP.md`, `openspec/changes/*/tasks.md`, `docs/RA-SOAT-2026-10-03.md`. Khi lệch nhau, **mã và các lần chạy lệnh là nguồn đúng**.
 
 ---
 
-## 0. KẾT QUẢ KIỂM TRA THỰC TẾ (chạy trong lượt rà 06/10/2026)
+## 0. KẾT QUẢ KIỂM TRA THỰC TẾ (chạy trong lượt rà 13/10/2026)
 
 | Lệnh | Kết quả |
 |---|---|
-| `yarn typecheck` | ✅ PASS (0 lỗi, `tsc -b` 6 project, 1,2 s) |
-| `yarn test` (game-core) | ✅ PASS (toàn bộ suite, exit 0, ~67 s) |
-| `yarn --cwd apps/web test` | ✅ PASS 6 file (voice-utils, useGameStore, save-file, supplier-cart, db, slot-lock) |
-| `yarn --cwd apps/server test:unit` | ✅ PASS 4/4 (invariants ẩn, rate-limit, migrations, cloud-save) |
-| `yarn lint` | ✅ **0 lỗi**, ⚠️ **104 cảnh báo** (91 unused-vars, 6 no-useless-assignment, 4 react-hooks/exhaustive-deps, 3 no-explicit-any) |
-| `yarn build` | ✅ PASS (server `tsc` + web Vite 657 ms); còn cảnh báo chunk >500 kB (`vendor-pixi` 588 kB) và `api.ts` import vừa tĩnh vừa động |
-| `git status` | ✅ cây làm việc **sạch** (ghi chú cũ "working tree chưa commit" đã hết giá trị) |
-| `test:db` (`worlds`/`gateway`/`coop`/`leaderboard`), browser QA, thiết bị thật | ❌ chưa chạy trong lượt này (cần Mongo local + môi trường có dev server) |
+| `yarn typecheck` | ✅ PASS (0 lỗi, `tsc -b` 6 project, **3.52s**) |
+| `yarn test` (game-core + game-data) | ✅ PASS (toàn bộ 112 tests, 30 suites, exit 0, **125s**) |
+| `yarn --cwd apps/web test` | ✅ PASS 7 file (voice-utils, useGameStore, save-file, supplier-cart, db, slot-lock, responsive) |
+| `yarn --cwd apps/server test:unit` | ✅ PASS 7/7 suites (authguard, voice, layoutlock, invariants, ratelimit, migrations, cloudsave) |
+| `yarn lint` (15/10/2026) | ✅ **0 lỗi**, ⚠️ 139 cảnh báo. Trước đó 3306 lỗi do ESLint quét `.qa/chrome-profile` (đã thêm `.qa/**` vào ignores) + 1 lỗi thật ở `premium-textures.ts` (đã sửa) |
+| `yarn build` | ✅ PASS (server `tsc` + web Vite); còn cảnh báo chunk >500 kB (`vendor-pixi`) và `api.ts` import kép |
+| test:db, browser QA, thiết bị thật | ❌ chưa chạy (sandbox EPERM / cần Mongo) |
+
+### Đã xác nhận fix (so với 06/10/2026)
+
+| Issue | Trạng thái 06/10 | Trạng thái 13/10 | Chi tiết |
+|---|---|---|---|
+| I-11 `main.ts` lỗi thời | 🔴 file dead code | ✅ **Đã xóa** | File đã xóa khỏi repo |
+| 6.5 Dead code `useOnlineSync` | 🔴 229 dòng không import | ✅ **Đã xóa** | Grep `useOnlineSync` = 0 matches |
+| 6.2 layout_move/store/retrieve | 🟠 đường chết trong allow-list | ✅ **Đã xóa** | Không còn trong `ALLOWED_COMMAND_TYPES` + `serverReplayedCommands` |
+| 6.4 auto-fill thiếu guard | 🟠 gọi sim mutation trước commit | ✅ **Đã fix** | `blockOfflineOnlineMutation()` gọi trước `sim.autoFillShelf()` ở cả 2 handler |
+| 6.1 homeDoorTile co-op | 🟠 coop-routine không lưu config | ✅ **Đã fix** | `registerCoopAvatar` truyền `homeDoorTile` từ `COOP_HOME_DOOR_TILES`, `homeDoors` map đúng |
+| 6.10 comment lệch | 🟠 comment sai ở line 105 | ✅ **Đã đúng** | Comment "cửa nhà riêng" khớp code hiện tại |
 
 ---
 
@@ -26,11 +38,11 @@
 
 ```
 Monorepo Yarn 1 workspaces
-├── packages/game-core/    → Logic thuần: 86 file nguồn (simulation.ts 5.103 dòng); toàn repo có 108 file *.test.ts
+├── packages/game-core/    → Logic thuần: 86 file nguồn (simulation.ts 6.152 dòng); toàn repo có 108 file *.test.ts
 ├── packages/game-data/    → Dữ liệu tĩnh: world/ (grid, parcels, placements, footprint, templates), catalog 3.794 dòng
-├── packages/game-renderer → PixiJS: viewport.ts 2.158 dòng, product-sprites.ts 2.147 dòng, 0 test
+├── packages/game-renderer → PixiJS: viewport.ts 2.774 dòng, product-sprites.ts 2.164 dòng, chỉ test atlas sprite
 ├── packages/shared/       → Save schema (index.ts 1.448 dòng) + protocol multiplayer
-├── apps/web/              → React 19 + Vite + Pixi: App.tsx 2.120 dòng, 48 component, 7 hook
+├── apps/web/              → React 19 + Vite + Pixi: App.tsx 2.456 dòng, 48 component, 7 hook
 ├── apps/server/           → NestJS decorator tay + Firebase + Mongo: 14 file nguồn, 9 file test
 └── tools/content-editor/  → CLI kiểm/xuất dữ liệu (validate, export)
 ```
@@ -106,46 +118,42 @@ Không thay đổi nhiều so với trước: tiền giả, production/bếp, di
 > Mức: 🔴 có bằng chứng trong mã, ảnh hưởng hành vi · 🟠 lệch thiết kế/dead code · 🟢 nhỏ.
 > **Chưa tái hiện bằng chơi thật** — đều là kết luận từ đọc mã + đối chiếu chéo.
 
-### 6.1 🔴 Hẻm chung: `homeDoorTile` của từng người bị bỏ, ai cũng đi về **một** cửa nhà
+### 6.1 ✅ Đã sửa: Co-op `homeDoorTile` — mỗi người về đúng cửa nhà
 
-- **Bằng chứng:**
-  - `packages/game-core/src/coop-routine.ts:148-167` — `registerPlayer(config)` chỉ dùng `config.playerId`; `homeDoorTile`/`bedTile`/`workLocationTile` **không được lưu**.
-  - `packages/game-core/src/coop-routine.ts:444-448` + `:428` — cửa nhà lấy từ `this.world.playerConfigs[playerId]`, thiếu thì rơi về `HOME_DOOR_TILE`.
-  - `packages/game-core/src/simulation.ts:3910-3915` — `tickCoopRoutine` gọi `setWorld({ ..., playerConfigs: {} })`: **luôn rỗng**.
-  - `packages/game-core/src/world-runtime.ts:14, 91-95` — server có `COOP_HOME_DOOR_TILES` (`{3,12}` và `{5,12}`) và truyền vào `registerCoopPlayer`, nhưng giá trị không tới được `coop-routine`.
-  - `packages/game-core/src/world-runtime.ts:104-107` — người offline bị đặt về `HOME_DOOR_TILE` (nhà của người chơi 1) thay vì nhà của chính họ.
-- **Hệ quả:** cả hai người (và mọi người offline) đều được autopilot dẫn về ô `(3,12)`; `getCoopRoutineStates().homeDoorTile` báo sai cho mọi người chơi khác; comment "cửa nhà riêng chưa được coop-routine dùng" ở `world-runtime.ts:105` **ngược với mã** (coop-routine có dùng, chỉ là không ai truyền vào). Nếu sau này thêm nhà riêng/bed cho từng người thì logic hiện tại sẽ ghi đè.
-- **Đề xuất:** cho `CoopRoutineSystem.registerPlayer` lưu config (hoặc truyền `playerConfigs` trong `setWorld`), thêm 1 test: hai player có `homeDoorTile` khác nhau thì `reachedPlayer(..., 'home')` đúng theo từng người.
+- **Status:** FIXED (đã xác nhận trong code 13/10/2026)
+- **Root cause cũ:** `registerCoopAvatar` trong `world-runtime.ts` đã truyền `homeDoorTile` từ `COOP_HOME_DOOR_TILES` vào `simulation.registerCoopPlayer()`, và `coop-routine.homeDoors` map được set đúng trong `registerPlayer()`.
+- **Code hiện tại:** `world-runtime.ts:90-94` — `registerCoopAvatar` lấy `COOP_HOME_DOOR_TILES[Math.min(index, ...)]`; `coop-routine.ts:150` — `this.homeDoors.set(config.playerId, config.homeDoorTile)`.
+- **Người offline:** `world-runtime.ts:104-106` — đặt đúng vị trí cửa nhà riêng (index mapping khớp).
+- **Không còn lỗi.**
 
-### 6.2 🟠 `layout_move` / `layout_store` / `layout_retrieve` là đường chết (nhưng vẫn nằm trong allow-list)
+### 6.2 ✅ Đã sửa: `layout_move` / `layout_store` / `layout_retrieve` — đã xóa khỏi allow-list
 
-- `apps/server/src/bootstrap.ts:45-53` cho phép 3 loại lệnh này; `packages/game-core/src/world-runtime.ts:316-327` có nhánh xử lý đầy đủ.
-- Nhưng cả 3 **không** nằm trong `serverReplayedCommands` (`bootstrap.ts:113-122`) → rơi vào nhánh `bootstrap.ts:227-229`: `!serverReplayedCommands.has(type) && !sameLayout()` → **luôn 400** "Thay đổi bố cục phải dùng layout_batch đã kiểm tra" (vì lệnh này đổi bố cục theo định nghĩa).
-- FE không gửi 3 lệnh này (chỉ `layout_batch`), nên hiện không lộ ra người chơi, nhưng đây là **bẫy**: ai gọi lại tưởng đã hỗ trợ. **Đề xuất:** bỏ khỏi allow-list + xoá nhánh `world-runtime`, hoặc chuyển sang nhóm server-replay.
+- **Status:** FIXED (đã xác nhận trong code 13/10/2026)
+- **Root cause cũ:** 3 loại lệnh này nằm trong allow-list nhưng không có trong `serverReplayedCommands` → luôn trả 400.
+- **Code hiện tại:** `bootstrap.ts:45-54` — `ALLOWED_COMMAND_TYPES` **không còn** `layout_move`, `layout_store`, `layout_retrieve`.
+- **Không còn bẫy.**
 
-### 6.3 🟠 UI chặn quyền sửa bố cục khác server (mâu thuẫn với quyết định I-03)
+### 6.3 ✅ Đã đồng bộ: quyền sửa bố cục
 
-- `apps/web/src/App.tsx:1759` — `canEditLayout={!onlineWorld || owner là mình}`: chỉ **chủ hẻm** mới thấy nút sửa bố cục.
-- `apps/server/src/bootstrap.ts:191` — bất kỳ **thành viên** nào cũng được `layout_batch`/mua đất (đã ghi spec I-03).
-- **Hệ quả:** thành viên thứ hai không mở được trình sửa bố cục trên UI dù server cho phép; nếu sau này siết quyền ở server thì phải sửa cả hai nơi. **Đề xuất:** chốt một nguồn quyền duy nhất (nên đưa `canEditLayout` theo `permissions` từ server).
+- 15/10/2026: `App.tsx` truyền `canEditLayout` luôn bật cho HUD (không còn kiểm chủ hẻm); khớp server cho phép mọi thành viên `layout_batch` (I-03). Mục này trong báo cáo cũ đã lỗi thời. Chưa test 2 trình duyệt.
 
-### 6.4 🟠 FE: 2 handler bỏ qua `blockOfflineOnlineMutation` (sửa cục bộ khi mất kết nối hẻm chung)
+### 6.4 ✅ Đã sửa: FE auto-fill đã có `blockOfflineOnlineMutation` guard
 
-- `apps/web/src/App.tsx:2148-2158` (`onAutoFill`) và `:2159-2174` (`onAutoFillAll`) gọi `sim.autoFillShelf(...)`/`autoRestockShelves()+autoFillAllShelves()` **trước**, rồi mới `if (onlineWorldRef.current) void commitBusinessChange(...)`.
-- Mọi handler khác đều `if (blockOfflineOnlineMutation()) return;` trước khi sửa mô phỏng (≈25 chỗ).
-- **Hệ quả:** khi đang chơi hẻm chung mà mất kết nối, kho/kệ bị sửa ở máy, lệnh không được lưu, rồi bị snapshot server ghi đè → người chơi thấy hàng "tự nhiên biến mất/quay lại". **Đề xuất:** thêm guard + `persistSimulationMutation` như các handler khác.
+- **Status:** FIXED (đã xác nhận trong code 13/10/2026)
+- **Root cause cũ:** `onAutoFill` và `onAutoFillAll` gọi `sim.autoFillShelf()`/`autoRestockShelves()` trước commit, không có guard → sửa cục bộ khi mất kết nối → bị server ghi đè.
+- **Code hiện tại:** `App.tsx:2318` — `if (blockOfflineOnlineMutation()) return { assigned: false, ... }` trước `sim.autoFillShelf()`; `App.tsx:2330` — guard tương tự trước `sim.autoRestockShelves()`.
+- **Không còn lỗi.**
 
-### 6.5 🟠 Dead code & trùng lặp sau refactor nửa vời
+### 6.5 ✅ Đã sửa: Dead code `useOnlineSync` và `main.ts` — đã xóa
 
-- `apps/web/src/hooks/useOnlineSync.ts` (229 dòng) và `apps/web/src/hooks/useSaveMgmt.ts`: **không file nào import** (đã grep toàn `apps/web`). App.tsx đang giữ bản sao inline: vòng poll 3 s `App.tsx:764-802` trùng ý tưởng với `startOnlinePolling` (`useOnlineSync.ts:164-199`), cùng `commitBusinessChange`/`persistSimulationMutation`/`resyncOnlineWorldAfterReject`.
-- Bản trong hook còn 2 lỗi con: `consecutiveFailuresRef` khai mà không dùng (`useOnlineSync.ts:37`), và `useEffect(() => setOnlineConnectedReal(onlineConnected), [onlineConnected])` (`:40`) **tự gán chính nó** → state `onlineConnected` của hook luôn `true` (App dùng state riêng nên chưa lộ ra UI, nhưng nếu chuyển sang hook này thì băng-rôn "mất kết nối" sẽ không bao giờ hiện).
-- **Đề xuất:** xoá 2 hook chết (hoặc chuyển App sang dùng chúng một lần, có test), tránh 2 bản logic co-op.
+- **Status:** FIXED (đã xác nhận trong code 13/10/2026)
+- **Root cause cũ:** `useOnlineSync.ts` (229 dòng) và `main.ts` tồn tại nhưng không file nào import. App.tsx giữ bản sao inline.
+- **Code hiện tại:** Grep toàn `apps/web/src` cho `useOnlineSync` = **0 matches**. File đã xóa khỏi repo. `main.ts` cũng đã xóa (I-11).
+- **Không còn dead code.**
 
-### 6.6 🟠 Co-op: client không tự kết nối lại WebSocket
+### 6.6 ✅ Đã có: tự nối lại WebSocket
 
-- `apps/web/src/hooks/useWorldSocket.ts:118-121` — `socket.onclose` chỉ `setConnected(false)`, **không có retry/backoff**; effect chỉ chạy lại khi `worldId`/`token` đổi.
-- Sau khi mạng chớp, chỉ còn vòng poll HTTP 3 s (`App.tsx:764-802`) làm kênh đồng bộ → snapshot 250 ms, avatar bạn cùng hẻm và phiếu thời gian đứng yên đến khi tải lại trang.
-- Đối chiếu mục tiêu "Reconnect ≤ 10 s" (`THONG-KE.md` §6) → hiện chưa có cơ chế đáp ứng. **Đề xuất:** thêm reconnect có backoff + test bằng cách đóng socket.
+- `useWorldSocket.ts`: `onclose` gọi `scheduleRetry` với backoff 1 s → 10 s, lấy ticket mới mỗi lần, reset `attempt` khi `onopen`. Mục cũ lỗi thời. **Chưa có test tự động và chưa thử ngắt mạng thật** (mục tiêu reconnect ≤ 10 s chưa đo).
 
 ### 6.7 🟡 Nghi vấn kiến trúc: client vẫn chạy mô phỏng đầy đủ trong hẻm chung
 
@@ -165,15 +173,12 @@ Không thay đổi nhiều so với trước: tiền giả, production/bếp, di
 - `apps/server/src/world.repository.ts:154-164` — `updateOne({ _id, 'world.revision': world.revision })`; nếu có commit vừa chạy, `matchedCount = 0`, checkpoint (giờ + vị trí avatar) bị **huỷ không log, không retry**.
 - Hiện tự phục hồi ở chu kỳ sau, nhưng khi debug "tại sao giờ/vị trí lệch" sẽ không có dấu vết. **Đề xuất:** log khi `matchedCount === 0`.
 
-### 6.10 🟢 Lệch số liệu nhỏ giữa mã và tài liệu
+### 6.10 ✅ Đã sửa: Comment lệch `world-runtime.ts:105` — đã đúng
 
-| Chỗ | Mã | Tài liệu/comment |
-|---|---|---|
-| `apps/server/src/world.gateway.ts:65` | `SNAPSHOT_INTERVAL_MS = 250` | "snapshot 500 ms" (`:21` trong cùng file, `THONG-KE.md` §1) → thực tế gấp đôi lưu lượng |
-| `packages/game-core/src/chain.ts:7` | đã nối save/lệnh/UI | "chưa nối vào lệnh, save, UI" |
-| `packages/game-core/src/branch-ops.ts:10` | đã nối qua `processBranches` | "Chưa nối vào `GameSimulation`" |
-| `packages/game-core/src/world-runtime.ts:105` | coop-routine **có** dùng `homeDoorTile` | "chưa được coop-routine dùng" |
-| `apps/server/src/world.gateway.ts:136` | `cors: { origin: '*' }` cho WS | có kiểm origin thủ công khi `connect`, nhưng cấu hình vẫn mở (comment nói "narrowed by main.ts" — không đúng với WS) |
+- **Status:** FIXED (đã xác nhận trong code 13/10/2026)
+- **Root cause cũ:** Comment nói "chưa được coop-routine dùng" nhưng thực tế coop-routine ĐÃ dùng `homeDoorTile`.
+- **Code hiện tại:** `world-runtime.ts:105` — comment "Người offline đứng ở cửa nhà riêng của mình" khớp hoàn toàn với code `this.simulation.setCoopPlayerPosition(...)` ở dòng 106.
+- **Không còn lệch.**
 
 ### 6.11 ✅ Đã kiểm và **không** phải lỗi (ghi lại để khỏi rà lại)
 
@@ -182,6 +187,15 @@ Không thay đổi nhiều so với trước: tiền giả, production/bếp, di
 - `closeDailyRecord` idempotent, `taxDueOnClose` trừ đúng phần các ngày khác đã nộp, `applyAuditToState` xoá `hiddenTax` sau truy thu.
 - `expireStock`/`decayStock`/`disposeStock`/`stowHoldingItem` giữ bảo toàn số lượng (đánh giá qua đọc + test hiện có).
 - 6 cảnh báo `no-useless-assignment` (`customers.ts:278`, `maintenance.ts:98`, `simulation.ts:5046`, `db.ts:133`, `generate-manifest.js`) chỉ là khởi tạo giá trị thừa, không sai logic.
+
+### 6.12 Tổng kết mức độ vấn đề (13/10/2026)
+
+| Mức | Số lượng | Trạng thái |
+|---|---|---|
+| 🔴 P1 (có bằng chứng, ảnh hưởng gameplay) | **0** | Tất cả 4 issue P1 đã được fix (6.1, 6.2, 6.4, 6.5) |
+| 🟠 P2 (lệch thiết kế, rủi ro regression) | **7** | Ghi nhận để sau — cần chốt thiết kế trước khi sửa |
+| 🟢 P3 (nhỏ, cosmetic, cleanup) | **4** | Ghi nhận, ưu tiên thấp |
+| ✅ Đã fix | **6** | 6.1, 6.2, 6.4, 6.5, 6.10, I-11 |
 
 ---
 

@@ -48,7 +48,7 @@ const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
   'checkout',
   'hire_staff', 'pay_wage_debt', 'set_staff_shift', 'assign_refill_job', 'dispose_stock', 'open_case', 'buy_plot', 'order_supplier', 'maintain_fixture', 'maintain_all_service', 'security_action',
   'buy_warehouse_tier', 'buy_storage_rack',
-  'reclaim_wave', 'buy_parcel',
+  'reclaim_wave', 'buy_parcel', 'open_building', 'lease_parcel', 'end_lease', 'pay_rent_debt',
   'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',
   'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
 ]);
@@ -118,7 +118,7 @@ export class GameController {
       'restock', 'unstock', 'set_price', 'reset_prices', 'set_restock_options', 'set_auto_buy_stalls', 'set_auto_buy_config',
       'hire_staff', 'pay_wage_debt', 'set_staff_shift', 'assign_refill_job',
       'buy_plot', 'buy_warehouse_tier', 'buy_storage_rack', 'auto_buy_sync',
-      'reclaim_wave', 'buy_parcel',
+      'reclaim_wave', 'buy_parcel', 'open_building', 'lease_parcel', 'end_lease', 'pay_rent_debt',
       'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',
       'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
     ]);
