@@ -1,4 +1,4 @@
-import { generateStarterTileMap, STARTER_PRODUCTS, ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP, DEFAULT_INITIAL_SAVE, runCatalogTests, runExpansionCatalogTests, runExpansionManifestTests, runReclamationDataTests, runPlayAreaTests, runWaveInfrastructureTests, runBuildingTypesTests, runStoreTiersTests, runLandLeaseTests, runDistrictsTests, runCityGoalsTests, runSpecialRequestDataTests, runMarketEventDataTests } from '@game/data';
+import { generateStarterTileMap, STARTER_PRODUCTS, ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP, DEFAULT_INITIAL_SAVE, runCatalogTests, runExpansionCatalogTests, runExpansionManifestTests, runReclamationDataTests, runPlayAreaTests, runWaveInfrastructureTests, runBuildingTypesTests, runStoreTiersTests, runLandLeaseTests, runDistrictsTests, runCityGoalsTests, runSpecialRequestDataTests, runMarketEventDataTests, runDataIntegrityTests } from '@game/data';
 import { COLD_WAREHOUSE_CAPACITY, CURRENT_SAVE_SCHEMA_VERSION } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
@@ -217,6 +217,7 @@ export async function runTests(): Promise<void> {
   runSpecialRequestDataTests();
   runSpecialRequestTests();
   runMarketEventDataTests();
+  runDataIntegrityTests();
   runWordOfMouthTests();
   runPriceSuggestTests();
   runWorldEventsTests();

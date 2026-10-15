@@ -8,7 +8,7 @@
 		"build": "tsc && vite build",
 		"preview": "vite preview",
 		"typecheck": "tsc --noEmit",
-		"test": "tsx src/responsive.test.ts && tsx src/voice-utils.test.ts && tsx src/store/useGameStore.test.ts && tsx src/save-file.test.ts && tsx src/supplier-cart.test.ts && tsx --tsconfig tsconfig.test.json src/db.test.ts && tsx --tsconfig tsconfig.test.json src/slot-lock.test.ts"
+		"test": "tsx src/responsive.test.ts && tsx src/voice-utils.test.ts && tsx src/store/useGameStore.test.ts && tsx src/save-file.test.ts && tsx src/supplier-cart.test.ts && tsx --tsconfig tsconfig.test.json src/db.test.ts && tsx --tsconfig tsconfig.test.json src/slot-lock.test.ts && tsx src/components/TutorialChecklist.test.tsx"
 	},
 	"dependencies": {
 		"@game/core": "*",
