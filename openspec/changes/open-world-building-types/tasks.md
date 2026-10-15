@@ -19,7 +19,7 @@ Trạng thái 07/10/2026: phần THUẦN AN TOÀN của các task 1.1, 2.2b(D9),
 ## 2. Mở tòa và loại mới
 
 - [ ] 2.1 Lệnh `open_building` (+ bí danh `buy_plot building-*`); id nội thất `${instanceId}_${key}`; server phát lại; test.
-- [ ] 2.2 **(15/10/2026: ĐÃ làm logic — nội thất mặc định, khách theo giờ cao điểm, bãi xe thưởng khách + phí; test `building-behavior.test.ts`. CÒN: hình ảnh/biển renderer, công thức cà phê riêng, món cơm riêng.)** `grocery_branch`, `cafe` (trạm pha + công thức), `parking_lot` (phí xe, hiệu ứng bán kính qua `arrival-mode`), `com_restaurant` (bếp + bàn ăn có sẵn, món cơm); hình ảnh tối thiểu (biển, mái hiên, màu).
+- [ ] 2.2 **(15/10/2026: ĐÃ làm logic — nội thất mặc định, khách theo giờ cao điểm, bãi xe thưởng khách + phí; test `building-behavior.test.ts`. CÒN: công thức cà phê riêng, món cơm riêng. Renderer 15/10: biển/mái/chi tiết riêng + bãi xe sân hở, nhìn desktop OK, CHƯA QA mobile/đêm/mưa.)** `grocery_branch`, `cafe` (trạm pha + công thức), `parking_lot` (phí xe, hiệu ứng bán kính qua `arrival-mode`), `com_restaurant` (bếp + bàn ăn có sẵn, món cơm); hình ảnh tối thiểu (biển, mái hiên, màu).
 - [ ] 2.2b Hạng cửa hàng theo diện tích (D9): `tiers` trong loại tòa, biển theo hạng, hệ số khách/sức chứa, `FIXTURE_SHOP[].minTier`; test ngưỡng và không giảm khi dời.
 - [ ] 2.3 Mô phỏng cân bằng bốn loại mới và các hạng (`*-balance-sim.ts`), ghi số provisional.
 

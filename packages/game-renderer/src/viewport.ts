@@ -70,13 +70,14 @@ const MAIN_FLOOR_RECT = PARCEL_MAP[DEFAULT_PLACEMENTS[0].parcelId].rect;
 
 /** Mặt tiền các tòa phụ: tên biển, màu mái hiên/biển. Hình học (biên, cửa, mái hiên) lấy từ `GameTileMap.buildings` theo vị trí đặt.
  *  Key = buildingId (xoi/snack/drink) HOẶC typeId (grocery_branch/cafe/com_restaurant). parking_lot không có mặt tiền. */
-const FACADES: Readonly<Record<string, { name: string; awning: number; board: number; trim: number; text: number }>> = {
+type AwningStyle = 'stripe' | 'scallop';
+const FACADES: Readonly<Record<string, { name: string; awning: number; board: number; trim: number; text: number; style?: AwningStyle }>> = {
   xoi: { name: 'TIỆM XÔI', awning: 0xc0392b, board: 0x7a2f1d, trim: 0xe0b85a, text: 0xffe9b0 },
   snack: { name: 'QUÁN ĂN VẶT', awning: 0xd9822b, board: 0x8a4b12, trim: 0xf3c969, text: 0xfff0c8 },
   drink: { name: 'QUÁN NƯỚC', awning: 0x1f6f8b, board: 0x14506a, trim: 0x8fd3e8, text: 0xd9f4ff },
   // --- 4 loại mới PROVISIONAL (6a.2 renderer) ---
   grocery_branch: { name: 'CHI NHÁNH TẠP HÓA', awning: 0x27ae60, board: 0x1e8449, trim: 0x82e0aa, text: 0xd5f5e3 },
-  cafe: { name: 'QUÁN CÀ PHÊ', awning: 0x8b4513, board: 0x5d2e0c, trim: 0xd4a574, text: 0xfdebd0 },
+  cafe: { name: 'QUÁN CÀ PHÊ', awning: 0x8b4513, board: 0x5d2e0c, trim: 0xd4a574, text: 0xfdebd0, style: 'scallop' },
   com_restaurant: { name: 'QUÁN CƠM', awning: 0xc0392b, board: 0x922b21, trim: 0xf1948a, text: 0xfadbd8 },
   // parking_lot: không có mặt tiền (bãi xe trống).
 } as const;
@@ -678,7 +679,12 @@ export class PixiGameViewport {
     const awningX = awningStart * TILE_SIZE;
     const stripes = 7;
     const stripeW = (awningTiles * TILE_SIZE) / stripes;
-    for (let i = 0; i < stripes; i++) awning.rect(awningX + i * stripeW, frontY - 6, stripeW, 9).fill(i % 2 === 0 ? facade.awning : 0xf5ecd8);
+    if (facade.style === 'scallop') {
+      awning.rect(awningX, frontY - 6, stripes * stripeW, 6).fill(facade.awning);
+      for (let i = 0; i < stripes; i++) awning.circle(awningX + (i + 0.5) * stripeW, frontY, stripeW / 2).fill(i % 2 === 0 ? facade.awning : 0xe8cfa5);
+    } else {
+      for (let i = 0; i < stripes; i++) awning.rect(awningX + i * stripeW, frontY - 6, stripeW, 9).fill(i % 2 === 0 ? facade.awning : 0xf5ecd8);
+    }
     awning.rect(awningX, frontY + 3, stripes * stripeW, 2).fill({ color: 0x26190e, alpha: 0.35 });
     awning.zIndex = 360;
     this.wallLayer.addChild(awning);
@@ -693,6 +699,94 @@ export class PixiGameViewport {
     const label = new Text({ text: facade.name, style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 14, fontWeight: 'bold', fill: facade.text }) });
     label.anchor.set(0.5);
     label.position.set(board.x + boardW / 2, board.y + 7.5);
+    label.zIndex = 362;
+    this.wallLayer.addChild(label);
+    this.buildTypeFacadeProps(typeId, placed, board.x, board.y, boardW, frontY);
+  }
+
+  /**
+   * Chi tiết mặt tiền riêng từng loại tòa mới (PROVISIONAL, vẽ code): cà phê có ly cà phê trên biển và chậu cây hai bên cửa,
+   * quán cơm có hai đèn lồng đỏ ở đầu biển và bảng thực đơn cạnh cửa, chi nhánh tạp hóa có dải đèn "24H" dưới biển.
+   */
+  private buildTypeFacadeProps(typeId: string, placed: PlacedBuilding, boardX: number, boardY: number, boardW: number, frontY: number): void {
+    const props = new Graphics();
+    const doorX = placed.doorTiles[0].x * TILE_SIZE;
+    const doorW = placed.doorTiles.length * TILE_SIZE;
+    if (typeId === 'cafe') {
+      props.rect(boardX + 3, boardY + 4, 7, 6).fill(0xfdebd0).stroke({ color: 0x3b1f0a, width: 1 });
+      props.rect(boardX + 10, boardY + 5, 2, 3).stroke({ color: 0xfdebd0, width: 1 });
+      props.rect(boardX + 5, boardY + 1, 1, 2).fill({ color: 0xffffff, alpha: 0.7 });
+      props.rect(boardX + 8, boardY + 0, 1, 3).fill({ color: 0xffffff, alpha: 0.7 });
+      for (const px of [doorX - 12, doorX + doorW + 4]) {
+        props.rect(px, frontY + 18, 9, 7).fill(0x8a4b27).stroke({ color: 0x3b1f0a, width: 1 });
+        props.circle(px + 4.5, frontY + 14, 6).fill(0x3e8e41);
+        props.circle(px + 2, frontY + 12, 3).fill(0x56b05a);
+      }
+    } else if (typeId === 'com_restaurant') {
+      for (const lx of [boardX - 6, boardX + boardW - 2]) {
+        props.rect(lx + 3, boardY - 2, 1, 4).fill(0x3b1f0a);
+        props.roundRect(lx, boardY + 2, 8, 11, 3).fill(0xd62828).stroke({ color: 0xffd166, width: 1 });
+        props.rect(lx + 3, boardY + 13, 2, 3).fill(0xffd166);
+      }
+      const mx = doorX + doorW + 5;
+      props.rect(mx, frontY + 6, 14, 18).fill(0x26352d).stroke({ color: 0x8a5a2b, width: 2 });
+      for (let i = 0; i < 4; i++) props.rect(mx + 3, frontY + 10 + i * 3.5, i % 2 ? 6 : 8, 1).fill(0xf5ecd8);
+    } else if (typeId === 'grocery_branch') {
+      props.roundRect(boardX + boardW - 24, boardY + 15, 22, 7, 2).fill(0x17391f).stroke({ color: 0xf1c40f, width: 1 });
+      for (let i = 0; i < 4; i++) props.rect(boardX + boardW - 21 + i * 5, boardY + 17, 3, 3).fill(i % 2 ? 0xf1c40f : 0xffe27a);
+    } else {
+      return;
+    }
+    props.zIndex = 363;
+    this.wallLayer.addChild(props);
+  }
+
+  /** Bãi giữ xe: sân lát nhựa hở (không tường), kẻ ô đỗ, gờ chắn bánh, thanh chắn ở lối vào và biển "BÃI XE". */
+  private buildParkingLot(placed: PlacedBuilding): void {
+    const { bounds } = placed;
+    const left = bounds.left * TILE_SIZE;
+    const top = bounds.top * TILE_SIZE;
+    const width = (bounds.right - bounds.left + 1) * TILE_SIZE;
+    const height = (bounds.bottom - bounds.top + 1) * TILE_SIZE;
+    const lot = new Graphics();
+    lot.rect(left, top, width, height).fill(0x3a3d42);
+    lot.rect(left, top, width, 2).fill(0x8f959b);
+    lot.rect(left, top + height - 2, width, 2).fill(0x8f959b);
+    lot.rect(left, top, 2, height).fill(0x8f959b);
+    lot.rect(left + width - 2, top, 2, height).fill(0x8f959b);
+    const bayTop = top + TILE_SIZE;
+    const bayH = height - 3 * TILE_SIZE;
+    for (let x = left + TILE_SIZE; x <= left + width - TILE_SIZE; x += TILE_SIZE) lot.rect(x - 1, bayTop, 2, bayH).fill({ color: 0xf5ecd8, alpha: 0.85 });
+    for (let x = left + TILE_SIZE; x < left + width - TILE_SIZE; x += TILE_SIZE) lot.rect(x + 6, bayTop + 2, TILE_SIZE - 12, 3).fill(0xc9ced3);
+    lot.zIndex = 1;
+    this.groundLayer.addChild(lot);
+
+    const props = new Graphics();
+    const frontY = bounds.bottom * TILE_SIZE;
+    const gateX = placed.doorTiles[0].x * TILE_SIZE;
+    props.rect(gateX - 4, frontY - 6, 6, 14).fill(0x555a60);
+    props.rect(gateX + 2 * TILE_SIZE - 2, frontY - 6, 6, 14).fill(0x555a60);
+    for (let i = 0; i < 6; i++) props.rect(gateX + 2 + i * 4, frontY - 4, 4, 3).fill(i % 2 ? 0xf5ecd8 : 0xd62828);
+    props.zIndex = 360;
+    this.wallLayer.addChild(props);
+
+    const boardW = 4 * TILE_SIZE;
+    const boardX = left + (width - boardW) / 2;
+    const boardY = top - 20;
+    const board = new Graphics();
+    board.roundRect(0, 0, boardW, 16, 2).fill(0x1b3f73).stroke({ color: 0xcfe3ff, width: 1 });
+    board.circle(9, 8, 6).fill(0xffffff);
+    board.position.set(boardX, boardY);
+    board.zIndex = 361;
+    this.wallLayer.addChild(board);
+    const badge = new Text({ text: 'P', style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 13, fontWeight: 'bold', fill: 0x1b3f73 }) });
+    badge.anchor.set(0.5);
+    badge.position.set(boardX + 9, boardY + 8.5);
+    badge.zIndex = 362;
+    this.wallLayer.addChild(badge);
+    const label = new Text({ text: 'BÃI XE', style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 14, fontWeight: 'bold', fill: 0xe8f1ff }) });
+    label.anchor.set(0.5);
+    label.position.set(boardX + boardW / 2 + 6, boardY + 8.5);
     label.zIndex = 362;
     this.wallLayer.addChild(label);
   }
@@ -1015,7 +1109,10 @@ export class PixiGameViewport {
       this.swaySigns.push(sign);
     }
 
-    for (const placed of this.placedBuildings()) this.buildBuildingFacade(placed);
+    for (const placed of this.placedBuildings()) {
+      if (resolveTypeId(placed.id) === 'parking_lot') this.buildParkingLot(placed);
+      else this.buildBuildingFacade(placed);
+    }
     this.buildVacantLotSigns();
 
     // Clean warehouse doorway frame and wood threshold

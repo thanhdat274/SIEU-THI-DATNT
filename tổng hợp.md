@@ -8,6 +8,7 @@
 - **Task 1.3 (15/10/2026):** `productFilter` của registry nay được áp cho kệ trong `grocery_branch` (loại đồ đông lạnh) và `parking_lot` (không bán gì) ở `setPlanogramAssignment`, `transferToShelf`, `autoFillCandidates` (lý do `product_not_allowed`, có toast ở `App.tsx`). 4 loại cũ giữ luật riêng sẵn có. `cafe`/`com_restaurant` hiện cho mọi món.
 - **Task 2.2 (15/10/2026) — nội thất + hành vi 4 loại tòa mới:** (1) Nội thất mặc định PROVISIONAL: chi nhánh (5 kệ, thu ngân, tủ mát), cà phê (quầy pha, máy xay, ấm, kệ, 4 bàn, thu ngân), quán cơm (bếp nướng, nồi canh, tủ trưng bày, 3 bàn 4 chỗ, thu ngân), bãi xe (không có); id nội thất có tiền tố instance (`cafe-1_counter`). (2) `openBuilding` đặt tòa qua `applyStoreLayout` (kiểm bố cục, dựng bản đồ) rồi mới trừ tiền. (3) Khách: tòa mở thêm có dòng sinh khách riêng = `trafficShare` × 1,5 trong giờ cao điểm × hệ số lô; bãi xe đang mở tăng khách đi xe của tòa trong bán kính (+15%, không cộng dồn) và thu phí gửi xe (xe máy 3.000 ₫, ô tô 15.000 ₫ — PROVISIONAL) ghi doanh thu/sổ cái cho chính bãi xe; bãi bị đóng vì nợ thuê mất hiệu lực. (4) Sửa `allowedStationIds` của cà phê (`cafe_pha_che` không tồn tại) thành trạm thật. Test `building-behavior.test.ts` PASS; cả suite 112/112, typecheck, lint 0 lỗi.
   **Chưa làm:** hình/biển/mái riêng ở renderer cho 4 loại; công thức cà phê riêng (đang dùng trạm quầy nước/ấm/máy xay có sẵn); quán cơm chưa có món cơm riêng (`recipe_com_hop_ga` có sẵn ở bếp nướng); phí gửi xe chưa chỉnh được trên UI; chưa balance/playtest; chưa browser QA.
+- **Renderer 4 loại tòa mới (15/10/2026, ĐÃ NHÌN bằng trình duyệt dev, desktop + khung hẹp, chưa mobile thật/đêm/mưa/co-op):** bãi giữ xe nay là sân lát hở không tường (`map.ts`: ground sidewalk, không va chạm trừ khi thi công) với kẻ ô đỗ, gờ chắn bánh, thanh chắn đỏ trắng và biển "P · BÃI XE" (`viewport.ts: buildParkingLot`; trước đó bị vẽ như một cửa hàng "CỬA HÀNG" kín tường). Quán cà phê: mái hiên nâu mép lượn sóng, ly cà phê trên biển, hai chậu cây cạnh cửa. Quán cơm: hai đèn lồng đỏ ở đầu biển, bảng thực đơn cạnh cửa. Chi nhánh tạp hóa: dải đèn "24H" dưới biển. Tất cả vẽ bằng code (Graphics), PROVISIONAL, chưa dùng sprite pack. Chưa có test tự động cho phần vẽ (renderer chưa chạy được Pixi trong test). Typecheck, suite 112/112, lint 0 lỗi.
 - Còn mở (chưa làm): client online vẫn chạy mô phỏng sinh khách cục bộ (6.7); chưa browser QA/co-op 2 trình duyệt; khoảng trống test renderer/game-data/component web.
 
 # REVIEW TOÀN BỘ DỰ ÁN — 13/10/2026
@@ -112,6 +113,15 @@
 - **Kiến trúc**: Monorepo ~31k dòng TS/TSX
 - **Tiến độ**: ~161 task `[ ]` + 22 task `[>]` trong 29 OpenSpec change
 - **Không hoàn tất 100%** — còn QA trình duyệt/playtest là chủ yếu
+
+---
+
+# Sửa lỗi nạp save schema 9 (15/10/2026)
+
+- **Lỗi:** màn hình "Lỗi nạp dữ liệu lưu: Chưa có migration an toàn cho save schema 9". Nguyên nhân: `isSaveGameData` (`packages/shared/src/index.ts`) liệt kê schema 1–8 và `CURRENT` (=10) nhưng **bỏ sót 9** (khi nâng lên 10 quên thêm). `validateSaveGameData` không gọi được migration 9→10 (`migrateToW10`) nên trả `data` rỗng, `apps/web/src/db.ts:loadOrCreateSave` ném lỗi.
+- **Đã sửa:** thêm `value.schemaVersion !== 9` vào `isSaveGameData`. Save cũ trong IndexedDB không bị ghi đè khi lỗi (đã giữ nguyên).
+- **Test:** thêm ca "Bản lưu schema 9 được nâng lên schema hiện tại" vào Test 8 của `packages/game-core/src/test-runner.ts` (PASS, 15/10/2026). `yarn typecheck` PASS.
+- **Chưa kiểm chứng:** nạp save thật trên trình duyệt (chưa Browser QA). `yarn test` toàn bộ vẫn fail ở `building-behavior.test.ts:44` (quán cà phê 20 nội thất, kỳ vọng 9) — file chưa commit thuộc phần `building-types` đang sửa dở, không liên quan lỗi này.
 
 ---
 
