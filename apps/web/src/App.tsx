@@ -5,6 +5,7 @@ import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
 import { ParcelBuyModal } from './components/ParcelBuyModal';
+import { WorldSettingsModal } from './components/WorldSettingsModal';
 import { LandVoteModal, type LandVoteInfo } from './components/LandVoteModal';
 import { OpenBuildingModal } from './components/OpenBuildingModal';
 import { PixiGameViewport, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
@@ -24,7 +25,7 @@ import { UpdateBanner } from './components/UpdateBanner';
 import { UpdateConflictDialog, type UpdateConflictChoice } from './components/UpdateConflictDialog';
 import type { CloudSaveSummary } from './services/api';
 import { LoginScreen } from './components/LoginScreen';
-import { type WorldDetail, createWorldInvite, commitOnlineCommand, getOnlineWorld, touchWorldSession } from './services/api';
+import { type WorldDetail, createWorldInvite, commitOnlineCommand, updateWorldSettings, getOnlineWorld, touchWorldSession } from './services/api';
 import { WarehouseModal } from './components/WarehouseModal';
 import { ShelfModal } from './components/ShelfModal';
 import { CashierModal } from './components/CashierModal';
@@ -109,6 +110,7 @@ export const App: React.FC = () => {
   const [isQuestOpen, setQuestOpen] = useState(false);
   const [isLevelRoadmapOpen, setLevelRoadmapOpen] = useState(false);
   const [isCityOpen, setCityOpen] = useState(false);
+  const [isWorldSettingsOpen, setWorldSettingsOpen] = useState(false);
   const [landVote, setLandVote] = useState<LandVoteInfo | null>(null);
   const [parcelPromptId, setParcelPromptId] = useState<string | null>(null);
   const [openBuildingParcelId, setOpenBuildingParcelId] = useState<string | null>(null);
@@ -609,6 +611,21 @@ export const App: React.FC = () => {
     } catch (err) {
       console.error(err);
       addToast(err instanceof Error ? err.message : 'Không tạo được lời mời.', 'warn');
+    }
+  };
+
+  const handleSaveWorldSettings = async (patch: import('@game/shared').WorldSettings) => {
+    if (!onlineWorld) return;
+    try {
+      const token = await getOnlineIdToken();
+      if (!token) throw new Error('Cần đăng nhập.');
+      const result = await updateWorldSettings(token, onlineWorld.world.id, patch);
+      setOnlineWorld(prev => prev ? { ...prev, world: { ...prev.world, settings: result.settings } } : prev);
+      onlineWorldRef.current = onlineWorldRef.current ? { ...onlineWorldRef.current, world: { ...onlineWorldRef.current.world, settings: result.settings } } : onlineWorldRef.current;
+      addToast('Đã lưu quyền đất của hẻm.', 'success');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Không lưu được cài đặt.', 'warn');
+      throw err;
     }
   };
 
@@ -1967,6 +1984,7 @@ export const App: React.FC = () => {
           onlineWorldName={onlineWorld?.world.name}
           isOnlineOwner={onlineWorld ? onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0] : false}
           onInvite={handleOnlineInvite}
+          onSettings={() => setWorldSettingsOpen(true)}
           onLeaveOnline={handleLeaveOnline}
           onReturnHome={handleReturnHome}
         />
@@ -2464,6 +2482,9 @@ export const App: React.FC = () => {
         }}
         onClose={() => setIsPlanogramOpen(false)}
       />
+    )}
+    {isWorldSettingsOpen && onlineWorld && (
+      <WorldSettingsModal settings={onlineWorld.world.settings} onSave={handleSaveWorldSettings} onClose={() => setWorldSettingsOpen(false)} />
     )}
     {landVote && (
       <LandVoteModal

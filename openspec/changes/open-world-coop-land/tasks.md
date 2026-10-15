@@ -22,7 +22,7 @@ Trạng thái 07/10/2026: phần THUẦN của các task 1.1, 2.1, 2.2, 3.1, 3.2
 
 ## 2. Quyền và phiếu
 
-- [ ] 2.1 **(15/10/2026: ĐÃ làm server — settings + endpoint chủ hẻm + policy; thiếu receipt/revision và UI trong bảng hẻm.)** Bảng quyền D2; `world.settings.memberLandPermissions`, `ownerSkipsVote`; lệnh đổi cài đặt có receipt; UI trong bảng hẻm.
+- [ ] 2.1 **(15/10/2026: ĐÃ làm server — settings + endpoint chủ hẻm + policy; thiếu receipt/revision; UI chỉnh quyền trong AccountBar đã có, chưa xem trình duyệt.)** Bảng quyền D2; `world.settings.memberLandPermissions`, `ownerSkipsVote`; lệnh đổi cài đặt có receipt; UI trong bảng hẻm.
 - [ ] 2.2 **(15/10/2026: ĐÃ nối server + socket + hộp phiếu client; test đơn vị PASS, CHƯA thử Mongo/hai trình duyệt.)** `land-vote` theo khuôn `time-vote`: tạo, đồng ý, từ chối, hết hạn 45 giây, người kia rời thì chạy; test.
 
 ## 3. Ghi nhận
