@@ -1,5 +1,6 @@
 import { Product } from '@game/shared';
 import { drawColdProductIcon } from './pixel-art-cold';
+import { drawDishProductIcon } from './pixel-art-dishes';
 import { FOOD_ICON_BY_PRODUCT, FOOD_ICON_RECTS } from './product-icons-food';
 
 /** Original 16px product silhouettes, shared by DOM icons and world shelf stock. */
@@ -10,6 +11,7 @@ export function productPixels(product?: Pick<Product, 'id' | 'category'>): Pixel
   const ink = '#3A3A50', paper = '#FFF2D6', gold = '#E9B95D', teal = '#357F72';
   const category = product?.category;
   if (drawColdProductIcon(product?.id, rect)) return p;
+  if (drawDishProductIcon(product?.id, rect)) return p;
   const foodIcon = product ? FOOD_ICON_RECTS[FOOD_ICON_BY_PRODUCT[product.id]] : undefined; // icon thực phẩm Kenney cho các món hợp hình
   if (foodIcon) { for (const [x, y, w, h, color] of foodIcon) rect(x, y, w, h, color); return p; }
   if (product?.id === 'keo_mut') { // kẹo mút: kẹo xoắn đỏ trắng tròn trên que trắng
