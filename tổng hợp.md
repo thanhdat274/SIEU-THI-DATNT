@@ -1,3 +1,41 @@
+# GIAI ĐOẠN 4 — MỤC 1: SỰ KIỆN XÓM PHỐ (16/10/2026)
+
+Change OpenSpec: `openspec/changes/neighborhood-events/` (proposal, spec delta `neighborhood-events`, design, tasks). Nối các module có sẵn (`seasons`, `party-orders`, `holiday-balance-sim`) thành loạt "sự kiện xóm phố" với đơn theo mùa, thông báo, màn tổng quan và cân bằng thưởng.
+
+## Làm được
+
+- **Đơn hàng theo mùa:** `PartyOrderDef.seasons?` (shared). `game-data/partyOrders.ts`: gắn nhãn mùa, thêm 2 đơn mới Tết/Trung thu (`party_sam_tet`, `party_trung_thu_pha_co`) + `validatePartyOrders()`. `game-core/party-orders.ts`: `partyOrdersForSeason()` thuần + `refreshAvailablePartyOrders` ưu tiên đơn đúng mùa (giữ "1 đơn mới/ngày").
+- **Thông báo:** `simulation.ts` `notifySeasonalEvents()` (gọi đầu ngày): toast lễ hội bắt đầu (chống lặp theo năm qua `notifiedFestivalKeys`), toast đơn tiệc mùa mới, toast có thưởng ngày hội (1 lần/ngày)
+- **Màn "Sự kiện xóm phố":** `apps/web/src/components/NeighborhoodEventsModal.tsx` (lễ hội đang/sắp tới, đơn mùa, mục tiêu ngày hội, cảnh báo hết hạn); badge mùa trên HUD thành nút mở; wire `App.tsx` (state `isSeasonEventsOpen`, `hudHandlers.onOpenSeasonEvents`, lazy-modal); CSS `hud-season-badge-btn`.
+- **Cân bằng:** chạy `holiday-balance-sim` qua harness — doanh thu 7 lễ (mức 10) 1.034k–1.185k ₫, khách 131–149 (±8%); thưởng mục tiêu 60–90k ₫ ~7–8% doanh thu ngày, đơn tiệc 110–450k ₫ — tương xứng, giữ hằng số.
+
+## File thay đổi
+
+`packages/shared/src/index.ts`, `packages/game-data/src/partyOrders.ts`, `packages/game-core/src/{party-orders,neighborhood-events,simulation,index,test-runner}.ts`, `packages/game-core/src/party-orders-seasonal.test.ts` (mới), `apps/web/src/components/{NeighborhoodEventsModal,HUD}.tsx`, `apps/web/src/{App,lazy-modals}.ts`, `apps/web/src/index.css`. Verifier: `.qa/verify-seasonal.mjs`, `.qa/verify-seasonal-regression.mjs`, `.qa/holiday-collect.mjs`.
+
+## Kiểm chứng thật
+
+| Lệnh | Kết quả |
+|------|---------|
+| `yarn typecheck` (toàn workspace) | ✅ PASS (3–7s) |
+| Harness `tsc`→`node` `verify-seasonal.mjs` (3 suite: party-orders-seasonal, party-orders, holiday-balance-sim) | ✅ PASS |
+| Harness `verify-seasonal-regression.mjs` (+ goals/festival, seasons) | ✅ PASS |
+| `npx eslint` (file đã sửa) | ✅ 0 errors (28 warnings pre-existing) |
+| `yarn test` / `yarn build` chuẩn | ⚠️ ghi nhận EPERM sandbox như các giai đoạn trước (nếu xảy ra) |
+
+## Có code nhưng chưa kiểm chứng / giới hạn
+
+- **Chưa Browser QA trên máy thật:** mở màn Sự kiện xóm phố, đơn mùa, toast lễ hội, cảnh báo hết hạn, viewport hẹp 568–740 px. (Sandbox chặn build/browser.)
+- Toast lễ hội chống lặp theo phiên (set `notifiedFestivalKeys`), không lưu qua save — nếu tải game giữa mùa thì không nhắc lại (hành vi đúng ý, không phải lỗi).
+- Full game-core `test-runner.ts` chưa chạy được `tsc`→`node` (lỗi định tuyến `@game/shared/src/multiplayer.test` — pre-existing, không do change này); đã chạy regression cục bộ 5 suite liên quan.
+
+## Còn thiếu / chờ
+
+- Browser QA mobile (568–740 px), co-op cùng đơn mùa (đơn vẫn lệnh local seed dùng chung như hiện tại), cân bằng playtest thêm nếu muốn.
+- Các mục GĐ4 còn lại (reviews, khách quen, chuỗi cung ứng, bếp đa món, cạnh tranh & thương hiệu) + GĐ5.
+
+---
+
 # GIAI ĐOẠN 3 — KIỂM CHỨNG THẬT — BÁO CÁO (16/10/2026)
 
 Kịch bản và kết quả từng bước: `.qa/phase3-playthrough-scenario.md`. Số liệu kinh tế: `.qa/economy-qa-sweep-2026-10-16.txt`.
@@ -36,7 +74,7 @@ Kiểm bằng grep 16/10/2026: `claimCityGoal`/`CityProgressState` chỉ nằm t
 
 ## Kinh tế (sweep headless, `yarn --cwd packages/game-core economy-qa`)
 
-Harness giữ kệ luôn đầy ⇒ số là TRẦN, không phải kỳ vọng người chơi; level 60, tòa phụ trên lô thuê `w1-corner`. Chi nhánh tạp hóa, 8 seed × 30 ngày: doanh thu tòa/ngày p10/p50/p90 = 1,79 / 2,01 / 2,29 triệu ₫; lãi gộp p50 1,58 triệu; tiền thuê 30.720 ₫/ngày = 1,5% doanh thu tòa; 0/8 seed lỗ, 0 ngày đóng vì nợ; hoàn vốn p50 sau 2 ngày. (Số này đo TRƯỚC khi bỏ thu trước 30 ngày; chi phí ban đầu giờ chỉ còn phí mở tòa 1,5 tr, nên hoàn vốn còn nhanh hơn.) Cà phê/quán cơm/bãi xe: xem file `.qa/economy-qa-sweep-2026-10-16.txt` (nếu thiếu = sweep chưa chạy xong). Nhận xét: trong harness, thuê đất gần như không là áp lực; tiền thuê đủ nhỏ để giá thuê/hằng số `leaseDailyRate` cần playtest thật. **KHÔNG đổi hằng số PROVISIONAL nào** vì chưa có số từ playtest thật; sweep chỉ cho thấy khoảng cách quá lớn giữa doanh thu trần và tiền thuê.
+Harness giữ kệ luôn đầy ⇒ số là TRẦN, không phải kỳ vọng người chơi; level 60, tòa phụ trên lô thuê `w1-corner`. Chi nhánh tạp hóa, 8 seed × 30 ngày: doanh thu tòa/ngày p10/p50/p90 = 1,79 / 2,01 / 2,29 triệu ₫; lãi gộp p50 1,58 triệu; tiền thuê 30.720 ₫/ngày = 1,5% doanh thu tòa; 0/8 seed lỗ, 0 ngày đóng vì nợ; hoàn vốn p50 sau 2 ngày. (Số này đo TRƯỚC khi bỏ thu trước 30 ngày; chi phí ban đầu giờ chỉ còn phí mở tòa 1,5 tr, nên hoàn vốn còn nhanh hơn.) Cà phê: doanh thu p50 0,78 tr/ngày, lãi gộp p50 0,59 tr, thuê = 4,0% doanh thu, hoàn vốn p50 ngày 4 (8/8 seed). Quán cơm: doanh thu p50 0,93 tr, lãi gộp p50 0,70 tr, thuê 3,3%, hoàn vốn p50 ngày 5 (8/8). **Bãi xe: doanh thu 0 ở cả 8 seed** (lỗ 8/8) — chưa rõ do lô `w1-corner` nằm ngoài bán kính 16 ô của tòa có khách đi xe, hay do harness/logic `collectParkingFee`; CHƯA điều tra, cần kiểm trước khi cân bằng bãi xe. Toàn bộ số đo TRƯỚC khi bỏ thu trước 30 ngày; file gốc `.qa/economy-qa-sweep-2026-10-16.txt` (còn dòng "thuê trả trước" cũ). Nhận xét: trong harness, thuê đất gần như không là áp lực; tiền thuê đủ nhỏ để giá thuê/hằng số `leaseDailyRate` cần playtest thật. **KHÔNG đổi hằng số PROVISIONAL nào** vì chưa có số từ playtest thật; sweep chỉ cho thấy khoảng cách quá lớn giữa doanh thu trần và tiền thuê.
 
 ## CHƯA kiểm chứng — hướng dẫn tự chạy
 
