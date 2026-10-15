@@ -304,6 +304,7 @@ export class WorldRuntime {
     return this.commandCoordinator.submit(actorId, commandInput, async (cmd) => {
       // Execute command on simulation
       let success = false;
+      this.simulation.setBuildActor(actorId);
       const p = cmd.payload;
       if (p.type === 'restock') {
         success = this.simulation.restockShelf(p.fixtureId, p.productId, p.quantity);

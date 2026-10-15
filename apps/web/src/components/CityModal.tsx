@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BUILDING_TYPES, RECLAMATION_WAVES, cityTierFrom, parcelLandValueMultiplier, parcelPrice, parcelTrafficMultiplier, type LandParcel } from '@game/data';
 import type { WorldOpenState } from '@game/shared';
 import { PixelButton, PixelDialog, money } from './pixel';
@@ -13,6 +13,10 @@ export interface Props {
   day: number;
   buildingCount: number;
   onReclaim: (waveId: string) => void | Promise<void>;
+  /** Đợt khai hoang đầu tiên còn có thể mở: App dùng để báo bạn cùng hẻm đang xem đợt này (giữ chỗ quy hoạch). */
+  /** Nhật ký đất của hẻm chung (mới nhất trước), có tên người làm; undefined khi chơi một mình. */
+  journal?: Array<{ id: string; who: string; description: string; at: string }>;
+  onPlanningWave?: (waveId: string | null) => void;
   onBuyParcel: (parcelId: string) => void | Promise<void>;
   onClose: () => void;
 }
@@ -21,9 +25,14 @@ const CORNER_LABEL = ['', 'Góc ngã tư'];
 const ROAD_LABEL: Record<string, string> = { main: 'đường chính', south: 'đường nam' };
 
 /** Bảng "Thành phố" (land-reclamation 4.3): cấp thành phố, các đợt khai hoang (khóa/đang thi công/mở) và mua lô. */
-export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels, playerLevel, playerMoney, day, buildingCount, onReclaim, onBuyParcel, onClose }) => {
+export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels, playerLevel, playerMoney, day, buildingCount, onReclaim, journal, onPlanningWave, onBuyParcel, onClose }) => {
   const tier = cityTierFrom(world.openedWaves, buildingCount);
   const waves = RECLAMATION_WAVES.filter(wave => wave.id !== 'w0');
+  const nextWaveId = waves.find(wave => !world.openedWaves.includes(wave.id) && world.wavesUnderConstruction[wave.id] === undefined)?.id ?? null;
+  useEffect(() => {
+    onPlanningWave?.(nextWaveId);
+    return () => onPlanningWave?.(null);
+  }, [nextWaveId, onPlanningWave]);
   const buildingName = (buildingId: string): string => BUILDING_TYPES.find(def => def.id === buildingId)?.name ?? buildingId;
   return <PixelDialog icon="star" title="Thành phố" subtitle={`Cấp thành phố ${tier} · ${world.openedWaves.length - 1}/${waves.length} đợt khai hoang`} onClose={onClose}>
     <p className="muted" style={{ margin: '0 0 8px' }}>Mở đợt để có đất mới, rồi mua lô để đặt tòa. Lô góc ngã tư đắt hơn nhưng đông khách hơn.</p>
@@ -68,5 +77,11 @@ export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels
         </li>;
       })}
     </ul>
+    {journal && <details style={{ marginTop: 10 }} data-city-journal>
+      <summary>Nhật ký thành phố ({journal.length})</summary>
+      {journal.length === 0 ? <p className="muted">Chưa có hoạt động đất nào.</p> : <ul style={{ listStyle: 'none', padding: 0, margin: '6px 0 0', display: 'grid', gap: 4, fontSize: 12 }}>
+        {journal.map(entry => <li key={entry.id}><strong>{entry.who}</strong> · {entry.description} <span className="muted">· {entry.at}</span></li>)}
+      </ul>}
+    </details>}
   </PixelDialog>;
 };

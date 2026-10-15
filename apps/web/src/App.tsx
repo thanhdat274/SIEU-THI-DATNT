@@ -25,7 +25,7 @@ import { UpdateBanner } from './components/UpdateBanner';
 import { UpdateConflictDialog, type UpdateConflictChoice } from './components/UpdateConflictDialog';
 import type { CloudSaveSummary } from './services/api';
 import { LoginScreen } from './components/LoginScreen';
-import { type WorldDetail, createWorldInvite, commitOnlineCommand, updateWorldSettings, getOnlineWorld, touchWorldSession } from './services/api';
+import { type WorldDetail, createWorldInvite, commitOnlineCommand, updateWorldSettings, listOnlineActivities, getOnlineWorld, touchWorldSession } from './services/api';
 import { WarehouseModal } from './components/WarehouseModal';
 import { ShelfModal } from './components/ShelfModal';
 import { CashierModal } from './components/CashierModal';
@@ -110,6 +110,8 @@ export const App: React.FC = () => {
   const [isQuestOpen, setQuestOpen] = useState(false);
   const [isLevelRoadmapOpen, setLevelRoadmapOpen] = useState(false);
   const [isCityOpen, setCityOpen] = useState(false);
+  const [cityJournal, setCityJournal] = useState<Array<{ id: string; who: string; description: string; at: string }> | undefined>(undefined);
+  const [planningWaveId, setPlanningWaveId] = useState<string | null>(null);
   const [isWorldSettingsOpen, setWorldSettingsOpen] = useState(false);
   const [landVote, setLandVote] = useState<LandVoteInfo | null>(null);
   const [parcelPromptId, setParcelPromptId] = useState<string | null>(null);
@@ -1090,11 +1092,34 @@ export const App: React.FC = () => {
   const planningOnline = !!onlineWorld && worldSocket.connected;
   const { reservePlanning, extendPlanning, releasePlanning } = worldSocket;
   useEffect(() => {
-    if (!planningOnline || !planningParcelId) return;
-    reservePlanning({ kind: 'parcels', parcelIds: [planningParcelId] });
+    if (!planningOnline || !(planningParcelId || planningWaveId)) return;
+    reservePlanning(planningParcelId ? { kind: 'parcels', parcelIds: [planningParcelId] } : { kind: 'wave', waveId: planningWaveId as string });
     const timer = setInterval(() => { extendPlanning(); }, 20_000);
     return () => { clearInterval(timer); releasePlanning(); };
-  }, [planningOnline, planningParcelId, reservePlanning, extendPlanning, releasePlanning]);
+  }, [planningOnline, planningParcelId, planningWaveId, reservePlanning, extendPlanning, releasePlanning]);
+
+  // Nhật ký thành phố (open-world-coop-land 3.2): lấy từ lịch sử hoạt động của hẻm, chỉ các dòng loại 'Thành phố', kèm tên người làm.
+  const cityJournalWorldId = onlineWorld?.world.id;
+  useEffect(() => {
+    if (!isCityOpen || !cityJournalWorldId) { setCityJournal(undefined); return; }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const token = await getOnlineIdToken();
+        if (!token) return;
+        const res = await listOnlineActivities(token, cityJournalWorldId, { limit: 100 });
+        if (cancelled) return;
+        const avatars = onlineWorldRef.current?.world.avatars ?? [];
+        setCityJournal(res.activities.filter(a => a.type === 'Thành phố').slice(0, 30).map(a => ({
+          id: String(a.id),
+          who: avatars.find(avatar => avatar.accountId === a.actorId)?.displayName ?? 'Người cùng hẻm',
+          description: String(a.description),
+          at: new Date(a.createdAt).toLocaleString('vi-VN'),
+        })));
+      } catch { if (!cancelled) setCityJournal(undefined); }
+    })();
+    return () => { cancelled = true; };
+  }, [isCityOpen, cityJournalWorldId, currentRevision]);
 
   useEffect(() => {
     const worldId = onlineWorld?.world.id;
@@ -1229,7 +1254,7 @@ export const App: React.FC = () => {
         await resyncOnlineWorldAfterReject(curWorld);
         // Lệnh đất lớn cần người kia đồng ý: chưa thực hiện, trả về trạng thái server cho tới khi phiếu được duyệt.
         if (res.pendingVote) addToast(res.message ?? 'Đã gửi phiếu, chờ người cùng hẻm đồng ý.', 'info');
-        else addToast('Máy chủ từ chối thay đổi. Đã khôi phục dữ liệu online gần nhất.', 'warn');
+        else addToast(`${landErrorMessage('stale_revision')}. Đã khôi phục dữ liệu online gần nhất.`, 'warn');
         return false;
       }
     } catch (err) {
@@ -1238,6 +1263,7 @@ export const App: React.FC = () => {
       // Lệnh đất đụng vùng bạn cùng hẻm đang quy hoạch: thông báo kèm tên người giữ (open-world-coop-land 4.1).
       const body = (err as { body?: { code?: string; by?: { name?: string; accountId?: string } } } | null)?.body;
       if (body?.code === 'reserved_by_other') addToast(landErrorMessage('reserved_by_other', { name: body.by?.name ?? body.by?.accountId }), 'warn');
+      else if (body?.code === 'forbidden') addToast(landErrorMessage('forbidden'), 'warn');
       else addToast(err instanceof Error ? err.message : 'Không thể lưu lên hẻm chung.', 'warn');
       return false;
     } finally {
@@ -1982,7 +2008,7 @@ export const App: React.FC = () => {
       {!isLoading && (
         <AccountBar
           onlineWorldName={onlineWorld?.world.name}
-          isOnlineOwner={onlineWorld ? onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0] : false}
+          isOnlineOwner={onlineWorld ? onlineWorld.world.memberships.some(m => m.role === 'owner' && m.accountId === onlineUid) : false}
           onInvite={handleOnlineInvite}
           onSettings={() => setWorldSettingsOpen(true)}
           onLeaveOnline={handleLeaveOnline}
@@ -2426,7 +2452,7 @@ export const App: React.FC = () => {
     })()}
     {isCityOpen && simulationRef.current && (() => {
       const snap = simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
-      return <CityModal world={snap.world ?? defaultWorldOpenState()} ownedParcelIds={snap.storeLayout.ownedParcelIds ?? []} builtParcels={simulationRef.current.getOccupiedParcelBuildings()} playerLevel={player.level} playerMoney={player.money} day={simulationRef.current.getTime().day} buildingCount={snap.storeLayout.buildingPlacements?.length ?? 3} onReclaim={handleReclaimWave} onBuyParcel={handleBuyParcel} onClose={() => setCityOpen(false)}/>;
+      return <CityModal world={snap.world ?? defaultWorldOpenState()} ownedParcelIds={snap.storeLayout.ownedParcelIds ?? []} builtParcels={simulationRef.current.getOccupiedParcelBuildings()} playerLevel={player.level} playerMoney={player.money} day={simulationRef.current.getTime().day} buildingCount={snap.storeLayout.buildingPlacements?.length ?? 3} onReclaim={handleReclaimWave} journal={cityJournal} onPlanningWave={setPlanningWaveId} onBuyParcel={handleBuyParcel} onClose={() => setCityOpen(false)}/>;
     })()}
     {isLevelRoadmapOpen && <LevelRoadmapModal player={player} onClose={() => setLevelRoadmapOpen(false)}/>}
     {daySummaryRecord && <DaySummaryModal record={daySummaryRecord} morningBrief={simulationRef.current?.getMorningBrief()} onClose={() => setDaySummaryRecord(null)}/>}

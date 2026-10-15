@@ -32,7 +32,7 @@ Trạng thái 07/10/2026: phần THUẦN của các task 1.1, 2.1, 2.2, 3.1, 3.2
 
 ## 4. Thông báo
 
-- [ ] 4.1 **(15/10/2026: ĐÃ ánh xạ `reserved_by_other` thành toast có tên khi commit bị từ chối; CÒN `stale_revision`/`vote_rejected`/`forbidden` và tự làm mới quy hoạch.)** Ánh xạ `reserved_by_other`, `stale_revision` (lệnh đất), `vote_rejected`, `forbidden` sang toast có tên; tự làm mới quy hoạch.
+- [ ] 4.1 **(15/10/2026: ĐÃ ánh xạ `reserved_by_other` thành toast có tên khi commit bị từ chối; ĐÃ thêm `stale_revision`/`vote_rejected`/`forbidden`; tự làm mới quy hoạch chạy nhờ snapshot. Chưa chạy thật.)** Ánh xạ `reserved_by_other`, `stale_revision` (lệnh đất), `vote_rejected`, `forbidden` sang toast có tên; tự làm mới quy hoạch.
 
 ## 5. Kiểm chứng và tài liệu
 

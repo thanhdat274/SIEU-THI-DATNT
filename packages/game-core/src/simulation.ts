@@ -777,6 +777,10 @@ export class GameSimulation {
     return { save: this.exportSaveData(save.id, Math.max(0, save.revision - 1)) };
   }
 
+  /** Người đang thực hiện lệnh xây (open-world-coop-land D4): server đặt accountId trước khi chạy lệnh; mặc định 'local' (chơi một mình). */
+  private buildActorId = 'local';
+  public setBuildActor(accountId: string): void { this.buildActorId = accountId || 'local'; }
+
   public purchaseLand(plotId: string, placement?: { parcelId: string; originX: number }): LayoutResult {
     const result = buyLandPlot(this.exportSaveData(), plotId, placement);
     if (!result.save || result.error) return result;
@@ -877,7 +881,7 @@ export class GameSimulation {
     const nextN = existing.length + 1;
     const instanceId = `${buildingTypeId}-${nextN}`;
     // Vị trí phải hợp lệ (đúng hàng mặt tiền, nằm trong lô, không đè tòa khác) trước khi trừ tiền
-    const candidate = { buildingId: instanceId, parcelId, originX, originY, typeId: buildingTypeId };
+    const candidate = { buildingId: instanceId, parcelId, originX, originY, typeId: buildingTypeId, builtBy: this.buildActorId };
     const accessibleParcels = [...this.ownedParcelIds, ...Object.entries(this.parcelTenure).filter(([, t]) => t.kind === 'owned' || t.kind === 'leased').map(([id]) => id)];
     const problem = validatePlacement(candidate, resolvePlacements(this.buildingPlacements, this.unlockedPlotIds), accessibleParcels);
     if (problem) return { success: false, reason: problem.split(':')[0] };
