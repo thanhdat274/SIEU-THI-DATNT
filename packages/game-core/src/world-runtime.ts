@@ -231,6 +231,11 @@ export class WorldRuntime {
     }
   }
 
+  /** Tài khoản đang có phiên online trong hẻm (dùng cho phiếu đất: có người kia để bỏ phiếu không). */
+  getActiveAccountIds(): string[] {
+    return [...this.activeSessions.keys()];
+  }
+
   heartbeat(accountId: string, nowMs = Date.now()): boolean {
     if (!this.activeSessions.has(accountId)) return false;
     this.activeSessions.set(accountId, { lastHeartbeatMs: nowMs });

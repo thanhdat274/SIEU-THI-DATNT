@@ -249,6 +249,20 @@ export class WorldRepository {
     return { reset: true, revision: 0 };
   }
 
+  /** Chỉ chủ hẻm đổi cài đặt đất (quyền thành viên, bỏ qua phiếu của chủ). Không đổi revision: cài đặt không nằm trong lệnh của tiệm. */
+  async updateSettings(worldId: string, ownerId: string, patch: import('@game/shared').WorldSettings) {
+    const collection = (await connectDatabase()).collection<WorldDocument>(collectionName);
+    const current = await collection.findOne({ _id: worldId, 'world.memberships': { $elemMatch: { accountId: ownerId, role: 'owner' } } }, { projection: { 'world.settings': 1 } });
+    if (!current) {
+      const exists = await collection.findOne({ _id: worldId }, { projection: { _id: 1 } });
+      if (!exists) throw new NotFoundException('Không tìm thấy hẻm.');
+      throw new ForbiddenException('Chỉ chủ hẻm mới đổi cài đặt đất.');
+    }
+    const settings = { ...(current.world?.settings ?? {}), ...patch };
+    await collection.updateOne({ _id: worldId }, { $set: { 'world.settings': settings, 'world.updatedAt': new Date().toISOString() } });
+    return { settings };
+  }
+
   /** Chỉ chủ hẻm được xóa; xóa cả tiệm, lời mời, biên nhận và hoạt động trong cùng document. */
   async deleteWorld(worldId: string, ownerId: string) {
     const collection = (await connectDatabase()).collection<WorldDocument>(collectionName);

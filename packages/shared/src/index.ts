@@ -1299,6 +1299,21 @@ export interface BusinessState {
   save: SaveGameData;
 }
 
+/** Cài đặt đất của hẻm chung (OpenSpec `open-world-coop-land` D2/D3); chỉ chủ hẻm đổi được. */
+export interface WorldSettings {
+  /** Quyền của thành viên (không phải chủ) với lệnh đất; thiếu = 'vote'. */
+  memberLandPermissions?: 'full' | 'vote' | 'none';
+  /** Chủ bỏ phiếu cho lệnh đất của chính mình; thiếu = false. */
+  ownerSkipsVote?: boolean;
+}
+
+export const isWorldSettings = (value: unknown): value is WorldSettings => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const v = value as Record<string, unknown>;
+  return (v.memberLandPermissions === undefined || v.memberLandPermissions === 'full' || v.memberLandPermissions === 'vote' || v.memberLandPermissions === 'none') &&
+    (v.ownerSkipsVote === undefined || typeof v.ownerSkipsVote === 'boolean');
+};
+
 export interface GameWorld {
   id: string;
   name?: string;
@@ -1311,6 +1326,8 @@ export interface GameWorld {
   memberships: WorldMembership[];
   businessIds: string[];
   avatars: GameAvatar[];
+  /** Cài đặt đất của hẻm; hẻm cũ thiếu = mặc định (thành viên 'vote', chủ không bỏ qua phiếu). */
+  settings?: WorldSettings;
 }
 
 export type GameCommandPayload =
@@ -1726,7 +1743,8 @@ export function isGameWorld(value: unknown): value is GameWorld {
       !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt) ||
       !Array.isArray(value.memberships) || !value.memberships.every(isWorldMembership) ||
       !Array.isArray(value.businessIds) || !value.businessIds.every(nonEmptyString) ||
-      !Array.isArray(value.avatars) || !value.avatars.every(isGameAvatar) || !isRecord(value.worldTime)) return false;
+      !Array.isArray(value.avatars) || !value.avatars.every(isGameAvatar) || !isRecord(value.worldTime) ||
+      (value.settings !== undefined && !isWorldSettings(value.settings))) return false;
   const memberIds = value.memberships.map(member => (member as WorldMembership).accountId);
   const avatarIds = value.avatars.map(avatar => (avatar as GameAvatar).accountId);
   return new Set(memberIds).size === memberIds.length && new Set(avatarIds).size === avatarIds.length &&

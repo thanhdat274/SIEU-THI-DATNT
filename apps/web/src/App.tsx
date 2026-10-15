@@ -5,6 +5,7 @@ import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
 import { ParcelBuyModal } from './components/ParcelBuyModal';
+import { LandVoteModal, type LandVoteInfo } from './components/LandVoteModal';
 import { OpenBuildingModal } from './components/OpenBuildingModal';
 import { PixiGameViewport, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
 import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
@@ -108,6 +109,7 @@ export const App: React.FC = () => {
   const [isQuestOpen, setQuestOpen] = useState(false);
   const [isLevelRoadmapOpen, setLevelRoadmapOpen] = useState(false);
   const [isCityOpen, setCityOpen] = useState(false);
+  const [landVote, setLandVote] = useState<LandVoteInfo | null>(null);
   const [parcelPromptId, setParcelPromptId] = useState<string | null>(null);
   const [openBuildingParcelId, setOpenBuildingParcelId] = useState<string | null>(null);
   const [isStallOpen, setStallOpen] = useState(false);
@@ -1030,6 +1032,22 @@ export const App: React.FC = () => {
         }
       }
     },
+    // Phiếu khoản chi đất: người kia thấy hộp đồng ý/từ chối, người đề xuất thấy hộp chờ; kết quả báo bằng toast.
+    onLandVote: (value) => {
+      if (!value || typeof value !== 'object') return;
+      const data = value as { status?: string; vote?: { command: string; initiatorId: string; expiresInMs: number } | null; initiatorId?: string | null; message?: string };
+      const nameOf = (id?: string | null) => onlineWorldRef.current?.world.avatars.find(avatar => avatar.accountId === id)?.displayName ?? 'Người cùng hẻm';
+      if (data.status === 'pending' && data.vote) {
+        setLandVote({ initiatorId: data.vote.initiatorId, command: data.vote.command, expiresAt: Date.now() + data.vote.expiresInMs });
+        return;
+      }
+      setLandVote(null);
+      if (data.status === 'rejected') addToast(landErrorMessage('vote_rejected', { name: onlineUidRef.current === data.initiatorId ? undefined : nameOf(data.initiatorId) }), 'warn');
+      else if (data.status === 'executed') addToast('Phiếu đã được đồng ý, lệnh đã thực hiện.', 'success');
+      else if (data.status === 'expired') addToast('Phiếu hết giờ, lệnh bị hủy (chưa trừ tiền).', 'warn');
+      else if (data.status === 'cancelled') addToast('Phiếu đã bị hủy.', 'info');
+      else if (data.status === 'failed') addToast(data.message ?? 'Lệnh không thực hiện được sau phiếu.', 'warn');
+    },
     onTimeVote: (value) => {
       if (!value || typeof value !== 'object') return;
       const data = value as { status?: typeof activeTimeVote; result?: { status?: string } };
@@ -1192,7 +1210,9 @@ export const App: React.FC = () => {
         return true;
       } else {
         await resyncOnlineWorldAfterReject(curWorld);
-        addToast('Máy chủ từ chối thay đổi. Đã khôi phục dữ liệu online gần nhất.', 'warn');
+        // Lệnh đất lớn cần người kia đồng ý: chưa thực hiện, trả về trạng thái server cho tới khi phiếu được duyệt.
+        if (res.pendingVote) addToast(res.message ?? 'Đã gửi phiếu, chờ người cùng hẻm đồng ý.', 'info');
+        else addToast('Máy chủ từ chối thay đổi. Đã khôi phục dữ liệu online gần nhất.', 'warn');
         return false;
       }
     } catch (err) {
@@ -2443,6 +2463,15 @@ export const App: React.FC = () => {
           openSupplierModal();
         }}
         onClose={() => setIsPlanogramOpen(false)}
+      />
+    )}
+    {landVote && (
+      <LandVoteModal
+        vote={landVote}
+        isInitiator={landVote.initiatorId === onlineUid}
+        initiatorName={onlineWorld?.world.avatars.find(avatar => avatar.accountId === landVote.initiatorId)?.displayName ?? 'Người cùng hẻm'}
+        onRespond={(agree) => { worldSocket.respondLandVote(agree); setLandVote(null); }}
+        onCancel={() => { worldSocket.cancelLandVote(); setLandVote(null); }}
       />
     )}
     {activeTimeVote && (

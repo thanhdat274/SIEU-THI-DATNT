@@ -91,7 +91,7 @@ export async function resetOnlineWorld(idToken: string, worldId: string): Promis
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- command payloads and receipts are command-specific JSON
-export async function commitOnlineCommand(idToken: string, worldId: string, payload: any): Promise<{ committed: boolean; revision: number; receipt: any; updatedBusiness?: any }> {
+export async function commitOnlineCommand(idToken: string, worldId: string, payload: any): Promise<{ committed: boolean; revision: number; receipt: any; updatedBusiness?: any; pendingVote?: boolean; message?: string }> {
   return fetchWithAuth(`/api/v1/worlds/${worldId}/commands`, idToken, {
     method: 'POST',
     body: JSON.stringify({ ...payload, protocolVersion: MULTIPLAYER_PROTOCOL_VERSION }),

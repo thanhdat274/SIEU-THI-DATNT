@@ -6,9 +6,9 @@ import {
 import { NestFactory } from '@nestjs/core';
 import { WsAdapter } from '@nestjs/platform-ws';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { isSaveGameData, type BuildingPlacementRecord, type GameAccount, type SaveGameData } from '@game/shared';
+import { isSaveGameData, isWorldSettings, type BuildingPlacementRecord, type GameAccount, type SaveGameData } from '@game/shared';
 import { generateStarterTileMap, placementsProblem } from '@game/data';
-import { applyStoreLayoutActions, GameSimulation, landErrorMessage, validateStoreLayout, WorldRuntime } from '@game/core';
+import { applyStoreLayoutActions, decideLandCommand, GameSimulation, landErrorMessage, validateStoreLayout, WorldRuntime } from '@game/core';
 import { readRuntimeConfig } from './runtime-config.js';
 import { checkSaveInvariants } from './save-invariants.js';
 import { commitLimiter, httpIpLimiter, MAX_HTTP_BODY } from './rate-limit.js';
@@ -18,7 +18,8 @@ import { createWebSocketTicket, verifyAccount } from './firebase-admin.js';
 import { FirebaseAuthGuard } from './auth.guard.js';
 import { worldRepository } from './world.repository.js';
 import { cloudSaveRepository, decideCloudSaveWrite } from './cloud-save.js';
-import { WorldGateway } from './world.gateway.js';
+import { WorldGateway, setLandVoteExecutor } from './world.gateway.js';
+import { landVotes } from './land-vote-store.js';
 
 interface AuthenticatedRequest {
   gameAccount: Awaited<ReturnType<typeof verifyAccount>>;
@@ -90,7 +91,7 @@ export class GameController {
     return worldRepository.reset(worldId, request.gameAccount.uid);
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untrusted JSON body, validated field by field below
-  async commitCommand(request: AuthenticatedRequest, worldId: string, body: any) {
+  async commitCommand(request: AuthenticatedRequest, worldId: string, body: any, internal?: { voteApproved?: boolean }) {
     if (!commitLimiter.take(request.gameAccount.uid)) {
       throw new HttpException('Gửi lệnh quá nhanh, vui lòng thử lại sau.', HttpStatus.TOO_MANY_REQUESTS);
     }
@@ -115,6 +116,23 @@ export class GameController {
     if (reservation?.conflict) {
       const holder = reservation.by?.name ?? reservation.by?.accountId;
       throw new BadRequestException({ statusCode: 400, error: 'Bad Request', code: 'reserved_by_other', by: reservation.by, message: landErrorMessage('reserved_by_other', { name: holder }) });
+    }
+    // Quyền và phiếu lệnh đất (open-world-coop-land 2.1/2.2): thành viên bị cấm hẳn, hoặc lệnh lớn cần người kia đồng ý trước khi chạy.
+    // Lệnh đã được duyệt (chạy lại từ phiếu) bỏ qua bước này; cờ `voteApproved` chỉ do server đặt, không đọc từ thân yêu cầu của client.
+    if (!internal?.voteApproved) {
+      const uid = request.gameAccount.uid;
+      const role = commandWorld.world.memberships.find((member) => member.accountId === uid)?.role ?? 'member';
+      const partnerOnline = (WorldGateway.getLiveRuntime(worldId)?.getActiveAccountIds() ?? []).some((id) => id !== uid);
+      const decision = decideLandCommand(payload, role, commandWorld.world.settings, commandBusiness.save.player.money, partnerOnline);
+      if (decision.action === 'forbid') {
+        throw new BadRequestException({ statusCode: 400, error: 'Bad Request', code: 'forbidden', message: landErrorMessage('forbidden') });
+      }
+      if (decision.action === 'vote') {
+        const pending = landVotes.start(worldId, uid, decision.command, payload, structuredClone(body));
+        if (!pending) throw new BadRequestException({ statusCode: 400, error: 'Bad Request', code: 'vote_pending', message: 'Đang có phiếu đất chờ người cùng hẻm trả lời, hãy đợi.' });
+        WorldGateway.announceLandVote(worldId);
+        return { committed: false, revision: commandWorld.world.revision, receipt: body.receipt, pendingVote: true, voteId: pending.vote.id, expiresInMs: Math.max(0, pending.vote.expiresAt - Date.now()), message: 'Đã gửi phiếu, chờ người cùng hẻm đồng ý.' };
+      }
     }
     let usedLiveRuntime: WorldRuntime | undefined;
     const serverReplayedCommands = new Set([
@@ -270,6 +288,15 @@ export class GameController {
       ? { ...result, updatedBusiness: body.updatedBusiness }
       : result;
   }
+  /** PUT /worlds/:worldId/settings — chỉ chủ hẻm đổi quyền thành viên và việc bỏ qua phiếu. */
+  async updateWorldSettings(request: AuthenticatedRequest, worldId: string, body: unknown) {
+    if (!isWorldSettings(body) || Object.keys(body).length === 0) throw new BadRequestException('Cài đặt không hợp lệ.');
+    const clean = {
+      ...(body.memberLandPermissions !== undefined ? { memberLandPermissions: body.memberLandPermissions } : {}),
+      ...(body.ownerSkipsVote !== undefined ? { ownerSkipsVote: body.ownerSkipsVote } : {}),
+    };
+    return worldRepository.updateSettings(worldId, request.gameAccount.uid, clean);
+  }
   leaderboard(request: AuthenticatedRequest) {
     return worldRepository.leaderboard(request.gameAccount.uid);
   }
@@ -335,11 +362,19 @@ route(Delete, 'kickMember', 'worlds/:worldId/members/:memberId'); requestParam('
 route(Delete, 'leaveWorld', 'worlds/:worldId/membership'); requestParam('leaveWorld', 0); namedParam('leaveWorld', 'worldId', 1);
 route(Post, 'resetWorld', 'worlds/:worldId/reset'); requestParam('resetWorld', 0); namedParam('resetWorld', 'worldId', 1); bodyParam('resetWorld', 2);
 route(Post, 'commitCommand', 'worlds/:worldId/commands'); requestParam('commitCommand', 0); namedParam('commitCommand', 'worldId', 1); bodyParam('commitCommand', 2);
+route(Put, 'updateWorldSettings', 'worlds/:worldId/settings'); requestParam('updateWorldSettings', 0); namedParam('updateWorldSettings', 'worldId', 1); bodyParam('updateWorldSettings', 2);
 route(Post, 'createWebSocketTicket', 'ws-ticket'); requestParam('createWebSocketTicket', 0);
 route(Get, 'listActivities', 'worlds/:worldId/activities'); requestParam('listActivities', 0); namedParam('listActivities', 'worldId', 1);
 route(Get, 'getCloudSave', 'game/save'); requestParam('getCloudSave', 0);
 route(Put, 'putCloudSave', 'game/save'); requestParam('putCloudSave', 0); bodyParam('putCloudSave', 1);
 route(Post, 'touchSession', 'worlds/:worldId/session'); requestParam('touchSession', 0); namedParam('touchSession', 'worldId', 1);
+
+// Phiếu đất được duyệt: chạy lại đúng lệnh gốc của người đề xuất (cùng commandId), bỏ qua bước phiếu.
+const voteCommitController = new GameController();
+setLandVoteExecutor(async (worldId, initiatorId, body) => {
+  const request = { gameAccount: { uid: initiatorId } } as unknown as AuthenticatedRequest;
+  await voteCommitController.commitCommand(request, worldId, structuredClone(body), { voteApproved: true });
+});
 
 class RuntimeModule {
   async onApplicationShutdown() { await closeDatabase(); }

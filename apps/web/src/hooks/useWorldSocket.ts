@@ -29,6 +29,8 @@ export interface WorldSocketOptions {
   onSnapshot?: (snapshot: unknown) => void;
   onAvatars?: (avatars: unknown) => void;
   onTimeVote?: (data: unknown) => void;
+  /** Phiếu khoản chi đất (open-world-coop-land D3): mở/đóng/kết quả. */
+  onLandVote?: (data: unknown) => void;
   onSessionEnded?: (event: 'kicked' | 'replaced' | 'timeout', data: unknown) => void;
   /** Voice chat: tín hiệu offer/answer/candidate từ người kia (`from` do server gán). */
   onVoiceSignal?: (data: unknown) => void;
@@ -36,7 +38,7 @@ export interface WorldSocketOptions {
   onVoicePeer?: (data: unknown) => void;
 }
 
-export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAvatars, onTimeVote, onSessionEnded, onVoiceSignal, onVoicePeer }: WorldSocketOptions) {
+export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAvatars, onTimeVote, onLandVote, onSessionEnded, onVoiceSignal, onVoicePeer }: WorldSocketOptions) {
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -44,6 +46,7 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
   const onSnapshotRef = useRef(onSnapshot);
   const onAvatarsRef = useRef(onAvatars);
   const onTimeVoteRef = useRef(onTimeVote);
+  const onLandVoteRef = useRef(onLandVote);
   const onSessionEndedRef = useRef(onSessionEnded);
   const onVoiceSignalRef = useRef(onVoiceSignal);
   const onVoicePeerRef = useRef(onVoicePeer);
@@ -56,6 +59,7 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
   useEffect(() => { onSnapshotRef.current = onSnapshot; }, [onSnapshot]);
   useEffect(() => { onAvatarsRef.current = onAvatars; }, [onAvatars]);
   useEffect(() => { onTimeVoteRef.current = onTimeVote; }, [onTimeVote]);
+  useEffect(() => { onLandVoteRef.current = onLandVote; }, [onLandVote]);
   useEffect(() => { onSessionEndedRef.current = onSessionEnded; }, [onSessionEnded]);
   useEffect(() => { onVoiceSignalRef.current = onVoiceSignal; }, [onVoiceSignal]);
   useEffect(() => { onVoicePeerRef.current = onVoicePeer; }, [onVoicePeer]);
@@ -117,6 +121,8 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
           setLayoutLockHolderId((msg.data as { holderId?: string | null })?.holderId ?? null);
         } else if (msg.event === 'time-vote:update') {
           onTimeVoteRef.current?.(msg.data);
+        } else if (msg.event === 'land-vote:update') {
+          onLandVoteRef.current?.(msg.data);
         } else if (msg.event === 'voice:signal') {
           onVoiceSignalRef.current?.(msg.data);
         } else if (msg.event === 'voice:peer') {
@@ -224,10 +230,25 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
     return true;
   }, []);
 
+  /** Trả lời phiếu đất của người kia (đồng ý/từ chối). */
+  const respondLandVote = useCallback((agree: boolean) => {
+    const socket = wsRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+    socket.send(JSON.stringify({ event: 'land-vote:respond', data: { agree } }));
+    return true;
+  }, []);
+
+  const cancelLandVote = useCallback(() => {
+    const socket = wsRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+    socket.send(JSON.stringify({ event: 'land-vote:cancel', data: {} }));
+    return true;
+  }, []);
+
   const releasePlanning = useCallback(() => {
     const socket = wsRef.current;
     if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ event: 'planning:release', data: {} }));
   }, []);
 
-  return { connected, layoutLockHolderId, reservePlanning, extendPlanning, releasePlanning, acquireLayoutLock, releaseLayoutLock, sendVoiceSignal, sendInput, sendPosition, submitTimeVote, cancelTimeVote };
+  return { connected, layoutLockHolderId, reservePlanning, extendPlanning, releasePlanning, respondLandVote, cancelLandVote, acquireLayoutLock, releaseLayoutLock, sendVoiceSignal, sendInput, sendPosition, submitTimeVote, cancelTimeVote };
 }

@@ -7,6 +7,7 @@ import type { BusinessState } from '@game/shared';
 import { consumeWebSocketTicket } from './firebase-admin.js';
 import { readRuntimeConfig } from './runtime-config.js';
 import { MAX_WS_PAYLOAD_BYTES, RATE_LIMITS, RateLimiter } from './rate-limit.js';
+import { landVotes, type PendingLandVote } from './land-vote-store.js';
 import { buildVoicePeerMessage, buildVoiceSignalMessage, parseVoiceSignal } from './voice-signal.js';
 
 /**
@@ -51,6 +52,34 @@ export function acceptWebSocketOrigin(origin: string | undefined, allowedOrigin:
   return !origin || origin === allowedOrigin;
 }
 
+/**
+ * Chạy lại lệnh đất đã được người kia đồng ý (hoặc tự chạy khi người kia rời). Do `bootstrap.ts` đăng ký để gateway không phụ thuộc controller.
+ * Nhận id hẻm, người đề xuất và thân yêu cầu gốc; ném lỗi nếu lệnh bị từ chối ở bước kiểm thật.
+ */
+type LandVoteExecutor = (worldId: string, initiatorId: string, body: unknown) => Promise<void>;
+let landVoteExecutor: LandVoteExecutor | null = null;
+export function setLandVoteExecutor(executor: LandVoteExecutor): void { landVoteExecutor = executor; }
+
+/** Báo cả hẻm trạng thái phiếu đất: `vote` là phiếu đang chờ (null khi đã đóng) kèm lý do đóng ở `status`. */
+function broadcastLandVote(worldId: string, status: 'pending' | 'executed' | 'rejected' | 'expired' | 'cancelled' | 'failed', initiatorId: string | null, message?: string) {
+  broadcastToWorld(worldId, 'land-vote:update', { status, vote: landVotes.summary(worldId), initiatorId, ...(message ? { message } : {}) });
+}
+
+/** Đóng phiếu: được duyệt/được chạy ngay thì chạy lệnh gốc rồi báo kết quả; bị từ chối thì chỉ báo. */
+async function settleLandVote(worldId: string, pending: PendingLandVote, outcome: 'approved' | 'rejected' | 'executed'): Promise<void> {
+  const initiatorId = pending.vote.initiatorId;
+  if (outcome === 'rejected') { broadcastLandVote(worldId, 'rejected', initiatorId); return; }
+  if (!landVoteExecutor) { broadcastLandVote(worldId, 'failed', initiatorId, 'Máy chủ chưa sẵn sàng chạy phiếu.'); return; }
+  try {
+    await landVoteExecutor(worldId, initiatorId, pending.body);
+    broadcastLandVote(worldId, 'executed', initiatorId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Lệnh không hợp lệ hoặc trạng thái đã thay đổi.';
+    console.warn(`[land-vote] chạy lệnh sau phiếu thất bại world=${worldId}: ${message}`);
+    broadcastLandVote(worldId, 'failed', initiatorId, message);
+  }
+}
+
 /** Tracks runtime, live sockets and serialized persistence for each loaded world. */
 const worldRuntimes = new Map<string, {
   runtime: WorldRuntime;
@@ -72,6 +101,7 @@ function startTickLoop() {
   if (tickTimer) return;
   tickTimer = setInterval(() => {
     const elapsedSeconds = TICK_INTERVAL_MS / 1000;
+    for (const { worldId, pending } of landVotes.expire()) broadcastLandVote(worldId, 'expired', pending.vote.initiatorId);
     for (const [, entry] of worldRuntimes) {
       const timedOut = entry.runtime.tick(elapsedSeconds);
       broadcastVoteChange(entry);
@@ -240,6 +270,11 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
       entry.runtime.unregisterSession(accountId);
       if (layoutLocks.release(worldId, accountId)) broadcastToWorld(worldId, 'layout-lock:update', { holderId: null });
       broadcastVoteChange(entry);
+      // Phiếu đất: người kia rời thì phiếu chạy ngay; người đề xuất rời thì phiếu hủy (D3).
+      const hadLandVote = !!landVotes.get(worldId);
+      const resolvedLandVote = landVotes.resolveOnLeave(worldId, entry.runtime.getActiveAccountIds());
+      if (resolvedLandVote) void settleLandVote(worldId, resolvedLandVote, 'executed');
+      else if (hadLandVote && !landVotes.get(worldId)) broadcastLandVote(worldId, 'cancelled', accountId);
       sendToOthers(entry, accountId, buildVoicePeerMessage(accountId, false));
     }
 
@@ -343,6 +378,30 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
     if (!allowSocketMessage(socket)) return;
     if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
     worldRuntimes.get(socket._worldId)?.runtime.releasePlanning(socket._accountId);
+  }
+
+  /** Người KHÁC người đề xuất đồng ý hoặc từ chối phiếu đất đang chờ (D3). */
+  @SubscribeMessage('land-vote:respond')
+  handleLandVoteRespond(@ConnectedSocket() socket: AuthenticatedSocket, @MessageBody() body: unknown) {
+    if (!allowSocketMessage(socket)) return;
+    if (!socket._worldId || !socket._accountId || !socket._sessionOk || !body || typeof body !== 'object') return;
+    const result = landVotes.respond(socket._worldId, socket._accountId, (body as { agree?: unknown }).agree === true);
+    if (result.kind === 'none') return;
+    void settleLandVote(socket._worldId, result.pending, result.kind === 'approved' ? 'approved' : 'rejected');
+  }
+
+  /** Người đề xuất tự hủy phiếu đất của mình. */
+  @SubscribeMessage('land-vote:cancel')
+  handleLandVoteCancel(@ConnectedSocket() socket: AuthenticatedSocket) {
+    if (!allowSocketMessage(socket)) return;
+    if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
+    if (landVotes.cancel(socket._worldId, socket._accountId)) broadcastLandVote(socket._worldId, 'cancelled', socket._accountId);
+  }
+
+  /** Báo cả hẻm có phiếu đất mới vừa mở (gọi từ HTTP `commitCommand`). */
+  static announceLandVote(worldId: string): void {
+    const pending = landVotes.get(worldId);
+    broadcastLandVote(worldId, 'pending', pending?.vote.initiatorId ?? null);
   }
 
   /** Xin khóa sửa bố cục: chỉ một người trong hẻm giữ được; trả kết quả cho người xin, báo cả hẻm khi đổi. */

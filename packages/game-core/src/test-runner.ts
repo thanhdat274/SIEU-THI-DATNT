@@ -92,6 +92,7 @@ import { runLandLeaseCoreTests } from './land-lease-core.test';
 import { runBuildingProductFilterTests } from './building-product-filter.test';
 import { runBuildingBehaviorTests } from './building-behavior.test';
 import { runPlanningRuntimeTests } from './planning-runtime.test';
+import { runLandPolicyTests } from './land-policy.test';
 import { runXoiCustomerTests } from './xoi-customers.test';
 import { runDrinkCustomerTests } from './drink-customers.test';
 import { runDrinkStaffTests } from './drink-staff.test';
@@ -186,6 +187,7 @@ export async function runTests(): Promise<void> {
   runBuildingProductFilterTests();
   runBuildingBehaviorTests();
   runPlanningRuntimeTests();
+  runLandPolicyTests();
   runDeterministicIdTests();
   runArrivalModeTests();
   runMaintenanceTests();
