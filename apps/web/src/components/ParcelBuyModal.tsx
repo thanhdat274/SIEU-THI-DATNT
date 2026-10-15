@@ -1,5 +1,5 @@
 import React from 'react';
-import { RECLAMATION_WAVES, LAND_LEASE_CONSTANTS, parcelLandValueMultiplier, parcelPrice, parcelTrafficMultiplier, type LandParcel } from '@game/data';
+import { RECLAMATION_WAVES, LAND_LEASE_CONSTANTS, parcelLandValueMultiplier, parcelPrice, parcelTrafficMultiplier, districtForWave, type LandParcel } from '@game/data';
 import { PixelButton, PixelDialog, money } from './pixel';
 
 export interface Props {
@@ -39,11 +39,13 @@ export const ParcelBuyModal: React.FC<Props> = ({
   const wave = RECLAMATION_WAVES.find(w => w.parcels.some(p => p.id === parcelId));
   const raw = wave?.parcels.find(p => p.id === parcelId);
   if (!wave || !raw) return null;
+  const districtId = RECLAMATION_WAVES.indexOf(wave) === 0 ? 'hem_dan_cu' : districtForWave(wave.id as 'w1' | 'w2' | 'w3' | 'w4');
   const parcel: LandParcel = {
     id: raw.id,
     rect: raw.rect,
     wave: RECLAMATION_WAVES.indexOf(wave),
     frontageRoadId: raw.frontageRoadId ?? wave.frontageRoadId,
+    districtId,
     frontage: { corner: raw.corner ?? false },
   };
   const basePrice = parcelPrice(parcel);

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BUILDING_TYPES, RECLAMATION_WAVES, cityTierFrom, parcelLandValueMultiplier, parcelPrice, parcelTrafficMultiplier, type LandParcel } from '@game/data';
+import { BUILDING_TYPES, RECLAMATION_WAVES, cityTierFrom, parcelLandValueMultiplier, parcelPrice, parcelTrafficMultiplier, districtForWave, type LandParcel } from '@game/data';
 import type { WorldOpenState } from '@game/shared';
 import { PixelButton, PixelDialog, money } from './pixel';
 
@@ -60,7 +60,8 @@ export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels
             <summary>Các lô của đợt</summary>
             <div style={{ display: 'grid', gap: 6, marginTop: 6 }}>
               {wave.parcels.map(raw => {
-                const parcel: LandParcel = { id: raw.id, rect: raw.rect, wave: RECLAMATION_WAVES.indexOf(wave), frontageRoadId: raw.frontageRoadId ?? wave.frontageRoadId, frontage: { corner: raw.corner ?? false } };
+                const districtId = RECLAMATION_WAVES.indexOf(wave) === 0 ? 'hem_dan_cu' : districtForWave(wave.id as 'w1' | 'w2' | 'w3' | 'w4');
+                const parcel: LandParcel = { id: raw.id, rect: raw.rect, wave: RECLAMATION_WAVES.indexOf(wave), frontageRoadId: raw.frontageRoadId ?? wave.frontageRoadId, districtId, frontage: { corner: raw.corner ?? false } };
                 const owned = ownedParcelIds.includes(raw.id);
                 const price = parcelPrice(parcel);
                 return <div key={raw.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>

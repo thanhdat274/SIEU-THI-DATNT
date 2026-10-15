@@ -15,6 +15,8 @@ export interface MarketContext {
   timeBand: string;
   weekday: number; // 0 = Thứ Hai
   eventIds: string[];
+  /** Mã khu áp dụng modifier cho demand (provisional, có thể là undefined nếu chưa mở thế giới mở). */
+  districtId?: string;
 }
 
 export interface AppliedFactor { ruleId: string; label: string; factor: number }
@@ -49,6 +51,7 @@ function whenMatches(rule: ModifierRule, ctx: MarketContext): boolean {
   if (w.timeBand && !w.timeBand.includes(ctx.timeBand)) return false;
   if (w.weekdays && !w.weekdays.includes(ctx.weekday)) return false;
   if (w.event && !w.event.some(id => ctx.eventIds.includes(id))) return false;
+  if (w.districtId && ctx.districtId && !w.districtId.includes(ctx.districtId)) return false;
   return true;
 }
 

@@ -1,5 +1,6 @@
 import type { Product } from '@game/shared';
 import { collectFactors, multiplyFactors, type AppliedFactor, type MarketContext } from './market';
+import { applyDistrictModifiers, type DistrictId } from '@game/data';
 
 export interface ProductDemand {
   base: number; // độ phổ biến cơ bản 0..1
@@ -44,8 +45,15 @@ export function buildDemandTable(input: DemandInput): DemandTable {
     const price = input.priceFactor?.(product.id) ?? 1;
     if (price !== 1) factors.push({ ruleId: 'price', label: 'Giá bán so với giá tham chiếu', factor: price });
     const { raw, value } = multiplyFactors(factors, 'demand');
+    
+    // Áp dụng hệ số khu (D1): preferredCategory × peakHour, cap DISTRICT_MULTIPLIER_CAP
+    let districtFactor = 1;
+    if (input.ctx.districtId) {
+      districtFactor = applyDistrictModifiers(input.ctx.districtId as DistrictId, product.category, input.ctx.hour);
+    }
+    
     const base = product.demandProfile.basePopularity;
-    perProduct[product.id] = { base, rawMultiplier: raw, multiplier: value, demand: base * value, factors };
+    perProduct[product.id] = { base, rawMultiplier: raw * districtFactor, multiplier: value * districtFactor, demand: base * value * districtFactor, factors };
   }
   const trafficFactors = collectFactors(input.ctx, 'traffic');
   const reputation = reputationTrafficFactor(input.reputation);

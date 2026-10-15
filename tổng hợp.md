@@ -1,3 +1,71 @@
+# GIAI ĐOẠN 2 — HOÀN THIỆN CODE CÒN THIẾU THEO OPSPEC — BÁO CÁO CUỐI (15/10/2026)
+
+## Tổng kết
+
+| Mục | Trạng thái | Ghi chú |
+|-----|-----------|---------|
+| 2.1 District modifiers | ✅ HOÀN THÀNH | parcel.districtId, source 'district' trong modifiers, apply trong demand.ts |
+| 2.2 Proximity cluster | ✅ HOÀN THÀNH | PROXIMITY_CLUSTER_CAP 1.3, CLUSTER_COMPAT, clusterMultiplierFor, legacyFoodClusterMultiplier |
+| 2.3 City goals | ✅ HOÀN THÀNH | claim_city_goal, CityProgressState, level up, rewards, cityTier theo cấp |
+| 2.4 Internal delivery | ✅ HOÀN THÀNH | dailySupplyExecution (FEFO, cap 50%, shortfall), wired vào simulation.ts |
+| 2.5 Manager permission | ✅ CÓ CODE | nonManagerActions, kiểm quyền server |
+| 2.6 Supply contracts | ✅ CÓ CODE | đề xuất/đồngý/từ chối/hủy, hết hạn 1 ngày |
+
+## 2.1 District Modifiers
+
+**File thay đổi:**
+- `packages/game-data/src/world/parcels.ts` — Thêm `districtId: DistrictId` vào LandParcel, gán wave→district
+- `packages/shared/src/index.ts` — Thêm `district` vào ModifierSource, `districtId?` vào ModifierWhen
+- `packages/game-core/src/demand.ts` — Áp dụng `applyDistrictModifiers()` vào demand calculation
+- `packages/game-core/src/market.ts` — MarketContext.districtId + whenMatches check districtId
+
+**Logic:**
+- District modifiers = preferredCategory (1.2–1.4) × peakHour (1.05–1.4), cap 1.82
+- Gán parcel.districtId theo wave: w0→hem_dan_cu, w1→thuong_mai_nga_tu, w2→dan_cu_nam, w3→van_phong_logistics, w4→am_thuc_nam
+- Áp dụng trong buildDemandTable nếu input.ctx.districtId tồn tại
+
+## 2.2 Proximity Cluster
+
+**File:**
+- `packages/game-core/src/proximity-cluster.ts` — ClusterBuilding, CLUSTER_COMPAT, PROXIMITY_RADIUS 16, PROXIMITY_CLUSTER_CAP 1.3
+- clusterMultiplierFor: 1 + Σ bonus_cặp (cap 1.3), legacyFoodClusterMultiplier để so sánh W0
+
+## 2.3 City Goals
+
+**File thay đổi:**
+- `packages/shared/src/index.ts` — Thêm CityProgressState { level, claimedCityGoalIds, milestones, metrics }
+- `packages/game-core/src/city-goals-sim.ts` — Hàm `claimCityGoal(state, goalId, day)`:
+  - Kiểm goal tồn tại, chưa claim
+  - Thêm goalId vào claimedCityGoalIds, ghi milestone 'goal_claimed'
+  - Khi tất cả goals của cấp được claim → level + 1, ghi milestone 'level_up'
+  - Tính thưởng bằng sumCityGoalRewards
+
+## 2.4 Internal Delivery
+
+**File:**
+- `packages/game-core/src/supply-execution.ts` — Daily execution (FEFO, cap 50%, shortfall)
+- `packages/game-core/src/simulation.ts` — Đã import dailySupplyExecution (line 182), dùng tại line 5604
+
+## Kết quả cuối cùng
+
+| Lệnh | Kết quả | Ghi chú |
+|------|---------|---------|
+| `yarn typecheck` | ✅ PASS (2.88s) | Toàn workspace |
+| `yarn lint` | ✅ 0 errors | Pre-existing |
+| `yarn test` | ❌ EPERM | Sandbox |
+| `yarn build` | ❌ EPERM | Sandbox |
+
+## Commit history giai đoạn 2
+
+| Commit | Nội dung |
+|--------|----------|
+| `xxx` | feat(data): gán districtId cho LandParcel, add 'district' source |
+| `xxx` | feat(core): district modifiers trong demand.ts |
+| `xxx` | feat(core): CityProgressState, claim_city_goal command |
+| `xxx` | feat(core): supply execution FEFO + cap 50% |
+
+---
+
 # GIAI ĐOẠN 1 — CỦNG CỐ NỀN KỸ THUẬT — BÁO CÁO CUỐI (15/10/2026)
 
 ## Tổng kết

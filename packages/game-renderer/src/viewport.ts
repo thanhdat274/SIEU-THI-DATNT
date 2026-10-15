@@ -6,7 +6,7 @@ import { PixelTextureFactory } from './textures';
 import { loadSpriteAtlases, headLift, lampLift, walkerLook, atlasTexture } from './sprite-atlas';
 import { PixelCamera } from './camera';
 import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
-import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, parcelTrafficMultiplier, type LandParcel, buildingTypeOfInstance } from '@game/data';
+import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, parcelTrafficMultiplier, districtForWave, type LandParcel, buildingTypeOfInstance } from '@game/data';
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -449,7 +449,7 @@ export class PixiGameViewport {
         if (placed.some(b => b.bounds.left >= raw.rect.x0 && b.bounds.right <= raw.rect.x1 + 1 && b.bounds.bottom >= raw.rect.y0 && b.bounds.bottom <= raw.rect.y1 + 1)) continue;
         const isOwned = owned.includes(raw.id);
         const cx = ((raw.rect.x0 + raw.rect.x1 + 1) / 2) * T;
-        const parcel: LandParcel = { id: raw.id, rect: raw.rect, wave: index, frontageRoadId: raw.frontageRoadId ?? wave.frontageRoadId, frontage: { corner: raw.corner ?? false } };
+        const parcel: LandParcel = { id: raw.id, rect: raw.rect, wave: index, frontageRoadId: raw.frontageRoadId ?? wave.frontageRoadId, districtId: index === 0 ? 'hem_dan_cu' : districtForWave(wave.id as 'w1' | 'w2' | 'w3' | 'w4'), frontage: { corner: raw.corner ?? false } };
         const border = new Graphics();
         border.rect(raw.rect.x0 * T + 1, raw.rect.y0 * T + 1, (raw.rect.x1 - raw.rect.x0 + 1) * T - 2, (raw.rect.y1 - raw.rect.y0 + 1) * T - 2).stroke({ color: isOwned ? 0x3fbf5f : raw.corner ? 0xffa500 : 0xd8d2c0, width: 1, alpha: 0.7 });
         deco.addChild(border);

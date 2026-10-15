@@ -444,7 +444,7 @@ export interface LedgerEntry {
 
 /** Thị trường động: mọi khóa là chuỗi để thêm thời tiết/sự kiện/thẻ bằng dữ liệu, không sửa lõi. */
 export type ModifierChannel = 'demand' | 'traffic' | 'wholesalePrice' | 'supplierStock' | 'spoilage' | 'priceSensitivity';
-export type ModifierSource = 'season' | 'climate' | 'weather' | 'time' | 'weekday' | 'event';
+export type ModifierSource = 'season' | 'climate' | 'weather' | 'time' | 'weekday' | 'event' | 'district';
 
 export interface ModifierTarget {
   categories?: ProductCategory[];
@@ -460,6 +460,8 @@ export interface ModifierWhen {
   timeBand?: string[];
   weekdays?: number[]; // 0 = Thứ Hai … 6 = Chủ Nhật
   event?: string[];
+  /** Mã khu áp dụng modifier (D1). Thiếu = áp dụng cho mọi khu. */
+  districtId?: string[];
 }
 
 export interface ModifierRule {
@@ -1094,6 +1096,27 @@ export interface ChainState {
 
 export const BRANCH_REPORT_LIMIT = 30;
 
+/** Mã loại mục tiêu thành phố (trùng với CityGoalKind trong game-data). */
+export type CityGoalKind =
+  | 'daily_customers'
+  | 'building_types_open'
+  | 'waves_opened'
+  | 'infrastructure'
+  | 'weekly_revenue'
+  | 'total_buildings';
+
+/** Trạng thái tiến độ mục tiêu thành phố (schema 10). */
+export interface CityProgressState {
+  /** Cấp thành phố hiện tại (1..10). */
+  level: number;
+  /** Đã hoàn thành (claim) các mục tiêu này. */
+  claimedCityGoalIds: string[];
+  /** Nhật ký các mốc đạt được (lên cấp, hoàn thành mục tiêu). */
+  milestones: Array<{ day: number; type: 'level_up' | 'goal_claimed'; goalId?: string; level?: number }>;
+  /** Số liệu hiện tại cho việc đánh giá tiến độ (được cập nhật bởi simulation). */
+  metrics: Partial<Record<CityGoalKind, number>>;
+}
+
 export interface SaveGameData {
   /** Chuỗi chi nhánh (tùy chọn, không nâng schema). */
   chain?: ChainState;
@@ -1178,6 +1201,8 @@ export interface SaveGameData {
    * (chỉ W0 mở, không công trình) — migration 6→7 gieo mặc định.
    */
   world?: WorldOpenState;
+  /** Tiến độ mục tiêu thành phố (OpenSpec `open-world-districts-city-goals`, schema 10). Thiếu = cấp 1, chưa hoàn thành mục tiêu nào. */
+  cityProgress?: CityProgressState;
 }
 
 export interface RegularCustomerProgress {

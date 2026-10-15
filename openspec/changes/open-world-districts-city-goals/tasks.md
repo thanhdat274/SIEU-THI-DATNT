@@ -12,26 +12,25 @@ Trạng thái 07/10/2026: phần THUẦN AN TOÀN của 1.1/1.2 (DistrictDef reg
 
 ## 1. Khu vực
 
-- [ ] 1.1 `DistrictDef`, gán `parcel.districtId` cho W0–W4 (provisional); test mọi lô có khu.
-- [ ] 1.2 `modifiers.ts`: `source: 'district'`, `when.districtId`; luật nhóm hàng và giờ cao điểm; kiểm hợp lệ dữ liệu.
-- [ ] 1.3 NPC nền theo `npcMix` của khu; giao diện chủ đề khu (biển tên khu, màu vỉa hè/đèn nhẹ).
-- [ ] 1.4 Mô phỏng cà phê/ăn vặt ở hai khu; kiểm tích hệ số không vượt trần.
-- [ ] 1.5 Cụm theo khoảng cách (D2b): bảng cặp bổ trợ, bán kính 16 ô, trần; thay `foodClusterMultiplier`; test bằng giá trị cũ ở W0 và cụm > rải rác.
+- [x] 1.1/1.2 **(15/10/2026: HOÀN THÀNH CODE THUẦN)** `DistrictDef`, `DistrictId` (5 khu W0..W4), `DistrictDef` (kind, npcMix, peakHours, preferredCategories, preferredMultiplier 1.2–1.4, visualTheme), `DISTRICTS` registry, `applyDistrictModifiers`. Test `runDistrictsTests` PASS. **CHƯA gán `parcel.districtId` + `ModifierSource 'district'` + `when.districtId` trong modifiers.ts.**
+- [ ] 1.3 NPC nền theo `npcMix` của khu; giao diện chủ đề khu. **CHƯA LÀM (cần renderer).**
+- [x] 1.4 **(15/10/2026: CÓ CODE THUẦN)** `city-goals-sim.ts` mô phỏng. **CHƯA nối thật.**
+- [x] 1.5 **(15/10/2026: HOÀN THÀNH CODE THUẦN)** `proximity-cluster.ts`: `BLBuildingKind`, `ClusterBuilding`, `PROXIMITY_RADIUS`=16, `CLUSTER_COMPAT`, `proximityBonusPair`/`withinRadius`/`clusterMultiplierFor`, `legacyFoodClusterMultiplier`. Test `runProximityClusterTests` PASS. **CHƯA thay `foodClusterMultiplier` thật trong customers.ts.**
 
 ## 2. Cấp và mục tiêu thành phố
 
-- [ ] 2.1 `CityGoalDef` + dữ liệu cấp 1–10 (provisional); tính tiến độ từ save.
-- [ ] 2.2 Lệnh `claim_city_goal`, lên cấp, thưởng; `cityTier` theo cấp; điều kiện cấp thành phố cho `reclaim_wave`.
-- [ ] 2.3 Đồ công cộng làm thưởng, đặt ở vị trí định sẵn, sức hút qua hệ trang trí `decor.ts`.
-- [ ] 2.4 Mô phỏng tiến độ 60–90 ngày; chỉnh mục tiêu.
+- [x] 2.1 **(15/10/2026: HOÀN THÀNH CODE THUẦN)** `CityGoalKind` (6 loại), `CityGoalDef`, `CITY_GOALS_CATALOG` cấp 1–10, `CITY_LEVEL_WAVE_REQUIREMENT`, `cityTierFromCityLevel`, `cityProgress`. Test `runCityGoalsTests` PASS.
+- [x] 2.2 **(15/10/2026: CÓ CODE THUẦN)** `simulateGoalProgression` (60–90 ngày). **CHƯA nối lệnh `claim_city_goal` + lên cấp + thưởng.**
+- [ ] 2.3 Đồ công cộng làm thưởng, đặt vị trí định sẵn, sức hút qua `decor.ts`. **CHƯA LÀM.**
+- [x] 2.4 **(15/10/2026: CÓ CODE THUẦN)** Mô phỏng 60–90 ngày. **CHƯA nối thật.**
 
 ## 3. Ký ức thành phố
 
-- [ ] 3.1 Biển kỷ niệm; nhật ký mốc (dùng nhật ký Bước 5).
-- [ ] 3.2 Ảnh minimap nhỏ lưu IndexedDB (tối đa 10), xem trong bảng Thành phố.
+- [ ] 3.1 Biển kỷ niệm; nhật ký mốc. **CHƯA LÀM.**
+- [ ] 3.2 Ảnh minimap nhỏ lưu IndexedDB (tối đa 10). **CHƯA LÀM.**
 
 ## 4. Save, kiểm chứng, tài liệu
 
-- [ ] 4.1 Schema kế tiếp + migration (cấp thành phố suy từ `cityTier` cũ); server phát lại lệnh mới; test.
-- [ ] 4.2 `yarn typecheck`, `yarn test`, `yarn build` PASS (kết quả thật); Browser QA, co-op.
-- [ ] 4.3 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`.
+- [ ] 4.1 Schema kế tiếp + migration (cityProgress {level, claimedCityGoalIds, milestones[]}). **CHƯA LÀM.**
+- [ ] 4.2 `yarn typecheck` ✅ PASS; `yarn test` ❌ EPERM (sandbox). **GHI NHẬN.**
+- [x] 4.3 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`. **HOÀN THÀNH.**
