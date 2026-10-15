@@ -217,9 +217,19 @@ export class LedgerManager {
       rep.transactionsCount += 1;
       rep.itemsSold += itemCount;
       rep.grossProfit = rep.revenue - rep.cogs;
-      rep.netProfit = rep.grossProfit;
+      rep.netProfit = rep.grossProfit - (rep.rentCost ?? 0);
     }
     this.recalcNetProfit();
+  }
+
+  /** Tính tiền thuê đất vào báo cáo của một tòa (spec D2); không đụng `rentCost` toàn ngày (do bên gọi cộng một lần). */
+  public addBuildingRent(buildingInstanceId: string, amount: number): void {
+    this.currentDayRecord.buildingReports ??= {};
+    const rep = (this.currentDayRecord.buildingReports[buildingInstanceId] ??= {
+      buildingInstanceId, revenue: 0, cogs: 0, transactionsCount: 0, itemsSold: 0, grossProfit: 0, netProfit: 0,
+    });
+    rep.rentCost = (rep.rentCost ?? 0) + amount;
+    rep.netProfit = rep.grossProfit - rep.rentCost;
   }
 
   /** Ghi thống kê hàng hỏng. */

@@ -19,6 +19,7 @@
  */
 import type { CityProgressState, CityGoalKind } from '@game/shared';
 import {
+  CITY_GOALS_CATALOG,
   CITY_LEVEL_WAVE_REQUIREMENT,
   cityGoalsForLevel,
   cityProgress,
@@ -289,7 +290,5 @@ export function claimCityGoal(
  * Tra một mục tiêu theo id (export từ game-data).
  */
 function cityGoalById(id: string): CityGoalReward & { cityLevel: number; kind: CityGoalKind; targetValue: number } | undefined {
-  // Import động để tránh circular dependency
-  const { CITY_GOALS_CATALOG } = require('@game/data/src/world/city-goals');
-  return CITY_GOALS_CATALOG.find((g: any) => g.id === id);
+  return CITY_GOALS_CATALOG.find(g => g.id === id);
 }

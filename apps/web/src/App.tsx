@@ -1549,7 +1549,7 @@ export const App: React.FC = () => {
       simulation => simulation.endLease(parcelId),
     );
     if (!res) return;
-    addToast(res.success ? 'Đã hủy thuê lô đất.' : (res.reason === 'building_present' ? 'Vui lòng dời công trình trước khi hủy thuê.' : (res.reason ?? 'Không hủy thuê được.')), res.success ? 'info' : 'warn');
+    addToast(res.success ? 'Đã hủy thuê lô đất.' : (res.reason === 'building_present' ? 'Vui lòng dời công trình trước khi hủy thuê.' : res.reason === 'rent_debt' ? 'Trả hết nợ tiền thuê trước khi hủy thuê.' : (res.reason ?? 'Không hủy thuê được.')), res.success ? 'info' : 'warn');
   };
 
   const handlePayRentDebt = async (parcelId: string) => {

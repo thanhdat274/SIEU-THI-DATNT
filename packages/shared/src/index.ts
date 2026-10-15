@@ -653,7 +653,10 @@ export interface BuildingDailyReport {
   transactionsCount: number;
   itemsSold: number;
   grossProfit: number;
+  /** Lãi sau tiền thuê đất của lô đặt tòa (spec D2): `grossProfit - rentCost`. */
   netProfit: number;
+  /** Phần tiền thuê đất ngày này tính cho tòa (chia đều khi lô có nhiều tòa). */
+  rentCost?: number;
 }
 
 export interface DailyRecord {

@@ -122,6 +122,44 @@ export function runLandLeaseCoreTests(): void {
     assert.equal(tenure, undefined, 'Bản ghi thuê bị xóa sạch');
   }
 
+  // 7. Hồi quy QA 15/10/2026: không thuê lô đợt chưa mở; không hủy thuê khi còn nợ
+  {
+    const sim = createTestSim();
+    const before = sim.getPlayerData().money;
+    assert.equal(sim.leaseParcel('w3-1').reason, 'wave_not_open', 'W3 chưa mở: không cho thuê');
+    assert.equal(sim.getPlayerData().money, before, 'Thuê bị từ chối thì không trừ tiền');
+    sim.leaseParcel('w1-east');
+    (sim as unknown as { parcelTenure: Record<string, { debtDays?: number }> }).parcelTenure['w1-east'].debtDays = 2;
+    assert.equal(sim.endLease('w1-east').reason, 'rent_debt', 'Còn nợ thì không hủy thuê');
+    (sim as unknown as { playerData: { money: number } }).playerData.money = 10_000_000;
+    assert.ok(sim.payRentDebt('w1-east').success);
+    assert.ok(sim.endLease('w1-east').success, 'Hết nợ thì hủy thuê được');
+  }
+
+  // 8. BUG-7 (spec D2): tiền thuê vào sổ cái có buildingInstanceId và trừ vào lãi báo cáo theo tòa
+  {
+    const sim = createTestSim();
+    sim.leaseParcel('w1-corner');
+    const branch = sim.openBuilding('grocery_branch', 'w1-corner', 42, 3);
+    assert.ok(branch.success);
+    const daily = Math.ceil(parcelPrice(resolveParcel('w1-corner')!) * LAND_LEASE_CONSTANTS.leaseDailyRate);
+    sim.collectDailyRent(2);
+    const rentRows = sim.getLedger().filter(l => l.type === 'rent' && l.day === 2);
+    assert.equal(rentRows.length, 1, 'Một tòa trên lô: một dòng rent');
+    assert.equal(rentRows[0].buildingInstanceId, branch.instanceId, 'Dòng rent gắn tòa');
+    assert.equal(rentRows[0].amount, daily);
+    const rep = sim.getCurrentDayRecord().buildingReports?.[branch.instanceId!];
+    assert.equal(rep?.rentCost, daily, 'Báo cáo tòa ghi tiền thuê');
+    assert.equal(rep?.netProfit, -daily, 'Chưa bán gì: lãi ròng tòa = -tiền thuê');
+    assert.equal(sim.getCurrentDayRecord().rentCost, daily, 'Tổng rent ngày không bị cộng đôi');
+    // Lô trống: dòng rent không gắn tòa
+    sim.leaseParcel('w1-east');
+    sim.collectDailyRent(3);
+    const east = sim.getLedger().filter(l => l.type === 'rent' && l.day === 3 && l.description.includes('w1-east'));
+    assert.equal(east.length, 1);
+    assert.equal(east[0].buildingInstanceId, undefined, 'Lô trống không gắn tòa');
+  }
+
   console.log('  ✓ Toàn bộ luồng thuê, thu tiền đầu ngày, nợ 3 ngày đóng tòa, trả nợ mở lại, mua khấu trừ và hủy thuê PASS!');
 }
 

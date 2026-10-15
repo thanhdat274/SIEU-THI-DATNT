@@ -912,6 +912,11 @@ export class GameSimulation {
     if (!parcel) return { success: false, reason: 'unknown_parcel' };
     // W0 không cho thuê (luôn owned)
     if (parcel.wave === 0) return { success: false, reason: 'w0_owned' };
+    // Đợt phải MỞ XONG (giống buy_parcel): không thu tiền thuê lô chưa đi tới được.
+    const leaseWaveId = `w${parcel.wave}`;
+    if (!this.worldOpenState.openedWaves.includes(leaseWaveId) || this.worldOpenState.wavesUnderConstruction[leaseWaveId] !== undefined) {
+      return { success: false, reason: 'wave_not_open' };
+    }
     // Kiểm tenure schema 10 (ưu tiên) hoặc ownedParcelIds schema ≤9
     const existing = this.parcelTenure[parcelId];
     if (existing && (existing.kind === 'owned' || existing.kind === 'leased')) return { success: false, reason: existing.kind === 'owned' ? 'owned' : 'leased' };
@@ -936,6 +941,8 @@ export class GameSimulation {
     if (!tenure || tenure.kind !== 'leased') return { success: false, reason: 'not_leased' };
     const hasBuilding = (this.buildingPlacements ?? []).some(p => p.parcelId === parcelId);
     if (hasBuilding) return { success: false, reason: 'building_present' };
+    // Spec D5: chỉ trả lại lô khi không nợ (nếu không, hủy thuê thành cách xóa nợ).
+    if ((tenure.debtDays ?? 0) > 0) return { success: false, reason: 'rent_debt' };
 
     delete this.parcelTenure[parcelId];
     this.notifyStateChanged();
@@ -969,16 +976,26 @@ export class GameSimulation {
       }
     }
     const currentDay = this.clock.getTime().day;
-    this.recordLedger({
-      day: currentDay,
-      type: 'rent',
-      amount: debtAmount,
-      description: `Trả nợ tiền thuê đất lô ${parcelId} (${debtDays} ngày, ngày ${currentDay})`,
-    });
+    this.recordRentCharge(parcelId, debtAmount, currentDay, `Trả nợ tiền thuê đất lô ${parcelId} (${debtDays} ngày, ngày ${currentDay})`);
     this.currentDayRecord.rentCost = (this.currentDayRecord.rentCost ?? 0) + debtAmount;
     this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
     this.notifyStateChanged();
     return { success: true, amount: debtAmount };
+  }
+
+  /**
+   * Ghi sổ cái `rent` (spec D2): có tòa trên lô thì mỗi tòa một dòng với `buildingInstanceId` và nhận phần chia đều
+   * (phần dư vào tòa đầu) vào báo cáo theo tòa; lô trống thì một dòng không gắn tòa. Tổng các dòng = `amount`.
+   */
+  private recordRentCharge(parcelId: string, amount: number, day: number, description: string): void {
+    const ids = (this.buildingPlacements ?? []).filter(p => p.parcelId === parcelId).map(p => p.buildingId);
+    if (ids.length === 0) { this.recordLedger({ day, type: 'rent', amount, description }); return; }
+    const base = Math.floor(amount / ids.length);
+    ids.forEach((id, i) => {
+      const share = base + (i === 0 ? amount - base * ids.length : 0);
+      this.recordLedger({ day, type: 'rent', amount: share, description, buildingInstanceId: id });
+      this.ledgerManager.addBuildingRent(id, share);
+    });
   }
 
   /**
@@ -1007,12 +1024,7 @@ export class GameSimulation {
         if (tenure.debtDays && tenure.debtDays > 0) {
           tenure.debtDays = Math.max(0, tenure.debtDays - 1);
         }
-        this.recordLedger({
-          day,
-          type: 'rent',
-          amount: dailyRent,
-          description: `Tiền thuê đất lô ${parcelId} (ngày ${day})`,
-        });
+        this.recordRentCharge(parcelId, dailyRent, day, `Tiền thuê đất lô ${parcelId} (ngày ${day})`);
         this.currentDayRecord.rentCost = (this.currentDayRecord.rentCost ?? 0) + dailyRent;
         this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
         anyChanged = true;
