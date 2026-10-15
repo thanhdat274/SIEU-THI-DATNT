@@ -2162,3 +2162,9 @@ Object.assign(PRODUCT_SPRITES, {
 function groceryCarton8(body: string, label: string, top: string): Sprite {
   return drinkCarton8(body, label, top);
 }
+
+// Quán cà phê, quán cơm: mượn hình có sẵn cho tới khi vẽ sprite riêng.
+for (const [id, source] of Object.entries({
+  ca_phe_den_da_tp: 'nuoc_ngot', bac_xiu_tp: 'sua_hop', ca_phe_trung_tp: 'sua_hop',
+  com_suon_nuong_tp: 'banh_bao', com_chien_trung_tp: 'gao', canh_rau_thit_tp: 'rau_muong',
+})) PRODUCT_SPRITES[id] = PRODUCT_SPRITES[source];

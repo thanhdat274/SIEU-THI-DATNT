@@ -81,6 +81,24 @@ export function runBuildingBehaviorTests(): void {
   assert.ok(spawnedIn.has('cafe-1'), `Quán cà phê sinh khách (các tòa sinh khách: ${[...spawnedIn].join(', ')})`);
   assert.ok(!spawnedIn.has('parking_lot-1'), 'Bãi xe không sinh khách quầy');
 
+  // Công thức riêng: cà phê chạy ở quầy pha của quán cà phê, món cơm ở bếp nướng/nồi canh của quán cơm
+  const stock = (productId: string, quantity: number) => ({ productId, quantity, lots: [{ quantity, expiresOnDay: 30, unitCost: 5_000, provenance: 'known' as const }] });
+  (sim as unknown as { inventory: unknown[] }).inventory.push(
+    stock('ca_phe_bot', 3), stock('duong_cat', 3), stock('sua_hop', 6), stock('trung_ga', 6),
+  );
+  const coffee = sim.startProduction('recipe_ca_phe_den_da', 'cafe-1_counter');
+  assert.ok(coffee.success, `Pha cà phê đen đá ở quầy pha quán cà phê (${coffee.reason ?? ''})`);
+  assert.equal(sim.startProduction('recipe_com_suon_nuong', 'cafe-1_counter').success, false, 'Món cơm không nấu được ở quầy pha');
+  assert.ok(sim.getStationRecipes('cafe-1_counter').some(r => r.id === 'recipe_bac_xiu'), 'Quầy pha liệt kê công thức bạc xỉu');
+
+  // Kệ quán cà phê tự nhận món pha, không tự nhận hàng thường
+  (sim as unknown as { inventory: unknown[] }).inventory.push(stock('ca_phe_den_da_tp', 6), stock('nuoc_suoi', 6));
+  cafeShelf.currentStock = 0;
+  cafeShelf.assignedProductId = undefined;
+  delete (sim as unknown as { planogram: Record<string, string> }).planogram['cafe-1_shelf'];
+  const fill = sim.autoFillShelf('cafe-1_shelf');
+  assert.equal(fill.productId, 'ca_phe_den_da_tp', 'Kệ quán cà phê tự nhận cà phê, bỏ qua nước suối');
+
   // Nợ thuê đóng bãi xe thì mất thưởng và phí
   const placement = (sim as unknown as { buildingPlacements?: Array<{ buildingId: string; closedForRent?: boolean }> }).buildingPlacements?.find(p => p.buildingId === 'parking_lot-1');
   assert.ok(placement, 'Có placement bãi xe');

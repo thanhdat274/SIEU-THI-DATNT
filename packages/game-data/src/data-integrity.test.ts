@@ -1,5 +1,5 @@
 import { PRODUCT_MAP } from './products';
-import { RECIPES, RECIPE_MAP, PRODUCED_PRODUCTS } from './recipes';
+import { RECIPES, RECIPE_MAP, PRODUCED_PRODUCTS, CAFE_SHOP_PRODUCT_IDS, COM_RESTAURANT_DISH_IDS } from './recipes';
 import { SUPPLIERS, SUPPLIER_MAP, DEFAULT_SUPPLIER_ID } from './suppliers';
 import { validateSpoilageData } from './spoilage';
 import { SEASON_EVENTS, SEASON_YEAR_DAYS, getDayOfYear, getSeasonForDay, getSeasonWindow, getFestivalClaimWindow, seasonDaysLeft } from './seasons';
@@ -21,6 +21,10 @@ export function runDataIntegrityTests(): void {
   assert(RECIPES.every(r => r.durationSeconds > 0 && r.outputQuantity > 0 && r.inputs.length > 0 && r.inputs.every(i => i.quantity > 0)), 'Công thức có thời gian, sản lượng, nguyên liệu dương');
   assert(RECIPES.every(r => r.unlockLevel >= 1), 'Cấp mở khóa công thức >= 1');
   assert(PRODUCED_PRODUCTS.every(p => !!PRODUCT_MAP[p.id]), 'Hàng tự sản xuất đều nằm trong PRODUCT_MAP');
+
+  assert(['ca_phe_den_da_tp', 'bac_xiu_tp', 'ca_phe_trung_tp'].every(id => CAFE_SHOP_PRODUCT_IDS.has(id)), 'Món pha riêng thuộc danh mục quán cà phê');
+  assert(['com_suon_nuong_tp', 'com_chien_trung_tp', 'canh_rau_thit_tp'].every(id => COM_RESTAURANT_DISH_IDS.has(id)), 'Món cơm riêng thuộc danh mục quán cơm');
+  assert(PRODUCED_PRODUCTS.every(p => p.intermediate || RECIPES.some(r => r.outputProductId === p.id)), 'Mọi thành phẩm đều có công thức tạo ra');
 
   // Nhà cung cấp
   assert(new Set(SUPPLIERS.map(s => s.id)).size === SUPPLIERS.length, 'Id nhà cung cấp không trùng');

@@ -176,7 +176,7 @@ import {
   hasPerk,
 } from './skills';
 import { applyBuildingLayout, setAwningOpen, SPECIAL_REQUEST_MAP } from '@game/data';
-import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS, WAREHOUSE_CENTER, buildingTypeOfInstance } from '@game/data';
+import { BUILDINGS, CAFE_SHOP_PRODUCT_IDS, COM_RESTAURANT_DISH_IDS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS, WAREHOUSE_CENTER, buildingTypeOfInstance } from '@game/data';
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS, RECLAMATION_WAVE_MAP } from '@game/data';
 import { dailySupplyExecution, type InternalDelivery, type SupplyContract, type SupplyStockLot } from './supply-execution';
@@ -5236,6 +5236,7 @@ export class GameSimulation {
     const isXoiShelf = shelfBuilding === 'xoi';
     const isDrinkShelf = shelfBuilding === 'drink';
     const isSnackShelf = shelfBuilding === 'snack';
+    const shelfTypeId = shelfBuilding ? buildingTypeOfInstance(shelfBuilding)?.typeId : undefined;
     // Các sản phẩm đang được bày ở kệ khác (ưu tiên thấp hơn để tránh trùng)
     const alreadyOnShelf = new Set(
       this.fixtures
@@ -5258,6 +5259,9 @@ export class GameSimulation {
         // Kệ quán ăn vặt chỉ tự nhận món chiên/xào của quán (gồm bánh tráng trộn); kệ tòa khác không tự nhận chúng (vẫn bày tay được).
         if (isSnackShelf && !SNACK_SHOP_PRODUCT_IDS.has(inv.productId)) return false;
         if (!this.shelfProductAllowed(fix, inv.productId)) return false;
+        // Kệ quán cà phê / quán cơm chỉ tự nhận món pha, món nấu của chính quán (kệ tòa khác vẫn bày tay được).
+        if (shelfTypeId === 'cafe' && !CAFE_SHOP_PRODUCT_IDS.has(inv.productId)) return false;
+        if (shelfTypeId === 'com_restaurant' && !COM_RESTAURANT_DISH_IDS.has(inv.productId)) return false;
         return true;
       })
       .sort((a, b) => {

@@ -48,6 +48,14 @@ export const PRODUCED_PRODUCTS: Product[] = [
   { id: 'bap_xao_tp', name: 'Bắp xào', category: 'snacks', spriteId: 'item_bap_xao_tp', purchasePrice: 3900, baseSellingPrice: 12000, shelfCapacity: 10, storageType: 'ambient', expirationRules: { daysToSpoil: 1 }, unlockLevel: 26, demandProfile: { basePopularity: 0.5 }, description: 'Bắp ngọt xào bơ, hành phi và hành lá, món ăn vặt buổi chiều.' },
   { id: 'ca_vien_chien_tp', name: 'Cá viên chiên', category: 'snacks', spriteId: 'item_ca_vien_chien_tp', purchasePrice: 4600, baseSellingPrice: 12000, shelfCapacity: 10, storageType: 'ambient', expirationRules: { daysToSpoil: 1 }, unlockLevel: 26, demandProfile: { basePopularity: 0.55 }, description: 'Cá viên chiên vàng giòn xiên que, chấm tương ớt.' },
   { id: 'banh_bao_hap_tp', name: 'Bánh bao hấp nóng', category: 'bread', spriteId: 'item_banh_bao_hap_tp', purchasePrice: 8400, baseSellingPrice: 15000, shelfCapacity: 10, storageType: 'ambient', expirationRules: { daysToSpoil: 1 }, unlockLevel: 39, demandProfile: { basePopularity: 0.45 }, description: 'Bánh bao nhân thịt trứng hấp bốc khói, ăn nóng mới ngon.' },
+  // Quán cà phê (OpenSpec `open-world-building-types` 2.2): đồ uống pha ở quầy pha. Số liệu provisional, chưa playtest.
+  { id: 'ca_phe_den_da_tp', name: 'Cà phê đen đá', category: 'soft_drinks', spriteId: 'item_ca_phe_bot', purchasePrice: 3500, baseSellingPrice: 10000, shelfCapacity: 10, storageType: 'ambient', expirationRules: { daysToSpoil: 1 }, unlockLevel: 34, demandProfile: { basePopularity: 0.5 }, description: 'Cà phê phin đen pha đậm, thêm đá, món sáng của dân văn phòng.' },
+  { id: 'bac_xiu_tp', name: 'Bạc xỉu', category: 'soft_drinks', spriteId: 'item_ca_phe_bot', purchasePrice: 6000, baseSellingPrice: 16000, shelfCapacity: 10, storageType: 'ambient', expirationRules: { daysToSpoil: 1 }, unlockLevel: 34, demandProfile: { basePopularity: 0.45 }, description: 'Nhiều sữa ít cà phê, ngọt dịu, hợp người mới uống cà phê.' },
+  { id: 'ca_phe_trung_tp', name: 'Cà phê trứng', category: 'soft_drinks', spriteId: 'item_ca_phe_bot', purchasePrice: 9500, baseSellingPrice: 24000, shelfCapacity: 8, storageType: 'ambient', expirationRules: { daysToSpoil: 1 }, unlockLevel: 36, demandProfile: { basePopularity: 0.4 }, description: 'Lớp kem trứng đánh bông béo ngậy phủ trên cà phê nóng.' },
+  // Quán cơm: món nấu ở bếp nướng và nồi canh. Số liệu provisional, chưa playtest.
+  { id: 'com_suon_nuong_tp', name: 'Cơm sườn nướng', category: 'bread', spriteId: 'item_com_hop_ga_tp', purchasePrice: 24000, baseSellingPrice: 48000, shelfCapacity: 8, storageType: 'ambient', expirationRules: { daysToSpoil: 1 }, unlockLevel: 40, demandProfile: { basePopularity: 0.5 }, description: 'Sườn heo nướng thơm lừng ăn với cơm trắng, rau và nước tương.' },
+  { id: 'com_chien_trung_tp', name: 'Cơm chiên trứng', category: 'bread', spriteId: 'item_com_hop_ga_tp', purchasePrice: 9500, baseSellingPrice: 25000, shelfCapacity: 8, storageType: 'ambient', expirationRules: { daysToSpoil: 1 }, unlockLevel: 40, demandProfile: { basePopularity: 0.45 }, description: 'Cơm chiên trứng hành lá vàng ươm, no bụng giá mềm.' },
+  { id: 'canh_rau_thit_tp', name: 'Canh rau thịt bằm', category: 'snacks', spriteId: 'item_com_hop_ga_tp', purchasePrice: 5500, baseSellingPrice: 12000, shelfCapacity: 10, storageType: 'ambient', expirationRules: { daysToSpoil: 1 }, unlockLevel: 40, demandProfile: { basePopularity: 0.4 }, description: 'Bát canh rau muống thịt bằm nấu ở nồi canh, ăn kèm cơm.' },
 ];
 
 export const RECIPES: Recipe[] = [
@@ -80,6 +88,13 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_tra_dao_cam_sa', name: 'Trà đào cam sả (6 ly)', stationShopId: 'drink_counter', inputs: [{ productId: 'tra_tac_base', quantity: 1 }, { productId: 'trai_cay', quantity: 1 }, { productId: 'duong_cat', quantity: 1 }], outputProductId: 'tra_dao_cam_sa_tp', outputQuantity: 6, durationSeconds: 30, unlockLevel: 26 },
   { id: 'recipe_kem_trai_cay', name: 'Kem trái cây tự làm (5 ly)', stationShopId: 'blender', inputs: [{ productId: 'trai_cay', quantity: 2 }, { productId: 'sua_chua', quantity: 2 }, { productId: 'duong_cat', quantity: 1 }], outputProductId: 'kem_trai_cay_tp', outputQuantity: 5, durationSeconds: 35, unlockLevel: 28 },
   { id: 'recipe_banh_bao_hap', name: 'Bánh bao hấp nóng (8 cái)', stationShopId: 'xung_hap', inputs: [{ productId: 'bot_mi', quantity: 2 }, { productId: 'thit_xay', quantity: 1 }, { productId: 'trung_ga', quantity: 1 }], outputProductId: 'banh_bao_hap_tp', outputQuantity: 8, durationSeconds: 40, unlockLevel: 39 },
+  // Quán cà phê (trạm quầy pha) và quán cơm (bếp nướng, nồi canh): số liệu provisional, chưa playtest.
+  { id: 'recipe_ca_phe_den_da', name: 'Cà phê đen đá (6 ly)', stationShopId: 'drink_counter', inputs: [{ productId: 'ca_phe_bot', quantity: 1 }, { productId: 'duong_cat', quantity: 1 }], outputProductId: 'ca_phe_den_da_tp', outputQuantity: 6, durationSeconds: 30, unlockLevel: 34 },
+  { id: 'recipe_bac_xiu', name: 'Bạc xỉu (5 ly)', stationShopId: 'drink_counter', inputs: [{ productId: 'ca_phe_bot', quantity: 1 }, { productId: 'sua_hop', quantity: 3 }], outputProductId: 'bac_xiu_tp', outputQuantity: 5, durationSeconds: 35, unlockLevel: 34 },
+  { id: 'recipe_ca_phe_trung', name: 'Cà phê trứng (4 ly)', stationShopId: 'drink_counter', inputs: [{ productId: 'ca_phe_bot', quantity: 1 }, { productId: 'trung_ga', quantity: 2 }, { productId: 'duong_cat', quantity: 1 }, { productId: 'sua_hop', quantity: 1 }], outputProductId: 'ca_phe_trung_tp', outputQuantity: 4, durationSeconds: 40, unlockLevel: 36 },
+  { id: 'recipe_com_suon_nuong', name: 'Cơm sườn nướng (4 phần)', stationShopId: 'food_grill', inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'suon_heo', quantity: 2 }, { productId: 'rau_cai', quantity: 1 }, { productId: 'nuoc_tuong', quantity: 1 }], outputProductId: 'com_suon_nuong_tp', outputQuantity: 4, durationSeconds: 50, unlockLevel: 40 },
+  { id: 'recipe_com_chien_trung', name: 'Cơm chiên trứng (5 phần)', stationShopId: 'food_grill', inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'trung_ga', quantity: 3 }, { productId: 'hanh_la', quantity: 1 }], outputProductId: 'com_chien_trung_tp', outputQuantity: 5, durationSeconds: 40, unlockLevel: 40 },
+  { id: 'recipe_canh_rau_thit', name: 'Canh rau thịt bằm (6 bát)', stationShopId: 'hot_kettle', inputs: [{ productId: 'rau_muong', quantity: 2 }, { productId: 'thit_xay', quantity: 1 }], outputProductId: 'canh_rau_thit_tp', outputQuantity: 6, durationSeconds: 35, unlockLevel: 40 },
 ];
 
 export const RECIPE_MAP: Record<string, Recipe> = nullProto(Object.fromEntries(RECIPES.map(recipe => [recipe.id, recipe])));
@@ -92,4 +107,14 @@ export const XOI_DISH_IDS: ReadonlySet<string> = new Set(
 /** Món bán ở quán ăn vặt: thành phẩm của chảo xào/chiên (gồm bánh tráng trộn). Kệ quán ăn vặt chỉ tự nhận các món này. */
 export const SNACK_SHOP_PRODUCT_IDS: ReadonlySet<string> = new Set(
   RECIPES.filter(recipe => recipe.stationShopId === 'chao_xao' || recipe.stationShopId === 'chao_chien').map(recipe => recipe.outputProductId)
+);
+
+/** Món pha ở quán cà phê: thành phẩm của quầy pha, máy xay (đồ uống). Kệ quán cà phê chỉ tự nhận các món này (bày tay vẫn được). */
+export const CAFE_SHOP_PRODUCT_IDS: ReadonlySet<string> = new Set(
+  RECIPES.filter(recipe => recipe.stationShopId === 'drink_counter' || recipe.stationShopId === 'blender').map(recipe => recipe.outputProductId)
+);
+
+/** Món nấu ở quán cơm: thành phẩm của bếp nướng, nồi canh. Kệ quán cơm chỉ tự nhận các món này (bày tay vẫn được). */
+export const COM_RESTAURANT_DISH_IDS: ReadonlySet<string> = new Set(
+  RECIPES.filter(recipe => recipe.stationShopId === 'food_grill' || recipe.stationShopId === 'hot_kettle').map(recipe => recipe.outputProductId)
 );
