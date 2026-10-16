@@ -56,7 +56,8 @@ export const RATE_LIMITS = {
 
 /** Kích thước tối đa thân JSON HTTP (save đầy đủ + sổ cái) và một thông điệp WebSocket. */
 export const MAX_HTTP_BODY = '2mb';
-export const MAX_WS_PAYLOAD_BYTES = 64 * 1024;
+// Lệnh chơi chung đi qua WS kèm save (~100 KB), nên giới hạn bằng thân HTTP `POST /commands` (2 MB).
+export const MAX_WS_PAYLOAD_BYTES = 2 * 1024 * 1024;
 
 export const httpIpLimiter = new RateLimiter(RATE_LIMITS.httpPerIpPerMin, 60_000);
 export const httpAccountLimiter = new RateLimiter(RATE_LIMITS.httpPerAccountPerMin, 60_000);

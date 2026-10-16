@@ -6,9 +6,25 @@ import { createServer } from './bootstrap.js';
 import { createWebSocketTicket } from './firebase-admin.js';
 import { connectDatabase } from './database.js';
 import { WorldGateway } from './world.gateway.js';
+import { applySnapshotPatches } from '@game/shared';
 
 type EventMessage = { event: string; data: any };
 const joinedMessages = new WeakMap<WebSocket, EventMessage>();
+/** Snapshot dựng lại từ 'world:snapshot' + 'world:snapshot-delta' (như client thật), để test đọc trạng thái đầy đủ. */
+const rebuiltSnapshots = new WeakMap<WebSocket, { seq: number; data: any }>();
+
+function trackSnapshots(socket: WebSocket) {
+  socket.on('message', (raw: WebSocket.RawData) => {
+    let message: EventMessage;
+    try { message = JSON.parse(raw.toString()) as EventMessage; } catch { return; }
+    if (message.event === 'world:snapshot' || message.event === 'session:joined') rebuiltSnapshots.set(socket, { seq: message.data.seq ?? -1, data: message.data });
+    else if (message.event === 'world:snapshot-delta') {
+      const base = rebuiltSnapshots.get(socket);
+      if (!base || base.seq !== message.data.baseSeq) { rebuiltSnapshots.delete(socket); return; }
+      rebuiltSnapshots.set(socket, { seq: message.data.seq, data: applySnapshotPatches(base.data, message.data.patches) });
+    }
+  });
+}
 
 function nextEvent(socket: WebSocket, predicate: (message: EventMessage) => boolean, timeoutMs = 5000): Promise<EventMessage> {
   return new Promise((resolve, reject) => {
@@ -17,6 +33,11 @@ function nextEvent(socket: WebSocket, predicate: (message: EventMessage) => bool
       let message: EventMessage;
       try { message = JSON.parse(raw.toString()) as EventMessage; }
       catch { return; }
+      if (message.event === 'world:snapshot-delta') {
+        const rebuilt = rebuiltSnapshots.get(socket);
+        if (!rebuilt || rebuilt.seq !== message.data.seq) return;
+        message = { event: 'world:snapshot', data: rebuilt.data };
+      }
       if (!predicate(message)) return;
       cleanup();
       resolve(message);
@@ -31,6 +52,7 @@ function nextEvent(socket: WebSocket, predicate: (message: EventMessage) => bool
 async function connect(url: string, accountId: string): Promise<WebSocket> {
   const ticket = await createWebSocketTicket(accountId);
   const socket = new WebSocket(url, `ticket.${ticket}`, { origin: process.env.WEB_ORIGIN ?? 'http://localhost:5173' });
+  trackSnapshots(socket);
   const joined = nextEvent(socket, message => message.event === 'session:joined').then(message => {
     joinedMessages.set(socket, message);
     return message;
@@ -82,6 +104,7 @@ async function run() {
     const memberJoin = getJoined(memberSocket);
     assert.equal(memberJoin.data.world.avatars.length, 2);
 
+    assert.equal(typeof memberJoin.data.seq, 'number', 'session:joined kèm seq để ghép delta ngay');
     const initialMember = memberJoin.data.world.avatars.find((avatar: any) => avatar.accountId === memberId);
     const ownerSnapshot = nextEvent(ownerSocket, message => message.event === 'world:snapshot' &&
       message.data.world.avatars.find((avatar: any) => avatar.accountId === owner.id)?.position.x !== seeded.world.avatars[0].position.x);
@@ -133,6 +156,49 @@ async function run() {
       await memberGetsCommit;
       assert.equal(WorldGateway.getLiveRuntime(seeded.world.id)!.getRevision(), expected + 1, 'runtime sống theo đúng revision DB');
       assert.equal((await controller.getWorld(request as any, seeded.world.id)).world.revision, expected + 1);
+    }
+
+    // Lệnh qua WebSocket: cùng logic commit, trả 'command:result' theo requestId; lỗi trả status + thân lỗi.
+    {
+      const { GameController } = await import('./bootstrap.js');
+      const controller = new GameController();
+      const request = { gameAccount: { uid: owner.id } };
+      const current = await controller.getWorld(request as any, seeded.world.id);
+      const wasOpen = current.businesses[0].save.worldTime.isStoreOpen;
+      const expected = WorldGateway.getLiveRuntime(seeded.world.id)!.getRevision();
+      const rejected = nextEvent(ownerSocket, message => message.event === 'command:result' && message.data.requestId === 'ws-bad');
+      ownerSocket.send(JSON.stringify({ event: 'command', data: { requestId: 'ws-bad', body: { expectedRevision: expected } } }));
+      const bad = await rejected;
+      assert.equal(bad.data.ok, false);
+      assert.equal(bad.data.status, 400);
+      const accepted = nextEvent(ownerSocket, message => message.event === 'command:result' && message.data.requestId === 'ws-ok');
+      const memberSees = nextEvent(memberSocket, message => message.event === 'world:snapshot' && message.data.world.revision === expected + 1);
+      ownerSocket.send(JSON.stringify({ event: 'command', data: { requestId: 'ws-ok', body: {
+        expectedRevision: expected,
+        receipt: { commandId: `ws-${suffix}`, actorId: owner.id, status: 'accepted', revision: expected + 1, payloadJson: JSON.stringify({ type: 'store_status', isOpen: !wasOpen }), createdAt: new Date().toISOString() },
+        // Lệnh server phát lại: client chỉ gửi mã save, không gửi cả save.
+        updatedBusiness: { ...current.businesses[0], save: { id: current.businesses[0].save.id } },
+      } } }));
+      const ok = await accepted;
+      assert.equal(ok.data.ok, true, JSON.stringify(ok.data));
+      assert.equal(ok.data.result.revision, expected + 1);
+      assert.equal(ok.data.result.updatedBusiness, undefined, 'kết quả qua WS không kèm save (đã có trong delta)');
+      await memberSees;
+      // Ghi DB chạy nền: chờ hàng đợi của hẻm rồi DB phải theo kịp runtime.
+      await WorldGateway.flushCheckpoints(seeded.world.id);
+      const persisted = await controller.getWorld(request as any, seeded.world.id);
+      assert.equal(persisted.world.revision, expected + 1, 'DB nhận lệnh ghi nền');
+      assert.equal(persisted.businesses[0].save.worldTime.isStoreOpen, !wasOpen);
+      // Gửi lại cùng commandId (vd. client thử lại) không chạy lệnh hai lần.
+      const dup = nextEvent(ownerSocket, message => message.event === 'command:result' && message.data.requestId === 'ws-dup');
+      ownerSocket.send(JSON.stringify({ event: 'command', data: { requestId: 'ws-dup', body: {
+        expectedRevision: expected,
+        receipt: { commandId: `ws-${suffix}`, actorId: owner.id, status: 'accepted', revision: expected + 1, payloadJson: JSON.stringify({ type: 'store_status', isOpen: !wasOpen }), createdAt: new Date().toISOString() },
+        updatedBusiness: { ...current.businesses[0], save: { id: current.businesses[0].save.id } },
+      } } }));
+      const dupResult = await dup;
+      assert.equal(dupResult.data.ok, true);
+      assert.equal(WorldGateway.getLiveRuntime(seeded.world.id)!.getRevision(), expected + 1, 'lệnh trùng không tăng revision');
     }
 
     const ownerVoteEvent = nextEvent(ownerSocket, message => message.event === 'time-vote:update');

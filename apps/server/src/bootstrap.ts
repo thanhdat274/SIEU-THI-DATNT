@@ -1,12 +1,12 @@
 import 'reflect-metadata';
 import {
-  BadRequestException, Body, Controller, Delete, Get, Module, Param, Post, Req,
+  BadRequestException, Body, Controller, Delete, Get, Module, NotFoundException, Param, Post, Req,
   HttpException, HttpStatus, Put, ServiceUnavailableException, UseGuards,
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { WsAdapter } from '@nestjs/platform-ws';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { isSaveGameData, isWorldSettings, type BuildingPlacementRecord, type GameAccount, type SaveGameData } from '@game/shared';
+import { isSaveGameData, isWorldSettings, MULTIPLAYER_PROTOCOL_VERSION, SERVER_REPLAYED_COMMAND_TYPES, type BuildingPlacementRecord, type GameAccount, type SaveGameData } from '@game/shared';
 import { generateStarterTileMap, placementsProblem } from '@game/data';
 import { applyStoreLayoutActions, decideLandCommand, GameSimulation, landErrorMessage, validateStoreLayout, WorldRuntime } from '@game/core';
 import { readRuntimeConfig } from './runtime-config.js';
@@ -18,8 +18,20 @@ import { createWebSocketTicket, verifyAccount } from './firebase-admin.js';
 import { FirebaseAuthGuard } from './auth.guard.js';
 import { worldRepository } from './world.repository.js';
 import { cloudSaveRepository, decideCloudSaveWrite } from './cloud-save.js';
-import { WorldGateway, setLandVoteExecutor } from './world.gateway.js';
+import { WorldGateway, setCommandExecutor, setLandVoteExecutor } from './world.gateway.js';
 import { landVotes } from './land-vote-store.js';
+
+/**
+ * Receipt của lệnh đã nhận qua đường nhanh nhưng có thể chưa ghi xong DB: khử trùng khi client gửi lại cùng commandId.
+ * Giữ tối đa 200 lệnh gần nhất mỗi hẻm (như `receipts` trong DB).
+ */
+const recentFastReceipts = new Map<string, Map<string, { actorId: string; status: 'accepted'; commandId: string; revision: number; payloadJson: string; createdAt: string }>>();
+function rememberFastReceipt(worldId: string, receipt: { actorId: string; status: 'accepted'; commandId: string; revision: number; payloadJson: string; createdAt: string }) {
+  let byWorld = recentFastReceipts.get(worldId);
+  if (!byWorld) { byWorld = new Map(); recentFastReceipts.set(worldId, byWorld); }
+  byWorld.set(receipt.commandId, receipt);
+  if (byWorld.size > 200) byWorld.delete(byWorld.keys().next().value!);
+}
 
 interface AuthenticatedRequest {
   gameAccount: Awaited<ReturnType<typeof verifyAccount>>;
@@ -65,6 +77,7 @@ export class GameController {
     return worldRepository.create(request.gameAccount, typeof body?.name === 'string' ? body.name : 'Hẻm mới');
   }
   getWorld(request: AuthenticatedRequest, worldId: string) { return worldRepository.getForMember(worldId, request.gameAccount.uid); }
+  getWorldRevision(request: AuthenticatedRequest, worldId: string) { return worldRepository.getRevisionForMember(worldId, request.gameAccount.uid); }
   createInvite(request: AuthenticatedRequest, worldId: string) { return worldRepository.createInvite(worldId, request.gameAccount.uid); }
   revokeInvite(request: AuthenticatedRequest, worldId: string, inviteId: string) { return worldRepository.revokeInvite(worldId, request.gameAccount.uid, inviteId); }
   joinWorld(request: AuthenticatedRequest, body: { token?: unknown }) {
@@ -91,7 +104,7 @@ export class GameController {
     return worldRepository.reset(worldId, request.gameAccount.uid);
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untrusted JSON body, validated field by field below
-  async commitCommand(request: AuthenticatedRequest, worldId: string, body: any, internal?: { voteApproved?: boolean }) {
+  async commitCommand(request: AuthenticatedRequest, worldId: string, body: any, internal?: { voteApproved?: boolean; viaSocket?: boolean }) {
     if (!commitLimiter.take(request.gameAccount.uid)) {
       throw new HttpException('Gửi lệnh quá nhanh, vui lòng thử lại sau.', HttpStatus.TOO_MANY_REQUESTS);
     }
@@ -101,7 +114,25 @@ export class GameController {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- command payload shape depends on command type
     let payload: any;
     try { payload = JSON.parse(body.receipt.payloadJson); } catch { throw new BadRequestException('Command payload is not valid JSON'); }
-    const commandWorld = await worldRepository.getForMember(worldId, request.gameAccount.uid);
+    // Đường nhanh: lệnh qua WS (socket đã xác thực, bị kick là đóng ngay), hẻm có runtime sống và lệnh do server phát lại
+    // → đọc trạng thái từ runtime thay vì Mongo, trả kết quả ngay, ghi DB nền theo thứ tự trong hàng đợi của hẻm.
+    const fastRuntime = internal?.viaSocket && SERVER_REPLAYED_COMMAND_TYPES.has(payload?.type) ? WorldGateway.getLiveRuntime(worldId) : undefined;
+    if (fastRuntime && typeof body.protocolVersion === 'number' && body.protocolVersion !== MULTIPLAYER_PROTOCOL_VERSION) {
+      throw new BadRequestException(`Phiên bản giao thức không được hỗ trợ: ${body.protocolVersion}. Yêu cầu phiên bản ${MULTIPLAYER_PROTOCOL_VERSION}. Vui lòng cập nhật trò chơi.`);
+    }
+    // Đường thường phải chờ các lần ghi nền của hẻm xong, nếu không sẽ đọc DB cũ và kéo runtime lùi revision.
+    if (!fastRuntime) await WorldGateway.flushCheckpoints(worldId);
+    let commandWorld = fastRuntime
+      ? (({ world, businesses }) => ({ world, businesses }))(fastRuntime.getSnapshot(''))
+      : await worldRepository.getForMember(worldId, request.gameAccount.uid);
+    // Lệnh WS lọt vào hàng đợi trong lúc đang đọc: runtime đi trước DB thì chờ ghi xong rồi đọc lại.
+    for (let attempt = 0; !fastRuntime && attempt < 3 && (WorldGateway.getLiveRuntime(worldId)?.getRevision() ?? 0) > commandWorld.world.revision; attempt++) {
+      await WorldGateway.flushCheckpoints(worldId);
+      commandWorld = await worldRepository.getForMember(worldId, request.gameAccount.uid);
+    }
+    if (fastRuntime && !commandWorld.world.memberships.some((member) => member.accountId === request.gameAccount.uid)) {
+      throw new NotFoundException('Không tìm thấy hẻm hoặc bạn chưa tham gia.');
+    }
     const commandBusiness = commandWorld.businesses.find((business) => business.id === body.updatedBusiness.id);
     if (!commandBusiness) throw new BadRequestException('Business is not part of this world.');
     if (JSON.stringify(commandBusiness.ownerAccountIds) !== JSON.stringify(body.updatedBusiness.ownerAccountIds) || body.updatedBusiness.save?.id !== commandBusiness.save.id) {
@@ -135,19 +166,12 @@ export class GameController {
       }
     }
     let usedLiveRuntime: WorldRuntime | undefined;
-    const serverReplayedCommands = new Set([
-      'checkout', 'repay_customer_credit', 'clean_dining_table', 'assign_dining_cleanup', 'start_production', 'respond_party_order', 'fulfill_party_order', 'rush_fulfill_party_order', 'claim_goal',
-      'claim_weekly_quest', 'claim_festival_goal', 'begin_story_chapter', 'claim_story_chapter', 'choose_perk', 'set_title', 'maintain_fixture', 'maintain_all_service', 'security_action',
-      'order_supplier', 'buy_stall', 'dispose_stock', 'open_case', 'claim_quest',
-      'restock', 'unstock', 'set_price', 'reset_prices', 'set_restock_options', 'set_auto_buy_stalls', 'set_auto_buy_config',
-      'hire_staff', 'pay_wage_debt', 'set_staff_shift', 'assign_refill_job',
-      'buy_plot', 'buy_warehouse_tier', 'buy_storage_rack', 'auto_buy_sync',
-      'reclaim_wave', 'buy_parcel', 'open_building', 'lease_parcel', 'end_lease', 'pay_rent_debt',
-      'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',
-      'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
-    ]);
+    const serverReplayedCommands = SERVER_REPLAYED_COMMAND_TYPES;
     if (serverReplayedCommands.has(payload?.type)) {
-      const priorReceipt = await worldRepository.findReceipt(worldId, request.gameAccount.uid, body.receipt.commandId);
+      const fastPrior = recentFastReceipts.get(worldId)?.get(body.receipt.commandId);
+      const priorReceipt = fastPrior?.actorId === request.gameAccount.uid
+        ? fastPrior
+        : await worldRepository.findReceipt(worldId, request.gameAccount.uid, body.receipt.commandId);
       if (priorReceipt) {
         if (priorReceipt.payloadJson !== body.receipt.payloadJson) throw new BadRequestException('Trùng mã lệnh với nội dung khác.');
         return {
@@ -261,6 +285,31 @@ export class GameController {
         if (violation) throw new BadRequestException(`Save không hợp lệ: ${violation}`);
       }
     }
+    if (fastRuntime) {
+      const revision = body.expectedRevision + 1;
+      const receipt = { ...body.receipt, actorId: request.gameAccount.uid, status: 'accepted' as const, revision, createdAt: new Date().toISOString() };
+      rememberFastReceipt(worldId, receipt);
+      const commitParams = {
+        worldId,
+        actorId: request.gameAccount.uid,
+        expectedRevision: body.expectedRevision,
+        protocolVersion: typeof body.protocolVersion === 'number' ? body.protocolVersion : undefined,
+        receipt: body.receipt,
+        updatedBusiness: structuredClone(body.updatedBusiness),
+        activity: body.activity,
+      };
+      WorldGateway.enqueueWorldWrite(worldId, async () => {
+        try {
+          await worldRepository.commitCommand(commitParams);
+        } catch (error) {
+          console.error(`[command] ghi nền lỗi type=${payload?.type} world=${worldId} revision=${revision}:`, error instanceof Error ? error.message : error);
+          recentFastReceipts.get(worldId)?.delete(receipt.commandId);
+          await WorldGateway.reloadFromDatabase(worldId, 'Máy chủ không lưu được thao tác vừa rồi, đã khôi phục bản đã lưu gần nhất.');
+        }
+      });
+      WorldGateway.notifyCommit(worldId, { revision, receipt }, { revision, business: body.updatedBusiness });
+      return { committed: true, revision, receipt, updatedBusiness: body.updatedBusiness };
+    }
     let result: Awaited<ReturnType<typeof worldRepository.commitCommand>>;
     try {
       result = await worldRepository.commitCommand({
@@ -353,6 +402,7 @@ route(Get, 'me', 'me'); requestParam('me', 0);
 route(Get, 'listWorlds', 'worlds'); requestParam('listWorlds', 0);
 route(Get, 'leaderboard', 'leaderboard'); requestParam('leaderboard', 0);
 route(Post, 'createWorld', 'worlds'); requestParam('createWorld', 0); bodyParam('createWorld', 1);
+route(Get, 'getWorldRevision', 'worlds/:worldId/revision'); requestParam('getWorldRevision', 0); namedParam('getWorldRevision', 'worldId', 1);
 route(Get, 'getWorld', 'worlds/:worldId'); requestParam('getWorld', 0); namedParam('getWorld', 'worldId', 1);
 route(Post, 'createInvite', 'worlds/:worldId/invites'); requestParam('createInvite', 0); namedParam('createInvite', 'worldId', 1);
 route(Delete, 'revokeInvite', 'worlds/:worldId/invites/:inviteId'); requestParam('revokeInvite', 0); namedParam('revokeInvite', 'worldId', 1); namedParam('revokeInvite', 'inviteId', 2);
@@ -374,6 +424,12 @@ const voteCommitController = new GameController();
 setLandVoteExecutor(async (worldId, initiatorId, body) => {
   const request = { gameAccount: { uid: initiatorId } } as unknown as AuthenticatedRequest;
   await voteCommitController.commitCommand(request, worldId, structuredClone(body), { voteApproved: true });
+});
+
+// Lệnh gửi qua WebSocket: socket đã xác thực tài khoản lúc nối, chạy đúng `commitCommand` như HTTP.
+setCommandExecutor((worldId, accountId, body) => {
+  const request = { gameAccount: { uid: accountId } } as unknown as AuthenticatedRequest;
+  return voteCommitController.commitCommand(request, worldId, body, { viaSocket: true });
 });
 
 class RuntimeModule {
@@ -402,7 +458,7 @@ async function main() {
   app.enableShutdownHooks();
   // Khách dev (hai client trên localhost) gửi thêm X-Dev-Client-Id; chỉ mở khi server đang bypass Google.
   const corsHeaders = process.env.GOOGLE_AUTH_BYPASS === 'true' ? ['Content-Type', 'Authorization', 'X-Dev-Client-Id'] : ['Content-Type', 'Authorization'];
-  app.enableCors({ origin: config.webOrigin, allowedHeaders: corsHeaders, methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] });
+  app.enableCors({ origin: config.webOrigin, allowedHeaders: corsHeaders, methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], maxAge: 86400 }); // trình duyệt nhớ preflight 1 ngày, bớt một nửa số request OPTIONS
   await app.listen(config.port, config.host);
   console.log(`Server listening on ${config.host}:${config.port} — WS at ws://${config.host}:${config.port}/ws`);
 }

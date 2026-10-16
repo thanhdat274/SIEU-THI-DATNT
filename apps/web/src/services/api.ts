@@ -55,6 +55,11 @@ export async function getOnlineWorld(idToken: string, worldId: string): Promise<
   return fetchWithAuth(`/api/v1/worlds/${worldId}`, idToken);
 }
 
+/** Chỉ lấy revision hiện tại: dùng cho vòng kiểm tra dự phòng, tải cả hẻm chỉ khi revision đổi. */
+export async function getOnlineWorldRevision(idToken: string, worldId: string): Promise<{ revision: number }> {
+  return fetchWithAuth(`/api/v1/worlds/${worldId}/revision`, idToken);
+}
+
 export async function createWorldInvite(idToken: string, worldId: string): Promise<{ inviteId: string; token: string; expiresAt: string }> {
   return fetchWithAuth(`/api/v1/worlds/${worldId}/invites`, idToken, {
     method: 'POST',

@@ -9,7 +9,7 @@ import { WorldSettingsModal } from './components/WorldSettingsModal';
 import { LandVoteModal, type LandVoteInfo } from './components/LandVoteModal';
 import { OpenBuildingModal } from './components/OpenBuildingModal';
 import { PixiGameViewport, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
-import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
+import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup, MULTIPLAYER_PROTOCOL_VERSION, SERVER_REPLAYED_COMMAND_TYPES } from '@game/shared';
 
 import { getActiveSlotId, loadOrCreateSave, persistSave, writeEmergencySave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
 import { releaseSlotLock } from './slot-lock';
@@ -25,7 +25,7 @@ import { UpdateBanner } from './components/UpdateBanner';
 import { UpdateConflictDialog, type UpdateConflictChoice } from './components/UpdateConflictDialog';
 import type { CloudSaveSummary } from './services/api';
 import { LoginScreen } from './components/LoginScreen';
-import { type WorldDetail, createWorldInvite, commitOnlineCommand, updateWorldSettings, listOnlineActivities, getOnlineWorld, touchWorldSession } from './services/api';
+import { type WorldDetail, createWorldInvite, commitOnlineCommand, updateWorldSettings, listOnlineActivities, getOnlineWorld, getOnlineWorldRevision, touchWorldSession } from './services/api';
 import { WarehouseModal } from './components/WarehouseModal';
 import { ShelfModal } from './components/ShelfModal';
 import { CashierModal } from './components/CashierModal';
@@ -197,6 +197,8 @@ export const App: React.FC = () => {
   // tracks whether online server is reachable (used to block mutations when network drops)
   const [onlineConnected, setOnlineConnected] = useState(true);
   const onlineConnectedRef = useRef(true);
+  /** WebSocket đang nối: snapshot đã đẩy trạng thái mới, vòng hỏi HTTP chỉ chạy dự phòng khi socket rớt. */
+  const wsConnectedRef = useRef(false);
   const [showWorldCaption, setShowWorldCaption] = useState(true);
 
   useEffect(() => {
@@ -910,23 +912,32 @@ export const App: React.FC = () => {
       }
     }, 20000);
 
-    // Online world sync interval (polls snapshot/partner updates every 3 seconds)
+    // Vòng hỏi dự phòng: chỉ chạy khi WebSocket không nối (WS đã đẩy snapshot). Lần sau chỉ hẹn khi lần trước xong
+    // nên request không chồng nhau lúc server chậm; hỏi revision trước (vài chục byte), đổi mới tải cả hẻm.
     let consecutiveFailures = 0;
-    const onlineSyncInterval = setInterval(async () => {
+    let onlineSyncTimer: ReturnType<typeof setTimeout> | null = null;
+    let onlineSyncStopped = false;
+    const scheduleOnlineSync = () => {
+      if (onlineSyncStopped) return;
+      const delay = consecutiveFailures ? Math.min(30_000, 5_000 * 2 ** (consecutiveFailures - 1)) : 5_000;
+      onlineSyncTimer = setTimeout(() => { void runOnlineSync().finally(scheduleOnlineSync); }, delay);
+    };
+    const runOnlineSync = async () => {
       const curWorld = onlineWorldRef.current;
-      if (!curWorld) return;
+      if (!curWorld || wsConnectedRef.current) return;
       try {
         const token = await getOnlineIdToken();
         if (!token) return;
-        const updated = await getOnlineWorld(token, curWorld.world.id);
-        onlineWorldRef.current = updated;
-        setOnlineWorld(updated);
-        // Restore connection status after success
+        const { revision } = await getOnlineWorldRevision(token, curWorld.world.id);
         if (!onlineConnectedRef.current) {
           onlineConnectedRef.current = true;
           setOnlineConnected(true);
         }
         consecutiveFailures = 0;
+        if (revision <= revisionRef.current) return;
+        const updated = await getOnlineWorld(token, curWorld.world.id);
+        onlineWorldRef.current = updated;
+        setOnlineWorld(updated);
         // If partner committed new revision, sync simulation (resync never uploads local save)
         if (simulationRef.current && updated.businesses[0]?.save) {
           const remoteRev = updated.world.revision;
@@ -940,13 +951,14 @@ export const App: React.FC = () => {
       } catch (err) {
         consecutiveFailures++;
         console.debug('Online sync check failed:', err);
-        // Mark disconnected after 2 consecutive failures (~6s)
+        // Mark disconnected after 2 consecutive failures
         if (consecutiveFailures >= 2 && onlineConnectedRef.current) {
           onlineConnectedRef.current = false;
           setOnlineConnected(false);
         }
       }
-    }, 3000);
+    };
+    scheduleOnlineSync();
 
     // Global key handler for Esc
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -959,7 +971,8 @@ export const App: React.FC = () => {
     return () => {
       isCancelled = true;
       clearInterval(autoSaveInterval);
-      clearInterval(onlineSyncInterval);
+      onlineSyncStopped = true;
+      if (onlineSyncTimer) clearTimeout(onlineSyncTimer);
       window.removeEventListener('keydown', handleGlobalKeyDown);
       if (initialized) dispose();
     };
@@ -974,6 +987,7 @@ export const App: React.FC = () => {
     onVoiceSignal: (data) => voiceHandlersRef.current?.onSignal(data),
     onVoicePeer: (data) => voiceHandlersRef.current?.onPeer(data),
     onConnectionStateChange: (state) => {
+      wsConnectedRef.current = state === 'connected';
       // Khi online: server là nguồn sự thật → stop local customer spawning
       // Khi disconnect (reconnecting/disconnected): cho phép sinh khách offline (chế độ solo)
       if (simulationRef.current) {
@@ -984,6 +998,10 @@ export const App: React.FC = () => {
       const curWorld = onlineWorldRef.current;
       if (!curWorld || !simulationRef.current) return;
       if (data.revision > revisionRef.current) {
+        // Lệnh của chính mình đang chờ kết quả: kết quả + phát lại snapshot sẽ cập nhật, không tải lại cả hẻm.
+        if (commitsInFlightRef.current > 0) return;
+        // Delta WS đã mang trạng thái mới: dùng bản đã ghép thay vì GET cả hẻm (~100 KB).
+        if (worldSocket.replayLatestSnapshot()) return;
         try {
           const token = await getOnlineIdToken();
           if (!token) return;
@@ -1001,6 +1019,7 @@ export const App: React.FC = () => {
         }
       }
     },
+    onPersistFailed: (message) => addToast(message, 'warn'),
     onAvatars: (value) => {
       const current = onlineWorldRef.current;
       if (!current || !Array.isArray(value)) return;
@@ -1210,11 +1229,13 @@ export const App: React.FC = () => {
       return false;
     }
     commitsInFlightRef.current += 1;
+    // Kết quả qua WS không kèm save: trạng thái mới đã tới bằng delta (bị bỏ qua lúc đang chờ lệnh) → phát lại khi xong.
+    let replaySnapshot = false;
     try {
-      const { gameAuth } = await import('./services/firebase');
-      const user = gameAuth().currentUser;
-      if (!user) throw new Error('Cần đăng nhập tài khoản.');
-      const token = await user.getIdToken();
+      // getOnlineIdToken hỗ trợ cả khách dev (2 người trên localhost), không chỉ tài khoản Firebase.
+      const token = await getOnlineIdToken();
+      const actorUid = onlineUidRef.current;
+      if (!token || !actorUid) throw new Error('Cần đăng nhập tài khoản.');
 
       const exportedSave = simulationRef.current.exportSaveData(
         curWorld.businesses[0].save.id,
@@ -1222,25 +1243,33 @@ export const App: React.FC = () => {
       );
 
       const commandId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `cmd-${Date.now()}`;
-      const res = await commitOnlineCommand(token, curWorld.world.id, {
+      const commandBody = {
         expectedRevision: curWorld.world.revision,
         receipt: {
           commandId,
-          actorId: user.uid,
+          actorId: actorUid,
           status: 'accepted',
           revision: curWorld.world.revision + 1,
           payloadJson: JSON.stringify(commandPayload),
         },
-        updatedBusiness: {
-          ...curWorld.businesses[0],
-          save: exportedSave,
-        },
+        // Lệnh server tự phát lại bỏ qua save client gửi: chỉ gửi mã save (~100 KB nhẹ hơn mỗi lệnh).
+        updatedBusiness: SERVER_REPLAYED_COMMAND_TYPES.has(commandPayload?.type)
+          ? { ...curWorld.businesses[0], save: { id: exportedSave.id } }
+          : { ...curWorld.businesses[0], save: exportedSave },
         activity: {
-          actorId: user.uid,
+          actorId: actorUid,
           type: activityType,
           description: activityDesc,
         },
-      });
+      };
+      // Ưu tiên WebSocket (không preflight, không xác thực lại token mỗi lệnh). Socket đứt/quá giờ thì gửi lại cùng
+      // commandId qua HTTP; lỗi server trả về (`delivered`) thì không gửi lại.
+      type CommitResult = Awaited<ReturnType<typeof commitOnlineCommand>>;
+      const sendOverHttp = () => commitOnlineCommand(token, curWorld.world.id, commandBody);
+      const viaSocket = worldSocket.sendCommand<CommitResult>({ ...commandBody, protocolVersion: MULTIPLAYER_PROTOCOL_VERSION });
+      const res = viaSocket
+        ? await viaSocket.catch((err: { delivered?: boolean }) => { if (err?.delivered) throw err; return sendOverHttp(); })
+        : await sendOverHttp();
 
       if (res.committed) {
         revisionRef.current = res.revision;
@@ -1251,6 +1280,8 @@ export const App: React.FC = () => {
         if (res.updatedBusiness?.save) {
           importOnlineSave(simulationRef.current, committedSave);
           syncFromSimulation(simulationRef.current);
+        } else if (viaSocket) {
+          replaySnapshot = true;
         }
         const updatedWorld = {
           ...curWorld,
@@ -1278,6 +1309,7 @@ export const App: React.FC = () => {
       return false;
     } finally {
       commitsInFlightRef.current = Math.max(0, commitsInFlightRef.current - 1);
+      if (replaySnapshot && commitsInFlightRef.current === 0) worldSocket.replayLatestSnapshot();
     }
   };
 

@@ -3,7 +3,7 @@ import { WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket, OnGat
 import type { Server, WebSocket } from 'ws';
 import { worldRepository } from './world.repository.js';
 import { WorldRuntime, parsePlanningTargets } from '@game/core';
-import type { BusinessState } from '@game/shared';
+import { diffSnapshot, type BusinessState, type GameSnapshot } from '@game/shared';
 import { consumeWebSocketTicket } from './firebase-admin.js';
 import { readRuntimeConfig } from './runtime-config.js';
 import { MAX_WS_PAYLOAD_BYTES, RATE_LIMITS, RateLimiter } from './rate-limit.js';
@@ -30,6 +30,8 @@ interface AuthenticatedSocket extends WebSocket {
   _worldId?: string;
   _accountId?: string;
   _sessionOk?: boolean;
+  /** Đã có bản gốc khớp `snapshotStates.seq` nên nhận được delta; false thì lần phát kế tiếp gửi bản đầy đủ. */
+  _snapshotSynced?: boolean;
 }
 
 const socketLimits = new WeakMap<object, { limiter: RateLimiter; violations: number; windowStart: number }>();
@@ -59,6 +61,20 @@ export function acceptWebSocketOrigin(origin: string | undefined, allowedOrigin:
 type LandVoteExecutor = (worldId: string, initiatorId: string, body: unknown) => Promise<void>;
 let landVoteExecutor: LandVoteExecutor | null = null;
 export function setLandVoteExecutor(executor: LandVoteExecutor): void { landVoteExecutor = executor; }
+
+/** Chạy lệnh chơi chung gửi qua WS bằng đúng logic `POST /worlds/:id/commands` (bootstrap đăng ký). */
+type CommandExecutor = (worldId: string, accountId: string, body: unknown) => Promise<unknown>;
+let commandExecutor: CommandExecutor | null = null;
+export function setCommandExecutor(executor: CommandExecutor): void { commandExecutor = executor; }
+
+/** Đổi lỗi Nest (HttpException) sang dạng giống thân lỗi HTTP để client xử lý chung một đường. */
+function commandErrorBody(error: unknown): { status: number; body: Record<string, unknown> } {
+  const err = error as { getStatus?: () => number; getResponse?: () => unknown; message?: string };
+  const status = typeof err?.getStatus === 'function' ? err.getStatus() : 500;
+  const response = typeof err?.getResponse === 'function' ? err.getResponse() : null;
+  const body = response && typeof response === 'object' ? response as Record<string, unknown> : { message: typeof response === 'string' ? response : status === 500 ? 'Lỗi máy chủ.' : err?.message };
+  return { status, body };
+}
 
 /** Báo cả hẻm trạng thái phiếu đất: `vote` là phiếu đang chờ (null khi đã đóng) kèm lý do đóng ở `status`. */
 function broadcastLandVote(worldId: string, status: 'pending' | 'executed' | 'rejected' | 'expired' | 'cancelled' | 'failed', initiatorId: string | null, message?: string) {
@@ -92,8 +108,8 @@ const checkpointQueues = new Map<string, Promise<void>>();
 /** Tick interval for all active runtimes (shared, 250ms per tick = 4fps headless sim) */
 const TICK_INTERVAL_MS = 250;
 const SNAPSHOT_INTERVAL_MS = 250;
-/** Bản phát gần nhất theo hẻm: không gửi lại khi mô phỏng không đổi (không ai làm gì, đang tạm dừng...). */
-const lastSnapshotPayload = new Map<string, string>();
+/** Bản phát gần nhất theo hẻm (gốc để tính delta): không gửi lại khi mô phỏng không đổi (không ai làm gì, đang tạm dừng...). */
+const snapshotStates = new Map<string, { seq: number; body: string; snapshot: GameSnapshot }>();
 let tickTimer: ReturnType<typeof setInterval> | null = null;
 let snapshotTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -118,15 +134,47 @@ function startTickLoop() {
   }, TICK_INTERVAL_MS);
   snapshotTimer = setInterval(() => {
     for (const [worldId, entry] of worldRuntimes) {
-      if (!entry.sockets.size) continue;
-      // serverTime đổi mỗi lần nên để trống khi so sánh; avatar đi kênh riêng 'avatars:update' nên không làm snapshot đổi liên tục.
-      const snapshot = entry.runtime.getSnapshot('');
-      const body = JSON.stringify(snapshot);
-      if (lastSnapshotPayload.get(worldId) === body) continue;
-      lastSnapshotPayload.set(worldId, body);
-      broadcastToWorld(worldId, 'world:snapshot', { ...snapshot, serverTime: new Date().toISOString() });
+      if (entry.sockets.size) publishSnapshot(worldId, entry);
     }
   }, SNAPSHOT_INTERVAL_MS);
+}
+
+/** Bản gốc delta của hẻm; chưa có (người đầu tiên vào) thì lấy trạng thái hiện tại làm gốc seq 1. */
+function ensureSnapshotBaseline(worldId: string, runtime: WorldRuntime) {
+  let state = snapshotStates.get(worldId);
+  if (!state) {
+    const snapshot = runtime.getSnapshot('');
+    state = { seq: 1, body: JSON.stringify(snapshot), snapshot };
+    snapshotStates.set(worldId, state);
+  }
+  return state;
+}
+
+/**
+ * Phát snapshot cho cả hẻm: socket đã có bản gốc nhận 'world:snapshot-delta' (chỉ nhánh đổi),
+ * socket mới/lệch nhận 'world:snapshot' đầy đủ kèm `seq`. Delta lớn hơn bản đầy đủ thì gửi đầy đủ cho mọi người.
+ */
+function publishSnapshot(worldId: string, entry: { runtime: WorldRuntime; sockets: Set<AuthenticatedSocket> }) {
+  // serverTime đổi mỗi lần nên để trống khi so sánh; avatar đi kênh riêng 'avatars:update' nên không làm snapshot đổi liên tục.
+  const snapshot = entry.runtime.getSnapshot('');
+  const body = JSON.stringify(snapshot);
+  const prev = snapshotStates.get(worldId);
+  if (prev?.body === body) return;
+  const seq = (prev?.seq ?? 0) + 1;
+  snapshotStates.set(worldId, { seq, body, snapshot });
+  const serverTime = new Date().toISOString();
+  const fullPayload = JSON.stringify({ event: 'world:snapshot', data: { ...snapshot, serverTime, seq } });
+  let deltaPayload: string | null = null;
+  if (prev) {
+    const candidate = JSON.stringify({ event: 'world:snapshot-delta', data: { baseSeq: prev.seq, seq, patches: diffSnapshot(prev.snapshot, snapshot), serverTime } });
+    if (candidate.length < fullPayload.length) deltaPayload = candidate;
+  }
+  for (const sock of entry.sockets) {
+    if (sock.readyState !== 1 /* OPEN */) continue;
+    if (deltaPayload && sock._snapshotSynced) sock.send(deltaPayload);
+    else sock.send(fullPayload);
+    sock._snapshotSynced = true;
+  }
 }
 
 function stopTickLoop() {
@@ -165,6 +213,8 @@ import { layoutLocks } from './layout-lock';
 @WebSocketGateway({
   path: '/ws',
   maxPayload: MAX_WS_PAYLOAD_BYTES, // thông điệp lớn hơn bị ws đóng kết nối (mã 1009)
+  // Snapshot JSON lặp nhiều khóa nên nén rất tốt; ngưỡng 1 KB để thông điệp nhỏ (avatar, heartbeat) không tốn CPU nén.
+  perMessageDeflate: { threshold: 1024 },
   cors: { origin: '*' }, // narrowed by main.ts CORS for HTTP; WS has separate origin handling
 })
 export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, BeforeApplicationShutdown {
@@ -235,9 +285,10 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
         } catch { /* ignore closed sockets */ }
       }
 
-      // Send initial snapshot
-      const snapshot = entry.runtime.getSnapshot();
-      socket.send(JSON.stringify({ event: 'session:joined', data: snapshot }));
+      // Gửi đúng bản gốc delta hiện tại kèm seq: client ghép được delta ngay, không cần thêm một bản đầy đủ nữa.
+      const baseline = ensureSnapshotBaseline(worldId, entry.runtime);
+      socket.send(JSON.stringify({ event: 'session:joined', data: { ...baseline.snapshot, serverTime: new Date().toISOString(), seq: baseline.seq } }));
+      socket._snapshotSynced = true;
 
       // Voice: báo cho người mới ai đang có mặt và báo cho người kia (gửi lại present=true khi cùng tài khoản đổi phiên để dựng lại kết nối).
       for (const other of entry.sockets) {
@@ -405,6 +456,42 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
   }
 
   /** Xin khóa sửa bố cục: chỉ một người trong hẻm giữ được; trả kết quả cho người xin, báo cả hẻm khi đổi. */
+  /**
+   * Lệnh chơi chung qua WS: cùng logic với HTTP nhưng bỏ được preflight CORS và bước xác thực token Firebase mỗi lần
+   * (socket đã xác thực lúc nối). Trả 'command:result' kèm `requestId` để client ghép với lời gọi.
+   */
+  @SubscribeMessage('command')
+  async handleCommand(@ConnectedSocket() socket: AuthenticatedSocket, @MessageBody() data: { requestId?: unknown; body?: unknown }) {
+    if (!allowSocketMessage(socket)) return;
+    if (!socket._worldId || !socket._accountId || !socket._sessionOk) return;
+    const requestId = typeof data?.requestId === 'string' ? data.requestId.slice(0, 64) : null;
+    if (!requestId) return;
+    const reply = (payload: Record<string, unknown>) => {
+      if (socket.readyState === 1 /* OPEN */) socket.send(JSON.stringify({ event: 'command:result', data: { requestId, ...payload } }));
+    };
+    if (!commandExecutor) { reply({ ok: false, status: 503, body: { message: 'Máy chủ chưa sẵn sàng nhận lệnh.' } }); return; }
+    try {
+      // Không trả kèm save (~100 KB): kết quả đã tới client qua delta snapshot phát ngay trước khi trả lời.
+      const { updatedBusiness: _omitted, ...result } = (await commandExecutor(socket._worldId, socket._accountId, data.body)) as Record<string, unknown>;
+      reply({ ok: true, result });
+    } catch (error) {
+      const { status, body } = commandErrorBody(error);
+      if (status >= 500) console.error('[command:ws] lỗi', error);
+      reply({ ok: false, status, body });
+    }
+  }
+
+  /** Client nhận delta không khớp bản gốc của mình: gửi lại đúng bản gốc hiện tại để các delta sau áp được. */
+  @SubscribeMessage('snapshot:resync')
+  handleSnapshotResync(@ConnectedSocket() socket: AuthenticatedSocket) {
+    if (!allowSocketMessage(socket)) return;
+    if (!socket._worldId || !socket._sessionOk) return;
+    const state = snapshotStates.get(socket._worldId);
+    if (!state) { socket._snapshotSynced = false; return; }
+    socket.send(JSON.stringify({ event: 'world:snapshot', data: { ...state.snapshot, serverTime: new Date().toISOString(), seq: state.seq } }));
+    socket._snapshotSynced = true;
+  }
+
   @SubscribeMessage('layout-lock:acquire')
   handleLayoutLockAcquire(@ConnectedSocket() socket: AuthenticatedSocket) {
     if (!allowSocketMessage(socket)) return;
@@ -440,8 +527,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
     // Runtime phải theo kịp bản vừa commit rồi mới phát, để người kia nhận ngay trạng thái mới (tiền, hàng, kệ...) không chờ vòng hỏi lại.
     if (entry && committed) entry.runtime.adoptCommitted(committed.revision, committed.business);
     if (entry) {
-      lastSnapshotPayload.delete(worldId);
-      broadcastToWorld(worldId, 'world:snapshot', entry.runtime.getSnapshot());
+      publishSnapshot(worldId, entry);
     }
     broadcastToWorld(worldId, 'world:update', snapshot);
   }
@@ -477,7 +563,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
     const entry = worldRuntimes.get(worldId);
     if (!entry) return;
     worldRuntimes.delete(worldId);
-    lastSnapshotPayload.delete(worldId);
+    snapshotStates.delete(worldId);
     checkpointQueues.delete(worldId);
     for (const sock of entry.sockets) {
       try {
@@ -494,6 +580,33 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
     return worldRuntimes.get(worldId)?.runtime.getActiveSessionsCount() ?? 0;
   }
 
+  /**
+   * Ghi DB nền cho hẻm đang sống: nối vào cùng hàng đợi với checkpoint nên mọi lần ghi giữ đúng thứ tự revision.
+   * Trả false khi hẻm không có runtime (người gọi phải ghi đồng bộ).
+   */
+  static enqueueWorldWrite(worldId: string, task: () => Promise<void>): boolean {
+    const entry = worldRuntimes.get(worldId);
+    if (!entry) return false;
+    entry.checkpointQueue = entry.checkpointQueue.then(task).catch((err) => { console.error(`[WorldRuntime] ghi nền lỗi world=${worldId}:`, err); });
+    checkpointQueues.set(worldId, entry.checkpointQueue);
+    return true;
+  }
+
+  /** Ghi nền thất bại: đưa runtime về đúng bản trong DB, phát snapshot đầy đủ và báo người chơi thao tác vừa rồi không được lưu. */
+  static async reloadFromDatabase(worldId: string, message: string): Promise<void> {
+    const entry = worldRuntimes.get(worldId);
+    if (!entry) return;
+    const owner = entry.runtime.getSnapshot('').world.memberships[0]?.accountId;
+    if (!owner) return;
+    const saved = await worldRepository.getForMember(worldId, owner);
+    if (worldRuntimes.get(worldId) !== entry) return;
+    entry.runtime.adoptCommitted(saved.world.revision, saved.businesses[0], true);
+    for (const sock of entry.sockets) sock._snapshotSynced = false;
+    snapshotStates.delete(worldId);
+    publishSnapshot(worldId, entry);
+    broadcastToWorld(worldId, 'command:persist-failed', { message, revision: saved.world.revision });
+  }
+
   /** Wait for persistence queued by the current runtime (used by shutdown/integration tests). */
   static async flushCheckpoints(worldId: string): Promise<void> {
     await checkpointQueues.get(worldId);
@@ -507,7 +620,7 @@ export class WorldGateway implements OnGatewayConnection, OnGatewayDisconnect, B
     if (entry.checkpointError) return;
     if (worldRuntimes.get(worldId) !== entry || entry.sockets.size > 0) return;
     worldRuntimes.delete(worldId);
-    lastSnapshotPayload.delete(worldId);
+    snapshotStates.delete(worldId);
     if (checkpointQueues.get(worldId) === entry.checkpointQueue) checkpointQueues.delete(worldId);
     if (worldRuntimes.size === 0) stopTickLoop();
   }

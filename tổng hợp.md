@@ -1,3 +1,44 @@
+# CHƠI CHUNG — GIẢM TẢI MẠNG / ĐỒNG BỘ (16/10/2026, chưa commit)
+
+## Làm được (có code)
+- Client (`apps/web/src/App.tsx`): bỏ `setInterval` 3s gọi `GET /worlds/:id` (request chồng nhau khi server Render chậm 4–25s). Thay bằng vòng `setTimeout` nối tiếp (xong lần trước mới hẹn lần sau), 5s, backoff tới 30s khi lỗi; **chỉ chạy khi WebSocket không nối** (`wsConnectedRef`), vì WS đã đẩy `world:snapshot`.
+- Endpoint mới `GET /api/v1/worlds/:id/revision` (`bootstrap.ts`, `world.repository.ts#getRevisionForMember`, projection chỉ `world.revision`). Vòng dự phòng hỏi revision trước, đổi mới tải cả hẻm (`api.ts#getOnlineWorldRevision`).
+- CORS `maxAge: 86400` để trình duyệt nhớ preflight.
+- WebSocket bật `perMessageDeflate` (ngưỡng 1 KB) trong `world.gateway.ts` để nén snapshot.
+- **Delta snapshot qua WS** (`packages/shared/src/snapshot-delta.ts`: `diffSnapshot` / `applySnapshotPatches`): server (`world.gateway.ts#publishSnapshot`) giữ bản gốc + `seq` theo hẻm, gửi `world:snapshot-delta {baseSeq, seq, patches}` cho socket đã đồng bộ, `world:snapshot` đầy đủ (kèm `seq`) cho socket mới hoặc khi delta không nhỏ hơn. Mảng thay nguyên khối, object đi sâu 5 tầng (`businesses[i].save.<khóa>...`). `notifyCommit` cũng đi đường này. Client (`useWorldSocket.ts`) ghép delta lên bản gốc, lệch `seq` thì gửi `snapshot:resync` (server trả lại đúng bản gốc); đưa bản `structuredClone` cho game để mô phỏng không sửa hỏng bản gốc.
+- **Lệnh qua WebSocket** (`world.gateway.ts#handleCommand` + `setCommandExecutor` trong `bootstrap.ts`): sự kiện `command {requestId, body}` chạy đúng `GameController.commitCommand` (cùng kiểm tra quyền/phiếu/revision/receipt), trả `command:result {requestId, ok, result | status, body}`. Client (`useWorldSocket.ts#sendCommand`, `App.tsx#commitBusinessChange`) ưu tiên WS; socket chưa mở/đứt/quá 15s thì gửi lại cùng `commandId` qua HTTP; lỗi server trả về (`delivered`) không gửi lại. `MAX_WS_PAYLOAD_BYTES` nâng 64 KB → 2 MB (bằng `MAX_HTTP_BODY`) vì lệnh kèm save ~100 KB. Optimistic đã có sẵn từ trước (mô phỏng chạy lệnh trên máy trước, snapshot bị bỏ qua khi `commitsInFlight > 0`).
+- **Đường nhanh + ghi Mongo nền** (`bootstrap.ts#commitCommand`, cờ `internal.viaSocket`): lệnh qua WS + hẻm có runtime sống + loại lệnh trong `SERVER_REPLAYED_COMMAND_TYPES` → đọc world/business từ runtime (không `getForMember`), khử trùng bằng `recentFastReceipts` (200 lệnh/hẻm, trong RAM) rồi tới DB, trả kết quả ngay; `worldRepository.commitCommand` chạy trong `WorldGateway.enqueueWorldWrite` (cùng hàng đợi với checkpoint → đúng thứ tự revision). Ghi nền lỗi → `WorldGateway.reloadFromDatabase` nạp lại runtime từ DB, phát snapshot đầy đủ + `command:persist-failed` (client hiện toast). Đường HTTP/lệnh không phát lại: chờ hàng đợi (`flushCheckpoints`) trước khi đọc DB, runtime đi trước DB thì chờ và đọc lại (tối đa 3 lần).
+- **Bớt dữ liệu trùng (16/10/2026)**: `command:result` qua WS bỏ `updatedBusiness` (kết quả đã tới bằng delta phát trước đó); client phát lại snapshot đã ghép (`useWorldSocket#replayLatestSnapshot`) khi lệnh xong. `session:joined` gửi đúng bản gốc delta kèm `seq` (`ensureSnapshotBaseline`) và đánh dấu socket đã đồng bộ → không còn bản đầy đủ thứ hai. `onWorldUpdate` không còn GET cả hẻm khi đang chờ lệnh của mình hoặc đã có snapshot ghép từ delta.
+- **Bỏ gửi save**: danh sách lệnh server phát lại chuyển sang `packages/shared/src/command-types.ts`; client gửi `updatedBusiness.save = { id }` cho các lệnh này.
+
+## Kiểm chứng
+- `test:gateway` thêm ca đường nhanh: save rút gọn → `ok:true`, save chuẩn trả về, DB đạt revision +1 sau `flushCheckpoints`, gửi lại cùng `commandId` không tăng revision: PASS 3/3. `test:unit`, `test:worlds`, `test:leaderboard`: PASS. `test:coop`: vẫn FAIL lỗi có sẵn như trên.
+- Chưa có test cho nhánh ghi nền lỗi (`reloadFromDatabase`).
+- **QA 2 người localhost (16/10/2026, chạy thật)**: server `start` (không watch) + web build `--mode development` qua `vite preview` cổng 5174 (cấu hình `server-qa`/`web-qa` trong `.claude/launch.json`; bản dev bị reload/restart liên tục do phiên khác sửa file). Người A = UI thật trong Browser pane (khách dev A), người B = script Node WS thật (`guest_b`, đã xóa sau QA) vì 2 tab cùng origin dùng chung localStorage định danh khách.
+  - Delta: 85–107 gói `world:snapshot-delta` TB 1.25–1.36 KB/gói (bản đầy đủ ~100 KB), 0 lần lệch seq; bản B dựng lại khớp từng byte bản gốc server trả qua `snapshot:resync`.
+  - Lệnh WS: B gửi `store_status` (save rút gọn) → `command:result ok` sau 63–73 ms; UI A đổi ngay sang "Nghỉ bán". A bấm mở tiệm trên UI → đi qua WS (log `account=guest_a`, không có `POST /commands`), tiệm mở lại.
+  - Ghi nền: DB đạt revision 3 sau B→A→B, `isStoreOpen` khớp runtime.
+  - Thấy thêm (đã sửa ở đợt sau): `command:result` ~100 KB; lúc vào hẻm nhận 2 bản đầy đủ (~200 KB); sau mỗi lệnh client còn GET cả hẻm qua HTTP.
+  - **QA lại sau khi sửa (chạy thật)**: `command:result` 301 B (28–34 ms), vào hẻm chỉ 1 bản đầy đủ `session:joined` (~103 KB) rồi toàn delta; B dựng lại khớp gốc server; DB revision 4→6 khớp. UI A: lệnh đóng của B hiện "Nghỉ bán", A bấm mở → "Đang mở cửa"; Network sau `ws-ticket` không còn request HTTP nào qua 2 lệnh. `test:gateway` (kiểm `seq` lúc join, kết quả không kèm save): PASS 3/3.
+- Sửa kèm: `App.tsx#commitBusinessChange` lấy token qua `getOnlineIdToken` + uid `onlineUidRef` (trước đây bắt buộc user Firebase nên khách dev không gửi lệnh được).
+- `test:gateway` thêm ca lệnh qua WS (thân sai → `ok:false status 400`; `store_status` hợp lệ → `ok:true`, revision +1, người kia nhận snapshot): PASS 4/4 lần. `test:unit`: PASS.
+- Đo bằng `WorldRuntime` thật (hẻm khởi tạo): snapshot đầy đủ ~97 KB, delta khi có thay đổi ~1.2 KB (lần đầu sau khởi tạo vẫn ~96 KB do chuẩn hóa save).
+- `snapshot-delta.test.ts` (shared, chạy `npx tsx`): PASS. `test:gateway` sau khi test dựng lại snapshot từ delta: PASS 4/4 lần. `test:coop`: FAIL `Cửa hàng phải đóng...` — fail cả khi bỏ thay đổi này (lỗi có sẵn, không do change này).
+- `typecheck` shared + server + web: PASS. `test:unit`: PASS. `test:gateway`: 1 lần fail `1 !== 0` rồi 3 lần chạy lại PASS (nghi flaky theo thời gian, chưa điều tra).
+- Chưa QA trình duyệt / Render thật; chưa đo lại số request trong Network.
+
+## Giới hạn / còn thiếu
+- Client bản cũ (chưa tải lại) không hiểu `world:snapshot-delta` → phải deploy web + server cùng lúc.
+- `time-vote:update` vẫn kèm snapshot đầy đủ (hiếm).
+- Server vẫn `JSON.stringify` + diff cả snapshot mỗi 250ms (CPU); nếu đông hẻm nên đánh dấu nhánh bẩn trong runtime.
+- Ghi nền nghĩa là server đã trả "nhận" trước khi DB lưu: server sập giữa chừng thì mất các lệnh chưa ghi (đổi lấy độ trễ). Ghi lỗi thì người chơi thấy trạng thái bị khôi phục.
+- Lệnh không phát lại (vd. `layout_batch`) và lệnh qua HTTP vẫn đọc/ghi Mongo đồng bộ.
+- Server vẫn trả cả save chuẩn trong `command:result` (chiều về, đã nén deflate).
+- Chưa thử trên Render thật.
+- `onWorldUpdate` vẫn GET cả hẻm khi revision WS mới hơn bản đã có.
+- HTTP chưa nén gzip (cần thêm dependency `compression`).
+- Render free ngủ/CPU yếu và Mongo ở xa vẫn làm mỗi request chậm.
+
 # GIAI ĐOẠN 4 — MỤC 5: BẾP ĐA MÓN + COMBO (nâng cấp tiệm xôi & quán nước) (16/10/2026)
 
 ## BƯỚC 3 — civic-local-fees: Phí xóm + duy trì công trình (16/10/2026, Claude sửa trực tiếp sau 2 lượt review — chưa commit)
@@ -2431,6 +2472,7 @@ Còn thiếu khách quen với lịch sử/thân thiết, bản tin sáng, phư�
 
 | Ngày | Thay đổi | Xác minh | Việc còn lại |
 | --- | --- | --- | --- |
+| 16/10/2026 | Chơi chung — tối ưu mạng: delta snapshot WS (`snapshot-delta.ts`), lệnh qua WS + đường nhanh ghi Mongo nền, `/revision`, poll chỉ khi WS rớt, `session:joined` kèm `seq`, `command:result` không kèm save, CORS `maxAge`, `perMessageDeflate`. | typecheck shared/server/web PASS; `test:gateway` PASS (có ca delta/lệnh WS/ghi nền/khử trùng); QA 2 người localhost (UI A + script WS B): delta ~1.3 KB/gói, `command:result` 301 B, 28–73 ms, DB khớp revision. | Chưa thử Render; chưa test nhánh ghi nền lỗi; lệnh không phát lại vẫn ghi Mongo đồng bộ. |
 | 16/10/2026 | GĐ4 Mục 5 — Bếp đa món + Combo: thêm 3 món xôi (thập cẩm/chà bông trứng/bắp) + 3 thức uống (trà sữa/sinh tố xoài/cà phê sữa đá) vào `recipes.ts` (PRODUCED_PRODUCTS + RECIPES); thêm `game-data/combos.ts` (`COMBOS`: Suất Xôi Đôi, Combo Hai Ly, discount 10%, `comboProductId`/`comboSellingPrice`/`comboCost`/`validateCombos`); recipe lắp ráp combo đi qua pipeline `Recipe`/`ProductionJob` sẵn có (nguyên liệu = món thành phẩm của shop, FEFO, COGS = tổng unitCost) — không mã bán riêng; set món tự nhận kệ `XOI_DISH_IDS`/`DRINK_SHOP_PRODUCT_IDS` sinh từ RECIPES tự gồm món+combo mới; UI `KitchenStationModal` thêm khối "Combo suất tiết kiệm" (dùng `start_production` sẵn có), wire `App.tsx`; sprite alias mới trong `product-sprites.ts`; save additive, `CURRENT_SAVE_SCHEMA_VERSION` giữ 10 | `yarn typecheck` (toàn workspace) PASS; harness tsc→node `verify-multi-dish-kitchen.mjs` PASS (`ALL MULTI-DISH-KITCHEN VERIFIED` — combos.test + combo-production.test + data-integrity); `combo-balance.mjs` PASS (lãi Suất Xôi Đôi 14.000₫, Combo Hai Ly 15.600₫; bundle 0→60% tăng doanh thu 10.06M→11.04M, biên ≥47%); eslint các file thay đổi 0 errors/warnings | Chưa máy thật/Browser QA màn Combo, viewport hẹp 568–740 px, playtest cân bằng combo; giá/hạn dùng món & combo provisional; trạm chạy 1 mẻ/1 thời điểm nên lắp ráp combo chờ trạm rảnh; trạm drink mở khóa cấp 25/26 lệch tòa quán nước mở cấp 46 (đã có sẵn, ngoài phạm vi) |
 | 06/10/2026 | Responsive đợt 4 (PWA + orientation): `orientation.ts` (`lockLandscape`, thử khi khởi tạo/vào game/chạm đầu tiên/quay lại từ nền, thất bại thì RotateOverlay), chữ overlay hướng dẫn tắt khóa xoay, reset joystick khi đổi hướng; manifest không đổi (đã fullscreen + landscape). Không đổi gameplay/save/renderer. | typecheck, test, build, `yarn test` OK; emulation 18 viewport landscape + chu trình xoay khi mở modal | Máy thật (lock thật, PWA từ Home Screen, safe-area, FPS), Playwright |
 | 06/10/2026 | Responsive đợt 3 (Landscape-first): dựng lại RotateOverlay tối giản cho màn cảm ứng dọc, rút gọn HUD điện thoại ngang, nút góc nhìn một hàng, menu chính và hộp thoại Sắp xếp gọn ở màn thấp, `--safe-*` cho shell, hook dev `__store`. Không đổi gameplay/save/renderer. | typecheck, test, build, `yarn test` OK; `tools/e2e/layout-qa.js` ở 7 cỡ điện thoại ngang, 4 cỡ tablet ngang, 4 cỡ desktop; modal Chain/An ninh/Phân tích/Kệ/Kho/Tổng kết ngày đã đo | Máy thật (safe-area, thanh địa chỉ, xoay máy, FPS/DPR), Bình chọn giờ cần co-op, Playwright |

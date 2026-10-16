@@ -114,6 +114,14 @@ export class WorldRepository {
     return { world: doc.world, businesses: doc.businesses };
   }
 
+  /** Chỉ đọc revision (vài chục byte) để client biết có cần tải lại cả hẻm hay không. */
+  async getRevisionForMember(worldId: string, accountId: string): Promise<{ revision: number }> {
+    const doc = await (await connectDatabase()).collection<WorldDocument>(collectionName)
+      .findOne({ _id: worldId, 'world.memberships.accountId': accountId }, { projection: { 'world.revision': 1 } });
+    if (!doc) throw new NotFoundException('Không tìm thấy hẻm hoặc bạn chưa tham gia.');
+    return { revision: doc.world.revision };
+  }
+
   async findReceipt(worldId: string, actorId: string, commandId: string): Promise<ReceiptRecord | undefined> {
     const doc = await (await connectDatabase()).collection<WorldDocument>(collectionName).findOne(
       { _id: worldId, 'world.memberships.accountId': actorId, 'receipts.commandId': commandId, 'receipts.actorId': actorId },

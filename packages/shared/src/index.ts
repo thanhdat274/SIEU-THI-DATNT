@@ -1906,3 +1906,6 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     world.businessIds.length === businesses.length &&
     businesses.every(business => world.businessIds.includes(business.id));
 }
+
+export * from './snapshot-delta';
+export * from './command-types';

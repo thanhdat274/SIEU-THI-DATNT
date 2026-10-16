@@ -21,6 +21,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { devGuestHeader } from '../services/dev-guest';
+import { applySnapshotPatches, type SnapshotDeltaMessage } from '@game/shared';
 
 const WS_BASE = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:3001')
   .replace(/^http/, 'ws');
@@ -33,6 +34,8 @@ export interface WorldSocketOptions {
   token: string | null;
   onWorldUpdate?: (data: { revision: number; receipt: unknown }) => void;
   onSnapshot?: (snapshot: unknown) => void;
+  /** Server ghi nền thất bại và đã khôi phục bản đã lưu. */
+  onPersistFailed?: (message: string) => void;
   onAvatars?: (avatars: unknown) => void;
   onTimeVote?: (data: unknown) => void;
   /** Phiếu khoản chi đất (open-world-coop-land D3): mở/đóng/kết quả. */
@@ -52,7 +55,7 @@ const BACKOFF_MAX_MS = 30000;
 const BACKOFF_JITTER_FACTOR = 0.5; // ±50% jitter
 const MAX_RETRIES = 20;
 
-export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAvatars, onTimeVote, onLandVote, onSessionEnded, onVoiceSignal, onVoicePeer, onConnectionStateChange }: WorldSocketOptions) {
+export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onPersistFailed, onAvatars, onTimeVote, onLandVote, onSessionEnded, onVoiceSignal, onVoicePeer, onConnectionStateChange }: WorldSocketOptions) {
   const [connected, setConnected] = useState(false);
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
@@ -60,6 +63,7 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onWorldUpdateRef = useRef(onWorldUpdate);
   const onSnapshotRef = useRef(onSnapshot);
+  const onPersistFailedRef = useRef(onPersistFailed);
   const onAvatarsRef = useRef(onAvatars);
   const onTimeVoteRef = useRef(onTimeVote);
   const onLandVoteRef = useRef(onLandVote);
@@ -68,7 +72,11 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
   const onVoicePeerRef = useRef(onVoicePeer);
   const onConnectionStateChangeRef = useRef(onConnectionStateChange);
   const sequenceRef = useRef(0);
+  /** Bản gốc để ghép 'world:snapshot-delta'; seq -1 = chưa có bản gốc có số thứ tự (chờ server gửi bản đầy đủ). */
+  const snapshotBaseRef = useRef<{ seq: number; snapshot: unknown; resyncRequested: boolean }>({ seq: -1, snapshot: null, resyncRequested: false });
   const lockWaitersRef = useRef<Array<(granted: boolean) => void>>([]);
+  /** Lệnh đang chờ 'command:result' theo requestId; socket đóng thì báo lỗi để người gọi chuyển sang HTTP. */
+  const commandWaitersRef = useRef(new Map<string, { resolve: (value: unknown) => void; reject: (error: unknown) => void; timer: ReturnType<typeof setTimeout> }>());
   const [layoutLockHolderId, setLayoutLockHolderId] = useState<string | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
@@ -77,6 +85,7 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
   // Keep callbacks up to date without re-triggering the effect
   useEffect(() => { onWorldUpdateRef.current = onWorldUpdate; }, [onWorldUpdate]);
   useEffect(() => { onSnapshotRef.current = onSnapshot; }, [onSnapshot]);
+  useEffect(() => { onPersistFailedRef.current = onPersistFailed; }, [onPersistFailed]);
   useEffect(() => { onAvatarsRef.current = onAvatars; }, [onAvatars]);
   useEffect(() => { onTimeVoteRef.current = onTimeVote; }, [onTimeVote]);
   useEffect(() => { onLandVoteRef.current = onLandVote; }, [onLandVote]);
@@ -156,9 +165,40 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
             try {
               const msg = JSON.parse(ev.data as string) as { event: string; data: unknown };
               if (msg.event === 'session:joined') {
+                const joinedSeq = typeof (msg.data as { seq?: unknown })?.seq === 'number' ? (msg.data as { seq: number }).seq : -1;
+                snapshotBaseRef.current = { seq: joinedSeq, snapshot: structuredClone(msg.data), resyncRequested: false };
                 onSnapshotRef.current?.(msg.data);
               } else if (msg.event === 'world:snapshot') {
+                const seq = typeof (msg.data as { seq?: unknown })?.seq === 'number' ? (msg.data as { seq: number }).seq : -1;
+                snapshotBaseRef.current = { seq, snapshot: structuredClone(msg.data), resyncRequested: false };
                 onSnapshotRef.current?.(msg.data);
+              } else if (msg.event === 'world:snapshot-delta') {
+                const delta = msg.data as SnapshotDeltaMessage;
+                const base = snapshotBaseRef.current;
+                if (base.seq < 0 || base.seq !== delta.baseSeq) {
+                  // Lệch bản gốc (vừa vào, mất gói...): xin lại bản đầy đủ một lần, bỏ qua delta tới khi có.
+                  if (!base.resyncRequested && socket.readyState === WebSocket.OPEN) {
+                    base.resyncRequested = true;
+                    socket.send(JSON.stringify({ event: 'snapshot:resync', data: {} }));
+                  }
+                  return;
+                }
+                const next = applySnapshotPatches(base.snapshot, delta.patches);
+                snapshotBaseRef.current = { seq: delta.seq, snapshot: next, resyncRequested: false };
+                // Bản gốc dùng chung nhánh giữa các lần ghép: đưa bản sao cho game để mô phỏng có sửa cũng không làm hỏng gốc.
+                onSnapshotRef.current?.({ ...structuredClone(next as object), serverTime: delta.serverTime, seq: delta.seq });
+              } else if (msg.event === 'command:persist-failed') {
+                onPersistFailedRef.current?.((msg.data as { message?: string })?.message ?? 'Thao tác vừa rồi chưa được lưu.');
+              } else if (msg.event === 'command:result') {
+                const result = msg.data as { requestId: string; ok: boolean; result?: unknown; status?: number; body?: { message?: string } };
+                const waiter = commandWaitersRef.current.get(result.requestId);
+                if (waiter) {
+                  commandWaitersRef.current.delete(result.requestId);
+                  clearTimeout(waiter.timer);
+                  if (result.ok) waiter.resolve(result.result);
+                  // Cùng dạng lỗi với fetchWithAuth (status + body) để App xử lý chung.
+                  else waiter.reject(Object.assign(new Error(result.body?.message || `Lỗi máy chủ (${result.status})`), { status: result.status, body: result.body, delivered: true }));
+                }
               } else if (msg.event === 'avatars:update') {
                 onAvatarsRef.current?.((msg.data as { avatars?: unknown })?.avatars);
               } else if (msg.event === 'world:update') {
@@ -191,6 +231,12 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
           socket.onclose = () => {
             if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
             if (wsRef.current === socket) wsRef.current = null;
+            // Lệnh chưa có kết quả: không biết server đã chạy chưa → báo người gọi gửi lại qua HTTP.
+            for (const [id, waiter] of commandWaitersRef.current) {
+              clearTimeout(waiter.timer);
+              waiter.reject(new Error('Mất kết nối khi đang gửi lệnh.'));
+              commandWaitersRef.current.delete(id);
+            }
 
             // If cancelled (unmount), don't retry
             if (cancelledRef.current) {
@@ -329,6 +375,32 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
     return true;
   }, []);
 
+  /**
+   * Gửi lệnh qua WS. Trả null nếu socket chưa mở (người gọi dùng HTTP). Lỗi có `delivered: true` là server đã từ chối;
+   * lỗi khác (đứt kết nối, quá giờ) thì không biết server đã chạy chưa — người gọi gửi lại cùng commandId qua HTTP, server khử trùng theo receipt.
+   */
+  const sendCommand = useCallback(<T,>(body: unknown, timeoutMs = 15_000): Promise<T> | null => {
+    const socket = wsRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return null;
+    const requestId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `req-${Date.now()}-${Math.random()}`;
+    return new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        commandWaitersRef.current.delete(requestId);
+        reject(new Error('Hết thời gian chờ máy chủ xác nhận lệnh.'));
+      }, timeoutMs);
+      commandWaitersRef.current.set(requestId, { resolve: resolve as (value: unknown) => void, reject, timer });
+      socket.send(JSON.stringify({ event: 'command', data: { requestId, body } }));
+    });
+  }, []);
+
+  /** Gọi lại onSnapshot với bản mới nhất đã ghép (vd. sau khi lệnh xong mà snapshot mang kết quả đã bị bỏ qua lúc chờ). */
+  const replayLatestSnapshot = useCallback(() => {
+    const base = snapshotBaseRef.current;
+    if (base.seq < 0 || !base.snapshot) return false;
+    onSnapshotRef.current?.(structuredClone(base.snapshot));
+    return true;
+  }, []);
+
   const releasePlanning = useCallback(() => {
     const socket = wsRef.current;
     if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ event: 'planning:release', data: {} }));
@@ -342,6 +414,8 @@ export function useWorldSocket({ worldId, token, onWorldUpdate, onSnapshot, onAv
     reservePlanning,
     extendPlanning,
     releasePlanning,
+    sendCommand,
+    replayLatestSnapshot,
     respondLandVote,
     cancelLandVote,
     acquireLayoutLock,
