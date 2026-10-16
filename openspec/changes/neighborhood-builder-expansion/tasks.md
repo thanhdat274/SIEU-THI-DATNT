@@ -9,7 +9,7 @@ Change này không có task code. Theo dõi tiến độ ở change con; đánh 
 
 ## 1. Change con (làm lần lượt)
 - [>] 1.1 `civic-buildings-qol` — code + test + tab Xóm phố xong 16/10/2026 (test EXIT 0); còn mặt tiền riêng, QA bấm xây thật + co-op 2 client
-- [ ] 1.2 `civic-population-demand` (sau 1.1)
+- [>] 1.2 `civic-population-demand` — code + test xong 16/10/2026 (EXIT 0); sweep CHƯA ĐẠT (doanh thu ≈ 0% dù hệ số 1,07–1,09), chờ quyết định
 - [ ] 1.3 `civic-local-fees` (sau 1.1; có thể song song 1.2 nếu không đụng cùng file)
 - [ ] 1.4 `civic-city-goals` + Sổ góp xóm (sau 1.2 và 0.3; 3 câu hỏi thiết kế đã chốt 16/10/2026)
 - [ ] 1.5 `civic-residents-life` (sau 1.2)

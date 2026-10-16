@@ -102,6 +102,7 @@ import { runXoiStaffTests } from './xoi-staff.test';
 import { runDiningAddonTests } from './dining-addons.test';
 import { runPrestigeTests } from './prestige.test';
 import { runCivicQolTestsEntry } from './civic-qol.test';
+import { runCivicPopulationTestsEntry } from './civic-population.test';
 import { runAnalyticsTests } from './analytics.test';
 import { runWaveATests } from './wave-a.test';
 import { runSpecialRequestSimTests } from './special-request-sim.test';
@@ -246,6 +247,7 @@ export async function runTests(): Promise<void> {
   runDiningAddonTests();
   runPrestigeTests();
   runCivicQolTestsEntry();
+  runCivicPopulationTestsEntry();
   runAnalyticsTests();
   runWaveATests();
   runSpecialRequestSimTests();

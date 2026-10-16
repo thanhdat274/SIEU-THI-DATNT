@@ -198,6 +198,7 @@ import { CoopRoutineSystem, type CoopPlayerRoutineConfig, type CoopRoutineTickIn
 import { reclaimWaveAllowed, startReclaimWave, buyParcelAllowed, customerTrafficMultiplier, occupiedParcelBuildings } from './reclamation';
 import { computeCivicQol } from './civic-qol';
 import { civicDefOf } from '@game/data';
+import { computePopulationSnapshot, stepAllPopulations, populationCapBonus, populationExtraUnitChance, type DistrictPopulation } from './civic-population';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
@@ -301,6 +302,8 @@ export class GameSimulation {
   private parcelTenure: Record<string, { kind: 'owned' | 'leased'; day?: number; paidTotal?: number; debtDays?: number }>;
   /** Trạng thái thế giới mở (schema 7): đợt đã mở & đang thi công. */
   private worldOpenState: WorldOpenState;
+  /** Dân số xóm theo QoL (OpenSpec `civic-population-demand`): districtId → pop. Lưu/export qua save. */
+  private _civicPopulationByDistrict: Record<string, number>;
   private inventory: InventoryItem[];
   private holdingArea: HoldingItem[];
   private planogram: Record<string, string> = dict();
@@ -484,6 +487,7 @@ export class GameSimulation {
     this.ownedParcelIds = initialSave.storeLayout.ownedParcelIds ? [...initialSave.storeLayout.ownedParcelIds] : ownedParcelIdsDefault();
     this.parcelTenure = initialSave.storeLayout.parcelTenure ? { ...initialSave.storeLayout.parcelTenure } : this.buildTenureFromOwned();
     this.worldOpenState = initialSave.world ? structuredClone(initialSave.world) : defaultWorldOpenState();
+    this._civicPopulationByDistrict = initialSave.civic?.populationByDistrict ? { ...initialSave.civic.populationByDistrict } : {};
     this.inventory = initialSave.inventory.map((i) => ({ ...i }));
     this.holdingArea = (initialSave.holdingArea ?? []).map((h) => ({ ...h }));
     this.planogram = dict(initialSave.planogram);
@@ -635,6 +639,8 @@ export class GameSimulation {
         const slow = tracked.filter((plan) => plan.flags.slowMoving);
         if (low.length || slow.length) this.callbacks.onStockWarning({ lowStock: low.length, slowMoving: slow.length, examples: low.slice(0, 3).map((plan) => PRODUCT_MAP[plan.productId]?.name ?? plan.productId) });
       }
+      // Bước dân số xóm (OpenSpec `civic-population-demand`): trước onDayChanged để snapshot có dân số mới
+      this.stepCivicPopulation();
       if (this.callbacks.onDayChanged) {
         this.callbacks.onDayChanged(day);
       }
@@ -753,7 +759,7 @@ export class GameSimulation {
     };
   }
   /** Lấy districtId của tiệm chính (main shop) từ parcel của nó. */
-  private getMainShopDistrictId(): DistrictId {
+  public getMainShopDistrictId(): DistrictId {
     const placements = this.buildingPlacements ?? DEFAULT_PLACEMENTS;
     const mainPlacement = placements.find(p => p.buildingId === 'main');
     if (!mainPlacement) return 'hem_dan_cu';
@@ -1437,11 +1443,14 @@ export class GameSimulation {
   private refreshDemandTable(): DemandTable {
     const time = this.clock.getTime();
     const ctx = this.getMarketContext(time.day, time.hour);
-    const key = demandContextKey(ctx, this.playerData.reputation);
+    const mainDistrict = this.getMainShopDistrictId();
+    const popFactor = this.getCivicPopulationFactor(mainDistrict);
+    const key = demandContextKey(ctx, this.playerData.reputation, popFactor);
     if (!this.demandTable || this.demandTable.key !== key) {
       this.demandTable = buildDemandTable({
         ctx, products: SELLABLE_PRODUCTS, reputation: this.playerData.reputation,
         priceFactor: (productId) => demandPriceFactor(priceRatio(this.sellingPrice(productId), this.referencePrice(productId))),
+        populationTrafficFactor: popFactor,
       });
       this.stallsMarketsManager.bumpDemandTable(key);
     }
@@ -1618,6 +1627,7 @@ export class GameSimulation {
         const tolerance = this.chilledOnDisplayIds().has(productId) ? 1 + (chilledDisplayAppeal(ctx.weatherId) - 1) * 0.4 : 1;
         return keepChance(priceRatio(this.sellingPrice(productId), this.referencePrice(productId)) / tolerance, productSensitivity(product, ctx));
       },
+      extraUnitChance: populationExtraUnitChance(this.getCivicPopulationFactor(this.getMainShopDistrictId())),
       onReject: () => { this.currentDayRecord.priceWalkouts = (this.currentDayRecord.priceWalkouts ?? 0) + 1; },
     };
   }
@@ -4119,6 +4129,7 @@ export class GameSimulation {
       lowStockItems,
       yesterdayReviews: this.reviewsManager.getReviewsOnDay(day - 1),
       districtQol: civicQol,
+      civicPopulation: this.currentDayRecord?.civicPopulation,
     });
   }
 
@@ -4149,6 +4160,43 @@ export class GameSimulation {
       }
     }
     return none;
+  }
+
+  // ========================
+  // CIVIC POPULATION (OpenSpec `civic-population-demand`)
+  // ========================
+
+  /** Đệm snapshot dân số theo khóa (đợt đã mở + công trình công cộng + dân số đã lưu); đổi một trong ba là tính lại. */
+  private populationCache: { key: string; snapshot: Record<string, DistrictPopulation> } | null = null;
+
+  private populationCacheKey(): string {
+    const civic = (this.buildingPlacements ?? [])
+      .filter(p => civicDefOf(buildingTypeOfInstance(p.buildingId)?.typeId ?? ''))
+      .map(p => `${p.buildingId}@${p.originX},${p.originY}`).join(';');
+    return `${this.worldOpenState.openedWaves.join(',')}|${civic}|${JSON.stringify(this._civicPopulationByDistrict)}`;
+  }
+
+  /** Dân số mọi khu với QoL hiện tại (target luôn theo công trình đang có). */
+  public getCivicPopulation(): Record<string, DistrictPopulation> {
+    const key = this.populationCacheKey();
+    if (this.populationCache?.key !== key) {
+      this.populationCache = { key, snapshot: computePopulationSnapshot(this.getCivicQol(), ALL_PARCELS, this.worldOpenState.openedWaves, this._civicPopulationByDistrict) };
+    }
+    return this.populationCache.snapshot;
+  }
+
+  /** Hệ số lưu lượng khách theo dân số của một khu (1 nếu không rõ khu). */
+  public getCivicPopulationFactor(districtId: string): number {
+    return this.getCivicPopulation()[districtId]?.factor ?? 1;
+  }
+
+  /** Bước dân số đầu ngày: tính lại target theo QoL hiện tại, tiến một bước, lưu số nguyên vào save. */
+  private stepCivicPopulation(): void {
+    const next = stepAllPopulations(this.getCivicPopulation());
+    for (const [districtId, state] of Object.entries(next)) this._civicPopulationByDistrict[districtId] = state.pop;
+    const mainDistrict = this.getMainShopDistrictId();
+    const main = next[mainDistrict];
+    if (main) this.currentDayRecord.civicPopulation = { districtId: mainDistrict, pop: main.pop, target: main.target, factor: main.factor };
   }
 
   /** Đưa bộ đếm ID về mức không trùng với save: lấy giá trị đã lưu hoặc số lớn nhất trong ID dạng `ord-N`/`led-N` đang có (ID cũ dùng giờ thật không khớp mẫu nên bị bỏ qua). */
@@ -4830,7 +4878,7 @@ export class GameSimulation {
         this.statistics.totalCustomersServed,
         {
           traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * (1 + getSkillModifier(this.skills, 'traffic_boost')) * prestigeTrafficMultiplier(this.playerData.prestigeStars ?? 0) * hourlyStoreTrafficMultiplier(this.clock.getTime().hour) * GameSimulation.STORE_TRAFFIC_BOOST, this.playerData.level),
-          maxConcurrentCustomers: maxActiveCustomersForLevel(this.playerData.level),
+          maxConcurrentCustomers: Math.max(1, maxActiveCustomersForLevel(this.playerData.level) + populationCapBonus(this.getCivicPopulationFactor(this.getMainShopDistrictId()))),
           weightOf: (productId) => (demandTable.perProduct[productId]?.demand ?? 0.01) * (chilledIds.has(productId) ? chilledAppeal : 1),
         },
         regularCandidate,
@@ -6193,6 +6241,7 @@ export class GameSimulation {
       skills: structuredClone(this.skills),
       statistics: { ...this.statistics },
       world: structuredClone(this.worldOpenState),
+      civic: Object.keys(this._civicPopulationByDistrict).length ? { populationByDistrict: { ...this._civicPopulationByDistrict } } : undefined,
     };
   }
 
@@ -6222,6 +6271,7 @@ export class GameSimulation {
     this.ownedParcelIds = saveData.storeLayout.ownedParcelIds ? [...saveData.storeLayout.ownedParcelIds] : ownedParcelIdsDefault();
     this.parcelTenure = saveData.storeLayout.parcelTenure ? { ...saveData.storeLayout.parcelTenure } : this.buildTenureFromOwned();
     this.worldOpenState = saveData.world ? structuredClone(saveData.world) : defaultWorldOpenState();
+    this._civicPopulationByDistrict = saveData.civic?.populationByDistrict ? { ...saveData.civic.populationByDistrict } : {};
     this.collisionSystem?.setOpenedWaves(this.worldOpenState.openedWaves);
     this.inventory = saveData.inventory.map((i) => ({ ...i }));
     this.holdingArea = (saveData.holdingArea ?? []).map((h) => ({ ...h }));

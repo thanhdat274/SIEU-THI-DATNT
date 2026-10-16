@@ -20,6 +20,8 @@ export interface Props {
   onBuyParcel: (parcelId: string) => void | Promise<void>;
   /** Chỉ số sống theo khu (`getCivicQol`), districtId → 0..100. */
   civicQol?: Readonly<Record<string, number>>;
+  /** Dân số xóm theo QoL (OpenSpec `civic-population-demand`), districtId → { pop, target, factor }. */
+  civicPopulation?: Readonly<Record<string, { pop: number; target: number; factor: number }>>;
   /** Vị trí các tòa đã đặt (để liệt kê công trình công cộng). */
   placements?: readonly { buildingId: string; parcelId: string }[];
   /** Lô trống có thể xây (lô W0 trống + lô đã sở hữu chưa có tòa). */
@@ -35,7 +37,7 @@ const CORNER_LABEL = ['', 'Góc ngã tư'];
 const ROAD_LABEL: Record<string, string> = { main: 'đường chính', south: 'đường nam' };
 
 /** Bảng "Thành phố" (land-reclamation 4.3): cấp thành phố, các đợt khai hoang (khóa/đang thi công/mở) và mua lô. */
-export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels, playerLevel, playerMoney, day, buildingCount, onReclaim, journal, onPlanningWave, onBuyParcel, civicQol, placements = [], buildableParcelIds = [], onBuildOnParcel, onClose }) => {
+export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels, playerLevel, playerMoney, day, buildingCount, onReclaim, journal, onPlanningWave, onBuyParcel, civicQol, civicPopulation, placements = [], buildableParcelIds = [], onBuildOnParcel, onClose }) => {
   const [tab, setTab] = useState<'land' | 'civic'>('land');
   const tier = cityTierFrom(world.openedWaves, buildingCount);
   const waves = RECLAMATION_WAVES.filter(wave => wave.id !== 'w0');
@@ -50,7 +52,7 @@ export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels
       <PixelButton role="tab" aria-selected={tab === 'land'} variant={tab === 'land' ? 'teal' : 'wood'} style={{ minHeight: 44 }} onClick={() => setTab('land')}>Khai hoang</PixelButton>
       <PixelButton role="tab" aria-selected={tab === 'civic'} variant={tab === 'civic' ? 'teal' : 'wood'} style={{ minHeight: 44 }} onClick={() => setTab('civic')} data-city-tab="civic">Xóm phố</PixelButton>
     </div>
-    {tab === 'civic' && <CivicPanel civicQol={civicQol} placements={placements} buildableParcelIds={buildableParcelIds} onBuildOnParcel={onBuildOnParcel} />}
+    {tab === 'civic' && <CivicPanel civicQol={civicQol} civicPopulation={civicPopulation} placements={placements} buildableParcelIds={buildableParcelIds} onBuildOnParcel={onBuildOnParcel} />}
     {tab === 'land' && <>
     <p className="muted" style={{ margin: '0 0 8px' }}>Mở đợt để có đất mới, rồi mua lô để đặt tòa. Lô góc ngã tư đắt hơn nhưng đông khách hơn.</p>
     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
@@ -105,24 +107,30 @@ export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels
   </PixelDialog>;
 };
 
-/** Tab "Xóm phố" (civic-buildings-qol 3.2): chỉ số sống từng khu, công trình đã xây, lô trống để góp vốn xây. */
-const CivicPanel: React.FC<{ civicQol?: Readonly<Record<string, number>>; placements: readonly { buildingId: string; parcelId: string }[]; buildableParcelIds: readonly string[]; onBuildOnParcel?: (parcelId: string) => void }> = ({ civicQol = {}, placements, buildableParcelIds, onBuildOnParcel }) => {
+/** Tab "Xóm phố" (civic-population-demand + civic-buildings-qol): dân số, chỉ số sống, công trình, lô trống. */
+const CivicPanel: React.FC<{ civicQol?: Readonly<Record<string, number>>; civicPopulation?: Readonly<Record<string, { pop: number; target: number; factor: number }>>; placements: readonly { buildingId: string; parcelId: string }[]; buildableParcelIds: readonly string[]; onBuildOnParcel?: (parcelId: string) => void }> = ({ civicQol = {}, civicPopulation = {}, placements, buildableParcelIds, onBuildOnParcel }) => {
   const civic = placements.flatMap(p => {
     const typeId = buildingTypeOfInstance(p.buildingId)?.typeId;
     const def = CIVIC_DEFS.find(c => c.buildingTypeId === typeId);
     return def && typeId ? [{ ...p, typeId, def }] : [];
   });
   return <div data-civic-panel>
-    <p className="muted" style={{ margin: '0 0 8px' }}>Góp vốn xây công trình công cộng để xóm tốt lên. Chỉ số sống cao hơn khi công trình ở gần giữa khu.</p>
+    <p className="muted" style={{ margin: '0 0 8px' }}>Công trình công cộng giúp xóm tốt lên → dân số tăng → nhiều khách hơn. Hệ số khách từ 0,85 đến 1,25.</p>
     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
       {Object.values(DISTRICTS).map(district => {
         const qol = Math.round(civicQol[district.id] ?? 0);
+        const pop = civicPopulation[district.id];
+        const factor = pop?.factor ?? 1;
+        const target = pop?.target ?? 0;
+        // Xu hướng: dân số tiến về mục tiêu mỗi ngày — dưới mục tiêu thì đang tăng, trên thì đang giảm.
+        const arrow = !pop || target <= 0 || pop.pop === target ? '' : pop.pop < target ? '▲' : '▼';
         return <li key={district.id} className="pixel-panel" style={{ padding: 8 }} data-district-qol={district.id}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
             <strong>{district.name}</strong>
-            <span>Chỉ số sống <strong>{qol}</strong>/100</span>
+            <span>{target <= 0 ? <span className="muted">Chưa khai hoang</span> : <>Dân số <strong>{Math.round(pop?.pop ?? 0)}</strong> / {Math.round(target)}</>} {arrow && <span title={arrow === '▲' ? 'Đang tăng' : 'Đang giảm'} style={{ color: arrow === '▲' ? 'var(--teal)' : 'var(--brick)', fontWeight: 'bold' }}>{arrow}</span>} · hệ số <strong>{factor.toFixed(2)}</strong></span>
           </div>
           <div aria-hidden style={{ height: 8, background: 'rgba(0,0,0,0.12)', marginTop: 4 }}><div style={{ width: `${qol}%`, height: '100%', background: 'var(--teal)' }}/></div>
+          <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>QoL {qol}/100</div>
         </li>;
       })}
     </ul>

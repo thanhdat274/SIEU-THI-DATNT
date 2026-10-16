@@ -1,5 +1,113 @@
 # GIAI ĐOẠN 4 — MỤC 5: BẾP ĐA MÓN + COMBO (nâng cấp tiệm xôi & quán nước) (16/10/2026)
 
+## BƯỚC 2 — civic-population-demand: Dân số xóm theo QoL + hệ số khách (16/10/2026, review — Claude sửa trực tiếp)
+
+> Change `civic-population-demand`: mỗi khu có dân số tiến dần về mục tiêu theo QoL; dân số khu tiệm chính nhân lưu lượng khách (kênh `traffic`, 0,85–1,25).
+
+### Làm được (có code + test)
+
+- **`game-core/src/civic-population.ts`** (thuần, số nguyên): sức chứa = Σ ô các lô của khu thuộc đợt đã mở × `RESIDENTS_PER_TILE` 0,5 (PROVISIONAL — chưa có dữ liệu "lô nhà dân"); `target = round(sức chứa × (0,6 + 0,6 × QoL/100))`; baseline = target ở QoL 20; mỗi ngày tiến về target tối đa 3% (ít nhất 1 người); hệ số = clamp(dân / baseline, 0,85, 1,25). Dân số đã lưu thiếu / 0 (ở khu có sức chứa) / âm / NaN → baseline.
+- **Simulation**: `stepCivicPopulation` chạy trong bước chốt ngày của đồng hồ (server chạy cùng mã), target tính lại theo QoL hiện tại mỗi ngày; `getCivicPopulation()` đệm theo khóa (đợt đã mở + công trình + dân số đã lưu); `getCivicPopulationFactor()`; báo cáo ngày `civicPopulation`; bản tin sáng mang dân số khu tiệm chính.
+- **Nhu cầu**: hệ số vào `buildDemandTable` là một `AppliedFactor` kênh `traffic` (`ruleId 'civic_population'`, nhãn "Dân số khu"), chịu kẹp `MODIFIER_RANGES.traffic`; khóa đệm bảng nhu cầu gồm hệ số (cả khóa so sánh lẫn khóa của bảng).
+- **Save schema 11**: `civic?: { populationByDistrict }`. Migration 10→11 chỉ nâng số schema (không gieo dữ liệu); `isSaveGameData` nhận schema 10.
+- **UI**: tab Xóm phố hiện "Dân số X / mục tiêu", ▲ đang tăng / ▼ đang giảm, hệ số; khu chưa khai hoang ghi "Chưa khai hoang".
+
+### Lỗi đã sửa so với bản của AI trước (đã kiểm chứng bằng chạy thật)
+
+1. **Dân số không bao giờ phản ứng khi xây công trình**: snapshot đệm giữ `target` cũ mãi (xây công viên, QoL 24 nhưng dân số đứng 164 sau 20 ngày). Nay target tính lại mỗi ngày.
+2. **Hệ số ≠ 1 ở save không công trình** (1,0012 do làm tròn dân số mà không làm tròn baseline) → kinh tế mọi save bị lệch nhẹ. Nay baseline/target là số nguyên, hệ số đúng 1.
+3. **Dân số nhỏ bị kẹt** (`round(5 × 1,03) = 5`) và migration gieo 0 cho mọi khu → khu kẹt ở hệ số 0,85 (−15% khách) vĩnh viễn. Nay bước ít nhất 1 người, 0 = chưa có dân → baseline, migration không gieo 0.
+4. **Save schema 10 bị từ chối hoàn toàn**: `isSaveGameData` không có số 10 trong danh sách sau khi nâng hiện tại lên 11 → mọi save hiện có của người chơi không nạp được. Đã thêm 10.
+5. **Đệm bảng nhu cầu luôn trượt** khi hệ số ≠ 1 (khóa của bảng thiếu hệ số) → dựng lại bảng mỗi lần gọi.
+6. **Test không chạy tới phần simulation** (fail ở hàm thuần), sang ngày bằng `setTime` + `update` (không sang ngày thật), công viên đặt gốc sai (`front_row`). Viết lại test: sang ngày bằng `getClock().advanceToNextDay()`, gốc hợp lệ.
+7. **Script sweep** chỉ xây được 1 công trình (vòng đặt sai), chạy ở cấp 60 (chạm trần lưu lượng). Sửa vòng đặt (lô trống, ưu tiên W0), thêm `QA_LEVEL` (mặc định 25), bảng có hoàn vốn theo lãi ròng.
+8. Mũi tên xu hướng UI ngược (đang tăng hiện ▼).
+
+### Test (`civic-population.test.ts`, đăng ký test-runner)
+
+- Thuần: sức chứa (khu chưa mở = 0, W0 = 455 × 0,5), target/baseline số nguyên, bước ±3% / ít nhất 1 / không vượt target / hội tụ, đầu vào âm/NaN, hệ số trần/sàn, snapshot thiếu/0/âm → baseline.
+- Qua `GameSimulation`: không công trình 10 ngày → dân số = baseline, hệ số đúng 1, không có hệ số trong bảng; công viên `lot-east-1` → target tăng ngay, mỗi ngày tăng ≤ 3%, sau 20 ngày hệ số > 1 và ≤ 1,25, bảng nhu cầu mang đúng hệ số; bảng được đệm; export/import giữ dân số, cùng hash, +3 ngày vẫn cùng hash; save v10 migrate lên 11, hệ số 1; dân số hỏng trong save → baseline; khóa đệm đổi theo hệ số.
+
+### Lệnh đã chạy (máy thật)
+
+| Lệnh | Kết quả |
+|------|---------|
+| `yarn typecheck` | ✅ PASS |
+| `yarn --cwd packages/game-core test` | ✅ EXIT 0 — 112 pass, 0 fail, không dòng `Error:`; "Dân số xóm: hàm thuần PASS", "qua GameSimulation PASS"; golden khớp |
+| `yarn --cwd apps/web test` | ✅ PASS (gồm save-file, db, TutorialChecklist) |
+
+### Sweep kinh tế 90 ngày (`economy-civic-pop-sweep.ts`, chạy thật 16/10/2026)
+
+Cấp 25, 3 seed (`QA_SEEDS=3`), mở W1 + mua 2 lô, kệ châm đầy mỗi giờ:
+
+| Kịch bản | Công trình đã xây | DT ngày 30 / 60 / 89 (trung vị) | Tổng DT 90 ngày (trung vị) | % so (a) | Lãi ròng thêm / ngày | Hoàn vốn (ngày) | QoL / dân số / hệ số ngày 90 |
+|---|---|---|---|---|---|---|---|
+| (a) không | 0 | 2.836.000 / 2.706.500 / 2.253.000 | 221.966.500 | — | — | — | 20 / 164 / 1,000 |
+| (b) mỗi loại 1 | 4 | 2.831.000 / 2.775.500 / 2.253.000 | 221.346.500 | −0,3% | 472 ₫ | ~6.141 | 30 / 178 / 1,085 |
+| (c) spam | 5 (hết lô trống) | như (b) | 221.346.500 | −0,3% | 472 ₫ | ~7.200 | 30 / 178 / 1,085 |
+
+Cấp 15, 2 seed (chỉ mở được công viên + trạm y tế):
+
+| Kịch bản | Công trình | Tổng DT 90 ngày (trung vị) | % so (a) | Lãi ròng thêm / ngày | Hoàn vốn (ngày) | QoL / dân số / hệ số ngày 90 |
+|---|---|---|---|---|---|---|
+| (a) không | 0 | 239.445.000 | — | — | — | 20 / 164 / 1,000 |
+| (b) mỗi loại 1 | 2 | 239.655.500 | +0,1% | 19.922 ₫ | ~65 | 28 / 175 / 1,067 |
+| (c) spam | 3 | 239.655.500 | +0,1% | 19.922 ₫ | ~90 | 28 / 175 / 1,067 |
+
+**Kết luận sweep (CHƯA ĐẠT tiêu chí "tăng doanh thu có trần, hoàn vốn 20–60 ngày")**: dân số và hệ số chạy đúng (1,067–1,085) nhưng **doanh thu gần như không đổi**. Nguyên nhân đã thấy: `trafficAtLevel` kẹp lưu lượng ≤ 6 và hệ số cấp ở cấp 25 là 6,5 → mọi hệ số khách (dân số, uy tín, trang trí, prestige) bị cắt ở cấp cao; ở cấp 15 vẫn ≈ 0 nên còn nút thắt khác (nghi số khách đồng thời `maxActiveCustomersForLevel`, tốc độ thu ngân, hoặc kệ châm 14 món/giờ trong script) — **chưa điều tra xong**. Không tự chỉnh số; cần chủ dự án chọn hướng (xem "Cần quyết định"). (c) = (b) vì hết lô trống (5 lô) và luật chống trùng.
+
+### Điều tra nút thắt + phương án A + B (16/10/2026, chạy thật)
+
+**Đo** (ép hệ số 1,0 so với 1,25, 5 ngày, kệ đầy): tiệm chạm trần khách đồng thời `maxActiveCustomersForLevel` **76–85% thời gian mở cửa ở mọi cấp**. Khách ở quầy trung bình 0,26–0,54, nên thu ngân không nghẽn. Lưu lượng trước kẹp 1,05–1,31, chưa chạm kẹp 0,25–2,5. Khi ×1,25 lưu lượng: khách phục vụ chỉ +1,8% (cấp 5), +0,5% (cấp 10), +0,1% (cấp 15), 0% (cấp 25). ⇒ Nút thắt là trần đồng thời; trần `trafficAtLevel` ≤ 6 chỉ thêm ở cấp ≥ ~22.
+
+**Đã làm** (`civic-population.ts`, `simulation.ts`, `customers.ts`):
+- **A.** Trần đồng thời tiệm chính = `maxActiveCustomersForLevel + populationCapBonus(hệ số)` với `round((hệ số − 1) × 8)`: 1,25 → +2, 0,85 → −1, sàn 1.
+- **B.** `CustomerPricing.extraUnitChance` = `min(10%, (hệ số − 1) × 0,4)`: khách có xác suất lấy 2 món ở kệ đang đứng. RNG tất định theo id khách, chỉ rút khi xác suất > 0, nên hệ số 1 không đổi mô phỏng (golden khớp).
+
+Kiểm tra: typecheck PASS; `yarn --cwd packages/game-core test` EXIT 0, 112 pass, 0 dòng "Error:", golden khớp. Test thuần mới cho cap bonus và xác suất thêm món.
+
+**Sweep lại (3 seed × 90 ngày):**
+
+| Cấp | Kịch bản | Công trình | Tổng DT 90 ngày (trung vị) | % so (a) | Lãi ròng thêm / ngày | Hoàn vốn (ngày) | Hệ số ngày 90 |
+|---|---|---|---|---|---|---|---|
+| 15 | (a) | 0 | 239.445.000 | — | — | — | 1,000 |
+| 15 | (b) | 2 | 280.516.000 | +17,2% | 355.267 ₫ | 4 | 1,067 |
+| 15 | (c) | 3 | 280.516.000 | +17,2% | 355.267 ₫ | 5 | 1,067 |
+| 25 | (a) | 0 | 221.966.500 | — | — | — | 1,000 |
+| 25 | (b) | 4 | 255.616.000 | +15,2% | 283.406 ₫ | 10 | 1,085 |
+| 25 | (c) | 5 | 255.616.000 | +15,2% | 283.406 ₫ | 12 | 1,085 |
+
+**Kết luận:** hệ số dân số giờ đã có tác dụng; (b) so (a) nằm trong trần +25%; spam không thêm gì. **Nhưng hoàn vốn 4–12 ngày, nhanh hơn nhiều so với mục tiêu 20–60 ngày.** Lý do: hệ số chỉ 1,067–1,085 đã làm tròn thành +1 chỗ (cấp 15: 5 → 6 chỗ, tức +20% sức chứa). Phần thưởng nhảy bậc, không mượt. Chưa chỉnh số.
+
+### Quyết định (16/10/2026, chủ dự án)
+
+Giữ số hiện tại (A = 8 chỗ/1,0 hệ số, B trần 10%). Bước 3 (`civic-local-fees`) phải dùng phí duy trì để kéo hoàn vốn về 20–60 ngày, và đo lại bằng sweep này.
+
+Các phương án đã cân nhắc:
+
+- Hạ cường độ A: giảm `POP_CAP_SLOTS_PER_FACTOR` (ví dụ 4, cần hệ số ≥ 1,125 mới được +1 chỗ), hoặc đổi sang thêm chỗ theo phần lẻ (xác suất cho phép vượt trần) để bỏ bậc nhảy.
+- Hay giữ số và để phí duy trì ở Bước 3 kéo hoàn vốn về 20–60 ngày (upkeep hiện chỉ 2.000–3.000 ₫/ngày, quá nhỏ so với lãi thêm ~300 nghìn/ngày).
+
+### Chưa làm / giới hạn
+
+- Hệ số chỉ theo khu tiệm chính (giới hạn từ Bước 0). Sức chứa theo diện tích lô là tạm.
+- Chưa QA co-op 2 client; QA trình duyệt mới 375×812 (dân số 164/164, khu chưa mở "Chưa khai hoang", không cuộn ngang, không lỗi console); chưa xây trong trình duyệt (không sửa save local).
+
+### File thay đổi
+
+| File | Hành động |
+|------|-----------|
+| `packages/game-core/src/civic-population.ts` | MỚI — sức chứa, target, bước ngày, hệ số, snapshot |
+| `packages/game-core/src/civic-population.test.ts` | MỚI — test thuần + simulation + save |
+| `packages/game-core/src/economy-civic-pop-sweep.ts` | MỚI — sweep 90 ngày, `QA_SEEDS`, `QA_LEVEL` |
+| `packages/game-core/src/simulation.ts` | bước dân số, getter, đệm, hệ số vào bảng nhu cầu, save |
+| `packages/game-core/src/demand.ts` | hệ số kênh `traffic`, khóa đệm có hệ số |
+| `packages/game-core/src/day-rhythm.ts` | `civicPopulation` trong bản tin sáng |
+| `packages/shared/src/index.ts` | schema 11, `civic`, migration 10→11, nhận schema 10 |
+| `apps/web/src/components/CityModal.tsx`, `apps/web/src/App.tsx` | dân số + xu hướng trong tab Xóm phố |
+
+---
+
 ## BƯỚC 1 — civic-buildings-qol: Công trình công cộng + QoL (16/10/2026, review lần 3 — Claude sửa trực tiếp)
 
 > Change `civic-buildings-qol`: 4 loại tòa công cộng, chỉ số sống (QoL) theo khu, đồn công an giảm trộm, co-op qua `land-policy.ts`, tab "Xóm phố".

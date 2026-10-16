@@ -95,6 +95,8 @@ export interface CustomerPricing {
   priceOf: (productId: string) => number;
   keepChance: (productId: string) => number;
   onReject: (productId: string) => void;
+  /** Xác suất lấy thêm 1 món cùng kệ (dân số xóm, civic-population-demand); thiếu hoặc 0 ⇒ luôn 1 món. */
+  extraUnitChance?: number;
 }
 
 export interface CustomerMovementPath {
@@ -666,7 +668,10 @@ export class CustomerManager {
           this.routeCustomer(customer, 'leaving', tileMap, fixtures);
         } else if (shelf && isSalesFixture(shelf) && prod && shelf.currentStock > 0 && shelf.stockLots && shelf.stockLots.length > 0) {
           // Pick 1 unit into basket
-          const movedLots = takeLots(shelf.stockLots, 1);
+          // Xóm đông: có xác suất lấy 2 món (chỉ rút RNG khi xác suất > 0 để không đổi mô phỏng cũ).
+          const extra = pricing?.extraUnitChance ?? 0;
+          const units = extra > 0 && shelf.currentStock > 1 && new Mulberry32Rng(daySeed(hashSeed(`${customer.id ?? customer.checkoutId ?? 'customer'}:extra`), currentDay)).next() < extra ? 2 : 1;
+          const movedLots = takeLots(shelf.stockLots, units);
           shelf.currentStock = sumLots(shelf.stockLots);
           if (shelf.currentStock === 0) {
             shelf.assignedProductId = undefined;

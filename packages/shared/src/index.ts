@@ -695,6 +695,8 @@ export interface DailyRecord {
   priceWalkouts?: number; // Khách bỏ hàng vì giá cao hơn giá thị trường
   averageStars?: number;
   ratingCount?: number;
+  /** Dân số khu tiệm chính trong ngày (OpenSpec `civic-population-demand`). */
+  civicPopulation?: { districtId: string; pop: number; target: number; factor: number };
 }
 
 export type PlanogramMap = Record<string, string>; // fixtureId -> productId
@@ -1208,6 +1210,8 @@ export interface SaveGameData {
   world?: WorldOpenState;
   /** Tiến độ mục tiêu thành phố (OpenSpec `open-world-districts-city-goals`, schema 10). Thiếu = cấp 1, chưa hoàn thành mục tiêu nào. */
   cityProgress?: CityProgressState;
+  /** Dân số xóm theo QoL (OpenSpec `civic-population-demand`, schema 11). Thiếu = chưa mở civic, dân số = baseline (factor = 1.0). */
+  civic?: { populationByDistrict: Record<string, number> };
 }
 
 export interface RegularCustomerProgress {
@@ -1501,7 +1505,7 @@ export function isGameAvatar(value: unknown): value is GameAvatar {
     (value.displayName === undefined || (typeof value.displayName === 'string' && value.displayName.length <= 64));
 }
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 10;
+export const CURRENT_SAVE_SCHEMA_VERSION = 11;
 
 /** Trạng thái thế giới mở (OpenSpec `open-world-land-reclamation`): đợt đã mở & đang thi công. */
 export interface WorldOpenState {
@@ -1565,7 +1569,7 @@ export function isChainState(value: unknown): value is ChainState {
 }
 
 export function isSaveGameData(value: unknown): value is SaveGameData {
-  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.schemaVersion !== 7 && value.schemaVersion !== 8 && value.schemaVersion !== 9 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.schemaVersion !== 7 && value.schemaVersion !== 8 && value.schemaVersion !== 9 && value.schemaVersion !== 10 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
     return false;
   }
@@ -1595,6 +1599,11 @@ export function isSaveGameData(value: unknown): value is SaveGameData {
     return false;
   }
   if (value.world !== undefined && !isWorldOpenState(value.world)) return false;
+  if (value.civic !== undefined) {
+    const civic = value.civic;
+    if (!isRecord(civic) || !isRecord(civic.populationByDistrict)) return false;
+    if (!Object.values(civic.populationByDistrict).every(v => Number.isFinite(v))) return false;
+  }
   return true;
 }
 
@@ -1653,7 +1662,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
   // Migration 9→10 chỉ điền khi CHƯA có `parcelTenure`; nếu đã có (save thử schema 10) thì giữ nguyên.
   // `ownedParcelIds` giữ nguyên để tương thích land-reclamation (`simulation.buyParcel` push string).
   const migrateToW10 = (m: SaveGameData): void => {
-    m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+    m.schemaVersion = 10;
     if (m.storeLayout.parcelTenure) return; // Đã có (save schema 10+)
     const owned = m.storeLayout.ownedParcelIds ?? [];
     const tenure: Record<string, { kind: 'owned'; day: number; boughtBy: string }> = {};
@@ -1668,12 +1677,18 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     }
     m.storeLayout.parcelTenure = tenure;
   };
+  // 10 → 11 (civic-population-demand): chỉ nâng số schema. Không gieo `civic`: simulation khởi tạo dân số = baseline cho khu
+  // thiếu dữ liệu (hệ số khách đúng 1), nên save cũ giữ nguyên kinh tế.
+  const migrateToW11 = (m: SaveGameData): void => {
+    m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+  };
   if ((value.schemaVersion === 1 || value.schemaVersion === 2 || value.schemaVersion === 3 || value.schemaVersion === 4 || value.schemaVersion === 5) && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW7(migrated);
     migrateToW8(migrated);
     migrateToW9(migrated);
     migrateToW10(migrated);
+    migrateToW11(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v6 → v7 (open-world-land-reclamation): save cũ không có `world`/`ownedParcelIds` → chỉ mở đợt 0 và W0 đã sở hữu.
@@ -1683,28 +1698,38 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW8(migrated);
     migrateToW9(migrated);
     migrateToW10(migrated);
+    migrateToW11(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v7 → hiện tại (open-world-coop-land D4): save v7 ĐÃ có `world`/`ownedParcelIds` (v6 đã gieo), chỉ cần điền
-  // `builtBy` (W8) + `typeId` (W9) + `parcelTenure` (W10). Trả `data` như v6 để caller nạp được save đã migrate.
+  // `builtBy` (W8) + `typeId` (W9) + `parcelTenure` (W10) + `civic` (W11). Trả `data` như v6 để caller nạp được save đã migrate.
   if (value.schemaVersion === 7 && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW8(migrated);
     migrateToW9(migrated);
     migrateToW10(migrated);
+    migrateToW11(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
-  // v8 → hiện tại (open-world-building-types D8): save v8 đã có `builtBy`, chỉ cần gắn `typeId` (W9) + `parcelTenure` (W10).
+  // v8 → hiện tại (open-world-building-types D8): save v8 đã có `builtBy`, chỉ cần gắn `typeId` (W9) + `parcelTenure` (W10) + `civic` (W11).
   if (value.schemaVersion === 8 && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW9(migrated);
     migrateToW10(migrated);
+    migrateToW11(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
-  // v9 → 10 (open-world-land-lease 3.1): save v9 có typeId, chỉ cần điền `parcelTenure` (W10).
+  // v9 → 10 (open-world-land-lease 3.1): save v9 có typeId, chỉ cần điền `parcelTenure` (W10) + `civic` (W11).
   if (value.schemaVersion === 9 && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW10(migrated);
+    migrateToW11(migrated);
+    return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
+  }
+  // v10 → 11 (civic-population-demand): điền `civic` nếu thiếu.
+  if (value.schemaVersion === 10 && isSaveGameData(value)) {
+    const migrated = structuredClone(value) as SaveGameData;
+    migrateToW11(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   if (value.schemaVersion < CURRENT_SAVE_SCHEMA_VERSION) {

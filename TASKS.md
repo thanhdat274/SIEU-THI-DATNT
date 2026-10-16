@@ -25,6 +25,15 @@
 - [ ] Mặt tiền riêng (3.1); bấm xây thật trong trình duyệt + co-op 2 client; đủ 7 viewport.
 - Change OpenSpec: `openspec/changes/civic-buildings-qol/`. Chi tiết: `tổng hợp.md` khối "BƯỚC 1".
 
+## GIAI ĐOẠN 4 — Bước 2: Dân số xóm theo QoL + hệ số khách (civic-population-demand) (16/10/2026, review — Claude sửa)
+
+- [x] `civic-population.ts` (sức chứa tạm theo diện tích lô, target theo QoL, ±3%/ngày, hệ số 0,85–1,25), bước chốt ngày, hệ số kênh `traffic`, schema 11.
+- [x] Sửa 8 lỗi bản trước (target cũ không đổi, hệ số ≠ 1, kẹt dân số nhỏ, **save schema 10 bị từ chối**, đệm bảng nhu cầu trượt, test/sweep sai). Chi tiết `tổng hợp.md` khối "BƯỚC 2".
+- [x] `yarn --cwd packages/game-core test` EXIT 0; `yarn --cwd apps/web test` PASS; tab Xóm phố QA 375×812.
+- [ ] Sweep 90 ngày đã chạy nhưng CHƯA ĐẠT: hệ số 1,07–1,09 mà doanh thu ≈ 0% (trần `trafficAtLevel` + nút thắt khác) — chờ chủ dự án chọn hướng.
+- [ ] Co-op 2 client.
+- Change OpenSpec: `openspec/changes/civic-population-demand/`.
+
 ## GIAI ĐOẠN 4 — Mục 5: Bếp đa món + Combo (nâng cấp tiệm xôi & quán nước) (16/10/2026)
 
 - [x] **Đa món (mới, `recipes.ts` `PRODUCED_PRODUCTS`+`RECIPES`):** 3 món xôi (thập cẩm/chà bông trứng/bắp) + 3 thức uống (trà sữa/sinh tố xoài/cà phê sữa đá); dùng nguyên liệu đã có, không chạm số lượng `catalog.test`.
