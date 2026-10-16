@@ -8,7 +8,7 @@ import { WsAdapter } from '@nestjs/platform-ws';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { isSaveGameData, isWorldSettings, MULTIPLAYER_PROTOCOL_VERSION, SERVER_REPLAYED_COMMAND_TYPES, type BuildingPlacementRecord, type GameAccount, type SaveGameData } from '@game/shared';
 import { generateStarterTileMap, placementsProblem } from '@game/data';
-import { applyStoreLayoutActions, decideLandCommand, GameSimulation, landErrorMessage, validateStoreLayout, WorldRuntime } from '@game/core';
+import { applyStoreLayoutActions, bundleReasonMessage, cashDonatedOnDay, decideLandCommand, GameSimulation, landErrorMessage, validateStoreLayout, WorldRuntime } from '@game/core';
 import { readRuntimeConfig } from './runtime-config.js';
 import { checkSaveInvariants } from './save-invariants.js';
 import { commitLimiter, httpIpLimiter, MAX_HTTP_BODY } from './rate-limit.js';
@@ -62,6 +62,7 @@ const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
   'hire_staff', 'pay_wage_debt', 'set_staff_shift', 'assign_refill_job', 'dispose_stock', 'open_case', 'buy_plot', 'order_supplier', 'maintain_fixture', 'maintain_all_service', 'security_action',
   'buy_warehouse_tier', 'buy_storage_rack',
   'reclaim_wave', 'buy_parcel', 'open_building', 'lease_parcel', 'end_lease', 'pay_rent_debt',
+  'claim_city_goal', 'donate_to_bundle',
   'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',
   'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
 ]);
@@ -154,7 +155,15 @@ export class GameController {
       const uid = request.gameAccount.uid;
       const role = commandWorld.world.memberships.find((member) => member.accountId === uid)?.role ?? 'member';
       const partnerOnline = (WorldGateway.getLiveRuntime(worldId)?.getActiveAccountIds() ?? []).some((id) => id !== uid);
-      const decision = decideLandCommand(payload, role, commandWorld.world.settings, commandBusiness.save.player.money, partnerOnline);
+      // Bối cảnh để tính giá mở tòa civic cho phiếu (dùng ĐÚNG `civicOpenCost` như lúc trừ tiền).
+      const decision = decideLandCommand(payload, role, commandWorld.world.settings, commandBusiness.save.player.money, partnerOnline, {
+        bundleStates: commandBusiness.save.civic?.bundles,
+        buildings: commandBusiness.save.storeLayout.buildingPlacements,
+        memberCashDonatedToday: cashDonatedOnDay(commandBusiness.save.civic?.bundles, uid, commandBusiness.save.worldTime.day),
+      });
+      if (decision.action === 'forbid' && decision.reason === 'daily_cap') {
+        throw new BadRequestException({ statusCode: 400, error: 'Bad Request', code: 'daily_cap', message: 'Chủ hẻm đang offline: mỗi thành viên chỉ góp tối đa 30% tiền chung mỗi ngày. Hãy thử lại vào ngày mai hoặc khi chủ hẻm online.' });
+      }
       if (decision.action === 'forbid') {
         throw new BadRequestException({ statusCode: 400, error: 'Bad Request', code: 'forbidden', message: landErrorMessage('forbidden') });
       }
@@ -204,7 +213,11 @@ export class GameController {
         console.warn(`[command] từ chối type=${payload.type} status=${commandResult.status} reason=${commandResult.reason ?? '(không có)'} world=${worldId} business=${commandBusiness.id} expectedRevision=${body.expectedRevision} serverRevision=${commandWorld.world.revision}`);
       }
       if (commandResult.status === 'accepted') console.log(`[command] nhận type=${payload.type} world=${worldId} account=${request.gameAccount.uid} revision=${commandWorld.world.revision}`);
-      if (commandResult.status !== 'accepted') throw new BadRequestException(commandResult.reason ?? 'Lệnh không hợp lệ hoặc trạng thái đã thay đổi.');
+      if (commandResult.status !== 'accepted') {
+        // Sổ góp/mục tiêu: lý do là mã (slot_full, not_enough_stock…) → câu tiếng Việt cho người chơi (kể cả khi phiếu chạy sau đó).
+        const civicMessage = payload.type === 'donate_to_bundle' || payload.type === 'claim_city_goal' ? bundleReasonMessage(commandResult.reason) : undefined;
+        throw new BadRequestException(civicMessage ?? commandResult.reason ?? 'Lệnh không hợp lệ hoặc trạng thái đã thay đổi.');
+      }
       const canonicalSave = runtime.getSnapshot().businesses[0].save;
       canonicalSave.id = commandBusiness.save.id;
       canonicalSave.revision = body.expectedRevision + 1;
@@ -344,7 +357,9 @@ export class GameController {
       ...(body.memberLandPermissions !== undefined ? { memberLandPermissions: body.memberLandPermissions } : {}),
       ...(body.ownerSkipsVote !== undefined ? { ownerSkipsVote: body.ownerSkipsVote } : {}),
     };
-    return worldRepository.updateSettings(worldId, request.gameAccount.uid, clean);
+    const updated = await worldRepository.updateSettings(worldId, request.gameAccount.uid, clean);
+    WorldGateway.getLiveRuntime(worldId)?.applySettings(updated.settings);
+    return updated;
   }
   leaderboard(request: AuthenticatedRequest) {
     return worldRepository.leaderboard(request.gameAccount.uid);

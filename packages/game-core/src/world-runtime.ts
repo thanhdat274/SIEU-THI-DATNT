@@ -143,6 +143,9 @@ export class WorldRuntime {
     }
   }
 
+  /** Cài đặt đất do chủ hẻm đổi qua HTTP: runtime sống phải nhận ngay, nếu không quyền `none`/`ownerSkipsVote` không có hiệu lực và checkpoint còn ghi đè cài đặt cũ. */
+  applySettings(settings: GameWorld['settings']): void { this.currentWorld.settings = structuredClone(settings); }
+
   getRevision(): number { return this.currentWorld.revision; }
 
   /**
@@ -304,6 +307,7 @@ export class WorldRuntime {
     return this.commandCoordinator.submit(actorId, commandInput, async (cmd) => {
       // Execute command on simulation
       let success = false;
+      let rejectReason: string | undefined;
       this.simulation.setBuildActor(actorId);
       const p = cmd.payload;
       if (p.type === 'restock') {
@@ -445,6 +449,17 @@ export class WorldRuntime {
         success = this.simulation.endLease(p.parcelId).success;
       } else if (p.type === 'pay_rent_debt') {
         success = this.simulation.payRentDebt(p.parcelId).success;
+      } else if (p.type === 'claim_city_goal') {
+        // Quyền: mọi thành viên được nhận mục tiêu (chủ dự án chốt 16/10/2026, kể cả memberLandPermissions='none').
+        const r = this.simulation.claimCityGoal(p.goalId);
+        success = r.success;
+        rejectReason = r.reason;
+      } else if (p.type === 'donate_to_bundle') {
+        // Server-authoritative: người góp = phiên (`actorId`, qua `setBuildActor`), không đọc từ payload; lệnh chạy lần lượt
+        // qua hàng đợi của coordinator nên lệnh sau chỉ nhận phần thiếu / bị từ chối 'slot_full'; thiếu kho → từ chối cả lệnh.
+        const r = this.simulation.donateToBundle(p.bundleId, p.slotId, p.productId, p.quantity, p.amount);
+        success = r.success;
+        rejectReason = r.reason;
       }
 
       if (success) {
@@ -456,7 +471,7 @@ export class WorldRuntime {
         );
         this.triggerCheckpoint();
       }
-      return success;
+      return success || !rejectReason ? success : { accepted: false, reason: rejectReason };
     });
   }
 

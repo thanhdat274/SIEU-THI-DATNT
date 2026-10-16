@@ -5,6 +5,8 @@ import { landCommandLabel } from './land-vote-labels';
 export interface LandVoteInfo {
   initiatorId: string;
   command: string;
+  /** Mô tả khoản chi do server dựng (vd. "Góp X₫ vào Quỹ xây dựng — Công viên"). */
+  description?: string;
   /** Mốc thời gian (ms epoch, giờ máy này) phiếu hết hạn, tính từ `expiresInMs` lúc nhận. */
   expiresAt: number;
 }
@@ -23,7 +25,7 @@ export const LandVoteModal: React.FC<{
     return () => clearInterval(timer);
   }, []);
   const seconds = Math.max(0, Math.ceil((vote.expiresAt - now) / 1000));
-  const label = landCommandLabel(vote.command);
+  const label = vote.description ?? landCommandLabel(vote.command);
   return (
     <PixelDialog
       icon="clock"

@@ -43,6 +43,32 @@
 - Change OpenSpec: `openspec/changes/civic-local-fees/`.
 - Change OpenSpec: `openspec/changes/civic-population-demand/`.
 
+## GIAI ĐOẠN 4 — BƯỚC 4: Mục tiêu thành phố + Sổ góp xóm (civic-city-goals) (16/10/2026 — code chưa commit)
+
+> Chỉ document **Giai đoạn 0–3** đã xong kèm test chạy thật (game-core 112/112, 0 lỗi). Giai đoạn 4 (UI Sổ góp) có code + QA Browser một phần (xem `tổng hợp.md`); Giai đoạn 5 (khánh thành + nhật ký) có code + test; Giai đoạn 6 (luật co-op) có code + test runtime, chưa QA 2 client — mục con tương ứng ở `openspec/changes/civic-city-goals/tasks.md` và `tổng hợp.md` khối "BƯỚC 4".
+> **Cập nhật Gđ 6 (16/10/2026):** đã sửa lỗi gốc `test:coop` và chạy lại typecheck/game-core/coop/gateway/web đều EXIT 0; còn QA 2 client trình duyệt và 2 câu hỏi chủ dự án (xem `tổng hợp.md`, mục "Giai đoạn 6 — rà soát & sửa").
+
+- [x] **Gđ 0**: xóa thư mục rác `dist-test/`; bỏ field `buildCostDiscount` khỏi data + type (không còn dùng).
+- [x] **Gđ 1 (1.1–1.9)**: constructor nạp `civic.bundles`; claim_city_goal không trùng milestones, thưởng vào **quỹ chung** (`playerData.money`), nhận TỪNG mục tiêu (chốt 16/10/2026), không đổi `cityTierFromCityLevel`; tách `city-progress-metrics.ts` (metrics thuần: building_types_open đếm loại, infra=waves+1, daily_customers ngày vừa kết thúc, weekly_revenue cửa sổ); donate trả mã; save validate 10&11 schema 11; P&L khoản civic là **giá vốn** không trừ 2 lần; dọn log/import chết.
+- [x] **Gđ 2 (cân bằng 80% + land-policy + test)**: quỹ `civicBundleCashAmount = round50k(0,8×giá xây − hàng dự kiến)` (không ghi tay), validate (quỹ ≥ 0, tổng ≤ giá xây); `land-policy` dùng `civicOpenCost` giá còn phải trả (bối cảnh bundleStates + đếm tòa); test `civic-bundles.test.ts` (từ chối, góp vượt, FIFO, ledger, netProfit, hoàn thành/mở, land-policy, claim, metrics, constructor, validateCivicBundles, save 10&11, hash giống nhau).
+- [x] **Kết quả lệnh (16/10/2026)**: `yarn typecheck` EXIT 0; `yarn --cwd packages/game-core test` (bản dist qua `.qa/pure-loader.cjs`) **112/112 pass, 0 fail, 0 lỗi Error**; golden khớp. Bảng cân bằng 4 trang trong `tổng hợp.md` khối "BƯỚC 4".
+- [x] **Gđ 3** — Mục tiêu xóm phố cấp 4–10: catalog riêng `civic-reveal-goals.ts` (NOT `CITY_GOALS_CATALOG` để KHÔNG chặn lên cấp/golden), nối `evaluateCivicGoalCondition` thật, `revealBundleId`, `isBundleRevealed`, `revealedBundleIdsForLoadedLevel` không hồi tố; simulation `claimCivicRevealGoal` + gieo reveal theo cấp tải (constructor + importSaveData) + ghi `revealedBundleIds` vào save (schema vẫn 11, additive). Test `runCivicRevealGoalsTests` (1.1 evaluator 3 loại; 1.2 catalog+validate; 1.3 không hồi tố; claim thật) — chạy trong suite 112/112, 0 lỗi (16/10/2026).
+- [ ] **Gđ 4** — UI tab "Sổ góp xóm" trong `CityModal.tsx`. CHƯA làm.
+- [ ] **Gđ 5** — Khánh thành + nhật ký thành phố (`city-journal.ts`, toast). CHƯA làm.
+- [ ] **Gđ 6** — Co-op server-authoritative (phiếu chi lớn ô quỹ, `memberLandPermissions`, góp cùng lúc, replay). CHƯA làm.
+- **Ghi chú**: không commit/push (theo yêu cầu); nhánh `develop`; Bước 3 đã commit ở d12887e.
+
+## GIAI ĐOẠN 4 — BƯỚC 5: Dân cư & Nhà dân nâng bậc (civic-residents-life) (16/10/2026 — code chưa commit)
+
+- [x] **1.1 Đóng gói sprite atlas riêng**: `tools/sprite-atlas/build-residents.py` tạo `apps/web/public/assets/sprites/residents/residents.png` (1024×372) và `residents.json` (105 frame: 9 nhà dân variant 0/9/19 tầng 1–3, 96 khung NPC look 6–9 học sinh, người cao tuổi, công sở, trẻ em), thêm `"residents/residents.json"` vào `index.json`. Atlas cũ giữ nguyên.
+- [x] **1.2 Hookup renderer**: `sprite-atlas.ts` nhận diện look 9 (`WALKER_LOOKS_9`), `neighborhood-actors.ts` tint trắng và bỏ phụ kiện vẽ code cho look 6–9, `neighborhood-scene.ts` căn giữa nhà 3 ô trên lô rộng và map variant 0/9/19, `setPopulation` cập nhật tầng nhà và vẽ lại đèn đêm.
+- [x] **1.3 Logic game-core & Công thức tất định**: `neighborhood-life.ts` hằng số `RESIDENTS_PER_NPC = 4`, `NPC_CAP_DESKTOP = 40`, `NPC_CAP_MOBILE = 20`; `visibleNpcCount` và `houseFloorTier`; `deterministicResidentNpc` tất định theo (seed, day, districtId, index); giữ PRNG cho chế độ mặc định; không sửa save.
+- [x] **1.4 Test tự động & Hiệu năng**: `civic-residents-life.test.ts` nối vào `test-runner.ts`; đo thời gian thực thi NPC nền mobile 375×812 đạt **0.061 ms/khung** (ngân sách ≤ 2.0 ms/khung).
+- [x] **1.5 QA Trình duyệt**: `http://localhost:5173/?qa` → Chơi Thử (Local) ở 375×812, 667×375 và 1280×800; canvas vẽ ổn định, 0 lỗi console, chụp ảnh kiểm chứng rồi xóa khỏi repo.
+- [x] **1.6 Kiểm tra tích hợp**: `yarn typecheck` EXIT 0; `yarn --cwd packages/game-core test` 112/112 pass, 0 fail; `yarn --cwd apps/web test` 9/9 pass.
+- [ ] **1.7 Co-op**: seed thế giới chung; QA 2 client thấy cùng cư dân.
+- **Ghi chú**: KHÔNG commit/push; không sửa simulation.ts, save, shared/src/index.ts, bootstrap.ts, civic-bundles.ts, city-goals-sim.ts, CityModal.tsx.
+
 ## GIAI ĐOẠN 4 — Mục 5: Bếp đa món + Combo (nâng cấp tiệm xôi & quán nước) (16/10/2026)
 
 - [x] **Đa món (mới, `recipes.ts` `PRODUCED_PRODUCTS`+`RECIPES`):** 3 món xôi (thập cẩm/chà bông trứng/bắp) + 3 thức uống (trà sữa/sinh tố xoài/cà phê sữa đá); dùng nguyên liệu đã có, không chạm số lượng `catalog.test`.

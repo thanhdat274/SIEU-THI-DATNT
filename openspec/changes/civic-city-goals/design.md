@@ -15,19 +15,19 @@ export interface BundleSlotDef {
   kind: 'goods' | 'cash';
   acceptedProductIds?: string[];       // goods: nhận 1 trong các loại (chốt 1)
   quantity?: number;                   // goods
-  amount?: number;                     // cash
+  amount?: number;                     // cash — KHÔNG ghi tay, dẫn xuất (xem D7)
 }
 export interface CivicBundleDef {
   id: string;                          // 'bundle_clinic'
   buildingTypeId: BuildingTypeId;      // công trình được mở
   revealedByCityLevel: number;
   slots: BundleSlotDef[];              // 3–4 ô, đúng 1 ô cash
-  buildCostDiscount: number;           // 0–1, giảm phí xây khi hoàn thành
 }
 ```
-`validateCivicBundles()`: id duy nhất; mọi `acceptedProductIds` tồn tại trong catalog; mỗi sổ đúng 1 ô `cash`; **mọi** ô goods có ≥ 2 loại thay thế (chốt 16/10/2026).
+`validateCivicBundles()`: id duy nhất; mọi `acceptedProductIds` tồn tại trong catalog; mỗi sổ đúng 1 ô `cash`; **mọi** ô goods có ≥ 2 loại thay thế (chốt 16/10/2026); ô cash phải = công thức 80% (`civicBundleCashAmount`); quỹ ≥ 0; **tổng góp dự kiến (hàng + quỹ) ≤ giá xây**.
 
-Ví dụ trang trạm y tế: dầu gió/bông băng ×10, sữa hộp ×20, cháo hoặc xôi ×15, quỹ 2.000.000đ.
+Ví dụ trang trạm y tế: dầu gió/bông băng ×10, sữa hộp ×20, cháo hoặc xôi ×15, quỹ dẫn xuất (xem D7).
+> Giai đoạn 1 đã bỏ trường `buildCostDiscount` khỏi data + type (không còn dùng — thay bằng `civicOpenCost` trừ giá trị góp ở D4).
 
 ## D3. Lệnh `donate_to_bundle`
 `{ bundleId, slotId, productId?, quantity?, amount? }`
@@ -39,7 +39,8 @@ Ví dụ trang trạm y tế: dầu gió/bông băng ×10, sữa hộp ×20, ch�
 - Server-authoritative, tất định; replay cho cùng kết quả.
 
 ## D4. Hoàn thành
-Khi mọi ô đủ trong cùng lệnh: đánh dấu `completedDay`, mở `buildingTypeId` cho `open_building` với phí × (1 − `buildCostDiscount`), đẩy thông báo khánh thành + mốc vào nhật ký thành phố (`city-journal.ts`).
+Khi mọi ô đủ trong cùng lệnh: đánh dấu `completedDay`, mở `buildingTypeId` cho `open_building` — **tòa đầu trả `max(0, giá xây − giá trị đã góp THẬT)`** (`civicOpenCost` + `bundleDonatedValue`), **tòa thứ 2+ trả giá gốc**, không âm. Mỗi contribution lưu `value` (tiền = số tiền, hàng = giá vốn FIFO); bản ghi cũ thiếu `value` → ô tiền lấy `qty`, ô hàng ước giá nhập rẻ nhất. **Không** chặn mở civic khi chưa xong sổ (giữ luật cũ). Đẩy thông báo khánh thành + mốc vào nhật ký thành phố (`city-journal.ts`) — **Giai đoạn 5 chưa làm** (`notifyBuildingOpenedViaBundle` vẫn stub rỗng).
+`land-policy.ts` (phiếu mở tòa co-op) dùng chung `civicOpenCost` với giá CÒN PHẢI TRẢ (bối cảnh `bundleStates` + đếm tòa cùng loại; server bootstrap truyền từ save) — ban đầu vẫn báo giá gốc (fix xong ở Gđ 2: đã kiểm chứng).
 Công trình loại `civic` từ change 1 đổi điều kiện mở: từ `minCityLevel` sang "sổ tương ứng đã hoàn thành". Change 1 vẫn dùng `minCityLevel` cho tới khi change này vào.
 
 ## D5. Save
@@ -59,9 +60,14 @@ Tùy chọn ⇒ save cũ hợp lệ; số schema theo thứ tự merge. Trang "�
 Tab "Sổ góp xóm": lưới thẻ trang (khóa / đang góp / xong). Mở trang → các ô với icon hàng, thanh tiến độ, "đang có trong kho: N". Chạm ô → bảng chọn loại + số lượng (nút +/−, "góp tối đa"). Hiển thị ai đã góp. Vùng chạm ≥ 44px, QA 7 viewport.
 
 ## D7. Cân bằng
-- Giá trị hàng + tiền mỗi trang ≈ 1–2 ngày lãi trung bình ở cấp hiện trang (đo bằng `economy-qa-sweep.ts`).
-- `simulateGoalProgression` 60–90 ngày: cấp 10 không chậm hơn quá 20% so với trước.
-- Sweep kiểm tra không trang nào cần hàng chỉ có ở một mùa mà không có thay thế.
+- **Đã chốt (16/10/2026): tổng góp DỰ KIẾN của mỗi trang ≈ 80% giá xây** (validate chặn [75%,85%] và tổng ≤ giá xây). Ô quỹ dẫn xuất: `civicBundleCashAmount = max(0, round50k(0,8 × giá xây − giá trị hàng dự kiến))`; hàng dự kiến = Σ quantity × giá nhập món rẻ nhất trong `acceptedProductIds`. Giá xây lấy từ `CIVIC_DEFS` (không sửa).
+- **Bảng 4 trang (16/10/2026, chạy thật):**
+  - bundle_park: giá xây 2.500.000 / hàng 268.000 / quỹ 1.750.000 / tổng 2.018.000 = 80,7%
+  - bundle_clinic: 4.000.000 / 170.000 / 3.050.000 / 3.220.000 = 80,5%
+  - bundle_ward_police: 1.800.000 / 217.500 / 1.200.000 / 1.417.500 = 78,8%
+  - bundle_primary_school: 3.000.000 / 260.000 / 2.150.000 / 2.410.000 = 80,3%
+- `simulateGoalProgression` 60–90 ngày: cấp 10 không chậm hơn quá 20% so với trước — **chưa chạy** (Gđ 7).
+- Sweep kiểm tra không trang nào cần hàng chỉ có ở một mùa mà không có thay thế — **chưa chạy**.
 
 ## D8. Co-op (bổ sung 16/10/2026)
 - **Quyền góp hàng**: mọi thành viên được góp hàng (kho chung, giá trị nhỏ) — không cần phiếu.

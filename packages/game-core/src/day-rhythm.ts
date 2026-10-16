@@ -132,6 +132,8 @@ export interface MorningBrief {
   civicPopulation?: { districtId: string; pop: number; target: number; factor: number };
   /** Chi phí xóm (OpenSpec `civic-local-fees`): đã trừ đầu ngày hôm nay và dự kiến/ngày theo công trình + lô sở hữu. */
   civicCosts?: { upkeep: number; fee: number; projected: { upkeep: number; fee: number } };
+  /** Công trình công cộng khánh thành hôm qua (từ sổ góp). */
+  civicOpenings?: string[];
 }
 
 export function buildMorningBrief(params: {
@@ -147,6 +149,7 @@ export function buildMorningBrief(params: {
   districtQol?: Record<string, number>;
   civicPopulation?: { districtId: string; pop: number; target: number; factor: number };
   civicCosts?: { upkeep: number; fee: number; projected: { upkeep: number; fee: number } };
+  civicOpenings?: string[];
 }): MorningBrief {
   const arrivingItemsCount = params.arrivingOrders.reduce((sum, o) => sum + o.quantity, 0);
   const tips: string[] = [];
@@ -203,5 +206,6 @@ export function buildMorningBrief(params: {
     ...(params.districtQol !== undefined ? { districtQol: params.districtQol } : {}),
     ...(params.civicPopulation !== undefined ? { civicPopulation: params.civicPopulation } : {}),
     ...(params.civicCosts !== undefined ? { civicCosts: params.civicCosts } : {}),
+    ...(params.civicOpenings && params.civicOpenings.length ? { civicOpenings: params.civicOpenings } : {}),
   };
 }

@@ -87,6 +87,7 @@ import { runBuildingPlacementTests } from './building-placement.test';
 import { runConstructionStaffTests } from './construction-staff.test';
 import { runSidewalkPassableTests } from './sidewalk-passable.test';
 import { runNeighborhoodWalkTests } from './neighborhood-walk.test';
+import { runCivicResidentsLifeTests } from './civic-residents-life.test';
 import { runReclamationMapTests } from './reclamation-map.test';
 import { runNewParcelPlacementTests } from './new-parcel-placement.test';
 import { runLandLeaseCoreTests } from './land-lease-core.test';
@@ -104,6 +105,10 @@ import { runPrestigeTests } from './prestige.test';
 import { runCivicQolTestsEntry } from './civic-qol.test';
 import { runCivicPopulationTestsEntry } from './civic-population.test';
 import { runCivicFeeTestsEntry } from './civic-fees.test';
+import { runCivicBundleTests } from './civic-bundles.test';
+import { runCivicRevealGoalsTests } from './civic-reveal-goals.test';
+import { runCivicBundleViewTests } from './civic-bundle-view.test';
+import { runCivicCoopTests } from './civic-coop.test';
 import { runAnalyticsTests } from './analytics.test';
 import { runWaveATests } from './wave-a.test';
 import { runSpecialRequestSimTests } from './special-request-sim.test';
@@ -250,6 +255,10 @@ export async function runTests(): Promise<void> {
   runCivicQolTestsEntry();
   runCivicPopulationTestsEntry();
   runCivicFeeTestsEntry();
+  runCivicBundleTests();
+runCivicRevealGoalsTests();
+runCivicBundleViewTests();
+runCivicResidentsLifeTests();
   runAnalyticsTests();
   runWaveATests();
   runSpecialRequestSimTests();
@@ -292,6 +301,7 @@ export async function runTests(): Promise<void> {
   runAvatarTests();
   await runCommandTests();
   await runWorldRuntimeTests();
+  await runCivicCoopTests();
   console.log('\n--- Test multiplayer checkout reservation/idempotency ---');
   const checkoutSave = structuredClone(DEFAULT_INITIAL_SAVE);
   checkoutSave.customer = {
@@ -500,5 +510,9 @@ export async function runTests(): Promise<void> {
 
 // Execute if run directly
 if (typeof process !== 'undefined' && process.argv && process.argv[1]?.includes('test-runner')) {
-  runTests();
+  // Phải bắt lỗi: runTests() là async, assert hỏng ở đoạn đồng bộ sẽ thành unhandledRejection và bị báo nhầm vào test node:test đang chạy.
+  runTests().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }

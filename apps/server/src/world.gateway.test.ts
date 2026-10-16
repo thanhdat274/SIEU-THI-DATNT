@@ -79,6 +79,10 @@ async function run() {
   seeded.world.name = 'Gateway integration';
   seeded.world.memberships.push({ accountId: memberId, role: 'member', joinedAt: new Date().toISOString(), lastSeenRevision: 0 });
   seeded.world.avatars.push({ accountId: memberId, position: { x: 400, y: 400 }, direction: 'down', updatedAt: new Date().toISOString() });
+  // Sổ góp xóm: cấp thành phố 4 (hiện trang công viên) và quỹ vừa đủ để khoản góp lớn phải qua phiếu (> 30% quỹ).
+  seeded.business.save.cityProgress = { level: 5, claimedCityGoalIds: [], milestones: [], metrics: {} };
+  seeded.business.save.player.money = 3_000_000;
+  seeded.business.save.inventory = [{ productId: 'xa_phong', quantity: 10 }] as any;
   const database = await connectDatabase();
   await database.collection<any>('game_worlds').insertOne({ _id: seeded.world.id, world: seeded.world, businesses: [seeded.business], invites: [] });
   const app = await createServer();
@@ -95,7 +99,7 @@ async function run() {
     const ownerJoin = getJoined(ownerSocket);
     assert.equal(ownerJoin.data.world.id, seeded.world.id);
 
-    const memberSocket = await connect(url, memberId);
+    let memberSocket = await connect(url, memberId);
     sockets.push(memberSocket);
     assert.equal(WorldGateway.getActiveSessionCount(seeded.world.id), 2);
     heartbeatTimer = setInterval(() => {
@@ -199,6 +203,115 @@ async function run() {
       const dupResult = await dup;
       assert.equal(dupResult.data.ok, true);
       assert.equal(WorldGateway.getLiveRuntime(seeded.world.id)!.getRevision(), expected + 1, 'lệnh trùng không tăng revision');
+    }
+
+    // Phiếu góp tiền vào Quỹ xây dựng của sổ xóm qua gateway thật: tạo phiếu, từ chối, duyệt, ô đã đủ khi phiếu chạy.
+    {
+      const { GameController } = await import('./bootstrap.js');
+      const controller = new GameController();
+      const cash = (amount: number) => ({ type: 'donate_to_bundle', bundleId: 'bundle_park', slotId: 'slot_park_cash', amount });
+      const live = () => WorldGateway.getLiveRuntime(seeded.world.id)!.getSnapshot('').businesses[0].save as any;
+      const slotCash = () => live().civic?.bundles?.bundle_park?.slots?.slot_park_cash ?? 0;
+      const sendWs = async (socket: WebSocket, who: string, id: string, payload: unknown) => {
+        const current = await controller.getWorld({ gameAccount: { uid: who } } as any, seeded.world.id);
+        const result = nextEvent(socket, message => message.event === 'command:result' && message.data.requestId === id);
+        socket.send(JSON.stringify({ event: 'command', data: { requestId: id, body: {
+          expectedRevision: current.world.revision,
+          receipt: { commandId: id, actorId: who, status: 'accepted', revision: current.world.revision + 1, payloadJson: JSON.stringify(payload), createdAt: new Date().toISOString() },
+          updatedBusiness: { ...current.businesses[0], save: { id: current.businesses[0].save.id } },
+        } } }));
+        return result;
+      };
+      const voteUpdate = (socket: WebSocket, status: string) => nextEvent(socket, message => message.event === 'land-vote:update' && message.data.status === status);
+      const respond = (agree: boolean) => ownerSocket.send(JSON.stringify({ event: 'land-vote:respond', data: { agree } }));
+      const money0 = live().player.money;
+      assert.equal(slotCash(), 0);
+
+      // (1) Tạo phiếu: khoản góp lớn của thành viên không chạy ngay, hẻm nhận phiếu có mô tả.
+      const pendingSeen = voteUpdate(ownerSocket, 'pending');
+      // Xin góp 5.000.000₫ nhưng ô chỉ còn thiếu 1.750.000₫ → mô tả/giá phiếu là phần ô thực sự nhận.
+      const created = await sendWs(memberSocket, memberId, 'civic-vote-refuse', cash(5_000_000));
+      assert.equal(created.data.ok, true, JSON.stringify(created.data));
+      assert.equal(created.data.result.pendingVote, true, 'khoản góp lớn thành phiếu');
+      const pendingMsg = await pendingSeen;
+      assert.match(String(pendingMsg.data.vote?.description), /^Góp 1[.,\u00a0\s]?750[.,\u00a0\s]?000₫ vào Quỹ xây dựng — \S.*/, `mô tả phiếu theo phần ô nhận: ${pendingMsg.data.vote?.description}`);
+      assert.equal(slotCash(), 0, 'chưa duyệt thì chưa trừ tiền');
+
+      // (2) Từ chối: không góp, không trừ tiền.
+      const rejectedSeen = voteUpdate(memberSocket, 'rejected');
+      respond(false);
+      await rejectedSeen;
+      assert.equal(slotCash(), 0, 'phiếu bị từ chối: ô không tăng');
+      assert.equal(live().player.money, money0, 'phiếu bị từ chối: không mất tiền');
+
+      // (3) Duyệt: lệnh chạy với người góp là người tạo phiếu (lấy từ phiên), tiền bị trừ đúng số.
+      const pending2 = voteUpdate(ownerSocket, 'pending');
+      await sendWs(memberSocket, memberId, 'civic-vote-approve', cash(1_200_000));
+      await pending2;
+      const executedSeen = voteUpdate(memberSocket, 'executed');
+      respond(true);
+      await executedSeen;
+      assert.equal(slotCash(), 1_200_000, 'phiếu được duyệt: ô tăng đúng số tiền');
+      assert.equal(live().player.money, money0 - 1_200_000, 'phiếu được duyệt: trừ đúng số tiền');
+      const contributions = live().civic.bundles.bundle_park.contributions as { playerId: string }[];
+      assert.equal(contributions[contributions.length - 1].playerId, memberId, 'đóng góp ghi cho người tạo phiếu');
+
+      // (4) Ô đã đủ khi phiếu chạy: phiếu chờ, người kia góp đủ phần còn thiếu, duyệt xong phiếu thất bại kèm thông báo.
+      const short = 1_750_000 - slotCash();
+      const pending3 = voteUpdate(ownerSocket, 'pending');
+      const created3 = await sendWs(memberSocket, memberId, 'civic-vote-full', cash(short));
+      assert.equal(created3.data.result.pendingVote, true, `phần còn thiếu ${short}đ vẫn > 30% quỹ → phiếu`);
+      await pending3;
+      const filled = await sendWs(ownerSocket, owner.id, 'civic-owner-fill-1', cash(500_000));
+      assert.equal(filled.data.ok, true, JSON.stringify(filled.data));
+      const filled2 = await sendWs(ownerSocket, owner.id, 'civic-owner-fill-2', cash(short - 500_000));
+      assert.equal(filled2.data.ok, true, JSON.stringify(filled2.data));
+      assert.equal(slotCash(), 1_750_000, 'người kia đã góp đủ ô');
+      const moneyBeforeFail = live().player.money;
+      const failedSeen = voteUpdate(memberSocket, 'failed');
+      respond(true);
+      const failed = await failedSeen;
+      assert.match(String(failed.data.message), /đủ/, 'phiếu thất bại kèm thông báo "Ô này vừa được góp đủ."');
+      assert.equal(slotCash(), 1_750_000, 'ô không bị góp quá');
+      assert.equal(live().player.money, moneyBeforeFail, 'phiếu thất bại không trừ tiền');
+      await WorldGateway.flushCheckpoints(seeded.world.id);
+
+      // (5) Bundle phòng khám (cấp 5), quỹ còn ~1,25tr: ngưỡng phiếu = 30% quỹ ≈ 375k.
+      //     DB thật: Mongo + runtime sống của gateway; state chỉ đổi qua lệnh/updateWorldSettings, không ghi thẳng DB.
+      const clinicCash = () => live().civic?.bundles?.bundle_clinic?.slots?.slot_clinic_cash ?? 0;
+      const clinicCashCmd = (amount: number) => ({ type: 'donate_to_bundle', bundleId: 'bundle_clinic', slotId: 'slot_clinic_cash', amount });
+      const ownerReq = { gameAccount: { uid: owner.id } } as any;
+      const m1 = live().player.money;
+      const small = await sendWs(memberSocket, memberId, 'clinic-small', clinicCashCmd(300_000));
+      assert.equal(small.data.ok, true, JSON.stringify(small.data));
+      assert.ok(!small.data.result?.pendingVote, 'góp ≤ ngưỡng: commit thẳng, không phiếu');
+      assert.equal(clinicCash(), 300_000);
+      assert.equal(live().player.money, m1 - 300_000);
+
+      // (6) memberLandPermissions = 'none': chặn góp TIỀN của thành viên ở server; góp hàng và chủ hẻm vẫn được.
+      await controller.updateWorldSettings(ownerReq, seeded.world.id, { memberLandPermissions: 'none' });
+      const denied = await sendWs(memberSocket, memberId, 'clinic-none-member', clinicCashCmd(50_000));
+      assert.equal(denied.data.ok, false, 'thành viên quyền none bị chặn góp tiền');
+      assert.equal(clinicCash(), 300_000, 'bị chặn thì không góp');
+      const goodsOk = await sendWs(memberSocket, memberId, 'clinic-none-goods', { type: 'donate_to_bundle', bundleId: 'bundle_clinic', slotId: 'slot_clinic_hygiene', productId: 'xa_phong', quantity: 3 });
+      assert.equal(goodsOk.data.ok, true, `góp hàng vẫn được dưới quyền none: ${JSON.stringify(goodsOk.data)}`);
+      const ownerOk = await sendWs(ownerSocket, owner.id, 'clinic-none-owner', clinicCashCmd(50_000));
+      assert.equal(ownerOk.data.ok, true, 'chủ hẻm luôn góp được');
+      assert.equal(clinicCash(), 350_000);
+      await controller.updateWorldSettings(ownerReq, seeded.world.id, { memberLandPermissions: 'vote' });
+
+      // (7) Bạn cùng hẻm offline: khoản lớn (> ngưỡng) chạy thẳng theo luật D3. (Trần góp theo ngày: CHƯA có code, xem tổng hợp.md.)
+      memberSocket.close();
+      for (let i = 0; i < 50 && WorldGateway.getActiveSessionCount(seeded.world.id) > 1; i++) await new Promise(resolve => setTimeout(resolve, 50));
+      assert.equal(WorldGateway.getActiveSessionCount(seeded.world.id), 1, 'thành viên đã offline');
+      const offline = await sendWs(ownerSocket, owner.id, 'clinic-offline', clinicCashCmd(600_000));
+      assert.equal(offline.data.ok, true, JSON.stringify(offline.data));
+      assert.ok(!offline.data.result?.pendingVote, 'bạn cùng hẻm offline: chạy thẳng, không phiếu');
+      assert.equal(clinicCash(), 950_000);
+      memberSocket = await connect(url, memberId);
+      sockets.push(memberSocket);
+      getJoined(memberSocket);
+      assert.equal(WorldGateway.getActiveSessionCount(seeded.world.id), 2);
     }
 
     const ownerVoteEvent = nextEvent(ownerSocket, message => message.event === 'time-vote:update');

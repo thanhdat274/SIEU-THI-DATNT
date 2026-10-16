@@ -5,6 +5,7 @@ const COMMAND_LABELS: Readonly<Record<string, string>> = {
   buy_parcel: 'mua hoặc thuê một lô đất',
   buy_plot: 'mua hoặc mở một tòa nhà',
   expand_footprint: 'mở rộng sàn tiệm',
+  donate_bundle_cash: 'góp tiền vào Quỹ xây dựng của sổ góp xóm',
 };
 
 export const landCommandLabel = (command: string): string => Object.prototype.hasOwnProperty.call(COMMAND_LABELS, command) ? COMMAND_LABELS[command] : 'một khoản chi đất lớn';

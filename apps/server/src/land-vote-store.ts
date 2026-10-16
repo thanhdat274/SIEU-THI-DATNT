@@ -1,4 +1,4 @@
-import { agreeLandVote, createLandVote, isLandVoteExpired, refuseLandVote, resolveLandVoteOnPartnerLeave, type LandCommand, type LandVote } from '@game/core';
+import { landVoteDescription, agreeLandVote, createLandVote, isLandVoteExpired, refuseLandVote, resolveLandVoteOnPartnerLeave, type LandCommand, type LandVote } from '@game/core';
 
 /**
  * Phiếu khoản chi đất đang chờ của từng hẻm (OpenSpec `open-world-coop-land` 2.2, D3): mỗi hẻm tối đa MỘT phiếu.
@@ -15,6 +15,8 @@ export interface LandVoteSummary {
   id: string;
   initiatorId: string;
   command: LandCommand;
+  /** Mô tả khoản chi (vd. "Góp X₫ vào Quỹ xây dựng — Công viên"); thiếu thì UI dùng nhãn theo `command`. */
+  description?: string;
   expiresInMs: number;
 }
 
@@ -85,7 +87,8 @@ export class LandVoteStore {
   summary(worldId: string, now = Date.now()): LandVoteSummary | null {
     const pending = this.votes.get(worldId);
     if (!pending) return null;
-    return { id: pending.vote.id, initiatorId: pending.vote.initiatorId, command: pending.vote.targetCommand, expiresInMs: Math.max(0, pending.vote.expiresAt - now) };
+    const description = landVoteDescription(pending.vote.payload);
+    return { id: pending.vote.id, initiatorId: pending.vote.initiatorId, command: pending.vote.targetCommand, ...(description ? { description } : {}), expiresInMs: Math.max(0, pending.vote.expiresAt - now) };
   }
 }
 

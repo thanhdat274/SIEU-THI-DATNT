@@ -190,6 +190,13 @@ export class NeighborhoodActors {
   public getVisibleSpriteCount(): number { return this.sprites.size; }
   public getBubbleCount(): number { return this.activeBubbles; }
 
+  public setCivicPopulation(
+    pop: number | Record<string, { pop: number; target?: number; baseline?: number; factor?: number; qol?: number; capacity?: number }>,
+    isMobile = false,
+  ): void {
+    this.life.setCivicPopulation(pop, isMobile);
+  }
+
   private buildBirds(): void {
     // Chim vòng quanh công viên và sân trường (vẽ khi trời quang).
     const spots = [
@@ -239,16 +246,24 @@ export class NeighborhoodActors {
     const hz = detail === 'far' ? 4 : 8;
     const frame = f.reducedMotion ? 0 : Math.floor(f.time * (walking ? hz : 1.5)) % (walking ? 4 : 2);
     const visualFacing: NpcFacing = sitting ? 'down' : dir;
-    const key = `npc_${walkerLook(n.spriteVariant)}_${visualFacing}_${walking ? 'walk' : 'idle'}_${frame}`;
+    const look = walkerLook(n.spriteVariant);
+    const key = `npc_${look}_${visualFacing}_${walking ? 'walk' : 'idle'}_${frame}`;
     entry.body.texture = this.textures.getTexture(key);
-    entry.body.tint = n.tint;
+    entry.body.tint = look >= 6 ? 0xffffff : n.tint;
     const bob = walking && !f.reducedMotion ? Math.abs(Math.sin(f.time * (n.type === 'jogger' ? 16 : 9) + n.x * 0.05)) * (n.type === 'jogger' ? 2 : 1.2) : 0;
     entry.container.scale.set(n.scale);
     entry.container.position.set(Math.round(n.x), Math.round(n.y - bob + (sitting ? 5 : 0)));
     entry.container.zIndex = n.y + (sitting ? 6 : 0);
     entry.shadow.visible = !sitting;
-    const accKey = `${n.accessory}|${visualFacing}|${n.tint}`;
-    if (entry.accKey !== accKey) { entry.accKey = accKey; drawAccessory(entry.accessory, n.accessory, visualFacing, n.tint); }
+    const accKey = look >= 6 ? 'none' : `${n.accessory}|${visualFacing}|${n.tint}`;
+    if (entry.accKey !== accKey) {
+      entry.accKey = accKey;
+      if (look >= 6) {
+        entry.accessory.clear();
+      } else {
+        drawAccessory(entry.accessory, n.accessory, visualFacing, n.tint);
+      }
+    }
     entry.accessory.y = sitting ? 1 : 0;
     // Ô/áo mưa: dùng chung RainGear với người chơi/khách (chỉ khi đang mưa và hiệu ứng bật)
     const raining = (f.weather?.rainIntensity ?? 0) > 0.02;

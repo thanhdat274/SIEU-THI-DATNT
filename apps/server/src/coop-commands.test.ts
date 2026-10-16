@@ -560,6 +560,72 @@ async function run() {
     // Dời tới lô chưa mua bị từ chối.
     await plotRejected('plot-move-unowned', { type: 'layout_batch', actions: [{ type: 'relocate_building', buildingId: 'snack', placement: { parcelId: 'w2-4', originX: 26 } }] }, 'dời tòa tới lô chưa mua bị từ chối');
 
+    // Sổ góp xóm (civic-city-goals Gđ 6): người góp lấy từ phiên server, bỏ qua `playerId` giả trong payload.
+    {
+      await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: {
+        'businesses.0.save.player.money': 10_000_000,
+        'businesses.0.save.cityProgress': { level: 4, claimedCityGoalIds: [], milestones: [], metrics: {} },
+        'businesses.0.save.inventory': [{ productId: 'nuoc_rua_tay', quantity: 10 }],
+      } });
+      const civicSave = async (who: typeof owner) => (await snapshotFor(who)).businesses[0].save as any;
+      const rev = async () => (await snapshotFor(owner)).world.revision;
+      // Góp hàng do thành viên, payload mang playerId của người khác → đóng góp vẫn ghi cho thành viên.
+      const goods = await send(member, 'civic-goods', { type: 'donate_to_bundle', bundleId: 'bundle_park', slotId: 'slot_park_hygiene_1', productId: 'nuoc_rua_tay', quantity: 5, playerId: owner.gameAccount.uid }, await rev());
+      assert.equal(goods.committed, true, 'thành viên góp hàng được commit');
+      let contributions = (await civicSave(owner)).civic.bundles.bundle_park.contributions as { playerId: string; slotId: string }[];
+      assert.equal(contributions[contributions.length - 1]?.playerId, member.gameAccount.uid, 'người góp lấy từ phiên server, không theo playerId trong payload');
+      // Góp tiền nhỏ (thẳng) do chủ hẻm.
+      const cashRes = await send(owner, 'civic-cash', { type: 'donate_to_bundle', bundleId: 'bundle_park', slotId: 'slot_park_cash', amount: 100_000, playerId: member.gameAccount.uid }, await rev());
+      assert.equal(cashRes.committed, true, 'góp tiền nhỏ chạy thẳng');
+      contributions = (await civicSave(owner)).civic.bundles.bundle_park.contributions;
+      assert.equal(contributions[contributions.length - 1]?.playerId, owner.gameAccount.uid, 'góp tiền: người góp là chủ hẻm (từ phiên)');
+      // Lệnh không hợp lệ bị từ chối bằng câu tiếng Việt, không đổi revision.
+      const before = await rev();
+      await assert.rejects(send(member, 'civic-nostock', { type: 'donate_to_bundle', bundleId: 'bundle_park', slotId: 'slot_park_hygiene_2', productId: 'xa_phong', quantity: 3 }, before), /Kho không đủ hàng còn hạn/);
+      await assert.rejects(send(member, 'civic-badslot', { type: 'donate_to_bundle', bundleId: 'bundle_park', slotId: 'khong_co', quantity: 1, productId: 'nuoc_rua_tay' }, before), /Không tìm thấy ô góp/);
+      assert.equal(await rev(), before, 'lệnh góp bị từ chối không đổi revision');
+      // claim_city_goal: mục tiêu không tồn tại / chưa đạt điều kiện bị từ chối kèm câu tiếng Việt.
+      await assert.rejects(send(member, 'civic-claim-missing', { type: 'claim_city_goal', goalId: 'khong_co' }, before), /Không tìm thấy mục tiêu/);
+      await assert.rejects(send(member, 'civic-claim-notmet', { type: 'claim_city_goal', goalId: 'crg_l4_park' }, before));
+      assert.equal(await rev(), before, 'claim bị từ chối không đổi revision');
+      // Hai người cùng một ô hàng (đã có 5/10): người sau chỉ nhận phần thiếu, ô đủ thì từ chối "vừa được góp đủ".
+      // DB thật (Mongo) + GameController thật, KHÔNG có runtime sống (không gateway) → chỉ kiểm đường commit HTTP tuần tự.
+      const stockOf = async () => ((await civicSave(owner)).inventory as { productId: string; quantity: number }[]).find((i) => i.productId === 'nuoc_rua_tay')?.quantity ?? 0;
+      const stockBefore = await stockOf();
+      const memberFill = await send(member, 'civic-fill-m', { type: 'donate_to_bundle', bundleId: 'bundle_park', slotId: 'slot_park_hygiene_1', productId: 'nuoc_rua_tay', quantity: 4 }, await rev());
+      assert.equal(memberFill.committed, true);
+      const ownerOver = await send(owner, 'civic-fill-o', { type: 'donate_to_bundle', bundleId: 'bundle_park', slotId: 'slot_park_hygiene_1', productId: 'nuoc_rua_tay', quantity: 3 }, await rev());
+      assert.equal(ownerOver.committed, true, 'lệnh sau vẫn commit, chỉ nhận phần thiếu');
+      const afterFill = await civicSave(owner);
+      assert.equal(afterFill.civic.bundles.bundle_park.slots.slot_park_hygiene_1, 10, 'ô đủ 10/10, không vượt');
+      assert.equal(await stockOf(), stockBefore - 5, 'chỉ trừ kho phần thực nhận (4 + 1)');
+      const lastC = afterFill.civic.bundles.bundle_park.contributions as { playerId: string; slotId: string; quantity?: number }[];
+      assert.equal(lastC[lastC.length - 1].playerId, owner.gameAccount.uid, 'người góp sau được ghi từ phiên');
+      const beforeFull = await rev();
+      await assert.rejects(send(member, 'civic-full', { type: 'donate_to_bundle', bundleId: 'bundle_park', slotId: 'slot_park_hygiene_1', productId: 'nuoc_rua_tay', quantity: 1 }, beforeFull), /vừa được góp đủ/);
+      assert.equal(await rev(), beforeFull, 'ô đủ: từ chối, không đổi revision');
+      assert.equal(await stockOf(), stockBefore - 5, 'ô đủ: không trừ thêm kho');
+      // Kho thiếu: từ chối cả lệnh, không trừ phần nào.
+      const stockNow = await stockOf();
+      await assert.rejects(send(member, 'civic-short', { type: 'donate_to_bundle', bundleId: 'bundle_park', slotId: 'slot_park_snack', productId: 'bim_bim_oishi', quantity: 5 }, await rev()), /Kho không đủ hàng còn hạn/);
+      assert.equal(await stockOf(), stockNow, 'kho thiếu: không trừ gì');
+      // Hai lệnh cùng expectedRevision: lệnh thứ hai (đã chậm một nhịp) không được làm mất hoặc nhân đôi lượt góp.
+      const staleRev = await rev();
+      const countC = async () => ((await civicSave(owner)).civic.bundles.bundle_park.contributions as unknown[]).length;
+      const cBefore = await countC();
+      const cashA = await send(owner, 'civic-race-a', { type: 'donate_to_bundle', bundleId: 'bundle_park', slotId: 'slot_park_cash', amount: 60_000 }, staleRev);
+      assert.equal(cashA.committed, true);
+      let raceOutcome = 'accepted';
+      try {
+        const cashB = await send(member, 'civic-race-b', { type: 'donate_to_bundle', bundleId: 'bundle_park', slotId: 'slot_park_cash', amount: 70_000 }, staleRev);
+        assert.equal(cashB.committed, true);
+      } catch (error) { raceOutcome = error instanceof Error ? error.message : String(error); }
+      const cAfter = await countC();
+      // Lệnh server-replay chạy trên trạng thái mới nhất của server (bootstrap ép expectedRevision), nên KHÔNG có `stale`: lệnh sau được nhận nếu còn chỗ.
+      assert.equal(raceOutcome, 'accepted', 'góp là lệnh server-replay: không trả stale, lệnh sau chạy trên trạng thái mới');
+      assert.equal(cAfter - cBefore, 2, 'cả hai lượt góp đều được ghi (không mất, không nhân đôi)');
+    }
+
     console.log('PASS co-op: 10 lệnh server-replay + lệnh vận hành (store_status, planogram, advance_day, stow_all) + layout_batch (mở rộng sàn, dời tòa) qua GameController.commitCommand');
     await closeDatabase();
   } finally {

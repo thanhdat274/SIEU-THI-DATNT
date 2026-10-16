@@ -132,6 +132,12 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
             </ul>
           </div>
 
+          {morningBrief.civicOpenings && morningBrief.civicOpenings.length > 0 && (
+            <div className="pixel-panel" style={{ padding: 12 }} data-morning-civic-openings>
+              {morningBrief.civicOpenings.map((line, i) => <div key={i}>🏛 <strong>{line}</strong></div>)}
+            </div>
+          )}
+
           {morningBrief.civicCosts && (morningBrief.civicCosts.upkeep > 0 || morningBrief.civicCosts.fee > 0) && (
             <div className="pixel-panel" style={{ padding: 12 }} data-morning-civic-costs>
               <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--color-wood-light)' }}>CHI PHÍ XÓM MỖI NGÀY</h4>

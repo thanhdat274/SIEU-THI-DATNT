@@ -424,7 +424,7 @@ export interface SecurityState {
   policeCases: PoliceCase[];
 }
 
-export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit' | 'tax' | 'rent' | 'civic_upkeep' | 'civic_fee';
+export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit' | 'tax' | 'rent' | 'civic_upkeep' | 'civic_fee' | 'civic_donation' | 'city_goal_reward';
 
 export interface LedgerEntry {
   id: string;
@@ -440,6 +440,10 @@ export interface LedgerEntry {
   branchId?: string;
   /** Mã thực thể tòa nhà phát sinh dòng này (D5); ví dụ 'main', 'snack-1', 'xoi_shop', v.v. */
   buildingInstanceId?: string;
+  /** Trang sổ góp xóm (civic_donation). */
+  bundleId?: string;
+  /** Ô trong trang sổ góp xóm (civic_donation). */
+  slotId?: string;
 }
 
 /** Thị trường động: mọi khóa là chuỗi để thêm thời tiết/sự kiện/thẻ bằng dữ liệu, không sửa lõi. */
@@ -1125,9 +1129,11 @@ export interface CityProgressState {
   /** Đã hoàn thành (claim) các mục tiêu này. */
   claimedCityGoalIds: string[];
   /** Nhật ký các mốc đạt được (lên cấp, hoàn thành mục tiêu). */
-  milestones: Array<{ day: number; type: 'level_up' | 'goal_claimed'; goalId?: string; level?: number }>;
+  milestones: Array<{ day: number; type: 'level_up' | 'goal_claimed' | 'bundle_completed' | 'civic_opened'; goalId?: string; level?: number; /** Sổ góp (bundle_completed/civic_opened). */ bundleId?: string; /** civic_opened: điểm chỉ số sống khu tăng lên khi tòa mở. */ qolGain?: number }>;
   /** Số liệu hiện tại cho việc đánh giá tiến độ (được cập nhật bởi simulation). */
   metrics: Partial<Record<CityGoalKind, number>>;
+  /** Các trang sổ góp đã được hiện (do nhận mục tiêu xóm phố, hoặc hồi tố khi tải save ở cấp đã qua). Tùy chọn, không nâng schema. */
+  revealedBundleIds?: string[];
 }
 
 export interface SaveGameData {
@@ -1217,7 +1223,11 @@ export interface SaveGameData {
   /** Tiến độ mục tiêu thành phố (OpenSpec `open-world-districts-city-goals`, schema 10). Thiếu = cấp 1, chưa hoàn thành mục tiêu nào. */
   cityProgress?: CityProgressState;
   /** Dân số xóm theo QoL (OpenSpec `civic-population-demand`, schema 11). Thiếu = chưa mở civic, dân số = baseline (factor = 1.0). */
-  civic?: { populationByDistrict: Record<string, number> };
+  civic?: {
+    populationByDistrict: Record<string, number>;
+    /** Sổ góp xóm (OpenSpec `civic-city-goals`). Tùy chọn, KHÔNG nâng schema — save cũ hợp lệ; thiếu = chưa mở sổ. */
+    bundles?: Record<string, { slots: Record<string, number>; contributions: Array<{ playerId: string; slotId: string; qty: number; day: number; value?: number }>; completedDay?: number }>;
+  };
 }
 
 export interface RegularCustomerProgress {
@@ -1445,7 +1455,10 @@ export type GameCommandPayload =
   // Thuê đất (OpenSpec `open-world-land-lease` 2.1)
   | { type: 'lease_parcel'; parcelId: string }
   | { type: 'end_lease'; parcelId: string }
-  | { type: 'pay_rent_debt'; parcelId: string };
+  | { type: 'pay_rent_debt'; parcelId: string }
+  // Mục tiêu thành phố (OpenSpec `civic-city-goals` 4A)
+  | { type: 'claim_city_goal'; goalId: string }
+  | { type: 'donate_to_bundle'; bundleId: string; slotId: string; productId?: string; quantity?: number; amount?: number };
 
 export interface GameCommand {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
@@ -1605,10 +1618,32 @@ export function isSaveGameData(value: unknown): value is SaveGameData {
     return false;
   }
   if (value.world !== undefined && !isWorldOpenState(value.world)) return false;
-  if (value.civic !== undefined) {
+  // null = Mongo lưu `undefined` thành null (save cũ/ghi trực tiếp): coi như không có, không phải save hỏng.
+  if (value.civic !== undefined && value.civic !== null) {
     const civic = value.civic;
     if (!isRecord(civic) || !isRecord(civic.populationByDistrict)) return false;
     if (!Object.values(civic.populationByDistrict).every(v => Number.isFinite(v))) return false;
+    // bundles tùy chọn (OpenSpec `civic-city-goals`, KHÔNG nâng schema). Validate từng trang để nạp không sập.
+    if (civic.bundles !== undefined && civic.bundles !== null) {
+      if (!isRecord(civic.bundles)) return false;
+      for (const bundle of Object.values(civic.bundles)) {
+        if (!isRecord(bundle)) return false;
+        // slots: Record<string, số hữu hạn ≥ 0> (hàng: đơn vị; cash: đồng).
+        if (!isRecord(bundle.slots)) return false;
+        if (!Object.values(bundle.slots).every(v => typeof v === 'number' && Number.isFinite(v) && (v as number) >= 0)) return false;
+        // contributions: mảng object hợp lệ (playerId/slotId chuỗi, qty/day số). value tùy chọn.
+        if (bundle.contributions !== undefined) {
+          if (!Array.isArray(bundle.contributions)) return false;
+          for (const c of bundle.contributions) {
+            if (!isRecord(c) || typeof c.playerId !== 'string' || typeof c.slotId !== 'string' ||
+              !(typeof c.qty === 'number' && Number.isFinite(c.qty)) || !(typeof c.day === 'number' && Number.isSafeInteger(c.day))) return false;
+            if (c.value !== undefined && !(typeof c.value === 'number' && Number.isFinite(c.value))) return false;
+          }
+        }
+        // completedDay: số nguyên dương hoặc undefined.
+        if (bundle.completedDay !== undefined && !(typeof bundle.completedDay === 'number' && Number.isSafeInteger(bundle.completedDay) && (bundle.completedDay as number) > 0)) return false;
+      }
+    }
   }
   return true;
 }
@@ -1891,6 +1926,11 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'lease_parcel': return nonEmptyString(p.parcelId);
     case 'end_lease': return nonEmptyString(p.parcelId);
     case 'pay_rent_debt': return nonEmptyString(p.parcelId);
+    case 'claim_city_goal': return nonEmptyString(p.goalId);
+    // Đúng một dạng: hàng (productId + quantity, không amount) HOẶC tiền (amount, không productId/quantity).
+    case 'donate_to_bundle': return nonEmptyString(p.bundleId) && nonEmptyString(p.slotId) && (
+      (p.amount === undefined && nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0) ||
+      (p.productId === undefined && p.quantity === undefined && Number.isSafeInteger(p.amount) && Number(p.amount) > 0));
     default: return false;
   }
 }

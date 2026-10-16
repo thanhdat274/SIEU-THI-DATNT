@@ -4,9 +4,13 @@ import { PixelButton, PixelDialog, money } from './pixel';
 
 export interface Props {
   parcelId: string;
+  /** Chọn sẵn loại tòa (vd. "Xây ngay" từ sổ góp đã hoàn thành). */
+  initialTypeId?: string;
   playerMoney: number;
   playerLevel: number;
   existingPlacements?: readonly { buildingId: string; typeId?: string }[];
+  /** Giá thật sau khi trừ phần đã góp ở sổ (App truyền `getOpenBuildingCost`); mặc định giá gốc. */
+  openCostFor?: (buildingTypeId: string, baseCost: number) => number;
   onOpenBuilding: (buildingTypeId: string, parcelId: string, originX: number, originY: number) => void | Promise<void>;
   onClose: () => void;
 }
@@ -49,13 +53,15 @@ function firstValidOrigin(typeId: BuildingTypeId, parcelId: string): { originX: 
 
 export const OpenBuildingModal: React.FC<Props> = ({
   parcelId,
+  initialTypeId,
   playerMoney,
   playerLevel,
   existingPlacements = [],
+  openCostFor,
   onOpenBuilding,
   onClose,
 }) => {
-  const [selectedType, setSelectedType] = useState<BuildingTypeId>('grocery_branch');
+  const [selectedType, setSelectedType] = useState<BuildingTypeId>(initialTypeId && initialTypeId in BUILDING_TYPE_DEFS ? (initialTypeId as BuildingTypeId) : 'grocery_branch');
   const parcel = resolveParcel(parcelId);
 
   if (!parcel) return null;
@@ -65,7 +71,8 @@ export const OpenBuildingModal: React.FC<Props> = ({
   const currentCount = existingPlacements.filter(p => p.typeId === selectedType).length;
   const reachedMax = currentCount >= currentDef.maxInstances;
   const levelLocked = playerLevel < currentDef.unlockLevel;
-  const cost = currentDef.buildCost ?? currentDef.openCost;
+  const baseCost = currentDef.buildCost ?? currentDef.openCost;
+  const cost = openCostFor ? openCostFor(selectedType, baseCost) : baseCost;
   const moneyLocked = playerMoney < cost;
   const origin = firstValidOrigin(selectedType, parcelId);
   const canBuild = !reachedMax && !levelLocked && !moneyLocked && origin !== null;
@@ -116,7 +123,7 @@ export const OpenBuildingModal: React.FC<Props> = ({
           <div>
             <strong>{isCivic(selectedType) ? 'Góp vốn xây:' : 'Phí đầu tư:'}</strong>{' '}
             <span style={{ color: moneyLocked ? 'var(--brick)' : 'var(--teal)', fontWeight: 'bold' }}>
-              {money(cost)} {moneyLocked ? '(Thiếu)' : ''}
+              {money(cost)} {moneyLocked ? '(Thiếu)' : ''}{cost < baseCost ? <span className="muted" style={{ fontWeight: 'normal' }}> (giá gốc {money(baseCost)})</span> : null}
             </span>
           </div>
           <div>

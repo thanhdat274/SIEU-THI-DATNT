@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BUILDING_TYPES, BUILDING_TYPE_DEFS, CIVIC_DEFS, DISTRICTS, RECLAMATION_WAVES, buildingTypeOfInstance, cityTierFrom, parcelLandValueMultiplier, parcelPrice, parcelTrafficMultiplier, districtForWave, type LandParcel } from '@game/data';
 import type { WorldOpenState } from '@game/shared';
 import { PixelButton, PixelDialog, money } from './pixel';
+import { CivicBundlesPanel, type BundlesProps } from './CivicBundlesPanel';
 
 export interface Props {
   world: WorldOpenState;
@@ -31,7 +32,9 @@ export interface Props {
   /** Phí xóm từng lô sở hữu kèm QoL khu của lô (để giải thích con số). */
   civicFeeByParcel?: ReadonlyArray<{ parcelId: string; districtId: string; qol: number; fee: number }>;
   /** Mở bảng góp vốn xây công trình trên một lô. */
-  onBuildOnParcel?: (parcelId: string) => void;
+  onBuildOnParcel?: (parcelId: string, buildingTypeId?: string) => void;
+  /** Sổ góp xóm (OpenSpec `civic-city-goals`): view-model + lệnh góp. Không truyền thì ẩn tab con Sổ góp. */
+  bundles?: Omit<BundlesProps, 'buildableParcelIds' | 'onBuildOnParcel'>;
   onClose: () => void;
 }
 
@@ -41,8 +44,9 @@ const CORNER_LABEL = ['', 'Góc ngã tư'];
 const ROAD_LABEL: Record<string, string> = { main: 'đường chính', south: 'đường nam' };
 
 /** Bảng "Thành phố" (land-reclamation 4.3): cấp thành phố, các đợt khai hoang (khóa/đang thi công/mở) và mua lô. */
-export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels, playerLevel, playerMoney, day, buildingCount, onReclaim, journal, onPlanningWave, onBuyParcel, civicQol, civicPopulation, placements = [], buildableParcelIds = [], civicCosts, civicFeeByParcel, onBuildOnParcel, onClose }) => {
+export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels, playerLevel, playerMoney, day, buildingCount, onReclaim, journal, onPlanningWave, onBuyParcel, civicQol, civicPopulation, placements = [], buildableParcelIds = [], civicCosts, civicFeeByParcel, onBuildOnParcel, bundles, onClose }) => {
   const [tab, setTab] = useState<'land' | 'civic'>('land');
+  const [civicSub, setCivicSub] = useState<'stats' | 'bundles'>('stats');
   const tier = cityTierFrom(world.openedWaves, buildingCount);
   const waves = RECLAMATION_WAVES.filter(wave => wave.id !== 'w0');
   const nextWaveId = waves.find(wave => !world.openedWaves.includes(wave.id) && world.wavesUnderConstruction[wave.id] === undefined)?.id ?? null;
@@ -56,7 +60,12 @@ export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels
       <PixelButton role="tab" aria-selected={tab === 'land'} variant={tab === 'land' ? 'teal' : 'wood'} style={{ minHeight: 44 }} onClick={() => setTab('land')}>Khai hoang</PixelButton>
       <PixelButton role="tab" aria-selected={tab === 'civic'} variant={tab === 'civic' ? 'teal' : 'wood'} style={{ minHeight: 44 }} onClick={() => setTab('civic')} data-city-tab="civic">Xóm phố</PixelButton>
     </div>
-    {tab === 'civic' && <CivicPanel civicQol={civicQol} civicPopulation={civicPopulation} placements={placements} buildableParcelIds={buildableParcelIds} civicCosts={civicCosts} civicFeeByParcel={civicFeeByParcel} onBuildOnParcel={onBuildOnParcel} />}
+    {tab === 'civic' && bundles && <div role="tablist" style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+      <PixelButton role="tab" aria-selected={civicSub === 'stats'} variant={civicSub === 'stats' ? 'teal' : 'wood'} style={{ minHeight: 44, flex: 1 }} onClick={() => setCivicSub('stats')}>Chỉ số</PixelButton>
+      <PixelButton role="tab" aria-selected={civicSub === 'bundles'} variant={civicSub === 'bundles' ? 'teal' : 'wood'} style={{ minHeight: 44, flex: 1 }} onClick={() => setCivicSub('bundles')} data-civic-sub="bundles">Sổ góp{bundles.views.some(v => v.hasDonatable) ? ' •' : ''}</PixelButton>
+    </div>}
+    {tab === 'civic' && bundles && civicSub === 'bundles' && <CivicBundlesPanel {...bundles} buildableParcelIds={buildableParcelIds} onBuildOnParcel={onBuildOnParcel} />}
+    {tab === 'civic' && (!bundles || civicSub === 'stats') && <CivicPanel civicQol={civicQol} civicPopulation={civicPopulation} placements={placements} buildableParcelIds={buildableParcelIds} civicCosts={civicCosts} civicFeeByParcel={civicFeeByParcel} onBuildOnParcel={onBuildOnParcel} />}
     {tab === 'land' && <>
     <p className="muted" style={{ margin: '0 0 8px' }}>Mở đợt để có đất mới, rồi mua lô để đặt tòa. Lô góc ngã tư đắt hơn nhưng đông khách hơn.</p>
     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>

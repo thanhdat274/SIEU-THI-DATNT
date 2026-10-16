@@ -10,6 +10,8 @@ export const SERVER_REPLAYED_COMMAND_TYPES: ReadonlySet<string> = new Set([
   'hire_staff', 'pay_wage_debt', 'set_staff_shift', 'assign_refill_job',
   'buy_plot', 'buy_warehouse_tier', 'buy_storage_rack', 'auto_buy_sync',
   'reclaim_wave', 'buy_parcel', 'open_building', 'lease_parcel', 'end_lease', 'pay_rent_debt',
+  'claim_city_goal',
+  'donate_to_bundle',
   'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',
   'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',
 ]);

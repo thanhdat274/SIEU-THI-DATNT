@@ -199,6 +199,15 @@ import { reclaimWaveAllowed, startReclaimWave, buyParcelAllowed, customerTraffic
 import { computeCivicQol } from './civic-qol';
 import { civicDefOf, civicFeeForOwnedParcel, rectWidth, rectHeight } from '@game/data';
 import { computePopulationSnapshot, stepAllPopulations, populationCapBonus, populationExtraUnitChance, type DistrictPopulation } from './civic-population';
+import { claimCityGoal as claimCityGoalPure } from './city-goals-sim';
+import { CityProgressState, CityGoalKind } from '@game/shared';
+import { cityGoalById, civicBundleById, CIVIC_BUNDLES, type CivicBundleDef } from '@game/data';
+import { buildCivicBundleViews, type BundleCardView } from './civic-bundle-view';
+import { isBundleRevealed } from './civic-reveal-goals';
+import { addCivicMilestoneOnce, civicOpeningBriefLines } from './city-journal';
+import { countBuildingsOfType, donateToBundle, itemLots, takeDonationLots, civicOpenCost, isBundleCompleted, evaluateCivicGoalCondition, type CivicBundleState, type CivicGoalCondition } from './civic-bundles';
+import { civicRevealGoalById, revealedBundleIdsForLoadedLevel } from './civic-reveal-goals';
+import { computeCityProgressMetrics } from './city-progress-metrics';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
@@ -304,6 +313,10 @@ export class GameSimulation {
   private worldOpenState: WorldOpenState;
   /** Dân số xóm theo QoL (OpenSpec `civic-population-demand`): districtId → pop. Lưu/export qua save. */
   private _civicPopulationByDistrict: Record<string, number>;
+  /** Tiến độ mục tiêu thành phố (OpenSpec `civic-city-goals` 4A). */
+  private _cityProgress: CityProgressState;
+  /** Trạng thái sổ góp xóm (OpenSpec `civic-city-goals`): bundleId → trạng thái ô/đóng góp. Trang chưa mở = không có entry. */
+  private _bundleStates: Record<string, CivicBundleState | undefined>;
   private inventory: InventoryItem[];
   private holdingArea: HoldingItem[];
   private planogram: Record<string, string> = dict();
@@ -490,6 +503,10 @@ export class GameSimulation {
     this.parcelTenure = initialSave.storeLayout.parcelTenure ? { ...initialSave.storeLayout.parcelTenure } : this.buildTenureFromOwned();
     this.worldOpenState = initialSave.world ? structuredClone(initialSave.world) : defaultWorldOpenState();
     this._civicPopulationByDistrict = initialSave.civic?.populationByDistrict ? { ...initialSave.civic.populationByDistrict } : {};
+    this._bundleStates = initialSave.civic?.bundles ? structuredClone(initialSave.civic.bundles) : {};
+    this._cityProgress = initialSave.cityProgress ? { ...initialSave.cityProgress } : { level: 1, claimedCityGoalIds: [], milestones: [], metrics: {} };
+    // 1.3 không hồi tố: trang sổ của các cấp đã qua hiện ngay khi tải (không làm mất cấp).
+    this._cityProgress.revealedBundleIds = [...new Set([...(this._cityProgress.revealedBundleIds ?? []), ...revealedBundleIdsForLoadedLevel(this._cityProgress.level)])];
     this.inventory = initialSave.inventory.map((i) => ({ ...i }));
     this.holdingArea = (initialSave.holdingArea ?? []).map((h) => ({ ...h }));
     this.planogram = dict(initialSave.planogram);
@@ -624,6 +641,8 @@ export class GameSimulation {
       // Chi phí xóm (OpenSpec `civic-local-fees`): sau tiền thuê lô (thứ tự thuê lô → duy trì → phí xóm), nhưng SAU khi mở
       // bản ghi ngày mới để `civicUpkeep`/`civicFee` nằm trong bản ghi của đúng ngày bị trừ (ledger `day` khớp bản ghi, bản tin sáng đọc được).
       this.collectDailyCivicCosts(day);
+      // Cập nhật metrics cho mục tiêu thành phố (sau khi đóng bản ghi hôm trước, trước khi sang ngày mới)
+      this.updateCityProgressMetrics();
       this.resolvePoliceCases(day);
       this.updateCustomerCreditStatuses(day);
       this.runNightBurglary(day, yesterdayRevenue);
@@ -909,8 +928,8 @@ export class GameSimulation {
     const typeDef = BUILDING_TYPE_DEFS[buildingTypeId as keyof typeof BUILDING_TYPE_DEFS];
     if (!typeDef) return { success: false, reason: 'unknown_type' };
     // Kiểm trần instance
-    const existing = (this.buildingPlacements ?? []).filter(p => p.buildingId.startsWith(`${buildingTypeId}-`));
-    if (existing.length >= typeDef.maxInstances) return { success: false, reason: 'max_instances' };
+    const existingCount = countBuildingsOfType(this.buildingPlacements, buildingTypeId);
+    if (existingCount >= typeDef.maxInstances) return { success: false, reason: 'max_instances' };
     // Kiểm loại cũ (maxInstances=1) không cho mở thêm
     if (typeDef.maxInstances === 1) return { success: false, reason: 'single_instance' };
     // Kiểm lô đã sở hữu (wave !== 0)
@@ -920,11 +939,12 @@ export class GameSimulation {
     const hasAccess = parcel.wave === 0 || this.ownedParcelIds.includes(parcelId) || (tenure && (tenure.kind === 'owned' || tenure.kind === 'leased'));
     if (!hasAccess) return { success: false, reason: 'parcel_not_owned' };
     // Kiểm tiền + cấp (civic: dùng buildCost nếu có, ngược lại openCost)
-    const buildCost = typeDef.buildCost ?? typeDef.openCost;
+    // Trang sổ góp của loại civic đã xong → tòa đầu tiên được giảm giá (OpenSpec `civic-city-goals` D5).
+    const buildCost = civicOpenCost(buildingTypeId, typeDef.buildCost ?? typeDef.openCost, this._bundleStates, existingCount);
     if (this.playerData.money < buildCost) return { success: false, reason: 'money' };
     if (this.playerData.level < typeDef.unlockLevel) return { success: false, reason: 'level' };
     // Tạo instance ID
-    const nextN = existing.length + 1;
+    const nextN = existingCount + 1;
     const instanceId = `${buildingTypeId}-${nextN}`;
     // Vị trí phải hợp lệ (đúng hàng mặt tiền, nằm trong lô, không đè tòa khác) trước khi trừ tiền
     const candidate = { buildingId: instanceId, parcelId, originX, originY, typeId: buildingTypeId, builtBy: this.buildActorId };
@@ -938,8 +958,10 @@ export class GameSimulation {
     for (const fixture of placementGeometry(candidate as BuildingPlacement).defaultFixtures) if (!used.has(fixture.id)) next.storeLayout.fixtures.push(structuredClone(fixture));
     syncLayoutSlots(next);
     next.player.money -= buildCost;
+    const qolBefore = this.getCivicQol();
     const applied = this.applyStoreLayout(next);
     if (applied.error) return { success: false, reason: applied.error };
+    this.recordCivicOpened(buildingTypeId, parcel.districtId, qolBefore);
     this.notifyStateChanged();
     return { success: true, instanceId };
   }
@@ -1031,6 +1053,227 @@ export class GameSimulation {
     this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
     this.notifyStateChanged();
     return { success: true, amount: debtAmount };
+  }
+
+  /**
+   * Cập nhật metrics cityProgress từ dữ liệu simulation hiện tại (dẫn xuất, không lưu).
+   * Wrapper mỏng gọi module thuần `computeCityProgressMetrics` (mục 1.5 — tách khỏi simulation).
+   * Đọc các số liệu thô rồi chuyển vào module; toàn bộ cách tính/định nghĩa nằm ở module.
+   */
+  private updateCityProgressMetrics(): void {
+    const openedTypes = new Set<string>();
+    openedTypes.add('grocery_main'); // tiệm chính luôn mở
+    for (const bp of this.buildingPlacements ?? []) {
+      const def = buildingTypeOfInstance(bp.buildingId);
+      if (def) openedTypes.add(def.typeId);
+    }
+    this._cityProgress.metrics = computeCityProgressMetrics({
+      // metrics đo trạng thái của NGÀY VỪA KẾT THÚC (day - 1 khi gọi đầu ngày mới).
+      day: this.clock.getTime().day - 1,
+      dailyRecords: this.dailyRecords,
+      openedTypeIds: [...openedTypes],
+      openedWaves: this.worldOpenState.openedWaves,
+      totalBuildings: this.buildingPlacements?.length ?? 0,
+    });
+  }
+
+  /**
+   * Nhận mục tiêu thành phố: thêm goalId vào claimedCityGoalIds, tính thưởng, có thể lên cấp.
+   * Chỉ chấp nhận khi mọi mục tiêu của cấp hiện tại đã đạt (metrics ≥ target).
+   * Server-authoritative, ai nhận cũng được, chỉ nhận một lần.
+   */
+  public claimCityGoal(goalId: string): { success: boolean; reason?: string; levelUp?: number; reward?: { gold?: number; prestige?: number; xp?: number } } {
+    // Cập nhật metrics trước khi claim
+    this.updateCityProgressMetrics();
+
+    const goal = cityGoalById(goalId);
+    if (!goal) return { success: false, reason: 'goal_not_found' };
+    if (this._cityProgress.claimedCityGoalIds.includes(goalId)) return { success: false, reason: 'already_claimed' };
+    if (goal.cityLevel !== this._cityProgress.level) return { success: false, reason: 'wrong_level' };
+
+    // 1.4: nhận TỪNG mục tiêu khi mục tiêu đó ĐÃ ĐẠT (metrics[goal.kind] >= target). Không yêu cầu đạt
+    // hết mọi mục tiêu của cấp mới được nhận. Luật lên cấp (nhận HẾT mục tiêu của cấp thì lên) do hàm
+    // thuần `claimCityGoalPure` lo — giữ nguyên, không đổi.
+    const current = this._cityProgress.metrics[goal.kind] ?? 0;
+    if (current < goal.targetValue) return { success: false, reason: 'goal_not_met' };
+
+    // Gọi hàm thuần để tính state mới. Hàm thuần đã thêm milestones 'goal_claimed' (level = cấp lúc nhận)
+    // và 'level_up' khi lên cấp — KHÔNG push lại ở đây để nhật ký không trùng (1.2).
+    const result = claimCityGoalPure(this._cityProgress, goalId, this.clock.getTime().day);
+    this._cityProgress = result.state;
+
+    // 1.3: cộng đủ ba loại thưởng (gold/prestige/xp). Tiền (gold) vào QUỸ CHUNG (quyết định chủ dự án
+    // 16/10/2026) — tức `this.playerData.money` (một ví cho cả thế giới). Ghi sổ cái income.
+    const reward = result.reward ?? {};
+    if (reward.gold) {
+      this.playerData.money += reward.gold;
+      this.recordLedger({ day: this.clock.getTime().day, type: 'city_goal_reward', amount: reward.gold, description: `Thưởng mục tiêu thành phố ${goalId} (+${reward.gold.toLocaleString('vi-VN')}₫)` });
+    }
+    if (reward.xp) this.addExperience(reward.xp);
+    if (reward.prestige) this.addPrestigePoints(reward.prestige);
+
+    this.notifyStateChanged();
+    return { success: true, levelUp: result.levelUp, reward };
+  }
+
+  /**
+   * Tra cứu trạng thái tiến độ thành phố (UI, co-op).
+   */
+  public getCityProgress(): CityProgressState {
+    return {
+      level: this._cityProgress.level,
+      claimedCityGoalIds: [...this._cityProgress.claimedCityGoalIds],
+      milestones: structuredClone(this._cityProgress.milestones),
+      metrics: { ...this._cityProgress.metrics },
+      revealedBundleIds: [...(this._cityProgress.revealedBundleIds ?? [])],
+    };
+  }
+
+  /** Giá `open_building` thật cho UI (đã trừ phần góp của sổ nếu là tòa đầu của loại civic) — cùng hàm với lúc trừ tiền. */
+  public getOpenBuildingCost(buildingTypeId: string, baseCost: number): number {
+    const existing = countBuildingsOfType(this.buildingPlacements, buildingTypeId);
+    return civicOpenCost(buildingTypeId, baseCost, this._bundleStates, existing);
+  }
+
+  /** Dữ liệu hiển thị tab Sổ góp (UI): module thuần `civic-bundle-view`. */
+  public getCivicBundleViews(): BundleCardView[] {
+    const existingBuildings: Record<string, number> = {};
+    for (const bp of this.buildingPlacements ?? []) {
+      const typeId = buildingTypeOfInstance(bp.buildingId)?.typeId;
+      if (typeId) existingBuildings[typeId] = (existingBuildings[typeId] ?? 0) + 1;
+    }
+    return buildCivicBundleViews({ bundleStates: this._bundleStates, cityLevel: this._cityProgress.level, revealedBundleIds: this._cityProgress.revealedBundleIds ?? [], inventory: this.inventory, playerMoney: this.playerData.money, day: this.clock.getTime().day, existingBuildings });
+  }
+
+  /** Trang sổ góp đã được hiện (cho UI/co-op). */
+  public getRevealedBundleIds(): string[] {
+    return [...(this._cityProgress.revealedBundleIds ?? [])];
+  }
+
+  /**
+   * Nhận mục tiêu XÓM PHỐ (Giai đoạn 3, tasks 1.1–1.3): khi điều kiện đạt, sổ góp của công trình
+   * tương ứng được HIỆN (không tự mở công trình). Mục tiêu xóm phố là khuyến khích riêng — KHÔNG nằm
+   * trong CITY_GOALS_CATALOG nên không ảnh hưởng luật lên cấp thành phố.
+   */
+  public claimCivicRevealGoal(goalId: string): { success: boolean; reason?: string; revealBundleId?: string } {
+    const goal = civicRevealGoalById(goalId);
+    if (!goal) return { success: false, reason: 'goal_not_found' };
+    if ((this._cityProgress.revealedBundleIds ?? []).includes(goal.revealBundleId)) {
+      return { success: false, reason: 'already_revealed' };
+    }
+    const met = this.evaluateRevealCondition(goal.condition);
+    if (!met) return { success: false, reason: 'goal_not_met' };
+    this._cityProgress.revealedBundleIds = [...(this._cityProgress.revealedBundleIds ?? []), goal.revealBundleId];
+    this._cityProgress.milestones = [
+      ...(this._cityProgress.milestones ?? []),
+      { day: this.clock.getTime().day, type: 'goal_claimed', goalId, level: this._cityProgress.level },
+    ];
+    this.notifyStateChanged();
+    return { success: true, revealBundleId: goal.revealBundleId };
+  }
+
+  /** Đánh giá điều kiện mục tiêu xóm phố từ state simulation hiện tại (thuần, qua module). */
+  private evaluateRevealCondition(condition: CivicGoalCondition): boolean {
+    const civicCounts: Record<string, number> = {};
+    for (const bp of this.buildingPlacements ?? []) {
+      const def = buildingTypeOfInstance(bp.buildingId);
+      if (def && def.typeId) civicCounts[def.typeId] = (civicCounts[def.typeId] ?? 0) + 1;
+    }
+    return evaluateCivicGoalCondition(condition, {
+      civicBuildings: civicCounts,
+      districtQol: this.getCivicQol(),
+      totalPopulation: Object.values(this._civicPopulationByDistrict ?? {}).reduce((a, b) => a + b, 0),
+    });
+  }
+
+  /**
+   * Góp hàng/tiền vào sổ góp xóm (OpenSpec `civic-city-goals`, D3/D4).
+   * Wrapper simulation gọi pure fn donateToBundle, trừ kho, trừ tiền, ghi ledger.
+   */
+  public donateToBundle(
+    bundleId: string,
+    slotId: string,
+    productId: string | undefined,
+    quantity: number | undefined,
+    amount: number | undefined
+  ): { success: boolean; reason?: string; completedBundleId?: string } {
+    const bundleDef = civicBundleById(bundleId);
+    if (!bundleDef) return { success: false, reason: 'bundle_not_found' };
+
+    // Get bundle state from save
+    const bundleState = this._bundleStates[bundleId];
+
+    // Call pure function
+    const result = donateToBundle(
+      bundleDef,
+      bundleState,
+      slotId,
+      productId,
+      quantity,
+      amount,
+      // Sổ được hiện bởi mục tiêu xóm phố (revealedBundleIds) cũng góp được dù cấp thành phố chưa tới.
+      isBundleRevealed(bundleId, this._cityProgress.level, this._cityProgress.revealedBundleIds) ? Math.max(this._cityProgress.level, bundleDef.revealedByCityLevel) : this._cityProgress.level,
+      this.inventory,
+      this.playerData.money,
+      this.buildActorId ?? 'local',
+      this.clock.getTime().day
+    );
+
+    if (!result.success || !result.actualQuantity) {
+      return { success: false, reason: result.reason };
+    }
+
+    const day = this.clock.getTime().day;
+    if (result.productId) {
+      // Trừ kho thật bằng cùng hàm mà hàm thuần đã lấy thử → đúng lô, đúng giá vốn; đồng bộ `quantity`.
+      const invItem = this.inventory.find((i) => i.productId === result.productId)!;
+      invItem.lots = itemLots(invItem, day);
+      takeDonationLots(invItem.lots, result.actualQuantity, day, PRODUCT_MAP[result.productId]?.caseSize);
+      invItem.quantity = sumLots(invItem.lots);
+      this.inventory = this.inventory.filter((item) => item.quantity > 0);
+    } else {
+      this.playerData.money -= result.actualQuantity;
+    }
+    if (result.ledgerEntry) this.recordLedger(result.ledgerEntry);
+
+    // 1.8: hàng góp tính như giá vốn — ghi vào `cogs` của bản ghi ngày đúng MỘT lần (không vào revenue;
+    // netProfit trừ đúng một lần qua grossProfit). Tiền góp là chuyển vào quỹ chung, không phải giá vốn.
+    if (result.productId && result.ledgerEntry?.cogs) {
+      this.currentDayRecord.cogs += result.ledgerEntry.cogs;
+      this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
+      this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
+    }
+
+    // Update bundle state
+    if (result.newState) {
+      this._bundleStates[bundleId] = result.newState;
+    }
+
+    // Nếu bundle hoàn thành → mở công trình civic + giảm giá
+    if (result.newState?.completedDay && bundleDef.buildingTypeId) {
+      this.notifyBuildingOpenedViaBundle(bundleDef.buildingTypeId, bundleDef, result.newState.completedDay);
+    }
+
+    this.notifyStateChanged();
+    return { success: true, ...(result.newState?.completedDay && !bundleState?.completedDay ? { completedBundleId: bundleId } : {}) };
+  }
+
+  /** Báo mở công trình civic qua hoàn thành bundle. Giá giảm áp trong `openBuilding` qua `civicOpenCost`. */
+  private notifyBuildingOpenedViaBundle(buildingTypeId: string, bundleDef: CivicBundleDef, completedDay: number): void {
+    // Mốc nhật ký (lưu trong save, không ghi trùng) + toast. Popup do UI dựng từ `completedBundleId`.
+    this._cityProgress.milestones = addCivicMilestoneOnce(this._cityProgress.milestones ?? [], { day: completedDay, type: 'bundle_completed', bundleId: bundleDef.id });
+    const name = BUILDING_TYPE_DEFS[buildingTypeId as keyof typeof BUILDING_TYPE_DEFS]?.name ?? buildingTypeId;
+    // Hẻm chung: client phát thông báo cho CẢ HAI người từ mốc trong save (xem App), nên không toast riêng người vừa góp.
+    if (!this.isCoopMode()) this.callbacks.onToast?.(`Xóm đã góp đủ sổ ${name}! Có thể xây ngay.`, 'success');
+  }
+
+  /** Mốc "Khánh thành" khi tòa civic đầu tiên của sổ đã xong được xây (qolGain = chỉ số sống khu tăng thêm). */
+  private recordCivicOpened(buildingTypeId: string, districtId: string | undefined, qolBefore: Record<string, number>): void {
+    const bundle = CIVIC_BUNDLES.find(b => b.buildingTypeId === buildingTypeId);
+    if (!bundle || !isBundleCompleted(bundle, this._bundleStates[bundle.id])) return;
+    const after = this.getCivicQol();
+    const gain = districtId ? (after[districtId] ?? 0) - (qolBefore[districtId] ?? 0) : 0;
+    this._cityProgress.milestones = addCivicMilestoneOnce(this._cityProgress.milestones ?? [], { day: this.clock.getTime().day, type: 'civic_opened', bundleId: bundle.id, qolGain: Math.max(0, gain) });
   }
 
   /**
@@ -4310,6 +4553,7 @@ export class GameSimulation {
       lowStockItems,
       yesterdayReviews: this.reviewsManager.getReviewsOnDay(day - 1),
       districtQol: civicQol,
+      civicOpenings: civicOpeningBriefLines(this._cityProgress.milestones ?? [], day, (bid) => { const t = civicBundleById(bid)?.buildingTypeId ?? bid; return BUILDING_TYPE_DEFS[t as keyof typeof BUILDING_TYPE_DEFS]?.name ?? t; }),
       civicPopulation: this.currentDayRecord?.civicPopulation,
       civicCosts: this.currentDayRecord
         ? { upkeep: this.currentDayRecord.civicUpkeep ?? 0, fee: this.currentDayRecord.civicFee ?? 0, projected: this.getCivicDailyPreview() }
@@ -6378,6 +6622,22 @@ export class GameSimulation {
     this.notifyStateChanged();
   }
 
+  /**
+   * Cộng điểm prestige (thưởng mục tiêu thành phố — PROVISIONAL 16/10/2026, chưa có dấu hiệu tích lũy
+   * riêng). Đưa vào ngưỡng sao prestige hiện có (`prestigeXp`) với cùng lối quy đổi `PRESTIGE_XP_PER_STAR`.
+   */
+  public addPrestigePoints(points: number): void {
+    if (!Number.isFinite(points) || points <= 0) return;
+    const stars = this.playerData.prestigeStars ?? 0;
+    if (stars >= PRESTIGE_MAX_STARS) return;
+    const total = (this.playerData.prestigeXp ?? 0) + points;
+    const gained = Math.min(PRESTIGE_MAX_STARS - stars, Math.floor(total / PRESTIGE_XP_PER_STAR));
+    this.playerData.prestigeStars = stars + gained;
+    this.playerData.prestigeXp = this.playerData.prestigeStars >= PRESTIGE_MAX_STARS ? 0 : total - gained * PRESTIGE_XP_PER_STAR;
+    if (gained > 0) this.callbacks.onToast?.(`Đạt ${this.playerData.prestigeStars}/${PRESTIGE_MAX_STARS} sao uy tín (prestige).`, 'success');
+    this.notifyStateChanged();
+  }
+
   private notifyStateChanged(): void {
     if (this.callbacks.onStateChanged) {
       this.callbacks.onStateChanged();
@@ -6466,7 +6726,13 @@ export class GameSimulation {
       skills: structuredClone(this.skills),
       statistics: { ...this.statistics },
       world: structuredClone(this.worldOpenState),
-      civic: Object.keys(this._civicPopulationByDistrict).length ? { populationByDistrict: { ...this._civicPopulationByDistrict } } : undefined,
+      civic: (() => {
+        const bundles = Object.fromEntries(Object.entries(this._bundleStates ?? {}).filter((x) => x[1] != null)) as Record<string, CivicBundleState>;
+        const hasBundles = Object.keys(bundles).length > 0;
+        if (!Object.keys(this._civicPopulationByDistrict).length && !hasBundles) return undefined;
+        return { populationByDistrict: { ...this._civicPopulationByDistrict }, ...(hasBundles ? { bundles: structuredClone(bundles) } : {}) };
+      })(),
+      cityProgress: { level: this._cityProgress.level, claimedCityGoalIds: [...this._cityProgress.claimedCityGoalIds], milestones: structuredClone(this._cityProgress.milestones), metrics: { ...this._cityProgress.metrics }, revealedBundleIds: [...(this._cityProgress.revealedBundleIds ?? [])] },
     };
   }
 
@@ -6497,6 +6763,10 @@ export class GameSimulation {
     this.parcelTenure = saveData.storeLayout.parcelTenure ? { ...saveData.storeLayout.parcelTenure } : this.buildTenureFromOwned();
     this.worldOpenState = saveData.world ? structuredClone(saveData.world) : defaultWorldOpenState();
     this._civicPopulationByDistrict = saveData.civic?.populationByDistrict ? { ...saveData.civic.populationByDistrict } : {};
+    this._bundleStates = saveData.civic?.bundles ? structuredClone(saveData.civic.bundles) : {};
+    this._cityProgress = saveData.cityProgress ? { ...saveData.cityProgress, metrics: { ...(saveData.cityProgress.metrics ?? {}) } } : { level: 1, claimedCityGoalIds: [], milestones: [], metrics: {} };
+    // 1.3 không hồi tố: trang sổ của cấp đã qua hiện ngay khi tải.
+    this._cityProgress.revealedBundleIds = [...new Set([...(this._cityProgress.revealedBundleIds ?? []), ...revealedBundleIdsForLoadedLevel(this._cityProgress.level)])];
     this.collisionSystem?.setOpenedWaves(this.worldOpenState.openedWaves);
     this.inventory = saveData.inventory.map((i) => ({ ...i }));
     this.holdingArea = (saveData.holdingArea ?? []).map((h) => ({ ...h }));

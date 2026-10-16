@@ -2272,14 +2272,17 @@ export class PixiGameViewport {
       if (quality !== this.trafficBudgetQuality) { this.trafficBudgetQuality = quality; this.simulation.setTrafficBudgetScale(NEIGHBORHOOD_QUALITY[quality].vehicles); }
       const viewW = this.app.screen.width / this.camera.zoom;
       const viewH = this.app.screen.height / this.camera.zoom;
+      const civicPop = this.simulation.getCivicPopulation();
+      this.neighborhood.setPopulation(civicPop);
       this.neighborhood.update({ artificial: light.artificial, outdoor: light.outdoor, weather: this.lastWeather, time: this.animTimer, camX: this.camera.x, camY: this.camera.y, viewW, viewH, reducedMotion });
       const lifeTime = debugTime ?? { day: timeNow.day, hour: timeNow.hour, minute: timeNow.minute, rain: undefined };
+      const isMobile = this.app.screen.width < 768;
       this.actors.update({
         dt: elapsed, time: this.animTimer, zoom: this.camera.zoom,
         view: { x0: this.camera.x, y0: this.camera.y, x1: this.camera.x + viewW, y1: this.camera.y + viewH },
         weather: this.lastWeather,
-        life: { hour: lifeTime.hour, minute: lifeTime.minute, day: lifeTime.day, weekday: weekdayOf(lifeTime.day), rain: rainNow, weatherId: this.simulation.getEffectiveWeatherId(), vehicles: streetVehicles },
-        vehicles: streetVehicles, quality, sun: light.sun, gearEnabled: gearOn, windEffects: fxSettingsEnabled, reducedMotion, mobile: this.app.screen.width < 768,
+        life: { hour: lifeTime.hour, minute: lifeTime.minute, day: lifeTime.day, weekday: weekdayOf(lifeTime.day), rain: rainNow, weatherId: this.simulation.getEffectiveWeatherId(), vehicles: streetVehicles, civicPopulation: civicPop, mobile: isMobile },
+        vehicles: streetVehicles, quality, sun: light.sun, gearEnabled: gearOn, windEffects: fxSettingsEnabled, reducedMotion, mobile: isMobile,
       });
       this.simulation.setStreetCrossings(this.actors.life.getCrossings());
     }
