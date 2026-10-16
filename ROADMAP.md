@@ -2,6 +2,26 @@
 
 > Ghi chú: `pnpm-workspace.yaml` ở Giai đoạn 0 là lịch sử; dự án dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
 
+## Giai đoạn 4 — Mục 5: Bếp đa món + Combo (nâng cấp tiệm xôi & quán nước) (16/10/2026)
+
+- [x] **Bếp đa món + Combo** (change OpenSpec `openspec/changes/multi-dish-kitchen-combos/`): thêm 3 món xôi + 3 thức uống mới vào `recipes.ts`; combo (`game-data/combos.ts`: Suất Xôi Đôi, Combo Hai Ly, discount 10%) biểu diễn theo phương án A — **lắp ráp qua `Recipe`** với nguyên liệu = món thành phẩm của shop (FEFO), giá = Σ bán lẻ ×(1−discount), chạy đúng pipeline `Recipe`/`ProductionJob` sẵn có (không mã bán riêng); set món tự nhận kệ `XOI_DISH_IDS`/`DRINK_SHOP_PRODUCT_IDS` sinh từ `RECIPES` tự gồm món+combo mới; UI `KitchenStationModal` khối "Combo suất tiết kiệm" (mobile-first); save additive giữ `CURRENT_SAVE_SCHEMA_VERSION=10`. **Bằng chứng thật:** `yarn typecheck` PASS; harness tsc→node `verify-multi-dish-kitchen.mjs` PASS (`ALL MULTI-DISH-KITCHEN VERIFIED`); `combo-balance.mjs` PASS (lãi 14k/15.6k, bundle 0→60% tăng doanh thu 10.06M→11.04M, biên ≥47%); eslint 0 errors/warnings. **Chờ máy thật:** Browser QA màn Combo + combo lên kệ/bán, viewport 568–740 px; playtest cân bằng combo. Chi tiết `tổng hợp.md` đầu file + `TASKS.md`.
+
+## Giai đoạn 4 — Mục 4: Chuỗi cung ứng (nhiều nhà cung cấp · hàng hết hạn · nhập sỉ theo lô) (16/10/2026)
+
+- [x] **Chuỗi cung ứng — ĐÃ có sẵn, chốt hiện trạng** (change OpenSpec `openspec/changes/supply-chain-complete/`): nhiều nhà cung cấp (cấp độ, giá theo danh mục, migrate đơn cũ), hàng hết hạn/shelf-life (StockLot.expiresOnDay, SPOILAGE_RULES, hạn dùng), nhập sỉ theo lô (orderSupplierCart, pendingOrders, receiveDeliveredOrders, case size, kho chờ). Không viết lại code. **Bằng chứng thật:** harness `suppliers` PASS + `delivery`+`receiveDeliveredOrders` PASS + `supplier-cart` PASS; `yarn typecheck` PASS. **Chờ máy thật:** Browser QA SupplierModal/giao hàng/kho chờ, viewport 568–740 px. Chi tiết `tổng hợp.md` đầu file + `TASKS.md`.
+
+## Giai đoạn 4 — Mục 3: Khách quen (thiện cảm · sổ nợ · mua chịu) (16/10/2026)
+
+- [x] **Khách quen — ĐÃ có sẵn, chốt hiện trạng** (change OpenSpec `openspec/changes/regulars-complete/`): thiện cảm theo khách (`regulars.ts`, trần +2/ngày, perk, boa), sổ nợ/mua chịu theo khách (`simulation.ts` credit: customerCredits/getCustomerCreditTerms/repayCustomerCredit/updateCustomerCreditStatuses + bad_debt), lưu theo khách, UI (`RegularsModal`, `CashierModal` "Thu nợ"). Không viết lại code. **Bằng chứng thật:** harness `wave-a` (tín dụng) PASS + `regulars` PASS; `yarn typecheck` PASS. **Chờ máy thật:** Browser QA màn khách quen/sổ nợ, viewport 568–740 px. Chi tiết `tổng hợp.md` đầu file + `TASKS.md`.
+
+## Giai đoạn 4 — Mục 2: Lời đánh giá bằng chữ ảnh hưởng uy tín (16/10/2026)
+
+- [x] **Lời đánh giá ảnh hưởng uy tín** (change OpenSpec `openspec/changes/written-reviews-reputation/`): đảo non-goal "chỉ trình bày" của `written-customer-reviews` — `review-reputation.ts` thuần (`reviewReputationContribution` theo reason/khen, `reviewReputationDrift`, `reviewSentimentSummary`), nối `recordCustomerRating` cạnh delta theo sao, thêm dòng uy tín vào bản tin sáng (`buildMorningBrief`) và khối "Ảnh hưởng uy tín" trong ReviewsModal. `yarn typecheck` PASS; harness review-reputation + hồi quy reviews/day-rhythm PASS; hồi quy rộng REGRESSION OK; eslint 0 errors; cân bằng drift từ từ (tiệm tốt +3.5, khá −1.6, chậm −8.8 điểm/ngày). **Chờ máy thật:** Browser QA khối uy tín + bản tin sáng, viewport 568–740 px. Chi tiết `tổng hợp.md` đầu file + `TASKS.md`.
+
+## Giai đoạn 4 — Mục 1: Sự kiện xóm phố (16/10/2026)
+
+- [x] **Sự kiện xóm phố** (change OpenSpec `openspec/changes/neighborhood-events/`): nối `seasons` + `party-orders` + `holiday-balance-sim` thành loạt sự kiện theo mùa. Đơn tiệc theo mùa (`PartyOrderDef.seasons?`, `partyOrdersForSeason`, ưu tiên đơn đúng mùa), thông báo lễ hội/đơn mùa/thưởng ngày hội (chống lặp), màn "Sự kiện xóm phố" (badge mùa HUD mở), cân bằng thưởng so với `holiday-balance-sim`. `yarn typecheck` PASS; harness tsc→node 5 suite liên quan PASS (party-orders-seasonal, party-orders, holiday-balance-sim, goals, seasons); eslint 0 errors. **Chờ máy thật:** Browser QA mobile, đơn mùa, toast, cảnh báo hết hạn, viewport 568–740 px. Chi tiết `tổng hợp.md` đầu file + `TASKS.md`.
+
 ## Giai đoạn 3 kiểm chứng thật (16/10/2026)
 
 - [>] QA trình duyệt thật cho thuê đất/nợ/mua khấu trừ/lưu-tải, 7 viewport (đo DOM), co-op 2 client + nối lại WS: ĐẠT; sửa 4 lỗi. Chưa Mobile Ready (chưa duyệt mắt hết), chưa đo FPS/OAuth/voice, city goals/cluster/district chưa nối vào game. Chi tiết: `tổng hợp.md` đầu file.

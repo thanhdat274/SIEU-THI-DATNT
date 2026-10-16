@@ -1,3 +1,49 @@
+## GIAI ĐOẠN 4 — Mục 5: Bếp đa món + Combo (nâng cấp tiệm xôi & quán nước) (16/10/2026)
+
+- [x] **Đa món (mới, `recipes.ts` `PRODUCED_PRODUCTS`+`RECIPES`):** 3 món xôi (thập cẩm/chà bông trứng/bắp) + 3 thức uống (trà sữa/sinh tố xoài/cà phê sữa đá); dùng nguyên liệu đã có, không chạm số lượng `catalog.test`.
+- [x] **Combo (mới, `game-data/combos.ts`):** `Combo`/`COMBOS` (Suất Xôi Đôi, Combo Hai Ly; discount 10%, cấp 36/26), `comboProductId`/`comboSellingPrice`/`comboCost`/`validateCombos`; export qua `@game/data`.
+- [x] **Lắp ráp qua Recipe (phương án A chủ dự án duyệt):** `recipe_combo_xoi_doi`/`recipe_combo_nuoc_doi` — nguyên liệu = món thành phẩm của shop (FEFO), đầu ra lên kệ; chạy đúng pipeline `Recipe`/`ProductionJob` có sẵn, COGS = tổng unitCost; không mã bán riêng (`game-core/combo-sales.ts` trong tasks ban đầu được gập vào `combos.ts`).
+- [x] **Set món tự nhận kệ:** `XOI_DISH_IDS`/`DRINK_SHOP_PRODUCT_IDS` sinh từ `RECIPES` → món mới + combo tự vào kệ tiệm xôi/quán nước (auto-fill).
+- [x] **UI mobile-first:** `KitchenStationModal` khối "Combo suất tiết kiệm" (món thành phần, giá combo gạch ngang bán lẻ, nút Làm combo qua `start_production` sẵn có); wire `App.tsx` (`COMBOS.filter` theo `fixture.shopId`).
+- [x] **Save:** additive, `CURRENT_SAVE_SCHEMA_VERSION` giữ 10 (không bump); save cũ tải bình thường. Sprite alias mới trong `product-sprites.ts`.
+- [x] **Kiểm chứng thật:** `yarn typecheck` PASS; harness tsc→node `verify-multi-dish-kitchen.mjs` PASS (`ALL MULTI-DISH-KITCHEN VERIFIED`); `combo-balance.mjs` PASS (lãi 14k/15.6k, bundle 0→60% tăng doanh thu, biên ≥47%); eslint 0 errors/warnings.
+- [ ] **Chờ máy thật:** Browser QA màn Combo (KitchenStationModal), combo lên kệ & bán ở tiệm xôi/quán nước, viewport 568–740 px; playtest cân bằng combo; trạm chạy 1 mẻ/thời điểm nên lắp ráp combo chờ trạm rảnh.
+- Change OpenSpec: `openspec/changes/multi-dish-kitchen-combos/`. Chi tiết: `tổng hợp.md` đầu file.
+
+## GIAI ĐOẠN 4 — Mục 4: Chuỗi cung ứng (nhiều nhà cung cấp · hàng hết hạn · nhập sỉ theo lô) (16/10/2026)
+
+- [x] **Đã có sẵn (chốt hiện trạng):** `suppliers.ts` (nhiều nhà cung cấp, cấp độ, giá theo danh mục, migrate đơn cũ), `delivery.ts` (đặt→giao, hạn dùng/lô, sổ nhập, kho chờ), `supplier-cart` (giỏ nhiều dòng, case size, validate), `SPOILAGE_RULES`/shelf-life, UI `SupplierModal`.
+- [x] **Bằng chứng verify thật:** harness `suppliers` PASS + `delivery`+`receiveDeliveredOrders` PASS + `supplier-cart` PASS; `yarn typecheck` PASS (không đổi code game).
+- [x] **OpenSpec `supply-chain-complete`** (proposal/design/spec delta `supply-chain`/tasks) + đồng bộ `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`.
+- [ ] **Chờ máy thật:** Browser QA SupplierModal / giao hàng / kho chờ, viewport 568–740 px; playtest cân bằng nếu muốn chỉnh hằng số.
+
+## GIAI ĐOẠN 4 — Mục 3: Khách quen (thiện cảm · sổ nợ · mua chịu) (16/10/2026)
+
+- [x] **Đã có sẵn (chốt hiện trạng):** `regulars.ts` (6 khách quen, thân thiết trần +2/ngày, perk, boa), `simulation.ts` credit (`customerCredits`, `getCustomerCreditTerms`, `repayCustomerCredit`, `updateCustomerCreditStatuses`, `onCredit` gating, `bad_debt`), lưu theo khách (`SaveGameData.regulars`+`customerCredits`), UI (`RegularsModal`, `CashierModal` "Thu nợ", toast).
+- [x] **Bằng chứng verify thật:** harness `wave-a` (tín dụng) PASS + `regulars` PASS; `yarn typecheck` PASS (không đổi code game).
+- [x] **OpenSpec `regulars-complete`** (proposal/design/spec delta `regulars-credit`/tasks) + đồng bộ `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`.
+- [ ] **Chờ máy thật:** Browser QA RegularsModal / CashierModal "Thu nợ" / toast, viewport 568–740 px; playtest cân bằng nếu muốn chỉnh hằng số.
+
+## GIAI ĐOẠN 4 — Mục 2: Lời đánh giá bằng chữ ảnh hưởng uy tín (16/10/2026)
+
+- [x] **Lõi thuần:** `game-core/review-reputation.ts` — `reviewReputationContribution` (reason −0.6/−0.5; khen ≥4★ +0.2; chê ≤2★ −0.2; 3★=0), `reviewReputationDrift` (cửa sổ 7, kẹp ±10), `reviewSentimentSummary`; deterministic. Nối `simulation.recordCustomerRating` cộng contribution cạnh delta theo sao.
+- [x] **Bản tin sáng:** `buildMorningBrief` thêm `yesterdayReviews?`/`reputationDelta?` + tip uy tín; wire `getMorningBrief` qua `reviewsManager.getReviewsOnDay(day-1)`; ReviewsManager thêm `getReviewsOnDay`.
+- [x] **Màn lời đánh giá:** `ReviewsModal` khối "Ảnh hưởng uy tín" (`ReputationInfluence`); export `review-reputation` qua game-core index.
+- [x] **Kiểm chứng:** `yarn typecheck` PASS; harness review-reputation + hồi quy reviews/day-rhythm PASS; hồi quy rộng REGRESSION OK + word-of-mouth PASS; eslint 0 errors; cân bằng drift từ từ (tiệm tốt +3.5, khá −1.6, chậm −8.8 điểm/ngày).
+- [ ] **Chờ máy thật:** Browser QA — khối "Ảnh hưởng uy tín", bản tin sáng, viewport 568–740 px.
+- Change OpenSpec: `openspec/changes/written-reviews-reputation/`. Chi tiết: `tổng hợp.md` đầu file.
+
+## GIAI ĐOẠN 4 — Mục 1: Sự kiện xóm phố (16/10/2026)
+
+- [x] **Đơn tiệc theo mùa:** `PartyOrderDef.seasons?`; `game-data/partyOrders.ts` gắn mùa + thêm `party_sam_tet`, `party_trung_thu_pha_co` + `validatePartyOrders()`; `game-core/party-orders.ts` `partyOrdersForSeason()` + `refreshAvailablePartyOrders` ưu tiên đơn đúng mùa.
+- [x] **Thông báo:** `simulation.ts` `notifySeasonalEvents()` — toast lễ hội bắt đầu (chống lặp `notifiedFestivalKeys`), toast đơn tiệc mùa mới, toast thưởng ngày hội (1 lần/ngày).
+- [x] **Màn "Sự kiện xóm phố":** `NeighborhoodEventsModal.tsx` (lễ hội đang/sắp tới, đơn mùa, mục tiêu ngày hội, cảnh báo hết hạn); badge mùa HUD thành nút; wire App.tsx + lazy-modal + CSS.
+- [x] **Kiểm chứng:** `yarn typecheck` PASS; harness tsc→node 3 suite mới/liên quan PASS (`verify-seasonal.mjs`) + hồi quy goals/seasons PASS (`verify-seasonal-regression.mjs`); eslint 0 errors. Số liệu cân bằng lễ hội qua `holiday-collect.mjs` (doanh thu 7 lễ 1.034k–1.185k ₫).
+- [ ] **Chờ máy thật:** Browser QA mobile (568–740 px), đơn mùa, toast, cảnh báo hết hạn.
+- Change OpenSpec: `openspec/changes/neighborhood-events/`. Chi tiết: `tổng hợp.md` đầu file.
+
+## GIAI ĐOẠN 3 (16/10/2026)
+
 > **Cập nhật 16/10/2026 (Giai đoạn 3):** QA thật đã chạy một phần — xem đầu `tổng hợp.md`. Sửa BUG-2/3/6/7 (thuê đất/báo cáo). BUG-1 (thu trước 30 ngày tiền thuê) đã bỏ theo quyết định chủ dự án. Mục city goals/cluster/district của GĐ2 chỉ là logic thuần, chưa nối vào game. FPS điện thoại, OAuth, voice, UI bỏ phiếu đất co-op: CHƯA kiểm chứng.
 
 ## Thuê đất và mua khấu trừ — Bước 6b thế giới mở (14/10/2026)

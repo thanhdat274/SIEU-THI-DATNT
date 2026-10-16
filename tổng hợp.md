@@ -1,3 +1,146 @@
+# GIAI ĐOẠN 4 — MỤC 5: BẾP ĐA MÓN + COMBO (nâng cấp tiệm xôi & quán nước) (16/10/2026)
+
+Change OpenSpec: `openspec/changes/multi-dish-kitchen-combos/` (proposal, spec delta `multi-dish-kitchen`, design, tasks). Mở rộng `quay_xoi`/`drink_counter` thành bếp đa món: thêm ≥3 món xôi, ≥3 thức uống mới và combo (suất/bữa gộp). Combo được biểu diễn theo phương án A chủ dự án duyệt: **lắp ráp qua `Recipe`** — nguyên liệu = các món thành phẩm của chính shop (FEFO), giá = tổng giá bán × (1−discount 8–15%), đầu ra lên kệ bán như món thường.
+
+## Làm được
+
+- **Đa món (mới, `recipes.ts` `PRODUCED_PRODUCTS` + `RECIPES`):** xôi thập cẩm `xoi_thap_cam_tp` (bán 22.000), xôi chà bông trứng `xoi_trung_cha_tp` (18.000), xôi bắp `xoi_bap_tp` (13.000); trà sữa `tra_sua_tp` (15.000), sinh tố xoài `sinh_to_xoai_tp` (18.000), cà phê sữa đá `ca_phe_sua_da_tp` (14.000). Toàn bộ dùng nguyên liệu ĐÃ CÓ trong catalog (không thêm sản phẩm nguyên liệu mới → không chạm số lượng `catalog.test` 291+…).
+- **Combo (mới, `game-data/combos.ts`):** `Combo` + `COMBOS` (2 combo: **Suất Xôi Đôi** `combo_xoi_doi` = xôi mặn + xôi trứng, **Combo Hai Ly** `combo_nuoc_doi` = trà sữa + cà phê sữa đá; discount 10%, cấp 36/26). Helper `comboProductId`/`comboSellingPrice` (= Σ giá bán lẻ ×(1−discount))/`comboCost`, hàm `validateCombos()` (mỗi combo phải có recipe lắp ráp tại trạm của shop, tiêu đúng mỗi thành viên ≥1, giá khớp). Export qua `@game/data`.
+- **Recipe lắp ráp combo:** `recipe_combo_xoi_doi` (quay_xoi) & `recipe_combo_nuoc_doi` (drink_counter); nguyên liệu = chính món thành phẩm combo → chạy đúng pipeline `Recipe`/`ProductionJob`/`consumeIngredients` (FEFO)/`addProductionOutput` (COGS = tổng unitCost lô đã tiêu) — **không cần mã bán riêng** (`game-core/combo-sales.ts` ghi trong tasks ban đầu được gập vào `combos.ts` vì combo đi qua pipeline có sẵn).
+- **Set món tự nhận kệ:** `XOI_DISH_IDS` & `DRINK_SHOP_PRODUCT_IDS` sinh từ `RECIPES` → món xôi mới + `combo_xoi_doi_tp` tự nhận kệ tiệm xôi; thức uống mới + `combo_nuoc_doi_tp` tự nhận kệ quán nước/cà phê (`autoFillCandidates`/`autoFillShelf`).
+- **UI mobile-first:** `KitchenStationModal.tsx` thêm khối **"Combo suất tiết kiệm"** — liệt kê combo của shop, gồm món thành phần (kho), giá combo gạch ngang giá bán lẻ, nút **Làm combo** (dùng `start_production` sẵn có, không lệnh co-op mới); wire `App.tsx` qua `COMBOS.filter(c => c.shopStationShopId === fixture.shopId)`. Không gây tràn ngang ≤568px (dùng cấu trúc `summary-row` sẵn có, flex-wrap cho tab).
+- **Sprite:** `game-renderer/src/product-sprites.ts` thêm alias cho 8 sản phẩm mới (xôi → `banh_bao`, thức uống → `sua_hop`/`nuoc_ngot`, combo → `banh_bao`/`nuoc_ngot`); DOM icon dùng `productPixels` (fallback theo category bread/soft_drinks) nên hiển thị được ngay.
+- **Save:** thêm sản phẩm + recipe + combo là **additive**, `CURRENT_SAVE_SCHEMA_VERSION = 10` **không bump**; save cũ tải bình thường (không field bắt buộc mới). Combo lưu/tải như production job thường.
+
+## Kiểm chứng thật (change này)
+
+| Lệnh | Kết quả |
+|------|---------|
+| `yarn typecheck` (toàn workspace) | ✅ PASS |
+| Harness tsc→node `verify-multi-dish-kitchen.mjs` (combos.test + combo-production.test + data-integrity) | ✅ PASS (`ALL MULTI-DISH-KITCHEN VERIFIED`) |
+| Harness tsc→node `combo-balance.mjs` (giá/vốn/lãi/30 ngày) | ✅ PASS — Suất Xôi Đôi lãi 14.000, Combo Hai Ly lãi 15.600; bundle 0→60% tăng doanh thu 10.06M→11.04M, biên ≥47% |
+| `eslint` các file thay đổi | ✅ 0 errors, 0 warnings |
+
+## Có code nhưng chưa kiểm chứng / giới hạn
+
+- **Chưa máy thật / chưa Browser QA:** màn mắt trang Combo trong KitchenStationModal, xem combo lên kệ & bán ở tiệm xôi/quán nước, viewport hẹp 568–740 px.
+- **Giới hạn thiết kế (đã ghi vào design):** mỗi trạm chạy 1 mẻ tại một thời điểm → lắp ráp combo phải chờ trạm rảnh (cần món thành phần đã có sẵn); 2 combo dùng chung trạm `drink_counter` với các thức uống mới.
+- **Đã biết, không chặn:** trạm `drink_counter`/`blender` & recipe mở khóa cấp 25/26 nhưng tòa quán nước/cà phê mở ở cấp 46 (lệch cấp mở khóa có sẵn, ngoài phạm vi mục này).
+- Giá/vốn/hạn dùng món & combo là **provisional**, cần playtest; chỉnh hằng số qua change riêng nếu cần.
+
+## Còn thiếu / chờ
+
+- Browser QA mobile; playtest cân bằng combo (tần suất nhu cầu, lãi gộp).
+- Các mục GĐ4 còn lại (**mục 6: Cạnh tranh & thương hiệu**) + GĐ5.
+
+---
+
+# GIAI ĐOẠN 4 — MỤC 4: CHUỖI CUNG ỨNG (nhiều nhà cung cấp · hàng hết hạn · nhập sỉ theo lô) (16/10/2026)
+
+Change OpenSpec: `openspec/changes/supply-chain-complete/` (proposal, spec delta `supply-chain`, design, tasks). **Phát hiện: năng lực chuỗi cung ứng ĐÃ có sẵn và chạy thật** — chủ dự án chọn "công nhận đã có + hoàn thiện tài liệu". Không viết lại code.
+
+## Hiện trạng đã có (đã rà soát)
+
+- **Nhiều nhà cung cấp:** `suppliers.ts` — nhiều nhà cung cấp (đại lý hẻm `dai_ly_dau_hem` + các nhà khác), cấp độ nhà cung cấp, giá theo danh mục; đơn cũ thiếu `supplierId` tự migrate về `dai_ly_dau_hem`.
+- **Hàng hết hạn / shelf-life:** `StockLot.expiresOnDay`/`expiryDay`, `SPOILAGE_RULES`, hạn dùng theo sản phẩm (`expirationRules.daysToSpoil`, `freshExtraDays`), hư hỏng/hết hạn trên kệ (`expiredOnShelfReputationLoss` tác động uy tín).
+- **Nhập sỉ theo lô (bulk/batch):** `orderSupplierCart` (giỏ nhiều dòng), `pendingOrders`, `receiveDeliveredOrders` (FIFO, gộp lô, `holdingArea` khi tràn kho mát), `caseSize`/`caseCount`, `StockLot.provenance`, đơn chờ khôi phục trọn vẹn khi load.
+- **UI:** `SupplierModal`, wire `App.tsx` + lệnh co-op.
+
+## Kiểm chứng thật (change này — gom bằng chứng)
+
+| Lệnh | Kết quả |
+|------|---------|
+| Harness tsc→node `suppliers` (nhiều nhà cung cấp, migrate đơn cũ) | ✅ PASS |
+| Harness tsc→node `delivery`+`receiveDeliveredOrders` (đặt→giao, hạn dùng/lô, sổ nhập, kho chờ) | ✅ PASS |
+| Harness tsc→node `supplier-cart` (giỏ nhiều dòng, case size, validate) | ✅ PASS |
+| `yarn typecheck` (toàn workspace) | ✅ PASS |
+
+## Có code sẵn nhưng chưa Browser QA / giới hạn
+
+- **Chưa máy thật:** QA mắt SupplierModal, đặt giỏ nhiều dòng, giao hàng/kho chờ, viewport hẹp 568–740 px.
+- Hiện trạng đã chạy; nếu playtest thấy giá/hạn dùng/sức chứa chưa cân bằng → mở change riêng chỉnh hằng số (ngoài phạm vi mục này).
+- Full `test-runner.ts` chưa chạy được `tsc`→node (lỗi `@game/shared/src/multiplayer.test` pre-existing) → kiểm qua suite con.
+
+## Còn thiếu / chờ
+
+- Browser QA mobile; playtest cân bằng tùy ý chủ dự án.
+- Các mục GĐ4 còn lại (**mục 6: Cạnh tranh & thương hiệu**) + GĐ5.
+
+---
+
+# GIAI ĐOẠN 4 — MỤC 3: KHÁCH QUEN (thiện cảm · sổ nợ · mua chịu) (16/10/2026)
+
+Change OpenSpec: `openspec/changes/regulars-complete/` (proposal, spec delta `regulars-credit`, design, tasks). **Phát hiện: năng lực khách quen ĐÃ có sẵn và chạy thật** (từ giai đoạn trước) — chủ dự án chọn "công nhận đã có + hoàn thiện tài liệu". Không viết lại code.
+
+## Hiện trạng đã có (đã rà soát)
+
+- **Thiện cảm (friendship):** `game-core/regulars.ts` — 6 khách quen đại diện hẻm (game-data), điểm thân thiết (trần +2/ngày, `lastFriendshipDay`), khám phá món ưa thích, mở khóa perk theo ngưỡng (`frequent_visit`, `bonus_tip`), boa theo perk; `shouldRegularVisitToday`/`pickAvailableRegular` deterministic theo seed (chơi lẻ = chơi chung).
+- **Sổ nợ / mua chịu:** `simulation.ts` — `customerCredits` (open/overdue/paid/defaulted), `getCustomerCreditTerms` (hạn mức theo thân thiết ≥40, dừng khi nợ xấu), checkout `onCredit` gating, `repayCustomerCredit`, `updateCustomerCreditStatuses` (overdue toast → defaulted + `bad_debt` sổ cái); lệnh co-op `repay_customer_credit`.
+- **Lưu theo khách:** `SaveGameData.regulars` + `customerCredits` lưu/tải; không đổi schemaVersion.
+- **UI:** `RegularsModal` (thân thiết/perk/món đã khám phá), `CashierModal` khối phải thu + nút **Thu nợ** (`onRepayCredit`), toast overdue/defaulted/thu nợ; wire `App.tsx`.
+
+## Kiểm chứng thật (change này — gom bằng chứng)
+
+| Lệnh | Kết quả |
+|------|---------|
+| Harness tsc→node `wave-a.test` (tín dụng/mua chịu/nợ xấu) | ✅ PASS |
+| Harness tsc→node `regulars.test` (thân thiết/perk/boa) | ✅ PASS |
+| `yarn typecheck` (toàn workspace) | ✅ PASS |
+
+## Có code sẵn nhưng chưa Browser QA / giới hạn
+
+- **Chưa máy thật:** QA mắt RegularsModal, CashierModal "Thu nợ", toast overdue/defaulted/thu nợ, viewport hẹp 568–740 px.
+- Hiện trạng đã chạy; nếu playtest thấy hạn mức/tần suất chưa cân bằng → mở change riêng chỉnh hằng số (ngoài phạm vi mục này).
+- Full `test-runner.ts` chưa chạy được `tsc`→node (lỗi `@game/shared/src/multiplayer.test` pre-existing) → kiểm qua suite con.
+
+## Còn thiếu / chờ
+
+- Browser QA mobile; playtest cân bằng tùy ý chủ dự án.
+- Các mục GĐ4 còn lại (chuỗi cung ứng, bếp đa món, cạnh tranh & thương hiệu) + GĐ5.
+
+---
+
+# GIAI ĐOẠN 4 — MỤC 2: LỜI ĐÁNH GIÁ BẰNG CHỮ ẢNH HƯỞNG UY TÍN (16/10/2026)
+
+Change OpenSpec: `openspec/changes/written-reviews-reputation/` (proposal, spec delta `review-reputation`, design, tasks). Đảo non-goal của change `written-customer-reviews` cũ: lời chữ không chỉ trình bày mà đóng góp thật vào uy tín 0..100.
+
+## Làm được
+
+- **`game-core/review-reputation.ts` (mới, thuần):** `reviewReputationContribution` (reason −0.6/−0.5; khen ≥4★ +0.2; chê ≤2★ −0.2; 3★ = 0), `reviewReputationDrift` (cửa sổ 7 ngày, kẹp ±10), `reviewSentimentSummary` (khen/chê/tổng delta/topReason). Xác định, không RNG → chơi lẻ = chơi chung.
+- **Nối `simulation.recordCustomerRating`:** giữ `reputationDeltaFromRating` cơ sở, cộng thêm `reviewReputationContribution` từ lời vừa soạn (kẹp 0..100). Chê có lý do trừ sâu hơn chê sao thấp; không đổi luật sao/reward.
+- **Bản tin sáng:** `day-rhythm.buildMorningBrief` thêm `yesterdayReviews?` + field `reputationDelta?`, thêm tip uy tín ("Xóm khen/than…"); wire `simulation.getMorningBrief` qua `reviewsManager.getReviewsOnDay(day-1)`. `ReviewsManager` thêm getter `getReviewsOnDay`.
+- **Màn lời đánh giá:** `ReviewsModal` thêm khối "Ảnh hưởng uy tín" (`ReputationInfluence`): tổng delta, sentiment, topReason. Export `review-reputation` qua game-core index.
+- **Kiểm chứng:** `yarn typecheck` PASS; harness tsc→node: `review-reputation` PASS, hồi quy `reviews` PASS, `day-rhythm` PASS, hồi quy rộng `verify-seasonal-regression` REGRESSION OK, `word-of-mouth` PASS; eslint 0 errors (22 warnings pre-existing simulation.ts).
+
+## File thay đổi
+
+`game-core/src/{review-reputation,review-reputation.test}.ts` (mới), `reviews.ts`, `day-rhythm.ts`, `simulation.ts`, `index.ts`, `test-runner.ts`; `apps/web/src/components/ReviewsModal.tsx`. Verifier: `.qa/verify-review-reputation.mjs`, `.qa/review-reputation-balance.mjs`.
+
+## Kiểm chứng thật
+
+| Lệnh | Kết quả |
+|------|---------|
+| `yarn typecheck` (toàn workspace) | ✅ PASS (~2–5s) |
+| Harness `verify-review-reputation.mjs` (review-reputation + reviews hồi quy) | ✅ PASS |
+| Harness `day-rhythm` hồi quy | ✅ PASS |
+| Harness `verify-seasonal-regression.mjs` (5 suite) + word-of-mouth | ✅ REGRESSION OK |
+| `npx eslint` file đã sửa | ✅ 0 errors (22 warnings pre-existing) |
+| Cân bằng `review-reputation-balance.mjs` | ✅ drift từ từ: tiệm tốt +3.5, tiệm khá −1.6, tiệm chậm −8.8 điểm/ngày (40 lượt) |
+
+## Có code nhưng chưa kiểm chứng / giới hạn
+
+- **Chưa Browser QA trên máy thật:** khối "Ảnh hưởng uy tín" trong ReviewsModal, dòng uy tín trong bản tin sáng, viewport hẹp 568–740 px. (Sandbox chặn build/browser.)
+- Contribution theo rule có sẵn của lời (reason/sao) — không phân tích ngữ nghĩa câu văn (ngoài phạm vi, ghi rõ non-goal).
+- Hằng số PROVISIONAL (0.2..0.6): đã kiểm cân bằng drift từ từ; nếu playtest thấy uy tín tụt/chạy quá mạnh sẽ chỉnh.
+- Full game-core `test-runner.ts` chưa chạy được `tsc`→node (lỗi định tuyến `@game/shared/src/multiplayer.test` — pre-existing) → kiểm qua suite con như trên.
+
+## Còn thiếu / chờ
+
+- Browser QA mobile; playtest cân bằng uy tín theo tháng nếu muốn.
+- Các mục GĐ4 còn lại (khách quen, chuỗi cung ứng, bếp đa món, cạnh tranh & thương hiệu) + GĐ5.
+
+---
+
 # GIAI ĐOẠN 4 — MỤC 1: SỰ KIỆN XÓM PHỐ (16/10/2026)
 
 Change OpenSpec: `openspec/changes/neighborhood-events/` (proposal, spec delta `neighborhood-events`, design, tasks). Nối các module có sẵn (`seasons`, `party-orders`, `holiday-balance-sim`) thành loạt "sự kiện xóm phố" với đơn theo mùa, thông báo, màn tổng quan và cân bằng thưởng.
@@ -2004,6 +2147,7 @@ Còn thiếu khách quen với lịch sử/thân thiết, bản tin sáng, phư�
 
 | Ngày | Thay đổi | Xác minh | Việc còn lại |
 | --- | --- | --- | --- |
+| 16/10/2026 | GĐ4 Mục 5 — Bếp đa món + Combo: thêm 3 món xôi (thập cẩm/chà bông trứng/bắp) + 3 thức uống (trà sữa/sinh tố xoài/cà phê sữa đá) vào `recipes.ts` (PRODUCED_PRODUCTS + RECIPES); thêm `game-data/combos.ts` (`COMBOS`: Suất Xôi Đôi, Combo Hai Ly, discount 10%, `comboProductId`/`comboSellingPrice`/`comboCost`/`validateCombos`); recipe lắp ráp combo đi qua pipeline `Recipe`/`ProductionJob` sẵn có (nguyên liệu = món thành phẩm của shop, FEFO, COGS = tổng unitCost) — không mã bán riêng; set món tự nhận kệ `XOI_DISH_IDS`/`DRINK_SHOP_PRODUCT_IDS` sinh từ RECIPES tự gồm món+combo mới; UI `KitchenStationModal` thêm khối "Combo suất tiết kiệm" (dùng `start_production` sẵn có), wire `App.tsx`; sprite alias mới trong `product-sprites.ts`; save additive, `CURRENT_SAVE_SCHEMA_VERSION` giữ 10 | `yarn typecheck` (toàn workspace) PASS; harness tsc→node `verify-multi-dish-kitchen.mjs` PASS (`ALL MULTI-DISH-KITCHEN VERIFIED` — combos.test + combo-production.test + data-integrity); `combo-balance.mjs` PASS (lãi Suất Xôi Đôi 14.000₫, Combo Hai Ly 15.600₫; bundle 0→60% tăng doanh thu 10.06M→11.04M, biên ≥47%); eslint các file thay đổi 0 errors/warnings | Chưa máy thật/Browser QA màn Combo, viewport hẹp 568–740 px, playtest cân bằng combo; giá/hạn dùng món & combo provisional; trạm chạy 1 mẻ/1 thời điểm nên lắp ráp combo chờ trạm rảnh; trạm drink mở khóa cấp 25/26 lệch tòa quán nước mở cấp 46 (đã có sẵn, ngoài phạm vi) |
 | 06/10/2026 | Responsive đợt 4 (PWA + orientation): `orientation.ts` (`lockLandscape`, thử khi khởi tạo/vào game/chạm đầu tiên/quay lại từ nền, thất bại thì RotateOverlay), chữ overlay hướng dẫn tắt khóa xoay, reset joystick khi đổi hướng; manifest không đổi (đã fullscreen + landscape). Không đổi gameplay/save/renderer. | typecheck, test, build, `yarn test` OK; emulation 18 viewport landscape + chu trình xoay khi mở modal | Máy thật (lock thật, PWA từ Home Screen, safe-area, FPS), Playwright |
 | 06/10/2026 | Responsive đợt 3 (Landscape-first): dựng lại RotateOverlay tối giản cho màn cảm ứng dọc, rút gọn HUD điện thoại ngang, nút góc nhìn một hàng, menu chính và hộp thoại Sắp xếp gọn ở màn thấp, `--safe-*` cho shell, hook dev `__store`. Không đổi gameplay/save/renderer. | typecheck, test, build, `yarn test` OK; `tools/e2e/layout-qa.js` ở 7 cỡ điện thoại ngang, 4 cỡ tablet ngang, 4 cỡ desktop; modal Chain/An ninh/Phân tích/Kệ/Kho/Tổng kết ngày đã đo | Máy thật (safe-area, thanh địa chỉ, xoay máy, FPS/DPR), Bình chọn giờ cần co-op, Playwright |
 | 06/10/2026 | Responsive đợt 2: modal và CSS riêng vào chung kiến trúc (bỏ vh/vw cứng, container query cho store-layout/planogram, lớp phủ riêng có safe-area và bottom-sheet, ô sơ đồ cảm ứng, đo bằng setTimeout), DPR thích ứng trong renderer. Không đổi gameplay/save. | typecheck, test, build OK; `tools/e2e/layout-qa.js` trên 14 viewport, 22 hộp thoại không lỗi | Máy thật, rà các modal còn lại, chạy tự động bằng Playwright |

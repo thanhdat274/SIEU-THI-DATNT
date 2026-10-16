@@ -567,6 +567,8 @@ export interface PartyOrderDef {
   reward: PartyOrderReward;
   durationDays: number;
   minPlayerLevel: number;
+  /** Các mùa (id trong SEASON_EVENTS) mà đơn chỉ xuất hiện khi lễ hội đó đang diễn ra; thiếu = đơn chung mọi mùa. */
+  seasons?: string[];
 }
 
 export interface ActivePartyOrder {

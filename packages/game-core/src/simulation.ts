@@ -93,6 +93,7 @@ import {
   WEEKDAY_LABELS,
   SHOPKEEPER_POSITION,
   getSeasonForDay,
+  getSeasonWindow,
   staffSpecialtyInfo,
   seasonDaysLeft,
   SPOILAGE_RULES,
@@ -110,6 +111,7 @@ import type { IntersectionSignals } from './traffic-signal';
 import { StoreLogisticsManager } from './store-logistics';
 import { CollisionSystem } from './collision';
 import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
+import { reviewReputationContribution } from './review-reputation';
 import { rainIntensityAt, describeRainForecast, roadWetnessAt, hashSeed } from './weather';
 import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance } from './security';
 import { assessCounterfeit } from './counterfeit';
@@ -146,6 +148,7 @@ import {
   fulfillPartyOrder,
   type FulfillPartyOrderResult,
 } from './party-orders';
+import { upcomingNearbySeasons } from './neighborhood-events';
 import {
   absMinute,
   advanceSpecialRequests,
@@ -198,7 +201,7 @@ import { reclaimWaveAllowed, startReclaimWave, buyParcelAllowed, customerTraffic
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
 import { aggregateHeatmap, appendPricePoint, pruneHeatmap, sanitizeHeatmap, sanitizePriceHistory } from './analytics';
 import { addProductionOutput, consumeIngredients, missingIngredients, sanitizeProductionJobs } from './production';
-import { LONG_TERM_GOALS, WEEKLY_QUESTS, PARTY_ORDER_MAP, TITLES, effectiveShelfCapacity, SECURITY_RULES } from '@game/data';
+import { LONG_TERM_GOALS, WEEKLY_QUESTS, PARTY_ORDER_MAP, PARTY_ORDERS, TITLES, effectiveShelfCapacity, SECURITY_RULES } from '@game/data';
 import { getUnlockedTitles, setActiveTitle, type TitleContext } from './titles';
 import { getFixtureDimensions, syncSlotChildren, type BuildingPlacementRecord, type TitleDef } from '@game/shared';
 
@@ -315,6 +318,10 @@ export class GameSimulation {
   private orderSequence = 0;
   private ledgerManager: LedgerManager;
   private questsManager: QuestManager;
+  /** Các lễ hội đã thông báo trong phiên (dạng "${year}:${seasonId}") để không nhắc lặp cùng năm. */
+  private notifiedFestivalKeys = new Set<string>();
+  /** Ngày gần nhất đã nhắc "có thưởng ngày hội để nhận" (chống nhắc mỗi ngày). */
+  private lastFestivalRewardNotificationDay = -1;
   /** Yêu cầu đặc biệt của khách VIP; roll mỗi 30 phút game khi tiệm mở cửa. */
   private specialRequests: SpecialRequestState = createSpecialRequestState();
   private lastSpecialRequestSlot = -1;
@@ -613,7 +620,9 @@ export class GameSimulation {
       this.deliverOrders(day);
       this.processAutoBuy(day);
       this.executeDailyInternalDeliveries(day);
+      const orderIdsBefore = this.partyOrders.available.map((o) => o.orderId);
       this.questsManager.advanceToDay(day, this.playerData.level);
+      this.notifySeasonalEvents(day, orderIdsBefore);
       this.statistics.totalDaysPassed = Math.max(this.statistics.totalDaysPassed, day - 1);
       if (spoiled > 0) this.callbacks.onStockExpired?.(spoiled);
       const expiring = this.getExpiringStock();
@@ -704,6 +713,8 @@ export class GameSimulation {
       regularName: customer.regularName,
     });
     this.reviewsManager.addReview(review);
+    // Lời đánh giá bằng chữ đóng góp vào uy tín (ngoài delta theo sao đã cộng ở trên) — đảo non-goal cũ.
+    this.playerData.reputation = Math.max(0, Math.min(100, this.playerData.reputation + reviewReputationContribution(review)));
     this.callbacks.onCustomerRated?.({ stars, average: averageRating(this.playerData.ratings), reason, review });
   }
 
@@ -1632,6 +1643,36 @@ export class GameSimulation {
     return getSeasonForDay(day);
   }
 
+  /** Thông báo lễ hội bắt đầu (ngày đầu tiên) và đơn tiệc mùa mới xuất hiện — tránh lặp cùng năm. */
+  private notifySeasonalEvents(day: number, orderIdsBefore: string[]): void {
+    const window = getSeasonWindow(day);
+    if (window && window.firstDay === day) {
+      const key = `${window.year}:${window.event.id}`;
+      if (!this.notifiedFestivalKeys.has(key)) {
+        this.notifiedFestivalKeys.add(key);
+        const dir = window.event.demandMultiplier >= 1 ? 'tăng' : 'đổi';
+        this.callbacks.onToast?.(`🎉 ${window.event.name} về xóm! Khách ghé đông hơn, nhu cầu ${dir} theo mùa và có mục tiêu ngày hội để nhận thưởng.`, 'info');
+      }
+    }
+    // Đơn tiệc đúng mùa được sinh hôm nay → nhắc người chơi.
+    const currentSeason = getSeasonForDay(day);
+    for (const ord of this.partyOrders.available) {
+      if (orderIdsBefore.includes(ord.orderId)) continue;
+      const def = PARTY_ORDER_MAP[ord.orderId];
+      if (def && currentSeason && def.seasons?.includes(currentSeason.id)) {
+        this.callbacks.onToast?.(`📋 Đơn tiệc mùa "${def.title}" vừa xuất hiện — xem trong Sự kiện xóm phố.`, 'info');
+      }
+    }
+    // Có mục tiêu ngày hội đạt đủ để nhận thưởng → nhắc (mỗi ngày một lần).
+    if (this.lastFestivalRewardNotificationDay !== day) {
+      const claimable = this.getFestivalGoalProgressList().some((g) => g.completed && !g.claimed);
+      if (claimable) {
+        this.lastFestivalRewardNotificationDay = day;
+        this.callbacks.onToast?.('🏆 Có thưởng ngày hội để nhận — mở Sự kiện xóm phố.', 'info');
+      }
+    }
+  }
+
   public getRainIntensity(): number {
     const time = this.clock.getTime();
     const weatherId = effectiveWeatherId(this.market, time.day);
@@ -2512,6 +2553,28 @@ export class GameSimulation {
 
   public getFestivalGoalProgressList(): FestivalGoalProgressInfo[] {
     return getFestivalGoalProgress(this.clock.getTime().day, this.goals, this.productSalesOn);
+  }
+
+  /** Xem tổng quan "Sự kiện xóm phố": lễ hội đang/sắp tới, đơn tiệc mùa và mục tiêu ngày hội. */
+  public getNeighborhoodEvents() {
+    const day = this.clock.getTime().day;
+    const current = getSeasonWindow(day);
+    const seasonalOrderSet = new Set(PARTY_ORDERS.filter((o) => o.seasons?.length).map((o) => o.id));
+    return {
+      current: current
+        ? {
+            eventId: current.event.id,
+            name: current.event.name,
+            blurb: current.event.blurb,
+            daysLeft: current.lastDay - day + 1,
+            demandMultiplier: current.event.demandMultiplier,
+            preferredCategories: current.event.preferredCategories,
+          }
+        : null,
+      upcoming: upcomingNearbySeasons(day).filter((e) => e.daysUntil > 0),
+      seasonalOrders: this.partyOrders.available.filter((o) => seasonalOrderSet.has(o.orderId)),
+      festivalGoals: this.getFestivalGoalProgressList(),
+    };
   }
 
   /** Thưởng ngày hội là tiền thưởng ngoài sổ GAAP, như thưởng mục tiêu/nhiệm vụ. */
@@ -4028,6 +4091,7 @@ export class GameSimulation {
       forecastTomorrow,
       arrivingOrders,
       lowStockItems,
+      yesterdayReviews: this.reviewsManager.getReviewsOnDay(day - 1),
     });
   }
 

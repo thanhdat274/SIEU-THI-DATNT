@@ -1,6 +1,7 @@
 export * from './products';
 export * from './fridge';
 export * from './recipes';
+export * from './combos';
 export * from './buildings';
 // Mô hình thế giới mở (OpenSpec `open-world-land-grid`): tên trùng (BuildingBounds, BuildingId, *_PLOT_ID…) đã re-export qua `./buildings`.
 export * from './world/world-grid';

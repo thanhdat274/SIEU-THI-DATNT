@@ -3,9 +3,10 @@ import {
   InventoryItem,
   PartyOrderReward,
   PartyOrderState,
-  StockLot
+  StockLot,
+  PartyOrderDef,
 } from '@game/shared';
-import { PARTY_ORDERS, PARTY_ORDER_MAP } from '@game/data';
+import { PARTY_ORDERS, PARTY_ORDER_MAP, getSeasonForDay } from '@game/data';
 
 export interface FulfillPartyOrderResult {
   success: boolean;
@@ -14,6 +15,24 @@ export interface FulfillPartyOrderResult {
   reward?: PartyOrderReward;
   inventory?: InventoryItem[];
   reason?: string;
+}
+
+/**
+ * Phân nhóm đơn tiệc theo mùa của `day`: `seasonal` là các đơn khai mùa khớp lễ hội đang diễn ra,
+ * `general` là các đơn không khai mùa (luôn chơi được). Dùng để ưu tiên sinh đơn đúng mùa.
+ */
+export function partyOrdersForSeason(
+  defs: readonly PartyOrderDef[],
+  day: number
+): { seasonal: PartyOrderDef[]; general: PartyOrderDef[] } {
+  const season = getSeasonForDay(day);
+  const seasonal: PartyOrderDef[] = [];
+  const general: PartyOrderDef[] = [];
+  for (const def of defs) {
+    if (def.seasons && season && def.seasons.includes(season.id)) seasonal.push(def);
+    else general.push(def);
+  }
+  return { seasonal, general };
 }
 
 /**
@@ -53,7 +72,11 @@ export function refreshAvailablePartyOrders(
       (def) => def.minPlayerLevel <= playerLevel
     );
 
-    for (const def of unlockedOrders) {
+    // Đơn đúng mùa của lễ hội đang diễn ra có trước, rồi mới đến đơn chung.
+    const { seasonal, general } = partyOrdersForSeason(unlockedOrders, day);
+    const candidates = [...seasonal, ...general];
+
+    for (const def of candidates) {
       const existing = nextAvailable.find((o) => o.orderId === def.id);
       const isCompleted = state.completedOrderIds.includes(def.id);
 

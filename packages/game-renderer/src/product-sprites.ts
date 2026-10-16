@@ -1838,6 +1838,10 @@ for (const [id, source] of Object.entries({
   bao_goi: 'khan_giay', tra_da: 'tra_xanh', nep_chin: 'gao', nep_ngam: 'gao',
   xoi_dau_xanh_tp: 'banh_bao', xoi_man_tp: 'banh_bao', xoi_trung_tp: 'banh_bao', xoi_dua_tp: 'banh_bao',
   xoi_dau_xanh_goi: 'banh_bao', xoi_man_goi: 'banh_bao', xoi_trung_goi: 'banh_bao', xoi_dua_goi: 'banh_bao',
+  // Bếp đa món (OpenSpec `multi-dish-kitchen-combos`, GĐ4 mục 5): món xôi + thức uống + combo mới (mượn silhouette có sẵn).
+  xoi_thap_cam_tp: 'banh_bao', xoi_trung_cha_tp: 'banh_bao', xoi_bap_tp: 'banh_bao',
+  tra_sua_tp: 'sua_hop', sinh_to_xoai_tp: 'sua_hop', ca_phe_sua_da_tp: 'nuoc_ngot',
+  combo_xoi_doi_tp: 'banh_bao', combo_nuoc_doi_tp: 'nuoc_ngot',
 })) PRODUCT_SPRITES[id] = PRODUCT_SPRITES[source];
 
 // Rau củ và trái cây mới: vẽ riêng theo lưới pixel 8x8, phóng mỗi pixel thành 2x2.

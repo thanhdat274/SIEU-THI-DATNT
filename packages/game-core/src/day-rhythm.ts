@@ -1,5 +1,7 @@
-import type { DailyRecord } from '@game/shared';
+import type { CustomerReview, DailyRecord } from '@game/shared';
 import { PRODUCT_MAP, STALL_MAP } from '@game/data';
+import { reviewSentimentSummary } from './review-reputation';
+import { feedbackReasonLabel } from './reputation';
 
 export interface DaySummary {
   day: number;
@@ -122,6 +124,8 @@ export interface MorningBrief {
   lowStockItems: string[];
   expiringItems: string[];
   tips: string[];
+  /** Tổng ảnh hưởng uy tín của lời đánh giá hôm qua (nếu có lời đánh giá). */
+  reputationDelta?: number;
 }
 
 export function buildMorningBrief(params: {
@@ -133,6 +137,7 @@ export function buildMorningBrief(params: {
   arrivingOrders: Array<{ productId: string; quantity: number }>;
   lowStockItems?: string[];
   expiringItems?: string[];
+  yesterdayReviews?: CustomerReview[];
 }): MorningBrief {
   const arrivingItemsCount = params.arrivingOrders.reduce((sum, o) => sum + o.quantity, 0);
   const tips: string[] = [];
@@ -155,6 +160,20 @@ export function buildMorningBrief(params: {
     tips.push(`Sáng nay có ${params.arrivingOrders.length} đơn hàng (${arrivingItemsCount} món) giao đến kho.`);
   }
 
+  let reputationDelta: number | undefined;
+  if (params.yesterdayReviews && params.yesterdayReviews.length > 0) {
+    const s = reviewSentimentSummary(params.yesterdayReviews);
+    if (s.totalDelta > 0) {
+      tips.push(`Được xóm khen hôm qua: uy tín +${s.totalDelta.toFixed(1)} điểm. Cứ giữ phong độ!`);
+    } else if (s.totalDelta < 0) {
+      const cause = (s.topReason && feedbackReasonLabel(s.topReason.reason)) ? ` (chủ yếu do ${feedbackReasonLabel(s.topReason.reason)})` : '';
+      tips.push(`Xóm than tiệm hôm qua: uy tín ${s.totalDelta.toFixed(1)} điểm${cause}. Giải quyết sớm để giữ khách.`);
+    } else {
+      tips.push(`Lời đánh giá hôm qua nhìn chung trung tính, uy tín không đổi. Giữ ổn định phục vụ.`);
+    }
+    reputationDelta = s.totalDelta;
+  }
+
   if (tips.length === 0) {
     tips.push('Thời tiết thuận lợi, chúc tiệm buôn may bán đắt!');
   }
@@ -171,5 +190,6 @@ export function buildMorningBrief(params: {
     lowStockItems: params.lowStockItems ?? [],
     expiringItems: params.expiringItems ?? [],
     tips,
+    ...(reputationDelta !== undefined ? { reputationDelta } : {}),
   };
 }
