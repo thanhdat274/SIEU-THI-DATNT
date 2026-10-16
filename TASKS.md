@@ -34,6 +34,15 @@
 - [ ] Co-op 2 client.
 - Change OpenSpec: `openspec/changes/civic-population-demand/`.
 
+## GIAI ĐOẠN 4 — BƯỚC 3: Phí xóm + duy trì công trình (civic-local-fees) (16/10/2026)
+
+- [x] 1.1–1.5 Phí xóm (lô sở hữu, làm tròn 100 ₫, giảm theo QoL) + duy trì công trình, trừ đầu ngày sau tiền thuê, ledger `civic_upkeep`/`civic_fee`, nợ riêng `civicDebt`/`civicDebtDays` (không đóng cửa tòa), UI bản tin sáng / Analytics / tab Xóm phố.
+- [x] 1.6 typecheck + game-core test (112 pass, golden cập nhật có chứng minh) + web test PASS.
+- [x] 1.8 Sweep chốt bộ E: hoàn vốn 20 ngày (cấp 15) / 50 ngày (cấp 25), phí ≤ 2,8% doanh thu.
+- [ ] 1.7 Co-op 2 client — CHƯA QA. QA trình duyệt lượt sửa cuối — CHƯA làm.
+- Change OpenSpec: `openspec/changes/civic-local-fees/`.
+- Change OpenSpec: `openspec/changes/civic-population-demand/`.
+
 ## GIAI ĐOẠN 4 — Mục 5: Bếp đa món + Combo (nâng cấp tiệm xôi & quán nước) (16/10/2026)
 
 - [x] **Đa món (mới, `recipes.ts` `PRODUCED_PRODUCTS`+`RECIPES`):** 3 món xôi (thập cẩm/chà bông trứng/bắp) + 3 thức uống (trà sữa/sinh tố xoài/cà phê sữa đá); dùng nguyên liệu đã có, không chạm số lượng `catalog.test`.

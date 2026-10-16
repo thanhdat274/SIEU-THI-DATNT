@@ -424,7 +424,7 @@ export interface SecurityState {
   policeCases: PoliceCase[];
 }
 
-export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit' | 'tax' | 'rent';
+export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit' | 'tax' | 'rent' | 'civic_upkeep' | 'civic_fee';
 
 export interface LedgerEntry {
   id: string;
@@ -655,10 +655,12 @@ export interface BuildingDailyReport {
   transactionsCount: number;
   itemsSold: number;
   grossProfit: number;
-  /** Lãi sau tiền thuê đất của lô đặt tòa (spec D2): `grossProfit - rentCost`. */
+  /** Lãi sau tiền thuê đất và chi phí xóm của tòa: `grossProfit - rentCost - civicCost`. */
   netProfit: number;
   /** Phần tiền thuê đất ngày này tính cho tòa (chia đều khi lô có nhiều tòa). */
   rentCost?: number;
+  /** Phí xóm của tòa trong ngày (OpenSpec `civic-local-fees`): phí vệ sinh/an ninh lô đặt tòa + phí duy trì tòa. */
+  civicCost?: number;
 }
 
 export interface DailyRecord {
@@ -672,6 +674,10 @@ export interface DailyRecord {
   maintenanceCost?: number; // Chi phí bảo trì/sửa/mua mới nội thất trong ngày (thiếu = 0)
   equipmentCost?: number; // Chi phí thiết bị / mua camera an ninh / máy móc ngoài bảo trì định kỳ (thiếu = 0)
   rentCost?: number; // Tiền thuê đất trong ngày (thiếu = 0)
+  /** Phí duy trì công trình công cộng trong ngày = Σ `upkeepPerDay` của công trình đang đặt (thiếu = 0). */
+  civicUpkeep?: number;
+  /** Phí vệ sinh/an ninh xóm trong ngày: chỉ tính trên ô lô SỞ HỮU, giảm theo QoL khu (thiếu = 0). */
+  civicFee?: number;
   theftCost?: number; // Giá vốn hàng và tiền bị trộm trong ngày (thiếu = 0)
   theftRecovered?: number; // Tiền thu hồi từ phạt kẻ trộm và công an trong ngày (thiếu = 0)
   counterfeitLoss?: number; // Mệnh giá tiền giả nhận nhầm trong ngày (thiếu = 0)
@@ -976,7 +982,7 @@ export interface StoreLayout {
    * Key = parcelId, value = { kind: 'owned' | 'leased', ... }.
    * Migration 9→10 điền từ ownedParcelIds (tất cả = owned).
    */
-  parcelTenure?: Record<string, { kind: 'owned' | 'leased'; boughtBy?: string; day?: number; leasedBy?: string; sinceDay?: number; paidTotal?: number; debtDays?: number }>;
+  parcelTenure?: Record<string, { kind: 'owned' | 'leased'; boughtBy?: string; day?: number; leasedBy?: string; sinceDay?: number; paidTotal?: number; debtDays?: number; civicDebt?: number; civicDebtDays?: number }>;
 }
 
 export interface BuildingPlacementRecord {

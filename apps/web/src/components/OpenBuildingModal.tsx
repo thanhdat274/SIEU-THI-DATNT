@@ -125,6 +125,15 @@ export const OpenBuildingModal: React.FC<Props> = ({
           <div>
             <strong>Số lượng:</strong> {currentCount} / {currentDef.maxInstances} cơ sở
           </div>
+          {isCivic(selectedType) && (
+            <div style={{ gridColumn: '1 / -1' }} data-civic-upkeep>
+              <strong>Duy trì:</strong>{' '}
+              <span style={{ color: 'var(--brick)', fontWeight: 'bold' }}>
+                {money(CIVIC_DEFS.find(def => def.buildingTypeId === selectedType)?.upkeepPerDay ?? 0)}/ngày
+              </span>
+              <span className="muted"> (trừ đầu mỗi ngày từ quỹ chung)</span>
+            </div>
+          )}
         </div>
       </div>
 

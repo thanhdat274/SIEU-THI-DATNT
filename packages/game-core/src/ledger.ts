@@ -217,7 +217,7 @@ export class LedgerManager {
       rep.transactionsCount += 1;
       rep.itemsSold += itemCount;
       rep.grossProfit = rep.revenue - rep.cogs;
-      rep.netProfit = rep.grossProfit - (rep.rentCost ?? 0);
+      rep.netProfit = rep.grossProfit - (rep.rentCost ?? 0) - (rep.civicCost ?? 0);
     }
     this.recalcNetProfit();
   }
@@ -229,7 +229,20 @@ export class LedgerManager {
       buildingInstanceId, revenue: 0, cogs: 0, transactionsCount: 0, itemsSold: 0, grossProfit: 0, netProfit: 0,
     });
     rep.rentCost = (rep.rentCost ?? 0) + amount;
-    rep.netProfit = rep.grossProfit - rep.rentCost;
+    rep.netProfit = rep.grossProfit - rep.rentCost - (rep.civicCost ?? 0);
+  }
+
+  /**
+   * Tính phí xóm (phí lô + duy trì công trình) vào báo cáo của một tòa (OpenSpec `civic-local-fees`, D2/D3);
+   * không đụng `civicFee`/`civicUpkeep` toàn ngày (do bên gọi cộng một lần).
+   */
+  public addBuildingCivicCost(buildingInstanceId: string, amount: number): void {
+    this.currentDayRecord.buildingReports ??= {};
+    const rep = (this.currentDayRecord.buildingReports[buildingInstanceId] ??= {
+      buildingInstanceId, revenue: 0, cogs: 0, transactionsCount: 0, itemsSold: 0, grossProfit: 0, netProfit: 0,
+    });
+    rep.civicCost = (rep.civicCost ?? 0) + amount;
+    rep.netProfit = rep.grossProfit - (rep.rentCost ?? 0) - rep.civicCost;
   }
 
   /** Ghi thống kê hàng hỏng. */
@@ -368,7 +381,8 @@ function parseLedgerSuffix(id: string): number {
 /**
  * Tính lợi nhuận ròng chuẩn mực cho một DailyRecord, bao gồm đầy đủ chi phí:
  * doanh thu - giá vốn - hàng hỏng - lương - bảo trì - thiết bị - tổn thất trộm
- * + thu hồi trộm - tiền giả - nợ xấu - thuế đã nộp - truy thu thuế - phạt thuế.
+ * + thu hồi trộm - tiền giả - nợ xấu - thuế đã nộp - truy thu thuế - phạt thuế
+ * - tiền thuê đất - phí duy trì công trình - phí xóm.
  */
 export function computeNetProfit(r: DailyRecord): number {
   return (
@@ -385,5 +399,7 @@ export function computeNetProfit(r: DailyRecord): number {
     - (r.taxBackPaid ?? 0)
     - (r.taxPenalty ?? 0)
     - (r.rentCost ?? 0)
+    - (r.civicUpkeep ?? 0)
+    - (r.civicFee ?? 0)
   );
 }

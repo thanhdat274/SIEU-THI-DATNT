@@ -51,7 +51,9 @@ export function runOperationsTests(): void {
   assert.equal(cashier.getPlayerData().money, startMoney + 4500, 'Player retry cùng checkout không cộng tiền lần hai');
 
   const autoSave = structuredClone(DEFAULT_INITIAL_SAVE);
-  autoSave.player.money = 7000;
+  // Bước 3 (`civic-local-fees`): đầu ngày tự trừ phí xóm lô sở hữu W0 (~11.000 ₫/ngày khi chưa có công trình, QoL 20).
+  // Đặt tiền đủ lớn để sau khi trừ phí vẫn còn đúng ngân sách thử (rules[0] ~6.000 ₫ vừa đủ, cộng rules[1] ~11.000 ₫ thì thiếu).
+  autoSave.player.money = 18000;
   autoSave.inventory = autoSave.inventory.map((item) => ({ ...item, quantity: 0, lots: [] }));
   const auto = createSim(autoSave);
   assert.equal(auto.getAutoBuyConfig().enabled, false, 'Tự nhập mặc định tắt');

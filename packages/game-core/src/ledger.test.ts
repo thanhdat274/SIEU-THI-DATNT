@@ -123,10 +123,11 @@ export function runLedgerTests(): void {
     assert.equal(dayRecord.revenue, 10000, 'Doanh thu đúng 10.000đ (2 × 5000)');
     assert.equal(dayRecord.cogs, 6000, 'Giá vốn COGS đúng 6.000đ (2 × 3000)');
     assert.equal(dayRecord.grossProfit, 4000, 'Lợi nhuận gộp đúng 4.000đ (10000 - 6000)');
-    assert.equal(dayRecord.netProfit, 4000, 'Lợi nhuận ròng đúng 4.000đ');
+    // Bước 3 (`civic-local-fees`): bản ghi ngày đã gồm phí xóm/duy trì trừ đầu ngày — chỉ trừ đúng các khoản đó.
+    assert.equal(dayRecord.netProfit, 4000 - (dayRecord.civicFee ?? 0) - (dayRecord.civicUpkeep ?? 0) - (dayRecord.rentCost ?? 0), 'Lợi nhuận ròng đúng 4.000đ (ngoài chi phí đầu ngày)');
 
     // Xác minh không bị trừ trùng 30.000đ tiền mua hàng vào lợi nhuận
-    assert(dayRecord.netProfit > 0, 'Lợi nhuận không bị âm do trừ trùng tiền mua hàng');
+    assert(dayRecord.grossProfit > 0, 'Lợi nhuận không bị âm do trừ trùng tiền mua hàng');
 
     // Kiểm tra Ledger có đủ 2 bút toán: 1 purchase (30.000) và 1 sale (10.000, cogs 6.000)
     const ledger = sim.getLedger();

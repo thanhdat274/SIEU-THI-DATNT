@@ -103,6 +103,7 @@ import { runDiningAddonTests } from './dining-addons.test';
 import { runPrestigeTests } from './prestige.test';
 import { runCivicQolTestsEntry } from './civic-qol.test';
 import { runCivicPopulationTestsEntry } from './civic-population.test';
+import { runCivicFeeTestsEntry } from './civic-fees.test';
 import { runAnalyticsTests } from './analytics.test';
 import { runWaveATests } from './wave-a.test';
 import { runSpecialRequestSimTests } from './special-request-sim.test';
@@ -248,6 +249,7 @@ export async function runTests(): Promise<void> {
   runPrestigeTests();
   runCivicQolTestsEntry();
   runCivicPopulationTestsEntry();
+  runCivicFeeTestsEntry();
   runAnalyticsTests();
   runWaveATests();
   runSpecialRequestSimTests();

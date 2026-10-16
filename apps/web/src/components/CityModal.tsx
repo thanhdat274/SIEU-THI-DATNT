@@ -26,6 +26,10 @@ export interface Props {
   placements?: readonly { buildingId: string; parcelId: string }[];
   /** Lô trống có thể xây (lô W0 trống + lô đã sở hữu chưa có tòa). */
   buildableParcelIds?: readonly string[];
+  /** Chi phí xóm/ngày (OpenSpec `civic-local-fees`): duy trì theo tòa, phí xóm theo lô sở hữu. */
+  civicCosts?: { upkeepByBuilding: Readonly<Record<string, number>>; feeByParcel: Readonly<Record<string, number>>; totalUpkeep: number; totalFee: number };
+  /** Phí xóm từng lô sở hữu kèm QoL khu của lô (để giải thích con số). */
+  civicFeeByParcel?: ReadonlyArray<{ parcelId: string; districtId: string; qol: number; fee: number }>;
   /** Mở bảng góp vốn xây công trình trên một lô. */
   onBuildOnParcel?: (parcelId: string) => void;
   onClose: () => void;
@@ -37,7 +41,7 @@ const CORNER_LABEL = ['', 'Góc ngã tư'];
 const ROAD_LABEL: Record<string, string> = { main: 'đường chính', south: 'đường nam' };
 
 /** Bảng "Thành phố" (land-reclamation 4.3): cấp thành phố, các đợt khai hoang (khóa/đang thi công/mở) và mua lô. */
-export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels, playerLevel, playerMoney, day, buildingCount, onReclaim, journal, onPlanningWave, onBuyParcel, civicQol, civicPopulation, placements = [], buildableParcelIds = [], onBuildOnParcel, onClose }) => {
+export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels, playerLevel, playerMoney, day, buildingCount, onReclaim, journal, onPlanningWave, onBuyParcel, civicQol, civicPopulation, placements = [], buildableParcelIds = [], civicCosts, civicFeeByParcel, onBuildOnParcel, onClose }) => {
   const [tab, setTab] = useState<'land' | 'civic'>('land');
   const tier = cityTierFrom(world.openedWaves, buildingCount);
   const waves = RECLAMATION_WAVES.filter(wave => wave.id !== 'w0');
@@ -52,7 +56,7 @@ export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels
       <PixelButton role="tab" aria-selected={tab === 'land'} variant={tab === 'land' ? 'teal' : 'wood'} style={{ minHeight: 44 }} onClick={() => setTab('land')}>Khai hoang</PixelButton>
       <PixelButton role="tab" aria-selected={tab === 'civic'} variant={tab === 'civic' ? 'teal' : 'wood'} style={{ minHeight: 44 }} onClick={() => setTab('civic')} data-city-tab="civic">Xóm phố</PixelButton>
     </div>
-    {tab === 'civic' && <CivicPanel civicQol={civicQol} civicPopulation={civicPopulation} placements={placements} buildableParcelIds={buildableParcelIds} onBuildOnParcel={onBuildOnParcel} />}
+    {tab === 'civic' && <CivicPanel civicQol={civicQol} civicPopulation={civicPopulation} placements={placements} buildableParcelIds={buildableParcelIds} civicCosts={civicCosts} civicFeeByParcel={civicFeeByParcel} onBuildOnParcel={onBuildOnParcel} />}
     {tab === 'land' && <>
     <p className="muted" style={{ margin: '0 0 8px' }}>Mở đợt để có đất mới, rồi mua lô để đặt tòa. Lô góc ngã tư đắt hơn nhưng đông khách hơn.</p>
     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
@@ -107,8 +111,8 @@ export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels
   </PixelDialog>;
 };
 
-/** Tab "Xóm phố" (civic-population-demand + civic-buildings-qol): dân số, chỉ số sống, công trình, lô trống. */
-const CivicPanel: React.FC<{ civicQol?: Readonly<Record<string, number>>; civicPopulation?: Readonly<Record<string, { pop: number; target: number; factor: number }>>; placements: readonly { buildingId: string; parcelId: string }[]; buildableParcelIds: readonly string[]; onBuildOnParcel?: (parcelId: string) => void }> = ({ civicQol = {}, civicPopulation = {}, placements, buildableParcelIds, onBuildOnParcel }) => {
+/** Tab "Xóm phố" (civic-population-demand + civic-buildings-qol + civic-local-fees): dân số, chỉ số sống, công trình + phí, lô trống. */
+const CivicPanel: React.FC<{ civicQol?: Readonly<Record<string, number>>; civicPopulation?: Readonly<Record<string, { pop: number; target: number; factor: number }>>; placements: readonly { buildingId: string; parcelId: string }[]; buildableParcelIds: readonly string[]; civicCosts?: { upkeepByBuilding: Readonly<Record<string, number>>; feeByParcel: Readonly<Record<string, number>>; totalUpkeep: number; totalFee: number }; civicFeeByParcel?: ReadonlyArray<{ parcelId: string; districtId: string; qol: number; fee: number }>; onBuildOnParcel?: (parcelId: string) => void }> = ({ civicQol = {}, civicPopulation = {}, placements, buildableParcelIds, civicCosts, civicFeeByParcel = [], onBuildOnParcel }) => {
   const civic = placements.flatMap(p => {
     const typeId = buildingTypeOfInstance(p.buildingId)?.typeId;
     const def = CIVIC_DEFS.find(c => c.buildingTypeId === typeId);
@@ -135,9 +139,30 @@ const CivicPanel: React.FC<{ civicQol?: Readonly<Record<string, number>>; civicP
       })}
     </ul>
     <h4 style={{ margin: '12px 0 6px' }}>Công trình đã xây ({civic.length})</h4>
+    {civicCosts && (
+      <p className="muted" style={{ margin: '0 0 6px', fontSize: 12 }} data-civic-costs-summary>
+        Mỗi ngày: duy trì công trình <strong>{money(civicCosts.totalUpkeep)}</strong> + phí xóm <strong>{money(civicCosts.totalFee)}</strong> (chỉ lô sở hữu; QoL cao thì phí giảm).
+      </p>
+    )}
     {civic.length === 0 ? <p className="muted" style={{ margin: 0 }}>Chưa có công trình công cộng nào.</p> : <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 4 }}>
-      {civic.map(c => <li key={c.buildingId}>🏛 <strong>{BUILDING_TYPE_DEFS[c.typeId as keyof typeof BUILDING_TYPE_DEFS]?.name ?? c.typeId}</strong> · {SERVICE_LABEL[c.def.service] ?? c.def.service} · lô {c.parcelId} · bán kính {c.def.radiusTiles} ô</li>)}
+      {civic.map(c => {
+        const upkeep = civicCosts?.upkeepByBuilding[c.buildingId] ?? c.def.upkeepPerDay;
+        const parcelFee = civicCosts?.feeByParcel[c.parcelId] ?? 0;
+        return <li key={c.buildingId} data-civic-building={c.buildingId}>
+          🏛 <strong>{BUILDING_TYPE_DEFS[c.typeId as keyof typeof BUILDING_TYPE_DEFS]?.name ?? c.typeId}</strong> · {SERVICE_LABEL[c.def.service] ?? c.def.service} · lô {c.parcelId} · bán kính {c.def.radiusTiles} ô
+          <br/><span className="muted">Duy trì {money(upkeep)}/ngày{parcelFee > 0 ? ` · phí xóm lô ${money(parcelFee)}/ngày` : ''}</span>
+        </li>;
+      })}
     </ul>}
+    {civicCosts && Object.keys(civicCosts.feeByParcel).length > 0 && <>
+      <h4 style={{ margin: '12px 0 6px' }}>Phí xóm theo lô sở hữu</h4>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 4 }} data-civic-fee-parcels>
+        {(civicFeeByParcel.length > 0 ? civicFeeByParcel : Object.entries(civicCosts.feeByParcel).map(([parcelId, fee]) => ({ parcelId, qol: 0, fee }))).map(line => (
+          <li key={line.parcelId}>Lô <strong>{line.parcelId}</strong> · QoL khu {Math.round(line.qol)}/100 · {money(line.fee)}/ngày</li>
+        ))}
+      </ul>
+      <p className="muted" style={{ margin: '4px 0 0', fontSize: 11 }}>Lô thuê không thu phí xóm (đã trả tiền thuê đất). QoL khu càng cao, phí càng giảm (tối đa −30%).</p>
+    </>}
     <h4 style={{ margin: '12px 0 6px' }}>Lô trống có thể xây</h4>
     {buildableParcelIds.length === 0 ? <p className="muted" style={{ margin: 0 }}>Không còn lô trống. Mua thêm lô ở tab Khai hoang.</p> : <div style={{ display: 'grid', gap: 6, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))' }}>
       {buildableParcelIds.map(id => <PixelButton key={id} variant="teal" style={{ minHeight: 44, width: '100%', whiteSpace: 'normal' }} disabled={!onBuildOnParcel} onClick={() => onBuildOnParcel?.(id)}>Góp vốn xây · {id}</PixelButton>)}

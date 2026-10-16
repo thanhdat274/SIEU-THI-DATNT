@@ -70,6 +70,8 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
             <div>Hàng hỏng: <strong style={{ color: 'var(--brick)' }}>- {money(summary.spoilageCost)}</strong></div>
             <div>Lương nhân viên: <strong style={{ color: 'var(--brick)' }}>- {money(summary.wagesPaid)}</strong></div>
             {record.rentCost ? <div>Tiền thuê đất: <strong style={{ color: 'var(--brick)' }}>- {money(record.rentCost)}</strong></div> : null}
+            {record.civicUpkeep ? <div>Duy trì công trình: <strong style={{ color: 'var(--brick)' }}>- {money(record.civicUpkeep)}</strong></div> : null}
+            {record.civicFee ? <div>Phí xóm: <strong style={{ color: 'var(--brick)' }}>- {money(record.civicFee)}</strong></div> : null}
             {summary.maintenanceCost ? <div>Sửa chữa, bảo trì: <strong style={{ color: 'var(--brick)' }}>- {money(summary.maintenanceCost)}</strong></div> : null}
             {record.counterfeitLoss ? <div>Tiền giả nhận nhầm: <strong style={{ color: 'var(--brick)' }}>- {money(record.counterfeitLoss)}</strong></div> : null}
             {record.badDebtCost ? <div>Nợ xấu đã xóa: <strong style={{ color: 'var(--brick)' }}>- {money(record.badDebtCost)}</strong></div> : null}
@@ -129,6 +131,17 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
               ))}
             </ul>
           </div>
+
+          {morningBrief.civicCosts && (morningBrief.civicCosts.upkeep > 0 || morningBrief.civicCosts.fee > 0) && (
+            <div className="pixel-panel" style={{ padding: 12 }} data-morning-civic-costs>
+              <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--color-wood-light)' }}>CHI PHÍ XÓM MỖI NGÀY</h4>
+              <div style={{ display: 'grid', gap: 4, fontSize: 11 }}>
+                <div>🏛 <strong>Duy trì công trình hôm nay:</strong> - {money(morningBrief.civicCosts.upkeep)}</div>
+                <div>🧹 <strong>Phí xóm hôm nay:</strong> - {money(morningBrief.civicCosts.fee)} <span className="muted">(chỉ lô sở hữu; QoL cao thì giảm)</span></div>
+                <div className="muted">Dự kiến mỗi ngày tới: duy trì {money(morningBrief.civicCosts.projected.upkeep)} + phí xóm {money(morningBrief.civicCosts.projected.fee)}.</div>
+              </div>
+            </div>
+          )}
         </div>
       ) : null}
     </PixelDialog>

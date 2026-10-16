@@ -106,6 +106,12 @@ const BuildingReportsView: React.FC<{ day: number; records: Record<number, Daily
         </select>
       </label>
     </div>
+    {currentRecord && ((currentRecord.civicUpkeep ?? 0) > 0 || (currentRecord.civicFee ?? 0) > 0) && (
+      <p style={{ margin: '0 0 10px', fontSize: 12 }} data-analytics-civic-costs>
+        🏛 Duy trì công trình: <strong style={{ color: 'var(--brick)' }}>- {(currentRecord.civicUpkeep ?? 0).toLocaleString('vi-VN')} ₫</strong>
+        {' · '}🧹 Phí xóm: <strong style={{ color: 'var(--brick)' }}>- {(currentRecord.civicFee ?? 0).toLocaleString('vi-VN')} ₫</strong>
+      </p>
+    )}
     {reports.length === 0 ? (
       <p className="muted">Chưa có giao dịch theo tòa nào được ghi nhận cho Ngày {selectedDay}.</p>
     ) : (
@@ -116,6 +122,7 @@ const BuildingReportsView: React.FC<{ day: number; records: Record<number, Daily
               <th style={{ padding: '6px 8px' }}>Tòa nhà</th>
               <th style={{ padding: '6px 8px', textAlign: 'right' }}>Doanh thu</th>
               <th style={{ padding: '6px 8px', textAlign: 'right' }}>Giá vốn</th>
+              <th style={{ padding: '6px 8px', textAlign: 'right' }}>Thuê + phí xóm</th>
               <th style={{ padding: '6px 8px', textAlign: 'right' }}>Lợi nhuận</th>
               <th style={{ padding: '6px 8px', textAlign: 'center' }}>Số đơn</th>
               <th style={{ padding: '6px 8px', textAlign: 'center' }}>Món bán</th>
@@ -127,7 +134,11 @@ const BuildingReportsView: React.FC<{ day: number; records: Record<number, Daily
                 <td style={{ padding: '6px 8px', fontWeight: 'bold' }}>{buildingName(r.buildingInstanceId)}</td>
                 <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--teal)' }}>{r.revenue.toLocaleString('vi-VN')} ₫</td>
                 <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--brick)' }}>{r.cogs.toLocaleString('vi-VN')} ₫</td>
-                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>{(r.revenue - r.cogs).toLocaleString('vi-VN')} ₫</td>
+                <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--brick)' }}>
+                  {((r.rentCost ?? 0) + (r.civicCost ?? 0)).toLocaleString('vi-VN')} ₫
+                  {(r.civicCost ?? 0) > 0 && <span className="muted" style={{ fontSize: 11 }}><br/>phí xóm {r.civicCost!.toLocaleString('vi-VN')} ₫</span>}
+                </td>
+                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold', color: (r.netProfit ?? r.grossProfit) >= 0 ? 'inherit' : 'var(--brick)' }}>{(r.netProfit ?? r.grossProfit).toLocaleString('vi-VN')} ₫</td>
                 <td style={{ padding: '6px 8px', textAlign: 'center' }}>{r.transactionsCount}</td>
                 <td style={{ padding: '6px 8px', textAlign: 'center' }}>{r.itemsSold}</td>
               </tr>
@@ -137,7 +148,8 @@ const BuildingReportsView: React.FC<{ day: number; records: Record<number, Daily
       </div>
     )}
     <p className="muted" style={{ marginTop: 10, fontSize: 11 }}>
-      Báo cáo ghi nhận doanh thu và giá vốn từ các giao dịch bán lẻ phát sinh tại từng tòa (D5).
+      Báo cáo ghi nhận doanh thu và giá vốn từ các giao dịch bán lẻ phát sinh tại từng tòa (D5). Cột "Thuê + phí xóm" gồm tiền thuê đất và
+      phí xóm (phí vệ sinh/an ninh lô + duy trì công trình) của tòa (OpenSpec `civic-local-fees`).
     </p>
   </div>;
 };

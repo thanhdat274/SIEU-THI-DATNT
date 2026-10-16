@@ -168,7 +168,10 @@ export function runSecurityTests(): void {
     const money0 = sim.getPlayerData().money;
     sim.getClock().advanceToNextDay();
     assert.equal(sim.getTime().day, day);
-    const stolen = money0 - sim.getPlayerData().money;
+    // Bước 3 (`civic-local-fees`): đầu ngày còn tự trừ phí xóm/quyên (W0 ~11.000 ₫/ngày) — tách riêng khỏi tiền mất do trộm.
+    const dayAfter = sim.getTime().day;
+    const civicCosts = sim.getLedger().filter(e => e.day === dayAfter && (e.type === 'rent' || e.type === 'civic_upkeep' || e.type === 'civic_fee')).reduce((s, e) => s + e.amount, 0);
+    const stolen = (money0 - sim.getPlayerData().money) - civicCosts;
     const plan = planBurglary(day, L + 1, { camera: false, hasGuard: false }) as Extract<BurglaryPlan, { kind: 'cash' }>;
     assert.ok(stolen >= 1000 && stolen <= 100_000 * SECURITY_RULES.nightCashMax + 1000 && stolen >= 100_000 * plan.fraction - 1000, `Mất 30–60% doanh thu hôm trước (mất ${stolen})`);
     const entry = sim.getLedger().find(e => e.type === 'theft_cash')!;

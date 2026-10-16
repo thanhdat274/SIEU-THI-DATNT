@@ -197,7 +197,7 @@ import { DailyRoutineSystem, HOME_DOOR_TILE, type DailyRoutineState, type Invent
 import { CoopRoutineSystem, type CoopPlayerRoutineConfig, type CoopRoutineTickInput, type CoopRoutineTickOutput } from './coop-routine';
 import { reclaimWaveAllowed, startReclaimWave, buyParcelAllowed, customerTrafficMultiplier, occupiedParcelBuildings } from './reclamation';
 import { computeCivicQol } from './civic-qol';
-import { civicDefOf } from '@game/data';
+import { civicDefOf, civicFeeForOwnedParcel, rectWidth, rectHeight } from '@game/data';
 import { computePopulationSnapshot, stepAllPopulations, populationCapBonus, populationExtraUnitChance, type DistrictPopulation } from './civic-population';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
@@ -299,7 +299,7 @@ export class GameSimulation {
   /** Các lô ĐÃ MUA (thế giới mở, schema 7). W0 gieo 4 lô mặc định; lô đợt mới chỉ thêm sau `buy_parcel`. */
   private ownedParcelIds: string[];
   /** Trạng thái sở hữu/thuê lô (schema 10): `parcelTenure[parcelId] = { kind: 'owned'|'leased', ... }`. */
-  private parcelTenure: Record<string, { kind: 'owned' | 'leased'; day?: number; paidTotal?: number; debtDays?: number }>;
+  private parcelTenure: Record<string, { kind: 'owned' | 'leased'; day?: number; paidTotal?: number; debtDays?: number; civicDebt?: number; civicDebtDays?: number }>;
   /** Trạng thái thế giới mở (schema 7): đợt đã mở & đang thi công. */
   private worldOpenState: WorldOpenState;
   /** Dân số xóm theo QoL (OpenSpec `civic-population-demand`): districtId → pop. Lưu/export qua save. */
@@ -373,6 +373,8 @@ export class GameSimulation {
   private logisticsManager = new StoreLogisticsManager();
   private storageManager: StorageManager;
   private processedRentDayIds: Set<number> = new Set();
+  /** Ngày đã trừ chi phí xóm (OpenSpec `civic-local-fees`): idempotent, KHÔNG thêm trường save (dựng lại khi nạp). */
+  private processedCivicDayIds: Set<number> = new Set();
 
   /** Proxy đến staffManager cho staff list (đọc). */
   private get staff(): StaffMember[] { return this.staffManager.getStaffRef(); }
@@ -619,6 +621,9 @@ export class GameSimulation {
       const yesterdayRevenue = this.currentDayRecord.revenue;
       this.closeDailyRecord(day - 1);
       this.initDailyRecord(day);
+      // Chi phí xóm (OpenSpec `civic-local-fees`): sau tiền thuê lô (thứ tự thuê lô → duy trì → phí xóm), nhưng SAU khi mở
+      // bản ghi ngày mới để `civicUpkeep`/`civicFee` nằm trong bản ghi của đúng ngày bị trừ (ledger `day` khớp bản ghi, bản tin sáng đọc được).
+      this.collectDailyCivicCosts(day);
       this.resolvePoliceCases(day);
       this.updateCustomerCreditStatuses(day);
       this.runNightBurglary(day, yesterdayRevenue);
@@ -988,21 +993,27 @@ export class GameSimulation {
   /**
    * Trả nợ tiền thuê đất (lệnh `pay_rent_debt`, OpenSpec `open-world-land-lease` 2.1/2.2):
    * Tính số nợ = debtDays × dailyRent; trừ tiền, xóa nợ, mở lại tòa trên lô nếu đang bị closedForRent.
+   * OpenSpec `civic-local-fees` D4: dùng CHUNG lệnh này cho nợ phí xóm (`civicDebt`) của lô sở hữu/đang thuê —
+   * không thêm lệnh mới; tổng nợ = nợ thuê + nợ phí xóm.
    */
   public payRentDebt(parcelId: string): { success: boolean; reason?: string; amount?: number } {
     const tenure = this.parcelTenure[parcelId];
-    if (!tenure || tenure.kind !== 'leased') return { success: false, reason: 'not_leased' };
+    if (!tenure || (tenure.kind !== 'leased' && tenure.kind !== 'owned')) return { success: false, reason: 'not_leased' };
     const debtDays = tenure.debtDays ?? 0;
-    if (debtDays <= 0) return { success: false, reason: 'no_debt' };
+    const civicDebt = tenure.civicDebt ?? 0;
+    if (debtDays <= 0 && civicDebt <= 0) return { success: false, reason: 'no_debt' };
     const parcel = resolveParcel(parcelId);
     if (!parcel) return { success: false, reason: 'unknown_parcel' };
     const basePrice = parcelPrice(parcel);
     const dailyRent = Math.max(1, Math.ceil(basePrice * LAND_LEASE_CONSTANTS.leaseDailyRate));
-    const debtAmount = debtDays * dailyRent;
+    const rentDebt = tenure.kind === 'leased' ? debtDays * dailyRent : 0;
+    const debtAmount = rentDebt + civicDebt;
 
     if (this.playerData.money < debtAmount) return { success: false, reason: 'not_enough_money' };
     this.playerData.money -= debtAmount;
     tenure.debtDays = 0;
+    tenure.civicDebt = 0;
+    tenure.civicDebtDays = 0;
     tenure.paidTotal = (tenure.paidTotal ?? 0) + debtAmount;
 
     // Mở lại các tòa trên lô nếu đang bị closedForRent
@@ -1012,7 +1023,10 @@ export class GameSimulation {
       }
     }
     const currentDay = this.clock.getTime().day;
-    this.recordRentCharge(parcelId, debtAmount, currentDay, `Trả nợ tiền thuê đất lô ${parcelId} (${debtDays} ngày, ngày ${currentDay})`);
+    const debtLabel = civicDebt > 0
+      ? `Trả nợ thuê đất + phí xóm lô ${parcelId} (${debtDays} ngày, ngày ${currentDay})`
+      : `Trả nợ tiền thuê đất lô ${parcelId} (${debtDays} ngày, ngày ${currentDay})`;
+    this.recordRentCharge(parcelId, debtAmount, currentDay, debtLabel);
     this.currentDayRecord.rentCost = (this.currentDayRecord.rentCost ?? 0) + debtAmount;
     this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
     this.notifyStateChanged();
@@ -1065,21 +1079,188 @@ export class GameSimulation {
         this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
         anyChanged = true;
       } else {
-        tenure.debtDays = (tenure.debtDays ?? 0) + 1;
-        anyChanged = true;
-        if (tenure.debtDays >= LAND_LEASE_CONSTANTS.debtClosureDays) {
-          // Đóng cửa tòa đặt trên lô này
-          const placements = this.buildingPlacements ?? [];
-          for (const p of placements) {
-            if (p.parcelId === parcelId && !p.closedForRent) {
-              p.closedForRent = true;
-              this.callbacks.onToast?.(`Tòa ${p.buildingId} trên lô ${parcelId} bị đóng cửa do nợ tiền thuê ${tenure.debtDays} ngày!`, 'warn');
-            }
-          }
-        }
+        if (this.recordRentDebtRefusal(parcelId, tenure, `tiền thuê đất lô ${parcelId}`)) anyChanged = true;
       }
     }
     if (anyChanged) this.notifyStateChanged();
+  }
+
+  /**
+   * Ghi nợ tiền thuê khi không đủ tiền: tăng `debtDays`; nợ ≥ `debtClosureDays` → đóng cửa tòa trên lô.
+   * KHÔNG đóng cửa tiệm chính (lot-center) — tránh chết spiral: đóng cửa → hết doanh thu → không trả được.
+   * @returns `true` nếu trạng thái nợ đổi (cần thông báo).
+   */
+  private recordRentDebtRefusal(parcelId: string, tenure: { debtDays?: number }, label: string): boolean {
+    tenure.debtDays = (tenure.debtDays ?? 0) + 1;
+    const debtDays = tenure.debtDays;
+    const isMainShop = parcelId === 'lot-center';
+    // KHÔNG đóng cửa tiệm chính/lô W0 vì nợ phí xóm
+    if (!isMainShop && debtDays >= LAND_LEASE_CONSTANTS.debtClosureDays) {
+      for (const p of this.buildingPlacements ?? []) {
+        if (p.parcelId === parcelId && !p.closedForRent) {
+          p.closedForRent = true;
+          this.callbacks.onToast?.(`Tòa ${p.buildingId} trên lô ${parcelId} bị đóng cửa do nợ ${label} ${debtDays} ngày!`, 'warn');
+        }
+      }
+    } else if (isMainShop && debtDays >= LAND_LEASE_CONSTANTS.debtClosureDays) {
+      this.callbacks.onToast?.(`Tiệm chính nợ ${label} ${debtDays} ngày — giảm QoL khu, KHÔNG đóng cửa`, 'warn');
+    } else {
+      this.callbacks.onToast?.(`Chưa đủ tiền trả ${label} (nợ ${debtDays} ngày).`, 'warn');
+    }
+    return true;
+  }
+
+  /**
+   * Ghi nợ phí xóm khi không đủ tiền: tăng `civicDebtDays` + dồn `civicDebt`.
+   * KHÔNG đóng cửa tòa chính/lô W0 (tránh chết spiral).
+   * @returns `true` nếu trạng thái nợ đổi (cần thông báo).
+   */
+  private recordCivicDebtRefusal(tenure: { civicDebtDays?: number; civicDebt?: number }, amount: number, label: string, firstMissToday: boolean): boolean {
+    tenure.civicDebt = (tenure.civicDebt ?? 0) + amount;
+    if (firstMissToday) tenure.civicDebtDays = (tenure.civicDebtDays ?? 0) + 1;
+    this.callbacks.onToast?.(`Chưa đủ tiền trả ${label} (nợ phí xóm ${tenure.civicDebtDays ?? 0} ngày, ${tenure.civicDebt} ₫).`, 'warn');
+    return true;
+  }
+
+  /** Lô SỞ HỮU (kind 'owned') — dùng cho phí xóm; lô thuê đã trả `rent` nên không thu phí. */
+  private ownedParcelIdList(): string[] {
+    const owned = Object.entries(this.parcelTenure)
+      .filter(([, t]) => t?.kind === 'owned')
+      .map(([id]) => id);
+    if (owned.length > 0) return owned.sort();
+    // Save cũ chưa có `parcelTenure` (schema ≤ 9 nạp thẳng): coi mọi `ownedParcelIds` là sở hữu.
+    return [...new Set(this.ownedParcelIds)].sort();
+  }
+
+  /** Đệm QoL theo khu cho một lượt tính chi phí xóm (một getter thay vì gọi lại cho từng lô). */
+  private civicQolCache: Record<string, number> = {};
+
+  /**
+   * Phí xóm một ngày của một lô: `OWNED_TILE_FEE × số ô × (1 − 0,3 × qol/100)`, làm tròn nghìn (D2).
+   * QoL lấy theo khu CỦA LÔ đó. Tất định theo trạng thái hiện tại.
+   */
+  private civicFeeForParcel(parcelId: string): number {
+    const parcel = resolveParcel(parcelId);
+    if (!parcel) return 0;
+    const tiles = rectWidth(parcel.rect) * rectHeight(parcel.rect);
+    return civicFeeForOwnedParcel(tiles, this.civicQolCache[parcel.districtId] ?? 0);
+  }
+
+  /**
+   * Chi phí xóm một ngày theo LÔ (nguồn duy nhất cho cả việc trừ tiền lẫn UI/báo cáo):
+   * `feeByParcel` = phí xóm lô sở hữu; `upkeepByParcel` = Σ duy trì công trình đặt trên lô;
+   * `upkeepByBuilding` = duy trì từng tòa (một dòng ledger mỗi tòa).
+   */
+  private civicDailyCosts(): { feeByParcel: Record<string, number>; upkeepByParcel: Record<string, number>; upkeepByBuilding: Record<string, number> } {
+    this.civicQolCache = this.getCivicQol();
+    const feeByParcel: Record<string, number> = {};
+    for (const parcelId of this.ownedParcelIdList()) {
+      const amount = this.civicFeeForParcel(parcelId);
+      if (amount > 0) feeByParcel[parcelId] = amount;
+    }
+    const upkeepByParcel: Record<string, number> = {};
+    const upkeepByBuilding: Record<string, number> = {};
+    for (const placement of this.civicPlacements()) {
+      const def = civicDefOf(buildingTypeOfInstance(placement.buildingId)?.typeId ?? '');
+      if (!def || def.upkeepPerDay <= 0) continue;
+      upkeepByParcel[placement.parcelId] = (upkeepByParcel[placement.parcelId] ?? 0) + def.upkeepPerDay;
+      upkeepByBuilding[placement.buildingId] = (upkeepByBuilding[placement.buildingId] ?? 0) + def.upkeepPerDay;
+    }
+    this.civicQolCache = {};
+    return { feeByParcel, upkeepByParcel, upkeepByBuilding };
+  }
+
+  /** Công trình công cộng đang đặt, theo VỊ TRÍ ĐÃ GIẢI (`resolvePlacements`, gồm tòa ở vị trí mặc định). */
+  private civicPlacements(): readonly BuildingPlacement[] {
+    return resolvePlacements(this.buildingPlacements, this.unlockedPlotIds)
+      .filter(p => !!civicDefOf(buildingTypeOfInstance(p.buildingId)?.typeId ?? ''));
+  }
+
+  /**
+   * Trừ chi phí xóm đầu ngày (OpenSpec `civic-local-fees` 1.3), NGAY SAU tiền thuê lô, thứ tự cố định:
+   *   thuê lô → duy trì công trình (`civic_upkeep`, mỗi tòa một dòng có `buildingInstanceId`) → phí xóm (`civic_fee`).
+   * Idempotent theo ngày (`processedCivicDayIds`). Thiếu tiền → nợ theo luồng thuê lô (D4): không trừ gì thêm,
+   * dồn `civicDebt` + `civicDebtDays` (riêng, tối đa +1 ngày/lô/ngày) để `payRentDebt` thu hồi; KHÔNG đóng cửa tòa (tránh kẹt tiệm chính).
+   * Vị trí tòa lấy từ `resolvePlacements` (không đọc `buildingPlacements` thô) nên tòa ở vị trí mặc định vẫn được tính.
+   */
+  public collectDailyCivicCosts(day: number): void {
+    if (day < 1) return;
+    if (this.processedCivicDayIds.has(day)) return;
+    this.processedCivicDayIds.add(day);
+
+    const { feeByParcel, upkeepByParcel, upkeepByBuilding } = this.civicDailyCosts();
+
+    // Thứ tự cố định (D1): duy trì công trình trước, rồi phí xóm; trong nhóm sắp xếp theo id để tất định.
+    const payments: { parcelId: string; amount: number; type: 'civic_upkeep' | 'civic_fee'; description: string; buildingInstanceId?: string; chargeBuilding?: string }[] = [];
+    const civicPlacements = this.civicPlacements();
+    for (const buildingId of Object.keys(upkeepByBuilding).sort()) {
+      const placement = civicPlacements.find(p => p.buildingId === buildingId);
+      if (!placement) continue;
+      payments.push({
+        parcelId: placement.parcelId, amount: upkeepByBuilding[buildingId], type: 'civic_upkeep',
+        description: `Duy trì công trình ${buildingId} (ngày ${day})`, buildingInstanceId: buildingId, chargeBuilding: buildingId,
+      });
+    }
+    for (const parcelId of Object.keys(feeByParcel).sort()) {
+      payments.push({
+        parcelId, amount: feeByParcel[parcelId], type: 'civic_fee',
+        description: `Phí xóm lô ${parcelId} (ngày ${day})`,
+      });
+    }
+
+    let upkeepTotal = 0, feeTotal = 0, anyChanged = false;
+    const missedToday = new Set<string>();
+    for (const payment of payments) {
+      const buildingIds = payment.type === 'civic_fee'
+        ? (this.buildingPlacements ?? []).filter(p => p.parcelId === payment.parcelId).map(p => p.buildingId)
+        : [];
+      const ledgerEntry = {
+        day, type: payment.type, amount: payment.amount, description: payment.description,
+        ...(payment.buildingInstanceId ? { buildingInstanceId: payment.buildingInstanceId } : {}),
+      };
+
+      if (this.playerData.money >= payment.amount) {
+        this.playerData.money -= payment.amount;
+        anyChanged = true;
+        this.recordLedger(ledgerEntry);
+        if (payment.type === 'civic_upkeep') {
+          upkeepTotal += payment.amount;
+          this.ledgerManager.addBuildingCivicCost(payment.chargeBuilding!, payment.amount);
+        } else {
+          feeTotal += payment.amount;
+          const base = Math.floor(payment.amount / Math.max(1, buildingIds.length));
+          buildingIds.forEach((id, i) => {
+            const share = base + (i === 0 ? payment.amount - base * buildingIds.length : 0);
+            this.ledgerManager.addBuildingCivicCost(id, share);
+          });
+        }
+        continue;
+      }
+
+      // Thiếu tiền: nợ phí xóm RIÊNG (civicDebt/civicDebtDays), không đụng debtDays của tiền thuê, không đóng cửa tòa.
+      // Mỗi lô tối đa +1 ngày nợ mỗi ngày dù trượt nhiều khoản.
+      const tenure = this.parcelTenure[payment.parcelId];
+      if (!tenure) continue;
+      this.recordCivicDebtRefusal(tenure, payment.amount, `phí xóm lô ${payment.parcelId}`, !missedToday.has(payment.parcelId));
+      missedToday.add(payment.parcelId);
+      anyChanged = true;
+    }
+
+    // Lô trả đủ hôm nay: giảm 1 ngày nợ phí xóm (giống luật thuê lô). Tiền nợ cũ vẫn trả bằng `pay_rent_debt`.
+    for (const payment of payments) {
+      const tenure = this.parcelTenure[payment.parcelId];
+      if (tenure && !missedToday.has(payment.parcelId) && (tenure.civicDebtDays ?? 0) > 0) { tenure.civicDebtDays = Math.max(0, tenure.civicDebtDays! - 1); missedToday.add(payment.parcelId); }
+    }
+    if (upkeepTotal > 0) this.currentDayRecord.civicUpkeep = (this.currentDayRecord.civicUpkeep ?? 0) + upkeepTotal;
+    if (feeTotal > 0) this.currentDayRecord.civicFee = (this.currentDayRecord.civicFee ?? 0) + feeTotal;
+    if (upkeepTotal > 0 || feeTotal > 0) this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
+    if (anyChanged) this.notifyStateChanged();
+  }
+
+  /** Phí xóm một ngày của một lô SỞ HỮU (cho UI khi chưa trừ) — 0 nếu lô không sở hữu/không có phí. */
+  public getCivicFeeForParcel(parcelId: string): number {
+    if (!this.ownedParcelIdList().includes(parcelId)) return 0;
+    return this.getCivicDailyReport().feeByParcel[parcelId] ?? 0;
   }
 
   /**
@@ -4130,6 +4311,9 @@ export class GameSimulation {
       yesterdayReviews: this.reviewsManager.getReviewsOnDay(day - 1),
       districtQol: civicQol,
       civicPopulation: this.currentDayRecord?.civicPopulation,
+      civicCosts: this.currentDayRecord
+        ? { upkeep: this.currentDayRecord.civicUpkeep ?? 0, fee: this.currentDayRecord.civicFee ?? 0, projected: this.getCivicDailyPreview() }
+        : undefined,
     });
   }
 
@@ -4140,6 +4324,47 @@ export class GameSimulation {
       return !!t && !!civicDefOf(t);
     });
     return computeCivicQol(placements, ALL_PARCELS);
+  }
+
+  /**
+   * Chi phí xóm dự kiến/ngày theo TÒA và theo LÔ (OpenSpec `civic-local-fees` 1.5):
+   * dùng chung `civicDailyCosts()` với bước trừ đầu ngày nên UI và gameplay không lệch nhau.
+   * `upkeepByBuilding` gắn theo `buildingId`; `feeByParcel` chỉ gồm lô SỞ HỮU (lô thuê trả `rent`).
+   */
+  public getCivicDailyReport(): {
+    feeByParcel: Record<string, number>;
+    upkeepByParcel: Record<string, number>;
+    upkeepByBuilding: Record<string, number>;
+    totalUpkeep: number;
+    totalFee: number;
+  } {
+    const { feeByParcel, upkeepByParcel, upkeepByBuilding } = this.civicDailyCosts();
+    return {
+      feeByParcel, upkeepByParcel, upkeepByBuilding,
+      totalUpkeep: Object.values(upkeepByBuilding).reduce((a, b) => a + b, 0),
+      totalFee: Object.values(feeByParcel).reduce((a, b) => a + b, 0),
+    };
+  }
+
+  /** Lô SỞ HỮU kèm phí xóm/ngày + QoL khu của lô (cho tab "Xóm phố"). */
+  public getCivicFeeByParcelDetailed(): Array<{ parcelId: string; districtId: string; qol: number; fee: number }> {
+    const qol = this.getCivicQol();
+    const { feeByParcel } = this.civicDailyCosts();
+    return Object.keys(feeByParcel).sort().map(parcelId => {
+      const parcel = resolveParcel(parcelId);
+      return { parcelId, districtId: parcel?.districtId ?? '', qol: qol[parcel?.districtId ?? ''] ?? 0, fee: feeByParcel[parcelId] };
+    });
+  }
+
+  /** Chi phí xóm dự kiến/ngày ở dạng gọn cho bản tin sáng. */
+  public getCivicDailyPreview(): { upkeep: number; fee: number } {
+    const report = this.getCivicDailyReport();
+    return { upkeep: report.totalUpkeep, fee: report.totalFee };
+  }
+
+  /** Lô của một tòa (theo vị trí đã giải), dùng cho UI phí xóm theo tòa. */
+  public getParcelIdOfBuilding(buildingId: string): string | undefined {
+    return resolvePlacements(this.buildingPlacements, this.unlockedPlotIds).find(p => p.buildingId === buildingId)?.parcelId;
   }
 
   /** Tòa có nằm trong bán kính một đồn công an phường không → thưởng bắt trộm / giảm trộm đêm (civic-buildings-qol D3). */

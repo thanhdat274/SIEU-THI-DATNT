@@ -1,5 +1,55 @@
 # GIAI ĐOẠN 4 — MỤC 5: BẾP ĐA MÓN + COMBO (nâng cấp tiệm xôi & quán nước) (16/10/2026)
 
+## BƯỚC 3 — civic-local-fees: Phí xóm + duy trì công trình (16/10/2026, Claude sửa trực tiếp sau 2 lượt review — chưa commit)
+
+> Duy trì công trình civic (`upkeepPerDay`) + phí xóm (`OWNED_TILE_FEE`, chỉ lô sở hữu, giảm theo QoL khu của từng lô).
+
+### Làm được (có code + test chạy thật)
+
+- **Hằng số** `OWNED_TILE_FEE = 20` ₫/ô/ngày, `CIVIC_FEE_QOL_DISCOUNT = 0,3` (`game-data/src/world/civic.ts`). `civicFeeForOwnedParcel` làm tròn **100 ₫** (đổi từ nghìn: phí mỗi lô chỉ ~1–3 nghìn, làm tròn nghìn xóa mất phần giảm theo QoL). `validateCivicDefs` kiểm số nguyên dương.
+- **Sổ cái**: `LedgerEntryType` + `'civic_upkeep' | 'civic_fee'`; `DailyRecord.civicUpkeep?/civicFee?`; `BuildingDailyReport.civicCost?`; `computeNetProfit` trừ cả hai. Schema vẫn 11.
+- **Trừ đầu ngày** (`collectDailyCivicCosts`): thứ tự thuê lô → duy trì (mỗi công trình một dòng, có `buildingInstanceId`) → phí xóm. Chạy **sau `initDailyRecord(day)`** để khoản trừ nằm trong bản ghi đúng ngày (trước đây rơi vào bản ghi hôm trước nên bản tin sáng luôn hiện 0). Vị trí tòa qua `resolvePlacements`.
+- **Nợ** (D4): nợ phí xóm tách khỏi nợ thuê: `civicDebt` cộng đúng một lần mỗi khoản trượt (bản AI trước cộng 2 lần), `civicDebtDays` tối đa +1/lô/ngày, ngày trả đủ thì −1; `payRentDebt` trả nợ thuê (chỉ lô thuê) + nợ phí. **Nợ phí xóm không đóng cửa tòa nào** (tránh kẹt tiệm chính); chỉ cảnh báo. Phạt QoL khi nợ kéo dài: CHƯA làm.
+- **UI**: bản tin sáng / tổng kết ngày / AnalyticsModal có "Duy trì công trình" + "Phí xóm"; tab Xóm phố hiện upkeep từng công trình + phí theo lô.
+- **Co-op**: chỉ server trừ; trả nợ bằng lệnh có sẵn `pay_rent_debt`, không lệnh mới. CHƯA QA 2 client.
+- **Golden**: cập nhật riêng phần `simulation` trong `__golden__/world-golden.json` sau khi chứng minh: khách, doanh thu, hàng bán 3 ngày y hệt; chỉ `netProfit` ngày 2–3 lệch đúng −10.200 ₫ (phí xóm 4 lô W0) và tiền cuối −30.600 ₫.
+- **Test cũ sửa** (chỉ trừ thêm chi phí đầu ngày, có comment): chain, operations, seasons, security, supplier-market, ledger.
+- **Lỗi có sẵn, chưa sửa**: `collectDailyRent` vẫn chạy trước khi chốt ngày nên `rentCost` rơi vào bản ghi hôm trước (từ `open-world-land-lease`).
+
+**Kiểm tra (chạy thật 16/10/2026):** `yarn typecheck` EXIT 0; `yarn --cwd packages/game-core test` EXIT 0, 112 pass / 0 fail, 0 dòng "Error:", golden khớp (sau cập nhật); `civic-fees.test.ts` 5 nhóm PASS; `yarn --cwd apps/web test` EXIT 0. CHƯA QA trình duyệt lượt sửa này.
+
+### Sweep cân bằng (3 seed × 90 ngày, chạy thật; giá gốc = park 500k, clinic 800k, đồn 600k, trường 1M; upkeep gốc 2.000/3.000/2.500/4.000)
+
+Script `economy-civic-pop-sweep.ts`: thêm `QA_MODE=quick` (1 seed × 45 ngày × (a)+(b)), `QA_DAYS`, `QA_SCENARIOS`. Sửa lỗi: `applyCivicOverrides()` trước đây không được gọi nên `QA_UPKEEP_MULT` vô tác dụng. Đã kiểm: upkeep ×5 thì doanh thu không đổi, lãi ròng giảm đúng phần upkeep thêm. Nên cột "lãi sau phí" dưới đây = lãi đo được − (hệ số − 1) × upkeep gốc (chính xác, không phải ước lượng).
+
+| Bộ số (giá ×, upkeep ×) | Cấp | Giá xây (b) | Upkeep + phí / ngày | % DT ngày | Lãi ròng thêm / ngày | Hoàn vốn (b) | (c) spam |
+|---|---|---|---|---|---|---|---|
+| ×4, ×5 | 15 | 5,2 tr | 34,6k | ~1,1% | 330,7k | **16** | không lợi hơn |
+| ×4, ×5 | 25 | 11,6 tr | 69,4k | ~2,4% | 226,9k | **51** | không lợi hơn |
+| ×5, ×8 | 15 | 6,5 tr | 49,4k | ~1,6% | 315,9k | **21** | không lợi hơn |
+| ×5, ×8 | 25 | 14,5 tr | 103,5k | ~3,6% | 192,8k | **75** | không lợi hơn |
+| ×6, ×4 | 15 | 7,8 tr | 29,7k | ~1,0% | 335,7k | **23** | không lợi hơn |
+| ×6, ×4 | 25 | 17,4 tr | 58,0k | ~2,0% | 238,3k | **73** | không lợi hơn |
+| **Đề xuất E**: công viên + trạm y tế ×5, đồn + trường ×3, upkeep ×5 | 15 | 6,5 tr | 34,6k | ~1,1% | 330,7k | **~20** | — |
+| **Đề xuất E** | 25 | 11,3 tr | 69,4k | ~2,4% | 226,9k | **~50** | — |
+
+Doanh thu (b) so (a): +17,2% (cấp 15), +15,2% (cấp 25), như nhau ở mọi bộ số. Spam (c) = (b) về doanh thu, lãi thấp hơn chút vì thêm upkeep.
+
+**Nhận xét:** không bộ nhân đều nào đạt 20–60 ngày ở cả hai cấp. Ở cấp 25 phải xây 4 công trình mà đồn và trường thêm rất ít lãi.
+
+### Chốt bộ E (chủ dự án, 16/10/2026) + vòng chốt chạy thật
+
+`CIVIC_DEFS`: công viên 2.500.000 ₫ / 10.000 ₫/ngày; trạm y tế 4.000.000 / 15.000; đồn công an 1.800.000 / 12.500; trường tiểu học 3.000.000 / 20.000. Vẫn PROVISIONAL tới playtest.
+
+| Cấp | Kịch bản | Công trình | Tổng DT 90 ngày | % so (a) | Lãi ròng thêm / ngày | Upkeep + phí / ngày | % DT ngày | Hoàn vốn |
+|---|---|---|---|---|---|---|---|---|
+| 15 | (b) | 2 | 280.516.000 | +17,2% | 330.742 | 24.722 + 9.889 | 1,10% | **20 ngày** |
+| 15 | (c) spam | 3 | 280.516.000 | +17,2% | 320.853 | 34.611 + 9.889 | 1,41% | 28 ngày |
+| 25 | (b) | 4 | 255.616.000 | +15,2% | 226.940 | 56.861 + 12.559 | 2,42% | **50 ngày** |
+| 25 | (c) spam | 5 | 255.616.000 | +15,2% | 217.150 | 66.750 + 12.460 | 2,76% | 64 ngày |
+
+Đạt cả bốn tiêu chí: hoàn vốn (b) 20–60 ngày ở cả hai cấp; lãi sau phí dương; spam không lợi hơn (lãi thấp hơn, hoàn vốn chậm hơn); phí + duy trì ≤ 5% doanh thu. Typecheck + `yarn --cwd packages/game-core test` (112 pass, golden khớp) chạy lại sau khi đổi số: PASS.
+
 ## BƯỚC 2 — civic-population-demand: Dân số xóm theo QoL + hệ số khách (16/10/2026, review — Claude sửa trực tiếp)
 
 > Change `civic-population-demand`: mỗi khu có dân số tiến dần về mục tiêu theo QoL; dân số khu tiệm chính nhân lưu lượng khách (kênh `traffic`, 0,85–1,25).

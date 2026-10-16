@@ -1,10 +1,10 @@
 # Tasks: civic-local-fees
 
-- [ ] 1.1 Hằng số `OWNED_TILE_FEE` (+ `upkeepPerDay` đã khai báo ở change 1); validate.
-- [ ] 1.2 `LedgerEntryType` + trường tùy chọn trong `DailyRecord`; cập nhật `netProfit`; test sổ cái.
-- [ ] 1.3 Trừ phí/duy trì đầu ngày, cùng chỗ trừ tiền thuê lô; test thứ tự + replay server.
-- [ ] 1.4 Thiếu tiền → nợ theo luồng thuê lô; test.
-- [ ] 1.5 Báo cáo theo tòa, tổng kết ngày, AnalyticsModal có dòng phí xóm (QA 7 viewport).
-- [ ] 1.6 `yarn typecheck`, `yarn test`; ghi kết quả vào `tổng hợp.md`.
-
-- [ ] 1.7 Co-op: phí chỉ trừ ở server; thông báo nợ cho cả hai; QA 2 client.
+- [x] 1.1 Hằng số `OWNED_TILE_FEE` (+ `upkeepPerDay` đã khai báo ở change 1); validate. Làm tròn phí 100 ₫.
+- [x] 1.2 `LedgerEntryType` + trường tùy chọn trong `DailyRecord`; cập nhật `netProfit`; test sổ cái.
+- [x] 1.3 Trừ phí/duy trì đầu ngày ngay sau tiền thuê lô (sau `initDailyRecord`); test thứ tự + idempotent + hash.
+- [x] 1.4 Thiếu tiền → nợ riêng `civicDebt`/`civicDebtDays` (không cộng 2 lần, tối đa +1 ngày/lô/ngày, trả đủ thì −1), trả bằng `pay_rent_debt`; không đóng cửa tòa vì nợ phí; test.
+- [x] 1.5 Báo cáo theo tòa, tổng kết ngày, AnalyticsModal, tab Xóm phố có dòng phí. CHƯA QA trình duyệt lượt sửa cuối.
+- [x] 1.6 `yarn typecheck` EXIT 0; `yarn --cwd packages/game-core test` EXIT 0 (112 pass, golden cập nhật có chứng minh); `yarn --cwd apps/web test` EXIT 0 (16/10/2026).
+- [ ] 1.7 Co-op: phí chỉ trừ ở server, không lệnh mới — có code; CHƯA QA 2 client.
+- [x] 1.8 Sweep cân bằng: chốt bộ E, hoàn vốn 20 ngày (cấp 15) / 50 ngày (cấp 25), phí ≤ 2,8% doanh thu.
