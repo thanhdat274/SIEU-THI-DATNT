@@ -14,6 +14,17 @@
 - **OpenSpec change**: `openspec/changes/neighborhood-builder-expansion/` (master change, 5 child changes `civic-*`).
 - **Ghi chú**: hiện tại mỗi building dùng district của main shop (`lot-center` → W0 `hem_dan_cu`). Per-building district assignment sẽ làm ở bước tiếp theo.
 
+## GIAI ĐOẠN 4 — Bước 1: Công trình công cộng + QoL (civic-buildings-qol) (16/10/2026, review lần 3)
+
+- [x] Dữ liệu `CIVIC_DEFS` (nguồn duy nhất) + 4 loại tòa civic (`maxInstances` 2, giá `buildCost`, cấp 10/15/20/25).
+- [x] `computeCivicQol` (tâm khu trên hàng vỉa hè — sửa lỗi QoL luôn 20), `getCivicQol`, `districtQol` trong bản tin sáng, `getBuildableParcelIds`.
+- [x] Đồn công an nối luồng trộm (sửa lỗi bỏ qua tiệm chính ở vị trí mặc định).
+- [x] Co-op qua `land-policy.ts` (phiếu > 30% quỹ, khóa lô); bỏ code chết `open_building_civic`.
+- [x] Tab "Xóm phố" + 4 loại civic trong `OpenBuildingModal`; QA trình duyệt 1280×800 + 375×812.
+- [x] `yarn typecheck` PASS; `yarn --cwd packages/game-core test` EXIT 0 (112 pass, golden khớp).
+- [ ] Mặt tiền riêng (3.1); bấm xây thật trong trình duyệt + co-op 2 client; đủ 7 viewport.
+- Change OpenSpec: `openspec/changes/civic-buildings-qol/`. Chi tiết: `tổng hợp.md` khối "BƯỚC 1".
+
 ## GIAI ĐOẠN 4 — Mục 5: Bếp đa món + Combo (nâng cấp tiệm xôi & quán nước) (16/10/2026)
 
 - [x] **Đa món (mới, `recipes.ts` `PRODUCED_PRODUCTS`+`RECIPES`):** 3 món xôi (thập cẩm/chà bông trứng/bắp) + 3 thức uống (trà sữa/sinh tố xoài/cà phê sữa đá); dùng nguyên liệu đã có, không chạm số lượng `catalog.test`.
@@ -158,7 +169,7 @@
 - [>] **1.5 cụm theo khoảng cách D2b**: `game-core/proximity-cluster.ts` (radius 16, cap 1.3, bonus 0.10/cặp để W0 = legacy 1.10, `CLUSTER_COMPAT`, `clusterMultiplierFor` đơn điệu + `legacyFoodClusterMultiplier`). KHÔNG sửa customers.ts.
 - [>] **2.1/1.4/2.4 mục tiêu + sim**: `game-data/world/city-goals.ts` (`CityGoalDef` cấp 1–10, `CITY_LEVEL_WAVE_REQUIREMENT` W1:2..W4:8, `cityTierFromCityLevel` = min(5,floor(level/2)), `cityProgress`) + `game-core/city-goals-sim.ts` (`simulateGoalProgression` 60–90 ngày + ẩm thực khu cap). KHÔNG sửa goals.ts/modifiers.ts/cityTier/simulation.
 - [>] **Lead review + nối test**: game-data index thêm export districts+city-goals (+test); test-runner nối 4 test (`runDistrictsTests`/`runProximityClusterTests`/`runCityGoalsTests`/`runCityGoalsSimTests`); `yarn typecheck` PASS (9.33s); `git diff --check` sạch. Subagent verify logic bằng node CJS (assert PASS), KHÔNG qua suite chuẩn.
-- [>] **1.1 NỐI vào simulation (16/10/2026 — Bước 0 neighborhood-builder-expansion):** `parcel.districtId` đã gán trong `parcels.ts`, `ModifierSource 'district'` + `when.districtId` trong shared, `demand.ts` đã gọi `applyDistrictModifiers`. **ĐÃ thêm `getMainShopDistrictId()` + `getMarketContext()` trong simulation.ts**, sửa 6 calls `buildMarketContext` để district modifier tác động. `yarn typecheck` PASS. **Chưa test thật** (EPERM sandbox). CHƯA: validation + source/when; NPC nền theo `npcMix`; giao diện chủ đề khu; sim cà phê/ăn vặt hai khu; thay `foodClusterMultiplier` thật trong customers.ts.
+- [>] **1.1 NỐI vào simulation (16/10/2026 — Bước 0 neighborhood-builder-expansion):** `parcel.districtId` đã gán trong `parcels.ts`, `ModifierSource 'district'` + `when.districtId` trong shared, `demand.ts` đã gọi `applyDistrictModifiers`. **ĐÃ thêm `getMainShopDistrictId()` + `getMarketContext()` trong simulation.ts**, sửa 6 calls `buildMarketContext` để district modifier tác động. `yarn typecheck` PASS, `yarn --cwd packages/game-core test` EXIT 0 (luật khu qua `modifiers.ts`, W0 trung tính). CHƯA: giờ cao điểm W1–W4; NPC nền theo `npcMix`; giao diện chủ đề khu; sim cà phê/ăn vặt hai khu; thay `foodClusterMultiplier` thật trong customers.ts.
 - [ ] **Chờ máy thật (6d):** 2.2 lệnh `claim_city_goal`/lên cấp/thưởng + `cityTier` theo cấp (bỏ công thức tự động) + điều kiện cấp cho `reclaim_wave`; 2.3 đồ công cộng + decor.ts; 3.1 biển kỷ niệm + nhật ký mốc; 3.2 minimap IndexedDB; 4.1 schema kế tiếp + migration (cityProgress, cấp suy từ cityTier cũ); 4.2 test/build/Browser QA/co-op; 4.3 docs tổng hợp.
 
 ## Vòng 5 (07/10/2026) — open-world-coop-contracts (Bước 6c) phần THUẦN (3 subagent, do giới hạn 8 teammate)

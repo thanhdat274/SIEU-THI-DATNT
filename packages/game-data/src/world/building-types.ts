@@ -17,9 +17,13 @@
  * - `trafficShare`: nhịp sinh khách so với trần (1 = tiệm chính); các loại mới là PROVISIONAL.
  * - `unlockLevel` / `openCost` / `maxInstances`: cấp mở, giá mở, số tòa tối đa.
  *   Loại cũ lấy từ `LAND_PLOTS` (level/cost); loại mới theo D4.
+ * - `buildCost`: giá xây cho civic (lấy từ CIVIC_DEFS).
  * - `hasCheckout`: loại có quầy thu ngân (parking_lot = false).
  * - `effects?`: hiệu ứng đặc biệt (bãi xe, khung giờ cao điểm) — PROVISIONAL.
  * - `tiers?`: hạng cửa hàng theo diện tích sàn (D9) — chỉ loại bán lẻ.
+ *
+ * Civic data (service, qolPoints, radiusTiles, buildCost, upkeepPerDay)
+ * là nguồn DUY NHẤT ở `civic.ts`. BuildingTypeDef chỉ giữ geometry + unlockLevel.
  */
 import type { StoreFixture } from '@game/shared';
 import { nullProto } from '../safe-map';
@@ -29,6 +33,7 @@ import { SNACK_SHOP_PRODUCT_IDS } from '../recipes';
 import {
   BUILDING_TEMPLATES, type BuildingId, type BuildingTemplate,
 } from './building-templates';
+import { CIVIC_DEFS, type CivicServiceId } from './civic';
 
 /** Loại hình tòa nhà (đích tới của khái niệm `BuildingId` sau refactor 1.2). */
 export type BuildingTypeId =
@@ -39,7 +44,11 @@ export type BuildingTypeId =
   | 'grocery_branch'
   | 'cafe'
   | 'parking_lot'
-  | 'com_restaurant';
+  | 'com_restaurant'
+  | 'park'
+  | 'clinic'
+  | 'ward_police'
+  | 'primary_school';
 
 /**
  * Hàm lọc sản phẩm của một loại tòa: trả true nếu `productId` được bày/bán ở loại này.
@@ -88,14 +97,16 @@ export interface BuildingTypeDef {
   productFilter: BuildingProductFilter;
   /** Nhịp sinh khách so với trần (1 = tiệm chính); loại mới PROVISIONAL. */
   trafficShare: number;
-  /** Cấp mở khóa loại này. */
+  /** Cấp mở khóa loại này — nguồn DUY NHẤT cho unlock level (civic + non-civic). */
   unlockLevel: number;
-  /** Giá mở tòa của loại này (₫). */
+  /** Giá mở tòa của loại này (₫). Civic: bằng buildCost. */
   openCost: number;
-  /** Số tòa tối đa của loại này (loại cũ = 1; loại mới theo D4). */
+  /** Số tòa tối đa của loại này (loại cũ = 1; loại mới theo D4). Civic = 2 (chống spam có nghĩa). */
   maxInstances: number;
   /** Loại có quầy thu ngân không (bãi giữ xe không có). */
   hasCheckout: boolean;
+  /** Giá xây công trình (₫) — civic: lấy từ CIVIC_DEFS. */
+  buildCost?: number;
   /** Hiệu ứng đặc biệt (PROVISIONAL). */
   effects?: BuildingTypeEffects;
   /** Hạng cửa hàng theo diện tích sàn (D9), chỉ loại bán lẻ. */
@@ -171,6 +182,16 @@ const GROCERY_BRANCH_TEMPLATE = provisionalTemplate('grocery_branch', 'Chi nhán
 const CAFE_TEMPLATE = provisionalTemplate('cafe', 'Quán cà phê', 8, 8, CAFE_FIXTURES);
 const PARKING_LOT_TEMPLATE = provisionalTemplate('parking_lot', 'Bãi giữ xe', 6, 6);
 const COM_RESTAURANT_TEMPLATE = provisionalTemplate('com_restaurant', 'Quán cơm / nhà hàng', 10, 8, COM_RESTAURANT_FIXTURES);
+
+// --- Template công trình công cộng (civic-buildings-qol, D1) ---
+// Kích thước: park 6×6, clinic 6×8, ward_police 6×8, primary_school 8×8 — đều vừa lô W0 nhỏ nhất.
+const PARK_TEMPLATE = provisionalTemplate('park', 'Công viên', 6, 6);
+const CLINIC_TEMPLATE = provisionalTemplate('clinic', 'Trạm y tế', 6, 8);
+const WARD_POLICE_TEMPLATE = provisionalTemplate('ward_police', 'Đồn công an phường', 6, 8);
+const PRIMARY_SCHOOL_TEMPLATE = provisionalTemplate('primary_school', 'Trường tiểu học', 8, 8);
+
+// --- Helper: lookup buildCost/unlockLevel from CIVIC_DEFS for civic types ---
+const CIVIC_MAP = Object.fromEntries(CIVIC_DEFS.map(c => [c.buildingTypeId, c])) as Record<string, (typeof CIVIC_DEFS)[number]>;
 
 // ---------------------------------------------------------------------------
 // Registry loại tòa
@@ -305,6 +326,69 @@ export const BUILDING_TYPE_DEFS: Record<BuildingTypeId, BuildingTypeDef> = {
     maxInstances: 2,
     hasCheckout: true,
     effects: { peakHours: [{ fromHour: 11, toHour: 13 }, { fromHour: 17, toHour: 20 }] },
+  },
+
+  // --- 4 loại công trình công cộng (civic-buildings-qol, D1 + D2) ---
+  // Nguồn dữ liệu: unlockLevel nằm ở đây; service/qolPoints/radius/buildCost/upkeep lấy từ CIVIC_DEFS.
+  park: {
+    id: 'park',
+    typeId: 'park',
+    name: 'Công viên',
+    template: PARK_TEMPLATE,
+    defaultFixtures: [],
+    allowedStationIds: [],
+    productFilter: () => false,
+    trafficShare: 0,
+    unlockLevel: 10,
+    openCost: CIVIC_MAP.park.buildCost,
+    maxInstances: 2,
+    hasCheckout: false,
+    buildCost: CIVIC_MAP.park.buildCost,
+  },
+  clinic: {
+    id: 'clinic',
+    typeId: 'clinic',
+    name: 'Trạm y tế',
+    template: CLINIC_TEMPLATE,
+    defaultFixtures: [],
+    allowedStationIds: [],
+    productFilter: () => false,
+    trafficShare: 0,
+    unlockLevel: 15,
+    openCost: CIVIC_MAP.clinic.buildCost,
+    maxInstances: 2,
+    hasCheckout: false,
+    buildCost: CIVIC_MAP.clinic.buildCost,
+  },
+  ward_police: {
+    id: 'ward_police',
+    typeId: 'ward_police',
+    name: 'Đồn công an phường',
+    template: WARD_POLICE_TEMPLATE,
+    defaultFixtures: [],
+    allowedStationIds: [],
+    productFilter: () => false,
+    trafficShare: 0,
+    unlockLevel: 20,
+    openCost: CIVIC_MAP.ward_police.buildCost,
+    maxInstances: 2,
+    hasCheckout: false,
+    buildCost: CIVIC_MAP.ward_police.buildCost,
+  },
+  primary_school: {
+    id: 'primary_school',
+    typeId: 'primary_school',
+    name: 'Trường tiểu học',
+    template: PRIMARY_SCHOOL_TEMPLATE,
+    defaultFixtures: [],
+    allowedStationIds: [],
+    productFilter: () => false,
+    trafficShare: 0,
+    unlockLevel: 25,
+    openCost: CIVIC_MAP.primary_school.buildCost,
+    maxInstances: 2,
+    hasCheckout: false,
+    buildCost: CIVIC_MAP.primary_school.buildCost,
   },
 };
 

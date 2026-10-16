@@ -126,6 +126,8 @@ export interface MorningBrief {
   tips: string[];
   /** Tổng ảnh hưởng uy tín của lời đánh giá hôm qua (nếu có lời đánh giá). */
   reputationDelta?: number;
+  /** Chỉ số sống theo khu: { [districtId]: qol0..100 }. */
+  districtQol?: Record<string, number>;
 }
 
 export function buildMorningBrief(params: {
@@ -138,6 +140,7 @@ export function buildMorningBrief(params: {
   lowStockItems?: string[];
   expiringItems?: string[];
   yesterdayReviews?: CustomerReview[];
+  districtQol?: Record<string, number>;
 }): MorningBrief {
   const arrivingItemsCount = params.arrivingOrders.reduce((sum, o) => sum + o.quantity, 0);
   const tips: string[] = [];
@@ -191,5 +194,6 @@ export function buildMorningBrief(params: {
     expiringItems: params.expiringItems ?? [],
     tips,
     ...(reputationDelta !== undefined ? { reputationDelta } : {}),
+    ...(params.districtQol !== undefined ? { districtQol: params.districtQol } : {}),
   };
 }

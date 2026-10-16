@@ -102,7 +102,7 @@ import {
   type StallDefinition,
   REGULAR_CUSTOMERS_MAP
   } from '@game/data';
-import { BUILDING_TYPE_DEFS, resolveParcel, LAND_LEASE_CONSTANTS, parcelPrice, type DistrictId } from '@game/data';
+import { BUILDING_TYPE_DEFS, resolveParcel, LAND_LEASE_CONSTANTS, parcelPrice, type DistrictId, ALL_PARCELS } from '@game/data';
 import { buildMorningBrief, type MorningBrief } from './day-rhythm';
 import { buildMarketSummary } from './market-summary';
 import { pickAvailableRegular, processRegularCheckout, processRegularWalkout } from './regulars';
@@ -113,7 +113,7 @@ import { CollisionSystem } from './collision';
 import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
 import { reviewReputationContribution } from './review-reputation';
 import { rainIntensityAt, describeRainForecast, roadWetnessAt, hashSeed } from './weather';
-import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance } from './security';
+import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance, CIVIC_POLICE_DETECT_BONUS, CIVIC_POLICE_BURGLARY_REDUCTION } from './security';
 import { assessCounterfeit } from './counterfeit';
 import { ACTIVE_TAX_POLICY, summarizeAnnualRevenue, taxDueOnClose } from './tax/annual-revenue';
 import { createChain, normalizeChain, openBranch as openBranchPure, returnStock as returnStockPure, setBranchPolicy as setBranchPolicyPure, switchBranch as switchBranchPure, transferStock as transferStockPure, type ChainContext, type TransferItem } from './chain';
@@ -196,6 +196,8 @@ import { BUILDING_MAP, chilledDisplayAppeal, fridgeShelfLifeBonus, isChilledDisp
 import { DailyRoutineSystem, HOME_DOOR_TILE, type DailyRoutineState, type InventorySummary, type RoutineTickOutput } from './daily-routine';
 import { CoopRoutineSystem, type CoopPlayerRoutineConfig, type CoopRoutineTickInput, type CoopRoutineTickOutput } from './coop-routine';
 import { reclaimWaveAllowed, startReclaimWave, buyParcelAllowed, customerTrafficMultiplier, occupiedParcelBuildings } from './reclamation';
+import { computeCivicQol } from './civic-qol';
+import { civicDefOf } from '@game/data';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
@@ -781,6 +783,12 @@ export class GameSimulation {
   }
   /** Bản đồ theo đất đã mua, quầy đã mở và vị trí đặt/ô sàn mở rộng hiện tại. */
   public getOccupiedParcelBuildings(): Record<string, string> { return occupiedParcelBuildings(this.buildingPlacements); }
+  /** Lô trống đặt được tòa mới: lô W0 + lô đã sở hữu/thuê, trừ lô có tòa (kể cả vị trí mặc định của tiệm chính/tòa cũ). */
+  public getBuildableParcelIds(): string[] {
+    const occupied = occupiedParcelBuildings(resolvePlacements(this.buildingPlacements, this.unlockedPlotIds));
+    const tenured = Object.entries(this.parcelTenure).filter(([, t]) => t.kind === 'owned' || t.kind === 'leased').map(([id]) => id);
+    return ALL_PARCELS.filter(p => (p.wave === 0 || this.ownedParcelIds.includes(p.id) || tenured.includes(p.id)) && !occupied[p.id]).map(p => p.id);
+  }
   public getOpenedWaves(): string[] { return [...this.worldOpenState.openedWaves]; }
   public getDecorOwned(): string[] { return [...this.decorOwned]; }
   /** Điểm thu hút từ trang trí và hệ số khách tương ứng. */
@@ -900,8 +908,9 @@ export class GameSimulation {
     const tenure = this.parcelTenure[parcelId];
     const hasAccess = parcel.wave === 0 || this.ownedParcelIds.includes(parcelId) || (tenure && (tenure.kind === 'owned' || tenure.kind === 'leased'));
     if (!hasAccess) return { success: false, reason: 'parcel_not_owned' };
-    // Kiểm tiền + cấp
-    if (this.playerData.money < typeDef.openCost) return { success: false, reason: 'money' };
+    // Kiểm tiền + cấp (civic: dùng buildCost nếu có, ngược lại openCost)
+    const buildCost = typeDef.buildCost ?? typeDef.openCost;
+    if (this.playerData.money < buildCost) return { success: false, reason: 'money' };
     if (this.playerData.level < typeDef.unlockLevel) return { success: false, reason: 'level' };
     // Tạo instance ID
     const nextN = existing.length + 1;
@@ -917,7 +926,7 @@ export class GameSimulation {
     const used = new Set([...next.storeLayout.fixtures, ...(next.storeLayout.storedFixtures ?? [])].map(fixture => fixture.id));
     for (const fixture of placementGeometry(candidate as BuildingPlacement).defaultFixtures) if (!used.has(fixture.id)) next.storeLayout.fixtures.push(structuredClone(fixture));
     syncLayoutSlots(next);
-    next.player.money -= typeDef.openCost;
+    next.player.money -= buildCost;
     const applied = this.applyStoreLayout(next);
     if (applied.error) return { success: false, reason: applied.error };
     this.notifyStateChanged();
@@ -1788,11 +1797,13 @@ export class GameSimulation {
     const day = this.clock.getTime().day;
     const guard = this.staff.find((s) => s.role === 'security' && this.isStaffOnShift(s));
     const guardBonus = guard ? (staffSpecialtyInfo(guard)?.thiefCatchBonus ?? 0) : 0;
+    const policeInfo = this.getCivicPoliceInfo(customer.buildingId ?? 'main');
     const chance = shopliftDetectChance({
       guardOnShift: !!guard,
       camera: this.security.camera,
       refillOnShift: this.staff.some((s) => s.role === 'refill' && this.isStaffOnShift(s)),
       guardBonus,
+      civicPoliceBonus: policeInfo.civicPoliceBonus,
     });
     const caught = shopliftCaught(day, customer.id ?? checkoutId, chance);
     const totals = this.customerManager.finishShoplifter(checkoutId, caught, this.tileMap, this.fixtures, this.inventory, (spoiled) => {
@@ -1815,7 +1826,8 @@ export class GameSimulation {
   /** Đêm sang `day`: có thể có trộm đột nhập (lấy tiền két hoặc hàng trên kệ); bảo vệ trong biên chế thì đuổi được. */
   private runNightBurglary(day: number, yesterdayRevenue: number): void {
     const guard = this.staff.find((s) => s.role === 'security');
-    const plan = planBurglary(day, this.playerData.level, { camera: this.security.camera, hasGuard: !!guard });
+    const policeInfo = this.getCivicPoliceInfo('main');
+    const plan = planBurglary(day, this.playerData.level, { camera: this.security.camera, hasGuard: !!guard }, policeInfo.civicPoliceReduction);
     if (plan.kind === 'none') return;
     if (plan.kind === 'repelled') {
       this.recordIncident('burglary_repelled', `Đêm qua có kẻ lạ cạy cửa tiệm, bảo vệ ${guard?.name ?? ''} đã đuổi đi. Không mất gì!`, {}, 'info');
@@ -4096,6 +4108,7 @@ export class GameSimulation {
     const lowStockItems = this.fixtures
       .filter((f) => isSalesFixture(f) && f.assignedProductId && f.currentStock <= 2)
       .map((f) => f.assignedProductId!);
+    const civicQol = this.getCivicQol();
     return buildMorningBrief({
       day,
       season: { name: season?.name ?? 'Ngày thường' },
@@ -4105,7 +4118,37 @@ export class GameSimulation {
       arrivingOrders,
       lowStockItems,
       yesterdayReviews: this.reviewsManager.getReviewsOnDay(day - 1),
+      districtQol: civicQol,
     });
+  }
+
+  /** Chỉ số sống theo khu, dẫn xuất từ placement công cộng. Không thêm trường save. */
+  public getCivicQol(): Record<string, number> {
+    const placements = (this.buildingPlacements ?? []).filter(p => {
+      const t = p.typeId ?? buildingTypeOfInstance(p.buildingId)?.typeId;
+      return !!t && !!civicDefOf(t);
+    });
+    return computeCivicQol(placements, ALL_PARCELS);
+  }
+
+  /** Tòa có nằm trong bán kính một đồn công an phường không → thưởng bắt trộm / giảm trộm đêm (civic-buildings-qol D3). */
+  private getCivicPoliceInfo(buildingId: string | undefined): { civicPoliceBonus: number; civicPoliceReduction: number } {
+    const none = { civicPoliceBonus: 0, civicPoliceReduction: 1 };
+    // Dùng vị trí đã giải (gồm vị trí mặc định của tiệm chính/tòa cũ — save mặc định không ghi bản ghi cho chúng).
+    const placements = resolvePlacements(this.buildingPlacements, this.unlockedPlotIds);
+    const target = placements.find(p => p.buildingId === (buildingId ?? 'main'));
+    if (!target) return none;
+    const targetDoor = placementGeometry(target).entranceTile;
+    for (const station of placements) {
+      if (buildingTypeOfInstance(station.buildingId)?.typeId !== 'ward_police') continue;
+      const def = civicDefOf('ward_police');
+      if (!def) continue;
+      const door = placementGeometry(station).entranceTile;
+      if (Math.abs(door.x - targetDoor.x) + Math.abs(door.y - targetDoor.y) <= def.radiusTiles) {
+        return { civicPoliceBonus: CIVIC_POLICE_DETECT_BONUS, civicPoliceReduction: CIVIC_POLICE_BURGLARY_REDUCTION };
+      }
+    }
+    return none;
   }
 
   /** Đưa bộ đếm ID về mức không trùng với save: lấy giá trị đã lưu hoặc số lớn nhất trong ID dạng `ord-N`/`led-N` đang có (ID cũ dùng giờ thật không khớp mẫu nên bị bỏ qua). */

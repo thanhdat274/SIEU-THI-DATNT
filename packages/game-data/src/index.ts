@@ -39,6 +39,7 @@ export * from './world/land-lease';
 export * from './world/land-lease.test';
 export * from './world/districts';
 export * from './world/districts.test';
+export * from './world/civic';
 export * from './world/city-goals';
 export * from './world/city-goals.test';
 export * from './world/special-requests';

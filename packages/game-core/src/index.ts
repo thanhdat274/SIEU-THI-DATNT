@@ -26,6 +26,7 @@ export { SAME_DAY_SUPPLIER_CUTOFF_HOUR } from './supplier-cart';
 export * from './staff';
 export * from './staff-manager';
 export * from './store-layout';
+export * from './civic-qol';
 export * from './quests';
 export * from './progression';
 export * from './reputation';

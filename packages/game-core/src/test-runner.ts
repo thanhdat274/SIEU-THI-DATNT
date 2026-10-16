@@ -101,6 +101,7 @@ import { runSnackShopTests } from './snack-shop.test';
 import { runXoiStaffTests } from './xoi-staff.test';
 import { runDiningAddonTests } from './dining-addons.test';
 import { runPrestigeTests } from './prestige.test';
+import { runCivicQolTestsEntry } from './civic-qol.test';
 import { runAnalyticsTests } from './analytics.test';
 import { runWaveATests } from './wave-a.test';
 import { runSpecialRequestSimTests } from './special-request-sim.test';
@@ -244,6 +245,7 @@ export async function runTests(): Promise<void> {
   runXoiStaffTests();
   runDiningAddonTests();
   runPrestigeTests();
+  runCivicQolTestsEntry();
   runAnalyticsTests();
   runWaveATests();
   runSpecialRequestSimTests();

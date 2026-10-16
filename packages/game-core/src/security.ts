@@ -3,6 +3,12 @@ import { SECURITY_RULES } from '@game/data';
 import { Mulberry32Rng, daySeed } from './staff';
 import { hashSeed } from './weather';
 
+/** Bonus phát hiện trộm lẻ khi có đồn công an phường trong bán kính (D3). */
+export const CIVIC_POLICE_DETECT_BONUS = 0.05;
+
+/** Hệ số giảm xác suất đột nhập đêm khi có đồn trong bán kính (25% — D3). */
+export const CIVIC_POLICE_BURGLARY_REDUCTION = 0.75;
+
 export const securityUnlocked = (level: number): boolean => level >= SECURITY_RULES.unlockLevel;
 
 export const emptySecurityState = (): SecurityState => ({ camera: false, callPolice: true, incidents: [], policeCases: [] });
@@ -14,11 +20,11 @@ export function rollShoplifter(day: number, customerId: string, level: number, i
 }
 
 /** Xác suất phát hiện kẻ trộm lẻ từ các nguồn đang có. */
-export function shopliftDetectChance(sources: { guardOnShift: boolean; camera: boolean; refillOnShift: boolean; guardBonus?: number }): number {
+export function shopliftDetectChance(sources: { guardOnShift: boolean; camera: boolean; refillOnShift: boolean; guardBonus?: number; civicPoliceBonus?: number }): number {
   const d = SECURITY_RULES.detect;
   let miss = 1;
   if (sources.guardOnShift) {
-    const guardChance = Math.min(0.98, d.guard + (sources.guardBonus ?? 0));
+    const guardChance = Math.min(0.98, d.guard + (sources.guardBonus ?? 0) + (sources.civicPoliceBonus ?? 0));
     miss *= 1 - guardChance;
   }
   if (sources.camera) miss *= 1 - d.camera;
@@ -37,10 +43,11 @@ export type BurglaryPlan =
   | { kind: 'goods'; fraction: number; maxItems: number; seed: number };
 
 /** Đêm sang `day` có trộm đột nhập không và kiểu mất mát. Hàm thuần; bảo vệ trong biên chế thì đuổi được. */
-export function planBurglary(day: number, level: number, state: { camera: boolean; hasGuard: boolean }): BurglaryPlan {
+export function planBurglary(day: number, level: number, state: { camera: boolean; hasGuard: boolean }, civicPoliceReduction: number = 1): BurglaryPlan {
   if (!securityUnlocked(level)) return { kind: 'none' };
   const rng = new Mulberry32Rng(daySeed(day, hashSeed('burglary')));
-  const chance = SECURITY_RULES.nightChance * (state.camera ? SECURITY_RULES.nightCameraMul : 1);
+  // civicPoliceReduction = 0.75 → giảm 25% xác suất
+  const chance = SECURITY_RULES.nightChance * (state.camera ? SECURITY_RULES.nightCameraMul : 1) * civicPoliceReduction;
   if (rng.next() >= chance) return { kind: 'none' };
   if (state.hasGuard) return { kind: 'repelled' };
   if (rng.next() < SECURITY_RULES.nightCashChance) {

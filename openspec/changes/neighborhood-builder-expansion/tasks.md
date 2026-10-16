@@ -8,7 +8,7 @@ Change này không có task code. Theo dõi tiến độ ở change con; đánh 
 - [ ] 0.3 `open-world-districts-city-goals` 2.2 + 4.1: lệnh `claim_city_goal`, `cityProgress` trong save (chỉ cần cho `civic-city-goals`).
 
 ## 1. Change con (làm lần lượt)
-- [ ] 1.1 `civic-buildings-qol`
+- [>] 1.1 `civic-buildings-qol` — code + test + tab Xóm phố xong 16/10/2026 (test EXIT 0); còn mặt tiền riêng, QA bấm xây thật + co-op 2 client
 - [ ] 1.2 `civic-population-demand` (sau 1.1)
 - [ ] 1.3 `civic-local-fees` (sau 1.1; có thể song song 1.2 nếu không đụng cùng file)
 - [ ] 1.4 `civic-city-goals` + Sổ góp xóm (sau 1.2 và 0.3; 3 câu hỏi thiết kế đã chốt 16/10/2026)

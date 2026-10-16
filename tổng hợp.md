@@ -1,5 +1,67 @@
 # GIAI ĐOẠN 4 — MỤC 5: BẾP ĐA MÓN + COMBO (nâng cấp tiệm xôi & quán nước) (16/10/2026)
 
+## BƯỚC 1 — civic-buildings-qol: Công trình công cộng + QoL (16/10/2026, review lần 3 — Claude sửa trực tiếp)
+
+> Change `civic-buildings-qol`: 4 loại tòa công cộng, chỉ số sống (QoL) theo khu, đồn công an giảm trộm, co-op qua `land-policy.ts`, tab "Xóm phố".
+
+### Làm được (có code + test)
+
+- **Dữ liệu** `game-data/src/world/civic.ts`: `CIVIC_DEFS` (park 8 điểm/r12/500.000₫, clinic 12/r16/800.000₫, ward_police 8/r16/600.000₫, primary_school 10/r16/1.000.000₫, kèm `upkeepPerDay` chưa trừ) là nguồn duy nhất; `BUILDING_TYPE_DEFS` chỉ giữ hình học + `unlockLevel` (10/15/20/25, trần cấp người chơi 60) và lấy `buildCost` từ `CIVIC_DEFS`; `maxInstances = 2`; không bán hàng, không quầy thu ngân.
+- **QoL** `game-core/src/civic-qol.ts`: `computeCivicQol` thuần, tất định. Khoảng cách Manhattan từ cửa tòa (`entranceTile` + gốc) tới **tâm khu trên hàng vỉa hè mặt tiền** (x = trung bình tâm ngang các lô, y = trung bình `rect.y1 + 1`). Sửa lỗi: bản trước lấy tâm dọc lô (lô W0 kéo lên y=-3) nên mọi công trình nằm ngoài bán kính, QoL luôn = 20. Cái thứ 2 cùng dịch vụ ×0,5, thứ 3+ ×0; trần theo dịch vụ; `clamp(20 + Σ, 0, 100)`. Không thêm trường save.
+- **Simulation**: `openBuilding` dùng `buildCost`; `getCivicQol()` (public) + `districtQol` trong bản tin sáng; `getBuildableParcelIds()` (lô W0 + lô sở hữu/thuê, trừ lô có tòa kể cả vị trí mặc định của tiệm chính).
+- **Đồn công an**: `getCivicPoliceInfo` dùng `resolvePlacements` (sửa lỗi: bản trước chỉ đọc bản ghi save nên tiệm chính ở vị trí mặc định không bao giờ được tính, đồn không có tác dụng). Trong bán kính 16 ô: `shopliftDetectChance` + 0,05 (trần 0,98 giữ nguyên), `planBurglary` ×0,75.
+- **Co-op**: đường thật là `open_building` → `land-policy.ts` (`buy_plot`, giá = `buildCost ?? openCost`) → phiếu khi > 30% quỹ; `land-command-targets.ts` khóa lô theo `parcelId`. Đã bỏ code chết `open_building_civic`.
+- **UI** (`apps/web`): `CityModal` có tab "Khai hoang" / "Xóm phố"; tab Xóm phố hiện QoL 5 khu (thanh), công trình đã xây, lô trống → nút "Góp vốn xây" mở `OpenBuildingModal`. `OpenBuildingModal` thêm 4 loại công trình (🏛), giá "Góp vốn xây", tự tìm gốc hợp lệ đầu tiên trong lô bằng `validatePlacement` (báo "Không vừa lô này" nếu không có).
+
+### Test (`civic-qol.test.ts`, đăng ký trong test-runner)
+
+- Dữ liệu: đủ 4 loại, khớp `CIVIC_DEFS`, không quầy thu ngân; footprint mỗi loại đặt hợp lệ trên ≥1 lô thật bằng `validatePlacement`.
+- QoL: không công trình = 20; gần tâm > mép và > 20; không lan sang khu bên kia đường; cái thứ 2 cộng đúng một nửa, 3 = 2; nhiều dịch vụ cộng dồn; tất định.
+- Qua `GameSimulation`: thiếu cấp → `level`, thiếu tiền → `money`, tiền không đổi; đủ → trừ đúng `buildCost`, QoL khu W1 tăng, bản tin sáng có QoL; hai sim cùng lệnh → cùng `hashSimulationState`; lô trống đúng (không gồm lô tiệm chính, lô vừa xây).
+- Co-op: member xây trường > 30% quỹ → `vote`; giá nhỏ → `allow`; quyền `none` → `forbid`; lệnh khóa đúng lô.
+- Đồn công an: trần xác suất giữ nguyên; 400 đêm cùng seed: có đồn ≤ không đồn; đồn ở `lot-east-1` cạnh tiệm chính → có thưởng, đồn ở W1 → không.
+
+### Lệnh đã chạy (máy thật)
+
+| Lệnh | Kết quả |
+|------|---------|
+| `yarn typecheck` | ✅ PASS (2.66s) |
+| `yarn --cwd packages/game-core test` | ✅ EXIT 0 — 30 suites, 112 pass, 0 fail, không dòng `Error:`; "civic-defs/civic-qol/civic simulation PASS"; "Golden thế giới … khớp golden" |
+
+Ghi chú: các báo cáo trước ghi "tsx EPERM/sandbox" và dùng runner tự viết (`run-civic-*.cjs/mjs`) là sai — lệnh chạy được; lần review 2 test thật đang FAIL (`gần tâm (20) > xa mép (20)`).
+
+### QA trình duyệt (đã nhìn bằng mắt, dev server 5173, `?qa`, save local mới cấp 1)
+
+- 1280×800: tab Xóm phố hiện 5 khu QoL 20/100, "Chưa có công trình", 3 lô trống W0 (`lot-west`, `lot-east-1`, `lot-east-2`; `lot-center` của tiệm chính không còn bị liệt kê). Không lỗi console.
+- 375×812: không cuộn ngang (`scrollWidth` 375), nút cao 44–51 px, nút lô trống xuống dòng (đã sửa từ hàng ngang bị tràn). `OpenBuildingModal` hiện 8 loại, Công viên "Cấp 10 (Chưa đạt)", "Góp vốn xây: 500.000 ₫".
+- Chưa bấm xây trong trình duyệt (không sửa save local của chủ dự án); luồng xây đã kiểm bằng test simulation.
+
+### Giới hạn / Chưa làm
+
+- **3.1 Mặt tiền**: chưa vẽ riêng — công trình dùng mẫu tòa tạm (`provisionalTemplate`) như các loại tòa mới khác.
+- Chưa QA co-op 2 client thật; chưa QA 7 viewport đầy đủ (mới 1280×800 và 375×812).
+- Cấp mở khóa 10/15/20/25 đạt được (trần 60) nhưng chưa đo số ngày chơi; công viên mở ở cấp 10, sớm hơn cà phê (24) — cần xem lại khi cân bằng ở Bước 2.
+- QoL chưa ảnh hưởng doanh thu (Bước 2); phí duy trì chưa trừ (Bước 3). Số liệu QoL/bán kính PROVISIONAL (W0 rộng 35 ô nên công viên bán kính 12 chỉ cộng ~1,6 điểm).
+- QoL tính khi gọi getter (dẫn xuất, rẻ), chưa lưu đệm theo ngày.
+
+### File thay đổi
+
+| File | Hành động |
+|------|-----------|
+| `packages/game-data/src/world/civic.ts` | MỚI — `CIVIC_DEFS`, `civicDefOf`, `validateCivicDefs` |
+| `packages/game-data/src/world/building-types.ts` | 4 loại civic, `buildCost` từ `CIVIC_DEFS`, `maxInstances` 2 |
+| `packages/game-core/src/civic-qol.ts` | MỚI — `computeCivicQol` (tâm khu trên hàng vỉa hè) |
+| `packages/game-core/src/civic-qol.test.ts` | MỚI — test dữ liệu, QoL, simulation, co-op, đồn công an |
+| `packages/game-core/src/simulation.ts` | `buildCost`, `getCivicQol`, `getBuildableParcelIds`, `getCivicPoliceInfo` (resolvePlacements), nối trộm |
+| `packages/game-core/src/security.ts` | hằng + tham số đồn công an |
+| `packages/game-core/src/day-rhythm.ts` | `districtQol` trong bản tin sáng |
+| `packages/game-core/src/land-policy.ts` | giá `open_building` = `buildCost ?? openCost` |
+| `apps/web/src/components/CityModal.tsx` | tab Xóm phố |
+| `apps/web/src/components/OpenBuildingModal.tsx` | 4 loại civic, gốc hợp lệ tự tìm |
+| `apps/web/src/App.tsx` | truyền QoL/lô trống/mở bảng xây |
+
+---
+
 ## BƯỚC 0 — neighborhood-builder-expansion: District Assignment (16/10/2026, fix review lần 2)
 
 > Tiên quyết cho 5 change `civic-*`. Nối `parcel.districtId` vào `MarketContext` trong `simulation.ts` để district modifier tác động qua `modifiers.ts`.

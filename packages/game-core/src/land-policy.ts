@@ -37,8 +37,9 @@ function classify(action: unknown): { command: LandCommand; price: number } | nu
       return { command: 'buy_parcel', price: parcel ? Math.floor(parcelPrice(parcel) * LAND_LEASE_CONSTANTS.leaseDailyRate * 30) : 0 };
     }
     case 'open_building': {
-      const def = typeof action.buildingTypeId === 'string' ? (BUILDING_TYPE_DEFS as Record<string, { openCost: number }>)[action.buildingTypeId] : undefined;
-      return { command: 'buy_plot', price: def?.openCost ?? 0 };
+      const def = typeof action.buildingTypeId === 'string' ? (BUILDING_TYPE_DEFS as Record<string, { openCost: number; buildCost?: number }>)[action.buildingTypeId] : undefined;
+      // Civic: buildCost là nguồn duy nhất (CIVIC_DEFS), khác non-civic dùng openCost.
+      return { command: 'buy_plot', price: def?.buildCost ?? def?.openCost ?? 0 };
     }
     case 'buy_plot': {
       const plot = LAND_PLOTS.find(item => item.id === action.plotId);
