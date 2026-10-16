@@ -1,5 +1,69 @@
 # GIAI ĐOẠN 4 — MỤC 5: BẾP ĐA MÓN + COMBO (nâng cấp tiệm xôi & quán nước) (16/10/2026)
 
+## BƯỚC 0 — neighborhood-builder-expansion: District Assignment (16/10/2026, fix review lần 2)
+
+> Tiên quyết cho 5 change `civic-*`. Nối `parcel.districtId` vào `MarketContext` trong `simulation.ts` để district modifier tác động qua `modifiers.ts`.
+
+### Làm được (sau review fix)
+
+- **Tạo helper `getMainShopDistrictId()`** (simulation.ts): tìm `buildingId === 'main'` trong `buildingPlacements`, resolve parcel, trả về `parcel.districtId`. Fallback `'hem_dan_cu'` nếu không tìm thấy (main shop mặc định ở W0).
+- **Tạo wrapper `getMarketContext(day, hour)`** (simulation.ts): gọi `buildMarketContext()` rồi spread thêm `districtId: this.getMainShopDistrictId()`.
+- **Chỉ truyền districtId vào demand/pricing** (2 nơi trong simulation.ts): `refreshDemandTable()` + `customerPricing()`. Các chỗ khác (`ensureSupplierMarket`, `updatePriceIndex`, `decayStock`, `calcReferencePrices`, `buildAvailabilityTable`) dùng `buildMarketContext` gốc — không có districtId.
+- **District neutral cho W0 hem_dan_cu**: sửa `districts.ts` — `hem_dan_cu` có `preferredMultiplier: 1.0`, `peakHours: []`. Không có district modifier rules cho W0 (IIFE bỏ qua).
+- **Thêm DISTRICT_MODIFIER_RULES vào modifiers.ts**: sinh từ DISTRICTS, chỉ cho W1-W4, dùng source `district`, target là preferredCategories. **ALL_MODIFIER_RULES** = `[...MODIFIER_RULES, ...DISTRICT_MODIFIER_RULES]`, dùng làm mặc định cho `validateMarketData()` và `collectFactors()`.
+- **Sửa `whenMatches` trong market.ts**: district-specific rules chỉ match khi ctx.districtId tồn tại VÀ trùng với rule.when.districtId. Non-district rules (không có districtId trong when) vẫn match bình thường.
+- **Sửa `demandContextKey`**: thêm `ctx.districtId ?? '-'` để cache đúng khi đổi khu.
+- **Bỏ districtFactor trực tiếp trong buildDemandTable**: district giờ đi qua collectFactors + DISTRICT_MODIFIER_RULES, chịu kẹp của `multiplyFactors`.
+- **Sửa `districts.test.ts`**: W0 exempt khỏi yêu cầu peakHours ≥1 và preferredMultiplier 1.2–1.4 (W0 = 1.0, khu gốc trung tính).
+
+> **CHƯA LÀM (ghi rõ)**: Giờ cao điểm W1–W4 hiện chỉ có định nghĩa `peakHours` trong district data nhưng chưa sinh luật kênh 'traffic' trong modifiers.ts. Đã chọn phương án **(b)**: không làm ở Bước 0 nhưng ghi rõ "chưa làm". Bước tiếp theo (per-building district assignment) hoặc change riêng sẽ sinh traffic rules từ peakHours (phải khớp TIME_BANDS boundaries, có validate).
+
+### Hiện trạng code trước khi sửa
+
+| Thành phần | Trạng thái | Ghi chú |
+|---|---|---|
+| `parcel.districtId` trong `LandParcel` | ✅ ĐÃ CÓ | parcels.ts:17 |
+| `WAVE_LAND_PARCELS` gán `districtId` | ✅ ĐÃ CÓ | parcels.ts:94-107 |
+| `ModifierSource 'district'` trong shared | ✅ ĐÃ CÓ | shared/index.ts:447 |
+| `when.districtId` trong `ModifierWhen` | ✅ ĐÃ CÓ | shared/index.ts:464 |
+| `MarketContext.districtId?` | ✅ ĐÃ CÓ | market.ts:19 |
+| `modifiers.ts` xử lý `when.districtId` | ✅ ĐÃ CÓ | market.ts:54 |
+| `demand.ts` gọi `applyDistrictModifiers` | ✅ ĐÃ CÓ | demand.ts:51-52 |
+| **simulation.ts set districtId vào context** | ❌ CHƯA CÓ → ĐÃ SỬA | 6 calls `buildMarketContext` |
+
+### Lệnh đã chạy (16/10/2026, review lần 3 — chạy trên máy thật)
+
+| Lệnh | Kết quả |
+|------|---------|
+| `yarn typecheck` | ✅ PASS (2.27s) |
+| `yarn --cwd packages/game-core test` | ✅ EXIT 0 — 30 suites, 112 pass, 0 fail, không có dòng `Error:`; "Golden thế giới … mô phỏng 3 ngày khớp golden" |
+
+Ghi chú: các lần trước ghi "EPERM (sandbox)" là sai — lệnh chạy được trên máy này. Lần 1 lệch golden (W0 nhân 1.3), lần 2 fail ở `market.test.ts` (sai món) và `districts.test.ts` (W0 chưa miễn) — đã sửa.
+
+### File thay đổi
+
+| File | Hành động |
+|------|-----------|
+| `packages/game-core/src/simulation.ts` | `getMainShopDistrictId()` + `getMarketContext()`; chỉ dùng ở `refreshDemandTable` và `customerPricing` |
+| `packages/game-core/src/demand.ts` | Bỏ nhân `districtFactor` trực tiếp; `demandContextKey` thêm `districtId` |
+| `packages/game-core/src/market.ts` | `whenMatches` lọc luật khu; `collectFactors` mặc định `ALL_MODIFIER_RULES` |
+| `packages/game-data/src/modifiers.ts` | `DISTRICT_MODIFIER_RULES` (W1–W4, nhóm ưa chuộng), `ALL_MODIFIER_RULES`; `validateMarketData` kiểm cả luật khu |
+| `packages/game-data/src/world/districts.ts` | W0 `hem_dan_cu` trung tính (`preferredMultiplier` 1.0, `peakHours` rỗng) |
+| `packages/game-core/src/market.test.ts`, `packages/game-data/src/world/districts.test.ts` | Test khu: W0 = không truyền khu, W1 = W0 × hệ số khu, khóa cache đổi theo khu, W0 miễn dải hệ số |
+
+### Quyết định tự đưa ra mà spec không nói rõ
+
+- W0 là khu gốc trung tính để không đổi kinh tế save cũ; các khu khác lệch tương đối so với W0.
+- `getMainShopDistrictId()` trả `'hem_dan_cu'` khi không có placement `main`.
+- Mọi tòa đang dùng khu của tiệm chính (theo từng tòa làm ở change sau).
+
+### Chưa kiểm chứng
+
+- Browser QA (dời tiệm chính sang W1 xem hệ số khu trong giải thích nhu cầu); co-op 2 client.
+- Sweep kinh tế cho W1–W4 (tiệm chính mặc định ở W0 nên golden không đổi).
+
+---
+
 Change OpenSpec: `openspec/changes/multi-dish-kitchen-combos/` (proposal, spec delta `multi-dish-kitchen`, design, tasks). Mở rộng `quay_xoi`/`drink_counter` thành bếp đa món: thêm ≥3 món xôi, ≥3 thức uống mới và combo (suất/bữa gộp). Combo được biểu diễn theo phương án A chủ dự án duyệt: **lắp ráp qua `Recipe`** — nguyên liệu = các món thành phẩm của chính shop (FEFO), giá = tổng giá bán × (1−discount 8–15%), đầu ra lên kệ bán như món thường.
 
 ## Làm được

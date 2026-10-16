@@ -1,6 +1,5 @@
 import type { Product } from '@game/shared';
 import { collectFactors, multiplyFactors, type AppliedFactor, type MarketContext } from './market';
-import { applyDistrictModifiers, type DistrictId } from '@game/data';
 
 export interface ProductDemand {
   base: number; // độ phổ biến cơ bản 0..1
@@ -33,27 +32,24 @@ export function reputationTrafficFactor(reputation: number): number {
   return TRAFFIC_REPUTATION_RANGE.min + (TRAFFIC_REPUTATION_RANGE.max - TRAFFIC_REPUTATION_RANGE.min) * clamped / 100;
 }
 
+/** Khóa ngữ cảnh cho demand table — gồm districtId để cache đúng khi đổi khu. */
 export function demandContextKey(ctx: MarketContext, reputation: number): string {
-  return [ctx.day, ctx.timeBand, ctx.weatherId, ctx.season?.id ?? '-', ctx.eventIds.join(','), Math.round(reputation / 5)].join('|');
+  return [ctx.day, ctx.timeBand, ctx.districtId ?? '-', ctx.weatherId, ctx.season?.id ?? '-', ctx.eventIds.join(','), Math.round(reputation / 5)].join('|');
 }
 
 /** Tính nhu cầu hiệu dụng từng món và lưu lượng. Thuần, không phụ thuộc kho; gọi theo khoảng thời gian, không mỗi khung hình. */
 export function buildDemandTable(input: DemandInput): DemandTable {
   const perProduct: Record<string, ProductDemand> = {};
   for (const product of input.products) {
+    // District modifier giờ đi qua collectFactors + DISTRICT_MODIFIER_RULES (source: 'district')
+    // nên chỉ cần collectFactors thông thường, multiplyFactors sẽ kẹp theo MODIFIER_RANGES
     const factors = collectFactors(input.ctx, 'demand', product);
     const price = input.priceFactor?.(product.id) ?? 1;
     if (price !== 1) factors.push({ ruleId: 'price', label: 'Giá bán so với giá tham chiếu', factor: price });
     const { raw, value } = multiplyFactors(factors, 'demand');
     
-    // Áp dụng hệ số khu (D1): preferredCategory × peakHour, cap DISTRICT_MULTIPLIER_CAP
-    let districtFactor = 1;
-    if (input.ctx.districtId) {
-      districtFactor = applyDistrictModifiers(input.ctx.districtId as DistrictId, product.category, input.ctx.hour);
-    }
-    
     const base = product.demandProfile.basePopularity;
-    perProduct[product.id] = { base, rawMultiplier: raw * districtFactor, multiplier: value * districtFactor, demand: base * value * districtFactor, factors };
+    perProduct[product.id] = { base, rawMultiplier: raw, multiplier: value, demand: base * value, factors };
   }
   const trafficFactors = collectFactors(input.ctx, 'traffic');
   const reputation = reputationTrafficFactor(input.reputation);

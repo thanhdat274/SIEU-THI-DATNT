@@ -12,7 +12,7 @@ Trạng thái 07/10/2026: phần THUẦN AN TOÀN của 1.1/1.2 (DistrictDef reg
 
 ## 1. Khu vực
 
-- [x] 1.1/1.2 **(15/10/2026: HOÀN THÀNH CODE THUẦN)** `DistrictDef`, `DistrictId` (5 khu W0..W4), `DistrictDef` (kind, npcMix, peakHours, preferredCategories, preferredMultiplier 1.2–1.4, visualTheme), `DISTRICTS` registry, `applyDistrictModifiers`. Test `runDistrictsTests` PASS. **CHƯA gán `parcel.districtId` + `ModifierSource 'district'` + `when.districtId` trong modifiers.ts.**
+- [x] 1.1/1.2 **(15/10/2026: HOÀN THÀNH CODE THUẦN)** `DistrictDef`, `DistrictId` (5 khu W0..W4), `DistrictDef` (kind, npcMix, peakHours, preferredCategories, preferredMultiplier 1.2–1.4, visualTheme), `DISTRICTS` registry, `applyDistrictModifiers`. Test `runDistrictsTests` PASS. **16/10/2026 (Bước 0 của `neighborhood-builder-expansion`): ĐÃ nối** `parcel.districtId` → `MarketContext` (khu của tiệm chính, mọi tòa dùng chung), luật `source: 'district'` + `when.districtId` (`DISTRICT_MODIFIER_RULES`, nhóm ưa chuộng W1–W4); W0 trung tính để golden không đổi. `yarn --cwd packages/game-core test` EXIT 0. **Chưa làm:** `peakHours` W1–W4 có dữ liệu nhưng chưa sinh luật (khi làm phải theo `timeBand` để cache đúng); khu theo từng tòa.
 - [ ] 1.3 NPC nền theo `npcMix` của khu; giao diện chủ đề khu. **CHƯA LÀM (cần renderer).**
 - [x] 1.4 **(15/10/2026: CÓ CODE THUẦN)** `city-goals-sim.ts` mô phỏng. **CHƯA nối thật.**
 - [x] 1.5 **(15/10/2026: HOÀN THÀNH CODE THUẦN)** `proximity-cluster.ts`: `BLBuildingKind`, `ClusterBuilding`, `PROXIMITY_RADIUS`=16, `CLUSTER_COMPAT`, `proximityBonusPair`/`withinRadius`/`clusterMultiplierFor`, `legacyFoodClusterMultiplier`. Test `runProximityClusterTests` PASS. **CHƯA thay `foodClusterMultiplier` thật trong customers.ts.**

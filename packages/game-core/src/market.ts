@@ -1,6 +1,6 @@
 import type { ActiveMarketEvent, ModifierChannel, ModifierRule, MarketState, Product } from '@game/shared';
 import {
-  MODIFIER_RULES, MODIFIER_RANGES, TIME_BANDS, MARKET_EVENTS, MARKET_EVENT_MAP, getProductTags, getSeasonForDay, validateMarketData,
+  MODIFIER_RULES, MODIFIER_RANGES, ALL_MODIFIER_RULES, TIME_BANDS, MARKET_EVENTS, MARKET_EVENT_MAP, getProductTags, getSeasonForDay, validateMarketData,
   type MarketEventDef, type SeasonEvent,
 } from '@game/data';
 import { advanceWeather, climateSeasonForDay, createWeatherState, hashSeed } from './weather';
@@ -51,7 +51,13 @@ function whenMatches(rule: ModifierRule, ctx: MarketContext): boolean {
   if (w.timeBand && !w.timeBand.includes(ctx.timeBand)) return false;
   if (w.weekdays && !w.weekdays.includes(ctx.weekday)) return false;
   if (w.event && !w.event.some(id => ctx.eventIds.includes(id))) return false;
-  if (w.districtId && ctx.districtId && !w.districtId.includes(ctx.districtId)) return false;
+  // districtId: rule district-specific có when.districtId
+  //   - ctx.districtId undefined → không khớp (không có ngữ cảnh khu)
+  //   - ctx.districtId != w.districtId[0] → không khớp (khu sai)
+  //   - ctx.districtId == w.districtId[0] → khớp
+  // rule không có khi.districtId → non-district rule, bỏ qua kiểm tra này
+  const distIds: string[] | undefined = w.districtId;
+  if (distIds && distIds.length > 0 && (!ctx.districtId || !distIds.includes(ctx.districtId))) return false;
   return true;
 }
 
@@ -70,7 +76,7 @@ export function collectFactors(
   ctx: MarketContext,
   channel: ModifierChannel,
   product?: Pick<Product, 'id' | 'category'>,
-  rules: readonly ModifierRule[] = MODIFIER_RULES,
+  rules: readonly ModifierRule[] = ALL_MODIFIER_RULES,
 ): AppliedFactor[] {
   const factors: AppliedFactor[] = [];
   for (const rule of rules) {

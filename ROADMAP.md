@@ -2,6 +2,10 @@
 
 > Ghi chú: `pnpm-workspace.yaml` ở Giai đoạn 0 là lịch sử; dự án dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
 
+## Giai đoạn 4 — Bước 0: District Assignment (16/10/2026, fix review lần 2)
+
+- [>] **District Assignment** (change OpenSpec `openspec/changes/neighborhood-builder-expansion/`): nối `parcel.districtId` vào `MarketContext` để district modifier tác động qua `modifiers.ts` (source `district`, rule `when.districtId`). Sửa `hem_dan_cu` trung lập (`preferredMultiplier: 1.0`, `peakHours: []`), tạo `DISTRICT_MODIFIER_RULES` cho W1-W4, sửa `whenMatches` để non-district rules không bị ảnh hưởng khi ctx có districtId, thêm districtId vào `demandContextKey`, bỏ districtFactor trực tiếp trong `buildDemandTable`. `validateMarketData()` + `collectFactors()` dùng `ALL_MODIFIER_RULES` làm mặc định. `yarn typecheck` PASS (3.38s). **CHƯA LÀM:** peakHours traffic rules (chọn option b: không làm Bước 0, ghi rõ "chưa làm"). **Chờ máy thật:** Browser QA district impact lên demand table, `yarn --cwd packages/game-core test` PASS (sandbox EPERM block `tsx` spawn). **Hiện trạng:** mỗi building dùng district của main shop (`lot-center` → W0 `hem_dan_cu`), per-building assignment ở bước tiếp. Chi tiết `tổng hợp.md` đầu file.
+
 ## Giai đoạn 4 — Mục 5: Bếp đa món + Combo (nâng cấp tiệm xôi & quán nước) (16/10/2026)
 
 - [x] **Bếp đa món + Combo** (change OpenSpec `openspec/changes/multi-dish-kitchen-combos/`): thêm 3 món xôi + 3 thức uống mới vào `recipes.ts`; combo (`game-data/combos.ts`: Suất Xôi Đôi, Combo Hai Ly, discount 10%) biểu diễn theo phương án A — **lắp ráp qua `Recipe`** với nguyên liệu = món thành phẩm của shop (FEFO), giá = Σ bán lẻ ×(1−discount), chạy đúng pipeline `Recipe`/`ProductionJob` sẵn có (không mã bán riêng); set món tự nhận kệ `XOI_DISH_IDS`/`DRINK_SHOP_PRODUCT_IDS` sinh từ `RECIPES` tự gồm món+combo mới; UI `KitchenStationModal` khối "Combo suất tiết kiệm" (mobile-first); save additive giữ `CURRENT_SAVE_SCHEMA_VERSION=10`. **Bằng chứng thật:** `yarn typecheck` PASS; harness tsc→node `verify-multi-dish-kitchen.mjs` PASS (`ALL MULTI-DISH-KITCHEN VERIFIED`); `combo-balance.mjs` PASS (lãi 14k/15.6k, bundle 0→60% tăng doanh thu 10.06M→11.04M, biên ≥47%); eslint 0 errors/warnings. **Chờ máy thật:** Browser QA màn Combo + combo lên kệ/bán, viewport 568–740 px; playtest cân bằng combo. Chi tiết `tổng hợp.md` đầu file + `TASKS.md`.
@@ -71,6 +75,7 @@
 - [ ] Bước 6b `open-world-land-lease`: thuê đất theo ngày, mua có khấu trừ, giá đất động theo thành phố.
 - [ ] Bước 6c `open-world-coop-contracts`: người phụ trách tòa, hợp đồng cung ứng nội bộ, thành tích theo người. Đã chốt giữ quỹ chung (05/10/2026).
 - [ ] Bước 6d `open-world-districts-city-goals`: khu vực có bản sắc (qua `modifiers.ts`), cấp và mục tiêu thành phố, ký ức thành phố.
+- [>] Mở rộng xóm phố (sau 6a + 6d) — change tổng `neighborhood-builder-expansion` (viết lại 16/10/2026 sau review: bỏ vẽ đường/zoning/thị trưởng thu thuế), tách 5 change con làm lần lượt: `civic-buildings-qol` → `civic-population-demand` → `civic-local-fees` → `civic-city-goals` (kèm Sổ góp xóm kiểu Community Center) → `civic-residents-life`. **BƯỚC 0 HOÀN THÀNH (16/10/2026):** `parcel.districtId` đã gán, `ModifierSource 'district'` đã có, `demand.ts` gọi `applyDistrictModifiers`, **simulation.ts đã nối districtId vào MarketContext** (`getMarketContext()` wrapper + `getMainShopDistrictId()`). `yarn typecheck` PASS. CHƯA test thật (EPERM sandbox). 5 change con CHƯA có code.
 
 ## Khu phố mở rộng quanh tiệm — 04/10/2026
 

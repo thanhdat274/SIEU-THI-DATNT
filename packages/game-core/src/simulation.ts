@@ -102,7 +102,7 @@ import {
   type StallDefinition,
   REGULAR_CUSTOMERS_MAP
   } from '@game/data';
-import { BUILDING_TYPE_DEFS, resolveParcel, LAND_LEASE_CONSTANTS, parcelPrice } from '@game/data';
+import { BUILDING_TYPE_DEFS, resolveParcel, LAND_LEASE_CONSTANTS, parcelPrice, type DistrictId } from '@game/data';
 import { buildMorningBrief, type MorningBrief } from './day-rhythm';
 import { buildMarketSummary } from './market-summary';
 import { pickAvailableRegular, processRegularCheckout, processRegularWalkout } from './regulars';
@@ -749,6 +749,19 @@ export class GameSimulation {
       const p = placements.find(bp => bp.buildingId === buildingId);
       return p ? customerTrafficMultiplier(p.parcelId) : 1;
     };
+  }
+  /** Lấy districtId của tiệm chính (main shop) từ parcel của nó. */
+  private getMainShopDistrictId(): DistrictId {
+    const placements = this.buildingPlacements ?? DEFAULT_PLACEMENTS;
+    const mainPlacement = placements.find(p => p.buildingId === 'main');
+    if (!mainPlacement) return 'hem_dan_cu';
+    const parcel = resolveParcel(mainPlacement.parcelId);
+    if (!parcel) return 'hem_dan_cu';
+    return parcel.districtId;
+  }
+  /** Wrapper buildMarketContext có thêm districtId. */
+  private getMarketContext(day: number, hour: number) {
+    return { ...buildMarketContext(this.market, day, hour), districtId: this.getMainShopDistrictId() };
   }
   /** Bản đồ theo đất đã mua, quầy đã mở và vị trí đặt/ô sàn mở rộng hiện tại. */
   private buildTileMap(): GameTileMap { return generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned, this.buildingPlacements, this.worldOpenState.openedWaves); }
@@ -1414,7 +1427,7 @@ export class GameSimulation {
   /** Bảng nhu cầu lưu đệm; chỉ tính lại khi bối cảnh đổi (ngày, khung giờ, thời tiết, mùa, sự kiện, bậc uy tín), không mỗi khung hình. */
   private refreshDemandTable(): DemandTable {
     const time = this.clock.getTime();
-    const ctx = buildMarketContext(this.market, time.day, time.hour);
+    const ctx = this.getMarketContext(time.day, time.hour);
     const key = demandContextKey(ctx, this.playerData.reputation);
     if (!this.demandTable || this.demandTable.key !== key) {
       this.demandTable = buildDemandTable({
@@ -1586,7 +1599,7 @@ export class GameSimulation {
 
   private customerPricing() {
     const time = this.clock.getTime();
-    const ctx = buildMarketContext(this.market, time.day, time.hour);
+    const ctx = this.getMarketContext(time.day, time.hour);
     return {
       priceOf: (productId: string) => this.sellingPrice(productId),
       keepChance: (productId: string) => {

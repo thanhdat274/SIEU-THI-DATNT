@@ -1,3 +1,19 @@
+## GIAI ĐOẠN 4 — Bước 0: District Assignment (16/10/2026, fix review lần 2)
+
+- [x] **Tạo DISTRICT_MODIFIER_RULES** (`game-data/modifiers.ts`): sinh từ `DISTRICTS`, chỉ cho W1-W4 (skip `hem_dan_cu`), source `district`, target preferredCategories. **ALL_MODIFIER_RULES** = `[...MODIFIER_RULES, ...DISTRICT_MODIFIER_RULES]` làm mặc định cho `validateMarketData()` + `collectFactors()`.
+- [x] **Sửa `whenMatches` trong `market.ts`**: district-specific rules chỉ match khi ctx.districtId tồn tại VÀ trùng rule.when.districtId; non-district rules (không có districtId trong when) bỏ qua kiểm tra.
+- [x] **Sửa `demandContextKey`**: thêm `ctx.districtId ?? '-'` để cache đúng khi đổi khu.
+- [x] **Bỏ districtFactor trực tiếp trong `buildDemandTable`** (`demand.ts`): district giờ đi qua collectFactors + DISTRICT_MODIFIER_RULES, chịu kẹp của `multiplyFactors`.
+- [x] **Sửa `hem_dan_cu` trong `districts.ts`**: `preferredMultiplier: 1.0`, `peakHours: []` → trung lập về kinh tế.
+- [x] **Tạo helper `getMainShopDistrictId()`** và wrapper `getMarketContext()` trong `simulation.ts` chỉ cho demand/pricing (2 nơi), các chỗ khác giữ `buildMarketContext` gốc.
+- [x] **Xóa thư mục rác** `neighborhood-builder-expansion/` ở root repo.
+- [x] **Sửa `districts.test.ts`**: W0 exempt peakHours ≥1 và preferredMultiplier 1.2–1.4.
+- [x] **Sửa `market.test.ts`**: test 3.3 (`mi_hao_hao` thay `banh_mi_que`), test 3.4 mới (W1 multiplier = W0 × 1.35), test 3.6 mới (W0 = no-district).
+- [>] **Kiểm chứng**: `yarn typecheck` PASS (3.38s); unit test cần chạy trên máy thật (sandbox EPERM block `tsx` spawn). Chờ `yarn --cwd packages/game-core test` PASS trên máy thật.
+- **CHƯA LÀM**: peakHours traffic rules (chọn option b: không làm Bước 0, ghi rõ "chưa làm" trong tổng hợp.md).
+- **OpenSpec change**: `openspec/changes/neighborhood-builder-expansion/` (master change, 5 child changes `civic-*`).
+- **Ghi chú**: hiện tại mỗi building dùng district của main shop (`lot-center` → W0 `hem_dan_cu`). Per-building district assignment sẽ làm ở bước tiếp theo.
+
 ## GIAI ĐOẠN 4 — Mục 5: Bếp đa món + Combo (nâng cấp tiệm xôi & quán nước) (16/10/2026)
 
 - [x] **Đa món (mới, `recipes.ts` `PRODUCED_PRODUCTS`+`RECIPES`):** 3 món xôi (thập cẩm/chà bông trứng/bắp) + 3 thức uống (trà sữa/sinh tố xoài/cà phê sữa đá); dùng nguyên liệu đã có, không chạm số lượng `catalog.test`.
@@ -136,13 +152,14 @@
 - [x] **6a.8 renderer 4 loại tòa (13/10/2026):** viewport.ts `FACADES` thêm grocery_branch/cafe/com_restaurant (parking_lot không mặt tiền); `resolveTypeId(buildingId)` → fallback `buildingTypeOfInstance`; thay 5 chỗ `buildingId === 'main'/'xoi'/'drink'/'snack'` bằng typeId check; `yarn typecheck` **PASS** (2.21s → 1.53s).
 - [x] **6b schema 10 + migration 9→10 + lease_parcel (13/10/2026):** shared `CURRENT_SAVE_SCHEMA_VERSION` 10, thêm `parcelTenure?` vào `SaveGameData`; `migrateToW7→migrateToW10` chain; lệnh `{ type: 'lease_parcel'; parcelId }` trong shared, validation `isGameCommand`, `simulation.leaseParcel()` kiểm w0/owned/money + trừ tiền + tenure schema 10 đã nối applyStoreLayout/exportSaveData; UI Thuê 30 ngày trên `ParcelBuyModal` + UI mở cơ sở mới `OpenBuildingModal`; wire world-runtime + server bootstrap. `yarn typecheck` **PASS**, `yarn test` **PASS**.
 
-## Vòng 6 (07/10/2026) — open-world-districts-city-goals (Bước 6d) phần THUẦN (3 subagent, do giới hạn 8 teammate) — VÒNG CUỐI, ĐỦ 6 CHANGE THẾ GIỚI MỞ
+- [>] **Vòng 6 (07/10/2026) — open-world-districts-city-goals (Bước 6d) phần THUẦN (3 subagent, do giới hạn 8 teammate) — VÒNG CUỐI, ĐỦ 6 CHANGE THẾ GIỚI MỞ**
 
 - [>] **1.1/1.2 khu vực**: `game-data/world/districts.ts` (`DistrictId` 5 khu W0..W4 + `DistrictDef` + `DISTRICTS` + `districtForWave` + `districtPreferredMultiplier` 1.2–1.4 + `districtPeakMultiplier` khung giờ lấy max + `applyDistrictModifiers` cap 1.82). KHÔNG sửa Parcel/modifiers.ts.
 - [>] **1.5 cụm theo khoảng cách D2b**: `game-core/proximity-cluster.ts` (radius 16, cap 1.3, bonus 0.10/cặp để W0 = legacy 1.10, `CLUSTER_COMPAT`, `clusterMultiplierFor` đơn điệu + `legacyFoodClusterMultiplier`). KHÔNG sửa customers.ts.
 - [>] **2.1/1.4/2.4 mục tiêu + sim**: `game-data/world/city-goals.ts` (`CityGoalDef` cấp 1–10, `CITY_LEVEL_WAVE_REQUIREMENT` W1:2..W4:8, `cityTierFromCityLevel` = min(5,floor(level/2)), `cityProgress`) + `game-core/city-goals-sim.ts` (`simulateGoalProgression` 60–90 ngày + ẩm thực khu cap). KHÔNG sửa goals.ts/modifiers.ts/cityTier/simulation.
 - [>] **Lead review + nối test**: game-data index thêm export districts+city-goals (+test); test-runner nối 4 test (`runDistrictsTests`/`runProximityClusterTests`/`runCityGoalsTests`/`runCityGoalsSimTests`); `yarn typecheck` PASS (9.33s); `git diff --check` sạch. Subagent verify logic bằng node CJS (assert PASS), KHÔNG qua suite chuẩn.
-- [ ] **Chờ máy thật (6d):** 1.1 gán `parcel.districtId` + `ModifierSource 'district'` (shared) + `when.districtId` trong modifiers.ts; 1.2 validation + source/when; 1.3 NPC nền theo `npcMix` + giao diện chủ đề khu; 1.4 sim cà phê/ăn vặt hai khu thật; 1.5 thay `foodClusterMultiplier` thật trong customers.ts; 2.2 lệnh `claim_city_goal`/lên cấp/thưởng + `cityTier` theo cấp (bỏ công thức tự động) + điều kiện cấp cho `reclaim_wave`; 2.3 đồ công cộng + decor.ts; 3.1 biển kỷ niệm + nhật ký mốc; 3.2 minimap IndexedDB; 4.1 schema kế tiếp + migration (cityProgress, cấp suy từ cityTier cũ); 4.2 test/build/Browser QA/co-op; 4.3 docs tổng hợp.
+- [>] **1.1 NỐI vào simulation (16/10/2026 — Bước 0 neighborhood-builder-expansion):** `parcel.districtId` đã gán trong `parcels.ts`, `ModifierSource 'district'` + `when.districtId` trong shared, `demand.ts` đã gọi `applyDistrictModifiers`. **ĐÃ thêm `getMainShopDistrictId()` + `getMarketContext()` trong simulation.ts**, sửa 6 calls `buildMarketContext` để district modifier tác động. `yarn typecheck` PASS. **Chưa test thật** (EPERM sandbox). CHƯA: validation + source/when; NPC nền theo `npcMix`; giao diện chủ đề khu; sim cà phê/ăn vặt hai khu; thay `foodClusterMultiplier` thật trong customers.ts.
+- [ ] **Chờ máy thật (6d):** 2.2 lệnh `claim_city_goal`/lên cấp/thưởng + `cityTier` theo cấp (bỏ công thức tự động) + điều kiện cấp cho `reclaim_wave`; 2.3 đồ công cộng + decor.ts; 3.1 biển kỷ niệm + nhật ký mốc; 3.2 minimap IndexedDB; 4.1 schema kế tiếp + migration (cityProgress, cấp suy từ cityTier cũ); 4.2 test/build/Browser QA/co-op; 4.3 docs tổng hợp.
 
 ## Vòng 5 (07/10/2026) — open-world-coop-contracts (Bước 6c) phần THUẦN (3 subagent, do giới hạn 8 teammate)
 
