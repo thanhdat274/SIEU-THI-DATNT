@@ -93,7 +93,7 @@ async function run() {
     const address = app.getHttpServer().address();
     if (!address || typeof address === 'string') throw new Error('Missing test server address');
     const url = `ws://127.0.0.1:${address.port}/ws?worldId=${encodeURIComponent(seeded.world.id)}`;
-    const ownerSocket = await connect(url, owner.id);
+    let ownerSocket = await connect(url, owner.id);
     sockets.push(ownerSocket);
     assert.equal(WorldGateway.getActiveSessionCount(seeded.world.id), 1);
     const ownerJoin = getJoined(ownerSocket);
@@ -300,7 +300,7 @@ async function run() {
       assert.equal(clinicCash(), 350_000);
       await controller.updateWorldSettings(ownerReq, seeded.world.id, { memberLandPermissions: 'vote' });
 
-      // (7) Bạn cùng hẻm offline: khoản lớn (> ngưỡng) chạy thẳng theo luật D3. (Trần góp theo ngày: CHƯA có code, xem tổng hợp.md.)
+      // (7) Bạn cùng hẻm offline: khoản lớn (> ngưỡng) chạy thẳng theo luật D3 (chủ hẻm góp không bị trần).
       memberSocket.close();
       for (let i = 0; i < 50 && WorldGateway.getActiveSessionCount(seeded.world.id) > 1; i++) await new Promise(resolve => setTimeout(resolve, 50));
       assert.equal(WorldGateway.getActiveSessionCount(seeded.world.id), 1, 'thành viên đã offline');
@@ -311,6 +311,24 @@ async function run() {
       memberSocket = await connect(url, memberId);
       sockets.push(memberSocket);
       getJoined(memberSocket);
+      assert.equal(WorldGateway.getActiveSessionCount(seeded.world.id), 2);
+
+      // (8) Chủ hẻm offline: thành viên góp tiền chạy thẳng NHƯNG bị trần theo ngày (30% tiền chung đầu ngày, cộng dồn).
+      //     Thành viên đã góp 300k hôm nay, quỹ chung còn thấp → cả khoản nhỏ cũng vượt trần; không trừ tiền, không đổi ô.
+      ownerSocket.close();
+      for (let i = 0; i < 50 && WorldGateway.getActiveSessionCount(seeded.world.id) > 1; i++) await new Promise(resolve => setTimeout(resolve, 50));
+      assert.equal(WorldGateway.getActiveSessionCount(seeded.world.id), 1, 'chủ hẻm đã offline');
+      const m8 = live().player.money;
+      const capped = await sendWs(memberSocket, memberId, 'clinic-daily-cap', clinicCashCmd(10_000));
+      assert.equal(capped.data.ok, false, 'vượt trần góp theo ngày khi chủ hẻm offline');
+      assert.match(JSON.stringify(capped.data), /30%/, 'thông báo nêu trần 30%');
+      assert.equal(clinicCash(), 950_000, 'bị chặn thì ô không đổi');
+      assert.equal(live().player.money, m8, 'bị chặn thì không trừ tiền');
+      const goodsWhileOwnerOffline = await sendWs(memberSocket, memberId, 'clinic-goods-offline', { type: 'donate_to_bundle', bundleId: 'bundle_clinic', slotId: 'slot_clinic_hygiene', productId: 'xa_phong', quantity: 2 });
+      assert.equal(goodsWhileOwnerOffline.data.ok, true, 'góp hàng không bị trần tiền');
+      ownerSocket = await connect(url, owner.id);
+      sockets.push(ownerSocket);
+      getJoined(ownerSocket);
       assert.equal(WorldGateway.getActiveSessionCount(seeded.world.id), 2);
     }
 

@@ -53,9 +53,9 @@
 - [x] **Gđ 2 (cân bằng 80% + land-policy + test)**: quỹ `civicBundleCashAmount = round50k(0,8×giá xây − hàng dự kiến)` (không ghi tay), validate (quỹ ≥ 0, tổng ≤ giá xây); `land-policy` dùng `civicOpenCost` giá còn phải trả (bối cảnh bundleStates + đếm tòa); test `civic-bundles.test.ts` (từ chối, góp vượt, FIFO, ledger, netProfit, hoàn thành/mở, land-policy, claim, metrics, constructor, validateCivicBundles, save 10&11, hash giống nhau).
 - [x] **Kết quả lệnh (16/10/2026)**: `yarn typecheck` EXIT 0; `yarn --cwd packages/game-core test` (bản dist qua `.qa/pure-loader.cjs`) **112/112 pass, 0 fail, 0 lỗi Error**; golden khớp. Bảng cân bằng 4 trang trong `tổng hợp.md` khối "BƯỚC 4".
 - [x] **Gđ 3** — Mục tiêu xóm phố cấp 4–10: catalog riêng `civic-reveal-goals.ts` (NOT `CITY_GOALS_CATALOG` để KHÔNG chặn lên cấp/golden), nối `evaluateCivicGoalCondition` thật, `revealBundleId`, `isBundleRevealed`, `revealedBundleIdsForLoadedLevel` không hồi tố; simulation `claimCivicRevealGoal` + gieo reveal theo cấp tải (constructor + importSaveData) + ghi `revealedBundleIds` vào save (schema vẫn 11, additive). Test `runCivicRevealGoalsTests` (1.1 evaluator 3 loại; 1.2 catalog+validate; 1.3 không hồi tố; claim thật) — chạy trong suite 112/112, 0 lỗi (16/10/2026).
-- [ ] **Gđ 4** — UI tab "Sổ góp xóm" trong `CityModal.tsx`. CHƯA làm.
-- [ ] **Gđ 5** — Khánh thành + nhật ký thành phố (`city-journal.ts`, toast). CHƯA làm.
-- [ ] **Gđ 6** — Co-op server-authoritative (phiếu chi lớn ô quỹ, `memberLandPermissions`, góp cùng lúc, replay). CHƯA làm.
+- [~] **Gđ 4** — UI tab "Sổ góp xóm": có code + QA Browser một client (667×375, desktop; dọc bị khóa) 17/10/2026; tên người góp hiển thị an toàn; sửa P1 "Xây ngay" chọn đúng loại tòa.
+- [~] **Gđ 5** — Khánh thành + nhật ký: popup/mốc/bản tin sáng đã nhìn bằng mắt; toast riêng khánh thành chưa thấy.
+- [~] **Gđ 6** — Co-op: test thật qua server/gateway + QA 2 client khách dev (B trình duyệt, A script) 17/10/2026: góp hàng/tiền, phiếu duyệt/từ chối, quyền none, cùng ô, khánh thành. Sửa lỗi quyền không tới runtime sống + UI thành viên không cập nhật. Còn bản tin sáng 2 client, 2 tài khoản Google thật.
 - **Ghi chú**: không commit/push (theo yêu cầu); nhánh `develop`; Bước 3 đã commit ở d12887e.
 
 ## GIAI ĐOẠN 4 — BƯỚC 5: Dân cư & Nhà dân nâng bậc (civic-residents-life) (16/10/2026 — code chưa commit)

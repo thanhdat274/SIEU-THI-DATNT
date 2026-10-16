@@ -1045,7 +1045,8 @@ export const App: React.FC = () => {
         : { ...current, world: { ...snapshot.world, avatars }, businesses: snapshot.businesses };
       onlineWorldRef.current = updated;
       // Chỉ báo React khi có gì hiển thị trong khung thay đổi; cập nhật 4 lần/giây không được dựng lại cả ứng dụng.
-      if (updated.world.revision !== current.world.revision || updated.world.avatars.length !== current.world.avatars.length || updated.world.memberships.length !== current.world.memberships.length) {
+      if (updated.world.revision !== current.world.revision || updated.world.avatars.length !== current.world.avatars.length || updated.world.memberships.length !== current.world.memberships.length || JSON.stringify(updated.world.settings) !== JSON.stringify(current.world.settings)) {
+        // Cài đặt đất (quyền thành viên) do chủ hẻm đổi không làm tăng revision, nhưng nút góp tiền phải xám ngay.
         setOnlineWorld(updated);
       }
       const sim = simulationRef.current;
