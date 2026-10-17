@@ -1,6 +1,7 @@
 export * from './products';
 export * from './fridge';
 export * from './recipes';
+export * from './combos';
 export * from './buildings';
 // Mô hình thế giới mở (OpenSpec `open-world-land-grid`): tên trùng (BuildingBounds, BuildingId, *_PLOT_ID…) đã re-export qua `./buildings`.
 export * from './world/world-grid';
@@ -10,7 +11,7 @@ export * from './world/infrastructure';
 export * from './world/wave-infrastructure';
 export * from './world/wave-infrastructure.test';
 export {
-  DEFAULT_PLACEMENTS, DEFAULT_GEOMETRY, placementGeometry, mainEastWingTiles, validatePlacements, normalizePlacements, placementsProblem, placementTop, placementEastWall, placementFloor, footprintBlockers, mainBlockedRects, warehouseGeometry, resolvePlacements, validatePlacement, layoutBuildings, defaultPlacementOf, placementOriginY, placedBuildingIds, type BuildingInfo, type BuildingPlacement, type PlacementGeometry,
+  DEFAULT_PLACEMENTS, DEFAULT_GEOMETRY, placementGeometry, mainEastWingTiles, validatePlacements, normalizePlacements, placementsProblem, placementTop, placementEastWall, placementFloor, footprintBlockers, mainBlockedRects, warehouseGeometry, resolvePlacements, validatePlacement, layoutBuildings, defaultPlacementOf, placementOriginY, placedBuildingIds, buildingTypeOfInstance, isExtraInstanceId, type BuildingInfo, type BuildingPlacement, type PlacementGeometry,
 } from './world/placements';
 export { adjacentParcels } from './world/parcels';
 export * from './world/footprint';
@@ -27,6 +28,7 @@ export * from './pixel-art-cold';
 export * from './online-world';
 export * from './catalog-manifest';
 export * from './catalog.test';
+export * from './data-integrity.test';
 export * from './world/reclamation-data.test';
 export * from './world/play-area.test';
 export * from './world/building-types';
@@ -37,6 +39,8 @@ export * from './world/land-lease';
 export * from './world/land-lease.test';
 export * from './world/districts';
 export * from './world/districts.test';
+export * from './world/civic';
+export * from './world/civic-bundles';
 export * from './world/city-goals';
 export * from './world/city-goals.test';
 export * from './world/special-requests';

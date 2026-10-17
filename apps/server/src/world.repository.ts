@@ -114,6 +114,14 @@ export class WorldRepository {
     return { world: doc.world, businesses: doc.businesses };
   }
 
+  /** Chỉ đọc revision (vài chục byte) để client biết có cần tải lại cả hẻm hay không. */
+  async getRevisionForMember(worldId: string, accountId: string): Promise<{ revision: number }> {
+    const doc = await (await connectDatabase()).collection<WorldDocument>(collectionName)
+      .findOne({ _id: worldId, 'world.memberships.accountId': accountId }, { projection: { 'world.revision': 1 } });
+    if (!doc) throw new NotFoundException('Không tìm thấy hẻm hoặc bạn chưa tham gia.');
+    return { revision: doc.world.revision };
+  }
+
   async findReceipt(worldId: string, actorId: string, commandId: string): Promise<ReceiptRecord | undefined> {
     const doc = await (await connectDatabase()).collection<WorldDocument>(collectionName).findOne(
       { _id: worldId, 'world.memberships.accountId': actorId, 'receipts.commandId': commandId, 'receipts.actorId': actorId },
@@ -247,6 +255,20 @@ export class WorldRepository {
       throw new ForbiddenException('Chỉ chủ hẻm mới đặt lại tiệm.');
     }
     return { reset: true, revision: 0 };
+  }
+
+  /** Chỉ chủ hẻm đổi cài đặt đất (quyền thành viên, bỏ qua phiếu của chủ). Không đổi revision: cài đặt không nằm trong lệnh của tiệm. */
+  async updateSettings(worldId: string, ownerId: string, patch: import('@game/shared').WorldSettings) {
+    const collection = (await connectDatabase()).collection<WorldDocument>(collectionName);
+    const current = await collection.findOne({ _id: worldId, 'world.memberships': { $elemMatch: { accountId: ownerId, role: 'owner' } } }, { projection: { 'world.settings': 1 } });
+    if (!current) {
+      const exists = await collection.findOne({ _id: worldId }, { projection: { _id: 1 } });
+      if (!exists) throw new NotFoundException('Không tìm thấy hẻm.');
+      throw new ForbiddenException('Chỉ chủ hẻm mới đổi cài đặt đất.');
+    }
+    const settings = { ...(current.world?.settings ?? {}), ...patch };
+    await collection.updateOne({ _id: worldId }, { $set: { 'world.settings': settings, 'world.updatedAt': new Date().toISOString() } });
+    return { settings };
   }
 
   /** Chỉ chủ hẻm được xóa; xóa cả tiệm, lời mời, biên nhận và hoạt động trong cùng document. */

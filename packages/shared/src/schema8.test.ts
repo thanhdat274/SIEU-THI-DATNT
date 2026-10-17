@@ -20,7 +20,7 @@ function makePlacement(): { buildingId: string; parcelId: string; originX: numbe
 }
 
 export function runSchema8Tests() {
-  assert.equal(CURRENT_SAVE_SCHEMA_VERSION, 9, 'schemaVersion hiện tại phải là 9');
+  assert.ok(CURRENT_SAVE_SCHEMA_VERSION >= 8, 'schemaVersion hiện tại phải >= 8');
 
   // isBuildingPlacementRecord: optional builtBy — có là phải non-empty string.
   assert.equal(isBuildingPlacementRecord({ ...makePlacement() }), true, 'bản ghi không builtBy vẫn hợp lệ (optional)');

@@ -17,9 +17,13 @@
  * - `trafficShare`: nhịp sinh khách so với trần (1 = tiệm chính); các loại mới là PROVISIONAL.
  * - `unlockLevel` / `openCost` / `maxInstances`: cấp mở, giá mở, số tòa tối đa.
  *   Loại cũ lấy từ `LAND_PLOTS` (level/cost); loại mới theo D4.
+ * - `buildCost`: giá xây cho civic (lấy từ CIVIC_DEFS).
  * - `hasCheckout`: loại có quầy thu ngân (parking_lot = false).
  * - `effects?`: hiệu ứng đặc biệt (bãi xe, khung giờ cao điểm) — PROVISIONAL.
  * - `tiers?`: hạng cửa hàng theo diện tích sàn (D9) — chỉ loại bán lẻ.
+ *
+ * Civic data (service, qolPoints, radiusTiles, buildCost, upkeepPerDay)
+ * là nguồn DUY NHẤT ở `civic.ts`. BuildingTypeDef chỉ giữ geometry + unlockLevel.
  */
 import type { StoreFixture } from '@game/shared';
 import { nullProto } from '../safe-map';
@@ -29,9 +33,7 @@ import { SNACK_SHOP_PRODUCT_IDS } from '../recipes';
 import {
   BUILDING_TEMPLATES, type BuildingId, type BuildingTemplate,
 } from './building-templates';
-import {
-  DRINK_DEFAULT_FIXTURES, SNACK_DEFAULT_FIXTURES, XOI_DEFAULT_FIXTURES,
-} from '../buildings';
+import { CIVIC_DEFS, type CivicServiceId } from './civic';
 
 /** Loại hình tòa nhà (đích tới của khái niệm `BuildingId` sau refactor 1.2). */
 export type BuildingTypeId =
@@ -42,7 +44,11 @@ export type BuildingTypeId =
   | 'grocery_branch'
   | 'cafe'
   | 'parking_lot'
-  | 'com_restaurant';
+  | 'com_restaurant'
+  | 'park'
+  | 'clinic'
+  | 'ward_police'
+  | 'primary_school';
 
 /**
  * Hàm lọc sản phẩm của một loại tòa: trả true nếu `productId` được bày/bán ở loại này.
@@ -91,14 +97,16 @@ export interface BuildingTypeDef {
   productFilter: BuildingProductFilter;
   /** Nhịp sinh khách so với trần (1 = tiệm chính); loại mới PROVISIONAL. */
   trafficShare: number;
-  /** Cấp mở khóa loại này. */
+  /** Cấp mở khóa loại này — nguồn DUY NHẤT cho unlock level (civic + non-civic). */
   unlockLevel: number;
-  /** Giá mở tòa của loại này (₫). */
+  /** Giá mở tòa của loại này (₫). Civic: bằng buildCost. */
   openCost: number;
-  /** Số tòa tối đa của loại này (loại cũ = 1; loại mới theo D4). */
+  /** Số tòa tối đa của loại này (loại cũ = 1; loại mới theo D4). Civic = 2 (chống spam có nghĩa). */
   maxInstances: number;
   /** Loại có quầy thu ngân không (bãi giữ xe không có). */
   hasCheckout: boolean;
+  /** Giá xây công trình (₫) — civic: lấy từ CIVIC_DEFS. */
+  buildCost?: number;
   /** Hiệu ứng đặc biệt (PROVISIONAL). */
   effects?: BuildingTypeEffects;
   /** Hạng cửa hàng theo diện tích sàn (D9), chỉ loại bán lẻ. */
@@ -127,8 +135,38 @@ const mainExceptColdFilter: BuildingProductFilter = (productId) => {
 // Mẫu tòa PROVISIONAL cho 4 loại mới (D4). Chưa chốt ảnh/hình học thật — chỉ đủ dữ liệu
 // để registry hoàn chỉnh; renderer/placement thật nối sau (2.2, chờ máy thật).
 // ---------------------------------------------------------------------------
+const fx = (id: string, type: StoreFixture['type'], tileX: number, tileY: number, widthTiles: number, label: string, shopId?: string, slotCount?: number, maxCapacity = 0): StoreFixture =>
+  ({ id, type, tileX, tileY, widthTiles, heightTiles: 1, rotation: 0, currentStock: 0, maxCapacity, label, ...(shopId ? { shopId } : {}), ...(slotCount ? { slotCount } : {}) } as StoreFixture);
+const shelfFx = (id: string, x: number, y: number, label: string) => fx(id, 'shelf_wooden', x, y, 2, label, 'shelf', 12, 20);
+const cashierFx = (x: number, y: number, label: string) => fx('cashier_counter', 'cashier_counter', x, y, 2, label);
+
+/** Nội thất mặc định (PROVISIONAL, tọa độ tương đối; id được tiền tố theo instance khi đặt tòa). Cửa ở hàng cuối, chừa cột giữa làm lối đi. */
+const GROCERY_BRANCH_FIXTURES: StoreFixture[] = [
+  shelfFx('shelf_1', 1, 1, 'Kệ 1'), shelfFx('shelf_2', 3, 1, 'Kệ 2'), shelfFx('shelf_3', 5, 1, 'Kệ 3'),
+  shelfFx('shelf_4', 1, 3, 'Kệ 4'), shelfFx('shelf_5', 5, 3, 'Kệ 5'),
+  cashierFx(1, 5, 'Quầy thu ngân chi nhánh'),
+  fx('fridge_1', 'refrigerator', 5, 5, 2, 'Tủ mát', 'fridge', 24, 20),
+];
+const CAFE_FIXTURES: StoreFixture[] = [
+  fx('counter', 'kitchen_station', 1, 1, 2, 'Quầy pha', 'drink_counter', 1),
+  fx('blender', 'kitchen_station', 3, 1, 1, 'Máy xay', 'blender', 1),
+  fx('kettle', 'kitchen_station', 4, 1, 1, 'Ấm nước nóng', 'hot_kettle', 1),
+  shelfFx('shelf', 5, 1, 'Kệ bánh, đồ uống'),
+  fx('table_1', 'dining_table', 1, 3, 1, 'Bàn 2 chỗ', 'food_table_2', 1), fx('table_2', 'dining_table', 6, 3, 1, 'Bàn 2 chỗ', 'food_table_2', 1),
+  fx('table_3', 'dining_table', 1, 4, 1, 'Bàn 2 chỗ', 'food_table_2', 1), fx('table_4', 'dining_table', 6, 4, 1, 'Bàn 2 chỗ', 'food_table_2', 1),
+  cashierFx(5, 5, 'Quầy thu ngân quán cà phê'),
+];
+const COM_RESTAURANT_FIXTURES: StoreFixture[] = [
+  fx('grill', 'kitchen_station', 1, 1, 2, 'Bếp nướng', 'food_grill', 1),
+  fx('kettle', 'kitchen_station', 3, 1, 1, 'Nồi canh', 'hot_kettle', 1),
+  fx('display', 'shelf_glass', 5, 1, 2, 'Tủ trưng bày món', 'bread_case', 12, 18),
+  fx('table_1', 'dining_table', 1, 3, 2, 'Bàn 4 chỗ', 'food_table_4', 1), fx('table_2', 'dining_table', 4, 3, 2, 'Bàn 4 chỗ', 'food_table_4', 1),
+  fx('table_3', 'dining_table', 7, 3, 2, 'Bàn 4 chỗ', 'food_table_4', 1),
+  cashierFx(7, 5, 'Quầy thu ngân nhà hàng'),
+];
+
 const provisionalTemplate = (
-  id: string, name: string, width: number, height: number,
+  id: string, name: string, width: number, height: number, defaultFixtures: StoreFixture[] = [],
 ): BuildingTemplate => ({
   // id phải thuộc union `BuildingId` cố định; các loại mới chưa có id thật trong union đó
   // (refactor 1.2 mới cho string) nên tạm cast. Đây là dữ liệu PROVISIONAL.
@@ -137,13 +175,23 @@ const provisionalTemplate = (
   entranceTile: { x: Math.floor(width / 2) - 1, y: height },
   awning: { startTiles: Math.max(1, Math.floor(width / 4)), widthTiles: Math.max(2, Math.floor(width / 2)) },
   eaveOffsetPx: 10,
-  defaultFixtures: [],
+  defaultFixtures,
 });
 
-const GROCERY_BRANCH_TEMPLATE = provisionalTemplate('grocery_branch', 'Chi nhánh tạp hóa', 8, 8);
-const CAFE_TEMPLATE = provisionalTemplate('cafe', 'Quán cà phê', 8, 8);
+const GROCERY_BRANCH_TEMPLATE = provisionalTemplate('grocery_branch', 'Chi nhánh tạp hóa', 8, 8, GROCERY_BRANCH_FIXTURES);
+const CAFE_TEMPLATE = provisionalTemplate('cafe', 'Quán cà phê', 8, 8, CAFE_FIXTURES);
 const PARKING_LOT_TEMPLATE = provisionalTemplate('parking_lot', 'Bãi giữ xe', 6, 6);
-const COM_RESTAURANT_TEMPLATE = provisionalTemplate('com_restaurant', 'Quán cơm / nhà hàng', 10, 8);
+const COM_RESTAURANT_TEMPLATE = provisionalTemplate('com_restaurant', 'Quán cơm / nhà hàng', 10, 8, COM_RESTAURANT_FIXTURES);
+
+// --- Template công trình công cộng (civic-buildings-qol, D1) ---
+// Kích thước: park 6×6, clinic 6×8, ward_police 6×8, primary_school 8×8 — đều vừa lô W0 nhỏ nhất.
+const PARK_TEMPLATE = provisionalTemplate('park', 'Công viên', 6, 6);
+const CLINIC_TEMPLATE = provisionalTemplate('clinic', 'Trạm y tế', 6, 8);
+const WARD_POLICE_TEMPLATE = provisionalTemplate('ward_police', 'Đồn công an phường', 6, 8);
+const PRIMARY_SCHOOL_TEMPLATE = provisionalTemplate('primary_school', 'Trường tiểu học', 8, 8);
+
+// --- Helper: lookup buildCost/unlockLevel from CIVIC_DEFS for civic types ---
+const CIVIC_MAP = Object.fromEntries(CIVIC_DEFS.map(c => [c.buildingTypeId, c])) as Record<string, (typeof CIVIC_DEFS)[number]>;
 
 // ---------------------------------------------------------------------------
 // Registry loại tòa
@@ -176,7 +224,7 @@ export const BUILDING_TYPE_DEFS: Record<BuildingTypeId, BuildingTypeDef> = {
     typeId: 'xoi_shop',
     name: BUILDING_TEMPLATES.xoi.name,
     template: BUILDING_TEMPLATES.xoi,
-    defaultFixtures: XOI_DEFAULT_FIXTURES,
+    defaultFixtures: BUILDING_TEMPLATES.xoi.defaultFixtures,
     allowedStationIds: ['thung_ngam', 'xung_hap', 'quay_xoi'],
     productFilter: allProductsFilter,
     trafficShare: 0.02,
@@ -190,7 +238,7 @@ export const BUILDING_TYPE_DEFS: Record<BuildingTypeId, BuildingTypeDef> = {
     typeId: 'drink_shop',
     name: BUILDING_TEMPLATES.drink.name,
     template: BUILDING_TEMPLATES.drink,
-    defaultFixtures: DRINK_DEFAULT_FIXTURES,
+    defaultFixtures: BUILDING_TEMPLATES.drink.defaultFixtures,
     allowedStationIds: ['drink_counter', 'blender', 'sugarcane_press'],
     productFilter: inSetFilter(DRINK_SHOP_PRODUCT_IDS),
     trafficShare: 0.05,
@@ -204,7 +252,7 @@ export const BUILDING_TYPE_DEFS: Record<BuildingTypeId, BuildingTypeDef> = {
     typeId: 'snack_shop',
     name: BUILDING_TEMPLATES.snack.name,
     template: BUILDING_TEMPLATES.snack,
-    defaultFixtures: SNACK_DEFAULT_FIXTURES,
+    defaultFixtures: BUILDING_TEMPLATES.snack.defaultFixtures,
     allowedStationIds: ['chao_xao', 'chao_chien'],
     productFilter: inSetFilter(SNACK_SHOP_PRODUCT_IDS),
     trafficShare: 0.03,
@@ -239,7 +287,7 @@ export const BUILDING_TYPE_DEFS: Record<BuildingTypeId, BuildingTypeDef> = {
     name: 'Quán cà phê',
     template: CAFE_TEMPLATE,
     defaultFixtures: [],
-    allowedStationIds: ['cafe_pha_che'],
+    allowedStationIds: ['drink_counter', 'blender', 'hot_kettle'],
     productFilter: allProductsFilter,
     trafficShare: 0.06,
     unlockLevel: 34,
@@ -279,6 +327,69 @@ export const BUILDING_TYPE_DEFS: Record<BuildingTypeId, BuildingTypeDef> = {
     hasCheckout: true,
     effects: { peakHours: [{ fromHour: 11, toHour: 13 }, { fromHour: 17, toHour: 20 }] },
   },
+
+  // --- 4 loại công trình công cộng (civic-buildings-qol, D1 + D2) ---
+  // Nguồn dữ liệu: unlockLevel nằm ở đây; service/qolPoints/radius/buildCost/upkeep lấy từ CIVIC_DEFS.
+  park: {
+    id: 'park',
+    typeId: 'park',
+    name: 'Công viên',
+    template: PARK_TEMPLATE,
+    defaultFixtures: [],
+    allowedStationIds: [],
+    productFilter: () => false,
+    trafficShare: 0,
+    unlockLevel: 10,
+    openCost: CIVIC_MAP.park.buildCost,
+    maxInstances: 2,
+    hasCheckout: false,
+    buildCost: CIVIC_MAP.park.buildCost,
+  },
+  clinic: {
+    id: 'clinic',
+    typeId: 'clinic',
+    name: 'Trạm y tế',
+    template: CLINIC_TEMPLATE,
+    defaultFixtures: [],
+    allowedStationIds: [],
+    productFilter: () => false,
+    trafficShare: 0,
+    unlockLevel: 15,
+    openCost: CIVIC_MAP.clinic.buildCost,
+    maxInstances: 2,
+    hasCheckout: false,
+    buildCost: CIVIC_MAP.clinic.buildCost,
+  },
+  ward_police: {
+    id: 'ward_police',
+    typeId: 'ward_police',
+    name: 'Đồn công an phường',
+    template: WARD_POLICE_TEMPLATE,
+    defaultFixtures: [],
+    allowedStationIds: [],
+    productFilter: () => false,
+    trafficShare: 0,
+    unlockLevel: 20,
+    openCost: CIVIC_MAP.ward_police.buildCost,
+    maxInstances: 2,
+    hasCheckout: false,
+    buildCost: CIVIC_MAP.ward_police.buildCost,
+  },
+  primary_school: {
+    id: 'primary_school',
+    typeId: 'primary_school',
+    name: 'Trường tiểu học',
+    template: PRIMARY_SCHOOL_TEMPLATE,
+    defaultFixtures: [],
+    allowedStationIds: [],
+    productFilter: () => false,
+    trafficShare: 0,
+    unlockLevel: 25,
+    openCost: CIVIC_MAP.primary_school.buildCost,
+    maxInstances: 2,
+    hasCheckout: false,
+    buildCost: CIVIC_MAP.primary_school.buildCost,
+  },
 };
 
 /** Mảng các loại tòa (thứ tự khai báo). */
@@ -293,9 +404,22 @@ export function buildingTypeOf(typeId: string): BuildingTypeDef | undefined {
  * Tra loại tòa theo id instance cũ (`main`/`xoi`/`drink`/`snack`, sau này cả `${typeId}-${n}`).
  * Đây là phép ánh xạ phụ: 4 loại cũ có `id === typeId`? Không — `id` là id instance cũ
  * ('main'...), `typeId` khác ('grocery_main'...). Hàm này giúp tìm loại từ id instance.
+ * Tòa mở thêm (`${typeId}-${n}`) tra qua `typeId` để tìm loại tương ứng.
  */
 export function buildingTypeOfInstance(id: string): BuildingTypeDef | undefined {
-  return BUILDING_TYPES.find((def) => def.id === id);
+  // Thử khớp id instance cũ
+  const exact = BUILDING_TYPES.find((def) => def.id === id);
+  if (exact) return exact;
+  // Tòa mở thêm: `${typeId}-${n}` → tra typeId
+  const dashIdx = id.lastIndexOf('-');
+  if (dashIdx > 0) {
+    const candidate = id.slice(0, dashIdx);
+    const numeric = id.slice(dashIdx + 1);
+    if (Number.isSafeInteger(Number(numeric)) && safeBuildingType(candidate)) {
+      return BUILDING_TYPE_DEFS[candidate as BuildingTypeId];
+    }
+  }
+  return undefined;
 }
 
 /**

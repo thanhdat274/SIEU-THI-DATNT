@@ -71,18 +71,16 @@ export const DISTRICT_PREFERRED_RANGE = { min: 1.2, max: 1.4 } as const;
 export const DISTRICT_PEAK_RANGE = { min: 1.05, max: 1.4 } as const;
 
 export const DISTRICTS: Record<DistrictId, DistrictDef> = {
-  // W0 – bản đồ ban đầu: hẻm dân cư quen thuộc.
+  // W0 – bản đồ ban đầu: hẻm dân cư. KHU GỐC TRUNG TÍNH — hệ số = 1.0 mọi giờ/mọi nhóm.
+  // Chỉ các khu khác (W1..W4) mới có multiplier >1 để so sánh tương đối với W0.
   hem_dan_cu: {
     id: 'hem_dan_cu',
     name: 'Hẻm dân cư',
     kind: 'residential',
     npcMix: ['elder', 'parent', 'child', 'walker', 'shopper'],
-    peakHours: [
-      { fromHour: 6.5, toHour: 9, multiplier: 1.15 },   // giờ đi chợ / con đi học
-      { fromHour: 17, toHour: 20, multiplier: 1.25 },   // tan làm ghé mua
-    ],
+    peakHours: [],
     preferredCategories: ['cooking_ingredients', 'snacks', 'bottled_water', 'bread', 'milk'],
-    preferredMultiplier: 1.3,
+    preferredMultiplier: 1.0,
     visualTheme: 'hem',
   },
   // W1 – gần chung cư, thương mại ngã tư Đông.

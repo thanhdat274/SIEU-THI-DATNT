@@ -26,6 +26,8 @@ export interface VehicleLightSource {
   y: number;
   direction: 'left' | 'right';
   type: 'car' | 'motorbike' | 'bicycle' | 'minibus' | 'truck';
+  /** Nửa chiều dài sprite (px): có thì đèn pha/hậu đặt sát đầu/đuôi theo kích thước thật, không dùng khoảng cách cố định theo loại xe. */
+  halfLength?: number;
   /** Độ mờ của sprite (xe mờ dần ở mép bản đồ thì đèn cũng mờ theo). */
   alpha: number;
 }
@@ -474,13 +476,15 @@ export class ShopLighting {
       const spec = VEHICLE_LIGHTS[src.type];
       const dir = src.direction === 'right' ? 1 : -1;
       const a = strength * src.alpha * spec.power;
-      light.head.position.set(Math.round(src.x + dir * spec.front), Math.round(src.y - spec.headY));
+      const front = src.halfLength ? src.halfLength - 3 : spec.front;
+      const rear = src.halfLength ? src.halfLength - 2 : spec.rear;
+      light.head.position.set(Math.round(src.x + dir * front), Math.round(src.y - spec.headY));
       light.head.alpha = Math.min(1, a * 0.95);
-      light.beam.position.set(Math.round(src.x + dir * (spec.front + spec.beam * 0.35)), Math.round(src.y - 4));
+      light.beam.position.set(Math.round(src.x + dir * (front + spec.beam * 0.35)), Math.round(src.y - 4));
       light.beam.width = spec.beam * 1.3;
       light.beam.height = spec.spread;
       light.beam.alpha = Math.min(1, a * 0.55);
-      light.tail.position.set(Math.round(src.x - dir * spec.rear), Math.round(src.y - spec.tailY));
+      light.tail.position.set(Math.round(src.x - dir * rear), Math.round(src.y - spec.tailY));
       light.tail.alpha = Math.min(1, a * 0.7);
     });
   }

@@ -1,11 +1,11 @@
 import { Container, Graphics, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
-import type { WeatherVisualState } from '@game/core';
+import { houseFloorTier, type WeatherVisualState } from '@game/core';
 import {
   APARTMENT_PARKING, AVENUES, INTERSECTIONS, NEIGHBORHOOD_LOTS, decorLotsOutsideWaves, RECLAMATION_WAVES, NEIGHBORHOOD_PROPS, hash, rnd, NEIGHBORHOOD_STREET_LAMPS, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, PARK, PARK_LAMPS, PARK_PATHS, SCHOOL,
   TRAFFIC_ROADS, NEIGHBORHOOD_SIGNS, type NeighborhoodLot, type NeighborhoodQuality, type RoadDef,
 } from '@game/data';
 import type { PixelTextureFactory } from './textures';
-import { lampLift } from './sprite-atlas';
+import { lampLift, atlasTexture } from './sprite-atlas';
 import { houseLitWindows } from './neighborhood-textures';
 
 const T = 32;
@@ -425,21 +425,80 @@ export class NeighborhoodScene {
     }
   }
 
+  private currentFloorsTier: 1 | 2 | 3 = 1;
+
+  /**
+   * Cập nhật bậc tầng nhà dân theo tỷ lệ dân số / sức chứa (OpenSpec `civic-residents-life`, 1.3).
+   * Khi dân số tăng vượt ngưỡng, các nhà dân đổi sprite sang bậc tầng tương ứng (1, 2, 3 tầng).
+   */
+  public setPopulation(popData?: Record<string, { pop: number; capacity?: number }> | number): void {
+    if (popData === undefined || popData === null) return;
+    let pop = 0;
+    let cap = 0;
+    if (typeof popData === 'number') {
+      pop = popData;
+      cap = Math.max(pop, 100);
+    } else {
+      for (const d of Object.values(popData)) {
+        pop += d?.pop ?? 0;
+        cap += d?.capacity ?? 0;
+      }
+    }
+    const newTier = houseFloorTier(pop, cap);
+    if (newTier === this.currentFloorsTier) return;
+    this.currentFloorsTier = newTier;
+    for (const lot of NEIGHBORHOOD_LOTS) {
+      if (lot.kind !== 'house') continue;
+      lot.floors = newTier;
+      const sprite = this.lotSprites.get(lot.id);
+      if (sprite) {
+        const key = this.lotKey(lot);
+        sprite.texture = this.tex(key);
+      }
+      const rects = this.lotWindows.get(lot.id);
+      if (rects) {
+        rects.length = 0;
+        const key = this.lotKey(lot);
+        const isResidentAtlas = key.endsWith('_3');
+        const offsetX = isResidentAtlas ? Math.max(0, Math.floor((lot.w * T - 96) / 2)) : 0;
+        const x = lot.x * T + offsetX;
+        const bottom = lot.frontY * T + 4;
+        const wins = houseLitWindows(lot.variant, lot.floors, isResidentAtlas ? 3 : lot.w);
+        const spriteTop = bottom - this.tex(key).height;
+        for (let i = 0; i < wins.length; i++) {
+          if (rnd(lot.x, lot.frontY, i, 61) > 0.5) continue;
+          const w = wins[i];
+          rects.push([x + w.x, spriteTop + w.y, w.w, w.h]);
+        }
+      }
+    }
+    this.redrawLotWindows();
+  }
+
   private lotKey(lot: NeighborhoodLot): string {
     if (lot.kind === 'apartment') return `nb_apartment_${lot.variant}`;
+    if (lot.kind === 'house') {
+      const RESIDENT_VARIANTS = [0, 9, 19] as const;
+      const resVar = RESIDENT_VARIANTS[lot.variant % RESIDENT_VARIANTS.length];
+      const atlasKey = `nb_house_${resVar}_${lot.floors}_3`;
+      if (atlasTexture(atlasKey)) return atlasKey;
+    }
     return `nb_${lot.kind === 'shophouse' ? 'shop' : 'house'}_${lot.variant}_${lot.floors}_${lot.w}${lot.yard ? '_y' : ''}`;
   }
 
   private addLot(lot: NeighborhoodLot, litCount: { n: number }): void {
-    const x = lot.x * T;
+    const key = this.lotKey(lot);
+    const isResidentAtlas = key.endsWith('_3') && lot.kind === 'house';
+    const offsetX = isResidentAtlas ? Math.max(0, Math.floor((lot.w * T - 96) / 2)) : 0;
+    const x = lot.x * T + offsetX;
     const bottom = lot.frontY * T + 4;
-    this.lotSprites.set(lot.id, this.sprite(this.props, this.lotKey(lot), x, bottom, 0, 0));
+    this.lotSprites.set(lot.id, this.sprite(this.props, key, x, bottom, 0, 0));
     const rects: Array<[number, number, number, number]> = [];
     this.lotWindows.set(lot.id, rects);
     // Cửa sổ sáng đèn khi tối: một phần cửa sổ bật sáng, cố định theo nhà
     if (lot.kind !== 'apartment') {
-      const wins = houseLitWindows(lot.variant, lot.floors, lot.w);
-      const spriteTop = bottom - (this.tex(this.lotKey(lot)).height);
+      const wins = houseLitWindows(lot.variant, lot.floors, isResidentAtlas ? 3 : lot.w);
+      const spriteTop = bottom - (this.tex(key).height);
       for (let i = 0; i < wins.length; i++) {
         if (rnd(lot.x, lot.frontY, i, 61) > 0.5) continue;
         const w = wins[i];
@@ -447,7 +506,7 @@ export class NeighborhoodScene {
         litCount.n++;
       }
     } else {
-      const top = bottom - this.tex(this.lotKey(lot)).height;
+      const top = bottom - this.tex(key).height;
       for (let f = 0; f < lot.floors; f++) for (let i = 0; i < 6; i++) {
         if (rnd(lot.x, f, i, 71) > 0.35) continue;
         const wx = (i < 3 ? 16 + i * 40 : 160 + 28 + (i - 3) * 40);

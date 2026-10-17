@@ -2,7 +2,7 @@ import { GameTileMap, StoreFixture, SaveGameData, Vector2D, tileIndex, tileInMap
 import { STARTER_OWNED_PLOT_IDS } from './land';
 import { STALLS } from './stalls';
 import { MAIN_STORE_BOUNDS } from './buildings';
-import { DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, layoutBuildings, resolvePlacements, placementFloor, placementGeometry, placementTop, warehouseGeometry } from './world/placements';
+import { DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, buildingTypeOfInstance, layoutBuildings, resolvePlacements, placementFloor, placementGeometry, placementTop, warehouseGeometry } from './world/placements';
 import { tileBox, tileKey, wallRing } from './world/footprint';
 import { xpToNextLevel } from './progression';
 import { PLAY_REGION, rectHeight, rectWidth, rectHas, playRegionForWaves, type WorldRect } from './world/world-grid';
@@ -225,6 +225,18 @@ export function generateStarterTileMap(
   // không có vỏ nhà (lô trống). Ô đã có tường của tòa đứng trước (tường chung, tường kho) được giữ nguyên.
   for (const [index, geo] of geometries.entries()) {
     if (geo === primary) continue;
+    // Bãi giữ xe: sân lát hở, không tường, đi vào từ mọi phía; chỉ chặn khi đang thi công.
+    if (buildingTypeOfInstance(resolved[index].buildingId)?.typeId === 'parking_lot') {
+      const lot = geo.bounds;
+      for (let y = lot.top; y <= lot.bottom; y++) for (let x = lot.left; x <= lot.right; x++) {
+        if (!tileInMap(frame, x, y)) continue;
+        const idx = at(x, y);
+        groundData[idx] = 2;
+        wallData[idx] = 0;
+        collisionLayer[idx] = !!resolved[index].constructionUntilDay;
+      }
+      continue;
+    }
     // Tòa phụ có ô sàn mở rộng: sàn = sàn gốc ∪ floorTiles, tường = vòng ô kề (như tiệm chính); ô cửa theo mẫu tòa; ô đã có tường của tòa trước giữ nguyên.
     if (resolved[index].floorTiles?.length) {
       const own = placementFloor(resolved[index], purchased);

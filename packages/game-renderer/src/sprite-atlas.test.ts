@@ -25,4 +25,14 @@ assert.equal(resolveAssetPath('/assets/sprites', './p.png'), '/assets/sprites/p.
 assert.equal(resolveAssetPath('/assets/sprites/', '../secret.json'), null);
 assert.equal(resolveAssetPath('/assets/sprites/', 'https://evil/x.png'), null);
 assert.equal(resolveAssetPath('/assets/sprites/', '//evil/x.png'), null);
+
+import { PRODUCT_SPRITES } from './product-sprites';
+import { validateSprite } from './ref-pixelart';
+
+for (const dishId of ['ca_phe_den_da_tp', 'bac_xiu_tp', 'ca_phe_trung_tp', 'com_suon_nuong_tp', 'com_chien_trung_tp', 'canh_rau_thit_tp']) {
+  assert.ok(PRODUCT_SPRITES[dishId], `Sprite tồn tại cho ${dishId}`);
+  const errs = validateSprite(PRODUCT_SPRITES[dishId]);
+  assert.equal(errs.length, 0, `Sprite ${dishId} hợp lệ 16x16: ${errs.join(', ')}`);
+}
+
 console.log('sprite-atlas tests PASS');

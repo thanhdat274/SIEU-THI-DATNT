@@ -85,7 +85,8 @@ export class RainGear {
     const dirX = Math.cos(w?.windDirection ?? 0);
     const lean: WindLean = dirX >= 0 ? 'R' : 'L';
     const holdsClosed = want === 'umbrella' && !wantOpen;
-    const showUmbrella = weatherSpritesReady() && (this.open > 0.03 || holdsClosed);
+    // Dưới mái hiên (shelter === 'awning'): cất ô hẳn thay vì để ô gập lơ lửng ngoài thân nhân vật.
+    const showUmbrella = weatherSpritesReady() && this.open > 0.03;
     const showCoat = weatherSpritesReady() && this.coatAmt > 0.5;
     this.umbrellaState = umbrellaAnimState(this.open, wantOpen, f.walking, wind);
     // Gió lay tóc và áo: chỉ ngoài trời (không dưới mái), gió đủ mạnh, và không mặc áo mưa (áo mưa có vạt/mũ riêng).

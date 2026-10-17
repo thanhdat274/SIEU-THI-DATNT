@@ -1,12 +1,15 @@
 import React, { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { ALL_PRODUCTS, DRINK_SHOP_PRODUCT_IDS, SNACK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, STORE_TYPES, WEATHER_MAP, XOI_DISH_IDS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
-import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES, FootstepTracker, footstepCue } from '@game/core';
+import { BUILDING_TYPE_DEFS, civicBundleById, ALL_PRODUCTS, COMBOS, DRINK_SHOP_PRODUCT_IDS, SNACK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, STORE_TYPES, WEATHER_MAP, XOI_DISH_IDS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
+import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES, landErrorMessage, openBuildingReasonMessage, FootstepTracker, footstepCue } from '@game/core';
 import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
 import { ParcelBuyModal } from './components/ParcelBuyModal';
-import { PixiGameViewport, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
-import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup } from '@game/shared';
+import { WorldSettingsModal } from './components/WorldSettingsModal';
+import { LandVoteModal, type LandVoteInfo } from './components/LandVoteModal';
+import { OpenBuildingModal } from './components/OpenBuildingModal';
+import { PixiGameViewport, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
+import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup, MULTIPLAYER_PROTOCOL_VERSION, SERVER_REPLAYED_COMMAND_TYPES } from '@game/shared';
 
 import { getActiveSlotId, loadOrCreateSave, persistSave, writeEmergencySave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
 import { releaseSlotLock } from './slot-lock';
@@ -22,7 +25,7 @@ import { UpdateBanner } from './components/UpdateBanner';
 import { UpdateConflictDialog, type UpdateConflictChoice } from './components/UpdateConflictDialog';
 import type { CloudSaveSummary } from './services/api';
 import { LoginScreen } from './components/LoginScreen';
-import { type WorldDetail, createWorldInvite, commitOnlineCommand, getOnlineWorld, touchWorldSession } from './services/api';
+import { type WorldDetail, createWorldInvite, commitOnlineCommand, updateWorldSettings, listOnlineActivities, getOnlineWorld, getOnlineWorldRevision, touchWorldSession } from './services/api';
 import { WarehouseModal } from './components/WarehouseModal';
 import { ShelfModal } from './components/ShelfModal';
 import { CashierModal } from './components/CashierModal';
@@ -38,7 +41,7 @@ import { InventorySummaryCard } from './components/InventorySummaryCard';
 import { BottomBar } from './components/BottomBar';
 import { WarehouseDock } from './components/WarehouseDock';
 import { CoopSleepNotification } from './components/CoopSleepNotification';
-import { feedbackReasonLabel, levelUnlockToast } from '@game/core';
+import { civicJournalLines, bundleBuildAction, donorDisplayName, bundleNeededProductIds, reconcileDonateRejection, feedbackReasonLabel, levelUnlockToast } from '@game/core';
 import type { StoreLayoutAction } from '@game/core';
 import { money, PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
@@ -46,7 +49,9 @@ import { useVoiceChat } from './hooks/useVoiceChat';
 import { VoicePanel } from './components/VoicePanel';
 import { getDevGuest, devGuestToken } from './services/dev-guest';
 
-import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, CityModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal } from './lazy-modals';
+import { BundleCompletePopup } from './components/BundleCompletePopup';
+import { newCivicMilestones, soloCompletedBundleId } from './civic-celebration';
+import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, CityModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal, NeighborhoodEventsModal } from './lazy-modals';
 
 /** Cấp thấp nhất mở được một loại chi nhánh; dưới cấp này (và chưa có chi nhánh) ẩn mục Chuỗi chi nhánh. */
 const CHAIN_UNLOCK_LEVEL = Math.min(...STORE_TYPES.map(type => type.unlockLevel));
@@ -107,7 +112,13 @@ export const App: React.FC = () => {
   const [isQuestOpen, setQuestOpen] = useState(false);
   const [isLevelRoadmapOpen, setLevelRoadmapOpen] = useState(false);
   const [isCityOpen, setCityOpen] = useState(false);
+  const [cityJournal, setCityJournal] = useState<Array<{ id: string; who: string; description: string; at: string }> | undefined>(undefined);
+  const [planningWaveId, setPlanningWaveId] = useState<string | null>(null);
+  const [isWorldSettingsOpen, setWorldSettingsOpen] = useState(false);
+  const [landVote, setLandVote] = useState<LandVoteInfo | null>(null);
   const [parcelPromptId, setParcelPromptId] = useState<string | null>(null);
+  const [openBuildingParcelId, setOpenBuildingParcelId] = useState<string | null>(null);
+  const [openBuildingTypeId, setOpenBuildingTypeId] = useState<string | undefined>(undefined);
   const [isStallOpen, setStallOpen] = useState(false);
   const [isMarketOpen, setMarketOpen] = useState(false);
   const [isTaxOpen, setTaxOpen] = useState(false);
@@ -117,6 +128,7 @@ export const App: React.FC = () => {
   const [isMaintenanceOpen, setMaintenanceOpen] = useState(false);
   const [isChainOpen, setChainOpen] = useState(false);
   const [isReviewsOpen, setReviewsOpen] = useState(false);
+  const [isSeasonEventsOpen, setSeasonEventsOpen] = useState(false);
   const [isPricesOpen, setPricesOpen] = useState(false);
   const [isSecurityOpen, setSecurityOpen] = useState(false);
   const [isAnalyticsOpen, setAnalyticsOpen] = useState(false);
@@ -188,6 +200,8 @@ export const App: React.FC = () => {
   // tracks whether online server is reachable (used to block mutations when network drops)
   const [onlineConnected, setOnlineConnected] = useState(true);
   const onlineConnectedRef = useRef(true);
+  /** WebSocket đang nối: snapshot đã đẩy trạng thái mới, vòng hỏi HTTP chỉ chạy dự phòng khi socket rớt. */
+  const wsConnectedRef = useRef(false);
   const [showWorldCaption, setShowWorldCaption] = useState(true);
 
   useEffect(() => {
@@ -217,6 +231,7 @@ export const App: React.FC = () => {
       quest: () => setQuestOpen(true), stall: () => setStallOpen(true), market: () => setMarketOpen(true), tax: () => setTaxOpen(true),
       regulars: () => setRegularsOpen(true), skills: () => setSkillsOpen(true), titles: () => setTitlesOpen(true),
       maintenance: () => setMaintenanceOpen(true), reviews: () => setReviewsOpen(true), prices: () => setPricesOpen(true),
+      seasonEvents: () => setSeasonEventsOpen(true),
       levelRoadmap: () => setLevelRoadmapOpen(true), city: () => setCityOpen(true),
       inventory: () => useGameStore.getState().toggleInventoryModal(),
       save: () => useGameStore.getState().toggleSaveModal(),
@@ -608,6 +623,21 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleSaveWorldSettings = async (patch: import('@game/shared').WorldSettings) => {
+    if (!onlineWorld) return;
+    try {
+      const token = await getOnlineIdToken();
+      if (!token) throw new Error('Cần đăng nhập.');
+      const result = await updateWorldSettings(token, onlineWorld.world.id, patch);
+      setOnlineWorld(prev => prev ? { ...prev, world: { ...prev.world, settings: result.settings } } : prev);
+      onlineWorldRef.current = onlineWorldRef.current ? { ...onlineWorldRef.current, world: { ...onlineWorldRef.current.world, settings: result.settings } } : onlineWorldRef.current;
+      addToast('Đã lưu quyền đất của hẻm.', 'success');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Không lưu được cài đặt.', 'warn');
+      throw err;
+    }
+  };
+
   const handleLeaveOnline = () => {
     if (window.confirm('Rời hẻm online để quay lại tiệm riêng trên máy này?')) {
       window.location.reload();
@@ -805,8 +835,9 @@ export const App: React.FC = () => {
       if (!onlineWorld) {
         simulation.setDailyRoutineEnabled(true);
       } else {
-        // Co-op mode: enable for multiplayer
+        // Co-op mode: enable for multiplayer; server authoritative = stop local customer spawning
         simulation.setCoopMode(true);
+        simulation.setServerAuthoritative(true);
         // Register players based on world avatars
         const curWorld = onlineWorld;
         if (curWorld.world.avatars.length > 0) {
@@ -884,23 +915,32 @@ export const App: React.FC = () => {
       }
     }, 20000);
 
-    // Online world sync interval (polls snapshot/partner updates every 3 seconds)
+    // Vòng hỏi dự phòng: chỉ chạy khi WebSocket không nối (WS đã đẩy snapshot). Lần sau chỉ hẹn khi lần trước xong
+    // nên request không chồng nhau lúc server chậm; hỏi revision trước (vài chục byte), đổi mới tải cả hẻm.
     let consecutiveFailures = 0;
-    const onlineSyncInterval = setInterval(async () => {
+    let onlineSyncTimer: ReturnType<typeof setTimeout> | null = null;
+    let onlineSyncStopped = false;
+    const scheduleOnlineSync = () => {
+      if (onlineSyncStopped) return;
+      const delay = consecutiveFailures ? Math.min(30_000, 5_000 * 2 ** (consecutiveFailures - 1)) : 5_000;
+      onlineSyncTimer = setTimeout(() => { void runOnlineSync().finally(scheduleOnlineSync); }, delay);
+    };
+    const runOnlineSync = async () => {
       const curWorld = onlineWorldRef.current;
-      if (!curWorld) return;
+      if (!curWorld || wsConnectedRef.current) return;
       try {
         const token = await getOnlineIdToken();
         if (!token) return;
-        const updated = await getOnlineWorld(token, curWorld.world.id);
-        onlineWorldRef.current = updated;
-        setOnlineWorld(updated);
-        // Restore connection status after success
+        const { revision } = await getOnlineWorldRevision(token, curWorld.world.id);
         if (!onlineConnectedRef.current) {
           onlineConnectedRef.current = true;
           setOnlineConnected(true);
         }
         consecutiveFailures = 0;
+        if (revision <= revisionRef.current) return;
+        const updated = await getOnlineWorld(token, curWorld.world.id);
+        onlineWorldRef.current = updated;
+        setOnlineWorld(updated);
         // If partner committed new revision, sync simulation (resync never uploads local save)
         if (simulationRef.current && updated.businesses[0]?.save) {
           const remoteRev = updated.world.revision;
@@ -914,13 +954,14 @@ export const App: React.FC = () => {
       } catch (err) {
         consecutiveFailures++;
         console.debug('Online sync check failed:', err);
-        // Mark disconnected after 2 consecutive failures (~6s)
+        // Mark disconnected after 2 consecutive failures
         if (consecutiveFailures >= 2 && onlineConnectedRef.current) {
           onlineConnectedRef.current = false;
           setOnlineConnected(false);
         }
       }
-    }, 3000);
+    };
+    scheduleOnlineSync();
 
     // Global key handler for Esc
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -933,7 +974,8 @@ export const App: React.FC = () => {
     return () => {
       isCancelled = true;
       clearInterval(autoSaveInterval);
-      clearInterval(onlineSyncInterval);
+      onlineSyncStopped = true;
+      if (onlineSyncTimer) clearTimeout(onlineSyncTimer);
       window.removeEventListener('keydown', handleGlobalKeyDown);
       if (initialized) dispose();
     };
@@ -947,10 +989,22 @@ export const App: React.FC = () => {
     token: onlineToken,
     onVoiceSignal: (data) => voiceHandlersRef.current?.onSignal(data),
     onVoicePeer: (data) => voiceHandlersRef.current?.onPeer(data),
+    onConnectionStateChange: (state) => {
+      wsConnectedRef.current = state === 'connected';
+      // Khi online: server là nguồn sự thật → stop local customer spawning
+      // Khi disconnect (reconnecting/disconnected): cho phép sinh khách offline (chế độ solo)
+      if (simulationRef.current) {
+        simulationRef.current.setServerAuthoritative(state === 'connected' || state === 'connecting');
+      }
+    },
     onWorldUpdate: async (data) => {
       const curWorld = onlineWorldRef.current;
       if (!curWorld || !simulationRef.current) return;
       if (data.revision > revisionRef.current) {
+        // Lệnh của chính mình đang chờ kết quả: kết quả + phát lại snapshot sẽ cập nhật, không tải lại cả hẻm.
+        if (commitsInFlightRef.current > 0) return;
+        // Delta WS đã mang trạng thái mới: dùng bản đã ghép thay vì GET cả hẻm (~100 KB).
+        if (worldSocket.replayLatestSnapshot()) return;
         try {
           const token = await getOnlineIdToken();
           if (!token) return;
@@ -968,6 +1022,7 @@ export const App: React.FC = () => {
         }
       }
     },
+    onPersistFailed: (message) => addToast(message, 'warn'),
     onAvatars: (value) => {
       const current = onlineWorldRef.current;
       if (!current || !Array.isArray(value)) return;
@@ -992,12 +1047,15 @@ export const App: React.FC = () => {
         : { ...current, world: { ...snapshot.world, avatars }, businesses: snapshot.businesses };
       onlineWorldRef.current = updated;
       // Chỉ báo React khi có gì hiển thị trong khung thay đổi; cập nhật 4 lần/giây không được dựng lại cả ứng dụng.
-      if (updated.world.revision !== current.world.revision || updated.world.avatars.length !== current.world.avatars.length || updated.world.memberships.length !== current.world.memberships.length) {
+      if (updated.world.revision !== current.world.revision || updated.world.avatars.length !== current.world.avatars.length || updated.world.memberships.length !== current.world.memberships.length || JSON.stringify(updated.world.settings) !== JSON.stringify(current.world.settings)) {
+        // Cài đặt đất (quyền thành viên) do chủ hẻm đổi không làm tăng revision, nhưng nút góp tiền phải xám ngay.
         setOnlineWorld(updated);
       }
       const sim = simulationRef.current;
       const save = snapshot.businesses[0]?.save;
       serverCoopRef.current = snapshot.coop?.players ?? null;
+      // Giữ chỗ quy hoạch đất của người khác: vẽ bóng mờ + tên (giữ chỗ của chính mình không vẽ).
+      viewportRef.current?.setPlanningReservations(planningOverlays(snapshot.planning, onlineUidRef.current));
       const dayBefore = sim?.getTime().day ?? 0;
       // Tốc độ do server quyết định (bỏ phiếu chung): cập nhật nút ×1/×2/×4 theo snapshot, không chỉ theo lần bấm cục bộ.
       if (save?.worldTime?.timeScale && !stale) setGameSpeed(Math.max(1, Math.round(save.worldTime.timeScale / 90)));
@@ -1026,6 +1084,22 @@ export const App: React.FC = () => {
         }
       }
     },
+    // Phiếu khoản chi đất: người kia thấy hộp đồng ý/từ chối, người đề xuất thấy hộp chờ; kết quả báo bằng toast.
+    onLandVote: (value) => {
+      if (!value || typeof value !== 'object') return;
+      const data = value as { status?: string; vote?: { command: string; description?: string; initiatorId: string; expiresInMs: number } | null; initiatorId?: string | null; message?: string };
+      const nameOf = (id?: string | null) => onlineWorldRef.current?.world.avatars.find(avatar => avatar.accountId === id)?.displayName ?? 'Người cùng hẻm';
+      if (data.status === 'pending' && data.vote) {
+        setLandVote({ initiatorId: data.vote.initiatorId, command: data.vote.command, description: data.vote.description, expiresAt: Date.now() + data.vote.expiresInMs });
+        return;
+      }
+      setLandVote(null);
+      if (data.status === 'rejected') addToast(landErrorMessage('vote_rejected', { name: onlineUidRef.current === data.initiatorId ? undefined : nameOf(data.initiatorId) }), 'warn');
+      else if (data.status === 'executed') addToast('Phiếu đã được đồng ý, lệnh đã thực hiện.', 'success');
+      else if (data.status === 'expired') addToast('Phiếu hết giờ, lệnh bị hủy (chưa trừ tiền).', 'warn');
+      else if (data.status === 'cancelled') addToast('Phiếu đã bị hủy.', 'info');
+      else if (data.status === 'failed') addToast(data.message ?? 'Lệnh không thực hiện được sau phiếu.', 'warn');
+    },
     onTimeVote: (value) => {
       if (!value || typeof value !== 'object') return;
       const data = value as { status?: typeof activeTimeVote; result?: { status?: string } };
@@ -1044,6 +1118,59 @@ export const App: React.FC = () => {
       }
     },
   });
+
+  // Giữ chỗ quy hoạch (open-world-coop-land 1.3): đang mở bảng một lô (mua/thuê/mở tòa) trong hẻm chung thì báo cho bạn cùng hẻm,
+  // gia hạn mỗi 20 s (server hết hạn sau 60 s) và thả khi đóng bảng hoặc mất kết nối.
+  const planningParcelId = openBuildingParcelId ?? parcelPromptId;
+  const planningOnline = !!onlineWorld && worldSocket.connected;
+  const { reservePlanning, extendPlanning, releasePlanning } = worldSocket;
+  useEffect(() => {
+    if (!planningOnline || !(planningParcelId || planningWaveId)) return;
+    reservePlanning(planningParcelId ? { kind: 'parcels', parcelIds: [planningParcelId] } : { kind: 'wave', waveId: planningWaveId as string });
+    const timer = setInterval(() => { extendPlanning(); }, 20_000);
+    return () => { clearInterval(timer); releasePlanning(); };
+  }, [planningOnline, planningParcelId, planningWaveId, reservePlanning, extendPlanning, releasePlanning]);
+
+  // Khánh thành sổ góp (civic-city-goals 6.8): mốc mới trong save chung → toast cho cả hai người đang online.
+  // Người offline không toast nhưng thấy mốc ở nhật ký Sổ góp + bản tin sáng (mốc nằm trong save).
+  const seenCivicMilestones = useRef<Set<string> | null>(null);
+  // Popup "Sổ góp hoàn thành": hiện cho CẢ HAI người trong hẻm (mốc bundle_completed đến qua save chung), kể cả khi bảng Thành phố đang đóng.
+  const [completedBundlePopupId, setCompletedBundlePopupId] = useState<string | null>(null);
+  useEffect(() => {
+    const sim = simulationRef.current;
+    if (!onlineWorld || !sim) { seenCivicMilestones.current = null; return; }
+    const { fresh, seen } = newCivicMilestones(sim.getCityProgress().milestones, seenCivicMilestones.current);
+    seenCivicMilestones.current = seen;
+    for (const m of fresh) {
+      const typeId = civicBundleById(m.bundleId)?.buildingTypeId ?? '';
+      const name = BUILDING_TYPE_DEFS[typeId as keyof typeof BUILDING_TYPE_DEFS]?.name ?? typeId;
+      addToast(m.type === 'bundle_completed' ? `Xóm đã góp đủ sổ ${name}! Có thể xây ngay.` : `Khánh thành ${name}!`, 'success');
+      if (m.type === 'bundle_completed') setCompletedBundlePopupId(m.bundleId);
+    }
+  }, [currentRevision, onlineWorld, addToast]);
+
+  // Nhật ký thành phố (open-world-coop-land 3.2): lấy từ lịch sử hoạt động của hẻm, chỉ các dòng loại 'Thành phố', kèm tên người làm.
+  const cityJournalWorldId = onlineWorld?.world.id;
+  useEffect(() => {
+    if (!isCityOpen || !cityJournalWorldId) { setCityJournal(undefined); return; }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const token = await getOnlineIdToken();
+        if (!token) return;
+        const res = await listOnlineActivities(token, cityJournalWorldId, { limit: 100 });
+        if (cancelled) return;
+        const avatars = onlineWorldRef.current?.world.avatars ?? [];
+        setCityJournal(res.activities.filter(a => a.type === 'Thành phố').slice(0, 30).map(a => ({
+          id: String(a.id),
+          who: avatars.find(avatar => avatar.accountId === a.actorId)?.displayName ?? 'Người cùng hẻm',
+          description: String(a.description),
+          at: new Date(a.createdAt).toLocaleString('vi-VN'),
+        })));
+      } catch { if (!cancelled) setCityJournal(undefined); }
+    })();
+    return () => { cancelled = true; };
+  }, [isCityOpen, cityJournalWorldId, currentRevision]);
 
   useEffect(() => {
     const worldId = onlineWorld?.world.id;
@@ -1124,11 +1251,13 @@ export const App: React.FC = () => {
       return false;
     }
     commitsInFlightRef.current += 1;
+    // Kết quả qua WS không kèm save: trạng thái mới đã tới bằng delta (bị bỏ qua lúc đang chờ lệnh) → phát lại khi xong.
+    let replaySnapshot = false;
     try {
-      const { gameAuth } = await import('./services/firebase');
-      const user = gameAuth().currentUser;
-      if (!user) throw new Error('Cần đăng nhập tài khoản.');
-      const token = await user.getIdToken();
+      // getOnlineIdToken hỗ trợ cả khách dev (2 người trên localhost), không chỉ tài khoản Firebase.
+      const token = await getOnlineIdToken();
+      const actorUid = onlineUidRef.current;
+      if (!token || !actorUid) throw new Error('Cần đăng nhập tài khoản.');
 
       const exportedSave = simulationRef.current.exportSaveData(
         curWorld.businesses[0].save.id,
@@ -1136,25 +1265,33 @@ export const App: React.FC = () => {
       );
 
       const commandId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `cmd-${Date.now()}`;
-      const res = await commitOnlineCommand(token, curWorld.world.id, {
+      const commandBody = {
         expectedRevision: curWorld.world.revision,
         receipt: {
           commandId,
-          actorId: user.uid,
+          actorId: actorUid,
           status: 'accepted',
           revision: curWorld.world.revision + 1,
           payloadJson: JSON.stringify(commandPayload),
         },
-        updatedBusiness: {
-          ...curWorld.businesses[0],
-          save: exportedSave,
-        },
+        // Lệnh server tự phát lại bỏ qua save client gửi: chỉ gửi mã save (~100 KB nhẹ hơn mỗi lệnh).
+        updatedBusiness: SERVER_REPLAYED_COMMAND_TYPES.has(commandPayload?.type)
+          ? { ...curWorld.businesses[0], save: { id: exportedSave.id } }
+          : { ...curWorld.businesses[0], save: exportedSave },
         activity: {
-          actorId: user.uid,
+          actorId: actorUid,
           type: activityType,
           description: activityDesc,
         },
-      });
+      };
+      // Ưu tiên WebSocket (không preflight, không xác thực lại token mỗi lệnh). Socket đứt/quá giờ thì gửi lại cùng
+      // commandId qua HTTP; lỗi server trả về (`delivered`) thì không gửi lại.
+      type CommitResult = Awaited<ReturnType<typeof commitOnlineCommand>>;
+      const sendOverHttp = () => commitOnlineCommand(token, curWorld.world.id, commandBody);
+      const viaSocket = worldSocket.sendCommand<CommitResult>({ ...commandBody, protocolVersion: MULTIPLAYER_PROTOCOL_VERSION });
+      const res = viaSocket
+        ? await viaSocket.catch((err: { delivered?: boolean }) => { if (err?.delivered) throw err; return sendOverHttp(); })
+        : await sendOverHttp();
 
       if (res.committed) {
         revisionRef.current = res.revision;
@@ -1165,6 +1302,8 @@ export const App: React.FC = () => {
         if (res.updatedBusiness?.save) {
           importOnlineSave(simulationRef.current, committedSave);
           syncFromSimulation(simulationRef.current);
+        } else if (viaSocket) {
+          replaySnapshot = true;
         }
         const updatedWorld = {
           ...curWorld,
@@ -1176,16 +1315,23 @@ export const App: React.FC = () => {
         return true;
       } else {
         await resyncOnlineWorldAfterReject(curWorld);
-        addToast('Máy chủ từ chối thay đổi. Đã khôi phục dữ liệu online gần nhất.', 'warn');
+        // Lệnh đất lớn cần người kia đồng ý: chưa thực hiện, trả về trạng thái server cho tới khi phiếu được duyệt.
+        if (res.pendingVote) addToast(res.message ?? 'Đã gửi phiếu, chờ người cùng hẻm đồng ý.', 'info');
+        else addToast(`${landErrorMessage('stale_revision')}. Đã khôi phục dữ liệu online gần nhất.`, 'warn');
         return false;
       }
     } catch (err) {
       console.error('Online commit error:', err);
       await resyncOnlineWorldAfterReject(curWorld);
-      addToast(err instanceof Error ? err.message : 'Không thể lưu lên hẻm chung.', 'warn');
+      // Lệnh đất đụng vùng bạn cùng hẻm đang quy hoạch: thông báo kèm tên người giữ (open-world-coop-land 4.1).
+      const body = (err as { body?: { code?: string; by?: { name?: string; accountId?: string } } } | null)?.body;
+      if (body?.code === 'reserved_by_other') addToast(landErrorMessage('reserved_by_other', { name: body.by?.name ?? body.by?.accountId }), 'warn');
+      else if (body?.code === 'forbidden') addToast(landErrorMessage('forbidden'), 'warn');
+      else addToast(err instanceof Error ? err.message : 'Không thể lưu lên hẻm chung.', 'warn');
       return false;
     } finally {
       commitsInFlightRef.current = Math.max(0, commitsInFlightRef.current - 1);
+      if (replaySnapshot && commitsInFlightRef.current === 0) worldSocket.replayLatestSnapshot();
     }
   };
 
@@ -1442,6 +1588,58 @@ export const App: React.FC = () => {
     );
     if (!res) return;
     addToast(res.success ? 'Đã mua lô đất. Có thể đặt tòa lên lô này trong Bố cục.' : (res.reason ?? 'Không mua được lô.'), res.success ? 'success' : 'warn');
+  };
+
+  const handleDonateToBundle = async (args: { bundleId: string; slotId: string; productId?: string; quantity?: number; amount?: number }) => {
+    const res = await persistSimulationMutation(
+      { type: 'donate_to_bundle', ...args }, 'Góp sổ xóm', 'Thành phố',
+      simulation => simulation.donateToBundle(args.bundleId, args.slotId, args.productId, args.quantity, args.amount),
+    );
+    if (res?.success) addToast('Đã góp vào sổ xóm.', 'success');
+    // Chơi một mình: không có mốc qua save chung, popup dựng từ kết quả góp; online thì effect mốc lo cho cả hai máy.
+    const soloDoneId = soloCompletedBundleId(res as { success?: boolean; completedBundleId?: string } | null | undefined, !!onlineWorld);
+    if (soloDoneId) setCompletedBundlePopupId(soloDoneId);
+    // Server từ chối (vd. người cùng hẻm vừa góp đủ ô): sổ đã được tải lại, báo đúng lý do thay vì "chưa xác nhận".
+    if (res && !res.success && res.reason === 'Máy chủ chưa xác nhận thay đổi.' && simulationRef.current) {
+      return { ...res, reason: reconcileDonateRejection(simulationRef.current.getCivicBundleViews(), args.bundleId, args.slotId) };
+    }
+    return res;
+  };
+
+  const handleLeaseParcel = async (parcelId: string) => {
+    const res = await persistSimulationMutation(
+      { type: 'lease_parcel', parcelId }, 'Thuê lô đất', 'Thành phố',
+      simulation => simulation.leaseParcel(parcelId),
+    );
+    if (!res) return;
+    addToast(res.success ? 'Đã thuê lô đất (thu tiền thuê mỗi sáng). Có thể đặt cơ sở lên lô này.' : (res.reason ?? 'Không thuê được lô.'), res.success ? 'success' : 'warn');
+  };
+
+  const handleEndLease = async (parcelId: string) => {
+    const res = await persistSimulationMutation(
+      { type: 'end_lease', parcelId }, 'Hủy thuê lô đất', 'Thành phố',
+      simulation => simulation.endLease(parcelId),
+    );
+    if (!res) return;
+    addToast(res.success ? 'Đã hủy thuê lô đất.' : (res.reason === 'building_present' ? 'Vui lòng dời công trình trước khi hủy thuê.' : res.reason === 'rent_debt' ? 'Trả hết nợ tiền thuê trước khi hủy thuê.' : (res.reason ?? 'Không hủy thuê được.')), res.success ? 'info' : 'warn');
+  };
+
+  const handlePayRentDebt = async (parcelId: string) => {
+    const res = await persistSimulationMutation(
+      { type: 'pay_rent_debt', parcelId }, 'Trả nợ thuê đất', 'Thành phố',
+      simulation => simulation.payRentDebt(parcelId),
+    );
+    if (!res) return;
+    addToast(res.success ? 'Đã thanh toán nợ tiền thuê đất thành công!' : (res.reason ?? 'Không thanh toán được.'), res.success ? 'success' : 'warn');
+  };
+
+  const handleOpenBuilding = async (buildingTypeId: string, parcelId: string, originX: number, originY: number) => {
+    const res = await persistSimulationMutation(
+      { type: 'open_building', buildingTypeId, parcelId, originX, originY }, 'Mở cơ sở mới', 'Thành phố',
+      simulation => simulation.openBuilding(buildingTypeId, parcelId, originX, originY),
+    );
+    if (!res) return;
+    addToast(res.success ? 'Đã mở cơ sở mới thành công!' : openBuildingReasonMessage(res.reason), res.success ? 'success' : 'warn');
   };
 
   const handleRestockStall = async (stallId: string) => {
@@ -1709,6 +1907,8 @@ export const App: React.FC = () => {
       addToast(
         res.reason === 'storage_type_mismatch'
           ? 'Không thể gán: điều kiện bảo quản không phù hợp!'
+          : res.reason === 'product_not_allowed'
+          ? 'Không thể gán: loại tòa này không bán món đó!'
           : 'Không thể thiết lập sơ đồ cho kệ này.',
         'warn'
       );
@@ -1855,6 +2055,7 @@ export const App: React.FC = () => {
     onOpenMaintenance: () => setMaintenanceOpen(true),
     onOpenChain: (player.level >= CHAIN_UNLOCK_LEVEL || (simulationRef.current?.getChain().branches.length ?? 0) > 0) ? () => setChainOpen(true) : undefined,
     onOpenReviews: () => setReviewsOpen(true),
+    onOpenSeasonEvents: () => setSeasonEventsOpen(true),
     onOpenPrices: () => setPricesOpen(true),
     onOpenAnalytics: () => setAnalyticsOpen(true),
     onToggleAudioMute: () => { const next = !audioMuted; audioRef.current?.setMuted(next); setAudioMuted(next); },
@@ -1888,8 +2089,9 @@ export const App: React.FC = () => {
       {!isLoading && (
         <AccountBar
           onlineWorldName={onlineWorld?.world.name}
-          isOnlineOwner={onlineWorld ? onlineWorld.world.memberships.find(m => m.role === 'owner')?.accountId === onlineWorld.businesses[0]?.ownerAccountIds[0] : false}
+          isOnlineOwner={onlineWorld ? onlineWorld.world.memberships.some(m => m.role === 'owner' && m.accountId === onlineUid) : false}
           onInvite={handleOnlineInvite}
+          onSettings={() => setWorldSettingsOpen(true)}
           onLeaveOnline={handleLeaveOnline}
           onReturnHome={handleReturnHome}
         />
@@ -1904,7 +2106,7 @@ export const App: React.FC = () => {
           ⚠️ Mất kết nối hẻm chung — thao tác bị tạm dừng, đang kết nối lại...
         </div>
       )}
-      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={hudHandlers.onOpenMarket} onOpenPrices={hudHandlers.onOpenPrices} onOpenTax={hudHandlers.onOpenTax} onOpenRegulars={hudHandlers.onOpenRegulars} onOpenSkills={hudHandlers.onOpenSkills} onOpenTitles={hudHandlers.onOpenTitles} maintenanceAlerts={simulationRef.current?.getMaintenanceList().filter(e => e.status !== 'good').length ?? 0} onOpenMaintenance={hudHandlers.onOpenMaintenance} onOpenChain={hudHandlers.onOpenChain} onOpenReviews={hudHandlers.onOpenReviews} onOpenAnalytics={hudHandlers.onOpenAnalytics} audioMuted={audioMuted} onToggleAudioMute={hudHandlers.onToggleAudioMute} onOpenSecurity={hudHandlers.onOpenSecurity} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onPayWageDebt={hudHandlers.onPayWageDebt} onOpenStaff={hudHandlers.onOpenStaff} onOpenStalls={hudHandlers.onOpenStalls} onOpenQuests={hudHandlers.onOpenQuests} onOpenLevelRoadmap={hudHandlers.onOpenLevelRoadmap} onOpenPlanogram={hudHandlers.onOpenPlanogram} emptySlotsCount={simulationRef.current?.countFillableEmptyShelves() ?? 0} onToggleStoreStatus={hudHandlers.onToggleStoreStatus} onOpenLayout={hudHandlers.onOpenLayout} canEditLayout gameSpeed={gameSpeed} onToggleGameSpeed={hudHandlers.onToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={hudHandlers.onToggleWarehouseDock} isWarehouseDockOpen={isWarehouseDockOpen} lastSavedAt={lastSavedTime}/>}
+      {!isLoading && <HUD customerRating={simulationRef.current?.getAverageCustomerRating() ?? 4} market={simulationRef.current?.getMarketSummary()} onOpenMarket={hudHandlers.onOpenMarket} onOpenPrices={hudHandlers.onOpenPrices} onOpenTax={hudHandlers.onOpenTax} onOpenRegulars={hudHandlers.onOpenRegulars} onOpenSkills={hudHandlers.onOpenSkills} onOpenTitles={hudHandlers.onOpenTitles} maintenanceAlerts={simulationRef.current?.getMaintenanceList().filter(e => e.status !== 'good').length ?? 0} onOpenMaintenance={hudHandlers.onOpenMaintenance} onOpenChain={hudHandlers.onOpenChain} onOpenReviews={hudHandlers.onOpenReviews} onOpenSeasonEvents={hudHandlers.onOpenSeasonEvents} onOpenAnalytics={hudHandlers.onOpenAnalytics} audioMuted={audioMuted} onToggleAudioMute={hudHandlers.onToggleAudioMute} onOpenSecurity={hudHandlers.onOpenSecurity} wageDebt={simulationRef.current?.getWageDebt() ?? 0} onPayWageDebt={hudHandlers.onPayWageDebt} onOpenStaff={hudHandlers.onOpenStaff} onOpenStalls={hudHandlers.onOpenStalls} onOpenQuests={hudHandlers.onOpenQuests} onOpenLevelRoadmap={hudHandlers.onOpenLevelRoadmap} onOpenPlanogram={hudHandlers.onOpenPlanogram} emptySlotsCount={simulationRef.current?.countFillableEmptyShelves() ?? 0} onToggleStoreStatus={hudHandlers.onToggleStoreStatus} onOpenLayout={hudHandlers.onOpenLayout} canEditLayout gameSpeed={gameSpeed} onToggleGameSpeed={hudHandlers.onToggleGameSpeed} activeCustomers={simulationRef.current?.getCustomers().length ?? 0} onToggleWarehouseDock={hudHandlers.onToggleWarehouseDock} isWarehouseDockOpen={isWarehouseDockOpen} lastSavedAt={lastSavedTime}/>}
       <div className="game-body"><main className="game-main">
         <div className="world-viewport">
           <canvas ref={canvasRef} aria-label="Bản đồ Tiệm Tạp Hóa Đầu Hẻm"/>
@@ -2003,9 +2205,9 @@ export const App: React.FC = () => {
     )}
     {activeFixtureModal && isWarehouseFixture(activeFixtureModal) && <WarehouseModal coldCapacity={simulationRef.current?.getColdCapacity()} ambientCapacity={simulationRef.current?.getAmbientCapacity()} ambientUsed={simulationRef.current?.getAmbientCellsUsed()} capacityBonus={simulationRef.current?.getShelfCapacityBonus() ?? 0} fixture={activeFixtureModal} inventory={inventory} holdingArea={holdingArea} fixtures={fixtures} pendingOrders={pendingOrders} currentDay={worldTime.day} onRestock={handleAutoRestock} onStowHolding={handleStowHolding} onDisposeStock={handleDisposeStock} onOpenCase={async (productId, count) => { const res = await persistSimulationMutation({ type: 'open_case', productId, count }, `Mở ${count} thùng ${PRODUCT_MAP[productId]?.name ?? productId}`, 'Mở thùng', simulation => simulation.unpackMultipleCases(productId, count)); if (res?.success) addToast(`Đã mở ${res.openedCases} thùng → +${res.unitsAdded} lẻ`, 'success'); else if (res) addToast(res.reason ?? 'Không thể mở thùng', 'warn'); }} onOpenSupplier={openSupplierModal} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'cashier_counter' && <CashierModal initialShowStaff={staffRequested} fixture={activeFixtureModal} player={player} worldTime={worldTime} shelves={fixtures.filter(isSalesFixture)} customers={customers} statistics={statistics} canDineIn={customer => simulationRef.current?.canDineIn(customer) ?? false} creditAccounts={simulationRef.current?.getCustomerCredits() ?? []} creditTerms={regularId => simulationRef.current?.getCustomerCreditTerms(regularId) ?? { eligible: false, limit: 0, used: 0, available: 0 }} onRepayCredit={async creditId => { const res = await persistSimulationMutation({ type: 'repay_customer_credit', creditId }, 'Thu hồi nợ khách quen', 'Thu nợ', simulation => ({ success: simulation.repayCustomerCredit(creditId), reason: undefined as string | undefined })); if (res?.success) addToast('Đã thu hồi khoản mua chịu.', 'success'); else if (res) addToast(res.reason ?? 'Không thu được khoản nợ.', 'warn'); }} staff={simulationRef.current?.getStaff() ?? []} staffCandidates={simulationRef.current?.getStaffCandidates(worldTime.day) ?? []} wageDebt={simulationRef.current?.getWageDebt() ?? 0} restockTargets={simulationRef.current?.getRestockJobTargets() ?? []} onAssignRefillJob={handleAssignRefillJob} onHireStaff={handleHireStaff} onSetStaffShift={handleSetStaffShift} onPayWageDebt={handlePayWageDebt} onCheckout={handleCheckout} onToggleStoreStatus={handleToggleStoreStatus} onAdvanceDay={handleAdvanceDay} onClose={closeFixtureModal}/>}
-    {activeFixtureModal?.type === 'kitchen_station' && simulationRef.current && <KitchenStationModal fixture={activeFixtureModal} recipes={simulationRef.current.getStationRecipes(activeFixtureModal.id)} job={simulationRef.current.getProductionJobs().find(job => job.stationId === activeFixtureModal.id)} inventory={simulationRef.current.getInventory()} day={simulationRef.current.getTime().day} allFixtures={fixtures.filter(f => f.type === 'kitchen_station' && f.shopId)} onStart={async (recipeId, stationId) => { const targetId = stationId ?? activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'start_production', recipeId, stationId: targetId }, 'Bắt đầu nấu', 'Sản xuất', simulation => simulation.startProduction(recipeId, targetId)); if (!res?.success) addToast(res?.reason ?? 'Không bắt đầu được mẻ nấu.', 'warn'); }} onClose={closeFixtureModal}/>}
+    {activeFixtureModal?.type === 'kitchen_station' && simulationRef.current && <KitchenStationModal fixture={activeFixtureModal} recipes={simulationRef.current.getStationRecipes(activeFixtureModal.id)} job={simulationRef.current.getProductionJobs().find(job => job.stationId === activeFixtureModal.id)} inventory={simulationRef.current.getInventory()} day={simulationRef.current.getTime().day} allFixtures={fixtures.filter(f => f.type === 'kitchen_station' && f.shopId)} combos={COMBOS.filter(c => c.shopStationShopId === activeFixtureModal.shopId)} onStart={async (recipeId, stationId) => { const targetId = stationId ?? activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'start_production', recipeId, stationId: targetId }, 'Bắt đầu nấu', 'Sản xuất', simulation => simulation.startProduction(recipeId, targetId)); if (!res?.success) addToast(res?.reason ?? 'Không bắt đầu được mẻ nấu.', 'warn'); }} onClose={closeFixtureModal}/>}
     {activeFixtureModal?.type === 'dining_table' && simulationRef.current && <DiningTableModal fixture={activeFixtureModal} state={simulationRef.current.getDiningTableState(activeFixtureModal.id)} staff={simulationRef.current.getStaff()} onAssignCleaner={async staffId => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'assign_dining_cleanup', staffId, fixtureId }, 'Giao việc dọn bàn', 'Dọn dẹp', simulation => ({ success: simulation.assignDiningCleanup(staffId, fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast(res?.reason ?? 'Không giao được việc dọn bàn.', 'warn'); }} onClean={async () => { const fixtureId = activeFixtureModal.id; const res = await persistSimulationMutation({ type: 'clean_dining_table', fixtureId }, 'Dọn bàn ăn', 'Dọn dẹp', simulation => ({ success: simulation.cleanDiningTable(fixtureId), reason: undefined as string | undefined })); if (!res?.success) addToast('Bàn đang có khách hoặc đã sạch.', 'warn'); }} onClose={closeFixtureModal}/>}
-    {isInventoryModalOpen && <InventoryModal inventory={inventory} currentDay={worldTime.day} onClose={closeAllModals}/>}
+    {isInventoryModalOpen && <InventoryModal inventory={inventory} currentDay={worldTime.day} neededProductIds={simulationRef.current ? bundleNeededProductIds(simulationRef.current.getCivicBundleViews()) : undefined} onClose={closeAllModals}/>}
     <UpdateBanner/>
     {updateConflict && <UpdateConflictDialog local={simulationRef.current?.exportSaveData(getActiveSlotId(), revisionRef.current)} remote={updateConflict.remote} onChoose={updateConflict.resolve}/>}
     {isSaveModalOpen && <SaveModal cloud={{state:cloud,onUpload:uploadCloud,onDownload:downloadCloud}} onManualSave={()=>handleSaveGame(true)} onResetSave={handleResetGame} onExportSave={handleExportSave} onImportSave={handleImportSave} isOnline={!!onlineWorld} onClose={closeAllModals} lastSavedAt={lastSavedTime} revision={currentRevision}/>}
@@ -2226,6 +2428,19 @@ export const App: React.FC = () => {
     {isReviewsOpen && simulationRef.current && (
       <ReviewsModal reviews={simulationRef.current.getReviews()} summary={simulationRef.current.getReviewSummary()} onClose={() => setReviewsOpen(false)} />
     )}
+    {isSeasonEventsOpen && simulationRef.current && (
+      <NeighborhoodEventsModal
+        events={simulationRef.current.getNeighborhoodEvents()}
+        inventory={simulationRef.current.getInventory()}
+        today={simulationRef.current.getTime().day}
+        rushQuote={(orderId) => simulationRef.current?.getPartyOrderRushQuote(orderId).totalCost ?? -1}
+        onRespondPartyOrder={(orderId, accept) => simulationRef.current?.respondPartyOrder(orderId, accept)}
+        onFulfillPartyOrder={(orderId) => simulationRef.current?.fulfillPartyOrder(orderId)}
+        onRushFulfillPartyOrder={(orderId) => simulationRef.current?.rushFulfillPartyOrder(orderId)}
+        onClaimFestivalGoal={(goalId) => simulationRef.current?.claimFestivalGoal(goalId)}
+        onClose={() => setSeasonEventsOpen(false)}
+      />
+    )}
     {isChainOpen && simulationRef.current && (
       <ChainModal
         chain={simulationRef.current.getChain()}
@@ -2291,10 +2506,54 @@ export const App: React.FC = () => {
         onClose={() => setTitlesOpen(false)}
       />
     )}
-    {parcelPromptId && <ParcelBuyModal parcelId={parcelPromptId} playerMoney={player.money} onBuy={handleBuyParcel} onClose={() => setParcelPromptId(null)}/>}
+    {parcelPromptId && simulationRef.current && (() => {
+      const sim = simulationRef.current;
+      const snap = sim.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
+      const tenure = snap.storeLayout.parcelTenure?.[parcelPromptId];
+      const isOwned = (snap.storeLayout.ownedParcelIds ?? []).includes(parcelPromptId) || tenure?.kind === 'owned';
+      const isLeased = tenure?.kind === 'leased';
+      const occupied = sim.getOccupiedParcelBuildings?.()?.[parcelPromptId];
+      return (
+        <ParcelBuyModal
+          parcelId={parcelPromptId}
+          playerMoney={player.money}
+          isOwned={isOwned}
+          isLeased={isLeased}
+          leasePaidTotal={tenure?.kind === 'leased' ? tenure.paidTotal : undefined}
+          leaseDebtDays={tenure?.kind === 'leased' ? tenure.debtDays : undefined}
+          occupiedBuildingName={occupied}
+          onBuy={handleBuyParcel}
+          onLease={handleLeaseParcel}
+          onEndLease={handleEndLease}
+          onPayRentDebt={handlePayRentDebt}
+          onOpenBuildingPrompt={(pid) => { setOpenBuildingTypeId(undefined); setOpenBuildingParcelId(pid); }}
+          onClose={() => setParcelPromptId(null)}
+        />
+      );
+    })()}
+    {openBuildingParcelId && simulationRef.current && (() => {
+      const snap = simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
+      return (
+        <OpenBuildingModal
+          parcelId={openBuildingParcelId}
+          initialTypeId={openBuildingTypeId}
+          playerMoney={player.money}
+          playerLevel={player.level}
+          existingPlacements={snap.storeLayout.buildingPlacements}
+          openCostFor={(typeId, base) => simulationRef.current?.getOpenBuildingCost(typeId, base) ?? base}
+          onOpenBuilding={handleOpenBuilding}
+          onClose={() => { setOpenBuildingParcelId(null); setOpenBuildingTypeId(undefined); }}
+        />
+      );
+    })()}
     {isCityOpen && simulationRef.current && (() => {
       const snap = simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
-      return <CityModal world={snap.world ?? defaultWorldOpenState()} ownedParcelIds={snap.storeLayout.ownedParcelIds ?? []} builtParcels={simulationRef.current.getOccupiedParcelBuildings()} playerLevel={player.level} playerMoney={player.money} day={simulationRef.current.getTime().day} buildingCount={snap.storeLayout.buildingPlacements?.length ?? 3} onReclaim={handleReclaimWave} onBuyParcel={handleBuyParcel} onClose={() => setCityOpen(false)}/>;
+      return <CityModal world={snap.world ?? defaultWorldOpenState()} ownedParcelIds={snap.storeLayout.ownedParcelIds ?? []} builtParcels={simulationRef.current.getOccupiedParcelBuildings()} playerLevel={player.level} playerMoney={player.money} day={simulationRef.current.getTime().day} buildingCount={snap.storeLayout.buildingPlacements?.length ?? 3} onReclaim={handleReclaimWave} journal={cityJournal} onPlanningWave={setPlanningWaveId} onBuyParcel={handleBuyParcel} civicQol={simulationRef.current.getCivicQol()} civicPopulation={simulationRef.current.getCivicPopulation()} placements={snap.storeLayout.buildingPlacements ?? []} buildableParcelIds={simulationRef.current.getBuildableParcelIds()} civicCosts={simulationRef.current.getCivicDailyReport()} civicFeeByParcel={simulationRef.current.getCivicFeeByParcelDetailed()} onBuildOnParcel={(parcelId, typeId) => { setCityOpen(false); setOpenBuildingTypeId(typeId); setOpenBuildingParcelId(parcelId); }} bundles={{ views: simulationRef.current.getCivicBundleViews(), inventory: simulationRef.current.getInventory(), day: simulationRef.current.getTime().day, playerMoney: player.money, playerLevel: player.level, onDonate: handleDonateToBundle, donorNameOf: (pid: string) => donorDisplayName(pid, onlineWorld ? Object.fromEntries(onlineWorld.world.memberships.map(m => [m.accountId, onlineWorld.world.avatars.find(a => a.accountId === m.accountId)?.displayName])) : undefined, onlineUid), cashBlockedReason: onlineWorld && onlineUid && !onlineWorld.world.memberships.some(m => m.role === 'owner' && m.accountId === onlineUid) && onlineWorld.world.settings?.memberLandPermissions === 'none' ? 'Chủ hẻm chưa cho bạn chi tiền' : undefined, journalLines: civicJournalLines(simulationRef.current.getCityProgress().milestones, (bid) => { const t = civicBundleById(bid)?.buildingTypeId ?? bid; return BUILDING_TYPE_DEFS[t as keyof typeof BUILDING_TYPE_DEFS]?.name ?? t; }) }} onClose={() => setCityOpen(false)}/>;
+    })()}
+    {completedBundlePopupId && simulationRef.current && (() => {
+      const view = simulationRef.current.getCivicBundleViews().find(v => v.id === completedBundlePopupId);
+      if (!view) return null;
+      return <BundleCompletePopup view={view} buildAction={bundleBuildAction(view, player.level, simulationRef.current.getBuildableParcelIds().length > 0)} buildingName={BUILDING_TYPE_DEFS[view.buildingTypeId as keyof typeof BUILDING_TYPE_DEFS]?.name ?? view.buildingTypeId} donorName={(pid: string) => donorDisplayName(pid, onlineWorld ? Object.fromEntries(onlineWorld.world.memberships.map(m => [m.accountId, onlineWorld.world.avatars.find(a => a.accountId === m.accountId)?.displayName])) : undefined, onlineUid)} buildableParcelIds={simulationRef.current.getBuildableParcelIds()} onBuildOnParcel={(parcelId, typeId) => { setCityOpen(false); setOpenBuildingTypeId(typeId); setOpenBuildingParcelId(parcelId); }} onClose={() => setCompletedBundlePopupId(null)} />;
     })()}
     {isLevelRoadmapOpen && <LevelRoadmapModal player={player} onClose={() => setLevelRoadmapOpen(false)}/>}
     {daySummaryRecord && <DaySummaryModal record={daySummaryRecord} morningBrief={simulationRef.current?.getMorningBrief()} onClose={() => setDaySummaryRecord(null)}/>}
@@ -2349,6 +2608,18 @@ export const App: React.FC = () => {
           openSupplierModal();
         }}
         onClose={() => setIsPlanogramOpen(false)}
+      />
+    )}
+    {isWorldSettingsOpen && onlineWorld && (
+      <WorldSettingsModal settings={onlineWorld.world.settings} onSave={handleSaveWorldSettings} onClose={() => setWorldSettingsOpen(false)} />
+    )}
+    {landVote && (
+      <LandVoteModal
+        vote={landVote}
+        isInitiator={landVote.initiatorId === onlineUid}
+        initiatorName={onlineWorld?.world.avatars.find(avatar => avatar.accountId === landVote.initiatorId)?.displayName ?? 'Người cùng hẻm'}
+        onRespond={(agree) => { worldSocket.respondLandVote(agree); setLandVote(null); }}
+        onCancel={() => { worldSocket.cancelLandVote(); setLandVote(null); }}
       />
     )}
     {activeTimeVote && (

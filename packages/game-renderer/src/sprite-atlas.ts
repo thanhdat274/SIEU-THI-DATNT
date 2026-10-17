@@ -84,11 +84,13 @@ export function headLift(): number {
   return tex ? Math.max(0, tex.height - 48) : 0;
 }
 
-/** Kiểu khách/NPC đi bộ dùng được: atlas có npc_3..8 (đổi màu áo) thì dùng 8 kiểu (bỏ npc_1 = chủ tiệm), không thì 3 kiểu vẽ code. */
-const WALKER_LOOKS = [0, 2, 3, 4, 5, 6, 7, 8];
+/** Kiểu khách/NPC đi bộ dùng được: atlas có npc_3..9 thì dùng 9 kiểu (bỏ npc_1 = chủ tiệm), không thì 3 kiểu vẽ code. */
+const WALKER_LOOKS_8 = [0, 2, 3, 4, 5, 6, 7, 8];
+const WALKER_LOOKS_9 = [0, 2, 3, 4, 5, 6, 7, 8, 9];
 export function walkerLook(i: number): number {
   const n = Math.abs(Math.floor(i));
-  return overrides.has('npc_8_down_idle_0') ? WALKER_LOOKS[n % WALKER_LOOKS.length] : n % 3;
+  if (overrides.has('npc_9_down_idle_0')) return WALKER_LOOKS_9[n % WALKER_LOOKS_9.length];
+  return overrides.has('npc_8_down_idle_0') ? WALKER_LOOKS_8[n % WALKER_LOOKS_8.length] : n % 3;
 }
 
 /** Cột đèn từ atlas cao hơn bản code (64 px) bao nhiêu px: quầng sáng đèn đường nâng lên đúng chừng đó để nằm ở đầu đèn. */

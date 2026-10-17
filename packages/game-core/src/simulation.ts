@@ -66,6 +66,10 @@ import {
   INITIAL_REFRIGERATOR,
   PRODUCT_MAP,
   generateStarterTileMap,
+  resolvePlacements,
+  validatePlacement,
+  placementGeometry,
+  type BuildingPlacement,
   WAREHOUSE_FIXTURES,
   WAREHOUSE_ENTRANCE,
   STORE_BOUNDS,
@@ -89,6 +93,7 @@ import {
   WEEKDAY_LABELS,
   SHOPKEEPER_POSITION,
   getSeasonForDay,
+  getSeasonWindow,
   staffSpecialtyInfo,
   seasonDaysLeft,
   SPOILAGE_RULES,
@@ -97,6 +102,7 @@ import {
   type StallDefinition,
   REGULAR_CUSTOMERS_MAP
   } from '@game/data';
+import { BUILDING_TYPE_DEFS, resolveParcel, LAND_LEASE_CONSTANTS, parcelPrice, type DistrictId, ALL_PARCELS } from '@game/data';
 import { buildMorningBrief, type MorningBrief } from './day-rhythm';
 import { buildMarketSummary } from './market-summary';
 import { pickAvailableRegular, processRegularCheckout, processRegularWalkout } from './regulars';
@@ -105,8 +111,9 @@ import type { IntersectionSignals } from './traffic-signal';
 import { StoreLogisticsManager } from './store-logistics';
 import { CollisionSystem } from './collision';
 import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
+import { reviewReputationContribution } from './review-reputation';
 import { rainIntensityAt, describeRainForecast, roadWetnessAt, hashSeed } from './weather';
-import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance } from './security';
+import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance, CIVIC_POLICE_DETECT_BONUS, CIVIC_POLICE_BURGLARY_REDUCTION } from './security';
 import { assessCounterfeit } from './counterfeit';
 import { ACTIVE_TAX_POLICY, summarizeAnnualRevenue, taxDueOnClose } from './tax/annual-revenue';
 import { createChain, normalizeChain, openBranch as openBranchPure, returnStock as returnStockPure, setBranchPolicy as setBranchPolicyPure, switchBranch as switchBranchPure, transferStock as transferStockPure, type ChainContext, type TransferItem } from './chain';
@@ -115,14 +122,14 @@ import { applyAuditToState, emptyTaxState, normalizeTaxState, resolveAudit, shou
 import { composeReview, sanitizeReviews, summarizeReviews, ReviewsManager } from './reviews';
 import { listMaintenance, maintainFixture as applyMaintenance, wearOvernight, coldBreakExtraDecay, staffServiceTargets, needsService, maintenanceUnlocked, isWearable, MAINTENANCE_FAILURE_TEXT, type MaintenanceAction, type MaintenanceEntry, type MaintenanceNotice } from './maintenance';
 import { decorAttraction, decorTrafficMultiplier } from './decor';
-import { buyLandPlot, expandFootprint, relocateBuilding, relocateMisplacedFixtures, upgradeFixtureSlots, validateStoreLayout, totalWarehouseCells, coldWarehouseCapacity, warehouseCellsFor, unitsFittingInCells, type LayoutResult } from './store-layout';
+import { buyLandPlot, expandFootprint, relocateBuilding, relocateMisplacedFixtures, upgradeFixtureSlots, validateStoreLayout, syncLayoutSlots, totalWarehouseCells, coldWarehouseCapacity, warehouseCellsFor, unitsFittingInCells, type LayoutResult } from './store-layout';
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
 import { expiryDay, looseUnits, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
 import { decayLot, spoilageRate, withBackupPower } from './spoilage';
 import { findPathToAny, GridPoint, tileCenter } from './pathfinding';
 import { normalizePlayerProgression, saleExperienceMultiplier, trafficAtLevel } from './progression';
-import { CustomerManager } from './customers';
+import { CustomerManager, PARKING_FEE, openParkingLots, parkingLotFor } from './customers';
 import { calculateSalesVelocity, generateRestockSuggestions, normalizeRestockOptions, getIncomingOrdersCount, getUsableStock } from './suggestions';
 import { buildProductPlans, type ProductPlan, type ProductPlanInput } from './forecast';
 import { advanceMarketState, assertMarketData, buildMarketContext, effectiveWeatherId, marketNoticesForDay, normalizeMarketState, NoticeThrottle, weekdayOf, type MarketNotice } from './market';
@@ -141,6 +148,7 @@ import {
   fulfillPartyOrder,
   type FulfillPartyOrderResult,
 } from './party-orders';
+import { upcomingNearbySeasons } from './neighborhood-events';
 import {
   absMinute,
   advanceSpecialRequests,
@@ -171,12 +179,13 @@ import {
   hasPerk,
 } from './skills';
 import { applyBuildingLayout, setAwningOpen, SPECIAL_REQUEST_MAP } from '@game/data';
-import { BUILDINGS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS } from '@game/data';
+import { BUILDINGS, CAFE_SHOP_PRODUCT_IDS, COM_RESTAURANT_DISH_IDS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS, WAREHOUSE_CENTER, buildingTypeOfInstance } from '@game/data';
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS, RECLAMATION_WAVE_MAP } from '@game/data';
+import { dailySupplyExecution, type InternalDelivery, type SupplyContract, type SupplyStockLot } from './supply-execution';
 import { RestockClaimManager } from './restock-claims';
 import { StorageManager } from './storage';
-import { LedgerManager } from './ledger';
+import { LedgerManager, computeNetProfit } from './ledger';
 import { StaffManager } from './staff-manager';
 import { DiningManager } from './dining-manager';
 import { ProductionManager } from './production-manager';
@@ -187,12 +196,24 @@ import { BUILDING_MAP, chilledDisplayAppeal, fridgeShelfLifeBonus, isChilledDisp
 import { DailyRoutineSystem, HOME_DOOR_TILE, type DailyRoutineState, type InventorySummary, type RoutineTickOutput } from './daily-routine';
 import { CoopRoutineSystem, type CoopPlayerRoutineConfig, type CoopRoutineTickInput, type CoopRoutineTickOutput } from './coop-routine';
 import { reclaimWaveAllowed, startReclaimWave, buyParcelAllowed, customerTrafficMultiplier, occupiedParcelBuildings } from './reclamation';
+import { computeCivicQol } from './civic-qol';
+import { civicDefOf, civicFeeForOwnedParcel, rectWidth, rectHeight } from '@game/data';
+import { computePopulationSnapshot, stepAllPopulations, populationCapBonus, populationExtraUnitChance, type DistrictPopulation } from './civic-population';
+import { claimCityGoal as claimCityGoalPure } from './city-goals-sim';
+import { CityProgressState, CityGoalKind } from '@game/shared';
+import { cityGoalById, civicBundleById, CIVIC_BUNDLES, type CivicBundleDef } from '@game/data';
+import { buildCivicBundleViews, type BundleCardView } from './civic-bundle-view';
+import { isBundleRevealed } from './civic-reveal-goals';
+import { addCivicMilestoneOnce, civicOpeningBriefLines } from './city-journal';
+import { countBuildingsOfType, donateToBundle, itemLots, takeDonationLots, civicOpenCost, isBundleCompleted, evaluateCivicGoalCondition, type CivicBundleState, type CivicGoalCondition } from './civic-bundles';
+import { civicRevealGoalById, revealedBundleIdsForLoadedLevel } from './civic-reveal-goals';
+import { computeCityProgressMetrics } from './city-progress-metrics';
 
 /** Thành phẩm của quầy xôi — import từ `@game/data` để tránh trùng lặp. */
 import { beginChapter, claimChapter, createInitialStoryState, getStoryProgressList, normalizeStoryState, type StoryChapterProgress, type StoryContext } from './story';
 import { aggregateHeatmap, appendPricePoint, pruneHeatmap, sanitizeHeatmap, sanitizePriceHistory } from './analytics';
 import { addProductionOutput, consumeIngredients, missingIngredients, sanitizeProductionJobs } from './production';
-import { LONG_TERM_GOALS, WEEKLY_QUESTS, PARTY_ORDER_MAP, TITLES, effectiveShelfCapacity, SECURITY_RULES } from '@game/data';
+import { LONG_TERM_GOALS, WEEKLY_QUESTS, PARTY_ORDER_MAP, PARTY_ORDERS, TITLES, effectiveShelfCapacity, SECURITY_RULES } from '@game/data';
 import { getUnlockedTitles, setActiveTitle, type TitleContext } from './titles';
 import { getFixtureDimensions, syncSlotChildren, type BuildingPlacementRecord, type TitleDef } from '@game/shared';
 
@@ -286,8 +307,16 @@ export class GameSimulation {
   private decorOwned: string[];
   /** Các lô ĐÃ MUA (thế giới mở, schema 7). W0 gieo 4 lô mặc định; lô đợt mới chỉ thêm sau `buy_parcel`. */
   private ownedParcelIds: string[];
+  /** Trạng thái sở hữu/thuê lô (schema 10): `parcelTenure[parcelId] = { kind: 'owned'|'leased', ... }`. */
+  private parcelTenure: Record<string, { kind: 'owned' | 'leased'; day?: number; paidTotal?: number; debtDays?: number; civicDebt?: number; civicDebtDays?: number }>;
   /** Trạng thái thế giới mở (schema 7): đợt đã mở & đang thi công. */
   private worldOpenState: WorldOpenState;
+  /** Dân số xóm theo QoL (OpenSpec `civic-population-demand`): districtId → pop. Lưu/export qua save. */
+  private _civicPopulationByDistrict: Record<string, number>;
+  /** Tiến độ mục tiêu thành phố (OpenSpec `civic-city-goals` 4A). */
+  private _cityProgress: CityProgressState;
+  /** Trạng thái sổ góp xóm (OpenSpec `civic-city-goals`): bundleId → trạng thái ô/đóng góp. Trang chưa mở = không có entry. */
+  private _bundleStates: Record<string, CivicBundleState | undefined>;
   private inventory: InventoryItem[];
   private holdingArea: HoldingItem[];
   private planogram: Record<string, string> = dict();
@@ -307,6 +336,10 @@ export class GameSimulation {
   private orderSequence = 0;
   private ledgerManager: LedgerManager;
   private questsManager: QuestManager;
+  /** Các lễ hội đã thông báo trong phiên (dạng "${year}:${seasonId}") để không nhắc lặp cùng năm. */
+  private notifiedFestivalKeys = new Set<string>();
+  /** Ngày gần nhất đã nhắc "có thưởng ngày hội để nhận" (chống nhắc mỗi ngày). */
+  private lastFestivalRewardNotificationDay = -1;
   /** Yêu cầu đặc biệt của khách VIP; roll mỗi 30 phút game khi tiệm mở cửa. */
   private specialRequests: SpecialRequestState = createSpecialRequestState();
   private lastSpecialRequestSlot = -1;
@@ -341,6 +374,8 @@ export class GameSimulation {
   private dailyRoutine: DailyRoutineSystem;
   private coopRoutine: CoopRoutineSystem | null = null;
   private coopMode = false;
+  /** Khi online/co-op, server là nguồn sự thật: client KHÔNG tự sinh khách để tránh trùng/lệch state. */
+  private serverAuthoritative = false;
   private coopLocalPlayerId: string | null = null;
   private coopLocalState: DailyRoutineState | null = null;
   private coopSeenDay: number | null = null;
@@ -350,6 +385,9 @@ export class GameSimulation {
   private trafficWarmed = false;
   private logisticsManager = new StoreLogisticsManager();
   private storageManager: StorageManager;
+  private processedRentDayIds: Set<number> = new Set();
+  /** Ngày đã trừ chi phí xóm (OpenSpec `civic-local-fees`): idempotent, KHÔNG thêm trường save (dựng lại khi nạp). */
+  private processedCivicDayIds: Set<number> = new Set();
 
   /** Proxy đến staffManager cho staff list (đọc). */
   private get staff(): StaffMember[] { return this.staffManager.getStaffRef(); }
@@ -373,6 +411,8 @@ export class GameSimulation {
 
   private warehouseTier: number;
   private storageRackCount: number;
+  private internalDeliveries: InternalDelivery[] = [];
+  private supplyContracts: SupplyContract[] = [];
 
   /** Proxy đến stallsMarketsManager cho stalls (đọc/ghi). */
   private get stalls(): StallState { return this.stallsMarketsManager.getStallsRef(); }
@@ -460,7 +500,13 @@ export class GameSimulation {
     this.buildingPlacements = initialSave.storeLayout.buildingPlacements ? structuredClone(initialSave.storeLayout.buildingPlacements) : undefined;
     this.decorOwned = [...(initialSave.storeLayout.decorOwned ?? [])];
     this.ownedParcelIds = initialSave.storeLayout.ownedParcelIds ? [...initialSave.storeLayout.ownedParcelIds] : ownedParcelIdsDefault();
+    this.parcelTenure = initialSave.storeLayout.parcelTenure ? { ...initialSave.storeLayout.parcelTenure } : this.buildTenureFromOwned();
     this.worldOpenState = initialSave.world ? structuredClone(initialSave.world) : defaultWorldOpenState();
+    this._civicPopulationByDistrict = initialSave.civic?.populationByDistrict ? { ...initialSave.civic.populationByDistrict } : {};
+    this._bundleStates = initialSave.civic?.bundles ? structuredClone(initialSave.civic.bundles) : {};
+    this._cityProgress = initialSave.cityProgress ? { ...initialSave.cityProgress } : { level: 1, claimedCityGoalIds: [], milestones: [], metrics: {} };
+    // 1.3 không hồi tố: trang sổ của các cấp đã qua hiện ngay khi tải (không làm mất cấp).
+    this._cityProgress.revealedBundleIds = [...new Set([...(this._cityProgress.revealedBundleIds ?? []), ...revealedBundleIdsForLoadedLevel(this._cityProgress.level)])];
     this.inventory = initialSave.inventory.map((i) => ({ ...i }));
     this.holdingArea = (initialSave.holdingArea ?? []).map((h) => ({ ...h }));
     this.planogram = dict(initialSave.planogram);
@@ -520,6 +566,7 @@ export class GameSimulation {
       this.currentDayRecord = this.createEmptyDailyRecord(initialSave.worldTime.day);
     }
     this.completedCheckoutIds = new Set(initialSave.completedCheckoutIds ?? []);
+    this.processedRentDayIds = new Set(initialSave.processedRentDayIds ?? []);
     this.hydrateStock(initialSave.worldTime.day);
 
     this.collisionSystem = new CollisionSystem(this.tileMap, this.fixtures);
@@ -570,6 +617,7 @@ export class GameSimulation {
       }, day - 1, 1 + getSkillModifier(this.skills, 'shelf_capacity_bonus'));
       // Khai hoang: đầu ngày — đợt hết thi công (wavesUnderConstruction[waveId] <= day) mở vùng chơi (D3).
       this.finishReclaimedWaves(day);
+      this.collectDailyRent(day);
       for (const member of this.staff) { this.finishStaffJob(member, true); member.diningTask = undefined; }
       this.processPayroll(day - 1);
       this.processStalls(day - 1);
@@ -590,13 +638,23 @@ export class GameSimulation {
       const yesterdayRevenue = this.currentDayRecord.revenue;
       this.closeDailyRecord(day - 1);
       this.initDailyRecord(day);
+      // Chi phí xóm (OpenSpec `civic-local-fees`): sau tiền thuê lô (thứ tự thuê lô → duy trì → phí xóm), nhưng SAU khi mở
+      // bản ghi ngày mới để `civicUpkeep`/`civicFee` nằm trong bản ghi của đúng ngày bị trừ (ledger `day` khớp bản ghi, bản tin sáng đọc được).
+      this.collectDailyCivicCosts(day);
+      // Tiền đầu ngày (sau trừ chi phí xóm) làm gốc cho trần góp tiền khi chủ hẻm offline: cố định cả ngày.
+      this.currentDayRecord.openingMoney = this.playerData.money;
+      // Cập nhật metrics cho mục tiêu thành phố (sau khi đóng bản ghi hôm trước, trước khi sang ngày mới)
+      this.updateCityProgressMetrics();
       this.resolvePoliceCases(day);
       this.updateCustomerCreditStatuses(day);
       this.runNightBurglary(day, yesterdayRevenue);
       const spoiled = this.expireStock(day);
       this.deliverOrders(day);
       this.processAutoBuy(day);
+      this.executeDailyInternalDeliveries(day);
+      const orderIdsBefore = this.partyOrders.available.map((o) => o.orderId);
       this.questsManager.advanceToDay(day, this.playerData.level);
+      this.notifySeasonalEvents(day, orderIdsBefore);
       this.statistics.totalDaysPassed = Math.max(this.statistics.totalDaysPassed, day - 1);
       if (spoiled > 0) this.callbacks.onStockExpired?.(spoiled);
       const expiring = this.getExpiringStock();
@@ -607,6 +665,8 @@ export class GameSimulation {
         const slow = tracked.filter((plan) => plan.flags.slowMoving);
         if (low.length || slow.length) this.callbacks.onStockWarning({ lowStock: low.length, slowMoving: slow.length, examples: low.slice(0, 3).map((plan) => PRODUCT_MAP[plan.productId]?.name ?? plan.productId) });
       }
+      // Bước dân số xóm (OpenSpec `civic-population-demand`): trước onDayChanged để snapshot có dân số mới
+      this.stepCivicPopulation();
       if (this.callbacks.onDayChanged) {
         this.callbacks.onDayChanged(day);
       }
@@ -687,6 +747,8 @@ export class GameSimulation {
       regularName: customer.regularName,
     });
     this.reviewsManager.addReview(review);
+    // Lời đánh giá bằng chữ đóng góp vào uy tín (ngoài delta theo sao đã cộng ở trên) — đảo non-goal cũ.
+    this.playerData.reputation = Math.max(0, Math.min(100, this.playerData.reputation + reviewReputationContribution(review)));
     this.callbacks.onCustomerRated?.({ stars, average: averageRating(this.playerData.ratings), reason, review });
   }
 
@@ -722,12 +784,43 @@ export class GameSimulation {
       return p ? customerTrafficMultiplier(p.parcelId) : 1;
     };
   }
+  /** Lấy districtId của tiệm chính (main shop) từ parcel của nó. */
+  public getMainShopDistrictId(): DistrictId {
+    const placements = this.buildingPlacements ?? DEFAULT_PLACEMENTS;
+    const mainPlacement = placements.find(p => p.buildingId === 'main');
+    if (!mainPlacement) return 'hem_dan_cu';
+    const parcel = resolveParcel(mainPlacement.parcelId);
+    if (!parcel) return 'hem_dan_cu';
+    return parcel.districtId;
+  }
+  /** Wrapper buildMarketContext có thêm districtId. */
+  private getMarketContext(day: number, hour: number) {
+    return { ...buildMarketContext(this.market, day, hour), districtId: this.getMainShopDistrictId() };
+  }
   /** Bản đồ theo đất đã mua, quầy đã mở và vị trí đặt/ô sàn mở rộng hiện tại. */
   private buildTileMap(): GameTileMap { return generateStarterTileMap(this.unlockedPlotIds, this.stalls.owned, this.buildingPlacements, this.worldOpenState.openedWaves); }
   public getWorldOpenState(): WorldOpenState { return structuredClone(this.worldOpenState); }
   public getOwnedParcelIds(): string[] { return [...this.ownedParcelIds]; }
-  /** Lô đã có tòa → id loại tòa (minimap và bảng Thành phố hiện lô đã dùng). */
+  /** Xây parcelTenure từ ownedParcelIds (schema ≤9 migrate lên 10). */
+  private buildTenureFromOwned(): Record<string, { kind: 'owned' | 'leased'; day?: number; paidTotal?: number; debtDays?: number }> {
+    const tenure: Record<string, { kind: 'owned' | 'leased'; day?: number; paidTotal?: number; debtDays?: number }> = {};
+    for (const pid of this.ownedParcelIds) {
+      tenure[pid] = { kind: 'owned' };
+    }
+    return tenure;
+  }
+  /** Lô nào đang thuê (schema 10 tenure). */
+  public getLeasedParcelIds(): string[] {
+    return Object.keys(this.parcelTenure).filter(pid => this.parcelTenure[pid].kind === 'leased');
+  }
+  /** Bản đồ theo đất đã mua, quầy đã mở và vị trí đặt/ô sàn mở rộng hiện tại. */
   public getOccupiedParcelBuildings(): Record<string, string> { return occupiedParcelBuildings(this.buildingPlacements); }
+  /** Lô trống đặt được tòa mới: lô W0 + lô đã sở hữu/thuê, trừ lô có tòa (kể cả vị trí mặc định của tiệm chính/tòa cũ). */
+  public getBuildableParcelIds(): string[] {
+    const occupied = occupiedParcelBuildings(resolvePlacements(this.buildingPlacements, this.unlockedPlotIds));
+    const tenured = Object.entries(this.parcelTenure).filter(([, t]) => t.kind === 'owned' || t.kind === 'leased').map(([id]) => id);
+    return ALL_PARCELS.filter(p => (p.wave === 0 || this.ownedParcelIds.includes(p.id) || tenured.includes(p.id)) && !occupied[p.id]).map(p => p.id);
+  }
   public getOpenedWaves(): string[] { return [...this.worldOpenState.openedWaves]; }
   public getDecorOwned(): string[] { return [...this.decorOwned]; }
   /** Điểm thu hút từ trang trí và hệ số khách tương ứng. */
@@ -749,6 +842,10 @@ export class GameSimulation {
     this.callbacks.onMapChanged?.(nextMap);
     return { save: this.exportSaveData(save.id, Math.max(0, save.revision - 1)) };
   }
+
+  /** Người đang thực hiện lệnh xây (open-world-coop-land D4): server đặt accountId trước khi chạy lệnh; mặc định 'local' (chơi một mình). */
+  private buildActorId = 'local';
+  public setBuildActor(accountId: string): void { this.buildActorId = accountId || 'local'; }
 
   public purchaseLand(plotId: string, placement?: { parcelId: string; originX: number }): LayoutResult {
     const result = buyLandPlot(this.exportSaveData(), plotId, placement);
@@ -785,7 +882,7 @@ export class GameSimulation {
    * (`PARCEL_BASE_PRICE × số ô × landValueMultiplier`), thêm vào `ownedParcelIds`. Lô W0 coi như đã sở hữu
    * nên không mua được (trả `already_owned`).
    */
-  public buyParcel(parcelId: string): { success: boolean; reason?: string; price?: number } {
+  public buyParcel(parcelId: string): { success: boolean; reason?: string; price?: number; credit?: number } {
     const check = buyParcelAllowed({
       level: this.playerData.level,
       money: this.playerData.money,
@@ -796,10 +893,619 @@ export class GameSimulation {
     }, parcelId);
     if (!check.ok) return { success: false, reason: check.reason };
     if (typeof check.price !== 'number') return { success: false, reason: 'unknown_parcel' };
-    this.playerData.money -= check.price;
+
+    const tenure = this.parcelTenure[parcelId];
+    const isLeasedParcel = tenure && tenure.kind === 'leased';
+    const basePrice = check.price;
+    let finalPrice = basePrice;
+    let credit = 0;
+    if (isLeasedParcel) {
+      credit = Math.min((tenure.paidTotal ?? 0) * LAND_LEASE_CONSTANTS.leaseCreditRate, Math.floor(basePrice * 0.5));
+      finalPrice = Math.max(0, basePrice - credit);
+    }
+    if (this.playerData.money < finalPrice) return { success: false, reason: 'not_enough_money', price: finalPrice };
+
+    this.playerData.money -= finalPrice;
     this.ownedParcelIds = [...this.ownedParcelIds, parcelId];
+    const day = this.clock.getTime().day;
+    this.parcelTenure[parcelId] = { kind: 'owned', day };
+    // Mở lại các tòa trên lô nếu đang bị closedForRent do nợ thuê
+    for (const p of this.buildingPlacements ?? []) {
+      if (p.parcelId === parcelId && p.closedForRent) {
+        p.closedForRent = false;
+      }
+    }
     this.notifyStateChanged();
-    return { success: true, price: check.price };
+    return { success: true, price: finalPrice, credit: credit > 0 ? credit : undefined };
+  }
+
+  /**
+   * Mở tòa loại mới (lệnh `open_building`, OpenSpec `open-world-building-types` 2.1):
+   * kiểm typeId hợp lệ + đủ cấp/tiền + trần instance + lô đã sở hữu + vị trí hợp lệ,
+   * tạo bản ghi placement với buildingId `${typeId}-${n}`, trả về instanceId.
+   */
+  public openBuilding(buildingTypeId: string, parcelId: string, originX: number, originY: number): { success: boolean; reason?: string; instanceId?: string } {
+    if (this.clock.getTime().isStoreOpen) return { success: false, reason: 'store_open' };
+    // Tra định nghĩa loại tòa
+    const typeDef = BUILDING_TYPE_DEFS[buildingTypeId as keyof typeof BUILDING_TYPE_DEFS];
+    if (!typeDef) return { success: false, reason: 'unknown_type' };
+    // Kiểm trần instance
+    const existingCount = countBuildingsOfType(this.buildingPlacements, buildingTypeId);
+    if (existingCount >= typeDef.maxInstances) return { success: false, reason: 'max_instances' };
+    // Kiểm loại cũ (maxInstances=1) không cho mở thêm
+    if (typeDef.maxInstances === 1) return { success: false, reason: 'single_instance' };
+    // Kiểm lô đã sở hữu (wave !== 0)
+    const parcel = resolveParcel(parcelId);
+    if (!parcel) return { success: false, reason: 'unknown_parcel' };
+    const tenure = this.parcelTenure[parcelId];
+    const hasAccess = parcel.wave === 0 || this.ownedParcelIds.includes(parcelId) || (tenure && (tenure.kind === 'owned' || tenure.kind === 'leased'));
+    if (!hasAccess) return { success: false, reason: 'parcel_not_owned' };
+    // Kiểm tiền + cấp (civic: dùng buildCost nếu có, ngược lại openCost)
+    // Trang sổ góp của loại civic đã xong → tòa đầu tiên được giảm giá (OpenSpec `civic-city-goals` D5).
+    const buildCost = civicOpenCost(buildingTypeId, typeDef.buildCost ?? typeDef.openCost, this._bundleStates, existingCount);
+    if (this.playerData.money < buildCost) return { success: false, reason: 'money' };
+    if (this.playerData.level < typeDef.unlockLevel) return { success: false, reason: 'level' };
+    // Tạo instance ID
+    const nextN = existingCount + 1;
+    const instanceId = `${buildingTypeId}-${nextN}`;
+    // Vị trí phải hợp lệ (đúng hàng mặt tiền, nằm trong lô, không đè tòa khác) trước khi trừ tiền
+    const candidate = { buildingId: instanceId, parcelId, originX, originY, typeId: buildingTypeId, builtBy: this.buildActorId };
+    const accessibleParcels = [...this.ownedParcelIds, ...Object.entries(this.parcelTenure).filter(([, t]) => t.kind === 'owned' || t.kind === 'leased').map(([id]) => id)];
+    const problem = validatePlacement(candidate, resolvePlacements(this.buildingPlacements, this.unlockedPlotIds), accessibleParcels);
+    if (problem) return { success: false, reason: problem.split(':')[0] };
+    // Áp placement + nội thất mặc định của loại qua đường áp bố cục chuẩn (dựng lại bản đồ, va chạm, kiểm đường đi) rồi mới trừ tiền.
+    const next = this.exportSaveData();
+    next.storeLayout.buildingPlacements = [...(next.storeLayout.buildingPlacements ?? []), candidate];
+    const used = new Set([...next.storeLayout.fixtures, ...(next.storeLayout.storedFixtures ?? [])].map(fixture => fixture.id));
+    for (const fixture of placementGeometry(candidate as BuildingPlacement).defaultFixtures) if (!used.has(fixture.id)) next.storeLayout.fixtures.push(structuredClone(fixture));
+    syncLayoutSlots(next);
+    next.player.money -= buildCost;
+    const qolBefore = this.getCivicQol();
+    const applied = this.applyStoreLayout(next);
+    if (applied.error) return { success: false, reason: applied.error };
+    this.recordCivicOpened(buildingTypeId, parcel.districtId, qolBefore);
+    this.notifyStateChanged();
+    return { success: true, instanceId };
+  }
+
+  /**
+   * Thuê lô đất (lệnh `lease_parcel`, OpenSpec `open-world-land-lease` 2.1):
+   * kiểm lô chưa owned/leased + đủ tiền cho MỘT ngày thuê, KHÔNG thu trước (spec D2: chỉ thu `dailyRent` đầu mỗi ngày
+   * qua `collectDailyRent`; chủ dự án chốt 16/10/2026), ghi tenure schema 10 (`parcelTenure[parcelId] = { kind: 'leased', day, paidTotal }`).
+   */
+  public leaseParcel(parcelId: string): { success: boolean; reason?: string; rent?: number } {
+    const day = this.clock.getTime().day;
+    if (day < 1) return { success: false, reason: 'invalid_day' };
+    const parcel = resolveParcel(parcelId);
+    if (!parcel) return { success: false, reason: 'unknown_parcel' };
+    // W0 không cho thuê (luôn owned)
+    if (parcel.wave === 0) return { success: false, reason: 'w0_owned' };
+    // Đợt phải MỞ XONG (giống buy_parcel): không thu tiền thuê lô chưa đi tới được.
+    const leaseWaveId = `w${parcel.wave}`;
+    if (!this.worldOpenState.openedWaves.includes(leaseWaveId) || this.worldOpenState.wavesUnderConstruction[leaseWaveId] !== undefined) {
+      return { success: false, reason: 'wave_not_open' };
+    }
+    // Kiểm tenure schema 10 (ưu tiên) hoặc ownedParcelIds schema ≤9
+    const existing = this.parcelTenure[parcelId];
+    if (existing && (existing.kind === 'owned' || existing.kind === 'leased')) return { success: false, reason: existing.kind === 'owned' ? 'owned' : 'leased' };
+    if (this.ownedParcelIds.includes(parcelId)) return { success: false, reason: 'owned' };
+    // Không thu trước: chỉ cần đủ tiền cho ngày thuê đầu tiên (thu sáng hôm sau); `paidTotal` tích lũy từ tiền thuê ngày.
+    const dailyRent = Math.max(1, Math.ceil(parcelPrice(parcel) * LAND_LEASE_CONSTANTS.leaseDailyRate));
+    if (this.playerData.money < dailyRent) return { success: false, reason: 'money' };
+    this.parcelTenure[parcelId] = { kind: 'leased', day, paidTotal: 0 };
+    this.notifyStateChanged();
+    return { success: true, rent: dailyRent };
+  }
+
+  /**
+   * Hủy thuê lô đất (lệnh `end_lease`, OpenSpec `open-world-land-lease` 2.1):
+   * Chỉ cho phép hủy khi không có tòa nhà nào đang đặt trên lô đó (cần dời/phá tòa trước).
+   */
+  public endLease(parcelId: string): { success: boolean; reason?: string } {
+    const tenure = this.parcelTenure[parcelId];
+    if (!tenure || tenure.kind !== 'leased') return { success: false, reason: 'not_leased' };
+    const hasBuilding = (this.buildingPlacements ?? []).some(p => p.parcelId === parcelId);
+    if (hasBuilding) return { success: false, reason: 'building_present' };
+    // Spec D5: chỉ trả lại lô khi không nợ (nếu không, hủy thuê thành cách xóa nợ).
+    if ((tenure.debtDays ?? 0) > 0) return { success: false, reason: 'rent_debt' };
+
+    delete this.parcelTenure[parcelId];
+    this.notifyStateChanged();
+    return { success: true };
+  }
+
+  /**
+   * Trả nợ tiền thuê đất (lệnh `pay_rent_debt`, OpenSpec `open-world-land-lease` 2.1/2.2):
+   * Tính số nợ = debtDays × dailyRent; trừ tiền, xóa nợ, mở lại tòa trên lô nếu đang bị closedForRent.
+   * OpenSpec `civic-local-fees` D4: dùng CHUNG lệnh này cho nợ phí xóm (`civicDebt`) của lô sở hữu/đang thuê —
+   * không thêm lệnh mới; tổng nợ = nợ thuê + nợ phí xóm.
+   */
+  public payRentDebt(parcelId: string): { success: boolean; reason?: string; amount?: number } {
+    const tenure = this.parcelTenure[parcelId];
+    if (!tenure || (tenure.kind !== 'leased' && tenure.kind !== 'owned')) return { success: false, reason: 'not_leased' };
+    const debtDays = tenure.debtDays ?? 0;
+    const civicDebt = tenure.civicDebt ?? 0;
+    if (debtDays <= 0 && civicDebt <= 0) return { success: false, reason: 'no_debt' };
+    const parcel = resolveParcel(parcelId);
+    if (!parcel) return { success: false, reason: 'unknown_parcel' };
+    const basePrice = parcelPrice(parcel);
+    const dailyRent = Math.max(1, Math.ceil(basePrice * LAND_LEASE_CONSTANTS.leaseDailyRate));
+    const rentDebt = tenure.kind === 'leased' ? debtDays * dailyRent : 0;
+    const debtAmount = rentDebt + civicDebt;
+
+    if (this.playerData.money < debtAmount) return { success: false, reason: 'not_enough_money' };
+    this.playerData.money -= debtAmount;
+    tenure.debtDays = 0;
+    tenure.civicDebt = 0;
+    tenure.civicDebtDays = 0;
+    tenure.paidTotal = (tenure.paidTotal ?? 0) + debtAmount;
+
+    // Mở lại các tòa trên lô nếu đang bị closedForRent
+    for (const p of this.buildingPlacements ?? []) {
+      if (p.parcelId === parcelId && p.closedForRent) {
+        p.closedForRent = false;
+      }
+    }
+    const currentDay = this.clock.getTime().day;
+    const debtLabel = civicDebt > 0
+      ? `Trả nợ thuê đất + phí xóm lô ${parcelId} (${debtDays} ngày, ngày ${currentDay})`
+      : `Trả nợ tiền thuê đất lô ${parcelId} (${debtDays} ngày, ngày ${currentDay})`;
+    this.recordRentCharge(parcelId, debtAmount, currentDay, debtLabel);
+    this.currentDayRecord.rentCost = (this.currentDayRecord.rentCost ?? 0) + debtAmount;
+    this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
+    this.notifyStateChanged();
+    return { success: true, amount: debtAmount };
+  }
+
+  /**
+   * Cập nhật metrics cityProgress từ dữ liệu simulation hiện tại (dẫn xuất, không lưu).
+   * Wrapper mỏng gọi module thuần `computeCityProgressMetrics` (mục 1.5 — tách khỏi simulation).
+   * Đọc các số liệu thô rồi chuyển vào module; toàn bộ cách tính/định nghĩa nằm ở module.
+   */
+  private updateCityProgressMetrics(): void {
+    const openedTypes = new Set<string>();
+    openedTypes.add('grocery_main'); // tiệm chính luôn mở
+    for (const bp of this.buildingPlacements ?? []) {
+      const def = buildingTypeOfInstance(bp.buildingId);
+      if (def) openedTypes.add(def.typeId);
+    }
+    this._cityProgress.metrics = computeCityProgressMetrics({
+      // metrics đo trạng thái của NGÀY VỪA KẾT THÚC (day - 1 khi gọi đầu ngày mới).
+      day: this.clock.getTime().day - 1,
+      dailyRecords: this.dailyRecords,
+      openedTypeIds: [...openedTypes],
+      openedWaves: this.worldOpenState.openedWaves,
+      totalBuildings: this.buildingPlacements?.length ?? 0,
+    });
+  }
+
+  /**
+   * Nhận mục tiêu thành phố: thêm goalId vào claimedCityGoalIds, tính thưởng, có thể lên cấp.
+   * Chỉ chấp nhận khi mọi mục tiêu của cấp hiện tại đã đạt (metrics ≥ target).
+   * Server-authoritative, ai nhận cũng được, chỉ nhận một lần.
+   */
+  public claimCityGoal(goalId: string): { success: boolean; reason?: string; levelUp?: number; reward?: { gold?: number; prestige?: number; xp?: number } } {
+    // Cập nhật metrics trước khi claim
+    this.updateCityProgressMetrics();
+
+    const goal = cityGoalById(goalId);
+    if (!goal) return { success: false, reason: 'goal_not_found' };
+    if (this._cityProgress.claimedCityGoalIds.includes(goalId)) return { success: false, reason: 'already_claimed' };
+    if (goal.cityLevel !== this._cityProgress.level) return { success: false, reason: 'wrong_level' };
+
+    // 1.4: nhận TỪNG mục tiêu khi mục tiêu đó ĐÃ ĐẠT (metrics[goal.kind] >= target). Không yêu cầu đạt
+    // hết mọi mục tiêu của cấp mới được nhận. Luật lên cấp (nhận HẾT mục tiêu của cấp thì lên) do hàm
+    // thuần `claimCityGoalPure` lo — giữ nguyên, không đổi.
+    const current = this._cityProgress.metrics[goal.kind] ?? 0;
+    if (current < goal.targetValue) return { success: false, reason: 'goal_not_met' };
+
+    // Gọi hàm thuần để tính state mới. Hàm thuần đã thêm milestones 'goal_claimed' (level = cấp lúc nhận)
+    // và 'level_up' khi lên cấp — KHÔNG push lại ở đây để nhật ký không trùng (1.2).
+    const result = claimCityGoalPure(this._cityProgress, goalId, this.clock.getTime().day);
+    this._cityProgress = result.state;
+
+    // 1.3: cộng đủ ba loại thưởng (gold/prestige/xp). Tiền (gold) vào QUỸ CHUNG (quyết định chủ dự án
+    // 16/10/2026) — tức `this.playerData.money` (một ví cho cả thế giới). Ghi sổ cái income.
+    const reward = result.reward ?? {};
+    if (reward.gold) {
+      this.playerData.money += reward.gold;
+      this.recordLedger({ day: this.clock.getTime().day, type: 'city_goal_reward', amount: reward.gold, description: `Thưởng mục tiêu thành phố ${goalId} (+${reward.gold.toLocaleString('vi-VN')}₫)` });
+    }
+    if (reward.xp) this.addExperience(reward.xp);
+    if (reward.prestige) this.addPrestigePoints(reward.prestige);
+
+    this.notifyStateChanged();
+    return { success: true, levelUp: result.levelUp, reward };
+  }
+
+  /**
+   * Tra cứu trạng thái tiến độ thành phố (UI, co-op).
+   */
+  public getCityProgress(): CityProgressState {
+    return {
+      level: this._cityProgress.level,
+      claimedCityGoalIds: [...this._cityProgress.claimedCityGoalIds],
+      milestones: structuredClone(this._cityProgress.milestones),
+      metrics: { ...this._cityProgress.metrics },
+      revealedBundleIds: [...(this._cityProgress.revealedBundleIds ?? [])],
+    };
+  }
+
+  /** Giá `open_building` thật cho UI (đã trừ phần góp của sổ nếu là tòa đầu của loại civic) — cùng hàm với lúc trừ tiền. */
+  public getOpenBuildingCost(buildingTypeId: string, baseCost: number): number {
+    const existing = countBuildingsOfType(this.buildingPlacements, buildingTypeId);
+    return civicOpenCost(buildingTypeId, baseCost, this._bundleStates, existing);
+  }
+
+  /** Dữ liệu hiển thị tab Sổ góp (UI): module thuần `civic-bundle-view`. */
+  public getCivicBundleViews(): BundleCardView[] {
+    const existingBuildings: Record<string, number> = {};
+    for (const bp of this.buildingPlacements ?? []) {
+      const typeId = buildingTypeOfInstance(bp.buildingId)?.typeId;
+      if (typeId) existingBuildings[typeId] = (existingBuildings[typeId] ?? 0) + 1;
+    }
+    return buildCivicBundleViews({ bundleStates: this._bundleStates, cityLevel: this._cityProgress.level, revealedBundleIds: this._cityProgress.revealedBundleIds ?? [], inventory: this.inventory, playerMoney: this.playerData.money, day: this.clock.getTime().day, existingBuildings });
+  }
+
+  /** Trang sổ góp đã được hiện (cho UI/co-op). */
+  public getRevealedBundleIds(): string[] {
+    return [...(this._cityProgress.revealedBundleIds ?? [])];
+  }
+
+  /**
+   * Nhận mục tiêu XÓM PHỐ (Giai đoạn 3, tasks 1.1–1.3): khi điều kiện đạt, sổ góp của công trình
+   * tương ứng được HIỆN (không tự mở công trình). Mục tiêu xóm phố là khuyến khích riêng — KHÔNG nằm
+   * trong CITY_GOALS_CATALOG nên không ảnh hưởng luật lên cấp thành phố.
+   */
+  public claimCivicRevealGoal(goalId: string): { success: boolean; reason?: string; revealBundleId?: string } {
+    const goal = civicRevealGoalById(goalId);
+    if (!goal) return { success: false, reason: 'goal_not_found' };
+    if ((this._cityProgress.revealedBundleIds ?? []).includes(goal.revealBundleId)) {
+      return { success: false, reason: 'already_revealed' };
+    }
+    const met = this.evaluateRevealCondition(goal.condition);
+    if (!met) return { success: false, reason: 'goal_not_met' };
+    this._cityProgress.revealedBundleIds = [...(this._cityProgress.revealedBundleIds ?? []), goal.revealBundleId];
+    this._cityProgress.milestones = [
+      ...(this._cityProgress.milestones ?? []),
+      { day: this.clock.getTime().day, type: 'goal_claimed', goalId, level: this._cityProgress.level },
+    ];
+    this.notifyStateChanged();
+    return { success: true, revealBundleId: goal.revealBundleId };
+  }
+
+  /** Đánh giá điều kiện mục tiêu xóm phố từ state simulation hiện tại (thuần, qua module). */
+  private evaluateRevealCondition(condition: CivicGoalCondition): boolean {
+    const civicCounts: Record<string, number> = {};
+    for (const bp of this.buildingPlacements ?? []) {
+      const def = buildingTypeOfInstance(bp.buildingId);
+      if (def && def.typeId) civicCounts[def.typeId] = (civicCounts[def.typeId] ?? 0) + 1;
+    }
+    return evaluateCivicGoalCondition(condition, {
+      civicBuildings: civicCounts,
+      districtQol: this.getCivicQol(),
+      totalPopulation: Object.values(this._civicPopulationByDistrict ?? {}).reduce((a, b) => a + b, 0),
+    });
+  }
+
+  /**
+   * Góp hàng/tiền vào sổ góp xóm (OpenSpec `civic-city-goals`, D3/D4).
+   * Wrapper simulation gọi pure fn donateToBundle, trừ kho, trừ tiền, ghi ledger.
+   */
+  public donateToBundle(
+    bundleId: string,
+    slotId: string,
+    productId: string | undefined,
+    quantity: number | undefined,
+    amount: number | undefined
+  ): { success: boolean; reason?: string; completedBundleId?: string } {
+    const bundleDef = civicBundleById(bundleId);
+    if (!bundleDef) return { success: false, reason: 'bundle_not_found' };
+
+    // Get bundle state from save
+    const bundleState = this._bundleStates[bundleId];
+
+    // Call pure function
+    const result = donateToBundle(
+      bundleDef,
+      bundleState,
+      slotId,
+      productId,
+      quantity,
+      amount,
+      // Sổ được hiện bởi mục tiêu xóm phố (revealedBundleIds) cũng góp được dù cấp thành phố chưa tới.
+      isBundleRevealed(bundleId, this._cityProgress.level, this._cityProgress.revealedBundleIds) ? Math.max(this._cityProgress.level, bundleDef.revealedByCityLevel) : this._cityProgress.level,
+      this.inventory,
+      this.playerData.money,
+      this.buildActorId ?? 'local',
+      this.clock.getTime().day
+    );
+
+    if (!result.success || !result.actualQuantity) {
+      return { success: false, reason: result.reason };
+    }
+
+    const day = this.clock.getTime().day;
+    if (result.productId) {
+      // Trừ kho thật bằng cùng hàm mà hàm thuần đã lấy thử → đúng lô, đúng giá vốn; đồng bộ `quantity`.
+      const invItem = this.inventory.find((i) => i.productId === result.productId)!;
+      invItem.lots = itemLots(invItem, day);
+      takeDonationLots(invItem.lots, result.actualQuantity, day, PRODUCT_MAP[result.productId]?.caseSize);
+      invItem.quantity = sumLots(invItem.lots);
+      this.inventory = this.inventory.filter((item) => item.quantity > 0);
+    } else {
+      this.playerData.money -= result.actualQuantity;
+    }
+    if (result.ledgerEntry) this.recordLedger(result.ledgerEntry);
+
+    // 1.8: hàng góp tính như giá vốn — ghi vào `cogs` của bản ghi ngày đúng MỘT lần (không vào revenue;
+    // netProfit trừ đúng một lần qua grossProfit). Tiền góp là chuyển vào quỹ chung, không phải giá vốn.
+    if (result.productId && result.ledgerEntry?.cogs) {
+      this.currentDayRecord.cogs += result.ledgerEntry.cogs;
+      this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
+      this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
+    }
+
+    // Update bundle state
+    if (result.newState) {
+      this._bundleStates[bundleId] = result.newState;
+    }
+
+    // Nếu bundle hoàn thành → mở công trình civic + giảm giá
+    if (result.newState?.completedDay && bundleDef.buildingTypeId) {
+      this.notifyBuildingOpenedViaBundle(bundleDef.buildingTypeId, bundleDef, result.newState.completedDay);
+    }
+
+    this.notifyStateChanged();
+    return { success: true, ...(result.newState?.completedDay && !bundleState?.completedDay ? { completedBundleId: bundleId } : {}) };
+  }
+
+  /** Báo mở công trình civic qua hoàn thành bundle. Giá giảm áp trong `openBuilding` qua `civicOpenCost`. */
+  private notifyBuildingOpenedViaBundle(buildingTypeId: string, bundleDef: CivicBundleDef, completedDay: number): void {
+    // Mốc nhật ký (lưu trong save, không ghi trùng) + toast. Popup do UI dựng từ `completedBundleId`.
+    this._cityProgress.milestones = addCivicMilestoneOnce(this._cityProgress.milestones ?? [], { day: completedDay, type: 'bundle_completed', bundleId: bundleDef.id });
+    const name = BUILDING_TYPE_DEFS[buildingTypeId as keyof typeof BUILDING_TYPE_DEFS]?.name ?? buildingTypeId;
+    // Hẻm chung: client phát thông báo cho CẢ HAI người từ mốc trong save (xem App), nên không toast riêng người vừa góp.
+    if (!this.isCoopMode()) this.callbacks.onToast?.(`Xóm đã góp đủ sổ ${name}! Có thể xây ngay.`, 'success');
+  }
+
+  /** Mốc "Khánh thành" khi tòa civic đầu tiên của sổ đã xong được xây (qolGain = chỉ số sống khu tăng thêm). */
+  private recordCivicOpened(buildingTypeId: string, districtId: string | undefined, qolBefore: Record<string, number>): void {
+    const bundle = CIVIC_BUNDLES.find(b => b.buildingTypeId === buildingTypeId);
+    if (!bundle || !isBundleCompleted(bundle, this._bundleStates[bundle.id])) return;
+    const after = this.getCivicQol();
+    const gain = districtId ? (after[districtId] ?? 0) - (qolBefore[districtId] ?? 0) : 0;
+    this._cityProgress.milestones = addCivicMilestoneOnce(this._cityProgress.milestones ?? [], { day: this.clock.getTime().day, type: 'civic_opened', bundleId: bundle.id, qolGain: Math.max(0, gain) });
+  }
+
+  /**
+   * Ghi sổ cái `rent` (spec D2): có tòa trên lô thì mỗi tòa một dòng với `buildingInstanceId` và nhận phần chia đều
+   * (phần dư vào tòa đầu) vào báo cáo theo tòa; lô trống thì một dòng không gắn tòa. Tổng các dòng = `amount`.
+   */
+  private recordRentCharge(parcelId: string, amount: number, day: number, description: string): void {
+    const ids = (this.buildingPlacements ?? []).filter(p => p.parcelId === parcelId).map(p => p.buildingId);
+    if (ids.length === 0) { this.recordLedger({ day, type: 'rent', amount, description }); return; }
+    const base = Math.floor(amount / ids.length);
+    ids.forEach((id, i) => {
+      const share = base + (i === 0 ? amount - base * ids.length : 0);
+      this.recordLedger({ day, type: 'rent', amount: share, description, buildingInstanceId: id });
+      this.ledgerManager.addBuildingRent(id, share);
+    });
+  }
+
+  /**
+   * Thu tiền thuê đất đầu ngày (OpenSpec `open-world-land-lease` 2.2, D2/D3):
+   * Idempotent (không thu 2 lần cùng ngày qua processedRentDayIds).
+   * Mỗi lô leased: thu dailyRent = ceil(parcelPrice × leaseDailyRate).
+   * Đủ tiền: trừ tiền, tăng paidTotal, giảm debtDays, ghi ledger 'rent' + rentCost.
+   * Thiếu tiền: tăng debtDays; nếu debtDays ≥ 3 thì đóng cửa tòa trên lô (closedForRent = true).
+   */
+  public collectDailyRent(day: number): void {
+    if (day < 1) return;
+    if (this.processedRentDayIds.has(day)) return;
+    this.processedRentDayIds.add(day);
+
+    let anyChanged = false;
+    for (const [parcelId, tenure] of Object.entries(this.parcelTenure)) {
+      if (!tenure || tenure.kind !== 'leased') continue;
+      const parcel = resolveParcel(parcelId);
+      if (!parcel) continue;
+      const basePrice = parcelPrice(parcel);
+      const dailyRent = Math.max(1, Math.ceil(basePrice * LAND_LEASE_CONSTANTS.leaseDailyRate));
+
+      if (this.playerData.money >= dailyRent) {
+        this.playerData.money -= dailyRent;
+        tenure.paidTotal = (tenure.paidTotal ?? 0) + dailyRent;
+        if (tenure.debtDays && tenure.debtDays > 0) {
+          tenure.debtDays = Math.max(0, tenure.debtDays - 1);
+        }
+        this.recordRentCharge(parcelId, dailyRent, day, `Tiền thuê đất lô ${parcelId} (ngày ${day})`);
+        this.currentDayRecord.rentCost = (this.currentDayRecord.rentCost ?? 0) + dailyRent;
+        this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
+        anyChanged = true;
+      } else {
+        if (this.recordRentDebtRefusal(parcelId, tenure, `tiền thuê đất lô ${parcelId}`)) anyChanged = true;
+      }
+    }
+    if (anyChanged) this.notifyStateChanged();
+  }
+
+  /**
+   * Ghi nợ tiền thuê khi không đủ tiền: tăng `debtDays`; nợ ≥ `debtClosureDays` → đóng cửa tòa trên lô.
+   * KHÔNG đóng cửa tiệm chính (lot-center) — tránh chết spiral: đóng cửa → hết doanh thu → không trả được.
+   * @returns `true` nếu trạng thái nợ đổi (cần thông báo).
+   */
+  private recordRentDebtRefusal(parcelId: string, tenure: { debtDays?: number }, label: string): boolean {
+    tenure.debtDays = (tenure.debtDays ?? 0) + 1;
+    const debtDays = tenure.debtDays;
+    const isMainShop = parcelId === 'lot-center';
+    // KHÔNG đóng cửa tiệm chính/lô W0 vì nợ phí xóm
+    if (!isMainShop && debtDays >= LAND_LEASE_CONSTANTS.debtClosureDays) {
+      for (const p of this.buildingPlacements ?? []) {
+        if (p.parcelId === parcelId && !p.closedForRent) {
+          p.closedForRent = true;
+          this.callbacks.onToast?.(`Tòa ${p.buildingId} trên lô ${parcelId} bị đóng cửa do nợ ${label} ${debtDays} ngày!`, 'warn');
+        }
+      }
+    } else if (isMainShop && debtDays >= LAND_LEASE_CONSTANTS.debtClosureDays) {
+      this.callbacks.onToast?.(`Tiệm chính nợ ${label} ${debtDays} ngày — giảm QoL khu, KHÔNG đóng cửa`, 'warn');
+    } else {
+      this.callbacks.onToast?.(`Chưa đủ tiền trả ${label} (nợ ${debtDays} ngày).`, 'warn');
+    }
+    return true;
+  }
+
+  /**
+   * Ghi nợ phí xóm khi không đủ tiền: tăng `civicDebtDays` + dồn `civicDebt`.
+   * KHÔNG đóng cửa tòa chính/lô W0 (tránh chết spiral).
+   * @returns `true` nếu trạng thái nợ đổi (cần thông báo).
+   */
+  private recordCivicDebtRefusal(tenure: { civicDebtDays?: number; civicDebt?: number }, amount: number, label: string, firstMissToday: boolean): boolean {
+    tenure.civicDebt = (tenure.civicDebt ?? 0) + amount;
+    if (firstMissToday) tenure.civicDebtDays = (tenure.civicDebtDays ?? 0) + 1;
+    this.callbacks.onToast?.(`Chưa đủ tiền trả ${label} (nợ phí xóm ${tenure.civicDebtDays ?? 0} ngày, ${tenure.civicDebt} ₫).`, 'warn');
+    return true;
+  }
+
+  /** Lô SỞ HỮU (kind 'owned') — dùng cho phí xóm; lô thuê đã trả `rent` nên không thu phí. */
+  private ownedParcelIdList(): string[] {
+    const owned = Object.entries(this.parcelTenure)
+      .filter(([, t]) => t?.kind === 'owned')
+      .map(([id]) => id);
+    if (owned.length > 0) return owned.sort();
+    // Save cũ chưa có `parcelTenure` (schema ≤ 9 nạp thẳng): coi mọi `ownedParcelIds` là sở hữu.
+    return [...new Set(this.ownedParcelIds)].sort();
+  }
+
+  /** Đệm QoL theo khu cho một lượt tính chi phí xóm (một getter thay vì gọi lại cho từng lô). */
+  private civicQolCache: Record<string, number> = {};
+
+  /**
+   * Phí xóm một ngày của một lô: `OWNED_TILE_FEE × số ô × (1 − 0,3 × qol/100)`, làm tròn nghìn (D2).
+   * QoL lấy theo khu CỦA LÔ đó. Tất định theo trạng thái hiện tại.
+   */
+  private civicFeeForParcel(parcelId: string): number {
+    const parcel = resolveParcel(parcelId);
+    if (!parcel) return 0;
+    const tiles = rectWidth(parcel.rect) * rectHeight(parcel.rect);
+    return civicFeeForOwnedParcel(tiles, this.civicQolCache[parcel.districtId] ?? 0);
+  }
+
+  /**
+   * Chi phí xóm một ngày theo LÔ (nguồn duy nhất cho cả việc trừ tiền lẫn UI/báo cáo):
+   * `feeByParcel` = phí xóm lô sở hữu; `upkeepByParcel` = Σ duy trì công trình đặt trên lô;
+   * `upkeepByBuilding` = duy trì từng tòa (một dòng ledger mỗi tòa).
+   */
+  private civicDailyCosts(): { feeByParcel: Record<string, number>; upkeepByParcel: Record<string, number>; upkeepByBuilding: Record<string, number> } {
+    this.civicQolCache = this.getCivicQol();
+    const feeByParcel: Record<string, number> = {};
+    for (const parcelId of this.ownedParcelIdList()) {
+      const amount = this.civicFeeForParcel(parcelId);
+      if (amount > 0) feeByParcel[parcelId] = amount;
+    }
+    const upkeepByParcel: Record<string, number> = {};
+    const upkeepByBuilding: Record<string, number> = {};
+    for (const placement of this.civicPlacements()) {
+      const def = civicDefOf(buildingTypeOfInstance(placement.buildingId)?.typeId ?? '');
+      if (!def || def.upkeepPerDay <= 0) continue;
+      upkeepByParcel[placement.parcelId] = (upkeepByParcel[placement.parcelId] ?? 0) + def.upkeepPerDay;
+      upkeepByBuilding[placement.buildingId] = (upkeepByBuilding[placement.buildingId] ?? 0) + def.upkeepPerDay;
+    }
+    this.civicQolCache = {};
+    return { feeByParcel, upkeepByParcel, upkeepByBuilding };
+  }
+
+  /** Công trình công cộng đang đặt, theo VỊ TRÍ ĐÃ GIẢI (`resolvePlacements`, gồm tòa ở vị trí mặc định). */
+  private civicPlacements(): readonly BuildingPlacement[] {
+    return resolvePlacements(this.buildingPlacements, this.unlockedPlotIds)
+      .filter(p => !!civicDefOf(buildingTypeOfInstance(p.buildingId)?.typeId ?? ''));
+  }
+
+  /**
+   * Trừ chi phí xóm đầu ngày (OpenSpec `civic-local-fees` 1.3), NGAY SAU tiền thuê lô, thứ tự cố định:
+   *   thuê lô → duy trì công trình (`civic_upkeep`, mỗi tòa một dòng có `buildingInstanceId`) → phí xóm (`civic_fee`).
+   * Idempotent theo ngày (`processedCivicDayIds`). Thiếu tiền → nợ theo luồng thuê lô (D4): không trừ gì thêm,
+   * dồn `civicDebt` + `civicDebtDays` (riêng, tối đa +1 ngày/lô/ngày) để `payRentDebt` thu hồi; KHÔNG đóng cửa tòa (tránh kẹt tiệm chính).
+   * Vị trí tòa lấy từ `resolvePlacements` (không đọc `buildingPlacements` thô) nên tòa ở vị trí mặc định vẫn được tính.
+   */
+  public collectDailyCivicCosts(day: number): void {
+    if (day < 1) return;
+    if (this.processedCivicDayIds.has(day)) return;
+    this.processedCivicDayIds.add(day);
+
+    const { feeByParcel, upkeepByParcel, upkeepByBuilding } = this.civicDailyCosts();
+
+    // Thứ tự cố định (D1): duy trì công trình trước, rồi phí xóm; trong nhóm sắp xếp theo id để tất định.
+    const payments: { parcelId: string; amount: number; type: 'civic_upkeep' | 'civic_fee'; description: string; buildingInstanceId?: string; chargeBuilding?: string }[] = [];
+    const civicPlacements = this.civicPlacements();
+    for (const buildingId of Object.keys(upkeepByBuilding).sort()) {
+      const placement = civicPlacements.find(p => p.buildingId === buildingId);
+      if (!placement) continue;
+      payments.push({
+        parcelId: placement.parcelId, amount: upkeepByBuilding[buildingId], type: 'civic_upkeep',
+        description: `Duy trì công trình ${buildingId} (ngày ${day})`, buildingInstanceId: buildingId, chargeBuilding: buildingId,
+      });
+    }
+    for (const parcelId of Object.keys(feeByParcel).sort()) {
+      payments.push({
+        parcelId, amount: feeByParcel[parcelId], type: 'civic_fee',
+        description: `Phí xóm lô ${parcelId} (ngày ${day})`,
+      });
+    }
+
+    let upkeepTotal = 0, feeTotal = 0, anyChanged = false;
+    const missedToday = new Set<string>();
+    for (const payment of payments) {
+      const buildingIds = payment.type === 'civic_fee'
+        ? (this.buildingPlacements ?? []).filter(p => p.parcelId === payment.parcelId).map(p => p.buildingId)
+        : [];
+      const ledgerEntry = {
+        day, type: payment.type, amount: payment.amount, description: payment.description,
+        ...(payment.buildingInstanceId ? { buildingInstanceId: payment.buildingInstanceId } : {}),
+      };
+
+      if (this.playerData.money >= payment.amount) {
+        this.playerData.money -= payment.amount;
+        anyChanged = true;
+        this.recordLedger(ledgerEntry);
+        if (payment.type === 'civic_upkeep') {
+          upkeepTotal += payment.amount;
+          this.ledgerManager.addBuildingCivicCost(payment.chargeBuilding!, payment.amount);
+        } else {
+          feeTotal += payment.amount;
+          const base = Math.floor(payment.amount / Math.max(1, buildingIds.length));
+          buildingIds.forEach((id, i) => {
+            const share = base + (i === 0 ? payment.amount - base * buildingIds.length : 0);
+            this.ledgerManager.addBuildingCivicCost(id, share);
+          });
+        }
+        continue;
+      }
+
+      // Thiếu tiền: nợ phí xóm RIÊNG (civicDebt/civicDebtDays), không đụng debtDays của tiền thuê, không đóng cửa tòa.
+      // Mỗi lô tối đa +1 ngày nợ mỗi ngày dù trượt nhiều khoản.
+      const tenure = this.parcelTenure[payment.parcelId];
+      if (!tenure) continue;
+      this.recordCivicDebtRefusal(tenure, payment.amount, `phí xóm lô ${payment.parcelId}`, !missedToday.has(payment.parcelId));
+      missedToday.add(payment.parcelId);
+      anyChanged = true;
+    }
+
+    // Lô trả đủ hôm nay: giảm 1 ngày nợ phí xóm (giống luật thuê lô). Tiền nợ cũ vẫn trả bằng `pay_rent_debt`.
+    for (const payment of payments) {
+      const tenure = this.parcelTenure[payment.parcelId];
+      if (tenure && !missedToday.has(payment.parcelId) && (tenure.civicDebtDays ?? 0) > 0) { tenure.civicDebtDays = Math.max(0, tenure.civicDebtDays! - 1); missedToday.add(payment.parcelId); }
+    }
+    if (upkeepTotal > 0) this.currentDayRecord.civicUpkeep = (this.currentDayRecord.civicUpkeep ?? 0) + upkeepTotal;
+    if (feeTotal > 0) this.currentDayRecord.civicFee = (this.currentDayRecord.civicFee ?? 0) + feeTotal;
+    if (upkeepTotal > 0 || feeTotal > 0) this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
+    if (anyChanged) this.notifyStateChanged();
+  }
+
+  /** Phí xóm một ngày của một lô SỞ HỮU (cho UI khi chưa trừ) — 0 nếu lô không sở hữu/không có phí. */
+  public getCivicFeeForParcel(parcelId: string): number {
+    if (!this.ownedParcelIdList().includes(parcelId)) return 0;
+    return this.getCivicDailyReport().feeByParcel[parcelId] ?? 0;
   }
 
   /**
@@ -1115,6 +1821,7 @@ export class GameSimulation {
     record.revenue += totalRevenue;
     record.cogs += totalCogs;
     record.itemsSold += totalItems;
+    record.transactionsCount += 1;
     record.grossProfit = record.revenue - record.cogs;
     record.netProfit = record.grossProfit - record.spoilageCost - record.wagesPaid - (record.maintenanceCost ?? 0) - (record.theftCost ?? 0) + (record.theftRecovered ?? 0) - (record.counterfeitLoss ?? 0) - (record.badDebtCost ?? 0);
     this.notifyStateChanged();
@@ -1161,12 +1868,15 @@ export class GameSimulation {
   /** Bảng nhu cầu lưu đệm; chỉ tính lại khi bối cảnh đổi (ngày, khung giờ, thời tiết, mùa, sự kiện, bậc uy tín), không mỗi khung hình. */
   private refreshDemandTable(): DemandTable {
     const time = this.clock.getTime();
-    const ctx = buildMarketContext(this.market, time.day, time.hour);
-    const key = demandContextKey(ctx, this.playerData.reputation);
+    const ctx = this.getMarketContext(time.day, time.hour);
+    const mainDistrict = this.getMainShopDistrictId();
+    const popFactor = this.getCivicPopulationFactor(mainDistrict);
+    const key = demandContextKey(ctx, this.playerData.reputation, popFactor);
     if (!this.demandTable || this.demandTable.key !== key) {
       this.demandTable = buildDemandTable({
         ctx, products: SELLABLE_PRODUCTS, reputation: this.playerData.reputation,
         priceFactor: (productId) => demandPriceFactor(priceRatio(this.sellingPrice(productId), this.referencePrice(productId))),
+        populationTrafficFactor: popFactor,
       });
       this.stallsMarketsManager.bumpDemandTable(key);
     }
@@ -1333,7 +2043,7 @@ export class GameSimulation {
 
   private customerPricing() {
     const time = this.clock.getTime();
-    const ctx = buildMarketContext(this.market, time.day, time.hour);
+    const ctx = this.getMarketContext(time.day, time.hour);
     return {
       priceOf: (productId: string) => this.sellingPrice(productId),
       keepChance: (productId: string) => {
@@ -1343,6 +2053,7 @@ export class GameSimulation {
         const tolerance = this.chilledOnDisplayIds().has(productId) ? 1 + (chilledDisplayAppeal(ctx.weatherId) - 1) * 0.4 : 1;
         return keepChance(priceRatio(this.sellingPrice(productId), this.referencePrice(productId)) / tolerance, productSensitivity(product, ctx));
       },
+      extraUnitChance: populationExtraUnitChance(this.getCivicPopulationFactor(this.getMainShopDistrictId())),
       onReject: () => { this.currentDayRecord.priceWalkouts = (this.currentDayRecord.priceWalkouts ?? 0) + 1; },
     };
   }
@@ -1390,6 +2101,36 @@ export class GameSimulation {
     return getSeasonForDay(day);
   }
 
+  /** Thông báo lễ hội bắt đầu (ngày đầu tiên) và đơn tiệc mùa mới xuất hiện — tránh lặp cùng năm. */
+  private notifySeasonalEvents(day: number, orderIdsBefore: string[]): void {
+    const window = getSeasonWindow(day);
+    if (window && window.firstDay === day) {
+      const key = `${window.year}:${window.event.id}`;
+      if (!this.notifiedFestivalKeys.has(key)) {
+        this.notifiedFestivalKeys.add(key);
+        const dir = window.event.demandMultiplier >= 1 ? 'tăng' : 'đổi';
+        this.callbacks.onToast?.(`🎉 ${window.event.name} về xóm! Khách ghé đông hơn, nhu cầu ${dir} theo mùa và có mục tiêu ngày hội để nhận thưởng.`, 'info');
+      }
+    }
+    // Đơn tiệc đúng mùa được sinh hôm nay → nhắc người chơi.
+    const currentSeason = getSeasonForDay(day);
+    for (const ord of this.partyOrders.available) {
+      if (orderIdsBefore.includes(ord.orderId)) continue;
+      const def = PARTY_ORDER_MAP[ord.orderId];
+      if (def && currentSeason && def.seasons?.includes(currentSeason.id)) {
+        this.callbacks.onToast?.(`📋 Đơn tiệc mùa "${def.title}" vừa xuất hiện — xem trong Sự kiện xóm phố.`, 'info');
+      }
+    }
+    // Có mục tiêu ngày hội đạt đủ để nhận thưởng → nhắc (mỗi ngày một lần).
+    if (this.lastFestivalRewardNotificationDay !== day) {
+      const claimable = this.getFestivalGoalProgressList().some((g) => g.completed && !g.claimed);
+      if (claimable) {
+        this.lastFestivalRewardNotificationDay = day;
+        this.callbacks.onToast?.('🏆 Có thưởng ngày hội để nhận — mở Sự kiện xóm phố.', 'info');
+      }
+    }
+  }
+
   public getRainIntensity(): number {
     const time = this.clock.getTime();
     const weatherId = effectiveWeatherId(this.market, time.day);
@@ -1430,8 +2171,8 @@ export class GameSimulation {
     if (this.playerData.money < cost) return { success: false, reason: 'Không đủ tiền.' };
     this.playerData.money -= cost;
     this.security.camera = true;
-    this.currentDayRecord.maintenanceCost = (this.currentDayRecord.maintenanceCost ?? 0) + cost;
-    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
+    this.currentDayRecord.equipmentCost = (this.currentDayRecord.equipmentCost ?? 0) + cost;
+    this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
     this.recordLedger({ day: this.clock.getTime().day, type: 'maintenance', amount: cost, description: 'Lắp camera an ninh' });
     this.notifyStateChanged();
     return { success: true, cost };
@@ -1490,10 +2231,15 @@ export class GameSimulation {
   /** Kẻ trộm lẻ tới quầy: bị phát hiện thì trả lại hàng và nộp phạt, không thì mang hàng đi mà không trả tiền. */
   private resolveShoplifter(customer: CustomerState, checkoutId: string): boolean {
     const day = this.clock.getTime().day;
+    const guard = this.staff.find((s) => s.role === 'security' && this.isStaffOnShift(s));
+    const guardBonus = guard ? (staffSpecialtyInfo(guard)?.thiefCatchBonus ?? 0) : 0;
+    const policeInfo = this.getCivicPoliceInfo(customer.buildingId ?? 'main');
     const chance = shopliftDetectChance({
-      guardOnShift: this.hasSecurityGuardOnShift(),
+      guardOnShift: !!guard,
       camera: this.security.camera,
       refillOnShift: this.staff.some((s) => s.role === 'refill' && this.isStaffOnShift(s)),
+      guardBonus,
+      civicPoliceBonus: policeInfo.civicPoliceBonus,
     });
     const caught = shopliftCaught(day, customer.id ?? checkoutId, chance);
     const totals = this.customerManager.finishShoplifter(checkoutId, caught, this.tileMap, this.fixtures, this.inventory, (spoiled) => {
@@ -1516,7 +2262,8 @@ export class GameSimulation {
   /** Đêm sang `day`: có thể có trộm đột nhập (lấy tiền két hoặc hàng trên kệ); bảo vệ trong biên chế thì đuổi được. */
   private runNightBurglary(day: number, yesterdayRevenue: number): void {
     const guard = this.staff.find((s) => s.role === 'security');
-    const plan = planBurglary(day, this.playerData.level, { camera: this.security.camera, hasGuard: !!guard });
+    const policeInfo = this.getCivicPoliceInfo('main');
+    const plan = planBurglary(day, this.playerData.level, { camera: this.security.camera, hasGuard: !!guard }, policeInfo.civicPoliceReduction);
     if (plan.kind === 'none') return;
     if (plan.kind === 'repelled') {
       this.recordIncident('burglary_repelled', `Đêm qua có kẻ lạ cạy cửa tiệm, bảo vệ ${guard?.name ?? ''} đã đuổi đi. Không mất gì!`, {}, 'info');
@@ -1626,7 +2373,7 @@ export class GameSimulation {
     const day = this.clock.getTime().day;
     this.playerData.money -= result.cost;
     this.currentDayRecord.maintenanceCost = (this.currentDayRecord.maintenanceCost ?? 0) + result.cost;
-    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
+    this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
     const verb = action === 'replace' ? 'Mua mới' : action === 'repair' ? 'Sửa' : 'Bảo trì';
     this.recordLedger({ day, type: 'maintenance', amount: result.cost, description: `${verb} ${fixture!.label}${byStaff ? ' (nhân viên)' : ''}` });
     this.notifyStateChanged();
@@ -2224,7 +2971,9 @@ export class GameSimulation {
       reputation: this.playerData.reputation,
       regularsCount: Object.keys(this.regulars).length,
       stallServings,
-      buildingsOpened: 1 + BUILDINGS.filter(building => building.plotId && this.unlockedPlotIds.includes(building.plotId)).length,
+      buildingsOpened: 1
+        + BUILDINGS.filter(building => building.plotId && this.unlockedPlotIds.includes(building.plotId)).length
+        + (this.buildingPlacements ?? []).filter(p => !['main', 'xoi', 'drink', 'snack'].includes(p.buildingId)).length,
     };
   }
 
@@ -2265,6 +3014,28 @@ export class GameSimulation {
 
   public getFestivalGoalProgressList(): FestivalGoalProgressInfo[] {
     return getFestivalGoalProgress(this.clock.getTime().day, this.goals, this.productSalesOn);
+  }
+
+  /** Xem tổng quan "Sự kiện xóm phố": lễ hội đang/sắp tới, đơn tiệc mùa và mục tiêu ngày hội. */
+  public getNeighborhoodEvents() {
+    const day = this.clock.getTime().day;
+    const current = getSeasonWindow(day);
+    const seasonalOrderSet = new Set(PARTY_ORDERS.filter((o) => o.seasons?.length).map((o) => o.id));
+    return {
+      current: current
+        ? {
+            eventId: current.event.id,
+            name: current.event.name,
+            blurb: current.event.blurb,
+            daysLeft: current.lastDay - day + 1,
+            demandMultiplier: current.event.demandMultiplier,
+            preferredCategories: current.event.preferredCategories,
+          }
+        : null,
+      upcoming: upcomingNearbySeasons(day).filter((e) => e.daysUntil > 0),
+      seasonalOrders: this.partyOrders.available.filter((o) => seasonalOrderSet.has(o.orderId)),
+      festivalGoals: this.getFestivalGoalProgressList(),
+    };
   }
 
   /** Thưởng ngày hội là tiền thưởng ngoài sổ GAAP, như thưởng mục tiêu/nhiệm vụ. */
@@ -2865,6 +3636,21 @@ export class GameSimulation {
           this.finishStaffJob(member, false);
           continue;
         }
+        // D6: Kệ ở tòa cách kho > 30 ô tạo chuyến giao nội bộ internal_delivery
+        const distFromWarehouse = shelf ? Math.hypot(shelf.tileX - WAREHOUSE_CENTER.x, shelf.tileY - WAREHOUSE_CENTER.y) : 0;
+        if (distFromWarehouse > 30) {
+          const buildingId = fixtureBuilding(shelf!, this.tileMap.buildings) ?? 'branch';
+          this.internalDeliveries.push({
+            id: `delivery-${Date.now()}-${task.fixtureId}`,
+            fromBuildingId: 'main',
+            toBuildingId: buildingId,
+            productId: task.productId,
+            lines: task.carriedLots.map((l, i) => ({ lotId: `lot-${i}`, qty: l.quantity })),
+            totalQty: sumLots(task.carriedLots),
+            fromDay: this.clock.getTime().day,
+            day: this.clock.getTime().day,
+          });
+        }
         task.stage = 'to_shelf';
         task.route = route;
         continue;
@@ -3363,7 +4149,7 @@ export class GameSimulation {
     const rec = this.dailyRecords[day] ?? { ...this.currentDayRecord, day };
     rec.closedAt = rec.closedAt ?? new Date().toISOString();
     rec.grossProfit = rec.revenue - rec.cogs;
-    rec.netProfit = rec.grossProfit - rec.spoilageCost - rec.wagesPaid - (rec.maintenanceCost ?? 0) - (rec.theftCost ?? 0) + (rec.theftRecovered ?? 0) - (rec.counterfeitLoss ?? 0) - (rec.badDebtCost ?? 0);
+    rec.netProfit = computeNetProfit(rec);
 
     // Thuế 1% khoán hộ cá thể: chỉ tính khi đóng ngày hiện tại
     if (day === this.clock.getTime().day) {
@@ -3758,6 +4544,7 @@ export class GameSimulation {
     const lowStockItems = this.fixtures
       .filter((f) => isSalesFixture(f) && f.assignedProductId && f.currentStock <= 2)
       .map((f) => f.assignedProductId!);
+    const civicQol = this.getCivicQol();
     return buildMorningBrief({
       day,
       season: { name: season?.name ?? 'Ngày thường' },
@@ -3766,7 +4553,121 @@ export class GameSimulation {
       forecastTomorrow,
       arrivingOrders,
       lowStockItems,
+      yesterdayReviews: this.reviewsManager.getReviewsOnDay(day - 1),
+      districtQol: civicQol,
+      civicOpenings: civicOpeningBriefLines(this._cityProgress.milestones ?? [], day, (bid) => { const t = civicBundleById(bid)?.buildingTypeId ?? bid; return BUILDING_TYPE_DEFS[t as keyof typeof BUILDING_TYPE_DEFS]?.name ?? t; }),
+      civicPopulation: this.currentDayRecord?.civicPopulation,
+      civicCosts: this.currentDayRecord
+        ? { upkeep: this.currentDayRecord.civicUpkeep ?? 0, fee: this.currentDayRecord.civicFee ?? 0, projected: this.getCivicDailyPreview() }
+        : undefined,
     });
+  }
+
+  /** Chỉ số sống theo khu, dẫn xuất từ placement công cộng. Không thêm trường save. */
+  public getCivicQol(): Record<string, number> {
+    const placements = (this.buildingPlacements ?? []).filter(p => {
+      const t = p.typeId ?? buildingTypeOfInstance(p.buildingId)?.typeId;
+      return !!t && !!civicDefOf(t);
+    });
+    return computeCivicQol(placements, ALL_PARCELS);
+  }
+
+  /**
+   * Chi phí xóm dự kiến/ngày theo TÒA và theo LÔ (OpenSpec `civic-local-fees` 1.5):
+   * dùng chung `civicDailyCosts()` với bước trừ đầu ngày nên UI và gameplay không lệch nhau.
+   * `upkeepByBuilding` gắn theo `buildingId`; `feeByParcel` chỉ gồm lô SỞ HỮU (lô thuê trả `rent`).
+   */
+  public getCivicDailyReport(): {
+    feeByParcel: Record<string, number>;
+    upkeepByParcel: Record<string, number>;
+    upkeepByBuilding: Record<string, number>;
+    totalUpkeep: number;
+    totalFee: number;
+  } {
+    const { feeByParcel, upkeepByParcel, upkeepByBuilding } = this.civicDailyCosts();
+    return {
+      feeByParcel, upkeepByParcel, upkeepByBuilding,
+      totalUpkeep: Object.values(upkeepByBuilding).reduce((a, b) => a + b, 0),
+      totalFee: Object.values(feeByParcel).reduce((a, b) => a + b, 0),
+    };
+  }
+
+  /** Lô SỞ HỮU kèm phí xóm/ngày + QoL khu của lô (cho tab "Xóm phố"). */
+  public getCivicFeeByParcelDetailed(): Array<{ parcelId: string; districtId: string; qol: number; fee: number }> {
+    const qol = this.getCivicQol();
+    const { feeByParcel } = this.civicDailyCosts();
+    return Object.keys(feeByParcel).sort().map(parcelId => {
+      const parcel = resolveParcel(parcelId);
+      return { parcelId, districtId: parcel?.districtId ?? '', qol: qol[parcel?.districtId ?? ''] ?? 0, fee: feeByParcel[parcelId] };
+    });
+  }
+
+  /** Chi phí xóm dự kiến/ngày ở dạng gọn cho bản tin sáng. */
+  public getCivicDailyPreview(): { upkeep: number; fee: number } {
+    const report = this.getCivicDailyReport();
+    return { upkeep: report.totalUpkeep, fee: report.totalFee };
+  }
+
+  /** Lô của một tòa (theo vị trí đã giải), dùng cho UI phí xóm theo tòa. */
+  public getParcelIdOfBuilding(buildingId: string): string | undefined {
+    return resolvePlacements(this.buildingPlacements, this.unlockedPlotIds).find(p => p.buildingId === buildingId)?.parcelId;
+  }
+
+  /** Tòa có nằm trong bán kính một đồn công an phường không → thưởng bắt trộm / giảm trộm đêm (civic-buildings-qol D3). */
+  private getCivicPoliceInfo(buildingId: string | undefined): { civicPoliceBonus: number; civicPoliceReduction: number } {
+    const none = { civicPoliceBonus: 0, civicPoliceReduction: 1 };
+    // Dùng vị trí đã giải (gồm vị trí mặc định của tiệm chính/tòa cũ — save mặc định không ghi bản ghi cho chúng).
+    const placements = resolvePlacements(this.buildingPlacements, this.unlockedPlotIds);
+    const target = placements.find(p => p.buildingId === (buildingId ?? 'main'));
+    if (!target) return none;
+    const targetDoor = placementGeometry(target).entranceTile;
+    for (const station of placements) {
+      if (buildingTypeOfInstance(station.buildingId)?.typeId !== 'ward_police') continue;
+      const def = civicDefOf('ward_police');
+      if (!def) continue;
+      const door = placementGeometry(station).entranceTile;
+      if (Math.abs(door.x - targetDoor.x) + Math.abs(door.y - targetDoor.y) <= def.radiusTiles) {
+        return { civicPoliceBonus: CIVIC_POLICE_DETECT_BONUS, civicPoliceReduction: CIVIC_POLICE_BURGLARY_REDUCTION };
+      }
+    }
+    return none;
+  }
+
+  // ========================
+  // CIVIC POPULATION (OpenSpec `civic-population-demand`)
+  // ========================
+
+  /** Đệm snapshot dân số theo khóa (đợt đã mở + công trình công cộng + dân số đã lưu); đổi một trong ba là tính lại. */
+  private populationCache: { key: string; snapshot: Record<string, DistrictPopulation> } | null = null;
+
+  private populationCacheKey(): string {
+    const civic = (this.buildingPlacements ?? [])
+      .filter(p => civicDefOf(buildingTypeOfInstance(p.buildingId)?.typeId ?? ''))
+      .map(p => `${p.buildingId}@${p.originX},${p.originY}`).join(';');
+    return `${this.worldOpenState.openedWaves.join(',')}|${civic}|${JSON.stringify(this._civicPopulationByDistrict)}`;
+  }
+
+  /** Dân số mọi khu với QoL hiện tại (target luôn theo công trình đang có). */
+  public getCivicPopulation(): Record<string, DistrictPopulation> {
+    const key = this.populationCacheKey();
+    if (this.populationCache?.key !== key) {
+      this.populationCache = { key, snapshot: computePopulationSnapshot(this.getCivicQol(), ALL_PARCELS, this.worldOpenState.openedWaves, this._civicPopulationByDistrict) };
+    }
+    return this.populationCache.snapshot;
+  }
+
+  /** Hệ số lưu lượng khách theo dân số của một khu (1 nếu không rõ khu). */
+  public getCivicPopulationFactor(districtId: string): number {
+    return this.getCivicPopulation()[districtId]?.factor ?? 1;
+  }
+
+  /** Bước dân số đầu ngày: tính lại target theo QoL hiện tại, tiến một bước, lưu số nguyên vào save. */
+  private stepCivicPopulation(): void {
+    const next = stepAllPopulations(this.getCivicPopulation());
+    for (const [districtId, state] of Object.entries(next)) this._civicPopulationByDistrict[districtId] = state.pop;
+    const mainDistrict = this.getMainShopDistrictId();
+    const main = next[mainDistrict];
+    if (main) this.currentDayRecord.civicPopulation = { districtId: mainDistrict, pop: main.pop, target: main.target, factor: main.factor };
   }
 
   /** Đưa bộ đếm ID về mức không trùng với save: lấy giá trị đã lưu hoặc số lớn nhất trong ID dạng `ord-N`/`led-N` đang có (ID cũ dùng giờ thật không khớp mẫu nên bị bỏ qua). */
@@ -3788,6 +4689,18 @@ export class GameSimulation {
     return this.ledgerManager.recordLedger(entry);
   }
 
+  /** Bãi giữ xe đang mở trong bán kính của tòa khách ghé thu phí theo lượt xe tới (PROVISIONAL); ghi doanh thu cho chính bãi xe. */
+  private collectParkingFee(customer: CustomerState): void {
+    const buildings = this.tileMap.buildings;
+    const lot = parkingLotFor(customer.buildingId ?? 'main', buildings, openParkingLots(buildings));
+    if (!lot) return;
+    const fee = PARKING_FEE[customer.arrivalMode === 'car' ? 'car' : 'motorbike'];
+    this.playerData.money += fee;
+    this.statistics.totalRevenue += fee;
+    this.ledgerManager.recordSale(fee, 0, 0, lot.id);
+    this.recordLedger({ day: this.clock.getTime().day, type: 'sale', amount: fee, cogs: 0, quantity: 0, description: `Phí gửi xe (${customer.arrivalMode === 'car' ? 'ô tô' : 'xe máy'})`, buildingInstanceId: lot.id });
+  }
+
   private awardSkillTip(saleAmount: number): void {
     const tip = Math.round(saleAmount * getSkillModifier(this.skills, 'tip_bonus'));
     if (tip <= 0) return;
@@ -3796,7 +4709,7 @@ export class GameSimulation {
     this.statistics.totalRevenue += tip;
     this.currentDayRecord.revenue += tip;
     this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
-    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
+    this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
     this.recordLedger({ day, type: 'sale', amount: tip, cogs: 0, quantity: 0, description: 'Tiền boa từ kỹ năng bán hàng' });
   }
 
@@ -3942,7 +4855,7 @@ export class GameSimulation {
   private recordSpoilageLoss(day: number, quantity: number, cost: number, description: string): void {
     this.currentDayRecord.spoilageCount += quantity;
     this.currentDayRecord.spoilageCost += cost;
-    this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
+    this.currentDayRecord.netProfit = computeNetProfit(this.currentDayRecord);
     this.recordLedger({ day, type: 'spoilage', amount: cost, quantity, description });
   }
 
@@ -4228,6 +5141,10 @@ export class GameSimulation {
 
   public isCoopMode(): boolean { return this.coopMode; }
 
+  /** Khi online, server là nguồn sự thật: client KHÔNG tự sinh khách (trùng/lệch state). */
+  public setServerAuthoritative(enabled: boolean): void { this.serverAuthoritative = enabled; }
+  public isServerAuthoritative(): boolean { return this.serverAuthoritative; }
+
   /**
    * Máy khách hẻm chung: người chơi của tài khoản này. Đặt thì lịch ngày áp lên nhân vật cục bộ (23:30 khóa điều khiển, tự đi bộ về nhà,
    * báo đổi trạng thái cho UI) và máy này KHÔNG tự chốt ngày: server chốt khi cả hai đã ngủ rồi gửi qua snapshot.
@@ -4421,26 +5338,29 @@ export class GameSimulation {
     })));
     const inStoreRegularIds = this.customerManager.peekCustomers().map(c => c.regularId).filter((id): id is string => Boolean(id));
     const regularCandidate = pickAvailableRegular(this.clock.getTime().day, this.market.seed, inStoreRegularIds, this.regulars);
-    const spawned = this.customerManager.maybeSpawnCustomer(
-      worldDt,
-      this.clock.getTime().isStoreOpen,
-      this.fixtures,
-      this.tileMap,
-      this.clock.getTime().day,
-      this.statistics.totalCustomersServed,
-      {
-        traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * (1 + getSkillModifier(this.skills, 'traffic_boost')) * prestigeTrafficMultiplier(this.playerData.prestigeStars ?? 0) * hourlyStoreTrafficMultiplier(this.clock.getTime().hour) * GameSimulation.STORE_TRAFFIC_BOOST, this.playerData.level),
-        maxConcurrentCustomers: maxActiveCustomersForLevel(this.playerData.level),
-        weightOf: (productId) => (demandTable.perProduct[productId]?.demand ?? 0.01) * (chilledIds.has(productId) ? chilledAppeal : 1),
-      },
-      regularCandidate,
-      this.getRainIntensity(),
-      this.hasSecurityGuardOnShift(),
-      { hour: this.clock.getTime().hour, weekday: weekdayOf(this.clock.getTime().day) },
-      this.buildingParcelTrafficMultiplier()
-    );
-    if (spawned?.id && rollShoplifter(this.clock.getTime().day, spawned.id, this.playerData.level, !!spawned.regularId)) spawned.thief = true;
-
+    // Khi server authoritative (online/co-op), client KHÔNG tự sinh khách để tránh trùng/lệch so với server.
+    if (!this.serverAuthoritative) {
+      const spawned = this.customerManager.maybeSpawnCustomer(
+        worldDt,
+        this.clock.getTime().isStoreOpen,
+        this.fixtures,
+        this.tileMap,
+        this.clock.getTime().day,
+        this.statistics.totalCustomersServed,
+        {
+          traffic: trafficAtLevel(effectiveTraffic(demandTable, availability) * reputationTrafficMultiplier(this.playerData.ratings) * this.getDecorAttraction().trafficMultiplier * (1 + getSkillModifier(this.skills, 'traffic_boost')) * prestigeTrafficMultiplier(this.playerData.prestigeStars ?? 0) * hourlyStoreTrafficMultiplier(this.clock.getTime().hour) * GameSimulation.STORE_TRAFFIC_BOOST, this.playerData.level),
+          maxConcurrentCustomers: Math.max(1, maxActiveCustomersForLevel(this.playerData.level) + populationCapBonus(this.getCivicPopulationFactor(this.getMainShopDistrictId()))),
+          weightOf: (productId) => (demandTable.perProduct[productId]?.demand ?? 0.01) * (chilledIds.has(productId) ? chilledAppeal : 1),
+        },
+        regularCandidate,
+        this.getRainIntensity(),
+        this.hasSecurityGuardOnShift(),
+        { hour: this.clock.getTime().hour, weekday: weekdayOf(this.clock.getTime().day) },
+        this.buildingParcelTrafficMultiplier()
+      );
+      if (spawned && (spawned.arrivalMode === 'motorbike' || spawned.arrivalMode === 'car')) this.collectParkingFee(spawned);
+      if (spawned?.id && rollShoplifter(this.clock.getTime().day, spawned.id, this.playerData.level, !!spawned.regularId)) spawned.thief = true;
+    }
     this.streetTraffic.setStallStops(this.stalls.owned.flatMap(id => STALL_MAP[id] ? [(STALL_MAP[id].tileX + STALL_MAP[id].widthTiles / 2) * TILE_SIZE] : []));
     applyBuildingLayout(this.tileMap.buildings);
     for (const id of ['xoi', 'drink', 'snack'] as const) setAwningOpen(id, this.tileMap.buildings?.find((b) => b.id === id)?.open ?? false);
@@ -4544,6 +5464,17 @@ export class GameSimulation {
   }
 
   /**
+   * Loại tòa mới (chi nhánh tạp hóa, bãi xe) lọc món bày theo `productFilter` của registry (open-world-building-types 1.3).
+   * 4 loại cũ giữ luật riêng sẵn có (xôi/nước/ăn vặt tự châm; tòa chính vẫn bày tay được), nên không lọc ở đây.
+   */
+  private shelfProductAllowed(fixture: StoreFixture, productId: string): boolean {
+    const building = fixtureBuilding(fixture, this.tileMap.buildings);
+    const def = building ? buildingTypeOfInstance(building) : undefined;
+    if (!def || (def.typeId !== 'grocery_branch' && def.typeId !== 'parking_lot')) return true;
+    return def.productFilter(productId);
+  }
+
+  /**
    * Transfer items to a sales shelf with detailed result.
    */
   public transferToShelf(fixtureId: string, productId: string, amount: number = 1, autoOpenCases = false, respectStallReserve = autoOpenCases): TransferShelfResult {
@@ -4559,6 +5490,9 @@ export class GameSimulation {
     const product = PRODUCT_MAP[productId];
     if (!product || product.unlockLevel > this.playerData.level) {
       return { success: false, actualQuantity: 0, reason: 'product_locked' };
+    }
+    if (!this.shelfProductAllowed(fixture, productId)) {
+      return { success: false, actualQuantity: 0, reason: 'product_not_allowed' };
     }
     // Chỉ chặn nếu: sản phẩm cold-only mà không vào tủ lạnh
     // Sản phẩm cold bình thường (như sữa tiệt trùng) có thể vào cả tủ lạnh HOẶC kệ nhiệt độ thường
@@ -4811,7 +5745,7 @@ export class GameSimulation {
   public setPlanogramAssignment(
     fixtureId: string,
     productId?: string
-  ): { success: boolean; reason?: 'fixture_not_found' | 'not_sales_fixture' | 'invalid_product' | 'storage_type_mismatch' } {
+  ): { success: boolean; reason?: 'fixture_not_found' | 'not_sales_fixture' | 'invalid_product' | 'storage_type_mismatch' | 'product_not_allowed' } {
     const fix = this.fixtures.find((f) => f.id === fixtureId);
     if (!fix || !isSalesFixture(fix)) {
       return { success: false, reason: !fix ? 'fixture_not_found' : 'not_sales_fixture' };
@@ -4824,6 +5758,9 @@ export class GameSimulation {
     const prod = PRODUCT_MAP[productId];
     if (!prod) {
       return { success: false, reason: 'invalid_product' };
+    }
+    if (!this.shelfProductAllowed(fix, productId)) {
+      return { success: false, reason: 'product_not_allowed' };
     }
     const isColdFixture = fix.type === 'refrigerator';
     const isColdProduct = prod.storageType === 'cold';
@@ -4959,6 +5896,7 @@ export class GameSimulation {
     const isXoiShelf = shelfBuilding === 'xoi';
     const isDrinkShelf = shelfBuilding === 'drink';
     const isSnackShelf = shelfBuilding === 'snack';
+    const shelfTypeId = shelfBuilding ? buildingTypeOfInstance(shelfBuilding)?.typeId : undefined;
     // Các sản phẩm đang được bày ở kệ khác (ưu tiên thấp hơn để tránh trùng)
     const alreadyOnShelf = new Set(
       this.fixtures
@@ -4980,6 +5918,10 @@ export class GameSimulation {
         if (isDrinkShelf && !DRINK_SHOP_PRODUCT_IDS.has(inv.productId)) return false;
         // Kệ quán ăn vặt chỉ tự nhận món chiên/xào của quán (gồm bánh tráng trộn); kệ tòa khác không tự nhận chúng (vẫn bày tay được).
         if (isSnackShelf && !SNACK_SHOP_PRODUCT_IDS.has(inv.productId)) return false;
+        if (!this.shelfProductAllowed(fix, inv.productId)) return false;
+        // Kệ quán cà phê / quán cơm chỉ tự nhận món pha, món nấu của chính quán (kệ tòa khác vẫn bày tay được).
+        if (shelfTypeId === 'cafe' && !CAFE_SHOP_PRODUCT_IDS.has(inv.productId)) return false;
+        if (shelfTypeId === 'com_restaurant' && !COM_RESTAURANT_DISH_IDS.has(inv.productId)) return false;
         return true;
       })
       .sort((a, b) => {
@@ -5294,6 +6236,45 @@ export class GameSimulation {
     this.notifyStateChanged();
   }
 
+  /** Thực thi các hợp đồng cung ứng nội bộ vào đầu mỗi ngày theo FEFO (D6). */
+  public executeDailyInternalDeliveries(day: number): void {
+    if (!this.supplyContracts.length) return;
+    const stockMap: Record<string, SupplyStockLot[]> = {};
+    for (const item of this.inventory) {
+      if (!item.lots?.length) continue;
+      stockMap[item.productId] = item.lots.map((l, idx) => ({
+        lotId: `${item.productId}-${l.expiresOnDay}-${idx}`,
+        productId: item.productId,
+        qty: l.quantity,
+        expiryDay: l.expiresOnDay,
+      }));
+    }
+    const res = dailySupplyExecution(this.supplyContracts, stockMap, day);
+    if (res.deliveries.length > 0) {
+      this.internalDeliveries.push(...res.deliveries);
+      for (const d of res.deliveries) {
+        const inv = this.inventory.find(i => i.productId === d.productId);
+        if (inv && inv.lots) {
+          takeLots(inv.lots, d.totalQty);
+          inv.quantity = sumLots(inv.lots);
+        }
+      }
+      this.inventory = this.inventory.filter(i => i.quantity > 0);
+    }
+  }
+
+  public getInternalDeliveries(): InternalDelivery[] {
+    return [...this.internalDeliveries];
+  }
+
+  public getSupplyContracts(): SupplyContract[] {
+    return [...this.supplyContracts];
+  }
+
+  public addSupplyContract(contract: SupplyContract): void {
+    this.supplyContracts.push(contract);
+  }
+
   /**
    * Stow an item from the holding area into the warehouse inventory.
    * Cold items stow up to available cold capacity.
@@ -5489,13 +6470,9 @@ export class GameSimulation {
       }
 
       const cogs = res.cogs ?? 0;
+      const buildingId = customer.buildingId ?? 'main';
       this.currentDayRecord.customersServed += 1;
-      this.currentDayRecord.transactionsCount += 1;
-      this.currentDayRecord.itemsSold += res.itemCount;
-      this.currentDayRecord.revenue += res.paidTotal;
-      this.currentDayRecord.cogs += cogs;
-      this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
-      this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
+      this.ledgerManager.recordSale(res.paidTotal, cogs, res.itemCount, buildingId);
 
       if (res.items) {
         for (const it of res.items) {
@@ -5515,6 +6492,7 @@ export class GameSimulation {
         cogs,
         quantity: res.itemCount,
         description: `${onCredit ? `Bán chịu ${creditId}` : 'Bán lẻ'} cho khách hàng #${checkoutId} (${res.itemCount} món)`,
+        buildingInstanceId: buildingId,
       });
       // Tiền boa chỉ có khi khách TRẢ TIỀN MẶT thật — bán chịu không có dòng tiền vào nên không boa (tránh bơm tiền từ không).
       if (!onCredit) this.awardSkillTip(res.paidTotal);
@@ -5555,13 +6533,9 @@ export class GameSimulation {
       this.addExperience(Math.round(5 * saleExperienceMultiplier(this.playerData.level)));
 
       const cogs = (taken[0]?.unitCost ?? product.purchasePrice) * 1;
+      const buildingId = customer.buildingId ?? 'main';
       this.currentDayRecord.customersServed += 1;
-      this.currentDayRecord.transactionsCount += 1;
-      this.currentDayRecord.itemsSold += 1;
-      this.currentDayRecord.revenue += salePrice;
-      this.currentDayRecord.cogs += cogs;
-      this.currentDayRecord.grossProfit = this.currentDayRecord.revenue - this.currentDayRecord.cogs;
-      this.currentDayRecord.netProfit = this.currentDayRecord.grossProfit - this.currentDayRecord.spoilageCost - this.currentDayRecord.wagesPaid - (this.currentDayRecord.maintenanceCost ?? 0) - (this.currentDayRecord.theftCost ?? 0) + (this.currentDayRecord.theftRecovered ?? 0) - (this.currentDayRecord.counterfeitLoss ?? 0) - (this.currentDayRecord.badDebtCost ?? 0);
+      this.ledgerManager.recordSale(salePrice, cogs, 1, buildingId);
       this.recordProductSale(product.id, 1);
 
       let creditId: string | undefined;
@@ -5577,6 +6551,7 @@ export class GameSimulation {
         quantity: 1,
         productId: product.id,
         description: `${onCredit ? `Bán chịu ${creditId}` : 'Bán lẻ'} cho khách hàng #${checkoutId} (${product.name})`,
+        buildingInstanceId: buildingId,
       });
       // Tiền boa chỉ khi khách TRẢ TIỀN MẶT thật — bán chịu không có dòng tiền vào nên không boa.
       if (!onCredit) this.awardSkillTip(salePrice);
@@ -5649,6 +6624,22 @@ export class GameSimulation {
     this.notifyStateChanged();
   }
 
+  /**
+   * Cộng điểm prestige (thưởng mục tiêu thành phố — PROVISIONAL 16/10/2026, chưa có dấu hiệu tích lũy
+   * riêng). Đưa vào ngưỡng sao prestige hiện có (`prestigeXp`) với cùng lối quy đổi `PRESTIGE_XP_PER_STAR`.
+   */
+  public addPrestigePoints(points: number): void {
+    if (!Number.isFinite(points) || points <= 0) return;
+    const stars = this.playerData.prestigeStars ?? 0;
+    if (stars >= PRESTIGE_MAX_STARS) return;
+    const total = (this.playerData.prestigeXp ?? 0) + points;
+    const gained = Math.min(PRESTIGE_MAX_STARS - stars, Math.floor(total / PRESTIGE_XP_PER_STAR));
+    this.playerData.prestigeStars = stars + gained;
+    this.playerData.prestigeXp = this.playerData.prestigeStars >= PRESTIGE_MAX_STARS ? 0 : total - gained * PRESTIGE_XP_PER_STAR;
+    if (gained > 0) this.callbacks.onToast?.(`Đạt ${this.playerData.prestigeStars}/${PRESTIGE_MAX_STARS} sao uy tín (prestige).`, 'success');
+    this.notifyStateChanged();
+  }
+
   private notifyStateChanged(): void {
     if (this.callbacks.onStateChanged) {
       this.callbacks.onStateChanged();
@@ -5686,6 +6677,7 @@ export class GameSimulation {
         unlockedPlotIds: [...this.unlockedPlotIds],
         decorOwned: [...this.decorOwned],
         ownedParcelIds: [...this.ownedParcelIds],
+        parcelTenure: this.parcelTenure ? { ...this.parcelTenure } : undefined,
         ...(this.buildingPlacements ? { buildingPlacements: structuredClone(this.buildingPlacements) } : {}),
       },
       inventory: this.getInventory(),
@@ -5695,6 +6687,7 @@ export class GameSimulation {
       staffSchedule: { ...this.staffSchedule },
       wageDebt: this.wageDebt,
       processedPayrollDayIds: [...this.processedPayrollDayIds],
+      processedRentDayIds: [...this.processedRentDayIds],
       autoBuyEnabled: this.autoBuyEnabled,
       autoBuyStalls: this.autoBuyStalls,
       stallShortfall: [...this.stallShortfall],
@@ -5735,6 +6728,13 @@ export class GameSimulation {
       skills: structuredClone(this.skills),
       statistics: { ...this.statistics },
       world: structuredClone(this.worldOpenState),
+      civic: (() => {
+        const bundles = Object.fromEntries(Object.entries(this._bundleStates ?? {}).filter((x) => x[1] != null)) as Record<string, CivicBundleState>;
+        const hasBundles = Object.keys(bundles).length > 0;
+        if (!Object.keys(this._civicPopulationByDistrict).length && !hasBundles) return undefined;
+        return { populationByDistrict: { ...this._civicPopulationByDistrict }, ...(hasBundles ? { bundles: structuredClone(bundles) } : {}) };
+      })(),
+      cityProgress: { level: this._cityProgress.level, claimedCityGoalIds: [...this._cityProgress.claimedCityGoalIds], milestones: structuredClone(this._cityProgress.milestones), metrics: { ...this._cityProgress.metrics }, revealedBundleIds: [...(this._cityProgress.revealedBundleIds ?? [])] },
     };
   }
 
@@ -5762,7 +6762,13 @@ export class GameSimulation {
     this.buildingPlacements = saveData.storeLayout.buildingPlacements ? structuredClone(saveData.storeLayout.buildingPlacements) : undefined;
     this.decorOwned = [...(saveData.storeLayout.decorOwned ?? [])];
     this.ownedParcelIds = saveData.storeLayout.ownedParcelIds ? [...saveData.storeLayout.ownedParcelIds] : ownedParcelIdsDefault();
+    this.parcelTenure = saveData.storeLayout.parcelTenure ? { ...saveData.storeLayout.parcelTenure } : this.buildTenureFromOwned();
     this.worldOpenState = saveData.world ? structuredClone(saveData.world) : defaultWorldOpenState();
+    this._civicPopulationByDistrict = saveData.civic?.populationByDistrict ? { ...saveData.civic.populationByDistrict } : {};
+    this._bundleStates = saveData.civic?.bundles ? structuredClone(saveData.civic.bundles) : {};
+    this._cityProgress = saveData.cityProgress ? { ...saveData.cityProgress, metrics: { ...(saveData.cityProgress.metrics ?? {}) } } : { level: 1, claimedCityGoalIds: [], milestones: [], metrics: {} };
+    // 1.3 không hồi tố: trang sổ của cấp đã qua hiện ngay khi tải.
+    this._cityProgress.revealedBundleIds = [...new Set([...(this._cityProgress.revealedBundleIds ?? []), ...revealedBundleIdsForLoadedLevel(this._cityProgress.level)])];
     this.collisionSystem?.setOpenedWaves(this.worldOpenState.openedWaves);
     this.inventory = saveData.inventory.map((i) => ({ ...i }));
     this.holdingArea = (saveData.holdingArea ?? []).map((h) => ({ ...h }));
@@ -5778,6 +6784,7 @@ export class GameSimulation {
     this.autoBuyRules = this.validateAutoBuyRules(saveData.autoBuyRules ?? []);
     this.restockOptions = saveData.restockOptions ? normalizeRestockOptions(saveData.restockOptions) : undefined;
     this.processedAutoBuyDayIds = new Set(saveData.processedAutoBuyDayIds ?? []);
+    this.processedRentDayIds = new Set(saveData.processedRentDayIds ?? []);
     this.autoBuyReports = structuredClone(saveData.autoBuyReports ?? {});
     this.questsManager.load(saveData);
     this.stallsMarketsManager.load(saveData);

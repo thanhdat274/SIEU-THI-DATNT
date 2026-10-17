@@ -33,6 +33,8 @@ interface HUDProps {
   onOpenTitles?: () => void;
   /** Mở danh sách lời khách nhận xét (bấm vào điểm đánh giá). */
   onOpenReviews?: () => void;
+  /** Mở màn "Sự kiện xóm phố" (lễ hội mùa + đơn tiệc + mục tiêu ngày hội). */
+  onOpenSeasonEvents?: () => void;
   /** Mở màn An ninh (chỉ truyền khi đã mở khóa). */
   onOpenSecurity?: () => void;
   onOpenAnalytics?: () => void;
@@ -47,7 +49,7 @@ interface HUDProps {
   /** Mốc lưu gần nhất (ISO) để hiện trong mục Lưu tiến trình của sổ quản lý. */
   lastSavedAt?: string;
 }
-const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenPrices, onOpenTax, onOpenStaff, onPayWageDebt, onOpenLevelRoadmap, onOpenCity, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0, lastSavedAt}) => {
+const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenPrices, onOpenTax, onOpenStaff, onPayWageDebt, onOpenLevelRoadmap, onOpenCity, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0, lastSavedAt, onOpenSeasonEvents}) => {
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore(useShallow((s) => ({player: s.player, worldTime: s.worldTime, timeString: s.timeString, toggleSaveModal: s.toggleSaveModal})));
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const season = getSeasonForDay(worldTime.day);
@@ -80,7 +82,9 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
             <span className="muted hud-store-status" data-hud="detail">{worldTime.isStoreOpen ? 'Bà con đang ghé tiệm' : 'Tiệm đang nghỉ bán'}</span>
             {weather && <span className="muted hud-weather-badge" title={`Hôm nay${todayRainText}. Dự báo: ${forecastText}`}>{weather.icon} {weather.label} · mai {forecastFirst}</span>}
             {market?.events?.map(event => <span key={event.id} className="muted hud-event-badge" title={event.notice}>{event.status === 'active' ? '⚡' : '⏳'} {event.label}{event.status === 'upcoming' ? ` · sau ${event.startsIn} ngày` : ''}</span>)}
-            {season && <span className="muted hud-season-badge" title={season.blurb}>🎉 {season.name} · còn {seasonDaysLeft(worldTime.day)} ngày</span>}
+            {season && (onOpenSeasonEvents
+              ? <button type="button" className="muted hud-season-badge hud-season-badge-btn" title={`${season.blurb} Bấm để xem sự kiện xóm phố.`} onClick={onOpenSeasonEvents}>🎉 {season.name} · còn {seasonDaysLeft(worldTime.day)} ngày · <span className="hud-season-link">chi tiết ▸</span></button>
+              : <span className="muted hud-season-badge" title={season.blurb}>🎉 {season.name} · còn {seasonDaysLeft(worldTime.day)} ngày</span>)}
           </div>
         </div>
         <div className="hud-stats">

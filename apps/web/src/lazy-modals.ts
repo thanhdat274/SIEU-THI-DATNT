@@ -26,5 +26,6 @@ const PricesModal = lazyModal<React.ComponentProps<typeof import('./components/P
 const ReviewsModal = lazyModal<React.ComponentProps<typeof import('./components/ReviewsModal').ReviewsModal>>(() => import('./components/ReviewsModal'), 'ReviewsModal');
 const SecurityModal = lazyModal<React.ComponentProps<typeof import('./components/SecurityModal').SecurityModal>>(() => import('./components/SecurityModal'), 'SecurityModal');
 const ChainModal = lazyModal<React.ComponentProps<typeof import('./components/ChainModal').ChainModal>>(() => import('./components/ChainModal'), 'ChainModal');
+const NeighborhoodEventsModal = lazyModal<React.ComponentProps<typeof import('./components/NeighborhoodEventsModal').NeighborhoodEventsModal>>(() => import('./components/NeighborhoodEventsModal'), 'NeighborhoodEventsModal');
 
-export { CityModal, ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal };
+export { CityModal, ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal, NeighborhoodEventsModal };

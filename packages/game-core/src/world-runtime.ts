@@ -4,6 +4,8 @@ import { WorldAvatarController } from './avatars';
 import { GameCommandCoordinator, CommandResult } from './commands';
 import { FixedStepSimulationRunner } from './runner';
 import { generateStarterTileMap, NEIGHBORHOOD_WALK_BOUNDS } from '@game/data';
+import { DEFAULT_PLANNING_TTL, activeReservationFor, extendReservation, pruneExpired, releaseReservation, reservationConflictsWith, setReservation, type PlanningReservation, type PlanningTargets } from './planning-reservation';
+import { landCommandTargets } from './land-command-targets';
 import { applyStoreLayoutActions, moveStoreFixture, retrieveStoreFixture, storeFixture, buyWarehouseTier, buyStorageRack } from './store-layout';
 
 /** Trần tốc độ chấp nhận khi client báo vị trí (đi bộ 130 px/s, chừa dư cho chạy/lag). */
@@ -38,6 +40,8 @@ export class WorldRuntime {
   private readonly checkpointIntervalSeconds: number;
   private readonly positionReportedAt = new Map<string, number>();
   private timeSinceLastCheckpoint = 0;
+  /** Giữ chỗ quy hoạch đất (OpenSpec `open-world-coop-land` D1): chỉ trong bộ nhớ, không vào save/checkpoint. */
+  private planning: PlanningReservation[] = [];
   private isPaused = true;
   private currentWorld: GameWorld;
   private currentBusiness: BusinessState;
@@ -139,6 +143,9 @@ export class WorldRuntime {
     }
   }
 
+  /** Cài đặt đất do chủ hẻm đổi qua HTTP: runtime sống phải nhận ngay, nếu không quyền `none`/`ownerSkipsVote` không có hiệu lực và checkpoint còn ghi đè cài đặt cũ. */
+  applySettings(settings: GameWorld['settings']): void { this.currentWorld.settings = structuredClone(settings); }
+
   getRevision(): number { return this.currentWorld.revision; }
 
   /**
@@ -219,11 +226,17 @@ export class WorldRuntime {
 
   unregisterSession(accountId: string): void {
     this.activeSessions.delete(accountId);
+    this.planning = releaseReservation(this.planning, accountId);
     this.resolveVoteAfterLeave();
     if (this.activeSessions.size === 0) {
       this.isPaused = true;
       this.triggerCheckpoint();
     }
+  }
+
+  /** Tài khoản đang có phiên online trong hẻm (dùng cho phiếu đất: có người kia để bỏ phiếu không). */
+  getActiveAccountIds(): string[] {
+    return [...this.activeSessions.keys()];
   }
 
   heartbeat(accountId: string, nowMs = Date.now()): boolean {
@@ -294,6 +307,8 @@ export class WorldRuntime {
     return this.commandCoordinator.submit(actorId, commandInput, async (cmd) => {
       // Execute command on simulation
       let success = false;
+      let rejectReason: string | undefined;
+      this.simulation.setBuildActor(actorId);
       const p = cmd.payload;
       if (p.type === 'restock') {
         success = this.simulation.restockShelf(p.fixtureId, p.productId, p.quantity);
@@ -426,6 +441,25 @@ export class WorldRuntime {
         success = this.simulation.reclaimWave(p.waveId).success;
       } else if (p.type === 'buy_parcel') {
         success = this.simulation.buyParcel(p.parcelId).success;
+      } else if (p.type === 'open_building') {
+        success = this.simulation.openBuilding(p.buildingTypeId, p.parcelId, p.originX, p.originY).success;
+      } else if (p.type === 'lease_parcel') {
+        success = this.simulation.leaseParcel(p.parcelId).success;
+      } else if (p.type === 'end_lease') {
+        success = this.simulation.endLease(p.parcelId).success;
+      } else if (p.type === 'pay_rent_debt') {
+        success = this.simulation.payRentDebt(p.parcelId).success;
+      } else if (p.type === 'claim_city_goal') {
+        // Quyền: mọi thành viên được nhận mục tiêu (chủ dự án chốt 16/10/2026, kể cả memberLandPermissions='none').
+        const r = this.simulation.claimCityGoal(p.goalId);
+        success = r.success;
+        rejectReason = r.reason;
+      } else if (p.type === 'donate_to_bundle') {
+        // Server-authoritative: người góp = phiên (`actorId`, qua `setBuildActor`), không đọc từ payload; lệnh chạy lần lượt
+        // qua hàng đợi của coordinator nên lệnh sau chỉ nhận phần thiếu / bị từ chối 'slot_full'; thiếu kho → từ chối cả lệnh.
+        const r = this.simulation.donateToBundle(p.bundleId, p.slotId, p.productId, p.quantity, p.amount);
+        success = r.success;
+        rejectReason = r.reason;
       }
 
       if (success) {
@@ -437,7 +471,7 @@ export class WorldRuntime {
         );
         this.triggerCheckpoint();
       }
-      return success;
+      return success || !rejectReason ? success : { accepted: false, reason: rejectReason };
     });
   }
 
@@ -471,14 +505,58 @@ export class WorldRuntime {
     this.currentWorld.worldTime = this.simulation.getTime();
   }
 
+  /** Tên hiển thị của người chơi cho thông báo giữ chỗ (rơi về id khi hẻm cũ thiếu tên). */
+  private displayNameOf(accountId: string): string {
+    return this.currentWorld.avatars.find(avatar => avatar.accountId === accountId)?.displayName ?? accountId;
+  }
+
+  /** Đặt/thay giữ chỗ quy hoạch của `accountId` (mỗi người tối đa một). Chỉ thành viên đang có phiên mới được giữ. */
+  reservePlanning(accountId: string, targets: PlanningTargets, now = Date.now()): boolean {
+    if (!this.activeSessions.has(accountId)) return false;
+    this.planning = setReservation(pruneExpired(this.planning, now), { accountId, kind: targets.kind, targets, expiresAt: 0, name: this.displayNameOf(accountId) }, DEFAULT_PLANNING_TTL, now);
+    return true;
+  }
+
+  /** Gia hạn giữ chỗ của `accountId`; false nếu không có giữ chỗ còn hiệu lực. */
+  extendPlanning(accountId: string, now = Date.now()): boolean {
+    if (!activeReservationFor(this.planning, accountId, now)) return false;
+    this.planning = extendReservation(pruneExpired(this.planning, now), accountId, now);
+    return true;
+  }
+
+  releasePlanning(accountId: string): void {
+    this.planning = releaseReservation(this.planning, accountId);
+  }
+
+  /** Giữ chỗ còn hiệu lực của mọi người (dùng cho snapshot). */
+  getPlanningReservations(now = Date.now()): PlanningReservation[] {
+    this.planning = pruneExpired(this.planning, now);
+    return this.planning.map(reservation => structuredClone(reservation));
+  }
+
+  /**
+   * Lệnh đất của `accountId` có đụng giữ chỗ của NGƯỜI KHÁC không (`reserved_by_other`, kèm tên người giữ).
+   * Lệnh không phải lệnh đất, hoặc khi chỉ có một người, luôn không xung đột.
+   */
+  checkPlanningConflict(accountId: string, payload: unknown, now = Date.now()): { conflict: boolean; by?: { accountId: string; name?: string } } {
+    this.planning = pruneExpired(this.planning, now);
+    for (const targets of landCommandTargets(payload)) {
+      const result = reservationConflictsWith(this.planning, accountId, targets, now);
+      if (result.conflict) return result;
+    }
+    return { conflict: false };
+  }
+
   getSnapshot(serverTime = new Date().toISOString()): GameSnapshot {
     this.refreshLiveState();
+    const planning = this.getPlanningReservations();
     return {
       protocolVersion: MULTIPLAYER_PROTOCOL_VERSION,
       world: structuredClone(this.currentWorld),
       businesses: [structuredClone(this.currentBusiness)],
       serverTime,
       coop: { players: this.simulation.getCoopRoutineStates().map((state) => ({ accountId: state.playerId, online: state.isOnline, sleeping: state.isSleeping })) },
+      ...(planning.length ? { planning } : {}),
     };
   }
 

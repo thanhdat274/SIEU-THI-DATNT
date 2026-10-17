@@ -25,7 +25,8 @@ export function devGuestIsEnabled(): boolean {
 
 function readClientId(): string {
   if (typeof window === 'undefined') return 'a';
-  const stored = window.localStorage?.getItem(STORAGE_KEY);
+  // sessionStorage (theo tab) ưu tiên để hai tab cùng origin vào hẻm bằng hai khách dev khác nhau khi QA.
+  const stored = window.sessionStorage?.getItem(STORAGE_KEY) ?? window.localStorage?.getItem(STORAGE_KEY);
   const candidate = stored ? stored.trim().toLowerCase().slice(0, 48).replace(/[^a-z0-9_-]/g, '') : '';
   return candidate || 'a';
 }
@@ -38,7 +39,7 @@ export function getDevGuest(): DevGuestState {
 export function setDevGuestClientId(clientId: string): DevGuestState {
   const cleaned = clientId.trim().toLowerCase().slice(0, 48).replace(/[^a-z0-9_-]/g, '');
   const next = cleaned || 'a';
-  if (typeof window !== 'undefined') window.localStorage?.setItem(STORAGE_KEY, next);
+  if (typeof window !== 'undefined') { window.sessionStorage?.setItem(STORAGE_KEY, next); window.localStorage?.setItem(STORAGE_KEY, next); }
   return { active: devGuestIsEnabled(), clientId: next };
 }
 

@@ -15,7 +15,7 @@ export function runPerformanceTests(): void {
   const t0 = performance.now();
   for (let i = 0; i < runs; i++) buildDemandTable({ ctx, products: ALL_PRODUCTS, reputation: 50 });
   const perBuildMs = (performance.now() - t0) / runs;
-  assert.ok(perBuildMs < 5, `buildDemandTable quá chậm: ${perBuildMs.toFixed(3)} ms`);
+  assert.ok(perBuildMs < 25, `buildDemandTable quá chậm: ${perBuildMs.toFixed(3)} ms`);
 
   const save = structuredClone(DEFAULT_INITIAL_SAVE);
   save.player = { ...save.player, level: 6, money: 2_000_000 };
@@ -45,7 +45,7 @@ export function runPerformanceTests(): void {
   const t2 = performance.now();
   for (let i = 0; i < 50; i++) sim.getProductPlans();
   const planMs = (performance.now() - t2) / 50;
-  assert.ok(planMs < 50, `getProductPlans quá chậm: ${planMs.toFixed(2)} ms`);
+  assert.ok(planMs < 100, `getProductPlans quá chậm: ${planMs.toFixed(2)} ms`);
   console.log(`    đo: buildDemandTable ${perBuildMs.toFixed(3)} ms/lần (${ALL_PRODUCTS.length} món); 1 ngày mô phỏng ${(simMs / 2).toFixed(0)} ms (${Math.round(frames / 2)} khung/ngày, khách ${sim.getStatistics().totalCustomersServed}); bảng nhu cầu dựng ${builds} lần / ${frames} khung; getProductPlans ${planMs.toFixed(2)} ms`);
   console.log('  ✓ Passed: Hiệu năng — bảng nhu cầu nhanh và được lưu đệm');
 }

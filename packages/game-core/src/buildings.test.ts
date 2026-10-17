@@ -292,7 +292,7 @@ export function runBuildingTests(): void {
     const bought = buyXoi(baseSave());
     const open = mapFor([XOI_PLOT_ID]);
     const stationShop = FIXTURE_SHOP.find(item => item.id === 'thung_ngam')!;
-    assert.deepEqual(stationShop.allowedBuildings, ['xoi']);
+    assert.deepEqual(stationShop.typeIds, ['xoi_shop']);
 
     // Trạm xôi trong tiệm chính bị từ chối.
     const inMain = structuredClone(bought);

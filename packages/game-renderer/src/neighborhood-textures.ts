@@ -16,7 +16,8 @@ function surface(w: number, h: number) {
 }
 type R = (x: number, y: number, w: number, h: number, c: string) => void;
 
-const INK = '#1f1a16';
+// Viền pixel art xanh đen #3A3A50 chuẩn LimeZu
+const INK = '#3A3A50';
 
 /** Số nguyên giả ngẫu nhiên ổn định từ chuỗi/số (cho chi tiết rải trên nhà). */
 const hash = (...n: number[]): number => {
@@ -427,9 +428,19 @@ export function cloudTexture(v: number): HTMLCanvasElement {
 }
 
 export function birdTexture(v: number): HTMLCanvasElement {
-  const { canvas, r } = surface(9, 5);
-  if (v === 0) { r(0, 2, 3, 1, INK); r(3, 3, 3, 1, INK); r(6, 2, 3, 1, INK); r(2, 1, 1, 1, INK); r(6, 1, 1, 1, INK); }
-  else { r(0, 1, 3, 1, INK); r(3, 2, 3, 1, INK); r(6, 1, 3, 1, INK); r(2, 2, 1, 1, INK); r(6, 2, 1, 1, INK); }
+  const { canvas, r } = surface(12, 8);
+  const WHITE = '#F4F6F8', GREY = '#B0B6C2', BEAK = '#E5A038';
+  if (v === 0) {
+    r(1, 3, 10, 3, INK);
+    r(2, 2, 8, 4, WHITE);
+    r(3, 3, 6, 2, GREY);
+    r(9, 3, 2, 2, BEAK);
+  } else {
+    r(1, 1, 10, 5, INK);
+    r(2, 2, 8, 3, WHITE);
+    r(4, 3, 4, 3, GREY);
+    r(9, 3, 2, 2, BEAK);
+  }
   return canvas;
 }
 

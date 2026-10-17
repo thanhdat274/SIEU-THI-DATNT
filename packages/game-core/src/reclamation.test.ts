@@ -14,7 +14,7 @@ import {
   cityTierFrom,
   cityGrowthFactor,
 } from './reclamation';
-import { RECLAMATION_WAVES, expansionBudgetAtLevel, parcelPrice, parcelTrafficMultiplier, type LandParcel } from '@game/data';
+import { RECLAMATION_WAVES, expansionBudgetAtLevel, parcelPrice, parcelTrafficMultiplier, districtForWave, type LandParcel } from '@game/data';
 
 /**
  * Khai hoang theo đợt (OpenSpec `open-world-land-reclamation`, task 2.2–2.4) — hàm thuần.
@@ -37,6 +37,7 @@ const syntheticWave1Corner: LandParcel = {
   rect: { x0: 42, x1: 47, y0: 3, y1: 15 },
   wave: 1,
   frontageRoadId: 'main',
+  districtId: districtForWave('w1'),
   frontage: { corner: true },
 };
 
@@ -157,7 +158,7 @@ export function runReclamationTests(): void {
     it('mua được lô W1 đã mở xong với đúng giá góc đường chính', () => {
       const s = baseState();
       s.openedWaves = ['w0', 'w1'];
-      const price = parcelPrice({ id: 'w1-corner', rect: { x0: 42, x1: 51, y0: 3, y1: 10 }, wave: 1, frontageRoadId: 'main', frontage: { corner: true } });
+      const price = parcelPrice({ id: 'w1-corner', rect: { x0: 42, x1: 51, y0: 3, y1: 10 }, wave: 1, frontageRoadId: 'main', districtId: districtForWave('w1'), frontage: { corner: true } });
       assert.equal(price, 12_000 * 10 * 8 * 1.6, 'giá = PARCEL_BASE_PRICE × số ô × hệ số góc đường chính');
       assert.deepEqual(buyParcelAllowed(s, 'w1-corner'), { ok: true, price });
     });
@@ -204,7 +205,7 @@ export function runReclamationTests(): void {
     // Lô W1..W4 chưa đặt được tòa THẬT (chưa vào PARCEL_MAP, chưa renderer) nên dùng lô TỔNG HỢP (LandParcel chế)
     // để chứng minh TỈ LỆ D5: góc ngã tư đường chính 1.25 > mặt chính 1.0 > góc nam 0.9 > mặt nam 0.75.
     const synthetic = (id: string, frontageRoadId: string, corner: boolean): LandParcel =>
-      ({ id, rect: { x0: 42, x1: 47, y0: 8, y1: 12 }, wave: 1, frontageRoadId, frontage: { corner } });
+      ({ id, rect: { x0: 42, x1: 47, y0: 8, y1: 12 }, wave: 1, frontageRoadId, districtId: districtForWave('w1'), frontage: { corner } });
     const cornerMain = synthetic('t-corner-main', 'main', true);
     const faceMain = synthetic('t-face-main', 'main', false);
     const cornerSouth = synthetic('t-corner-south', 'south', true);

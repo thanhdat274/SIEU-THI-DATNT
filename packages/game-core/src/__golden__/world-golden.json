@@ -2920,18 +2920,18 @@
      "day": 2,
      "customersServed": 233,
      "revenue": 4528000,
-     "netProfit": 1305000,
+     "netProfit": 1294800,
      "sales": "f3899b23e9506588e274e0f45b89b00abeb8ea58"
     },
     {
      "day": 3,
      "customersServed": 231,
      "revenue": 3866000,
-     "netProfit": 1026000,
+     "netProfit": 1015800,
      "sales": "51eadc2f26551f7bf8db5f7e6d85ed0bbcbf9afb"
     }
    ],
-   "money": 22553500,
+   "money": 22522900,
    "fixtures": "c9afa8cb47a3f771695ac61c5c0385e08baadb9e"
   },
   "allBuildings": {
@@ -2947,18 +2947,18 @@
      "day": 2,
      "customersServed": 316,
      "revenue": 5762500,
-     "netProfit": 1714500,
+     "netProfit": 1704300,
      "sales": "74a9ff5c147f07d8e9e91245777f2fdb7fdf5835"
     },
     {
      "day": 3,
      "customersServed": 314,
      "revenue": 6057000,
-     "netProfit": 1665000,
+     "netProfit": 1654800,
      "sales": "fcc678f0bceffce3c50c5b110caa10888095a9fe"
     }
    ],
-   "money": 24729500,
+   "money": 24698900,
    "fixtures": "13c1b27e648a4413a578277e27625839471941f1"
   }
  }

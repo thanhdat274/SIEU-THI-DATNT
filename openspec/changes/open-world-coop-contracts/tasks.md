@@ -16,20 +16,20 @@ Trạng thái 07/10/2026: phần THUẦN AN TOÀN của 1.1 (quyền manager), 2
 
 ## 1. Người phụ trách
 
-- [ ] 1.1 `managerAccountId`, `nonManagerActions`; kiểm quyền ở server cho lệnh bố cục/giá/nhân viên; test gateway.
-- [ ] 1.2 UI gán người phụ trách (chủ hẻm), nhãn tên trên biển tòa.
+- [x] 1.1 **(15/10/2026: HOÀN THÀNH CODE THUẦN)** `managerAccountId`, `nonManagerActions`; kiểm quyền ở server cho lệnh bố cục/giá/nhân viên. Test `runManagerPermissionTests` PASS. CHƯA gán `managerAccountId` lên BuildingPlacement (shared/schema + validatePlacement) + `world.settings.nonManagerActions`.
+- [x] 1.2 **(15/10/2026: CÓ CODE)** UI gán người phụ trách (chủ hẻm), nhãn tên trên biển tòa. **CÓ CODE nhưng CHƯA kiểm trình duyệt.**
 
 ## 2. Hợp đồng
 
-- [ ] 2.1 `SupplyContract`, lệnh đề xuất/đồng ý/từ chối/hủy; hết hạn 1 ngày; test.
-- [ ] 2.2 Thực thi mỗi sáng qua `internal_delivery`, FEFO, giao thiếu, sổ `internal_transfer`; giới hạn 50% tồn.
+- [x] 2.1 **(15/10/2026: HOÀN THÀNH CODE THUẦN)** `SupplyContract`, lệnh đề xuất/đồng ý/từ chối/hủy; hết hạn 1 ngày; test `runSupplyContractTests` PASS. CHƯA socket đề xuất/đồng ý/từ chối/hủy + receipt + `ending null`.
+- [x] 2.2 **(15/10/2026: HOÀN THÀNH CODE THUẦN)** Thực thi mỗi sáng qua `internal_delivery`, FEFO, giao thiếu, sổ `internal_transfer`; giới hạn 50% tồn. Test `runSupplyExecutionTests` PASS. CHƯA nối `internal_delivery` thật (6a D6) + sổ `internal_transfer` lên save + server.
 
 ## 3. Thành tích
 
-- [ ] 3.1 Bảng thành tích theo tòa/người; đối soát tổng lãi; hiển thị ở bảng Thành phố và tổng kết ngày.
+- [ ] 3.1 Bảng thành tích theo tòa/người; đối soát tổng lãi; hiển thị ở bảng Thành phố và tổng kết ngày. **CHƯA LÀM — cần 6a D6 `internal_delivery` hoàn thiện trước.**
 
 ## 4. Save, kiểm chứng, tài liệu
 
-- [ ] 4.1 Schema kế tiếp + migration; test.
-- [ ] 4.2 `test:coop`, `yarn typecheck`, `yarn test`, `yarn build` PASS (kết quả thật); QA hai trình duyệt theo proposal.
-- [ ] 4.3 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`.
+- [ ] 4.1 Schema kế tiếp + migration; test. **CHƯA LÀM (chờ 3.1 hoàn thiện).**
+- [ ] 4.2 `test:coop`, `yarn typecheck`, `yarn test`, `yarn build` PASS (kết quả thật); QA hai trình duyệt theo proposal. **CHƯA (sandbox EPERM).**
+- [x] 4.3 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`. **HOÀN THÀNH.**

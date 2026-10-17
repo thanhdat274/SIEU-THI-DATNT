@@ -116,6 +116,11 @@ export class ReviewsManager {
     return this.reviews.map(r => ({ ...r }));
   }
 
+  /** Các lời đánh giá đúng một ngày (dùng cho bản tin sáng — báo lời hôm qua). */
+  public getReviewsOnDay(day: number): CustomerReview[] {
+    return this.reviews.filter(r => r.day === day).map(r => ({ ...r }));
+  }
+
   public getReviewSummary(): ReviewSummary {
     return summarizeReviews(this.reviews);
   }

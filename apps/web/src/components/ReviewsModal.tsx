@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { CustomerReview } from '@game/shared';
 import { PRODUCT_MAP } from '@game/data';
-import { feedbackReasonLabel, type ReviewSummary } from '@game/core';
+import { feedbackReasonLabel, reviewSentimentSummary, type ReviewSummary } from '@game/core';
 import { PixelButton, PixelDialog } from './pixel';
 
 export interface ReviewsModalProps {
@@ -20,6 +20,21 @@ const FILTERS: Array<{ id: Filter; label: string }> = [
 
 const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 const clock = (r: CustomerReview) => `${String(r.hour).padStart(2, '0')}:${String(r.minute).padStart(2, '0')}`;
+
+/** Ảnh hưởng uy tín của lời đánh giá bằng chữ (Mục 2 GĐ4): sentiment + tổng delta từ các lời đang giữ. */
+function ReputationInfluence({ reviews }: { reviews: CustomerReview[] }) {
+  const s = reviewSentimentSummary(reviews);
+  if (s.count === 0) return null;
+  const color = s.totalDelta > 0 ? 'var(--color-green-dark)' : s.totalDelta < 0 ? 'var(--color-brick)' : 'var(--color-wheat-dark)';
+  const sign = s.totalDelta > 0 ? '+' : '';
+  return (
+    <div className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 4, marginTop: 8, borderColor: 'var(--color-outline-soft)' }}>
+      <strong style={{ fontSize: 12 }}>Ảnh hưởng uy tín</strong>
+      <span style={{ fontSize: 12, color }}>Tổng ảnh hưởng gần đây: {sign}{s.totalDelta.toFixed(1)} điểm uy tín</span>
+      <span className="muted" style={{ fontSize: 11 }}>{s.praise} lời khen · {s.complaints} lời chê{s.topReason ? ` · chủ yếu do ${feedbackReasonLabel(s.topReason.reason)}` : ''}</span>
+    </div>
+  );
+}
 
 /** Lời đánh giá bằng chữ của khách: tóm tắt điểm, lý do chê nhiều nhất và danh sách mới nhất trước. */
 export const ReviewsModal: React.FC<ReviewsModalProps> = ({ reviews, summary, onClose }) => {
@@ -48,6 +63,7 @@ export const ReviewsModal: React.FC<ReviewsModalProps> = ({ reviews, summary, on
             {summary.topReason && (
               <span className="muted" style={{ fontSize: 11 }}>Khách bỏ về nhiều nhất vì: {feedbackReasonLabel(summary.topReason.reason)} ({summary.topReason.count} lần)</span>
             )}
+            <ReputationInfluence reviews={reviews} />
           </div>
           <div className="feature-scroll-tabs" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
             {FILTERS.map((f) => (

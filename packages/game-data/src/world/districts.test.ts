@@ -17,6 +17,7 @@ import assert from 'node:assert/strict';
 import {
   DISTRICTS,
   DISTRICT_MULTIPLIER_CAP,
+  DISTRICT_PREFERRED_RANGE,
   applyDistrictModifiers,
   districtForWave,
   districtPeakMultiplier,
@@ -43,19 +44,28 @@ export function runDistrictsTests(): void {
     assert.ok(d.kind.length > 0, `khu ${id} có kind`);
     assert.ok(Array.isArray(d.npcMix) && d.npcMix.length > 0, `khu ${id} có npcMix không rỗng`);
 
-    // peakHours: khung hợp lệ 0..24, from < to, hệ số trong dải
-    assert.ok(Array.isArray(d.peakHours) && d.peakHours.length > 0, `khu ${id} có ≥1 khung giờ cao điểm`);
-    for (const peak of d.peakHours) {
-      assert.ok(Number.isFinite(peak.fromHour) && Number.isFinite(peak.toHour), `khu ${id}: giờ khung phải là số`);
-      assert.ok(peak.fromHour >= 0 && peak.fromHour < 24, `khu ${id}: fromHour ${peak.fromHour} trong 0..<24`);
-      assert.ok(peak.toHour > 0 && peak.toHour <= 24, `khu ${id}: toHour ${peak.toHour} trong >0..24`);
-      assert.ok(peak.fromHour < peak.toHour, `khu ${id}: fromHour < toHour`);
-      assert.ok(peak.multiplier >= 1.05 && peak.multiplier <= 1.4, `khu ${id}: hệ số khung ${peak.multiplier} trong dải 1.05..1.4`);
+    // peakHours: khung hợp lệ 0..24, from < to, hệ số trong dải.
+    // W0 (hem_dan_cu) là khu gốc trung tính → miễn dải peakHours ≥1.
+    if (id === 'hem_dan_cu') {
+      assert.ok(d.peakHours.length === 0, `W0 hem_dan_cu: peakHours rỗng (khu trung lập gốc)`);
+    } else {
+      assert.ok(Array.isArray(d.peakHours) && d.peakHours.length > 0, `khu ${id} có ≥1 khung giờ cao điểm`);
+      for (const peak of d.peakHours) {
+        assert.ok(Number.isFinite(peak.fromHour) && Number.isFinite(peak.toHour), `khu ${id}: giờ khung phải là số`);
+        assert.ok(peak.fromHour >= 0 && peak.fromHour < 24, `khu ${id}: fromHour ${peak.fromHour} trong 0..<24`);
+        assert.ok(peak.toHour > 0 && peak.toHour <= 24, `khu ${id}: toHour ${peak.toHour} trong >0..24`);
+        assert.ok(peak.fromHour < peak.toHour, `khu ${id}: fromHour < toHour`);
+        assert.ok(peak.multiplier >= 1.05 && peak.multiplier <= 1.4, `khu ${id}: hệ số khung ${peak.multiplier} trong dải 1.05..1.4`);
+      }
     }
 
-    // preferredMultiplier trong dải 1.2–1.4
-    assert.ok(d.preferredMultiplier >= 1.2 && d.preferredMultiplier <= 1.4,
-      `khu ${id}: preferredMultiplier ${d.preferredMultiplier} trong dải 1.2–1.4`);
+    // preferredMultiplier: W0 = 1.0 (trung lập); W1-W4 trong dải 1.2–1.4.
+    if (id === 'hem_dan_cu') {
+      assert.equal(d.preferredMultiplier, 1.0, `W0 hem_dan_cu: preferredMultiplier = 1.0 (trung lập)`);
+    } else {
+      assert.ok(d.preferredMultiplier >= DISTRICT_PREFERRED_RANGE.min && d.preferredMultiplier <= DISTRICT_PREFERRED_RANGE.max,
+        `khu ${id}: preferredMultiplier ${d.preferredMultiplier} trong dải 1.2–1.4`);
+    }
     assert.ok(typeof d.visualTheme === 'string' && d.visualTheme.length > 0, `khu ${id} có visualTheme`);
   }
 
@@ -81,11 +91,12 @@ export function runDistrictsTests(): void {
   assert.equal(districtPreferredMultiplier('hem_dan_cu', 'alcohol'), 1, 'category lạ (không ưa chuộng) → 1');
   assert.equal(districtPreferredMultiplier('dan_cu_nam', 'toys_stationery'), 1, 'category lạ cho khu W2 → 1');
   assert.equal(districtPreferredMultiplier('am_thuc_nam', 'soft_drinks'), 1, 'category lạ cho khu W4 → 1');
-  // Category ưa chuộng → 1.2–1.4 (đúng preferredMultiplier của khu).
+  // Category ưa chuộng → đúng preferredMultiplier của khu; W0 trung tính → 1, khu khác trong DISTRICT_PREFERRED_RANGE.
   for (const id of expectedDistrictIds) {
     for (const cat of DISTRICTS[id].preferredCategories) {
       const m = districtPreferredMultiplier(id, cat);
-      assert.ok(m >= 1.2 && m <= 1.4, `khu ${id}, category ${cat} → ${m} trong dải 1.2–1.4`);
+      if (id === 'hem_dan_cu') assert.equal(m, 1, `W0 hem_dan_cu, category ${cat} → 1 (trung tính)`);
+      else assert.ok(m >= DISTRICT_PREFERRED_RANGE.min && m <= DISTRICT_PREFERRED_RANGE.max, `khu ${id}, category ${cat} → ${m} trong DISTRICT_PREFERRED_RANGE`);
       assert.equal(m, DISTRICTS[id].preferredMultiplier, `khu ${id}, category ${cat} → đúng preferredMultiplier của khu`);
     }
   }

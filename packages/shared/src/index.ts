@@ -424,7 +424,7 @@ export interface SecurityState {
   policeCases: PoliceCase[];
 }
 
-export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit' | 'tax';
+export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit' | 'tax' | 'rent' | 'civic_upkeep' | 'civic_fee' | 'civic_donation' | 'city_goal_reward';
 
 export interface LedgerEntry {
   id: string;
@@ -438,11 +438,17 @@ export interface LedgerEntry {
   timestamp: string;
   /** Chi nhánh phát sinh dòng này; thiếu = hub (`branch-chain`). */
   branchId?: string;
+  /** Mã thực thể tòa nhà phát sinh dòng này (D5); ví dụ 'main', 'snack-1', 'xoi_shop', v.v. */
+  buildingInstanceId?: string;
+  /** Trang sổ góp xóm (civic_donation). */
+  bundleId?: string;
+  /** Ô trong trang sổ góp xóm (civic_donation). */
+  slotId?: string;
 }
 
 /** Thị trường động: mọi khóa là chuỗi để thêm thời tiết/sự kiện/thẻ bằng dữ liệu, không sửa lõi. */
 export type ModifierChannel = 'demand' | 'traffic' | 'wholesalePrice' | 'supplierStock' | 'spoilage' | 'priceSensitivity';
-export type ModifierSource = 'season' | 'climate' | 'weather' | 'time' | 'weekday' | 'event';
+export type ModifierSource = 'season' | 'climate' | 'weather' | 'time' | 'weekday' | 'event' | 'district';
 
 export interface ModifierTarget {
   categories?: ProductCategory[];
@@ -458,6 +464,8 @@ export interface ModifierWhen {
   timeBand?: string[];
   weekdays?: number[]; // 0 = Thứ Hai … 6 = Chủ Nhật
   event?: string[];
+  /** Mã khu áp dụng modifier (D1). Thiếu = áp dụng cho mọi khu. */
+  districtId?: string[];
 }
 
 export interface ModifierRule {
@@ -563,6 +571,8 @@ export interface PartyOrderDef {
   reward: PartyOrderReward;
   durationDays: number;
   minPlayerLevel: number;
+  /** Các mùa (id trong SEASON_EVENTS) mà đơn chỉ xuất hiện khi lễ hội đó đang diễn ra; thiếu = đơn chung mọi mùa. */
+  seasons?: string[];
 }
 
 export interface ActivePartyOrder {
@@ -642,6 +652,21 @@ export interface SkillState {
   chosenPerks: string[];
 }
 
+export interface BuildingDailyReport {
+  buildingInstanceId: string;
+  revenue: number;
+  cogs: number;
+  transactionsCount: number;
+  itemsSold: number;
+  grossProfit: number;
+  /** Lãi sau tiền thuê đất và chi phí xóm của tòa: `grossProfit - rentCost - civicCost`. */
+  netProfit: number;
+  /** Phần tiền thuê đất ngày này tính cho tòa (chia đều khi lô có nhiều tòa). */
+  rentCost?: number;
+  /** Phí xóm của tòa trong ngày (OpenSpec `civic-local-fees`): phí vệ sinh/an ninh lô đặt tòa + phí duy trì tòa. */
+  civicCost?: number;
+}
+
 export interface DailyRecord {
   day: number;
   closedAt?: string;
@@ -651,6 +676,14 @@ export interface DailyRecord {
   spoilageCost: number; // Value of goods spoiled on this day
   wagesPaid: number; // Wages paid to staff on this day
   maintenanceCost?: number; // Chi phí bảo trì/sửa/mua mới nội thất trong ngày (thiếu = 0)
+  equipmentCost?: number; // Chi phí thiết bị / mua camera an ninh / máy móc ngoài bảo trì định kỳ (thiếu = 0)
+  rentCost?: number; // Tiền thuê đất trong ngày (thiếu = 0)
+  /** Phí duy trì công trình công cộng trong ngày = Σ `upkeepPerDay` của công trình đang đặt (thiếu = 0). */
+  civicUpkeep?: number;
+  /** Phí vệ sinh/an ninh xóm trong ngày: chỉ tính trên ô lô SỞ HỮU, giảm theo QoL khu (thiếu = 0). */
+  civicFee?: number;
+  /** Tiền chung đầu ngày (sau chi phí xóm): gốc tính trần góp tiền/ngày khi chủ hẻm offline (thiếu = dùng tiền hiện tại). */
+  openingMoney?: number;
   theftCost?: number; // Giá vốn hàng và tiền bị trộm trong ngày (thiếu = 0)
   theftRecovered?: number; // Tiền thu hồi từ phạt kẻ trộm và công an trong ngày (thiếu = 0)
   counterfeitLoss?: number; // Mệnh giá tiền giả nhận nhầm trong ngày (thiếu = 0)
@@ -660,7 +693,7 @@ export interface DailyRecord {
   taxBackPaid?: number; // Thuế truy thu khi kiểm tra, ghi vào ngày bị kiểm tra
   taxPenalty?: number; // Tiền phạt khi kiểm tra thuế trong ngày
   grossProfit: number; // revenue - cogs
-  netProfit: number; // revenue - cogs - spoilageCost - wagesPaid
+  netProfit: number; // revenue - cogs - spoilageCost - wagesPaid - maintenanceCost - equipmentCost - theft - tax...
   customersServed: number; // Distinct customers served
   transactionsCount: number; // Distinct sales transactions
   itemsSold: number; // Total units of items sold
@@ -669,10 +702,13 @@ export interface DailyRecord {
   stallServings?: Record<string, number>; // Suất bán ra theo id quầy ăn uống trong ngày (tính vào mục tiêu ngày hội)
   stallRevenue?: Record<string, number>; // Doanh thu theo id quầy trong ngày (đã nằm trong `revenue`; thiếu ở ngày cũ)
   stallCogs?: Record<string, number>; // Giá vốn theo id quầy trong ngày (đã nằm trong `cogs`; thiếu ở ngày cũ)
+  buildingReports?: Record<string, BuildingDailyReport>; // Báo cáo kinh doanh theo từng tòa (D5)
   outOfStockWalkouts?: number; // Khách bỏ về vì kệ món đã chọn hết hàng
   priceWalkouts?: number; // Khách bỏ hàng vì giá cao hơn giá thị trường
   averageStars?: number;
   ratingCount?: number;
+  /** Dân số khu tiệm chính trong ngày (OpenSpec `civic-population-demand`). */
+  civicPopulation?: { districtId: string; pop: number; target: number; factor: number };
 }
 
 export type PlanogramMap = Record<string, string>; // fixtureId -> productId
@@ -947,6 +983,12 @@ export interface StoreLayout {
    * đưa cả 4 lô W0 vào đây; lô đợt mới chỉ thêm sau khi `buy_parcel`. Thiếu = chưa ghi (save cũ).
    */
   ownedParcelIds?: string[];
+  /**
+   * Quyền sử dụng lô đất (OpenSpec open-world-land-lease 3.1 schema 10).
+   * Key = parcelId, value = { kind: 'owned' | 'leased', ... }.
+   * Migration 9→10 điền từ ownedParcelIds (tất cả = owned).
+   */
+  parcelTenure?: Record<string, { kind: 'owned' | 'leased'; boughtBy?: string; day?: number; leasedBy?: string; sinceDay?: number; paidTotal?: number; debtDays?: number; civicDebt?: number; civicDebtDays?: number }>;
 }
 
 export interface BuildingPlacementRecord {
@@ -975,6 +1017,8 @@ export interface BuildingPlacementRecord {
    * dùng typeId làm nguồn là việc SAU (chờ máy thật), KHÔNG ở task thuần schema này.
    */
   typeId?: string;
+  /** Tòa bị đóng cửa vì nợ tiền thuê đất ≥ 3 ngày (OpenSpec `open-world-land-lease` 2.2). Trả nợ xong sẽ mở lại. */
+  closedForRent?: boolean;
 }
 
 /** Vị trí chọn khi mua tòa (lô + gốc x), tùy chọn. */
@@ -989,6 +1033,7 @@ export function isBuildingPlacementRecord(value: unknown): value is BuildingPlac
   if (!isRecord(value) || !nonEmptyString(value.buildingId) || !nonEmptyString(value.parcelId)
     || !Number.isSafeInteger(value.originX) || !Number.isSafeInteger(value.originY)) return false;
   if (value.constructionUntilDay !== undefined && !(Number.isSafeInteger(value.constructionUntilDay) && Number(value.constructionUntilDay) >= 1)) return false;
+  if (value.closedForRent !== undefined && typeof value.closedForRent !== 'boolean') return false;
   // parcelIds là danh sách id lô (tùy chọn)
   if (value.parcelIds !== undefined && (!Array.isArray(value.parcelIds) || value.parcelIds.some(id => !nonEmptyString(id)))) return false;
   // builtBy là accountId/'local' của người xây (tùy chọn — nếu có phải là chuỗi không rỗng)
@@ -1070,6 +1115,29 @@ export interface ChainState {
 
 export const BRANCH_REPORT_LIMIT = 30;
 
+/** Mã loại mục tiêu thành phố (trùng với CityGoalKind trong game-data). */
+export type CityGoalKind =
+  | 'daily_customers'
+  | 'building_types_open'
+  | 'waves_opened'
+  | 'infrastructure'
+  | 'weekly_revenue'
+  | 'total_buildings';
+
+/** Trạng thái tiến độ mục tiêu thành phố (schema 10). */
+export interface CityProgressState {
+  /** Cấp thành phố hiện tại (1..10). */
+  level: number;
+  /** Đã hoàn thành (claim) các mục tiêu này. */
+  claimedCityGoalIds: string[];
+  /** Nhật ký các mốc đạt được (lên cấp, hoàn thành mục tiêu). */
+  milestones: Array<{ day: number; type: 'level_up' | 'goal_claimed' | 'bundle_completed' | 'civic_opened'; goalId?: string; level?: number; /** Sổ góp (bundle_completed/civic_opened). */ bundleId?: string; /** civic_opened: điểm chỉ số sống khu tăng lên khi tòa mở. */ qolGain?: number }>;
+  /** Số liệu hiện tại cho việc đánh giá tiến độ (được cập nhật bởi simulation). */
+  metrics: Partial<Record<CityGoalKind, number>>;
+  /** Các trang sổ góp đã được hiện (do nhận mục tiêu xóm phố, hoặc hồi tố khi tải save ở cấp đã qua). Tùy chọn, không nâng schema. */
+  revealedBundleIds?: string[];
+}
+
 export interface SaveGameData {
   /** Chuỗi chi nhánh (tùy chọn, không nâng schema). */
   chain?: ChainState;
@@ -1092,6 +1160,7 @@ export interface SaveGameData {
   staffSchedule?: Record<string, StaffShift>;
   wageDebt?: number;
   processedPayrollDayIds?: number[];
+  processedRentDayIds?: number[];
   autoBuyEnabled?: boolean;
   /** Mỗi sáng tự nhập nguyên liệu cho quầy ăn uống đã mở (độc lập với quy tắc theo mặt hàng). */
   autoBuyStalls?: boolean;
@@ -1153,6 +1222,14 @@ export interface SaveGameData {
    * (chỉ W0 mở, không công trình) — migration 6→7 gieo mặc định.
    */
   world?: WorldOpenState;
+  /** Tiến độ mục tiêu thành phố (OpenSpec `open-world-districts-city-goals`, schema 10). Thiếu = cấp 1, chưa hoàn thành mục tiêu nào. */
+  cityProgress?: CityProgressState;
+  /** Dân số xóm theo QoL (OpenSpec `civic-population-demand`, schema 11). Thiếu = chưa mở civic, dân số = baseline (factor = 1.0). */
+  civic?: {
+    populationByDistrict: Record<string, number>;
+    /** Sổ góp xóm (OpenSpec `civic-city-goals`). Tùy chọn, KHÔNG nâng schema — save cũ hợp lệ; thiếu = chưa mở sổ. */
+    bundles?: Record<string, { slots: Record<string, number>; contributions: Array<{ playerId: string; slotId: string; qty: number; day: number; value?: number }>; completedDay?: number }>;
+  };
 }
 
 export interface RegularCustomerProgress {
@@ -1274,6 +1351,21 @@ export interface BusinessState {
   save: SaveGameData;
 }
 
+/** Cài đặt đất của hẻm chung (OpenSpec `open-world-coop-land` D2/D3); chỉ chủ hẻm đổi được. */
+export interface WorldSettings {
+  /** Quyền của thành viên (không phải chủ) với lệnh đất; thiếu = 'vote'. */
+  memberLandPermissions?: 'full' | 'vote' | 'none';
+  /** Chủ bỏ phiếu cho lệnh đất của chính mình; thiếu = false. */
+  ownerSkipsVote?: boolean;
+}
+
+export const isWorldSettings = (value: unknown): value is WorldSettings => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const v = value as Record<string, unknown>;
+  return (v.memberLandPermissions === undefined || v.memberLandPermissions === 'full' || v.memberLandPermissions === 'vote' || v.memberLandPermissions === 'none') &&
+    (v.ownerSkipsVote === undefined || typeof v.ownerSkipsVote === 'boolean');
+};
+
 export interface GameWorld {
   id: string;
   name?: string;
@@ -1286,6 +1378,8 @@ export interface GameWorld {
   memberships: WorldMembership[];
   businessIds: string[];
   avatars: GameAvatar[];
+  /** Cài đặt đất của hẻm; hẻm cũ thiếu = mặc định (thành viên 'vote', chủ không bỏ qua phiếu). */
+  settings?: WorldSettings;
 }
 
 export type GameCommandPayload =
@@ -1357,7 +1451,16 @@ export type GameCommandPayload =
   | { type: 'buy_storage_rack' }
   // Khai hoang đất (OpenSpec `open-world-land-reclamation` D3/D4)
   | { type: 'reclaim_wave'; waveId: string }
-  | { type: 'buy_parcel'; parcelId: string };
+  | { type: 'buy_parcel'; parcelId: string }
+  // Mở tòa loại mới (OpenSpec `open-world-building-types` 2.1)
+  | { type: 'open_building'; buildingTypeId: string; parcelId: string; originX: number; originY: number }
+  // Thuê đất (OpenSpec `open-world-land-lease` 2.1)
+  | { type: 'lease_parcel'; parcelId: string }
+  | { type: 'end_lease'; parcelId: string }
+  | { type: 'pay_rent_debt'; parcelId: string }
+  // Mục tiêu thành phố (OpenSpec `civic-city-goals` 4A)
+  | { type: 'claim_city_goal'; goalId: string }
+  | { type: 'donate_to_bundle'; bundleId: string; slotId: string; productId?: string; quantity?: number; amount?: number };
 
 export interface GameCommand {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
@@ -1374,6 +1477,19 @@ export interface GameInputIntent {
   direction: Vector2D;
 }
 
+/** Giữ chỗ quy hoạch đất của một người trong hẻm chung (trạng thái tạm của runtime, không lưu save; xem game-core `planning-reservation`). */
+export interface PlanningReservationSnapshot {
+  accountId: string;
+  name?: string;
+  kind: 'tiles' | 'parcels' | 'placement' | 'wave';
+  targets:
+    | { kind: 'tiles'; tiles: Array<{ x: number; y: number }> }
+    | { kind: 'parcels'; parcelIds: string[] }
+    | { kind: 'placement'; placement: { buildingId: string; parcelId: string; originX: number } }
+    | { kind: 'wave'; waveId: string };
+  expiresAt: number;
+}
+
 export interface GameSnapshot {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
   world: GameWorld;
@@ -1381,6 +1497,8 @@ export interface GameSnapshot {
   serverTime: string;
   /** Hiện diện thật của từng người trong lịch ngày chung (server tính); hẻm cũ/bản cũ có thể thiếu. */
   coop?: { players: Array<{ accountId: string; online: boolean; sleeping: boolean }> };
+  /** Giữ chỗ quy hoạch đất đang hiệu lực của mọi người (client tự lọc phần của mình); thiếu = không ai giữ. */
+  planning?: PlanningReservationSnapshot[];
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -1408,7 +1526,7 @@ export function isGameAvatar(value: unknown): value is GameAvatar {
     (value.displayName === undefined || (typeof value.displayName === 'string' && value.displayName.length <= 64));
 }
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 9;
+export const CURRENT_SAVE_SCHEMA_VERSION = 11;
 
 /** Trạng thái thế giới mở (OpenSpec `open-world-land-reclamation`): đợt đã mở & đang thi công. */
 export interface WorldOpenState {
@@ -1445,7 +1563,7 @@ export interface SaveValidationResult {
   data?: SaveGameData;
 }
 
-const OPTIONAL_SAVE_ARRAYS = ['staff', 'processedPayrollDayIds', 'pendingOrders', 'holdingArea', 'closedDayIds', 'completedCheckoutIds', 'processedAutoBuyDayIds', 'autoBuyRules', 'customerCredits', 'ledger'] as const;
+const OPTIONAL_SAVE_ARRAYS = ['staff', 'processedPayrollDayIds', 'processedRentDayIds', 'pendingOrders', 'holdingArea', 'closedDayIds', 'completedCheckoutIds', 'processedAutoBuyDayIds', 'autoBuyRules', 'customerCredits', 'ledger'] as const;
 const OPTIONAL_LAYOUT_ARRAYS = ['storedFixtures', 'unlockedPlotIds', 'decorOwned', 'buildingPlacements', 'ownedParcelIds'] as const;
 
 /** Quy tắc tự nhập đúng hình dạng; nội dung (sản phẩm, nhà cung cấp, giới hạn) do `setAutoBuyConfig` kiểm tiếp. */
@@ -1472,7 +1590,7 @@ export function isChainState(value: unknown): value is ChainState {
 }
 
 export function isSaveGameData(value: unknown): value is SaveGameData {
-  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.schemaVersion !== 7 && value.schemaVersion !== 8 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.schemaVersion !== 7 && value.schemaVersion !== 8 && value.schemaVersion !== 9 && value.schemaVersion !== 10 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
     return false;
   }
@@ -1502,6 +1620,33 @@ export function isSaveGameData(value: unknown): value is SaveGameData {
     return false;
   }
   if (value.world !== undefined && !isWorldOpenState(value.world)) return false;
+  // null = Mongo lưu `undefined` thành null (save cũ/ghi trực tiếp): coi như không có, không phải save hỏng.
+  if (value.civic !== undefined && value.civic !== null) {
+    const civic = value.civic;
+    if (!isRecord(civic) || !isRecord(civic.populationByDistrict)) return false;
+    if (!Object.values(civic.populationByDistrict).every(v => Number.isFinite(v))) return false;
+    // bundles tùy chọn (OpenSpec `civic-city-goals`, KHÔNG nâng schema). Validate từng trang để nạp không sập.
+    if (civic.bundles !== undefined && civic.bundles !== null) {
+      if (!isRecord(civic.bundles)) return false;
+      for (const bundle of Object.values(civic.bundles)) {
+        if (!isRecord(bundle)) return false;
+        // slots: Record<string, số hữu hạn ≥ 0> (hàng: đơn vị; cash: đồng).
+        if (!isRecord(bundle.slots)) return false;
+        if (!Object.values(bundle.slots).every(v => typeof v === 'number' && Number.isFinite(v) && (v as number) >= 0)) return false;
+        // contributions: mảng object hợp lệ (playerId/slotId chuỗi, qty/day số). value tùy chọn.
+        if (bundle.contributions !== undefined) {
+          if (!Array.isArray(bundle.contributions)) return false;
+          for (const c of bundle.contributions) {
+            if (!isRecord(c) || typeof c.playerId !== 'string' || typeof c.slotId !== 'string' ||
+              !(typeof c.qty === 'number' && Number.isFinite(c.qty)) || !(typeof c.day === 'number' && Number.isSafeInteger(c.day))) return false;
+            if (c.value !== undefined && !(typeof c.value === 'number' && Number.isFinite(c.value))) return false;
+          }
+        }
+        // completedDay: số nguyên dương hoặc undefined.
+        if (bundle.completedDay !== undefined && !(typeof bundle.completedDay === 'number' && Number.isSafeInteger(bundle.completedDay) && (bundle.completedDay as number) > 0)) return false;
+      }
+    }
+  }
   return true;
 }
 
@@ -1523,7 +1668,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
   // của save cũ vẫn nằm trong `unlockedPlotIds` và được bản đồ đọc như ô sàn mở rộng đã dùng (xem `mainFloorTiles` ở game-data).
   // Nâng lên schema hiện tại + gieo trường world-open (đợt 0 đã mở, 4 lô W0 đã sở hữu) cho v6–v7 và v1–v5.
   const migrateToW7 = (m: SaveGameData): void => {
-    m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+    m.schemaVersion = 7;
     m.storeLayout.storedFixtures = m.storeLayout.storedFixtures ?? [];
     m.storeLayout.unlockedPlotIds = m.storeLayout.unlockedPlotIds ?? [];
     m.storeLayout.ownedParcelIds = m.storeLayout.ownedParcelIds ?? ownedParcelIdsDefault();
@@ -1534,7 +1679,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
   // `ownedParcelIds` GIỮ string[] như trước (KHÔNG đổi thành bản ghi {id,boughtBy,day}) để tương thích land-reclamation đã
   // implement (`simulation.buyParcel` push string, `store-layout` đọc string[]); bản ghi lô đầy đủ theo D4 đạt qua field bổ sung/ghi chú, không breaking.
   const migrateToW8 = (m: SaveGameData): void => {
-    m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+    m.schemaVersion = 8;
     for (const p of m.storeLayout.buildingPlacements ?? []) {
       if (p.builtBy === undefined) p.builtBy = 'local';
     }
@@ -1543,7 +1688,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
   // chờ máy thật — task này CHỈ chuẩn bị schema). Chỉ điền khi CHƯA có (KHÔNG ghi đè typeId do custom/dữ liệu đặt).
   // Các buildingId khác giữ nguyên, không suy diễn.
   const migrateToW9 = (m: SaveGameData): void => {
-    m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+    m.schemaVersion = 9;
     const TYPEID_BY_LEGACY_BUILDING: Record<string, string> = {
       main: 'grocery_main',
       xoi: 'xoi_shop',
@@ -1556,11 +1701,37 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
       }
     }
   };
+  // 9 → 10 (open-world-land-lease 3.1): điền `parcelTenure` từ `ownedParcelIds` (mọi lô = owned).
+  // Migration 9→10 chỉ điền khi CHƯA có `parcelTenure`; nếu đã có (save thử schema 10) thì giữ nguyên.
+  // `ownedParcelIds` giữ nguyên để tương thích land-reclamation (`simulation.buyParcel` push string).
+  const migrateToW10 = (m: SaveGameData): void => {
+    m.schemaVersion = 10;
+    if (m.storeLayout.parcelTenure) return; // Đã có (save schema 10+)
+    const owned = m.storeLayout.ownedParcelIds ?? [];
+    const tenure: Record<string, { kind: 'owned'; day: number; boughtBy: string }> = {};
+    for (const pid of owned) {
+      tenure[pid] = { kind: 'owned', day: 1, boughtBy: 'local' };
+    }
+    // W0 luôn owned: gieo 4 lô mặc định nếu parcelTenure rỗng
+    if (Object.keys(tenure).length === 0) {
+      for (const pid of W0_OWNED_PARCEL_IDS) {
+        tenure[pid] = { kind: 'owned', day: 1, boughtBy: 'local' };
+      }
+    }
+    m.storeLayout.parcelTenure = tenure;
+  };
+  // 10 → 11 (civic-population-demand): chỉ nâng số schema. Không gieo `civic`: simulation khởi tạo dân số = baseline cho khu
+  // thiếu dữ liệu (hệ số khách đúng 1), nên save cũ giữ nguyên kinh tế.
+  const migrateToW11 = (m: SaveGameData): void => {
+    m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+  };
   if ((value.schemaVersion === 1 || value.schemaVersion === 2 || value.schemaVersion === 3 || value.schemaVersion === 4 || value.schemaVersion === 5) && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW7(migrated);
     migrateToW8(migrated);
     migrateToW9(migrated);
+    migrateToW10(migrated);
+    migrateToW11(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v6 → v7 (open-world-land-reclamation): save cũ không có `world`/`ownedParcelIds` → chỉ mở đợt 0 và W0 đã sở hữu.
@@ -1569,20 +1740,39 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW7(migrated);
     migrateToW8(migrated);
     migrateToW9(migrated);
+    migrateToW10(migrated);
+    migrateToW11(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v7 → hiện tại (open-world-coop-land D4): save v7 ĐÃ có `world`/`ownedParcelIds` (v6 đã gieo), chỉ cần điền
-  // `builtBy` (W8) + `typeId` (W9). Trả `data` như v6 để caller nạp được save đã migrate.
+  // `builtBy` (W8) + `typeId` (W9) + `parcelTenure` (W10) + `civic` (W11). Trả `data` như v6 để caller nạp được save đã migrate.
   if (value.schemaVersion === 7 && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW8(migrated);
     migrateToW9(migrated);
+    migrateToW10(migrated);
+    migrateToW11(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
-  // v8 → hiện tại (open-world-building-types D8): save v8 đã có `builtBy`, chỉ cần gắn `typeId` (W9).
+  // v8 → hiện tại (open-world-building-types D8): save v8 đã có `builtBy`, chỉ cần gắn `typeId` (W9) + `parcelTenure` (W10) + `civic` (W11).
   if (value.schemaVersion === 8 && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW9(migrated);
+    migrateToW10(migrated);
+    migrateToW11(migrated);
+    return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
+  }
+  // v9 → 10 (open-world-land-lease 3.1): save v9 có typeId, chỉ cần điền `parcelTenure` (W10) + `civic` (W11).
+  if (value.schemaVersion === 9 && isSaveGameData(value)) {
+    const migrated = structuredClone(value) as SaveGameData;
+    migrateToW10(migrated);
+    migrateToW11(migrated);
+    return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
+  }
+  // v10 → 11 (civic-population-demand): điền `civic` nếu thiếu.
+  if (value.schemaVersion === 10 && isSaveGameData(value)) {
+    const migrated = structuredClone(value) as SaveGameData;
+    migrateToW11(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   if (value.schemaVersion < CURRENT_SAVE_SCHEMA_VERSION) {
@@ -1617,7 +1807,7 @@ export function restoreSaveBackupSnapshot(backup: SaveGameData, targetId = 'loca
 export interface TransferShelfResult {
   success: boolean;
   actualQuantity: number;
-  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'fixture_broken' | 'invalid_amount' | 'product_locked' | 'storage_mismatch' | 'no_inventory' | 'product_mismatch' | 'no_space' | 'success'
+  reason?: 'fixture_not_found' | 'not_sales_fixture' | 'fixture_broken' | 'invalid_amount' | 'product_locked' | 'storage_mismatch' | 'product_not_allowed' | 'no_inventory' | 'product_mismatch' | 'no_space' | 'success'
     /** Kho còn hàng nhưng toàn nguyên thùng: phải mở thùng trong kho rồi mới châm kệ được. */
     | 'in_cases'
     /** Phần còn lại trong kho đã giữ cho nguyên liệu quầy ăn uống: bày tự động không lấy. */
@@ -1651,7 +1841,8 @@ export function isGameWorld(value: unknown): value is GameWorld {
       !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt) ||
       !Array.isArray(value.memberships) || !value.memberships.every(isWorldMembership) ||
       !Array.isArray(value.businessIds) || !value.businessIds.every(nonEmptyString) ||
-      !Array.isArray(value.avatars) || !value.avatars.every(isGameAvatar) || !isRecord(value.worldTime)) return false;
+      !Array.isArray(value.avatars) || !value.avatars.every(isGameAvatar) || !isRecord(value.worldTime) ||
+      (value.settings !== undefined && !isWorldSettings(value.settings))) return false;
   const memberIds = value.memberships.map(member => (member as WorldMembership).accountId);
   const avatarIds = value.avatars.map(avatar => (avatar as GameAvatar).accountId);
   return new Set(memberIds).size === memberIds.length && new Set(avatarIds).size === avatarIds.length &&
@@ -1733,6 +1924,15 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'buy_storage_rack': return true;
     case 'reclaim_wave': return nonEmptyString(p.waveId);
     case 'buy_parcel': return nonEmptyString(p.parcelId);
+    case 'open_building': return nonEmptyString(p.buildingTypeId) && nonEmptyString(p.parcelId) && Number.isSafeInteger(p.originX) && Number.isSafeInteger(p.originY);
+    case 'lease_parcel': return nonEmptyString(p.parcelId);
+    case 'end_lease': return nonEmptyString(p.parcelId);
+    case 'pay_rent_debt': return nonEmptyString(p.parcelId);
+    case 'claim_city_goal': return nonEmptyString(p.goalId);
+    // Đúng một dạng: hàng (productId + quantity, không amount) HOẶC tiền (amount, không productId/quantity).
+    case 'donate_to_bundle': return nonEmptyString(p.bundleId) && nonEmptyString(p.slotId) && (
+      (p.amount === undefined && nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0) ||
+      (p.productId === undefined && p.quantity === undefined && Number.isSafeInteger(p.amount) && Number(p.amount) > 0));
     default: return false;
   }
 }
@@ -1748,3 +1948,6 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     world.businessIds.length === businesses.length &&
     businesses.every(business => world.businessIds.includes(business.id));
 }
+
+export * from './snapshot-delta';
+export * from './command-types';

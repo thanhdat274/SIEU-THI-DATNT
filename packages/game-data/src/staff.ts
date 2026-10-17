@@ -99,6 +99,8 @@ export interface StaffSpecialtyInfo {
   detectAccuracyBonus?: number;
   /** Nhân với tốc độ di chuyển khi làm việc. */
   moveSpeedFactor?: number;
+  /** Thưởng tỷ lệ phát hiện kẻ trộm khi bảo vệ tuần tra (ví dụ +0.05). */
+  thiefCatchBonus?: number;
   /** Phụ phí lương mỗi ngày cho chuyên môn. */
   wageBonus: number;
 }
@@ -107,7 +109,7 @@ export const STAFF_SPECIALTIES: Record<StaffSpecialty, StaffSpecialtyInfo> = {
   quick_hands: { id: 'quick_hands', label: 'Tay nhanh', icon: '⚡', description: 'Tính tiền nhanh hơn 20%, hàng khách không phải chờ lâu.', roles: ['cashier'], checkoutTimeFactor: 0.8, wageBonus: 5000 },
   sharp_eye: { id: 'sharp_eye', label: 'Mắt tinh', icon: '👁', description: 'Soi tiền giả tốt hơn hẳn người thường.', roles: ['cashier'], detectAccuracyBonus: 3, wageBonus: 5000 },
   swift_legs: { id: 'swift_legs', label: 'Chân nhanh', icon: '👟', description: 'Di chuyển bổ sung kệ nhanh hơn 25%.', roles: ['refill', 'drink_staff'], moveSpeedFactor: 1.25, wageBonus: 5000 },
-  patrol_ace: { id: 'patrol_ace', label: 'Tuần tra giỏi', icon: '🔦', description: 'Đi tuần nhanh hơn 30%, phủ được nhiều khu hơn.', roles: ['security', 'drink_security'], moveSpeedFactor: 1.3, wageBonus: 5000 },
+  patrol_ace: { id: 'patrol_ace', label: 'Tuần tra giỏi', icon: '🔦', description: 'Đi tuần nhanh hơn 30%, tăng khả năng tóm trộm và phủ nhiều khu hơn.', roles: ['security', 'drink_security'], moveSpeedFactor: 1.3, thiefCatchBonus: 0.05, wageBonus: 5000 },
 };
 
 export const STAFF_SPECIALTY_IDS = Object.keys(STAFF_SPECIALTIES) as StaffSpecialty[];

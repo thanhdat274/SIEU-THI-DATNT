@@ -33,3 +33,26 @@ export function landErrorMessage(code: string, ctx?: LandErrorContext): string {
       return code;
   }
 }
+
+const OPEN_BUILDING_REASON_MESSAGES: Record<string, string> = {
+  store_open: 'Cần đóng cửa tiệm rồi mới mở được cơ sở mới.',
+  unknown_type: 'Loại công trình này không tồn tại.',
+  unknown_parcel: 'Không tìm thấy lô đất này.',
+  parcel_not_owned: 'Bạn chưa sở hữu lô đất này.',
+  not_leased: 'Lô đất này chưa được thuê.',
+  rent_debt: 'Lô đất đang nợ tiền thuê, hãy trả nợ trước.',
+  wave_not_open: 'Đợt khai hoang của lô này chưa mở.',
+  level: 'Chưa đủ cấp để mở công trình này.',
+  money: 'Không đủ tiền để mở công trình này.',
+  max_instances: 'Đã đạt số lượng tối đa của loại công trình này.',
+  single_instance: 'Mỗi lô chỉ xây được một công trình loại này.',
+  building_present: 'Lô đất này đã có công trình.',
+  owned: 'Công trình này đã có rồi.',
+  invalid_day: 'Chưa mở được công trình vào lúc này.',
+};
+
+/** Câu tiếng Việt cho `reason` của `openBuilding` (mã lạ trả về chính mã). */
+export function openBuildingReasonMessage(reason: string | undefined): string {
+  if (!reason) return 'Không mở được cơ sở.';
+  return OPEN_BUILDING_REASON_MESSAGES[reason] ?? reason;
+}

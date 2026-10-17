@@ -1,1 +1,9 @@
-{"atlases": ["city/city.json", "chars/chars.json", "vehicles/vehicles.json"]}
+{
+  "atlases": [
+    "city/city.json",
+    "chars/chars.json",
+    "vehicles/vehicles.json",
+    "furniture/furniture.json",
+    "residents/residents.json"
+  ]
+}

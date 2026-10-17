@@ -1,5 +1,5 @@
-import { generateStarterTileMap, STARTER_PRODUCTS, ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP, DEFAULT_INITIAL_SAVE, runCatalogTests, runExpansionCatalogTests, runExpansionManifestTests, runReclamationDataTests, runPlayAreaTests, runWaveInfrastructureTests, runBuildingTypesTests, runStoreTiersTests, runLandLeaseTests, runDistrictsTests, runCityGoalsTests, runSpecialRequestDataTests, runMarketEventDataTests } from '@game/data';
-import { COLD_WAREHOUSE_CAPACITY, CURRENT_SAVE_SCHEMA_VERSION } from '@game/shared';
+import { generateStarterTileMap, STARTER_PRODUCTS, ALL_PRODUCTS, PRODUCT_CATEGORY_LABELS, PRODUCT_MAP, DEFAULT_INITIAL_SAVE, runCatalogTests, runExpansionCatalogTests, runExpansionManifestTests, runReclamationDataTests, runPlayAreaTests, runWaveInfrastructureTests, runBuildingTypesTests, runStoreTiersTests, runLandLeaseTests, runDistrictsTests, runCityGoalsTests, runSpecialRequestDataTests, runMarketEventDataTests, runDataIntegrityTests } from '@game/data';
+import { COLD_WAREHOUSE_CAPACITY, CURRENT_SAVE_SCHEMA_VERSION, validateSaveGameData } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { CollisionSystem } from './collision';
@@ -23,6 +23,7 @@ import { runPlanningReservationTests } from './planning-reservation.test';
 import { runLandPermissionTests, runLandVoteTests } from './land-core-coop.test';
 import { runOpenWorldCoopLandPureTests } from './city-journal.test';
 import { runBuildingTypesBalanceSimTests } from './building-types-balance-sim.test';
+import { runHolidayBalanceSimTests } from './holiday-balance-sim.test';
 import { runParcelPriceTests } from './parcel-price.test';
 import { runLandLeaseSimTests } from './land-lease-sim.test';
 import { runSupplyContractTests } from './supply-contract.test';
@@ -74,6 +75,7 @@ import { runDeterministicIdTests } from './deterministic-ids.test';
 import { runArrivalModeTests } from './arrival-mode.test';
 import { runMaintenanceTests } from './maintenance.test';
 import { runReviewTests } from './reviews.test';
+import { runReviewReputationTests } from './review-reputation.test';
 import { runSecurityTests } from './security.test';
 import { runProductionTests } from './production.test';
 import { runXoiTests } from './xoi.test';
@@ -85,8 +87,14 @@ import { runBuildingPlacementTests } from './building-placement.test';
 import { runConstructionStaffTests } from './construction-staff.test';
 import { runSidewalkPassableTests } from './sidewalk-passable.test';
 import { runNeighborhoodWalkTests } from './neighborhood-walk.test';
+import { runCivicResidentsLifeTests } from './civic-residents-life.test';
 import { runReclamationMapTests } from './reclamation-map.test';
 import { runNewParcelPlacementTests } from './new-parcel-placement.test';
+import { runLandLeaseCoreTests } from './land-lease-core.test';
+import { runBuildingProductFilterTests } from './building-product-filter.test';
+import { runBuildingBehaviorTests } from './building-behavior.test';
+import { runPlanningRuntimeTests } from './planning-runtime.test';
+import { runLandPolicyTests } from './land-policy.test';
 import { runXoiCustomerTests } from './xoi-customers.test';
 import { runDrinkCustomerTests } from './drink-customers.test';
 import { runDrinkStaffTests } from './drink-staff.test';
@@ -94,6 +102,13 @@ import { runSnackShopTests } from './snack-shop.test';
 import { runXoiStaffTests } from './xoi-staff.test';
 import { runDiningAddonTests } from './dining-addons.test';
 import { runPrestigeTests } from './prestige.test';
+import { runCivicQolTestsEntry } from './civic-qol.test';
+import { runCivicPopulationTestsEntry } from './civic-population.test';
+import { runCivicFeeTestsEntry } from './civic-fees.test';
+import { runCivicBundleTests } from './civic-bundles.test';
+import { runCivicRevealGoalsTests } from './civic-reveal-goals.test';
+import { runCivicBundleViewTests } from './civic-bundle-view.test';
+import { runCivicCoopTests } from './civic-coop.test';
 import { runAnalyticsTests } from './analytics.test';
 import { runWaveATests } from './wave-a.test';
 import { runSpecialRequestSimTests } from './special-request-sim.test';
@@ -106,6 +121,7 @@ import { runDayRhythmTests } from './day-rhythm.test';
 import { runStreetTrafficTests } from './street-traffic.test';
 import { runNeighborhoodTests, runNeighborNameTests } from './neighborhood.test';
 import { runPartyOrderTests } from './party-orders.test';
+import { runPartyOrdersSeasonalTests } from './party-orders-seasonal.test';
 import { runGoalTests } from './goals.test';
 import { runStoryTests } from './story.test';
 import { runSkillTests } from './skills.test';
@@ -177,10 +193,16 @@ export async function runTests(): Promise<void> {
   runNeighborhoodWalkTests();
   runReclamationMapTests();
   runNewParcelPlacementTests();
+  runLandLeaseCoreTests();
+  runBuildingProductFilterTests();
+  runBuildingBehaviorTests();
+  runPlanningRuntimeTests();
+  runLandPolicyTests();
   runDeterministicIdTests();
   runArrivalModeTests();
   runMaintenanceTests();
   runReviewTests();
+  runReviewReputationTests();
   runSecurityTests();
   runProductionTests();
   runXoiTests();
@@ -201,6 +223,7 @@ export async function runTests(): Promise<void> {
   runStoreTiersTests();
   runSchema9Tests();
   runBuildingTypesBalanceSimTests();
+  runHolidayBalanceSimTests();
   runLandLeaseTests();
   runParcelPriceTests();
   runLandLeaseSimTests();
@@ -213,6 +236,7 @@ export async function runTests(): Promise<void> {
   runSpecialRequestDataTests();
   runSpecialRequestTests();
   runMarketEventDataTests();
+  runDataIntegrityTests();
   runWordOfMouthTests();
   runPriceSuggestTests();
   runWorldEventsTests();
@@ -228,6 +252,13 @@ export async function runTests(): Promise<void> {
   runXoiStaffTests();
   runDiningAddonTests();
   runPrestigeTests();
+  runCivicQolTestsEntry();
+  runCivicPopulationTestsEntry();
+  runCivicFeeTestsEntry();
+  runCivicBundleTests();
+runCivicRevealGoalsTests();
+runCivicBundleViewTests();
+runCivicResidentsLifeTests();
   runAnalyticsTests();
   runWaveATests();
   runSpecialRequestSimTests();
@@ -256,6 +287,7 @@ export async function runTests(): Promise<void> {
   runNeighborhoodTests();
   runNeighborNameTests();
   runPartyOrderTests();
+  runPartyOrdersSeasonalTests();
   runGoalTests();
   runStoryTests();
   runSkillTests();
@@ -269,6 +301,7 @@ export async function runTests(): Promise<void> {
   runAvatarTests();
   await runCommandTests();
   await runWorldRuntimeTests();
+  await runCivicCoopTests();
   console.log('\n--- Test multiplayer checkout reservation/idempotency ---');
   const checkoutSave = structuredClone(DEFAULT_INITIAL_SAVE);
   checkoutSave.customer = {
@@ -420,6 +453,11 @@ export async function runTests(): Promise<void> {
   assert(migrated.getFixtures().some((fixture) => fixture.type === 'refrigerator'), 'Bản lưu cũ được bổ sung tủ mát');
   assert(migrated.getInventory().every((item) => item.lots?.length), 'Hàng trong bản lưu cũ được gắn hạn dùng');
   assert(migrated.exportSaveData('test_save_id', 4).schemaVersion === CURRENT_SAVE_SCHEMA_VERSION, 'Bản lưu mới dùng schema version hiện tại');
+  const v9Save = structuredClone(DEFAULT_INITIAL_SAVE) as unknown as Record<string, unknown>;
+  v9Save.schemaVersion = 9;
+  (v9Save.storeLayout as Record<string, unknown>).parcelTenure = undefined;
+  const v9Result = validateSaveGameData(v9Save);
+  assert(v9Result.valid && v9Result.data?.schemaVersion === CURRENT_SAVE_SCHEMA_VERSION && !!v9Result.data.storeLayout.parcelTenure, 'Bản lưu schema 9 được nâng lên schema hiện tại');
   const partialSave = structuredClone(DEFAULT_INITIAL_SAVE);
   partialSave.inventory[0].lots = [];
   assert(new GameSimulation(partialSave, tileMap, input).getInventory()[0].quantity === partialSave.inventory[0].quantity, 'Bản lưu thiếu lô không làm mất hàng');
@@ -472,5 +510,9 @@ export async function runTests(): Promise<void> {
 
 // Execute if run directly
 if (typeof process !== 'undefined' && process.argv && process.argv[1]?.includes('test-runner')) {
-  runTests();
+  // Phải bắt lỗi: runTests() là async, assert hỏng ở đoạn đồng bộ sẽ thành unhandledRejection và bị báo nhầm vào test node:test đang chạy.
+  runTests().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }
