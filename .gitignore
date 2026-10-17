@@ -14,3 +14,4 @@ bash.exe.stackdump
 apps/web/public/assets/sprites/chars/
 apps/web/public/assets/sprites/furniture/
 browser-screenshots
+yarn.lock
