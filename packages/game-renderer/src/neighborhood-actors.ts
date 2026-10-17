@@ -1,4 +1,4 @@
-import { walkerLook } from './sprite-atlas';
+import { residentLook } from './sprite-atlas';
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import { NeighborhoodLife, type LifeContext, type NeighborNpcView, type NpcFacing, type WeatherVisualState } from '@game/core';
 import { NEIGHBORHOOD_QUALITY, PARK, SCHOOL, detailForZoom, type NeighborhoodQuality } from '@game/data';
@@ -246,7 +246,8 @@ export class NeighborhoodActors {
     const hz = detail === 'far' ? 4 : 8;
     const frame = f.reducedMotion ? 0 : Math.floor(f.time * (walking ? hz : 1.5)) % (walking ? 4 : 2);
     const visualFacing: NpcFacing = sitting ? 'down' : dir;
-    const look = walkerLook(n.spriteVariant);
+    // `spriteVariant` là mã look (6 học sinh, 7 cụ già, 8 công sở, 9 trẻ em), không phải chỉ số walker.
+    const look = residentLook(n.spriteVariant);
     const key = `npc_${look}_${visualFacing}_${walking ? 'walk' : 'idle'}_${frame}`;
     entry.body.texture = this.textures.getTexture(key);
     entry.body.tint = look >= 6 ? 0xffffff : n.tint;

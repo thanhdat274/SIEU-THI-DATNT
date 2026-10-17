@@ -4,6 +4,7 @@
  */
 import type { BuildingPlacementRecord, StoreFixture } from '@game/shared';
 import { BUILDING_TYPE_DEFS, type BuildingTypeId, buildingTypeOfInstance } from './building-types';
+import { civicDefOf } from './civic';
 import { BUILDING_TEMPLATES, MAIN_EAST_WING_COLUMNS, NORTH_EXPANSION_ROWS, type BuildingId, type BuildingTemplate, type RelTile } from './building-templates';
 import { baseFloorTiles, checkFootprintTiles, footprintFloor, tileKey, type Tile } from './footprint';
 import { TREE_PROPS } from './infrastructure';
@@ -340,6 +341,9 @@ export function resolvePlacements(records: readonly BuildingPlacementRecord[] | 
 /** Tương thích tên cũ: trước Bước 3 trả cả bốn tòa; nay chỉ trả tòa đang có (xem `resolvePlacements`). */
 export const normalizePlacements = resolvePlacements;
 
+/** Tòa civic (mặt tiền sprite phủ kín footprint): tra theo `typeId` của bản ghi hoặc loại của instance id. */
+const isCivicPlacement = (record: BuildingPlacementRecord): boolean => !!civicDefOf(record.typeId ?? buildingTypeOfInstance(record.buildingId)?.typeId ?? '');
+
 /** Hộp bao hai biên chồng nhau; trả null nếu không chạm. */
 const overlap = (a: BuildingBounds, b: BuildingBounds): BuildingBounds | null => {
   const left = Math.max(a.left, b.left), right = Math.min(a.right, b.right), top = Math.max(a.top, b.top), bottom = Math.min(a.bottom, b.bottom);
@@ -351,8 +355,12 @@ const overlap = (a: BuildingBounds, b: BuildingBounds): BuildingBounds | null =>
  * ô vỉa hè trước cửa không có cây. `others` là các vị trí đặt còn lại (tiệm chính + tòa phụ khác đang có). Trả mã lỗi hoặc null.
  * `ownedParcelIds` (open-world-land-reclamation D4): lô đợt mới (wave !== 0) phải đã MUA bằng `buy_parcel` mới đặt được tòa;
  * lô W0 coi như đã sở hữu. Thiếu tham số → không kiểm sở hữu (giữ hành vi cũ để golden không đổi).
+ * Hai công trình công cộng (civic) KHÔNG được chung cột tường với nhau: mỗi bên vẽ mặt tiền bằng một sprite phủ kín footprint
+ * nên chung cột thì sprite này che mép sprite kia. Civic cạnh tòa vẽ code vẫn được chung một cột (lô `lot-east-1` rộng đúng 6 cột,
+ * cột 21 là tường đông của tiệm chính). `legacyCivicShare` chỉ dành cho đường kiểm save đã có (`placementsProblem`):
+ * save cũ đã lỡ đặt civic chung cột vẫn nạp được, chỉ chặn đặt MỚI.
  */
-export function validatePlacement(candidate: BuildingPlacementRecord, others: readonly BuildingPlacement[], ownedParcelIds: Iterable<string> = []): string | null {
+export function validatePlacement(candidate: BuildingPlacementRecord, others: readonly BuildingPlacement[], ownedParcelIds: Iterable<string> = [], options: { legacyCivicShare?: boolean } = {}): string | null {
   const ownedParcels = new Set(ownedParcelIds);
   const template = Object.prototype.hasOwnProperty.call(BUILDING_TEMPLATES, candidate.buildingId) ? BUILDING_TEMPLATES[candidate.buildingId as BuildingId] : buildingTypeOfInstance(candidate.buildingId)?.template;
   if (!template) return `unknown_building:${candidate.buildingId}`;
@@ -374,8 +382,8 @@ export function validatePlacement(candidate: BuildingPlacementRecord, others: re
     const boxes = [otherParcel ? parcelFitBounds(otherParcel, otherGeo) : otherGeo.maxBounds, ...(otherGeo.template.hasWarehouse ? [warehouseGeometry(otherGeo).bounds] : [])];
     for (const box of boxes) {
       const shared = overlap(parcelFitBounds(parcel, geo), box);
-      // Chỉ được chung đúng một cột tường (tường đông của tòa này là tường tây của tòa kia).
-      if (shared && shared.left !== shared.right) return `overlap:${candidate.buildingId}:${other.buildingId}`;
+      // Chỉ được chung đúng một cột tường (tường đông của tòa này là tường tây của tòa kia) — trừ khi CẢ HAI là civic.
+      if (shared && (shared.left !== shared.right || (!options.legacyCivicShare && isCivicPlacement(candidate) && isCivicPlacement(other)))) return `overlap:${candidate.buildingId}:${other.buildingId}`;
     }
   }
   // Ô trước cửa (hàng vỉa hè y=11) phải đi được: không có cây trên các ô cửa hay ô vào cửa.
@@ -413,7 +421,7 @@ export function placementsProblem(placements: readonly BuildingPlacementRecord[]
   if (!main) placed.unshift(defaultPlacementOf('main'));
   for (const record of relevant) {
     if (isMain(record)) continue;
-    const problem = validatePlacement(record, placed.filter(other => getTypeId(other) !== 'grocery_main'), ownedParcelIds);
+    const problem = validatePlacement(record, placed.filter(other => getTypeId(other) !== 'grocery_main'), ownedParcelIds, { legacyCivicShare: true });
     if (problem) return problem;
   }
   // D7b: lô đã lấn (`parcelIds`) phải có thật và không thuộc tòa khác.

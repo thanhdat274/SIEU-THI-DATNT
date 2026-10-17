@@ -37,6 +37,7 @@ export type NpcFacing = 'up' | 'down' | 'left' | 'right';
 export interface NeighborNpcView {
   id: string;
   type: NeighborNpcType;
+  /** Mã look nhân vật 0–9 (6 học sinh, 7 cụ già, 8 công sở, 9 trẻ em) — renderer dùng thẳng, KHÔNG phải chỉ số walker. */
   spriteVariant: number;
   tint: number;
   scale: number;
@@ -130,6 +131,9 @@ export function houseFloorTier(pop: number, capacity: number): 1 | 2 | 3 {
  * Sinh thuộc tính cư dân tất định theo (seed, day, districtId, index).
  * Hai client cùng các tham số này sẽ sinh ra cùng loại NPC và ngoại hình.
  */
+/** Mã look cư dân khi không theo dân số (bỏ look 1 = chủ tiệm); thứ tự giữ đúng `walkerLook` cũ để hình không đổi. */
+const LEGACY_WALKER_LOOKS = [0, 2, 3, 4, 5, 6, 7, 8];
+
 export function deterministicResidentNpc(
   seed: number,
   day: number,
@@ -290,7 +294,8 @@ export class NeighborhoodLife {
         let pick = rng.next() * totalWeight;
         def = NPC_TYPES[0];
         for (const t of NPC_TYPES) { pick -= t.weight; if (pick <= 0) { def = t; break; } }
-        spriteVariant = Math.floor(rng.next() * 8);
+        // Mã look (giống `walkerLook(i)` cũ với atlas 9 kiểu): cùng số lần rút RNG, cùng hình như trước.
+        spriteVariant = LEGACY_WALKER_LOOKS[Math.floor(rng.next() * LEGACY_WALKER_LOOKS.length)];
         residentId = `nb-${this.seed}-${i}`;
       }
       const home = homes[Math.floor(rng.next() * homes.length)];

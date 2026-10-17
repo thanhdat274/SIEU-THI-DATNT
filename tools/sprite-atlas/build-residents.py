@@ -23,9 +23,12 @@ def main():
         key = p.stem
         items[key] = Image.open(p).convert('RGBA')
 
-    # 2. Đọc 96 sprite NPC
+    # 2. Đọc sprite NPC hướng down/up. Khung nghiêng left/right của look 6–9 nay chỉ có ở atlas `civic`
+    #    (build-civic.py) để mỗi khóa texture có đúng một nguồn; bỏ qua nếu thư mục nguồn còn file cũ.
     for p in sorted(SRC.glob('npc_*.png')):
         key = p.stem
+        if '_left_' in key or '_right_' in key:
+            continue
         items[key] = Image.open(p).convert('RGBA')
 
     print(f"Tìm thấy {len(items)} sprite ({len([k for k in items if k.startswith('nb_house_')])} nhà, {len([k for k in items if k.startswith('npc_')])} NPC)")

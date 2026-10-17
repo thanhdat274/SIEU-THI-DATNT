@@ -11,7 +11,7 @@
 - [x] 2.4 Golden: save không công trình → "Golden thế giới … khớp golden" PASS.
 
 ## 3. Hình + UI
-- [ ] 3.1 Mặt tiền 4 công trình — CHƯA: đang dùng mẫu tòa tạm (`provisionalTemplate`).
+- [~] 3.1 Mặt tiền 4 công trình (`civic_park`, `civic_clinic`, `civic_ward_police`, `civic_primary_school` + 4 bản `_night`) và 48 khung NPC nghiêng ngang look 6–9: đóng gói vào atlas riêng `apps/web/public/assets/sprites/civic/` (`civic.png` + `civic.json`), đăng ký vào `index.json`. Renderer `viewport.ts` ưu tiên sprite atlas trên `wallLayer` (zIndex = top×32 + 50), tự động chuyển texture ngày/đêm theo `streetLightStrength(light) > 0.5`, bỏ qua biển hiệu code thương mại. Fallback nếu thiếu atlas. Test `civic-atlas.test.ts` PASS 56/56 khung + khớp `doorTiles`. QA D2 17/10/2026 (đã nhìn trong game): trạm y tế/đồn/công viên cửa đúng tâm, ngày/đêm đổi 18:10–18:20 và 6:40–6:50 không nhấp nháy, rào thi công đúng cửa. Sửa lỗi QA D2 (17/10/2026): khóa NPC gộp theo thứ tự `index.json` + residents bỏ khung nghiêng (test `sprite-atlas-order`); hai civic không chung cột (test `civic-placement-overlap`); bảng/rào thi công căn giữa sprite (đo trong game 4 loại); test pixel `civic-door-pixels` PASS với civic.png mới (trường có cổng 96%). CÒN: QA hai client; lòng cổng trường là gạch sáng (không cánh cửa) — chờ chủ dự án duyệt; lỗi lệch `spriteVariant`→look cư dân đã sửa (test `npc-look`); NPC 375×812/667×375 chưa kiểm.
 - [x] 3.2 Tab "Xóm phố" trong `CityModal` (QoL theo khu, công trình, lô trống → góp vốn xây) + 4 loại civic trong `OpenBuildingModal`. QA trình duyệt 1280×800 và 375×812 (không cuộn ngang, nút ≥ 44px). Chưa QA đủ 7 viewport.
 
 ## 4. Kiểm tra

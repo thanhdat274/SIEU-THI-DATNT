@@ -1,5 +1,5 @@
 import { Assets, Rectangle, Texture } from 'pixi.js';
-import { logicalFrame, parseAtlas, parseAtlasIndex, resolveAssetPath } from './sprite-atlas-parse';
+import { logicalFrame, mergeAtlasesInOrder, parseAtlas, parseAtlasIndex, resolveAssetPath, resolveNpcLook } from './sprite-atlas-parse';
 
 /**
  * Hạ tầng nạp spritesheet PNG cho thế giới game. Atlas khai báo khung theo ĐÚNG khóa texture mà `PixelTextureFactory`
@@ -27,34 +27,33 @@ async function fetchJson(url: string): Promise<unknown | null> {
   }
 }
 
-async function loadAtlas(base: string, atlasPath: string): Promise<number> {
+async function loadAtlas(base: string, atlasPath: string): Promise<Map<string, Texture> | null> {
   const atlasUrl = resolveAssetPath(base, atlasPath);
-  if (!atlasUrl) { console.warn(`sprite atlas: đường dẫn không hợp lệ "${atlasPath}"`); return 0; }
+  if (!atlasUrl) { console.warn(`sprite atlas: đường dẫn không hợp lệ "${atlasPath}"`); return null; }
   const atlas = parseAtlas(await fetchJson(atlasUrl));
-  if (!atlas) { console.warn(`sprite atlas: JSON lỗi "${atlasPath}"`); return 0; }
+  if (!atlas) { console.warn(`sprite atlas: JSON lỗi "${atlasPath}"`); return null; }
   const dir = atlasUrl.slice(0, atlasUrl.lastIndexOf('/') + 1);
   const imageUrl = resolveAssetPath(dir, atlas.image);
-  if (!imageUrl) { console.warn(`sprite atlas: ảnh không hợp lệ "${atlas.image}"`); return 0; }
+  if (!imageUrl) { console.warn(`sprite atlas: ảnh không hợp lệ "${atlas.image}"`); return null; }
   let sheet: Texture;
   try {
     sheet = await Assets.load<Texture>(imageUrl);
   } catch (err) {
     console.warn(`sprite atlas: không nạp được ảnh "${atlas.image}"`, err);
-    return 0;
+    return null;
   }
   sheet.source.scaleMode = 'nearest';
   sheet.source.resolution = atlas.resolution; // khung tính theo đơn vị logic = pixel / resolution
-  let count = 0;
+  const textures = new Map<string, Texture>();
   for (const [key, rect] of atlas.frames) {
     const f = logicalFrame(rect, atlas.resolution);
     if (f.x + f.w > sheet.source.width + 1e-6 || f.y + f.h > sheet.source.height + 1e-6) {
       console.warn(`sprite atlas: khung "${key}" vượt ngoài ảnh "${atlas.image}"`);
       continue;
     }
-    overrides.set(key, new Texture({ source: sheet.source, frame: new Rectangle(f.x, f.y, f.w, f.h) }));
-    count++;
+    textures.set(key, new Texture({ source: sheet.source, frame: new Rectangle(f.x, f.y, f.w, f.h) }));
   }
-  return count;
+  return textures;
 }
 
 /** Nạp nền, gọi nhiều lần an toàn. Lỗi chỉ cảnh báo, không chặn game. */
@@ -63,7 +62,9 @@ export function loadSpriteAtlases(): Promise<void> {
     const base = spriteBase();
     const index = parseAtlasIndex(await fetchJson(`${base}index.json`));
     if (!index || index.atlases.length === 0) return;
-    await Promise.all(index.atlases.map((path) => loadAtlas(base, path)));
+    // Gộp theo thứ tự index.json (atlas sau đè atlas trước) để mọi máy thấy cùng khung, không phụ thuộc atlas nào nạp xong trước.
+    const merged = await mergeAtlasesInOrder(index.atlases, (path) => loadAtlas(base, path));
+    for (const [key, texture] of merged) overrides.set(key, texture);
   })().catch((err) => { loading = null; console.warn('sprite atlases failed to load', err); });
   return loading;
 }
@@ -91,6 +92,11 @@ export function walkerLook(i: number): number {
   const n = Math.abs(Math.floor(i));
   if (overrides.has('npc_9_down_idle_0')) return WALKER_LOOKS_9[n % WALKER_LOOKS_9.length];
   return overrides.has('npc_8_down_idle_0') ? WALKER_LOOKS_8[n % WALKER_LOOKS_8.length] : n % 3;
+}
+
+/** Look của cư dân khu phố theo `spriteVariant` (mã look), xem `resolveNpcLook`. */
+export function residentLook(spriteVariant: number): number {
+  return resolveNpcLook(spriteVariant, (key) => overrides.has(key), walkerLook);
 }
 
 /** Cột đèn từ atlas cao hơn bản code (64 px) bao nhiêu px: quầng sáng đèn đường nâng lên đúng chừng đó để nằm ở đầu đèn. */

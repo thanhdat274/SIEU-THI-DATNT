@@ -46,6 +46,27 @@ export function parseAtlas(json: unknown): ParsedAtlas | null {
   return { image, resolution, frames };
 }
 
+/**
+ * Nạp mọi atlas song song nhưng gộp khung THEO ĐÚNG thứ tự `paths` (thứ tự trong index.json): atlas đứng sau ghi đè
+ * khóa trùng của atlas đứng trước, không phụ thuộc atlas nào nạp xong trước. Atlas lỗi (null/throw) bị bỏ qua.
+ */
+export async function mergeAtlasesInOrder<T>(paths: readonly string[], load: (path: string) => Promise<Map<string, T> | null>): Promise<Map<string, T>> {
+  const results = await Promise.all(paths.map((path) => load(path).catch(() => null)));
+  const merged = new Map<string, T>();
+  for (const frames of results) if (frames) for (const [key, value] of frames) merged.set(key, value);
+  return merged;
+}
+
+/**
+ * Look (kiểu nhân vật 0–9) của cư dân khu phố: `spriteVariant` từ `NeighborhoodLife` LÀ mã look (học sinh 6, cụ già 7,
+ * công sở 8, trẻ em 9), không phải chỉ số vào danh sách walker. Atlas có khung `npc_<look>_down_idle_0` thì dùng thẳng;
+ * thiếu (atlas chưa nạp/ít kiểu) thì rơi về `fallback` (thường là `walkerLook`, hình vẽ code).
+ */
+export function resolveNpcLook(spriteVariant: number, hasKey: (key: string) => boolean, fallback: (variant: number) => number): number {
+  const look = Math.abs(Math.floor(spriteVariant));
+  return hasKey(`npc_${look}_down_idle_0`) ? look : fallback(look);
+}
+
 export function parseAtlasIndex(json: unknown): AtlasIndex | null {
   if (!isRecord(json) || !Array.isArray(json.atlases)) return null;
   return { atlases: json.atlases.filter((item): item is string => typeof item === 'string' && item.length > 0) };

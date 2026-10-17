@@ -22,7 +22,7 @@
 - [x] Co-op qua `land-policy.ts` (phiếu > 30% quỹ, khóa lô); bỏ code chết `open_building_civic`.
 - [x] Tab "Xóm phố" + 4 loại civic trong `OpenBuildingModal`; QA trình duyệt 1280×800 + 375×812.
 - [x] `yarn typecheck` PASS; `yarn --cwd packages/game-core test` EXIT 0 (112 pass, golden khớp).
-- [ ] Mặt tiền riêng (3.1); bấm xây thật trong trình duyệt + co-op 2 client; đủ 7 viewport.
+- [~] Mặt tiền riêng (3.1 — Bước D2 17/10/2026: 4 công trình ngày/đêm + 48 khung NPC nghiêng trong atlas `civic.png`/`civic.json`, renderer ưu tiên sprite, test `civic-atlas.test.ts` PASS 56/56; sửa lỗi QA D2: thứ tự atlas, civic không chung cột, bảng thi công căn giữa, test pixel cửa PASS với sprite mới; đã sửa lệch `spriteVariant`→look; còn QA 2 client); bấm xây thật trong trình duyệt + co-op 2 client; đủ 7 viewport.
 - Change OpenSpec: `openspec/changes/civic-buildings-qol/`. Chi tiết: `tổng hợp.md` khối "BƯỚC 1".
 
 ## GIAI ĐOẠN 4 — Bước 2: Dân số xóm theo QoL + hệ số khách (civic-population-demand) (16/10/2026, review — Claude sửa)

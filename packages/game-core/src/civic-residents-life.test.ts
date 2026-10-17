@@ -130,5 +130,22 @@ export function runCivicResidentsLifeTests(): void {
     );
   }
 
+  // spriteVariant LÀ mã look theo vai trò (QA D2): học sinh 6, cụ già 7, công sở 8, trẻ em 9; mọi look hợp lệ 0,2..9.
+  {
+    const ROLE_LOOK: Record<string, number> = { student: 6, elder: 7, office_worker: 8, child: 9 };
+    const seen = new Set<string>();
+    for (let i = 0; i < 400; i++) {
+      const r = deterministicResidentNpc(777, 3, 'hem_dan_cu', i);
+      assert.ok([0, 2, 3, 4, 5, 6, 7, 8, 9].includes(r.spriteVariant), `look hợp lệ (${r.spriteVariant})`);
+      if (ROLE_LOOK[r.defId] !== undefined) { assert.strictEqual(r.spriteVariant, ROLE_LOOK[r.defId], `${r.defId} → look ${ROLE_LOOK[r.defId]}`); seen.add(r.defId); }
+    }
+    assert.deepStrictEqual([...seen].sort(), Object.keys(ROLE_LOOK).sort(), 'đủ 4 vai trò có look riêng xuất hiện trong mẫu');
+    // Đường không theo dân số: look rút từ [0,2..8] (bỏ look 1 chủ tiệm), giống hình cũ.
+    const legacy = new NeighborhoodLife(4242);
+    (legacy as unknown as { populate(): void }).populate();
+    assert.ok((legacy as unknown as { npcs: unknown[] }).npcs.length > 0, 'đường cũ có cư dân');
+    for (const n of (legacy as unknown as { npcs: Array<{ spriteVariant: number }> }).npcs) assert.ok([0, 2, 3, 4, 5, 6, 7, 8].includes(n.spriteVariant), `look đường cũ hợp lệ (${n.spriteVariant})`);
+  }
+
   console.log('  PASS: civic-residents-life tests');
 }
