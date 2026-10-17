@@ -7,9 +7,9 @@
  */
 import { isSalesFixture } from '@game/shared';
 import { DEFAULT_INITIAL_SAVE, BUILDING_TYPE_DEFS, CIVIC_BUNDLES, CIVIC_DEFS, generateStarterTileMap } from '@game/data';
-import { InputManager } from './input';
-import { GameSimulation } from './simulation';
-import { createMarketState } from './market';
+import { InputManager } from '../src/input';
+import { GameSimulation } from '../src/simulation';
+import { createMarketState } from '../src/market';
 
 const SEEDS = Number(process.env.QA_SEEDS ?? 3);
 const DAYS = Number(process.env.QA_DAYS ?? 15);

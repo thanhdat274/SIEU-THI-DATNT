@@ -41,7 +41,7 @@ import { InventorySummaryCard } from './components/InventorySummaryCard';
 import { BottomBar } from './components/BottomBar';
 import { WarehouseDock } from './components/WarehouseDock';
 import { CoopSleepNotification } from './components/CoopSleepNotification';
-import { civicJournalLines, donorDisplayName, bundleNeededProductIds, reconcileDonateRejection, feedbackReasonLabel, levelUnlockToast } from '@game/core';
+import { civicJournalLines, bundleBuildAction, donorDisplayName, bundleNeededProductIds, reconcileDonateRejection, feedbackReasonLabel, levelUnlockToast } from '@game/core';
 import type { StoreLayoutAction } from '@game/core';
 import { money, PixelButton, PixelIcon } from './components/pixel';
 import { useWorldSocket } from './hooks/useWorldSocket';
@@ -50,7 +50,7 @@ import { VoicePanel } from './components/VoicePanel';
 import { getDevGuest, devGuestToken } from './services/dev-guest';
 
 import { BundleCompletePopup } from './components/BundleCompletePopup';
-import { newCivicMilestones } from './civic-celebration';
+import { newCivicMilestones, soloCompletedBundleId } from './civic-celebration';
 import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, CityModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal, NeighborhoodEventsModal } from './lazy-modals';
 
 /** Cấp thấp nhất mở được một loại chi nhánh; dưới cấp này (và chưa có chi nhánh) ẩn mục Chuỗi chi nhánh. */
@@ -1597,8 +1597,8 @@ export const App: React.FC = () => {
     );
     if (res?.success) addToast('Đã góp vào sổ xóm.', 'success');
     // Chơi một mình: không có mốc qua save chung, popup dựng từ kết quả góp; online thì effect mốc lo cho cả hai máy.
-    const doneId = (res as { completedBundleId?: string } | null | undefined)?.completedBundleId;
-    if (res?.success && doneId && !onlineWorld) setCompletedBundlePopupId(doneId);
+    const soloDoneId = soloCompletedBundleId(res as { success?: boolean; completedBundleId?: string } | null | undefined, !!onlineWorld);
+    if (soloDoneId) setCompletedBundlePopupId(soloDoneId);
     // Server từ chối (vd. người cùng hẻm vừa góp đủ ô): sổ đã được tải lại, báo đúng lý do thay vì "chưa xác nhận".
     if (res && !res.success && res.reason === 'Máy chủ chưa xác nhận thay đổi.' && simulationRef.current) {
       return { ...res, reason: reconcileDonateRejection(simulationRef.current.getCivicBundleViews(), args.bundleId, args.slotId) };
@@ -2548,12 +2548,12 @@ export const App: React.FC = () => {
     })()}
     {isCityOpen && simulationRef.current && (() => {
       const snap = simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
-      return <CityModal world={snap.world ?? defaultWorldOpenState()} ownedParcelIds={snap.storeLayout.ownedParcelIds ?? []} builtParcels={simulationRef.current.getOccupiedParcelBuildings()} playerLevel={player.level} playerMoney={player.money} day={simulationRef.current.getTime().day} buildingCount={snap.storeLayout.buildingPlacements?.length ?? 3} onReclaim={handleReclaimWave} journal={cityJournal} onPlanningWave={setPlanningWaveId} onBuyParcel={handleBuyParcel} civicQol={simulationRef.current.getCivicQol()} civicPopulation={simulationRef.current.getCivicPopulation()} placements={snap.storeLayout.buildingPlacements ?? []} buildableParcelIds={simulationRef.current.getBuildableParcelIds()} civicCosts={simulationRef.current.getCivicDailyReport()} civicFeeByParcel={simulationRef.current.getCivicFeeByParcelDetailed()} onBuildOnParcel={(parcelId, typeId) => { setCityOpen(false); setOpenBuildingTypeId(typeId); setOpenBuildingParcelId(parcelId); }} bundles={{ views: simulationRef.current.getCivicBundleViews(), inventory: simulationRef.current.getInventory(), day: simulationRef.current.getTime().day, playerMoney: player.money, onDonate: handleDonateToBundle, donorNameOf: (pid: string) => donorDisplayName(pid, onlineWorld ? Object.fromEntries(onlineWorld.world.memberships.map(m => [m.accountId, onlineWorld.world.avatars.find(a => a.accountId === m.accountId)?.displayName])) : undefined, onlineUid), cashBlockedReason: onlineWorld && onlineUid && !onlineWorld.world.memberships.some(m => m.role === 'owner' && m.accountId === onlineUid) && onlineWorld.world.settings?.memberLandPermissions === 'none' ? 'Chủ hẻm chưa cho bạn chi tiền' : undefined, journalLines: civicJournalLines(simulationRef.current.getCityProgress().milestones, (bid) => { const t = civicBundleById(bid)?.buildingTypeId ?? bid; return BUILDING_TYPE_DEFS[t as keyof typeof BUILDING_TYPE_DEFS]?.name ?? t; }) }} onClose={() => setCityOpen(false)}/>;
+      return <CityModal world={snap.world ?? defaultWorldOpenState()} ownedParcelIds={snap.storeLayout.ownedParcelIds ?? []} builtParcels={simulationRef.current.getOccupiedParcelBuildings()} playerLevel={player.level} playerMoney={player.money} day={simulationRef.current.getTime().day} buildingCount={snap.storeLayout.buildingPlacements?.length ?? 3} onReclaim={handleReclaimWave} journal={cityJournal} onPlanningWave={setPlanningWaveId} onBuyParcel={handleBuyParcel} civicQol={simulationRef.current.getCivicQol()} civicPopulation={simulationRef.current.getCivicPopulation()} placements={snap.storeLayout.buildingPlacements ?? []} buildableParcelIds={simulationRef.current.getBuildableParcelIds()} civicCosts={simulationRef.current.getCivicDailyReport()} civicFeeByParcel={simulationRef.current.getCivicFeeByParcelDetailed()} onBuildOnParcel={(parcelId, typeId) => { setCityOpen(false); setOpenBuildingTypeId(typeId); setOpenBuildingParcelId(parcelId); }} bundles={{ views: simulationRef.current.getCivicBundleViews(), inventory: simulationRef.current.getInventory(), day: simulationRef.current.getTime().day, playerMoney: player.money, playerLevel: player.level, onDonate: handleDonateToBundle, donorNameOf: (pid: string) => donorDisplayName(pid, onlineWorld ? Object.fromEntries(onlineWorld.world.memberships.map(m => [m.accountId, onlineWorld.world.avatars.find(a => a.accountId === m.accountId)?.displayName])) : undefined, onlineUid), cashBlockedReason: onlineWorld && onlineUid && !onlineWorld.world.memberships.some(m => m.role === 'owner' && m.accountId === onlineUid) && onlineWorld.world.settings?.memberLandPermissions === 'none' ? 'Chủ hẻm chưa cho bạn chi tiền' : undefined, journalLines: civicJournalLines(simulationRef.current.getCityProgress().milestones, (bid) => { const t = civicBundleById(bid)?.buildingTypeId ?? bid; return BUILDING_TYPE_DEFS[t as keyof typeof BUILDING_TYPE_DEFS]?.name ?? t; }) }} onClose={() => setCityOpen(false)}/>;
     })()}
     {completedBundlePopupId && simulationRef.current && (() => {
       const view = simulationRef.current.getCivicBundleViews().find(v => v.id === completedBundlePopupId);
       if (!view) return null;
-      return <BundleCompletePopup view={view} buildingName={BUILDING_TYPE_DEFS[view.buildingTypeId as keyof typeof BUILDING_TYPE_DEFS]?.name ?? view.buildingTypeId} donorName={(pid: string) => donorDisplayName(pid, onlineWorld ? Object.fromEntries(onlineWorld.world.memberships.map(m => [m.accountId, onlineWorld.world.avatars.find(a => a.accountId === m.accountId)?.displayName])) : undefined, onlineUid)} buildableParcelIds={simulationRef.current.getBuildableParcelIds()} onBuildOnParcel={(parcelId, typeId) => { setCityOpen(false); setOpenBuildingTypeId(typeId); setOpenBuildingParcelId(parcelId); }} onClose={() => setCompletedBundlePopupId(null)} />;
+      return <BundleCompletePopup view={view} buildAction={bundleBuildAction(view, player.level, simulationRef.current.getBuildableParcelIds().length > 0)} buildingName={BUILDING_TYPE_DEFS[view.buildingTypeId as keyof typeof BUILDING_TYPE_DEFS]?.name ?? view.buildingTypeId} donorName={(pid: string) => donorDisplayName(pid, onlineWorld ? Object.fromEntries(onlineWorld.world.memberships.map(m => [m.accountId, onlineWorld.world.avatars.find(a => a.accountId === m.accountId)?.displayName])) : undefined, onlineUid)} buildableParcelIds={simulationRef.current.getBuildableParcelIds()} onBuildOnParcel={(parcelId, typeId) => { setCityOpen(false); setOpenBuildingTypeId(typeId); setOpenBuildingParcelId(parcelId); }} onClose={() => setCompletedBundlePopupId(null)} />;
     })()}
     {isLevelRoadmapOpen && <LevelRoadmapModal player={player} onClose={() => setLevelRoadmapOpen(false)}/>}
     {daySummaryRecord && <DaySummaryModal record={daySummaryRecord} morningBrief={simulationRef.current?.getMorningBrief()} onClose={() => setDaySummaryRecord(null)}/>}

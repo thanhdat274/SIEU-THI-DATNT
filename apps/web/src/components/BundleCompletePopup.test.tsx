@@ -16,8 +16,10 @@ const view = {
 const donorDisplayName = (pid: string, m: Record<string, string>, selfId: string) => (pid === selfId ? 'Bạn' : m[pid] ?? 'Thành viên cũ');
 const members = { guest_a: 'Khách A (dev)', guest_b: 'Khách B (dev)' };
 // Cùng một view, hai máy chỉ khác "Bạn" là ai: cả hai đều thấy tiêu đề, danh sách người góp và nút xây.
-const popupFor = (selfId: string, parcels: readonly string[]) => renderToStaticMarkup(
-  <BundleCompletePopup buildingName="Công viên" view={view} donorName={(pid) => donorDisplayName(pid, members, selfId)} buildableParcelIds={parcels} onBuildOnParcel={() => {}} onClose={() => {}} />,
+// Giống `bundleBuildAction` của core (tsx không nạp được giá trị từ core; luật thật được test trong game-core `civic-bundle-view.test.ts`).
+const buildActionOf = (playerLevel: number, parcels: readonly string[]) => playerLevel < 10 ? { disabled: true, label: 'Mở ở cấp người chơi 10' } : parcels.length === 0 ? { disabled: true, label: 'Chưa có lô trống' } : { disabled: false, label: 'Xây ngay (còn 451.728 ₫)' };
+const popupFor = (selfId: string, parcels: readonly string[], playerLevel = 20) => renderToStaticMarkup(
+  <BundleCompletePopup buildingName="Công viên" view={view} buildAction={buildActionOf(playerLevel, parcels)} donorName={(pid) => donorDisplayName(pid, members, selfId)} buildableParcelIds={parcels} onBuildOnParcel={() => {}} onClose={() => {}} />,
 );
 
 for (const self of ['guest_a', 'guest_b']) {
@@ -37,6 +39,15 @@ assert.ok(!popupFor('guest_a', ['lot-west']).includes('guest_'), 'không lộ ui
   const out = popupFor('guest_b', []);
   assert.ok(out.includes('Chưa có lô trống'), 'báo chưa có lô trống');
   assert.ok(out.includes('disabled'), 'nút xây bị khóa');
+}
+
+// Cấp người chơi thấp hơn cấp mở tòa: nút khóa NGAY trong popup, nói rõ cấp cần, không hứa "Xây ngay"
+{
+  const out = popupFor('guest_a', ['lot-west'], 5);
+  assert.ok(out.includes('Mở ở cấp người chơi 10'), 'báo cấp người chơi cần');
+  assert.ok(!out.includes('Xây ngay'), 'không hiện Xây ngay khi chưa đủ cấp');
+  assert.ok(out.includes('disabled'), 'nút khóa');
+  assert.ok(out.includes('Để sau') && out.includes('Trang Công viên đã hoàn thành!'), 'popup vẫn báo hoàn thành');
 }
 
 console.log('BundleCompletePopup tests passed');

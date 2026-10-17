@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import type { CityProgressState } from '@game/shared';
-import { newCivicMilestones } from './civic-celebration';
+import { newCivicMilestones, soloCompletedBundleId } from './civic-celebration';
 
 type M = CityProgressState['milestones'][number];
 const done = (bundleId: string, day = 3): M => ({ day, type: 'bundle_completed', bundleId });
@@ -41,5 +41,14 @@ assert.equal(clientB1.fresh.length, 1);
 assert.equal(newCivicMilestones(snapshot, clientB1.seen).fresh.length, 0);
 // B vào hẻm SAU khi mốc đã có (tải lại trang) → không bật lại.
 assert.equal(newCivicMilestones(snapshot, null).fresh.length, 0);
+
+// Chơi một mình: popup dựng từ kết quả góp; online thì chỉ mốc lo (không báo trùng).
+assert.equal(soloCompletedBundleId({ success: true, completedBundleId: 'bundle_park' }, false), 'bundle_park', 'solo: góp đủ → popup đúng sổ');
+assert.equal(soloCompletedBundleId({ success: true }, false), null, 'solo: góp chưa đủ → không popup');
+assert.equal(soloCompletedBundleId({ success: false, completedBundleId: 'bundle_park' }, false), null, 'solo: lệnh thất bại → không popup');
+assert.equal(soloCompletedBundleId(null, false), null, 'solo: không có kết quả');
+assert.equal(soloCompletedBundleId({ success: true, completedBundleId: 'bundle_park' }, true), null, 'online: để mốc lo, không báo trùng');
+// Mốc đến sau đó trong chế độ solo (nếu có): lần đọc đầu chỉ lập nền nên không bật thêm popup
+assert.equal(newCivicMilestones([done('bundle_park')], null).fresh.length, 0, 'mốc đến sau lần góp solo không báo thêm');
 
 console.log('civic-celebration.test OK');

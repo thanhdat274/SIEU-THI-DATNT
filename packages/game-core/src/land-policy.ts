@@ -31,6 +31,16 @@ export interface LandContext {
   dayStartFunds?: number;
 }
 
+/**
+ * Tiền chung đầu ngày dùng làm cố định cho trần góp ngày: chỉ lấy `openingMoney` của bản ghi ngày HIỆN TẠI
+ * (`currentDayRecord.day === worldTime.day`); save cũ không có `openingMoney` hoặc bản ghi ngày cũ → undefined
+ * (trần tính theo tiền hiện tại + đã góp).
+ */
+export function dayStartFundsOf(save: { currentDayRecord?: { day: number; openingMoney?: number }; worldTime: { day: number } }): number | undefined {
+  const rec = save.currentDayRecord;
+  return rec && rec.day === save.worldTime.day ? rec.openingMoney : undefined;
+}
+
 /** Số tiền thật sự được nhận khi góp: không quá phần thiếu của ô (góp vượt chỉ nhận phần thiếu). */
 function effectiveCashDonation(action: Record<string, unknown>, ctx?: LandContext): number {
   const amount = typeof action.amount === 'number' ? Math.max(0, action.amount) : 0;

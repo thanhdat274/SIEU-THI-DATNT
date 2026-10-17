@@ -8,7 +8,7 @@ import { WsAdapter } from '@nestjs/platform-ws';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { isSaveGameData, isWorldSettings, MULTIPLAYER_PROTOCOL_VERSION, SERVER_REPLAYED_COMMAND_TYPES, type BuildingPlacementRecord, type GameAccount, type SaveGameData } from '@game/shared';
 import { generateStarterTileMap, placementsProblem } from '@game/data';
-import { applyStoreLayoutActions, bundleReasonMessage, cashDonatedOnDay, decideLandCommand, GameSimulation, landErrorMessage, validateStoreLayout, WorldRuntime } from '@game/core';
+import { applyStoreLayoutActions, bundleReasonMessage, cashDonatedOnDay, dayStartFundsOf, decideLandCommand, GameSimulation, landErrorMessage, validateStoreLayout, WorldRuntime } from '@game/core';
 import { readRuntimeConfig } from './runtime-config.js';
 import { checkSaveInvariants } from './save-invariants.js';
 import { commitLimiter, httpIpLimiter, MAX_HTTP_BODY } from './rate-limit.js';
@@ -159,7 +159,7 @@ export class GameController {
       const decision = decideLandCommand(payload, role, commandWorld.world.settings, commandBusiness.save.player.money, partnerOnline, {
         bundleStates: commandBusiness.save.civic?.bundles,
         buildings: commandBusiness.save.storeLayout.buildingPlacements,
-        dayStartFunds: commandBusiness.save.currentDayRecord?.day === commandBusiness.save.worldTime.day ? commandBusiness.save.currentDayRecord.openingMoney : undefined,
+        dayStartFunds: dayStartFundsOf(commandBusiness.save),
         memberCashDonatedToday: cashDonatedOnDay(commandBusiness.save.civic?.bundles, uid, commandBusiness.save.worldTime.day),
       });
       if (decision.action === 'forbid' && decision.reason === 'daily_cap') {

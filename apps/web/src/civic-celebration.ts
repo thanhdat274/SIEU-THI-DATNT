@@ -35,3 +35,11 @@ export function newCivicMilestones(
   }
   return { fresh, seen: next };
 }
+
+/**
+ * Chơi một mình: không có mốc qua save chung, popup "Sổ góp hoàn thành" dựng từ kết quả lệnh góp (`completedBundleId`).
+ * Online: trả null — popup do mốc `bundle_completed` (`newCivicMilestones`) lo cho cả hai máy, tránh báo trùng.
+ */
+export function soloCompletedBundleId(res: { success?: boolean; completedBundleId?: string } | null | undefined, isOnline: boolean): string | null {
+  return !isOnline && res?.success && res.completedBundleId ? res.completedBundleId : null;
+}

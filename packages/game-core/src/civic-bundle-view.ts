@@ -3,7 +3,7 @@
  * UI không tự tính luật: trạng thái trang, tồn kho góp được, giá còn phải trả đều lấy từ đây
  * (dùng chung `civic-bundles.ts` nên khớp với lệnh `donate_to_bundle` thật).
  */
-import { CIVIC_BUNDLES, PRODUCT_MAP, bundleBuildCost, expectedBundleGoodsValue, type CivicBundleDef } from '@game/data';
+import { BUILDING_TYPE_DEFS, CIVIC_BUNDLES, PRODUCT_MAP, bundleBuildCost, expectedBundleGoodsValue, type CivicBundleDef } from '@game/data';
 import type { InventoryItem } from '@game/shared';
 import {
   BUNDLE_MIN_SHELF_DAYS,
@@ -60,6 +60,8 @@ export interface BundleCardView {
   slotsTotal: number;
   /** Có hàng trong kho góp được vào ít nhất một ô hàng còn thiếu (chấm đỏ). */
   hasDonatable: boolean;
+  /** Cấp người chơi tối thiểu để xây tòa này (`BUILDING_TYPE_DEFS[loại].unlockLevel`), có thể cao hơn cấp mở sổ. */
+  requiredPlayerLevel: number;
   buildCost: number;
   donatedValue: number;
   /** Giá còn phải trả khi xây tòa tiếp theo (đúng hàm `civicOpenCost` lúc trừ tiền). */
@@ -156,6 +158,7 @@ export function buildCivicBundleViews(input: BundleViewInput): BundleCardView[] 
       slotsDone: slots.filter((s) => s.done).length,
       slotsTotal: slots.length,
       hasDonatable: status === 'collecting' && slots.some((s) => s.kind === 'goods' && s.canDonate),
+      requiredPlayerLevel: BUILDING_TYPE_DEFS[def.buildingTypeId as keyof typeof BUILDING_TYPE_DEFS]?.unlockLevel ?? 1,
       buildCost,
       donatedValue: bundleDonatedValue(def, state),
       remainingCost: civicOpenCost(def.buildingTypeId, buildCost, bundleStates, existingBuildings[def.buildingTypeId] ?? 0),
@@ -197,4 +200,19 @@ export function bundleNeededProductIds(views: readonly BundleCardView[]): Set<st
     }
   }
   return ids;
+}
+
+/**
+ * Nút "Xây ngay" của thẻ sổ/popup: khóa trước khi bấm nếu người chơi chưa đủ cấp mở tòa (khác cấp mở sổ) hoặc chưa có lô trống.
+ * `remainingCost` là giá còn phải trả (đúng `civicOpenCost`).
+ */
+export function bundleBuildAction(
+  view: Pick<BundleCardView, 'requiredPlayerLevel' | 'remainingCost'>,
+  playerLevel: number,
+  hasParcel: boolean,
+  fmt: (n: number) => string = (n) => n.toLocaleString('vi-VN') + ' ₫',
+): { disabled: boolean; label: string } {
+  if (playerLevel < view.requiredPlayerLevel) return { disabled: true, label: `Mở ở cấp người chơi ${view.requiredPlayerLevel}` };
+  if (!hasParcel) return { disabled: true, label: 'Chưa có lô trống' };
+  return { disabled: false, label: `Xây ngay (còn ${fmt(view.remainingCost)})` };
 }

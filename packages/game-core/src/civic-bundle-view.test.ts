@@ -5,7 +5,7 @@ import type { SaveGameData } from '@game/shared';
 import { GameSimulation } from './simulation';
 import { InputManager } from './input';
 import { addCivicMilestoneOnce, civicJournalLines } from './city-journal';
-import { buildCivicBundleViews, bundleNeededProductIds, donorDisplayName, previewDonationCost, reconcileDonateRejection } from './civic-bundle-view';
+import { buildCivicBundleViews, bundleBuildAction, bundleNeededProductIds, donorDisplayName, previewDonationCost, reconcileDonateRejection } from './civic-bundle-view';
 import { BUNDLE_REASON_MESSAGES } from './civic-bundles';
 
 function newSim(cityLevel: number): GameSimulation {
@@ -21,6 +21,25 @@ export function runCivicBundleViewTests(): void {
   console.log('\n▶ Civic bundle view tests');
   const sim = newSim(4);
   let views = sim.getCivicBundleViews();
+  // Nút "Xây ngay" khóa theo cấp NGƯỜI CHƠI (khác cấp thành phố mở sổ): requiredPlayerLevel = unlockLevel của tòa
+  {
+    const lv = newSim(9).getCivicBundleViews();
+    const need = (id: string) => lv.find(v => v.id === id)!.requiredPlayerLevel;
+    assert.deepEqual([need('bundle_park'), need('bundle_clinic'), need('bundle_ward_police'), need('bundle_primary_school')], [10, 15, 20, 25], 'cấp người chơi cần theo từng tòa civic');
+    const fmt = (n: number) => `${n}₫`;
+    const v = { requiredPlayerLevel: 15, remainingCost: 700_000 };
+    assert.deepEqual(bundleBuildAction(v, 10, true, fmt), { disabled: true, label: 'Mở ở cấp người chơi 15' }, 'thấp cấp: khóa + nói cấp cần (kể cả khi có lô)');
+    assert.deepEqual(bundleBuildAction(v, 10, false, fmt), { disabled: true, label: 'Mở ở cấp người chơi 15' }, 'thấp cấp ưu tiên hơn thiếu lô');
+    assert.deepEqual(bundleBuildAction(v, 15, false, fmt), { disabled: true, label: 'Chưa có lô trống' }, 'đủ cấp, hết lô');
+    assert.deepEqual(bundleBuildAction(v, 15, true, fmt), { disabled: false, label: 'Xây ngay (còn 700000₫)' }, 'đủ cấp + có lô: bấm được');
+    // Thẻ "Đã xong chưa xây": sổ đủ vẫn là complete ở người chơi cấp thấp; chỉ nút bị khóa
+    const cash = civicBundleById('bundle_clinic')!.slots.find(s2 => s2.kind === 'cash')!.amount!;
+    const bundleStates = { bundle_clinic: { slots: { slot_clinic_hygiene: 10, slot_clinic_milk: 20, slot_clinic_cash: cash }, contributions: [], completedDay: 1 } };
+    const cv = buildCivicBundleViews({ bundleStates, cityLevel: 5, revealedBundleIds: ['bundle_clinic'], inventory: [], playerMoney: 0, day: 2, existingBuildings: {} }).find(x => x.id === 'bundle_clinic')!;
+    assert.equal(cv.status, 'complete', 'sổ đủ nhưng chưa xây');
+    assert.equal(bundleBuildAction(cv, 10, true).disabled, true, 'cấp 10 < 15: nút khóa');
+    assert.equal(bundleBuildAction(cv, 15, true).disabled, false, 'cấp 15: mở nút');
+  }
   assert.equal(views.find(v => v.id === 'bundle_park')?.status, 'collecting', 'cấp 4: park đang góp');
   assert.equal(views.find(v => v.id === 'bundle_clinic')?.status, 'hidden', 'clinic chưa hiện');
   const park = views.find(v => v.id === 'bundle_park')!;

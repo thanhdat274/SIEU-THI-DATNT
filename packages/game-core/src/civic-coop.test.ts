@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { createInitialOnlineWorld, civicBundleById } from '@game/data';
 import { MULTIPLAYER_PROTOCOL_VERSION } from '@game/shared';
-import { decideLandCommand, landVoteDescription } from './land-policy';
+import { dayStartFundsOf, decideLandCommand, landVoteDescription } from './land-policy';
 import { WorldRuntime } from './world-runtime';
 import { isBundleCompleted } from './civic-bundles';
 import { openBuildingReasonMessage } from './land-error-messages';
@@ -53,6 +53,21 @@ export async function runCivicCoopTests(): Promise<void> {
   const fixed = (amount: number) => decideLandCommand(cashCmd(amount), 'member', undefined, 500_000, false, { memberCashDonatedToday: 200_000, dayStartFunds: 1_000_000 });
   assert.equal(fixed(100_000).action, 'allow', 'trần theo tiền đầu ngày 1M = 300k, đã góp 200k, thêm 100k được dù tiền hiện tại chỉ 500k');
   assert.equal(fixed(100_001).action, 'forbid', 'vượt trần cố định');
+  // Đường dự phòng + nguồn "tiền đầu ngày": chỉ dùng openingMoney của bản ghi ngày HIỆN TẠI.
+  {
+    const wt = { day: 5 };
+    assert.equal(dayStartFundsOf({ worldTime: wt, currentDayRecord: { day: 5, openingMoney: 1_000_000 } }), 1_000_000, 'bản ghi đúng ngày: dùng openingMoney');
+    assert.equal(dayStartFundsOf({ worldTime: wt, currentDayRecord: { day: 4, openingMoney: 1_000_000 } }), undefined, 'bản ghi ngày cũ: bỏ qua');
+    assert.equal(dayStartFundsOf({ worldTime: wt, currentDayRecord: { day: 5 } }), undefined, 'save cũ không có openingMoney');
+    assert.equal(dayStartFundsOf({ worldTime: wt }), undefined, 'không có bản ghi ngày');
+    // Save cũ (undefined) → trần = 30% × (tiền hiện tại + đã góp): funds 800k + đã góp 200k = 1M → trần 300k
+    const legacy = (amount: number) => decideLandCommand(cashCmd(amount), 'member', undefined, 800_000, false, { memberCashDonatedToday: 200_000, dayStartFunds: dayStartFundsOf({ worldTime: wt }) });
+    assert.equal(legacy(100_000).action, 'allow', 'đường dự phòng: đúng trần 300k');
+    assert.equal(legacy(100_001).action, 'forbid', 'đường dự phòng: vượt trần');
+    // Bản ghi ngày cũ KHÔNG được làm trần cố định (nếu bị dùng nhầm, 10M đầu ngày cũ sẽ cho góp 1M)
+    const stale = decideLandCommand(cashCmd(1_000_000), 'member', undefined, 800_000, false, { memberCashDonatedToday: 0, dayStartFunds: dayStartFundsOf({ worldTime: wt, currentDayRecord: { day: 4, openingMoney: 10_000_000 } }) });
+    assert.equal(stale.action, 'forbid', 'openingMoney ngày cũ không nới trần');
+  }
   // Mở tòa lúc tiệm đang mở: câu tiếng Việt, không lộ mã thô.
   assert.equal(openBuildingReasonMessage('store_open'), 'Cần đóng cửa tiệm rồi mới mở được cơ sở mới.');
   assert.equal(openBuildingReasonMessage(undefined), 'Không mở được cơ sở.');

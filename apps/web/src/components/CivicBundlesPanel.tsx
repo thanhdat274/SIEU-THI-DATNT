@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BUILDING_TYPE_DEFS, CIVIC_DEFS, civicBundleById } from '@game/data';
-import { BUNDLE_REASON_MESSAGES, CIVIC_REVEAL_GOALS, donorDisplayName, previewDonationCost, type BundleCardView, type BundleSlotView, type SlotBlockReason } from '@game/core';
+import { BUNDLE_REASON_MESSAGES, bundleBuildAction, CIVIC_REVEAL_GOALS, donorDisplayName, previewDonationCost, type BundleCardView, type BundleSlotView, type SlotBlockReason } from '@game/core';
 import type { InventoryItem } from '@game/shared';
 import { PixelButton, ProductIcon, money } from './pixel';
 
@@ -11,6 +11,8 @@ export interface BundlesProps {
   inventory: readonly InventoryItem[];
   day: number;
   playerMoney: number;
+  /** Cấp người chơi (khóa nút Xây ngay khi chưa đủ cấp mở tòa). */
+  playerLevel: number;
   /** Lô trống có thể xây (để nút "Xây ngay"). */
   buildableParcelIds: readonly string[];
   onDonate: (args: DonateArgs) => Promise<{ success: boolean; reason?: string; completedBundleId?: string } | null | undefined>;
@@ -60,7 +62,7 @@ export const CivicBundlesPanel: React.FC<BundlesProps> = (rawProps) => {
           {hidden && <span className="muted" style={{ fontSize: 12 }}>Mở ở cấp thành phố {v.revealedByCityLevel}{goal ? ` hoặc đạt: ${goalText(goal.condition)}` : ''}</span>}
           {v.status === 'collecting' && <><div aria-hidden style={{ height: 8, background: 'rgba(0,0,0,0.12)' }}><div style={{ width: `${(v.slotsDone / v.slotsTotal) * 100}%`, height: '100%', background: 'var(--teal)' }} /></div><span style={{ fontSize: 12 }}>{v.slotsDone}/{v.slotsTotal} ô</span></>}
           {v.status === 'complete' && <><span style={{ color: 'var(--teal)', fontWeight: 'bold' }}>✓ Hoàn thành</span>
-            <PixelButton variant="teal" style={{ minHeight: 44, whiteSpace: 'normal' }} disabled={!onBuildOnParcel || buildableParcelIds.length === 0} onClick={() => onBuildOnParcel?.(buildableParcelIds[0], v.buildingTypeId)}>{buildableParcelIds.length === 0 ? 'Chưa có lô trống' : `Xây ngay (còn ${money(v.remainingCost)})`}</PixelButton></>}
+            <PixelButton variant="teal" style={{ minHeight: 44, whiteSpace: 'normal' }} disabled={!onBuildOnParcel || bundleBuildAction(v, props.playerLevel, buildableParcelIds.length > 0).disabled} onClick={() => onBuildOnParcel?.(buildableParcelIds[0], v.buildingTypeId)}>{bundleBuildAction(v, props.playerLevel, buildableParcelIds.length > 0, money).label}</PixelButton></>}
           {v.status === 'built' && <span style={{ color: 'var(--teal)', fontWeight: 'bold' }}>Đã khánh thành{v.completedDay ? ` · góp xong ngày ${v.completedDay}` : ''}</span>}
           {!hidden && <PixelButton variant="wood" style={{ minHeight: 44 }} onClick={() => setOpenId(v.id)}>Chi tiết</PixelButton>}
         </li>;
@@ -73,7 +75,7 @@ export const CivicBundlesPanel: React.FC<BundlesProps> = (rawProps) => {
   </div>;
 };
 
-const BundleDetail: React.FC<BundlesProps & { view: BundleCardView; onBack: () => void }> = ({ cashBlockedReason, view, inventory, day, playerMoney, buildableParcelIds, onDonate, onBuildOnParcel, donorNameOf, onBack }) => {
+const BundleDetail: React.FC<BundlesProps & { view: BundleCardView; onBack: () => void }> = ({ cashBlockedReason, view, inventory, day, playerMoney, playerLevel, buildableParcelIds, onDonate, onBuildOnParcel, donorNameOf, onBack }) => {
   const donorName = donorNameOf ?? ((id: string) => donorDisplayName(id));
   const [sheet, setSheet] = useState<BundleSlotView | null>(null);
   const [message, setMessage] = useState('');
@@ -97,7 +99,7 @@ const BundleDetail: React.FC<BundlesProps & { view: BundleCardView; onBack: () =
       </li>)}
     </ul>
     {view.topDonor && <p className="muted" style={{ margin: '6px 0 0' }}>Góp nhiều nhất: {donorName(view.topDonor.playerId)} ({view.topDonor.percent}%)</p>}
-    {view.status === 'complete' && <PixelButton variant="teal" style={{ minHeight: 44, width: '100%', marginTop: 8, whiteSpace: 'normal' }} disabled={!onBuildOnParcel || buildableParcelIds.length === 0} onClick={() => onBuildOnParcel?.(buildableParcelIds[0], view.buildingTypeId)}>{buildableParcelIds.length === 0 ? 'Chưa có lô trống để xây' : `Xây ngay (còn ${money(view.remainingCost)})`}</PixelButton>}
+    {view.status === 'complete' && <PixelButton variant="teal" style={{ minHeight: 44, width: '100%', marginTop: 8, whiteSpace: 'normal' }} disabled={!onBuildOnParcel || bundleBuildAction(view, playerLevel, buildableParcelIds.length > 0).disabled} onClick={() => onBuildOnParcel?.(buildableParcelIds[0], view.buildingTypeId)}>{bundleBuildAction(view, playerLevel, buildableParcelIds.length > 0, money).label}</PixelButton>}
     {liveSlot && <DonateSheet bundleId={view.id} slot={liveSlot} inventory={inventory} day={day} playerMoney={playerMoney} onClose={() => setSheet(null)}
       onSubmit={async (args) => {
         const res = await onDonate(args);
