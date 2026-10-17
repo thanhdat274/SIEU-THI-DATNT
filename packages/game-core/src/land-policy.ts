@@ -27,6 +27,8 @@ export interface LandContext {
   buildings?: Array<{ buildingId: string }>;
   /** Tiền người gửi lệnh đã góp vào các ô quỹ trong ngày hôm nay (trần ngày khi chủ hẻm offline). */
   memberCashDonatedToday?: number;
+  /** Tiền chung đầu ngày để trần cố định cả ngày (thiếu = tính theo tiền hiện tại + đã góp). */
+  dayStartFunds?: number;
 }
 
 /** Số tiền thật sự được nhận khi góp: không quá phần thiếu của ô (góp vượt chỉ nhận phần thiếu). */
@@ -115,7 +117,7 @@ export function decideLandCommand(
     // Chủ hẻm offline: góp tiền chạy thẳng không phiếu, nên mỗi thành viên bị trần theo ngày (30% tiền chung đầu ngày).
     if (info.command === 'donate_bundle_cash' && role === 'member' && !partnerOnline) {
       const donated = ctx?.memberCashDonatedToday ?? 0;
-      if (donated + info.price > Math.floor((funds + donated) * OFFLINE_DAILY_CASH_CAP_RATIO)) return { action: 'forbid', command: info.command, reason: 'daily_cap' };
+      if (donated + info.price > Math.floor((ctx?.dayStartFunds ?? funds + donated) * OFFLINE_DAILY_CASH_CAP_RATIO)) return { action: 'forbid', command: info.command, reason: 'daily_cap' };
     }
     const votes = (permission.requiresVote ?? false) || shouldLandVote(info.command, info.price, funds, partnerOnline, { ownerSkipsVote, isOwner: role === 'owner' });
     if (votes && partnerOnline && decision.action === 'allow') decision = { action: 'vote', command: info.command };

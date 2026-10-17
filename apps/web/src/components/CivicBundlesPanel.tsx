@@ -43,25 +43,12 @@ const goalText = (c: { kind: string; targetValue: number; buildingTypeId?: strin
 
 export const CivicBundlesPanel: React.FC<BundlesProps> = (rawProps) => {
   const [openId, setOpenId] = useState<string | null>(null);
-  const [completedId, setCompletedId] = useState<string | null>(null);
-  const props: BundlesProps = { ...rawProps, onDonate: async (args) => { const r = await rawProps.onDonate(args); if (r?.completedBundleId) setCompletedId(r.completedBundleId); return r; } };
+  const props: BundlesProps = rawProps;
   const { views, buildableParcelIds, onBuildOnParcel, journalLines = [] } = props;
   const donorName = rawProps.donorNameOf ?? ((id: string) => donorDisplayName(id));
   const open = views.find(v => v.id === openId);
-  const completed = views.find(v => v.id === completedId);
-  const popup = completed && <div role="dialog" aria-label="Sổ góp hoàn thành" data-bundle-complete style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.55)', display: 'grid', placeItems: 'center', padding: 16 }}>
-    <div className="pixel-panel" style={{ padding: 16, maxWidth: 420, width: '100%', display: 'grid', gap: 8, maxHeight: '90vh', overflowY: 'auto' }}>
-      <strong style={{ fontSize: 18 }}>Trang {typeName(completed.buildingTypeId)} đã hoàn thành!</strong>
-      <span className="muted">Người góp:</span>
-      <ul style={{ margin: 0, paddingLeft: 18 }}>{completed.donors.map(d => <li key={d.playerId}>{donorName(d.playerId)} — {d.percent}%</li>)}</ul>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <PixelButton variant="paper" style={{ minHeight: 44, flex: 1 }} onClick={() => setCompletedId(null)}>Để sau</PixelButton>
-        <PixelButton variant="teal" style={{ minHeight: 44, flex: 2, whiteSpace: 'normal' }} disabled={!onBuildOnParcel || buildableParcelIds.length === 0} onClick={() => { setCompletedId(null); onBuildOnParcel?.(buildableParcelIds[0], completed.buildingTypeId); }}>{buildableParcelIds.length === 0 ? 'Chưa có lô trống' : `Xây ngay (còn ${money(completed.remainingCost)})`}</PixelButton>
-      </div>
-    </div>
-  </div>;
-  if (open) return <><BundleDetail view={open} {...props} onBack={() => setOpenId(null)} />{popup}</>;
-  return <div data-bundles-list>{popup}
+  if (open) return <BundleDetail view={open} {...props} onBack={() => setOpenId(null)} />;
+  return <div data-bundles-list>
     <p className="muted" style={{ margin: '0 0 8px' }}>Cả xóm góp hàng và quỹ để xây công trình công cộng. Giá trị góp dự kiến khoảng 80% giá xây.</p>
     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 150px), 1fr))' }}>
       {views.map(v => {

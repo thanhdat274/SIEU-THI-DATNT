@@ -8,12 +8,16 @@ Change này không có task code. Theo dõi tiến độ ở change con; đánh 
 - [x] 0.3 `open-world-districts-city-goals` 2.2 + 4.1: lệnh `claim_city_goal`, `cityProgress` trong save — có code + test (game-core 112/112, `test:coop` EXIT 0, 17/10/2026); claim thành công qua server chưa có test riêng.
 
 ## 1. Change con (làm lần lượt)
-- [>] 1.1 `civic-buildings-qol` — code + test + tab Xóm phố xong 16/10/2026 (test EXIT 0); còn mặt tiền riêng, QA bấm xây thật + co-op 2 client
-- [>] 1.2 `civic-population-demand` — code + test xong 16/10/2026 (EXIT 0); sweep CHƯA ĐẠT (doanh thu ≈ 0% dù hệ số 1,07–1,09), chờ quyết định
-- [x] 1.3 `civic-local-fees` — code + test + sweep chốt bộ E (16/10/2026); còn QA trình duyệt và co-op 2 client.
-- [>] 1.4 `civic-city-goals` + Sổ góp xóm — code + test + QA Browser một client và 2 client khách dev xong 17/10/2026; còn bản tin sáng 2 client, 2 tài khoản Google thật.
-- [ ] 1.5 `civic-residents-life` (sau 1.2)
+- [>] 1.1 `civic-buildings-qol` — code + test + tab Xóm phố xong 16/10/2026 (test EXIT 0); còn mặt tiền riêng, QA bấm xây thật + co-op 2 client (17/10: QA 2 client thấy cùng QoL/công trình — xong)
+- [>] 1.2 `civic-population-demand` — code + test xong 16/10/2026 (EXIT 0); sweep CHƯA ĐẠT (doanh thu ≈ 0% dù hệ số 1,07–1,09), chờ quyết định (17/10: QA 2 client dân số khớp, chỉ đổi lúc chốt ngày)
+- [x] 1.3 `civic-local-fees` — code + test + sweep chốt bộ E (16/10/2026); còn QA trình duyệt và co-op 2 client. (17/10: QA 2 client phí khớp; nợ riêng chưa kiểm)
+- [>] 1.4 `civic-city-goals` + Sổ góp xóm — code + test + QA Browser một client và 2 client khách dev xong 17/10/2026; còn bản tin sáng 2 client, 2 tài khoản Google thật. (17/10 Bước C: toast/khánh thành/bản tin sáng hai giao diện thật PASS; còn Google thật)
+- [ ] 1.5 `civic-residents-life` (sau 1.2) — code xong; 17/10 QA 2 client cùng cư dân; chưa cận cảnh NPC
 
 ## 2. Hoãn / ngoài phạm vi
 - Sự kiện thành phố (ngập, mất điện, dịch bệnh): nếu làm thì mở rộng `neighborhood-events`.
 - Đường do người chơi vẽ, zoning tự do, traffic sim, điện/nước, xe buýt: không làm.
+
+- Bước C (17/10/2026): sweep cấp TP 4/5/7/9 đã chạy (không lệch); trần góp theo tiền đầu ngày đã có code+test; QA 2 client giao diện thật CHƯA làm.
+
+- Bước C (17\/10\/2026) cập nhật: QA 2 giao diện thật đã làm (xem tổng hợp.md C3).

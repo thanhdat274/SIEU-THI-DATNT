@@ -159,10 +159,11 @@ export class GameController {
       const decision = decideLandCommand(payload, role, commandWorld.world.settings, commandBusiness.save.player.money, partnerOnline, {
         bundleStates: commandBusiness.save.civic?.bundles,
         buildings: commandBusiness.save.storeLayout.buildingPlacements,
+        dayStartFunds: commandBusiness.save.currentDayRecord?.day === commandBusiness.save.worldTime.day ? commandBusiness.save.currentDayRecord.openingMoney : undefined,
         memberCashDonatedToday: cashDonatedOnDay(commandBusiness.save.civic?.bundles, uid, commandBusiness.save.worldTime.day),
       });
       if (decision.action === 'forbid' && decision.reason === 'daily_cap') {
-        throw new BadRequestException({ statusCode: 400, error: 'Bad Request', code: 'daily_cap', message: 'Chủ hẻm đang offline: mỗi thành viên chỉ góp tối đa 30% tiền chung mỗi ngày. Hãy thử lại vào ngày mai hoặc khi chủ hẻm online.' });
+        throw new BadRequestException({ statusCode: 400, error: 'Bad Request', code: 'daily_cap', message: 'Chủ hẻm đang offline: mỗi thành viên chỉ góp tối đa 30% tiền chung đầu ngày. Hãy thử lại vào ngày mai hoặc khi chủ hẻm online.' });
       }
       if (decision.action === 'forbid') {
         throw new BadRequestException({ statusCode: 400, error: 'Bad Request', code: 'forbidden', message: landErrorMessage('forbidden') });

@@ -3,7 +3,9 @@
 - [x] 1.1 Dữ liệu lịch sinh hoạt + hằng số NPC theo dân số (`RESIDENTS_PER_NPC = 4`, `NPC_CAP_DESKTOP = 40`, `NPC_CAP_MOBILE = 20`).
 - [x] 1.2 Mở rộng `NeighborhoodLife`: số NPC theo dân số `min(pop / RESIDENTS_PER_NPC, NPC_CAP)`, trần di động thấp hơn desktop, sinh tất định theo `(seed, day, districtId, index)`, đích là công trình; test tất định + trần đạt chuẩn.
 - [x] 1.3 Bậc nhà dân theo dân số `houseFloorTier(pop, capacity)`; renderer đổi sprite tương ứng (1, 2, 3 tầng) với atlas `residents/residents.json`.
-- [x] 1.4 Test hiệu năng (0.061 ms/khung ở 375×812, ngân sách ≤ 2 ms); QA trình duyệt (375×812, 667×375, desktop 1280×800) không lỗi console.
-- [x] 1.5 `yarn typecheck` (PASS), `yarn test` (game-core 112/0 PASS, web 9/0 PASS); ghi `tổng hợp.md`.
+- [~] 1.4 Hiệu năng NPC nền đo lại 16/10/2026: 0.052 ms/khung ở 375×812 (≤ 2 ms, chỉ CPU update). QA trình duyệt: headless Chrome xác nhận NPC look 6–9 xuất hiện + 0 console error; **chưa chụp cận cảnh left/right/trẻ em, chưa nhìn nhà 1→2→3 tầng trên màn hình** (có code, chưa kiểm chứng bằng mắt).
+- [x] 1.5 `yarn typecheck` EXIT 0; game-core 112/0 PASS (10/10 lần, 0 dòng "Error:"); web 9 tệp PASS (16/10/2026).
 
-- [ ] 1.6 Co-op: seed thế giới chung; QA 2 client thấy cùng cư dân.
+- [~] 1.6 Co-op: seed thế giới chung — QA 2 client 17/10/2026 (Bước C): hai thẻ Browser pane cùng localhost, thẻ B ép id khách `b` bằng shim `Storage.getItem` ở thẻ đó (giao diện thật cả hai; hẻm "QA BuocC" gieo save qua DB: cấp 25, 20tr, sổ gần đủ). ĐÃ KIỂM CHỨNG: cùng seed 3819441952, ngày 3, dân 169, cùng 20 NPC (kiểu/biến thể giống nhau); vị trí NPC đang đi lệch theo pha (ví dụ y 72 vs 132 ở NPC đầu) vì mỗi máy tự chạy. Thẻ nền không tạo NPC tới khi được đưa lên trước. CHƯA: cận cảnh NPC left/right (camera bị kẹp pan, không đưa tới NPC bằng hook), chiều cao trẻ em so người lớn; bố cục dọc 375×812 chỉ thấy màn "Xoay ngang thiết bị" (game khóa ngang), các viewport dọc khác chưa kiểm.
+
+- [x] BƯỚC C (17/10/2026): QA 2 giao diện thật (2 tab, khách dev b/a); bản đầy đủ chỉ: civic-residents-life CHƯA xem NPC ngang/trẻ em bằng mắt; kết quả của change này xem `tổng hợp.md` mục BƯỚC C (C3).

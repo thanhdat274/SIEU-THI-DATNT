@@ -641,6 +641,8 @@ export class GameSimulation {
       // Chi phí xóm (OpenSpec `civic-local-fees`): sau tiền thuê lô (thứ tự thuê lô → duy trì → phí xóm), nhưng SAU khi mở
       // bản ghi ngày mới để `civicUpkeep`/`civicFee` nằm trong bản ghi của đúng ngày bị trừ (ledger `day` khớp bản ghi, bản tin sáng đọc được).
       this.collectDailyCivicCosts(day);
+      // Tiền đầu ngày (sau trừ chi phí xóm) làm gốc cho trần góp tiền khi chủ hẻm offline: cố định cả ngày.
+      this.currentDayRecord.openingMoney = this.playerData.money;
       // Cập nhật metrics cho mục tiêu thành phố (sau khi đóng bản ghi hôm trước, trước khi sang ngày mới)
       this.updateCityProgressMetrics();
       this.resolvePoliceCases(day);

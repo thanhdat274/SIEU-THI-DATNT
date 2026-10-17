@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { BUILDING_TYPE_DEFS, civicBundleById, ALL_PRODUCTS, COMBOS, DRINK_SHOP_PRODUCT_IDS, SNACK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, STORE_TYPES, WEATHER_MAP, XOI_DISH_IDS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
-import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES, landErrorMessage, FootstepTracker, footstepCue } from '@game/core';
+import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES, landErrorMessage, openBuildingReasonMessage, FootstepTracker, footstepCue } from '@game/core';
 import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
@@ -49,6 +49,8 @@ import { useVoiceChat } from './hooks/useVoiceChat';
 import { VoicePanel } from './components/VoicePanel';
 import { getDevGuest, devGuestToken } from './services/dev-guest';
 
+import { BundleCompletePopup } from './components/BundleCompletePopup';
+import { newCivicMilestones } from './civic-celebration';
 import { ChainModal, AnalyticsModal, KitchenStationModal, DiningTableModal, SaveModal, SupplierModal, TimeVoteModal, StoreLayoutModal, StorePlanogramModal, QuestModal, LevelRoadmapModal, CityModal, StallModal, MarketModal, TaxModal, DaySummaryModal, RegularsModal, SkillsModal, TitlesModal, MaintenanceModal, ReviewsModal, PricesModal, SecurityModal, NeighborhoodEventsModal } from './lazy-modals';
 
 /** Cấp thấp nhất mở được một loại chi nhánh; dưới cấp này (và chưa có chi nhánh) ẩn mục Chuỗi chi nhánh. */
@@ -1131,18 +1133,20 @@ export const App: React.FC = () => {
 
   // Khánh thành sổ góp (civic-city-goals 6.8): mốc mới trong save chung → toast cho cả hai người đang online.
   // Người offline không toast nhưng thấy mốc ở nhật ký Sổ góp + bản tin sáng (mốc nằm trong save).
-  const seenCivicMilestones = useRef<number | null>(null);
+  const seenCivicMilestones = useRef<Set<string> | null>(null);
+  // Popup "Sổ góp hoàn thành": hiện cho CẢ HAI người trong hẻm (mốc bundle_completed đến qua save chung), kể cả khi bảng Thành phố đang đóng.
+  const [completedBundlePopupId, setCompletedBundlePopupId] = useState<string | null>(null);
   useEffect(() => {
     const sim = simulationRef.current;
     if (!onlineWorld || !sim) { seenCivicMilestones.current = null; return; }
-    const list = sim.getCityProgress().milestones.filter(m => (m.type === 'bundle_completed' || m.type === 'civic_opened') && m.bundleId);
-    if (seenCivicMilestones.current === null) { seenCivicMilestones.current = list.length; return; }
-    for (const m of list.slice(seenCivicMilestones.current)) {
-      const typeId = civicBundleById(m.bundleId as string)?.buildingTypeId ?? '';
+    const { fresh, seen } = newCivicMilestones(sim.getCityProgress().milestones, seenCivicMilestones.current);
+    seenCivicMilestones.current = seen;
+    for (const m of fresh) {
+      const typeId = civicBundleById(m.bundleId)?.buildingTypeId ?? '';
       const name = BUILDING_TYPE_DEFS[typeId as keyof typeof BUILDING_TYPE_DEFS]?.name ?? typeId;
       addToast(m.type === 'bundle_completed' ? `Xóm đã góp đủ sổ ${name}! Có thể xây ngay.` : `Khánh thành ${name}!`, 'success');
+      if (m.type === 'bundle_completed') setCompletedBundlePopupId(m.bundleId);
     }
-    seenCivicMilestones.current = list.length;
   }, [currentRevision, onlineWorld, addToast]);
 
   // Nhật ký thành phố (open-world-coop-land 3.2): lấy từ lịch sử hoạt động của hẻm, chỉ các dòng loại 'Thành phố', kèm tên người làm.
@@ -1592,6 +1596,9 @@ export const App: React.FC = () => {
       simulation => simulation.donateToBundle(args.bundleId, args.slotId, args.productId, args.quantity, args.amount),
     );
     if (res?.success) addToast('Đã góp vào sổ xóm.', 'success');
+    // Chơi một mình: không có mốc qua save chung, popup dựng từ kết quả góp; online thì effect mốc lo cho cả hai máy.
+    const doneId = (res as { completedBundleId?: string } | null | undefined)?.completedBundleId;
+    if (res?.success && doneId && !onlineWorld) setCompletedBundlePopupId(doneId);
     // Server từ chối (vd. người cùng hẻm vừa góp đủ ô): sổ đã được tải lại, báo đúng lý do thay vì "chưa xác nhận".
     if (res && !res.success && res.reason === 'Máy chủ chưa xác nhận thay đổi.' && simulationRef.current) {
       return { ...res, reason: reconcileDonateRejection(simulationRef.current.getCivicBundleViews(), args.bundleId, args.slotId) };
@@ -1632,7 +1639,7 @@ export const App: React.FC = () => {
       simulation => simulation.openBuilding(buildingTypeId, parcelId, originX, originY),
     );
     if (!res) return;
-    addToast(res.success ? 'Đã mở cơ sở mới thành công!' : (res.reason ?? 'Không mở được cơ sở.'), res.success ? 'success' : 'warn');
+    addToast(res.success ? 'Đã mở cơ sở mới thành công!' : openBuildingReasonMessage(res.reason), res.success ? 'success' : 'warn');
   };
 
   const handleRestockStall = async (stallId: string) => {
@@ -2542,6 +2549,11 @@ export const App: React.FC = () => {
     {isCityOpen && simulationRef.current && (() => {
       const snap = simulationRef.current.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
       return <CityModal world={snap.world ?? defaultWorldOpenState()} ownedParcelIds={snap.storeLayout.ownedParcelIds ?? []} builtParcels={simulationRef.current.getOccupiedParcelBuildings()} playerLevel={player.level} playerMoney={player.money} day={simulationRef.current.getTime().day} buildingCount={snap.storeLayout.buildingPlacements?.length ?? 3} onReclaim={handleReclaimWave} journal={cityJournal} onPlanningWave={setPlanningWaveId} onBuyParcel={handleBuyParcel} civicQol={simulationRef.current.getCivicQol()} civicPopulation={simulationRef.current.getCivicPopulation()} placements={snap.storeLayout.buildingPlacements ?? []} buildableParcelIds={simulationRef.current.getBuildableParcelIds()} civicCosts={simulationRef.current.getCivicDailyReport()} civicFeeByParcel={simulationRef.current.getCivicFeeByParcelDetailed()} onBuildOnParcel={(parcelId, typeId) => { setCityOpen(false); setOpenBuildingTypeId(typeId); setOpenBuildingParcelId(parcelId); }} bundles={{ views: simulationRef.current.getCivicBundleViews(), inventory: simulationRef.current.getInventory(), day: simulationRef.current.getTime().day, playerMoney: player.money, onDonate: handleDonateToBundle, donorNameOf: (pid: string) => donorDisplayName(pid, onlineWorld ? Object.fromEntries(onlineWorld.world.memberships.map(m => [m.accountId, onlineWorld.world.avatars.find(a => a.accountId === m.accountId)?.displayName])) : undefined, onlineUid), cashBlockedReason: onlineWorld && onlineUid && !onlineWorld.world.memberships.some(m => m.role === 'owner' && m.accountId === onlineUid) && onlineWorld.world.settings?.memberLandPermissions === 'none' ? 'Chủ hẻm chưa cho bạn chi tiền' : undefined, journalLines: civicJournalLines(simulationRef.current.getCityProgress().milestones, (bid) => { const t = civicBundleById(bid)?.buildingTypeId ?? bid; return BUILDING_TYPE_DEFS[t as keyof typeof BUILDING_TYPE_DEFS]?.name ?? t; }) }} onClose={() => setCityOpen(false)}/>;
+    })()}
+    {completedBundlePopupId && simulationRef.current && (() => {
+      const view = simulationRef.current.getCivicBundleViews().find(v => v.id === completedBundlePopupId);
+      if (!view) return null;
+      return <BundleCompletePopup view={view} buildingName={BUILDING_TYPE_DEFS[view.buildingTypeId as keyof typeof BUILDING_TYPE_DEFS]?.name ?? view.buildingTypeId} donorName={(pid: string) => donorDisplayName(pid, onlineWorld ? Object.fromEntries(onlineWorld.world.memberships.map(m => [m.accountId, onlineWorld.world.avatars.find(a => a.accountId === m.accountId)?.displayName])) : undefined, onlineUid)} buildableParcelIds={simulationRef.current.getBuildableParcelIds()} onBuildOnParcel={(parcelId, typeId) => { setCityOpen(false); setOpenBuildingTypeId(typeId); setOpenBuildingParcelId(parcelId); }} onClose={() => setCompletedBundlePopupId(null)} />;
     })()}
     {isLevelRoadmapOpen && <LevelRoadmapModal player={player} onClose={() => setLevelRoadmapOpen(false)}/>}
     {daySummaryRecord && <DaySummaryModal record={daySummaryRecord} morningBrief={simulationRef.current?.getMorningBrief()} onClose={() => setDaySummaryRecord(null)}/>}

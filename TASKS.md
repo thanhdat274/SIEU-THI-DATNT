@@ -43,7 +43,7 @@
 - Change OpenSpec: `openspec/changes/civic-local-fees/`.
 - Change OpenSpec: `openspec/changes/civic-population-demand/`.
 
-## GIAI ĐOẠN 4 — BƯỚC 4: Mục tiêu thành phố + Sổ góp xóm (civic-city-goals) (16/10/2026 — code chưa commit)
+## GIAI ĐOẠN 4 — BƯỚC 4: Mục tiêu thành phố + Sổ góp xóm (civic-city-goals) (16/10/2026 — đã commit c35178f + e11c5e7; QA 2 giao diện thật đã làm (3.1–3.4 PASS))
 
 > Chỉ document **Giai đoạn 0–3** đã xong kèm test chạy thật (game-core 112/112, 0 lỗi). Giai đoạn 4 (UI Sổ góp) có code + QA Browser một phần (xem `tổng hợp.md`); Giai đoạn 5 (khánh thành + nhật ký) có code + test; Giai đoạn 6 (luật co-op) có code + test runtime, chưa QA 2 client — mục con tương ứng ở `openspec/changes/civic-city-goals/tasks.md` và `tổng hợp.md` khối "BƯỚC 4".
 > **Cập nhật Gđ 6 (16/10/2026):** đã sửa lỗi gốc `test:coop` và chạy lại typecheck/game-core/coop/gateway/web đều EXIT 0; còn QA 2 client trình duyệt và 2 câu hỏi chủ dự án (xem `tổng hợp.md`, mục "Giai đoạn 6 — rà soát & sửa").
@@ -54,7 +54,7 @@
 - [x] **Kết quả lệnh (16/10/2026)**: `yarn typecheck` EXIT 0; `yarn --cwd packages/game-core test` (bản dist qua `.qa/pure-loader.cjs`) **112/112 pass, 0 fail, 0 lỗi Error**; golden khớp. Bảng cân bằng 4 trang trong `tổng hợp.md` khối "BƯỚC 4".
 - [x] **Gđ 3** — Mục tiêu xóm phố cấp 4–10: catalog riêng `civic-reveal-goals.ts` (NOT `CITY_GOALS_CATALOG` để KHÔNG chặn lên cấp/golden), nối `evaluateCivicGoalCondition` thật, `revealBundleId`, `isBundleRevealed`, `revealedBundleIdsForLoadedLevel` không hồi tố; simulation `claimCivicRevealGoal` + gieo reveal theo cấp tải (constructor + importSaveData) + ghi `revealedBundleIds` vào save (schema vẫn 11, additive). Test `runCivicRevealGoalsTests` (1.1 evaluator 3 loại; 1.2 catalog+validate; 1.3 không hồi tố; claim thật) — chạy trong suite 112/112, 0 lỗi (16/10/2026).
 - [~] **Gđ 4** — UI tab "Sổ góp xóm": có code + QA Browser một client (667×375, desktop; dọc bị khóa) 17/10/2026; tên người góp hiển thị an toàn; sửa P1 "Xây ngay" chọn đúng loại tòa.
-- [~] **Gđ 5** — Khánh thành + nhật ký: popup/mốc/bản tin sáng đã nhìn bằng mắt; toast riêng khánh thành chưa thấy.
+- [x] **Gđ 5** — Khánh thành + nhật ký: popup/toast/mốc/bản tin sáng ("+8") đã nhìn bằng mắt ở hai tab thật (17/10/2026); còn thiếu hai tài khoản Google thật.
 - [~] **Gđ 6** — Co-op: test thật qua server/gateway + QA 2 client khách dev (B trình duyệt, A script) 17/10/2026: góp hàng/tiền, phiếu duyệt/từ chối, quyền none, cùng ô, khánh thành. Sửa lỗi quyền không tới runtime sống + UI thành viên không cập nhật. Còn bản tin sáng 2 client, 2 tài khoản Google thật.
 - **Ghi chú**: không commit/push (theo yêu cầu); nhánh `develop`; Bước 3 đã commit ở d12887e.
 
@@ -510,3 +510,4 @@
 - 03/10/2026: mở rộng nội dung đa dạng hóa: +182 sản phẩm cấp 5–30 (catalog 483), 6 nhóm hàng mới, +8 công thức tự chế, +8 nội thất và bật máy phát điện/tủ bánh mì/bàn nước, quầy tự thanh toán, +18 trang trí. Test lõi/web/server, typecheck renderer/web/server, `content:validate` PASS; chưa playtest cân bằng, chưa xem giao diện thật, chưa nâng cấp tòa nhà. `EXPANSION_MANIFEST` cho 182 món mới, `yarn balance` PASS (chỉ đo chỉ số giá/khách). Chi tiết: `tổng hợp.md`. Thêm `yarn workspace @game/core category-revenue` (doanh thu/lãi gộp theo nhóm ở cấp 5/15/30; không tính hao hụt, chưa thay playtest).
 
 - [x] (11/10/2026) Bê từ Rao: 5 lễ mới, trang trí cột đèn, nhân viên chuyên môn — có code + test; chưa QA bằng trình duyệt (xem `tổng hợp.md`).
+- [x] (17/10/2026) BƯỚC C civic: C1 trần góp tiền khi chủ offline tính trên tiền đầu ngày (`DailyRecord.openingMoney`, test `civic-coop`); C2 `yarn --cwd packages/game-core civic-bundle-sweep`; C3 QA 2 giao diện thật (hẻm gieo qua DB) — còn: Google thật, cận cảnh NPC, nợ riêng, viewport dọc. Chi tiết `tổng hợp.md` khối "BƯỚC C".

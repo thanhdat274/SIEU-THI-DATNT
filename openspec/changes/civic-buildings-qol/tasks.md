@@ -16,7 +16,9 @@
 
 ## 4. Kiểm tra
 - [x] 4.1 `yarn typecheck` PASS; `yarn --cwd packages/game-core test` EXIT 0 (112 pass, civic PASS, golden khớp) — 16/10/2026.
-- [ ] 4.2 QA trình duyệt bấm xây thật + co-op 2 client thấy cùng QoL — CHƯA.
+- [~] 4.2 QA trình duyệt bấm xây thật + co-op 2 client thấy cùng QoL — QA 2 client 17/10/2026 (Bước C): hai thẻ Browser pane cùng localhost, thẻ B ép id khách `b` bằng shim `Storage.getItem` ở thẻ đó (giao diện thật cả hai; hẻm "QA BuocC" gieo save qua DB: cấp 25, 20tr, sổ gần đủ). ĐÃ KIỂM CHỨNG: A bấm xây công viên/trạm y tế thật, cả hai thấy cùng công trình, cùng QoL (24,42 → 27,89), hash trạng thái dân sự giống hệt. Phát hiện: công viên ở lô `lot-west` ngoài bán kính → +0 QoL (bản tin ghi đúng "nằm ngoài bán kính"). CHƯA: mặt tiền riêng (3.1), QA đa viewport.
 
 ## 5. Co-op
 - [x] 5.1 `open_building` civic đi qua `land-policy.ts` (`buy_plot`, giá `buildCost`) → phiếu khi > 30% quỹ, cấm khi quyền `none`; khóa lô qua `land-command-targets.ts`. Test `decideLandCommand` + `landCommandTargets`. Bỏ code chết `open_building_civic`.
+
+- [x] BƯỚC C (17/10/2026): QA 2 giao diện thật (2 tab, khách dev b/a) — kết quả của change này xem `tổng hợp.md` mục BƯỚC C (C3).

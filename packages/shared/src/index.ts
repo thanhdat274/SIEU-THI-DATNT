@@ -682,6 +682,8 @@ export interface DailyRecord {
   civicUpkeep?: number;
   /** Phí vệ sinh/an ninh xóm trong ngày: chỉ tính trên ô lô SỞ HỮU, giảm theo QoL khu (thiếu = 0). */
   civicFee?: number;
+  /** Tiền chung đầu ngày (sau chi phí xóm): gốc tính trần góp tiền/ngày khi chủ hẻm offline (thiếu = dùng tiền hiện tại). */
+  openingMoney?: number;
   theftCost?: number; // Giá vốn hàng và tiền bị trộm trong ngày (thiếu = 0)
   theftRecovered?: number; // Tiền thu hồi từ phạt kẻ trộm và công an trong ngày (thiếu = 0)
   counterfeitLoss?: number; // Mệnh giá tiền giả nhận nhầm trong ngày (thiếu = 0)

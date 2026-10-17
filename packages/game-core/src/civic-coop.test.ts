@@ -5,6 +5,7 @@ import { MULTIPLAYER_PROTOCOL_VERSION } from '@game/shared';
 import { decideLandCommand, landVoteDescription } from './land-policy';
 import { WorldRuntime } from './world-runtime';
 import { isBundleCompleted } from './civic-bundles';
+import { openBuildingReasonMessage } from './land-error-messages';
 
 const CASH_SLOT = 'slot_park_cash';
 
@@ -48,6 +49,15 @@ export async function runCivicCoopTests(): Promise<void> {
   assert.deepEqual(capped(300_001, 0), { action: 'forbid', command: 'donate_bundle_cash', reason: 'daily_cap' }, 'offline: vượt trần ngày bị chặn');
   assert.equal(capped(100_000, 200_000, 800_000).action, 'allow', 'cộng dồn: đã góp 200k, quỹ còn 800k → trần 300k, góp thêm 100k được');
   assert.equal(capped(100_001, 200_000, 800_000).action, 'forbid', 'cộng dồn vượt trần');
+  // Trần cố định theo tiền đầu ngày: tiền hiện tại tụt (đã chi đất) không làm trần co lại.
+  const fixed = (amount: number) => decideLandCommand(cashCmd(amount), 'member', undefined, 500_000, false, { memberCashDonatedToday: 200_000, dayStartFunds: 1_000_000 });
+  assert.equal(fixed(100_000).action, 'allow', 'trần theo tiền đầu ngày 1M = 300k, đã góp 200k, thêm 100k được dù tiền hiện tại chỉ 500k');
+  assert.equal(fixed(100_001).action, 'forbid', 'vượt trần cố định');
+  // Mở tòa lúc tiệm đang mở: câu tiếng Việt, không lộ mã thô.
+  assert.equal(openBuildingReasonMessage('store_open'), 'Cần đóng cửa tiệm rồi mới mở được cơ sở mới.');
+  assert.equal(openBuildingReasonMessage(undefined), 'Không mở được cơ sở.');
+  assert.equal(openBuildingReasonMessage('ma_la'), 'ma_la', 'mã lạ trả về chính mã');
+  assert.ok(['store_open', 'unknown_type', 'unknown_parcel', 'parcel_not_owned', 'not_leased', 'rent_debt', 'wave_not_open', 'level', 'money', 'max_instances', 'single_instance', 'building_present', 'owned', 'invalid_day'].every(r => openBuildingReasonMessage(r) !== r), 'mọi lý do của openBuilding đều có câu tiếng Việt');
   assert.equal(decideLandCommand(cashCmd(300_001), 'owner', undefined, 1_000_000, false).action, 'allow', 'chủ hẻm không bị trần');
   assert.equal(decideLandCommand(cashCmd(10_000), 'member', { memberLandPermissions: 'none' }, 1_000_000, true).action, 'forbid', '6.3 quyền none: không góp tiền');
   assert.equal(decideLandCommand(cashCmd(10_000), 'owner', { memberLandPermissions: 'none' }, 1_000_000, true).action, 'allow', '6.3 chủ hẻm luôn góp được');
