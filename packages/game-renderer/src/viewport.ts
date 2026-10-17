@@ -94,6 +94,17 @@ const FACADES: Readonly<Record<string, { name: string; awning: number; board: nu
   com_restaurant: { name: 'QUÁN CƠM', awning: 0xc0392b, board: 0x922b21, trim: 0xf1948a, text: 0xfadbd8 },
   // parking_lot: không có mặt tiền (bãi xe trống).
 } as const;
+/**
+ * Điểm sáng cửa sổ/cửa kính của mặt tiền civic ban đêm: [x, y, rộng] theo px trong sprite (đo từ civic_*.png).
+ * Vẽ bằng quầng cộng màu ở lớp trên nhân màu đêm để cửa sổ vẫn sáng khi cảnh tối.
+ */
+const CIVIC_WINDOW_GLOWS: Readonly<Record<string, ReadonlyArray<readonly [number, number, number]>>> = {
+  clinic: [[36, 189, 30], [152, 189, 30], [95, 206, 44]],
+  ward_police: [[40, 205, 34], [150, 205, 34]],
+  primary_school: [[62, 108, 26], [92, 108, 26], [124, 108, 26], [158, 108, 26], [188, 108, 26], [69, 156, 24], [98, 156, 24], [160, 156, 24], [190, 156, 24], [126, 168, 30]],
+};
+const CIVIC_GLOW_STRENGTH = 0.55;
+
 const FALLBACK_FACADE = { name: 'CỬA HÀNG', awning: 0x4a6b8a, board: 0x2f4558, trim: 0xb8d0e6, text: 0xeaf4ff };
 
 /** Resolve typeId từ buildingId: DEFAULT_PLACEMENTS (4 tòa gốc) → fallback buildingTypeOfInstance (tòa mở thêm). */
@@ -180,6 +191,10 @@ export class PixiGameViewport {
   private shopkeeper?: { container: Container; sprite: Sprite; bubble: Container };
   /** Sprite mặt tiền công trình công cộng (civic) để đổi texture ngày/đêm theo ánh sáng. */
   private civicBuildingSprites: Array<{ sprite: Sprite; typeId: string }> = [];
+  /** Quầng sáng cửa sổ civic ban đêm (lớp trên nhân màu đêm); alpha đổi theo `streetLightStrength`. */
+  private civicGlowLayer = new Container();
+  private civicGlows: Sprite[] = [];
+  private civicGlowTexture?: ReturnType<typeof glowTexture>;
   private motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private fixtureSprites: Map<string, { container: Container; stockText: Text; dotMarker: Graphics; wearMarker: Graphics; sprite: Sprite; textureKey: string; lastState: string; staticArt?: boolean; dotX: number }> = new Map();
   private interactionBubble!: Container;
@@ -285,6 +300,7 @@ export class PixiGameViewport {
     this.worldContainer.addChild(this.weatherFx.darknessLayer);
     this.worldContainer.addChild(this.tintLayer);
     this.worldContainer.addChild(this.lightLayer);
+    this.worldContainer.addChild(this.civicGlowLayer);
     this.worldContainer.addChild(this.neighborhood.glow);
     this.worldContainer.addChild(this.neighborhood.labels);
     this.worldContainer.addChild(this.uiOverlayLayer);
@@ -604,6 +620,20 @@ export class PixiGameViewport {
       civicSprite.zIndex = bounds.top * TILE_SIZE + 50;
       this.wallLayer.addChild(civicSprite);
       this.civicBuildingSprites.push({ sprite: civicSprite, typeId });
+      if (placed.open) {
+        for (const [gx, gy, gw] of CIVIC_WINDOW_GLOWS[typeId] ?? []) {
+          this.civicGlowTexture ??= glowTexture();
+          const glow = new Sprite(this.civicGlowTexture);
+          glow.anchor.set(0.5);
+          glow.width = glow.height = gw * 2;
+          glow.position.set(bounds.left * TILE_SIZE + gx, bounds.top * TILE_SIZE + gy);
+          glow.tint = 0xffd980;
+          glow.blendMode = 'add';
+          glow.alpha = 0;
+          this.civicGlowLayer.addChild(glow);
+          this.civicGlows.push(glow);
+        }
+      }
 
       if (!placed.open) {
         // Đang thi công: rào chắn sọc vàng đen chắn cửa và biển "ĐANG THI CÔNG"
@@ -886,6 +916,8 @@ export class PixiGameViewport {
 
   private buildMapLayers(): void {
     this.civicBuildingSprites = [];
+    for (const glow of this.civicGlowLayer.removeChildren()) glow.destroy();
+    this.civicGlows = [];
     const storeBounds = this.tileMap.storeBounds ?? STORE_BOUNDS;
     const width = this.tileMap.width;
     const height = this.tileMap.height;
@@ -2088,6 +2120,7 @@ export class PixiGameViewport {
     const streetStrength = streetLightStrength(light);
     for (const glow of this.decorLampGlows) glow.alpha = streetStrength;
     const isNight = streetStrength > 0.5;
+    for (const glow of this.civicGlows) glow.alpha = streetStrength * CIVIC_GLOW_STRENGTH;
     for (const item of this.civicBuildingSprites) {
       const texKey = isNight ? `civic_${item.typeId}_night` : `civic_${item.typeId}`;
       const tex = atlasTexture(texKey) ?? atlasTexture(`civic_${item.typeId}`);

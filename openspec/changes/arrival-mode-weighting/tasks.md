@@ -22,5 +22,5 @@ Trạng thái 01/10/2026: nhóm 1–3 đã có code và test tự động (`tsc 
 - [x] 4.1 `yarn typecheck` (`tsc -b --force`), `yarn test`, `yarn build` PASS (01/10/2026, Node 24 qua PATH vì lệnh mặc định đang trỏ Node 20 không đạt engine >= 22).
 - [ ] 4.2 Browser QA: chưa thấy khách ô tô đến, đỗ ở phía đông và rời đi; Browser pane bị ẩn nên game gần như đứng. Cần chạy khi pane hiển thị (đặc biệt tối cuối tuần hoặc ngày mưa), desktop và mobile.
 - [ ] 4.3 Cảm quan/cân bằng: tỷ lệ ô tô, quãng đi từ chỗ đỗ, khách bỏ đi do đi xa, hệ số khung giờ.
-- [ ] 4.4 Quyết định sau: khách đi bộ qua đường tại vạch, tỷ lệ xe nền theo giờ/mưa, thêm chỗ đỗ ô tô, ảnh hưởng tiền tiêu/độ kiên nhẫn.
+- [ ] 4.4 Quyết định sau: khách đi bộ qua đường tại vạch, tỷ lệ xe nền theo giờ/mưa, thêm chỗ đỗ ô tô, ảnh hưởng tiền tiêu/độ kiên nhẫn. **ĐÃ CHỐT 17/10/2026:** không thêm chỗ đỗ ô tô, giữ chỗ đỗ phía đông. Khách đi bộ qua đường tại vạch: xem traffic-light-crosswalk-yielding 4.5.
 - [ ] 4.5 Cập nhật `TASKS.md`/`ROADMAP.md` khi chốt nghiệm thu.

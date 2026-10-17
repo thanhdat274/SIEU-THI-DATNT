@@ -20,4 +20,4 @@ Trạng thái 05/10/2026: nhóm 1–3.2 có code; typecheck, `yarn test` game-co
 - [x] 3.2 Browser QA desktop: mua tòa, tường, biển, mái hiên, cửa, thu ngân.
 - [x] 3.3 (một phần, 05/10/2026) Đã sửa và xem lại bàn (dời lên y=6) và sprite chảo riêng ở zoom 2×, khách thật vào mua. Chưa xem: khách ngồi bàn, mưa/đêm, mobile, co-op.
 - [ ] 3.4 Cân bằng: đã có `snack-balance-sim.ts` (hoàn vốn ≈ 2,1–2,3 ngày so với quán nước 7,2 ngày → có vẻ quá rẻ); còn lại chỉnh `SNACK_TRAFFIC_SHARE`/giá mở tòa/hệ số cụm và playtest thật.
-- [ ] 3.5 Việc sau: khách chuyền tòa, khách quen Bé Na, nhân viên riêng, khung giờ bổ trợ.
+- [ ] 3.5 Việc sau: khách chuyền tòa, khách quen Bé Na, nhân viên riêng, khung giờ bổ trợ. **ĐÃ CHỐT 17/10/2026:** làm cả bốn: khách chuyền tòa, khách quen Bé Na, nhân viên riêng, khung giờ bổ trợ (nhân viên riêng phụ thuộc hệ nhân viên theo ca).

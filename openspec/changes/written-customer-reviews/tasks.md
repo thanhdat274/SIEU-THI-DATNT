@@ -24,5 +24,5 @@ Trạng thái 01/10/2026: nhóm 1–3 đã có code và test tự động (`revi
 - [x] 4.2 Browser QA: mở màn, thấy lời đánh giá thật, lọc, toast. **(15/10/2026: CÓ CODE UI — ReviewsModal, toast, HUD button. CHƯA kiểm trình duyệt thật do sandbox EPERM.)**
 - [x] 4.3 Lối vào cho màn hình hẹp: đo 02/10/2026, ô "Đánh giá khách" hiện và bấm được ở 760–900 px. **HOÀN THÀNH.**
 - [x] 4.4 Thêm mẫu câu (02/10/2026: mở rộng từ ~38 lên ~80 câu chính + ~20 câu ngữ cảnh để tránh lặp). **HOÀN THÀNH.**
-- [ ] 4.5 Quyết định sau: lời đánh giá trong bản tin sáng/tổng kết ngày, phản hồi lời chê, lọc theo món. **CHƯA LÀM — chờ yêu cầu cụ thể từ chủ dự án.**
+- [ ] 4.5 Quyết định sau: lời đánh giá trong bản tin sáng/tổng kết ngày, phản hồi lời chê, lọc theo món. **CHƯA LÀM — chờ yêu cầu cụ thể từ chủ dự án.** **ĐÃ CHỐT 17/10/2026:** đưa lời đánh giá vào bản tin sáng + tổng kết ngày, có phản hồi lời chê và lọc theo món (hết trạng thái chờ yêu cầu).
 - [x] 4.6 Cập nhật `TASKS.md`/`ROADMAP.md`. **HOÀN THÀNH.**

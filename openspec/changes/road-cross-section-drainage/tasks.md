@@ -22,5 +22,5 @@ Trạng thái 01/10/2026: nhóm 1–3 đã có code và test tự động (`yarn
 - [x] 4.1 `yarn typecheck`, `yarn test`, `yarn build` PASS (01/10/2026).
 - [x] 4.2 Browser QA một phần (desktop, Browser pane, `?debugTime=…`): đường khô thấy bó vỉa, 4 cửa thu nước, vạch giữa, vạch qua đường trước cửa; mưa 0,9 mặt đường tối và có 4 vũng; mưa 0,15 chỉ tối nhẹ, không vũng; không lỗi console.
 - [ ] 4.3 Chưa kiểm: mobile, ban đêm/đèn đường trên đường ướt, khi thu nhỏ camera sát biên bản đồ, mưa thực trong ngày chơi (độ ướt khô dần theo thời gian), hiệu năng.
-- [ ] 4.4 Quyết định sau: giọt/sóng nước động quanh vũng, mang độ ướt qua đêm, màu và độ đậm.
+- [ ] 4.4 Quyết định sau: giọt/sóng nước động quanh vũng, mang độ ướt qua đêm, màu và độ đậm. **ĐÃ CHỐT 17/10/2026:** có gợn sóng nhẹ ở vũng khi đang mưa; độ ướt mặt đường giữ qua đêm nếu mưa to (lưu vào save/co-op).
 - [ ] 4.5 Cập nhật `TASKS.md`/`ROADMAP.md` khi chốt nghiệm thu.
