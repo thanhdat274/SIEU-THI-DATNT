@@ -36,7 +36,7 @@ assert.equal(setWeatherFxSettings({ quality: 'ultra' as never }).quality, null, 
 
 // Chất lượng tường minh được giữ nguyên
 for (const q of ['low', 'medium', 'high'] as const) {
-  assert.equal(resolveWeatherQuality({ enabled: true, intensity: 1, quality: q }), q);
+  assert.equal(resolveWeatherQuality({ enabled: true, intensity: 1, quality: q, depthFx: true }), q);
 }
 
 // Độ gần mái được kẹp 0..1

@@ -1,3 +1,54 @@
+# QA + DỌN SAU SỬA LỖI D2 (17/10/2026 chiều, chưa commit)
+
+## Sức chứa civic trên W0 (chạy thật: script vét 24 thứ tự × 4 loại qua `GameSimulation.openBuilding`, đã xóa script)
+- W0 có 3 lô trống cho civic (`lot-west` 0..6, `lot-east-1` 21..26, `lot-east-2` 26..35; `lot-center` là tiệm chính cố định) → **tối đa 3 civic cùng lúc**, loại thứ 4 luôn không có lô (giống trước sửa). Trường 8×8 chỉ vừa `lot-east-2`.
+- **ĐÃ SỬA (17/10/2026, chủ dự án chọn):** `GameSimulation.findOpenOrigin(typeId, parcelId)` dò gốc bằng đúng `validatePlacement` của `openBuilding` với các tòa ĐANG CÓ và ưu tiên gốc không chiếm cột ranh lô (x0/x1) — trường trên lô trống `lot-east-2` nay ra x=27; `getBuildableParcelIds(typeId?)` chỉ coi lô là trống khi còn ít nhất một gốc đặt được (có loại → đúng loại; không có → một loại mở thêm bất kỳ). `OpenBuildingModal` nhận prop `findOrigin` (App truyền `findOpenOrigin`); nút "Xây ngay" ở thẻ/chi tiết sổ (`CivicBundlesPanel.buildableParcelIdsFor`) và popup dùng lô trống theo loại tòa. Test `civic-placement-overlap.test.ts` khối mới (ĐỎ trước sửa: `findOpenOrigin is not a function`; XANH sau): đồn rồi trường → gốc 27; trường trước → gốc 27, lot-east-1 còn đặt được; save cũ trường x=26 → lot-east-1 không còn là lô trống cho trạm y tế; 24 thứ tự đều đạt 3 civic W0. Lưu ý: gốc mặc định của tòa mở thêm loại khác cũng có thể lệch 1 cột vào trong lô. CHƯA bấm thử modal/nút trên giao diện thật. Mô tả lỗi cũ —  `OpenBuildingModal.firstValidOrigin` (`apps/web/src/components/OpenBuildingModal.tsx`) chọn gốc với `others = []` nên `lot-east-2` luôn ra x=26. (a) Đã có civic ở `lot-east-1` (21..26) → bấm xây ở `lot-east-2` báo `overlap` dù x=27 đặt được (8/24 thứ tự, theo đường nút). (b) Xây trường TRƯỚC ở `lot-east-2` (x=26) → `lot-east-1` vĩnh viễn không đặt được civic 6 ô nào (cột 26 bị chiếm), chỉ còn 2 civic (12/24 thứ tự), trong khi `getBuildableParcelIds` vẫn liệt `lot-east-1` là lô trống nên nút "Xây ngay" KHÔNG khóa (`bundleBuildAction` chỉ xét có lô trống).
+
+## QA trong game (bản build `vite build --mode development` + `NODE_ENV=development`, `VITE_API_URL=http://127.0.0.1:3011`, preview 5174; ô lưu mặc định bị Web Lock của ngữ cảnh khác giữ nên chơi local ở origin `qa.localhost:5174`)
+- ĐÃ LÀM (nhìn bằng mắt): trường cổng giữa đáy khớp 2 ô cửa giữa; bảng/rào "ĐANG THI CÔNG" giữa sprite trường; trạm y tế + trường ngày/đêm; chiều sâu bật/tắt bằng nút "Bóng & chiều sâu" (`depth.isEnabled()` false, bóng biến mất) và theo chất lượng (Thấp → tắt; Vừa/Cao/Tự động → bật); 375×812 hiện lớp "Xoay ngang" đúng thiết kế; 667×375 thấy mặt tiền nhưng canvas trong pane chỉ phủ góc trên-trái (giới hạn pane).
+- NPC: dân số ép `__sim._civicPopulationByDistrict = { hem_dan_cu: 400 }`, đổi sang ngày 4 rồi tăng 1 phút/0,4 s bằng `setDebugTime` để NPC lập lịch và ra ngoài; trích sprite NPC đang đi bằng `renderer.extract` (khung 32×48, nguồn civic.png) và xem phóng 4×: 6_left, 7_left, 7_right, 8_left, 8_right, 9_right. Cụ già hết ô trắng; trẻ em thấp hơn. CHƯA bắt được 6_right, 9_left.
+- Hai client: khách dev A/B (hai thẻ, sessionStorage) vào hẻm mới "QA D2 mat tien" (b421c071…, tạo trên Mongo local, chưa xóa) — cùng dân 164, cùng 20 NPC, cùng mã look. CHƯA kiểm mặt tiền co-op: hẻm mới cấp 1, xây civic cần seed cấp trong Mongo (chờ chủ dự án cho phép).
+- Ảnh chụp chỉ nằm trong thư mục tool-results của phiên, không ghi vào repo.
+
+## Hiệu năng chiều sâu (17/10/2026 chiều, Browser pane Chromium, KHÔNG phải headless, KHÔNG phải điện thoại; 375×812, DPR 2)
+- `renderer.render(stage)` thời gian CPU, trung vị 120 lần, 3 vòng tắt/bật: 16:30 → 0,2/0,1 · 0,1/0,1 · 0,1/0,1 ms; 21:30 → 0,1/0,1 ×3 ms (chỉ đo phía CPU, GPU bất đồng bộ nên không phản ánh tô điểm ảnh). `DepthEffects.update` trong khung thật: 55 lần, trung vị 0 ms, p99 0,1 ms, tối đa 0,1 ms. Số đo headless cũ ở mục dưới vẫn là bằng chứng chính.
+
+## Dọn
+- `tools/generate_updated_civic_art.py`: giữ (công cụ sinh lại trường + NPC 7 vào thư mục nguồn civic-art), đã thêm chú thích mục đích + cách chạy + cảnh báo ghi đè tại chỗ.
+- `.claude/launch.json`: không khác HEAD; thay đổi (thêm `server-qa`, `web-qa`) đã nằm trong commit 83c0b71 và là đổi cấu hình, không chỉ định dạng.
+- Sprite/atlas/test atlas và sửa đặt tòa civic đã commit ở 83c0b71; phần chưa commit chỉ còn nhóm art bible + chiều sâu + script sinh sprite.
+
+## Kiểm tra (chạy thật 17/10/2026 chiều)
+- `yarn typecheck` EXIT 0; `game-renderer test` EXIT 0 (9 file, gồm depth-effects, civic-door-pixels PASS); `game-core test` ×3: EXIT 0, 112/112, fail 0, 0 dòng "Error:"; `apps/web test` EXIT 0; `apps/server test:coop` EXIT 0. Chạy lại SAU sửa chọn gốc: typecheck EXIT 0; game-core ×3 EXIT 0, 112/112, fail 0, 0 "Error:" (có dòng "PASS civic origin pick"); renderer EXIT 0; web EXIT 0; test:coop EXIT 0.
+
+# HÌNH ẢNH — ART BIBLE + CHIỀU SÂU BẰNG CODE + LÁT CẮT THỬ (17/10/2026, chưa commit)
+
+## Làm được (có code + đã nhìn ảnh chụp thật)
+- **Kiểm kê 6 cảnh** (trong tiệm, phố ngày, phố đêm, góc civic, mưa, nhiều NPC) ở 375×812 và 1280×800 bằng Chrome headless (`?qa` → Chơi Thử (Local)). Nhận xét từng cảnh + nguồn ảnh (Kenney / LimeZu / vẽ code / model sinh) ghi ở `docs/ART-BIBLE.md` mục 0–1. Lỗi chính: 3 mật độ điểm ảnh cùng lúc (Kenney + nhân vật 2 px, nội thất 1 px, civic/residents model sinh 1 px mịn), nhà civic nhìn thẳng mặt đứng, thiếu bóng tiếp xúc/chân tường, mỗi vật liệu chỉ 1–2 sắc độ.
+- **`docs/ART-BIBLE.md`**: giữ `TILE_SIZE` 32, chuẩn mật độ 16 px × 2, **không** nâng ô lên 48/64 (345 chỗ dùng `TILE_SIZE` trong 21 file, 229 số `32` gõ thẳng trong renderer, mọi atlas phải làm lại, mobile 375 px chỉ còn ~7,8 ô ngang). Có bảng màu rút từ ảnh game + hằng màu code, luật sáng/bóng (sáng sẵn trên-trái, bóng đổ do code), viền (tối hơn 2 sắc độ, không đen), số sắc độ theo vật liệu, mật độ chi tiết tối thiểu, quy ước tên khóa/atlas. Ảnh tham chiếu thật ở `docs/art-bible/` (10 JPEG, ~1 MB).
+- **Hiệu ứng chiều sâu bằng code** `packages/game-renderer/src/depth-effects.ts` (không đổi sprite/save/gameplay): bóng đổ tòa nhà theo giờ (đa giác bỏ phần dưới nhà nên không tối sàn trong tiệm; chỉ vẽ lại khi hình bóng đổi), tối chân tường mặt tiền + dưới mái hiên (tĩnh), quầng cửa ban đêm cho tòa chưa có quầng riêng (tiệm chính đã có trong `shop-lighting.ts`). Nối trong `viewport.ts` (dựng lại cuối `buildMapLayers`, cập nhật sau `lighting.update`). `glowTexture` của `shop-lighting.ts` được export để dùng chung.
+- **Cài đặt chất lượng:** `WeatherFxSettings.depthFx` (mặc định bật) + `depthFxActive()` (chất lượng Thấp luôn tắt); nút "Bóng & chiều sâu" trong menu Quản lý (`ManagementModal.tsx`).
+- **Lát cắt thử:** tiệm chính + vỉa hè + trạm y tế (dựng tạm qua `__viewport.updateTileMap`, không vào save) + NPC/xe, cùng góc máy khóa camera, 16:30 và 21:00, bật/tắt trong cùng phiên. Ảnh `docs/art-bible/slice-*.jpg`.
+
+## Số đo hiệu năng (chạy thật 17/10/2026, 375×812, DPR 1, Chrome headless WebGL, dev server riêng không HMR)
+| Hiệu ứng | Render tắt / bật (ms, trung vị 4 vòng xen kẽ) | Ghi chú |
+|---|---|---|
+| DepthEffects mới | ngày 2,6 / 2,6 · đêm 2,9 / 3,2 | `update()` trung vị < 0,05 ms (đồng hồ 0,1 ms), p99 0,1 ms, tối đa 2,5 ms (lần vẽ lại đầu); 11.548 khung |
+| Parallax đồi (có sẵn) | ngày 2,3 / 2,4 · đêm 2,7 / 3,1 | |
+| Bóng cây (có sẵn) | ngày 2,5 / 2,4 · đêm 3,1 / 3,2 | trong nhiễu |
+| Quầng đèn + cửa sổ (có sẵn) | ngày 2,4 / 2,8 · đêm 2,0 / 2,0 | |
+Ngân sách hiệu ứng nền ≤ 2,0 ms/khung: hiệu ứng mới nằm trong ngân sách. Tick tổng dao động 6,2–7,8 ms giữa các lần đo cùng cấu hình nên **không** dùng chênh lệch tick làm bằng chứng. Chưa đo trên điện thoại thật.
+
+## Kiểm tra (chạy thật 17/10/2026)
+- `yarn typecheck` EXIT 0. `game-renderer`: 7/8 file test PASS (gồm `depth-effects.test.ts` mới, `weather-settings.test.ts` cập nhật); **`civic-door-pixels.test.ts` FAIL** — file mới của phiên làm việc khác đang song song (civic_primary_school chưa vẽ cửa trùng doorTiles), không thuộc thay đổi này nên `yarn --cwd packages/game-renderer test` tổng thể đang EXIT 1.
+- `game-core test` ×3: EXIT 0, 112/112 pass, fail 0 cả ba lần. `apps/web test` EXIT 0. `apps/server test:coop` EXIT 0.
+
+## Giới hạn / còn mở
+- Sprite chưa vẽ lại: lệch mật độ điểm ảnh và góc nhìn civic vẫn còn. Bản đêm civic không có cửa sổ sáng. Lớp phủ quy hoạch (`w2-x`) đè cảnh ở chế độ thường.
+- Bóng tòa dùng chiều cao chung 1,6 ô cho mọi tòa; tòa civic 2 tầng có thể cần cao hơn.
+- Chưa QA ma trận 7 viewport ngang của chuẩn mobile cho nút cài đặt mới (chỉ là thêm một dòng vào menu sẵn có) — NOT TESTED.
+- Chưa làm: phản chiếu đèn trên đường ướt, sương nền xa ở zoom 0,5 (đề xuất trong art bible mục 9).
+
 # CHƠI CHUNG — GIẢM TẢI MẠNG / ĐỒNG BỘ (16/10/2026, phần mạng đã commit c763ea4)
 
 ## Làm được (có code)
@@ -2646,6 +2697,8 @@ Còn thiếu khách quen với lịch sử/thân thiết, bản tin sáng, phư�
 | 17/10/2026 | BƯỚC B civic-city-goals: test gateway/coop thật (phiếu, quyền none, offline, trần ngày, hai người cùng ô, kho thiếu), sửa lỗi quyền không tới runtime sống (`applySettings`), tên người góp an toàn (`donorDisplayName`), "Xây ngay" chọn đúng loại tòa, QA Browser một client, sweep cấp 10/kinh tế | typecheck, game-core ×3 (112/112, 0 Error), web, coop, gateway, unit đều EXIT 0 | B4 làm bằng khách dev (B trình duyệt, A script) PASS 4.1–4.4, 4.5 một phần; sửa P1 quyền không cập nhật UI thành viên; chưa kiểm bản tin sáng 2 client, chưa dùng 2 tài khoản Google thật; bố cục dọc không kiểm được (khóa dọc). Đã commit c35178f (Bước 4) và e11c5e7 (Bước B) trên `develop`; chưa push. |
 | 17/10/2026 | BƯỚC C: dọn tài liệu, chốt (a) giữ sổ góp không bắt buộc, (b) trần góp theo tiền đầu ngày (`openingMoney`), (c) không trần chi đất; sweep civic-bundle theo cấp TP 4/5/7/9 | typecheck, game-core ×3 (112/112, 0 Error), web, coop đều EXIT 0; sweep: 1,43 / 1,93 / 0,75 / 1,25 ngày lãi mỗi trang | QA 2 giao diện thật đã làm (3.1–3.4 PASS, 3.5 một phần, 3.6 không kiểm được); phát hiện store_open thô + popup chỉ ở máy hoàn thành; chưa commit. |
 | 17/10/2026 | BƯỚC C vòng 2: tách `civic-celebration.ts` + test mốc→popup; QA hai giao diện thật sổ Trạm y tế (popup/toast cả hai, tải lại không báo lại, `store_open` tiếng Việt, bản tin +8, popup 3 viewport); typecheck/game-core ×3/web/coop EXIT 0 | Chưa QA hai tài khoản Google; NPC trái/phải, 3.6 dọc |
+| 17/10/2026 | QA + dọn sau sửa D2: sức chứa civic W0 (tối đa 3; ca kẹt gốc x=26 → ĐÃ SỬA `findOpenOrigin` + lô trống theo loại), QA trường/bảng thi công/NPC 6–9/chiều sâu/2 client, chú thích script sinh sprite | typecheck 0; renderer 0; game-core ×3 112/112, 0 Error:; web 0; coop 0 | Bấm thử modal/nút Xây ngay trên giao diện, seed hẻm QA để xem mặt tiền co-op, 6_right/9_left |
+| 17/10/2026 | Hình ảnh: kiểm kê 6 cảnh × 2 viewport, `docs/ART-BIBLE.md`, `depth-effects.ts` (bóng tòa theo giờ, chân tường/mái hiên, quầng cửa đêm, tắt được), lát cắt trước/sau | typecheck EXIT 0; game-renderer 7/8 PASS (`civic-door-pixels` của phiên khác FAIL); game-core ×3 112/112; web, coop EXIT 0; đo render 375×812 trong nhiễu, `update` < 0,05 ms | Vẽ lại sprite theo art bible (chờ quyết phương án), QA 7 viewport, đo thiết bị thật |
 | 17/10/2026 | BƯỚC C vòng 3: khóa nút Xây ngay theo cấp người chơi (`bundleBuildAction`), test `dayStartFundsOf`/`soloCompletedBundleId`, sweep chuyển sang `tools/`, kiểm devGuest production; typecheck/game-core ×3/web/coop EXIT 0 | Nút khóa chưa nhìn trên UI thật; hai tài khoản Google, NPC trái/phải, 3.6 dọc chưa làm; 3 hẻm QA còn trong Mongo |
 | 17/10/2026 | Sửa lỗi QA D2: A nạp atlas theo thứ tự index + bỏ khung nghiêng khỏi residents; B civic không chung cột civic; C căn giữa bảng/rào thi công; D test pixel cửa; E tọa độ ô trắng look 7 | typecheck EXIT 0; renderer test EXIT 0 (sprite-atlas-order, civic-atlas, civic-door-pixels PASS với civic.png mới); game-core ×3 EXIT 0, 112/112, 0 `Error:`, golden khớp; web test EXIT 0; test:coop EXIT 0 | Lỗi lệch `spriteVariant`→look đã sửa sau (test `npc-look`, golden khớp). CHƯA: QA 2 client |
 | 17/10/2026 | QA Bước D2 mặt tiền civic + NPC nghiêng ngang (chỉ QA, thêm test khớp cửa trong `civic-atlas.test.ts`) | typecheck EXIT 0; renderer test PASS (civic-atlas mục 6 mới); game-core ×3 EXIT 0, 112/112; web test EXIT 0; test:coop EXIT 0 | Lỗi: trường không vẽ cửa, đồn/trường chồng 1 cột, bảng thi công lệch nửa ô, khóa NPC trùng 3 atlas (race), look 7 ô trắng trên mặt. CHƯA: 2 client, NPC trong game ở 3 viewport |

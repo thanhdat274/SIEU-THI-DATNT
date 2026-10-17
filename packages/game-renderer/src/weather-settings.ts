@@ -8,6 +8,8 @@ export interface WeatherFxSettings {
   intensity: number;
   /** null = tự chọn (điện thoại: medium, máy tính: high). */
   quality: WeatherQuality | null;
+  /** Bóng tòa nhà theo giờ, tối chân tường/mái hiên, quầng cửa đêm. Chất lượng "thấp" luôn tắt. */
+  depthFx: boolean;
 }
 
 const KEY = 'tiem-tap-hoa:weather-fx';
@@ -19,6 +21,7 @@ function sanitize(raw: unknown): WeatherFxSettings {
     enabled: typeof v.enabled === 'boolean' ? v.enabled : DEFAULT_WEATHER_FX_SETTINGS.enabled,
     intensity: v.intensity === undefined ? DEFAULT_WEATHER_FX_SETTINGS.intensity : clamp01(v.intensity),
     quality: v.quality === 'low' || v.quality === 'medium' || v.quality === 'high' ? v.quality : null,
+    depthFx: typeof v.depthFx === 'boolean' ? v.depthFx : true,
   };
 }
 
@@ -48,6 +51,11 @@ export function resolveWeatherQuality(s: WeatherFxSettings = settings): WeatherQ
   if (s.quality) return s.quality;
   const touch = typeof window !== 'undefined' && (window.innerWidth < 768 || window.matchMedia?.('(pointer: coarse)').matches);
   return touch ? 'medium' : 'high';
+}
+
+/** Hiệu ứng chiều sâu có bật thật không: người chơi bật và chất lượng hiệu lực khác "thấp". */
+export function depthFxActive(s: WeatherFxSettings = settings): boolean {
+  return s.depthFx && resolveWeatherQuality(s) !== 'low';
 }
 
 // ----- Kênh trạng thái: renderer phát, UI/âm thanh/debug đọc -----

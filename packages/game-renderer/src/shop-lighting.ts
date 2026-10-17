@@ -46,7 +46,7 @@ const VEHICLE_LIGHTS: Record<VehicleLightSource['type'], { front: number; rear: 
 
 const T = TILE_SIZE;
 
-function glowTexture(): Texture {
+export function glowTexture(): Texture {
   // Một texture gradient dùng chung cho mọi nguồn sáng: mượt, không viền, cùng batch nên rẻ.
   const size = 128;
   const canvas = document.createElement('canvas');

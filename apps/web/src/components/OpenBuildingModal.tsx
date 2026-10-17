@@ -12,6 +12,8 @@ export interface Props {
   /** Giá thật sau khi trừ phần đã góp ở sổ (App truyền `getOpenBuildingCost`); mặc định giá gốc. */
   openCostFor?: (buildingTypeId: string, baseCost: number) => number;
   onOpenBuilding: (buildingTypeId: string, parcelId: string, originX: number, originY: number) => void | Promise<void>;
+  /** Gốc đặt có xét các tòa đang có (App truyền `simulation.findOpenOrigin`); thiếu thì dò như lô trống. */
+  findOrigin?: (buildingTypeId: string, parcelId: string) => { originX: number; originY: number } | null;
   onClose: () => void;
 }
 
@@ -40,7 +42,7 @@ const TYPE_DESCRIPTIONS: Record<string, string> = {
   primary_school: 'Trường tiểu học (8×8): Góp vốn xây cho phường; tăng chỉ số sống của khu trong bán kính 16 ô. Không bán hàng.',
 };
 
-/** Gốc hợp lệ đầu tiên trong lô (đúng hàng mặt tiền, nằm trong lô, cửa không bị cây chặn); null nếu loại này không vừa lô. */
+/** Dự phòng khi không có `findOrigin`: gốc hợp lệ đầu tiên trên lô trống (KHÔNG xét tòa bên cạnh). */
 function firstValidOrigin(typeId: BuildingTypeId, parcelId: string): { originX: number; originY: number } | null {
   const parcel = resolveParcel(parcelId);
   if (!parcel) return null;
@@ -59,6 +61,7 @@ export const OpenBuildingModal: React.FC<Props> = ({
   existingPlacements = [],
   openCostFor,
   onOpenBuilding,
+  findOrigin,
   onClose,
 }) => {
   const [selectedType, setSelectedType] = useState<BuildingTypeId>(initialTypeId && initialTypeId in BUILDING_TYPE_DEFS ? (initialTypeId as BuildingTypeId) : 'grocery_branch');
@@ -74,7 +77,7 @@ export const OpenBuildingModal: React.FC<Props> = ({
   const baseCost = currentDef.buildCost ?? currentDef.openCost;
   const cost = openCostFor ? openCostFor(selectedType, baseCost) : baseCost;
   const moneyLocked = playerMoney < cost;
-  const origin = firstValidOrigin(selectedType, parcelId);
+  const origin = findOrigin ? findOrigin(selectedType, parcelId) : firstValidOrigin(selectedType, parcelId);
   const canBuild = !reachedMax && !levelLocked && !moneyLocked && origin !== null;
 
   const handleBuild = async () => {

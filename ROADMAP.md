@@ -1,5 +1,12 @@
 # LỘ TRÌNH PHÁT TRIỂN (DEVELOPMENT ROADMAP)
 
+## Hình ảnh — Art bible + chiều sâu bằng code (17/10/2026)
+- [x] Kiểm kê 6 cảnh × 2 viewport, `docs/ART-BIBLE.md` (giữ ô 32, chuẩn 16 px × 2, bảng màu, sáng/bóng, viền, sắc độ, tên atlas).
+- [x] `depth-effects.ts`: bóng tòa theo giờ, tối chân tường/mái hiên, quầng cửa đêm; nút "Bóng & chiều sâu"; đo trong ngân sách ≤ 2 ms (headless, chưa đo máy thật); 17/10 chiều đo lại 3 vòng ở 375×812 trong Browser pane (CPU) và xác nhận tắt ở chất lượng Thấp + nút tắt.
+- [x] Lát cắt thử một góc phố, ảnh trước/sau ở `docs/art-bible/`.
+- [ ] Chờ chủ dự án chọn phương án asset (LimeZu đầy đủ / tự vẽ Aseprite / thuê họa sĩ) rồi mới vẽ lại sprite theo art bible.
+- [ ] QA 7 viewport ngang + đo hiệu năng trên điện thoại thật.
+
 > Ghi chú: `pnpm-workspace.yaml` ở Giai đoạn 0 là lịch sử; dự án dùng Yarn 1 workspaces. Bản chuẩn theo dõi hiện trạng chi tiết (hệ thống S01–S46, vấn đề I-01…I-19, việc tiếp theo) là `THONG-KE.md`; khi lệch với file này, mã và `THONG-KE.md` là nguồn đúng.
 
 ## Giai đoạn 4 — Bước 0: District Assignment (16/10/2026, fix review lần 2)

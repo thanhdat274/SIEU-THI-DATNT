@@ -6,7 +6,7 @@
   "types": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "tsx src/sprite-atlas.test.ts && tsx src/sprite-atlas-order.test.ts && tsx src/npc-look.test.ts && tsx src/civic-atlas.test.ts && tsx src/camera.test.ts && tsx src/weather-settings.test.ts && tsx src/planning-overlay.test.ts && tsx src/civic-door-pixels.test.ts"
+    "test": "tsx src/sprite-atlas.test.ts && tsx src/sprite-atlas-order.test.ts && tsx src/npc-look.test.ts && tsx src/civic-atlas.test.ts && tsx src/camera.test.ts && tsx src/weather-settings.test.ts && tsx src/planning-overlay.test.ts && tsx src/depth-effects.test.ts && tsx src/civic-door-pixels.test.ts"
   },
   "dependencies": {
     "@game/shared": "*",

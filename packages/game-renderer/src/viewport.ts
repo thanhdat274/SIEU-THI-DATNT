@@ -5,7 +5,8 @@ import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, weekdayO
 import { PixelTextureFactory } from './textures';
 import { loadSpriteAtlases, headLift, lampLift, walkerLook, atlasTexture } from './sprite-atlas';
 import { PixelCamera } from './camera';
-import { ShopLighting, streetLightStrength, type VehicleLightSource } from './shop-lighting';
+import { ShopLighting, glowTexture, streetLightStrength, type VehicleLightSource } from './shop-lighting';
+import { DepthEffects } from './depth-effects';
 import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, parcelTrafficMultiplier, districtForWave, type LandParcel, buildingTypeOfInstance } from '@game/data';
 
 export interface PixiGameViewportOptions {
@@ -24,7 +25,7 @@ import { buildRoadSurface, type RoadSurface } from './road-surface';
 import { WeatherEffects, swaySkew } from './weather-effects';
 import { RainGear, roofProximity, type GearFacing } from './rain-gear';
 import { loadWeatherSprites } from './weather-sprites';
-import { emitThunder, setRoofProximity, getWeatherFxSettings, publishWeatherVisual, resolveWeatherQuality } from './weather-settings';
+import { emitThunder, setRoofProximity, getWeatherFxSettings, publishWeatherVisual, resolveWeatherQuality, depthFxActive } from './weather-settings';
 import { NeighborhoodScene } from './neighborhood-scene';
 import { NeighborhoodActors } from './neighborhood-actors';
 import { planningOverlaySignature, type PlanningOverlay } from './planning-overlay';
@@ -289,6 +290,8 @@ export class PixiGameViewport {
     this.worldContainer.addChild(this.uiOverlayLayer);
     this.actors = new NeighborhoodActors(this.textures, this.entitiesLayer, this.uiOverlayLayer, hashSeed(String(this.simulation.getWeatherSeed())));
     this.lighting = new ShopLighting(this.tintLayer, this.lightLayer, this.shadowLayer, this.entitiesLayer);
+    this.depth = new DepthEffects(this.shadowLayer, this.lightLayer, glowTexture());
+    this.depth.setEnabled(depthFxActive());
 
     this.app.stage.addChild(this.worldContainer);
 
@@ -1245,6 +1248,7 @@ export class PixiGameViewport {
     baskets.y = MAIN_B.bottom * TILE_SIZE + 6;
     baskets.zIndex = baskets.y + 32;
     this.entitiesLayer.addChild(baskets);
+    this.depth?.rebuild((this.tileMap.buildings ?? []).filter(b => b.bounds).map(b => ({ bounds: b.bounds!, awning: b.awning, doorTiles: b.doorTiles, hasOwnSpill: b.id === 'main' })));
   }
 
   /** Quầy hết vé/ngừng bán hiện biển HẾT; gọi mỗi khi tập đổi, và vẽ lại ngay. */
@@ -1604,6 +1608,8 @@ export class PixiGameViewport {
 
   private bubbleWidth = 0;
   private lighting!: ShopLighting;
+  /** Bóng tòa nhà theo giờ, tối chân tường/mái hiên, quầng cửa đêm (tắt được trong cài đặt). */
+  private depth?: DepthEffects;
   private shadowLayer!: Container;
   private tintLayer!: Container;
   private lightLayer!: Container;
@@ -2116,6 +2122,11 @@ export class PixiGameViewport {
     }
     // Mưa cho bóng/đường dùng cường độ đã làm mượt; tắt hiệu ứng thì quay về cường độ thô của mô phỏng.
     const rain = fxSettings.enabled ? weatherState.rainIntensity : rainNow;
+    if (this.depth) {
+      const depthOn = depthFxActive(fxSettings);
+      if (this.depth.isEnabled() !== depthOn) this.depth.setEnabled(depthOn);
+      this.depth.update(light, Math.max(rain, fxSettings.enabled ? weatherState.sunOcclusion * 0.5 : 0), streetStrength);
+    }
     this.roadSurface?.setWetness(fxSettings.enabled ? weatherState.puddleLevel : (dbgRain !== undefined ? Math.min(1, rain * 1.5) : this.simulation.getRoadWetness()));
     const shadowSoftness = fxSettings.enabled ? Math.max(rain, weatherState.sunOcclusion * 0.5) : rain;
     for (const entry of this.treeShadows) {

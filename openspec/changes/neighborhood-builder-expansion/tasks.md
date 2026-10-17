@@ -12,7 +12,7 @@ Change này không có task code. Theo dõi tiến độ ở change con; đánh 
 - [>] 1.2 `civic-population-demand` — code + test xong 16/10/2026 (EXIT 0); sweep CHƯA ĐẠT (doanh thu ≈ 0% dù hệ số 1,07–1,09), chờ quyết định (17/10: QA 2 client dân số khớp, chỉ đổi lúc chốt ngày)
 - [x] 1.3 `civic-local-fees` — code + test + sweep chốt bộ E (16/10/2026); còn QA trình duyệt và co-op 2 client. (17/10: QA 2 client phí khớp; nợ riêng chưa kiểm)
 - [>] 1.4 `civic-city-goals` + Sổ góp xóm — code + test + QA Browser một client và 2 client khách dev xong 17/10/2026; còn bản tin sáng 2 client, 2 tài khoản Google thật. (17/10 Bước C: toast/khánh thành/bản tin sáng hai giao diện thật PASS; còn Google thật)
-- [ ] 1.5 `civic-residents-life` (sau 1.2) — code xong; 17/10 QA 2 client cùng cư dân; chưa cận cảnh NPC
+- [>] 1.5 `civic-residents-life` (sau 1.2) — code xong, test tất định + hiệu năng 0,052 ms/khung; 17/10 QA 2 client cùng cư dân; còn cận cảnh NPC nghiêng ngang, hình vẽ lại, bố cục dọc
 
 ## 2. Hoãn / ngoài phạm vi
 - Sự kiện thành phố (ngập, mất điện, dịch bệnh): nếu làm thì mở rộng `neighborhood-events`.

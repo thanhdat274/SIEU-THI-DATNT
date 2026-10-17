@@ -15,6 +15,8 @@ export interface BundlesProps {
   playerLevel: number;
   /** Lô trống có thể xây (để nút "Xây ngay"). */
   buildableParcelIds: readonly string[];
+  /** Lô trống còn đặt được đúng loại tòa của sổ (App: `getBuildableParcelIds(typeId)`); thiếu thì dùng `buildableParcelIds`. */
+  buildableParcelIdsFor?: (buildingTypeId: string) => readonly string[];
   onDonate: (args: DonateArgs) => Promise<{ success: boolean; reason?: string; completedBundleId?: string } | null | undefined>;
   /** Nhật ký sổ góp (mới nhất trước), ví dụ "Ngày 3 — Xóm góp đủ sổ Công viên". */
   journalLines?: readonly string[];
@@ -46,7 +48,8 @@ const goalText = (c: { kind: string; targetValue: number; buildingTypeId?: strin
 export const CivicBundlesPanel: React.FC<BundlesProps> = (rawProps) => {
   const [openId, setOpenId] = useState<string | null>(null);
   const props: BundlesProps = rawProps;
-  const { views, buildableParcelIds, onBuildOnParcel, journalLines = [] } = props;
+  const { views, buildableParcelIds, buildableParcelIdsFor, onBuildOnParcel, journalLines = [] } = props;
+  const lotsFor = (typeId: string) => buildableParcelIdsFor?.(typeId) ?? buildableParcelIds;
   const donorName = rawProps.donorNameOf ?? ((id: string) => donorDisplayName(id));
   const open = views.find(v => v.id === openId);
   if (open) return <BundleDetail view={open} {...props} onBack={() => setOpenId(null)} />;
@@ -62,7 +65,7 @@ export const CivicBundlesPanel: React.FC<BundlesProps> = (rawProps) => {
           {hidden && <span className="muted" style={{ fontSize: 12 }}>Mở ở cấp thành phố {v.revealedByCityLevel}{goal ? ` hoặc đạt: ${goalText(goal.condition)}` : ''}</span>}
           {v.status === 'collecting' && <><div aria-hidden style={{ height: 8, background: 'rgba(0,0,0,0.12)' }}><div style={{ width: `${(v.slotsDone / v.slotsTotal) * 100}%`, height: '100%', background: 'var(--teal)' }} /></div><span style={{ fontSize: 12 }}>{v.slotsDone}/{v.slotsTotal} ô</span></>}
           {v.status === 'complete' && <><span style={{ color: 'var(--teal)', fontWeight: 'bold' }}>✓ Hoàn thành</span>
-            <PixelButton variant="teal" style={{ minHeight: 44, whiteSpace: 'normal' }} disabled={!onBuildOnParcel || bundleBuildAction(v, props.playerLevel, buildableParcelIds.length > 0).disabled} onClick={() => onBuildOnParcel?.(buildableParcelIds[0], v.buildingTypeId)}>{bundleBuildAction(v, props.playerLevel, buildableParcelIds.length > 0, money).label}</PixelButton></>}
+            <PixelButton variant="teal" style={{ minHeight: 44, whiteSpace: 'normal' }} disabled={!onBuildOnParcel || bundleBuildAction(v, props.playerLevel, lotsFor(v.buildingTypeId).length > 0).disabled} onClick={() => onBuildOnParcel?.(lotsFor(v.buildingTypeId)[0], v.buildingTypeId)}>{bundleBuildAction(v, props.playerLevel, lotsFor(v.buildingTypeId).length > 0, money).label}</PixelButton></>}
           {v.status === 'built' && <span style={{ color: 'var(--teal)', fontWeight: 'bold' }}>Đã khánh thành{v.completedDay ? ` · góp xong ngày ${v.completedDay}` : ''}</span>}
           {!hidden && <PixelButton variant="wood" style={{ minHeight: 44 }} onClick={() => setOpenId(v.id)}>Chi tiết</PixelButton>}
         </li>;
@@ -75,7 +78,8 @@ export const CivicBundlesPanel: React.FC<BundlesProps> = (rawProps) => {
   </div>;
 };
 
-const BundleDetail: React.FC<BundlesProps & { view: BundleCardView; onBack: () => void }> = ({ cashBlockedReason, view, inventory, day, playerMoney, playerLevel, buildableParcelIds, onDonate, onBuildOnParcel, donorNameOf, onBack }) => {
+const BundleDetail: React.FC<BundlesProps & { view: BundleCardView; onBack: () => void }> = ({ cashBlockedReason, view, inventory, day, playerMoney, playerLevel, buildableParcelIds, buildableParcelIdsFor, onDonate, onBuildOnParcel, donorNameOf, onBack }) => {
+  const lots = buildableParcelIdsFor?.(view.buildingTypeId) ?? buildableParcelIds;
   const donorName = donorNameOf ?? ((id: string) => donorDisplayName(id));
   const [sheet, setSheet] = useState<BundleSlotView | null>(null);
   const [message, setMessage] = useState('');
@@ -99,7 +103,7 @@ const BundleDetail: React.FC<BundlesProps & { view: BundleCardView; onBack: () =
       </li>)}
     </ul>
     {view.topDonor && <p className="muted" style={{ margin: '6px 0 0' }}>Góp nhiều nhất: {donorName(view.topDonor.playerId)} ({view.topDonor.percent}%)</p>}
-    {view.status === 'complete' && <PixelButton variant="teal" style={{ minHeight: 44, width: '100%', marginTop: 8, whiteSpace: 'normal' }} disabled={!onBuildOnParcel || bundleBuildAction(view, playerLevel, buildableParcelIds.length > 0).disabled} onClick={() => onBuildOnParcel?.(buildableParcelIds[0], view.buildingTypeId)}>{bundleBuildAction(view, playerLevel, buildableParcelIds.length > 0, money).label}</PixelButton>}
+    {view.status === 'complete' && <PixelButton variant="teal" style={{ minHeight: 44, width: '100%', marginTop: 8, whiteSpace: 'normal' }} disabled={!onBuildOnParcel || bundleBuildAction(view, playerLevel, lots.length > 0).disabled} onClick={() => onBuildOnParcel?.(lots[0], view.buildingTypeId)}>{bundleBuildAction(view, playerLevel, lots.length > 0, money).label}</PixelButton>}
     {liveSlot && <DonateSheet bundleId={view.id} slot={liveSlot} inventory={inventory} day={day} playerMoney={playerMoney} onClose={() => setSheet(null)}
       onSubmit={async (args) => {
         const res = await onDonate(args);

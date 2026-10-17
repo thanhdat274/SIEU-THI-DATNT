@@ -816,10 +816,43 @@ export class GameSimulation {
   /** Bản đồ theo đất đã mua, quầy đã mở và vị trí đặt/ô sàn mở rộng hiện tại. */
   public getOccupiedParcelBuildings(): Record<string, string> { return occupiedParcelBuildings(this.buildingPlacements); }
   /** Lô trống đặt được tòa mới: lô W0 + lô đã sở hữu/thuê, trừ lô có tòa (kể cả vị trí mặc định của tiệm chính/tòa cũ). */
-  public getBuildableParcelIds(): string[] {
+  /**
+   * Lô trống mở được tòa: có quyền dùng, chưa có tòa và còn ít nhất một gốc đặt được (`findOpenOrigin`).
+   * Có `typeId` thì xét đúng loại đó; không có thì chỉ cần một loại mở thêm được (maxInstances > 1) đặt vừa.
+   */
+  public getBuildableParcelIds(typeId?: string): string[] {
     const occupied = occupiedParcelBuildings(resolvePlacements(this.buildingPlacements, this.unlockedPlotIds));
-    const tenured = Object.entries(this.parcelTenure).filter(([, t]) => t.kind === 'owned' || t.kind === 'leased').map(([id]) => id);
-    return ALL_PARCELS.filter(p => (p.wave === 0 || this.ownedParcelIds.includes(p.id) || tenured.includes(p.id)) && !occupied[p.id]).map(p => p.id);
+    const tenured = this.tenuredParcelIds();
+    const types = typeId ? [typeId] : Object.values(BUILDING_TYPE_DEFS).filter(def => def.maxInstances > 1).map(def => def.typeId);
+    return ALL_PARCELS
+      .filter(p => (p.wave === 0 || this.ownedParcelIds.includes(p.id) || tenured.includes(p.id)) && !occupied[p.id])
+      .filter(p => types.some(t => this.findOpenOrigin(t, p.id) !== null))
+      .map(p => p.id);
+  }
+
+  private tenuredParcelIds(): string[] {
+    return Object.entries(this.parcelTenure).filter(([, t]) => t.kind === 'owned' || t.kind === 'leased').map(([id]) => id);
+  }
+
+  /**
+   * Gốc đặt tòa `typeId` trên lô, xét các tòa đang có (cùng kiểm tra với `openBuilding`); null nếu không còn chỗ.
+   * Ưu tiên gốc không chiếm cột ranh lô (x0/x1 là tường chung với lô kề) để lô bên cạnh vẫn đặt được civic.
+   */
+  public findOpenOrigin(typeId: string, parcelId: string): { originX: number; originY: number } | null {
+    const typeDef = BUILDING_TYPE_DEFS[typeId as keyof typeof BUILDING_TYPE_DEFS];
+    const parcel = resolveParcel(parcelId);
+    if (!typeDef || !parcel) return null;
+    const originY = parcel.rect.y1 - (typeDef.template.height - 1);
+    const buildingId = `${typeId}-${countBuildingsOfType(this.buildingPlacements, typeId) + 1}`;
+    const others = resolvePlacements(this.buildingPlacements, this.unlockedPlotIds);
+    const accessible = [...this.ownedParcelIds, ...this.tenuredParcelIds()];
+    const valid: number[] = [];
+    for (let originX = parcel.rect.x0; originX <= parcel.rect.x1; originX++) {
+      if (validatePlacement({ buildingId, parcelId, originX, originY, typeId }, others, accessible) === null) valid.push(originX);
+    }
+    if (valid.length === 0) return null;
+    const inner = valid.find(x => x > parcel.rect.x0 && x + typeDef.template.width - 1 < parcel.rect.x1);
+    return { originX: inner ?? valid[0], originY };
   }
   public getOpenedWaves(): string[] { return [...this.worldOpenState.openedWaves]; }
   public getDecorOwned(): string[] { return [...this.decorOwned]; }

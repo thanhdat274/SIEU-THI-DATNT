@@ -31,6 +31,6 @@ Trạng thái 07/10/2026: phần THUẦN AN TOÀN của 1.1/1.2 (DistrictDef reg
 
 ## 4. Save, kiểm chứng, tài liệu
 
-- [ ] 4.1 Schema kế tiếp + migration (cityProgress {level, claimedCityGoalIds, milestones[]}). **CHƯA LÀM.**
-- [ ] 4.2 `yarn typecheck` ✅ PASS; `yarn test` ❌ EPERM (sandbox). **GHI NHẬN.**
+- [x] 4.1 `cityProgress {level, claimedCityGoalIds, milestones, metrics}` có trong `SaveGameData` (`packages/shared/src/index.ts`), `isSaveGameData`/migration nhận schema 10 và 11 (schema hiện hành 11). Đã kiểm chứng gián tiếp qua test nạp save 10 & 11 trong `civic-bundles.test.ts` (game-core 112/112, 17/10/2026).
+- [x] 4.2 17/10/2026: `yarn typecheck` EXIT 0; `yarn --cwd packages/game-core test` ×3 EXIT 0, 112/112 pass, 0 dòng `Error:`; `yarn --cwd apps/web test` EXIT 0; `yarn --cwd apps/server test:coop` EXIT 0 (thay ghi chú EPERM cũ).
 - [x] 4.3 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`. **HOÀN THÀNH.**
