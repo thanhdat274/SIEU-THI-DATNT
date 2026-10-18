@@ -2938,27 +2938,27 @@
    "days": [
     {
      "day": 1,
-     "customersServed": 301,
-     "revenue": 5124500,
-     "netProfit": 1519500,
-     "sales": "c1e7a963c484e5d4a040c5468cbf92e7c848a8a0"
+     "customersServed": 309,
+     "revenue": 5592500,
+     "netProfit": 1656500,
+     "sales": "bfdcba8e63e1da90d42793e4c737845287684cad"
     },
     {
      "day": 2,
-     "customersServed": 312,
-     "revenue": 5384000,
-     "netProfit": 1579800,
-     "sales": "6400f66075a25ce52457725cb2e84086169fdeeb"
+     "customersServed": 320,
+     "revenue": 5365000,
+     "netProfit": 1607800,
+     "sales": "05ce3836e8d299867db26fc9782165d1b2b10e64"
     },
     {
      "day": 3,
-     "customersServed": 292,
-     "revenue": 5684000,
-     "netProfit": 1561800,
-     "sales": "8dca93ed9e95f281ed33b01ee024714ca95265c8"
+     "customersServed": 299,
+     "revenue": 5747500,
+     "netProfit": 1574300,
+     "sales": "06bd6195d853f3fc9263253e0122e4ffe028d969"
     }
    ],
-   "money": 22711900,
+   "money": 23254400,
    "fixtures": "13c1b27e648a4413a578277e27625839471941f1"
   }
  }

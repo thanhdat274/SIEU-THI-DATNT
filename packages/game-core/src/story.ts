@@ -14,6 +14,8 @@ export interface StoryContext {
   stallServings: number;
   /** Số cơ sở đang có: tiệm chính (1) + mỗi tòa nhà đã mở. */
   buildingsOpened: number;
+  /** Số chi nhánh thật: tòa `grocery_branch` + chi nhánh điều hành từ xa (OpenSpec `branch-chain` 7.2). */
+  branchesOpened: number;
 }
 
 export type StoryChapterStatus = 'locked' | 'available' | 'started' | 'completed' | 'claimed';
@@ -56,6 +58,7 @@ function measure(objective: StoryObjective, ctx: StoryContext, startedDay: numbe
     case 'level': return { current: Math.min(ctx.level, objective.target), target: objective.target, met: ctx.level >= objective.target };
     case 'totalRevenue': return { current: Math.min(ctx.totalRevenue, objective.target), target: objective.target, met: ctx.totalRevenue >= objective.target };
     case 'stallServings': return { current: Math.min(ctx.stallServings, objective.target), target: objective.target, met: ctx.stallServings >= objective.target };
+    case 'branchesOpened': return { current: Math.min(ctx.branchesOpened, objective.target), target: objective.target, met: ctx.branchesOpened >= objective.target };
     case 'buildingsOpened': return { current: Math.min(ctx.buildingsOpened, objective.target), target: objective.target, met: ctx.buildingsOpened >= objective.target };
     case 'levelAndStaff': {
       const met = ctx.level >= objective.level && ctx.staffCount >= objective.staff;

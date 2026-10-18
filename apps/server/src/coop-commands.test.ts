@@ -198,6 +198,18 @@ async function run() {
     const afterRack = await snapshotFor(owner);
     assert.equal(afterRack.businesses[0].save.storageRackCount, racksBefore + 1, 'owner thấy thêm đúng một storage rack qua server replay');
 
+    // dynamic-economy 5.2: đặt hàng qua đường REST được server chạy lại — vượt tồn nhà cung cấp bị từ chối, đơn hợp lệ chốt giá vào save chuẩn.
+    const orderRevision = (await snapshotFor(owner)).world.revision;
+    const orderMoneyBefore = (await snapshotFor(owner)).businesses[0].save.player.money;
+    await assert.rejects(send(owner, 'order-too-many', { type: 'order_supplier', supplierId: 'cho_dau_moi', items: [{ productId: 'mi_hao_hao', quantity: 100_000 }] }, orderRevision), /chỉ còn/, 'vượt tồn nhà cung cấp: server từ chối, nêu tồn còn lại');
+    assert.equal((await snapshotFor(owner)).businesses[0].save.player.money, orderMoneyBefore, 'đơn bị từ chối không trừ tiền');
+    const orderResult = await send(member, 'order-ok', { type: 'order_supplier', supplierId: 'cho_dau_moi', items: [{ productId: 'mi_hao_hao', quantity: 60 }] }, orderRevision);
+    assert.equal(orderResult.committed, true, 'đơn hợp lệ được commit');
+    const afterOrder = await snapshotFor(owner);
+    const placed = (afterOrder.businesses[0].save.pendingOrders ?? []).find((order: { supplierId?: string }) => order.supplierId === 'cho_dau_moi') as { unitCost: number } | undefined;
+    assert.ok(placed && placed.unitCost > 0, 'đơn chốt giá vốn trong save chuẩn của server');
+    assert.ok(afterOrder.businesses[0].save.player.money < orderMoneyBefore, 'server trừ tiền theo giá đã chốt');
+
     // Tiệm xôi riêng (OpenSpec xoi-shop-same-land-strip): mua qua buy_plot như đất, server replay và hai client cùng thấy.
     await client.db(testDbName).collection<{ _id: string }>('game_worlds').updateOne({ _id: world.id }, { $set: { 'businesses.0.save.worldTime.isStoreOpen': false, 'businesses.0.save.player.level': 40, 'businesses.0.save.player.money': 5_000_000 } });
     const xoiRevision = (await snapshotFor(owner)).world.revision;
@@ -246,6 +258,27 @@ async function run() {
     const hired = (await snapshotFor(member)).businesses[0].save.staff ?? [];
     assert.equal(hired.length, 1, 'thành viên còn lại thấy đúng một nhân viên mới');
     assert.ok(!hired.some((member: any) => member.id === 'staff-injected'), 'nhân viên chèn ngoài lệnh không vào save chuẩn');
+
+    // OpenSpec `staff-shifts`: đổi ca đêm + gán tòa qua HTTP (server replay); thành viên thấy cùng kết quả.
+    let staffOpsRevision = hireResult.revision;
+    const newStaffId = hired[0]?.id;
+    assert.ok(newStaffId, 'có nhân viên vừa tuyển để đổi ca');
+    const nightShift = await send(owner, 'staff-night-shift', { type: 'set_staff_shift', staffId: newStaffId, shift: 'night' }, staffOpsRevision);
+    assert.equal(nightShift.committed, true, 'set_staff_shift ca đêm qua HTTP được commit');
+    staffOpsRevision = nightShift.revision;
+    let staffSaveAfter = (await snapshotFor(member)).businesses[0].save as any;
+    assert.equal((staffSaveAfter.staff ?? []).find((item: any) => item.id === newStaffId)?.shift, 'night', 'thành viên còn lại thấy ca đêm');
+    await assert.rejects(
+      send(owner, 'staff-building-bad', { type: 'assign_staff_building', staffId: newStaffId, buildingId: 'drink' }, staffOpsRevision),
+      /không hợp lệ|tòa|hẻm|Bad/i,
+      'gán tòa chưa mua bị từ chối',
+    );
+    assert.equal((await snapshotFor(owner)).world.revision, staffOpsRevision, 'lệnh gán tòa sai không tăng revision');
+    const assignMain = await send(owner, 'staff-building-main', { type: 'assign_staff_building', staffId: newStaffId, buildingId: 'main' }, staffOpsRevision);
+    assert.equal(assignMain.committed, true, 'gán tòa tiệm chính qua HTTP được commit');
+    staffOpsRevision = assignMain.revision;
+    staffSaveAfter = (await snapshotFor(member)).businesses[0].save as any;
+    assert.equal((staffSaveAfter.staff ?? []).find((item: any) => item.id === newStaffId)?.assignedBuilding, 'main', 'thành viên còn lại thấy tòa được gán');
 
     // --- Lệnh vận hành hằng ngày: server phát lại và lưu save chuẩn ---
     const opsBase = await snapshotFor(owner);
@@ -390,7 +423,7 @@ async function run() {
     const snackResult = await send(member, 'snack-east', { type: 'buy_plot', plotId: 'building-snack', placement: { parcelId: 'lot-east-1', originX: 21 } }, snackBase.world.revision);
     assert.equal(snackResult.committed, true, 'mua quán ăn vặt kèm vị trí hợp lệ được commit');
     const snackSave = (await snapshotFor(owner)).businesses[0].save;
-    assert.equal(snackSave.player.money, snackMoney - 400_000);
+    assert.equal(snackSave.player.money, snackMoney - 1_200_000);
     assert.ok(snackSave.storeLayout.fixtures.some((f: { id: string; tileX: number }) => f.id === 'snack_shelf' && f.tileX === 24), 'nội thất mặc định theo gốc 21');
 
     // B2-2: co-op dời tòa (`relocate_building` qua layout_batch). Dùng thế giới riêng vì hẻm chính đã hết lô trống để dời tới.
@@ -430,7 +463,7 @@ async function run() {
     assert.equal(movedPlacement.parcelId, 'lot-west', 'owner thấy quán ăn vặt ở lô tây');
     assert.equal(movedPlacement.originX, 1);
     assert.equal(movedPlacement.constructionUntilDay, afterMove.worldTime.day + 1, 'tòa đang thi công tới sáng hôm sau');
-    assert.equal(afterMove.player.money, moneyBeforeMove - 120_000, 'ví chung trừ phí dời 30% × giá mở tòa');
+    assert.equal(afterMove.player.money, moneyBeforeMove - 360_000, 'ví chung trừ phí dời 30% × giá mở tòa (1.200.000 ₫ → 360.000 ₫)');
     assert.equal(afterMove.storeLayout.fixtures.find((f: { id: string }) => f.id === 'snack_shelf')!.tileX, snackShelfX - 20, 'nội thất quán ăn vặt dịch theo dx = −20');
     assert.deepEqual((await moveSnapshot(member)).businesses[0].save.storeLayout.buildingPlacements, afterMove.storeLayout.buildingPlacements, 'thành viên gửi lệnh thấy cùng vị trí đặt');
 

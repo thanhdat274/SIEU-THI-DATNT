@@ -147,5 +147,12 @@ export function runCivicResidentsLifeTests(): void {
     for (const n of (legacy as unknown as { npcs: Array<{ spriteVariant: number }> }).npcs) assert.ok([0, 2, 3, 4, 5, 6, 7, 8].includes(n.spriteVariant), `look đường cũ hợp lệ (${n.spriteVariant})`);
   }
 
+  // 1.3 open-world-districts: NPC nền theo `npcMix` — khu văn phòng nhiều người đi làm hơn hẻm dân cư, hẻm nhiều cụ già hơn.
+  {
+    const count = (district: string, type: string) => { let c = 0; for (let i = 0; i < 600; i++) if (deterministicResidentNpc(99, 1, district, i).defId === type) c++; return c; };
+    assert.ok(count('van_phong_logistics', 'office_worker') > count('hem_dan_cu', 'office_worker'), 'khu văn phòng nhiều người đi làm hơn');
+    assert.ok(count('hem_dan_cu', 'elder') > count('van_phong_logistics', 'elder'), 'hẻm dân cư nhiều cụ già hơn');
+  }
+
   console.log('  PASS: civic-residents-life tests');
 }

@@ -112,7 +112,8 @@ export function simulateDays(allBuildings: boolean, days = 3) {
   while (sim.getTime().day < 1 + days && guard++ < 2_000_000) {
     const t = sim.getTime();
     if (t.hour !== hour) { hour = t.hour; refill(); }
-    if (!t.isStoreOpen && t.hour < 20) sim.getClock().toggleStoreStatus();
+    // Chỉ mở cửa trong giờ bán; ban đêm 22:00–06:00 là pha đêm nên KHÔNG mở (OpenSpec `staff-shifts`).
+    if (!t.isStoreOpen && t.hour >= 7 && t.hour < 20) sim.getClock().toggleStoreStatus();
     sim.update(0.25);
   }
   const records = Object.values(sim.getDailyRecords()).filter(r => r.day >= 1 && r.day < 1 + days).sort((a, b) => a.day - b.day);

@@ -1,6 +1,6 @@
 import { StreetVehicleState } from '@game/shared';
 import {
-  APARTMENT_PARKING, AVENUE_WALK_X, STREET_VEHICLE_RULES, NEIGHBORHOOD_LOD, NEIGHBORHOOD_LOTS, decorLotsOutsideWaves, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_SHELTERS, NPC_BUDGET, NPC_TYPES, NPC_TYPE_MAP,
+  APARTMENT_PARKING, AVENUE_WALK_X, STREET_VEHICLE_RULES, NEIGHBORHOOD_LOD, NEIGHBORHOOD_LOTS, decorLotsOutsideWaves, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_SHELTERS, NPC_BUDGET, NPC_TYPES, NPC_TYPE_MAP, DISTRICTS, lotDistrictId, type DistrictId,
   PARK, PARK_BENCHES, PARK_PATHS, ROAD_MAP, SCHOOL, SCHOOL_GATE_PX, SHOP_AWNING_PX, SHOP_FRONT, TRAFFIC_ROADS, WALK_LINES, WORK_PORTALS,
   dialoguePhaseOf, dialogueWeatherOf, npcRingOf, parkAppeal, activeShelterZones, type DetailLevel, type NeighborNpcType, type NeighborhoodLot,
   type NeighborhoodQuality, type NpcRing, type NpcTypeDef,
@@ -134,6 +134,9 @@ export function houseFloorTier(pop: number, capacity: number): 1 | 2 | 3 {
 /** Mã look cư dân khi không theo dân số (bỏ look 1 = chủ tiệm); thứ tự giữ đúng `walkerLook` cũ để hình không đổi. */
 const LEGACY_WALKER_LOOKS = [0, 2, 3, 4, 5, 6, 7, 8];
 
+/** Hệ số trọng số cho loại NPC thuộc `npcMix` của khu (các loại khác vẫn có thể xuất hiện, chỉ hiếm hơn). */
+export const NPC_MIX_WEIGHT_BOOST = 3;
+
 export function deterministicResidentNpc(
   seed: number,
   day: number,
@@ -147,11 +150,14 @@ export function deterministicResidentNpc(
 } {
   const h = hashSeed(`resident:${seed}:${districtId}:${index}`);
   const rng = new Mulberry32Rng(h);
-  const totalWeight = NPC_TYPES.reduce((sum, t) => sum + t.weight, 0);
+  // NPC nền theo `npcMix` của khu (OpenSpec `open-world-districts-city-goals` 1.3): loại có trong mix được nhân trọng số.
+  const mix = DISTRICTS[districtId as DistrictId]?.npcMix ?? [];
+  const weightOf = (t: NpcTypeDef) => t.weight * (mix.includes(t.id) ? NPC_MIX_WEIGHT_BOOST : 1);
+  const totalWeight = NPC_TYPES.reduce((sum, t) => sum + weightOf(t), 0);
   let pick = rng.next() * totalWeight;
   let def = NPC_TYPES[0];
   for (const t of NPC_TYPES) {
-    pick -= t.weight;
+    pick -= weightOf(t);
     if (pick <= 0) { def = t; break; }
   }
 
@@ -285,8 +291,10 @@ export class NeighborhoodLife {
       let def: NpcTypeDef;
       let spriteVariant: number;
       let residentId: string;
+      let home: NeighborhoodLot;
       if (this.customTargetNpcCount !== null) {
-        const resident = deterministicResidentNpc(this.seed, this.day, 'hem_dan_cu', i);
+        home = homes[Math.floor(rng.next() * homes.length)];
+        const resident = deterministicResidentNpc(this.seed, this.day, lotDistrictId(home), i);
         def = NPC_TYPE_MAP[resident.defId] ?? NPC_TYPES[0];
         spriteVariant = resident.spriteVariant;
         residentId = resident.id;
@@ -297,8 +305,8 @@ export class NeighborhoodLife {
         // Mã look (giống `walkerLook(i)` cũ với atlas 9 kiểu): cùng số lần rút RNG, cùng hình như trước.
         spriteVariant = LEGACY_WALKER_LOOKS[Math.floor(rng.next() * LEGACY_WALKER_LOOKS.length)];
         residentId = `nb-${this.seed}-${i}`;
+        home = homes[Math.floor(rng.next() * homes.length)];
       }
-      const home = homes[Math.floor(rng.next() * homes.length)];
       const line = bandLine(home.id);
       const homePt: Pt = { x: home.door.x + (rng.next() - 0.5) * 16, y: home.door.y, line };
       this.npcs.push({

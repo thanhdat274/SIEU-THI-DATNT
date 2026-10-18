@@ -15,7 +15,7 @@ import {
 } from './civic-population';
 import { BASE_QOL } from './civic-qol';
 import { ALL_PARCELS, DEFAULT_INITIAL_SAVE, SELLABLE_PRODUCTS, generateStarterTileMap } from '@game/data';
-import { validateSaveGameData, type SaveGameData } from '@game/shared';
+import { validateSaveGameData, CURRENT_SAVE_SCHEMA_VERSION, type SaveGameData } from '@game/shared';
 import { GameSimulation } from './simulation';
 import { InputManager } from './input';
 import { buildDemandTable, demandContextKey } from './demand';
@@ -140,7 +140,7 @@ function runSimulationTests(): void {
   v10.schemaVersion = 10; delete v10.civic;
   const migrated = validateSaveGameData(v10);
   assert.ok(migrated.valid && migrated.data, `Save v10 migrate được (${migrated.versionStatus})`);
-  assert.equal(migrated.data!.schemaVersion, 11, 'Migrate lên schema 11');
+  assert.equal(migrated.data!.schemaVersion, CURRENT_SAVE_SCHEMA_VERSION, 'Migrate lên schema hiện hành');
   const fromV10 = newSim(migrated.data!);
   advanceDays(fromV10, 5);
   assert.equal(fromV10.getCivicPopulationFactor(W0), 1, 'Save v10: hệ số đúng 1 sau 5 ngày');

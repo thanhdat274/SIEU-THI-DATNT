@@ -104,28 +104,34 @@ export function runSnackExtendedTests(): void {
       const f = sim.getFixtures().find(x => x.id === 'snack_shelf')!;
       return { x: (f.tileX + 1) * TILE_SIZE, y: (f.tileY + 1) * TILE_SIZE };
     })();
-    let prev = { ...c.position };
+    let prev = { ...c!.position };
     let maxJump = 0;
     let transferred = false;
+    let pendingCleared = false;
     let distAtTransfer = Infinity;
-    let distAfterTransfer = Infinity;
+    let minDistAfter = Infinity;
     for (let i = 0; i < 12000; i++) {
       sim.update(1 / 60);
       c = live(sim).find(x => x.checkoutId === `cx-${custId}`);
       if (!c) break;
       const jump = Math.sqrt((c.position.x - prev.x) ** 2 + (c.position.y - prev.y) ** 2);
       maxJump = Math.max(maxJump, jump);
+      const dist = Math.sqrt((c.position.x - shelfCenter.x) ** 2 + (c.position.y - shelfCenter.y) ** 2);
       if (!transferred && c.buildingId === 'snack' && c.stage === 'to_shelf') {
+        // Khoảnh khắc chuyển tòa: khách đang ở cửa tòa nguồn (còn xa kệ snack) → chứng tỏ KHÔNG teleport vào kệ.
         transferred = true;
-        distAtTransfer = Math.sqrt((c.position.x - shelfCenter.x) ** 2 + (c.position.y - shelfCenter.y) ** 2);
+        distAtTransfer = dist;
+      } else if (transferred) {
+        if (c.pendingCrossSellTo === undefined) pendingCleared = true;
+        minDistAfter = Math.min(minDistAfter, dist);
       }
-      if (transferred) distAfterTransfer = Math.sqrt((c.position.x - shelfCenter.x) ** 2 + (c.position.y - shelfCenter.y) ** 2);
       prev = { ...c.position };
     }
     assert.ok(transferred, 'cross-sell: khách chuyển sang tòa snack (buildingId main→snack qua đi bộ)');
     assert.ok(maxJump <= TILE_SIZE, `cross-sell: không tick nào nhảy quá 1 ô (không teleport), maxJump=${maxJump.toFixed(1)}px`);
-    assert.ok(distAfterTransfer < distAtTransfer, 'cross-sell: sau khi chuyển tòa, khách ĐI BỘ lại gần kệ snack hơn (không teleport lên kệ)');
-    assert.equal(c.pendingCrossSellTo, undefined, 'cross-sell: pendingCrossSellTo bị xóa sau khi chuyển tòa');
+    assert.ok(distAtTransfer > 3 * TILE_SIZE, `cross-sell: lúc chuyển tòa khách còn XA kệ snack (cách ${distAtTransfer.toFixed(1)}px) → không teleport vào kệ`);
+    assert.ok(minDistAfter < distAtTransfer, `cross-sell: sau khi chuyển tòa khách ĐI BỘ lại gần kệ snack (min=${minDistAfter.toFixed(1)}px < transfer=${distAtTransfer.toFixed(1)}px)`);
+    assert.ok(pendingCleared, 'cross-sell: pendingCrossSellTo bị xóa sau khi chuyển tòa');
   }
 
   // (a2)(ii) Tòa đích HẾT HÀNG (hoặc đóng) sau khi checkout: khách KHÔNG chuyển tòa,
@@ -149,8 +155,8 @@ export function runSnackExtendedTests(): void {
       crossSellApplied: [] as string[],
     });
     assert.ok(sim.completeCustomerCheckout(`cx2-${custId}`), 'checkout xong, cross-sell trigger (snack còn hàng lúc checkout)');
-    let c = live(sim).find(x => x.checkoutId === `cx2-${custId}`)!;
-    assert.equal(c.pendingCrossSellTo, 'snack', 'pendingCrossSellTo=snack được set'); 
+    let c: CustomerState | undefined = live(sim).find(x => x.checkoutId === `cx2-${custId}`)!;
+    assert.equal(c!.pendingCrossSellTo, 'snack', 'pendingCrossSellTo=snack được set'); 
 
     // Snack hết hàng trước khi khách rời khỏi tòa nguồn.
     const snackShelf = sim.getFixtures().find(x => x.id === 'snack_shelf')!;

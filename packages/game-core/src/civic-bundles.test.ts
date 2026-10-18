@@ -24,6 +24,7 @@ import { computeCityProgressMetrics } from './city-progress-metrics';
 import { claimCityGoal as claimCityGoalPure } from './city-goals-sim';
 import { civicOpenCost, countBuildingsOfType, bundleDonatedValue, isBundleCompleted } from './civic-bundles';
 import { decideLandCommand } from './land-policy';
+import { cityMilestoneLines } from './city-journal';
 
 interface SimOpts { money?: number; level?: number; cityLevel?: number; bundles?: unknown }
 
@@ -363,6 +364,22 @@ function runSaveSchemaHashTests(): void {
   console.log('  ✓ save + hash PASS');
 }
 
+/** OpenSpec `open-world-districts-city-goals` 2.3 + 3.1: đồ công cộng theo cấp, nhật ký mốc có người thực hiện, giữ qua save. */
+function runCityMemoryTests(): void {
+  console.log('\n--- Ký ức thành phố: mốc + đồ công cộng (districts 2.3/3.1) ---');
+  assert.ok(newSim({ cityLevel: 9 }).getDecorAttraction().points > newSim({ cityLevel: 1 }).getDecorAttraction().points, 'cấp thành phố cao → đồ công cộng gần tiệm cộng sức hút');
+  const sim = newSim({ cityLevel: 9 });
+  sim.setBuildActor('acc-A');
+  const r = sim.reclaimWave('w1');
+  assert.equal(r.success, true, `mở đợt W1 thành công (${r.reason})`);
+  const ms = sim.getCityProgress().milestones;
+  assert.ok(ms.some(m => m.type === 'wave_opened' && m.waveId === 'w1' && m.by === 'acc-A'), 'mốc mở đợt ghi người thực hiện');
+  const reloaded = new GameSimulation(sim.exportSaveData(), generateStarterTileMap(), new InputManager(), {});
+  assert.deepEqual(reloaded.getCityProgress().milestones, ms, 'mốc giữ nguyên sau lưu/nạp');
+  const lines = cityMilestoneLines(ms, (t) => t, (id) => (id === 'acc-A' ? 'An' : id));
+  assert.ok(lines.some(l => l.includes('W1') && l.includes('An')), `dòng nhật ký có đợt + tên người: ${lines.join(' | ')}`);
+}
+
 export function runCivicBundleTests(): void {
   runBalanceTests();
   runMetricsTests();
@@ -375,4 +392,5 @@ export function runCivicBundleTests(): void {
   runLandPolicyCostTests();
   runVotePriceMatchesChargeTests();
   runSaveSchemaHashTests();
+  runCityMemoryTests();
 }

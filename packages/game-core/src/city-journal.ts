@@ -108,3 +108,27 @@ export function civicJournalLines(
     .map((m) => civicMilestoneLine(m, nameOf(m.bundleId)))
     .reverse();
 }
+
+// ============ NHẬT KÝ MỐC THÀNH PHỐ (OpenSpec `open-world-districts-city-goals` 3.1) ============
+
+/** Cấp thành phố tối thiểu để dựng biển kỷ niệm tiệm đầu tiên. */
+export const MEMORIAL_PLAQUE_CITY_LEVEL = 3;
+
+/**
+ * Dòng nhật ký mốc (mới nhất trước): mở đợt, loại hình đầu tiên, lên cấp — kèm ngày game và người thực hiện.
+ * `typeName`/`waveName` đổi id → tên; `whoOf` đổi accountId → tên hiển thị (không có `by` thì bỏ phần tên).
+ */
+export function cityMilestoneLines(
+  milestones: readonly { day: number; type: string; level?: number; waveId?: string; buildingTypeId?: string; by?: string }[],
+  typeName: (typeId: string) => string,
+  whoOf: (accountId: string) => string,
+): string[] {
+  const lines: string[] = [];
+  for (const m of milestones) {
+    const who = m.by ? ` · ${whoOf(m.by)}` : '';
+    if (m.type === 'wave_opened' && m.waveId) lines.push(`Ngày ${m.day} — Mở đợt khai hoang ${m.waveId.toUpperCase()}${who}`);
+    else if (m.type === 'first_type_opened' && m.buildingTypeId) lines.push(`Ngày ${m.day} — Mở ${typeName(m.buildingTypeId)} đầu tiên${who}`);
+    else if (m.type === 'level_up' && m.level) lines.push(`Ngày ${m.day} — Thành phố lên cấp ${m.level}${who}`);
+  }
+  return lines.reverse();
+}

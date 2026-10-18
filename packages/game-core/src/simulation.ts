@@ -535,6 +535,8 @@ export class GameSimulation {
     for (const member of this.staff) {
       if (member.workerTask) this.restockJobClaims.addFromWorkerTask(member.workerTask.fixtureId, member.id);
     }
+    // Gán callbacks sớm để toast cảnh báo ở dưới dùng được (trước đây gán ở cuối constructor nên onToast còn undefined).
+    this.callbacks = callbacks;
     // Toast một lần cho save cũ: guard không phải ca đêm (full_day/morning/afternoon) sẽ không chặn trộm đêm.
     // Cờ hasWarnedGuardNotNight được LƯU trong save (schema 14 additive, không nâng version) để không toast lặp khi load lại save.
     this.hasWarnedGuardNotNight = initialSave.hasWarnedGuardNotNight ?? false;
@@ -576,7 +578,6 @@ export class GameSimulation {
     this.ensureSupplierMarket(initialSave.worldTime.day);
     this.tileMap = this.stalls.owned.length || this.buildingPlacements?.length ? this.buildTileMap() : tileMap;
     this.inputManager = inputManager;
-    this.callbacks = callbacks;
     this.customerManager = new CustomerManager(
       initialSave.customers ?? (initialSave.customer ? [initialSave.customer] : []),
       initialSave.customerSequence ?? 0,
@@ -824,8 +825,8 @@ export class GameSimulation {
     if (this.reviewsManager.responseCountOnDay(day) >= REVIEW_RESPONSE_DAILY_CAP) {
       return { success: false, reason: `Hôm nay đã phản hồi đủ ${REVIEW_RESPONSE_DAILY_CAP} lời chê. Mai quay lại nhé.` };
     }
-    // Hồi phục tối đa nửa mức contribution danh nghĩa, nhưng không vượt mức uy tín THẬT đã mất (sau clamp) — 2a.
-    const delta = Math.min(reviewResponseDelta(review), Math.max(0, review.reputationLost ?? 0));
+    // Hồi phục tối đa nửa mức contribution danh nghĩa, nhưng không vượt 50% mức uy tín THẬT đã mất (sau clamp) — 2a.
+    const delta = Math.min(reviewResponseDelta(review), Math.max(0, (review.reputationLost ?? 0) / 2));
     // Chỉ cộng uy tín khi có mức hồi phục > 0 (lời chê luôn có, do đã kiểm isReviewComplaint).
     this.playerData.reputation = Math.max(0, Math.min(100, this.playerData.reputation + delta));
     this.reviewsManager.addResponse({ reviewId, day, delta });

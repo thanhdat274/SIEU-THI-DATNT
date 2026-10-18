@@ -45,8 +45,8 @@
 
 ## 7. Deferred — multiple branches and shop types
 
-- [ ] 7.1 Decide how multiple businesses/areas expand and divide the existing land, fixture ownership, shared/separate inventory and co-op authority. **ĐÃ CHỐT 17/10/2026:** cơ sở mới = thuê lô đất trống trên bản đồ chung; kho riêng mỗi cơ sở + kho tổng nối được; co-op: mọi người trong phòng đều quản lý được; kệ/tủ gắn với lô đất. Còn hỏi khi viết 7.2: có khóa thao tác nguy hiểm (bán/phá/rút kho tổng) khi chủ rời phòng không.
-- [ ] 7.2 After 7.1, author a separate OpenSpec change for branches, shop types and internal supply.
+- [x] 7.1 Decide how multiple businesses/areas expand and divide the existing land, fixture ownership, shared/separate inventory and co-op authority. **ĐÃ CHỐT 17/10/2026:** cơ sở mới = thuê lô đất trống trên bản đồ chung; kho riêng mỗi cơ sở + kho tổng nối được; co-op: mọi người trong phòng đều quản lý được; kệ/tủ gắn với lô đất. Khi viết 7.2 đã chốt: KHÔNG khóa thao tác nguy hiểm khi chủ rời phòng (chỉ ghi nhật ký).
+- [x] 7.2 After 7.1, author a separate OpenSpec change for branches, shop types and internal supply. (17/10/2026: spec `openspec/changes/multi-site-parcel-lease`, chưa code.)
 
 ## 8. Grouped verification — do after functionality tasks
 

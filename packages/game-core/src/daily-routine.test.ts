@@ -31,29 +31,41 @@ export function runDailyRoutineTests(): void {
   // Mốc cấu hình, không hard-code timer.
   assert.equal(parseClockMinutes(DAILY_SCHEDULE.returnHome), 23 * 60 + 30);
 
-  // Chế độ mặc định không đổi: không bật routine thì đồng hồ dừng khi đóng cửa và sang ngày lúc 22:00.
+  // Chế độ mặc định: cửa đóng thì đồng hồ đứng; mở cửa chạy tới 22:00 thì ĐÓNG CỬA vào pha đêm (OpenSpec `staff-shifts`),
+  // ngày chỉ chốt lúc 06:00; 00:00–06:00 vẫn thuộc ngày cũ.
   {
     const clock = new GameClock({ day: 1, hour: 7, minute: 0, isStoreOpen: false, timeScale: 60 });
     clock.update(600);
     assert.equal(clock.getTime().hour, 7, 'mặc định: cửa đóng thì đồng hồ đứng');
     clock.toggleStoreStatus();
-    clock.update(15 * 60);
-    assert.equal(clock.getTime().day, 2, 'mặc định: 22:00 sang ngày mới');
+    clock.update(605); // 07:00 + ~15 giờ game = 22:00 (dư vài giây để tránh sai số cộng dồn số thực)
+    assert.equal(clock.getTime().hour, 22, 'mặc định: 22:00 đóng cửa');
+    assert.equal(clock.getTime().isStoreOpen, false);
+    assert.equal(clock.getTime().day, 1, 'mặc định: 22:00 KHÔNG còn sang ngày mới');
+    assert.equal(clock.isNightPhase(), true);
+    clock.update(110); // 8 giờ game ban đêm (×3) + qua 06:00
+    assert.equal(clock.getTime().day, 2, 'mặc định: 06:00 mới chốt ngày');
+    assert.equal(clock.getTime().hour, 7);
+    assert.equal(clock.getTime().isStoreOpen, true, 'sáng hôm sau mở cửa lại');
   }
 
-  // Chế độ routine của clock: chạy khi cửa đóng, đứng ở 23:30, không tự sang ngày.
+  // Chế độ routine của clock: chạy cả ban đêm; 23:30 nhân vật về nhà ngủ nhưng KHÔNG đứng đồng hồ, 06:00 mới sang ngày.
   {
     const clock = new GameClock({ day: 1, hour: 7, minute: 0, isStoreOpen: false, timeScale: 60 });
     clock.setRoutineMode(true);
     clock.update(20); // 20 giây thực = 30 phút game (timeScale 60 cũ quy đổi thành 90)
     assert.equal(clock.getTime().hour, 7);
     assert.equal(clock.getTime().minute, 30, 'routine: cửa đóng vẫn chạy');
-    clock.update(GameClock.MAX_UPDATE_SECONDS);
-    assert.equal(clock.getTime().day, 1, 'routine: không tự sang ngày');
-    assert.equal(clock.getTime().hour * 60 + clock.getTime().minute, 23 * 60 + 30, 'routine: đứng ở 23:30');
-    assert.ok(clock.isNightHold());
+    clock.setTime({ ...clock.getTime(), hour: 23, minute: 31 });
+    clock.update(10); // ban đêm ×3: 10 s thực = 45 phút game
+    assert.equal(clock.getTime().day, 1, 'routine: 23:30 không còn đứng đồng hồ');
+    assert.ok(clock.getTime().hour * 60 + clock.getTime().minute <= 1 * 60, 'routine: vẫn trong đêm 00:xx ngày cũ');
+    clock.update(90); // vượt 06:00
+    assert.equal(clock.getTime().day, 2, 'routine: 06:00 mới chốt ngày');
+    assert.equal(clock.getTime().hour, 7);
+    assert.equal(clock.getTime().isStoreOpen, false, 'routine: chờ lịch 08:00 mở cửa');
     clock.advanceToNextDay();
-    assert.equal(clock.getTime().day, 2);
+    assert.equal(clock.getTime().day, 3);
     assert.equal(clock.getTime().hour, 7);
     assert.equal(clock.getTime().isStoreOpen, false);
   }
@@ -86,7 +98,8 @@ export function runDailyRoutineTests(): void {
     assert.deepEqual(Object.keys(summaries[0] as object).sort(), ['lowStock', 'orders', 'outOfStock', 'overstock', 'revenue']);
 
     // 23:30 khóa điều khiển, tự đi bộ về nhà (từng bước nhỏ, không teleport), rồi sang ngày mới 07:00.
-    runUntil(sim, () => minuteOf(sim) >= parseClockMinutes(DAILY_SCHEDULE.returnHome) - 1);
+    // Ban đêm chạy ×3 nên bước nhỏ hơn để không nhảy qua mốc 23:30 và trạng thái RETURNING_HOME.
+    runUntil(sim, () => minuteOf(sim) >= parseClockMinutes(DAILY_SCHEDULE.returnHome) - 1, 6000, 0.1);
     let maxStep = 0;
     let prev = { ...sim.getPlayerData().position };
     let locked = false;

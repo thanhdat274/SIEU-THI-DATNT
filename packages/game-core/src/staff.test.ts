@@ -4,7 +4,7 @@ import { STAFF_SHIFTS, StaffShift } from '@game/shared';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { generateCandidatesForDay, validateHireStaff } from './staff';
-import { isShiftWithinStoreHours } from '@game/data';
+import { isKnownShift, isShiftWithinStoreHours } from '@game/data';
 import { shopliftDetectChance } from './security';
 
 export function runStaffTests(): void {
@@ -25,8 +25,12 @@ export function runStaffTests(): void {
   assert.deepEqual(generateCandidatesForDay(9, 6), generateCandidatesForDay(9, 6), 'Chuyên môn ổn định theo ngày');
 
   for (const shift of Object.keys(STAFF_SHIFTS) as StaffShift[]) {
-    assert.equal(isShiftWithinStoreHours(shift), true, `${shift} phải nằm trong khung 06–22`);
+    assert.equal(isKnownShift(shift), true, `${shift} phải là ca hợp lệ`);
   }
+  for (const shift of ['morning', 'afternoon', 'full_day'] as StaffShift[]) {
+    assert.equal(isShiftWithinStoreHours(shift), true, `${shift} phải nằm trong khung 07–22`);
+  }
+  assert.equal(isShiftWithinStoreHours('night'), false, 'Ca đêm không nằm trọn trong giờ bán');
 
   const candidate = first[0];
   assert.deepEqual(validateHireStaff({

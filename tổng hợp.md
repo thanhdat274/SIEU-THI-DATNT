@@ -1,3 +1,62 @@
+# ĐUA VỀ TEST XANH THẬT — SỬA LỖI REVIEW CÒN TỒN + KIỂM CHỨNG (18/10/2026)
+
+## Việc đã làm trong đợt này (không thêm tính năng mới)
+
+- **BƯỚC 0 — hiện trạng:** `yarn.lock` bị thiếu → khôi phục bằng `git checkout e2ed3be -- yarn.lock` và bỏ dòng `yarn.lock` cuối `.gitignore` (commit 42169b6 từng xóa nó). Lỗi ban đầu ghi nhận: game-core `building-placement.test.ts:38` (giá lô 1.200.000), server `coop-commands.test.ts:426` (snack price) → đã sửa ở bước 1a/3.
+- **BƯỚC 1a — giá lô:** SNACK_PLOT_ID chốt **1.200.000 ₫**. Chạy `snack-balance-sim` CÓ tính hệ số khung giờ (`snackSupplementaryMultiplier`) + cross-sell → ghi lãi/ngày + hoàn vốn ở bảng dưới. Đã sửa `building-placement.test.ts:38/99`, `coop-commands.test.ts:426` theo giá mới.
+- **BƯỚC 1b — cross-sell đi bộ (không teleport):** `customers.ts` — bỏ dòng `customer.position = entrance của tòa đích`; thay bằng giữ nguyên vị trí rồi `routeCustomer(customer,'to_shelf',...)` để khách đi bộ từ cửa tòa nguồn sang kệ tòa đích. Chỉ chuyển khi tòa đích MỞ **và** có kệ còn hàng; không chuyển được thì xóa pending và khách rời bình thường. Test mô phỏng thật trong `snack-extended.test.ts` (vị trí không nhảy quá 1 ô/tick; tòa đóng/hết hàng thì rời tiệm).
+- **BƯỚC 1c — toast "bảo vệ ca ngày" 1 lần/save:** `simulation.ts` — gán `this.callbacks = callbacks` SỚM (trước đây gán cuối constructor nên `onToast` còn undefined → toast không hiện); thêm cờ `hasWarnedGuardNotNight` lưu trong save (schema 14, additive, không nâng version). Test `night-cycle.test.ts`: tải lại save lần 2 → không toast lại (chỉ 1 lần).
+- **BƯỚC 1d — golden 3 ngày:** sinh lại `__golden__/world-golden.json` sau 1a–1c. base không đổi; allBuildings tăng khách/doanh thu do cross-sell → bảng trước → sau ở dưới kèm nguyên nhân.
+- **BƯỚC 2a — respondReview không tăng ròng:** `recordCustomerRating` lưu `reputationLost` (mức uy tín **THẬT** đã bị trừ, sau clamp 0..100); `respondReview` giới hạn delta `≤ 50%` mức đó: `min(reviewResponseDelta, reputationLost/2)`. Test `reviews.test.ts`: chê rồi phản hồi uy tín không bao giờ tăng ròng (kể cả case clamp).
+- **BƯỚC 2b — phản hồi trong 3 ngày:** `REVIEW_RESPONSE_MAX_AGE_DAYS = 3`; lời quá hạn bị từ chối kèm câu tiếng Việt ("đã quá 3 ngày"). Test `reviews.test.ts` + `world-runtime.test.ts` (replay co-op từ chối, không tăng revision).
+- **BƯỚC 2c — UI khóa nút:** `ReviewsModal` + `DaySummaryModal` ẩn/khóa nút "Phản hồi" kèm 🔒 lý do với lời chê quá hạn.
+- **BƯỚC 3 — coop "Chợ đầu mối chỉ còn 51":** nguyên nhân là **giả định cũ của test** — cha kỳ vọng con số tồn nhà cung cấp cụ thể, trong khi số này thay đổi động theo nhịp 06:00/predictive stock. Không có lỗi code; test hiện dùng regex `/chỉ còn/` (loose, không fragile). Sửa 2 kỳ vọng giá snack trong `coop-commands.test.ts`: `:426` (mua snack −1.200.000) và `:466` (phí dời 30% × 1.200.000 = 360.000).
+- **BƯỚC 2a-verify (18/10/2026):** xác nhận `simulation.ts:829` đã có cap `≤ 50%` mức uy tín THẬT đã mất: `min(reviewResponseDelta(review), Math.max(0, (review.reputationLost ?? 0) / 2))`. `world-runtime.test.ts` (replay co-op `respond_review` rev-5-1) nay seed `reputationLost: 0.5` (lời 'wait' tiêm thẳng vào save — mức uy tín thật bị trừ) kèm chú thích lý do: `min(0.25, 0.5/2)=0.25` → uy tín 50 → 50.25. Không có `reputationLost` thì cap = 0 (delta 0 → test replay FAIL). Chạy `game-core test` ×3 đều **112/112 pass, 0 fail**; `server test:unit` PASS. Chưa commit.
+
+## Kết quả lệnh thật (18/10/2026, chạy lại sau khi sửa)
+
+| Lệnh | Kết quả |
+|---|---|
+| `yarn typecheck` (tsc -b) | EXIT 0 (0 lỗi) |
+| `yarn --cwd packages/game-core test` ×3 | mỗi lần **112/112 pass, 0 fail** (0 dòng AssertionError) |
+| `yarn --cwd apps/web test` | PASS |
+| `yarn --cwd packages/game-renderer test` | PASS (9 file con) |
+| `yarn --cwd apps/server test:unit` | PASS (fail 0) |
+| `yarn --cwd apps/server test:coop` | **FLAKY** — lần 1 FAIL vì "order_supplier: Chợ đầu mối chỉ còn 51 hôm nay (cần 60)" (thiếu tồn nhà cung cấp theo nhịp 06:00/predictive stock, đã biết ở BƯỚC 3); chạy lại ngay → PASS (có Mongo). Không liên quan 2 sửa 2a (respondReview cap `/2`). |
+
+## Giới hạn / CHƯA QA (browser) đợt này
+- Cross-sell đi bộ (1b): **CHƯA QA browser** — đã kiểm bằng mô phỏng thật trong game-core (≤1 ô/tick).
+- Toast "bảo vệ ca ngày" 1 lần/save (1c): **CHƯA QA browser** — đã test game-core (tải 2 lần chỉ 1 toast).
+- Nút "Phản hồi" quá hạn (2c): **CHƯA QA browser** — UI pass typecheck + web test.
+
+Ghi chú: các file `_tmp_diag*.ts` / `_tmp-review-runner*.ts` (tạo để verify trong lúc làm) đã bị **xóa** — không còn trong tree.
+
+## snack-balance-sim (giá 1.200.000₫, có khung giờ + cross-sell, 12 ngày × 3 seeds, kệ đầy, không cluster)
+
+| Chỉ số/ngày | Không snack | Có snack | Tăng thêm |
+|---|---|---|---|
+| Khách phục vụ | 218 | 234 | +16 |
+| Doanh thu (₫) | 3.448.833 | 3.734.792 | +285.958 |
+| Lãi ròng (₫) | 981.483 | 1.147.240 | +165.757 |
+| Món ăn vặt bán | 0 | 24 | +24 |
+
+**Hoàn vốn: 1.200.000 / 165.757 ≈ 7,2 ngày** (chưa tính nguyên liệu thật, nhân viên). Đúng thiết kế "hoàn vốn ~7 ngày".
+
+## Golden 3 ngày: trước → sau (sinh lại sau 1a–1c; nguyên nhân là cross-sell 1b)
+
+- **base** (không tòa phụ): **không đổi** (cross-sell không áp dụng khi không có tòa đích mở).
+- **allBuildings** (có snack+xôi):
+
+| Ngày | Khách trước → sau | Doanh thu trước → sau | Nguyên nhân |
+|---|---|---|---|
+| 1 | 301 → 309 | 5.124.500 → 5.592.500 | cross-sell phục vụ thêm khách |
+| 2 | 312 → 320 | 5.384.000 → 5.365.000 | cross-sell chuyển tòa, mua thêm |
+| 3 | 292 → 299 | 5.684.000 → 5.747.500 | cross-sell |
+
+Tiền cuối allBuildings: 22.711.900 → 23.254.400.
+
+---
+
 # QUÁN ĂN VẶT MỞ RỘNG — 4 TÍNH NĂNG + CÂN BẰNG (17/10/2026, UPDATE 2)
 
 ## (a) Khách chuyền tòa — CROSS_SELL_RULES

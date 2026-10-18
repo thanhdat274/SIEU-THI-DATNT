@@ -1,6 +1,6 @@
 import type { CustomerReview, DailyRecord } from '@game/shared';
 import { PRODUCT_MAP, STALL_MAP } from '@game/data';
-import { reviewSentimentSummary } from './review-reputation';
+import { reviewSentimentSummary, isReviewComplaint } from './review-reputation';
 import { feedbackReasonLabel } from './reputation';
 
 export interface DaySummary {
@@ -134,6 +134,25 @@ export interface MorningBrief {
   civicCosts?: { upkeep: number; fee: number; projected: { upkeep: number; fee: number } };
   /** Công trình công cộng khánh thành hôm qua (từ sổ góp). */
   civicOpenings?: string[];
+  /** Vài lời khách nổi bật hôm qua (chê mạnh nhất + khen hay nhất) để hiện trong bản tin sáng (OpenSpec `written-customer-reviews` 4.5). */
+  standoutReviews?: CustomerReview[];
+}
+
+/**
+ * Chọn vài lời khách nổi bật hôm qua cho bản tin sáng: tối đa 2 lời chê mạnh nhất (ưu tiên phản hồi) + 1 lời khen hay nhất.
+ * Xác định theo sao/ngày (mới nhất trước) nên chơi lẻ = chơi chung.
+ */
+export function pickStandoutReviews(yesterdayReviews: readonly CustomerReview[] | undefined): CustomerReview[] {
+  if (!yesterdayReviews || yesterdayReviews.length === 0) return [];
+  const order = [...yesterdayReviews].sort((a, b) => b.day - a.day || b.hour - a.hour || b.minute - a.minute);
+  const complaints = order.filter(r => isReviewComplaint(r)).sort((a, b) => a.stars - b.stars);
+  const praises = order.filter(r => !isReviewComplaint(r) && r.stars >= 4).sort((a, b) => b.stars - a.stars);
+  const picked: CustomerReview[] = [];
+  const add = (r?: CustomerReview) => { if (r && !picked.includes(r)) picked.push(r); };
+  add(complaints[0]);
+  add(complaints[1]);
+  add(praises[0]);
+  return picked.slice(0, 3);
 }
 
 export function buildMorningBrief(params: {
@@ -207,5 +226,6 @@ export function buildMorningBrief(params: {
     ...(params.civicPopulation !== undefined ? { civicPopulation: params.civicPopulation } : {}),
     ...(params.civicCosts !== undefined ? { civicCosts: params.civicCosts } : {}),
     ...(params.civicOpenings && params.civicOpenings.length ? { civicOpenings: params.civicOpenings } : {}),
+    ...(pickStandoutReviews(params.yesterdayReviews).length ? { standoutReviews: pickStandoutReviews(params.yesterdayReviews) } : {}),
   };
 }

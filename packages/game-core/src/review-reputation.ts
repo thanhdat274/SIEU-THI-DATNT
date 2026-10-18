@@ -34,6 +34,22 @@ export const REVIEW_DRIFT_CAP = 10;
 /** Kẹp delta một ngày mô tả (danh nghĩa, tính trước khi cộng dồn). */
 export const REVIEW_DRIFT_DAY_CAP = 3;
 
+/** Giới hạn số lời chê được phản hồi mỗi ngày (OpenSpec `written-customer-reviews` 4.5). */
+export const REVIEW_RESPONSE_DAILY_CAP = 3;
+/** Số ngày tối đa một lời chê còn hiệu lực để phản hồi (OpenSpec `written-customer-reviews` 2b). */
+export const REVIEW_RESPONSE_MAX_AGE_DAYS = 3;
+
+/** Lời đánh giá có phải "lời chê" (chủ tiệm có thể phản hồi) hay không. */
+export function isReviewComplaint(review: Pick<CustomerReview, 'reason' | 'stars'>): boolean {
+  return !!review.reason || review.stars <= 2;
+}
+
+/** Uy tín cộng lại khi phản hồi một lời chê: hồi phục một nửa lượng đã mất (làm tròn 0.05). Lời khen trả về 0. */
+export function reviewResponseDelta(review: Pick<CustomerReview, 'reason' | 'stars'>): number {
+  const loss = review.reason ? REVIEW_REASON_DELTA[review.reason] : (review.stars <= 2 ? REVIEW_LOWSTAR_NO_REASON_DELTA : 0);
+  return loss < 0 ? Math.round((Math.abs(loss) / 2) * 20) / 20 : 0;
+}
+
 /** Đóng góp uy tín của một lời đánh giá, theo nội dung vượt ngoài số sao. */
 export function reviewReputationContribution(review: Pick<CustomerReview, 'reason' | 'stars'>): number {
   if (review.reason) return REVIEW_REASON_DELTA[review.reason];

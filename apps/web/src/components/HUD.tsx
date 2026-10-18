@@ -8,6 +8,12 @@ import { ManagementModal } from './ManagementModal';
 
 interface HUDProps {
   onToggleStoreStatus: () => void;
+  /** Ban đêm 22:00–06:00 (OpenSpec `staff-shifts` night-cycle): khoá mở cửa, hiện nút Ngủ. */
+  isNight?: boolean;
+  /** Có được mở cửa lúc này không (giờ bán 07:00–22:00 / routine 08:00–22:00). */
+  canOpenStore?: boolean;
+  /** Kết thúc ban đêm / qua ngày (dùng chung đường advance_day, co-op chuyển thành bỏ phiếu). */
+  onAdvanceDay?: () => void;
   gameSpeed: number;
   onToggleGameSpeed: () => void;
   activeCustomers: number;
@@ -49,7 +55,7 @@ interface HUDProps {
   /** Mốc lưu gần nhất (ISO) để hiện trong mục Lưu tiến trình của sổ quản lý. */
   lastSavedAt?: string;
 }
-const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenPrices, onOpenTax, onOpenStaff, onPayWageDebt, onOpenLevelRoadmap, onOpenCity, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0, lastSavedAt, onOpenSeasonEvents}) => {
+const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, isNight = false, canOpenStore = true, onAdvanceDay, gameSpeed, onToggleGameSpeed, activeCustomers, onToggleWarehouseDock, isWarehouseDockOpen, onOpenLayout, canEditLayout, onOpenQuests, onOpenStalls, market, onOpenMarket, onOpenPrices, onOpenTax, onOpenStaff, onPayWageDebt, onOpenLevelRoadmap, onOpenCity, onOpenRegulars, onOpenSkills, onOpenTitles, onOpenReviews, onOpenSecurity, onOpenAnalytics, audioMuted, onToggleAudioMute, maintenanceAlerts = 0, onOpenMaintenance, onOpenChain, customerRating = 4, wageDebt = 0, onOpenPlanogram, emptySlotsCount = 0, lastSavedAt, onOpenSeasonEvents}) => {
   const {player, worldTime, timeString, toggleSaveModal} = useGameStore(useShallow((s) => ({player: s.player, worldTime: s.worldTime, timeString: s.timeString, toggleSaveModal: s.toggleSaveModal})));
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const season = getSeasonForDay(worldTime.day);
@@ -79,7 +85,7 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
           <span className="hud-icon-wrap" data-hud="decor"><PixelIcon name={worldTime.hour >= 18 ? 'moon' : 'sun'} size={24}/></span>
           <div>
             <strong className="tabular">Ngày {worldTime.day} · {timeString}</strong>
-            <span className="muted hud-store-status" data-hud="detail">{worldTime.isStoreOpen ? 'Bà con đang ghé tiệm' : 'Tiệm đang nghỉ bán'}</span>
+            <span className="muted hud-store-status" data-hud="detail">{isNight ? 'Ban đêm — tiệm đóng cửa' : worldTime.isStoreOpen ? 'Bà con đang ghé tiệm' : 'Tiệm đang nghỉ bán'}</span>
             {weather && <span className="muted hud-weather-badge" title={`Hôm nay${todayRainText}. Dự báo: ${forecastText}`}>{weather.icon} {weather.label} · mai {forecastFirst}</span>}
             {market?.events?.map(event => <span key={event.id} className="muted hud-event-badge" title={event.notice}>{event.status === 'active' ? '⚡' : '⏳'} {event.label}{event.status === 'upcoming' ? ` · sau ${event.startsIn} ngày` : ''}</span>)}
             {season && (onOpenSeasonEvents
@@ -101,9 +107,14 @@ const HUDInner: React.FC<HUDProps> = ({onToggleStoreStatus, gameSpeed, onToggleG
           <div className="hud-customers" data-hud="important" title="Khách trong tiệm"><PixelStat label="Khách trong tiệm" value={activeCustomers} icon="person"/></div>
         </div>
         <nav className="hud-actions" aria-label="Điều hành tiệm">
-          <PixelButton icon="door" variant={worldTime.isStoreOpen ? 'teal' : 'brick'} onClick={onToggleStoreStatus} aria-label={worldTime.isStoreOpen ? 'Đóng cửa tiệm' : 'Mở cửa đón khách'} title={worldTime.isStoreOpen ? 'Đang mở cửa (Bấm để đóng)' : 'Đang đóng cửa (Bấm để mở)'} className="btn-store-toggle">
+          <PixelButton icon="door" variant={worldTime.isStoreOpen ? 'teal' : 'brick'} onClick={onToggleStoreStatus} disabled={(!worldTime.isStoreOpen && !canOpenStore) || isNight} aria-label={isNight ? 'Ban đêm, không mở cửa' : worldTime.isStoreOpen ? 'Đóng cửa tiệm' : 'Mở cửa đón khách'} title={isNight ? 'Ban đêm (22:00–06:00) — không mở cửa bán hàng' : worldTime.isStoreOpen ? 'Đang mở cửa (Bấm để đóng)' : 'Đang đóng cửa (Bấm để mở)'} className="btn-store-toggle">
             <span>{worldTime.isStoreOpen ? 'Mở cửa' : 'Nghỉ bán'}</span>
           </PixelButton>
+          {isNight && onAdvanceDay && (
+            <PixelButton icon="moon" variant="teal" onClick={onAdvanceDay} aria-label="Ngủ, qua đêm sang ngày mới" title="Kết thúc ban đêm: chốt ngày và sang ngày mới">
+              <span className="button-label">Ngủ</span>
+            </PixelButton>
+          )}
           {!worldTime.isStoreOpen && canEditLayout && (
             <PixelButton icon="warehouse" onClick={onOpenLayout} aria-label="Sắp xếp cửa hàng" title="Sắp xếp cửa hàng">
               <span className="button-label">Sắp xếp</span>

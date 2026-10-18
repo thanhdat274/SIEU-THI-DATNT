@@ -27,8 +27,11 @@ interface Props {
   staff: StaffMember[];
   staffCandidates: StaffCandidate[];
   wageDebt: number;
+  /** Tòa đang có để gán nhân viên (OpenSpec `staff-shifts`). */
+  staffBuildings?: Array<{ id: string | null; label: string }>;
   onHireStaff: (candidateId: string) => { success: boolean; reason?: string };
   onSetStaffShift: (staffId: string, shift: StaffShift) => boolean;
+  onSetStaffBuilding?: (staffId: string, buildingId: string | null) => boolean;
   onPayWageDebt?: () => void;
   restockTargets?: RestockJobTarget[];
   onAssignRefillJob?: (staffId: string, fixtureId: string) => { success: boolean; reason?: string };
@@ -52,8 +55,10 @@ export const CashierModal: React.FC<Props> = ({
   staff,
   staffCandidates,
   wageDebt,
+  staffBuildings = [],
   onHireStaff,
   onSetStaffShift,
+  onSetStaffBuilding,
   onPayWageDebt,
   restockTargets = [],
   onAssignRefillJob,
@@ -110,11 +115,14 @@ export const CashierModal: React.FC<Props> = ({
     return <StaffModal
       player={player}
       day={worldTime.day}
+      time={worldTime}
       candidates={staffCandidates}
       staff={staff}
       wageDebt={wageDebt}
+      staffBuildings={staffBuildings.length ? staffBuildings : [{ id: null, label: 'Toàn tiệm' }]}
       onHire={onHireStaff}
       onSetShift={onSetStaffShift}
+      onSetBuilding={onSetStaffBuilding}
       onPayWageDebt={onPayWageDebt}
       restockTargets={restockTargets}
       onAssignRefillJob={onAssignRefillJob}

@@ -1,3 +1,17 @@
+## ĐUA VỀ TEST XANH THẬT — SỬA LỖI REVIEW CÒN TỒN + KIỂM CHỨNG (18/10/2026, CHƯA COMMIT)
+
+- [x] **BƯỚC 0 — hiện trạng:** khôi phục `yarn.lock` (`git checkout e2ed3be -- yarn.lock`) + bỏ dòng `yarn.lock` trong `.gitignore`. Lỗi ban đầu: game-core `building-placement.test.ts:38`, server `coop-commands.test.ts:426` → đã sửa (1a/3).
+- [x] **1a:** SNACK_PLOT_ID **1.200.000 ₫**; `snack-balance-sim` CÓ khung giờ + cross-sell → **hoàn vốn ≈ 7,2 ngày** (lãi ròng +165.757 ₫/ngày); sửa `building-placement.test.ts:38/99`, `coop-commands.test.ts:426`.
+- [x] **1b cross-sell đi bộ:** bỏ teleport `position`; khách đi bộ qua `routeCustomer('to_shelf')`; chỉ chuyển khi tòa đích MỞ + có kệ hàng; test sim thật ≤1 ô/tick + rời khi đóng/hết hàng. **CHƯA QA browser.**
+- [x] **1c toast 1 lần/save:** `simulation.ts` gán `callbacks` sớm + cờ `hasWarnedGuardNotNight` (schema 14); test `night-cycle.test.ts` (tải 2 lần chỉ 1 toast). **CHƯA QA browser.**
+- [x] **1d golden 3 ngày:** sinh lại `world-golden.json`; base không đổi, allBuildings tăng khách/doanh thu do cross-sell.
+- [x] **2a:** respondReview giới hạn delta ≤ 50% mức uy tín THẬT đã mất (`reputationLost` ghi trong `recordCustomerRating`; cap `reputationLost/2`); test không tăng ròng.
+- [x] **2b:** REVIEW_RESPONSE_MAX_AGE_DAYS=3, từ chối quá hạn bằng tiếng Việt; test reviews.test + world-runtime replay (không đổi revision).
+- [x] **2c UI:** ReviewsModal + DaySummaryModal khóa nút "Phản hồi" + 🔒 lý do quá hạn. **CHƯA QA browser.**
+- [x] **BƯỚC 3 coop "chỉ còn 51":** là giả định cũ của test (số tồn nhà cung cấp thay đổi động) — hiện dùng regex `/chỉ còn/`, không lỗi code; sửa `coop-commands.test.ts:426` (mua snack −1.200.000) + `:466` (phí dời 360.000).
+- [x] **Kiểm chứng cuối (18/10/2026):** `yarn typecheck` EXIT 0; `game-core test` ×3 mỗi lần **112/112 pass, 0 fail**; `apps/web test` PASS; `game-renderer test` PASS; `server test:unit` PASS; `server test:coop` PASS.
+- [ ] **CHƯA QA browser:** cross-sell đi bộ, toast 1 lần/save, nút "Phản hồi" quá hạn. **CHƯA COMMIT.**
+
 ## HỆ NHÂN VIÊN THEO CA (staff-shifts) — CẢ 2 PHASE XONG 17/10/2026 (chưa commit, chưa QA mắt)
 
 - [x] **Phase A (ca + gán tòa, không đụng clock) đã code + test xanh**: 4 ca (sáng 07–14, chiều 14–22, đêm 22–06 vắt nửa đêm hệ số 0,6, cả ngày 07–22), lương theo ca, chỉ vẽ/làm việc trong ca (`peekVisibleStaff`), gán nhân viên vào tòa `BuildingPlacement` + lọc việc theo tòa (châm hàng/thu ngân/bảo vệ/dọn bàn), lệnh co-op `assign_staff_building` (server replay + validate), migration save 12→13, UI `StaffModal` (ca/tòa/lương/trạng thái + cảnh báo ca đêm chưa giảm trộm).

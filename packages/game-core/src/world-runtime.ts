@@ -345,7 +345,10 @@ export class WorldRuntime {
         this.simulation.setAutoBuyStalls(p.enabled);
         success = true;
       } else if (p.type === 'order_supplier') {
-        success = this.simulation.orderSupplierCart(p.supplierId, p.items).success;
+        const r = this.simulation.orderSupplierCart(p.supplierId, p.items);
+        success = r.success;
+        // dynamic-economy 5.2: báo đúng lý do (vượt tồn, ngừng cung, thiếu tiền…) cho người đặt.
+        if (!r.success) rejectReason = r.reasons?.join('; ') || undefined;
       } else if (p.type === 'buy_stall') {
         success = this.simulation.buyStall(p.stallId).success;
       } else if (p.type === 'hire_staff') {
@@ -354,6 +357,8 @@ export class WorldRuntime {
         success = this.simulation.payWageDebt().success;
       } else if (p.type === 'set_staff_shift') {
         success = this.simulation.setStaffShift(p.staffId, p.shift);
+      } else if (p.type === 'assign_staff_building') {
+        success = this.simulation.setStaffBuilding(p.staffId, p.buildingId ?? null).success;
       } else if (p.type === 'assign_refill_job') {
         success = this.simulation.assignRefillJob(p.staffId, p.fixtureId).success;
       } else if (p.type === 'open_branch') {
@@ -458,6 +463,11 @@ export class WorldRuntime {
         // Server-authoritative: người góp = phiên (`actorId`, qua `setBuildActor`), không đọc từ payload; lệnh chạy lần lượt
         // qua hàng đợi của coordinator nên lệnh sau chỉ nhận phần thiếu / bị từ chối 'slot_full'; thiếu kho → từ chối cả lệnh.
         const r = this.simulation.donateToBundle(p.bundleId, p.slotId, p.productId, p.quantity, p.amount);
+        success = r.success;
+        rejectReason = r.reason;
+      } else if (p.type === 'respond_review') {
+        // OpenSpec `written-customer-reviews` 4.5: phản hồi lời chê = server-authoritative (cộng uy tín).
+        const r = this.simulation.respondReview(p.reviewId);
         success = r.success;
         rejectReason = r.reason;
       }

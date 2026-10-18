@@ -24,8 +24,16 @@ import {
   districtPreferredMultiplier,
 } from './districts';
 import type { DistrictId } from './districts';
+import { PUBLIC_DECOR, publicDecorAttraction, publicDecorForCityLevel } from './public-decor';
 
 export function runDistrictsTests(): void {
+  // 2.3: đồ công cộng xuất hiện theo cấp thành phố, sức hút chỉ tăng khi lên cấp, cấp 1 chưa có gì.
+  assert.equal(publicDecorForCityLevel(1).length, 0, 'cấp 1 chưa có đồ công cộng');
+  assert.equal(publicDecorForCityLevel(10).length, PUBLIC_DECOR.length, 'cấp 10 có đủ đồ công cộng');
+  assert.equal(publicDecorAttraction(1), 0, 'cấp 1 không cộng sức hút');
+  assert.ok(publicDecorAttraction(2) > 0, 'ghế đá đầu hẻm (cấp 2) gần tiệm chính → cộng sức hút');
+  for (let lv = 1; lv < 10; lv++) assert.ok(publicDecorAttraction(lv + 1) >= publicDecorAttraction(lv), `sức hút không giảm khi lên cấp ${lv + 1}`);
+
   console.log('\n--- Khu của thế giới mở theo đợt (D1/D2, task 1.1+1.2: registry + luật hệ số) ---');
 
   // --- Registry đủ 5 khu theo D1 ---

@@ -9,9 +9,11 @@ console.log('--- Testing PixelCamera ---');
 {
   const cam = new PixelCamera(20, 16);
   cam.setViewportSize(390, 844);
-  assert.equal(cam.zoom, 1.25, 'điện thoại dọc: 1.25');
+  assert.equal(cam.zoom, 1, 'điện thoại dọc: 1');
   cam.setViewportSize(740, 360);
-  assert.equal(cam.zoom, 1.5, 'điện thoại ngang: 1.5');
+  assert.equal(cam.zoom, 1, 'điện thoại ngang: 1');
+  cam.setViewportSize(667, 375);
+  assert.equal(cam.zoom, 1, 'iPhone SE ngang: 1');
   cam.setViewportSize(1024, 768);
   assert.equal(cam.zoom, 2, 'desktop nhỏ: 2');
   cam.setViewportSize(1920, 1080);

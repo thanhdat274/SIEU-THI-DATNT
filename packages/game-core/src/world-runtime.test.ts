@@ -448,5 +448,93 @@ export async function runWorldRuntimeTests() {
     assert.equal((await rt.executeCommand('owner-1', cmd('wage-2', { type: 'pay_wage_debt' }))).status, 'rejected', 'Hết nợ thì lệnh bị từ chối');
   }
 
+  // OpenSpec `staff-shifts` A5: server replay đổi ca đêm + gán tòa cho nhân viên; tòa không có thì từ chối.
+  {
+    const seed = createInitialOnlineWorld(owner, 'world-staff-shifts');
+    seed.business.save.player.level = 40;
+    seed.business.save.player.money = 10_000_000;
+    seed.business.save.worldTime.isStoreOpen = false;
+    seed.business.save.staff = [{
+      id: 'wm-staff', name: 'Anh Khoa', role: 'refill', speed: 6, accuracy: 5, stamina: 7,
+      dailyWage: 30_000, hiredOnDay: 1, shift: 'full_day',
+    }];
+    seed.business.save.staffSchedule = { 'wm-staff': 'full_day' };
+    const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    const cmd = (commandId: string, payload: unknown) => ({
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId,
+      expectedRevision: rt.getSnapshot().world.revision, payload,
+    });
+    const sim = rt.getSimulation();
+    const night = await rt.executeCommand('owner-1', cmd('staff-night', { type: 'set_staff_shift', staffId: 'wm-staff', shift: 'night' }));
+    assert.equal(night.status, 'accepted', 'Server phát lại đổi ca đêm');
+    assert.equal(sim.getStaff()[0].shift, 'night', 'Ca đêm ghi vào save chuẩn của server');
+    const badShift = await rt.executeCommand('owner-1', cmd('staff-bad-shift', { type: 'set_staff_shift', staffId: 'wm-staff', shift: 'bogus' }));
+    assert.equal(badShift.status, 'invalid', 'Ca không hợp lệ bị lớp validate chặn');
+    assert.equal(sim.getStaff()[0].shift, 'night', 'Ca không đổi khi lệnh bị từ chối');
+
+    const unowned = await rt.executeCommand('owner-1', cmd('staff-build-missing', { type: 'assign_staff_building', staffId: 'wm-staff', buildingId: 'snack' }));
+    assert.equal(unowned.status, 'rejected', 'Gán tòa chưa mua bị từ chối');
+    assert.equal(sim.getStaff()[0].assignedBuilding, undefined);
+
+    await rt.executeCommand('owner-1', cmd('staff-buy-snack', { type: 'layout_batch', actions: [{ type: 'buy_plot', plotId: SNACK_PLOT_ID }] }));
+    const revisionBefore = rt.getSnapshot().world.revision;
+    const assign = await rt.executeCommand('owner-1', cmd('staff-build-snack', { type: 'assign_staff_building', staffId: 'wm-staff', buildingId: 'snack' }));
+    assert.equal(assign.status, 'accepted', 'Gán nhân viên vào tòa đã mua');
+    assert.equal(rt.getSnapshot().world.revision, revisionBefore + 1, 'Lệnh gán tòa tăng revision đúng một');
+    assert.equal(sim.getStaff()[0].assignedBuilding, 'snack');
+    const replaySame = await rt.executeCommand('owner-1', cmd('staff-build-snack', { type: 'assign_staff_building', staffId: 'wm-staff', buildingId: 'snack' }));
+    assert.equal(replaySame.status, 'accepted', 'Gửi lại cùng commandId không lỗi');
+    assert.equal(rt.getSnapshot().world.revision, revisionBefore + 1, 'Gửi lại cùng commandId không tăng revision lần hai');
+    const clear = await rt.executeCommand('owner-1', cmd('staff-build-clear', { type: 'assign_staff_building', staffId: 'wm-staff', buildingId: null }));
+    assert.equal(clear.status, 'accepted');
+    assert.equal(sim.getStaff()[0].assignedBuilding, undefined, 'null = toàn tiệm');
+  }
+
+  // OpenSpec `written-customer-reviews` 4.5: server replay phản hồi lời chê → cộng uy tín + ghi nhận trong save chuẩn.
+  {
+    const seed = createInitialOnlineWorld(owner, 'world-reviews');
+    seed.business.save.player.reputation = 50;
+    seed.business.save.reviews = [{
+      id: 'rev-5-1', day: 5, hour: 10, minute: 0, stars: 2, author: 'Cô Hoa', text: 'Chờ lâu quá.', reason: 'wait',
+      // 2a: lời chê phải ghi mức uy tín thật đã bị trừ (Ở đây lời tiêm thẳng vào save nên gán 0.5 = đúng contribution 'wait').
+      // Phản hồi chỉ hồi phục ≤ 50% mức đó: min(reviewResponseDelta=0.25, 0.5/2=0.25) = 0.25 → uy tín 50 → 50.25.
+      reputationLost: 0.5,
+    }];
+    const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    const cmd = (commandId: string, payload: unknown) => ({
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId,
+      expectedRevision: rt.getSnapshot().world.revision, payload,
+    });
+    const sim = rt.getSimulation();
+    const repBefore = sim.getPlayerData().reputation;
+    const resp = await rt.executeCommand('owner-1', cmd('resp-1', { type: 'respond_review', reviewId: 'rev-5-1' }));
+    assert.equal(resp.status, 'accepted', 'Server phát lại phản hồi lời chê');
+    assert.ok(sim.getPlayerData().reputation > repBefore, 'Uy tín tăng sau khi phản hồi');
+    assert.equal(sim.getReviewResponses().length, 1, 'Ghi nhận lượt phản hồi trong save chuẩn của server');
+    const again = await rt.executeCommand('owner-1', cmd('resp-2', { type: 'respond_review', reviewId: 'rev-5-1' }));
+    assert.equal(again.status, 'rejected', 'Phản hồi lần hai bị từ chối (đã phản hồi)');
+  }
+
+  // OpenSpec `written-customer-reviews` 2b: lời chê quá 3 ngày bị từ chối qua replay co-op (không đổi revision).
+  {
+    const seed = createInitialOnlineWorld(owner, 'world-reviews-old');
+    seed.business.save.player.reputation = 50;
+    seed.business.save.worldTime.day = 6; // hôm nay ngày 6 → lời ngày 2 quá 3 ngày (2 < 6 - 3 = 3)
+    seed.business.save.reviews = [{
+      id: 'rev-old', day: 2, hour: 10, minute: 0, stars: 1, author: 'Cô Hoa', text: 'Chờ lâu quá.', reason: 'wait',
+    }];
+    const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    const cmd = (commandId: string, payload: unknown) => ({
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId,
+      expectedRevision: rt.getSnapshot().world.revision, payload,
+    });
+    const sim = rt.getSimulation();
+    const revisionBefore = rt.getSnapshot().world.revision;
+    const res = await rt.executeCommand('owner-1', cmd('resp-old', { type: 'respond_review', reviewId: 'rev-old' }));
+    assert.equal(res.status, 'rejected', 'Server từ chối phản hồi lời cũ hơn 3 ngày');
+    assert.equal(sim.getReviewResponses().length, 0, 'Không ghi nhận phản hồi cho lời cũ');
+    assert.equal(rt.getSnapshot().world.revision, revisionBefore, 'Lệnh bị từ chối không tăng revision');
+  }
+
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');
 }

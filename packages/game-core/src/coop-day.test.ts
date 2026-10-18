@@ -20,9 +20,9 @@ function makeCoopSim(localId: string | null) {
   return { sim, states };
 }
 
-/** Ngày chung (hẻm chơi cặp đôi): 23:30 mọi người về nhà, cả hai ngủ thì sang ngày mới đúng một lần. */
+/** Ngày chung (hẻm chơi cặp đôi): 23:30 mọi người về nhà ngủ, đồng hồ chạy nhanh ×3 qua đêm và 06:00 mới sang ngày mới đúng một lần. */
 export function runCoopDayTests(): void {
-  console.log('--- Test Coop Day (23:30 → ngày mới) ---');
+  console.log('--- Test Coop Day (23:30 về nhà ngủ → 06:00 ngày mới) ---');
 
   // Server (không có người chơi cục bộ): cả hai đã ở cửa nhà → sang đúng 1 ngày, 07:00.
   {
@@ -70,42 +70,42 @@ export function runCoopDayTests(): void {
     const seeded = createInitialOnlineWorld({ id: 'o1', displayName: 'O', photoUrl: null }, 'coop-day-world');
     seeded.world.memberships.push({ accountId: 'm2', role: 'member', joinedAt: new Date().toISOString(), lastSeenRevision: 0 });
     seeded.world.avatars.push({ accountId: 'm2', position: { x: 400, y: 400 }, direction: 'down', updatedAt: new Date().toISOString() });
-    const runtime = new WorldRuntime(seeded.world, seeded.business, { checkpointIntervalSeconds: 30 });
+    const runtime = new WorldRuntime(seeded.world, seeded.business, { checkpointIntervalSeconds: 30, heartbeatTimeoutMs: 10 * 60 * 1000 });
     let now = Date.now();
     runtime.registerSession('o1', now);
     runtime.registerSession('m2', now);
     const sim = runtime.getSimulation();
     sim.getClock().setTime({ ...sim.getClock().getTime(), hour: 23, minute: 29, isStoreOpen: false });
     const startDay = sim.getClock().getTime().day;
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 420 && sim.getClock().getTime().day === startDay; i++) {
       now += 250;
       runtime.reportPosition('o1', { ...homeCenter }, 'down', now);
       runtime.reportPosition('m2', { x: (COOP_HOME_DOOR_TILES[1].x + 0.5) * 32, y: (COOP_HOME_DOOR_TILES[1].y + 0.5) * 32 }, 'down', now); // cửa nhà riêng của người thứ hai
       runtime.tick(0.25, now);
     }
-    assert.equal(sim.getClock().getTime().day, startDay + 1, 'runtime: cả hai về nhà thì sang ngày mới');
+    assert.equal(sim.getClock().getTime().day, startDay + 1, 'runtime: cả hai ngủ qua đêm, 06:00 sang ngày mới');
     const snapshot = runtime.getSnapshot();
     assert.equal(snapshot.businesses[0].save.worldTime.day, startDay + 1, 'snapshot: save mang ngày mới ngay, không chờ checkpoint');
     assert.equal(snapshot.world.worldTime.day, startDay + 1, 'snapshot: giờ thế giới là giờ sống');
   }
 
-  // Người kia đã out (không có phiên): server tự cho họ về nhà ngủ, người còn lại về nhà là sang ngày ngay như chơi đơn.
+  // Người kia đã out (không có phiên): server tự cho họ về nhà ngủ, người còn lại ngủ qua đêm và 06:00 mới sang ngày mới.
   {
     const seeded = createInitialOnlineWorld({ id: 'o1', displayName: 'O', photoUrl: null }, 'offline-partner-world');
     seeded.world.memberships.push({ accountId: 'm2', role: 'member', joinedAt: new Date().toISOString(), lastSeenRevision: 0 });
     seeded.world.avatars.push({ accountId: 'm2', position: { x: 400, y: 400 }, direction: 'down', updatedAt: new Date().toISOString() });
-    const runtime = new WorldRuntime(seeded.world, seeded.business, { checkpointIntervalSeconds: 30 });
+    const runtime = new WorldRuntime(seeded.world, seeded.business, { checkpointIntervalSeconds: 30, heartbeatTimeoutMs: 10 * 60 * 1000 });
     let now = Date.now();
     runtime.registerSession('o1', now); // m2 không đăng ký phiên = đã out
     const sim = runtime.getSimulation();
     sim.getClock().setTime({ ...sim.getClock().getTime(), hour: 23, minute: 29, isStoreOpen: false });
     const startDay = sim.getClock().getTime().day;
-    for (let i = 0; i < 40 && sim.getClock().getTime().day === startDay; i++) {
+    for (let i = 0; i < 420 && sim.getClock().getTime().day === startDay; i++) {
       now += 250;
       runtime.reportPosition('o1', { ...homeCenter }, 'down', now);
       runtime.tick(0.25, now);
     }
-    assert.equal(sim.getClock().getTime().day, startDay + 1, 'người kia out: ngày vẫn sang khi mình về nhà');
+    assert.equal(sim.getClock().getTime().day, startDay + 1, 'người kia out: qua đêm tới 06:00 ngày vẫn sang');
   }
 
   // Người kia online nhưng AFK ở xa nhà: sau ~30 s thực server tự cho họ ngủ, ngày vẫn sang; snapshot báo đúng hiện diện.

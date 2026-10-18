@@ -1,5 +1,12 @@
 # Tasks
 
+## CẬP NHẬT 18/10/2026 (đợt "ĐUA VỀ TEST XANH THẬT")
+
+- Bổ sung cho mục 4.4a: **toast "Bảo vệ ca ngày không trực đêm" chỉ hiện 1 lần/save** (`simulation.ts` gắn `callbacks` sớm + cờ `hasWarnedGuardNotNight` lưu trong save, schema 14 additive). Trước đây `this.callbacks` gán cuối constructor nên `onToast` còn undefined → toast không hiện; nay toast hiện đúng 1 lần cho save có guard không ca đêm. Test `night-cycle.test.ts`: tải 2 lần chỉ 1 toast. **CHƯA QA browser.**
+- Kiểm chứng cuối (18/10/2026): typecheck EXIT 0; game-core ×3 mỗi lần 112/112 pass 0 fail; web/renderer/server-unit/server-coop đều PASS.
+
+---
+
 Trạng thái 01/10/2026: nhóm 1–3 đã có code và test tự động. Trong lượt rà soát tiếp nối, sửa lỗi qua ngày hoàn giỏ trên khách thật; `tsc -b` và toàn bộ `test-runner.ts` PASS (suite an ninh + 7 TAP test). Production build server và web PASS khi chạy trực tiếp bằng Node 24; browser QA và cân bằng vẫn mở.
 
 ## 1. Dữ liệu và logic
@@ -27,5 +34,6 @@ Trạng thái 01/10/2026: nhóm 1–3 đã có code và test tự động. Trong
 - [x] 4.2 Browser QA một phần (02/10/2026, dev server, cấp 12 ép bằng `window.__sim.addExperience`): mở màn An ninh từ "Sổ quản lý", bấm "Lắp camera" (tiền −250.000, sổ cái `maintenance` 250.000, camera bật), bật/tắt báo công an đổi `callPolice`, danh sách sự cố (nạp bằng `importSaveData`) hiển thị đúng biểu tượng và nội dung. Chưa thấy toast sự cố thật và chưa gặp trộm thật trong lúc chạy, vì xác suất thấp và trang liên tục tải lại do phiên khác sửa file.
 - [ ] 4.3 Cân bằng: tần suất, mức mất, giá camera, phạt, tỷ lệ bắt của công an; xem người chơi có hiểu vì sao bị mất hàng.
 - [ ] 4.4 Quyết định sau: người chơi tự bắt trộm, dấu hiệu nhìn thấy trên khách trộm, bảo vệ ca đêm, chi phí camera trong mô-đun thuế (chờ TAX-0). Đã làm 02/10/2026: server phát lại `security_action` (`world-runtime.test.ts`). **ĐÃ CHỐT 17/10/2026:** không cho người chơi tự bắt trộm; có bảo vệ đêm là nhân vật đứng trong tiệm (cần hệ nhân viên theo ca + sprite trước); nguyên nhân chỉ báo sau sự cố trong sổ; chi phí camera vào thuế chờ TAX-0.
+- [x] 4.4a Chặn trộm đêm theo ca + tòa (17/10/2026 tối): `runNightBurglary` dùng `isStaffActiveAt` + `burglaryTime` (02:00 ngày N); guard `night` chặn, guard `full_day`/`morning`/`afternoon` không chặn; guard `assignedBuilding=null` hoặc `'main'` chặn trộm `main`, tòa khác không chặn. Multi-tòa burglary để sau. Test: guard night/day/none. Typecheck + game-core ×3 + server unit/coop đều EXIT 0, 112 pass/0 fail. Xóa cảnh báo "chưa giảm trộm" ở StaffModal.
 - [x] 4.5 Lỗi có sẵn khi đổi ngày: đã sửa trong cùng lượt vì ảnh hưởng trực tiếp tới hoàn giỏ; `abandonAllBaskets` cập nhật khách thật.
 - [ ] 4.6 Cập nhật `TASKS.md`/`ROADMAP.md` khi chốt nghiệm thu.

@@ -1,5 +1,18 @@
 # LỘ TRÌNH PHÁT TRIỂN (DEVELOPMENT ROADMAP)
 
+## ĐUA VỀ TEST XANH THẬT — SỬA LỖI REVIEW CÒN TỒN + KIỂM CHỨNG (18/10/2026, CHƯA COMMIT)
+- [x] **BƯỚC 0:** khôi phục `yarn.lock` + bỏ dòng `yarn.lock` trong `.gitignore`. Lỗi ban đầu: `building-placement.test.ts:38`, `coop-commands.test.ts:426` → đã sửa.
+- [x] **1a:** SNACK_PLOT_ID **1.200.000 ₫**; `snack-balance-sim` CÓ khung giờ + cross-sell → **hoàn vốn ≈ 7,2 ngày**; sửa `building-placement.test.ts:38/99`, `coop-commands.test.ts:426`.
+- [x] **1b cross-sell đi bộ (không teleport):** bỏ gán `position`; đi bộ qua `routeCustomer('to_shelf')`; chỉ chuyển khi tòa đích MỞ + còn hàng. Test sim thật ≤1 ô/tick + rời khi đóng/hết hàng. **CHƯA QA browser.**
+- [x] **1c toast 1 lần/save:** gán `callbacks` sớm + cờ `hasWarnedGuardNotNight` (schema 14). Test `night-cycle.test.ts`. **CHƯA QA browser.**
+- [x] **1d golden 3 ngày:** sinh lại `world-golden.json`; base không đổi, allBuildings tăng khách/doanh thu do cross-sell.
+- [x] **2a:** respondReview giới hạn delta ≤ 50% mức uy tín THẬT đã mất. Test không tăng ròng.
+- [x] **2b:** REVIEW_RESPONSE_MAX_AGE_DAYS=3, từ chối quá hạn. Test thường + replay co-op (không đổi revision).
+- [x] **2c UI:** ReviewsModal + DaySummaryModal khóa nút "Phản hồi" + 🔒 lý do quá hạn. **CHƯA QA browser.**
+- [x] **BƯỚC 3 coop "chỉ còn 51":** giả định cũ của test — số tồn nhà cung cấp thay đổi động; dùng regex `/chỉ còn/` (không lỗi code); sửa `coop-commands.test.ts:426` + `:466`.
+- [x] **Kiểm chứng cuối (18/10/2026):** typecheck EXIT 0; game-core ×3 **112/112 pass 0 fail**; web/renderer PASS; server unit + coop PASS.
+- [ ] **CHƯA QA browser:** cross-sell đi bộ, toast 1 lần/save, nút "Phản hồi" quá hạn. **CHƯA COMMIT.**
+
 ## Hệ nhân viên theo ca (staff-shifts) — CẢ 2 PHASE XONG 17/10/2026 (chưa commit, chưa QA mắt)
 - [x] **Phase A (ca + gán tòa)**: 4 ca (sáng 07–14, chiều 14–22, đêm 22–06 vắt nửa đêm, cả ngày 07–22), lương theo ca, chỉ vẽ/làm việc trong ca, gán nhân viên vào tòa `BuildingPlacement` + lọc việc theo tòa (châm hàng/thu ngân/bảo vệ/dọn bàn), lệnh co-op `assign_staff_building`, migration save 12→13, UI `StaffModal` (ca/tòa/lương/trạng thái + cảnh báo "ca đêm chưa giảm trộm").
 - [x] **Phase B (pha đêm)**: 22:00 đóng cửa vào pha đêm (đồng hồ chạy, không sinh khách/không bán), 00:00–06:00 thuộc ngày N, 06:00 chốt ngày + mở cửa (chế độ thường), tốc độ ×3 một nguồn trong `GameClock` với parity client↔`WorldRuntime` (cả routine/coop), HUD ban đêm + nút Ngủ; đã sửa `daily-routine.test.ts` và sinh lại golden world; test mới `night-cycle.test.ts`.

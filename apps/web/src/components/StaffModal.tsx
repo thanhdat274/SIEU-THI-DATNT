@@ -1,9 +1,14 @@
 import React from 'react';
 import { PlayerData, StaffCandidate, StaffMember, StaffShift, STAFF_SHIFTS } from '@game/shared';
 import { getMaxStaffSlots, STAFF_ROLE_INFO, STAFF_SPECIALTIES } from '@game/data';
+import { isStaffActiveAt, shiftWage, activeShiftOf, describeWorkerError } from '@game/core';
 import { PixelButton, PixelDialog, money } from './pixel';
 import { RestockJobTarget } from '@game/shared';
-import { describeWorkerError } from '@game/core';
+
+interface StaffBuildingOption {
+  id: string | null;
+  label: string;
+}
 
 interface Props {
   player: PlayerData;
@@ -11,17 +16,23 @@ interface Props {
   candidates: StaffCandidate[];
   staff: StaffMember[];
   wageDebt: number;
+  /** Giờ game hiện tại để hiện "Đang trực/Ngoài ca" (OpenSpec `staff-shifts`). */
+  time?: { day: number; hour: number; minute: number };
+  /** Tòa đang có để gán nhân viên; thiếu = chỉ "Toàn tiệm". */
+  staffBuildings?: StaffBuildingOption[];
   onHire: (candidateId: string) => { success: boolean; reason?: string };
   onSetShift: (staffId: string, shift: StaffShift) => boolean;
+  onSetBuilding?: (staffId: string, buildingId: string | null) => boolean;
   onPayWageDebt?: () => void;
   restockTargets?: RestockJobTarget[];
   onAssignRefillJob?: (staffId: string, fixtureId: string) => { success: boolean; reason?: string };
   onClose: () => void;
 }
 
-export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wageDebt, onHire, onSetShift, onPayWageDebt, restockTargets = [], onAssignRefillJob, onClose }) => {
+export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wageDebt, time, staffBuildings = [{ id: null, label: 'Toàn tiệm' }], onHire, onSetShift, onSetBuilding, onPayWageDebt, restockTargets = [], onAssignRefillJob, onClose }) => {
   const slots = getMaxStaffSlots(player.level);
   const hiredIds = new Set(staff.map((member) => member.id));
+  const currentTime = time ?? { day, hour: 12, minute: 0 };
 
   const hasDebt = wageDebt > 0 && !!onPayWageDebt;
   const debtRow = (
@@ -48,21 +59,36 @@ export const StaffModal: React.FC<Props> = ({ player, day, candidates, staff, wa
 
       <section className={staff.length === 0 ? 'staff-hired staff-hired-empty' : 'staff-hired'} style={{ marginBottom: 18 }}>
         <h3>Nhân viên đang làm · {staff.length}</h3>
-        {staff.length === 0 ? <p className="muted">Chưa tuyển nhân viên nào.</p> : staff.map((member) => (
-          <article key={member.id} className="product-row">
-            <div className="product-info">
-              <h3>{member.name} · {STAFF_ROLE_INFO[member.role].label}{member.specialty ? ` · ${STAFF_SPECIALTIES[member.specialty].icon} ${STAFF_SPECIALTIES[member.specialty].label}` : ''}</h3>
-              <p>Lương đủ ngày {money(member.dailyWage)} · Tốc độ {member.speed} · Chính xác {member.accuracy} · Sức bền {member.stamina}</p>
-              <p className="muted">{member.workerTask ? `Đang bày kệ ${member.workerTask.fixtureId}` : member.currentCheckoutId ? 'Đang phục vụ khách tại quầy' : describeWorkerError(member.lastWorkerError) ?? 'Đang rảnh'}</p>
-            </div>
-            <label className="staff-shift" style={{ display: 'grid', gap: 4, minWidth: 'min(170px, 100%)' }}>
-              Ca làm
-              <select aria-label={`Ca làm của ${member.name}`} value={member.shift} onChange={(event) => onSetShift(member.id, event.target.value as StaffShift)}>
-                {Object.values(STAFF_SHIFTS).map((shift) => <option key={shift.id} value={shift.id}>{shift.name}</option>)}
-              </select>
-            </label>
-          </article>
-        ))}
+        {staff.length === 0 ? <p className="muted">Chưa tuyển nhân viên nào.</p> : staff.map((member) => {
+          const shift = activeShiftOf(member, undefined);
+          const onShift = isStaffActiveAt(member, undefined, currentTime);
+          const buildingLabel = staffBuildings.find((option) => option.id === (member.assignedBuilding ?? null))?.label ?? member.assignedBuilding ?? 'Toàn tiệm';
+          return (
+            <article key={member.id} className="product-row">
+              <div className="product-info">
+                <h3>{member.name} · {STAFF_ROLE_INFO[member.role].label}{member.specialty ? ` · ${STAFF_SPECIALTIES[member.specialty].icon} ${STAFF_SPECIALTIES[member.specialty].label}` : ''}</h3>
+                <p>Lương theo ca {money(shiftWage(member.dailyWage, shift))} · đủ ngày {money(member.dailyWage)} · Tốc độ {member.speed} · Chính xác {member.accuracy} · Sức bền {member.stamina}</p>
+                <p className="muted">{onShift ? 'Đang trực' : 'Ngoài ca'} · {buildingLabel} · {member.workerTask ? `Đang bày kệ ${member.workerTask.fixtureId}` : member.currentCheckoutId ? 'Đang phục vụ khách tại quầy' : describeWorkerError(member.lastWorkerError) ?? 'Đang rảnh'}</p>
+              </div>
+              <div style={{ display: 'grid', gap: 8, minWidth: 'min(200px, 100%)' }}>
+                <label className="staff-shift" style={{ display: 'grid', gap: 4 }}>
+                  Ca làm
+                  <select aria-label={`Ca làm của ${member.name}`} value={member.shift} onChange={(event) => onSetShift(member.id, event.target.value as StaffShift)}>
+                    {Object.values(STAFF_SHIFTS).map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}
+                  </select>
+                </label>
+                {onSetBuilding && (
+                  <label className="staff-building" style={{ display: 'grid', gap: 4 }}>
+                    Làm việc tại
+                    <select aria-label={`Tòa làm việc của ${member.name}`} value={member.assignedBuilding ?? ''} onChange={(event) => onSetBuilding(member.id, event.target.value === '' ? null : event.target.value)}>
+                      {staffBuildings.map((option) => <option key={option.id ?? 'all'} value={option.id ?? ''}>{option.label}</option>)}
+                    </select>
+                  </label>
+                )}
+              </div>
+            </article>
+          );
+        })}
       </section>
 
       <section className="staff-candidates">

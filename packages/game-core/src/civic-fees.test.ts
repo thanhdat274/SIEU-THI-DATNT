@@ -14,7 +14,7 @@ import {
   ALL_PARCELS,
   LAND_LEASE_CONSTANTS,
 } from '@game/data';
-import { validateSaveGameData, type SaveGameData, type LedgerEntry } from '@game/shared';
+import { validateSaveGameData, CURRENT_SAVE_SCHEMA_VERSION, type SaveGameData, type LedgerEntry } from '@game/shared';
 import { GameSimulation } from './simulation';
 import { InputManager } from './input';
 import { hashSimulationState } from './replay';
@@ -208,7 +208,7 @@ function runSaveTests(): void {
   const sim = newSim();
   sim.openBuilding('park', 'lot-east-1', 21, 5);
   const exported = sim.exportSaveData();
-  assert.equal(exported.schemaVersion, 11, 'Schema vẫn là 11 (không thêm trường save)');
+  assert.equal(exported.schemaVersion, CURRENT_SAVE_SCHEMA_VERSION, 'Schema hiện hành (civic-local-fees không thêm trường save)');
   assert.equal(validateSaveGameData(exported).valid, true, 'Save hiện tại hợp lệ');
 
   for (const version of [10, 11] as const) {
@@ -224,7 +224,7 @@ function runSaveTests(): void {
     for (const tenure of Object.values(old.storeLayout.parcelTenure ?? {})) delete (tenure as { civicDebt?: number }).civicDebt;
     const validated = validateSaveGameData(old);
     assert.ok(validated.valid && validated.data, `Save schema ${version} nạp được (${validated.versionStatus})`);
-    assert.equal(validated.data!.schemaVersion, 11, `Migrate schema ${version} → 11`);
+    assert.equal(validated.data!.schemaVersion, CURRENT_SAVE_SCHEMA_VERSION, `Migrate schema ${version} → hiện hành`);
     const loaded = new GameSimulation(validated.data!, generateStarterTileMap(), new InputManager(), {});
     const before = moneyOf(loaded);
     advance(loaded, 1);

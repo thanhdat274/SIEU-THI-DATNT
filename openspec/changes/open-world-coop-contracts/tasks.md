@@ -26,10 +26,10 @@ Trạng thái 07/10/2026: phần THUẦN AN TOÀN của 1.1 (quyền manager), 2
 
 ## 3. Thành tích
 
-- [ ] 3.1 Bảng thành tích theo tòa/người; đối soát tổng lãi; hiển thị ở bảng Thành phố và tổng kết ngày. **CHƯA LÀM — cần 6a D6 `internal_delivery` hoàn thiện trước.**
+- [x] 3.1 Bảng thành tích theo tòa/người; đối soát tổng lãi; hiển thị ở bảng Thành phố và tổng kết ngày. **17/10/2026:** `game-core/building-scoreboard.ts` (`buildingScores`/`managerScores`/`ledgerProfit`) tính từ sổ cái, `internal_transfer` cộng doanh thu tòa giao + giá vốn tòa nhận; tòa chưa gán vào nhóm `chung`. Hợp đồng chạy mỗi sáng giờ lấy lô FEFO thật thành chuyến đang chuyển (trước đây hàng rời kho rồi biến mất) và ghi sổ `internal_transfer` (không đổi quỹ). Co-op: người mở tòa tự thành người phụ trách (`managerAccountId`). UI: mục "Thành tích" trong bảng Thành phố (đã nhìn ở 812×375) + "Thành tích theo người phụ trách" trong tổng kết ngày (khi ≥ 2 nhóm; chưa nhìn bằng mắt). Test `runBuildingScoreboardTests` (đối soát trên sổ mẫu 5 ngày + simulation thật 5 ngày).
 
 ## 4. Save, kiểm chứng, tài liệu
 
-- [ ] 4.1 Schema kế tiếp + migration; test. **CHƯA LÀM (chờ 3.1 hoàn thiện).**
+- [x] 4.1 Schema kế tiếp + migration; test. **17/10/2026:** schema 12: `supplyContracts[]`, `internalDeliveries[]` (hàng đang chuyển), `BuildingPlacementRecord.managerAccountId?`, sổ `internal_transfer` + `toBuildingInstanceId`; kiểu `SupplyContract`/`InternalDelivery` chuyển sang shared. Migration 11→12 chỉ nâng số (mọi trường tùy chọn); server tự nâng qua `world-migrations`. Test lưu/nạp + migration 11→12; sửa 3 test cũ cứng số 11.
 - [ ] 4.2 `test:coop`, `yarn typecheck`, `yarn test`, `yarn build` PASS (kết quả thật); QA hai trình duyệt theo proposal. **CHƯA (sandbox EPERM).**
 - [x] 4.3 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`. **HOÀN THÀNH.**

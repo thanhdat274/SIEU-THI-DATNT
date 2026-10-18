@@ -1,13 +1,16 @@
 import { furnitureSpriteTexture, fixtureTextureKey, STOCK_ART_SHOP_IDS } from './fixture-preview';
 import { Application, Container, RenderTexture, Sprite, Graphics, Text, TextStyle } from 'pixi.js';
 import { GameTileMap, StoreFixture, TILE_SIZE, Vector2D, isWarehouseFixture, getFixtureDimensions } from '@game/shared';
-import { FixedStepSimulationRunner, GameSimulation, WeatherVisualModel, weekdayOf, hashSeed, type WeatherVisualState, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
+import { FixedStepSimulationRunner, MEMORIAL_PLAQUE_CITY_LEVEL, GameSimulation, WeatherVisualModel, weekdayOf, hashSeed, type WeatherVisualState, needsService, getLightingState, computeTreeShadow, treeShadowNeedsRedraw, type TreeShadowSnapshot } from '@game/core';
 import { PixelTextureFactory } from './textures';
 import { loadSpriteAtlases, headLift, lampLift, walkerLook, atlasTexture } from './sprite-atlas';
 import { PixelCamera } from './camera';
 import { ShopLighting, glowTexture, streetLightStrength, type VehicleLightSource } from './shop-lighting';
 import { DepthEffects } from './depth-effects';
-import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, parcelTrafficMultiplier, districtForWave, type LandParcel, buildingTypeOfInstance } from '@game/data';
+import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, effectiveShelfCapacity, WAREHOUSE_ENTRANCE, WAREHOUSE_CENTER, WAREHOUSE_BOUNDS, WAREHOUSE_DOOR_LEFT, STORE_BOUNDS, isInWarehouse, isFenceTileFor, STREET_LAMP_TILES, TREE_PROPS, TREE_SPRITE_OFFSET, WEATHER_CONFIG, MAP_HEIGHT, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_TILES, TRUCK_KINDS, STREET_VEHICLE_RULES, type TreeProp, LOADING_DOCK_CONFIG , XOI_BOUNDS, DRINK_BOUNDS, SNACK_BOUNDS, BUILDING_MAP, DEFAULT_GEOMETRY, DEFAULT_PLACEMENTS, LAND_PARCELS, PARCEL_MAP, type BuildingId, RECLAMATION_WAVES, parcelPrice, parcelTrafficMultiplier, districtForWave, DISTRICTS, publicDecorForCityLevel, MAIN_STORE_BOUNDS, type LandParcel, buildingTypeOfInstance } from '@game/data';
+
+/** Màu chủ đề khu theo `DistrictDef.visualTheme` (W0 'hem' giữ cảnh gốc, không phủ). */
+const DISTRICT_THEME_COLORS: Record<string, number> = { commercial: 0xc98a2e, suburb: 0x4f8f4f, modern_office: 0x3f6fa8, food_street: 0xb8502e };
 
 export interface PixiGameViewportOptions {
   canvas: HTMLCanvasElement;
@@ -389,7 +392,7 @@ export class PixiGameViewport {
     const world = this.simulation.getWorldOpenState();
     const owned = this.simulation.getOwnedParcelIds();
     const day = this.simulation.getTime().day;
-    const key = JSON.stringify([world.openedWaves, world.wavesUnderConstruction, owned, Object.keys(world.wavesUnderConstruction).length ? day : 0, this.placedBuildings().map(b => b.id + b.bounds.left)]);
+    const key = JSON.stringify([world.openedWaves, world.wavesUnderConstruction, owned, Object.keys(world.wavesUnderConstruction).length ? day : 0, this.placedBuildings().map(b => b.id + b.bounds.left), this.simulation.getCityProgress().level]);
     if (key === this.worldStateKey) return;
     this.worldStateKey = key;
     this.refreshCameraBounds();
@@ -466,6 +469,14 @@ export class PixiGameViewport {
         sign(`ĐỢT ${wave.id.slice(1)} · KHÓA · CẤP ${wave.unlockLevel} · ${(wave.cost / 1e6).toLocaleString('vi-VN')}tr`, x + w / 2, y + h / 2 - 7, 230, 0x4a4f57);
         continue;
       }
+      // Chủ đề khu (OpenSpec `open-world-districts-city-goals` 1.3): phủ màu nhẹ theo `visualTheme` + biển tên khu.
+      const district = DISTRICTS[districtForWave(wave.id as 'w1' | 'w2' | 'w3' | 'w4')];
+      const theme = DISTRICT_THEME_COLORS[district.visualTheme];
+      if (theme !== undefined) {
+        const x = r.x0 * T, y = r.y0 * T, w = (r.x1 - r.x0 + 1) * T, h = (r.y1 - r.y0 + 1) * T;
+        deco.addChild(new Graphics().rect(x, y, w, h).fill({ color: theme, alpha: 0.08 }));
+        sign(district.name.toUpperCase(), x + w / 2, y + 10, 180, theme);
+      }
       for (const raw of wave.parcels) {
         if (placed.some(b => b.bounds.left >= raw.rect.x0 && b.bounds.right <= raw.rect.x1 + 1 && b.bounds.bottom >= raw.rect.y0 && b.bounds.bottom <= raw.rect.y1 + 1)) continue;
         const isOwned = owned.includes(raw.id);
@@ -476,6 +487,27 @@ export class PixiGameViewport {
         deco.addChild(border);
         sign(isOwned ? 'ĐẤT TRỐNG' : `LÔ BÁN · ${Math.round(parcelPrice(parcel) / 1000)}k · ×${parcelTrafficMultiplier(parcel)}`, cx, raw.rect.y1 * T - 6, isOwned ? 4 * T : 5 * T, isOwned ? 0x6b6f73 : 0x2f6f5f);
       }
+    }
+    // Đồ công cộng thưởng cấp thành phố (2.3) + biển kỷ niệm tiệm đầu tiên từ cấp 3 (3.1); suy từ cấp nên co-op giống nhau.
+    const cityLevel = this.simulation.getCityProgress().level;
+    for (const item of publicDecorForCityLevel(cityLevel)) {
+      const cx = (item.tile.x + 0.5) * T, by = (item.tile.y + 1) * T - 4;
+      const g = new Graphics();
+      if (item.kind === 'bench') g.rect(cx - 14, by - 10, 28, 5).fill(0x9a958c).rect(cx - 12, by - 5, 4, 5).fill(0x6f6a62).rect(cx + 8, by - 5, 4, 5).fill(0x6f6a62);
+      else if (item.kind === 'flower_bed') g.roundRect(cx - 15, by - 8, 30, 8, 2).fill(0x8a6a4a).circle(cx - 8, by - 10, 4).fill(0xe0507a).circle(cx, by - 11, 4).fill(0xf0c040).circle(cx + 8, by - 10, 4).fill(0xe0507a);
+      else if (item.kind === 'fountain') g.ellipse(cx, by - 6, 22, 9).fill(0xb8b2a4).ellipse(cx, by - 7, 17, 6).fill(0x5fa8d8).rect(cx - 3, by - 24, 6, 17).fill(0xb8b2a4).circle(cx, by - 26, 5).fill(0x9fd4f0);
+      else g.rect(cx - 30, by - 44, 6, 44).fill(0x8a2a22).rect(cx + 24, by - 44, 6, 44).fill(0x8a2a22).rect(cx - 34, by - 50, 68, 9).fill(0xb8342a);
+      deco.addChild(g);
+    }
+    if (cityLevel >= MEMORIAL_PLAQUE_CITY_LEVEL) {
+      const plaque = new Graphics();
+      const px = MAIN_STORE_BOUNDS.left * T + 8, py = 12 * T + 6;
+      plaque.rect(px + 30, py + 14, 4, 12).fill(0x4a4036).roundRect(px, py, 64, 16, 2).fill(0x6b5434).stroke({ color: 0xd8b860, width: 1 });
+      deco.addChild(plaque);
+      const label = new Text({ text: 'TIỆM ĐẦU TIÊN · NGÀY 1', style: new TextStyle({ fontFamily: 'VT323, Arial, sans-serif', fontSize: 9, fill: 0xf5e6b0 }) });
+      label.anchor.set(0.5);
+      label.position.set(px + 32, py + 8);
+      deco.addChild(label);
     }
     this.worldContainer.addChild(deco);
   }
@@ -1911,7 +1943,7 @@ export class PixiGameViewport {
       }
     }
 
-    const workers = this.simulation.peekStaff(); // vẽ đủ mọi nhân viên (tối đa theo số vị trí); không sao chép từng nhân viên mỗi khung; chỉ đọc
+    const workers = this.simulation.peekVisibleStaff(); // chỉ vẽ nhân viên đang trong ca (OpenSpec `staff-shifts`); không sao chép từng nhân viên mỗi khung; chỉ đọc
     const workerIds = new Set(workers.map((worker) => worker.id));
     workers.forEach((worker, idx) => {
       const position = worker.position ?? { x: 300 + idx * TILE_SIZE, y: 300 };

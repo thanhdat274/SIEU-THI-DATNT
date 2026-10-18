@@ -3,6 +3,7 @@ import { BUILDING_TYPES, BUILDING_TYPE_DEFS, CIVIC_DEFS, DISTRICTS, RECLAMATION_
 import type { WorldOpenState } from '@game/shared';
 import { PixelButton, PixelDialog, money } from './pixel';
 import { CivicBundlesPanel, type BundlesProps } from './CivicBundlesPanel';
+import { Scoreboard, type ScoreRow } from './Scoreboard';
 
 export interface Props {
   world: WorldOpenState;
@@ -35,6 +36,12 @@ export interface Props {
   onBuildOnParcel?: (parcelId: string, buildingTypeId?: string) => void;
   /** Sổ góp xóm (OpenSpec `civic-city-goals`): view-model + lệnh góp. Không truyền thì ẩn tab con Sổ góp. */
   bundles?: Omit<BundlesProps, 'buildableParcelIds' | 'onBuildOnParcel'>;
+  /** Nhật ký mốc thành phố (mở đợt, loại hình đầu tiên, lên cấp), mới nhất trước — đi cùng save nên giống nhau ở cả hai máy co-op. */
+  milestoneLines?: string[];
+  /** Thành tích cộng dồn theo người phụ trách và theo tòa (OpenSpec `open-world-coop-contracts` 3.1). */
+  scoreboard?: { people: readonly ScoreRow[]; buildings: readonly ScoreRow[] };
+  /** Ảnh minimap lúc lên cấp (IndexedDB cục bộ, mới nhất trước). */
+  snapshots?: ReadonlyArray<{ level: number; day: number; dataUrl: string }>;
   onClose: () => void;
 }
 
@@ -44,7 +51,7 @@ const CORNER_LABEL = ['', 'Góc ngã tư'];
 const ROAD_LABEL: Record<string, string> = { main: 'đường chính', south: 'đường nam' };
 
 /** Bảng "Thành phố" (land-reclamation 4.3): cấp thành phố, các đợt khai hoang (khóa/đang thi công/mở) và mua lô. */
-export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels, playerLevel, playerMoney, day, buildingCount, onReclaim, journal, onPlanningWave, onBuyParcel, civicQol, civicPopulation, placements = [], buildableParcelIds = [], civicCosts, civicFeeByParcel, onBuildOnParcel, bundles, onClose }) => {
+export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels, playerLevel, playerMoney, day, buildingCount, onReclaim, journal, onPlanningWave, onBuyParcel, civicQol, civicPopulation, placements = [], buildableParcelIds = [], civicCosts, civicFeeByParcel, onBuildOnParcel, bundles, milestoneLines, snapshots, scoreboard, onClose }) => {
   const [tab, setTab] = useState<'land' | 'civic'>('land');
   const [civicSub, setCivicSub] = useState<'stats' | 'bundles'>('stats');
   const tier = cityTierFrom(world.openedWaves, buildingCount);
@@ -111,6 +118,24 @@ export const CityModal: React.FC<Props> = ({ world, ownedParcelIds, builtParcels
       })}
     </ul>
     </>}
+    {scoreboard && scoreboard.buildings.length > 0 && <details style={{ marginTop: 10 }} data-city-scoreboard>
+      <summary>Thành tích</summary>
+      {scoreboard.people.length > 1 && <><p style={{ margin: '6px 0 0', fontSize: 12 }}><strong>Theo người phụ trách</strong></p><Scoreboard rows={scoreboard.people}/></>}
+      <p style={{ margin: '6px 0 0', fontSize: 12 }}><strong>Theo tòa</strong></p>
+      <Scoreboard rows={scoreboard.buildings}/>
+    </details>}
+    {snapshots && snapshots.length > 0 && <details style={{ marginTop: 10 }} data-city-snapshots>
+      <summary>Ảnh thành phố qua các cấp ({snapshots.length})</summary>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))', gap: 6, marginTop: 6 }}>
+        {snapshots.map((shot, i) => <figure key={i} style={{ margin: 0, fontSize: 12 }}><img src={shot.dataUrl} alt={`Bản đồ khi lên cấp ${shot.level}`} style={{ width: '100%', imageRendering: 'pixelated' }}/><figcaption>Cấp {shot.level} · ngày {shot.day}</figcaption></figure>)}
+      </div>
+    </details>}
+    {milestoneLines && <details style={{ marginTop: 10 }} data-city-milestones>
+      <summary>Mốc thành phố ({milestoneLines.length})</summary>
+      {milestoneLines.length === 0 ? <p className="muted">Chưa có mốc nào.</p> : <ul style={{ listStyle: 'none', padding: 0, margin: '6px 0 0', display: 'grid', gap: 4, fontSize: 12 }}>
+        {milestoneLines.map((line, i) => <li key={i}>{line}</li>)}
+      </ul>}
+    </details>}
     {journal && <details style={{ marginTop: 10 }} data-city-journal>
       <summary>Nhật ký thành phố ({journal.length})</summary>
       {journal.length === 0 ? <p className="muted">Chưa có hoạt động đất nào.</p> : <ul style={{ listStyle: 'none', padding: 0, margin: '6px 0 0', display: 'grid', gap: 4, fontSize: 12 }}>

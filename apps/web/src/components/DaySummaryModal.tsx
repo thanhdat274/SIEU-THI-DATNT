@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
 import type { DailyRecord } from '@game/shared';
-import { buildDaySummary, buildDayChannelBreakdown, type MorningBrief } from '@game/core';
+import { buildDaySummary, buildDayChannelBreakdown, isReviewComplaint, REVIEW_RESPONSE_MAX_AGE_DAYS, type MorningBrief } from '@game/core';
 import { PRODUCT_MAP } from '@game/data';
 import { money, PixelDialog, PixelStat, PixelButton } from './pixel';
+import { Scoreboard, type ScoreRow } from './Scoreboard';
 
 export interface Props {
   record: DailyRecord;
   morningBrief?: MorningBrief | null;
+  /** Thành tích trong ngày theo người phụ trách (co-op, có từ 2 nhóm trở lên). */
+  scoreRows?: readonly ScoreRow[];
+  /** Phản hồi một lời chê nổi bật trong bản tin sáng (OpenSpec `written-customer-reviews` 4.5). */
+  onRespondReview?: (reviewId: string) => void;
+  /** Ngày hiện tại để tính giới hạn tuổi lời chê có thể phản hồi (OpenSpec `written-customer-reviews` 2c). */
+  today?: number;
   onClose: () => void;
 }
 
-export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose }) => {
+export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, scoreRows, onRespondReview, today, onClose }) => {
   const [tab, setTab] = useState<'summary' | 'morning'>('summary');
   const summary = buildDaySummary(record);
   const channels = buildDayChannelBreakdown(record);
@@ -80,6 +87,11 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
             </div>
           </div>
 
+          {scoreRows && scoreRows.length > 1 && <details style={{ marginTop: 8 }}>
+            <summary>Thành tích theo người phụ trách</summary>
+            <Scoreboard rows={scoreRows}/>
+          </details>}
+
           <p className="muted day-summary-foot" style={{ margin: '10px 0 0', fontSize: 11 }}>
             {summary.bestSellingProductId
               ? `Món bán chạy nhất: ${PRODUCT_MAP[summary.bestSellingProductId]?.name ?? summary.bestSellingProductId}. `
@@ -131,6 +143,37 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, onClose
               ))}
             </ul>
           </div>
+
+          {morningBrief.standoutReviews && morningBrief.standoutReviews.length > 0 && (
+            <div className="pixel-panel" style={{ padding: 12 }} data-morning-standout-reviews>
+              <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--color-wood-light)' }}>LỜI KHÁCH NỔI BẬT HÔM QUA</h4>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {morningBrief.standoutReviews.map((r) => {
+                  const complaint = isReviewComplaint(r);
+                  const expired = complaint && today !== undefined && today - r.day > REVIEW_RESPONSE_MAX_AGE_DAYS;
+                  return (
+                    <div key={r.id} className="pixel-panel" style={{ padding: 8, display: 'grid', gap: 4 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                        <strong>{r.author}</strong>
+                        <span style={{ color: r.stars >= 4 ? 'var(--color-green-dark)' : r.stars === 3 ? 'var(--color-wheat-dark)' : 'var(--color-brick)' }}>{'★'.repeat(r.stars)}{'☆'.repeat(5 - r.stars)}</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: 11 }}>“{r.text}”</p>
+                      {r.productId && PRODUCT_MAP[r.productId] && <span className="muted" style={{ fontSize: 10 }}>Món: {PRODUCT_MAP[r.productId].name}</span>}
+                      {complaint && onRespondReview && (
+                        <div>
+                          {expired ? (
+                            <span className="muted" style={{ fontSize: 11 }} title="Lời chê đã quá 3 ngày, không phản hồi được nữa.">🔒 Lời chê đã quá 3 ngày, không phản hồi được nữa.</span>
+                          ) : (
+                            <PixelButton aria-label="Phản hồi lời chê" variant="teal" onClick={() => onRespondReview(r.id)} style={{ fontSize: 11, padding: '4px 10px' }}>Phản hồi lời chê</PixelButton>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {morningBrief.civicOpenings && morningBrief.civicOpenings.length > 0 && (
             <div className="pixel-panel" style={{ padding: 12 }} data-morning-civic-openings>

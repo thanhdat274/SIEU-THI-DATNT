@@ -57,7 +57,7 @@ export const DRINK_TRAFFIC_SHARE = 0.05;
  * (cách cây ở (25,11) một ô, cây ở (19,11) xa cửa). "Bé trước, nâng cấp sau": hai mảnh mở rộng bắc thêm 3 hàng mỗi mảnh.
  */
 export const SNACK_BOUNDS: BuildingBounds = DEFAULT_GEOMETRY.snack.bounds;
-/** Nhịp sinh khách của quán ăn vặt so với trần sinh khách (provisional, chưa mô phỏng cân bằng: 0,03 ≈ 15 khách/ngày). */
+/** Nhịp sinh khách của quán ăn vặt so với trần sinh khách (provisional, chưa cân bằng: 0,03 ≈ 15 khách/ngày). */
 export const SNACK_TRAFFIC_SHARE = 0.03;
 
 /**

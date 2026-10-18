@@ -6,6 +6,7 @@
 import { AWNING_SPANS, MAIN_STORE_BOUNDS, awningShelterBand } from './buildings';
 import { PLAY_REGION } from './world/world-grid';
 import { RECLAMATION_WAVES } from './world/waves';
+import { districtForWave, type DistrictId } from './world/districts';
 import { MAP_HEIGHT, MAP_ORIGIN_Y, MAP_WIDTH } from './map';
 
 const T = 32;
@@ -131,6 +132,11 @@ export function scaledVehicleBudget(tier: number): number {
 
 /** Điểm trước cửa tiệm chính (vỉa hè phía bắc đường chính), nơi NPC ghé mua đồ. */
 export const SHOP_FRONT = { x: ((MAIN_STORE_BOUNDS.left + MAIN_STORE_BOUNDS.right + 1) / 2) * T - 16, y: 12 * T - 6 } as const;
+/**
+ * Chỗ đứng của nhân viên bảo vệ (OpenSpec `xoi-shop-same-land-strip` 5.2): vỉa hè trước tiệm chính, lệch trái cửa 2 ô để không
+ * đứng chắn lối khách. Suy từ biên tiệm chính thay cho tọa độ cứng (4,13) cũ — (4,13) là lòng đường.
+ */
+export const SECURITY_POST = { x: SHOP_FRONT.x - 2 * T, y: 12 * T + 16 } as const;
 
 export const npcRingOf = (x: number, y: number): NpcRing => {
   const d = Math.hypot(x - SHOP_FRONT.x, y - SHOP_FRONT.y);
@@ -398,6 +404,12 @@ export function decorLotsOutsideWaves(openedWaves: readonly string[]): readonly 
   const regions = RECLAMATION_WAVES.filter((w) => openedWaves.includes(w.id)).map((w) => w.region);
   if (regions.length === 0) return NEIGHBORHOOD_LOTS;
   return NEIGHBORHOOD_LOTS.filter((lot) => !regions.some((r) => lot.x <= r.x1 && lot.x + lot.w - 1 >= r.x0 && lot.frontY >= r.y0 && lot.frontY <= r.y1));
+}
+
+/** Khu (`DistrictId`) chứa lô nhà nền: lô nằm trong vùng đợt W1–W4 thuộc khu của đợt đó, còn lại là hẻm dân cư W0. */
+export function lotDistrictId(lot: NeighborhoodLot): DistrictId {
+  const wave = RECLAMATION_WAVES.find((w, i) => i > 0 && lot.x <= w.region.x1 && lot.x + lot.w - 1 >= w.region.x0 && lot.frontY >= w.region.y0 && lot.frontY <= w.region.y1);
+  return wave ? districtForWave(wave.id as 'w1' | 'w2' | 'w3' | 'w4') : 'hem_dan_cu';
 }
 
 /** Id các nhà trang trí bị ẩn (nằm trong vùng đợt đã mở) — dùng cho va chạm/đồ vật trước nhà. */

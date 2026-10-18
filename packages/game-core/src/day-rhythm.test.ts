@@ -53,5 +53,26 @@ export function runDayRhythmTests(): void {
   assert.equal(brief.lowStockItems.length, 1);
   assert.ok(brief.tips.length >= 2, 'Có ít nhất 2 lời khuyên (thời tiết + đơn giao/hàng sắp hết)');
 
+  // Test 3: Bản tin sáng đưa vài lời khách nổi bật (chê mạnh nhất + khen hay nhất) vào standoutReviews.
+  const brief3 = buildMorningBrief({
+    day: 7,
+    season: { name: 'Mùa mưa Sài Gòn' },
+    seasonDaysLeft: 10,
+    weather: { label: 'Nắng', icon: '☀️' },
+    arrivingOrders: [],
+    yesterdayReviews: [
+      { id: 'a', day: 6, hour: 9, minute: 0, stars: 2, author: 'A', text: 'chê 1', reason: 'wait' },
+      { id: 'b', day: 6, hour: 10, minute: 0, stars: 1, author: 'B', text: 'chê 2', reason: 'out_of_stock' },
+      { id: 'c', day: 6, hour: 11, minute: 0, stars: 5, author: 'C', text: 'khen', productId: 'mi_hao_hao' },
+      { id: 'd', day: 6, hour: 12, minute: 0, stars: 4, author: 'D', text: 'khen 2' },
+    ],
+  });
+  assert.ok(brief3.standoutReviews, 'Có mục lời nổi bật');
+  assert.ok(brief3.standoutReviews!.length <= 3, 'Tối đa 3 lời nổi bật');
+  assert.ok(brief3.standoutReviews!.some(r => r.id === 'b'), 'Chê mạnh nhất (1 sao) được chọn');
+  assert.ok(brief3.standoutReviews!.some(r => r.id === 'c'), 'Khen 5 sao được chọn');
+  const briefEmpty = buildMorningBrief({ day: 8, season: { name: 'X' }, seasonDaysLeft: 1, weather: { label: 'Mưa', icon: '☔' }, arrivingOrders: [] });
+  assert.equal(briefEmpty.standoutReviews, undefined, 'Không lời hôm qua thì không có mục nổi bật');
+
   console.log('  ✓ Passed: Nhịp ngày — Tổng kết ngày và Bản tin sáng chuẩn xác');
 }

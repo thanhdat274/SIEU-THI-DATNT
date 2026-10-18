@@ -1,5 +1,15 @@
 # Tasks
 
+## CẬP NHẬT 18/10/2026 (đợt "ĐUA VỀ TEST XANH THẬT") — hoàn tất bước 1a/1b/1c/1d
+
+- **1a giá lô 1.200.000 ₫ (chốt):** chạy `snack-balance-sim` CÓ khung giờ + cross-sell → **hoàn vốn ≈ 7,2 ngày** (lãi ròng tăng +165.757 ₫/ngày; khách 218→234). Đã sửa `building-placement.test.ts:38/99`, `coop-commands.test.ts:426` theo giá mới.
+- **1b cross-sell đi bộ (không teleport):** `customers.ts` bỏ `position=entrance`; khách đi bộ qua `routeCustomer('to_shelf')` từ cửa tòa nguồn, chỉ chuyển khi tòa đích MỞ + có kệ còn hàng. Test mô phỏng thật trong `snack-extended.test.ts`: vị trí không nhảy quá 1 ô/tick; tòa đóng/hết hàng → rời bình thường. **CHƯA QA browser.**
+- **1c toast "bảo vệ ca ngày" 1 lần/save:** `simulation.ts` gán `callbacks` sớm (trước đây undefined → toast không hiện) + cờ `hasWarnedGuardNotNight` lưu trong save (schema 14, additive). Test `night-cycle.test.ts`: tải 2 lần chỉ 1 lần toast. **CHƯA QA browser.**
+- **1d golden:** sinh lại `__golden__/world-golden.json`; base không đổi, allBuildings tăng khách/doanh thu do cross-sell (day1 301→309, day2 312→320, day3 292→299; tiền 22.711.900→23.254.400).
+- **Kiểm chứng cuối (18/10/2026):** typecheck EXIT 0; game-core ×3 mỗi lần 112/112 pass 0 fail; web/renderer/server-unit/server-coop đều PASS.
+
+---
+
 Trạng thái 05/10/2026: nhóm 1–3.2 có code; typecheck, `yarn test` game-core, `apps/server test:unit`, `yarn --cwd apps/web build` PASS; đã xem desktop trong Browser pane; các mục còn lại ghi bên dưới.
 
 ## 1. Dữ liệu và lõi
