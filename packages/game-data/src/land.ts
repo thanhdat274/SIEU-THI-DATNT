@@ -21,8 +21,8 @@ export const LAND_PLOTS: LandPlotDefinition[] = [
   { id: XOI_PLOT_ID, name: 'Tiệm xôi', level: 36, cost: 700_000, tiles: [], buildingId: 'xoi' },
   // Quán nước (cấp 46, 1.500.000 ₫ khớp `STORE_TYPES.drink_shop`; chưa cân bằng): tòa nhà riêng ở dải đất phía đông.
   { id: DRINK_PLOT_ID, name: 'Quán nước', level: 46, cost: 1_500_000, tiles: [], buildingId: 'drink' },
-  // Quán ăn vặt (cấp 26, 400.000 ₫; số tạm, chưa cân bằng): tòa nhỏ nhất, chen giữa cánh đông tiệm chính và quán nước.
-  { id: SNACK_PLOT_ID, name: 'Quán ăn vặt', level: 26, cost: 400_000, tiles: [], buildingId: 'snack' },
+  // Quán ăn vặt (cấp 26, 1.200.000₫ — hoàn vốn ~7 ngày theo snack-balance-sim 60 ngày): tòa nhỏ nhất, chen giữa cánh đông tiệm chính và quán nước.
+  { id: SNACK_PLOT_ID, name: 'Quán ăn vặt', level: 26, cost: 1_200_000, tiles: [], buildingId: 'snack' },
   // Mở rộng về phía bắc (làm tòa sâu thêm 3 hàng mỗi mảnh). Giá ≈ 1/3 và ≈ 1/2 giá mở tòa, mở khóa sau cấp mở tòa vài cấp; chưa cân bằng.
   { id: 'xoi-north-a', name: 'Mở rộng tiệm xôi (1)', level: 40, cost: 230_000, tiles: [], prerequisitePlotId: XOI_PLOT_ID, expandsBuilding: 'xoi' },
   { id: 'xoi-north-b', name: 'Mở rộng tiệm xôi (2)', level: 43, cost: 350_000, tiles: [], prerequisitePlotId: 'xoi-north-a', expandsBuilding: 'xoi' },

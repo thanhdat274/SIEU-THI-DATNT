@@ -12,6 +12,7 @@ import {
   SupplierOrder,
   CustomerState,
   CustomerReview,
+  ReviewResponse,
   SecurityIncident,
   SecurityState,
   isSalesFixture,
@@ -76,7 +77,8 @@ import {
   SUPPLIERS,
   SUPPLIER_MAP,
   DEFAULT_SUPPLIER_ID,
-  isShiftWithinStoreHours,
+  isKnownShift,
+  BUSINESS_HOURS,
   STALLS,
   STALL_MAP,
   STALL_OPEN_HOUR,
@@ -111,7 +113,7 @@ import type { IntersectionSignals } from './traffic-signal';
 import { StoreLogisticsManager } from './store-logistics';
 import { CollisionSystem } from './collision';
 import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
-import { reviewReputationContribution } from './review-reputation';
+import { reviewReputationContribution, reviewResponseDelta, isReviewComplaint, REVIEW_RESPONSE_DAILY_CAP, REVIEW_RESPONSE_MAX_AGE_DAYS } from './review-reputation';
 import { rainIntensityAt, describeRainForecast, roadWetnessAt, hashSeed } from './weather';
 import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance, CIVIC_POLICE_DETECT_BONUS, CIVIC_POLICE_BURGLARY_REDUCTION } from './security';
 import { assessCounterfeit } from './counterfeit';
@@ -141,6 +143,12 @@ import { availabilityFactor, buildDemandTable, demandContextKey, effectiveTraffi
 import { emptyStallState, normalizeStallState, planStallDay, stallDemand } from './stalls';
 import { emptyQuestState, findClaimableQuest, getDailyQuests, getStoryQuest, markQuestClaimed, normalizeQuestState, type QuestContext, type QuestProgress, type QuestReward } from './quests';
 import { generateCandidatesForDay, validateHireStaff, calculatePayroll, Mulberry32Rng, describeWorkerError } from './staff';
+import {
+  isStaffActiveAt,
+  staffBuildingIdsFrom,
+  staffBuildingOptionsFrom,
+  validateStaffBuilding,
+} from './staff-shifts';
 import {
   createInitialPartyOrderState,
   refreshAvailablePartyOrders,
@@ -179,10 +187,10 @@ import {
   hasPerk,
 } from './skills';
 import { applyBuildingLayout, setAwningOpen, SPECIAL_REQUEST_MAP } from '@game/data';
-import { BUILDINGS, CAFE_SHOP_PRODUCT_IDS, COM_RESTAURANT_DISH_IDS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS, WAREHOUSE_CENTER, buildingTypeOfInstance } from '@game/data';
+import { BUILDINGS, BRANCH_UNITS_PER_CUSTOMER, SECURITY_POST, CAFE_SHOP_PRODUCT_IDS, COM_RESTAURANT_DISH_IDS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS, WAREHOUSE_CENTER, buildingTypeOfInstance, RegularCustomerDefinition } from '@game/data';
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS, RECLAMATION_WAVE_MAP } from '@game/data';
-import { dailySupplyExecution, type InternalDelivery, type SupplyContract, type SupplyStockLot } from './supply-execution';
+import { dailySupplyExecution, INTERNAL_DELIVERY_MIN_TILES, absoluteGameMinute, internalDeliveryMinutes, type InternalDelivery, type SupplyContract, type SupplyStockLot } from './supply-execution';
 import { RestockClaimManager } from './restock-claims';
 import { StorageManager } from './storage';
 import { LedgerManager, computeNetProfit } from './ledger';
@@ -201,7 +209,7 @@ import { civicDefOf, civicFeeForOwnedParcel, rectWidth, rectHeight } from '@game
 import { computePopulationSnapshot, stepAllPopulations, populationCapBonus, populationExtraUnitChance, type DistrictPopulation } from './civic-population';
 import { claimCityGoal as claimCityGoalPure } from './city-goals-sim';
 import { CityProgressState, CityGoalKind } from '@game/shared';
-import { cityGoalById, civicBundleById, CIVIC_BUNDLES, type CivicBundleDef } from '@game/data';
+import { cityGoalById, publicDecorAttraction, civicBundleById, CIVIC_BUNDLES, type CivicBundleDef } from '@game/data';
 import { buildCivicBundleViews, type BundleCardView } from './civic-bundle-view';
 import { isBundleRevealed } from './civic-reveal-goals';
 import { addCivicMilestoneOnce, civicOpeningBriefLines } from './city-journal';
@@ -224,7 +232,7 @@ function normalizeStaffSchedule(
   const staffIds = new Set(staff.map((member) => member.id));
   return Object.fromEntries(
     Object.entries(schedule ?? {}).filter(([staffId, shift]) =>
-      staffIds.has(staffId) && isShiftWithinStoreHours(shift)
+      staffIds.has(staffId) && isKnownShift(shift)
     )
   ) as Record<string, StaffShift>;
 }
@@ -257,6 +265,7 @@ export interface GameSimulationCallbacks {
   onMaintenanceNotice?: (notices: MaintenanceNotice[]) => void;
   onSecurityNotice?: (notice: { text: string; severity: 'info' | 'warn' }) => void;
   onCustomerRated?: (event: { stars: number; average: number; reason?: CustomerFeedbackReason; review?: CustomerReview }) => void;
+  onReviewResponded?: (event: { reviewId: string; delta: number; day: number }) => void;
   onInventorySummary?: (summary: InventorySummary) => void;
   onRoutineStateChanged?: (state: DailyRoutineState, previous: DailyRoutineState) => void;
   onToast?: (message: string, type?: 'info' | 'success' | 'warn') => void;
@@ -332,6 +341,8 @@ export class GameSimulation {
   private restockOptions?: RestockSuggestionOptions;
   private processedAutoBuyDayIds = new Set<number>();
   private autoBuyReports: Record<number, AutoBuyReport> = {};
+  /** Pha đêm lần trước (để phát hiện mốc 22:00 đóng cửa và cho khách còn trong tiệm rời đi). Không lưu save. */
+  private clockWasNight = false;
   private pendingOrders: SupplierOrder[];
   private orderSequence = 0;
   private ledgerManager: LedgerManager;
@@ -388,6 +399,8 @@ export class GameSimulation {
   private processedRentDayIds: Set<number> = new Set();
   /** Ngày đã trừ chi phí xóm (OpenSpec `civic-local-fees`): idempotent, KHÔNG thêm trường save (dựng lại khi nạp). */
   private processedCivicDayIds: Set<number> = new Set();
+  /** Đã thông báo "bảo vệ ca ngày không trực đêm" — ngăn toast lặp khi load save. Không lưu save. */
+  private hasWarnedGuardNotNight = false;
 
   /** Proxy đến staffManager cho staff list (đọc). */
   private get staff(): StaffMember[] { return this.staffManager.getStaffRef(); }
@@ -505,6 +518,8 @@ export class GameSimulation {
     this._civicPopulationByDistrict = initialSave.civic?.populationByDistrict ? { ...initialSave.civic.populationByDistrict } : {};
     this._bundleStates = initialSave.civic?.bundles ? structuredClone(initialSave.civic.bundles) : {};
     this._cityProgress = initialSave.cityProgress ? { ...initialSave.cityProgress } : { level: 1, claimedCityGoalIds: [], milestones: [], metrics: {} };
+    this.supplyContracts = structuredClone(initialSave.supplyContracts ?? []);
+    this.internalDeliveries = structuredClone(initialSave.internalDeliveries ?? []);
     // 1.3 không hồi tố: trang sổ của các cấp đã qua hiện ngay khi tải (không làm mất cấp).
     this._cityProgress.revealedBundleIds = [...new Set([...(this._cityProgress.revealedBundleIds ?? []), ...revealedBundleIdsForLoadedLevel(this._cityProgress.level)])];
     this.inventory = initialSave.inventory.map((i) => ({ ...i }));
@@ -519,6 +534,16 @@ export class GameSimulation {
     this.restockJobClaims = new RestockClaimManager();
     for (const member of this.staff) {
       if (member.workerTask) this.restockJobClaims.addFromWorkerTask(member.workerTask.fixtureId, member.id);
+    }
+    // Toast một lần cho save cũ: guard không phải ca đêm (full_day/morning/afternoon) sẽ không chặn trộm đêm.
+    // Cờ hasWarnedGuardNotNight được LƯU trong save (schema 14 additive, không nâng version) để không toast lặp khi load lại save.
+    this.hasWarnedGuardNotNight = initialSave.hasWarnedGuardNotNight ?? false;
+    if (!this.hasWarnedGuardNotNight) {
+      const hasNonNightGuard = this.staff.some((s) => s.role === 'security' && s.shift !== 'night');
+      if (hasNonNightGuard && this.callbacks.onToast) {
+        this.callbacks.onToast('Bảo vệ ca ngày không trực đêm — hãy chuyển sang ca đêm để chống trộm.', 'warn');
+        this.hasWarnedGuardNotNight = true;
+      }
     }
     this.autoBuyEnabled = initialSave.autoBuyEnabled ?? false;
     this.autoBuyStalls = initialSave.autoBuyStalls ?? false;
@@ -540,7 +565,7 @@ export class GameSimulation {
     this.taxState = normalizeTaxState(initialSave.tax);
     this.chainState = normalizeChain(initialSave.chain);
     this.productionJobSequence = Math.max(initialSave.productionJobSequence ?? 0, ...this.productionManager.getRef().map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
-    this.reviewsManager = new ReviewsManager(initialSave.reviews);
+    this.reviewsManager = new ReviewsManager(initialSave.reviews, initialSave.reviewResponses);
     this.securityManager = new SecurityManager(initialSave.security);
     this.questsManager = new QuestManager(initialSave);
     this.specialRequests = initialSave.specialRequests
@@ -581,7 +606,9 @@ export class GameSimulation {
         this.callbacks.onRoutineStateChanged?.(state, previous);
         this.notifyStateChanged();
       },
-      onSleep: () => this.sleepUntilMorning(),
+      // Routine: nhân vật lên giường lúc 23:30 nhưng KHÔNG chốt ngày ở đây — ngày chỉ chốt lúc 06:00
+      // (OpenSpec `staff-shifts` night-cycle: 23:30 về nhà ngủ, 06:00 mới đen màn/sang ngày mới).
+      onSleep: () => { this.notifyStateChanged(); },
     });
 
     // Co-op routine system (optional, enabled via setCoopMode)
@@ -609,6 +636,14 @@ export class GameSimulation {
     });
     this.ensureSafePlayerPosition();
     this.clock = new GameClock(initialSave.worldTime, (day) => {
+      // Chốt ngày 06:00 ở chế độ sinh hoạt ngày: nhân vật ngủ dậy ở cửa nhà, reset lịch ngày (trước đây làm lúc ngủ 23:30).
+      if (this.routineEnabled) {
+        if (!this.coopMode) {
+          this.playerData.position = { ...this.dailyRoutine.getHomeDoorPosition() };
+          this.prevPlayerPosition = null;
+        }
+        this.dailyRoutine.resetForNewDay();
+      }
       for (const customer of this.customerManager.getCustomers()) {
         if (customer.diningTableId && (customer.stage === 'to_table' || customer.stage === 'eating')) this.diningDirtyTableIds.add(customer.diningTableId);
       }
@@ -672,6 +707,7 @@ export class GameSimulation {
       }
       this.notifyStateChanged();
     }, () => { this.callbacks.onTimeChanged?.(); this.topUpStallShortfalls(); this.settleStallsHourly(); this.emitStallStatus(); });
+    this.clockWasNight = this.clock.isNightPhase();
   }
 
   /** Đặt lại vị trí nhân vật (dùng khi chơi chung: vị trí không theo save dùng chung). */
@@ -746,10 +782,15 @@ export class GameSimulation {
       regularId: customer.regularId,
       regularName: customer.regularName,
     });
-    this.reviewsManager.addReview(review);
     // Lời đánh giá bằng chữ đóng góp vào uy tín (ngoài delta theo sao đã cộng ở trên) — đảo non-goal cũ.
-    this.playerData.reputation = Math.max(0, Math.min(100, this.playerData.reputation + reviewReputationContribution(review)));
-    this.callbacks.onCustomerRated?.({ stars, average: averageRating(this.playerData.ratings), reason, review });
+    const beforeContribution = this.playerData.reputation;
+    const contribution = reviewReputationContribution(review);
+    this.playerData.reputation = Math.max(0, Math.min(100, beforeContribution + contribution));
+    // Ghi mức uy tín THẬT đã bị trừ bởi lời chê (sau clamp 0..100): phản hồi không được hồi phục quá mức thực tế (2a).
+    const reputationLost = contribution < 0 ? beforeContribution - this.playerData.reputation : 0;
+    const finalReview = reputationLost > 0 ? { ...review, reputationLost } : review;
+    this.reviewsManager.addReview(finalReview);
+    this.callbacks.onCustomerRated?.({ stars, average: averageRating(this.playerData.ratings), reason, review: finalReview });
   }
 
   /** Lời đánh giá gần đây của khách, mới nhất ở cuối. */
@@ -759,6 +800,37 @@ export class GameSimulation {
 
   public getReviewSummary(): ReturnType<typeof summarizeReviews> {
     return this.reviewsManager.getReviewSummary();
+  }
+
+  /** Các lượt phản hồi lời chê đã làm (schema 14). */
+  public getReviewResponses(): ReviewResponse[] {
+    return this.reviewsManager.getReviewResponses();
+  }
+
+  /**
+   * Phản hồi một lời chê (OpenSpec `written-customer-reviews` 4.5): hồi phục một phần uy tín đã mất,
+   * mỗi lời chỉ phản hồi một lần, giới hạn `REVIEW_RESPONSE_DAILY_CAP` lời/ngày chống cày.
+   * Chạy xác định nên chơi lẻ = chơi chung (co-op replay qua lệnh `respond_review`).
+   */
+  public respondReview(reviewId: string): { success: boolean; reason?: string } {
+    const review = this.reviewsManager.getReviews().find(r => r.id === reviewId);
+    if (!review) return { success: false, reason: 'Không tìm thấy lời đánh giá này.' };
+    const day = this.clock.getTime().day;
+    if (review.day < day - REVIEW_RESPONSE_MAX_AGE_DAYS) {
+      return { success: false, reason: 'Lời chê này đã quá 3 ngày, không phản hồi được nữa.' };
+    }
+    if (!isReviewComplaint(review)) return { success: false, reason: 'Lời khen không cần phản hồi.' };
+    if (this.reviewsManager.isResponded(reviewId)) return { success: false, reason: 'Lời này đã phản hồi rồi.' };
+    if (this.reviewsManager.responseCountOnDay(day) >= REVIEW_RESPONSE_DAILY_CAP) {
+      return { success: false, reason: `Hôm nay đã phản hồi đủ ${REVIEW_RESPONSE_DAILY_CAP} lời chê. Mai quay lại nhé.` };
+    }
+    // Hồi phục tối đa nửa mức contribution danh nghĩa, nhưng không vượt mức uy tín THẬT đã mất (sau clamp) — 2a.
+    const delta = Math.min(reviewResponseDelta(review), Math.max(0, review.reputationLost ?? 0));
+    // Chỉ cộng uy tín khi có mức hồi phục > 0 (lời chê luôn có, do đã kiểm isReviewComplaint).
+    this.playerData.reputation = Math.max(0, Math.min(100, this.playerData.reputation + delta));
+    this.reviewsManager.addResponse({ reviewId, day, delta });
+    this.callbacks.onReviewResponded?.({ reviewId, delta, day });
+    return { success: true };
   }
 
   public getFixtures(): StoreFixture[] {
@@ -858,7 +930,7 @@ export class GameSimulation {
   public getDecorOwned(): string[] { return [...this.decorOwned]; }
   /** Điểm thu hút từ trang trí và hệ số khách tương ứng. */
   public getDecorAttraction(): { points: number; trafficMultiplier: number } {
-    const points = decorAttraction(this.decorOwned, this.fixtures);
+    const points = decorAttraction(this.decorOwned, this.fixtures, publicDecorAttraction(this._cityProgress.level));
     return { points, trafficMultiplier: decorTrafficMultiplier(points) };
   }
 
@@ -906,6 +978,7 @@ export class GameSimulation {
     if (!wave) return { success: false, reason: 'unknown_wave' };
     this.playerData.money -= wave.cost;
     this.worldOpenState.wavesUnderConstruction = startReclaimWave(common, waveId, this.clock.getTime().day).wavesUnderConstruction;
+    this._cityProgress.milestones = [...(this._cityProgress.milestones ?? []), { day: this.clock.getTime().day, type: 'wave_opened', waveId, by: this.buildActorId }];
     this.notifyStateChanged();
     return { success: true };
   }
@@ -982,7 +1055,8 @@ export class GameSimulation {
     const nextN = existingCount + 1;
     const instanceId = `${buildingTypeId}-${nextN}`;
     // Vị trí phải hợp lệ (đúng hàng mặt tiền, nằm trong lô, không đè tòa khác) trước khi trừ tiền
-    const candidate = { buildingId: instanceId, parcelId, originX, originY, typeId: buildingTypeId, builtBy: this.buildActorId };
+    // D2 (coop-contracts): co-op thì người mở tòa tự thành người phụ trách; chơi một mình không gán.
+    const candidate = { buildingId: instanceId, parcelId, originX, originY, typeId: buildingTypeId, builtBy: this.buildActorId, ...(this.buildActorId !== 'local' ? { managerAccountId: this.buildActorId } : {}) };
     const accessibleParcels = [...this.ownedParcelIds, ...Object.entries(this.parcelTenure).filter(([, t]) => t.kind === 'owned' || t.kind === 'leased').map(([id]) => id)];
     const problem = validatePlacement(candidate, resolvePlacements(this.buildingPlacements, this.unlockedPlotIds), accessibleParcels);
     if (problem) return { success: false, reason: problem.split(':')[0] };
@@ -997,6 +1071,7 @@ export class GameSimulation {
     const applied = this.applyStoreLayout(next);
     if (applied.error) return { success: false, reason: applied.error };
     this.recordCivicOpened(buildingTypeId, parcel.districtId, qolBefore);
+    if (existingCount === 0) this._cityProgress.milestones = [...(this._cityProgress.milestones ?? []), { day: this.clock.getTime().day, type: 'first_type_opened', buildingTypeId, by: this.buildActorId }];
     this.notifyStateChanged();
     return { success: true, instanceId };
   }
@@ -1135,7 +1210,10 @@ export class GameSimulation {
     // Gọi hàm thuần để tính state mới. Hàm thuần đã thêm milestones 'goal_claimed' (level = cấp lúc nhận)
     // và 'level_up' khi lên cấp — KHÔNG push lại ở đây để nhật ký không trùng (1.2).
     const result = claimCityGoalPure(this._cityProgress, goalId, this.clock.getTime().day);
+    const before = this._cityProgress.milestones.length;
     this._cityProgress = result.state;
+    // Ghi người thực hiện cho mốc mới (nhận thưởng / lên cấp) để nhật ký mốc hiện tên ở cả hai máy co-op.
+    this._cityProgress.milestones = this._cityProgress.milestones.map((m, i) => i >= before ? { ...m, by: this.buildActorId } : m);
 
     // 1.3: cộng đủ ba loại thưởng (gold/prestige/xp). Tiền (gold) vào QUỸ CHUNG (quyết định chủ dự án
     // 16/10/2026) — tức `this.playerData.money` (một ví cho cả thế giới). Ghi sổ cái income.
@@ -1799,9 +1877,11 @@ export class GameSimulation {
   public assignDiningCleanup(staffId: string, fixtureId: string): boolean {
     const member = this.staff.find(item => item.id === staffId && item.role === 'refill');
     const state = this.getDiningTableState(fixtureId);
-    if (!member || !this.isStaffOnShift(member) || member.workerTask || member.diningTask || !state.dirty || state.occupied > 0) return false;
-    const position = member.position ?? { ...WAREHOUSE_ENTRANCE };
     const fixture = this.fixtures.find(item => item.id === fixtureId && item.type === 'dining_table');
+    if (!member || !this.isStaffOnShift(member) || member.workerTask || member.diningTask || !state.dirty || state.occupied > 0) return false;
+    // Nhân viên gán tòa chỉ dọn bàn thuộc tòa đó (không gán = mọi tòa như cũ).
+    if (!this.staffCanWorkInBuilding(member, this.buildingOfFixture(fixture))) return false;
+    const position = member.position ?? { ...WAREHOUSE_ENTRANCE };
     const route = fixture ? this.routeToFixture(position, fixture) : undefined;
     if (!route) return false;
     member.position = { ...position };
@@ -2292,14 +2372,28 @@ export class GameSimulation {
     return true;
   }
 
-  /** Đêm sang `day`: có thể có trộm đột nhập (lấy tiền két hoặc hàng trên kệ); bảo vệ trong biên chế thì đuổi được. */
+  /** Đêm sang `day`: có thể có trộm đột nhập (lấy tiền két hoặc hàng trên kệ); bảo vệ ĐANG TRỰC trong đêm mới chặn. */
   private runNightBurglary(day: number, yesterdayRevenue: number): void {
-    const guard = this.staff.find((s) => s.role === 'security');
+    // Trộm xảy ra lúc 02:00 — thuộc ngày N (đêm của ngày N, khi `day` = N+1 đã sang).
+    // `day` tham số là ngày mới (N+1) sau advanceToNextDay(); dùng day - 1 cho burglaryTime.
+    const burglaryTime = { day: day - 1, hour: 2, minute: 0 };
+    // Duyệt TẤT CẢ guard đang trực lúc trộm. Chỉ chặn nếu:
+    // - Guard có shift phù hợp (isStaffActiveAt kiểm hiredOnDay + khung giờ ca)
+    // - assignedBuilding là null (toàn tiệm) hoặc === 'main' (tòa chính).
+    // Guard gán tòa khác → không chặn trộm main.
+    let mainGuard: StaffMember | undefined;
+    for (const member of this.staff) {
+      if (member.role !== 'security') continue;
+      if (!isStaffActiveAt(member, this.staffSchedule, burglaryTime)) continue;
+      if (member.assignedBuilding && member.assignedBuilding !== 'main') continue;
+      mainGuard = member;
+      break; // Có BẤT KỲ guard nào phù hợp là chặn
+    }
     const policeInfo = this.getCivicPoliceInfo('main');
-    const plan = planBurglary(day, this.playerData.level, { camera: this.security.camera, hasGuard: !!guard }, policeInfo.civicPoliceReduction);
+    const plan = planBurglary(day, this.playerData.level, { camera: this.security.camera, hasGuard: !!mainGuard }, policeInfo.civicPoliceReduction);
     if (plan.kind === 'none') return;
     if (plan.kind === 'repelled') {
-      this.recordIncident('burglary_repelled', `Đêm qua có kẻ lạ cạy cửa tiệm, bảo vệ ${guard?.name ?? ''} đã đuổi đi. Không mất gì!`, {}, 'info');
+      this.recordIncident('burglary_repelled', `Đêm qua có kẻ lạ cạy cửa tiệm, bảo vệ ${mainGuard?.name ?? ''} đã đuổi đi. Không mất gì!`, {}, 'info');
       return;
     }
     let value = 0;
@@ -3007,6 +3101,8 @@ export class GameSimulation {
       buildingsOpened: 1
         + BUILDINGS.filter(building => building.plotId && this.unlockedPlotIds.includes(building.plotId)).length
         + (this.buildingPlacements ?? []).filter(p => !['main', 'xoi', 'drink', 'snack'].includes(p.buildingId)).length,
+      // Chi nhánh thật (7.2): tòa tạp hóa chi nhánh trên đất khai hoang + chi nhánh điều hành từ xa.
+      branchesOpened: countBuildingsOfType(this.buildingPlacements, 'grocery_branch') + this.chainState.branches.length,
     };
   }
 
@@ -3127,6 +3223,42 @@ export class GameSimulation {
   /** Nhân viên thật không sao chép, chỉ đọc trong lượt gọi (renderer mỗi khung); cần sửa/giữ lâu thì dùng `getStaff()`. */
   public peekStaff(): readonly Readonly<StaffMember>[] {
     return this.staff;
+  }
+
+  /** Nhân viên đang trong ca tại thời điểm game hiện tại — renderer chỉ vẽ những người này (OpenSpec `staff-shifts`). */
+  public peekVisibleStaff(): readonly Readonly<StaffMember>[] {
+    const time = this.clock.getTime();
+    return this.staff.filter((member) => isStaffActiveAt(member, this.staffSchedule, time));
+  }
+
+  /** Id các tòa đang có để gán nhân viên (đã mua, gồm tòa mở thêm). */
+  public getStaffBuildingIds(): string[] {
+    return staffBuildingIdsFrom(this.buildingPlacements, this.unlockedPlotIds);
+  }
+
+  /** Lựa chọn tòa cho UI nhân viên: `{ id: null }` = toàn tiệm + các tòa đang có. */
+  public getStaffBuildingOptions(): Array<{ id: string | null; label: string }> {
+    return staffBuildingOptionsFrom(this.getStaffBuildingIds());
+  }
+
+  /**
+   * Gán nhân viên vào một tòa (id instance `BuildingPlacement`); `null` = toàn tiệm.
+   * Đổi tòa khi đang làm dở thì dừng việc, trả hàng và nhả claim như hết ca.
+   */
+  public setStaffBuilding(staffId: string, buildingId: string | null): { success: boolean; reason?: string } {
+    const member = this.staff.find((item) => item.id === staffId);
+    if (!member) return { success: false, reason: 'Không tìm thấy nhân viên.' };
+    const validIds = this.getStaffBuildingIds();
+    if (buildingId !== null && !validateStaffBuilding(buildingId, validIds)) {
+      return { success: false, reason: 'Tòa này không có trong tiệm (chưa mua hoặc đã bỏ).' };
+    }
+    const next = buildingId ?? undefined;
+    if (member.assignedBuilding === next) return { success: true };
+    if (member.workerTask) this.finishStaffJob(member, true);
+    member.diningTask = undefined;
+    member.assignedBuilding = next;
+    this.notifyStateChanged();
+    return { success: true };
   }
 
   public getAutoBuyConfig(): { enabled: boolean; stalls: boolean; rules: AutoBuyRule[]; reports: Record<number, AutoBuyReport> } {
@@ -3327,10 +3459,13 @@ export class GameSimulation {
       specialty: candidate.specialty,
       hiredOnDay: this.clock.getTime().day,
       shift: 'full_day',
+      ...(candidate.assignedBuilding && validateStaffBuilding(candidate.assignedBuilding, this.getStaffBuildingIds())
+        ? { assignedBuilding: candidate.assignedBuilding }
+        : {}),
       position: candidate.role === 'cashier'
         ? (this.getCashierPost(candidate.id) ?? { ...WAREHOUSE_ENTRANCE })
         : candidate.role === 'security'
-        ? { x: 4 * 32, y: 13 * 32 }
+        ? { ...SECURITY_POST }
         : { ...WAREHOUSE_ENTRANCE },
     };
     this.staff.push(member);
@@ -3340,7 +3475,7 @@ export class GameSimulation {
 
   public setStaffShift(staffId: string, shift: StaffShift): boolean {
     const member = this.staff.find((item) => item.id === staffId);
-    if (!member || !isShiftWithinStoreHours(shift)) return false;
+    if (!member || !isKnownShift(shift)) return false;
     member.shift = shift;
     this.staffSchedule[staffId] = shift;
     if (member.workerTask && !this.isActorAvailableForRestock(staffId)) this.finishStaffJob(member, true);
@@ -3406,7 +3541,7 @@ export class GameSimulation {
     if (member.workerTask) return { success: false, reason: 'staff_busy' };
 
     // Mỗi nhân viên nhắm một kệ trống khác nhau (kệ người khác đang giữ thì bỏ qua), lệch theo thứ tự nhân viên để không dồn vào cùng kệ.
-    const free = this.getRestockJobTargets().filter((t) => {
+    const free = this.restockTargetsFor(staffId).filter((t) => {
       if (t.availableInInventory <= 0) return false;
       const claim = this.restockJobClaims.get(t.fixtureId);
       return !claim || claim.actorId === staffId || !this.isActorAvailableForRestock(claim.actorId);
@@ -3438,7 +3573,7 @@ export class GameSimulation {
 
   /** Lấy kệ tiếp theo cần châm khi ở chế độ auto-restock. Trả undefined nếu không còn kệ nào. */
   private getNextAutoRestockTarget(actorId: string, currentFixtureId: string, currentProductId: string): RestockJobTarget | undefined {
-    const targets = this.getRestockJobTargets();
+    const targets = this.restockTargetsFor(actorId);
     const currentIdx = targets.findIndex((t) => t.fixtureId === currentFixtureId && t.productId === currentProductId);
     // Bỏ qua kệ đã có nhân viên khác giữ chỗ.
     const free = (t: RestockJobTarget) => {
@@ -3468,16 +3603,20 @@ export class GameSimulation {
   private returnWorkerCargo(member: StaffMember): void {
     const task = member.workerTask;
     if (!task?.carriedLots.length) return;
-    const inventoryItem = this.inventory.find((item) => item.productId === task.productId);
+    this.returnLotsToInventory(task.productId, task.carriedLots);
+    task.carriedLots = [];
+  }
+
+  private returnLotsToInventory(productId: string, lots: StockLot[]): void {
+    const inventoryItem = this.inventory.find((item) => item.productId === productId);
     if (inventoryItem) {
-      inventoryItem.lots ??= normalizeLots(inventoryItem.quantity, undefined, task.productId, this.clock.getTime().day);
-      mergeLots(inventoryItem.lots, task.carriedLots);
+      inventoryItem.lots ??= normalizeLots(inventoryItem.quantity, undefined, productId, this.clock.getTime().day);
+      mergeLots(inventoryItem.lots, lots);
       inventoryItem.quantity = sumLots(inventoryItem.lots);
     } else {
-      const lots = task.carriedLots.map((lot) => ({ ...lot }));
-      this.inventory.push({ productId: task.productId, lots, quantity: sumLots(lots) });
+      const copy = lots.map((lot) => ({ ...lot }));
+      this.inventory.push({ productId, lots: copy, quantity: sumLots(copy) });
     }
-    task.carriedLots = [];
   }
 
   private finishStaffJob(member: StaffMember, returnCargo: boolean): void {
@@ -3492,12 +3631,20 @@ export class GameSimulation {
   public assignNextCashierCustomer(staffId: string): boolean {
     const member = this.staff.find((candidate) => candidate.id === staffId && candidate.role === 'cashier');
     if (!member || !this.isStaffOnShift(member)) return false;
-    const customer = this.customerManager.getCustomers().find((candidate) => candidate.stage === 'checkout' && !candidate.cashierStaffId && candidate.checkoutId);
+    const customer = this.customerManager.getCustomers().find((candidate) =>
+      candidate.stage === 'checkout' && !candidate.cashierStaffId && candidate.checkoutId && this.staffCanServeCheckout(member, candidate));
     if (!customer?.checkoutId) return false;
     member.currentCheckoutId = customer.checkoutId;
     this.customerManager.assignCashier(customer.checkoutId, staffId);
     member.checkoutServiceRemaining = Math.max(0.6, 2.4 - member.accuracy * 0.15) * (staffSpecialtyInfo(member)?.checkoutTimeFactor ?? 1) * (1 - getSkillModifier(this.skills, 'cashier_speed')) * (1 - getSkillModifier(this.skills, 'staff_speed'));
     return true;
+  }
+
+  /** Thu ngân có được phục vụ khách đang chờ ở quầy này không (theo tòa được gán). Khách cũ thiếu quầy = quầy tiệm chính. */
+  private staffCanServeCheckout(member: StaffMember, customer: { cashierFixtureId?: string }): boolean {
+    if (!member.assignedBuilding) return true;
+    const counter = customer.cashierFixtureId ? this.fixtures.find((fixture) => fixture.id === customer.cashierFixtureId) : undefined;
+    return this.staffCanWorkInBuilding(member, counter ? this.buildingOfFixture(counter) : 'main');
   }
 
   /** Câu trạng thái hiển thị khi nhân viên đứng chờ ở kho vì tòa được gán đang thi công (L3-C6). */
@@ -3506,6 +3653,25 @@ export class GameSimulation {
   /** Tòa theo vị trí đặt của một nội thất; undefined khi nội thất không nằm trong tòa nào (vd. kho sau tiệm). */
   private buildingOfFixture(fixture: StoreFixture | undefined): string | undefined {
     return fixture ? fixtureBuilding(fixture, this.tileMap.buildings) : undefined;
+  }
+
+  /** Nhân viên có được làm việc ở tòa này không: không gán = mọi tòa (OpenSpec `staff-shifts`). */
+  private staffCanWorkInBuilding(member: StaffMember, buildingId: string | undefined): boolean {
+    return !member.assignedBuilding || member.assignedBuilding === buildingId;
+  }
+
+  /** Nhân viên có được làm việc với nội thất này không (theo tòa của nội thất). */
+  private staffCanWorkFixture(member: StaffMember, fixtureId: string): boolean {
+    const fixture = this.fixtures.find((item) => item.id === fixtureId);
+    return this.staffCanWorkInBuilding(member, this.buildingOfFixture(fixture));
+  }
+
+  /** Danh sách việc châm kệ mà nhân viên được nhận, lọc theo tòa được gán (không gán = giữ nguyên như cũ). */
+  private restockTargetsFor(actorId: string): RestockJobTarget[] {
+    const targets = this.getRestockJobTargets();
+    const member = this.staff.find((item) => item.id === actorId);
+    if (!member?.assignedBuilding) return targets;
+    return targets.filter((target) => this.staffCanWorkFixture(member, target.fixtureId));
   }
 
   /**
@@ -3613,7 +3779,7 @@ export class GameSimulation {
       // Revalidate: nếu auto-restock thì tìm kệ tiếp theo, nếu không thì validate kệ cụ thể
       if (task.autoRestock && task.stage === 'to_warehouse') {
         // Ưu tiên kệ đang nhắm (nếu còn thiếu hàng và chưa ai khác giữ), không thì lấy kệ kế tiếp.
-        const current = this.getRestockJobTargets().find((t) => t.fixtureId === task.fixtureId && t.productId === task.productId && t.availableInInventory > 0);
+        const current = this.restockTargetsFor(member.id).find((t) => t.fixtureId === task.fixtureId && t.productId === task.productId && t.availableInInventory > 0);
         const nextTarget = current ?? this.getNextAutoRestockTarget(member.id, task.fixtureId, task.productId);
         if (!nextTarget || !this.claimAutoRestockTarget(member, nextTarget)) {
           member.lastWorkerError = 'Đã châm hết kệ cần thiết.';
@@ -3662,27 +3828,36 @@ export class GameSimulation {
         source.quantity = sumLots(source.lots);
         this.inventory = this.inventory.filter((item) => item.quantity > 0);
         const shelf = this.fixtures.find((item) => item.id === task.fixtureId);
+        // D6 / 4.1: kệ ở tòa cách kho > 30 ô → chuyến giao nội bộ: hàng rời kho ngay, "đang chuyển" (không bán được, vẫn
+        // tính hạn dùng theo lô FEFO đã lấy), tới kệ sau thời gian theo quãng đường. Nhân viên xong việc ngay (không đi bộ).
+        const distFromWarehouse = shelf ? Math.hypot(shelf.tileX - WAREHOUSE_CENTER.x / 32, shelf.tileY - WAREHOUSE_CENTER.y / 32) : 0; // WAREHOUSE_CENTER tính bằng px
+        if (shelf && distFromWarehouse > INTERNAL_DELIVERY_MIN_TILES) {
+          const now = this.clock.getTime();
+          this.internalDeliveries.push({
+            id: `delivery-${now.day}-${now.hour * 60 + now.minute}-${task.fixtureId}-${this.internalDeliveries.length}`,
+            fromBuildingId: 'main',
+            toBuildingId: fixtureBuilding(shelf, this.tileMap.buildings) ?? 'branch',
+            productId: task.productId,
+            lines: task.carriedLots.map((l, i) => ({ lotId: `lot-${i}`, qty: l.quantity })),
+            totalQty: sumLots(task.carriedLots),
+            fromDay: now.day,
+            day: now.day,
+            toFixtureId: shelf.id,
+            lots: task.carriedLots.map(l => ({ ...l })),
+            arriveAtMinute: absoluteGameMinute(now) + internalDeliveryMinutes(distFromWarehouse),
+          });
+          task.carriedLots = [];
+          member.lastWorkerError = undefined;
+          this.finishStaffJob(member, true);
+          this.notifyStateChanged();
+          continue;
+        }
         const route = shelf ? this.routeToFixture(member.position, shelf) : undefined;
         if (!route) {
           member.lastWorkerError = 'Không tìm thấy đường đến kệ.';
           this.returnWorkerCargo(member);
           this.finishStaffJob(member, false);
           continue;
-        }
-        // D6: Kệ ở tòa cách kho > 30 ô tạo chuyến giao nội bộ internal_delivery
-        const distFromWarehouse = shelf ? Math.hypot(shelf.tileX - WAREHOUSE_CENTER.x, shelf.tileY - WAREHOUSE_CENTER.y) : 0;
-        if (distFromWarehouse > 30) {
-          const buildingId = fixtureBuilding(shelf!, this.tileMap.buildings) ?? 'branch';
-          this.internalDeliveries.push({
-            id: `delivery-${Date.now()}-${task.fixtureId}`,
-            fromBuildingId: 'main',
-            toBuildingId: buildingId,
-            productId: task.productId,
-            lines: task.carriedLots.map((l, i) => ({ lotId: `lot-${i}`, qty: l.quantity })),
-            totalQty: sumLots(task.carriedLots),
-            fromDay: this.clock.getTime().day,
-            day: this.clock.getTime().day,
-          });
         }
         task.stage = 'to_shelf';
         task.route = route;
@@ -3804,13 +3979,27 @@ export class GameSimulation {
 
   private securityPatrol = new Map<string, { step: number; route: Vector2D[]; wait: number }>();
 
-  /** Bảo vệ trong ca đi tuần: ra đường trước tiệm, vào cửa, đi sâu vào trong tiệm rồi quay ra. */
-  private updateSecurityPatrol(dt: number): void {
+  /** Điểm tuần tra theo tòa được gán: tiệm chính giữ lộ trình cũ, tòa khác đi trước cửa → cửa → trong nhà → cửa. */
+  private securityPatrolStops(member: StaffMember): GridPoint[] {
     // Tiệm chính cố định ở vị trí mặc định (`main_fixed` trong `placementsProblem`) nên tra tĩnh là đúng.
     const door = BUILDING_MAP.main.entranceTile;
-    const stops: GridPoint[] = [{ x: 4, y: 13 }, { x: door.x, y: door.y }, { x: door.x - 2, y: door.y - 3 }, { x: door.x, y: door.y }];
+    if (!member.assignedBuilding || member.assignedBuilding === 'main') {
+      return [{ x: 4, y: 13 }, { x: door.x, y: door.y }, { x: door.x - 2, y: door.y - 3 }, { x: door.x, y: door.y }];
+    }
+    const placement = resolvePlacements(this.buildingPlacements, this.unlockedPlotIds).find((item) => item.buildingId === member.assignedBuilding);
+    if (!placement) return [{ x: door.x, y: door.y }];
+    const geometry = placementGeometry(placement);
+    const entrance = geometry.entranceTile;
+    const interior = { x: entrance.x, y: Math.max(geometry.bounds.top + 1, entrance.y - 3) };
+    const street = { x: entrance.x, y: entrance.y + 1 };
+    return [street, entrance, interior, entrance];
+  }
+
+  /** Bảo vệ trong ca đi tuần: ra đường trước tiệm, vào cửa, đi sâu vào trong tiệm rồi quay ra. */
+  private updateSecurityPatrol(dt: number): void {
     for (const member of this.staff) {
       if (member.role !== 'security' || member.workerTask || member.diningTask || !this.isStaffOnShift(member)) continue;
+      const stops = this.securityPatrolStops(member);
       let patrol = this.securityPatrol.get(member.id);
       if (!patrol) { patrol = { step: 0, route: [], wait: 0 }; this.securityPatrol.set(member.id, patrol); }
       if (patrol.wait > 0) { patrol.wait -= dt; continue; }
@@ -3836,11 +4025,7 @@ export class GameSimulation {
   }
 
   private isStaffOnShift(member: StaffMember): boolean {
-    if (member.hiredOnDay > this.clock.getTime().day) return false;
-    const shift = this.staffSchedule[member.id] ?? member.shift;
-    const config = STAFF_SHIFTS[shift];
-    const { hour } = this.clock.getTime();
-    return !!config && hour >= config.startHour && hour < config.endHour;
+    return isStaffActiveAt(member, this.staffSchedule, this.clock.getTime());
   }
 
   /** Quầy tự thanh toán: mỗi máy tự tính tiền một khách (có giỏ, chưa có thu ngân phụ trách, không phải kẻ trộm) sau mỗi chu kỳ. */
@@ -3884,9 +4069,10 @@ export class GameSimulation {
     }
   }
 
-  /** Quầy có người đứng: không tính quầy tự thanh toán; quầy gốc đứng trước. */
-  private getStaffedCounters(): StoreFixture[] {
-    return this.fixtures.filter((fixture) => fixture.type === 'cashier_counter' && !fixture.parentId && fixture.shopId !== 'self_checkout');
+  /** Quầy có người đứng: không tính quầy tự thanh toán; quầy gốc đứng trước. Có `member` thì chỉ quầy thuộc tòa được gán. */
+  private getStaffedCounters(member?: StaffMember): StoreFixture[] {
+    return this.fixtures.filter((fixture) => fixture.type === 'cashier_counter' && !fixture.parentId && fixture.shopId !== 'self_checkout'
+      && (!member?.assignedBuilding || this.staffCanWorkInBuilding(member, this.buildingOfFixture(fixture))));
   }
 
   /** Số người đứng tối đa ở mỗi quầy thu ngân. */
@@ -3910,7 +4096,8 @@ export class GameSimulation {
 
   /** Chủ tiệm (người mặc định) chiếm chỗ 0 của quầy đầu; thu ngân thuê lần lượt lấp các chỗ tiếp theo. */
   private getCashierPost(staffId?: string): Vector2D | undefined {
-    const counters = this.getStaffedCounters();
+    const member = staffId ? this.staff.find((item) => item.id === staffId) : undefined;
+    const counters = this.getStaffedCounters(member);
     if (!counters.length) return undefined;
     const cashiers = this.staff.filter((member) => member.role === 'cashier');
     const found = cashiers.findIndex((member) => member.id === staffId);
@@ -4122,6 +4309,10 @@ export class GameSimulation {
       const { revenue, cogs, wages, spoilageLoss, unitsSold } = result.report;
       this.playerData.money += result.moneyDelta;
       this.statistics.totalRevenue += revenue;
+      // Khách tổng chuỗi (7.3): ước tính từ số món bán, cộng vào thống kê + bản ghi ngày mà goals/nhiệm vụ tuần đọc.
+      const estimatedCustomers = Math.ceil(unitsSold / BRANCH_UNITS_PER_CUSTOMER);
+      this.statistics.totalCustomersServed += estimatedCustomers;
+      record.customersServed += estimatedCustomers;
       record.revenue += revenue;
       record.cogs += cogs;
       record.itemsSold += unitsSold;
@@ -5152,6 +5343,19 @@ export class GameSimulation {
     this.notifyStateChanged();
   }
 
+  /**
+   * "Ngủ/Qua đêm" thủ công (nút Ngủ ở HUD, OpenSpec `staff-shifts` night-cycle): chốt ngày và — nếu đang bật lịch sinh hoạt
+   * ngày — đưa nhân vật về cửa nhà + reset lịch như đường ngủ tự động 23:30, thay vì để nhân vật đứng lại trong tiệm.
+   */
+  public sleepNow(): void {
+    if (this.routineEnabled) {
+      this.sleepUntilMorning();
+      return;
+    }
+    this.clock.advanceToNextDay();
+    this.notifyStateChanged();
+  }
+
   // ========================
   // CO-OP ROUTINE HELPERS
   // ========================
@@ -5279,6 +5483,22 @@ export class GameSimulation {
   }
 
   /**
+   * 22:00 (OpenSpec `staff-shifts` night-cycle): bắt đầu pha đêm, khách còn trong tiệm trả giỏ và rời đi như lúc chốt ngày
+   * để ban đêm không có bán hàng. Chế độ sinh hoạt ngày giữ nhánh CLOSING_STORE/kiểm kê riêng của routine.
+   */
+  private handleNightPhaseStart(): void {
+    const nightNow = this.clock.isNightPhase();
+    if (nightNow === this.clockWasNight) return;
+    this.clockWasNight = nightNow;
+    if (!nightNow || this.clock.isRoutineMode()) return;
+    this.customerManager.abandonAllBaskets(this.tileMap, this.fixtures, this.inventory, (cnt) => {
+      this.statistics.totalSpoiled = (this.statistics.totalSpoiled ?? 0) + cnt;
+    }, this.clock.getTime().day, 1 + getSkillModifier(this.skills, 'shelf_capacity_bonus'));
+    this.callbacks.onToast?.('🌙 22:00 — đóng cửa, bắt đầu ban đêm. Nhân viên ca đêm trực tiệm tới 06:00.', 'info');
+    this.notifyStateChanged();
+  }
+
+  /**
    * Fixed update step
    */
   public update(dt: number): void {
@@ -5287,7 +5507,9 @@ export class GameSimulation {
     if (this.isPaused) { this.prevPlayerPosition = null; return; }
     // 1. Advance game clock
     this.clock.update(dt);
+    this.handleNightPhaseStart();
     this.finishConstruction();
+    this.tickInternalDeliveries();
     this.tickSpecialRequests();
     
     // 1.5. Daily Routine (chỉ khi bật): một máy trạng thái theo phút game; autopilot trả vector di chuyển, không teleport.
@@ -5302,19 +5524,16 @@ export class GameSimulation {
       ? { move: coopTick.moves[localId], controlLocked: coopTick.controlLocked[localId], speedMultiplier: coopTick.speedMultipliers[localId], gear: coopTick.gears[localId] }
       : null;
     const driveTick = coopDrive ?? routineTick;
-    if (coopTick?.allPlayersSleeping && !this.clock.getTime().isStoreOpen && !localId) {
-      // Cả hai player đã ngủ → chuyển ngày
-      this.clock.advanceToNextDay();
-      this.resetCoopForNewDay();
-      this.callbacks.onDayChanged?.(this.clock.getTime().day);
-    }
+    // Co-op: cả hai ngủ lúc 23:30 KHÔNG chốt ngày ngay; đồng hồ chạy tới 06:00 mới chốt (OpenSpec night-cycle).
     
     // Khách và nhân viên chạy theo thời gian game: 2× đồng hồ thì họ cũng hoạt động nhanh gấp đôi (người chơi vẫn đi bộ bình thường).
     const worldDt = dt * Math.max(0.25, (this.clock.getTime().timeScale || 90) / 60);
+    // Ban đêm (22:00–06:00) không bán hàng kể cả khi cờ mở cửa bị đặt bằng tay (test/harness): khách không sinh, quầy đóng.
+    const storeOpenForTrade = this.clock.getTime().isStoreOpen && !this.clock.isNightPhase();
       this.customerManager.outdoorSpeedMultiplier = rainSpeedMultiplier(this.getRainIntensity());
       this.customerManager.update(
       worldDt,
-      this.clock.getTime().isStoreOpen,
+      storeOpenForTrade,
       this.clock.getTime().day,
       this.tileMap,
       this.fixtures,
@@ -5370,12 +5589,14 @@ export class GameSimulation {
       inStock: shelf.currentStock > 0 && !shelf.broken,
     })));
     const inStoreRegularIds = this.customerManager.peekCustomers().map(c => c.regularId).filter((id): id is string => Boolean(id));
-    const regularCandidate = pickAvailableRegular(this.clock.getTime().day, this.market.seed, inStoreRegularIds, this.regulars);
+    const regularPick = pickAvailableRegular(this.clock.getTime().day, this.market.seed, inStoreRegularIds, this.regulars, this.clock.getTime().hour);
+    const regularCandidate: RegularCustomerDefinition | null = regularPick?.regular ?? null;
+    const regularPreferredBuilding = regularPick?.preferredBuilding ?? null;
     // Khi server authoritative (online/co-op), client KHÔNG tự sinh khách để tránh trùng/lệch so với server.
     if (!this.serverAuthoritative) {
       const spawned = this.customerManager.maybeSpawnCustomer(
         worldDt,
-        this.clock.getTime().isStoreOpen,
+        storeOpenForTrade,
         this.fixtures,
         this.tileMap,
         this.clock.getTime().day,
@@ -5389,7 +5610,8 @@ export class GameSimulation {
         this.getRainIntensity(),
         this.hasSecurityGuardOnShift(),
         { hour: this.clock.getTime().hour, weekday: weekdayOf(this.clock.getTime().day) },
-        this.buildingParcelTrafficMultiplier()
+        this.buildingParcelTrafficMultiplier(),
+        regularPreferredBuilding
       );
       if (spawned && (spawned.arrivalMode === 'motorbike' || spawned.arrivalMode === 'car')) this.collectParkingFee(spawned);
       if (spawned?.id && rollShoplifter(this.clock.getTime().day, spawned.id, this.playerData.level, !!spawned.regularId)) spawned.thief = true;
@@ -6077,7 +6299,7 @@ export class GameSimulation {
       const prod = PRODUCT_MAP[fix.assignedProductId];
       if (!prod) continue;
       const effectiveCap = effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
-      const needed = Math.max(0, effectiveCap - fix.currentStock);
+      const needed = Math.max(0, effectiveCap - fix.currentStock - this.inTransitTo(fix.id));
       if (needed <= 0) continue;
       const available = this.shelvableUnits(fix.assignedProductId);
       targets.push({ fixtureId: fix.id, productId: fix.assignedProductId, currentStock: fix.currentStock, maxCapacity: effectiveCap, needed, availableInInventory: available });
@@ -6085,7 +6307,7 @@ export class GameSimulation {
     // Kệ trống chưa gán món và không có trong sơ đồ: nhân viên tự chọn món mới từ kho (cùng luật với "bày tất cả"), chia đều món cho các kệ.
     const taken = new Set<string>();
     for (const fix of this.fixtures) {
-      if (!isSalesFixture(fix) || fix.broken || fix.assignedProductId || fix.currentStock > 0 || this.planogram[fix.id] || !usable(fix)) continue;
+      if (!isSalesFixture(fix) || fix.broken || fix.assignedProductId || fix.currentStock > 0 || this.inTransitTo(fix.id) > 0 || this.planogram[fix.id] || !usable(fix)) continue;
       const candidate = this.autoFillCandidates(fix, taken).find((inv) => {
         const prod = PRODUCT_MAP[inv.productId];
         if (!prod || prod.unlockLevel > this.playerData.level || this.shelvableUnits(inv.productId) <= 0) return false;
@@ -6106,19 +6328,17 @@ export class GameSimulation {
   private isActorAvailableForRestock(actorId: string): boolean {
     if (actorId === 'player') return true;
     const member = this.staff.find((item) => item.id === actorId && item.role === 'refill');
-    if (!member || member.diningTask || member.hiredOnDay > this.clock.getTime().day) return false;
-    const shift = this.staffSchedule[actorId] ?? member.shift;
-    const config = STAFF_SHIFTS[shift];
-    const { hour } = this.clock.getTime();
-    return !!config && hour >= config.startHour && hour < config.endHour;
+    if (!member || member.diningTask) return false;
+    return isStaffActiveAt(member, this.staffSchedule, this.clock.getTime());
   }
 
   public claimRestockJob(actorId: string, fixtureId: string): { claimed: boolean; reason?: string; target?: RestockJobTarget } {
     if (!this.isActorAvailableForRestock(actorId)) return { claimed: false, reason: 'actor_unavailable' };
-    const target = this.getRestockJobTargets().find((item) => item.fixtureId === fixtureId);
+    const targets = this.restockTargetsFor(actorId);
+    const target = targets.find((item) => item.fixtureId === fixtureId);
     if (!target || target.availableInInventory <= 0) return { claimed: false, reason: 'target_invalid' };
     const current = this.restockJobClaims.get(fixtureId);
-    if (current && (!this.isActorAvailableForRestock(current.actorId) || !this.getRestockJobTargets().some((item) => item.fixtureId === fixtureId))) {
+    if (current && (!this.isActorAvailableForRestock(current.actorId) || !targets.some((item) => item.fixtureId === fixtureId))) {
       this.restockJobClaims.delete(fixtureId);
     }
     const activeClaim = this.restockJobClaims.get(fixtureId);
@@ -6134,7 +6354,7 @@ export class GameSimulation {
       this.restockJobClaims.delete(fixtureId);
       return { valid: false, reason: 'actor_unavailable' };
     }
-    const target = this.getRestockJobTargets().find((item) => item.fixtureId === fixtureId);
+    const target = this.restockTargetsFor(actorId).find((item) => item.fixtureId === fixtureId);
     const carryingJob = this.staff.some((member) =>
       member.id === actorId && member.workerTask?.fixtureId === fixtureId && sumLots(member.workerTask.carriedLots) > 0
     );
@@ -6283,17 +6503,72 @@ export class GameSimulation {
       }));
     }
     const res = dailySupplyExecution(this.supplyContracts, stockMap, day);
-    if (res.deliveries.length > 0) {
-      this.internalDeliveries.push(...res.deliveries);
-      for (const d of res.deliveries) {
-        const inv = this.inventory.find(i => i.productId === d.productId);
-        if (inv && inv.lots) {
-          takeLots(inv.lots, d.totalQty);
-          inv.quantity = sumLots(inv.lots);
+    if (!res.deliveries.length) return;
+    const now = absoluteGameMinute(this.clock.getTime());
+    for (const d of res.deliveries) {
+      const inv = this.inventory.find(i => i.productId === d.productId);
+      if (!inv?.lots) continue;
+      // Lô FEFO thật rời kho chung, đang chuyển tới tòa nhận theo quãng đường (OpenSpec `open-world-building-types` 4.1).
+      const lots = takeLots(inv.lots, d.totalQty);
+      inv.quantity = sumLots(inv.lots);
+      const qty = sumLots(lots);
+      if (qty <= 0) continue;
+      this.internalDeliveries.push({ ...d, totalQty: qty, lots, arriveAtMinute: now + internalDeliveryMinutes(this.buildingDistanceTiles(d.fromBuildingId, d.toBuildingId)) });
+      // Sổ `internal_transfer`: giá nội bộ là thành tích (doanh thu tòa giao / giá vốn tòa nhận), KHÔNG đổi quỹ (D1-A).
+      const contract = this.supplyContracts.find(c => c.fromBuildingId === d.fromBuildingId && c.toBuildingId === d.toBuildingId && c.productId === d.productId && c.status === 'active');
+      const amount = (contract?.internalPrice ?? 0) * qty;
+      this.recordLedger({ day, type: 'internal_transfer', amount, quantity: qty, productId: d.productId, description: `Chuyển nội bộ ${qty} ${PRODUCT_MAP[d.productId]?.name ?? d.productId}: ${d.fromBuildingId} → ${d.toBuildingId}`, buildingInstanceId: d.fromBuildingId, toBuildingInstanceId: d.toBuildingId });
+    }
+    this.inventory = this.inventory.filter(i => i.quantity > 0);
+  }
+
+  /** Khoảng cách (ô) giữa tâm hai tòa trên bản đồ; không tìm thấy tòa thì 0. */
+  private buildingDistanceTiles(fromId: string, toId: string): number {
+    const center = (id: string) => {
+      const b = this.tileMap.buildings?.find(item => item.id === id)?.bounds;
+      return b ? { x: (b.left + b.right) / 2, y: (b.top + b.bottom) / 2 } : undefined;
+    };
+    const a = center(fromId), b = center(toId);
+    return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+  }
+
+  /** Số hàng đang chuyển tới kệ (chưa bán được) — trừ khỏi phần kệ còn thiếu để không châm trùng. */
+  private inTransitTo(fixtureId: string): number {
+    let total = 0;
+    for (const d of this.internalDeliveries) if (d.toFixtureId === fixtureId && d.arriveAtMinute !== undefined) total += d.totalQty;
+    return total;
+  }
+
+  /** Chuyến châm kệ xa tới nơi: gộp lô lên kệ (đến trần sức chứa), phần dư trả về kho chung. */
+  private tickInternalDeliveries(): void {
+    const now = absoluteGameMinute(this.clock.getTime());
+    const arrived = this.internalDeliveries.filter(d => d.arriveAtMinute !== undefined && d.arriveAtMinute <= now);
+    if (!arrived.length) return;
+    this.internalDeliveries = this.internalDeliveries.filter(d => !arrived.includes(d));
+    for (const d of arrived) {
+      const lots = (d.lots ?? []).map(l => ({ ...l }));
+      const product = PRODUCT_MAP[d.productId];
+      // Chuyến châm kệ có kệ đích; chuyến theo hợp đồng thì châm các kệ cùng món (hoặc kệ trống) của tòa nhận.
+      const shelves = d.toFixtureId
+        ? this.fixtures.filter(f => f.id === d.toFixtureId)
+        : this.fixtures.filter(f => isSalesFixture(f) && (fixtureBuilding(f, this.tileMap.buildings) ?? 'main') === d.toBuildingId && (f.assignedProductId === d.productId || (!f.assignedProductId && f.currentStock <= 0 && !this.planogram[f.id])));
+      for (const shelf of shelves) {
+        if (sumLots(lots) <= 0) break;
+        if (product && isSalesFixture(shelf) && (shelf.currentStock <= 0 || shelf.assignedProductId === d.productId)) {
+          const capacity = effectiveShelfCapacity(shelf.maxCapacity, product.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
+          const moved = Math.min(Math.max(0, capacity - shelf.currentStock), sumLots(lots));
+          if (moved > 0) {
+            if (!shelf.assignedProductId && !this.planogram[shelf.id]) this.planogram[shelf.id] = d.productId;
+            shelf.assignedProductId = d.productId;
+            shelf.stockLots ??= [];
+            mergeLots(shelf.stockLots, takeLots(lots, moved));
+            shelf.currentStock = sumLots(shelf.stockLots);
+          }
         }
       }
-      this.inventory = this.inventory.filter(i => i.quantity > 0);
+      if (sumLots(lots) > 0) this.returnLotsToInventory(d.productId, lots);
     }
+    this.notifyStateChanged();
   }
 
   public getInternalDeliveries(): InternalDelivery[] {
@@ -6377,11 +6652,24 @@ export class GameSimulation {
 
   /** Đặt trạng thái mở/đóng cửa; trả true nếu trạng thái hiện tại khớp `open` sau khi gọi. */
   public setStoreOpen(open: boolean): boolean {
-    if (this.routineEnabled && open && (this.dailyRoutine.isControlLocked() || this.clock.getTime().hour >= 22)) {
-      return false;
-    }
+    // Ban đêm/ngoài giờ bán không mở được (OpenSpec `staff-shifts` night-cycle).
+    if (open && !this.canOpenStoreNow()) return false;
+    if (this.routineEnabled && open && this.dailyRoutine.isControlLocked()) return false;
     if (this.clock.getTime().isStoreOpen !== open) this.clock.toggleStoreStatus();
     return this.clock.getTime().isStoreOpen === open;
+  }
+
+  /** Có được mở cửa lúc này không: chỉ trong giờ bán (routine 08:00–22:00, thường 07:00–22:00), không ban đêm. */
+  public canOpenStoreNow(): boolean {
+    const time = this.clock.getTime();
+    if (this.clock.isNightPhase(time)) return false;
+    const openHour = this.routineEnabled ? 8 : BUSINESS_HOURS.openHour;
+    return time.hour >= openHour && time.hour < BUSINESS_HOURS.closeHour;
+  }
+
+  /** Đang là pha đêm 22:00–06:00 không (UI/HUD). */
+  public isNightNow(): boolean {
+    return this.clock.isNightPhase();
   }
 
   /** Châm kệ từ kho: áp sơ đồ bày hàng, rồi kệ có gán sản phẩm nhưng chưa nằm trong sơ đồ. Trả tổng số món đã châm. */
@@ -6754,6 +7042,8 @@ export class GameSimulation {
       priceHistory: structuredClone(this.priceHistory),
       heatmap: structuredClone(this.heatmap),
       reviews: this.reviewsManager.exportReviews(),
+      reviewResponses: this.reviewsManager.getReviewResponses(),
+      hasWarnedGuardNotNight: this.hasWarnedGuardNotNight,
       security: { ...this.security, incidents: this.security.incidents.map(i => ({ ...i })), policeCases: this.security.policeCases.map(c => ({ ...c })) },
       partyOrders: structuredClone(this.partyOrders),
       specialRequests: structuredClone(this.specialRequests),
@@ -6767,6 +7057,8 @@ export class GameSimulation {
         if (!Object.keys(this._civicPopulationByDistrict).length && !hasBundles) return undefined;
         return { populationByDistrict: { ...this._civicPopulationByDistrict }, ...(hasBundles ? { bundles: structuredClone(bundles) } : {}) };
       })(),
+      supplyContracts: structuredClone(this.supplyContracts),
+      internalDeliveries: structuredClone(this.internalDeliveries),
       cityProgress: { level: this._cityProgress.level, claimedCityGoalIds: [...this._cityProgress.claimedCityGoalIds], milestones: structuredClone(this._cityProgress.milestones), metrics: { ...this._cityProgress.metrics }, revealedBundleIds: [...(this._cityProgress.revealedBundleIds ?? [])] },
     };
   }
@@ -6800,6 +7092,8 @@ export class GameSimulation {
     this._civicPopulationByDistrict = saveData.civic?.populationByDistrict ? { ...saveData.civic.populationByDistrict } : {};
     this._bundleStates = saveData.civic?.bundles ? structuredClone(saveData.civic.bundles) : {};
     this._cityProgress = saveData.cityProgress ? { ...saveData.cityProgress, metrics: { ...(saveData.cityProgress.metrics ?? {}) } } : { level: 1, claimedCityGoalIds: [], milestones: [], metrics: {} };
+    this.supplyContracts = structuredClone(saveData.supplyContracts ?? []);
+    this.internalDeliveries = structuredClone(saveData.internalDeliveries ?? []);
     // 1.3 không hồi tố: trang sổ của cấp đã qua hiện ngay khi tải.
     this._cityProgress.revealedBundleIds = [...new Set([...(this._cityProgress.revealedBundleIds ?? []), ...revealedBundleIdsForLoadedLevel(this._cityProgress.level)])];
     this.collisionSystem?.setOpenedWaves(this.worldOpenState.openedWaves);
@@ -6842,7 +7136,7 @@ export class GameSimulation {
     this.taxState = normalizeTaxState(saveData.tax);
     this.chainState = normalizeChain(saveData.chain);
     this.productionJobSequence = Math.max(saveData.productionJobSequence ?? 0, ...this.productionManager.getRef().map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
-    this.reviewsManager.importReviews(saveData.reviews);
+    this.reviewsManager.importReviews(saveData.reviews, saveData.reviewResponses);
     this.securityManager.load({ security: saveData.security });
     this.skills = saveData.skills ? structuredClone(saveData.skills) : createInitialSkillState();
     this.ledger = (saveData.ledger ?? []).map((e) => ({ ...e }));

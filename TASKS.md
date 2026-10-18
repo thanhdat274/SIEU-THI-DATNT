@@ -1,3 +1,35 @@
+## HỆ NHÂN VIÊN THEO CA (staff-shifts) — CẢ 2 PHASE XONG 17/10/2026 (chưa commit, chưa QA mắt)
+
+- [x] **Phase A (ca + gán tòa, không đụng clock) đã code + test xanh**: 4 ca (sáng 07–14, chiều 14–22, đêm 22–06 vắt nửa đêm hệ số 0,6, cả ngày 07–22), lương theo ca, chỉ vẽ/làm việc trong ca (`peekVisibleStaff`), gán nhân viên vào tòa `BuildingPlacement` + lọc việc theo tòa (châm hàng/thu ngân/bảo vệ/dọn bàn), lệnh co-op `assign_staff_building` (server replay + validate), migration save 12→13, UI `StaffModal` (ca/tòa/lương/trạng thái + cảnh báo ca đêm chưa giảm trộm).
+- [x] **Phase B đã code + test xanh**: pha đêm 22:00–06:00 (đóng cửa, đồng hồ chạy, không sinh khách/không bán), quy ước 00:00–06:00 thuộc ngày N, chốt ngày 06:00 (chế độ thường), tốc độ đêm ×3 một nguồn trong `GameClock` (parity client↔`WorldRuntime`, gồm routine/coop), chặn mở cửa ngoài giờ, HUD ban đêm + nút Ngủ; sửa `daily-routine.test.ts` + sinh lại golden world; test mới `night-cycle.test.ts`.
+- [x] **QA mắt desktop PASS (17/10/2026 tối, 1280×800, Browser pane + dev 5173)**: HUD ban đêm/khoá cửa/nút Ngủ; StaffModal 4 ca + chọn tòa + lương theo ca + trạng thái trực + cảnh báo ca đêm; chỉ vẽ nhân viên trong ca; Ngủ sang ngày mới. Phát hiện+sửa P2: thêm `GameSimulation.sleepNow()` để nút Ngủ ở routine mode đưa nhân vật về cửa nhà như ngủ 23:30. QA lại luồng routine đêm sau chốt: 23:30 ngủ **không** đen màn/không chốt ngày, 05:50 mới mờ đen, 06:00 chốt ngày + thức dậy ở nhà, nút Ngủ ẩn khi đang ngủ.
+- [ ] **QA mắt mobile 375×812/667×375 CHƯA LÀM** (browser tool không đổi viewport) + playtest cân bằng (chủ dự án chốt giữ lương đêm 0,6 và tốc độ ×3 ngày 17/10/2026).
+- [x] **Chặn trộm đêm theo ca + tòa (theft-and-security 4.4a, 17/10/2026 tối):** `runNightBurglary` dùng `isStaffActiveAt` + `burglaryTime` (02:00 ngày N); guard `night` chặn trộm, guard `full_day`/`morning`/`afternoon` không chặn; guard `assignedBuilding=null` hoặc `'main'` chặn trộm `main`, tòa khác không. Test: guard night/day/none. Typecheck + game-core ×3 (112/112 pass) + server unit/coop EXIT 0. Xóa cảnh báo "chưa giảm trộm" StaffModal.
+- Bằng chứng cuối (chạy thật 17/10/2026): `yarn typecheck` EXIT 0; `game-core test` EXIT 0 **112/112 pass, 0 fail, 3 lần liên tiếp**; `game-renderer test` EXIT 0; `apps/web test` EXIT 0; `apps/server test:unit` EXIT 0; `test:coop` **EXIT 0** (Mongo, có ca đổi ca đêm + gán tòa qua HTTP). Golden world sinh lại bằng `world-golden-gen.ts` (gameplay đổi được duyệt). Sửa 1 dòng ngoài phạm vi `apps/server/src/coop-commands.test.ts:209` (typing của phiên khác) để typecheck xanh — xem `tổng hợp.md`.
+- **Giới hạn**: game thật (local/co-op) đang bật routine nên pha đêm chỉ 22:00–23:30; muốn chơi tới 06:00 phải tắt routine mặc định hoặc đổi lịch routine (change khác). Lương đêm 0,6 / tốc độ ×3 chưa playtest.
+- Là nền cho `theft-and-security` 4.4 (bảo vệ đêm) và `snack-shop-building` 3.5 (nhân viên riêng quán ăn vặt); change này **không** làm hai tính năng đích, **không** sửa `open-world-districts-city-goals`, **chưa commit**.
+
+## QUÁN ĂN VẶT MỞ RỘNG (17/10/2026, UPDATE 3)
+
+- [x] **(a) Khách chuyền tòa:** `CROSS_SELL_RULES` (main↔snack 15%/10%, main↔xoi 8%/5%), `shouldCrossSell` dùng `hashSeed`+`Mulberry32Rng`. Nối vào `completeCheckout()` → set `pendingCrossSellTo`, `stage='leaving'` (KHÔNG teleport). Trong `update()` tick tiếp theo, kiểm tòa đích mở + còn hàng → chuyển sang.
+- [x] **(b) Bé Na regulars:** `pickAvailableRegular()` trả `RegularPickResult { regular, preferredBuilding }`. Nếu `snackShopVisitHours` khớp giờ hiện tại → `preferredBuilding='snack'`. `maybeSpawnCustomer()` spawn regular ở preferredBuilding. `RegularCustomerDefinition` thêm 3 trường optional (`snackShopProductIds`, `snackShopVisitHours`, `snackShopDialogues`).
+- [x] **(c) Bỏ `snack_staff` role:** dùng `assignedBuilding='snack'` của staff-shifts cho cashier/refill. `generateCandidatesForDay()` không còn 'snack_staff' trong roles. Buildings pool vẫn có 'snack'.
+- [x] **(d) Khung giờ bổ trợ:** `SNACK_SUPPLEMENTARY_HOURS` (14–16h ×1.3, 16–18h ×1.5), `snackSupplementaryMultiplier()` nối vào `maybeSpawnCustomer()` stream factor snack.
+- [x] **Cân bằng:** SNACK_PLOT_ID **1.200.000** (giá mới, hoàn vốn ~11,2 ngày 60 ngày). SNACK_TRAFFIC_SHARE giữ 0,03.
+- [x] **Migration:** không nâng schema (optional fields).
+- [x] **Toast "bảo vệ ca ngày" chỉ 1 lần:** ✅ có cờ `hasWarnedGuardNotNight` trong constructor, chỉ toast 1 lần/save.
+- [x] **Typecheck:** ✅ EXIT 0 (tsc -b).
+- [x] **game-core test ×3:** 102/102 pass, 0 fail. Golden world đã sinh lại.
+- [x] **server test:unit:** 2/2 pass.
+- [x] **server test:coop:** PASS.
+- [x] **apps/web test:** PASS.
+- [x] **snack-balance-sim 12 ngày:** lãi ròng tăng +123.471/ngày → hoàn vốn 9,7 ngày.
+- [x] **snack-balance-sim 60 ngày:** lãi ròng tăng +106.699/ngày → hoàn vốn 11,2 ngày.
+- [ ] **CHƯA QA:** cross-sell, Bé Na snack shop, snack_staff assignment, supplementary hours — cần playtest.
+- [ ] **CHƯA COMMIT.**
+- **Files sửa:** `customers.ts`, `regulars.ts`, `staff.ts` (shared), `staff.ts` (game-core), `snack-shop.test.ts`, `snack-extended.test.ts` (mới), `test-runner.ts`, `simulation.ts`, `land.ts`, `buildings.ts`, `shared/index.ts`.
+
+
 ## GIAI ĐOẠN 4 — Bước 0: District Assignment (16/10/2026, fix review lần 2)
 
 - [x] **Tạo DISTRICT_MODIFIER_RULES** (`game-data/modifiers.ts`): sinh từ `DISTRICTS`, chỉ cho W1-W4 (skip `hem_dan_cu`), source `district`, target preferredCategories. **ALL_MODIFIER_RULES** = `[...MODIFIER_RULES, ...DISTRICT_MODIFIER_RULES]` làm mặc định cho `validateMarketData()` + `collectFactors()`.
@@ -103,6 +135,14 @@
 - [x] **Kiểm chứng:** `yarn typecheck` PASS; harness review-reputation + hồi quy reviews/day-rhythm PASS; hồi quy rộng REGRESSION OK + word-of-mouth PASS; eslint 0 errors; cân bằng drift từ từ (tiệm tốt +3.5, khá −1.6, chậm −8.8 điểm/ngày).
 - [ ] **Chờ máy thật:** Browser QA — khối "Ảnh hưởng uy tín", bản tin sáng, viewport 568–740 px.
 - Change OpenSpec: `openspec/changes/written-reviews-reputation/`. Chi tiết: `tổng hợp.md` đầu file.
+
+## GIAI ĐOẠN 4 — Đánh giá khách 4.5: bản tin + phản hồi lời chê + lọc món (17/10/2026)
+
+- [x] **Lời đánh giá nổi bật vào bản tin sáng + DaySummaryModal:** `buildMorningBrief` thêm `MorningBrief.standoutReviews` (`pickStandoutReviews`: 2 chê mạnh nhất + 1 khen hay nhất); `DaySummaryModal` hiện khối "LỜI KHÁCH NỔI BẬT HÔM QUA".
+- [x] **Phản hồi lời chê (uy tín + giới hạn chống cày):** lệnh `respond_review` (server replay) → `simulation.respondReview` hồi phục nửa uy tín đã mất (`reviewResponseDelta`), mỗi lời một lần, cap `REVIEW_RESPONSE_DAILY_CAP = 3` lời/ngày.
+- [x] **Save (migration 13→14) + replay co-op:** `SaveGameData.reviewResponses` (`ReviewResponse`), `CURRENT_SAVE_SCHEMA_VERSION = 14`, `migrateToW14` (KHÔNG đụng `migrateToW13`); `ReviewsManager` + `simulation` lưu/xuất/nhập; co-op qua `respond_review` server replay.
+- [x] **ReviewsModal lọc theo món + phản hồi:** dropdown món + nút "Phản hồi lời chê" + "✓ Đã phản hồi" + bộ đếm lượt/ngày + dòng uy tín.
+- [x] **Kiểm chứng:** `tsc -b` PASS, web build PASS, `apps/web test` PASS, server `test:unit` PASS; game-core các module reviews/day-rhythm/world-runtime/staff-shifts/migration chạy PASS. **Lỗi có sẵn ngoài phạm vi 4.5** (building-placement giá theo lô, golden allBuildings, coop order_supplier) — không do 4.5 gây ra, không sửa.
 
 ## GIAI ĐOẠN 4 — Mục 1: Sự kiện xóm phố (16/10/2026)
 

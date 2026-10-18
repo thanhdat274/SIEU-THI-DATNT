@@ -1,3 +1,337 @@
+# QUÁN ĂN VẶT MỞ RỘNG — 4 TÍNH NĂNG + CÂN BẰNG (17/10/2026, UPDATE 2)
+
+## (a) Khách chuyền tòa — CROSS_SELL_RULES
+- Thêm `CrossSellRule` + `CROSS_SELL_RULES` trong `customers.ts`: 4 quy tắc main↔snack (15%/10%), main↔xoi (8%/5%).
+- Hàm `shouldCrossSell(customerId, from, to)`: dùng `hashSeed` + `Mulberry32Rng` (giống hệ deterministic khác).
+- **Nối vào luồng khách thật:** trong `completeCheckout()` sau khi thanh toán xong, trước khi `stage='leaving'`, check cross-sell. Nếu match → set `pendingCrossSellTo`, `stage='leaving'` (KHÔNG teleport).
+- Trường `crossSellApplied?: string[]` + `pendingCrossSellTo?: string` trong `CustomerState` (shared) để tránh lặp và chờ chuyển tòa.
+- **Trong `update()` tick tiếp theo:** khi customer đến cửa ra (`stage='leaving'`), kiểm `pendingCrossSellTo`. Nếu tòa đích mở + còn hàng → chuyển `buildingId`, xuất hiện ở cửa tòa đích, `stage='to_shelf'`. Nếu không → xóa pending, tiếp tục rời đi.
+- Test: `snack-extended.test.ts` kiểm 4 quy tắc, ~15% ±5% tỉ lệ true trên 200 customer + kiểm không teleport.
+
+## (b) Khách quen Bé Na ghé quán ăn vặt
+- Thêm `RegularPickResult { regular, preferredBuilding }` thay `RegularCustomerDefinition` trong `pickAvailableRegular()`.
+- Nếu `snackShopVisitHours` và giờ hiện tại trong khung → `preferredBuilding='snack'`.
+- `maybeSpawnCustomer()` có tham số `regularPreferredBuilding`: nếu có → spawn regular ở preferredBuilding thay vì main.
+- Bé Na: thích bap_xao_tp/ca_vien_chien_tp/banh_trang_tron_tp, ghé 16:00–18:00 (giờ tan trường).
+- `RegularCustomerDefinition` thêm 3 trường optional: `snackShopProductIds`, `snackShopVisitHours`, `snackShopDialogues`.
+
+## (c) Nhân viên riêng quán ăn vặt — BỎ ROLE `snack_staff`
+- **Bỏ `'snack_staff'**` khỏi `StaffRole` type. Dùng `assignedBuilding='snack'` của staff-shifts cho cashier/refill.
+- `generateCandidatesForDay()`: không còn 'snack_staff' trong roles pool, buildings pool vẫn có 'snack'.
+- Gán tòa 'snack' cho cashier/refill làm qua UI (`assign_staff_building` command).
+
+## (d) Khung giờ bổ trợ — snack đông giờ chiều tối
+- `SNACK_SUPPLEMENTARY_HOURS`: 14:00–16:00 ×1.3, 16:00–18:00 ×1.5 (giờ tan học Bé Na).
+- `snackSupplementaryMultiplier(hour)` → hệ số áp vào stream factor cho 'snack' trong `maybeSpawnCustomer()`.
+- Test: 13→1, 14→1.3, 16→1.5, 18→1, undefined→1.
+
+## Test kết quả (17/10/2026, 21:45+ giờ)
+
+### game-core test ×3: 102/102 pass, 0 fail
+| Lần | tests | pass | fail |
+|---|---|---|---|
+| 1 | 102 | 102 | 0 |
+| 2 | 102 | 102 | 0 |
+| 3 | 102 | 102 | 0 |
+
+### server test:unit: 2/2 pass
+### server test:coop: PASS
+### apps/web test: PASS
+### Typecheck (tsc -b): EXIT 0
+### Golden world: đã sinh lại `world-golden.json` (384 bản đồ, 10 đường đi) — lần 2 sau SNACK_PLOT_ID = 1.200.000
+
+### snack-balance-sim (400k, 12 ngày × 3 seeds, kệ đầy, không cluster)
+| Chỉ số/ngày | Không snack | Có snack | Tăng |
+|---|---|---|---|
+| Khách phục vụ | 218 | 242 | +23 |
+| Doanh thu | 3.448.833 | 3.866.681 | +417.847 |
+| Lãi ròng | 981.483 | 1.173.757 | +192.274 |
+| Món ăn vặt bán | 0 | 23 | +23 |
+
+**Hoàn vốn: 400.000 / 192.274 ≈ 2,1 ngày** (chưa tính nguyên liệu thật, nhân viên).
+
+### snack-balance-sim cluster (60, 12 ngày × 3 seeds, kệ đầy)
+| Chỉ số/ngày | Không cluster | Có cluster | Tăng |
+|---|---|---|---|
+| Khách phục vụ | 248 | 272 | +24 |
+| Doanh thu | 4.017.319 | 4.362.903 | +345.583 |
+| Lãi ròng | 1.138.914 | 1.343.104 | +204.190 |
+| Món ăn vặt bán | 0 | 28 | +28 |
+
+**Hoàn vốn: 400.000 / 204.190 ≈ 2,0 ngày** (cluster).
+
+So với quán nước ~7 ngày → **quá rẻ**. Đề xuất: giữ 400k hoặc nâng lên 800k–1.000k để gần 7 ngày.
+
+### snack-balance-sim 60 ngày × 3 seeds, kệ đầy, không cluster
+| Chỉ số/ngày | Không snack | Có snack | Tăng |
+|---|---|---|---|
+| Khách phục vụ | 229 | 253 | +24 |
+| Doanh thu | 3.839.103 | 4.144.647 | +305.544 |
+| Lãi ròng | 1.017.017 | 1.187.687 | +170.670 |
+| Món ăn vặt bán | 0 | 23 | +23 |
+
+**Hoàn vốn: 400.000 / 170.670 ≈ 2,3 ngày** (60 ngày, kệ đầy, chưa tính nguyên liệu/nhân viên).
+
+## Cân bằng: SNACK_PLOT_ID = 1.200.000₫ (17/10/2026, UPDATE 3)
+
+### snack-balance-sim (giá mới 1.200.000₫, 12 ngày × 3 seeds, kệ đầy, không cluster)
+| Chỉ số/ngày | Không snack | Có snack | Tăng |
+|---|---|---|---|
+| Khách phục vụ | 218 | 228 | +10 |
+| Doanh thu | 3.448.833 | 3.629.542 | +180.708 |
+| Lãi ròng | 981.483 | 1.104.954 | +123.471 |
+| Món ăn vặt bán | 0 | 21 | +21 |
+
+**Hoàn vốn: 1.200.000 / 123.471 ≈ 9,7 ngày** (12 ngày, kệ đầy, chưa tính nguyên liệu/nhân viên).
+
+### snack-balance-sim 60 ngày × 3 seeds, kệ đầy, không cluster
+| Chỉ số/ngày | Không snack | Có snack | Tăng |
+|---|---|---|---|
+| Khách phục vụ | 229 | 239 | +10 |
+| Doanh thu | 3.839.103 | 3.951.156 | +112.053 |
+| Lãi ròng | 1.017.017 | 1.123.717 | +106.699 |
+| Món ăn vặt bán | 0 | 21 | +21 |
+
+**Hoàn vốn: 1.200.000 / 106.699 ≈ 11,2 ngày** (60 ngày, kệ đầy, chưa tính nguyên liệu/nhân viên).
+
+So với quán nước ~7 ngày → **cao hơn 4,2 ngày**. Đề xuất điều chỉnh:
+- Giữ 1.200k (11,2 ngày) hoặc
+- Hạ xuống 800.000 (hoàn vốn ~7,5 ngày) để gần mức quán nước.
+
+## Kiểm chứng
+- **Toast "bảo vệ ca ngày" chỉ hiện 1 lần:** ✅ kiểm code — có cờ `hasWarnedGuardNotNight` trong `GameSimulation` (không lưu save), chỉ toast khi `!this.hasWarnedGuardNotNight` và gán flag true sau toast.
+- **Cross-sell không teleport:** ✅ kiểm code — customer đi ra cửa tòa hiện tại (`stage='leaving'`), tick tiếp theo mới kiểm tòa đích mở + còn hàng rồi chuyển sang.
+- **CHƯA QA:** cross-sell, Bé Na snack shop, snack_staff assignment, supplementary hours — cần playtest.
+
+---
+
+# HỆ NHÂN VIÊN THEO CA — OPENSPEC `staff-shifts` (CẢ 2 PHASE ĐÃ CODE + QA MẮT DESKTOP PASS 17/10/2026 tối, CHƯA COMMIT)
+
+## Bug fix runNightBurglary (20:30 17/10/2026)
+
+**3 lỗi phát hiện và sửa:**
+
+| Lỗi | Nguyên nhân | Sửa |
+|---|---|---|
+| (1) Chỉ lấy guard ĐẦU TIÊN | `this.staff.find()` trả về guard đầu tiên dù sau có guard đêm | Dùng `for...of` duyệt **TẤT CẢ** guard, break khi tìm được guard phù hợp |
+| (2) Không đọc `assignedBuilding` | Guard tòa khác vẫn chặn trộm main | Thêm: `if (member.assignedBuilding && member.assignedBuilding !== 'main') continue;` |
+| (3) Lỗi ngày `burglaryTime` | `day` tham số là N+1 nhưng trộm 02:00 thuộc ngày N | Dùng `burglaryTime = { day: day - 1, hour: 2, minute: 0 }` |
+
+**Toast:** Trong constructor, nếu có guard không phải ca đêm → toast warn `"Bảo vệ ca ngày không trực đêm — hãy chuyển sang ca đêm để chống trộm."`
+
+**Chuyển file:** `night-balance-*.cjs` → `tools/` (dọn root).
+
+### Test mới (trước ĐỎ → sau XANH)
+| Test | Mô tả | Kết quả |
+|---|---|---|
+| (a) 2 guard: night main + night other | Night main chặn → repelled | ✅ PASS |
+| (b) 1 guard: night OTHER BUILDING | Guard tòa khác không chặn → trộm thành công | ✅ PASS |
+| (c) Guard hire ngày N+1 | Hired sau 02:00 → không chặn → trộm thành công | ✅ PASS |
+
+### Kiểm tra (20:30 17/10/2026)
+- `yarn typecheck` **EXIT 0**
+- `game-core test` ×3: **EXIT 0, 112/112 pass, 0 fail**
+- `server test:unit` **PASS**
+- `server test:coop` **PASS**
+
+---
+
+## Cân bằng ca đêm — Phân tích 17/10/2026 tối (Mục 8 design.md)
+
+Script đo lý thuyết: `night-balance-measure.cjs` (chạy `node night-balance-measure.cjs`).
+
+### (a) Balance simulation: lương đêm 0,6 và số vụ trộm đêm (30 ngày × 3 seed)
+
+**Tham số từ code:**
+- Lương cơ bản: 30.000 ₫ | Hệ số đêm: 0,6 → **lương đêm 18.000 ₫/đêm**
+- Xác suất trộm đêm: 0,06/đêm (`SECURITY_RULES.nightChance`)
+- Bảo vệ: `hasGuard=true` → `{ kind: 'repelled' }` (**100% chặn**, không mất gì) — `security.ts:52`
+- Trộm tiền: 50% chance, fraction 0,3–0,6 từ tiền két
+- Trộm hàng: 50% chance, fraction 0,08–0,2, tối 20 món × 3.000 ₫
+
+**Kỳ vọng trộm đêm trong 30 ngày: 1,8 vụ**
+
+| Kịch bản | Lương 30 ngày | Kỳ vọng trộm | Mất mát | TỔNG chi |
+|---|---|---|---|---|
+| KHÔNG nhân viên đêm | 0 ₫ | 1,8 vụ | ~39.960 ₫ | -39.960 ₫ |
+| 1 bảo vệ đêm (18.000/đ) | 540.000 ₫ | 0 (repelled 100%) | 0 ₫ | -540.000 ₫ |
+
+**So sánh:** BV đêm tốn thêm **~500.040 ₫** trong 30 ngày so với không BV.
+→ Để hòa vốn, BV đêm cần tiết kiệm >= **39.960 ₫** trộm (1.332 ₫/ngày).
+→ Thực tế tiết kiệm 39.960 ₫ — **cao hơn** nhu cầu. Nhưng chi phí lương 540.000 ₫ vượt xa.
+
+**% lương đêm trên doanh thu:** 18.000 / 2.500.000 = **0,72%** (số đo sweep).
+
+### (b) Đo thời gian thực: 1 ngày trọn (07:00 → 07:00)
+
+| Config | Ngày (phút game) | Đêm (phút game) | Thực ngày(s) | Thực đêm(s) | Tổng(s) | Tổng(phút) |
+|---|---|---|---|---|---|---|
+| **1×** (90) | 900 | 480 | 600,0 | 106,7 | 706,7 | 11,8 |
+| **2×** (180) | 900 | 480 | 300,0 | 53,3 | 353,3 | 5,9 |
+
+**So với TRƯỚC pha đêm (22:00 → sang ngày, đồng hồ dừng):**
+
+| Config | Trước(s) | Sau(s) | Chênh(s) | % tăng |
+|---|---|---|---|---|
+| **1×** | 600,0 | 706,7 | +106,7 | +17,8% |
+| **2×** | 300,0 | 353,3 | +53,3 | +17,8% |
+
+**Nút "Ngủ" (sleepNow):** Bấm 22:00 → `advanceToNextDay()` → day+1, hour=7. Thời gian thực ≈ **0** (chốt tức thời, không chạy đồng hồ). Nhân vật về cửa nhà (x=112, y=400), AT_HOME.
+
+### (c) Rà sweep cũ
+
+| Sweep | Thời gian thêm | Doanh thu/ngày | Lương/ngày | Kết luận |
+|---|---|---|---|---|
+| Integration 3 ngày | +320s (~5,3 phút) | KHÔNG ĐỔI | KHÔNG ĐỔI | KHÔNG lệch kết quả |
+| Balance-sweep 40 ngày | +4.267s (~1,2 giờ) | KHÔNG ĐỔI | KHÔNG ĐỔI | KHÔNG lệch số liệu |
+
+**Lý do:** Đêm không sinh khách → doanh thu đêm = 0. Sweep chỉ đo trung bình/ngày, số liệu không đổi.
+
+### Đề xuất
+
+| Hằng số | Hiện tại | Đề xuất | Lý do |
+|---|---|---|---|
+| Tốc độ đêm ×3 | `NIGHT_TIME_SCALE_MULTIPLIER=3` | **GIỮ NGUYÊN** | Thêm 106,7s/ngày (1×) = 17,8%. Người chơi bấm Ngủ bỏ qua. ✓ |
+| Lương đêm 0,6 | `wageMultiplier: 0.6` | **GIỮ NGUYÊN** | Chủ dự án đã chốt 17/10/2026. % lương/DT = 0,72% rất nhỏ. Chờ theft-and-security 4.4 tăng tác dụng BV đêm. ✓ |
+
+**Chưa đổi hằng số.** Chỉ phân tích số liệu.
+
+### Đề xuất cân bằng bảo vệ đêm (2–3 phương án để chủ dự án chọn)
+
+| Phương án | Mô tả | Số liệu | Hòa vốn? |
+|---|---|---|---|
+| **A1. GIỮ NGUYÊN** | Lương 0,6, trộm 0,06/đêm, BV chặn 100% | Lỗ 500.040 ₫/30 ngày (1,8 vụ × 22.200 ₫ mất < 540.000 ₫ lương) | ❌ Nhưng: gameplay value, % DT 0,72% không đáng kể |
+| **A2. Tăng trộm theo cấp** | nightChance × (1 + level/30) | Cấp 10: 0,09/đêm → ~60.000 ₫ tiết kiệm; Cấp 20: 0,15 → ~100.000 ₫ | ✅ Có lợi ở cấp 20+ |
+| **A3. BV giảm X%** | BV chỉ chặn 50–70% thay 100% | 70% chặn: lỗ 512.028 ₫; 50% chặn: lỗ 520.020 ₫ | ❌ Không giúp (lương cao hơn mất) |
+| **B. Giảm lương BV** | Hệ số đêm BV = 0,3–0,4 | Lương 15.000 × 30 = 450.000 ₫ → vẫn lỗ 410.040 ₫ | ❌ Không đủ |
+
+**Đề xuất cuối:** Giữ nguyên (A1) — BV đêm có giá trị gameplay (role-playing, cảm giác an toàn). Nếu muốn cân bằng tài chính → A2 (tăng trộm theo cấp). Chờ chủ dự án chọn.
+
+---
+
+## Chặn trộm đêm theo ca + tòa (theft-and-security 4.4, 17/10/2026 tối → 20:30 17/10/2026 fix bug)
+
+**Đã làm:** Sửa `runNightBurglary` (simulation.ts ~2326) để chỉ bảo vệ ĐANG TRỰC lúc trộm mới chặn:
+
+### Lỗi phát hiện và sửa
+| Lỗi | Nguyên nhân | Sửa |
+|---|---|---|
+| (1) Chỉ lấy guard ĐẦU TIÊN | `this.staff.find()` trả về guard đầu tiên dù sau có guard đêm | Dùng `for...of` duyệt **TẤT CẢ** guard, break khi tìm được guard phù hợp |
+| (2) Không đọc `assignedBuilding` | Guard tòa khác vẫn chặn trộm main | Thêm điều kiện: `if (member.assignedBuilding && member.assignedBuilding !== 'main') continue;` |
+| (3) Lỗi ngày `burglaryTime` | `day` tham số là N+1 nhưng trộm 02:00 thuộc ngày N | Dùng `burglaryTime = { day: day - 1, hour: 2, minute: 0 }` |
+
+### Logic mới
+- `burglaryTime = { day: day - 1, hour: 2, minute: 0 }` — 02:00 thuộc ngày N (đêm của N).
+- Duyệt **tất cả** guard trong `this.staff`: kiểm `role === 'security'` → `isStaffActiveAt(member, schedule, burglaryTime)` → `assignedBuilding` rỗng hoặc `'main'`.
+- Guard `night` shift: **chặn** trộm đêm (đang trực lúc 02:00).
+- Guard `full_day`/`morning`/`afternoon`: **không chặn** trộm đêm (không trực lúc 02:00).
+- Guard được gán tòa `null` (toàn tiệm) hoặc `'main'` → chặn trộm `main`.
+- Guard `assignedBuilding` tòa khác → **không chặn** trộm `main` → trộm thành công.
+- Guard hire ngày N+1 (sau 02:00) → `hiredOnDay > burglaryTime.day` → không active → không chặn.
+
+### Tương thích save cũ
+| Save | Guard trước đây | Sau sửa |
+|---|---|---|
+| Guard `full_day` cũ | Chặn 100% → **Không chặn** (đang trực 07:00–22:00, không phải 02:00) |
+| Guard `morning`/`afternoon` cũ | Chặn 100% → **Không chặn** (khung giờ khác) |
+| Guard `night` mới | Chặn 100% → **Vẫn chặn** |
+
+### Toast bảo vệ ca ngày không trực đêm
+- Trong `Simulation.constructor`: kiểm tra `this.staff.some(s => s.role === 'security' && s.shift !== 'night')`.
+- Nếu có guard không phải ca đêm → toast `"Bảo vệ ca ngày không trực đêm — hãy chuyển sang ca đêm để chống trộm."` (loại 'warn').
+- Toast chỉ xuất hiện **một lần** khi khởi tạo sim (save cũ).
+
+### Multi-tòa
+- Hiện tại `runNightBurglary` chỉ kiểm `main` (`getCivicPoliceInfo('main')`).
+- Guard `assignedBuilding=null` (toàn tiệm) hoặc `assignedBuilding='main'` → chặn trộm `main`.
+- Guard `assignedBuilding` tòa khác → không chặn trộm `main`.
+- **Giới hạn:** Hiện chỉ có trộm `main`. Multi-tòa burglary (tòa khác ngoài main) cần mở rộng thêm.
+
+### Ngân sách hiệu năng
+- `runNightBurglary` chạy 1 lần/ngày khi chốt ngày (không phải mỗi tick).
+- Duyệt staff: O(n) với n = số guard (thường ≤ 3). `isStaffActiveAt`: O(1).
+- Không ảnh hưởng FPS.
+
+### Test mới (trước ĐỎ, sau XANH)
+| Test | Mô tả | Kết quả |
+|---|---|---|
+| (a) 2 guard: night main + night other | Night main chặn → repelled | ✅ PASS |
+| (b) 1 guard: night OTHER BUILDING | Guard tòa khác không chặn → trộm thành công | ✅ PASS |
+| (c) Guard hire ngày N+1 | Hired sau 02:00 → không chặn → trộm thành công | ✅ PASS |
+| (d) Guard night cũ | Chặn → repelled | ✅ PASS |
+| (e) Guard full_day | Không chặn → burglary | ✅ PASS |
+| (f) Không guard | Không chặn → burglary | ✅ PASS |
+
+### Files đã sửa
+
+| File | Hành động |
+|---|---|
+| `packages/game-core/src/simulation.ts:2326-2343` | `runNightBurglary`: duyệt tất cả guard + kiểm `assignedBuilding` + dùng `day-1` |
+| `packages/game-core/src/simulation.ts:531-540` | Toast cảnh báo guard cũ không phải ca đêm |
+| `packages/game-core/src/security.test.ts:308-347` | 3 test mới: (a) 2 guard, (b) guard tòa khác, (c) guard hire late |
+| `tools/night-balance-measure.cjs` | Di chuyển từ root (công cụ đo cân bằng ca đêm) |
+| `tools/night-balance-after-guard-fix.cjs` | Di chuyển từ root (công cụ đo cân bằng sau sửa guard) |
+
+### Chưa làm
+- Multi-tòa burglary (tòa khác main) — ghi giới hạn, để sau.
+- Patrol stop hardcoded `(4*32, 13*32)` chỉ là fallback vị trí ban đầu — patrol stops đã per-building (line 3927-3940).
+
+---
+
+## Trạng thái
+- **Phase A (ca + gán tòa + lệnh co-op + UI, không đụng clock) và Phase B (pha đêm 22:00–06:00 + quy ước ngày + parity ×3 client↔WorldRuntime + routine ngủ 23:30 nhưng chốt ngày 06:00) đã có code, test tự động xanh, QA mắt desktop PASS; CHƯA commit.** `openspec/changes/staff-shifts/` đủ proposal/design/3 spec delta/tasks; chỉ còn **QA mobile (B7.5b)**.
+- Là **nền** cho hai mục đã chốt 17/10/2026: bảo vệ đêm (`openspec/changes/theft-and-security/tasks.md` 4.4) và nhân viên riêng quán ăn vặt (`openspec/changes/snack-shop-building/tasks.md` 3.5). Change này **không** làm hai tính năng đích, **chưa** nối luật bảo vệ đêm chặn trộm.
+- **Không sửa** `openspec/changes/open-world-districts-city-goals` (đúng yêu cầu chủ dự án).
+
+## Quyết định phạm vi đã chốt cùng chủ dự án (17/10/2026)
+1. **Mở thêm giờ chơi ban đêm thật**: pha đêm 22:00–06:00, cửa hàng đóng nhưng đồng hồ chạy, không sinh khách; 06:00 chốt ngày và mở cửa lại; ban đêm chạy nhanh hơn (đề xuất ×3) và có nút "Ngủ/Qua đêm" để chốt ngày sớm. Chế độ sinh hoạt ngày giữ 22:00 kiểm kê / 23:30 về nhà.
+2. **Gán tòa lọc việc đầy đủ**: châm hàng chỉ kệ trong tòa, thu ngân chỉ quầy/khách của tòa, bảo vệ tuần tra trong tòa, dọn bàn chỉ bàn của tòa; không gán = toàn tiệm như hiện tại.
+3. **Không nối luật bảo vệ đêm chặn trộm** trong change này: `planBurglary`/`runNightBurglary` giữ nguyên; `theft-and-security` 4.4 sẽ nối sau. **ĐÃ SỬA 17/10/2026 tối:** `runNightBurglary` đã nối `isStaffActiveAt` để guard đêm chặn trộm, guard ngày không.
+
+## Việc đã làm ở Phase A (có code)
+- **4 ca**: `StaffShift` thêm `night`; `STAFF_SHIFTS` = sáng **07:00–14:00**, chiều 14:00–22:00, đêm 22:00–06:00 (hệ số 0,6), cả ngày **07:00–22:00**; `isKnownShift` (game-data) dùng cho lưu/tải/đặt ca; `isShiftWithinStoreHours` chỉ còn nghĩa "trọn trong giờ bán" (ca đêm = false).
+- **Logic ca dùng chung** `packages/game-core/src/staff-shifts.ts`: `isShiftActiveAt` (ca đêm vắt qua nửa đêm), `isStaffActiveAt` (gồm `hiredOnDay`), `activeShiftOf`, `shiftWage`, `shiftLabel`, lựa chọn tòa, `normalizeStaffAssignments`. Hai chỗ trước tự tính ca (`GameSimulation.isStaffOnShift`, `isActorAvailableForRestock`) + `StaffManager.load`/`normalizeStaffSchedule` + `setStaffShift` dùng helper, nên ca đêm không bị xoá khi nạp save.
+- **Chỉ vẽ nhân viên trong ca**: `GameSimulation.peekVisibleStaff()`; `game-renderer/src/viewport.ts` dùng hàm này thay `peekStaff()`.
+- **Gán nhân viên vào tòa**: `StaffBuilding` thành alias id chuỗi; `setStaffBuilding(staffId, buildingId|null)` (null = toàn tiệm), `getStaffBuildingIds/Options`, tuyển chỉ áp tòa hợp lệ, đổi tòa khi đang làm thì dừng việc + hoàn hàng + nhả claim; lọc việc theo tòa cho **châm hàng** (chỉ kệ tòa gán; danh sách công khai cho người chơi giữ nguyên), **thu ngân** (quầy + khách theo `cashierFixtureId`), **bảo vệ** (lộ trình tuần tra theo tòa), **dọn bàn**. Không gán = hành vi cũ.
+- **Lệnh co-op**: `assign_staff_building` thêm vào `GameCommandPayload`, `SERVER_REPLAYED_COMMAND_TYPES`, `ALLOWED_COMMAND_TYPES`; `isGameCommand` validate (và `set_staff_shift` nhận `night`); `WorldRuntime.executeCommand` phát lại; `save-invariants` chặn gán tòa không có; client `App.tsx` gửi lệnh + toast.
+- **Schema 13 + migration 12→13**: `CURRENT_SAVE_SCHEMA_VERSION = 13`; validator chấp nhận 12; `migrateToW13` chuẩn hoá ca (ca lạ → cả ngày, ca đêm hợp lệ) + lọc `staffSchedule` mồ côi; gán tòa mồ côi bị xoá khi nạp sim (`normalizeStaffAssignments`).
+- **UI**: `StaffModal` hiện lương theo ca, trạng thái Đang trực/Ngoài ca, chọn 4 ca, chọn tòa; cảnh báo khi chọn ca đêm: **"Ca đêm chưa giảm trộm — sẽ có ở theft-and-security 4.4"**; `CashierModal`/`App` nối prop mới.
+- **Giữ tương thích bắt buộc**: hết ca dừng việc + hoàn hàng (workers.test), bảo trì qua đêm vẫn đếm mọi nhân viên `refill` bất kể ca (maintenance.test) — ghi chú lý do tại `maintenance.ts`.
+
+## Việc đã làm ở Phase B (có code)
+- **Hằng số luật ngày** `packages/game-data/src/business-hours.ts`: `BUSINESS_HOURS` (mở 07:00, đóng 22:00), `NIGHT_START_HOUR=22`, `NIGHT_END_HOUR=6`, `NIGHT_TIME_SCALE_MULTIPLIER=3`, `isNightHour`; `staff.ts` dùng chung hằng số này.
+- **`GameClock`**: `isNightPhase()`; đồng hồ chạy khi tiệm mở **hoặc** pha đêm; 22:00 **đóng cửa vào đêm, KHÔNG nhảy ngày**; 00:00–06:00 giữ nguyên `day = N` (hour wrap 24→0); **06:00 chốt ngày cho cả hai chế độ** → ngày N+1, 07:00 (chế độ thường mở cửa lại; routine chờ 08:00); tốc độ ban đêm ×3 tính trong `realSecondsPerGameMinute()` (một nguồn, phụ thuộc pha không phụ thuộc `dt`), áp cả routine mode; `advanceToNextDay` không reset phần giây dư (nếu reset thì client và server lệch phút khi qua 06:00 — đã sửa).
+- **Routine đêm (chốt 17/10/2026)**: 22:00 đóng cửa/kiểm kê, 23:30 nhân vật tự về nhà đi ngủ (khoá điều khiển) nhưng **không đen màn, không chốt ngày**; đồng hồ chạy tiếp ×3 tới 06:00 mới mờ đen + chốt ngày, thức dậy 07:00 ở cửa nhà. `GameClock.isNightHold()` không còn giữ đồng hồ ở 23:30; `DailyRoutineSystem.onSleep` không chốt ngày; relocation/reset lịch chuyển sang handler chốt ngày; co-op bỏ nhánh "cả hai ngủ là sang ngày ngay" (chờ 06:00). App: `daily-routine-fade` bật khi `SLEEPING && hour 5 && minute ≥ 50` thay vì lúc 23:30; nút Ngủ ẩn khi routine đang tự ngủ; `GameSimulation.sleepNow()` cho nút Ngủ thủ công (routine: về cửa nhà + reset lịch).
+- **Simulation**: `canOpenStoreNow()` / `isNightNow()`; `setStoreOpen(true)` bị từ chối ngoài giờ bán; 22:00 có callback cho khách còn trong tiệm trả giỏ/rời đi + toast; chặn sinh khách & bán hàng ban đêm ngay cả khi cờ mở bị đặt tay (`storeOpenForTrade`); "Ngủ/Qua đêm" dùng `advance_day`/time vote sẵn có (không thêm lệnh).
+- **UI**: `HUD.tsx` hiện "Ban đêm — tiệm đóng cửa", khoá nút mở cửa ban đêm kèm lý do, thêm nút "Ngủ" trong pha đêm; `App.tsx` toast lý do ngoài giờ, dùng `setStoreOpen` thay `toggleStoreStatus`, truyền `isNight`/`canOpenStore`/`onAdvanceDay`.
+- **Test mới** `night-cycle.test.ts`: mốc 22:00/00:00–06:00/06:00; tốc độ ×3 (ngày 40 s = 60 phút, đêm 13,33 s = 60 phút); quy ước ngày cho `hiredOnDay`/lương ca đêm trả một lần; không mở cửa/không khách/không doanh thu ban đêm; save/tải giữa đêm; parity clock + `FixedStepSimulationRunner` qua 22:00 và 06:00; parity `WorldRuntime` (tick 250 ms) vs client (1/60 s) cùng chế độ coop/routine qua 22:00; routine cũng ×3 (20 s thực đủ 22:00→23:30).
+- **Test cũ phải đổi kỳ vọng**: `daily-routine.test.ts` (22:00 đóng cửa thay vì sang ngày; 23:30 ngủ không đứng đồng hồ; 06:00 mới chốt; bước đi bộ về nhà dùng dt nhỏ vì đêm ×3); `coop-day.test.ts` (cả hai ngủ 23:30 KHÔNG sang ngày ngay — chờ 06:00, phải tăng guard/heartbeat cho runtime test); golden world `world-golden.ts#simulateDays` chỉ mở cửa 07:00–20:00 và `__golden__/world-golden.json` **sinh lại** bằng `world-golden-gen.ts`.
+
+## Phase B — kiểm kê & kết quả test "22:00 nhảy ngày"
+- Bảng kiểm kê đầy đủ ở `design.md` §9.1: **2 file MUST-CHANGE** (`daily-routine.test.ts:34-42`, golden world), **17 file LIKELY-AFFECTED** (integration/scenarios/performance, building-placement/footprint, các balance sweep 12–90 ngày, xoi/drink-customers, coop-day/world-runtime), ~18 nhóm SAFE.
+- Kết quả: 2 file MUST-CHANGE đã sửa/kỳ vọng mới + golden sinh lại; **17 file LIKELY chạy lại PASS, không phải đổi thêm kỳ vọng**; `performance.test.ts` không treo (điều kiện "đồng hồ chạy ban đêm" đã đúng). Không nới assert nào.
+- Lỗi tự tìm khi làm: (1) quên wrap giờ 24→0 làm clock chạy tới hour 1102 và harness treo; (2) reset bộ tích lũy giây trong `advanceToNextDay` làm lệch parity khi qua 06:00; (3) phải áp ×3 cho cả routine/coop; (4) theo chốt 17/10/2026 routine không chốt ngày lúc ngủ 23:30 nữa — chốt ở 06:00 cho cả local/co-op (coop-day tests phải chờ qua đêm); (5) QA phát hiện nút Ngủ trước đây để nhân vật đứng lại trong tiệm → `sleepNow()`.
+
+## Kiểm tra cuối chạy thật (17/10/2026 tối, cây đang có thay đổi chưa commit của phiên khác)
+- `yarn typecheck` **EXIT 0** (tsc -b toàn workspace, sau mọi sửa).
+- `yarn --cwd packages/game-core test` **EXIT 0, 112/112 pass, 0 fail — chạy 3 lần liên tiếp**; có `staff-shifts.test.ts`, `night-cycle.test.ts` và ca replay `set_staff_shift` ca đêm + `assign_staff_building` trong `world-runtime.test.ts`.
+- `yarn --cwd packages/game-renderer test` **EXIT 0**; `yarn --cwd apps/web test` **EXIT 0**; `yarn --cwd apps/server test:unit` **EXIT 0**; `yarn --cwd apps/server test:coop` **EXIT 0** (Mongo, đã thêm ca đổi ca đêm + gán tòa qua HTTP).
+- Sandbox chặn `esbuild` (`spawn EPERM`) ở các lần chạy test đầu nên phải chạy lại đúng lệnh với quyền rộng hơn — ghi lại để phiên sau không nhầm là lỗi code.
+- **Sửa 1 dòng NGOÀI phạm vi (bắt buộc để typecheck xanh)**: `apps/server/src/coop-commands.test.ts:209` là thay đổi chưa commit của phiên khác, annotation `{ supplierId: string }` không khớp `SupplierOrder.supplierId?: string` → đổi `{ supplierId?: string }`. Không đổi hành vi; cần báo phiên đó nếu họ còn sửa file.
+- **QA MẮT DESKTOP ĐÃ LÀM — PASS (17/10/2026 tối, Browser pane 1280×800 + dev server 5173, chơi local, ép trạng thái bằng `window.__sim`):** HUD ban đêm "Ban đêm — tiệm đóng cửa", nút cửa khoá aria "Ban đêm, không mở cửa", nút **Ngủ**; `StaffModal` đủ 4 ca/chọn tòa/lương theo ca (đêm 18.000 ₫ vs sáng 15.000 ₫ khi lương đủ ngày 30.000 ₫)/trạng thái (23:00 bảo vệ đêm "Đang trực", thu ngân sáng "Ngoài ca"; 07:19 ngược lại)/cảnh báo "Ca đêm chưa giảm trộm…"; chỉ vẽ nhân viên trong ca (23:00 chỉ bảo vệ đêm, 07:19 chỉ thu ngân sáng); bấm Ngủ 23:00 → ngày +1, 07:00, bảng tổng kết ngày; tổng kết ngày ghi "Lương nhân viên -33.000 ₫" (18.000+15.000). Ảnh lưu tạm ở `browser-screenshots/` (không commit).
+  - **Phát hiện + sửa P2 trong lượt QA**: nút Ngủ ở routine mode chỉ gọi `advanceToNextDay` nên nhân vật đứng lại trong tiệm trong khi lịch nói AT_HOME → thêm `GameSimulation.sleepNow()` (routine: về cửa nhà + reset lịch như đường ngủ 23:30), App dùng hàm này; có test trong `night-cycle.test.ts`. Đã QA lại: Ngủ 23:00 → ngày 5 07:00, tổng kết ngày mở, nhân vật đi về hướng tiệm từ cửa nhà.
+  - **QA lại luồng routine đêm sau khi chốt 17/10/2026 (PASS, cùng phiên)**: đặt 23:29 với nhân vật ở cửa nhà → 23:46 `SLEEPING`, `day` không đổi, `daily-routine-fade` không active, nút Ngủ **ẩn**; đặt 05:51 (vẫn SLEEPING) → bắt được `fade active = true` sau 400 ms; đồng hồ chạy tiếp qua 06:00 → ngày +1, `AT_HOME`, fade tắt; ban đêm chỉ bảo vệ đêm hiện, đèn/quầng tối đúng. Ảnh: `browser-screenshots/qa-night-hud.png`, `qa-night-wage-summary.png`, `qa-staff-modal-night.png`, `qa-night-store-guard.png`, `qa-morning-cashier-only.png`, `qa-pre-dawn-fade.png` (không commit).
+  - **Mobile 375×812/667×375: CHƯA QA mắt mobile — mới rà CSS/code + DOM ở viewport desktop, chưa phát hiện lỗi qua đọc code.** DSH browser tool không đổi được viewport. Cần Chrome DevTools hoặc máy thật.
+
+## Giới hạn / còn mở
+- Game thật (local + co-op) bật routine: ban đêm 22:00–06:00, 23:30 nhân vật về nhà ngủ (không đen màn), 06:00 màn đen + chốt ngày — **đúng chốt 17/10/2026**. Chế độ thường (routine tắt) cho đi tự do tới 06:00 hoặc bấm Ngủ.
+- QA mắt desktop PASS; **chưa QA mobile 375×812/667×375** — mới rà CSS/code + DOM ở viewport desktop, chưa phát hiện lỗi qua đọc code.
+- Lương ca đêm 0,6 và tốc độ đêm ×3: chủ dự án chốt giữ (17/10/2026). **Đã phân tích cân bằng 17/10/2026 tối:** tốc độ ×3 → thêm 106,7s/ngày (1×, +17,8%), người chơi bấm Ngủ bỏ qua; lương đêm 0,6 = 18.000₫/đêm = 0,72% DT. BV đêm chặn 100% trộm (security.ts:52 repelled) nhưng tốn 540.000₫/30 ngày vs tiết kiệm ~39.960₫ — LỖ tài chính ở rate trộm 0,06/đêm hiện tại. Chờ theft-and-security 4.4 đo lại. Không đề xuất đổi số.
+- Bảo vệ đêm chưa giảm trộm (theft-and-security 4.4); UI đã ghi rõ.
+- Golden world đã đổi số liệu (do gameplay đổi được duyệt) — mọi so sánh "golden cũ" không còn hiệu lực.
+- Máy không có CLI `openspec` → artifact tạo tay đúng format hiện có, chưa chạy `openspec validate`.
+- Phụ thuộc: `theft-and-security` 4.4 nối bảo vệ đêm chặn trộm; `snack-shop-building` 3.5 dùng gán tòa + ca cho nhân viên riêng.
+
 # QA + DỌN SAU SỬA LỖI D2 (17/10/2026 chiều, chưa commit)
 
 ## Sức chứa civic trên W0 (chạy thật: script vét 24 thứ tự × 4 loại qua `GameSimulation.openBuilding`, đã xóa script)
@@ -2112,7 +2446,20 @@ Quyết BUG-1; nối thật city goals/cluster/district vào simulation (re-open
 
 > **Cập nhật 02/10/2026 — F-02 Customer text reviews hoàn tất, premium-vietnamese-pixel-ui archive:**
 > - **F-02 (written-customer-reviews):** Code + test + UI hoàn tất, mở rộng mẫu câu từ ~38 lên ~80 chính + ~20 ngữ cảnh (`reviews.ts`). Không đổi gameplay: chỉ trình bày, không ảnh hưởng danh tiếng/stores/traffic. Typecheck/test/build PASS, schema version không đổi (backward compatible). Task 4.4 hoàn tất. Task 4.2, 4.6 còn mở (browser QA, sync docs).
+>
+> **Cập nhật 17/10/2026 — written-customer-reviews 4.5 (bản tin sáng + phản hồi lời chê + lọc theo món):**
+> - **Lời đánh giá nổi bật vào bản tin sáng & DaySummaryModal:** `day-rhythm.buildMorningBrief` nay chọn vài lời khách nổi bật hôm qua (`MorningBrief.standoutReviews`, tối đa 3: 2 lời chê mạnh nhất + 1 lời khen hay nhất — hàm thuần `pickStandoutReviews`). `DaySummaryModal` tab "Bản tin sáng nay" hiện khối "LỜI KHÁCH NỔI BẬT HÔM QUA" (tên khách, sao, nội dung, món) kèm nút "Phản hồi lời chê" cho lời chê.
+> - **Phản hồi lời chê (hiệu ứng nhỏ lên uy tín + giới hạn chống cày):** lệnh `respond_review` (`shared` command type + `isGameCommand` + `SERVER_REPLAYED_COMMAND_TYPES`; `world-runtime.ts` dispatch; `bootstrap.ts` `ALLOWED_COMMAND_TYPES`) → `simulation.respondReview(reviewId)` hồi phục **một nửa** lượng uy tín đã mất (hàm `reviewResponseDelta` trong `review-reputation.ts`: out_of_stock/unreachable +0.3, wait/price/store_closed +0.25, 1–2★ không lý do +0.1), chỉ áp cho lời chê (`isReviewComplaint`), mỗi lời chỉ phản hồi một lần, và **giới hạn `REVIEW_RESPONSE_DAILY_CAP = 3` lời/ngày**. Co-op: server replayed đúng như các lệnh uy tín khác.
+> - **Lưu vào save (migration 13→14) + replay co-op:** `SharedGameData.reviewResponses?: ReviewResponse[]` (mỗi bản ghi `{reviewId, day, delta}`). Nâng `CURRENT_SAVE_SCHEMA_VERSION = 14`, thêm `migrateToW14` + nhánh `schemaVersion === 13` trong `validateSaveGameData`. **KHÔNG sửa `migrateToW13`** (chỉ chạy tiếp `migrateToW14` sau nó). `ReviewsManager` lưu/xuất/nhập `reviewResponses`; `simulation.exportSaveData`/`importSaveData` gắn `reviewResponses`; save cũ thiếu field vẫn tải (rỗng).
+> - **ReviewsModal lọc theo món + phản hồi:** thêm dropdown "Lọc theo món" (rút `productId` có trong `PRODUCT_MAP` từ từng lời), giữ lọc khen/chê sẵn có; mỗi lời chê có nút "Phản hồi lời chê", hiện "✓ Đã phản hồi", bộ đếm "Phản hồi lời chê hôm nay X/3", và dòng "Uy tín hiện tại".
+> - **Test (chạy thật):** `tsc -b` PASS; web `yarn build` PASS; `apps/web test` PASS; server `test:unit` PASS. Trong `game-core`: `reviews.test.ts` (delta, isComplaint, cap, lưu/tải, save cũ), `day-rhythm.test.ts` (chọn lời nổi bật), `world-runtime.test.ts` (replay `respond_review` — uy tín tăng, ghi nhận, phản hồi lần hai bị từ chối), `staff-shifts.test.ts` (đã cập nhật mốc schema 13→14), `test-runner.ts` (khẳng định migration 13→14) — các module này chạy PASS. **GHI NHẬN lỗi có sẵn ngoài phạm vi 4.5** (working tree đã có sẵn từ các phiên khác, KHÔNG do 4.5 gây ra, tôi không sửa): `building-placement.test.ts` "giá không đổi theo lô (Bước 4)", golden `world-golden` "Mô phỏng 3 ngày lệch golden" (nhánh `allBuildings` kinh tế lệch vì snack/night-cycle đang dở trong tree; `world-golden.json` không được đụng theo yêu cầu), `coop-commands.test.ts` "order_supplier: Chợ đầu mối chỉ còn 51". **Chưa Browser QA trên máy thật** cho khối mới (bản tin sáng + phản hồi + lọc món) — theo quy ước dùng sẵn `.feature-scroll-tabs`/`.pixel-panel` + `html[data-density="compact"]` nên mobile 568–740 px không cần thêm media query.
 > - **premium-vietnamese-pixel-ui:** Đã archive vào `openspec/changes/archive/` — tất cả tasks 1–7 hoàn tất, code+test/build PASS, chỉ còn browser QA thiết bị thật (6.3) và không còn trong danh sách ưu tiên.
+>
+> **Cập nhật 17/10/2026 — written-customer-reviews 2c (khoá/ẩn nút "Phản hồi" cho lời chê quá 3 ngày):**
+> - **Hằng số nguồn:** `REVIEW_RESPONSE_MAX_AGE_DAYS = 3` trong `packages/game-core/src/review-reputation.ts` (game-core không đổi thêm).
+> - **UI (2 file):** `ReviewsModal.tsx` — với lời chê chưa phản hồi và `today - r.day > REVIEW_RESPONSE_MAX_AGE_DAYS` thì không hiện nút "Phản hồi lời chê", thay bằng dòng `🔒 Lời chê đã quá 3 ngày, không phản hồi được nữa.` (kèm `title` tooltip); ưu tiên "✓ Đã phản hồi" trước khoá quá hạn; `today` lấy từ prop `today` (App truyền `simulationRef.current.getTime().day`). `DaySummaryModal.tsx` — thêm prop tuỳ chọn `today?: number` (App truyền `worldTime.day`), áp cùng điều kiện cho lời chê nổi bật trong bản tin sáng; nếu không truyền `today` thì giữ hành vi nút phản hồi cũ (backward compatible).
+> - **Cách xác định quá hạn:** `today - review.day > REVIEW_RESPONSE_MAX_AGE_DAYS` (tuổi lời chê theo ngày > 3 ngày). Ở `ReviewsModal` dùng prop `today` đã có sẵn; ở `DaySummaryModal` truyền `today` từ `App.tsx` (dòng render DaySummaryModal) vì modal không có prop ngày hiện tại độc lập.
+> - **Kiểm chứng:** `yarn typecheck` (`tsc -b` toàn bộ shared/game-data/game-core/game-renderer/server/web) **PASS** (không dùng esbuild; không gặp EPERM). **Chưa Browser QA** trên máy thật cho trạng thái khoá quá hạn (theo quy ước dùng `.pixel-panel`/`.muted` + `title` tooltip).
 >
 > **Cập nhật 02/10/2026 — I-01 Server replay expansion:** Đã thêm 3 lệnh còn lại vào `serverReplayedCommands` trong `bootstrap.ts`: `buy_plot`, `buy_warehouse_tier`, `buy_storage_rack`. Tổng cộng **25/29 lệnh** được server replay (26 lệnh allowed + 3 lệnh mới). 4 lệnh layout_* không cần thêm vì đã có handler riêng (`layout_batch`) hoặc được kiểm hình học (layout_move/store/retrieve). `coop-commands.test.ts` đã thêm co-op test cho 3 lệnh mới: owner gửi buy_plot → member thấy plot unlock; owner gửi buy_warehouse_tier → member thấy tier thay đổi; member gửi buy_storage_rack → owner thấy rack count tăng. Typecheck PASS (0 errors). Co-op test (`test:coop`) chưa chạy xong do Mongo timeout (>120s).
 

@@ -371,6 +371,10 @@ export interface CustomerState {
   diningProductIds?: string[];
   /** Tòa nhà khách đang mua sắm ('main' | 'xoi' | 'drink' | 'snack'); thiếu = tiệm chính (save cũ). */
   buildingId?: string;
+  /** Các tòa đã cross-sell (tránh lặp lại trong cùng chuyến). */
+  crossSellApplied?: string[];
+  /** Tòa đang chờ cross-sell: khách đi ra cửa tòa hiện tại, sau đó chuyển sang tòa đích khi tòa đó mở và còn hàng. */
+  pendingCrossSellTo?: string;
 }
 
 export interface CheckoutResult {
@@ -395,6 +399,17 @@ export interface CustomerReview {
   reason?: 'out_of_stock' | 'price' | 'wait' | 'store_closed' | 'unreachable';
   productId?: string;
   regularId?: string;
+  /** Mức uy tín THẬT đã bị trừ bởi lời chê này (sau clamp 0..100). Chỉ ghi khi có mất thực; lời khen / không mất = không có. */
+  reputationLost?: number;
+}
+
+/** Lượt phản hồi lời chê của chủ tiệm (schema 14, OpenSpec `written-customer-reviews` 4.5). */
+export interface ReviewResponse {
+  reviewId: string;
+  /** Ngày phản hồi (đếm giới hạn hằng ngày theo field này). */
+  day: number;
+  /** Uy tín cộng lại khi phản hồi (đã áp vào `playerData.reputation`). */
+  delta: number;
 }
 
 /** Sự cố an ninh (trộm lẻ, trộm đột nhập, kết quả công an) để hiển thị cho người chơi. */
@@ -424,7 +439,45 @@ export interface SecurityState {
   policeCases: PoliceCase[];
 }
 
-export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit' | 'tax' | 'rent' | 'civic_upkeep' | 'civic_fee' | 'civic_donation' | 'city_goal_reward';
+export type LedgerEntryType = 'purchase' | 'sale' | 'credit_sale' | 'credit_repayment' | 'bad_debt' | 'spoilage' | 'wage' | 'maintenance' | 'theft' | 'theft_cash' | 'recovery' | 'counterfeit' | 'tax' | 'rent' | 'civic_upkeep' | 'civic_fee' | 'civic_donation' | 'city_goal_reward' | 'internal_transfer';
+
+/** Hợp đồng cung ứng (design D3). `status: 'active'` = đã được hai bên đồng ý, đang hiệu lực. */
+export interface SupplyContract {
+  id: string;
+  /** Tòa giao hàng (nguồn kho chung lấy cho tòa này). */
+  fromBuildingId: string;
+  /** Tòa nhận hàng. */
+  toBuildingId: string;
+  productId: string;
+  /** Lượng mong muốn mỗi sáng (bị cap ≤ 50% tồn trung bình). */
+  quantityPerDay: number;
+  /** Giá nội bộ mỗi đơn vị (chỉ ghi thành tích, không đổi quỹ). */
+  internalPrice: number;
+  startDay: number;
+  endDay?: number;
+  status: 'active' | 'proposed' | 'ended' | 'cancelled';
+}
+
+/** Giao hàng nội bộ tới kệ/kho phụ của tòa nhận (6a D6 — PROVISIONAL chờ nối thật). */
+export interface InternalDelivery {
+  id: string;
+  fromBuildingId: string;
+  toBuildingId: string;
+  productId: string;
+  /** Các lô đã lấy theo FEFO (mỗi lô là phần đã tiêu thụ của lô gốc). */
+  lines: { lotId: string; qty: number }[];
+  totalQty: number;
+  /** Ngày hợp đồng bắt đầu có hiệu lực (để truy vết nguồn). */
+  fromDay: number;
+  /** Ngày thực hiện giao. */
+  day: number;
+  /** Mốc thời gian giao (nếu có), tùy chọn. */
+  deliveredAt?: number;
+  /** Chuyến châm kệ xa (OpenSpec `open-world-building-types` 4.1): kệ nhận, lô đang chuyển (giữ hạn dùng), phút game tới nơi. */
+  toFixtureId?: string;
+  lots?: StockLot[];
+  arriveAtMinute?: number;
+}
 
 export interface LedgerEntry {
   id: string;
@@ -440,6 +493,8 @@ export interface LedgerEntry {
   branchId?: string;
   /** Mã thực thể tòa nhà phát sinh dòng này (D5); ví dụ 'main', 'snack-1', 'xoi_shop', v.v. */
   buildingInstanceId?: string;
+  /** `internal_transfer`: tòa nhận hàng (`buildingInstanceId` = tòa giao). Không đổi quỹ (OpenSpec `open-world-coop-contracts` D1-A). */
+  toBuildingInstanceId?: string;
   /** Trang sổ góp xóm (civic_donation). */
   bundleId?: string;
   /** Ô trong trang sổ góp xóm (civic_donation). */
@@ -865,23 +920,28 @@ export interface WorldTime {
 
 export type StaffRole = 'cashier' | 'refill' | 'security' | 'drink_staff' | 'drink_security';
 
-/** Tòa nhà mà nhân viên phụ trách (undefined = tất cả tòa). */
-export type StaffBuilding = 'main' | 'xoi' | 'drink' | 'snack' | undefined;
+/**
+ * Tòa nhà mà nhân viên phụ trách: id instance tòa (`BuildingPlacement.buildingId`, vd. 'main'|'xoi'|'drink'|'snack'
+ * hoặc tòa mở thêm). Rỗng = toàn tiệm (OpenSpec `staff-shifts`).
+ */
+export type StaffBuilding = string;
 
-export type StaffShift = 'morning' | 'afternoon' | 'full_day';
+export type StaffShift = 'morning' | 'afternoon' | 'night' | 'full_day';
 
 export interface ShiftConfig {
   id: StaffShift;
   name: string;
-  startHour: number; // 6 to 22
-  endHour: number;   // 6 to 22
-  wageMultiplier: number; // 0.5 for half day, 1.0 for full day
+  startHour: number; // theo giờ game; ca đêm vắt qua nửa đêm (start > end)
+  endHour: number;
+  wageMultiplier: number; // 0.5 nửa ngày, 1.0 cả ngày, 0.6 ca đêm (có phụ cấp)
 }
 
 export const STAFF_SHIFTS: Record<StaffShift, ShiftConfig> = {
-  morning: { id: 'morning', name: 'Ca sáng (06:00 - 14:00)', startHour: 6, endHour: 14, wageMultiplier: 0.5 },
+  // Ngày game bắt đầu 07:00 nên ca sáng/cả ngày bắt đầu 07:00 (trước đây 06:00).
+  morning: { id: 'morning', name: 'Ca sáng (07:00 - 14:00)', startHour: 7, endHour: 14, wageMultiplier: 0.5 },
   afternoon: { id: 'afternoon', name: 'Ca chiều (14:00 - 22:00)', startHour: 14, endHour: 22, wageMultiplier: 0.5 },
-  full_day: { id: 'full_day', name: 'Cả ngày (06:00 - 22:00)', startHour: 6, endHour: 22, wageMultiplier: 1.0 },
+  night: { id: 'night', name: 'Ca đêm (22:00 - 06:00)', startHour: 22, endHour: 6, wageMultiplier: 0.6 },
+  full_day: { id: 'full_day', name: 'Cả ngày (07:00 - 22:00)', startHour: 7, endHour: 22, wageMultiplier: 1.0 },
 };
 
 /** Chuyên môn riêng của nhân viên (tuỳ chọn; nhân viên cũ trong save không có). */
@@ -1010,6 +1070,8 @@ export interface BuildingPlacementRecord {
    * OPTIONAL (save cũ / land-reclamation chưa có) — migration 7→8 điền `'local'` cho mọi bản ghi chưa có.
    */
   builtBy?: string;
+  /** Người phụ trách tòa trong co-op (OpenSpec `open-world-coop-contracts` D2, schema 12). Thiếu = chưa gán / chơi một mình. */
+  managerAccountId?: string;
   /**
    * Kiểu instance tòa (OpenSpec `open-world-building-types`, Schema 9) — chuỗi id kiểu mà refactor BuildingId→string sẽ dùng,
    * ví dụ 'grocery_main' | 'xoi_shop' | 'drink_shop' | 'snack_shop'. OPTIONAL: bản chưa di cư (schema ≤ 8) vẫn hợp lệ.
@@ -1131,7 +1193,7 @@ export interface CityProgressState {
   /** Đã hoàn thành (claim) các mục tiêu này. */
   claimedCityGoalIds: string[];
   /** Nhật ký các mốc đạt được (lên cấp, hoàn thành mục tiêu). */
-  milestones: Array<{ day: number; type: 'level_up' | 'goal_claimed' | 'bundle_completed' | 'civic_opened'; goalId?: string; level?: number; /** Sổ góp (bundle_completed/civic_opened). */ bundleId?: string; /** civic_opened: điểm chỉ số sống khu tăng lên khi tòa mở. */ qolGain?: number }>;
+  milestones: Array<{ day: number; type: 'level_up' | 'goal_claimed' | 'bundle_completed' | 'civic_opened' | 'wave_opened' | 'first_type_opened'; goalId?: string; level?: number; /** wave_opened. */ waveId?: string; /** first_type_opened. */ buildingTypeId?: string; /** Người thực hiện (accountId, 'local' khi chơi một mình). */ by?: string; /** Sổ góp (bundle_completed/civic_opened). */ bundleId?: string; /** civic_opened: điểm chỉ số sống khu tăng lên khi tòa mở. */ qolGain?: number }>;
   /** Số liệu hiện tại cho việc đánh giá tiến độ (được cập nhật bởi simulation). */
   metrics: Partial<Record<CityGoalKind, number>>;
   /** Các trang sổ góp đã được hiện (do nhận mục tiêu xóm phố, hoặc hồi tố khi tải save ở cấp đã qua). Tùy chọn, không nâng schema. */
@@ -1211,6 +1273,8 @@ export interface SaveGameData {
   skills?: SkillState;
   /** Lời đánh giá gần đây của khách (tối đa 60), mới nhất ở cuối. */
   reviews?: CustomerReview[];
+  /** Các lượt phản hồi lời chê của chủ tiệm (schema 14). Thiếu = chưa phản hồi lời nào. */
+  reviewResponses?: ReviewResponse[];
   /** An ninh: camera, báo công an, sự cố gần đây và hồ sơ công an đang mở. */
   security?: SecurityState;
   /** Chỉ số tier kho hàng (0–3). Thiếu = 0. */
@@ -1224,12 +1288,18 @@ export interface SaveGameData {
   world?: WorldOpenState;
   /** Tiến độ mục tiêu thành phố (OpenSpec `open-world-districts-city-goals`, schema 10). Thiếu = cấp 1, chưa hoàn thành mục tiêu nào. */
   cityProgress?: CityProgressState;
+  /** Hợp đồng cung ứng nội bộ giữa các tòa (OpenSpec `open-world-coop-contracts` D6, schema 12). */
+  supplyContracts?: SupplyContract[];
+  /** Chuyến giao nội bộ đang chuyển (schema 12): hàng rời kho, chưa lên kệ, vẫn tính hạn dùng. */
+  internalDeliveries?: InternalDelivery[];
   /** Dân số xóm theo QoL (OpenSpec `civic-population-demand`, schema 11). Thiếu = chưa mở civic, dân số = baseline (factor = 1.0). */
   civic?: {
     populationByDistrict: Record<string, number>;
     /** Sổ góp xóm (OpenSpec `civic-city-goals`). Tùy chọn, KHÔNG nâng schema — save cũ hợp lệ; thiếu = chưa mở sổ. */
     bundles?: Record<string, { slots: Record<string, number>; contributions: Array<{ playerId: string; slotId: string; qty: number; day: number; value?: number }>; completedDay?: number }>;
   };
+  /** Đã cảnh báo "bảo vệ ca ngày không trực đêm" cho save này (additive, schema 14). Thiếu = chưa cảnh báo. */
+  hasWarnedGuardNotNight?: boolean;
 }
 
 export interface RegularCustomerProgress {
@@ -1411,6 +1481,8 @@ export type GameCommandPayload =
   | { type: 'hire_staff'; candidateId: string }
   | { type: 'pay_wage_debt' }
   | { type: 'set_staff_shift'; staffId: string; shift: StaffShift }
+  /** Gán nhân viên vào một tòa (id instance trong `BuildingPlacement`); null = toàn tiệm (OpenSpec `staff-shifts`). */
+  | { type: 'assign_staff_building'; staffId: string; buildingId: string | null }
   | { type: 'assign_refill_job'; staffId: string; fixtureId: string }
   | { type: 'dispose_stock'; productId: string; quantity: number }
   /** Mở thùng trong kho: chỉ đổi thùng thành hàng lẻ, tổng hàng không đổi. */
@@ -1460,7 +1532,9 @@ export type GameCommandPayload =
   | { type: 'pay_rent_debt'; parcelId: string }
   // Mục tiêu thành phố (OpenSpec `civic-city-goals` 4A)
   | { type: 'claim_city_goal'; goalId: string }
-  | { type: 'donate_to_bundle'; bundleId: string; slotId: string; productId?: string; quantity?: number; amount?: number };
+  | { type: 'donate_to_bundle'; bundleId: string; slotId: string; productId?: string; quantity?: number; amount?: number }
+  /** Phản hồi một lời chê của khách (OpenSpec `written-customer-reviews` 4.5): cộng lại một phần uy tín đã mất, giới hạn mỗi ngày. */
+  | { type: 'respond_review'; reviewId: string };
 
 export interface GameCommand {
   protocolVersion: typeof MULTIPLAYER_PROTOCOL_VERSION;
@@ -1526,7 +1600,7 @@ export function isGameAvatar(value: unknown): value is GameAvatar {
     (value.displayName === undefined || (typeof value.displayName === 'string' && value.displayName.length <= 64));
 }
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 11;
+export const CURRENT_SAVE_SCHEMA_VERSION = 14;
 
 /** Trạng thái thế giới mở (OpenSpec `open-world-land-reclamation`): đợt đã mở & đang thi công. */
 export interface WorldOpenState {
@@ -1563,7 +1637,7 @@ export interface SaveValidationResult {
   data?: SaveGameData;
 }
 
-const OPTIONAL_SAVE_ARRAYS = ['staff', 'processedPayrollDayIds', 'processedRentDayIds', 'pendingOrders', 'holdingArea', 'closedDayIds', 'completedCheckoutIds', 'processedAutoBuyDayIds', 'autoBuyRules', 'customerCredits', 'ledger'] as const;
+const OPTIONAL_SAVE_ARRAYS = ['staff', 'processedPayrollDayIds', 'processedRentDayIds', 'pendingOrders', 'holdingArea', 'closedDayIds', 'completedCheckoutIds', 'processedAutoBuyDayIds', 'autoBuyRules', 'customerCredits', 'ledger', 'reviewResponses'] as const;
 const OPTIONAL_LAYOUT_ARRAYS = ['storedFixtures', 'unlockedPlotIds', 'decorOwned', 'buildingPlacements', 'ownedParcelIds'] as const;
 
 /** Quy tắc tự nhập đúng hình dạng; nội dung (sản phẩm, nhà cung cấp, giới hạn) do `setAutoBuyConfig` kiểm tiếp. */
@@ -1590,7 +1664,7 @@ export function isChainState(value: unknown): value is ChainState {
 }
 
 export function isSaveGameData(value: unknown): value is SaveGameData {
-  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.schemaVersion !== 7 && value.schemaVersion !== 8 && value.schemaVersion !== 9 && value.schemaVersion !== 10 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.schemaVersion !== 7 && value.schemaVersion !== 8 && value.schemaVersion !== 9 && value.schemaVersion !== 10 && value.schemaVersion !== 11 && value.schemaVersion !== 12 && value.schemaVersion !== 13 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
     return false;
   }
@@ -1723,7 +1797,35 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
   // 10 → 11 (civic-population-demand): chỉ nâng số schema. Không gieo `civic`: simulation khởi tạo dân số = baseline cho khu
   // thiếu dữ liệu (hệ số khách đúng 1), nên save cũ giữ nguyên kinh tế.
   const migrateToW11 = (m: SaveGameData): void => {
+    m.schemaVersion = 11;
+  };
+  // 11 → 12 (open-world-coop-contracts D6): chỉ thêm trường tùy chọn (`supplyContracts`, `internalDeliveries`,
+  // `managerAccountId`, sổ `internal_transfer`); save cũ không có hợp đồng nên kinh tế giữ nguyên.
+  const migrateToW12 = (m: SaveGameData): void => {
+    m.schemaVersion = 12;
+  };
+  // 12 → 13 (OpenSpec `staff-shifts`): ca đêm hợp lệ + chuẩn hoá ca/lịch ca. Lọc `assignedBuilding` mồ côi làm ở
+  // GameSimulation lúc nạp (shared không import được @game/data để biết tòa nào đã mua).
+  const migrateToW13 = (m: SaveGameData): void => {
     m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+    const validShifts = new Set<string>(Object.keys(STAFF_SHIFTS));
+    const staff = m.staff ?? [];
+    for (const member of staff) {
+      if (!member.shift || !validShifts.has(member.shift)) member.shift = 'full_day';
+    }
+    if (m.staffSchedule) {
+      const staffIds = new Set(staff.map((member) => member.id));
+      const cleaned: Record<string, StaffShift> = {};
+      for (const [staffId, shift] of Object.entries(m.staffSchedule)) {
+        if (staffIds.has(staffId) && validShifts.has(shift)) cleaned[staffId] = shift;
+      }
+      m.staffSchedule = cleaned;
+    }
+  };
+  // 13 → 14 (OpenSpec `written-customer-reviews` 4.5): khởi tạo/chuẩn hoá danh sách phản hồi lời chê.
+  const migrateToW14 = (m: SaveGameData): void => {
+    m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+    if (m.reviewResponses !== undefined && !Array.isArray(m.reviewResponses)) m.reviewResponses = [];
   };
   if ((value.schemaVersion === 1 || value.schemaVersion === 2 || value.schemaVersion === 3 || value.schemaVersion === 4 || value.schemaVersion === 5) && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
@@ -1732,6 +1834,9 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW9(migrated);
     migrateToW10(migrated);
     migrateToW11(migrated);
+    migrateToW12(migrated);
+    migrateToW13(migrated);
+    migrateToW14(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v6 → v7 (open-world-land-reclamation): save cũ không có `world`/`ownedParcelIds` → chỉ mở đợt 0 và W0 đã sở hữu.
@@ -1742,6 +1847,9 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW9(migrated);
     migrateToW10(migrated);
     migrateToW11(migrated);
+    migrateToW12(migrated);
+    migrateToW13(migrated);
+    migrateToW14(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v7 → hiện tại (open-world-coop-land D4): save v7 ĐÃ có `world`/`ownedParcelIds` (v6 đã gieo), chỉ cần điền
@@ -1752,6 +1860,9 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW9(migrated);
     migrateToW10(migrated);
     migrateToW11(migrated);
+    migrateToW12(migrated);
+    migrateToW13(migrated);
+    migrateToW14(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v8 → hiện tại (open-world-building-types D8): save v8 đã có `builtBy`, chỉ cần gắn `typeId` (W9) + `parcelTenure` (W10) + `civic` (W11).
@@ -1760,6 +1871,9 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW9(migrated);
     migrateToW10(migrated);
     migrateToW11(migrated);
+    migrateToW12(migrated);
+    migrateToW13(migrated);
+    migrateToW14(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v9 → 10 (open-world-land-lease 3.1): save v9 có typeId, chỉ cần điền `parcelTenure` (W10) + `civic` (W11).
@@ -1767,12 +1881,39 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW10(migrated);
     migrateToW11(migrated);
+    migrateToW12(migrated);
+    migrateToW13(migrated);
+    migrateToW14(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v10 → 11 (civic-population-demand): điền `civic` nếu thiếu.
   if (value.schemaVersion === 10 && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW11(migrated);
+    migrateToW12(migrated);
+    migrateToW13(migrated);
+    migrateToW14(migrated);
+    return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
+  }
+  // v11 → 12 (open-world-coop-contracts): chỉ nâng số schema.
+  if (value.schemaVersion === 11 && isSaveGameData(value)) {
+    const migrated = structuredClone(value) as SaveGameData;
+    migrateToW12(migrated);
+    migrateToW13(migrated);
+    migrateToW14(migrated);
+    return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
+  }
+  // v12 → 13 (OpenSpec `staff-shifts`): chuẩn hoá ca/lịch ca; ca đêm hợp lệ.
+  if (value.schemaVersion === 12 && isSaveGameData(value)) {
+    const migrated = structuredClone(value) as SaveGameData;
+    migrateToW13(migrated);
+    migrateToW14(migrated);
+    return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
+  }
+  // v13 → 14 (OpenSpec `written-customer-reviews` 4.5): chuẩn hoá danh sách phản hồi lời chê.
+  if (value.schemaVersion === 13 && isSaveGameData(value)) {
+    const migrated = structuredClone(value) as SaveGameData;
+    migrateToW14(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   if (value.schemaVersion < CURRENT_SAVE_SCHEMA_VERSION) {
@@ -1890,7 +2031,8 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'buy_stall': return nonEmptyString(p.stallId);
     case 'hire_staff': return nonEmptyString(p.candidateId);
     case 'pay_wage_debt': return true;
-    case 'set_staff_shift': return nonEmptyString(p.staffId) && (p.shift === 'morning' || p.shift === 'afternoon' || p.shift === 'full_day');
+    case 'set_staff_shift': return nonEmptyString(p.staffId) && (p.shift === 'morning' || p.shift === 'afternoon' || p.shift === 'night' || p.shift === 'full_day');
+    case 'assign_staff_building': return nonEmptyString(p.staffId) && (p.buildingId === null || nonEmptyString(p.buildingId));
     case 'assign_refill_job': return nonEmptyString(p.staffId) && nonEmptyString(p.fixtureId);
     case 'store_status': return typeof p.isOpen === 'boolean';
     case 'set_tax_declaration': return typeof p.underDeclare === 'boolean';
@@ -1933,6 +2075,7 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'donate_to_bundle': return nonEmptyString(p.bundleId) && nonEmptyString(p.slotId) && (
       (p.amount === undefined && nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0) ||
       (p.productId === undefined && p.quantity === undefined && Number.isSafeInteger(p.amount) && Number(p.amount) > 0));
+    case 'respond_review': return nonEmptyString(p.reviewId);
     default: return false;
   }
 }

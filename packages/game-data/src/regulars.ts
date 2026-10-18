@@ -16,6 +16,16 @@ export interface RegularCustomerDefinition {
   favoriteProductIds: string[];
   patienceSeconds: number; // Thời gian kiên nhẫn tối đa (giây)
   priceSensitivity: number; // 0.8 = ít nhạy giá, 1.3 = rất nhạy giá
+  /** Món ăn vặt ưa thích tại quán ăn vặt (rỗng = không ghé quán ăn vặt). */
+  snackShopProductIds?: string[];
+  /** Khung giờ Bé Na ghé quán ăn vặt (rỗng = không giới hạn). */
+  snackShopVisitHours?: { fromHour: number; toHour: number };
+  /** Hội thoại khi ghé quán ăn vặt (thiếu thì dùng dialogues gốc). */
+  snackShopDialogues?: {
+    greeting: string;
+    satisfied: string;
+    walkout: string;
+  };
   dialogues: {
     greeting: string;
     satisfied: string;
@@ -74,6 +84,15 @@ export const REGULAR_CUSTOMERS: RegularCustomerDefinition[] = [
     favoriteProductIds: ['bubblegum_big_babol', 'snack_oishi', 'yogurt_vinamilk', 'fresh_milk_vinamilk'],
     patienceSeconds: 22,
     priceSensitivity: 1.25,
+    /** Bé Na cũng ghé quán ăn vặt sau giờ tan trường (16:00–18:00), thích món chiên/xào và bánh tráng. */
+    snackShopProductIds: ['bap_xao_tp', 'ca_vien_chien_tp', 'banh_trang_tron_tp'],
+    /** Bé Na chỉ ghé quán ăn vặt vào khung giờ bổ trợ (sau giờ tan trường) */
+    snackShopVisitHours: { fromHour: 16, toHour: 18 },
+    snackShopDialogues: {
+      greeting: 'Chú ơi! Cho cháu mua bắp xào với cá viên chiên nha!',
+      satisfied: 'Cháo ngon quá, cháu sẽ quay lại mua nữa đấy!',
+      walkout: 'Hết đồ ăn vặt rồi hả cháu? Thôi về má cháu vậy...',
+    },
     dialogues: {
       greeting: 'Cô chú ơi! Có kẹo thổi bong bóng Big Babol mới về chưa ạ?',
       satisfied: 'Dạ con cảm ơn cô chú, kẹo ngon quá!',

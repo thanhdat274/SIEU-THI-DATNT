@@ -82,9 +82,18 @@ export const CANDIDATE_NAMES: string[] = [
   'Anh Huy',
 ];
 
+import { BUSINESS_HOURS } from './business-hours';
+
+/** Ca hợp lệ (gồm ca đêm vắt qua nửa đêm). Dùng khi lưu/tải/đặt ca; khác `isShiftWithinStoreHours` chỉ xét ca ngày. */
+export function isKnownShift(shift: string | undefined): shift is StaffShift {
+  return !!shift && Object.prototype.hasOwnProperty.call(STAFF_SHIFTS, shift);
+}
+
+/** Ca nằm trọn trong giờ bán (chỉ đúng cho ca ngày; ca đêm trả false). */
 export function isShiftWithinStoreHours(shift: StaffShift): boolean {
+  if (!isKnownShift(shift)) return false;
   const cfg = STAFF_SHIFTS[shift];
-  return cfg !== undefined && cfg.startHour >= 6 && cfg.endHour <= 22;
+  return cfg.startHour < cfg.endHour && cfg.startHour >= BUSINESS_HOURS.openHour && cfg.endHour <= BUSINESS_HOURS.closeHour;
 }
 
 export interface StaffSpecialtyInfo {

@@ -104,6 +104,71 @@ export interface CustomerMovementPath {
   waypoints: Vector2D[];
 }
 
+/**
+ * Mối chéo mua hàng giữa các tòa: sau khi khách hoàn tất mua sắm tại một tòa,
+ * họ có xác suất chuyển sang tòa khác trong cùng chuyến (cross-sell).
+ * Tỷ lệ PROVISIONAL, deterministic theo seed dùng Mulberry32Rng + hashSeed.
+ * Chỉ áp dụng khi tòa đích đang mở và còn hàng.
+ */
+export interface CrossSellRule {
+  fromBuilding: string;
+  toBuilding: string;
+  /** Xác suất khách chuyển tòa sau khi mua xong (0–1). */
+  chance: number;
+  /** Sản phẩm tại tòa đích kích hoạt cross-sell (rỗng = mọi sản phẩm). */
+  triggeringProductIds?: string[];
+}
+
+/**
+ * Quy tắc chuyển tòa: khách mua ở tiệm chính rồi ghé quán ăn vặt (hoặc ngược lại)
+ * trong cùng chuyến. Xác suất deterministic theo seed.
+ */
+export const CROSS_SELL_RULES: CrossSellRule[] = [
+  // Tiệm chính → quán ăn vặt: 15% khách mua hàng tạp hóa sau ghé ăn vặt
+  { fromBuilding: 'main', toBuilding: 'snack', chance: 0.15 },
+  // Quán ăn vặt → tiệm chính: 10% khách ăn vặt sau mua thêm đồ tạp hóa
+  { fromBuilding: 'snack', toBuilding: 'main', chance: 0.10 },
+  // Tiệm chính → tiệm xôi: 8%
+  { fromBuilding: 'main', toBuilding: 'xoi', chance: 0.08 },
+  // Tiệm xôi → tiệm chính: 5%
+  { fromBuilding: 'xoi', toBuilding: 'main', chance: 0.05 },
+];
+
+/** Kiểm tra hash tất định xem khách có nên chuyển tòa không */
+export function shouldCrossSell(customerId: string, fromBuilding: string, toBuilding: string): boolean {
+  const rule = CROSS_SELL_RULES.find(
+    r => r.fromBuilding === fromBuilding && r.toBuilding === toBuilding
+  );
+  if (!rule) return false;
+
+  // Dùng hashSeed + Mulberry32Rng giống các hệ deterministic khác trong game
+  const seed = hashSeed(`${customerId}:${toBuilding}`);
+  const rng = new Mulberry32Rng(seed);
+  return rng.next() < rule.chance;
+}
+
+/**
+ * Khung giờ bổ trợ: quán ăn vặt đông khách vào giờ tiệm chính vắng (chiều tối 14:00–16:00,
+ * trước giờ tan học 16:00–18:00). Hệ số nhân nhịp sinh khách theo khung giờ.
+ */
+export const SNACK_SUPPLEMENTARY_HOURS: ReadonlyArray<{ fromHour: number; toHour: number; multiplier: number }> = [
+  // Giờ tan học: Bé Na và bạn bè ghé quán ăn vặt
+  { fromHour: 16, toHour: 18, multiplier: 1.5 },
+  // Giờ chiều sớm: khách mua sắm ít, ghé quán ăn vặt
+  { fromHour: 14, toHour: 16, multiplier: 1.3 },
+];
+
+/** Lấy hệ số khung giờ bổ trợ cho quán ăn vặt */
+export function snackSupplementaryMultiplier(hour: number | undefined): number {
+  if (hour === undefined) return 1;
+  for (const slot of SNACK_SUPPLEMENTARY_HOURS) {
+    if (hour >= slot.fromHour && hour < slot.toHour) {
+      return slot.multiplier;
+    }
+  }
+  return 1;
+}
+
 /** Nhân nhịp khách của tòa mở thêm trong khung giờ cao điểm của loại (PROVISIONAL). */
 export const EXTRA_PEAK_MULTIPLIER = 1.5;
 export function extraBuildingPeakMultiplier(peaks: ReadonlyArray<{ fromHour: number; toHour: number }> | undefined, hour: number | undefined): number {
@@ -257,7 +322,8 @@ export class CustomerManager {
     rainIntensity = 0,
     hasBikeSecurity = false,
     arrivalContext?: { hour: number; weekday: number },
-    parcelMultiplierFor?: (buildingId: BuildingId) => number
+    parcelMultiplierFor?: (buildingId: BuildingId) => number,
+    regularPreferredBuilding?: string | null
   ): CustomerState | null {
     if (!isStoreOpen) return null;
     // Cụm ẩm thực: càng nhiều tòa phụ đang mở thì các tòa phụ càng đông khách (tiệm chính giữ nhịp cũ).
@@ -265,7 +331,15 @@ export class CustomerManager {
     // (`parcelMultiplierFor`). Lô W0 mặt đường chính hệ số 1 → golden không đổi; khi tham số thiếu mặc định 1.
     const openSecondary = tileMap.buildings?.filter(building => building.id !== 'main' && building.open).length ?? 0;
     const cluster = foodClusterMultiplier(openSecondary);
-    const streams: Array<readonly [BuildingId, number]> = [['main', 1], ...BUILDING_TRAFFIC_SHARE.map(([id, share]) => [id, share * cluster * (parcelMultiplierFor?.(id) ?? 1)] as const)];
+    // Dòng khách mỗi tòa: tiệm chính = 1, tòa phụ = share × cụm × lô × khung giờ bổ trợ (riêng snack)
+    const streams: Array<readonly [BuildingId, number]> = [['main', 1], ...BUILDING_TRAFFIC_SHARE.map(([id, share]) => {
+      let factor = share * cluster * (parcelMultiplierFor?.(id) ?? 1);
+      // Khung giờ bổ trợ: snack đông khách vào giờ chiều tối (tan học, trước giờ đóng tiệm)
+      if (id === 'snack') {
+        factor *= snackSupplementaryMultiplier(arrivalContext?.hour);
+      }
+      return [id, factor] as const;
+    })];
     // Tòa mở thêm (chi nhánh, cà phê, quán cơm): nhịp = trafficShare của loại × giờ cao điểm × lô; bãi xe không có khách quầy.
     for (const building of tileMap.buildings ?? []) {
       if (!isExtraInstanceId(building.id)) continue;
@@ -281,10 +355,16 @@ export class CustomerManager {
         if (bonus > 0) (stream as unknown as [BuildingId, number])[1] = stream[1] * (1 + bonus);
       }
     }
-    for (const [streamId, factor] of streams) {
+    // Nếu regular có preferredBuilding (Bé Na → snack), spawn ở đó trước, không ở main
+    const firstStream = regularPreferredBuilding ? streams.find(s => s[0] === regularPreferredBuilding)?.[0] ?? 'main' : 'main';
+    const orderedStreams = firstStream === 'main' ? streams : [streams.find(s => s[0] === firstStream)!, ...streams.filter(s => s[0] !== firstStream)];
+    for (const [streamId, factor] of orderedStreams) {
       // Chỉ tòa đang có và không thi công mới sinh khách (tòa chưa mua/đang dời không có dòng khách).
       if (!buildingSpawnsCustomers(tileMap.buildings, streamId)) continue;
-      const spawned = this.spawnForBuilding(streamId, factor, dt, fixtures, tileMap, currentDay, customersServed, demand, streamId === 'main' ? regularCandidate : null, rainIntensity, hasBikeSecurity, arrivalContext);
+      // Regular chỉ spawn ở stream chính (hoặc preferredBuilding)
+      const isMainStream = streamId === 'main';
+      const isRegularStream = regularPreferredBuilding ? streamId === regularPreferredBuilding : isMainStream;
+      const spawned = this.spawnForBuilding(streamId, factor, dt, fixtures, tileMap, currentDay, customersServed, demand, isRegularStream ? regularCandidate : null, rainIntensity, hasBikeSecurity, arrivalContext);
       if (spawned) return spawned;
     }
     return null;
@@ -706,6 +786,28 @@ export class CustomerManager {
           customer.stage = 'checkout';
         }
       } else if (customer.stage === 'leaving') {
+        // Cross-sell: khi khách đến cửa ra, kiểm tra pendingCrossSellTo
+        if (customer.pendingCrossSellTo) {
+          const targetBld = tileMap.buildings?.find(b => b.id === customer.pendingCrossSellTo);
+          const targetOpen = targetBld?.open === true;
+          const targetHasStock = fixtures.some(f => isSalesFixture(f) && fixtureBuilding(f) === customer.pendingCrossSellTo && f.currentStock > 0);
+
+          if (targetOpen && targetHasStock) {
+            // Transfer to target building — khách đi bộ từ vị trí hiện tại (cửa tòa nguồn)
+            // sang kệ tòa đích, KHÔNG teleport: giữ nguyên customer.position
+            const targetShelf = fixtures.find(f => isSalesFixture(f) && fixtureBuilding(f) === customer.pendingCrossSellTo);
+            if (targetShelf) {
+              customer.buildingId = customer.pendingCrossSellTo;
+              customer.targetFixtureId = targetShelf.id;
+              delete customer.pendingCrossSellTo;
+              customer.stage = 'to_shelf';
+              this.routeCustomer(customer, 'to_shelf', tileMap, fixtures);
+              continue;
+            }
+          }
+          // Nếu không chuyển được, xóa pending và tiếp tục rời đi
+          delete customer.pendingCrossSellTo;
+        }
         onCustomerDepart?.(customer);
         this.removeCustomer(customer);
       }
@@ -879,6 +981,45 @@ export class CustomerManager {
     customer.basket = [];
     customer.diningTableId = diningTableId;
     customer.diningTimeLeft = diningTableId ? 60 : undefined;
+
+    // Cross-sell: sau khi mua xong, khách có xác suất ghé tòa khác
+    // Không teleport — khách đi ra cửa tòa hiện tại, sau đó chuyển sang tòa đích
+    // Chỉ chuyển khi tòa đích đang mở và kệ còn hàng
+    if (!diningTableId && customer.id && customer.buildingId) {
+      for (const rule of CROSS_SELL_RULES) {
+        if (rule.fromBuilding === customer.buildingId && !customer.crossSellApplied?.includes(rule.toBuilding)) {
+          if (shouldCrossSell(customer.id, rule.fromBuilding, rule.toBuilding)) {
+            // Kiểm tra tòa đích có mở và còn hàng không
+            const targetBuilding = tileMap.buildings?.find(b => b.id === rule.toBuilding);
+            const targetOpen = targetBuilding?.open === true;
+            const targetHasStock = fixtures.some(f => isSalesFixture(f) && fixtureBuilding(f) === rule.toBuilding && f.currentStock > 0);
+
+            if (targetOpen && targetHasStock) {
+              // Đánh dấu đã áp dụng (tránh lặp)
+              if (!customer.crossSellApplied) customer.crossSellApplied = [];
+              customer.crossSellApplied.push(rule.toBuilding);
+              // Đánh dấu pending cross-sell — khách sẽ đi ra cửa tòa hiện tại,
+              // sau đó trong tick tiếp theo sẽ được chuyển sang tòa đích
+              customer.pendingCrossSellTo = rule.toBuilding;
+              // Khách đi ra cửa tòa hiện tại trước (không teleport)
+              customer.stage = 'leaving';
+              this.routeCustomer(customer, 'leaving', tileMap, fixtures);
+              return {
+                success: true,
+                checkoutId: effectiveCheckoutId,
+                paidTotal,
+                itemCount,
+                cogs,
+                items,
+                reason: 'success',
+                crossSellTo: rule.toBuilding,
+              } as CheckoutResult & { crossSellTo: string };
+            }
+          }
+        }
+      }
+    }
+
     customer.stage = diningTableId ? 'to_table' : 'leaving';
     this.routeCustomer(customer, diningTableId ? 'to_table' : 'leaving', tileMap, fixtures);
 

@@ -47,14 +47,25 @@ export function shouldRegularVisitToday(
 }
 
 /**
+ * Kết quả chọn khách quen: bao gồm định nghĩa + tòa nhà ưu tiên (dùng cho Bé Na ghé snack shop).
+ */
+export interface RegularPickResult {
+  regular: RegularCustomerDefinition;
+  /** Tòa nhà khách quen nên ghé (undefined = main như cũ). */
+  preferredBuilding?: string;
+}
+
+/**
  * Chọn một khách quen hợp lệ ghé tiệm trong ngày, tránh trùng với khách quen đang có mặt.
+ * Nếu regular có snackShopVisitHours và giờ hiện tại nằm trong khung → preferredBuilding = 'snack'.
  */
 export function pickAvailableRegular(
   day: number,
   worldSeed: number | string,
   currentlyInStoreRegularIds: string[],
-  progressMap: Record<string, RegularCustomerProgress>
-): RegularCustomerDefinition | null {
+  progressMap: Record<string, RegularCustomerProgress>,
+  currentHour: number
+): RegularPickResult | null {
   const numSeed = seedToNumber(worldSeed);
   const candidates = REGULAR_CUSTOMERS.filter((reg) => {
     if (currentlyInStoreRegularIds.includes(reg.id)) return false;
@@ -66,7 +77,15 @@ export function pickAvailableRegular(
 
   // Chọn ứng viên theo hash
   const hash = Math.abs((numSeed * 17 + day * 37) % candidates.length);
-  return candidates[hash];
+  const selected = candidates[hash];
+
+  // Nếu regular có snackShopVisitHours và giờ hiện tại nằm trong khung → ghé snack shop
+  let preferredBuilding: string | undefined;
+  if (selected.snackShopVisitHours && currentHour >= selected.snackShopVisitHours.fromHour && currentHour < selected.snackShopVisitHours.toHour) {
+    preferredBuilding = 'snack';
+  }
+
+  return { regular: selected, preferredBuilding };
 }
 
 export interface RegularCheckoutResult {

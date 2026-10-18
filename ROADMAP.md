@@ -1,5 +1,26 @@
 # LỘ TRÌNH PHÁT TRIỂN (DEVELOPMENT ROADMAP)
 
+## Hệ nhân viên theo ca (staff-shifts) — CẢ 2 PHASE XONG 17/10/2026 (chưa commit, chưa QA mắt)
+- [x] **Phase A (ca + gán tòa)**: 4 ca (sáng 07–14, chiều 14–22, đêm 22–06 vắt nửa đêm, cả ngày 07–22), lương theo ca, chỉ vẽ/làm việc trong ca, gán nhân viên vào tòa `BuildingPlacement` + lọc việc theo tòa (châm hàng/thu ngân/bảo vệ/dọn bàn), lệnh co-op `assign_staff_building`, migration save 12→13, UI `StaffModal` (ca/tòa/lương/trạng thái + cảnh báo "ca đêm chưa giảm trộm").
+- [x] **Phase B (pha đêm)**: 22:00 đóng cửa vào pha đêm (đồng hồ chạy, không sinh khách/không bán), 00:00–06:00 thuộc ngày N, 06:00 chốt ngày + mở cửa (chế độ thường), tốc độ ×3 một nguồn trong `GameClock` với parity client↔`WorldRuntime` (cả routine/coop), HUD ban đêm + nút Ngủ; đã sửa `daily-routine.test.ts` và sinh lại golden world; test mới `night-cycle.test.ts`.
+- [x] **QA mắt desktop PASS 17/10/2026** (1280×800): HUD ban đêm/khoá mở cửa/nút Ngủ, StaffModal 4 ca + chọn tòa + lương theo ca + trạng thái trực + cảnh báo ca đêm, chỉ vẽ nhân viên trong ca; sửa P2 nút Ngủ routine (thêm `sleepNow`, về cửa nhà). QA lại routine đêm: 23:30 về nhà ngủ không đen màn/không chốt ngày, 05:50–06:00 mới mờ đen + chốt ngày (chốt 17/10/2026).
+- [ ] QA mắt mobile 375×812/667×375 chưa làm; chưa playtest cân bằng (đã chốt giữ lương đêm 0,6 và tốc độ ×3).
+- [x] **Chặn trộm đêm theo ca + tòa (17/10/2026 tối):** `runNightBurglary` dùng `isStaffActiveAt` + `burglaryTime` (02:00); guard night chặn, guard full_day/morning/afternoon không; guard tòa khác không chặn trộm main. Typecheck + game-core 112/112 ×3 + server unit/coop EXIT 0. Xóa cảnh báo "chưa giảm trộm" StaffModal.
+- Là nền cho `theft-and-security` 4.4 (bảo vệ đêm đứng trong tiệm) và `snack-shop-building` 3.5 (nhân viên riêng quán ăn vặt); không làm hai tính năng đích, không sửa `open-world-districts-city-goals`. Bằng chứng: typecheck EXIT 0; game-core 112/112 pass, 0 fail ×3; renderer/web test EXIT 0; test:unit + test:coop EXIT 0 (coop có ca đêm/gán tòa qua HTTP). **Số liệu cân bằng (17/10/2026 tối):** lương đêm 0,6 = 18.000 ₫/đêm (0,72% DT); trộm đêm 0,06/đêm = 1,8 vụ/30 ngày = 39.960 ₫ tiết kiệm; BV đêm lỗ 500.040 ₫/30 ngày → GIỮ NGUYÊN (gameplay value, % DT nhỏ). Đề xuất: (A2) tăng trộm theo cấp để BV có lợi ở cấp 20+. — chi tiết `tổng hợp.md` khối đầu file.
+
+## QUÁN ĂN VẶT MỞ RỘNG (17/10/2026, UPDATE 3)
+
+- [x] **(a) Khách chuyền tòa:** `CROSS_SELL_RULES` (main↔snack 15%/10%, main↔xoi 8%/5%), `shouldCrossSell` dùng `hashSeed`+`Mulberry32Rng`. Nối vào `completeCheckout()` → set `pendingCrossSellTo`, `stage='leaving'` (KHÔNG teleport). Trong `update()` tick tiếp theo, kiểm tòa đích mở + còn hàng → chuyển sang.
+- [x] **(b) Bé Na regulars:** `pickAvailableRegular()` trả `RegularPickResult { regular, preferredBuilding }`. `snackShopVisitHours` khớp giờ → `preferredBuilding='snack'`. `maybeSpawnCustomer()` spawn regular ở preferredBuilding.
+- [x] **(c) Bỏ `snack_staff` role:** dùng `assignedBuilding='snack'` của staff-shifts cho cashier/refill. `generateCandidatesForDay()` không còn 'snack_staff' trong roles.
+- [x] **(d) Khung giờ bổ trợ:** `SNACK_SUPPLEMENTARY_HOURS` (14–16h ×1.3, 16–18h ×1.5), `snackSupplementaryMultiplier()` nối vào `maybeSpawnCustomer()`.
+- [x] **Cân bằng:** SNACK_PLOT_ID **1.200.000** (hoàn vốn ~11,2 ngày 60 ngày). SNACK_TRAFFIC_SHARE giữ 0,03.
+- [x] **Toast "bảo vệ ca ngày" chỉ 1 lần:** ✅ cờ `hasWarnedGuardNotNight`.
+- [x] **Typecheck:** ✅ EXIT 0 (tsc -b).
+- [x] **game-core test ×3:** 102/102 pass, 0 fail. Golden world đã sinh lại.
+- [x] **snack-balance-sim 12 ngày:** hoàn vốn 9,7 ngày. **snack-balance-sim 60 ngày:** hoàn vốn 11,2 ngày.
+- [ ] **CHƯA QA** — cần playtest.
+
 ## Hình ảnh — Art bible + chiều sâu bằng code (17/10/2026)
 - [x] Kiểm kê 6 cảnh × 2 viewport, `docs/ART-BIBLE.md` (giữ ô 32, chuẩn 16 px × 2, bảng màu, sáng/bóng, viền, sắc độ, tên atlas).
 - [x] `depth-effects.ts`: bóng tòa theo giờ, tối chân tường/mái hiên, quầng cửa đêm; nút "Bóng & chiều sâu"; đo trong ngân sách ≤ 2 ms (headless, chưa đo máy thật); 17/10 chiều đo lại 3 vòng ở 375×812 trong Browser pane (CPU) và xác nhận tắt ở chất lượng Thấp + nút tắt.
@@ -30,6 +51,10 @@
 ## Giai đoạn 4 — Mục 2: Lời đánh giá bằng chữ ảnh hưởng uy tín (16/10/2026)
 
 - [x] **Lời đánh giá ảnh hưởng uy tín** (change OpenSpec `openspec/changes/written-reviews-reputation/`): đảo non-goal "chỉ trình bày" của `written-customer-reviews` — `review-reputation.ts` thuần (`reviewReputationContribution` theo reason/khen, `reviewReputationDrift`, `reviewSentimentSummary`), nối `recordCustomerRating` cạnh delta theo sao, thêm dòng uy tín vào bản tin sáng (`buildMorningBrief`) và khối "Ảnh hưởng uy tín" trong ReviewsModal. `yarn typecheck` PASS; harness review-reputation + hồi quy reviews/day-rhythm PASS; hồi quy rộng REGRESSION OK; eslint 0 errors; cân bằng drift từ từ (tiệm tốt +3.5, khá −1.6, chậm −8.8 điểm/ngày). **Chờ máy thật:** Browser QA khối uy tín + bản tin sáng, viewport 568–740 px. Chi tiết `tổng hợp.md` đầu file + `TASKS.md`.
+
+## Giai đoạn 4 — Đánh giá khách 4.5: bản tin + phản hồi lời chê + lọc món (17/10/2026)
+
+- [x] **written-customer-reviews 4.5** (change OpenSpec `openspec/changes/written-customer-reviews/tasks.md` 4.5): đưa vài lời khách nổi bật hôm qua vào bản tin sáng + DaySummaryModal (`MorningBrief.standoutReviews`, `pickStandoutReviews`); phản hồi lời chê — lệnh `respond_review` (server replay) → `simulation.respondReview` hồi phục nửa uy tín đã mất, giới hạn `REVIEW_RESPONSE_DAILY_CAP = 3` lời/ngày, mỗi lời một lần; lưu `SaveGameData.reviewResponses` (migration schema 13→14, `migrateToW14`, KHÔNG đụng `migrateToW13`) + replay co-op; ReviewsModal lọc theo món + nút phản hồi + "✓ Đã phản hồi" + bộ đếm lượt. `tsc -b` PASS, web build PASS, web test + server test:unit PASS, game-core module reviews/day-rhythm/world-runtime/staff-shifts/migration chạy PASS. **Chờ máy thật:** Browser QA khối mới (bản tin sáng + phản hồi + lọc món) viewport 568–740 px. Lỗi có sẵn ngoài phạm vi 4.5 (building-placement giá theo lô, golden allBuildings, coop order_supplier) không sửa.
 
 ## Giai đoạn 4 — Mục 1: Sự kiện xóm phố (16/10/2026)
 
