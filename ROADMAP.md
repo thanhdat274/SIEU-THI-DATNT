@@ -1,3 +1,16 @@
+## MULTI-SITE-PARCEL-LEASE: CƠ SỞ TRÊN LÔ THUÊ + KHO ĐỆM + SCHEMA 17 (19/10/2026, CHƯA COMMIT) — spec 7.2, core/save/co-op + UI bảng cơ sở
+
+- [x] Lệnh `open_site` / `close_site` / `site_transfer` (core + server replay + `WorldRuntime`): cơ sở = tòa mở trên lô thuê/sở hữu ngoài W0, `siteId` = instanceId; 4 tòa trên lô tiệm chính và tòa mở bằng `open_building` cũ vẫn dùng thẳng kho tổng.
+- [x] Kho đệm `siteBuffers`: `toTarget 'site_buffer'` giờ vào kho đệm (trước tạm vào kho tổng); kệ cơ sở (bày tay, sơ đồ, châm tự động, nhân viên) chỉ lấy từ kho đệm của nó. Sức chứa 60 + tối đa 3 cơ sở là PROVISIONAL (`game-core/src/multi-site.ts`).
+- [x] `end_lease` lô có cơ sở → `site_not_cleared` + danh sách việc (`buffer:n`, `deliveries:n`, `fixtures:n`, `close_site`); lô nợ thuê: chỉ chuyển ra. Nhật ký cơ sở 200 dòng ghi người làm (co-op: mọi thành viên làm được, chủ vắng vẫn làm).
+- [x] Id chuyến nội bộ dùng bộ đếm `internalDeliverySeq` lưu trong save (thay `internalDeliveries.length`).
+- [x] Save schema 17 (`migrateToW17`, không sửa W7–W16): `sites`, `siteBuffers`, `siteLogs`, `internalDeliverySeq` tùy chọn; save cũ không sinh trường mới.
+- [x] Test: `multi-site.test.ts` (thuê → chuyển vào → kệ lấy kho đệm → không châm chéo → trả lô bị từ chối → dọn xong trả được; lô nợ chỉ chuyển ra; lưu/tải giữa chuyến; id không trùng; migration 16→17); `world-runtime.test` co-op 2 người, chủ rời phòng. Sửa 3 test cứng số 16.
+- [x] typecheck PASS; game-core ×3 112/112; web, server test:unit, test:coop PASS; golden khớp. Log `.qa/msp-*.log`.
+- [x] UI 3.2 bảng cơ sở (`SiteModal`, mobile-first một cột) + nút "Quản lý cơ sở" trong hộp lô đất; mở cơ sở trên lô W1+ gửi `open_site`. Browser QA 7 viewport 568–932 px: vừa màn, không tràn ngang, control ≥44 px; thao tác chuyển vào/rút về/nhật ký nhìn bằng mắt. CHƯA QA co-op 2 trình duyệt, chọn lô bằng tay, cất kệ thật rồi trả lô. Log `.qa/msp-ui-*.log`.
+- [x] 1.2 kệ gắn lô: `validateStoreLayout` từ chối kệ vắt qua ranh lô cơ sở (`outside_parcel`), lô suy từ `sites[].parcelId` (không thêm trường save). Test trong `multi-site.test.ts`. Log `.qa/msp-12-*.log`. typecheck, game-core ×3 112/112 (golden khớp), web, server test:unit PASS; test:coop lượt đầu FAIL ở `order_supplier` (chợ đầu mối chỉ còn 51 < 60 — tồn chợ theo world id ngẫu nhiên, không liên quan change), chạy lại 3/3 PASS: test chập chờn có sẵn.
+- [ ] CHƯA: `yarn build`, QA co-op 2 trình duyệt thật.
+
 # LỘ TRÌNH PHÁT TRIỂN (DEVELOPMENT ROADMAP)
 
 ## INTERNAL_DELIVERY HAI CHIỀU + HÀNG ĐANG CHUYỂN SCHEMA 16 (19/10/2026, CHƯA COMMIT) — nền cho spec 7.2 `multi-site-parcel-lease`

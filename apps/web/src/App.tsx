@@ -8,6 +8,7 @@ import { ParcelBuyModal } from './components/ParcelBuyModal';
 import { WorldSettingsModal } from './components/WorldSettingsModal';
 import { LandVoteModal, type LandVoteInfo } from './components/LandVoteModal';
 import { OpenBuildingModal } from './components/OpenBuildingModal';
+import { SiteModal, siteTodoLabel } from './components/SiteModal';
 import { PixiGameViewport, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
 import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup, MULTIPLAYER_PROTOCOL_VERSION, SERVER_REPLAYED_COMMAND_TYPES } from '@game/shared';
 
@@ -118,6 +119,15 @@ export const App: React.FC = () => {
   const [isWorldSettingsOpen, setWorldSettingsOpen] = useState(false);
   const [landVote, setLandVote] = useState<LandVoteInfo | null>(null);
   const [parcelPromptId, setParcelPromptId] = useState<string | null>(null);
+  /** Bảng cơ sở đang mở (`multi-site-parcel-lease` 3.2): siteId. */
+  const [sitePanelId, setSitePanelId] = useState<string | null>(null);
+  // Bảng cơ sở đọc thẳng từ mô phỏng: vẽ lại mỗi giây để thấy chuyến tới nơi / kho đệm đổi.
+  const [, setSitePanelTick] = useState(0);
+  useEffect(() => {
+    if (!sitePanelId) return;
+    const timer = window.setInterval(() => setSitePanelTick(n => n + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [sitePanelId]);
   const [openBuildingParcelId, setOpenBuildingParcelId] = useState<string | null>(null);
   const [openBuildingTypeId, setOpenBuildingTypeId] = useState<string | undefined>(undefined);
   const [isStallOpen, setStallOpen] = useState(false);
@@ -242,6 +252,8 @@ export const App: React.FC = () => {
       shelf: () => { const fs = useGameStore.getState().fixtures; const f = fs.find(isSalesFixture) ?? fs[0]; if (f) openFixtureModal(f); },
       kitchen: () => { const f = fixtureOf('kitchen_station'); if (f) openFixtureModal(f); },
       dining: () => { const f = fixtureOf('dining_table'); if (f) openFixtureModal(f); },
+      site: () => { const s = simulationRef.current?.getSites()[0]; if (s) setSitePanelId(s.siteId); },
+      parcel: () => { const s = simulationRef.current?.getSites()[0]; if (s) setParcelPromptId(s.parcelId); },
       timeVote: () => setActiveTimeVote({ type: 'advance_day', initiatedBy: 'qa', expiresInMs: 30000, approvalsCount: 1, totalRequired: 2 }),
       daySummary: () => {
         const recs = Object.values(simulationRef.current?.getDailyRecords() ?? {}); const last = recs[recs.length - 1];
@@ -1683,6 +1695,10 @@ export const App: React.FC = () => {
       simulation => simulation.endLease(parcelId),
     );
     if (!res) return;
+    if (!res.success && res.reason === 'site_not_cleared') {
+      addToast(`Chưa trả lô được — cần: ${(res.todo ?? []).map(siteTodoLabel).join('; ')}.`, 'warn');
+      return;
+    }
     addToast(res.success ? 'Đã hủy thuê lô đất.' : (res.reason === 'building_present' ? 'Vui lòng dời công trình trước khi hủy thuê.' : res.reason === 'rent_debt' ? 'Trả hết nợ tiền thuê trước khi hủy thuê.' : (res.reason ?? 'Không hủy thuê được.')), res.success ? 'info' : 'warn');
   };
 
@@ -1696,12 +1712,46 @@ export const App: React.FC = () => {
   };
 
   const handleOpenBuilding = async (buildingTypeId: string, parcelId: string, originX: number, originY: number) => {
+    // Lô thuê/sở hữu ngoài lô tiệm chính + loại kinh doanh (không phải civic) → cơ sở có kho đệm (`open_site`).
+    const isCivic = BUILDING_TYPE_DEFS[buildingTypeId as keyof typeof BUILDING_TYPE_DEFS]?.buildCost !== undefined;
+    if (!isCivic && !parcelId.startsWith('lot-')) {
+      const site = await persistSimulationMutation(
+        { type: 'open_site', buildingTypeId, parcelId, originX, originY }, 'Mở cơ sở mới', 'Thành phố',
+        simulation => simulation.openSite(buildingTypeId, parcelId, originX, originY),
+      );
+      if (!site) return;
+      addToast(site.success ? 'Đã mở cơ sở mới! Chuyển hàng vào kho đệm để kệ cơ sở có hàng bán.' : site.reason === 'max_sites' ? 'Đã đạt số cơ sở tối đa.' : openBuildingReasonMessage(site.reason), site.success ? 'success' : 'warn');
+      if (site.success && site.siteId) setSitePanelId(site.siteId);
+      return;
+    }
     const res = await persistSimulationMutation(
       { type: 'open_building', buildingTypeId, parcelId, originX, originY }, 'Mở cơ sở mới', 'Thành phố',
       simulation => simulation.openBuilding(buildingTypeId, parcelId, originX, originY),
     );
     if (!res) return;
     addToast(res.success ? 'Đã mở cơ sở mới thành công!' : openBuildingReasonMessage(res.reason), res.success ? 'success' : 'warn');
+  };
+
+  const SITE_REASON: Record<string, string> = {
+    buffer_full: 'Kho đệm đã đầy (tính cả hàng đang chuyển tới).', no_inventory: 'Kho tổng không đủ hàng.', no_buffer_stock: 'Kho đệm không đủ hàng.',
+    closed_for_rent: 'Lô đang đóng do nợ thuê — chỉ rút hàng ra được.', store_open: 'Đóng cửa tiệm trước khi đóng cơ sở.',
+  };
+  const handleSiteTransfer = async (siteId: string, direction: 'in' | 'out', productId: string, quantity: number) => {
+    const res = await persistSimulationMutation(
+      { type: 'site_transfer', siteId, productId, quantity, direction }, direction === 'in' ? 'Chuyển hàng vào kho đệm' : 'Rút hàng về kho tổng', 'Cơ sở',
+      simulation => simulation.siteTransfer(siteId, productId, quantity, direction),
+    );
+    if (!res) return;
+    addToast(res.success ? `Đã xếp chuyến ${quantity} ${PRODUCT_MAP[productId]?.name ?? productId} ${direction === 'in' ? 'tới kho đệm' : 'về kho tổng'}.` : (SITE_REASON[res.reason ?? ''] ?? res.reason ?? 'Không chuyển được.'), res.success ? 'success' : 'warn');
+  };
+  const handleCloseSite = async (siteId: string) => {
+    const res = await persistSimulationMutation(
+      { type: 'close_site', siteId }, 'Đóng cơ sở', 'Cơ sở',
+      simulation => simulation.closeSite(siteId),
+    );
+    if (!res) return;
+    if (res.success) setSitePanelId(null);
+    addToast(res.success ? 'Đã đóng cơ sở (gỡ tòa khỏi lô, không hoàn tiền).' : res.reason === 'site_not_cleared' ? `Cần dọn trước: ${(res.todo ?? []).map(siteTodoLabel).join('; ')}.` : (SITE_REASON[res.reason ?? ''] ?? res.reason ?? 'Không đóng được.'), res.success ? 'info' : 'warn');
   };
 
   const handleRestockStall = async (stallId: string) => {
@@ -2598,6 +2648,7 @@ export const App: React.FC = () => {
       const isOwned = (snap.storeLayout.ownedParcelIds ?? []).includes(parcelPromptId) || tenure?.kind === 'owned';
       const isLeased = tenure?.kind === 'leased';
       const occupied = sim.getOccupiedParcelBuildings?.()?.[parcelPromptId];
+      const siteOnParcel = sim.getSites().find(item => item.parcelId === parcelPromptId);
       return (
         <ParcelBuyModal
           parcelId={parcelPromptId}
@@ -2612,7 +2663,39 @@ export const App: React.FC = () => {
           onEndLease={handleEndLease}
           onPayRentDebt={handlePayRentDebt}
           onOpenBuildingPrompt={(pid) => { setOpenBuildingTypeId(undefined); setOpenBuildingParcelId(pid); }}
+          onManageSite={siteOnParcel ? () => { setParcelPromptId(null); setSitePanelId(siteOnParcel.siteId); } : undefined}
           onClose={() => setParcelPromptId(null)}
+        />
+      );
+    })()}
+    {sitePanelId && simulationRef.current && (() => {
+      const sim = simulationRef.current;
+      const site = sim.getSites().find(item => item.siteId === sitePanelId);
+      if (!site) return null;
+      const snap = sim.exportSaveData(onlineWorld?.businesses[0]?.save.id ?? 'local_save_default', currentRevision);
+      const placement = snap.storeLayout.buildingPlacements?.find(p => p.buildingId === site.siteId);
+      const members = onlineWorld ? Object.fromEntries(onlineWorld.world.memberships.map(m => [m.accountId, onlineWorld.world.avatars.find(a => a.accountId === m.accountId)?.displayName])) : undefined;
+      const nameOf = (id: string) => id === 'local' ? 'Bạn' : donorDisplayName(id, members, onlineUid);
+      return (
+        <SiteModal
+          siteId={site.siteId}
+          parcelId={site.parcelId}
+          siteName={`${BUILDING_TYPE_DEFS[buildingTypeOfInstance(site.siteId)?.typeId as keyof typeof BUILDING_TYPE_DEFS]?.name ?? site.siteId} (${site.siteId})`}
+          buffer={sim.getSiteBuffer(site.siteId)}
+          capacity={sim.getSiteBufferCapacity()}
+          load={sim.siteBufferLoad(site.siteId)}
+          incomingTrips={sim.getInternalDeliveries().filter(d => d.toBuildingId === site.siteId || d.fromBuildingId === site.siteId).length}
+          central={sim.getInventory()}
+          todo={sim.siteClearanceTodo(site.siteId)}
+          closedForRent={!!placement?.closedForRent}
+          isLeased={snap.storeLayout.parcelTenure?.[site.parcelId]?.kind === 'leased'}
+          managerLabel={placement?.managerAccountId ? nameOf(placement.managerAccountId) : undefined}
+          log={sim.getSiteLog(site.siteId)}
+          nameOf={nameOf}
+          onTransfer={(direction, productId, quantity) => handleSiteTransfer(site.siteId, direction, productId, quantity)}
+          onCloseSite={() => handleCloseSite(site.siteId)}
+          onEndLease={async () => { await handleCloseSite(site.siteId); await handleEndLease(site.parcelId); }}
+          onClose={() => setSitePanelId(null)}
         />
       );
     })()}

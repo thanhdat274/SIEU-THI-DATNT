@@ -495,6 +495,22 @@ export interface InternalDelivery {
   toTarget?: InternalDeliveryTarget;
 }
 
+/** Cơ sở (`multi-site-parcel-lease` D1): `siteId` = instanceId của tòa (`BuildingPlacementRecord.buildingId`). */
+export interface Site {
+  siteId: string;
+  parcelId: string;
+  openedDay: number;
+  openedBy: string;
+}
+
+export interface SiteLogEntry {
+  day: number;
+  minute: number;
+  actorAccountId: string;
+  action: string;
+  detail?: string;
+}
+
 export type InternalDeliveryTarget = 'shelf' | 'site_buffer' | 'central';
 export const INTERNAL_DELIVERY_TARGETS: readonly InternalDeliveryTarget[] = ['shelf', 'site_buffer', 'central'];
 
@@ -1313,6 +1329,14 @@ export interface SaveGameData {
   supplyContracts?: SupplyContract[];
   /** Chuyến giao nội bộ đang chuyển (schema 12): hàng rời kho, chưa lên kệ, vẫn tính hạn dùng. */
   internalDeliveries?: InternalDelivery[];
+  /** Bộ đếm id chuyến nội bộ (schema 17): tăng dần, không dùng lại id khi chuyến cũ đã xóa. Thiếu = 0. */
+  internalDeliverySeq?: number;
+  /** Cơ sở trên lô thuê/sở hữu (OpenSpec `multi-site-parcel-lease` D1, schema 17). Thiếu = chưa có cơ sở nào. */
+  sites?: Site[];
+  /** Kho đệm theo `siteId` (D2): cùng cấu trúc kho (lô FEFO + giá vốn). */
+  siteBuffers?: Record<string, InventoryItem[]>;
+  /** Nhật ký cơ sở theo `siteId` (D5), giữ 200 dòng gần nhất. */
+  siteLogs?: Record<string, SiteLogEntry[]>;
   /** Dân số xóm theo QoL (OpenSpec `civic-population-demand`, schema 11). Thiếu = chưa mở civic, dân số = baseline (factor = 1.0). */
   civic?: {
     populationByDistrict: Record<string, number>;
@@ -1551,6 +1575,10 @@ export type GameCommandPayload =
   | { type: 'lease_parcel'; parcelId: string }
   | { type: 'end_lease'; parcelId: string }
   | { type: 'pay_rent_debt'; parcelId: string }
+  // Nhiều cơ sở trên lô (OpenSpec `multi-site-parcel-lease`)
+  | { type: 'open_site'; buildingTypeId: string; parcelId: string; originX: number; originY: number }
+  | { type: 'close_site'; siteId: string }
+  | { type: 'site_transfer'; siteId: string; productId: string; quantity: number; direction: 'in' | 'out' }
   // Mục tiêu thành phố (OpenSpec `civic-city-goals` 4A)
   | { type: 'claim_city_goal'; goalId: string }
   | { type: 'donate_to_bundle'; bundleId: string; slotId: string; productId?: string; quantity?: number; amount?: number }
@@ -1634,7 +1662,7 @@ export function isRoadWetnessCarry(value: unknown): value is RoadWetnessCarry {
     typeof value.value === 'number' && Number.isFinite(value.value) && value.value >= 0 && value.value <= 1;
 }
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 16;
+export const CURRENT_SAVE_SCHEMA_VERSION = 17;
 
 /** Trạng thái thế giới mở (OpenSpec `open-world-land-reclamation`): đợt đã mở & đang thi công. */
 export interface WorldOpenState {
@@ -1698,7 +1726,7 @@ export function isChainState(value: unknown): value is ChainState {
 }
 
 export function isSaveGameData(value: unknown): value is SaveGameData {
-  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.schemaVersion !== 7 && value.schemaVersion !== 8 && value.schemaVersion !== 9 && value.schemaVersion !== 10 && value.schemaVersion !== 11 && value.schemaVersion !== 12 && value.schemaVersion !== 13 && value.schemaVersion !== 14 && value.schemaVersion !== 15 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.schemaVersion !== 7 && value.schemaVersion !== 8 && value.schemaVersion !== 9 && value.schemaVersion !== 10 && value.schemaVersion !== 11 && value.schemaVersion !== 12 && value.schemaVersion !== 13 && value.schemaVersion !== 14 && value.schemaVersion !== 15 && value.schemaVersion !== 16 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
     return false;
   }
@@ -1880,6 +1908,17 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
       if (d.toTarget !== undefined && !INTERNAL_DELIVERY_TARGETS.includes(d.toTarget)) delete d.toTarget;
     }
   };
+  // 16 → 17 (`multi-site-parcel-lease` D7 + sửa id chuyến): trường tùy chọn `sites`/`siteBuffers`/`siteLogs`/`internalDeliverySeq`.
+  // Save thiếu = rỗng. Bộ đếm id chuyến bắt đầu sau số chuyến đang chạy để id mới không trùng chuyến cũ.
+  const migrateToW17 = (m: SaveGameData): void => {
+    m.schemaVersion = 17;
+    if (m.sites !== undefined && !Array.isArray(m.sites)) delete m.sites;
+    if (m.sites) m.sites = m.sites.filter((x) => isRecord(x) && nonEmptyString(x.siteId) && nonEmptyString(x.parcelId));
+    if (m.siteBuffers !== undefined && !isRecord(m.siteBuffers)) delete m.siteBuffers;
+    if (m.siteLogs !== undefined && !isRecord(m.siteLogs)) delete m.siteLogs;
+    if (m.internalDeliverySeq !== undefined && !nonNegativeInteger(m.internalDeliverySeq)) delete m.internalDeliverySeq;
+    if (m.internalDeliverySeq === undefined && m.internalDeliveries?.length) m.internalDeliverySeq = m.internalDeliveries.length;
+  };
   if ((value.schemaVersion === 1 || value.schemaVersion === 2 || value.schemaVersion === 3 || value.schemaVersion === 4 || value.schemaVersion === 5) && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW7(migrated);
@@ -1892,6 +1931,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW14(migrated);
     migrateToW15(migrated);
     migrateToW16(migrated);
+    migrateToW17(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v6 → v7 (open-world-land-reclamation): save cũ không có `world`/`ownedParcelIds` → chỉ mở đợt 0 và W0 đã sở hữu.
@@ -1907,6 +1947,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW14(migrated);
     migrateToW15(migrated);
     migrateToW16(migrated);
+    migrateToW17(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v7 → hiện tại (open-world-coop-land D4): save v7 ĐÃ có `world`/`ownedParcelIds` (v6 đã gieo), chỉ cần điền
@@ -1922,6 +1963,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW14(migrated);
     migrateToW15(migrated);
     migrateToW16(migrated);
+    migrateToW17(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v8 → hiện tại (open-world-building-types D8): save v8 đã có `builtBy`, chỉ cần gắn `typeId` (W9) + `parcelTenure` (W10) + `civic` (W11).
@@ -1935,6 +1977,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW14(migrated);
     migrateToW15(migrated);
     migrateToW16(migrated);
+    migrateToW17(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v9 → 10 (open-world-land-lease 3.1): save v9 có typeId, chỉ cần điền `parcelTenure` (W10) + `civic` (W11).
@@ -1947,6 +1990,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW14(migrated);
     migrateToW15(migrated);
     migrateToW16(migrated);
+    migrateToW17(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v10 → 11 (civic-population-demand): điền `civic` nếu thiếu.
@@ -1958,6 +2002,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW14(migrated);
     migrateToW15(migrated);
     migrateToW16(migrated);
+    migrateToW17(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v11 → 12 (open-world-coop-contracts): chỉ nâng số schema.
@@ -1968,6 +2013,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW14(migrated);
     migrateToW15(migrated);
     migrateToW16(migrated);
+    migrateToW17(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v12 → 13 (OpenSpec `staff-shifts`): chuẩn hoá ca/lịch ca; ca đêm hợp lệ.
@@ -1977,6 +2023,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW14(migrated);
     migrateToW15(migrated);
     migrateToW16(migrated);
+    migrateToW17(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v13 → 14 (OpenSpec `written-customer-reviews` 4.5): chuẩn hoá danh sách phản hồi lời chê.
@@ -1985,6 +2032,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW14(migrated);
     migrateToW15(migrated);
     migrateToW16(migrated);
+    migrateToW17(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v14 → 15: độ ướt mặt đường qua đêm (tùy chọn).
@@ -1992,12 +2040,20 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW15(migrated);
     migrateToW16(migrated);
+    migrateToW17(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v15 → 16: hàng đang chuyển thành trường save chính thức.
   if (value.schemaVersion === 15 && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW16(migrated);
+    migrateToW17(migrated);
+    return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
+  }
+  // v16 → 17: cơ sở/kho đệm/nhật ký + bộ đếm id chuyến (tùy chọn).
+  if (value.schemaVersion === 16 && isSaveGameData(value)) {
+    const migrated = structuredClone(value) as SaveGameData;
+    migrateToW17(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   if (value.schemaVersion < CURRENT_SAVE_SCHEMA_VERSION) {
@@ -2154,6 +2210,9 @@ export function isGameCommand(value: unknown): value is GameCommand {
     case 'lease_parcel': return nonEmptyString(p.parcelId);
     case 'end_lease': return nonEmptyString(p.parcelId);
     case 'pay_rent_debt': return nonEmptyString(p.parcelId);
+    case 'open_site': return nonEmptyString(p.buildingTypeId) && nonEmptyString(p.parcelId) && Number.isSafeInteger(p.originX) && Number.isSafeInteger(p.originY);
+    case 'close_site': return nonEmptyString(p.siteId);
+    case 'site_transfer': return nonEmptyString(p.siteId) && nonEmptyString(p.productId) && Number.isSafeInteger(p.quantity) && Number(p.quantity) > 0 && (p.direction === 'in' || p.direction === 'out');
     case 'claim_city_goal': return nonEmptyString(p.goalId);
     // Đúng một dạng: hàng (productId + quantity, không amount) HOẶC tiền (amount, không productId/quantity).
     case 'donate_to_bundle': return nonEmptyString(p.bundleId) && nonEmptyString(p.slotId) && (

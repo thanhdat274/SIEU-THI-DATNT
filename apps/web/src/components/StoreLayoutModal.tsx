@@ -72,6 +72,7 @@ const errorMessage = (error: string | undefined, action: StoreLayoutAction, bloc
   if (error === 'level') return 'Chưa đủ cấp độ để mở khu đất.';
   if (error === 'outside_floor') return 'Ô đặt nằm ngoài mặt bằng đã mở.';
   if (error === 'wrong_building') return 'Món này không đặt được ở tòa nhà này (trạm xôi chỉ đặt trong tiệm xôi).';
+  if (error === 'outside_parcel') return 'Kệ/tủ của cơ sở phải nằm trọn trong lô đất của cơ sở (không vắt qua ranh lô).';
   if (error === 'overlap') return 'Vị trí đang bị nội thất khác chiếm.';
   if (error === 'path_blocked') return `Bố cục chặn lối tới: ${blocked?.join(', ')}`;
   if (error === 'prerequisite') return 'Cần mở khu đất liền trước hoặc giữ quầy thu ngân.';

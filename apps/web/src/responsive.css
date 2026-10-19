@@ -1070,3 +1070,17 @@ html[data-density="compact"] .auto-add { box-sizing: border-box; width: calc(100
 html[data-density="compact"] .auto-head p { display: none; }
 .auto-grid :is(input, select) { min-height: 34px; }
 html[data-input="touch"] .auto-grid :is(input, select) { min-height: var(--touch); }
+
+/* ---------- Bảng cơ sở (multi-site-parcel-lease 3.2): một cột, không cuộn lồng ---------- */
+.site-panel { display: flex; flex-direction: column; gap: var(--space-3); }
+.site-panel section { display: flex; flex-direction: column; gap: var(--space-2); }
+.site-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
+.site-list, .site-log ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1, 4px); }
+.site-item { display: flex; align-items: center; gap: var(--space-2); min-height: var(--touch); }
+.site-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.site-select { min-height: var(--touch); width: 100%; font: inherit; }
+.site-todo { margin: 0; padding-left: 1.2em; }
+.site-actions { justify-content: flex-end; }
+.site-warn { margin: 0; color: var(--red, #c62828); font-weight: bold; }
+.site-log summary { min-height: var(--touch); display: flex; align-items: center; cursor: pointer; }
+.site-log li { font-size: var(--fs-sm); }

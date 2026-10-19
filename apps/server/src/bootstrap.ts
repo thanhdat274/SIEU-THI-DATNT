@@ -61,7 +61,7 @@ const ALLOWED_COMMAND_TYPES: ReadonlySet<string> = new Set([
   'checkout',
   'hire_staff', 'pay_wage_debt', 'set_staff_shift', 'assign_staff_building', 'assign_refill_job', 'dispose_stock', 'open_case', 'buy_plot', 'order_supplier', 'maintain_fixture', 'maintain_all_service', 'security_action',
   'buy_warehouse_tier', 'buy_storage_rack',
-  'reclaim_wave', 'buy_parcel', 'open_building', 'lease_parcel', 'end_lease', 'pay_rent_debt',
+  'reclaim_wave', 'buy_parcel', 'open_building', 'lease_parcel', 'end_lease', 'pay_rent_debt', 'open_site', 'close_site', 'site_transfer',
   'claim_city_goal', 'donate_to_bundle', 'respond_review',
   'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',
   'open_branch', 'switch_branch', 'transfer_stock', 'return_stock', 'set_branch_policy',

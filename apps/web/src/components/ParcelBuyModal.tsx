@@ -10,6 +10,8 @@ export interface Props {
   onEndLease?: (parcelId: string) => void | Promise<void>;
   onPayRentDebt?: (parcelId: string) => void | Promise<void>;
   onOpenBuildingPrompt?: (parcelId: string) => void;
+  /** Lô có cơ sở (`multi-site-parcel-lease`): mở bảng cơ sở. */
+  onManageSite?: () => void;
   isOwned?: boolean;
   isLeased?: boolean;
   leasePaidTotal?: number;
@@ -29,6 +31,7 @@ export const ParcelBuyModal: React.FC<Props> = ({
   onEndLease,
   onPayRentDebt,
   onOpenBuildingPrompt,
+  onManageSite,
   isOwned = false,
   isLeased = false,
   leasePaidTotal = 0,
@@ -106,6 +109,8 @@ export const ParcelBuyModal: React.FC<Props> = ({
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', marginTop: 12 }}>
         <PixelButton onClick={onClose}>Đóng</PixelButton>
+
+        {onManageSite && <PixelButton variant="teal" onClick={onManageSite}>Quản lý cơ sở</PixelButton>}
 
         {isLeased && leaseDebtDays > 0 && onPayRentDebt && (
           <PixelButton

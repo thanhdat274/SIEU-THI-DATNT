@@ -10,7 +10,7 @@ export const SERVER_REPLAYED_COMMAND_TYPES: ReadonlySet<string> = new Set([
   'restock', 'unstock', 'set_price', 'reset_prices', 'set_restock_options', 'set_auto_buy_stalls', 'set_auto_buy_config',
   'hire_staff', 'pay_wage_debt', 'set_staff_shift', 'assign_staff_building', 'assign_refill_job',
   'buy_plot', 'buy_warehouse_tier', 'buy_storage_rack', 'auto_buy_sync',
-  'reclaim_wave', 'buy_parcel', 'open_building', 'lease_parcel', 'end_lease', 'pay_rent_debt',
+  'reclaim_wave', 'buy_parcel', 'open_building', 'lease_parcel', 'end_lease', 'pay_rent_debt', 'open_site', 'close_site', 'site_transfer',
   'claim_city_goal',
   'donate_to_bundle',
   'store_status', 'set_tax_declaration', 'advance_day', 'stow', 'stow_all', 'planogram_assignment', 'planogram_restock', 'auto_restock', 'auto_fill_shelf',

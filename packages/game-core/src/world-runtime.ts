@@ -451,7 +451,16 @@ export class WorldRuntime {
       } else if (p.type === 'lease_parcel') {
         success = this.simulation.leaseParcel(p.parcelId).success;
       } else if (p.type === 'end_lease') {
-        success = this.simulation.endLease(p.parcelId).success;
+        const r = this.simulation.endLease(p.parcelId);
+        success = r.success;
+        rejectReason = r.todo?.length ? `${r.reason}:${r.todo.join(',')}` : r.reason;
+      } else if (p.type === 'open_site' || p.type === 'close_site' || p.type === 'site_transfer') {
+        // `multi-site-parcel-lease` D5: mọi thành viên ra được lệnh cơ sở, không kiểm vai trò; người làm = phiên (`setBuildActor`).
+        const r = p.type === 'open_site' ? this.simulation.openSite(p.buildingTypeId, p.parcelId, p.originX, p.originY)
+          : p.type === 'close_site' ? this.simulation.closeSite(p.siteId)
+            : this.simulation.siteTransfer(p.siteId, p.productId, p.quantity, p.direction);
+        success = r.success;
+        rejectReason = 'todo' in r && r.todo?.length ? `${r.reason}:${r.todo.join(',')}` : r.reason;
       } else if (p.type === 'pay_rent_debt') {
         success = this.simulation.payRentDebt(p.parcelId).success;
       } else if (p.type === 'claim_city_goal') {

@@ -121,7 +121,7 @@ export function runInternalDeliveryReturnTests(): void {
   // Lưu/tải giữa chuyến: giữ chuyến, không gộp vào kho (không nhân đôi), schema 16.
   const save = sim.exportSaveData();
   assert.equal(save.schemaVersion, CURRENT_SAVE_SCHEMA_VERSION);
-  assert.equal(CURRENT_SAVE_SCHEMA_VERSION, 16);
+  assert.equal(CURRENT_SAVE_SCHEMA_VERSION, 17);
   const reloaded = new GameSimulation(save, generateStarterTileMap(), new InputManager());
   assert.deepEqual(reloaded.getInternalDeliveries(), sim.getInternalDeliveries(), 'lưu/tải giữ chuyến về');
   assert.equal(total(reloaded), before + 5, 'lưu/tải giữa chuyến không mất, không nhân đôi');
@@ -147,7 +147,7 @@ export function runInternalDeliveryReturnTests(): void {
   v15.internalDeliveries = [{ ...structuredClone(save.internalDeliveries![0]), totalQty: 999, toTarget: 'moon' }, null, { id: '' }];
   const migrated = validateSaveGameData(v15);
   assert.equal(migrated.versionStatus, 'legacy_migrate');
-  assert.equal(migrated.data!.schemaVersion, 16);
+  assert.equal(migrated.data!.schemaVersion, 17);
   assert.equal(migrated.data!.internalDeliveries!.length, 1, 'bỏ phần tử hỏng');
   assert.equal(migrated.data!.internalDeliveries![0].totalQty, 5, 'totalQty theo lô đang chuyển');
   assert.equal(migrated.data!.internalDeliveries![0].toTarget, undefined, 'bỏ toTarget lạ (= hành vi cũ)');

@@ -583,4 +583,70 @@ export async function runWorldRuntimeTests() {
   }
 
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');
+  await runMultiSiteCoopTests();
+}
+
+/** `multi-site-parcel-lease` 3.1/D5: co-op hai thành viên, chủ phòng rời; server replay lệnh cơ sở, ghi đúng người làm. */
+async function runMultiSiteCoopTests() {
+  const owner = { id: 'owner-1', displayName: 'Owner One', photoUrl: null };
+  const seed = createInitialOnlineWorld(owner, 'world-multisite-test');
+  seed.world.memberships.push({ accountId: 'member-2', role: 'member', joinedAt: new Date().toISOString(), lastSeenRevision: 0 });
+  seed.business.save.player.level = 80;
+  seed.business.save.player.money = 80_000_000;
+  seed.business.save.worldTime.isStoreOpen = false;
+  seed.business.save.inventory = seed.business.save.inventory.filter(i => i.productId !== 'nuoc_suoi');
+  seed.business.save.inventory.push({ productId: 'nuoc_suoi', quantity: 20, lots: [{ quantity: 20, expiresOnDay: 99, unitCost: 3000, provenance: 'known' }] });
+  const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 600000, checkpointIntervalSeconds: 9999 });
+  const sim = rt.getSimulation();
+  sim.reclaimWave('w1');
+  (sim as unknown as { finishReclaimedWaves(day: number): void }).finishReclaimedWaves(3);
+  rt.registerSession('owner-1');
+  rt.registerSession('member-2');
+  let n = 0;
+  const cmd = (payload: Record<string, unknown>, commandId = `ms-${++n}`) => ({ protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId, expectedRevision: rt.getSnapshot().world.revision, payload });
+  const arrive = () => {
+    const last = Math.max(...sim.getInternalDeliveries().map(d => d.arriveAtMinute ?? 0));
+    sim.getClock().setTime({ ...sim.getTime(), day: Math.floor(last / 1440), hour: Math.floor((last % 1440) / 60), minute: last % 60 });
+    rt.tick(0.1);
+  };
+  for (const p of [{ type: 'open_site', buildingTypeId: 'grocery_branch', parcelId: 'w1-corner', originX: 0, originY: 0 }, { type: 'close_site', siteId: 'x' }, { type: 'site_transfer', siteId: 'x', productId: 'nuoc_suoi', quantity: 1, direction: 'in' }]) {
+    assert.ok(isGameCommand(cmd(p)), `${p.type} là lệnh hợp lệ`);
+  }
+  assert.equal((await rt.executeCommand('owner-1', cmd({ type: 'lease_parcel', parcelId: 'w1-corner' }))).status, 'accepted');
+  const origin = sim.findOpenOrigin('grocery_branch', 'w1-corner')!;
+  const money = sim.getPlayerData().money;
+  const fixturesBefore = new Set(sim.getFixtures().map(f => f.id));
+  const open = cmd({ type: 'open_site', buildingTypeId: 'grocery_branch', parcelId: 'w1-corner', ...origin });
+  assert.equal((await rt.executeCommand('owner-1', open)).status, 'accepted', 'owner mở cơ sở');
+  await rt.executeCommand('owner-1', { ...open, expectedRevision: rt.getSnapshot().world.revision });
+  assert.equal(sim.getSites().length, 1, 'replay cùng commandId: một cơ sở');
+  const spent = money - sim.getPlayerData().money;
+  assert.ok(spent > 0 && sim.getPlayerData().money === money - spent, 'trừ tiền một lần');
+  const siteId = sim.getSites()[0].siteId;
+  assert.equal((await rt.executeCommand('owner-1', cmd({ type: 'site_transfer', siteId, productId: 'nuoc_suoi', quantity: 8, direction: 'in' }))).status, 'accepted');
+  arrive();
+  // Client dựng từ snapshot thấy cùng kho đệm.
+  (rt as unknown as { lastLiveSnapshotAt: number }).lastLiveSnapshotAt = 0;
+  rt.tick(0.01);
+  const client = new GameSimulation(structuredClone(rt.getSnapshot().businesses[0].save), generateStarterTileMap(), new InputManager());
+  assert.deepEqual(client.getSiteBuffer(siteId), sim.getSiteBuffer(siteId), 'client = server kho đệm');
+  // Chủ phòng rời phòng: member-2 rút hàng, đóng cơ sở (sau khi cất kệ), trả lô.
+  rt.unregisterSession('owner-1');
+  const refused = await rt.executeCommand('member-2', cmd({ type: 'end_lease', parcelId: 'w1-corner' }));
+  assert.equal(refused.status, 'rejected', 'trả lô chưa dọn bị từ chối');
+  assert.match(JSON.stringify(refused), /site_not_cleared/, 'lý do kèm danh sách việc');
+  assert.equal((await rt.executeCommand('member-2', cmd({ type: 'site_transfer', siteId, productId: 'nuoc_suoi', quantity: 8, direction: 'out' }))).status, 'accepted', 'member rút kho đệm khi chủ vắng');
+  arrive();
+  const stow = sim.exportSaveData();
+  const ids = new Set(sim.getFixtures().filter(f => !fixturesBefore.has(f.id)).map(f => f.id));
+  stow.storeLayout.storedFixtures = [...(stow.storeLayout.storedFixtures ?? []), ...stow.storeLayout.fixtures.filter(f => ids.has(f.id) || ids.has(f.parentId ?? ''))];
+  stow.storeLayout.fixtures = stow.storeLayout.fixtures.filter(f => !ids.has(f.id) && !ids.has(f.parentId ?? ''));
+  assert.ok(!sim.applyStoreLayout(stow).error, 'cất kệ cơ sở');
+  const closeRes = await rt.executeCommand('member-2', cmd({ type: 'close_site', siteId }));
+  assert.equal(closeRes.status, 'accepted', `member đóng cơ sở (${JSON.stringify(closeRes)})`);
+  assert.equal((await rt.executeCommand('member-2', cmd({ type: 'end_lease', parcelId: 'w1-corner' }))).status, 'accepted', 'member trả lô');
+  const log = sim.getSiteLog(siteId);
+  assert.deepEqual(log.map(e => [e.action, e.actorAccountId]), [['open_site', 'owner-1'], ['transfer_in', 'owner-1'], ['transfer_out', 'member-2'], ['close_site', 'member-2']], 'nhật ký ghi đúng người');
+  assert.equal(sim.getInventory().find(i => i.productId === 'nuoc_suoi')!.quantity, 20, 'hàng về đủ kho tổng');
+  console.log('✓ multi-site co-op: server replay open_site/site_transfer/close_site/end_lease, chủ vắng member vẫn làm, nhật ký đúng người');
 }

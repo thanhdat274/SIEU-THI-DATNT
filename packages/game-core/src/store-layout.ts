@@ -6,7 +6,7 @@ import {
   RECLAMATION_WAVES, WAVE_EXPANSION_BONUS,
 } from '@game/data';
 
-export type LayoutFailure = 'fixture_missing' | 'plot_locked' | 'outside_floor' | 'overlap' | 'path_blocked' | 'invalid_rotation' | 'store_open' | 'level' | 'money' | 'prerequisite' | 'unknown_item' | 'unavailable' | 'owned' | 'wrong_building'
+export type LayoutFailure = 'fixture_missing' | 'plot_locked' | 'outside_floor' | 'overlap' | 'path_blocked' | 'invalid_rotation' | 'store_open' | 'level' | 'money' | 'prerequisite' | 'unknown_item' | 'unavailable' | 'owned' | 'wrong_building' | 'outside_parcel'
   // Mở rộng tiệm theo ô (OpenSpec `open-world-main-expansion`)
   | 'not_adjacent' | 'disconnected' | 'outside_parcel' | 'blocked_by_building' | 'over_budget' | 'invalid_tiles'
   // Đặt tòa phụ vào lô (OpenSpec `open-world-building-relocation`)
@@ -100,9 +100,16 @@ export function validateStoreLayout(save: SaveGameData, map: GameTileMap): Layou
   const invalid: string[] = [];
   const buildingOf = new Map<string, BuildingId>();
   if (!save.storeLayout.fixtures.some(fixture => fixture.type === 'cashier_counter')) invalid.push('cashier_missing');
+  // `multi-site-parcel-lease` D3: nội thất chạm lô của cơ sở phải nằm trọn trong lô đó (không vắt qua ranh lô).
+  const siteRects = (save.sites ?? []).map(site => resolveParcel(site.parcelId)?.rect).filter((rect): rect is NonNullable<typeof rect> => !!rect);
   for (const fixture of save.storeLayout.fixtures) {
     if (fixture.type.startsWith('warehouse_') || isSlotChild(fixture)) continue;
     if (![0, 90, 180, 270].includes(fixture.rotation)) return { error: 'invalid_rotation' };
+    const tiles = footprint(fixture);
+    for (const rect of siteRects) {
+      const inside = tiles.filter(tile => inRect(rect, tile.x, tile.y)).length;
+      if (inside > 0 && inside < tiles.length) return { error: 'outside_parcel', blockedFixtureIds: [fixture.id] };
+    }
     for (const tile of footprint(fixture)) {
       const idx = tileIndex(map, tile.x, tile.y);
       const k = key(tile.x, tile.y);

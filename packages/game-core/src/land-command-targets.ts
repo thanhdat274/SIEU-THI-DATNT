@@ -21,7 +21,8 @@ function targetOf(action: unknown): PlanningTargets | null {
     case 'reclaim_wave': return str(action.waveId) ? { kind: 'wave', waveId: action.waveId } : null;
     case 'buy_parcel':
     case 'lease_parcel':
-    case 'open_building': return str(action.parcelId) ? { kind: 'parcels', parcelIds: [action.parcelId] } : null;
+    case 'open_building':
+    case 'open_site': return str(action.parcelId) ? { kind: 'parcels', parcelIds: [action.parcelId] } : null;
     case 'buy_plot':
     case 'relocate_building': return placementTarget(action.plotId ?? action.buildingId, action.placement);
     case 'expand_footprint': return Array.isArray(action.tiles) && action.tiles.every(tile) ? { kind: 'tiles', tiles: (action.tiles as Array<{ x: number; y: number }>).map(t => ({ x: t.x, y: t.y })) } : null;

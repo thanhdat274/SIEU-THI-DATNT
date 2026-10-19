@@ -220,7 +220,7 @@ export function runStaffShiftTests(): void {
   assert.equal(migrated.valid, true);
   assert.equal(migrated.versionStatus, 'legacy_migrate');
   assert.equal(migrated.data?.schemaVersion, CURRENT_SAVE_SCHEMA_VERSION);
-  assert.equal(CURRENT_SAVE_SCHEMA_VERSION, 16);
+  assert.equal(CURRENT_SAVE_SCHEMA_VERSION, 17);
   const byId = new Map((migrated.data?.staff ?? []).map((item) => [item.id, item]));
   assert.equal(byId.get('keep-morning')?.shift, 'morning', 'Ca ngày giữ nguyên');
   assert.equal(byId.get('keep-night')?.shift, 'night', 'Ca đêm hợp lệ khi migrate');

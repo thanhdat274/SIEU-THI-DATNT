@@ -224,7 +224,8 @@ import { aggregateHeatmap, appendPricePoint, pruneHeatmap, sanitizeHeatmap, sani
 import { addProductionOutput, consumeIngredients, missingIngredients, sanitizeProductionJobs } from './production';
 import { LONG_TERM_GOALS, WEEKLY_QUESTS, PARTY_ORDER_MAP, PARTY_ORDERS, TITLES, effectiveShelfCapacity, SECURITY_RULES } from '@game/data';
 import { getUnlockedTitles, setActiveTitle, type TitleContext } from './titles';
-import { getFixtureDimensions, syncSlotChildren, isRoadWetnessCarry, type BuildingPlacementRecord, type RoadWetnessCarry, type TitleDef, type InternalDeliveryTarget } from '@game/shared';
+import { getFixtureDimensions, syncSlotChildren, isRoadWetnessCarry, type BuildingPlacementRecord, type RoadWetnessCarry, type TitleDef, type InternalDeliveryTarget, type Site, type SiteLogEntry } from '@game/shared';
+import { SITE_BUFFER_CAPACITY, MAX_SITES, appendSiteLog } from './multi-site';
 
 function normalizeStaffSchedule(
   schedule: Record<string, StaffShift> | undefined,
@@ -426,6 +427,12 @@ export class GameSimulation {
   private warehouseTier: number;
   private storageRackCount: number;
   private internalDeliveries: InternalDelivery[] = [];
+  /** Bộ đếm id chuyến nội bộ (schema 17), tăng dần — không dùng `internalDeliveries.length` (trùng id khi chuyến cũ đã xóa). */
+  private internalDeliverySeq = 0;
+  /** Cơ sở trên lô thuê/sở hữu (`multi-site-parcel-lease` D1); 4 tòa trên lô tiệm chính không nằm ở đây (dùng thẳng kho tổng). */
+  private sites: Site[] = [];
+  private siteBuffers: Record<string, InventoryItem[]> = {};
+  private siteLogs: Record<string, SiteLogEntry[]> = {};
   private supplyContracts: SupplyContract[] = [];
 
   /** Proxy đến stallsMarketsManager cho stalls (đọc/ghi). */
@@ -521,6 +528,7 @@ export class GameSimulation {
     this._cityProgress = initialSave.cityProgress ? { ...initialSave.cityProgress } : { level: 1, claimedCityGoalIds: [], milestones: [], metrics: {} };
     this.supplyContracts = structuredClone(initialSave.supplyContracts ?? []);
     this.internalDeliveries = structuredClone(initialSave.internalDeliveries ?? []);
+    this.loadSiteState(initialSave);
     // 1.3 không hồi tố: trang sổ của các cấp đã qua hiện ngay khi tải (không làm mất cấp).
     this._cityProgress.revealedBundleIds = [...new Set([...(this._cityProgress.revealedBundleIds ?? []), ...revealedBundleIdsForLoadedLevel(this._cityProgress.level)])];
     this.inventory = initialSave.inventory.map((i) => ({ ...i }));
@@ -1136,9 +1144,12 @@ export class GameSimulation {
    * Hủy thuê lô đất (lệnh `end_lease`, OpenSpec `open-world-land-lease` 2.1):
    * Chỉ cho phép hủy khi không có tòa nhà nào đang đặt trên lô đó (cần dời/phá tòa trước).
    */
-  public endLease(parcelId: string): { success: boolean; reason?: string } {
+  public endLease(parcelId: string): { success: boolean; reason?: string; todo?: string[] } {
     const tenure = this.parcelTenure[parcelId];
     if (!tenure || tenure.kind !== 'leased') return { success: false, reason: 'not_leased' };
+    // `multi-site-parcel-lease` D4: lô có cơ sở phải dọn trước — trả danh sách việc cần làm (theo thứ tự dọn).
+    const site = this.sites.find(item => item.parcelId === parcelId);
+    if (site) return { success: false, reason: 'site_not_cleared', todo: this.siteClearanceTodo(site.siteId) };
     const hasBuilding = (this.buildingPlacements ?? []).some(p => p.parcelId === parcelId);
     if (hasBuilding) return { success: false, reason: 'building_present' };
     // Spec D5: chỉ trả lại lô khi không nợ (nếu không, hủy thuê thành cách xóa nợ).
@@ -1147,6 +1158,165 @@ export class GameSimulation {
     delete this.parcelTenure[parcelId];
     this.notifyStateChanged();
     return { success: true };
+  }
+
+  // ===== Nhiều cơ sở trên lô (OpenSpec `multi-site-parcel-lease`) =====
+
+  private loadSiteState(save: SaveGameData): void {
+    this.internalDeliverySeq = save.internalDeliverySeq ?? save.internalDeliveries?.length ?? 0;
+    this.sites = structuredClone(save.sites ?? []);
+    this.siteBuffers = structuredClone(save.siteBuffers ?? {});
+    this.siteLogs = structuredClone(save.siteLogs ?? {});
+  }
+
+  public getSites(): Site[] { return structuredClone(this.sites); }
+  public getSiteBuffer(siteId: string): InventoryItem[] { return structuredClone(this.siteBuffers[siteId] ?? []); }
+  public getSiteLog(siteId: string): SiteLogEntry[] { return structuredClone(this.siteLogs[siteId] ?? []); }
+  public getSiteBufferCapacity(): number { return SITE_BUFFER_CAPACITY; }
+
+  /** Hàng trong kho đệm + đang chuyển tới (sức chứa D2 tính cả hàng đang chuyển). */
+  public siteBufferLoad(siteId: string): number {
+    const stored = (this.siteBuffers[siteId] ?? []).reduce((sum, item) => sum + item.quantity, 0);
+    const incoming = this.internalDeliveries.filter(d => d.toTarget === 'site_buffer' && d.toBuildingId === siteId).reduce((sum, d) => sum + d.totalQty, 0);
+    return stored + incoming;
+  }
+
+  /** Việc còn phải làm trước khi trả lô (D4), theo thứ tự dọn: `buffer:n`, `deliveries:n`, `fixtures:n`, `close_site`. */
+  public siteClearanceTodo(siteId: string): string[] {
+    const todo: string[] = [];
+    const buffered = (this.siteBuffers[siteId] ?? []).reduce((sum, item) => sum + item.quantity, 0);
+    if (buffered > 0) todo.push(`buffer:${buffered}`);
+    const trips = this.internalDeliveries.filter(d => d.toBuildingId === siteId || d.fromBuildingId === siteId).length;
+    if (trips > 0) todo.push(`deliveries:${trips}`);
+    const fixtures = this.siteFixtures(siteId).length;
+    if (fixtures > 0) todo.push(`fixtures:${fixtures}`);
+    if (this.sites.some(site => site.siteId === siteId)) todo.push('close_site');
+    return todo;
+  }
+
+  private siteFixtures(siteId: string): StoreFixture[] {
+    return this.fixtures.filter(fixture => !fixture.parentId && this.buildingOfFixture(fixture) === siteId);
+  }
+
+  /** Cơ sở (có kho đệm) chứa nội thất này; undefined = tòa trên lô tiệm chính hoặc ngoài tòa (dùng kho tổng). */
+  private siteOfFixture(fixture: StoreFixture | undefined): string | undefined {
+    if (!this.sites.length) return undefined;
+    const building = this.buildingOfFixture(fixture);
+    return building && this.sites.some(site => site.siteId === building) ? building : undefined;
+  }
+
+  /** Kho nguồn để châm kệ: kệ cơ sở chỉ lấy từ kho đệm của chính nó (D2), còn lại = kho tổng. */
+  private stockSourceFor(fixture: StoreFixture | undefined): InventoryItem[] {
+    const site = this.siteOfFixture(fixture);
+    return site ? (this.siteBuffers[site] ??= []) : this.inventory;
+  }
+
+  private pruneStockSource(fixture: StoreFixture | undefined): void {
+    const site = this.siteOfFixture(fixture);
+    if (site) this.siteBuffers[site] = (this.siteBuffers[site] ?? []).filter(item => item.quantity > 0);
+    else this.inventory = this.inventory.filter(item => item.quantity > 0);
+  }
+
+  /** Hàng bày được cho kệ: kệ cơ sở = tồn kho đệm; kệ khác = kho tổng trừ phần giữ cho quầy. */
+  private availableForFixture(fixture: StoreFixture, productId: string): number {
+    if (this.siteOfFixture(fixture)) return this.stockSourceFor(fixture).find(item => item.productId === productId)?.quantity ?? 0;
+    return this.shelvableUnits(productId);
+  }
+
+  private addLotsToSiteBuffer(siteId: string, productId: string, lots: StockLot[]): void {
+    const buffer = (this.siteBuffers[siteId] ??= []);
+    const item = buffer.find(entry => entry.productId === productId);
+    if (item) {
+      item.lots ??= normalizeLots(item.quantity, undefined, productId, this.clock.getTime().day);
+      mergeLots(item.lots, lots);
+      item.quantity = sumLots(item.lots);
+    } else {
+      const copy = lots.map(lot => ({ ...lot }));
+      buffer.push({ productId, lots: copy, quantity: sumLots(copy) });
+    }
+  }
+
+  /** D5: mỗi lệnh cơ sở ghi người làm (phiên co-op qua `setBuildActor`; chơi một mình = 'local'). */
+  private logSite(siteId: string, action: string, detail?: string): void {
+    const now = this.clock.getTime();
+    this.siteLogs[siteId] = appendSiteLog(this.siteLogs[siteId], { day: now.day, minute: now.hour * 60 + now.minute, actorAccountId: this.buildActorId, action, ...(detail ? { detail } : {}) });
+  }
+
+  /**
+   * Mở cơ sở trên lô đang thuê/sở hữu (lệnh `open_site`, D1): lô chưa có cơ sở, không bị đóng do nợ, không phải lô tiệm chính;
+   * gọi `openBuilding` (trừ tiền một lần), `siteId` = instanceId. Lặp lệnh cùng opId do hàng đợi lệnh server chặn.
+   */
+  public openSite(buildingTypeId: string, parcelId: string, originX: number, originY: number): { success: boolean; reason?: string; siteId?: string } {
+    const parcel = resolveParcel(parcelId);
+    if (!parcel) return { success: false, reason: 'unknown_parcel' };
+    if (parcel.wave === 0) return { success: false, reason: 'main_parcel' };
+    const tenure = this.parcelTenure[parcelId];
+    if (!tenure || (tenure.kind !== 'owned' && tenure.kind !== 'leased')) return { success: false, reason: 'parcel_not_held' };
+    if (this.sites.some(site => site.parcelId === parcelId)) return { success: false, reason: 'site_exists' };
+    if ((tenure.debtDays ?? 0) >= LAND_LEASE_CONSTANTS.debtClosureDays || (this.buildingPlacements ?? []).some(p => p.parcelId === parcelId && p.closedForRent)) return { success: false, reason: 'closed_for_rent' };
+    if (this.sites.length >= MAX_SITES) return { success: false, reason: 'max_sites' };
+    const opened = this.openBuilding(buildingTypeId, parcelId, originX, originY);
+    if (!opened.success || !opened.instanceId) return { success: false, reason: opened.reason };
+    this.sites.push({ siteId: opened.instanceId, parcelId, openedDay: this.clock.getTime().day, openedBy: this.buildActorId });
+    this.logSite(opened.instanceId, 'open_site', `${buildingTypeId} @ ${parcelId}`);
+    this.notifyStateChanged();
+    return { success: true, siteId: opened.instanceId };
+  }
+
+  /** Đóng cơ sở (lệnh `close_site`, D4): chỉ khi kho đệm rỗng, không chuyến đang chạy, đã cất hết kệ; gỡ tòa khỏi lô, không hoàn tiền. */
+  public closeSite(siteId: string): { success: boolean; reason?: string; todo?: string[] } {
+    if (!this.sites.some(site => site.siteId === siteId)) return { success: false, reason: 'unknown_site' };
+    if (this.clock.getTime().isStoreOpen) return { success: false, reason: 'store_open' };
+    const todo = this.siteClearanceTodo(siteId).filter(item => item !== 'close_site');
+    if (todo.length) return { success: false, reason: 'site_not_cleared', todo };
+    const next = this.exportSaveData();
+    next.storeLayout.buildingPlacements = (next.storeLayout.buildingPlacements ?? []).filter(p => p.buildingId !== siteId);
+    next.sites = (next.sites ?? []).filter(site => site.siteId !== siteId);
+    const applied = this.applyStoreLayout(next);
+    if (applied.error) return { success: false, reason: applied.error };
+    this.sites = this.sites.filter(site => site.siteId !== siteId);
+    delete this.siteBuffers[siteId];
+    this.logSite(siteId, 'close_site');
+    this.notifyStateChanged();
+    return { success: true };
+  }
+
+  /**
+   * Chuyển hàng kho tổng ↔ kho đệm qua `internal_delivery` (D2): `in` từ chối khi kho tổng thiếu, vượt sức chứa (tính cả hàng
+   * đang chuyển tới) hoặc lô bị đóng do nợ thuê; `out` luôn được kể cả khi lô đóng do nợ (D4 — cứu hàng).
+   * Lô FEFO + giá vốn đi nguyên; sổ `internal_transfer` không đổi quỹ.
+   */
+  public siteTransfer(siteId: string, productId: string, quantity: number, direction: 'in' | 'out'): { success: boolean; reason?: string; deliveryId?: string } {
+    if (!this.sites.some(item => item.siteId === siteId)) return { success: false, reason: 'unknown_site' };
+    if (!Number.isSafeInteger(quantity) || quantity <= 0) return { success: false, reason: 'invalid_quantity' };
+    let lots: StockLot[];
+    if (direction === 'in') {
+      if ((this.buildingPlacements ?? []).some(p => p.buildingId === siteId && p.closedForRent)) return { success: false, reason: 'closed_for_rent' };
+      if (this.siteBufferLoad(siteId) + quantity > SITE_BUFFER_CAPACITY) return { success: false, reason: 'buffer_full' };
+      const source = this.inventory.find(item => item.productId === productId);
+      if (!source || source.quantity < quantity) return { success: false, reason: 'no_inventory' };
+      source.lots ??= normalizeLots(source.quantity, undefined, productId, this.clock.getTime().day);
+      lots = takeLots(source.lots, quantity);
+      source.quantity = sumLots(source.lots);
+      this.inventory = this.inventory.filter(item => item.quantity > 0);
+    } else {
+      const buffer = this.siteBuffers[siteId] ?? [];
+      const source = buffer.find(item => item.productId === productId);
+      if (!source || source.quantity < quantity) return { success: false, reason: 'no_buffer_stock' };
+      source.lots ??= normalizeLots(source.quantity, undefined, productId, this.clock.getTime().day);
+      lots = takeLots(source.lots, quantity);
+      source.quantity = sumLots(source.lots);
+      this.siteBuffers[siteId] = buffer.filter(item => item.quantity > 0);
+    }
+    const delivery = direction === 'in'
+      ? this.startInternalDelivery({ fromBuildingId: 'main', toBuildingId: siteId, productId, lots, toTarget: 'site_buffer' })
+      : this.startInternalDelivery({ fromBuildingId: siteId, toBuildingId: 'main', productId, lots, toTarget: 'central' });
+    if (!delivery) return { success: false, reason: 'empty' };
+    const name = PRODUCT_MAP[productId]?.name ?? productId;
+    this.recordLedger({ day: this.clock.getTime().day, type: 'internal_transfer', amount: 0, quantity, productId, description: `Chuyển ${quantity} ${name}: ${direction === 'in' ? `kho tổng → kho đệm ${siteId}` : `kho đệm ${siteId} → kho tổng`}`, buildingInstanceId: direction === 'in' ? 'main' : siteId, toBuildingInstanceId: direction === 'in' ? siteId : 'main' });
+    this.logSite(siteId, direction === 'in' ? 'transfer_in' : 'transfer_out', `${quantity} ${productId}`);
+    this.notifyStateChanged();
+    return { success: true, deliveryId: delivery.id };
   }
 
   /**
@@ -3891,6 +4061,14 @@ export class GameSimulation {
         continue;
       }
       if (task.stage === 'to_warehouse') {
+        // Kệ cơ sở: châm tại chỗ từ kho đệm của cơ sở (D2), không lấy kho tổng.
+        const siteShelf = this.fixtures.find((item) => item.id === task.fixtureId);
+        if (this.siteOfFixture(siteShelf)) {
+          const res = this.transferToShelf(task.fixtureId, task.productId, valid.target.needed, false, false);
+          member.lastWorkerError = res.success ? undefined : 'Kho đệm cơ sở không còn hàng theo yêu cầu.';
+          this.finishStaffJob(member, false);
+          continue;
+        }
         const source = this.inventory.find((item) => item.productId === task.productId);
         if (!source || source.quantity <= 0) {
           member.lastWorkerError = 'Kho không còn hàng theo yêu cầu.';
@@ -3928,7 +4106,7 @@ export class GameSimulation {
         if (shelf && distFromWarehouse > INTERNAL_DELIVERY_MIN_TILES) {
           const now = this.clock.getTime();
           this.internalDeliveries.push({
-            id: `delivery-${now.day}-${now.hour * 60 + now.minute}-${task.fixtureId}-${this.internalDeliveries.length}`,
+            id: `delivery-${now.day}-${now.hour * 60 + now.minute}-${task.fixtureId}-${++this.internalDeliverySeq}`,
             fromBuildingId: 'main',
             toBuildingId: fixtureBuilding(shelf, this.tileMap.buildings) ?? 'branch',
             productId: task.productId,
@@ -5865,12 +6043,14 @@ export class GameSimulation {
       return { success: false, actualQuantity: 0, reason: 'storage_mismatch' };
     }
 
-    const inventorySlot = this.inventory.find((i) => i.productId === productId);
+    // `multi-site-parcel-lease` D2: kệ cơ sở chỉ lấy từ kho đệm của chính nó.
+    const fromSite = this.siteOfFixture(fixture) !== undefined;
+    const inventorySlot = this.stockSourceFor(fixture).find((i) => i.productId === productId);
     if (!inventorySlot || inventorySlot.quantity <= 0) {
       return { success: false, actualQuantity: 0, reason: 'no_inventory' };
     }
     // Bày tự động (sơ đồ, "bày tất cả", châm kệ) chừa nguyên liệu cho quầy ăn uống đã mở; người chơi bày tay thì tự quyết.
-    if (respectStallReserve) {
+    if (respectStallReserve && !fromSite) {
       const shelvable = this.shelvableUnits(productId);
       if (shelvable <= 0) return { success: false, actualQuantity: 0, reason: 'reserved_for_stall' };
       amount = Math.min(amount, shelvable);
@@ -5891,7 +6071,7 @@ export class GameSimulation {
     inventorySlot.lots ??= normalizeLots(inventorySlot.quantity, undefined, productId, this.clock.getTime().day);
     let loose = looseUnits(inventorySlot.lots, product.caseSize);
     // Bày tự động: thiếu hàng lẻ thì tự mở đúng số thùng cần dùng.
-    if (autoOpenCases && product.caseSize && loose < Math.min(amount, availableSpace)) {
+    if (autoOpenCases && !fromSite && product.caseSize && loose < Math.min(amount, availableSpace)) {
       const wanted = Math.min(amount, availableSpace);
       this.unpackMultipleCases(productId, Math.ceil((wanted - loose) / product.caseSize));
       loose = looseUnits(inventorySlot.lots, product.caseSize);
@@ -5913,9 +6093,7 @@ export class GameSimulation {
     fixture.currentStock = sumLots(fixture.stockLots);
 
     // Clean up empty inventory slots
-    if (inventorySlot.quantity <= 0) {
-      this.inventory = this.inventory.filter((i) => i.quantity > 0);
-    }
+    if (inventorySlot.quantity <= 0) this.pruneStockSource(fixture);
 
     this.notifyStateChanged();
     return { success: true, actualQuantity: actualTransfer, reason: 'success' };
@@ -6263,7 +6441,7 @@ export class GameSimulation {
         .concat([...alsoTaken])
     );
 
-    return this.inventory
+    return this.stockSourceFor(fix)
       .filter((inv) => {
         if (inv.quantity <= 0) return false;
         const prod = PRODUCT_MAP[inv.productId];
@@ -6385,7 +6563,7 @@ export class GameSimulation {
       if (needed <= 0) continue;
 
       // Hàng nguyên thùng vẫn tính là có sẵn (bày tự động sẽ mở thùng khi cần), trừ phần giữ cho quầy ăn uống.
-      const available = this.shelvableUnits(productId);
+      const available = this.availableForFixture(fix, productId);
 
       targets.push({
         fixtureId,
@@ -6404,7 +6582,7 @@ export class GameSimulation {
       const effectiveCap = effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
       const needed = Math.max(0, effectiveCap - fix.currentStock - this.inTransitTo(fix.id));
       if (needed <= 0) continue;
-      const available = this.shelvableUnits(fix.assignedProductId);
+      const available = this.availableForFixture(fix, fix.assignedProductId);
       targets.push({ fixtureId: fix.id, productId: fix.assignedProductId, currentStock: fix.currentStock, maxCapacity: effectiveCap, needed, availableInInventory: available });
     }
     // Kệ trống chưa gán món và không có trong sơ đồ: nhân viên tự chọn món mới từ kho (cùng luật với "bày tất cả"), chia đều món cho các kệ.
@@ -6413,7 +6591,7 @@ export class GameSimulation {
       if (!isSalesFixture(fix) || fix.broken || fix.assignedProductId || fix.currentStock > 0 || this.inTransitTo(fix.id) > 0 || this.planogram[fix.id] || !usable(fix)) continue;
       const candidate = this.autoFillCandidates(fix, taken).find((inv) => {
         const prod = PRODUCT_MAP[inv.productId];
-        if (!prod || prod.unlockLevel > this.playerData.level || this.shelvableUnits(inv.productId) <= 0) return false;
+        if (!prod || prod.unlockLevel > this.playerData.level || this.availableForFixture(fix, inv.productId) <= 0) return false;
         if (prod.storageType === 'cold' && prod.coldOnly && fix.type !== 'refrigerator') return false;
         if (prod.category === 'frozen' && !(fix.type === 'refrigerator' && (fix.shopId ?? this.fixtures.find((item) => item.id === fix.parentId)?.shopId) === 'freezer')) return false;
         return true;
@@ -6423,7 +6601,7 @@ export class GameSimulation {
       taken.add(candidate.productId);
       const effectiveCap = effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, getSkillModifier(this.skills, 'shelf_capacity_bonus'));
       if (effectiveCap <= 0) continue;
-      targets.push({ fixtureId: fix.id, productId: candidate.productId, currentStock: 0, maxCapacity: effectiveCap, needed: effectiveCap, availableInInventory: this.shelvableUnits(candidate.productId) });
+      targets.push({ fixtureId: fix.id, productId: candidate.productId, currentStock: 0, maxCapacity: effectiveCap, needed: effectiveCap, availableInInventory: this.availableForFixture(fix, candidate.productId) });
     }
     return targets;
   }
@@ -6650,8 +6828,13 @@ export class GameSimulation {
     this.internalDeliveries = this.internalDeliveries.filter(d => !arrived.includes(d));
     for (const d of arrived) {
       const lots = (d.lots ?? []).map(l => ({ ...l }));
-      // Chiều về kho tổng (D6 `multi-site-parcel-lease`): gộp nguyên lô (giữ hạn dùng FEFO + giá vốn). `site_buffer` chưa có
-      // kho đệm (spec 7.2) nên tạm cũng vào kho tổng — không mất hàng.
+      // Vào kho đệm cơ sở (`multi-site-parcel-lease` D2): nguyên lô FEFO + giá vốn; thùng coi như mở tại chỗ (số lượng đã gồm hàng
+      // trong thùng). Cơ sở không còn (không xảy ra khi đóng đúng luật) thì về kho tổng — không mất hàng.
+      if (d.toTarget === 'site_buffer' && this.sites.some(site => site.siteId === d.toBuildingId)) {
+        if (sumLots(lots) > 0) this.addLotsToSiteBuffer(d.toBuildingId, d.productId, lots.map(l => { const opened = { ...l }; delete opened.caseCount; return opened; }));
+        continue;
+      }
+      // Chiều về kho tổng: gộp nguyên lô (giữ hạn dùng FEFO + giá vốn).
       if (d.toTarget === 'central' || d.toTarget === 'site_buffer') {
         if (sumLots(lots) > 0) this.returnLotsToInventory(d.productId, lots);
         continue;
@@ -6687,7 +6870,7 @@ export class GameSimulation {
     if (totalQty <= 0) return undefined;
     const now = this.clock.getTime();
     const delivery: InternalDelivery = {
-      id: `delivery-${now.day}-${now.hour * 60 + now.minute}-${input.toTarget}-${input.fromBuildingId}-${this.internalDeliveries.length}`,
+      id: `delivery-${now.day}-${now.hour * 60 + now.minute}-${input.toTarget}-${input.fromBuildingId}-${++this.internalDeliverySeq}`,
       fromBuildingId: input.fromBuildingId,
       toBuildingId: input.toBuildingId,
       productId: input.productId,
@@ -6814,7 +6997,7 @@ export class GameSimulation {
       const prod = PRODUCT_MAP[fix.assignedProductId];
       const cap = prod ? effectiveShelfCapacity(fix.maxCapacity, prod.shelfCapacity, this.getShelfCapacityBonus()) : fix.maxCapacity;
       const needed = cap - fix.currentStock;
-      const have = this.getInventory().find((i) => i.productId === fix.assignedProductId);
+      const have = this.stockSourceFor(fix).find((i) => i.productId === fix.assignedProductId);
       if (needed > 0 && have && have.quantity > 0) {
         const res = this.transferToShelf(fix.id, fix.assignedProductId, Math.min(needed, have.quantity), true);
         if (res.success && res.actualQuantity > 0) restocked += res.actualQuantity;
@@ -7193,6 +7376,10 @@ export class GameSimulation {
       })(),
       supplyContracts: structuredClone(this.supplyContracts),
       internalDeliveries: structuredClone(this.internalDeliveries),
+      ...(this.internalDeliverySeq > 0 ? { internalDeliverySeq: this.internalDeliverySeq } : {}),
+      ...(this.sites.length ? { sites: structuredClone(this.sites) } : {}),
+      ...(Object.keys(this.siteBuffers).length ? { siteBuffers: structuredClone(this.siteBuffers) } : {}),
+      ...(Object.keys(this.siteLogs).length ? { siteLogs: structuredClone(this.siteLogs) } : {}),
       cityProgress: { level: this._cityProgress.level, claimedCityGoalIds: [...this._cityProgress.claimedCityGoalIds], milestones: structuredClone(this._cityProgress.milestones), metrics: { ...this._cityProgress.metrics }, revealedBundleIds: [...(this._cityProgress.revealedBundleIds ?? [])] },
     };
   }
@@ -7228,6 +7415,7 @@ export class GameSimulation {
     this._cityProgress = saveData.cityProgress ? { ...saveData.cityProgress, metrics: { ...(saveData.cityProgress.metrics ?? {}) } } : { level: 1, claimedCityGoalIds: [], milestones: [], metrics: {} };
     this.supplyContracts = structuredClone(saveData.supplyContracts ?? []);
     this.internalDeliveries = structuredClone(saveData.internalDeliveries ?? []);
+    this.loadSiteState(saveData);
     // 1.3 không hồi tố: trang sổ của cấp đã qua hiện ngay khi tải.
     this._cityProgress.revealedBundleIds = [...new Set([...(this._cityProgress.revealedBundleIds ?? []), ...revealedBundleIdsForLoadedLevel(this._cityProgress.level)])];
     this.collisionSystem?.setOpenedWaves(this.worldOpenState.openedWaves);
