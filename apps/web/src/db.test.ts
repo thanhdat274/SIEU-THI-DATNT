@@ -134,10 +134,13 @@ console.log('PASS db: ô lưu, khóa backup, ô đang chọn, revision, backup r
   assert.equal(demo.id, dbm.DEMO_SAVE_SLOT_ID);
   assert.equal(isSaveSlotId(dbm.DEMO_SAVE_SLOT_ID), false, 'ô demo không thuộc ô hiển thị');
   await persistSave({ ...demo, revision: demo.revision + 1 });
+  const seeded = await dbm.seedDemoSave({ ...demo, id: 'local_save_slot_2', revision: 9 });
+  assert.equal(seeded.id, dbm.DEMO_SAVE_SLOT_ID, 'save QA luôn ghi vào ô demo dù id đầu vào là ô thật');
   assert.deepEqual(await db.saves.get('local_save_slot_2'), before, 'chơi thử không đổi save ô đang chọn');
   assert.equal((await listSaveSlots()).length, 3, 'danh sách ô không có ô demo');
   setActiveSlotId('local_save_slot_2');
   assert.equal(dbm.isDemoMode(), false, 'chọn lại ô thật thì thoát demo');
+  await rejects(dbm.seedDemoSave(demo), /Chơi Thử/, 'ngoài chế độ demo không nạp save QA');
   assert.equal((await loadOrCreateSave()).id, 'local_save_slot_2');
   console.log('PASS db: chơi thử dùng ô demo riêng');
 }

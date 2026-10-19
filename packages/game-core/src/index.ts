@@ -86,3 +86,4 @@ export * from './civic-bundle-view';
 export * from './civic-reveal-goals';
 export * from './city-journal';
 export * from './building-scoreboard';
+export * from './qa-seed';

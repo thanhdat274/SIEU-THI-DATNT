@@ -282,6 +282,14 @@ export async function resetSaveToDefault(): Promise<SaveGameData> {
   return freshSave;
 }
 
+/** QA (DEV): ghi save dựng sẵn vào ô Chơi Thử. Chỉ chạy khi đang ở chế độ demo nên không bao giờ chạm ô thật. */
+export async function seedDemoSave(save: SaveGameData): Promise<SaveGameData> {
+  if (!demoMode) throw new Error('Chỉ nạp save QA vào ô Chơi Thử.');
+  const seeded: SaveGameData = { ...save, id: DEMO_SAVE_SLOT_ID, revision: 1 };
+  await db.saves.put(seeded);
+  return seeded;
+}
+
 /**
  * Thay bản lưu hiện tại bằng save nhập từ file. Save được kiểm tra lại, bản hiện tại giữ làm backup (một bản)
  * và revision đi tiếp từ bản cũ để hàng đợi lưu tuần tự không báo lệch.

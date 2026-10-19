@@ -25,6 +25,25 @@ Môi trường: Browser pane (Chromium) qua dev server 5173 có sẵn, "Chơi Th
 
 **CHƯA QA (không dựng được trạng thái trong lượt này):** nút phản hồi lời chê (chưa có lời chê), lời nổi bật trong bản tin sáng (không có lời chê/khen nổi bật hôm trước), quán ăn vặt + cross-sell + Bé Na (cần cấp 26 và mua lô), hội chợ W4, đường ướt qua đêm, tooltip dự báo mưa, điện thoại thật, co-op hai trình duyệt.
 
+# CÔNG CỤ DỰNG SAVE QA (19/10/2026)
+
+Chỉ có ở bản DEV (`yarn --cwd apps/web dev`). Ở **màn đăng nhập**, mở Console và gõ:
+
+```js
+await window.__seedQaSave('snack')   // hoặc 'fair' | 'complaints' | 'rain'
+```
+
+Hook vào chế độ Chơi Thử, ghi save dựng sẵn vào ô `local_save_demo` rồi vào game. **Không đụng 3 ô lưu thật** (`seedDemoSave` từ chối nếu không ở chế độ demo). Đang trong game thì tải lại trang để về màn đăng nhập rồi gọi lại. Bộ dựng: `packages/game-core/src/qa-seed.ts` (`buildQaSave(kind)`), seed thị trường cố định `qa-seed` nên lần nào cũng ra cùng ngày/thời tiết.
+
+| Bộ | Trạng thái |
+|---|---|
+| `snack` | Cấp 26, đã mua lô `building-snack` (đúng giá 1.200.000 ₫), mọi kệ tiệm chính + 12 kệ quán ăn vặt đầy (14 món/kệ, không hết hạn), ngày 5 lúc 15:30, đang mở cửa. |
+| `fair` | Như `snack` nhưng quán ăn vặt đã dời sang lô `w4-corner` (khu `am_thuc_nam`, mở đủ đợt w0–w4, bỏ công trường), đúng ngày hội chợ W4 đầu tiên (ngày 6), 10:00. |
+| `complaints` | Cấp 10, kệ đầy, ngày 5 lúc 09:00, 3 lời chê ngày 3/4/5 (chờ lâu / hết mì / nước suối đắt) — dùng để QA nút phản hồi lời chê và lời nổi bật bản tin. |
+| `rain` | Cấp 10, kệ đầy, ngày mưa to đầu tiên không trùng sự kiện thành phố (ngày 27, đỉnh 0,63, mưa ~12:30–16:00), 21:30. Lưu ý: 21:30 đã tạnh (mưa không rơi sau ~16h) — bộ này để xem đường ướt/qua đêm sang ngày 28 và dự báo; muốn thấy mưa đang rơi thì tua ngày hôm sau hoặc dựng giờ khác. |
+
+Test: `qa-seed.test.ts` (game-core) — mỗi bộ `isSaveGameData` hợp lệ, cả sau JSON; `db.test.ts` — save QA luôn vào ô demo, ngoài demo bị từ chối.
+
 # MƯA: DỰ BÁO CÓ SAI SỐ + MƯA TO ÍT KHÁCH/XE CHẬM + GỢN VŨNG + ƯỚT QUA ĐÊM (19/10/2026, HỆ SỐ KHÁCH ĐÃ CHỐT 19/10/2026)
 
 Theo chốt 17/10/2026 ở `rain-intensity-forecast` 4.4 và `road-cross-section-drainage` 4.4. Nền trước khi sửa: typecheck PASS, game-core 112/112 (`.qa/baseline-*.log`).
