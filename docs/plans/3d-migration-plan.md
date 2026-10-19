@@ -1,6 +1,6 @@
 # Kế hoạch chuyển sang 3D (Babylon.js, phong cách pixel nổi khối)
 
-> Trạng thái: **bản nháp kế hoạch**, chưa code. Ngày lập: 2026-10-19.
+> Trạng thái: A ✅, B ✅ (khung 3D chạy bằng `?r=3d`). Ngày lập: 2026-10-19.
 > Nguyên tắc: mỗi bước là một thay đổi nhỏ, chạy được, test được, có thể dừng ở bất kỳ bước nào mà game vẫn chơi được.
 
 ## 0. Quyết định nền
@@ -50,7 +50,7 @@ Tạo package mới `packages/game-renderer-3d` (không sửa package Pixi).
 **B3. Sàn lưới từ `GameTileMap`**: một mesh ô vuông với thin instances (`thinInstanceAdd`), màu theo loại ô (đường/vỉa hè/cỏ/sàn tiệm). Tọa độ: 1 ô = 1 đơn vị, `x → X`, `y → Z`.
 - ✅ Kiểm: nhìn thấy đúng hình bản đồ từ trên xuống; test đơn vị cho hàm `tileToWorld`/`worldToTile`.
 
-**B4. Camera iso + điều khiển (desktop trước)**: kéo chuột phải/giữa hoặc WASD/mũi tên để pan, lăn chuột zoom theo bậc, `Q`/`E` xoay 90° (khóa `alpha` theo bậc). Chạm/pinch trên mobile để sau. Tái dùng logic chặn biên từ `camera.ts` nếu được.
+**B4. Camera iso + điều khiển (desktop trước)**: kéo chuột phải/giữa để pan (WASD vẫn là đi lại; camera bám người chơi), lăn chuột zoom theo bậc, `Q`/`R` xoay 90° (khóa `alpha` theo bậc; `E` đã dùng cho tương tác). Chạm/pinch trên mobile để sau. Tái dùng logic chặn biên từ `camera.ts` nếu được.
 - ✅ Kiểm: desktop 1280×720, 1920×1080; mobile chỉ cần không vỡ.
 
 **B5. Pipeline "pixel"**: `engine.setHardwareScalingLevel(n)` hoặc `PassPostProcess` độ phân giải thấp (chiều cao ~360–540px) + lấy mẫu `NEAREST_SAMPLINGMODE`, canvas CSS `image-rendering: pixelated`. Snap camera theo bước 1 pixel ảo để không rung.

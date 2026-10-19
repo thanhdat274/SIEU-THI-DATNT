@@ -9,7 +9,8 @@ import { WorldSettingsModal } from './components/WorldSettingsModal';
 import { LandVoteModal, type LandVoteInfo } from './components/LandVoteModal';
 import { OpenBuildingModal } from './components/OpenBuildingModal';
 import { SiteModal, siteTodoLabel } from './components/SiteModal';
-import { createViewport, preferredRenderer, type GameViewport, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
+import { type GameViewport, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
+import { createViewport, preferredRenderer } from './viewport-factory';
 import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup, MULTIPLAYER_PROTOCOL_VERSION, SERVER_REPLAYED_COMMAND_TYPES } from '@game/shared';
 
 import { getActiveSlotId, loadOrCreateSave, persistSave, writeEmergencySave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
@@ -877,7 +878,7 @@ export const App: React.FC = () => {
       syncFromSimulation(simulation);
 
       // 5. Setup PixiJS Viewport
-      const viewport = createViewport(preferredRenderer(), {
+      const viewport = await createViewport(preferredRenderer(), {
         canvas: canvasRef.current,
         tileMap: simulation.getTileMap(),
         simulation,
