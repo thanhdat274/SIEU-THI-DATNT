@@ -23,6 +23,7 @@ export interface PixiGameViewportOptions {
   getPartnerAvatar?: () => { position: Vector2D; direction: string; isMoving?: boolean; name?: string } | null;
 }
 
+import type { GameViewport } from './viewport-api';
 import { getDebugVisualTime } from './debug-time';
 import { buildRoadSurface, type RoadSurface } from './road-surface';
 import { WeatherEffects, swaySkew } from './weather-effects';
@@ -121,7 +122,7 @@ interface PlacedBuilding { id: Exclude<BuildingId, 'main'>; open: boolean; bound
 
 /** Kệ, tủ mát, quầy thu ngân có thể là ảnh atlas tĩnh (cao hơn bản code 48 px, không đổi hình theo mức hàng). */
 const ATLAS_FIXTURE_KEY = /^fixture_(shelf_|refrigerator|freezer|cashier|warehouse_(dry|cold|receiving)$|prop_(chau_cay|cay_kieng_lon|storage_rack|food_table_2|drink_table_2|food_table_4)$)/;
-export class PixiGameViewport {
+export class PixiGameViewport implements GameViewport {
   private app!: Application;
   private canvas: HTMLCanvasElement;
   private tileMap: GameTileMap;

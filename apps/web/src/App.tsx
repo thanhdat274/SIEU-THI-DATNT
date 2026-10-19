@@ -9,7 +9,7 @@ import { WorldSettingsModal } from './components/WorldSettingsModal';
 import { LandVoteModal, type LandVoteInfo } from './components/LandVoteModal';
 import { OpenBuildingModal } from './components/OpenBuildingModal';
 import { SiteModal, siteTodoLabel } from './components/SiteModal';
-import { PixiGameViewport, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
+import { createViewport, preferredRenderer, type GameViewport, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
 import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup, MULTIPLAYER_PROTOCOL_VERSION, SERVER_REPLAYED_COMMAND_TYPES } from '@game/shared';
 
 import { getActiveSlotId, loadOrCreateSave, persistSave, writeEmergencySave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
@@ -95,7 +95,7 @@ export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simulationRef = useRef<GameSimulation | null>(null);
   const inputManagerRef = useRef<InputManager | null>(null);
-  const viewportRef = useRef<PixiGameViewport | null>(null);
+  const viewportRef = useRef<GameViewport | null>(null);
   const revisionRef = useRef(1);
   const [staffRequested, setStaffRequested] = useState(false);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -696,7 +696,7 @@ export const App: React.FC = () => {
     let initialized = false;
     let disposed = false;
     let ownedInput: InputManager | null = null;
-    let ownedViewport: PixiGameViewport | null = null;
+    let ownedViewport: GameViewport | null = null;
     let stateSyncQueued = false;
     let lastHeavySync = 0;
     let ownedSimulation: GameSimulation | null = null;
@@ -877,7 +877,7 @@ export const App: React.FC = () => {
       syncFromSimulation(simulation);
 
       // 5. Setup PixiJS Viewport
-      const viewport = new PixiGameViewport({
+      const viewport = createViewport(preferredRenderer(), {
         canvas: canvasRef.current,
         tileMap: simulation.getTileMap(),
         simulation,
