@@ -219,19 +219,19 @@ export function runSecurityTests(): void {
   {
     const day = findBurglaryDay('repelled', { camera: false, hasGuard: true });
     // a) Guard night — chặn
-    let simNight = newSim(save => { save.staff = [guardNight]; save.staffSchedule = { 'guard-night': 'night' }; save.worldTime = { ...save.worldTime, day: day - 1 }; });
+    const simNight = newSim(save => { save.staff = [guardNight]; save.staffSchedule = { 'guard-night': 'night' }; save.worldTime = { ...save.worldTime, day: day - 1 }; });
     (simNight as unknown as { currentDayRecord: { revenue: number } }).currentDayRecord.revenue = 100_000;
     simNight.getClock().advanceToNextDay();
     assert.equal(simNight.getSecurityState().incidents.at(-1)?.kind, 'burglary_repelled', 'Guard đêm: chặn');
 
     // b) Guard day — không chặn
-    let simDay = newSim(save => { save.staff = [guardStaff]; save.staffSchedule = { 'guard-1': 'full_day' }; save.worldTime = { ...save.worldTime, day: day - 1 }; });
+    const simDay = newSim(save => { save.staff = [guardStaff]; save.staffSchedule = { 'guard-1': 'full_day' }; save.worldTime = { ...save.worldTime, day: day - 1 }; });
     (simDay as unknown as { currentDayRecord: { revenue: number } }).currentDayRecord.revenue = 100_000;
     simDay.getClock().advanceToNextDay();
     assert.ok(simDay.getSecurityState().incidents.at(-1)?.kind !== 'burglary_repelled', 'Guard ngày: không chặn trộm đêm');
 
     // c) Không guard — không chặn
-    let simNone = newSim(save => { save.worldTime = { ...save.worldTime, day: day - 1 }; });
+    const simNone = newSim(save => { save.worldTime = { ...save.worldTime, day: day - 1 }; });
     (simNone as unknown as { currentDayRecord: { revenue: number } }).currentDayRecord.revenue = 100_000;
     simNone.getClock().advanceToNextDay();
     assert.ok(simNone.getSecurityState().incidents.at(-1)?.kind !== 'burglary_repelled', 'Không guard: không chặn');

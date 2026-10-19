@@ -93,7 +93,7 @@ export function runCrosswalkTests(): void {
 
     // Chạy 1 khung với đèn đỏ: xác nhận chưa qua.
     mgr.update(0.2, true, 1, tileMap, fixtures, [], undefined, undefined, undefined, undefined, undefined, undefined, 1);
-    assert.ok(mgr.getCustomers().find(x => x.id === 'cw-full')?.position.y! >= 512, 'khách chưa qua vạch khi đèn đỏ');
+    assert.ok(mgr.getCustomers().find(x => x.id === 'cw-full')!.position.y >= 512, 'khách chưa qua vạch khi đèn đỏ');
 
     mgr.setStoreFrontPedestrian('walk', 120);
     let reachedShelfPick = false;
