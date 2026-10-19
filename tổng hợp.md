@@ -1,3 +1,105 @@
+# ĐÈN TÍN HIỆU THEO GIỜ GAME + KHÁCH THẬT QUA VẠCH (OpenSpec `traffic-light-crosswalk-yielding` 4.3–4.6, `arrival-mode-weighting` 4.4, 18/10/2026)
+
+## Đèn tín hiệu là hàm thuần theo giờ game (task 1, traffic-light 4.3)
+
+- Trước đây `StreetTrafficManager.signalClock` cộng dồn `dt` thực từng bước con → **lệch pha giữa client/WorldRuntime**, sai khi ban đêm ×3 và khi catch-up. Nay pha đèn là hàm thuần `trafficSignalPhaseFromWorldClock(day,hour,minute)` = `((day*1440+hour*60+minute − 1*1440−7*60) mod 39)` (bắt đầu ngày 1 lúc 07:00 đúng chu kỳ 39 phút game); áp dụng **như nhau** ở client và WorldRuntime qua `setWorldClock` trong `simulation.update()` **mỗi khung** — không gửi qua mạng mỗi frame. Giữ dòng `signalClock += step` cho test standalone (không nối đèn), sản xuất vẫn neo pha theo giờ game.
+- **Tách chu kỳ đèn** (review 4, điểm 1): hai tín hiệu dùng chung một hàm pha `trafficSignalPhaseFromWorldClock` (chu kỳ 39 phút game; `TRAFFIC_SIGNAL_CYCLE_SEC = 39`) nhưng khác **bản đồ pha→trạng thái** qua `signalStateAt(elapsedSec, config)`:
+  - `STORE_FRONT_SIGNAL` (vạch trước cửa, ưu tiên người đi bộ — khách thật băng qua): **green 7, yellow 2, red 30, pedLead 1, pedWalk 22** → đi bộ 22/39 ≈ **56%** chu kỳ để khách đi bộ không chờ lâu (giữ nguyên, không đổi bởi review này).
+  - `INTERSECTION_SIGNAL` (các ngã tư, ưu tiên xe): **green 26, yellow 3, red 10, pedLead 1, pedWalk 5** → xe xanh 26/39 ≈ **67% ≥ 50%** (khôi phục chu kỳ cũ). Trước review, mọi nơi cùng ưu tiên đi bộ (ngã tư xe chỉ 18%) nên xe nền/khách ô tô bị đình trệ.
+  - `traffic-signal.test.ts` khối tất định: `phase(1,7,0)=0`, `phase(1,7,39)=0`, `phase(1,8,18)=0`; hai manager `setWorldClock(4,9,31)` cho cùng tín hiệu; cả hai chu kỳ cộng = 39; ngã tư `greenSec ≥ 39/2`; vạch trước cửa đi bộ ≥ 50%.
+- **Phía renderer:** vẽ vạch qua đường trước cửa + trụ đèn đi bộ `buildFrontCrosswalk` (`street-signal.ts`, nối `viewport.ts`), xe đường main dừng trước vạch khi đèn đi bộ xanh (front-crosswalk stop trong `street-traffic.ts`).
+
+## Khách thật từ phía bên kia đường — băng vạch trước cửa (task 2, traffic-light 4.5)
+
+- Khách đi bộ (`arrivalMode='walk'`) giờ **sinh ở mép xa** của `STORE_FRONT_CROSSWALK` (320,512), đi bộ tới vạch, **chờ đèn người đi bộ xanh** rồi băng qua (`canCrossCrosswalk` chặn khi `dont_walk`/`clearing`), vào tiệm tới kệ; **rời tiệm cũng băng qua vạch** về phía xa rồi biến mất. Xe máy/ô tô không đổi (không thêm chỗ đỗ ô tô, giữ phía đông — `CAR_PARKING_SPOTS` không đổi, arrival-mode 4.4).
+- Trạng thái mới: stage `'crosswalk'` + `CustomerCrosswalkState` `{leaving, phase: 'approach'|'wait'|'cross'}` (save additive, không nâng schema). Đường chính (hàng 13–15) chặn pathfind của khách, chỉ được qua trong dải vạch x∈[256,384].
+- Giữ nguyên: khách kẹt (lối ra bị chặn) test 2.y/2.z, cross-sell giữa tòa (chuyển tại mép vạch gần khi rời), khách quen, pha đêm (không khách đêm).
+- Test: `crosswalk.test.ts` (đèn đỏ không vào vạch; đèn xanh mới qua; vào tiệm qua vạch + rời qua vạch về phía xa; save/load giữa chừng đang chờ ở vạch không kẹt). Đã nối `runCrosswalkTests` vào `test-runner.ts`.
+
+## Golden 3 ngày: trước → sau (task 5, sinh lại `world-golden-gen.ts` sau khi xác nhận doanh thu không giảm >5%)
+
+| Bối cảnh | Khách trước → sau | Doanh thu trước → sau | Tiền cuối trước → sau |
+|---|---|---|---|
+| **base** | 695 → **702** | 12.650.000 → **12.879.500** (+1,8%) | 22.609.400 → **22.838.900** |
+| **allBuildings** | 928 → **966** | 16.705.000 → **17.446.500** (+4,4%) | 23.254.400 → **23.935.900** |
+
+- Ban đầu với pha đi bộ cũ (5/39 ≈ 13% chu kỳ) khách chờ lâu → doanh thu tụt **−24,7% (base)** / **−9,4% (allBuildings)**, vi phạm quy chế "không giảm >5%". **Đã dừng, báo chủ dự án; chủ dự án chọn "điều chỉnh giảm tổn thất rồi mới sinh lại"**. Sau khi nâng pha đi bộ lên ~56% chu kỳ → doanh thu **tăng** (+1,8% / +4,4%), tức **không giảm** nên sinh lại golden là hợp lệ. Nguyên nhân tăng: xem mục kế tiếp (đo bằng số).
+
+- **Sau khi tách chu kỳ (review 4) sinh lại golden:** kết quả **KHÔNG đổi** (base 702 / 12.879.500 ₫ / tiền cuối 22.838.900; allBuildings 966 / 17.446.500 ₫ / 23.935.900; delta **0%**) vì vạch trước cửa không đổi, chỉ đèn ngã tư đổi. *(Bản trước ghi nhầm tiền cuối 22.864.900 / 24.048.700; số đúng theo `world-golden.json` là 22.838.900 / 23.935.900.)*
+
+### Vì sao doanh thu golden TĂNG (review 5, điểm 3) — đo bằng probe tạm (HEAD `cf13ab6` so với bản đang stage, cùng `simulateDays`, script đã xóa)
+
+| Chỉ số (3 ngày) | base trước → sau | allBuildings trước → sau |
+|---|---|---|
+| Khách **sinh ra** | 733 → **743** (+10) | 985 → **1027** (+42) |
+| — trong đó đi bộ | 347 → 361 | 544 → 574 |
+| Khách thanh toán (served) | 695 → 702 | 928 → 966 |
+| Doanh thu / khách served | 18.201 → 18.347 ₫ (+0,8%) | 18.001 → 18.061 ₫ (+0,3%) |
+| Bỏ về vì hết kiên nhẫn | 0 → 0 | 157 → 156 |
+| Thời gian khách đi bộ tồn tại TB (sinh → biến mất) | 34,6 → **31,4 s** | 41,1 → 44,6 s |
+| Tiệm chính chạm trần `maxConcurrentCustomers` (số tick) | — | 5127 → **4992** |
+| Khách tiệm chính sinh ra: đi bộ / ô tô | — | 401 → 426 / 48 → 65 |
+
+Kết luận: tăng vì **sinh nhiều khách hơn**, KHÔNG phải mỗi khách mua thêm (doanh thu/khách gần như không đổi, +0,3–0,8%) và KHÔNG phải cross-sell. Cơ chế: tiệm chính bị giới hạn bởi trần khách đồng thời (cap), nhịp `spawnCooldown`/cap **không đổi**. Khách đi bộ giờ sinh và biến mất ở mép xa vạch (cách cửa ~3 ô) thay vì đi bộ từ/tới mép bản đồ, nên ở base mỗi khách đi bộ chiếm chỗ ngắn hơn ~3 s (dù có chờ đèn). Chỗ trong cap được nhả sớm hơn → tick chạm trần giảm → sinh thêm khách. Ở allBuildings khách đi bộ của tòa phụ phải băng vạch trước tiệm chính rồi đi tiếp nên tồn tại lâu hơn, nhưng tiệm chính (đang bị cap chặn) vẫn được nhả chỗ sớm nên sinh thêm khách (+25 đi bộ, +17 ô tô). Bước chờ **có chạy**: khách vẫn chờ đèn, test `crosswalk.test.ts` khẳng định đèn đỏ thì không vào vạch. Ghi chú: trong stage `crosswalk` khách không bị trừ kiên nhẫn, nhưng số bỏ về không đổi (0→0, 157→156) nên đây không phải nguồn tăng. → **Hợp lý, không phải lỗi; không sửa.**
+
+## Đo chu kỳ tách: xe nền băng vạch + khách ô tô tới bãi đỗ (review 4, điểm 1) — `bench-traffic-cycle.ts` (giờ 12, seed 424242, 2000 s mô phỏng)
+
+| Chỉ số | before (ngã tư 18%) | after (ngã tư 67%) |
+|---|---|---|
+| Xe nền ngang dải vạch trước cửa / cửa sổ | 181 | 181 |
+| Xe nền qua ngã tư main-west / cửa sổ | 179 | 178 |
+| Xe nền còn trên đường cuối cửa sổ | 14 | 15 |
+| **Xe mép tây → bãi đỗ ô tô đông (x=592), tổng TB** | **53,7 s** | **39,7 s** (−26%) |
+| — trong đó đứng/chậm do đèn TB | 26,8 s | 13,1 s (−51%) |
+
+Nhận xét: số xe nền "đi qua" giữ hai mode ≈ nhau vì tổng lượng xe giới hạn bởi nhịp sinh (density), sai khác thể hiện ở **thời gian chờ** — với ngã tư ưu tiên xe, khách ô tô tới bãi đỗ phía đông nhanh hơn ~26% và thời gian đứng đèn giảm ~một nửa. Số liệu đo đã lưu ở `.qa/`, script đo tạm `bench-traffic-cycle.ts` đã xóa.
+
+## Giật đèn do pha theo phút game (review 4, điểm 4) — xác nhận KHÔNG giật, không cần sửa
+
+`trafficSignalPhaseFromWorldClock(day,hour,minute)` là hàm thuần theo **phút game nguyên**, và `simulation.update()` gọi `setWorldClock` mỗi khung lấy `clock.getTime()` nguyên → pha đứng yên trong mỗi phút game, **không phụ thuộc** tần suất khung hình / dt / tốc độ ban đêm ×3 / catch-up, cùng giờ trên mọi client/WorldRuntime → không dao động giữa các khung (không giật). Tốc độ 2×/×3 chỉ làm giờ trôi nhanh; pha chuyển đúng tại biên phút game, tất định. Không thêm phần lẻ `accumulatedSeconds` (pha vốn là hàm của phút; thêm phần lẻ có thể gây lệch pha giữa client).
+
+Đo lại (review 5, `.qa/jitter-check.txt`, chạy `GameClock` thật mỗi khung 1/60 s trong 2 phút thực, lấy pha + đèn vạch trước tiệm mỗi khung):
+
+| Tốc độ | Pha nhảy khác +1 | Đổi đèn | Giữ trạng thái ngắn nhất | Đổi ngược A→B→A |
+|---|---|---|---|---|
+| 2× ban ngày | 0 | 29 | 0,667 s thực | 0 |
+| 2× ban đêm ×3 | 2 (đều là 06:00 → 07:00 sang ngày) | 53 | 0,233 s thực (vàng 2 phút) | 0 |
+| 1× ban đêm ×3 | 2 (đều là 06:00 → 07:00) | 41 | 0,450 s | 0 |
+
+Pha chỉ tiến, không bao giờ nhấp nháy qua lại → **không giật**, không thêm `accumulatedSeconds`. Lưu ý: ở 2× ban đêm đèn vàng vạch trước tiệm chỉ còn ~0,23 s thực (ngắn nhưng không giật; ban đêm không có khách).
+
+
+
+| N | Trước (khách đang đi, chưa crosswalk) | Sau (khách đang chờ ở vạch) |
+|---|---|---|
+| 0 | 0,815 | 0,860 |
+| 10 | 0,503 | 0,458 |
+| 20 | 0,370 | 0,437 |
+| 40 | 0,346 | 0,421 |
+| 60 | 0,395 | 0,405 |
+| 80 | 0,366 | 0,437 |
+
+Khách chờ ở vạch là **O(1) mỗi khung** (chỉ kiểm pha, không pathfind mỗi frame) nên chi phí ≈ không đổi theo N và ngang mức trước khi làm crosswalk. Script đo tạm đã xóa; số ghi ở đây.
+
+## Kiểm tra chạy thật (19/10/2026, review 5 — log `.qa/r5/`)
+
+| Lệnh | Kết quả |
+|---|---|
+| `yarn typecheck` | EXIT 0 (0 lỗi) |
+| `yarn --cwd packages/game-core test` ×3 | mỗi lần **112/112 pass, 0 fail**, golden khớp (đã sinh lại) |
+| `yarn --cwd packages/game-renderer test` | EXIT 0 |
+| `yarn --cwd apps/web test` | EXIT 0 |
+| `yarn --cwd apps/server test:coop` | EXIT 0 |
+| `yarn --cwd apps/server test:unit` | EXIT 0 |
+
+## Giới hạn / CHƯA QA browser
+
+- **CHƯA QA browser** (cần máy thật/đăng nhập/co-op; hành vi đã phủ bằng test tự động): nhìn vạch + trụ đèn đi bộ trước cửa trên màn hình, khách thật băng qua khi đèn xanh, xe dừng trước vạch, mobile.
+- Renderer `buildFrontCrosswalk` đã vẽ vạch + trụ đèn đi bộ (compile + web build OK) nhưng **chưa nhìn bằng mắt** trong game chạy.
+- `existing test bound` trong `test-runner.ts` (`npcResumed.update` 1200→3000 vòng) do khách đi bộ đi xa hơn; giữ nguyên vì khách giờ cần nhiều tick để tới thu ngân.
+
+---
+
 # ĐUA VỀ TEST XANH THẬT — SỬA LỖI REVIEW CÒN TỒN + KIỂM CHỨNG (18/10/2026)
 
 ## Việc đã làm trong đợt này (không thêm tính năng mới)

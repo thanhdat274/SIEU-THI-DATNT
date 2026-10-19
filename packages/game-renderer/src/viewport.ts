@@ -32,7 +32,7 @@ import { emitThunder, setRoofProximity, getWeatherFxSettings, publishWeatherVisu
 import { NeighborhoodScene } from './neighborhood-scene';
 import { NeighborhoodActors } from './neighborhood-actors';
 import { planningOverlaySignature, type PlanningOverlay } from './planning-overlay';
-import { buildIntersectionSignalHeads, createPedestrianSprite, placePedestrian } from './street-signal';
+import { buildFrontCrosswalk, buildIntersectionSignalHeads, createPedestrianSprite, placePedestrian } from './street-signal';
 import {
   handlePointerDown,
   handlePointerMove,
@@ -1270,6 +1270,7 @@ export class PixiGameViewport {
 
     // Cozy Alley Shade Tree on sidewalk
     this.intersectionSignalHeads = buildIntersectionSignalHeads(this.entitiesLayer);
+    this.frontCrosswalk = buildFrontCrosswalk(this.entitiesLayer, () => this.simulation.getStoreFrontSignal());
     this.treeSprites = this.treeSprites.filter(({ sprite }) => !sprite.destroyed); // bỏ cây đã bị hủy khi dựng lại bản đồ
     for (const prop of TREE_PROPS) {
       const tree = new Sprite(this.textures.getTexture('tile_tree'));
@@ -1680,6 +1681,7 @@ export class PixiGameViewport {
   private sunBeamGraphic!: Graphics;
   private roadSurface: RoadSurface | null = null;
   private intersectionSignalHeads: ReturnType<typeof buildIntersectionSignalHeads> | null = null;
+  private frontCrosswalk: { update(): void } | null = null;
   private pedestrianSprites = new Map<string, Container>();
   private treeShadows: Array<{ prop: TreeProp; graphic: Graphics; last: TreeShadowSnapshot | null }> = [];
   private weatherFx = new WeatherEffects();
@@ -2110,6 +2112,7 @@ export class PixiGameViewport {
 
     // Đèn tín hiệu và người đi bộ qua vạch trước cửa tiệm (ambient, không phải khách)
     this.intersectionSignalHeads?.update(this.simulation.getIntersectionSignals());
+    this.frontCrosswalk?.update();
     const activePedestrians = new Set<string>();
     const getPedTexture = (key: string) => this.textures.getTexture(key);
     for (const ped of this.simulation.getStreetPedestrians()) {

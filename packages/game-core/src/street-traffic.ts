@@ -1,10 +1,10 @@
-import { StreetPedestrianState, StreetVehicleState, TILE_SIZE, Vector2D } from '@game/shared';
-import { INTERSECTIONS, PLAY_REGION, ROAD_MAP, roadLaneCoord, shelterZoneAt, STREET_PEDESTRIANS, STREET_VEHICLE_RULES, VEHICLE_ROADS, VEHICLE_ROAD_MAP, TRAFFIC_SIGNAL_CYCLE_SEC, TRAFFIC_X_RANGE, TRUCK_KINDS, CAR_VARIANTS, VEHICLE_BUDGET, trafficDensity, trafficRainSpeedFactor, vehicleMix, type IntersectionDef, type RoadDef, type StreetVehicleKind } from '@game/data';
+import { StreetPedestrianState, StreetVehicleState, TILE_SIZE, TrafficSignalState, Vector2D } from '@game/shared';
+import { INTERSECTIONS, PLAY_REGION, ROAD_MAP, roadLaneCoord, shelterZoneAt, STORE_FRONT_CROSSWALK, STREET_PEDESTRIANS, STREET_VEHICLE_RULES, VEHICLE_ROADS, VEHICLE_ROAD_MAP, TRAFFIC_SIGNAL_CYCLE_SEC, TRAFFIC_X_RANGE, TRUCK_KINDS, CAR_VARIANTS, VEHICLE_BUDGET, trafficDensity, trafficRainSpeedFactor, vehicleMix, type IntersectionDef, type RoadDef, type StreetVehicleKind } from '@game/data';
 import { Mulberry32Rng } from './staff';
 import { hashSeed } from './weather';
 import { rainSpeedMultiplier } from './rain-protection';
 import { newShelterSeek, stepShelterSeek, type ShelterSeek } from './shelter-seek';
-import { intersectionSignalsAt, type IntersectionSignals } from './traffic-signal';
+import { intersectionSignalsAt, storeFrontSignalAt, trafficSignalPhaseFromWorldClock, type IntersectionSignals } from './traffic-signal';
 
 export const STREET_LANE_RIGHT_Y = 14.6 * TILE_SIZE; // 467px (làn bên phải, đi từ trái qua phải)
 export const STREET_LANE_LEFT_Y = 13.4 * TILE_SIZE;  // 428px (làn bên trái, đi từ phải qua trái)
@@ -123,9 +123,19 @@ export class StreetTrafficManager {
     return INTERSECTIONS.map((x) => ({ id: x.id, signals: intersectionSignalsAt(this.signalClock + x.signalOffsetSec) }));
   }
 
+  /** Đèn main (đường ngang) ngay trước cửa tiệm — pha ưu tiên người đi bộ để khách thật chờ/qua vạch STORE_FRONT_CROSSWALK. Cùng pha trên mọi client/WorldRuntime. */
+  public getStoreFrontSignal(): TrafficSignalState {
+    return storeFrontSignalAt(this.signalClock);
+  }
+
   /** Đặt đồng hồ đèn (giây trong chu kỳ); dùng cho kiểm thử và để căn pha khi tải. */
   public setSignalClock(seconds: number): void {
     this.signalClock = ((seconds % TRAFFIC_SIGNAL_CYCLE_SEC) + TRAFFIC_SIGNAL_CYCLE_SEC) % TRAFFIC_SIGNAL_CYCLE_SEC;
+  }
+
+  /** Đặt pha đèn từ giờ game (ngày + phút) — hàm thuần, cùng giờ trên mọi client/WorldRuntime cho cùng pha. */
+  public setWorldClock(day: number, hour: number, minute: number): void {
+    this.setSignalClock(trafficSignalPhaseFromWorldClock(day, hour, minute));
   }
 
   /** Thêm người đi bộ (kiểm thử và dựng cảnh). */
@@ -260,6 +270,22 @@ export class StreetTrafficManager {
       const committed = lamp.vehicle === 'yellow' && current >= v.speed - 1 && gap < brake * 0.6;
       const blocked = lamp.vehicle !== 'green' ? !committed : this.vehicles.some((o) => o !== v && (o.axis === 'y') !== vertical && this.occupiesConflictZone(o, x));
       if (blocked) desired = Math.min(desired, Math.sqrt(2 * decel * gap));
+    }
+
+    // Vạch khách thật qua đường trước cửa tiệm: xe đường ngang (main) dừng trước vạch khi đèn main đỏ/vàng (người đi bộ
+    // được qua). Đã vào vạch thì chạy tiếp cho thoáng; vàng mà quá gần để phanh kịp thì chạy luôn.
+    if (!vertical && (v.roadId ?? 'main') === STORE_FRONT_CROSSWALK.roadId) {
+      const entered = sign > 0 ? front > STORE_FRONT_CROSSWALK.x0 : front < STORE_FRONT_CROSSWALK.x1;
+      if (!entered) {
+        const lamp = storeFrontSignalAt(this.signalClock);
+        if (lamp.vehicle !== 'green') {
+          const stop = sign > 0 ? STORE_FRONT_CROSSWALK.x0 - stopMarginPx : STORE_FRONT_CROSSWALK.x1 + stopMarginPx;
+          const gap = Math.max(0, sign > 0 ? stop - front : front - stop);
+          const brake = (current * current) / (2 * decel);
+          const committed = lamp.vehicle === 'yellow' && current >= v.speed - 1 && gap < brake * 0.6;
+          if (!committed) desired = Math.min(desired, Math.sqrt(2 * decel * gap));
+        }
+      }
     }
 
     // Nhân vật người chơi đang ở trên lòng đường thì xe chưa tới nhường như với người qua đường.
@@ -433,6 +459,11 @@ export class StreetTrafficManager {
     while (remaining > 1e-9) {
       const step = Math.min(MAX_STEP, remaining);
       remaining -= step;
+      // Đồng hồ đèn vẫn tích lũy theo dt cho các bước con trong frame này; nhưng trong sản xuất, simulation gọi
+      // `setWorldClock` MỖI frame trước lúc này để neo pha đèn về hàm thuần của worldTime (ngày + phút) — nên pha
+      // thực tế được trình bày chính là pha worldTime, giống nhau ở client và WorldRuntime (không gửi qua mạng mỗi khung),
+      // chạy đúng cả ban đêm ×3 và catch-up. Khi dùng StreetTrafficManager độc lập (test) không gọi setWorldClock thì
+      // vẫn tự tích lũy như cũ.
       this.signalClock = (this.signalClock + step) % TRAFFIC_SIGNAL_CYCLE_SEC;
       this.stepPedestrians(step * rainSpeedMultiplier(rainIntensity));
       this.stepVehicles(step);

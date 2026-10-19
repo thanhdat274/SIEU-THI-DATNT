@@ -2911,54 +2911,54 @@
    "days": [
     {
      "day": 1,
-     "customersServed": 228,
-     "revenue": 4169500,
-     "netProfit": 1234500,
-     "sales": "e526b479465fbd86a4041e654f4c59c5a866befc"
+     "customersServed": 232,
+     "revenue": 4290500,
+     "netProfit": 1271500,
+     "sales": "c74e1e0aa4b08ff3fb524e7ad7c3dd30a9a50a10"
     },
     {
      "day": 2,
-     "customersServed": 234,
-     "revenue": 4546000,
-     "netProfit": 1297800,
-     "sales": "10aeae144007899769485e127a600024f44860c7"
+     "customersServed": 237,
+     "revenue": 4638500,
+     "netProfit": 1314300,
+     "sales": "939cd5b64d19eec236d1524ea540b439a08bfb37"
     },
     {
      "day": 3,
      "customersServed": 233,
-     "revenue": 3934500,
-     "netProfit": 997300,
-     "sales": "9febb8d30a3981712016d76f3298f6c549a6b5b1"
+     "revenue": 3950500,
+     "netProfit": 990300,
+     "sales": "4a555ce4309b21b675561265bcc223e6b8abcfb4"
     }
    ],
-   "money": 22609400,
+   "money": 22838900,
    "fixtures": "c9afa8cb47a3f771695ac61c5c0385e08baadb9e"
   },
   "allBuildings": {
    "days": [
     {
      "day": 1,
-     "customersServed": 309,
-     "revenue": 5592500,
-     "netProfit": 1656500,
-     "sales": "bfdcba8e63e1da90d42793e4c737845287684cad"
+     "customersServed": 320,
+     "revenue": 5401000,
+     "netProfit": 1585000,
+     "sales": "9834e63bf662f7b829fa13d2a4df7773fb780c11"
     },
     {
      "day": 2,
-     "customersServed": 320,
-     "revenue": 5365000,
-     "netProfit": 1607800,
-     "sales": "05ce3836e8d299867db26fc9782165d1b2b10e64"
+     "customersServed": 329,
+     "revenue": 5950500,
+     "netProfit": 1708300,
+     "sales": "c917483e043556942a8e9eaf8aa3bd3f3d6913f2"
     },
     {
      "day": 3,
-     "customersServed": 299,
-     "revenue": 5747500,
-     "netProfit": 1574300,
-     "sales": "06bd6195d853f3fc9263253e0122e4ffe028d969"
+     "customersServed": 317,
+     "revenue": 6095000,
+     "netProfit": 1694800,
+     "sales": "2d3bbc05e69d5fdf045e7481f34ab18fe33b222c"
     }
    ],
-   "money": 23254400,
+   "money": 23935900,
    "fixtures": "13c1b27e648a4413a578277e27625839471941f1"
   }
  }

@@ -1,7 +1,7 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { StreetPedestrianState, TILE_SIZE, TrafficSignalState } from '@game/shared';
 import { walkerLook } from './sprite-atlas';
-import { INTERSECTIONS, ROAD_MAP } from '@game/data';
+import { INTERSECTIONS, ROAD_MAP, STORE_FRONT_CROSSWALK } from '@game/data';
 
 const OFF = 0x2a2f2c;
 const RED = 0xe0533f, YELLOW = 0xf2c74a, GREEN = 0x5fd17a;
@@ -69,6 +69,52 @@ export function buildIntersectionSignalHeads(layer: Container): { update(signals
         drawn.set(p.g, key);
         drawSignalPole(p.g, vehicle, walk, blinkOn);
       }
+    },
+  };
+}
+
+/**
+ * Vạch qua đường trước cửa tiệm chính (OpenSpec `traffic-light-crosswalk-yielding` 4.5): dải vạch trắng ngang băng
+ * ngang đường main trong phạm vi `STORE_FRONT_CROSSWALK` + trụ đèn đi bộ ở mép xa. Khách thật đi bộ chờ đèn rồi băng
+ * qua đây. `getSignal` trả pha đèn trước cửa (main) để trụ đèn Walk/Don’t Walk hiện đúng.
+ */
+export function buildFrontCrosswalk(layer: Container, getSignal: () => TrafficSignalState): { update(): void } {
+  const cw = STORE_FRONT_CROSSWALK;
+  // Dải vạch trắng ngang: khách băng theo chiều dọc, nên các thanh nằm ngang (chạy đông-tây), xếp dọc theo y.
+  const stripes = new Graphics();
+  stripes.eventMode = 'none';
+  const barW = cw.x1 - cw.x0; // 128
+  const barH = 5, gap = 7;
+  let by = cw.nearY + 3;
+  while (by + barH <= cw.farY) {
+    stripes.rect(cw.x0, by, barW, barH).fill({ color: 0xf2f4f0, alpha: 0.85 });
+    by += barH + gap;
+  }
+  stripes.zIndex = cw.nearY; // dưới người đi bộ (khách/người nền có zIndex = tọa độ y)
+  layer.addChild(stripes);
+
+  // Trụ đèn người đi bộ trước cửa (đặt mép xa vạch, hơi lệch sang cạnh đông): Walk (xanh) / Don't Walk (đỏ) + nhấp nháy khi clearing.
+  const g = new Graphics();
+  g.eventMode = 'none';
+  g.position.set(cw.x1 - 22, cw.farY + 6);
+  g.zIndex = cw.farY + 40;
+  layer.addChild(g);
+  let lastKey = '';
+  return {
+    update(): void {
+      const s = getSignal();
+      const blinkOn = s.pedestrian !== 'clearing' || Math.floor(s.secondsLeft * 2) % 2 === 0;
+      const key = `${s.pedestrian}|${blinkOn}`;
+      if (!g || lastKey === key) return;
+      lastKey = key;
+      g.clear();
+      g.ellipse(0, 0, 3, 1.2).fill({ color: 0x1a211e, alpha: 0.35 });
+      g.rect(-1, -26, 2, 26).fill(0x31443c);
+      g.roundRect(-4, -24, 8, 10, 2).fill(0x1d2420);
+      g.rect(-5, -25, 10, 1).fill(0x111614);
+      const stopOn = s.pedestrian === 'dont_walk' || (s.pedestrian === 'clearing' && blinkOn);
+      g.rect(-2, -22.5, 4, 3).fill(stopOn ? RED : OFF);
+      g.rect(-2, -18.5, 4, 3).fill(s.pedestrian === 'walk' ? GREEN : OFF);
     },
   };
 }

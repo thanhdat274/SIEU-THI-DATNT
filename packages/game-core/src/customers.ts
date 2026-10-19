@@ -9,10 +9,11 @@ import {
   Vector2D,
   InventoryItem,
   CustomerArrivalMode,
+  PedestrianSignal,
   tileIndex,
   tileInMap,
 } from '@game/shared';
-import { BUILDING_MAP, BUILDING_TRAFFIC_SHARE, foodClusterMultiplier, PLAY_REGION, buildingAt, entranceOf, fixtureBuilding, inMainExpansionZone, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS, type BuildingId, DEFAULT_PLACEMENTS, buildingTypeOfInstance, isExtraInstanceId } from '@game/data';
+import { BUILDING_MAP, BUILDING_TRAFFIC_SHARE, foodClusterMultiplier, PLAY_REGION, buildingAt, entranceOf, fixtureBuilding, inMainExpansionZone, STORE_BOUNDS, PRODUCT_MAP, effectiveShelfCapacity, RegularCustomerDefinition, STREET_PARKING_SPOTS, CAR_PARKING_SPOTS, STORE_FRONT_CROSSWALK, type BuildingId, DEFAULT_PLACEMENTS, buildingTypeOfInstance, isExtraInstanceId } from '@game/data';
 import { arrivalModeWeights, pickArrivalMode } from './arrival-mode';
 import { CollisionSystem } from './collision';
 import { findPath, findPathToAny, GridPoint, tileCenter } from './pathfinding';
@@ -21,6 +22,30 @@ import { removeExpiredLots } from './spoilage';
 import { Mulberry32Rng, daySeed } from './staff';
 import { hashSeed } from './weather';
 import type { CustomerFeedbackReason } from './reputation';
+
+/**
+ * Vạch qua đường trước cửa tiệm chính cho KHÁCH THẬT đi bộ (OpenSpec `traffic-light-crosswalk-yielding` 4.5).
+ * Khách đi bộ vào/rời tiệm băng qua đây, chờ đèn người đi bộ xanh (`walk`) rồi mới qua.
+ */
+const CROSSWALK = STORE_FRONT_CROSSWALK;
+/** Trục x (px) khách đi bộ băng qua vạch — tâm dải vạch, trong phạm vi che cửa chính. */
+const CROSSWALK_X = (CROSSWALK.x0 + CROSSWALK.x1) / 2; // 320
+/** Điểm chờ phía bên kia đường (mép xa của vạch, đáy bản đồ); khách chờ ở đây khi đèn đi bộ chưa xanh. */
+const CROSSWALK_FAR = { x: CROSSWALK_X, y: CROSSWALK.farY }; // (320, 512)
+/** Điểm chờ phía cửa tiệm (mép gần của vạch); khách rời tiệm tới đây rồi chờ đèn để băng về phía xa. */
+const CROSSWALK_NEAR = { x: CROSSWALK_X, y: CROSSWALK.nearY }; // (320, 416)
+/** Ô đích (tile) khi khách tiếp cận mép xa: hàng 15 (đáy bản đồ, trong dải vạch nên đi được). */
+const CROSSWALK_FAR_TILE = { x: Math.floor(CROSSWALK_X / TILE_SIZE), y: Math.floor((CROSSWALK.farY - 1) / TILE_SIZE) }; // (10, 15)
+/** Ô đích (tile) khi khách tiếp cận mép gần: hàng 13 (đầu đường, trong dải vạch). */
+const CROSSWALK_NEAR_TILE = { x: Math.floor(CROSSWALK_X / TILE_SIZE), y: Math.floor(CROSSWALK.nearY / TILE_SIZE) }; // (10, 13)
+/** Hàng đường chính khách không tự đi qua được (chỉ băng trong dải vạch). */
+const CROSSWALK_ROAD_Y0 = Math.floor(CROSSWALK.nearY / TILE_SIZE); // 13
+const CROSSWALK_ROAD_Y1 = Math.floor((CROSSWALK.farY - 1) / TILE_SIZE); // 15
+/** Dải cột (tile) của vạch: x trong [x0 tile, x1 tile) được phép qua. */
+const CROSSWALK_TILE_X0 = Math.floor(CROSSWALK.x0 / TILE_SIZE); // 8
+const CROSSWALK_TILE_X1 = Math.floor((CROSSWALK.x1 - 1) / TILE_SIZE) + 1; // 12
+/** Tốc độ băng qua đường (px/s) của khách đi bộ khi đèn đi bộ xanh. */
+const CROSSWALK_SPEED = 90;
 
 /** Hàng chờ thu ngân cũ của tiệm chính: cột cửa trái, từ hai ô trong cửa ra tới ô cửa (vị trí mặc định: (9,8), (9,9), (9,10)).
  *  Tiệm chính cố định ở vị trí mặc định (`main_fixed` trong `placementsProblem`) nên tra tĩnh là đúng; tòa phụ đọc ô cửa từ bản đồ. */
@@ -220,6 +245,10 @@ export class CustomerManager {
   /** Nhịp sinh khách của các tòa phụ (không lưu trong save; nạp lại thì bắt đầu từ 5,5 s). */
   private streamCooldowns = new Map<string, number>();
   private readonly maxConcurrentCustomers = 3;
+  /** Pha đèn người đi bộ trước cửa tiệm, đặt mỗi khung trước `update` (để khách chờ/qua vạch đọc được). */
+  private storeFrontPedestrian: PedestrianSignal | undefined;
+  /** Giây còn lại của pha (từ `getStoreFrontSignal`), để chỉ băng đường khi còn đủ thời gian qua hết vạch. */
+  private storeFrontPedestrianSecondsLeft: number | undefined;
 
   constructor(
     initialCustomers: CustomerState[] = [],
@@ -257,6 +286,11 @@ export class CustomerManager {
     shelfCapacityMultiplier = 1,
   ): void {
     for (const customer of this.customers) {
+      // Khách đi bộ còn ở phía xa (chưa qua vạch vào tiệm) khi sang ngày: rời thẳng, không băng đường nữa.
+      if (customer.stage === 'crosswalk' && !customer.crosswalk?.leaving) {
+        this.removeCustomer(customer);
+        continue;
+      }
       this.abandonBasket(customer, fixtures, inventory, onSpoiledGoods, currentDay, shelfCapacityMultiplier);
       customer.cashierStaffId = undefined;
       customer.reservedProductId = undefined;
@@ -267,7 +301,11 @@ export class CustomerManager {
   /** Tính lại đường đi của khách thật (không phải bản sao) sau khi bản đồ hoặc đồ đạc đổi. */
   public rerouteAll(tileMap: GameTileMap, fixtures: StoreFixture[]): void {
     for (const customer of this.customers) {
-      if (customer.stage !== 'checkout') this.routeCustomer(customer, customer.stage, tileMap, fixtures);
+      if (customer.stage !== 'checkout') {
+        // Khách ở vạch đang chờ/băng không đi theo A*: giữ nguyên trạng thái (chỉ dựng lại đường khi đang tiếp cận).
+        if (customer.stage === 'crosswalk' && customer.crosswalk?.phase !== 'approach') continue;
+        this.routeCustomer(customer, customer.stage, tileMap, fixtures);
+      }
     }
   }
 
@@ -304,6 +342,12 @@ export class CustomerManager {
 
   public getCustomerSequence(): number {
     return this.customerSequence;
+  }
+
+  /** Cập nhật pha đèn người đi bộ trước cửa tiệm (cho khách chờ/qua vạch); gọi mỗi frame trước `update`. */
+  public setStoreFrontPedestrian(pedestrian: PedestrianSignal | undefined, secondsLeft?: number): void {
+    this.storeFrontPedestrian = pedestrian;
+    if (secondsLeft !== undefined) this.storeFrontPedestrianSecondsLeft = secondsLeft;
   }
 
   /**
@@ -484,6 +528,9 @@ export class CustomerManager {
     let startPos: Vector2D;
     if (vehicleSpot) {
       startPos = { ...vehicleSpot };
+    } else if (arrivalMode === 'walk') {
+      // Khách đi bộ sinh phía bên kia đường, ngay mép xa của vạch trước cửa (chờ đèn rồi mới qua).
+      startPos = { ...CROSSWALK_FAR };
     } else {
       const doorTileX = entrance.x;
       const leftX = walkEdgeWest(tileMap);
@@ -513,7 +560,14 @@ export class CustomerManager {
     };
 
     this.customers.push(newCustomer);
-    this.routeCustomer(newCustomer, 'to_shelf', tileMap, fixtures);
+    if (arrivalMode === 'walk') {
+      // Khách đi bộ: vào tiệm qua vạch — chờ đèn rồi băng đường tới cửa, sau đó mới tới kệ như thường.
+      newCustomer.stage = 'crosswalk';
+      newCustomer.crosswalk = { leaving: false, phase: 'wait' };
+      this.paths.delete(newCustomer.id ?? newCustomer.checkoutId ?? 'default');
+    } else {
+      this.routeCustomer(newCustomer, 'to_shelf', tileMap, fixtures);
+    }
     return newCustomer;
   }
 
@@ -583,10 +637,18 @@ export class CustomerManager {
           x: Math.floor(customer.vehicleSpot.x / TILE_SIZE),
           y: Math.floor(customer.vehicleSpot.y / TILE_SIZE),
         });
+      } else if (customer.arrivalMode === 'walk') {
+        // Khách đi bộ rời tiệm qua vạch: tới mép gần, chờ đèn rồi băng sang phía xa để biến mất.
+        return this.beginCrosswalkLeave(customer, tileMap, fixtures);
       } else {
         const exitX = (customer.id ? customer.id.charCodeAt(customer.id.length - 1) : 0) % 2 === 0 ? walkEdgeWest(tileMap) : walkEdgeEast(tileMap);
         goals.push({ x: exitX, y: 12 });
       }
+    } else if (stage === 'crosswalk') {
+      // Khách đi bộ ở vạch (sau load/save hoặc yêu cầu reroute): dựng lại đường tiếp cận đúng mép vạch.
+      const leaving = customer.crosswalk?.leaving ?? false;
+      customer.crosswalk = { leaving, phase: 'approach' };
+      goals.push(leaving ? CROSSWALK_NEAR_TILE : CROSSWALK_FAR_TILE);
     }
 
     // Khách không vào kho/phía sau tiệm chính (hàng y <= STORE_BOUNDS.top), trừ phần mở rộng phía bắc của tòa phụ (sàn tòa mở)
@@ -595,10 +657,17 @@ export class CustomerManager {
     const customerMap = {
       ...tileMap,
       collisionLayer: tileMap.collisionLayer.map((solid, i) => {
+        const x = (i % tileMap.width) + (tileMap.originTileX ?? 0);
         const y = Math.floor(i / tileMap.width) + (tileMap.originTileY ?? 0);
+        // Lòng đường chính (hàng 13–15) ép khách chỉ băng qua trong dải vạch trước cửa: ngoài dải thì chặn,
+        // trong dải (kể cả hàng 15 vốn là viền bản đồ) thì cho đi để khách qua đường đúng chỗ này.
+        if (y >= CROSSWALK_ROAD_Y0 && y <= CROSSWALK_ROAD_Y1) {
+          if (x >= CROSSWALK_TILE_X0 && x < CROSSWALK_TILE_X1) return false;
+          return true;
+        }
         if (solid || y > STORE_BOUNDS.top) return solid;
-        if (groundLayer?.[i] === 3 && inMainExpansionZone((i % tileMap.width) + (tileMap.originTileX ?? 0), y)) return false;
-        const building = buildingAt((i % tileMap.width) + (tileMap.originTileX ?? 0), y, tileMap.buildings);
+        if (groundLayer?.[i] === 3 && inMainExpansionZone(x, y)) return false;
+        const building = buildingAt(x, y, tileMap.buildings);
         return !building || building === 'main'; // cửa kho nằm ở hàng tường sau tiệm chính nên vẫn chặn
       }),
     };
@@ -631,7 +700,9 @@ export class CustomerManager {
     // Khách đang rời đi mà mép bản đồ bị chặn vẫn đi theo đường dự phòng tới cửa tòa nhà rồi mới rời (trước đây kiểm
     // `paths` nên đường dự phòng bị bỏ và khách biến mất ngay tại chỗ). Chỉ xóa tại chỗ khi cả đường dự phòng cũng không có.
     const routed = stage === 'leaving' ? !!chosenPath?.length : paths.length > 0;
-    if (!routed && stage !== 'checkout') {
+    // Khách ở vạch được bỏ qua bước "unreachable": khách vào tiệm đã đứng sẵn mép xa (đường rỗng là bình thường),
+    // khách rời tiệm tới mép gần luôn đi được; không rơi vào vòng lặp abandon → leaving → crosswalk.
+    if (!routed && stage !== 'checkout' && stage !== 'crosswalk') {
       // Unreachable goal, leave
       if (stage !== 'leaving') {
         this.abandonBasket(customer, fixtures, [], () => {});
@@ -640,6 +711,50 @@ export class CustomerManager {
         this.removeCustomer(customer);
       }
     }
+  }
+
+  /**
+   * Bắt đầu cho khách đi bộ rời tiệm qua vạch: đặt stage 'crosswalk' hướng rời (leaving=true) rồi tiếp cận mép gần,
+   * chờ đèn đi bộ rồi băng về phía xa để biến mất. Không dựng đường tới mép bản đồ như khách đi xe.
+   */
+  private beginCrosswalkLeave(customer: CustomerState, tileMap: GameTileMap, fixtures: StoreFixture[]): void {
+    customer.crosswalk = { leaving: true, phase: 'approach' };
+    this.routeCustomer(customer, 'crosswalk', tileMap, fixtures);
+  }
+
+  /** Khách đi bộ chỉ băng qua vạch khi đèn đi bộ xanh (hoặc chưa nối đèn) và còn đủ thời gian để đi hết chiều rộng đường. */
+  private canCrossCrosswalk(): boolean {
+    if (this.storeFrontPedestrian === 'dont_walk' || this.storeFrontPedestrian === 'clearing') return false;
+    // 'walk' hoặc undefined (manager chưa nối đèn — test/bối cảnh không có tín hiệu): cho qua.
+    const remaining = this.storeFrontPedestrianSecondsLeft;
+    if (remaining === undefined) return true; // không có thông tin pha thì mặc định được qua
+    // Pha walk còn lại (phút game) phải đủ để đi hết bề rộng đường (px) với tốc độ đi bộ.
+    return remaining >= (CROSSWALK.farY - CROSSWALK.nearY) / CROSSWALK_SPEED;
+  }
+
+  /**
+   * Xử lý cross-sell khi khách đi bộ đến mép gần vạch (đang rời tiệm): nếu tòa đích mở + còn hàng thì chuyển sang
+   * tòa đó (đi bộ tới kệ, không teleport); nếu không chuyển được thì xóa pending và tiếp tục rời qua vạch. Trả true nếu đã chuyển.
+   */
+  private tryCrossSellTransfer(customer: CustomerState, tileMap: GameTileMap, fixtures: StoreFixture[]): boolean {
+    const target = customer.pendingCrossSellTo;
+    if (!target) return false;
+    const targetBld = tileMap.buildings?.find(b => b.id === target);
+    const targetOpen = targetBld?.open === true;
+    const targetHasStock = fixtures.some(f => isSalesFixture(f) && fixtureBuilding(f) === target && f.currentStock > 0);
+    delete customer.pendingCrossSellTo;
+    if (targetOpen && targetHasStock) {
+      const targetShelf = fixtures.find(f => isSalesFixture(f) && fixtureBuilding(f) === target);
+      if (targetShelf) {
+        customer.buildingId = target;
+        customer.targetFixtureId = targetShelf.id;
+        customer.crosswalk = undefined;
+        customer.stage = 'to_shelf';
+        this.routeCustomer(customer, 'to_shelf', tileMap, fixtures);
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -668,8 +783,8 @@ export class CustomerManager {
       if (!this.customers.includes(customer)) continue;
       const key = customer.id ?? customer.checkoutId ?? 'default';
 
-      // 1. Patience check (before checkout)
-      if (customer.stage !== 'leaving' && customer.stage !== 'eating') {
+      // 1. Patience check (before checkout) — khách ở vạch chờ đèn không bị trừ kiên nhẫn (sẽ xử lý riêng dưới).
+      if (customer.stage !== 'leaving' && customer.stage !== 'eating' && customer.stage !== 'crosswalk') {
         customer.patience -= dt;
         if (customer.patience <= 0 || !isStoreOpen) {
           onReputationLoss?.(1);
@@ -696,6 +811,67 @@ export class CustomerManager {
         // Wait expires: auto checkout if applicable, or leave if not served
         if (customer.checkoutWait <= 0) {
           // Handled externally or triggers auto checkout
+        }
+        continue;
+      }
+
+      // 2.5 Khách đi bộ ở vạch qua đường: tiếp cận mép vạch, chờ đèn, băng qua. Không chạy pathfinding mỗi khung — chỉ đọc pha đèn đã cache.
+      if (customer.stage === 'crosswalk') {
+        const cw = customer.crosswalk;
+        if (!cw) {
+          // Save cũ thiếu trạng thái vạch: phục hồi an toàn theo hướng đang di chuyển.
+          this.routeCustomer(customer, 'crosswalk', tileMap, fixtures);
+          continue;
+        }
+        // Tiệm đóng mà khách còn ở phía xa (chưa vào tiệm): rời thẳng trên phía xa.
+        if (!isStoreOpen && !cw.leaving) {
+          this.removeCustomer(customer);
+          continue;
+        }
+        if (cw.phase === 'approach') {
+          const waypoints = this.paths.get(key);
+          if (waypoints && waypoints.length > 0) {
+            const next = waypoints[0];
+            const dx = next.x - customer.position.x;
+            const dy = next.y - customer.position.y;
+            const distance = Math.hypot(dx, dy);
+            const step = 72 * dt;
+            if (distance <= step) {
+              customer.position = { ...next };
+              waypoints.shift();
+            } else {
+              customer.position = { x: customer.position.x + (dx / distance) * step, y: customer.position.y + (dy / distance) * step };
+            }
+            continue;
+          }
+          // Đã tới mép vạch: nếu đang rời tiệm thì xử lý cross-sell trước khi chờ đèn.
+          if (cw.leaving && this.tryCrossSellTransfer(customer, tileMap, fixtures)) continue;
+          cw.phase = 'wait';
+          continue;
+        }
+        if (cw.phase === 'wait') {
+          // O(1): chỉ đọc pha đèn đã cache, không pathfinding.
+          if (!this.canCrossCrosswalk()) continue;
+          cw.phase = 'cross';
+          continue;
+        }
+        // phase 'cross': băng qua đường theo chiều dọc trong dải vạch.
+        const targetY = cw.leaving ? CROSSWALK.farY : CROSSWALK.nearY;
+        const stepCross = CROSSWALK_SPEED * dt;
+        if (cw.leaving) {
+          customer.position.y = Math.min(targetY, customer.position.y + stepCross);
+          if (customer.position.y >= targetY) {
+            // Đã băng sang phía xa: biến mất trên phía bên kia đường.
+            onCustomerDepart?.(customer);
+            this.removeCustomer(customer);
+          }
+        } else {
+          customer.position.y = Math.max(targetY, customer.position.y - stepCross);
+          if (customer.position.y <= targetY) {
+            // Đã tới mép gần (cửa tiệm): vào tiệm tới kệ như thường.
+            customer.crosswalk = undefined;
+            this.routeCustomer(customer, 'to_shelf', tileMap, fixtures);
+          }
         }
         continue;
       }

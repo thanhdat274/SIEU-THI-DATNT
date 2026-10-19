@@ -343,10 +343,21 @@ export interface TrafficSignalState {
   secondsLeft: number;
 }
 
+/** Pha của khách đi bộ khi dùng vạch qua đường trước cửa (OpenSpec `traffic-light-crosswalk-yielding`). */
+export type CustomerCrosswalkPhase = 'approach' | 'wait' | 'cross';
+
+/** Trạng thái khách đi bộ băng qua vạch trước cửa tiệm: chờ đèn rồi mới qua. */
+export interface CustomerCrosswalkState {
+  /** True = đang rời tiệm ra phía xa (bên kia đường); false = đang từ phía xa vào tiệm. */
+  leaving: boolean;
+  /** 'approach' = đang đi tới mép vạch; 'wait' = đang chờ đèn đi bộ; 'cross' = đang băng qua đường. */
+  phase: CustomerCrosswalkPhase;
+}
+
 export interface CustomerState {
   id?: string;
   position: Vector2D;
-  stage: 'to_shelf' | 'to_checkout' | 'checkout' | 'to_table' | 'eating' | 'leaving';
+  stage: 'to_shelf' | 'to_checkout' | 'checkout' | 'to_table' | 'eating' | 'leaving' | 'crosswalk';
   targetFixtureId: string;
   checkoutId?: string;
   cashierStaffId?: string;
@@ -375,6 +386,8 @@ export interface CustomerState {
   crossSellApplied?: string[];
   /** Tòa đang chờ cross-sell: khách đi ra cửa tòa hiện tại, sau đó chuyển sang tòa đích khi tòa đó mở và còn hàng. */
   pendingCrossSellTo?: string;
+  /** Khách đi bộ băng qua vạch trước cửa tiệm; thiếu = không qua vạch (khách đi xe / save cũ). */
+  crosswalk?: CustomerCrosswalkState;
 }
 
 export interface CheckoutResult {

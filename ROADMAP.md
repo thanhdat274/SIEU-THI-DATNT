@@ -139,7 +139,7 @@
 
 ## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)
 
-- **Hẻm sống động:** mặt cắt đường/cống/độ ướt đã commit (2f2af38). Đèn tín hiệu chu kỳ + người đi bộ + nhường đường: đã commit `24a2fab` + OpenSpec `traffic-light-crosswalk-yielding`, QA browser mới một phần (S46, F-03); khách thật qua đường và đồng bộ co-op là non-goal hiện tại.
+- **Hẻm sống động:** mặt cắt đường/cống/độ ướt đã commit (2f2af38). Đèn tín hiệu chu kỳ + người đi bộ + nhường đường: đã commit `24a2fab` + OpenSpec `traffic-light-crosswalk-yielding`; **18/10/2026 chốt 4.3–4.6**: pha đèn là hàm thuần từ `worldTime` (day+minute) đồng bộ client/WorldRuntime (không lệch, đúng đêm ×3/catch-up); **review 4 tách chu kỳ**: `STORE_FRONT_SIGNAL` vạch trước cửa ưu tiên đi bộ (walk 22/39 ≈56%), `INTERSECTION_SIGNAL` ngã tư ưu tiên xe (xe xanh 26/39 ≈ **67% ≥50%** — trước review mọi nơi ưu tiên đi bộ nên ngã tư xe chỉ 18%) → khách ô tô tới bãi đỗ đông nhanh hơn (53,7 s → 39,7 s, đứng đèn 26,8 s → 13,1 s); **khách thật đi bộ đã qua đường**: sinh phía xa, chờ đèn xanh băng `STORE_FRONT_CROSSWALK` vào tiệm, rời băng vạch về phía xa; không thêm chỗ đỗ ô tô (giữ phía đông); golden sinh lại (base +1,8%, allBuildings +4,4%; sau tách chu kỳ delta 0%); renderer vẽ vạch + trụ đèn đi bộ trước cửa. Còn lại: QA browser (S46, F-03), đồng bộ co-op đèn đã hết lệch pha.
 - **Co-op:** I-01 đã mở rộng replay 36 loại lệnh (03/10/2026, chưa kiểm browser/2 client thật), I-16 đã có code migration (chưa chạy thật); còn I-15, I-05; sau đó mới tới bảng xếp hạng thật (F-05, phụ thuộc I-01).
 - **Chất lượng:** CI, `test:all`, test `apps/web`, a11y (I-09, I-18, S32, S43).
 - **Vận hành:** `docs/deploy.md`, quản lý khóa bí mật (I-17, I-14).

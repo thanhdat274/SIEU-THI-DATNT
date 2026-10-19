@@ -1979,6 +1979,11 @@ export class GameSimulation {
     return this.streetTraffic.getIntersectionSignals();
   }
 
+  /** Đèn main (đường ngang) ngay trước cửa tiệm — để khách thật chờ/qua vạch STORE_FRONT_CROSSWALK (OpenSpec crosswalk 4.5). */
+  public getStoreFrontSignal(): TrafficSignalState {
+    return this.streetTraffic.getStoreFrontSignal();
+  }
+
   /** Bảng nhu cầu lưu đệm; chỉ tính lại khi bối cảnh đổi (ngày, khung giờ, thời tiết, mùa, sự kiện, bậc uy tín), không mỗi khung hình. */
   private refreshDemandTable(): DemandTable {
     const time = this.clock.getTime();
@@ -5531,6 +5536,8 @@ export class GameSimulation {
     const worldDt = dt * Math.max(0.25, (this.clock.getTime().timeScale || 90) / 60);
     // Ban đêm (22:00–06:00) không bán hàng kể cả khi cờ mở cửa bị đặt bằng tay (test/harness): khách không sinh, quầy đóng.
     const storeOpenForTrade = this.clock.getTime().isStoreOpen && !this.clock.isNightPhase();
+      // Lưu pha đèn người đi bộ trước cửa vào bộ quản lý khách để khách chờ/qua vạch đọc được (gọi trước update).
+      this.customerManager.setStoreFrontPedestrian(this.streetTraffic.getStoreFrontSignal().pedestrian, this.streetTraffic.getStoreFrontSignal().secondsLeft);
       this.customerManager.outdoorSpeedMultiplier = rainSpeedMultiplier(this.getRainIntensity());
       this.customerManager.update(
       worldDt,
@@ -5622,6 +5629,9 @@ export class GameSimulation {
     for (const id of ['xoi', 'drink', 'snack'] as const) setAwningOpen(id, this.tileMap.buildings?.find((b) => b.id === id)?.open ?? false);
     const trafficTime = this.clock.getTime();
     const trafficCtx = { minute: trafficTime.minute, weekday: weekdayOf(trafficTime.day) };
+    // Pha đèn là hàm thuần suy từ worldTime (ngày + phút): đặt mỗi vòng lặp để khi client và WorldRuntime cùng giờ thì cùng pha
+    // (không gửi qua mạng mỗi khung), chạy đúng cả ban đêm ×3 và khi catch-up (giờ game là nguồn duy nhất).
+    this.streetTraffic.setWorldClock(trafficTime.day, trafficTime.hour, trafficTime.minute);
     if (!this.trafficWarmed) {
       // Đường rộng, xe sinh ở rìa khu phố: chạy trước một đoạn để lúc mở game đã có xe đúng mật độ giờ hiện tại.
       this.trafficWarmed = true;
