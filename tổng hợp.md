@@ -1,4 +1,25 @@
-# MƯA: DỰ BÁO CÓ SAI SỐ + MƯA TO ÍT KHÁCH/XE CHẬM + GỢN VŨNG + ƯỚT QUA ĐÊM (19/10/2026, CHƯA COMMIT, HỆ SỐ KHÁCH ĐÃ CHỐT 19/10/2026)
+# QA TRÌNH DUYỆT CHUNG (19/10/2026) — pha đêm, nhân viên theo ca, vạch qua đường, mưa, lời đánh giá
+
+Môi trường: Browser pane (Chromium) qua dev server 5173 có sẵn, "Chơi Thử (Local)" (không đụng ô lưu thật), giả lập viewport 740×360 và 568×320 bằng `resize_window`. KHÔNG phải điện thoại thật. Chỉnh giờ bằng `__sim.getClock().setTime`, thuê nhân viên bằng `__sim.hireStaff`, ép mưa bằng `weatherModel().transitionWeather('storm')` (chỉ hình ảnh).
+
+**Đã nhìn bằng mắt / kiểm DOM — ĐẠT:**
+- Pha đêm 22:09 (740×360): HUD ghi "Ban đêm — tiệm đóng cửa"; nút cửa bị khóa (`disabled`, tooltip "Ban đêm (22:00–06:00)…"); nút Ngủ hiện; mọi nút HUD 44×44 px; không cuộn ngang.
+- 05:48 → màn mờ `daily-routine-fade` bật; đồng hồ chạy tiếp, sang ngày 2 lúc 07:00. Ban ngày chỉ nhân viên ca ngày hiển thị (`peekVisibleStaff` = refill full_day; bảo vệ ca đêm ẩn).
+- StaffModal ở 740×360 và 568×320: chọn đủ 4 ca, chọn tòa, lương theo ca (ca đêm 21.000 so với đủ ngày 35.000), không tràn.
+- Vạch trước cửa trong mưa giông: khách che ô đứng chờ ở vạch, xe máy dừng trước vạch, vũng nước hiện; ghi nhận các pha `approach/wait` cả chiều vào và ra.
+- ReviewsModal 740×360: khối "Ảnh hưởng uy tín", "Uy tín hiện tại", bộ đếm "Phản hồi lời chê hôm nay 0/3", nút lọc khen/chê và bộ chọn món (44 px).
+
+**Lỗi tìm thấy và ĐÃ SỬA:**
+- **P1 — StaffModal ẩn dòng "Đang trực / Ngoài ca" trên màn nhỏ:** rule chung `html[data-density="compact"] .product-info p.muted { display: none; }` (`responsive.css`) ẩn luôn trạng thái ca. Thêm `html[data-density="compact"] .staff-hired .product-info p.muted { display: block; }` → đã thấy lại ở 568×320.
+
+**P2 — ĐÃ SỬA cùng ngày (`responsive.css`, đã nhìn lại bằng mắt):**
+- 568×320: chỉ số nhân viên bị cắt "Tốc độ 7 · Ch…" → `.staff-hired .product-info p { white-space: normal; }`, nay xuống dòng đủ chỉ số.
+- 740×360: toast đè nội dung hộp thoại (ví dụ "Lãi gộp" trong tổng kết ngày) → trong media màn thấp nằm ngang, khi có hộp thoại toast đặt lên thanh tiêu đề, lệch trái, rộng tối đa `100% - 120px` (nút đóng ở 674–722 px không bị che; toast 8–368 px).
+- 740×360 cảm ứng: toast che cụm nút thu phóng góc trên phải → toast lệch trái, rộng tối đa `100% - 260px` (toast 8–368 px, cụm nút 466–678 px, không chồng). Đổi kèm: trên màn thấp nằm ngang toast nằm góc trên trái thay vì giữa.
+
+**CHƯA QA (không dựng được trạng thái trong lượt này):** nút phản hồi lời chê (chưa có lời chê), lời nổi bật trong bản tin sáng (không có lời chê/khen nổi bật hôm trước), quán ăn vặt + cross-sell + Bé Na (cần cấp 26 và mua lô), hội chợ W4, đường ướt qua đêm, tooltip dự báo mưa, điện thoại thật, co-op hai trình duyệt.
+
+# MƯA: DỰ BÁO CÓ SAI SỐ + MƯA TO ÍT KHÁCH/XE CHẬM + GỢN VŨNG + ƯỚT QUA ĐÊM (19/10/2026, HỆ SỐ KHÁCH ĐÃ CHỐT 19/10/2026)
 
 Theo chốt 17/10/2026 ở `rain-intensity-forecast` 4.4 và `road-cross-section-drainage` 4.4. Nền trước khi sửa: typecheck PASS, game-core 112/112 (`.qa/baseline-*.log`).
 

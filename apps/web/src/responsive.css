@@ -353,6 +353,10 @@ html[data-input="touch"] .layout-board { min-width: calc(var(--layout-cols, 16) 
 /* Điện thoại ngang (thấp): nút góc nhìn thành một hàng ở góc trên phải để không đụng nút Xem ở góc dưới. */
 @media (max-height: 499px) and (orientation: landscape) {
   html[data-input="touch"] .world-tools { flex-direction: row; align-items: center; }
+  /* Toast lệch trái để không che cụm nút thu phóng ở góc trên phải. */
+  html[data-input="touch"] .toast-stack { left: calc(var(--space-3) + var(--safe-l, 0px)); transform: none; width: min(360px, calc(100% - 260px)); }
+  /* Có hộp thoại: màn thấp không đủ chỗ dưới đáy (toast đè nội dung) → đặt toast lên thanh tiêu đề, chừa nút đóng bên phải. */
+  html[data-dialogs] .toast-stack { top: calc(var(--safe-t, 0px) + var(--space-1)); bottom: auto; left: calc(var(--space-3) + var(--safe-l, 0px)); transform: none; width: min(360px, calc(100% - 120px)); }
 }
 
 /* ---------- Mật độ hộp thoại (dùng chung data-density của Đợt 5) ---------- */
@@ -611,6 +615,10 @@ html[data-density="compact"] .feature-suggest input[type="number"] { height: var
 /* Staff (P0): metadata phụ trên dòng (lương/tốc độ/...) gọn xuống 1 dòng, action nổi bật */
 html[data-density="compact"] .product-info p { line-height: 1.25; }
 html[data-density="compact"] .product-row select { max-width: 100%; }
+/* Trạng thái ca "Đang trực/Ngoài ca" là thông tin chính của nhân viên, không ẩn như dòng phụ của danh sách hàng */
+html[data-density="compact"] .staff-hired .product-info p.muted { display: block; }
+/* Chỉ số nhân viên (tốc độ/chính xác/sức bền) xuống dòng thay vì bị cắt "…" trên màn hẹp */
+html[data-density="compact"] .staff-hired .product-info p { white-space: normal; }
 html[data-density="compact"] section > h3 { font-size: 14px; margin: 2px 0 6px; }
 
 /* Chain (P0): dòng chuyển hàng / branch card gọn, thông tin dự phòng không dãn dọc */
