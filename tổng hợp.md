@@ -17,6 +17,10 @@ Môi trường: Browser pane (Chromium) qua dev server 5173 có sẵn, "Chơi Th
 - 740×360: toast đè nội dung hộp thoại (ví dụ "Lãi gộp" trong tổng kết ngày) → trong media màn thấp nằm ngang, khi có hộp thoại toast đặt lên thanh tiêu đề, lệch trái, rộng tối đa `100% - 120px` (nút đóng ở 674–722 px không bị che; toast 8–368 px).
 - 740×360 cảm ứng: toast che cụm nút thu phóng góc trên phải → toast lệch trái, rộng tối đa `100% - 260px` (toast 8–368 px, cụm nút 466–678 px, không chồng). Đổi kèm: trên màn thấp nằm ngang toast nằm góc trên trái thay vì giữa.
 
+**LỖI NGHIÊM TRỌNG phát hiện khi QA (chưa sửa, chờ chủ dự án):** nút "Chơi Thử (Local)" ở màn đầu (`LoginScreen.tsx` `handleLocalDemo`) gọi `resetSaveToDefault()` (`db.ts:255`), GHI ĐÈ ô lưu đang chọn bằng save mới, không hỏi xác nhận, không giữ backup. Người chơi có tiến trình mà bấm "Chơi thử" là mất save. Đã xảy ra với ô lưu "Ngày Bán Thứ 2" trong trình duyệt của Browser pane (không phải Chrome của chủ dự án) lúc QA 19/10/2026.
+
+**QA lượt 2 (19/10/2026):** mua lô quán ăn vặt `building-snack` ở cấp 26 qua `purchaseLand` trừ đúng 1.200.000 ₫. Chưa xem được khách quán ăn vặt/cross-sell/Bé Na vì kệ trống (không có khách sinh ra) — cần save dựng sẵn có hàng.
+
 **CHƯA QA (không dựng được trạng thái trong lượt này):** nút phản hồi lời chê (chưa có lời chê), lời nổi bật trong bản tin sáng (không có lời chê/khen nổi bật hôm trước), quán ăn vặt + cross-sell + Bé Na (cần cấp 26 và mua lô), hội chợ W4, đường ướt qua đêm, tooltip dự báo mưa, điện thoại thật, co-op hai trình duyệt.
 
 # MƯA: DỰ BÁO CÓ SAI SỐ + MƯA TO ÍT KHÁCH/XE CHẬM + GỢN VŨNG + ƯỚT QUA ĐÊM (19/10/2026, HỆ SỐ KHÁCH ĐÃ CHỐT 19/10/2026)
