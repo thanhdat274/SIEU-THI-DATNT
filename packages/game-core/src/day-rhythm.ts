@@ -134,6 +134,8 @@ export interface MorningBrief {
   civicCosts?: { upkeep: number; fee: number; projected: { upkeep: number; fee: number } };
   /** Công trình công cộng khánh thành hôm qua (từ sổ góp). */
   civicOpenings?: string[];
+  /** Sự kiện thành phố hôm nay (hội chợ W4, mất điện) — đã gộp chống trùng với thị trường. */
+  cityEvents?: string[];
   /** Vài lời khách nổi bật hôm qua (chê mạnh nhất + khen hay nhất) để hiện trong bản tin sáng (OpenSpec `written-customer-reviews` 4.5). */
   standoutReviews?: CustomerReview[];
 }
@@ -169,6 +171,7 @@ export function buildMorningBrief(params: {
   civicPopulation?: { districtId: string; pop: number; target: number; factor: number };
   civicCosts?: { upkeep: number; fee: number; projected: { upkeep: number; fee: number } };
   civicOpenings?: string[];
+  cityEvents?: string[];
 }): MorningBrief {
   const arrivingItemsCount = params.arrivingOrders.reduce((sum, o) => sum + o.quantity, 0);
   const tips: string[] = [];
@@ -226,6 +229,7 @@ export function buildMorningBrief(params: {
     ...(params.civicPopulation !== undefined ? { civicPopulation: params.civicPopulation } : {}),
     ...(params.civicCosts !== undefined ? { civicCosts: params.civicCosts } : {}),
     ...(params.civicOpenings && params.civicOpenings.length ? { civicOpenings: params.civicOpenings } : {}),
+    ...(params.cityEvents && params.cityEvents.length ? { cityEvents: params.cityEvents } : {}),
     ...(pickStandoutReviews(params.yesterdayReviews).length ? { standoutReviews: pickStandoutReviews(params.yesterdayReviews) } : {}),
   };
 }

@@ -21,6 +21,7 @@ export * from './security';
 export * from './security-manager';
 export * from './counterfeit';
 export * from './world-runtime';
+export * from './world-events';
 export * from './suggestions';
 export { SAME_DAY_SUPPLIER_CUTOFF_HOUR } from './supplier-cart';
 export * from './staff';

@@ -128,7 +128,8 @@ import { buyLandPlot, expandFootprint, relocateBuilding, relocateMisplacedFixtur
 import { GameInputSource, vectorToDirection } from './input';
 import { GameClock } from './clock';
 import { expiryDay, looseUnits, mergeLots, normalizeLots, sumLots, takeLots } from './stock';
-import { decayLot, spoilageRate, withBackupPower } from './spoilage';
+import { decayLot, isPowerOut, spoilageRate, withBackupPower } from './spoilage';
+import { mergeDayEvents, worldEventsForDay, type WorldEventsForDay } from './world-events';
 import { findPathToAny, GridPoint, tileCenter } from './pathfinding';
 import { normalizePlayerProgression, saleExperienceMultiplier, trafficAtLevel } from './progression';
 import { CustomerManager, PARKING_FEE, openParkingLots, parkingLotFor } from './customers';
@@ -856,6 +857,14 @@ export class GameSimulation {
       const p = placements.find(bp => bp.buildingId === buildingId);
       return p ? customerTrafficMultiplier(p.parcelId) : 1;
     };
+  }
+  /**
+   * Hệ số dòng khách từng tòa cho `maybeSpawnCustomer`: hệ số lô (tòa phụ) × sự kiện thành phố theo khu của tòa.
+   * Tiệm chính không nhận hệ số lô (giữ golden), chỉ nhận hội chợ khi thật sự ở khu W4.
+   */
+  private buildingStreamTrafficMultiplier(): (buildingId: string) => number {
+    const parcel = this.buildingParcelTrafficMultiplier();
+    return (buildingId: string) => (buildingId === 'main' ? 1 : parcel(buildingId)) * this.getBuildingWorldEventFactor(buildingId);
   }
   /** Lấy districtId của tiệm chính (main shop) từ parcel của nó. */
   public getMainShopDistrictId(): DistrictId {
@@ -2197,6 +2206,55 @@ export class GameSimulation {
   public getDemandBuildCount(): number { return this.demandBuildCount; }
   public getMarketState(): MarketState { return structuredClone(this.market); }
 
+  private worldEventsCache?: { day: number; seed: string | number; eventsKey: number; value: WorldEventsForDay };
+
+  /**
+   * Sự kiện thành phố cố định của `day` (hội chợ W4, mất điện) đã gộp với thị trường: mất điện có ở cả hai nguồn chỉ
+   * tính một lần. Deterministic theo `market.seed` + ngày nên chơi lẻ, server co-op và client cho cùng kết quả.
+   * `day` là ngày đồng hồ (chốt 06:00 — 00:00–06:00 vẫn thuộc ngày N). Mất điện thị trường xét ở 12:00 là đủ vì sự kiện
+   * thị trường tính theo NGUYÊN NGÀY (`buildMarketContext` lọc `startDay <= day <= endDay`, không theo giờ).
+   * Cache theo ngày + seed + số sự kiện thị trường (gọi mỗi tick sinh khách).
+   */
+  public getWorldEvents(day = this.clock.getTime().day): WorldEventsForDay {
+    const c = this.worldEventsCache;
+    if (c && c.day === day && c.seed === this.market.seed && c.eventsKey === this.market.events.length) return c.value;
+    const value = mergeDayEvents(worldEventsForDay(this.market.seed, day), isPowerOut(buildMarketContext(this.market, day, 12)));
+    this.worldEventsCache = { day, seed: this.market.seed, eventsKey: this.market.events.length, value };
+    return value;
+  }
+
+  /** Khu của một tòa theo lô đang đặt (vị trí đã lưu hoặc mặc định); không tìm thấy → undefined. */
+  private buildingDistrictId(buildingId: string): DistrictId | undefined {
+    const placement = (this.buildingPlacements ?? DEFAULT_PLACEMENTS).find(p => p.buildingId === buildingId);
+    return placement ? resolveParcel(placement.parcelId)?.districtId : undefined;
+  }
+
+  /** Hệ số khách của sự kiện thành phố cho dòng khách của MỘT tòa: hội chợ W4 chỉ nhân tòa đứng trên lô khu W4 (`am_thuc_nam`). */
+  public getBuildingWorldEventFactor(buildingId: string, day = this.clock.getTime().day): number {
+    return this.buildingDistrictId(buildingId) === 'am_thuc_nam' ? this.getWorldEvents(day).trafficFactor : 1;
+  }
+
+  /** Có tòa nào của người chơi nằm ở khu W4 không (để bản tin/HUD ghi rõ hội chợ có áp cho tiệm hay không). */
+  private hasBuildingInW4(): boolean {
+    return (this.buildingPlacements ?? DEFAULT_PLACEMENTS).some(p => resolveParcel(p.parcelId)?.districtId === 'am_thuc_nam');
+  }
+
+  /** Nhãn sự kiện thành phố cho bản tin/HUD: hội chợ ghi rõ khi không áp cho tiệm nào của người chơi. */
+  private cityEventLabel(e: WorldEventsForDay['events'][number]): string {
+    return e.kind === 'w4_fair' && !this.hasBuildingInW4() ? `${e.label} (không áp cho tiệm của bạn)` : e.label;
+  }
+
+  /** Số ngày còn lại (kể cả hôm nay) của sự kiện đang diễn ra liên tục từ `day`. */
+  private cityEventDaysLeft(kind: string, day: number): number {
+    let n = 1;
+    while (n < 30 && this.peekWorldEventKinds(day + n).includes(kind)) n++;
+    return n;
+  }
+
+  private peekWorldEventKinds(day: number): string[] {
+    return mergeDayEvents(worldEventsForDay(this.market.seed, day), isPowerOut(buildMarketContext(this.market, day, 12))).events.map(e => e.kind);
+  }
+
   /** Lý do nhu cầu của một món: danh sách hệ số (nguồn, nhãn, hệ số) cùng tổng. */
   public explainDemand(productId: string): ProductDemand | undefined {
     return this.refreshDemandTable().perProduct[productId];
@@ -2204,7 +2262,7 @@ export class GameSimulation {
 
   /** Tóm tắt cho giao diện: thời tiết hôm nay + dự báo, mùa, khung giờ, thứ, lưu lượng và lý do. */
   public getMarketSummary() {
-    return buildMarketSummary({
+    const summary = buildMarketSummary({
       market: this.market,
       weatherSeed: this.weatherSeed,
       time: this.clock.getTime(),
@@ -2214,6 +2272,14 @@ export class GameSimulation {
       prestigeStars: this.playerData.prestigeStars ?? 0,
       decor: this.getDecorAttraction(),
     });
+    // Sự kiện thành phố (đã gộp, không trùng mất điện thị trường) hiện chung hàng huy hiệu sự kiện của HUD.
+    const today = this.clock.getTime().day;
+    const cityEvents = this.getWorldEvents().events.map(e => ({
+      id: `city:${e.kind}`, label: this.cityEventLabel(e), status: 'active' as const, startsIn: 0,
+      daysLeft: e.kind === 'power_outage' ? 1 : this.cityEventDaysLeft(e.kind, today),
+      notice: e.kind === 'w4_fair' ? 'Hội chợ khu ẩm thực W4: tòa nằm ở khu W4 đông khách +50% hôm nay.' : 'Mất điện xóm: hàng lạnh hao hạn nhanh gấp đôi (máy phát điện chặn được).',
+    }));
+    return cityEvents.length ? { ...summary, events: [...summary.events, ...cityEvents] } : summary;
   }
 
   public getSeason(day = this.clock.getTime().day) {
@@ -4787,6 +4853,7 @@ export class GameSimulation {
       districtQol: civicQol,
       civicOpenings: civicOpeningBriefLines(this._cityProgress.milestones ?? [], day, (bid) => { const t = civicBundleById(bid)?.buildingTypeId ?? bid; return BUILDING_TYPE_DEFS[t as keyof typeof BUILDING_TYPE_DEFS]?.name ?? t; }),
       civicPopulation: this.currentDayRecord?.civicPopulation,
+      cityEvents: this.getWorldEvents(day).events.map(e => this.cityEventLabel(e)),
       civicCosts: this.currentDayRecord
         ? { upkeep: this.currentDayRecord.civicUpkeep ?? 0, fee: this.currentDayRecord.civicFee ?? 0, projected: this.getCivicDailyPreview() }
         : undefined,
@@ -5096,11 +5163,14 @@ export class GameSimulation {
   private decayStock(day: number): void {
     if (day < 1) return;
     const marketCtx = buildMarketContext(this.market, day, 12);
-    const ctx = this.fixtures.some(fixture => fixture.shopId === 'generator' && !fixture.broken) ? withBackupPower(marketCtx) : marketCtx; // máy phát điện: tủ mát không hỏng nhanh khi cúp điện
+    const hasGenerator = this.fixtures.some(fixture => fixture.shopId === 'generator' && !fixture.broken);
+    const ctx = hasGenerator ? withBackupPower(marketCtx) : marketCtx; // máy phát điện: tủ mát không hỏng nhanh khi cúp điện
+    // Mất điện của sự kiện thành phố (đã gộp: bỏ nếu thị trường cũng mất điện) → hàng lạnh hao nhanh hơn `spoilageFactor`.
+    const cityOutageFactor = hasGenerator ? 1 : this.getWorldEvents(day).spoilageFactor;
     const rateOf = (productId: string | undefined) => {
       const product = productId ? PRODUCT_MAP[productId] : undefined;
       if (!product) return 1;
-      const rate = spoilageRate(ctx, product);
+      const rate = spoilageRate(ctx, product) * (product.storageType === 'cold' ? cityOutageFactor : 1);
       return 1 + (rate - 1) * (1 - getSkillModifier(this.skills, 'spoilage_reduction'));
     };
     for (const item of this.inventory) {
@@ -5113,7 +5183,7 @@ export class GameSimulation {
       const shelfProduct = fixture.assignedProductId ? PRODUCT_MAP[fixture.assignedProductId] : undefined;
       if (shelfProduct && fixture.type === 'refrigerator' && isChilledDisplayItem(shelfProduct)) {
         // Hàng thường để tủ mát: không chịu hao do trời nóng và tươi lâu hơn; mất điện thì hao như hàng lạnh.
-        const coldRate = spoilageRate(ctx, { ...shelfProduct, storageType: 'cold' });
+        const coldRate = spoilageRate(ctx, { ...shelfProduct, storageType: 'cold' }) * cityOutageFactor;
         rate = Math.max(0.6, 1 + (coldRate - 1) * (1 - getSkillModifier(this.skills, 'spoilage_reduction')) + coldBreakExtraDecay(fixture) - fridgeShelfLifeBonus(shelfProduct));
       }
       for (const lot of fixture.stockLots ?? []) decayLot(lot, rate);
@@ -5618,7 +5688,7 @@ export class GameSimulation {
         this.getRainIntensity(),
         this.hasSecurityGuardOnShift(),
         { hour: this.clock.getTime().hour, weekday: weekdayOf(this.clock.getTime().day) },
-        this.buildingParcelTrafficMultiplier(),
+        this.buildingStreamTrafficMultiplier(),
         regularPreferredBuilding
       );
       if (spawned && (spawned.arrivalMode === 'motorbike' || spawned.arrivalMode === 'car')) this.collectParkingFee(spawned);

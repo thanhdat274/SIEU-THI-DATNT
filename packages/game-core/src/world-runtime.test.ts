@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { ALL_PRODUCTS, MAINTENANCE_RULES, SECURITY_RULES, SNACK_PLOT_ID, SUPPLIER_MAP, createInitialOnlineWorld } from '@game/data';
+import { ALL_PRODUCTS, MAINTENANCE_RULES, SECURITY_RULES, SNACK_PLOT_ID, SUPPLIER_MAP, createInitialOnlineWorld, generateStarterTileMap } from '@game/data';
 import { MULTIPLAYER_PROTOCOL_VERSION, isGameCommand } from '@game/shared';
 import { WorldRuntime } from './world-runtime';
+import { GameSimulation } from './simulation';
+import { InputManager } from './input';
 
 export async function runWorldRuntimeTests() {
   const owner = { id: 'owner-1', displayName: 'Owner One', photoUrl: null };
@@ -534,6 +536,19 @@ export async function runWorldRuntimeTests() {
     assert.equal(res.status, 'rejected', 'Server từ chối phản hồi lời cũ hơn 3 ngày');
     assert.equal(sim.getReviewResponses().length, 0, 'Không ghi nhận phản hồi cho lời cũ');
     assert.equal(rt.getSnapshot().world.revision, revisionBefore, 'Lệnh bị từ chối không tăng revision');
+  }
+
+  // Sự kiện thành phố (hội chợ W4, mất điện) deterministic theo seed + ngày: client dựng từ snapshot thấy đúng như server.
+  {
+    const serverSim = runtime.getSimulation();
+    const clientSim = new GameSimulation(structuredClone(runtime.getSnapshot().businesses[0].save), generateStarterTileMap(), new InputManager());
+    let seen = 0;
+    for (let day = 1; day <= 40; day++) {
+      const server = serverSim.getWorldEvents(day);
+      assert.deepEqual(clientSim.getWorldEvents(day), server, `ngày ${day}: client và server cùng sự kiện thành phố`);
+      seen += server.events.length;
+    }
+    assert.ok(seen > 0, 'cửa sổ 40 ngày có ít nhất một sự kiện thành phố');
   }
 
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');

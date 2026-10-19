@@ -117,6 +117,12 @@ export const DaySummaryModal: React.FC<Props> = ({ record, morningBrief, scoreRo
             </div>
           </div>
 
+          {morningBrief.cityEvents && morningBrief.cityEvents.length > 0 && (
+            <div className="pixel-panel" style={{ padding: 8, fontSize: 11, overflowWrap: 'anywhere' }}>
+              📣 <strong>Sự kiện thành phố hôm nay:</strong> {morningBrief.cityEvents.join(' · ')}
+            </div>
+          )}
+
           <div className="pixel-panel" style={{ padding: 12 }}>
             <h4 style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--color-wood-light)' }}>TÌNH HÌNH HÀNG HÓA SÁNG NAY</h4>
             <div style={{ display: 'grid', gap: 4, fontSize: 11 }}>

@@ -1,3 +1,28 @@
+# SỬA REVIEW PROMPT 6 — SỰ KIỆN THÀNH PHỐ (19/10/2026, CHƯA COMMIT)
+
+- **ĐÃ CHỐT 19/10/2026:** hội chợ W4 kéo dài 3 ngày, lặp mỗi 8 ngày (giữ `W4_FAIR_DURATION_DAYS`/`W4_FAIR_PERIOD_DAYS`).
+- **1. Hội chợ áp theo TÒA:** tiệm chính KHÔNG dời được (`main_fixed` trong `placementsProblem`), nên bỏ nhân vào `traffic` chung; thay bằng `buildingStreamTrafficMultiplier()` truyền vào `maybeSpawnCustomer`: mỗi dòng khách = hệ số lô (tòa phụ) × `getBuildingWorldEventFactor(tòa)` (1,5 khi tòa đứng trên lô khu `am_thuc_nam` ngày hội chợ, còn lại 1). Dòng tiệm chính giờ đọc `parcelMultiplierFor('main')` nhưng simulation trả 1 × sự kiện (không nhận hệ số lô) → chỉ +50% khi thật sự ở W4. Bản tin/HUD: không có tòa nào ở W4 → nhãn “Hội chợ Cà phê W4 (không áp cho tiệm của bạn)”.
+- **2. Cache:** `getWorldEvents` cache theo (ngày, `market.seed`, số sự kiện thị trường). Đo (`.qa/de2-bench.log`, harness như `performance.test.ts`, 2 ngày game = 28.267 khung, 3 lần): bố trí mặc định getWorldEvents chỉ bị gọi 2 lần (đường nóng không chạm vì tiệm chính ở W0) → không cache 3457/2502/2323 ms, có cache 2360/2262/2695 ms (chênh trong nhiễu). Xôi đặt ở W4: 24.002 lần gọi → không cache 2571/2716/2506 ms, có cache 2121/2439/2303 ms. Một lần gọi: 0,40 µs → 0,022 µs. Kết luận: chi phí gốc nhỏ (~10 ms/2 ngày), cache loại bỏ hẳn.
+- **3. `daysLeft` thật:** hội chợ = số ngày còn lại của kỳ hiện tại (ngày đầu = 3), mất điện = 1.
+- **Kiểm mất điện theo giờ:** sự kiện thị trường tính theo NGUYÊN NGÀY (`buildMarketContext` lọc `startDay <= day <= endDay`, `power_outage` `durationDays: 1`, không có giờ) → xét 12:00 là đủ; đã ghi chú tại `getWorldEvents`.
+- **Test thêm** (`world-events.test.ts`): tòa xôi trên lô W4 ngày hội chợ ×1,5 (dòng khách = lô × 1,5); tiệm chính và tòa W0 không đổi; ngày thường không đổi; `daysLeft` ngày đầu = 3; không có tòa W4 → bản tin + HUD ghi “không áp cho tiệm của bạn”.
+- **Golden 3 ngày:** KHÔNG lệch (bố trí mặc định không tòa nào ở W4).
+- **Số thật (`.qa/de2-*.log`):** typecheck PASS; game-core ×3 = 112/112; renderer PASS; web PASS; server `test:unit` 6/6; `test:coop` PASS. **CHƯA QA** browser.
+
+# NỐI SỰ KIỆN THÀNH PHỐ (`worldEventsForDay`) VÀO KHÁCH + HƯ HỎNG + UI (dynamic-economy-simulation, CHỜ MÁY THẬT #2, 19/10/2026, CHƯA COMMIT)
+
+- **Phân vai** (ghi ở đầu `packages/game-data/src/market-events.ts` và `packages/game-core/src/world-events.ts`): `market-events` = sự kiện thị trường (giá sỉ/tồn nhà cung cấp/nhu cầu theo nhóm, thời tiết ép); `worldEventsForDay` = sự kiện thành phố cố định (hội chợ W4, mất điện xóm).
+- **Chống chồng:** hàm thuần `mergeDayEvents(world, marketPowerOut)` — thị trường đã mất điện thì bỏ mất điện của nguồn thành phố, tính lại hệ số. `GameSimulation.getWorldEvents(day)` luôn trả bản đã gộp.
+- **Hội chợ W4:** giữ hằng số cũ — mỗi kỳ 3 ngày liên tiếp, lặp mỗi `W4_FAIR_PERIOD_DAYS` = 8 ngày (pha theo seed), +50% khách. **Chọn theo khu:** dữ liệu có khu (`am_thuc_nam` = W4) nên hệ số chỉ nhân vào lượt sinh khách khi tiệm chính nằm ở khu W4 (`getWorldEventTrafficFactor`); khu khác = 1 (vẫn hiện trong bản tin/HUD). Giả định: “chu kỳ cố định 3 ngày” = kỳ kéo dài 3 ngày, nhịp 8 ngày như code đã có — nếu ý là lặp mỗi 3 ngày thì đổi `W4_FAIR_PERIOD_DAYS`.
+- **Mất điện → `decayStock`:** hàng `storageType: 'cold'` (và hàng thường để tủ mát) nhân `spoilageFactor` (2,0) của mất điện thành phố; máy phát điện chặn được. Không áp chồng với mất điện thị trường (đã gộp).
+- **Quy ước ngày:** dùng ngày đồng hồ — đồng hồ chỉ tăng ngày lúc 06:00 (00:00–06:00 thuộc ngày N, `clock.ts:110`), nên pha đêm không rơi sang ngày sai.
+- **UI:** bản tin sáng có dòng “📣 Sự kiện thành phố hôm nay” (`MorningBrief.cityEvents`, `DaySummaryModal`); HUD dùng lại huy hiệu `hud-event-badge` (đã có `max-width: 24ch` + ellipsis nên không tràn) qua `getMarketSummary().events` thêm mục `city:*`.
+- **Co-op:** deterministic theo `market.seed` + ngày; test `world-runtime.test.ts` so 40 ngày server vs client dựng từ snapshot → giống hệt.
+- **Golden 3 ngày:** KHÔNG lệch (test golden PASS, không sinh lại): seed golden không có mất điện thành phố trong 3 ngày đầu và tiệm không ở khu W4 → doanh thu đổi 0%.
+- **Test mới** (`world-events.test.ts`): chống chồng mất điện; hội chợ đúng 3 ngày + đúng chu kỳ; spoilage tăng khi mất điện thành phố và trùng hai nguồn chỉ hao bằng một lần; co-op cùng sự kiện (`world-runtime.test.ts`).
+- **Số thật (log trong `.qa/de-*.log`):** nền trước khi sửa: typecheck PASS, game-core 112/112. Sau: typecheck PASS; game-core ×3 = 112/112 mỗi lần; renderer PASS; web PASS; server `test:unit` 6/6 (hai nhóm 2 + 4); `test:coop` PASS.
+- **CHƯA QA** browser (bản tin/huy hiệu chưa xem thật ở 568–740 px).
+
 # ĐÈN TÍN HIỆU THEO GIỜ GAME + KHÁCH THẬT QUA VẠCH (OpenSpec `traffic-light-crosswalk-yielding` 4.3–4.6, `arrival-mode-weighting` 4.4, 18/10/2026)
 
 ## Đèn tín hiệu là hàm thuần theo giờ game (task 1, traffic-light 4.3)

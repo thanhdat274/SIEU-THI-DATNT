@@ -1,5 +1,9 @@
 # LỘ TRÌNH PHÁT TRIỂN (DEVELOPMENT ROADMAP)
 
+## SỰ KIỆN THÀNH PHỐ NỐI VÀO GAME (19/10/2026, CHƯA COMMIT)
+- [x] Phân vai market-events / worldEventsForDay; `mergeDayEvents` chống chồng mất điện; hội chợ W4 +50% khách (tiệm ở khu W4); mất điện → hao hàng lạnh; bản tin + huy hiệu HUD; co-op cùng sự kiện. Test PASS, golden không lệch. **CHƯA QA browser.**
+- [x] Sửa review 19/10: hội chợ nhân theo tòa ở khu W4; cache theo ngày; `daysLeft` thật; chốt 3 ngày/8 ngày.
+
 ## ĐUA VỀ TEST XANH THẬT — SỬA LỖI REVIEW CÒN TỒN + KIỂM CHỨNG (18/10/2026, CHƯA COMMIT)
 - [x] **BƯỚC 0:** khôi phục `yarn.lock` + bỏ dòng `yarn.lock` trong `.gitignore`. Lỗi ban đầu: `building-placement.test.ts:38`, `coop-commands.test.ts:426` → đã sửa.
 - [x] **1a:** SNACK_PLOT_ID **1.200.000 ₫**; `snack-balance-sim` CÓ khung giờ + cross-sell → **hoàn vốn ≈ 7,2 ngày**; sửa `building-placement.test.ts:38/99`, `coop-commands.test.ts:426`.

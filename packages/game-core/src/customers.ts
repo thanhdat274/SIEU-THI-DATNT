@@ -375,8 +375,8 @@ export class CustomerManager {
     // (`parcelMultiplierFor`). Lô W0 mặt đường chính hệ số 1 → golden không đổi; khi tham số thiếu mặc định 1.
     const openSecondary = tileMap.buildings?.filter(building => building.id !== 'main' && building.open).length ?? 0;
     const cluster = foodClusterMultiplier(openSecondary);
-    // Dòng khách mỗi tòa: tiệm chính = 1, tòa phụ = share × cụm × lô × khung giờ bổ trợ (riêng snack)
-    const streams: Array<readonly [BuildingId, number]> = [['main', 1], ...BUILDING_TRAFFIC_SHARE.map(([id, share]) => {
+    // Dòng khách mỗi tòa: tiệm chính = 1 (× sự kiện thành phố nếu caller truyền), tòa phụ = share × cụm × lô × khung giờ bổ trợ (riêng snack)
+    const streams: Array<readonly [BuildingId, number]> = [['main', parcelMultiplierFor?.('main') ?? 1], ...BUILDING_TRAFFIC_SHARE.map(([id, share]) => {
       let factor = share * cluster * (parcelMultiplierFor?.(id) ?? 1);
       // Khung giờ bổ trợ: snack đông khách vào giờ chiều tối (tan học, trước giờ đóng tiệm)
       if (id === 'snack') {
