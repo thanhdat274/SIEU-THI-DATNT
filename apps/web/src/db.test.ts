@@ -121,3 +121,23 @@ console.log('PASS db: ô lưu, khóa backup, ô đang chọn, revision, backup r
   assert.equal(store.has('tiem.emergencySave.local_save_slot_3'), false);
   console.log('PASS db: bản chụp khẩn cấp');
 }
+
+// Chơi thử (Local): ghi vào ô demo riêng, ô người chơi đang chọn giữ nguyên.
+{
+  setActiveSlotId('local_save_slot_2');
+  const before = await db.saves.get('local_save_slot_2');
+  assert.ok(before, 'ô 2 đã có save từ các bước trên');
+  dbm.enterDemoSlot();
+  assert.equal(dbm.isDemoMode(), true);
+  assert.equal(getActiveSlotId(), 'local_save_slot_2', 'ô hiển thị vẫn là ô người chơi chọn');
+  const demo = await resetSaveToDefault();
+  assert.equal(demo.id, dbm.DEMO_SAVE_SLOT_ID);
+  assert.equal(isSaveSlotId(dbm.DEMO_SAVE_SLOT_ID), false, 'ô demo không thuộc ô hiển thị');
+  await persistSave({ ...demo, revision: demo.revision + 1 });
+  assert.deepEqual(await db.saves.get('local_save_slot_2'), before, 'chơi thử không đổi save ô đang chọn');
+  assert.equal((await listSaveSlots()).length, 3, 'danh sách ô không có ô demo');
+  setActiveSlotId('local_save_slot_2');
+  assert.equal(dbm.isDemoMode(), false, 'chọn lại ô thật thì thoát demo');
+  assert.equal((await loadOrCreateSave()).id, 'local_save_slot_2');
+  console.log('PASS db: chơi thử dùng ô demo riêng');
+}
