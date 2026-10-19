@@ -551,5 +551,36 @@ export async function runWorldRuntimeTests() {
     assert.ok(seen > 0, 'cửa sổ 40 ngày có ít nhất một sự kiện thành phố');
   }
 
+  // Hàng đang chuyển (schema 16): server chạy chuyến về kho tổng qua nửa đêm; client dựng từ snapshot thấy cùng chuyến;
+  // khởi động lại server từ checkpoint giữa chuyến không mất/không nhân đôi hàng.
+  {
+    const serverSim = runtime.getSimulation();
+    const qty = (s: GameSimulation) => (s.getInventory().find(i => i.productId === 'mi_hao_hao')?.quantity ?? 0) + s.getInternalDeliveries().reduce((n, d) => n + d.totalQty, 0);
+    serverSim.getClock().setTime({ ...serverSim.getTime(), hour: 23, minute: 59 });
+    const before = qty(serverSim);
+    const startDay = serverSim.getTime().day;
+    const d = serverSim.startInternalDelivery({ fromBuildingId: 'drink', toBuildingId: 'main', productId: 'mi_hao_hao', lots: [{ quantity: 4, expiresOnDay: 99, unitCost: 4200, provenance: 'known' }], toTarget: 'central' })!;
+    runtime.registerSession('owner-1');
+    (runtime as unknown as { lastLiveSnapshotAt: number }).lastLiveSnapshotAt = 0; // bỏ chặn 250 ms thời gian thực
+    runtime.tick(0.01);
+    const snapSave = structuredClone(runtime.getSnapshot().businesses[0].save);
+    assert.deepEqual(snapSave.internalDeliveries, serverSim.getInternalDeliveries(), 'snapshot server mang chuyến đang chuyển');
+    const clientSim = new GameSimulation(structuredClone(snapSave), generateStarterTileMap(), new InputManager());
+    assert.equal(qty(clientSim), qty(serverSim), 'client dựng từ snapshot cùng tổng hàng với server');
+    clientSim.importSaveData(structuredClone(snapSave), { live: true });
+    assert.equal(qty(clientSim), before + 4, 'nạp live lặp lại không nhân đôi');
+    // Server khởi động lại từ checkpoint giữa chuyến.
+    const restarted = new WorldRuntime(structuredClone(runtime.getSnapshot().world), { ...structuredClone(runtime.getSnapshot().businesses[0]), save: snapSave }, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    restarted.registerSession('owner-1');
+    const rs = restarted.getSimulation();
+    assert.equal(qty(rs), before + 4, 'khởi động lại giữa chuyến không mất hàng');
+    for (let i = 0; i < 600 && rs.getInternalDeliveries().some(x => x.id === d.id); i++) restarted.tick(0.5);
+    assert.ok(!rs.getInternalDeliveries().some(x => x.id === d.id), 'server chạy chuyến tới nơi');
+    assert.ok(rs.getTime().day > startDay, 'chuyến tới nơi sau khi đổi ngày');
+    assert.ok(rs.getInventory().find(i => i.productId === 'mi_hao_hao')!.lots!.some(l => l.expiresOnDay === 99 && l.unitCost === 4200), 'lô về kho tổng giữ hạn + giá vốn');
+    const after = new GameSimulation(structuredClone(restarted.getSnapshot().businesses[0].save), generateStarterTileMap(), new InputManager());
+    assert.equal(after.getInternalDeliveries().some(x => x.id === d.id), false, 'client thấy chuyến đã xong như server');
+  }
+
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');
 }

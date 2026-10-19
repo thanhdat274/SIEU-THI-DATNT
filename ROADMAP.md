@@ -1,5 +1,12 @@
 # LỘ TRÌNH PHÁT TRIỂN (DEVELOPMENT ROADMAP)
 
+## INTERNAL_DELIVERY HAI CHIỀU + HÀNG ĐANG CHUYỂN SCHEMA 16 (19/10/2026, CHƯA COMMIT) — nền cho spec 7.2 `multi-site-parcel-lease`
+
+- [x] `InternalDelivery.toTarget?: 'shelf' | 'site_buffer' | 'central'` (thiếu = châm kệ như cũ); `GameSimulation.startInternalDelivery(...)`; tới nơi `central` → `returnLotsToInventory` (giữ lô FEFO + giá vốn). `site_buffer` tạm vào kho tổng tới khi có kho đệm (7.2, phiên sau).
+- [x] Save schema 16 (`migrateToW16`, không sửa W7–W15): chuẩn hoá `internalDeliveries` (bỏ phần tử hỏng, `totalQty` = tổng lô, bỏ `toTarget` lạ). Hàng đang chuyển không nằm trong kho nên lưu/tải không mất, không nhân đôi.
+- [x] Test: `runInternalDeliveryReturnTests` (đi/về qua lưu-tải, qua nửa đêm, migration 15→16), khối hàng đang chuyển trong `world-runtime.test` (snapshot server = client, khởi động lại server giữa chuyến, chạy qua đổi ngày). Sửa 2 test cứng số 15.
+- [x] typecheck PASS; game-core ×3 112/112; web, server test:unit, test:coop PASS; golden khớp tuyệt đối. Log `.qa/7.2-nen-*.log`. CHƯA QA trình duyệt (chưa có UI).
+
 ## MƯA: DỰ BÁO SAI SỐ + MƯA TO ÍT KHÁCH + GỢN VŨNG + ƯỚT QUA ĐÊM (19/10/2026, CHƯA COMMIT)
 
 - [x] (a) dự báo sai số tăng theo ngày (`forecastRainForDay`), deterministic; (e) cache `getWorldEvents` theo id sự kiện; (c) sóng gợn vũng theo `depthFxActive`; (d) ướt qua đêm sau mưa to, save schema 15 (`migrateToW15`).

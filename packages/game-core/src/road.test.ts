@@ -94,7 +94,7 @@ function runOvernightWetnessTests(): void {
   // Lưu/nạp (co-op dùng chung save/replay): độ ướt mang sang nằm trong save schema 15 và cho cùng giá trị.
   wet.getClock().setTime({ ...wet.getTime(), hour: 8, minute: 0 });
   const save = wet.exportSaveData();
-  assert.equal(save.schemaVersion, 15);
+  assert.equal(save.schemaVersion, 16);
   assert.ok(save.roadWetnessCarry && save.roadWetnessCarry.day === day + 1 && save.roadWetnessCarry.value > 0, 'Save có roadWetnessCarry');
   const reloaded = new GameSimulation(save, generateStarterTileMap(), new InputManager());
   assert.equal(reloaded.getRoadWetness(), wet.getRoadWetness(), 'Nạp lại save: cùng độ ướt');
@@ -112,7 +112,7 @@ function runOvernightWetnessTests(): void {
   delete v14.roadWetnessCarry;
   const migrated = validateSaveGameData(v14);
   assert.equal(migrated.valid, true);
-  assert.equal(migrated.data?.schemaVersion, 15, 'v14 → 15');
+  assert.equal(migrated.data?.schemaVersion, 16, 'v14 → 16');
   const broken = validateSaveGameData({ ...v14, roadWetnessCarry: { day: 'x', value: 5 } });
   assert.equal(broken.data?.roadWetnessCarry, undefined, 'roadWetnessCarry hỏng bị bỏ khi migrate');
   console.log(`  ✓ Passed: Mưa to giữ ướt qua đêm (07:00 ${w7.toFixed(2)} → 15:00 ${w15.toFixed(2)}), lưu save 15; mưa nhẹ không giữ`);

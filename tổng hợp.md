@@ -1,3 +1,10 @@
+# INTERNAL_DELIVERY HAI CHIỀU + HÀNG ĐANG CHUYỂN SCHEMA 16 (19/10/2026, CHƯA COMMIT) — nền cho spec 7.2 `multi-site-parcel-lease`
+
+- [x] `InternalDelivery.toTarget?: 'shelf' | 'site_buffer' | 'central'` (thiếu = châm kệ như cũ); `GameSimulation.startInternalDelivery(...)`; tới nơi `central` → `returnLotsToInventory` (giữ lô FEFO + giá vốn). `site_buffer` tạm vào kho tổng tới khi có kho đệm (7.2, phiên sau).
+- [x] Save schema 16 (`migrateToW16`, không sửa W7–W15): chuẩn hoá `internalDeliveries` (bỏ phần tử hỏng, `totalQty` = tổng lô, bỏ `toTarget` lạ). Hàng đang chuyển không nằm trong kho nên lưu/tải không mất, không nhân đôi.
+- [x] Test: `runInternalDeliveryReturnTests` (đi/về qua lưu-tải, qua nửa đêm, migration 15→16), khối hàng đang chuyển trong `world-runtime.test` (snapshot server = client, khởi động lại server giữa chuyến, chạy qua đổi ngày). Sửa 2 test cứng số 15.
+- [x] typecheck PASS; game-core ×3 112/112; web, server test:unit, test:coop PASS; golden khớp tuyệt đối. Log `.qa/7.2-nen-*.log`. CHƯA QA trình duyệt (chưa có UI).
+
 # QA TRÌNH DUYỆT CHUNG (19/10/2026) — pha đêm, nhân viên theo ca, vạch qua đường, mưa, lời đánh giá
 
 Môi trường: Browser pane (Chromium) qua dev server 5173 có sẵn, "Chơi Thử (Local)" (không đụng ô lưu thật), giả lập viewport 740×360 và 568×320 bằng `resize_window`. KHÔNG phải điện thoại thật. Chỉnh giờ bằng `__sim.getClock().setTime`, thuê nhân viên bằng `__sim.hireStaff`, ép mưa bằng `weatherModel().transitionWeather('storm')` (chỉ hình ảnh).

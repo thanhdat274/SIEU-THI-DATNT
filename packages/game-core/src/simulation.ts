@@ -224,7 +224,7 @@ import { aggregateHeatmap, appendPricePoint, pruneHeatmap, sanitizeHeatmap, sani
 import { addProductionOutput, consumeIngredients, missingIngredients, sanitizeProductionJobs } from './production';
 import { LONG_TERM_GOALS, WEEKLY_QUESTS, PARTY_ORDER_MAP, PARTY_ORDERS, TITLES, effectiveShelfCapacity, SECURITY_RULES } from '@game/data';
 import { getUnlockedTitles, setActiveTitle, type TitleContext } from './titles';
-import { getFixtureDimensions, syncSlotChildren, isRoadWetnessCarry, type BuildingPlacementRecord, type RoadWetnessCarry, type TitleDef } from '@game/shared';
+import { getFixtureDimensions, syncSlotChildren, isRoadWetnessCarry, type BuildingPlacementRecord, type RoadWetnessCarry, type TitleDef, type InternalDeliveryTarget } from '@game/shared';
 
 function normalizeStaffSchedule(
   schedule: Record<string, StaffShift> | undefined,
@@ -6650,6 +6650,12 @@ export class GameSimulation {
     this.internalDeliveries = this.internalDeliveries.filter(d => !arrived.includes(d));
     for (const d of arrived) {
       const lots = (d.lots ?? []).map(l => ({ ...l }));
+      // Chiều về kho tổng (D6 `multi-site-parcel-lease`): gộp nguyên lô (giữ hạn dùng FEFO + giá vốn). `site_buffer` chưa có
+      // kho đệm (spec 7.2) nên tạm cũng vào kho tổng — không mất hàng.
+      if (d.toTarget === 'central' || d.toTarget === 'site_buffer') {
+        if (sumLots(lots) > 0) this.returnLotsToInventory(d.productId, lots);
+        continue;
+      }
       const product = PRODUCT_MAP[d.productId];
       // Chuyến châm kệ có kệ đích; chuyến theo hợp đồng thì châm các kệ cùng món (hoặc kệ trống) của tòa nhận.
       const shelves = d.toFixtureId
@@ -6672,6 +6678,30 @@ export class GameSimulation {
       if (sumLots(lots) > 0) this.returnLotsToInventory(d.productId, lots);
     }
     this.notifyStateChanged();
+  }
+
+  /** Tạo chuyến nội bộ từ lô đã lấy khỏi nguồn (người gọi đã trừ nguồn). Thời gian theo quãng đường giữa hai tòa. */
+  public startInternalDelivery(input: { fromBuildingId: string; toBuildingId: string; productId: string; lots: StockLot[]; toTarget: InternalDeliveryTarget }): InternalDelivery | undefined {
+    const lots = input.lots.filter(l => l.quantity > 0).map(l => ({ ...l }));
+    const totalQty = sumLots(lots);
+    if (totalQty <= 0) return undefined;
+    const now = this.clock.getTime();
+    const delivery: InternalDelivery = {
+      id: `delivery-${now.day}-${now.hour * 60 + now.minute}-${input.toTarget}-${input.fromBuildingId}-${this.internalDeliveries.length}`,
+      fromBuildingId: input.fromBuildingId,
+      toBuildingId: input.toBuildingId,
+      productId: input.productId,
+      lines: lots.map((l, i) => ({ lotId: `lot-${i}`, qty: l.quantity })),
+      totalQty,
+      fromDay: now.day,
+      day: now.day,
+      lots,
+      arriveAtMinute: absoluteGameMinute(now) + internalDeliveryMinutes(this.buildingDistanceTiles(input.fromBuildingId, input.toBuildingId)),
+      toTarget: input.toTarget,
+    };
+    this.internalDeliveries.push(delivery);
+    this.notifyStateChanged();
+    return structuredClone(delivery);
   }
 
   public getInternalDeliveries(): InternalDelivery[] {
