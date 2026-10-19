@@ -1,3 +1,16 @@
+# QA BẰNG SAVE DỰNG SẴN (19/10/2026, `__seedQaSave`, ô demo, Browser pane)
+
+Pane bị ẩn nên vòng khung hình dừng; mô phỏng được chạy bằng `__sim.update(0.25)` gọi trực tiếp (logic thật, không phải nhìn chuyển động). Ảnh chụp ở 740×360.
+
+- **snack — ĐẠT:** 600 giây mô phỏng từ ngày 5 15:30: tiệm chính 148 lượt khách, quán ăn vặt 37; cross-sell 19 khách (cả main→snack và snack→main). **Bé Na không ghé** trong ngày 5–6 của seed `qa-seed` (lịch ghé `shouldRegularVisitToday` không chọn) → CHƯA thấy Bé Na ở quán ăn vặt bằng mắt.
+- **fair — ĐẠT (logic):** ngày 6 có `w4_fair`, `getBuildingWorldEventFactor('snack')` = 1,5 khi quán đứng lô `w4-corner`; HUD có huy hiệu "⚡ Hội chợ Cà phê W4". **Ghi nhận P2:** ở màn hẹp/thấp (740×360) `.hud-event-badge` bị ẩn bởi rule có sẵn `responsive.css:82` → người chơi điện thoại chỉ thấy sự kiện trong bản tin sáng. Nhãn "Hội chợ Cà phê W4" khác chữ "khu ẩm thực W4" trong thông báo.
+- **complaints — ĐẠT (nhìn bằng mắt):** 3 lời chê (ngày 3/4/5) đều có nút "Phản hồi lời chê"; bấm 1 lần: uy tín 10 → 10,25, nút thành "✓ Đã phản hồi", bộ đếm "1/3 (còn 2 lượt)"; toast nằm trên thanh tiêu đề, không che nội dung.
+- **rain — PHÁT HIỆN 2 LỖI (chưa sửa):**
+  1. **Đường ướt nhảy lúc 07:00:** ngày 27 mưa to; 21:30 độ ướt 0,01, 23:00–05:00 là 0,00, rồi ngày 28 07:00 bật lên 0,55 dù không mưa (09:00 còn 0,28). Độ ướt mang qua đêm đang tính theo đỉnh mưa thay vì độ ướt thật cuối ngày, nên đêm khô mà sáng lại ướt. Cần: giữ độ ướt liên tục qua đêm (khô dần) hoặc chỉ mang khi cuối ngày còn ướt.
+  2. **Dự báo tự mâu thuẫn:** nhãn thời tiết "Mưa to" nhưng dải dự báo "Mưa vừa" (đỉnh 0,53) → tooltip kiểu "Mưa to (Mưa vừa…)". Sai số áp vào dải, không áp vào nhãn.
+- **Lời thoại Bé Na quán ăn vặt (P2, chưa sửa, `game-data/regulars.ts`):** "Cháo ngon quá…" (Bé Na mua bắp xào/cá viên, có lẽ ý là "Ngon quá"); walkout "Hết đồ ăn vặt rồi hả cháu? Thôi về má cháu vậy..." là giọng người lớn, không phải lời Bé Na.
+- **SiteModal:** không QA lại lượt này (phiên 7.2 đã QA 7 viewport). CHƯA QA co-op 2 trình duyệt, điện thoại thật.
+
 # MULTI-SITE-PARCEL-LEASE: CƠ SỞ TRÊN LÔ THUÊ + KHO ĐỆM + SCHEMA 17 (19/10/2026, CHƯA COMMIT) — spec 7.2, core/save/co-op + UI bảng cơ sở
 
 - [x] Lệnh `open_site` / `close_site` / `site_transfer` (core + server replay + `WorldRuntime`): cơ sở = tòa mở trên lô thuê/sở hữu ngoài W0, `siteId` = instanceId; 4 tòa trên lô tiệm chính và tòa mở bằng `open_building` cũ vẫn dùng thẳng kho tổng.
