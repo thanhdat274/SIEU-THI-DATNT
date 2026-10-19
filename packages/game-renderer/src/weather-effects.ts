@@ -2,7 +2,7 @@ import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { TILE_SIZE } from '@game/shared';
 import { ROAD_PROFILE, ROOF_EAVES, STORM_DRAINS, WEATHER_CONFIG, isAwningOpen, shelterZoneAt, type WeatherQuality } from '@game/data';
 import { rainVelocity, windSway, type WeatherVisualState } from '@game/core';
-import { puddleGeometry } from './road-surface';
+import { puddleGeometry, puddleWaveRings } from './road-surface';
 
 /**
  * Lớp vẽ hiệu ứng thời tiết (pixel art): mưa bằng sprite 1 px được pool, giọt bắn và gợn nước lấy mẫu một phần, lá/giấy bay,
@@ -22,6 +22,8 @@ export interface WeatherFrameContext {
   /** Cường độ người chơi chọn 0..1. */
   userIntensity: number;
   reducedMotion: boolean;
+  /** Bóng & chiều sâu đang bật thật (`depthFxActive`: người chơi bật và chất lượng khác Thấp) — bật sóng gợn vũng. */
+  depthFx?: boolean;
   mapWidthPx: number;
   mapHeightPx: number;
   /** Chân các nhân vật (để bắn nước khi đi qua vũng). */
@@ -399,6 +401,15 @@ export class WeatherEffects {
       if (rp.age >= 0.7) { this.ripples.splice(i, 1); continue; }
       const t = rp.age / 0.7;
       g.ellipse(Math.round(rp.x), Math.round(rp.y), 1 + rp.max * t, (1 + rp.max * t) * 0.45).stroke({ color: 0xe2f0f7, alpha: 0.6 * (1 - t), width: 1 });
+    }
+
+    // Sóng gợn nhẹ đồng tâm khi đang mưa (chỉ khi bật chiều sâu, không giảm chuyển động).
+    const rings = puddleWaveRings(ctx.time, level, state.rainIntensity, !!ctx.depthFx && !ctx.reducedMotion);
+    if (rings.length) {
+      for (const drain of STORM_DRAINS) {
+        const px = drain.tileX * TILE_SIZE + 16;
+        for (const ring of rings) g.ellipse(px, py, geo.rx * ring.scale, geo.ry * ring.scale).stroke({ color: 0xd6eaf4, alpha: ring.alpha, width: 1 });
+      }
     }
 
     // Phản chiếu: đèn đường/cửa tiệm ban đêm và chớp trên mặt nước.

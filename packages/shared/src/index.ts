@@ -1288,6 +1288,8 @@ export interface SaveGameData {
   reviews?: CustomerReview[];
   /** Các lượt phản hồi lời chê của chủ tiệm (schema 14). Thiếu = chưa phản hồi lời nào. */
   reviewResponses?: ReviewResponse[];
+  /** Độ ướt mặt đường mang qua đêm sau ngày mưa to (schema 15): áp cho ngày `day`, khô dần từ 06:00. Thiếu = khô. */
+  roadWetnessCarry?: RoadWetnessCarry;
   /** An ninh: camera, báo công an, sự cố gần đây và hồ sơ công an đang mở. */
   security?: SecurityState;
   /** Chỉ số tier kho hàng (0–3). Thiếu = 0. */
@@ -1613,7 +1615,20 @@ export function isGameAvatar(value: unknown): value is GameAvatar {
     (value.displayName === undefined || (typeof value.displayName === 'string' && value.displayName.length <= 64));
 }
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 14;
+/** Độ ướt mặt đường còn lại lúc chốt ngày 06:00 sau ngày mưa to (OpenSpec `road-cross-section-drainage` 4.4). */
+export interface RoadWetnessCarry {
+  /** Ngày được nhận độ ướt mang sang (ngày vừa bắt đầu lúc chốt). */
+  day: number;
+  /** Độ ướt 0..1 lúc 06:00 của `day`. */
+  value: number;
+}
+
+export function isRoadWetnessCarry(value: unknown): value is RoadWetnessCarry {
+  return isRecord(value) && Number.isSafeInteger(value.day) && (value.day as number) >= 1 &&
+    typeof value.value === 'number' && Number.isFinite(value.value) && value.value >= 0 && value.value <= 1;
+}
+
+export const CURRENT_SAVE_SCHEMA_VERSION = 15;
 
 /** Trạng thái thế giới mở (OpenSpec `open-world-land-reclamation`): đợt đã mở & đang thi công. */
 export interface WorldOpenState {
@@ -1677,7 +1692,7 @@ export function isChainState(value: unknown): value is ChainState {
 }
 
 export function isSaveGameData(value: unknown): value is SaveGameData {
-  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.schemaVersion !== 7 && value.schemaVersion !== 8 && value.schemaVersion !== 9 && value.schemaVersion !== 10 && value.schemaVersion !== 11 && value.schemaVersion !== 12 && value.schemaVersion !== 13 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4 && value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.schemaVersion !== 7 && value.schemaVersion !== 8 && value.schemaVersion !== 9 && value.schemaVersion !== 10 && value.schemaVersion !== 11 && value.schemaVersion !== 12 && value.schemaVersion !== 13 && value.schemaVersion !== 14 && value.schemaVersion !== CURRENT_SAVE_SCHEMA_VERSION) || !nonEmptyString(value.id) ||
       !nonNegativeInteger(value.revision) || !nonEmptyString(value.createdAt) || !nonEmptyString(value.updatedAt)) {
     return false;
   }
@@ -1840,6 +1855,12 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
     if (m.reviewResponses !== undefined && !Array.isArray(m.reviewResponses)) m.reviewResponses = [];
   };
+  // 14 → 15 (OpenSpec `road-cross-section-drainage` 4.4): thêm `roadWetnessCarry` tùy chọn; save cũ không có = đường khô.
+  // Giá trị hỏng (sửa tay) bị bỏ thay vì từ chối cả save.
+  const migrateToW15 = (m: SaveGameData): void => {
+    m.schemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
+    if (m.roadWetnessCarry !== undefined && !isRoadWetnessCarry(m.roadWetnessCarry)) delete m.roadWetnessCarry;
+  };
   if ((value.schemaVersion === 1 || value.schemaVersion === 2 || value.schemaVersion === 3 || value.schemaVersion === 4 || value.schemaVersion === 5) && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW7(migrated);
@@ -1850,6 +1871,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW12(migrated);
     migrateToW13(migrated);
     migrateToW14(migrated);
+    migrateToW15(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v6 → v7 (open-world-land-reclamation): save cũ không có `world`/`ownedParcelIds` → chỉ mở đợt 0 và W0 đã sở hữu.
@@ -1863,6 +1885,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW12(migrated);
     migrateToW13(migrated);
     migrateToW14(migrated);
+    migrateToW15(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v7 → hiện tại (open-world-coop-land D4): save v7 ĐÃ có `world`/`ownedParcelIds` (v6 đã gieo), chỉ cần điền
@@ -1876,6 +1899,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW12(migrated);
     migrateToW13(migrated);
     migrateToW14(migrated);
+    migrateToW15(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v8 → hiện tại (open-world-building-types D8): save v8 đã có `builtBy`, chỉ cần gắn `typeId` (W9) + `parcelTenure` (W10) + `civic` (W11).
@@ -1887,6 +1911,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW12(migrated);
     migrateToW13(migrated);
     migrateToW14(migrated);
+    migrateToW15(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v9 → 10 (open-world-land-lease 3.1): save v9 có typeId, chỉ cần điền `parcelTenure` (W10) + `civic` (W11).
@@ -1897,6 +1922,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW12(migrated);
     migrateToW13(migrated);
     migrateToW14(migrated);
+    migrateToW15(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v10 → 11 (civic-population-demand): điền `civic` nếu thiếu.
@@ -1906,6 +1932,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW12(migrated);
     migrateToW13(migrated);
     migrateToW14(migrated);
+    migrateToW15(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v11 → 12 (open-world-coop-contracts): chỉ nâng số schema.
@@ -1914,6 +1941,7 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     migrateToW12(migrated);
     migrateToW13(migrated);
     migrateToW14(migrated);
+    migrateToW15(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v12 → 13 (OpenSpec `staff-shifts`): chuẩn hoá ca/lịch ca; ca đêm hợp lệ.
@@ -1921,12 +1949,20 @@ export function validateSaveGameData(value: unknown): SaveValidationResult {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW13(migrated);
     migrateToW14(migrated);
+    migrateToW15(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   // v13 → 14 (OpenSpec `written-customer-reviews` 4.5): chuẩn hoá danh sách phản hồi lời chê.
   if (value.schemaVersion === 13 && isSaveGameData(value)) {
     const migrated = structuredClone(value) as SaveGameData;
     migrateToW14(migrated);
+    migrateToW15(migrated);
+    return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
+  }
+  // v14 → 15: độ ướt mặt đường qua đêm (tùy chọn).
+  if (value.schemaVersion === 14 && isSaveGameData(value)) {
+    const migrated = structuredClone(value) as SaveGameData;
+    migrateToW15(migrated);
     return { valid: true, versionStatus: 'legacy_migrate', data: migrated };
   }
   if (value.schemaVersion < CURRENT_SAVE_SCHEMA_VERSION) {

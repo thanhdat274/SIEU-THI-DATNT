@@ -164,6 +164,14 @@ function runWorldEventsIntegrationTests(): void {
     const bothSources = lost(outageDay, true);
     assert.ok(!bothSources.events.events.some(e => e.kind === 'power_outage'), 'gộp: không còn mất điện thành phố khi thị trường đã mất điện');
     assert.equal(bothSources.lostDays, marketOnly.lostDays, 'trùng hai nguồn: hao bằng đúng một lần mất điện');
+
+    // Cache getWorldEvents khóa theo danh sách id: đổi một sự kiện thị trường thành sự kiện khác CÙNG số lượng vẫn tính lại.
+    // Ngày mất điện thành phố: khi thị trường cũng mất điện thì bản gộp bỏ mất điện thành phố (chỉ tính một lần).
+    const market = { ...createMarketState(SEED, outageDay), events: [{ id: 'wholesale_sale', startDay: outageDay, endDay: outageDay }] };
+    const sim = new GameSimulation({ ...structuredClone(DEFAULT_INITIAL_SAVE), worldTime: { ...DEFAULT_INITIAL_SAVE.worldTime, day: outageDay }, market }, generateStarterTileMap(), new InputManager());
+    assert.ok(sim.getWorldEvents(outageDay).events.some(e => e.kind === 'power_outage'), 'cache: trước khi đổi còn mất điện thành phố');
+    (sim as unknown as { market: { events: { id: string; startDay: number; endDay: number }[] } }).market.events = [{ id: 'power_outage', startDay: outageDay, endDay: outageDay }];
+    assert.ok(!sim.getWorldEvents(outageDay).events.some(e => e.kind === 'power_outage'), 'cache: cùng số sự kiện nhưng khác id → tính lại (gộp bỏ mất điện thành phố)');
   }
 
   // ---- Hội chợ áp theo TÒA ở khu W4: tòa trên lô W4 +50% ngày hội chợ; tòa W0 và ngày thường không đổi ----

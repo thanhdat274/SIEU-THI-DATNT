@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { buildingShadowPolygon, buildingShadowShape, BUILDING_SHADOW_MAX } from './depth-effects';
-import { setWeatherFxSettings, depthFxActive } from './weather-settings';
+import { setWeatherFxSettings, depthFxActive, getWeatherFxSettings } from './weather-settings';
+import { puddleWaveRings, PUDDLE_WAVE } from './road-surface';
 
 console.log('--- Testing depth-effects ---');
 const r = { x0: 0, y0: 0, x1: 100, y1: 50 };
@@ -38,3 +39,20 @@ setWeatherFxSettings({ depthFx: true, quality: 'low' });
 assert.equal(depthFxActive(), false, 'chất lượng thấp tắt chiều sâu');
 assert.equal(setWeatherFxSettings({ depthFx: 'x' as never, quality: null }).depthFx, true, 'giá trị lạ về mặc định bật');
 console.log('depth-effects OK');
+
+// ---- Sóng gợn vũng (road-cross-section-drainage 4.4): chỉ khi đang mưa và bật chiều sâu; Thấp / tắt chiều sâu thì không ----
+{
+  const base = getWeatherFxSettings();
+  setWeatherFxSettings({ ...base, depthFx: true, quality: 'high' });
+  const on = puddleWaveRings(1.3, 0.8, 0.7, depthFxActive());
+  assert.equal(on.length, PUDDLE_WAVE.count, 'mưa + chiều sâu bật: có sóng gợn');
+  assert.ok(on.every(r => r.scale > 0 && r.scale <= 0.9 && r.alpha >= 0 && r.alpha <= PUDDLE_WAVE.maxAlpha), 'sóng nằm trong vũng, mờ nhẹ');
+  setWeatherFxSettings({ ...base, depthFx: true, quality: 'low' });
+  assert.equal(puddleWaveRings(1.3, 0.8, 0.7, depthFxActive()).length, 0, 'chất lượng Thấp: tắt sóng gợn');
+  setWeatherFxSettings({ ...base, depthFx: false, quality: 'high' });
+  assert.equal(puddleWaveRings(1.3, 0.8, 0.7, depthFxActive()).length, 0, 'tắt Bóng & chiều sâu: tắt sóng gợn');
+  assert.equal(puddleWaveRings(1.3, 0.8, 0, true).length, 0, 'tạnh mưa: không gợn (vũng còn nhưng mặt nước lặng)');
+  assert.equal(puddleWaveRings(1.3, 0, 0.7, true).length, 0, 'không có vũng: không gợn');
+  setWeatherFxSettings(base);
+  console.log('✓ sóng gợn vũng bật/tắt đúng theo mưa + chiều sâu + chất lượng');
+}

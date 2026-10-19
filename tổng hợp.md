@@ -1,3 +1,44 @@
+# MƯA: DỰ BÁO CÓ SAI SỐ + MƯA TO ÍT KHÁCH/XE CHẬM + GỢN VŨNG + ƯỚT QUA ĐÊM (19/10/2026, CHƯA COMMIT, HỆ SỐ KHÁCH ĐÃ CHỐT 19/10/2026)
+
+Theo chốt 17/10/2026 ở `rain-intensity-forecast` 4.4 và `road-cross-section-drainage` 4.4. Nền trước khi sửa: typecheck PASS, game-core 112/112 (`.qa/baseline-*.log`).
+
+- **(a) Dự báo có sai số:** `forecastRainForDay(seed, day, weatherId, daysAhead)` (`game-core/weather.ts`) lệch đỉnh ±0,1×số ngày và lệch giờ ±30 phút×số ngày (`FORECAST_PEAK_ERROR_PER_DAY`, `FORECAST_TIME_ERROR_PER_DAY`, PROVISIONAL), deterministic theo `hashSeed` + `Mulberry32Rng` → WorldRuntime và client cùng dự báo. Hôm nay = thật; thời tiết thật không đổi. `market-summary.ts` dùng cho ngày mai/ngày kia (HUD tooltip, MarketModal, bản tin sáng). Test: sai số TB đỉnh 1 ngày 0,051 < 3 ngày 0,147; giờ 16 < 48 phút; cùng seed cùng kết quả. Giới hạn: loại thời tiết dự báo (nắng/mưa) vẫn đúng, chỉ dải + khung giờ sai.
+- **(b) Mưa to → ít khách, xe chậm:** `RAIN_BAND_CUSTOMER_FACTOR` (`game-data/weather.ts`) theo dải mưa **đỉnh của ngày**: phùn 1 / vừa 0,95 / to 0,6 / giông 0,5 (**ĐÃ CHỐT 19/10/2026**, chỉ nhịp sinh khách). Nhân vào dòng khách từng tòa: `lô × hội chợ W4 × mưa` (`buildingStreamTrafficMultiplier`). (Bản đầu nhân cả trần khách đồng thời — đã bỏ, xem ĐIỀU TRA.) Xe nền: `trafficRainSpeedFactor` giảm thêm tới −12% từ mưa ≥ 0,55 (`HEAVY_RAIN_EXTRA_SLOWDOWN`); xe khách rời tiệm nhân cùng hệ số.
+  - **Vì sao phải nhân cả trần:** sweep cho thấy hệ số chỉ ở nhịp sinh (theo giờ hoặc cả ngày) gần như không đổi doanh thu — harness cấp 6 bị trần khách đồng thời giữ (~177 khách/ngày bất kể mưa).
+  - **Bảng sweep** (`balance-sweep.ts`, 5 seed × 60 ngày, kệ đầy, nhóm theo dải đỉnh mưa của ngày: nắng 190 / vừa 66 / to 39 ngày; log `.qa/sweep-*.log`):
+
+| Lượt | Hệ số (vừa/to/giông) | Nắng DT TB | Mưa vừa | Mưa to | Khách nắng/vừa/to |
+|---|---|---|---|---|---|
+| Trước sửa | — | 3.032.989 ₫ | 2.964.523 (−2,3%) | 2.960.038 (−2,4%) | 179,5 / 173,4 / 176,8 |
+| v1 theo giờ, chỉ nhịp sinh | 0,9/0,75/0,65 | 3.027.076 | −2,5% | −2,3% | 179,4 / 172,8 / 176,8 |
+| v2 cả ngày, chỉ nhịp sinh | 0,9/0,75/0,65 | 3.012.226 | −3,2% | −1,5% | 178,9 / 170,6 / 175,3 |
+| v3 cả ngày + trần | 0,9/0,75/0,65 | 2.904.837 | −10,4% | −9,5% | 173,3 / 155,3 / 156,0 |
+| v4 cả ngày + trần | 0,95/0,7/0,6 | 2.897.013 | −7,6% | −7,9% | 173,8 / 156,9 / 153,5 |
+| **v5 (đang để trong code)** | **0,95/0,6/0,5** | **2.859.779** | **−10,6%** | **−12,6%** | 172,2 / 150,0 / 146,1 |
+
+  - **Điểm bất thường cần chủ dự án xem trước khi chốt:** (1) ngày mưa vừa giảm gần bằng mưa to dù hệ số 0,95 — nghi trần khách làm tròn (`Math.round(trần × 0,95)`) hoặc hiệu ứng dây chuyền qua ngày; (2) **ngày nắng cũng giảm 3,03 → 2,86 tr (−5,7%)** dù hệ số = 1 → có tác động chéo ngày (uy tín/khách bỏ về/thị trường) chưa tách được; tổng doanh thu 60 ngày ~−8,8%. Bỏ về TB không tăng (nắng 7,0 / vừa 9,7 / to 6,9). **Chưa chốt hằng số.**
+  - **Tương tác đã kiểm (test):** xe nền mưa to vẫn dừng trước vạch ngã tư khi đỏ; mô phỏng 1.800 s mưa to: 0 xe lấn vào vạch trước tiệm lúc người đi bộ xanh (đối chứng trời khô cũng 0); thứ tự nhân dòng khách = lô × hội chợ × mưa cho cả 4 tòa; pha đêm: mưa không bao giờ rơi lúc 22:00 (đỉnh ≤ ~14:30, nửa độ dài ≤ 155 phút) và tiệm đóng nên hệ số không chạm đêm. Khách chờ ở vạch: logic chờ đèn không đọc mưa (không đổi), test crosswalk cũ PASS.
+- **ĐIỀU TRA (19/10/2026, sau khi chủ dự án yêu cầu):**
+  - **Nguyên nhân nắng giảm 5,7%:** harness `balance-sweep` để cấp tự lên (6 → 32–34 sau 60 ngày). Ngày mưa ít khách → ít XP → cuối kỳ chậm 1–2 cấp (v5: 32–33 so với 34) → trần khách/lưu lượng theo cấp thấp hơn ở MỌI ngày sau, kể cả ngày nắng. Khóa cấp (`BALANCE_LOCK_LEVEL=1`) thì nắng còn −2,6% — phần còn lại là mô phỏng tách nhánh (khác chuỗi khách/RNG từ ngày mưa đầu tiên), không phải hệ số. Log `.qa/sweep-{off,v5}-{locked,unlocked}.log`.
+  - **Nguyên nhân mưa vừa giảm gần bằng mưa to:** cùng tác động chéo ngày + nhiễu so sánh không cặp; ở cấp 6 trần = 3, 3×0,95 làm tròn vẫn 3 nên hệ số 0,95 gần như không làm gì. Đo cặp: mưa vừa chỉ −0,8%.
+  - **Công cụ mới `game-core/src/rain-paired-sweep.ts`:** mỗi đầu ngày chụp save, chạy cùng một ngày hai lần (tắt/bật hệ số), cấp cố định. Kiểm tất định: 189 ngày không mưa lệch 0 ₫. `balance-sweep.ts` thêm `BALANCE_LOCK_LEVEL`, `BALANCE_RAIN_FACTOR=off`, in cấp cuối mỗi seed.
+  - **Kết quả cặp với v5 (nhân cả trần):** mưa to −38,3% (cấp 6) / −33,3% (cấp 20), giông −40,3% / −48,7% → **vượt 25%**, sweep cũ đánh giá thấp. Nguyên nhân: trần 3 → 2 (bước −33%) chồng lên hệ số nhịp sinh.
+  - **Đã sửa:** bỏ nhân trần khách đồng thời, chỉ giữ hệ số ở nhịp sinh từng tòa (cùng hệ số 0,95/0,6/0,5). Đo cặp (`.qa/sweep-paired-*-nocap.log`):
+
+| Cấp | Mưa vừa | Mưa to | Giông |
+|---|---|---|---|
+| 6 | −0,6% (70,9 → 70,3 khách) | **−15,0%** (59,1 → 49,8) | **−20,6%** (70,4 → 56,4) |
+| 20 | −0,0% | −7,0% (133,0 → 123,3) | −7,8% (159,5 → 145,7) |
+
+  - Ở cấp cao trần khách đồng thời giữ nên mưa to chỉ còn −7%: nếu muốn ổn định 10–25% ở mọi cấp phải đổi cách áp — **chủ dự án chốt 19/10/2026 giữ như hiện tại** (−15% cấp 6, −7% cấp 20). Mưa vừa 0,95 gần như không tác dụng. Golden không lệch; typecheck PASS; game-core 112/112 (`.qa/final-*.log`).
+- **(c) Gợn sóng vũng:** `puddleWaveRings` (`game-renderer/road-surface.ts`) — 2 vòng đồng tâm giãn chậm (chu kỳ 2,6 s, alpha ≤ 0,22) vẽ trong `updatePuddles` chỉ khi đang mưa + `depthFxActive` (chất lượng Thấp / tắt "Bóng & chiều sâu" / giảm chuyển động → tắt). Gợn giọt chạm vũng có sẵn giữ nguyên. Đo trong Browser pane (game thật, mưa giông): thời gian `updatePuddles` 0,033 ms/khung (tắt sóng) → 0,041–0,047 ms (bật), tức +~0,01 ms; FPS pane 11,4 / 14,1 / 13,9 (bật/tắt/bật) — nhiễu do test chạy nền, không tách được. Test `depth-effects.test.ts`.
+- **(d) Ướt qua đêm:** lúc chốt 06:00, `overnightRoadWetness` (chỉ khi dải đỉnh của ngày vừa qua là to/giông; giữ 60% của `peak×1,5`) → `roadWetnessCarry {day, value}`; `getRoadWetness` = max(độ ướt hôm nay, phần mang sang khô dần τ=180 phút từ 06:00). Lưu save **schema 15** (`migrateToW15`, thêm 14 vào `isSaveGameData`, KHÔNG sửa W13/W14; giá trị hỏng bị bỏ). Co-op: nằm trong save chung, server/client cùng tính lúc chốt ngày. Test `road.test.ts`: mưa to qua 06:00 → 07:00 0,50 → 10:00 giảm → 15:00 0,04; mưa nhẹ/vừa không giữ; lưu/nạp cùng giá trị; v14 → 15.
+- **(e) Cache `getWorldEvents`:** khóa theo `id@startDay-endDay` của mọi sự kiện thị trường (thay vì số lượng). Test `world-events.test.ts`: thay `wholesale_sale` bằng `power_outage` (cùng 1 sự kiện) → tính lại; ĐỎ trước sửa, XANH sau.
+- **Golden 3 ngày:** KHÔNG lệch (test golden PASS, không sinh lại).
+- **Số thật (log `.qa/after-*.log`):** typecheck PASS; game-core ×3 = 112/112, 0 fail mỗi lần; renderer PASS; web PASS; server `test:unit` 2+4 pass, 0 fail; `test:coop` lần 1 **FAIL** (`coop-commands.test.ts:204` chờ "chỉ còn" nhưng gặp "Chợ đầu mối tạm ngừng cung" — sự kiện khan hàng theo seed ngẫu nhiên của thế giới test), chạy lại lần 2, 3 **PASS** → test phụ thuộc seed, không do thay đổi này (chưa chứng minh bằng chạy trên nhánh gốc). Sửa thêm `staff-shifts.test.ts:223` (schema 14 → 15).
+- **Browser QA (desktop, Browser pane, ép `heavy_rain_spell` bằng `window.__sim`):** thấy vòng gợn mờ ở vũng cửa thu nước lúc mưa giông 0,86; tooltip HUD "Hôm nay (Mưa giông 10:45–13:00). Dự báo: Mưa to (Mưa giông 12:45–16:00), Nắng"; qua 06:00 → ngày 2 07:00 đường còn sẫm + vũng còn, độ ướt 0,54–0,56, không gợn (đang tạnh); bản tin sáng hiện "Mưa to / Dự báo ngày mai: Nắng". **CHƯA QA:** mobile, chất lượng Thấp bằng mắt, co-op 2 trình duyệt, MarketModal.
+- `balance-sweep.ts` thêm in doanh thu/khách/bỏ về theo dải mưa.
+
 # SỬA REVIEW PROMPT 6 — SỰ KIỆN THÀNH PHỐ (19/10/2026, CHƯA COMMIT)
 
 - **ĐÃ CHỐT 19/10/2026:** hội chợ W4 kéo dài 3 ngày, lặp mỗi 8 ngày (giữ `W4_FAIR_DURATION_DAYS`/`W4_FAIR_PERIOD_DAYS`).

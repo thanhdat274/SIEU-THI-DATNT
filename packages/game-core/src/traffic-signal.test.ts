@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { INTERSECTIONS, VEHICLE_ROAD_MAP, roadLaneCoord, STREET_VEHICLE_RULES, INTERSECTION_SIGNAL, STORE_FRONT_SIGNAL, TRAFFIC_SIGNAL_CYCLE_SEC } from '@game/data';
+import { INTERSECTIONS, VEHICLE_ROAD_MAP, roadLaneCoord, STREET_VEHICLE_RULES, INTERSECTION_SIGNAL, STORE_FRONT_CROSSWALK, STORE_FRONT_SIGNAL, TRAFFIC_SIGNAL_CYCLE_SEC, trafficRainSpeedFactor } from '@game/data';
 import { StreetVehicleState } from '@game/shared';
 import { StreetTrafficManager, STREET_LANE_RIGHT_Y } from './street-traffic';
 import { intersectionSignalsAt, storeFrontSignalAt, trafficSignalPhaseFromWorldClock } from './traffic-signal';
@@ -144,4 +144,47 @@ export function runTrafficSignalTests(): void {
   }
   console.log('  ✓ Passed: Vạch trước tiệm ưu tiên người đi bộ, ngã tư ưu tiên xe (≥50% xanh), xe dừng trước vạch, không xung đột');
   console.log('  ✓ Passed: Pha đèn là hàm thuần của worldTime, cùng giờ → cùng pha');
+
+  // ---- Mưa to (rain-intensity-forecast 4.4): xe chậm hơn nhưng vẫn dừng trước vạch ngã tư và vạch trước tiệm ----
+  {
+    const ix = INTERSECTIONS.find((x) => x.roadId === 'main' && x.avenueId === 'west')!;
+    const half = STREET_VEHICLE_RULES.halfLength.car;
+    const stop = ix.crossLeft - STREET_VEHICLE_RULES.stopMarginPx;
+    const m = new StreetTrafficManager([car('wet', stop - half - 40)]);
+    m.setSignalClock(RED_START + 1 - ix.signalOffsetSec);
+    run(m, 6, 14, 1);
+    const wet = find(m, 'wet');
+    assert.ok(frontOf(wet) <= ix.crossLeft && (wet.currentSpeed ?? wet.speed) < 1, 'Mưa to: xe vẫn dừng trước vạch ngã tư khi đỏ');
+
+    // Mô phỏng dài lúc mưa to: không xe nào MỚI lấn vào vạch trước tiệm khi người đi bộ đang xanh (xe đang dọn vạch lúc
+    // đèn chuyển thì được đi hết — giống trời khô).
+    const entriesDuringWalk = (rain: number) => {
+      const mgr = new StreetTrafficManager();
+      const prevFront = new Map<string, number>();
+      let entries = 0;
+      for (let t = 0; t < 1800; t += 0.1) {
+        mgr.update(0.1, 14, rain, 99);
+        const walk = mgr.getStoreFrontSignal().pedestrian === 'walk';
+        for (const v of mgr.getVehicles()) {
+          if (v.axis === 'y' || (v.roadId ?? 'main') !== 'main' || v.isDeparting) continue;
+          const hl = STREET_VEHICLE_RULES.halfLength[v.type];
+          const front = v.direction === 'right' ? v.position.x + hl : v.position.x - hl;
+          const before = prevFront.get(v.id);
+          const entered = before !== undefined && (v.direction === 'right' ? before <= STORE_FRONT_CROSSWALK.x0 && front > STORE_FRONT_CROSSWALK.x0 : before >= STORE_FRONT_CROSSWALK.x1 && front < STORE_FRONT_CROSSWALK.x1);
+          if (walk && entered) entries++;
+          prevFront.set(v.id, front);
+        }
+      }
+      return entries;
+    };
+    assert.equal(entriesDuringWalk(1), 0, 'Mưa to: không xe nào lấn vào vạch trước tiệm lúc người đi bộ xanh');
+    assert.equal(entriesDuringWalk(0), 0, 'Trời khô: (đối chứng) không xe nào lấn vào vạch lúc người đi bộ xanh');
+
+    // Xe khách rời tiệm chậm hơn khi mưa to; tốc độ xe nền giảm thêm từ ngưỡng mưa to.
+    const dry = new StreetTrafficManager(); dry.update(0.1, 14, 0, 5); dry.addDepartingVehicle({ x: 300, y: 450 }, 'motorbike', 0);
+    const rainy = new StreetTrafficManager(); rainy.update(0.1, 14, 1, 5); rainy.addDepartingVehicle({ x: 300, y: 450 }, 'motorbike', 0);
+    const depSpeed = (mgr: StreetTrafficManager) => mgr.getVehicles().find((v) => v.isDeparting)!.speed;
+    assert.ok(depSpeed(rainy) < depSpeed(dry), `Xe khách rời tiệm chậm hơn khi mưa to (${depSpeed(rainy).toFixed(1)} < ${depSpeed(dry)})`);
+    assert.ok(trafficRainSpeedFactor(1) < 1 - 0.28 && Math.abs(trafficRainSpeedFactor(0.5) - (1 - 0.28 * 0.5)) < 1e-9, 'Chậm thêm chỉ từ mưa to trở lên');
+  }
 }

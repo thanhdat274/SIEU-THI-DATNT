@@ -1,5 +1,11 @@
 # LỘ TRÌNH PHÁT TRIỂN (DEVELOPMENT ROADMAP)
 
+## MƯA: DỰ BÁO SAI SỐ + MƯA TO ÍT KHÁCH + GỢN VŨNG + ƯỚT QUA ĐÊM (19/10/2026, CHƯA COMMIT)
+
+- [x] (a) dự báo sai số tăng theo ngày (`forecastRainForDay`), deterministic; (e) cache `getWorldEvents` theo id sự kiện; (c) sóng gợn vũng theo `depthFxActive`; (d) ướt qua đêm sau mưa to, save schema 15 (`migrateToW15`).
+- [x] (b) hệ số khách theo dải mưa (vừa 0,95 / to 0,6 / giông 0,5), chỉ áp vào nhịp sinh khách — **ĐÃ CHỐT 19/10/2026**; xe chậm thêm khi mưa to (hằng số tốc độ vẫn PROVISIONAL). Đã điều tra: nắng −5,7% là do harness tự lên cấp (ít XP ngày mưa); đo cặp (`rain-paired-sweep.ts`) sau khi bỏ nhân trần khách: mưa to −15% / giông −21% (cấp 6), −7% (cấp 20); mưa vừa ~0%.
+- [x] typecheck PASS; game-core ×3 112/112; renderer/web/server unit PASS; coop lần 1 FAIL (seed khan hàng NCC), lần 2–3 PASS; golden không lệch. Browser QA desktop một phần; CHƯA QA mobile/co-op.
+
 ## SỰ KIỆN THÀNH PHỐ NỐI VÀO GAME (19/10/2026, CHƯA COMMIT)
 - [x] Phân vai market-events / worldEventsForDay; `mergeDayEvents` chống chồng mất điện; hội chợ W4 +50% khách (tiệm ở khu W4); mất điện → hao hàng lạnh; bản tin + huy hiệu HUD; co-op cùng sự kiện. Test PASS, golden không lệch. **CHƯA QA browser.**
 - [x] Sửa review 19/10: hội chợ nhân theo tòa ở khu W4; cache theo ngày; `daysLeft` thật; chốt 3 ngày/8 ngày.

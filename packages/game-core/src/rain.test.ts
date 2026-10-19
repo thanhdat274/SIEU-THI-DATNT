@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { DEFAULT_INITIAL_SAVE, RAIN_BANDS, generateStarterTileMap, rainBandOf } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, RAIN_BANDS, RAIN_BAND_CUSTOMER_FACTOR, generateStarterTileMap, rainBandOf } from '@game/data';
+import { createMarketState } from './market';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
-import { describeRainForecast, formatMinuteOfDay, rainDayProfile, rainForecastForDay, rainIntensityAt } from './weather';
+import { FORECAST_PEAK_ERROR_PER_DAY, FORECAST_TIME_ERROR_PER_DAY, describeRainForecast, forecastRainForDay, formatMinuteOfDay, rainDayProfile, rainForecastForDay, rainIntensityAt } from './weather';
 
 export function runRainTests(): void {
   console.log('\n--- Mưa: dải cường độ, hồ sơ trong ngày và dự báo khung giờ ---');
@@ -62,9 +63,62 @@ export function runRainTests(): void {
     sim.getClock().advanceToNextDay();
     const today = sim.getMarketSummary();
     assert.equal(today.weather.id, tomorrow.id, 'Thời tiết hôm sau đúng dự báo');
-    assert.deepEqual(today.weather.rain, tomorrow.rain, 'Khung giờ và dải mưa hôm sau đúng dự báo hôm trước');
+    // Dự báo có sai số (rain-intensity-forecast 4.4): ngày mai lệch trong biên một ngày; thời tiết thật không đổi.
+    assert.ok(today.weather.rain, 'Hôm nay vẫn mưa như loại thời tiết dự báo');
+    assert.ok(Math.abs(today.weather.rain!.peak - tomorrow.rain.peak) <= FORECAST_PEAK_ERROR_PER_DAY + 0.011, 'Đỉnh mưa dự báo ngày mai lệch trong biên');
+    assert.ok(Math.abs(today.weather.rain!.startMinute - tomorrow.rain.startMinute) <= FORECAST_TIME_ERROR_PER_DAY + 15, 'Giờ mưa dự báo ngày mai lệch trong biên');
     checked++;
   }
   assert.ok(checked >= 1, 'Tìm được ít nhất một seed có dự báo mưa để đối chiếu');
   console.log('  ✓ Passed: Mưa theo dải, khung giờ dự báo khớp đường cong mưa thực tế');
+
+  // ---- Dự báo có sai số: ngày xa sai nhiều hơn ngày gần; cùng seed cùng kết quả; hôm nay đúng ----
+  {
+    const err = (daysAhead: number) => {
+      let peakErr = 0, timeErr = 0, n = 0;
+      for (let day = 1; day <= 200; day++) {
+        const truth = rainForecastForDay('fc-seed', day, 'heavy_rain')!;
+        const fc = forecastRainForDay('fc-seed', day, 'heavy_rain', daysAhead)!;
+        peakErr += Math.abs(fc.peak - truth.peak); timeErr += Math.abs(fc.startMinute - truth.startMinute); n++;
+      }
+      return { peak: peakErr / n, time: timeErr / n };
+    };
+    const d0 = err(0), d1 = err(1), d3 = err(3);
+    assert.equal(d0.peak + d0.time, 0, 'Hôm nay (0 ngày) dự báo đúng thật');
+    assert.ok(d1.peak < d3.peak, `Đỉnh: ngày mai sai ít hơn 3 ngày tới (${d1.peak.toFixed(3)} < ${d3.peak.toFixed(3)})`);
+    assert.ok(d1.time < d3.time, `Giờ: ngày mai sai ít hơn 3 ngày tới (${d1.time.toFixed(1)} < ${d3.time.toFixed(1)} phút)`);
+    assert.ok(d1.peak > 0, 'Ngày mai vẫn có sai số');
+    assert.deepEqual(forecastRainForDay('fc-seed', 9, 'rainy', 2), forecastRainForDay('fc-seed', 9, 'rainy', 2), 'Cùng seed + ngày → cùng dự báo');
+    assert.equal(forecastRainForDay('fc-seed', 9, 'sunny', 2), null, 'Ngày nắng không có dự báo mưa');
+    assert.deepEqual(rainDayProfile('fc-seed', 9, 'rainy'), rainDayProfile('fc-seed', 9, 'rainy'), 'Thời tiết thật không đổi');
+    console.log(`  ✓ Passed: Dự báo sai số tăng theo ngày (đỉnh ${d1.peak.toFixed(3)}→${d3.peak.toFixed(3)}, giờ ${d1.time.toFixed(0)}→${d3.time.toFixed(0)} phút)`);
+  }
+
+  // ---- Mưa to → ít khách: hệ số theo dải mưa đỉnh của ngày, nhân cạnh hội chợ W4 trong dòng khách từng tòa ----
+  {
+    const simOn = (day: number, heavy: boolean) => new GameSimulation({
+      ...structuredClone(DEFAULT_INITIAL_SAVE),
+      worldTime: { ...DEFAULT_INITIAL_SAVE.worldTime, day },
+      market: { ...createMarketState('rain-traffic', day), events: heavy ? [{ id: 'heavy_rain_spell', startDay: day, endDay: day }] : [] },
+    }, generateStarterTileMap(), new InputManager());
+    let heavyDay = 0;
+    for (let d = 2; d < 60 && !heavyDay; d++) if (simOn(d, true).getEffectiveWeatherId() === 'heavy_rain') heavyDay = d;
+    assert.ok(heavyDay, 'Tìm được ngày mưa to (sự kiện ép thời tiết)');
+    const wet = simOn(heavyDay, true);
+    const expected = RAIN_BAND_CUSTOMER_FACTOR[rainBandOf(rainDayProfile(wet.getWeatherSeed(), heavyDay, 'heavy_rain')!.peak).id];
+    assert.equal(wet.getRainCustomerFactor(), expected, 'Hệ số khách theo dải mưa đỉnh của ngày');
+    assert.ok(expected < 1 && expected >= 0.5, `Mưa to giảm khách vừa phải (${expected})`);
+    let dryDay = 0;
+    for (let d = 2; d < 60 && !dryDay; d++) { const sim = simOn(d, false); if (!rainDayProfile(sim.getWeatherSeed(), d, sim.getEffectiveWeatherId())) dryDay = d; }
+    assert.equal(simOn(dryDay, false).getRainCustomerFactor(), 1, 'Ngày không mưa: hệ số 1');
+    // Thứ tự nhân trong dòng khách từng tòa: lô × sự kiện thành phố (hội chợ) × mưa.
+    const stream = (wet as unknown as { buildingStreamTrafficMultiplier(): (id: string) => number }).buildingStreamTrafficMultiplier();
+    for (const id of ['main', 'xoi', 'drink', 'snack']) {
+      const parcel = (wet as unknown as { buildingParcelTrafficMultiplier(): (id: string) => number }).buildingParcelTrafficMultiplier()(id);
+      assert.ok(Math.abs(stream(id) - (id === 'main' ? 1 : parcel) * wet.getBuildingWorldEventFactor(id) * expected) < 1e-12, `Dòng khách ${id} = lô × hội chợ × mưa`);
+    }
+    // Pha đêm: mưa chỉ rơi ban ngày (đỉnh ≤ ~14:30, nửa độ dài ≤ 155 phút) → ban đêm hệ số giờ không đổi gì, tiệm đóng.
+    for (let d = 1; d <= 120; d++) for (const id of ['rainy', 'heavy_rain', 'storm']) assert.equal(rainIntensityAt('night', d, 22, 0, id), 0, 'Không mưa lúc 22:00');
+    console.log(`  ✓ Passed: Mưa to giảm khách (hệ số ${expected}), nhân đúng thứ tự cạnh hội chợ; ban đêm không mưa`);
+  }
 }

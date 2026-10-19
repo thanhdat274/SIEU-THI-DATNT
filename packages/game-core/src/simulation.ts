@@ -114,7 +114,7 @@ import { StoreLogisticsManager } from './store-logistics';
 import { CollisionSystem } from './collision';
 import { appendRating, averageRating, ratingForVisit, reputationDeltaFromRating, reputationTrafficMultiplier, type CustomerFeedbackReason } from './reputation';
 import { reviewReputationContribution, reviewResponseDelta, isReviewComplaint, REVIEW_RESPONSE_DAILY_CAP, REVIEW_RESPONSE_MAX_AGE_DAYS } from './review-reputation';
-import { rainIntensityAt, describeRainForecast, roadWetnessAt, hashSeed } from './weather';
+import { rainIntensityAt, describeRainForecast, roadWetnessAt, hashSeed, rainDayProfile, overnightRoadWetness, carriedRoadWetnessAt } from './weather';
 import { appendIncident, emptySecurityState, openPoliceCase, planBurglary, rollShoplifter, sanitizeSecurity, securityUnlocked, shopliftCaught, shopliftDetectChance, CIVIC_POLICE_DETECT_BONUS, CIVIC_POLICE_BURGLARY_REDUCTION } from './security';
 import { assessCounterfeit } from './counterfeit';
 import { ACTIVE_TAX_POLICY, summarizeAnnualRevenue, taxDueOnClose } from './tax/annual-revenue';
@@ -187,7 +187,7 @@ import {
   getSkillModifier,
   hasPerk,
 } from './skills';
-import { applyBuildingLayout, setAwningOpen, SPECIAL_REQUEST_MAP } from '@game/data';
+import { applyBuildingLayout, setAwningOpen, SPECIAL_REQUEST_MAP, RAIN_BAND_CUSTOMER_FACTOR, rainBandOf } from '@game/data';
 import { BUILDINGS, BRANCH_UNITS_PER_CUSTOMER, SECURITY_POST, CAFE_SHOP_PRODUCT_IDS, COM_RESTAURANT_DISH_IDS, DINING, DINING_ADD_ON_RULES, DRINK_SHOP_PRODUCT_IDS, RIVAL_EVENT_ID, SNACK_SHOP_PRODUCT_IDS, buildingAt, fixtureBuilding, XOI_DISH_IDS, DEFAULT_PLACEMENTS, WAREHOUSE_CENTER, buildingTypeOfInstance, RegularCustomerDefinition } from '@game/data';
 import { rollDiningAddOns, takeInventoryUnits } from './dining';
 import { RECIPES, RECIPE_MAP, Recipe, SELLABLE_PRODUCTS, RECLAMATION_WAVE_MAP } from '@game/data';
@@ -224,7 +224,7 @@ import { aggregateHeatmap, appendPricePoint, pruneHeatmap, sanitizeHeatmap, sani
 import { addProductionOutput, consumeIngredients, missingIngredients, sanitizeProductionJobs } from './production';
 import { LONG_TERM_GOALS, WEEKLY_QUESTS, PARTY_ORDER_MAP, PARTY_ORDERS, TITLES, effectiveShelfCapacity, SECURITY_RULES } from '@game/data';
 import { getUnlockedTitles, setActiveTitle, type TitleContext } from './titles';
-import { getFixtureDimensions, syncSlotChildren, type BuildingPlacementRecord, type TitleDef } from '@game/shared';
+import { getFixtureDimensions, syncSlotChildren, isRoadWetnessCarry, type BuildingPlacementRecord, type RoadWetnessCarry, type TitleDef } from '@game/shared';
 
 function normalizeStaffSchedule(
   schedule: Record<string, StaffShift> | undefined,
@@ -569,6 +569,7 @@ export class GameSimulation {
     this.chainState = normalizeChain(initialSave.chain);
     this.productionJobSequence = Math.max(initialSave.productionJobSequence ?? 0, ...this.productionManager.getRef().map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
     this.reviewsManager = new ReviewsManager(initialSave.reviews, initialSave.reviewResponses);
+    this.roadWetnessCarry = isRoadWetnessCarry(initialSave.roadWetnessCarry) ? { ...initialSave.roadWetnessCarry } : undefined;
     this.securityManager = new SecurityManager(initialSave.security);
     this.questsManager = new QuestManager(initialSave);
     this.specialRequests = initialSave.specialRequests
@@ -646,6 +647,9 @@ export class GameSimulation {
         }
         this.dailyRoutine.resetForNewDay();
       }
+      // Mặt đường còn ướt qua đêm sau ngày mưa to (đọc thời tiết ngày vừa qua TRƯỚC khi thị trường sang ngày mới).
+      const carry = overnightRoadWetness(this.weatherSeed, day - 1, effectiveWeatherId(this.market, day - 1));
+      this.roadWetnessCarry = carry > 0 ? { day, value: carry } : undefined;
       for (const customer of this.customerManager.getCustomers()) {
         if (customer.diningTableId && (customer.stage === 'to_table' || customer.stage === 'eating')) this.diningDirtyTableIds.add(customer.diningTableId);
       }
@@ -864,7 +868,20 @@ export class GameSimulation {
    */
   private buildingStreamTrafficMultiplier(): (buildingId: string) => number {
     const parcel = this.buildingParcelTrafficMultiplier();
-    return (buildingId: string) => (buildingId === 'main' ? 1 : parcel(buildingId)) * this.getBuildingWorldEventFactor(buildingId);
+    // Thứ tự nhân: lô × sự kiện thành phố (hội chợ W4) × dải mưa tức thời — đều sau trần nhịp sinh khách (phép nhân giao hoán, ghi để dễ đọc).
+    const rain = this.getRainCustomerFactor();
+    return (buildingId: string) => (buildingId === 'main' ? 1 : parcel(buildingId)) * this.getBuildingWorldEventFactor(buildingId) * rain;
+  }
+  /**
+   * Hệ số dòng khách theo dải mưa ĐỈNH của hôm nay (`RAIN_BAND_CUSTOMER_FACTOR`, đã chốt 19/10/2026), áp cả ngày: ngày mưa to người
+   * ta ngại ra đường từ sáng. Chỉ nhân nhịp sinh khách, KHÔNG nhân trần khách đồng thời (trần 3 → 2 là bước nhảy −33%;
+   * sweep cặp `rain-paired-sweep.ts` 19/10/2026: nhân cả trần thì mưa to −38%, chỉ nhịp sinh thì −15% ở cấp 6).
+   * Ngày không mưa = 1.
+   */
+  public getRainCustomerFactor(): number {
+    const day = this.clock.getTime().day;
+    const profile = rainDayProfile(this.weatherSeed, day, effectiveWeatherId(this.market, day));
+    return profile ? RAIN_BAND_CUSTOMER_FACTOR[rainBandOf(profile.peak).id] : 1;
   }
   /** Lấy districtId của tiệm chính (main shop) từ parcel của nó. */
   public getMainShopDistrictId(): DistrictId {
@@ -2206,20 +2223,24 @@ export class GameSimulation {
   public getDemandBuildCount(): number { return this.demandBuildCount; }
   public getMarketState(): MarketState { return structuredClone(this.market); }
 
-  private worldEventsCache?: { day: number; seed: string | number; eventsKey: number; value: WorldEventsForDay };
+  /** Độ ướt mặt đường mang qua đêm (schema 15), đặt lúc chốt ngày 06:00 sau ngày mưa to. */
+  private roadWetnessCarry?: RoadWetnessCarry;
+  private worldEventsCache?: { day: number; seed: string | number; eventsKey: string; value: WorldEventsForDay };
 
   /**
    * Sự kiện thành phố cố định của `day` (hội chợ W4, mất điện) đã gộp với thị trường: mất điện có ở cả hai nguồn chỉ
    * tính một lần. Deterministic theo `market.seed` + ngày nên chơi lẻ, server co-op và client cho cùng kết quả.
    * `day` là ngày đồng hồ (chốt 06:00 — 00:00–06:00 vẫn thuộc ngày N). Mất điện thị trường xét ở 12:00 là đủ vì sự kiện
    * thị trường tính theo NGUYÊN NGÀY (`buildMarketContext` lọc `startDay <= day <= endDay`, không theo giờ).
-   * Cache theo ngày + seed + số sự kiện thị trường (gọi mỗi tick sinh khách).
+   * Cache theo ngày + seed + danh sách id (kèm ngày đầu/cuối) sự kiện thị trường — không theo SỐ LƯỢNG, vì một sự kiện
+   * có thể bị thay bằng sự kiện khác cùng số lượng (gọi mỗi tick sinh khách).
    */
   public getWorldEvents(day = this.clock.getTime().day): WorldEventsForDay {
     const c = this.worldEventsCache;
-    if (c && c.day === day && c.seed === this.market.seed && c.eventsKey === this.market.events.length) return c.value;
+    const eventsKey = this.market.events.map(e => `${e.id}@${e.startDay}-${e.endDay}`).join('|');
+    if (c && c.day === day && c.seed === this.market.seed && c.eventsKey === eventsKey) return c.value;
     const value = mergeDayEvents(worldEventsForDay(this.market.seed, day), isPowerOut(buildMarketContext(this.market, day, 12)));
-    this.worldEventsCache = { day, seed: this.market.seed, eventsKey: this.market.events.length, value };
+    this.worldEventsCache = { day, seed: this.market.seed, eventsKey, value };
     return value;
   }
 
@@ -2340,7 +2361,8 @@ export class GameSimulation {
   /** Độ ướt mặt đường 0..1 (mưa + khô dần sau mưa), dùng cho đường ướt và vũng nước. */
   public getRoadWetness(): number {
     const time = this.clock.getTime();
-    return roadWetnessAt(this.weatherSeed, time.day, time.hour * 60 + time.minute, effectiveWeatherId(this.market, time.day));
+    const minute = time.hour * 60 + time.minute;
+    return Math.max(roadWetnessAt(this.weatherSeed, time.day, minute, effectiveWeatherId(this.market, time.day)), carriedRoadWetnessAt(this.roadWetnessCarry, time.day, minute));
   }
 
   /** Trạng thái an ninh (camera, báo công an, sự cố gần đây, hồ sơ công an đang mở). */
@@ -7124,6 +7146,7 @@ export class GameSimulation {
       heatmap: structuredClone(this.heatmap),
       reviews: this.reviewsManager.exportReviews(),
       reviewResponses: this.reviewsManager.getReviewResponses(),
+      ...(this.roadWetnessCarry ? { roadWetnessCarry: { ...this.roadWetnessCarry } } : {}),
       hasWarnedGuardNotNight: this.hasWarnedGuardNotNight,
       security: { ...this.security, incidents: this.security.incidents.map(i => ({ ...i })), policeCases: this.security.policeCases.map(c => ({ ...c })) },
       partyOrders: structuredClone(this.partyOrders),
@@ -7218,6 +7241,7 @@ export class GameSimulation {
     this.chainState = normalizeChain(saveData.chain);
     this.productionJobSequence = Math.max(saveData.productionJobSequence ?? 0, ...this.productionManager.getRef().map(job => Number(job.id.match(/^job-(\d+)$/)?.[1] ?? 0)));
     this.reviewsManager.importReviews(saveData.reviews, saveData.reviewResponses);
+    this.roadWetnessCarry = isRoadWetnessCarry(saveData.roadWetnessCarry) ? { ...saveData.roadWetnessCarry } : undefined;
     this.securityManager.load({ security: saveData.security });
     this.skills = saveData.skills ? structuredClone(saveData.skills) : createInitialSkillState();
     this.ledger = (saveData.ledger ?? []).map((e) => ({ ...e }));

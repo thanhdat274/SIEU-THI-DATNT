@@ -13,6 +13,22 @@ export function puddleGeometry(wet: number): { level: number; rx: number; ry: nu
   return { level, rx: 10 + 26 * level, ry: 3 + 7 * level };
 }
 
+/**
+ * Sóng gợn nhẹ đồng tâm trên mặt vũng khi đang mưa (road-cross-section-drainage 4.4): `count` vòng giãn chậm theo `time`
+ * (giây), mỗi vòng trả tỷ lệ bán kính 0..1 so với vũng và độ mờ. Tắt (mảng rỗng) khi không bật chiều sâu (`enabled` =
+ * `depthFxActive`, đã gồm chất lượng Thấp), khi giảm chuyển động, khi không mưa hoặc vũng quá nhỏ. Hàm thuần để test.
+ */
+export const PUDDLE_WAVE = { count: 2, periodSec: 2.6, minRain: 0.03, maxAlpha: 0.22 } as const;
+export function puddleWaveRings(time: number, level: number, rain: number, enabled: boolean): Array<{ scale: number; alpha: number }> {
+  if (!enabled || level <= 0 || !(rain >= PUDDLE_WAVE.minRain)) return [];
+  const rings: Array<{ scale: number; alpha: number }> = [];
+  for (let i = 0; i < PUDDLE_WAVE.count; i++) {
+    const t = (((time / PUDDLE_WAVE.periodSec) + i / PUDDLE_WAVE.count) % 1 + 1) % 1;
+    rings.push({ scale: 0.25 + 0.65 * t, alpha: PUDDLE_WAVE.maxAlpha * Math.min(1, rain * 2) * level * Math.sin(Math.PI * t) });
+  }
+  return rings;
+}
+
 export interface RoadSurface {
   /** Độ ướt mặt đường 0..1; vẽ lại lớp đường ướt và vũng nước khi đổi đủ lớn. */
   setWetness(wetness: number): void;

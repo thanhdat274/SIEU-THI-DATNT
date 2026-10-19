@@ -58,6 +58,12 @@ export const RAIN_BANDS: readonly RainBand[] = [
   { id: 'thunderstorm', label: 'Mưa giông', min: 0.8 },
 ];
 
+/**
+ * Hệ số dòng khách theo dải mưa ĐỈNH của ngày, chỉ nhân vào nhịp sinh khách từng tòa (cạnh hội chợ W4), không nhân trần
+ * khách đồng thời. ĐÃ CHỐT 19/10/2026 (sweep cặp: mưa to −15% ở cấp 6, −7% ở cấp 20; mưa vừa ~0%).
+ */
+export const RAIN_BAND_CUSTOMER_FACTOR: Readonly<Record<RainBandId, number>> = { none: 1, drizzle: 1, moderate: 0.95, heavy: 0.6, thunderstorm: 0.5 };
+
 export function rainBandOf(intensity: number): RainBand {
   let band = RAIN_BANDS[0];
   for (const candidate of RAIN_BANDS) if (intensity >= candidate.min) band = candidate;

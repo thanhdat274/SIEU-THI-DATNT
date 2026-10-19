@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { MAP_WIDTH, ROAD_PROFILE, STORM_DRAINS, generateStarterTileMap } from '@game/data';
 import { STREET_LANE_LEFT_Y, STREET_LANE_RIGHT_Y } from './street-traffic';
-import { rainDayProfile, roadWetnessAt, ROAD_DRY_TAU_MINUTES } from './weather';
+import { DEFAULT_INITIAL_SAVE, rainBandOf } from '@game/data';
+import { validateSaveGameData } from '@game/shared';
+import { InputManager } from './input';
+import { createMarketState } from './market';
+import { GameSimulation } from './simulation';
+import { overnightRoadWetness, rainDayProfile, roadWetnessAt, ROAD_DRY_TAU_MINUTES } from './weather';
 
 export function runRoadTests(): void {
   console.log('\n--- Mặt cắt lòng đường: dữ liệu bản đồ và độ ướt mặt đường ---');
@@ -46,6 +51,71 @@ export function runRoadTests(): void {
     }
   }
   console.log('  ✓ Passed: Mặt cắt đường khớp làn xe/cửa tiệm và mặt đường ướt rồi khô dần sau mưa');
+  runOvernightWetnessTests();
+}
+
+/** road-cross-section-drainage 4.4: mưa to thì mặt đường còn ướt qua chốt ngày 06:00, sáng hôm sau khô dần; mưa nhẹ không giữ. */
+function runOvernightWetnessTests(): void {
+  // Mưa nhẹ/vừa (loại 'rainy', đỉnh ≤ 0,52 < ngưỡng mưa to) không bao giờ mang qua đêm.
+  for (let d = 1; d <= 200; d++) assert.equal(overnightRoadWetness('wet-seed', d, 'rainy'), 0, 'Mưa nhẹ/vừa không giữ ướt qua đêm');
+  for (let d = 1; d <= 200; d++) {
+    const p = rainDayProfile('wet-seed', d, 'heavy_rain')!;
+    const band = rainBandOf(p.peak).id;
+    assert.equal(overnightRoadWetness('wet-seed', d, 'heavy_rain') > 0, band === 'heavy' || band === 'thunderstorm', 'Mưa to/giông thì giữ ướt');
+  }
+
+  const sim = (day: number, heavy: boolean) => new GameSimulation({
+    ...structuredClone(DEFAULT_INITIAL_SAVE),
+    worldTime: { ...DEFAULT_INITIAL_SAVE.worldTime, day, hour: 5, minute: 50 },
+    market: { ...createMarketState('wet-overnight', day), events: heavy ? [{ id: 'heavy_rain_spell', startDay: day, endDay: day }] : [] },
+  }, generateStarterTileMap(), new InputManager());
+  // Ngày mưa to, ngày hôm sau không mưa (để thấy riêng phần mang qua đêm).
+  let day = 0;
+  for (let d = 2; d < 80 && !day; d++) {
+    const s = sim(d, true);
+    if (s.getEffectiveWeatherId() !== 'heavy_rain') continue;
+    if (rainDayProfile(s.getWeatherSeed(), d + 1, s.getMarketSummary().forecast[0].id)) continue;
+    day = d;
+  }
+  assert.ok(day, 'Tìm được ngày mưa to mà hôm sau khô');
+  const crossDawn = (s: GameSimulation) => {
+    for (let i = 0; i < 20000 && s.getTime().day === day; i++) s.update(0.25);
+    assert.equal(s.getTime().day, day + 1, 'Qua 06:00 sang ngày mới');
+  };
+  const at = (s: GameSimulation, hour: number) => { s.getClock().setTime({ ...s.getTime(), hour, minute: 0 }); return s.getRoadWetness(); };
+
+  const wet = sim(day, true);
+  crossDawn(wet);
+  const w7 = at(wet, 7), w10 = at(wet, 10), w15 = at(wet, 15);
+  assert.ok(w7 > 0.15, `Sáng hôm sau mưa to: đường vẫn ướt (07:00 = ${w7.toFixed(3)})`);
+  assert.ok(w10 < w7 && w15 < w10, `Khô dần trong ngày (${w7.toFixed(3)} → ${w10.toFixed(3)} → ${w15.toFixed(3)})`);
+  assert.ok(w15 < 0.05, 'Chiều đã gần khô');
+
+  // Lưu/nạp (co-op dùng chung save/replay): độ ướt mang sang nằm trong save schema 15 và cho cùng giá trị.
+  wet.getClock().setTime({ ...wet.getTime(), hour: 8, minute: 0 });
+  const save = wet.exportSaveData();
+  assert.equal(save.schemaVersion, 15);
+  assert.ok(save.roadWetnessCarry && save.roadWetnessCarry.day === day + 1 && save.roadWetnessCarry.value > 0, 'Save có roadWetnessCarry');
+  const reloaded = new GameSimulation(save, generateStarterTileMap(), new InputManager());
+  assert.equal(reloaded.getRoadWetness(), wet.getRoadWetness(), 'Nạp lại save: cùng độ ướt');
+
+  // Ngày không mưa trước đó: sáng hôm sau khô.
+  const dry = sim(day, false);
+  if (!rainDayProfile(dry.getWeatherSeed(), day, dry.getEffectiveWeatherId())) {
+    crossDawn(dry);
+    assert.equal(at(dry, 7), 0, 'Hôm trước không mưa: sáng khô');
+    assert.equal(dry.exportSaveData().roadWetnessCarry, undefined, 'Không có phần mang qua đêm');
+  }
+
+  // Save v14 → migrate lên 15 (không có trường = khô); trường hỏng bị bỏ.
+  const v14 = { ...structuredClone(save), schemaVersion: 14 } as Record<string, unknown>;
+  delete v14.roadWetnessCarry;
+  const migrated = validateSaveGameData(v14);
+  assert.equal(migrated.valid, true);
+  assert.equal(migrated.data?.schemaVersion, 15, 'v14 → 15');
+  const broken = validateSaveGameData({ ...v14, roadWetnessCarry: { day: 'x', value: 5 } });
+  assert.equal(broken.data?.roadWetnessCarry, undefined, 'roadWetnessCarry hỏng bị bỏ khi migrate');
+  console.log(`  ✓ Passed: Mưa to giữ ướt qua đêm (07:00 ${w7.toFixed(2)} → 15:00 ${w15.toFixed(2)}), lưu save 15; mưa nhẹ không giữ`);
 }
 
 const peakWetMinute = (centerMinute: number) => Math.round(centerMinute);

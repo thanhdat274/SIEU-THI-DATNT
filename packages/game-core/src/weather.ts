@@ -73,6 +73,36 @@ export function rainForecastForDay(seed: string, day: number, weatherId: string)
   };
 }
 
+/** Sai số dự báo mỗi ngày nhìn xa: biên độ đỉnh mưa (0..1) và lệch giờ (phút). Ngày 0 (hôm nay) đúng. PROVISIONAL. */
+export const FORECAST_PEAK_ERROR_PER_DAY = 0.1;
+export const FORECAST_TIME_ERROR_PER_DAY = 30;
+
+/**
+ * Dự báo mưa HIỂN THỊ cho `day` khi nhìn trước `daysAhead` ngày: lệch đỉnh (→ có thể đổi dải) và lệch giờ, biên độ tăng
+ * tuyến tính theo `daysAhead`. Chỉ đổi chữ dự báo — thời tiết thật vẫn theo `rainDayProfile`. Deterministic theo hạt
+ * giống + ngày + số ngày nhìn trước (dùng `Mulberry32Rng`/`hashSeed`), nên WorldRuntime và client cho cùng dự báo.
+ */
+export function forecastRainForDay(seed: string, day: number, weatherId: string, daysAhead: number): RainForecast | null {
+  const truth = rainForecastForDay(seed, day, weatherId);
+  const profile = rainDayProfile(seed, day, weatherId);
+  if (!truth || !profile || daysAhead <= 0) return truth;
+  const rng = new Mulberry32Rng(hashSeed(`${seed}:rain-forecast:${day}:${daysAhead}`));
+  const signed = () => rng.next() * 2 - 1;
+  const peak = Math.max(RAIN_BANDS_MIN_DRIZZLE, Math.min(1, profile.peak + signed() * FORECAST_PEAK_ERROR_PER_DAY * daysAhead));
+  const center = profile.centerMinute + signed() * FORECAST_TIME_ERROR_PER_DAY * daysAhead;
+  const half = profile.halfDuration * RAIN_WINDOW_FRACTION;
+  const band = rainBandOf(peak);
+  return {
+    band: band.id,
+    bandLabel: band.label,
+    peak: Number(peak.toFixed(2)),
+    startMinute: Math.max(0, round15(center - half)),
+    endMinute: Math.min(24 * 60, round15(center + half)),
+  };
+}
+/** Dự báo mưa không bao giờ rơi xuống "Không mưa" (loại thời tiết vẫn là mưa). */
+const RAIN_BANDS_MIN_DRIZZLE = 0.03;
+
 /** Mặt đường khô dần với hằng số thời gian này (phút) sau khi mưa tạnh. */
 export const ROAD_DRY_TAU_MINUTES = 120;
 
@@ -92,6 +122,26 @@ export function roadWetnessAt(seed: string, day: number, minuteOfDay: number, we
   }
   const current = rainIntensityAt(seed, day, Math.floor(minuteOfDay / 60), minuteOfDay % 60, weatherId);
   return Math.min(1, Math.max(wet, current) * 1.5);
+}
+
+/** Ngày mưa to (dải đỉnh to/giông) thì mặt đường còn ướt qua đêm: tỷ lệ giữ lại lúc 06:00 và hằng số khô buổi sáng. PROVISIONAL. */
+export const ROAD_OVERNIGHT_KEEP = 0.6;
+export const ROAD_MORNING_DRY_TAU_MINUTES = 180;
+
+/** Độ ướt mang sang lúc chốt ngày (06:00) sau `day`: chỉ khi đỉnh mưa của `day` thuộc dải to/giông; mưa nhẹ/vừa = 0. */
+export function overnightRoadWetness(seed: string, day: number, weatherId: string): number {
+  const profile = rainDayProfile(seed, day, weatherId);
+  if (!profile) return 0;
+  const band = rainBandOf(profile.peak).id;
+  if (band !== 'heavy' && band !== 'thunderstorm') return 0;
+  return Number(Math.min(1, profile.peak * 1.5 * ROAD_OVERNIGHT_KEEP).toFixed(3));
+}
+
+/** Độ ướt còn lại của phần mang qua đêm lúc `minuteOfDay` của `day` (khô dần từ 06:00; 00:00–05:59 vẫn thuộc ngày đó). */
+export function carriedRoadWetnessAt(carry: { day: number; value: number } | undefined, day: number, minuteOfDay: number): number {
+  if (!carry || carry.day !== day) return 0;
+  const elapsed = (minuteOfDay - 6 * 60 + 24 * 60) % (24 * 60);
+  return carry.value * Math.exp(-elapsed / ROAD_MORNING_DRY_TAU_MINUTES);
 }
 
 export function formatMinuteOfDay(minute: number): string {

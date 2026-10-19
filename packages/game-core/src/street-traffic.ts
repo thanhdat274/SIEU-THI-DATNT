@@ -163,7 +163,8 @@ export class StreetTrafficManager {
       variant,
       direction,
       position: { x: spot.x, y: spot.y },
-      speed: type === 'motorbike' ? 82 : 72,
+      // Xe khách rời tiệm cũng chậm lại khi mưa (cùng hệ số xe nền, giảm thêm khi mưa to).
+      speed: (type === 'motorbike' ? 82 : 72) * trafficRainSpeedFactor(this.rain),
       currentSpeed: 28,
       isDeparting: true,
       ...(riderLook !== undefined ? { riderLook } : {}),

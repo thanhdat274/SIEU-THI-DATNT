@@ -273,8 +273,14 @@ function interpolate(table: ReadonlyArray<readonly [number, number]>, x: number)
 export const TRAFFIC_RAIN_FACTOR: ReadonlyArray<readonly [number, number]> = [[0, 1], [0.03, 0.97], [0.3, 0.88], [0.55, 0.65], [0.8, 0.38], [1, 0.28]];
 export const clampUnit = (v: number): number => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0);
 export const trafficRainFactor = (rain: number): number => interpolate(TRAFFIC_RAIN_FACTOR, clampUnit(rain));
-/** Tốc độ xe giảm nhẹ khi mưa (đường ướt): nhân với tốc độ chạy. */
-export const trafficRainSpeedFactor = (rain: number): number => 1 - 0.28 * clampUnit(rain);
+/** Xe chậm thêm khi mưa to (từ cường độ này trở lên), tới −HEAVY_RAIN_EXTRA_SLOWDOWN lúc mưa 1. PROVISIONAL. */
+export const HEAVY_RAIN_SPEED_FROM = 0.55;
+export const HEAVY_RAIN_EXTRA_SLOWDOWN = 0.12;
+/** Tốc độ xe giảm nhẹ khi mưa (đường ướt), giảm thêm khi mưa to: nhân với tốc độ chạy. */
+export const trafficRainSpeedFactor = (rain: number): number => {
+  const r = clampUnit(rain);
+  return 1 - 0.28 * r - HEAVY_RAIN_EXTRA_SLOWDOWN * Math.max(0, (r - HEAVY_RAIN_SPEED_FROM) / (1 - HEAVY_RAIN_SPEED_FROM));
+};
 
 /**
  * Mật độ giao thông 0..1 (>1 không có): giờ × thứ × thời tiết × loại đường.

@@ -2218,7 +2218,7 @@ export class PixiGameViewport {
       const viewH = this.app.screen.height / this.camera.zoom;
       const frameCtx = {
         dt: elapsed, time: this.animTimer, sun: light.sun, night: streetStrength, quality: resolveWeatherQuality(fxSettings),
-        userIntensity: fxSettings.intensity, reducedMotion, mapWidthPx: this.tileMap.width * TILE_SIZE, mapHeightPx: this.tileMap.height * TILE_SIZE, actors: feet,
+        userIntensity: fxSettings.intensity, reducedMotion, depthFx: depthFxActive(fxSettings), mapWidthPx: this.tileMap.width * TILE_SIZE, mapHeightPx: this.tileMap.height * TILE_SIZE, actors: feet,
       };
       this.weatherFx.update(weatherState, { left: this.camera.x, top: this.camera.y, width: viewW, height: viewH }, frameCtx);
       this.weatherFx.stepActors(weatherState, frameCtx);
