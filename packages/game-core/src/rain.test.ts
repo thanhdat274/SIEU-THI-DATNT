@@ -60,6 +60,9 @@ export function runRainTests(): void {
     const tomorrow = sim.getMarketSummary().forecast[0];
     if (!tomorrow.rain) continue;
     assert.ok(tomorrow.rain.startMinute < tomorrow.rain.endMinute, 'Dự báo ngày mai có khung giờ');
+    // QA 19/10/2026: nhãn ngày mưa theo dải dự báo, không tự mâu thuẫn kiểu "Mưa to (Mưa vừa …)".
+    assert.equal(tomorrow.label, tomorrow.rain.bandLabel, 'Nhãn dự báo khớp dải mưa dự báo');
+    for (const f of sim.getMarketSummary().forecast) if (f.rain) assert.equal(f.label, f.rain.bandLabel, 'Mọi ngày dự báo mưa: nhãn = dải');
     sim.getClock().advanceToNextDay();
     const today = sim.getMarketSummary();
     assert.equal(today.weather.id, tomorrow.id, 'Thời tiết hôm sau đúng dự báo');

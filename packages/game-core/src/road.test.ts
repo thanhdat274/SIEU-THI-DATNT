@@ -45,7 +45,9 @@ export function runRoadTests(): void {
       const afterEnd = Math.ceil(profile.centerMinute + profile.halfDuration);
       const justAfter = at(afterEnd + 5), later = at(afterEnd + 5 + ROAD_DRY_TAU_MINUTES), muchLater = at(Math.min(1439, afterEnd + 6 * ROAD_DRY_TAU_MINUTES));
       assert.ok(justAfter > 0 && justAfter <= peakWet, 'Ngay sau mưa mặt đường còn ướt');
-      if (afterEnd + 5 + ROAD_DRY_TAU_MINUTES <= 1439) assert.ok(later < justAfter, 'Mặt đường khô dần sau mưa');
+      // Ngày mưa to khô dần nhưng không xuống dưới mức giữ qua đêm (QA 19/10/2026: không khô hẳn buổi tối rồi sáng ướt lại).
+      const keep = overnightRoadWetness(seed, day, weatherId);
+      if (afterEnd + 5 + ROAD_DRY_TAU_MINUTES <= 1439) assert.ok(later < justAfter || (keep > 0 && later === keep), 'Mặt đường khô dần sau mưa');
       assert.ok(muchLater <= later + 1e-9, 'Khô dần đơn điệu sau mưa');
       assert.equal(at(peakWetMinute(profile.centerMinute)), peakWet, 'Cùng đầu vào cho cùng độ ướt');
     }
@@ -62,6 +64,20 @@ function runOvernightWetnessTests(): void {
     const p = rainDayProfile('wet-seed', d, 'heavy_rain')!;
     const band = rainBandOf(p.peak).id;
     assert.equal(overnightRoadWetness('wet-seed', d, 'heavy_rain') > 0, band === 'heavy' || band === 'thunderstorm', 'Mưa to/giông thì giữ ướt');
+  }
+
+  // QA 19/10/2026: ngày mưa to thì mặt đường ướt LIÊN TỤC từ sau đỉnh mưa qua nửa đêm tới 05:59 (trước đây khô hẳn buổi tối
+  // rồi sáng hôm sau ướt lại) và không thấp hơn mức mang qua đêm.
+  for (let d = 1; d <= 200; d++) {
+    const keep = overnightRoadWetness('wet-seed', d, 'heavy_rain');
+    if (keep <= 0) continue;
+    for (const minute of [21 * 60 + 30, 23 * 60, 0, 2 * 60, 5 * 60 + 59]) {
+      assert.ok(roadWetnessAt('wet-seed', d, minute, 'heavy_rain') >= keep, `Ngày ${d} ${minute}': đường mưa to không khô trước khi chốt ngày`);
+    }
+  }
+  // Mưa nhẹ: qua nửa đêm vẫn khô dần liên tục (00:30 không ướt hơn 23:30).
+  for (let d = 1; d <= 50; d++) {
+    assert.ok(roadWetnessAt('wet-seed', d, 30, 'rainy') <= roadWetnessAt('wet-seed', d, 23 * 60 + 30, 'rainy') + 1e-9, 'Qua nửa đêm không ướt lại');
   }
 
   const sim = (day: number, heavy: boolean) => new GameSimulation({

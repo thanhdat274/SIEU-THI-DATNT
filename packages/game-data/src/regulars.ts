@@ -90,8 +90,8 @@ export const REGULAR_CUSTOMERS: RegularCustomerDefinition[] = [
     snackShopVisitHours: { fromHour: 16, toHour: 18 },
     snackShopDialogues: {
       greeting: 'Chú ơi! Cho cháu mua bắp xào với cá viên chiên nha!',
-      satisfied: 'Cháo ngon quá, cháu sẽ quay lại mua nữa đấy!',
-      walkout: 'Hết đồ ăn vặt rồi hả cháu? Thôi về má cháu vậy...',
+      satisfied: 'Ngon quá chú ơi, mai cháu lại ghé mua nữa nha!',
+      walkout: 'Hết đồ ăn vặt rồi hả chú? Thôi cháu về má vậy...',
     },
     dialogues: {
       greeting: 'Cô chú ơi! Có kẹo thổi bong bóng Big Babol mới về chưa ạ?',

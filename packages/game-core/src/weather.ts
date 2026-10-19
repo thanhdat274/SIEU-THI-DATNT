@@ -113,15 +113,20 @@ export const ROAD_DRY_TAU_MINUTES = 120;
 export function roadWetnessAt(seed: string, day: number, minuteOfDay: number, weatherId: string): number {
   const profile = rainDayProfile(seed, day, weatherId);
   if (!profile) return 0;
+  // 00:00–05:59 vẫn thuộc ngày `day` (chốt 06:00) → tính tiếp sau 24:00 để mặt đường khô liên tục qua nửa đêm.
+  const elapsed = minuteOfDay < 6 * 60 ? minuteOfDay + 24 * 60 : minuteOfDay;
   const first = Math.max(0, Math.floor(profile.centerMinute - profile.halfDuration));
   let wet = 0;
-  for (let m = first; m <= minuteOfDay; m += 5) {
+  for (let m = first; m <= elapsed; m += 5) {
     const progress = Math.max(0, 1 - Math.abs(m - profile.centerMinute) / profile.halfDuration);
     const intensity = profile.peak * progress * progress * (3 - 2 * progress);
-    wet = Math.max(wet, intensity * Math.exp(-(minuteOfDay - m) / ROAD_DRY_TAU_MINUTES));
+    wet = Math.max(wet, intensity * Math.exp(-(elapsed - m) / ROAD_DRY_TAU_MINUTES));
   }
   const current = rainIntensityAt(seed, day, Math.floor(minuteOfDay / 60), minuteOfDay % 60, weatherId);
-  return Math.min(1, Math.max(wet, current) * 1.5);
+  const value = Math.min(1, Math.max(wet, current) * 1.5);
+  // Ngày mưa to: sau đỉnh mưa giữ ít nhất mức mang qua đêm tới lúc chốt ngày, nối liền `carriedRoadWetnessAt` buổi sáng
+  // (trước đây đường khô hẳn buổi tối rồi sáng hôm sau lại ướt).
+  return elapsed >= profile.centerMinute ? Math.max(value, overnightRoadWetness(seed, day, weatherId)) : value;
 }
 
 /** Ngày mưa to (dải đỉnh to/giông) thì mặt đường còn ướt qua đêm: tỷ lệ giữ lại lúc 06:00 và hằng số khô buổi sáng. PROVISIONAL. */
