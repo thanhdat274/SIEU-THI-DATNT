@@ -18,6 +18,8 @@ export class InputManager {
   private interactRequested: boolean = false;
   private inventoryToggleRequested: boolean = false;
   private enabled = true;
+  private viewRight: Vector2D = { x: 1, y: 0 };
+  private viewDown: Vector2D = { x: 0, y: 1 };
 
   public setEnabled(enabled: boolean): void {
     if (this.enabled === enabled) return;
@@ -110,6 +112,28 @@ export class InputManager {
     return val;
   }
 
+  /**
+   * Hướng bản đồ ứng với phải/xuống của màn hình (renderer 3D xoay camera); mặc định trục bản đồ nên 2D không đổi.
+   */
+  public setViewBasis(right: Vector2D, down: Vector2D): void {
+    const rightLength = Math.sqrt(right.x * right.x + right.y * right.y);
+    const downLength = Math.sqrt(down.x * down.x + down.y * down.y);
+    if (
+      !Number.isFinite(right.x) || !Number.isFinite(right.y) ||
+      !Number.isFinite(down.x) || !Number.isFinite(down.y) ||
+      rightLength < 1e-6 || downLength < 1e-6
+    ) {
+      return;
+    }
+    this.viewRight = { x: right.x / rightLength, y: right.y / rightLength };
+    this.viewDown = { x: down.x / downLength, y: down.y / downLength };
+  }
+
+  public resetViewBasis(): void {
+    this.viewRight = { x: 1, y: 0 };
+    this.viewDown = { x: 0, y: 1 };
+  }
+
   public getMovementVector(): Vector2D {
     let dx = 0;
     let dy = 0;
@@ -124,14 +148,19 @@ export class InputManager {
     dx += this.joystickVector.x;
     dy += this.joystickVector.y;
 
+    // Convert from screen space to map space using the view basis.
+    const sx = dx;
+    const sy = dy;
+    const x = sx * this.viewRight.x + sy * this.viewDown.x;
+    const y = sx * this.viewRight.y + sy * this.viewDown.y;
+
     // Normalize if length > 1
-    const length = Math.sqrt(dx * dx + dy * dy);
+    const length = Math.sqrt(x * x + y * y);
     if (length > 1) {
-      dx /= length;
-      dy /= length;
+      return { x: x / length, y: y / length };
     }
 
-    return { x: dx, y: dy };
+    return { x, y };
   }
 
   public static vectorToDirection(vec: Vector2D, currentDirection: Direction): Direction {

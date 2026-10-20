@@ -1,17 +1,19 @@
 import React, { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { BUILDING_TYPE_DEFS, buildingTypeOfInstance, civicBundleById, ALL_PRODUCTS, COMBOS, DRINK_SHOP_PRODUCT_IDS, SNACK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, STORE_TYPES, WEATHER_MAP, XOI_DISH_IDS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
+import { BUILDING_TYPE_DEFS, buildingTypeOfInstance, buildingOfTiles, fixtureBuilding, civicBundleById, ALL_PRODUCTS, COMBOS, DRINK_SHOP_PRODUCT_IDS, SNACK_SHOP_PRODUCT_IDS, generateStarterTileMap, getSeasonForDay, PRODUCT_MAP, SECURITY_RULES, STORE_TYPES, WEATHER_MAP, XOI_DISH_IDS, ZOOM_MAX, ZOOM_MIN } from '@game/data';
 import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES, landErrorMessage, openBuildingReasonMessage, FootstepTracker, footstepCue } from '@game/core';
 import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
+import { BuildingPanel, type BuildingPanelAction } from './components/BuildingPanel';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
 import { ParcelBuyModal } from './components/ParcelBuyModal';
 import { WorldSettingsModal } from './components/WorldSettingsModal';
 import { LandVoteModal, type LandVoteInfo } from './components/LandVoteModal';
 import { OpenBuildingModal } from './components/OpenBuildingModal';
 import { SiteModal, siteTodoLabel } from './components/SiteModal';
-import { type GameViewport, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
+import { type GameViewport, type GameViewportOptions, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
 import { createViewport, preferredRenderer } from './viewport-factory';
-import { BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup, MULTIPLAYER_PROTOCOL_VERSION, SERVER_REPLAYED_COMMAND_TYPES } from '@game/shared';
+import { initializeWithFallback } from './renderer-choice';
+import { TILE_SIZE, BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup, MULTIPLAYER_PROTOCOL_VERSION, SERVER_REPLAYED_COMMAND_TYPES } from '@game/shared';
 
 import { getActiveSlotId, loadOrCreateSave, persistSave, writeEmergencySave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
 import { releaseSlotLock } from './slot-lock';
@@ -129,6 +131,19 @@ export const App: React.FC = () => {
     const timer = window.setInterval(() => setSitePanelTick(n => n + 1), 1000);
     return () => window.clearInterval(timer);
   }, [sitePanelId]);
+  /** Tòa đang chọn trong 3D (renderer phát onBuildingSelect); có id thì hiện BuildingPanel. */
+  const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+  const closeBuildingPanel = useCallback(() => {
+    setSelectedBuildingId(null);
+    viewportRef.current?.clearBuildingSelection();
+  }, []);
+  useEffect(() => {
+    if (!selectedBuildingId) return;
+    const onKey = (e: KeyboardEvent) => { if (e.code === 'Escape') closeBuildingPanel(); };
+    // Pha capture: chạy trước hộp thoại (chúng chặn Esc ở document) để một lần Esc đóng cả bảng tòa lẫn bảng đang mở.
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [selectedBuildingId, closeBuildingPanel]);
   const [openBuildingParcelId, setOpenBuildingParcelId] = useState<string | null>(null);
   const [openBuildingTypeId, setOpenBuildingTypeId] = useState<string | undefined>(undefined);
   const [isStallOpen, setStallOpen] = useState(false);
@@ -706,6 +721,7 @@ export const App: React.FC = () => {
       if (disposed) return;
       disposed = true;
       ownedInput?.detachListeners();
+      inputManagerRef.current?.resetViewBasis();
       ownedViewport?.destroy();
       if (inputManagerRef.current === ownedInput) inputManagerRef.current = null;
       if (viewportRef.current === ownedViewport) viewportRef.current = null;
@@ -878,12 +894,13 @@ export const App: React.FC = () => {
       syncFromSimulation(simulation);
 
       // 5. Setup PixiJS Viewport
-      const viewport = await createViewport(preferredRenderer(), {
+      const viewportOptions: GameViewportOptions = {
         canvas: canvasRef.current,
         tileMap: simulation.getTileMap(),
         simulation,
         onZoomChange: setZoomLevel,
         onParcelTap: setParcelPromptId,
+        onBuildingSelect: setSelectedBuildingId,
         getPartnerAvatar: () => {
           // Dev/QA: giả lập bạn co-op để kiểm hình ảnh mà không cần hai trình duyệt (window.__debugPartner = { position, direction, isMoving }).
           if (import.meta.env.DEV) { const dbg = (window as unknown as { __debugPartner?: { position: { x: number; y: number }; direction: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; name?: string } }).__debugPartner; if (dbg) return dbg; }
@@ -894,12 +911,18 @@ export const App: React.FC = () => {
           const partner = myUid ? curWorld.world.avatars.find(avatar => avatar.accountId !== myUid) : null;
           return partner ? { position: partner.position, direction: partner.direction, name: partner.displayName?.trim() || 'Bạn cùng hẻm' } : null;
         },
-      });
-      ownedViewport = viewport;
+        // Renderer 3D báo hướng bản đồ ứng với phải/xuống màn hình mỗi khi camera xoay (2D không gọi).
+        onViewBasisChange: (right, down) => inputManagerRef.current?.setViewBasis(right, down),
+      };
+      // 3D là mặc định; khởi tạo 3D lỗi thì tự quay về 2D (xem renderer-choice.ts). Mỗi bản vừa tạo được giữ lại để hủy nếu bị hủy giữa chừng.
+      const { viewport } = await initializeWithFallback(
+        preferredRenderer(),
+        (kind) => createViewport(kind, viewportOptions),
+        (created) => { ownedViewport = created; },
+      );
       // Dev/QA: lối vào mô phỏng để dựng cảnh kiểm thử (đặt vị trí người chơi, đếm khách...). Không có trong bản production.
       if (import.meta.env.DEV) (window as unknown as { __gameDebug?: unknown }).__gameDebug = { simulation, get viewport() { return ownedViewport; } };
 
-      await viewport.initialize();
       if (isCancelled) return;
 
       viewportRef.current = viewport;
@@ -2265,6 +2288,40 @@ export const App: React.FC = () => {
             )}
             {simulationRef.current && <SpecialRequestPanel state={simulationRef.current.getSpecialRequestState()} onFulfill={(id) => { const sim = simulationRef.current; if (!sim) return { success: false }; const res = sim.fulfillSpecialRequest(id); syncFromSimulation(sim); return res; }}/>}
             <div className="world-tools" aria-label="Góc nhìn bản đồ"><PixelButton icon="warehouse" aria-label="Định vị nhà kho" onClick={locateWarehouse}/><PixelButton icon="minus" aria-label="Thu nhỏ bản đồ" disabled={zoomLevel<=ZOOM_MIN} onClick={handleZoomOut}/><span className="zoom-value">{Number(zoomLevel.toFixed(2))}×</span><PixelButton icon="plus" aria-label="Phóng to bản đồ" disabled={zoomLevel>=ZOOM_MAX} onClick={handleZoomIn}/></div>
+            {selectedBuildingId && simulationRef.current && (() => {
+              const sim = simulationRef.current;
+              const tileMap = sim.getTileMap();
+              const norm = (id: string | undefined) => (id && /^grocery_main/.test(id) ? 'main' : id);
+              const isMain = norm(selectedBuildingId) === 'main';
+              const placed = tileMap.buildings?.find(b => norm(b.id) === norm(selectedBuildingId));
+              const typeDef = buildingTypeOfInstance(selectedBuildingId);
+              const inBuilding = (f: typeof fixtures[number]) => isMain ? (isWarehouseFixture(f) || norm(fixtureBuilding(f, tileMap.buildings)) === 'main') : norm(fixtureBuilding(f, tileMap.buildings)) === norm(selectedBuildingId);
+              const own = fixtures.filter(f => !f.parentId && inBuilding(f));
+              const open = isMain ? worldTime.isStoreOpen : (placed?.open ?? false);
+              const customerCount = sim.getCustomers().filter(c => norm(buildingOfTiles([{ x: Math.floor(c.position.x / TILE_SIZE), y: Math.floor(c.position.y / TILE_SIZE) }], tileMap.buildings)) === norm(selectedBuildingId)).length;
+              const act = (fn: () => void) => () => { fn(); };
+              const actions: BuildingPanelAction[] = [];
+              const warehouse = own.find(isWarehouseFixture);
+              if (warehouse) actions.push({ label: 'Kho', onClick: act(() => openFixtureModal(warehouse)) });
+              if (own.some(isSalesFixture)) actions.push({ label: 'Sơ đồ kệ', onClick: act(() => setIsPlanogramOpen(true)) });
+              const cashier = own.find(f => f.type === 'cashier_counter');
+              if (cashier) actions.push({ label: 'Quầy thu ngân', onClick: act(() => openFixtureModal(cashier)) });
+              const kitchen = own.find(f => f.type === 'kitchen_station');
+              if (kitchen) actions.push({ label: 'Bếp', onClick: act(() => openFixtureModal(kitchen)) });
+              if (isMain) actions.push({ label: 'Quầy ăn uống', onClick: act(() => setStallOpen(true)) });
+              const site = sim.getSites().find(s => s.siteId === selectedBuildingId);
+              if (site) actions.push({ label: 'Quản lý cơ sở', onClick: act(() => setSitePanelId(site.siteId)) });
+              actions.push({ label: 'Bố trí cửa hàng', onClick: act(() => { void openLayoutEditor(); }) });
+              return <BuildingPanel
+                title={typeDef?.name ?? selectedBuildingId}
+                typeLabel={typeDef?.name ?? selectedBuildingId}
+                isOpen={open}
+                statusLabel={isMain ? (open ? 'Đang mở cửa' : 'Đã đóng cửa') : (open ? 'Đang hoạt động' : 'Đóng cửa / đang thi công')}
+                customerCount={customerCount}
+                actions={actions}
+                onClose={closeBuildingPanel}
+              />;
+            })()}
             {!hasModal && (!isWarehouseDockOpen || controlMode === 'touch') && <VirtualJoystick onMove={handleMobileJoystickMove} onInteract={handleMobileInteract}/>}
           </>}
         </div>

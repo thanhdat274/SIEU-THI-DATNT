@@ -3,8 +3,6 @@ import { Scene } from '@babylonjs/core/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
-import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
-import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { Plane } from '@babylonjs/core/Maths/math.plane';
 import { CreateGround } from '@babylonjs/core/Meshes/Builders/groundBuilder';
 import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder';
@@ -14,7 +12,7 @@ import '@babylonjs/core/Culling/ray';
 import { FixedStepSimulationRunner, type GameSimulation } from '@game/core';
 import { WAREHOUSE_BOUNDS } from '@game/data';
 import type { GameTileMap } from '@game/shared';
-import type { GameViewport, GameViewportOptions, MinimapSnapshot, PlanningOverlay } from '@game/renderer';
+import { getDebugVisualTime, getWeatherFxSettings, resolveWeatherQuality, type GameViewport, type GameViewportOptions, type MinimapSnapshot, type PlanningOverlay } from '@game/renderer';
 import { CAMERA_BETA, CAMERA_FOV, groundViewRadius, isoAlpha, pixelToWorld, snapGround, stepZoom, worldToTile, zoomHalfHeight, zoomRadius } from './coords';
 import { buildCityMap, type RoofInfo } from './map-builder';
 import { Actors3D } from './actors-3d';
@@ -23,8 +21,12 @@ import { Crowd3D } from './crowd-3d';
 import { Fixtures3D } from './fixtures-3d';
 import { Stock3D } from './stock-3d';
 import { Overlay3D } from './overlay-3d';
+import { Sky3D } from './sky-3d';
+import { Weather3D } from './weather-3d';
+import { WorldDecor3D } from './world-decor-3d';
+import { Vehicles3D } from './vehicles-3d';
 import { pickTarget, resolveTileTarget, type TileTarget } from './tile-target';
-import { ALPHA_HIDDEN, OCCLUDER_ALPHA, rayHitsBox, shouldOpenRoof, stepAlpha } from './roof-fade';
+import { ALPHA_HIDDEN, facadeAlpha, OCCLUDER_ALPHA, rayHitsBox, shouldOpenRoof, stepAlpha } from './roof-fade';
 
 /** Chiều cao khung hình "pixel" (px ảo); canvas thật được phóng lên bằng nearest-neighbour. */
 const PIXEL_TARGET_HEIGHT = 360;
@@ -60,6 +62,12 @@ export class BabylonGameViewport implements GameViewport {
   private stock: Stock3D | null = null;
   private soldOutStalls: readonly string[] = [];
   private overlay: Overlay3D | null = null;
+  private sky: Sky3D | null = null;
+  private weather: Weather3D | null = null;
+  private worldDecor: WorldDecor3D | null = null;
+  private vehicles: Vehicles3D | null = null;
+  private pendingPlanning: readonly PlanningOverlay[] = [];
+  private pendingWaveOverlay = false;
   private actorAtlas: ActorAtlas | null = null;
   private openedWaves: readonly string[] = [];
 
@@ -106,11 +114,8 @@ export class BabylonGameViewport implements GameViewport {
     camera.minZ = 0.1;
     camera.maxZ = 500;
 
-    const hemi = new HemisphericLight('sky', new Vector3(0, 1, 0), scene);
-    hemi.intensity = 0.75;
-    hemi.groundColor = new Color3(0.45, 0.42, 0.5);
-    const sun = new DirectionalLight('sun', new Vector3(-0.5, -1, 0.35), scene);
-    sun.intensity = 0.55;
+    this.sky = new Sky3D(scene);
+    this.weather = new Weather3D(scene, Weather3D.maxDropsFor(resolveWeatherQuality(getWeatherFxSettings())));
 
     this.engine = engine;
     this.scene = scene;
@@ -123,6 +128,12 @@ export class BabylonGameViewport implements GameViewport {
     this.fixtures = new Fixtures3D(scene, this.simulation);
     this.stock = new Stock3D(scene, this.simulation);
     this.stock.setStallSoldOut(this.soldOutStalls);
+    this.worldDecor = new WorldDecor3D(scene, this.simulation);
+    this.worldDecor.setTileMap(this.tileMap);
+    this.worldDecor.setPlanning(this.pendingPlanning);
+    if (this.pendingWaveOverlay) this.worldDecor.showWaveOverlay(true);
+    this.vehicles = new Vehicles3D(scene, this.simulation);
+    await this.vehicles.load();
 
     this.prevImageRendering = this.canvas.style.imageRendering;
     this.canvas.style.imageRendering = 'pixelated';
@@ -151,6 +162,8 @@ export class BabylonGameViewport implements GameViewport {
     this.roofs = built.roofs;
     this.fixtures?.setRoofs(built.roofs);
     this.stock?.setMap(built.roofs, this.tileMap.stalls);
+    this.sky?.setLampMaterial(built.lampMaterial);
+    this.weather?.setRoadMaterial(built.roadMaterial);
   }
 
   /** Khung hình nội bộ ~PIXEL_TARGET_HEIGHT px rồi phóng nguyên lần lên canvas (nearest) → chất pixel. */
@@ -195,6 +208,7 @@ export class BabylonGameViewport implements GameViewport {
     this.updateRoofFade(elapsed, pos);
     this.fixtures?.update(elapsed);
     this.stock?.update(elapsed);
+    this.worldDecor?.update();
     // Sau khi mái đã bóc/đậy: khách trong tòa còn mái thì ẩn.
     const aspect = engine.getRenderWidth() / Math.max(1, engine.getRenderHeight());
     this.crowd?.update(
@@ -210,14 +224,39 @@ export class BabylonGameViewport implements GameViewport {
       },
       this.canvas.clientWidth < 768,
     );
+    this.vehicles?.update(this.quarter, CAMERA_BETA, {
+      centerX: pos.x + this.pan.x,
+      centerZ: pos.z + this.pan.z,
+      radius: groundViewRadius(this.zoom, aspect, CAMERA_BETA),
+      zoom: this.zoom,
+    });
 
     // Khóa tâm camera theo lưới pixel ảo (ở mặt phẳng tâm) để sprite/mép khối quanh người chơi không "bơi" khi camera trượt.
     const step = (2 * this.halfHeight()) / Math.max(1, engine.getRenderHeight());
     const snapped = snapGround(pos.x + this.pan.x, pos.z + this.pan.z, cam.alpha, CAMERA_BETA, step);
     cam.target.set(snapped.x, 0, snapped.z);
+    this.updateSky(elapsed, pos);
     scene.render();
     this.overlay?.update(elapsed, this.quarter, CAMERA_BETA, this.roofs, this.getPartnerAvatar?.());
   };
+
+  /** Giờ, ánh sáng, mưa và đường ướt. Có giờ/mưa debug (setDebugTime, chỉ dev) thì dùng thay mô phỏng, giống bản 2D. */
+  private updateSky(elapsed: number, pos: { x: number; z: number }): void {
+    const sky = this.sky;
+    const weather = this.weather;
+    const cam = this.camera;
+    if (!sky || !weather || !cam || !this.engine) return;
+    const debug = getDebugVisualTime();
+    const t = debug ?? this.simulation.getTime();
+    const fx = getWeatherFxSettings();
+    const rainRaw = debug?.rain ?? this.simulation.getRainIntensity();
+    const wetRaw = debug?.rain !== undefined ? Math.min(1, debug.rain * 1.5) : this.simulation.getRoadWetness();
+    const reduced = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
+    const half = Math.max(8, Math.min(24, groundViewRadius(this.zoom, aspect, CAMERA_BETA) * 0.9));
+    weather.update(elapsed, rainRaw, wetRaw, fx.enabled ? fx.intensity : 0, reduced, { x: pos.x + this.pan.x, z: pos.z + this.pan.z }, half);
+    sky.update(t.hour, t.minute, t.day, weather.getRain());
+  }
 
   /** Bóc mái mượt: mái + tường mặt tiền mờ dần khi người chơi vào tòa (và kho thông với tiệm chính; tòa kề sát giữ mái), tường tòa che người chơi hạ còn OCCLUDER_ALPHA. */
   private updateRoofFade(elapsed: number, pos: { x: number; z: number }): void {
@@ -236,6 +275,8 @@ export class BabylonGameViewport implements GameViewport {
       const roofAlpha = Math.min(r.alpha, r.wallAlpha);
       for (const m of r.fadeMaterials) m.alpha = roofAlpha;
       for (const m of r.wallMaterials) m.alpha = r.wallAlpha;
+      const facade = facadeAlpha(roofAlpha);
+      for (const m of r.facadeMaterials) m.alpha = facade;
       const visible = roofAlpha > ALPHA_HIDDEN;
       for (const m of r.meshes) m.isVisible = visible;
     }
@@ -362,7 +403,13 @@ export class BabylonGameViewport implements GameViewport {
     this.selectBuilding(target.id);
   }
 
-  /** Chọn/bỏ chọn tòa `buildingId` (null = bỏ), cập nhật viền sáng và báo callback (giai đoạn F sẽ nối UI). */
+  /** Bỏ chọn từ phía UI (đóng bảng): tắt viền sáng, không báo lại callback. */
+  public clearBuildingSelection(): void {
+    this.selectedBuildingId = null;
+    this.updateSelectionVisual();
+  }
+
+  /** Chọn/bỏ chọn tòa `buildingId` (null = bỏ), cập nhật viền sáng và báo callback cho UI mở bảng tòa. */
   private selectBuilding(buildingId: string | null): void {
     this.selectedBuildingId = buildingId;
     this.updateSelectionVisual();
@@ -486,18 +533,24 @@ export class BabylonGameViewport implements GameViewport {
 
   public updateTileMap(tileMap: GameTileMap): void {
     this.tileMap = tileMap;
+    this.worldDecor?.setTileMap(tileMap);
     if (this.scene) this.buildMap();
   }
 
   public setOpenedWaves(openedWaves: readonly string[]): void { this.openedWaves = openedWaves; }
 
-  // Chưa vẽ ở giai đoạn B (xem docs/plans/3d-migration-plan.md, C–G).
   public setStallSoldOut(ids: readonly string[]): void {
     this.soldOutStalls = ids;
     this.stock?.setStallSoldOut(ids);
   }
-  public setPlanningReservations(_overlays: readonly PlanningOverlay[]): void {}
-  public showWaveOverlay(_show: boolean): boolean { return false; }
+  public setPlanningReservations(overlays: readonly PlanningOverlay[]): void {
+    this.pendingPlanning = overlays;
+    this.worldDecor?.setPlanning(overlays);
+  }
+  public showWaveOverlay(show: boolean): boolean {
+    this.pendingWaveOverlay = show;
+    return this.worldDecor?.showWaveOverlay(show) ?? false;
+  }
   public addFloatingGain(x: number, y: number, text: string, color: number = 0xf4a261): void {
     this.overlay?.addFloatingGain(x, y, text, color);
   }
@@ -545,9 +598,13 @@ export class BabylonGameViewport implements GameViewport {
     window.removeEventListener('keydown', this.handleKeyDown);
     this.engine?.stopRenderLoop();
     this.overlay?.destroy();
+    this.sky?.dispose();
+    this.weather?.dispose();
     this.crowd?.dispose();
     this.fixtures?.dispose();
     this.stock?.dispose();
+    this.worldDecor?.dispose();
+    this.vehicles?.dispose();
     this.actors?.dispose();
     this.actorAtlas?.manager.dispose();
     for (const m of this.selectionFrameBars) m.dispose();
@@ -562,7 +619,11 @@ export class BabylonGameViewport implements GameViewport {
     this.crowd = null;
     this.fixtures = null;
     this.stock = null;
+    this.worldDecor = null;
+    this.vehicles = null;
     this.overlay = null;
+    this.sky = null;
+    this.weather = null;
     this.actorAtlas = null;
     this.mapMeshes = [];
     this.roofs = [];

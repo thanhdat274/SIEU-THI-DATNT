@@ -37,6 +37,17 @@ assert.deepEqual([dir(90).rx, dir(90).rz], [0, 1]);
 assert.deepEqual([dir(180).rx, dir(180).rz], [-1, 0]);
 assert.deepEqual([dir(270).rx, dir(270).rz], [0, -1]);
 
+// Tái hiện: kệ 'shelf_wooden_noodles' (12 ô, chỉ ô gốc gán mi_hao_hao, tồn 20/20) phải ra icon, nằm nhô ra trước ván ở quarter 0.
+const noodles = { type: 'shelf_wooden', tileX: 8, tileY: 5, widthTiles: 2, heightTiles: 1, rotation: 0 } as const;
+const noodleSlots = [{ assignedProductId: 'mi_hao_hao', currentStock: 20 }, ...Array.from({ length: 11 }, () => ({ assignedProductId: undefined, currentStock: 0 }))];
+const noodleQuads = shelfStockQuads(noodles, noodleSlots, () => 20);
+assert.ok(noodleQuads.length > 0, 'kệ mì có icon');
+const boardFront = 5 + 0.5 + 0.02 + 0.45; // tâm chân diện + lệch ván + nửa độ sâu ván
+for (const q of noodleQuads) {
+  assert.ok(q.cz >= boardFront + 0.019 && q.cz <= boardFront + 0.05, 'icon nhô ~0.02 ra trước ván (mặt về phía camera +z)');
+  assert.ok(q.w >= 0.2, 'icon đủ lớn để thấy');
+}
+
 // Biển HẾT không gắn sản phẩm; biển quầy nằm giữa quầy.
 assert.equal(soldOutSignQuad(shelf).productId, null);
 const sign = stallSignQuad({ tileX: 4, tileY: 20, widthTiles: 2 });

@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict';
-import { rayHitsBox, shouldOpenRoof, stepAlpha, type RoofRef } from './roof-fade';
+import { FACADE_ALPHA, facadeAlpha, rayHitsBox, shouldOpenRoof, stepAlpha, type RoofRef } from './roof-fade';
 import { pickTarget } from './tile-target';
 
 assert.equal(stepAlpha(1, 0, 0.1), 0.5);
 assert.equal(stepAlpha(0.1, 0, 0.5), 0);
 assert.equal(stepAlpha(0, 1, 1), 1);
 assert.equal(stepAlpha(1, 0.35, 0.01), 0.95);
+
+assert.equal(facadeAlpha(1), 1);
+assert.equal(facadeAlpha(0), FACADE_ALPHA);
+assert.ok(facadeAlpha(0.5) > FACADE_ALPHA && facadeAlpha(0.5) < 1);
 
 const box = { x0: 0, x1: 4, y0: 0, y1: 2, z0: 10, z1: 14 };
 // Người ở sau tòa (z=8) nhìn về phía camera ở +z, lên trên: bị che

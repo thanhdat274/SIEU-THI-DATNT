@@ -18,7 +18,10 @@ export type StockSlot = Pick<StoreFixture, 'assignedProductId' | 'currentStock'>
 export const TIER_Y = [0.13, 0.53, 0.93] as const;
 const MAX_ICONS_PER_CELL = 3;
 const MAX_ICON = 0.3;
-const MIN_ICON_GAP = 0.14;
+const MIN_ICON_GAP = 0.2;
+/** Mép trước tấm ván kệ (khớp fixture-shapes: ván lệch 0.02, sâu 0.9·d) và độ nhô của icon ra trước để không bị ván che. */
+const BOARD_FRONT_OFFSET = 0.02;
+const ICON_PROTRUDE = 0.02;
 
 /** Số icon hiện trong một ô hàng: tỉ lệ với tồn/sức chứa, còn hàng thì ít nhất 1, hết hàng thì 0. */
 export function iconCount(stock: number, limit: number, maxIcons: number): number {
@@ -41,7 +44,7 @@ export function shelfStockQuads(
   const cellW = usable / cols;
   const perCell = Math.max(1, Math.min(MAX_ICONS_PER_CELL, Math.floor(cellW / MIN_ICON_GAP)));
   const size = Math.min(MAX_ICON, cellW / perCell);
-  const frontZ = fix.type === 'refrigerator' ? fix.heightTiles / 2 + 0.03 : fix.heightTiles * 0.4;
+  const frontZ = fix.type === 'refrigerator' ? fix.heightTiles / 2 + 0.03 : fix.heightTiles * 0.45 + BOARD_FRONT_OFFSET + ICON_PROTRUDE;
   const right = fixtureLocalToWorld(fix, 1, 0);
   const origin = fixtureLocalToWorld(fix, 0, 0);
   const rx = right.x - origin.x;

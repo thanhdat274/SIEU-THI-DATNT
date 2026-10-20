@@ -29,4 +29,6 @@ export interface GameViewport {
   zoomOut(delta?: number): number;
   getZoom(): number;
   getMinimapSnapshot(): MinimapSnapshot;
+  /** Bỏ chọn tòa và tắt viền (renderer 3D); 2D không làm gì. */
+  clearBuildingSelection(): void;
 }

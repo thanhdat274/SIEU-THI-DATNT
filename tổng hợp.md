@@ -1,3 +1,81 @@
+# RENDERER 3D: SỬA 3 LỖI QA GIAI ĐOẠN D (20/10/2026, `packages/game-renderer-3d` + `game-core/input` cho WASD theo màn hình)
+
+Sửa/hoàn thiện 3 lỗi QA giai đoạn D: (1) lật gương hệ tay trái, (2) góc camera chéo 45° isometric + WASD theo hướng màn hình, (3) viền chọn tòa nhìn thấy khi còn mái, kèm (4) chuột trái không còn kéo camera. Chỉ sửa trong `packages/game-renderer-3d` (riêng cơ chế `setViewBasis`/`resetViewBasis` đặt trong `game-core/input.ts` vì InputManager ở đó — chính là "đã có chuẩn hoá trong InputManager", không sửa luật chơi).
+
+- [x] **Lật gương (P0) — hệ tay PHẢI:** `scene.useRightHandedSystem = true` đặt ngay khi tạo scene (`babylon-viewport.ts:94`). Chọn cách này (đổi ánh xạ hàng ô → -Z đòi hỏi đảo dấu Z khắp nơi, dễ sót) và giữ nguyên quy ước `cột→X, hàng→Z`. Rà lại toàn bộ chỗ phụ thuộc trục:
+  - `groundBasis()` (`babylon-viewport.ts`): right=(sin α, −cos α), down=(cos α, sin α) — đúng hệ tay phải, dùng cho pan + truyền `onViewBasisChange` cho InputManager (WASD theo màn hình).
+  - `facingFromMovement`/`facingForCamera` (`coords.ts`): đổi vector bản đồ sang hướng màn hình bằng groundBasis, chọn 4 hướng gần nhất, nếu trục ngang = trục dọc ưu tiên trái/phải. Test đủ 4 quarter × 4 hướng (`coords.test.ts`).
+  - `tileFromPointer` dùng `scene.createPickingRay` + `ray.intersectsPlane(y=0)` — không phụ thuộc vật đè lên (mái), dùng `worldToTile`.
+  - **Biển hiệu đọc xuôi (đã SỬA LỖI THẬT):** bản cũ dùng mẹo `vScale = -1, wrapV = WRAP` là bù cho hệ tay TRÁI. Sau khi bật right-handed, mẹo này làm chữ bị **xoay 180°** (lộn ngược + in ngược). Đo bằng cô lập biển trên màn hình (ẩn mọi mesh khác) rồi so tương quan với texture gốc: bản cũ khớp nguồn chỉ khi xoay 180°, bản mới (`map-builder.ts` `signMaterial`: bỏ `vScale=-1/wrapV`, thêm `uScale=-1/wrapU=WRAP`) khớp nguồn khi KHÔNG lật (vì right-handed làm texture phản chiếu NGANG). Biển "TIỆM TẠP HÓA" đọc xuôi ở quarter 0.
+  - `Overlay3D`: phép chiếu `Vector3.ProjectToRef` dùng `scene.getTransformMatrix()` — tự theo hệ tay phải, không sửa thêm.
+  - Cull mặt sau (`backFaceCulling`): mặc định bật, không đổi vì quy ước trục giữ nguyên (chỉ đổi handedness của phép chiếu).
+- [x] **Góc camera chéo 45° isometric (KHÔNG nhìn thẳng như 2D):**
+  - `isoAlpha(quarter)` (`coords.ts`): `π/4 − q·π/2` — quarter 0 camera đặt hướng đông-nam, thấy đồng thời mặt tiền (nam) và mặt hông (đông) của tòa; bản đồ chạy chéo (hình thoi), không thẳng hàng mép màn hình; giữ `beta = 0.96`. Comment + test `coords.test.ts` đã khớp.
+  - **WASD/arrow theo hướng MÀN HÌNH:** `InputManager.setViewBasis(right, down)` (`game-core/input.ts`) nhân vector phím với basis để ra vector bản đồ, chuẩn hoá độ dài khi >1 (tốc độ đi chéo = tốc độ đi thẳng). Renderer báo basis qua `onViewBasisChange` (`App.tsx` nối `inputManagerRef.setViewBasis`), `resetViewBasis()` khi dừng. Test `input.test.ts` (xoay 90°, chéo 45°, basis 0/NaN bị bỏ, reset). **Không sửa luật chơi** — chỉ chuyển toạ độ phím sang bản đồ.
+  - QA đo trên game thật (độ dời sim, quarter 0–3): W/S/A/D = lên/xuống/trái/phải màn hình đúng cả 4 quarter, mỗi lần độ dài ≈ 62.8 (diagonal = thẳng). Arrow trùng WASD.
+- [x] **Viền chọn tòa nhìn thấy khi còn mái:** khung cạnh (`CreateLines sel_frame`) dựng ở cao độ `max(2.0, roofTopFor(footprint)+0.1)` → luôn cao hơn nóc mái 0.1, kèm mặt nền sáng (`sel_ground`). Click tòa → dựng + hiện viền (`selectedBuildingId`), click chỗ trống → `dispose()` viền + ẩn nền; `destroy()` dọn sạch. QA: click ô tiệm → `selectedBuildingId='main'`, viền ở Y=2.15 = roofTop(2.05)+0.1 (trên mái ✓); click trống → viền biến mất.
+- [x] **Chuột trái không kéo camera:** `handlePointerMove` chỉ pan khi `pointerButton !== 0` (chuột giữa/phải); chuột trái dành cho click/chọn (ngưỡng click vs kéo vẫn 4px). QA: kéo trái >4px không đổi `camera.target`; kéo giữa/phải thì đổi → đúng "như giai đoạn B".
+- [x] **Kiểm thử tự động:** `yarn typecheck` EXIT 0; `yarn --cwd packages/game-renderer-3d test` PASS (`coords.test.ts` isoAlpha chéo + facing 4×4, `overlay-3d.test.ts` test phép chiếu thuần: quarter 0, +X → x màn hình lớn hơn, +Z → y màn hình lớn hơn, NullEngine); `yarn --cwd packages/game-core test` **112/112 pass 0 fail**; `npx eslint packages/game-renderer-3d` **0 error / 0 warning**.
+- [x] **QA browser (`?r=3d`, `__seedQaSave('fair')`, ảnh `.qa/qa-D/`):** phép chiếu +X→phải, +Z→xuống (đúng bản 2D, hết lật gương); WASD + arrow đúng hướng màn hình 4 quarter; click tiệm → viền sáng trên mái, click trống → viền tắt; `__debugPartner` hiện bạn co-op (sprite partner visible); **FPS khi cửa sổ đang hiện: baseline 58.8, có partner 57.5** (fair seed); biển "TIỆM TẠP HÓA" đọc xuôi quarter 0 (kiểm bằng so khớp pixel cô lập); ảnh quarter 0 + quarter 1–3 kèm bảng hướng.
+- [ ] **CHƯA:** QA 2D-vs-3D đối chiếu trái–phải tiệm/đèn/cây bằng mắt thật (tôi không đọc được ảnh — đối chiếu bằng đơn vị phép chiếu); kiểm trên điện thoại thật; chụp 2D đối chiếu cùng tọa độ.
+
+**Bảng hướng di chuyển (phím → độ dời x,y của sim → hướng màn hình):**
+
+| Quarter (camera) | W | S | A | D |
+|---|---|---|---|---|
+| 0 (đông-nam) | (−44,−44) → lên | (44,44) → xuống | (−44,44) → trái | (44,−44) → phải |
+| 1 (đông-bắc) | (−43,43) → lên | (40,−40) → xuống | (43,43) → trái | (−40,−40) → phải |
+| 2 (tây-bắc) | (40,40) → lên | (−40,−40) → xuống | (40,−40) → trái | (−40,40) → phải |
+| 3 (tây-nam) | (40,−40) → lên | (−40,40) → xuống | (−38,−38) → trái | (38,38) → phải |
+
+(Độ dời x,y tính theo pixel mô phỏng 2D; độ dài vector xấp xỉ bằng nhau ~62.8 → đi chéo = đi thẳng.)
+
+# RENDERER 3D: CLICK CHUỘT TRÁI = CHẠM PIXI — CHỌN LÔ / CHỌN TÒA + VIỀN SÁNG (20/10/2026, Prompt 6, `packages/game-renderer-3d`)
+
+- [x] **Chuột trái trong 3D hoạt động như chạm/click ở Pixi**:
+  - **Ngưỡng click vs kéo = 4 px** (cùng `viewport-input.ts` của Pixi): `handlePointerDown` ghi vị trí + nút; `handlePointerMove` chỉ coi là kéo (pan camera) khi độ dời vượt ngưỡng; `handlePointerUp` chỉ phát click khi chuột Trái, chưa kéo, và thả ngay trên canvas (`e.target === canvas`). Kéo chuột trái/giữa/phải vẫn pan như cũ, kéo rồi thả **không** tính là click.
+  - **Ô dưới con trỏ**: giao tia camera với mặt phẳng `y=0` (`scene.createPickingRay` + `ray.intersectsPlane`, cài qua `@babylonjs/core/Culling/ray`) rồi `worldToTile` (`coords.ts`) — không lệ thuộc vật đè lên (mái/tường) và tính đúng sau khi xoay camera (Q/R) nhờ tia qua camera hiện tại. Không dùng `scene.pick` để tránh bị mái che.
+- [x] **Ô → (lô | tòa | null) = hàm thuần `resolveTileTarget`** (`tile-target.ts`, dùng lại đúng logic lô của Pixi `findUnownedParcelAt` qua `RECLAMATION_WAVES`: đợt đã mở && chưa mua): 
+  1. lô đợt mở chưa mua → `{kind:'parcel', id}` → gọi `onParcelTap(id)` (mở hộp mua đất như Pixi);
+  2. ô thuộc tòa (bounds + `top` mở rộng bắc + `floorTiles` lấn ngoài) hoặc kho gắn liền tiệm chính → `{kind:'building', id}` → `selectBuilding(id)`;
+  3. chỗ trống → `null` → bỏ chọn.
+- [x] **Chọn tòa + viền sáng**: khi click vào tòa, lưu `selectedBuildingId`, dựng/vị trí `selectionBoxMesh` (khối trong suốt phát sáng rộng hơn tường một chút — đọc là khung viền) + `selectionGroundMesh` (mặt sáng hạ trên nền) theo chân diện tòa (gồm vùng mở rộng + kho `main`); click chỗ trống ẩn viền. Có `onBuildingSelect?(buildingId|null)` trong `GameViewportOptions` (`packages/game-renderer/src/viewport.ts`, **đã có sẵn từ Prompt 5**, CHƯA nối vào App — để giai đoạn F dùng).
+- [x] **Kiểm thử tự động**:
+  - `yarn typecheck` EXIT 0.
+  - `yarn --cwd packages/game-renderer-3d test` PASS — thêm `tile-target.test.ts` (ô trống → null; ô trong bounds/top mở rộng/floorTiles → tòa; kho → `main`; lô đợt mở chưa mua → parcel id thật từ `RECLAMATION_WAVES`; đợt chưa mở/đã mua → không trả lô).
+  - `npx eslint packages/game-renderer-3d packages/game-renderer/src/viewport.ts` **0 error**; 3D package **0 warning** (bỏ import thừa `MAIN_STORE_BOUNDS`). `viewport.ts` còn 14 **cảnh báo có sẵn** (import thừa cũ + `no-explicit-any`) — không sửa (ngoài phạm vi, là dead code có trước).
+- [ ] **CHƯA QA browser** (`?r=3d` click lô/tòa, xoay camera rồi click), chưa nối `onBuildingSelect` vào App (giai đoạn F).
+
+# RENDERER 3D: HTML/CSS OVERLAY BONG BÓNG NHU CẦU, THẺ KHÁCH QUEN & SỐ TIỀN BAY LÊN (20/10/2026, Prompt 5, `packages/game-renderer-3d`)
+
+- [x] **Lớp phủ HTML/CSS (`Overlay3D` trong `packages/game-renderer-3d/src/overlay-3d.ts`)**:
+  - Div overlay `.game-overlay-3d` tuyệt đối (`position: absolute; pointer-events: none; overflow: hidden`) phủ đúng kích thước canvas, gắn vào `canvas.parentElement`.
+  - Dọn sạch hoàn toàn trong `destroy()`: `container.remove()`, giải phóng mọi phần tử con và hồ chứa (`customerPool`, `floatingPool`), đảm bảo `document.querySelectorAll('.game-overlay-3d').length === 0`.
+- [x] **Chiếu toạ độ 3D và tối ưu render**:
+  - Mỗi khung hình chiếu toạ độ 3D ra màn hình bằng `Vector3.ProjectToRef` với ma trận camera orthographic ArcRotateCamera (`scene.getTransformMatrix()`) và kích thước Viewport màn hình CSS pixel.
+  - Định vị phần tử hoàn toàn bằng `transform: translate3d(x px, y px, 0) translate(-50%, -100%)`, tuyệt đối không đổi `top`/`left` để tránh layout reflow.
+  - Tự động ẩn phần tử (`display: 'none'`) khi ra ngoài khung nhìn màn hình hoặc khi nhân vật đứng trong tòa nhà chưa bóc mái (`hiddenByRoof`).
+- [x] **Nội dung hiển thị theo chuẩn Pixi**:
+  - **Bong bóng nhu cầu**: Khung hộp 20×20 px nền trắng kem, viền pixel `#4a2b16`, đuôi nhọn chỉ xuống đầu nhân vật; icon 16×16 px dựng bằng SVG crispEdges từ `@game/data` (`productPixels` và `PRODUCT_MAP` hoặc icon đồng xu `pixel_coin`), có bộ đệm `iconSvgCache` sinh 1 lần dùng mãi.
+  - **Trạng thái chờ / yêu cầu đặc biệt**: Huy hiệu tròn màu vàng "!" nhún nhẹ theo nhịp animation khi khách có trong `simulation.getSpecialRequestCustomerIds()`.
+  - **Thẻ tên khách quen**: Khung tím `rgba(139, 92, 246, 0.95)` chữ trắng `♥ [Tên]` (`cust.regularName`).
+  - **Số tiền bay lên (`addFloatingGain`)**: Cài đặt thật thay thế no-op cũ; nhận toạ độ pixel mô phỏng `(x, y)`, quy đổi ra thế giới 3D, bay lên theo trục Y và mờ dần trong ~1.0s; có cơ chế Object Pooling tái sử dụng DOM element.
+  - **Bong bóng chủ tiệm**: Hiện "Tính tiền" khi chủ tiệm đang phục vụ khách (`keeper.visible && keeper.serving`).
+  - **Thẻ tên bạn co-op**: Khung xanh `#2b6cb0` hiển thị tên bạn cùng hẻm (`partnerAvatar.name`).
+- [x] **Font chữ**: Sử dụng biến CSS `--font-pixel` / VT323 như UI, chữ có bóng đổ đen viền nét; kích thước cố định theo pixel CSS màn hình (không đổi kích cỡ theo zoom) giúp tiếng Việt luôn sắc nét, dễ đọc.
+- [x] **Kiểm thử tự động & QA thực tế**:
+  - `yarn typecheck` EXIT 0
+  - `yarn --cwd packages/game-renderer-3d test` PASS (`overlay-3d.test.ts` & `coords.test.ts`: test SVG cache, tính bất biến toạ độ chiếu đầu nhân vật qua 4 hướng xoay Q/R, vòng đời floating gain & pooling, dọn sạch DOM khi destroy).
+  - `npx eslint packages/game-renderer-3d` EXIT 0 (0 error, 0 warning).
+  - **QA Browser (Playwright Chromium, save dựng sẵn `snack`)**:
+    1. Div `.game-overlay-3d` tồn tại đúng 1 phần tử, `pointer-events: none`.
+    2. Khách hàng hiển thị đầy đủ bong bóng nhu cầu kèm SVG icon tương ứng.
+    3. Khách quen Bé Na (và các khách quen khác) hiển thị thẻ tên tím `♥ Bé Na`.
+    4. Gọi `addFloatingGain(300, 300, '+12.000 đ', 0xf4a261)`: xuất hiện text `+12.000 đ` font VT323 màu `#f4a261`, sau 1.2s mờ dần và ẩn hoàn toàn.
+    5. Xoay camera bằng phím Q và phóng to/thu nhỏ (zoom): toạ độ overlay cập nhật theo `transform: translate3d(...)` và bám chính xác theo vị trí người trong không gian 3D.
+    6. Gọi `destroy()` / về menu: `document.querySelectorAll('.game-overlay-3d').length === 0`, không còn bất kỳ div thừa nào trong DOM.
+- [ ] **Chưa làm trong lượt này (giữ đúng phạm vi yêu cầu)**: Bong bóng thoại đối thoại ngẫu nhiên của cư dân (neighborhood talk bubbles), ô và áo mưa trong 3D, thùng hàng nhân viên bê, bóng đổ và nhún bước chân của nhân vật.
+
 # QA BẰNG SAVE DỰNG SẴN (19/10/2026, `__seedQaSave`, ô demo, Browser pane)
 
 Pane bị ẩn nên vòng khung hình dừng; mô phỏng được chạy bằng `__sim.update(0.25)` gọi trực tiếp (logic thật, không phải nhìn chuyển động). Ảnh chụp ở 740×360.
@@ -3952,3 +4030,84 @@ Chỉ ghi PASS khi đã đo/chụp thật trong Browser pane (giả lập viewpo
     - **Voice chat WebRTC P2P:** Cần server TURN và chứng chỉ HTTPS khi deploy thật (ngoài phạm vi code tĩnh của repo).
     - **Co-op 2 máy/2 trình duyệt:** Cần phiên người dùng mở đồng thời 2 tab hoặc 2 máy vật lý kết nối mạng LAN/Internet để kiểm chứng độ trễ cảm nhận.
     - **Ảnh overlay W1/W2:** Repo hiện không chứa file ảnh gốc để căn chỉnh rect quy hoạch theo ảnh.
+
+## Kiểm kê chênh lệch 2D (Pixi) ↔ 3D (Babylon) — 21/10/2026
+
+Chỉ đọc và đo, không sửa code. Nguồn: `viewport-api.ts`, `babylon-viewport.ts`, `viewport.ts` (Pixi), `crowd-3d.ts`, `overlay-3d.ts`, `map-builder.ts`, `apps/web/src`.
+
+### 1. Interface `GameViewport` — `BabylonGameViewport` đã cài thật hay no-op
+
+| Method | 3D |
+|---|---|
+| initialize, destroy, updateTileMap, zoomIn/Out/getZoom, locateWarehouse, clearBuildingSelection | Cài thật |
+| setStallSoldOut, addFloatingGain | Cài thật (Stock3D, Overlay3D) |
+| setOpenedWaves | Chỉ lưu giá trị cho minimap, **không vẽ gì** |
+| getMinimapSnapshot | Cài thật (view/player/map/owned/built); khung `view` là hình chữ nhật xấp xỉ, không phải hình thang của camera phối cảnh |
+| **setPlanningReservations** | **No-op** (thân hàm rỗng) |
+| **showWaveOverlay** | **No-op**, luôn trả `false` |
+
+Ghi chú: `locateWarehouse` ở 3D chỉ xóa độ lệch kéo (pan) → về người chơi, không bay tới kho như 2D (cần xác minh hành vi 2D khi người chơi đang ở xa).
+
+### 2. Tính năng hiển thị
+
+| Tính năng | 2D | 3D | Mức | Công |
+|---|---|---|---|---|
+| Xe chạy trên đường (ô tô, xe máy, xe buýt nhỏ, xe tải, xe đạp, xe dọc) + đèn pha/hậu ban đêm | Có | **Chưa có** (3D chỉ đưa danh sách xe cho `NeighborhoodLife`, không dựng sprite) | P0 (đường phố chết, và `setStreetCrossings` hiện chỉ tính từ người đi bộ) | M (2–3 ngày; cần atlas xe, hiện chỉ có atlas người) |
+| Xe máy/ô tô khách đỗ ở bãi (vehicleSpot) | Có | Chưa có | P1 | S |
+| Người đi bộ (`getStreetPedestrians`, qua vạch trước tiệm) | Có | Chưa có (chỉ `NeighborhoodLife`) | P1 | S–M |
+| Đèn tín hiệu giao lộ + vạch qua đường | Có | **Chưa có** | P1 | M |
+| Khách / nhân viên / dân khu phố (NeighborhoodLife) | Có | Có (Crowd3D, tự ẩn khi trong tòa còn mái) | — | — |
+| Người chơi, bạn co-op + thẻ tên | Có | Có | — | — |
+| Chủ tiệm sau quầy + bong bóng "Tính tiền" | Có | Có (Overlay3D) | — | — |
+| Bong bóng nhu cầu, dấu "!" khách quen, thẻ tên khách quen | Có | Có (HTML overlay) | — | — |
+| Chữ nổi +tiền/+EXP | Có | Có | — | — |
+| Ô/áo mưa (`RainGear`) cho người chơi, khách, người đi bộ | Có | **Chưa có** | P2 | S |
+| Nhân viên bê thùng, xe tải giao hàng, bến bốc dỡ kho (`updateLogistics`, `buildLoadingDock`) | Có | **Chưa có** | P1 (kho thấy trống, nhưng không chặn chơi) | L (3–4 ngày) |
+| Công trường + nhà mờ dần theo tiến độ khai hoang (`updateConstruction`) | Có | **Chưa có** | P0 (người chơi không thấy lô đang xây) | M |
+| Biển lô đợt khai hoang, biển "ĐẤT TRỐNG", bãi giữ xe | Có | Chưa có (chỉ nhận click vào lô qua `tile-target`) | P0 (không có dấu hiệu nào cho biết lô nào bấm được mua) | M |
+| Overlay vùng khai hoang W0–W4 (`showWaveOverlay`, QA) | Có | No-op | P2 (công cụ QA) | S |
+| Bóng mờ giữ chỗ quy hoạch của người khác (co-op) | Có | **No-op** | P0 nếu co-op là chế độ chính, nếu không thì P1 | M |
+| Nhà trang trí khu phố, nhà phụ (tiệm xôi, quán nước), civic ngày/đêm, đồ treo tường, fixture, kệ + hàng | Có | Một phần: tòa, fixture, hàng trên kệ có; **mặt tiền theo `FACADES`, civic, đồ treo tường, trang trí phía đông** cần kiểm từng cái | P1 | M–L |
+| Quầy ăn uống vỉa hè + biển HẾT | Có | Có (Stock3D) | — | — |
+| Giờ/ánh sáng, đèn đường, mưa, đường ướt, bầu trời | Có | Có (Sky3D, Weather3D) | — | — |
+| Sấm, nắng xuyên, gió làm cây/biển đung đưa (`WeatherEffects`) | Có | Không thấy trong 3D | P2 | S–M |
+| Bóng tòa nhà theo giờ, bóng chân nhân vật, quầng sáng cửa đêm (`ShopLighting`, `DepthEffects`) | Có | Một phần (ánh sáng toàn cảnh, không có bóng chân/quầng cửa) | P2 | M |
+| Rung màn hình, `adaptResolution` (tự hạ độ phân giải khi chậm) | Có | Không (3D cố định ~360 px nội bộ) | P2 | S |
+| Xoay camera Q/R, bóc mái, click chọn tòa + viền | Không có (2D không xoay) | Có | — | — |
+| Tooltip trong viewport | Không có | Không có | — | — |
+
+### 3. `apps/web/src` có phụ thuộc riêng vào Pixi không
+
+- Không có ép kiểu `PixiGameViewport` ngoài `viewport-factory.ts` (nơi chọn renderer). `App.tsx` chỉ giữ `GameViewport` qua `viewportRef`.
+- Mọi method App gọi (`updateTileMap`, `setOpenedWaves`, `setStallSoldOut`, `setPlanningReservations`, `showWaveOverlay`, `addFloatingGain`, `zoomIn/Out`, `locateWarehouse`, `clearBuildingSelection`) đều có trong interface.
+- Phụ thuộc ngầm duy nhất: các hook dev `window.__viewport`, `window.setDebugTime` dùng cho QA; `tools/e2e/perf-probe.js` cần `viewport.app`, `renderTick` của Pixi (không chạy với 3D).
+- Kết luận: không có khối UI nào bị chặn vì ép kiểu; khoảng trống chỉ nằm ở phần render.
+
+### 4. Số đo (cửa sổ ~1440×900 giả lập, dev server, WebGL phần mềm/ANGLE, save "TIẾP TỤC", giờ 12:00 trời quang)
+
+Hạn chế phải nói rõ:
+- FPS thật **không đo được**: pane không có focus nên `requestAnimationFrame` bị hạ còn ~1 Hz (đo được 1–7 FPS ở cả hai bản — là số của trình duyệt, không phải của game). Thay vào đó đo **chi phí mỗi khung** bằng cách gọi trực tiếp tick+render rồi `gl.finish()`, 60–90 khung.
+- Zoom của Pixi chỉ từ 0,5 tới 3 (không có 4) nên 2D đo ở 1/2/3; 3D đo ở 1/2/4.
+- `gl.finish()` trên môi trường này có thể không chặn tới khi GPU xong, nên số 3D có dao động lớn giữa các lần chạy (zoom 4: 7,4 ms, rồi 0,2–0,4 ms). Coi là chiều hướng, không phải chuẩn.
+
+| Chỉ số | 2D Pixi | 3D Babylon |
+|---|---|---|
+| Kích thước vẽ nội bộ | 1440×712, DPR 1 | 480×300 (phóng ×3, pixel hóa) |
+| Chi phí khung zoom thấp / giữa / cao | 3,1 / 2,8 / 2,9 ms (z1/z2/z3), p95 ≤ 5,6 | 0,6 / 1,1 / 7,4→0,3 ms (z1/z2/z4), p95 2–43 |
+| Trần FPS suy ra | ~320–360 | không đáng tin (≥130) |
+| Từ bấm "Tiếp tục" tới có viewport | ≈1,0 s | ≈0,5 s |
+| Bộ nhớ JS đã dùng (sau ~3 s) | 64–94 MB (2 lần đo) | 85 MB (tổng 95 MB) |
+| Mesh đang vẽ / tổng mesh | n/a | 18 / 33 (fixture dùng thin instance) |
+
+Kết luận đo: không thấy dấu hiệu 3D nặng hơn 2D ở desktop; cần đo lại FPS thật trên cửa sổ có focus và GPU thật (nên đo cả máy yếu) trước khi quyết.
+
+### 5. Đề xuất thứ tự làm các mục P0 (chặn chuyển 3D mặc định)
+
+1. **Biển lô khai hoang / "ĐẤT TRỐNG" + `showWaveOverlay`** (M, ~2 ngày): người chơi phải thấy lô nào mua được, và dùng chung dữ liệu với bước 2. Làm trước vì click vào lô đã chạy mà không có gì để nhìn.
+2. **Công trường + mờ dần nhà trang trí theo tiến độ** (M, ~2 ngày): dùng `getWorldOpenState`, cùng chỗ dựng với bước 1.
+3. **Xe chạy trên đường** (M, ~2–3 ngày, kèm quyết định atlas xe 3D: dùng lại ảnh Pixi làm billboard là rẻ nhất): đường phố trống là chỗ khác biệt dễ thấy nhất.
+4. **`setPlanningReservations`** (M, ~1–2 ngày): chỉ là P0 nếu co-op chung là chế độ mặc định; ngoài ra P1.
+
+P1 sau đó: đèn giao thông + người đi bộ qua vạch, hậu cần kho/xe tải, mặt tiền civic/nhà phụ còn thiếu. P2: ô mưa, sấm/gió, bóng chân, `adaptResolution`.
+
+Ước lượng công là phỏng đoán từ kích thước code Pixi tương ứng (`updateLogistics` ~190 dòng, v.v.), chưa thử làm.

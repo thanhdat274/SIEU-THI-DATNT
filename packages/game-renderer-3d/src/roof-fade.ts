@@ -2,6 +2,8 @@
 export const ROOF_FADE_SECONDS = 0.2;
 /** Alpha tường tòa đang che người chơi. */
 export const OCCLUDER_ALPHA = 0.35;
+/** Alpha tường mặt tiền + biển hiệu khi người chơi đang ở trong tòa (mái thì mờ hẳn). */
+export const FACADE_ALPHA = 0.25;
 /** Dưới ngưỡng này coi như trong suốt hẳn → isVisible = false. */
 export const ALPHA_HIDDEN = 0.01;
 
@@ -50,4 +52,9 @@ const isMainRoof = (r: RoofRef): boolean => !r.warehouse && (r.id === 'main' || 
  */
 export function shouldOpenRoof(r: RoofRef, inside: readonly RoofRef[]): boolean {
   return inside.some(i => i === r || (i.warehouse && isMainRoof(r)) || (r.warehouse && isMainRoof(i)));
+}
+
+/** Alpha mặt tiền/biển theo alpha mái: mái đặc → 1, mái đã bóc (0) → FACADE_ALPHA. Dùng chung nhịp mờ của mái. */
+export function facadeAlpha(roofAlpha: number): number {
+  return FACADE_ALPHA + (1 - FACADE_ALPHA) * roofAlpha;
 }

@@ -1,6 +1,6 @@
 # Kế hoạch chuyển sang 3D (Babylon.js, phong cách pixel nổi khối)
 
-> Trạng thái: A ✅, B ✅ (khung 3D chạy bằng `?r=3d`). Ngày lập: 2026-10-19.
+> Trạng thái: A ✅, B ✅, C1–C4 ✅ (bản đầu: dựng bằng code, chưa có asset Kenney 3D), C5 chưa làm, H1 ✅ (3D là mặc định từ 2026-10-21; `?r=2d` hoặc cài đặt để về 2D cổ điển). Ngày lập: 2026-10-19.
 > Nguyên tắc: mỗi bước là một thay đổi nhỏ, chạy được, test được, có thể dừng ở bất kỳ bước nào mà game vẫn chơi được.
 
 ## 0. Quyết định nền
@@ -112,8 +112,14 @@ Tạo package mới `packages/game-renderer-3d` (không sửa package Pixi).
 
 ## Giai đoạn H — Thay hẳn Pixi
 
-**H1.** 3D thành mặc định; Pixi còn trong cài đặt "Đồ họa nhẹ" 1–2 bản.
-**H2.** Gỡ code Pixi không dùng, cập nhật `ARCHITECTURE.md`, `ART-BIBLE.md`.
+**H1.** ✅ (2026-10-21) 3D thành mặc định; Pixi còn trong cài đặt "Đồ họa: 3D / 2D cổ điển" (Sổ quản lý → Tiện ích & Lưu trữ, lưu localStorage `renderer`; `?r=2d|3d` thắng localStorage). Không có WebGL hoặc khởi tạo 3D lỗi thì tự quay về 2D (`apps/web/src/renderer-choice.ts`, có test).
+  - Hạng mục P0 đã làm cho H1 (kiểm kê 2D↔3D ở `tổng hợp.md`): biển lô + vùng khóa + công trường + `showWaveOverlay` (`wave-decor.ts`, `world-decor-3d.ts`), xe chạy trên đường và xe khách đỗ (`vehicle-view.ts`, `vehicles-3d.ts`), bóng quy hoạch co-op (`setPlanningReservations`).
+**H2.** Gỡ code Pixi không dùng, cập nhật `ARCHITECTURE.md`, `ART-BIBLE.md`. Chưa làm: Pixi còn là đường lui nên giữ.
+
+**Còn lại sau H1 (chưa làm)**
+- P1: đèn giao thông + vạch qua đường (`getIntersectionSignals`, `STORE_FRONT_CROSSWALK`); người đi bộ qua vạch trước tiệm (`getStreetPedestrians`); hậu cần kho (xe tải giao hàng, nhân viên bê thùng, bến bốc dỡ, `updateLogistics`); mặt tiền nhà phụ/civic ngày-đêm/đồ treo tường/trang trí phía đông; đèn pha/đèn hậu xe ban đêm; xe khách đỗ đổi hướng theo camera; nhà trang trí mờ dần theo tiến độ công trường.
+- P2: ô/áo mưa (`RainGear`), sấm + gió đung đưa cây/biển, bóng chân nhân vật + quầng sáng cửa, tự hạ độ phân giải (`adaptResolution`), rung màn hình, hoạt cảnh công trường (tay máy xúc, công nhân đi lại), `locateWarehouse` bay tới kho thay vì chỉ về người chơi.
+- Đo lại FPS thật ở cửa sổ có focus và GPU thật (số đo 21/10 chỉ là chi phí mỗi khung trong pane không focus).
 
 ---
 

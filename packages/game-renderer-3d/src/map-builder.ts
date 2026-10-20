@@ -45,8 +45,11 @@ export interface RoofInfo {
   id: string;
   /** Khối kho gắn sau tiệm chính (không có `building`). */
   warehouse: boolean;
-  /** Mái + tường mặt tiền: mờ về 0 khi người chơi vào tòa. */
+  /** Mái: mờ về 0 khi người chơi vào tòa. */
   meshes: Mesh[];
+  /** Tường mặt tiền + biển hiệu: mờ về FACADE_ALPHA (không biến mất) khi người chơi vào tòa. */
+  facadeMeshes: Mesh[];
+  facadeMaterials: StandardMaterial[];
   /** Tường thân tòa: chỉ mờ khi tòa che người chơi. */
   wallMeshes: Mesh[];
   /** Vật liệu RIÊNG của tòa (clone) để đổi alpha không lan sang tòa khác. */
@@ -58,7 +61,8 @@ export interface RoofInfo {
   top: number;
   x0: number; x1: number; z0: number; z1: number;
 }
-export interface BuiltMap { meshes: Mesh[]; roofs: RoofInfo[] }
+/** `roadMaterial`/`lampMaterial`: vật liệu mặt đường và đầu đèn đường, để sky/weather đổi theo giờ và mưa. */
+export interface BuiltMap { meshes: Mesh[]; roofs: RoofInfo[]; roadMaterial: StandardMaterial | null; lampMaterial: StandardMaterial | null }
 
 interface Footprint { visual: BuildingVisual; name: string; building?: MapBuilding; walls: number[]; x0: number; x1: number; y0: number; y1: number }
 
@@ -186,7 +190,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     roof.material = roofMat;
     roof.metadata = { buildingId };
     meshes.push(roof);
-    const roofInfo: RoofInfo = { meshes: [roof], wallMeshes, fadeMaterials: [roofMat], wallMaterials: [wallMat], id: buildingId, warehouse: !f.building, alpha: 1, wallAlpha: 1, top: v.wallHeight + 0.25, x0: f.x0, x1: f.x1 + 1, z0: f.y0, z1: f.y1 + 1 };
+    const roofInfo: RoofInfo = { meshes: [roof], facadeMeshes: [], facadeMaterials: [], wallMeshes, fadeMaterials: [roofMat], wallMaterials: [wallMat], id: buildingId, warehouse: !f.building, alpha: 1, wallAlpha: 1, top: v.wallHeight + 0.25, x0: f.x0, x1: f.x1 + 1, z0: f.y0, z1: f.y1 + 1 };
     roofs.push(roofInfo);
 
     const b = f.building;
@@ -212,10 +216,10 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     facadeMesh.material = facadeMat;
     facadeMesh.metadata = { buildingId };
     facadeMesh.thinInstanceEnablePicking = true;
-    roofInfo.fadeMaterials.push(facadeMat);
+    roofInfo.facadeMaterials.push(facadeMat);
     setMatrices(facadeMesh, facade);
     meshes.push(facadeMesh);
-    roofInfo.meshes.push(facadeMesh);
+    roofInfo.facadeMeshes.push(facadeMesh);
     if (b.awning) {
       const ax0 = b.awning.x0 / TILE_SIZE;
       const ax1 = b.awning.x1 / TILE_SIZE;
@@ -233,7 +237,10 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     const sign = createSignPlane(scene, `sign_${f.name}`, signW, SIGN_HEIGHT);
     sign.position.set(signX, v.wallHeight + 0.25 + SIGN_HEIGHT / 2, front + 0.06);
     sign.metadata = { buildingId };
-    sign.material = signMaterial(scene, `sign_${f.name}`, f.name, v.signBg, v.signText, signW / SIGN_HEIGHT);
+    const signMat = signMaterial(scene, `sign_${f.name}`, f.name, v.signBg, v.signText, signW / SIGN_HEIGHT);
+    sign.material = signMat;
+    roofInfo.facadeMeshes.push(sign);
+    roofInfo.facadeMaterials.push(signMat);
     meshes.push(sign);
   }
 
@@ -270,7 +277,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
   }
 
   for (const m of meshes) m.freezeWorldMatrix();
-  return { meshes, roofs };
+  return { meshes, roofs, roadMaterial: mats.get(GROUND_COLORS.street) ?? null, lampMaterial: STREET_LAMP_TILES.length ? mats.get('#ffe9a8e') ?? null : null };
 }
 
 /** Thin instances đặt tại các cặp toạ độ thế giới (x, z) liên tiếp trong `xz`, nâng lên `y`. */

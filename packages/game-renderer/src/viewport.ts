@@ -2875,6 +2875,8 @@ export class PixiGameViewport implements GameViewport {
     return this.camera.targetZoom;
   }
 
+  public clearBuildingSelection(): void {}
+
   public locateWarehouse(): void {
     const p=this.simulation.getPlayerData().position;
     const inWarehouse=isInWarehouse(p);

@@ -116,4 +116,7 @@ import './roof-fade.test';
 import './fixture-shapes.test';
 import './shelf-stock.test';
 import './sign-plane.test';
+import './sky-3d.test';
 import './actor-sprite.test';
+import './wave-decor.test';
+import './vehicle-view.test';

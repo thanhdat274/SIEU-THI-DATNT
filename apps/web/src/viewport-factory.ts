@@ -1,13 +1,15 @@
 import { PixiGameViewport, type GameViewport, type GameViewportOptions } from '@game/renderer';
+import { chooseRenderer, detectWebGL, readStoredRenderer, resolveRendererPreference, type RendererKind } from './renderer-choice';
 
-export type RendererKind = 'pixi' | '3d';
+export type { RendererKind };
 
-/** Đọc renderer muốn dùng: `?r=3d` trên URL, hoặc localStorage `renderer`; mặc định Pixi. */
+/** Renderer sẽ dùng: `?r=2d|3d` trên URL, hoặc localStorage `renderer`; mặc định 3D, không có WebGL thì 2D. */
 export function preferredRenderer(): RendererKind {
   try {
-    const fromUrl = new URLSearchParams(window.location.search).get('r');
-    const value = fromUrl ?? window.localStorage.getItem('renderer');
-    return value === '3d' ? '3d' : 'pixi';
+    const preferred = resolveRendererPreference(window.location.search, readStoredRenderer(window.localStorage));
+    const webgl = detectWebGL(() => document.createElement('canvas'));
+    if (preferred === '3d' && !webgl) console.warn('Trình duyệt không có WebGL, dùng đồ họa 2D cổ điển.');
+    return chooseRenderer(preferred, webgl);
   } catch {
     return 'pixi';
   }
