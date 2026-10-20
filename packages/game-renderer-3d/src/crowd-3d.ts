@@ -4,7 +4,7 @@ import { NeighborhoodLife, weekdayOf, hashSeed, type GameSimulation } from '@gam
 import { detailForZoom } from '@game/data';
 import { resolveWeatherQuality } from '@game/renderer';
 import { TILE_SIZE, getFixtureDimensions, type Direction } from '@game/shared';
-import type { ActorAtlas } from './actor-atlas';
+import { createActorSprite, type ActorAtlas } from './actor-atlas';
 import { billboardCenter, directionFromDelta, facingForCamera, isoAlpha, npcFrameKey, pixelToWorld, walkerLookFor } from './coords';
 import type { RoofInfo } from './map-builder';
 
@@ -56,7 +56,7 @@ export class Crowd3D {
   private acquire(): Sprite {
     const reused = this.pool.pop();
     if (reused) { reused.isVisible = true; return reused; }
-    const sprite = new Sprite('npc', this.atlas.manager);
+    const sprite = createActorSprite('npc', this.atlas.manager);
     sprite.isPickable = false;
     return sprite;
   }

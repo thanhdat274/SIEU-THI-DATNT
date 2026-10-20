@@ -1,3 +1,4 @@
+import { Sprite } from '@babylonjs/core/Sprites/sprite';
 import { SpriteManager } from '@babylonjs/core/Sprites/spriteManager';
 import { Constants } from '@babylonjs/core/Engines/constants';
 import type { Scene } from '@babylonjs/core/scene';
@@ -99,4 +100,15 @@ export async function createActorAtlas(scene: Scene): Promise<ActorAtlas> {
   );
   manager.texture.updateSamplingMode(Constants.TEXTURE_NEAREST_SAMPLINGMODE);
   return { manager, frames };
+}
+
+/**
+ * Tạo sprite nhân vật dùng chung cho mọi nơi. Hệ tay phải (scene.useRightHandedSystem) làm SpriteManager vẽ
+ * sprite lật ngang so với PNG nên phải đặt invertU; sửa một chỗ này thì người chơi, bạn co-op, khách và NPC cùng đúng
+ * và vẫn đúng khi xoay camera (hướng 'left' của facingFromMovement không đổi).
+ */
+export function createActorSprite(name: string, manager: SpriteManager): Sprite {
+  const sprite = new Sprite(name, manager);
+  sprite.invertU = manager.texture.getScene()?.useRightHandedSystem === true;
+  return sprite;
 }

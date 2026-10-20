@@ -116,3 +116,4 @@ import './roof-fade.test';
 import './fixture-shapes.test';
 import './shelf-stock.test';
 import './sign-plane.test';
+import './actor-sprite.test';

@@ -1,7 +1,7 @@
 import { Sprite } from '@babylonjs/core/Sprites/sprite';
 import { TILE_SIZE, type Direction, type Vector2D } from '@game/shared';
 import { billboardCenter, facingFromMovement, isoAlpha, pixelToWorld } from './coords';
-import type { ActorAtlas } from './actor-atlas';
+import { createActorSprite, type ActorAtlas } from './actor-atlas';
 
 /** Chiều rộng và chiều cao logic (pixel) của khung nhân vật trong atlas LimeZu (chars.json). */
 export const ACTOR_FRAME_WIDTH = 32;
@@ -39,12 +39,12 @@ export class Actors3D {
     const manager = atlas.manager;
     this.availableKeys = atlas.frames;
 
-    const player = new Sprite('player', manager);
+    const player = createActorSprite('player', manager);
     player.width = ACTOR_WORLD_WIDTH;
     player.height = ACTOR_WORLD_HEIGHT;
     player.cellRef = 'player_down_idle_0';
 
-    const partner = new Sprite('partner', manager);
+    const partner = createActorSprite('partner', manager);
     partner.width = ACTOR_WORLD_WIDTH;
     partner.height = ACTOR_WORLD_HEIGHT;
     partner.cellRef = 'partner_down_idle_0';
