@@ -22,6 +22,11 @@ interface Group {
   alpha: number;
 }
 
+/** Chỉ số mái chứa điểm (x, z); -1 = ngoài trời hoặc tòa mở không có mái. */
+export function roofIndexAt(roofs: readonly RoofInfo[], x: number, z: number): number {
+  return roofs.findIndex(r => x >= r.x0 && x < r.x1 && z >= r.z0 && z < r.z1);
+}
+
 /**
  * Fixture (kệ, quầy, tủ lạnh, bàn...) dựng bằng thin instances: mỗi (mái, màu) một mesh hộp đơn vị, mỗi hộp là một instance.
  * Chỉ dựng lại khi chữ ký danh sách fixture đổi; fixture trong tòa còn mái thì ẩn, hiện dần khi mái bóc.
@@ -61,10 +66,6 @@ export class Fixtures3D {
     this.groups.clear();
   }
 
-  private roofIndexAt(x: number, z: number): number {
-    return this.roofs.findIndex(r => x >= r.x0 && x < r.x1 && z >= r.z0 && z < r.z1);
-  }
-
   private groupFor(roof: number, box: FixtureBox): Group {
     const key = `${roof}|${box.color}${box.emissive ? 'e' : ''}`;
     let g = this.groups.get(key);
@@ -88,7 +89,7 @@ export class Fixtures3D {
       if (fix.parentId) continue;
       const boxes = fixtureBoxes(fix);
       // Mái chứa tâm fixture; fixture ngoài mọi mái (hoặc tòa mở không có mái) luôn hiện.
-      const roof = boxes.length ? this.roofIndexAt(boxes[0].cx, boxes[0].cz) : -1;
+      const roof = boxes.length ? roofIndexAt(this.roofs, boxes[0].cx, boxes[0].cz) : -1;
       for (const b of boxes) {
         const g = this.groupFor(roof, b);
         let list = matrices.get(g);

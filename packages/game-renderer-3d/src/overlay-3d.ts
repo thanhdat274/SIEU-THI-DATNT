@@ -4,7 +4,7 @@ import type { Scene } from '@babylonjs/core/scene';
 import type { GameSimulation } from '@game/core';
 import { MAP_WIDTH, PRODUCT_MAP, productPixels } from '@game/data';
 import { TILE_SIZE } from '@game/shared';
-import { pixelToWorld } from './coords';
+import { cameraUp, isoAlpha, pixelToWorld } from './coords';
 import type { RoofInfo } from './map-builder';
 import { hiddenByRoof } from './crowd-3d';
 import { ACTOR_WORLD_HEIGHT, type PartnerAvatarInfo } from './actors-3d';
@@ -267,7 +267,7 @@ export class Overlay3D {
 
   public update(
     elapsed: number,
-    _quarter: number,
+    quarter: number,
     cameraBeta: number,
     roofs: readonly RoofInfo[],
     partnerAvatar?: PartnerAvatarInfo | null,
@@ -289,7 +289,9 @@ export class Overlay3D {
     this.viewport.height = ch;
 
     const transformMatrix = this.scene.getTransformMatrix();
-    const headHeight = ACTOR_WORLD_HEIGHT / Math.sin(cameraBeta);
+    // Đầu sprite billboard = chân + H·(vector lên của camera): đúng cả ortho lẫn phối cảnh (chiếu qua getTransformMatrix).
+    const up = cameraUp(isoAlpha(quarter), cameraBeta);
+    const headDx = up.x * ACTOR_WORLD_HEIGHT, headDy = up.y * ACTOR_WORLD_HEIGHT, headDz = up.z * ACTOR_WORLD_HEIGHT;
 
     // 1. Cập nhật floating gains
     for (let i = this.floatingGains.length - 1; i >= 0; i--) {
@@ -347,7 +349,7 @@ export class Overlay3D {
         continue;
       }
 
-      this.tempVector.set(world.x, headHeight, world.z);
+      this.tempVector.set(world.x + headDx, headDy, world.z + headDz);
       Vector3.ProjectToRef(this.tempVector, Matrix.IdentityReadOnly, transformMatrix, this.viewport, this.projVector);
 
       const offScreen =
@@ -442,7 +444,7 @@ export class Overlay3D {
       }
 
       const kw = pixelToWorld(keeper.position.x, keeper.position.y);
-      this.tempVector.set(kw.x, headHeight + 0.1, kw.z);
+      this.tempVector.set(kw.x + headDx, headDy + 0.1, kw.z + headDz);
       Vector3.ProjectToRef(this.tempVector, Matrix.IdentityReadOnly, transformMatrix, this.viewport, this.projVector);
 
       const offScreen =
@@ -490,7 +492,7 @@ export class Overlay3D {
 
       this.partnerTag.textContent = partnerAvatar.name;
       const pw = pixelToWorld(partnerAvatar.position.x, partnerAvatar.position.y);
-      this.tempVector.set(pw.x, headHeight, pw.z);
+      this.tempVector.set(pw.x + headDx, headDy, pw.z + headDz);
       Vector3.ProjectToRef(this.tempVector, Matrix.IdentityReadOnly, transformMatrix, this.viewport, this.projVector);
 
       const offScreen =

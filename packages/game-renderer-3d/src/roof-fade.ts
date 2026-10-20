@@ -38,3 +38,16 @@ export function rayHitsBox(origin: Vec, dir: Vec, b: Box): boolean {
   }
   return true;
 }
+
+/** Thông tin tối thiểu của một khối mái để quyết định bóc mái. */
+export interface RoofRef { id: string; warehouse: boolean }
+
+const isMainRoof = (r: RoofRef): boolean => !r.warehouse && (r.id === 'main' || /^grocery_main/.test(r.id));
+
+/**
+ * Mái `r` có được bóc khi người chơi đang đứng trong các khối `inside` không: chỉ tòa đang đứng, cộng với kho thông với nó
+ * (khối kho ↔ tiệm chính, hai chiều). Tòa chỉ kề sát (chung tường) thì GIỮ mái.
+ */
+export function shouldOpenRoof(r: RoofRef, inside: readonly RoofRef[]): boolean {
+  return inside.some(i => i === r || (i.warehouse && isMainRoof(r)) || (r.warehouse && isMainRoof(i)));
+}

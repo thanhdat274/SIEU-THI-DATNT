@@ -5,17 +5,19 @@ import { CreateGround } from '@babylonjs/core/Meshes/Builders/groundBuilder';
 import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder';
 import { CreateCylinder } from '@babylonjs/core/Meshes/Builders/cylinderBuilder';
 import { CreateIcoSphere } from '@babylonjs/core/Meshes/Builders/icoSphereBuilder';
-import { CreatePlane } from '@babylonjs/core/Meshes/Builders/planeBuilder';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import '@babylonjs/core/Meshes/thinInstanceMesh';
 import { TILE_SIZE, type GameTileMap, type MapBuilding } from '@game/shared';
+import { createSignPlane } from './sign-plane';
 import { BUILDING_VISUALS, STREET_LAMP_TILES, TREE_PROPS, buildingTypeOfInstance, type BuildingVisual } from '@game/data';
 
 /** Mã ô lớp `walls`: 7 là gốc cây (vẽ cây riêng), còn lại là tường. */
 const WALL_TREE = 7;
+/** Mã ô lớp `walls` của tường nhà kho (game-data/map.ts) — luôn thuộc khối kho, kể cả khi nằm trong biên một tòa kề bên. */
+const WALL_WAREHOUSE = 10;
 const WAREHOUSE_VISUAL: BuildingVisual = { wall: '#cfc3a8', roof: '#6d6a63', awning: ['#6d6a63', '#6d6a63'], signBg: '#444', signText: '#fff', wallHeight: 1.8 };
 const SIDEWALK_HEIGHT = 0.08;
 const SIGN_HEIGHT = 0.75;
@@ -39,6 +41,10 @@ export function tileKind(id: number, worldY: number): TileKind {
 
 /** Mái và tường mặt tiền một tòa (hộp ô, gồm cả tường) — ẩn khi người chơi đứng trong để nhìn thấy bên trong. */
 export interface RoofInfo {
+  /** Mã tòa (buildingId; khối kho dùng 'main' vì bấm vào kho là chọn tiệm chính). */
+  id: string;
+  /** Khối kho gắn sau tiệm chính (không có `building`). */
+  warehouse: boolean;
   /** Mái + tường mặt tiền: mờ về 0 khi người chơi vào tòa. */
   meshes: Mesh[];
   /** Tường thân tòa: chỉ mờ khi tòa che người chơi. */
@@ -92,7 +98,10 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
   let streetMax = -Infinity;
   for (let y = oy; y < oy + height; y++) {
     for (let x = ox; x < ox + width; x++) {
-      const kind = tileKind(at(ground, x, y), y);
+      let kind = tileKind(at(ground, x, y), y);
+      // Ô có tường mà nền không phải sàn tiệm/kho (vỉa hè, cỏ, đường, ô trống) → lát sàn màu kho, không để tường đứng trên cỏ.
+      const wallHere = at(walls, x, y);
+      if (wallHere && wallHere !== WALL_TREE && kind !== 'store' && kind !== 'warehouse') kind = 'warehouse';
       let list = tiles.get(kind);
       if (!list) tiles.set(kind, list = []);
       list.push(x, y);
@@ -130,12 +139,23 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     const b = f.building?.bounds;
     return b && x >= b.left && x <= b.right && y >= (f.building?.top ?? b.top) && y <= b.bottom;
   });
+  // Tường lọt ngoài biên mọi tòa (vòng tường quanh ô sàn mở rộng `floorTiles`): thuộc tòa có ô sàn kề 8 hướng.
+  const floorOwner = new Map<string, Footprint>();
+  for (const f of footprints) for (const t of f.building?.floorTiles ?? []) floorOwner.set(`${t.x},${t.y}`, f);
+  const ownerByFloor = (x: number, y: number): Footprint | undefined => {
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const f = floorOwner.get(`${x + dx},${y + dy}`);
+      if (f) return f;
+    }
+    return undefined;
+  };
   const grow = (f: Footprint, x: number, y: number) => { f.x0 = Math.min(f.x0, x); f.x1 = Math.max(f.x1, x); f.y0 = Math.min(f.y0, y); f.y1 = Math.max(f.y1, y); };
   for (let y = oy; y < oy + height; y++) {
     for (let x = ox; x < ox + width; x++) {
       const w = at(walls, x, y);
       const g = at(ground, x, y);
-      const f = owner(x, y);
+      // Tường kho (mã 10) luôn của khối kho, dù cột chung nằm trong biên tòa kề (vd. tiệm xôi biên x 0..6 ôm cột tường tây của kho).
+      const f = w === WALL_WAREHOUSE ? undefined : (owner(x, y) ?? (w ? ownerByFloor(x, y) : undefined));
       if (w && w !== WALL_TREE) { const t = f ?? warehouse; t.walls.push(x + 0.5, y + 0.5); grow(t, x, y); }
       else if (g === 3 && f) grow(f, x, y);
       else if (g === 9 && !f) grow(warehouse, x, y);
@@ -166,7 +186,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     roof.material = roofMat;
     roof.metadata = { buildingId };
     meshes.push(roof);
-    const roofInfo: RoofInfo = { meshes: [roof], wallMeshes, fadeMaterials: [roofMat], wallMaterials: [wallMat], alpha: 1, wallAlpha: 1, top: v.wallHeight + 0.25, x0: f.x0, x1: f.x1 + 1, z0: f.y0, z1: f.y1 + 1 };
+    const roofInfo: RoofInfo = { meshes: [roof], wallMeshes, fadeMaterials: [roofMat], wallMaterials: [wallMat], id: buildingId, warehouse: !f.building, alpha: 1, wallAlpha: 1, top: v.wallHeight + 0.25, x0: f.x0, x1: f.x1 + 1, z0: f.y0, z1: f.y1 + 1 };
     roofs.push(roofInfo);
 
     const b = f.building;
@@ -210,9 +230,8 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     const signW = Math.max(3, Math.min(w - 0.6, 7));
     const doorMid = doors.length ? doors.reduce((s, t) => s + t.x + 0.5, 0) / doors.length : f.x0 + w / 2;
     const signX = Math.max(f.x0 + signW / 2, Math.min(f.x1 + 1 - signW / 2, doorMid));
-    const sign = CreatePlane(`sign_${f.name}`, { width: signW, height: SIGN_HEIGHT }, scene);
+    const sign = createSignPlane(scene, `sign_${f.name}`, signW, SIGN_HEIGHT);
     sign.position.set(signX, v.wallHeight + 0.25 + SIGN_HEIGHT / 2, front + 0.06);
-    sign.rotation.y = Math.PI;
     sign.metadata = { buildingId };
     sign.material = signMaterial(scene, `sign_${f.name}`, f.name, v.signBg, v.signText, signW / SIGN_HEIGHT);
     meshes.push(sign);
@@ -306,10 +325,6 @@ function signMaterial(scene: Scene, name: string, text: string, bg: string, fg: 
   draw();
   // Font web có thể chưa tải xong lúc dựng cảnh: vẽ lại khi có.
   if (typeof document !== 'undefined' && document.fonts) void document.fonts.load(`20px ${SIGN_FONT}`).then(draw, () => {});
-  // Ghi chú hệ tay phải (scene.useRightHandedSystem): right-handed làm chuẩn nguồn phản chiếu NGANG, nên
-  // chữ biển hiệu bị in ngược (đọc phải→trái) nếu không bù. Bù bằng uScale=-1 (+ wrapU). KHÔNG cần lật dọc.
-  tex.wrapU = Texture.WRAP_ADDRESSMODE;
-  tex.uScale = -1;
   const m = new StandardMaterial(name, scene);
   m.emissiveTexture = tex;
   m.disableLighting = true;

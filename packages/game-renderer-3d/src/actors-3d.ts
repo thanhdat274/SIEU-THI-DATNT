@@ -1,6 +1,6 @@
 import { Sprite } from '@babylonjs/core/Sprites/sprite';
 import { TILE_SIZE, type Direction, type Vector2D } from '@game/shared';
-import { facingFromMovement, pixelToWorld } from './coords';
+import { billboardCenter, facingFromMovement, isoAlpha, pixelToWorld } from './coords';
 import type { ActorAtlas } from './actor-atlas';
 
 /** Chiều rộng và chiều cao logic (pixel) của khung nhân vật trong atlas LimeZu (chars.json). */
@@ -72,9 +72,9 @@ export class Actors3D {
     this.animTimer += elapsed;
     const reducedMotion = this.motionQuery?.matches ?? false;
 
-    // Chân sprite chạm đất tại toạ độ (pos.x, pos.z). Do billboard quay theo camera nghiêng góc CAMERA_BETA,
-    // tâm sprite nâng lên (height / 2) / sin(CAMERA_BETA) để mép dưới trùng với hình chiếu mặt đất.
-    const feetY = (ACTOR_WORLD_HEIGHT / 2) / Math.sin(cameraBeta);
+    // Chân sprite chạm đất tại (x, z): billboard song song mặt phẳng màn hình nên tâm = chân + (H/2)·(vector lên
+    // của camera) → mép dưới trùng chân, đúng cả với camera phối cảnh.
+    const alpha = isoAlpha(quarter);
 
     // 1. Cập nhật Player
     const playerMode = playerMoving ? 'walk' : 'idle';
@@ -91,7 +91,8 @@ export class Actors3D {
     }
 
     const playerWorld = pixelToWorld(playerRenderPixel[0], playerRenderPixel[1]);
-    this.playerSprite.position.set(playerWorld.x, feetY, playerWorld.z);
+    const pc = billboardCenter(playerWorld.x, playerWorld.z, ACTOR_WORLD_HEIGHT, alpha, cameraBeta);
+    this.playerSprite.position.set(pc.x, pc.y, pc.z);
 
     // 2. Cập nhật Partner (co-op)
     if (partnerAvatar) {
@@ -128,7 +129,8 @@ export class Actors3D {
       }
 
       const partnerWorld = pixelToWorld(shown.x, shown.y);
-      this.partnerSprite.position.set(partnerWorld.x, feetY, partnerWorld.z);
+      const qc = billboardCenter(partnerWorld.x, partnerWorld.z, ACTOR_WORLD_HEIGHT, alpha, cameraBeta);
+      this.partnerSprite.position.set(qc.x, qc.y, qc.z);
     } else {
       this.partnerSprite.isVisible = false;
       this.partnerShown = null;

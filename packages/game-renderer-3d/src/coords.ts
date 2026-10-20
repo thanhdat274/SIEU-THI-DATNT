@@ -27,12 +27,52 @@ export function stepZoom(current: number, delta: number): number {
   return ZOOM_LEVELS[next];
 }
 
-/** Góc camera (alpha của ArcRotateCamera) cho hướng nhìn thứ `quarter` (0..3), chéo 45° isometric.
- *  Mỗi quarter lệch 90°. Quarter 0: camera đặt ở hướng đông-nam của tâm nhìn — thấy cùng lúc mặt tiền
- *  (phía nam) và mặt hông phía đông của tòa nhà, bản đồ chạy chéo (hình thoi) trên màn hình. */
+/** Góc nghiêng camera (beta của ArcRotateCamera, rad): ~52° từ phương thẳng đứng. */
+export const CAMERA_BETA = 0.9;
+/** Góc nhìn dọc của camera phối cảnh (rad, ~29°): nhỏ để giữ cảm giác "diorama", vẫn lộ mặt hông tòa lệch tâm. */
+export const CAMERA_FOV = 0.5;
+
+/** Nửa chiều cao vùng nhìn (đơn vị thế giới) tại tâm nhìn ở bậc zoom `zoom`. */
+export function zoomHalfHeight(zoom: number): number { return ZOOM_BASE_TILES / zoom / 2; }
+
+/** Bán kính camera (khoảng cách tới tâm) để chiều cao khung nhìn tại tâm đúng bằng chế độ ortho cũ: halfHeight / tan(fov/2). */
+export function zoomRadius(zoom: number, fov: number = CAMERA_FOV): number {
+  return zoomHalfHeight(zoom) / Math.tan(fov / 2);
+}
+
+/** Góc camera (alpha của ArcRotateCamera, hệ tay phải) cho hướng nhìn thứ `quarter` (0..3). Mỗi quarter lệch 90°.
+ *  Quarter 0: camera ở phía nam (+Z) của tâm nhìn, nhìn về -Z → trục X bản đồ nằm ngang màn hình (X tăng → sang phải),
+ *  Z tăng → xuống dưới: hướng màn hình = hướng bản đồ, đường nằm ngang như bản 2D. */
 export function isoAlpha(quarter: number): number {
   const q = ((quarter % 4) + 4) % 4;
-  return Math.PI / 4 - q * (Math.PI / 2);
+  return Math.PI / 2 - q * (Math.PI / 2);
+}
+
+/** Vector "lên" của camera (đơn vị) trong thế giới, từ alpha/beta: (-cosα·cosβ, sinβ, -sinα·cosβ).
+ *  Sprite billboard đặt tâm tại chân + (H/2)·up thì mép dưới trùng đúng chân, cả ortho lẫn perspective. */
+export function cameraUp(alpha: number, beta: number): { x: number; y: number; z: number } {
+  return { x: -Math.cos(alpha) * Math.cos(beta), y: Math.sin(beta), z: -Math.sin(alpha) * Math.cos(beta) };
+}
+
+/** Tâm sprite billboard cao `height` có chân tại mặt đất (x, z). */
+export function billboardCenter(x: number, z: number, height: number, alpha: number, beta: number): { x: number; y: number; z: number } {
+  const u = cameraUp(alpha, beta);
+  const h = height / 2;
+  return { x: x + u.x * h, y: u.y * h, z: z + u.z * h };
+}
+
+/** Bán kính (thế giới, quanh tâm nhìn) đủ phủ phần mặt đất camera phối cảnh thấy — cho Crowd3D chọn vùng chạy chi tiết. */
+export function groundViewRadius(zoom: number, aspect: number, beta: number, fov: number = CAMERA_FOV): number {
+  const r = zoomRadius(zoom, fov);
+  const hc = r * Math.cos(beta);
+  const horiz = r * Math.sin(beta);
+  const half = fov / 2;
+  const depFar = Math.max(0.05, Math.PI / 2 - beta - half);
+  const depNear = Math.PI / 2 - beta + half;
+  const far = hc / Math.tan(depFar) - horiz;
+  const near = horiz - hc / Math.tan(depNear);
+  const lateral = (hc / Math.sin(depFar)) * Math.tan(half) * aspect;
+  return Math.hypot(Math.max(far, near, 0), lateral);
 }
 
 /** Làm tròn giá trị về bội số `step` (khóa camera theo pixel ảo để hình không rung). */
@@ -40,13 +80,23 @@ export function snapTo(value: number, step: number): number {
   return step > 0 ? Math.round(value / step) * step : value;
 }
 
+/** Khóa tâm camera (x, z) theo lưới pixel màn hình tại mặt phẳng tâm: ngang theo `step`, dọc theo `step / sin β`
+ *  (mặt đất bị ép theo góc nghiêng). Phối cảnh không khóa được mọi độ sâu, nhưng tâm/sprite người chơi thì không rung. */
+export function snapGround(x: number, z: number, alpha: number, beta: number, step: number): { x: number; z: number } {
+  const rx = Math.sin(alpha), rz = -Math.cos(alpha);
+  const dx = Math.cos(alpha), dz = Math.sin(alpha);
+  const sr = snapTo(x * rx + z * rz, step);
+  const sd = snapTo(x * dx + z * dz, step / Math.sin(beta));
+  return { x: sr * rx + sd * dx, z: sr * rz + sd * dz };
+}
+
 const FACING_DIRS: readonly Direction[] = ['up', 'right', 'down', 'left'] as const;
 
 /**
  * Hướng quay của sprite theo vector di chuyển trên bản đồ `(dx, dz)` (X = cột, Z = hàng) và góc nhìn camera `quarter`.
- * Với camera chéo 45° (hệ tay phải): đổi vector về hướng màn hình bằng groundBasis (hướng phải/xuống của màn hình
- * chiếu xuống mặt đất), rồi chọn trong 4 hướng (up/down/left/right) hướng gần nhất; nếu trục ngang và trục dọc
- * lớn bằng nhau thì ưu tiên trái/phải.
+ * Đổi vector về hướng màn hình bằng groundBasis (hướng phải/xuống của màn hình chiếu xuống mặt đất, hệ tay phải),
+ * rồi chọn trong 4 hướng (up/down/left/right) hướng gần nhất. Quarter 0: hướng màn hình = hướng bản đồ; quarter lẻ:
+ * camera xoay 90° nên up/down/left/right bản đồ thành right/left/up/down; trục ngang bằng dọc thì ưu tiên trái/phải.
  */
 export function facingFromMovement(dx: number, dz: number, quarter: number): Direction {
   const q = ((quarter % 4) + 4) % 4;
@@ -56,8 +106,7 @@ export function facingFromMovement(dx: number, dz: number, quarter: number): Dir
   const dX = Math.cos(a), dZ = Math.sin(a);
   const sRight = dx * rX + dz * rZ;
   const sDown = dx * dX + dz * dZ;
-  // Camera chéo 45° nên vector cardinal chiếu thành đường chéo → trục ngang/dọc bằng nhau; dùng dung sai để
-  // tránh nhiễu dấu phẩy động, ưu tiên trái/phải khi bằng nhau.
+  // Dung sai tránh nhiễu dấu phẩy động khi vector chéo; ưu tiên trái/phải khi ngang bằng dọc.
   const eps = 1e-9;
   if (Math.abs(sRight) + eps >= Math.abs(sDown)) return sRight >= 0 ? 'right' : 'left';
   return sDown >= 0 ? 'down' : 'up';

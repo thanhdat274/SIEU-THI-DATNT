@@ -2,11 +2,10 @@ import assert from 'node:assert/strict';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
-import { Camera } from '@babylonjs/core/Cameras/camera';
 import { Vector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 import { Viewport } from '@babylonjs/core/Maths/math.viewport';
 import { getIconSvg, Overlay3D } from './overlay-3d';
-import { isoAlpha } from './coords';
+import { CAMERA_BETA, CAMERA_FOV, cameraUp, isoAlpha, zoomRadius } from './coords';
 import { ACTOR_WORLD_HEIGHT } from './actors-3d';
 
 // 1. Kiểm tra bộ đệm SVG: sinh đúng icon 16x16, có cấu trúc SVG và cache
@@ -29,15 +28,8 @@ assert.ok(fallbackSvg.includes('width="16"'), 'Icon fallback sản phẩm rộng
   const engine = new NullEngine();
   const scene = new Scene(engine);
   const target = new Vector3(15, 0, 15);
-  const camera = new ArcRotateCamera('test-cam', isoAlpha(0), 0.96, 60, target, scene);
-  camera.mode = Camera.ORTHOGRAPHIC_CAMERA;
-  camera.orthoTop = 6;
-  camera.orthoBottom = -6;
-  camera.orthoLeft = -8;
-  camera.orthoRight = 8;
-
-  const headY = ACTOR_WORLD_HEIGHT / Math.sin(0.96);
-  const headPos = new Vector3(15, headY, 15);
+  const camera = new ArcRotateCamera('test-cam', isoAlpha(0), CAMERA_BETA, zoomRadius(2), target, scene);
+  camera.fov = CAMERA_FOV;
   const viewport = new Viewport(0, 0, 800, 600);
   const proj = new Vector3();
 
@@ -45,6 +37,8 @@ assert.ok(fallbackSvg.includes('width="16"'), 'Icon fallback sản phẩm rộng
   for (let q = 0; q < 4; q++) {
     camera.alpha = isoAlpha(q);
     scene.render();
+    const up = cameraUp(isoAlpha(q), CAMERA_BETA);
+    const headPos = new Vector3(15 + up.x * ACTOR_WORLD_HEIGHT, up.y * ACTOR_WORLD_HEIGHT, 15 + up.z * ACTOR_WORLD_HEIGHT);
     Vector3.ProjectToRef(headPos, Matrix.IdentityReadOnly, scene.getTransformMatrix(), viewport, proj);
     results.push({ x: Math.round(proj.x), y: Math.round(proj.y) });
   }
@@ -58,16 +52,15 @@ assert.ok(fallbackSvg.includes('width="16"'), 'Icon fallback sản phẩm rộng
   engine.dispose();
 }
 
-// 2b. Kiểm phép chiếu (hệ tay phải + góc chéo 45°): ở quarter 0, điểm dời +X (đông) có toạ độ x màn hình
+// 2b. Kiểm phép chiếu (hệ tay phải, camera phối cảnh nhìn thẳng từ nam): ở quarter 0, điểm dời +X (đông) có toạ độ x màn hình
 // lớn hơn, điểm dời +Z (nam) có toạ độ y màn hình lớn hơn — khớp bản 2D, không còn lật gương.
 {
   const engine = new NullEngine();
   const scene = new Scene(engine);
   scene.useRightHandedSystem = true;
   const target = new Vector3(0, 0, 0);
-  const camera = new ArcRotateCamera('proj-cam', isoAlpha(0), 0.96, 60, target, scene);
-  camera.mode = Camera.ORTHOGRAPHIC_CAMERA;
-  camera.orthoTop = 6; camera.orthoBottom = -6; camera.orthoLeft = -8; camera.orthoRight = 8;
+  const camera = new ArcRotateCamera('proj-cam', isoAlpha(0), CAMERA_BETA, zoomRadius(2), target, scene);
+  camera.fov = CAMERA_FOV;
   scene.render();
   const viewport = new Viewport(0, 0, 800, 600);
   const o = new Vector3(), px = new Vector3(), pz = new Vector3();
@@ -134,10 +127,8 @@ assert.ok(fallbackSvg.includes('width="16"'), 'Icon fallback sản phẩm rộng
   const engine = new NullEngine();
   const scene = new Scene(engine);
   const target = new Vector3(10, 0, 10);
-  const camera = new ArcRotateCamera('c', isoAlpha(0), 0.96, 60, target, scene);
-  camera.mode = Camera.ORTHOGRAPHIC_CAMERA;
-  camera.orthoTop = 5; camera.orthoBottom = -5;
-  camera.orthoLeft = -5; camera.orthoRight = 5;
+  const camera = new ArcRotateCamera('c', isoAlpha(0), CAMERA_BETA, zoomRadius(2), target, scene);
+  camera.fov = CAMERA_FOV;
 
   const fakeSim = {
     peekCustomers: () => [
@@ -164,7 +155,7 @@ assert.ok(fallbackSvg.includes('width="16"'), 'Icon fallback sản phẩm rộng
 
   // Cập nhật khung hình
   scene.render();
-  overlay.update(0.1, 0, 0.96, []);
+  overlay.update(0.1, 0, CAMERA_BETA, []);
 
   // Kiểm tra font VT323 và màu
   const container = overlay.containerElement as unknown as FakeElement;
@@ -189,7 +180,7 @@ assert.ok(fallbackSvg.includes('width="16"'), 'Icon fallback sản phẩm rộng
   assert.equal(reqBadge.style.display, 'flex');
 
   // Cho thời gian trôi > 1s để floating gain bay hết hạn và được thu hồi vào pool
-  overlay.update(1.2, 0, 0.96, []);
+  overlay.update(1.2, 0, CAMERA_BETA, []);
   assert.equal(floating.style.display, 'none', 'Floating gain đã hết hạn phải ẩn đi');
 
   // Thêm floating gain mới: phải tái sử dụng từ pool (không tạo thêm phần tử thừa)

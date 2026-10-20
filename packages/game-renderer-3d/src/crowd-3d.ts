@@ -5,7 +5,7 @@ import { detailForZoom } from '@game/data';
 import { resolveWeatherQuality } from '@game/renderer';
 import { TILE_SIZE, getFixtureDimensions, type Direction } from '@game/shared';
 import type { ActorAtlas } from './actor-atlas';
-import { directionFromDelta, facingForCamera, npcFrameKey, pixelToWorld, walkerLookFor } from './coords';
+import { billboardCenter, directionFromDelta, facingForCamera, isoAlpha, npcFrameKey, pixelToWorld, walkerLookFor } from './coords';
 import type { RoofInfo } from './map-builder';
 
 /** Vùng nhìn (đơn vị thế giới) để NPC nền chỉ chạy chi tiết gần camera. */
@@ -104,9 +104,9 @@ export class Crowd3D {
       this.scratchColor.set(((tint >> 16) & 255) / 255, ((tint >> 8) & 255) / 255, (tint & 255) / 255, 1);
       sprite.color.copyFrom(this.scratchColor);
     }
-    // Chân sprite chạm đất (xem Actors3D): tâm nâng lên (height / 2) / sin(beta) vì billboard nghiêng theo camera.
-    const feetY = (sprite.height / 2) / Math.sin(ctx.beta);
-    sprite.position.set(world.x, feetY, world.z + (sitting ? 5 / TILE_SIZE : 0));
+    // Chân sprite chạm đất (xem Actors3D): tâm = chân + (H/2)·(vector lên của camera).
+    const c = billboardCenter(world.x, world.z + (sitting ? 5 / TILE_SIZE : 0), sprite.height, isoAlpha(ctx.quarter), ctx.beta);
+    sprite.position.set(c.x, c.y, c.z);
   }
 
   private counterCenter(fixtureId: string | undefined): { x: number; y: number } | null {

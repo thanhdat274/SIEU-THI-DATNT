@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { rayHitsBox, stepAlpha } from './roof-fade';
+import { rayHitsBox, shouldOpenRoof, stepAlpha, type RoofRef } from './roof-fade';
 import { pickTarget } from './tile-target';
 
 assert.equal(stepAlpha(1, 0, 0.1), 0.5);
@@ -19,4 +19,18 @@ assert.deepEqual(pickTarget('main', null), { kind: 'building', id: 'main' });
 assert.deepEqual(pickTarget('main', { kind: 'parcel', id: 'p1' }), { kind: 'building', id: 'main' });
 assert.deepEqual(pickTarget(null, { kind: 'parcel', id: 'p1' }), { kind: 'parcel', id: 'p1' });
 assert.equal(pickTarget(undefined, null), null);
+// Bóc mái: chỉ tòa đang đứng + kho thông với tiệm chính; tòa kề sát giữ mái.
+{
+  const main: RoofRef = { id: 'main', warehouse: false };
+  const kho: RoofRef = { id: 'main', warehouse: true };
+  const xoi: RoofRef = { id: 'xoi', warehouse: false };
+  const snack: RoofRef = { id: 'snack', warehouse: false };
+  const all = [main, kho, xoi, snack];
+  const open = (inside: RoofRef[]) => all.filter(r => shouldOpenRoof(r, inside));
+  assert.deepEqual(open([main]), [main, kho], 'đứng trong tiệm: tiệm + kho');
+  assert.deepEqual(open([kho]), [main, kho], 'đứng trong kho: kho + tiệm');
+  assert.deepEqual(open([xoi]), [xoi], 'đứng trong tiệm xôi sát kho: chỉ xôi');
+  assert.deepEqual(open([snack]), [snack], 'quán kề tiệm chính (chung tường) giữ mái của tiệm/kho');
+  assert.deepEqual(open([]), [], 'ngoài đường: không bóc');
+}
 console.log('PASS roof-fade: alpha mờ dần, tia cắt hộp, chọn mesh tòa ưu tiên hơn ô đất');

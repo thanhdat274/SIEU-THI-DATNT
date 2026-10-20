@@ -108,16 +108,22 @@ function localBoxes(f: Fix): FixtureBox[] {
  * cùng chiều kim đồng hồ như Pixi) và kích thước X/Z đổi chỗ khi 90/270.
  */
 export function fixtureBoxes(f: Fix): FixtureBox[] {
-  const { cx, cz } = fixtureFootprint(f);
   const swap = f.rotation === 90 || f.rotation === 270;
   return localBoxes(f).map(b => {
-    let ox = b.cx;
-    let oz = b.cz;
-    if (f.rotation === 90) { ox = -b.cz; oz = b.cx; }
-    else if (f.rotation === 180) { ox = -b.cx; oz = -b.cz; }
-    else if (f.rotation === 270) { ox = b.cz; oz = -b.cx; }
-    return { ...b, cx: cx + ox, cz: cz + oz, sx: swap ? b.sz : b.sx, sz: swap ? b.sx : b.sz };
+    const p = fixtureLocalToWorld(f, b.cx, b.cz);
+    return { ...b, cx: p.x, cz: p.z, sx: swap ? b.sz : b.sx, sz: swap ? b.sx : b.sz };
   });
+}
+
+/** Độ lệch cục bộ (lx, lz) so với tâm chân diện → toạ độ thế giới (xem quy ước xoay ở fixtureBoxes). */
+export function fixtureLocalToWorld(f: Fix, lx: number, lz: number): { x: number; z: number } {
+  const { cx, cz } = fixtureFootprint(f);
+  let ox = lx;
+  let oz = lz;
+  if (f.rotation === 90) { ox = -lz; oz = lx; }
+  else if (f.rotation === 180) { ox = -lx; oz = -lz; }
+  else if (f.rotation === 270) { ox = lz; oz = -lx; }
+  return { x: cx + ox, z: cz + oz };
 }
 
 /** Chữ ký các fixture gốc (bỏ ô phụ) — đổi khi thêm/xóa/dời/xoay/đổi kiểu; dùng để biết khi nào dựng lại. */

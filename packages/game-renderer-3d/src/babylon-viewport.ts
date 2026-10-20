@@ -1,7 +1,6 @@
 import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
-import { Camera } from '@babylonjs/core/Cameras/camera';
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
 import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
@@ -16,20 +15,19 @@ import { FixedStepSimulationRunner, type GameSimulation } from '@game/core';
 import { WAREHOUSE_BOUNDS } from '@game/data';
 import type { GameTileMap } from '@game/shared';
 import type { GameViewport, GameViewportOptions, MinimapSnapshot, PlanningOverlay } from '@game/renderer';
-import { isoAlpha, pixelToWorld, snapTo, stepZoom, worldToTile, ZOOM_BASE_TILES } from './coords';
+import { CAMERA_BETA, CAMERA_FOV, groundViewRadius, isoAlpha, pixelToWorld, snapGround, stepZoom, worldToTile, zoomHalfHeight, zoomRadius } from './coords';
 import { buildCityMap, type RoofInfo } from './map-builder';
 import { Actors3D } from './actors-3d';
 import { createActorAtlas, type ActorAtlas } from './actor-atlas';
 import { Crowd3D } from './crowd-3d';
 import { Fixtures3D } from './fixtures-3d';
+import { Stock3D } from './stock-3d';
 import { Overlay3D } from './overlay-3d';
 import { pickTarget, resolveTileTarget, type TileTarget } from './tile-target';
-import { ALPHA_HIDDEN, OCCLUDER_ALPHA, rayHitsBox, stepAlpha } from './roof-fade';
+import { ALPHA_HIDDEN, OCCLUDER_ALPHA, rayHitsBox, shouldOpenRoof, stepAlpha } from './roof-fade';
 
 /** Chiều cao khung hình "pixel" (px ảo); canvas thật được phóng lên bằng nearest-neighbour. */
 const PIXEL_TARGET_HEIGHT = 360;
-/** Góc nghiêng camera (beta của ArcRotateCamera, rad): ~55° từ phương thẳng đứng. */
-const CAMERA_BETA = 0.96;
 /** Độ dời chuột (px) vượt qua là kéo (pan) thay vì click — cùng ngưỡng Pixi (viewport-input.ts). */
 const DRAG_THRESHOLD_PX = 4;
 /** Chiều cao khung viền sáng khi chọn tòa (đơn vị thế giới, cao hơn tường ~1.6 để đọc là viền). */
@@ -59,6 +57,8 @@ export class BabylonGameViewport implements GameViewport {
   private actors: Actors3D | null = null;
   private crowd: Crowd3D | null = null;
   private fixtures: Fixtures3D | null = null;
+  private stock: Stock3D | null = null;
+  private soldOutStalls: readonly string[] = [];
   private overlay: Overlay3D | null = null;
   private actorAtlas: ActorAtlas | null = null;
   private openedWaves: readonly string[] = [];
@@ -100,8 +100,9 @@ export class BabylonGameViewport implements GameViewport {
     scene.useRightHandedSystem = true;
     scene.clearColor = Color4.FromHexString('#2b3a2bff');
 
-    const camera = new ArcRotateCamera('cam', isoAlpha(this.quarter), CAMERA_BETA, 60, Vector3.Zero(), scene);
-    camera.mode = Camera.ORTHOGRAPHIC_CAMERA;
+    // Camera phối cảnh (fov dọc CAMERA_FOV); bán kính theo bậc zoom đặt ở applyZoom.
+    const camera = new ArcRotateCamera('cam', isoAlpha(this.quarter), CAMERA_BETA, zoomRadius(this.zoom), Vector3.Zero(), scene);
+    camera.fov = CAMERA_FOV;
     camera.minZ = 0.1;
     camera.maxZ = 500;
 
@@ -120,6 +121,8 @@ export class BabylonGameViewport implements GameViewport {
     this.crowd = new Crowd3D(this.actorAtlas, this.simulation);
     this.overlay = new Overlay3D(this.canvas, this.simulation, scene);
     this.fixtures = new Fixtures3D(scene, this.simulation);
+    this.stock = new Stock3D(scene, this.simulation);
+    this.stock.setStallSoldOut(this.soldOutStalls);
 
     this.prevImageRendering = this.canvas.style.imageRendering;
     this.canvas.style.imageRendering = 'pixelated';
@@ -147,6 +150,7 @@ export class BabylonGameViewport implements GameViewport {
     this.mapMeshes = built.meshes;
     this.roofs = built.roofs;
     this.fixtures?.setRoofs(built.roofs);
+    this.stock?.setMap(built.roofs, this.tileMap.stalls);
   }
 
   /** Khung hình nội bộ ~PIXEL_TARGET_HEIGHT px rồi phóng nguyên lần lên canvas (nearest) → chất pixel. */
@@ -157,18 +161,15 @@ export class BabylonGameViewport implements GameViewport {
     this.engine.resize();
   }
 
-  /** Nửa chiều cao vùng nhìn (đơn vị thế giới) theo zoom; khung ortho theo tỉ lệ canvas. */
-  private halfHeight(): number { return ZOOM_BASE_TILES / this.zoom / 2; }
+  /** Nửa chiều cao vùng nhìn (đơn vị thế giới) tại tâm theo zoom. */
+  private halfHeight(): number { return zoomHalfHeight(this.zoom); }
 
+  /** Zoom = đổi bán kính camera sao cho khung nhìn tại tâm cao đúng bằng ortho cũ (xem zoomRadius). */
   private applyZoom(): void {
     const cam = this.camera;
     if (!cam || !this.engine) return;
-    const half = this.halfHeight();
-    const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
-    cam.orthoTop = half;
-    cam.orthoBottom = -half;
-    cam.orthoLeft = -half * aspect;
-    cam.orthoRight = half * aspect;
+    cam.fov = CAMERA_FOV;
+    cam.radius = zoomRadius(this.zoom);
   }
 
   private renderTick = (): void => {
@@ -193,6 +194,7 @@ export class BabylonGameViewport implements GameViewport {
     if (this.simulation.getIsMoving()) this.pan = { x: 0, z: 0 };
     this.updateRoofFade(elapsed, pos);
     this.fixtures?.update(elapsed);
+    this.stock?.update(elapsed);
     // Sau khi mái đã bóc/đậy: khách trong tòa còn mái thì ẩn.
     const aspect = engine.getRenderWidth() / Math.max(1, engine.getRenderHeight());
     this.crowd?.update(
@@ -203,28 +205,29 @@ export class BabylonGameViewport implements GameViewport {
       {
         centerX: pos.x + this.pan.x,
         centerZ: pos.z + this.pan.z,
-        radius: Math.hypot(this.halfHeight() * aspect, this.halfHeight() / Math.sin(CAMERA_BETA)),
+        radius: groundViewRadius(this.zoom, aspect, CAMERA_BETA),
         zoom: this.zoom,
       },
       this.canvas.clientWidth < 768,
     );
 
-    // Khóa tâm camera theo lưới pixel ảo để mép khối không "bơi" khi camera trượt.
+    // Khóa tâm camera theo lưới pixel ảo (ở mặt phẳng tâm) để sprite/mép khối quanh người chơi không "bơi" khi camera trượt.
     const step = (2 * this.halfHeight()) / Math.max(1, engine.getRenderHeight());
-    cam.target.set(snapTo(pos.x + this.pan.x, step), 0, snapTo(pos.z + this.pan.z, step));
+    const snapped = snapGround(pos.x + this.pan.x, pos.z + this.pan.z, cam.alpha, CAMERA_BETA, step);
+    cam.target.set(snapped.x, 0, snapped.z);
     scene.render();
     this.overlay?.update(elapsed, this.quarter, CAMERA_BETA, this.roofs, this.getPartnerAvatar?.());
   };
 
-  /** Bóc mái mượt: mái + tường mặt tiền mờ dần khi người chơi vào tòa (cùng tòa liền kề), tường tòa che người chơi hạ còn OCCLUDER_ALPHA. */
+  /** Bóc mái mượt: mái + tường mặt tiền mờ dần khi người chơi vào tòa (và kho thông với tiệm chính; tòa kề sát giữ mái), tường tòa che người chơi hạ còn OCCLUDER_ALPHA. */
   private updateRoofFade(elapsed: number, pos: { x: number; z: number }): void {
     const cam = this.camera;
     const inside = this.roofs.filter(r => pos.x >= r.x0 && pos.x < r.x1 && pos.z >= r.z0 && pos.z < r.z1);
-    const touches = (a: RoofInfo, b: RoofInfo) => a.x0 <= b.x1 + 0.5 && b.x0 <= a.x1 + 0.5 && a.z0 <= b.z1 + 0.5 && b.z0 <= a.z1 + 0.5;
-    const toCam = cam ? cam.position.subtract(cam.target).normalize() : null;
     const origin = { x: pos.x, y: 0.9, z: pos.z };
+    // Tia từ người chơi về phía mắt camera (phối cảnh: hướng thật tới vị trí camera, không phải hướng song song).
+    const toCam = cam ? new Vector3(cam.position.x - origin.x, cam.position.y - origin.y, cam.position.z - origin.z).normalize() : null;
     for (const r of this.roofs) {
-      const open = inside.some(i => i === r || touches(i, r));
+      const open = shouldOpenRoof(r, inside);
       const occluding = !open && toCam !== null
         && rayHitsBox(origin, toCam, { x0: r.x0, x1: r.x1, y0: 0, y1: r.top, z0: r.z0, z1: r.z1 });
       r.alpha = stepAlpha(r.alpha, open ? 0 : 1, elapsed);
@@ -293,7 +296,8 @@ export class BabylonGameViewport implements GameViewport {
     this.drag = { x: e.clientX, y: e.clientY };
     const perPx = (2 * this.halfHeight()) / Math.max(1, this.canvas.clientHeight);
     // Kiểu "nắm kéo": cảnh đi theo chuột. Dùng groundBasis (hướng phải/xuống của màn hình chiếu xuống mặt đất);
-    // trục dọc giãn theo góc nghiêng. Hướng kéo chuột giữ nguyên so với trước.
+    // trục dọc giãn theo góc nghiêng. perPx = 2·halfHeight / chiều cao canvas là tỉ lệ ĐÚNG tại mặt phẳng tâm
+    // (bán kính camera = halfHeight / tan(fov/2) nên chiều cao khung tại khoảng cách tới tâm = 2·halfHeight).
     const { right, down } = this.groundBasis();
     const ky = perPx / Math.sin(CAMERA_BETA);
     this.pan.x += -right.x * dx * perPx + (-down.x) * dy * ky;
@@ -488,7 +492,10 @@ export class BabylonGameViewport implements GameViewport {
   public setOpenedWaves(openedWaves: readonly string[]): void { this.openedWaves = openedWaves; }
 
   // Chưa vẽ ở giai đoạn B (xem docs/plans/3d-migration-plan.md, C–G).
-  public setStallSoldOut(_ids: readonly string[]): void {}
+  public setStallSoldOut(ids: readonly string[]): void {
+    this.soldOutStalls = ids;
+    this.stock?.setStallSoldOut(ids);
+  }
   public setPlanningReservations(_overlays: readonly PlanningOverlay[]): void {}
   public showWaveOverlay(_show: boolean): boolean { return false; }
   public addFloatingGain(x: number, y: number, text: string, color: number = 0xf4a261): void {
@@ -540,6 +547,7 @@ export class BabylonGameViewport implements GameViewport {
     this.overlay?.destroy();
     this.crowd?.dispose();
     this.fixtures?.dispose();
+    this.stock?.dispose();
     this.actors?.dispose();
     this.actorAtlas?.manager.dispose();
     for (const m of this.selectionFrameBars) m.dispose();
@@ -553,6 +561,7 @@ export class BabylonGameViewport implements GameViewport {
     this.actors = null;
     this.crowd = null;
     this.fixtures = null;
+    this.stock = null;
     this.overlay = null;
     this.actorAtlas = null;
     this.mapMeshes = [];
