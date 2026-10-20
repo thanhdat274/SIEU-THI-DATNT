@@ -20,7 +20,11 @@ export interface PixiGameViewportOptions {
   onZoomChange?: (zoom: number) => void;
   /** Chạm (không kéo) vào lô đất đợt đã mở mà chưa mua (land-reclamation 4.3). */
   onParcelTap?: (parcelId: string) => void;
+  /** Chọn tòa nhà khi click chuột (giai đoạn F sẽ nối UI). */
+  onBuildingSelect?: (buildingId: string | null) => void;
   getPartnerAvatar?: () => { position: Vector2D; direction: string; isMoving?: boolean; name?: string } | null;
+  /** Renderer 3D báo hướng bản đồ ứng với phải/xuống màn hình mỗi khi camera xoay (2D không gọi). */
+  onViewBasisChange?: (right: { x: number; y: number }, down: { x: number; y: number }) => void;
 }
 
 import type { GameViewport } from './viewport-api';

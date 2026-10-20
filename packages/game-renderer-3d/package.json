@@ -11,6 +11,7 @@
   "dependencies": {
     "@babylonjs/core": "^8",
     "@game/core": "*",
+    "@game/data": "*",
     "@game/renderer": "*",
     "@game/shared": "*"
   },
