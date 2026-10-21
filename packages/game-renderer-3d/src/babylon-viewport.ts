@@ -160,7 +160,6 @@ export class BabylonGameViewport implements GameViewport {
       this.worldDecor.showWaveOverlay(true);
     }
     this.vehicles = new Vehicles3D(scene, this.simulation, this.sky);
-    await this.vehicles.load();
     this.trafficSignals = new TrafficSignals3D(scene, this.sky);
     this.actorShadows = new ActorShadows3D(scene);
     this.umbrellas = new Umbrellas3D(scene);
@@ -345,7 +344,6 @@ export class BabylonGameViewport implements GameViewport {
       radius: groundViewRadius(this.zoom, aspect, CAMERA_BETA),
       zoom: this.zoom,
     };
-    this.vehicles?.setLightTint(actorTint);
     this.vehicles?.update(this.quarter, CAMERA_BETA, viewBounds, currentSkyLighting.lampsOn);
 
     // Cập nhật nhân vật: nếu Characters3D (model 3D Kenney) đã sẵn sàng thì dùng 3D,
