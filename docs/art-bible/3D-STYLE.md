@@ -107,7 +107,14 @@ Quy ước hệ cục bộ của mảnh: x ngang (căn giữa), y lên từ 0 �
 - **Số mục vẽ (đo trong game):** **14 mesh**, chỉ khi camera gần; **0 mesh** khi camera xa 60 ô; ở 25 ô (giữa hai bán kính) giữ nguyên trạng thái trước đó. Ảnh: [sáng](3d-grocery-interior-4.4-day.jpg), [đêm](3d-grocery-interior-4.4-night.jpg).
 - **Chưa làm:** chữ trên bảng giá, áp phích có hình thật, đèn trần không dây (xà chỉ nối được khi hai đầu có tường).
 
-## 12. Checklist cho một asset mới
+## 12. Nội thất tạp hóa dựng từ kit (bước 4.5)
+
+- **Mảnh** (`kit/furniture.ts`, hệ fixture: tâm chân diện là gốc, +z là mặt trước): `fridgeCase(w, d)` (thân băng, đế thép, dải biển bạc hà, cửa kính trong suốt trước nền sáng, tay nắm; 2 ô có hai cửa), `cashierCounter(w, d)` (tủ gỗ + dải mặt trước bạc hà, mặt quầy cát, máy tính tiền với màn hình phía thu ngân, giỏ hàng có quai và món hàng phía khách), `endCapShelf(w, d)` (ba bậc bày hàng, thấp hơn kệ gondola).
+- **Nối vào game:** `fixture-shapes` gọi `fridgeCase`/`cashierCounter` cho loại `refrigerator`/`cashier_counter`; đường model Kenney của hai loại này đã gỡ khỏi `fixtures-3d`. Kệ gondola giữ nguyên.
+- **Test:** hộp bao nằm gọn trong chân diện ở 4 hướng xoay (1×1 và 2×1), thân đúng tâm, đặt sát sàn, cao bằng chuẩn `SCALE_TARGETS.fixtures`; kính ở mặt trước; máy tính tiền và giỏ trên mặt quầy. Ảnh xem trước: [3d-grocery-furniture-4.5.jpg](3d-grocery-furniture-4.5.jpg).
+- **Chưa làm:** `endCapShelf` mới có mảnh và test, chưa có loại fixture để đặt trong game (cần thêm kiểu ở `@game/shared`).
+
+## 13. Checklist cho một asset mới
 
 - [ ] Kích thước khai báo ở `scale-spec.ts`, hộp bao có test nằm trong chân diện/mặt tiền.
 - [ ] Mọi màu là token (hoặc vai trò trỏ về token), vật liệu không bóng.

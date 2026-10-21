@@ -254,11 +254,6 @@ export class BabylonGameViewport implements GameViewport {
       lib.loadModel(currentScene, 'building_civic_police'),
       lib.loadModel(currentScene, 'building_civic_school'),
       lib.loadModel(currentScene, 'building_low_detail_wide_a'),
-      lib.loadModel(currentScene, 'furniture_fridge'),
-      lib.loadModel(currentScene, 'furniture_fridge_large'),
-      lib.loadModel(currentScene, 'furniture_fridge_small'),
-      lib.loadModel(currentScene, 'furniture_kitchen_bar'),
-      lib.loadModel(currentScene, 'furniture_computer_screen'),
     ]);
     if (this.scene !== currentScene || !this.scene) return;
     if (results.some(r => r !== null)) {

@@ -1,5 +1,6 @@
 import { BUILDING_VISUALS } from '@game/data';
 import { getFixtureDimensions, type StoreFixture } from '@game/shared';
+import { cashierCounter, fridgeCase } from './kit/furniture';
 import { SCALE_TARGETS } from './scale-spec';
 import { GROCERY_FIXTURE_COLORS as GROCERY } from './style-spec';
 
@@ -84,23 +85,6 @@ function shelf(w: number, d: number, glass: boolean): FixtureBox[] {
     out.push({ color: PRICE_STRIP, cx: 0, cy: y - 0.026, cz: zFront + PRICE_STRIP_THICK / 2, sx: w - 0.12, sy: 0.052, sz: PRICE_STRIP_THICK });
   }
   return out;
-}
-
-function fridge(w: number, d: number): FixtureBox[] {
-  const h = 1.35;
-  return [
-    { color: GROCERY.fridgeBody, cx: 0, cy: h / 2, cz: 0, sx: w, sy: h, sz: d * 0.96 },
-    { color: GROCERY.fridgeGlass, emissive: true, cx: 0, cy: h / 2 + 0.03, cz: d * 0.48 + 0.01, sx: w - 0.14, sy: h - 0.24, sz: 0.03 },
-    { color: GROCERY.fridgeTop, cx: 0, cy: h + 0.03, cz: 0, sx: w, sy: 0.06, sz: d * 0.98 },
-  ];
-}
-
-function counter(w: number, d: number): FixtureBox[] {
-  return [
-    { color: GROCERY.counterBase, cx: 0, cy: 0.3, cz: 0, sx: w, sy: 0.6, sz: d * 0.9 },
-    { color: GROCERY.counterTop, cx: 0, cy: 0.63, cz: 0, sx: w * 0.98, sy: 0.07, sz: d * 0.96 },
-    { color: GROCERY.register, cx: -w / 2 + 0.3, cy: 0.8, cz: 0, sx: 0.32, sy: 0.26, sz: 0.3 },
-  ];
 }
 
 function table(w: number, d: number): FixtureBox[] {
@@ -229,8 +213,8 @@ function localBoxes(f: Fix, fill: number): FixtureBox[] {
   switch (f.type) {
     case 'shelf_wooden': return shelf(w, d, false);
     case 'shelf_glass': return shelf(w, d, true);
-    case 'refrigerator': return fridge(w, d);
-    case 'cashier_counter': return counter(w, d);
+    case 'refrigerator': return fridgeCase(w, d).boxes;
+    case 'cashier_counter': return cashierCounter(w, d).boxes;
     case 'dining_table': return table(w, d);
     case 'kitchen_station': return station(w, d);
     case 'warehouse_cold': return rack(w, d, true, fill);

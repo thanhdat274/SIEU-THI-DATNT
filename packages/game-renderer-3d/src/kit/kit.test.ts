@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { boxOverlapsRectXY, boxesBounds } from '../box-bounds';
 import { SCALE_TARGETS, DOOR_HEIGHT_D } from '../scale-spec';
-import { KIT_COLORS, PALETTE_HEXES } from '../style-spec';
-import { KIT_BOX_BUDGET, KIT_PIECES, ceilingBeam, doorMat, lampBulb, pendantLamp, priceBoard, wallPoster, acUnit, baseboard, cornerPost, cornice, doorFrame, glassDoor, parapet, plantPot, produceCrate, sandwichBoard, shopWindow, waterTank } from './index';
+import { KIT_COLORS, KIT_GLASS_ALPHA, PALETTE, PALETTE_HEXES } from '../style-spec';
+import { KIT_BOX_BUDGET, KIT_PIECES, cashierCounter, endCapShelf, fridgeCase, ceilingBeam, doorMat, lampBulb, pendantLamp, priceBoard, wallPoster, acUnit, baseboard, cornerPost, cornice, doorFrame, glassDoor, parapet, plantPot, produceCrate, sandwichBoard, shopWindow, waterTank } from './index';
 
 const K = SCALE_TARGETS.kit;
 const EPS = 1e-9;
@@ -124,9 +124,41 @@ for (const p of [produceCrate(), sandwichBoard(), plantPot()]) {
   near(doorMat(1.7).bounds.maxX, 0.85, 'thảm cửa theo bề rộng'); assert.ok(doorMat(1.7).bounds.maxY <= 0.03, 'thảm mỏng');
 }
 
+// Nội thất tạp hóa (hệ fixture: tâm chân diện là gốc): gọn trong chân diện w × d, đúng chiều cao chuẩn, đúng chi tiết.
+{
+  for (const [w, d] of [[1, 1], [2, 1], [1, 2]] as const) {
+    for (const p of [fridgeCase(w, d), cashierCounter(w, d), endCapShelf(w, d)]) {
+      const b = p.bounds;
+      assert.ok(b.minX >= -w / 2 - EPS && b.maxX <= w / 2 + EPS && b.minZ >= -d / 2 - EPS && b.maxZ <= d / 2 + EPS, `${p.id} ${w}x${d}: ngoài chân diện`);
+      near(b.minY, 0, `${p.id} đặt sát sàn`);
+    }
+  }
+  const fridge = fridgeCase(1, 1);
+  assert.ok(fridge.bounds.maxY >= SCALE_TARGETS.fixtures.fridge - 1e-6 && fridge.bounds.maxY <= SCALE_TARGETS.fixtures.fridge + 1e-6, 'tủ lạnh cao bằng chuẩn');
+  const glass = fridge.boxes.filter((x) => x.color === KIT_COLORS.glass);
+  assert.equal(glass.length, 1, 'tủ lạnh có một cửa kính');
+  assert.ok(glass[0].alpha === KIT_GLASS_ALPHA && glass[0].cz > 0, 'kính trong suốt ở mặt trước (+z)');
+  assert.equal(fridgeCase(2, 1).boxes.filter((x) => x.color === KIT_COLORS.handle && x.sx === 0.04 && x.sy > 0.4).length, 2, 'tủ hai ô có hai tay nắm');
+  assert.equal(fridgeCase(1, 1).boxes.filter((x) => x.color === KIT_COLORS.handle && x.sx === 0.04 && x.sy > 0.4).length, 1);
+
+  const counter = cashierCounter(2, 1);
+  near(counter.bounds.minY, 0, 'quầy sát sàn');
+  const top = counter.boxes.find((x) => x.color === PALETTE.sand)!;
+  near(top.cy + top.sy / 2, SCALE_TARGETS.fixtures.counter, 'mặt quầy cao bằng chuẩn');
+  const register = counter.boxes.find((x) => x.color === PALETTE.charcoal)!;
+  const basket = counter.boxes.find((x) => x.color === KIT_COLORS.produceRed)!;
+  assert.ok(register.cy - register.sy / 2 >= SCALE_TARGETS.fixtures.counter - EPS && basket.cy - basket.sy / 2 >= SCALE_TARGETS.fixtures.counter - EPS, 'máy tính tiền và giỏ đặt trên mặt quầy');
+  assert.ok(register.cz < 0 && basket.cz > 0 && register.cx < 0 && basket.cx > 0, 'máy tính tiền phía thu ngân (sau), giỏ phía khách (trước), hai bên khác nhau');
+  assert.ok(counter.bounds.maxY < SCALE_TARGETS.fixtures.gondola, 'đồ trên quầy thấp hơn kệ gondola');
+
+  const cap = endCapShelf(1, 1);
+  assert.ok(cap.bounds.maxY < SCALE_TARGETS.fixtures.gondola, 'đầu dãy kệ thấp hơn kệ gondola');
+  assert.equal(new Set(cap.boxes.map((x) => x.color)).size >= 4, true, 'đầu dãy kệ có hàng nhiều màu');
+}
+
 // Mọi mảnh trong danh mục: ngân sách khối, kích thước dương, không chìm dưới sàn, màu thuộc bảng màu, kính duy nhất trong suốt.
 const ids = Object.keys(KIT_PIECES);
-assert.ok(ids.length >= 18, 'danh mục có đủ 18 mảnh (6 đầu tiên + mái + đồ trưng + nội thất trong nhà)');
+assert.ok(ids.length >= 21, 'danh mục có đủ 21 mảnh (6 đầu tiên + mái + đồ trưng + nội thất trong nhà + tủ lạnh/quầy/đầu kệ)');
 for (const key of ids) {
   const piece = KIT_PIECES[key]();
   assert.equal(piece.id, key, `${key}: id khớp khóa danh mục`);
@@ -140,4 +172,4 @@ for (const key of ids) {
   }
 }
 
-console.log('PASS kit: 18 mảnh (khung cửa, cánh cửa kính, cửa sổ, phào, trụ, chi tiết mái, đồ trưng, nội thất trong nhà) đúng hộp bao, lối cửa thông, màu thuộc bảng màu, trong ngân sách');
+console.log('PASS kit: 21 mảnh (khung cửa, cánh cửa kính, cửa sổ, phào, trụ, chi tiết mái, đồ trưng, nội thất trong nhà, tủ lạnh, quầy thu ngân, đầu dãy kệ) đúng hộp bao, lối cửa thông, màu thuộc bảng màu, trong ngân sách');

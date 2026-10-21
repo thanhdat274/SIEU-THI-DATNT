@@ -70,126 +70,40 @@ assert.notEqual(sig, fixturesSignature([]));
 assert.notEqual(sig, fixturesSignature([base, { ...base, id: 'b' }]));
 assert.equal(sig, fixturesSignature([base, { ...base, id: 'a_slot1', parentId: 'a' }]));
 
-// Kiểm thử Ánh xạ fixture -> model Kenney và fallback khối code
-import { resolveFixtureModelInstances } from './fixtures-3d';
-
-// 1. Kệ gỗ & kệ kính dựng bằng code (không còn model bookcase): không có instance model
-for (const type of ['shelf_wooden', 'shelf_glass'] as const) {
-  assert.equal(resolveFixtureModelInstances({ type, tileX: 8, tileY: 5, widthTiles: 2, heightTiles: 1, rotation: 0 }, 9, 5.5), null, `${type} dùng khối code`);
-}
-
-// 2. Tủ mát / tủ lạnh: kitchenFridgeLarge (2 ô) hoặc kitchenFridgeSmall (1 ô)
-const fridge2 = resolveFixtureModelInstances({ type: 'refrigerator', tileX: 10, tileY: 5, widthTiles: 2, heightTiles: 1, rotation: 0 }, 11, 5.5);
-assert.ok(fridge2 !== null && fridge2.length === 1);
-assert.equal(fridge2[0].kind, 'furniture_fridge_large');
-
-const fridge1 = resolveFixtureModelInstances({ type: 'refrigerator', tileX: 10, tileY: 5, widthTiles: 1, heightTiles: 1, rotation: 0 }, 10.5, 5.5);
-assert.ok(fridge1 !== null && fridge1.length === 1);
-assert.equal(fridge1[0].kind, 'furniture_fridge_small');
-
-// 3. Quầy thu ngân: kitchenBar + computerScreen
-const counterInst = resolveFixtureModelInstances({ type: 'cashier_counter', tileX: 7, tileY: 8, widthTiles: 2, heightTiles: 1, rotation: 0 }, 8, 8.5);
-assert.ok(counterInst !== null && counterInst.length === 3, 'Quầy 2 ô có 2 thân quầy bar + 1 máy tính tiền');
-assert.equal(counterInst[0].kind, 'furniture_kitchen_bar');
-assert.equal(counterInst[1].kind, 'furniture_kitchen_bar');
-assert.equal(counterInst[2].kind, 'furniture_computer_screen');
-
-// 4. Các loại fixture khác giữ khối code (trả về null)
-const codeOnlyTypes = ['dining_table', 'kitchen_station', 'warehouse_dry', 'warehouse_cold', 'warehouse_receiving', 'decor'] as const;
-for (const ct of codeOnlyTypes) {
-  assert.equal(resolveFixtureModelInstances({ type: ct, tileX: 0, tileY: 0, widthTiles: 2, heightTiles: 1, rotation: 0 }, 1, 0.5), null, `${ct} giữ khối code`);
-}
-
-// 5. Đặt model đúng chân diện: hộp bao đo từ chính file .glb (bỏ nút gốc __root__, giữ dịch chuyển nút con), ở cả 4 hướng xoay
-import fs from 'node:fs';
-import path from 'node:path';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { FIXTURE_MODEL_CENTERS } from './fixtures-3d';
-import { MODEL_CATALOG, type ModelKind } from './model-library';
-
-function findModelDir(): string {
-  let dir = process.cwd();
-  for (let i = 0; i < 6; i++, dir = path.dirname(dir)) {
-    const candidate = path.join(dir, 'apps', 'web', 'public');
-    if (fs.existsSync(candidate)) return candidate;
-  }
-  throw new Error('Không tìm thấy apps/web/public từ ' + process.cwd());
-}
-
-interface Bounds { min: [number, number, number]; max: [number, number, number] }
-
-function glbBounds(kind: ModelKind): Bounds {
-  const buf = fs.readFileSync(path.join(findModelDir(), MODEL_CATALOG[kind].url));
-  const json = JSON.parse(buf.subarray(20, 20 + buf.readUInt32LE(12)).toString());
-  const min: [number, number, number] = [Infinity, Infinity, Infinity];
-  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
-  const visit = (index: number, offset: number[]): void => {
-    const node = json.nodes[index];
-    assert.ok(!node.rotation || node.rotation.join() === '0,0,0,1', `${kind}: nút có xoay, bộ đọc hộp bao chưa hỗ trợ`);
-    assert.ok(!node.scale || node.scale.join() === '1,1,1', `${kind}: nút có tỉ lệ, bộ đọc hộp bao chưa hỗ trợ`);
-    const at = offset.map((v, k) => v + (node.translation?.[k] ?? 0));
-    if ('mesh' in node) {
-      for (const prim of json.meshes[node.mesh].primitives) {
-        const acc = json.accessors[prim.attributes.POSITION];
-        for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], acc.min[k] + at[k]); max[k] = Math.max(max[k], acc.max[k] + at[k]); }
-      }
-    }
-    for (const child of node.children ?? []) visit(child, at);
-  };
-  for (const root of json.scenes[0].nodes) visit(root, [0, 0, 0]);
-  return { min, max };
-}
-
-const MODEL_KINDS_USED = Object.keys(FIXTURE_MODEL_CENTERS) as ModelKind[];
-for (const kind of MODEL_KINDS_USED) {
-  const b = glbBounds(kind);
-  const center = FIXTURE_MODEL_CENTERS[kind]!;
-  assert.ok(Math.abs((b.min[0] + b.max[0]) / 2 - center.x) < 0.005, `${kind}: tâm x ${center.x} lệch hộp bao thật ${(b.min[0] + b.max[0]) / 2}`);
-  assert.ok(Math.abs((b.min[2] + b.max[2]) / 2 - center.z) < 0.005, `${kind}: tâm z ${center.z} lệch hộp bao thật ${(b.min[2] + b.max[2]) / 2}`);
-}
-
-function worldAabb(kind: ModelKind, matrix: import('@babylonjs/core/Maths/math.vector').Matrix): Bounds {
-  const b = glbBounds(kind);
-  const min: [number, number, number] = [Infinity, Infinity, Infinity];
-  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
-  for (const x of [b.min[0], b.max[0]]) for (const y of [b.min[1], b.max[1]]) for (const z of [b.min[2], b.max[2]]) {
-    const w = Vector3.TransformCoordinates(new Vector3(x, y, z), matrix);
-    min[0] = Math.min(min[0], w.x); max[0] = Math.max(max[0], w.x);
-    min[1] = Math.min(min[1], w.y); max[1] = Math.max(max[1], w.y);
-    min[2] = Math.min(min[2], w.z); max[2] = Math.max(max[2], w.z);
-  }
-  return { min, max };
-}
+// Tủ lạnh và quầy thu ngân dựng từ kit (không còn model Kenney): hộp nằm gọn trong chân diện ở 4 hướng xoay, đúng chiều cao chuẩn,
+// cửa kính/màn hình/giỏ ở đúng phía và đặt đúng chỗ khi xoay.
+import { SCALE_TARGETS } from './scale-spec';
+import { boxesBounds } from './box-bounds';
 
 const EPS = 0.005;
-const modelCases: { type: 'refrigerator' | 'cashier_counter'; w: number }[] = [
-  { type: 'refrigerator', w: 1 }, { type: 'refrigerator', w: 2 }, { type: 'cashier_counter', w: 1 }, { type: 'cashier_counter', w: 2 },
+const cases: { type: 'refrigerator' | 'cashier_counter'; w: number; h: number }[] = [
+  { type: 'refrigerator', w: 1, h: SCALE_TARGETS.fixtures.fridge }, { type: 'refrigerator', w: 2, h: SCALE_TARGETS.fixtures.fridge },
+  { type: 'cashier_counter', w: 1, h: SCALE_TARGETS.fixtures.counter }, { type: 'cashier_counter', w: 2, h: SCALE_TARGETS.fixtures.counter },
 ];
-for (const { type, w } of modelCases) {
+for (const { type, w, h } of cases) {
   for (const rotation of [0, 90, 180, 270] as const) {
     const fix = { type, tileX: 7, tileY: 8, widthTiles: w, heightTiles: 1, rotation };
     const fp = fixtureFootprint(fix);
     const label = `${type} ${w}x1 xoay ${rotation}`;
-    const instances = resolveFixtureModelInstances(fix, fp.cx, fp.cz);
-    assert.ok(instances !== null, `${label}: phải dùng model`);
-    const boxes = instances.map((inst) => ({ kind: inst.kind, aabb: worldAabb(inst.kind, inst.matrix) }));
-    for (const { kind, aabb } of boxes) {
-      assert.ok(aabb.min[0] >= fp.x0 - EPS && aabb.max[0] <= fp.x0 + fp.w + EPS, `${label}: ${kind} nhô khỏi chân diện theo x [${aabb.min[0].toFixed(2)}, ${aabb.max[0].toFixed(2)}] so với [${fp.x0}, ${fp.x0 + fp.w}]`);
-      assert.ok(aabb.min[2] >= fp.z0 - EPS && aabb.max[2] <= fp.z0 + fp.d + EPS, `${label}: ${kind} nhô khỏi chân diện theo z [${aabb.min[2].toFixed(2)}, ${aabb.max[2].toFixed(2)}] so với [${fp.z0}, ${fp.z0 + fp.d}]`);
-      assert.ok(Math.abs(aabb.min[1]) < EPS || kind === 'furniture_computer_screen', `${label}: ${kind} phải đặt sát sàn`);
-    }
+    const boxes = fixtureBoxes(fix);
+    const b = boxesBounds(boxes);
+    assert.ok(b.minX >= fp.x0 - 1e-9 && b.maxX <= fp.x0 + fp.w + 1e-9, `${label}: nhô khỏi chân diện theo x [${b.minX.toFixed(3)}, ${b.maxX.toFixed(3)}]`);
+    assert.ok(b.minZ >= fp.z0 - 1e-9 && b.maxZ <= fp.z0 + fp.d + 1e-9, `${label}: nhô khỏi chân diện theo z [${b.minZ.toFixed(3)}, ${b.maxZ.toFixed(3)}]`);
+    assert.ok(Math.abs(b.minY) < EPS, `${label}: phải đặt sát sàn`);
+    assert.ok(b.maxY >= h - EPS && b.maxY <= h + 0.35, `${label}: cao ${b.maxY.toFixed(2)} lệch chuẩn ${h}`);
+    // Thân phủ gần hết chân diện và nằm đúng tâm (không lệch như model cũ).
+    const body = boxes.reduce((m, x) => (x.sx * x.sz > m.sx * m.sz ? x : m));
+    assert.ok(Math.abs(body.cx - fp.cx) < EPS && Math.abs(body.cz - fp.cz) < EPS, `${label}: thân phải nằm đúng tâm chân diện`);
+    assert.ok(body.sx * body.sz >= 0.8 * fp.w * fp.d * 0.8, `${label}: thân phủ chân diện`);
+    // Phía trước (+z cục bộ, xoay theo fixture): kính tủ lạnh / mặt dải quầy nhô ra phía trước hơn thân.
+    const front = { 0: [0, 1], 90: [-1, 0], 180: [0, -1], 270: [1, 0] }[rotation];
+    const reach = (x: (typeof boxes)[number]) => (x.cx - fp.cx) * front[0] + (x.cz - fp.cz) * front[1] + (Math.abs(front[0]) ? x.sx : x.sz) / 2;
+    const frontMost = boxes.reduce((m, x) => (reach(x) > reach(m) ? x : m));
     if (type === 'refrigerator') {
-      const a = boxes[0].aabb;
-      assert.ok(Math.abs((a.min[0] + a.max[0]) / 2 - fp.cx) < EPS && Math.abs((a.min[2] + a.max[2]) / 2 - fp.cz) < EPS, `${label}: tủ lạnh phải nằm đúng tâm chân diện`);
-    } else {
-      const bars = boxes.filter((b) => b.kind === 'furniture_kitchen_bar').map((b) => b.aabb);
-      const screen = boxes.find((b) => b.kind === 'furniture_computer_screen')!.aabb;
-      const barMin = [Math.min(...bars.map((b) => b.min[0])), Math.min(...bars.map((b) => b.min[2]))];
-      const barMax = [Math.max(...bars.map((b) => b.max[0])), Math.max(...bars.map((b) => b.max[2]))];
-      assert.ok(screen.min[0] >= barMin[0] - EPS && screen.max[0] <= barMax[0] + EPS && screen.min[2] >= barMin[1] - EPS && screen.max[2] <= barMax[1] + EPS, `${label}: máy tính tiền phải nằm trên quầy, không lơ lửng cạnh quầy`);
-      assert.ok(Math.abs((barMin[0] + barMax[0]) / 2 - fp.cx) < EPS && Math.abs((barMin[1] + barMax[1]) / 2 - fp.cz) < EPS, `${label}: quầy phải nằm đúng tâm chân diện`);
+      assert.ok(frontMost.alpha !== undefined || frontMost.sy > 0.3, `${label}: mặt trước tủ lạnh là kính/tay nắm`);
+      assert.ok(boxes.some((x) => x.alpha !== undefined && reach(x) > reach(body) - 1e-9), `${label}: kính nằm ở mặt trước`);
     }
   }
 }
 
-console.log('PASS fixture-shapes: chân diện, hộp theo hướng xoay, chữ ký, ánh xạ model Kenney & fallback, model nằm đúng chân diện ở 4 hướng');
+console.log('PASS fixture-shapes: chân diện, hộp theo hướng xoay, chữ ký, tủ lạnh và quầy thu ngân (kit) nằm gọn chân diện ở 4 hướng xoay');

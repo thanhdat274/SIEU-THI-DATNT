@@ -4,7 +4,9 @@ export * from './trim';
 export * from './roof';
 export * from './props';
 export * from './interior';
+export * from './furniture';
 
+import { cashierCounter, endCapShelf, fridgeCase } from './furniture';
 import { cornerPost, baseboard, cornice } from './trim';
 import { doorFrame, glassDoor, shopWindow } from './openings';
 import { parapet, acUnit, waterTank } from './roof';
@@ -35,4 +37,7 @@ export const KIT_PIECES: Record<string, () => KitPiece> = {
   'wall-poster': () => wallPoster(),
   'price-board': () => priceBoard(),
   'door-mat': () => doorMat(1.5),
+  'fridge-2': () => fridgeCase(2, 1),
+  'cashier-counter-2': () => cashierCounter(2, 1),
+  'end-cap-shelf': () => endCapShelf(1, 1),
 };
