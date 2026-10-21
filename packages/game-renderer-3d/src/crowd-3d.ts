@@ -2,7 +2,7 @@ import { Sprite } from '@babylonjs/core/Sprites/sprite';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import { NeighborhoodLife, weekdayOf, hashSeed, type GameSimulation } from '@game/core';
 import { NEIGHBORHOOD_QUALITY, detailForZoom } from '@game/data';
-import { resolveWeatherQuality } from '@game/renderer';
+import { resolveWeatherQuality } from '@game/renderer-core';
 import { TILE_SIZE, getFixtureDimensions, type Direction } from '@game/shared';
 import { createActorSprite, type ActorAtlas } from './actor-atlas';
 import { NEUTRAL_TINT, type LightTint } from './actor-light';

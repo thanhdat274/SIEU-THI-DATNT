@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { ALL_PARCELS, RECLAMATION_WAVES, WORLD_BOUNDS } from '@game/data';
 
-type Snapshot = import('@game/renderer').MinimapSnapshot;
+type Snapshot = import('@game/renderer-core').MinimapSnapshot;
 
 const W = 132;
 const H = 88;

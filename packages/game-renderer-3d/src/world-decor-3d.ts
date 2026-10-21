@@ -9,7 +9,7 @@ import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { GameSimulation } from '@game/core';
 import type { GameTileMap } from '@game/shared';
 import { TILE_SIZE } from '@game/shared';
-import type { PlanningOverlay } from '@game/renderer';
+import type { PlanningOverlay } from '@game/renderer-core';
 import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { createSignPlane } from './sign-plane';
 import { computeWaveDecor, computeWaveOverlay, worldDecorKey, type DecorSign, type TileRect, type WorldDecorInput } from './wave-decor';

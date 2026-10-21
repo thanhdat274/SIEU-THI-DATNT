@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getWeatherFxSettings, getWeatherVisualModel, getWeatherVisualState, setWeatherFxSettings, setDebugVisualTime } from '@game/renderer';
+import { getWeatherFxSettings, getWeatherVisualModel, getWeatherVisualState, setWeatherFxSettings, setDebugVisualTime } from '@game/renderer-core';
 import type { WeatherPresetId, WeatherQuality } from '@game/data';
 
 /** Bảng debug thời tiết. Chỉ hiện khi nhấn Shift+F5 hoặc bật flag trong localStorage. */

@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { getWeatherFxSettings, onWeatherFxSettings, setWeatherFxSettings, type WeatherFxSettings } from '@game/renderer';
+import { getWeatherFxSettings, onWeatherFxSettings, setWeatherFxSettings, type WeatherFxSettings } from '@game/renderer-core';
 
 let snapshot = getWeatherFxSettings();
 onWeatherFxSettings((next) => { snapshot = next; });

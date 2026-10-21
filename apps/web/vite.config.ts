@@ -13,6 +13,7 @@ function reloadGameOnChange(): Plugin {
     '../../packages/game-core/src/',
     '../../packages/game-data/src/',
     '../../packages/game-renderer/src/',
+    '../../packages/game-renderer-core/src/',
     '../../packages/shared/src/',
   ].map((p) => normalizePath(fileURLToPath(new URL(p, import.meta.url))));
 

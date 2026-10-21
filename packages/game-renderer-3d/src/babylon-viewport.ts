@@ -12,7 +12,7 @@ import '@babylonjs/core/Culling/ray';
 import { FixedStepSimulationRunner, type GameSimulation } from '@game/core';
 import { WAREHOUSE_BOUNDS } from '@game/data';
 import type { GameTileMap } from '@game/shared';
-import { getDebugVisualTime, getWeatherFxSettings, resolveWeatherQuality, onThunder, type GameViewport, type GameViewportOptions, type MinimapSnapshot, type PlanningOverlay } from '@game/renderer';
+import { getDebugVisualTime, getWeatherFxSettings, resolveWeatherQuality, onThunder, type GameViewport, type GameViewportOptions, type MinimapSnapshot, type PlanningOverlay } from '@game/renderer-core';
 import { CAMERA_BETA, CAMERA_FOV, cameraGroundViewBounds, groundViewRadius, isoAlpha, pixelToWorld, snapGround, stepZoom, worldToTile, zoomHalfHeight, zoomRadius } from './coords';
 import { buildCityMap, type RoofInfo } from './map-builder';
 import { Actors3D } from './actors-3d';

@@ -12,31 +12,16 @@ import { AWNING_SPANS, DECOR_MAP, seasonalDecorForDay, MAP_WIDTH, PRODUCT_MAP, e
 /** Màu chủ đề khu theo `DistrictDef.visualTheme` (W0 'hem' giữ cảnh gốc, không phủ). */
 const DISTRICT_THEME_COLORS: Record<string, number> = { commercial: 0xc98a2e, suburb: 0x4f8f4f, modern_office: 0x3f6fa8, food_street: 0xb8502e };
 
-export interface PixiGameViewportOptions {
-  canvas: HTMLCanvasElement;
-  tileMap: GameTileMap;
-  simulation: GameSimulation;
-  onResize?: (width: number, height: number) => void;
-  onZoomChange?: (zoom: number) => void;
-  /** Chạm (không kéo) vào lô đất đợt đã mở mà chưa mua (land-reclamation 4.3). */
-  onParcelTap?: (parcelId: string) => void;
-  /** Chọn tòa nhà khi click chuột (giai đoạn F sẽ nối UI). */
-  onBuildingSelect?: (buildingId: string | null) => void;
-  getPartnerAvatar?: () => { position: Vector2D; direction: string; isMoving?: boolean; name?: string } | null;
-  /** Renderer 3D báo hướng bản đồ ứng với phải/xuống màn hình mỗi khi camera xoay (2D không gọi). */
-  onViewBasisChange?: (right: { x: number; y: number }, down: { x: number; y: number }) => void;
-}
+export type PixiGameViewportOptions = GameViewportOptions;
 
-import type { GameViewport } from './viewport-api';
-import { getDebugVisualTime } from './debug-time';
+import type { GameViewport, GameViewportOptions } from '@game/renderer-core';
+import { getDebugVisualTime, emitThunder, setRoofProximity, getWeatherFxSettings, publishWeatherVisual, resolveWeatherQuality, depthFxActive, planningOverlaySignature, type PlanningOverlay } from '@game/renderer-core';
 import { buildRoadSurface, type RoadSurface } from './road-surface';
 import { WeatherEffects, swaySkew } from './weather-effects';
 import { RainGear, roofProximity, type GearFacing } from './rain-gear';
 import { loadWeatherSprites } from './weather-sprites';
-import { emitThunder, setRoofProximity, getWeatherFxSettings, publishWeatherVisual, resolveWeatherQuality, depthFxActive } from './weather-settings';
 import { NeighborhoodScene } from './neighborhood-scene';
 import { NeighborhoodActors } from './neighborhood-actors';
-import { planningOverlaySignature, type PlanningOverlay } from './planning-overlay';
 import { buildFrontCrosswalk, buildIntersectionSignalHeads, createPedestrianSprite, placePedestrian } from './street-signal';
 import {
   handlePointerDown,

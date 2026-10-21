@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ArtLab } from './components/ArtLab';
-import { getWeatherVisualModel, getWeatherVisualState, setDebugVisualTime } from '@game/renderer';
+import { getWeatherVisualModel, getWeatherVisualState, setDebugVisualTime } from '@game/renderer-core';
 import { installPerfOverlay } from './services/perf-overlay';
 import { watchAppUpdates } from './services/app-update';
 import './index.css';

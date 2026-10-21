@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { buildingShadowPolygon, buildingShadowShape, BUILDING_SHADOW_MAX } from './depth-effects';
-import { setWeatherFxSettings, depthFxActive, getWeatherFxSettings } from './weather-settings';
+import { setWeatherFxSettings, depthFxActive, getWeatherFxSettings } from '@game/renderer-core';
 import { puddleWaveRings, PUDDLE_WAVE } from './road-surface';
 
 console.log('--- Testing depth-effects ---');

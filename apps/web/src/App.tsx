@@ -11,7 +11,7 @@ import { WorldSettingsModal } from './components/WorldSettingsModal';
 import { LandVoteModal, type LandVoteInfo } from './components/LandVoteModal';
 import { OpenBuildingModal } from './components/OpenBuildingModal';
 import { SiteModal, siteTodoLabel } from './components/SiteModal';
-import { type GameViewport, type GameViewportOptions, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer';
+import { type GameViewport, type GameViewportOptions, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer-core';
 import { createViewport, preferredRenderer } from './viewport-factory';
 import { initializeWithFallback } from './renderer-choice';
 import { TILE_SIZE, BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup, MULTIPLAYER_PROTOCOL_VERSION, SERVER_REPLAYED_COMMAND_TYPES } from '@game/shared';

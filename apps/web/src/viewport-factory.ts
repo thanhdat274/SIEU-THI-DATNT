@@ -1,4 +1,5 @@
-import { PixiGameViewport, type GameViewport, type GameViewportOptions } from '@game/renderer';
+import { PixiGameViewport } from '@game/renderer';
+import type { GameViewport, GameViewportOptions } from '@game/renderer-core';
 import { chooseRenderer, clearStoredRenderer, detectWebGL, resolveRendererPreference, type RendererKind } from './renderer-choice';
 
 export type { RendererKind };

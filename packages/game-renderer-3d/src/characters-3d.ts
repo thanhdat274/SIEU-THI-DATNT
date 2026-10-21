@@ -15,7 +15,7 @@ import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder';
 import type { GameSimulation } from '@game/core';
 import { NeighborhoodLife, weekdayOf, hashSeed } from '@game/core';
 import { detailForZoom, NEIGHBORHOOD_QUALITY } from '@game/data';
-import { resolveWeatherQuality } from '@game/renderer';
+import { resolveWeatherQuality } from '@game/renderer-core';
 import { TILE_SIZE, type Vector2D } from '@game/shared';
 import {
   CHARACTER_CATALOG,
