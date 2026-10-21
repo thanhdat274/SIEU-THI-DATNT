@@ -102,6 +102,8 @@ export const SCALE_TARGETS = {
     windowSillHeight: 0.31 * DOOR_HEIGHT_D, // 0.50
     /** Trụ góc: cạnh 0.09 * D = 0.14 */
     postSize: 0.09 * DOOR_HEIGHT_D, // 0.144
+    /** Chân tường mặt tiền (tông thứ hai): cao 0.3 * D = 0.48 */
+    wainscotHeight: 0.3 * DOOR_HEIGHT_D, // 0.48
     /** Phào chân tường cao 0.0625 * D = 0.10; phào trần cao 0.05 * D = 0.08 */
     baseboardHeight: 0.0625 * DOOR_HEIGHT_D, // 0.10
     corniceHeight: 0.05 * DOOR_HEIGHT_D, // 0.08

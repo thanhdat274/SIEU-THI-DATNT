@@ -12,9 +12,10 @@ import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import '@babylonjs/core/Meshes/thinInstanceMesh';
 import { TILE_SIZE, type GameTileMap, type MapBuilding } from '@game/shared';
 import { createSignPlane } from './sign-plane';
-import { BUILDING_VISUALS, STREET_LAMP_TILES, TREE_PROPS, buildingTypeOfInstance, type BuildingVisual } from '@game/data';
+import { BUILDING_VISUALS, STREET_LAMP_TILES, TREE_PROPS, buildingTypeOfInstance, type BuildingTypeId, type BuildingVisual } from '@game/data';
 import { resolveTreeHeightForId } from './scale-spec';
 import { ModelLibrary, MODEL_CATALOG, cloneTemplateMesh, type ModelKind } from './model-library';
+import { EXTERIOR_BUILDERS } from './building-registry';
 
 /** Mã ô lớp `walls`: 7 là gốc cây (vẽ cây riêng), còn lại là tường. */
 const WALL_TREE = 7;
@@ -106,7 +107,7 @@ export interface BuiltMap {
   updateTreeWind?: (timeSec: number, windStrength: number, reducedMotion: boolean) => void;
 }
 
-interface Footprint { visual: BuildingVisual; name: string; building?: MapBuilding; walls: number[]; x0: number; x1: number; y0: number; y1: number }
+interface Footprint { visual: BuildingVisual; typeId?: BuildingTypeId; name: string; building?: MapBuilding; walls: number[]; x0: number; x1: number; y0: number; y1: number }
 
 /** Dựng toàn bộ bản đồ 3D từ `GameTileMap`: sàn, vỉa hè nổi, vạch đường, tòa nhà (tường, mái, mái hiên, biển), cây, đèn. */
 
@@ -202,6 +203,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     const signText = resolveBuildingSignText(b);
     return {
       visual: (type && BUILDING_VISUALS[type.typeId]) ?? BUILDING_VISUALS.grocery_main,
+      typeId: type?.typeId,
       name: signText ?? '',
       building: b,
       walls: [],
@@ -367,6 +369,42 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
 
     if (!b) continue;
     const front = f.y1 + 1;
+
+    // Điểm móc registry (building-registry.ts): loại tòa có builder vỏ ngoài riêng thì dùng thay cho mặt tiền/cửa sổ/mái hiên/biển chung bên dưới.
+    const buildExterior = f.typeId ? EXTERIOR_BUILDERS[f.typeId] : undefined;
+    if (buildExterior) {
+      const ex = buildExterior({
+        scene,
+        buildingId,
+        visual: v,
+        name: f.name,
+        x0: f.x0,
+        x1: f.x1,
+        z0: f.y0,
+        z1: f.y1,
+        front,
+        doorXs: new Set(doors.map(t => t.x)),
+        awning: b.awning ? { x0: b.awning.x0 / TILE_SIZE, x1: b.awning.x1 / TILE_SIZE } : undefined,
+        groundY: SIDEWALK_HEIGHT,
+        makeSign: (text, width) => {
+          const mesh = createSignPlane(scene, `sign_${f.name}`, width, SIGN_HEIGHT);
+          const material = signMaterial(scene, `sign_${f.name}`, text, v.signBg, v.signText, width / SIGN_HEIGHT);
+          mesh.material = material;
+          return { mesh, material, height: SIGN_HEIGHT };
+        },
+      });
+      meshes.push(...ex.meshes);
+      roofInfo.meshes.push(...ex.roofMeshes);
+      roofInfo.fadeMaterials.push(...ex.roofMaterials);
+      roofInfo.facadeMeshes.push(...ex.facadeMeshes);
+      roofInfo.facadeMaterials.push(...ex.facadeMaterials);
+      facadeNightMaterials.push(...ex.nightFacadeMaterials);
+      for (const glow of ex.windowGlowMeshes) {
+        windowPlaneMeshes.push(glow);
+        if (civicNightMeshes.length < 6) civicNightMeshes.push(glow);
+      }
+      continue;
+    }
 
     // Tường mặt tiền mỏng ở mép trước (lớp `walls` không có hàng này): khúc tường giữa các cửa, thêm lanh tô trên ô cửa.
     const doorX = new Set(doors.map(t => t.x));

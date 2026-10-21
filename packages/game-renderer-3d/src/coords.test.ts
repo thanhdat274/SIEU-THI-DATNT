@@ -146,6 +146,8 @@ import './fixture-preview-3d.test';
 import './style-spec.test';
 import './studio-3d.test';
 import './kit/kit.test';
+import './kit/batch.test';
+import './grocery-exterior.test';
 
 import './signals-data.test';
 

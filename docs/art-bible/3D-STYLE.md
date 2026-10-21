@@ -89,10 +89,20 @@ Quy ước hệ cục bộ của mảnh: x ngang (căn giữa), y lên từ 0 �
 
 **Studio** (`studio-3d.ts`) chụp một danh sách khối bất kỳ ra PNG nền trong suốt ở ba góc: `iso` (như camera game), `top` (x sang phải, z xuống dưới), `front` (nhìn thẳng vào mặt trước). Studio dùng **hệ tay phải như cảnh game**; hệ tay trái sẽ làm ảnh bị lật gương theo x. Ảnh tham chiếu: [3d-kit-4.2.jpg](3d-kit-4.2.jpg).
 
-## 10. Checklist cho một asset mới
+## 10. Registry dựng tòa và vỏ ngoài tạp hóa (bước 4.3)
+
+- **Registry** (`building-registry.ts`): `EXTERIOR_BUILDERS[typeId]` là builder vỏ ngoài của một loại tòa. `map-builder` có **một điểm móc**: loại tòa có builder thì dùng, không có thì chạy đường dựng chung cũ (tiệm xôi, quán nước... chưa đổi). Thêm loại tòa mới = thêm một file builder và một dòng ở registry.
+- **`KitBatch`** (`kit/batch.ts`): gom khối của nhiều mảnh theo (vai trò, màu, độ đục) thành thin instances; số mục vẽ tăng theo số loại vật liệu, không theo số chi tiết. Vật liệu riêng từng tòa.
+- **Vai trò khối** quyết định phản ứng với bóc mái và đêm: `facade` (mờ về 0,25 khi vào trong), `roof` (ẩn cùng mái), `glass` (kính trong suốt cố định, **không** nằm trong danh sách mờ vì sẽ bị ghi đè độ đục), `glow` (ô sáng, chỉ hiện ban đêm), `plain` (luôn hiện).
+- **Hợp đồng với bóc mái/chọn tòa/đèn đêm:** mọi mesh có `metadata.buildingId`; vật liệu mái và mặt tiền riêng từng tòa; ô sáng đăng ký vào danh sách phát sáng đêm. Có test tích hợp trên `buildCityMap`.
+- **Tạp hóa v1:** tường mặt tiền hai tông có lanh tô, khung cửa + cánh cửa kính (cửa đôi khi cửa dài 2 ô), cửa sổ có bậu cách một ô, phào chân tường + phào trần, hai trụ góc, mái hiên sọc có diềm, biển hiệu có khung và hai đèn rọi, lan can/điều hòa/bồn nước trên mái, thùng rau củ, biển quảng cáo và chậu cây trước tiệm.
+- **Số mục vẽ (đo trong game, tòa tạp hóa không tính kho):** 6 mesh (25 instance) → **28 mesh (165 instance)**, ngân sách 60. Ảnh: [ngày](3d-grocery-exterior-4.3-day.jpg), [đêm](3d-grocery-exterior-4.3-night.jpg).
+- **Chưa làm:** biển MỞ/ĐÓNG theo trạng thái tiệm (cần cập nhật động), cánh cửa mở khi có khách.
+
+## 11. Checklist cho một asset mới
 
 - [ ] Kích thước khai báo ở `scale-spec.ts`, hộp bao có test nằm trong chân diện/mặt tiền.
 - [ ] Mọi màu là token (hoặc vai trò trỏ về token), vật liệu không bóng.
 - [ ] Nếu là tòa/nội thất: gắn `metadata.buildingId`, tham gia bóc mái (`roof-fade`) và đèn đêm khi cần.
 - [ ] Chụp ảnh bằng studio (ba góc) và ngày/đêm/mưa trong game; so cạnh các asset đã khóa.
-- [ ] Số mục vẽ trong ngân sách.
+- [ ] Số mục vẽ trong ngân sách (đo bằng số mesh có `metadata.buildingId` của tòa).

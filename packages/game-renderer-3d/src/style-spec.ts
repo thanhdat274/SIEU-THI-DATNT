@@ -45,6 +45,25 @@ export const KIT_COLORS = {
   trim: PALETTE.white,
   post: PALETTE.sand,
   sill: PALETTE.stone,
+  /** Ô kính tối phía sau kính cửa sổ: nhìn như khoảng tối trong nhà. */
+  pane: PALETTE.slate,
+  /** Chân tường (tông thứ hai của tường mặt tiền). */
+  wainscot: PALETTE.sand,
+  metal: PALETTE.steel,
+  metalDark: PALETTE.steelDark,
+  /** Ô cửa sổ phát sáng ban đêm: thân và ánh phát. */
+  glow: PALETTE.butter,
+  glowEmissive: PALETTE.sun,
+  crate: PALETTE.oak,
+  produceRed: PALETTE.tomato,
+  produceGreen: PALETTE.leaf,
+  produceYellow: PALETTE.sun,
+  board: PALETTE.cream,
+  boardTrim: PALETTE.tomato,
+  pot: PALETTE.terracotta,
+  soil: PALETTE.cocoa,
+  foliage: PALETTE.leaf,
+  foliageDark: PALETTE.forest,
 } as const;
 
 /** Độ đục của kính trong kit (kính luôn trong suốt cố định, không phản chiếu). */

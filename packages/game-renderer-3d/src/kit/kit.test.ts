@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { boxOverlapsRectXY, boxesBounds } from '../box-bounds';
 import { SCALE_TARGETS, DOOR_HEIGHT_D } from '../scale-spec';
 import { KIT_COLORS, PALETTE_HEXES } from '../style-spec';
-import { KIT_BOX_BUDGET, KIT_PIECES, baseboard, cornerPost, cornice, doorFrame, glassDoor, shopWindow } from './index';
+import { KIT_BOX_BUDGET, KIT_PIECES, acUnit, baseboard, cornerPost, cornice, doorFrame, glassDoor, parapet, plantPot, produceCrate, sandwichBoard, shopWindow, waterTank } from './index';
 
 const K = SCALE_TARGETS.kit;
 const EPS = 1e-9;
@@ -70,9 +70,46 @@ const near = (a: number, b: number, msg: string): void => assert.ok(Math.abs(a -
   near(cornerPost({ height: 2.4 }).bounds.maxY, 2.4, 'trụ theo chiều cao truyền vào');
 }
 
+// Cửa sổ có ô kính tối nằm SAU kính (thấy như khoảng tối trong nhà) và trong khung.
+{
+  const w = shopWindow();
+  const glass = w.boxes.find((b) => b.color === KIT_COLORS.glass)!;
+  const pane = w.boxes.find((b) => b.color === KIT_COLORS.pane)!;
+  assert.ok(pane.alpha === undefined, 'ô kính tối đục');
+  assert.ok(pane.cz + pane.sz / 2 <= glass.cz - glass.sz / 2 + EPS, 'ô tối nằm sau kính');
+  assert.ok(Math.abs(pane.cx) < EPS && pane.sx <= glass.sx + EPS, 'ô tối nằm trong khung');
+}
+
+// Cửa đôi: tay nắm hai cánh hướng vào giữa.
+{
+  const handleX = (side: 1 | -1) => glassDoor({ handleSide: side }).boxes.find((b) => b.color === KIT_COLORS.handle)!.cx;
+  assert.ok(handleX(1) > 0 && handleX(-1) < 0 && Math.abs(handleX(1) + handleX(-1)) < EPS, 'tay nắm đối xứng qua tâm cánh');
+}
+
+// Chi tiết mái: lan can bỏ được mép trước (nhường chỗ biển), điều hòa và bồn nước đặt được lên mặt mái (đáy y = 0).
+{
+  const full = parapet(4, 3);
+  const open = parapet(4, 3, { front: false });
+  near(full.bounds.maxX, 2, 'lan can rộng 4'); near(full.bounds.maxZ, 1.5, 'lan can sâu 3 có mép trước');
+  near(open.bounds.maxZ, 1.5 - 0.06, 'bỏ mép trước thì mép dưới lùi bằng bề dày gờ');
+  assert.equal(open.boxes.length + 1, full.boxes.length);
+  for (const p of [acUnit(), waterTank()]) {
+    near(p.bounds.minY, 0, `${p.id} đặt lên mặt mái`);
+    assert.ok(p.bounds.maxY < 1, `${p.id} thấp hơn D·0,6 để không che biển`);
+  }
+  near(acUnit().bounds.maxX - acUnit().bounds.minX, 0.5, 'điều hòa rộng 0,5');
+}
+
+// Đồ trưng trước tiệm: nhỏ hơn một ô, đáy ở y = 0, thấp hơn người (0,8·D = 1,28).
+for (const p of [produceCrate(), sandwichBoard(), plantPot()]) {
+  near(p.bounds.minY, 0, `${p.id} đặt lên vỉa hè`);
+  assert.ok(p.bounds.maxX - p.bounds.minX <= 0.5 && p.bounds.maxZ - p.bounds.minZ <= 0.5, `${p.id} nhỏ hơn nửa ô`);
+  assert.ok(p.bounds.maxY <= 0.8, `${p.id} thấp hơn nửa chiều cao người`);
+}
+
 // Mọi mảnh trong danh mục: ngân sách khối, kích thước dương, không chìm dưới sàn, màu thuộc bảng màu, kính duy nhất trong suốt.
 const ids = Object.keys(KIT_PIECES);
-assert.ok(ids.length >= 6, 'danh mục có đủ 6 mảnh đầu tiên');
+assert.ok(ids.length >= 12, 'danh mục có đủ 12 mảnh (6 đầu tiên + mái + đồ trưng)');
 for (const key of ids) {
   const piece = KIT_PIECES[key]();
   assert.equal(piece.id, key, `${key}: id khớp khóa danh mục`);
@@ -86,4 +123,4 @@ for (const key of ids) {
   }
 }
 
-console.log('PASS kit: khung cửa, cánh cửa kính, cửa sổ, phào, trụ đúng hộp bao, lối cửa thông, màu thuộc bảng màu, trong ngân sách');
+console.log('PASS kit: 12 mảnh (khung cửa, cánh cửa kính, cửa sổ, phào, trụ, chi tiết mái, đồ trưng) đúng hộp bao, lối cửa thông, màu thuộc bảng màu, trong ngân sách');

@@ -29,13 +29,15 @@ export function doorFrame({ width = K.doorWidth, height = K.doorHeight }: DoorFr
 export interface GlassDoorOptions {
   width?: number;
   height?: number;
+  /** Tay nắm ở phía +x (1) hay -x (-1): cửa đôi để tay nắm hướng vào giữa. */
+  handleSide?: 1 | -1;
 }
 
 /**
  * Cánh cửa kính: khung gỗ (hai thanh đứng, thanh ngang trên, thanh dưới cao làm tấm chắn chân), kính trong suốt và tay nắm
- * dọc ở mặt trước phía +x. Rộng/cao đúng bằng lối cửa nên lọt vừa `doorFrame` cùng kích thước. Sâu 0,06 căn giữa z = 0.
+ * dọc ở mặt trước (phía +x, hoặc -x khi `handleSide` = -1). Rộng/cao đúng bằng lối cửa nên lọt vừa `doorFrame` cùng kích thước. Sâu 0,06 căn giữa z = 0.
  */
-export function glassDoor({ width = K.doorWidth, height = K.doorHeight }: GlassDoorOptions = {}): KitPiece {
+export function glassDoor({ width = K.doorWidth, height = K.doorHeight, handleSide = 1 }: GlassDoorOptions = {}): KitPiece {
   const bar = 0.05;
   const kick = 0.18;
   const depth = 0.06;
@@ -47,7 +49,7 @@ export function glassDoor({ width = K.doorWidth, height = K.doorHeight }: GlassD
     kitBox(c, 0, height - bar / 2, 0, width - 2 * bar, bar, depth),
     kitBox(c, 0, kick / 2, 0, width - 2 * bar, kick, depth),
     kitBox(KIT_COLORS.glass, 0, kick + glassH / 2, 0, width - 2 * bar, glassH, 0.02, KIT_GLASS_ALPHA),
-    kitBox(KIT_COLORS.handle, width / 2 - bar - 0.08, height * 0.5, depth / 2 + 0.02, 0.03, 0.3, 0.04),
+    kitBox(KIT_COLORS.handle, handleSide * (width / 2 - bar - 0.08), height * 0.5, depth / 2 + 0.02, 0.03, 0.3, 0.04),
   ]);
 }
 
@@ -59,7 +61,8 @@ export interface ShopWindowOptions {
 }
 
 /**
- * Cửa sổ mặt tiền: khung bốn thanh, kính trong suốt, thanh giữa (nếu 2 ô) và bậu nhô ra phía trước (+z).
+ * Cửa sổ mặt tiền: khung bốn thanh, kính trong suốt, ô kính tối phía sau kính (khoảng tối trong nhà), thanh giữa (nếu 2 ô)
+ * và bậu nhô ra phía trước (+z).
  * `height` là chiều cao phần khung; cao tổng = height + bề dày bậu (đáy mảnh là đáy bậu, y = 0). Khung sâu 0,12 căn giữa z = 0.
  */
 export function shopWindow({ width = K.windowWidth, height = K.windowHeight, panes = 2 }: ShopWindowOptions = {}): KitPiece {
@@ -77,6 +80,7 @@ export function shopWindow({ width = K.windowWidth, height = K.windowHeight, pan
     kitBox(c, width / 2 - t / 2, y0 + height / 2, 0, t, innerH, depth),
     kitBox(KIT_COLORS.glass, 0, y0 + height / 2, 0, innerW, innerH, 0.02, KIT_GLASS_ALPHA),
     kitBox(KIT_COLORS.sill, 0, sillH / 2, 0.04, width + 0.1, sillH, 0.2),
+    kitBox(KIT_COLORS.pane, 0, y0 + height / 2, -0.012, innerW, innerH, 0.004),
   ];
   if (panes === 2) boxes.push(kitBox(c, 0, y0 + height / 2, 0, 0.03, innerH, depth * 0.8));
   return makePiece('shop-window', boxes);
