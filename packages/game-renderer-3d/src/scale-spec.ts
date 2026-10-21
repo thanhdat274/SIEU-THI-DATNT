@@ -88,6 +88,25 @@ export const SCALE_TARGETS = {
     fridge: 0.90 * DOOR_HEIGHT_D, // 1.44
   },
 
+  /** Bộ kit chi tiết tòa (kit/): kích thước chuẩn theo D */
+  kit: {
+    /** Lối cửa: rộng 0.56 * D = 0.90, cao = D trừ lanh tô 0.45 của mặt tiền (tường cao D) = 1.15 */
+    doorWidth: 0.56 * DOOR_HEIGHT_D, // 0.90
+    doorHeight: DOOR_HEIGHT_D - 0.45, // 1.15
+    /** Bề dày khung cửa/cửa sổ: 0.045 * D = 0.07; bề sâu khung cửa 0.1 * D = 0.16 */
+    frameThickness: 0.045 * DOOR_HEIGHT_D, // 0.072
+    frameDepth: 0.1 * DOOR_HEIGHT_D, // 0.16
+    /** Cửa sổ mặt tiền: rộng 0.56 * D, cao 0.44 * D; bậu đặt cao 0.31 * D so với sàn */
+    windowWidth: 0.56 * DOOR_HEIGHT_D, // 0.90
+    windowHeight: 0.44 * DOOR_HEIGHT_D, // 0.70
+    windowSillHeight: 0.31 * DOOR_HEIGHT_D, // 0.50
+    /** Trụ góc: cạnh 0.09 * D = 0.14 */
+    postSize: 0.09 * DOOR_HEIGHT_D, // 0.144
+    /** Phào chân tường cao 0.0625 * D = 0.10; phào trần cao 0.05 * D = 0.08 */
+    baseboardHeight: 0.0625 * DOOR_HEIGHT_D, // 0.10
+    corniceHeight: 0.05 * DOOR_HEIGHT_D, // 0.08
+  },
+
   /** Phụ kiện đính kèm người */
   accessories: {
     /** Bán kính bóng chân tỉ lệ theo người: ~0.24 đơn vị */

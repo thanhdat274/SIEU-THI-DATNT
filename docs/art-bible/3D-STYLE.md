@@ -81,10 +81,18 @@ box.material.diffuseColor = Color3.FromHexString('#8a5a38');        // sai: hex 
 
 Lúc chốt còn 112 dòng có hex rời trong `packages/game-renderer-3d/src` (không tính test và `style-spec`), nằm ở các mục bên phải. Chúng chuyển dần theo từng giai đoạn, không đổi hàng loạt.
 
-## 9. Checklist cho một asset mới
+## 9. Bộ kit và studio chụp (bước 4.2)
+
+Bộ kit `packages/game-renderer-3d/src/kit/` là các mảnh chi tiết dựng từ khối, dùng lại cho mọi tòa: **khung cửa, cánh cửa kính, cửa sổ (có bậu), phào chân tường, phào trần, trụ góc**. Kích thước chuẩn ở `SCALE_TARGETS.kit` (`scale-spec.ts`), màu theo vai trò ở `KIT_COLORS` (`style-spec.ts`). Mỗi mảnh ≤ 12 khối.
+
+Quy ước hệ cục bộ của mảnh: x ngang (căn giữa), y lên từ 0 ở đáy mảnh, **+z là mặt trước** (hướng ra phố), mặt phẳng tường ở z = 0. `bounds` luôn tính từ chính danh sách khối.
+
+**Studio** (`studio-3d.ts`) chụp một danh sách khối bất kỳ ra PNG nền trong suốt ở ba góc: `iso` (như camera game), `top` (x sang phải, z xuống dưới), `front` (nhìn thẳng vào mặt trước). Studio dùng **hệ tay phải như cảnh game**; hệ tay trái sẽ làm ảnh bị lật gương theo x. Ảnh tham chiếu: [3d-kit-4.2.jpg](3d-kit-4.2.jpg).
+
+## 10. Checklist cho một asset mới
 
 - [ ] Kích thước khai báo ở `scale-spec.ts`, hộp bao có test nằm trong chân diện/mặt tiền.
 - [ ] Mọi màu là token (hoặc vai trò trỏ về token), vật liệu không bóng.
 - [ ] Nếu là tòa/nội thất: gắn `metadata.buildingId`, tham gia bóc mái (`roof-fade`) và đèn đêm khi cần.
-- [ ] Chụp ảnh ngày, đêm, mưa ở góc camera mặc định; so cạnh các asset đã khóa.
+- [ ] Chụp ảnh bằng studio (ba góc) và ngày/đêm/mưa trong game; so cạnh các asset đã khóa.
 - [ ] Số mục vẽ trong ngân sách.

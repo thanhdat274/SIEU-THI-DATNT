@@ -36,6 +36,20 @@ export const GROCERY_FIXTURE_COLORS = {
   register: PALETTE.charcoal,
 } as const;
 
+/** Màu bộ kit chi tiết tòa (kit/) theo vai trò. */
+export const KIT_COLORS = {
+  frame: PALETTE.bark,
+  leaf: PALETTE.walnut,
+  glass: PALETTE.sky,
+  handle: PALETTE.steelDark,
+  trim: PALETTE.white,
+  post: PALETTE.sand,
+  sill: PALETTE.stone,
+} as const;
+
+/** Độ đục của kính trong kit (kính luôn trong suốt cố định, không phản chiếu). */
+export const KIT_GLASS_ALPHA = 0.4;
+
 /** Mọi giá trị hex của bảng màu (để kiểm tra "màu này có thuộc bảng màu không"). */
 export const PALETTE_HEXES: ReadonlySet<string> = new Set(Object.values(PALETTE));
 

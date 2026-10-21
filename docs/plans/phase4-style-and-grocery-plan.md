@@ -1,6 +1,7 @@
 # Giai đoạn 4 — Bảng phong cách asset và tòa mẫu tạp hóa
 
-Ngày lập: 21/10/2026. Nhánh `thay-doi-game-sang-3d`. **Đây là kế hoạch, chưa sửa code.**
+Ngày lập: 21/10/2026. Nhánh `thay-doi-game-sang-3d`.
+**Tiến độ:** 4.0 ✅ (`7316850`), 4.1 ✅ (`6d1875f`), 4.2 ✅. Các bước còn lại chưa làm.
 Tiền đề (đã chốt): bỏ hẳn 2D, chỉ còn 3D Babylon; asset theo **A (tự dựng bằng code, đồng bộ) + chút B (Kenney bổ trợ)**; tầm nhìn Cafeland + chút quy hoạch CS2; "vào trong" là một cảnh riêng; mỗi loại cửa hàng làm sâu xong hẳn rồi mới sang loại khác; **làm từng bước nhỏ, xong là khóa**.
 
 ## 1. Mục tiêu và ranh giới
