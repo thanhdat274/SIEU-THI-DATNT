@@ -143,6 +143,7 @@ import './actor-sprite.test';
 import './wave-decor.test';
 import './vehicle-view.test';
 import './fixture-preview-3d.test';
+import './style-spec.test';
 
 import './signals-data.test';
 

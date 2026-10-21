@@ -1,4 +1,5 @@
 import type { BuildingTypeId } from './world/building-types';
+import { GROCERY_STYLE } from './style-palette';
 
 /** Hình 3D của một loại tòa (renderer Babylon, docs/plans/3d-migration-plan.md C1). Màu dạng '#rrggbb'. */
 export interface BuildingVisual {
@@ -22,7 +23,7 @@ const shop = (wall: string, roof: string, awning: readonly [string, string], sig
 
 /** Mỗi loại tòa phải có hình (kiểu `Record` bắt thiếu khi thêm loại mới). */
 export const BUILDING_VISUALS: Record<BuildingTypeId, BuildingVisual> = {
-  grocery_main: shop('#efe3c6', '#b5533c', ['#c8402f', '#f3ead6'], '#2f5d3a'),
+  grocery_main: shop(GROCERY_STYLE.wall, GROCERY_STYLE.roof, GROCERY_STYLE.awning, GROCERY_STYLE.signBg, GROCERY_STYLE.signText),
   xoi_shop: shop('#f2dfb0', '#8a5a2b', ['#e1a12a', '#fbf1d6'], '#7a3b1d'),
   drink_shop: shop('#d8ecea', '#2f7f86', ['#3a9aa2', '#f1fbfa'], '#1f4f66'),
   snack_shop: shop('#f6d9d0', '#c4563f', ['#e9774e', '#fff2e8'], '#8c2f39'),

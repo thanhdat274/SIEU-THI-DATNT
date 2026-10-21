@@ -1,5 +1,7 @@
 # ART BIBLE — Tiệm Tạp Hóa Đầu Hẻm
 
+> **Lưu ý (21/10/2026):** tài liệu này mô tả phong cách pixel 2D và không còn áp dụng cho game (đã bỏ renderer 2D). Phong cách hiện hành: [art-bible/3D-STYLE.md](art-bible/3D-STYLE.md).
+
 Phiên bản 1 — 17/10/2026. Áp dụng cho mọi sprite/atlas/hình vẽ bằng code mới hoặc vẽ lại. Ảnh tham chiếu trong `docs/art-bible/` là ảnh chụp thật của game (Chrome headless, `?qa` → Chơi Thử (Local), dev server riêng không HMR).
 
 Game chơi cá nhân, phi thương mại (xem `tổng hợp.md`): được dùng Kenney (CC0) và LimeZu bản free (cấm thương mại). Nếu sau này phát hành phải mua bản đầy đủ và ghi credit.

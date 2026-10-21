@@ -1,6 +1,7 @@
 import { BUILDING_VISUALS } from '@game/data';
 import { getFixtureDimensions, type StoreFixture } from '@game/shared';
 import { SCALE_TARGETS } from './scale-spec';
+import { GROCERY_FIXTURE_COLORS as GROCERY } from './style-spec';
 
 /** Một khối hộp trục song song trong toạ độ thế giới 3D (đơn vị = ô; Y hướng lên, cy = tâm theo chiều cao). */
 export interface FixtureBox {
@@ -41,12 +42,12 @@ export function shelfFrontZ(d: number): number {
   return -d / 2 + SHELF_BACK_GAP + d * SHELF_DEPTH_RATIO;
 }
 
-const SHELF_WOOD = '#7b5d40';
-const SHELF_WOOD_DARK = '#5c4531';
-const SHELF_BACK_WOOD = '#6a4f37';
-const SHELF_METAL = '#8d979e';
-const SHELF_METAL_DARK = '#68737a';
-const SHELF_GLASS = '#cfe6ee';
+const SHELF_WOOD = GROCERY.shelfWood;
+const SHELF_WOOD_DARK = GROCERY.shelfWoodDark;
+const SHELF_BACK_WOOD = GROCERY.shelfBackWood;
+const SHELF_METAL = GROCERY.shelfMetal;
+const SHELF_METAL_DARK = GROCERY.shelfMetalDark;
+const SHELF_GLASS = GROCERY.shelfGlass;
 const PRICE_STRIP = BUILDING_VISUALS.grocery_main.wall;
 const PRICE_STRIP_THICK = 0.014;
 
@@ -88,17 +89,17 @@ function shelf(w: number, d: number, glass: boolean): FixtureBox[] {
 function fridge(w: number, d: number): FixtureBox[] {
   const h = 1.35;
   return [
-    { color: '#dfe8ee', cx: 0, cy: h / 2, cz: 0, sx: w, sy: h, sz: d * 0.96 },
-    { color: '#9fd8ff', emissive: true, cx: 0, cy: h / 2 + 0.03, cz: d * 0.48 + 0.01, sx: w - 0.14, sy: h - 0.24, sz: 0.03 },
-    { color: '#8a99a3', cx: 0, cy: h + 0.03, cz: 0, sx: w, sy: 0.06, sz: d * 0.98 },
+    { color: GROCERY.fridgeBody, cx: 0, cy: h / 2, cz: 0, sx: w, sy: h, sz: d * 0.96 },
+    { color: GROCERY.fridgeGlass, emissive: true, cx: 0, cy: h / 2 + 0.03, cz: d * 0.48 + 0.01, sx: w - 0.14, sy: h - 0.24, sz: 0.03 },
+    { color: GROCERY.fridgeTop, cx: 0, cy: h + 0.03, cz: 0, sx: w, sy: 0.06, sz: d * 0.98 },
   ];
 }
 
 function counter(w: number, d: number): FixtureBox[] {
   return [
-    { color: '#8a5a38', cx: 0, cy: 0.3, cz: 0, sx: w, sy: 0.6, sz: d * 0.9 },
-    { color: '#d9b98c', cx: 0, cy: 0.63, cz: 0, sx: w * 0.98, sy: 0.07, sz: d * 0.96 },
-    { color: '#333a40', cx: -w / 2 + 0.3, cy: 0.8, cz: 0, sx: 0.32, sy: 0.26, sz: 0.3 },
+    { color: GROCERY.counterBase, cx: 0, cy: 0.3, cz: 0, sx: w, sy: 0.6, sz: d * 0.9 },
+    { color: GROCERY.counterTop, cx: 0, cy: 0.63, cz: 0, sx: w * 0.98, sy: 0.07, sz: d * 0.96 },
+    { color: GROCERY.register, cx: -w / 2 + 0.3, cy: 0.8, cz: 0, sx: 0.32, sy: 0.26, sz: 0.3 },
   ];
 }
 

@@ -32,6 +32,7 @@ export * from './data-integrity.test';
 export * from './world/reclamation-data.test';
 export * from './world/play-area.test';
 export * from './building-visuals';
+export * from './style-palette';
 export * from './world/building-types';
 export * from './world/building-types.test';
 export * from './world/store-tiers';

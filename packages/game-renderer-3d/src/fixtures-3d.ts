@@ -10,12 +10,13 @@ import type { StoreFixture } from '@game/shared';
 import { fixtureBoxes, fixtureFootprint, fixturesSignature, type FixtureBox } from './fixture-shapes';
 import { ModelLibrary, cloneTemplateMesh, type ModelKind, MODEL_CATALOG } from './model-library';
 import { SCALE_TARGETS } from './scale-spec';
+import { EMISSIVE_SCALE } from './style-spec';
 import { ALPHA_HIDDEN } from './roof-fade';
 import type { RoofInfo } from './map-builder';
 
 /** Chu kỳ kiểm tra chữ ký fixture (giây) khi sim không có bộ đếm phiên bản. */
 const SYNC_INTERVAL = 0.5;
-export const EMISSIVE_SCALE = 0.6;
+export { EMISSIVE_SCALE };
 
 interface BoxGroup {
   mesh: Mesh;
