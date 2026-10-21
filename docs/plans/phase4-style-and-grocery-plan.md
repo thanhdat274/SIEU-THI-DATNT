@@ -1,7 +1,7 @@
 # Giai đoạn 4 — Bảng phong cách asset và tòa mẫu tạp hóa
 
 Ngày lập: 21/10/2026. Nhánh `thay-doi-game-sang-3d`.
-**Tiến độ:** 4.0 ✅ (`7316850`), 4.1 ✅ (`6d1875f`), 4.2 ✅ (`5d9f85d`), 4.3 ✅ (số mục vẽ tạp hóa 6 → 28 mesh, ngân sách 60). Các bước còn lại chưa làm.
+**Tiến độ:** 4.0 ✅ (`7316850`), 4.1 ✅ (`6d1875f`), 4.2 ✅ (`5d9f85d`), 4.3 ✅ (số mục vẽ tạp hóa 6 → 28 mesh, ngân sách 60), 4.4 ✅ (vỏ trong 14 mesh, dựng lười). Các bước còn lại chưa làm.
 Tiền đề (đã chốt): bỏ hẳn 2D, chỉ còn 3D Babylon; asset theo **A (tự dựng bằng code, đồng bộ) + chút B (Kenney bổ trợ)**; tầm nhìn Cafeland + chút quy hoạch CS2; "vào trong" là một cảnh riêng; mỗi loại cửa hàng làm sâu xong hẳn rồi mới sang loại khác; **làm từng bước nhỏ, xong là khóa**.
 
 ## 1. Mục tiêu và ranh giới

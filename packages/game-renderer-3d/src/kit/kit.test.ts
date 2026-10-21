@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { boxOverlapsRectXY, boxesBounds } from '../box-bounds';
 import { SCALE_TARGETS, DOOR_HEIGHT_D } from '../scale-spec';
 import { KIT_COLORS, PALETTE_HEXES } from '../style-spec';
-import { KIT_BOX_BUDGET, KIT_PIECES, acUnit, baseboard, cornerPost, cornice, doorFrame, glassDoor, parapet, plantPot, produceCrate, sandwichBoard, shopWindow, waterTank } from './index';
+import { KIT_BOX_BUDGET, KIT_PIECES, ceilingBeam, doorMat, lampBulb, pendantLamp, priceBoard, wallPoster, acUnit, baseboard, cornerPost, cornice, doorFrame, glassDoor, parapet, plantPot, produceCrate, sandwichBoard, shopWindow, waterTank } from './index';
 
 const K = SCALE_TARGETS.kit;
 const EPS = 1e-9;
@@ -107,9 +107,26 @@ for (const p of [produceCrate(), sandwichBoard(), plantPot()]) {
   assert.ok(p.bounds.maxY <= 0.8, `${p.id} thấp hơn nửa chiều cao người`);
 }
 
+// Nội thất trong nhà: xà, đèn thả (đèn nhỏ ngoài thân), áp phích ba biến thể, bảng giá, thảm cửa.
+{
+  near(ceilingBeam(6).bounds.maxX - ceilingBeam(6).bounds.minX, 6, 'xà dài 6');
+  near(ceilingBeam(6).bounds.maxY, 0.08, 'xà dày 0,08');
+  const lamp = pendantLamp(0.06);
+  near(lamp.bounds.maxY, 0.12 + 0.06, 'đèn thả cao = chụp + dây');
+  near(lamp.bounds.minY, 0, 'đèn thả đặt đáy chụp ở y = 0');
+  assert.ok(lampBulb().bounds.maxY <= 0.06 + EPS && lampBulb().boxes[0].color === KIT_COLORS.glow, 'bóng đèn nhỏ, màu ánh sáng');
+  const colors = [0, 1, 2].map((v) => wallPoster(v as 0 | 1 | 2).boxes[1].color);
+  assert.equal(new Set(colors).size, 3, 'ba biến thể áp phích khác màu tranh');
+  const pb = priceBoard();
+  near(pb.bounds.maxX - pb.bounds.minX, 0.8, 'bảng giá rộng 0,8'); near(pb.bounds.maxY, 0.5, 'bảng giá cao 0,5');
+  assert.ok(pb.bounds.minZ >= -EPS && pb.bounds.maxZ <= 0.05, 'bảng giá nhô ≤ 0,05 khỏi mặt tường (z ≥ 0)');
+  assert.ok(wallPoster().bounds.minZ >= -EPS && wallPoster().bounds.maxZ <= 0.04, 'áp phích nhô ≤ 0,04 khỏi mặt tường');
+  near(doorMat(1.7).bounds.maxX, 0.85, 'thảm cửa theo bề rộng'); assert.ok(doorMat(1.7).bounds.maxY <= 0.03, 'thảm mỏng');
+}
+
 // Mọi mảnh trong danh mục: ngân sách khối, kích thước dương, không chìm dưới sàn, màu thuộc bảng màu, kính duy nhất trong suốt.
 const ids = Object.keys(KIT_PIECES);
-assert.ok(ids.length >= 12, 'danh mục có đủ 12 mảnh (6 đầu tiên + mái + đồ trưng)');
+assert.ok(ids.length >= 18, 'danh mục có đủ 18 mảnh (6 đầu tiên + mái + đồ trưng + nội thất trong nhà)');
 for (const key of ids) {
   const piece = KIT_PIECES[key]();
   assert.equal(piece.id, key, `${key}: id khớp khóa danh mục`);
@@ -123,4 +140,4 @@ for (const key of ids) {
   }
 }
 
-console.log('PASS kit: 12 mảnh (khung cửa, cánh cửa kính, cửa sổ, phào, trụ, chi tiết mái, đồ trưng) đúng hộp bao, lối cửa thông, màu thuộc bảng màu, trong ngân sách');
+console.log('PASS kit: 18 mảnh (khung cửa, cánh cửa kính, cửa sổ, phào, trụ, chi tiết mái, đồ trưng, nội thất trong nhà) đúng hộp bao, lối cửa thông, màu thuộc bảng màu, trong ngân sách');

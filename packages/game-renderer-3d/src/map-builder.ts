@@ -15,7 +15,7 @@ import { createSignPlane } from './sign-plane';
 import { BUILDING_VISUALS, STREET_LAMP_TILES, TREE_PROPS, buildingTypeOfInstance, type BuildingTypeId, type BuildingVisual } from '@game/data';
 import { resolveTreeHeightForId } from './scale-spec';
 import { ModelLibrary, MODEL_CATALOG, cloneTemplateMesh, type ModelKind } from './model-library';
-import { EXTERIOR_BUILDERS } from './building-registry';
+import { EXTERIOR_BUILDERS, INTERIOR_BUILDERS, type InteriorSpec } from './building-registry';
 
 /** Mã ô lớp `walls`: 7 là gốc cây (vẽ cây riêng), còn lại là tường. */
 const WALL_TREE = 7;
@@ -102,6 +102,8 @@ export interface BuiltMap {
   lampMaterial: StandardMaterial | null;
   lampHeadMesh: Mesh | null;
   civicNightMeshes?: Mesh[];
+  /** Vỏ trong chờ dựng lười (xem interior-manager.ts), một mục cho mỗi tòa có builder vỏ trong. */
+  interiors?: InteriorSpec[];
   shadowCasters?: Mesh[];
   updateNightLighting?: (lampsOn: number) => void;
   updateTreeWind?: (timeSec: number, windStrength: number, reducedMotion: boolean) => void;
@@ -125,6 +127,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
   const civicNightMaterials: StandardMaterial[] = [];
   const facadeNightMaterials: StandardMaterial[] = [];
   const windowPlaneMeshes: Mesh[] = [];
+  const interiors: InteriorSpec[] = [];
   const civicNightMeshes: Mesh[] = [];
   const mats = new Map<string, StandardMaterial>();
 
@@ -369,6 +372,22 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
 
     if (!b) continue;
     const front = f.y1 + 1;
+
+    // Vỏ trong (dựng lười): chỉ ghi lại ô sàn/tường thật và cách dựng; InteriorManager quyết định khi nào dựng.
+    const buildInterior = f.typeId ? INTERIOR_BUILDERS[f.typeId] : undefined;
+    if (buildInterior) {
+      const wallAt = (x: number, z: number): boolean => { const w = at(walls, x, z); return w !== 0 && w !== WALL_TREE; };
+      const floorTiles: Array<{ x: number; z: number }> = [];
+      for (let ty = f.y0; ty <= f.y1; ty++) for (let tx = f.x0; tx <= f.x1; tx++) if (at(ground, tx, ty) === 3 && !wallAt(tx, ty)) floorTiles.push({ x: tx, z: ty });
+      if (floorTiles.length) {
+        const center = { x: floorTiles.reduce((s, t) => s + t.x + 0.5, 0) / floorTiles.length, z: floorTiles.reduce((s, t) => s + t.z + 0.5, 0) / floorTiles.length };
+        interiors.push({
+          buildingId,
+          center,
+          build: () => buildInterior({ scene, buildingId, visual: v, wallHeight: v.wallHeight, floorTiles, isWall: wallAt, doorTiles: doors.map(t => ({ x: t.x, z: t.y })) }),
+        });
+      }
+    }
 
     // Điểm móc registry (building-registry.ts): loại tòa có builder vỏ ngoài riêng thì dùng thay cho mặt tiền/cửa sổ/mái hiên/biển chung bên dưới.
     const buildExterior = f.typeId ? EXTERIOR_BUILDERS[f.typeId] : undefined;
@@ -647,6 +666,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     lampMaterial: STREET_LAMP_TILES.length ? mats.get('#ffe9a8') ?? null : null,
     lampHeadMesh,
     civicNightMeshes,
+    interiors,
     shadowCasters,
     updateNightLighting,
     updateTreeWind,

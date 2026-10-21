@@ -69,6 +69,28 @@ const close = (a: Vector3, b: Vector3, msg: string): void => assert.ok(Vector3.D
   close(got, expected, 'xoay X quanh gốc at');
 }
 
+// Xoay quanh trục đứng (phào dọc tường bên): khớp Matrix.RotationY, mặt trước +z quay sang +x khi rotY = π/2.
+{
+  const box = kitBox('#fbf6ea', 0.3, 0.5, 0.2, 1, 0.1, 0.04);
+  const at = { x: 7, y: 0, z: 5 };
+  const batch = new KitBatch(scene, 'roty', 'main');
+  batch.addBox(box, at, 'plain', 0, Math.PI / 2);
+  const m = batch.build().meshes[0].thinInstanceGetWorldMatrices()[0];
+  const expected = Vector3.TransformCoordinates(new Vector3(box.cx, box.cy, box.cz), Matrix.RotationY(Math.PI / 2).multiply(Matrix.Translation(at.x, at.y, at.z)));
+  close(m.getTranslation(), expected, 'xoay Y quanh gốc at');
+  close(Vector3.TransformNormal(new Vector3(0, 0, 1), m).normalize(), new Vector3(1, 0, 0), 'mặt trước +z quay sang +x');
+}
+
+// Vai trò floor: nhận bóng đổ; các vai trò khác thì không.
+{
+  const batch = new KitBatch(scene, 'floor', 'main');
+  batch.addBox(kitBox('#e6cfa3', 0, 0.01, 0, 1, 0.02, 1), { x: 0, y: 0, z: 0 }, 'floor');
+  batch.addBox(kitBox('#fbf6ea', 0, 0.01, 0, 1, 0.02, 1), { x: 0, y: 0, z: 0 }, 'plain');
+  const [floor, plain] = batch.build().meshes;
+  assert.equal(floor.receiveShadows, true);
+  assert.equal(plain.receiveShadows, false);
+}
+
 // Vai trò glow: ô phát sáng, tắt sẵn (chỉ bật ban đêm), vật liệu không bị ánh sáng ảnh hưởng.
 {
   const batch = new KitBatch(scene, 'glow', 'main');

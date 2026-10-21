@@ -20,6 +20,7 @@ import { createActorAtlas, type ActorAtlas } from './actor-atlas';
 import { Crowd3D } from './crowd-3d';
 import { Characters3D } from './characters-3d';
 import { Fixtures3D } from './fixtures-3d';
+import { InteriorManager } from './interior-manager';
 import { Stock3D } from './stock-3d';
 import { Overlay3D } from './overlay-3d';
 import { Sky3D } from './sky-3d';
@@ -86,6 +87,7 @@ export class BabylonGameViewport implements GameViewport {
   private actorAtlas: ActorAtlas | null = null;
   private openedWaves: readonly string[] = [];
   private readonly resolutionAdapter = new AdaptiveResolutionController();
+  private readonly interiors = new InteriorManager();
   private updateNightLighting: ((lampsOn: number) => void) | null = null;
   private updateTreeWind: ((timeSec: number, windStrength: number, reducedMotion: boolean) => void) | null = null;
   private treeWindTimer = 0;
@@ -225,6 +227,7 @@ export class BabylonGameViewport implements GameViewport {
     for (const m of built.shadowCasters ?? []) {
       this.sky?.addShadowCaster(m);
     }
+    this.interiors.reset(built.interiors ?? []);
     this.updateNightLighting = built.updateNightLighting ?? null;
     this.updateTreeWind = built.updateTreeWind ?? null;
     this.weather?.setRoadMaterial(built.roadMaterial);
@@ -305,6 +308,7 @@ export class BabylonGameViewport implements GameViewport {
       this.targetPan = { x: 0, z: 0 };
     }
     this.updateRoofFade(elapsed, pos);
+    this.interiors.update(this.roofs, focus);
     this.fixtures?.update(elapsed, focus);
     this.stock?.update(elapsed, focus);
     this.worldDecor?.update();
@@ -446,6 +450,7 @@ export class BabylonGameViewport implements GameViewport {
     sky.update(t.hour, t.minute, t.day, weather.getRain(), elapsed);
     const skyLighting = lightingAt(t.hour, t.minute, t.day, weather.getRain());
     this.updateNightLighting?.(skyLighting.lampsOn);
+    this.interiors.setNight(skyLighting.lampsOn);
   }
 
   /** Bóc mái mượt: mái + tường mặt tiền mờ dần khi người chơi vào tòa (và kho thông với tiệm chính; tòa kề sát giữ mái), tường tòa che người chơi hạ còn OCCLUDER_ALPHA. */
@@ -926,6 +931,7 @@ export class BabylonGameViewport implements GameViewport {
     this.sky = null;
     this.weather = null;
     this.actorAtlas = null;
+    this.interiors.dispose();
     this.mapMeshes = [];
     this.roofs = [];
     this.selectionFrameBars = [];

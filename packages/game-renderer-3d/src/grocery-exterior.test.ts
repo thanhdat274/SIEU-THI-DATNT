@@ -177,6 +177,17 @@ function instanceBounds(mesh: Mesh): { minX: number; maxX: number; minY: number;
   // Mọi mesh bấm chọn được của tiệm chính đều mang buildingId 'main'.
   const mine = built.meshes.filter((m) => m.name.startsWith('gx_main_'));
   assert.ok(mine.length > 10 && mine.every((m) => (m.metadata as { buildingId?: string }).buildingId === 'main'));
+  // Vỏ trong dựng LƯỜI: bản đồ chỉ ghi lại cách dựng (một mục cho tiệm chính, tiệm xôi không có), chưa có mesh nào.
+  assert.equal(built.interiors?.length, 1, 'chỉ tiệm chính có vỏ trong');
+  const spec = built.interiors![0];
+  assert.equal(spec.buildingId, 'main');
+  assert.ok(spec.center.x > 7 && spec.center.x < 21 && spec.center.z > 4 && spec.center.z < 11, 'tâm vỏ trong nằm trong phòng');
+  assert.equal(scene.meshes.filter((m) => m.name.startsWith('gi_main')).length, 0, 'chưa gọi build thì chưa có mesh vỏ trong');
+  const interior = spec.build();
+  assert.ok(interior.meshes.length > 5 && interior.meshes.every((m) => (m.metadata as { buildingId?: string }).buildingId === 'main'));
+  assert.equal(scene.meshes.filter((m) => m.name.startsWith('gi_main')).length, interior.meshes.length, 'build tạo đúng các mesh trả về');
+  const floorCount = interior.meshes.filter((m) => m.name.includes('floor|')).reduce((s, m) => s + m.thinInstanceCount, 0);
+  assert.equal(floorCount, 14 * 6 + 2, 'ô lát = ô sàn thật (ground = 3, không tường) gồm hai ô cửa');
   // Hằng số mặt tiền khớp: lối cửa cao bằng D trừ lanh tô.
   assert.equal(K.doorHeight, 1.6 - 0.45);
   assert.equal(KIT_COLORS.wainscot, PALETTE_HEXES.has(KIT_COLORS.wainscot) ? KIT_COLORS.wainscot : '');

@@ -3,11 +3,13 @@ export * from './openings';
 export * from './trim';
 export * from './roof';
 export * from './props';
+export * from './interior';
 
 import { cornerPost, baseboard, cornice } from './trim';
 import { doorFrame, glassDoor, shopWindow } from './openings';
 import { parapet, acUnit, waterTank } from './roof';
 import { produceCrate, sandwichBoard, plantPot } from './props';
+import { ceilingBeam, doorMat, lampBulb, pendantLamp, priceBoard, wallPoster } from './interior';
 import type { KitPiece } from './piece';
 
 /** Ngân sách khối của một mảnh kit (mảnh phức tạp hơn thì tách thành hai mảnh). */
@@ -27,4 +29,10 @@ export const KIT_PIECES: Record<string, () => KitPiece> = {
   'produce-crate': () => produceCrate(),
   'sandwich-board': () => sandwichBoard(),
   'plant-pot': () => plantPot(),
+  'ceiling-beam': () => ceilingBeam(2),
+  'pendant-lamp': () => pendantLamp(),
+  'lamp-bulb': () => lampBulb(),
+  'wall-poster': () => wallPoster(),
+  'price-board': () => priceBoard(),
+  'door-mat': () => doorMat(1.5),
 };

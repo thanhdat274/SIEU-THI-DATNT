@@ -99,7 +99,15 @@ Quy ước hệ cục bộ của mảnh: x ngang (căn giữa), y lên từ 0 �
 - **Số mục vẽ (đo trong game, tòa tạp hóa không tính kho):** 6 mesh (25 instance) → **28 mesh (165 instance)**, ngân sách 60. Ảnh: [ngày](3d-grocery-exterior-4.3-day.jpg), [đêm](3d-grocery-exterior-4.3-night.jpg).
 - **Chưa làm:** biển MỞ/ĐÓNG theo trạng thái tiệm (cần cập nhật động), cánh cửa mở khi có khách.
 
-## 11. Checklist cho một asset mới
+## 11. Vỏ trong tạp hóa (bước 4.4)
+
+- **Dựng lười:** `InteriorManager` (`interior-manager.ts`) hỏi hàm thuần `decideInterior` mỗi khung hình: **dựng** khi camera cách tâm phòng ≤ 20 ô hoặc mái đã bóc; **hiện** chỉ khi mái đang mờ (độ đục < 0,999); **giải phóng** (mesh và vật liệu) khi mái đậy và camera xa hơn 36 ô. Hai bán kính khác nhau để không dựng/hủy liên tục. Dựng lỗi chỉ cảnh báo một lần, không thử lại.
+- **Vị trí theo ô thật:** builder nhận danh sách ô sàn, hàm hỏi ô tường và ô cửa từ bản đồ (không dùng hộp bao tòa vì nó gồm cả vùng mở rộng chưa lát sàn). `wallFaces` gộp mặt tường nhìn vào phòng thành đoạn liên tiếp.
+- **Tạp hóa v1:** sàn lát hai tông xen kẽ (khe vữa lộ nền), dải chân tường bạc hà (`interiorWainscot`) kèm phào chân trắng, áp phích (3 biến thể) trên tường sau và tường phải, bảng giá trên tường trái, xà ngang tựa vào hai tường với đèn thả cao hơn đầu người (1,28) và dưới trần, bóng đèn chỉ sáng ban đêm, thảm cửa ở ngưỡng cửa. Không đặt đồ trang trí trên tường phía cửa (có cửa và quầy thu ngân).
+- **Số mục vẽ (đo trong game):** **14 mesh**, chỉ khi camera gần; **0 mesh** khi camera xa 60 ô; ở 25 ô (giữa hai bán kính) giữ nguyên trạng thái trước đó. Ảnh: [sáng](3d-grocery-interior-4.4-day.jpg), [đêm](3d-grocery-interior-4.4-night.jpg).
+- **Chưa làm:** chữ trên bảng giá, áp phích có hình thật, đèn trần không dây (xà chỉ nối được khi hai đầu có tường).
+
+## 12. Checklist cho một asset mới
 
 - [ ] Kích thước khai báo ở `scale-spec.ts`, hộp bao có test nằm trong chân diện/mặt tiền.
 - [ ] Mọi màu là token (hoặc vai trò trỏ về token), vật liệu không bóng.

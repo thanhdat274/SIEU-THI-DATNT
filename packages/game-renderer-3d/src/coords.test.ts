@@ -148,6 +148,8 @@ import './studio-3d.test';
 import './kit/kit.test';
 import './kit/batch.test';
 import './grocery-exterior.test';
+import './interior-manager.test';
+import './grocery-interior.test';
 
 import './signals-data.test';
 

@@ -3,6 +3,7 @@ import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import type { BuildingTypeId, BuildingVisual } from '@game/data';
 import { buildGroceryExterior } from './grocery-exterior';
+import { buildGroceryInterior } from './grocery-interior';
 
 /**
  * Registry dựng tòa: mỗi loại tòa có thể đăng ký một builder vỏ ngoài riêng (mặt tiền, mái hiên, biển, chi tiết mái, đồ trưng).
@@ -54,3 +55,44 @@ export type ExteriorBuilder = (ctx: ExteriorContext) => BuildingExterior;
 export const EXTERIOR_BUILDERS: Partial<Record<BuildingTypeId, ExteriorBuilder>> = {
   grocery_main: buildGroceryExterior,
 };
+
+/**
+ * Vỏ trong (sàn, tường, phào, đèn, áp phích...) của một loại tòa. Khác vỏ ngoài, vỏ trong dựng LƯỜI bởi `InteriorManager`:
+ * chỉ khi người chơi ở gần hoặc đã bóc mái, và chỉ hiện khi mái mờ đi. Vị trí lấy từ ô sàn/tường thật của bản đồ,
+ * không phải hộp bao tòa (hộp bao còn gồm cả vùng mở rộng chưa lát sàn).
+ */
+export interface InteriorContext {
+  scene: Scene;
+  buildingId: string;
+  visual: BuildingVisual;
+  /** Chiều cao tường (ô). */
+  wallHeight: number;
+  /** Ô sàn tiệm (toạ độ ô thế giới, không gồm ô tường). */
+  floorTiles: ReadonlyArray<{ x: number; z: number }>;
+  isWall(x: number, z: number): boolean;
+  /** Ô cửa ở hàng mặt tiền (toạ độ ô thế giới). */
+  doorTiles: ReadonlyArray<{ x: number; z: number }>;
+}
+
+export interface BuildingInterior {
+  meshes: Mesh[];
+  /** Ô phát sáng: chỉ hiện ban đêm (và khi vỏ trong đang hiện). */
+  glowMeshes: Mesh[];
+  /** Vật liệu riêng của vỏ trong, giải phóng cùng mesh. */
+  materials: StandardMaterial[];
+  drawItems: number;
+}
+
+export type InteriorBuilder = (ctx: InteriorContext) => BuildingInterior;
+
+export const INTERIOR_BUILDERS: Partial<Record<BuildingTypeId, InteriorBuilder>> = {
+  grocery_main: buildGroceryInterior,
+};
+
+/** Một vỏ trong chờ dựng: `build` chỉ chạy khi `InteriorManager` quyết định cần. */
+export interface InteriorSpec {
+  buildingId: string;
+  /** Tâm vỏ trong (toạ độ thế giới) để đo khoảng cách tới camera. */
+  center: { x: number; z: number };
+  build: () => BuildingInterior;
+}

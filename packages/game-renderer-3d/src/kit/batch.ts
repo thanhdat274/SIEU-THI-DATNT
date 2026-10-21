@@ -15,10 +15,11 @@ import type { KitPiece } from './piece';
  * - roof: ẩn/mờ cùng mái;
  * - glass: kính trong suốt cố định (không mờ theo mặt tiền, vì sẽ ghi đè độ đục của kính);
  * - glow: ô phát sáng, chỉ hiện ban đêm;
+ * - floor: như plain nhưng nhận bóng đổ (sàn lát);
  * - plain: luôn hiện (mái hiên, đồ trưng trước tiệm).
  * Khối có `alpha` (kính) luôn thuộc nhóm glass, trừ khi truyền glow.
  */
-export type BatchRole = 'facade' | 'roof' | 'glass' | 'glow' | 'plain';
+export type BatchRole = 'facade' | 'roof' | 'glass' | 'glow' | 'floor' | 'plain';
 
 export interface BatchGroupInfo {
   role: BatchRole;
@@ -64,12 +65,15 @@ export class KitBatch {
   ) {}
 
   /** Thêm một mảnh kit, đặt gốc cục bộ của mảnh tại `at`. */
-  public add(piece: KitPiece, at: BatchPlacement, role: BatchRole = 'plain', rotX = 0): void {
-    for (const box of piece.boxes) this.addBox(box, at, role, rotX);
+  public add(piece: KitPiece, at: BatchPlacement, role: BatchRole = 'plain', rotX = 0, rotY = 0): void {
+    for (const box of piece.boxes) this.addBox(box, at, role, rotX, rotY);
   }
 
-  /** Thêm một khối lẻ. `rotX` (rad) xoay cả khối quanh trục X của `at` (mái hiên nghiêng). */
-  public addBox(box: FixtureBox, at: BatchPlacement, role: BatchRole = 'plain', rotX = 0): void {
+  /**
+   * Thêm một khối lẻ. `rotX` (rad) xoay cả khối quanh trục X của `at` (mái hiên nghiêng); `rotY` xoay quanh trục đứng
+   * (phào dọc tường bên: mặt trước +z quay sang +x khi rotY = π/2).
+   */
+  public addBox(box: FixtureBox, at: BatchPlacement, role: BatchRole = 'plain', rotX = 0, rotY = 0): void {
     const resolved: BatchRole = role === 'glow' ? 'glow' : box.alpha !== undefined ? 'glass' : role;
     const alpha = box.alpha ?? 1;
     const key = `${resolved}|${box.color}|${alpha}`;
@@ -79,7 +83,7 @@ export class KitBatch {
       this.groups.set(key, g);
     }
     const local = Matrix.Compose(new Vector3(box.sx, box.sy, box.sz), Quaternion.Identity(), new Vector3(box.cx, box.cy, box.cz));
-    const world = Matrix.Compose(new Vector3(1, 1, 1), Quaternion.RotationAxis(Vector3.Right(), rotX), new Vector3(at.x, at.y, at.z));
+    const world = Matrix.Compose(new Vector3(1, 1, 1), Quaternion.RotationYawPitchRoll(rotY, rotX, 0), new Vector3(at.x, at.y, at.z));
     g.matrices.push(local.multiply(world));
   }
 
@@ -102,6 +106,7 @@ export class KitBatch {
       mesh.material = material;
       mesh.metadata = { buildingId: this.buildingId };
       mesh.thinInstanceEnablePicking = true;
+      mesh.receiveShadows = g.role === 'floor';
       const buffer = new Float32Array(g.matrices.length * 16);
       g.matrices.forEach((m, i) => m.copyToArray(buffer, i * 16));
       mesh.thinInstanceSetBuffer('matrix', buffer, 16, true);

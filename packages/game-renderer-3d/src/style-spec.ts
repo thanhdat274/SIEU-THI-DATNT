@@ -64,6 +64,14 @@ export const KIT_COLORS = {
   soil: PALETTE.cocoa,
   foliage: PALETTE.leaf,
   foliageDark: PALETTE.forest,
+  /** Trong nhà: sàn lát hai tông xen kẽ, tường chân màu bạc hà, đèn thả, bảng phấn, thảm cửa. */
+  floorA: PALETTE.sand,
+  floorB: PALETTE.butter,
+  interiorWainscot: PALETTE.mint,
+  lampShade: PALETTE.terracotta,
+  chalkboard: PALETTE.charcoal,
+  chalk: PALETTE.cream,
+  mat: PALETTE.cocoa,
 } as const;
 
 /** Độ đục của kính trong kit (kính luôn trong suốt cố định, không phản chiếu). */
