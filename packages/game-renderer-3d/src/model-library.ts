@@ -131,6 +131,21 @@ export interface LoadedModelContainer {
 }
 
 /**
+ * Nhân bản một mesh của model đã tải để vẽ bằng thin instances (không cha).
+ * Không nhân bản mesh con (chúng đã là renderMeshes riêng; nhân bản kèm sẽ tạo bản thừa đứng ở gốc tọa độ) và giữ phép
+ * biến đổi của các nút trung gian (nút cha dịch chuyển như thân cây, cánh tủ), chỉ bỏ nút gốc `__root__` của glTF.
+ */
+export function cloneTemplateMesh(loaded: LoadedModelContainer, mesh: Mesh, name: string): Mesh {
+  const rootInverse = loaded.root.computeWorldMatrix(true).clone().invert();
+  const copy = mesh.clone(name, null, true);
+  copy.parent = null;
+  copy.setEnabled(true);
+  // decompose = true: vị trí/xoay/tỉ lệ của bản sao chính là phép biến đổi này, nên lần `freezeWorldMatrix()` không tham số về sau (vd. cuối buildCityMap) không làm mất nó.
+  copy.freezeWorldMatrix(mesh.computeWorldMatrix(true).multiply(rootInverse), true);
+  return copy;
+}
+
+/**
  * Cấu hình lấy mẫu NEAREST cho texture trong material để giữ nguyên chất pixel/voxel sắc nét.
  */
 export function applyNearestSampling(scene: Scene): void {

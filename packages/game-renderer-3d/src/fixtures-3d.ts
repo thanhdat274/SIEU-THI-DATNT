@@ -8,7 +8,7 @@ import '@babylonjs/core/Meshes/thinInstanceMesh';
 import type { GameSimulation } from '@game/core';
 import type { StoreFixture } from '@game/shared';
 import { fixtureBoxes, fixtureFootprint, fixturesSignature, type FixtureBox } from './fixture-shapes';
-import { ModelLibrary, type ModelKind, MODEL_CATALOG } from './model-library';
+import { ModelLibrary, cloneTemplateMesh, type ModelKind, MODEL_CATALOG } from './model-library';
 import { SCALE_TARGETS } from './scale-spec';
 import { ALPHA_HIDDEN } from './roof-fade';
 import type { RoofInfo } from './map-builder';
@@ -325,13 +325,8 @@ export class Fixtures3D {
         const loaded = lib.getLoadedModel(this.scene, entry.kind);
         if (!loaded) continue;
         const clonedMeshes: Mesh[] = [];
-        const rootInverse = loaded.root.computeWorldMatrix(true).clone().invert();
         for (const rm of loaded.renderMeshes) {
-          // Mesh con được nhân bản riêng ở vòng lặp này nên không nhân bản kèm; giữ dịch chuyển của nút cha (cánh tủ...), bỏ nút gốc __root__.
-          const clone = rm.clone(`fixm_${key}_${rm.name}`, null, true);
-          clone.parent = null;
-          clone.freezeWorldMatrix(rm.computeWorldMatrix(true).multiply(rootInverse));
-          clone.setEnabled(true);
+          const clone = cloneTemplateMesh(loaded, rm, `fixm_${key}_${rm.name}`);
           clone.isPickable = false;
           clone.receiveShadows = true;
           if (clone.material) {

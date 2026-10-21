@@ -14,7 +14,7 @@ import { TILE_SIZE, type GameTileMap, type MapBuilding } from '@game/shared';
 import { createSignPlane } from './sign-plane';
 import { BUILDING_VISUALS, STREET_LAMP_TILES, TREE_PROPS, buildingTypeOfInstance, type BuildingVisual } from '@game/data';
 import { resolveTreeHeightForId } from './scale-spec';
-import { ModelLibrary, MODEL_CATALOG, type ModelKind } from './model-library';
+import { ModelLibrary, MODEL_CATALOG, cloneTemplateMesh, type ModelKind } from './model-library';
 
 /** Mã ô lớp `walls`: 7 là gốc cây (vẽ cây riêng), còn lại là tường. */
 const WALL_TREE = 7;
@@ -275,9 +275,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
       m.copyToArray(buf, 0);
 
       for (const mesh of loadedCivic.renderMeshes) {
-        const copy = mesh.clone(`bldg_${f.name}_${mesh.name}`);
-        copy.parent = null;
-        copy.setEnabled(true);
+        const copy = cloneTemplateMesh(loadedCivic, mesh, `bldg_${f.name}_${mesh.name}`);
         copy.metadata = { buildingId };
         copy.thinInstanceSetBuffer('matrix', buf, 16, true);
         meshes.push(copy);
@@ -478,9 +476,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
       const buf = new Float32Array(treeMatrices.length * 16);
       treeMatrices.forEach((m, i) => m.copyToArray(buf, i * 16));
       for (const mesh of treeModel.renderMeshes) {
-        const copy = mesh.clone(`tree_${mesh.name}_inst`);
-        copy.parent = null;
-        copy.setEnabled(true);
+        const copy = cloneTemplateMesh(treeModel, mesh, `tree_${mesh.name}_inst`);
         if (mesh.material) copy.material = mesh.material;
         copy.thinInstanceSetBuffer('matrix', buf, 16, true);
         meshes.push(copy);
@@ -493,9 +489,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
       const buf = new Float32Array(bushMatrices.length * 16);
       bushMatrices.forEach((m, i) => m.copyToArray(buf, i * 16));
       for (const mesh of bushModel.renderMeshes) {
-        const copy = mesh.clone(`bush_${mesh.name}_inst`);
-        copy.parent = null;
-        copy.setEnabled(true);
+        const copy = cloneTemplateMesh(bushModel, mesh, `bush_${mesh.name}_inst`);
         if (mesh.material) copy.material = mesh.material;
         copy.thinInstanceSetBuffer('matrix', buf, 16, true);
         meshes.push(copy);
@@ -534,9 +528,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
       lampMatrices.forEach((m, i) => m.copyToArray(buf, i * 16));
 
       for (const mesh of lampModel.renderMeshes) {
-        const copy = mesh.clone(`lamp_${mesh.name}_inst`);
-        copy.parent = null;
-        copy.setEnabled(true);
+        const copy = cloneTemplateMesh(lampModel, mesh, `lamp_${mesh.name}_inst`);
         copy.thinInstanceSetBuffer('matrix', buf, 16, true);
         meshes.push(copy);
         shadowCasters.push(copy);

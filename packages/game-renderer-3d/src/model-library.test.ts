@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
+import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
+import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder';
 import { BUILDING_VISUALS } from '@game/data';
-import { MATERIAL_COLOR_MODELS, MODEL_CATALOG, ModelLibrary, type ModelKind } from './model-library';
+import { MATERIAL_COLOR_MODELS, MODEL_CATALOG, ModelLibrary, cloneTemplateMesh, type ModelKind } from './model-library';
 
 test('model-library: C1 - Mọi modelId trong BUILDING_VISUALS phải có trong MODEL_CATALOG', () => {
   const visualEntries = Object.entries(BUILDING_VISUALS);
@@ -116,5 +119,48 @@ test('model-library: Cache qua nhiều scene - scene cũ dispose không được
   assert.equal(lib.getLoadedModel(sceneB, 'tree'), null, 'Scene mới chưa nạp không được trả mesh của scene cũ');
 
   sceneB.dispose();
+  engine.dispose();
+});
+
+test('model-library: cloneTemplateMesh - không nhân bản mesh con, giữ nút trung gian, bỏ nút gốc __root__', () => {
+  const engine = new NullEngine();
+  const scene = new Scene(engine);
+
+  // Dựng cây nút giống file glTF đã nạp: __root__ (lật z + xoay 180°) > nút cha dịch (0,-0.05,0) > thân > mesh con dịch (0.5,0,0).
+  const root = new TransformNode('__root__', scene);
+  root.scaling = new Vector3(1, 1, -1);
+  root.rotationQuaternion = new Quaternion(0, 1, 0, 0);
+  const node = new TransformNode('node', scene);
+  node.parent = root;
+  node.position = new Vector3(0, -0.05, 0);
+  const body = CreateBox('body', { size: 1 }, scene);
+  body.parent = node;
+  const lid = CreateBox('lid', { size: 0.2 }, scene);
+  lid.parent = body;
+  lid.position = new Vector3(0.5, 0, 0);
+  const loaded = { kind: 'dumpster' as ModelKind, root: root as any, renderMeshes: [body, lid] };
+
+  const before = scene.meshes.length;
+  const bodyCopy = cloneTemplateMesh(loaded, body, 'body_copy');
+  assert.equal(scene.meshes.length, before + 1, 'Nhân bản thân không được kéo theo bản sao của mesh con (bản thừa đứng ở gốc tọa độ)');
+  const lidCopy = cloneTemplateMesh(loaded, lid, 'lid_copy');
+  assert.equal(scene.meshes.length, before + 2);
+
+  for (const copy of [bodyCopy, lidCopy]) {
+    assert.equal(copy.parent, null, 'Bản sao không có cha');
+    assert.equal(copy.isEnabled(), true, 'Bản sao bật sẵn dù template bị ẩn');
+  }
+
+  // Đóng băng lại không tham số như cuối buildCityMap: không được làm mất phép biến đổi đã gán.
+  bodyCopy.freezeWorldMatrix();
+  lidCopy.freezeWorldMatrix();
+
+  // Vị trí = chuỗi biến đổi bỏ nút gốc: thân ở (0,-0.05,0); mesh con ở (0.5,-0.05,0). Nút gốc (lật z, xoay 180°) không được ảnh hưởng.
+  const at = (m: typeof bodyCopy) => m.computeWorldMatrix(true).getTranslation();
+  const close = (a: Vector3, b: Vector3) => Vector3.Distance(a, b) < 1e-5;
+  assert.ok(close(at(bodyCopy), new Vector3(0, -0.05, 0)), `Thân phải giữ dịch chuyển của nút cha, nhận ${at(bodyCopy).toString()}`);
+  assert.ok(close(at(lidCopy), new Vector3(0.5, -0.05, 0)), `Mesh con phải giữ dịch chuyển của cha và của chính nó, nhận ${at(lidCopy).toString()}`);
+
+  scene.dispose();
   engine.dispose();
 });

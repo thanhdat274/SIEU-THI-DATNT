@@ -13,7 +13,7 @@ import type { PlanningOverlay } from '@game/renderer-core';
 import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { createSignPlane } from './sign-plane';
 import { computeWaveDecor, computeWaveOverlay, worldDecorKey, type DecorSign, type TileRect, type WorldDecorInput } from './wave-decor';
-import { ModelLibrary, MODEL_CATALOG } from './model-library';
+import { ModelLibrary, MODEL_CATALOG, cloneTemplateMesh } from './model-library';
 
 /** Lớp trang trí đặt trên mặt đất, cao hơn vỉa hè (0,08) để không bị chìm. */
 const ZONE_Y = 0.12;
@@ -211,9 +211,7 @@ export class WorldDecor3D {
       const buf = new Float32Array(barrierMatrices.length * 16);
       barrierMatrices.forEach((m, idx) => m.copyToArray(buf, idx * 16));
       for (const mesh of barrierModel.renderMeshes) {
-        const copy = mesh.clone(`barrier_${mesh.name}_inst`);
-        copy.parent = null;
-        copy.setEnabled(true);
+        const copy = cloneTemplateMesh(barrierModel, mesh, `barrier_${mesh.name}_inst`);
         copy.thinInstanceSetBuffer('matrix', buf, 16, true);
         this.meshes.push(copy);
       }
@@ -229,9 +227,7 @@ export class WorldDecor3D {
       const buf = new Float32Array(coneMatrices.length * 16);
       coneMatrices.forEach((m, idx) => m.copyToArray(buf, idx * 16));
       for (const mesh of coneModel.renderMeshes) {
-        const copy = mesh.clone(`cone_${mesh.name}_inst`);
-        copy.parent = null;
-        copy.setEnabled(true);
+        const copy = cloneTemplateMesh(coneModel, mesh, `cone_${mesh.name}_inst`);
         copy.thinInstanceSetBuffer('matrix', buf, 16, true);
         this.meshes.push(copy);
       }
@@ -245,9 +241,7 @@ export class WorldDecor3D {
       const buf = new Float32Array(dumpsterMatrices.length * 16);
       dumpsterMatrices.forEach((m, idx) => m.copyToArray(buf, idx * 16));
       for (const mesh of dumpsterModel.renderMeshes) {
-        const copy = mesh.clone(`dumpster_${mesh.name}_inst`);
-        copy.parent = null;
-        copy.setEnabled(true);
+        const copy = cloneTemplateMesh(dumpsterModel, mesh, `dumpster_${mesh.name}_inst`);
         copy.thinInstanceSetBuffer('matrix', buf, 16, true);
         this.meshes.push(copy);
       }
