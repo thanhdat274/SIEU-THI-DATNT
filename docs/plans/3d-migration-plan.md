@@ -117,7 +117,8 @@ Tạo package mới `packages/game-renderer-3d` (không sửa package Pixi).
 **H2.** Gỡ code Pixi không dùng, cập nhật `ARCHITECTURE.md`, `ART-BIBLE.md`. Chưa làm: Pixi còn là đường lui nên giữ.
 
 **Còn lại sau H1 (chưa làm)**
-- P1: đèn giao thông + vạch qua đường (`getIntersectionSignals`, `STORE_FRONT_CROSSWALK`); người đi bộ qua vạch trước tiệm (`getStreetPedestrians`); hậu cần kho (xe tải giao hàng, nhân viên bê thùng, bến bốc dỡ, `updateLogistics`); mặt tiền nhà phụ/civic ngày-đêm/đồ treo tường/trang trí phía đông; đèn pha/đèn hậu xe ban đêm; xe khách đỗ đổi hướng theo camera; nhà trang trí mờ dần theo tiến độ công trường.
+- P1 (đã hoàn thành 21/10/2026): sửa xe lóa sáng (GlowLayer chỉ áp includedOnlyMeshes, xe nhận chiếu sáng chuẩn); đèn pha/đèn hậu xe ban đêm theo lampsOn; đèn giao thông 4 ngã tư + vạch qua đường trước tiệm (TrafficSignals3D); người đi bộ qua đường trước tiệm (sim.getStreetPedestrians() trong Crowd3D).
+- P1 còn lại: hậu cần kho (xe tải giao hàng, nhân viên bê thùng, bến bốc dỡ, `updateLogistics`); mặt tiền nhà phụ/civic ngày-đêm/đồ treo tường/trang trí phía đông; xe khách đỗ đổi hướng theo camera; nhà trang trí mờ dần theo tiến độ công trường.
 - P2: ô/áo mưa (`RainGear`), sấm + gió đung đưa cây/biển, bóng chân nhân vật + quầng sáng cửa, tự hạ độ phân giải (`adaptResolution`), rung màn hình, hoạt cảnh công trường (tay máy xúc, công nhân đi lại), `locateWarehouse` bay tới kho thay vì chỉ về người chơi.
 - Đo lại FPS thật ở cửa sổ có focus và GPU thật (số đo 21/10 chỉ là chi phí mỗi khung trong pane không focus).
 

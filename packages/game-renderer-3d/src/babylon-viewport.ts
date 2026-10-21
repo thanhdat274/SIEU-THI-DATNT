@@ -25,6 +25,8 @@ import { Sky3D } from './sky-3d';
 import { Weather3D } from './weather-3d';
 import { WorldDecor3D } from './world-decor-3d';
 import { Vehicles3D } from './vehicles-3d';
+import { TrafficSignals3D } from './traffic-signals-3d';
+import { lightingAt } from './sky-3d';
 import { pickTarget, resolveTileTarget, type TileTarget } from './tile-target';
 import { ALPHA_HIDDEN, facadeAlpha, OCCLUDER_ALPHA, rayHitsBox, shouldOpenRoof, stepAlpha } from './roof-fade';
 
@@ -66,6 +68,7 @@ export class BabylonGameViewport implements GameViewport {
   private weather: Weather3D | null = null;
   private worldDecor: WorldDecor3D | null = null;
   private vehicles: Vehicles3D | null = null;
+  private trafficSignals: TrafficSignals3D | null = null;
   private pendingPlanning: readonly PlanningOverlay[] = [];
   private pendingWaveOverlay = false;
   private actorAtlas: ActorAtlas | null = null;
@@ -132,7 +135,8 @@ export class BabylonGameViewport implements GameViewport {
     this.worldDecor.setTileMap(this.tileMap);
     this.worldDecor.setPlanning(this.pendingPlanning);
     if (this.pendingWaveOverlay) this.worldDecor.showWaveOverlay(true);
-    this.vehicles = new Vehicles3D(scene, this.simulation);
+    this.trafficSignals = new TrafficSignals3D(scene, this.sky);
+    this.vehicles = new Vehicles3D(scene, this.simulation, this.sky);
     await this.vehicles.load();
 
     this.prevImageRendering = this.canvas.style.imageRendering;
@@ -162,7 +166,7 @@ export class BabylonGameViewport implements GameViewport {
     this.roofs = built.roofs;
     this.fixtures?.setRoofs(built.roofs);
     this.stock?.setMap(built.roofs, this.tileMap.stalls);
-    this.sky?.setLampMaterial(built.lampMaterial);
+    this.sky?.setLampSource(built.lampMaterial, built.lampHeadMesh);
     this.weather?.setRoadMaterial(built.roadMaterial);
   }
 
@@ -209,6 +213,7 @@ export class BabylonGameViewport implements GameViewport {
     this.fixtures?.update(elapsed);
     this.stock?.update(elapsed);
     this.worldDecor?.update();
+    this.trafficSignals?.update(elapsed, this.simulation.getIntersectionSignals(), this.simulation.getStoreFrontSignal());
     // Sau khi mái đã bóc/đậy: khách trong tòa còn mái thì ẩn.
     const aspect = engine.getRenderWidth() / Math.max(1, engine.getRenderHeight());
     this.crowd?.update(
@@ -224,12 +229,14 @@ export class BabylonGameViewport implements GameViewport {
       },
       this.canvas.clientWidth < 768,
     );
+    const currentLightTime = getDebugVisualTime() ?? this.simulation.getTime();
+    const currentSkyLighting = lightingAt(currentLightTime.hour, currentLightTime.minute, currentLightTime.day, this.weather?.getRain() ?? 0);
     this.vehicles?.update(this.quarter, CAMERA_BETA, {
       centerX: pos.x + this.pan.x,
       centerZ: pos.z + this.pan.z,
       radius: groundViewRadius(this.zoom, aspect, CAMERA_BETA),
       zoom: this.zoom,
-    });
+    }, currentSkyLighting.lampsOn);
 
     // Khóa tâm camera theo lưới pixel ảo (ở mặt phẳng tâm) để sprite/mép khối quanh người chơi không "bơi" khi camera trượt.
     const step = (2 * this.halfHeight()) / Math.max(1, engine.getRenderHeight());
@@ -604,6 +611,7 @@ export class BabylonGameViewport implements GameViewport {
     this.fixtures?.dispose();
     this.stock?.dispose();
     this.worldDecor?.dispose();
+    this.trafficSignals?.dispose();
     this.vehicles?.dispose();
     this.actors?.dispose();
     this.actorAtlas?.manager.dispose();
@@ -620,6 +628,7 @@ export class BabylonGameViewport implements GameViewport {
     this.fixtures = null;
     this.stock = null;
     this.worldDecor = null;
+    this.trafficSignals = null;
     this.vehicles = null;
     this.overlay = null;
     this.sky = null;

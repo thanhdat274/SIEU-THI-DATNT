@@ -75,6 +75,8 @@ export class Sky3D {
   private pool: Mesh | null = null;
   private poolMat: StandardMaterial | null = null;
 
+  private readonly includedMeshes = new Set<Mesh>();
+
   constructor(private readonly scene: Scene) {
     this.hemi = new HemisphericLight('sky', new Vector3(0, 1, 0), scene);
     this.sun = new DirectionalLight('sun', new Vector3(-0.5, -1, 0.35), scene);
@@ -88,6 +90,20 @@ export class Sky3D {
     this.poolMat.specularColor = Color3.Black();
     this.poolMat.backFaceCulling = false;
     this.buildLampPools();
+  }
+
+  /** Thêm mesh nguồn sáng chỉ định vào danh sách GlowLayer duy nhất được phát sáng. */
+  public addLightMesh(mesh: Mesh): void {
+    if (this.includedMeshes.has(mesh)) return;
+    this.includedMeshes.add(mesh);
+    this.glow?.addIncludedOnlyMesh(mesh);
+  }
+
+  /** Bỏ mesh khỏi danh sách GlowLayer. */
+  public removeLightMesh(mesh: Mesh): void {
+    if (!this.includedMeshes.has(mesh)) return;
+    this.includedMeshes.delete(mesh);
+    this.glow?.removeIncludedOnlyMesh(mesh);
   }
 
   /** Vệt sáng ấm trên mặt đất dưới mỗi đèn đường, một mesh thin instances. */
@@ -107,6 +123,11 @@ export class Sky3D {
   }
 
   /** Gắn vật liệu đầu đèn (map-builder) để đổi sáng/tối theo giờ; gọi lại sau mỗi lần dựng bản đồ. */
+  public setLampSource(mat: StandardMaterial | null, headMesh: Mesh | null): void {
+    this.lampHead = mat;
+    if (headMesh) this.addLightMesh(headMesh);
+  }
+
   public setLampMaterial(mat: StandardMaterial | null): void { this.lampHead = mat; }
 
   public update(hour: number, minute: number, day: number, rain: number): void {
@@ -139,5 +160,6 @@ export class Sky3D {
     this.pool = null;
     this.poolMat = null;
     this.lampHead = null;
+    this.includedMeshes.clear();
   }
 }

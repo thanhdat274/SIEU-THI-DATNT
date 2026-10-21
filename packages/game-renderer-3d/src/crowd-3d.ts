@@ -165,6 +165,14 @@ export class Crowd3D {
       weatherId: sim.getEffectiveWeatherId(), vehicles, civicPopulation: sim.getCivicPopulation(), mobile,
     }, { x0: cx - r, y0: cy - r, x1: cx + r, y1: cy + r }, detail, resolveWeatherQuality());
     sim.setStreetCrossings(this.life.getCrossings());
+
+    // Người đi bộ qua đường (vạch trước tiệm): sim.getStreetPedestrians(), đồng bộ theo id
+    for (const ped of sim.getStreetPedestrians()) {
+      if (ped.position.x < cx - r - 64 || ped.position.x > cx + r + 64 || ped.position.y < cy - r - 64 || ped.position.y > cy + r + 64) continue;
+      const look = this.walkerLook(ped.variant);
+      const walking = ped.state === 'walking';
+      this.place('sp:' + ped.id, look, ped.position.x, ped.position.y, ped.direction, walking, 1, 0xffffff, false, ctx);
+    }
     this.life.forEachVisible((n) => {
       if (n.x < cx - r - 64 || n.x > cx + r + 64 || n.y < cy - r - 64 || n.y > cy + r + 64) return;
       const look = this.hasKey(`npc_${n.spriteVariant}_down_idle_0`) ? n.spriteVariant : this.walkerLook(n.spriteVariant);

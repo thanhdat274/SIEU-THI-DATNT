@@ -62,7 +62,7 @@ export interface RoofInfo {
   x0: number; x1: number; z0: number; z1: number;
 }
 /** `roadMaterial`/`lampMaterial`: vật liệu mặt đường và đầu đèn đường, để sky/weather đổi theo giờ và mưa. */
-export interface BuiltMap { meshes: Mesh[]; roofs: RoofInfo[]; roadMaterial: StandardMaterial | null; lampMaterial: StandardMaterial | null }
+export interface BuiltMap { meshes: Mesh[]; roofs: RoofInfo[]; roadMaterial: StandardMaterial | null; lampMaterial: StandardMaterial | null; lampHeadMesh: Mesh | null }
 
 interface Footprint { visual: BuildingVisual; name: string; building?: MapBuilding; walls: number[]; x0: number; x1: number; y0: number; y1: number }
 
@@ -263,6 +263,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
   }
 
   // --- Đèn đường: cột mảnh + bóng đèn tự sáng.
+  let lampHeadMesh: Mesh | null = null;
   if (STREET_LAMP_TILES.length) {
     const pole = CreateCylinder('lamp_pole', { height: 2.4, diameter: 0.08, tessellation: 6 }, scene);
     pole.material = mat('#3d4148');
@@ -274,10 +275,11 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     setInstances(pole, poleXY, 1.2);
     setInstances(head, headXY, 2.4);
     meshes.push(pole, head);
+    lampHeadMesh = head;
   }
 
   for (const m of meshes) m.freezeWorldMatrix();
-  return { meshes, roofs, roadMaterial: mats.get(GROUND_COLORS.street) ?? null, lampMaterial: STREET_LAMP_TILES.length ? mats.get('#ffe9a8e') ?? null : null };
+  return { meshes, roofs, roadMaterial: mats.get(GROUND_COLORS.street) ?? null, lampMaterial: STREET_LAMP_TILES.length ? mats.get('#ffe9a8e') ?? null : null, lampHeadMesh };
 }
 
 /** Thin instances đặt tại các cặp toạ độ thế giới (x, z) liên tiếp trong `xz`, nâng lên `y`. */

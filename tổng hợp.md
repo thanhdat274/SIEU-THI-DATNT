@@ -1,3 +1,32 @@
+# RENDERER 3D: HOÀN THIỆN P1 — SỬA XE LÓA, ĐÈN XE ĐÊM, ĐÈN GIAO THÔNG, VẠCH QUA ĐƯỜNG & NGƯỜI ĐI BỘ (21/10/2026, packages/game-renderer-3d)
+
+Sửa và hoàn thiện toàn bộ danh sách P1 đồ họa 3D theo yêu cầu:
+1. **Xe lóa sáng (đã sửa triệt để)**:
+   - Nguyên nhân: Trước đây vật liệu xe đặt emissiveColor = Color3.White() và disableLighting = true, đồng thời GlowLayer trong sky-3d bật toàn cảnh không giới hạn mesh, khiến ban ngày xe bị trắng lóa và có quầng phát sáng xung quanh.
+   - Sửa: Trong vehicles-3d.ts, chuyển sang diffuseColor = White, bỏ emissiveColor, bỏ disableLighting để nhận ánh sáng mặt trời/hemi ngày-đêm chuẩn xác.
+   - Trong sky-3d.ts: GlowLayer cấu hình addIncludedOnlyMesh / removeIncludedOnlyMesh, chỉ cho phép danh sách mesh đèn thật (đầu đèn đường, bóng đèn giao thông, đèn xe ban đêm) được tạo quầng sáng.
+2. **Đèn pha / đèn hậu xe ban đêm**:
+   - Sử dụng chung mức lampsOn từ lightingAt (sky-3d.ts). Khi lampsOn > 0.05, xe chạy trên đường ngang tự động hiển thị đèn pha vàng ấm phía trước và đèn hậu đỏ phía sau theo đúng thông số VEHICLE_LIGHT_SPECS (chuẩn Pixi). Ban ngày (lampsOn <= 0.05) đèn tự tắt hoàn toàn.
+3. **Đèn giao thông + Vạch qua đường 3D**:
+   - Thêm module signals-data.ts và traffic-signals-3d.ts:
+   - Vạch qua đường STORE_FRONT_CROSSWALK trước tiệm: Dựng 8 khối chữ nhật vạch trắng nằm trên mặt đường (y=0.008) đúng chuẩn 2D.
+   - Cột đèn 4 ngã tư INTERSECTIONS: Mỗi ngã tư có 4 cột đèn đầy đủ hộp đèn xe (3 mắt đỏ/vàng/xanh) và hộp đèn người đi bộ (đỏ/xanh), đọc trực tiếp sim.getIntersectionSignals().
+   - Cột đèn người đi bộ trước cửa tiệm: Đọc trực tiếp sim.getStoreFrontSignal(), đổi màu đỏ (dừng) / xanh (băng qua) / nhấp nháy khi clearing.
+4. **Người đi bộ qua đường (vạch trước tiệm)**:
+   - Trong crowd-3d.ts: Đọc sim.getStreetPedestrians(), vẽ bằng SpriteManager chung của Crowd3D (tiết kiệm draw call), đồng bộ id sp: + ped.id, cập nhật tư thế đi/chờ và hướng nhìn.
+5. **Kiểm thử tự động & ESLint**:
+   - Viết test thuần signals-data.test.ts kiểm tra quy đổi màu đèn, vạch qua đường thành hình chữ nhật, tọa độ cột đèn ngã tư.
+   - yarn typecheck: EXIT 0.
+   - yarn --cwd packages/game-renderer-3d test: PASS toàn bộ 12 test suites.
+   - npx eslint packages/game-renderer-3d: 0 error, 0 warning.
+6. **QA Browser (CDP Chrome headless >=1280px, save fair)**:
+   - Ảnh chụp 12h (.qa/qa-p1/01-noon-12h.png): Xe đúng màu sprite gốc, không còn quầng sáng lóa.
+   - Ảnh chụp 22h (.qa/qa-p1/02-night-22h.png): Toàn cảnh tối theo giờ đêm, chỉ đèn xe và đèn đường phát sáng.
+   - Đèn giao thông & vạch qua đường: Cả 4 ngã tư và trước tiệm đổi màu theo chu kỳ tín hiệu thật; người đi bộ (side-ped-*) xuất hiện và di chuyển qua đường.
+   - Đo FPS 2 giây (save fair): Zoom 1: 56.0 FPS; Zoom 2: 56.7 FPS; Zoom 4: 54.5 FPS (mượt mà, ổn định trên 3D).
+   - Chơi trọn 1 ngày (2261 bước lặp, từ Ngày 6 qua Ngày 7 07:00): Console không có bất kỳ lỗi nào (0 error).
+   - Lỗi Bản lưu đã thay đổi: Không xuất hiện khi KHÔNG tải lại trang (saveChangedWarning = false, toasts bình thường).
+
 # RENDERER 3D: SỬA 3 LỖI QA GIAI ĐOẠN D (20/10/2026, `packages/game-renderer-3d` + `game-core/input` cho WASD theo màn hình)
 
 Sửa/hoàn thiện 3 lỗi QA giai đoạn D: (1) lật gương hệ tay trái, (2) góc camera chéo 45° isometric + WASD theo hướng màn hình, (3) viền chọn tòa nhìn thấy khi còn mái, kèm (4) chuột trái không còn kéo camera. Chỉ sửa trong `packages/game-renderer-3d` (riêng cơ chế `setViewBasis`/`resetViewBasis` đặt trong `game-core/input.ts` vì InputManager ở đó — chính là "đã có chuẩn hoá trong InputManager", không sửa luật chơi).

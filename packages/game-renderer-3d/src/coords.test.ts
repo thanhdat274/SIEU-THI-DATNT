@@ -120,3 +120,5 @@ import './sky-3d.test';
 import './actor-sprite.test';
 import './wave-decor.test';
 import './vehicle-view.test';
+
+import './signals-data.test';

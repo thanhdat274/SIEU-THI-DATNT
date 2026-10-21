@@ -7,11 +7,12 @@ import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTextur
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { GameSimulation } from '@game/core';
-import { TILE_SIZE } from '@game/shared';
+import { TILE_SIZE, type StreetVehicleState } from '@game/shared';
 import { PixelTextureFactory } from '@game/renderer';
 import { billboardCenter, isoAlpha, pixelToWorld } from './coords';
 import { parkedVehicleKey, vehicleFacing, vehicleFootY, vehicleTextureKey } from './vehicle-view';
 import type { CrowdView } from './crowd-3d';
+import type { Sky3D } from './sky-3d';
 
 /** Dư (px) quanh vùng nhìn trước khi xe bị bỏ khỏi cảnh (xe dài tới ~190 px). */
 const CULL_MARGIN_PX = 240;
@@ -20,6 +21,20 @@ const ATLAS_PATH = 'vehicles/vehicles.json';
 
 interface VehicleTexture { material: StandardMaterial; w: number; h: number }
 interface VehicleEntry { mesh: Mesh; key: string; seen: number }
+
+interface VehicleLightPair {
+  headMesh: Mesh;
+  tailMesh: Mesh;
+  seen: number;
+}
+
+const VEHICLE_LIGHT_SPECS: Record<StreetVehicleState['type'], { front: number; rear: number; headY: number; tailY: number }> = {
+  car: { front: 41, rear: 41, headY: 14, tailY: 14 },
+  motorbike: { front: 27, rear: 29, headY: 29, tailY: 21 },
+  bicycle: { front: 30, rear: 28, headY: 28, tailY: 20 },
+  minibus: { front: 64, rear: 64, headY: 17, tailY: 17 },
+  truck: { front: 86, rear: 86, headY: 18, tailY: 18 },
+};
 
 function spriteBase(): string {
   const env = (import.meta as unknown as { env?: { BASE_URL?: string } }).env;
@@ -40,7 +55,53 @@ export class Vehicles3D {
   private atlasFrames = new Map<string, { x: number; y: number; w: number; h: number }>();
   private frameId = 0;
 
-  constructor(private readonly scene: Scene, private readonly simulation: GameSimulation) {}
+  // Đèn xe ban đêm
+  private readonly lightEntries = new Map<string, VehicleLightPair>();
+  private readonly headPool: Mesh[] = [];
+  private readonly tailPool: Mesh[] = [];
+  private headMat: StandardMaterial | null = null;
+  private tailMat: StandardMaterial | null = null;
+
+  constructor(
+    private readonly scene: Scene,
+    private readonly simulation: GameSimulation,
+    private readonly sky: Sky3D | null = null,
+  ) {
+    this.initLights();
+  }
+
+  private initLights(): void {
+    const headMat = new StandardMaterial('veh_headlight_mat', this.scene);
+    headMat.emissiveColor = new Color3(1, 0.94, 0.72);
+    headMat.disableLighting = true;
+    headMat.specularColor = Color3.Black();
+    headMat.backFaceCulling = false;
+    this.headMat = headMat;
+
+    const tailMat = new StandardMaterial('veh_taillight_mat', this.scene);
+    tailMat.emissiveColor = new Color3(1, 0.23, 0.19);
+    tailMat.disableLighting = true;
+    tailMat.specularColor = Color3.Black();
+    tailMat.backFaceCulling = false;
+    this.tailMat = tailMat;
+  }
+
+  private acquireLightMesh(isHead: boolean): Mesh {
+    const pool = isHead ? this.headPool : this.tailPool;
+    const reused = pool.pop();
+    if (reused) {
+      reused.isVisible = true;
+      return reused;
+    }
+    const mesh = CreatePlane(isHead ? 'headlight' : 'taillight', { width: 0.18, height: 0.18 }, this.scene);
+    mesh.billboardMode = Mesh.BILLBOARDMODE_ALL;
+    mesh.material = isHead ? this.headMat : this.tailMat;
+    mesh.isPickable = false;
+    if (this.sky) {
+      this.sky.addLightMesh(mesh);
+    }
+    return mesh;
+  }
 
   /** Nạp atlas xe; lỗi/thiếu thì mọi xe dùng canvas vẽ bằng code. */
   public async load(): Promise<void> {
@@ -95,9 +156,9 @@ export class Vehicles3D {
     material.useAlphaFromDiffuseTexture = true;
     material.transparencyMode = Material.MATERIAL_ALPHATEST;
     material.alphaCutOff = 0.4;
-    material.emissiveColor = Color3.White();
-    material.disableLighting = true;
+    material.diffuseColor = Color3.White();
     material.specularColor = Color3.Black();
+    // disableLighting = false để nhận ánh sáng mặt trời/hemi ngày-đêm đúng sprite
     material.backFaceCulling = false;
     const entry = { material, w: src.width, h: src.height };
     this.textures.set(key, entry);
@@ -131,7 +192,41 @@ export class Vehicles3D {
     e.mesh.position.set(c.x, c.y, c.z);
   }
 
-  public update(quarter: number, beta: number, view: CrowdView): void {
+  private placeLights(v: StreetVehicleState, lampsOn: number, quarter: number, beta: number): void {
+    if (lampsOn <= 0.05 || v.axis === 'y') return; // xe đường dọc hoặc ban ngày: không vẽ đèn
+    const spec = VEHICLE_LIGHT_SPECS[v.type] ?? VEHICLE_LIGHT_SPECS.car;
+    const dir = v.direction === 'right' ? 1 : -1;
+
+    let pair = this.lightEntries.get(v.id);
+    if (!pair) {
+      pair = {
+        headMesh: this.acquireLightMesh(true),
+        tailMesh: this.acquireLightMesh(false),
+        seen: 0,
+      };
+      this.lightEntries.set(v.id, pair);
+    }
+    pair.seen = this.frameId;
+    pair.headMesh.isVisible = true;
+    pair.tailMesh.isVisible = true;
+
+    // Vị trí đèn pha (đầu xe) và đèn hậu (đuôi xe)
+    const headX = v.position.x + dir * spec.front;
+    const headFootY = v.position.y;
+    const headWorld = pixelToWorld(headX, headFootY);
+    const headHeight = (spec.headY * 2) / TILE_SIZE;
+    const hc = billboardCenter(headWorld.x, headWorld.z, headHeight, isoAlpha(quarter), beta);
+    pair.headMesh.position.set(hc.x, hc.y, hc.z);
+
+    const tailX = v.position.x - dir * spec.rear;
+    const tailFootY = v.position.y;
+    const tailWorld = pixelToWorld(tailX, tailFootY);
+    const tailHeight = (spec.tailY * 2) / TILE_SIZE;
+    const tc = billboardCenter(tailWorld.x, tailWorld.z, tailHeight, isoAlpha(quarter), beta);
+    pair.tailMesh.position.set(tc.x, tc.y, tc.z);
+  }
+
+  public update(quarter: number, beta: number, view: CrowdView, lampsOn = 0): void {
     this.frameId++;
     const sim = this.simulation;
     const r = view.radius * TILE_SIZE + CULL_MARGIN_PX;
@@ -143,6 +238,7 @@ export class Vehicles3D {
       if (!inView(v.position.x, v.position.y)) continue;
       const facing = vehicleFacing(v.axis, v.direction, quarter);
       this.place(`v:${v.id}`, vehicleTextureKey(v, facing), v.position.x, vehicleFootY(v), quarter, beta);
+      this.placeLights(v, lampsOn, quarter, beta);
     }
     for (const c of sim.peekCustomers()) {
       const spot = c.vehicleSpot;
@@ -158,6 +254,15 @@ export class Vehicles3D {
       this.pool.push(e.mesh);
       this.entries.delete(id);
     }
+
+    for (const [id, pair] of this.lightEntries) {
+      if (pair.seen === this.frameId) continue;
+      pair.headMesh.isVisible = false;
+      pair.tailMesh.isVisible = false;
+      this.headPool.push(pair.headMesh);
+      this.tailPool.push(pair.tailMesh);
+      this.lightEntries.delete(id);
+    }
   }
 
   public dispose(): void {
@@ -165,6 +270,29 @@ export class Vehicles3D {
     for (const m of this.pool) m.dispose();
     this.entries.clear();
     this.pool.length = 0;
+
+    for (const pair of this.lightEntries.values()) {
+      this.sky?.removeLightMesh(pair.headMesh);
+      this.sky?.removeLightMesh(pair.tailMesh);
+      pair.headMesh.dispose();
+      pair.tailMesh.dispose();
+    }
+    for (const m of this.headPool) {
+      this.sky?.removeLightMesh(m);
+      m.dispose();
+    }
+    for (const m of this.tailPool) {
+      this.sky?.removeLightMesh(m);
+      m.dispose();
+    }
+    this.lightEntries.clear();
+    this.headPool.length = 0;
+    this.tailPool.length = 0;
+    this.headMat?.dispose();
+    this.tailMat?.dispose();
+    this.headMat = null;
+    this.tailMat = null;
+
     for (const t of this.textures.values()) t.material.dispose(true, true);
     this.textures.clear();
     this.factory.destroy();
