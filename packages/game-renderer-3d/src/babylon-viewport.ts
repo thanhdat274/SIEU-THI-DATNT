@@ -12,8 +12,8 @@ import '@babylonjs/core/Culling/ray';
 import { FixedStepSimulationRunner, type GameSimulation } from '@game/core';
 import { WAREHOUSE_BOUNDS } from '@game/data';
 import type { GameTileMap } from '@game/shared';
-import { getDebugVisualTime, getWeatherFxSettings, resolveWeatherQuality, type GameViewport, type GameViewportOptions, type MinimapSnapshot, type PlanningOverlay } from '@game/renderer';
-import { CAMERA_BETA, CAMERA_FOV, groundViewRadius, isoAlpha, pixelToWorld, snapGround, stepZoom, worldToTile, zoomHalfHeight, zoomRadius } from './coords';
+import { getDebugVisualTime, getWeatherFxSettings, resolveWeatherQuality, onThunder, type GameViewport, type GameViewportOptions, type MinimapSnapshot, type PlanningOverlay } from '@game/renderer';
+import { CAMERA_BETA, CAMERA_FOV, cameraGroundViewBounds, groundViewRadius, isoAlpha, pixelToWorld, snapGround, stepZoom, worldToTile, zoomHalfHeight, zoomRadius } from './coords';
 import { buildCityMap, type RoofInfo } from './map-builder';
 import { Actors3D } from './actors-3d';
 import { createActorAtlas, type ActorAtlas } from './actor-atlas';
@@ -33,6 +33,7 @@ import { Logistics3D } from './logistics-3d';
 import { lightingAt } from './sky-3d';
 import { pickTarget, resolveTileTarget, type TileTarget } from './tile-target';
 import { ALPHA_HIDDEN, facadeAlpha, OCCLUDER_ALPHA, rayHitsBox, shouldOpenRoof, stepAlpha } from './roof-fade';
+import { AdaptiveResolutionController } from './adaptive-resolution';
 
 /** Chiều cao khung hình "pixel" (px ảo); canvas thật được phóng lên bằng nearest-neighbour. */
 const PIXEL_TARGET_HEIGHT = 360;
@@ -81,6 +82,14 @@ export class BabylonGameViewport implements GameViewport {
   private pendingWaveOverlay = false;
   private actorAtlas: ActorAtlas | null = null;
   private openedWaves: readonly string[] = [];
+  private readonly resolutionAdapter = new AdaptiveResolutionController();
+  private updateNightLighting: ((lampsOn: number) => void) | null = null;
+  private updateTreeWind: ((timeSec: number, windStrength: number, reducedMotion: boolean) => void) | null = null;
+  private treeWindTimer = 0;
+  private timeSec = 0;
+  private thunderCleanup: (() => void) | null = null;
+  private inspectedBuildingId: string | null = null;
+  private savedZoomRadius: number | null = null;
 
   private zoom = 2;
   private quarter = 0;
@@ -168,6 +177,7 @@ export class BabylonGameViewport implements GameViewport {
     this.resizeObserver = new ResizeObserver(() => { this.applyResolution(); this.applyZoom(); });
     this.resizeObserver.observe(this.canvas);
 
+    this.thunderCleanup = onThunder(e => this.sky?.triggerThunder(e.strength));
     engine.runRenderLoop(this.renderTick);
     this.emitViewBasis();
   }
@@ -179,7 +189,8 @@ export class BabylonGameViewport implements GameViewport {
       prevRoofAlphas.set(r.id, { alpha: r.alpha, wallAlpha: r.wallAlpha });
     }
 
-    for (const m of this.mapMeshes) m.dispose(false, true);
+    // Giải phóng mesh cũ mà KHÔNG hủy material dùng chung của ModelLibrary / mats pool
+    for (const m of this.mapMeshes) m.dispose(false, false);
     const built = buildCityMap(this.scene!, this.tileMap);
 
     // Phục hồi alpha mái đã bóc trước đó
@@ -203,6 +214,14 @@ export class BabylonGameViewport implements GameViewport {
     this.fixtures?.setRoofs(built.roofs);
     this.stock?.setMap(built.roofs, this.tileMap.stalls);
     this.sky?.setLampSource(built.lampMaterial, built.lampHeadMesh);
+    for (const m of built.civicNightMeshes ?? []) {
+      this.sky?.addLightMesh(m);
+    }
+    for (const m of built.shadowCasters ?? []) {
+      this.sky?.addShadowCaster(m);
+    }
+    this.updateNightLighting = built.updateNightLighting ?? null;
+    this.updateTreeWind = built.updateTreeWind ?? null;
     this.weather?.setRoadMaterial(built.roadMaterial);
 
     // Cập nhật lại khung viền tòa đang chọn (nếu có)
@@ -239,7 +258,8 @@ export class BabylonGameViewport implements GameViewport {
   private applyResolution(): void {
     if (!this.engine) return;
     const cssHeight = Math.max(1, this.canvas.clientHeight);
-    this.engine.setHardwareScalingLevel(Math.max(1, Math.round(cssHeight / PIXEL_TARGET_HEIGHT)));
+    const baseScaling = Math.max(1, Math.round(cssHeight / PIXEL_TARGET_HEIGHT));
+    this.engine.setHardwareScalingLevel(this.resolutionAdapter.resolveScalingLevel(baseScaling));
     this.engine.resize();
   }
 
@@ -262,8 +282,10 @@ export class BabylonGameViewport implements GameViewport {
     const elapsed = Math.min(engine.getDeltaTime() / 1000, 0.25);
     this.runner.advance(elapsed);
 
+    this.timeSec += elapsed;
     const renderPixel = this.playerPixel();
     const pos = pixelToWorld(...renderPixel);
+    const focus = { x: pos.x + this.pan.x, z: pos.z + this.pan.z };
     this.actors?.update(
       elapsed,
       renderPixel,
@@ -273,13 +295,29 @@ export class BabylonGameViewport implements GameViewport {
       CAMERA_BETA,
       this.getPartnerAvatar?.(),
     );
-    if (this.simulation.getIsMoving()) { this.pan = { x: 0, z: 0 }; this.targetPan = { x: 0, z: 0 }; }
+    if (this.simulation.getIsMoving()) {
+      if (this.inspectedBuildingId) {
+        this.exitBuilding();
+      }
+      this.pan = { x: 0, z: 0 };
+      this.targetPan = { x: 0, z: 0 };
+    }
     this.updateRoofFade(elapsed, pos);
-    this.fixtures?.update(elapsed);
-    this.stock?.update(elapsed);
+    this.fixtures?.update(elapsed, focus);
+    this.stock?.update(elapsed, focus);
     this.worldDecor?.update();
     this.trafficSignals?.update(elapsed, this.simulation.getIntersectionSignals(), this.simulation.getStoreFrontSignal());
     this.logistics?.update(this.quarter, CAMERA_BETA, this.roofs);
+
+    this.treeWindTimer += elapsed;
+    if (this.treeWindTimer >= 0.066) {
+      this.treeWindTimer = 0;
+      const weatherId = this.simulation.getEffectiveWeatherId();
+      const isStorm = weatherId === 'storm' || weatherId === 'thunder' || weatherId === 'heavy_rain';
+      const windStrength = isStorm ? 2.5 : 1.0;
+      const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      this.updateTreeWind?.(this.timeSec, windStrength, !!reducedMotion);
+    }
 
     // Camera pan animation (cho locateWarehouse mượt 0.4s)
     const panDx = this.targetPan.x - this.pan.x;
@@ -336,9 +374,18 @@ export class BabylonGameViewport implements GameViewport {
     const step = (2 * this.halfHeight()) / Math.max(1, engine.getRenderHeight());
     const snapped = snapGround(pos.x + this.pan.x, pos.z + this.pan.z, cam.alpha, CAMERA_BETA, step);
     cam.target.set(snapped.x, 0, snapped.z);
+
+    // Tự hạ độ phân giải khi FPS < 45 trong 3s, phục hồi khi FPS > 58 trong 10s (Task 4)
+    const instantFps = engine.getFps();
+    const isPaused = typeof document !== 'undefined' && (document.hidden || !!document.documentElement.dataset.dialogs);
+    if (this.resolutionAdapter.update(elapsed, instantFps, isPaused)) {
+      this.applyResolution();
+    }
+
     this.updateSky(elapsed, pos);
     scene.render();
-    this.overlay?.update(elapsed, this.quarter, CAMERA_BETA, this.roofs, this.getPartnerAvatar?.());
+    const talkBubbles = this.crowd?.getTalkBubbles() ?? [];
+    this.overlay?.update(elapsed, this.quarter, CAMERA_BETA, this.roofs, this.getPartnerAvatar?.(), talkBubbles);
   };
 
   /** Giờ, ánh sáng, mưa và đường ướt. Có giờ/mưa debug (setDebugTime, chỉ dev) thì dùng thay mô phỏng, giống bản 2D. */
@@ -356,7 +403,10 @@ export class BabylonGameViewport implements GameViewport {
     const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
     const half = Math.max(8, Math.min(24, groundViewRadius(this.zoom, aspect, CAMERA_BETA) * 0.9));
     weather.update(elapsed, rainRaw, wetRaw, fx.enabled ? fx.intensity : 0, reduced, { x: pos.x + this.pan.x, z: pos.z + this.pan.z }, half);
-    sky.update(t.hour, t.minute, t.day, weather.getRain());
+    sky.setShadowsEnabled(!this.resolutionAdapter.isDownscaled);
+    sky.update(t.hour, t.minute, t.day, weather.getRain(), elapsed);
+    const skyLighting = lightingAt(t.hour, t.minute, t.day, weather.getRain());
+    this.updateNightLighting?.(skyLighting.lampsOn);
   }
 
   /** Bóc mái mượt: mái + tường mặt tiền mờ dần khi người chơi vào tòa (và kho thông với tiệm chính; tòa kề sát giữ mái), tường tòa che người chơi hạ còn OCCLUDER_ALPHA. */
@@ -367,7 +417,12 @@ export class BabylonGameViewport implements GameViewport {
     // Tia từ người chơi về phía mắt camera (phối cảnh: hướng thật tới vị trí camera, không phải hướng song song).
     const toCam = cam ? new Vector3(cam.position.x - origin.x, cam.position.y - origin.y, cam.position.z - origin.z).normalize() : null;
     for (const r of this.roofs) {
-      const open = shouldOpenRoof(r, inside);
+      const isInspected = Boolean(this.inspectedBuildingId && (
+        r.id === this.inspectedBuildingId ||
+        (r.warehouse && /^grocery_main/.test(this.inspectedBuildingId)) ||
+        (/^grocery_main/.test(r.id) && /^grocery_main/.test(this.inspectedBuildingId))
+      ));
+      const open = isInspected || shouldOpenRoof(r, inside);
       const occluding = !open && toCam !== null
         && rayHitsBox(origin, toCam, { x0: r.x0, x1: r.x1, y0: 0, y1: r.top, z0: r.z0, z1: r.z1 });
       r.alpha = stepAlpha(r.alpha, open ? 0 : 1, elapsed);
@@ -507,7 +562,55 @@ export class BabylonGameViewport implements GameViewport {
   /** Bỏ chọn từ phía UI (đóng bảng): tắt viền sáng, không báo lại callback. */
   public clearBuildingSelection(): void {
     this.selectedBuildingId = null;
+    this.exitBuilding();
     this.updateSelectionVisual();
+  }
+
+  /** F2: Trượt camera tới cửa tòa, zoom gần và bóc mái bằng roof-fade. */
+  public enterBuilding(id?: string): void {
+    const targetId = id ?? this.selectedBuildingId;
+    if (!targetId) return;
+    this.inspectedBuildingId = targetId;
+    const b = this.tileMap.buildings?.find(item => item.id === targetId || (targetId.startsWith('grocery_main') && item.id.startsWith('grocery_main')));
+    let doorX = 14;
+    let doorZ = 12;
+    if (b) {
+      if (b.doorTiles && b.doorTiles.length > 0) {
+        doorX = b.doorTiles[0].x + 0.5;
+        doorZ = b.doorTiles[0].y + 0.5;
+      } else if (b.bounds) {
+        doorX = (b.bounds.left + b.bounds.right) / 2;
+        doorZ = b.bounds.bottom;
+      }
+    }
+    const pp = this.playerPixel();
+    const pWorld = pixelToWorld(pp[0], pp[1]);
+    this.targetPan = { x: doorX - pWorld.x, z: doorZ - pWorld.z };
+    if (!this.savedZoomRadius && this.camera) {
+      this.savedZoomRadius = this.camera.radius;
+    }
+    if (this.camera) {
+      this.camera.radius = Math.min(this.camera.radius, 15);
+    }
+  }
+
+  /** Trả camera về lại người chơi và đậy lại mái khi Esc hoặc người chơi di chuyển. */
+  public exitBuilding(): void {
+    if (!this.inspectedBuildingId) return;
+    this.inspectedBuildingId = null;
+    this.targetPan = { x: 0, z: 0 };
+    if (this.savedZoomRadius && this.camera) {
+      this.camera.radius = this.savedZoomRadius;
+      this.savedZoomRadius = null;
+    }
+  }
+
+  public getSimulation(): GameSimulation {
+    return this.simulation;
+  }
+
+  public triggerDevThunder(strength = 1.0): void {
+    this.sky?.triggerThunder(strength);
   }
 
   /** Chọn/bỏ chọn tòa `buildingId` (null = bỏ), cập nhật viền sáng và báo callback cho UI mở bảng tòa. */
@@ -655,13 +758,19 @@ export class BabylonGameViewport implements GameViewport {
   public addFloatingGain(x: number, y: number, text: string, color: number = 0xf4a261): void {
     this.overlay?.addFloatingGain(x, y, text, color);
   }
-  public panToWorld(x: number, z: number): void {
+  public panToWorld(x: number, z: number, immediate = false): void {
     const p = this.simulation.getPlayerData().position;
     const playerWorld = pixelToWorld(p.x, p.y);
     this.targetPan = {
       x: x - playerWorld.x,
       z: z - playerWorld.z,
     };
+    if (immediate) {
+      this.pan = { ...this.targetPan };
+      if (this.camera) {
+        this.camera.target.set(x, 0, z);
+      }
+    }
   }
 
   public locateWarehouse(): void {
@@ -695,20 +804,29 @@ export class BabylonGameViewport implements GameViewport {
   public getMinimapSnapshot(): MinimapSnapshot {
     const [px, py] = this.playerPixel();
     const p = pixelToWorld(px, py);
-    const half = this.halfHeight();
     const aspect = this.engine ? this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight()) : 1;
     const cx = p.x + this.pan.x;
     const cz = p.z + this.pan.z;
+    const bounds = cameraGroundViewBounds(cx, cz, this.zoom, this.quarter, aspect, CAMERA_BETA, CAMERA_FOV);
     const ox = this.tileMap.originTileX ?? 0;
     const oy = this.tileMap.originTileY ?? 0;
     return {
-      view: { x0: cx - half * aspect, y0: cz - half, x1: cx + half * aspect, y1: cz + half },
+      view: bounds,
       player: { x: p.x, y: p.z },
       map: { x0: ox, y0: oy, x1: ox + this.tileMap.width, y1: oy + this.tileMap.height },
       openedWaves: this.openedWaves.length ? this.openedWaves : this.simulation.getWorldOpenState().openedWaves,
       owned: this.simulation.getOwnedParcelIds(),
       built: this.simulation.getOccupiedParcelBuildings(),
     };
+  }
+
+  public getResolutionAdapter(): AdaptiveResolutionController {
+    return this.resolutionAdapter;
+  }
+
+  /** QA / debug: trigger a deterministic resident talk bubble */
+  public setDevTalkBubble(text: string): void {
+    this.crowd?.setDevBubble(text);
   }
 
   public destroy(): void {
@@ -740,6 +858,8 @@ export class BabylonGameViewport implements GameViewport {
     this.engine?.dispose();
     ModelLibrary.resetInstance();
     this.canvas.style.imageRendering = this.prevImageRendering;
+    this.thunderCleanup?.();
+    this.thunderCleanup = null;
     this.engine = null;
     this.scene = null;
     this.camera = null;

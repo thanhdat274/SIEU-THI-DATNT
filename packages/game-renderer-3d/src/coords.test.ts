@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { TILE_SIZE } from '@game/shared';
-import { CAMERA_BETA, CAMERA_FOV, billboardCenter, cameraUp, groundViewRadius, snapGround, zoomHalfHeight, zoomRadius, directionFromDelta, facingForCamera, facingFromMovement, npcFrameKey, walkerLookFor, isoAlpha, pixelToWorld, snapTo, stepZoom, tileCenter, worldToTile, ZOOM_LEVELS } from './coords';
+import { CAMERA_BETA, CAMERA_FOV, billboardCenter, cameraUp, cameraGroundViewBounds, groundViewRadius, snapGround, zoomHalfHeight, zoomRadius, directionFromDelta, facingForCamera, facingFromMovement, npcFrameKey, walkerLookFor, isoAlpha, pixelToWorld, snapTo, stepZoom, tileCenter, worldToTile, ZOOM_LEVELS } from './coords';
 
 assert.deepEqual(tileCenter(3, 4), { x: 3.5, z: 4.5 });
 assert.deepEqual(pixelToWorld(TILE_SIZE * 2, TILE_SIZE * 5), { x: 2, z: 5 });
@@ -107,7 +107,29 @@ assert.equal(walkerLookFor(() => false, 4), 1);
 assert.equal(npcFrameKey(6, 'left', true, 2), 'npc_6_left_walk_2');
 assert.equal(npcFrameKey(0, 'down', false, 1), 'npc_0_down_idle_1');
 
+
+// Khung nhìn camera trên mặt đất cho Minimap (quarter 0 và quarter 1)
+{
+  const aspect = 16 / 9;
+  const b0 = cameraGroundViewBounds(10, 20, 2, 0, aspect);
+  const b1 = cameraGroundViewBounds(10, 20, 2, 1, aspect);
+
+  const spanX0 = b0.x1 - b0.x0;
+  const spanY0 = b0.y1 - b0.y0;
+  assert.ok(spanX0 > 0 && spanY0 > 0);
+  assert.ok(Math.abs((b0.x0 + b0.x1) / 2 - 10) < 1e-6);
+
+  const spanX1 = b1.x1 - b1.x0;
+  const spanY1 = b1.y1 - b1.y0;
+  assert.ok(spanX1 > 0 && spanY1 > 0);
+  assert.ok(Math.abs((b1.y0 + b1.y1) / 2 - 20) < 1e-6);
+
+  assert.ok(Math.abs(spanX0 - spanY1) < 1e-4, 'SpanX của q0 khớp SpanY của q1 khi xoay 90 độ');
+  assert.ok(Math.abs(spanY0 - spanX1) < 1e-4, 'SpanY của q0 khớp SpanX của q1 khi xoay 90 độ');
+}
+
 console.log('PASS coords: quy đổi ô/pixel/thế giới, bậc zoom, góc iso, khóa pixel, hướng sprite theo camera');
+import './adaptive-resolution.test';
 
 import './overlay-3d.test';
 import './tile-target.test';

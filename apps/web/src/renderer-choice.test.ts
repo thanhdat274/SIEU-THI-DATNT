@@ -1,18 +1,24 @@
 import assert from 'node:assert/strict';
-import { chooseRenderer, detectWebGL, initializeWithFallback, parseRendererPref, readStoredRenderer, resolveRendererPreference, saveRendererPreference } from './renderer-choice';
+import { chooseRenderer, clearStoredRenderer, detectWebGL, initializeWithFallback, parseRendererPref, readStoredRenderer, resolveRendererPreference } from './renderer-choice';
 
-// Mặc định (không tham số, chưa lưu) là 3D.
+// Mặc định (không tham số) là 3D.
 assert.equal(resolveRendererPreference('', null), '3d');
 assert.equal(resolveRendererPreference('?qa', null), '3d');
-// ?r=2d hoặc localStorage 2d dùng Pixi; URL thắng localStorage.
+
+// ?r=2d dùng Pixi; ?r=3d dùng 3D.
 assert.equal(resolveRendererPreference('?r=2d', null), 'pixi');
-assert.equal(resolveRendererPreference('', '2d'), 'pixi');
-assert.equal(resolveRendererPreference('', 'pixi'), 'pixi');
+assert.equal(resolveRendererPreference('?r=3d', null), '3d');
+
+// localStorage '2d' bị bỏ qua hoàn toàn: vẫn ra 3D (trừ khi có ?r=2d trên URL).
+assert.equal(resolveRendererPreference('', '2d'), '3d');
+assert.equal(resolveRendererPreference('', 'pixi'), '3d');
 assert.equal(resolveRendererPreference('?r=3d', '2d'), '3d');
 assert.equal(resolveRendererPreference('?r=2d', '3d'), 'pixi');
-// Giá trị lạ không có ý kiến.
+assert.equal(resolveRendererPreference('?r=2d', '2d'), 'pixi');
+
+// Giá trị lạ không có ý kiến → mặc định 3D.
 assert.equal(parseRendererPref('xyz'), null);
-assert.equal(resolveRendererPreference('?r=xyz', '2d'), 'pixi');
+assert.equal(resolveRendererPreference('?r=xyz', '2d'), '3d');
 assert.equal(resolveRendererPreference('?r=xyz', 'abc'), '3d');
 
 // Không có WebGL: 3D quay về 2D, 2D giữ nguyên.
@@ -23,19 +29,23 @@ assert.equal(detectWebGL(() => ({ getContext: () => null })), false);
 assert.equal(detectWebGL(() => ({ getContext: (id: string) => (id === 'webgl' ? {} : null) })), true);
 assert.equal(detectWebGL(() => { throw new Error('no canvas'); }), false);
 
-// Lưu / đọc lựa chọn, kể cả khi storage ném lỗi.
+// Xóa khóa lưu trữ khi khởi động (clearStoredRenderer)
 {
   const data = new Map<string, string>();
-  const storage = { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => { data.set(k, v); } };
-  saveRendererPreference(storage, 'pixi');
-  assert.equal(data.get('renderer'), '2d');
-  assert.equal(resolveRendererPreference('', readStoredRenderer(storage)), 'pixi');
-  saveRendererPreference(storage, '3d');
-  assert.equal(data.get('renderer'), '3d');
-  const broken = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('blocked'); } };
-  assert.equal(readStoredRenderer(broken), null);
-  saveRendererPreference(broken, '3d');
-  assert.equal(readStoredRenderer(null), null);
+  const storage = {
+    getItem: (k: string) => data.get(k) ?? null,
+    setItem: (k: string, v: string) => { data.set(k, v); },
+    removeItem: (k: string) => { data.delete(k); },
+  };
+  storage.setItem('renderer', '2d');
+  assert.equal(storage.getItem('renderer'), '2d');
+  clearStoredRenderer(storage);
+  assert.equal(storage.getItem('renderer'), null, 'clearStoredRenderer xóa khóa renderer');
+  assert.equal(resolveRendererPreference('', readStoredRenderer(storage)), '3d');
+
+  const broken = { removeItem: () => { throw new Error('blocked'); } };
+  clearStoredRenderer(broken); // Không throw khi lỗi
+  clearStoredRenderer(null);
 }
 
 // Dự phòng khi khởi tạo 3D lỗi.

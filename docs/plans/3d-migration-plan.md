@@ -1,6 +1,6 @@
 # Kế hoạch chuyển sang 3D (Babylon.js, phong cách pixel nổi khối)
 
-> Trạng thái: A ✅, B ✅, C1–C4 ✅ (bản đầu: dựng bằng code, chưa có asset Kenney 3D), C5 chưa làm, H1 ✅ (3D là mặc định từ 2026-10-21; `?r=2d` hoặc cài đặt để về 2D cổ điển). Ngày lập: 2026-10-19.
+> Trạng thái: A ✅, B ✅, C1–C4 ✅ (đã tích hợp asset Kenney 3D cho civic, cây, đèn, phụ kiện), C5 chưa làm, D ✅, E1–E3 ✅, F1–F2 ✅, G1–G3 ✅, H1 ✅ (3D là mặc định từ 2026-10-21; `?r=2d` hoặc cài đặt để về 2D cổ điển), H2 chưa làm. Ngày cập nhật: 2026-10-21.
 > Nguyên tắc: mỗi bước là một thay đổi nhỏ, chạy được, test được, có thể dừng ở bất kỳ bước nào mà game vẫn chơi được.
 
 ## 0. Quyết định nền
@@ -60,67 +60,62 @@ Tạo package mới `packages/game-renderer-3d` (không sửa package Pixi).
 
 ## Giai đoạn C — Bản đồ 3D mới (một dải phố)
 
-**C1. Định dạng bản đồ 3D**: thêm vào `game-data` mô tả nhẹ cho mỗi tòa: `modelId`, chiều cao tầng, màu mái, biển hiệu. Hình học ô (bounds, cửa) **vẫn lấy từ `MapBuilding`** đã có.
-- ✅ Kiểm: `content:validate` bắt lỗi thiếu `modelId`.
+**C1. ✅ Định dạng bản đồ 3D**: thêm vào `game-data` mô tả nhẹ cho mỗi tòa: `modelId`, chiều cao tầng, màu mái, biển hiệu. Hình học ô (bounds, cửa) **vẫn lấy từ `MapBuilding`** đã có. Model catalog trong 3D renderer ánh xạ sang các asset glb của Kenney City Kit (`building_civic_clinic`, `building_civic_police`, `building_civic_school`, `building_low_detail_wide_a`).
+- ✅ Kiểm: test unit trong `packages/game-renderer-3d` bắt buộc mọi `modelId` trong `BUILDING_VISUALS` phải tồn tại trong `MODEL_CATALOG`.
 
-**C2. Dựng khối nhà bằng code**: tường đùn từ `bounds`, mái, ô cửa khoét theo `doorTiles`, mái hiên theo `awning`. Texture pixel 16px dùng chung atlas.
-- ✅ Kiểm: tiệm tạp hóa + tiệm xôi đứng đúng chỗ, cửa trùng ô cửa logic.
+**C2. ✅ Dựng khối nhà bằng code**: tường đùn từ `bounds`, mái, ô cửa khoét theo `doorTiles`, mái hiên theo `awning`. Texture pixel 16px dùng chung atlas.
 
-**C3. Đường, vỉa hè, vạch kẻ, đèn giao thông** (tái dùng dữ liệu `road-surface`, `street-signal`).
+**C3. ✅ Đường, vỉa hè, vạch kẻ, đèn giao thông** (tái dùng dữ liệu `road-surface`, `street-signal`).
 
-**C4. Đồ trang trí ngoài phố** (cây, cột điện, xe máy đỗ) từ Kenney `.glb` qua `SceneLoader.ImportMeshAsync`, nhân bản bằng instances/thin instances.
+**C4. ✅ Đồ trang trí ngoài phố** (cây, cột điện, xe máy đỗ, rào chắn, cọc tiêu, thùng rác) từ Kenney `.glb` qua `ModelLibrary`, nhân bản bằng thin instances.
 
 **C5. Đập & làm lại bản đồ** (tùy chọn, chỉ khi C1–C4 ổn): sửa layout `game-data` cho hợp 3D (đường rộng hơn, lô vuông vức hơn). Tăng `schemaVersion` + migration save nếu vị trí tòa đổi.
-- ✅ Kiểm: test `world-golden`, `reclamation-map`, `neighborhood` cập nhật & xanh; save cũ nạp được.
+- Kiểm: test `world-golden`, `reclamation-map`, `neighborhood` cập nhật & xanh; save cũ nạp được.
 
 ---
 
 ## Giai đoạn D — Nhân vật & thứ chuyển động
 
-**D1. Người chơi + bạn co-op**: billboard sprite (`Sprite`/`SpriteManager` hoặc plane `BILLBOARDMODE_Y`) (dùng lại sprite NPC hiện có, luôn quay về camera) — rẻ và giữ chất pixel. Sau này mới đổi sang model 3D nếu muốn.
-**D2. Khách hàng, NPC khu phố**: `SpriteManager` của Babylon (billboard có sẵn, vẽ hàng trăm sprite một lần).
-**D3. Bong bóng nhu cầu, tên khách quen, số tiền bay**: dùng lớp HTML/CSS đè lên canvas (chiếu toạ độ 3D → màn hình) thay vì vẽ trong WebGL — chữ tiếng Việt nét hơn, dễ làm UI.
-**D4. Click**: `scene.pick` → ô → gọi `onParcelTap`, chọn tòa nhà.
-- ✅ Kiểm mỗi bước: so sánh với Pixi cùng save QA (`window.__seedQaSave`).
+**D1. ✅ Người chơi + bạn co-op**: billboard sprite (`SpriteManager` của Babylon, luôn quay về camera) — rẻ và giữ chất pixel.
+**D2. ✅ Khách hàng, NPC khu phố**: `SpriteManager` của Babylon (billboard có sẵn, vẽ hàng trăm sprite một lần), xe cộ chạy trên đường (`Vehicles3D`), người đi bộ qua đường trước tiệm.
+**D3. ✅ Bong bóng nhu cầu, tên khách quen, số tiền bay, bong bóng thoại cư dân**: dùng lớp HTML/CSS đè lên canvas (`Overlay3D`, chiếu toạ độ 3D → màn hình) thay vì vẽ trong WebGL — chữ tiếng Việt nét hơn, dễ làm UI.
+**D4. ✅ Click**: `scene.pick` → ô → gọi `onParcelTap`, chọn tòa nhà.
 
 ---
 
 ## Giai đoạn E — Vào trong cửa hàng
 
-**E1. Chế độ "bóc mái"**: khi người chơi bước qua ô cửa (`getRoofProximity` đã có) → mái và tường mặt trước mờ dần/ẩn, camera zoom gần.
-**E2. Nội thất từ dữ liệu thật**: kệ, tủ mát, quầy theo `store-layout` / planogram; hàng hóa trên kệ là sprite nhỏ lấy từ `product-sprites`. Kệ trống hiện trống thật.
-**E3. Tối ưu**: chỉ dựng nội thất tòa đang xem; tòa khác chỉ là vỏ ngoài (LOD).
-- ✅ Kiểm: thêm/bớt hàng trong `StorePlanogramModal` → kệ 3D đổi theo.
+**E1. ✅ Chế độ "bóc mái"**: khi người chơi bước qua ô cửa (`getRoofProximity` đã có) hoặc chọn xem tòa → mái và tường mặt trước mờ dần/ẩn qua `roof-fade`.
+**E2. ✅ Nội thất từ dữ liệu thật**: kệ, tủ mát, quầy theo `store-layout` / planogram; hàng hóa trên kệ là sprite nhỏ lấy từ `product-sprites`. Kệ trống hiện trống thật (`Fixtures3D`, `Stock3D`).
+**E3. ✅ Tối ưu**: chỉ dựng/hiện nội thất của tòa đang bóc mái hoặc nằm trong phạm vi gần camera; các tòa khác chỉ là vỏ ngoài.
 
 ---
 
 ## Giai đoạn F — Nút "chi tiết tòa nhà"
 
-**F1. Chạm vào tòa đang mở** → panel React (bottom-sheet trên mobile): doanh thu hôm nay/7 ngày, khách, tồn kho thấp, nhân viên, trạng thái đóng/mở. Dữ liệu từ `market-summary` và các selector có sẵn.
-**F2. Nút "Vào trong"** từ panel → camera bay vào chế độ E1.
-> Có thể làm F trước C nếu muốn có lợi sớm — panel không phụ thuộc 3D.
+**F1. ✅ Bảng thông tin tòa nhà**: panel React (`BuildingPanel.tsx`, bottom-sheet trên mobile) hiển thị doanh thu hôm nay/7 ngày, số khách, mặt hàng tồn kho thấp, nhân viên đang làm, trạng thái đóng/mở lấy từ selector có sẵn và simulation.
+**F2. ✅ Nút "Vào trong"**: trượt camera tới cửa tòa, zoom gần, mái bóc (dùng roof-fade). Phím Esc hoặc người chơi di chuyển trả camera về vị trí cũ.
 
 ---
 
 ## Giai đoạn G — Thời tiết, ánh sáng, ngày đêm
 
-**G1.** `DirectionalLight` theo giờ trong game + `ShadowGenerator`; đổ bóng bậc (toon ramp 3 mức) qua `NodeMaterial` hoặc `ShaderMaterial`.
-**G2.** Mưa: `ParticleSystem` (hoặc `GPUParticleSystem`), sàn ướt (đổi màu/độ bóng), tái dùng `getWeatherVisualState`.
-**G3.** Đèn đêm: biển hiệu và cửa sổ phát sáng (emissive), không dùng nhiều đèn thật.
+**G1. ✅ Ánh sáng & bóng đổ**: `DirectionalLight` theo giờ trong game + `ShadowGenerator` (map nhỏ, pixel crisp); chỉ tòa, cây, cột đèn đổ bóng; ban đêm tắt bóng, tự tắt khi `AdaptiveResolution` đang hạ độ phân giải.
+**G2. ✅ Mưa & bão**: `Weather3D` hạt mưa, sàn ướt, ô che mưa (`Umbrellas3D`), chớp sáng toàn cảnh khi có sấm sét (`onThunder`), cây rung rinh lay theo gió (tôn trọng `prefers-reduced-motion`).
+**G3. ✅ Đèn đêm**: biển hiệu, cửa sổ phát sáng (emissive), đèn đường bật sáng vệt mặt đất và glow nhẹ, cửa sổ các tòa civic sáng ấm khi trời tối (`lampsOn > 0.3`).
 
 ---
 
 ## Giai đoạn H — Thay hẳn Pixi
 
 **H1.** ✅ (2026-10-21) 3D thành mặc định; Pixi còn trong cài đặt "Đồ họa: 3D / 2D cổ điển" (Sổ quản lý → Tiện ích & Lưu trữ, lưu localStorage `renderer`; `?r=2d|3d` thắng localStorage). Không có WebGL hoặc khởi tạo 3D lỗi thì tự quay về 2D (`apps/web/src/renderer-choice.ts`, có test).
-  - Hạng mục P0 đã làm cho H1 (kiểm kê 2D↔3D ở `tổng hợp.md`): biển lô + vùng khóa + công trường + `showWaveOverlay` (`wave-decor.ts`, `world-decor-3d.ts`), xe chạy trên đường và xe khách đỗ (`vehicle-view.ts`, `vehicles-3d.ts`), bóng quy hoạch co-op (`setPlanningReservations`).
 **H2.** Gỡ code Pixi không dùng, cập nhật `ARCHITECTURE.md`, `ART-BIBLE.md`. Chưa làm: Pixi còn là đường lui nên giữ.
 
-**Còn lại sau H1 (chưa làm)**
-- P1 (đã hoàn thành 21/10/2026): sửa xe lóa sáng (GlowLayer chỉ áp includedOnlyMeshes, xe nhận chiếu sáng chuẩn); đèn pha/đèn hậu xe ban đêm theo lampsOn; đèn giao thông 4 ngã tư + vạch qua đường trước tiệm (TrafficSignals3D); người đi bộ qua đường trước tiệm (sim.getStreetPedestrians() trong Crowd3D).
-- P1 còn lại: hậu cần kho (xe tải giao hàng, nhân viên bê thùng, bến bốc dỡ, `updateLogistics`); mặt tiền nhà phụ/civic ngày-đêm/đồ treo tường/trang trí phía đông; xe khách đỗ đổi hướng theo camera; nhà trang trí mờ dần theo tiến độ công trường.
-- P2: ô/áo mưa (`RainGear`), sấm + gió đung đưa cây/biển, bóng chân nhân vật + quầng sáng cửa, tự hạ độ phân giải (`adaptResolution`), rung màn hình, hoạt cảnh công trường (tay máy xúc, công nhân đi lại), `locateWarehouse` bay tới kho thay vì chỉ về người chơi.
-- Đo lại FPS thật ở cửa sổ có focus và GPU thật (số đo 21/10 chỉ là chi phí mỗi khung trong pane không focus).
+**Còn lại (chưa làm)**
+- C5: Đập & làm lại layout bản đồ (khi có yêu cầu mở rộng phố).
+- H2: Gỡ hẳn code Pixi và các file 2D cũ khi 3D đạt độ ổn định tuyệt đối trên mọi môi trường.
+- Nội thất 3D Kenney: Chờ Furniture Kit nếu muốn đổi kệ/bàn từ khối code sang model glb.
+- Tối ưu hóa điều khiển chạm/pinch chuyên sâu cho mobile.
 
 ---
 

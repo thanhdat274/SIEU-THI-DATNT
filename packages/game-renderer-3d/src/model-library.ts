@@ -2,6 +2,7 @@ import type { Scene } from '@babylonjs/core/scene';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
 import '@babylonjs/loaders/glTF/index.js';
@@ -80,6 +81,9 @@ export const MODEL_CATALOG: Record<ModelKind, ModelSpec> = {
   },
 };
 
+
+/** Danh sách model không cần texture ảnh mà được tô lại màu chuẩn bằng diffuseColor. */
+export const RECOLOR_MODELS: ReadonlySet<ModelKind> = new Set<ModelKind>(['tree', 'bush']);
 export interface LoadedModelContainer {
   kind: ModelKind;
   root: Mesh;
@@ -219,7 +223,27 @@ export class ModelLibrary {
             }
           }
 
-          if (hasMissingTexture) {
+          if (RECOLOR_MODELS.has(kind)) {
+            // Model nằm trong danh sách tô lại màu: bỏ unlit, đặt diffuseColor xanh đậm tự nhiên (#246820 lá, #5a3d28 thân)
+            for (const mesh of renderMeshes) {
+              const matName = (mesh.material?.name ?? '').toLowerCase();
+              const recolorMat = new StandardMaterial(`${kind}_${mesh.name}_recolor`, scene);
+              recolorMat.specularColor = Color3.Black();
+              if (kind === 'tree') {
+                if (matName.includes('wood') || matName.includes('bark') || mesh.name.toLowerCase().includes('primitive0')) {
+                  recolorMat.diffuseColor = Color3.FromHexString('#5a3d28'); // Thân cây nâu gỗ sẫm
+                  recolorMat.ambientColor = Color3.FromHexString('#2d1e14');
+                } else {
+                  recolorMat.diffuseColor = Color3.FromHexString('#246820'); // Tán lá xanh đậm tự nhiên, không bị chói trắng
+                  recolorMat.ambientColor = Color3.FromHexString('#143d12');
+                }
+              } else if (kind === 'bush') {
+                recolorMat.diffuseColor = Color3.FromHexString('#246820'); // Bụi xanh đậm
+                recolorMat.ambientColor = Color3.FromHexString('#143d12');
+              }
+              mesh.material = recolorMat;
+            }
+          } else if (hasMissingTexture) {
             console.warn(`[ModelLibrary] Model ${kind} có material thiếu texture (diffuseTexture/albedoTexture là null), tự động chuyển sang fallback dựng bằng code.`);
             root.dispose();
             failedSet!.add(kind);

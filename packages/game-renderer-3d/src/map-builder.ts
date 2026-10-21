@@ -13,7 +13,7 @@ import '@babylonjs/core/Meshes/thinInstanceMesh';
 import { TILE_SIZE, type GameTileMap, type MapBuilding } from '@game/shared';
 import { createSignPlane } from './sign-plane';
 import { BUILDING_VISUALS, STREET_LAMP_TILES, TREE_PROPS, buildingTypeOfInstance, type BuildingVisual } from '@game/data';
-import { ModelLibrary, MODEL_CATALOG } from './model-library';
+import { ModelLibrary, MODEL_CATALOG, type ModelKind } from './model-library';
 
 /** Mã ô lớp `walls`: 7 là gốc cây (vẽ cây riêng), còn lại là tường. */
 const WALL_TREE = 7;
@@ -50,11 +50,17 @@ export function resolveBuildingSignText(building: MapBuilding): string | null {
   if (type?.name) return type.name;
 
   // Tra cứu theo tiền tố id đã biết
-  if (building.id === 'main') return 'Tiệm Tạp Hóa';
+  if (building.id === 'main' || building.id.startsWith('grocery_main')) return 'Tiệm Tạp Hóa';
   if (building.id.startsWith('clinic')) return 'Trạm Y Tế';
   if (building.id.startsWith('ward_police')) return 'Đồn Công An Phường';
   if (building.id.startsWith('primary_school')) return 'Trường Tiểu Học';
   if (building.id.startsWith('civic_wide') || building.id.startsWith('building-wide')) return 'Trung Tâm Sinh Hoạt Cộng Đồng';
+  if (building.id.startsWith('xoi')) return 'Tiệm Xôi';
+  if (building.id.startsWith('drink')) return 'Tiệm Giải Khát';
+  if (building.id.startsWith('snack')) return 'Tiệm Ăn Vặt';
+  if (building.id.startsWith('cafe')) return 'Quán Cà Phê';
+  if (building.id.startsWith('com_restaurant')) return 'Quán Cơm';
+  if (building.id.startsWith('grocery_branch')) return 'Chi Nhánh Tạp Hóa';
 
   // Chặn mọi id mã kỹ thuật: chứa dấu '_' hoặc toàn chữ hoa không dấu kiểu mã id
   if (building.id.includes('_') || /^[A-Z0-9-]+$/.test(building.id)) {
@@ -87,14 +93,37 @@ export interface RoofInfo {
   x0: number; x1: number; z0: number; z1: number;
 }
 /** `roadMaterial`/`lampMaterial`: vật liệu mặt đường và đầu đèn đường, để sky/weather đổi theo giờ và mưa. */
-export interface BuiltMap { meshes: Mesh[]; roofs: RoofInfo[]; roadMaterial: StandardMaterial | null; lampMaterial: StandardMaterial | null; lampHeadMesh: Mesh | null }
+export interface BuiltMap {
+  meshes: Mesh[];
+  roofs: RoofInfo[];
+  roadMaterial: StandardMaterial | null;
+  lampMaterial: StandardMaterial | null;
+  lampHeadMesh: Mesh | null;
+  civicNightMeshes?: Mesh[];
+  shadowCasters?: Mesh[];
+  updateNightLighting?: (lampsOn: number) => void;
+  updateTreeWind?: (timeSec: number, windStrength: number, reducedMotion: boolean) => void;
+}
 
 interface Footprint { visual: BuildingVisual; name: string; building?: MapBuilding; walls: number[]; x0: number; x1: number; y0: number; y1: number }
 
 /** Dựng toàn bộ bản đồ 3D từ `GameTileMap`: sàn, vỉa hè nổi, vạch đường, tòa nhà (tường, mái, mái hiên, biển), cây, đèn. */
+
+
+
+
+
+
 export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
   const meshes: Mesh[] = [];
   const roofs: RoofInfo[] = [];
+  const shadowCasters: Mesh[] = [];
+  const treeInstanceMeshes: Mesh[] = [];
+  const treeBaseMatrices: Matrix[] = [];
+  const civicNightMaterials: StandardMaterial[] = [];
+  const facadeNightMaterials: StandardMaterial[] = [];
+  const windowPlaneMeshes: Mesh[] = [];
+  const civicNightMeshes: Mesh[] = [];
   const mats = new Map<string, StandardMaterial>();
 
   const mat = (hex: string, emissive = false): StandardMaterial => {
@@ -120,6 +149,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
   const outside = CreateGround('outside', { width: width + 80, height: height + 80 }, scene);
   outside.position.set(ox + width / 2, -0.02, oy + height / 2);
   outside.material = mat(GROUND_COLORS.outside);
+  outside.receiveShadows = true;
   meshes.push(outside);
 
   // --- Sàn: mỗi loại ô một mesh thin instances; vỉa hè là khối mỏng nổi lên để có bó vỉa.
@@ -144,6 +174,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
       ? CreateBox(`ground_${kind}`, { width: 1, height: SIDEWALK_HEIGHT, depth: 1 }, scene)
       : CreateGround(`ground_${kind}`, { width: 1, height: 1 }, scene);
     mesh.material = mat(GROUND_COLORS[kind]);
+    mesh.receiveShadows = true;
     setInstances(mesh, list.map(v => v + 0.5), raised ? SIDEWALK_HEIGHT / 2 : 0);
     meshes.push(mesh);
   }
@@ -218,15 +249,18 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     const d = f.y1 - f.y0 + 1;
     const b = f.building;
     const doors = b?.doorTiles ?? [];
-    const civicModelKind = buildingId.startsWith('clinic')
-      ? 'building_civic_clinic'
-      : buildingId.startsWith('ward_police')
-        ? 'building_civic_police'
-        : buildingId.startsWith('primary_school')
-          ? 'building_civic_school'
-          : (buildingId.startsWith('building-wide') || buildingId === 'civic_wide')
-            ? 'building_low_detail_wide_a'
-            : null;
+    const modelFromVis = (v.modelId && (v.modelId in MODEL_CATALOG)) ? (v.modelId as ModelKind) : null;
+    const civicModelKind: ModelKind | null = modelFromVis ?? (
+      buildingId.startsWith('clinic')
+        ? 'building_civic_clinic'
+        : buildingId.startsWith('ward_police')
+          ? 'building_civic_police'
+          : buildingId.startsWith('primary_school')
+            ? 'building_civic_school'
+            : (buildingId.startsWith('building-wide') || buildingId === 'civic_wide')
+              ? 'building_low_detail_wide_a'
+              : null
+    );
     const loadedCivic = civicModelKind ? ModelLibrary.getInstance().getLoadedModel(scene, civicModelKind) : null;
 
     if (loadedCivic && loadedCivic.renderMeshes.length > 0) {
@@ -246,6 +280,53 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
         copy.metadata = { buildingId };
         copy.thinInstanceSetBuffer('matrix', buf, 16, true);
         meshes.push(copy);
+        shadowCasters.push(copy);
+      }
+
+      // Cửa sổ phát sáng ấm ban đêm cho tòa civic (mặt phẳng sáng nhỏ trước cửa sổ, chỉ hiện khi lampsOn > 0.3)
+      const frontZ = f.y1 + 1 + 0.04;
+      const winMatrices: Matrix[] = [];
+      const addWin = (wx: number, wy: number, sx = 0.85, sy = 0.85) => {
+        winMatrices.push(Matrix.Compose(
+          new Vector3(sx, sy, 1),
+          Quaternion.Identity(),
+          new Vector3(f.x0 + wx, wy, frontZ)
+        ));
+      };
+
+      if (civicModelKind === 'building_civic_clinic') {
+        addWin(1.2, 1.4); addWin(4.8, 1.4);
+        addWin(1.2, 2.7); addWin(4.8, 2.7);
+      } else if (civicModelKind === 'building_civic_police') {
+        addWin(1.2, 1.4); addWin(4.8, 1.4);
+        addWin(1.2, 2.7); addWin(4.8, 2.7);
+        addWin(3.0, 3.8);
+      } else if (civicModelKind === 'building_civic_school') {
+        addWin(1.2, 1.4); addWin(2.8, 1.4); addWin(5.2, 1.4); addWin(6.8, 1.4);
+        addWin(1.2, 2.7); addWin(2.8, 2.7); addWin(5.2, 2.7); addWin(6.8, 2.7);
+      } else if (civicModelKind === 'building_low_detail_wide_a') {
+        addWin(1.4, 1.2, 1.1, 0.9); addWin(4.6, 1.2, 1.1, 0.9);
+        addWin(1.4, 2.3, 1.1, 0.9); addWin(4.6, 2.3, 1.1, 0.9);
+      }
+
+      if (winMatrices.length) {
+        const winMesh = CreateBox(`civic_win_${f.name}`, { width: 1, height: 1, depth: 0.03 }, scene);
+        const winMat = new StandardMaterial(`civic_win_mat_${f.name}`, scene);
+        winMat.diffuseColor = Color3.FromHexString('#ffe49e');
+        winMat.emissiveColor = Color3.FromHexString('#ffdf88');
+        winMat.specularColor = Color3.Black();
+        winMat.disableLighting = true;
+        winMesh.material = winMat;
+        winMesh.isVisible = false;
+        winMesh.metadata = { buildingId };
+        const winBuf = new Float32Array(winMatrices.length * 16);
+        winMatrices.forEach((m, idx) => m.copyToArray(winBuf, idx * 16));
+        winMesh.thinInstanceSetBuffer('matrix', winBuf, 16, true);
+        meshes.push(winMesh);
+        windowPlaneMeshes.push(winMesh);
+        if (civicNightMeshes.length < 6) {
+          civicNightMeshes.push(winMesh);
+        }
       }
 
       // Giữ biển hiệu đặt lên mặt tiền model (đặt ở tầng trệt mặt tiền: cao Y ~ 1.6-1.8) nếu có tên hợp lệ
@@ -271,6 +352,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
       wallMesh.metadata = { buildingId };
       setInstances(wallMesh, f.walls, v.wallHeight / 2);
       meshes.push(wallMesh);
+      shadowCasters.push(wallMesh);
       wallMeshes.push(wallMesh);
     }
     if (v.open) continue;
@@ -280,6 +362,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     roof.material = roofMat;
     roof.metadata = { buildingId };
     meshes.push(roof);
+    shadowCasters.push(roof);
     const roofInfo: RoofInfo = { meshes: [roof], facadeMeshes: [], facadeMaterials: [], wallMeshes, fadeMaterials: [roofMat], wallMaterials: [wallMat], id: buildingId, warehouse: !f.building, alpha: 1, wallAlpha: 1, top: v.wallHeight + 0.25, x0: f.x0, x1: f.x1 + 1, z0: f.y0, z1: f.y1 + 1 };
     roofs.push(roofInfo);
 
@@ -305,9 +388,29 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     facadeMesh.metadata = { buildingId };
     facadeMesh.thinInstanceEnablePicking = true;
     roofInfo.facadeMaterials.push(facadeMat);
+    facadeNightMaterials.push(facadeMat);
     setMatrices(facadeMesh, facade);
     meshes.push(facadeMesh);
     roofInfo.facadeMeshes.push(facadeMesh);
+
+    // Cửa sổ phát sáng ấm cho tiệm chính và quán ăn vào ban đêm (lampsOn > 0.3)
+    if (f.walls.length && w >= 4) {
+      const winX = f.x0 + 1;
+      const winPlane = CreateBox(`store_win_${f.name}`, { width: 0.9, height: 0.9, depth: 0.05 }, scene);
+      winPlane.position.set(winX + 0.5, 1.25, front + 0.04);
+      const winMat = new StandardMaterial(`win_mat_${f.name}`, scene);
+      winMat.diffuseColor = Color3.FromHexString('#ffe49e');
+      winMat.emissiveColor = Color3.FromHexString('#ffdf88');
+      winMat.specularColor = Color3.Black();
+      winPlane.material = winMat;
+      winPlane.metadata = { buildingId };
+      winPlane.isVisible = false;
+      meshes.push(winPlane);
+      windowPlaneMeshes.push(winPlane);
+      if (civicNightMeshes.length < 6) {
+        civicNightMeshes.push(winPlane);
+      }
+    }
     if (b.awning) {
       const ax0 = b.awning.x0 / TILE_SIZE;
       const ax1 = b.awning.x1 / TILE_SIZE;
@@ -369,14 +472,18 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     }
 
     if (treeMatrices.length && treeModel) {
+      treeBaseMatrices.push(...treeMatrices);
       const buf = new Float32Array(treeMatrices.length * 16);
       treeMatrices.forEach((m, i) => m.copyToArray(buf, i * 16));
       for (const mesh of treeModel.renderMeshes) {
         const copy = mesh.clone(`tree_${mesh.name}_inst`);
         copy.parent = null;
         copy.setEnabled(true);
+        if (mesh.material) copy.material = mesh.material;
         copy.thinInstanceSetBuffer('matrix', buf, 16, true);
         meshes.push(copy);
+        shadowCasters.push(copy);
+        treeInstanceMeshes.push(copy);
       }
     }
 
@@ -387,8 +494,10 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
         const copy = mesh.clone(`bush_${mesh.name}_inst`);
         copy.parent = null;
         copy.setEnabled(true);
+        if (mesh.material) copy.material = mesh.material;
         copy.thinInstanceSetBuffer('matrix', buf, 16, true);
         meshes.push(copy);
+        shadowCasters.push(copy);
       }
     }
 
@@ -396,7 +505,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
       const trunk = CreateCylinder('tree_trunk', { height: 1, diameter: 0.22, tessellation: 6 }, scene);
       trunk.material = mat('#6b4a2f');
       const crown = CreateIcoSphere('tree_crown', { radius: 1, subdivisions: 1, flat: true }, scene);
-      crown.material = mat('#3f8a3a');
+      crown.material = mat('#246820');
       setMatrices(trunk, fallbackTrunkM);
       setMatrices(crown, fallbackCrownM);
       meshes.push(trunk, crown);
@@ -428,13 +537,14 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
         copy.setEnabled(true);
         copy.thinInstanceSetBuffer('matrix', buf, 16, true);
         meshes.push(copy);
+        shadowCasters.push(copy);
       }
 
       // Giữ khối bóng đèn nhỏ tự sáng ở đầu cần đèn:
       // Model light-curved đầu cần tại (0, 0.66, -0.20) cục bộ.
       // Sau khi scale 3.55x và xoay 180° quanh Y: dx = 0, dy = 0.66 * 3.55 ≈ 2.34, dz = +0.20 * 3.55 = +0.71.
       const bulb = CreateBox('lamp_head', { width: 0.22, height: 0.10, depth: 0.28 }, scene);
-      bulb.material = mat('#ffe9a8', true);
+      bulb.material = mat('#ffe9a8');
       const bulbXY: number[] = [];
       for (const l of STREET_LAMP_TILES) {
         bulbXY.push(l.x + 0.5, l.y + 0.5 + 0.71);
@@ -447,7 +557,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
       const pole = CreateCylinder('lamp_pole', { height: 2.4, diameter: 0.08, tessellation: 6 }, scene);
       pole.material = mat('#3d4148');
       const head = CreateBox('lamp_head', { width: 0.3, height: 0.12, depth: 0.5 }, scene);
-      head.material = mat('#ffe9a8', true);
+      head.material = mat('#ffe9a8');
       const poleXY: number[] = [];
       const headXY: number[] = [];
       for (const l of STREET_LAMP_TILES) { poleXY.push(l.x + 0.5, l.y + 0.5); headXY.push(l.x + 0.5, l.y + 0.75); }
@@ -459,7 +569,56 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
   }
 
   for (const m of meshes) m.freezeWorldMatrix();
-  return { meshes, roofs, roadMaterial: mats.get(GROUND_COLORS.street) ?? null, lampMaterial: STREET_LAMP_TILES.length ? mats.get('#ffe9a8') ?? null : null, lampHeadMesh };
+  const updateNightLighting = (lampsOn: number): void => {
+    const isNight = lampsOn > 0.3;
+    const civicEmissive = isNight ? new Color3(1.0, 0.85, 0.5).scale(lampsOn) : Color3.Black();
+    for (const m of civicNightMaterials) {
+      m.emissiveColor.copyFrom(civicEmissive);
+    }
+    const facadeEmissive = isNight ? new Color3(0.35, 0.28, 0.15).scale(lampsOn) : Color3.Black();
+    for (const m of facadeNightMaterials) {
+      m.emissiveColor.copyFrom(facadeEmissive);
+    }
+    for (const p of windowPlaneMeshes) {
+      p.isVisible = isNight;
+    }
+  };
+
+  const updateTreeWind = (timeSec: number, windStrength: number, reducedMotion: boolean): void => {
+    if (!treeInstanceMeshes.length || !treeBaseMatrices.length) return;
+    if (reducedMotion || windStrength <= 0.01) {
+      const baseBuf = new Float32Array(treeBaseMatrices.length * 16);
+      treeBaseMatrices.forEach((m, i) => m.copyToArray(baseBuf, i * 16));
+      for (const m of treeInstanceMeshes) {
+        m.thinInstanceSetBuffer('matrix', baseBuf, 16, true);
+      }
+      return;
+    }
+    const swayAngle = Math.sin(timeSec * 2.5) * 0.04 * windStrength;
+    const buf = new Float32Array(treeBaseMatrices.length * 16);
+    for (let i = 0; i < treeBaseMatrices.length; i++) {
+      const base = treeBaseMatrices[i];
+      const indAngle = swayAngle * (1 + 0.25 * Math.sin(i * 1.7 + timeSec));
+      const swayRot = Matrix.RotationZ(indAngle);
+      const swayed = swayRot.multiply(base);
+      swayed.copyToArray(buf, i * 16);
+    }
+    for (const m of treeInstanceMeshes) {
+      m.thinInstanceSetBuffer('matrix', buf, 16, true);
+    }
+  };
+
+  return {
+    meshes,
+    roofs,
+    roadMaterial: mats.get(GROUND_COLORS.street) ?? null,
+    lampMaterial: STREET_LAMP_TILES.length ? mats.get('#ffe9a8') ?? null : null,
+    lampHeadMesh,
+    civicNightMeshes,
+    shadowCasters,
+    updateNightLighting,
+    updateTreeWind,
+  };
 }
 
 /** Thin instances đặt tại các cặp toạ độ thế giới (x, z) liên tiếp trong `xz`, nâng lên `y`. */

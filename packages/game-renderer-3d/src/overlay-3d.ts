@@ -6,6 +6,7 @@ import { MAP_WIDTH, PRODUCT_MAP, productPixels } from '@game/data';
 import { TILE_SIZE } from '@game/shared';
 import { cameraUp, isoAlpha, pixelToWorld } from './coords';
 import type { RoofInfo } from './map-builder';
+import type { CrowdTalkBubble } from './crowd-3d';
 import { hiddenByRoof } from './crowd-3d';
 import { ACTOR_WORLD_HEIGHT, type PartnerAvatarInfo } from './actors-3d';
 
@@ -79,6 +80,8 @@ export class Overlay3D {
 
   private shopkeeperBubble: HTMLDivElement | null = null;
   private partnerTag: HTMLDivElement | null = null;
+  private readonly activeTalkBubbles = new Map<string, { element: HTMLDivElement; seenFrame: number }>();
+  private readonly talkBubblePool: HTMLDivElement[] = [];
 
   private readonly tempVector = new Vector3();
   private readonly projVector = new Vector3();
@@ -271,6 +274,7 @@ export class Overlay3D {
     cameraBeta: number,
     roofs: readonly RoofInfo[],
     partnerAvatar?: PartnerAvatarInfo | null,
+    talkBubbles: readonly CrowdTalkBubble[] = [],
   ): void {
     if (!this.container) return;
 
@@ -512,10 +516,77 @@ export class Overlay3D {
     } else if (this.partnerTag) {
       this.partnerTag.style.display = 'none';
     }
+
+    // 5. Bong bóng thoại cư dân khu phố (neighborhood talk bubbles)
+    for (const b of talkBubbles) {
+      let entry = this.activeTalkBubbles.get(b.id);
+      if (!entry) {
+        let el = this.talkBubblePool.pop();
+        if (!el) {
+          el = document.createElement('div');
+          el.className = 'game-overlay-talk-bubble';
+          el.style.position = 'absolute';
+          el.style.left = '0';
+          el.style.top = '0';
+          el.style.background = '#fff7e0';
+          el.style.border = '2px solid #3a3a50';
+          el.style.borderRadius = '4px';
+          el.style.color = '#2b2118';
+          el.style.fontFamily = 'var(--font-pixel, "VT323", monospace)';
+          el.style.fontSize = '13px';
+          el.style.fontWeight = 'bold';
+          el.style.padding = '2px 6px';
+          el.style.maxWidth = '120px';
+          el.style.whiteSpace = 'normal';
+          el.style.textAlign = 'center';
+          el.style.lineHeight = '1.1';
+          el.style.pointerEvents = 'none';
+          el.style.userSelect = 'none';
+          el.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.25)';
+          el.style.willChange = 'transform, opacity';
+          this.container.appendChild(el);
+        }
+        entry = { element: el, seenFrame: this.frameId };
+        this.activeTalkBubbles.set(b.id, entry);
+      }
+      entry.seenFrame = this.frameId;
+
+      const bw = pixelToWorld(b.x, b.y);
+      this.tempVector.set(bw.x + headDx, headDy + (b.scale - 1) * 0.4, bw.z + headDz);
+      Vector3.ProjectToRef(this.tempVector, Matrix.IdentityReadOnly, transformMatrix, this.viewport, this.projVector);
+
+      const offScreen =
+        this.projVector.x < -100 ||
+        this.projVector.x > cw + 100 ||
+        this.projVector.y < -100 ||
+        this.projVector.y > ch + 100 ||
+        this.projVector.z < 0 ||
+        this.projVector.z > 1;
+
+      if (offScreen) {
+        entry.element.style.display = 'none';
+        continue;
+      }
+
+      entry.element.textContent = b.text;
+      entry.element.style.display = 'block';
+      entry.element.style.transform = `translate3d(${Math.round(this.projVector.x)}px, ${Math.round(this.projVector.y)}px, 0) translate(-50%, -100%)`;
+      entry.element.style.opacity = String(Math.min(1, b.bubbleAge < 0.15 ? b.bubbleAge / 0.15 : 1));
+    }
+
+    // Thu dọn bong bóng thoại đã kết thúc
+    for (const [id, entry] of this.activeTalkBubbles) {
+      if (entry.seenFrame === this.frameId) continue;
+      entry.element.style.display = 'none';
+      this.talkBubblePool.push(entry.element);
+      this.activeTalkBubbles.delete(id);
+    }
   }
 
   /** Dọn dẹp toàn bộ phần tử overlay khi huỷ viewport, đảm bảo không còn div thừa. */
   public destroy(): void {
+    this.activeTalkBubbles.clear();
+    this.talkBubblePool.length = 0;
     if (this.container) {
       this.container.remove();
       this.container.replaceChildren();

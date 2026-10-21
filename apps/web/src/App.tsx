@@ -3,7 +3,8 @@ import { BUILDING_TYPE_DEFS, buildingTypeOfInstance, buildingOfTiles, fixtureBui
 import { InputManager, GameSimulation, ambientMix, getTutorialChecklist, COOP_HOME_DOOR_TILES, landErrorMessage, openBuildingReasonMessage, FootstepTracker, footstepCue } from '@game/core';
 import type { TutorialItem, CoopPlayerRoutineConfig } from '@game/core';
 import { TutorialChecklist } from './components/TutorialChecklist';
-import { BuildingPanel, type BuildingPanelAction } from './components/BuildingPanel';
+import { MiniMap } from './components/MiniMap';
+import { BuildingPanel, sanitizeBuildingTitle, sanitizeBuildingTypeLabel, type BuildingPanelAction } from './components/BuildingPanel';
 import { AmbientAudioEngine } from './services/ambient-audio-engine';
 import { ParcelBuyModal } from './components/ParcelBuyModal';
 import { WorldSettingsModal } from './components/WorldSettingsModal';
@@ -914,12 +915,20 @@ export const App: React.FC = () => {
         // Renderer 3D báo hướng bản đồ ứng với phải/xuống màn hình mỗi khi camera xoay (2D không gọi).
         onViewBasisChange: (right, down) => inputManagerRef.current?.setViewBasis(right, down),
       };
-      // 3D là mặc định; khởi tạo 3D lỗi thì tự quay về 2D (xem renderer-choice.ts). Mỗi bản vừa tạo được giữ lại để hủy nếu bị hủy giữa chừng.
-      const { viewport } = await initializeWithFallback(
-        preferredRenderer(),
+      // 3D là mặc định; không có WebGL hoặc khởi tạo 3D lỗi thì tự quay về 2D và hiện thông báo (xem renderer-choice.ts). Mỗi bản vừa tạo được giữ lại để hủy nếu bị hủy giữa chừng.
+      let fallbackToastShown = false;
+      const initialPref = preferredRenderer(() => {
+        fallbackToastShown = true;
+        addToast('Máy không hỗ trợ 3D, đang dùng đồ họa 2D', 'info');
+      });
+      const { viewport, kind } = await initializeWithFallback(
+        initialPref,
         (kind) => createViewport(kind, viewportOptions),
         (created) => { ownedViewport = created; },
       );
+      if (initialPref === '3d' && kind === 'pixi' && !fallbackToastShown) {
+        addToast('Máy không hỗ trợ 3D, đang dùng đồ họa 2D', 'info');
+      }
       // Dev/QA: lối vào mô phỏng để dựng cảnh kiểm thử (đặt vị trí người chơi, đếm khách...). Không có trong bản production.
       if (import.meta.env.DEV) (window as unknown as { __gameDebug?: unknown }).__gameDebug = { simulation, get viewport() { return ownedViewport; } };
 
@@ -2159,6 +2168,7 @@ export const App: React.FC = () => {
   };
 
   const [zoomLevel, setZoomLevel] = useState<number>(2.0);
+  const getMinimapSnapshot = useCallback(() => viewportRef.current?.getMinimapSnapshot() ?? null, []);
 
   const handleZoomIn = () => {
     if (viewportRef.current) {
@@ -2287,6 +2297,7 @@ export const App: React.FC = () => {
               </div>
             )}
             {simulationRef.current && <SpecialRequestPanel state={simulationRef.current.getSpecialRequestState()} onFulfill={(id) => { const sim = simulationRef.current; if (!sim) return { success: false }; const res = sim.fulfillSpecialRequest(id); syncFromSimulation(sim); return res; }}/>}
+            {!hasModal && <MiniMap getSnapshot={getMinimapSnapshot} />}
             <div className="world-tools" aria-label="Góc nhìn bản đồ"><PixelButton icon="warehouse" aria-label="Định vị nhà kho" onClick={locateWarehouse}/><PixelButton icon="minus" aria-label="Thu nhỏ bản đồ" disabled={zoomLevel<=ZOOM_MIN} onClick={handleZoomOut}/><span className="zoom-value">{Number(zoomLevel.toFixed(2))}×</span><PixelButton icon="plus" aria-label="Phóng to bản đồ" disabled={zoomLevel>=ZOOM_MAX} onClick={handleZoomIn}/></div>
             {selectedBuildingId && simulationRef.current && (() => {
               const sim = simulationRef.current;
@@ -2312,11 +2323,14 @@ export const App: React.FC = () => {
               const site = sim.getSites().find(s => s.siteId === selectedBuildingId);
               if (site) actions.push({ label: 'Quản lý cơ sở', onClick: act(() => setSitePanelId(site.siteId)) });
               actions.push({ label: 'Bố trí cửa hàng', onClick: act(() => { void openLayoutEditor(); }) });
+              const isMainStore = norm(selectedBuildingId) === 'main';
+              const displayTitle = isMainStore ? 'Tiệm Tạp Hóa Đầu Hẻm' : (typeDef?.name ?? sanitizeBuildingTitle(selectedBuildingId));
+              const displayType = isMainStore ? 'Cửa hàng chính' : (typeDef?.name ?? sanitizeBuildingTypeLabel(typeDef?.typeId ?? selectedBuildingId, displayTitle));
               return <BuildingPanel
-                title={typeDef?.name ?? selectedBuildingId}
-                typeLabel={typeDef?.name ?? selectedBuildingId}
+                title={displayTitle}
+                typeLabel={displayType}
                 isOpen={open}
-                statusLabel={isMain ? (open ? 'Đang mở cửa' : 'Đã đóng cửa') : (open ? 'Đang hoạt động' : 'Đóng cửa / đang thi công')}
+                statusLabel={isMainStore ? (open ? 'Đang mở cửa' : 'Đã đóng cửa') : (open ? 'Đang hoạt động' : 'Đóng cửa / đang thi công')}
                 customerCount={customerCount}
                 actions={actions}
                 onClose={closeBuildingPanel}

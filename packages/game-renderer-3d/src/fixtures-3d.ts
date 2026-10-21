@@ -46,7 +46,7 @@ export class Fixtures3D {
     this.forceRebuild = true;
   }
 
-  public update(elapsed: number): void {
+  public update(elapsed: number, cameraFocus?: { x: number; z: number }): void {
     this.sinceSync += elapsed;
     if (this.sinceSync >= SYNC_INTERVAL || this.forceRebuild) {
       this.sinceSync = 0;
@@ -58,7 +58,7 @@ export class Fixtures3D {
         this.rebuild();
       }
     }
-    this.applyRoofAlpha();
+    this.applyRoofAlpha(cameraFocus);
   }
 
   public dispose(): void {
@@ -107,15 +107,27 @@ export class Fixtures3D {
     }
   }
 
-  /** Fixture trong tòa hiện dần khi mái mờ đi (alpha mái 1 → 0 thì fixture 0 → 1). */
-  private applyRoofAlpha(): void {
+  /** Fixture trong tòa hiện dần khi mái mờ đi (alpha mái 1 → 0 thì fixture 0 → 1). E3: Chỉ hiện tòa bóc mái hoặc gần camera. */
+  private applyRoofAlpha(cameraFocus?: { x: number; z: number }): void {
     for (const g of this.groups.values()) {
       const roof = g.roof >= 0 ? this.roofs[g.roof] : undefined;
       const alpha = roof ? 1 - roof.alpha : 1;
-      if (alpha === g.alpha) continue;
-      g.alpha = alpha;
-      g.mat.alpha = alpha;
-      g.mesh.isVisible = alpha > ALPHA_HIDDEN && g.mesh.thinInstanceCount > 0;
+      let near = true;
+      if (cameraFocus && roof) {
+        const cx = (roof.x0 + roof.x1) / 2;
+        const cz = (roof.z0 + roof.z1) / 2;
+        const dx = cx - cameraFocus.x;
+        const dz = cz - cameraFocus.z;
+        near = (dx * dx + dz * dz) <= 24 * 24;
+      }
+      const isPeeled = roof ? (roof.alpha < 0.95) : false;
+      const shouldRender = isPeeled || near;
+      const isVisible = shouldRender && alpha > ALPHA_HIDDEN && g.mesh.thinInstanceCount > 0;
+      if (isVisible !== g.mesh.isVisible || alpha !== g.alpha) {
+        g.alpha = alpha;
+        g.mat.alpha = alpha;
+        g.mesh.isVisible = isVisible;
+      }
     }
   }
 }

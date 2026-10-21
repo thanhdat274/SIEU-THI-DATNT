@@ -188,6 +188,20 @@ assert.ok(fallbackSvg.includes('width="16"'), 'Icon fallback sản phẩm rộng
   assert.equal(floating.textContent, '+24.000 đ', 'Phần tử floating gain phải được tái sử dụng từ pool');
   assert.equal(floating.style.color, '#2a7a43');
 
+  // Kiểm tra bong bóng thoại cư dân khu phố
+  const talkBubbles = [
+    { id: 'npc_1', x: 320, y: 320, text: 'Hôm nay trời đẹp ghê!', scale: 1, bubbleAge: 0.5 },
+  ];
+  overlay.update(0.1, 0, CAMERA_BETA, [], undefined, talkBubbles);
+  const bubbleEl = container.children.find(c => c.className === 'game-overlay-talk-bubble');
+  assert.ok(bubbleEl, 'Phải có phần tử bong bóng thoại cư dân');
+  assert.equal(bubbleEl.textContent, 'Hôm nay trời đẹp ghê!');
+  assert.equal(bubbleEl.style.display, 'block');
+
+  // Khung hình sau không còn bong bóng: phải ẩn đi và thu hồi về pool
+  overlay.update(0.1, 0, CAMERA_BETA, [], undefined, []);
+  assert.equal(bubbleEl.style.display, 'none', 'Bong bóng thoại hết hạn phải ẩn đi');
+
   // Hủy overlay: dọn sạch container khỏi parentElement
   overlay.destroy();
   assert.equal(parent.children.length, 0, 'Sau destroy(), container overlay phải biến mất hoàn toàn khỏi DOM');

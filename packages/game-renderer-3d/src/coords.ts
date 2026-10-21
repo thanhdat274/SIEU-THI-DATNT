@@ -75,6 +75,79 @@ export function groundViewRadius(zoom: number, aspect: number, beta: number, fov
   return Math.hypot(Math.max(far, near, 0), lateral);
 }
 
+/**
+ * Bounding box hình chiếu vùng nhìn camera xuống mặt đất Y = 0 (dùng cho MinimapSnapshot).
+ * Phối cảnh: 4 góc màn hình (u = ±1, v = ±1) phát tia cắt mặt phẳng Y = 0.
+ * Hỗ trợ xoay camera theo 4 hướng (quarter 0..3), góc nghiêng beta, fov và tỉ lệ khung hình aspect.
+ */
+export function cameraGroundViewBounds(
+  centerX: number,
+  centerZ: number,
+  zoom: number,
+  quarter: number,
+  aspect: number,
+  beta: number = CAMERA_BETA,
+  fov: number = CAMERA_FOV,
+): { x0: number; y0: number; x1: number; y1: number } {
+  const r = zoomRadius(zoom, fov);
+  const a = isoAlpha(quarter);
+  const sinA = Math.sin(a);
+  const cosA = Math.cos(a);
+  const sinB = Math.sin(beta);
+  const cosB = Math.cos(beta);
+
+  const cx = centerX + r * sinB * cosA;
+  const cy = r * cosB;
+  const cz = centerZ + r * sinB * sinA;
+
+  const fx = -sinB * cosA, fy = -cosB, fz = -sinB * sinA;
+  const rx = sinA, ry = 0, rz = -cosA;
+  const ux = -cosA * cosB, uy = sinB, uz = -sinA * cosB;
+
+  const thY = Math.tan(fov / 2);
+  const thX = thY * aspect;
+
+  const corners: Array<[number, number]> = [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ];
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+
+  for (const [u, v] of corners) {
+    const dx = fx + (u * thX) * rx + (v * thY) * ux;
+    const dy = fy + (u * thX) * ry + (v * thY) * uy;
+    const dz = fz + (u * thX) * rz + (v * thY) * uz;
+
+    if (Math.abs(dy) < 1e-6) continue;
+    const t = -cy / dy;
+    if (t <= 0) continue;
+
+    const px = cx + t * dx;
+    const pz = cz + t * dz;
+
+    if (px < minX) minX = px;
+    if (px > maxX) maxX = px;
+    if (pz < minZ) minZ = pz;
+    if (pz > maxZ) maxZ = pz;
+  }
+
+  if (!Number.isFinite(minX)) {
+    const halfH = zoomHalfHeight(zoom);
+    minX = centerX - halfH * aspect;
+    maxX = centerX + halfH * aspect;
+    minZ = centerZ - halfH;
+    maxZ = centerZ + halfH;
+  }
+
+  return { x0: minX, y0: minZ, x1: maxX, y1: maxZ };
+}
+
 /** Làm tròn giá trị về bội số `step` (khóa camera theo pixel ảo để hình không rung). */
 export function snapTo(value: number, step: number): number {
   return step > 0 ? Math.round(value / step) * step : value;

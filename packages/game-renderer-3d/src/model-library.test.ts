@@ -2,7 +2,23 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
+import { BUILDING_VISUALS } from '@game/data';
 import { MODEL_CATALOG, ModelLibrary, type ModelKind } from './model-library';
+
+test('model-library: C1 - Mọi modelId trong BUILDING_VISUALS phải có trong MODEL_CATALOG', () => {
+  const visualEntries = Object.entries(BUILDING_VISUALS);
+  let countWithModel = 0;
+  for (const [typeId, visual] of visualEntries) {
+    if (visual.modelId) {
+      countWithModel++;
+      assert.ok(
+        visual.modelId in MODEL_CATALOG,
+        `Tòa ${typeId} có modelId "${visual.modelId}" không tồn tại trong MODEL_CATALOG`
+      );
+    }
+  }
+  assert.ok(countWithModel >= 3, 'Ít nhất 3 tòa civic có modelId được ánh xạ vào MODEL_CATALOG');
+});
 
 test('model-library: Bảng ánh xạ loại vật -> đường dẫn model + tỉ lệ', () => {
   assert.ok(MODEL_CATALOG.tree, 'Đã cấu hình model cây');

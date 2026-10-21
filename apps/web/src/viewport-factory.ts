@@ -1,14 +1,20 @@
 import { PixiGameViewport, type GameViewport, type GameViewportOptions } from '@game/renderer';
-import { chooseRenderer, detectWebGL, readStoredRenderer, resolveRendererPreference, type RendererKind } from './renderer-choice';
+import { chooseRenderer, clearStoredRenderer, detectWebGL, resolveRendererPreference, type RendererKind } from './renderer-choice';
 
 export type { RendererKind };
 
-/** Renderer sẽ dùng: `?r=2d|3d` trên URL, hoặc localStorage `renderer`; mặc định 3D, không có WebGL thì 2D. */
-export function preferredRenderer(): RendererKind {
+/** Renderer sẽ dùng: `?r=2d|3d` trên URL; mặc định 3D (bỏ qua localStorage 'renderer' và xóa khóa khi khởi động); không có WebGL thì 2D. */
+export function preferredRenderer(onFallback?: (message: string) => void): RendererKind {
   try {
-    const preferred = resolveRendererPreference(window.location.search, readStoredRenderer(window.localStorage));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      clearStoredRenderer(window.localStorage);
+    }
+    const preferred = resolveRendererPreference(window.location.search);
     const webgl = detectWebGL(() => document.createElement('canvas'));
-    if (preferred === '3d' && !webgl) console.warn('Trình duyệt không có WebGL, dùng đồ họa 2D cổ điển.');
+    if (preferred === '3d' && !webgl) {
+      console.warn('Trình duyệt không có WebGL, dùng đồ họa 2D cổ điển.');
+      onFallback?.('Máy không hỗ trợ 3D, đang dùng đồ họa 2D');
+    }
     return chooseRenderer(preferred, webgl);
   } catch {
     return 'pixi';

@@ -1,7 +1,7 @@
 import { Sprite } from '@babylonjs/core/Sprites/sprite';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import { NeighborhoodLife, weekdayOf, hashSeed, type GameSimulation } from '@game/core';
-import { detailForZoom } from '@game/data';
+import { NEIGHBORHOOD_QUALITY, detailForZoom } from '@game/data';
 import { resolveWeatherQuality } from '@game/renderer';
 import { TILE_SIZE, getFixtureDimensions, type Direction } from '@game/shared';
 import { createActorSprite, type ActorAtlas } from './actor-atlas';
@@ -30,11 +30,22 @@ interface CrowdEntry {
  * Đồng bộ theo id: sprite chỉ tạo khi có người mới, người rời đi thì trả về hồ chứa (ẩn) để dùng lại; mỗi khung chỉ
  * cập nhật vị trí và khung hình. Người trong tòa còn mái thì ẩn, tòa đang bóc mái thì vẫn thấy.
  */
+export interface CrowdTalkBubble {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  scale: number;
+  bubbleAge: number;
+}
+
 export class Crowd3D {
   private readonly entries = new Map<string, CrowdEntry>();
   private readonly externalEntries = new Map<string, CrowdEntry>();
   private readonly pool: Sprite[] = [];
   private readonly life: NeighborhoodLife;
+  private talkBubbles: CrowdTalkBubble[] = [];
+  private devBubble: { text: string; age: number } | null = null;
   private readonly counterCenters = new Map<string, { x: number; y: number } | null>();
   private counterCacheAge = 0;
   private frameId = 0;
@@ -235,12 +246,52 @@ export class Crowd3D {
       const walking = ped.state === 'walking';
       this.place('sp:' + ped.id, look, ped.position.x, ped.position.y, ped.direction, walking, 1, 0xffffff, false, ctx);
     }
+    this.talkBubbles = [];
+    const maxBubbles = NEIGHBORHOOD_QUALITY[resolveWeatherQuality()].bubbles;
+    let bubbleIndex = 0;
     this.life.forEachVisible((n) => {
       if (n.x < cx - r - 64 || n.x > cx + r + 64 || n.y < cy - r - 64 || n.y > cy + r + 64) return;
       const look = this.hasKey(`npc_${n.spriteVariant}_down_idle_0`) ? n.spriteVariant : this.walkerLook(n.spriteVariant);
       const walking = n.pose === 'walking';
       this.place(`n:${n.id}`, look, n.x, n.y, n.facing, walking, n.scale, look >= 6 ? 0xffffff : n.tint, n.pose === 'sitting', ctx);
+      if (n.bubble && bubbleIndex < maxBubbles) {
+        bubbleIndex++;
+        this.talkBubbles.push({
+          id: n.id,
+          x: n.x,
+          y: n.y,
+          text: n.bubble,
+          scale: n.scale,
+          bubbleAge: n.bubbleAge,
+        });
+      }
     });
+
+    if (this.devBubble && this.talkBubbles.length === 0) {
+      for (const [id, e] of this.entries) {
+        if (e.seen === this.frameId && e.sprite.isVisible && e.last) {
+          this.talkBubbles.push({
+            id,
+            x: e.last.x,
+            y: e.last.y,
+            text: this.devBubble.text,
+            scale: 1,
+            bubbleAge: this.devBubble.age,
+          });
+          break;
+        }
+      }
+      if (this.talkBubbles.length === 0) {
+        this.talkBubbles.push({
+          id: 'dev_bubble_center',
+          x: cx,
+          y: cy,
+          text: this.devBubble.text,
+          scale: 1,
+          bubbleAge: this.devBubble.age,
+        });
+      }
+    }
 
     // Người đã rời: trả sprite về hồ chứa.
     for (const [id, e] of this.entries) {
@@ -251,7 +302,16 @@ export class Crowd3D {
     }
   }
 
+  /** QA / dev helper: force a talk bubble */
+  public setDevBubble(text: string, age = 1): void {
+    this.devBubble = { text, age };
+  }
+
   /** Thu thập danh sách người đang hiển thị kèm id và vị trí chân pixel. */
+  public getTalkBubbles(): readonly CrowdTalkBubble[] {
+    return this.talkBubbles;
+  }
+
   public getVisibleActors(): Array<{ id: string; x: number; y: number }> {
     const list: Array<{ id: string; x: number; y: number }> = [];
     for (const [id, e] of this.entries) {

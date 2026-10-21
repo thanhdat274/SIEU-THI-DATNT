@@ -3,6 +3,8 @@ import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
 import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
+import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
+import '@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent';
 import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
 import '@babylonjs/core/Layers/effectLayerSceneComponent';
 import { CreateDisc } from '@babylonjs/core/Meshes/Builders/discBuilder';
@@ -70,16 +72,47 @@ const LAMP_POOL_ALPHA = 0.32;
 export class Sky3D {
   private readonly hemi: HemisphericLight;
   private readonly sun: DirectionalLight;
+  private shadowGen: ShadowGenerator | null = null;
+  private readonly pendingShadowCasters = new Set<Mesh>();
+  private shadowsEnabled = true;
+  private thunderIntensity = 0;
   private glow: GlowLayer | null = null;
   private lampHead: StandardMaterial | null = null;
   private pool: Mesh | null = null;
   private poolMat: StandardMaterial | null = null;
+  private disposed = false;
 
   private readonly includedMeshes = new Set<Mesh>();
 
   constructor(private readonly scene: Scene) {
     this.hemi = new HemisphericLight('sky', new Vector3(0, 1, 0), scene);
     this.sun = new DirectionalLight('sun', new Vector3(-0.5, -1, 0.35), scene);
+    this.sun.autoCalcShadowZBounds = false;
+    this.sun.shadowMinZ = 1;
+    this.sun.shadowMaxZ = 75;
+    this.sun.orthoLeft = -25;
+    this.sun.orthoRight = 25;
+    this.sun.orthoTop = 25;
+    this.sun.orthoBottom = -25;
+
+    if (typeof window !== 'undefined' && scene.getEngine().name !== 'NullEngine') {
+      try {
+        const sg = new ShadowGenerator(512, this.sun);
+        sg.usePoissonSampling = false;
+        sg.filteringQuality = ShadowGenerator.QUALITY_LOW;
+        sg.bias = 0.003;
+        sg.normalBias = 0.01;
+        sg.darkness = 0.45;
+        this.shadowGen = sg;
+        for (const m of this.pendingShadowCasters) {
+          sg.addShadowCaster(m, true);
+        }
+        this.pendingShadowCasters.clear();
+      } catch (e) {
+        console.warn('Failed to init shadow generator:', e);
+        this.shadowGen = null;
+      }
+    }
     this.glow = new GlowLayer('night_glow', scene, { mainTextureRatio: 0.25, blurKernelSize: 24 });
     this.glow.intensity = 0;
     this.glow.isEnabled = false;
@@ -130,18 +163,82 @@ export class Sky3D {
 
   public setLampMaterial(mat: StandardMaterial | null): void { this.lampHead = mat; }
 
-  public update(hour: number, minute: number, day: number, rain: number): void {
+  /** Thêm mesh vào danh sách đổ bóng (chỉ tòa, cây, đèn). */
+  public addShadowCaster(mesh: Mesh): void {
+    if (this.shadowGen) {
+      try {
+        this.shadowGen.addShadowCaster(mesh, true);
+      } catch {
+        // Ignored
+      }
+    } else {
+      this.pendingShadowCasters.add(mesh);
+    }
+  }
+
+  /** Bật/tắt đổ bóng (vd: tắt khi hạ độ phân giải hoặc tùy chọn người dùng). */
+  public setShadowsEnabled(enabled: boolean): void {
+    this.shadowsEnabled = enabled;
+  }
+
+  /** Kích hoạt chớp sáng sấm chớp (0..1). */
+  public triggerThunder(strength = 1.0): void {
+    this.thunderIntensity = Math.max(this.thunderIntensity, Math.min(1.0, strength));
+  }
+
+  public getThunderIntensity(): number {
+    return this.thunderIntensity;
+  }
+
+  public update(hour: number, minute: number, day: number, rain: number, elapsed = 0.016): void {
     const l = lightingAt(hour, minute, day, rain);
-    this.hemi.intensity = l.hemiIntensity;
-    this.hemi.diffuse = toColor3(l.hemiColor);
+
+    // Cập nhật chớp sáng sấm sét
+    if (this.thunderIntensity > 0) {
+      this.thunderIntensity = Math.max(0, this.thunderIntensity - elapsed * 3.5);
+    }
+
+    const flash = this.thunderIntensity;
+    this.hemi.intensity = l.hemiIntensity + flash * 2.8;
+    this.hemi.diffuse = flash > 0.05 ? new Color3(1, 1, 1) : toColor3(l.hemiColor);
     this.hemi.groundColor = toColor3(l.groundColor);
-    this.sun.intensity = l.sunIntensity;
+    this.sun.intensity = l.sunIntensity * (1 - flash * 0.5);
     this.sun.diffuse = toColor3(l.sunColor);
     this.sun.direction.set(l.sunDir.x, l.sunDir.y, l.sunDir.z);
-    const c = toColor3(l.skyColor);
-    this.scene.clearColor = new Color4(c.r, c.g, c.b, 1);
+
+    // Đặt vị trí DirectionalLight ở trên cao chiếu xuống trung tâm khu phố (x: 24, z: 16)
+    // để camera bóng đổ (ortho) bao trọn toàn bộ các tòa nhà, cây cối và đường phố
+    const center = new Vector3(24, 0, 16);
+    this.sun.position.copyFrom(center.subtract(this.sun.direction.scale(35)));
+
+    // Bầu trời: chớp sáng thì trắng xanh
+    if (flash > 0.05) {
+      this.scene.clearColor = new Color4(0.92, 0.95, 1.0, 1);
+    } else {
+      const c = toColor3(l.skyColor);
+      this.scene.clearColor = new Color4(c.r, c.g, c.b, 1);
+    }
+
+    // Shadow map: ban đêm hoặc khi bị tắt thì ngừng pass render bóng
+    if (this.shadowGen) {
+      const isDaytime = l.sunIntensity > 0.05;
+      const active = isDaytime && this.shadowsEnabled;
+      const map = this.shadowGen.getShadowMap();
+      if (map) {
+        map.refreshRate = active ? 1 : 0;
+      }
+      this.shadowGen.darkness = active ? 0.45 : 0;
+    }
+
     const on = l.lampsOn;
-    if (this.lampHead) this.lampHead.emissiveColor.set(0.25 + 0.75 * on, (0.25 + 0.75 * on) * 0.91, (0.25 + 0.75 * on) * 0.66);
+    if (this.lampHead) {
+      // Ban ngày (on < 0.05): đầu đèn tắt hẳn emissive (màu đen) để không bị phát sáng trắng giữa trưa
+      if (on > 0.05) {
+        this.lampHead.emissiveColor.set(on * 1.0, on * 0.91, on * 0.66);
+      } else {
+        this.lampHead.emissiveColor.set(0, 0, 0);
+      }
+    }
     if (this.poolMat) this.poolMat.alpha = LAMP_POOL_ALPHA * on;
     if (this.pool) this.pool.isVisible = on > 0.02;
     if (this.glow) {
@@ -151,6 +248,10 @@ export class Sky3D {
   }
 
   public dispose(): void {
+    this.disposed = true;
+    this.pendingShadowCasters.clear();
+    this.shadowGen?.dispose();
+    this.shadowGen = null;
     this.glow?.dispose();
     this.pool?.dispose();
     this.poolMat?.dispose();

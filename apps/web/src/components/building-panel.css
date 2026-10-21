@@ -12,6 +12,7 @@
 .building-panel-stats dd { margin: 0; font-weight: bold; }
 .building-panel-stats .is-open { color: #2f6b3a; }
 .building-panel-stats .is-closed { color: #9a2f22; }
+.building-panel-stats .is-warning { color: #c8402f; }
 .building-panel-actions { display: flex; flex-direction: column; gap: 6px; }
 
 @media (max-width: 767px) {

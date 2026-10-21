@@ -80,7 +80,7 @@ export class Stock3D {
     this.dirty = true;
   }
 
-  public update(elapsed: number): void {
+  public update(elapsed: number, cameraFocus?: { x: number; z: number }): void {
     this.sinceSync += elapsed;
     if (this.sinceSync >= SYNC_INTERVAL || this.dirty) {
       this.sinceSync = 0;
@@ -91,7 +91,7 @@ export class Stock3D {
         this.rebuild();
       }
     }
-    this.applyRoofAlpha();
+    this.applyRoofAlpha(cameraFocus);
   }
 
   public dispose(): void {
@@ -261,14 +261,24 @@ export class Stock3D {
   }
 
   /** Icon trong tòa hiện dần khi mái mờ đi (cùng nhịp với fixture). */
-  private applyRoofAlpha(): void {
+  private applyRoofAlpha(cameraFocus?: { x: number; z: number }): void {
     for (const g of this.groups.values()) {
       const roof = g.roof >= 0 ? this.roofs[g.roof] : undefined;
       const alpha = roof ? 1 - roof.alpha : 1;
-      if (alpha === g.alpha) continue;
+      let near = true;
+      if (cameraFocus && roof) {
+        const cx = (roof.x0 + roof.x1) / 2;
+        const cz = (roof.z0 + roof.z1) / 2;
+        const dx = cx - cameraFocus.x;
+        const dz = cz - cameraFocus.z;
+        near = (dx * dx + dz * dz) <= 24 * 24;
+      }
+      const isPeeled = roof ? (roof.alpha < 0.95) : false;
+      const shouldRender = isPeeled || near;
+      if (!shouldRender && !g.mesh.isVisible) continue;
       g.alpha = alpha;
       g.mat.alpha = alpha;
-      g.mesh.isVisible = alpha > ALPHA_HIDDEN && g.count > 0;
+      g.mesh.isVisible = shouldRender && alpha > ALPHA_HIDDEN && g.count > 0;
     }
   }
 }

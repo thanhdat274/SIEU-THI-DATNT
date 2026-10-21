@@ -10,10 +10,15 @@ export function parseRendererPref(value: string | null | undefined): RendererKin
   return null;
 }
 
-/** Ưu tiên: `?r=` trên URL > localStorage `renderer` > mặc định 3D. */
-export function resolveRendererPreference(search: string, stored: string | null): RendererKind {
+/** Ưu tiên: `?r=` trên URL > mặc định 3D. KHÔNG đọc localStorage 'renderer' (bỏ qua nếu truyền vào). */
+export function resolveRendererPreference(search: string, _stored?: string | null): RendererKind {
   const fromUrl = parseRendererPref(new URLSearchParams(search).get('r'));
-  return fromUrl ?? parseRendererPref(stored) ?? '3d';
+  return fromUrl ?? '3d';
+}
+
+/** Xóa khóa 'renderer' khỏi localStorage khi khởi động để người từng chọn 2D không bị kẹt ở 2D. */
+export function clearStoredRenderer(storage: Pick<Storage, 'removeItem'> | null): void {
+  try { storage?.removeItem(RENDERER_STORAGE_KEY); } catch { /* bỏ qua lỗi storage */ }
 }
 
 /** Không có WebGL thì 3D không chạy được: quay về 2D. */

@@ -1,6 +1,5 @@
 import { useWeatherFx, WEATHER_QUALITY_LABEL, WEATHER_QUALITY_ORDER } from '../hooks/useWeatherFx';
 import React from 'react';
-import { readStoredRenderer, resolveRendererPreference, saveRendererPreference, type RendererKind } from '../renderer-choice';
 import { PixelDialog, PixelIcon, type IconName } from './pixel';
 import { applyAppUpdate, checkForAppUpdate, isAppUpdateReady, subscribeAppUpdate, type AppUpdateResult } from '../services/app-update';
 
@@ -74,19 +73,6 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
   lastSavedAt,
 }) => {
   const [weatherFx, setWeatherFx] = useWeatherFx();
-  // Đồ họa: `running` là bản đang chạy (đọc một lần lúc mở), `rendererPref` là lựa chọn đã lưu cho lần tải lại sau.
-  const [running] = React.useState<RendererKind>(() => resolveRendererPreference(window.location.search, readStoredRenderer(window.localStorage)));
-  const [rendererPref, setRendererPref] = React.useState<RendererKind>(running);
-  const toggleRenderer = () => {
-    const next: RendererKind = rendererPref === '3d' ? 'pixi' : '3d';
-    saveRendererPreference(window.localStorage, next);
-    // `?r=` trên URL thắng localStorage: bỏ nó đi để lần tải lại theo lựa chọn vừa lưu.
-    try {
-      const url = new URL(window.location.href);
-      if (url.searchParams.has('r')) { url.searchParams.delete('r'); window.history.replaceState(null, '', url); }
-    } catch { /* môi trường không có history: bỏ qua */ }
-    setRendererPref(next);
-  };
   const savedDate = lastSavedAt ? new Date(lastSavedAt) : null;
   const savedText = savedDate && !Number.isNaN(savedDate.getTime()) ? `Lưu gần nhất: ${savedDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} ${savedDate.toLocaleDateString("vi-VN")}.` : "Chưa có mốc lưu trong phiên này.";
   const [updateStatus, setUpdateStatus] = React.useState<AppUpdateResult | 'checking' | null>(null);
@@ -279,15 +265,6 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
           desc: 'Mật độ mưa, mây, lá bay. Tự động: điện thoại = Vừa, máy tính = Cao. Bấm để đổi vòng Tự động → Thấp → Vừa → Cao',
           icon: 'cold' as IconName,
           action: () => setWeatherFx({ quality: WEATHER_QUALITY_ORDER[(WEATHER_QUALITY_ORDER.indexOf(weatherFx.quality) + 1) % WEATHER_QUALITY_ORDER.length] }),
-        },
-        {
-          id: 'renderer',
-          label: `Đồ họa: ${rendererPref === '3d' ? '3D' : '2D cổ điển'}`,
-          desc: 'Bấm để đổi giữa 3D và 2D cổ điển. Lựa chọn được lưu trên máy này và có hiệu lực sau khi tải lại trang',
-          icon: 'sun' as IconName,
-          action: toggleRenderer,
-          badge: rendererPref !== running ? 'Tải lại để áp dụng' : undefined,
-          badgeVariant: 'gold' as const,
         },
         {
           id: 'depth-fx',
