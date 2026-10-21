@@ -124,3 +124,4 @@ import './vehicle-view.test';
 import './signals-data.test';
 
 import './logistics-umbrella-shadow.test';
+import './model-library.test';

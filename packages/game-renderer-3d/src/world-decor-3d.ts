@@ -10,8 +10,10 @@ import type { GameSimulation } from '@game/core';
 import type { GameTileMap } from '@game/shared';
 import { TILE_SIZE } from '@game/shared';
 import type { PlanningOverlay } from '@game/renderer';
+import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { createSignPlane } from './sign-plane';
 import { computeWaveDecor, computeWaveOverlay, worldDecorKey, type DecorSign, type TileRect, type WorldDecorInput } from './wave-decor';
+import { ModelLibrary, MODEL_CATALOG } from './model-library';
 
 /** Lớp trang trí đặt trên mặt đất, cao hơn vỉa hè (0,08) để không bị chìm. */
 const ZONE_Y = 0.12;
@@ -87,8 +89,22 @@ export class WorldDecor3D {
     }
   }
 
-  /** Overlay QA: viền vùng đợt và từng lô kèm mã (giống `showWaveOverlay` của Pixi). */
+  /** Overlay QA: viền vùng đợt và từng lô kèm mã (giống `showWaveOverlay` của Pixi). Chỉ cho phép hiện khi dev hoặc có cờ qa. */
   public showWaveOverlay(show: boolean): boolean {
+    const isDev = Boolean(
+      (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV ||
+      (typeof window !== 'undefined' && (
+        (window as unknown as { __DEV__?: boolean }).__DEV__ ||
+        new URLSearchParams(window.location.search).has('qa') ||
+        new URLSearchParams(window.location.search).has('dev')
+      ))
+    );
+    if (!isDev) {
+      this.qaOn = false;
+      this.clear(this.qaMeshes);
+      return false;
+    }
+
     if (show === this.qaOn) return true;
     this.qaOn = show;
     this.clear(this.qaMeshes);
@@ -113,6 +129,7 @@ export class WorldDecor3D {
 
   /** Một tấm phủ mặt đất có bản vẽ riêng (nền mờ + viền) theo kiểu. */
   private zone(r: TileRect, style: ZoneStyle, color: string, into: Mesh[] = this.meshes, fillAlpha?: number, y = ZONE_Y): void {
+    if (typeof document === 'undefined' && typeof OffscreenCanvas === 'undefined') return;
     const w = r.x1 - r.x0 + 1;
     const d = r.y1 - r.y0 + 1;
     const pw = Math.max(8, Math.round(w * ZONE_PX_PER_TILE));
@@ -157,7 +174,7 @@ export class WorldDecor3D {
     into.push(ground);
   }
 
-  /** Ba máy xúc tượng trưng (khối vàng + gầu) trong công trường. */
+  /** Ba máy xúc tượng trưng cùng rào chắn và cọc tiêu trong công trường. */
   private excavators(r: TileRect): void {
     const w = r.x1 - r.x0 + 1;
     const d = r.y1 - r.y0 + 1;
@@ -178,10 +195,68 @@ export class WorldDecor3D {
       arm.isPickable = false;
       this.meshes.push(body, arm);
     }
+
+    // Đồ đường phố công trường: rào chắn (construction_barrier), cọc tiêu (traffic_cone), thùng rác (dumpster)
+    const lib = ModelLibrary.getInstance();
+    const barrierModel = lib.getLoadedModel(this.scene, 'construction_barrier');
+    const coneModel = lib.getLoadedModel(this.scene, 'traffic_cone');
+    const dumpsterModel = lib.getLoadedModel(this.scene, 'dumpster');
+
+    if (barrierModel && barrierModel.renderMeshes.length > 0) {
+      const s = MODEL_CATALOG.construction_barrier.scale;
+      const barrierMatrices: Matrix[] = [
+        Matrix.Compose(new Vector3(s, s, s), Quaternion.Identity(), new Vector3(r.x0 + 1.2, ZONE_Y, r.y0 + 0.5)),
+        Matrix.Compose(new Vector3(s, s, s), Quaternion.Identity(), new Vector3(r.x1 - 0.2, ZONE_Y, r.y0 + 0.5)),
+      ];
+      const buf = new Float32Array(barrierMatrices.length * 16);
+      barrierMatrices.forEach((m, idx) => m.copyToArray(buf, idx * 16));
+      for (const mesh of barrierModel.renderMeshes) {
+        const copy = mesh.clone(`barrier_${mesh.name}_inst`);
+        copy.parent = null;
+        copy.setEnabled(true);
+        copy.thinInstanceSetBuffer('matrix', buf, 16, true);
+        this.meshes.push(copy);
+      }
+    }
+
+    if (coneModel && coneModel.renderMeshes.length > 0) {
+      const s = MODEL_CATALOG.traffic_cone.scale;
+      const coneMatrices: Matrix[] = [
+        Matrix.Compose(new Vector3(s, s, s), Quaternion.Identity(), new Vector3(r.x0 + 0.5, ZONE_Y, r.y0 + 0.5)),
+        Matrix.Compose(new Vector3(s, s, s), Quaternion.Identity(), new Vector3(r.x0 + 2.0, ZONE_Y, r.y0 + 0.5)),
+        Matrix.Compose(new Vector3(s, s, s), Quaternion.Identity(), new Vector3(r.x1 - 1.0, ZONE_Y, r.y0 + 0.5)),
+      ];
+      const buf = new Float32Array(coneMatrices.length * 16);
+      coneMatrices.forEach((m, idx) => m.copyToArray(buf, idx * 16));
+      for (const mesh of coneModel.renderMeshes) {
+        const copy = mesh.clone(`cone_${mesh.name}_inst`);
+        copy.parent = null;
+        copy.setEnabled(true);
+        copy.thinInstanceSetBuffer('matrix', buf, 16, true);
+        this.meshes.push(copy);
+      }
+    }
+
+    if (dumpsterModel && dumpsterModel.renderMeshes.length > 0) {
+      const s = MODEL_CATALOG.dumpster.scale;
+      const dumpsterMatrices: Matrix[] = [
+        Matrix.Compose(new Vector3(s, s, s), Quaternion.RotationYawPitchRoll(Math.PI / 2, 0, 0), new Vector3(r.x0 + 1.0, ZONE_Y, r.y1 - 0.5)),
+      ];
+      const buf = new Float32Array(dumpsterMatrices.length * 16);
+      dumpsterMatrices.forEach((m, idx) => m.copyToArray(buf, idx * 16));
+      for (const mesh of dumpsterModel.renderMeshes) {
+        const copy = mesh.clone(`dumpster_${mesh.name}_inst`);
+        copy.parent = null;
+        copy.setEnabled(true);
+        copy.thinInstanceSetBuffer('matrix', buf, 16, true);
+        this.meshes.push(copy);
+      }
+    }
   }
 
   /** Biển chữ đứng, luôn quay mặt về camera quanh trục dọc để đọc được ở mọi hướng xoay. */
   private sign(s: DecorSign, into: Mesh[] = this.meshes, lift = 0): void {
+    if (typeof document === 'undefined' && typeof OffscreenCanvas === 'undefined') return;
     const w = s.width;
     const pw = Math.round(w * SIGN_PX_PER_UNIT);
     const ph = Math.round(SIGN_HEIGHT * SIGN_PX_PER_UNIT);

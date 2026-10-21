@@ -28,6 +28,7 @@ import { Vehicles3D } from './vehicles-3d';
 import { TrafficSignals3D } from './traffic-signals-3d';
 import { ActorShadows3D } from './actor-shadows-3d';
 import { Umbrellas3D } from './umbrellas-3d';
+import { ModelLibrary } from './model-library';
 import { Logistics3D } from './logistics-3d';
 import { lightingAt } from './sky-3d';
 import { pickTarget, resolveTileTarget, type TileTarget } from './tile-target';
@@ -141,7 +142,9 @@ export class BabylonGameViewport implements GameViewport {
     this.worldDecor = new WorldDecor3D(scene, this.simulation);
     this.worldDecor.setTileMap(this.tileMap);
     this.worldDecor.setPlanning(this.pendingPlanning);
-    if (this.pendingWaveOverlay) this.worldDecor.showWaveOverlay(true);
+    if (this.pendingWaveOverlay) {
+      this.worldDecor.showWaveOverlay(true);
+    }
     this.vehicles = new Vehicles3D(scene, this.simulation, this.sky);
     await this.vehicles.load();
     this.trafficSignals = new TrafficSignals3D(scene, this.sky);
@@ -152,6 +155,7 @@ export class BabylonGameViewport implements GameViewport {
     this.prevImageRendering = this.canvas.style.imageRendering;
     this.canvas.style.imageRendering = 'pixelated';
     this.buildMap();
+    void this.preloadModels();
     this.applyResolution();
     this.applyZoom();
 
@@ -168,16 +172,67 @@ export class BabylonGameViewport implements GameViewport {
     this.emitViewBasis();
   }
 
-  /** Dựng lại toàn bộ bản đồ (xem map-builder.ts). */
+  /** Dựng lại toàn bộ bản đồ (xem map-builder.ts). Giữ nguyên trạng thái alpha của các mái đã bóc và viền chọn tòa. */
   private buildMap(): void {
+    const prevRoofAlphas = new Map<string, { alpha: number; wallAlpha: number }>();
+    for (const r of this.roofs) {
+      prevRoofAlphas.set(r.id, { alpha: r.alpha, wallAlpha: r.wallAlpha });
+    }
+
     for (const m of this.mapMeshes) m.dispose(false, true);
     const built = buildCityMap(this.scene!, this.tileMap);
+
+    // Phục hồi alpha mái đã bóc trước đó
+    for (const r of built.roofs) {
+      const prev = prevRoofAlphas.get(r.id);
+      if (prev) {
+        r.alpha = prev.alpha;
+        r.wallAlpha = prev.wallAlpha;
+        const roofAlpha = Math.min(r.alpha, r.wallAlpha);
+        for (const m of r.fadeMaterials) m.alpha = roofAlpha;
+        for (const m of r.wallMaterials) m.alpha = r.wallAlpha;
+        const facade = facadeAlpha(roofAlpha);
+        for (const m of r.facadeMaterials) m.alpha = facade;
+        const visible = roofAlpha > ALPHA_HIDDEN;
+        for (const m of r.meshes) m.isVisible = visible;
+      }
+    }
+
     this.mapMeshes = built.meshes;
     this.roofs = built.roofs;
     this.fixtures?.setRoofs(built.roofs);
     this.stock?.setMap(built.roofs, this.tileMap.stalls);
     this.sky?.setLampSource(built.lampMaterial, built.lampHeadMesh);
     this.weather?.setRoadMaterial(built.roadMaterial);
+
+    // Cập nhật lại khung viền tòa đang chọn (nếu có)
+    if (this.selectedBuildingId) {
+      this.updateSelectionVisual();
+    }
+  }
+
+  /** Tải trước các model 3D (cây, đèn đường, đồ đường phố). Khi tải xong, tái dựng bản đồ để cập nhật model 3D mà không gián đoạn game. */
+  private async preloadModels(): Promise<void> {
+    if (!this.scene) return;
+    const currentScene = this.scene;
+    const lib = ModelLibrary.getInstance();
+    const results = await Promise.all([
+      lib.loadModel(currentScene, 'tree'),
+      lib.loadModel(currentScene, 'street_lamp'),
+      lib.loadModel(currentScene, 'bush'),
+      lib.loadModel(currentScene, 'construction_barrier'),
+      lib.loadModel(currentScene, 'traffic_cone'),
+      lib.loadModel(currentScene, 'dumpster'),
+      lib.loadModel(currentScene, 'building_civic_clinic'),
+      lib.loadModel(currentScene, 'building_civic_police'),
+      lib.loadModel(currentScene, 'building_civic_school'),
+      lib.loadModel(currentScene, 'building_low_detail_wide_a'),
+    ]);
+    if (this.scene !== currentScene || !this.scene) return;
+    if (results.some(r => r !== null)) {
+      this.buildMap();
+      this.worldDecor?.update();
+    }
   }
 
   /** Khung hình nội bộ ~PIXEL_TARGET_HEIGHT px rồi phóng nguyên lần lên canvas (nearest) → chất pixel. */
@@ -683,6 +738,7 @@ export class BabylonGameViewport implements GameViewport {
     this.selectionGroundMesh?.dispose();
     this.scene?.dispose();
     this.engine?.dispose();
+    ModelLibrary.resetInstance();
     this.canvas.style.imageRendering = this.prevImageRendering;
     this.engine = null;
     this.scene = null;

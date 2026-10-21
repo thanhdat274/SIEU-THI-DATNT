@@ -13,6 +13,7 @@ import '@babylonjs/core/Meshes/thinInstanceMesh';
 import { TILE_SIZE, type GameTileMap, type MapBuilding } from '@game/shared';
 import { createSignPlane } from './sign-plane';
 import { BUILDING_VISUALS, STREET_LAMP_TILES, TREE_PROPS, buildingTypeOfInstance, type BuildingVisual } from '@game/data';
+import { ModelLibrary, MODEL_CATALOG } from './model-library';
 
 /** Mã ô lớp `walls`: 7 là gốc cây (vẽ cây riêng), còn lại là tường. */
 const WALL_TREE = 7;
@@ -37,6 +38,30 @@ export function tileKind(id: number, worldY: number): TileKind {
   if (id === 9) return 'warehouse';
   if (id === 2 && worldY < 11) return 'grass';
   return 'sidewalk';
+}
+
+/**
+ * Tra cứu tên hiển thị tiếng Việt hợp lệ cho biển hiệu tòa nhà.
+ * Quy định: Biển hiệu không được chứa dấu '_' hoặc toàn chữ in hoa/mã kỹ thuật (như 'CIVIC_WIDE', 'BUILDING_A').
+ * Nếu không có tên tiếng Việt hợp lệ, trả về null (không dựng biển hiệu).
+ */
+export function resolveBuildingSignText(building: MapBuilding): string | null {
+  const type = buildingTypeOfInstance(building.id);
+  if (type?.name) return type.name;
+
+  // Tra cứu theo tiền tố id đã biết
+  if (building.id === 'main') return 'Tiệm Tạp Hóa';
+  if (building.id.startsWith('clinic')) return 'Trạm Y Tế';
+  if (building.id.startsWith('ward_police')) return 'Đồn Công An Phường';
+  if (building.id.startsWith('primary_school')) return 'Trường Tiểu Học';
+  if (building.id.startsWith('civic_wide') || building.id.startsWith('building-wide')) return 'Trung Tâm Sinh Hoạt Cộng Đồng';
+
+  // Chặn mọi id mã kỹ thuật: chứa dấu '_' hoặc toàn chữ hoa không dấu kiểu mã id
+  if (building.id.includes('_') || /^[A-Z0-9-]+$/.test(building.id)) {
+    return null;
+  }
+
+  return building.id;
 }
 
 /** Mái và tường mặt tiền một tòa (hộp ô, gồm cả tường) — ẩn khi người chơi đứng trong để nhìn thấy bên trong. */
@@ -71,6 +96,7 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
   const meshes: Mesh[] = [];
   const roofs: RoofInfo[] = [];
   const mats = new Map<string, StandardMaterial>();
+
   const mat = (hex: string, emissive = false): StandardMaterial => {
     const key = hex + (emissive ? 'e' : '');
     let m = mats.get(key);
@@ -136,7 +162,22 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
   // --- Tòa nhà: gán ô tường cho tòa chứa nó; ô tường ngoài mọi tòa (kho) gom thành một khối riêng.
   const footprints: Footprint[] = (map.buildings ?? []).map(b => {
     const type = buildingTypeOfInstance(b.id);
-    return { visual: (type && BUILDING_VISUALS[type.typeId]) ?? BUILDING_VISUALS.grocery_main, name: type?.name ?? b.id, building: b, walls: [], x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
+    const bounds = b.bounds;
+    const x0 = bounds ? bounds.left : Infinity;
+    const x1 = bounds ? bounds.right : -Infinity;
+    const y0 = bounds ? (b.top ?? bounds.top) : Infinity;
+    const y1 = bounds ? bounds.bottom : -Infinity;
+    const signText = resolveBuildingSignText(b);
+    return {
+      visual: (type && BUILDING_VISUALS[type.typeId]) ?? BUILDING_VISUALS.grocery_main,
+      name: signText ?? '',
+      building: b,
+      walls: [],
+      x0,
+      x1,
+      y0,
+      y1,
+    };
   });
   const warehouse: Footprint = { visual: WAREHOUSE_VISUAL, name: 'Kho', walls: [], x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
   const owner = (x: number, y: number): Footprint | undefined => footprints.find(f => {
@@ -173,6 +214,57 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     const roofMat = mat(v.roof).clone(`roof_${f.name}_mat`);
     const wallMat = mat(v.wall).clone(`wall_${f.name}_mat`);
     const wallMeshes: Mesh[] = [];
+    const w = f.x1 - f.x0 + 1;
+    const d = f.y1 - f.y0 + 1;
+    const b = f.building;
+    const doors = b?.doorTiles ?? [];
+    const civicModelKind = buildingId.startsWith('clinic')
+      ? 'building_civic_clinic'
+      : buildingId.startsWith('ward_police')
+        ? 'building_civic_police'
+        : buildingId.startsWith('primary_school')
+          ? 'building_civic_school'
+          : (buildingId.startsWith('building-wide') || buildingId === 'civic_wide')
+            ? 'building_low_detail_wide_a'
+            : null;
+    const loadedCivic = civicModelKind ? ModelLibrary.getInstance().getLoadedModel(scene, civicModelKind) : null;
+
+    if (loadedCivic && loadedCivic.renderMeshes.length > 0) {
+      // Model 3D cho công trình civic (không vào được)
+      const spec = MODEL_CATALOG[civicModelKind!];
+      const modelScale = spec.scale;
+      const bCenter = new Vector3(f.x0 + w / 2, 0, f.y0 + d / 2);
+      const rot = Quaternion.RotationYawPitchRoll(Math.PI, 0, 0); // Quay mặt tiền ra hướng nam (+Z)
+      const m = Matrix.Compose(new Vector3(modelScale, modelScale, modelScale), rot, bCenter);
+      const buf = new Float32Array(16);
+      m.copyToArray(buf, 0);
+
+      for (const mesh of loadedCivic.renderMeshes) {
+        const copy = mesh.clone(`bldg_${f.name}_${mesh.name}`);
+        copy.parent = null;
+        copy.setEnabled(true);
+        copy.metadata = { buildingId };
+        copy.thinInstanceSetBuffer('matrix', buf, 16, true);
+        meshes.push(copy);
+      }
+
+      // Giữ biển hiệu đặt lên mặt tiền model (đặt ở tầng trệt mặt tiền: cao Y ~ 1.6-1.8) nếu có tên hợp lệ
+      if (b && f.name) {
+        const front = f.y1 + 1;
+        const signW = Math.max(3, Math.min(w - 0.6, 7));
+        const doorMid = doors.length ? doors.reduce((s, t) => s + t.x + 0.5, 0) / doors.length : f.x0 + w / 2;
+        const signX = Math.max(f.x0 + signW / 2, Math.min(f.x1 + 1 - signW / 2, doorMid));
+        const sign = createSignPlane(scene, `sign_${f.name}`, signW, SIGN_HEIGHT);
+        // Đặt biển hiệu ở mặt tiền (Z = front + 0.08), cao độ tầng 1 (Y ≈ 1.6)
+        sign.position.set(signX, 1.6, front + 0.08);
+        sign.metadata = { buildingId };
+        const signMat = signMaterial(scene, `sign_${f.name}`, f.name, v.signBg, v.signText, signW / SIGN_HEIGHT);
+        sign.material = signMat;
+        meshes.push(sign);
+      }
+      continue;
+    }
+
     if (f.walls.length) {
       const wallMesh = CreateBox(`walls_${f.name}`, { width: 1, height: v.wallHeight, depth: 1 }, scene);
       wallMesh.material = wallMat;
@@ -183,8 +275,6 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     }
     if (v.open) continue;
     // Mái phẳng có viền nhô, phủ cả tường.
-    const w = f.x1 - f.x0 + 1;
-    const d = f.y1 - f.y0 + 1;
     const roof = CreateBox(`roof_${f.name}`, { width: w + 0.3, height: 0.25, depth: d + 0.3 }, scene);
     roof.position.set(f.x0 + w / 2, v.wallHeight + 0.125, f.y0 + d / 2);
     roof.material = roofMat;
@@ -193,10 +283,8 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
     const roofInfo: RoofInfo = { meshes: [roof], facadeMeshes: [], facadeMaterials: [], wallMeshes, fadeMaterials: [roofMat], wallMaterials: [wallMat], id: buildingId, warehouse: !f.building, alpha: 1, wallAlpha: 1, top: v.wallHeight + 0.25, x0: f.x0, x1: f.x1 + 1, z0: f.y0, z1: f.y1 + 1 };
     roofs.push(roofInfo);
 
-    const b = f.building;
     if (!b) continue;
     const front = f.y1 + 1;
-    const doors = b.doorTiles ?? [];
 
     // Tường mặt tiền mỏng ở mép trước (lớp `walls` không có hàng này): khúc tường giữa các cửa, thêm lanh tô trên ô cửa.
     const doorX = new Set(doors.map(t => t.x));
@@ -230,56 +318,148 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
       awning.material = stripeMaterial(scene, `awning_${f.name}`, v.awning, Math.max(2, Math.round((ax1 - ax0) * 2)));
       meshes.push(awning);
     }
-    // Biển hiệu đứng trên mép mái mặt tiền, rộng gần bằng tòa, căn giữa theo cửa.
-    const signW = Math.max(3, Math.min(w - 0.6, 7));
-    const doorMid = doors.length ? doors.reduce((s, t) => s + t.x + 0.5, 0) / doors.length : f.x0 + w / 2;
-    const signX = Math.max(f.x0 + signW / 2, Math.min(f.x1 + 1 - signW / 2, doorMid));
-    const sign = createSignPlane(scene, `sign_${f.name}`, signW, SIGN_HEIGHT);
-    sign.position.set(signX, v.wallHeight + 0.25 + SIGN_HEIGHT / 2, front + 0.06);
-    sign.metadata = { buildingId };
-    const signMat = signMaterial(scene, `sign_${f.name}`, f.name, v.signBg, v.signText, signW / SIGN_HEIGHT);
-    sign.material = signMat;
-    roofInfo.facadeMeshes.push(sign);
-    roofInfo.facadeMaterials.push(signMat);
-    meshes.push(sign);
-  }
-
-  // --- Cây: thân trụ + tán khối đa diện (đổ bóng phẳng cho chất low-poly).
-  if (TREE_PROPS.length) {
-    const trunk = CreateCylinder('tree_trunk', { height: 1, diameter: 0.22, tessellation: 6 }, scene);
-    trunk.material = mat('#6b4a2f');
-    const crown = CreateIcoSphere('tree_crown', { radius: 1, subdivisions: 1, flat: true }, scene);
-    crown.material = mat('#3f8a3a');
-    const trunkM: Matrix[] = [];
-    const crownM: Matrix[] = [];
-    for (const t of TREE_PROPS) {
-      const h = t.height * 0.55;
-      trunkM.push(Matrix.Compose(new Vector3(1, h, 1), Quaternion.Identity(), new Vector3(t.tileX + 0.5, h / 2, t.tileY + 0.5)));
-      crownM.push(Matrix.Compose(new Vector3(t.crownRadius, t.crownRadius * 0.85, t.crownRadius), Quaternion.Identity(), new Vector3(t.tileX + 0.5, h + t.crownRadius * 0.6, t.tileY + 0.5)));
+    // Biển hiệu đứng trên mép mái mặt tiền, rộng gần bằng tòa, căn giữa theo cửa (nếu có tên hợp lệ)
+    if (f.name) {
+      const signW = Math.max(3, Math.min(w - 0.6, 7));
+      const doorMid = doors.length ? doors.reduce((s, t) => s + t.x + 0.5, 0) / doors.length : f.x0 + w / 2;
+      const signX = Math.max(f.x0 + signW / 2, Math.min(f.x1 + 1 - signW / 2, doorMid));
+      const sign = createSignPlane(scene, `sign_${f.name}`, signW, SIGN_HEIGHT);
+      sign.position.set(signX, v.wallHeight + 0.25 + SIGN_HEIGHT / 2, front + 0.06);
+      sign.metadata = { buildingId };
+      const signMat = signMaterial(scene, `sign_${f.name}`, f.name, v.signBg, v.signText, signW / SIGN_HEIGHT);
+      sign.material = signMat;
+      roofInfo.facadeMeshes.push(sign);
+      roofInfo.facadeMaterials.push(signMat);
+      meshes.push(sign);
     }
-    setMatrices(trunk, trunkM);
-    setMatrices(crown, crownM);
-    meshes.push(trunk, crown);
   }
 
-  // --- Đèn đường: cột mảnh + bóng đèn tự sáng.
+  // --- Cây & Bụi cây: dùng model 3D (tree_default.glb, plant_bush.glb) nếu có sẵn, fallback về trụ + tán icosphere.
+  if (TREE_PROPS.length) {
+    const treeModel = ModelLibrary.getInstance().getLoadedModel(scene, 'tree');
+    const bushModel = ModelLibrary.getInstance().getLoadedModel(scene, 'bush');
+
+    const treeMatrices: Matrix[] = [];
+    const bushMatrices: Matrix[] = [];
+
+    const fallbackTrunkM: Matrix[] = [];
+    const fallbackCrownM: Matrix[] = [];
+
+    for (const t of TREE_PROPS) {
+      const isBush = t.id.includes('bush') || t.height <= 1.5;
+      if (isBush && bushModel && bushModel.renderMeshes.length > 0) {
+        const s = (t.height / MODEL_CATALOG.bush.targetHeight) * MODEL_CATALOG.bush.scale * 0.45;
+        bushMatrices.push(Matrix.Compose(
+          new Vector3(s, s, s),
+          Quaternion.Identity(),
+          new Vector3(t.tileX + 0.5, 0, t.tileY + 0.5)
+        ));
+      } else if (!isBush && treeModel && treeModel.renderMeshes.length > 0) {
+        const s = (t.height / MODEL_CATALOG.tree.targetHeight) * MODEL_CATALOG.tree.scale;
+        treeMatrices.push(Matrix.Compose(
+          new Vector3(s, s, s),
+          Quaternion.Identity(),
+          new Vector3(t.tileX + 0.5, 0, t.tileY + 0.5)
+        ));
+      } else {
+        const h = t.height * 0.55;
+        fallbackTrunkM.push(Matrix.Compose(new Vector3(1, h, 1), Quaternion.Identity(), new Vector3(t.tileX + 0.5, h / 2, t.tileY + 0.5)));
+        fallbackCrownM.push(Matrix.Compose(new Vector3(t.crownRadius, t.crownRadius * 0.85, t.crownRadius), Quaternion.Identity(), new Vector3(t.tileX + 0.5, h + t.crownRadius * 0.6, t.tileY + 0.5)));
+      }
+    }
+
+    if (treeMatrices.length && treeModel) {
+      const buf = new Float32Array(treeMatrices.length * 16);
+      treeMatrices.forEach((m, i) => m.copyToArray(buf, i * 16));
+      for (const mesh of treeModel.renderMeshes) {
+        const copy = mesh.clone(`tree_${mesh.name}_inst`);
+        copy.parent = null;
+        copy.setEnabled(true);
+        copy.thinInstanceSetBuffer('matrix', buf, 16, true);
+        meshes.push(copy);
+      }
+    }
+
+    if (bushMatrices.length && bushModel) {
+      const buf = new Float32Array(bushMatrices.length * 16);
+      bushMatrices.forEach((m, i) => m.copyToArray(buf, i * 16));
+      for (const mesh of bushModel.renderMeshes) {
+        const copy = mesh.clone(`bush_${mesh.name}_inst`);
+        copy.parent = null;
+        copy.setEnabled(true);
+        copy.thinInstanceSetBuffer('matrix', buf, 16, true);
+        meshes.push(copy);
+      }
+    }
+
+    if (fallbackTrunkM.length) {
+      const trunk = CreateCylinder('tree_trunk', { height: 1, diameter: 0.22, tessellation: 6 }, scene);
+      trunk.material = mat('#6b4a2f');
+      const crown = CreateIcoSphere('tree_crown', { radius: 1, subdivisions: 1, flat: true }, scene);
+      crown.material = mat('#3f8a3a');
+      setMatrices(trunk, fallbackTrunkM);
+      setMatrices(crown, fallbackCrownM);
+      meshes.push(trunk, crown);
+    }
+  }
+
+  // --- Đèn đường: dùng model 3D (light-curved.glb) nếu có sẵn, fallback về cột trụ + hộp đèn.
   let lampHeadMesh: Mesh | null = null;
   if (STREET_LAMP_TILES.length) {
-    const pole = CreateCylinder('lamp_pole', { height: 2.4, diameter: 0.08, tessellation: 6 }, scene);
-    pole.material = mat('#3d4148');
-    const head = CreateBox('lamp_head', { width: 0.3, height: 0.12, depth: 0.5 }, scene);
-    head.material = mat('#ffe9a8', true);
-    const poleXY: number[] = [];
-    const headXY: number[] = [];
-    for (const l of STREET_LAMP_TILES) { poleXY.push(l.x + 0.5, l.y + 0.5); headXY.push(l.x + 0.5, l.y + 0.75); }
-    setInstances(pole, poleXY, 1.2);
-    setInstances(head, headXY, 2.4);
-    meshes.push(pole, head);
-    lampHeadMesh = head;
+    const lampModel = ModelLibrary.getInstance().getLoadedModel(scene, 'street_lamp');
+    if (lampModel && lampModel.renderMeshes.length > 0) {
+      const lampMatrices: Matrix[] = [];
+      const s = MODEL_CATALOG.street_lamp.scale;
+      for (const l of STREET_LAMP_TILES) {
+        // Quay 180 độ (Math.PI) quanh trục Y để cần đèn vươn ra lòng đường (hướng nam +Z)
+        const rot = Quaternion.RotationYawPitchRoll(Math.PI, 0, 0);
+        lampMatrices.push(Matrix.Compose(
+          new Vector3(s, s, s),
+          rot,
+          new Vector3(l.x + 0.5, 0, l.y + 0.5)
+        ));
+      }
+      const buf = new Float32Array(lampMatrices.length * 16);
+      lampMatrices.forEach((m, i) => m.copyToArray(buf, i * 16));
+
+      for (const mesh of lampModel.renderMeshes) {
+        const copy = mesh.clone(`lamp_${mesh.name}_inst`);
+        copy.parent = null;
+        copy.setEnabled(true);
+        copy.thinInstanceSetBuffer('matrix', buf, 16, true);
+        meshes.push(copy);
+      }
+
+      // Giữ khối bóng đèn nhỏ tự sáng ở đầu cần đèn:
+      // Model light-curved đầu cần tại (0, 0.66, -0.20) cục bộ.
+      // Sau khi scale 3.55x và xoay 180° quanh Y: dx = 0, dy = 0.66 * 3.55 ≈ 2.34, dz = +0.20 * 3.55 = +0.71.
+      const bulb = CreateBox('lamp_head', { width: 0.22, height: 0.10, depth: 0.28 }, scene);
+      bulb.material = mat('#ffe9a8', true);
+      const bulbXY: number[] = [];
+      for (const l of STREET_LAMP_TILES) {
+        bulbXY.push(l.x + 0.5, l.y + 0.5 + 0.71);
+      }
+      setInstances(bulb, bulbXY, 2.34);
+      meshes.push(bulb);
+      lampHeadMesh = bulb;
+    } else {
+      // Fallback: cột mảnh + bóng đèn tự sáng
+      const pole = CreateCylinder('lamp_pole', { height: 2.4, diameter: 0.08, tessellation: 6 }, scene);
+      pole.material = mat('#3d4148');
+      const head = CreateBox('lamp_head', { width: 0.3, height: 0.12, depth: 0.5 }, scene);
+      head.material = mat('#ffe9a8', true);
+      const poleXY: number[] = [];
+      const headXY: number[] = [];
+      for (const l of STREET_LAMP_TILES) { poleXY.push(l.x + 0.5, l.y + 0.5); headXY.push(l.x + 0.5, l.y + 0.75); }
+      setInstances(pole, poleXY, 1.2);
+      setInstances(head, headXY, 2.4);
+      meshes.push(pole, head);
+      lampHeadMesh = head;
+    }
   }
 
   for (const m of meshes) m.freezeWorldMatrix();
-  return { meshes, roofs, roadMaterial: mats.get(GROUND_COLORS.street) ?? null, lampMaterial: STREET_LAMP_TILES.length ? mats.get('#ffe9a8e') ?? null : null, lampHeadMesh };
+  return { meshes, roofs, roadMaterial: mats.get(GROUND_COLORS.street) ?? null, lampMaterial: STREET_LAMP_TILES.length ? mats.get('#ffe9a8') ?? null : null, lampHeadMesh };
 }
 
 /** Thin instances đặt tại các cặp toạ độ thế giới (x, z) liên tiếp trong `xz`, nâng lên `y`. */

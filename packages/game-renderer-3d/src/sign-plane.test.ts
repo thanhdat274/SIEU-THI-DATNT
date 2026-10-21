@@ -1,3 +1,4 @@
+import { resolveBuildingSignText } from './map-builder';
 import assert from 'node:assert/strict';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
@@ -37,3 +38,32 @@ import { createSignPlane } from './sign-plane';
   engine.dispose();
 }
 console.log('PASS sign-plane: UV biển hiệu đọc xuôi khi nhìn từ phía đường');
+
+// Test tra cứu tên biển hiệu: không được chứa dấu '_' hoặc toàn chữ hoa kiểu mã id
+{
+  const samples = [
+    { building: { id: 'main' }, expected: 'Tiệm Tạp Hóa' },
+    { building: { id: 'xoi' }, expected: 'Tiệm Xôi Bà Năm' },
+    { building: { id: 'drink' }, expected: 'Tiệm Nước Giải Khát' },
+    { building: { id: 'snack' }, expected: 'Tiệm Ăn Vặt Bé Ba' },
+    { building: { id: 'clinic-1' }, expected: 'Trạm y tế' },
+    { building: { id: 'ward_police-1' }, expected: 'Đồn công an phường' },
+    { building: { id: 'primary_school-1' }, expected: 'Trường tiểu học' },
+    { building: { id: 'civic_wide' }, expected: 'Trung Tâm Sinh Hoạt Cộng Đồng' },
+    { building: { id: 'building-wide-1' }, expected: 'Trung Tâm Sinh Hoạt Cộng Đồng' },
+    { building: { id: 'UNKNOWN_ID_XYZ' }, expected: null },
+    { building: { id: 'RAW_DEBUG_CODE' }, expected: null },
+  ];
+
+  for (const s of samples) {
+    const text = resolveBuildingSignText(s.building as any);
+    if (s.expected !== null) {
+      assert.ok(text, 'Biển hiệu cho ' + s.building.id + ' phải có giá trị');
+      assert.ok(!text.includes('_'), 'Biển hiệu cho ' + s.building.id + ' không được chứa dấu gạch dưới');
+      assert.ok(!/^[A-Z0-9_-]+$/.test(text), 'Biển hiệu cho ' + s.building.id + ' không được toàn chữ hoa kiểu mã id');
+    } else {
+      assert.equal(text, null, 'Mã id kỹ thuật ' + s.building.id + ' không được tạo biển hiệu');
+    }
+  }
+  console.log('PASS sign-plane: Tên biển hiệu chuẩn tiếng Việt, không chứa dấu _ hoặc mã id in hoa');
+}

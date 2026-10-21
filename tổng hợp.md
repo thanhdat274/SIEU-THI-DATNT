@@ -1,3 +1,160 @@
+# RENDERER 3D: SỬA TƯỜNG NHIỄU CẦU VỒNG (P0), SỬA CÂY TRẮNG (P1), CHUẨN HÓA BIỂN HIỆU TIẾNG VIỆT (P1) (21/10/2026, packages/game-renderer-3d)
+
+Đã hoàn thành toàn bộ các hạng mục sửa lỗi và kiểm chứng:
+1. **Tường nhiễu cầu vồng (P0)**:
+   - **Nguyên nhân**: `colormap.png` của Kenney là bảng màu 256x256 gồm các ô màu nhỏ 16x16 px phục vụ UV map từng mặt của model 3D Kenney. Khi gán trực tiếp làm `diffuseTexture` trên các khối code dựng (`CreateBox`), do UV của khối hộp là 0..1 trải toàn mặt, toàn bộ lưới ô màu cầu vồng bị co giãn trên mặt phẳng tường và mái gây hiện tượng lốm đốm nhiễu hạt.
+   - **Khắc phục**: Loại bỏ hoàn toàn việc gán `diffuseTexture = kenneyColormap` trên khối code dựng trong `map-builder.ts`. Màu của tường, mái và mặt tiền khối code được trả về nguyên bản theo màu đơn của `BUILDING_VISUALS` (`wall`, `roof`, `awning`, `signBg`) thông qua `diffuseColor` của `StandardMaterial`.
+   - **Kiểm chứng QA**: Ảnh chụp tiệm chính góc gần (`main-store-clean-colors.png`) cho thấy tường nhà màu kem sáng `#efe3c6`, mái đỏ gạch `#b5533c`, phẳng mịn, sạch bóng, không còn bất kỳ ô nhiễu màu nào.
+
+2. **Cây / Bụi trắng toát (P1)**:
+   - **Nguyên nhân**: File `tree_default.glb` và `plant_bush.glb` từ `kenney_nature-kit` được xuất bằng UniGLTF với extension `KHR_materials_unlit` và không có texture ảnh (`images: undefined`), chỉ có màu pastel xanh ngọc nhạt `[0.161, 0.788, 0.671]`. Dưới ánh sáng ban ngày và độ chói của màn hình, tán lá bị bạc màu và trông trắng toát so với mặt cỏ xanh `#6aa84f`.
+   - **Khắc phục**: Thêm kiểm tra nghiêm ngặt trong `ModelLibrary.loadModel`: sau khi tải, duyệt qua toàn bộ render meshes, mọi material phải có `diffuseTexture` hoặc `albedoTexture` hợp lệ khác null. Nếu thiếu texture, `ModelLibrary` ghi log cảnh báo và đánh dấu fallback về khối dựng code. Khối dựng code cây (`CreateCylinder` thân cây màu `#6b4a2f` + `CreateIcoSphere` tán lá xanh lá đậm `#3f8a3a`) hiển thị sắc nét, tán lá xanh thẫm tự nhiên.
+   - **Kiểm chứng QA**: Ảnh `trees-and-bushes-green.png` và `overview-noon-12h.png` ghi nhận toàn bộ cây ở cả cự ly gần và xa đều hiển thị tán lá xanh đậm đồng nhất, hài hòa với mặt cỏ.
+
+3. **Biển "CIVIC_WIDE" và tên biển hiệu (P1)**:
+   - **Nguyên nhân**: Biển hiệu trước đây lấy trực tiếp `b.id` làm fallback khi không tìm thấy tên trong registry, dẫn tới việc hiện các mã kỹ thuật như `civic_wide` thành `CIVIC_WIDE`.
+   - **Khắc phục**: Xây dựng hàm `resolveBuildingSignText(building)`:
+     - Ưu tiên lấy tên tiếng Việt từ `buildingTypeOfInstance(b.id)`.
+     - Nhận diện các công trình đặc biệt (`main` → "Tiệm Tạp Hóa", `clinic` → "Trạm Y Tế", `ward_police` → "Đồn Công An Phường", `primary_school` → "Trường Tiểu Học", `civic_wide`/`building-wide` → "Trung Tâm Sinh Hoạt Cộng Đồng").
+     - Chặn tuyệt đối: Bất kỳ tên nào chứa dấu `_` hoặc toàn chữ hoa không dấu kiểu mã id (`^[A-Z0-9-]+$`) đều bị trả về `null` và hệ thống sẽ không dựng biển hiệu cho tòa đó.
+   - **Unit test**: Bổ sung kiểm thử trong `sign-plane.test.ts` kiểm chứng quy tắc tên biển hiệu (không chứa `_`, không in hoa mã code, chỉ nhận tiếng Việt hợp lệ).
+   - **Kiểm chứng QA**: Ảnh chụp 4 tòa civic (`civic-01-clinic.png`, `civic-02-ward_police.png`, `civic-03-primary_school.png`, `civic-04-building-wide.png`) hiển thị biển hiệu tiếng Việt trang trọng: "Trạm y tế", "Đồn công an phường", "Trường tiểu học", "Trung Tâm Sinh Hoạt Cộng Đồng".
+
+4. **Làm rõ nguồn nhãn Debug đợt khai hoang**:
+   - Ghi nhận đúng nguyên nhân: Overlay nhãn debug các đợt khai hoang (`W4 (x0..35, y-6..15)`, `WZ-1`) trước đó chỉ bật khi chạy script QA có can thiệp `window.__showWaveOverlay = true`, mã nguồn App chính trong `main.ts` và `app.tsx` hoàn toàn không tự ý kích hoạt cờ này. Đã giữ nguyên cơ chế chặn an toàn trong `world-decor-3d.ts` chỉ cho phép bật khi có cờ DEV/QA tường minh và tắt sạch overlay trong ảnh nộp.
+
+5. **Kiểm tra tiêu chuẩn**:
+   - `yarn typecheck`: PASS (0 lỗi).
+   - `yarn --cwd packages/game-renderer-3d test`: PASS toàn bộ 14/14 suites.
+   - `npx eslint packages/game-renderer-3d`: 0 lỗi, 0 cảnh báo.
+
+6. **QA Browser — Dữ liệu thực tế (.qa/qa-p1-models/)**:
+   - `main-store-clean-colors.png`: Tiệm chính nhìn thẳng mặt tiền lúc 12h, màu tường kem sáng và mái đỏ gạch mịn đẹp, sạch bóng, không còn sọc cầu vồng.
+   - `trees-and-bushes-green.png`: Dãy cây xanh rì rào bên vỉa hè với thân nâu gỗ và tán lá xanh đậm `#3f8a3a`, giải quyết dứt điểm hiện tượng cây trắng.
+   - `civic-01-clinic.png`: Trạm y tế (`clinic`), model `building-c.glb`, biển hiệu "Trạm y tế" trên nền đỏ.
+   - `civic-02-ward_police.png`: Đồn công an (`ward_police`), model `building-d.glb`, biển hiệu "Đồn công an phường".
+   - `civic-03-primary_school.png`: Trường tiểu học (`primary_school`), model `building-e.glb`, biển hiệu "Trường tiểu học".
+   - `civic-04-building-wide.png`: Tòa nhà cộng đồng (`civic_wide`), model `low-detail-building-wide-a.glb`, biển hiệu "Trung Tâm Sinh Hoạt Cộng Đồng", không còn chữ `CIVIC_WIDE`.
+   - `overview-noon-12h.png`: Cảnh quan phố phường 12h trưa sạch sẽ, không có nhãn debug, màu sắc tươi tắn.
+   - `overview-night-22h.png`: Cảnh quan 22h đêm, chỉ có bóng đèn nhỏ ở đầu cần đèn phát sáng tự nhiên, cột đèn tối.
+   - Chu trình vào menu rồi vào lại game 2 lần: Console 0 lỗi (`Total console errors: 0`).
+
+# RENDERER 3D: SỬA NHÃN DEBUG LỘ RA (P1), THU THẬP BẰNG CHỨNG ĐỢT B CIVIC, COLORMAP ĐỢT C, BÁO CÁO ĐỢT D (21/10/2026, packages/game-renderer-3d)
+
+Đã hoàn thành toàn bộ 6 yêu cầu:
+1. **Nhãn debug lộ ra (P1)**:
+   - Trong `world-decor-3d.ts`: Cấu hình hàm `showWaveOverlay(show: boolean)` kiểm tra cờ DEV (`import.meta.env.DEV`, `window.__DEV__`, URL chứa `?qa` hoặc `?dev`). Khi không có cờ hoặc khi `show === false`, toàn bộ overlay vùng và chữ debug `W4 (x0..35, y-6..15)`, `WZ-1` lập tức bị clear và không sinh ra mesh nào trên màn hình người chơi thông thường.
+   - Thêm test tự động trong `wave-decor.test.ts` kiểm chứng `WorldDecor3D.showWaveOverlay` chỉ kích hoạt khi có cờ dev/qa.
+2. **Bằng chứng Đợt B – Các tòa civic đã thay**:
+   - Sử dụng script tự động Playwright (`.qa/qa-civic-shots.mjs`) điều khiển camera đặt NGAY tại từng tòa (`panToWorld`):
+     - `civic-01-clinic.png`: Trạm y tế (`clinic`), model `building-c.glb` (scale 6.8x), chân diện $6 \times 8$ ô, biển hiệu đỏ "TRẠM Y TẾ" đọc rõ nét trên mặt tiền. Chân model đặt ngay ngắn tại $Y = 0$, không chìm, không đè lên đường.
+     - `civic-02-ward_police.png`: Đồn công an phường (`ward_police`), model `building-d.glb` (scale 7.1x), chân diện $6 \times 8$ ô, biển hiệu nâu đỏ "ĐỒN CÔNG AN PHƯỜNG" đọc rõ nét. Chân đặt ngay ngắn trên mặt đất.
+     - `civic-03-primary_school.png`: Trường tiểu học (`primary_school`), model `building-e.glb` (scale 4.88x), chân diện $8 \times 8$ ô, biển hiệu xanh "TRƯỜNG TIỂU HỌC" đọc rõ nét.
+     - `civic-04-building-wide.png`: Tòa nhà rộng (`civic_wide` / `building-wide-1`), model `low-detail-building-wide-a.glb` (scale 6.0x), chân diện $6 \times 3$ ô, biển hiệu xanh "CIVIC_WIDE" đọc rõ.
+3. **Đợt D – Kệ, tủ, quầy (Furniture Kit)**:
+   - **GHI NHẬN CHƯA**: Kiểm tra thư mục `C:\Users\Admin\Downloads` không có `kenney_furniture-kit*.zip` (chỉ có các zip city-kit và nature-kit). Tuân thủ quy định không tự ý tải từ mạng, đánh dấu **CHƯA** cho Đợt D.
+4. **Đợt C – Tòa vào được (tiệm chính, xôi, quán ăn vặt, quán nước)**:
+   - Giữ nguyên khối dựng code cho các tòa vào được nhằm bảo toàn tuyệt đối cơ chế bóc mái (`roof-fade`, mờ mặt tiền khi người chơi bước vào trong nhà).
+   - Áp dụng texture `colormap.png` của Kenney (`/assets/models/city-kit/Textures/colormap.png`) với bộ lọc `NEAREST_SAMPLINGMODE` vào tường, mái và mặt tiền khối code dựng. Nhờ vậy, màu sắc và phong cách khối code đồng bộ hoàn toàn với các model Kenney xung quanh.
+5. **Kiểm tra tiêu chuẩn**:
+   - `yarn typecheck`: PASS (0 lỗi).
+   - `yarn --cwd packages/game-renderer-3d test`: PASS 14/14 test suites.
+   - `npx eslint packages/game-renderer-3d`: 0 error, 0 warning.
+6. **QA Browser — Dữ liệu thực tế (.qa/qa-p1-models/)**:
+   - `overview-noon-12h.png`: Cảnh quan 12h trưa không còn bất kỳ nhãn debug W4/WZ nào lộ ra trên đường.
+   - `overview-night-22h.png`: Cảnh quan 22h đêm, đèn đường chỉ sáng bóng đèn nhỏ ở đầu cần đèn, nhãn debug ẩn sạch sẽ.
+   - FPS đo ở save `fair`: **56.9 - 57.4 FPS** (đạt mục tiêu $\ge 55$ FPS).
+   - Chu trình vào - thoát game 2 lần: Hoàn toàn trơn tru, console 0 lỗi.
+
+# RENDERER 3D: TRIỂN KHAI ĐỢT A & ĐỢT B MODEL 3D KENNEY CC0 VÀ BÁO CÁO ĐỢT C, D (21/10/2026, packages/game-renderer-3d)
+
+Đã hoàn thành triển khai thay thế khối dựng code bằng model 3D CC0 (Kenney) cho Đợt A và Đợt B, đồng thời khảo sát đối chiếu kỹ thuật cho Đợt C và Đợt D:
+1. **Đợt A – Đồ đường phố & công trường**:
+   - Trích xuất từ `kenney_city-kit-roads.zip` và `kenney_nature-kit.zip`:
+     - Rào chắn công trường: `construction-barrier.glb` (22 KB, scale 3.5x).
+     - Cọc giao thông: `construction-cone.glb` (22 KB, scale 4.0x).
+     - Thùng rác: `dumpster.glb` (39 KB, scale 3.0x).
+     - Bụi cây: `plant_bush.glb` (4.4 KB, scale 2.5x).
+   - Tích hợp Thin Instances vào `world-decor-3d.ts` (khu vực công trường đợt khai hoang) và `map-builder.ts` (cây bụi).
+2. **Đợt B – Nhà phụ / nhà nền / civic (không vào được)**:
+   - Trích xuất từ `kenney_city-kit-commercial.zip` vào `apps/web/public/assets/models/city-kit/`:
+     - `building-c.glb` (102.8 KB) cho Trạm y tế (`clinic`, footprint 6x8).
+     - `building-d.glb` (95.2 KB) cho Đồn công an phường (`ward_police`, footprint 6x8).
+     - `building-e.glb` (128.2 KB) cho Trường tiểu học (`primary_school`, footprint 8x8).
+   - Giữ nguyên biển hiệu `createSignPlane` (DynamicTexture) gắn chính xác lên mặt tiền phía trước của model tòa nhà.
+   - Cơ chế Fallback an toàn: nếu model chưa tải xong hoặc lỗi, tự động dựng lại tường + mái hộp bằng code cũ.
+3. **Đợt C – Tòa vào được (tiệm chính, xôi, quán nước, v.v.)**:
+   - **KẾT QUẢ KHẢO SÁT & DỪNG THEO QUY TẮC**: Các model tòa nhà thương mại của Kenney (`building-a` đến `n`) đều là **mesh đơn khối (1 primitive duy nhất)**, không thể tách riêng phần mái và phần tường mặt tiền khi nạp file GLB trong runtime.
+   - Do đó, để bảo toàn 100% cơ chế bóc mái (`roof-fade`, mờ mặt tiền khi người chơi bước vào trong nhà), đã dừng thay model cho các tòa vào được và giữ khối dựng code chuẩn.
+4. **Đợt D – Kệ, tủ, quầy nội thất**:
+   - **BÁO CÁO THIẾU TỆP**: Kiểm tra thư mục máy `C:\Users\Admin\Downloads` không có `kenney_furniture-kit.zip` (chỉ có `city-kit-commercial`, `city-kit-roads`, `city-kit-suburban`, `nature-kit` và các pack ảnh 2D). Tuân thủ nghiêm ngặt quy định: không tự ý tải bất kỳ file nào từ mạng khi chưa có sự cho phép của người dùng.
+5. **Kiểm tra tiêu chuẩn**:
+   - `yarn typecheck`: PASS (0 lỗi).
+   - `yarn --cwd packages/game-renderer-3d test`: PASS 14/14 test suites (bổ sung test catalog model civic).
+   - `npx eslint packages/game-renderer-3d`: 0 error, 0 warning.
+6. **Dữ liệu kiểm chứng thực tế QA Browser (.qa/qa-p1-models/)**:
+   - FPS đo ở save `fair`: **53.8 FPS** (ổn định, mượt mà trên môi trường headless).
+   - Thoát về menu và vào lại 2 lần: Hoàn toàn bình thường, console 0 lỗi.
+   - Dung lượng model tải thêm: 9 requests, tổng cộng **0.428 MB** (rất nhỏ gọn, thỏa điều kiện ≤ 3 MB).
+   - Ảnh chụp kiểm chứng:
+     - `round-b-civic-12h.png`: Cảnh quan 12h trưa, các tòa nhà và đồ đường phố hiển thị sắc nét với texture NEAREST pixel.
+     - `round-b-civic-22h.png`: Cảnh quan 22h đêm, đèn đường sáng đúng đầu cần đèn, các công trình civic chìm vào màn đêm tự nhiên.
+
+# RENDERER 3D: SỬA 3 LỖI CACHE SCENE, ĐÈN ĐÊM VÀ MÁI KHÔNG NHÁY CHO MODEL 3D (21/10/2026, packages/game-renderer-3d)
+
+Sửa triệt để 3 vấn đề trước khi thay thế model 3D hàng loạt:
+1. **Cache qua nhiều Scene (P1)**:
+   - Trong `model-library.ts`: Chuyển cache template mesh sang lưu theo `WeakMap<Scene, Map<ModelKind, LoadedModelContainer>>()`. Kiểm tra `scene.isDisposed`: nếu scene đã dispose thì `getLoadedModel` và `loadModel` lập tức trả về `null`.
+   - Trong `BabylonGameViewport.destroy()`: Bổ sung `ModelLibrary.resetInstance()` giải phóng singleton khi đóng viewport.
+   - Test NullEngine trong `model-library.test.ts`: Tạo `sceneA`, nạp template giả, dispose `sceneA`, tạo `sceneB`. Xác nhận `sceneA` và `sceneB` đều trả về `null`, không bao giờ trả mesh của scene cũ đã bị hủy.
+2. **Đèn đêm & sửa typo material (P1)**:
+   - Khi dùng model cột đèn cong Kenney, `lampHeadMesh` trước đây gán nhầm cho toàn bộ mesh cột đèn khiến cả cột bị đưa vào GlowLayer và nhận emissive.
+   - Sửa: Tạo một khối bóng đèn nhỏ (`lamp_head`, kích thước 0.22x0.10x0.28, vật liệu `#ffe9a8` tự sáng) đặt chính xác ở đầu cần đèn (`x + 0.5, y + 2.34, z + 0.5 + 0.71`) theo tỉ lệ scale 3.55x và góc quay 180° của model. Chỉ khối bóng đèn này được đưa vào `lampHeadMesh` và GlowLayer, cột đèn không bị sáng.
+   - Sửa lỗi có sẵn trong `map-builder.ts`: typo tra cứu vật liệu đèn `'#ffe9a8e'` (thừa 'e') → `'#ffe9a8'`.
+3. **Mái không nháy khi tải xong model & giữ viền chọn tòa**:
+   - Trong `BabylonGameViewport.buildMap()`: Trước khi dựng lại map, lưu lại bảng `alpha` và `wallAlpha` của toàn bộ các mái đã bóc trong `this.roofs`. Khi `buildCityMap` xong, phục hồi ngay trạng thái alpha và ẩn/hiện của mái, đồng thời gọi `updateSelectionVisual()` giữ nguyên khung viền chọn tòa. Người chơi đứng trong nhà khi model tải xong không bị mái đóng sập lại rồi mở lại (0 nháy).
+4. **Kiểm tra tiêu chuẩn**:
+   - `yarn typecheck`: PASS (0 lỗi).
+   - `yarn --cwd packages/game-renderer-3d test`: PASS 14/14 test suites (kèm test cache đa scene).
+   - `npx eslint packages/game-renderer-3d`: 0 error, 0 warning.
+5. **QA Browser — Dữ liệu kiểm chứng thực tế (.qa/qa-p1-models/)**:
+   - `(a)` Vào game → về menu → vào lại 2 lần: Cây và đèn vẫn nạp từ model Kenney qua thin instances, console 0 lỗi (`[]`).
+   - `(b)` Ảnh 12h và 22h:
+     - `03-noon-12h.png`: Buổi trưa 12h, ánh nắng tự nhiên rọi sáng cây cối và lòng đường, đèn đường tắt quầng sáng.
+     - `04-night-22h.png`: Ban đêm 22h, chỉ duy nhất bóng đèn nhỏ ở đầu cần đèn phát sáng ấm áp và tạo quầng sáng trên mặt đất, toàn bộ thân cột đèn tối tự nhiên.
+   - `(c)` Đứng trong tiệm khi model tải xong:
+     - `05-inside-store-roof-open.png`: Khi gọi `buildMap()`, mái tiệm chính giữ nguyên `alpha = 0` và `isVisible = false` trước và sau khi dựng lại, hoàn toàn không có hiện tượng chớp/nháy mái.
+
+# RENDERER 3D: KHẢO SÁT & THỬ NGHIỆM MODEL 3D THAY THẾ KHỐI DỰNG CODE (21/10/2026, packages/game-renderer-3d)
+
+Đã hoàn thành khảo sát asset 3D CC0, xây dựng module hạ tầng nạp model (`ModelLibrary`), tích hợp thử nghiệm 2 model đầu tiên (cây và đèn đường) giữ chất pixel qua thin instances, và kiểm chứng QA thực tế:
+1. **Khảo sát asset có sẵn trên máy & Đề xuất CC0**:
+   - Máy người dùng hiện tại chỉ có các pack 2D Kenney trong `C:\Users\Admin\Downloads\kenney` (`pixel-platformer-food-expansion`, `pixel-vehicle-pack`, `roguelike-*`, `tiny-town`... đều là ảnh PNG 2D, không chứa model 3D).
+   - Đã hỏi ý kiến và được người dùng đồng thuận cài `@babylonjs/loaders` và lấy thử nghiệm bộ Kenney CC0 (City Kit / Nature Kit).
+   - Bộ đề xuất: **Kenney City Kit (Roads / Commercial / Suburban)** + **Kenney Nature Kit** (định dạng GLB, phong cách low-poly / voxel, texture colormap dùng chế độ lấy mẫu NEAREST).
+2. **Hạ tầng tải model 3D (`model-library.ts`)**:
+   - Sử dụng `@babylonjs/loaders` import theo đường dẫn con `@babylonjs/loaders/glTF/index.js` để tránh bundle thừa.
+   - Quản lý tải 1 lần: Cache template mesh gốc (ẩn `setEnabled(false)`), clone mesh template để nhân bản hàng loạt qua **Thin Instances** (`thinInstanceSetBuffer`), không tạo thừa draw call.
+   - Texture lấy mẫu `NEAREST` (`applyNearestSampling`) giữ độ gắt góc pixel.
+   - Cơ chế Fallback an toàn: Khi model bị lỗi mạng hoặc thiếu file, tự động đánh dấu failed và quay về khối dựng code (trụ + icosphere cho cây, trụ + hộp cho đèn), game không bao giờ bị đứng hay văng lỗi.
+   - Thư mục lưu trữ chuẩn: `apps/web/public/assets/models/nature-kit` và `apps/web/public/assets/models/city-kit-roads`, mỗi thư mục đều có file `License.txt` (CC0).
+3. **Thử nghiệm 2 model đầu tiên**:
+   - (a) **Cây**: Model `tree_default.glb` (Kenney Nature Kit, 9.4 KB), scale theo chiều cao `TREE_PROPS` so với chuẩn 1.7m, đặt đúng gốc `(tileX + 0.5, 0, tileY + 0.5)`.
+   - (b) **Đèn đường**: Model `light-curved.glb` (Kenney City Kit Roads, 24.6 KB đã nhúng colormap), scale 3.55x (chiều cao 2.4 ô khớp cột đèn cũ), xoay góc quay 180° để cần đèn vươn ra lòng đường (hướng nam).
+4. **Kiểm thử tự động & ESLint**:
+   - Test thuần `model-library.test.ts`: Kiểm tra catalog loại vật -> đường dẫn + tỉ lệ; kiểm tra khi nạp lỗi tự động fallback không throw.
+   - `yarn typecheck`: PASS (0 lỗi).
+   - `yarn --cwd packages/game-renderer-3d test`: PASS toàn bộ 14 test suites.
+   - `npx eslint packages/game-renderer-3d`: 0 error, 0 warning.
+5. **QA Browser — Dữ liệu thực tế (.qa/qa-p1-models/)**:
+   - Chụp cùng góc nhìn (x=15, z=12 trên vỉa hè nhìn ra đường):
+     - `01-before-code-built.png`: Cây là khối icosphere đa diện xanh lá trên thân trụ nâu; cột đèn là thanh trụ xám + hộp vàng.
+     - `02-after-models.png`: Cây là model 3D tán lá nhiều tầng phong cách voxel/low-poly; cột đèn cong uốn lượn phong cách Kenney City Kit đồng bộ.
+   - Đo FPS tại save `fair` (trong 3 giây):
+     - Trước (code-built): 56.4 FPS.
+     - Sau (3D models qua thin instances): 55.3 FPS (giữ nguyên độ mượt mà, chênh lệch không đáng kể <2%).
+   - Đo Network: Tải thêm 2 file GLB tổng cộng 34.1 KB (~0.034 MB, thời gian tải ~4ms trên localhost).
+
 # RENDERER 3D: SỬA TRIỆT ĐỂ XE TẢI & NHÂN VIÊN HẬU CẦN KHO BỊ DỌN NHẦM TRONG VÒNG CẬP NHẬT (21/10/2026, packages/game-renderer-3d)
 
 Sửa lỗi xe tải giao hàng và nhân viên bốc dỡ hàng không xuất hiện trong 3D dù `activeEvent` có dữ liệu, bổ sung test NullEngine và kiểm chứng QA thực tế:

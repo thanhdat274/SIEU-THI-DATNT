@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
+import { Scene } from '@babylonjs/core/scene';
 import { RECLAMATION_WAVES } from '@game/data';
 import { computeWaveDecor, computeWaveOverlay, worldDecorKey, type WorldDecorInput } from './wave-decor';
+import { WorldDecor3D } from './world-decor-3d';
 
 const base: WorldDecorInput = { openedWaves: ['w0'], wavesUnderConstruction: {}, ownedParcelIds: [], day: 5, placed: [] };
 const later = RECLAMATION_WAVES.slice(1);
@@ -55,4 +58,32 @@ const later = RECLAMATION_WAVES.slice(1);
   assert.ok(items.filter(i => i.kind === 'parcel').every(i => i.color === '#ff8800' || i.color === '#3fbf5f'));
 }
 
-console.log('PASS wave-decor: khóa, thi công, lô bán/đất trống, khóa dựng lại, overlay QA');
+// Kiểm tra hàm showWaveOverlay của WorldDecor3D chỉ bật khi có cờ dev/qa
+{
+  const engine = new NullEngine();
+  const scene = new Scene(engine);
+  const dummySim = {
+    getWorldOpenState: () => ({ openedWaves: ['w0'], wavesUnderConstruction: {} }),
+    getOwnedParcelIds: () => [],
+    getTime: () => ({ day: 1 }),
+    getPlayerData: () => ({ position: { x: 0, y: 0 } }),
+  } as any;
+  const decor = new WorldDecor3D(scene, dummySim);
+
+  // Môi trường không có window/dev flag
+  const originalWindow = (globalThis as any).window;
+  (globalThis as any).window = undefined;
+  const turnedOn = decor.showWaveOverlay(true);
+  assert.equal(turnedOn, false, 'Không bật được wave overlay khi không có cờ dev/qa');
+
+  // Khi có cờ dev qua window.__DEV__
+  (globalThis as any).window = { __DEV__: true, location: { search: '' } };
+  const turnedOnDev = decor.showWaveOverlay(true);
+  assert.equal(turnedOnDev, true, 'Bật được wave overlay khi có cờ dev');
+
+  (globalThis as any).window = originalWindow;
+  decor.dispose();
+  engine.dispose();
+}
+
+console.log('PASS wave-decor: khóa, thi công, lô bán/đất trống, khóa dựng lại, overlay QA (chỉ bật khi dev/qa)');
