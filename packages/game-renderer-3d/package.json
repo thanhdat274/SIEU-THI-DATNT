@@ -13,7 +13,6 @@
     "@babylonjs/loaders": "^8",
     "@game/core": "*",
     "@game/data": "*",
-    "@game/renderer": "*",
     "@game/renderer-core": "*",
     "@game/shared": "*"
   },

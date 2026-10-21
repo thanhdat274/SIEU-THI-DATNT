@@ -12,8 +12,7 @@ import { LandVoteModal, type LandVoteInfo } from './components/LandVoteModal';
 import { OpenBuildingModal } from './components/OpenBuildingModal';
 import { SiteModal, siteTodoLabel } from './components/SiteModal';
 import { type GameViewport, type GameViewportOptions, planningOverlays, getRoofProximity, getWeatherVisualState, onThunder } from '@game/renderer-core';
-import { createViewport, preferredRenderer } from './viewport-factory';
-import { initializeWithFallback } from './renderer-choice';
+import { detectWebGL, WebGLUnavailableError } from './webgl-support';
 import { TILE_SIZE, BranchPolicy, CustomerState, GameAvatar, GameSnapshot, WorldMembership, SaveGameData, SupplierOrder, StaffShift, DailyRecord, defaultWorldOpenState, isSalesFixture, isWarehouseFixture, slotGroup, MULTIPLAYER_PROTOCOL_VERSION, SERVER_REPLAYED_COMMAND_TYPES } from '@game/shared';
 
 import { getActiveSlotId, loadOrCreateSave, persistSave, writeEmergencySave, replaceSaveWithImported, resetSaveToDefault, restoreFromBackup } from './db';
@@ -894,7 +893,7 @@ export const App: React.FC = () => {
       // Sync initial state
       syncFromSimulation(simulation);
 
-      // 5. Setup PixiJS Viewport
+      // 5. Setup 3D Viewport
       const viewportOptions: GameViewportOptions = {
         canvas: canvasRef.current,
         tileMap: simulation.getTileMap(),
@@ -912,23 +911,15 @@ export const App: React.FC = () => {
           const partner = myUid ? curWorld.world.avatars.find(avatar => avatar.accountId !== myUid) : null;
           return partner ? { position: partner.position, direction: partner.direction, name: partner.displayName?.trim() || 'Bạn cùng hẻm' } : null;
         },
-        // Renderer 3D báo hướng bản đồ ứng với phải/xuống màn hình mỗi khi camera xoay (2D không gọi).
+        // Renderer 3D báo hướng bản đồ ứng với phải/xuống màn hình mỗi khi camera xoay.
         onViewBasisChange: (right, down) => inputManagerRef.current?.setViewBasis(right, down),
       };
-      // 3D là mặc định; không có WebGL hoặc khởi tạo 3D lỗi thì tự quay về 2D và hiện thông báo (xem renderer-choice.ts). Mỗi bản vừa tạo được giữ lại để hủy nếu bị hủy giữa chừng.
-      let fallbackToastShown = false;
-      const initialPref = preferredRenderer(() => {
-        fallbackToastShown = true;
-        addToast('Máy không hỗ trợ 3D, đang dùng đồ họa 2D', 'info');
-      });
-      const { viewport, kind } = await initializeWithFallback(
-        initialPref,
-        (kind) => createViewport(kind, viewportOptions),
-        (created) => { ownedViewport = created; },
-      );
-      if (initialPref === '3d' && kind === 'pixi' && !fallbackToastShown) {
-        addToast('Máy không hỗ trợ 3D, đang dùng đồ họa 2D', 'info');
-      }
+      // Chỉ có renderer 3D (Babylon, tải trễ thành chunk riêng). Không có WebGL thì báo lỗi rõ ràng; khởi tạo lỗi rơi vào catch bên dưới.
+      if (!detectWebGL(() => document.createElement('canvas'))) throw new WebGLUnavailableError();
+      const { BabylonGameViewport } = await import('@game/renderer-3d');
+      const viewport = new BabylonGameViewport(viewportOptions);
+      ownedViewport = viewport;
+      await viewport.initialize();
       // Dev/QA: lối vào mô phỏng để dựng cảnh kiểm thử (đặt vị trí người chơi, đếm khách...). Không có trong bản production.
       if (import.meta.env.DEV) (window as unknown as { __gameDebug?: unknown }).__gameDebug = { simulation, get viewport() { return ownedViewport; } };
 
@@ -945,7 +936,7 @@ export const App: React.FC = () => {
       addToast('Chào mừng bạn đến với Tiệm Tạp Hóa Đầu Hẻm! ', 'info');
     }
 
-    // React StrictMode can mount, clean up, and mount again while Pixi is still
+    // React StrictMode can mount, clean up, and mount again while the 3D viewport is still
     // initializing. Serialize those passes so an old pass cannot destroy the
     // WebGL context used by the current pass.
     const previous = initializationRef.current;
@@ -953,7 +944,7 @@ export const App: React.FC = () => {
       dispose();
       if (!isCancelled) {
         console.error('Game startup error:', error);
-        setStartupError('Không thể mở bản đồ. Hãy tải lại trang để thử lại.');
+        setStartupError(error instanceof WebGLUnavailableError ? error.message : 'Không thể mở bản đồ. Hãy tải lại trang để thử lại.');
       }
     }).finally(() => {
       if (isCancelled) dispose();

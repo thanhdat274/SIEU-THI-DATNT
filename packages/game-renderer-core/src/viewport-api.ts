@@ -27,7 +27,7 @@ export type MinimapSnapshot = {
   built: Readonly<Record<string, string>>;
 };
 
-/** Mặt giao tiếp app web dùng với renderer, để Pixi 2D và 3D (Babylon, docs/plans/3d-migration-plan.md) thay cho nhau được. */
+/** Mặt giao tiếp app web dùng với renderer 3D (Babylon, docs/plans/3d-migration-plan.md). */
 export interface GameViewport {
   initialize(): Promise<void>;
   destroy(): void;
@@ -42,6 +42,6 @@ export interface GameViewport {
   zoomOut(delta?: number): number;
   getZoom(): number;
   getMinimapSnapshot(): MinimapSnapshot;
-  /** Bỏ chọn tòa và tắt viền (renderer 3D); 2D không làm gì. */
+  /** Bỏ chọn tòa và tắt viền. */
   clearBuildingSelection(): void;
 }

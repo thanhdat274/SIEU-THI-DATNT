@@ -12,7 +12,7 @@
  *   --footer-h   chiều cao thanh dưới (0 khi nó là cột bên phải); voice/thẻ tóm tắt neo phía trên nó
  *   --top-ui-height chiều cao khối UI phía trên thế giới (nguồn duy nhất; --hud-bottom là bí danh giữ tương thích)
  *   --account-h  chiều cao thanh tài khoản trong luồng (0 khi nó là nút nổi ở màn thấp)
- * Canvas thế giới có hệ thống scale riêng (game-renderer) nên không bị ảnh hưởng ở đây.
+ * Canvas thế giới có hệ thống scale riêng (game-renderer-3d) nên không bị ảnh hưởng ở đây.
  */
 
 /** Ngưỡng dùng chung: dưới đây kho hàng là ngăn kéo phủ lên thế giới thay vì cột cố định. */
