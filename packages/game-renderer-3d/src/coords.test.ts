@@ -142,6 +142,7 @@ import './sky-3d.test';
 import './actor-sprite.test';
 import './wave-decor.test';
 import './vehicle-view.test';
+import './fixture-preview-3d.test';
 
 import './signals-data.test';
 

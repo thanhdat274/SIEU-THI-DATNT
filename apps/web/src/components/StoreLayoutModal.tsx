@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { UNITS_PER_WAREHOUSE_CELL, getFixtureDimensions, slotGroup, tileIndex, tileInMap, type SaveGameData, type StoreFixture } from '@game/shared';
 import { BUILDING_MAP, BUILDINGS, resolveParcel, DECOR, DECOR_ATTRACTION_MAX, FIXTURE_SHOP, LAND_PLOTS, EXPANSION_TILE_PRICE, MAIN_EAST_WING_PLOT_IDS, MAX_STORAGE_RACKS, NORTH_EXPANSION_ROWS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, fixtureBuilding, generateStarterTileMap, buildingAt, inMainExpansionZone, defaultPlacementOf, normalizePlacements, placementFloor, tileKey, wallRing, type BuildingId, type LandPlotDefinition, buildingTypeOfInstance, STORE_TIERS, storeTierFromFloorTiles, } from '@game/data';
 import { applyStoreLayoutActions, coldWarehouseCapacity, decorAttraction, decorTrafficMultiplier, expandFootprint, expansionPrice, placementOptions, relocationFee, rotateStoreFixture, sharedExpansionBudget, totalWarehouseCells, type StoreLayoutAction } from '@game/core';
-import { fixturePreviewUrl } from '@game/renderer';
+import { useFixturePreview } from '../hooks/useFixturePreview';
 import { PixelButton } from './pixel';
 import './store-layout.css';
 
@@ -25,9 +25,10 @@ const BOARD_VIEWS: Record<BuildingId, { x0: number; cols: number; y0: number; ro
   snack: { x0: 21, cols: 6, y0: -3, rows: 14, label: 'Quán ăn vặt' },
 };
 
-const FixtureArt: React.FC<{ type: StoreFixture['type']; shopId?: string; doubleWide?: boolean; className?: string }> = ({ type, shopId, doubleWide, className }) => {
+const FixtureArt: React.FC<{ type: StoreFixture['type']; shopId?: string; doubleWide?: boolean; className?: string; view?: 'iso' | 'top' }> = ({ type, shopId, doubleWide, className, view }) => {
   const tint = type === 'shelf_glass' ? 'fx-glass' : '';
-  const img = <img src={fixturePreviewUrl(type, shopId)} alt="" draggable={false} className={`fx-img ${tint}`} />;
+  const src = useFixturePreview(type, shopId, view);
+  const img = src ? <img src={src} alt="" draggable={false} className={`fx-img ${tint}`} /> : null;
   return <span className={`fx-art ${className ?? ''}`}>{img}</span>;
 };
 
@@ -662,7 +663,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
                             transform: `translate(-50%,-50%) rotate(${item.rotation}deg)`
                           }}
                         >
-                          <FixtureArt type={item.type} shopId={shopIdOf(item)} doubleWide={item.widthTiles * item.heightTiles >= 2} />
+                          <FixtureArt type={item.type} shopId={shopIdOf(item)} doubleWide={item.widthTiles * item.heightTiles >= 2} view="top" />
                         </div>
 
                         {/* Tên kệ hiển thị khi được chọn */}

@@ -15,7 +15,7 @@ import type { RoofInfo } from './map-builder';
 
 /** Chu kỳ kiểm tra chữ ký fixture (giây) khi sim không có bộ đếm phiên bản. */
 const SYNC_INTERVAL = 0.5;
-const EMISSIVE_SCALE = 0.6;
+export const EMISSIVE_SCALE = 0.6;
 
 interface BoxGroup {
   mesh: Mesh;
