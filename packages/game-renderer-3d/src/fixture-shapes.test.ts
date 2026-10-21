@@ -100,4 +100,96 @@ for (const ct of codeOnlyTypes) {
   assert.equal(resolveFixtureModelInstances({ type: ct, tileX: 0, tileY: 0, widthTiles: 2, heightTiles: 1, rotation: 0 }, 1, 0.5), null, `${ct} giữ khối code`);
 }
 
-console.log('PASS fixture-shapes: chân diện, hộp theo hướng xoay, chữ ký, ánh xạ model Kenney & fallback');
+// 5. Đặt model đúng chân diện: hộp bao đo từ chính file .glb (bỏ nút gốc __root__, giữ dịch chuyển nút con), ở cả 4 hướng xoay
+import fs from 'node:fs';
+import path from 'node:path';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { FIXTURE_MODEL_CENTERS } from './fixtures-3d';
+import { MODEL_CATALOG, type ModelKind } from './model-library';
+
+function findModelDir(): string {
+  let dir = process.cwd();
+  for (let i = 0; i < 6; i++, dir = path.dirname(dir)) {
+    const candidate = path.join(dir, 'apps', 'web', 'public');
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  throw new Error('Không tìm thấy apps/web/public từ ' + process.cwd());
+}
+
+interface Bounds { min: [number, number, number]; max: [number, number, number] }
+
+function glbBounds(kind: ModelKind): Bounds {
+  const buf = fs.readFileSync(path.join(findModelDir(), MODEL_CATALOG[kind].url));
+  const json = JSON.parse(buf.subarray(20, 20 + buf.readUInt32LE(12)).toString());
+  const min: [number, number, number] = [Infinity, Infinity, Infinity];
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+  const visit = (index: number, offset: number[]): void => {
+    const node = json.nodes[index];
+    assert.ok(!node.rotation || node.rotation.join() === '0,0,0,1', `${kind}: nút có xoay, bộ đọc hộp bao chưa hỗ trợ`);
+    assert.ok(!node.scale || node.scale.join() === '1,1,1', `${kind}: nút có tỉ lệ, bộ đọc hộp bao chưa hỗ trợ`);
+    const at = offset.map((v, k) => v + (node.translation?.[k] ?? 0));
+    if ('mesh' in node) {
+      for (const prim of json.meshes[node.mesh].primitives) {
+        const acc = json.accessors[prim.attributes.POSITION];
+        for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], acc.min[k] + at[k]); max[k] = Math.max(max[k], acc.max[k] + at[k]); }
+      }
+    }
+    for (const child of node.children ?? []) visit(child, at);
+  };
+  for (const root of json.scenes[0].nodes) visit(root, [0, 0, 0]);
+  return { min, max };
+}
+
+const MODEL_KINDS_USED = Object.keys(FIXTURE_MODEL_CENTERS) as ModelKind[];
+for (const kind of MODEL_KINDS_USED) {
+  const b = glbBounds(kind);
+  const center = FIXTURE_MODEL_CENTERS[kind]!;
+  assert.ok(Math.abs((b.min[0] + b.max[0]) / 2 - center.x) < 0.005, `${kind}: tâm x ${center.x} lệch hộp bao thật ${(b.min[0] + b.max[0]) / 2}`);
+  assert.ok(Math.abs((b.min[2] + b.max[2]) / 2 - center.z) < 0.005, `${kind}: tâm z ${center.z} lệch hộp bao thật ${(b.min[2] + b.max[2]) / 2}`);
+}
+
+function worldAabb(kind: ModelKind, matrix: import('@babylonjs/core/Maths/math.vector').Matrix): Bounds {
+  const b = glbBounds(kind);
+  const min: [number, number, number] = [Infinity, Infinity, Infinity];
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+  for (const x of [b.min[0], b.max[0]]) for (const y of [b.min[1], b.max[1]]) for (const z of [b.min[2], b.max[2]]) {
+    const w = Vector3.TransformCoordinates(new Vector3(x, y, z), matrix);
+    min[0] = Math.min(min[0], w.x); max[0] = Math.max(max[0], w.x);
+    min[1] = Math.min(min[1], w.y); max[1] = Math.max(max[1], w.y);
+    min[2] = Math.min(min[2], w.z); max[2] = Math.max(max[2], w.z);
+  }
+  return { min, max };
+}
+
+const EPS = 0.005;
+const modelCases: { type: 'refrigerator' | 'cashier_counter'; w: number }[] = [
+  { type: 'refrigerator', w: 1 }, { type: 'refrigerator', w: 2 }, { type: 'cashier_counter', w: 1 }, { type: 'cashier_counter', w: 2 },
+];
+for (const { type, w } of modelCases) {
+  for (const rotation of [0, 90, 180, 270] as const) {
+    const fix = { type, tileX: 7, tileY: 8, widthTiles: w, heightTiles: 1, rotation };
+    const fp = fixtureFootprint(fix);
+    const label = `${type} ${w}x1 xoay ${rotation}`;
+    const instances = resolveFixtureModelInstances(fix, fp.cx, fp.cz);
+    assert.ok(instances !== null, `${label}: phải dùng model`);
+    const boxes = instances.map((inst) => ({ kind: inst.kind, aabb: worldAabb(inst.kind, inst.matrix) }));
+    for (const { kind, aabb } of boxes) {
+      assert.ok(aabb.min[0] >= fp.x0 - EPS && aabb.max[0] <= fp.x0 + fp.w + EPS, `${label}: ${kind} nhô khỏi chân diện theo x [${aabb.min[0].toFixed(2)}, ${aabb.max[0].toFixed(2)}] so với [${fp.x0}, ${fp.x0 + fp.w}]`);
+      assert.ok(aabb.min[2] >= fp.z0 - EPS && aabb.max[2] <= fp.z0 + fp.d + EPS, `${label}: ${kind} nhô khỏi chân diện theo z [${aabb.min[2].toFixed(2)}, ${aabb.max[2].toFixed(2)}] so với [${fp.z0}, ${fp.z0 + fp.d}]`);
+      assert.ok(Math.abs(aabb.min[1]) < EPS || kind === 'furniture_computer_screen', `${label}: ${kind} phải đặt sát sàn`);
+    }
+    if (type === 'refrigerator') {
+      const a = boxes[0].aabb;
+      assert.ok(Math.abs((a.min[0] + a.max[0]) / 2 - fp.cx) < EPS && Math.abs((a.min[2] + a.max[2]) / 2 - fp.cz) < EPS, `${label}: tủ lạnh phải nằm đúng tâm chân diện`);
+    } else {
+      const bars = boxes.filter((b) => b.kind === 'furniture_kitchen_bar').map((b) => b.aabb);
+      const screen = boxes.find((b) => b.kind === 'furniture_computer_screen')!.aabb;
+      const barMin = [Math.min(...bars.map((b) => b.min[0])), Math.min(...bars.map((b) => b.min[2]))];
+      const barMax = [Math.max(...bars.map((b) => b.max[0])), Math.max(...bars.map((b) => b.max[2]))];
+      assert.ok(screen.min[0] >= barMin[0] - EPS && screen.max[0] <= barMax[0] + EPS && screen.min[2] >= barMin[1] - EPS && screen.max[2] <= barMax[1] + EPS, `${label}: máy tính tiền phải nằm trên quầy, không lơ lửng cạnh quầy`);
+      assert.ok(Math.abs((barMin[0] + barMax[0]) / 2 - fp.cx) < EPS && Math.abs((barMin[1] + barMax[1]) / 2 - fp.cz) < EPS, `${label}: quầy phải nằm đúng tâm chân diện`);
+    }
+  }
+}
+
+console.log('PASS fixture-shapes: chân diện, hộp theo hướng xoay, chữ ký, ánh xạ model Kenney & fallback, model nằm đúng chân diện ở 4 hướng');

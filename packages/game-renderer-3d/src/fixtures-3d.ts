@@ -39,18 +39,22 @@ export interface ModelInstanceDesc {
   matrix: Matrix;
 }
 
-/** Bán kính/nửa kích thước chuẩn của model Kenney để căn tâm chân diện ô */
-export const FIXTURE_MODEL_HALVES: Partial<Record<ModelKind, { halfW: number; halfD: number }>> = {
-  furniture_fridge: { halfW: 0.215, halfD: 0.146 },
-  furniture_fridge_large: { halfW: 0.260, halfD: 0.203 },
-  furniture_fridge_small: { halfW: 0.215, halfD: 0.146 },
-  furniture_kitchen_bar: { halfW: 0.215, halfD: 0.105 },
-  furniture_computer_screen: { halfW: 0.196, halfD: 0.052 },
+/**
+ * Tâm (x, z) của hộp bao model Kenney trong không gian model chưa nhân tỉ lệ, sau khi bỏ nút gốc `__root__`
+ * (đúng hình học của bản sao `parent = null` trong Fixtures3D, gồm cả dịch chuyển của nút con như cánh tủ).
+ * Đo từ file .glb trong public/assets/models/furniture-kit: x ∈ [0, W], z ∈ [-D + zMax, zMax] nên tâm không nằm ở gốc.
+ */
+export const FIXTURE_MODEL_CENTERS: Partial<Record<ModelKind, { x: number; z: number }>> = {
+  furniture_fridge: { x: 0.215, z: -0.136 },
+  furniture_fridge_large: { x: 0.260, z: -0.139 },
+  furniture_fridge_small: { x: 0.215, z: -0.136 },
+  furniture_kitchen_bar: { x: 0.215, z: -0.105 },
+  furniture_computer_screen: { x: 0.1965, z: -0.052 },
 };
 
 /**
  * Tính ma trận biến đổi thế giới cho một instance của model Kenney trong fixture:
- * - Căn tâm model (vốn có anchor ở mép) về tọa độ cục bộ (lx, ly, lz)
+ * - Căn tâm hộp bao model (`center`, vốn lệch khỏi gốc) về tọa độ cục bộ (lx, ly, lz); ly là độ cao đáy model
  * - Xoay theo rotation cục bộ và rotation của fixture
  * - Đặt vào tọa độ thế giới (fixCx, fixCz)
  */
@@ -63,15 +67,14 @@ export function computeFixtureModelMatrix(
   lz: number,
   localYawDeg: number,
   scale: Vector3,
-  halfW: number,
-  halfD: number,
+  center: { x: number; z: number },
 ): Matrix {
   const fixYaw = -(fixRotationDeg * Math.PI) / 180;
   const localYaw = -(localYawDeg * Math.PI) / 180;
   const totalYaw = fixYaw + localYaw;
   const totalRot = Quaternion.RotationYawPitchRoll(totalYaw, 0, 0);
 
-  const localCenterOffset = new Vector3(-halfW * scale.x, 0, -halfD * scale.z);
+  const localCenterOffset = new Vector3(center.x * scale.x, 0, center.z * scale.z);
   const qLocal = Quaternion.RotationYawPitchRoll(localYaw, 0, 0);
   const rotatedLocalCenter = localCenterOffset.applyRotationQuaternion(qLocal);
 
@@ -110,33 +113,33 @@ export function resolveFixtureModelInstances(fix: Fix, cx: number, cz: number): 
     case 'refrigerator': {
       if (w >= 2) {
         // Tủ lạnh 2 cánh / tủ đông lớn
-        const half = FIXTURE_MODEL_HALVES.furniture_fridge_large!;
+        const center = FIXTURE_MODEL_CENTERS.furniture_fridge_large!;
         const scaleVal = MODEL_CATALOG.furniture_fridge_large.scale;
         const s = new Vector3(scaleVal, scaleVal, scaleVal);
         return [
           {
             kind: 'furniture_fridge_large',
-            matrix: computeFixtureModelMatrix(cx, cz, rot, 0, 0, 0, 0, s, half.halfW, half.halfD),
+            matrix: computeFixtureModelMatrix(cx, cz, rot, 0, 0, 0, 0, s, center),
           },
         ];
       }
       // Tủ mát 1 cánh nhỏ
-      const half = FIXTURE_MODEL_HALVES.furniture_fridge_small!;
+      const center = FIXTURE_MODEL_CENTERS.furniture_fridge_small!;
       const scaleVal = MODEL_CATALOG.furniture_fridge_small.scale;
       const s = new Vector3(scaleVal, scaleVal, scaleVal);
       return [
         {
           kind: 'furniture_fridge_small',
-          matrix: computeFixtureModelMatrix(cx, cz, rot, 0, 0, 0, 0, s, half.halfW, half.halfD),
+          matrix: computeFixtureModelMatrix(cx, cz, rot, 0, 0, 0, 0, s, center),
         },
       ];
     }
 
     case 'cashier_counter': {
-      const barHalf = FIXTURE_MODEL_HALVES.furniture_kitchen_bar!;
+      const barCenter = FIXTURE_MODEL_CENTERS.furniture_kitchen_bar!;
       const barScaleVal = MODEL_CATALOG.furniture_kitchen_bar.scale;
       const barScale = new Vector3(barScaleVal, barScaleVal, barScaleVal);
-      const screenHalf = FIXTURE_MODEL_HALVES.furniture_computer_screen!;
+      const screenCenter = FIXTURE_MODEL_CENTERS.furniture_computer_screen!;
       const screenScaleVal = MODEL_CATALOG.furniture_computer_screen.scale;
       const screenScale = new Vector3(screenScaleVal, screenScaleVal, screenScaleVal);
 
@@ -144,26 +147,26 @@ export function resolveFixtureModelInstances(fix: Fix, cx: number, cz: number): 
         return [
           {
             kind: 'furniture_kitchen_bar',
-            matrix: computeFixtureModelMatrix(cx, cz, rot, -0.45, 0, 0, 0, barScale, barHalf.halfW, barHalf.halfD),
+            matrix: computeFixtureModelMatrix(cx, cz, rot, -0.45, 0, 0, 0, barScale, barCenter),
           },
           {
             kind: 'furniture_kitchen_bar',
-            matrix: computeFixtureModelMatrix(cx, cz, rot, 0.45, 0, 0, 0, barScale, barHalf.halfW, barHalf.halfD),
+            matrix: computeFixtureModelMatrix(cx, cz, rot, 0.45, 0, 0, 0, barScale, barCenter),
           },
           {
             kind: 'furniture_computer_screen',
-            matrix: computeFixtureModelMatrix(cx, cz, rot, -0.35, SCALE_TARGETS.fixtures.counter, -0.05, 180, screenScale, screenHalf.halfW, screenHalf.halfD),
+            matrix: computeFixtureModelMatrix(cx, cz, rot, -0.35, SCALE_TARGETS.fixtures.counter, -0.05, 180, screenScale, screenCenter),
           },
         ];
       }
       return [
         {
           kind: 'furniture_kitchen_bar',
-          matrix: computeFixtureModelMatrix(cx, cz, rot, 0, 0, 0, 0, barScale, barHalf.halfW, barHalf.halfD),
+          matrix: computeFixtureModelMatrix(cx, cz, rot, 0, 0, 0, 0, barScale, barCenter),
         },
         {
           kind: 'furniture_computer_screen',
-          matrix: computeFixtureModelMatrix(cx, cz, rot, 0, 0.672, -0.05, 180, screenScale, screenHalf.halfW, screenHalf.halfD),
+          matrix: computeFixtureModelMatrix(cx, cz, rot, 0, 0.672, -0.05, 180, screenScale, screenCenter),
         },
       ];
     }
@@ -322,9 +325,12 @@ export class Fixtures3D {
         const loaded = lib.getLoadedModel(this.scene, entry.kind);
         if (!loaded) continue;
         const clonedMeshes: Mesh[] = [];
+        const rootInverse = loaded.root.computeWorldMatrix(true).clone().invert();
         for (const rm of loaded.renderMeshes) {
-          const clone = rm.clone(`fixm_${key}_${rm.name}`);
+          // Mesh con được nhân bản riêng ở vòng lặp này nên không nhân bản kèm; giữ dịch chuyển của nút cha (cánh tủ...), bỏ nút gốc __root__.
+          const clone = rm.clone(`fixm_${key}_${rm.name}`, null, true);
           clone.parent = null;
+          clone.freezeWorldMatrix(rm.computeWorldMatrix(true).multiply(rootInverse));
           clone.setEnabled(true);
           clone.isPickable = false;
           clone.receiveShadows = true;
