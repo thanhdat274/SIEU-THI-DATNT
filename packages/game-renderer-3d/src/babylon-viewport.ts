@@ -18,6 +18,7 @@ import { buildCityMap, type RoofInfo } from './map-builder';
 import { Actors3D } from './actors-3d';
 import { createActorAtlas, type ActorAtlas } from './actor-atlas';
 import { Crowd3D } from './crowd-3d';
+import { Characters3D } from './characters-3d';
 import { Fixtures3D } from './fixtures-3d';
 import { Stock3D } from './stock-3d';
 import { Overlay3D } from './overlay-3d';
@@ -31,14 +32,15 @@ import { Umbrellas3D } from './umbrellas-3d';
 import { ModelLibrary } from './model-library';
 import { Logistics3D } from './logistics-3d';
 import { lightingAt } from './sky-3d';
+import { actorLightTint } from './actor-light';
 import { pickTarget, resolveTileTarget, type TileTarget } from './tile-target';
 import { ALPHA_HIDDEN, facadeAlpha, OCCLUDER_ALPHA, rayHitsBox, shouldOpenRoof, stepAlpha } from './roof-fade';
 import { AdaptiveResolutionController } from './adaptive-resolution';
+import { exceedsDragThreshold, isClickRelease } from './pointer-gesture';
 
 /** Chiều cao khung hình "pixel" (px ảo); canvas thật được phóng lên bằng nearest-neighbour. */
 const PIXEL_TARGET_HEIGHT = 360;
 /** Độ dời chuột (px) vượt qua là kéo (pan) thay vì click — cùng ngưỡng Pixi (viewport-input.ts). */
-const DRAG_THRESHOLD_PX = 4;
 /** Chiều cao khung viền sáng khi chọn tòa (đơn vị thế giới, cao hơn tường ~1.6 để đọc là viền). */
 const SELECTION_FRAME_HEIGHT = 2.0;
 /** Màu viền sáng khi chọn tòa (vàng nhạt, phát sáng). */
@@ -65,6 +67,7 @@ export class BabylonGameViewport implements GameViewport {
   private roofs: RoofInfo[] = [];
   private actors: Actors3D | null = null;
   private crowd: Crowd3D | null = null;
+  private characters: Characters3D | null = null;
   private fixtures: Fixtures3D | null = null;
   private stock: Stock3D | null = null;
   private soldOutStalls: readonly string[] = [];
@@ -101,6 +104,7 @@ export class BabylonGameViewport implements GameViewport {
   private pointerDownPos: { x: number; y: number } | null = null;
   private pointerButton = 0;
   private isPointerDragging = false;
+  private activePointerId: number | null = null;
   private selectedBuildingId: string | null = null;
   private selectionGroundMesh: Mesh | null = null;
   private selectionFrameBars: Mesh[] = [];
@@ -144,6 +148,7 @@ export class BabylonGameViewport implements GameViewport {
     this.actors = new Actors3D();
     this.actors.initialize(this.actorAtlas);
     this.crowd = new Crowd3D(this.actorAtlas, this.simulation);
+    this.characters = new Characters3D(scene, this.simulation);
     this.overlay = new Overlay3D(this.canvas, this.simulation, scene);
     this.fixtures = new Fixtures3D(scene, this.simulation);
     this.stock = new Stock3D(scene, this.simulation);
@@ -173,6 +178,7 @@ export class BabylonGameViewport implements GameViewport {
     this.canvas.addEventListener('contextmenu', this.preventMenu);
     window.addEventListener('pointermove', this.handlePointerMove);
     window.addEventListener('pointerup', this.handlePointerUp);
+    window.addEventListener('pointercancel', this.handlePointerUp);
     window.addEventListener('keydown', this.handleKeyDown);
     this.resizeObserver = new ResizeObserver(() => { this.applyResolution(); this.applyZoom(); });
     this.resizeObserver.observe(this.canvas);
@@ -246,11 +252,17 @@ export class BabylonGameViewport implements GameViewport {
       lib.loadModel(currentScene, 'building_civic_police'),
       lib.loadModel(currentScene, 'building_civic_school'),
       lib.loadModel(currentScene, 'building_low_detail_wide_a'),
+      lib.loadModel(currentScene, 'furniture_fridge'),
+      lib.loadModel(currentScene, 'furniture_fridge_large'),
+      lib.loadModel(currentScene, 'furniture_fridge_small'),
+      lib.loadModel(currentScene, 'furniture_kitchen_bar'),
+      lib.loadModel(currentScene, 'furniture_computer_screen'),
     ]);
     if (this.scene !== currentScene || !this.scene) return;
     if (results.some(r => r !== null)) {
       this.buildMap();
       this.worldDecor?.update();
+      this.fixtures?.markDirty();
     }
   }
 
@@ -286,15 +298,6 @@ export class BabylonGameViewport implements GameViewport {
     const renderPixel = this.playerPixel();
     const pos = pixelToWorld(...renderPixel);
     const focus = { x: pos.x + this.pan.x, z: pos.z + this.pan.z };
-    this.actors?.update(
-      elapsed,
-      renderPixel,
-      this.simulation.getPlayerData().direction,
-      this.simulation.getIsMoving(),
-      this.quarter,
-      CAMERA_BETA,
-      this.getPartnerAvatar?.(),
-    );
     if (this.simulation.getIsMoving()) {
       if (this.inspectedBuildingId) {
         this.exitBuilding();
@@ -330,45 +333,84 @@ export class BabylonGameViewport implements GameViewport {
       this.pan.x = this.targetPan.x;
       this.pan.z = this.targetPan.z;
     }
-    // Sau khi mái đã bóc/đậy: khách trong tòa còn mái thì ẩn.
+
     const aspect = engine.getRenderWidth() / Math.max(1, engine.getRenderHeight());
-    this.crowd?.update(
-      elapsed,
-      this.quarter,
-      CAMERA_BETA,
-      this.roofs,
-      {
-        centerX: pos.x + this.pan.x,
-        centerZ: pos.z + this.pan.z,
-        radius: groundViewRadius(this.zoom, aspect, CAMERA_BETA),
-        zoom: this.zoom,
-      },
-      this.canvas.clientWidth < 768,
-    );
-    const currentLightTime = getDebugVisualTime() ?? this.simulation.getTime();
-    const currentSkyLighting = lightingAt(currentLightTime.hour, currentLightTime.minute, currentLightTime.day, this.weather?.getRain() ?? 0);
-    this.vehicles?.update(this.quarter, CAMERA_BETA, {
+    // Người/xe là sprite nên không nhận đèn Babylon: nhân màu theo cùng ánh sáng cảnh (giờ + mưa).
+    const lightTime = getDebugVisualTime() ?? this.simulation.getTime();
+    const currentSkyLighting = lightingAt(lightTime.hour, lightTime.minute, lightTime.day, this.weather?.getRain() ?? 0);
+    const actorTint = actorLightTint(currentSkyLighting);
+    const viewBounds = {
       centerX: pos.x + this.pan.x,
       centerZ: pos.z + this.pan.z,
       radius: groundViewRadius(this.zoom, aspect, CAMERA_BETA),
       zoom: this.zoom,
-    }, currentSkyLighting.lampsOn);
+    };
+    this.vehicles?.setLightTint(actorTint);
+    this.vehicles?.update(this.quarter, CAMERA_BETA, viewBounds, currentSkyLighting.lampsOn);
 
-    // Thu thập toàn bộ vị trí chân người để vẽ bóng mờ dưới chân
-    const visibleActors = this.crowd?.getVisibleActors() ?? [];
-    const allFeet: Array<{ x: number; z: number }> = [
-      { x: pos.x, z: pos.z },
-      ...visibleActors.map(a => pixelToWorld(a.x, a.y)),
-    ];
-    this.actorShadows?.update(allFeet, currentSkyLighting.sunIntensity, currentSkyLighting.lampsOn);
-
-    // Ô che mưa cho khách và người đi đường khi trời mưa
+    // Cập nhật nhân vật: nếu Characters3D (model 3D Kenney) đã sẵn sàng thì dùng 3D,
+    // ngược lại fallback về sprite 2D Actors3D + Crowd3D.
+    const use3DCharacters = Boolean(this.characters?.isReady);
     const rain = this.weather?.getRain() ?? this.simulation.getRainIntensity();
-    const rainActors = [
-      { id: 'player', x: renderPixel[0], y: renderPixel[1] },
-      ...visibleActors,
-    ];
-    this.umbrellas?.update(rainActors, rain, currentLightTime.day, this.quarter, CAMERA_BETA, this.roofs);
+
+    let allFeet: Array<{ x: number; z: number }>;
+    let talkBubbles: readonly import('./characters-3d').CrowdTalkBubble[];
+
+    if (use3DCharacters && this.characters) {
+      this.characters.setLightTint(actorTint);
+      this.characters.update(
+        elapsed,
+        renderPixel,
+        this.simulation.getIsMoving(),
+        this.roofs,
+        this.getPartnerAvatar?.(),
+        viewBounds,
+        rain,
+        lightTime.day,
+      );
+      allFeet = [...this.characters.getActiveFeet()];
+      talkBubbles = this.characters.getTalkBubbles();
+    } else {
+      this.actors?.setLightTint(actorTint);
+      this.crowd?.setLightTint(actorTint);
+      this.actors?.update(
+        elapsed,
+        renderPixel,
+        this.simulation.getPlayerData().direction,
+        this.simulation.getIsMoving(),
+        this.quarter,
+        CAMERA_BETA,
+        this.getPartnerAvatar?.(),
+      );
+      this.crowd?.update(
+        elapsed,
+        this.quarter,
+        CAMERA_BETA,
+        this.roofs,
+        viewBounds,
+        this.canvas.clientWidth < 768,
+      );
+      const visibleActors = this.crowd?.getVisibleActors() ?? [];
+      allFeet = [
+        { x: pos.x, z: pos.z },
+        ...visibleActors.map(a => pixelToWorld(a.x, a.y)),
+      ];
+      talkBubbles = this.crowd?.getTalkBubbles() ?? [];
+
+      // Ô che mưa 2D fallback
+      const rainActors = [
+        { id: 'player', x: renderPixel[0], y: renderPixel[1] },
+        ...visibleActors,
+      ];
+      this.umbrellas?.update(rainActors, rain, lightTime.day, this.quarter, CAMERA_BETA, this.roofs);
+    }
+
+    if (use3DCharacters) {
+      // Khi dùng 3D, ô che mưa và thùng hàng đã được gắn trực tiếp trên xương/model của nhân vật
+      this.umbrellas?.update([], 0, lightTime.day, this.quarter, CAMERA_BETA, this.roofs);
+    }
+
+    this.actorShadows?.update(allFeet, currentSkyLighting.sunIntensity, currentSkyLighting.lampsOn);
 
     // Khóa tâm camera theo lưới pixel ảo (ở mặt phẳng tâm) để sprite/mép khối quanh người chơi không "bơi" khi camera trượt.
     const step = (2 * this.halfHeight()) / Math.max(1, engine.getRenderHeight());
@@ -384,7 +426,6 @@ export class BabylonGameViewport implements GameViewport {
 
     this.updateSky(elapsed, pos);
     scene.render();
-    const talkBubbles = this.crowd?.getTalkBubbles() ?? [];
     this.overlay?.update(elapsed, this.quarter, CAMERA_BETA, this.roofs, this.getPartnerAvatar?.(), talkBubbles);
   };
 
@@ -468,9 +509,11 @@ export class BabylonGameViewport implements GameViewport {
 
   private preventMenu = (e: Event): void => e.preventDefault();
 
-  /** Kéo chuột để dời camera: chỉ chuột giữa/phải (chuột trái dành cho click/chọn); ghi lại vị trí/nút để phân biệt click với kéo. */
+  /** Kéo chuột để dời camera (trái/giữa/phải, vượt 4px); ghi lại vị trí/nút để phân biệt click với kéo. */
   private handlePointerDown = (e: PointerEvent): void => {
     if (e.button > 2) return;
+    if (this.activePointerId !== null && e.pointerId !== this.activePointerId) return;
+    this.activePointerId = e.pointerId;
     e.preventDefault();
     this.pointerButton = e.button;
     this.pointerDownPos = { x: e.clientX, y: e.clientY };
@@ -479,15 +522,17 @@ export class BabylonGameViewport implements GameViewport {
   };
 
   private handlePointerMove = (e: PointerEvent): void => {
+    if (this.activePointerId !== null && e.pointerId !== this.activePointerId) return;
     if (!this.drag || !this.camera) return;
     // Với mọi nút, vượt ngưỡng 4px là kéo (hủy click tiềm năng), giống Pixi.
     if (this.pointerDownPos && !this.isPointerDragging) {
-      if (Math.hypot(e.clientX - this.pointerDownPos.x, e.clientY - this.pointerDownPos.y) > DRAG_THRESHOLD_PX) {
+      if (exceedsDragThreshold(this.pointerDownPos, { x: e.clientX, y: e.clientY })) {
         this.isPointerDragging = true;
+        this.canvas.style.cursor = 'grabbing';
       }
     }
-    // Chỉ chuột giữa/phải dời camera; chuột trái dành cho click/chọn (không pan).
-    if (this.pointerButton === 0 || !this.isPointerDragging) return;
+    // Mọi nút (trái/giữa/phải) kéo được camera sau khi vượt ngưỡng; dưới ngưỡng chuột trái vẫn là click.
+    if (!this.isPointerDragging) return;
     const dx = e.clientX - this.drag.x;
     const dy = e.clientY - this.drag.y;
     this.drag = { x: e.clientX, y: e.clientY };
@@ -502,14 +547,17 @@ export class BabylonGameViewport implements GameViewport {
   };
 
   private handlePointerUp = (e: PointerEvent): void => {
+    if (this.activePointerId !== null && e.pointerId !== this.activePointerId) return;
+    this.activePointerId = null;
     const wasDragging = this.isPointerDragging;
     const button = this.pointerButton;
     const downPos = this.pointerDownPos;
     this.drag = null;
     this.pointerDownPos = null;
     this.isPointerDragging = false;
+    this.canvas.style.cursor = 'default';
     // Click: chuột trái, chưa kéo, thả ngay trên canvas (giống handlePointerUp của Pixi).
-    if (wasDragging || button !== 0 || !downPos || e.target !== this.canvas) return;
+    if (!isClickRelease(button, wasDragging) || !downPos || e.target !== this.canvas) return;
     if (!this.scene || !this.camera) return;
     this.handleTargetClick(this.targetFromPointer(e.clientX, e.clientY));
   };
@@ -836,6 +884,7 @@ export class BabylonGameViewport implements GameViewport {
     this.canvas.removeEventListener('contextmenu', this.preventMenu);
     window.removeEventListener('pointermove', this.handlePointerMove);
     window.removeEventListener('pointerup', this.handlePointerUp);
+    window.removeEventListener('pointercancel', this.handlePointerUp);
     window.removeEventListener('keydown', this.handleKeyDown);
     this.engine?.stopRenderLoop();
     this.overlay?.destroy();
@@ -850,6 +899,7 @@ export class BabylonGameViewport implements GameViewport {
     this.umbrellas?.dispose();
     this.logistics?.dispose();
     this.vehicles?.dispose();
+    this.characters?.dispose();
     this.actors?.dispose();
     this.actorAtlas?.manager.dispose();
     for (const m of this.selectionFrameBars) m.dispose();
@@ -864,6 +914,7 @@ export class BabylonGameViewport implements GameViewport {
     this.scene = null;
     this.camera = null;
     this.actors = null;
+    this.characters = null;
     this.crowd = null;
     this.fixtures = null;
     this.stock = null;

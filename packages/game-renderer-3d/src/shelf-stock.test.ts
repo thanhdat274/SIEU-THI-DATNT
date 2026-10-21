@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { fixtureFootprint } from './fixture-shapes';
+import { fixtureFootprint, SHELF_HEIGHT, SHELF_TIER_Y, shelfFrontZ } from './fixture-shapes';
 import { iconCount, shelfStockQuads, soldOutSignQuad, stallSignQuad, TIER_Y } from './shelf-stock';
 
 const shelf = { type: 'shelf_wooden', tileX: 10, tileY: 5, widthTiles: 2, heightTiles: 1, rotation: 0 } as const;
@@ -26,7 +26,8 @@ for (const rotation of [0, 90, 180, 270] as const) {
   const fp = fixtureFootprint(f);
   for (const q of shelfStockQuads(f, slots(12, 20), () => 20)) {
     assert.ok(q.cx >= fp.x0 && q.cx <= fp.x0 + fp.w && q.cz >= fp.z0 && q.cz <= fp.z0 + fp.d, `icon trong chân diện rot ${rotation}`);
-    assert.ok(q.cy - q.h / 2 >= TIER_Y[0] - 1e-9 && q.cy + q.h / 2 <= 1.3, 'icon trong khoảng cao kệ');
+    assert.ok(q.cy - q.h / 2 >= SHELF_TIER_Y[0] - 1e-9 && q.cy + q.h / 2 <= SHELF_HEIGHT + 0.05, 'icon trong khoảng cao kệ');
+    assert.ok(SHELF_TIER_Y.some(y => Math.abs(q.cy - q.h / 2 - y) < 1e-9), 'icon đặt trên mặt một tầng ván');
     assert.ok(q.w > 0 && Math.abs(Math.hypot(q.rx, q.rz) - 1) < 1e-9);
   }
 }
@@ -42,14 +43,25 @@ const noodles = { type: 'shelf_wooden', tileX: 8, tileY: 5, widthTiles: 2, heigh
 const noodleSlots = [{ assignedProductId: 'mi_hao_hao', currentStock: 20 }, ...Array.from({ length: 11 }, () => ({ assignedProductId: undefined, currentStock: 0 }))];
 const noodleQuads = shelfStockQuads(noodles, noodleSlots, () => 20);
 assert.ok(noodleQuads.length > 0, 'kệ mì có icon');
-const boardFront = 5 + 0.5 + 0.02 + 0.45; // tâm chân diện + lệch ván + nửa độ sâu ván
+const boardFront = 5.5 + shelfFrontZ(1); // tâm chân diện + mép trước ván kệ gondola
 for (const q of noodleQuads) {
-  assert.ok(q.cz >= boardFront + 0.019 && q.cz <= boardFront + 0.05, 'icon nhô ~0.02 ra trước ván (mặt về phía camera +z)');
+  assert.ok(q.cz >= boardFront + 0.02 && q.cz <= boardFront + 0.05, 'icon nhô ~0.03 ra trước mép ván, qua dải nhãn giá');
   assert.ok(q.w >= 0.2, 'icon đủ lớn để thấy');
 }
+// Hàng xếp kín bề ngang ô: các icon của một ô cách đều và phủ ~toàn bề rộng ô, không chồng nhau.
+const row = noodleQuads.filter(q => q.cy === noodleQuads[0].cy).sort((a, b) => a.cx - b.cx);
+assert.ok(row.length >= 2, 'ô đầy có ≥ 2 icon trên một tầng');
+for (let i = 1; i < row.length; i++) assert.ok(Math.abs(row[i].cx - row[i - 1].cx - row[0].w) < 1e-9, 'icon liền nhau, đều khoảng cách');
 
 // Biển HẾT không gắn sản phẩm; biển quầy nằm giữa quầy.
 assert.equal(soldOutSignQuad(shelf).productId, null);
+// Biển HẾT của kệ nằm trên dải nhãn giá tầng 2: đáy biển ở mặt ván, trước mép ván, trong chiều cao kệ.
+const soldOut = soldOutSignQuad(shelf);
+assert.ok(Math.abs(soldOut.cy - soldOut.h / 2 - SHELF_TIER_Y[1]) < 1e-9, 'đáy biển ở mặt ván tầng 2');
+assert.ok(soldOut.cz > 5.5 + shelfFrontZ(1) && soldOut.cy + soldOut.h / 2 < SHELF_HEIGHT, 'biển trước mép ván, trong kệ');
+// Tủ mát giữ mốc cũ.
+assert.equal(shelfStockQuads({ ...shelf, type: 'refrigerator' }, slots(3, 20), () => 20).length > 0, true);
+assert.ok(TIER_Y.length === 3);
 const sign = stallSignQuad({ tileX: 4, tileY: 20, widthTiles: 2 });
 assert.equal(sign.productId, null);
 assert.equal(sign.cx, 5);

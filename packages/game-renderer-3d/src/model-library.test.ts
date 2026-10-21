@@ -3,7 +3,7 @@ import test from 'node:test';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { Scene } from '@babylonjs/core/scene';
 import { BUILDING_VISUALS } from '@game/data';
-import { MODEL_CATALOG, ModelLibrary, type ModelKind } from './model-library';
+import { MATERIAL_COLOR_MODELS, MODEL_CATALOG, ModelLibrary, type ModelKind } from './model-library';
 
 test('model-library: C1 - Mọi modelId trong BUILDING_VISUALS phải có trong MODEL_CATALOG', () => {
   const visualEntries = Object.entries(BUILDING_VISUALS);
@@ -52,6 +52,21 @@ test('model-library: Bảng ánh xạ loại vật -> đường dẫn model + t�
 
   assert.ok(MODEL_CATALOG.building_low_detail_wide_a, 'Đã cấu hình low-detail building wide a');
   assert.equal(MODEL_CATALOG.building_low_detail_wide_a.url, '/assets/models/city-kit/low-detail-building-wide-a.glb');
+
+  // Furniture Kit models
+  assert.ok(MODEL_CATALOG.furniture_fridge, 'Đã cấu hình kitchenFridge');
+  assert.ok(MODEL_CATALOG.furniture_fridge_large, 'Đã cấu hình kitchenFridgeLarge');
+  assert.ok(MODEL_CATALOG.furniture_fridge_small, 'Đã cấu hình kitchenFridgeSmall');
+  assert.ok(MODEL_CATALOG.furniture_kitchen_bar, 'Đã cấu hình kitchenBar');
+  assert.ok(MODEL_CATALOG.furniture_computer_screen, 'Đã cấu hình computerScreen');
+});
+
+test('model-library: Cho phép nhóm material-color (giữ màu gốc, specular = 0, unlit = false)', () => {
+  assert.ok(MATERIAL_COLOR_MODELS.has('furniture_fridge'), 'kitchenFridge thuộc material-color');
+  assert.ok(MATERIAL_COLOR_MODELS.has('furniture_fridge_large'), 'kitchenFridgeLarge thuộc material-color');
+  assert.ok(MATERIAL_COLOR_MODELS.has('furniture_fridge_small'), 'kitchenFridgeSmall thuộc material-color');
+  assert.ok(MATERIAL_COLOR_MODELS.has('furniture_kitchen_bar'), 'kitchenBar thuộc material-color');
+  assert.ok(MATERIAL_COLOR_MODELS.has('furniture_computer_screen'), 'computerScreen thuộc material-color');
 });
 
 test('model-library: Tải lỗi thì tự động rơi về fallback (không throw, game không treo)', async () => {

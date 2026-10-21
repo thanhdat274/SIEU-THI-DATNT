@@ -13,6 +13,7 @@ import '@babylonjs/core/Meshes/thinInstanceMesh';
 import { TILE_SIZE, type GameTileMap, type MapBuilding } from '@game/shared';
 import { createSignPlane } from './sign-plane';
 import { BUILDING_VISUALS, STREET_LAMP_TILES, TREE_PROPS, buildingTypeOfInstance, type BuildingVisual } from '@game/data';
+import { resolveTreeHeightForId } from './scale-spec';
 import { ModelLibrary, MODEL_CATALOG, type ModelKind } from './model-library';
 
 /** Mã ô lớp `walls`: 7 là gốc cây (vẽ cây riêng), còn lại là tường. */
@@ -458,7 +459,8 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
           new Vector3(t.tileX + 0.5, 0, t.tileY + 0.5)
         ));
       } else if (!isBush && treeModel && treeModel.renderMeshes.length > 0) {
-        const s = (t.height / MODEL_CATALOG.tree.targetHeight) * MODEL_CATALOG.tree.scale;
+        const targetH = resolveTreeHeightForId(t.id);
+        const s = targetH / 1.708; // scale đều theo chiều cao thực của model tree_default.glb (1.708)
         treeMatrices.push(Matrix.Compose(
           new Vector3(s, s, s),
           Quaternion.Identity(),

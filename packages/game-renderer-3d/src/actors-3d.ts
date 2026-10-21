@@ -1,7 +1,9 @@
 import { Sprite } from '@babylonjs/core/Sprites/sprite';
 import { TILE_SIZE, type Direction, type Vector2D } from '@game/shared';
 import { billboardCenter, facingFromMovement, isoAlpha, pixelToWorld } from './coords';
+import { Color4 } from '@babylonjs/core/Maths/math.color';
 import { createActorSprite, type ActorAtlas } from './actor-atlas';
+import type { LightTint } from './actor-light';
 
 /** Chiều rộng và chiều cao logic (pixel) của khung nhân vật trong atlas LimeZu (chars.json). */
 export const ACTOR_FRAME_WIDTH = 32;
@@ -56,6 +58,13 @@ export class Actors3D {
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       this.motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     }
+  }
+
+  /** Nhân màu người chơi và bạn co-op theo ánh sáng cảnh (ban ngày = màu gốc). */
+  public setLightTint(t: LightTint): void {
+    const c = new Color4(t.r, t.g, t.b, 1);
+    this.playerSprite?.color.copyFrom(c);
+    this.partnerSprite?.color.copyFrom(c);
   }
 
   public update(

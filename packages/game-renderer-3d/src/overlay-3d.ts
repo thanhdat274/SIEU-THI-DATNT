@@ -8,7 +8,8 @@ import { cameraUp, isoAlpha, pixelToWorld } from './coords';
 import type { RoofInfo } from './map-builder';
 import type { CrowdTalkBubble } from './crowd-3d';
 import { hiddenByRoof } from './crowd-3d';
-import { ACTOR_WORLD_HEIGHT, type PartnerAvatarInfo } from './actors-3d';
+import { type PartnerAvatarInfo } from './actors-3d';
+import { SCALE_TARGETS } from './scale-spec';
 
 /** Bộ đệm SVG cho các icon 16x16: đồng xu hoặc hàng hóa, sinh 1 lần dùng mãi. */
 const iconSvgCache = new Map<string, string>();
@@ -157,7 +158,7 @@ export class Overlay3D {
     this.floatingGains.push({
       element: el,
       worldX: world.x,
-      worldY: 1.8,
+      worldY: SCALE_TARGETS.adultPlayer + 0.15,
       worldZ: world.z,
       life: 1.0,
       maxLife: 1.0,
@@ -295,7 +296,8 @@ export class Overlay3D {
     const transformMatrix = this.scene.getTransformMatrix();
     // Đầu sprite billboard = chân + H·(vector lên của camera): đúng cả ortho lẫn phối cảnh (chiếu qua getTransformMatrix).
     const up = cameraUp(isoAlpha(quarter), cameraBeta);
-    const headDx = up.x * ACTOR_WORLD_HEIGHT, headDy = up.y * ACTOR_WORLD_HEIGHT, headDz = up.z * ACTOR_WORLD_HEIGHT;
+    const actorHeadY = SCALE_TARGETS.adultPlayer;
+    const headDx = up.x * actorHeadY, headDy = up.y * actorHeadY, headDz = up.z * actorHeadY;
 
     // 1. Cập nhật floating gains
     for (let i = this.floatingGains.length - 1; i >= 0; i--) {

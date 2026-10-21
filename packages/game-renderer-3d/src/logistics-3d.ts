@@ -9,10 +9,11 @@ import { billboardCenter, isoAlpha, pixelToWorld } from './coords';
 import type { Crowd3D } from './crowd-3d';
 import type { Vehicles3D } from './vehicles-3d';
 import type { RoofInfo } from './map-builder';
+import { SCALE_TARGETS } from './scale-spec';
 
-const BOX_WORLD_WIDTH = 0.35;
-const BOX_WORLD_HEIGHT = 0.28;
-const BOX_WORLD_DEPTH = 0.35;
+const BOX_WORLD_WIDTH = 0.28;
+const BOX_WORLD_HEIGHT = 0.22;
+const BOX_WORLD_DEPTH = 0.28;
 
 export const CARGO_BOX_COLORS: Record<string, string> = {
   carton: '#c29b63',
@@ -32,9 +33,10 @@ export function logisticsBoxPosition(
 ): { x: number; y: number; z: number } {
   const world = pixelToWorld(worker.x, worker.y);
   const dirSign = worker.direction === 'right' ? 1 : worker.direction === 'left' ? -1 : 0;
-  // Lệch nhẹ theo hướng đi
-  const c = billboardCenter(world.x + (dirSign * 3) / 32, world.z, 0.75, isoAlpha(quarter), beta);
-  return { x: c.x, y: 0.75, z: c.z };
+  // Lệch nhẹ theo hướng đi, cao độ ngang ngực người mới (~0.58)
+  const chestY = SCALE_TARGETS.adultPlayer * 0.45; // ~0.58
+  const c = billboardCenter(world.x + (dirSign * 3) / 32, world.z, chestY, isoAlpha(quarter), beta);
+  return { x: c.x, y: chestY, z: c.z };
 }
 
 export class Logistics3D {

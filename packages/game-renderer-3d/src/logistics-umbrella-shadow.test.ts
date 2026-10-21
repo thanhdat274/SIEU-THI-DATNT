@@ -75,7 +75,7 @@ import type { LogisticsWorkerState } from '@game/shared';
   };
   const posRight = logisticsBoxPosition(workerRight, 0, 0.96);
   assert.ok(Number.isFinite(posRight.x) && Number.isFinite(posRight.y) && Number.isFinite(posRight.z));
-  assert.equal(posRight.y, 0.75, 'độ cao thùng ngang ngực');
+  assert.ok(Math.abs(posRight.y - 0.576) < 0.01, 'độ cao thùng ngang ngực');
 
   const workerLeft: LogisticsWorkerState = {
     ...workerRight,

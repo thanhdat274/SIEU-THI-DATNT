@@ -1,5 +1,5 @@
 import type { StoreFixture } from '@game/shared';
-import { fixtureLocalToWorld } from './fixture-shapes';
+import { fixtureLocalToWorld, SHELF_TIER_Y, shelfFrontZ } from './fixture-shapes';
 
 /** Một ô vuông đứng (icon sản phẩm hoặc biển) trong thế giới 3D: tâm, hướng "phải" của mặt trước (rx, rz) và kích thước. */
 export interface StockQuad {
@@ -14,14 +14,17 @@ export interface StockQuad {
 type Fix = Pick<StoreFixture, 'type' | 'tileX' | 'tileY' | 'widthTiles' | 'heightTiles' | 'rotation'>;
 export type StockSlot = Pick<StoreFixture, 'assignedProductId' | 'currentStock'>;
 
-/** Độ cao mặt ván các tầng (khớp fixture-shapes: kệ có ván ở 0.1/0.5/0.9; tủ lạnh dùng cùng mốc). */
-export const TIER_Y = [0.13, 0.53, 0.93] as const;
+/** Độ cao mặt ván các tầng của tủ mát (kệ tạp hóa dùng SHELF_TIER_Y của fixture-shapes, 4 tầng). */
+export const TIER_Y = [0.19, 0.54, 0.88] as const;
 const MAX_ICONS_PER_CELL = 3;
 const MAX_ICON = 0.3;
 const MIN_ICON_GAP = 0.2;
-/** Mép trước tấm ván kệ (khớp fixture-shapes: ván lệch 0.02, sâu 0.9·d) và độ nhô của icon ra trước để không bị ván che. */
-const BOARD_FRONT_OFFSET = 0.02;
-const ICON_PROTRUDE = 0.02;
+/** Icon nhô ra trước mép ván (và dải nhãn giá dày 0.014 ở mép đó) để không bị ván che. */
+const ICON_PROTRUDE = 0.03;
+const SIGN_SIZE = 0.25;
+
+const isShelf = (fix: Fix): boolean => fix.type !== 'refrigerator';
+const tierYOf = (fix: Fix): readonly number[] => (isShelf(fix) ? SHELF_TIER_Y : TIER_Y);
 
 /** Số icon hiện trong một ô hàng: tỉ lệ với tồn/sức chứa, còn hàng thì ít nhất 1, hết hàng thì 0. */
 export function iconCount(stock: number, limit: number, maxIcons: number): number {
@@ -38,13 +41,14 @@ export function shelfStockQuads(
   slots: readonly StockSlot[],
   limitOf: (index: number) => number,
 ): StockQuad[] {
-  const tiers = TIER_Y.length;
+  const tierY = tierYOf(fix);
+  const tiers = tierY.length;
   const cols = Math.max(1, Math.ceil(slots.length / tiers));
   const usable = fix.widthTiles - 0.16;
   const cellW = usable / cols;
   const perCell = Math.max(1, Math.min(MAX_ICONS_PER_CELL, Math.floor(cellW / MIN_ICON_GAP)));
   const size = Math.min(MAX_ICON, cellW / perCell);
-  const frontZ = fix.type === 'refrigerator' ? fix.heightTiles / 2 + 0.03 : fix.heightTiles * 0.45 + BOARD_FRONT_OFFSET + ICON_PROTRUDE;
+  const frontZ = fix.type === 'refrigerator' ? (fix.widthTiles === 2 ? 0.31 : 0.28) : shelfFrontZ(fix.heightTiles) + ICON_PROTRUDE;
   const right = fixtureLocalToWorld(fix, 1, 0);
   const origin = fixtureLocalToWorld(fix, 0, 0);
   const rx = right.x - origin.x;
@@ -61,18 +65,25 @@ export function shelfStockQuads(
     for (let k = 0; k < n; k++) {
       const lx = cellCenter + (k - (perCell - 1) / 2) * size;
       const p = fixtureLocalToWorld(fix, lx, frontZ);
-      out.push({ productId, cx: p.x, cy: TIER_Y[tier] + size / 2, cz: p.z, rx, rz, w: size, h: size });
+      out.push({ productId, cx: p.x, cy: tierY[tier] + size / 2, cz: p.z, rx, rz, w: size, h: size });
     }
   });
   return out;
 }
 
-/** Biển "HẾT" nhỏ ở giữa mặt trước kệ/tủ (tầng giữa). */
+/** Biển "HẾT": tủ mát ở giữa mặt trước; kệ tạp hóa đặt trên dải nhãn giá của tầng thứ hai (đáy biển ngay mép trên dải). */
 export function soldOutSignQuad(fix: Fix): StockQuad {
   const right = fixtureLocalToWorld(fix, 1, 0);
   const origin = fixtureLocalToWorld(fix, 0, 0);
-  const p = fixtureLocalToWorld(fix, 0, fix.type === 'refrigerator' ? fix.heightTiles / 2 + 0.04 : fix.heightTiles * 0.46);
-  return { productId: null, cx: p.x, cy: 0.78, cz: p.z, rx: right.x - origin.x, rz: right.z - origin.z, w: Math.min(0.6, fix.widthTiles * 0.4), h: Math.min(0.6, fix.widthTiles * 0.4) / 2 };
+  const rx = right.x - origin.x;
+  const rz = right.z - origin.z;
+  if (isShelf(fix)) {
+    const p = fixtureLocalToWorld(fix, 0, shelfFrontZ(fix.heightTiles) + ICON_PROTRUDE);
+    const w = Math.min(0.6, fix.widthTiles * 0.4);
+    return { productId: null, cx: p.x, cy: SHELF_TIER_Y[1] + SIGN_SIZE / 2, cz: p.z, rx, rz, w, h: SIGN_SIZE };
+  }
+  const p = fixtureLocalToWorld(fix, 0, fix.widthTiles === 2 ? 0.32 : 0.29);
+  return { productId: null, cx: p.x, cy: 0.78, cz: p.z, rx, rz, w: Math.min(0.6, fix.widthTiles * 0.4), h: Math.min(0.6, fix.widthTiles * 0.4) / 2 };
 }
 
 /** Biển "HẾT" đặt giữa mặt nam của quầy vỉa hè (`stall`: ô góc trên-trái và bề rộng ô). */

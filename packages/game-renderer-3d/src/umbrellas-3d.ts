@@ -8,9 +8,10 @@ import { shelterZoneAt } from '@game/data';
 import { billboardCenter, isoAlpha, pixelToWorld } from './coords';
 import type { RoofInfo } from './map-builder';
 import { hiddenByRoof } from './crowd-3d';
+import { SCALE_TARGETS } from './scale-spec';
 
-const UMBRELLA_RADIUS = 0.42;
-const UMBRELLA_HEIGHT_OFFSET = 1.62;
+const UMBRELLA_RADIUS = SCALE_TARGETS.accessories.umbrellaRadius;
+const UMBRELLA_HEIGHT_OFFSET = SCALE_TARGETS.adultPlayer + 0.12;
 
 export const UMBRELLA_COLORS: Record<string, string> = {
   blue: '#3b82f6',

@@ -6,7 +6,10 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import '@babylonjs/core/Meshes/thinInstanceMesh';
 import type { GameSimulation } from '@game/core';
-import { fixtureBoxes, fixturesSignature, type FixtureBox } from './fixture-shapes';
+import type { StoreFixture } from '@game/shared';
+import { fixtureBoxes, fixtureFootprint, fixturesSignature, type FixtureBox } from './fixture-shapes';
+import { ModelLibrary, type ModelKind, MODEL_CATALOG } from './model-library';
+import { SCALE_TARGETS } from './scale-spec';
 import { ALPHA_HIDDEN } from './roof-fade';
 import type { RoofInfo } from './map-builder';
 
@@ -14,12 +17,160 @@ import type { RoofInfo } from './map-builder';
 const SYNC_INTERVAL = 0.5;
 const EMISSIVE_SCALE = 0.6;
 
-interface Group {
+interface BoxGroup {
   mesh: Mesh;
   mat: StandardMaterial;
   /** Chỉ số mái chứa nhóm này (-1 = ngoài trời / tòa mở: luôn hiện). */
   roof: number;
   alpha: number;
+  /** Độ đục riêng của nhóm (kính < 1), nhân với độ mờ theo mái. */
+  baseAlpha: number;
+}
+
+interface ModelInstanceGroup {
+  kind: ModelKind;
+  roof: number;
+  meshes: Mesh[];
+  alpha: number;
+}
+
+export interface ModelInstanceDesc {
+  kind: ModelKind;
+  matrix: Matrix;
+}
+
+/** Bán kính/nửa kích thước chuẩn của model Kenney để căn tâm chân diện ô */
+export const FIXTURE_MODEL_HALVES: Partial<Record<ModelKind, { halfW: number; halfD: number }>> = {
+  furniture_fridge: { halfW: 0.215, halfD: 0.146 },
+  furniture_fridge_large: { halfW: 0.260, halfD: 0.203 },
+  furniture_fridge_small: { halfW: 0.215, halfD: 0.146 },
+  furniture_kitchen_bar: { halfW: 0.215, halfD: 0.105 },
+  furniture_computer_screen: { halfW: 0.196, halfD: 0.052 },
+};
+
+/**
+ * Tính ma trận biến đổi thế giới cho một instance của model Kenney trong fixture:
+ * - Căn tâm model (vốn có anchor ở mép) về tọa độ cục bộ (lx, ly, lz)
+ * - Xoay theo rotation cục bộ và rotation của fixture
+ * - Đặt vào tọa độ thế giới (fixCx, fixCz)
+ */
+export function computeFixtureModelMatrix(
+  fixCx: number,
+  fixCz: number,
+  fixRotationDeg: number,
+  lx: number,
+  ly: number,
+  lz: number,
+  localYawDeg: number,
+  scale: Vector3,
+  halfW: number,
+  halfD: number,
+): Matrix {
+  const fixYaw = -(fixRotationDeg * Math.PI) / 180;
+  const localYaw = -(localYawDeg * Math.PI) / 180;
+  const totalYaw = fixYaw + localYaw;
+  const totalRot = Quaternion.RotationYawPitchRoll(totalYaw, 0, 0);
+
+  const localCenterOffset = new Vector3(-halfW * scale.x, 0, -halfD * scale.z);
+  const qLocal = Quaternion.RotationYawPitchRoll(localYaw, 0, 0);
+  const rotatedLocalCenter = localCenterOffset.applyRotationQuaternion(qLocal);
+
+  const originInFixtureSpace = new Vector3(
+    lx - rotatedLocalCenter.x,
+    ly,
+    lz - rotatedLocalCenter.z,
+  );
+
+  const qFix = Quaternion.RotationYawPitchRoll(fixYaw, 0, 0);
+  const worldPosOffset = originInFixtureSpace.applyRotationQuaternion(qFix);
+
+  const finalPos = new Vector3(
+    fixCx + worldPosOffset.x,
+    worldPosOffset.y,
+    fixCz + worldPosOffset.z,
+  );
+
+  return Matrix.Compose(scale, totalRot, finalPos);
+}
+
+type Fix = Pick<StoreFixture, 'type' | 'tileX' | 'tileY' | 'widthTiles' | 'heightTiles' | 'rotation'>;
+
+/**
+ * Ánh xạ loại fixture sang danh sách instance model Kenney tương ứng:
+ * - shelf_wooden / shelf_glass: không dùng model — kệ tạp hóa dựng bằng code (fixture-shapes)
+ * - refrigerator: kitchenFridgeLarge (nếu rộng 2) / kitchenFridgeSmall (nếu rộng 1)
+ * - cashier_counter: kitchenBar (+ computerScreen làm máy tính tiền)
+ * - các loại khác (dining_table, kitchen_station, warehouse...): trả về null để dùng khối code
+ */
+export function resolveFixtureModelInstances(fix: Fix, cx: number, cz: number): ModelInstanceDesc[] | null {
+  const w = fix.widthTiles;
+  const rot = fix.rotation;
+
+  switch (fix.type) {
+    case 'refrigerator': {
+      if (w >= 2) {
+        // Tủ lạnh 2 cánh / tủ đông lớn
+        const half = FIXTURE_MODEL_HALVES.furniture_fridge_large!;
+        const scaleVal = MODEL_CATALOG.furniture_fridge_large.scale;
+        const s = new Vector3(scaleVal, scaleVal, scaleVal);
+        return [
+          {
+            kind: 'furniture_fridge_large',
+            matrix: computeFixtureModelMatrix(cx, cz, rot, 0, 0, 0, 0, s, half.halfW, half.halfD),
+          },
+        ];
+      }
+      // Tủ mát 1 cánh nhỏ
+      const half = FIXTURE_MODEL_HALVES.furniture_fridge_small!;
+      const scaleVal = MODEL_CATALOG.furniture_fridge_small.scale;
+      const s = new Vector3(scaleVal, scaleVal, scaleVal);
+      return [
+        {
+          kind: 'furniture_fridge_small',
+          matrix: computeFixtureModelMatrix(cx, cz, rot, 0, 0, 0, 0, s, half.halfW, half.halfD),
+        },
+      ];
+    }
+
+    case 'cashier_counter': {
+      const barHalf = FIXTURE_MODEL_HALVES.furniture_kitchen_bar!;
+      const barScaleVal = MODEL_CATALOG.furniture_kitchen_bar.scale;
+      const barScale = new Vector3(barScaleVal, barScaleVal, barScaleVal);
+      const screenHalf = FIXTURE_MODEL_HALVES.furniture_computer_screen!;
+      const screenScaleVal = MODEL_CATALOG.furniture_computer_screen.scale;
+      const screenScale = new Vector3(screenScaleVal, screenScaleVal, screenScaleVal);
+
+      if (w >= 2) {
+        return [
+          {
+            kind: 'furniture_kitchen_bar',
+            matrix: computeFixtureModelMatrix(cx, cz, rot, -0.45, 0, 0, 0, barScale, barHalf.halfW, barHalf.halfD),
+          },
+          {
+            kind: 'furniture_kitchen_bar',
+            matrix: computeFixtureModelMatrix(cx, cz, rot, 0.45, 0, 0, 0, barScale, barHalf.halfW, barHalf.halfD),
+          },
+          {
+            kind: 'furniture_computer_screen',
+            matrix: computeFixtureModelMatrix(cx, cz, rot, -0.35, SCALE_TARGETS.fixtures.counter, -0.05, 180, screenScale, screenHalf.halfW, screenHalf.halfD),
+          },
+        ];
+      }
+      return [
+        {
+          kind: 'furniture_kitchen_bar',
+          matrix: computeFixtureModelMatrix(cx, cz, rot, 0, 0, 0, 0, barScale, barHalf.halfW, barHalf.halfD),
+        },
+        {
+          kind: 'furniture_computer_screen',
+          matrix: computeFixtureModelMatrix(cx, cz, rot, 0, 0.672, -0.05, 180, screenScale, screenHalf.halfW, screenHalf.halfD),
+        },
+      ];
+    }
+
+    default:
+      return null;
+  }
 }
 
 /** Chỉ số mái chứa điểm (x, z); -1 = ngoài trời hoặc tòa mở không có mái. */
@@ -28,15 +179,19 @@ export function roofIndexAt(roofs: readonly RoofInfo[], x: number, z: number): n
 }
 
 /**
- * Fixture (kệ, quầy, tủ lạnh, bàn...) dựng bằng thin instances: mỗi (mái, màu) một mesh hộp đơn vị, mỗi hộp là một instance.
- * Chỉ dựng lại khi chữ ký danh sách fixture đổi; fixture trong tòa còn mái thì ẩn, hiện dần khi mái bóc.
+ * Fixture (kệ, quầy, tủ lạnh, bàn...) dựng bằng thin instances:
+ * - Kệ gỗ, tủ lạnh, quầy thu ngân dùng model 3D từ Kenney Furniture Kit.
+ * - Các loại khác (hoặc khi model chưa tải xong) tự động dùng khối code fallback.
+ * - Chỉ dựng nội thất tòa đang bóc mái hoặc gần camera (E3).
  */
 export class Fixtures3D {
-  private readonly groups = new Map<string, Group>();
+  private readonly boxGroups = new Map<string, BoxGroup>();
+  private readonly modelGroups = new Map<string, ModelInstanceGroup>();
   private roofs: readonly RoofInfo[] = [];
   private signature = '';
   private sinceSync = SYNC_INTERVAL;
   private forceRebuild = true;
+  private fills = { dry: 0, cold: 0 };
 
   constructor(private readonly scene: Scene, private readonly simulation: GameSimulation) {}
 
@@ -46,12 +201,17 @@ export class Fixtures3D {
     this.forceRebuild = true;
   }
 
+  public markDirty(): void {
+    this.forceRebuild = true;
+  }
+
   public update(elapsed: number, cameraFocus?: { x: number; z: number }): void {
     this.sinceSync += elapsed;
     if (this.sinceSync >= SYNC_INTERVAL || this.forceRebuild) {
       this.sinceSync = 0;
       const fixtures = this.simulation.getFixtures();
-      const sig = fixturesSignature(fixtures);
+      this.fills = this.warehouseFills();
+      const sig = `${fixturesSignature(fixtures)}|${this.fills.dry},${this.fills.cold}`;
       if (this.forceRebuild || sig !== this.signature) {
         this.signature = sig;
         this.forceRebuild = false;
@@ -61,14 +221,34 @@ export class Fixtures3D {
     this.applyRoofAlpha(cameraFocus);
   }
 
-  public dispose(): void {
-    for (const g of this.groups.values()) { g.mesh.dispose(false, true); g.mat.dispose(); }
-    this.groups.clear();
+  /** Độ đầy kho thường/kho lạnh (đọc từ simulation như bảng Kho), làm tròn 1/12 để không dựng lại mỗi lần tồn nhúc nhích. */
+  private warehouseFills(): { dry: number; cold: number } {
+    const sim = this.simulation;
+    const ratio = (used: number, cap: number) => (cap > 0 ? Math.round(Math.min(1, used / cap) * 12) / 12 : 0);
+    return {
+      dry: ratio(sim.getAmbientCellsUsed(), sim.getAmbientCapacity()),
+      cold: ratio(sim.getColdWarehouseCount(), sim.getColdCapacity()),
+    };
   }
 
-  private groupFor(roof: number, box: FixtureBox): Group {
-    const key = `${roof}|${box.color}${box.emissive ? 'e' : ''}`;
-    let g = this.groups.get(key);
+  public dispose(): void {
+    for (const g of this.boxGroups.values()) {
+      g.mesh.dispose(false, true);
+      g.mat.dispose();
+    }
+    this.boxGroups.clear();
+
+    for (const mg of this.modelGroups.values()) {
+      for (const m of mg.meshes) {
+        m.dispose(false, true);
+      }
+    }
+    this.modelGroups.clear();
+  }
+
+  private boxGroupFor(roof: number, box: FixtureBox): BoxGroup {
+    const key = `${roof}|${box.color}${box.emissive ? 'e' : ''}${box.alpha !== undefined ? `a${box.alpha}` : ''}`;
+    let g = this.boxGroups.get(key);
     if (!g) {
       const mesh = CreateBox(`fix_${key}`, { size: 1 }, this.scene);
       const mat = new StandardMaterial(`fixm_${key}`, this.scene);
@@ -77,40 +257,132 @@ export class Fixtures3D {
       if (box.emissive) mat.emissiveColor = Color3.FromHexString(box.color).scale(EMISSIVE_SCALE);
       mesh.material = mat;
       mesh.isPickable = false;
-      g = { mesh, mat, roof, alpha: 1 };
-      this.groups.set(key, g);
+      mesh.receiveShadows = true;
+      g = { mesh, mat, roof, alpha: 1, baseAlpha: box.alpha ?? 1 };
+      this.boxGroups.set(key, g);
     }
     return g;
   }
 
   private rebuild(): void {
-    const matrices = new Map<Group, number[]>();
+    const lib = ModelLibrary.getInstance();
+    const boxMatrices = new Map<BoxGroup, number[]>();
+    const modelMatrices = new Map<string, { kind: ModelKind; roof: number; list: number[] }>();
+
     for (const fix of this.simulation.getFixtures()) {
       if (fix.parentId) continue;
-      const boxes = fixtureBoxes(fix);
-      // Mái chứa tâm fixture; fixture ngoài mọi mái (hoặc tòa mở không có mái) luôn hiện.
-      const roof = boxes.length ? roofIndexAt(this.roofs, boxes[0].cx, boxes[0].cz) : -1;
-      for (const b of boxes) {
-        const g = this.groupFor(roof, b);
-        let list = matrices.get(g);
-        if (!list) matrices.set(g, list = []);
-        Matrix.Compose(new Vector3(b.sx, b.sy, b.sz), Quaternion.Identity(), new Vector3(b.cx, b.cy, b.cz)).copyToArray(list, list.length);
+      const { cx, cz } = fixtureFootprint(fix);
+      const roof = roofIndexAt(this.roofs, cx, cz);
+
+      // Thử dùng model Kenney
+      const forceCodeBoxes = typeof window !== 'undefined' && Boolean((window as unknown as { __forceFixtureCodeBoxes?: boolean }).__forceFixtureCodeBoxes);
+      const instances = resolveFixtureModelInstances(fix, cx, cz);
+      const canUseModels = !forceCodeBoxes && instances !== null && instances.every(inst => lib.getLoadedModel(this.scene, inst.kind) !== null);
+
+      if (canUseModels && instances) {
+        for (const inst of instances) {
+          const key = `${roof}|${inst.kind}`;
+          let entry = modelMatrices.get(key);
+          if (!entry) {
+            entry = { kind: inst.kind, roof, list: [] };
+            modelMatrices.set(key, entry);
+          }
+          inst.matrix.copyToArray(entry.list, entry.list.length);
+        }
+      } else {
+        // Fallback về khối code dựng bằng box
+        const boxes = fixtureBoxes(fix, fix.type === 'warehouse_cold' ? this.fills.cold : this.fills.dry);
+        for (const b of boxes) {
+          const g = this.boxGroupFor(roof, b);
+          let list = boxMatrices.get(g);
+          if (!list) boxMatrices.set(g, list = []);
+          Matrix.Compose(new Vector3(b.sx, b.sy, b.sz), Quaternion.Identity(), new Vector3(b.cx, b.cy, b.cz)).copyToArray(list, list.length);
+        }
       }
     }
-    for (const g of this.groups.values()) {
-      const list = matrices.get(g);
-      if (!list) { g.mesh.thinInstanceSetBuffer('matrix', new Float32Array(0), 16, true); g.mesh.isVisible = false; continue; }
+
+    // Cập nhật thin instances cho khối code
+    for (const g of this.boxGroups.values()) {
+      const list = boxMatrices.get(g);
+      if (!list) {
+        g.mesh.thinInstanceSetBuffer('matrix', new Float32Array(0), 16, true);
+        g.mesh.isVisible = false;
+        continue;
+      }
       g.mesh.thinInstanceSetBuffer('matrix', new Float32Array(list), 16, true);
       g.mesh.thinInstanceRefreshBoundingInfo(true);
       g.mesh.alwaysSelectAsActiveMesh = true;
-      g.alpha = -1; // buộc applyRoofAlpha cập nhật
+      g.alpha = -1;
+    }
+
+    // Cập nhật thin instances cho model Kenney
+    for (const [key, entry] of modelMatrices) {
+      let mg = this.modelGroups.get(key);
+      if (!mg) {
+        const loaded = lib.getLoadedModel(this.scene, entry.kind);
+        if (!loaded) continue;
+        const clonedMeshes: Mesh[] = [];
+        for (const rm of loaded.renderMeshes) {
+          const clone = rm.clone(`fixm_${key}_${rm.name}`);
+          clone.parent = null;
+          clone.setEnabled(true);
+          clone.isPickable = false;
+          clone.receiveShadows = true;
+          if (clone.material) {
+            clone.material = clone.material.clone(`${clone.name}_mat`);
+          }
+          clonedMeshes.push(clone);
+        }
+        mg = { kind: entry.kind, roof: entry.roof, meshes: clonedMeshes, alpha: -1 };
+        this.modelGroups.set(key, mg);
+      }
+      for (const m of mg.meshes) {
+        m.thinInstanceSetBuffer('matrix', new Float32Array(entry.list), 16, true);
+        m.thinInstanceRefreshBoundingInfo(true);
+        m.alwaysSelectAsActiveMesh = true;
+      }
+      mg.alpha = -1;
+    }
+
+    // Ẩn các modelGroup không còn instance
+    for (const [key, mg] of this.modelGroups) {
+      if (!modelMatrices.has(key)) {
+        for (const m of mg.meshes) {
+          m.thinInstanceSetBuffer('matrix', new Float32Array(0), 16, true);
+          m.isVisible = false;
+        }
+      }
     }
   }
 
-  /** Fixture trong tòa hiện dần khi mái mờ đi (alpha mái 1 → 0 thì fixture 0 → 1). E3: Chỉ hiện tòa bóc mái hoặc gần camera. */
+  /** Fixture trong tòa hiện dần khi mái mờ đi. E3: Chỉ hiện tòa bóc mái hoặc gần camera. */
   private applyRoofAlpha(cameraFocus?: { x: number; z: number }): void {
-    for (const g of this.groups.values()) {
+    // 1. Khối code
+    for (const g of this.boxGroups.values()) {
       const roof = g.roof >= 0 ? this.roofs[g.roof] : undefined;
+      const roofAlpha = roof ? 1 - roof.alpha : 1;
+      const alpha = roofAlpha * g.baseAlpha;
+      let near = true;
+      if (cameraFocus && roof) {
+        const cx = (roof.x0 + roof.x1) / 2;
+        const cz = (roof.z0 + roof.z1) / 2;
+        const dx = cx - cameraFocus.x;
+        const dz = cz - cameraFocus.z;
+        near = (dx * dx + dz * dz) <= 24 * 24;
+      }
+      const isPeeled = roof ? (roof.alpha < 0.95) : false;
+      const shouldRender = isPeeled || near;
+      const isVisible = shouldRender && roofAlpha > ALPHA_HIDDEN && g.mesh.thinInstanceCount > 0;
+      if (isVisible !== g.mesh.isVisible || alpha !== g.alpha) {
+        g.alpha = alpha;
+        g.mat.alpha = alpha;
+        g.mesh.isVisible = isVisible;
+      }
+    }
+
+    // 2. Model Kenney
+    for (const mg of this.modelGroups.values()) {
+      const roof = mg.roof >= 0 ? this.roofs[mg.roof] : undefined;
       const alpha = roof ? 1 - roof.alpha : 1;
       let near = true;
       if (cameraFocus && roof) {
@@ -122,11 +394,13 @@ export class Fixtures3D {
       }
       const isPeeled = roof ? (roof.alpha < 0.95) : false;
       const shouldRender = isPeeled || near;
-      const isVisible = shouldRender && alpha > ALPHA_HIDDEN && g.mesh.thinInstanceCount > 0;
-      if (isVisible !== g.mesh.isVisible || alpha !== g.alpha) {
-        g.alpha = alpha;
-        g.mat.alpha = alpha;
-        g.mesh.isVisible = isVisible;
+      const isVisible = shouldRender && alpha > ALPHA_HIDDEN && mg.meshes.length > 0 && (mg.meshes[0].thinInstanceCount ?? 0) > 0;
+      if (isVisible !== mg.meshes[0]?.isVisible || alpha !== mg.alpha) {
+        mg.alpha = alpha;
+        for (const m of mg.meshes) {
+          if (m.material) m.material.alpha = alpha;
+          m.isVisible = isVisible;
+        }
       }
     }
   }

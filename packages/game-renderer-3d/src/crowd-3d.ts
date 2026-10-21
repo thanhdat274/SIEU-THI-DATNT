@@ -5,6 +5,7 @@ import { NEIGHBORHOOD_QUALITY, detailForZoom } from '@game/data';
 import { resolveWeatherQuality } from '@game/renderer';
 import { TILE_SIZE, getFixtureDimensions, type Direction } from '@game/shared';
 import { createActorSprite, type ActorAtlas } from './actor-atlas';
+import { NEUTRAL_TINT, type LightTint } from './actor-light';
 import { billboardCenter, directionFromDelta, facingForCamera, isoAlpha, npcFrameKey, pixelToWorld, walkerLookFor } from './coords';
 import type { RoofInfo } from './map-builder';
 
@@ -62,6 +63,19 @@ export class Crowd3D {
 
   public get activeCount(): number { return this.entries.size; }
 
+  private lightTint: LightTint = NEUTRAL_TINT;
+
+  /** Màu nhân theo ánh sáng cảnh (xem actor-light.ts); áp lên mọi người ở lần đặt kế tiếp. */
+  public setLightTint(t: LightTint): void { this.lightTint = t; }
+
+  /** Màu sprite = màu riêng của người × ánh sáng cảnh (ban ngày = màu gốc). */
+  private applyColor(e: CrowdEntry, tint: number): void {
+    e.tint = tint;
+    const l = this.lightTint;
+    this.scratchColor.set(((tint >> 16) & 255) / 255 * l.r, ((tint >> 8) & 255) / 255 * l.g, (tint & 255) / 255 * l.b, 1);
+    e.sprite.color.copyFrom(this.scratchColor);
+  }
+
   private hasKey = (key: string): boolean => this.atlas.frames.has(key);
   private walkerLook = (i: number): number => walkerLookFor(this.hasKey, i);
 
@@ -111,11 +125,7 @@ export class Crowd3D {
       sprite.height = (rect.h / TILE_SIZE) * scale;
     }
 
-    if (e.tint !== tint) {
-      e.tint = tint;
-      this.scratchColor.set(((tint >> 16) & 255) / 255, ((tint >> 8) & 255) / 255, (tint & 255) / 255, 1);
-      sprite.color.copyFrom(this.scratchColor);
-    }
+    this.applyColor(e, tint);
     const c = billboardCenter(world.x, world.z, sprite.height, isoAlpha(quarter), beta);
     sprite.position.set(c.x, c.y, c.z);
   }
@@ -172,11 +182,7 @@ export class Crowd3D {
       sprite.height = (rect.h / TILE_SIZE) * scale;
     }
 
-    if (e.tint !== tint) {
-      e.tint = tint;
-      this.scratchColor.set(((tint >> 16) & 255) / 255, ((tint >> 8) & 255) / 255, (tint & 255) / 255, 1);
-      sprite.color.copyFrom(this.scratchColor);
-    }
+    this.applyColor(e, tint);
     // Chân sprite chạm đất (xem Actors3D): tâm = chân + (H/2)·(vector lên của camera).
     const c = billboardCenter(world.x, world.z + (sitting ? 5 / TILE_SIZE : 0), sprite.height, isoAlpha(ctx.quarter), ctx.beta);
     sprite.position.set(c.x, c.y, c.z);

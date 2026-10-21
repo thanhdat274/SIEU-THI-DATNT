@@ -5,9 +5,10 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Matrix } from '@babylonjs/core/Maths/math.vector';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import '@babylonjs/core/Meshes/thinInstanceMesh';
+import { SCALE_TARGETS } from './scale-spec';
 
-/** Bán kính vệt bóng tròn dưới chân nhân vật (ô). */
-export const ACTOR_SHADOW_RADIUS = 0.38;
+/** Bán kính vệt bóng tròn dưới chân nhân vật (ô) đọc từ scale-spec (~0.24). */
+export const ACTOR_SHADOW_RADIUS = SCALE_TARGETS.accessories.actorShadowRadius;
 
 /** Tính alpha bóng đổ theo mức sáng tự nhiên và giờ: ban ngày rõ nét (~0.35), ban đêm nhạt đi (~0.12). */
 export function actorShadowAlpha(sunIntensity: number, lampsOn: number): number {

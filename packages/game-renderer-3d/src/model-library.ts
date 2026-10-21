@@ -6,6 +6,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
 import '@babylonjs/loaders/glTF/index.js';
+import { SCALE_TARGETS } from './scale-spec';
 
 export type ModelKind =
   | 'tree'
@@ -17,7 +18,12 @@ export type ModelKind =
   | 'building_civic_clinic'
   | 'building_civic_police'
   | 'building_civic_school'
-  | 'building_low_detail_wide_a';
+  | 'building_low_detail_wide_a'
+  | 'furniture_fridge'
+  | 'furniture_fridge_large'
+  | 'furniture_fridge_small'
+  | 'furniture_kitchen_bar'
+  | 'furniture_computer_screen';
 
 export interface ModelSpec {
   url: string;
@@ -31,13 +37,13 @@ export interface ModelSpec {
 export const MODEL_CATALOG: Record<ModelKind, ModelSpec> = {
   tree: {
     url: '/assets/models/nature-kit/tree_default.glb',
-    scale: 1.0,
-    targetHeight: 1.7,
+    scale: ((SCALE_TARGETS.treeMin + SCALE_TARGETS.treeMax) / 2) / 1.708,
+    targetHeight: (SCALE_TARGETS.treeMin + SCALE_TARGETS.treeMax) / 2, // ~2.96 (1.85 * D)
   },
   street_lamp: {
     url: '/assets/models/city-kit-roads/light-curved.glb',
-    scale: 3.55, // 0.675 * 3.55 ≈ 2.40 (khớp chính xác chiều cao cột đèn cũ 2.4 ô)
-    targetHeight: 2.4,
+    scale: SCALE_TARGETS.streetLamp / 0.675, // 1.7 * D = 2.72
+    targetHeight: SCALE_TARGETS.streetLamp,
   },
   construction_barrier: {
     url: '/assets/models/city-kit-roads/construction-barrier.glb',
@@ -79,7 +85,41 @@ export const MODEL_CATALOG: Record<ModelKind, ModelSpec> = {
     scale: 6.0, // size 1.0x0.5x1.1 -> rộng ~6.0 ô, sâu ~3.0 ô, cao ~6.6 ô
     targetHeight: 6.6,
   },
+  furniture_fridge: {
+    url: '/assets/models/furniture-kit/kitchenFridge.glb',
+    scale: SCALE_TARGETS.fixtures.fridge / 0.917, // 0.90 * D = 1.44
+    targetHeight: SCALE_TARGETS.fixtures.fridge,
+  },
+  furniture_fridge_large: {
+    url: '/assets/models/furniture-kit/kitchenFridgeLarge.glb',
+    scale: SCALE_TARGETS.fixtures.fridge / 0.917,
+    targetHeight: SCALE_TARGETS.fixtures.fridge,
+  },
+  furniture_fridge_small: {
+    url: '/assets/models/furniture-kit/kitchenFridgeSmall.glb',
+    scale: (SCALE_TARGETS.fixtures.fridge * 0.8) / 0.60,
+    targetHeight: SCALE_TARGETS.fixtures.fridge * 0.8,
+  },
+  furniture_kitchen_bar: {
+    url: '/assets/models/furniture-kit/kitchenBar.glb',
+    scale: SCALE_TARGETS.fixtures.counter / 0.419, // 0.45 * D = 0.72
+    targetHeight: SCALE_TARGETS.fixtures.counter,
+  },
+  furniture_computer_screen: {
+    url: '/assets/models/furniture-kit/computerScreen.glb',
+    scale: 1.0,
+    targetHeight: 0.29,
+  },
 };
+
+/** Danh sách model nội thất sử dụng màu vật liệu gốc (material-color): giữ albedoColor, bỏ unlit, specular = 0. */
+export const MATERIAL_COLOR_MODELS: ReadonlySet<ModelKind> = new Set<ModelKind>([
+  'furniture_fridge',
+  'furniture_fridge_large',
+  'furniture_fridge_small',
+  'furniture_kitchen_bar',
+  'furniture_computer_screen',
+]);
 
 
 /** Danh sách model không cần texture ảnh mà được tô lại màu chuẩn bằng diffuseColor. */
@@ -242,6 +282,24 @@ export class ModelLibrary {
                 recolorMat.ambientColor = Color3.FromHexString('#143d12');
               }
               mesh.material = recolorMat;
+            }
+          } else if (MATERIAL_COLOR_MODELS.has(kind)) {
+            // Model nhóm "material-color": giữ màu gốc (albedoColor), bỏ unlit, specular = 0
+            for (const mesh of renderMeshes) {
+              const mat = mesh.material;
+              if (!mat) continue;
+              if (mat instanceof PBRMaterial) {
+                const std = new StandardMaterial(`${kind}_${mesh.name}_std`, scene);
+                std.diffuseColor = mat.albedoColor ? mat.albedoColor.clone() : Color3.White();
+                std.specularColor = Color3.Black();
+                if (mat.alpha !== undefined && mat.alpha < 1) {
+                  std.alpha = mat.alpha;
+                  std.transparencyMode = StandardMaterial.MATERIAL_ALPHABLEND;
+                }
+                mesh.material = std;
+              } else if (mat instanceof StandardMaterial) {
+                mat.specularColor = Color3.Black();
+              }
             }
           } else if (hasMissingTexture) {
             console.warn(`[ModelLibrary] Model ${kind} có material thiếu texture (diffuseTexture/albedoTexture là null), tự động chuyển sang fallback dựng bằng code.`);

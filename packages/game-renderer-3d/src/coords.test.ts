@@ -147,3 +147,8 @@ import './signals-data.test';
 
 import './logistics-umbrella-shadow.test';
 import './model-library.test';
+import './pointer-gesture.test';
+import './actor-light.test';
+import './character-models.test';
+import './car-models.test';
+import './scale-spec.test';
