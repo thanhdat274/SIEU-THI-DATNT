@@ -87,6 +87,11 @@ export class InteriorManager {
     }
   }
 
+  /** Phòng (gồm tường bao) của tòa `buildingId`, nếu có vỏ trong riêng. */
+  public boundsOf(buildingId: string): InteriorSpec['bounds'] {
+    return this.entries.find((e) => e.spec.buildingId === buildingId)?.spec.bounds;
+  }
+
   /** Số vỏ trong đang được dựng. */
   public get builtCount(): number {
     return this.entries.filter((e) => e.interior).length;

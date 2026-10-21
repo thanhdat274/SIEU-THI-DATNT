@@ -114,7 +114,15 @@ Quy ước hệ cục bộ của mảnh: x ngang (căn giữa), y lên từ 0 �
 - **Test:** hộp bao nằm gọn trong chân diện ở 4 hướng xoay (1×1 và 2×1), thân đúng tâm, đặt sát sàn, cao bằng chuẩn `SCALE_TARGETS.fixtures`; kính ở mặt trước; máy tính tiền và giỏ trên mặt quầy. Ảnh xem trước: [3d-grocery-furniture-4.5.jpg](3d-grocery-furniture-4.5.jpg).
 - **Chưa làm:** `endCapShelf` mới có mảnh và test, chưa có loại fixture để đặt trong game (cần thêm kiểu ở `@game/shared`).
 
-## 13. Checklist cho một asset mới
+## 13. "Vào trong" kiểu cảnh riêng (bước 4.6)
+
+- **Máy trạng thái thuần** `interior-mode.ts`: `outside → entering → inside → leaving → outside`; mỗi lần chuyển cảnh 0,5 s, tối dần rồi sáng dần quanh giữa. Hai chiều đối xứng nên đổi ý giữa chừng (vào rồi ra ngay) vẫn liên tục. `interiorView` cho viewport biết độ mờ và có cô lập tòa chưa.
+- **Cô lập tòa:** tới giữa chuyển cảnh (lúc màn hình tối), viewport cắt mọi thứ ngoài phòng bằng 4 mặt phẳng cắt của scene (phòng thật + khối kho gắn sau tiệm chính, lấy từ `InteriorSpec.bounds`), đồng thời bóc mái, đưa camera về giữa phòng (zoom tối đa bán kính 15) và bật đèn thả như buổi tối. Mô phỏng vẫn chạy, người chơi và khách trong phòng vẫn thấy.
+- **Thoát:** Esc hoặc đóng bảng tòa (`clearBuildingSelection`), nút gọi `exitBuilding`, hoặc **bước ra khỏi phòng sau khi đã từng ở trong** (vào từ ngoài không bị đá ra). Người chơi đi lại bình thường khi đang ở trong.
+- **Nút:** "Vào trong" ở `BuildingPanel` gọi `enterBuilding` như cũ.
+- **Chưa làm / hạn chế:** nhân vật người chơi đứng ngoài phòng vẫn hiện (không bị mặt phẳng cắt); các tòa khác chưa có vỏ trong nên vào là phòng trống; chưa có nút "Ra ngoài" trên bảng (dùng Esc/đóng bảng).
+
+## 14. Checklist cho một asset mới
 
 - [ ] Kích thước khai báo ở `scale-spec.ts`, hộp bao có test nằm trong chân diện/mặt tiền.
 - [ ] Mọi màu là token (hoặc vai trò trỏ về token), vật liệu không bóng.

@@ -384,6 +384,10 @@ export function buildCityMap(scene: Scene, map: GameTileMap): BuiltMap {
         interiors.push({
           buildingId,
           center,
+          bounds: {
+            x0: Math.min(...floorTiles.map(t => t.x)) - 1, x1: Math.max(...floorTiles.map(t => t.x)) + 2,
+            z0: Math.min(...floorTiles.map(t => t.z)) - 1, z1: Math.max(...floorTiles.map(t => t.z)) + 2,
+          },
           build: () => buildInterior({ scene, buildingId, visual: v, wallHeight: v.wallHeight, floorTiles, isWall: wallAt, doorTiles: doors.map(t => ({ x: t.x, z: t.y })) }),
         });
       }

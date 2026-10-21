@@ -94,5 +94,7 @@ export interface InteriorSpec {
   buildingId: string;
   /** Tâm vỏ trong (toạ độ thế giới) để đo khoảng cách tới camera. */
   center: { x: number; z: number };
+  /** Phòng thật (gồm tường bao), theo ô: [x0, x1) × [z0, z1). Dùng cô lập tòa khi "Vào trong". */
+  bounds?: { x0: number; z0: number; x1: number; z1: number };
   build: () => BuildingInterior;
 }

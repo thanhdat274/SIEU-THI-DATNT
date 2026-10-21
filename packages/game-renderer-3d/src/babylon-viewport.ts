@@ -21,6 +21,7 @@ import { Crowd3D } from './crowd-3d';
 import { Characters3D } from './characters-3d';
 import { Fixtures3D } from './fixtures-3d';
 import { InteriorManager } from './interior-manager';
+import { INTERIOR_OUTSIDE, enterInterior, exitInterior, insideFootprint, interiorView, observePlayer, stepInteriorMode, type InteriorModeState } from './interior-mode';
 import { Stock3D } from './stock-3d';
 import { Overlay3D } from './overlay-3d';
 import { Sky3D } from './sky-3d';
@@ -48,6 +49,14 @@ const SELECTION_FRAME_HEIGHT = 2.0;
 /** Độ dày thanh viền chọn (đơn vị thế giới). */
 const SELECTION_BAR_THICKNESS = 0.08;
 const SELECTION_COLOR = new Color3(1, 0.85, 0.25);
+/** Trong nhà (đã cô lập) đèn thả luôn sáng ấm như buổi tối: cường độ đèn tối thiểu. */
+const INTERIOR_LAMPS_ON = 0.6;
+/** Màu nền thế giới ngoài. */
+const WORLD_CLEAR_COLOR = '#2b3a2bff';
+/** Màu nền khi cô lập tòa: tối ấm, như một cảnh riêng. */
+const INTERIOR_CLEAR_COLOR = '#1f1a17ff';
+/** Camera trong nhà zoom tối đa tới bán kính này (nhỏ hơn = gần hơn). */
+const INTERIOR_CAMERA_RADIUS = 15;
 
 /** Renderer 3D (Babylon): bản đồ khối (map-builder), người chơi và bạn co-op dạng sprite pixel, camera iso pixel. */
 export class BabylonGameViewport implements GameViewport {
@@ -95,6 +104,10 @@ export class BabylonGameViewport implements GameViewport {
   private thunderCleanup: (() => void) | null = null;
   private inspectedBuildingId: string | null = null;
   private savedZoomRadius: number | null = null;
+  /** Chế độ "Vào trong" (interior-mode.ts): lớp mờ chuyển cảnh, cô lập tòa khỏi thế giới ngoài. */
+  private interiorMode: InteriorModeState = INTERIOR_OUTSIDE;
+  private interiorIsolated = false;
+  private fadeLayer: HTMLDivElement | null = null;
 
   private zoom = 2;
   private quarter = 0;
@@ -132,7 +145,7 @@ export class BabylonGameViewport implements GameViewport {
     // Hệ tay phải: Babylon mặc định hệ tay trái làm phép chiếu bị lật gương (điểm +X hiện bên trái màn hình
     // ngược bản 2D). Bật right-handed ngay khi tạo scene để +X hiện bên phải, khớp bản 2D.
     scene.useRightHandedSystem = true;
-    scene.clearColor = Color4.FromHexString('#2b3a2bff');
+    scene.clearColor = Color4.FromHexString(WORLD_CLEAR_COLOR);
 
     // Camera phối cảnh (fov dọc CAMERA_FOV); bán kính theo bậc zoom đặt ở applyZoom.
     const camera = new ArcRotateCamera('cam', isoAlpha(this.quarter), CAMERA_BETA, zoomRadius(this.zoom), Vector3.Zero(), scene);
@@ -183,6 +196,7 @@ export class BabylonGameViewport implements GameViewport {
     window.addEventListener('keydown', this.handleKeyDown);
     this.resizeObserver = new ResizeObserver(() => { this.applyResolution(); this.applyZoom(); });
     this.resizeObserver.observe(this.canvas);
+    this.createFadeLayer();
 
     this.thunderCleanup = onThunder(e => this.sky?.triggerThunder(e.strength));
     engine.runRenderLoop(this.renderTick);
@@ -295,10 +309,8 @@ export class BabylonGameViewport implements GameViewport {
     const renderPixel = this.playerPixel();
     const pos = pixelToWorld(...renderPixel);
     const focus = { x: pos.x + this.pan.x, z: pos.z + this.pan.z };
-    if (this.simulation.getIsMoving()) {
-      if (this.inspectedBuildingId) {
-        this.exitBuilding();
-      }
+    this.updateInteriorMode(elapsed, pos);
+    if (this.simulation.getIsMoving() && this.interiorMode.phase === 'outside') {
       this.pan = { x: 0, z: 0 };
       this.targetPan = { x: 0, z: 0 };
     }
@@ -445,7 +457,7 @@ export class BabylonGameViewport implements GameViewport {
     sky.update(t.hour, t.minute, t.day, weather.getRain(), elapsed);
     const skyLighting = lightingAt(t.hour, t.minute, t.day, weather.getRain());
     this.updateNightLighting?.(skyLighting.lampsOn);
-    this.interiors.setNight(skyLighting.lampsOn);
+    this.interiors.setNight(this.interiorIsolated ? Math.max(skyLighting.lampsOn, INTERIOR_LAMPS_ON) : skyLighting.lampsOn);
   }
 
   /** Bóc mái mượt: mái + tường mặt tiền mờ dần khi người chơi vào tòa (và kho thông với tiệm chính; tòa kề sát giữ mái), tường tòa che người chơi hạ còn OCCLUDER_ALPHA. */
@@ -612,43 +624,110 @@ export class BabylonGameViewport implements GameViewport {
     this.updateSelectionVisual();
   }
 
-  /** F2: Trượt camera tới cửa tòa, zoom gần và bóc mái bằng roof-fade. */
+  /** "Vào trong": mờ chuyển cảnh, cô lập tòa khỏi thế giới ngoài, bóc mái, camera chuyển về giữa tòa (xem interior-mode.ts). */
   public enterBuilding(id?: string): void {
     const targetId = id ?? this.selectedBuildingId;
     if (!targetId) return;
+    const next = enterInterior(this.interiorMode, targetId);
+    if (next === this.interiorMode) return;
+    this.interiorMode = next;
     this.inspectedBuildingId = targetId;
-    const b = this.tileMap.buildings?.find(item => item.id === targetId || (targetId.startsWith('grocery_main') && item.id.startsWith('grocery_main')));
-    let doorX = 14;
-    let doorZ = 12;
-    if (b) {
-      if (b.doorTiles && b.doorTiles.length > 0) {
-        doorX = b.doorTiles[0].x + 0.5;
-        doorZ = b.doorTiles[0].y + 0.5;
-      } else if (b.bounds) {
-        doorX = (b.bounds.left + b.bounds.right) / 2;
-        doorZ = b.bounds.bottom;
+    if (!this.savedZoomRadius && this.camera) this.savedZoomRadius = this.camera.radius;
+    if (this.camera) this.camera.radius = Math.min(this.camera.radius, INTERIOR_CAMERA_RADIUS);
+  }
+
+  /** Thoát chế độ "Vào trong" (Esc, đóng bảng, bước ra cửa): mờ chuyển cảnh rồi trả camera về người chơi và đậy lại mái. */
+  public exitBuilding(): void {
+    this.interiorMode = exitInterior(this.interiorMode);
+  }
+
+  /** Chân diện (x0..x1, z0..z1) tòa đang vào, hoặc null khi ở ngoài. */
+  private interiorFootprint(): { x0: number; z0: number; x1: number; z1: number } | null {
+    const id = this.interiorMode.buildingId;
+    if (!id) return null;
+    const room = this.interiors.boundsOf(id);
+    if (room) {
+      // Phòng thật cộng khối kho gắn sau tiệm chính (nếu có): hợp hai chữ nhật.
+      const out = { ...room };
+      for (const r of this.roofs) {
+        if (r.id !== id || !r.warehouse) continue;
+        out.x0 = Math.min(out.x0, r.x0); out.x1 = Math.max(out.x1, r.x1);
+        out.z0 = Math.min(out.z0, r.z0); out.z1 = Math.max(out.z1, r.z1);
       }
+      return out;
     }
-    const pp = this.playerPixel();
-    const pWorld = pixelToWorld(pp[0], pp[1]);
-    this.targetPan = { x: doorX - pWorld.x, z: doorZ - pWorld.z };
-    if (!this.savedZoomRadius && this.camera) {
-      this.savedZoomRadius = this.camera.radius;
+    const f = this.buildingFootprint(id);
+    return f.x1 > f.x0 ? { x0: f.x0, z0: f.y0, x1: f.x1, z1: f.y1 } : null;
+  }
+
+  /** Mỗi khung hình: tiến máy trạng thái, vẽ lớp mờ, cô lập/hết cô lập tòa, giữ camera giữa tòa, hoàn tất khi ra xong. */
+  private updateInteriorMode(elapsed: number, pos: { x: number; z: number }): void {
+    const footprint = this.interiorFootprint();
+    let mode = stepInteriorMode(this.interiorMode, elapsed);
+    if (footprint) mode = observePlayer(mode, insideFootprint(pos, footprint));
+    const wasInside = this.interiorMode.phase !== 'outside';
+    this.interiorMode = mode;
+    const view = interiorView(mode);
+    if (this.fadeLayer) this.fadeLayer.style.opacity = String(view.fade);
+    if (view.isolated !== this.interiorIsolated) {
+      this.interiorIsolated = view.isolated;
+      this.applyIsolation(view.isolated ? footprint : null);
+      if (view.isolated && footprint) this.snapPanTo(footprint, pos);
+      else this.snapPanHome();
     }
-    if (this.camera) {
-      this.camera.radius = Math.min(this.camera.radius, 15);
+    if (footprint && view.isolated) {
+      this.targetPan = { x: (footprint.x0 + footprint.x1) / 2 - pos.x, z: (footprint.z0 + footprint.z1) / 2 - pos.z };
+    }
+    if (wasInside && mode.phase === 'outside') {
+      this.inspectedBuildingId = null;
+      this.targetPan = { x: 0, z: 0 };
+      if (this.savedZoomRadius && this.camera) {
+        this.camera.radius = this.savedZoomRadius;
+        this.savedZoomRadius = null;
+      }
     }
   }
 
-  /** Trả camera về lại người chơi và đậy lại mái khi Esc hoặc người chơi di chuyển. */
-  public exitBuilding(): void {
-    if (!this.inspectedBuildingId) return;
-    this.inspectedBuildingId = null;
+  /** Lớp đen phủ canvas cho mờ chuyển cảnh (không chặn chuột). */
+  private createFadeLayer(): void {
+    const parent = this.canvas.parentElement;
+    if (!parent || this.fadeLayer) return;
+    const layer = document.createElement('div');
+    layer.setAttribute('aria-hidden', 'true');
+    layer.style.cssText = 'position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:5;';
+    if (getComputedStyle(parent).position === 'static') parent.style.position = 'relative';
+    parent.appendChild(layer);
+    this.fadeLayer = layer;
+  }
+
+  private snapPanTo(f: { x0: number; z0: number; x1: number; z1: number }, pos: { x: number; z: number }): void {
+    this.pan = { x: (f.x0 + f.x1) / 2 - pos.x, z: (f.z0 + f.z1) / 2 - pos.z };
+    this.targetPan = { ...this.pan };
+  }
+
+  private snapPanHome(): void {
+    this.pan = { x: 0, z: 0 };
     this.targetPan = { x: 0, z: 0 };
-    if (this.savedZoomRadius && this.camera) {
-      this.camera.radius = this.savedZoomRadius;
-      this.savedZoomRadius = null;
+  }
+
+  /** Cô lập tòa: cắt mọi thứ ngoài chân diện bằng 4 mặt phẳng cắt của scene và đổi màu nền; null = trả lại thế giới ngoài. */
+  private applyIsolation(f: { x0: number; z0: number; x1: number; z1: number } | null): void {
+    const scene = this.scene;
+    if (!scene) return;
+    if (!f) {
+      scene.clipPlane = null;
+      scene.clipPlane2 = null;
+      scene.clipPlane3 = null;
+      scene.clipPlane4 = null;
+      scene.clearColor = Color4.FromHexString(WORLD_CLEAR_COLOR);
+      return;
     }
+    // Mặt phẳng cắt bỏ phía dương của pháp tuyến: (-1,0,0,x0) cắt x < x0; (1,0,0,-x1) cắt x > x1; tương tự theo z.
+    scene.clipPlane = new Plane(-1, 0, 0, f.x0);
+    scene.clipPlane2 = new Plane(1, 0, 0, -f.x1);
+    scene.clipPlane3 = new Plane(0, 0, -1, f.z0);
+    scene.clipPlane4 = new Plane(0, 0, 1, -f.z1);
+    scene.clearColor = Color4.FromHexString(INTERIOR_CLEAR_COLOR);
   }
 
   public getSimulation(): GameSimulation {
@@ -877,6 +956,8 @@ export class BabylonGameViewport implements GameViewport {
 
   public destroy(): void {
     this.resizeObserver?.disconnect();
+    this.fadeLayer?.remove();
+    this.fadeLayer = null;
     this.canvas.removeEventListener('wheel', this.handleWheel);
     this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
     this.canvas.removeEventListener('contextmenu', this.preventMenu);

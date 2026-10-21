@@ -149,6 +149,7 @@ import './kit/kit.test';
 import './kit/batch.test';
 import './grocery-exterior.test';
 import './interior-manager.test';
+import './interior-mode.test';
 import './grocery-interior.test';
 
 import './signals-data.test';
