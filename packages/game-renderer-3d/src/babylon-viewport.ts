@@ -26,6 +26,9 @@ import { Weather3D } from './weather-3d';
 import { WorldDecor3D } from './world-decor-3d';
 import { Vehicles3D } from './vehicles-3d';
 import { TrafficSignals3D } from './traffic-signals-3d';
+import { ActorShadows3D } from './actor-shadows-3d';
+import { Umbrellas3D } from './umbrellas-3d';
+import { Logistics3D } from './logistics-3d';
 import { lightingAt } from './sky-3d';
 import { pickTarget, resolveTileTarget, type TileTarget } from './tile-target';
 import { ALPHA_HIDDEN, facadeAlpha, OCCLUDER_ALPHA, rayHitsBox, shouldOpenRoof, stepAlpha } from './roof-fade';
@@ -69,6 +72,10 @@ export class BabylonGameViewport implements GameViewport {
   private worldDecor: WorldDecor3D | null = null;
   private vehicles: Vehicles3D | null = null;
   private trafficSignals: TrafficSignals3D | null = null;
+  private actorShadows: ActorShadows3D | null = null;
+  private umbrellas: Umbrellas3D | null = null;
+  private logistics: Logistics3D | null = null;
+  private targetPan = { x: 0, z: 0 };
   private pendingPlanning: readonly PlanningOverlay[] = [];
   private pendingWaveOverlay = false;
   private actorAtlas: ActorAtlas | null = null;
@@ -135,9 +142,12 @@ export class BabylonGameViewport implements GameViewport {
     this.worldDecor.setTileMap(this.tileMap);
     this.worldDecor.setPlanning(this.pendingPlanning);
     if (this.pendingWaveOverlay) this.worldDecor.showWaveOverlay(true);
-    this.trafficSignals = new TrafficSignals3D(scene, this.sky);
     this.vehicles = new Vehicles3D(scene, this.simulation, this.sky);
     await this.vehicles.load();
+    this.trafficSignals = new TrafficSignals3D(scene, this.sky);
+    this.actorShadows = new ActorShadows3D(scene);
+    this.umbrellas = new Umbrellas3D(scene);
+    this.logistics = new Logistics3D(scene, this.simulation, this.vehicles, this.crowd);
 
     this.prevImageRendering = this.canvas.style.imageRendering;
     this.canvas.style.imageRendering = 'pixelated';
@@ -208,12 +218,25 @@ export class BabylonGameViewport implements GameViewport {
       CAMERA_BETA,
       this.getPartnerAvatar?.(),
     );
-    if (this.simulation.getIsMoving()) this.pan = { x: 0, z: 0 };
+    if (this.simulation.getIsMoving()) { this.pan = { x: 0, z: 0 }; this.targetPan = { x: 0, z: 0 }; }
     this.updateRoofFade(elapsed, pos);
     this.fixtures?.update(elapsed);
     this.stock?.update(elapsed);
     this.worldDecor?.update();
     this.trafficSignals?.update(elapsed, this.simulation.getIntersectionSignals(), this.simulation.getStoreFrontSignal());
+    this.logistics?.update(this.quarter, CAMERA_BETA, this.roofs);
+
+    // Camera pan animation (cho locateWarehouse mượt 0.4s)
+    const panDx = this.targetPan.x - this.pan.x;
+    const panDz = this.targetPan.z - this.pan.z;
+    if (Math.abs(panDx) > 0.001 || Math.abs(panDz) > 0.001) {
+      const panStep = Math.min(1, (elapsed / 0.4) * 2.5);
+      this.pan.x += panDx * panStep;
+      this.pan.z += panDz * panStep;
+    } else {
+      this.pan.x = this.targetPan.x;
+      this.pan.z = this.targetPan.z;
+    }
     // Sau khi mái đã bóc/đậy: khách trong tòa còn mái thì ẩn.
     const aspect = engine.getRenderWidth() / Math.max(1, engine.getRenderHeight());
     this.crowd?.update(
@@ -237,6 +260,22 @@ export class BabylonGameViewport implements GameViewport {
       radius: groundViewRadius(this.zoom, aspect, CAMERA_BETA),
       zoom: this.zoom,
     }, currentSkyLighting.lampsOn);
+
+    // Thu thập toàn bộ vị trí chân người để vẽ bóng mờ dưới chân
+    const visibleActors = this.crowd?.getVisibleActors() ?? [];
+    const allFeet: Array<{ x: number; z: number }> = [
+      { x: pos.x, z: pos.z },
+      ...visibleActors.map(a => pixelToWorld(a.x, a.y)),
+    ];
+    this.actorShadows?.update(allFeet, currentSkyLighting.sunIntensity, currentSkyLighting.lampsOn);
+
+    // Ô che mưa cho khách và người đi đường khi trời mưa
+    const rain = this.weather?.getRain() ?? this.simulation.getRainIntensity();
+    const rainActors = [
+      { id: 'player', x: renderPixel[0], y: renderPixel[1] },
+      ...visibleActors,
+    ];
+    this.umbrellas?.update(rainActors, rain, currentLightTime.day, this.quarter, CAMERA_BETA, this.roofs);
 
     // Khóa tâm camera theo lưới pixel ảo (ở mặt phẳng tâm) để sprite/mép khối quanh người chơi không "bơi" khi camera trượt.
     const step = (2 * this.halfHeight()) / Math.max(1, engine.getRenderHeight());
@@ -561,7 +600,29 @@ export class BabylonGameViewport implements GameViewport {
   public addFloatingGain(x: number, y: number, text: string, color: number = 0xf4a261): void {
     this.overlay?.addFloatingGain(x, y, text, color);
   }
-  public locateWarehouse(): void { this.pan = { x: 0, z: 0 }; }
+  public panToWorld(x: number, z: number): void {
+    const p = this.simulation.getPlayerData().position;
+    const playerWorld = pixelToWorld(p.x, p.y);
+    this.targetPan = {
+      x: x - playerWorld.x,
+      z: z - playerWorld.z,
+    };
+  }
+
+  public locateWarehouse(): void {
+    const p = this.simulation.getPlayerData().position;
+    const playerWorld = pixelToWorld(p.x, p.y);
+    const inWarehouse = p.x >= WAREHOUSE_BOUNDS.left * 32 && p.x < (WAREHOUSE_BOUNDS.right + 1) * 32 && p.y >= WAREHOUSE_BOUNDS.top * 32 && p.y < WAREHOUSE_BOUNDS.bottom * 32;
+    const targetY = WAREHOUSE_BOUNDS.top * 32 + (WAREHOUSE_BOUNDS.bottom - WAREHOUSE_BOUNDS.top) * 16;
+    const warehouseWorld = pixelToWorld(
+      WAREHOUSE_BOUNDS.left * 32 + (WAREHOUSE_BOUNDS.right - WAREHOUSE_BOUNDS.left + 1) * 16,
+      targetY + (inWarehouse ? 0 : 32),
+    );
+    this.targetPan = {
+      x: warehouseWorld.x - playerWorld.x,
+      z: warehouseWorld.z - playerWorld.z,
+    };
+  }
 
   public zoomIn(delta = 1): number { return this.setZoom(stepZoom(this.zoom, Math.abs(delta))); }
   public zoomOut(delta = 1): number { return this.setZoom(stepZoom(this.zoom, -Math.abs(delta))); }
@@ -612,6 +673,9 @@ export class BabylonGameViewport implements GameViewport {
     this.stock?.dispose();
     this.worldDecor?.dispose();
     this.trafficSignals?.dispose();
+    this.actorShadows?.dispose();
+    this.umbrellas?.dispose();
+    this.logistics?.dispose();
     this.vehicles?.dispose();
     this.actors?.dispose();
     this.actorAtlas?.manager.dispose();
@@ -629,6 +693,9 @@ export class BabylonGameViewport implements GameViewport {
     this.stock = null;
     this.worldDecor = null;
     this.trafficSignals = null;
+    this.actorShadows = null;
+    this.umbrellas = null;
+    this.logistics = null;
     this.vehicles = null;
     this.overlay = null;
     this.sky = null;

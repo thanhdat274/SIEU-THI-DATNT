@@ -122,3 +122,5 @@ import './wave-decor.test';
 import './vehicle-view.test';
 
 import './signals-data.test';
+
+import './logistics-umbrella-shadow.test';

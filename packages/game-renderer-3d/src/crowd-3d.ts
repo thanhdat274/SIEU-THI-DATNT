@@ -32,6 +32,7 @@ interface CrowdEntry {
  */
 export class Crowd3D {
   private readonly entries = new Map<string, CrowdEntry>();
+  private readonly externalEntries = new Map<string, CrowdEntry>();
   private readonly pool: Sprite[] = [];
   private readonly life: NeighborhoodLife;
   private readonly counterCenters = new Map<string, { x: number; y: number } | null>();
@@ -61,7 +62,68 @@ export class Crowd3D {
     return sprite;
   }
 
-  /** Đặt một người; bị mái che thì ẩn sprite. */
+  /** Đặt một người từ ngoài (logistics): quản lý trong externalEntries, không bị dọn bởi update() */
+  public placeExternalPerson(
+    id: string, look: number, x: number, y: number, facing: Direction | null, walkingOverride: boolean | null,
+    scale: number, tint: number, quarter: number, beta: number, roofs: readonly RoofInfo[],
+  ): void {
+    let e = this.externalEntries.get(id);
+    if (!e) {
+      e = { sprite: this.acquire(), look, direction: 'down', last: null, seen: 0, tint: 0xffffff };
+      this.externalEntries.set(id, e);
+    }
+    e.look = look;
+
+    const world = pixelToWorld(x, y);
+    const sprite = e.sprite;
+    if (hiddenByRoof(world.x, world.z, roofs)) {
+      sprite.isVisible = false;
+      e.last = { x, y };
+      return;
+    }
+    sprite.isVisible = true;
+
+    const dx = e.last ? x - e.last.x : 0;
+    const dy = e.last ? y - e.last.y : 0;
+    const walking = walkingOverride ?? Math.abs(dx) + Math.abs(dy) > 0.01;
+    e.direction = facing ?? directionFromDelta(dx, dy, e.direction);
+    e.last = { x, y };
+
+    const shown = facingForCamera(e.direction, quarter);
+    const reduced = this.motionQuery?.matches ?? false;
+    const frame = reduced ? 0 : Math.floor(this.animTimer * (walking ? 8 : 1.5)) % (walking ? 4 : 2);
+    const key = npcFrameKey(look, shown, walking, frame);
+    const rect = this.atlas.frames.get(key);
+    if (rect) {
+      sprite.cellRef = key;
+      sprite.width = (rect.w / TILE_SIZE) * scale;
+      sprite.height = (rect.h / TILE_SIZE) * scale;
+    }
+
+    if (e.tint !== tint) {
+      e.tint = tint;
+      this.scratchColor.set(((tint >> 16) & 255) / 255, ((tint >> 8) & 255) / 255, (tint & 255) / 255, 1);
+      sprite.color.copyFrom(this.scratchColor);
+    }
+    const c = billboardCenter(world.x, world.z, sprite.height, isoAlpha(quarter), beta);
+    sprite.position.set(c.x, c.y, c.z);
+  }
+
+  /** Xóa người đặt từ ngoài khi sự kiện kết thúc. */
+  public clearExternalPerson(id: string): void {
+    const e = this.externalEntries.get(id);
+    if (e) {
+      e.sprite.isVisible = false;
+      this.pool.push(e.sprite);
+      this.externalEntries.delete(id);
+    }
+  }
+
+  /** Tìm sprite người (nội bộ hoặc ngoài) phục vụ kiểm thử và debug. */
+  public findPersonSprite(id: string): Sprite | null {
+    return this.externalEntries.get(id)?.sprite ?? this.entries.get(id)?.sprite ?? null;
+  }
+
   private place(
     id: string, look: number, x: number, y: number, facing: Direction | null, walkingOverride: boolean | null,
     scale: number, tint: number, sitting: boolean, ctx: { quarter: number; beta: number; roofs: readonly RoofInfo[]; reduced: boolean },
@@ -189,10 +251,44 @@ export class Crowd3D {
     }
   }
 
+  /** Thu thập danh sách người đang hiển thị kèm id và vị trí chân pixel. */
+  public getVisibleActors(): Array<{ id: string; x: number; y: number }> {
+    const list: Array<{ id: string; x: number; y: number }> = [];
+    for (const [id, e] of this.entries) {
+      if (e.seen === this.frameId && e.sprite.isVisible && e.last) {
+        list.push({ id, x: e.last.x, y: e.last.y });
+      }
+    }
+    for (const [id, e] of this.externalEntries) {
+      if (e.sprite.isVisible && e.last) {
+        list.push({ id, x: e.last.x, y: e.last.y });
+      }
+    }
+    return list;
+  }
+
+  /** Thu thập vị trí chân pixel của toàn bộ người trong crowd đang hiển thị. */
+  public getVisibleFeet(): Array<{ x: number; y: number }> {
+    const feet: Array<{ x: number; y: number }> = [];
+    for (const e of this.entries.values()) {
+      if (e.seen === this.frameId && e.sprite.isVisible && e.last) {
+        feet.push(e.last);
+      }
+    }
+    for (const e of this.externalEntries.values()) {
+      if (e.sprite.isVisible && e.last) {
+        feet.push(e.last);
+      }
+    }
+    return feet;
+  }
+
   public dispose(): void {
     for (const e of this.entries.values()) e.sprite.dispose();
+    for (const e of this.externalEntries.values()) e.sprite.dispose();
     for (const s of this.pool) s.dispose();
     this.entries.clear();
+    this.externalEntries.clear();
     this.pool.length = 0;
     this.counterCenters.clear();
   }

@@ -48,6 +48,7 @@ function spriteBase(): string {
  */
 export class Vehicles3D {
   private readonly entries = new Map<string, VehicleEntry>();
+  private readonly externalEntries = new Map<string, VehicleEntry>();
   private readonly pool: Mesh[] = [];
   private readonly textures = new Map<string, VehicleTexture>();
   private readonly factory = new PixelTextureFactory();
@@ -129,6 +130,9 @@ export class Vehicles3D {
   public get activeCount(): number { return this.entries.size; }
 
   private sourceCanvas(key: string): HTMLCanvasElement {
+    if (typeof document === 'undefined') {
+      return { width: 32, height: 32, getContext: () => null } as unknown as HTMLCanvasElement;
+    }
     const f = this.atlasFrames.get(key);
     if (f && this.atlasImage) {
       const c = document.createElement('canvas');
@@ -144,6 +148,12 @@ export class Vehicles3D {
   private textureFor(key: string): VehicleTexture {
     const cached = this.textures.get(key);
     if (cached) return cached;
+    if (typeof document === 'undefined') {
+      const material = new StandardMaterial(`veh_mat_${key}`, this.scene);
+      const entry = { material, w: 64, h: 32 };
+      this.textures.set(key, entry);
+      return entry;
+    }
     const src = this.sourceCanvas(key);
     const tex = new DynamicTexture(`veh_${key}`, { width: src.width, height: src.height }, this.scene, false, Texture.NEAREST_SAMPLINGMODE);
     tex.hasAlpha = true;
@@ -174,7 +184,39 @@ export class Vehicles3D {
     return mesh;
   }
 
-  /** Đặt một xe: chân xe (px) tại (x, footY), khung hình `key`. */
+  /** Đặt một xe từ bên ngoài (logistics): quản lý trong externalEntries, không bị dọn bởi update() */
+  public placeExternalVehicle(id: string, key: string, x: number, footY: number, quarter: number, beta: number): void {
+    let e = this.externalEntries.get(id);
+    if (!e) {
+      e = { mesh: this.acquire(), key: '', seen: 0 };
+      this.externalEntries.set(id, e);
+    }
+    const t = this.textureFor(key);
+    if (e.key !== key) { e.key = key; e.mesh.material = t.material; }
+    e.mesh.isVisible = true;
+    const w = t.w / TILE_SIZE;
+    const h = t.h / TILE_SIZE;
+    e.mesh.scaling.set(w, h, 1);
+    const world = pixelToWorld(x, footY);
+    const c = billboardCenter(world.x, world.z, h, isoAlpha(quarter), beta);
+    e.mesh.position.set(c.x, c.y, c.z);
+  }
+
+  /** Xóa xe đặt từ bên ngoài khi sự kiện kết thúc. */
+  public clearExternalVehicle(id: string): void {
+    const e = this.externalEntries.get(id);
+    if (e) {
+      e.mesh.isVisible = false;
+      this.pool.push(e.mesh);
+      this.externalEntries.delete(id);
+    }
+  }
+
+  /** Tìm mesh của một xe (nội bộ hoặc ngoài) phục vụ kiểm thử và debug. */
+  public findVehicleMesh(id: string): Mesh | null {
+    return this.externalEntries.get(id)?.mesh ?? this.entries.get(id)?.mesh ?? null;
+  }
+
   private place(id: string, key: string, x: number, footY: number, quarter: number, beta: number): void {
     let e = this.entries.get(id);
     if (!e) {
@@ -267,8 +309,10 @@ export class Vehicles3D {
 
   public dispose(): void {
     for (const e of this.entries.values()) e.mesh.dispose();
+    for (const e of this.externalEntries.values()) e.mesh.dispose();
     for (const m of this.pool) m.dispose();
     this.entries.clear();
+    this.externalEntries.clear();
     this.pool.length = 0;
 
     for (const pair of this.lightEntries.values()) {

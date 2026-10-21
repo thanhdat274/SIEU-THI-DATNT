@@ -1,3 +1,64 @@
+# RENDERER 3D: SỬA TRIỆT ĐỂ XE TẢI & NHÂN VIÊN HẬU CẦN KHO BỊ DỌN NHẦM TRONG VÒNG CẬP NHẬT (21/10/2026, packages/game-renderer-3d)
+
+Sửa lỗi xe tải giao hàng và nhân viên bốc dỡ hàng không xuất hiện trong 3D dù `activeEvent` có dữ liệu, bổ sung test NullEngine và kiểm chứng QA thực tế:
+1. **Nguyên nhân bug gốc**:
+   - Trong `renderTick` (`babylon-viewport.ts`), `logistics.update()` chạy trước `crowd.update()` và `vehicles.update()`.
+   - `Vehicles3D.update()` và `Crowd3D.update()` tăng `this.frameId` ở đầu hàm rồi thu hồi mọi phần tử có `seen !== this.frameId`.
+   - Vì xe tải và nhân viên được đặt trước khi `vehicles.update()` và `crowd.update()` chạy, trường `seen` mang giá trị `frameId` của khung hình trước, dẫn đến việc ngay lập tức bị vòng lặp dọn dẹp coi là "không còn tồn tại" và thu hồi về pool trong cùng khung hình.
+2. **Phương án khắc phục (Phương án b - Tách map ngoài riêng biệt)**:
+   - Trong `Vehicles3D` (`vehicles-3d.ts`): Bổ sung `externalEntries = new Map<string, VehicleEntry>()`. Khi gọi `placeExternalVehicle(id, ...)`, đối tượng được lưu vào map riêng này, hoàn toàn không bị vòng quét theo `frameId` của các xe tuần tra tự động đụng tới. Bổ sung `clearExternalVehicle(id)` để trả mesh về pool khi sự kiện kết thúc.
+   - Trong `Crowd3D` (`crowd-3d.ts`): Bổ sung `externalEntries = new Map<string, CrowdEntry>()`. `placeExternalPerson(id, ...)` lưu vào map ngoài riêng; bổ sung `clearExternalPerson(id)` để ẩn sprite khi sự kiện kết thúc. Cập nhật `getVisibleActors()` và `getVisibleFeet()` tổng hợp cả `entries` và `externalEntries`.
+   - Trong `Logistics3D` (`logistics-3d.ts`): Khi `activeEvent` chuyển sang `null`, chủ động gọi `vehicles.clearExternalVehicle('logistics_truck')` và `crowd.clearExternalPerson('logistics_worker')`, đảm bảo dọn sạch sẽ xe và nhân viên mà không để kẹt lại đối tượng rác.
+   - Thứ tự gọi trong `renderTick` hoàn toàn độc lập, không còn bị phụ thuộc thứ tự frame.
+3. **Kiểm thử tự động với NullEngine (`logistics-umbrella-shadow.test.ts`)**:
+   - Viết test mô phỏng vòng lặp render đầy đủ: gọi `logistics.update()` TRƯỚC `crowd.update()` và `vehicles.update()`.
+   - Assert mesh xe tải `isVisible === true` và sprite nhân viên `isVisible === true` sau khung hình (chứng minh không còn bị ẩn nhầm).
+   - Assert khi `activeEvent = null`: xe tải và nhân viên biến mất (`isVisible === false`), thùng hàng ẩn (`boxMesh.isVisible === false`).
+4. **Kiểm tra tiêu chuẩn**:
+   - `yarn typecheck`: PASS (0 lỗi).
+   - `yarn --cwd packages/game-renderer-3d test`: PASS 13/13 test suites.
+   - `npx eslint packages/game-renderer-3d`: 0 error, 0 warning.
+5. **QA Browser — Dữ liệu kiểm chứng thực tế (.qa/qa-p1-logistics-real/)**:
+   - `01-truck-approaching.png`: Xe tải màu xanh đang tiến vào bến bốc dỡ từ phía đông (truckPos: x=1137, y=422.4, phase: "approaching", statusText: "Xe giao hàng Đại lý Nước giải khát và Thực phẩm đang tiến vào bãi", truckVisible: true).
+   - `02-worker-carrying-box.png`: Nhân viên bốc hàng ôm thùng carton màu nâu vàng trên tay di chuyển về phía kho (workerPos: x=767.5, y=388.5, direction: "left", carryingBox: true, boxType: "carton", boxVisible: true, boxPos: { x: 23.89, y: 0.75, z: 11.91 }, truckPos: x=688, y=422.4, truckVisible: true).
+   - `03-logistics-unloading.png`: Nhân viên quay trở lại xe để dỡ kiện hàng tiếp theo (boxesRemaining: 4/5, carryingBox: false, boxVisible: false, direction: "right", truckPos: x=688, y=422.4, truckVisible: true, workerVisible: true).
+   - `04-delivery-completed-no-truck.png`: Đơn hàng hoàn tất, activeEvent = null; xe tải và nhân viên biến mất hoàn toàn khỏi bến bốc dỡ (truckMeshExists: false, workerSpriteExists: false, boxVisible: false).
+
+# RENDERER 3D: HOÀN THIỆN HẬU CẦN KHO, Ô MƯA, BÓNG CHÂN & LOCATE WAREHOUSE (21/10/2026, packages/game-renderer-3d)
+
+Tiếp tục hoàn thiện các hạng mục P1 còn lại theo docs/plans/3d-migration-plan.md, sửa lỗi hiển thị và kiểm chứng thực tế:
+1. **Hậu cần kho 3D (Logistics3D)**:
+   - Module `logistics-3d.ts`: Đọc trạng thái sự kiện `sim.getLogisticsState().activeEvent`.
+   - Xe tải giao hàng tới bến: Gọi `vehicles.placeExternalVehicle()` để tái sử dụng mesh xe tải của Vehicles3D (tùy theo loại xe `truckType`, hướng nhìn, vị trí đỗ bến).
+   - Nhân viên bốc dỡ hàng: Gọi `crowd.placeExternalPerson()` đặt sprite nhân viên đi lại giữa bến bốc dỡ và kho lưu trữ.
+   - Thùng hàng trên tay: Khối 3D `boxMesh` gắn vật liệu theo `boxType` (`carton` vàng nâu, `foam_cold` trắng ngà, `produce_crate` xanh lá, v.v.), vị trí bám theo ngực nhân viên qua hàm `logisticsBoxPosition()`. Khi nhân viên quay về lấy thùng tiếp theo, thùng ẩn đi chính xác.
+   - Hoàn toàn tái sử dụng Vehicles3D và Crowd3D, không tạo thêm SpriteManager riêng.
+2. **Ô che mưa / áo mưa (Umbrellas3D)**:
+   - Module `umbrellas-3d.ts`: Khi `rainIntensity > 0`, tự động bật ô cho người đi đường và khách hàng theo cơ chế `getRainProtection` / `rainGearProfile` của Pixi.
+   - Sửa logic kiểm tra: Trong `crowd-3d.ts`, cung cấp `getVisibleActors()` để lấy đúng id nhân vật thật (thay vì id giả), đảm bảo hồ sơ ô/áo mưa cố định theo id. Khi trời mưa ở ngoài trời (kể cả dưới mái hiên ngoài tiệm), nhân vật mở ô che mưa với màu sắc tương ứng (`red`, `green`, `blue`, `yellow`, `orange`).
+   - Dựng đĩa tròn che mưa đặt trên đỉnh đầu nhân vật.
+3. **Bóng chân nhân vật (ActorShadows3D)**:
+   - Module `actor-shadows-3d.ts`: Thin instances của đĩa tròn dẹt mờ (`CreateDisc`, bán kính 0.38).
+   - Đặt cao độ `actorShadowElevation(x, z)`: Trên vỉa hè (z >= 11) bóng nâng lên Y = 0.085 để không bị lẹm/chìm vào khối vỉa hè; dưới lòng đường Y = 0.006.
+   - Hàm `actorShadowAlpha(sunIntensity, lampsOn)`: Ban ngày rõ nét (~0.38), ban đêm nhạt đi (~0.12) theo mức sáng tự nhiên.
+4. **Locate Warehouse (trượt mượt tới kho)**:
+   - Trong `babylon-viewport.ts`: `locateWarehouse()` tính vector độ dời từ người chơi tới tâm `WAREHOUSE_BOUNDS` và trượt camera mượt mà trong ~0.4s qua biến `targetPan` và nội suy `pan`. Tự động hoàn trả camera bám người chơi khi bấm di chuyển. Thêm `panToWorld(x, z)` hỗ trợ điều khiển camera tới bến bốc dỡ khi cần.
+5. **Kiểm thử tự động & ESLint**:
+   - Viết test thuần `logistics-umbrella-shadow.test.ts` kiểm tra:
+     - Dữ liệu sự kiện hậu cần -> tọa độ xe tải, nhân viên, thùng hàng trên tay.
+     - Điều kiện mở ô mưa: trời tạnh vs mưa to, ngoài trời vs trong nhà.
+     - Độ đậm nhạt của bóng chân: ban ngày rõ nét (>0.30) vs ban đêm nhạt (<0.16).
+   - `yarn typecheck`: EXIT 0.
+   - `yarn --cwd packages/game-renderer-3d test`: PASS toàn bộ 13 test suites.
+   - `npx eslint packages/game-renderer-3d`: 0 error, 0 warning.
+6. **QA Browser — Dữ liệu kiểm chứng thực tế (.qa/qa-p1-verify/)**:
+   - `01-daytime-shadows-zoom4.png`: Người chơi đứng ngoài trời trên vỉa hè lúc 12h trưa, zoom 4; vệt bóng tròn mờ sẫm dưới chân rõ nét. Số liệu đo: giờ game 12:00, alpha bóng = 0.376, thinInstanceCount = 1.
+   - `02-heavy-rain-umbrellas.png`: Trời mưa to (rainIntensity = 0.74, 403 hạt mưa đang rơi), 11 chiếc ô (đỏ, xanh lá, xanh dương, vàng, cam) mở trên đầu người chơi và toàn bộ khách/người đi đường ngoài trời (outdoorActors = 10 + player).
+   - `03-logistics-truck-approaching.png`: Camera đặt tại bến bốc dỡ (x=21.5, z=12.5), xe tải giao hàng dry_goods màu xanh tiến vào bãi từ phía đông (truckPos: x=1158, y=422.4), nhân viên đứng chờ tại bến (x=582.4, y=377.6).
+   - `04-logistics-worker-carrying.png`: Xe tải đã đỗ tại bến (x=688, y=422.4), nhân viên bốc hàng ôm thùng carton màu nâu vàng ngang ngực quay vào kho (carryingBox = true, boxPos: x=23.77, y=0.75, z=11.90, boxVisible = true).
+   - `05-logistics-unloading-dock.png`: Nhân viên quay lại xe dỡ kiện hàng tiếp theo (boxesRemaining: 4/5, carryingBox = false, boxVisible = false).
+   - `06-locate-warehouse-view.png`: Bấm locateWarehouse, camera trượt mượt về trung tâm kho (target: x=10.22, z=1.25, targetPan: { x: 0, z: -11.5 }).
+
 # RENDERER 3D: HOÀN THIỆN P1 — SỬA XE LÓA, ĐÈN XE ĐÊM, ĐÈN GIAO THÔNG, VẠCH QUA ĐƯỜNG & NGƯỜI ĐI BỘ (21/10/2026, packages/game-renderer-3d)
 
 Sửa và hoàn thiện toàn bộ danh sách P1 đồ họa 3D theo yêu cầu:
