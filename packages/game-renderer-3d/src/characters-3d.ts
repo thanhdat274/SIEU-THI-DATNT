@@ -21,10 +21,6 @@ import {
   CHARACTER_CATALOG,
   CHARACTER_MODELS,
   TARGET_CHARACTER_HEIGHT,
-  characterModelForDelivery,
-  characterModelForId,
-  characterModelForPartner,
-  characterModelForPlayer,
   shouldHaveNonLa,
   stepYawTowards,
   targetYawFromMovement,
@@ -37,6 +33,15 @@ import { hiddenByRoof } from './crowd-3d';
 import { shouldOpenUmbrella } from './umbrellas-3d';
 import { CARGO_BOX_COLORS } from './logistics-3d';
 import type { LightTint } from './actor-light';
+import { createStreetVendorCart } from './character-outfits-3d';
+import {
+  neighborhoodArchetype,
+  pedestrianArchetype,
+  resolveCharacterAppearance,
+  staffArchetype,
+  type CharacterArchetype,
+  type CharacterAppearanceSpec,
+} from './character-appearance';
 
 export interface PartnerAvatarInfo {
   position: Vector2D;
@@ -69,6 +74,8 @@ interface CharacterInstance {
   nonLaMesh: Mesh | null;
   umbrellaMesh: Mesh | null;
   cargoBoxMesh: Mesh | null;
+  archetype: CharacterArchetype;
+  roleAccessoryMeshes: Mesh[];
   seenFrame: number;
 }
 
@@ -76,6 +83,7 @@ export class Characters3D {
   private readonly containers = new Map<CharacterModelKind, AssetContainer>();
   private readonly instances = new Map<string, CharacterInstance>();
   private readonly pool = new Map<CharacterModelKind, CharacterInstance[]>();
+  private readonly appearanceCache = new Map<string, CharacterAppearanceSpec>();
   private isLoaded = false;
   private loadFailed = false;
   private frameId = 0;
@@ -117,6 +125,14 @@ export class Characters3D {
     return this.allFeet;
   }
 
+  private resolveAppearance(id: string, seed: number | undefined, archetype: CharacterArchetype): CharacterAppearanceSpec {
+    const existing = this.appearanceCache.get(id);
+    if (existing?.archetype === archetype) return existing;
+    const appearance = resolveCharacterAppearance({ identity: id, seed, archetype });
+    this.appearanceCache.set(id, appearance);
+    return appearance;
+  }
+
   public setOpenedWaves(openedWaves: readonly string[]): void {
     this.life.setOpenedWaves(openedWaves);
   }
@@ -140,18 +156,19 @@ export class Characters3D {
           return null;
         }
 
-        // Cấu hình vật liệu pixel crisp
+        // Character textures are color atlases, not pixel-art sprites. Use linear
+        // sampling so their appearance matches the smooth low-poly 3D style.
         for (const mat of container.materials) {
           if (mat instanceof StandardMaterial) {
             mat.specularColor = Color3.Black();
             if (mat.diffuseTexture instanceof Texture) {
-              mat.diffuseTexture.updateSamplingMode(Texture.NEAREST_SAMPLINGMODE);
+              mat.diffuseTexture.updateSamplingMode(Texture.BILINEAR_SAMPLINGMODE);
             }
           } else if (mat instanceof PBRMaterial) {
             mat.metallic = 0;
             mat.roughness = 1;
             if (mat.albedoTexture instanceof Texture) {
-              mat.albedoTexture.updateSamplingMode(Texture.NEAREST_SAMPLINGMODE);
+              mat.albedoTexture.updateSamplingMode(Texture.BILINEAR_SAMPLINGMODE);
             }
           }
         }
@@ -208,7 +225,7 @@ export class Characters3D {
     return mat;
   }
 
-  private createInstance(kind: CharacterModelKind, id: string): CharacterInstance | null {
+  private createInstance(kind: CharacterModelKind, id: string, archetype: CharacterArchetype): CharacterInstance | null {
     const container = this.containers.get(kind);
     if (!container) return null;
 
@@ -271,6 +288,10 @@ export class Characters3D {
     cargoBox.isPickable = false;
     cargoBox.setEnabled(false);
 
+    const roleAccessoryMeshes = archetype === 'street_vendor'
+      ? createStreetVendorCart(this.scene, root, id, spec.scale)
+      : [];
+
     return {
       id,
       kind,
@@ -286,11 +307,13 @@ export class Characters3D {
       nonLaMesh: nonLa,
       umbrellaMesh: umbrella,
       cargoBoxMesh: cargoBox,
+      archetype,
+      roleAccessoryMeshes,
       seenFrame: this.frameId,
     };
   }
 
-  private acquireInstance(kind: CharacterModelKind, id: string): CharacterInstance | null {
+  private acquireInstance(kind: CharacterModelKind, id: string, archetype: CharacterArchetype): CharacterInstance | null {
     let poolList = this.pool.get(kind);
     if (!poolList) {
       poolList = [];
@@ -299,7 +322,7 @@ export class Characters3D {
 
     let inst = poolList.pop();
     if (!inst) {
-      inst = this.createInstance(kind, id) ?? undefined;
+      inst = this.createInstance(kind, id, archetype) ?? undefined;
     }
     if (inst) {
       inst.id = id;
@@ -325,16 +348,24 @@ export class Characters3D {
     hasUmbrella = false,
     umbrellaColor = '#3b82f6',
     carryingBoxType: string | null = null,
+    archetype: CharacterArchetype = 'pedestrian',
   ): void {
     let inst = this.instances.get(id);
     if (!inst) {
-      inst = this.acquireInstance(kind, id) ?? undefined;
+      inst = this.acquireInstance(kind, id, archetype) ?? undefined;
       if (!inst) return;
       inst.prevX = worldX;
       inst.prevZ = worldZ;
       inst.root.position.set(worldX, elevation, worldZ);
     }
     inst.seenFrame = this.frameId;
+    if (inst.archetype !== archetype) {
+      inst.archetype = archetype;
+      if (archetype === 'street_vendor' && inst.roleAccessoryMeshes.length === 0) {
+        inst.roleAccessoryMeshes = createStreetVendorCart(this.scene, inst.root, id, CHARACTER_CATALOG[kind].scale);
+      }
+      for (const mesh of inst.roleAccessoryMeshes) mesh.setEnabled(archetype === 'street_vendor');
+    }
 
     // Ẩn nếu ở trong tòa nhà có mái che chưa bóc
     const isHidden = hiddenByRoof(worldX, worldZ, roofs);
@@ -424,13 +455,19 @@ export class Characters3D {
     const pWorld = pixelToWorld(playerRenderPixel[0], playerRenderPixel[1]);
     this.updatePerson(
       'player',
-      characterModelForPlayer(),
+      this.resolveAppearance('player', undefined, 'player').modelKind,
       pWorld.x,
       pWorld.z,
       playerMoving,
       0,
       elapsed,
       roofs,
+      undefined,
+      undefined,
+      false,
+      '#3b82f6',
+      null,
+      'player',
     );
 
     // 2. BẠN CO-OP (character_male_a)
@@ -451,13 +488,19 @@ export class Characters3D {
 
       this.updatePerson(
         'partner',
-        characterModelForPartner(),
+        this.resolveAppearance('partner', undefined, 'partner').modelKind,
         partWorld.x,
         partWorld.z,
         isPartMoving,
         0,
         elapsed,
         roofs,
+        undefined,
+        undefined,
+        false,
+        '#3b82f6',
+        null,
+        'partner',
       );
     }
 
@@ -467,7 +510,7 @@ export class Characters3D {
       const c = customers[idx];
       const id = "c:" + (c.id ?? c.checkoutId ?? idx);
       const cWorld = pixelToWorld(c.position.x, c.position.y);
-      const kind = characterModelForId(id, c.lookSeed ?? idx);
+      const kind = this.resolveAppearance(id, c.lookSeed ?? idx, 'customer').modelKind;
       const { open: hasUmbrella, color: umbColor } = shouldOpenUmbrella(
         currentRain,
         c.id ?? String(idx),
@@ -490,6 +533,8 @@ export class Characters3D {
         c.lookSeed ?? idx,
         hasUmbrella,
         umbColor,
+        null,
+        'customer',
       );
     }
 
@@ -500,7 +545,8 @@ export class Characters3D {
       const p = w.position ?? { x: 300 + idx * TILE_SIZE, y: 300 };
       const id = "s:" + w.id;
       const sWorld = pixelToWorld(p.x, p.y);
-      const kind = characterModelForId(id, idx + 3);
+      const archetype = staffArchetype(w.role);
+      const kind = this.resolveAppearance(id, idx + 3, archetype).modelKind;
 
       this.updatePerson(
         id,
@@ -513,6 +559,10 @@ export class Characters3D {
         roofs,
         undefined,
         idx + 3,
+        false,
+        '#3b82f6',
+        null,
+        archetype,
       );
     }
 
@@ -526,7 +576,7 @@ export class Characters3D {
 
       this.updatePerson(
         id,
-        characterModelForDelivery(),
+        this.resolveAppearance(id, 6, 'courier').modelKind,
         wWorld.x,
         wWorld.z,
         true,
@@ -538,6 +588,7 @@ export class Characters3D {
         false,
         "",
         carryingBox,
+        'courier',
       );
     }
 
@@ -572,7 +623,8 @@ export class Characters3D {
       if (ped.position.x < cx - r - 64 || ped.position.x > cx + r + 64 || ped.position.y < cy - r - 64 || ped.position.y > cy + r + 64) continue;
       const id = "sp:" + ped.id;
       const pedWorld = pixelToWorld(ped.position.x, ped.position.y);
-      const kind = characterModelForId(id, ped.variant);
+      const archetype = pedestrianArchetype(ped.activity);
+      const kind = this.resolveAppearance(id, ped.variant, archetype).modelKind;
       const { open: hasUmbrella, color: umbColor } = shouldOpenUmbrella(
         currentRain,
         id,
@@ -594,6 +646,8 @@ export class Characters3D {
         ped.variant,
         hasUmbrella,
         umbColor,
+        null,
+        archetype,
       );
     }
 
@@ -603,7 +657,8 @@ export class Characters3D {
       if (n.x < cx - r - 64 || n.x > cx + r + 64 || n.y < cy - r - 64 || n.y > cy + r + 64) return;
       const id = "n:" + n.id;
       const nWorld = pixelToWorld(n.x, n.y);
-      const kind = characterModelForId(id, n.spriteVariant);
+      const archetype = neighborhoodArchetype(n.type);
+      const kind = this.resolveAppearance(id, n.spriteVariant, archetype).modelKind;
       const { open: hasUmbrella, color: umbColor } = shouldOpenUmbrella(
         currentRain,
         n.id,
@@ -626,6 +681,8 @@ export class Characters3D {
         n.spriteVariant,
         hasUmbrella,
         umbColor,
+        null,
+        archetype,
       );
 
       if (n.bubble && bubbleIndex < maxBubbles) {
@@ -665,6 +722,7 @@ export class Characters3D {
         inst.walkAnim?.stop();
         inst.currentAnim = null;
         this.instances.delete(id);
+        this.appearanceCache.delete(id);
         const pList = this.pool.get(inst.kind);
         if (pList) pList.push(inst);
       }
@@ -692,6 +750,7 @@ export class Characters3D {
       }
     }
     this.pool.clear();
+    this.appearanceCache.clear();
 
     for (const container of this.containers.values()) {
       container.dispose();

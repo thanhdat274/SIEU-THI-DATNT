@@ -8,6 +8,8 @@ Nguồn chân lý trong code: bảng màu `packages/game-data/src/style-palette.
 
 Cảm giác khi nhìn: **thị trấn đồ chơi ấm áp** (tinh thần Cafeland), dễ đọc ở khoảng cách camera xa, chi tiết đủ để thấy "có người sống và buôn bán" khi zoom gần. Không cố giống thật, không pixel, không phô trương.
 
+**Nhân vật:** người chơi, co-op và NPC theo cùng hướng low-poly hoạt hình, không pixel. Gallery DEV `apps/web/character-gallery.html` dùng để so 12 model hiện tại cạnh mốc cửa 1,60m và chiều cao người 1,28m. Gallery đã xem trước prototype; texture renderer đổi sang bilinear sampling. Prototype người bán hàng rong dùng xe đẩy 3D low-poly (khung gỗ nâu, tay đẩy kim loại xám, rau củ đỏ/xanh/vàng), gắn theo role và dùng vật liệu cache theo Scene. Sau prototype, gallery báo 12/12 GLB và không có console error; ảnh không capture được nên chưa nghiệm thu hình học. Các outfit role khác chưa có mesh.
+
 ## 2. Năm nguyên tắc
 
 1. **Khối đơn giản, chi tiết bằng phụ kiện.** Hình chính là khối hộp/trụ sạch; sự phong phú đến từ phào, khung, bậu, biển, đồ trưng, không từ đa giác nhỏ.

@@ -1,4 +1,5 @@
 import { Engine } from '@babylonjs/core/Engines/engine';
+import { SceneInstrumentation } from '@babylonjs/core/Instrumentation/sceneInstrumentation';
 import { Scene } from '@babylonjs/core/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
@@ -72,6 +73,7 @@ export class BabylonGameViewport implements GameViewport {
 
   private engine: Engine | null = null;
   private scene: Scene | null = null;
+  private qaInstrumentation: SceneInstrumentation | null = null;
   private camera: ArcRotateCamera | null = null;
   private mapMeshes: Mesh[] = [];
   private roofs: RoofInfo[] = [];
@@ -158,6 +160,10 @@ export class BabylonGameViewport implements GameViewport {
 
     this.engine = engine;
     this.scene = scene;
+    const isDev = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV === true;
+    if (isDev && new URLSearchParams(window.location.search).get('perf') === '1') {
+      this.qaInstrumentation = new SceneInstrumentation(scene);
+    }
     this.camera = camera;
     this.actorAtlas = await createActorAtlas(scene);
     this.actors = new Actors3D();
@@ -435,6 +441,9 @@ export class BabylonGameViewport implements GameViewport {
 
     this.updateSky(elapsed, pos);
     scene.render();
+    if (this.qaInstrumentation && typeof window !== 'undefined') {
+      (window as Window & { __babylonDrawCalls?: number }).__babylonDrawCalls = this.qaInstrumentation.drawCallsCounter.current;
+    }
     this.overlay?.update(elapsed, this.quarter, CAMERA_BETA, this.roofs, this.getPartnerAvatar?.(), talkBubbles);
   };
 
@@ -983,6 +992,8 @@ export class BabylonGameViewport implements GameViewport {
     this.actorAtlas?.manager.dispose();
     for (const m of this.selectionFrameBars) m.dispose();
     this.selectionGroundMesh?.dispose();
+    this.qaInstrumentation?.dispose();
+    this.qaInstrumentation = null;
     this.scene?.dispose();
     this.engine?.dispose();
     ModelLibrary.resetInstance();

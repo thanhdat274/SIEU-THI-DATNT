@@ -1,8 +1,36 @@
 # Kế hoạch chuyển sang 3D (Babylon.js, phong cách pixel nổi khối)
 
-> Trạng thái: A ✅, B ✅, C1–C4 ✅ (đã tích hợp asset Kenney 3D cho civic, cây, đèn, phụ kiện), C5 chưa làm, D ✅, E1–E3 ✅, F1–F2 ✅, G1–G3 ✅, H1 ✅ (3D là mặc định từ 2026-10-21; `?r=2d` hoặc cài đặt để về 2D cổ điển), H2 chưa làm. Ngày cập nhật: 2026-10-21.
+> Trạng thái: A ✅, B ✅, C1–C4 ✅ (đã tích hợp asset Kenney 3D cho civic, cây, đèn, phụ kiện), C5 chưa làm, D ✅, E1–E3 ✅, F1–F2 ✅, G1–G3 ✅, H1 ✅ (3D là mặc định từ 2026-10-21; `?r=2d` hoặc cài đặt để về 2D cổ điển), H2 chưa làm. Bước 4.7 (QA tạp hóa v1): ĐÃ QA MỘT PHẦN, CHƯA KHÓA — kiểm tra runtime ngày/đêm/mưa, mở bảng tòa và vào nội thất; FPS trung bình 57.0–57.6, 125–142 draw calls/khung ở render target 426×184. Ảnh được xem trong phiên QA nhưng chưa lưu thành file trong `.qa`; giới hạn cấu hình và tiêu chí khóa ở mục Bước 4.7. Ngày cập nhật: 2026-10-22.
 > Nguyên tắc: mỗi bước là một thay đổi nhỏ, chạy được, test được, có thể dừng ở bất kỳ bước nào mà game vẫn chơi được.
 
+## Bước 4.7 — Khóa và QA tạp hóa v1 (2026-10-22)
+
+**Trạng thái: QA runtime một phần; chưa ký khóa v1.** Phạm vi: cảnh tạp hóa ngày/đêm/mưa, bảng chi tiết tòa, vào nội thất, FPS và draw calls. Đây là QA renderer hiện tại, không thay đổi gameplay/save.
+
+### Kết quả runtime
+
+| Cảnh | FPS TB | p1 | p95 khung | Khung chậm nhất | Draw calls/khung | Ghi chú |
+|---|---:|---:|---:|---:|---:|---|
+| Ngày (`?debugTime=1:12:30:0`) | 57.2 | 26.2 | 25.0 ms | 49.9 ms | 127 | 287 mẫu / cửa sổ 5 giây |
+| Đêm (`?debugTime=1:22:0:0`) | 57.0 | 29.9 | 17.0 ms | 91.8 ms | 142 | 285 mẫu / cửa sổ 5 giây |
+| Mưa (`?debugTime=1:14:30:0.9`) | 57.6 | 29.9 | 17.0 ms | 98.0 ms | 125 | 289 mẫu / cửa sổ 5 giây |
+
+- Cấu hình: trình duyệt QA local, viewport 1280×720, DPR 1; màn hình báo 1920×1080. Canvas cảnh game là 1280×554 CSS và render target 426×184 (độ phân giải nội bộ 1/3 chiều rộng/cao). Đo bằng `?perf=1`, cửa sổ trượt 5 giây sau khi tải cảnh ổn định; FPS là trung bình frame-time, p1 là FPS tính từ frame chậm nhất 1%, p95 là frame-time phân vị 95.
+- Đã quan sát bằng mắt ba cảnh; ban đêm có ánh sáng cửa sổ/đèn đường, mưa có hạt mưa và mặt đường ướt. Ảnh là output chụp trong phiên trình duyệt ngày 22/10 nhưng công cụ giao diện không cung cấp đường lưu PNG, nên chưa có file tham chiếu bền vững trong `.qa`.
+- Tương tác: click tòa tạp hóa mở bảng chi tiết (tình trạng, doanh thu, khách, nhân viên, tồn kho); nút “Vào trong” chuyển camera vào nội thất. PASS trong phiên local demo.
+- Console lỗi trình duyệt: 0. `yarn typecheck`: PASS. `yarn --cwd packages/game-renderer-3d test`: PASS (toàn bộ test runner). `yarn --cwd apps/web build`: PASS; `npx eslint apps/web/src/services/perf-overlay.ts packages/game-renderer-3d/src/babylon-viewport.ts`: PASS; build có cảnh báo chunk lớn và một dynamic import không tách chunk (không phát sinh bởi đo QA).
+
+### Công cụ đo
+
+- Bổ sung phép đo draw calls chỉ trong DEV khi URL có `?perf=1`: bật `SceneInstrumentation` của Babylon trong cảnh QA và hiển thị draw calls/khung trong overlay hiệu năng. Không chạy trong production và không đổi logic game.
+- File liên quan: `packages/game-renderer-3d/src/babylon-viewport.ts`, `apps/web/src/services/perf-overlay.ts`.
+
+### Giới hạn và điều kiện để khóa
+
+- Bộ save đang dùng là Local Demo mới, kho có hàng nhưng 30 kệ bán trống; đây không phải save QA đã nạp đủ kệ, nên ảnh nội thất chưa xác nhận chất lượng khi cửa hàng bày đủ hàng.
+- Ảnh chưa được lưu thành file trong `.qa`; cần lưu được ba ảnh tham chiếu ngày/đêm/mưa vào thư mục QA để bản khóa có thể tái kiểm tra.
+- Render target 426×184 và kết quả 57.0–57.6 FPS chưa đáp ứng chắc chắn mục tiêu 60 FPS ở màn hình desktop; p1 thấp và có frame chậm nhất 99.9 ms ở mưa. Cần xác nhận trên cảnh/save đại diện và quyết định chất lượng/resolution phù hợp trước khi ký khóa.
+- Do các giới hạn trên, bước 4.7 vẫn mở. Không ghi nhận “tạp hóa v1 đã khóa”. Tiếp theo: chạy bằng save QA đủ hàng, lưu ba ảnh vào `.qa/qa-phase2/`, đo lại ở cấu hình render đã phục hồi/được chốt, rồi đánh giá ảnh trước khi khóa.
 ## 0. Quyết định nền
 
 | Hạng mục | Chọn | Lý do |
@@ -76,8 +104,8 @@ Tạo package mới `packages/game-renderer-3d` (không sửa package Pixi).
 
 ## Giai đoạn D — Nhân vật & thứ chuyển động
 
-**D1. ✅ Người chơi + bạn co-op**: billboard sprite (`SpriteManager` của Babylon, luôn quay về camera) — rẻ và giữ chất pixel.
-**D2. ✅ Khách hàng, NPC khu phố**: `SpriteManager` của Babylon (billboard có sẵn, vẽ hàng trăm sprite một lần), xe cộ chạy trên đường (`Vehicles3D`), người đi bộ qua đường trước tiệm.
+**D1. ✅ Người chơi + bạn co-op**: `Characters3D` dùng model GLB khi đủ 12 model tải xong; đường lỗi/chưa sẵn sàng còn fallback `Actors3D` billboard.
+**D2. ✅ Khách hàng, NPC khu phố**: `Characters3D` dùng model GLB, giữ `Crowd3D` billboard làm fallback; xe cộ chạy trên đường (`Vehicles3D`), người đi bộ qua đường trước tiệm. (22/10/2026: đang làm registry ngoại hình theo role và prototype xe đẩy 3D cho vendor; xem `docs/plans/character-style/2026-10-22-role-diversity-plan.md`. Chưa QA prototype bằng ảnh.)
 **D3. ✅ Bong bóng nhu cầu, tên khách quen, số tiền bay, bong bóng thoại cư dân**: dùng lớp HTML/CSS đè lên canvas (`Overlay3D`, chiếu toạ độ 3D → màn hình) thay vì vẽ trong WebGL — chữ tiếng Việt nét hơn, dễ làm UI.
 **D4. ✅ Click**: `scene.pick` → ô → gọi `onParcelTap`, chọn tòa nhà.
 

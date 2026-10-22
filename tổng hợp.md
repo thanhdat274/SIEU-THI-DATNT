@@ -1,3 +1,33 @@
+# NHÂN VẬT 3D: BƯỚC ĐẦU ĐỒNG BỘ TEXTURE + GALLERY DEV (22/10/2026)
+
+- Đã thêm trang DEV riêng `apps/web/character-gallery.html` và loader `apps/web/src/dev-character-gallery.ts` để xem 12 GLB cùng ánh sáng/camera, so với mốc cửa 1,60m và chiều cao nhân vật 1,28m. Có thể đổi lọc texture nearest/linear và tải PNG từ canvas.
+- Gallery đã mở được trong browser local: 12/12 GLB tải, catalog hiển thị mỗi model ở 1,28m cạnh mốc 1,60m. Đã xem ảnh gallery: cả bộ có hình khối low-poly hoạt hình đồng bộ và màu trang phục đa dạng, nhưng tỉ lệ đầu lớn/thân ngắn kiểu chibi; gallery đặt model khá lệch về trái và chưa có PNG QA lưu trong repo. Đây là đánh giá sơ bộ, chưa phải nghiệm thu game runtime.
+- `characters-3d.ts`: đổi riêng lọc texture nhân vật từ NEAREST sang BILINEAR để giảm cảm giác pixel-crisp; không thay GLB, tỉ lệ, hoạt ảnh, gameplay, fallback hoặc hệ nhân vật nào khác. Code đã đổi, ảnh game sau đổi chưa được xác minh.
+- Role source đã xác minh: staff có `role`; cư dân có `type/accessory`; người đi đường có `activity`; logistics worker là role cố định; customer hiện không có nghề. Catalog có sáu asset presentation nữ và sáu asset presentation nam; player hiện cố định mẫu nữ, co-op và courier là mẫu nam. Bộ chọn cũ dùng hash modulo 12 nên một nhóm ID nhỏ có thể tình cờ dồn cùng presentation.
+- Bắt đầu triển khai theo hướng kết hợp/B: thêm `character-appearance.ts` (registry archetype/outfit, resolver deterministic) và cache appearance theo identity trong `Characters3D`; đổi bộ chọn NPC theo parity của hash để các ID/seed tuần tự luân phiên presentation rồi chọn một trong sáu model cùng nhóm; thêm xe đẩy low-poly cho cư dân `vendor`, gắn theo `NeighborNpcView.type`; gallery hiển thị 6/6 và preview xe đẩy trên một base feminine + masculine. Không đổi game-core/save/gameplay.
+- Gallery DEV đã hot-reload sau thay đổi: accessibility state báo 12/12 GLB, legend đánh dấu hai preview xe đẩy (một model feminine, một masculine), console error đọc được: 0. API screenshot không chụp được nên hình học xe đẩy chưa được duyệt bằng mắt; đây chỉ là xác nhận tải trang/assets, chưa phải QA hình ảnh trong game.
+- Chưa chạy typecheck/test/build. Resolver/mesh chưa được xác nhận compile qua build và runtime chính chưa được kiểm; chưa mở rộng phụ kiện cho nghề khác. Tiếp theo: xem/chụp gallery và chỉnh prototype xe đẩy; sau visual gate mới bổ sung lần lượt backpack/briefcase/đồng phục cho các role có nguồn dữ liệu thật.
+
+---
+
+# QA 3D: BƯỚC 4.7 TẠP HÓA V1 — QA RUNTIME MỘT PHẦN, CHƯA KHÓA (22/10/2026)
+
+- Sau khi server game mở được, QA chạy trong trình duyệt local: đã quan sát cảnh ngày, đêm, mưa; chọn tòa mở `BuildingPanel`; bấm “Vào trong” để xác nhận chuyển cảnh nội thất. Console lỗi trình duyệt: 0.
+- Đo cùng cấu hình (viewport 1280×720, DPR 1, màn hình 1920×1080, render target 426×184; overlay `?perf=1`, cửa sổ 5 giây): ngày 57.2 FPS TB / p1 26.2 / p95 25.0 ms / 127 draw calls; đêm 57.0 / 29.9 / 17.0 ms / 142; mưa 57.6 / 29.9 / 17.0 ms / 125. Mưa có frame chậm nhất 98.0 ms. Chi tiết định nghĩa số đo và cách tái lập: `docs/plans/3d-migration-plan.md`, mục Bước 4.7.
+- Instrumentation DEV-only: `packages/game-renderer-3d/src/babylon-viewport.ts` bật `SceneInstrumentation` và đọc bộ đếm draw calls khi `?perf=1`; `apps/web/src/services/perf-overlay.ts` hiển thị số đo. `yarn typecheck`: PASS; `yarn --cwd packages/game-renderer-3d test`: PASS; `yarn --cwd apps/web build`: PASS (còn cảnh báo chunk lớn và dynamic import không tách chunk); eslint hai file đo: PASS.
+- Giới hạn nghiệm thu: ảnh ngày/đêm/mưa được xem trong phiên nhưng chưa lưu được thành PNG trong `.qa`; công cụ trình duyệt không cung cấp file path để ghi ảnh. Save Local Demo có 30 kệ trống nên chưa kiểm nội thất khi bày đủ hàng. Render target 426×184 và FPS trung bình dưới 60, p1 thấp; chưa ký khóa v1.
+- Tiếp theo: dùng save QA đủ hàng, lưu ba ảnh vào `.qa/qa-phase2/`, chốt cấu hình render, đo lại và kiểm hình ảnh trước khi khóa. Không đổi gameplay/save trong lần QA này.
+
+---
+# QA 3D: BƯỚC 4.7 — LẦN THỬ BAN ĐẦU KHI SERVER CHƯA KẾT NỐI (22/10/2026)
+
+- Phạm vi yêu cầu: ảnh tham chiếu tạp hóa v1 ban ngày, ban đêm, trời mưa; đo FPS và draw calls; cập nhật `docs/plans/3d-migration-plan.md`.
+- Đã thử chạy Vite (`yarn --cwd apps/web dev --host 0.0.0.0`, Vite 8.3.2, cổng 5173) và mở game từ trình duyệt QA trong app. Kết nối tới localhost/địa chỉ host timeout, nên không quan sát được game runtime.
+- Ảnh ngày/đêm/mưa lần QA này: CHƯA CÓ. FPS và draw calls lần QA này: CHƯA ĐO. Console runtime: CHƯA KIỂM. Vì thiếu bằng chứng runtime, tạp hóa v1 chưa được khóa/duyệt.
+- Số liệu 56.56 FPS (`.qa/qa-phase2/metrics.json`) và 52.93 FPS (`.qa/qa-phase2/qa-final-metrics.json`) là số liệu lịch sử 21/10/2026; không tái sử dụng chúng như kết quả mới. Chưa có số draw calls xác nhận.
+- Không sửa code/gameplay. Cập nhật trạng thái và tiêu chí hoàn tất tại `docs/plans/3d-migration-plan.md`, mục “Bước 4.7”. Cần chạy lại QA trong trình duyệt truy cập được server, chụp đủ ba trạng thái, đo FPS/draw calls trên cùng cảnh và xem lại ảnh trước khi khóa.
+
+---
 # RENDERER 3D: CHUẨN HÓA TỈ LỆ THẾ GIỚI TOÀN DIỆN TỪ NGUỒN DUY NHẤT `scale-spec.ts` (21/10/2026, Prompt 33, packages/game-renderer-3d)
 
 Đã hoàn thành chuẩn hóa tỉ lệ toàn bộ các đối tượng 3D trong không gian game theo mốc cửa tiệm $D = 1.60$ đơn vị thế giới, giải quyết triệt để tình trạng người quá to, xe máy/cây/đèn đường lệch kích thước:

@@ -29,6 +29,24 @@ export const CHARACTER_MODELS: readonly CharacterModelKind[] = [
   'character_male_f',
 ] as const;
 
+export const CHARACTER_PRESENTATION: Readonly<Record<CharacterModelKind, 'feminine' | 'masculine'>> = {
+  character_female_a: 'feminine',
+  character_female_b: 'feminine',
+  character_female_c: 'feminine',
+  character_female_d: 'feminine',
+  character_female_e: 'feminine',
+  character_female_f: 'feminine',
+  character_male_a: 'masculine',
+  character_male_b: 'masculine',
+  character_male_c: 'masculine',
+  character_male_d: 'masculine',
+  character_male_e: 'masculine',
+  character_male_f: 'masculine',
+};
+
+const FEMININE_CHARACTER_MODELS = CHARACTER_MODELS.filter((kind) => CHARACTER_PRESENTATION[kind] === 'feminine');
+const MASCULINE_CHARACTER_MODELS = CHARACTER_MODELS.filter((kind) => CHARACTER_PRESENTATION[kind] === 'masculine');
+
 export interface CharacterModelSpec {
   kind: CharacterModelKind;
   filename: string;
@@ -160,12 +178,17 @@ export function characterModelForDelivery(): CharacterModelKind {
 }
 
 export function characterModelForId(id: string, seed?: number): CharacterModelKind {
-  let hash = seed ?? 0;
+  let idHash = 0;
   for (let i = 0; i < id.length; i++) {
-    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+    idHash = (Math.imul(idHash, 31) + id.charCodeAt(i)) >>> 0;
   }
-  const idx = hash % CHARACTER_MODELS.length;
-  return CHARACTER_MODELS[idx];
+  // Keep family selection independent from lookSeed: customer IDs and lookSeed
+  // are both sequence-derived, so mixing them into the same parity cancels out.
+  // The identity bit alternates sequential IDs; seed diversifies the six models.
+  const models = (idHash & 1) === 0 ? FEMININE_CHARACTER_MODELS : MASCULINE_CHARACTER_MODELS;
+  const seedHash = (seed ?? 0) >>> 0;
+  const variant = ((idHash >>> 1) + seedHash) % models.length;
+  return models[variant];
 }
 
 /**

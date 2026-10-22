@@ -97,7 +97,9 @@ export function installPerfOverlay(): void {
       const longTaskLine = longTaskSupported
         ? `Long task JS: ${longTasks.length}   ·   dài nhất: ${longTasks.length ? Math.max(...longTasks.map((t) => t.duration)).toFixed(0) + ' ms' : '—'}`
         : 'Long task JS: không hỗ trợ (Safari/Firefox)';
-      body.textContent = `FPS TB: ${mean ? (1000 / mean).toFixed(1) : 'đang đo…'}   ·   p1: ${p99 ? (1000 / p99).toFixed(1) : '—'}\np95: ${p95 ? p95.toFixed(1) + ' ms' : '—'}   ·   chậm nhất: ${worst ? worst.toFixed(1) + ' ms' : '—'}\nKhung >33 ms: ${over33}   ·   >50 ms: ${over50}\n${longTaskLine}\nBộ nhớ JS: ${memory}\nSố mẫu: ${intervals.length} / 5 giây\n${rendererLabel} · DPR ${window.devicePixelRatio || 1} · ${screen.width}×${screen.height}`;
+      const drawCalls = (window as Window & { __babylonDrawCalls?: number }).__babylonDrawCalls;
+      const drawCallsLine = drawCalls === undefined ? '' : `\nDraw calls/khung: ${drawCalls}`;
+      body.textContent = `FPS TB: ${mean ? (1000 / mean).toFixed(1) : 'đang đo…'}   ·   p1: ${p99 ? (1000 / p99).toFixed(1) : '—'}\np95: ${p95 ? p95.toFixed(1) + ' ms' : '—'}   ·   chậm nhất: ${worst ? worst.toFixed(1) + ' ms' : '—'}\nKhung >33 ms: ${over33}   ·   >50 ms: ${over50}\n${longTaskLine}\nBộ nhớ JS: ${memory}\nSố mẫu: ${intervals.length} / 5 giây${drawCallsLine}\n${rendererLabel} · DPR ${window.devicePixelRatio || 1} · ${screen.width}×${screen.height}`;
     }
     raf = window.requestAnimationFrame(frame);
   };
