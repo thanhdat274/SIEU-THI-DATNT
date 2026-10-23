@@ -1,6 +1,6 @@
 # Spritesheet PNG cho thế giới game
 
-Hạ tầng: `packages/game-renderer/src/sprite-atlas.ts` (+ `sprite-atlas-parse.ts`). Khóa nào có trong atlas thì ảnh PNG ghi đè hình vẽ bằng code; khóa không có vẫn dùng hình vẽ code.
+Hạ tầng: `packages/game-renderer-3d/src/actor-atlas.ts`, chỉ đọc khung nhân vật (`player_`, `partner_`, `npc_`) của các atlas trong `index.json`; khung khác bị bỏ qua.
 
 ## Cách thêm asset
 1. Đặt PNG + JSON atlas vào thư mục con, ví dụ `characters/player.png`, `characters/player.json`.

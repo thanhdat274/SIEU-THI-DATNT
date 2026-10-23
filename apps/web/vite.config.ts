@@ -5,14 +5,14 @@ import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
 
-// React Fast Refresh preserves refs, including the running simulation and Pixi
+// React Fast Refresh preserves refs, including the running simulation and the 3D
 // viewport. Reload game code so every edit creates a fresh runtime instead.
 function reloadGameOnChange(): Plugin {
   const sourceRoots = [
     './src/',
     '../../packages/game-core/src/',
     '../../packages/game-data/src/',
-    '../../packages/game-renderer/src/',
+    '../../packages/game-renderer-core/src/',
     '../../packages/shared/src/',
   ].map((p) => normalizePath(fileURLToPath(new URL(p, import.meta.url))));
 
@@ -58,7 +58,6 @@ export default defineConfig({
         // Tách thư viện lớn để tải song song và cache lâu dài; mã game đổi thường xuyên không làm mất cache.
         manualChunks(id: string) {
           if (!id.includes('node_modules')) return undefined;
-          if (id.includes('pixi')) return 'vendor-pixi';
           if (id.includes('firebase') || id.includes('@firebase')) return 'vendor-firebase';
           if (/node_modules[/]dexie[/]/.test(id)) return 'vendor-dexie';
           // Chỉ react, react-dom, scheduler (lõi, không phụ thuộc thư viện khác) nên không tạo vòng với chunk khác.

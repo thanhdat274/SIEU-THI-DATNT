@@ -1,0 +1,22 @@
+{
+  "name": "@game/renderer-3d",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsx src/coords.test.ts"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^8",
+    "@babylonjs/loaders": "^8",
+    "@game/core": "*",
+    "@game/data": "*",
+    "@game/renderer-core": "*",
+    "@game/shared": "*"
+  },
+  "devDependencies": {
+    "@typescript/native": "npm:typescript@^7.0.2"
+  }
+}

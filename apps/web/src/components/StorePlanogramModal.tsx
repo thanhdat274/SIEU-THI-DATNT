@@ -1,9 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { StoreFixture, InventoryItem, type GameTileMap, isSalesFixture, isUsableSalesFixture, slotGroup } from '@game/shared';
 import { PRODUCT_MAP, SELLABLE_PRODUCTS, effectiveShelfCapacity, FIXTURE_SHOP, fixtureBuilding, refrigerationAccepts } from '@game/data';
-import { fixturePreviewUrl } from '@game/renderer';
+import { useFixturePreview } from '../hooks/useFixturePreview';
 import { PixelDialog, PixelButton, PixelIcon, ProductSlot, PixelProgress, EmptyState } from './pixel';
 import './store-planogram.css';
+
+const FixtureThumb: React.FC<{ type: StoreFixture['type']; shopId?: string }> = ({ type, shopId }) => {
+  const src = useFixturePreview(type, shopId);
+  return src ? <img src={src} alt="" className="fixture-thumb-img" draggable={false} /> : null;
+};
 
 export interface Props {
   fixtures: StoreFixture[];
@@ -365,7 +370,6 @@ export const StorePlanogramModal: React.FC<Props> = ({
           {filteredFixtures.length > 0 ? (
             filteredFixtures.map(mainFix => {
               const slots = slotGroup(fixtures, mainFix);
-              const preview = fixturePreviewUrl(mainFix.type, mainFix.shopId);
               const isCold = mainFix.type === 'refrigerator';
 
               // Kiểm tra xem kệ này có thể châm thêm hàng không
@@ -414,7 +418,7 @@ export const StorePlanogramModal: React.FC<Props> = ({
                   <header className="fixture-card-header">
                     <div className="fixture-header-info">
                       <div className="fixture-thumb-box">
-                        <img src={preview} alt="" className="fixture-thumb-img" draggable={false} />
+                        <FixtureThumb type={mainFix.type} shopId={mainFix.shopId} />
                       </div>
                       <div className="fixture-title-box">
                         <div className="fixture-name-row">
