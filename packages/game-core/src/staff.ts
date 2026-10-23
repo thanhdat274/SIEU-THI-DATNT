@@ -59,8 +59,8 @@ export function generateCandidatesForDay(day: number, count = 3): StaffCandidate
     [namePool[i], namePool[j]] = [namePool[j], namePool[i]];
   }
 
-  // Buildings available for assignment
-  const buildings: StaffBuilding[] = [undefined, 'main', 'xoi', 'drink'];
+  // Buildings available for assignment (staff-shifts: any role can be gán tòa qua assignedBuilding)
+  const buildings: Array<StaffBuilding | undefined> = [undefined, 'main', 'xoi', 'drink', 'snack'];
 
   for (let i = 0; i < count; i++) {
     // Ensure diverse roles in the candidate list
@@ -81,13 +81,13 @@ export function generateCandidatesForDay(day: number, count = 3): StaffCandidate
     const rawWage = 20000 + (speed + accuracy + stamina) * 500;
     const dailyWage = Math.max(25000, Math.round(rawWage / 5000) * 5000);
 
-    // Assign building for drink-specific roles
-    let assignedBuilding: StaffBuilding = undefined;
+    // Assign building for role-specific staff (staff-shifts: cashier/refill có thể gán tòa 'snack' thay vì role riêng)
+    let assignedBuilding: StaffBuilding | undefined = undefined;
     if (role === 'drink_staff' || role === 'drink_security') {
       assignedBuilding = 'drink';
     } else if (role === 'security' && rng.next() < 0.3) {
       // 30% chance global security becomes building-specific
-      assignedBuilding = rng.pick(['main', 'xoi'] as StaffBuilding[]);
+      assignedBuilding = rng.pick(['main', 'xoi', 'drink', 'snack'] as StaffBuilding[]);
     }
 
     // Chuyên môn dùng RNG riêng để không làm lệch chuỗi ứng viên cũ; khoảng 45% ứng viên có chuyên môn hợp vai trò.

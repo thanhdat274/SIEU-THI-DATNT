@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import type { BranchPolicy, BranchSave, InventoryItem, StockLot } from '@game/shared';
-import { BRANCH_MANAGER, DEFAULT_INITIAL_SAVE, MAX_CHAIN_BRANCHES, PRODUCT_MAP, STORE_TYPE_MAP, generateStarterTileMap } from '@game/data';
+import { BRANCH_MANAGER, BRANCH_UNITS_PER_CUSTOMER, DEFAULT_INITIAL_SAVE, MAX_CHAIN_BRANCHES, PRODUCT_MAP, STORE_TYPE_MAP, generateStarterTileMap } from '@game/data';
 import { validateSaveGameData } from '@game/shared';
 import { InputManager } from './input';
 import { summarizeAnnualRevenue } from './tax/annual-revenue';
@@ -301,9 +301,14 @@ export function runChainSimulationTests(): void {
   const sales = entries.filter((e) => e.type === 'sale').reduce((s, e) => s + e.amount, 0);
   const wages = entries.filter((e) => e.type === 'wage').reduce((s, e) => s + e.amount, 0);
   const otherEntries = sim.getLedger().slice(ledgerBefore).filter((e) => e.branchId !== 'branch-1');
+  // `civic_upkeep`/`civic_fee` (Bước 3 `civic-local-fees`) là CHI TRỪ TIỀN từ quỹ chung như tiền thuê đất
+  // → tính là `-e.amount` (không đưa vào nhóm "không đổi ví" như spoilage/theft).
   const hubDelta = otherEntries.reduce((s, e) => s + (e.type === 'sale' || e.type === 'recovery' ? e.amount : e.type === 'spoilage' || e.type === 'theft' ? 0 : -e.amount), 0);
-  assert.equal(sim.getPlayerData().money - moneyBefore - hubDelta, sales - wages, 'Δví = doanh thu chi nhánh − lương (khớp sổ cái)');
+  // Δví = (doanh thu − chi phí của chi nhánh) + (mọi dòng sổ của hub, gồm thuê đất + phí xóm).
+  assert.equal(sim.getPlayerData().money - moneyBefore, sales - wages + hubDelta, 'Δví = doanh thu chi nhánh − lương + sổ cái hub (khớp sổ cái)');
   assert.equal(sim.getStatistics().totalRevenue - revenueBefore, sales);
+  const units = entries.filter((e) => e.type === 'sale').reduce((sum, e) => sum + (e.quantity ?? 0), 0);
+  assert.ok(units > 0 && (sim.getDailyRecords()[day]?.customersServed ?? 0) >= Math.ceil(units / BRANCH_UNITS_PER_CUSTOMER), 'Khách tổng chuỗi (7.3): bản ghi ngày gồm khách ước tính của chi nhánh');
   const dayRecord = sim.getDailyRecords()[day];
   assert.ok(dayRecord && dayRecord.revenue >= sales && dayRecord.wagesPaid >= wages, 'Bản ghi ngày hub gồm doanh thu/lương chi nhánh (nền cho thuế tổng chuỗi)');
   assert.equal(summarizeAnnualRevenue(sim.getDailyRecords(), day + 1).revenue >= sales, true, 'Doanh thu năm tính cả chi nhánh');

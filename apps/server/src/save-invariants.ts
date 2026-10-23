@@ -1,5 +1,5 @@
 import type { SaveGameData } from '@game/shared';
-import { MAX_PLAYER_LEVEL, staffSlotsAtLevel } from '@game/data';
+import { MAX_PLAYER_LEVEL, resolvePlacements, staffSlotsAtLevel } from '@game/data';
 
 /**
  * Hướng B của I-01: với lệnh server chưa phát lại được, client vẫn gửi save, nên server chỉ kiểm bất biến giữa save đã lưu
@@ -57,6 +57,13 @@ export function checkSaveInvariants(prev: SaveGameData, next: SaveGameData, comm
   if (staffAfter > staffSlotsAtLevel(next.player.level)) return 'Số nhân viên vượt số vị trí theo cấp.';
   const knownStaff = new Set((prev.staff ?? []).map((member) => member.id));
   if ((next.staff ?? []).filter((member) => !knownStaff.has(member.id)).length > (commandType === 'hire_staff' ? 1 : 0)) return 'Nhân viên mới xuất hiện không qua lệnh tuyển dụng.';
+  // Gán tòa (OpenSpec `staff-shifts`): chỉ được trỏ tới tòa đang có trong save; không đổi số nhân viên/tiền.
+  if (commandType === 'assign_staff_building') {
+    const buildingIds = new Set(resolvePlacements(next.storeLayout.buildingPlacements, next.storeLayout.unlockedPlotIds ?? []).map((placement) => placement.buildingId));
+    for (const member of next.staff ?? []) {
+      if (member.assignedBuilding !== undefined && !buildingIds.has(member.assignedBuilding)) return 'Gán nhân viên vào tòa không có trong hẻm.';
+    }
+  }
 
   // Chuỗi chi nhánh chỉ đổi qua lệnh chuỗi (open/switch/transfer/return) hoặc qua ngày, đều do server phát lại; save client của lệnh khác không được đụng tới.
   if (JSON.stringify(prev.chain ?? null) !== JSON.stringify(next.chain ?? null)) return 'Chuỗi chi nhánh chỉ đổi qua lệnh chuỗi.';

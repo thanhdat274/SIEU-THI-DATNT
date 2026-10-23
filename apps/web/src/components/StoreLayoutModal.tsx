@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { UNITS_PER_WAREHOUSE_CELL, getFixtureDimensions, slotGroup, tileIndex, tileInMap, type SaveGameData, type StoreFixture } from '@game/shared';
-import { BUILDING_MAP, BUILDINGS, resolveParcel, DECOR, DECOR_ATTRACTION_MAX, FIXTURE_SHOP, LAND_PLOTS, EXPANSION_TILE_PRICE, MAIN_EAST_WING_PLOT_IDS, MAX_STORAGE_RACKS, NORTH_EXPANSION_ROWS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, fixtureBuilding, generateStarterTileMap, buildingAt, inMainExpansionZone, defaultPlacementOf, normalizePlacements, placementFloor, tileKey, wallRing, type BuildingId, type LandPlotDefinition } from '@game/data';
+import { BUILDING_MAP, BUILDINGS, resolveParcel, DECOR, DECOR_ATTRACTION_MAX, FIXTURE_SHOP, LAND_PLOTS, EXPANSION_TILE_PRICE, MAIN_EAST_WING_PLOT_IDS, MAX_STORAGE_RACKS, NORTH_EXPANSION_ROWS, PRODUCT_MAP, STORAGE_RACK_CELL_BONUS, WAREHOUSE_TIERS, fixtureBuilding, generateStarterTileMap, buildingAt, inMainExpansionZone, defaultPlacementOf, normalizePlacements, placementFloor, tileKey, wallRing, type BuildingId, type LandPlotDefinition, buildingTypeOfInstance, STORE_TIERS, storeTierFromFloorTiles, } from '@game/data';
 import { applyStoreLayoutActions, coldWarehouseCapacity, decorAttraction, decorTrafficMultiplier, expandFootprint, expansionPrice, placementOptions, relocationFee, rotateStoreFixture, sharedExpansionBudget, totalWarehouseCells, type StoreLayoutAction } from '@game/core';
 import { fixturePreviewUrl } from '@game/renderer';
 import { PixelButton } from './pixel';
@@ -72,6 +72,7 @@ const errorMessage = (error: string | undefined, action: StoreLayoutAction, bloc
   if (error === 'level') return 'Chưa đủ cấp độ để mở khu đất.';
   if (error === 'outside_floor') return 'Ô đặt nằm ngoài mặt bằng đã mở.';
   if (error === 'wrong_building') return 'Món này không đặt được ở tòa nhà này (trạm xôi chỉ đặt trong tiệm xôi).';
+  if (error === 'outside_parcel') return 'Kệ/tủ của cơ sở phải nằm trọn trong lô đất của cơ sở (không vắt qua ranh lô).';
   if (error === 'overlap') return 'Vị trí đang bị nội thất khác chiếm.';
   if (error === 'path_blocked') return `Bố cục chặn lối tới: ${blocked?.join(', ')}`;
   if (error === 'prerequisite') return 'Cần mở khu đất liền trước hoặc giữ quầy thu ngân.';
@@ -363,6 +364,7 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
     const placement = normalizePlacements(draft.storeLayout.buildingPlacements, owned).find(item => item.buildingId === activeView);
     return placement ? placementFloor(placement, owned) : new Set<string>();
   }, [draft.storeLayout.buildingPlacements, draft.storeLayout.unlockedPlotIds, activeView]);
+  const activeTier = useMemo(() => storeTierFromFloorTiles(planFloor.size), [planFloor.size]);
   /** Ô có thể xin xây sàn: tiệm chính theo `inMainExpansionZone`; tòa phụ trong phần ruột của lô mình (luật đầy đủ do `expandFootprint` kiểm). */
   const planParcel = resolveParcel(normalizePlacements(draft.storeLayout.buildingPlacements, owned).find(item => item.buildingId === activeView)?.parcelId ?? '');
   const inPlanZone = (x: number, y: number) => activeView === 'main'
@@ -864,29 +866,46 @@ export const StoreLayoutModal: React.FC<Props> = ({ save, onConfirm, onClose }) 
             <div className="sidebar-tab-content">
               {tab === 'shop' && (
                 <div className="layout-fixtures layout-shop">
-                  {FIXTURE_SHOP.filter(item => !item.allowedBuildings || item.allowedBuildings.includes(activeView)).map(item => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={`shop-card ${item.id === buyId ? 'is-selected' : ''}`}
-                      disabled={!item.functional || draft.player.level < item.unlockLevel || (draft.player.money < item.cost && item.id !== buyId)}
-                      onClick={() => {
-                        setBuyId(item.id === buyId ? null : item.id);
-                        setSelectedId(null);
-                        setRetrieveId(null);
-                        setError(item.id === buyId ? '' : 'Chọn ô sàn để đặt món mới.');
-                      }}
-                    >
-                      <span className="shop-art"><FixtureArt type={item.type} shopId={item.id} /></span>
-                      <strong className="shop-card-name">{item.name}</strong>
-                      <small className="shop-card-info">
-                        {item.functional ? `${item.widthTiles}×${item.heightTiles} ô · ${item.slotCount} khay` : `${item.widthTiles}×${item.heightTiles} ô`}
-                      </small>
-                      <span className={`shop-price ${item.functional && draft.player.level >= item.unlockLevel ? '' : 'is-locked'}`}>
-                        {draft.player.level < item.unlockLevel ? `Cần Lv ${item.unlockLevel}` : !item.functional ? 'Sắp có' : `${item.cost.toLocaleString('vi-VN')} đ`}
-                      </span>
-                    </button>
-                  ))}
+                  {FIXTURE_SHOP.filter(item => {
+                    const typeIds = item.typeIds;
+                    if (!typeIds) return true;
+                    const typeDef = buildingTypeOfInstance(activeView);
+                    return typeDef && typeIds.includes(typeDef.typeId);
+                  }).map(item => {
+                    const typeDef = buildingTypeOfInstance(activeView);
+                    const isRetail = !typeDef || typeDef.tiers !== undefined;
+                    const tierLocked = isRetail && item.minTier !== undefined && activeTier.minTierShop < item.minTier;
+                    const disabled = !item.functional || draft.player.level < item.unlockLevel || (draft.player.money < item.cost && item.id !== buyId) || tierLocked;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`shop-card ${item.id === buyId ? 'is-selected' : ''}`}
+                        disabled={disabled}
+                        onClick={() => {
+                          setBuyId(item.id === buyId ? null : item.id);
+                          setSelectedId(null);
+                          setRetrieveId(null);
+                          setError(item.id === buyId ? '' : 'Chọn ô sàn để đặt món mới.');
+                        }}
+                      >
+                        <span className="shop-art"><FixtureArt type={item.type} shopId={item.id} /></span>
+                        <strong className="shop-card-name">{item.name}</strong>
+                        <small className="shop-card-info">
+                          {item.functional ? `${item.widthTiles}×${item.heightTiles} ô · ${item.slotCount} khay` : `${item.widthTiles}×${item.heightTiles} ô`}
+                        </small>
+                        <span className={`shop-price ${item.functional && draft.player.level >= item.unlockLevel && !tierLocked ? '' : 'is-locked'}`}>
+                          {tierLocked
+                            ? `Cần ${STORE_TIERS.find(t => t.minTierShop === item.minTier)?.name ?? 'hạng cao'}`
+                            : draft.player.level < item.unlockLevel
+                              ? `Cần Lv ${item.unlockLevel}`
+                              : !item.functional
+                                ? 'Sắp có'
+                                : `${item.cost.toLocaleString('vi-VN')} đ`}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 

@@ -1,6 +1,6 @@
 import { StreetVehicleState } from '@game/shared';
 import {
-  APARTMENT_PARKING, AVENUE_WALK_X, STREET_VEHICLE_RULES, NEIGHBORHOOD_LOD, NEIGHBORHOOD_LOTS, decorLotsOutsideWaves, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_SHELTERS, NPC_BUDGET, NPC_TYPES,
+  APARTMENT_PARKING, AVENUE_WALK_X, STREET_VEHICLE_RULES, NEIGHBORHOOD_LOD, NEIGHBORHOOD_LOTS, decorLotsOutsideWaves, NEIGHBORHOOD_QUALITY, NEIGHBORHOOD_SHELTERS, NPC_BUDGET, NPC_TYPES, NPC_TYPE_MAP, DISTRICTS, lotDistrictId, type DistrictId,
   PARK, PARK_BENCHES, PARK_PATHS, ROAD_MAP, SCHOOL, SCHOOL_GATE_PX, SHOP_AWNING_PX, SHOP_FRONT, TRAFFIC_ROADS, WALK_LINES, WORK_PORTALS,
   dialoguePhaseOf, dialogueWeatherOf, npcRingOf, parkAppeal, activeShelterZones, type DetailLevel, type NeighborNpcType, type NeighborhoodLot,
   type NeighborhoodQuality, type NpcRing, type NpcTypeDef,
@@ -37,6 +37,7 @@ export type NpcFacing = 'up' | 'down' | 'left' | 'right';
 export interface NeighborNpcView {
   id: string;
   type: NeighborNpcType;
+  /** Mã look nhân vật 0–9 (6 học sinh, 7 cụ già, 8 công sở, 9 trẻ em) — renderer dùng thẳng, KHÔNG phải chỉ số walker. */
   spriteVariant: number;
   tint: number;
   scale: number;
@@ -98,6 +99,89 @@ export interface LifeContext {
   rain: number;
   weatherId: string;
   vehicles?: readonly StreetVehicleState[];
+  civicPopulation?: number | Record<string, { pop: number; target?: number; baseline?: number; factor?: number; qol?: number; capacity?: number }>;
+  mobile?: boolean;
+}
+
+/** Số cư dân trong khu cho mỗi NPC nền hiển thị (OpenSpec `civic-residents-life`, 1.1/1.2). */
+export const RESIDENTS_PER_NPC = 4;
+
+/** Trần số NPC nền hiển thị tối đa trên máy tính (desktop) để đảm bảo hiệu năng. */
+export const NPC_CAP_DESKTOP = 40;
+
+/** Trần số NPC nền hiển thị tối đa trên di động (mobile) để giữ ngân sách ≤ 2 ms/khung ở 375×812. */
+export const NPC_CAP_MOBILE = 20;
+
+/** Tính số NPC nền hiển thị từ dân số khu/tổng dân số, có trần theo loại thiết bị. */
+export function visibleNpcCount(pop: number, isMobile = false): number {
+  const cap = isMobile ? NPC_CAP_MOBILE : NPC_CAP_DESKTOP;
+  return Math.min(Math.floor(Math.max(0, pop) / RESIDENTS_PER_NPC), cap);
+}
+
+/** Bậc tầng nhà dân theo tỷ lệ dân số / sức chứa của khu: 1, 2, hoặc 3 tầng (OpenSpec `civic-residents-life`, 1.3). */
+export function houseFloorTier(pop: number, capacity: number): 1 | 2 | 3 {
+  if (capacity <= 0) return 1;
+  const ratio = pop / capacity;
+  if (ratio < 0.65) return 1;
+  if (ratio < 1.0) return 2;
+  return 3;
+}
+
+/**
+ * Sinh thuộc tính cư dân tất định theo (seed, day, districtId, index).
+ * Hai client cùng các tham số này sẽ sinh ra cùng loại NPC và ngoại hình.
+ */
+/** Mã look cư dân khi không theo dân số (bỏ look 1 = chủ tiệm); thứ tự giữ đúng `walkerLook` cũ để hình không đổi. */
+const LEGACY_WALKER_LOOKS = [0, 2, 3, 4, 5, 6, 7, 8];
+
+/** Hệ số trọng số cho loại NPC thuộc `npcMix` của khu (các loại khác vẫn có thể xuất hiện, chỉ hiếm hơn). */
+export const NPC_MIX_WEIGHT_BOOST = 3;
+
+export function deterministicResidentNpc(
+  seed: number,
+  day: number,
+  districtId: string,
+  index: number,
+): {
+  id: string;
+  defId: NeighborNpcType;
+  spriteVariant: number;
+  accessory: NpcTypeDef['accessory'];
+} {
+  const h = hashSeed(`resident:${seed}:${districtId}:${index}`);
+  const rng = new Mulberry32Rng(h);
+  // NPC nền theo `npcMix` của khu (OpenSpec `open-world-districts-city-goals` 1.3): loại có trong mix được nhân trọng số.
+  const mix = DISTRICTS[districtId as DistrictId]?.npcMix ?? [];
+  const weightOf = (t: NpcTypeDef) => t.weight * (mix.includes(t.id) ? NPC_MIX_WEIGHT_BOOST : 1);
+  const totalWeight = NPC_TYPES.reduce((sum, t) => sum + weightOf(t), 0);
+  let pick = rng.next() * totalWeight;
+  let def = NPC_TYPES[0];
+  for (const t of NPC_TYPES) {
+    pick -= weightOf(t);
+    if (pick <= 0) { def = t; break; }
+  }
+
+  // Ánh xạ spriteVariant theo vai trò để ưu tiên dùng sprite pixel art mới (look 6..9)
+  let spriteVariant: number;
+  if (def.id === 'student') {
+    spriteVariant = 6;
+  } else if (def.id === 'elder') {
+    spriteVariant = 7;
+  } else if (def.id === 'office_worker') {
+    spriteVariant = 8;
+  } else if (def.id === 'child') {
+    spriteVariant = 9;
+  } else {
+    const allLooks = [0, 2, 3, 4, 5, 6, 7, 8, 9];
+    spriteVariant = allLooks[Math.floor(rng.next() * allLooks.length)];
+  }
+
+  return {
+    id: `res-${seed}-${districtId}-${index}`,
+    defId: def.id,
+    spriteVariant,
+    accessory: def.accessory,
+  };
 }
 
 /** Vùng nhìn thấy (px thế giới) để cập nhật đầy đủ chỉ những NPC trong tầm. */
@@ -137,6 +221,8 @@ export class NeighborhoodLife {
   private stats = { chatsStarted: 0, shelterTrips: 0 };
   /** Vạch qua đường đang có người chờ/đi, để xe nhường (đọc bởi StreetTrafficManager). */
   private crossings: Array<{ roadId: string; x0: number; x1: number }> = [];
+  private customTargetNpcCount: number | null = null;
+  private currentPop = -1;
 
   constructor(private readonly seed = 20260504) {}
 
@@ -176,23 +262,55 @@ export class NeighborhoodLife {
 
   // ------------------------------------------------------------------ dân cư
 
+  public setCivicPopulation(
+    pop: number | Record<string, { pop: number; target?: number; baseline?: number; factor?: number; qol?: number; capacity?: number }>,
+    isMobile = false,
+  ): void {
+    const totalPop = typeof pop === 'number'
+      ? pop
+      : Object.values(pop).reduce((sum, d) => sum + (d?.pop ?? 0), 0);
+    this.currentPop = totalPop;
+    const newTarget = visibleNpcCount(totalPop, isMobile);
+    if (newTarget !== this.customTargetNpcCount) {
+      this.customTargetNpcCount = newTarget;
+      if (this.seeded) this.populate();
+    }
+  }
+
   private populate(): void {
     this.npcs = [];
     this.activeChats = 0;
     const scale = NEIGHBORHOOD_QUALITY[this.quality].npc;
-    const target = Math.round((NPC_BUDGET.near + NPC_BUDGET.middle + NPC_BUDGET.far) * scale * 1.9);
+    const target = this.customTargetNpcCount !== null
+      ? this.customTargetNpcCount
+      : Math.round((NPC_BUDGET.near + NPC_BUDGET.middle + NPC_BUDGET.far) * scale * 1.9);
     const rng = new Mulberry32Rng(hashSeed(`neighborhood:${this.seed}`));
     const totalWeight = NPC_TYPES.reduce((sum, t) => sum + t.weight, 0);
     const homes = this.lots;
     for (let i = 0; i < target; i++) {
-      let pick = rng.next() * totalWeight;
-      let def = NPC_TYPES[0];
-      for (const t of NPC_TYPES) { pick -= t.weight; if (pick <= 0) { def = t; break; } }
-      const home = homes[Math.floor(rng.next() * homes.length)];
+      let def: NpcTypeDef;
+      let spriteVariant: number;
+      let residentId: string;
+      let home: NeighborhoodLot;
+      if (this.customTargetNpcCount !== null) {
+        home = homes[Math.floor(rng.next() * homes.length)];
+        const resident = deterministicResidentNpc(this.seed, this.day, lotDistrictId(home), i);
+        def = NPC_TYPE_MAP[resident.defId] ?? NPC_TYPES[0];
+        spriteVariant = resident.spriteVariant;
+        residentId = resident.id;
+      } else {
+        let pick = rng.next() * totalWeight;
+        def = NPC_TYPES[0];
+        for (const t of NPC_TYPES) { pick -= t.weight; if (pick <= 0) { def = t; break; } }
+        // Mã look (giống `walkerLook(i)` cũ với atlas 9 kiểu): cùng số lần rút RNG, cùng hình như trước.
+        spriteVariant = LEGACY_WALKER_LOOKS[Math.floor(rng.next() * LEGACY_WALKER_LOOKS.length)];
+        residentId = `nb-${this.seed}-${i}`;
+        home = homes[Math.floor(rng.next() * homes.length)];
+      }
       const line = bandLine(home.id);
       const homePt: Pt = { x: home.door.x + (rng.next() - 0.5) * 16, y: home.door.y, line };
       this.npcs.push({
-        id: `nb-${this.seed}-${i}`, def, home, homePt, ring: npcRingOf(home.door.x, home.door.y), spriteVariant: Math.floor(rng.next() * 8),
+        id: residentId, def, home, homePt, ring: npcRingOf(home.door.x, home.door.y), spriteVariant,
         tint: def.tints[Math.floor(rng.next() * def.tints.length)], x: homePt.x, y: homePt.y, facing: 'down', pose: 'idle', active: false,
         steps: [], route: [], dwell: 0, dwellPose: 'idle', errands: [], holdUntil: 0, chat: null, chatCooldown: rng.next() * 20, shelter: null,
         crossing: null, waiting: false, acc: rng.next(), decideCooldown: rng.next() * 3, bubble: null, bubbleAge: 0, parkAppealRoll: rng.next(), curPt: homePt,
@@ -403,6 +521,9 @@ export class NeighborhoodLife {
    */
   public update(dt: number, ctx: LifeContext, view: LifeView, detail: DetailLevel, quality: NeighborhoodQuality = 'high'): void {
     if (!Number.isFinite(dt) || dt <= 0) return;
+    if (ctx.civicPopulation !== undefined) {
+      this.setCivicPopulation(ctx.civicPopulation, Boolean(ctx.mobile));
+    }
     if (!this.seeded || quality !== this.quality) { this.quality = quality; this.populate(); }
     const hour = ctx.hour + ctx.minute / 60;
     if (ctx.day !== this.day) {

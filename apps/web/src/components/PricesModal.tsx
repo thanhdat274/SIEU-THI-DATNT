@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { PRODUCT_CATEGORY_LABELS } from '@game/data';
 import type { Product, ProductCategory } from '@game/shared';
 import { PixelButton, PixelDialog, ProductSlot, money } from './pixel';
+import { PRICE_PRESETS, presetPrice } from '../price-presets';
 
-export interface PriceBounds { min: number; max: number; step: number }
+import type { PriceBounds } from '../price-presets';
+
+export type { PriceBounds };
 
 export interface PricesModalProps {
   /** Các món đã mở khóa, có thể bày bán. */
@@ -31,6 +34,11 @@ export const PricesModal: React.FC<PricesModalProps> = ({ products, sellingPrice
     <PixelDialog icon="coin" title="Giá bán" subtitle="Giá cao dễ bị chê, giá thấp hút khách" onClose={onClose}>
       <div className="prices-reset-row" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
         <PixelButton variant="wood" onClick={onResetAll} disabled={!changed}>↺ Về giá gợi ý tất cả</PixelButton>
+      </div>
+      <div className="prices-preset-row" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }} aria-label="Mức giá nhanh cho nhóm đang xem">
+        {PRICE_PRESETS.map((preset) => (
+          <PixelButton key={preset.id} variant="paper" onClick={() => { for (const p of shown) onSetPrice(p.id, presetPrice(p.baseSellingPrice, bounds(p.id), preset.factor)); }}>{preset.label}</PixelButton>
+        ))}
       </div>
       <div className="feature-scroll-tabs" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
         <PixelButton aria-pressed={filter === 'all'} variant={filter === 'all' ? 'teal' : 'paper'} onClick={() => setFilter('all')}>Tất cả</PixelButton>

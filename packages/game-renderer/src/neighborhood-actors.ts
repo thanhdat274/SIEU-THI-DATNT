@@ -1,4 +1,4 @@
-import { walkerLook } from './sprite-atlas';
+import { residentLook } from './sprite-atlas';
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import { NeighborhoodLife, type LifeContext, type NeighborNpcView, type NpcFacing, type WeatherVisualState } from '@game/core';
 import { NEIGHBORHOOD_QUALITY, PARK, SCHOOL, detailForZoom, type NeighborhoodQuality } from '@game/data';
@@ -7,7 +7,7 @@ import type { PixelTextureFactory } from './textures';
 import { RainGear, type GearFacing } from './rain-gear';
 
 const T = 32;
-const INK = 0x1f1a16;
+const INK = 0x3a3a50;
 
 export interface ActorsFrame {
   dt: number;
@@ -42,34 +42,127 @@ function drawAccessory(g: Graphics, kind: string, facing: NpcFacing, tint: numbe
   g.clear();
   const side = facing === 'left' ? -1 : 1;
   const lateral = facing === 'left' || facing === 'right';
+  // Vẽ trên lưới thô 2×2 (p = nửa toạ độ pixel) cho cùng độ thô với nhân vật LimeZu phóng 2×.
+  const p = (x: number, y: number, w: number, h: number, color: number) => { g.rect(x * 2, y * 2, w * 2, h * 2).fill(color); };
   switch (kind) {
-    case 'backpack':
-      if (facing === 'down') return; // đeo sau lưng: nhìn từ phía trước không thấy
-      if (lateral) g.rect(-side * 9 - 4, -33, 8, 14).fill(INK).rect(-side * 9 - 3, -32, 6, 12).fill(tint === 0xffffff ? 0x2e7dbf : 0xd9533a);
-      else g.rect(-8, -34, 16, 16).fill(INK).rect(-7, -33, 14, 14).fill(0x2e7dbf);
+    case 'backpack': {
+      // Cặp học sinh / sinh viên: xanh cobalt hoặc đỏ mận, viền INK, có quai đeo và ngăn khóa
+      const bpMain = tint === 0xffffff ? 0x2563eb : 0xdc2626;
+      const bpDark = tint === 0xffffff ? 0x1d4ed8 : 0xb91c1c;
+      const bpLight = tint === 0xffffff ? 0x60a5fa : 0xf87171;
+      const zip = 0xf1f5f9;
+
+      if (facing === 'down') {
+        // Nhìn từ phía trước: 2 quai đeo ôm qua 2 vai xuống ngực kèm chốt ngực
+        p(-3, -15, 1, 5, INK); p(-3, -14, 1, 4, bpMain);
+        p(2, -15, 1, 5, INK); p(2, -14, 1, 4, bpMain);
+        p(-2, -12, 4, 1, INK); p(-1, -12, 2, 1, zip);
+      } else if (lateral) {
+        // Nhìn nghiêng: cặp đeo sát lưng (y = -15 đến -9), có quai ôm qua ngực và quai xách
+        const bx = side === 1 ? -5 : 1;
+        p(bx, -15, 4, 7, INK);
+        p(bx + 1, -14, 2, 5, bpMain);
+        p(bx + 1, -14, 2, 1, bpLight); // highlight nắp trên
+        p(bx + 1, -11, 2, 2, bpDark);  // ngăn phụ dưới
+        p(bx + 1, -11, 1, 1, zip);     // khóa kéo
+        p(bx + 1, -16, 2, 1, INK);     // quai xách đỉnh
+        // Quai đeo vai ôm qua ngực
+        p(side === 1 ? -1 : 0, -14, 1, 1, INK);
+        const sx = side === 1 ? 1 : -2;
+        p(sx, -13, 1, 3, INK);
+        p(sx, -12, 1, 2, bpMain);
+      } else {
+        // Nhìn từ sau lưng (facing === 'up'): thấy trọn vẹn lưng cặp
+        p(-2, -16, 4, 1, INK); // quai xách chữ U
+        p(-3, -15, 6, 7, INK);
+        p(-2, -14, 4, 5, bpMain);
+        p(-2, -14, 4, 1, bpLight); // nắp trên
+        p(-2, -11, 4, 2, bpDark);  // ngăn phụ
+        p(-1, -11, 2, 1, zip);     // khóa kéo bạc
+      }
       break;
+    }
     case 'briefcase':
-      g.rect(side * 9 - 4, -13, 9, 7).fill(INK).rect(side * 9 - 3, -12, 7, 5).fill(0x6b4a2f).rect(side * 9 - 1, -15, 3, 2).fill(INK);
+      p(side * 5 - 2, -7, 5, 4, INK); p(side * 5 - 1, -6, 3, 2, 0x6b4a2f); p(side * 5, -8, 1, 1, INK);
       break;
     case 'bag':
-      g.rect(side * 9 - 4, -15, 8, 10).fill(INK).rect(side * 9 - 3, -14, 6, 8).fill(0xe03a2e);
+      p(side * 5 - 2, -8, 4, 5, INK); p(side * 5 - 1, -7, 2, 3, 0xe03a2e);
       break;
-    case 'box':
-      if (lateral) g.rect(-side * 10 - 7, -40, 14, 15).fill(INK).rect(-side * 10 - 6, -39, 12, 13).fill(0xe9a33a).rect(-side * 10 - 6, -34, 12, 2).fill(0xb67a20);
-      else g.rect(-9, -38, 18, 14).fill(INK).rect(-8, -37, 16, 12).fill(0xe9a33a);
+    case 'box': {
+      // Balo giao hàng shipper chuyên nghiệp: balo giữ nhiệt cam năng động + dải phản quang + quai đeo ngực + mũ lưỡi trai
+      const boxMain = 0xf57c00;
+      const boxDark = 0xc2410c;
+      const boxLight = 0xffb74d;
+      const reflector = 0xf8fafc;
+
+      if (facing === 'down') {
+        // Nhìn từ phía trước:
+        // 1. Quai đeo balo 2 bên vai + đai ngực phản quang
+        p(-3, -15, 1, 5, INK); p(-3, -14, 1, 4, boxMain);
+        p(2, -15, 1, 5, INK); p(2, -14, 1, 4, boxMain);
+        p(-2, -12, 4, 1, INK); p(-1, -12, 2, 1, reflector);
+        // Thân balo nhô nhẹ 2 bên hông sau lưng
+        p(-4, -14, 1, 4, INK); p(-4, -13, 1, 3, boxDark);
+        p(3, -14, 1, 4, INK); p(3, -13, 1, 3, boxDark);
+        // 2. Mũ shipper lưỡi trai đội trên đầu nhìn chính diện
+        p(-3, -24, 6, 3, INK); p(-2, -23, 4, 2, boxMain);
+        p(-4, -21, 8, 1, INK); p(-3, -21, 6, 1, boxDark); // vành lưỡi trai
+        p(0, -25, 1, 1, INK); // nút chóp nón
+      } else if (lateral) {
+        // Nhìn nghiêng:
+        // 1. Thân balo shipper đứng dáng, áp sát lưng (y = -16 đến -8)
+        const bx = side === 1 ? -6 : 1;
+        p(bx + 1, -16, 3, 1, INK); // bo tròn góc đỉnh
+        p(bx, -15, 5, 7, INK);     // khung balo
+        p(bx + 1, -8, 3, 1, INK);  // bo góc đáy
+        p(bx + 1, -15, 3, 6, boxMain);
+        p(bx + 1, -15, 3, 1, boxLight);  // nắp mở highlight
+        p(bx + 1, -12, 3, 1, reflector); // dải phản quang an toàn
+        p(bx + 1, -10, 3, 2, boxDark);   // đáy balo bóng đổ
+        p(bx + 2, -17, 2, 1, INK);       // quai xách đỉnh
+        // Quai đeo ôm từ vai ra trước ngực
+        p(side === 1 ? -1 : 0, -15, 2, 1, INK);
+        const sx = side === 1 ? 1 : -2;
+        p(sx, -14, 1, 4, INK);
+        p(sx, -13, 1, 2, boxMain);
+        p(sx, -12, 1, 1, reflector); // khóa ngực bạc
+        // 2. Mũ shipper lưỡi trai chìa về phía trước
+        p(-2, -24, 5, 3, INK);
+        p(-1, -23, 4, 2, boxMain);
+        const vx = side === 1 ? 2 : -5;
+        p(vx, -21, 4, 1, INK);
+        p(vx + (side === 1 ? 0 : 1), -21, 3, 1, boxDark); // lưỡi trai chìa ra
+        p(0, -25, 1, 1, INK); // chóp nón
+      } else {
+        // Nhìn từ sau lưng (facing === 'up'):
+        // 1. Thân balo trọn vẹn
+        p(-2, -17, 4, 1, INK); // quai xách đỉnh
+        p(-4, -16, 8, 9, INK);
+        p(-3, -15, 6, 7, boxMain);
+        p(-3, -15, 6, 1, boxLight);  // nắp trên
+        p(-3, -12, 6, 1, reflector); // dải phản quang
+        p(-3, -10, 6, 2, boxDark);   // phần đáy
+        p(-2, -14, 1, 5, INK);       // 2 đai lưng
+        p(1, -14, 1, 5, INK);
+        // 2. Mũ shipper nhìn từ sau lưng
+        p(-3, -24, 6, 3, INK); p(-2, -23, 4, 2, boxMain);
+        p(-1, -21, 2, 1, INK); // chốt cài nón sau gáy
+        p(0, -25, 1, 1, INK);
+      }
       break;
+    }
     case 'cart': {
       // nón lá + xe đẩy bên cạnh
-      g.moveTo(-11, -42).lineTo(0, -52).lineTo(11, -42).closePath().fill(0xe4c485).stroke({ color: INK, width: 1 });
-      g.rect(side * 16 - 14, -22, 28, 14).fill(INK).rect(side * 16 - 13, -21, 26, 12).fill(0xc0392b).rect(side * 16 - 13, -21, 26, 3).fill(0xe8604f);
-      g.rect(side * 16 - 12, -8, 6, 6).fill(INK).rect(side * 16 + 6, -8, 6, 6).fill(INK);
+      for (let i = 0; i < 6; i++) p(-1 - i, -26 + i, 2 + 2 * i, 1, i === 0 ? INK : 0xe4c485);
+      p(side * 8 - 7, -11, 14, 7, INK); p(side * 8 - 6, -10, 12, 5, 0xc0392b); p(side * 8 - 6, -10, 12, 1, 0xe8604f);
+      p(side * 8 - 6, -4, 3, 3, INK); p(side * 8 + 3, -4, 3, 3, INK);
       break;
     }
     case 'cap':
-      g.rect(-7, -47, 14, 5).fill(INK).rect(-6, -46, 12, 3).fill(0x8a8a82);
+      p(-4, -24, 8, 3, INK); p(-3, -24, 6, 2, 0x8a8a82);
       break;
     case 'band':
-      g.rect(-8, -41, 16, 3).fill(0xf1c40f);
+      p(-4, -21, 8, 2, 0xf1c40f);
       break;
   }
 }
@@ -96,6 +189,13 @@ export class NeighborhoodActors {
 
   public getVisibleSpriteCount(): number { return this.sprites.size; }
   public getBubbleCount(): number { return this.activeBubbles; }
+
+  public setCivicPopulation(
+    pop: number | Record<string, { pop: number; target?: number; baseline?: number; factor?: number; qol?: number; capacity?: number }>,
+    isMobile = false,
+  ): void {
+    this.life.setCivicPopulation(pop, isMobile);
+  }
 
   private buildBirds(): void {
     // Chim vòng quanh công viên và sân trường (vẽ khi trời quang).
@@ -145,17 +245,27 @@ export class NeighborhoodActors {
     const dir = n.facing;
     const hz = detail === 'far' ? 4 : 8;
     const frame = f.reducedMotion ? 0 : Math.floor(f.time * (walking ? hz : 1.5)) % (walking ? 4 : 2);
-    const key = `npc_${walkerLook(n.spriteVariant)}_${sitting ? 'down' : dir}_${walking ? 'walk' : 'idle'}_${frame}`;
+    const visualFacing: NpcFacing = sitting ? 'down' : dir;
+    // `spriteVariant` là mã look (6 học sinh, 7 cụ già, 8 công sở, 9 trẻ em), không phải chỉ số walker.
+    const look = residentLook(n.spriteVariant);
+    const key = `npc_${look}_${visualFacing}_${walking ? 'walk' : 'idle'}_${frame}`;
     entry.body.texture = this.textures.getTexture(key);
-    entry.body.tint = n.tint;
+    entry.body.tint = look >= 6 ? 0xffffff : n.tint;
     const bob = walking && !f.reducedMotion ? Math.abs(Math.sin(f.time * (n.type === 'jogger' ? 16 : 9) + n.x * 0.05)) * (n.type === 'jogger' ? 2 : 1.2) : 0;
     entry.container.scale.set(n.scale);
     entry.container.position.set(Math.round(n.x), Math.round(n.y - bob + (sitting ? 5 : 0)));
     entry.container.zIndex = n.y + (sitting ? 6 : 0);
     entry.shadow.visible = !sitting;
-    const accKey = `${n.accessory}|${dir}|${n.tint}`;
-    if (entry.accKey !== accKey) { entry.accKey = accKey; drawAccessory(entry.accessory, n.accessory, dir, n.tint); }
-    entry.accessory.y = sitting ? 0 : 0;
+    const accKey = look >= 6 ? 'none' : `${n.accessory}|${visualFacing}|${n.tint}`;
+    if (entry.accKey !== accKey) {
+      entry.accKey = accKey;
+      if (look >= 6) {
+        entry.accessory.clear();
+      } else {
+        drawAccessory(entry.accessory, n.accessory, visualFacing, n.tint);
+      }
+    }
+    entry.accessory.y = sitting ? 1 : 0;
     // Ô/áo mưa: dùng chung RainGear với người chơi/khách (chỉ khi đang mưa và hiệu ứng bật)
     const raining = (f.weather?.rainIntensity ?? 0) > 0.02;
     if (raining && f.gearEnabled && !n.sheltered) {

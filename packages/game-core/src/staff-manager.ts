@@ -1,5 +1,6 @@
 import type { SaveGameData, StaffBuilding, StaffMember, StaffShift } from '@game/shared';
-import { isShiftWithinStoreHours } from '@game/data';
+import { isKnownShift } from '@game/data';
+import { normalizeStaffAssignments } from './staff-shifts';
 
 export function normalizeStaffSchedule(
   schedule: Record<string, StaffShift> | undefined,
@@ -8,7 +9,7 @@ export function normalizeStaffSchedule(
   const staffIds = new Set(staff.map((member) => member.id));
   return Object.fromEntries(
     Object.entries(schedule ?? {}).filter(([staffId, shift]) =>
-      staffIds.has(staffId) && isShiftWithinStoreHours(shift)
+      staffIds.has(staffId) && isKnownShift(shift)
     )
   ) as Record<string, StaffShift>;
 }
@@ -28,13 +29,16 @@ export class StaffManager {
   }
 
   public load(saveData: SaveGameData): void {
-    this.staff = (saveData.staff ?? []).map((s) => ({
+    // Chuẩn hoá gán tòa khi nạp (cùng đường migration 13): bỏ gán tới tòa không còn tồn tại.
+    const normalized = structuredClone(saveData);
+    normalizeStaffAssignments(normalized);
+    this.staff = (normalized.staff ?? []).map((s) => ({
       ...structuredClone(s),
-      shift: isShiftWithinStoreHours(s.shift) ? s.shift : 'full_day',
+      shift: isKnownShift(s.shift) ? s.shift : 'full_day',
     }));
-    this.staffSchedule = normalizeStaffSchedule(saveData.staffSchedule, this.staff);
-    this.wageDebt = Math.max(0, saveData.wageDebt ?? 0);
-    this.processedPayrollDayIds = new Set(saveData.processedPayrollDayIds ?? []);
+    this.staffSchedule = normalizeStaffSchedule(normalized.staffSchedule, this.staff);
+    this.wageDebt = Math.max(0, normalized.wageDebt ?? 0);
+    this.processedPayrollDayIds = new Set(normalized.processedPayrollDayIds ?? []);
   }
 
   // --- Export ---
@@ -130,7 +134,7 @@ export class StaffManager {
   public setStaffShift(staffId: string, shift: StaffShift): boolean {
     const member = this.staff.find((m) => m.id === staffId);
     if (!member) return false;
-    if (!isShiftWithinStoreHours(shift)) return false;
+    if (!isKnownShift(shift)) return false;
     this.staffSchedule[staffId] = shift;
     return true;
   }

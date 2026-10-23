@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import type { GameTileMap, SaveGameData, StoreFixture } from '@game/shared';
-import { BUILDINGS, BUILDING_MAP, DEFAULT_INITIAL_SAVE, FIXTURE_SHOP, LAND_PLOTS, MAP_HEIGHT, MAP_ORIGIN_Y, MAP_WIDTH, STORE_BOUNDS, XOI_BOUNDS, XOI_DEFAULT_FIXTURES, XOI_PLOT_ID, DRINK_BOUNDS, DRINK_DEFAULT_FIXTURES, DRINK_PLOT_ID, DRINK_EXPANSION_PLOT_IDS, XOI_EXPANSION_PLOT_IDS, NORTH_EXPANSION_ROWS, buildingTop, fixtureBuilding, buildingAt, buildingOfTiles, generateStarterTileMap, isFenceTile } from '@game/data';
+import { BUILDINGS, BUILDING_MAP, DEFAULT_INITIAL_SAVE, FIXTURE_SHOP, LAND_PLOTS, MAP_HEIGHT, MAP_ORIGIN_Y, MAP_WIDTH, STORE_BOUNDS, XOI_BOUNDS, XOI_DEFAULT_FIXTURES, XOI_PLOT_ID, DRINK_BOUNDS, DRINK_DEFAULT_FIXTURES, DRINK_PLOT_ID, DRINK_EXPANSION_PLOT_IDS, XOI_EXPANSION_PLOT_IDS, NORTH_EXPANSION_ROWS, buildingTop, fixtureBuilding, buildingAt, buildingOfTiles, generateStarterTileMap, isFenceTile, SECURITY_POST } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { applyStoreLayoutActions, buyLandPlot, relocateMisplacedFixtures, validateStoreLayout } from './store-layout';
@@ -48,6 +48,16 @@ const fixture = (over: Partial<StoreFixture> & Pick<StoreFixture, 'id' | 'type' 
 });
 
 export function runBuildingTests(): void {
+  // xoi-shop 5.2: chỗ đứng bảo vệ nằm trên vỉa hè, không thuộc tòa nào và đi được, kể cả khi đã mua mọi tòa phụ.
+  {
+    const post = { x: Math.floor(SECURITY_POST.x / 32), y: Math.floor(SECURITY_POST.y / 32) };
+    for (const ids of [[], [XOI_PLOT_ID], [XOI_PLOT_ID, DRINK_PLOT_ID, ...XOI_EXPANSION_PLOT_IDS, ...DRINK_EXPANSION_PLOT_IDS]]) {
+      const map = mapFor(ids);
+      assert.equal(buildingAt(post.x, post.y, map.buildings), undefined, `chỗ bảo vệ không nằm trong tòa (${ids.length} lô)`);
+      assert.equal(map.collisionLayer[tileIndex(post.x, post.y)], false, `chỗ bảo vệ đi được (${ids.length} lô)`);
+    }
+  }
+
   console.log('\n--- Nhiều tòa nhà: tiệm xôi riêng trên cùng dải đất ---');
 
   // Dữ liệu: tòa không chồng sàn trong, chỉ chung một tường, nằm trong bản đồ, cửa nằm trên hàng tường dưới.
@@ -292,7 +302,7 @@ export function runBuildingTests(): void {
     const bought = buyXoi(baseSave());
     const open = mapFor([XOI_PLOT_ID]);
     const stationShop = FIXTURE_SHOP.find(item => item.id === 'thung_ngam')!;
-    assert.deepEqual(stationShop.allowedBuildings, ['xoi']);
+    assert.deepEqual(stationShop.typeIds, ['xoi_shop']);
 
     // Trạm xôi trong tiệm chính bị từ chối.
     const inMain = structuredClone(bought);

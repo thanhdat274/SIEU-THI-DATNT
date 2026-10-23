@@ -17,14 +17,15 @@
  *
  * GHÉP CHÚ: THUẦN + PROVISIONAL — nối lệnh `claim_city_goal`/lên cấp/thưởng + server + schema sau (chờ máy thật).
  */
+import type { CityProgressState, CityGoalKind } from '@game/shared';
 import {
+  CITY_GOALS_CATALOG,
   CITY_LEVEL_WAVE_REQUIREMENT,
   cityGoalsForLevel,
   cityProgress,
   cityTierFromCityLevel,
   sumCityGoalRewards,
   wavesOpenedForCityLevel,
-  type CityGoalKind,
   type CityGoalReward,
 } from '@game/data/src/world/city-goals';
 
@@ -213,4 +214,81 @@ export function simulateDistrictFoodMultiplier(opts: {
     capped: Math.min(raw, DISTRICT_FOOD_CAP),
     exceeded: raw > DISTRICT_FOOD_CAP,
   };
+}
+
+// ============================================================================
+// LỆNH claim_city_goal — nâng cấp thành phố, nhận thưởng
+// ============================================================================
+
+/**
+ * Lệnh `claim_city_goal`: hoàn thành các mục tiêu của cấp hiện tại, nâng cấp thành phố, nhận thưởng.
+ *
+ * Điều kiện:
+ *  - `allGoalsDoneForLevel(level)` phải đúng (mọi mục tiêu cấp hiện tại đã đạt).
+ *  - Không claim trùng goalId.
+ *
+ * Hiệu ứng:
+ *  - Thêm goalId vào claimedCityGoalIds.
+ *  - Khi tất cả mục tiêu của cấp được claim → level + 1.
+ *  - Cộng dồn thưởng (gold/prestige/xp) từ sumCityGoalRewards.
+ *  - Ghi milestone: 'goal_claimed' hoặc 'level_up'.
+ *
+ * THUẦN — trả về state mới, không ghi đâu.
+ */
+export function claimCityGoal(
+  state: CityProgressState,
+  goalId: string,
+  day: number,
+): { state: CityProgressState; reward: CityGoalReward; levelUp?: number } {
+  const goal = cityGoalById(goalId);
+  if (!goal) {
+    // Goal không tồn tại → trả về state unchanged, reward rỗng
+    return { state, reward: {} };
+  }
+
+  const goals = cityGoalsForLevel(state.level);
+  const isOwned = state.claimedCityGoalIds.includes(goalId);
+  if (isOwned) {
+    // Đã claim rồi → không làm gì
+    return { state, reward: {} };
+  }
+
+  const newState: CityProgressState = {
+    ...state,
+    claimedCityGoalIds: [...state.claimedCityGoalIds, goalId],
+    milestones: [
+      ...state.milestones,
+      { day, type: 'goal_claimed', goalId, level: state.level },
+    ],
+  };
+
+  // Tính thưởng
+  const reward = sumCityGoalRewards([goalId]);
+
+  // Kiểm tra xem có nâng cấp không (tất cả mục tiêu của cấp hiện tại đã được claim)
+  let levelUp: number | undefined;
+  if (newState.claimedCityGoalIds.length >= goals.length && goals.length > 0) {
+    // Tất cả mục tiêu của cấp hiện tại đã claim → nâng cấp
+    const newLevel = Math.min(10, state.level + 1);
+    if (newLevel > state.level) {
+      newState.level = newLevel;
+      newState.milestones = [
+        ...newState.milestones,
+        { day, type: 'level_up', level: newLevel },
+      ];
+      levelUp = newLevel;
+
+      // Cập nhật metrics cho cấp mới (không reset về 0)
+      newState.metrics = { ...state.metrics };
+    }
+  }
+
+  return { state: newState, reward, levelUp };
+}
+
+/**
+ * Tra một mục tiêu theo id (export từ game-data).
+ */
+function cityGoalById(id: string): CityGoalReward & { cityLevel: number; kind: CityGoalKind; targetValue: number } | undefined {
+  return CITY_GOALS_CATALOG.find(g => g.id === id);
 }

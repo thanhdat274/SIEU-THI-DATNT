@@ -68,12 +68,11 @@ export class PixelCamera {
     this.viewportWidth = width;
     this.viewportHeight = height;
     if (!this.isCustomZoom) {
-      // Mobile Portrait (< 768px width) -> Zoom 1.25
-      // Mobile Landscape -> Zoom 1.5
+      // Mobile (< 768px width), dọc hay ngang -> Zoom 1 (nguyên, nằm trong ZOOM_LEVELS, nét 1:1, thấy ≥ 11 ô ngang)
       // Desktop Small -> Zoom 2
       // Desktop Large -> Zoom 3
       if (width < 768) {
-        this.zoom = height > width ? 1.25 : 1.5;
+        this.zoom = 1;
       } else if (height >= 900 && width >= 1400) {
         this.zoom = 3;
       } else {

@@ -79,7 +79,7 @@ export function runSnackShopTests(): void {
     assert.equal(buildingTop('snack', [SNACK_PLOT_ID, 'snack-north-a']), SNACK_BOUNDS.top - 3);
     assert.equal(buildingTop('snack', ['snack-north-a']), SNACK_BOUNDS.top, 'mảnh bắc không có tòa thì không tính');
     const plot = LAND_PLOTS.find(p => p.id === SNACK_PLOT_ID)!;
-    assert.ok(plot.level === 26 && plot.cost === 400_000 && plot.buildingId === 'snack');
+    assert.ok(plot.level === 26 && plot.cost === 1_200_000 && plot.buildingId === 'snack');
     assert.deepEqual(LAND_PLOTS.filter(p => p.expandsBuilding === 'snack').map(p => p.prerequisitePlotId), [SNACK_PLOT_ID, 'snack-north-a']);
   }
 
@@ -102,9 +102,9 @@ export function runSnackShopTests(): void {
   // Mua tòa: trừ tiền, đặt bố cục mặc định hợp lệ (có thu ngân), mua lặp không nhân đôi, dưới cấp 26 không mua được.
   {
     const base = structuredClone(DEFAULT_INITIAL_SAVE);
-    base.player.level = 60; base.player.money = 1_000_000; base.worldTime.isStoreOpen = false;
+    base.player.level = 60; base.player.money = 2_000_000; base.worldTime.isStoreOpen = false;
     const bought = applyStoreLayoutActions(base, [{ type: 'buy_plot', plotId: SNACK_PLOT_ID }], mapFor).save!;
-    assert.equal(bought.player.money, 1_000_000 - 400_000);
+    assert.equal(bought.player.money, 2_000_000 - 1_200_000);
     for (const f of SNACK_DEFAULT_FIXTURES) assert.equal(bought.storeLayout.fixtures.filter(x => x.id === f.id).length, 1);
     assert.deepEqual(validateStoreLayout(bought, mapFor(bought.storeLayout.unlockedPlotIds ?? [])), {}, 'bố cục mặc định hợp lệ (đủ thu ngân, đi tới được mọi nội thất)');
     const again = applyStoreLayoutActions(bought, [{ type: 'buy_plot', plotId: SNACK_PLOT_ID }], mapFor).save!;
@@ -117,7 +117,7 @@ export function runSnackShopTests(): void {
   {
     for (const id of ['chao_xao', 'chao_chien']) {
       const item = FIXTURE_SHOP.find(x => x.id === id)!;
-      assert.deepEqual(item.allowedBuildings, ['snack']);
+      assert.deepEqual(item.typeIds, ['snack_shop']);
       assert.equal(item.functional, true);
     }
     for (const id of ['bap_xao_tp', 'ca_vien_chien_tp']) {

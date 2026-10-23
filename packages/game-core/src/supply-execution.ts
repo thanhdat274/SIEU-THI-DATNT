@@ -14,6 +14,9 @@
  * vòng/thiếu. Nối `internal_delivery` thật (cần 6a D6) + schema kế tiếp + server
  * là SAU (chờ máy thật). KHÔNG sửa shared/schema.
  */
+import type { SupplyContract, InternalDelivery } from '@game/shared';
+
+export type { SupplyContract, InternalDelivery };
 
 /** Một lô hàng trong kho chung (đủ trường để tham chiếu qua `lotId` trong delivery). */
 export interface SupplyStockLot {
@@ -26,39 +29,22 @@ export interface SupplyStockLot {
   expiryDay: number;
 }
 
-/** Hợp đồng cung ứng (design D3). `status: 'active'` = đã được hai bên đồng ý, đang hiệu lực. */
-export interface SupplyContract {
-  id: string;
-  /** Tòa giao hàng (nguồn kho chung lấy cho tòa này). */
-  fromBuildingId: string;
-  /** Tòa nhận hàng. */
-  toBuildingId: string;
-  productId: string;
-  /** Lượng mong muốn mỗi sáng (bị cap ≤ 50% tồn trung bình). */
-  quantityPerDay: number;
-  /** Giá nội bộ mỗi đơn vị (chỉ ghi thành tích, không đổi quỹ). */
-  internalPrice: number;
-  startDay: number;
-  endDay?: number;
-  status: 'active' | 'proposed' | 'ended' | 'cancelled';
+
+/** Kệ cách kho quá số ô này thì nhân viên châm qua chuyến giao nội bộ (design D6). */
+export const INTERNAL_DELIVERY_MIN_TILES = 30;
+/** Tốc độ chuyến giao nội bộ: số ô đi được mỗi phút game (PROVISIONAL — 50 ô ≈ 25 phút). */
+export const INTERNAL_DELIVERY_TILES_PER_MINUTE = 2;
+
+/** Phút game chuyến giao mất cho quãng đường `tiles` (ít nhất 1). */
+export function internalDeliveryMinutes(tiles: number): number {
+  return Math.max(1, Math.ceil(tiles / INTERNAL_DELIVERY_TILES_PER_MINUTE));
 }
 
-/** Giao hàng nội bộ tới kệ/kho phụ của tòa nhận (6a D6 — PROVISIONAL chờ nối thật). */
-export interface InternalDelivery {
-  id: string;
-  fromBuildingId: string;
-  toBuildingId: string;
-  productId: string;
-  /** Các lô đã lấy theo FEFO (mỗi lô là phần đã tiêu thụ của lô gốc). */
-  lines: { lotId: string; qty: number }[];
-  totalQty: number;
-  /** Ngày hợp đồng bắt đầu có hiệu lực (để truy vết nguồn). */
-  fromDay: number;
-  /** Ngày thực hiện giao. */
-  day: number;
-  /** Mốc thời gian giao (nếu có), tùy chọn. */
-  deliveredAt?: number;
+/** Phút game tuyệt đối (ngày × 1440 + giờ × 60 + phút) để so mốc tới nơi qua nửa đêm. */
+export function absoluteGameMinute(t: { day: number; hour: number; minute: number }): number {
+  return t.day * 1440 + t.hour * 60 + t.minute;
 }
+
 
 /** Báo thiếu hàng cho một hợp đồng (báo hai bên khi giao phần có). */
 export interface ShortfallReport {

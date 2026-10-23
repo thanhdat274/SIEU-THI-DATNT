@@ -22,7 +22,9 @@ export type LandCommand =
   | 'buy_parcel'
   | 'buy_plot'
   | 'relocate_building'
-  | 'reclaim_wave';
+  | 'reclaim_wave'
+  /** Góp tiền vào ô "Quỹ xây dựng" của sổ góp xóm (góp hàng không phải lệnh đất). */
+  | 'donate_bundle_cash';
 
 export type LandCommandRole = 'owner' | 'member';
 

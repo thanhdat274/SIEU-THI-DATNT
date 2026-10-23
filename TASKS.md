@@ -1,3 +1,210 @@
+## MULTI-SITE-PARCEL-LEASE: CƠ SỞ TRÊN LÔ THUÊ + KHO ĐỆM + SCHEMA 17 (19/10/2026, CHƯA COMMIT) — spec 7.2, core/save/co-op + UI bảng cơ sở
+
+- [x] Lệnh `open_site` / `close_site` / `site_transfer` (core + server replay + `WorldRuntime`): cơ sở = tòa mở trên lô thuê/sở hữu ngoài W0, `siteId` = instanceId; 4 tòa trên lô tiệm chính và tòa mở bằng `open_building` cũ vẫn dùng thẳng kho tổng.
+- [x] Kho đệm `siteBuffers`: `toTarget 'site_buffer'` giờ vào kho đệm (trước tạm vào kho tổng); kệ cơ sở (bày tay, sơ đồ, châm tự động, nhân viên) chỉ lấy từ kho đệm của nó. Sức chứa 60 + tối đa 3 cơ sở là PROVISIONAL (`game-core/src/multi-site.ts`).
+- [x] `end_lease` lô có cơ sở → `site_not_cleared` + danh sách việc (`buffer:n`, `deliveries:n`, `fixtures:n`, `close_site`); lô nợ thuê: chỉ chuyển ra. Nhật ký cơ sở 200 dòng ghi người làm (co-op: mọi thành viên làm được, chủ vắng vẫn làm).
+- [x] Id chuyến nội bộ dùng bộ đếm `internalDeliverySeq` lưu trong save (thay `internalDeliveries.length`).
+- [x] Save schema 17 (`migrateToW17`, không sửa W7–W16): `sites`, `siteBuffers`, `siteLogs`, `internalDeliverySeq` tùy chọn; save cũ không sinh trường mới.
+- [x] Test: `multi-site.test.ts` (thuê → chuyển vào → kệ lấy kho đệm → không châm chéo → trả lô bị từ chối → dọn xong trả được; lô nợ chỉ chuyển ra; lưu/tải giữa chuyến; id không trùng; migration 16→17); `world-runtime.test` co-op 2 người, chủ rời phòng. Sửa 3 test cứng số 16.
+- [x] typecheck PASS; game-core ×3 112/112; web, server test:unit, test:coop PASS; golden khớp. Log `.qa/msp-*.log`.
+- [x] UI 3.2 bảng cơ sở (`SiteModal`, mobile-first một cột) + nút "Quản lý cơ sở" trong hộp lô đất; mở cơ sở trên lô W1+ gửi `open_site`. Browser QA 7 viewport 568–932 px: vừa màn, không tràn ngang, control ≥44 px; thao tác chuyển vào/rút về/nhật ký nhìn bằng mắt. CHƯA QA co-op 2 trình duyệt, chọn lô bằng tay, cất kệ thật rồi trả lô. Log `.qa/msp-ui-*.log`.
+- [x] 1.2 kệ gắn lô: `validateStoreLayout` từ chối kệ vắt qua ranh lô cơ sở (`outside_parcel`), lô suy từ `sites[].parcelId` (không thêm trường save). Test trong `multi-site.test.ts`. Log `.qa/msp-12-*.log`. typecheck, game-core ×3 112/112 (golden khớp), web, server test:unit PASS; test:coop lượt đầu FAIL ở `order_supplier` (chợ đầu mối chỉ còn 51 < 60 — tồn chợ theo world id ngẫu nhiên, không liên quan change), chạy lại 3/3 PASS: test chập chờn có sẵn.
+- [ ] CHƯA: `yarn build`, QA co-op 2 trình duyệt thật.
+
+## INTERNAL_DELIVERY HAI CHIỀU + HÀNG ĐANG CHUYỂN SCHEMA 16 (19/10/2026, CHƯA COMMIT) — nền cho spec 7.2 `multi-site-parcel-lease`
+
+- [x] `InternalDelivery.toTarget?: 'shelf' | 'site_buffer' | 'central'` (thiếu = châm kệ như cũ); `GameSimulation.startInternalDelivery(...)`; tới nơi `central` → `returnLotsToInventory` (giữ lô FEFO + giá vốn). `site_buffer` tạm vào kho tổng tới khi có kho đệm (7.2, phiên sau).
+- [x] Save schema 16 (`migrateToW16`, không sửa W7–W15): chuẩn hoá `internalDeliveries` (bỏ phần tử hỏng, `totalQty` = tổng lô, bỏ `toTarget` lạ). Hàng đang chuyển không nằm trong kho nên lưu/tải không mất, không nhân đôi.
+- [x] Test: `runInternalDeliveryReturnTests` (đi/về qua lưu-tải, qua nửa đêm, migration 15→16), khối hàng đang chuyển trong `world-runtime.test` (snapshot server = client, khởi động lại server giữa chuyến, chạy qua đổi ngày). Sửa 2 test cứng số 15.
+- [x] typecheck PASS; game-core ×3 112/112; web, server test:unit, test:coop PASS; golden khớp tuyệt đối. Log `.qa/7.2-nen-*.log`. CHƯA QA trình duyệt (chưa có UI).
+
+## MƯA: DỰ BÁO SAI SỐ + MƯA TO ÍT KHÁCH + GỢN VŨNG + ƯỚT QUA ĐÊM (19/10/2026, CHƯA COMMIT)
+
+- [x] (a) dự báo sai số tăng theo ngày (`forecastRainForDay`), deterministic; (e) cache `getWorldEvents` theo id sự kiện; (c) sóng gợn vũng theo `depthFxActive`; (d) ướt qua đêm sau mưa to, save schema 15 (`migrateToW15`).
+- [x] (b) hệ số khách theo dải mưa (vừa 0,95 / to 0,6 / giông 0,5), chỉ áp vào nhịp sinh khách — **ĐÃ CHỐT 19/10/2026**; xe chậm thêm khi mưa to (hằng số tốc độ vẫn PROVISIONAL). Đã điều tra: nắng −5,7% là do harness tự lên cấp (ít XP ngày mưa); đo cặp (`rain-paired-sweep.ts`) sau khi bỏ nhân trần khách: mưa to −15% / giông −21% (cấp 6), −7% (cấp 20); mưa vừa ~0%.
+- [x] typecheck PASS; game-core ×3 112/112; renderer/web/server unit PASS; coop lần 1 FAIL (seed khan hàng NCC), lần 2–3 PASS; golden không lệch. Browser QA desktop một phần; CHƯA QA mobile/co-op.
+
+## ĐUA VỀ TEST XANH THẬT — SỬA LỖI REVIEW CÒN TỒN + KIỂM CHỨNG (18/10/2026, CHƯA COMMIT)
+
+- [x] **BƯỚC 0 — hiện trạng:** khôi phục `yarn.lock` (`git checkout e2ed3be -- yarn.lock`) + bỏ dòng `yarn.lock` trong `.gitignore`. Lỗi ban đầu: game-core `building-placement.test.ts:38`, server `coop-commands.test.ts:426` → đã sửa (1a/3).
+- [x] **1a:** SNACK_PLOT_ID **1.200.000 ₫**; `snack-balance-sim` CÓ khung giờ + cross-sell → **hoàn vốn ≈ 7,2 ngày** (lãi ròng +165.757 ₫/ngày); sửa `building-placement.test.ts:38/99`, `coop-commands.test.ts:426`.
+- [x] **1b cross-sell đi bộ:** bỏ teleport `position`; khách đi bộ qua `routeCustomer('to_shelf')`; chỉ chuyển khi tòa đích MỞ + có kệ hàng; test sim thật ≤1 ô/tick + rời khi đóng/hết hàng. **CHƯA QA browser.**
+- [x] **1c toast 1 lần/save:** `simulation.ts` gán `callbacks` sớm + cờ `hasWarnedGuardNotNight` (schema 14); test `night-cycle.test.ts` (tải 2 lần chỉ 1 toast). **CHƯA QA browser.**
+- [x] **1d golden 3 ngày:** sinh lại `world-golden.json`; base không đổi, allBuildings tăng khách/doanh thu do cross-sell.
+- [x] **2a:** respondReview giới hạn delta ≤ 50% mức uy tín THẬT đã mất (`reputationLost` ghi trong `recordCustomerRating`; cap `reputationLost/2`); test không tăng ròng.
+- [x] **2b:** REVIEW_RESPONSE_MAX_AGE_DAYS=3, từ chối quá hạn bằng tiếng Việt; test reviews.test + world-runtime replay (không đổi revision).
+- [x] **2c UI:** ReviewsModal + DaySummaryModal khóa nút "Phản hồi" + 🔒 lý do quá hạn. **CHƯA QA browser.**
+- [x] **BƯỚC 3 coop "chỉ còn 51":** là giả định cũ của test (số tồn nhà cung cấp thay đổi động) — hiện dùng regex `/chỉ còn/`, không lỗi code; sửa `coop-commands.test.ts:426` (mua snack −1.200.000) + `:466` (phí dời 360.000).
+- [x] **Kiểm chứng cuối (18/10/2026):** `yarn typecheck` EXIT 0; `game-core test` ×3 mỗi lần **112/112 pass, 0 fail**; `apps/web test` PASS; `game-renderer test` PASS; `server test:unit` PASS; `server test:coop` PASS.
+- [ ] **CHƯA QA browser:** cross-sell đi bộ, toast 1 lần/save, nút "Phản hồi" quá hạn. **CHƯA COMMIT.**
+
+## HỆ NHÂN VIÊN THEO CA (staff-shifts) — CẢ 2 PHASE XONG 17/10/2026 (chưa commit, chưa QA mắt)
+
+- [x] **Phase A (ca + gán tòa, không đụng clock) đã code + test xanh**: 4 ca (sáng 07–14, chiều 14–22, đêm 22–06 vắt nửa đêm hệ số 0,6, cả ngày 07–22), lương theo ca, chỉ vẽ/làm việc trong ca (`peekVisibleStaff`), gán nhân viên vào tòa `BuildingPlacement` + lọc việc theo tòa (châm hàng/thu ngân/bảo vệ/dọn bàn), lệnh co-op `assign_staff_building` (server replay + validate), migration save 12→13, UI `StaffModal` (ca/tòa/lương/trạng thái + cảnh báo ca đêm chưa giảm trộm).
+- [x] **Phase B đã code + test xanh**: pha đêm 22:00–06:00 (đóng cửa, đồng hồ chạy, không sinh khách/không bán), quy ước 00:00–06:00 thuộc ngày N, chốt ngày 06:00 (chế độ thường), tốc độ đêm ×3 một nguồn trong `GameClock` (parity client↔`WorldRuntime`, gồm routine/coop), chặn mở cửa ngoài giờ, HUD ban đêm + nút Ngủ; sửa `daily-routine.test.ts` + sinh lại golden world; test mới `night-cycle.test.ts`.
+- [x] **QA mắt desktop PASS (17/10/2026 tối, 1280×800, Browser pane + dev 5173)**: HUD ban đêm/khoá cửa/nút Ngủ; StaffModal 4 ca + chọn tòa + lương theo ca + trạng thái trực + cảnh báo ca đêm; chỉ vẽ nhân viên trong ca; Ngủ sang ngày mới. Phát hiện+sửa P2: thêm `GameSimulation.sleepNow()` để nút Ngủ ở routine mode đưa nhân vật về cửa nhà như ngủ 23:30. QA lại luồng routine đêm sau chốt: 23:30 ngủ **không** đen màn/không chốt ngày, 05:50 mới mờ đen, 06:00 chốt ngày + thức dậy ở nhà, nút Ngủ ẩn khi đang ngủ.
+- [ ] **QA mắt mobile 375×812/667×375 CHƯA LÀM** (browser tool không đổi viewport) + playtest cân bằng (chủ dự án chốt giữ lương đêm 0,6 và tốc độ ×3 ngày 17/10/2026).
+- [x] **Chặn trộm đêm theo ca + tòa (theft-and-security 4.4a, 17/10/2026 tối):** `runNightBurglary` dùng `isStaffActiveAt` + `burglaryTime` (02:00 ngày N); guard `night` chặn trộm, guard `full_day`/`morning`/`afternoon` không chặn; guard `assignedBuilding=null` hoặc `'main'` chặn trộm `main`, tòa khác không. Test: guard night/day/none. Typecheck + game-core ×3 (112/112 pass) + server unit/coop EXIT 0. Xóa cảnh báo "chưa giảm trộm" StaffModal.
+- Bằng chứng cuối (chạy thật 17/10/2026): `yarn typecheck` EXIT 0; `game-core test` EXIT 0 **112/112 pass, 0 fail, 3 lần liên tiếp**; `game-renderer test` EXIT 0; `apps/web test` EXIT 0; `apps/server test:unit` EXIT 0; `test:coop` **EXIT 0** (Mongo, có ca đổi ca đêm + gán tòa qua HTTP). Golden world sinh lại bằng `world-golden-gen.ts` (gameplay đổi được duyệt). Sửa 1 dòng ngoài phạm vi `apps/server/src/coop-commands.test.ts:209` (typing của phiên khác) để typecheck xanh — xem `tổng hợp.md`.
+- **Giới hạn**: game thật (local/co-op) đang bật routine nên pha đêm chỉ 22:00–23:30; muốn chơi tới 06:00 phải tắt routine mặc định hoặc đổi lịch routine (change khác). Lương đêm 0,6 / tốc độ ×3 chưa playtest.
+- Là nền cho `theft-and-security` 4.4 (bảo vệ đêm) và `snack-shop-building` 3.5 (nhân viên riêng quán ăn vặt); change này **không** làm hai tính năng đích, **không** sửa `open-world-districts-city-goals`, **chưa commit**.
+
+## QUÁN ĂN VẶT MỞ RỘNG (17/10/2026, UPDATE 3)
+
+- [x] **(a) Khách chuyền tòa:** `CROSS_SELL_RULES` (main↔snack 15%/10%, main↔xoi 8%/5%), `shouldCrossSell` dùng `hashSeed`+`Mulberry32Rng`. Nối vào `completeCheckout()` → set `pendingCrossSellTo`, `stage='leaving'` (KHÔNG teleport). Trong `update()` tick tiếp theo, kiểm tòa đích mở + còn hàng → chuyển sang.
+- [x] **(b) Bé Na regulars:** `pickAvailableRegular()` trả `RegularPickResult { regular, preferredBuilding }`. Nếu `snackShopVisitHours` khớp giờ hiện tại → `preferredBuilding='snack'`. `maybeSpawnCustomer()` spawn regular ở preferredBuilding. `RegularCustomerDefinition` thêm 3 trường optional (`snackShopProductIds`, `snackShopVisitHours`, `snackShopDialogues`).
+- [x] **(c) Bỏ `snack_staff` role:** dùng `assignedBuilding='snack'` của staff-shifts cho cashier/refill. `generateCandidatesForDay()` không còn 'snack_staff' trong roles. Buildings pool vẫn có 'snack'.
+- [x] **(d) Khung giờ bổ trợ:** `SNACK_SUPPLEMENTARY_HOURS` (14–16h ×1.3, 16–18h ×1.5), `snackSupplementaryMultiplier()` nối vào `maybeSpawnCustomer()` stream factor snack.
+- [x] **Cân bằng:** SNACK_PLOT_ID **1.200.000** (giá mới, hoàn vốn ~11,2 ngày 60 ngày). SNACK_TRAFFIC_SHARE giữ 0,03.
+- [x] **Migration:** không nâng schema (optional fields).
+- [x] **Toast "bảo vệ ca ngày" chỉ 1 lần:** ✅ có cờ `hasWarnedGuardNotNight` trong constructor, chỉ toast 1 lần/save.
+- [x] **Typecheck:** ✅ EXIT 0 (tsc -b).
+- [x] **game-core test ×3:** 102/102 pass, 0 fail. Golden world đã sinh lại.
+- [x] **server test:unit:** 2/2 pass.
+- [x] **server test:coop:** PASS.
+- [x] **apps/web test:** PASS.
+- [x] **snack-balance-sim 12 ngày:** lãi ròng tăng +123.471/ngày → hoàn vốn 9,7 ngày.
+- [x] **snack-balance-sim 60 ngày:** lãi ròng tăng +106.699/ngày → hoàn vốn 11,2 ngày.
+- [ ] **CHƯA QA:** cross-sell, Bé Na snack shop, snack_staff assignment, supplementary hours — cần playtest.
+- [ ] **CHƯA COMMIT.**
+- **Files sửa:** `customers.ts`, `regulars.ts`, `staff.ts` (shared), `staff.ts` (game-core), `snack-shop.test.ts`, `snack-extended.test.ts` (mới), `test-runner.ts`, `simulation.ts`, `land.ts`, `buildings.ts`, `shared/index.ts`.
+
+
+## GIAI ĐOẠN 4 — Bước 0: District Assignment (16/10/2026, fix review lần 2)
+
+- [x] **Tạo DISTRICT_MODIFIER_RULES** (`game-data/modifiers.ts`): sinh từ `DISTRICTS`, chỉ cho W1-W4 (skip `hem_dan_cu`), source `district`, target preferredCategories. **ALL_MODIFIER_RULES** = `[...MODIFIER_RULES, ...DISTRICT_MODIFIER_RULES]` làm mặc định cho `validateMarketData()` + `collectFactors()`.
+- [x] **Sửa `whenMatches` trong `market.ts`**: district-specific rules chỉ match khi ctx.districtId tồn tại VÀ trùng rule.when.districtId; non-district rules (không có districtId trong when) bỏ qua kiểm tra.
+- [x] **Sửa `demandContextKey`**: thêm `ctx.districtId ?? '-'` để cache đúng khi đổi khu.
+- [x] **Bỏ districtFactor trực tiếp trong `buildDemandTable`** (`demand.ts`): district giờ đi qua collectFactors + DISTRICT_MODIFIER_RULES, chịu kẹp của `multiplyFactors`.
+- [x] **Sửa `hem_dan_cu` trong `districts.ts`**: `preferredMultiplier: 1.0`, `peakHours: []` → trung lập về kinh tế.
+- [x] **Tạo helper `getMainShopDistrictId()`** và wrapper `getMarketContext()` trong `simulation.ts` chỉ cho demand/pricing (2 nơi), các chỗ khác giữ `buildMarketContext` gốc.
+- [x] **Xóa thư mục rác** `neighborhood-builder-expansion/` ở root repo.
+- [x] **Sửa `districts.test.ts`**: W0 exempt peakHours ≥1 và preferredMultiplier 1.2–1.4.
+- [x] **Sửa `market.test.ts`**: test 3.3 (`mi_hao_hao` thay `banh_mi_que`), test 3.4 mới (W1 multiplier = W0 × 1.35), test 3.6 mới (W0 = no-district).
+- [>] **Kiểm chứng**: `yarn typecheck` PASS (3.38s); unit test cần chạy trên máy thật (sandbox EPERM block `tsx` spawn). Chờ `yarn --cwd packages/game-core test` PASS trên máy thật.
+- **CHƯA LÀM**: peakHours traffic rules (chọn option b: không làm Bước 0, ghi rõ "chưa làm" trong tổng hợp.md).
+- **OpenSpec change**: `openspec/changes/neighborhood-builder-expansion/` (master change, 5 child changes `civic-*`).
+- **Ghi chú**: hiện tại mỗi building dùng district của main shop (`lot-center` → W0 `hem_dan_cu`). Per-building district assignment sẽ làm ở bước tiếp theo.
+
+## GIAI ĐOẠN 4 — Bước 1: Công trình công cộng + QoL (civic-buildings-qol) (16/10/2026, review lần 3)
+
+- [x] Dữ liệu `CIVIC_DEFS` (nguồn duy nhất) + 4 loại tòa civic (`maxInstances` 2, giá `buildCost`, cấp 10/15/20/25).
+- [x] `computeCivicQol` (tâm khu trên hàng vỉa hè — sửa lỗi QoL luôn 20), `getCivicQol`, `districtQol` trong bản tin sáng, `getBuildableParcelIds`.
+- [x] Đồn công an nối luồng trộm (sửa lỗi bỏ qua tiệm chính ở vị trí mặc định).
+- [x] Co-op qua `land-policy.ts` (phiếu > 30% quỹ, khóa lô); bỏ code chết `open_building_civic`.
+- [x] Tab "Xóm phố" + 4 loại civic trong `OpenBuildingModal`; QA trình duyệt 1280×800 + 375×812.
+- [x] `yarn typecheck` PASS; `yarn --cwd packages/game-core test` EXIT 0 (112 pass, golden khớp).
+- [~] Mặt tiền riêng (3.1 — Bước D2 17/10/2026: 4 công trình ngày/đêm + 48 khung NPC nghiêng trong atlas `civic.png`/`civic.json`, renderer ưu tiên sprite, test `civic-atlas.test.ts` PASS 56/56; sửa lỗi QA D2: thứ tự atlas, civic không chung cột, bảng thi công căn giữa, test pixel cửa PASS với sprite mới; đã sửa lệch `spriteVariant`→look; 17/10 chiều: QA lại trường/bảng thi công/NPC 6–9/chiều sâu trong game, 2 client cùng cư dân; CÒN mặt tiền co-op (cần seed cấp), 6_right/9_left, ca kẹt đặt civic W0 đã sửa bằng `findOpenOrigin` + lô trống theo loại, chưa bấm thử UI); bấm xây thật trong trình duyệt + co-op 2 client; đủ 7 viewport.
+- Change OpenSpec: `openspec/changes/civic-buildings-qol/`. Chi tiết: `tổng hợp.md` khối "BƯỚC 1".
+
+## GIAI ĐOẠN 4 — Bước 2: Dân số xóm theo QoL + hệ số khách (civic-population-demand) (16/10/2026, review — Claude sửa)
+
+- [x] `civic-population.ts` (sức chứa tạm theo diện tích lô, target theo QoL, ±3%/ngày, hệ số 0,85–1,25), bước chốt ngày, hệ số kênh `traffic`, schema 11.
+- [x] Sửa 8 lỗi bản trước (target cũ không đổi, hệ số ≠ 1, kẹt dân số nhỏ, **save schema 10 bị từ chối**, đệm bảng nhu cầu trượt, test/sweep sai). Chi tiết `tổng hợp.md` khối "BƯỚC 2".
+- [x] `yarn --cwd packages/game-core test` EXIT 0; `yarn --cwd apps/web test` PASS; tab Xóm phố QA 375×812.
+- [ ] Sweep 90 ngày đã chạy nhưng CHƯA ĐẠT: hệ số 1,07–1,09 mà doanh thu ≈ 0% (trần `trafficAtLevel` + nút thắt khác) — chờ chủ dự án chọn hướng.
+- [ ] Co-op 2 client.
+- Change OpenSpec: `openspec/changes/civic-population-demand/`.
+
+## GIAI ĐOẠN 4 — BƯỚC 3: Phí xóm + duy trì công trình (civic-local-fees) (16/10/2026)
+
+- [x] 1.1–1.5 Phí xóm (lô sở hữu, làm tròn 100 ₫, giảm theo QoL) + duy trì công trình, trừ đầu ngày sau tiền thuê, ledger `civic_upkeep`/`civic_fee`, nợ riêng `civicDebt`/`civicDebtDays` (không đóng cửa tòa), UI bản tin sáng / Analytics / tab Xóm phố.
+- [x] 1.6 typecheck + game-core test (112 pass, golden cập nhật có chứng minh) + web test PASS.
+- [x] 1.8 Sweep chốt bộ E: hoàn vốn 20 ngày (cấp 15) / 50 ngày (cấp 25), phí ≤ 2,8% doanh thu.
+- [ ] 1.7 Co-op 2 client — CHƯA QA. QA trình duyệt lượt sửa cuối — CHƯA làm.
+- Change OpenSpec: `openspec/changes/civic-local-fees/`.
+- Change OpenSpec: `openspec/changes/civic-population-demand/`.
+
+## GIAI ĐOẠN 4 — BƯỚC 4: Mục tiêu thành phố + Sổ góp xóm (civic-city-goals) (16/10/2026 — đã commit c35178f + e11c5e7; QA 2 giao diện thật đã làm (3.1–3.4 PASS))
+
+> Chỉ document **Giai đoạn 0–3** đã xong kèm test chạy thật (game-core 112/112, 0 lỗi). Giai đoạn 4 (UI Sổ góp) có code + QA Browser một phần (xem `tổng hợp.md`); Giai đoạn 5 (khánh thành + nhật ký) có code + test; Giai đoạn 6 (luật co-op) có code + test runtime, chưa QA 2 client — mục con tương ứng ở `openspec/changes/civic-city-goals/tasks.md` và `tổng hợp.md` khối "BƯỚC 4".
+> **Cập nhật Gđ 6 (16/10/2026):** đã sửa lỗi gốc `test:coop` và chạy lại typecheck/game-core/coop/gateway/web đều EXIT 0; còn QA 2 client trình duyệt và 2 câu hỏi chủ dự án (xem `tổng hợp.md`, mục "Giai đoạn 6 — rà soát & sửa").
+
+- [x] **Gđ 0**: xóa thư mục rác `dist-test/`; bỏ field `buildCostDiscount` khỏi data + type (không còn dùng).
+- [x] **Gđ 1 (1.1–1.9)**: constructor nạp `civic.bundles`; claim_city_goal không trùng milestones, thưởng vào **quỹ chung** (`playerData.money`), nhận TỪNG mục tiêu (chốt 16/10/2026), không đổi `cityTierFromCityLevel`; tách `city-progress-metrics.ts` (metrics thuần: building_types_open đếm loại, infra=waves+1, daily_customers ngày vừa kết thúc, weekly_revenue cửa sổ); donate trả mã; save validate 10&11 schema 11; P&L khoản civic là **giá vốn** không trừ 2 lần; dọn log/import chết.
+- [x] **Gđ 2 (cân bằng 80% + land-policy + test)**: quỹ `civicBundleCashAmount = round50k(0,8×giá xây − hàng dự kiến)` (không ghi tay), validate (quỹ ≥ 0, tổng ≤ giá xây); `land-policy` dùng `civicOpenCost` giá còn phải trả (bối cảnh bundleStates + đếm tòa); test `civic-bundles.test.ts` (từ chối, góp vượt, FIFO, ledger, netProfit, hoàn thành/mở, land-policy, claim, metrics, constructor, validateCivicBundles, save 10&11, hash giống nhau).
+- [x] **Kết quả lệnh (16/10/2026)**: `yarn typecheck` EXIT 0; `yarn --cwd packages/game-core test` (bản dist qua `.qa/pure-loader.cjs`) **112/112 pass, 0 fail, 0 lỗi Error**; golden khớp. Bảng cân bằng 4 trang trong `tổng hợp.md` khối "BƯỚC 4".
+- [x] **Gđ 3** — Mục tiêu xóm phố cấp 4–10: catalog riêng `civic-reveal-goals.ts` (NOT `CITY_GOALS_CATALOG` để KHÔNG chặn lên cấp/golden), nối `evaluateCivicGoalCondition` thật, `revealBundleId`, `isBundleRevealed`, `revealedBundleIdsForLoadedLevel` không hồi tố; simulation `claimCivicRevealGoal` + gieo reveal theo cấp tải (constructor + importSaveData) + ghi `revealedBundleIds` vào save (schema vẫn 11, additive). Test `runCivicRevealGoalsTests` (1.1 evaluator 3 loại; 1.2 catalog+validate; 1.3 không hồi tố; claim thật) — chạy trong suite 112/112, 0 lỗi (16/10/2026).
+- [~] **Gđ 4** — UI tab "Sổ góp xóm": có code + QA Browser một client (667×375, desktop; dọc bị khóa) 17/10/2026; tên người góp hiển thị an toàn; sửa P1 "Xây ngay" chọn đúng loại tòa.
+- [x] **Gđ 5** — Khánh thành + nhật ký: popup/toast/mốc/bản tin sáng ("+8") đã nhìn bằng mắt ở hai tab thật (17/10/2026); còn thiếu hai tài khoản Google thật. Vòng 3: nút Xây ngay khóa theo cấp người chơi (code + test, chưa nhìn UI thật).
+- [~] **Gđ 6** — Co-op: test thật qua server/gateway + QA 2 client khách dev (B trình duyệt, A script) 17/10/2026: góp hàng/tiền, phiếu duyệt/từ chối, quyền none, cùng ô, khánh thành. Sửa lỗi quyền không tới runtime sống + UI thành viên không cập nhật. Còn bản tin sáng 2 client, 2 tài khoản Google thật.
+- **Ghi chú**: không commit/push (theo yêu cầu); nhánh `develop`; Bước 3 đã commit ở d12887e.
+
+## GIAI ĐOẠN 4 — BƯỚC 5: Dân cư & Nhà dân nâng bậc (civic-residents-life) (16/10/2026 — code chưa commit)
+
+- [x] **1.1 Đóng gói sprite atlas riêng**: `tools/sprite-atlas/build-residents.py` tạo `apps/web/public/assets/sprites/residents/residents.png` (1024×372) và `residents.json` (105 frame: 9 nhà dân variant 0/9/19 tầng 1–3, 96 khung NPC look 6–9 học sinh, người cao tuổi, công sở, trẻ em), thêm `"residents/residents.json"` vào `index.json`. Atlas cũ giữ nguyên.
+- [x] **1.2 Hookup renderer**: `sprite-atlas.ts` nhận diện look 9 (`WALKER_LOOKS_9`), `neighborhood-actors.ts` tint trắng và bỏ phụ kiện vẽ code cho look 6–9, `neighborhood-scene.ts` căn giữa nhà 3 ô trên lô rộng và map variant 0/9/19, `setPopulation` cập nhật tầng nhà và vẽ lại đèn đêm.
+- [x] **1.3 Logic game-core & Công thức tất định**: `neighborhood-life.ts` hằng số `RESIDENTS_PER_NPC = 4`, `NPC_CAP_DESKTOP = 40`, `NPC_CAP_MOBILE = 20`; `visibleNpcCount` và `houseFloorTier`; `deterministicResidentNpc` tất định theo (seed, day, districtId, index); giữ PRNG cho chế độ mặc định; không sửa save.
+- [x] **1.4 Test tự động & Hiệu năng**: `civic-residents-life.test.ts` nối vào `test-runner.ts`; đo thời gian thực thi NPC nền mobile 375×812 đạt **0.061 ms/khung** (ngân sách ≤ 2.0 ms/khung).
+- [x] **1.5 QA Trình duyệt**: `http://localhost:5173/?qa` → Chơi Thử (Local) ở 375×812, 667×375 và 1280×800; canvas vẽ ổn định, 0 lỗi console, chụp ảnh kiểm chứng rồi xóa khỏi repo.
+- [x] **1.6 Kiểm tra tích hợp**: `yarn typecheck` EXIT 0; `yarn --cwd packages/game-core test` 112/112 pass, 0 fail; `yarn --cwd apps/web test` 9/9 pass.
+- [ ] **1.7 Co-op**: seed thế giới chung; QA 2 client thấy cùng cư dân.
+- **Ghi chú**: KHÔNG commit/push; không sửa simulation.ts, save, shared/src/index.ts, bootstrap.ts, civic-bundles.ts, city-goals-sim.ts, CityModal.tsx.
+
+## GIAI ĐOẠN 4 — Mục 5: Bếp đa món + Combo (nâng cấp tiệm xôi & quán nước) (16/10/2026)
+
+- [x] **Đa món (mới, `recipes.ts` `PRODUCED_PRODUCTS`+`RECIPES`):** 3 món xôi (thập cẩm/chà bông trứng/bắp) + 3 thức uống (trà sữa/sinh tố xoài/cà phê sữa đá); dùng nguyên liệu đã có, không chạm số lượng `catalog.test`.
+- [x] **Combo (mới, `game-data/combos.ts`):** `Combo`/`COMBOS` (Suất Xôi Đôi, Combo Hai Ly; discount 10%, cấp 36/26), `comboProductId`/`comboSellingPrice`/`comboCost`/`validateCombos`; export qua `@game/data`.
+- [x] **Lắp ráp qua Recipe (phương án A chủ dự án duyệt):** `recipe_combo_xoi_doi`/`recipe_combo_nuoc_doi` — nguyên liệu = món thành phẩm của shop (FEFO), đầu ra lên kệ; chạy đúng pipeline `Recipe`/`ProductionJob` có sẵn, COGS = tổng unitCost; không mã bán riêng (`game-core/combo-sales.ts` trong tasks ban đầu được gập vào `combos.ts`).
+- [x] **Set món tự nhận kệ:** `XOI_DISH_IDS`/`DRINK_SHOP_PRODUCT_IDS` sinh từ `RECIPES` → món mới + combo tự vào kệ tiệm xôi/quán nước (auto-fill).
+- [x] **UI mobile-first:** `KitchenStationModal` khối "Combo suất tiết kiệm" (món thành phần, giá combo gạch ngang bán lẻ, nút Làm combo qua `start_production` sẵn có); wire `App.tsx` (`COMBOS.filter` theo `fixture.shopId`).
+- [x] **Save:** additive, `CURRENT_SAVE_SCHEMA_VERSION` giữ 10 (không bump); save cũ tải bình thường. Sprite alias mới trong `product-sprites.ts`.
+- [x] **Kiểm chứng thật:** `yarn typecheck` PASS; harness tsc→node `verify-multi-dish-kitchen.mjs` PASS (`ALL MULTI-DISH-KITCHEN VERIFIED`); `combo-balance.mjs` PASS (lãi 14k/15.6k, bundle 0→60% tăng doanh thu, biên ≥47%); eslint 0 errors/warnings.
+- [ ] **Chờ máy thật:** Browser QA màn Combo (KitchenStationModal), combo lên kệ & bán ở tiệm xôi/quán nước, viewport 568–740 px; playtest cân bằng combo; trạm chạy 1 mẻ/thời điểm nên lắp ráp combo chờ trạm rảnh.
+- Change OpenSpec: `openspec/changes/multi-dish-kitchen-combos/`. Chi tiết: `tổng hợp.md` đầu file.
+
+## GIAI ĐOẠN 4 — Mục 4: Chuỗi cung ứng (nhiều nhà cung cấp · hàng hết hạn · nhập sỉ theo lô) (16/10/2026)
+
+- [x] **Đã có sẵn (chốt hiện trạng):** `suppliers.ts` (nhiều nhà cung cấp, cấp độ, giá theo danh mục, migrate đơn cũ), `delivery.ts` (đặt→giao, hạn dùng/lô, sổ nhập, kho chờ), `supplier-cart` (giỏ nhiều dòng, case size, validate), `SPOILAGE_RULES`/shelf-life, UI `SupplierModal`.
+- [x] **Bằng chứng verify thật:** harness `suppliers` PASS + `delivery`+`receiveDeliveredOrders` PASS + `supplier-cart` PASS; `yarn typecheck` PASS (không đổi code game).
+- [x] **OpenSpec `supply-chain-complete`** (proposal/design/spec delta `supply-chain`/tasks) + đồng bộ `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`.
+- [ ] **Chờ máy thật:** Browser QA SupplierModal / giao hàng / kho chờ, viewport 568–740 px; playtest cân bằng nếu muốn chỉnh hằng số.
+
+## GIAI ĐOẠN 4 — Mục 3: Khách quen (thiện cảm · sổ nợ · mua chịu) (16/10/2026)
+
+- [x] **Đã có sẵn (chốt hiện trạng):** `regulars.ts` (6 khách quen, thân thiết trần +2/ngày, perk, boa), `simulation.ts` credit (`customerCredits`, `getCustomerCreditTerms`, `repayCustomerCredit`, `updateCustomerCreditStatuses`, `onCredit` gating, `bad_debt`), lưu theo khách (`SaveGameData.regulars`+`customerCredits`), UI (`RegularsModal`, `CashierModal` "Thu nợ", toast).
+- [x] **Bằng chứng verify thật:** harness `wave-a` (tín dụng) PASS + `regulars` PASS; `yarn typecheck` PASS (không đổi code game).
+- [x] **OpenSpec `regulars-complete`** (proposal/design/spec delta `regulars-credit`/tasks) + đồng bộ `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`.
+- [ ] **Chờ máy thật:** Browser QA RegularsModal / CashierModal "Thu nợ" / toast, viewport 568–740 px; playtest cân bằng nếu muốn chỉnh hằng số.
+
+## GIAI ĐOẠN 4 — Mục 2: Lời đánh giá bằng chữ ảnh hưởng uy tín (16/10/2026)
+
+- [x] **Lõi thuần:** `game-core/review-reputation.ts` — `reviewReputationContribution` (reason −0.6/−0.5; khen ≥4★ +0.2; chê ≤2★ −0.2; 3★=0), `reviewReputationDrift` (cửa sổ 7, kẹp ±10), `reviewSentimentSummary`; deterministic. Nối `simulation.recordCustomerRating` cộng contribution cạnh delta theo sao.
+- [x] **Bản tin sáng:** `buildMorningBrief` thêm `yesterdayReviews?`/`reputationDelta?` + tip uy tín; wire `getMorningBrief` qua `reviewsManager.getReviewsOnDay(day-1)`; ReviewsManager thêm `getReviewsOnDay`.
+- [x] **Màn lời đánh giá:** `ReviewsModal` khối "Ảnh hưởng uy tín" (`ReputationInfluence`); export `review-reputation` qua game-core index.
+- [x] **Kiểm chứng:** `yarn typecheck` PASS; harness review-reputation + hồi quy reviews/day-rhythm PASS; hồi quy rộng REGRESSION OK + word-of-mouth PASS; eslint 0 errors; cân bằng drift từ từ (tiệm tốt +3.5, khá −1.6, chậm −8.8 điểm/ngày).
+- [ ] **Chờ máy thật:** Browser QA — khối "Ảnh hưởng uy tín", bản tin sáng, viewport 568–740 px.
+- Change OpenSpec: `openspec/changes/written-reviews-reputation/`. Chi tiết: `tổng hợp.md` đầu file.
+
+## GIAI ĐOẠN 4 — Đánh giá khách 4.5: bản tin + phản hồi lời chê + lọc món (17/10/2026)
+
+- [x] **Lời đánh giá nổi bật vào bản tin sáng + DaySummaryModal:** `buildMorningBrief` thêm `MorningBrief.standoutReviews` (`pickStandoutReviews`: 2 chê mạnh nhất + 1 khen hay nhất); `DaySummaryModal` hiện khối "LỜI KHÁCH NỔI BẬT HÔM QUA".
+- [x] **Phản hồi lời chê (uy tín + giới hạn chống cày):** lệnh `respond_review` (server replay) → `simulation.respondReview` hồi phục nửa uy tín đã mất (`reviewResponseDelta`), mỗi lời một lần, cap `REVIEW_RESPONSE_DAILY_CAP = 3` lời/ngày.
+- [x] **Save (migration 13→14) + replay co-op:** `SaveGameData.reviewResponses` (`ReviewResponse`), `CURRENT_SAVE_SCHEMA_VERSION = 14`, `migrateToW14` (KHÔNG đụng `migrateToW13`); `ReviewsManager` + `simulation` lưu/xuất/nhập; co-op qua `respond_review` server replay.
+- [x] **ReviewsModal lọc theo món + phản hồi:** dropdown món + nút "Phản hồi lời chê" + "✓ Đã phản hồi" + bộ đếm lượt/ngày + dòng uy tín.
+- [x] **Kiểm chứng:** `tsc -b` PASS, web build PASS, `apps/web test` PASS, server `test:unit` PASS; game-core các module reviews/day-rhythm/world-runtime/staff-shifts/migration chạy PASS. **Lỗi có sẵn ngoài phạm vi 4.5** (building-placement giá theo lô, golden allBuildings, coop order_supplier) — không do 4.5 gây ra, không sửa.
+
+## GIAI ĐOẠN 4 — Mục 1: Sự kiện xóm phố (16/10/2026)
+
+- [x] **Đơn tiệc theo mùa:** `PartyOrderDef.seasons?`; `game-data/partyOrders.ts` gắn mùa + thêm `party_sam_tet`, `party_trung_thu_pha_co` + `validatePartyOrders()`; `game-core/party-orders.ts` `partyOrdersForSeason()` + `refreshAvailablePartyOrders` ưu tiên đơn đúng mùa.
+- [x] **Thông báo:** `simulation.ts` `notifySeasonalEvents()` — toast lễ hội bắt đầu (chống lặp `notifiedFestivalKeys`), toast đơn tiệc mùa mới, toast thưởng ngày hội (1 lần/ngày).
+- [x] **Màn "Sự kiện xóm phố":** `NeighborhoodEventsModal.tsx` (lễ hội đang/sắp tới, đơn mùa, mục tiêu ngày hội, cảnh báo hết hạn); badge mùa HUD thành nút; wire App.tsx + lazy-modal + CSS.
+- [x] **Kiểm chứng:** `yarn typecheck` PASS; harness tsc→node 3 suite mới/liên quan PASS (`verify-seasonal.mjs`) + hồi quy goals/seasons PASS (`verify-seasonal-regression.mjs`); eslint 0 errors. Số liệu cân bằng lễ hội qua `holiday-collect.mjs` (doanh thu 7 lễ 1.034k–1.185k ₫).
+- [ ] **Chờ máy thật:** Browser QA mobile (568–740 px), đơn mùa, toast, cảnh báo hết hạn.
+- Change OpenSpec: `openspec/changes/neighborhood-events/`. Chi tiết: `tổng hợp.md` đầu file.
+
+## GIAI ĐOẠN 3 (16/10/2026)
+
+> **Cập nhật 16/10/2026 (Giai đoạn 3):** QA thật đã chạy một phần — xem đầu `tổng hợp.md`. Sửa BUG-2/3/6/7 (thuê đất/báo cáo). BUG-1 (thu trước 30 ngày tiền thuê) đã bỏ theo quyết định chủ dự án. Mục city goals/cluster/district của GĐ2 chỉ là logic thuần, chưa nối vào game. FPS điện thoại, OAuth, voice, UI bỏ phiếu đất co-op: CHƯA kiểm chứng.
+
+## Thuê đất và mua khấu trừ — Bước 6b thế giới mở (14/10/2026)
+
+- [x] **Lệnh core:** `lease_parcel` (thuê 30 ngày, ghi tenure schema 10), `end_lease` (hủy thuê khi đất trống, chặn nếu có tòa), `pay_rent_debt` (trả nợ thuê, mở lại tòa), `buyParcel` khấu trừ `min(paidTotal × 0.5, 50% giá)` khi mua lô đang thuê.
+- [x] **Thu tiền thuê đầu ngày:** `collectDailyRent(day)` chạy tự động mỗi sáng, idempotent qua `processedRentDayIds` (lưu cả trong save); tích lũy `debtDays` khi thiếu tiền; nợ ≥ 3 ngày đóng tòa trên lô (`closedForRent = true`), giữ nguyên nội thất và hàng; trả nợ mở lại.
+- [x] **UI & Server:** `ParcelBuyModal.tsx` hiển thị tiền thuê/ngày, tổng đã trả, khoản khấu trừ khi mua đứt, cảnh báo nợ/đóng cửa, nút trả nợ/hủy thuê/mua đứt; `App.tsx` wire đầy đủ lệnh qua `persistSimulationMutation`; `bootstrap.ts` server replay hỗ trợ `lease_parcel`, `end_lease`, `pay_rent_debt`.
+- [x] **Kiểm chứng:** `land-lease-core.test.ts` PASS 100%; `yarn typecheck` PASS (0 lỗi); web tests PASS 7 suites; server unit tests PASS 7 suites.
+- [ ] **Chờ máy thật:** Browser QA luồng thuê đất, nợ tiền thuê và mua đứt trên trình duyệt thực tế.
+
 ## Khai hoang — nốt mục "còn hoãn" (11/10/2026)
 
 - [x] **W4 cần W1/W3 đã mở để có đường nối** (`connectedVia`, `reclaimWaveAllowed` → `not_connected`). Đo lại bằng BFS: W2 KHÔNG nối được W4, ghi chú cũ sai. Test `reclamation.test.ts` + `reclamation-data.test.ts` PASS (game-core 112/0).
@@ -15,7 +222,7 @@
 - [x] **#3 Bảng giá gợi ý (lõi thuần, có sẵn + verify):** `game-core/price-suggest.ts` — `suggestPrice` không dùng RNG, chỉ dựa lịch sử bán chung (raise/hold/cut, giá sàn có lãi) → 2 bên giống nhau không cần server. **Verify PASS** qua harness.
 - [x] **#4 Chain / cửa hàng thứ hai:** DEFER (sync 2 cửa hàng phụ thuộc hạ tầng server; ChainModal từng bỏ dở). Không code.
 - [x] **Verification phiên này:** `yarn typecheck` toàn workspace PASS (11.08s) · harness tsc→node (`tsc -p packages/game-core` emit dist + `.qa/pure-loader.cjs` + `.qa/verify-pure.mjs`) → `runWordOfMouthTests`/`runPriceSuggestTests`/`runWorldEventsTests` **PASS** · `npx eslint` 5 file 0 lỗi · `git diff --check` sạch. **Giới hạn:** `yarn test` chuẩn (tsx) vẫn `spawn EPERM` trong sandbox → chạy từ dist qua node; không commit/push.
-- [ ] **CHỜ MÁY THẬT (phần nối):** #1 nhân `trafficFactor` vào luồng sinh khách khi VIP bỏ qua (1–2 ngày sau); #2 nối `worldEventsForDay` vào luồng khách (traffic W4 khi hội chợ) + `spoilage.ts` (spoilageFactor khi mất điện) + UI bản tin/huy hiệu + đảm bảo co-op cùng sự kiện; #3 nối đề xuất giá vào UI (PricesModal/gợi ý nhập) + `buildProductSeries` thật; #4 chain server. Cân bằng hằng số PROVISIONAL bằng playtest. **Thống nhất khi nối:** không bấm đúp hiệu ứng mất điện/hội chợ với hệ `market-events` (đề xuất 1 nguồn điều khiển, chờ chủ dự án).
+- [ ] **CHỜ MÁY THẬT (phần nối):** #1 nhân `trafficFactor` vào luồng sinh khách khi VIP bỏ qua (1–2 ngày sau); #2 ~~nối `worldEventsForDay`…~~ **ĐÃ NỐI 19/10/2026** (khách W4 theo từng tòa ở khu W4 — sửa review 19/10, cache theo ngày, daysLeft thật, spoilage mất điện, chống chồng `mergeDayEvents`, bản tin/HUD, co-op test; CHƯA QA browser — xem `tổng hợp.md` khối đầu); bản gốc: nối `worldEventsForDay` vào luồng khách (traffic W4 khi hội chợ) + `spoilage.ts` (spoilageFactor khi mất điện) + UI bản tin/huy hiệu + đảm bảo co-op cùng sự kiện; #3 nối đề xuất giá vào UI (PricesModal/gợi ý nhập) + `buildProductSeries` thật; #4 chain server. Cân bằng hằng số PROVISIONAL bằng playtest. **Thống nhất khi nối:** không bấm đúp hiệu ứng mất điện/hội chợ với hệ `market-events` (đề xuất 1 nguồn điều khiển, chờ chủ dự án).
 
 ## Tính năng mới: "Yêu cầu đặc biệt của khách VIP" — phần lõi THUẦN (07/10/2026)
 
@@ -74,15 +281,20 @@
 - [>] **2.3 balance-sim**: `game-core/building-types-balance-sim.ts` (PROVISIONAL 4 loại mới + hạng, peak giờ theo D4, parking không khách quầy nhưng doanh thu xe >0).
 - [>] **5.1/D8 schema 9**: shared `typeId?` optional + `migrateToW9` (map 4 instance cũ, không ghi đè) + bump 8→9 + `isSaveGameData` thêm `!== 8`; sửa `schema8.test.ts` (assert 8→9 khỏi fail runtime).
 - [>] **Lead review + nối test**: export building-types + store-tiers qua game-data index; nối `runBuildingTypesTests`/`runStoreTiersTests`/`runSchema9Tests`/`runBuildingTypesBalanceSimTests` vào test-runner; `yarn typecheck` PASS (6.85s); `git diff --check` sạch. Subagent verify logic bằng node strip-types/CJS (assert PASS), KHÔNG qua suite chuẩn.
-- [ ] **Chờ máy thật (6a):** 1.2 refactor `BuildingId→string` + `buildingPlacements[].typeId` (~20+ file + UI + renderer); `FIXTURE_SHOP.allowedBuildings`→typeId + `minTier`; 2.1 `open_building` pipeline + server replay; 2.2 renderer 4 loại; D5 sổ cái/báo cáo theo tòa; D6 giao hàng nội bộ; D7 cốt truyện ch7; `yarn test`/`build`/browser QA + co-op.
+- [x] **1.2 refactor BuildingId→string + typeId trên buildingPlacements (13/10/2026):** `BuildingPlacement.typeId` optional (`BuildingTypeId`); `DEFAULT_PLACEMENTS` điền typeId; `placementGeometry` fallback `buildingTypeOfInstance.typeId`; `buildingTypeOfInstance` nhận `${typeId}-${n}` (tòa mở thêm); customers.ts 3 chỗ `buildingId === 'main'` → `typeId === 'grocery_main'`; store-layout.ts 2 chỗ `buildingId === 'main'` → typeId check; placements.ts `placementsProblem` dùng `buildingTypeOfInstance?.typeId`; `export buildingTypeOfInstance` qua `@game/data`. **open_building (2.1):** lệnh `{ type: 'open_building'; buildingTypeId; parcelId; originX; originY }` trong shared; validation trong `isGameCommand`; `simulation.openBuilding()` kiểm typeId + trần + tiền/cấp/ownership + tạo `${typeId}-${n}` placement; wire trong `world-runtime.ts`; `bootstrap.ts` ALLOWED_COMMAND_TYPES + serverReplayedCommands. `yarn typecheck` **PASS** (2.48s). **CHƯA browser QA, CHƯA test runtime.**
+- [x] **D5, D6, D7 (13/10/2026):** D5 sổ cái/báo cáo theo tòa (`buildingInstanceId` trên `LedgerEntry`, `buildingReports` trên `DailyRecord`, UI tab theo tòa trong `AnalyticsModal.tsx`); D6 giao hàng nội bộ (`internal_delivery` khi kệ cách kho >30 ô, `executeDailyInternalDeliveries` theo FEFO đầu ngày); D7 cốt truyện ch7 (`buildingsOpened` đếm chi nhánh/tòa W≥1); `yarn test` 112 pass, `typecheck` PASS, `web test` PASS, `server test:unit` PASS.
+- [ ] **Chờ máy thật / browser:** Browser QA toàn bộ luồng gameplay + co-op 2 trình duyệt thật (sandbox hiện tại không chạy được trình duyệt).
+- [x] **6a.8 renderer 4 loại tòa (13/10/2026):** viewport.ts `FACADES` thêm grocery_branch/cafe/com_restaurant (parking_lot không mặt tiền); `resolveTypeId(buildingId)` → fallback `buildingTypeOfInstance`; thay 5 chỗ `buildingId === 'main'/'xoi'/'drink'/'snack'` bằng typeId check; `yarn typecheck` **PASS** (2.21s → 1.53s).
+- [x] **6b schema 10 + migration 9→10 + lease_parcel (13/10/2026):** shared `CURRENT_SAVE_SCHEMA_VERSION` 10, thêm `parcelTenure?` vào `SaveGameData`; `migrateToW7→migrateToW10` chain; lệnh `{ type: 'lease_parcel'; parcelId }` trong shared, validation `isGameCommand`, `simulation.leaseParcel()` kiểm w0/owned/money + trừ tiền + tenure schema 10 đã nối applyStoreLayout/exportSaveData; UI Thuê 30 ngày trên `ParcelBuyModal` + UI mở cơ sở mới `OpenBuildingModal`; wire world-runtime + server bootstrap. `yarn typecheck` **PASS**, `yarn test` **PASS**.
 
-## Vòng 6 (07/10/2026) — open-world-districts-city-goals (Bước 6d) phần THUẦN (3 subagent, do giới hạn 8 teammate) — VÒNG CUỐI, ĐỦ 6 CHANGE THẾ GIỚI MỞ
+- [>] **Vòng 6 (07/10/2026) — open-world-districts-city-goals (Bước 6d) phần THUẦN (3 subagent, do giới hạn 8 teammate) — VÒNG CUỐI, ĐỦ 6 CHANGE THẾ GIỚI MỞ**
 
 - [>] **1.1/1.2 khu vực**: `game-data/world/districts.ts` (`DistrictId` 5 khu W0..W4 + `DistrictDef` + `DISTRICTS` + `districtForWave` + `districtPreferredMultiplier` 1.2–1.4 + `districtPeakMultiplier` khung giờ lấy max + `applyDistrictModifiers` cap 1.82). KHÔNG sửa Parcel/modifiers.ts.
 - [>] **1.5 cụm theo khoảng cách D2b**: `game-core/proximity-cluster.ts` (radius 16, cap 1.3, bonus 0.10/cặp để W0 = legacy 1.10, `CLUSTER_COMPAT`, `clusterMultiplierFor` đơn điệu + `legacyFoodClusterMultiplier`). KHÔNG sửa customers.ts.
 - [>] **2.1/1.4/2.4 mục tiêu + sim**: `game-data/world/city-goals.ts` (`CityGoalDef` cấp 1–10, `CITY_LEVEL_WAVE_REQUIREMENT` W1:2..W4:8, `cityTierFromCityLevel` = min(5,floor(level/2)), `cityProgress`) + `game-core/city-goals-sim.ts` (`simulateGoalProgression` 60–90 ngày + ẩm thực khu cap). KHÔNG sửa goals.ts/modifiers.ts/cityTier/simulation.
 - [>] **Lead review + nối test**: game-data index thêm export districts+city-goals (+test); test-runner nối 4 test (`runDistrictsTests`/`runProximityClusterTests`/`runCityGoalsTests`/`runCityGoalsSimTests`); `yarn typecheck` PASS (9.33s); `git diff --check` sạch. Subagent verify logic bằng node CJS (assert PASS), KHÔNG qua suite chuẩn.
-- [ ] **Chờ máy thật (6d):** 1.1 gán `parcel.districtId` + `ModifierSource 'district'` (shared) + `when.districtId` trong modifiers.ts; 1.2 validation + source/when; 1.3 NPC nền theo `npcMix` + giao diện chủ đề khu; 1.4 sim cà phê/ăn vặt hai khu thật; 1.5 thay `foodClusterMultiplier` thật trong customers.ts; 2.2 lệnh `claim_city_goal`/lên cấp/thưởng + `cityTier` theo cấp (bỏ công thức tự động) + điều kiện cấp cho `reclaim_wave`; 2.3 đồ công cộng + decor.ts; 3.1 biển kỷ niệm + nhật ký mốc; 3.2 minimap IndexedDB; 4.1 schema kế tiếp + migration (cityProgress, cấp suy từ cityTier cũ); 4.2 test/build/Browser QA/co-op; 4.3 docs tổng hợp.
+- [>] **1.1 NỐI vào simulation (16/10/2026 — Bước 0 neighborhood-builder-expansion):** `parcel.districtId` đã gán trong `parcels.ts`, `ModifierSource 'district'` + `when.districtId` trong shared, `demand.ts` đã gọi `applyDistrictModifiers`. **ĐÃ thêm `getMainShopDistrictId()` + `getMarketContext()` trong simulation.ts**, sửa 6 calls `buildMarketContext` để district modifier tác động. `yarn typecheck` PASS, `yarn --cwd packages/game-core test` EXIT 0 (luật khu qua `modifiers.ts`, W0 trung tính). CHƯA: giờ cao điểm W1–W4; NPC nền theo `npcMix`; giao diện chủ đề khu; sim cà phê/ăn vặt hai khu; thay `foodClusterMultiplier` thật trong customers.ts.
+- [ ] **Chờ máy thật (6d):** 2.2 lệnh `claim_city_goal`/lên cấp/thưởng + `cityTier` theo cấp (bỏ công thức tự động) + điều kiện cấp cho `reclaim_wave`; 2.3 đồ công cộng + decor.ts; 3.1 biển kỷ niệm + nhật ký mốc; 3.2 minimap IndexedDB; 4.1 schema kế tiếp + migration (cityProgress, cấp suy từ cityTier cũ); 4.2 test/build/Browser QA/co-op; 4.3 docs tổng hợp.
 
 ## Vòng 5 (07/10/2026) — open-world-coop-contracts (Bước 6c) phần THUẦN (3 subagent, do giới hạn 8 teammate)
 
@@ -175,7 +387,7 @@
 
 ## Đồng bộ 01/10/2026 (từ `THONG-KE.md`)
 
-- [>] Đèn tín hiệu chu kỳ + người đi bộ + xe nhường đường (S46, I-19): đã commit `24a2fab`; OpenSpec `traffic-light-crosswalk-yielding` (tasks 1–3, 4.1 xong; 4.2–4.6 mở). Còn: QA browser (đèn đổi pha/xe dừng/người qua), cảm quan, hiệu năng, quyết định khách thật qua đường và đồng bộ co-op (non-goal hiện tại).
+- [x] Đèn tín hiệu chu kỳ + người đi bộ + xe nhường đường (S46, I-19) — **18/10/2026 chốt nghiệm thu OpenSpec `traffic-light-crosswalk-yielding` 4.3–4.6 + `arrival-mode-weighting` 4.4**: pha đèn nay là hàm thuần từ `worldTime` (`trafficSignalPhaseFromWorldClock`, day+minute) áp dụng như nhau client/WorldRuntime → đồng bộ giữa client không lệch, đúng đêm ×3 và catch-up, không giật; **review 4 tách chu kỳ**: `STORE_FRONT_SIGNAL` (vạch trước cửa, ưu tiên đi bộ) green 7/yellow 2/red 30/pedWalk 22 (đi bộ ≈56%), `INTERSECTION_SIGNAL` (ngã tư, ưu tiên xe) green 26/yellow 3/red 10/pedWalk 5 (xe xanh ≈ **67% ≥50%** — trước review ngã tư xe chỉ 18%). Khách thật đi bộ giờ **sinh phía xa**, chờ đèn xanh rồi băng `STORE_FRONT_CROSSWALK` vào tiệm, rời tiệm băng qua vạch về phía xa (stage `'crosswalk'` + `CustomerCrosswalkState`, save additive); không thêm chỗ đỗ ô tô (giữ `CAR_PARKING_SPOTS` phía đông). Golden sinh lại: base 12.650.000 → 12.879.500 (+1,8%), allBuildings 16.705.000 → 17.446.500 (+4,4%); sau tách chu kỳ delta **0%**. Tách chu kỳ làm khách ô tô tới bãi đỗ đông nhanh hơn (tổng 53,7 s → 39,7 s, đứng đèn 26,8 s → 13,1 s). Renderer vẽ vạch + trụ đèn đi bộ trước cửa (`buildFrontCrosswalk`). Test: `crosswalk.test.ts`, `traffic-signal.test.ts` (pha theo ngày+phút, hai manager cùng pha, hai chu kỳ cộng 39, ngã tư xe ≥50%); `yarn typecheck` EXIT 0; game-core test ×3 **112/112 pass, 0 fail**; renderer test, web test+build, server test:unit/test:coop PASS (số liệu `.qa/review-traffic-cycle.md`). **CHƯA QA browser** (4.2/arrival 4.2 mở).
 - [>] I-05: lệnh nhân viên co-op (`hire_staff`/`set_staff_shift`/`assign_refill_job`) đã làm 01/10/2026, test co-op PASS; còn QA hai trình duyệt, đồng bộ AI nhân viên.
 - [>] I-02: bảng xếp hạng thật (`/api/v1/leaderboard`, `leaderboard.test.ts` PASS 01/10/2026); còn kiểm đăng nhập thật, tuần/mùa, opt-out, chống gian lận.
 - [>] I-04: ID đơn nhập/sổ cái xác định (`ord-N`/`led-N`, `deterministic-ids.test.ts` PASS 01/10/2026).
@@ -378,3 +590,4 @@
 - 03/10/2026: mở rộng nội dung đa dạng hóa: +182 sản phẩm cấp 5–30 (catalog 483), 6 nhóm hàng mới, +8 công thức tự chế, +8 nội thất và bật máy phát điện/tủ bánh mì/bàn nước, quầy tự thanh toán, +18 trang trí. Test lõi/web/server, typecheck renderer/web/server, `content:validate` PASS; chưa playtest cân bằng, chưa xem giao diện thật, chưa nâng cấp tòa nhà. `EXPANSION_MANIFEST` cho 182 món mới, `yarn balance` PASS (chỉ đo chỉ số giá/khách). Chi tiết: `tổng hợp.md`. Thêm `yarn workspace @game/core category-revenue` (doanh thu/lãi gộp theo nhóm ở cấp 5/15/30; không tính hao hụt, chưa thay playtest).
 
 - [x] (11/10/2026) Bê từ Rao: 5 lễ mới, trang trí cột đèn, nhân viên chuyên môn — có code + test; chưa QA bằng trình duyệt (xem `tổng hợp.md`).
+- [x] (17/10/2026) BƯỚC C civic: C1 trần góp tiền khi chủ offline tính trên tiền đầu ngày (`DailyRecord.openingMoney`, test `civic-coop`); C2 `yarn --cwd packages/game-core civic-bundle-sweep`; C3 QA 2 giao diện thật (hẻm gieo qua DB) — còn: Google thật, cận cảnh NPC, nợ riêng, viewport dọc. Chi tiết `tổng hợp.md` khối "BƯỚC C".

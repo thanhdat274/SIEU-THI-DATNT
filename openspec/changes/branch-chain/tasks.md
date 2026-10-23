@@ -7,8 +7,8 @@ Quy ước: chỉ đánh `[x]` khi code và kiểm chứng tương ứng đã ch
 ## 1. Khảo sát và chốt quyết định
 
 - [>] 1.1 Chủ dự án đã trả lời 4/5 câu hỏi (03/10/2026, ghi ở `design.md`); còn mở: quyền sở hữu chi nhánh trong co-op 2 người và câu hỏi đóng/bán chi nhánh.
-- [ ] 1.2 Spike: dựng hai `GameSimulation` từ hai save khác nhau trong một test, chạy luân phiên; đo thời gian dựng và kích thước save một chi nhánh. Xác nhận ngân sách D8 (mỗi chi nhánh < 150 KB; hub + 3 chi nhánh < 1,5 MB). Nếu vượt, quay lại D2.
-- [ ] 1.3 Kiểm kê chỗ gắn cứng (`design.md` mục kiểm kê): lập bảng "chỗ nào, xử lý thế nào" cho `playerData.money`, `warehouse`, `recordLedger`, `goals/quests/story`, `App.tsx` `simulationRef`.
+- [~] 1.2 **LỖI THỜI (17/10/2026, chủ dự án đồng ý):** thuộc mô hình mỗi chi nhánh một save/`GameSimulation` đã bỏ ngày 05/10 — không làm. Spike: dựng hai `GameSimulation` từ hai save khác nhau trong một test, chạy luân phiên; đo thời gian dựng và kích thước save một chi nhánh. Xác nhận ngân sách D8 (mỗi chi nhánh < 150 KB; hub + 3 chi nhánh < 1,5 MB). Nếu vượt, quay lại D2.
+- [~] 1.3 **LỖI THỜI (17/10/2026):** cùng lý do 1.2 — chi nhánh là tòa trên cùng simulation nên không còn chỗ gắn cứng cần tách. Kiểm kê chỗ gắn cứng (`design.md` mục kiểm kê): lập bảng "chỗ nào, xử lý thế nào" cho `playerData.money`, `warehouse`, `recordLedger`, `goals/quests/story`, `App.tsx` `simulationRef`.
 
 ## 2. Dữ liệu loại hình và mô hình chuỗi
 
@@ -42,7 +42,7 @@ Quy ước: chỉ đánh `[x]` khi code và kiểm chứng tương ứng đã ch
 - [>] 6.2 (03/10/2026: `ChainModal` có ví chung, kho tổng, từng chi nhánh với tồn/sức chứa, báo cáo ngày gần nhất, bán hụt; **chưa** có hàng sắp hết dạng cảnh báo riêng, chưa có báo cáo ngày vắng) Màn tổng quan chuỗi: ví chung, kho tổng, từng chi nhánh (doanh thu hôm qua, hàng sắp hết, bán hụt).
 - [>] 6.3 (03/10/2026: `ChainModal` chuyển/trả nhiều món cùng lúc, hiện hạn lô gần nhất, kiểm sức chứa chi nhánh phía client, mở chi nhánh có đặt tên; lệnh `open_branch`/`transfer_stock`/`return_stock` đi qua `persistSimulationMutation` (online gửi server-replay). Đã xem trên Browser pane desktop + 844×390: mở chi nhánh trừ 1.500.000 ₫, chuyển 41 món vào kho chi nhánh. **Chưa** kiểm: trả hàng bấm thật, hai tài khoản online, qua ngày chạy nền trên UI) Hộp thoại chuyển/trả kho nhiều món (hiện hạn dùng, kiểm sức chứa); hộp thoại mở chi nhánh.
 - [>] 6.4 (03/10/2026: bản nhẹ thay chế độ ghé qua — khối "Điều hành" trong `ChainModal`: mức giá thấp/chuẩn/cao + thuê quản lý, lệnh co-op `set_branch_policy`, test core + runtime PASS, đã xem trên Browser pane; **chưa** có mở bố cục/mua đất cho chi nhánh xa, báo cáo ngày hub chưa lọc theo chi nhánh, chưa cân bằng 8.3)
-- [ ] 6.5 Renderer: bản đồ và biển theo loại hình (tái dùng texture, chỉ thêm biển "QUÁN NƯỚC").
+- [x] 6.5 Renderer: bản đồ và biển theo loại hình (tái dùng texture, chỉ thêm biển "QUÁN NƯỚC"). **17/10/2026:** đã có sẵn theo mô hình mới — `FACADES` trong `viewport.ts` chọn biển/mái hiên theo `typeId` (QUÁN NƯỚC, CHI NHÁNH TẠP HÓA, QUÁN CÀ PHÊ, QUÁN CƠM…) do `open-world-building-types` 2.2 làm; không cần thêm code.
 
 ### 6b. Quán nước gần = tòa nhà thứ 3 trên cùng bản đồ (nhánh việc riêng, quyết định 03/10/2026)
 
@@ -59,8 +59,8 @@ Quy ước: chỉ đánh `[x]` khi code và kiểm chứng tương ứng đã ch
 ## 7. Tích hợp, thuế, cốt truyện
 
 - [x] 7.1 (03/10/2026: doanh thu/lương/hao hụt chi nhánh vào `DailyRecord` hub nên `summarizeAnnualRevenue` tính tổng chuỗi; test trong `runChainSimulationTests`; chưa có ca `taxDueOnClose` riêng nhiều chi nhánh) Thuế theo quyết định 1.1 (mặc định tổng chuỗi): doanh thu chạy nền cộng vào bản ghi ngày hub có `branchId`; test `taxDueOnClose` với nhiều chi nhánh.
-- [ ] 7.2 Chương 7 đo số chi nhánh thật (`buildingsOpened` → `branchesOpened` hoặc mục tiêu mới); save đã nhận chương 7 vẫn giữ trạng thái đã nhận.
-- [ ] 7.3 Nhiệm vụ/goals đọc chỉ số chuỗi (định nghĩa rõ: doanh thu tổng chuỗi, khách tổng chuỗi, danh tiếng hub).
+- [x] 7.2 Chương 7 đo số chi nhánh thật (`buildingsOpened` → `branchesOpened` hoặc mục tiêu mới); save đã nhận chương 7 vẫn giữ trạng thái đã nhận. **17/10/2026:** objective mới `branchesOpened` (target 1) = số tòa `grocery_branch` + chi nhánh điều hành từ xa; tiệm xôi/tòa phụ không còn tính. Chương giữ id `open_second_shop` nên save đã nhận vẫn `claimed`. Test `story.test.ts` (ngữ cảnh + simulation thật).
+- [x] 7.3 Nhiệm vụ/goals đọc chỉ số chuỗi (định nghĩa rõ: doanh thu tổng chuỗi, khách tổng chuỗi, danh tiếng hub). **17/10/2026:** định nghĩa: doanh thu tổng chuỗi = `statistics.totalRevenue`/bản ghi ngày (tòa trên thành phố dùng chung sổ; chi nhánh chạy nền đã cộng từ 7.1); khách tổng chuỗi = khách thật + khách ước tính của chi nhánh chạy nền ⌈món bán / `BRANCH_UNITS_PER_CUSTOMER`(2, PROVISIONAL)⌉ cộng vào `totalCustomersServed` + `customersServed` ngày; danh tiếng = danh tiếng hub (giữ). Test trong `runChainSimulationTests`.
 
 ## 8. Kiểm chứng và tài liệu
 

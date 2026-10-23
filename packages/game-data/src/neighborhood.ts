@@ -6,6 +6,7 @@
 import { AWNING_SPANS, MAIN_STORE_BOUNDS, awningShelterBand } from './buildings';
 import { PLAY_REGION } from './world/world-grid';
 import { RECLAMATION_WAVES } from './world/waves';
+import { districtForWave, type DistrictId } from './world/districts';
 import { MAP_HEIGHT, MAP_ORIGIN_Y, MAP_WIDTH } from './map';
 
 const T = 32;
@@ -131,6 +132,11 @@ export function scaledVehicleBudget(tier: number): number {
 
 /** Điểm trước cửa tiệm chính (vỉa hè phía bắc đường chính), nơi NPC ghé mua đồ. */
 export const SHOP_FRONT = { x: ((MAIN_STORE_BOUNDS.left + MAIN_STORE_BOUNDS.right + 1) / 2) * T - 16, y: 12 * T - 6 } as const;
+/**
+ * Chỗ đứng của nhân viên bảo vệ (OpenSpec `xoi-shop-same-land-strip` 5.2): vỉa hè trước tiệm chính, lệch trái cửa 2 ô để không
+ * đứng chắn lối khách. Suy từ biên tiệm chính thay cho tọa độ cứng (4,13) cũ — (4,13) là lòng đường.
+ */
+export const SECURITY_POST = { x: SHOP_FRONT.x - 2 * T, y: 12 * T + 16 } as const;
 
 export const npcRingOf = (x: number, y: number): NpcRing => {
   const d = Math.hypot(x - SHOP_FRONT.x, y - SHOP_FRONT.y);
@@ -267,8 +273,14 @@ function interpolate(table: ReadonlyArray<readonly [number, number]>, x: number)
 export const TRAFFIC_RAIN_FACTOR: ReadonlyArray<readonly [number, number]> = [[0, 1], [0.03, 0.97], [0.3, 0.88], [0.55, 0.65], [0.8, 0.38], [1, 0.28]];
 export const clampUnit = (v: number): number => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0);
 export const trafficRainFactor = (rain: number): number => interpolate(TRAFFIC_RAIN_FACTOR, clampUnit(rain));
-/** Tốc độ xe giảm nhẹ khi mưa (đường ướt): nhân với tốc độ chạy. */
-export const trafficRainSpeedFactor = (rain: number): number => 1 - 0.28 * clampUnit(rain);
+/** Xe chậm thêm khi mưa to (từ cường độ này trở lên), tới −HEAVY_RAIN_EXTRA_SLOWDOWN lúc mưa 1. PROVISIONAL. */
+export const HEAVY_RAIN_SPEED_FROM = 0.55;
+export const HEAVY_RAIN_EXTRA_SLOWDOWN = 0.12;
+/** Tốc độ xe giảm nhẹ khi mưa (đường ướt), giảm thêm khi mưa to: nhân với tốc độ chạy. */
+export const trafficRainSpeedFactor = (rain: number): number => {
+  const r = clampUnit(rain);
+  return 1 - 0.28 * r - HEAVY_RAIN_EXTRA_SLOWDOWN * Math.max(0, (r - HEAVY_RAIN_SPEED_FROM) / (1 - HEAVY_RAIN_SPEED_FROM));
+};
 
 /**
  * Mật độ giao thông 0..1 (>1 không có): giờ × thứ × thời tiết × loại đường.
@@ -400,6 +412,12 @@ export function decorLotsOutsideWaves(openedWaves: readonly string[]): readonly 
   return NEIGHBORHOOD_LOTS.filter((lot) => !regions.some((r) => lot.x <= r.x1 && lot.x + lot.w - 1 >= r.x0 && lot.frontY >= r.y0 && lot.frontY <= r.y1));
 }
 
+/** Khu (`DistrictId`) chứa lô nhà nền: lô nằm trong vùng đợt W1–W4 thuộc khu của đợt đó, còn lại là hẻm dân cư W0. */
+export function lotDistrictId(lot: NeighborhoodLot): DistrictId {
+  const wave = RECLAMATION_WAVES.find((w, i) => i > 0 && lot.x <= w.region.x1 && lot.x + lot.w - 1 >= w.region.x0 && lot.frontY >= w.region.y0 && lot.frontY <= w.region.y1);
+  return wave ? districtForWave(wave.id as 'w1' | 'w2' | 'w3' | 'w4') : 'hem_dan_cu';
+}
+
 /** Id các nhà trang trí bị ẩn (nằm trong vùng đợt đã mở) — dùng cho va chạm/đồ vật trước nhà. */
 export function hiddenDecorLotIds(openedWaves: readonly string[]): ReadonlySet<string> {
   const visible = new Set(decorLotsOutsideWaves(openedWaves).map((l) => l.id));
@@ -521,7 +539,7 @@ export const NPC_TYPES: readonly NpcTypeDef[] = [
   { id: 'university_student', label: 'Sinh viên', weight: 7, speed: 38, scale: 1, tints: [0xffe0c9, 0xd9f0d6, 0xffffff], accessory: 'backpack' },
   { id: 'elder', label: 'Người lớn tuổi', weight: 9, speed: 22, scale: 1, tints: [0xd8d2c4, 0xc9c0b0, 0xe6dfd0], accessory: 'cap' },
   { id: 'parent', label: 'Phụ huynh', weight: 8, speed: 33, scale: 1, tints: [0xffffff, 0xf2d8d8, 0xd8e8f2], accessory: 'bag' },
-  { id: 'courier', label: 'Nhân viên giao hàng', weight: 5, speed: 46, scale: 1, tints: [0xffd08a, 0xffb36b, 0xffe0a8], accessory: 'box' },
+  { id: 'courier', label: 'Nhân viên giao hàng', weight: 5, speed: 46, scale: 1, tints: [0xffffff, 0xf6f6f4, 0xfaf5ee], accessory: 'box' },
   { id: 'vendor', label: 'Người bán hàng rong', weight: 4, speed: 20, scale: 1, tints: [0xe6d3a8, 0xd9c28f, 0xf0e2bd], accessory: 'cart' },
   { id: 'walker', label: 'Người đi bộ', weight: 12, speed: 30, scale: 1, tints: [0xffffff, 0xf0d9ec, 0xd9f0f0], accessory: 'none' },
   { id: 'jogger', label: 'Người chạy bộ', weight: 5, speed: 54, scale: 1, tints: [0xffa9a9, 0xa9d1ff, 0xb9f0b9], accessory: 'band' },

@@ -13,6 +13,8 @@ import {
   WAVE_EXPANSION_BONUS,
   cityGrowthFactor,
   cityTierFrom,
+  districtForWave,
+  type DistrictId,
   expansionBudgetAtLevel,
   parcelPrice,
   parcelTrafficMultiplier,
@@ -52,11 +54,13 @@ function parcelFromWaveParcels(parcelId: string): LandParcel | undefined {
     const wave = RECLAMATION_WAVES[wi];
     const found = wave.parcels.find((p: ReclamationParcel) => p.id === parcelId);
     if (found) {
+      const districtId = districtForWave(wave.id as 'w1' | 'w2' | 'w3' | 'w4');
       return {
         id: found.id,
         rect: found.rect,
         wave: wi,
         frontageRoadId: found.frontageRoadId ?? wave.frontageRoadId,
+        districtId,
         frontage: { corner: found.corner ?? false },
       };
     }

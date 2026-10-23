@@ -4,6 +4,7 @@
  */
 import { rectHeight, rectWidth, type WorldRect } from './world-grid';
 import { RECLAMATION_WAVES } from './waves';
+import { districtForWave, type DistrictId, type WaveId } from './districts';
 
 export interface LandParcel {
   id: string;
@@ -12,6 +13,8 @@ export interface LandParcel {
   wave: number;
   /** Đường mà mặt tiền lô quay ra. */
   frontageRoadId: string;
+  /** Khu của lô (D1): suy từ đợt khai hoang — w0→hem_dan_cu, w1→thuong_mai_nga_tu, w2→dan_cu_nam, w3→van_phong_logistics, w4→am_thuc_nam. */
+  districtId: DistrictId;
   /** Vị trí mặt tiền: `corner: true` = lô góc ngã tư. Mặc định (thiếu) = mặt đường thường. */
   frontage?: { corner: boolean };
 }
@@ -77,25 +80,30 @@ export function parcelPrice(parcel: LandParcel): number {
 }
 
 export const LAND_PARCELS: readonly LandParcel[] = [
-  { id: 'lot-west', rect: { x0: 0, x1: 6, y0: -3, y1: 10 }, wave: 0, frontageRoadId: 'main', frontage: { corner: false } },
-  { id: 'lot-center', rect: { x0: 6, x1: 21, y0: -3, y1: 10 }, wave: 0, frontageRoadId: 'main', frontage: { corner: false } },
-  { id: 'lot-east-1', rect: { x0: 21, x1: 26, y0: -3, y1: 10 }, wave: 0, frontageRoadId: 'main', frontage: { corner: false } },
-  { id: 'lot-east-2', rect: { x0: 26, x1: 35, y0: -3, y1: 10 }, wave: 0, frontageRoadId: 'main', frontage: { corner: false } },
+  { id: 'lot-west', rect: { x0: 0, x1: 6, y0: -3, y1: 10 }, wave: 0, frontageRoadId: 'main', districtId: 'hem_dan_cu', frontage: { corner: false } },
+  { id: 'lot-center', rect: { x0: 6, x1: 21, y0: -3, y1: 10 }, wave: 0, frontageRoadId: 'main', districtId: 'hem_dan_cu', frontage: { corner: false } },
+  { id: 'lot-east-1', rect: { x0: 21, x1: 26, y0: -3, y1: 10 }, wave: 0, frontageRoadId: 'main', districtId: 'hem_dan_cu', frontage: { corner: false } },
+  { id: 'lot-east-2', rect: { x0: 26, x1: 35, y0: -3, y1: 10 }, wave: 0, frontageRoadId: 'main', districtId: 'hem_dan_cu', frontage: { corner: false } },
 ];
 
 export const PARCEL_MAP: Readonly<Record<string, LandParcel>> = Object.freeze(
   Object.assign(Object.create(null) as Record<string, LandParcel>, Object.fromEntries(LAND_PARCELS.map(parcel => [parcel.id, parcel]))),
 );
 
-/** Lô của các đợt khai hoang W1–W4 (chuyển từ `RECLAMATION_WAVES[*].parcels`, gắn `wave` = chỉ số đợt, mặt tiền theo đợt). */
+/** Lô của các đợt khai hoang W1–W4 (chuyển từ `RECLAMATION_WAVES[*].parcels`, gắn `wave` = chỉ số đợt, mặt tiền theo đợt, `districtId` theo wave). */
 export const WAVE_LAND_PARCELS: readonly LandParcel[] = Object.freeze(
-  RECLAMATION_WAVES.flatMap((wave, waveIndex) => wave.parcels.map((raw): LandParcel => ({
-    id: raw.id,
-    rect: raw.rect,
-    wave: waveIndex,
-    frontageRoadId: raw.frontageRoadId ?? wave.frontageRoadId,
-    frontage: { corner: raw.corner ?? false },
-  }))),
+  RECLAMATION_WAVES.flatMap((wave, waveIndex): LandParcel[] => {
+    const waveId = wave.id as WaveId;
+    const districtId = districtForWave(waveId);
+    return wave.parcels.map((raw): LandParcel => ({
+      id: raw.id,
+      rect: raw.rect,
+      wave: waveIndex,
+      frontageRoadId: raw.frontageRoadId ?? wave.frontageRoadId,
+      districtId,
+      frontage: { corner: raw.corner ?? false },
+    }));
+  }),
 );
 
 /** Mọi lô: 4 lô W0 + lô các đợt khai hoang. `LAND_PARCELS`/`PARCEL_MAP` vẫn chỉ là W0 để dữ liệu cũ không đổi. */

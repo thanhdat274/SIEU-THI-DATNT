@@ -7,7 +7,7 @@ import type { DemandTable } from './demand';
 import { effectiveWeatherId, timeBandFor, visibleMarketEvents, weekdayOf } from './market';
 import { trafficAtLevel } from './progression';
 import { reputationTrafficMultiplier } from './reputation';
-import { climateSeasonForDay, rainForecastForDay, rainIntensityAt } from './weather';
+import { climateSeasonForDay, forecastRainForDay, rainForecastForDay, rainIntensityAt } from './weather';
 
 /** Đầu vào tường minh cho tóm tắt thị trường (tách khỏi `GameSimulation`, không đọc trạng thái ngầm). */
 export interface MarketSummaryContext {
@@ -36,7 +36,9 @@ export function buildMarketSummary(ctx: MarketSummaryContext) {
     },
     forecast: [1, 2].map(offset => {
       const id = effectiveWeatherId(market, time.day + offset);
-      return { id, label: WEATHER_MAP[id]?.label ?? id, icon: WEATHER_MAP[id]?.icon ?? '', rain: rainForecastForDay(weatherSeed, time.day + offset, id) };
+      const rain = forecastRainForDay(weatherSeed, time.day + offset, id, offset);
+      // Nhãn ngày mưa theo dải DỰ BÁO (đã có sai số) để không tự mâu thuẫn kiểu "Mưa to (Mưa vừa …)"; id giữ loại thật.
+      return { id, label: rain ? rain.bandLabel : WEATHER_MAP[id]?.label ?? id, icon: WEATHER_MAP[id]?.icon ?? '', rain };
     }),
     events: visibleMarketEvents(market, time.day),
     season: getSeasonForDay(time.day),

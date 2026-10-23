@@ -158,8 +158,16 @@ export async function runSupplierMarketTests(): Promise<void> {
   assert.ok(stockByDay[2] < SUPPLIER_MAP['dai_ly_dau_hem'].stockPerProductPerDay!, 'Kịch bản: tồn nhà cung cấp đồ mát giảm trong nắng nóng');
   const earlyOrder = scenario.getPendingOrders().concat().find(order => order.productId === 'nuoc_suoi') ?? scenario.getInventory().find(item => item.productId === 'nuoc_suoi');
   assert.ok(!!earlyOrder, 'Đơn nhập sớm đã về kho hoặc đang chờ');
-  const purchases = scenario.getLedger().filter(entry => entry.type === 'purchase').reduce((sum, entry) => sum + entry.amount, 0);
-  assert.equal(startMoney - scenario.getPlayerData().money, purchases, 'Tiền giảm đúng bằng tổng sổ cái nhập hàng (không có bán hàng)');
+  // Bước 3 (`civic-local-fees`): đầu ngày còn tự trừ TIỀN THUÊ ĐẤT + PHÍ XÓM (duy trì công trình + phí vệ sinh lô sở hữu),
+  // nên tiền giảm = nhập hàng + các khoản đầu ngày trong sổ cái, không còn chỉ riêng `purchase`.
+  const ledgerSum = (type: string) => scenario.getLedger().filter(entry => entry.type === type).reduce((sum, entry) => sum + entry.amount, 0);
+  const purchases = ledgerSum('purchase');
+  assert.equal(
+    startMoney - scenario.getPlayerData().money,
+    purchases + ledgerSum('rent') + ledgerSum('civic_upkeep') + ledgerSum('civic_fee'),
+    'Tiền giảm đúng bằng tổng sổ cái chi (nhập hàng + thuê đất + phí xóm; không có bán hàng)',
+  );
+  assert.ok(ledgerSum('civic_fee') > 0, 'Có phí xóm được ghi trong 10 ngày');
   assert.ok(scenario.getPlayerData().money >= 0 && ALL_PRODUCTS.length > 0);
 
   console.log('  ✓ Passed: Thị trường nhà cung cấp — giá sỉ động, tồn, ngừng cung, ưu đãi, lịch giao, đơn nguyên tử, co-op, kịch bản nắng nóng');

@@ -5,6 +5,7 @@ import { SEASON_EVENTS, SEASON_YEAR_DAYS } from './seasons';
 import { CLIMATE_SEASONS, WEATHER_MAP, WEATHER_TYPES } from './weather';
 import { MARKET_EVENTS, MARKET_EVENT_RULES } from './market-events';
 import { validateSupplierData } from './supplier-market';
+import { DISTRICTS, type DistrictId } from './world/districts';
 
 /** Dải kẹp của tích các hệ số mỗi kênh. */
 export const MODIFIER_RANGES: Record<ModifierChannel, { min: number; max: number }> = {
@@ -91,7 +92,32 @@ const SEASON_RULES: ModifierRule[] = SEASON_EVENTS.flatMap((season): ModifierRul
 
 export const MODIFIER_RULES: readonly ModifierRule[] = [...SEASON_RULES, ...WEATHER_RULES, ...TIME_RULES, ...WEEKDAY_RULES, ...MARKET_EVENT_RULES];
 
-export function validateMarketData(rules: readonly ModifierRule[] = MODIFIER_RULES): string[] {
+// --- District rules (sinh từ DISTRICTS, chỉ áp khi MarketContext.districtId tồn tại) ---
+// W0 (hem_dan_cu) là khu gốc trung tính → không sinh rules cho khu này.
+export const DISTRICT_MODIFIER_RULES: readonly ModifierRule[] = (() => {
+  const rules: ModifierRule[] = [];
+  for (const [distId, dist] of Object.entries(DISTRICTS) as [DistrictId, typeof DISTRICTS[DistrictId]][]) {
+    // Bỏ khu gốc W0: hệ số = 1.0 mọi giờ/mọi nhóm
+    if (distId === 'hem_dan_cu') continue;
+    // Demand rule cho nhóm ưa chuộng
+    if (dist.preferredMultiplier > 1 && dist.preferredCategories.length > 0) {
+      rules.push({
+        id: `district_${distId}_preferred`,
+        label: `${dist.name}: nhóm hàng ${dist.preferredCategories.join(', ')} được ưa chuộng`,
+        source: 'district',
+        when: { districtId: [distId] },
+        target: { categories: dist.preferredCategories },
+        effects: { demand: dist.preferredMultiplier },
+      });
+    }
+  }
+  return Object.freeze(rules);
+})();
+
+// Toàn bộ luật = luật chung + luật khu (MODIFIER_RULES giữ nguyên, không chứa luật khu).
+export const ALL_MODIFIER_RULES: readonly ModifierRule[] = [...MODIFIER_RULES, ...DISTRICT_MODIFIER_RULES];
+
+export function validateMarketData(rules: readonly ModifierRule[] = ALL_MODIFIER_RULES): string[] {
   const errors: string[] = [];
   const seenRuleIds = new Set<string>();
   const knownTags = new Set(ALL_KNOWN_TAGS);

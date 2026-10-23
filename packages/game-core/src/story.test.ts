@@ -6,7 +6,7 @@ import { beginChapter, claimChapter, createInitialStoryState, getChapterProgress
 import { scheduleEvents } from './market';
 
 const ctxAt = (patch: Partial<StoryContext> = {}): StoryContext => ({
-  day: 1, level: 1, totalCustomersServed: 0, totalRevenue: 0, staffCount: 0, reputation: 20, regularsCount: 0, stallServings: 0, buildingsOpened: 1, ...patch,
+  day: 1, level: 1, totalCustomersServed: 0, totalRevenue: 0, staffCount: 0, reputation: 20, regularsCount: 0, stallServings: 0, buildingsOpened: 1, branchesOpened: 0, ...patch,
 });
 
 export function runStoryTests(): void {
@@ -60,20 +60,24 @@ export function runStoryTests(): void {
     state.claimedChapters.push('grandma_visit');
     assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 35 })).status, 'locked', 'thiếu cấp');
     assert.equal(beginChapter(state, ch7.id, ctxAt({ level: 36 })).success, true);
-    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 36, buildingsOpened: 1 })).status, 'started', 'chưa mở tiệm xôi');
-    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 36, buildingsOpened: 2 })).status, 'completed');
-    assert.equal(claimChapter(state, ch7.id, ctxAt({ level: 36, buildingsOpened: 2 })).success, true);
+    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 36, buildingsOpened: 3 })).status, 'started', 'mở tòa phụ (tiệm xôi…) không tính là chi nhánh');
+    assert.equal(getChapterProgress(state, ch7, ctxAt({ level: 36, branchesOpened: 1 })).status, 'completed');
+    assert.equal(claimChapter(state, ch7.id, ctxAt({ level: 36, branchesOpened: 1 })).success, true);
+    // Save đã nhận chương 7 theo điều kiện cũ (mở tiệm xôi) vẫn giữ trạng thái đã nhận dù chưa có chi nhánh.
+    const legacy = normalizeStoryState({ startedChapters: { open_second_shop: 40 }, claimedChapters: STORY_CHAPTERS.map(c => c.id) });
+    assert.equal(getChapterProgress(legacy, ch7, ctxAt({ level: 40, branchesOpened: 0 })).status, 'claimed', 'đã nhận thì giữ nguyên');
 
-    // Qua simulation: mua mảnh đất tiệm xôi thì đếm là cơ sở thứ hai
+    // Qua simulation: mua mảnh đất tiệm xôi không tính; mở chi nhánh (điều hành từ xa) thì tính 1.
     const save = structuredClone(DEFAULT_INITIAL_SAVE);
-    save.player.level = 36;
+    save.player.level = 60; save.player.money = 10_000_000;
     const sim = new GameSimulation(save, generateStarterTileMap(), new InputManager());
-    const before = sim.getStoryProgressList().find(p => p.chapterId === ch7.id)!;
-    assert.equal(before.current, 1);
+    assert.equal(sim.getStoryProgressList().find(p => p.chapterId === ch7.id)!.current, 0);
     const opened = structuredClone(save);
     opened.storeLayout.unlockedPlotIds = [...(opened.storeLayout.unlockedPlotIds ?? []), XOI_PLOT_ID];
     sim.importSaveData(opened);
-    assert.equal(sim.getStoryProgressList().find(p => p.chapterId === ch7.id)!.current, 2, 'Mở tiệm xôi = 2 cơ sở');
+    assert.equal(sim.getStoryProgressList().find(p => p.chapterId === ch7.id)!.current, 0, 'tiệm xôi không phải chi nhánh');
+    assert.equal(sim.openBranch('drink_shop', 'Quán A', 'branch-1').success, true);
+    assert.equal(sim.getStoryProgressList().find(p => p.chapterId === ch7.id)!.current, 1, 'mở chi nhánh = 1');
   }
 
   // Normalize: bỏ chương lạ, ngày không hợp lệ

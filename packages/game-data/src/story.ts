@@ -8,7 +8,9 @@ export type StoryObjective =
   | { kind: 'rival'; reputation: number; regulars: number }
   | { kind: 'stallServings'; target: number }
   /** Số cơ sở đang có (tiệm chính + các tòa nhà đã mở trên dải đất, hiện chỉ có tiệm xôi). */
-  | { kind: 'buildingsOpened'; target: number };
+  | { kind: 'buildingsOpened'; target: number }
+  /** Số chi nhánh thật (tòa tạp hóa chi nhánh trên đất khai hoang + chi nhánh điều hành từ xa). */
+  | { kind: 'branchesOpened'; target: number };
 
 export interface StoryChapterDef {
   id: string;
@@ -30,7 +32,7 @@ export const RIVAL_EVENT_ID = 'supermarket_rival';
 
 /**
  * Chương cốt truyện, chuyển thể từ game gốc "tap-hoa-dau-hem". Chương 4 và 7 gốc phụ thuộc thuế theo quý và chuỗi chi nhánh,
- * chưa có thuế theo quý nên điều kiện chương 4 là doanh thu tích lũy. Chương 7 "mở chuỗi" gốc đo chi nhánh; ở đây chưa có chi nhánh nên chương 7 đo việc mở tiệm xôi (cơ sở thứ hai trên cùng dải đất).
+ * chưa có thuế theo quý nên điều kiện chương 4 là doanh thu tích lũy. Chương 7 "mở chuỗi" đo chi nhánh thật (`branchesOpened`, OpenSpec `branch-chain` 7.2); chương đã nhận thưởng giữ nguyên vì trạng thái lưu theo id chương.
  */
 export const STORY_CHAPTERS: readonly StoryChapterDef[] = [
   { id: 'homecoming', chapter: 1, title: 'Về quê giữ tiệm', unlockLevel: 1, portrait: '👵',
@@ -52,8 +54,8 @@ export const STORY_CHAPTERS: readonly StoryChapterDef[] = [
     dialog: ['Bà ghé thăm và thấy góc đồ ăn đông vui quá.', 'Bà nhờ cháu chuẩn bị vài món quen cho xóm mình.'],
     goal: 'Bán 10 suất ở các quầy ăn uống', objective: { kind: 'stallServings', target: 10 }, rewardMoney: 250000, rewardExp: 600 },
   { id: 'open_second_shop', chapter: 7, title: 'Mở thêm cơ sở', unlockLevel: 36, portrait: '👵',
-    dialog: ['Tiệm đứng vững rồi, bà muốn cháu nghĩ xa hơn một gian hàng.', 'Mở thêm tiệm xôi sát bên: thêm một cơ sở là thêm một nguồn thu cho cả xóm.'],
-    goal: 'Mở tiệm xôi (cơ sở thứ hai)', objective: { kind: 'buildingsOpened', target: 2 }, rewardMoney: 500000, rewardExp: 1000 },
+    dialog: ['Tiệm đứng vững rồi, bà muốn cháu nghĩ xa hơn một gian hàng.', 'Mở một chi nhánh tạp hóa ở khu đất mới: thêm một cơ sở là thêm một nguồn thu cho cả xóm.'],
+    goal: 'Mở chi nhánh đầu tiên', objective: { kind: 'branchesOpened', target: 1 }, rewardMoney: 500000, rewardExp: 1000 },
 ];
 
 export const STORY_CHAPTER_MAP: Record<string, StoryChapterDef> = nullProto(Object.fromEntries(STORY_CHAPTERS.map(chapter => [chapter.id, chapter])));

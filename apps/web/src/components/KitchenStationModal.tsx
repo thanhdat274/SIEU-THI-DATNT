@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { InventoryItem, ProductionJob, StoreFixture } from '@game/shared';
-import { PRODUCT_MAP, Recipe, RECIPES } from '@game/data';
+import { PRODUCT_MAP, Recipe, RECIPES, Combo, comboSellingPrice } from '@game/data';
 import { PixelButton, PixelDialog } from './pixel';
 
 /** Các station ID cho quán nước (đồ uống). */
@@ -28,6 +28,7 @@ export interface Props {
   inventory: InventoryItem[];
   day: number;
   allFixtures?: StoreFixture[]; // Tất cả kitchen_station fixtures cho cùng shop
+  combos?: Combo[]; // Combo của shop này (bếp đa món)
   onStart: (recipeId: string, stationId?: string) => void;
   onClose: () => void;
 }
@@ -38,7 +39,9 @@ const usable = (inventory: InventoryItem[], productId: string, day: number): num
   return slot.lots ? slot.lots.filter(lot => lot.expiresOnDay > day).reduce((sum, lot) => sum + lot.quantity, 0) : slot.quantity;
 };
 
-export const KitchenStationModal: React.FC<Props> = ({ fixture, recipes, job, inventory, day, allFixtures, onStart, onClose }) => {
+const formatVND = (n: number): string => new Intl.NumberFormat('vi-VN').format(n);
+
+export const KitchenStationModal: React.FC<Props> = ({ fixture, recipes, job, inventory, day, allFixtures, combos = [], onStart, onClose }) => {
   const [activeStation, setActiveStation] = useState<string>(fixture.shopId ?? '');
 
   const hasMultipleStations = useMemo(() => {
@@ -134,6 +137,32 @@ export const KitchenStationModal: React.FC<Props> = ({ fixture, recipes, job, in
         </PixelButton>
       </div>;
     })}
+
+    {/* Combo suất tiết kiệm (bếp đa món): lắp ráp từ các món thành phẩm của shop. */}
+    {combos.length > 0 && (
+      <div className="combo-panel" style={{ marginTop: 14, borderTop: '2px solid var(--outline, #3A3A50)', paddingTop: 10 }}>
+        <strong style={{ fontSize: 14 }}>Combo suất tiết kiệm</strong>
+        {combos.map(combo => {
+          const retailTotal = combo.memberProductIds.reduce((sum, pid) => sum + (PRODUCT_MAP[pid]?.baseSellingPrice ?? 0), 0);
+          const lacking = combo.memberProductIds.some(pid => usable(inventory, pid, day) < 1);
+          const comboRecipeId = `recipe_${combo.id}`;
+          return <div className="summary-row" key={combo.id}>
+            <div>
+              <strong>{combo.name}</strong>
+              <p className="muted">Gồm: {combo.memberProductIds.map(pid => `${PRODUCT_MAP[pid]?.name ?? pid} (kho ${usable(inventory, pid, day)})`).join(' + ')}</p>
+              <p className="muted">Lắp ráp tại {STATION_LABELS[combo.shopStationShopId] ?? combo.shopStationShopId} · Giá combo {formatVND(comboSellingPrice(combo))}₫ <span style={{ textDecoration: 'line-through' }}>{formatVND(retailTotal)}₫</span></p>
+            </div>
+            <PixelButton
+              variant="teal"
+              disabled={!!selectedStationJob || lacking}
+              onClick={() => onStart(comboRecipeId, fixture.id)}
+            >
+              {lacking ? 'Thiếu món thành phần' : 'Làm combo'}
+            </PixelButton>
+          </div>;
+        })}
+      </div>
+    )}
     <p className="muted">
       Thành phẩm được đưa vào kho; mang lên kệ để bán. Nhân viên bổ sung hàng đang trong ca giúp nấu nhanh hơn.
     </p>

@@ -1,3 +1,8 @@
+/**
+ * PHÂN VAI (chốt 17/10/2026): file này = SỰ KIỆN THỊ TRƯỜNG (giá sỉ, tồn nhà cung cấp, nhu cầu/lưu lượng theo nhóm hàng,
+ * thời tiết ép). Sự kiện THÀNH PHỐ CỐ ĐỊNH (hội chợ W4, mất điện xóm) ở `@game/core` `world-events.ts` (`worldEventsForDay`).
+ * Mất điện có ở cả hai nguồn → `mergeDayEvents` (world-events.ts) bảo đảm chỉ áp một lần trong ngày.
+ */
 import type { ModifierChannel, ModifierRule, ModifierTarget } from '@game/shared';
 import { nullProto } from './safe-map';
 

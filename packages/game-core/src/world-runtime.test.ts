@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { ALL_PRODUCTS, MAINTENANCE_RULES, SECURITY_RULES, SNACK_PLOT_ID, SUPPLIER_MAP, createInitialOnlineWorld } from '@game/data';
+import { ALL_PRODUCTS, MAINTENANCE_RULES, SECURITY_RULES, SNACK_PLOT_ID, SUPPLIER_MAP, createInitialOnlineWorld, generateStarterTileMap } from '@game/data';
 import { MULTIPLAYER_PROTOCOL_VERSION, isGameCommand } from '@game/shared';
 import { WorldRuntime } from './world-runtime';
+import { GameSimulation } from './simulation';
+import { InputManager } from './input';
 
 export async function runWorldRuntimeTests() {
   const owner = { id: 'owner-1', displayName: 'Owner One', photoUrl: null };
@@ -448,5 +450,203 @@ export async function runWorldRuntimeTests() {
     assert.equal((await rt.executeCommand('owner-1', cmd('wage-2', { type: 'pay_wage_debt' }))).status, 'rejected', 'Hết nợ thì lệnh bị từ chối');
   }
 
+  // OpenSpec `staff-shifts` A5: server replay đổi ca đêm + gán tòa cho nhân viên; tòa không có thì từ chối.
+  {
+    const seed = createInitialOnlineWorld(owner, 'world-staff-shifts');
+    seed.business.save.player.level = 40;
+    seed.business.save.player.money = 10_000_000;
+    seed.business.save.worldTime.isStoreOpen = false;
+    seed.business.save.staff = [{
+      id: 'wm-staff', name: 'Anh Khoa', role: 'refill', speed: 6, accuracy: 5, stamina: 7,
+      dailyWage: 30_000, hiredOnDay: 1, shift: 'full_day',
+    }];
+    seed.business.save.staffSchedule = { 'wm-staff': 'full_day' };
+    const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    const cmd = (commandId: string, payload: unknown) => ({
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId,
+      expectedRevision: rt.getSnapshot().world.revision, payload,
+    });
+    const sim = rt.getSimulation();
+    const night = await rt.executeCommand('owner-1', cmd('staff-night', { type: 'set_staff_shift', staffId: 'wm-staff', shift: 'night' }));
+    assert.equal(night.status, 'accepted', 'Server phát lại đổi ca đêm');
+    assert.equal(sim.getStaff()[0].shift, 'night', 'Ca đêm ghi vào save chuẩn của server');
+    const badShift = await rt.executeCommand('owner-1', cmd('staff-bad-shift', { type: 'set_staff_shift', staffId: 'wm-staff', shift: 'bogus' }));
+    assert.equal(badShift.status, 'invalid', 'Ca không hợp lệ bị lớp validate chặn');
+    assert.equal(sim.getStaff()[0].shift, 'night', 'Ca không đổi khi lệnh bị từ chối');
+
+    const unowned = await rt.executeCommand('owner-1', cmd('staff-build-missing', { type: 'assign_staff_building', staffId: 'wm-staff', buildingId: 'snack' }));
+    assert.equal(unowned.status, 'rejected', 'Gán tòa chưa mua bị từ chối');
+    assert.equal(sim.getStaff()[0].assignedBuilding, undefined);
+
+    await rt.executeCommand('owner-1', cmd('staff-buy-snack', { type: 'layout_batch', actions: [{ type: 'buy_plot', plotId: SNACK_PLOT_ID }] }));
+    const revisionBefore = rt.getSnapshot().world.revision;
+    const assign = await rt.executeCommand('owner-1', cmd('staff-build-snack', { type: 'assign_staff_building', staffId: 'wm-staff', buildingId: 'snack' }));
+    assert.equal(assign.status, 'accepted', 'Gán nhân viên vào tòa đã mua');
+    assert.equal(rt.getSnapshot().world.revision, revisionBefore + 1, 'Lệnh gán tòa tăng revision đúng một');
+    assert.equal(sim.getStaff()[0].assignedBuilding, 'snack');
+    const replaySame = await rt.executeCommand('owner-1', cmd('staff-build-snack', { type: 'assign_staff_building', staffId: 'wm-staff', buildingId: 'snack' }));
+    assert.equal(replaySame.status, 'accepted', 'Gửi lại cùng commandId không lỗi');
+    assert.equal(rt.getSnapshot().world.revision, revisionBefore + 1, 'Gửi lại cùng commandId không tăng revision lần hai');
+    const clear = await rt.executeCommand('owner-1', cmd('staff-build-clear', { type: 'assign_staff_building', staffId: 'wm-staff', buildingId: null }));
+    assert.equal(clear.status, 'accepted');
+    assert.equal(sim.getStaff()[0].assignedBuilding, undefined, 'null = toàn tiệm');
+  }
+
+  // OpenSpec `written-customer-reviews` 4.5: server replay phản hồi lời chê → cộng uy tín + ghi nhận trong save chuẩn.
+  {
+    const seed = createInitialOnlineWorld(owner, 'world-reviews');
+    seed.business.save.player.reputation = 50;
+    seed.business.save.reviews = [{
+      id: 'rev-5-1', day: 5, hour: 10, minute: 0, stars: 2, author: 'Cô Hoa', text: 'Chờ lâu quá.', reason: 'wait',
+      // 2a: lời chê phải ghi mức uy tín thật đã bị trừ (Ở đây lời tiêm thẳng vào save nên gán 0.5 = đúng contribution 'wait').
+      // Phản hồi chỉ hồi phục ≤ 50% mức đó: min(reviewResponseDelta=0.25, 0.5/2=0.25) = 0.25 → uy tín 50 → 50.25.
+      reputationLost: 0.5,
+    }];
+    const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    const cmd = (commandId: string, payload: unknown) => ({
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId,
+      expectedRevision: rt.getSnapshot().world.revision, payload,
+    });
+    const sim = rt.getSimulation();
+    const repBefore = sim.getPlayerData().reputation;
+    const resp = await rt.executeCommand('owner-1', cmd('resp-1', { type: 'respond_review', reviewId: 'rev-5-1' }));
+    assert.equal(resp.status, 'accepted', 'Server phát lại phản hồi lời chê');
+    assert.ok(sim.getPlayerData().reputation > repBefore, 'Uy tín tăng sau khi phản hồi');
+    assert.equal(sim.getReviewResponses().length, 1, 'Ghi nhận lượt phản hồi trong save chuẩn của server');
+    const again = await rt.executeCommand('owner-1', cmd('resp-2', { type: 'respond_review', reviewId: 'rev-5-1' }));
+    assert.equal(again.status, 'rejected', 'Phản hồi lần hai bị từ chối (đã phản hồi)');
+  }
+
+  // OpenSpec `written-customer-reviews` 2b: lời chê quá 3 ngày bị từ chối qua replay co-op (không đổi revision).
+  {
+    const seed = createInitialOnlineWorld(owner, 'world-reviews-old');
+    seed.business.save.player.reputation = 50;
+    seed.business.save.worldTime.day = 6; // hôm nay ngày 6 → lời ngày 2 quá 3 ngày (2 < 6 - 3 = 3)
+    seed.business.save.reviews = [{
+      id: 'rev-old', day: 2, hour: 10, minute: 0, stars: 1, author: 'Cô Hoa', text: 'Chờ lâu quá.', reason: 'wait',
+    }];
+    const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    const cmd = (commandId: string, payload: unknown) => ({
+      protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId,
+      expectedRevision: rt.getSnapshot().world.revision, payload,
+    });
+    const sim = rt.getSimulation();
+    const revisionBefore = rt.getSnapshot().world.revision;
+    const res = await rt.executeCommand('owner-1', cmd('resp-old', { type: 'respond_review', reviewId: 'rev-old' }));
+    assert.equal(res.status, 'rejected', 'Server từ chối phản hồi lời cũ hơn 3 ngày');
+    assert.equal(sim.getReviewResponses().length, 0, 'Không ghi nhận phản hồi cho lời cũ');
+    assert.equal(rt.getSnapshot().world.revision, revisionBefore, 'Lệnh bị từ chối không tăng revision');
+  }
+
+  // Sự kiện thành phố (hội chợ W4, mất điện) deterministic theo seed + ngày: client dựng từ snapshot thấy đúng như server.
+  {
+    const serverSim = runtime.getSimulation();
+    const clientSim = new GameSimulation(structuredClone(runtime.getSnapshot().businesses[0].save), generateStarterTileMap(), new InputManager());
+    let seen = 0;
+    for (let day = 1; day <= 40; day++) {
+      const server = serverSim.getWorldEvents(day);
+      assert.deepEqual(clientSim.getWorldEvents(day), server, `ngày ${day}: client và server cùng sự kiện thành phố`);
+      seen += server.events.length;
+    }
+    assert.ok(seen > 0, 'cửa sổ 40 ngày có ít nhất một sự kiện thành phố');
+  }
+
+  // Hàng đang chuyển (schema 16): server chạy chuyến về kho tổng qua nửa đêm; client dựng từ snapshot thấy cùng chuyến;
+  // khởi động lại server từ checkpoint giữa chuyến không mất/không nhân đôi hàng.
+  {
+    const serverSim = runtime.getSimulation();
+    const qty = (s: GameSimulation) => (s.getInventory().find(i => i.productId === 'mi_hao_hao')?.quantity ?? 0) + s.getInternalDeliveries().reduce((n, d) => n + d.totalQty, 0);
+    serverSim.getClock().setTime({ ...serverSim.getTime(), hour: 23, minute: 59 });
+    const before = qty(serverSim);
+    const startDay = serverSim.getTime().day;
+    const d = serverSim.startInternalDelivery({ fromBuildingId: 'drink', toBuildingId: 'main', productId: 'mi_hao_hao', lots: [{ quantity: 4, expiresOnDay: 99, unitCost: 4200, provenance: 'known' }], toTarget: 'central' })!;
+    runtime.registerSession('owner-1');
+    (runtime as unknown as { lastLiveSnapshotAt: number }).lastLiveSnapshotAt = 0; // bỏ chặn 250 ms thời gian thực
+    runtime.tick(0.01);
+    const snapSave = structuredClone(runtime.getSnapshot().businesses[0].save);
+    assert.deepEqual(snapSave.internalDeliveries, serverSim.getInternalDeliveries(), 'snapshot server mang chuyến đang chuyển');
+    const clientSim = new GameSimulation(structuredClone(snapSave), generateStarterTileMap(), new InputManager());
+    assert.equal(qty(clientSim), qty(serverSim), 'client dựng từ snapshot cùng tổng hàng với server');
+    clientSim.importSaveData(structuredClone(snapSave), { live: true });
+    assert.equal(qty(clientSim), before + 4, 'nạp live lặp lại không nhân đôi');
+    // Server khởi động lại từ checkpoint giữa chuyến.
+    const restarted = new WorldRuntime(structuredClone(runtime.getSnapshot().world), { ...structuredClone(runtime.getSnapshot().businesses[0]), save: snapSave }, { heartbeatTimeoutMs: 1000, checkpointIntervalSeconds: 100 });
+    restarted.registerSession('owner-1');
+    const rs = restarted.getSimulation();
+    assert.equal(qty(rs), before + 4, 'khởi động lại giữa chuyến không mất hàng');
+    for (let i = 0; i < 600 && rs.getInternalDeliveries().some(x => x.id === d.id); i++) restarted.tick(0.5);
+    assert.ok(!rs.getInternalDeliveries().some(x => x.id === d.id), 'server chạy chuyến tới nơi');
+    assert.ok(rs.getTime().day > startDay, 'chuyến tới nơi sau khi đổi ngày');
+    assert.ok(rs.getInventory().find(i => i.productId === 'mi_hao_hao')!.lots!.some(l => l.expiresOnDay === 99 && l.unitCost === 4200), 'lô về kho tổng giữ hạn + giá vốn');
+    const after = new GameSimulation(structuredClone(restarted.getSnapshot().businesses[0].save), generateStarterTileMap(), new InputManager());
+    assert.equal(after.getInternalDeliveries().some(x => x.id === d.id), false, 'client thấy chuyến đã xong như server');
+  }
+
   console.log('✓ WorldRuntime manages sessions, heartbeats, pausing, checkpoints, and 30s time votes correctly.');
+  await runMultiSiteCoopTests();
+}
+
+/** `multi-site-parcel-lease` 3.1/D5: co-op hai thành viên, chủ phòng rời; server replay lệnh cơ sở, ghi đúng người làm. */
+async function runMultiSiteCoopTests() {
+  const owner = { id: 'owner-1', displayName: 'Owner One', photoUrl: null };
+  const seed = createInitialOnlineWorld(owner, 'world-multisite-test');
+  seed.world.memberships.push({ accountId: 'member-2', role: 'member', joinedAt: new Date().toISOString(), lastSeenRevision: 0 });
+  seed.business.save.player.level = 80;
+  seed.business.save.player.money = 80_000_000;
+  seed.business.save.worldTime.isStoreOpen = false;
+  seed.business.save.inventory = seed.business.save.inventory.filter(i => i.productId !== 'nuoc_suoi');
+  seed.business.save.inventory.push({ productId: 'nuoc_suoi', quantity: 20, lots: [{ quantity: 20, expiresOnDay: 99, unitCost: 3000, provenance: 'known' }] });
+  const rt = new WorldRuntime(seed.world, seed.business, { heartbeatTimeoutMs: 600000, checkpointIntervalSeconds: 9999 });
+  const sim = rt.getSimulation();
+  sim.reclaimWave('w1');
+  (sim as unknown as { finishReclaimedWaves(day: number): void }).finishReclaimedWaves(3);
+  rt.registerSession('owner-1');
+  rt.registerSession('member-2');
+  let n = 0;
+  const cmd = (payload: Record<string, unknown>, commandId = `ms-${++n}`) => ({ protocolVersion: MULTIPLAYER_PROTOCOL_VERSION, worldId: seed.world.id, businessId: seed.business.id, commandId, expectedRevision: rt.getSnapshot().world.revision, payload });
+  const arrive = () => {
+    const last = Math.max(...sim.getInternalDeliveries().map(d => d.arriveAtMinute ?? 0));
+    sim.getClock().setTime({ ...sim.getTime(), day: Math.floor(last / 1440), hour: Math.floor((last % 1440) / 60), minute: last % 60 });
+    rt.tick(0.1);
+  };
+  for (const p of [{ type: 'open_site', buildingTypeId: 'grocery_branch', parcelId: 'w1-corner', originX: 0, originY: 0 }, { type: 'close_site', siteId: 'x' }, { type: 'site_transfer', siteId: 'x', productId: 'nuoc_suoi', quantity: 1, direction: 'in' }]) {
+    assert.ok(isGameCommand(cmd(p)), `${p.type} là lệnh hợp lệ`);
+  }
+  assert.equal((await rt.executeCommand('owner-1', cmd({ type: 'lease_parcel', parcelId: 'w1-corner' }))).status, 'accepted');
+  const origin = sim.findOpenOrigin('grocery_branch', 'w1-corner')!;
+  const money = sim.getPlayerData().money;
+  const fixturesBefore = new Set(sim.getFixtures().map(f => f.id));
+  const open = cmd({ type: 'open_site', buildingTypeId: 'grocery_branch', parcelId: 'w1-corner', ...origin });
+  assert.equal((await rt.executeCommand('owner-1', open)).status, 'accepted', 'owner mở cơ sở');
+  await rt.executeCommand('owner-1', { ...open, expectedRevision: rt.getSnapshot().world.revision });
+  assert.equal(sim.getSites().length, 1, 'replay cùng commandId: một cơ sở');
+  const spent = money - sim.getPlayerData().money;
+  assert.ok(spent > 0 && sim.getPlayerData().money === money - spent, 'trừ tiền một lần');
+  const siteId = sim.getSites()[0].siteId;
+  assert.equal((await rt.executeCommand('owner-1', cmd({ type: 'site_transfer', siteId, productId: 'nuoc_suoi', quantity: 8, direction: 'in' }))).status, 'accepted');
+  arrive();
+  // Client dựng từ snapshot thấy cùng kho đệm.
+  (rt as unknown as { lastLiveSnapshotAt: number }).lastLiveSnapshotAt = 0;
+  rt.tick(0.01);
+  const client = new GameSimulation(structuredClone(rt.getSnapshot().businesses[0].save), generateStarterTileMap(), new InputManager());
+  assert.deepEqual(client.getSiteBuffer(siteId), sim.getSiteBuffer(siteId), 'client = server kho đệm');
+  // Chủ phòng rời phòng: member-2 rút hàng, đóng cơ sở (sau khi cất kệ), trả lô.
+  rt.unregisterSession('owner-1');
+  const refused = await rt.executeCommand('member-2', cmd({ type: 'end_lease', parcelId: 'w1-corner' }));
+  assert.equal(refused.status, 'rejected', 'trả lô chưa dọn bị từ chối');
+  assert.match(JSON.stringify(refused), /site_not_cleared/, 'lý do kèm danh sách việc');
+  assert.equal((await rt.executeCommand('member-2', cmd({ type: 'site_transfer', siteId, productId: 'nuoc_suoi', quantity: 8, direction: 'out' }))).status, 'accepted', 'member rút kho đệm khi chủ vắng');
+  arrive();
+  const stow = sim.exportSaveData();
+  const ids = new Set(sim.getFixtures().filter(f => !fixturesBefore.has(f.id)).map(f => f.id));
+  stow.storeLayout.storedFixtures = [...(stow.storeLayout.storedFixtures ?? []), ...stow.storeLayout.fixtures.filter(f => ids.has(f.id) || ids.has(f.parentId ?? ''))];
+  stow.storeLayout.fixtures = stow.storeLayout.fixtures.filter(f => !ids.has(f.id) && !ids.has(f.parentId ?? ''));
+  assert.ok(!sim.applyStoreLayout(stow).error, 'cất kệ cơ sở');
+  const closeRes = await rt.executeCommand('member-2', cmd({ type: 'close_site', siteId }));
+  assert.equal(closeRes.status, 'accepted', `member đóng cơ sở (${JSON.stringify(closeRes)})`);
+  assert.equal((await rt.executeCommand('member-2', cmd({ type: 'end_lease', parcelId: 'w1-corner' }))).status, 'accepted', 'member trả lô');
+  const log = sim.getSiteLog(siteId);
+  assert.deepEqual(log.map(e => [e.action, e.actorAccountId]), [['open_site', 'owner-1'], ['transfer_in', 'owner-1'], ['transfer_out', 'member-2'], ['close_site', 'member-2']], 'nhật ký ghi đúng người');
+  assert.equal(sim.getInventory().find(i => i.productId === 'nuoc_suoi')!.quantity, 20, 'hàng về đủ kho tổng');
+  console.log('✓ multi-site co-op: server replay open_site/site_transfer/close_site/end_lease, chủ vắng member vẫn làm, nhật ký đúng người');
 }

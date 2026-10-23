@@ -3,13 +3,15 @@ import type { ModifierRule, SaveGameData } from '@game/shared';
 import { isSalesFixture } from '@game/shared';
 import {
   ALL_PRODUCTS, DEFAULT_INITIAL_SAVE, MODIFIER_RULES, PRODUCT_MAP, SEASON_EVENTS, WEATHER_TYPES, generateStarterTileMap,
-  getProductTags, getDayOfYear, validateMarketData, CLIMATE_SEASONS,
+  getProductTags, getDayOfYear, validateMarketData, CLIMATE_SEASONS, DISTRICTS,
 } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
 import { CustomerManager } from './customers';
 import { createWeatherState, advanceWeather, weatherOnDay, pickWeather } from './weather';
-import { collectFactors, timeBandFor, weekdayOf, type MarketContext } from './market';
+import { collectFactors, timeBandFor, weekdayOf, type MarketContext, multiplyFactors } from './market';
+import { DISTRICT_MODIFIER_RULES, MODIFIER_RANGES } from '@game/data';
+import { demandContextKey } from './demand';
 import { availabilityFactor, buildDemandTable, effectiveTraffic } from './demand';
 
 const newSim = (mutate?: (save: SaveGameData) => void) => {
@@ -169,5 +171,49 @@ export function runMarketTests(): void {
   assert.equal(walkouts, 1, 'Đếm đúng một khách bỏ về vì hết hàng');
   assert.equal(newSim().getCurrentDayRecord().outOfStockWalkouts ?? 0, 0, 'Báo cáo ngày mới không có khách bỏ về');
 
-  console.log('  ✓ Passed: Thị trường — dữ liệu, thời tiết xác định, nhu cầu, lưu lượng, chọn món theo nhu cầu');
+  // --- 3. District modifier: W0 hem_dan_cu trung lập, W1-W4 có multiplier ---
+  // 3.1 DISTRICT_MODIFIER_RULES không có rule cho hem_dan_cu (W0)
+  const w0Rules = DISTRICT_MODIFIER_RULES.filter(r => r.when.districtId?.includes('hem_dan_cu'));
+  assert.equal(w0Rules.length, 0, 'Không có DISTRICT_MODIFIER_RULES cho hem_dan_cu (W0)');
+
+  // 3.2 District modifier đi qua collectFactors, không qua districtFactor trực tiếp
+  // Với W0, collectFactors() không trả về bất kỳ district factor nào
+  const ctxW0 = { ...ctxFor('sunny', 12), districtId: 'hem_dan_cu' };
+  const factorsW0 = collectFactors(ctxW0, 'demand', PRODUCT_MAP['mi_hao_hao']);
+  const districtFactorsW0 = factorsW0.filter(f => f.ruleId.startsWith('district_'));
+  assert.equal(districtFactorsW0.length, 0, 'W0: không có district factor trong collectFactors');
+
+  // 3.3 W1 có district factor cho preferred categories (instant_noodles thuộc preferred W1)
+  const ctxW1 = { ...ctxFor('sunny', 12), districtId: 'thuong_mai_nga_tu' };
+  const factorsW1 = collectFactors(ctxW1, 'demand', PRODUCT_MAP['mi_hao_hao']); // instant_noodles ∈ preferred W1
+  const districtFactorsW1 = factorsW1.filter(f => f.ruleId.startsWith('district_'));
+  assert.ok(districtFactorsW1.length > 0, 'W1 instant_noodles: có district factor trong collectFactors');
+  assert.ok(districtFactorsW1.every(f => DISTRICT_MODIFIER_RULES.some(r => r.id === f.ruleId)), 'W1: district factor ruleId hợp lệ');
+  assert.equal(districtFactorsW1[0]?.factor, DISTRICTS['thuong_mai_nga_tu'].preferredMultiplier, 'W1: district factor = preferredMultiplier của W1');
+
+  // 3.4 buildDemandTable W1 cho món ưa chuộng có multiplier = W0 × preferredMultiplier (chưa chạm trần)
+  const tableW0 = buildDemandTable({ ctx: ctxW0, products: [PRODUCT_MAP['mi_hao_hao']], reputation: 50 });
+  const tableW1 = buildDemandTable({ ctx: ctxW1, products: [PRODUCT_MAP['mi_hao_hao']], reputation: 50 });
+  const w0Demand = tableW0.perProduct['mi_hao_hao'];
+  const w1Demand = tableW1.perProduct['mi_hao_hao'];
+  const w1ExpectedMultiplier = w0Demand.multiplier * DISTRICTS['thuong_mai_nga_tu'].preferredMultiplier;
+  // W1 multiplier = W0 multiplier × preferredMultiplier (raw), bị kẹp trong dải MODIFIER_RANGES
+  assert.ok(Math.abs(w1Demand.multiplier - w1ExpectedMultiplier) < 1e-6,
+    `W1 multiplier (${w1Demand.multiplier}) ≈ W0 (${w0Demand.multiplier}) × preferredMult (${DISTRICTS['thuong_mai_nga_tu'].preferredMultiplier})`);
+  assert.ok(w1Demand.multiplier > w0Demand.multiplier, 'W1 multiplier > W0 multiplier cho món ưa chuộng');
+
+  // 3.5 demandContextKey thay đổi khi districtId thay đổi
+  const keyW0 = demandContextKey(ctxW0, 50);
+  const keyW1 = demandContextKey(ctxW1, 50);
+  assert.notEqual(keyW0, keyW1, 'demandContextKey khác nhau khi districtId khác');
+
+  // 3.6 buildDemandTable W0 (có districtId='hem_dan_cu') giống hệt không truyền districtId
+  const ctxNoDistrict = { ...ctxFor('sunny', 12) }; // không có districtId
+  const tableNoD = buildDemandTable({ ctx: ctxNoDistrict, products: [PRODUCT_MAP['mi_hao_hao']], reputation: 50 });
+  const w0NoD = tableNoD.perProduct['mi_hao_hao'];
+  assert.equal(w0Demand.multiplier, w0NoD.multiplier, 'W0 multiplier = không districtId multiplier');
+  assert.equal(w0Demand.rawMultiplier, w0NoD.rawMultiplier, 'W0 rawMultiplier = không districtId rawMultiplier');
+  assert.equal(w0Demand.demand, w0NoD.demand, 'W0 demand = không districtId demand');
+
+  console.log('  ✓ Passed: Thị trường — dữ liệu, thời tiết xác định, nhu cầu, lưu lượng, chọn món theo nhu cầu, district modifier');
 }

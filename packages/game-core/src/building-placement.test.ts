@@ -35,7 +35,7 @@ export function runBuildingPlacementTests(): void {
   const west = { parcelId: 'lot-west', originX: 1 };
   const bought = buy(base(), SNACK_PLOT_ID, west).save!;
   assert.ok(bought, 'đặt quán ăn vặt ở lô tây');
-  assert.equal(bought.player.money, 20_000_000 - 400_000, 'giá không đổi theo lô (Bước 4 mới có hệ số vị trí)');
+  assert.equal(bought.player.money, 20_000_000 - 1_200_000, 'giá không đổi theo lô (Bước 4 mới có hệ số vị trí)');
   assert.deepEqual(bought.storeLayout.buildingPlacements, [
     { buildingId: 'main', parcelId: 'lot-center', originX: 6, originY: 3 },
     { buildingId: 'snack', parcelId: 'lot-west', originX: 1, originY: 3 },
@@ -96,7 +96,7 @@ export function runBuildingPlacementTests(): void {
   stockedShelf.stockLots = [{ quantity: 9, expiresOnDay: 99999, unitCost: 3000, provenance: 'known' }];
   stocked.storeLayout.unlockedPlotIds = [...(stocked.storeLayout.unlockedPlotIds ?? []), 'snack-north-a'];
   const moveTo = { parcelId: 'lot-west', originX: 1 };
-  assert.equal(relocationFee(stocked, 'snack'), Math.round((400_000 + 150_000) * 0.3), 'phí = 30% (giá mở tòa + mảnh mở rộng bắc đã mua)');
+  assert.equal(relocationFee(stocked, 'snack'), Math.round((1_200_000 + 150_000) * 0.3), 'phí = 30% (giá mở tòa + mảnh mở rộng bắc đã mua)');
   assert.equal(relocateBuilding({ ...stocked, worldTime: { ...stocked.worldTime, isStoreOpen: true } }, 'snack', moveTo).error, 'store_open');
   assert.equal(relocateBuilding(stocked, 'main', moveTo).error, 'invalid_placement', 'tiệm chính không dời được');
   assert.equal(relocateBuilding(stocked, 'snack', { parcelId: 'lot-east-1', originX: 21 }).error, 'invalid_placement', 'cùng vị trí');

@@ -119,7 +119,13 @@ export function checkFootprintTiles(opts: { floor: ReadonlySet<string>; tiles: r
   const allowed = [parcelId, ...(freeParcelIds ?? [])].map(pid => resolveParcel(pid)).filter((parcel): parcel is NonNullable<typeof parcel> => !!parcel);
   const inAllowed = (x: number, y: number) => allowed.some(parcel => inRect(parcel.rect, x, y));
   for (const tile of tiles) {
-    if (!inAllowed(tile.x, tile.y) || !inAllowed(tile.x - 1, tile.y - 1) || !inAllowed(tile.x + 1, tile.y + 1)) return 'outside_parcel';
+    if (
+      !inAllowed(tile.x, tile.y) ||
+      !inAllowed(tile.x - 1, tile.y - 1) ||
+      !inAllowed(tile.x + 1, tile.y + 1) ||
+      !inAllowed(tile.x - 1, tile.y + 1) ||
+      !inAllowed(tile.x + 1, tile.y - 1)
+    ) return 'outside_parcel';
   }
   for (const tile of tiles) if (blocked.some(rect => inRect(rect, tile.x, tile.y)) || blockedKeys?.has(tileKey(tile.x, tile.y))) return 'blocked_by_building';
   const reached = new Set<string>();

@@ -1,4 +1,8 @@
 /**
+ * PHÂN VAI (chốt 17/10/2026): file này = SỰ KIỆN THÀNH PHỐ CỐ ĐỊNH (`worldEventsForDay`: hội chợ W4 theo nhịp cố định,
+ * mất điện xóm). Sự kiện THỊ TRƯỜNG (giá/cung/nhu cầu theo nhóm hàng) nằm ở `@game/data` `market-events.ts`.
+ * Hai nguồn trùng nhau ở mất điện → luôn gộp qua `mergeDayEvents` để chỉ áp một lần.
+ *
  * Sự kiện thành phố / sự cố ngẫu nhiên — phần lõi THUẦN (tính năng đề xuất #2, PHẦN THUẦN / PROVISIONAL).
  *
  * Ràng buộc then chốt: chơi lẻ = chơi chung. Module thuần này sinh kết quả xác định theo `(worldSeed, ngày)`
@@ -159,4 +163,19 @@ export function worldEventsBetween(
     if (r.events.length > 0) out.push(r);
   }
   return out;
+}
+
+/**
+ * Gộp sự kiện thành phố với sự kiện thị trường của cùng ngày — THUẦN. Mất điện có ở cả hai nguồn: nếu thị trường
+ * đã có mất điện (`marketPowerOut`) thì bỏ mất điện của nguồn thành phố, để hiệu ứng hư hỏng chỉ áp MỘT lần
+ * (theo bảng điều kiện của `spoilage.ts`). Hệ số tổng được tính lại từ các sự kiện còn lại.
+ */
+export function mergeDayEvents(world: WorldEventsForDay, marketPowerOut: boolean): WorldEventsForDay {
+  const events = marketPowerOut ? world.events.filter(e => e.kind !== 'power_outage') : world.events;
+  return {
+    day: world.day,
+    events,
+    trafficFactor: events.reduce((f, e) => f * e.trafficFactor, 1),
+    spoilageFactor: events.reduce((f, e) => Math.max(f, e.spoilageFactor), 1),
+  };
 }

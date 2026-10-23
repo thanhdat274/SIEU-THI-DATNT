@@ -57,6 +57,11 @@ export const BRANCH_MANAGER = { wagePerDay: 40_000, demandFactor: 0.95 } as cons
 
 /** Số chi nhánh tối đa toàn chuỗi ở bản đầu (D8). */
 export const MAX_CHAIN_BRANCHES = 3;
+/**
+ * Số món trung bình mỗi lượt khách ở chi nhánh chạy nền (PROVISIONAL): chạy nền chỉ có số món bán, nên "khách tổng chuỗi"
+ * (goals/nhiệm vụ tuần, OpenSpec `branch-chain` 7.3) cộng ước tính ⌈món / hệ số⌉ — không phải khách thật.
+ */
+export const BRANCH_UNITS_PER_CUSTOMER = 2;
 
 /** Trạm đồ uống (khớp `FIXTURE_SHOP`): thành phẩm của chúng là hàng của quán nước. */
 const DRINK_STATION_IDS: ReadonlySet<string> = new Set(['drink_counter', 'blender', 'sugarcane_press']);

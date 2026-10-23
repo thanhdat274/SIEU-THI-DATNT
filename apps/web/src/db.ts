@@ -10,6 +10,10 @@ export const SAVE_BACKUP_KEY = 'local_save_backup';
 export const SAVE_SLOT_IDS = [SAVE_STORAGE_KEY, 'local_save_slot_2', 'local_save_slot_3'] as const;
 export type SaveSlotId = (typeof SAVE_SLOT_IDS)[number];
 
+/** Ô riêng cho "Chơi Thử (Local)": không nằm trong SAVE_SLOT_IDS nên không hiện cho người chơi và không đè ô thật. */
+export const DEMO_SAVE_SLOT_ID = 'local_save_demo';
+type StorageSlotId = SaveSlotId | typeof DEMO_SAVE_SLOT_ID;
+
 const ACTIVE_SLOT_STORAGE_KEY = 'tiem.activeSaveSlot';
 
 export function isSaveSlotId(value: unknown): value is SaveSlotId {
@@ -20,7 +24,7 @@ export function slotNumber(slotId: SaveSlotId): number {
   return SAVE_SLOT_IDS.indexOf(slotId) + 1;
 }
 
-export function backupKeyFor(slotId: SaveSlotId): string {
+export function backupKeyFor(slotId: StorageSlotId): string {
   return slotId === SAVE_STORAGE_KEY ? SAVE_BACKUP_KEY : `${slotId}_backup`;
 }
 
@@ -34,16 +38,29 @@ function readStoredSlot(): SaveSlotId {
   return SAVE_STORAGE_KEY;
 }
 
-let activeSlotId: SaveSlotId = readStoredSlot();
+let selectedSlotId: SaveSlotId = readStoredSlot();
+let demoMode = false;
+/** Khóa thật mà các hàm đọc/ghi dùng: ô demo khi đang chơi thử, ngược lại ô người chơi chọn. */
+const storageSlot = (): StorageSlotId => (demoMode ? DEMO_SAVE_SLOT_ID : selectedSlotId);
 
 /** Ô đang chọn của tab này. Giữ trong bộ nhớ nên hai tab có thể chọn hai ô khác nhau; localStorage chỉ nhớ lựa chọn cho lần mở sau. */
 export function getActiveSlotId(): SaveSlotId {
-  return activeSlotId;
+  return selectedSlotId;
+}
+
+export function isDemoMode(): boolean {
+  return demoMode;
+}
+
+/** Vào chế độ chơi thử: mọi đọc/ghi chuyển sang ô demo (chỉ trong bộ nhớ tab này) cho tới khi chọn lại ô thật. */
+export function enterDemoSlot(): void {
+  demoMode = true;
 }
 
 export function setActiveSlotId(slotId: SaveSlotId): void {
   if (!isSaveSlotId(slotId)) throw new Error('Ô lưu không hợp lệ.');
-  activeSlotId = slotId;
+  selectedSlotId = slotId;
+  demoMode = false;
   try {
     globalThis.localStorage?.setItem(ACTIVE_SLOT_STORAGE_KEY, slotId);
   } catch {
@@ -105,11 +122,11 @@ export async function deleteSaveSlot(slotId: SaveSlotId): Promise<void> {
  * Inspect local save without creating default if absent.
  * Throws if database encounters a read failure.
  */
-export async function loadExistingSave(slotId: SaveSlotId = activeSlotId): Promise<SaveGameData | undefined> {
+export async function loadExistingSave(slotId: StorageSlotId = storageSlot()): Promise<SaveGameData | undefined> {
   return await db.saves.get(slotId);
 }
 
-const emergencyKeyFor = (slotId: SaveSlotId) => `tiem.emergencySave.${slotId}`;
+const emergencyKeyFor = (slotId: StorageSlotId) => `tiem.emergencySave.${slotId}`;
 
 /**
  * Bản chụp khẩn cấp: ghi ĐỒNG BỘ vào localStorage khi trang sắp đóng/tải lại (IndexedDB là bất đồng bộ nên có thể không kịp).
@@ -117,19 +134,19 @@ const emergencyKeyFor = (slotId: SaveSlotId) => `tiem.emergencySave.${slotId}`;
  */
 export function writeEmergencySave(saveData: SaveGameData): boolean {
   try {
-    localStorage.setItem(emergencyKeyFor(activeSlotId), JSON.stringify({ savedAtMs: Date.now(), save: saveData }));
+    localStorage.setItem(emergencyKeyFor(storageSlot()), JSON.stringify({ savedAtMs: Date.now(), save: saveData }));
     return true;
   } catch {
     return false;
   }
 }
 
-export function clearEmergencySave(slotId: SaveSlotId = activeSlotId): void {
+export function clearEmergencySave(slotId: StorageSlotId = storageSlot()): void {
   try { localStorage.removeItem?.(emergencyKeyFor(slotId)); } catch { /* bỏ qua */ }
 }
 
 /** Trả bản chụp khẩn cấp hợp lệ và mới hơn `existing`; xóa nó dù dùng hay bỏ để không nạp lại lần sau. */
-function takeEmergencySave(slotId: SaveSlotId, existing: SaveGameData): SaveGameData | undefined {
+function takeEmergencySave(slotId: StorageSlotId, existing: SaveGameData): SaveGameData | undefined {
   let raw: string | null = null;
   try { raw = localStorage.getItem(emergencyKeyFor(slotId)); } catch { return undefined; }
   if (!raw) return undefined;
@@ -151,7 +168,7 @@ function takeEmergencySave(slotId: SaveSlotId, existing: SaveGameData): SaveGame
  * If reading the database fails, throws an error rather than silently overwriting with default.
  */
 export async function loadOrCreateSave(): Promise<SaveGameData> {
-  const slotId = activeSlotId;
+  const slotId = storageSlot();
   const existing = await db.saves.get(slotId);
   if (existing) {
     const validation = validateSaveGameData(existing);
@@ -199,7 +216,7 @@ export async function loadOrCreateSave(): Promise<SaveGameData> {
 export async function createBackupSave(saveData: SaveGameData): Promise<SaveGameData> {
   const backup: SaveGameData = {
     ...saveData,
-    id: backupKeyFor(activeSlotId),
+    id: backupKeyFor(storageSlot()),
     updatedAt: new Date().toISOString(),
   };
   await db.saves.put(backup);
@@ -210,7 +227,7 @@ export async function createBackupSave(saveData: SaveGameData): Promise<SaveGame
  * Load backup save from IndexedDB
  */
 export async function loadBackupSave(): Promise<SaveGameData | undefined> {
-  return await db.saves.get(backupKeyFor(activeSlotId));
+  return await db.saves.get(backupKeyFor(storageSlot()));
 }
 
 /**
@@ -221,7 +238,7 @@ export async function restoreFromBackup(): Promise<SaveGameData | undefined> {
   if (!backup) return undefined;
   const restored: SaveGameData = {
     ...backup,
-    id: activeSlotId,
+    id: storageSlot(),
     updatedAt: new Date().toISOString(),
   };
   await db.saves.put(restored);
@@ -232,7 +249,7 @@ export async function restoreFromBackup(): Promise<SaveGameData | undefined> {
  * Persist active save state to IndexedDB, keeping previous valid revision as backup
  */
 export async function persistSave(saveData: SaveGameData): Promise<SaveGameData> {
-  const slotId = activeSlotId;
+  const slotId = storageSlot();
   const updated: SaveGameData = { ...saveData, id: slotId, updatedAt: new Date().toISOString() };
   const validation = validateSaveGameData(updated);
   if (!validation.valid || validation.versionStatus !== 'supported') throw new Error(validation.error ?? 'Không thể lưu dữ liệu chưa được nâng cấp hợp lệ.');
@@ -255,7 +272,7 @@ export async function persistSave(saveData: SaveGameData): Promise<SaveGameData>
 export async function resetSaveToDefault(): Promise<SaveGameData> {
   const freshSave: SaveGameData = {
     ...DEFAULT_INITIAL_SAVE,
-    id: activeSlotId,
+    id: storageSlot(),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     revision: 1,
@@ -265,6 +282,14 @@ export async function resetSaveToDefault(): Promise<SaveGameData> {
   return freshSave;
 }
 
+/** QA (DEV): ghi save dựng sẵn vào ô Chơi Thử. Chỉ chạy khi đang ở chế độ demo nên không bao giờ chạm ô thật. */
+export async function seedDemoSave(save: SaveGameData): Promise<SaveGameData> {
+  if (!demoMode) throw new Error('Chỉ nạp save QA vào ô Chơi Thử.');
+  const seeded: SaveGameData = { ...save, id: DEMO_SAVE_SLOT_ID, revision: 1 };
+  await db.saves.put(seeded);
+  return seeded;
+}
+
 /**
  * Thay bản lưu hiện tại bằng save nhập từ file. Save được kiểm tra lại, bản hiện tại giữ làm backup (một bản)
  * và revision đi tiếp từ bản cũ để hàng đợi lưu tuần tự không báo lệch.
@@ -272,7 +297,7 @@ export async function resetSaveToDefault(): Promise<SaveGameData> {
 export async function replaceSaveWithImported(imported: SaveGameData): Promise<SaveGameData> {
   const validation = validateSaveGameData(imported);
   if (!validation.valid || !validation.data) throw new Error(validation.error ?? 'Bản lưu nhập vào không hợp lệ.');
-  const slotId = activeSlotId;
+  const slotId = storageSlot();
   return await db.transaction('rw', db.saves, async () => {
     const existing = await db.saves.get(slotId);
     const next: SaveGameData = {

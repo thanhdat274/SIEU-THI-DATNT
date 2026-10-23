@@ -1,4 +1,4 @@
-import type { GameWorld, BusinessState, SaveGameData } from '@game/shared';
+import type { GameWorld, BusinessState, SaveGameData, WorldSettings } from '@game/shared';
 import { MULTIPLAYER_PROTOCOL_VERSION } from '@game/shared';
 import { devGuestHeader } from './dev-guest';
 
@@ -55,6 +55,11 @@ export async function getOnlineWorld(idToken: string, worldId: string): Promise<
   return fetchWithAuth(`/api/v1/worlds/${worldId}`, idToken);
 }
 
+/** Chỉ lấy revision hiện tại: dùng cho vòng kiểm tra dự phòng, tải cả hẻm chỉ khi revision đổi. */
+export async function getOnlineWorldRevision(idToken: string, worldId: string): Promise<{ revision: number }> {
+  return fetchWithAuth(`/api/v1/worlds/${worldId}/revision`, idToken);
+}
+
 export async function createWorldInvite(idToken: string, worldId: string): Promise<{ inviteId: string; token: string; expiresAt: string }> {
   return fetchWithAuth(`/api/v1/worlds/${worldId}/invites`, idToken, {
     method: 'POST',
@@ -70,6 +75,14 @@ export async function revokeWorldInvite(idToken: string, worldId: string, invite
 export async function kickWorldMember(idToken: string, worldId: string, memberId: string): Promise<{ removed: boolean }> {
   return fetchWithAuth(`/api/v1/worlds/${worldId}/members/${memberId}`, idToken, {
     method: 'DELETE',
+  });
+}
+
+export async function updateWorldSettings(idToken: string, worldId: string, patch: WorldSettings): Promise<{ settings: WorldSettings }> {
+  return fetchWithAuth(`/api/v1/worlds/${worldId}/settings`, idToken, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
   });
 }
 
@@ -91,7 +104,7 @@ export async function resetOnlineWorld(idToken: string, worldId: string): Promis
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- command payloads and receipts are command-specific JSON
-export async function commitOnlineCommand(idToken: string, worldId: string, payload: any): Promise<{ committed: boolean; revision: number; receipt: any; updatedBusiness?: any }> {
+export async function commitOnlineCommand(idToken: string, worldId: string, payload: any): Promise<{ committed: boolean; revision: number; receipt: any; updatedBusiness?: any; pendingVote?: boolean; message?: string }> {
   return fetchWithAuth(`/api/v1/worlds/${worldId}/commands`, idToken, {
     method: 'POST',
     body: JSON.stringify({ ...payload, protocolVersion: MULTIPLAYER_PROTOCOL_VERSION }),

@@ -85,6 +85,8 @@ function LazyRow({ children }: { children: React.ReactNode }) {
 }
 
 interface ProductRowProps {
+  /** Sổ góp xóm đang cần món này. */
+  bundleNeeded?: boolean;
   product: (typeof ALL_PRODUCTS)[number];
   quantity: number;
   unitPrice: number;
@@ -103,7 +105,7 @@ interface ProductRowProps {
  * Một dòng sản phẩm trong danh sách nhập. Đóng gói và memo để bấm +/- chỉ vẽ lại đúng dòng đó
  * (trước đây mỗi lần đổi số lượng cả ~300 dòng cùng biểu tượng SVG được dựng lại).
  */
-const SupplierProductRow = React.memo(function SupplierProductRow({ product, quantity, unitPrice, locked, discountRate, supplierName, maxQty, changePct, reasonsText, stockLeft, unavailable, onSetQty }: ProductRowProps) {
+const SupplierProductRow = React.memo(function SupplierProductRow({ bundleNeeded, product, quantity, unitPrice, locked, discountRate, supplierName, maxQty, changePct, reasonsText, stockLeft, unavailable, onSetQty }: ProductRowProps) {
   const packSize = product.caseSize ?? 1;
   const packCount = quantity / packSize;
   const cost = quantity * unitPrice;
@@ -117,7 +119,7 @@ const SupplierProductRow = React.memo(function SupplierProductRow({ product, qua
     >
       <ProductSlot productId={product.id} />
       <div className="product-info">
-        <h3>{product.name}</h3>
+        <h3>{product.name}{bundleNeeded && <span data-bundle-needed title="Sổ góp xóm đang cần món này" style={{ marginLeft: 6, fontSize: 11, padding: '1px 4px', border: '1px solid var(--teal)', color: 'var(--teal)' }}>Xóm cần</span>}</h3>
         <p>
           {PRODUCT_CATEGORY_LABELS[product.category]}
           {product.storageType === 'cold' ? ' · Giữ mát' : ''}
@@ -174,6 +176,8 @@ export interface SupplierQuoteBoard {
 }
 
 export interface Props {
+  /** Món sổ góp xóm đang cần (huy hiệu "Xóm cần"). */
+  bundleNeededProductIds?: ReadonlySet<string>;
   coldCapacity?: number;
   player: PlayerData;
   pendingOrders: SupplierOrder[];
@@ -196,6 +200,7 @@ export interface Props {
 }
 
 export const SupplierModal: React.FC<Props> = ({
+  bundleNeededProductIds,
   coldCapacity = COLD_WAREHOUSE_CAPACITY,
   player,
   pendingOrders,
@@ -904,6 +909,7 @@ export const SupplierModal: React.FC<Props> = ({
           return (
             <LazyRow key={product.id}>
             <SupplierProductRow
+              bundleNeeded={bundleNeededProductIds?.has(product.id)}
               product={product}
               quantity={quantity}
               unitPrice={product.caseSize ? Math.round(estimateCartCost([{ productId: product.id, quantity: product.caseSize }]) / product.caseSize) : unitPrice}

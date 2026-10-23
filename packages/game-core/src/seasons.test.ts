@@ -98,9 +98,12 @@ export function runSeasonAndStallTests(): void {
   assert.equal(describeWorkerError('claim_lost')?.includes('claim_lost'), false, 'Mã lỗi châm kệ được dịch sang tiếng Việt');
 
   // Ngày 1: chỉ có sữa đặc, thiếu đường -> không đủ nguyên liệu để bán.
+  // Bước 3 (`civic-local-fees`): đầu ngày vẫn tự trừ thuê đất + phí xóm, nên so ví phải trừ các khoản đó ra.
   const moneyBeforeDay = sim.getPlayerData().money;
+  const beforeLedgerLen = sim.getLedger().length;
   sim.getClock().advanceToNextDay();
-  assert.equal(sim.getPlayerData().money, moneyBeforeDay, 'Thiếu đường thì quầy không bán và không tốn tiền');
+  const dayCosts = sim.getLedger().slice(beforeLedgerLen).filter(e => e.type === 'rent' || e.type === 'civic_upkeep' || e.type === 'civic_fee').reduce((sum, e) => sum + e.amount, 0);
+  assert.equal(sim.getPlayerData().money, moneyBeforeDay - dayCosts, 'Thiếu đường thì quầy không bán và không tốn tiền (ngoài chi phí đầu ngày)');
   assert.equal(sim.getStallReport()?.entries[0]?.servings, 0);
   assert.equal(sim.getStallReport()?.entries[0]?.limitedBy, 'duong_cat');
   assert.equal(sim.getInventory().find(i => i.productId === 'sua_ong_tho')?.quantity, 5, 'Không lấy kho khi không bán');
@@ -114,10 +117,12 @@ export function runSeasonAndStallTests(): void {
   const moneyDay2 = sim.getPlayerData().money;
   const plan = planStallDay('cafe_vot', day, sim.getPlayerData().reputation, id => id === 'sua_ong_tho' ? 5 : 3)!;
   assert.ok(plan.servings > 0);
+  const beforeDay2Ledger = sim.getLedger().length;
   sim.getClock().advanceToNextDay();
+  const day2Costs = sim.getLedger().slice(beforeDay2Ledger).filter(e => e.type === 'rent' || e.type === 'civic_upkeep' || e.type === 'civic_fee').reduce((sum, e) => sum + e.amount, 0);
   const revenue = plan.servings * coffee.servingPrice;
   const cogs = plan.servings * coffee.cashCostPerServing + plan.ingredientUnits['sua_ong_tho'] * 17000 + plan.ingredientUnits['duong_cat'] * 11000;
-  assert.equal(sim.getPlayerData().money - moneyDay2, revenue - plan.servings * coffee.cashCostPerServing, 'Ví tăng doanh thu trừ tiền mặt nhập hàng của quầy');
+  assert.equal(sim.getPlayerData().money - moneyDay2 + day2Costs, revenue - plan.servings * coffee.cashCostPerServing, 'Ví tăng doanh thu trừ tiền mặt nhập hàng của quầy (ngoài chi phí đầu ngày)');
   const saleEntry = sim.getLedger().find(entry => entry.description.includes('Quầy cà phê vợt') && entry.day === day);
   assert.ok(saleEntry && saleEntry.cogs === cogs && saleEntry.amount === revenue, 'Quầy ghi sổ với giá vốn theo lô kho');
   assert.equal(sim.getInventory().find(i => i.productId === 'sua_ong_tho')?.quantity ?? 0, 5 - plan.ingredientUnits['sua_ong_tho'], 'Trừ đúng nguyên liệu trong kho');

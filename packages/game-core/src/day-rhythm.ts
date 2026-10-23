@@ -1,5 +1,7 @@
-import type { DailyRecord } from '@game/shared';
+import type { CustomerReview, DailyRecord } from '@game/shared';
 import { PRODUCT_MAP, STALL_MAP } from '@game/data';
+import { reviewSentimentSummary, isReviewComplaint } from './review-reputation';
+import { feedbackReasonLabel } from './reputation';
 
 export interface DaySummary {
   day: number;
@@ -122,6 +124,37 @@ export interface MorningBrief {
   lowStockItems: string[];
   expiringItems: string[];
   tips: string[];
+  /** Tổng ảnh hưởng uy tín của lời đánh giá hôm qua (nếu có lời đánh giá). */
+  reputationDelta?: number;
+  /** Chỉ số sống theo khu: { [districtId]: qol0..100 }. */
+  districtQol?: Record<string, number>;
+  /** Dân số khu tiệm chính: { districtId, pop, target, factor }. */
+  civicPopulation?: { districtId: string; pop: number; target: number; factor: number };
+  /** Chi phí xóm (OpenSpec `civic-local-fees`): đã trừ đầu ngày hôm nay và dự kiến/ngày theo công trình + lô sở hữu. */
+  civicCosts?: { upkeep: number; fee: number; projected: { upkeep: number; fee: number } };
+  /** Công trình công cộng khánh thành hôm qua (từ sổ góp). */
+  civicOpenings?: string[];
+  /** Sự kiện thành phố hôm nay (hội chợ W4, mất điện) — đã gộp chống trùng với thị trường. */
+  cityEvents?: string[];
+  /** Vài lời khách nổi bật hôm qua (chê mạnh nhất + khen hay nhất) để hiện trong bản tin sáng (OpenSpec `written-customer-reviews` 4.5). */
+  standoutReviews?: CustomerReview[];
+}
+
+/**
+ * Chọn vài lời khách nổi bật hôm qua cho bản tin sáng: tối đa 2 lời chê mạnh nhất (ưu tiên phản hồi) + 1 lời khen hay nhất.
+ * Xác định theo sao/ngày (mới nhất trước) nên chơi lẻ = chơi chung.
+ */
+export function pickStandoutReviews(yesterdayReviews: readonly CustomerReview[] | undefined): CustomerReview[] {
+  if (!yesterdayReviews || yesterdayReviews.length === 0) return [];
+  const order = [...yesterdayReviews].sort((a, b) => b.day - a.day || b.hour - a.hour || b.minute - a.minute);
+  const complaints = order.filter(r => isReviewComplaint(r)).sort((a, b) => a.stars - b.stars);
+  const praises = order.filter(r => !isReviewComplaint(r) && r.stars >= 4).sort((a, b) => b.stars - a.stars);
+  const picked: CustomerReview[] = [];
+  const add = (r?: CustomerReview) => { if (r && !picked.includes(r)) picked.push(r); };
+  add(complaints[0]);
+  add(complaints[1]);
+  add(praises[0]);
+  return picked.slice(0, 3);
 }
 
 export function buildMorningBrief(params: {
@@ -133,6 +166,12 @@ export function buildMorningBrief(params: {
   arrivingOrders: Array<{ productId: string; quantity: number }>;
   lowStockItems?: string[];
   expiringItems?: string[];
+  yesterdayReviews?: CustomerReview[];
+  districtQol?: Record<string, number>;
+  civicPopulation?: { districtId: string; pop: number; target: number; factor: number };
+  civicCosts?: { upkeep: number; fee: number; projected: { upkeep: number; fee: number } };
+  civicOpenings?: string[];
+  cityEvents?: string[];
 }): MorningBrief {
   const arrivingItemsCount = params.arrivingOrders.reduce((sum, o) => sum + o.quantity, 0);
   const tips: string[] = [];
@@ -155,6 +194,20 @@ export function buildMorningBrief(params: {
     tips.push(`Sáng nay có ${params.arrivingOrders.length} đơn hàng (${arrivingItemsCount} món) giao đến kho.`);
   }
 
+  let reputationDelta: number | undefined;
+  if (params.yesterdayReviews && params.yesterdayReviews.length > 0) {
+    const s = reviewSentimentSummary(params.yesterdayReviews);
+    if (s.totalDelta > 0) {
+      tips.push(`Được xóm khen hôm qua: uy tín +${s.totalDelta.toFixed(1)} điểm. Cứ giữ phong độ!`);
+    } else if (s.totalDelta < 0) {
+      const cause = (s.topReason && feedbackReasonLabel(s.topReason.reason)) ? ` (chủ yếu do ${feedbackReasonLabel(s.topReason.reason)})` : '';
+      tips.push(`Xóm than tiệm hôm qua: uy tín ${s.totalDelta.toFixed(1)} điểm${cause}. Giải quyết sớm để giữ khách.`);
+    } else {
+      tips.push(`Lời đánh giá hôm qua nhìn chung trung tính, uy tín không đổi. Giữ ổn định phục vụ.`);
+    }
+    reputationDelta = s.totalDelta;
+  }
+
   if (tips.length === 0) {
     tips.push('Thời tiết thuận lợi, chúc tiệm buôn may bán đắt!');
   }
@@ -171,5 +224,12 @@ export function buildMorningBrief(params: {
     lowStockItems: params.lowStockItems ?? [],
     expiringItems: params.expiringItems ?? [],
     tips,
+    ...(reputationDelta !== undefined ? { reputationDelta } : {}),
+    ...(params.districtQol !== undefined ? { districtQol: params.districtQol } : {}),
+    ...(params.civicPopulation !== undefined ? { civicPopulation: params.civicPopulation } : {}),
+    ...(params.civicCosts !== undefined ? { civicCosts: params.civicCosts } : {}),
+    ...(params.civicOpenings && params.civicOpenings.length ? { civicOpenings: params.civicOpenings } : {}),
+    ...(params.cityEvents && params.cityEvents.length ? { cityEvents: params.cityEvents } : {}),
+    ...(pickStandoutReviews(params.yesterdayReviews).length ? { standoutReviews: pickStandoutReviews(params.yesterdayReviews) } : {}),
   };
 }

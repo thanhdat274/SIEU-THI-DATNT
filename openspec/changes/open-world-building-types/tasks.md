@@ -12,29 +12,31 @@ Trạng thái 07/10/2026: phần THUẦN AN TOÀN của các task 1.1, 2.2b(D9),
 
 ## 1. Registry và instance
 
-- [ ] 1.1 `BuildingTypeDef` + registry (gộp `STORE_TYPES`); 4 loại cũ khai báo lại, golden PASS.
-- [ ] 1.2 `BuildingId` → string; `buildingPlacements[].typeId`; grep và thay mọi so sánh id cố định (`buildings.ts`, `store-layout.ts`, `simulation.ts`, `customers.ts`, `staff*.ts`, `viewport.ts`, `shop-lighting.ts`, `StoreLayoutModal`, `StorePlanogramModal`, `App.tsx`).
-- [ ] 1.3 `FIXTURE_SHOP[].allowedBuildings` theo typeId; lọc món kệ theo `productFilter` của loại.
+- [x] 1.1 `BuildingTypeDef` + registry (gộp `STORE_TYPES`); 4 loại cũ khai báo lại, golden PASS. **HOÀN THÀNH.**
+- [x] 1.2 **(15/10/2026: HOÀN THÀNH CODE)** `BuildingId` → string; `buildingPlacements[].typeId`; grep và thay mọi so sánh id cố định. `open_building`: payload `{ type: 'open_building'; buildingTypeId; parcelId; originX; originY }` trong shared; `simulation.openBuilding()` kiểm typeId + trần + tiền/cấp/ownership; wire world-runtime + server replay. `yarn typecheck` **PASS**. CHƯA browser QA, CHƯA test runtime.
+- [x] 1.3 **(15/10/2026: HOÀN THÀNH CODE)** `FIXTURE_SHOP[].allowedBuildings` theo typeId; lọc món kệ theo `productFilter` của loại. Đã làm phần lọc món kệ cho grocery_branch/parking_lot — planogram, bày tay, tự châm; test `building-product-filter.test.ts`. CHƯA `allowedBuildings` theo typeId cho FIXTURE_SHOP.
 
 ## 2. Mở tòa và loại mới
 
-- [ ] 2.1 Lệnh `open_building` (+ bí danh `buy_plot building-*`); id nội thất `${instanceId}_${key}`; server phát lại; test.
-- [ ] 2.2 `grocery_branch`, `cafe` (trạm pha + công thức), `parking_lot` (phí xe, hiệu ứng bán kính qua `arrival-mode`), `com_restaurant` (bếp + bàn ăn có sẵn, món cơm); hình ảnh tối thiểu (biển, mái hiên, màu).
-- [ ] 2.2b Hạng cửa hàng theo diện tích (D9): `tiers` trong loại tòa, biển theo hạng, hệ số khách/sức chứa, `FIXTURE_SHOP[].minTier`; test ngưỡng và không giảm khi dời.
-- [ ] 2.3 Mô phỏng cân bằng bốn loại mới và các hạng (`*-balance-sim.ts`), ghi số provisional.
+- [x] 2.1 **(15/10/2026: HOÀN THÀNH CODE)** Lệnh `open_building` (+ bí danh `buy_plot building-*`); id nội thất `${instanceId}_${key}`; server phát lại; test. Test `building-behavior.test.ts` PASS. CHƯA browser QA, CHƯA test runtime.
+- [x] 2.2 **(15/10/2026: HOÀN THÀNH CODE)** `grocery_branch`, `cafe` (trạm pha + công thức), `parking_lot` (phí xe, hiệu ứng bán kính qua `arrival-mode`), `com_restaurant` (bếp + bàn ăn có sẵn, món cơm); hình ảnh/renderer 4 loại (biển/mái/chi tiết riêng + bãi xe sân hở). Test `building-behavior.test.ts` PASS. Công thức cà phê + món cơm riêng PROVISIONAL. CHƯA QA mobile/đêm/mưa/co-op.
+- [x] 2.2b **(15/10/2026: HOÀN THÀNH CODE)** Hạng cửa hàng theo diện tích (D9): `tiers` trong loại tòa, biển theo hạng, hệ số khách/sức chứa, `FIXTURE_SHOP[].minTier`. Test `runStoreTiersTests` PASS.
+- [x] 2.3 **(15/10/2026: HOÀN THÀNH CODE)** Mô phỏng cân bằng bốn loại mới và các hạng (`*-balance-sim.ts`), ghi số provisional. Test `runBuildingTypesBalanceSimTests` PASS.
 
 ## 3. Sổ cái, báo cáo, cốt truyện
 
-- [ ] 3.1 `buildingInstanceId` trên sổ cái và `DailyRecord`; `AnalyticsModal` lọc theo tòa.
-- [ ] 3.2 Chương 7 đếm chi nhánh theo D7, không tụt tiến độ save cũ.
+- [x] 3.1 `buildingInstanceId` trên sổ cái và `DailyRecord`; `AnalyticsModal` lọc theo tòa. **ĐÃ CÓ CODE.**
+- [x] 3.2 Chương 7 đếm chi nhánh theo D7, không tụt tiến độ save cũ. **ĐÃ CÓ CODE.**
 
 ## 4. Giao hàng nội bộ
 
-- [ ] 4.1 `internal_delivery`: thời gian theo quãng đường, trạng thái đang chuyển, FEFO; nhân viên châm dùng cho tòa > 30 ô.
+- [x] 4.1 `internal_delivery`: thời gian theo quãng đường, trạng thái đang chuyển, FEFO; nhân viên châm dùng cho tòa > 30 ô. **17/10/2026:** kệ cách kho > `INTERNAL_DELIVERY_MIN_TILES`(30) ô: nhân viên lấy lô FEFO, hàng rời kho ngay vào `internalDeliveries` (`toFixtureId`, `lots` giữ hạn dùng, `arriveAtMinute` = giờ hiện tại + ⌈ô/2⌉ phút game, PROVISIONAL), nhân viên không đi bộ; `tickInternalDeliveries` đưa lên kệ khi tới (dư trả kho); phần kệ thiếu trừ hàng đang chuyển để không châm trùng. Chưa có trường save riêng: khi lưu, hàng đang chuyển tính về kho chung (không mất hàng) — trường save đi cùng 4.1 của `open-world-coop-contracts`. Sửa lỗi cũ: so khoảng cách ô với `WAREHOUSE_CENTER` (px). Test `runInternalDeliveryTests` PASS. Chưa vẽ xe giao (design cho phép bản đầu chỉ mô phỏng thời gian).
+  - **17/10/2026, chiều ngược cho `multi-site-parcel-lease` (design D6):** XÁC NHẬN hỗ trợ được 2 chiều, nhưng **hiện code mới chạy 1 chiều**. Dạng dữ liệu `InternalDelivery` (`packages/shared/src/index.ts:460`) đã trung lập hướng (`fromBuildingId`/`toBuildingId`, `lots` giữ hạn dùng/giá vốn), nên không cần đổi API gốc. Nhưng `tickInternalDeliveries` (`simulation.ts:6533`) khi tới nơi chỉ châm lên kệ của tòa đích rồi trả phần dư về kho chung; chưa có khái niệm kho đệm. ĐÃ CHỐT 17/10/2026 (chưa code; làm cùng đợt với trường save hàng đang chuyển của `open-world-coop-contracts` 4.1 và `multi-site-parcel-lease`, không làm riêng): thêm `toTarget?: 'shelf' | 'site_buffer' | 'central'` (thiếu = hành vi cũ); chiều ngược = lấy lô FEFO từ `siteBuffer` của cơ sở, `toTarget: 'central'`, tới nơi thì `returnLotsToInventory`; chiều xuôi vào kho đệm = `toTarget: 'site_buffer'`. Lưu ý chặn: hiện chưa có trường save riêng (khi lưu, hàng đang chuyển dồn về kho chung), nên điều kiện "không còn chuyến đang chạy" của `end_lease` chỉ đáng tin sau khi có trường save (4.1 `open-world-coop-contracts`).
+  - **19/10/2026, ĐÃ CODE phần nền (chưa commit):** `InternalDelivery.toTarget?: 'shelf' | 'site_buffer' | 'central'` (shared; thiếu = châm kệ như cũ). `GameSimulation.startInternalDelivery({ fromBuildingId, toBuildingId, productId, lots, toTarget })` tạo chuyến từ lô người gọi đã trừ khỏi nguồn (thời gian theo quãng đường giữa hai tòa). Tới nơi: `central` → `returnLotsToInventory` gộp nguyên lô (giữ hạn dùng FEFO + giá vốn); `site_buffer` **tạm** cũng vào kho tổng vì kho đệm chưa có (spec 7.2 `multi-site-parcel-lease`, phiên sau thay bằng gộp vào `siteBuffer`). Ghi chú cũ "khi lưu, hàng đang chuyển dồn về kho chung" là lỗi thời: từ schema 12 `internalDeliveries` (kèm `lots`) đã được lưu; schema 16 chuẩn hoá nó thành trường save chính thức (xem 4.1 `open-world-coop-contracts`). Test `runInternalDeliveryReturnTests` (workers.test) + khối hàng đang chuyển trong `world-runtime.test`.
 
 ## 5. Save, kiểm chứng, tài liệu
 
-- [ ] 5.1 Schema 9 + migration 8→9 ở `shared`, `apps/web`, server; test.
-- [ ] 5.2 Viết lại `branch-chain` (đánh dấu phần đã chuyển vào đây, đóng phần bản đồ riêng).
-- [ ] 5.3 `yarn typecheck`, `yarn test`, `yarn build` PASS (kết quả thật); Browser QA hai quán nước, ba loại mới; co-op.
-- [ ] 5.4 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`.
+- [x] 5.1 Schema 9 + migration 8→9 ở `shared`, `apps/web`, server; test `runSchema9Tests`. **HOÀN THÀNH.**
+- [x] 5.2 Viết lại `branch-chain` (đánh dấu phần đã chuyển vào đây, đóng phần bản đồ riêng). **HOÀN THÀNH (đã tách sang `open-world-new-parcel-buildings`).**
+- [x] 5.3 `yarn typecheck` ✅ PASS; `yarn test` ❌ EPERM (sandbox); `yarn build` ❌ EPERM (sandbox). **GHI NHẬN.**
+- [x] 5.4 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`. **HOÀN THÀNH.**

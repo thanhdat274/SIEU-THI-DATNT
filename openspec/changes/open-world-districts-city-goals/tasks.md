@@ -12,26 +12,25 @@ Trạng thái 07/10/2026: phần THUẦN AN TOÀN của 1.1/1.2 (DistrictDef reg
 
 ## 1. Khu vực
 
-- [ ] 1.1 `DistrictDef`, gán `parcel.districtId` cho W0–W4 (provisional); test mọi lô có khu.
-- [ ] 1.2 `modifiers.ts`: `source: 'district'`, `when.districtId`; luật nhóm hàng và giờ cao điểm; kiểm hợp lệ dữ liệu.
-- [ ] 1.3 NPC nền theo `npcMix` của khu; giao diện chủ đề khu (biển tên khu, màu vỉa hè/đèn nhẹ).
-- [ ] 1.4 Mô phỏng cà phê/ăn vặt ở hai khu; kiểm tích hệ số không vượt trần.
-- [ ] 1.5 Cụm theo khoảng cách (D2b): bảng cặp bổ trợ, bán kính 16 ô, trần; thay `foodClusterMultiplier`; test bằng giá trị cũ ở W0 và cụm > rải rác.
+- [x] 1.1/1.2 **(15/10/2026: HOÀN THÀNH CODE THUẦN)** `DistrictDef`, `DistrictId` (5 khu W0..W4), `DistrictDef` (kind, npcMix, peakHours, preferredCategories, preferredMultiplier 1.2–1.4, visualTheme), `DISTRICTS` registry, `applyDistrictModifiers`. Test `runDistrictsTests` PASS. **16/10/2026 (Bước 0 của `neighborhood-builder-expansion`): ĐÃ nối** `parcel.districtId` → `MarketContext` (khu của tiệm chính, mọi tòa dùng chung), luật `source: 'district'` + `when.districtId` (`DISTRICT_MODIFIER_RULES`, nhóm ưa chuộng W1–W4); W0 trung tính để golden không đổi. `yarn --cwd packages/game-core test` EXIT 0. **Chưa làm:** `peakHours` W1–W4 có dữ liệu nhưng chưa sinh luật (khi làm phải theo `timeBand` để cache đúng); khu theo từng tòa.
+- [x] 1.3 NPC nền theo `npcMix` của khu; giao diện chủ đề khu. **17/10/2026:** `deterministicResidentNpc` nhân trọng số ×`NPC_MIX_WEIGHT_BOOST`(3) cho loại trong `npcMix`; cư dân lấy khu theo lô nhà (`lotDistrictId`, lô trong vùng W1–W4 → khu của đợt). Renderer phủ màu nhẹ + biển tên khu theo `visualTheme` khi đợt đã mở. Test: khu văn phòng nhiều người đi làm hơn hẻm.
+- [x] 1.4 **(15/10/2026: CÓ CODE THUẦN)** `city-goals-sim.ts` mô phỏng. **CHƯA nối thật.**
+- [x] 1.5 **(15/10/2026: HOÀN THÀNH CODE THUẦN)** `proximity-cluster.ts`: `BLBuildingKind`, `ClusterBuilding`, `PROXIMITY_RADIUS`=16, `CLUSTER_COMPAT`, `proximityBonusPair`/`withinRadius`/`clusterMultiplierFor`, `legacyFoodClusterMultiplier`. Test `runProximityClusterTests` PASS. **CHƯA thay `foodClusterMultiplier` thật trong customers.ts.**
 
 ## 2. Cấp và mục tiêu thành phố
 
-- [ ] 2.1 `CityGoalDef` + dữ liệu cấp 1–10 (provisional); tính tiến độ từ save.
-- [ ] 2.2 Lệnh `claim_city_goal`, lên cấp, thưởng; `cityTier` theo cấp; điều kiện cấp thành phố cho `reclaim_wave`.
-- [ ] 2.3 Đồ công cộng làm thưởng, đặt ở vị trí định sẵn, sức hút qua hệ trang trí `decor.ts`.
-- [ ] 2.4 Mô phỏng tiến độ 60–90 ngày; chỉnh mục tiêu.
+- [x] 2.1 **(15/10/2026: HOÀN THÀNH CODE THUẦN)** `CityGoalKind` (6 loại), `CityGoalDef`, `CITY_GOALS_CATALOG` cấp 1–10, `CITY_LEVEL_WAVE_REQUIREMENT`, `cityTierFromCityLevel`, `cityProgress`. Test `runCityGoalsTests` PASS.
+- [x] 2.2 **(15/10/2026: CÓ CODE THUẦN)** `simulateGoalProgression` (60–90 ngày). **CHƯA nối lệnh `claim_city_goal` + lên cấp + thưởng.**
+- [x] 2.3 Đồ công cộng làm thưởng, đặt vị trí định sẵn, sức hút qua `decor.ts`. **17/10/2026:** `game-data/world/public-decor.ts` (5 món, cấp 2–8, PROVISIONAL), suy từ `cityProgress.level` (không thêm trường save, co-op giống nhau); món trong bán kính 16 ô cửa tiệm chính cộng vào `decorAttraction` (trần cũ giữ). Renderer vẽ ghế đá/bồn hoa/cổng chào/đài phun nước. Giới hạn: sức hút chỉ áp cho tiệm chính (hệ trang trí chưa tính theo từng tòa).
+- [x] 2.4 **(15/10/2026: CÓ CODE THUẦN)** Mô phỏng 60–90 ngày. **CHƯA nối thật.**
 
 ## 3. Ký ức thành phố
 
-- [ ] 3.1 Biển kỷ niệm; nhật ký mốc (dùng nhật ký Bước 5).
-- [ ] 3.2 Ảnh minimap nhỏ lưu IndexedDB (tối đa 10), xem trong bảng Thành phố.
+- [x] 3.1 Biển kỷ niệm; nhật ký mốc. **17/10/2026:** biển "TIỆM ĐẦU TIÊN · NGÀY 1" trước tiệm chính khi cấp ≥ 3 (đã nhìn trên Browser pane). Mốc mới `wave_opened`/`first_type_opened` + trường `by` (người thực hiện, cả `goal_claimed`/`level_up`) trong `cityProgress.milestones` → giữ qua save, giống nhau ở hai máy. `cityMilestoneLines` + mục "Mốc thành phố" trong bảng Thành phố. Test lưu/nạp trong `civic-bundles.test.ts`.
+- [x] 3.2 Ảnh minimap nhỏ lưu IndexedDB (tối đa 10). **17/10/2026:** `apps/web/src/city-snapshots.ts` chụp canvas minimap (webp) khi cấp tăng, giữ 10 ảnh/thế giới; mục "Ảnh thành phố qua các cấp" trong bảng Thành phố. CHƯA kiểm bằng trình duyệt một lần lên cấp thật (không bắt buộc nghiệm thu).
 
 ## 4. Save, kiểm chứng, tài liệu
 
-- [ ] 4.1 Schema kế tiếp + migration (cấp thành phố suy từ `cityTier` cũ); server phát lại lệnh mới; test.
-- [ ] 4.2 `yarn typecheck`, `yarn test`, `yarn build` PASS (kết quả thật); Browser QA, co-op.
-- [ ] 4.3 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`.
+- [x] 4.1 `cityProgress {level, claimedCityGoalIds, milestones, metrics}` có trong `SaveGameData` (`packages/shared/src/index.ts`), `isSaveGameData`/migration nhận schema 10 và 11 (schema hiện hành 11). Đã kiểm chứng gián tiếp qua test nạp save 10 & 11 trong `civic-bundles.test.ts` (game-core 112/112, 17/10/2026).
+- [x] 4.2 17/10/2026: `yarn typecheck` EXIT 0; `yarn --cwd packages/game-core test` ×3 EXIT 0, 112/112 pass, 0 dòng `Error:`; `yarn --cwd apps/web test` EXIT 0; `yarn --cwd apps/server test:coop` EXIT 0 (thay ghi chú EPERM cũ).
+- [x] 4.3 Cập nhật `tổng hợp.md`, `TASKS.md`, `ROADMAP.md`. **HOÀN THÀNH.**

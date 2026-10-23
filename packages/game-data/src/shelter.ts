@@ -44,7 +44,7 @@ export const SHELTER_RULES = {
   /** Sau mỗi lần cân nhắc (kể cả từ chối) phải chờ ngần này giây mới cân nhắc lại. */
   reevaluateCooldownSec: 8,
   /** Trú tối đa ngần này giây rồi đi tiếp dù còn mưa (tránh đứng mãi). */
-  maxShelterSec: 90,
+  maxShelterSec: 15,
 } as const;
 
 /**

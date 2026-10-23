@@ -1,4 +1,4 @@
-import type { CustomerReview } from '@game/shared';
+import type { CustomerReview, ReviewResponse } from '@game/shared';
 import { REVIEW_AUTHORS, REVIEW_BY_REASON, REVIEW_BY_STARS, REVIEW_DETAILS, REVIEW_HISTORY_CAP } from '@game/data';
 import { Mulberry32Rng, daySeed } from './staff';
 import { hashSeed } from './weather';
@@ -78,6 +78,17 @@ export function sanitizeReviews(value: unknown, capacity = REVIEW_HISTORY_CAP): 
     .slice(-capacity);
 }
 
+/** Lọc bỏ bản ghi phản hồi hỏng khi tải save (thiếu trường, sao/delta sai kiểu). */
+export function sanitizeReviewResponses(value: unknown): ReviewResponse[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((r): r is ReviewResponse => !!r && typeof r === 'object'
+      && typeof (r as ReviewResponse).reviewId === 'string'
+      && Number.isSafeInteger((r as ReviewResponse).day)
+      && typeof (r as ReviewResponse).delta === 'number' && Number.isFinite((r as ReviewResponse).delta))
+    .slice(-REVIEW_HISTORY_CAP);
+}
+
 export interface ReviewSummary {
   count: number;
   average: number;
@@ -103,9 +114,11 @@ export function summarizeReviews(reviews: readonly CustomerReview[]): ReviewSumm
 /** Quản lý danh sách đánh giá khách hàng. Tuân theo pattern của CustomerManager: nhận dữ liệu qua constructor, không nhận `this`. */
 export class ReviewsManager {
   private reviews: CustomerReview[] = [];
+  private reviewResponses: ReviewResponse[] = [];
 
-  constructor(initialReviews: CustomerReview[] | undefined) {
+  constructor(initialReviews: CustomerReview[] | undefined, initialResponses?: ReviewResponse[]) {
     this.reviews = sanitizeReviews(initialReviews);
+    this.reviewResponses = sanitizeReviewResponses(initialResponses);
   }
 
   public addReview(review: CustomerReview): void {
@@ -116,17 +129,43 @@ export class ReviewsManager {
     return this.reviews.map(r => ({ ...r }));
   }
 
+  /** Các lời đánh giá đúng một ngày (dùng cho bản tin sáng — báo lời hôm qua). */
+  public getReviewsOnDay(day: number): CustomerReview[] {
+    return this.reviews.filter(r => r.day === day).map(r => ({ ...r }));
+  }
+
   public getReviewSummary(): ReviewSummary {
     return summarizeReviews(this.reviews);
   }
 
   /** Ghi lại reviews từ dữ liệu save (dùng trong importSaveData). */
-  public importReviews(initialReviews: CustomerReview[] | undefined): void {
+  public importReviews(initialReviews: CustomerReview[] | undefined, initialResponses?: ReviewResponse[]): void {
     this.reviews = sanitizeReviews(initialReviews);
+    this.reviewResponses = sanitizeReviewResponses(initialResponses ?? this.reviewResponses);
   }
 
   /** Trả về bản sao sâu để serialize. */
   public exportReviews(): CustomerReview[] {
     return this.reviews.map(r => ({ ...r }));
+  }
+
+  public getReviewResponses(): ReviewResponse[] {
+    return this.reviewResponses.map(r => ({ ...r }));
+  }
+
+  public isResponded(reviewId: string): boolean {
+    return this.reviewResponses.some(r => r.reviewId === reviewId);
+  }
+
+  /** Số lời chê đã phản hồi trong một ngày (giới hạn chống cày). */
+  public responseCountOnDay(day: number): number {
+    return this.reviewResponses.filter(r => r.day === day).length;
+  }
+
+  /** Ghi một lượt phản hồi. Trả về false nếu lời này đã phản hồi rồi. */
+  public addResponse(response: ReviewResponse): boolean {
+    if (this.isResponded(response.reviewId)) return false;
+    this.reviewResponses = [...this.reviewResponses, response].slice(-REVIEW_HISTORY_CAP);
+    return true;
   }
 }

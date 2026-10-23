@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
-import { deleteSaveSlot, getActiveSlotId, listSaveSlots, loadExistingSave, resetSaveToDefault, setActiveSlotId, type SaveSlotId, type SaveSlotInfo } from '../db';
+import { buildQaSave, QA_SEED_KINDS, type QaSeedKind } from '@game/core';
+import { deleteSaveSlot, enterDemoSlot, getActiveSlotId, listSaveSlots, loadExistingSave, resetSaveToDefault, seedDemoSave, setActiveSlotId, type SaveSlotId, type SaveSlotInfo } from '../db';
 import { acquireSlotLock, releaseSlotLock, slotsLockedElsewhere } from '../slot-lock';
 import { listUserWorlds, createOnlineWorld, joinOnlineWorld, getLeaderboard, type WorldSummary, type WorldDetail, type ActivitiesResponse, type LeaderboardResponse } from '../services/api';
 import { useControlMode, setControlMode, type ControlMode } from '../control-mode';
@@ -372,12 +373,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
     }
   };
 
-  /** Chơi thử local — không cần Google Auth, tạo bản lưu mới tại ô đang chọn */
+  /** Chơi thử local — không cần Google Auth, tạo bản lưu mới ở ô demo riêng, không đụng ô người chơi đang chọn */
   const handleLocalDemo = async () => {
     triggerSound(380);
     setBusy(true);
     try {
-      if (!(await claimActiveSlot())) return;
+      enterDemoSlot();
       await resetSaveToDefault();
       triggerSound(600);
       setFeedbackMsg('Chế độ Local Demo — không đồng bộ máy chủ. Chơi thử đơn player.');
@@ -388,6 +389,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onEnter }) => {
       setBusy(false);
     }
   };
+
+  // Dev/QA: window.__seedQaSave('snack' | 'fair' | 'complaints' | 'rain') — vào Chơi Thử với save dựng sẵn (xem tổng hợp.md).
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const w = window as unknown as { __seedQaSave?: (kind: QaSeedKind) => Promise<void> };
+    w.__seedQaSave = async kind => {
+      if (!QA_SEED_KINDS.includes(kind)) throw new Error(`Bộ QA không có: ${kind}. Chọn: ${QA_SEED_KINDS.join(', ')}`);
+      enterDemoSlot();
+      await seedDemoSave(buildQaSave(kind));
+      setFeedbackMsg(`QA: Chơi Thử với save '${kind}'.`);
+      onEnter();
+    };
+    return () => { delete w.__seedQaSave; };
+  }, [onEnter]);
 
   return (
     <main className="login-screen-vintage">

@@ -35,7 +35,11 @@ export const needsService = (fixture: Pick<StoreFixture, 'wear' | 'broken'>): bo
 export const coldBreakExtraDecay = (fixture: Pick<StoreFixture, 'type' | 'broken'>): number =>
   fixture.type === 'refrigerator' && fixture.broken ? MAINTENANCE_RULES.brokenColdExtraDecay : 0;
 
-/** Đồ nhân viên châm hàng tự bảo trì đêm nay: đã mòn, chưa hỏng, mòn nhiều trước; mỗi nhân viên được `staffServicePerNight` món. */
+/**
+ * Đồ nhân viên châm hàng tự bảo trì đêm nay: đã mòn, chưa hỏng, mòn nhiều trước; mỗi nhân viên được `staffServicePerNight` món.
+ * LƯU Ý (OpenSpec `staff-shifts`): cố ý đếm MỌI nhân viên vai trò `refill` bất kể ca (không lọc ca, không lọc tòa) để giữ
+ * nguyên hành vi cũ và test `maintenance.test.ts`; nếu sau này muốn chỉ nhân viên ca đêm bảo trì thì phải đổi test đó.
+ */
 export function staffServiceTargets(fixtures: readonly StoreFixture[], staff: readonly Pick<StaffMember, 'role'>[]): string[] {
   const limit = staff.filter((member) => member.role === 'refill').length * MAINTENANCE_RULES.staffServicePerNight;
   if (limit <= 0) return [];

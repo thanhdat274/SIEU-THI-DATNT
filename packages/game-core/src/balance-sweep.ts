@@ -5,10 +5,14 @@
  * Chạy: yarn workspace @game/core balance
  */
 import { isSalesFixture } from '@game/shared';
-import { DEFAULT_INITIAL_SAVE, PRICED_CATEGORIES, generateStarterTileMap } from '@game/data';
+import { DEFAULT_INITIAL_SAVE, PRICED_CATEGORIES, RAIN_BAND_CUSTOMER_FACTOR, generateStarterTileMap } from '@game/data';
 import { InputManager } from './input';
 import { GameSimulation } from './simulation';
-import { createMarketState } from './market';
+import { createMarketState, effectiveWeatherId } from './market';
+import { rainForecastForDay } from './weather';
+
+// BALANCE_RAIN_FACTOR=off: tắt hệ số khách theo mưa (đối chứng cùng code, chỉ trong harness).
+if (process.env.BALANCE_RAIN_FACTOR === 'off') for (const k of Object.keys(RAIN_BAND_CUSTOMER_FACTOR)) (RAIN_BAND_CUSTOMER_FACTOR as Record<string, number>)[k] = 1;
 
 const SEEDS = ['balance-a', 'balance-b', 'balance-c', 'balance-d', 'balance-e'];
 const DAYS = Number(process.env.BALANCE_DAYS ?? 40);
@@ -22,6 +26,10 @@ const wholesaleRange: Record<string, { min: number; max: number }> = Object.from
 const eventDays: Record<string, number> = {};
 const weatherDays: Record<string, number> = {};
 const maxStepSeen = { price: 0, wholesale: 0 };
+/** Doanh thu/khách theo dải mưa đỉnh của ngày (nắng = không mưa; vừa = phùn/vừa; to = to/giông). */
+const byRain: Record<'nang' | 'vua' | 'to', { days: number; revenue: number; customers: number; walkouts: number }> = {
+  nang: { days: 0, revenue: 0, customers: 0, walkouts: 0 }, vua: { days: 0, revenue: 0, customers: 0, walkouts: 0 }, to: { days: 0, revenue: 0, customers: 0, walkouts: 0 },
+};
 let totalCustomers = 0, totalDays = 0, stockouts = 0, priceWalkouts = 0, eventStarts = 0;
 
 for (const seed of SEEDS) {
@@ -64,14 +72,23 @@ for (const seed of SEEDS) {
     const t = sim.getTime();
     if (t.day !== day) {
       const record = sim.getDailyRecords()[day];
-      if (record) { stockouts += record.outOfStockWalkouts ?? 0; priceWalkouts += record.priceWalkouts ?? 0; }
+      if (record) {
+        stockouts += record.outOfStockWalkouts ?? 0; priceWalkouts += record.priceWalkouts ?? 0;
+        const band = rainForecastForDay(sim.getWeatherSeed(), day, effectiveWeatherId(sim.getMarketState(), day))?.band ?? 'none';
+        const bucket = byRain[band === 'none' ? 'nang' : band === 'heavy' || band === 'thunderstorm' ? 'to' : 'vua'];
+        bucket.days++; bucket.revenue += record.revenue; bucket.customers += record.customersServed;
+        bucket.walkouts += (record.outOfStockWalkouts ?? 0) + (record.priceWalkouts ?? 0);
+      }
       day = t.day; totalDays++; refill(); observe();
+      // BALANCE_LOCK_LEVEL=1: giữ cấp cố định để tách tác động chéo ngày (XP → lên cấp → trần khách/lưu lượng).
+      if (process.env.BALANCE_LOCK_LEVEL === '1') (sim as unknown as { playerData: { level: number } }).playerData.level = 6;
     }
     if (t.hour !== hour) { hour = t.hour; refill(); } // kệ luôn đầy: số khách không bị chặn bởi hàng trong harness
     if (!t.isStoreOpen && t.hour >= 8 && t.hour < 20) sim.getClock().toggleStoreStatus();
     sim.update(0.25);
   }
   totalCustomers += sim.getStatistics().totalCustomersServed;
+  console.log(`Seed ${seed}: cấp cuối ${sim.getPlayerData().level}`);
   eventStarts += sim.getMarketState().events.length;
 }
 
@@ -83,3 +100,7 @@ console.log('Chỉ số giá tham chiếu theo nhóm (min–max):', PRICED_CATEG
 console.log('Chỉ số giá sỉ theo nhóm (min–max):', PRICED_CATEGORIES.map(c => `${c} ${fmt(wholesaleRange[c])}`).join('; '));
 console.log('Ngày có sự kiện đang chạy:', JSON.stringify(eventDays), `(số sự kiện đã lên lịch: ${eventStarts})`);
 console.log('Phân bố thời tiết (ngày):', JSON.stringify(weatherDays));
+for (const [k, b] of Object.entries(byRain)) {
+  const avg = (v: number) => (b.days ? v / b.days : 0);
+  console.log(`Theo mưa ${k}: ${b.days} ngày; DT TB ${Math.round(avg(b.revenue)).toLocaleString('vi-VN')} ₫; khách TB ${avg(b.customers).toFixed(1)}; bỏ về TB ${avg(b.walkouts).toFixed(1)}`);
+}

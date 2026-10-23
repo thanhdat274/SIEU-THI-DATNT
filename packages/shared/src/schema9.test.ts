@@ -32,7 +32,7 @@ function makeLegacyPlacements(): BuildingPlacementRecord[] {
 }
 
 export function runSchema9Tests() {
-  assert.equal(CURRENT_SAVE_SCHEMA_VERSION, 9, 'schemaVersion hiện tại phải là 9');
+  assert.ok(CURRENT_SAVE_SCHEMA_VERSION >= 9, 'schemaVersion hiện tại phải >= 9');
 
   // --- isBuildingPlacementRecord: typeId OPTIONAL — thiếu là hợp lệ; có phải là non-empty string. ---
   assert.equal(isBuildingPlacementRecord(makePlacement()), true, 'bản ghi chưa có typeId vẫn hợp lệ (optional)');
@@ -60,7 +60,7 @@ export function runSchema9Tests() {
   assert.equal(res.valid, true);
   assert.equal(res.versionStatus, 'legacy_migrate');
   const migrated = res.data as SaveGameData;
-  assert.equal(migrated.schemaVersion, 9, 'migration đưa save lên schema 9');
+  assert.equal(migrated.schemaVersion, CURRENT_SAVE_SCHEMA_VERSION, 'migration đưa save lên schema hiện tại');
 
   const placements = migrated.storeLayout.buildingPlacements ?? [];
   const find = (buildingId: string, originX = 0, originY = 0) => placements.find(p => p.buildingId === buildingId && p.originX === originX && p.originY === originY);
@@ -83,8 +83,8 @@ export function runSchema9Tests() {
   assert.ok(Array.isArray(migrated.storeLayout.ownedParcelIds), 'ownedParcelIds giữ nguyên string[] sau migrate');
   assert.ok((migrated.storeLayout.ownedParcelIds ?? []).length >= 4, '4 lô W0 đã sở hữu được gieo');
 
-  // Save sau migrate phải hợp lệ ở schema 9.
-  assert.equal(isSaveGameData(migrated), true, 'save sau migrate là hợp lệ ở schema 9');
+  // Save sau migrate phải hợp lệ ở schema hiện tại.
+  assert.equal(isSaveGameData(migrated), true, 'save sau migrate là hợp lệ ở schema hiện tại');
   const res9 = validateSaveGameData(migrated);
   assert.equal(res9.valid, true);
   assert.equal(res9.versionStatus, 'supported');
@@ -94,10 +94,10 @@ export function runSchema9Tests() {
     assert.equal(isBuildingPlacementRecord(p), true, `round-trip bản ghi ${p.buildingId} vẫn hợp lệ sau khi thêm typeId`);
   }
 
-  // --- isSaveGameData: chỉ chấp nhận đúng các phiên bản trong validation list (1..9), từ chối tương lai. ---
+  // --- isSaveGameData: chỉ chấp nhận đúng các phiên bản trong validation list, từ chối tương lai. ---
   const future = structuredClone(migrated);
-  (future as SaveGameData).schemaVersion = 10;
-  assert.equal(isSaveGameData(future), false, 'schema tương lai (10) bị từ chối');
+  (future as SaveGameData).schemaVersion = CURRENT_SAVE_SCHEMA_VERSION + 1;
+  assert.equal(isSaveGameData(future), false, `schema tương lai (${CURRENT_SAVE_SCHEMA_VERSION + 1}) bị từ chối`);
   const resFuture = validateSaveGameData(future);
   assert.equal(resFuture.valid, false);
   assert.equal(resFuture.versionStatus, 'unsupported_future');

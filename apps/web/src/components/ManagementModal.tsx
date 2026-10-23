@@ -267,6 +267,15 @@ export const ManagementModal: React.FC<ManagementModalProps> = ({
           action: () => setWeatherFx({ quality: WEATHER_QUALITY_ORDER[(WEATHER_QUALITY_ORDER.indexOf(weatherFx.quality) + 1) % WEATHER_QUALITY_ORDER.length] }),
         },
         {
+          id: 'depth-fx',
+          label: weatherFx.depthFx ? 'Tắt bóng & chiều sâu' : 'Bật bóng & chiều sâu',
+          desc: 'Bóng tòa nhà theo giờ, tối chân tường/mái hiên, quầng sáng cửa ban đêm. Chất lượng Thấp luôn tắt',
+          icon: 'sun' as IconName,
+          action: () => setWeatherFx({ depthFx: !weatherFx.depthFx }),
+          badge: weatherFx.depthFx ? undefined : 'Đang tắt',
+          badgeVariant: 'gold' as const,
+        },
+        {
           id: 'check-update',
           label: updateReady ? 'Cập nhật ngay' : 'Kiểm tra cập nhật',
           desc: updateReady ? updateText.available : updateStatus ? updateText[updateStatus] : 'Tải giao diện/phiên bản mới nhất của game nếu có',

@@ -1,30 +1,40 @@
 import assert from 'node:assert/strict';
-import { INTERSECTIONS, VEHICLE_ROAD_MAP, roadLaneCoord, STREET_VEHICLE_RULES, TRAFFIC_SIGNAL, TRAFFIC_SIGNAL_CYCLE_SEC } from '@game/data';
+import { INTERSECTIONS, VEHICLE_ROAD_MAP, roadLaneCoord, STREET_VEHICLE_RULES, INTERSECTION_SIGNAL, STORE_FRONT_CROSSWALK, STORE_FRONT_SIGNAL, TRAFFIC_SIGNAL_CYCLE_SEC, trafficRainSpeedFactor } from '@game/data';
 import { StreetVehicleState } from '@game/shared';
 import { StreetTrafficManager, STREET_LANE_RIGHT_Y } from './street-traffic';
-import { intersectionSignalsAt, trafficSignalAt } from './traffic-signal';
+import { intersectionSignalsAt, storeFrontSignalAt, trafficSignalPhaseFromWorldClock } from './traffic-signal';
 
-const RED_START = TRAFFIC_SIGNAL.greenSec + TRAFFIC_SIGNAL.yellowSec;
+const RED_START = INTERSECTION_SIGNAL.greenSec + INTERSECTION_SIGNAL.yellowSec; // 29
 const car = (id: string, x: number, speed = 85): StreetVehicleState => ({ id, type: 'car', variant: 0, direction: 'right', position: { x, y: STREET_LANE_RIGHT_Y }, speed });
 const frontOf = (v: StreetVehicleState) => v.position.x + STREET_VEHICLE_RULES.halfLength[v.type];
 const find = (m: StreetTrafficManager, id: string) => m.getVehicles().find(v => v.id === id)!;
 const run = (m: StreetTrafficManager, seconds: number, hour = 12, rain = 0, seed = 1) => { for (let t = 0; t < seconds - 1e-9; t += 0.1) m.update(0.1, hour, rain, seed); };
 
 export function runTrafficSignalTests(): void {
-  console.log('\n--- Đèn giao thông ngã tư, xe dừng trước vạch, xe đường dọc ---');
+  console.log('\n--- Đèn giao thông: vạch trước tiệm (ưu tiên người đi bộ) + ngã tư (ưu tiên xe), xe dừng trước vạch ---');
 
-  // Chu kỳ đèn.
-  const order: string[] = [];
-  for (let t = 0; t < TRAFFIC_SIGNAL_CYCLE_SEC * 2; t += 0.1) {
-    const s = trafficSignalAt(t);
-    if (order[order.length - 1] !== s.vehicle) order.push(s.vehicle);
-    if (s.pedestrian === 'walk') assert.equal(s.vehicle, 'red', 'Người đi bộ chỉ được đi khi xe đỏ');
-    if (s.vehicle !== 'red') assert.equal(s.pedestrian, 'dont_walk', 'Xe xanh/vàng thì người đi bộ phải chờ');
+  // Hai chu kỳ cùng tổng 39 phút (nền pha worldTime là một); tổng pha hợp lệ.
+  assert.equal(INTERSECTION_SIGNAL.greenSec + INTERSECTION_SIGNAL.yellowSec + INTERSECTION_SIGNAL.redSec, TRAFFIC_SIGNAL_CYCLE_SEC, 'Ngã tư: tổng pha = chu kỳ');
+  assert.equal(STORE_FRONT_SIGNAL.greenSec + STORE_FRONT_SIGNAL.yellowSec + STORE_FRONT_SIGNAL.redSec, TRAFFIC_SIGNAL_CYCLE_SEC, 'Vạch trước tiệm: tổng pha = chu kỳ');
+  // Yêu cầu review: ngã tư phải để xe xanh ≥ 50% chu kỳ (không để xe đứng chờ đỏ hầu hết thời gian).
+  assert.ok(INTERSECTION_SIGNAL.greenSec >= TRAFFIC_SIGNAL_CYCLE_SEC / 2, `Ngã tư xe xanh ${INTERSECTION_SIGNAL.greenSec}/${TRAFFIC_SIGNAL_CYCLE_SEC} ≈ ${(100 * INTERSECTION_SIGNAL.greenSec / TRAFFIC_SIGNAL_CYCLE_SEC).toFixed(0)}% ≥ 50%`);
+  assert.ok(INTERSECTION_SIGNAL.pedLeadSec + INTERSECTION_SIGNAL.pedWalkSec < INTERSECTION_SIGNAL.redSec, 'Ngã tư: có pha nhấp nháy dọn đường trước khi xe xanh');
+  assert.ok(STORE_FRONT_SIGNAL.pedLeadSec + STORE_FRONT_SIGNAL.pedWalkSec < STORE_FRONT_SIGNAL.redSec, 'Vạch trước tiệm: có pha nhấp nháy dọn đường');
+
+  // Chu kỳ vạch trước tiệm (ưu tiên người đi bộ): người đi bộ chỉ qua khi xe đỏ; thứ tự xanh → vàng → đỏ lặp lại.
+  {
+    const order: string[] = [];
+    for (let t = 0; t < TRAFFIC_SIGNAL_CYCLE_SEC * 2; t += 0.1) {
+      const s = storeFrontSignalAt(t);
+      if (order[order.length - 1] !== s.vehicle) order.push(s.vehicle);
+      if (s.pedestrian === 'walk') assert.equal(s.vehicle, 'red', 'Người đi bộ chỉ được đi khi xe đỏ');
+      if (s.vehicle !== 'red') assert.equal(s.pedestrian, 'dont_walk', 'Xe xanh/vàng thì người đi bộ phải chờ');
+    }
+    assert.deepEqual(order, ['green', 'yellow', 'red', 'green', 'yellow', 'red'], 'Thứ tự xanh → vàng → đỏ lặp lại');
+    assert.deepEqual(storeFrontSignalAt(3), storeFrontSignalAt(3 + TRAFFIC_SIGNAL_CYCLE_SEC), 'Chu kỳ tuần hoàn');
+    // Pha walk (22/39 ≈ 56%) đủ rộng để khách thật băng vạch không chờ lâu.
+    assert.ok(STORE_FRONT_SIGNAL.pedLeadSec + STORE_FRONT_SIGNAL.pedWalkSec >= TRAFFIC_SIGNAL_CYCLE_SEC / 2, 'Vạch trước tiệm: pha đi bộ ≥ 50% chu kỳ');
   }
-  assert.deepEqual(order, ['green', 'yellow', 'red', 'green', 'yellow', 'red'], 'Thứ tự xanh → vàng → đỏ lặp lại');
-  assert.deepEqual(trafficSignalAt(3), trafficSignalAt(3 + TRAFFIC_SIGNAL_CYCLE_SEC), 'Chu kỳ tuần hoàn');
-  assert.equal(TRAFFIC_SIGNAL.greenSec + TRAFFIC_SIGNAL.yellowSec + TRAFFIC_SIGNAL.redSec, TRAFFIC_SIGNAL_CYCLE_SEC);
-  assert.ok(TRAFFIC_SIGNAL.pedLeadSec + TRAFFIC_SIGNAL.pedWalkSec < TRAFFIC_SIGNAL.redSec, 'Có pha nhấp nháy dọn đường trước khi xe xanh');
 
   // Người đi bộ nền trên vỉa hè: không ban đêm, không mưa lớn, không quá 3 người cùng lúc (không còn vạch qua đường riêng trước tiệm).
   {
@@ -42,7 +52,7 @@ export function runTrafficSignalTests(): void {
   }
 
 
-  // Ngã tư đường dọc: hai pha xen kẽ, không bao giờ cùng xanh; xe dừng trước vạch dừng khi đường ngang đỏ rồi đi tiếp.
+  // Ngã tư đường dọc (ưu tiên xe): hai pha xen kẽ, không bao giờ cùng xanh; xe dừng trước vạch dừng khi đường ngang đỏ rồi đi tiếp.
   {
     assert.ok(INTERSECTIONS.length >= 2 && INTERSECTIONS.every((x) => x.roadId !== 'school'), 'Có ngã tư ở đường chính/đường phía nam, ngã ba đường trường không có đèn');
     let avenueGreenSeen = false;
@@ -112,5 +122,69 @@ export function runTrafficSignalTests(): void {
     assert.ok(seen.has('avenue-west|right') || seen.has('avenue-east|right'), 'Có xe xuôi nam trên đường dọc');
     assert.ok(seen.has('avenue-west|left') || seen.has('avenue-east|left'), 'Có xe ngược bắc trên đường dọc');
   }
-  console.log('  ✓ Passed: Đèn ngã tư, xe dừng trước vạch, xe đường dọc không xung đột');
+
+  // ---- Pha đèn là hàm thuần của worldTime (ngày + phút), giống nhau ở client và WorldRuntime cùng giờ (OpenSpec 4.5)
+  {
+    // Tuần hoàn theo chu kỳ phút game: từ 07:00 cộng một chu kỳ (TRAFFIC_SIGNAL_CYCLE_SEC phút) → cùng pha.
+    assert.equal(trafficSignalPhaseFromWorldClock(1, 7, 0), 0, 'Ngày 1 07:00 là mốc bắt đầu chu kỳ (pha 0)');
+    assert.equal(trafficSignalPhaseFromWorldClock(1, 7, TRAFFIC_SIGNAL_CYCLE_SEC), 0, 'Sau một chu kỳ (số phút = TRAFFIC_SIGNAL_CYCLE_SEC) pha lặp lại');
+    assert.equal(trafficSignalPhaseFromWorldClock(1, 8, 18), 0, '78 phút = 2 chu kỳ cũng về pha 0');
+    // Hai manager cùng giờ cho cùng pha đèn (không gửi qua mạng mỗi khung) — cả vạch trước tiệm lẫn ngã tư.
+    const a = new StreetTrafficManager();
+    a.setWorldClock(4, 9, 31);
+    const b = new StreetTrafficManager();
+    b.setWorldClock(4, 9, 31);
+    assert.deepEqual(a.getIntersectionSignals(), b.getIntersectionSignals(), 'Hai manager cùng giờ có cùng pha ngã tư');
+    assert.deepEqual(a.getStoreFrontSignal(), b.getStoreFrontSignal(), 'Hai manager cùng giờ có cùng pha vạch trước tiệm');
+    // Pha đổi theo giờ: các giờ khác nhau trải ra nhiều trạng thái đèn khác nhau (cả hai tín hiệu).
+    const storeFrontStates = new Set([7, 9, 11, 13, 15].map((h) => storeFrontSignalAt(trafficSignalPhaseFromWorldClock(4, h, 0)).vehicle));
+    assert.ok(storeFrontStates.size >= 2, 'Pha vạch trước tiệm thay đổi theo giờ game (có ít nhất hai trạng thái đèn khác nhau)');
+    const intersectionStates = new Set([7, 9, 11, 13, 15].map((h) => intersectionSignalsAt(trafficSignalPhaseFromWorldClock(4, h, 0)).main.vehicle));
+    assert.ok(intersectionStates.size >= 2, 'Pha ngã tư thay đổi theo giờ game (có ít nhất hai trạng thái đèn khác nhau)');
+  }
+  console.log('  ✓ Passed: Vạch trước tiệm ưu tiên người đi bộ, ngã tư ưu tiên xe (≥50% xanh), xe dừng trước vạch, không xung đột');
+  console.log('  ✓ Passed: Pha đèn là hàm thuần của worldTime, cùng giờ → cùng pha');
+
+  // ---- Mưa to (rain-intensity-forecast 4.4): xe chậm hơn nhưng vẫn dừng trước vạch ngã tư và vạch trước tiệm ----
+  {
+    const ix = INTERSECTIONS.find((x) => x.roadId === 'main' && x.avenueId === 'west')!;
+    const half = STREET_VEHICLE_RULES.halfLength.car;
+    const stop = ix.crossLeft - STREET_VEHICLE_RULES.stopMarginPx;
+    const m = new StreetTrafficManager([car('wet', stop - half - 40)]);
+    m.setSignalClock(RED_START + 1 - ix.signalOffsetSec);
+    run(m, 6, 14, 1);
+    const wet = find(m, 'wet');
+    assert.ok(frontOf(wet) <= ix.crossLeft && (wet.currentSpeed ?? wet.speed) < 1, 'Mưa to: xe vẫn dừng trước vạch ngã tư khi đỏ');
+
+    // Mô phỏng dài lúc mưa to: không xe nào MỚI lấn vào vạch trước tiệm khi người đi bộ đang xanh (xe đang dọn vạch lúc
+    // đèn chuyển thì được đi hết — giống trời khô).
+    const entriesDuringWalk = (rain: number) => {
+      const mgr = new StreetTrafficManager();
+      const prevFront = new Map<string, number>();
+      let entries = 0;
+      for (let t = 0; t < 1800; t += 0.1) {
+        mgr.update(0.1, 14, rain, 99);
+        const walk = mgr.getStoreFrontSignal().pedestrian === 'walk';
+        for (const v of mgr.getVehicles()) {
+          if (v.axis === 'y' || (v.roadId ?? 'main') !== 'main' || v.isDeparting) continue;
+          const hl = STREET_VEHICLE_RULES.halfLength[v.type];
+          const front = v.direction === 'right' ? v.position.x + hl : v.position.x - hl;
+          const before = prevFront.get(v.id);
+          const entered = before !== undefined && (v.direction === 'right' ? before <= STORE_FRONT_CROSSWALK.x0 && front > STORE_FRONT_CROSSWALK.x0 : before >= STORE_FRONT_CROSSWALK.x1 && front < STORE_FRONT_CROSSWALK.x1);
+          if (walk && entered) entries++;
+          prevFront.set(v.id, front);
+        }
+      }
+      return entries;
+    };
+    assert.equal(entriesDuringWalk(1), 0, 'Mưa to: không xe nào lấn vào vạch trước tiệm lúc người đi bộ xanh');
+    assert.equal(entriesDuringWalk(0), 0, 'Trời khô: (đối chứng) không xe nào lấn vào vạch lúc người đi bộ xanh');
+
+    // Xe khách rời tiệm chậm hơn khi mưa to; tốc độ xe nền giảm thêm từ ngưỡng mưa to.
+    const dry = new StreetTrafficManager(); dry.update(0.1, 14, 0, 5); dry.addDepartingVehicle({ x: 300, y: 450 }, 'motorbike', 0);
+    const rainy = new StreetTrafficManager(); rainy.update(0.1, 14, 1, 5); rainy.addDepartingVehicle({ x: 300, y: 450 }, 'motorbike', 0);
+    const depSpeed = (mgr: StreetTrafficManager) => mgr.getVehicles().find((v) => v.isDeparting)!.speed;
+    assert.ok(depSpeed(rainy) < depSpeed(dry), `Xe khách rời tiệm chậm hơn khi mưa to (${depSpeed(rainy).toFixed(1)} < ${depSpeed(dry)})`);
+    assert.ok(trafficRainSpeedFactor(1) < 1 - 0.28 && Math.abs(trafficRainSpeedFactor(0.5) - (1 - 0.28 * 0.5)) < 1e-9, 'Chậm thêm chỉ từ mưa to trở lên');
+  }
 }

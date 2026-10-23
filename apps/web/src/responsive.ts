@@ -37,6 +37,17 @@ function viewportSize(): { width: number; height: number } {
   return { width: window.innerWidth, height: window.innerHeight };
 }
 
+export function detectInitialInputMode(): 'touch' | 'mouse' {
+  if (typeof window === 'undefined') return 'mouse';
+  if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return 'touch';
+  if ('ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)) return 'touch';
+  // Ở màn hình nhỏ dạng compact di động (<640 rộng hoặc <500 cao), nếu không có chuột fine, ưu tiên touch
+  if ((window.innerWidth < 640 || window.innerHeight < 500) && !window.matchMedia?.('(pointer: fine)').matches) {
+    return 'touch';
+  }
+  return 'mouse';
+}
+
 let installed = false;
 
 export function installResponsive(): void {
@@ -50,9 +61,24 @@ export function installResponsive(): void {
   const setVar = (name: string, value: string) => { if (root.style.getPropertyValue(name) !== value) root.style.setProperty(name, value); };
   const setAttr = (name: string, value: string) => { if (root.getAttribute(name) !== value) root.setAttribute(name, value); };
 
+  let currentInput: 'touch' | 'mouse' = (root.getAttribute('data-input') as 'touch' | 'mouse') || detectInitialInputMode();
+  setAttr('data-input', currentInput);
+
+  window.addEventListener('pointerdown', (e) => {
+    const mode = e.pointerType === 'touch' ? 'touch' : (e.pointerType === 'mouse' ? 'mouse' : null);
+    if (mode && mode !== currentInput) {
+      currentInput = mode;
+      setAttr('data-input', mode);
+    }
+  }, { passive: true });
+
   const measure = () => {
     raf = 0;
     const { width, height } = viewportSize();
+    if (!root.getAttribute('data-input')) {
+      currentInput = detectInitialInputMode();
+      setAttr('data-input', currentInput);
+    }
     setAttr('data-size', sizeClassFor(width));
     setAttr('data-orient', height > width ? 'portrait' : 'landscape');
     setAttr('data-density', densityFor(width, height));

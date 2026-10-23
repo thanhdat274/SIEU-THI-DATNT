@@ -1,7 +1,7 @@
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { StreetPedestrianState, TILE_SIZE, TrafficSignalState } from '@game/shared';
 import { walkerLook } from './sprite-atlas';
-import { INTERSECTIONS, ROAD_MAP } from '@game/data';
+import { INTERSECTIONS, ROAD_MAP, STORE_FRONT_CROSSWALK } from '@game/data';
 
 const OFF = 0x2a2f2c;
 const RED = 0xe0533f, YELLOW = 0xf2c74a, GREEN = 0x5fd17a;
@@ -73,6 +73,52 @@ export function buildIntersectionSignalHeads(layer: Container): { update(signals
   };
 }
 
+/**
+ * Vạch qua đường trước cửa tiệm chính (OpenSpec `traffic-light-crosswalk-yielding` 4.5): dải vạch trắng ngang băng
+ * ngang đường main trong phạm vi `STORE_FRONT_CROSSWALK` + trụ đèn đi bộ ở mép xa. Khách thật đi bộ chờ đèn rồi băng
+ * qua đây. `getSignal` trả pha đèn trước cửa (main) để trụ đèn Walk/Don’t Walk hiện đúng.
+ */
+export function buildFrontCrosswalk(layer: Container, getSignal: () => TrafficSignalState): { update(): void } {
+  const cw = STORE_FRONT_CROSSWALK;
+  // Dải vạch trắng ngang: khách băng theo chiều dọc, nên các thanh nằm ngang (chạy đông-tây), xếp dọc theo y.
+  const stripes = new Graphics();
+  stripes.eventMode = 'none';
+  const barW = cw.x1 - cw.x0; // 128
+  const barH = 5, gap = 7;
+  let by = cw.nearY + 3;
+  while (by + barH <= cw.farY) {
+    stripes.rect(cw.x0, by, barW, barH).fill({ color: 0xf2f4f0, alpha: 0.85 });
+    by += barH + gap;
+  }
+  stripes.zIndex = cw.nearY; // dưới người đi bộ (khách/người nền có zIndex = tọa độ y)
+  layer.addChild(stripes);
+
+  // Trụ đèn người đi bộ trước cửa (đặt mép xa vạch, hơi lệch sang cạnh đông): Walk (xanh) / Don't Walk (đỏ) + nhấp nháy khi clearing.
+  const g = new Graphics();
+  g.eventMode = 'none';
+  g.position.set(cw.x1 - 22, cw.farY + 6);
+  g.zIndex = cw.farY + 40;
+  layer.addChild(g);
+  let lastKey = '';
+  return {
+    update(): void {
+      const s = getSignal();
+      const blinkOn = s.pedestrian !== 'clearing' || Math.floor(s.secondsLeft * 2) % 2 === 0;
+      const key = `${s.pedestrian}|${blinkOn}`;
+      if (!g || lastKey === key) return;
+      lastKey = key;
+      g.clear();
+      g.ellipse(0, 0, 3, 1.2).fill({ color: 0x1a211e, alpha: 0.35 });
+      g.rect(-1, -26, 2, 26).fill(0x31443c);
+      g.roundRect(-4, -24, 8, 10, 2).fill(0x1d2420);
+      g.rect(-5, -25, 10, 1).fill(0x111614);
+      const stopOn = s.pedestrian === 'dont_walk' || (s.pedestrian === 'clearing' && blinkOn);
+      g.rect(-2, -22.5, 4, 3).fill(stopOn ? RED : OFF);
+      g.rect(-2, -18.5, 4, 3).fill(s.pedestrian === 'walk' ? GREEN : OFF);
+    },
+  };
+}
+
 
 /** Hàm lấy texture theo khóa (cùng kho texture với nhân vật chính và khách). */
 export type PedestrianTextureGetter = (key: string) => Texture;
@@ -96,17 +142,17 @@ export function createPedestrianSprite(variant: number, activity: string | undef
   body.anchor.set(0.5, 1);
   c.addChild(body);
 
+  // Phụ kiện vẽ trên lưới thô 2×2 (p = nửa toạ độ) cho cùng độ thô với nhân vật LimeZu phóng 2×.
   const g = new Graphics();
+  const p = (gr: Graphics, x: number, y: number, w: number, h: number, color: number, alpha = 1) => { gr.rect(x * 2, y * 2, w * 2, h * 2).fill({ color, alpha }); };
   if (activity === 'jog') {
-    g.rect(-5, -41, 10, 2).fill(0xf1c40f);
+    p(g, -4, -21, 8, 2, 0xf1c40f);
   } else if (activity === 'dog') {
-    g.ellipse(-17, -4, 6, 4).fill(0xd35400);
-    g.circle(-11, -7, 3.5).fill(0xd35400);
-    g.rect(-10, -8, 1, 1).fill(0x1a1815);
-    g.rect(-21, -9, 2, 4).fill(0xd35400);
-    g.rect(-19, 0, 1, 3).fill(0x2c3e50);
-    g.rect(-14, 0, 1, 3).fill(0x2c3e50);
-    g.rect(-11, -6, 11, 1).fill({ color: 0x7f8c8d, alpha: 0.6 });
+    p(g, -11, -4, 5, 3, 0xd35400); p(g, -11, -4, 5, 1, 0xe67e22);          // thân
+    p(g, -7, -6, 3, 3, 0xd35400); p(g, -5, -5, 1, 1, 0x1a1815);            // đầu + mắt
+    p(g, -8, -7, 1, 2, 0xa84300); p(g, -12, -6, 1, 3, 0xd35400);           // tai + đuôi
+    p(g, -11, -1, 1, 1, 0x2c3e50); p(g, -9, -1, 1, 1, 0x2c3e50); p(g, -7, -1, 1, 1, 0x2c3e50);  // chân
+    p(g, -4, -4, 5, 1, 0x7f8c8d, 0.6);                                     // dây dắt
   }
   c.addChild(g);
 
@@ -114,15 +160,9 @@ export function createPedestrianSprite(variant: number, activity: string | undef
   // Tọa độ gốc ở giữa túi; vị trí đổi theo hướng đi và theo nhịp đung đưa của tay.
   const bag = new Graphics();
   if (activity === 'grocery') {
-    bag.rect(-3, -15, 6, 1).fill(0x8e2a22);
-    bag.rect(-3, -15, 1, 4).fill(0x8e2a22);
-    bag.rect(2, -15, 1, 4).fill(0x8e2a22);
-    bag.rect(-5, -12, 11, 12).fill(0x7a1f19);
-    bag.rect(-4, -11, 9, 10).fill(0xe03a2e);
-    bag.rect(-4, -11, 9, 1).fill(0xff6a50);
-    bag.rect(3, -10, 2, 9).fill(0xb82a20);
-    bag.rect(-2, -8, 4, 3).fill(0xf2e3c0);
-    bag.rect(-1, -7, 2, 1).fill(0xd9b99a);
+    p(bag, -1, -8, 3, 1, 0x8e2a22);
+    p(bag, -3, -7, 6, 7, 0x7a1f19); p(bag, -2, -6, 4, 5, 0xe03a2e); p(bag, -2, -6, 4, 1, 0xff6a50);
+    p(bag, -1, -4, 2, 1, 0xf2e3c0);
   }
   bag.visible = activity === 'grocery';
   c.addChild(bag);

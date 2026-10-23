@@ -5,11 +5,12 @@ interface AccountBarProps {
   onlineWorldName?: string;
   isOnlineOwner?: boolean;
   onInvite?: () => void;
+  onSettings?: () => void;
   onLeaveOnline?: () => void;
   onReturnHome?: () => void;
 }
 
-export function AccountBar({ onlineWorldName, isOnlineOwner, onInvite, onLeaveOnline, onReturnHome }: AccountBarProps = {}) {
+export function AccountBar({ onlineWorldName, isOnlineOwner, onInvite, onSettings, onLeaveOnline, onReturnHome }: AccountBarProps = {}) {
   const [user, setUser] = useState<User | null>(null);
   const [busy, setBusy] = useState(false);
   // Chỉ có tác dụng khi màn thấp (CSS biến thanh thành nút tròn nổi): mở/đóng bảng tài khoản. Ở màn thường CSS bỏ qua.
@@ -125,6 +126,11 @@ export function AccountBar({ onlineWorldName, isOnlineOwner, onInvite, onLeaveOn
             title="Mời bạn bè cùng kinh doanh"
           >
             👥 Mời bạn
+          </button>
+        )}
+        {onlineWorldName && isOnlineOwner && onSettings && (
+          <button type="button" className="account-bar-btn" onClick={onSettings} title="Quyền đất của thành viên và phiếu">
+            ⚙ Quyền đất
           </button>
         )}
         {onlineWorldName && onLeaveOnline && (

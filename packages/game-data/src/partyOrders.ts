@@ -1,5 +1,7 @@
 import type { PartyOrderDef } from '@game/shared';
 import { nullProto } from './safe-map';
+import { SEASON_EVENTS } from './seasons';
+import { PRODUCT_MAP } from './products';
 
 export const PARTY_ORDERS: readonly PartyOrderDef[] = [
   {
@@ -88,8 +90,68 @@ export const PARTY_ORDERS: readonly PartyOrderDef[] = [
       reputation: 8,
       experience: 180,
     },
+    seasons: ['tet'],
+  },
+  {
+    id: 'party_sam_tet',
+    title: 'Sắm Tết cả xóm',
+    customerName: 'Bác Tám Tổ Trưởng',
+    description: 'Đầu năm bà con rủ nhau sắm Tết sớm: bánh chưng, dưa hấu khắc chữ và câu đối đỏ trưng bàn thờ.',
+    minPlayerLevel: 1,
+    durationDays: 2,
+    items: [
+      { productId: 'banh_chung_tet', quantity: 6 },
+      { productId: 'dua_hau_tet', quantity: 4 },
+      { productId: 'cau_doi_do', quantity: 2 },
+    ],
+    reward: {
+      money: 280000,
+      reputation: 6,
+      experience: 110,
+    },
+    seasons: ['tet'],
+  },
+  {
+    id: 'party_trung_thu_pha_co',
+    title: 'Đêm rằm phá cỗ',
+    customerName: 'Bé Na Học Sinh',
+    description: 'Lũ nhỏ trong xóm rước đèn phá cỗ đêm Trung thu, cần bánh trung thu thập cẩm và kẹo chia phần.',
+    minPlayerLevel: 1,
+    durationDays: 2,
+    items: [
+      { productId: 'banh_trung_thu', quantity: 8 },
+      { productId: 'keo_big_babol', quantity: 20 },
+    ],
+    reward: {
+      money: 250000,
+      reputation: 6,
+      experience: 100,
+    },
+    seasons: ['trung_thu'],
   },
 ];
+
+/** Kiểm định nghĩa đơn tiệc: món phải có thật & mở khóa kịp cấp mở đơn; nhãn mùa phải là mùa hợp lệ. */
+export function validatePartyOrders(): string[] {
+  const errors: string[] = [];
+  const seasonIds = new Set<string>(SEASON_EVENTS.map((s) => s.id));
+  for (const def of PARTY_ORDERS) {
+    for (const item of def.items) {
+      const product = PRODUCT_MAP[item.productId];
+      if (!product) {
+        errors.push(`${def.id}: sản phẩm ${item.productId} không tồn tại`);
+      } else if (product.unlockLevel > def.minPlayerLevel) {
+        errors.push(`${def.id}: ${item.productId} mở khóa cấp ${product.unlockLevel} > cấp mở đơn ${def.minPlayerLevel}`);
+      }
+    }
+    for (const season of def.seasons ?? []) {
+      if (!seasonIds.has(season)) {
+        errors.push(`${def.id}: mùa "${season}" không hợp lệ`);
+      }
+    }
+  }
+  return errors;
+}
 
 export const PARTY_ORDER_MAP: Record<string, PartyOrderDef> = nullProto(Object.fromEntries(
   PARTY_ORDERS.map((order) => [order.id, order])

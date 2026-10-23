@@ -51,3 +51,84 @@ export function filterJournalByAccount(
 ): CityJournalEntry[] {
   return entries.filter((entry) => entry.accountId === accountId);
 }
+
+// ============ MỐC SỔ GÓP XÓM (OpenSpec `civic-city-goals`, Giai đoạn 5) ============
+
+/** Mốc sổ góp lưu trong `cityProgress.milestones` (đi cùng save → không ghi trùng khi nạp lại). */
+export interface CivicMilestone {
+  day: number;
+  type: 'bundle_completed' | 'civic_opened';
+  bundleId: string;
+  qolGain?: number;
+}
+
+/** Thêm mốc nếu CHƯA có mốc cùng loại + cùng sổ (replay / nạp lại save không ghi trùng). Trả mảng mới. */
+export function addCivicMilestoneOnce<T extends { type: string; bundleId?: string }>(
+  milestones: readonly T[],
+  milestone: T,
+): T[] {
+  const exists = milestones.some((m) => m.type === milestone.type && m.bundleId === milestone.bundleId);
+  return exists ? [...milestones] : [...milestones, milestone];
+}
+
+/**
+ * Câu nhật ký tiếng Việt cho mốc sổ góp:
+ * "Ngày N — Xóm góp đủ sổ <công trình> (<tên>)" / "Ngày N — Khánh thành <công trình>".
+ */
+export function civicMilestoneLine(m: CivicMilestone, buildingName: string, bundleLabel = ''): string {
+  return m.type === 'bundle_completed'
+    ? `Ngày ${m.day} — Xóm góp đủ sổ ${buildingName}${bundleLabel ? ` (${bundleLabel})` : ''}`
+    : `Ngày ${m.day} — Khánh thành ${buildingName}`;
+}
+
+/** Dòng bản tin sáng ngày `day`: công trình khánh thành hôm qua → "<công trình> mở cửa: chỉ số sống khu +X". */
+export function civicOpeningBriefLines(
+  milestones: readonly { day: number; type: string; bundleId?: string; qolGain?: number }[],
+  day: number,
+  nameOf: (bundleId: string) => string,
+): string[] {
+  return milestones
+    .filter((m) => m.type === 'civic_opened' && m.bundleId && m.day === day - 1)
+    .map((m) => {
+      const gain = Math.round(m.qolGain ?? 0);
+      return gain > 0
+        ? `${nameOf(m.bundleId as string)} mở cửa: chỉ số sống khu +${gain}`
+        : `${nameOf(m.bundleId as string)} mở cửa: nằm ngoài bán kính nên chưa tăng chỉ số sống khu`;
+    });
+}
+
+/** Tất cả dòng nhật ký sổ góp (mới nhất trước) cho tab Sổ góp. `nameOf(bundleId)` → tên công trình. */
+export function civicJournalLines(
+  milestones: readonly { day: number; type: string; bundleId?: string; qolGain?: number }[],
+  nameOf: (bundleId: string) => string,
+): string[] {
+  return milestones
+    .filter((m): m is { day: number; type: 'bundle_completed' | 'civic_opened'; bundleId: string; qolGain?: number } =>
+      (m.type === 'bundle_completed' || m.type === 'civic_opened') && !!m.bundleId)
+    .map((m) => civicMilestoneLine(m, nameOf(m.bundleId)))
+    .reverse();
+}
+
+// ============ NHẬT KÝ MỐC THÀNH PHỐ (OpenSpec `open-world-districts-city-goals` 3.1) ============
+
+/** Cấp thành phố tối thiểu để dựng biển kỷ niệm tiệm đầu tiên. */
+export const MEMORIAL_PLAQUE_CITY_LEVEL = 3;
+
+/**
+ * Dòng nhật ký mốc (mới nhất trước): mở đợt, loại hình đầu tiên, lên cấp — kèm ngày game và người thực hiện.
+ * `typeName`/`waveName` đổi id → tên; `whoOf` đổi accountId → tên hiển thị (không có `by` thì bỏ phần tên).
+ */
+export function cityMilestoneLines(
+  milestones: readonly { day: number; type: string; level?: number; waveId?: string; buildingTypeId?: string; by?: string }[],
+  typeName: (typeId: string) => string,
+  whoOf: (accountId: string) => string,
+): string[] {
+  const lines: string[] = [];
+  for (const m of milestones) {
+    const who = m.by ? ` · ${whoOf(m.by)}` : '';
+    if (m.type === 'wave_opened' && m.waveId) lines.push(`Ngày ${m.day} — Mở đợt khai hoang ${m.waveId.toUpperCase()}${who}`);
+    else if (m.type === 'first_type_opened' && m.buildingTypeId) lines.push(`Ngày ${m.day} — Mở ${typeName(m.buildingTypeId)} đầu tiên${who}`);
+    else if (m.type === 'level_up' && m.level) lines.push(`Ngày ${m.day} — Thành phố lên cấp ${m.level}${who}`);
+  }
+  return lines.reverse();
+}
