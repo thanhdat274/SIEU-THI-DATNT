@@ -3,42 +3,67 @@ import { buildChibiCharacter, type CharacterParts } from '../render/characterMod
 
 const WALK_SPEED = 1.6; // m/giây (thời gian game)
 
-/** Bảng chữ/emoji nhỏ trên đầu nhân vật. Chữ ngắn ("Hết sữa!") vẽ pill nền tối cho dễ đọc. */
+/**
+ * Bong bóng thoại trên đầu nhân vật: nền trắng viền mảnh, đuôi nhọn chỉ xuống đầu.
+ * Emoji nằm trong bong bóng tròn; chữ ngắn ("Hết sữa!") nằm trong bong bóng dài.
+ * Canvas 256×128 (2:1) nên sprite luôn giữ tỉ lệ 2:1 — lệch tỉ lệ là hình bị bóp dẹt.
+ */
 function emojiSprite(): { sprite: THREE.Sprite; set: (text: string | null) => void; dispose: () => void } {
+  const W = 256, H = 128;
   const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 64;
+  canvas.width = W;
+  canvas.height = H;
   const ctx = canvas.getContext('2d')!;
   const texture = new THREE.CanvasTexture(canvas);
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false }));
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true }));
+  sprite.renderOrder = 10;
   sprite.visible = false;
   const isEmoji = (t: string) => !/[a-zA-Z0-9À-ỹ]/.test(t);
+  /** Vẽ bong bóng rộng w, cao h, căn giữa; đuôi nhọn ở đáy. */
+  const bubble = (w: number, h: number) => {
+    const x = (W - w) / 2, y = 6, r = Math.min(h / 2, 30);
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    ctx.moveTo(W / 2 - 12, y + h - 1);
+    ctx.lineTo(W / 2, y + h + 16);
+    ctx.lineTo(W / 2 + 12, y + h - 1);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.save();
+    ctx.translate(0, 3);
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#3d3d4e';
+    ctx.stroke();
+    // Che nét viền giữa thân bong bóng và đuôi
+    ctx.fillRect(W / 2 - 10, y + h - 3, 20, 5);
+  };
   return {
     sprite,
     set: (text) => {
       sprite.visible = !!text;
       if (!text) return;
-      ctx.clearRect(0, 0, 256, 64);
+      ctx.clearRect(0, 0, W, H);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       if (isEmoji(text)) {
-        sprite.scale.set(0.65, 0.65, 1);
+        sprite.scale.set(1.0, 0.5, 1);
         sprite.position.y = 2.15;
-        ctx.font = '48px serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(text, 128, 36);
+        bubble(96, 90);
+        ctx.font = '58px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+        ctx.fillText(text, W / 2, 54);
       } else {
-        sprite.scale.set(1.7, 0.42, 1);
-        sprite.position.y = 2.2;
+        sprite.scale.set(1.6, 0.8, 1);
+        sprite.position.y = 2.3;
         ctx.font = 'bold 30px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const w = ctx.measureText(text).width;
-        ctx.fillStyle = 'rgba(0,0,0,0.62)';
-        ctx.beginPath();
-        ctx.roundRect(128 - w / 2 - 10, 10, w + 20, 44, 20);
-        ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.fillText(text, 128, 33);
+        const w = Math.min(W - 12, ctx.measureText(text).width + 32);
+        bubble(w, 56);
+        ctx.fillStyle = '#2d3436';
+        ctx.fillText(text, W / 2, 35, W - 36);
       }
       texture.needsUpdate = true;
     },
