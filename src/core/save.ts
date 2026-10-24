@@ -34,7 +34,7 @@ export function snapshot(): SaveData {
     sales: s.sales, salesToday: s.salesToday, regulars: s.regulars, reservations: s.reservations, market: s.market,
     contracts: s.contracts, repLog: s.repLog, community: s.community, opening: s.opening, costume: s.costume, event: s.event,
     giftStreak: s.giftStreak, giftLastDay: s.giftLastDay, wheelLastDay: s.wheelLastDay, wheelBoost: s.wheelBoost, shopName: s.shopName,
-    history: s.history, activeCombos: s.activeCombos, order: s.order, ordersDone: s.ordersDone, cookJobs: s.cookJobs, phoneOrders: s.phoneOrders, phoneSlot: s.phoneSlot, phoneHintDay: s.phoneHintDay, phoneOrdersDone: s.phoneOrdersDone, debts: s.debts, allowCredit: s.allowCredit, biz: s.biz, vendorDay: s.vendorDay, vendorOffer: s.vendorOffer, skills: s.skills, titles: s.titles, fakeCash: s.fakeCash,
+    history: s.history, activeCombos: s.activeCombos, order: s.order, ordersDone: s.ordersDone, cookJobs: s.cookJobs, phoneOrders: s.phoneOrders, phoneSlot: s.phoneSlot, phoneHintDay: s.phoneHintDay, phoneOrdersDone: s.phoneOrdersDone, debts: s.debts, allowCredit: s.allowCredit, biz: s.biz, vendorDay: s.vendorDay, vendorOffer: s.vendorOffer, skills: s.skills, titles: s.titles, fakeCash: s.fakeCash, branch: s.branch,
     weatherSeed: s.weatherSeed, weather: s.weather, forecast: s.forecast,
     saveVersion: SAVE_VERSION,
   };

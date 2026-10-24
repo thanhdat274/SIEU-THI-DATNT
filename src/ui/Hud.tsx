@@ -1,3 +1,4 @@
+import { CONVENIENCE } from '../data/branches';
 import { Joystick } from './Joystick';
 import { useEffect, useRef, useState } from 'react';
 import { formatClock, questContext, useGame } from '../core/store';
@@ -184,6 +185,7 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     { icon: '🏅', label: 'Danh hiệu', more: true, badge: skillsLeft > 0 ? `+${skillsLeft} kỹ năng` : undefined, on: () => openPanel({ type: 'skills' }) },
     { icon: '💛', label: 'Khách quen', more: true, on: () => openPanel({ type: 'regulars' }) },
     { icon: '👥', label: 'Nhân viên', more: true, lock: FEATURES.staff, on: () => openPanel({ type: 'staff' }) },
+    { icon: '🏪', label: 'Tiện lợi 24/7', more: true, lock: CONVENIENCE.unlock, on: () => openPanel({ type: 'branch' }) },
     {
       icon: '💬', label: 'Đánh giá', more: true, badge: rating.count ? `${rating.average.toFixed(1)}★` : undefined,
       on: () => openPanel({ type: 'reviews' }),

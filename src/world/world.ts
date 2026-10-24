@@ -5,6 +5,7 @@ import { Warehouse, WAREHOUSE_DEPTH } from './warehouse';
 import type { NavGrid } from './navGrid';
 import { SHOP_CENTER_X, SHOP_FRONT_Z, SHOP_TIERS } from '../data/shopTiers';
 import { HOUSE_SIZE, houseDoor, NEIGHBOR_HOUSES } from '../data/phoneOrders';
+import { CONVENIENCE, LANE_X, ROAD2_Z } from '../data/branches';
 
 /** Các điểm trong một phòng ngủ (toạ độ thế giới). */
 export interface RoomSpots { bed: THREE.Vector3; wake: THREE.Vector3; nightstand: THREE.Vector3 }
@@ -28,6 +29,8 @@ export interface World {
   roomSpots(room: number): RoomSpots;
   shop: GroceryShop;
   warehouse: Warehouse;
+  /** Cửa hàng tiện lợi 24/7, xa tiệm chính, trên con đường thứ hai. */
+  convenience: Building;
   /** Nhà hàng xóm dọc hẻm, theo id trong NEIGHBOR_HOUSES; mỗi nhà có cờ báo đơn chờ giao trước cửa. */
   houses: Map<string, { building: Building; door: THREE.Vector3; marker: THREE.Object3D }>;
 }
@@ -60,6 +63,19 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   sidewalk.receiveShadow = true;
   scene.add(sidewalk);
 
+  // Con đường thứ hai cho cửa hàng tiện lợi, nối với đường chính bằng một hẻm dọc
+  const road2 = new THREE.Mesh(new THREE.PlaneGeometry(60, 6), new THREE.MeshStandardMaterial({ color: 0x555555 }));
+  road2.rotation.x = -Math.PI / 2;
+  road2.position.set(LANE_X + 20, 0.01, ROAD2_Z);
+  road2.receiveShadow = true;
+  const lane = new THREE.Mesh(new THREE.PlaneGeometry(5, 3 - ROAD2_Z), new THREE.MeshStandardMaterial({ color: 0x5e5e5e }));
+  lane.rotation.x = -Math.PI / 2;
+  lane.position.set(LANE_X, 0.012, (3 + ROAD2_Z) / 2);
+  lane.receiveShadow = true;
+  scene.add(road2, lane);
+  const convenience = createConvenienceStore();
+  scene.add(convenience.group);
+
   // Nhà riêng
   const home = new Building({
     name: 'Nhà của bạn', width: 6, depth: 6, height: 3, wallColor: 0xf5e6c8, roofColor: 0xb03a2e, doorStyle: 'wood',
@@ -91,12 +107,15 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
     if (Math.abs(x - SHOP_CENTER_X) < maxTier.width / 2 + 2 && z > SHOP_FRONT_Z - reserved - 2) {
       z -= reserved + 4;
     }
+    // Chừa hẻm dọc, con đường thứ hai và mặt bằng cửa hàng tiện lợi
+    if (Math.abs(x - LANE_X) < 4 || (x > LANE_X - 12 && z < ROAD2_Z + 5)) continue;
     scene.add(createTree(x, z));
     treeBoxes.push(new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, 0, z), new THREE.Vector3(0.4, 1, 0.4)));
   }
 
   grid.setStatic('trees', treeBoxes);
   grid.setStatic('home', home.staticBoxes());
+  grid.setStatic('convenience', convenience.staticBoxes());
 
   // Nhà chung cho hẻm online: chỉ hiện (thay nhà riêng) khi đang chơi chung
   const shared = createSharedHome();
@@ -143,13 +162,14 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
       if (current === home) return soloSpots;
       return shared.rooms[Math.max(0, Math.min(shared.rooms.length - 1, room))];
     },
-    get buildings() { return [current, shop.building, warehouse.building, ...[...houses.values()].map((h) => h.building)]; },
+    get buildings() { return [current, shop.building, warehouse.building, convenience, ...[...houses.values()].map((h) => h.building)]; },
     houses,
     bed,
     nightstand: nightstand.getWorldPosition(new THREE.Vector3()).setY(0).add(new THREE.Vector3(0.7, 0, 0.6)),
     home,
     shop,
     warehouse,
+    convenience,
   };
 }
 
@@ -287,4 +307,28 @@ function createSharedHome() {
   table.castShadow = true;
   building.interior.add(table);
   return { building, rooms };
+}
+
+/** Cửa hàng tiện lợi 24/7: mặt kính, mái xanh, biển "24H" phát sáng (mặt tiền nhìn ra con đường thứ hai). */
+function createConvenienceStore(): Building {
+  const b = new Building({
+    name: CONVENIENCE.name, width: CONVENIENCE.width, depth: CONVENIENCE.depth, height: 3.4,
+    wallColor: 0xf4f7fb, roofColor: 0x0b8a4a, floorColor: 0xe9ecef, doorStyle: 'glass', airCon: true,
+  });
+  b.group.position.set(CONVENIENCE.x, 0, CONVENIENCE.z);
+  // Biển hiệu và dải màu thương hiệu trên mặt tiền
+  const sign = new THREE.Mesh(
+    new THREE.BoxGeometry(5, 0.9, 0.15),
+    new THREE.MeshStandardMaterial({ color: 0x0b8a4a, emissive: 0x19c26b, emissiveIntensity: 0.7 }),
+  );
+  sign.position.set(0, 3.9, CONVENIENCE.depth / 2 + 0.1);
+  const h24 = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 0.9, 0.18),
+    new THREE.MeshStandardMaterial({ color: 0xff7a00, emissive: 0xff9a2e, emissiveIntensity: 0.9 }),
+  );
+  h24.position.set(3.6, 3.9, CONVENIENCE.depth / 2 + 0.12);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(CONVENIENCE.width, 0.25, 0.1), new THREE.MeshStandardMaterial({ color: 0xff7a00 }));
+  stripe.position.set(0, 3.25, CONVENIENCE.depth / 2 + 0.06);
+  b.group.add(sign, h24, stripe);
+  return b;
 }

@@ -1,3 +1,4 @@
+import { BranchPanel } from './BranchPanel';
 import { ProductIcon } from './ProductIcon';
 import { fitLots, nearestLife, tierMarkdown } from '../data/freshness';
 import { useEffect, useState } from 'react';
@@ -60,6 +61,7 @@ export function Panels() {
         {panel.type === 'build' && <BuildPanel />}
         {panel.type === 'prices' && <PricePanel />}
         {panel.type === 'staff' && <StaffPanel />}
+        {panel.type === 'branch' && <BranchPanel />}
         {panel.type === 'summary' && <SummaryPanel day={panel.day} />}
         {panel.type === 'levels' && <LevelsPanel />}
         {panel.type === 'reviews' && <ReviewsPanel />}

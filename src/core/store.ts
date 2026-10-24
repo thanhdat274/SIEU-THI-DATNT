@@ -29,7 +29,7 @@ import { hasUpgrade } from '../data/upgrades';
 import { isNight, LATE_WAKE_AT, NIGHT_PRICE_MUL } from '../data/night';
 import { summarizeReviews } from '../data/reviews';
 import { comboById, MAX_ACTIVE_COMBOS } from '../data/combos';
-import { dailyWage, DIRT_MAX, generateCandidates, maxStaff, ROLES, SHIFTS, skillSpeed, type Shift, type Staff } from '../data/staff';
+import { dailyWage, DIRT_MAX, GUARD_DETECT, generateCandidates, maxStaff, ROLES, SHIFTS, skillSpeed, type Shift, type Staff } from '../data/staff';
 import { eventOn, type RandomEvent } from '../data/events';
 import { activeContractsFor, contractValue, missingForContract, supplyContractById, type SupplyContract } from '../data/contracts';
 import { costumeById, type Costume } from '../data/costumes';
@@ -39,6 +39,7 @@ import { giftOfStreak, giftText, spinWheelPrize, type WheelPrize } from '../data
 import { paymentById, type PaymentMethod } from '../data/payments';
 import { COOKED_PRODUCT_IDS, RECIPE_MAP } from '../data/recipes';
 import { playSfx } from './audio';
+import { BRANCH_NIGHT_THEFT, BRANCH_ROLES, CONVENIENCE, branchTrafficAt, isBranchNight, newBranch, onShift, shelfTotal, type BranchState } from '../data/branches';
 
 /** Phút trong ngày khi bắt đầu ngày mới (06:00). */
 export const DAY_START = 6 * 60;
@@ -173,6 +174,7 @@ export type Panel =
   | { type: 'arrange' }
   | { type: 'prices' }
   | { type: 'staff' }
+  | { type: 'branch' }
   | { type: 'levels' }
   | { type: 'reviews' }
   | { type: 'storage' }
@@ -441,6 +443,13 @@ export interface GameState {
   hire: (id: number) => void;
   fire: (id: number) => void;
   setShift: (id: number, shift: Shift) => void;
+  /** Cửa hàng tiện lợi 24/7 (null = chưa thuê mặt bằng). */
+  branch: BranchState | null;
+  openBranch: () => boolean;
+  toggleBranch: () => void;
+  hireForBranch: (id: number) => void;
+  fireFromBranch: (id: number) => void;
+  setBranchShift: (id: number, shift: Shift) => void;
 }
 
 export interface Delivery {
@@ -657,6 +666,7 @@ export const newGameData = () => ({
   skills: [] as SkillId[],
   titles: [] as string[],
   fakeCash: 0,
+  branch: null as BranchState | null,
   ...initialWeather(),
 });
 
@@ -744,9 +754,92 @@ export const useGame = create<GameState>((set, get) => {
     }
   };
 
+  /**
+   * Mô phỏng cửa hàng tiện lợi từ mốc đã chạy tới phút `to` (bước 10 phút): khách mua, xe chở hàng từ kho chung,
+   * trộm đêm. Chủ không đứng bán nên không cần agent 3D; trả về phần state cần cập nhật.
+   */
+  const runBranch = (to: number): Partial<GameState> => {
+    const s = get();
+    const b0 = s.branch;
+    if (!b0) return {};
+    const b: BranchState = { ...b0, shelf: { ...b0.shelf } };
+    const k = copyStock(s);
+    let fees = 0;
+    let revenue = 0;
+    const STEP = 10;
+    if (b.simAt > to || to - b.simAt > 48 * 60) b.simAt = to - STEP;
+    while (b.simAt + STEP <= to) {
+      b.simAt += STEP;
+      const m = b.simAt;
+      if (!b.open) continue;
+      const on = b.staff.filter((st) => onShift(st, m));
+      // Xe chở hàng: người giao/xếp hàng trực thì định kỳ chở từ kho chung sang bày đầy kệ
+      if (on.some((st) => st.role === 'courier' || st.role === 'stocker') && m - b.lastTrip >= CONVENIENCE.tripEvery) {
+        let room = CONVENIENCE.shelfCap - shelfTotal(b.shelf);
+        let moved = 0;
+        for (const id of Object.keys(k.storage)) {
+          if (room <= 0) break;
+          const want = Math.min(room, CONVENIENCE.perItem - (b.shelf[id] ?? 0), k.storage[id] ?? 0);
+          if (want <= 0) continue;
+          const got = takeStock(k, id, want).reduce((n, l) => n + l.qty, 0);
+          b.shelf[id] = (b.shelf[id] ?? 0) + got;
+          room -= got;
+          moved += got;
+        }
+        if (moved) { fees += CONVENIENCE.tripFee; b.lastTrip = m; }
+      }
+      // Khách ghé trong 10 phút; không có thu ngân trực hoặc hết hàng thì khách bỏ về
+      const expect = (branchTrafficAt(m) * STEP) / 60;
+      let n = Math.floor(expect) + (Math.random() < expect % 1 ? 1 : 0);
+      const cashier = on.some((st) => st.role === 'cashier');
+      for (; n > 0; n--) {
+        if (!cashier || !Object.values(b.shelf).some((q) => q > 0)) { b.missedToday++; continue; }
+        b.customersToday++;
+        for (let items = 1 + Math.floor(Math.random() * 2); items > 0; items--) {
+          const pool = Object.keys(b.shelf).filter((id) => b.shelf[id] > 0);
+          if (!pool.length) break;
+          const id = pool[Math.floor(Math.random() * pool.length)];
+          b.shelf[id]--;
+          revenue += Math.round((s.priceOf(id) * CONVENIENCE.priceMul) / 500) * 500;
+        }
+      }
+      // Trộm đêm: có bảo vệ trực thì gần như bắt được hết
+      if (isBranchNight(m) && Math.random() < BRANCH_NIGHT_THEFT) {
+        const guard = on.some((st) => st.role === 'guard');
+        if (!guard || Math.random() > GUARD_DETECT) {
+          for (let i = 0; i < 3; i++) {
+            const pool = Object.keys(b.shelf).filter((id) => b.shelf[id] > 0);
+            if (!pool.length) break;
+            b.shelf[pool[Math.floor(Math.random() * pool.length)]]--;
+            b.lostToday++;
+          }
+        }
+      }
+    }
+    for (const id of Object.keys(b.shelf)) if (b.shelf[id] <= 0) delete b.shelf[id];
+    b.revenueToday += revenue;
+    return {
+      branch: b, ...k,
+      money: s.money - fees + revenue,
+      stats: { ...s.stats, revenue: s.stats.revenue + revenue, spent: s.stats.spent + fees },
+    };
+  };
+
   /** Kết thúc ngày: hiện bảng tổng kết, sang ngày mới. */
   const endDay = (extra: Partial<GameState> = {}) => {
+    // Cửa hàng tiện lợi bán xuyên đêm trong lúc chủ ngủ: chạy nốt tới giờ thức dậy sáng mai
+    if (get().branch) {
+      const lateWake = get().minutes >= 24 * 60;
+      const delta = extra.money !== undefined ? extra.money - get().money : 0;
+      set(runBranch(24 * 60 + (lateWake ? LATE_WAKE_AT : DAY_START)));
+      if (extra.money !== undefined) extra = { ...extra, money: get().money + delta };
+    }
     const s = get();
+    const br = s.branch;
+    const branchWages = br ? Math.round(br.staff.reduce((n, st) => n + dailyWage(st), 0) * (hasSkill(s.skills, 'good_boss') ? 0.9 : 1)) : 0;
+    if (br) s.notify(`🏪 Tiện lợi 24/7: ${br.customersToday} khách, thu ${formatMoney(br.revenueToday)}, thuê + lương ${formatMoney(CONVENIENCE.rent + branchWages)}`
+      + (br.missedToday ? ` · ${br.missedToday} khách bỏ về (thiếu thu ngân/hết hàng)` : '')
+      + (br.lostToday ? ` · mất trộm ${br.lostToday} món` : ''));
     if (s.pendingUpgrade) {
       // Mặt tiền giữ nguyên, tiệm nới ra phía sau: giữ đồ đạc ở đúng chỗ cũ
       const shift = (SHOP_TIERS[s.shopTier + 1].depth - SHOP_TIERS[s.shopTier].depth) / 2;
@@ -874,8 +967,8 @@ export const useGame = create<GameState>((set, get) => {
       market[p.id] = nextMarketIndex(market[p.id] ?? 1, (k.storage[p.id] ?? 0) + onShelf, 0, demand[p.id] ?? 0);
     }
     // Trả lương và tiền nhà cuối ngày (kèm phí thợ bảo trì sáng nay nếu có)
-    const wages = wagesDue(s);
-    const rent = rentOf(s.shopTier);
+    const wages = wagesDue(s) + branchWages;
+    const rent = rentOf(s.shopTier) + (br ? CONVENIENCE.rent : 0);
     const stats = { ...s.stats, wages, rent, spent: s.stats.spent + maintCost, spoiledItems: aged.items, spoiledCost: aged.cost };
     const biz = bizEndOfDay(s, stats);
     if (biz.news.length) s.notify(biz.news.join(' · '));
@@ -904,6 +997,7 @@ export const useGame = create<GameState>((set, get) => {
       ...extra,
       money: (extra.money ?? s.money) - wages - rent - maintCost + inspectPay + biz.money,
       biz: biz.biz,
+      branch: br ? { ...br, revenueToday: 0, customersToday: 0, lostToday: 0, missedToday: 0, simAt: wokeLate ? LATE_WAKE_AT : DAY_START, lastTrip: br.lastTrip - 1440 } : null,
     });
     checkAchievements();
     // Hàng mới về sáng nay: ô kệ hết hàng mà kho không còn món đó thì đổi sang món khác
@@ -959,6 +1053,7 @@ export const useGame = create<GameState>((set, get) => {
         return;
       }
       set({ minutes });
+      if (s.branch && minutes - s.branch.simAt >= 10) set(runBranch(minutes));
       updatePhones();
       maybeSurprise(minutes - s.minutes);
       // Các mẻ nấu đang chạy: hết giờ thì thành phẩm vào kho (bày bán như hàng thường)
@@ -1810,6 +1905,43 @@ export const useGame = create<GameState>((set, get) => {
     },
     fire: (id) => set({ staff: get().staff.filter((it) => it.id !== id) }),
     setShift: (id, shift) => set({ staff: get().staff.map((it) => (it.id === id ? { ...it, shift } : it)) }),
+    openBranch: () => {
+      const s = get();
+      if (s.branch) return false;
+      if (s.level < CONVENIENCE.unlock) { s.notify(`Cửa hàng tiện lợi mở ở cấp ${CONVENIENCE.unlock}`); return false; }
+      if (s.money < CONVENIENCE.openCost) { s.notify('Không đủ tiền cọc mặt bằng! Có thể vay ngân hàng.'); return false; }
+      set({
+        money: s.money - CONVENIENCE.openCost,
+        branch: { ...newBranch(), simAt: s.minutes },
+        stats: { ...s.stats, spent: s.stats.spent + CONVENIENCE.openCost },
+        totals: { ...s.totals, spent: s.totals.spent + CONVENIENCE.openCost },
+      });
+      s.notify('🏪 Đã thuê mặt bằng cửa hàng tiện lợi ở con đường bên kia! Thuê thu ngân, giao hàng, bảo vệ rồi mở cửa.');
+      return true;
+    },
+    toggleBranch: () => {
+      const s = get();
+      if (!s.branch) return;
+      if (!s.branch.open && !s.branch.staff.some((st) => st.role === 'cashier')) return s.notify('Chủ không đứng bán ở chi nhánh: thuê ít nhất 1 thu ngân trước!');
+      set({ branch: { ...s.branch, open: !s.branch.open, simAt: s.minutes } });
+    },
+    hireForBranch: (id) => {
+      const s = get();
+      const c = s.candidates.find((it) => it.id === id);
+      if (!c || !s.branch) return;
+      if (s.branch.staff.length >= CONVENIENCE.maxStaff) return s.notify('Chi nhánh đã đủ người');
+      if (!BRANCH_ROLES.includes(c.role)) return s.notify('Chi nhánh chỉ cần thu ngân, xếp hàng, giao hàng, bảo vệ');
+      set({ branch: { ...s.branch, staff: [...s.branch.staff, c] }, candidates: s.candidates.filter((it) => it.id !== id) });
+      s.notify(`🤝 ${c.name} sẽ làm ở cửa hàng tiện lợi.`);
+    },
+    fireFromBranch: (id) => {
+      const b = get().branch;
+      if (b) set({ branch: { ...b, staff: b.staff.filter((it) => it.id !== id) } });
+    },
+    setBranchShift: (id, shift) => {
+      const b = get().branch;
+      if (b) set({ branch: { ...b, staff: b.staff.map((it) => (it.id === id ? { ...it, shift } : it)) } });
+    },
     paint: (part, color) => {
       const s = get();
       if (s.style[part] === color) return;
