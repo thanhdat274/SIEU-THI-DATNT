@@ -39,7 +39,7 @@ export const WHEEL_PRIZES: WheelPrize[] = [
   { icon: '🪙', label: '5.000đ', short: '5k', money: 5000, weight: 22 },
   { icon: '⭐', label: '30 XP', short: '30XP', xp: 30, weight: 14 },
   { icon: '🪙', label: '10.000đ', short: '10k', money: 10000, weight: 18 },
-  { icon: '🍀', label: 'Khách +20% hôm nay', short: '🍀 Khách đông', boost: 0.2, weight: 8 },
+  { icon: '🍀', label: 'Khách +20% hôm nay', short: 'Đông khách', boost: 0.2, weight: 8 },
   { icon: '🪙', label: '20.000đ', short: '20k', money: 20000, weight: 14 },
   { icon: '⭐', label: '60 XP', short: '60XP', xp: 60, weight: 8 },
   { icon: '💰', label: '50.000đ', short: '50k', money: 50000, weight: 10 },

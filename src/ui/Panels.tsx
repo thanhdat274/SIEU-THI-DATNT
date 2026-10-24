@@ -1676,17 +1676,21 @@ function GiftPanel() {
             }}
           >
             {WHEEL_PRIZES.map((p, i) => (
-              <span
+              // Nhãn xoay theo ô (kiểu vòng quay thật): biểu tượng sát mép, chữ bên dưới hướng vào tâm,
+              // bề ngang giới hạn trong cung của ô để không tràn sang ô bên cạnh
+              <div
                 key={i}
                 style={{
-                  position: 'absolute', left: '50%', top: '50%', fontSize: 11, whiteSpace: 'nowrap', fontWeight: 600,
-                  padding: '1px 5px', borderRadius: 9, background: 'rgba(0,0,0,0.55)',
-                  transform: `rotate(${i * step + step / 2}deg) translate(0, -79px) rotate(${-(i * step + step / 2)}deg) translate(-50%, -50%)`,
-                  transformOrigin: '0 0',
+                  position: 'absolute', left: '50%', top: '50%', width: 54, marginLeft: -27,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                  transform: `rotate(${i * step + step / 2}deg) translateY(-104px)`,
+                  transformOrigin: '50% 0',
+                  textAlign: 'center', lineHeight: 1.05, pointerEvents: 'none',
                 }}
               >
-                {p.icon} {p.short}
-              </span>
+                <span style={{ fontSize: 20 }}>{p.icon}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>{p.short}</span>
+              </div>
             ))}
           </div>
           <div style={{
