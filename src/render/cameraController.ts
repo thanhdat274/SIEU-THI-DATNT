@@ -14,7 +14,7 @@ export class CameraController {
 
   minDistance = 6;
   maxDistance = 80;
-  bounds = 60;
+  bounds = 78;
 
   /** Điểm camera bám theo (nhân vật). Kéo chuột để tạm bỏ bám. */
   follow: THREE.Vector3 | null = null;

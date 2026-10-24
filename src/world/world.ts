@@ -320,25 +320,31 @@ function createConvenienceStore(): { building: Building; views: FurnitureView[] 
     wallColor: 0xf4f7fb, roofColor: 0x0b8a4a, floorColor: 0xe9ecef, doorStyle: 'glass', airCon: true, ceilingFan: true,
   });
   b.group.position.set(CONVENIENCE.x, 0, CONVENIENCE.z);
-  // Biển hiệu và dải màu thương hiệu trên mặt tiền
-  const sign = new THREE.Mesh(
-    new THREE.BoxGeometry(5, 0.9, 0.15),
-    new THREE.MeshStandardMaterial({ color: 0x0b8a4a, emissive: 0x19c26b, emissiveIntensity: 0.7 }),
+  // Biển hiệu có chữ trên mặt tiền (phát sáng ban đêm) + dải màu thương hiệu; vào trong thì ẩn cho khỏi che
+  const front = CONVENIENCE.depth / 2;
+  const board = new THREE.Mesh(
+    new THREE.BoxGeometry(7.2, 1.1, 0.16),
+    new THREE.MeshStandardMaterial({ color: 0x0b8a4a }),
   );
-  sign.position.set(0, 3.9, CONVENIENCE.depth / 2 + 0.1);
+  board.position.set(-0.6, 3.95, front + 0.1);
+  const face = new THREE.Mesh(
+    new THREE.PlaneGeometry(7, 1),
+    new THREE.MeshStandardMaterial({ map: signTexture('TIỆN LỢI', '0b8a4a'), emissive: 0xffffff, emissiveMap: signTexture('TIỆN LỢI', '0b8a4a'), emissiveIntensity: 0.55 }),
+  );
+  face.position.set(-0.6, 3.95, front + 0.185);
   const h24 = new THREE.Mesh(
-    new THREE.BoxGeometry(1.6, 0.9, 0.18),
-    new THREE.MeshStandardMaterial({ color: 0xff7a00, emissive: 0xff9a2e, emissiveIntensity: 0.9 }),
+    new THREE.BoxGeometry(1.7, 1.1, 0.18),
+    new THREE.MeshStandardMaterial({ color: 0xff7a00 }),
   );
-  h24.position.set(3.6, 3.9, CONVENIENCE.depth / 2 + 0.12);
+  h24.position.set(3.9, 3.95, front + 0.11);
+  const h24Face = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.6, 1),
+    new THREE.MeshStandardMaterial({ map: signTexture('24/7', 'ff7a00'), emissive: 0xffffff, emissiveMap: signTexture('24/7', 'ff7a00'), emissiveIntensity: 0.6 }),
+  );
+  h24Face.position.set(3.9, 3.95, front + 0.205);
   const stripe = new THREE.Mesh(new THREE.BoxGeometry(CONVENIENCE.width, 0.25, 0.1), new THREE.MeshStandardMaterial({ color: 0xff7a00 }));
-  stripe.position.set(0, 3.25, CONVENIENCE.depth / 2 + 0.06);
-  // Gắn vào mái để nhìn vào trong thì biển mờ theo mái, không che quầy kệ
-  for (const m of [sign, h24, stripe]) {
-    m.position.y -= b.roof.position.y;
-    (m.material as THREE.MeshStandardMaterial).transparent = true;
-    b.roof.add(m);
-  }
+  stripe.position.set(0, 3.25, front + 0.06);
+  b.facade.add(board, face, h24, h24Face, stripe);
   // Bên trong dùng đúng kệ, tủ, quầy của tiệm chính; hàng 3D được bày theo hàng đang có ở chi nhánh
   const views = BRANCH_LAYOUT.map((f) => {
     const v = new FurnitureView(f.type);
@@ -356,4 +362,23 @@ function createConvenienceStore(): { building: Building; views: FurnitureView[] 
     b.group.add(light, tube);
   }
   return { building: b, views };
+}
+
+/** Chữ trắng in đậm trên nền màu (dùng cho biển hiệu). */
+function signTexture(text: string, bg: string): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = text.length > 5 ? 1024 : 256;
+  c.height = 146;
+  const g = c.getContext('2d')!;
+  g.fillStyle = `#${bg}`;
+  g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = '#ffffff';
+  g.font = `900 ${text.length > 5 ? 104 : 92}px "Segoe UI", Arial, sans-serif`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(text, c.width / 2, c.height / 2 + 4);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
 }

@@ -47,7 +47,7 @@ export class BranchVisit {
       if (!slots) return;
       const own = items.filter(([id]) => zone(f.type)(id));
       // Không có món đúng loại thì bày tạm món khác cho kệ khỏi trống
-      const list = own.length ? own : items;
+      const list = own.length || f.type === 'freezer' ? own : items;
       const tiers = Array.from({ length: slots }, () => {
         if (!list.length) return { productId: null, count: 0 };
         const k = cursor[f.type] = (cursor[f.type] ?? 0) + 1;

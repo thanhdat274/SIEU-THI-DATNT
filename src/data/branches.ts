@@ -200,6 +200,6 @@ export const BRANCH_LAYOUT: { type: FurnitureType; x: number; z: number; rot: nu
   // Tủ mát dọc tường sau, tủ đông gần quầy
   { type: 'fridge', x: 0.2, z: -4.3, rot: 0 }, { type: 'fridge', x: 1.5, z: -4.3, rot: 0 }, { type: 'fridge', x: 2.8, z: -4.3, rot: 0 },
   { type: 'fridge', x: 4.1, z: -4.3, rot: 0 }, { type: 'fridge', x: 5.4, z: -4.3, rot: 0 }, { type: 'fridge', x: 6.7, z: -4.3, rot: 0 },
-  { type: 'freezer', x: -5.4, z: -3.6, rot: 0 },
+  { type: 'freezer', x: -5.9, z: -3.9, rot: 0 }, { type: 'freezer', x: -4.1, z: -3.9, rot: 0 },
   { type: 'bigShelf', x: -6.5, z: -1.2, rot: 1 },
 ];

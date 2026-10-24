@@ -27,8 +27,9 @@ export interface BuildingOptions {
 export class Building {
   group = new THREE.Group();
   interior = new THREE.Group();
-  /** Mái (mờ đi khi nhìn vào trong); đồ gắn mặt tiền như biển hiệu cũng gắn vào đây để mờ theo. */
-  readonly roof: THREE.Group;
+  private roof: THREE.Group;
+  /** Đồ gắn mặt tiền (biển hiệu...): hiện rõ khi ở ngoài, ẩn khi vào cảnh trong nhà để khỏi che phòng. */
+  readonly facade = new THREE.Group();
   private roofMat: THREE.MeshStandardMaterial;
   /** Hai đầu hồi tam giác dưới mái, sơn cùng màu tường. */
   private gable: THREE.Mesh;
@@ -231,7 +232,7 @@ export class Building {
       this.group.add(ac);
     }
 
-    this.group.add(this.interior);
+    this.group.add(this.interior, this.facade);
   }
 
   /** Bật đèn trong nhà, 0 = tắt, 1 = sáng hẳn. */
@@ -305,6 +306,7 @@ export class Building {
     const size = Math.max(this.opts.width, this.opts.depth) / 2;
     const dist = camera.position.distanceTo(this.group.position) - size;
     const inside = indoors ? 1 : THREE.MathUtils.clamp((25 - dist) / 8, 0, 1); // 0 = ngoài, 1 = trong
+    this.facade.visible = !indoors;
     setOpacity(this.roof, 1 - inside);
     setOpacity(this.door, indoors ? 0 : 1 - inside * 0.85);
 
