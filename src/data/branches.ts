@@ -1,4 +1,4 @@
-import { SHIFTS, type Staff, type StaffRole } from './staff';
+import { SHIFTS, type Shift, type Staff, type StaffRole } from './staff';
 
 /** Cửa hàng tiện lợi 24/7: chi nhánh xa tiệm chính, chủ không đứng bán, nhân viên lo hết. */
 export const CONVENIENCE = {
@@ -53,6 +53,8 @@ export interface BranchState {
   lostToday: number;
   /** Khách tới mà quầy không ai trực / hết hàng. */
   missedToday: number;
+  /** Ngày đã nhắc kho chung sắp cạn (nhắc một lần mỗi tối). */
+  warnedDay?: number;
 }
 
 export const newBranch = (): BranchState => ({
@@ -80,3 +82,16 @@ export const shelfTotal = (shelf: Record<string, number>) => Object.values(shelf
 export const BRANCH_ROLES: StaffRole[] = ['cashier', 'stocker', 'courier', 'guard'];
 /** Xác suất mỗi 10 phút ban đêm có kẻ trộm ghé. */
 export const BRANCH_NIGHT_THEFT = 0.05;
+
+/** Bán 24/7 nên chi nhánh chia 3 ca nối nhau, mỗi ca 8 tiếng. */
+export const BRANCH_SHIFTS: Shift[] = ['morning', 'afternoon', 'night'];
+export const BRANCH_SHIFT_NAME: Record<string, string> = { morning: 'Ca sáng 6h–14h', afternoon: 'Ca chiều 14h–22h', night: 'Ca đêm 22h–6h (×1.5 lương)' };
+/** Giờ nhắc kho chung trước đêm. */
+export const STOCK_WARN_AT = 20 * 60;
+
+/** Số món chi nhánh ước bán từ 22h tới 6h sáng (khách đêm × ~1.5 món). */
+export function nightNeed() {
+  let n = 0;
+  for (let h = 22; h < 30; h++) n += branchTrafficAt(h * 60) * 1.5;
+  return Math.round(n);
+}

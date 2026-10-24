@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { useGame } from '../core/store';
-import { BRANCH_ROLES, CONVENIENCE, shelfTotal, uncoveredHours } from '../data/branches';
-import { dailyWage, ROLES, SHIFTS, type Shift } from '../data/staff';
+import { BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, nightNeed, shelfTotal, uncoveredHours } from '../data/branches';
+import { dailyWage, ROLES, type Shift } from '../data/staff';
 import { formatMoney, productById } from '../data/products';
 import { Dropdown } from './Dropdown';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
-  const { branch, level, money, candidates, openBranch, toggleBranch, hireForBranch, fireFromBranch, setBranchShift, closePanel } = useGame();
+  const { branch, level, money, candidates, storage, openBranch, toggleBranch, hireForBranch, fireFromBranch, setBranchShift, closePanel } = useGame();
   const [tab, setTab] = useState<'info' | 'team' | 'hire'>('info');
+  const [pick, setPick] = useState<Record<number, Shift>>({});
 
   if (!branch) {
     return (
@@ -35,6 +36,11 @@ export function BranchPanel() {
   const has = (r: string) => branch.staff.some((s) => s.role === r);
   const wages = branch.staff.reduce((n, s) => n + dailyWage(s), 0);
   const top = Object.entries(branch.shelf).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const stockLeft = Object.values(storage).reduce((n, q) => n + q, 0) + shelfTotal(branch.shelf);
+  const inShift = (sh: Shift) => branch.staff.filter((s) => s.shift === sh);
+  // Ca mặc định khi tuyển: ca đầu tiên còn thiếu thu ngân, đủ hết thì ca đêm
+  const needShift = BRANCH_SHIFTS.find((sh) => !inShift(sh).some((s) => s.role === 'cashier')) ?? 'night';
+  const others = branch.staff.filter((s) => !BRANCH_SHIFTS.includes(s.shift));
 
   return (
     <>
@@ -60,25 +66,34 @@ export function BranchPanel() {
           {has('cashier') && gaps.length > 0 && <p style={st.warn}>⚠️ Không có thu ngân lúc: {gaps.map((h) => `${h}h`).join(', ')}. Thêm người ca đêm/ca chiều.</p>}
           {!has('courier') && !has('stocker') && <p style={st.warn}>⚠️ Chưa có người giao/xếp hàng — kệ sẽ không được chở hàng từ kho chung.</p>}
           {!has('guard') && <p style={st.warn}>⚠️ Không có bảo vệ — ban đêm dễ mất trộm.</p>}
+          {stockLeft < nightNeed() && <p style={st.warn}>⚠️ Kho chung sắp cạn (còn {stockLeft} món, mỗi đêm cần ~{nightNeed()}), đêm nay chi nhánh có thể hết hàng.</p>}
         </div>
       )}
 
       {tab === 'team' && (
-        <div style={{ display: 'grid', gap: 8 }}>
-          {!branch.staff.length && <p style={st.sub}>Chưa có ai. Qua tab Tuyển để thuê.</p>}
-          {branch.staff.map((s) => (
-            <div key={s.id} style={st.card}>
-              <span>{ROLES[s.role].icon} <b>{s.name}</b> · {ROLES[s.role].name} · {'★'.repeat(s.skill)}</span>
-              <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                <Dropdown
-                  value={s.shift}
-                  onChange={(v) => setBranchShift(s.id, v)}
-                  ariaLabel={`Ca làm của ${s.name}`}
-                  options={(Object.keys(SHIFTS) as Shift[]).map((k) => ({ value: k, label: SHIFTS[k].name }))}
-                />
-                <span>{formatMoney(dailyWage(s))}/ngày</span>
-                <button style={st.btn} onClick={() => confirm(`Cho ${s.name} nghỉ việc?`) && fireFromBranch(s.id)}>Cho nghỉ</button>
-              </span>
+        <div style={{ display: 'grid', gap: 10 }}>
+          <p style={st.sub}>Bán 24/7 nên chia 3 ca nối nhau. Ca nào cũng cần 1 thu ngân; ca đêm nên có bảo vệ; có ít nhất 1 người xếp/giao hàng để xe chở hàng từ kho chung.</p>
+          {[...BRANCH_SHIFTS.map((sh) => [sh, BRANCH_SHIFT_NAME[sh], inShift(sh)] as const), ...(others.length ? [['full', 'Ca khác (chưa xếp vào 3 ca)', others] as const] : [])].map(([sh, label, list]) => (
+            <div key={sh} style={st.shift}>
+              <b>🕒 {label}</b>
+              {sh !== 'full' && !list.some((s) => s.role === 'cashier') && <span style={st.warn}>⚠️ Thiếu thu ngân — ca này khách tới không ai bán</span>}
+              {sh === 'night' && !list.some((s) => s.role === 'guard') && <span style={st.warn}>⚠️ Ca đêm chưa có bảo vệ</span>}
+              {!list.length && <span style={st.sub}>Chưa có ai.</span>}
+              {list.map((s) => (
+                <div key={s.id} style={st.card}>
+                  <span>{ROLES[s.role].icon} <b>{s.name}</b> · {ROLES[s.role].name} · {'★'.repeat(s.skill)}</span>
+                  <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <Dropdown
+                      value={s.shift}
+                      onChange={(v) => setBranchShift(s.id, v)}
+                      ariaLabel={`Ca làm của ${s.name}`}
+                      options={BRANCH_SHIFTS.map((k) => ({ value: k, label: BRANCH_SHIFT_NAME[k] }))}
+                    />
+                    <span>{formatMoney(dailyWage(s))}/ngày</span>
+                    <button style={st.btn} onClick={() => confirm(`Cho ${s.name} nghỉ việc?`) && fireFromBranch(s.id)}>Cho nghỉ</button>
+                  </span>
+                </div>
+              ))}
             </div>
           ))}
         </div>
@@ -86,11 +101,19 @@ export function BranchPanel() {
 
       {tab === 'hire' && (
         <div style={{ display: 'grid', gap: 8 }}>
-          <p style={st.sub}>Dùng chung danh sách ứng viên với tiệm chính. Chi nhánh cần: {BRANCH_ROLES.map((r) => `${ROLES[r].icon} ${ROLES[r].name}`).join(', ')}. Nhớ xếp ca đêm (×1.5 lương) để mở xuyên đêm.</p>
+          <p style={st.sub}>Dùng chung danh sách ứng viên với tiệm chính. Chọn ca trước khi thuê — mặc định là ca đang thiếu thu ngân. Ca đêm trả ×1.5 lương.</p>
           {candidates.filter((c) => BRANCH_ROLES.includes(c.role)).map((c) => (
             <div key={c.id} style={st.card}>
               <span>{ROLES[c.role].icon} <b>{c.name}</b> · {ROLES[c.role].name} · {'★'.repeat(c.skill)} · {formatMoney(c.wage)}/ca</span>
-              <button style={st.btn} disabled={branch.staff.length >= CONVENIENCE.maxStaff} onClick={() => hireForBranch(c.id)}>Thuê cho chi nhánh</button>
+              <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Dropdown
+                  value={pick[c.id] ?? needShift}
+                  onChange={(v) => setPick({ ...pick, [c.id]: v })}
+                  ariaLabel={`Ca làm cho ${c.name}`}
+                  options={BRANCH_SHIFTS.map((k) => ({ value: k, label: BRANCH_SHIFT_NAME[k] }))}
+                />
+                <button style={st.btn} disabled={branch.staff.length >= CONVENIENCE.maxStaff} onClick={() => hireForBranch(c.id, pick[c.id] ?? needShift)}>Thuê</button>
+              </span>
             </div>
           ))}
           {!candidates.some((c) => BRANCH_ROLES.includes(c.role)) && <p style={st.sub}>Hết ứng viên phù hợp hôm nay, mai quay lại.</p>}
@@ -109,6 +132,7 @@ const st: Record<string, React.CSSProperties> = {
   badge: { padding: '4px 10px', borderRadius: 999, color: '#fff', fontWeight: 700, fontSize: 12 },
   tabs: { display: 'flex', gap: 6, margin: '4px 0 12px', flexWrap: 'wrap' },
   tab: { padding: '6px 10px', borderRadius: 8, border: 'none', color: '#222', cursor: 'pointer' },
+  shift: { display: 'grid', gap: 6, padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)' },
   card: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: 10, background: '#3a3a4d', borderRadius: 10 },
   primary: { padding: '8px 14px', borderRadius: 8, border: 'none', background: '#f1c40f', color: '#222', fontWeight: 700, cursor: 'pointer' },
   btn: { padding: '6px 10px', borderRadius: 8, border: 'none', background: '#fff', color: '#222', cursor: 'pointer' },

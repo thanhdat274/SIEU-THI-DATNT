@@ -56,6 +56,8 @@ export function applySnapshot(raw: Partial<SaveData>) {
     merged.weatherSeed = seed;
     merged.forecast = forecastFrom(seed, merged.day, merged.weather);
   }
+  // Chi nhánh tiện lợi giờ chia 3 ca (sáng/chiều/đêm): ai đang làm "cả ngày" chuyển sang ca sáng
+  if (merged.branch) merged.branch = { ...merged.branch, staff: merged.branch.staff.map((st) => (st.shift === 'full' ? { ...st, shift: 'morning' } : st)) };
   useGame.setState(merged);
 }
 

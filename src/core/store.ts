@@ -39,7 +39,7 @@ import { giftOfStreak, giftText, spinWheelPrize, type WheelPrize } from '../data
 import { paymentById, type PaymentMethod } from '../data/payments';
 import { COOKED_PRODUCT_IDS, RECIPE_MAP } from '../data/recipes';
 import { playSfx } from './audio';
-import { BRANCH_NIGHT_THEFT, BRANCH_ROLES, CONVENIENCE, branchTrafficAt, isBranchNight, newBranch, onShift, shelfTotal, type BranchState } from '../data/branches';
+import { BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, STOCK_WARN_AT, nightNeed, branchTrafficAt, isBranchNight, newBranch, onShift, shelfTotal, type BranchState } from '../data/branches';
 
 /** Phút trong ngày khi bắt đầu ngày mới (06:00). */
 export const DAY_START = 6 * 60;
@@ -447,7 +447,7 @@ export interface GameState {
   branch: BranchState | null;
   openBranch: () => boolean;
   toggleBranch: () => void;
-  hireForBranch: (id: number) => void;
+  hireForBranch: (id: number, shift: Shift) => void;
   fireFromBranch: (id: number) => void;
   setBranchShift: (id: number, shift: Shift) => void;
 }
@@ -1054,6 +1054,13 @@ export const useGame = create<GameState>((set, get) => {
       }
       set({ minutes });
       if (s.branch && minutes - s.branch.simAt >= 10) set(runBranch(minutes));
+      // Tối: kho chung + hàng trên kệ chi nhánh không đủ bán qua đêm thì nhắc chủ nhập thêm
+      const br = get().branch;
+      if (br?.open && minutes >= STOCK_WARN_AT && br.warnedDay !== s.day) {
+        const have = Object.values(get().storage).reduce((n, q) => n + q, 0) + shelfTotal(br.shelf);
+        set({ branch: { ...br, warnedDay: s.day } });
+        if (have < nightNeed()) get().notify(`⚠️ Kho chung sắp cạn (còn ${have} món, đêm nay cần ~${nightNeed()}), đêm nay chi nhánh có thể hết hàng — nhập thêm hàng!`);
+      }
       updatePhones();
       maybeSurprise(minutes - s.minutes);
       // Các mẻ nấu đang chạy: hết giờ thì thành phẩm vào kho (bày bán như hàng thường)
@@ -1925,14 +1932,15 @@ export const useGame = create<GameState>((set, get) => {
       if (!s.branch.open && !s.branch.staff.some((st) => st.role === 'cashier')) return s.notify('Chủ không đứng bán ở chi nhánh: thuê ít nhất 1 thu ngân trước!');
       set({ branch: { ...s.branch, open: !s.branch.open, simAt: s.minutes } });
     },
-    hireForBranch: (id) => {
+    hireForBranch: (id, shift) => {
       const s = get();
       const c = s.candidates.find((it) => it.id === id);
       if (!c || !s.branch) return;
       if (s.branch.staff.length >= CONVENIENCE.maxStaff) return s.notify('Chi nhánh đã đủ người');
       if (!BRANCH_ROLES.includes(c.role)) return s.notify('Chi nhánh chỉ cần thu ngân, xếp hàng, giao hàng, bảo vệ');
-      set({ branch: { ...s.branch, staff: [...s.branch.staff, c] }, candidates: s.candidates.filter((it) => it.id !== id) });
-      s.notify(`🤝 ${c.name} sẽ làm ở cửa hàng tiện lợi.`);
+      if (!BRANCH_SHIFTS.includes(shift)) return;
+      set({ branch: { ...s.branch, staff: [...s.branch.staff, { ...c, shift }] }, candidates: s.candidates.filter((it) => it.id !== id) });
+      s.notify(`🤝 ${c.name} làm ${BRANCH_SHIFT_NAME[shift]} ở cửa hàng tiện lợi.`);
     },
     fireFromBranch: (id) => {
       const b = get().branch;
