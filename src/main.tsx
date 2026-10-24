@@ -56,7 +56,7 @@ const staff = new StaffManager(scene, grid, shop);
 customers.guardOnDuty = () => staff.guardOnDuty();
 
 const residents = new ResidentManager(scene);
-const branchVisit = new BranchVisit(scene);
+const branchVisit = new BranchVisit(scene, world.convenienceViews);
 const bizView = new BizView(scene, world.home, world.sharedHome, shop);
 const player = new Player(grid);
 scene.add(player.mesh);

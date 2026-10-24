@@ -5,7 +5,8 @@ import { Warehouse, WAREHOUSE_DEPTH } from './warehouse';
 import type { NavGrid } from './navGrid';
 import { SHOP_CENTER_X, SHOP_FRONT_Z, SHOP_TIERS } from '../data/shopTiers';
 import { HOUSE_SIZE, houseDoor, NEIGHBOR_HOUSES } from '../data/phoneOrders';
-import { CONVENIENCE, LANE_X, ROAD2_Z } from '../data/branches';
+import { BRANCH_LAYOUT, CONVENIENCE, LANE_X, ROAD2_Z } from '../data/branches';
+import { FurnitureView } from '../shop/furnitureView';
 
 /** Các điểm trong một phòng ngủ (toạ độ thế giới). */
 export interface RoomSpots { bed: THREE.Vector3; wake: THREE.Vector3; nightstand: THREE.Vector3 }
@@ -31,6 +32,8 @@ export interface World {
   warehouse: Warehouse;
   /** Cửa hàng tiện lợi 24/7, xa tiệm chính, trên con đường thứ hai. */
   convenience: Building;
+  /** Kệ, tủ trong cửa hàng tiện lợi (cùng kiểu với tiệm chính), theo thứ tự BRANCH_LAYOUT. */
+  convenienceViews: FurnitureView[];
   /** Nhà hàng xóm dọc hẻm, theo id trong NEIGHBOR_HOUSES; mỗi nhà có cờ báo đơn chờ giao trước cửa. */
   houses: Map<string, { building: Building; door: THREE.Vector3; marker: THREE.Object3D }>;
 }
@@ -73,7 +76,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   lane.position.set(LANE_X, 0.012, (3 + ROAD2_Z) / 2);
   lane.receiveShadow = true;
   scene.add(road2, lane);
-  const convenience = createConvenienceStore();
+  const { building: convenience, views: convenienceViews } = createConvenienceStore();
   scene.add(convenience.group);
 
   // Nhà riêng
@@ -170,6 +173,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
     shop,
     warehouse,
     convenience,
+    convenienceViews,
   };
 }
 
@@ -310,10 +314,10 @@ function createSharedHome() {
 }
 
 /** Cửa hàng tiện lợi 24/7: mặt kính, mái xanh, biển "24H" phát sáng (mặt tiền nhìn ra con đường thứ hai). */
-function createConvenienceStore(): Building {
+function createConvenienceStore(): { building: Building; views: FurnitureView[] } {
   const b = new Building({
     name: CONVENIENCE.name, width: CONVENIENCE.width, depth: CONVENIENCE.depth, height: 3.4,
-    wallColor: 0xf4f7fb, roofColor: 0x0b8a4a, floorColor: 0xe9ecef, doorStyle: 'glass', airCon: true,
+    wallColor: 0xf4f7fb, roofColor: 0x0b8a4a, floorColor: 0xe9ecef, doorStyle: 'glass', airCon: true, ceilingFan: true,
   });
   b.group.position.set(CONVENIENCE.x, 0, CONVENIENCE.z);
   // Biển hiệu và dải màu thương hiệu trên mặt tiền
@@ -335,33 +339,21 @@ function createConvenienceStore(): Building {
     (m.material as THREE.MeshStandardMaterial).transparent = true;
     b.roof.add(m);
   }
-  // Bên trong: quầy thu ngân bên trái cửa, hai dãy kệ đầy hàng, tủ mát dọc tường sau
-  const mat = (color: number, emissive = 0) => new THREE.MeshStandardMaterial({ color, emissive, emissiveIntensity: emissive ? 0.35 : 0 });
-  const box = (sx: number, sy: number, sz: number, x: number, y: number, z: number, m: THREE.Material, parent: THREE.Object3D = b.interior) => {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), m);
-    mesh.position.set(x, y, z);
-    mesh.castShadow = mesh.receiveShadow = true;
-    parent.add(mesh);
-    return mesh;
-  };
-  box(2.6, 1, 0.8, -6, 0.5, 2, mat(0x0b8a4a));
-  box(2.6, 0.06, 0.9, -6, 1.03, 2, mat(0xf4f7fb));
-  box(0.4, 0.3, 0.3, -5.6, 1.2, 2, mat(0x2c3e50)); // máy tính tiền
-  const goods = [0xe74c3c, 0xf1c40f, 0x3498db, 0x2ecc71, 0xe67e22, 0x9b59b6];
-  for (const z of [-0.5, -3]) {
-    const shelf = new THREE.Group();
-    shelf.position.set(2, 0, z);
-    box(7, 1.6, 0.6, 0, 0.8, 0, mat(0xdfe6e9), shelf);
-    // Hàng bày hai mặt kệ, mỗi tầng một dải màu
-    for (let tier = 0; tier < 3; tier++) for (let i = 0; i < 12; i++) {
-      for (const side of [-0.34, 0.34]) box(0.42, 0.3, 0.12, -3.1 + i * 0.56, 0.35 + tier * 0.5, side, mat(goods[(i + tier) % goods.length]), shelf);
-    }
-    b.interior.add(shelf);
+  // Bên trong dùng đúng kệ, tủ, quầy của tiệm chính; hàng 3D được bày theo hàng đang có ở chi nhánh
+  const views = BRANCH_LAYOUT.map((f) => {
+    const v = new FurnitureView(f.type);
+    v.group.position.set(f.x, 0, f.z);
+    v.group.rotation.y = (f.rot * Math.PI) / 2;
+    b.interior.add(v.group);
+    return v;
+  });
+  // Mặt bằng rộng mở 24/7: thêm dãy đèn sáng phủ cả tiệm (đèn chung của tòa nhà chỉ chiếu góc sau)
+  for (const [x, z] of [[-4.5, 1.5], [1, 1.5], [5.5, 1.5], [-4.5, -2.5], [1, -2.5], [5.5, -2.5]]) {
+    const light = new THREE.PointLight(0xf6f9ff, 2.2, 9, 1.4);
+    light.position.set(x, 3.0, z);
+    const tube = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.06, 0.18), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1.2 }));
+    tube.position.set(x, 3.3, z);
+    b.group.add(light, tube);
   }
-  const fridge = new THREE.Group();
-  fridge.position.set(2, 0, -4.45);
-  box(9, 2.1, 0.7, 0, 1.05, 0, mat(0xbfe6ff, 0x8fd3ff), fridge);
-  for (let i = 0; i < 14; i++) for (let tier = 0; tier < 3; tier++) box(0.4, 0.38, 0.1, -4 + i * 0.62, 0.45 + tier * 0.6, 0.36, mat(goods[(i * 2 + tier) % goods.length]), fridge);
-  b.interior.add(fridge);
-  return b;
+  return { building: b, views };
 }

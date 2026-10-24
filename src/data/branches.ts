@@ -1,5 +1,6 @@
 import { COOKED_PRODUCT_IDS } from './recipes';
 import { productById } from './products';
+import type { FurnitureType } from './furniture';
 import { SHIFTS, type Shift, type Staff, type StaffRole } from './staff';
 
 /** Cửa hàng tiện lợi 24/7: chi nhánh xa tiệm chính, chủ không đứng bán, nhân viên lo hết. */
@@ -186,3 +187,19 @@ export function pickWeighted(ids: string[], minute: number): string {
   for (let i = 0; i < ids.length; i++) if ((r -= w[i]) <= 0) return ids[i];
   return ids[ids.length - 1];
 }
+
+/**
+ * Bố trí cố định trong cửa hàng tiện lợi (toạ độ tính từ tâm tòa nhà, mặt tiền ở +z, cửa ở x = 0).
+ * rot giống tiệm chính: 0 = mặt kệ nhìn ra +z (phía cửa), 2 = nhìn vào trong.
+ */
+export const BRANCH_LAYOUT: { type: FurnitureType; x: number; z: number; rot: number }[] = [
+  { type: 'checkout', x: -5.6, z: 2.1, rot: 0 },
+  // Dãy kệ siêu thị hai mặt giữa tiệm
+  { type: 'bigShelf', x: 1.4, z: 0.6, rot: 0 }, { type: 'bigShelf', x: 4.0, z: 0.6, rot: 0 }, { type: 'bigShelf', x: 6.6, z: 0.6, rot: 0 },
+  { type: 'bigShelf', x: 1.4, z: -0.05, rot: 2 }, { type: 'bigShelf', x: 4.0, z: -0.05, rot: 2 }, { type: 'bigShelf', x: 6.6, z: -0.05, rot: 2 },
+  // Tủ mát dọc tường sau, tủ đông gần quầy
+  { type: 'fridge', x: 0.2, z: -4.3, rot: 0 }, { type: 'fridge', x: 1.5, z: -4.3, rot: 0 }, { type: 'fridge', x: 2.8, z: -4.3, rot: 0 },
+  { type: 'fridge', x: 4.1, z: -4.3, rot: 0 }, { type: 'fridge', x: 5.4, z: -4.3, rot: 0 }, { type: 'fridge', x: 6.7, z: -4.3, rot: 0 },
+  { type: 'freezer', x: -5.4, z: -3.6, rot: 0 },
+  { type: 'bigShelf', x: -6.5, z: -1.2, rot: 1 },
+];
