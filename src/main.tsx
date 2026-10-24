@@ -19,6 +19,7 @@ import { CustomerManager } from './agents/customers';
 import { Player } from './agents/player';
 import { StaffManager } from './agents/staff';
 import { ResidentManager } from './agents/residents';
+import { BranchVisit } from './agents/branchVisit';
 import { BizView } from './render/bizView';
 import { CameraController } from './render/cameraController';
 import { InteriorView } from './render/interiorView';
@@ -55,6 +56,7 @@ const staff = new StaffManager(scene, grid, shop);
 customers.guardOnDuty = () => staff.guardOnDuty();
 
 const residents = new ResidentManager(scene);
+const branchVisit = new BranchVisit(scene);
 const bizView = new BizView(scene, world.home, world.sharedHome, shop);
 const player = new Player(grid);
 scene.add(player.mesh);
@@ -379,6 +381,10 @@ renderer.setAnimationLoop(() => {
         * (hasUpgrade(useGame.getState().biz, 'pos') ? 1.5 : 1));
     }
     if (!guest) residents.update(dt * speed);
+    // Cửa hàng tiện lợi: chỉ dựng nhân vật khi chủ ghé; chủ đứng trong tiệm thì tự bán được khi thiếu thu ngân
+    if (!guest) branchVisit.update(dt * speed, player.position);
+    const atBranch = world.convenience.contains(player.position.x, player.position.z);
+    if (atBranch !== state.atBranch) useGame.setState({ atBranch });
     updateCoop(dt);
     updateStatus();
   }
@@ -402,7 +408,7 @@ renderer.setAnimationLoop(() => {
   const hour = (useGame.getState().minutes / 60) % 24;
   const lamp = THREE.MathUtils.clamp(Math.max(hour - 17, 6.5 - hour), 0, 1);
   const people = [player.position, ...customers.customers.map((c) => c.position), ...[...staff.workers.values()].map((w) => w.position)];
-  people.push(...partnerPositions());
+  people.push(...partnerPositions(), ...branchVisit.people);
   // Cờ giao hàng: hiện trước cửa nhà có đơn đang mang đi, hộp hàng nhấp nhô cho dễ thấy
   const waiting = new Set(g.phoneOrders.filter((o) => o.status === 'carrying').map((o) => o.houseId));
   const bob = Math.sin(performance.now() / 300) * 0.12;

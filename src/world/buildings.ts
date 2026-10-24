@@ -27,7 +27,8 @@ export interface BuildingOptions {
 export class Building {
   group = new THREE.Group();
   interior = new THREE.Group();
-  private roof: THREE.Group;
+  /** Mái (mờ đi khi nhìn vào trong); đồ gắn mặt tiền như biển hiệu cũng gắn vào đây để mờ theo. */
+  readonly roof: THREE.Group;
   private roofMat: THREE.MeshStandardMaterial;
   /** Hai đầu hồi tam giác dưới mái, sơn cùng màu tường. */
   private gable: THREE.Mesh;

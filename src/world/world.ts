@@ -329,6 +329,39 @@ function createConvenienceStore(): Building {
   h24.position.set(3.6, 3.9, CONVENIENCE.depth / 2 + 0.12);
   const stripe = new THREE.Mesh(new THREE.BoxGeometry(CONVENIENCE.width, 0.25, 0.1), new THREE.MeshStandardMaterial({ color: 0xff7a00 }));
   stripe.position.set(0, 3.25, CONVENIENCE.depth / 2 + 0.06);
-  b.group.add(sign, h24, stripe);
+  // Gắn vào mái để nhìn vào trong thì biển mờ theo mái, không che quầy kệ
+  for (const m of [sign, h24, stripe]) {
+    m.position.y -= b.roof.position.y;
+    (m.material as THREE.MeshStandardMaterial).transparent = true;
+    b.roof.add(m);
+  }
+  // Bên trong: quầy thu ngân bên trái cửa, hai dãy kệ đầy hàng, tủ mát dọc tường sau
+  const mat = (color: number, emissive = 0) => new THREE.MeshStandardMaterial({ color, emissive, emissiveIntensity: emissive ? 0.35 : 0 });
+  const box = (sx: number, sy: number, sz: number, x: number, y: number, z: number, m: THREE.Material, parent: THREE.Object3D = b.interior) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), m);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = mesh.receiveShadow = true;
+    parent.add(mesh);
+    return mesh;
+  };
+  box(2.6, 1, 0.8, -6, 0.5, 2, mat(0x0b8a4a));
+  box(2.6, 0.06, 0.9, -6, 1.03, 2, mat(0xf4f7fb));
+  box(0.4, 0.3, 0.3, -5.6, 1.2, 2, mat(0x2c3e50)); // máy tính tiền
+  const goods = [0xe74c3c, 0xf1c40f, 0x3498db, 0x2ecc71, 0xe67e22, 0x9b59b6];
+  for (const z of [-0.5, -3]) {
+    const shelf = new THREE.Group();
+    shelf.position.set(2, 0, z);
+    box(7, 1.6, 0.6, 0, 0.8, 0, mat(0xdfe6e9), shelf);
+    // Hàng bày hai mặt kệ, mỗi tầng một dải màu
+    for (let tier = 0; tier < 3; tier++) for (let i = 0; i < 12; i++) {
+      for (const side of [-0.34, 0.34]) box(0.42, 0.3, 0.12, -3.1 + i * 0.56, 0.35 + tier * 0.5, side, mat(goods[(i + tier) % goods.length]), shelf);
+    }
+    b.interior.add(shelf);
+  }
+  const fridge = new THREE.Group();
+  fridge.position.set(2, 0, -4.45);
+  box(9, 2.1, 0.7, 0, 1.05, 0, mat(0xbfe6ff, 0x8fd3ff), fridge);
+  for (let i = 0; i < 14; i++) for (let tier = 0; tier < 3; tier++) box(0.4, 0.38, 0.1, -4 + i * 0.62, 0.45 + tier * 0.6, 0.36, mat(goods[(i * 2 + tier) % goods.length]), fridge);
+  b.interior.add(fridge);
   return b;
 }
