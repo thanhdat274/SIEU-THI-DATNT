@@ -159,6 +159,8 @@ export const LOAN_UNLOCK = 5;
 /** Lãi mỗi ngày trên tiền gốc còn nợ. */
 export const LOAN_DAILY_RATE = 0.008;
 export const LOAN_DAYS = 30;
+/** Gói vay nhỏ nhất (cũng là gói vay gấp khi chưa tới cấp mở vay). */
+export const LOAN_OPTIONS_MIN = 1000000;
 export const loanOptions = (level: number) => [1000000, 3000000, 10000000].filter((_, i) => level >= [5, 15, 30][i]);
 /** Hạn mức nợ tối đa theo cấp: bằng gói vay lớn nhất đã mở. */
 export const loanLimit = (level: number) => Math.max(0, ...loanOptions(level));
@@ -167,6 +169,16 @@ export const loanInterest = (principal: number) => Math.round((principal * LOAN_
 /** Các khoản còn vay thêm được khi đang nợ: không vượt hạn mức. */
 export const loanTopUps = (level: number, principal: number) =>
   [500000, 1000000, 3000000].filter((a) => principal + a <= loanLimit(level));
+/** Khoản vay nhỏ nhất đủ bù `need` đồng; null nếu không còn vay được. Chưa tới cấp mở vay thì chỉ có gói vay gấp. */
+export function loanToCover(level: number, principal: number | null, need: number): { amount: number; emergency: boolean } | null {
+  if (principal != null) {
+    const a = loanTopUps(level, principal).find((x) => x >= need);
+    return a ? { amount: a, emergency: false } : null;
+  }
+  if (level < LOAN_UNLOCK) return need <= LOAN_OPTIONS_MIN ? { amount: LOAN_OPTIONS_MIN, emergency: true } : null;
+  const a = loanOptions(level).find((x) => x >= need);
+  return a ? { amount: a, emergency: false } : null;
+}
 
 export interface Hui {
   /** Tiền góp mỗi ngày và số "chân" (người chơi, mỗi người hốt một lần). */

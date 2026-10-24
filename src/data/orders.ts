@@ -1,6 +1,7 @@
 import { festivalOn } from './calendar';
 import { productById } from './products';
 import { regularById, type RegularProgress } from './regulars';
+import { orderTotal, supplierById, supplierSells } from './suppliers';
 
 /** Đơn tiệc/đơn đặt trước: hàng xóm đặt số lượng lớn, giao từ kho trước hạn thì được thưởng. */
 export interface PartyOrderDef {
@@ -239,6 +240,17 @@ export function offerForDay(seed: number, day: number, level: number, regulars: 
   if (!pool.length || day < 2 || roll(seed, day, 7) > 0.35) return null;
   const def = pool[Math.floor(roll(seed, day, 13) * pool.length)];
   return { id: def.id, dueDay: day + def.days - 1, accepted: false };
+}
+
+/**
+ * Nhập gấp phần còn thiếu của đơn ở Đại lý đầu ngõ (có hàng ngay, giá chuẩn trong ngày).
+ * `ok` = false khi có món đại lý không bán (món nhà làm phải tự nấu).
+ */
+export function rushQuote(def: PartyOrderDef, storage: Record<string, number>, day: number) {
+  const sup = supplierById('daily');
+  const items = Object.fromEntries(missingForOrder(def, storage).map((m) => [m.id, m.need]));
+  const ok = Object.keys(items).every((id) => supplierSells(sup, id));
+  return { items, cost: ok ? orderTotal(sup, items, day) : 0, ok };
 }
 
 /** Thiếu những món nào trong kho để giao đơn. */

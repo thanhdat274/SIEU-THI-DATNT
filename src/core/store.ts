@@ -10,7 +10,7 @@ import { describeDay, forecastFrom, newWeatherSeed, WEATHER, type Weather } from
 import { orderTotal, supplierById } from '../data/suppliers';
 import { ageLots, fitLots, mergeLots, nearestLife, needsCold, tierMarkdown, shelfLife, spoilRate, takeOldest, type Lot } from '../data/freshness';
 import { regularById, regularCheckout, regularFriendship, regularWalkout, RESERVE_BONUS, RESERVE_MISS_LOSS, type RegularProgress, type Reservation } from '../data/regulars';
-import { missingForOrder, offerForDay, orderValue, partyOrderById, STORY_ORDER_FRIEND_GAIN, STORY_ORDER_FRIEND_LOSS, type ActiveOrder } from '../data/orders';
+import { missingForOrder, offerForDay, rushQuote, orderValue, partyOrderById, STORY_ORDER_FRIEND_GAIN, STORY_ORDER_FRIEND_LOSS, type ActiveOrder } from '../data/orders';
 import { dayEffects, FESTIVALS, morningNews, festivalOn, festivalStock } from '../data/calendar';
 import { happyHourActive, type HappyHour } from '../data/rhythm';
 import { DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS, FORGIVE_FRIEND_GAIN, REMIND_FRIEND_LOSS, WRITE_OFF_FRIEND_LOSS, type Debt } from '../data/credit';
@@ -370,6 +370,8 @@ export interface GameState {
   declineOrder: () => void;
   /** Giao đơn từ kho. */
   deliverOrder: () => boolean;
+  /** Nhập gấp phần thiếu ở đại lý rồi giao đơn ngay. */
+  rushDeliverOrder: () => boolean;
   /** Kỹ năng đã học. */
   skills: SkillId[];
   learnSkill: (id: SkillId) => void;
@@ -1531,6 +1533,26 @@ export const useGame = create<GameState>((set, get) => {
       s.notify(`🎉 Giao xong "${def.title}": +${formatMoney(pay)} · +${def.xp} XP${def.regular ? ` · 💛 +${STORY_ORDER_FRIEND_GAIN} thân thiết với ${def.from}` : ''}`);
       get().checkTitles();
       return true;
+    },
+    rushDeliverOrder: () => {
+      const s = get();
+      const def = s.order && partyOrderById(s.order.id);
+      if (!def || !s.order?.accepted) return false;
+      const q = rushQuote(def, s.storage, s.day);
+      if (!q.ok) {
+        s.notify('Đơn có món nhà làm, đại lý không bán: phải tự nấu');
+        return false;
+      }
+      if (s.money < q.cost) {
+        s.notify(`Cần ${formatMoney(q.cost)} để nhập gấp, còn thiếu ${formatMoney(q.cost - s.money)}`);
+        return false;
+      }
+      // Hàng nhập gấp đi thẳng vào đơn, không cần chỗ trống trong kho
+      const k = copyStock(s);
+      for (const [id, qty] of Object.entries(q.items)) putStock(k, id, qty);
+      set({ ...k, money: s.money - q.cost, stats: { ...s.stats, spent: s.stats.spent + q.cost } });
+      s.notify(`🏠 Nhập gấp ở đại lý: -${formatMoney(q.cost)}`);
+      return get().deliverOrder();
     },
     communitySale: (ids) => {
       const s = get();

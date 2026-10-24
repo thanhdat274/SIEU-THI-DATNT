@@ -1,7 +1,7 @@
 import {
   ACHIEVEMENTS, adById, activeAds, BREAKFAST, closeWeek, COUNTER_RETAILIATE, COUNTER_RETAILIATE_BUFF, COUNTER_STREAK_MAX,
   counterById, emptyWeek, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK,
-  LOAN_DAILY_RATE, LOAN_DAYS, LOAN_UNLOCK, loanInterest, loanOptions, loanTopUps, petActive, petDef, PETS, PRICE_WAR_MIN_SALES, RIVAL_BEAT_REWARD,
+  LOAN_DAILY_RATE, LOAN_DAYS, LOAN_UNLOCK, loanInterest, LOAN_OPTIONS_MIN, loanOptions, loanTopUps, petActive, petDef, PETS, PRICE_WAR_MIN_SALES, RIVAL_BEAT_REWARD,
   RIVAL_BEAT_XP, RIVAL_COOLDOWN, RIVAL_NAMES, RIVAL_START, RIVAL_UNLOCK, rivalNightly, STORIES, SURPRISE_CHANCE, SURPRISES,
   VEHICLES, WEEK_DAYS, type AchievementCtx, type BizState, type CounterTactic, type PetKind, type Vehicle,
 } from '../data/biz';
@@ -79,9 +79,16 @@ export function redeemLoyalty(prices: number[]) {
 
 // ───── Vay vốn, hụi ─────
 
-export function takeLoan(amount: number) {
+/** `emergency`: vay gấp để nhập hàng giao đơn, được vay gói nhỏ nhất kể cả khi chưa tới cấp mở vay. */
+export function takeLoan(amount: number, emergency = false) {
   const s = S();
-  if (s.level < LOAN_UNLOCK) return;
+  if (s.level < LOAN_UNLOCK && !(emergency && !s.biz.loan && amount === LOAN_OPTIONS_MIN)) return;
+  if (s.level < LOAN_UNLOCK) {
+    patch({ loan: { principal: amount, takenDay: s.day, dueDay: s.day + LOAN_DAYS, interestPaid: 0 } });
+    useGame.setState({ money: S().money + amount });
+    s.notify(`🏦 Vay gấp ${formatMoney(amount)} để nhập hàng, lãi ${(LOAN_DAILY_RATE * 100).toFixed(1)}%/ngày, hạn trả ngày ${s.day + LOAN_DAYS}`);
+    return;
+  }
   const loan = s.biz.loan;
   if (loan) {
     // Vay thêm: cộng vào gốc, hạn trả tính lại từ hôm nay

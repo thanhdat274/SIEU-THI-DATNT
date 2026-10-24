@@ -1,9 +1,11 @@
 import { questContext, useGame } from '../core/store';
+import { takeLoan } from '../core/biz';
+import { loanToCover } from '../data/biz';
 import { goalLocked, goalLockText, upcomingGoals, type CommunityGoal } from '../data/community';
 import { reputationOf } from '../data/reputation';
 import { dailyQuests, STORY_STEPS, storyQuest, type Quest } from '../data/quests';
 import { formatMoney, productById } from '../data/products';
-import { missingForOrder, orderValue, partyOrderById, STORY_ORDER_FRIEND_GAIN, STORY_ORDER_FRIEND_LOSS } from '../data/orders';
+import { missingForOrder, orderValue, rushQuote, partyOrderById, STORY_ORDER_FRIEND_GAIN, STORY_ORDER_FRIEND_LOSS } from '../data/orders';
 
 /** Sổ nhiệm vụ: ba việc mỗi ngày và một bước cốt truyện, xong thì bấm nhận thưởng. */
 export function QuestPanel() {
@@ -88,10 +90,13 @@ function CommunityCard({ goal, inDays }: { goal: CommunityGoal; inDays: number }
 
 /** Đơn tiệc đang mời hoặc đã nhận: giao bằng hàng trong kho. */
 function OrderCard() {
-  const { order, storage, day, acceptOrder, declineOrder, deliverOrder } = useGame();
+  const { order, storage, day, money, level, biz, acceptOrder, declineOrder, deliverOrder, rushDeliverOrder } = useGame();
   const def = order && partyOrderById(order.id);
   if (!order || !def) return null;
   const missing = missingForOrder(def, storage);
+  const rush = rushQuote(def, storage, day);
+  const short = rush.cost - money;
+  const loan = short > 0 ? loanToCover(level, biz.loan?.principal ?? null, short) : null;
   const left = order.dueDay - day;
   return (
     <>
@@ -118,6 +123,29 @@ function OrderCard() {
             </span>
           )}
         </div>
+        {order.accepted && missing.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, fontSize: 12, background: '#2f2f40', borderRadius: 6, padding: '6px 8px' }}>
+            {!rush.ok ? (
+              <span style={{ opacity: 0.8 }}>Có món nhà làm, đại lý không bán: phải tự nấu rồi giao từ kho.</span>
+            ) : (
+              <>
+                <span>
+                  Nhập gấp phần thiếu ở 🏠 đại lý: <b>{formatMoney(rush.cost)}</b>
+                  {short > 0 && <span style={{ color: '#ff8a7a' }}> · thiếu {formatMoney(short)}</span>}
+                </span>
+                {short <= 0 ? (
+                  <button style={{ ...btn, background: '#2ecc71', color: '#fff', whiteSpace: 'nowrap' }} onClick={rushDeliverOrder}>⚡ Nhập gấp & giao</button>
+                ) : loan ? (
+                  <button style={{ ...btn, background: '#f1c40f', whiteSpace: 'nowrap' }} onClick={() => takeLoan(loan.amount, loan.emergency)}>
+                    🏦 Vay {formatMoney(loan.amount)} để nhập
+                  </button>
+                ) : (
+                  <span style={{ opacity: 0.7 }}>Đã chạm hạn mức vay</span>
+                )}
+              </>
+            )}
+          </div>
+        )}
         {order.accepted && <div style={{ fontSize: 11, opacity: 0.65 }}>Lỡ hẹn thì người đặt chê 1 sao{def.regular && ` và giảm ${STORY_ORDER_FRIEND_LOSS} thân thiết`}.</div>}
       </div>
     </>
