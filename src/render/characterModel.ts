@@ -149,8 +149,22 @@ function addJobHeadwear(job: JobArchetype, headGroup: THREE.Group, s: number) {
   } else if (job === 'nurse') {
     add(new THREE.Mesh(new THREE.BoxGeometry(0.3 * s, 0.12 * s, 0.14 * s), mat(0xffffff, 0.7)), 0, 0.42, 0.1);
     for (const [w, h] of [[0.08, 0.025], [0.025, 0.08]]) add(new THREE.Mesh(new THREE.BoxGeometry(w * s, h * s, 0.01), mat(0xe74c3c)), 0, 0.42, 0.175);
-    // Khẩu trang y tế che miệng
-    add(new THREE.Mesh(new THREE.BoxGeometry(0.34 * s, 0.16 * s, 0.05), mat(0x9fd3e8, 0.8)), 0, -0.12, 0.35);
+    // Khẩu trang y tế: tấm cong ôm nửa dưới mặt (che mũi, miệng), có nếp gấp và dây đeo ra sau tai.
+    // Bán kính phải lớn hơn chóp mũi (≈0.42) để mũi, miệng nằm gọn bên trong; nới ngang theo đầu (×1.05)
+    const maskMat = new THREE.MeshStandardMaterial({ color: 0xa8d8ea, roughness: 0.9, side: THREE.DoubleSide });
+    const maskR = 0.43;
+    add(new THREE.Mesh(new THREE.SphereGeometry(maskR * s, 24, 10, Math.PI / 2 - 0.8, 1.6, 1.6, 0.55), maskMat), 0, 0, 0).scale.x = 1.05;
+    for (const t of [1.8, 1.98]) {
+      const pleat = add(new THREE.Mesh(new THREE.TorusGeometry(maskR * Math.sin(t) * s + 0.004, 0.006 * s, 4, 24, 1.5), mat(0x86c1d6, 0.9)), 0, maskR * Math.cos(t), 0);
+      pleat.rotation.set(Math.PI / 2, 0, -Math.PI / 2 - 0.75);
+      pleat.scale.x = 1.05;
+    }
+    for (const side of [-1, 1]) {
+      for (const y of [-0.03, -0.2]) {
+        const strap = add(new THREE.Mesh(new THREE.BoxGeometry(0.012 * s, 0.012 * s, 0.32 * s), mat(0xf5f6fa, 0.8)), side * 0.36, y, 0.145);
+        strap.rotation.y = -side * 0.39;
+      }
+    }
   } else if (job === 'security_guard') {
     add(new THREE.Mesh(new THREE.CylinderGeometry(0.44 * s, 0.38 * s, 0.16, 18), mat(0x2f3b2a)), 0, 0.38, 0);
     add(new THREE.Mesh(new THREE.CylinderGeometry(0.4 * s, 0.4 * s, 0.02, 16, 1, false, -Math.PI * 0.3, Math.PI * 0.6), mat(0x111111, 0.2)), 0, 0.31, 0.1);
@@ -243,7 +257,21 @@ function addJobGear(job: JobArchetype, outfit: THREE.Group, rightHand: THREE.Gro
     trowel.add(blade, new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.1, 6), mat(0x8b4513)));
     hold(rightHand, trowel);
   } else if (job === 'nurse') {
-    hold(leftHand, new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.24, 0.02), mat(0x74b9ff)), 0.1);
+    // Bìa kẹp hồ sơ: tấm gỗ, tờ giấy có dòng kẻ, kẹp kim loại ở mép trên
+    const clipboard = new THREE.Group();
+    clipboard.add(new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.23, 0.012), mat(0xb5835a, 0.7)));
+    const paper = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.18, 0.004), mat(0xffffff, 0.9));
+    paper.position.set(0, -0.015, 0.008);
+    clipboard.add(paper);
+    for (let i = 0; i < 4; i++) {
+      const line = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.006, 0.002), mat(0x95a5a6));
+      line.position.set(0, -0.03 - i * 0.03, 0.011);
+      clipboard.add(line);
+    }
+    const clip = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.03, 0.02), mat(0xb2bec3, 0.3, 0.8));
+    clip.position.set(0, 0.1, 0.012);
+    clipboard.add(clip);
+    hold(leftHand, clipboard, 0.1);
     wear(new THREE.TorusGeometry(0.14, 0.015, 6, 16, Math.PI), 0x2d3436, 0, 0.84, 0.18).rotation.z = Math.PI; // Ống nghe
   } else if (job === 'shipper') {
     wear(new THREE.BoxGeometry(0.42, 0.42, 0.34), 0x00a651, 0, 0.78, -0.36); // Thùng giao hàng
@@ -664,6 +692,7 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
   mouth.rotation.x = Math.PI * 0.5;
   mouth.rotation.z = Math.PI * 0.65;
   faceGroup.add(mouth);
+  if (archetype === 'nurse') mouth.visible = false; // Khẩu trang che miệng
 
   // Râu bạc cho Cụ ông / Bác tổ trưởng
   if (archetype === 'elder_man') {
