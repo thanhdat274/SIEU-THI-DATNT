@@ -1,7 +1,7 @@
 import {
   ACHIEVEMENTS, adById, activeAds, BREAKFAST, closeWeek, COUNTER_RETAILIATE, COUNTER_RETAILIATE_BUFF, COUNTER_STREAK_MAX,
   counterById, emptyWeek, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK,
-  LOAN_DAILY_RATE, LOAN_DAYS, LOAN_UNLOCK, loanOptions, petActive, petDef, PETS, PRICE_WAR_MIN_SALES, RIVAL_BEAT_REWARD,
+  LOAN_DAILY_RATE, LOAN_DAYS, LOAN_UNLOCK, loanInterest, loanOptions, loanTopUps, petActive, petDef, PETS, PRICE_WAR_MIN_SALES, RIVAL_BEAT_REWARD,
   RIVAL_BEAT_XP, RIVAL_COOLDOWN, RIVAL_NAMES, RIVAL_START, RIVAL_UNLOCK, rivalNightly, STORIES, SURPRISE_CHANCE, SURPRISES,
   VEHICLES, WEEK_DAYS, type AchievementCtx, type BizState, type CounterTactic, type PetKind, type Vehicle,
 } from '../data/biz';
@@ -81,8 +81,18 @@ export function redeemLoyalty(prices: number[]) {
 
 export function takeLoan(amount: number) {
   const s = S();
-  if (s.level < LOAN_UNLOCK || s.biz.loan || !loanOptions(s.level).includes(amount)) return;
-  patch({ loan: { principal: amount, takenDay: s.day, dueDay: s.day + LOAN_DAYS } });
+  if (s.level < LOAN_UNLOCK) return;
+  const loan = s.biz.loan;
+  if (loan) {
+    // Vay thêm: cộng vào gốc, hạn trả tính lại từ hôm nay
+    if (!loanTopUps(s.level, loan.principal).includes(amount)) return;
+    patch({ loan: { ...loan, principal: loan.principal + amount, dueDay: s.day + LOAN_DAYS } });
+    useGame.setState({ money: S().money + amount });
+    s.notify(`🏦 Vay thêm ${formatMoney(amount)}, nợ gốc ${formatMoney(loan.principal + amount)}, hạn trả dời tới ngày ${s.day + LOAN_DAYS}`);
+    return;
+  }
+  if (!loanOptions(s.level).includes(amount)) return;
+  patch({ loan: { principal: amount, takenDay: s.day, dueDay: s.day + LOAN_DAYS, interestPaid: 0 } });
   useGame.setState({ money: S().money + amount });
   s.notify(`🏦 Vay ${formatMoney(amount)}, lãi ${(LOAN_DAILY_RATE * 100).toFixed(1)}%/ngày, hạn trả ngày ${s.day + LOAN_DAYS}`);
 }
@@ -421,8 +431,9 @@ export function bizEndOfDay(s: GameState, stats: DayStats): { biz: BizState; mon
 
   // Lãi vay, quá hạn
   if (b.loan) {
-    const interest = Math.round((b.loan.principal * LOAN_DAILY_RATE) / 100) * 100;
+    const interest = loanInterest(b.loan.principal);
     money -= interest;
+    b.loan = { ...b.loan, interestPaid: (b.loan.interestPaid ?? 0) + interest };
     if (day + 1 > b.loan.dueDay) {
       // Quá hạn: ngân hàng trừ thẳng vào tài khoản
       money -= b.loan.principal;

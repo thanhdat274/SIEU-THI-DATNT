@@ -148,12 +148,25 @@ export const adTargets = (ads: ActiveAd[], day: number) =>
 
 // ───────────────────────── Vay vốn & hụi ─────────────────────────
 
-export interface Loan { principal: number; takenDay: number; dueDay: number }
+export interface Loan {
+  principal: number;
+  takenDay: number;
+  dueDay: number;
+  /** Tổng lãi đã trả từ lúc vay (bản lưu cũ không có thì coi như 0). */
+  interestPaid?: number;
+}
 export const LOAN_UNLOCK = 5;
 /** Lãi mỗi ngày trên tiền gốc còn nợ. */
 export const LOAN_DAILY_RATE = 0.008;
 export const LOAN_DAYS = 30;
 export const loanOptions = (level: number) => [1000000, 3000000, 10000000].filter((_, i) => level >= [5, 15, 30][i]);
+/** Hạn mức nợ tối đa theo cấp: bằng gói vay lớn nhất đã mở. */
+export const loanLimit = (level: number) => Math.max(0, ...loanOptions(level));
+/** Lãi trừ mỗi tối, làm tròn trăm đồng như ngân hàng thu thật. */
+export const loanInterest = (principal: number) => Math.round((principal * LOAN_DAILY_RATE) / 100) * 100;
+/** Các khoản còn vay thêm được khi đang nợ: không vượt hạn mức. */
+export const loanTopUps = (level: number, principal: number) =>
+  [500000, 1000000, 3000000].filter((a) => principal + a <= loanLimit(level));
 
 export interface Hui {
   /** Tiền góp mỗi ngày và số "chân" (người chơi, mỗi người hốt một lần). */

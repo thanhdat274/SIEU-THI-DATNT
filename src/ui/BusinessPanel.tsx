@@ -7,7 +7,7 @@ import { hasUpgrade, UPGRADES } from '../data/upgrades';
 import { HistoryChart } from './Panels';
 import {
   ACHIEVEMENTS, activeAds, ADS, BREAKFAST, COUNTERS, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, LOAN_DAILY_RATE,
-  LOAN_UNLOCK, loanOptions, LOYALTY_OPTIONS, LOYALTY_UNLOCK, petActive, PETS, RIVAL_UNLOCK, rivalTrafficFactor, VEHICLES, WEEK_DAYS,
+  LOAN_UNLOCK, loanInterest, loanLimit, loanOptions, loanTopUps, LOYALTY_OPTIONS, LOYALTY_UNLOCK, petActive, PETS, RIVAL_UNLOCK, rivalTrafficFactor, VEHICLES, WEEK_DAYS,
 } from '../data/biz';
 import { formatMoney, productById } from '../data/products';
 import { BILL_RUSH_DAYS, dayOfMonth, SERVICE_BUY_ALONG, SERVICES } from '../data/services';
@@ -186,12 +186,38 @@ function Money() {
         <b>🏦 Vay ngân hàng</b>
         {level < LOAN_UNLOCK ? <div style={sub}>Mở ở cấp {LOAN_UNLOCK}.</div> : loan ? (
           <>
-            <div>Đang nợ <b>{formatMoney(loan.principal)}</b> · lãi {formatMoney(Math.round(loan.principal * LOAN_DAILY_RATE))}/ngày · hạn ngày {loan.dueDay} (còn {loan.dueDay - day} ngày)</div>
-            <div style={{ marginTop: 4 }}>
+            {(() => {
+              const daily = loanInterest(loan.principal);
+              const left = Math.max(0, loan.dueDay - day);
+              const interestLeft = daily * left;
+              const row = { display: 'flex', justifyContent: 'space-between', gap: 12 };
+              return (
+                <div style={{ display: 'grid', gap: 2, marginTop: 4, maxWidth: 420 }}>
+                  <div style={row}><span>Nợ gốc</span><b>{formatMoney(loan.principal)}</b></div>
+                  <div style={row}><span>Lãi mỗi tối ({(LOAN_DAILY_RATE * 100).toFixed(1)}%)</span><span>{formatMoney(daily)}</span></div>
+                  <div style={row}><span>Lãi đã trả</span><span>{formatMoney(loan.interestPaid ?? 0)}</span></div>
+                  <div style={row}><span>Lãi còn phải trả nếu giữ tới hạn ({left} ngày)</span><span>{formatMoney(interestLeft)}</span></div>
+                  <div style={{ ...row, borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: 2 }}>
+                    <span>Tổng còn phải trả tới hạn (ngày {loan.dueDay})</span><b>{formatMoney(loan.principal + interestLeft)}</b>
+                  </div>
+                </div>
+              );
+            })()}
+            <div style={{ marginTop: 6 }}>
               <button style={{ ...btn, marginLeft: 0 }} onClick={() => repayLoan(Math.min(loan.principal, 500000))}>Trả 500.000đ</button>
-              <button style={btn} onClick={() => repayLoan()}>Trả hết</button>
+              <button style={btn} onClick={() => repayLoan()}>Trả hết gốc {formatMoney(loan.principal)}</button>
             </div>
-            <div style={sub}>Quá hạn ngân hàng sẽ tự trừ hết tiền gốc vào tài khoản.</div>
+            {loanTopUps(level, loan.principal).length > 0 ? (
+              <div style={{ marginTop: 4 }}>
+                {loanTopUps(level, loan.principal).map((a) => <button key={a} style={{ ...btn, marginLeft: 0, marginRight: 6 }} onClick={() => takeLoan(a)}>Vay thêm {formatMoney(a)}</button>)}
+              </div>
+            ) : (
+              <div style={sub}>Đã chạm hạn mức {formatMoney(loanLimit(level))} ở cấp này.</div>
+            )}
+            <div style={sub}>
+              Lãi trừ vào tiền mỗi tối, trả bớt gốc thì lãi giảm theo. Vay thêm sẽ dời hạn trả thành 30 ngày kể từ hôm nay; hạn mức {formatMoney(loanLimit(level))}.
+              Quá hạn ngân hàng sẽ tự trừ hết tiền gốc vào tài khoản.
+            </div>
           </>
         ) : (
           <>
