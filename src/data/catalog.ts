@@ -13,6 +13,10 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_banh_quy', 'Bánh quy', 'dry', 9000, 12000, 0xcb664d, 3),
   p('x_que_cay', 'Que cay', 'dry', 3000, 5000, 0x8e4dcb, 3),
   p('x_pin', 'Pin', 'household', 8000, 10000, 0x4d66cb, 7),
+  // Hàng hay bán ban đêm ở cửa hàng tiện lợi
+  p('x_bao_cao_su', 'Bao cao su', 'household', 25000, 35000, 0x4d7bcb, 10),
+  p('x_thuoc_cam', 'Thuốc cảm', 'household', 12000, 18000, 0xcb4d4d, 10),
+  p('x_com_nam', 'Cơm nắm', 'cold', 9000, 15000, 0xe8e2c8, 10),
   p('x_the_cao', 'Thẻ cào', 'household', 10000, 12000, 0x4da9cb, 5),
   p('x_gas_mini', 'Gas mini', 'household', 18000, 23000, 0xcbc04d, 5),
   p('x_bat_lua', 'Bật lửa', 'household', 3000, 5000, 0xcbba4d, 5),

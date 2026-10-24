@@ -1,3 +1,5 @@
+import { COOKED_PRODUCT_IDS } from './recipes';
+import { productById } from './products';
 import { SHIFTS, type Shift, type Staff, type StaffRole } from './staff';
 
 /** Cửa hàng tiện lợi 24/7: chi nhánh xa tiệm chính, chủ không đứng bán, nhân viên lo hết. */
@@ -55,6 +57,29 @@ export interface BranchState {
   missedToday: number;
   /** Ngày đã nhắc kho chung sắp cạn (nhắc một lần mỗi tối). */
   warnedDay?: number;
+  /** Mức mệt của từng nhân viên (0–100). */
+  fatigue?: Record<number, number>;
+  /** Nhân viên được nghỉ (id → ngày nghỉ). */
+  restDay?: Record<number, number>;
+  /** Doanh thu từng giờ hôm nay (0–23). */
+  hourly?: number[];
+  /** Sự kiện đêm nay. */
+  event?: BranchEvent | null;
+  /** Ngày đã tung sự kiện đêm. */
+  eventDay?: number;
+  /** Quầy bị khách say quậy, tạm ngưng bán tới phút này. */
+  blockedUntil?: number;
+}
+
+export interface BranchEvent {
+  kind: 'drunk' | 'blackout' | 'calloff';
+  /** Phút xảy ra (theo đồng hồ ngày hiện tại, có thể quá 1440). */
+  at: number;
+  /** Nhân viên xin nghỉ (calloff). */
+  staffId?: number;
+  /** Đã gọi người làm thay. */
+  covered?: boolean;
+  done?: boolean;
 }
 
 export const newBranch = (): BranchState => ({
@@ -79,7 +104,7 @@ export function uncoveredHours(staff: Staff[]): number[] {
 export const shelfTotal = (shelf: Record<string, number>) => Object.values(shelf).reduce((n, q) => n + q, 0);
 
 /** Vai trò chi nhánh cần: thu ngân, xếp hàng, giao hàng (chở hàng từ kho chung), bảo vệ. */
-export const BRANCH_ROLES: StaffRole[] = ['cashier', 'stocker', 'courier', 'guard'];
+export const BRANCH_ROLES: StaffRole[] = ['cashier', 'stocker', 'courier', 'guard', 'manager'];
 /** Xác suất mỗi 10 phút ban đêm có kẻ trộm ghé. */
 export const BRANCH_NIGHT_THEFT = 0.05;
 
@@ -94,4 +119,70 @@ export function nightNeed() {
   let n = 0;
   for (let h = 22; h < 30; h++) n += branchTrafficAt(h * 60) * 1.5;
   return Math.round(n);
+}
+
+// ── Sự kiện đêm ──
+/** Giờ tung sự kiện đêm (một lần mỗi tối). */
+export const EVENT_ROLL_AT = 21 * 60;
+/** Xác suất mỗi đêm: nhân viên ca đêm xin nghỉ, khách say quậy, mất điện. */
+export const EVENT_CHANCE = { calloff: 0.12, drunk: 0.12, blackout: 0.07 };
+/** Khách say quậy mà không có bảo vệ: mất tiền đền đồ, quầy ngưng bán một lúc. */
+export const DRUNK_DAMAGE = 300_000;
+export const DRUNK_BLOCK = 60;
+/** Gọi người làm thay ca: trả gấp đôi lương ca. */
+export const COVER_WAGE_MUL = 2;
+/** Mất điện: hàng mát, đông lạnh, tươi sống, đồ nóng trên kệ hỏng mất phần này. */
+export const BLACKOUT_LOSS = 0.6;
+export const spoilsInBlackout = (id: string) => COOKED_PRODUCT_IDS.has(id) || ['cold', 'frozen', 'fresh'].includes(productById(id).category);
+
+// ── Tinh thần nhân viên ──
+/** Mệt thêm mỗi ngày theo ca; nghỉ một ngày thì hồi hết. */
+export const FATIGUE_PER_DAY: Record<Shift, number> = { morning: 8, afternoon: 8, full: 15, night: 22 };
+/** Mệt từ mức này: bán chậm, khách bỏ về nhiều hơn. */
+export const FATIGUE_SLOW = 70;
+/** Mệt từ mức này: mỗi đêm có thể xin nghỉ việc. */
+export const FATIGUE_QUIT = 90;
+export const QUIT_CHANCE = 0.3;
+/** Thu ngân mệt: mỗi khách có xác suất này bỏ về vì chờ lâu. */
+export const TIRED_MISS = 0.25;
+/** Thưởng nóng: tốn một ngày lương, giảm mệt từng này. */
+export const BONUS_RELIEF = 35;
+export const fatigueOf = (b: BranchState, id: number) => b.fatigue?.[id] ?? 0;
+/** Nhân viên đang nghỉ hôm nay. */
+export const restingOn = (b: BranchState, id: number, day: number) => b.restDay?.[id] === day;
+
+// ── Quản lý cửa hàng ──
+/** Có quản lý thì kệ vơi dưới tỉ lệ này là tự gọi xe, không cần chờ người giao hàng. */
+export const MANAGER_REFILL_BELOW = 0.5;
+
+/** Quản lý xếp ca: thu ngân xoay sáng → chiều → đêm (ai ít mệt nhận ca đêm), bảo vệ ưu tiên ca đêm. */
+export function autoSchedule(staff: Staff[], fatigue: Record<number, number>): Staff[] {
+  const plan = (role: StaffRole, shifts: Shift[]) => {
+    const list = staff.filter((s) => s.role === role).sort((a, b) => (fatigue[a.id] ?? 0) - (fatigue[b.id] ?? 0));
+    return new Map(list.map((s, i) => [s.id, shifts[i % shifts.length]]));
+  };
+  const maps = [
+    plan('cashier', ['night', 'morning', 'afternoon']),
+    plan('guard', ['night', 'morning', 'afternoon']),
+    plan('stocker', ['morning', 'afternoon', 'night']),
+    plan('courier', ['afternoon', 'morning', 'night']),
+  ];
+  return staff.map((s) => ({ ...s, shift: maps.map((m) => m.get(s.id)).find(Boolean) ?? s.shift }));
+}
+
+// ── Hàng tiện lợi ──
+/** Món khách đêm hay mua ở tiện lợi (mì ly, nước tăng lực, bao cao su, thuốc cảm, cơm nắm...). */
+const NIGHT_ITEMS = new Set(['mi', 'nuoc', 'x_mi_ly_tp', 'x_sting_dau', 'x_sting_nhan_sam', 'x_redbull_lon', 'x_bao_cao_su', 'x_thuoc_cam', 'x_com_nam', 'x_xuc_xich_nuong_tp']);
+export const isNightItem = (id: string) => NIGHT_ITEMS.has(id);
+/** Đồ nóng nấu ở bếp tiệm chính, chở sang bán đắt hơn. */
+export const isHotFood = (id: string) => COOKED_PRODUCT_IDS.has(id);
+export const HOT_FOOD_MUL = 1.3;
+/** Trọng số khách chọn món: đêm ưu tiên món đêm, đồ nóng lúc nào cũng hút khách. */
+export const itemWeight = (id: string, minute: number) => (isHotFood(id) ? 2.5 : 1) * (isBranchNight(minute) && isNightItem(id) ? 3 : 1);
+/** Chọn ngẫu nhiên một món theo trọng số. */
+export function pickWeighted(ids: string[], minute: number): string {
+  const w = ids.map((id) => itemWeight(id, minute));
+  let r = Math.random() * w.reduce((n, x) => n + x, 0);
+  for (let i = 0; i < ids.length; i++) if ((r -= w[i]) <= 0) return ids[i];
+  return ids[ids.length - 1];
 }

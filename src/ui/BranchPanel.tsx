@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useGame } from '../core/store';
-import { BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, nightNeed, shelfTotal, uncoveredHours } from '../data/branches';
+import { BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, BONUS_RELIEF, CONVENIENCE, COVER_WAGE_MUL, FATIGUE_QUIT, FATIGUE_SLOW, fatigueOf, isHotFood, nightNeed, restingOn, shelfTotal, uncoveredHours } from '../data/branches';
 import { dailyWage, ROLES, type Shift } from '../data/staff';
 import { formatMoney, productById } from '../data/products';
 import { Dropdown } from './Dropdown';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
-  const { branch, level, money, candidates, storage, openBranch, toggleBranch, hireForBranch, fireFromBranch, setBranchShift, closePanel } = useGame();
-  const [tab, setTab] = useState<'info' | 'team' | 'hire'>('info');
+  const { branch, level, money, day, candidates, storage, stats, atBranch, openBranch, toggleBranch, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel } = useGame();
+  const [tab, setTab] = useState<'info' | 'team' | 'hire' | 'report'>('info');
   const [pick, setPick] = useState<Record<number, Shift>>({});
 
   if (!branch) {
@@ -41,6 +41,12 @@ export function BranchPanel() {
   // Ca mặc định khi tuyển: ca đầu tiên còn thiếu thu ngân, đủ hết thì ca đêm
   const needShift = BRANCH_SHIFTS.find((sh) => !inShift(sh).some((s) => s.role === 'cashier')) ?? 'night';
   const others = branch.staff.filter((s) => !BRANCH_SHIFTS.includes(s.shift));
+  const calloff = branch.event?.kind === 'calloff' ? branch.event : null;
+  const calloffWho = calloff ? branch.staff.find((s) => s.id === calloff.staffId) : undefined;
+  const calloffCost = calloffWho ? Math.round(dailyWage(calloffWho) * COVER_WAGE_MUL) : 0;
+  const mainHourly = Array.from({ length: 24 }, (_, h) => stats.byHour?.[h]?.revenue ?? 0);
+  const branchHourly = branch.hourly ?? Array(24).fill(0);
+  const peak = Math.max(1, ...mainHourly, ...branchHourly);
 
   return (
     <>
@@ -50,7 +56,7 @@ export function BranchPanel() {
         <button style={st.primary} onClick={toggleBranch}>{branch.open ? 'Đóng cửa' : 'Mở cửa'}</button>
       </div>
       <div style={st.tabs}>
-        {([['info', '📊 Tình hình'], ['team', `👥 Nhân viên (${branch.staff.length}/${CONVENIENCE.maxStaff})`], ['hire', '🔍 Tuyển']] as const).map(([id, label]) => (
+        {([['info', '📊 Tình hình'], ['team', `👥 Nhân viên (${branch.staff.length}/${CONVENIENCE.maxStaff})`], ['hire', '🔍 Tuyển'], ['report', '📈 Theo giờ']] as const).map(([id, label]) => (
           <button key={id} style={{ ...st.tab, background: tab === id ? '#f1c40f' : '#fff' }} onClick={() => setTab(id)}>{label}</button>
         ))}
       </div>
@@ -61,7 +67,20 @@ export function BranchPanel() {
             {branch.missedToday > 0 && <> · {branch.missedToday} khách bỏ về</>}{branch.lostToday > 0 && <> · mất trộm {branch.lostToday} món</>}</div>
           <div>Chi phí mỗi ngày: {formatMoney(CONVENIENCE.rent)} thuê + {formatMoney(wages)} lương</div>
           <div>Hàng trên kệ: <b>{shelfTotal(branch.shelf)}</b>/{CONVENIENCE.shelfCap} món (lấy từ kho chung)</div>
-          {top.length > 0 && <div style={st.sub}>{top.map(([id, q]) => `${productById(id).name} ×${q}`).join(' · ')}</div>}
+          {top.length > 0 && <div style={st.sub}>{top.map(([id, q]) => `${isHotFood(id) ? '🔥' : ''}${productById(id).name} ×${q}`).join(' · ')}</div>}
+          {atBranch && <p style={{ ...st.sub, color: '#2ecc71' }}>🧑‍💼 Bạn đang ở chi nhánh — thiếu thu ngân thì bạn tự đứng quầy.</p>}
+          {calloff && (
+            <div style={st.event}>
+              <b>📵 {calloffWho?.name ?? 'Nhân viên'} ca đêm xin nghỉ đột xuất</b>
+              {calloff.covered
+                ? <span>✅ Đã có người làm thay.</span>
+                : <>
+                    <span style={st.sub}>Gọi người làm thay (gấp {COVER_WAGE_MUL} lương ca), hoặc tự chạy sang chi nhánh đứng quầy.</span>
+                    <button style={st.primary} onClick={coverCalloff}>Gọi người thay ({formatMoney(calloffCost)})</button>
+                  </>}
+            </div>
+          )}
+          {!has('manager') && <p style={st.sub}>💡 Thuê 📋 Quản lý: tự xếp ca, cho người mệt nghỉ luân phiên, tự gọi xe khi kệ vơi, tự gọi người thay khi có ai xin nghỉ.</p>}
           {!has('cashier') && <p style={st.warn}>⚠️ Chưa có thu ngân — khách tới không ai bán.</p>}
           {has('cashier') && gaps.length > 0 && <p style={st.warn}>⚠️ Không có thu ngân lúc: {gaps.map((h) => `${h}h`).join(', ')}. Thêm người ca đêm/ca chiều.</p>}
           {!has('courier') && !has('stocker') && <p style={st.warn}>⚠️ Chưa có người giao/xếp hàng — kệ sẽ không được chở hàng từ kho chung.</p>}
@@ -81,7 +100,11 @@ export function BranchPanel() {
               {!list.length && <span style={st.sub}>Chưa có ai.</span>}
               {list.map((s) => (
                 <div key={s.id} style={st.card}>
-                  <span>{ROLES[s.role].icon} <b>{s.name}</b> · {ROLES[s.role].name} · {'★'.repeat(s.skill)}</span>
+                  <span>{ROLES[s.role].icon} <b>{s.name}</b> · {ROLES[s.role].name} · {'★'.repeat(s.skill)}
+                    {restingOn(branch, s.id, day) && <> · 🛌 nghỉ hôm nay</>}
+                    {branch.restDay?.[s.id] === day + 1 && <> · 🛌 nghỉ ngày mai</>}
+                  </span>
+                  <Fatigue value={fatigueOf(branch, s.id)} />
                   <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                     <Dropdown
                       value={s.shift}
@@ -90,7 +113,9 @@ export function BranchPanel() {
                       options={BRANCH_SHIFTS.map((k) => ({ value: k, label: BRANCH_SHIFT_NAME[k] }))}
                     />
                     <span>{formatMoney(dailyWage(s))}/ngày</span>
-                    <button style={st.btn} onClick={() => confirm(`Cho ${s.name} nghỉ việc?`) && fireFromBranch(s.id)}>Cho nghỉ</button>
+                    <button style={st.btn} title={`Tốn 1 ngày lương, giảm ${BONUS_RELIEF} mệt`} onClick={() => bonusBranchStaff(s.id)}>🎁 Thưởng</button>
+                    <button style={st.btn} disabled={branch.restDay?.[s.id] === day + 1} title="Nghỉ ngày mai không lương, hồi hết mệt" onClick={() => restBranchStaff(s.id)}>🛌 Nghỉ mai</button>
+                    <button style={st.btn} onClick={() => confirm(`Cho ${s.name} nghỉ việc?`) && fireFromBranch(s.id)}>Cho thôi việc</button>
                   </span>
                 </div>
               ))}
@@ -119,12 +144,51 @@ export function BranchPanel() {
           {!candidates.some((c) => BRANCH_ROLES.includes(c.role)) && <p style={st.sub}>Hết ứng viên phù hợp hôm nay, mai quay lại.</p>}
         </div>
       )}
+      {tab === 'report' && (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <p style={st.sub}>Doanh thu từng giờ hôm nay. Giờ chi nhánh cao mà nhiều khách bỏ về thì nên xếp thêm thu ngân ca đó.</p>
+          <div style={{ display: 'flex', gap: 12, fontSize: 12 }}>
+            <span><i style={{ ...st.dot, background: '#f1c40f' }} /> Tiệm chính</span>
+            <span><i style={{ ...st.dot, background: '#2ecc71' }} /> Tiện lợi 24/7</span>
+          </div>
+          <div style={st.chart} role="img" aria-label="Biểu đồ doanh thu theo giờ">
+            {mainHourly.map((v, h) => (
+              <div key={h} style={st.col} title={`${h}h — tiệm chính ${formatMoney(v)}, tiện lợi ${formatMoney(branchHourly[h])}`}>
+                <div style={st.bars}>
+                  <div style={{ ...st.bar, background: '#f1c40f', height: `${(v / peak) * 100}%` }} />
+                  <div style={{ ...st.bar, background: '#2ecc71', height: `${(branchHourly[h] / peak) * 100}%` }} />
+                </div>
+                <small style={{ opacity: h % 3 ? 0 : 0.7 }}>{h}</small>
+              </div>
+            ))}
+          </div>
+          <div style={st.sub}>Hôm nay: tiệm chính {formatMoney(mainHourly.reduce((n, v) => n + v, 0))} · tiện lợi {formatMoney(branch.revenueToday)}</div>
+        </div>
+      )}
       <div style={{ textAlign: 'right', marginTop: 12 }}><button style={st.btn} onClick={closePanel}>Đóng</button></div>
     </>
   );
 }
 
+/** Thanh mệt: xanh → vàng (bán chậm) → đỏ (dễ nghỉ việc). */
+function Fatigue({ value }: { value: number }) {
+  const color = value >= FATIGUE_QUIT ? '#e74c3c' : value >= FATIGUE_SLOW ? '#f39c12' : '#2ecc71';
+  return (
+    <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, minWidth: 140 }} title="Mệt cao: bán chậm, dễ nghỉ việc">
+      😓 <span style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.15)' }}>
+        <span style={{ display: 'block', width: `${value}%`, height: '100%', borderRadius: 3, background: color }} />
+      </span> {value}
+    </span>
+  );
+}
+
 const st: Record<string, React.CSSProperties> = {
+  event: { display: 'grid', gap: 6, padding: 10, borderRadius: 10, background: 'rgba(231,76,60,0.15)', border: '1px solid rgba(231,76,60,0.5)' },
+  chart: { display: 'flex', alignItems: 'stretch', gap: 2, height: 140, padding: '6px 0' },
+  col: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 },
+  bars: { flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end', gap: 1 },
+  bar: { flex: 1, minHeight: 1, borderRadius: '2px 2px 0 0' },
+  dot: { display: 'inline-block', width: 10, height: 10, borderRadius: 2, marginRight: 4 },
   title: { margin: '0 0 8px' },
   sub: { fontSize: 13, opacity: 0.8, margin: '4px 0' },
   warn: { fontSize: 13, color: '#f39c12', margin: '2px 0' },
