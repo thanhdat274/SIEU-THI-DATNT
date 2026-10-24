@@ -1,4 +1,5 @@
 import { CATALOG_PRODUCTS } from './catalog';
+import { COOKED_PRODUCTS } from './recipes';
 
 /** Ngành hàng: quyết định bày ở đâu (kệ thường, tủ mát, tủ đông). */
 export type Category = 'dry' | 'drink' | 'cold' | 'frozen' | 'household' | 'fresh';
@@ -90,13 +91,44 @@ export const PRODUCTS: Product[] = [
   p('quatet', 'Giỏ quà biếu', 'household', 250000, 360000, 0xd63031, 55),
   p('aomua', 'Áo mưa', 'household', 5000, 9000, 0x0984e3, 1),
   p('o', 'Ô dù', 'household', 15000, 25000, 0x6c5ce7, 1),
+  // Đợt mở rộng danh mục: đồ cao cấp/hàng biếu cho giai đoạn sau (giá sỉ tạp hóa VN 2026)
+  p('banh_pia', 'Bánh pía', 'dry', 28000, 40000, 0xd9a66c, 40),
+  p('yen_mach', 'Yến mạch hộp', 'dry', 45000, 65000, 0xd8b998, 40),
+  p('mi_tuoi', 'Mì tươi vắt', 'fresh', 6000, 9000, 0xe8d8c0, 40),
+  p('sua_hat', 'Sữa hạt lốc 4', 'cold', 42000, 58000, 0xe4c9a0, 41),
+  p('cha_bong', 'Chà bông hũ', 'dry', 32000, 46000, 0xc0392b, 41),
+  p('bia_chai', 'Bia chai', 'drink', 15000, 21000, 0x996633, 42),
+  p('nho_kho', 'Nho khô hộp', 'dry', 55000, 78000, 0x8e5a2b, 42),
+  p('sua_chua_hop', 'Sữa chua nếp cốc', 'cold', 12000, 18000, 0xd4a76a, 43),
+  p('ca_phe_lon', 'Cà phê hòa tan hộp thiếc', 'dry', 85000, 118000, 0x4a2c0a, 44),
+  p('tra_atiso', 'Trà atiso túi', 'dry', 38000, 55000, 0x9b59b6, 44),
+  p('lap_xuong', 'Lạp xưởng', 'frozen', 72000, 100000, 0xa93226, 44),
+  p('hat_dieu_muoi', 'Hạt điều rang muối hũ', 'dry', 78000, 108000, 0xb5651d, 45),
+  p('kem_cay_hop', 'Kem cây hộp 10', 'frozen', 48000, 68000, 0xffb6c1, 45),
+  p('ruou_gao', 'Rượu gạo', 'drink', 45000, 65000, 0xc0c0c0, 46),
+  p('tom_kho', 'Tôm khô gói', 'dry', 65000, 92000, 0xe67e22, 47),
+  p('keo_mut_hop', 'Kẹo mứt hũ biếu', 'dry', 48000, 69000, 0xe74c3c, 48),
+  p('muc_kho', 'Mực khô', 'dry', 120000, 168000, 0xd5aa6f, 49),
+  p('mut_tet', 'Mứt Tết hộp', 'dry', 62000, 88000, 0xd35400, 50),
+  p('trung_muoi', 'Trứng muối hộp 6', 'dry', 30000, 42000, 0xe8d8c0, 51),
+  p('thit_ga', 'Gà nguyên con', 'fresh', 130000, 175000, 0xd5aa6f, 52),
+  // Nguyên liệu chế biến đúng nghĩa cho các món nấu
+  p('banhtrang', 'Bánh tráng', 'dry', 5000, 8000, 0xd9b38c, 1),
+  p('dau_xanh', 'Đậu xanh', 'dry', 15000, 22000, 0x9acd32, 1),
+  p('bap', 'Bắp ngô', 'fresh', 8000, 12000, 0xf1c40f, 1),
+  p('botmi', 'Bột mì', 'dry', 18000, 26000, 0xf5e6c8, 1),
+  p('nep', 'Gạo nếp (túi 5kg)', 'dry', 30000, 42000, 0xe8d8c0, 1),
+  p('mia', 'Mía', 'fresh', 12000, 18000, 0x84c639, 1),
 ];
 
-/** Cấp sớm nhất bày được từng ngành (cần tủ mát, tủ đông, quầy rau quả). */
-const SHELF_READY: Partial<Record<Category, number>> = { cold: 5, frozen: 14, fresh: 26 };
+/** Cấp sớm nhất bày được từng ngành (cần tủ mát, tủ đông, quầy rau quả). fresh=21 để khớp trạm nấu mở ở 21. */
+const SHELF_READY: Partial<Record<Category, number>> = { cold: 5, frozen: 14, fresh: 21 };
 
 // Thêm mẫu hàng nhập từ catalog tham khảo; món chưa có chỗ bày thì lùi tới lúc có tủ/quầy
 PRODUCTS.push(...CATALOG_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
+
+// Món nhà làm (recipes.ts): không nhập được ở nhà cung cấp, chỉ có bằng cách nấu từ nguyên liệu
+PRODUCTS.push(...COOKED_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
 
 export const productById = (id: string) => PRODUCTS.find((it) => it.id === id)!;
 export const unlockedProducts = (level: number) => PRODUCTS.filter((it) => it.unlock <= level);

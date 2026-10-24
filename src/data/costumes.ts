@@ -23,6 +23,8 @@ export interface CostumeOptions {
   hasGlasses?: boolean;
   skinColor?: number;
   hairColor?: number;
+  /** Biến thể giới tính: đổi kiểu tóc của các archetype trung tính (xem genderHairStyle). */
+  gender?: 'male' | 'female';
 }
 
 export interface Costume {
@@ -370,6 +372,48 @@ export const COSTUMES: Costume[] = [
     price: 42000,
     options: {
       bodyColor: 0xd63031,
+      hasGlasses: false,
+    },
+  },
+  // ──────────────────────────────────────────────
+  // BIẾN THỂ GIỚI TÍNH (gender đổi kiểu tóc cho archetype trung tính)
+  // ──────────────────────────────────────────────
+  {
+    id: 'nu_chu_tiem',
+    name: 'Nữ — Chị chủ tiệm',
+    icon: '👩‍🌾',
+    unlock: 14,
+    price: 15000,
+    options: {
+      gender: 'female',
+      bodyColor: 0xfd79a8,
+      hairColor: 0x6e472e,
+      hasGlasses: false,
+    },
+  },
+  {
+    id: 'nu_cong_so',
+    name: 'Nữ — Đồ công sở',
+    icon: '👩‍💼',
+    unlock: 26,
+    price: 30000,
+    options: {
+      gender: 'female',
+      bodyColor: 0x00cec9,
+      hairColor: 0x1a1e24,
+      hasGlasses: true,
+    },
+  },
+  {
+    id: 'nam_ba_ba_trang',
+    name: 'Nam — Áo bà ba trắng',
+    icon: '👨',
+    unlock: 24,
+    price: 26000,
+    options: {
+      gender: 'male',
+      bodyColor: 0xf5f6fa,
+      hatColor: 0xf5f6fa,
       hasGlasses: false,
     },
   },

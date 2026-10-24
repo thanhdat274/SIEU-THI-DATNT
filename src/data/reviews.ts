@@ -1,5 +1,5 @@
 /** Lời khách nhận xét sau mỗi lượt ghé tiệm. */
-export type ReviewReason = 'stock' | 'price' | 'wait';
+export type ReviewReason = 'stock' | 'price' | 'wait' | 'expired';
 
 export interface Review {
   id: number;
@@ -24,6 +24,7 @@ export const REASON_LABEL: Record<ReviewReason, string> = {
   stock: 'hết hàng',
   price: 'giá cao',
   wait: 'chờ lâu',
+  expired: 'hàng cận hạn',
 };
 
 const AUTHORS = [
@@ -43,6 +44,7 @@ const BY_REASON: Record<ReviewReason, string[]> = {
   stock: ['Tìm {product} mãi không thấy, kệ trống trơn.', 'Hết {product} rồi, phải chạy qua tiệm khác.', 'Kệ {product} trống, nhập thêm đi chủ ơi.'],
   price: ['{product} bán đắt quá, chợ rẻ hơn nhiều.', 'Giá {product} chát quá, thôi không mua.', 'Định mua {product} mà nhìn giá phải bỏ xuống.'],
   wait: ['Đứng chờ tính tiền cả buổi không ai ra quầy.', 'Xếp hàng lâu quá, bỏ giỏ về luôn.', 'Quầy không có người, chờ mỏi chân.'],
+  expired: ['Lô {product} nhìn cận hạn quá, ngại mua.', '{product} mai hết hạn rồi, nhập ít thôi chủ ơi.', 'Hạn {product} ngắn quá mà không giảm nhiều, thôi bỏ.'],
 };
 
 const EXTRA_GOOD = ['Có {product} ngon lắm.', 'Mua được {product} đúng loại cần.'];
@@ -78,9 +80,27 @@ export function summarizeReviews(reviews: Review[]) {
   return { average, byStars, count: reviews.length, topReason: top ? { reason: top[0], count: top[1] } : null };
 }
 
-/**
- * Tiếng lành đồn xa: điểm trung bình thay đổi tỉ lệ người đi đường ghé vào tiệm
- * (3 sao = như cũ, 5 sao = +10%, 1 sao = −10%). Chưa có lời nào thì không ảnh hưởng.
- */
-export const reputationBonus = (reviews: Review[]) =>
-  reviews.length < 5 ? 0 : (summarizeReviews(reviews).average - 3) * 0.05;
+/** Một món được khen/bị chê bao nhiêu lần trong các lời gần nhất. */
+export interface ProductReviews {
+  productId: string;
+  /** Lời khen: 4–5★ không kèm lý do chê. */
+  praise: number;
+  /** Lời chê nhắc món này kèm lý do (hết hàng, giá cao...). */
+  complaint: number;
+}
+
+/** Tổng hợp theo từng món: món bị chê nhiều nhất (nhập/bày/điều giá liền) và món được khen nhiều nhất (giữ chất lượng). */
+export function productSummary(reviews: Review[], top = 3): { worst: ProductReviews[]; best: ProductReviews[] } {
+  const map = new Map<string, ProductReviews>();
+  for (const r of reviews) {
+    if (!r.productId) continue;
+    const line = map.get(r.productId) ?? { productId: r.productId, praise: 0, complaint: 0 };
+    if (r.reason) line.complaint++;
+    else if (r.stars >= 4) line.praise++;
+    map.set(r.productId, line);
+  }
+  const all = [...map.values()];
+  const worst = all.filter((p) => p.complaint > 0).sort((a, b) => b.complaint - a.complaint || b.praise - a.praise).slice(0, top);
+  const best = all.filter((p) => p.praise > 0).sort((a, b) => b.praise - a.praise || a.complaint - b.complaint).slice(0, top);
+  return { worst, best };
+}

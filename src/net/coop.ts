@@ -296,7 +296,10 @@ function becomeRunner() {
     applyingRemote = false;
     originals = null;
   }
-  for (const p of puppets.values()) world?.scene.remove(p.walker.mesh);
+  for (const p of puppets.values()) {
+    world?.scene.remove(p.walker.mesh);
+    p.walker.dispose();
+  }
   puppets.clear();
   for (const p of pending.values()) clearTimeout(p.timer);
   pending.clear();
@@ -326,6 +329,7 @@ function onMessage(msg: Msg) {
       for (const [id, o] of others) {
         if (ids.has(id)) continue;
         world?.scene.remove(o.walker.mesh);
+        o.walker.dispose();
         others.delete(id);
       }
       for (const p of msg.peers) if (p.id !== self) addOther(p);
@@ -410,7 +414,10 @@ function addOther(p: AlleyPeer) {
 }
 
 function clearOthers() {
-  for (const o of [...others.values(), ...puppets.values()]) world?.scene.remove(o.walker.mesh);
+  for (const o of [...others.values(), ...puppets.values()]) {
+    world?.scene.remove(o.walker.mesh);
+    o.walker.dispose();
+  }
   others.clear();
   puppets.clear();
 }
@@ -422,6 +429,7 @@ function setPose(id: number, pose: Pose, look?: string) {
   if (look && look !== o.look && world) {
     const walker = otherWalker(o.name, look);
     walker.position.copy(o.walker.position);
+    o.walker.dispose();
     world.scene.remove(o.walker.mesh);
     world.scene.add(walker.mesh);
     o.walker = walker;
@@ -450,6 +458,7 @@ function syncPuppets(actors: Actor[]) {
   }
   for (const [id, p] of puppets) {
     if (seen.has(id)) continue;
+    p.walker.dispose();
     world.scene.remove(p.walker.mesh);
     puppets.delete(id);
   }

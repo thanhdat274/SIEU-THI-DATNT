@@ -58,6 +58,18 @@
 #ui .ar-status.sel { border-left-color: var(--ar-accent); }
 #ui .ar-status.bad { border-left-color: var(--ar-red); background: rgba(231, 76, 60, 0.15); }
 
+/* Hàng trạng thái + nút bật heatmap doanh số theo kệ */
+#ui .ar-status-row { display: flex; gap: 8px; align-items: stretch; }
+#ui .ar-status-row .ar-status { flex: 1; min-width: 0; }
+#ui .ar-status-row .ar-btn { align-self: center; white-space: nowrap; }
+#ui .ar-heat-legend {
+  font-size: 12px; color: #d5dbdb; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+#ui .ar-heat-scale {
+  display: inline-block; width: 84px; height: 10px; border-radius: 5px; flex: none;
+  background: linear-gradient(90deg, hsl(200, 85%, 58%), hsl(100, 85%, 54%), hsl(0, 85%, 50%));
+}
+
 #ui .ar-board {
   flex: 1;
   min-height: 0;
@@ -74,6 +86,9 @@
 #ui .ar-wall { fill: none; stroke: #f5e6c8; stroke-width: 0.2; stroke-linecap: square; pointer-events: none; }
 #ui .ar-door { fill: var(--ar-accent); font-size: 0.32px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
 #ui .ar-door-zone { fill: rgba(46, 204, 113, 0.18); stroke: rgba(46, 204, 113, 0.6); stroke-width: 0.02; stroke-dasharray: 0.1 0.08; pointer-events: none; }
+#ui .ar-window { stroke: #8fd3ff; stroke-width: 0.12; stroke-linecap: butt; pointer-events: none; }
+#ui .ar-window-zone { fill: rgba(143, 211, 255, 0.18); stroke: rgba(143, 211, 255, 0.6); stroke-width: 0.02; stroke-dasharray: 0.1 0.08; pointer-events: none; }
+#ui .ar-door-back { font-size: 0.26px; }
 
 #ui .ar-counter rect { fill: #5c4a3d; stroke: #3b2f27; stroke-width: 0.04; }
 #ui .ar-counter text, #ui .ar-item text {

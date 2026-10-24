@@ -1,4 +1,5 @@
 import { useGame } from '../core/store';
+import { describeRep, meetsRep, repScore, reputationOf } from '../data/reputation';
 import { SUPPLY_CONTRACTS, supplyContractById, missingForContract, contractValue, type SupplyContract } from '../data/contracts';
 import { formatMoney, productById } from '../data/products';
 
@@ -84,7 +85,9 @@ function ActiveContracts() {
 
 /** Một hợp đồng: hiển thị chi tiết, nút chấp nhận. */
 function ContractRow({ contract }: { contract: SupplyContract }) {
-  const { level, money, contracts, acceptContract } = useGame();
+  const { level, money, contracts, acceptContract, repLog } = useGame();
+  const rep = reputationOf(repLog);
+  const trusted = meetsRep(rep, contract.rep);
   const alreadyAccepted = !!contracts[contract.id];
   const canAfford = money >= contractValue(contract) * 0.3; // chỉ kiểm tra sơ bộ
   return (
@@ -113,9 +116,15 @@ function ContractRow({ contract }: { contract: SupplyContract }) {
       {alreadyAccepted ? (
         <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75 }}>✅ Đã chấp nhận hợp đồng này</div>
       ) : (
-        <div style={{ marginTop: 8 }}>
+        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {contract.rep && (
+            <span style={{ fontSize: 12, color: trusted ? '#2ecc71' : '#e17055' }}>
+              {trusted ? '✅' : '🔒'} {describeRep(contract.rep)} (đang {repScore(rep, contract.rep).toFixed(1)}★)
+            </span>
+          )}
           <button
-            style={{ ...btn, background: '#f1c40f' }}
+            style={{ ...btn, background: trusted ? '#f1c40f' : '#777' }}
+            disabled={!trusted}
             onClick={() => acceptContract(contract.id)}
           >
             📋 Chấp nhận hợp đồng
@@ -134,7 +143,7 @@ function LockedContract({ contract }: { contract: SupplyContract }) {
         <span style={{ fontSize: 22 }}>🔒</span>
         <div>
           <b>{contract.title}</b>
-          <div style={{ fontSize: 12, opacity: 0.75 }}>Cần cấp {contract.unlock}</div>
+          <div style={{ fontSize: 12, opacity: 0.75 }}>Cần cấp {contract.unlock}{contract.rep ? ` · ${describeRep(contract.rep)}` : ''}</div>
         </div>
       </div>
     </div>

@@ -1,4 +1,6 @@
 import { questContext, useGame } from '../core/store';
+import { goalLocked, goalLockText, upcomingGoals, type CommunityGoal } from '../data/community';
+import { reputationOf } from '../data/reputation';
 import { dailyQuests, STORY_STEPS, storyQuest, type Quest } from '../data/quests';
 import { formatMoney, productById } from '../data/products';
 import { missingForOrder, orderValue, partyOrderById, STORY_ORDER_FRIEND_GAIN, STORY_ORDER_FRIEND_LOSS } from '../data/orders';
@@ -18,6 +20,7 @@ export function QuestPanel() {
         Nhiệm vụ ngày làm mới mỗi sáng, càng lên cấp càng khó và thưởng càng to. Cốt truyện làm lần lượt từng bước.
       </p>
 
+      <CommunityGoals />
       <OrderCard />
 
       <h3 style={head}>📖 Cốt truyện <small style={{ opacity: 0.6, fontWeight: 400 }}>· bước {Math.min(doneSteps + 1, STORY_STEPS.length)}/{STORY_STEPS.length}</small></h3>
@@ -35,6 +38,51 @@ export function QuestPanel() {
         </button>
       )}
     </>
+  );
+}
+
+/** Mục tiêu chung của hẻm: ngày khai trương và dịp lễ đang diễn ra hoặc sắp tới. */
+function CommunityGoals() {
+  const { day, level, opening, pendingUpgrade, shopTier } = useGame();
+  return <>{upcomingGoals(day, level, opening, pendingUpgrade ? shopTier + 1 : undefined).map(({ goal, inDays }) => (
+    <CommunityCard key={goal.key} goal={goal} inDays={inDays} />
+  ))}</>;
+}
+
+function CommunityCard({ goal, inDays }: { goal: CommunityGoal; inDays: number }) {
+  const { community, repLog, furniture } = useGame();
+  const f = goal.festival;
+  const p = community[goal.key];
+  const decor = furniture.filter((x) => x.type === 'plant').length;
+  const locked = goalLocked(goal, reputationOf(repLog));
+  const bar = (label: string, have: number, need: number) => need > 0 && (
+    <div style={{ fontSize: 12, marginTop: 4 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{label}</span><span>{Math.min(have, need)}/{need}</span></div>
+      <div style={{ height: 6, background: '#555', borderRadius: 3 }}>
+        <div style={{ width: `${Math.min(1, have / need) * 100}%`, height: '100%', borderRadius: 3, background: have >= need ? '#2ecc71' : '#f1c40f' }} />
+      </div>
+    </div>
+  );
+  const names = goal.items.slice(0, 3).map((id) => productById(id).name).join(', ') + (goal.items.length > 3 ? '…' : '');
+  return (
+    <div style={{ background: '#3a3a4d', borderRadius: 8, padding: '8px 12px', marginBottom: 10 }}>
+      <b>{f.icon} Mục tiêu chung · {f.name}</b>
+      <span style={{ fontSize: 12, opacity: 0.75 }}> · {inDays ? `${inDays === 1 ? 'mai' : `${inDays} ngày nữa`} bắt đầu, chuẩn bị hàng và trang trí` : goal.days === 1 ? 'chỉ hôm nay' : `${goal.days} ngày`}</span>
+      {p?.done ? (
+        <div style={{ fontSize: 13, marginTop: 4 }}>🎉 Cả hẻm đã hoàn thành mục tiêu dịp này!</div>
+      ) : locked ? (
+        <div style={{ fontSize: 12, marginTop: 4, color: '#e17055' }}>🔒 {goalLockText(goal)}</div>
+      ) : (
+        <>
+          {bar(goal.items.length ? `🛍️ Bán hàng của dịp (${names})` : '🛍️ Bán món bất kỳ', p?.sold ?? 0, goal.itemTarget)}
+          {bar('🍲 Món nhà làm', p?.cooked ?? 0, goal.cookedTarget)}
+          {bar(f.id === 'khai_truong' ? '💐 Lẵng hoa mừng (chậu cây)' : '🪴 Trang trí tiệm (chậu cây)', decor, goal.decorTarget)}
+          <div style={{ fontSize: 12, marginTop: 6, opacity: 0.8 }}>
+            🎁 Thưởng {formatMoney(goal.reward.money)} · {goal.reward.xp} XP{f.host ? ' · người lo hội thân hơn' : ''}. Chơi chung thì cả hẻm cùng góp.
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 

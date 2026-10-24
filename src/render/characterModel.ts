@@ -27,7 +27,14 @@ export type CharacterArchetype =
   | 'barista'       // Pha chế quán nước (tạp dề, cốc pha cà phê)
   | 'doctor'        // Bác sĩ (blouse trắng, ống nghe, cặp thuốc)
   | 'banker'        // Nhân viên ngân hàng (vest, cà vạt, cặp táp)
-  | 'player';       // Người chơi chính
+  | 'monk'         // Sư thầy (áo vàng sa môn, đầu trần, cầm tràng hạt)
+  | 'fisherman'    // Ngư dân (áo mưa vàng, mũ rộng vành, cần câu)
+  | 'influencer'   // Influencer (đồ trendy, mũ lưỡi trai, điện thoại selfie)
+  | 'taxi_driver'  // Tài xế công nghệ (áo xanh lá đặc trưng, mũ lưỡi trai, điện thoại nhận cuốc)
+  | 'bus_driver'   // Tài xế xe bus (đồng phục xanh dương, mũ kê-pi, sổ tuyến)
+  | 'online_seller'// Chị bán hàng online (tạp dề, băng đô, thùng hàng bọc màng co)
+  | 'tailor'       // Thợ may (thước dây quàng cổ, kéo cắt)
+  | 'player';      // Người chơi chính
 
 /** Kiểu tóc; mặc định suy ra từ archetype. */
 export type HairStyle = 'side_part' | 'spiky' | 'pigtails' | 'bun' | 'long' | 'ponytail' | 'buzz' | 'curly' | 'plain';
@@ -35,7 +42,8 @@ export type HairStyle = 'side_part' | 'spiky' | 'pigtails' | 'bun' | 'long' | 'p
 /** Đạo cụ riêng của khách quen (cầm tay, đội đầu hoặc vác vai). */
 export type PropKind =
   | 'non_la' | 'xoi_basket' | 'phone' | 'lollipop' | 'notebook' | 'handbag' | 'laptop' | 'oil_can'
-  | 'flowers' | 'cable_coil' | 'meat_bag' | 'beer_crate' | 'megaphone' | 'wood_plank' | 'flag' | 'cake_box';
+  | 'flowers' | 'cable_coil' | 'meat_bag' | 'beer_crate' | 'megaphone' | 'wood_plank' | 'flag' | 'cake_box'
+  | 'stethoscope';
 
 export interface CharacterMeshOptions {
   archetype?: CharacterArchetype;
@@ -81,7 +89,8 @@ export const SKIN_TONES = {
 };
 
 type JobArchetype = 'construction_worker' | 'nurse' | 'shipper' | 'chef' | 'young_mom' | 'security_guard' | 'teacher' | 'farmer' | 'athlete'
-  | 'barber' | 'mechanic' | 'electrician' | 'police' | 'soldier' | 'barista' | 'doctor' | 'banker';
+  | 'barber' | 'mechanic' | 'electrician' | 'police' | 'soldier' | 'barista' | 'doctor' | 'banker'
+  | 'monk' | 'fisherman' | 'influencer' | 'taxi_driver' | 'bus_driver' | 'online_seller' | 'tailor';
 
 /** Màu đồng phục theo nghề. */
 const JOB_UNIFORMS: Record<JobArchetype, { top: number; pants: number }> = {
@@ -102,11 +111,18 @@ const JOB_UNIFORMS: Record<JobArchetype, { top: number; pants: number }> = {
   barista: { top: 0x6b3fa0, pants: 0x2d3436 },
   doctor: { top: 0xf8f9fa, pants: 0xdfe8ee },
   banker: { top: 0x2c3e50, pants: 0x17202a },
+  monk: { top: 0xf4a742, pants: 0xa04000 },
+  fisherman: { top: 0xf1c40f, pants: 0x2c3e50 },
+  influencer: { top: 0xff6b9d, pants: 0x2d3436 },
+  taxi_driver: { top: 0x00b14f, pants: 0x2d3436 },
+  bus_driver: { top: 0x2560ab, pants: 0x1e3a5f },
+  online_seller: { top: 0xe67e22, pants: 0x34495e },
+  tailor: { top: 0x8e6fb8, pants: 0x2d3436 },
 };
 
 const isJob = (a: CharacterArchetype): a is JobArchetype => a in JOB_UNIFORMS;
 
-const OUTDOOR_JOBS: CharacterArchetype[] = ['worker_driver', 'construction_worker', 'shipper', 'farmer', 'athlete'];
+const OUTDOOR_JOBS: CharacterArchetype[] = ['worker_driver', 'construction_worker', 'shipper', 'farmer', 'athlete', 'fisherman'];
 
 const mat = (color: number, roughness = 0.5, metalness = 0) => new THREE.MeshStandardMaterial({ color, roughness, metalness });
 
@@ -178,6 +194,28 @@ function addJobHeadwear(job: JobArchetype, headGroup: THREE.Group, s: number) {
   } else if (job === 'banker') {
     // Tóc vuốt gọn + kính, chưa cần mũ
     add(new THREE.Mesh(new THREE.TorusGeometry(0.4 * s, 0.015, 6, 18), mat(0x1f3a93, 0.3, 0.4)), 0, 0.16, 0).rotation.x = Math.PI / 2;
+  } else if (job === 'fisherman') {
+    // Mũ mưa rộng vành vàng cá canh
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.42 * s, 16, 14, 0, Math.PI * 2, 0, Math.PI * 0.52), mat(0xf1c40f, 0.4)), 0, 0.08, 0);
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.58 * s, 0.6 * s, 0.03, 22), mat(0xf1c40f, 0.4)), 0, 0.02, 0);
+  } else if (job === 'influencer') {
+    // Mũ lưỡi trai màu hồng ngược trông chất chơi
+    const capMat = mat(0xff6b9d, 0.4);
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.42 * s, 16, 14, 0, Math.PI * 2, 0, Math.PI * 0.52), capMat), 0, 0.06, 0);
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.44 * s, 0.44 * s, 0.02, 16, 1, false, Math.PI * 0.7, Math.PI * 0.6), capMat), 0, 0.08, -0.16).rotation.x = -0.2;
+  } else if (job === 'taxi_driver') {
+    // Mũ lưỡi trai xanh lá của hãng xe công nghệ
+    const capMat = mat(0x00b14f, 0.4);
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.42 * s, 16, 14, 0, Math.PI * 2, 0, Math.PI * 0.52), capMat), 0, 0.06, 0);
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.44 * s, 0.44 * s, 0.02, 16, 1, false, -Math.PI * 0.3, Math.PI * 0.6), capMat), 0, 0.08, 0.16).rotation.x = 0.2;
+  } else if (job === 'bus_driver') {
+    // Mũ kê-pi đồng phục tài xế
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.44 * s, 0.4 * s, 0.14, 18), mat(0x2560ab, 0.4)), 0, 0.36, 0);
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.46 * s, 0.46 * s, 0.03, 18), mat(0x1e3a5f, 0.35)), 0, 0.05, 0);
+    add(new THREE.Mesh(new THREE.TorusGeometry(0.43 * s, 0.018, 6, 20), mat(0xf1c40f, 0.4, 0.5)), 0, 0.29, 0).rotation.x = Math.PI / 2;
+  } else if (job === 'online_seller') {
+    // Băng đô buộc tóc gọn của chị đóng hàng
+    add(new THREE.Mesh(new THREE.TorusGeometry(0.4 * s, 0.022, 6, 18), mat(0xd35400, 0.5)), 0, 0.13, 0).rotation.x = Math.PI / 2;
   }
 }
 
@@ -300,16 +338,80 @@ function addJobGear(job: JobArchetype, outfit: THREE.Group, rightHand: THREE.Gro
     // Cà vạt + cặp táp
     wear(new THREE.ConeGeometry(0.045, 0.22, 4), 0x8a2b3b, 0, 0.8, 0.24);
     hold(leftHand, new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.2, 0.06), mat(0x5a3d2b, 0.5)), 0.08); // Cặp táp nâu
+  } else if (job === 'monk') {
+    // Tràng hạt ôm trước bụng + túi vải đeo vai
+    const beads = new THREE.Group();
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      const bead = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 8), mat(0x6d4c2f, 0.4));
+      bead.position.set(Math.cos(a) * 0.07, Math.sin(a) * 0.07, 0);
+      beads.add(bead);
+    }
+    hold(rightHand, beads);
+    wear(new THREE.BoxGeometry(0.12, 0.16, 0.04), 0x8d5524, -0.16, 0.62, 0.24); // Túi vải
+  } else if (job === 'fisherman') {
+    // Cần câu tre dài vác trên vai + thùng cá
+    const rod = wear(new THREE.CylinderGeometry(0.012, 0.008, 1.1, 6), 0x8b6914, 0.24, 1.02, -0.05);
+    rod.rotation.z = Math.PI * 0.42;
+    wear(new THREE.CylinderGeometry(0.09, 0.07, 0.14, 10), 0x2980b9, -0.3, 0.5, 0.28); // Thùng cá
+  } else if (job === 'influencer') {
+    // Điện thoại cầm lên live + giá đỡ bỏ túi
+    hold(rightHand, new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.13, 0.015), mat(0x111111, 0.2)), 0.1);
+    wear(new THREE.BoxGeometry(0.16, 0.05, 0.01), 0xffeaa7, 0.14, 0.62, 0.26); // Túi mini chéo ngực
+  } else if (job === 'taxi_driver') {
+    // Điện thoại nhận cuốc gắn tay + nước mời khách
+    hold(rightHand, new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.13, 0.015), mat(0x111111, 0.2)), 0.1);
+    hold(leftHand, new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.1, 10), mat(0x5dade2, 0.3)), 0.06);
+  } else if (job === 'bus_driver') {
+    // Sổ tuyến giờ chạy + còi hụ cầm tay
+    hold(leftHand, new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2, 0.03), mat(0xecf0f1)), 0.08);
+    const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.055, 0.1, 10), mat(0xd35400, 0.4));
+    horn.rotation.x = Math.PI / 2;
+    hold(rightHand, horn);
+  } else if (job === 'online_seller') {
+    // Thùng hàng bọc màng co ôm trước bụng + băng keo trên tay
+    const parcel = wear(new THREE.BoxGeometry(0.3, 0.2, 0.2), 0xc49a5a, 0, 0.55, 0.3);
+    wear(new THREE.BoxGeometry(0.31, 0.045, 0.205), 0xd4b896, 0, 0.55, 0.3); // Dải băng keo
+    parcel.castShadow = true;
+    hold(rightHand, new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.09, 8), mat(0x8e44ad, 0.3)), 0.08); // Cuộn băng keo
+  } else if (job === 'tailor') {
+    // Thước dây quàng cổ + kéo cắt trong tay
+    wear(new THREE.TorusGeometry(0.2, 0.012, 6, 20, Math.PI), 0xffffff, 0, 0.84, 0.16).rotation.set(Math.PI / 2, 0, Math.PI / 2);
+    const scissors = new THREE.Group();
+    for (const dir of [-1, 1]) {
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.16, 0.01), mat(0xb2bec3, 0.3, 0.8));
+      blade.rotation.z = dir * 0.2;
+      blade.position.y = -0.06;
+      scissors.add(blade);
+    }
+    hold(rightHand, scissors);
   }
 }
 
 function defaultHairStyle(a: CharacterArchetype): HairStyle {
-  if (a === 'gentleman' || a === 'player') return 'side_part';
-  if (a === 'student_boy' || a === 'coder_guy' || a === 'athlete') return 'spiky';
+  if (a === 'gentleman' || a === 'player' || a === 'taxi_driver' || a === 'bus_driver') return 'side_part';
+  if (a === 'student_boy' || a === 'coder_guy' || a === 'athlete' || a === 'fisherman') return 'spiky';
   if (a === 'student_girl') return 'pigtails';
-  if (a === 'elder_woman') return 'bun';
-  if (a === 'office_lady' || a === 'nurse' || a === 'young_mom' || a === 'teacher') return 'long';
+  if (a === 'elder_woman' || a === 'tailor') return 'bun';
+  if (a === 'office_lady' || a === 'nurse' || a === 'young_mom' || a === 'teacher' || a === 'influencer') return 'long';
+  if (a === 'online_seller') return 'ponytail';
   return 'plain';
+}
+
+/**
+ * Biến thể giới tính cho các archetype trung tính: cùng một kiểu người nhưng đổi kiểu tóc
+ * theo `gender`. Archetype đã lây nam/nữ rõ ràng (elder, y tá, bảo vệ...) giữ nguyên.
+ */
+function genderHairStyle(a: CharacterArchetype, g: CharacterGender | undefined): HairStyle {
+  if (g === 'female') {
+    if (a === 'gentleman' || a === 'player') return 'long';
+    if (a === 'coder_guy' || a === 'worker_driver') return 'ponytail';
+    if (a === 'student_boy') return 'pigtails';
+  } else if (g === 'male') {
+    if (a === 'office_lady' || a === 'student_girl') return 'side_part';
+    if (a === 'online_seller') return 'side_part';
+  }
+  return defaultHairStyle(a);
 }
 
 /** Đạo cụ riêng: mặc định cầm tay trái, để tay phải còn đồ nghề. */
@@ -395,6 +497,16 @@ function addProp(prop: PropKind, headGroup: THREE.Group, outfit: THREE.Group, ri
     ), rightHand);
   } else if (prop === 'cake_box') {
     hold(group([box(0.22, 0.12, 0.22, 0xffeaa7, 0.6), 0, 0, 0], [box(0.23, 0.02, 0.04, 0xe84393, 0.4), 0, 0.06, 0]), leftHand, 0.12);
+  } else if (prop === 'stethoscope') {
+    // Ống nghe quàng cổ, hai ống nhỏ xuống ngực và mảnh nghe bạc trước ngực
+    const tubeMat = mat(0x2d3436, 0.4);
+    const arc = onBody(new THREE.Mesh(new THREE.TorusGeometry(0.14 * s, 0.014 * s, 6, 16, Math.PI), tubeMat), 0, 0.86, 0.17);
+    arc.rotation.z = Math.PI;
+    const left = onBody(new THREE.Mesh(new THREE.CylinderGeometry(0.008 * s, 0.008 * s, 0.2 * s, 6), tubeMat), -0.08 * s, 0.72, 0.27);
+    left.rotation.z = 0.15;
+    const right = onBody(new THREE.Mesh(new THREE.CylinderGeometry(0.008 * s, 0.008 * s, 0.2 * s, 6), tubeMat), 0.08 * s, 0.72, 0.27);
+    right.rotation.z = -0.15;
+    onBody(new THREE.Mesh(new THREE.CylinderGeometry(0.035 * s, 0.035 * s, 0.015 * s, 12), mat(0xb2bec3, 0.3, 0.8)), 0, 0.6, 0.29).rotation.x = Math.PI / 2;
   }
 }
 
@@ -480,7 +592,7 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
   }
 
   // Má hồng (đặc biệt đậm hơn cho trẻ em / bạn nữ)
-  if (archetype === 'student_girl' || archetype === 'student_boy' || archetype === 'office_lady' || archetype === 'gentleman') {
+  if (archetype === 'student_girl' || archetype === 'student_boy' || archetype === 'office_lady' || archetype === 'gentleman' || archetype === 'influencer') {
     const blushMat = new THREE.MeshBasicMaterial({ color: 0xff6b81, transparent: true, opacity: isChild ? 0.45 : 0.28 });
     for (const side of [-1, 1]) {
       const blush = new THREE.Mesh(new THREE.CircleGeometry(0.065 * headScale, 14), blushMat);
@@ -587,13 +699,16 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
   const hairGroup = new THREE.Group();
   headGroup.add(hairGroup);
 
-  const hairStyle: HairStyle = options.hairStyle ?? defaultHairStyle(archetype);
+  const hairStyle: HairStyle = options.hairStyle ?? genderHairStyle(archetype, options.gender);
   const shortCap = archetype === 'elder_man' || hairStyle === 'buzz';
-  const hairCapGeo = new THREE.SphereGeometry((hairStyle === 'buzz' ? 0.395 : 0.405) * headScale, 20, 16, 0, Math.PI * 2, 0, Math.PI * (shortCap ? 0.45 : 0.65));
-  const hairCap = new THREE.Mesh(hairCapGeo, hairMat);
-  hairCap.position.set(0, 0.04 * headScale, -0.04 * headScale);
-  hairCap.castShadow = true;
-  hairGroup.add(hairCap);
+  // Sư thầy đầu trần: không mọc tóc
+  if (archetype !== 'monk') {
+    const hairCapGeo = new THREE.SphereGeometry((hairStyle === 'buzz' ? 0.395 : 0.405) * headScale, 20, 16, 0, Math.PI * 2, 0, Math.PI * (shortCap ? 0.45 : 0.65));
+    const hairCap = new THREE.Mesh(hairCapGeo, hairMat);
+    hairCap.position.set(0, 0.04 * headScale, -0.04 * headScale);
+    hairCap.castShadow = true;
+    hairGroup.add(hairCap);
+  }
 
   if (hairStyle === 'side_part') {
     // Tóc vuốt side-part quý ông bồng bềnh
@@ -647,17 +762,17 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
     pin.position.set(0, 0.1, -0.38);
     hairGroup.add(pin);
   } else if (hairStyle === 'long') {
-    // Tóc dài uốn lượn ngang vai thanh lịch
+    // Tóc dài uốn lượn ngang vai thanh lịch: mái ngố phủ đều trán, hai lọn thả sau vai
     for (const side of [-1, 1]) {
-      const lock = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.28, 4, 10), hairMat);
-      lock.position.set(side * 0.32, -0.05, 0.08);
-      lock.rotation.z = side * 0.15;
+      const lock = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.3, 4, 10), hairMat);
+      lock.position.set(side * 0.34, -0.1, -0.04);
+      lock.rotation.z = side * 0.12;
       hairGroup.add(lock);
     }
-    const frontLock = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), hairMat);
-    frontLock.scale.set(1.3, 0.7, 0.8);
-    frontLock.position.set(-0.1, 0.32, 0.24);
-    hairGroup.add(frontLock);
+    const bangs = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 10), hairMat);
+    bangs.scale.set(1.55, 0.55, 0.8);
+    bangs.position.set(0, 0.3, 0.25);
+    hairGroup.add(bangs);
   } else if (hairStyle === 'ponytail') {
     // Tóc cột đuôi ngựa sau gáy
     const tie = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.02, 6, 12), new THREE.MeshStandardMaterial({ color: 0xfdcb6e, roughness: 0.4 }));

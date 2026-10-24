@@ -1,30 +1,42 @@
 import * as THREE from 'three';
 import { MINUTES_PER_SECOND, useGame, type CartItem } from '../core/store';
-import { furnitureDef } from '../data/furniture';
+import { furnitureDef, isCookStation } from '../data/furniture';
 import { customersPerDay, FEATURES } from '../data/levels';
 import { formatMoney, productById, unlockedProducts } from '../data/products';
 import { trending } from '../data/suppliers';
 import { skyAt } from '../data/weather';
-import { tierMarkdown } from '../data/freshness';
+import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../data/freshness';
 import { demandPriceFactor, keepChance } from '../data/pricing';
-import { dayEffects } from '../data/calendar';
-import { timeBandAt } from '../data/rhythm';
+import { dayEffects, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
+import { COOKED_PRODUCT_IDS, RECIPES } from '../data/recipes';
+import { happyHourActive, happyTraffic, timeBandAt } from '../data/rhythm';
 import { hasSkill } from '../data/titles';
 import { RISK_RULES } from '../data/risks';
+import { isNight, NIGHT_SPAN, NIGHT_THEFT_MUL, nightTrafficAt } from '../data/night';
 import { COMBO_PULL, comboDiscount, comboPartners } from '../data/combos';
-import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, unlockedFavorites, type RegularDef } from '../data/regulars';
-import { pickProfession, PROFESSIONS, type ProfessionDef } from '../data/professions';
+import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, reserveAsk, unlockedFavorites, type RegularDef } from '../data/regulars';
+import { pickProfession, PROFESSIONS, PROFESSION_LOOK, type ProfessionDef } from '../data/professions';
 import { CREDIT_UNLOCK, repaysToday, wantsCredit } from '../data/credit';
 import { ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, HAGGLE_CHANCE, HAGGLE_MIN_TOTAL, HAGGLE_REFUSE_OK, HAGGLE_UNLOCK, haggleOff, oddChange } from '../data/counterDeals';
+import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
+import { earnService } from '../core/biz';
+import { paymentById, pickPayment } from '../data/payments';
 import { askAtCounter, askPending, clearAsk, expireAsk } from '../core/counterAsk';
 import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../data/wholesale';
-import { DIRT_PER_VISIT, dirtVisitFactor, GUARD_DETECT } from '../data/staff';
+import { DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor, GUARD_DETECT } from '../data/staff';
 import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive } from '../data/biz';
 import { redeemLoyalty, storyOnVisit, theftFactor } from '../core/biz';
+import { hasUpgrade } from '../data/upgrades';
+import {
+  impulseChance, impulseOptions, impulseWeight, shelfAttention, stockedAttention, weightedPick, type ShopGeom,
+} from '../data/layout';
+import { playSfx } from '../core/audio';
 
 /** Tỉ lệ món khách chọn trong số hàng đang giảm giá (nếu có). */
 const SALE_HUNT = 0.2;
-import { REVIEW_CHANCE, reputationBonus, type ReviewReason } from '../data/reviews';
+import { REVIEW_CHANCE, type ReviewReason } from '../data/reviews';
+import { reputationOf, repVisitBonus, sampleVisit } from '../data/reputation';
+import { OPENING_TRAFFIC } from '../data/community';
 import { createCart } from '../shop/furnitureView';
 import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
@@ -73,6 +85,8 @@ class Customer extends Walker {
   offered = false;
   /** Chuyện ở quầy lúc tính tiền (xin ghi sổ, mặc cả, thiếu lẻ): 'waiting' = đang chờ chủ tiệm chọn. */
   deal?: Deal | 'waiting';
+  /** Khách tới dùng dịch vụ ở quầy (nạp tiền, thu hộ): tiền lời của lượt này. */
+  service?: { def: ServiceDef; amount: number; fee: number };
 
   constructor(startX: number, regular: RegularDef | null = null, profession: ProfessionDef | null = null) {
     const look = regular?.look;
@@ -81,7 +95,10 @@ class Customer extends Walker {
       look?.hat ? regular!.hatColor : undefined,
       'customer',
       look?.archetype ?? profession?.archetype,
-      look && { topColor: regular!.color, hairStyle: look.hairStyle, hairColor: look.hair, props: look.props, hasGlasses: look.glasses },
+      // Khách quen có diện mạo riêng; khách nghề dùng biến thể màu/đạo cụ nếu nghề đó dùng chung archetype
+      regular?.look
+        ? { topColor: regular.color, hairStyle: look!.hairStyle, hairColor: look!.hair, props: look!.props, hasGlasses: look!.glasses }
+        : profession ? PROFESSION_LOOK[profession.id] : undefined,
     );
     this.regular = regular;
     this.profession = profession;
@@ -132,8 +149,9 @@ export class CustomerManager {
     const counters = this.shop.counters();
     this.rehomeQueues(counters);
 
-    // Ban ngày người đi đường nhiều hơn
-    const daytime = s.minutes >= OPEN_FROM && s.minutes < OPEN_UNTIL;
+    // Ban ngày người đi đường nhiều hơn; có ca đêm thì "ngày" kéo dài tới 6h sáng hôm sau
+    const nightOpen = hasUpgrade(s.biz, 'night');
+    const daytime = s.minutes >= OPEN_FROM && (s.minutes < OPEN_UNTIL || (nightOpen && s.minutes < 30 * 60));
     this.spawnIn -= gameMinutes;
     if (this.spawnIn <= 0) {
       // Khách quen rủ bạn đi cùng: ngay khi có suất sinh, ưu tiên cho bạn vào tiệm
@@ -142,27 +160,37 @@ export class CustomerManager {
         this.spawn(true);
       } else {
         const perDay = customersPerDay(s.level) * 2; // một nửa chỉ đi ngang qua
-        // Giờ cao điểm, ngày lễ, sửa đường, ngày hội của khách quen nữa
+        // Giờ cao điểm, ngày lễ, sửa đường, ngày hội của khách quen nữa; trúng vòng quay thì đông thêm
+        // Ban đêm người đi đường thưa hẳn (kéo dài nửa ca sinh theo ca đêm nên nhân lại)
         const festival = this.festivalToday ? 1.35 : 1;
-        const eventTraffic = s.event?.traffic ?? 1;
-        const rush = (timeBandAt(s.minutes)?.traffic ?? 1) * dayEffects(s.weatherSeed, s.day, s.level).traffic
+        const eventTraffic = (s.event?.traffic ?? 1) * (s.opening?.day === s.day ? OPENING_TRAFFIC : 1) * s.wheelBoost;
+        // Ban đêm sinh khách theo khung ca đêm (22h–6h): thưa nhưng đều, giờ nào cũng có người ghé
+        const night = nightTrafficAt(s.minutes);
+        const bandTraffic = night ?? timeBandAt(s.minutes)?.traffic ?? 1;
+        const rush = bandTraffic * dayEffects(s.weatherSeed, s.day, s.level).traffic
           * (hasSkill(s.skills, 'local_legend') ? 1.1 : 1) * festival * eventTraffic;
-        this.spawnIn = (daytime ? (OPEN_UNTIL - OPEN_FROM) / perDay / rush : 60) * (0.5 + Math.random());
+        this.spawnIn = (daytime ? (night ? NIGHT_SPAN : OPEN_UNTIL - OPEN_FROM) / perDay / rush : 60) * (0.5 + Math.random());
         // Mỗi chậu cây +5% khách ghé, tối đa +25%
         const plants = s.furniture.filter((f) => f.type === 'plant').length;
         // Đang mưa thì ít người ra đường, tạnh mưa lại đông như thường
         const traffic = skyAt(s.weatherSeed, s.day, s.weather, s.minutes).traffic * festival * eventTraffic;
-        // Bày hàng rẻ hơn giá gợi ý thì tiếng lành đồn xa, thêm người ghé; sàn bẩn thì ngại vào
-        const visit = (0.5 + Math.min(plants * 0.05, 0.25) + reputationBonus(s.reviews)) * traffic * this.priceAppeal() * dirtVisitFactor(s.dirt)
-          * bizTraffic(s.biz, s.day);
+      // Bày hàng rẻ hơn giá gợi ý thì tiếng lành đồn xa, thêm người ghé; sàn bẩn thì ngại vào; giờ vàng kéo khách về đúng khung
+      const happy = happyHourActive(s.happyHour, s.minutes) ? happyTraffic(s.happyHour!.off) : 1;
+      const visit = (0.5 + Math.min(plants * 0.05, 0.25) + repVisitBonus(reputationOf(s.repLog))) * traffic * this.priceAppeal() * dirtVisitFactor(s.dirt)
+      * bizTraffic(s.biz, s.day) * happy;
         const open = daytime && s.shopOpen;
         // Khách quen tới đúng giờ quen, không phụ thuộc người đi đường
-        const regular = open ? pickRegular(s.day, s.minutes, s.weatherSeed, s.level, s.regulars, this.regularsToday) : undefined;
+        const regular = open ? pickRegular(s.day, s.minutes, s.weatherSeed, s.level, s.regulars, this.regularsToday, reputationOf(s.repLog)) : undefined;
         if (regular) {
           this.regularsToday.push(regular.id);
           if (festivalVisit(regular, s.regulars[regular.id])) this.festivalToday = true;
           this.spawn(true, regular);
-        } else this.spawn(open && Math.random() < visit);
+        } else {
+          // Người đi đường ghé quầy dùng dịch vụ (nạp tiền, đóng tiền điện nước)
+          const svc = open ? rollService(s.biz.services ?? [], s.day, Math.random()) : undefined;
+          if (svc) this.spawn(true, undefined, svc);
+          else this.spawn(open && Math.random() < visit);
+        }
       }
     }
 
@@ -187,7 +215,7 @@ export class CustomerManager {
       if (c.state === 'queued') {
         c.waitedMinutes += gameMinutes;
         if (c.waitedMinutes > c.patience) {
-          c.say('😠');
+          c.say('😠 Chờ lâu quá!');
           s.noteMiss('wait');
           this.leave(c, false);
         }
@@ -196,15 +224,33 @@ export class CustomerManager {
 
     for (const counter of counters) this.updateCheckout(counter, gameDt, cashierSpeed(counter));
 
-    // Xoá khách đã đi khỏi bản đồ
+    // Xoá khách đã đi khỏi bản đồ (kèm giải phóng tài nguyên GPU)
     this.customers = this.customers.filter((c) => {
       const gone = c.state !== 'queued' && !(c.wholesale && c.offered) && c.idle;
-      if (gone) this.scene.remove(c.mesh);
+      if (gone) {
+        this.scene.remove(c.mesh);
+        c.dispose();
+      }
       return !gone;
     });
 
     const waiting = [...this.queues.values()].reduce((sum, q) => sum + q.length, 0);
-    if (s.waiting !== waiting) useGame.setState({ waiting });
+    // Khách còn trong tiệm: đang chọn hàng / đi tới quầy / đang chờ thanh toán — nhân viên tan ca
+    // phải chờ hết đám này mới được về
+    const inside = this.customers.filter((c) => c.state === 'shopping' || c.state === 'toQueue' || c.state === 'queued').length;
+    if (s.waiting !== waiting || s.customersInside !== inside) useGame.setState({ waiting, customersInside: inside });
+  }
+
+  /** Hình dáng tiệm hiện tại (cửa, các chỗ trả tiền) để tính độ được để ý của kệ. */
+  private geom(): ShopGeom {
+    return {
+      width: this.shop.width,
+      depth: this.shop.depth,
+      paySpots: this.shop.counters().map((ct) => {
+        const p = this.shop.toLocal(ct.pay);
+        return { x: p.x, z: p.z };
+      }),
+    };
   }
 
   /** Trung bình hệ số giá rẻ của các món đang bày (1 = giá gợi ý hoặc đắt hơn). */
@@ -232,7 +278,8 @@ export class CustomerManager {
   /** Khách theo nghề: phần lớn mua đồ nghề mình hay dùng, còn lại như khách thường. */
   private professionWants(def: ProfessionDef, count: number) {
     const level = useGame.getState().level;
-    const likes = def.likes.filter((id) => productById(id)?.unlock <= level);
+    const day = useGame.getState().day;
+    const likes = def.likes.filter((id) => productById(id)?.unlock <= level && !offSeason(id, day));
     if (!likes.length) return this.chooseWants(count);
     return Array.from({ length: count }, () => (Math.random() < def.loyalty ? pick(likes) : this.chooseWants(1)[0]));
   }
@@ -240,34 +287,50 @@ export class CustomerManager {
   /** Món khách muốn mua: phần lớn là hàng đang bày, đôi khi là món tiệm chưa có. */
   private chooseWants(count: number) {
     const s = useGame.getState();
-    const all = unlockedProducts(s.level).map((p) => p.id);
-    const stocked = [
+    // Hàng của dịp (bánh chưng, lồng đèn...) hết dịp thì không ai hỏi mua
+    const inSeason = (id: string) => !offSeason(id, s.day);
+    const all = unlockedProducts(s.level).map((p) => p.id).filter(inSeason);
+    const shelved = [
       ...new Set(s.furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!))),
     ];
+    const stocked = shelved.filter(inSeason);
+    // Hàng của dịp còn tồn: bày giá xả thật thấp thì có khách săn hàng rẻ mua dọn
+    const clearance = shelved.filter((id) => !inSeason(id) && s.priceOf(id) <= productById(id).sell * OFF_SEASON_CLEARANCE);
     // Hàng hot tuần này: khách hay hỏi mua hơn hẳn
-    const hot = trending(s.day, s.level);
+    const hot = trending(s.day, s.level).filter(inSeason);
     // Món của mùa lễ / đang nổi, và món hợp khung giờ (sáng sữa bánh mì, tối rau thịt)
     const unlocked = (id: string) => productById(id).unlock <= s.level;
     const effects = dayEffects(s.weatherSeed, s.day, s.level);
     const seasonal = effects.hot;
     const timely = (timeBandAt(s.minutes)?.wants ?? []).filter(unlocked);
-    // Trời mưa/giông: khách hay ghé mua áo mưa, ô, nước, đồ tránh rét khẩn cấp
-    const rainy = (s.weather === 'rain' || s.weather === 'storm') ? ['aomua', 'o', 'nuoc'].filter(unlocked) : [];
+    // Trời mưa/giông: khách hay ghé mua áo mưa, ô, nước khẩn cấp — và trời lạnh thì thèm đồ nóng
+    const rainy = (s.weather === 'rain' || s.weather === 'storm') ? ['aomua', 'o', 'nuoc', 'mi_trung_nong', 'tra_gung_nong', 'banh_bao_hap', 'che_dau_xanh'].filter(unlocked) : [];
+    // Nắng đẹp: đồ mát mát lạnh bán bùng nổ
+    const sunnyCool = s.weather === 'sunny' ? ['nuoc_mia', 'kem_trai_cay', 'sinh_to_trai_cay', 'tra_dao_cam_sa'].filter(unlocked) : [];
     // Hàng cận hạn đang giảm giá: có khách chuyên săn đồ giảm
     const onSale = [
       ...new Set(s.furniture.flatMap((f) => f.tiers.filter((t) => tierMarkdown(t.productId, t.lots, t.count) > 0).map((t) => t.productId!))),
     ];
+    // Món nhà làm đang bày: mùi thơm kéo khách hỏi mua nhiều hơn hẳn hàng đóng gói
+    const homemade = shelved.filter((id) => COOKED_PRODUCT_IDS.has(id));
+    // Kệ dễ thấy (gần cửa, sát lối đi chính) thì món trên đó được hỏi mua nhiều hơn
+    const attention = stockedAttention(s.furniture, this.geom());
     return Array.from({ length: count }, () => {
       if (onSale.length && Math.random() < SALE_HUNT) return pick(onSale);
+      if (homemade.length && Math.random() < 0.25) return pick(homemade);
+      if (clearance.length && Math.random() < OFF_SEASON_HUNT) return pick(clearance);
       if (rainy.length && Math.random() < 0.3) return pick(rainy);
+      if (sunnyCool.length && Math.random() < 0.25) return pick(sunnyCool);
       if (seasonal.length && Math.random() < effects.pull) return pick(seasonal);
       if (timely.length && Math.random() < 0.2) return pick(timely);
-      if (Math.random() < 0.15) return pick(hot);
-      return stocked.length && Math.random() < WANTS_STOCKED ? pick(stocked) : pick(all);
+      if (hot.length && Math.random() < 0.15) return pick(hot);
+      return stocked.length && Math.random() < WANTS_STOCKED
+        ? weightedPick(stocked, (id) => attention[id] ?? 1, Math.random)
+        : pick(all);
     });
   }
 
-  private spawn(visit: boolean, regular?: RegularDef) {
+  private spawn(visit: boolean, regular?: RegularDef, service?: ServiceDef) {
     const startX = Math.random() < 0.5 ? -EDGE_X : EDGE_X;
     const st0 = useGame.getState();
     const c = new Customer(startX, regular, regular ? null : pickProfession(st0.minutes, adTargets(st0.biz.ads, st0.day)));
@@ -286,7 +349,7 @@ export class CustomerManager {
     const count = (withCart ? 3 + Math.floor(Math.random() * 5) : 1 + Math.floor(Math.random() * maxItems))
       + (hasSkill(s.skills, 'big_basket') && Math.random() < 0.5 ? 1 : 0);
     if (hasSkill(s.skills, 'charm')) c.sensitivity *= 0.85;
-    c.thief = !regular && s.level >= RISK_RULES.theft.unlock && Math.random() < RISK_RULES.theft.chance * theftFactor(s.biz, s.day);
+    c.thief = !regular && !service && s.level >= RISK_RULES.theft.unlock && Math.random() < RISK_RULES.theft.chance * (hasUpgrade(s.biz, 'night') && isNight(s.minutes) ? NIGHT_THEFT_MUL : 1) * theftFactor(s.biz, s.day) * (hasUpgrade(s.biz, 'camera') ? 0.7 : 1);
     // Có mèo ở quầy: khách nhỏ (học sinh, mẹ bỉm) vui hơn, đỡ sốt ruột
     if (petActive(s.biz.pets.cat, s.day) && c.profession && ['student_highschool', 'student_college', 'mom'].includes(c.profession.id)) c.patience *= 1.3;
     c.wants = regular
@@ -294,12 +357,27 @@ export class CustomerManager {
       : c.profession
         ? this.professionWants(c.profession, Math.max(1, count + c.profession.extraItems))
         : this.chooseWants(count);
+    // Khách quen có lời hẹn giữ món hôm nay: đi lấy đúng món đó trước (kệ trống thì thành mất hẹn)
+    if (regular) {
+      const res = s.reservations[regular.id];
+      if (res && res.day === s.day && productById(res.productId).unlock <= s.level) {
+        for (let i = 0; i < res.qty; i++) c.wants.push(res.productId);
+        c.say('🤝', 2.5);
+      }
+    }
+    // Khách dịch vụ: đi thẳng tới quầy, đôi khi tiện mua kèm 1–2 món
+    if (service) {
+      c.service = { def: service, ...service.fee() };
+      c.wants = Math.random() < SERVICE_BUY_ALONG ? this.chooseWants(1 + Math.floor(Math.random() * 2)) : [];
+    }
     c.state = 'toShop';
     c.path = this.pathTo(c.position, this.shop.doorOutside);
     c.plan.push(() => {
       useGame.getState().addDirt(DIRT_PER_VISIT);
-      if (regular) c.say('👋', 3);
+      if (c.service) c.say(c.service.def.icon, 3);
+      else if (regular) c.say('👋', 3);
       else if (c.profession) c.say(c.profession.icon, 2.5);
+      playSfx('door');
       this.walk(c, this.shop.doorInside);
     });
     if (station && withCart) {
@@ -321,13 +399,23 @@ export class CustomerManager {
         c.pause = 1.5;
         const st = useGame.getState();
         st.noteDemand(want);
+        const shortName = productById(want).name.replace(/\s*\(.*\)\s*/g, '');
         // Giá càng cao so với giá gợi ý thì khách càng ngại mua; món thiết yếu ít bị ảnh hưởng hơn, hàng của mùa lễ cũng vậy
         const tolerance = dayEffects(st.weatherSeed, st.day, st.level).tolerance(want);
         if (Math.random() > keepChance(want, st.priceOf(want), c.sensitivity * tolerance)) {
           c.missing++;
           c.missed.push({ id: want, why: 'price' });
           st.noteMiss('price', want);
-          c.say('💸');
+          c.say(`💸 ${shortName} đắt quá!`);
+          return;
+        }
+        // Khách nhìn hạn dùng ngay tại kệ: hàng còn ≤1 ngày thì một số người bỏ món dù đã giảm giá sâu
+        const shelfF = shelfUid !== undefined ? st.furniture.find((x) => x.uid === shelfUid) : undefined;
+        const shelfTier = shelfF?.tiers.find((x) => x.productId === want && x.count > 0);
+        const shelfLife = shelfTier ? nearestLife(fitLots(shelfTier.lots, shelfTier.count, want)) : null;
+        if (shelfLife !== null && Math.random() < nearExpiryRefuseChance(shelfLife, productById(want).category)) {
+          c.say('⏳ Hàng cận hạn!');
+          st.noteMiss('expired', want);
           return;
         }
         const price = st.takeFromShelf(want, shelfUid);
@@ -338,13 +426,13 @@ export class CustomerManager {
           c.missing++;
           c.missed.push({ id: want, why: 'stock' });
           st.noteMiss('stock', want);
-          c.say('❓');
+          c.say(`❓ Hết ${shortName}!`);
         }
       });
     }
     c.plan.push(() => {
-      if (!c.basket.length) {
-        c.say('😞');
+      if (!c.basket.length && !c.service) {
+        c.say('😞 Không có gì ưng');
         this.leave(c, false);
         return;
       }
@@ -365,6 +453,31 @@ export class CustomerManager {
     c.state = 'toQueue';
     this.walk(c, this.shop.queueSpot(best, queue.length - 1));
     c.plan = [() => (c.state = 'queued')];
+    this.impulseBuy(c, best, queue.length - 1);
+  }
+
+  /**
+   * Hàng chớp nhoáng: đứng chờ tính tiền, khách với tay mua kẹp thêm một món nhỏ
+   * ở kệ đặt trong tầm với quanh quầy — bày kẹo/bánh/nước cạnh quầy thu ngân để tăng giá trị đơn.
+   */
+  private impulseBuy(c: Customer, counter: Counter, queueAhead: number) {
+    const st = useGame.getState();
+    if (st.level < FEATURES.impulse || c.wholesale) return;
+    if (Math.random() >= impulseChance(queueAhead)) return;
+    const pay = this.shop.toLocal(counter.pay);
+    const options = impulseOptions(st.furniture, pay);
+    if (!options.length) return;
+    const buy = weightedPick(options, (o) => impulseWeight(o.productId), Math.random);
+    const price = st.takeFromShelf(buy.productId, buy.uid);
+    if (price === null) return;
+    c.basket.push({ id: buy.productId, price });
+    c.say('🍬', 2);
+    // Đếm cho thành tựu (kệ hàng chớp nhoáng)
+    useGame.setState({ totals: { ...st.totals, impulseSold: st.totals.impulseSold + 1 } });
+    if (!st.impulseHinted) {
+      useGame.setState({ impulseHinted: true });
+      st.notify('🍬 Khách xếp hàng mua kẹp thêm món nhỏ ở kệ bên cạnh quầy! Bày kẹo, bánh, nước giá ≤15k sát quầy thu ngân để bán thêm mỗi đơn.');
+    }
   }
 
   /** Quầy phụ bị dời/bán: khách đang chờ ở đó chuyển sang quầy khác. */
@@ -397,7 +510,7 @@ export class CustomerManager {
     if (combo.count) first.say('🎁');
     // Thẻ tích điểm: khách đủ tem được tặng món rẻ nhất trong giỏ
     const lp = useGame.getState();
-    if (lp.level >= LOYALTY_UNLOCK && Math.random() < loyaltyRedeemChance(lp.biz.loyalty)) {
+    if (first.basket.length && lp.level >= LOYALTY_UNLOCK && Math.random() < loyaltyRedeemChance(lp.biz.loyalty)) {
       combo.discount += redeemLoyalty(first.basket.map((it) => it.price));
       first.say('🎫', 2);
     }
@@ -424,27 +537,70 @@ export class CustomerManager {
       if (Math.random() < CANDY_ANNOY) happy = false;
     }
     const onCredit = deal.kind === 'credit' && deal.choice === 0;
+    // Khách tự chọn cách trả tiền: đơn càng lớn càng nghiêng chuyển khoản / ví / thẻ
+    const method = onCredit ? undefined : pickPayment(total, st.level);
     if (onCredit) st.checkoutOnCredit(reg!.id, first.basket, combo.discount, combo.count);
-    else st.checkout(first.basket, combo.discount, combo.count);
+    else if (first.basket.length) {
+      st.checkout(first.basket, combo.discount, combo.count, method);
+      playSfx('sale');
+    }
+    if (first.service) {
+      earnService(first.service.fee);
+      first.say(first.service.def.icon, 2);
+    }
     if (first.regular) {
       useGame.getState().regularVisit(first.regular.id, first.basket, true);
       storyOnVisit(first.regular.id);
       // Khách quen có perk giới thiệu bạn bè: rủ thêm khách lẻ vào tiệm
       const friends = referFriends(first.regular, useGame.getState().regulars[first.regular.id]);
       if (friends > 0) this.friendsBurst += friends;
+      this.maybeReserve(first, counter);
     }
     // Khách quen đã trả tiền rồi thì không tính là bỏ về, chỉ hơi phật ý
     if (!happy && first.regular) {
       useGame.getState().adjustFriendship(first.regular.id, -1);
       happy = true;
     }
+    if (method && method !== 'cash') first.say(paymentById(method).icon, 2);
     first.say(!happy ? '😒' : onCredit ? '📒' : first.regular ? '💛' : first.missing ? '🙂' : '😊');
-    this.leave(first, happy);
+    this.leave(first, happy, true);
+  }
+
+  /** Sau lần mua hài lòng: khách quen đủ thân có thể nhờ giữ một món ưa thích đến ngày mai. */
+  private maybeReserve(c: Customer, counter: Counter) {
+    const st = useGame.getState();
+    const reg = c.regular!;
+    const rng = Math.random;
+    // Có trạm nấu rồi thì khách quen còn đặt trước suất ngon ("mai ghé lấy, chú nấu sẵn nhé")
+    const stations = new Set(st.furniture.filter((f) => isCookStation(f.type)).map((f) => f.type));
+    const cookable = stations.size ? RECIPES.filter((r) => r.unlock <= st.level && stations.has(r.station)).map((r) => r.outputId) : [];
+    const ask = reserveAsk(reg, st.regulars[reg.id], st.level, !!st.reservations[reg.id], rng, cookable);
+    if (!ask || askPending()) return;
+    const name = productById(ask.productId).name;
+    const cooked = COOKED_PRODUCT_IDS.has(ask.productId);
+    const accept = () => useGame.getState().addReservation(reg.id, ask.productId, ask.qty);
+    if (!this.playerAtCounter(counter)) {
+      // Không có ai ở quầy: khách để lời nhắn, tiệm nhận luôn (mai không giữ được thì khách phật ý)
+      accept();
+      c.say('🤝', 3);
+      return;
+    }
+    c.say('🤝', 3);
+    askAtCounter({
+      icon: '🤝', who: reg.name,
+      text: cooked
+        ? `mai cháu ghé, chú nấu sẵn giúp ${ask.qty} ${name} nhé? (nấu ở trạm rồi bày lên kệ, giữ đúng hẹn thì thân hơn)`
+        : `mai cháu ghé, chú giữ giúp ${ask.qty} ${name} nhé? (giữ đúng thì thân hơn, hẹn mà không mua được thì phật ý)`,
+      options: ['🤝 Giữ giúp', 'Không giữ được'], fallback: 0,
+      expiresAt: st.minutes + ASK_MINUTES,
+      resolve: (choice) => { if (choice === 0) accept(); },
+    });
   }
 
   /** Quyết định chuyện ở quầy một lần cho mỗi khách; người chơi đứng quầy thì hỏi, không thì tự chọn mặc định. */
   private counterDeal(c: Customer, counter: Counter): Deal | 'waiting' {
     if (c.deal) return c.deal;
+    if (!c.basket.length) return (c.deal = { kind: 'none', amount: 0, choice: 0 });
     const st = useGame.getState();
     const total = c.basket.reduce((n, it) => n + it.price, 0);
     const reg = c.regular;
@@ -515,7 +671,9 @@ export class CustomerManager {
     const r = RISK_RULES.theft;
     const staffed = this.shop.counters().some((ct) => this.cashierSpeed(ct) > 0);
     const dog = petActive(st.biz.pets.dog, st.day) ? 0.25 : 0;
-    const chance = dog + (this.guardOnDuty()
+    // Camera ghi hình dọc quầy: kể cả không ai đứng quầy vẫn bắt được kẻ gian qua hình
+    const camera = hasUpgrade(st.biz, 'camera') ? 0.3 : 0;
+    const chance = dog + camera + (this.guardOnDuty()
       ? GUARD_DETECT
       : (staffed ? r.detectCashier : r.detectNobody) + (hasSkill(st.skills, 'sharp_eye') ? r.sharpEyeBonus : 0));
     const value = c.basket.reduce((n, it) => n + it.price, 0);
@@ -539,8 +697,18 @@ export class CustomerManager {
     st.recordCounterfeit(note, Math.random() < r.detect + (hasSkill(st.skills, 'sharp_eye') ? r.sharpEyeBonus : 0));
   }
 
-  private leave(c: Customer, happy: boolean) {
-    useGame.getState().recordVisit(happy);
+  private leave(c: Customer, happy: boolean, paid = happy) {
+    const st = useGame.getState();
+    st.recordVisit(happy, sampleVisit({
+      // Giá trên giỏ thấp hơn giá niêm yết là lô cận hạn tự giảm giá
+      bought: paid ? c.basket.map((it) => ({ id: it.id, nearExpiry: it.price < st.priceOf(it.id) })) : [],
+      priceMisses: c.missed.filter((m) => m.why === 'price').length,
+      stockMisses: c.missed.filter((m) => m.why === 'stock').length,
+      walkedOut: !paid && c.basket.length > 0,
+      waitedMinutes: c.waitedMinutes,
+      patience: c.patience,
+      dirt: st.dirt / DIRT_MAX,
+    }));
     if (c.regular && !happy) useGame.getState().regularVisit(c.regular.id, c.basket, false);
     this.review(c, happy);
     const queue = c.counterKey ? this.queues.get(c.counterKey) : undefined;
@@ -589,11 +757,16 @@ export class CustomerManager {
     return path.length ? path : [to.clone()];
   }
 
-  /** Kệ có món hàng này; không có thì một kệ cùng ngành hàng (khách đi tìm rồi thất vọng). */
+  /** Kệ có món hàng này; không có thì một kệ cùng ngành hàng (khách đi tìm rồi thất vọng).
+   *  Nhiều kệ cùng món: khách tới kệ dễ thấy hơn. */
   private shelfWith(productId: string) {
     const shelves = useGame.getState().furniture.filter((f) => furnitureDef(f.type).tiers > 0);
     const having = shelves.filter((f) => !f.broken && f.tiers.some((t) => t.productId === productId && t.count > 0));
-    if (having.length) return pick(having);
+    if (having.length === 1) return having[0];
+    if (having.length > 1) {
+      const attention = shelfAttention(shelves, this.geom());
+      return weightedPick(having, (f) => attention.get(f.uid) ?? 1, Math.random);
+    }
     const sameKind = shelves.filter((f) => furnitureDef(f.type).categories.includes(productById(productId).category));
     return pick(sameKind.length ? sameKind : shelves);
   }
@@ -631,7 +804,10 @@ export class CustomerManager {
   /** Xoá hết khách (sang ngày mới). */
   reset() {
     clearAsk();
-    for (const c of this.customers) this.scene.remove(c.mesh);
+    for (const c of this.customers) {
+      this.scene.remove(c.mesh);
+      c.dispose();
+    }
     this.customers = [];
     this.queues.clear();
     this.checkoutProgress.clear();

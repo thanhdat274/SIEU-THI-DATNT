@@ -1,14 +1,19 @@
 import {
-  ACHIEVEMENTS, adById, activeAds, BREAKFAST, closeWeek, emptyWeek, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK,
-  LOAN_DAILY_RATE, LOAN_DAYS, LOAN_UNLOCK, loanOptions, petActive, petDef, PETS, RIVAL_BEAT_REWARD, RIVAL_BEAT_XP,
-  RIVAL_COOLDOWN, RIVAL_NAMES, RIVAL_START, RIVAL_UNLOCK, rivalNightly, STORIES, SURPRISE_CHANCE, SURPRISES, VEHICLES,
-  WEEK_DAYS, type AchievementCtx, type BizState, type PetKind, type Vehicle,
+  ACHIEVEMENTS, adById, activeAds, BREAKFAST, closeWeek, COUNTER_RETAILIATE, COUNTER_RETAILIATE_BUFF, COUNTER_STREAK_MAX,
+  counterById, emptyWeek, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK,
+  LOAN_DAILY_RATE, LOAN_DAYS, LOAN_UNLOCK, loanOptions, petActive, petDef, PETS, PRICE_WAR_MIN_SALES, RIVAL_BEAT_REWARD,
+  RIVAL_BEAT_XP, RIVAL_COOLDOWN, RIVAL_NAMES, RIVAL_START, RIVAL_UNLOCK, rivalNightly, STORIES, SURPRISE_CHANCE, SURPRISES,
+  VEHICLES, WEEK_DAYS, type AchievementCtx, type BizState, type CounterTactic, type PetKind, type Vehicle,
 } from '../data/biz';
 import { chapterById, nextChapter, STORY_RIVAL_NAME } from '../data/chapters';
 import { nearestLife } from '../data/freshness';
+import { isCookStation } from '../data/furniture';
 import { formatMoney, productById } from '../data/products';
 import { REGULARS } from '../data/regulars';
 import { summarizeReviews } from '../data/reviews';
+import { reputationOf } from '../data/reputation';
+import { serviceById } from '../data/services';
+import { upgradeById, type UpgradeId } from '../data/upgrades';
 import { useGame, type DayStats, type GameState } from './store';
 
 const S = () => useGame.getState();
@@ -39,6 +44,28 @@ export function buyAd(id: string) {
 export function setLoyalty(on: boolean, stamps?: 5 | 10 | 15) {
   const l = S().biz.loyalty;
   patch({ loyalty: { ...l, on, stamps: stamps ?? l.stamps } });
+}
+
+// ───── Phản công đối thủ ─────
+
+/** Chạy một đợt phản công đối thủ hôm nay: mỗi ngày một đợt, mỗi chiến thuật có thời gian hồi. */
+export function startCounter(tactic: CounterTactic) {
+  const s = S();
+  const def = counterById(tactic);
+  if (!s.biz.rival) return s.notify('Chưa có đối thủ nào mở cạnh tranh');
+  if (s.biz.counter?.day === s.day) return s.notify('Hôm nay đã chạy một đợt phản công rồi, mai tính tiếp');
+  if (s.day < (s.biz.counterReady[tactic] ?? 0)) return s.notify(`${def.name} đang hồi, dùng lại được từ ngày ${s.biz.counterReady[tactic]}`);
+  if (def.cost && !pay(def.cost, def.name.toLowerCase())) return;
+  patch({
+    counter: { tactic, day: s.day },
+    counterReady: { ...s.biz.counterReady, [tactic]: s.day + def.cooldown },
+  });
+  const note = tactic === 'price'
+    ? '💸 Đối đầu giá: hôm nay mọi món bán rẻ hơn 10% niêm yết — bán được 30 món thì đêm nay đối thủ mất sức mạnh!'
+    : tactic === 'ad'
+      ? '📢 Quảng cáo xuyên hẻm đang chạy: hôm nay khách đông thêm, đêm nay đối thủ mất sức mạnh'
+      : '🎁 Tri ân khách quen: khách quen ghé hôm nay được tặng quà (+2 thân thiết)';
+  s.notify(note);
 }
 
 /** Khách vừa đủ tem: tặng món rẻ nhất trong giỏ; trả về số tiền giảm. */
@@ -106,6 +133,17 @@ export function feedPet(kind: PetKind) {
   s.notify(`${def.icon} ${def.name} ăn no, vẫy đuôi rối rít`);
 }
 
+/** Mua thiết bị một lần (camera an ninh, máy POS) — dùng vĩnh viễn sau khi lắp. */
+export function buyUpgrade(id: UpgradeId) {
+  const s = S();
+  const def = upgradeById(id);
+  if (!def || s.biz.upgrades?.includes(id)) return;
+  if (s.level < def.unlock) return s.notify(`Cần cấp ${def.unlock} để mua ${def.name}`);
+  if (!pay(def.price, `lắp ${def.name}`)) return;
+  patch({ upgrades: [...(S().biz.upgrades ?? []), id] });
+  s.notify(`${def.icon} Đã lắp ${def.name}! ${def.desc}`);
+}
+
 export const theftFactor = (b: BizState, day: number) => (petActive(b.pets.dog, day) ? 0.45 : 1);
 export const spoilFactor = (b: BizState, day: number) => (petActive(b.pets.cat, day) ? 0.8 : 1);
 
@@ -117,6 +155,12 @@ export function achievementCtx(s: GameState): AchievementCtx {
     closeFriends: Object.values(s.regulars).filter((r) => r.friendship >= 40).length,
     rivalsBeaten: s.biz.rivalsBeaten, petCount: Object.keys(s.biz.pets).length, homeDecor: s.biz.home.length,
     vehicle: s.biz.vehicle, perfectDays: s.biz.perfectDays,
+    cookedSold: s.totals.cookedSold,
+    cookedStations: new Set(s.furniture.map((f) => f.type).filter(isCookStation)).size,
+    qualityStars: reputationOf(s.repLog).factors.quality,
+    impulseSold: s.totals.impulseSold,
+    cookOrdersDone: s.totals.cookOrdersDone,
+    counterKills: s.biz.counterKills,
   };
 }
 
@@ -189,6 +233,8 @@ export function closeStory() {
 export function checkChapters() {
   const s = S();
   if (s.biz.chapterPending || s.biz.storyPending || s.panel) return;
+  // Mỗi ngày tối đa một chương: lên cấp nhanh không dồn mấy hội thoại liên tiếp
+  if (s.biz.chapterDay === s.day) return;
   const ch = nextChapter(s.biz.chapters, {
     day: s.day, level: s.level, customers: s.totals.customers, staffCount: s.staff.length, shopTier: s.shopTier,
     hasRival: !!s.biz.rival, rivalsBeaten: s.biz.rivalsBeaten,
@@ -201,7 +247,7 @@ export function closeChapter() {
   const s = S();
   const ch = s.biz.chapterPending ? chapterById(s.biz.chapterPending) : undefined;
   if (!ch) return patch({ chapterPending: null });
-  const b: Partial<BizState> = { chapterPending: null, chapters: [...s.biz.chapters, ch.id] };
+  const b: Partial<BizState> = { chapterPending: null, chapters: [...s.biz.chapters, ch.id], chapterDay: s.day };
   if (ch.effect === 'openRival' && !s.biz.rival) {
     b.rival = { name: STORY_RIVAL_NAME, strength: RIVAL_START, openedDay: s.day, saleUntil: s.day + 2 };
   }
@@ -267,13 +313,33 @@ export function buyHomeItem(id: string) {
   checkAchievements();
 }
 
+// ───── Dịch vụ ở quầy ─────
+
+export function buyService(id: string) {
+  const s = S();
+  const def = serviceById(id);
+  const owned = s.biz.services ?? [];
+  if (!def || owned.includes(id) || s.level < def.unlock || !pay(def.price, def.name.toLowerCase())) return;
+  patch({ services: [...owned, id] });
+  s.notify(`${def.icon} Đã mở dịch vụ ${def.name}: khách sẽ ghé quầy dùng dịch vụ, nhiều người mua kèm`);
+}
+
+/** Một lượt dịch vụ xong ở quầy: cộng tiền lời vào két và doanh thu hôm nay. */
+export function earnService(fee: number) {
+  const s = S();
+  useGame.setState({
+    money: s.money + fee,
+    stats: { ...s.stats, revenue: s.stats.revenue + fee, services: (s.stats.services ?? 0) + fee },
+  });
+}
+
 export function eatBreakfast() {
   const s = S();
   if (s.biz.breakfastDay === s.day) return s.notify('Sáng nay ăn rồi, no lắm');
   if (s.minutes > 11 * 60) return s.notify('Quá giờ ăn sáng rồi');
   if (!pay(BREAKFAST.price, 'ăn sáng')) return;
   patch({ breakfastDay: s.day });
-  s.notify(`🍜 Ăn tô phở sáng: hôm nay đi nhanh hơn, thức khuya thêm ${BREAKFAST.lateMinutes} phút mới ngất`);
+  s.notify(`🍜 Ăn tô phở sáng (${BREAKFAST.price.toLocaleString('vi-VN')}đ): hôm nay đi nhanh hơn, thức khuya thêm ${BREAKFAST.lateMinutes} phút mới ngất`);
 }
 
 export function buyVehicle(id: Exclude<Vehicle, 'none'>) {
@@ -303,21 +369,50 @@ export function bizEndOfDay(s: GameState, stats: DayStats): { biz: BizState; mon
     const rating = summarizeReviews(s.reviews.slice(-30)).average || 3.5;
     const missed = (stats.missed?.stock ?? 0) + (stats.missed?.price ?? 0) + (stats.missed?.wait ?? 0);
     const missRate = missed / Math.max(1, missed + stats.itemsSold);
+    // Đợt phản công hôm nay: tính hiệu quả trước khi đối thủ tự điều chỉnh theo số liệu ngày
+    const counter = b.counter?.day === day ? b.counter : null;
+    let counterHit = 0;
+    if (counter) {
+      const def = counterById(counter.tactic);
+      if (counter.tactic === 'price' && stats.itemsSold < PRICE_WAR_MIN_SALES) {
+        news.push(`💸 Đối đầu giá mà chỉ bán ${stats.itemsSold} món (cần ${PRICE_WAR_MIN_SALES}): khách chưa tin tiệm rẻ hơn, đợt này vô hiệu`);
+      } else {
+        // Đối đầu nhiều ngày liền: phe mình đang máu lửa, đòn nặng thêm mỗi ngày (tối đa +3)
+        const streak = b.counterLastDay === day - 1 ? (b.counterStreak ?? 0) + 1 : 1;
+        const streakBonus = Math.min(streak - 1, COUNTER_STREAK_MAX);
+        counterHit = def.hit + streakBonus;
+        b.counterStreak = streak;
+        b.counterLastDay = day;
+        news.push(`${def.icon} Đợt "${def.name}" hiệu quả: ${b.rival.name} mất ${counterHit} sức mạnh`);
+        if (streakBonus > 0) news.push(`🔥 Đối đầu ngày thứ ${streak} liền, phe mình máu lửa: đòn nặng thêm ${streakBonus} sức mạnh`);
+      }
+      b.counter = null;
+    }
     const priced = Object.keys(s.prices);
     const priceIndex = priced.length ? priced.reduce((n, id) => n + s.prices[id] / productById(id).sell, 0) / priced.length : 1;
-    const strength = rivalNightly(b.rival, { rating, missRate, priceIndex, adsActive: activeAds(s.biz.ads, day).length > 0 });
+    let strength = rivalNightly(b.rival, { rating, missRate, priceIndex, adsActive: activeAds(s.biz.ads, day).length > 0 }) - counterHit;
+    let sale = Math.random() < 0.15 ? day + 1 + Math.floor(Math.random() * 2) : b.rival.saleUntil;
+    // Bị đánh mà vẫn trụ: đối thủ có khi trả đũa bằng đợt giảm giá ngay ngày mai
+    if (counterHit > 0 && strength > 0 && Math.random() < COUNTER_RETAILIATE) {
+      strength = Math.min(100, strength + COUNTER_RETAILIATE_BUFF);
+      sale = day + 1;
+      news.push(`⚔️ ${b.rival.name} trả đũa: xả hàng giảm giá tới ngày ${sale}, gắng kéo khách về phía họ!`);
+    }
     if (strength <= 0) {
       news.push(`🏆 ${b.rival.name} đóng cửa! Khách cũ của họ chuyển hết sang tiệm bạn · +${formatMoney(RIVAL_BEAT_REWARD)}`);
+      if (counterHit > 0) news.push('🎯 Đòn phản công hôm qua chính là giọt nước tràn ly — đối thủ gậy cũ nằm gọn!');
       money += RIVAL_BEAT_REWARD;
       s.addXp(RIVAL_BEAT_XP);
       b.rival = null;
       b.rivalsBeaten += 1;
+      if (counterHit > 0) b.counterKills += 1;
       b.rivalNextDay = day + RIVAL_COOLDOWN;
     } else {
-      const sale = Math.random() < 0.15 ? day + 1 + Math.floor(Math.random() * 2) : b.rival.saleUntil;
-      if (sale !== b.rival.saleUntil) news.push(`⚔️ ${b.rival.name} giảm giá xả hàng tới ngày ${sale}, khách bị hút bớt`);
+      if (sale !== b.rival.saleUntil && counterHit <= 0) news.push(`⚔️ ${b.rival.name} giảm giá xả hàng tới ngày ${sale}, khách bị hút bớt`);
       b.rival = { ...b.rival, strength, saleUntil: sale };
     }
+  } else if (b.counter) {
+    b.counter = null; // đối thủ đóng cửa giữa chừng thì đợt phản công cũng kết thúc
   } else if (s.level >= RIVAL_UNLOCK && b.rivalsBeaten > 0 && day + 1 >= b.rivalNextDay && Math.random() < 0.25) {
     const name = RIVAL_NAMES[b.rivalsBeaten % RIVAL_NAMES.length];
     b.rival = { name, strength: Math.min(95, RIVAL_START + b.rivalsBeaten * 10), openedDay: day + 1 };
@@ -333,7 +428,10 @@ export function bizEndOfDay(s: GameState, stats: DayStats): { biz: BizState; mon
       money -= b.loan.principal;
       news.push(`🏦 Khoản vay quá hạn, ngân hàng thu ${formatMoney(b.loan.principal)} cùng lãi`);
       b.loan = null;
-    } else if (b.loan.dueDay - (day + 1) === 3) news.push(`🏦 Còn 3 ngày tới hạn trả nợ ${formatMoney(b.loan.principal)}`);
+    } else {
+      news.push(`🏦 Trả lãi vay ${formatMoney(interest)} · còn nợ gốc ${formatMoney(b.loan.principal)} · hạn ngày ${b.loan.dueDay} (còn ${b.loan.dueDay - (day + 1)} ngày)`);
+      if (b.loan.dueDay - (day + 1) === 3) news.push(`⚠️ Còn 3 ngày tới hạn trả nợ ${formatMoney(b.loan.principal)} — gắng trả bớt gốc!`);
+    }
   }
 
   // Hụi: góp mỗi ngày, tới lượt thì hốt; có khi vỡ hụi

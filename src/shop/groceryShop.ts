@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { useGame, type Furniture } from '../core/store';
 import { footprint, frontDir, furnitureDef, type FurnitureType } from '../data/furniture';
-import { Building, createCounter } from '../world/buildings';
+import { Building, WINDOW_W, createCounter } from '../world/buildings';
 import type { Warehouse } from '../world/warehouse';
 import type { NavGrid } from '../world/navGrid';
 import { FurnitureView } from './furnitureView';
@@ -70,7 +70,8 @@ export class GroceryShop {
     const { width, depth } = SHOP_TIERS[this.tier];
     this.building = new Building({
       name: 'Tạp hóa', width, depth, height: 3,
-      wallColor: s.style.wall, roofColor: s.style.roof, floorColor: s.style.floor, backDoorX: this.backDoorX,
+      wallColor: s.style.wall, roofColor: s.style.roof, floorColor: s.style.floor, backDoorX: this.backDoorX, sideWindows: false,
+      ceilingFan: true, airCon: this.tier >= 1,
     });
     this.building.group.position.set(SHOP_CENTER_X, 0, SHOP_FRONT_Z - depth / 2);
     // Nhà kho nối ngay sau tiệm, cửa trước của kho thông với cửa sau của tiệm
@@ -121,6 +122,7 @@ export class GroceryShop {
     for (const [uid, view] of this.views) {
       if (!alive.has(uid)) {
         this.furnitureGroup.remove(view.group);
+        view.dispose();
         this.views.delete(uid);
       }
     }
@@ -203,6 +205,10 @@ export class GroceryShop {
       Math.abs(x - ox) < (w + ow) / 2 && Math.abs(z - oz) < (d + od) / 2;
     if (overlaps(c.x, c.z, COUNTER_W, COUNTER_D)) return 'Chồng lên quầy';
     if (overlaps(0, this.depth / 2 - 0.5, 1.8, 1.0)) return 'Không được chắn cửa ra vào';
+    if (overlaps(this.backDoorX, -this.depth / 2 + 0.5, 1.8, 1.0)) return 'Không được chắn cửa sang nhà kho';
+    if (type !== 'plant') {
+      for (const z of this.windowZones()) if (overlaps(z.x, z.z, z.w, z.d)) return 'Không được che cửa sổ (chắn ánh sáng)';
+    }
 
     const others = list.filter((f) => f.uid !== ignoreUid);
     for (const f of others) {
@@ -260,10 +266,24 @@ export class GroceryShop {
     return reason;
   }
 
+  /** Khoảng sàn sát trước mỗi cửa sổ (sâu 0.5m) phải để trống cho ánh sáng vào. */
+  windowZones() {
+    const depth = 0.5;
+    return this.building.windows.map((wn) => {
+      // Dời từ tâm tường vào trong nhà nửa độ dày tường + nửa vùng chừa
+      const inX = wn.alongX ? 0 : -Math.sign(wn.x) * (0.1 + depth / 2);
+      const inZ = wn.alongX ? -Math.sign(wn.z) * (0.1 + depth / 2) : 0;
+      return { x: wn.x + inX, z: wn.z + inZ, w: wn.alongX ? WINDOW_W : depth, d: wn.alongX ? depth : WINDOW_W };
+    });
+  }
+
   /** Mặt bằng cho màn sắp xếp (toạ độ trong tiệm, gốc ở giữa sàn, +z là phía cửa). */
   plan() {
     const c = this.counterPos;
-    return { width: this.width, depth: this.depth, counter: { x: c.x, z: c.z, w: COUNTER_W, d: COUNTER_D }, doorW: 1.4 };
+    return {
+      width: this.width, depth: this.depth, counter: { x: c.x, z: c.z, w: COUNTER_W, d: COUNTER_D }, doorW: 1.4,
+      backDoorX: this.backDoorX, windows: this.windowZones(),
+    };
   }
 
   /** Đổi toạ độ trong tiệm ra toạ độ thế giới. */

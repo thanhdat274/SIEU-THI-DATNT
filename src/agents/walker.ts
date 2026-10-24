@@ -3,27 +3,48 @@ import { buildChibiCharacter, type CharacterParts } from '../render/characterMod
 
 const WALK_SPEED = 1.6; // m/giây (thời gian game)
 
-/** Bảng emoji nhỏ trên đầu nhân vật. */
-function emojiSprite(): { sprite: THREE.Sprite; set: (text: string | null) => void } {
+/** Bảng chữ/emoji nhỏ trên đầu nhân vật. Chữ ngắn ("Hết sữa!") vẽ pill nền tối cho dễ đọc. */
+function emojiSprite(): { sprite: THREE.Sprite; set: (text: string | null) => void; dispose: () => void } {
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 64;
+  canvas.width = 256;
+  canvas.height = 64;
   const ctx = canvas.getContext('2d')!;
   const texture = new THREE.CanvasTexture(canvas);
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false }));
-  sprite.scale.set(0.65, 0.65, 1);
-  sprite.position.y = 2.15;
   sprite.visible = false;
+  const isEmoji = (t: string) => !/[a-zA-Z0-9À-ỹ]/.test(t);
   return {
     sprite,
     set: (text) => {
       sprite.visible = !!text;
       if (!text) return;
-      ctx.clearRect(0, 0, 64, 64);
-      ctx.font = '48px serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(text, 32, 36);
+      ctx.clearRect(0, 0, 256, 64);
+      if (isEmoji(text)) {
+        sprite.scale.set(0.65, 0.65, 1);
+        sprite.position.y = 2.15;
+        ctx.font = '48px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, 128, 36);
+      } else {
+        sprite.scale.set(1.7, 0.42, 1);
+        sprite.position.y = 2.2;
+        ctx.font = 'bold 30px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const w = ctx.measureText(text).width;
+        ctx.fillStyle = 'rgba(0,0,0,0.62)';
+        ctx.beginPath();
+        ctx.roundRect(128 - w / 2 - 10, 10, w + 20, 44, 20);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.fillText(text, 128, 33);
+      }
       texture.needsUpdate = true;
+    },
+    dispose: () => {
+      texture.dispose();
+      sprite.material.dispose();
     },
   };
 }
@@ -86,6 +107,22 @@ export class Walker {
 
   get idle() {
     return this.path.length === 0 && this.plan.length === 0 && this.pause <= 0;
+  }
+
+  /** Nhân vật rời khỏi sân khấu vĩnh viễn: giải phóng geometry/material để không rò rỉ bộ nhớ GPU. */
+  dispose() {
+    const freeMat = (m: THREE.Material) => {
+      (m as unknown as { map?: THREE.Texture }).map?.dispose();
+      m.dispose();
+    };
+    this.mesh.traverse((o) => {
+      if (!(o instanceof THREE.Mesh || o instanceof THREE.Sprite)) return;
+      o.geometry?.dispose();
+      const mat = o.material as THREE.Material | THREE.Material[];
+      if (Array.isArray(mat)) mat.forEach(freeMat);
+      else freeMat(mat);
+    });
+    this.emoji.dispose();
   }
 
   step(dt: number) {

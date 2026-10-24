@@ -131,3 +131,10 @@ export function tierMarkdown(productId: string | null, lots: Lot[] | undefined, 
   const oldest = fitLots(lots, count, productId)[0];
   return oldest ? markdown(productId, oldest.life) : 0;
 }
+
+/**
+ * Xác suất khách bỏ món cận hạn (lô cũ nhất còn ≤1 ngày) khi nhìn thấy ngay tại kệ,
+ * dù món đã tự giảm giá sâu: hàng tươi bị chê nhiều hơn đồ khô.
+ */
+export const nearExpiryRefuseChance = (life: number, category: Category) =>
+  life <= 1 ? (category === 'fresh' ? 0.2 : 0.12) : 0;

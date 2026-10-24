@@ -1,4 +1,6 @@
 import { casesFor, PRODUCTS, productById, type Category } from './products';
+import { SEASONAL_GOODS } from './calendar';
+import { COOKED_PRODUCT_IDS } from './recipes';
 
 /** Nơi nhập hàng: mỗi mối có giá, thời gian giao, đơn tối thiểu và ngành hàng riêng. */
 export interface Supplier {
@@ -44,8 +46,9 @@ export const SUPPLIERS: Supplier[] = [
 
 export const supplierById = (id: string) => SUPPLIERS.find((s) => s.id === id)!;
 
+/** Món nhà làm không nhập được ở mối nào: chỉ có bằng cách nấu từ nguyên liệu. */
 export const supplierSells = (s: Supplier, productId: string) =>
-  !s.categories || s.categories.includes(productById(productId).category);
+  !COOKED_PRODUCT_IDS.has(productId) && (!s.categories || s.categories.includes(productById(productId).category));
 
 /** Số ngẫu nhiên cố định theo (ngày, chuỗi): cùng ngày thì giá không nhảy khi mở lại bảng. */
 function seeded(day: number, key: string) {
@@ -81,7 +84,8 @@ export function orderTotal(s: Supplier, items: Record<string, number>, day: numb
 
 /** Hàng hot trong tuần: khách hỏi mua nhiều hơn hẳn. Đổi mỗi 7 ngày, chỉ chọn món đã mở khóa. */
 export function trending(day: number, level: number): string[] {
-  const pool = PRODUCTS.filter((p) => p.unlock <= level);
+  // Hàng của dịp (bánh chưng, lồng đèn...) và món nhà làm không thành "hàng hot tuần"
+  const pool = PRODUCTS.filter((p) => p.unlock <= level && !SEASONAL_GOODS.has(p.id) && !COOKED_PRODUCT_IDS.has(p.id));
   const week = Math.floor((day - 1) / 7);
   const picks = [...pool].sort((a, b) => seeded(week, a.id) - seeded(week, b.id));
   return picks.slice(0, pool.length > 6 ? 2 : 1).map((p) => p.id);

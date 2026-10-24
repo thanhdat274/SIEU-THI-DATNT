@@ -1,39 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    {
-      "name": "web",
-      "runtimeExecutable": "yarn",
-      "runtimeArgs": [
-        "--cwd",
-        "apps/web",
-        "dev",
-        "--no-open"
-      ],
-      "port": 5173
-    },
-    {
-      "name": "server-qa",
-      "runtimeExecutable": "cmd",
-      "runtimeArgs": [
-        "/c",
-        "set PORT=3011&& set WEB_ORIGIN=http://localhost:5174&& yarn --cwd apps/server start"
-      ],
-      "port": 3011
-    },
-    {
-      "name": "web-qa",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": [
-        "vite",
-        "preview",
-        "--port",
-        "5174",
-        "--strictPort",
-        "--outDir",
-        "C:/Users/Admin/AppData/Local/Temp/qa-web-dist"
-      ],
-      "port": 5174
-    }
+    { "name": "game", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 5173 },
+    { "name": "server", "runtimeExecutable": "npm", "runtimeArgs": ["run", "server"], "port": 3002 }
   ]
 }

@@ -179,7 +179,8 @@
 #ui .hud-alert.warn { background: rgba(230, 126, 34, 0.94); }
 #ui .hud-alert.info { background: rgba(41, 128, 185, 0.94); border-radius: var(--hud-radius); }
 #ui .hud-alert.build { background: rgba(41, 128, 185, 0.94); }
-#ui .hud-alert-actions { display: flex; gap: 6px; }
+#ui .hud-alert-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+#ui .hud-hint { font-size: 12px; font-style: italic; opacity: 0.9; }
 #ui .hud-btn {
   border: none;
   border-radius: 999px;
@@ -301,6 +302,7 @@
   color: #222;
   font-size: 10px;
   line-height: 16px;
+  white-space: nowrap;
 }
 #ui .hud-badge.muted { background: rgba(255, 255, 255, 0.18); color: var(--hud-text); }
 
@@ -310,12 +312,14 @@
   left: auto;
   display: grid;
   grid-template-columns: repeat(3, minmax(76px, 1fr));
+  width: max-content;
   gap: 4px;
   padding: 8px;
 }
 #ui .hud-more .hud-tool { display: flex; min-width: 0; padding: 10px 6px; font-size: 12px; text-align: center; }
 #ui .hud-more .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { display: inline; }
-#ui .hud-more .hud-help { grid-column: 1 / -1; }
+#ui .hud-more .hud-help { grid-column: 1 / -1; width: max-content; min-width: 280px; }
+#ui .hud-help kbd, #ui .hud-help span { white-space: nowrap; }
 #ui .hud-badge.hud-dot { top: 2px; right: 10px; width: 9px; height: 9px; padding: 0; background: #e74c3c; }
 #ui .hud-help { min-width: 260px; display: grid; gap: 6px; padding: 10px 12px; font-size: 13px; }
 #ui .hud-help div { display: flex; justify-content: space-between; gap: 12px; }

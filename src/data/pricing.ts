@@ -10,6 +10,14 @@ export const PRICE_RULES = {
   defaultSensitivity: 1.5,
 } as const;
 
+/** Hệ số giá tham chiếu của từng món (do thị trường khan hiếm nhích mỗi ngày; store đặt khi khởi tạo). */
+let marketIndex: (productId: string) => number = () => 1;
+export const setMarketIndex = (fn: typeof marketIndex) => { marketIndex = fn; };
+
+/** Giá gợi ý hiện hành của món: giá gốc nhân hệ số thị trường (khan hàng thì trượt lên, tồn nhiều thì xuống). */
+export const referenceSell = (productId: string) =>
+  Math.round((productById(productId).sell * marketIndex(productId)) / 100) * 100;
+
 /** Độ nhạy giá theo ngành hàng (cao = khách bỏ hàng nhanh khi giá tăng). */
 const SENSITIVITY_BY_CATEGORY: Record<Category, number> = {
   drink: 2.2,
@@ -36,8 +44,8 @@ export function productSensitivity(productId: string): number {
   return SENSITIVITY_BY_PRODUCT[productId] ?? SENSITIVITY_BY_CATEGORY[productById(productId).category] ?? PRICE_RULES.defaultSensitivity;
 }
 
-/** Tỉ số giá: bán / gợi ý. > 1 là đắt hơn thị trường. */
-export const priceRatio = (price: number, productId: string) => price / productById(productId).sell;
+/** Tỉ số giá: bán / gợi ý hiện hành. > 1 là đắt hơn thị trường. */
+export const priceRatio = (price: number, productId: string) => price / referenceSell(productId);
 
 /**
  * Xác suất khách lấy món khi tới kệ. Bằng hoặc rẻ hơn giá gợi ý: luôn lấy; đắt hơn: giảm theo độ nhạy
@@ -81,6 +89,7 @@ const roundStep = (n: number) => Math.max(STEP, Math.round(n / STEP) * STEP);
  */
 export function suggestPrice(productId: string, price: number, soldPerDay: number | undefined, wantedPerDay: number | undefined): PriceSuggestion {
   const p = productById(productId);
+  const ref = referenceSell(productId);
   const floor = roundStep(Math.ceil(p.buy * 1.05));
   const margin = price > 0 ? (price - p.buy) / price : 0;
   if (soldPerDay === undefined && wantedPerDay === undefined) {
@@ -89,11 +98,11 @@ export function suggestPrice(productId: string, price: number, soldPerDay: numbe
   const sold = soldPerDay ?? 0;
   const wanted = wantedPerDay ?? 0;
   // Khách hỏi nhiều mà bán được ít hẳn: đang đắt quá (hoặc hết hàng) — chỉ hạ khi giá đang trên gợi ý
-  const turnedAway = wanted >= 2 && sold < wanted * 0.5 && price > p.sell;
+  const turnedAway = wanted >= 2 && sold < wanted * 0.5 && price > ref;
   if (turnedAway) {
-    return { action: 'cut', price: Math.max(floor, roundStep(Math.max(p.sell, price * (1 - MAX_CUT)))), reason: 'Khách hỏi nhiều mà chê đắt, nên hạ giá.' };
+    return { action: 'cut', price: Math.max(floor, roundStep(Math.max(ref, price * (1 - MAX_CUT)))), reason: 'Khách hỏi nhiều mà chê đắt, nên hạ giá.' };
   }
-  if (sold >= FAST_UNITS && margin > MIN_MARGIN && price < p.sell * 1.3) {
+  if (sold >= FAST_UNITS && margin > MIN_MARGIN && price < ref * 1.3) {
     return { action: 'raise', price: roundStep(price * (1 + MAX_RAISE)), reason: 'Bán chạy, khách chịu giá — có thể tăng nhẹ.' };
   }
   if (sold < SLOW_UNITS && wanted < SLOW_UNITS && margin > MIN_MARGIN) {

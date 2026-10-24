@@ -9,9 +9,15 @@ export interface BuildingOptions {
   roofColor: number;
   floorColor?: number;
   /** Cửa gỗ (nhà ở) hay cửa kính (tiệm). */
-  doorStyle?: 'glass' | 'wood';
+  doorStyle?: 'glass' | 'wood' | 'solid';
   /** Chừa lối đi ở tường sau, tâm lệch chừng này so với giữa tường (vd. cửa sau tiệm sang nhà kho). */
   backDoorX?: number;
+  /** false: tường hai bên không trổ cửa sổ (để kê kệ sát tường). */
+  sideWindows?: boolean;
+  /** Quạt trần quay giữa phòng. */
+  ceilingFan?: boolean;
+  /** Máy lạnh treo tường sau (tiệm đã nâng cấp). */
+  airCon?: boolean;
 }
 
 /**
@@ -37,8 +43,10 @@ export class Building {
   private lastPos = new WeakMap<THREE.Vector3, THREE.Vector3>();
   private lamp: THREE.PointLight;
   private bulbMat: THREE.MeshStandardMaterial;
-  /** Chao đèn và dây treo: ẩn khi xem trong nhà để khỏi che phòng. */
-  private lampShade: THREE.Object3D[] = [];
+  /** Cánh quạt trần, quay liên tục. */
+  private fanBlades: THREE.Object3D[] = [];
+  /** Tâm các cửa sổ (toạ độ trong nhà); `alongX`: nằm trên tường trước/sau. Rộng WINDOW_W. */
+  windows: { x: number; z: number; alongX: boolean }[] = [];
 
   constructor(public opts: BuildingOptions) {
     const { width: w, depth: d, height: h, wallColor, roofColor } = opts;
@@ -61,6 +69,11 @@ export class Building {
       this.group.add(wall);
       return wall;
     };
+    // Cửa sổ gắn vào mảng tường; ghi lại tâm (toạ độ trong nhà) để màn sắp xếp chừa chỗ
+    const addWin = (wall: THREE.Mesh, alongX: boolean, offset: number) => {
+      wall.add(createWindow(alongX, offset, t));
+      this.windows.push({ x: wall.position.x + (alongX ? offset : 0), z: wall.position.z + (alongX ? 0 : offset), alongX });
+    };
     // Tường sau: nguyên một mảng, hoặc hai mảng chừa lối đi (mảng tường trên lối đi gắn vào mảng trái để mờ theo)
     let back: THREE.Mesh;
     if (opts.backDoorX === undefined) back = addWall(w, t, 0, -d / 2);
@@ -73,7 +86,7 @@ export class Building {
       over.position.set(opts.backDoorX - back.position.x, DOOR_H + (h - DOOR_H) / 2 - h / 2, 0);
       back.add(over);
       // Cửa sổ chỉ đặt ở mảng rộng hơn cho khỏi đè lối đi
-      if (w / 2 - gapR >= 3) rightPart.add(createWindow(true, 0, t));
+      if (w / 2 - gapR >= 3) addWin(rightPart, true, 0);
     }
     const left = addWall(t, d, -w / 2, 0);
     const right = addWall(t, d, w / 2, 0);
@@ -85,14 +98,16 @@ export class Building {
     // Cửa sổ gắn vào tường (mờ cùng tường), cứ khoảng 3m tường một ô
     const windowsAlong = (wall: THREE.Mesh, length: number, alongX: boolean) => {
       const count = Math.floor(length / 3);
-      for (let i = 0; i < count; i++) wall.add(createWindow(alongX, (i - (count - 1) / 2) * (length / count), t));
+      for (let i = 0; i < count; i++) addWin(wall, alongX, (i - (count - 1) / 2) * (length / count));
     };
     if (opts.backDoorX === undefined) windowsAlong(back, w, true);
-    windowsAlong(left, d, false);
-    windowsAlong(right, d, false);
+    if (opts.sideWindows !== false) {
+      windowsAlong(left, d, false);
+      windowsAlong(right, d, false);
+    }
     if (side >= 1.4) {
-      frontL.add(createWindow(true, 0, t));
-      frontR.add(createWindow(true, 0, t));
+      addWin(frontL, true, 0);
+      addWin(frontR, true, 0);
     }
 
     // Cửa ra vào: khung gỗ, mảng tường phía trên, hai cánh tự mở vào trong khi có người tới gần.
@@ -158,21 +173,62 @@ export class Building {
     this.roof.add(ridge);
     this.group.add(this.roof);
 
-    // Đèn trần giữa phòng: bật khi trời tối
-    this.bulbMat = new THREE.MeshStandardMaterial({ color: 0xfff3d6, emissive: 0xffd27a, emissiveIntensity: 0 });
-    const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.45, 0.3, 16, 1, true), new THREE.MeshStandardMaterial({ color: 0x3d3d3d, side: THREE.DoubleSide }));
-    shade.position.y = h - 0.55;
-    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 8), this.bulbMat);
-    bulb.position.y = h - 0.65;
-    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.4), shade.material);
-    cord.position.y = h - 0.2;
-    this.lamp = new THREE.PointLight(0xffd9a0, 0, Math.max(w, d) * 1.4, 1.2);
-    this.lamp.position.y = h - 0.8;
-    // Treo trên trần, không nằm trong interior để khỏi thành vật cản trên lưới đi lại
+    // Đèn tuýp gắn tường sau (máng trắng + ống sáng), bật khi trời tối
+    this.bulbMat = new THREE.MeshStandardMaterial({ color: 0xf4fbff, emissive: 0xe8f4ff, emissiveIntensity: 0 });
+    const housingMat = new THREE.MeshStandardMaterial({ color: 0xeceff1, roughness: 0.5 });
     const fixture = new THREE.Group();
-    fixture.add(shade, bulb, cord, this.lamp);
-    this.lampShade = [shade, cord];
+    const tubeLen = Math.min(1.4, w * 0.3);
+    const count = w >= 6 ? 2 : 1;
+    // Có cửa sau thì chừa khoảng trên cửa (chỗ treo biển), chia đèn đều trên đoạn tường rộng hơn
+    let segL = -w / 2;
+    let segR = w / 2;
+    if (opts.backDoorX !== undefined) {
+      const clear = 0.9;
+      const leftEnd = opts.backDoorX - clear;
+      const rightStart = opts.backDoorX + clear;
+      if (leftEnd + w / 2 >= w / 2 - rightStart) segR = leftEnd;
+      else segL = rightStart;
+    }
+    for (let i = 0; i < count; i++) {
+      const x = opts.backDoorX !== undefined
+        ? segL + ((segR - segL) * (i + 0.5)) / count
+        : count === 1 ? 0 : (i - 0.5) * w * 0.45;
+      const z = -d / 2 + t / 2;
+      const housing = new THREE.Mesh(new THREE.BoxGeometry(tubeLen + 0.1, 0.08, 0.06), housingMat);
+      housing.position.set(x, h - 0.45, z + 0.03);
+      const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, tubeLen, 10), this.bulbMat);
+      tube.rotation.z = Math.PI / 2;
+      tube.position.set(x, h - 0.5, z + 0.08);
+      for (const s of [-1, 1]) {
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, 0.1), housingMat);
+        cap.position.set(x + s * (tubeLen / 2 + 0.02), h - 0.48, z + 0.05);
+        fixture.add(cap);
+      }
+      fixture.add(housing, tube);
+    }
+    this.lamp = new THREE.PointLight(0xf2f6ff, 0, Math.max(w, d) * 1.6, 1.2);
+    this.lamp.position.set(0, h - 0.7, -d / 2 + 1.2);
+    // Gắn trên tường, không nằm trong interior để khỏi thành vật cản trên lưới đi lại
+    fixture.add(this.lamp);
     this.group.add(fixture);
+
+    // Quạt trần: mỗi quạt phụ trách chừng 25 m², treo đều theo bề ngang
+    if (opts.ceilingFan) {
+      const fans = THREE.MathUtils.clamp(Math.round((w * d) / 25), 1, 4);
+      for (let i = 0; i < fans; i++) {
+        const fan = createCeilingFan(h);
+        fan.position.set(-w / 2 + (w / fans) * (i + 0.5), 0, 0);
+        this.fanBlades.push(fan.getObjectByName('blades')!);
+        this.group.add(fan);
+      }
+    }
+    // Máy lạnh treo tường trái, gần góc sau (tường sau đã kín đèn tuýp và cửa sang nhà kho)
+    if (opts.airCon) {
+      const ac = createAirCon();
+      ac.rotation.y = Math.PI / 2; // mặt gió hướng vào trong tiệm
+      ac.position.set(-w / 2 + t / 2, h - 0.6, -d / 2 + 1.8);
+      this.group.add(ac);
+    }
 
     this.group.add(this.interior);
   }
@@ -188,6 +244,7 @@ export class Building {
    * đi ngang qua trên vỉa hè thì không mở. Đi khỏi thì từ từ đóng lại.
    */
   updateDoor(dt: number, people: THREE.Vector3[]) {
+    for (const b of this.fanBlades) b.rotation.y += dt * 9;
     const door = this.door.getWorldPosition(new THREE.Vector3());
     // Trục của cửa: x dọc theo tường, z vuông góc tường (hướng ra ngoài)
     const q = this.door.getWorldQuaternion(new THREE.Quaternion());
@@ -249,7 +306,6 @@ export class Building {
     const inside = indoors ? 1 : THREE.MathUtils.clamp((25 - dist) / 8, 0, 1); // 0 = ngoài, 1 = trong
     setOpacity(this.roof, 1 - inside);
     setOpacity(this.door, indoors ? 0 : 1 - inside * 0.85);
-    for (const o of this.lampShade) o.visible = !indoors;
 
     // Tường nằm giữa camera và tòa nhà thì mờ, tường phía xa vẫn giữ
     const toCam = camera.position.clone().sub(this.group.position).setY(0).normalize();
@@ -334,6 +390,7 @@ function setOpacity(obj: THREE.Object3D, opacity: number) {
 
 const DOOR_W = 1.4;
 const DOOR_H = 2.2;
+export const WINDOW_W = 1.1;
 const DOOR_OPEN = 1.4;
 
 
@@ -343,7 +400,7 @@ function createWindow(alongX: boolean, offset: number, t: number) {
   const g = new THREE.Group();
   const frameMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true });
   const glassMat = new THREE.MeshStandardMaterial({ color: 0x9fd3f0, transparent: true, opacity: 0.8, metalness: 0.2, roughness: 0.15 });
-  const W = 1.1;
+  const W = WINDOW_W;
   const H = 1.0;
   g.add(new THREE.Mesh(new THREE.BoxGeometry(W, H, t + 0.04), glassMat));
   const bars: [number, number, number, number][] = [
@@ -369,8 +426,25 @@ function createWindow(alongX: boolean, offset: number, t: number) {
 
 /** Một cánh cửa (kính khung nhôm, hoặc gỗ có ô kính nhỏ), gốc ở giữa mép dưới. */
 /** `side`: bản lề ở bên nào (-1 trái, 1 phải), tay nắm nằm ở mép còn lại. */
-function createDoorLeaf(width: number, style: 'glass' | 'wood', side: number) {
+function createDoorLeaf(width: number, style: 'glass' | 'wood' | 'solid', side: number) {
   const g = new THREE.Group();
+  if (style === 'solid') {
+    // Cửa sắt kín (kho): tấm thép sơn xám, gân ngang, tay nắm dài
+    const steel = new THREE.MeshStandardMaterial({ color: 0x607d8b, metalness: 0.5, roughness: 0.5, transparent: true });
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(width, DOOR_H - 0.05, 0.06), steel);
+    panel.position.y = DOOR_H / 2;
+    g.add(panel);
+    const rib = new THREE.MeshStandardMaterial({ color: 0x546e7a, metalness: 0.5, roughness: 0.5, transparent: true });
+    for (const y of [0.45, 1.1, 1.75]) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(width * 0.86, 0.06, 0.08), rib);
+      bar.position.y = y;
+      g.add(bar);
+    }
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.32, 0.05), new THREE.MeshStandardMaterial({ color: 0xb0bec5, metalness: 0.8, transparent: true }));
+    handle.position.set(-side * width * 0.38, DOOR_H * 0.48, 0.07);
+    g.add(handle);
+    return g;
+  }
   if (style === 'wood') {
     const wood = new THREE.Mesh(new THREE.BoxGeometry(width, DOOR_H - 0.05, 0.06), new THREE.MeshStandardMaterial({ color: 0x8a5a36, transparent: true }));
     wood.position.y = DOOR_H / 2;
@@ -442,6 +516,52 @@ const IMPULSE_COLORS = [0xe84393, 0x0984e3, 0x00b894, 0xfdcb6e, 0xe17055, 0x6c5c
  * giữa quầy có tấm bảng "THU NGÂN" nhô cao, máy tính tiền và khay đặt hàng trên mặt quầy.
  * Gốc ở sàn; dài theo x (`w`), khách đứng phía −z, thu ngân đứng phía +z.
  */
+/** Quạt trần: ty treo, bầu motor và 4 cánh gỗ (nhóm 'blades' để quay). */
+function createCeilingFan(h: number): THREE.Group {
+  const g = new THREE.Group();
+  const metal = new THREE.MeshStandardMaterial({ color: 0xdfe3e6, roughness: 0.35, metalness: 0.6 });
+  const wood = new THREE.MeshStandardMaterial({ color: 0x8d5a3b, roughness: 0.7 });
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.4, 8), metal);
+  rod.position.y = h - 0.2;
+  const canopy = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.05, 14), metal);
+  canopy.position.y = h - 0.03;
+  const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.14, 16), metal);
+  motor.position.y = h - 0.45;
+  const blades = new THREE.Group();
+  blades.name = 'blades';
+  blades.position.y = h - 0.48;
+  for (let i = 0; i < 4; i++) {
+    const arm = new THREE.Group();
+    arm.rotation.y = (i / 4) * Math.PI * 2;
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.02, 0.15), wood);
+    blade.position.x = 0.45;
+    blade.rotation.x = 0.12;
+    arm.add(blade);
+    blades.add(arm);
+  }
+  g.add(rod, canopy, motor, blades);
+  return g;
+}
+
+/** Máy lạnh treo tường: dàn lạnh trắng, khe gió, cánh đảo gió, đèn báo xanh; mặt quay vào phòng (+z). */
+function createAirCon(): THREE.Group {
+  const g = new THREE.Group();
+  const white = new THREE.MeshStandardMaterial({ color: 0xf7f8fa, roughness: 0.4 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.3, 0.22), white);
+  body.position.z = 0.11;
+  const vent = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.05, 0.02), new THREE.MeshStandardMaterial({ color: 0x9aa3ab }));
+  vent.position.set(0, -0.1, 0.225);
+  const flap = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.02, 0.06), white);
+  flap.position.set(0, -0.15, 0.21);
+  flap.rotation.x = -0.4;
+  const led = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.015, 0.01), new THREE.MeshStandardMaterial({ color: 0x2ecc71, emissive: 0x2ecc71, emissiveIntensity: 1.5 }));
+  led.position.set(0.38, 0.05, 0.225);
+  const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.8, 8), white);
+  pipe.position.set(0.42, -0.55, 0.03);
+  g.add(body, vent, flap, led, pipe);
+  return g;
+}
+
 export function createCounter(w = 1.6, d = 0.7): THREE.Group {
   const g = new THREE.Group();
   const wood = new THREE.MeshStandardMaterial({ color: 0xf0c890, roughness: 0.7 });

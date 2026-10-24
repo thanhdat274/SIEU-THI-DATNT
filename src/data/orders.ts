@@ -1,3 +1,4 @@
+import { festivalOn } from './calendar';
 import { productById } from './products';
 import { regularById, type RegularProgress } from './regulars';
 
@@ -18,6 +19,8 @@ export interface PartyOrderDef {
   xp: number;
   /** Đơn riêng của một khách quen: chỉ mời khi đã thân, giao xong tăng thân thiết. */
   regular?: string;
+  /** Đơn theo dịp lễ (vd. giỏ quà Tết): chỉ mời khi đúng dịp trên lịch. */
+  festival?: string;
 }
 
 /** Thân thiết tối thiểu để khách quen nhờ đơn riêng (mốc perk đầu tiên). */
@@ -66,6 +69,33 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     id: 'quan_com', icon: '🍚', title: 'Quán cơm mối mới', from: 'Bà Năm', unlock: 30, days: 2,
     description: 'Quán cơm đầu ngõ đặt hàng tươi cho cả tuần.',
     items: { rau: 15, thit: 6, ca: 6, gao: 4 }, bonus: 400000, xp: 260,
+  },
+  // Đơn tiệc cần MÓN NHÀ LÀM: chỉ mời khi đã có bếp (unlock ≥ COOK_UNLOCK), nấu xong để trong kho rồi giao như thường
+  {
+    id: 'com_trua_vp', icon: '🍱', title: 'Cơm trưa văn phòng', from: regularById('chi_lan')!.name, regular: 'chi_lan', unlock: 23, days: 2,
+    description: 'Công ty chị Lan họp cả ngày, đặt cơm hộp gà nóng cho nhóm — nấu ở bếp rồi để kho, giao như đơn thường.',
+    items: { com_hop_ga: 12, nuoc: 10 }, bonus: 200000, xp: 150,
+  },
+  {
+    id: 'sn_trang', icon: '🎂', title: 'Sinh nhật tuổi 18', from: 'Bé Na', unlock: 26, days: 2,
+    description: 'Bé Na tổ chức sinh nhật tuổi 18, nhóm bạn muốn mấy ly trà sữa với bánh mì trứng nướng của tiệm.',
+    items: { tra_sua: 8, banh_mi_trung_nuong: 6 }, bonus: 180000, xp: 140,
+  },
+  {
+    id: 'dam_hoi_hem', icon: '🎎', title: 'Đám hỏi đầu hẻm', from: 'Bác Tám', unlock: 36, days: 2,
+    description: 'Nhà bên làm đám hỏi, bác đặt xôi thập cẩm với nước mía tươi đãi khách sáng sớm.',
+    items: { xoi_thap_cam: 10, nuoc_mia: 12 }, bonus: 260000, xp: 180,
+  },
+  // Đơn theo dịp lễ: chỉ được mời khi lịch đang đúng dịp (giỏ quà phải gói đúng mùa)
+  {
+    id: 'gio_qua_tet_dn', icon: '🧧', title: 'Gói giỏ quà Tết cho họ hàng', from: 'Bà Năm', unlock: 28, days: 2, festival: 'tet',
+    description: 'Bà Năm cần mấy giỏ bánh kẹo trà biếu họ hàng trong Nam — gói ở bàn gói quà rồi để kho, giao như đơn thường.',
+    items: { gio_qua_tet: 3, tra: 2 }, bonus: 150000, xp: 130,
+  },
+  {
+    id: 'gio_qua_2011_dn', icon: '🌸', title: 'Lớp học tặng cô giáo', from: 'Bé Na', unlock: 32, days: 2, festival: 'nha_giao',
+    description: 'Cả lớp gom tiền đặt giỏ quà tặng cô nhân 20/11 — bé nhờ tiệm gói giùm cho đẹp.',
+    items: { gio_qua_2011: 3 }, bonus: 130000, xp: 120,
   },
   // Đơn riêng theo câu chuyện từng khách quen
   {
@@ -201,8 +231,10 @@ const storyReady = (o: PartyOrderDef, level: number, regulars: Record<string, Re
  * Khoảng 1/3 số ngày có lời mời; nửa số lời mời là đơn riêng của khách quen đã thân (nếu có).
  */
 export function offerForDay(seed: number, day: number, level: number, regulars: Record<string, RegularProgress> = {}): ActiveOrder | null {
-  const story = PARTY_ORDERS.filter((o) => storyReady(o, level, regulars));
-  const party = PARTY_ORDERS.filter((o) => !o.regular && o.unlock <= level);
+  // Đơn theo dịp lễ chỉ mời khi lịch đang đúng dịp (giỏ quà Tết chỉ hiện trong Tết)
+  const inSeason = (o: PartyOrderDef) => !o.festival || festivalOn(day)?.id === o.festival;
+  const story = PARTY_ORDERS.filter((o) => inSeason(o) && storyReady(o, level, regulars));
+  const party = PARTY_ORDERS.filter((o) => inSeason(o) && !o.regular && o.unlock <= level);
   const pool = story.length && (roll(seed, day, 17) < 0.5 || !party.length) ? story : party;
   if (!pool.length || day < 2 || roll(seed, day, 7) > 0.35) return null;
   const def = pool[Math.floor(roll(seed, day, 13) * pool.length)];

@@ -23,7 +23,7 @@ export const joystick = { x: 0, y: 0 };
 
 /** Mặt bằng tiệm và kiểm tra vị trí đặt cho màn sắp xếp (main.tsx gán từ GroceryShop). */
 export const shopLayout = {
-  plan: () => ({ width: 6, depth: 5, counter: { x: 0, z: 0, w: 0.7, d: 1.6 }, doorW: 1.4 }),
+  plan: () => ({ width: 6, depth: 5, counter: { x: 0, z: 0, w: 0.7, d: 1.6 }, doorW: 1.4, backDoorX: 2, windows: [] as { x: number; z: number; w: number; d: number }[] }),
   check: (_type: FurnitureType, _x: number, _z: number, _rot: number, _ignoreUid: number | undefined, _list: Furniture[]): string | null => null,
   layoutCheck: (_list: Furniture[]): string | null => null,
 };

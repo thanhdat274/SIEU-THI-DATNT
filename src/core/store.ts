@@ -1,32 +1,44 @@
 import { create } from 'zustand';
-import { furnitureDef, slotCount, type FurnitureType } from '../data/furniture';
+import { furnitureDef, isCookStation, slotCount, type FurnitureType } from '../data/furniture';
 import { warehouseTier, WAREHOUSE_TIERS } from '../data/warehouse';
 import { dailyQuests, emptyQuestLog, emptyTotals, storyQuest, type QuestContext, type QuestLog, type Totals } from '../data/quests';
 import { customersPerDay, MAX_LEVEL, unlocksAt, xpToNext } from '../data/levels';
 import { casesFor, formatMoney, productById, unlockedProducts } from '../data/products';
-import { PAINT_PRICE, SHOP_TIERS, type ShopStyle } from '../data/shopTiers';
+import { PAINT_PRICE, SHOP_TIERS, rentOf, type ShopStyle } from '../data/shopTiers';
 import { composeReview, REVIEW_CAP, type Review, type ReviewReason } from '../data/reviews';
 import { describeDay, forecastFrom, newWeatherSeed, WEATHER, type Weather } from '../data/weather';
 import { orderTotal, supplierById } from '../data/suppliers';
-import { ageLots, fitLots, mergeLots, needsCold, tierMarkdown, shelfLife, spoilRate, takeOldest, type Lot } from '../data/freshness';
-import { regularById, regularCheckout, regularFriendship, regularWalkout, type RegularProgress } from '../data/regulars';
+import { ageLots, fitLots, mergeLots, nearestLife, needsCold, tierMarkdown, shelfLife, spoilRate, takeOldest, type Lot } from '../data/freshness';
+import { regularById, regularCheckout, regularFriendship, regularWalkout, RESERVE_BONUS, RESERVE_MISS_LOSS, type RegularProgress, type Reservation } from '../data/regulars';
 import { missingForOrder, offerForDay, orderValue, partyOrderById, STORY_ORDER_FRIEND_GAIN, STORY_ORDER_FRIEND_LOSS, type ActiveOrder } from '../data/orders';
-import { dayEffects, morningNews } from '../data/calendar';
+import { dayEffects, FESTIVALS, morningNews, festivalOn, festivalStock } from '../data/calendar';
+import { happyHourActive, type HappyHour } from '../data/rhythm';
 import { DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS, FORGIVE_FRIEND_GAIN, REMIND_FRIEND_LOSS, WRITE_OFF_FRIEND_LOSS, type Debt } from '../data/credit';
 import { makeVendorOffer, vendorById, wholesaleTotal, type VendorOffer } from '../data/wholesale';
 import { missKey, type MissLog } from '../data/advice';
-import { BREAKFAST, newBiz, type BizState } from '../data/biz';
+import { BREAKFAST, counterActive, INSPECTION_EVERY, INSPECTION_FINE, INSPECTION_REWARD, INSPECTION_UNLOCK, inspectionResult, newBiz, PRICE_WAR_CUT, type BizState } from '../data/biz';
 import { bizEndOfDay, checkAchievements, maybeSurprise, spoilFactor } from './biz';
-import { CANCEL_AFTER_LATE, describeItems, houseById, ON_TIME_TIP, PHONE_FRIEND_GAIN, PHONE_SLOTS, phoneCallFor, phoneOrderValue, type PhoneOrder } from '../data/phoneOrders';
+import { CANCEL_AFTER_LATE, describeItems, FAST_TIP, fastWindow, houseById, ON_TIME_TIP, PHONE_FRIEND_GAIN, PHONE_SLOTS, phoneCallFor, phoneOrderValue, type PhoneOrder } from '../data/phoneOrders';
+import type { CookingStation } from '../data/recipes';
 import { setCostModifier } from '../data/suppliers';
+import { nextMarketIndex } from '../data/market';
+import { referenceSell, setMarketIndex } from '../data/pricing';
 import { hasSkill, SKILLS, skillPoints, TITLES, type SkillId, type TitleContext } from '../data/titles';
 import { repairCost, RISK_RULES, wears } from '../data/risks';
+import { hasUpgrade } from '../data/upgrades';
+import { isNight, LATE_WAKE_AT, NIGHT_PRICE_MUL } from '../data/night';
 import { summarizeReviews } from '../data/reviews';
 import { comboById, MAX_ACTIVE_COMBOS } from '../data/combos';
-import { dailyWage, DIRT_MAX, generateCandidates, maxStaff, ROLES, type Shift, type Staff } from '../data/staff';
+import { dailyWage, DIRT_MAX, generateCandidates, maxStaff, ROLES, SHIFTS, skillSpeed, type Shift, type Staff } from '../data/staff';
 import { eventOn, type RandomEvent } from '../data/events';
 import { activeContractsFor, contractValue, missingForContract, supplyContractById, type SupplyContract } from '../data/contracts';
 import { costumeById, type Costume } from '../data/costumes';
+import { describeRep, meetsRep, REP_CAP, reputationOf, type RepSample } from '../data/reputation';
+import { activeGoals, addSales, goalLocked, goalMet, type CommunityProgress, type Opening } from '../data/community';
+import { giftOfStreak, giftText, spinWheelPrize, type WheelPrize } from '../data/gifts';
+import { paymentById, type PaymentMethod } from '../data/payments';
+import { COOKED_PRODUCT_IDS, RECIPE_MAP } from '../data/recipes';
+import { playSfx } from './audio';
 
 /** Phút trong ngày khi bắt đầu ngày mới (06:00). */
 export const DAY_START = 6 * 60;
@@ -79,6 +91,16 @@ export interface CartItem {
   price: number;
 }
 
+/** Một mẻ nấu đang chạy ở trạm nấu: còn `remaining` phút game là xong, nguyên liệu đã trừ kho. */
+export interface CookJob {
+  id: number;
+  recipeId: string;
+  /** Phút game còn lại. */
+  remaining: number;
+  /** Tổng thời gian nấu (để vẽ thanh tiến độ). */
+  total: number;
+}
+
 export interface DayStats {
   revenue: number;
   spent: number;
@@ -99,10 +121,30 @@ export interface DayStats {
   /** Tiền khách quen ghi sổ hôm nay (đã tính vào doanh thu, chưa vào két) và tiền nợ thu về. */
   credited?: number;
   repaid?: number;
+  /** Tiền lời dịch vụ ở quầy (nạp tiền, thu hộ) hôm nay. */
+  services?: number;
   /** Số combo bán ra và tiền đã giảm cho combo. */
   combos?: number;
   comboDiscount?: number;
+  /** Tiền nhà/chi phí cố định trả cuối ngày theo bậc tiệm. */
+  rent?: number;
+  /** Số lời hẹn giữ món được giữ đúng hôm nay (để đo nhiệm vụ ngày). */
+  reservationsFilled?: number;
+  /** Sổ theo giờ (khoá là giờ trong ngày, 6–22): số khách ghé và tiền thu. */
+  byHour?: Record<number, HourLine>;
+  /** Tiền vào theo từng hình thức thanh toán: doanh thu và số lượt (kể cả ghi sổ). */
+  byMethod?: Partial<Record<PaymentMethod, { revenue: number; count: number }>>;
+  /** Phí giao dịch ví điện tử / máy POS trừ đi hôm nay. */
+  fees?: number;
 }
+
+export interface HourLine { customers: number; revenue: number }
+
+const addHour = (byHour: DayStats['byHour'], minutes: number, customers: number, revenue: number) => {
+  const h = Math.floor(minutes / 60);
+  const line = byHour?.[h] ?? { customers: 0, revenue: 0 };
+  return { ...byHour, [h]: { customers: line.customers + customers, revenue: line.revenue + revenue } };
+};
 
 export interface ItemLine {
   qty: number;
@@ -117,10 +159,12 @@ export interface DayRecord {
   profit: number;
   customers: number;
   unhappy: number;
+  /** Sao trung bình của các đánh giá trong ngày; không ai chấm thì bỏ trống. */
+  rating?: number;
 }
 
 /** Số ngày giữ trong lịch sử. */
-export const HISTORY_DAYS = 14;
+export const HISTORY_DAYS = 30;
 
 export type Panel =
   | { type: 'order' }
@@ -140,6 +184,11 @@ export type Panel =
   | { type: 'contracts' }
   | { type: 'costume' }
   | { type: 'business' }
+  | { type: 'calendar' }
+  | { type: 'gifts' }
+  | { type: 'cook' }
+  | { type: 'morning' }
+  | { type: 'history' }
   | { type: 'summary'; day: number; stats: DayStats };
 
 /** Đang cầm một món đồ để đặt (mua mới hoặc di chuyển món có sẵn). */
@@ -172,10 +221,20 @@ export interface GameState {
   /** Các lô trong kho của từng món (khớp `storage`). */
   storageLots: Record<string, Lot[]>;
   furniture: Furniture[];
+  /** Số món đã bán ra của từng kệ/tủ (khóa là uid) — heatmap vị trí: kệ dễ thấy bán nhiều hơn. */
+  shelfHeat: Record<number, number>;
+  /** Đã nhắc người chơi về hàng chớp nhoáng cạnh quầy (chỉ nhắc một lần). */
+  impulseHinted: boolean;
   /** Giá bán người chơi tự đặt; không có thì dùng giá gợi ý. */
   prices: Record<string, number>;
+  /** Giờ vàng tự đặt: khung 2 tiếng giảm giá kéo khách về (null = tắt). */
+  happyHour: HappyHour | null;
+  /** Đặt / tắt giờ vàng. */
+  setHappyHour: (hh: HappyHour | null) => void;
   /** Số khách đang chờ ở quầy. */
   waiting: number;
+  /** Số khách còn trong tiệm (đang chọn hàng + đang chờ thanh toán) — nhân viên ở lại dọn nốt mới về. */
+  customersInside: number;
   /** Độ bẩn sàn tiệm 0–100: tăng theo lượt khách, lao công lau, mỗi đêm dọn sạch. */
   dirt: number;
   addDirt: (amount: number) => void;
@@ -208,6 +267,12 @@ export interface GameState {
   autoRoutine: boolean;
   /** Lời khách nhận xét gần nhất (cũ trước, mới sau). */
   reviews: Review[];
+  /** Điểm danh tiếng 5 mặt của các lượt khách gần nhất. */
+  repLog: RepSample[];
+  /** Tiến độ mục tiêu chung của hẻm theo từng dịp. */
+  community: Record<string, CommunityProgress>;
+  /** Ngày khai trương của lần nâng cấp tiệm gần nhất. */
+  opening?: Opening;
   /** Đơn hàng đang chờ giao (giao lúc sang ngày mới). */
   deliveries: Delivery[];
   /** Nhu cầu trung bình mỗi ngày của từng món (khách muốn mua, kể cả không mua được). */
@@ -219,6 +284,12 @@ export interface GameState {
   salesToday: Record<string, number>;
   /** Thân thiết với từng khách quen. */
   regulars: Record<string, RegularProgress>;
+  /** Lời hẹn giữ món của khách quen (mỗi người một hẹn): món, số lượng, ngày ghé lấy. */
+  reservations: Record<string, Reservation>;
+  /** Nhận lời giữ món cho khách quen (nguyên liệu/hàng sẵn có thì ngày mai khách ghé lấy được). */
+  addReservation: (regularId: string, productId: string, qty: number) => void;
+  /** Từ chối/huỷ lời hẹn giữ món (không mất thân thiết). */
+  cancelReservation: (regularId: string) => void;
   /** Khách quen trả tiền xong hoặc bỏ về; trả về tiền boa. */
   regularVisit: (id: string, basket: CartItem[], paid: boolean) => number;
   /** Cộng/trừ thân thiết ngoài lần ghé (đơn riêng), mở perk nếu tới mốc. */
@@ -229,6 +300,8 @@ export interface GameState {
   consumeStock: (productId: string, qty: number) => void;
   /** Sổ nợ khách quen (theo id khách quen). */
   debts: Record<string, Debt>;
+  /** Hệ số giá tham chiếu của từng món so với giá gợi ý gốc (thị trường nhích theo khan hiếm). */
+  market: Record<string, number>;
   /** Cho khách quen ghi sổ hay không. */
   allowCredit: boolean;
   setAllowCredit: (on: boolean) => void;
@@ -250,25 +323,49 @@ export interface GameState {
   phoneOrders: PhoneOrder[];
   /** Số khung giờ gọi điện hôm nay đã xét (chỉ số tiếp theo trong PHONE_SLOTS). */
   phoneSlot: number;
+  /** Ngày gần nhất đã nhắc "mưa mà chưa có người giao hàng" (mỗi ngày chỉ nhắc một lần). */
+  phoneHintDay: number;
   phoneOrdersDone: number;
   /** Nghe máy: soạn hàng từ kho rồi mang đi; trả false nếu kho thiếu. */
   answerPhone: (id: number) => boolean;
+  /** Nhập ngay phần kho còn thiếu (theo giá nhập) rồi nghe máy soạn hàng. */
+  restockAndAnswerPhone: (id: number) => boolean;
   declinePhone: (id: number) => void;
   /** Giao đơn gọi điện tại cửa nhà khách. */
   deliverPhone: (id: number) => boolean;
   /** Đơn tiệc đang mời hoặc đang nhận. */
   order: ActiveOrder | null;
   ordersDone: number;
+  /** Các mẻ nấu đang chạy ở trạm nấu. */
+  cookJobs: CookJob[];
+  /** Bắt đầu một mẻ: trừ nguyên liệu khỏi kho (lô cận hạn trước), trả false nếu chưa đủ điều kiện. */
+  startCook: (recipeId: string) => boolean;
   /** Hợp đồng cung cấp đang giữ (khách sỉ / đơn buôn dài hạn). */
   contracts: Record<string, ContractState>;
   acceptContract: (id: string) => void;
+  /** Món vừa bán tính vào mục tiêu chung của dịp; đủ thì trao thưởng. */
+  communitySale: (ids: string[]) => void;
   /** Giao kỳ hiện tại của hợp đồng từ kho; trả true nếu giao xong. */
   deliverContract: (id: string) => boolean;
   /** Sự kiện ngẫu nhiên hôm nay (ảnh hưởng lượt khách). */
   event: RandomEvent | null;
+  /** Giữ chân: chuỗi điểm danh quà 7 ngày và lượt vòng quay may mắn mỗi ngày. */
+  giftStreak: number;
+  giftLastDay: number;
+  wheelLastDay: number;
+  /** Nhân lượng khách ghé hôm nay khi trúng giải 🍀 trên vòng quay (1 = bình thường). */
+  wheelBoost: number;
+  /** Điểm danh hôm nay; trả false nếu đã nhận rồi. */
+  claimGift: () => boolean;
+  /** Quay vòng quay hôm nay; trả về giải trúng, hoặc null nếu hết lượt. */
+  spinWheel: () => WheelPrize | null;
   /** Cấp ngoại hình/nhân vật chính đang dùng (id trong COSTUMES). */
   costume: string;
   setCostume: (id: string) => void;
+  /** Tên tiệm do người chơi đặt (hiện ở HUD, màn sắp xếp, tổng kết). */
+  shopName: string;
+  /** Đổi tên tiệm (tối đa 24 ký tự, rỗng thì về tên mặc định). */
+  setShopName: (name: string) => void;
   acceptOrder: () => void;
   declineOrder: () => void;
   /** Giao đơn từ kho. */
@@ -316,8 +413,9 @@ export interface GameState {
   takeFromShelf: (productId: string, preferUid?: number) => number | null;
   priceOf: (productId: string) => number;
   setPrice: (productId: string, price: number) => void;
-  /** Tính tiền cho khách; `discount` là tiền giảm combo, `combos` là số combo trong giỏ. */
-  checkout: (items: CartItem[], discount?: number, combos?: number) => void;
+  /** Tính tiền cho khách; `discount` là tiền giảm combo, `combos` là số combo trong giỏ,
+   *  `payment` là hình thức thanh toán (mặc định tiền mặt) — ảnh hưởng phí và sổ thống kê. */
+  checkout: (items: CartItem[], discount?: number, combos?: number, payment?: PaymentMethod) => void;
   /** Khách không mua được một món (hoặc bỏ về vì chờ lâu). */
   noteMiss: (reason: ReviewReason, productId?: string) => void;
   /** Lời/lỗ các ngày gần đây (cũ trước). */
@@ -325,7 +423,7 @@ export interface GameState {
   /** Combo khuyến mãi đang chạy. */
   activeCombos: string[];
   toggleCombo: (id: string) => void;
-  recordVisit: (happy: boolean) => void;
+  recordVisit: (happy: boolean, sample?: RepSample) => void;
   addXp: (amount: number) => void;
   addReview: (stars: number, reason?: ReviewReason, productId?: string) => void;
 
@@ -435,7 +533,9 @@ function spoilOvernight(s: Pick<GameState, 'storage' | 'storageLots' | 'furnitur
     ...f,
     tiers: f.tiers.map((t) => {
       if (!t.productId || t.count <= 0) return t;
-      const lots = spoil(t.productId, fitLots(t.lots, t.count, t.productId), f.type);
+      // Tủ mát/tủ đông hỏng: mất lạnh, hàng trong tủ hỏng nhanh như để ngoài kho
+      const place = f.broken && (f.type === 'fridge' || f.type === 'freezer') ? 'storage' as const : f.type;
+      const lots = spoil(t.productId, fitLots(t.lots, t.count, t.productId), place);
       return { ...t, lots, count: lots.reduce((n, l) => n + l.qty, 0) };
     }),
   }));
@@ -447,11 +547,19 @@ const emptyTiers = (type: FurnitureType): Tier[] =>
 
 /**
  * Bản lưu cũ mỗi tầng là một món (tối đa slots × capacity): chia hàng của tầng đó vào các ô của tầng,
- * lô cũ vào ô đầu. Đồ đã đúng số ô thì giữ nguyên.
+ * lô cũ vào ô đầu. Đồ đã đúng số ô thì giữ nguyên. Kệ tăng/giảm số ô (đợt kệ rộng hơn) thì
+ * bù ô trống hoặc cắt bớt để khớp tầng × ô hiện tại.
  */
 export function migrateTiers(f: Furniture): Furniture {
   const def = furnitureDef(f.type);
-  if (f.tiers.length === slotCount(f.type) || f.tiers.length !== def.tiers) return f;
+  const target = slotCount(f.type);
+  if (f.tiers.length === target) return f;
+  if (f.tiers.length !== def.tiers) {
+    // Đúng dạng tầng × ô nhưng số ô đã đổi: giữ nguyên hàng, bù ô trống / cắt ô thừa
+    const tiers = f.tiers.slice(0, target).map((t) => ({ ...t }));
+    while (tiers.length < target) tiers.push({ productId: null, count: 0 });
+    return { ...f, tiers };
+  }
   const tiers: Tier[] = [];
   for (const old of f.tiers) {
     let lots = old.productId ? fitLots(old.lots, old.count, old.productId) : [];
@@ -469,6 +577,9 @@ export function migrateTiers(f: Furniture): Furniture {
 export const questContext = (s: GameState): QuestContext => ({
   day: s.day, level: s.level, stats: s.stats, totals: s.totals, staffCount: s.staff.length,
   shopTier: s.shopTier, warehouseTier: s.warehouseTier, ordersDone: s.ordersDone, log: s.questLog,
+  festivalGoods: festivalOn(s.day) ? festivalStock(festivalOn(s.day)!, s.level) : [],
+  reservationsToday: Object.values(s.reservations).filter((r) => r.day === s.day).length,
+  rent: rentOf(s.shopTier),
 });
 
 /** Trạng thái lúc bắt đầu game mới. */
@@ -490,7 +601,10 @@ export const newGameData = () => ({
     },
     { uid: 2, type: 'shelf', x: 0.4, z: -2.0, rot: 0, tiers: emptyTiers('shelf') },
   ] as Furniture[],
+  shelfHeat: {} as Record<number, number>,
+  impulseHinted: false,
   prices: {} as Record<string, number>,
+  happyHour: null as HappyHour | null,
   stats: emptyStats(),
   shopTier: 0,
   pendingUpgrade: false,
@@ -498,32 +612,46 @@ export const newGameData = () => ({
   staff: [] as Staff[],
   candidates: generateCandidates(1, 1),
   autoOpen: true,
-  autoRoutine: true,
+  // Ván mới để người chơi tự điều hành core loop (ra tiệm, mở cửa); bản lưu cũ giữ nguyên thói quen
+  autoRoutine: false,
   autoSwap: true,
   totals: emptyTotals(),
   questLog: emptyQuestLog(),
   warehouseTier: 0,
   reviews: [] as Review[],
+  repLog: [] as RepSample[],
+  community: {} as Record<string, CommunityProgress>,
+  opening: undefined as Opening | undefined,
   deliveries: [] as Delivery[],
   demand: {} as Record<string, number>,
   demandToday: {} as Record<string, number>,
   sales: {} as Record<string, number>,
   salesToday: {} as Record<string, number>,
   regulars: {} as Record<string, RegularProgress>,
+  reservations: {} as Record<string, Reservation>,
   history: [] as DayRecord[],
   activeCombos: [] as string[],
   order: null as ActiveOrder | null,
   ordersDone: 0,
+  cookJobs: [] as CookJob[],
+  vendorOffer: null as VendorOffer | null,
   phoneOrders: [] as PhoneOrder[],
   phoneSlot: 0,
+  phoneHintDay: 0,
   phoneOrdersDone: 0,
   debts: {} as Record<string, Debt>,
+  market: {} as Record<string, number>,
   allowCredit: true,
   biz: newBiz(),
   vendorDay: 0,
   contracts: {} as Record<string, ContractState>,
   event: null as RandomEvent | null,
   costume: 'default',
+  shopName: 'Tạp Hóa Đầu Ngõ',
+  giftStreak: 0,
+  giftLastDay: 0,
+  wheelLastDay: 0,
+  wheelBoost: 1,
   skills: [] as SkillId[],
   titles: [] as string[],
   fakeCash: 0,
@@ -535,32 +663,56 @@ export function initialWeather(seed = newWeatherSeed()) {
   return { weatherSeed: seed, weather: 'sunny' as Weather, forecast: forecastFrom(seed, 1, 'sunny') };
 }
 
-/** Trung bình trượt theo ngày, ngày gần nặng hơn. */
-function movingAverage(avg: Record<string, number>, today: Record<string, number>) {
-  const out: Record<string, number> = {};
-  for (const id of new Set([...Object.keys(avg), ...Object.keys(today)])) {
-    const v = (avg[id] ?? 0) * 0.6 + (today[id] ?? 0) * 0.4;
-    if (v >= 0.05) out[id] = Math.round(v * 100) / 100;
+  /** Trung bình trượt theo ngày, ngày gần nặng hơn. */
+  function movingAverage(avg: Record<string, number>, today: Record<string, number>) {
+    const out: Record<string, number> = {};
+    for (const id of new Set([...Object.keys(avg), ...Object.keys(today)])) {
+      const v = (avg[id] ?? 0) * 0.6 + (today[id] ?? 0) * 0.4;
+      if (v >= 0.05) out[id] = Math.round(v * 100) / 100;
+    }
+    return out;
   }
-  return out;
-}
 
 let messageTimer: ReturnType<typeof setTimeout> | undefined;
 
 export const useGame = create<GameState>((set, get) => {
+  /** Đầu bếp trực ca tay nghề cao nhất: mẻ nấu nhanh hơn bấy nhiêu (1★ = như chủ tự nấu). */
+  const cookSpeed = () => {
+    const s = get();
+    let best = 1;
+    for (const st of s.staff) {
+      if (st.role !== 'cook') continue;
+      const shift = SHIFTS[st.shift];
+      if (s.minutes >= shift.from && s.minutes < shift.to) best = Math.max(best, skillSpeed(st.skill));
+    }
+    return best;
+  };
+
   /** Điện thoại: đổ chuông theo khung giờ khi tiệm mở; cúp máy khi không nghe; huỷ khi trễ quá lâu. */
   const updatePhones = () => {
     const s = get();
     let { phoneOrders, phoneSlot } = s;
     let changed = false;
+    const hasCourier = s.staff.some((w) => w.role === 'courier');
     while (phoneSlot < PHONE_SLOTS.length && s.minutes >= PHONE_SLOTS[phoneSlot]) {
-      // Lỡ khung giờ (tua nhanh qua) hoặc tiệm đóng cửa thì bỏ qua khung đó
-      const call = s.shopOpen && s.minutes < PHONE_SLOTS[phoneSlot] + 30
-        ? phoneCallFor(s.weatherSeed, s.day, phoneSlot, s.level, s.regulars, s.day * 100 + phoneSlot)
+      // Lỡ khung giờ (tua nhanh qua), tiệm đóng cửa hoặc chưa thuê nhân viên giao hàng thì bỏ qua khung đó
+      // Có trạm nấu trong tiệm thì đôi khi cuộc gọi là đơn nấu món nhà làm (giá hời)
+      const stations = [...new Set(s.furniture.filter((f) => isCookStation(f.type)).map((f) => f.type as CookingStation))];
+      const call = s.shopOpen && s.minutes < PHONE_SLOTS[phoneSlot] + 30 && hasCourier
+        ? phoneCallFor(s.weatherSeed, s.day, phoneSlot, s.level, s.regulars, s.day * 100 + phoneSlot, s.weather, s.storage, stations, reputationOf(s.repLog).overall)
         : null;
       if (call) {
         phoneOrders = [...phoneOrders, call];
-        s.notify(`📞 ${call.caller} (${houseById(call.houseId)!.name}) gọi đặt hàng: ${describeItems(call.items)}`);
+        playSfx('ring');
+        s.notify(call.vip
+          ? `👑 ${call.caller} (người nhà của ${regularById(call.regular!)?.name ?? 'khách quen'}) đặt GÓI LỚN: ${describeItems(call.items)} — giá hời ×${call.premium}!`
+          : call.premium
+            ? `🍳 ${call.caller} (${houseById(call.houseId)!.name}) đặt nấu: ${describeItems(call.items)} — trả giá hời ×${call.premium}, nấu xong nghe máy rồi mang đi!`
+            : `📞 ${call.caller} (${houseById(call.houseId)!.name}) gọi đặt hàng: ${describeItems(call.items)}`);
+      } else if (s.shopOpen && !hasCourier && (s.weather === 'rain' || s.weather === 'storm') && s.phoneHintDay !== s.day) {
+        // Mưa mà không ai giao hàng thì lỡ hết đơn — nhắc một lần mỗi ngày cho khỏi làm phiền
+        set({ phoneHintDay: s.day });
+        s.notify('🌧️ Trời mưa, nhiều người muốn gọi đặt hàng — thuê nhân viên giao hàng để nhận đơn!');
       }
       phoneSlot++;
       changed = true;
@@ -600,8 +752,9 @@ export const useGame = create<GameState>((set, get) => {
         shopTier: s.shopTier + 1,
         pendingUpgrade: false,
         furniture: s.furniture.map((f) => ({ ...f, z: f.z + shift })),
+        opening: { day: s.day + 1, tier: s.shopTier + 1 },
       });
-      s.notify(`🏗️ Thợ đã xây xong: ${SHOP_TIERS[s.shopTier + 1].name}!`);
+      s.notify(`🏗️ Thợ đã xây xong: ${SHOP_TIERS[s.shopTier + 1].name}! Mai khai trương, cả hẻm sẽ tới mừng, xem mục tiêu ở Nhiệm vụ`);
     }
     // Qua đêm hàng cũ đi một ngày hạn, rồi hàng đặt hôm nay về kho lúc sáng mai (hạn đầy)
     const aged = spoilOvernight(get());
@@ -625,6 +778,10 @@ export const useGame = create<GameState>((set, get) => {
       s.addReview(2, 'wait');
       if (o.regular) s.adjustFriendship(o.regular, -PHONE_FRIEND_GAIN);
     }
+    // Lời hẹn giữ món: chỉ giữ lại hẹn mới lập hôm nay (cho ngày mai); hẹn cũ khách đã ghé hay không thì xoá
+    const reservations = Object.fromEntries(
+      Object.entries(s.reservations).filter(([, r]) => r.day === s.day + 1),
+    );
     if (s.deliveries.length) s.notify(`🚚 Hàng đã về kho: ${s.deliveries.length} đơn`);
     if (aged.items) s.notify(`🗑️ ${aged.items} món hết hạn phải bỏ đi (vốn ${formatMoney(aged.cost)})`);
     // Nhu cầu: trung bình trượt, ngày gần nặng hơn
@@ -646,13 +803,28 @@ export const useGame = create<GameState>((set, get) => {
     // Kệ hao mòn qua đêm, mòn nhiều có thể hỏng
     const w = RISK_RULES.wear;
     let brokeNow = 0;
-    const furniture = aged.furniture.map((f) => {
+    let furniture = aged.furniture.map((f) => {
       if (s.level < w.unlock || !wears(f.type) || f.broken) return f;
       const wear = Math.min(100, (f.wear ?? 0) + w.perNight[0] + Math.floor(Math.random() * (w.perNight[1] - w.perNight[0] + 1)));
       const broken = Math.random() < (wear - w.breakFrom) * w.perPoint;
       if (broken) brokeNow++;
       return { ...f, wear, broken };
     });
+    // Hợp đồng bảo trì: thợ ghé sáng nay — kệ mòn được bảo trì miễn phí, kệ hỏng sửa ngay nửa giá
+    let maintCost = 0;
+    let maintFixed = 0;
+    if (hasUpgrade(s.biz, 'maintenance')) {
+      furniture = furniture.map((f) => {
+        if (!wears(f.type)) return f;
+        if (f.broken) {
+          maintCost += Math.round(repairCost(f.type) / 2000) * 1000;
+          maintFixed++;
+          return { ...f, wear: 10, broken: false };
+        }
+        return (f.wear ?? 0) >= w.serviceFrom ? { ...f, wear: 10 } : f;
+      });
+      brokeNow = 0;
+    }
     // Sự kiện ngẫu nhiên hôm nay (ngày mới) + hợp đồng cung cấp tới kỳ giao
     const nextEvent = eventOn(s.weatherSeed, s.day + 1, s.level);
     let contractNews: string[] = [];
@@ -671,32 +843,64 @@ export const useGame = create<GameState>((set, get) => {
     if (contractNews.length) news.push(...contractNews);
     if (order && !order.accepted) news.push(`📋 ${partyOrderById(order.id)!.from} muốn đặt đơn, xem ở Nhiệm vụ`);
     if (brokeNow) news.push(`🔧 ${brokeNow} kệ bị hỏng qua đêm, bấm vào kệ để sửa`);
+    if (maintFixed) news.push(`🔧 Thợ bảo trì đã sửa ${maintFixed} kệ hỏng sáng nay (nửa giá: ${formatMoney(maintCost)})`);
+    else if (hasUpgrade(s.biz, 'maintenance')) news.push('🔧 Thợ bảo trì đã ghé: kệ mòn được chăm sóc như mới');
+    // Tủ mát/tủ đông hỏng mà còn hàng: mất lạnh qua đêm, hàng trong tủ hỏng nhanh hơn
+    const coldBroken = s.furniture.filter((f) => f.broken && (f.type === 'fridge' || f.type === 'freezer')
+      && f.tiers.some((t) => t.count > 0));
+    if (coldBroken.length) news.push(`🧊 ${coldBroken.length} tủ lạnh đang hỏng: hàng mát trong tủ không được giữ lạnh, hỏng nhanh như để ngoài kho — sửa sớm!`);
+    // Thanh tra thị trường định kỳ: chấm theo chỉ số của ngày vừa đóng cửa
+    let inspectPay = 0;
+    if (s.level >= INSPECTION_UNLOCK && s.day % INSPECTION_EVERY === 0) {
+      const near = s.furniture.reduce((n, f) => n + f.tiers.reduce((m, t) => {
+        if (!t.productId || t.count <= 0) return m;
+        const life = nearestLife(fitLots(t.lots, t.count, t.productId));
+        return life !== null && life <= 1 ? m + t.count : m;
+      }, 0), 0);
+      const priced = Object.keys(s.prices);
+      const priceIndex = priced.length ? priced.reduce((n, id) => n + s.prices[id] / productById(id).sell, 0) / priced.length : 1;
+      const insp = inspectionResult({ dirt: s.dirt, nearExpiryOnShelves: near, priceIndex, rating: summarizeReviews(s.reviews.slice(-30)).average });
+      inspectPay = insp.pass ? INSPECTION_REWARD : -INSPECTION_FINE;
+      news.push(`📋 Thanh tra thị trường ${insp.score}/4: ${insp.notes.join(' · ')} — ${insp.pass ? `ĐẠT, thưởng ${formatMoney(INSPECTION_REWARD)}` : `KHÔNG ĐẠT, phạt ${formatMoney(INSPECTION_FINE)}`}`);
+    }
     if (s.fakeCash) news.push(`💸 Kiểm két thấy ${formatMoney(s.fakeCash)} tiền giả`);
     s.notify([`Hôm nay: ${describeDay(s.weatherSeed, s.day + 1, today)}. ${WEATHER[today].tip}`, ...news].join(' · '));
-    // Trả lương cuối ngày
+    // Giá tham chiếu thị trường nhích theo khan hiếm (kho + kệ) và cầu trung bình của từng món
+    const market: Record<string, number> = { ...s.market };
+    for (const p of unlockedProducts(s.level)) {
+      const onShelf = furniture.reduce((n, f) => n + f.tiers.reduce((m, t) => m + (t.productId === p.id ? t.count : 0), 0), 0);
+      market[p.id] = nextMarketIndex(market[p.id] ?? 1, (k.storage[p.id] ?? 0) + onShelf, 0, demand[p.id] ?? 0);
+    }
+    // Trả lương và tiền nhà cuối ngày (kèm phí thợ bảo trì sáng nay nếu có)
     const wages = wagesDue(s);
-    const stats = { ...s.stats, wages, spoiledItems: aged.items, spoiledCost: aged.cost };
+    const rent = rentOf(s.shopTier);
+    const stats = { ...s.stats, wages, rent, spent: s.stats.spent + maintCost, spoiledItems: aged.items, spoiledCost: aged.cost };
     const biz = bizEndOfDay(s, stats);
     if (biz.news.length) s.notify(biz.news.join(' · '));
+    const todayReviews = s.reviews.filter((r) => r.day === s.day);
     const record: DayRecord = {
-      day: s.day, revenue: stats.revenue, profit: stats.revenue - stats.spent - wages,
+      day: s.day, revenue: stats.revenue, profit: stats.revenue - stats.spent - wages - rent,
       customers: stats.customers, unhappy: stats.unhappy,
+      ...(todayReviews.length ? { rating: todayReviews.reduce((n, r) => n + r.stars, 0) / todayReviews.length } : {}),
     };
     const nextId = Math.max(0, ...s.staff.map((st) => st.id), ...s.candidates.map((c) => c.id)) + 1;
+    // Thức qua nửa đêm (ca đêm) thì hôm sau dậy trễ, bỏ lỡ buổi sáng đông khách
+    const wokeLate = s.minutes >= 24 * 60;
+    if (wokeLate) s.notify('😴 Ngủ muộn vì ca đêm: hôm nay dậy trễ, bỏ lỡ buổi sáng đông khách!');
     set({
       candidates: generateCandidates(s.level, nextId),
       day: s.day + 1,
-      minutes: DAY_START,
+      minutes: wokeLate ? LATE_WAKE_AT : DAY_START,
       shopOpen: false,
       dirt: 0,
       buildMode: false,
       placing: null,
       panel: { type: 'summary', day: s.day, stats },
       stats: emptyStats(),
-      ...k, furniture, order, phoneOrders: [], phoneSlot: 0, debts, vendorOffer: null, event: nextEvent, contracts, fakeCash: 0, history: [...s.history, record].slice(-HISTORY_DAYS), deliveries: [], demand, demandToday: {}, sales, salesToday: {},
+      ...k, furniture, order, phoneOrders: [], phoneSlot: 0, debts, vendorOffer: null, event: nextEvent, contracts, fakeCash: 0, wheelBoost: 1, history: [...s.history, record].slice(-HISTORY_DAYS), deliveries: [], demand, demandToday: {}, sales, salesToday: {}, reservations, market,
       weather: s.forecast[0], forecast: forecastFrom(s.weatherSeed, s.day + 1, s.forecast[0]),
       ...extra,
-      money: (extra.money ?? s.money) - wages + biz.money,
+      money: (extra.money ?? s.money) - wages - rent - maintCost + inspectPay + biz.money,
       biz: biz.biz,
     });
     checkAchievements();
@@ -713,6 +917,8 @@ export const useGame = create<GameState>((set, get) => {
     const s = get();
     return dayEffects(s.weatherSeed, day, s.level).cost(id) * (hasSkill(s.skills, 'negotiator') ? 0.95 : 1);
   });
+  // Giá gợi ý hiện hành theo hệ số thị trường (khan hàng trượt lên, tồn nhiều trượt xuống)
+  setMarketIndex((id) => get().market[id] ?? 1);
 
   const updateFurniture = (uid: number, fn: (f: Furniture) => Furniture) =>
     set({ furniture: get().furniture.map((f) => (f.uid === uid ? fn(f) : f)) });
@@ -729,6 +935,7 @@ export const useGame = create<GameState>((set, get) => {
     placing: null,
     shopOpen: false,
     waiting: 0,
+    customersInside: 0,
     vendorOffer: null,
     dirt: 0,
     addDirt: (amount) => {
@@ -752,6 +959,30 @@ export const useGame = create<GameState>((set, get) => {
       set({ minutes });
       updatePhones();
       maybeSurprise(minutes - s.minutes);
+      // Các mẻ nấu đang chạy: hết giờ thì thành phẩm vào kho (bày bán như hàng thường)
+      const jobs = get().cookJobs;
+      if (jobs.length && s.speed > 0) {
+        const step = dt * MINUTES_PER_SECOND * s.speed * cookSpeed();
+        const next = jobs.map((j) => ({ ...j, remaining: j.remaining - step }));
+        const done = next.filter((j) => j.remaining <= 0);
+        if (done.length) {
+          const k = copyStock(get());
+          for (const j of done) {
+            const r = RECIPE_MAP[j.recipeId];
+            if (r) putStock(k, r.outputId, r.outputQty);
+          }
+          set({ ...k, cookJobs: next.filter((j) => j.remaining > 0) });
+          playSfx('ding');
+          for (const j of done) {
+            const r = RECIPE_MAP[j.recipeId];
+            if (!r) continue;
+            get().notify(`🍲 Nấu xong: ${r.outputQty} ${productById(r.outputId).name} đã vào kho, bày lên kệ được ngay`);
+            get().addXp(4);
+          }
+        } else {
+          set({ cookJobs: next });
+        }
+      }
     },
     sleep: () => {
       const s = get();
@@ -777,6 +1008,11 @@ export const useGame = create<GameState>((set, get) => {
     },
     buy: (productId, qty) => {
       const s = get();
+      // Món nhà làm không nhập được ở đâu: phải tự nấu ở trạm (vì vậy đơn nấu mới có ý nghĩa)
+      if (COOKED_PRODUCT_IDS.has(productId)) {
+        s.notify(`🍳 ${productById(productId).name} là món nhà làm — vào trạm nấu để chế biến nhé`);
+        return false;
+      }
       const cost = productById(productId).buy * qty;
       if (s.money < cost) {
         s.notify('Không đủ tiền!');
@@ -788,6 +1024,7 @@ export const useGame = create<GameState>((set, get) => {
         money: s.money - cost,
         ...k,
         stats: { ...s.stats, spent: s.stats.spent + cost },
+        totals: { ...s.totals, spent: s.totals.spent + cost },
       });
       return true;
     },
@@ -814,14 +1051,15 @@ export const useGame = create<GameState>((set, get) => {
         return false;
       }
       const stats = { ...s.stats, spent: s.stats.spent + cost };
+      const totals = { ...s.totals, spent: s.totals.spent + cost };
       if (sup.delayDays === 0) {
         const k = copyStock(s);
         for (const [id, qty] of Object.entries(lines)) putStock(k, id, qty);
-        set({ money: s.money - cost, ...k, stats });
+        set({ money: s.money - cost, ...k, stats, totals });
         const swapped = s.autoSwap ? get().replaceEmptySlots() : [];
         s.notify(`📦 Đã nhập hàng từ ${sup.name}: ${formatMoney(cost)}${swapped.length ? ` · 🔄 Thay ô hết hàng: ${swapped.join(', ')}` : ''}`);
       } else {
-        set({ money: s.money - cost, stats, deliveries: [...s.deliveries, { supplierId, items: lines }] });
+        set({ money: s.money - cost, stats, totals, deliveries: [...s.deliveries, { supplierId, items: lines }] });
         s.notify(`🚚 Đã đặt ${sup.name} (${formatMoney(cost)}), hàng về lúc 6h sáng mai`);
       }
       return true;
@@ -842,7 +1080,7 @@ export const useGame = create<GameState>((set, get) => {
         s.notify('Không đủ tiền!');
         return false;
       }
-      set({ money: s.money - next.price, warehouseTier: s.warehouseTier + 1, stats: { ...s.stats, spent: s.stats.spent + next.price } });
+      set({ money: s.money - next.price, warehouseTier: s.warehouseTier + 1, stats: { ...s.stats, spent: s.stats.spent + next.price }, totals: { ...s.totals, spent: s.totals.spent + next.price } });
       s.notify(`🏭 Đã nâng cấp ${next.name}: chứa ${next.cases} thùng, giữ lạnh ${next.cold} món`);
       return true;
     },
@@ -916,17 +1154,34 @@ export const useGame = create<GameState>((set, get) => {
           ...old,
           tiers: old.tiers.map((t, i) => (i === j ? { ...t, count: t.count - 1, lots: takeOldest(fitLots(t.lots, t.count, productId), 1)[0] } : t)),
         }));
+        // Heatmap vị trí: đếm số món bán ra của kệ vừa được lấy hàng
+        const heat = get().shelfHeat;
+        set({ shelfHeat: { ...heat, [f.uid]: (heat[f.uid] ?? 0) + 1 } });
         // Lô cận hạn tự giảm giá
         const sale = tierMarkdown(productId, f.tiers[j].lots, f.tiers[j].count);
         return Math.round(s.priceOf(productId) * (1 + (furnitureDef(f.type).priceBonus ?? 0)) * (1 - sale));
       }
       return null;
     },
-    priceOf: (productId) => get().prices[productId] ?? productById(productId).sell,
+    priceOf: (productId) => {
+      const s = get();
+      let p = s.prices[productId] ?? productById(productId).sell;
+      // Đợt đối đầu giá với đối thủ: mọi món bán rẻ hơn trong ngày
+      if (counterActive(s.biz.counter, s.day, 'price')) p = Math.round(p * (1 - PRICE_WAR_CUT));
+      // Giờ vàng tự đặt: giảm giá đúng khung 2 tiếng đã chọn
+      if (happyHourActive(s.happyHour, s.minutes)) p = Math.round(p * (1 - s.happyHour!.off / 100));
+      // Ca đêm: khách khuya lười trả giá, được phép bán đắt hơn buổi ngày
+      if (hasUpgrade(s.biz, 'night') && isNight(s.minutes)) p = Math.round(p * NIGHT_PRICE_MUL);
+      return p;
+    },
     setPrice: (productId, price) => set({ prices: { ...get().prices, [productId]: price } }),
-    checkout: (items, discount = 0, combos = 0) => {
+    setHappyHour: (hh) => set({ happyHour: hh }),
+    checkout: (items, discount = 0, combos = 0, payment = 'cash') => {
       const s = get();
       const total = items.reduce((sum, it) => sum + it.price, 0) - discount;
+      // Ví điện tử / máy POS lấy ít % phí, tiền mặt và chuyển khoản không mất gì
+      const pay = paymentById(payment);
+      const fee = Math.round(total * pay.fee);
       const salesToday = { ...s.salesToday };
       const byItem = { ...s.stats.byItem };
       for (const it of items) {
@@ -934,17 +1189,26 @@ export const useGame = create<GameState>((set, get) => {
         const line = byItem[it.id] ?? { qty: 0, revenue: 0, cost: 0 };
         byItem[it.id] = { qty: line.qty + 1, revenue: line.revenue + it.price, cost: line.cost + productById(it.id).buy };
       }
+      const byMethod = { ...s.stats.byMethod };
+      const m = byMethod[payment] ?? { revenue: 0, count: 0 };
+      byMethod[payment] = { revenue: m.revenue + total, count: m.count + 1 };
       set({
         salesToday,
-        money: s.money + total,
+        money: s.money + total - fee,
         stats: {
           ...s.stats, revenue: s.stats.revenue + total, itemsSold: s.stats.itemsSold + items.length, byItem,
+          byHour: addHour(s.stats.byHour, s.minutes, 0, total), byMethod,
+          fees: (s.stats.fees ?? 0) + fee,
           combos: (s.stats.combos ?? 0) + combos, comboDiscount: (s.stats.comboDiscount ?? 0) + discount,
         },
-        totals: { ...s.totals, revenue: s.totals.revenue + total, itemsSold: s.totals.itemsSold + items.length },
+        totals: {
+          ...s.totals, revenue: s.totals.revenue + total, itemsSold: s.totals.itemsSold + items.length,
+          cookedSold: s.totals.cookedSold + items.filter((it) => COOKED_PRODUCT_IDS.has(it.id)).length,
+        },
       });
       // Mỗi món 1 XP, hàng đắt cho thêm (cứ 20.000đ thêm 1 XP)
       s.addXp(items.reduce((sum, it) => sum + 1 + Math.floor(it.price / 20000), 0));
+      get().communitySale(items.map((it) => it.id));
     },
     noteMiss: (reason, productId) => {
       const s = get();
@@ -969,8 +1233,8 @@ export const useGame = create<GameState>((set, get) => {
       set(k);
     },
     checkoutOnCredit: (regularId, items, discount = 0, combos = 0) => {
-      // Ghi nhận bán hàng như thường, rồi lấy lại tiền khỏi két và ghi vào sổ
-      get().checkout(items, discount, combos);
+      // Ghi nhận bán hàng như thường (sổ thanh toán ghi vào "Ghi sổ"), rồi lấy lại tiền khỏi két và ghi vào sổ nợ
+      get().checkout(items, discount, combos, 'credit');
       const s = get();
       const total = items.reduce((sum, it) => sum + it.price, 0) - discount;
       const old = s.debts[regularId];
@@ -1056,10 +1320,14 @@ export const useGame = create<GameState>((set, get) => {
       set({ activeCombos: [...s.activeCombos, id] });
       s.notify(`🎁 Bắt đầu chạy combo ${comboById(id)?.name}`);
     },
-    recordVisit: (happy) => {
+    recordVisit: (happy, sample) => {
       const s = get();
       set({
-        stats: { ...s.stats, customers: s.stats.customers + 1, unhappy: s.stats.unhappy + (happy ? 0 : 1) },
+        ...(sample ? { repLog: [...s.repLog, sample].slice(-REP_CAP) } : {}),
+        stats: {
+          ...s.stats, customers: s.stats.customers + 1, unhappy: s.stats.unhappy + (happy ? 0 : 1),
+          byHour: addHour(s.stats.byHour, s.minutes, 1, 0),
+        },
         totals: { ...s.totals, customers: s.totals.customers + 1 },
       });
       if (happy) s.addXp(2);
@@ -1079,10 +1347,45 @@ export const useGame = create<GameState>((set, get) => {
         money: s.money + r.tip,
         stats: { ...s.stats, revenue: s.stats.revenue + r.tip },
       });
+      // Đợt tri ân khách quen (phản công đối thủ): mỗi khách ghé hôm nay được tặng quà
+      let giftNote = '';
+      if (counterActive(s.biz.counter, s.day, 'gift')) {
+        get().adjustFriendship(id, 2);
+        giftNote = ' · 🎁 quà tri ân +2 thân thiết';
+      }
+      // Lời hẹn giữ món hôm nay: giữ đúng thì khách mừng, hẹn mà không mua được thì phật ý
+      const res = s.reservations[id];
+      let resNote = '';
+      if (res && res.day === s.day) {
+        const got = basket.filter((it) => it.id === res.productId).reduce((n, it) => n + 1, 0);
+        if (got >= res.qty) {
+          get().adjustFriendship(id, RESERVE_BONUS);
+          resNote = ` · 🤝 Giữ đúng hẹn ${res.qty} ${productById(res.productId).name}, +${RESERVE_BONUS} thân thiết`;
+          set({ stats: { ...get().stats, reservationsFilled: (get().stats.reservationsFilled ?? 0) + 1 } });
+        } else {
+          get().adjustFriendship(id, -RESERVE_MISS_LOSS);
+          resNote = ` · 😔 Đã hẹn giữ ${res.qty} ${productById(res.productId).name} mà không mua được, -${RESERVE_MISS_LOSS} thân thiết`;
+        }
+        const { [id]: _drop, ...restRes } = get().reservations;
+        set({ reservations: restRes });
+      }
       const tip = r.tip ? ` · boa ${formatMoney(r.tip)}` : '';
-      if (r.newPerks.length) s.notify(`💛 ${def.name} thân thiết hơn: ${r.newPerks.map((p) => p.description).join(' ')}${tip}`);
-      else s.notify(`😊 ${def.name}: "${def.lines.satisfied}"${tip}`);
+      if (r.newPerks.length) s.notify(`💛 ${def.name} thân thiết hơn: ${r.newPerks.map((p) => p.description).join(' ')}${tip}${resNote}${giftNote}`);
+      else s.notify(`😊 ${def.name}: "${def.lines.satisfied}"${tip}${resNote}${giftNote}`);
       return r.tip;
+    },
+    addReservation: (regularId, productId, qty) => {
+      const s = get();
+      if (!regularById(regularId)) return;
+      set({ reservations: { ...s.reservations, [regularId]: { productId, qty, day: s.day + 1 } } });
+      s.notify(`🤝 Đã hẹn giữ ${qty} ${productById(productId).name} cho ${regularById(regularId)?.name} — mai khách ghé lấy, nhớ bày đầy kệ!`);
+    },
+    cancelReservation: (regularId) => {
+      const s = get();
+      if (!s.reservations[regularId]) return;
+      const { [regularId]: _drop, ...rest } = s.reservations;
+      set({ reservations: rest });
+      s.notify(`👎 Đã từ chối lời hẹn giữ món (không mất thân thiết)`);
     },
     adjustFriendship: (id, delta) => {
       const s = get();
@@ -1097,6 +1400,44 @@ export const useGame = create<GameState>((set, get) => {
       if (!s.order) return;
       set({ order: { ...s.order, accepted: true } });
       s.notify(`📋 Đã nhận đơn, giao trước hết ngày ${s.order.dueDay}`);
+    },
+    startCook: (recipeId) => {
+      const s = get();
+      const r = RECIPE_MAP[recipeId];
+      if (!r) return false;
+      if (s.level < r.unlock) {
+        s.notify(`Món "${r.name}" mở ở cấp ${r.unlock}`);
+        return false;
+      }
+      // Giỏ quà ngày lễ: chỉ gói được trong đúng dịp (giỏ Tết gói mùa Tết...)
+      if (r.festival) {
+        const now = festivalOn(s.day);
+        if (now?.id !== r.festival) {
+          s.notify(`🎁 ${r.name} chỉ gói trong dịp ${FESTIVALS.find((f) => f.id === r.festival)?.name ?? r.festival}${now ? ' (đang là dịp khác)' : ' — chưa tới dịp'}`);
+          return false;
+        }
+      }
+      const stations = s.furniture.filter((f) => f.type === r.station);
+      if (!stations.length) {
+        s.notify(`Cần đặt trạm "${furnitureDef(r.station).name}" trong tiệm trước (mua ở 🛠️ Xây dựng)`);
+        return false;
+      }
+      const busy = s.cookJobs.filter((j) => RECIPE_MAP[j.recipeId]?.station === r.station).length;
+      if (busy >= stations.length) {
+        s.notify(`${furnitureDef(r.station).name} đang bận mẻ trước, chờ chút nhé`);
+        return false;
+      }
+      const missing = r.inputs.filter((i) => (s.storage[i.productId] ?? 0) < i.quantity);
+      if (missing.length) {
+        s.notify(`Thiếu nguyên liệu: ${missing.map((i) => `${i.quantity - (s.storage[i.productId] ?? 0)} ${productById(i.productId).name}`).join(', ')}. Nhập thêm rồi nấu nhé.`);
+        return false;
+      }
+      const k = copyStock(s);
+      for (const i of r.inputs) takeStock(k, i.productId, i.quantity);
+      const id = Math.max(0, ...s.cookJobs.map((j) => j.id)) + 1;
+      set({ ...k, cookJobs: [...s.cookJobs, { id, recipeId, remaining: r.durationMin, total: r.durationMin }] });
+      s.notify(`🍳 Đang nấu ${r.name} (${r.durationMin} phút) — nguyên liệu đã trừ kho, nấu xong tự vào kho`);
+      return true;
     },
     declineOrder: () => set({ order: null }),
     answerPhone: (id) => {
@@ -1115,6 +1456,22 @@ export const useGame = create<GameState>((set, get) => {
       s.notify(`📦 Đã soạn hàng. Mang tới ${houseById(o.houseId)!.name} trước ${formatClock(o.dueAt)} để được boa`);
       return true;
     },
+    restockAndAnswerPhone: (id) => {
+      const s = get();
+      const o = s.phoneOrders.find((p) => p.id === id && p.status === 'ringing');
+      if (!o) return false;
+      const missing = Object.entries(o.items)
+        .map(([pid, q]) => [pid, q - (s.storage[pid] ?? 0)] as const)
+        .filter(([, q]) => q > 0);
+      const cost = missing.reduce((sum, [pid, q]) => sum + productById(pid).buy * q, 0);
+      if (s.money < cost) {
+        s.notify(`Không đủ tiền nhập bù (cần ${formatMoney(cost)})`);
+        return false;
+      }
+      for (const [pid, q] of missing) get().buy(pid, q);
+      if (missing.length) s.notify(`🛒 Đã nhập bù ${missing.map(([pid, q]) => `${q} ${productById(pid).name}`).join(', ')} (${formatMoney(cost)})`);
+      return get().answerPhone(id);
+    },
     declinePhone: (id) => {
       const s = get();
       const o = s.phoneOrders.find((p) => p.id === id && p.status === 'ringing');
@@ -1126,20 +1483,27 @@ export const useGame = create<GameState>((set, get) => {
       const o = s.phoneOrders.find((p) => p.id === id && p.status === 'carrying');
       if (!o) return false;
       const value = phoneOrderValue(o, s.priceOf);
+      const fast = s.minutes <= fastWindow(o);
       const onTime = s.minutes <= o.dueAt;
-      const tip = onTime ? Math.round((value * ON_TIME_TIP) / 1000) * 1000 : 0;
+      // Giao ngay trong nửa đầu khung hẹn: boa gấp đôi; giao kịp hẹn: boa thường
+      const tip = onTime ? Math.round((value * (fast ? FAST_TIP : ON_TIME_TIP)) / 1000) * 1000 : 0;
       const pay = value + tip;
       const items = Object.values(o.items).reduce((n, q) => n + q, 0);
+      const cooked = Object.entries(o.items).reduce((n, [id, q]) => n + (COOKED_PRODUCT_IDS.has(id) ? q : 0), 0);
       set({
         phoneOrders: s.phoneOrders.filter((p) => p !== o), phoneOrdersDone: s.phoneOrdersDone + 1, money: s.money + pay,
         stats: { ...s.stats, revenue: s.stats.revenue + pay, itemsSold: s.stats.itemsSold + items },
-        totals: { ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + items },
+        totals: {
+          ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + items,
+          cookedSold: s.totals.cookedSold + cooked,
+          cookOrdersDone: s.totals.cookOrdersDone + (o.premium ? 1 : 0),
+        },
       });
       get().addXp(onTime ? 15 + items * 2 : 5);
       get().addReview(onTime ? 5 : 3, onTime ? undefined : 'wait', Object.keys(o.items)[0]);
       if (o.regular && onTime) get().adjustFriendship(o.regular, PHONE_FRIEND_GAIN);
       s.notify(onTime
-        ? `🛵 Giao kịp cho ${o.caller}: +${formatMoney(pay)} (boa ${formatMoney(tip)})${o.regular ? ` · 💛 +${PHONE_FRIEND_GAIN}` : ''}`
+        ? `🛵 Giao ${fast ? '⚡ lẹ như chớp' : 'kịp'} cho ${o.caller}: +${formatMoney(pay)} (boa ${formatMoney(tip)})${o.regular ? ` · 💛 +${PHONE_FRIEND_GAIN}` : ''}`
         : `🛵 Giao trễ cho ${o.caller}: +${formatMoney(pay)}, khách không boa`);
       return true;
     },
@@ -1168,12 +1532,36 @@ export const useGame = create<GameState>((set, get) => {
       get().checkTitles();
       return true;
     },
+    communitySale: (ids) => {
+      const s = get();
+      const rep = reputationOf(s.repLog);
+      const decor = s.furniture.filter((f) => f.type === 'plant').length;
+      for (const goal of activeGoals(s.day, s.level, s.opening)) {
+        const now = get();
+        if (now.community[goal.key]?.done || goalLocked(goal, rep)) continue;
+        const progress = addSales(goal, now.community[goal.key], ids);
+        if (!goalMet(goal, progress, decor)) {
+          set({ community: { ...now.community, [goal.key]: progress } });
+          continue;
+        }
+        const host = goal.festival.host ? regularById(goal.festival.host) : undefined;
+        const friend = host ? regularFriendship(host, now.regulars[host.id], goal.reward.friendship) : undefined;
+        set({
+          community: { ...now.community, [goal.key]: { ...progress, done: true } },
+          money: now.money + goal.reward.money,
+          ...(host && friend ? { regulars: { ...now.regulars, [host.id]: friend.progress } } : {}),
+        });
+        now.addXp(goal.reward.xp);
+        now.notify(`🎉 Cả hẻm hoàn thành mục tiêu ${goal.festival.name}! +${formatMoney(goal.reward.money)}, +${goal.reward.xp} XP${host ? `, ${host.name} thân hơn` : ''}`);
+      }
+    },
     acceptContract: (id) => {
       const s = get();
       const def = supplyContractById(id);
       if (!def) return;
       if (s.contracts[id]) { s.notify('Hợp đồng này đang hoạt động rồi'); return; }
       if (s.level < def.unlock) { s.notify(`Cần cấp ${def.unlock} để nhận hợp đồng này`); return; }
+      if (!meetsRep(reputationOf(s.repLog), def.rep)) { s.notify(`${def.from} chưa đủ tin tiệm, cần ${describeRep(def.rep!)}`); return; }
       set({ contracts: { ...s.contracts, [id]: { defId: id, dueDay: s.day + def.periodDays, delivered: 0, pending: true } } });
       s.notify(`📋 Nhận hợp đồng "${def.title}": ${formatMoney(contractValue(def))}/kỳ, giao mỗi ${def.periodDays} ngày`);
     },
@@ -1197,7 +1585,7 @@ export const useGame = create<GameState>((set, get) => {
         contracts: { ...s.contracts, [id]: { ...cs, delivered: cs.delivered + 1, dueDay: nextDue, pending: false } },
         money: s.money + pay,
         stats: { ...s.stats, revenue: s.stats.revenue + pay, itemsSold: s.stats.itemsSold + items },
-        totals: { ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + items },
+        totals: { ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + items, contractsDone: s.totals.contractsDone + 1 },
       });
       get().addXp(def.xp);
       s.notify(`🚚 Giao xong kỳ hạn "${def.title}": +${formatMoney(pay)} · +${def.xp} XP`);
@@ -1211,6 +1599,41 @@ export const useGame = create<GameState>((set, get) => {
       if (s.level < def.unlock) { s.notify(`Cần cấp ${def.unlock} để mở trang phục này`); return; }
       set({ costume: id });
       s.notify(`👕 Đổi sang "${def.name}"`);
+    },
+    setShopName: (name) => {
+      const clean = name.trim().slice(0, 24) || 'Tạp Hóa Đầu Ngõ';
+      set({ shopName: clean });
+      get().notify(`🏪 Tiệm giờ mang tên "${clean}"`);
+    },
+    claimGift: () => {
+      const s = get();
+      if (s.giftLastDay === s.day) {
+        s.notify('🎁 Hôm nay đã điểm danh rồi, mai quay lại nhé!');
+        return false;
+      }
+      const streak = s.giftLastDay === s.day - 1 ? s.giftStreak + 1 : 1;
+      const gift = giftOfStreak(streak);
+      set({
+        giftStreak: streak,
+        giftLastDay: s.day,
+        ...(gift.money ? { money: s.money + gift.money } : {}),
+      });
+      if (gift.xp) get().addXp(gift.xp);
+      s.notify(`🎁 Điểm danh ngày ${((streak - 1) % 7) + 1}: ${gift.icon} ${gift.label} — ${giftText(gift)}`);
+      return true;
+    },
+    spinWheel: () => {
+      const s = get();
+      if (s.wheelLastDay === s.day) return null;
+      const prize = spinWheelPrize();
+      set({
+        wheelLastDay: s.day,
+        ...(prize.boost ? { wheelBoost: 1 + prize.boost } : {}),
+        ...(prize.money ? { money: s.money + prize.money } : {}),
+      });
+      if (prize.xp) get().addXp(prize.xp);
+      s.notify(`🎡 Vòng quay may mắn: ${prize.icon} ${prize.label}!`);
+      return prize;
     },
     learnSkill: (id) => {
       const s = get();
@@ -1239,7 +1662,7 @@ export const useGame = create<GameState>((set, get) => {
       const cost = repairCost(f.type);
       if (s.money < cost) return s.notify('Không đủ tiền!');
       updateFurniture(uid, (old) => ({ ...old, wear: 10, broken: false }));
-      set({ money: get().money - cost, stats: { ...s.stats, spent: s.stats.spent + cost } });
+      set({ money: get().money - cost, stats: { ...s.stats, spent: s.stats.spent + cost }, totals: { ...s.totals, spent: s.totals.spent + cost } });
       s.notify(`🔧 Đã ${f.broken ? 'sửa' : 'bảo trì'} ${furnitureDef(f.type).name}: ${formatMoney(cost)}`);
     },
     recordTheft: (value, caught) => {
@@ -1282,6 +1705,7 @@ export const useGame = create<GameState>((set, get) => {
       }
       set({ xp, level, stats: { ...s.stats, xp: s.stats.xp + amount } });
       if (level !== s.level) {
+        playSfx('levelup');
         s.notify(`⭐ Lên cấp ${level}!${gained.length ? ' Mở khóa: ' + gained.join(', ') : ''}`);
       }
     },
@@ -1292,7 +1716,10 @@ export const useGame = create<GameState>((set, get) => {
         id: (s.reviews.at(-1)?.id ?? 0) + 1, day: s.day, minute: Math.floor(s.minutes), stars, reason,
         productId, productName: productId ? productById(productId).name : undefined,
       });
-      set({ reviews: [...s.reviews, review].slice(-REVIEW_CAP) });
+      set({
+        reviews: [...s.reviews, review].slice(-REVIEW_CAP),
+        ...(stars === 5 ? { totals: { ...s.totals, fiveStars: s.totals.fiveStars + 1 } } : {}),
+      });
     },
 
     setBuildMode: (on) => set({ buildMode: on, placing: null, panel: on ? { type: 'build' } : null }),
@@ -1309,6 +1736,7 @@ export const useGame = create<GameState>((set, get) => {
         money: s.money - def.price,
         furniture: [...s.furniture, { uid, type, x, z, rot, tiers: emptyTiers(type) }],
         stats: { ...s.stats, spent: s.stats.spent + def.price },
+        totals: { ...s.totals, spent: s.totals.spent + def.price },
       });
       return true;
     },
@@ -1320,7 +1748,10 @@ export const useGame = create<GameState>((set, get) => {
       const k = copyStock(s);
       for (const t of f.tiers) returnTier(k, t);
       const refund = Math.round(furnitureDef(f.type).price * SELL_BACK);
-      set({ money: s.money + refund, ...k, furniture: s.furniture.filter((it) => it.uid !== uid), placing: null });
+      // Kệ đã bán đi thì bỏ luôn số heat của nó
+      const heat = { ...s.shelfHeat };
+      delete heat[uid];
+      set({ money: s.money + refund, ...k, furniture: s.furniture.filter((it) => it.uid !== uid), placing: null, shelfHeat: heat });
       s.notify(`Đã bán ${furnitureDef(f.type).name}, nhận lại ${formatMoney(refund)}. Hàng trên kệ về kho.`);
     },
     demolishAll: () => {
@@ -1331,7 +1762,7 @@ export const useGame = create<GameState>((set, get) => {
         for (const t of f.tiers) returnTier(k, t);
         refund += Math.round(furnitureDef(f.type).price * SELL_BACK);
       }
-      set({ money: s.money + refund, ...k, furniture: [], placing: null });
+      set({ money: s.money + refund, ...k, furniture: [], placing: null, shelfHeat: {} });
       s.notify(`🔨 Đã dọn sạch tiệm, nhận lại ${formatMoney(refund)}. Hàng về kho.`);
     },
     buyUpgrade: () => {
@@ -1340,7 +1771,7 @@ export const useGame = create<GameState>((set, get) => {
       if (!next || s.pendingUpgrade) return;
       if (s.level < next.unlock) return s.notify(`Cần đạt cấp ${next.unlock}`);
       if (s.money < next.price) return s.notify('Không đủ tiền!');
-      set({ money: s.money - next.price, pendingUpgrade: true, stats: { ...s.stats, spent: s.stats.spent + next.price } });
+      set({ money: s.money - next.price, pendingUpgrade: true, stats: { ...s.stats, spent: s.stats.spent + next.price }, totals: { ...s.totals, spent: s.totals.spent + next.price } });
       s.notify(`🏗️ Đã thuê thợ! Sáng mai tiệm thành "${next.name}".`);
     },
     hire: (id) => {
@@ -1351,6 +1782,9 @@ export const useGame = create<GameState>((set, get) => {
       if (ROLES[c.role].unlock > s.level) return s.notify(`Vai trò ${ROLES[c.role].name} mở ở cấp ${ROLES[c.role].unlock}`);
       set({ staff: [...s.staff, c], candidates: s.candidates.filter((it) => it.id !== id) });
       s.notify(`🤝 Đã thuê ${c.name}. Lương trả cuối mỗi ngày.`);
+      if (c.role === 'courier' && !s.staff.some((w) => w.role === 'courier')) {
+        s.notify('🛵 Đã mở chế độ giao tận nhà: hàng xóm sẽ gọi điện đặt hàng!');
+      }
     },
     fire: (id) => set({ staff: get().staff.filter((it) => it.id !== id) }),
     setShift: (id, shift) => set({ staff: get().staff.map((it) => (it.id === id ? { ...it, shift } : it)) }),
@@ -1362,6 +1796,7 @@ export const useGame = create<GameState>((set, get) => {
         money: s.money - PAINT_PRICE,
         style: { ...s.style, [part]: color },
         stats: { ...s.stats, spent: s.stats.spent + PAINT_PRICE },
+        totals: { ...s.totals, spent: s.totals.spent + PAINT_PRICE },
       });
     },
   };

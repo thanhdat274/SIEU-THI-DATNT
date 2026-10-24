@@ -1,7 +1,7 @@
 import type { CharacterArchetype } from '../render/characterModel';
 
 export type StaffRole = 'cashier' | 'stocker' | 'cleaner' | 'courier' | 'guard' | 'manager' | 'bartender' | 'cook' | 'warehouse_mgr' | 'customer_care';
-export type Shift = 'morning' | 'afternoon' | 'full';
+export type Shift = 'morning' | 'afternoon' | 'full' | 'night';
 
 export interface RoleDef {
   name: string;
@@ -20,16 +20,16 @@ export const ROLES: Record<StaffRole, RoleDef> = {
   cashier: { name: 'Thu ngân', icon: '🧾', color: 0xc0392b, unlock: 4, wageMul: 1, desc: 'Đứng quầy tính tiền, tự mở cửa khi vào ca' },
   stocker: { name: 'Xếp hàng', icon: '📦', color: 0x16a085, unlock: 4, wageMul: 1, desc: 'Lấy hàng trong kho bày lên kệ khi kệ vơi' },
   cleaner: { name: 'Lao công', icon: '🧹', color: 0x8e44ad, unlock: 6, wageMul: 0.8, archetype: 'elder_woman', desc: 'Lau dọn chỗ bẩn; tiệm sạch thì khách ghé nhiều hơn' },
-  courier: { name: 'Giao hàng', icon: '🛵', color: 0x00a651, unlock: 10, wageMul: 1.1, archetype: 'shipper', desc: 'Tự chở đơn khách gọi điện và đơn tiệc đã nhận đi giao' },
+  courier: { name: 'Giao hàng', icon: '🛵', color: 0x00a651, unlock: 4, wageMul: 1.1, archetype: 'shipper', desc: 'Thuê để mở chế độ hàng xóm gọi điện đặt hàng giao tận nhà; tự chở đơn khách gọi điện và đơn tiệc đã nhận đi giao' },
   guard: { name: 'Bảo vệ', icon: '💂', color: 0x4b6043, unlock: 15, wageMul: 1.2, archetype: 'security_guard', desc: 'Đứng cửa canh trộm, bắt kẻ gian gần như chắc chắn' },
-  manager: { name: 'Quản lý', icon: '📋', color: 0x2c3e50, unlock: 22, wageMul: 1.8, archetype: 'gentleman', desc: 'Sáng và trưa kiểm kho, món sắp hết thì tự đặt nhà cung cấp' },
+  manager: { name: 'Quản lý', icon: '📋', color: 0x2c3e50, unlock: 22, wageMul: 1.8, archetype: 'gentleman', desc: 'Sáng và trưa kiểm kho, món đã bán qua ít nhất một lần mà sắp hết thì tự đặt nhà cung cấp' },
   // ──────────────────────────────────────────────
   // NHÂN VIÊN MỚI – mở rộng từ 6 lên 10 vai trò
   // ──────────────────────────────────────────────
-  bartender: { name: 'Pha chế', icon: '☕', color: 0xe17055, unlock: 18, wageMul: 1.3, archetype: 'barista', desc: 'Nấu trà, cà phê, sinh tố bán tại quầy nước. Tăng doanh thu món tự chế 15%.' },
-  cook: { name: 'Chế biến thực phẩm', icon: '🍳', color: 0xc0392b, unlock: 25, wageMul: 1.5, archetype: 'chef', desc: 'Nấu bánh mì trứng, xôi, cơm hộp. Mở khóa quầy ăn chế biến.' },
-  warehouse_mgr: { name: 'Quản lý kho', icon: '📦', color: 0x636e72, unlock: 30, wageMul: 1.4, archetype: 'gentleman', desc: 'Tự đặt hàng khi kho thấp, quản lý nhập/xuất. Giảm hao hụt kho 20%.' },
-  customer_care: { name: 'Chăm sóc khách', icon: '💬', color: 0x00b894, unlock: 35, wageMul: 1.2, archetype: 'office_lady', desc: 'Trả lời review, tăng danh tiếng tiệm. Khách hài lòng hơn 20%.' },
+  bartender: { name: 'Pha chế', icon: '☕', color: 0xe17055, unlock: 18, wageMul: 1, archetype: 'barista', desc: 'Hiện làm phụ việc: bày hàng lên kệ khi kệ vơi (chưa có hiệu ứng riêng)' },
+  cook: { name: 'Chế biến thực phẩm', icon: '🍳', color: 0xc0392b, unlock: 25, wageMul: 1.5, archetype: 'chef', desc: 'Đứng bếp ở trạm nấu: các món đang nấu xong nhanh hơn theo tay nghề (1★ không nhanh hơn, 5★ nhanh gấp rưỡi)' },
+  warehouse_mgr: { name: 'Quản lý kho', icon: '📦', color: 0x636e72, unlock: 30, wageMul: 1, archetype: 'gentleman', desc: 'Hiện làm phụ việc: bày hàng lên kệ khi kệ vơi (chưa có hiệu ứng riêng)' },
+  customer_care: { name: 'Chăm sóc khách', icon: '💬', color: 0x00b894, unlock: 35, wageMul: 1, archetype: 'office_lady', desc: 'Hiện làm phụ việc: bày hàng lên kệ khi kệ vơi (chưa có hiệu ứng riêng)' },
 };
 
 export const unlockedRoles = (level: number) => (Object.keys(ROLES) as StaffRole[]).filter((r) => ROLES[r].unlock <= level);
@@ -55,8 +55,11 @@ export const MANAGER_CHECKS = [7 * 60, 12 * 60];
 
 export const SHIFTS: Record<Shift, { name: string; from: number; to: number; pay: number }> = {
   morning: { name: 'Ca sáng (6h–14h)', from: 6 * 60, to: 14 * 60, pay: 1 },
-  afternoon: { name: 'Ca chiều (14h–22h)', from: 14 * 60, to: 22 * 60, pay: 1 },
-  full: { name: 'Cả ngày (6h–22h)', from: 6 * 60, to: 22 * 60, pay: 1.6 },
+  // Ca chiều/nguyên ngày kéo tới 22h30 khớp giờ đóng cửa tiệm; còn khách chưa thanh toán thì ở lại dọn nốt
+  afternoon: { name: 'Ca chiều (14h–22h30)', from: 14 * 60, to: 22 * 60 + 30, pay: 1 },
+  full: { name: 'Cả ngày (6h–22h30)', from: 6 * 60, to: 22 * 60 + 30, pay: 1.6 },
+  // Ca đêm nối qua nửa đêm: phút trong ngày chạy tiếp 24h–30h (= 0h–6h hôm sau), lương ×1.5
+  night: { name: 'Ca đêm (22h–6h, ×1.5 lương)', from: 22 * 60, to: 30 * 60, pay: 1.5 },
 };
 
 export interface Staff {

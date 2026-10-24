@@ -1,26 +1,33 @@
 import { useState } from 'react';
 import { useGame } from '../core/store';
 import {
-  buyAd, buyHomeItem, buyPet, buyVehicle, feedPet, joinHui, repayLoan, setLoyalty, takeLoan,
+  buyAd, buyHomeItem, buyService, buyPet, buyUpgrade, buyVehicle, feedPet, joinHui, repayLoan, setLoyalty, startCounter, takeLoan,
 } from '../core/biz';
+import { hasUpgrade, UPGRADES } from '../data/upgrades';
 import { HistoryChart } from './Panels';
 import {
-  ACHIEVEMENTS, activeAds, ADS, BREAKFAST, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, LOAN_DAILY_RATE, LOAN_UNLOCK,
-  loanOptions, LOYALTY_OPTIONS, LOYALTY_UNLOCK, petActive, PETS, RIVAL_UNLOCK, rivalTrafficFactor, VEHICLES, WEEK_DAYS,
+  ACHIEVEMENTS, activeAds, ADS, BREAKFAST, COUNTERS, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, LOAN_DAILY_RATE,
+  LOAN_UNLOCK, loanOptions, LOYALTY_OPTIONS, LOYALTY_UNLOCK, petActive, PETS, RIVAL_UNLOCK, rivalTrafficFactor, VEHICLES, WEEK_DAYS,
 } from '../data/biz';
 import { formatMoney, productById } from '../data/products';
+import { BILL_RUSH_DAYS, dayOfMonth, SERVICE_BUY_ALONG, SERVICES } from '../data/services';
 
-const card: React.CSSProperties = { background: '#3a3a4d', borderRadius: 8, padding: '8px 12px', marginBottom: 6 };
+const card: React.CSSProperties = { background: '#3a3a4d', borderRadius: 10, padding: '12px 14px', marginBottom: 8, border: '1px solid rgba(255,255,255,0.06)' };
+const title: React.CSSProperties = { fontSize: 15, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 };
+const pill: React.CSSProperties = { fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 999, whiteSpace: 'nowrap' };
+const iconTile: React.CSSProperties = { width: 34, height: 34, borderRadius: 8, background: 'rgba(255,255,255,0.08)', display: 'grid', placeItems: 'center', fontSize: 18, flexShrink: 0 };
 const btn: React.CSSProperties = { marginLeft: 6, padding: '4px 10px', borderRadius: 6, border: 0, cursor: 'pointer', background: '#f1c40f', fontWeight: 600 };
 const sub: React.CSSProperties = { fontSize: 12, opacity: 0.75 };
 const row: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 };
 
 const TABS = [
-  ['market', '⚔️ Đối thủ & quảng cáo'],
+  ['market', '⚔️ Cạnh tranh'],
+  ['services', '🧾 Dịch vụ'],
   ['money', '🏦 Vay & hụi'],
-  ['week', '📊 Lãi lỗ & tuần'],
+  ['week', '📊 Lãi lỗ'],
   ['pets', '🐾 Thú cưng'],
   ['life', '🏡 Nhà & xe'],
+  ['upgrades', '🔧 Nâng cấp'],
   ['ach', '🏆 Thành tựu'],
 ] as const;
 
@@ -28,22 +35,32 @@ const TABS = [
 export function BusinessPanel() {
   const [tab, setTab] = useState<(typeof TABS)[number][0]>('market');
   return (
-    <>
+    // Khung cố định để mọi tab cùng kích thước, không co giãn theo nội dung
+    <div style={{ width: 'min(760px, 86vw)', minHeight: 'min(520px, 70vh)' }}>
       <h2 style={{ margin: '0 0 8px' }}>📈 Kinh doanh</h2>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: 4, padding: 4, marginBottom: 12, background: 'rgba(0,0,0,0.25)', borderRadius: 10 }}>
         {TABS.map(([id, label]) => (
-          <button key={id} style={{ ...btn, marginLeft: 0, background: tab === id ? '#f1c40f' : '#fff' }} onClick={() => setTab(id)}>{label}</button>
+          <button
+            key={id}
+            style={{
+              padding: '7px 8px', borderRadius: 7, border: 0, cursor: 'pointer', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap',
+              background: tab === id ? '#f1c40f' : 'transparent', color: tab === id ? '#222' : '#ddd',
+            }}
+            onClick={() => setTab(id)}
+          >{label}</button>
         ))}
       </div>
-      <div style={{ maxWidth: 600 }}>
+      <div>
         {tab === 'market' && <Market />}
+        {tab === 'services' && <Services />}
         {tab === 'money' && <Money />}
         {tab === 'week' && <Week />}
         {tab === 'pets' && <Pets />}
         {tab === 'life' && <Life />}
+        {tab === 'upgrades' && <Upgrades />}
         {tab === 'ach' && <Achievements />}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -53,8 +70,9 @@ function Market() {
   const running = activeAds(biz.ads, day);
   return (
     <>
-      <div style={card}>
-        <b>⚔️ Tiệm đối thủ</b>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 8 }}>
+      <div style={{ ...card, marginBottom: 0 }}>
+        <div style={title}>⚔️ Tiệm đối thủ</div>
         {level < RIVAL_UNLOCK ? <div style={sub}>Từ cấp {RIVAL_UNLOCK} sẽ có tiệm khác mở cạnh tranh trong hẻm.</div>
           : r ? (
             <>
@@ -66,13 +84,40 @@ function Market() {
                 Đang hút mất {Math.round((1 - rivalTrafficFactor(r, day)) * 100)}% khách{r.saleUntil !== undefined && r.saleUntil >= day ? ` (đang giảm giá tới ngày ${r.saleUntil})` : ''}.
                 Mỗi đêm họ yếu đi khi tiệm bạn được đánh giá cao, ít để khách hụt hàng, giá không đắt hơn giá gợi ý, và có chạy quảng cáo.
               </div>
+              <div style={{ ...title, marginTop: 8 }}>🎯 Phản công (mỗi ngày một đợt)</div>
+              <div style={{ display: 'grid', gap: 4 }}>
+                {COUNTERS.map((c) => {
+                  const runningNow = biz.counter?.day === day && biz.counter.tactic === c.id;
+                  const ready = day >= (biz.counterReady[c.id] ?? 0);
+                  const usedToday = biz.counter?.day === day;
+                  const affordable = money >= c.cost;
+                  return (
+                    <button
+                      key={c.id}
+                      disabled={runningNow || usedToday || !ready || !affordable}
+                      style={{
+                        textAlign: 'left', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 12,
+                        border: `1px solid ${runningNow ? 'rgba(46,204,113,0.55)' : 'transparent'}`,
+                        background: runningNow ? 'rgba(46,204,113,0.15)' : 'rgba(0,0,0,0.18)',
+                        color: '#eee', opacity: runningNow || (!usedToday && ready && affordable) ? 1 : 0.55,
+                      }}
+                      onClick={() => startCounter(c.id)}
+                    >
+                      <b>{c.icon} {c.name}</b>
+                      {c.cost > 0 ? ` · ${formatMoney(c.cost)}` : ' · miễn phí (lãi mỏng)'}
+                      {runningNow ? ' · ✅ đang chạy' : usedToday ? ' · hôm nay đã chạy đợt khác' : !ready ? ` · hồi từ ngày ${biz.counterReady[c.id]}` : ''}
+                      <div style={sub}>{c.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </>
           ) : <div style={sub}>Hẻm đang chỉ có tiệm bạn{biz.rivalsBeaten ? ` · đã đánh bại ${biz.rivalsBeaten} đối thủ` : ''}. Thỉnh thoảng sẽ có tiệm mới mở.</div>}
       </div>
 
-      <div style={card}>
-        <div style={row}>
-          <b>🎫 Thẻ tích điểm</b>
+      <div style={{ ...card, marginBottom: 0 }}>
+        <div style={{ ...row, ...title }}>
+          <span>🎫 Thẻ tích điểm</span>
           {level >= LOYALTY_UNLOCK && (
             <label style={{ fontSize: 13 }}>
               <input type="checkbox" checked={biz.loyalty.on} onChange={(e) => setLoyalty(e.target.checked)} /> Bật
@@ -93,20 +138,39 @@ function Market() {
           </>
         )}
       </div>
+      </div>
 
-      <div style={card}>
-        <b>📢 Quảng cáo</b>
-        {ADS.map((a) => {
-          const on = running.find((x) => x.id === a.id);
-          return (
-            <div key={a.id} style={{ ...row, marginTop: 6, opacity: level < a.unlock ? 0.5 : 1 }}>
-              <span>{a.icon} {a.name} <span style={sub}>· {a.desc} +{Math.round((a.traffic - 1) * 100)}% khách, {a.days} ngày</span></span>
-              {level < a.unlock ? <span style={sub}>Cấp {a.unlock}</span>
-                : on ? <span style={{ ...sub, color: '#2ecc71' }}>Chạy tới ngày {on.untilDay}</span>
-                  : <button style={btn} disabled={money < a.price} onClick={() => buyAd(a.id)}>{formatMoney(a.price)}</button>}
-            </div>
-          );
-        })}
+      <div style={{ ...card, marginTop: 8 }}>
+        <div style={title}>📢 Quảng cáo</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 6 }}>
+          {ADS.map((a) => {
+            const on = running.find((x) => x.id === a.id);
+            const locked = level < a.unlock;
+            return (
+              <div
+                key={a.id}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: 8, borderRadius: 8,
+                  background: on ? 'rgba(46,204,113,0.12)' : 'rgba(0,0,0,0.18)',
+                  border: `1px solid ${on ? 'rgba(46,204,113,0.45)' : 'transparent'}`, opacity: locked ? 0.5 : 1,
+                }}
+              >
+                <div style={iconTile}>{locked ? '🔒' : a.icon}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>{a.name}</div>
+                  <div style={{ ...sub, fontSize: 11 }}>{a.desc}</div>
+                  <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                    <span style={{ ...pill, background: 'rgba(241,196,15,0.18)', color: '#f1c40f' }}>+{Math.round((a.traffic - 1) * 100)}% khách</span>
+                    <span style={{ ...pill, background: 'rgba(255,255,255,0.1)' }}>{a.days} ngày</span>
+                  </div>
+                </div>
+                {locked ? <span style={{ ...pill, background: 'rgba(255,255,255,0.1)' }}>Cấp {a.unlock}</span>
+                  : on ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✓ Tới ngày {on.untilDay}</span>
+                    : <button style={{ ...btn, marginLeft: 0, whiteSpace: 'nowrap', opacity: money < a.price ? 0.5 : 1 }} disabled={money < a.price} onClick={() => buyAd(a.id)}>{formatMoney(a.price)}</button>}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </>
   );
@@ -131,7 +195,10 @@ function Money() {
           </>
         ) : (
           <>
-            <div style={sub}>Vay để mở rộng sớm. Lãi {(LOAN_DAILY_RATE * 100).toFixed(1)}%/ngày trên tiền còn nợ, hạn 30 ngày, trả sớm không mất phí.</div>
+            <div style={sub}>
+              Vay để mở rộng sớm. Lãi {(LOAN_DAILY_RATE * 100).toFixed(1)}%/ngày trên tiền còn nợ, hạn 30 ngày, trả sớm không mất phí.
+              {loanOptions(level)[0] > 0 && ` Ví dụ vay ${formatMoney(loanOptions(level)[0])}: trả ${formatMoney(Math.round(loanOptions(level)[0] * LOAN_DAILY_RATE))}/ngày, giữ đủ 30 ngày thì tổng lãi ~${formatMoney(Math.round(loanOptions(level)[0] * LOAN_DAILY_RATE) * 30)}.`}
+            </div>
             <div style={{ marginTop: 4 }}>
               {loanOptions(level).map((a) => <button key={a} style={{ ...btn, marginLeft: 0, marginRight: 6 }} onClick={() => takeLoan(a)}>Vay {formatMoney(a)}</button>)}
             </div>
@@ -231,6 +298,40 @@ function Pets() {
   );
 }
 
+/** Dịch vụ ở quầy: mua thiết bị một lần, khách ghé dùng dịch vụ và hay mua kèm. */
+function Services() {
+  const { biz, level, day, stats } = useGame();
+  const owned = biz.services ?? [];
+  return (
+    <>
+      <div style={card}>
+        <b>🧾 Dịch vụ ở quầy</b>
+        <div style={sub}>
+          Không cần kệ: khách đi thẳng tới quầy, lãi mỗi lượt ít nhưng {Math.round(SERVICE_BUY_ALONG * 100)}% khách tiện tay mua kèm 1–2 món.
+          Phải có người đứng quầy mới phục vụ được.
+        </div>
+        <div style={{ fontSize: 12, marginTop: 4 }}>Hôm nay lời từ dịch vụ: <b>{formatMoney(stats.services ?? 0)}</b></div>
+      </div>
+      {SERVICES.map((sv) => (
+        <div key={sv.id} style={{ ...card, opacity: level < sv.unlock ? 0.5 : 1 }}>
+          <div style={row}>
+            <b>{sv.icon} {sv.name}</b>
+            {owned.includes(sv.id) ? <span style={{ ...sub, color: '#2ecc71' }}>Đang chạy</span>
+              : level < sv.unlock ? <span style={sub}>Cấp {sv.unlock}</span>
+                : <button style={btn} onClick={() => buyService(sv.id)}>Mở · {formatMoney(sv.price)}</button>}
+          </div>
+          <div style={sub}>{sv.desc}</div>
+          {sv.id === 'bills' && (
+            <div style={{ fontSize: 12, marginTop: 2 }}>
+              Hôm nay ngày {dayOfMonth(day)} trong tháng{dayOfMonth(day) <= BILL_RUSH_DAYS ? ' · 🔥 đầu tháng, khách đóng tiền đông gấp 4' : ` · đợt đông tới sau ${30 - dayOfMonth(day) + 1} ngày`}
+            </div>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
+
 function Life() {
   const { biz, level, day } = useGame();
   return (
@@ -264,6 +365,43 @@ function Life() {
           </div>
         ))}
       </div>
+    </>
+  );
+}
+
+/** Tab nâng cấp: thiết bị mua một lần dùng vĩnh viễn. */
+function Upgrades() {
+  const { level, money, biz } = useGame();
+  return (
+    <>
+      <div style={{ ...card, marginBottom: 8 }}>
+        <b>🔧 Thiết bị của tiệm</b>
+        <div style={sub}>Mua một lần dùng vĩnh viễn — tiền đốt cho giai đoạn về sau, mỗi món gắn với một hệ thống đã có.</div>
+      </div>
+      {UPGRADES.map((u) => {
+        const owned = hasUpgrade(biz, u.id);
+        return (
+          <div key={u.id} style={card}>
+            <div style={row}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div style={iconTile}>{u.icon}</div>
+                <div>
+                  <b>{u.name}</b>
+                  <div style={sub}>{u.desc}</div>
+                  {owned
+                    ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✓ Đã lắp</span>
+                    : <div style={sub}>Giá {formatMoney(u.price)} · mở ở cấp {u.unlock}</div>}
+                </div>
+              </div>
+              {!owned && (
+                <button style={btn} disabled={level < u.unlock || money < u.price} onClick={() => buyUpgrade(u.id)}>
+                  {level < u.unlock ? `Cần cấp ${u.unlock}` : `Mua ${formatMoney(u.price)}`}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </>
   );
 }

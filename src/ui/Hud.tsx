@@ -7,7 +7,7 @@ import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save
 import { FEATURES, xpToNext } from '../data/levels';
 import { formatMoney, productById } from '../data/products';
 import { summarizeReviews } from '../data/reviews';
-import { dayEffects, upcomingFestival } from '../data/calendar';
+import { dayEffects, describeDate, festivalStock, upcomingFestival } from '../data/calendar';
 import { skillPoints } from '../data/titles';
 import { COMBO_UNLOCK } from '../data/combos';
 import { describeDay, describeRain, rainSpell, WEATHER } from '../data/weather';
@@ -20,6 +20,7 @@ import { vendorById, wholesaleTotal } from '../data/wholesale';
 import { STORIES, SURPRISES } from '../data/biz';
 import { chooseSurprise, closeChapter, closeStory, dismissTutorial, REGULAR_NAMES } from '../core/biz';
 import { chapterById } from '../data/chapters';
+import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
 import { Panels } from './Panels';
 import { answerAsk, useCounterAsk } from '../core/counterAsk';
 import './hud.css';
@@ -42,12 +43,41 @@ const CONTROLS = [
   ['B', 'Bày hàng (ở kệ, tủ)'],
   ['K', 'Đặt hàng / xem kho (ở kho)'],
   ['G', 'Giao hàng (ở cửa nhà khách)'],
+  ['M', 'Nấu ăn (ở trạm nấu)'],
   ['O', 'Đóng / mở cửa tiệm'],
   ['Kéo chuột trái', 'Nhìn quanh'],
   ['Chuột phải / Q E', 'Xoay camera'],
   ['Cuộn chuột', 'Phóng to, thu nhỏ'],
   ['Esc', 'Đóng bảng'],
 ];
+
+/** Nút tắt/bật tiếng: âm thanh lưu riêng trong máy, không nằm trong bản lưu game. */
+function SoundToggle() {
+  const [muted, setLocal] = useState(isMuted());
+  return (
+    <button
+      className="hud-chip hud-sound"
+      title={muted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+      onClick={() => { initAudio(); const next = !muted; setMuted(next); setLocal(next); }}
+    >
+      <span aria-hidden="true">{muted ? '🔇' : '🔊'}</span>
+    </button>
+  );
+}
+
+/** Nút nhạc nền: giai điệu nhẹ tự sinh, bật riêng khỏi hiệu ứng tiếng. */
+function MusicToggle() {
+  const [on, setLocal] = useState(isMusic());
+  return (
+    <button
+      className="hud-chip hud-sound"
+      title={on ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
+      onClick={() => { const next = !on; setMusic(next); setLocal(next); }}
+    >
+      <span aria-hidden="true">{on ? '🎵' : '🎶︎'}</span>
+    </button>
+  );
+}
 
 export function Hud() {
   const {
@@ -111,6 +141,17 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   // Nhiệm vụ đã xong chờ nhận thưởng
   const questsReady = useGame((s) => claimableCount(questContext(s)));
   const rivalBadge = useGame((s) => (s.biz.rival ? `⚔️ ${Math.round(s.biz.rival.strength)}` : undefined));
+  // Vẫn còn nợ ngân hàng thì nhắc số gốc ngay trên nút Kinh doanh
+  const loanBadge = useGame((s) => {
+    const l = s.biz.loan;
+    if (!l) return undefined;
+    const goc = l.principal >= 1000000 ? `${Math.round((l.principal / 1000000) * 10) / 10}tr` : `${Math.round(l.principal / 1000)}k`;
+    return `🏦 ${goc}${s.day >= l.dueDay - 3 ? ' ⚠️' : ''}`;
+  });
+  // Điểm danh quà / lượt vòng quay hôm nay còn trống thì nhắc trên nút
+  const giftClaimable = useGame((s) => s.giftLastDay !== s.day);
+  const wheelReady = useGame((s) => s.wheelLastDay !== s.day);
+  const wheelBoost = useGame((s) => s.wheelBoost);
   const atHome = location === 'Nhà của bạn';
   type Tool = { icon: string; label: string; on: () => void; badge?: string; lock?: number; active?: boolean; more?: boolean };
   const tools: Tool[] = [
@@ -123,14 +164,23 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
       on: () => openPanel({ type: 'storage' }),
     },
     { icon: '🗺️', label: 'Sơ đồ kệ', on: () => openPanel({ type: 'planogram' }) },
-    { icon: '📜', label: 'Nhiệm vụ', badge: questsReady ? `${questsReady} xong` : undefined, on: () => openPanel({ type: 'quests' }) },
     { icon: '📦', label: 'Nhập hàng', on: () => openPanel({ type: 'order' }) },
+    { icon: '☀️', label: 'Sổ đầu ngày', on: () => openPanel({ type: 'morning' }) },
+    { icon: '📜', label: 'Nhiệm vụ', badge: questsReady ? `${questsReady} xong` : undefined, on: () => openPanel({ type: 'quests' }) },
+    {
+      icon: '🎁', label: 'Điểm danh',
+      badge: giftClaimable ? 'Có quà' : wheelReady ? '⭕ Quay' : undefined,
+      on: () => openPanel({ type: 'gifts' }),
+    },
+    { icon: '🗓️', label: 'Lịch sự kiện', more: true, on: () => openPanel({ type: 'calendar' }) },
+    { icon: '🍳', label: 'Sổ nấu', more: true, lock: 21, on: () => openPanel({ type: 'cook' }) },
     { icon: '🛠️', label: 'Xây dựng', active: false, more: true, on: () => openPanel({ type: 'arrange' }) },
     { icon: '💲', label: 'Giá bán', lock: FEATURES.prices, on: () => openPanel({ type: 'prices' }) },
     { icon: '🎁', label: 'Combo', more: true, lock: COMBO_UNLOCK, on: () => openPanel({ type: 'combos' }) },
-    { icon: '📋', label: 'Hợp đồng', lock: 14, on: () => openPanel({ type: 'contracts' }) },
-    { icon: '📈', label: 'Kinh doanh', lock: 3, badge: rivalBadge, on: () => openPanel({ type: 'business' }) },
-    { icon: '👕', label: 'Trang phục', lock: 2, on: () => openPanel({ type: 'costume' }) },
+    { icon: '📋', label: 'Hợp đồng', lock: 14, more: true, on: () => openPanel({ type: 'contracts' }) },
+    { icon: '📈', label: 'Kinh doanh', lock: 3, badge: [loanBadge, rivalBadge].filter(Boolean).join(' · ') || undefined, on: () => openPanel({ type: 'business' }) },
+    { icon: '📊', label: 'Sổ theo dõi', more: true, on: () => openPanel({ type: 'history' }) },
+    { icon: '👕', label: 'Trang phục', lock: 2, more: true, on: () => openPanel({ type: 'costume' }) },
     { icon: '🏅', label: 'Danh hiệu', more: true, badge: skillsLeft > 0 ? `+${skillsLeft} kỹ năng` : undefined, on: () => openPanel({ type: 'skills' }) },
     { icon: '💛', label: 'Khách quen', more: true, on: () => openPanel({ type: 'regulars' }) },
     { icon: '👥', label: 'Nhân viên', more: true, lock: FEATURES.staff, on: () => openPanel({ type: 'staff' }) },
@@ -150,7 +200,7 @@ ${forecastText}`}>
           <span className="hud-weather" aria-hidden="true">{skyIcon}</span>
           <span>
             <b className={late ? 'hud-late' : undefined}>{formatClock(minutes)}</b>
-            <small>Ngày {day} · {spell ? describeRain(spell, weather) : WEATHER[weather].name}</small>
+            <small>Ngày {day} ({describeDate(day)}) · {spell ? describeRain(spell, weather) : WEATHER[weather].name}</small>
             {(effects.festival || effects.market) && (
               <small title={[effects.festival && `${effects.festival.name}: ${effects.festival.blurb}`, effects.market?.label].filter(Boolean).join('\n')}>
                 {effects.festival && `${effects.festival.icon} ${effects.festival.name}`}
@@ -159,7 +209,7 @@ ${forecastText}`}>
               </small>
             )}
             {soon && (
-              <small title={`${soon.festival.blurb}\nHàng nên nhập sẵn: ${soon.festival.hot.filter((id) => productById(id).unlock <= level).map((id) => productById(id).name).join(', ')}`}>
+              <small title={`${soon.festival.blurb}\nHàng nên nhập sẵn: ${festivalStock(soon.festival, level).map((id) => productById(id).name).join(', ')}`}>
                 ⏳ {soon.festival.icon} {soon.festival.name} {soon.inDays === 1 ? 'ngày mai' : `sau ${soon.inDays} ngày`}
               </small>
             )}
@@ -183,8 +233,10 @@ ${forecastText}`}>
         </div>
       </div>
 
-      {/* Góc phải trên: phòng chơi chung, tài khoản và menu */}
+      {/* Góc phải trên: âm thanh, nhạc nền, phòng chơi chung, tài khoản và menu */}
       <div className="hud-meta">
+        <SoundToggle />
+        <MusicToggle />
         {coop && (
           <div className="hud-chip hud-room" title={`Mã hẻm ${coop.alley}: gửi cho bạn bè để cùng vào (tối đa 4 người)`}>
             <span>👥</span>
@@ -219,6 +271,7 @@ ${forecastText}`}>
       {/* Thông báo giữa trên */}
       <div className="hud-alerts">
         {late && !message && <div className="hud-alert danger">🌙 Đã khuya! Về nhà ngủ trước 2:00 sáng kẻo ngất.</div>}
+        {wheelBoost > 1 && <div className="hud-alert info">🍀 Vòng quay may mắn: hôm nay khách ghé đông thêm {Math.round((wheelBoost - 1) * 100)}%</div>}
         {dirt >= 60 && <div className="hud-alert warn">🧹 Sàn tiệm bẩn ({Math.round(dirt)}%), khách ngại vào</div>}
         {waiting > 0 && !hint?.startsWith('💵') &&<div className="hud-alert warn">🛒 {waiting} khách đang chờ tính tiền ở quầy</div>}
         <PhoneAlerts />
@@ -458,7 +511,7 @@ function FestivalBanner() {
   const seed = useGame((s) => s.weatherSeed);
   const f = dayEffects(seed, day, level).festival;
   if (!f || (f.traffic < 1.2 && !f.pull)) return null;
-  const goods = f.hot.filter((id) => productById(id).unlock <= level).map((id) => productById(id).name).join(', ');
+  const goods = festivalStock(f, level).map((id) => productById(id).name).join(', ');
   const pct = (x: number) => `${x >= 1 ? '+' : ''}${Math.round((x - 1) * 100)}%`;
   return (
     <div className="hud-alert festival">
@@ -479,7 +532,8 @@ function Tutorial() {
     { label: 'Đứng quầy tính tiền cho khách', done: s.totals.itemsSold > 0 },
     { label: 'Tối về nhà đi ngủ', done: s.day > 1 },
   ].map((x) => `${x.done ? 1 : 0}${x.label}`).join('|'));
-  if (off || day > 2) return null;
+  // Chỉ hướng dẫn ngày đầu: sang ngày 2 là tắt, tránh đè thông báo mỗi sáng
+  if (off || day > 1) return null;
   const list = steps.split('|').map((x) => ({ done: x[0] === '1', label: x.slice(1) }));
   if (list.every((x) => x.done)) return null;
   return (
@@ -556,20 +610,36 @@ function PhoneAlerts() {
   const priceOf = useGame((s) => s.priceOf);
   const answer = useGame((s) => s.answerPhone);
   const decline = useGame((s) => s.declinePhone);
+  const restock = useGame((s) => s.restockAndAnswerPhone);
   return (
     <>
       {orders.map((o) => {
         const house = houseById(o.houseId)?.name ?? '';
         if (o.status === 'ringing') {
-          const short = Object.entries(o.items).some(([id, q]) => (storage[id] ?? 0) < q);
+          const shortCost = Object.entries(o.items).reduce((sum, [id, q]) => sum + Math.max(0, q - (storage[id] ?? 0)) * productById(id).buy, 0);
+          const short = shortCost > 0;
+          const cook = !!o.premium && !o.vip;
+          const vip = !!o.vip;
           return (
             <div key={o.id} className="hud-alert phone ringing">
-              📞 <b>{o.caller}</b> ({house}, {o.reason}): {describeItems(o.items)} · {formatMoney(phoneOrderValue(o, priceOf))}
+              {vip ? '👑' : cook ? '🍳' : '📞'} <b>{o.caller}</b> ({house}, {o.reason}): {describeItems(o.items)} · {formatMoney(phoneOrderValue(o, priceOf))}
+              {vip && <b> (đơn VIP, giá hời ×{o.premium})</b>}
+              {cook && <b> (đơn nấu, giá hời ×{o.premium})</b>}
               <small> · còn {Math.max(0, Math.ceil(o.answerBy - minutes))} phút để nghe máy</small>
               <span className="hud-alert-actions">
-                <button className="hud-btn primary" onClick={() => answer(o.id)} title={short ? 'Kho chưa đủ hàng' : 'Soạn hàng từ kho rồi mang đi giao'}>
-                  {short ? '⚠️ Thiếu hàng' : '📦 Nghe máy, soạn hàng'}
-                </button>
+                {short ? (
+                  cook ? (
+                    <span className="hud-hint">Nấu ở trạm xong bấm nghe máy — món nhà làm không nhập được ở mối nào</span>
+                  ) : (
+                    <button className="hud-btn primary" onClick={() => restock(o.id)} title="Nhập ngay phần kho còn thiếu rồi soạn hàng đi giao">
+                      🛒 Nhập bù {formatMoney(shortCost)} & soạn hàng
+                    </button>
+                  )
+                ) : (
+                  <button className="hud-btn primary" onClick={() => answer(o.id)} title="Soạn hàng từ kho rồi mang đi giao">
+                    📦 Nghe máy, soạn hàng
+                  </button>
+                )}
                 <button className="hud-btn" onClick={() => decline(o.id)}>Từ chối</button>
               </span>
             </div>

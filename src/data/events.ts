@@ -20,9 +20,9 @@ export interface RandomEvent {
   days: number;
 }
 
-/** Năm game 120 ngày, ngày 1 lệch mùa hè — khớp calendar.ts để mùa ăn khớp lễ. */
-const YEAR_DAYS = 120;
-const YEAR_OFFSET = 10;
+/** Năm game 365 ngày theo lịch thật — khớp calendar.ts để mùa ăn khớp lễ. */
+const YEAR_DAYS = 365;
+const YEAR_OFFSET = 0;
 
 /** Hash xác định (giống calendar.ts): cho [0,1). */
 function roll(seed: number, n: number, salt: number): number {
@@ -34,13 +34,13 @@ function roll(seed: number, n: number, salt: number): number {
 
 const dayOfYear = (day: number) => (day - 1 + YEAR_OFFSET) % YEAR_DAYS;
 
-/** Mùa dựa theo ngày trong năm để gợi ý các sự kiện theo thời vụ. */
+/** Mùa dựa theo ngày trong năm (lịch thật) để gợi ý các sự kiện theo thời vụ. */
 function seasonOf(day: number): 'summer' | 'autumn' | 'winter' | 'spring' {
   const d = dayOfYear(day);
-  if (d >= 12 && d <= 27) return 'summer'; // Mùa hè
-  if (d >= 58 && d <= 75) return 'autumn'; // Trung thu về cuối thu
-  if (d >= 92 && d <= 105) return 'winter'; // Giáng sinh & cận Tết
-  return 'spring';
+  if (d >= 151 && d <= 242) return 'summer'; // Tháng 6–8
+  if (d >= 243 && d <= 333) return 'autumn'; // Tháng 9–11
+  if (d >= 334 || d <= 58) return 'winter'; // Tháng 12–tháng 2
+  return 'spring'; // Tháng 3–5
 }
 
 /** Pool các sự kiện có thể xảy ra trong ngày. Các sự kiện theo mùa được lọc khi chọn. */

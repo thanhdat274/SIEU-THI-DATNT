@@ -27,13 +27,14 @@ export function snapshot(): SaveData {
   const s = useGame.getState();
   return {
     day: s.day, minutes: s.minutes, money: s.money, level: s.level, xp: s.xp,
-    storage: s.storage, storageLots: s.storageLots, furniture: s.furniture, prices: s.prices, stats: s.stats,
+    storage: s.storage, storageLots: s.storageLots, furniture: s.furniture, shelfHeat: s.shelfHeat, impulseHinted: s.impulseHinted, prices: s.prices, happyHour: s.happyHour, stats: s.stats,
     shopTier: s.shopTier, pendingUpgrade: s.pendingUpgrade, style: s.style,
     staff: s.staff, candidates: s.candidates, autoOpen: s.autoOpen, autoRoutine: s.autoRoutine, autoSwap: s.autoSwap, totals: s.totals, questLog: s.questLog, warehouseTier: s.warehouseTier,
     reviews: s.reviews, deliveries: s.deliveries, demand: s.demand, demandToday: s.demandToday,
-    sales: s.sales, salesToday: s.salesToday, regulars: s.regulars,
-    contracts: s.contracts, costume: s.costume, event: s.event,
-    history: s.history, activeCombos: s.activeCombos, order: s.order, ordersDone: s.ordersDone, phoneOrders: s.phoneOrders, phoneSlot: s.phoneSlot, phoneOrdersDone: s.phoneOrdersDone, debts: s.debts, allowCredit: s.allowCredit, biz: s.biz, vendorDay: s.vendorDay, skills: s.skills, titles: s.titles, fakeCash: s.fakeCash,
+    sales: s.sales, salesToday: s.salesToday, regulars: s.regulars, reservations: s.reservations, market: s.market,
+    contracts: s.contracts, repLog: s.repLog, community: s.community, opening: s.opening, costume: s.costume, event: s.event,
+    giftStreak: s.giftStreak, giftLastDay: s.giftLastDay, wheelLastDay: s.wheelLastDay, wheelBoost: s.wheelBoost, shopName: s.shopName,
+    history: s.history, activeCombos: s.activeCombos, order: s.order, ordersDone: s.ordersDone, cookJobs: s.cookJobs, phoneOrders: s.phoneOrders, phoneSlot: s.phoneSlot, phoneHintDay: s.phoneHintDay, phoneOrdersDone: s.phoneOrdersDone, debts: s.debts, allowCredit: s.allowCredit, biz: s.biz, vendorDay: s.vendorDay, vendorOffer: s.vendorOffer, skills: s.skills, titles: s.titles, fakeCash: s.fakeCash,
     weatherSeed: s.weatherSeed, weather: s.weather, forecast: s.forecast,
     saveVersion: SAVE_VERSION,
   };
@@ -43,7 +44,7 @@ export function snapshot(): SaveData {
 export function applySnapshot(raw: Partial<SaveData>) {
   const data = migrate(raw);
   const fresh = newGameData();
-  const merged = { ...fresh, ...data, stats: { ...fresh.stats, ...data.stats }, biz: { ...fresh.biz, ...data.biz } };
+  const merged = { ...fresh, ...data, stats: { ...fresh.stats, ...data.stats }, totals: { ...fresh.totals, ...data.totals }, biz: { ...fresh.biz, ...data.biz } };
   // Kệ kho, tủ lạnh kho từng đặt trong tiệm: giờ đã có nhà kho riêng, hoàn tiền mua
   const OLD_WAREHOUSE: Record<string, number> = { stockRack: 200000, coldStorage: 250000 };
   const refund = merged.furniture.reduce((n, f) => n + (OLD_WAREHOUSE[f.type] ?? 0), 0);

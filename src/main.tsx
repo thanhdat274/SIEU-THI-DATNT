@@ -7,7 +7,12 @@ import { formatClock, ROUTINE, SLEEP_FROM, useGame } from './core/store';
 import { vehicleDef } from './data/biz';
 import { checkChapters, eatBreakfast, stockReminders } from './core/biz';
 import { hasSkill } from './data/titles';
-import { furnitureDef } from './data/furniture';
+import { furnitureDef, isCookStation } from './data/furniture';
+import { initAudio, playSfx, setRain } from './core/audio';
+import { hasUpgrade } from './data/upgrades';
+
+// Trình duyệt chỉ mở tiếng sau tương tác đầu tiên — mỗi cú click là một cơ hội khởi động AudioContext
+window.addEventListener('pointerdown', initAudio);
 import { BuildMode } from './shop/buildMode';
 import type { Counter } from './shop/groceryShop';
 import { CustomerManager } from './agents/customers';
@@ -267,6 +272,16 @@ const interactables = (): Interactable[] => [
       key: 'KeyB',
       action: () => useGame.getState().openPanel({ type: 'shelf', uid: f.uid }),
     })),
+  // Trạm nấu: đứng gần bấm M mở Sổ nấu (nguyên liệu lấy từ kho, nấu xong về kho)
+  ...useGame.getState().furniture
+    .filter((f) => isCookStation(f.type))
+    .map((f) => ({
+      position: shop.spotFor(f),
+      radius: 1.3,
+      hint: () => `[M] Nấu ăn ở ${furnitureDef(f.type).name.toLowerCase()}`,
+      key: 'KeyM',
+      action: () => useGame.getState().openPanel({ type: 'cook' }),
+    })),
 ];
 
 const nearestInteractable = () => {
@@ -360,7 +375,8 @@ renderer.setAnimationLoop(() => {
     if (!guest) {
       staff.update(dt * speed, nearCounter());
       customers.update(dt * speed, (counter) =>
-        Math.max(playerAt(counter) || partnerAt(counter) ? (hasSkill(useGame.getState().skills, 'quick_hands') ? 1.2 : 1) : 0, staff.cashierSpeed(counter)));
+        Math.max(playerAt(counter) || partnerAt(counter) ? (hasSkill(useGame.getState().skills, 'quick_hands') ? 1.2 : 1) : 0, staff.cashierSpeed(counter))
+        * (hasUpgrade(useGame.getState().biz, 'pos') ? 1.5 : 1));
     }
     if (!guest) residents.update(dt * speed);
     updateCoop(dt);
@@ -370,7 +386,11 @@ renderer.setAnimationLoop(() => {
   bizView.update(dt);
   controller.update(dt);
   const g = useGame.getState();
-  lighting.update(g.minutes, skyAt(g.weatherSeed, g.day, g.weather, g.minutes), controller.target, dt);
+  const sky = skyAt(g.weatherSeed, g.day, g.weather, g.minutes);
+  lighting.update(g.minutes, sky, controller.target, dt);
+  // Âm thanh môi trường: mưa nền theo cường độ, sấm đánh khi có giông
+  setRain(sky.rain);
+  if (sky.thunder) playSfx('thunder');
   // Bước vào nhà / tiệm thì chuyển sang cảnh bên trong
   // (đang ở trong thì phải ra khỏi cửa một chút mới tính là ra, đỡ chớp khi đứng ngay ngưỡng cửa)
   const { x, z } = player.position;
@@ -416,5 +436,8 @@ if (import.meta.env.DEV) {
   Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff } });
   import('./dev/autoplay').then(({ createAutoplay }) =>
     Object.assign((window as unknown as { game: object }).game, { autoplay: createAutoplay(shop, customers, staff, player) }),
+  );
+  import('./dev/playtest').then(({ createPlaytest }) =>
+    Object.assign((window as unknown as { game: object }).game, { playtest: createPlaytest(shop, customers, staff, player) }),
   );
 }

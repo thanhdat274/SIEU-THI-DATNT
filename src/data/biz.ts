@@ -41,6 +41,60 @@ export function rivalNightly(r: Rival, ctx: { rating: number; missRate: number; 
   return Math.max(0, Math.min(100, r.strength + delta));
 }
 
+// ───── Phản công đối thủ chủ động ─────
+
+export type CounterTactic = 'price' | 'ad' | 'gift';
+
+export interface CounterDef {
+  id: CounterTactic;
+  icon: string;
+  name: string;
+  /** Chi phí chạy đợt (0 = không trả trước, trả bằng lãi mỏng). */
+  cost: number;
+  /** Số ngày chờ trước khi dùng lại chiến thuật này. */
+  cooldown: number;
+  /** Sức mạnh đối thủ mất trong đêm nếu đợt hiệu quả. */
+  hit: number;
+  desc: string;
+}
+
+/** Ba cách đánh sức mạnh đối thủ trong ngày; mỗi ngày chạy được một đợt, mỗi cách có thời gian hồi. */
+export const COUNTERS: CounterDef[] = [
+  {
+    id: 'price', icon: '💸', name: 'Đối đầu giá', cost: 0, cooldown: 3, hit: 9,
+    desc: 'Hôm nay mọi giá bán trừ 10%: khách đông lên nhưng lãi mỏng. Đêm nay đối thủ mất 9 sức mạnh nếu hôm nay bán được ít nhất 30 món.',
+  },
+  {
+    id: 'ad', icon: '📢', name: 'Quảng cáo xuyên hẻm', cost: 300000, cooldown: 4, hit: 6,
+    desc: 'Treo băng rôn khắp hẻm kể về tiệm mình: hôm nay khách ghé đông thêm 12%, đêm nay đối thủ mất 6 sức mạnh.',
+  },
+  {
+    id: 'gift', icon: '🎁', name: 'Tri ân khách quen', cost: 150000, cooldown: 5, hit: 4,
+    desc: 'Tặng quà cho khách quen ghé hôm nay (+2 thân thiết mỗi người), đêm nay đối thủ mất 4 sức mạnh.',
+  },
+];
+
+export const counterById = (id: CounterTactic) => COUNTERS.find((c) => c.id === id)!;
+
+/** Đợt đối đầu giá "thắng" khi tiệm vẫn bán được chừng này món trong ngày giảm giá. */
+export const PRICE_WAR_MIN_SALES = 30;
+/** Tỉ lệ giảm giá niêm yết trong ngày đối đầu giá. */
+export const PRICE_WAR_CUT = 0.1;
+/** Khách ghé thêm trong ngày chạy quảng cáo xuyên hẻm. */
+export const COUNTER_AD_TRAFFIC = 1.12;
+/** Sau khi bị đánh, đối thủ có thể trả đũa bằng đợt giảm giá ngay ngày mai. */
+export const COUNTER_RETAILIATE = 0.5;
+export const COUNTER_RETAILIATE_BUFF = 2;
+/** Đánh đối thủ nhiều ngày liền: mỗi ngày liên tiếp đòn nặng thêm 1 sức mạnh, tối đa bấy nhiêu. */
+export const COUNTER_STREAK_MAX = 3;
+
+/** Đợt phản công đang chạy (một ngày hiệu lực); null = hôm nay không chạy. */
+export interface Counter { tactic: CounterTactic; day: number }
+
+/** Đợt có hiệu lực hôm nay không (để đọc giá/traffic/ưu đãi). */
+export const counterActive = (c: Counter | null | undefined, day: number, tactic: CounterTactic) =>
+  !!c && c.day === day && c.tactic === tactic;
+
 // ───────────────────────── Thẻ tích điểm ─────────────────────────
 
 export interface Loyalty {
@@ -189,6 +243,18 @@ export interface AchievementCtx {
   homeDecor: number;
   vehicle: Vehicle;
   perfectDays: number;
+  /** Số món nhà làm đã bán. */
+  cookedSold: number;
+  /** Số trạm nấu khác nhau đã lắp. */
+  cookedStations: number;
+  /** Sao chất lượng món (từ sổ danh tiếng). */
+  qualityStars: number;
+  /** Số món chớp nhoáng bán ở kệ cạnh quầy. */
+  impulseSold: number;
+  /** Số đơn nấu (đặt riêng món nhà làm) đã giao. */
+  cookOrdersDone: number;
+  /** Số đối thủ bị hạ bởi đợt phản công chủ động. */
+  counterKills: number;
 }
 export interface Achievement { id: string; icon: string; name: string; desc: string; reward: number; done: (c: AchievementCtx) => boolean }
 
@@ -207,9 +273,58 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'pets', icon: '🐾', name: 'Tiệm có bé cưng', desc: 'Nuôi cả mèo và chó', reward: 100000, done: (c) => c.petCount >= 2 },
   { id: 'home', icon: '🏡', name: 'Tổ ấm', desc: 'Sắm đủ 4 món cho nhà riêng', reward: 100000, done: (c) => c.homeDecor >= 4 },
   { id: 'moto', icon: '🏍️', name: 'Có xe máy', desc: 'Mua xe máy', reward: 50000, done: (c) => c.vehicle === 'moto' },
+  { id: 'cooked_500', icon: '🍲', name: 'Bếp kho đã động', desc: 'Bán 500 món nhà làm', reward: 200000, done: (c) => c.cookedSold >= 500 },
+  { id: 'stations_8', icon: '🏭', name: 'Nhà hàng thu nhỏ', desc: 'Lắp đủ 8 trạm nấu', reward: 400000, done: (c) => c.cookedStations >= 8 },
+  { id: 'quality_4', icon: '⭐', name: 'Ngon có tiếng', desc: 'Chất lượng món đạt 4★ danh tiếng', reward: 300000, done: (c) => c.qualityStars >= 4 },
+  { id: 'impulse_100', icon: '🍬', name: 'Kệ sinh lời cạnh quầy', desc: 'Bán 100 món chớp nhoáng ở kệ bên quầy thu ngân', reward: 100000, done: (c) => c.impulseSold >= 100 },
+  { id: 'cook_orders_10', icon: '🍳', name: 'Bếp nhận đơn riêng', desc: 'Giao 10 đơn nấu món nhà làm (giá hời)', reward: 150000, done: (c) => c.cookOrdersDone >= 10 },
+  { id: 'counter_kill', icon: '🎯', name: 'Đòn kết liễu', desc: 'Khiến đối thủ đóng cửa bằng đợt phản công chủ động', reward: 300000, done: (c) => c.counterKills >= 1 },
   { id: 'level_20', icon: '⭐', name: 'Chủ tiệm lành nghề', desc: 'Đạt cấp 20', reward: 200000, done: (c) => c.level >= 20 },
   { id: 'level_50', icon: '👑', name: 'Ông trùm siêu thị', desc: 'Đạt cấp 50', reward: 2000000, done: (c) => c.level >= 50 },
 ];
+
+// ───────────────────────── Thanh tra thị trường ─────────────────────────
+
+/** Thanh tra thị trường ghé từ cấp này. */
+export const INSPECTION_UNLOCK = 12;
+/** Cứ chừng này ngày có một lượt thanh tra (sau khi đóng cửa). */
+export const INSPECTION_EVERY = 14;
+export const INSPECTION_REWARD = 250000;
+export const INSPECTION_FINE = 120000;
+/** Số món cận hạn (≤1 ngày) tối đa được coi là "quản lý hàng hoá tốt". */
+export const INSPECTION_NEAR_MAX = 5;
+
+/** Số liệu thanh tra xem xét (đều lấy từ chỉ số sẵn có của ngày). */
+export interface InspectionCtx {
+  /** Độ bẩn sàn 0–100. */
+  dirt: number;
+  /** Số món cận hạn còn bày trên kệ. */
+  nearExpiryOnShelves: number;
+  /** Giá bán trung bình so với giá gợi ý. */
+  priceIndex: number;
+  /** Sao trung bình của các đánh giá gần nhất. */
+  rating: number;
+}
+
+export interface InspectionResult {
+  pass: boolean;
+  /** Số tiêu chí đạt (0–4). */
+  score: number;
+  /** Nhận xét từng tiêu chí (tiêu đề để ghép thông báo). */
+  notes: string[];
+}
+
+/** Chấm điểm thanh tra: sạch – quản lý hàng hoá – giá hợp lý – phục vụ tốt; đạt 3/4 thì qua. */
+export function inspectionResult(ctx: InspectionCtx): InspectionResult {
+  const checks = [
+    { ok: ctx.dirt <= 30, ok_: 'Sàn sạch sẽ', bad: 'Sàn bẩn, lau nhà đi' },
+    { ok: ctx.nearExpiryOnShelves <= INSPECTION_NEAR_MAX, ok_: 'Quản lý hàng cận hạn tốt', bad: `${ctx.nearExpiryOnShelves} món cận hạn còn bày la liệt trên kệ` },
+    { ok: ctx.priceIndex <= 1.2, ok_: 'Giá niêm yết hợp lý', bad: 'Giá bán chung cao hơn giá gợi ý quá 20%' },
+    { ok: ctx.rating >= 4, ok_: 'Khách đánh giá tốt', bad: `Đánh giá trung bình mới ${ctx.rating.toFixed(1)}★` },
+  ];
+  const score = checks.filter((c) => c.ok).length;
+  return { pass: score >= 3, score, notes: checks.map((c) => (c.ok ? `✅ ${c.ok_}` : `❌ ${c.bad}`)) };
+}
 
 // ───────────────────────── Sự kiện bất ngờ ─────────────────────────
 
@@ -354,6 +469,14 @@ export interface BizState {
   rivalsBeaten: number;
   /** Ngày sớm nhất có thể mở đối thủ mới. */
   rivalNextDay: number;
+  /** Đợt phản công đối thủ đang chạy (hiệu lực trong ngày); null = không có. */
+  counter: Counter | null;
+  /** Ngày gần nhất có đợt phản công; đối đầu nhiều ngày liền thì đòn nặng dần. */
+  counterLastDay?: number;
+  /** Chuỗi ngày liên tiếp có đợt phản công (1 = ngày đầu tiên). */
+  counterStreak?: number;
+  /** Ngày sớm nhất được dùng lại từng chiến thuật phản công (thời gian hồi). */
+  counterReady: Partial<Record<CounterTactic, number>>;
   ads: ActiveAd[];
   loyalty: Loyalty;
   loan: Loan | null;
@@ -375,18 +498,26 @@ export interface BizState {
   /** Chương cốt truyện đã xem, và chương đang chờ hiện hội thoại. */
   chapters: string[];
   chapterPending: string | null;
+  /** Số đối thủ bị đánh bại nhờ đợt phản công chủ động (đếm cho thành tựu). */
+  counterKills: number;
+  /** Ngày gần nhất đã hiện một chương hội thoại (tối đa 1 chương/ngày, tránh dồn khi lên cấp nhanh). */
+  chapterDay?: number;
   /** Đã tắt hướng dẫn ngày đầu. */
   tutorialOff: boolean;
+  /** Dịch vụ ở quầy đã mở (nạp tiền, thu hộ); thiếu ở save cũ. */
+  services?: string[];
+  /** Thiết bị đã mua (camera, máy POS); thiếu ở save cũ. */
+  upgrades?: string[];
 }
 
 export const newBiz = (): BizState => ({
-  rival: null, rivalsBeaten: 0, rivalNextDay: 0, ads: [],
+  rival: null, rivalsBeaten: 0, rivalNextDay: 0, counter: null, counterReady: {}, ads: [],
   loyalty: { on: false, stamps: 10, redeemed: 0, given: 0 },
   loan: null, hui: null, week: emptyWeek(1), lastWeek: null,
   pets: {}, achievements: [], perfectDays: 0,
   surprise: null, surpriseDay: 0, story: {}, storyPending: null,
   home: [], vehicle: 'none', breakfastDay: 0,
-  chapters: [], chapterPending: null, tutorialOff: false,
+  chapters: [], chapterPending: null, counterKills: 0, tutorialOff: false, services: [], upgrades: [],
 });
 
 /** Hệ số đi bộ của chủ tiệm hôm nay: nhà đẹp ngủ ngon, ăn sáng, xe (chỉ khi ở ngoài đường). */
@@ -396,5 +527,6 @@ export function playerPace(b: BizState, day: number, outdoors: boolean) {
   return pace;
 }
 
-/** Lượng khách ghé chung: đối thủ, quảng cáo, thẻ tích điểm. */
-export const bizTraffic = (b: BizState, day: number) => rivalTrafficFactor(b.rival, day) * adsTraffic(b.ads, day) * loyaltyTraffic(b.loyalty);
+/** Lượng khách ghé chung: đối thủ, quảng cáo, thẻ tích điểm, đợt phản công đang chạy. */
+export const bizTraffic = (b: BizState, day: number) => rivalTrafficFactor(b.rival, day) * adsTraffic(b.ads, day)
+  * loyaltyTraffic(b.loyalty) * (counterActive(b.counter, day, 'ad') ? COUNTER_AD_TRAFFIC : 1);

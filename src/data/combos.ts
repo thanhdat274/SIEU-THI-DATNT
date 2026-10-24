@@ -1,4 +1,5 @@
 import { productById } from './products';
+import { COOK_UNLOCK } from './recipes';
 
 /** Combo khuyến mãi: mua đủ các món trong combo thì giảm giá cả cặp; khách thấy biển combo hay mua kèm. */
 export interface ComboDef {
@@ -8,6 +9,8 @@ export interface ComboDef {
   items: [string, string];
   /** Phần giảm trên tổng giá hai món. */
   discount: number;
+  /** Combo dùng món nhà làm: chỉ mở khi tiệm đã có bếp (COOK_UNLOCK), dù hai món đã mở khóa. */
+  cook?: boolean;
 }
 
 /** Cấp mở bảng combo. */
@@ -29,12 +32,19 @@ export const COMBOS: ComboDef[] = [
   { id: 'botgiat_daugoi', icon: '🧴', name: 'Bột giặt + dầu gội', items: ['botgiat', 'daugoi'], discount: 0.07 },
   { id: 'tangluc_mi', icon: '⚡', name: 'Tăng lực + mì (ca đêm)', items: ['tangluc', 'mi'], discount: 0.1 },
   { id: 'thit_rau', icon: '🥩', name: 'Thịt + rau củ', items: ['thit', 'rau'], discount: 0.08 },
+  // Combo món nhà làm (mở khi đã có bếp, từ cấp 21)
+  { id: 'comhop_nuoc', icon: '🍱', name: 'Cơm hộp gà + nước suối', items: ['com_hop_ga', 'nuoc'], discount: 0.1, cook: true },
+  { id: 'banhmi_caphe', icon: '🥖', name: 'Bánh mì trứng + cà phê sữa đá', items: ['banh_mi_trung_nuong', 'ca_phe_sua_da'], discount: 0.08, cook: true },
+  { id: 'trangtron_trasua', icon: '🧋', name: 'Bánh tráng trộn + trà sữa', items: ['banh_trang_tron', 'tra_sua'], discount: 0.1, cook: true },
+  { id: 'anvat_chieu', icon: '🌽', name: 'Bắp xào + cá viên chiên', items: ['bap_xao', 'ca_vien_chien'], discount: 0.08, cook: true },
+  { id: 'comga_sinhto', icon: '💪', name: 'Cơm gà + sinh tố', items: ['com_hop_ga', 'sinh_to_trai_cay'], discount: 0.1, cook: true },
 ];
 
 export const comboById = (id: string) => COMBOS.find((c) => c.id === id);
 
-/** Combo đã mở: cả hai món đã mở khóa. */
-export const unlockedCombos = (level: number) => COMBOS.filter((c) => c.items.every((id) => productById(id).unlock <= level));
+/** Combo đã mở: cả hai món đã mở khóa; combo món nhà làm cần tiệm đã có bếp. */
+export const unlockedCombos = (level: number) =>
+  COMBOS.filter((c) => (!c.cook || level >= COOK_UNLOCK) && c.items.every((id) => productById(id).unlock <= level));
 
 /** Món đi kèm của `productId` trong các combo đang chạy. */
 export function comboPartners(active: readonly string[], productId: string): string[] {

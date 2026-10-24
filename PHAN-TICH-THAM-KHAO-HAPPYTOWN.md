@@ -1,3 +1,7 @@
+> **⚠️ TÀI LIỆU LỊCH SỬ (10/2026) — số liệu trong file đã cũ, không dùng để đối chiếu hiện trạng.**
+> Đến 24/10/2026, code đã đi xa hơn nhiều mục trong file này (35 nghề, 33 archetype, 10 vai nhân viên, thanh toán đa phương thức, đơn điện thoại, hợp đồng, co-op...).
+> Bản đồ hiện trạng chuẩn nhất: `NGHIEN-CUU-TAP-HOA-2026-10-24.md` và mã nguồn trong `src/`.
+
 # Phân tích game hiện tại và tham khảo HappyTown
 
 Ngày rà soát: 23/10/2026

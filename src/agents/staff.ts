@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { useGame } from '../core/store';
-import { furnitureDef } from '../data/furniture';
+import { furnitureDef, isCookStation } from '../data/furniture';
 import { houseById, houseDoor } from '../data/phoneOrders';
 import { missingForOrder, partyOrderById } from '../data/orders';
 import { productById } from '../data/products';
@@ -46,7 +46,10 @@ export class StaffManager {
 
     for (const st of s.staff) {
       const shift = SHIFTS[st.shift];
-      const onDuty = s.minutes >= shift.from && s.minutes < shift.to;
+      // Làm thêm giờ: hết ca mà tiệm còn khách chưa thanh toán thì ở lại tính tiền nốt
+      // (chỉ tính từ buổi tối, chốt muộn nhất 23h30 — sau đó khách lì lợn quá cũng phải để mai)
+      const overtime = s.customersInside > 0 && s.minutes >= 20 * 60 && s.minutes < 23.5 * 60;
+      const onDuty = (s.minutes >= shift.from && s.minutes < shift.to) || overtime;
       const w = this.workers.get(st.id);
       if (w) w.staff = st;
       if (onDuty && !w) this.arrive(st);
@@ -62,6 +65,7 @@ export class StaffManager {
       if (w.state === 'working' && w.idle) this.work(w, gameDt);
       if (w.state === 'leaving' && w.idle) {
         this.scene.remove(w.mesh);
+        w.dispose();
         this.workers.delete(id);
       }
     }
@@ -146,6 +150,8 @@ export class StaffManager {
     if (w.staff.role === 'guard') return this.standGuard(w, gameDt);
     if (w.staff.role === 'courier') return this.courier(w, gameDt);
     if (w.staff.role === 'manager') return this.manage(w, gameDt);
+    // Đầu bếp: đứng canh trạm nấu — các mẻ đang nấu chạy nhanh hơn theo tay nghề (xem store.cookSpeed)
+    if (w.staff.role === 'cook') return this.watchStove(w, gameDt);
 
     // Xếp hàng: tìm tầng kệ vơi mà kho còn hàng
     const s = useGame.getState();
@@ -173,6 +179,24 @@ export class StaffManager {
     }
     // Không có việc: đứng chờ một lát rồi kiểm tra lại
     w.pause = Math.max(gameDt, 2);
+  }
+
+  /** Đầu bếp: tới đứng cạnh trạm nấu đầu tiên còn bỏ trống; mẻ nào xong thì bưng xuống kho. */
+  private watchStove(w: Worker, gameDt: number) {
+    const s = useGame.getState();
+    const stations = s.furniture.filter((f) => isCookStation(f.type));
+    if (!stations.length) {
+      w.pause = Math.max(gameDt, 5);
+      return;
+    }
+    const taken = new Set([...this.workers.values()].filter((it) => it !== w).map((it) => it.post));
+    const free = stations.find((f) => !taken.has(`stove:${f.uid}`));
+    const post = free ?? stations[0];
+    w.post = `stove:${post.uid}`;
+    const spot = this.shop.spotFor(post, (Math.random() - 0.5) * 0.4);
+    if (w.position.distanceTo(spot) > 0.3) this.walk(w, spot);
+    else if (s.cookJobs.length) w.pause = Math.max(gameDt, 2);
+    else w.pause = Math.max(gameDt, 4);
   }
 
   /** Lao công: sàn có bẩn thì tới một chỗ ngẫu nhiên lau, sạch rồi thì nghỉ. */
@@ -270,8 +294,11 @@ export class StaffManager {
     const pending: Record<string, number> = {};
     for (const d of s.deliveries) for (const [id, q] of Object.entries(d.items)) pending[id] = (pending[id] ?? 0) + q;
     const shelved = [...new Set(s.furniture.flatMap((f) => f.tiers.map((t) => t.productId).filter((id): id is string => !!id)))];
+    // Chỉ tự đặt lại món tiệm đã bán qua ít nhất một lần: món mới do chủ tự quyết định nhập thử
+    const everSold = (id: string) => (s.sales[id] ?? 0) > 0 || (s.salesToday[id] ?? 0) > 0;
     let need: Record<string, number> = {};
     for (const id of shelved) {
+      if (!everSold(id)) continue;
       const have = (s.storage[id] ?? 0) + (pending[id] ?? 0);
       if (have < MANAGER_LOW_STOCK) need[id] = MANAGER_TARGET - have;
     }
@@ -305,7 +332,10 @@ export class StaffManager {
 
   /** Xoá hết nhân viên đang ở trên bản đồ (sang ngày mới). */
   reset() {
-    for (const w of this.workers.values()) this.scene.remove(w.mesh);
+    for (const w of this.workers.values()) {
+      this.scene.remove(w.mesh);
+      w.dispose();
+    }
     this.workers.clear();
     this.hadCashier = false;
     this.delivering = false;

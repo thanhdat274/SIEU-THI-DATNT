@@ -35,7 +35,7 @@ export const TITLES: TitleDef[] = [
   { id: 'ong_chu', icon: '👔', name: 'Ông chủ nhỏ', description: 'Có 3 nhân viên.', done: (c) => c.staffCount >= 3 },
   { id: 'chuc_trieu', icon: '💰', name: 'Triệu phú hẻm', description: 'Tổng doanh thu đạt 50 triệu.', done: (c) => c.revenue >= 50_000_000 },
   { id: 'cap_30', icon: '🏪', name: 'Chủ cửa hàng tiện lợi', description: 'Đạt cấp 30.', done: (c) => c.level >= 30 },
-  { id: 'mot_nam', icon: '📅', name: 'Tròn một năm', description: 'Buôn bán qua 120 ngày (một năm trong game).', done: (c) => c.day > 120 },
+  { id: 'mot_nam', icon: '📅', name: 'Tròn một năm', description: 'Buôn bán qua 365 ngày (một năm trong game).', done: (c) => c.day > 365 },
   { id: 'cap_60', icon: '🏬', name: 'Ông trùm siêu thị', description: 'Đạt cấp 60.', done: (c) => c.level >= 60 },
 ];
 

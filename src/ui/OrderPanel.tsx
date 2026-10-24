@@ -1,3 +1,4 @@
+import { ProductIcon } from './ProductIcon';
 import { useState } from 'react';
 import { Dropdown } from './Dropdown';
 import { storageCapacity, storageUsed, useGame, wagesDue } from '../core/store';
@@ -31,19 +32,38 @@ function onHand(productId: string) {
 const incoming = (productId: string) =>
   useGame.getState().deliveries.reduce((sum, d) => sum + (d.items[productId] ?? 0), 0);
 
+/** Sức bày của món: tổng số món kệ/tủ tiệm đang chứa được cho ngành hàng của món này. */
+function displayCapacityFor(productId: string) {
+  const cat = productById(productId).category;
+  const s = useGame.getState();
+  let slots = 0;
+  for (const f of s.furniture) {
+    const def = furnitureDef(f.type);
+    if (!def.categories.includes(cat)) continue;
+    slots += f.tiers.length * def.capacity;
+  }
+  return slots;
+}
+
 /**
  * Gợi ý nhập (số thùng): đủ bán ~2 ngày theo nhu cầu (hàng giao sáng mai thì cần dự phòng nhiều hơn),
  * hàng hot tính dư 50%, món mới chưa ai hỏi thì nhập thử một thùng.
+ * Thông minh hơn: tính cả lượt khách hỏi hôm nay (kể cả lượt bị từ chối vì hết hàng — món đang "hụt hơi"),
+ * và không nhập quá sức bày của món (nhập về thừa chỉ nằm kho chết hạn).
  */
 function suggestQty(productId: string, supplier: Supplier, hot: boolean, isNew: boolean) {
   const s = useGame.getState();
-  // Món hôm nay khách hỏi nhiều hơn mức trung bình thì tính theo hôm nay
+  // Không có chỗ bày thì khỏi nhập (nhập về chỉ nằm kho)
+  if (!displayable(productId)) return 0;
+  // Nhu cầu = trung bình nhiều ngày, hoặc hôm nay nếu hôm nay khách hỏi nhiều hơn (món đang hụt hơi)
   const demand = Math.max(s.demand[productId] ?? 0, s.demandToday[productId] ?? 0);
   // Hàng dễ hỏng thì chỉ nhập đủ bán trước khi hết hạn
   const days = Math.min(supplier.delayDays ? 2.5 : 1.5, shelfLife(productId) * 0.8);
   const fresh = isNew && s.level - productById(productId).unlock <= 1;
   const size = caseSize(productId);
-  const target = demand ? Math.ceil(demand * days * (hot ? 1.5 : 1) * forecastTraffic(supplier)) : fresh || hot ? TRIAL_CASES * size : 0;
+  let target = demand ? Math.ceil(demand * days * (hot ? 1.5 : 1) * forecastTraffic(supplier)) : fresh || hot ? TRIAL_CASES * size : 0;
+  // Chặn trên: sức bày của món + một thùng dự phòng kho, để không nhập về nằm ứ
+  target = Math.min(target, displayCapacityFor(productId) + size);
   const need = target - onHand(productId) - incoming(productId);
   return need > 0 ? Math.ceil(need / size) : 0;
 }
@@ -58,7 +78,7 @@ function forecastTraffic(supplier: Supplier) {
 type Filter = 'suggest' | 'all' | Category;
 
 export function OrderPanel() {
-  const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, warehouseTier } = useGame();
+  const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, warehouseTier, priceOf } = useGame();
   const unlockedSuppliers = SUPPLIERS.filter((s) => s.unlock <= level);
   const [supplierId, setSupplierId] = useState(SUPPLIERS[0].id);
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -85,8 +105,22 @@ export function OrderPanel() {
 
   const shown = rows
     .filter((r) => filter === 'all' || (filter === 'suggest' ? r.suggest > 0 || (cart[r.p.id] ?? 0) > 0 : r.p.category === filter))
-    // Món đang thiếu lên trước, trong đó món bán chạy nhất đứng đầu
-    .sort((a, b) => Number(b.suggest > 0) - Number(a.suggest > 0) || b.demand - a.demand || Number(b.isHot) - Number(a.isHot) || a.p.unlock - b.p.unlock);
+    // Món khách đang hỏi nhiều nhất (kể cả hôm nay) lên đầu, rồi tới thiếu hàng nhất
+    .sort((a, b) => b.asked - a.asked || b.demand - a.demand || Number(b.suggest > 0) - Number(a.suggest > 0) || Number(b.isHot) - Number(a.isHot) || a.p.unlock - b.p.unlock);
+
+  // "Cần nhập gấp": món đang hụt hơi nhất — hết hàng mà khách hỏi, hoặc còn ít hơn một ngày bán
+  const urgent = rows
+    .filter((r) => r.suggest > 0 && displayable(r.p.id))
+    .sort((a, b) => b.asked - a.asked || b.demand - a.demand || a.have - b.have)
+    .slice(0, 5);
+  const urgentReason = (r: (typeof rows)[number]) => {
+    if (r.asked > 0 && r.have === 0) return `hôm nay ${r.asked} khách hỏi mà hết hàng`;
+    if (r.have === 0) return 'đã hết hàng';
+    if (r.demand > 0 && r.have < r.demand) return `còn ${r.have} món, ít hơn một ngày bán (${r.demand.toFixed(1)}/ngày)`;
+    if (r.asked > 0) return `hôm nay ${r.asked} khách hỏi mua`;
+    if (r.isHot) return 'hàng hot tuần này';
+    return `bán ${r.demand.toFixed(1)}/ngày, đang có ${r.have}`;
+  };
 
   // Giỏ đặt tính theo thùng; đơn gửi đi tính theo món
   const toLines = (c: Record<string, number>) => Object.fromEntries(
@@ -216,6 +250,21 @@ export function OrderPanel() {
         </div>
       )}
 
+      {filter === 'suggest' && urgent.length > 0 && (
+        <div style={{ ...st.banner, background: 'rgba(214, 48, 49, 0.16)' }}>
+          <b>🚨 Cần nhập gấp</b>
+          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
+            {urgent.map((r) => (
+              <div key={r.p.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                <span style={{ minWidth: 130 }}>{productById(r.p.id).name}</span>
+                <span style={{ opacity: 0.85 }}>{urgentReason(r)}</span>
+                <span style={{ marginLeft: 'auto', opacity: 0.75 }}>✨ nên nhập {r.suggest} thùng</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={st.toolbar}>
         <Dropdown<Filter>
           value={filter}
@@ -233,7 +282,7 @@ export function OrderPanel() {
 
       <div style={st.list}>
         <div className="or-row or-head" style={{ ...st.row, ...st.head }}>
-          <span>Mặt hàng</span><span>Khách mua/ngày</span><span>Đang có (món)</span><span>Giá thùng</span><span>Số thùng</span><span>Thành tiền</span>
+          <span>Mặt hàng</span><span>Khách mua/ngày</span><span>Đang có (món)</span><span>Giá thùng</span><span>Lãi/thùng</span><span>Số thùng</span><span>Thành tiền</span>
         </div>
         {shown.length === 0 && (
           <p style={{ ...st.sub, padding: 12 }}>
@@ -246,15 +295,18 @@ export function OrderPanel() {
           const diff = r.cost / base - 1;
           const bulk = bulkDiscount(supplier, qty);
           const caseCost = r.cost * r.size;
+          // Lãi dự kiến mỗi thùng ở giá bán hiện tại (chưa tính giảm giá cận hạn/combo)
+          const margin = (priceOf(r.p.id) - r.cost) * r.size;
           return (
             <div key={r.p.id} className="or-row" style={st.row}>
               <span className="or-name">
-                <Swatch color={r.p.color} /> {r.p.name}
+                <ProductIcon product={r.p} size={26} tile />{r.p.name}
                 {Number.isFinite(shelfLife(r.p.id)) && shelfLife(r.p.id) <= 14 && (
                   <span style={{ ...st.badge, background: shelfLife(r.p.id) <= 3 ? '#d63031' : '#636e72' }} title="Hạn dùng khi mới nhập">⏳ {shelfLife(r.p.id)} ngày</span>
                 )}
                 {r.isHot && <span style={{ ...st.badge, background: '#e17055' }}>🔥 Hot</span>}
                 {r.isNew && <span style={{ ...st.badge, background: '#00b894' }}>Mới</span>}
+                {r.demand > 0 && r.have > 0 && r.have < r.demand && <span style={{ ...st.badge, background: '#e17055' }} title={`Còn ${r.have} món, khách mua ~${r.demand.toFixed(1)}/ngày — sắp hết`}>⚠️ Gần hết</span>}
                 {r.asked > 0 && r.have === 0 && <span style={{ ...st.badge, background: '#d63031' }}>Khách hỏi {r.asked} lần, hết hàng</span>}
               </span>
               <span data-label="Mua/ngày">{r.demand ? r.demand.toFixed(1) : '—'}</span>
@@ -263,6 +315,9 @@ export function OrderPanel() {
                 {formatMoney(caseCost)}
                 <span style={{ opacity: 0.6, fontSize: 11 }}> ×{r.size}</span>
                 {Math.abs(diff) >= 0.01 && <span style={{ color: diff > 0 ? '#ff7675' : '#55efc4', fontSize: 11 }}> {diff > 0 ? '▲' : '▼'}{Math.round(Math.abs(diff) * 100)}%</span>}
+              </span>
+              <span data-label="Lãi/thùng" title={`Giá bán đang đặt ${formatMoney(priceOf(r.p.id))} − giá nhập ${formatMoney(r.cost)} = ${formatMoney(priceOf(r.p.id) - r.cost)}/món, nhân ${r.size} món/thùng`} style={{ color: margin > 0 ? '#55efc4' : '#ff7675' }}>
+                {margin > 0 ? '+' : ''}{formatMoney(margin)}
               </span>
               <span className="or-qty" style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
                 <button style={st.step} onClick={() => setQty(r.p.id, qty - 1)} aria-label={`Bớt một thùng ${r.p.name}`}>−</button>
@@ -303,12 +358,6 @@ export function OrderPanel() {
   );
 }
 
-const Swatch = ({ color }: { color: number }) => (
-  <span style={{
-    display: 'inline-block', width: 12, height: 12, borderRadius: 3, verticalAlign: 'middle',
-    background: `#${color.toString(16).padStart(6, '0')}`, border: '1px solid #0004',
-  }} />
-);
 
 /** Thanh đo: phần đã có (base, đậm) + phần của đơn này (sáng), đỏ khi vượt. */
 function Meter({ label, used, max, base = 0, text }: { label: string; used: number; max: number; base?: number; text: string }) {

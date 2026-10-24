@@ -1,3 +1,4 @@
+import { meetsRep, type Reputation, type RepNeed } from './reputation';
 import { productById } from './products';
 import type { CharacterArchetype, HairStyle, PropKind } from '../render/characterModel';
 
@@ -43,6 +44,8 @@ export interface RegularDef {
   visitUntil: number;
   /** Cấp tiệm để khách này bắt đầu ghé. */
   unlock: number;
+  /** Danh tiếng cần để khách bắt đầu ghé; không ghi thì theo cấp mở (xem regularRep). */
+  rep?: RepNeed;
   lines: { greeting: string; satisfied: string; walkout: string };
   perks: RegularPerk[];
 }
@@ -253,7 +256,7 @@ export const REGULARS: RegularDef[] = [
   },
   {
     id: 'bac_doi_hoi', name: 'Bác Đôi ngày hội', role: 'Cụ tổ chức lễ hội làng',
-    bio: 'Lo việc lễ hội làng cuối năm. Mỗi dịp hội là cả phường kéo nhau ra tiệm, kéo khách về cả làng.',
+    bio: 'Lo việc lễ hội làng đầu xuân. Mỗi dịp hội là cả phường kéo nhau ra tiệm, kéo khách về cả làng.',
     color: 0xd35400, hatColor: 0xf1c40f,
     look: { archetype: 'elder_man', hairStyle: 'plain', hair: 0xd0d5dd, props: ['flag'], glasses: false }, favorites: ['gao', 'tra', 'nuoc', 'banh'],
     priceSensitivity: 0.7, patienceMinutes: 30, visitFrom: 7 * 60, visitUntil: 11 * 60, unlock: 28,
@@ -275,6 +278,114 @@ export const REGULARS: RegularDef[] = [
       { threshold: 15, title: 'Dậy sớm nướng bánh', description: 'Ghé sáng sớm mỗi ngày.', effect: 'frequent_visit', value: 0.2 },
       { threshold: 40, title: 'Nguyên liệu theo lô', description: 'Mua thêm 2 đơn vị nguyên liệu nướng bánh.', effect: 'bulk_buy', value: 2 },
       { threshold: 80, title: 'Tiệm bánh kén đồ', description: 'Boa thêm 12% vì quen nguyên liệu chuẩn.', effect: 'bonus_tip', value: 0.12 },
+    ],
+  },
+  {
+    id: 'suc_khanh_long', name: 'Sư cụ Khánh Long', role: 'Trụ trì chùa đầu làng',
+    bio: 'Sáng nào cũng đi khất thực qua hẻm. Thi thoảng ghé lấy trà, chuối để tiếp khách thơ cúng dường.',
+    color: 0xf4a742, hatColor: 0xa04000,
+    look: { archetype: 'monk', hairStyle: 'plain', hair: 0x222222, props: [], glasses: false }, favorites: ['tra', 'x_tra_xanh', 'x_chuoi', 'traicay', 'x_yakult'],
+    priceSensitivity: 0.5, patienceMinutes: 90, visitFrom: 5 * 60, visitUntil: 8 * 60, unlock: 9, // thấp nhất trong favorites là Trà xanh chai (cấp 9)
+    lines: { greeting: 'A di đà Phật, con lấy ít trà với chuối nha.', satisfied: 'Tiệm buôn may bán đắt, tâm an lành tới.', walkout: 'Trà hết rồi sao... cụ trở về chùa vậy.' },
+    perks: [
+      { threshold: 15, title: 'Ghé sớm mỗi sáng', description: 'Sáng nào cũng ghé trước khi chùa mở cửa.', effect: 'frequent_visit', value: 0.2 },
+      { threshold: 40, title: 'Phật tử ghé theo', description: 'Rủ thêm 1 khách lẻ ghé tiệm mỗi lần mua.', effect: 'refer_friend', value: 1 },
+      { threshold: 80, title: 'Cúng dường hậu hĩnh', description: 'Boa thêm 15% hóa đơn.', effect: 'bonus_tip', value: 0.15 },
+    ],
+  },
+  {
+    id: 'chu_sau_ca', name: 'Chú Sáu chài lưới', role: 'Ngư dân bến sông',
+    bio: 'Ra sông từ 4 giờ sáng, tan chài là ghé tiệm lấy nước với mì để bữa thứ hai trên ghe.',
+    color: 0xf1c40f, hatColor: 0x2c3e50,
+    look: { archetype: 'fisherman', hairStyle: 'spiky', hair: 0x222222, props: [], glasses: false }, favorites: ['nuoc', 'mi', 'tangluc', 'banhmi', 'x_tra_da'],
+    priceSensitivity: 1.3, patienceMinutes: 45, visitFrom: 7 * 60, visitUntil: 10 * 60, unlock: 11,
+    lines: { greeting: 'Cậu ơi, lấy giúp chú lốc nước với mấy gói mì nghen!', satisfied: 'No bụng rồi, chiều kéo lưới chắc tay luôn!', walkout: 'Hết mì rồi à? Chú ra bến mua chỗ khác vậy.' },
+    perks: [
+      { threshold: 15, title: 'Tan chài ghé liền', description: 'Sáng nào tan chài cũng ghé.', effect: 'frequent_visit', value: 0.2 },
+      { threshold: 40, title: 'Mua dự trữ trên ghe', description: 'Mua thêm 2 đơn vị mỗi món cần.', effect: 'bulk_buy', value: 2 },
+      { threshold: 80, title: 'Bà con bến sông ghé', description: 'Giới thiệu anh em bến sông qua mua.', effect: 'refer_friend', value: 1 },
+    ],
+  },
+  {
+    id: 'chi_be_live', name: 'Chị Bé live sale', role: 'Influencer bán hàng qua mạng',
+    bio: 'Live bán hàng đêm nào cũng tới khuya. Tiệm sạch đẹp thì chị khen trên sóng, khách kéo về ầm ầm.',
+    color: 0xff6b9d, hatColor: 0xff6b9d,
+    look: { archetype: 'influencer', hairStyle: 'long', hair: 0x4e311f, props: [], glasses: false }, favorites: ['sinhto', 'traicay', 'banh', 'mypham', 'kem'],
+    priceSensitivity: 0.5, patienceMinutes: 30, visitFrom: 13 * 60, visitUntil: 17 * 60, unlock: 13,
+    lines: { greeting: 'Shop ơi, lấy chị ít trái cây với sữa chua đẹp đẹp để quay nha!', satisfied: 'Đồ tiệm nhìn mốt quá, chờ chị live khoe nha!', walkout: 'Chán quá, chẳng có gì lên hình hết...' },
+    perks: [
+      { threshold: 15, title: 'Quay clip quen chỗ', description: 'Chiều nào cũng ghé quay cảnh mua hàng.', effect: 'frequent_visit', value: 0.2 },
+      { threshold: 40, title: 'Khoe trên sóng', description: 'Ngày chị ghé, cả khu đông khách hơn 20%.', effect: 'festival', value: 0.2 },
+      { threshold: 80, title: 'Review đỉnh', description: 'Ngày chị ghé, cả khu đông khách hẳn 35%.', effect: 'festival', value: 0.35 },
+    ],
+  },
+  {
+    id: 'chi_hanh_online', name: 'Chị Hạnh đóng hàng', role: 'Chủ shop bán hàng online',
+    bio: 'Đóng gói hàng từ sáng tới tối trong nhà. Bao gói, túi nilon, băng keo thiếu là ghé tiệm mua nguyên lô.',
+    color: 0xe67e22, hatColor: 0xd35400,
+    look: { archetype: 'online_seller', hairStyle: 'ponytail', hair: 0x332219, props: [], glasses: false }, favorites: ['x_ta_giay', 'x_bao_goi', 'x_khan_giay', 'x_tui_rac'],
+    priceSensitivity: 1.1, patienceMinutes: 35, visitFrom: 8 * 60, visitUntil: 14 * 60, unlock: 21,
+    lines: { greeting: 'Cho chị mấy cuộn băng keo với bao gói, cuối tuần đơn nhiều quá!', satisfied: 'Đủ đồ đóng hàng, đơn nào cũng gói kỹ càng!', walkout: 'Hết bao gói rồi hả? Chị phải dồn đơn lại mai đóng vậy...' },
+    perks: [
+      { threshold: 15, title: 'Cắt đơn ghé mua', description: 'Giữa buổi nào cũng ghé.', effect: 'frequent_visit', value: 0.2 },
+      { threshold: 40, title: 'Mua nguyên lô', description: 'Mua thêm 2 đơn vị mỗi món phụ kiện.', effect: 'bulk_buy', value: 2 },
+      { threshold: 80, title: 'Tiệm ruột shop online', description: 'Boa thêm 12% cho tiệm thân quen.', effect: 'bonus_tip', value: 0.12 },
+    ],
+  },
+  {
+    id: 'bac_ba_xe_om', name: 'Bác Ba xe ôm', role: 'Tài xế xe ôm đầu hẻm',
+    bio: 'Chở khách sớm khuya, dừng tiệm mua lót dạ và chai nước cho nguội người.',
+    color: 0xe17055, hatColor: 0xd63031,
+    look: { archetype: 'worker_driver', hairStyle: 'plain', hair: 0x3d3d3d, props: ['phone'], glasses: false, hat: true },
+    favorites: ['nuoc', 'banh', 'diem'],
+    priceSensitivity: 1.05, patienceMinutes: 25,
+    visitFrom: 6 * 60, visitUntil: 9 * 60, unlock: 8,
+    lines: { greeting: 'Còn nước lạnh không ông bạn?', satisfied: 'Nhanh gọn, chở khách kịp giờ liền!', walkout: 'Chờ lâu quá, khách tôi kêu bấm máy rồi.' },
+    perks: [
+      { threshold: 15, title: 'Sớm mai nào cũng ghé', description: 'Sáng nào cũng ghé mua.', effect: 'frequent_visit', value: 0.15 },
+      { threshold: 40, title: 'Mua dùm đồng nghiệp', description: 'Mua thêm 1 món mỗi lần ghé.', effect: 'extra_item', value: 1 },
+    ],
+  },
+  {
+    id: 'co_xuan_cho', name: 'Cô Xuân chợ rau', role: 'Bán rau đầu chợ',
+    bio: 'Hết chợ ghé mua gia vị, xà phòng; hay rủ cả dãy hàng xóm bán chợ ghé cùng.',
+    color: 0x27ae60, hatColor: 0xf4d03f,
+    look: { archetype: 'farmer', hairStyle: 'bun', hair: 0x4a4a4a, props: ['non_la'], glasses: false },
+    favorites: ['giavi', 'xaphong', 'nuocmam'],
+    priceSensitivity: 1.15, patienceMinutes: 40,
+    visitFrom: 9 * 60, visitUntil: 12 * 60, unlock: 10,
+    lines: { greeting: 'Cô qua mua chút gia vị nhé!', satisfied: 'Giá cô được, mai cô rủ cả dãy qua.', walkout: 'Thôi cô qua quầy bên kia cho lẹ.' },
+    perks: [
+      { threshold: 15, title: 'Rủ cả dãy chợ', description: 'Thỉnh thoảng rủ thêm khách ghé.', effect: 'refer_friend', value: 1 },
+      { threshold: 60, title: 'Khách quen cả xóm', description: 'Boa thêm 10% cho tiệm thân quen.', effect: 'bonus_tip', value: 0.1 },
+    ],
+  },
+  {
+    id: 'dung_gym', name: 'Dũng phòng gym', role: 'Huấn luyện viên gym',
+    bio: 'Tập xong ghé lấy nước và đồ ăn nhẹ; đồ uống toàn mua nguyên thùng.',
+    color: 0x00b8d4, hatColor: 0x2d3436,
+    look: { archetype: 'athlete', hairStyle: 'spiky', hair: 0x222222, props: [], glasses: false },
+    favorites: ['tangluc', 'sinhto', 'nuoc'],
+    priceSensitivity: 0.9, patienceMinutes: 30,
+    visitFrom: 17 * 60, visitUntil: 20 * 60, unlock: 18,
+    lines: { greeting: 'Cho thêm nước, tập xong khát khô họng!', satisfied: 'Đủ chất, mai tập xong ghé tiếp.', walkout: 'Kệ đồ uống trống trơn vậy trời?' },
+    perks: [
+      { threshold: 15, title: 'Bụng đói mắt to', description: 'Mua thêm 1 món mỗi lần ghé.', effect: 'extra_item', value: 1 },
+      { threshold: 40, title: 'Lấy cả thùng', description: 'Mua thêm 2 đơn vị mỗi món phụ kiện.', effect: 'bulk_buy', value: 2 },
+    ],
+  },
+  {
+    id: 'vy_live', name: 'Chị Vy livestream', role: 'Nhân vật mạng bán hàng đêm',
+    bio: 'Live khuya quảng cáo gì cũng hết; ghé tiệm săn mỹ phẩm và đồ ăn vặt quay video.',
+    color: 0xff6b9d, hatColor: 0x2d3436,
+    look: { archetype: 'influencer', hairStyle: 'long', hair: 0x6d214f, props: ['phone'], glasses: false },
+    favorites: ['mypham', 'snack', 'keomut'],
+    priceSensitivity: 0.85, patienceMinutes: 35,
+    visitFrom: 20 * 60, visitUntil: 23 * 60, unlock: 34,
+    lines: { greeting: 'Để chị quay phát trực tiếp tiệm mình nè!', satisfied: 'Khán giả ơi, tiệm này chất lượng nha!', walkout: 'Hết đồ hot rồi, live mai thôi.' },
+    perks: [
+      { threshold: 15, title: 'Boa trên sóng trực tiếp', description: 'Boa thêm 10% cho tiệm thân quen.', effect: 'bonus_tip', value: 0.1 },
+      { threshold: 60, title: 'Kéo cả cộng đồng ghé', description: 'Thỉnh thoảng rủ thêm khách ghé.', effect: 'refer_friend', value: 1 },
     ],
   },
 ];
@@ -303,6 +414,10 @@ export const festivalVisit = (def: RegularDef, prog: RegularProgress | undefined
   hasPerk(def, prog, 'festival');
 
 /** Món ưa thích đã mở khóa ở cấp hiện tại. */
+/** Khách quen mở muộn kén tiệm hơn: cấp 12+ cần 3.5★, cấp 18+ cần 4★. */
+export const regularRep = (def: RegularDef): RepNeed | undefined =>
+  def.rep ?? (def.unlock >= 18 ? { min: 4 } : def.unlock >= 12 ? { min: 3.5 } : undefined);
+
 export const unlockedFavorites = (def: RegularDef, level: number) => def.favorites.filter((id) => productById(id).unlock <= level);
 
 function hash(seed: number, day: number, id: string) {
@@ -316,8 +431,10 @@ function hash(seed: number, day: number, id: string) {
  * Hôm nay khách quen có ghé không: tính từ hạt giống ván + ngày nên hai máy chơi chung luôn khớp.
  * Chưa có perk "ghé thường hơn" thì không ghé hai ngày liền.
  */
-export function visitsToday(def: RegularDef, day: number, seed: number, level: number, prog?: RegularProgress): boolean {
+export function visitsToday(def: RegularDef, day: number, seed: number, level: number, prog?: RegularProgress, rep?: Reputation): boolean {
   if (level < def.unlock || !unlockedFavorites(def, level).length) return false;
+  // Đã quen rồi thì vẫn ghé; khách mới chỉ tìm tới tiệm đủ uy tín
+  if (rep && !prog?.visits && !meetsRep(rep, regularRep(def))) return false;
   const frequent = hasPerk(def, prog, 'frequent_visit');
   if (!frequent && prog?.lastVisitDay !== undefined && day - prog.lastVisitDay < 2) return false;
   if (prog?.lastVisitDay === day) return false;
@@ -325,10 +442,10 @@ export function visitsToday(def: RegularDef, day: number, seed: number, level: n
 }
 
 /** Khách quen hợp lệ để ghé ngay lúc này (đúng giờ, chưa có mặt trong tiệm). */
-export function pickRegular(day: number, minutes: number, seed: number, level: number, progress: Record<string, RegularProgress>, inStore: string[]) {
+export function pickRegular(day: number, minutes: number, seed: number, level: number, progress: Record<string, RegularProgress>, inStore: string[], rep?: Reputation) {
   return REGULARS.find((def) =>
     !inStore.includes(def.id) && minutes >= def.visitFrom && minutes < def.visitUntil
-    && visitsToday(def, day, seed, level, progress[def.id]),
+    && visitsToday(def, day, seed, level, progress[def.id], rep),
   );
 }
 
@@ -375,3 +492,52 @@ export function regularWalkout(prev: RegularProgress | undefined, day: number): 
 
 /** Mốc perk kế tiếp (để hiện thanh tiến độ). */
 export const nextPerk = (def: RegularDef, prog?: RegularProgress) => def.perks.find((p) => !prog?.perks.includes(p.title));
+
+// ──────────────────────────────────────────────
+// Giữ món theo lời hẹn (reservation): khách quen nhờ giữ một món ưa thích, mai ghé lấy
+// ──────────────────────────────────────────────
+
+/** Một lời hẹn đang giữ: món, số lượng và ngày khách sẽ ghé lấy. */
+export interface Reservation {
+  productId: string;
+  qty: number;
+  /** Ngày khách hẹn ghé lấy. */
+  day: number;
+}
+
+/** Thân thiết từ mốc này khách quen mới nhờ giữ món. */
+export const RESERVE_FRIENDSHIP = 15;
+/** Xác suất khách quen đủ thân xin giữ món sau một lần mua hài lòng. */
+export const RESERVE_CHANCE = 0.35;
+/** Giữ đúng hẹn: cộng thân thiết. */
+export const RESERVE_BONUS = 2;
+/** Hẹn mà không được (đã ghé, không mua được món đó): mất thân thiết. */
+export const RESERVE_MISS_LOSS = 2;
+
+/** Khách đủ thân và chưa có lời hẹn nào: có thể nhờ giữ món không (kèm món với số lượng).
+ *  `cookedPool`: các món nhà làm tiệm đang nấu được — khách quen có bếp sẵn hay "đặt trước suất ngon". */
+export function reserveAsk(
+  def: RegularDef, prog: RegularProgress | undefined, level: number, hasPending: boolean, rng: () => number,
+  cookedPool: string[] = [],
+): { productId: string; qty: number } | null {
+  if (!prog || prog.friendship < RESERVE_FRIENDSHIP || hasPending) return null;
+  if (rng() >= RESERVE_CHANCE) return null;
+  const cookable = cookedPool.filter((id) => productById(id).unlock <= level);
+  // Có bếp rồi thì nửa số lời hẹn là món nhà làm ("mai ghé lấy vài phần nóng hổi")
+  if (cookable.length && rng() < 0.5) {
+    return { productId: cookable[Math.floor(rng() * cookable.length)], qty: 1 + (rng() < 0.3 ? 1 : 0) };
+  }
+  const favs = unlockedFavorites(def, level);
+  if (!favs.length) return null;
+  return { productId: favs[Math.floor(rng() * favs.length)], qty: 1 + (rng() < 0.4 ? 1 : 0) };
+}
+
+/**
+ * Danh sách khách quen dự kiến ghé hôm nay (cùng hàm hash với lịch ghé thật nên dự đoán luôn đúng).
+ * Dùng cho Sổ đầu ngày: người chơi nhập sẵn hàng đúng món khách quen thích.
+ */
+export function regularsExpectedToday(
+  day: number, seed: number, level: number, progress: Record<string, RegularProgress>, rep?: Reputation,
+): RegularDef[] {
+  return REGULARS.filter((def) => visitsToday(def, day, seed, level, progress[def.id], rep));
+}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { shopLayout } from '../core/actions';
 import { SELL_BACK, useGame, type Furniture } from '../core/store';
 import { FURNITURE, footprint, frontDir, furnitureDef, type FurnitureType } from '../data/furniture';
+import { heatColor, isDisplay, spotVisibility, visibilityLabel, type ShopGeom } from '../data/layout';
 import { formatMoney } from '../data/products';
 import { ExpandTab, PaintTab } from './Panels';
 import './arrange.css';
@@ -14,9 +15,13 @@ const snap = (v: number) => Math.round(v / SNAP) * SNAP;
 const COLORS: Record<FurnitureType, string> = {
   shelf: '#a0703f', bigShelf: '#7f8c99', fridge: '#4aa3df', freezer: '#76c7e8', produce: '#5fa846',
   checkout: '#c0504d', cartStation: '#8e7cc3', plant: '#3f9d5a', wall: '#c9bfa6',
+  hot_kettle: '#d4ac0d', food_grill: '#e67e22', blender: '#fd79a8', drink_counter: '#6e2c00',
+  fryer: '#f9ca24', sugarcane_press: '#00b894', rice_station: '#f5cba7', steamer: '#95a5a6', gift_wrap: '#c0392b',
 };
 const ICONS: Record<FurnitureType, string> = {
   shelf: '🗄️', bigShelf: '🏬', fridge: '🧊', freezer: '❄️', produce: '🥬', checkout: '🧾', cartStation: '🛒', plant: '🪴', wall: '🧱',
+  hot_kettle: '🫖', food_grill: '🔥', blender: '🍹', drink_counter: '☕',
+  fryer: '🍳', sugarcane_press: '🥤', rice_station: '🍚', steamer: '♨️', gift_wrap: '🎁',
 };
 
 type Tab = 'furniture' | 'paint' | 'expand';
@@ -32,6 +37,7 @@ export function ArrangePanel() {
   // Sàn và tường bản vẽ theo màu tiệm (kể cả màu đang xem thử ở thẻ Sơn sửa)
   const style = useGame((s) => s.style);
   const preview = useGame((s) => s.stylePreview);
+  const shopName = useGame((s) => s.shopName);
   const look = { ...style, ...preview };
   const hex = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
   const [draft, setDraft] = useState<Furniture[]>(saved);
@@ -39,6 +45,9 @@ export function ArrangePanel() {
   const [selected, setSelected] = useState<number | null>(null);
   const [tab, setTab] = useState<Tab>('furniture');
   const [error, setError] = useState('');
+  // 🔥 Heatmap doanh số theo kệ: kệ nào bán chạy nhất kể từ khi đặt
+  const [heatOn, setHeatOn] = useState(false);
+  const shelfHeat = useGame((s) => s.shelfHeat);
   const svg = useRef<SVGSVGElement>(null);
   const drag = useRef<{ uid: number; dx: number; dz: number; moved: boolean; before: Furniture[] } | null>(null);
 
@@ -172,7 +181,22 @@ export function ArrangePanel() {
     update(sel.uid, (f) => ({ ...f, x: snap(p.x), z: snap(p.z) }));
   };
 
-  const { width: W, depth: D, counter, doorW } = plan;
+  const { width: W, depth: D, counter, doorW, backDoorX, windows } = plan;
+  // Hình dáng tiệm theo bản nháp (quầy chính + các quầy phụ đang đặt thử) để chấm điểm vị trí
+  const geom: ShopGeom = useMemo(() => ({
+    width: W, depth: D,
+    paySpots: [
+      { x: counter.x - 1.0, z: counter.z },
+      ...draft.filter((f) => f.type === 'checkout').map((f) => {
+        const [fx, fz] = frontDir(f.rot);
+        return { x: f.x + fx, z: f.z + fz };
+      }),
+    ],
+    // phụ thuộc vị trí quầy trong nháp, không phụ thuộc selection
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [W, D, counter, draft]);
+  const topHeat = Math.max(0, ...Object.values(shelfHeat));
+  const selAttention = sel ? spotVisibility(sel.x, sel.z, geom) : 0;
   const pad = 0.6;
   const gridLines = [];
   for (let x = -W / 2 + 1; x < W / 2; x += 1) gridLines.push(<line key={`x${x}`} x1={x} y1={-D / 2} x2={x} y2={D / 2} />);
@@ -183,7 +207,7 @@ export function ArrangePanel() {
       <section className="ar" role="dialog" aria-modal="true" aria-labelledby="ar-title">
         <header className="ar-head">
           <div>
-            <h2 id="ar-title">🏪 Sắp xếp cửa hàng</h2>
+            <h2 id="ar-title">🏪 {shopName}</h2>
             <p>Kéo đồ để dời chỗ, chạm vào món để xoay hoặc bán. Bấm "Áp dụng" mới tính tiền.</p>
           </div>
           <span className="ar-money">💰 {formatMoney(money)}</span>
@@ -192,14 +216,23 @@ export function ArrangePanel() {
 
         <div className="ar-body">
           <div className="ar-main">
-            <div className={`ar-status${sel ? (problems.has(sel.uid) ? ' bad' : ' sel') : ''}`}>
-              {sel ? (
-                problems.has(sel.uid)
-                  ? <>⚠️ <b>{furnitureDef(sel.type).name}</b>: {problems.get(sel.uid)}</>
-                  : <>✥ <b>{furnitureDef(sel.type).name}</b>: kéo để dời, hoặc chạm chỗ sàn trống để đưa tới đó.</>
-              ) : (
-                <>💡 Chạm vào một món trên bản vẽ để chọn, hoặc mua món mới ở danh mục.</>
-              )}
+            <div className="ar-status-row">
+              <div className={`ar-status${sel ? (problems.has(sel.uid) ? ' bad' : ' sel') : ''}`}>
+                {sel ? (
+                  problems.has(sel.uid)
+                    ? <>⚠️ <b>{furnitureDef(sel.type).name}</b>: {problems.get(sel.uid)}</>
+                    : <>✥ <b>{furnitureDef(sel.type).name}</b>: kéo để dời, hoặc chạm chỗ sàn trống để đưa tới đó.</>
+                ) : (
+                  <>💡 Chạm vào một món trên bản vẽ để chọn, hoặc mua món mới ở danh mục.</>
+                )}
+              </div>
+              <button
+                className={`ar-btn${heatOn ? ' primary' : ' ghost'}`}
+                title="Tô màu kệ theo số món đã bán ra: đỏ bán chạy, xanh là ế. Kệ dễ thấy (gần cửa, sát lối đi) bán nhiều hơn."
+                onClick={() => setHeatOn(!heatOn)}
+              >
+                🔥 Doanh số theo kệ
+              </button>
             </div>
 
             <div className="ar-board">
@@ -216,8 +249,21 @@ export function ArrangePanel() {
                 <path
                   className="ar-wall"
                   style={{ stroke: hex(look.wall) }}
-                  d={`M ${-doorW / 2} ${D / 2} H ${-W / 2} V ${-D / 2} H ${W / 2} V ${D / 2} H ${doorW / 2}`}
+                  d={`M ${-doorW / 2} ${D / 2} H ${-W / 2} V ${-D / 2} H ${backDoorX - doorW / 2} M ${backDoorX + doorW / 2} ${-D / 2} H ${W / 2} V ${D / 2} H ${doorW / 2}`}
                 />
+                {/* Cửa sổ trên tường, vùng sàn trước cửa sổ phải để trống */}
+                {windows.map((wn, i) => (
+                  <g key={i}>
+                    <rect className="ar-window-zone" x={wn.x - wn.w / 2} y={wn.z - wn.d / 2} width={wn.w} height={wn.d} />
+                    {wn.w > wn.d ? (
+                      <line className="ar-window" x1={wn.x - wn.w / 2} x2={wn.x + wn.w / 2} y1={wn.z + Math.sign(wn.z) * (wn.d / 2 + 0.1)} y2={wn.z + Math.sign(wn.z) * (wn.d / 2 + 0.1)} />
+                    ) : (
+                      <line className="ar-window" y1={wn.z - wn.d / 2} y2={wn.z + wn.d / 2} x1={wn.x + Math.sign(wn.x) * (wn.w / 2 + 0.1)} x2={wn.x + Math.sign(wn.x) * (wn.w / 2 + 0.1)} />
+                    )}
+                  </g>
+                ))}
+                <text className="ar-door ar-door-back" x={backDoorX} y={-D / 2 - 0.2}>▲ Nhà kho</text>
+                <rect className="ar-door-zone" x={backDoorX - 0.9} y={-D / 2} width={1.8} height={1} />
                 <text className="ar-door" x={0} y={D / 2 + 0.45}>▼ Cửa ra vào</text>
                 <rect className="ar-door-zone" x={-0.9} y={D / 2 - 1} width={1.8} height={1} />
 
@@ -232,6 +278,7 @@ export function ArrangePanel() {
                   const [fx, fz] = frontDir(f.rot);
                   const bad = problems.has(f.uid);
                   const small = Math.min(w, d) < 0.6;
+                  const heat = heatOn && f.uid > 0 ? shelfHeat[f.uid] ?? 0 : 0;
                   return (
                     <g
                       key={f.uid}
@@ -246,17 +293,49 @@ export function ArrangePanel() {
                       <text x={f.x} y={f.z} className={small ? 'icon-only' : undefined}>
                         {small ? ICONS[f.type] : `${ICONS[f.type]} ${furnitureDef(f.type).name}`}
                       </text>
+                      {/* Lớp heatmap doanh số: phủ lên kệ đang bày hàng */}
+                      {heat > 0 && (
+                        <>
+                          <rect
+                            x={f.x - w / 2} y={f.z - d / 2} width={w} height={d} rx={0.05}
+                            fill={heatColor(heat / Math.max(topHeat, 1))} opacity={0.78}
+                            style={{ pointerEvents: 'none' }}
+                          />
+                          <text
+                            x={f.x} y={f.z + 0.14} textAnchor="middle"
+                            style={{ fontSize: 0.52, fill: '#fff', fontWeight: 700, pointerEvents: 'none' }}
+                          >
+                            {heat}
+                          </text>
+                        </>
+                      )}
                     </g>
                   );
                 })}
               </svg>
             </div>
 
+            {heatOn && (
+              <div className="ar-heat-legend">
+                {topHeat > 0 ? (
+                  <>Ế <i className="ar-heat-scale" /> Bán chạy · kệ đỏ nhất đã bán {topHeat} món · kệ dễ thấy (gần cửa, sát lối đi) bán nhiều hơn kệ khuất</>
+                ) : (
+                  <>Chưa có số liệu: heatmap ghi số món mỗi kệ bán ra, khách mua là tự cập nhật.</>
+                )}
+              </div>
+            )}
+
             {sel && (
               <div className="ar-inspect">
                 <div className="ar-inspect-name">
                   <b>{ICONS[sel.type]} {furnitureDef(sel.type).name}</b>
                   <small>{sel.uid < 0 ? `Mua mới · ${formatMoney(furnitureDef(sel.type).price)}` : furnitureDef(sel.type).desc}</small>
+                  {isDisplay(sel) && (
+                    <small>
+                      📍 {visibilityLabel(selAttention)} · {Math.round(selAttention * 100)}%
+                      {sel.uid > 0 && shelfHeat[sel.uid] ? ` · 🔥 đã bán ${shelfHeat[sel.uid]} món từ khi đặt` : ''}
+                    </small>
+                  )}
                 </div>
                 <div className="ar-pad" aria-label="Dời món đang chọn">
                   <button onClick={() => nudge(0, -STEP)} aria-label="Lên">▲</button>

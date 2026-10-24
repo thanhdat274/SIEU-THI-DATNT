@@ -8,16 +8,24 @@ export interface ShopTier {
 }
 
 export const SHOP_TIERS: ShopTier[] = [
-  { name: 'Tiệm nhỏ đầu ngõ', width: 6, depth: 5, unlock: 1, price: 0 },
-  { name: 'Tiệm nới rộng', width: 8, depth: 6, unlock: 10, price: 800000 },
-  { name: 'Tạp hóa lớn', width: 11, depth: 8, unlock: 25, price: 4000000 },
-  { name: 'Mini mart', width: 14, depth: 10, unlock: 40, price: 9000000 },
-  { name: 'Siêu thị tạp hóa', width: 18, depth: 12, unlock: 50, price: 20000000 },
+  // Chỉ nới chiều ngang khi cân lại: chiều sâu đổi sẽ làm lệch đồ đã đặt trong bản lưu cũ.
+  // Bậc mở dày ở cấp 6–30 để tiền có chỗ tiêu (kệ, tủ đông, quầy phụ, trạm nấu đều cần mặt bằng).
+  { name: 'Tiệm nhỏ đầu ngõ', width: 8, depth: 5, unlock: 1, price: 0 },
+  { name: 'Tiệm nới rộng', width: 10, depth: 6, unlock: 6, price: 500000 },
+  { name: 'Tạp hóa lớn', width: 12, depth: 8, unlock: 13, price: 2500000 },
+  { name: 'Mini mart', width: 15, depth: 10, unlock: 30, price: 7000000 },
+  { name: 'Siêu thị tạp hóa', width: 18, depth: 12, unlock: 45, price: 16000000 },
 ];
 
 /** Mặt tiền tiệm luôn nằm ở z này (sát vỉa hè); tiệm mở rộng về phía sau. */
 export const SHOP_FRONT_Z = 1;
 export const SHOP_CENTER_X = 4;
+
+/**
+ * Tiền nhà mỗi ngày theo bậc tiệm: chi phí cố định tạo áp lực tối ưu mặt bằng.
+ * Nhẹ ở tiệm nhỏ, đáng kể khi lên siêu thị (20k → 50k → 140k → 290k → 500k).
+ */
+export const rentOf = (tier: number) => 20000 + tier * tier * 30000;
 
 export interface Swatch {
   name: string;
