@@ -1,15 +1,43 @@
 import { WEATHER, type Sky, type WeatherInfo } from '../data/weather';
 import * as THREE from 'three';
+import { WebGPURenderer } from 'three/webgpu';
 
 /** Điện thoại / máy tính bảng: giảm độ phân giải, bóng và hạt mưa cho đỡ nóng máy. */
 export const LOW_POWER = matchMedia('(pointer: coarse)').matches;
 
+/** Mọi renderer đều biết làm những việc này — dùng để đánh type chung cho WebGL/WebGPU. */
+export interface GameRenderer {
+  domElement: HTMLCanvasElement;
+  setPixelRatio(value: number): void;
+  getPixelRatio(): number;
+  setSize(width: number, height: number, updateStyle?: boolean): void;
+  setAnimationLoop(callback: ((time: number) => void) | null): void;
+  render(scene: THREE.Scene, camera: THREE.Camera): void;
+  shadowMap: { enabled: boolean; type: number; autoUpdate?: boolean; needsUpdate?: boolean };
+  init?(): Promise<unknown>;
+}
+
 export function createRenderer(container: HTMLElement) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  // WebGPU: đường ống render thế hệ mới của trình duyệt — điều phối nhẹ hơn WebGL,
+  // mở đường compute shader (đám đông, hạt) về sau. Không có WebGPU thì three tự
+  // rơi về backend WebGL2 với đúng scene/material hiện có, không phải đổi code gì.
+  // Chrome trên Windows bỏ qua powerPreference khi xin card cho WebGPU (crbug.com/369219127):
+  // laptop hai card sẽ chạy WebGPU trên card onboard yếu → giật, CPU full. WebGL2 (ANGLE) thì
+  // chọn đúng card rời, nên trên Windows mặc định dùng backend WebGL2 của chính WebGPURenderer
+  // (scene/material/TSL giữ nguyên). `?renderer=webgpu` / `?renderer=webgl` để chọn tay, nhớ cho lần sau.
+  const pick = new URLSearchParams(location.search).get('renderer');
+  let saved: string | null = null;
+  try {
+    if (pick) localStorage.setItem('renderer', pick);
+    saved = localStorage.getItem('renderer');
+  } catch { /* chế độ ẩn danh */ }
+  const choice = pick ?? saved;
+  const forceWebGL = choice ? choice === 'webgl' : /Windows/.test(navigator.userAgent);
+  const renderer = new WebGPURenderer({ antialias: true, powerPreference: 'high-performance', forceWebGL }) as unknown as WebGPURenderer & GameRenderer;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, LOW_POWER ? 1.5 : 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap; // PCFSoft đã bị bỏ, three tự đổi về PCF kèm cảnh báo
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
@@ -28,6 +56,46 @@ const DAY_SKY = new THREE.Color(0x87b5e0);
 const DUSK_SKY = new THREE.Color(0xf0a060);
 const NIGHT_SKY = new THREE.Color(0x0b1530);
 const STORM_SKY = new THREE.Color(0x7d8a96);
+const FLASH_SKY = new THREE.Color(0xe8eeff);
+// Biến tạm dùng lại mỗi khung, tránh cấp phát rác trong vòng render
+const sunDir = new THREE.Vector3();
+const stormShade = new THREE.Color();
+
+/**
+ * Tự co giãn độ phân giải theo FPS: máy yếu hạ pixel ratio để giữ khung mượt,
+ * khỏe lại thì nâng dần về nét. Tránh tình trạng 20 FPS cứng đầu trên card yếu.
+ * Các bậc sắp từ cao xuống thấp và không vượt nét gốc của màn hình.
+ */
+export class AdaptiveResolution {
+  private idx = 0;
+  private elapsed = 0;
+  private frames = 0;
+  private goodStreak = 0;
+  private readonly steps: number[];
+
+  constructor(private renderer: GameRenderer) {
+    const native = Math.min(window.devicePixelRatio, LOW_POWER ? 1.5 : 2);
+    const all = [native, 1.5, 1.25, 1];
+    this.steps = [...new Set(all.filter((v) => v <= native + 0.01))].sort((a, b) => b - a);
+    this.renderer.setPixelRatio(this.steps[0]);
+  }
+
+  update(dt: number) {
+    this.elapsed += dt;
+    this.frames++;
+    if (this.elapsed < 2) return;
+    const fps = this.frames / this.elapsed;
+    this.elapsed = 0;
+    this.frames = 0;
+    if (fps < 45 && this.idx < this.steps.length - 1) {
+      this.renderer.setPixelRatio(this.steps[++this.idx]);
+      this.goodStreak = 0;
+    } else if (fps > 57 && this.idx > 0 && ++this.goodStreak >= 3) {
+      this.renderer.setPixelRatio(this.steps[--this.idx]);
+      this.goodStreak = 0;
+    }
+  }
+}
 
 /** Bóng nắng phủ quanh camera bấy nhiêu mét: nhỏ thì bóng sắc nét. */
 const SHADOW_RANGE = 26;
@@ -119,7 +187,7 @@ export class Lighting {
     // 5h mọc, 19h lặn
     const angle = ((hour - 5) / 14) * Math.PI;
     const height = Math.sin(angle);
-    const sunDir = new THREE.Vector3(Math.cos(angle), Math.max(height, 0.05), 0.45).normalize();
+    sunDir.set(Math.cos(angle), Math.max(height, 0.05), 0.45).normalize();
     this.sun.position.copy(focus).addScaledVector(sunDir, 70);
     this.sun.target.position.copy(focus);
     // Mây dày thì nắng yếu, bóng nhạt
@@ -138,8 +206,8 @@ export class Lighting {
     const sky = this.scene.background as THREE.Color;
     if (daylight > 0.5) sky.copy(DAY_SKY).lerp(DUSK_SKY, 1 - (daylight - 0.5) * 2);
     else sky.copy(NIGHT_SKY).lerp(DUSK_SKY, daylight * 2);
-    sky.lerp(STORM_SKY.clone().multiplyScalar(0.3 + 0.7 * daylight), clouds * 0.7);
-    if (this.flash > 0) sky.lerp(new THREE.Color(0xe8eeff), this.flash * 0.6);
+    sky.lerp(stormShade.copy(STORM_SKY).multiplyScalar(0.3 + 0.7 * daylight), clouds * 0.7);
+    if (this.flash > 0) sky.lerp(FLASH_SKY, this.flash * 0.6);
     const sceneFog = this.scene.fog as THREE.Fog;
     sceneFog.color.copy(sky);
     sceneFog.near = THREE.MathUtils.lerp(80, 4, fog);

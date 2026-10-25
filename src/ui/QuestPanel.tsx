@@ -7,7 +7,7 @@ import { dailyQuests, STORY_STEPS, storyQuest, type Quest } from '../data/quests
 import { formatMoney, productById } from '../data/products';
 import { missingForOrder, orderValue, rushQuote, partyOrderById, STORY_ORDER_FRIEND_GAIN, STORY_ORDER_FRIEND_LOSS } from '../data/orders';
 
-/** Sổ nhiệm vụ: ba việc mỗi ngày và một bước cốt truyện, xong thì bấm nhận thưởng. */
+/** Sổ nhiệm vụ: những việc mỗi ngày (đủ mở gì thêm việc đó) và một bước cốt truyện, xong thì bấm nhận thưởng. */
 export function QuestPanel() {
   const s = useGame();
   const ctx = questContext(s);
@@ -28,7 +28,7 @@ export function QuestPanel() {
       <h3 style={head}>📖 Cốt truyện <small style={{ opacity: 0.6, fontWeight: 400 }}>· bước {Math.min(doneSteps + 1, STORY_STEPS.length)}/{STORY_STEPS.length}</small></h3>
       {story ? <QuestRow q={story} /> : <p style={{ opacity: 0.75, fontSize: 13 }}>🎊 Đã xong toàn bộ cốt truyện!</p>}
 
-      <h3 style={head}>☀️ Nhiệm vụ hôm nay <small style={{ opacity: 0.6, fontWeight: 400 }}>· ngày {s.day}</small></h3>
+      <h3 style={head}>☀️ Nhiệm vụ hôm nay <small style={{ opacity: 0.6, fontWeight: 400 }}>· ngày {s.day} · {daily.length} việc</small></h3>
       <div style={{ display: 'grid', gap: 8 }}>
         {daily.map((q) => <QuestRow key={q.id} q={q} />)}
       </div>

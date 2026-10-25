@@ -96,10 +96,16 @@ export class NavGrid {
     const n = this.cols * this.rows;
     const startIdx = start.r * this.cols + start.c;
     const goalIdx = goal.r * this.cols + goal.c;
-    const g = new Float32Array(n).fill(Infinity);
-    const parent = new Int32Array(n).fill(-1);
-    const closed = new Uint8Array(n);
-    const heap = new MinHeap();
+    // Bộ đệm dùng lại giữa các lần tìm đường: mỗi lần gọi mà cấp phát mới là ~350KB rác GC
+    if (!gScratch || gScratch.length !== n) {
+      gScratch = new Float32Array(n);
+      parentScratch = new Int32Array(n);
+      closedScratch = new Uint8Array(n);
+    }
+    const g = gScratch.fill(Infinity);
+    const parent = parentScratch!.fill(-1);
+    const closed = closedScratch!.fill(0);
+    const heap = heapScratch.reset();
     const h = (i: number) => {
       const dc = Math.abs((i % this.cols) - goal.c);
       const dr = Math.abs(Math.floor(i / this.cols) - goal.r);
@@ -179,6 +185,13 @@ class MinHeap {
   private prio: number[] = [];
   get size() { return this.items.length; }
 
+  /** Xoá sạch để dùng lại cho lần tìm đường kế tiếp. */
+  reset(): this {
+    this.items.length = 0;
+    this.prio.length = 0;
+    return this;
+  }
+
   push(item: number, p: number) {
     this.items.push(item);
     this.prio.push(p);
@@ -218,3 +231,9 @@ class MinHeap {
     [this.prio[a], this.prio[b]] = [this.prio[b], this.prio[a]];
   }
 }
+
+// Bộ đệm A* dùng chung (tìm đường chạy đồng bộ, không nhập lại): hết rác GC khi khách tìm đường dồn dập
+let gScratch: Float32Array | null = null;
+let parentScratch: Int32Array | null = null;
+let closedScratch: Uint8Array | null = null;
+const heapScratch = new MinHeap();

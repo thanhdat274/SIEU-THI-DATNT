@@ -42,6 +42,12 @@ export class FurnitureView {
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.castShadow = true;
     });
+    // Kệ/tủ đứng yên: tính ma trận một lần rồi tắt auto-update, đỡ cho cả nghìn hộp hàng
+    // phải ghép ma trận lại mỗi khung. Thân group vẫn tự cập nhật để xây/chuyển đổi chỗ được.
+    this.group.updateMatrixWorld(true);
+    this.group.traverse((o) => {
+      if (o !== this.group) o.matrixAutoUpdate = false;
+    });
   }
 
   /** Giải phóng tài nguyên GPU khi món nội thất rời khỏi tiệm. */
@@ -337,6 +343,11 @@ export class FurnitureView {
         box.clear();
         const [w, h, d] = box.userData.size as number[];
         box.add(createProductModel(tier.productId, w, h, d));
+        // Hàng bày xong không nhúc nhích: đóng băng ma trận luôn
+        box.updateMatrixWorld(true);
+        box.traverse((o) => {
+          o.matrixAutoUpdate = false;
+        });
       });
     });
     this.refreshEmptyMark(tiers);

@@ -1,6 +1,6 @@
 import { formatMoney, productById } from '../../data/products';
 import { composeReview, REVIEW_CAP } from '../../data/reviews';
-import { regularById, regularCheckout, regularFriendship, regularWalkout, RESERVE_BONUS, RESERVE_MISS_LOSS } from '../../data/regulars';
+import { regularById, regularCheckout, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS } from '../../data/regulars';
 import { FORGIVE_FRIEND_GAIN, REMIND_FRIEND_LOSS } from '../../data/credit';
 import { counterActive } from '../../data/biz';
 import { REP_CAP } from '../../data/reputation';
@@ -36,6 +36,11 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
       money: s.money + r.tip,
       stats: { ...s.stats, revenue: s.stats.revenue + r.tip },
     });
+    // Influencer ghé: khán giả theo chân, trang mạng xã hội thêm người theo dõi
+    if (id === INFLUENCER_ID) {
+      set({ social: { ...get().social, followers: get().social.followers + 25 } });
+      s.notify('📱 Chị Vy quay clip mua sắm: trang tiệm thêm 25 người theo dõi!');
+    }
     // Đợt tri ân khách quen (phản công đối thủ): mỗi khách ghé hôm nay được tặng quà
     let giftNote = '';
     if (counterActive(s.biz.counter, s.day, 'gift')) {

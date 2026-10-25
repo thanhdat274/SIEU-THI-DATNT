@@ -7,6 +7,7 @@ import { playSfx } from '../audio';
 import { STOCK_WARN_AT, nightNeed, shelfTotal } from '../../data/branches';
 import { type GameState, type SetState, type GetState, SLEEP_FROM, FAINT_AT, MINUTES_PER_SECOND } from '../gameTypes';
 import { copyStock, putStock } from '../stock';
+import { useClock } from '../store';
 import { runBranch } from './branch';
 import { endDay } from './endDay';
 import { updateOnline } from './online';
@@ -34,7 +35,10 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
       s.notify(`😵 Bạn thức quá khuya và ngất đi... Mất ${formatMoney(lost)} tiền thuốc.`);
       return;
     }
-    set({ minutes });
+    // Đồng hồ chạy mỗi khung hình: ghi thẳng vào state (không set) để cả đống component
+    // dùng nguyên `useGame()` không phải vẽ lại 60 lần/giây. UI đọc giờ qua useClock bên dưới.
+    get().minutes = minutes;
+    useClock.setState({ minutes });
     if (s.branch && minutes - s.branch.simAt >= 10) set(runBranch(get, minutes));
     // Tối: kho chung + hàng trên kệ chi nhánh không đủ bán qua đêm thì nhắc chủ nhập thêm
     const br = get().branch;

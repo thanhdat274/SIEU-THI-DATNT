@@ -119,6 +119,7 @@ export const PRODUCTS: Product[] = [
   p('botmi', 'Bột mì', 'dry', 18000, 26000, 0xf5e6c8, 1),
   p('nep', 'Gạo nếp (túi 5kg)', 'dry', 30000, 42000, 0xe8d8c0, 1),
   p('mia', 'Mía', 'fresh', 12000, 18000, 0x84c639, 1),
+  p('cam_ga', 'Cám gà (túi)', 'dry', 15000, 22000, 0xc9a86a, 1),
 ];
 
 /** Cấp sớm nhất bày được từng ngành (cần tủ mát, tủ đông, quầy rau quả). fresh=21 để khớp trạm nấu mở ở 21. */

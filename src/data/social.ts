@@ -56,9 +56,16 @@ export interface SocialState {
   buzz: Buzz | null;
   /** Ngày chủ tiệm đăng bài quảng bá gần nhất. */
   promoDay: number;
+  /** Ngày gần nhất một người sáng tạo nội dung nổi tiếng ghé bài khen và trở thành khách quen (thiếu ở save cũ). */
+  influencerSince?: number;
 }
 
 export const newSocial = (): SocialState => ({ followers: 0, posts: [], buzz: null, promoDay: 0 });
+
+/** Influencer là khách quen trong bấy nhiêu ngày kể từ bài lan truyền. */
+export const INFLUENCER_DAYS = 14;
+export const influencerActive = (social: SocialState, day: number) =>
+  social.influencerSince !== undefined && day - social.influencerSince < INFLUENCER_DAYS;
 
 const buzzOn = (social: SocialState, day: number) => (social.buzz && day <= social.buzz.until ? social.buzz : null);
 
@@ -90,6 +97,7 @@ export function socialDayEnd(social: SocialState, reviews: Review[], day: number
   const news: string[] = [];
   const posts = [...social.posts];
   let followers = social.followers;
+  let influencer = social.influencerSince;
   let buzz = buzzOn(social, day + 1);
   let nextId = (posts.at(-1)?.id ?? 0) + 1;
   for (const r of reviews) {
@@ -107,9 +115,14 @@ export function socialDayEnd(social: SocialState, reviews: Review[], day: number
       news.push(good
         ? `📱🔥 Bài khen tiệm của ${r.author} lan truyền khắp phường (${likes} lượt thích)! Mấy ngày tới khách kéo tới đông`
         : `📱⚠️ Bài chê tiệm của ${r.author} lan truyền (${shares} lượt chia sẻ)! Khách ngại ghé — mở Mạng xã hội để xin lỗi`);
+      // Bài khen lan truyền: người sáng tạo nội dung ghé quay, thành khách quen đưa tiệm lên sóng
+      if (good && (social.influencerSince === undefined || day - social.influencerSince >= INFLUENCER_DAYS + 16) && rng() < 0.5) {
+        influencer = day;
+        news.push('🎬 Chị Vy livestream ghé quay tiệm sau bài khen lan truyền — hai tuần nay chị hay dẫn fan ghé mua!');
+      }
     }
   }
-  return { social: { ...social, followers: Math.max(0, followers), posts: posts.slice(-POST_CAP), buzz }, news };
+  return { social: { ...social, followers: Math.max(0, followers), posts: posts.slice(-POST_CAP), buzz, ...(influencer !== undefined ? { influencerSince: influencer } : {}) }, news };
 }
 
 /** Chủ tiệm lên tiếng xin lỗi khi đang khủng hoảng: dịu xuống, gỡ được ít người theo dõi. */

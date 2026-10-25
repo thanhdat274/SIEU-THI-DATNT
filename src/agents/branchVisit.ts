@@ -58,8 +58,14 @@ export class BranchVisit {
     });
   }
 
-  /** Mọi người đang hiện ở chi nhánh (để cửa tự mở khi có người tới gần). */
-  get people() { return [...this.staff.values(), ...this.shoppers].map((w) => w.position); }
+  /** Mọi người đang hiện ở chi nhánh (để cửa tự mở khi có người tới gần); mảng dùng lại mỗi khung. */
+  private peopleOut: THREE.Vector3[] = [];
+  get people() {
+    this.peopleOut.length = 0;
+    for (const w of this.staff.values()) this.peopleOut.push(w.position);
+    for (const w of this.shoppers) this.peopleOut.push(w.position);
+    return this.peopleOut;
+  }
 
   update(gameDt: number, player: THREE.Vector3) {
     const s = useGame.getState();

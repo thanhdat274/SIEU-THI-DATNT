@@ -3,6 +3,7 @@
  * báo cáo tuần, thú cưng, thành tựu, sự kiện bất ngờ, chuyện khách quen, nhà riêng, bữa sáng, xe cộ.
  * File này chỉ có dữ liệu và hàm thuần; hành động đổi trạng thái nằm ở `core/biz.ts`.
  */
+import { productById } from './products';
 
 // ───────────────────────── Tiệm đối thủ ─────────────────────────
 
@@ -13,7 +14,23 @@ export interface Rival {
   openedDay: number;
   /** Đang chạy đợt giảm giá tới hết ngày này. */
   saleUntil?: number;
+  /** Tính cách: phá giá (cutter), chơi chất lượng (quality) hay máu liều (aggressive). */
+  personality?: RivalPersonality;
+  /** Bảng giá rival đang bán từng món (chỉ bày món có trong bảng); thiếu ở save cũ. */
+  prices?: Record<string, number>;
+  /** Kho hàng của rival theo món (để bớt dần khi mình đánh mạnh). */
+  stock?: Record<string, number>;
+  /** Khách quen bị lôi kéo sang rival: id → ngày bị lôi kéo. */
+  poached?: Record<string, number>;
 }
+
+export type RivalPersonality = 'cutter' | 'quality' | 'aggressive';
+
+export const RIVAL_PERSONALITIES: Record<RivalPersonality, { icon: string; name: string; desc: string }> = {
+  cutter: { icon: '💸', name: 'Thích phá giá', desc: 'Luôn bán rẻ hơn mình vài phần trăm đúng món mình bán chạy nhất' },
+  quality: { icon: '✨', name: 'Chơi chất lượng', desc: 'Không phá giá, kiên trì rót khách bằng phục vụ tốt — rất khó hạ nếu tiệm mình sơ suất' },
+  aggressive: { icon: '😤', name: 'Máu liều', desc: 'Lôi kéo khách quen và sẵn sàng giựt cả nhân viên của mình' },
+};
 
 export const RIVAL_UNLOCK = 8;
 export const RIVAL_NAMES = ['Tạp hóa Phát Đạt', 'Mini mart Hưng Thịnh', 'Tiệm Cô Ba Mới', 'Cửa hàng 24h Ánh Dương'];
@@ -22,6 +39,34 @@ export const RIVAL_BEAT_REWARD = 800000;
 export const RIVAL_BEAT_XP = 400;
 /** Sau khi thắng, nghỉ chừng này ngày rồi mới có tiệm mới mở (mạnh hơn). */
 export const RIVAL_COOLDOWN = 20;
+/** Rival bán bao nhiêu món (bestseller của mình) mỗi đêm nhắm phá giá. */
+export const RIVAL_TARGETS = 3;
+/** Rival phá giá sâu từng này phần so với giá của mình (cutter sâu hơn). */
+export const RIVAL_UNDERCUT = { cutter: 0.88, quality: 0.97, aggressive: 0.92 };
+/** Khách quen thân thiết dưới mốc này có thể bị lôi kéo. */
+export const POACH_FRIENDSHIP = 25;
+/** Xác suất cơ bản mỗi đêm một khách quen bị lôi kéo (nhân theo sức mạnh rival). */
+export const POACH_CHANCE = 0.05;
+/** Rival mạnh quá mốc này mới dám giựt nhân viên (chỉ rival máu liều). */
+export const STAFF_POACH_STRENGTH = 60;
+export const STAFF_POACH_CHANCE = 0.04;
+/** Mua lại mặt bằng rival: giá bán và số ngày giữ chào bán. */
+export const RIVAL_SHOP_PRICE = 12000000;
+export const RIVAL_SHOP_OFFER_DAYS = 10;
+/** Mua lại xong: khách cũ của rival ghé tiệm mình thêm bấy nhiêu phần trong chừng này ngày. */
+export const RIVAL_BUY_TRAFFIC = 1.15;
+export const RIVAL_BUY_DAYS = 7;
+
+/** Món rival đang bán rẻ hơn mình đáng kể (để khách nhạy giá chê mình đắt). */
+export function rivalUndercuts(r: Rival | null, priceOf: (id: string) => number, day: number): Set<string> {
+  const out = new Set<string>();
+  if (!r?.prices) return out;
+  const sale = r.saleUntil !== undefined && r.saleUntil >= day ? 0.95 : 1;
+  for (const [id, rp] of Object.entries(r.prices)) {
+    if (rp * sale < priceOf(id) * 0.95) out.add(id);
+  }
+  return out;
+}
 
 /** Phần khách bị đối thủ hút đi: tối đa 25% khi đối thủ mạnh nhất, gấp đôi khi họ đang giảm giá. */
 export function rivalTrafficFactor(r: Rival | null, day: number) {
@@ -31,14 +76,108 @@ export function rivalTrafficFactor(r: Rival | null, day: number) {
 }
 
 /** Cuối ngày: tiệm mình phục vụ tốt (sao cao, ít lỡ bán, giá không đắt) thì đối thủ yếu dần. */
-export function rivalNightly(r: Rival, ctx: { rating: number; missRate: number; priceIndex: number; adsActive: boolean }) {
-  let delta = 0;
+export function rivalNightly(r: Rival, ctx: { rating: number; missRate: number; priceIndex: number; adsActive: boolean }) {  let delta = 0;
   delta -= (ctx.rating - 3.5) * 4; // 5★ → −6, 3★ → +2
   delta += ctx.missRate * 20; // lỡ 30% lượt bán → +6
   delta += (ctx.priceIndex - 1) * 30; // đắt hơn giá gợi ý 10% → +3
   if (ctx.adsActive) delta -= 2;
   delta += 1; // đối thủ cũng tự quảng cáo mỗi ngày
   return Math.max(0, Math.min(100, r.strength + delta));
+}
+
+/** Tạo một rival ngẫu nhiên tính cách. */
+export function newRival(name: string, strength: number, openedDay: number, rng: () => number = Math.random): Rival {
+  const personalities: RivalPersonality[] = ['cutter', 'quality', 'aggressive'];
+  return { name, strength, openedDay, personality: personalities[Math.floor(rng() * personalities.length)] };
+}
+
+export interface RivalNightCtx {
+  day: number;
+  /** Sổ bán hôm nay của tiệm mình: rival nhắm đúng món bán chạy nhất. */
+  byItem: Record<string, { qty: number }>;
+  /** Giá bán hiện hành của tiệm mình (đã gồm giảm giá nếu có). */
+  priceOf: (id: string) => number;
+  /** Thân thiết của khách quen: người thân thiết dưới mốc có thể bị lôi kéo. */
+  friendships: Record<string, number>;
+  /** Hôm nay mình có chạy đợt tri ân khách quen không: khách bị lôi kéo có cơ hội quay lại. */
+  giftCounter: boolean;
+  /** Nhân viên đang làm (chỉ rival máu liều mới giựt). */
+  staff: { id: number; name: string; skill: number }[];
+  rng?: () => number;
+}
+
+export interface RivalNightResult {
+  rival: Rival;
+  news: string[];
+  /** Nhân viên bị rival móc: loại khỏi danh sách ở tầng core. */
+  poachedStaffId?: number;
+  /** Khách quen quay lại tiệm mình (được cộng thêm thân thiết). */
+  returned: string[];
+}
+
+/**
+ * Đối thủ có não mỗi đêm: nhìn vào món mình bán chạy nhất để phá giá đúng món đó, lôi kéo khách quen
+ * còn xa lạ, rival máu liều mạnh quá mốc thì giựt cả nhân viên. Đợt tri ân khách quen và rival yếu đi
+ * là hai cách giành lại khách quen.
+ */
+export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
+  const rng = ctx.rng ?? Math.random;
+  const news: string[] = [];
+  const pers = r.personality ?? 'cutter';
+  const undercut = RIVAL_UNDERCUT[pers];
+  const next: Rival = { ...r, prices: { ...r.prices }, stock: { ...r.stock }, poached: { ...r.poached } };
+  next.poached = Object.fromEntries(Object.entries(next.poached ?? {}).filter(([id]) => ctx.friendships[id] !== undefined));
+
+  // 1. Chọn mục tiêu: top món bán chạy của mình, rival bày hàng và giá dưới mình một chút
+  const targets = Object.entries(ctx.byItem).sort((a, b) => b[1].qty - a[1].qty).slice(0, RIVAL_TARGETS)
+    .filter(([id]) => ctx.priceOf(id) > 0);
+  for (const [id] of targets) {
+    const mine = ctx.priceOf(id);
+    next.prices![id] = Math.max(100, Math.round((mine * undercut) / 100) * 100);
+    next.stock![id] = Math.min(60, (next.stock![id] ?? 20) + 15);
+  }
+  // Món cũ không còn bán chạy: rival xả dần rồi ngừng bày
+  for (const id of Object.keys(next.stock ?? {})) {
+    if (targets.some(([t]) => t === id)) continue;
+    next.stock![id] = (next.stock![id] ?? 0) - 8;
+    if (next.stock![id]! <= 0) { delete next.stock![id]; delete next.prices![id]; }
+  }
+  if (targets.length) {
+    const names = targets.slice(0, 2).map(([id]) => productById(id).name).join(', ');
+    news.push(`⚔️ ${r.name} bày thêm hàng, bán rẻ đúng món ${names} của tiệm mình — xem giá họ ở Kinh doanh`);
+  }
+
+  // 2. Lôi kéo khách quen còn xa lạ (tối đa một người mỗi đêm)
+  const poached = next.poached ?? {};
+  const returned: string[] = [];
+  const winBack = ctx.giftCounter || r.strength < 25;
+  for (const id of Object.keys(poached)) {
+    if (!winBack && rng() >= 0.25) continue;
+    if (winBack || rng() < 0.5) {
+      delete poached[id];
+      returned.push(id);
+      news.push(`💛 Một khách quen chán ${r.name}, quay lại tiệm mình!`);
+    }
+  }
+  if (r.strength >= 35 && Object.keys(poached).length < 3) {
+    const candidates = Object.entries(ctx.friendships)
+      .filter(([id, f]) => f < POACH_FRIENDSHIP && !poached[id] && f !== undefined)
+      .sort((a, b) => a[1] - b[1]);
+    const victim = candidates[0];
+    if (victim && rng() < POACH_CHANCE * (r.strength / 100) * (pers === 'aggressive' ? 1.6 : pers === 'quality' ? 0.5 : 1)) {
+      poached[victim[0]] = ctx.day;
+      news.push(`😠 Đáng tiếc: khách quen của mình bị ${r.name} kéo rớt giá mớ hàng rẻ hơn — ghé Mạng xã hội quảng bá và nhớ tri ân khách!`);
+    }
+  }
+
+  // 3. Rival máu liều mạnh quá mốc thì móc nhân viên giỏi nhất của mình
+  let poachedStaffId: number | undefined;
+  if (pers === 'aggressive' && r.strength >= STAFF_POACH_STRENGTH && ctx.staff.length && rng() < STAFF_POACH_CHANCE) {
+    const best = [...ctx.staff].sort((a, b) => b.skill - a.skill)[0];
+    poachedStaffId = best.id;
+    news.push(`⚔️ ${r.name} móc ${best.name} sang làm với lương gấp rưỡi! Vào lại tuyển người ở bảng Nhân viên`);
+  }
+  return { rival: next, news, poachedStaffId, returned: [] };
 }
 
 // ───── Phản công đối thủ chủ động ─────
@@ -529,6 +668,10 @@ export interface BizState {
   chapterPending: string | null;
   /** Số đối thủ bị đánh bại nhờ đợt phản công chủ động (đếm cho thành tựu). */
   counterKills: number;
+  /** Rival vừa đóng cửa, chào bán mặt bằng: mua lại thành chi nhánh; hết hạn thì người khác thuê mất. */
+  rivalForSale?: { name: string; price: number; until: number };
+  /** Đã mua lại tiệm đối thủ: khách cũ của họ ghé thêm trong tới ngày này. */
+  rivalBuyUntil?: number;
   /** Ngày gần nhất đã hiện một chương hội thoại (tối đa 1 chương/ngày, tránh dồn khi lên cấp nhanh). */
   chapterDay?: number;
   /** Đã tắt hướng dẫn ngày đầu. */
@@ -556,6 +699,7 @@ export function playerPace(b: BizState, day: number, outdoors: boolean) {
   return pace;
 }
 
-/** Lượng khách ghé chung: đối thủ, quảng cáo, thẻ tích điểm, đợt phản công đang chạy. */
+/** Lượng khách ghé chung: đối thủ, quảng cáo, thẻ tích điểm, đợt phản công đang chạy, khách cũ của rival đã mua lại. */
 export const bizTraffic = (b: BizState, day: number) => rivalTrafficFactor(b.rival, day) * adsTraffic(b.ads, day)
-  * loyaltyTraffic(b.loyalty) * (counterActive(b.counter, day, 'ad') ? COUNTER_AD_TRAFFIC : 1);
+  * loyaltyTraffic(b.loyalty) * (counterActive(b.counter, day, 'ad') ? COUNTER_AD_TRAFFIC : 1)
+  * (b.rivalBuyUntil !== undefined && day <= b.rivalBuyUntil ? RIVAL_BUY_TRAFFIC : 1);

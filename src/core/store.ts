@@ -23,6 +23,8 @@ import type { CommunityProgress, Opening } from '../data/community';
 import type { BranchState } from '../data/branches';
 import { newSocial } from '../data/social';
 import { newOnline } from '../data/online';
+import { newGarden } from '../data/garden';
+import { newAnalytics } from '../data/analytics';
 import { newInspection, type LicenseId } from '../data/licenses';
 import { type GameState, type Furniture, type ContractState, type Delivery, type DayRecord, DAY_START, emptyStats, type CookJob } from './gameTypes';
 import { emptyTiers } from './stock';
@@ -37,6 +39,7 @@ import { createStaffSlice } from './slices/staff';
 import { createClockSlice } from './slices/clock';
 import { createSocialSlice } from './slices/social';
 import { createOnlineSlice } from './slices/online';
+import { createGardenSlice } from './slices/garden';
 import { createLicensesSlice } from './slices/licenses';
 
 export * from './gameTypes';
@@ -129,6 +132,8 @@ export const newGameData = () => ({
   online: newOnline(),
   licenses: {} as Partial<Record<LicenseId, number>>,
   inspection: newInspection(),
+  garden: newGarden(),
+  analytics: newAnalytics(),
   ...initialWeather(),
 });
 
@@ -136,6 +141,13 @@ export const newGameData = () => ({
 export function initialWeather(seed = newWeatherSeed()) {
   return { weatherSeed: seed, weather: 'sunny' as Weather, forecast: forecastFrom(seed, 1, 'sunny') };
 }
+
+/**
+ * Đồng hồ game tách khỏi useGame: tick() cập nhật mỗi KHUNG HÌNH nên nếu để trong useGame thì
+ * mọi component dùng nguyên `useGame()` (cả HUD, mọi panel) phải vẽ lại 60 lần/giây. Giờ chỉ
+ * component thật sự hiện giờ/phút giờ subscribe đây, và chọn theo phút nguyên cho đỡ lần vẽ.
+ */
+export const useClock = create<{ minutes: number }>(() => ({ minutes: DAY_START }));
 
 export const useGame = create<GameState>((set, get) => {
   // Giá nhập theo lễ, sự kiện thị trường và kỹ năng thương lượng
@@ -173,8 +185,14 @@ export const useGame = create<GameState>((set, get) => {
     ...createClockSlice(set, get),
     ...createSocialSlice(set, get),
     ...createOnlineSlice(set, get),
+    ...createGardenSlice(set, get),
     ...createLicensesSlice(set, get),
   };
+});
+
+// Mọi chỗ đặt minutes qua set() bình thường (ngủ dậy, đi lại...) cũng đồng bộ sang đồng hồ UI
+useGame.subscribe((s, prev) => {
+  if (s.minutes !== prev.minutes) useClock.setState({ minutes: s.minutes });
 });
 
 export function formatClock(minutes: number): string {

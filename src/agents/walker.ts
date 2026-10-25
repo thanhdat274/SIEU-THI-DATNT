@@ -3,6 +3,9 @@ import { buildChibiCharacter, type CharacterParts } from '../render/characterMod
 
 const WALK_SPEED = 1.6; // m/giây (thời gian game)
 
+// Vector tạm dùng lại mỗi khung cho mọi nhân vật đang đi (không cấp phát rác)
+const _stepDir = new THREE.Vector3();
+
 /**
  * Bong bóng thoại trên đầu nhân vật: nền trắng viền mảnh, đuôi nhọn chỉ xuống đầu.
  * Emoji nằm trong bong bóng tròn; chữ ngắn ("Hết sữa!") nằm trong bong bóng dài.
@@ -168,7 +171,7 @@ export class Walker {
     let step = WALK_SPEED * dt;
     while (this.path.length && step > 0) {
       const next = this.path[0];
-      const d = next.clone().sub(this.position).setY(0);
+      const d = _stepDir.set(next.x - this.position.x, 0, next.z - this.position.z);
       const len = d.length();
       if (len <= step) {
         this.position.set(next.x, 0, next.z);

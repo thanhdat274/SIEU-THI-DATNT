@@ -14,7 +14,8 @@ import { hasSkill } from '../data/titles';
 import { RISK_RULES } from '../data/risks';
 import { isNight, NIGHT_SPAN, NIGHT_THEFT_MUL, nightTrafficAt } from '../data/night';
 import { COMBO_PULL, comboDiscount, comboPartners } from '../data/combos';
-import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, reserveAsk, unlockedFavorites, type RegularDef } from '../data/regulars';
+import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regularById, reserveAsk, INFLUENCER_ID, unlockedFavorites, type RegularDef } from '../data/regulars';
+import { influencerActive } from '../data/social';
 import { pickProfession, PROFESSIONS, PROFESSION_LOOK, type ProfessionDef } from '../data/professions';
 import { CREDIT_UNLOCK, repaysToday, wantsCredit } from '../data/credit';
 import { ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, HAGGLE_CHANCE, HAGGLE_MIN_TOTAL, HAGGLE_REFUSE_OK, HAGGLE_UNLOCK, haggleOff, oddChange } from '../data/counterDeals';
@@ -25,7 +26,7 @@ import { askAtCounter, askPending, clearAsk, expireAsk } from '../core/counterAs
 import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../data/wholesale';
 import { DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor, GUARD_DETECT } from '../data/staff';
 import { socialTraffic } from '../data/social';
-import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive } from '../data/biz';
+import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalUndercuts } from '../data/biz';
 import { redeemLoyalty, storyOnVisit, theftFactor } from '../core/biz';
 import { hasUpgrade } from '../data/upgrades';
 import {
@@ -180,8 +181,14 @@ export class CustomerManager {
       const visit = (0.5 + Math.min(plants * 0.05, 0.25) + repVisitBonus(reputationOf(s.repLog))) * traffic * this.priceAppeal() * dirtVisitFactor(s.dirt)
       * bizTraffic(s.biz, s.day) * happy * socialTraffic(s.social, s.day);
         const open = daytime && s.shopOpen;
-        // Khách quen tới đúng giờ quen, không phụ thuộc người đi đường
-        const regular = open ? pickRegular(s.day, s.minutes, s.weatherSeed, s.level, s.regulars, this.regularsToday, reputationOf(s.repLog)) : undefined;
+        // Khách quen tới đúng giờ quen, không phụ thuộc người đi đường; người bị rival lôi kéo thì tạm vắng
+        const poached = s.biz.rival ? Object.keys(s.biz.rival.poached ?? {}) : [];
+        let regular = open ? pickRegular(s.day, s.minutes, s.weatherSeed, s.level, s.regulars, this.regularsToday, reputationOf(s.repLog), poached) : undefined;
+        // Bài khen lan truyền gần đây: influencer ghé sớm hơn bình thường, dẫn fan qua ủng hộ
+        if (!regular && open && influencerActive(s.social, s.day) && !this.regularsToday.includes(INFLUENCER_ID)
+          && !poached.includes(INFLUENCER_ID) && Math.random() < 0.35) {
+          regular = regularById(INFLUENCER_ID);
+        }
         if (regular) {
           this.regularsToday.push(regular.id);
           if (festivalVisit(regular, s.regulars[regular.id])) this.festivalToday = true;
@@ -254,12 +261,13 @@ export class CustomerManager {
     };
   }
 
-  /** Trung bình hệ số giá rẻ của các món đang bày (1 = giá gợi ý hoặc đắt hơn). */
+  /** Trung bình hệ số giá rẻ của các món đang bày (1 = giá gợi ý hoặc đắt hơn); món rival phá giá thì khách e dè. */
   private priceAppeal() {
     const s = useGame.getState();
     const ids = [...new Set(s.furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!)))];
     if (!ids.length) return 1;
-    return ids.reduce((n, id) => n + demandPriceFactor(id, s.priceOf(id)), 0) / ids.length;
+    const under = rivalUndercuts(s.biz.rival, (id) => s.priceOf(id), s.day);
+    return ids.reduce((n, id) => n + demandPriceFactor(id, s.priceOf(id)) * (under.has(id) ? 0.85 : 1), 0) / ids.length;
   }
 
   /** Khách quen: chủ yếu mua món ưa thích, perk "mua thêm" cộng món, perk "mua lô" nhân số lượng. */
@@ -403,7 +411,9 @@ export class CustomerManager {
         const shortName = productById(want).name.replace(/\s*\(.*\)\s*/g, '');
         // Giá càng cao so với giá gợi ý thì khách càng ngại mua; món thiết yếu ít bị ảnh hưởng hơn, hàng của mùa lễ cũng vậy
         const tolerance = dayEffects(st.weatherSeed, st.day, st.level).tolerance(want);
-        if (Math.random() > keepChance(want, st.priceOf(want), c.sensitivity * tolerance)) {
+        // Rival đang bán rẻ đúng món này thì khách soi giá kỹ hơn hẳn
+        const rivalPress = rivalUndercuts(st.biz.rival, (id) => st.priceOf(id), st.day).has(want) ? 1.35 : 1;
+        if (Math.random() > keepChance(want, st.priceOf(want), c.sensitivity * rivalPress * tolerance)) {
           c.missing++;
           c.missed.push({ id: want, why: 'price' });
           st.noteMiss('price', want);

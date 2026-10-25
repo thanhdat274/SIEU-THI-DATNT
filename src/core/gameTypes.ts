@@ -26,6 +26,8 @@ import type { BranchState } from '../data/branches';
 import type { SocialState } from '../data/social';
 import type { OnlineState } from '../data/online';
 import type { InspectionRecord, LicenseId } from '../data/licenses';
+import type { GardenState } from '../data/garden';
+import type { AnalyticsState } from '../data/analytics';
 
 /** Phút trong ngày khi bắt đầu ngày mới (06:00). */
 export const DAY_START = 6 * 60;
@@ -186,6 +188,8 @@ export type Panel =
   | { type: 'social' }
   | { type: 'online' }
   | { type: 'licenses' }
+  | { type: 'garden' }
+  | { type: 'analytics' }
   | { type: 'summary'; day: number; stats: DayStats };
 
 /** Đang cầm một món đồ để đặt (mua mới hoặc di chuyển món có sẵn). */
@@ -469,6 +473,17 @@ export interface GameState {
   licenses: Partial<Record<LicenseId, number>>;
   inspection: InspectionRecord;
   buyLicense: (id: LicenseId) => void;
+
+  /** Vườn rau + chuồng gà sau nhà (trồng, tưới, thu hoạch, nuôi gà). */
+  garden: GardenState;
+  plantCrop: (plotIndex: number, cropId: string) => void;
+  waterGarden: () => void;
+  harvestPlot: (plotIndex: number) => void;
+  buyChicken: () => void;
+  feedCoop: () => void;
+  collectEggs: () => void;
+  /** Sổ phân tích 30 ngày theo món (sức khoẻ món, ABC, gợi ý). */
+  analytics: AnalyticsState;
 }
 
 export interface Delivery {

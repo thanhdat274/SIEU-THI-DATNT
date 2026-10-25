@@ -11,6 +11,7 @@ import { paymentById } from '../../data/payments';
 import { COOKED_PRODUCT_IDS } from '../../data/recipes';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
+import { HOMEGROWN_PREMIUM } from '../../data/garden';
 
 /** Bán hàng ở quầy: giá, giờ vàng, tính tiền, bán sỉ, combo, trộm và tiền giả. */
 
@@ -34,6 +35,17 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     // Ví điện tử / máy POS lấy ít % phí, tiền mặt và chuyển khoản không mất gì
     const pay = paymentById(payment);
     const fee = Math.round(total * pay.fee);
+    // Món "nhà trồng/nhà nuôi" còn trong kho: khách thích hàng nhà làm, trả thêm 20%
+    const homegrown = { ...s.garden.homegrown };
+    let premium = 0;
+    for (const it of items) {
+      if ((homegrown[it.id] ?? 0) > 0) {
+        homegrown[it.id]!--;
+        if (!homegrown[it.id]) delete homegrown[it.id];
+        premium += it.price * HOMEGROWN_PREMIUM;
+      }
+    }
+    premium = Math.round(premium / 100) * 100;
     const salesToday = { ...s.salesToday };
     const byItem = { ...s.stats.byItem };
     for (const it of items) {
@@ -46,15 +58,16 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     byMethod[payment] = { revenue: m.revenue + total, count: m.count + 1 };
     set({
       salesToday,
-      money: s.money + total - fee,
+      garden: { ...s.garden, homegrown },
+      money: s.money + total - fee + premium,
       stats: {
-        ...s.stats, revenue: s.stats.revenue + total, itemsSold: s.stats.itemsSold + items.length, byItem,
-        byHour: addHour(s.stats.byHour, s.minutes, 0, total), byMethod,
+        ...s.stats, revenue: s.stats.revenue + total + premium, itemsSold: s.stats.itemsSold + items.length, byItem,
+        byHour: addHour(s.stats.byHour, s.minutes, 0, total + premium), byMethod,
         fees: (s.stats.fees ?? 0) + fee,
         combos: (s.stats.combos ?? 0) + combos, comboDiscount: (s.stats.comboDiscount ?? 0) + discount,
       },
       totals: {
-        ...s.totals, revenue: s.totals.revenue + total, itemsSold: s.totals.itemsSold + items.length,
+        ...s.totals, revenue: s.totals.revenue + total + premium, itemsSold: s.totals.itemsSold + items.length,
         cookedSold: s.totals.cookedSold + items.filter((it) => COOKED_PRODUCT_IDS.has(it.id)).length,
       },
     });

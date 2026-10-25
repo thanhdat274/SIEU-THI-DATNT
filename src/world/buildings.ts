@@ -1,4 +1,12 @@
 import * as THREE from 'three';
+import { registerLight } from '../render/lightBudget';
+
+// Biến tạm dùng lại mỗi khung cho updateDoor/updateView, tránh cấp phát rác
+const _doorRel = new THREE.Vector3();
+const _doorStep = new THREE.Vector3();
+const _doorQuat = new THREE.Quaternion();
+const _toCam = new THREE.Vector3();
+const _wallDir = new THREE.Vector3();
 
 export interface BuildingOptions {
   name: string;
@@ -44,6 +52,12 @@ export class Building {
   /** Vị trí khung trước của từng người (riêng mỗi cửa), để biết họ đang đi về hướng nào. */
   private lastPos = new WeakMap<THREE.Vector3, THREE.Vector3>();
   private lamp: THREE.PointLight;
+  /** Khung cửa (vị trí + trục) tính một lần: tòa nhà đứng yên, khỏi suy diễn lại mỗi khung. */
+  private doorCenter = new THREE.Vector3();
+  private doorAlong = new THREE.Vector3();
+  private doorOut = new THREE.Vector3();
+  private doorFrameReady = false;
+  private lampRegistered = false;
   private bulbMat: THREE.MeshStandardMaterial;
   /** Cánh quạt trần, quay liên tục. */
   private fanBlades: THREE.Object3D[] = [];
@@ -237,6 +251,10 @@ export class Building {
 
   /** Bật đèn trong nhà, 0 = tắt, 1 = sáng hẳn. */
   setLamp(level: number) {
+    if (!this.lampRegistered) {
+      this.lampRegistered = true;
+      registerLight(this.lamp, this.lamp.getWorldPosition(new THREE.Vector3()));
+    }
     this.lamp.intensity = level * 6;
     this.bulbMat.emissiveIntensity = level * 2;
   }
@@ -244,28 +262,34 @@ export class Building {
   /**
    * Cửa mở khi có người đi vào/ra qua cửa (đi thẳng về phía cửa, hoặc đứng ngay ngưỡng cửa),
    * đi ngang qua trên vỉa hè thì không mở. Đi khỏi thì từ từ đóng lại.
+   * Người ở xa cửa bị loại ngay từ phép trừ — chỉ ai lại gần mới tốn phép tính tiếp theo.
    */
   updateDoor(dt: number, people: THREE.Vector3[]) {
     for (const b of this.fanBlades) b.rotation.y += dt * 9;
-    const door = this.door.getWorldPosition(new THREE.Vector3());
-    // Trục của cửa: x dọc theo tường, z vuông góc tường (hướng ra ngoài)
-    const q = this.door.getWorldQuaternion(new THREE.Quaternion());
-    const along = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
-    const out = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
-    const rel = new THREE.Vector3();
+    if (!this.doorFrameReady) {
+      this.doorFrameReady = true;
+      this.door.getWorldPosition(this.doorCenter);
+      const q = this.door.getWorldQuaternion(_doorQuat);
+      this.doorAlong.set(1, 0, 0).applyQuaternion(q);
+      this.doorOut.set(0, 0, 1).applyQuaternion(q);
+    }
     const near = people.some((p) => {
-      rel.subVectors(p, door);
-      const a = Math.abs(rel.dot(along)), n = rel.dot(out);
-      const prev = this.lastPos.get(p);
-      this.lastPos.set(p, p.clone());
+      const rel = _doorRel.subVectors(p, this.doorCenter);
+      const a = Math.abs(rel.dot(this.doorAlong)), n = rel.dot(this.doorOut);
       if (a > DOOR_W / 2 + 0.3 || Math.abs(n) > 1.8) return false;
       // Đứng ngay ngưỡng cửa (trong lòng khung) thì luôn mở
       if (Math.abs(n) < 0.5) return true;
-      if (!prev) return false;
+      let prev = this.lastPos.get(p);
+      if (!prev) {
+        prev = p.clone();
+        this.lastPos.set(p, prev);
+        return false;
+      }
       // Đang tiến về phía tường (vào hoặc ra), chứ không phải đi dọc theo vỉa hè
-      const step = rel.clone().add(door).sub(prev);
-      const toward = -Math.sign(n) * step.dot(out);
-      return toward > 1e-4 && toward > Math.abs(step.dot(along));
+      const step = _doorStep.copy(rel).add(this.doorCenter).sub(prev);
+      const toward = -Math.sign(n) * step.dot(this.doorOut);
+      prev.copy(p);
+      return toward > 1e-4 && toward > Math.abs(step.dot(this.doorAlong));
     });
     this.doorOpen = THREE.MathUtils.clamp(this.doorOpen + (near ? dt * 4 : -dt * 2.2), 0, 1);
     // Nhanh lúc đầu, chậm dần khi gần mở hẳn
@@ -311,14 +335,15 @@ export class Building {
     setOpacity(this.door, indoors ? 0 : 1 - inside * 0.85);
 
     // Tường nằm giữa camera và tòa nhà thì mờ, tường phía xa vẫn giữ
-    const toCam = camera.position.clone().sub(this.group.position).setY(0).normalize();
+    const toCam = _toCam.copy(camera.position).sub(this.group.position).setY(0).normalize();
     for (const wall of this.walls) {
       // Pháp tuyến hướng ra ngoài của tường (theo chiều mỏng của hộp), không theo vị trí
       // vì hai mảng tường trước nằm lệch sang hai bên cửa
       const box = (wall.geometry as THREE.BoxGeometry).parameters;
-      const dir = (box.width > box.depth
-        ? new THREE.Vector3(0, 0, Math.sign(wall.position.z))
-        : new THREE.Vector3(Math.sign(wall.position.x), 0, 0)).applyQuaternion(this.group.quaternion);
+      const dir = box.width > box.depth
+        ? _wallDir.set(0, 0, Math.sign(wall.position.z))
+        : _wallDir.set(Math.sign(wall.position.x), 0, 0);
+      dir.applyQuaternion(this.group.quaternion);
       const front = box.width > box.depth && wall.position.z > 0;
       // Trong nhà luôn hạ tường có cửa để thấy lối ra
       const facing = dir.dot(toCam) > 0.3 || (indoors && front);

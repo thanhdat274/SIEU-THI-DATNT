@@ -38,6 +38,8 @@ export function returnTier(k: Stock, t: Tier) {
 export function spoilOvernight(s: Pick<GameState, 'storage' | 'storageLots' | 'furniture' | 'weather' | 'warehouseTier' | 'skills' | 'biz' | 'day'>) {
   let items = 0;
   let cost = 0;
+  /** Số món hỏng theo từng sản phẩm — cho sổ phân tích 30 ngày. */
+  const byId: Record<string, number> = {};
   // fresh_keeper: hàng hỏng chậm 25%
   const keeper = hasSkill(s.skills, 'fresh_keeper') ? 0.75 : 1;
   // cool_pack: mở khóa ở cấp 12 – cộng thêm 0.8 cho hệ số giữ tươi
@@ -54,6 +56,7 @@ export function spoilOvernight(s: Pick<GameState, 'storage' | 'storageLots' | 'f
     const [kept, gone] = ageLots(lots, rate);
     items += gone;
     cost += gone * product.buy;
+    if (gone) byId[id] = (byId[id] ?? 0) + gone;
     return kept;
   };
   const k: Stock = { storage: {}, storageLots: {} };
@@ -83,7 +86,7 @@ export function spoilOvernight(s: Pick<GameState, 'storage' | 'storageLots' | 'f
       return { ...t, lots, count: lots.reduce((n, l) => n + l.qty, 0) };
     }),
   }));
-  return { ...k, furniture, items, cost };
+  return { ...k, furniture, items, cost, byId };
 }
 
 export const emptyTiers = (type: FurnitureType): Tier[] =>

@@ -6,6 +6,9 @@ import type { Building } from '../world/buildings';
 
 const mat = (color: number, emissive = 0) => new THREE.MeshStandardMaterial({ color, emissive, emissiveIntensity: emissive ? 0.5 : 0 });
 
+// Vị trí lệch dùng lại mỗi khung cho mèo/chó (không cấp phát rác)
+const _offset = new THREE.Vector3();
+
 function box(g: THREE.Group, sx: number, sy: number, sz: number, x: number, y: number, z: number, m: THREE.Material) {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), m);
   mesh.position.set(x, y, z);
@@ -125,13 +128,13 @@ export class BizView {
     if (cat && counter) {
       // Mèo nằm trên quầy; đói thì ngồi dưới đất kêu
       const fed = petActive(cat, s.day);
-      this.cat.position.copy(counter.center).add(new THREE.Vector3(0.5, fed ? 1.0 : 0, 0));
+      this.cat.position.copy(counter.center).add(_offset.set(0.5, fed ? 1.0 : 0, 0));
       this.cat.scale.y = 1 + Math.sin(this.t * 2) * 0.04;
     }
     const dog = s.biz.pets.dog;
     this.dog.visible = !!dog;
     if (dog) {
-      this.dog.position.copy(this.shop.doorInside).add(new THREE.Vector3(1.3, 0, -0.3));
+      this.dog.position.copy(this.shop.doorInside).add(_offset.set(1.3, 0, -0.3));
       this.dog.rotation.y = Math.PI / 2 + Math.sin(this.t * 0.7) * 0.4;
     }
   }

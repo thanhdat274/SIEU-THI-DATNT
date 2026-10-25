@@ -8,10 +8,8 @@ export const CONVENIENCE = {
   name: 'Cửa hàng tiện lợi 24/7',
   /** Cấp mở khóa. */
   unlock: 10,
-  /** Tiền cọc mặt bằng + sửa sang (trả một lần). */
-  openCost: 12_000_000,
-  /** Tiền thuê mặt bằng mỗi ngày (mặt bằng rộng cố định). */
-  rent: 350_000,
+  /** Mua đứt mặt bằng + sửa sang (trả một lần, sở hữu luôn — không có tiền thuê hàng ngày). */
+  openCost: 5_000_000,
   /** Mặt bằng cố định (m). */
   width: 16,
   depth: 10,

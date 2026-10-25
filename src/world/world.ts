@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createFarm, FARM_CENTER } from './farm';
 import { GroceryShop } from '../shop/groceryShop';
 import { Building } from './buildings';
 import { Warehouse, WAREHOUSE_DEPTH } from './warehouse';
@@ -7,6 +8,8 @@ import { SHOP_CENTER_X, SHOP_FRONT_Z, SHOP_TIERS } from '../data/shopTiers';
 import { HOUSE_SIZE, houseDoor, NEIGHBOR_HOUSES } from '../data/phoneOrders';
 import { BRANCH_LAYOUT, CONVENIENCE, LANE_X, ROAD2_Z } from '../data/branches';
 import { FurnitureView } from '../shop/furnitureView';
+import { StreetLamps } from './streetLamps';
+import { registerLight } from '../render/lightBudget';
 
 /** Các điểm trong một phòng ngủ (toạ độ thế giới). */
 export interface RoomSpots { bed: THREE.Vector3; wake: THREE.Vector3; nightstand: THREE.Vector3 }
@@ -20,6 +23,8 @@ export interface World {
   nightstand: THREE.Vector3;
   /** Nhà riêng, để bày đồ mua thêm vào trong. */
   home: Building;
+  /** Chỗ đứng giữa trang trại để mở bảng vườn. */
+  farmSpot: THREE.Vector3;
   /** Nhà chung nhiều phòng (chỉ hiện khi chơi hẻm online). */
   sharedHome: Building;
   /** Nhà đang dùng: nhà riêng, hoặc nhà chung nhiều phòng khi chơi hẻm online. */
@@ -36,6 +41,8 @@ export interface World {
   convenienceViews: FurnitureView[];
   /** Nhà hàng xóm dọc hẻm, theo id trong NEIGHBOR_HOUSES; mỗi nhà có cờ báo đơn chờ giao trước cửa. */
   houses: Map<string, { building: Building; door: THREE.Vector3; marker: THREE.Object3D }>;
+  /** Đèn đường dọc khu phố, sáng lúc trời tối. */
+  streetLamps: StreetLamps;
 }
 
 /** Thế giới ban đầu: mặt đất, con đường, nhà riêng và tiệm tạp hóa nhỏ. */
@@ -76,6 +83,12 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   lane.position.set(LANE_X, 0.012, (3 + ROAD2_Z) / 2);
   lane.receiveShadow = true;
   scene.add(road2, lane);
+
+  // Đèn đường dọc khu phố, cột đèn chặn nhẹ lưới đi lại
+  const streetLamps = new StreetLamps();
+  scene.add(streetLamps.group);
+  grid.setStatic('streetLamps', streetLamps.boxes);
+
   const { building: convenience, views: convenienceViews } = createConvenienceStore();
   scene.add(convenience.group);
 
@@ -94,6 +107,10 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   home.interior.add(bed, nightstand);
   // Thảm nằm sát sàn, không chặn đường đi
   home.group.add(rug);
+  // Trang trại riêng sau nhà: luống rau + chuồng gà trong rào (tương tác ở main.tsx, trạng thái ở core/slices/garden)
+  const farm = createFarm();
+  scene.add(farm.group);
+  grid.setStatic('garden', farm.boxes);
   scene.add(home.group);
 
   const warehouse = new Warehouse(scene);
@@ -111,8 +128,16 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
       z -= reserved + 4;
     }
     // Chừa hẻm dọc, con đường thứ hai và mặt bằng cửa hàng tiện lợi
+    // Chừa mảnh trang trại sau nhà
+    if (Math.abs(x - FARM_CENTER.x) < 7 && Math.abs(z - FARM_CENTER.z) < 6.5) continue;
     if (Math.abs(x - LANE_X) < 4 || (x > LANE_X - 12 && z < ROAD2_Z + 5)) continue;
-    scene.add(createTree(x, z));
+    const tree = createTree(x, z);
+    // Cây đứng yên: tính ma trận một lần rồi tắt auto-update
+    tree.updateMatrixWorld(true);
+    tree.traverse((o) => {
+      o.matrixAutoUpdate = false;
+    });
+    scene.add(tree);
     treeBoxes.push(new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, 0, z), new THREE.Vector3(0.4, 1, 0.4)));
   }
 
@@ -123,6 +148,8 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   // Nhà chung cho hẻm online: chỉ hiện (thay nhà riêng) khi đang chơi chung
   const shared = createSharedHome();
   let current = home;
+  // Danh sách toà nhà chỉ đổi khi vào/rời hẻm online, còn lại đứng yên: cache lại đỡ ghép mảng mỗi khung
+  let buildingsCache: Building[] | null = null;
 
   // Nhà hàng xóm: khách gọi điện đặt hàng, giao tận cửa
   const houses: World['houses'] = new Map();
@@ -157,6 +184,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
       scene.remove(current.group);
       scene.add(next.group);
       current = next;
+      buildingsCache = null;
       grid.setStatic('home', next.staticBoxes());
       // Dựng lại lưới đi lại (kèm nội thất trong tiệm) theo tường nhà mới
       shop.attachGrid(grid);
@@ -165,15 +193,21 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
       if (current === home) return soloSpots;
       return shared.rooms[Math.max(0, Math.min(shared.rooms.length - 1, room))];
     },
-    get buildings() { return [current, shop.building, warehouse.building, convenience, ...[...houses.values()].map((h) => h.building)]; },
+    get buildings() {
+      // Nâng cấp tiệm thì groceryShop dựng Building mới: cache cũ trỏ vào toà đã gỡ → mái không mờ, không vào được cảnh trong
+      if (buildingsCache && (buildingsCache[1] !== shop.building || buildingsCache[2] !== warehouse.building)) buildingsCache = null;
+      return buildingsCache ??= [current, shop.building, warehouse.building, convenience, ...[...houses.values()].map((h) => h.building)];
+    },
     houses,
     bed,
     nightstand: nightstand.getWorldPosition(new THREE.Vector3()).setY(0).add(new THREE.Vector3(0.7, 0, 0.6)),
     home,
+    farmSpot: farm.spot,
     shop,
     warehouse,
     convenience,
     convenienceViews,
+    streetLamps,
   };
 }
 
@@ -360,6 +394,8 @@ function createConvenienceStore(): { building: Building; views: FurnitureView[] 
     const tube = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.06, 0.18), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1.2 }));
     tube.position.set(x, 3.3, z);
     b.group.add(light, tube);
+    // Vào quỹ ánh sáng chung: chỉ đèn gần chỗ nhìn nhất mới tốn chi phí GPU thật
+    registerLight(light, new THREE.Vector3(CONVENIENCE.x + x, 3.0, CONVENIENCE.z + z));
   }
   return { building: b, views };
 }

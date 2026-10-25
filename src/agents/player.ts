@@ -8,6 +8,10 @@ import { playerPace } from '../data/biz';
 
 const SPEED = 3.5; // m/giây
 
+// Biến tạm dùng lại mỗi khung, tránh cấp phát rác trong vòng render
+const _input = new THREE.Vector2();
+const _dir = new THREE.Vector3();
+
 /** Nhân vật chính: đi bằng WASD / phím mũi tên, hoặc bấm chuột lên mặt đất. */
 export class Player {
   mesh = new THREE.Group();
@@ -74,7 +78,7 @@ export class Player {
   /** Trả về true nếu nhân vật đang di chuyển. */
   update(dt: number, cameraYaw: number): boolean {
     if (this.asleep) return false;
-    const input = new THREE.Vector2(
+    const input = _input.set(
       (this.has('d', 'arrowright') ? 1 : 0) - (this.has('a', 'arrowleft') ? 1 : 0),
       (this.has('s', 'arrowdown') ? 1 : 0) - (this.has('w', 'arrowup') ? 1 : 0),
     );
@@ -86,17 +90,17 @@ export class Player {
       pace = Math.min(1, input.length() * 1.3);
     }
 
-    let dir = new THREE.Vector3();
+    let dir: THREE.Vector3 | null = null;
     if (input.lengthSq() > 0) {
       this.path = [];
       input.normalize();
       // Đổi hướng phím theo góc camera: W luôn là "đi vào trong màn hình"
       const sin = Math.sin(cameraYaw);
       const cos = Math.cos(cameraYaw);
-      dir.set(input.x * cos + input.y * sin, 0, -input.x * sin + input.y * cos);
+      dir = _dir.set(input.x * cos + input.y * sin, 0, -input.x * sin + input.y * cos);
     } else if (this.path.length) {
       const next = this.path[0];
-      dir = next.clone().sub(this.position).setY(0);
+      dir = _dir.set(next.x - this.position.x, 0, next.z - this.position.z);
       if (dir.length() < 0.1) {
         this.path.shift();
         return this.path.length > 0;

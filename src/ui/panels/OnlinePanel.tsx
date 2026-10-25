@@ -1,4 +1,4 @@
-import { formatClock, useGame } from '../../core/store';
+import { formatClock, useClock, useGame } from '../../core/store';
 import {
   ACCEPT_WINDOW, APP_COMMISSION, appRating, describeOnline, grabFee, grabTravel, ONLINE_OPEN_COST, ONLINE_UNLOCK, onlineValue, ownTravel,
 } from '../../data/online';
@@ -7,7 +7,7 @@ import { Footer, styles } from './shared';
 
 export function OnlinePanel() {
   const { online, level, money, staff, storage, priceOf, openOnline, toggleOnline, acceptOnline, declineOnline, closePanel } = useGame();
-  const minutes = useGame((s) => Math.floor(s.minutes));
+  const minutes = useClock((c) => Math.floor(c.minutes));
   const registered = online.open || online.done > 0 || online.ratingCount > 0;
   const couriers = staff.filter((st) => st.role === 'courier').sort((a, b) => b.skill - a.skill);
   const busyOwn = online.orders.filter((o) => o.status === 'shipping' && o.via === 'own').length;

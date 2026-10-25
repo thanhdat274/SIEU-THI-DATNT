@@ -18,13 +18,15 @@ import { summarizeReviews } from '../../data/reviews';
 import { dailyWage, generateCandidates } from '../../data/staff';
 import { eventOn } from '../../data/events';
 import { supplyContractById } from '../../data/contracts';
-import { CONVENIENCE, restingOn } from '../../data/branches';
+import { restingOn } from '../../data/branches';
 import { type GameState, type ContractState, type DayRecord, type SetState, type GetState, DAY_START, HISTORY_DAYS, wagesDue, emptyStats } from '../gameTypes';
 import { putStock, spoilOvernight, takeStock, type Stock } from '../stock';
 import { isCookStation } from '../../data/furniture';
 import { COMPLAINTS_FOR_SURPRISE, LICENSE_FINE, LICENSE_GRACE, licenseById, licenseStatus, missingLicenses, newInspection, RENEW_WARN_DAYS, requiredLicenses, SURPRISE_INSPECTION, SUSPEND_AFTER } from '../../data/licenses';
 import { staffDayEnd } from '../../data/staffTraits';
-import { SOCIAL_UNLOCK, socialDayEnd } from '../../data/social';
+import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
+import { gardenNight } from '../../data/garden';
+import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
 import { runBranch, branchNewDay } from './branch';
@@ -57,7 +59,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   const branchWages = Math.round(paid.reduce((n, st) => n + dailyWage(st), 0) * (hasSkill(s.skills, 'good_boss') ? 0.9 : 1));
   const nextBranch = br ? branchNewDay(br, s.day) : null;
   if (nextBranch?.news.length) s.notify(nextBranch.news.join(' · '));
-  if (br) s.notify(`🏪 Tiện lợi 24/7: ${br.customersToday} khách, thu ${formatMoney(br.revenueToday)}, thuê + lương ${formatMoney(CONVENIENCE.rent + branchWages)}`
+  if (br) s.notify(`🏪 Tiện lợi 24/7: ${br.customersToday} khách, thu ${formatMoney(br.revenueToday)}, lương ${formatMoney(branchWages)}`
     + (br.missedToday ? ` · ${br.missedToday} khách bỏ về (thiếu thu ngân/hết hàng)` : '')
     + (br.lostToday ? ` · mất ${br.lostToday} món (trộm/hỏng)` : '')
     + (br.event?.kind === 'drunk' ? ' · đêm qua có khách say quậy' : br.event?.kind === 'blackout' ? ' · đêm qua mất điện' : br.event?.kind === 'calloff' ? (br.event.covered ? ' · có người làm thay ca đêm' : ' · ca đêm thiếu người') : ''));
@@ -74,6 +76,17 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   }
   // Qua đêm hàng cũ đi một ngày hạn, rồi hàng đặt hôm nay về kho lúc sáng mai (hạn đầy)
   const aged = spoilOvernight(get());
+  // Vườn rau + chuồng gà sau nhà qua một đêm: cây lớn theo tưới/mưa, bão phá vườn, gà đẻ trứng
+  const gardenNightResult = gardenNight(s.garden, { day: s.day, weather: s.weather, coopFedToday: s.garden.coop?.fedDay === s.day });
+  const garden = gardenNightResult.garden;
+  // Sổ phân tích 30 ngày: bán/hỏng/lỡ bán theo từng món + cờ combo & giờ vàng của hôm nay
+  const lostPerItem: Record<string, number> = {};
+  for (const [key, n] of Object.entries(s.stats.missLog ?? {})) {
+    const pid = key.split(':')[1];
+    if (pid) lostPerItem[pid] = (lostPerItem[pid] ?? 0) + n;
+  }
+  const analytics = logAnalyticsDay(s.analytics, s.day, s.stats.byItem ?? {}, lostPerItem, aged.byId,
+    { combo: s.activeCombos.length > 0, happyHour: !!s.happyHour });
   const k: Stock = { storage: aged.storage, storageLots: aged.storageLots };
   for (const d of s.deliveries) for (const [id, qty] of Object.entries(d.items)) putStock(k, id, qty);
   // Sổ nợ: nợ lâu thì nhắc chủ tiệm, quá hạn chót coi như mất
@@ -156,6 +169,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   }
   const news = morningNews(s.weatherSeed, s.day + 1, s.level);
   if (nextEvent) news.push(`${nextEvent.icon} Sự kiện hôm nay: ${nextEvent.blurb}`);
+  news.push(...gardenNightResult.news);
   if (contractNews.length) news.push(...contractNews);
   if (order && !order.accepted) news.push(`📋 ${partyOrderById(order.id)!.from} muốn đặt đơn, xem ở Nhiệm vụ`);
   if (brokeNow) news.push(`🔧 ${brokeNow} kệ bị hỏng qua đêm, bấm vào kệ để sửa`);
@@ -217,6 +231,18 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   // Mạng xã hội: lời khen chê nổi bật hôm nay lên mạng, có thể lan truyền
   const socialDay = s.level >= SOCIAL_UNLOCK ? socialDayEnd(s.social, get().reviews, s.day) : { social: s.social, news: [] };
   news.push(...socialDay.news);
+  // Bắt được nhân viên ăn bớt hàng: tin xấu lan trên mạng thành khủng hoảng nhỏ (mỗi lần một nửa cơ hội)
+  let socialNext = socialDay.social;
+  if (crew.caught.length && !socialNext.buzz && s.level >= SOCIAL_UNLOCK && Math.random() < 0.5) {
+    const id = (socialNext.posts.at(-1)?.id ?? 0) + 1;
+    const post: SocialPost = {
+      id, day: s.day, author: 'Khách qua đường', stars: 1,
+      text: `🚨 Nghe đồn ${s.shopName} vừa bắt được nhân viên ăn bớt hàng trong kho... mua đồ ở đây sợ quá!`,
+      likes: 30 + Math.round(socialNext.followers * 0.3), shares: 12, viral: true,
+    };
+    socialNext = { ...socialNext, posts: [...socialNext.posts, post].slice(-POST_CAP), buzz: { kind: 'crisis', postId: id, until: s.day + BUZZ_DAYS, mul: CRISIS_MUL } };
+    news.push('📱⚠️ Tin bắt được nhân viên gian lận lan trên mạng, khách đang xì xào — nên đăng bài xin lỗi ở Mạng xã hội');
+  }
   // Đơn app còn đang chở: coi như tới trễ; đơn chưa nhận thì app huỷ
   const onlineDay = onlineDayEnd(s);
   if (s.online.done || s.online.orders.length) news.push(`📲 App hôm nay: thu ${formatMoney(s.online.revenueToday + onlineDay.money)} (đã trừ hoa hồng)${s.online.grabFeesToday ? `, phí Grab ${formatMoney(s.online.grabFeesToday)}` : ''} · điểm ${appRating(onlineDay.online).toFixed(1)}★`);
@@ -228,9 +254,9 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     const onShelf = furniture.reduce((n, f) => n + f.tiers.reduce((m, t) => m + (t.productId === p.id ? t.count : 0), 0), 0);
     market[p.id] = nextMarketIndex(market[p.id] ?? 1, (k.storage[p.id] ?? 0) + onShelf, 0, demand[p.id] ?? 0);
   }
-  // Trả lương và tiền nhà cuối ngày (kèm phí thợ bảo trì sáng nay nếu có)
+  // Trả lương và tiền nhà cuối ngày (kèm phí thợ bảo trì sáng nay nếu có); chi nhánh mua đứt nên không cộng tiền thuê
   const wages = wagesDue(s) + branchWages;
-  const rent = rentOf(s.shopTier) + (br ? CONVENIENCE.rent : 0);
+  const rent = rentOf(s.shopTier);
   const stats = {
     ...s.stats, wages, rent, spent: s.stats.spent + maintCost, spoiledItems: aged.items, spoiledCost: aged.cost,
     revenue: s.stats.revenue + onlineDay.money + crew.tips, online: (s.stats.online ?? 0) + onlineDay.money,
@@ -259,10 +285,11 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     panel: { type: 'summary', day: s.day, stats },
     stats: emptyStats(),
     ...k, furniture, order, phoneOrders: [], phoneSlot: 0, debts, vendorOffer: null, event: nextEvent, contracts, fakeCash: 0, wheelBoost: 1, history: [...s.history, record].slice(-HISTORY_DAYS), deliveries: [], demand, demandToday: {}, sales, salesToday: {}, reservations, market,
+    garden, analytics,
     weather: s.forecast[0], forecast: forecastFrom(s.weatherSeed, s.day + 1, s.forecast[0]),
     ...extra,
     money: (extra.money ?? s.money) - wages - rent - maintCost + inspectPay + biz.money + onlineDay.money + crew.tips - crew.cashLoss,
-    staff: crew.staff, social: socialDay.social, online: onlineDay.online, inspection,
+    staff: crew.staff.filter((st) => st.id !== biz.poachedStaffId), social: socialNext, online: onlineDay.online, inspection,
     biz: biz.biz,
     branch: nextBranch ? { ...nextBranch.branch, revenueToday: 0, customersToday: 0, lostToday: 0, missedToday: 0, simAt: wokeLate ? LATE_WAKE_AT : DAY_START, lastTrip: nextBranch.branch.lastTrip - 1440 } : null,
   });

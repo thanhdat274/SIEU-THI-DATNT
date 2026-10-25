@@ -7,7 +7,6 @@
  */
 import type { Lot } from './freshness';
 import { productById, unlockedProducts } from './products';
-import { COOKED_PRODUCT_IDS } from './recipes';
 import { skillSpeed } from './staff';
 
 export const ONLINE_UNLOCK = 10;
@@ -73,9 +72,9 @@ export const grabFee = (km: number) => Math.round((8000 + km * 4000) / 1000) * 1
 
 const NAMES = ['Chị Mai Q.7', 'Anh Tuấn Q.3', 'Bạn Hân', 'Cô Lệ', 'Anh Khoa', 'Chị Thu', 'Em Bảo', 'Chú Sáu', 'Chị Hồng', 'Anh Phát'];
 
-/** Tạo một đơn app: 1–3 món đang mở khoá (không phải món nhà làm), 1–8 km. */
+/** Tạo một đơn app: 1–3 món đang mở khoá (không phải món nhà làm nếu cấp đã mở), 1–8 km. */
 export function makeOnlineOrder(id: number, level: number, minutes: number, rng: () => number = Math.random): OnlineOrder {
-  const pool = unlockedProducts(level).filter((p) => !COOKED_PRODUCT_IDS.has(p.id));
+  const pool = unlockedProducts(level);
   const items: Record<string, number> = {};
   for (let n = 1 + Math.floor(rng() * 3); n > 0 && pool.length; n--) {
     const p = pool[Math.floor(rng() * pool.length)];

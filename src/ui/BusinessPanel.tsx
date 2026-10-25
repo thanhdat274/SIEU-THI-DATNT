@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useGame } from '../core/store';
 import {
-  buyAd, buyHomeItem, buyService, buyPet, buyUpgrade, buyVehicle, feedPet, joinHui, repayLoan, setLoyalty, startCounter, takeLoan,
+  buyAd, buyHomeItem, buyRivalShop, buyService, buyPet, buyUpgrade, buyVehicle, feedPet, joinHui, repayLoan, setLoyalty, startCounter, takeLoan,
 } from '../core/biz';
 import { hasUpgrade, UPGRADES } from '../data/upgrades';
 import { HistoryChart } from './Panels';
 import {
   ACHIEVEMENTS, activeAds, ADS, BREAKFAST, COUNTERS, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, LOAN_DAILY_RATE,
-  LOAN_UNLOCK, loanInterest, loanLimit, loanOptions, loanTopUps, LOYALTY_OPTIONS, LOYALTY_UNLOCK, petActive, PETS, RIVAL_UNLOCK, rivalTrafficFactor, VEHICLES, WEEK_DAYS,
+  LOAN_UNLOCK, loanInterest, loanLimit, loanOptions, loanTopUps, LOYALTY_OPTIONS, LOYALTY_UNLOCK, petActive, PETS,
+  RIVAL_PERSONALITIES, RIVAL_UNLOCK, rivalTrafficFactor, VEHICLES, WEEK_DAYS,
 } from '../data/biz';
+import { REGULAR_NAMES } from '../core/biz';
 import { formatMoney, productById } from '../data/products';
 import { BILL_RUSH_DAYS, dayOfMonth, SERVICE_BUY_ALONG, SERVICES } from '../data/services';
 
@@ -65,7 +67,7 @@ export function BusinessPanel() {
 }
 
 function Market() {
-  const { biz, day, level, money } = useGame();
+  const { biz, day, level, money, branch } = useGame();
   const r = biz.rival;
   const running = activeAds(biz.ads, day);
   return (
@@ -80,6 +82,21 @@ function Market() {
               <div style={{ height: 8, background: '#555', borderRadius: 4, margin: '4px 0' }}>
                 <div style={{ width: `${r.strength}%`, height: '100%', borderRadius: 4, background: '#e74c3c' }} />
               </div>
+              {r.personality && (
+                <div style={{ ...sub, marginTop: 4 }}>
+                  Tính cách: {RIVAL_PERSONALITIES[r.personality].icon} <b>{RIVAL_PERSONALITIES[r.personality].name}</b> — {RIVAL_PERSONALITIES[r.personality].desc}.
+                  {' '}Khách quen bị lôi kéo: {Object.keys(r.poached ?? {}).length ? Object.keys(r.poached!).map((id) => REGULAR_NAMES[id] ?? id).join(', ') : 'chưa có'}.
+                </div>
+              )}
+              {!!Object.keys(r.prices ?? {}).length && (
+                <div style={{ ...sub, marginTop: 4 }}>
+                  <b>Giá rival đang bán:</b>{' '}
+                  {Object.entries(r.prices!).map(([id, rp]) => {
+                    const mine = useGame.getState().priceOf(id);
+                    return `${productById(id).name} ${formatMoney(rp)}${mine ? ` (mình ${formatMoney(mine)}${rp < mine * 0.95 ? ' ⚠️' : ''})` : ''}`;
+                  }).join(' · ')}
+                </div>
+              )}
               <div style={sub}>
                 Đang hút mất {Math.round((1 - rivalTrafficFactor(r, day)) * 100)}% khách{r.saleUntil !== undefined && r.saleUntil >= day ? ` (đang giảm giá tới ngày ${r.saleUntil})` : ''}.
                 Mỗi đêm họ yếu đi khi tiệm bạn được đánh giá cao, ít để khách hụt hàng, giá không đắt hơn giá gợi ý, và có chạy quảng cáo.
@@ -114,6 +131,22 @@ function Market() {
             </>
           ) : <div style={sub}>Hẻm đang chỉ có tiệm bạn{biz.rivalsBeaten ? ` · đã đánh bại ${biz.rivalsBeaten} đối thủ` : ''}. Thỉnh thoảng sẽ có tiệm mới mở.</div>}
       </div>
+
+      {biz.rivalForSale && !biz.rival && (
+        <div style={{ ...card, marginBottom: 0, gridColumn: '1 / -1', border: '1px solid #f1c40f' }}>
+          <div style={title}>🏢 Mặt bằng "{biz.rivalForSale.name}" chào bán lại</div>
+          <div style={sub}>
+            Rival vừa đóng cửa, chủ tiệm bán lại mặt bằng {formatMoney(biz.rivalForSale.price)}
+            {branch
+              ? ' — mua về thì chi nhánh nhận thêm một chuyến hàng lớn từ kho chung và khách cũ của họ ghé tiệm bạn đông hơn 7 ngày.'
+              : ' — mua về là có ngay chi nhánh thứ hai, không mất tiền mở cửa hàng tiện lợi (5 triệu).'}
+            {' '}Hết ngày {biz.rivalForSale.until} không mua thì người khác thuê mất.
+          </div>
+          <button style={{ ...btn, background: money >= biz.rivalForSale.price ? '#f1c40f' : '#555' }} onClick={buyRivalShop}>
+            🏢 Mua lại mặt bằng ({formatMoney(biz.rivalForSale.price)})
+          </button>
+        </div>
+      )}
 
       <div style={{ ...card, marginBottom: 0 }}>
         <div style={{ ...row, ...title }}>

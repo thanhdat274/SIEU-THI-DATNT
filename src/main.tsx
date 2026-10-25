@@ -222,6 +222,8 @@ function runRoutine() {
 /** Quầy, kệ và tủ thay đổi khi xây dựng / mở rộng tiệm, nên tính lại mỗi lần. */
 const fixedInteractables: Interactable[] = [
   { position: bedPos, radius: 2, hint: () => (player.asleep ? '💤 Đang ngủ...' : '[N] Đi ngủ'), key: 'KeyN', action: goToBed },
+  // Trang trại sau nhà: đứng trong rào bấm V mở bảng vườn (trồng, tưới, thu hoạch, cho gà ăn)
+  { position: world.farmSpot, radius: 4, hint: () => '[V] Trang trại', key: 'KeyV', action: () => useGame.getState().openPanel({ type: 'garden' }) },
 ];
 
 // Danh sách đồ tương tác chỉ đổi khi đơn mang đi / đồ trong tiệm / chỗ kho đổi — cache theo dấu hiệu đó
@@ -512,6 +514,10 @@ const precompile = async () => {
 void (renderer.init ? renderer.init() : Promise.resolve()).then(() => {
   renderer.setAnimationLoop(renderFrame);
   void precompile();
+  // Ghi ra console đang vẽ bằng gì, trên card nào — để dò khi máy người chơi bị giật
+  const backend = (renderer as { backend?: { isWebGPUBackend?: boolean; device?: { adapterInfo?: GPUAdapterInfo } } }).backend;
+  const info = backend?.device?.adapterInfo;
+  console.warn(`[render] ${backend?.isWebGPUBackend ? 'WebGPU' : 'WebGL2'}${info ? ` · ${info.vendor} ${info.architecture} ${info.description}` : ''}`);
 });
 
 function App() {

@@ -82,23 +82,33 @@ export interface Sky extends Pick<WeatherInfo, 'clouds' | 'rain' | 'fog' | 'traf
   thunder: boolean;
 }
 
+// Đối tượng trời dùng lại: skyAt chạy mỗi khung hình, ai gọi cũng đọc xong ngay trong khung nên dùng chung được
+const skyScratch: Sky = { clouds: 0, rain: 0, fog: 0, traffic: 1, thunder: false };
+
 export function skyAt(seed: number, day: number, weather: Weather, minutes: number): Sky {
+  const sky = skyScratch;
   const info = WEATHER[weather];
   const spell = rainSpell(seed, day, weather);
-  if (!spell) return { ...info, thunder: false };
+  if (!spell) {
+    sky.clouds = info.clouds;
+    sky.rain = info.rain;
+    sky.fog = info.fog;
+    sky.traffic = info.traffic;
+    sky.thunder = false;
+    return sky;
+  }
   const wet = rainIntensity(spell, minutes);
   const dry = WEATHER.cloudy;
   // Mây dày lên trong giờ trước cơn mưa và tan dần trong giờ sau
   const gap = minutes < spell.start ? spell.start - minutes : minutes > spell.end ? minutes - spell.end : 0;
   const overcast = Math.max(wet, 1 - Math.min(gap / 60, 1));
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-  return {
-    clouds: lerp(dry.clouds, info.clouds, overcast),
-    rain: info.rain * wet,
-    fog: lerp(dry.fog, info.fog, wet),
-    traffic: lerp(dry.traffic, info.traffic, wet),
-    thunder: weather === 'storm' && wet > 0.5,
-  };
+  sky.clouds = lerp(dry.clouds, info.clouds, overcast);
+  sky.rain = info.rain * wet;
+  sky.fog = lerp(dry.fog, info.fog, wet);
+  sky.traffic = lerp(dry.traffic, info.traffic, wet);
+  sky.thunder = weather === 'storm' && wet > 0.5;
+  return sky;
 }
 
 /** Hệ số khách trung bình trong giờ mở cửa (6h–22h) của một ngày, để nhập hàng theo dự báo. */

@@ -2,7 +2,7 @@ import { ProductIcon } from '../ProductIcon';
 import { useState } from 'react';
 import { Dropdown } from '../Dropdown';
 import { HAPPY_FROM_MAX, HAPPY_FROM_MIN, HAPPY_HOURS, HAPPY_OFF_OPTIONS, happyHourActive } from '../../data/rhythm';
-import { useGame } from '../../core/store';
+import { useClock, useGame } from '../../core/store';
 import { CATEGORIES, formatMoney, unlockedProducts, type Product } from '../../data/products';
 import { suggestPrice, referenceSell } from '../../data/pricing';
 import { Footer, styles } from './shared';
@@ -12,7 +12,7 @@ export const PRICE_PAGE = 12;
 export function PricePanel() {
   const { level, prices, setPrice, closePanel, sales, demand } = useGame();
   const happyHour = useGame((s) => s.happyHour);
-  const minutes = useGame((s) => s.minutes);
+  const minutes = useClock((c) => Math.floor(c.minutes));
   const setHappyHour = useGame((s) => s.setHappyHour);
   const running = happyHourActive(happyHour, minutes);
   // Lọc theo ngành + tìm theo tên, rồi phân trang cho đỡ kéo dài

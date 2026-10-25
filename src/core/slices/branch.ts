@@ -172,14 +172,14 @@ export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState,
     const s = get();
     if (s.branch) return false;
     if (s.level < CONVENIENCE.unlock) { s.notify(`Cửa hàng tiện lợi mở ở cấp ${CONVENIENCE.unlock}`); return false; }
-    if (s.money < CONVENIENCE.openCost) { s.notify('Không đủ tiền cọc mặt bằng! Có thể vay ngân hàng.'); return false; }
+    if (s.money < CONVENIENCE.openCost) { s.notify('Không đủ tiền mua mặt bằng! Có thể vay ngân hàng.'); return false; }
     set({
       money: s.money - CONVENIENCE.openCost,
       branch: { ...newBranch(), simAt: s.minutes },
       stats: { ...s.stats, spent: s.stats.spent + CONVENIENCE.openCost },
       totals: { ...s.totals, spent: s.totals.spent + CONVENIENCE.openCost },
     });
-    s.notify('🏪 Đã thuê mặt bằng cửa hàng tiện lợi ở con đường bên kia! Thuê thu ngân, giao hàng, bảo vệ rồi mở cửa.');
+    s.notify('🏪 Đã mua đứt mặt bằng cửa hàng tiện lợi ở con đường bên kia! Thuê thu ngân, giao hàng, bảo vệ rồi mở cửa.');
     return true;
   },
   toggleBranch: () => {

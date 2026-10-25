@@ -20,13 +20,13 @@ export function BranchPanel() {
           thu ngân trực theo ca, người giao hàng chở hàng từ <b>kho chung</b> sang, bảo vệ canh trộm ban đêm.
         </p>
         <ul style={st.sub}>
-          <li>Tiền cọc + sửa sang: <b>{formatMoney(CONVENIENCE.openCost)}</b></li>
-          <li>Tiền thuê mỗi ngày: <b>{formatMoney(CONVENIENCE.rent)}</b> + lương nhân viên chi nhánh</li>
+          <li>Giá mua mặt bằng (mua đứt, sở hữu luôn): <b>{formatMoney(CONVENIENCE.openCost)}</b></li>
+          <li>Mua đứt nên không có tiền thuê — mỗi ngày chỉ trả lương nhân viên chi nhánh</li>
           <li>Kệ chứa tới {CONVENIENCE.shelfCap} món, giá bán ×{CONVENIENCE.priceMul} so với tiệm chính</li>
         </ul>
         {level < CONVENIENCE.unlock
           ? <p style={st.warn}>🔒 Mở ở cấp {CONVENIENCE.unlock}</p>
-          : <button style={st.primary} disabled={money < CONVENIENCE.openCost} onClick={openBranch}>Thuê mặt bằng</button>}
+          : <button style={st.primary} disabled={money < CONVENIENCE.openCost} onClick={openBranch}>Mua mặt bằng</button>}
         {level >= CONVENIENCE.unlock && money < CONVENIENCE.openCost && <p style={st.warn}>Chưa đủ tiền — có thể vay ở mục Kinh doanh.</p>}
       </>
     );
@@ -65,7 +65,7 @@ export function BranchPanel() {
         <div style={{ display: 'grid', gap: 6 }}>
           <div>Hôm nay: <b>{branch.customersToday}</b> khách · thu <b>{formatMoney(branch.revenueToday)}</b>
             {branch.missedToday > 0 && <> · {branch.missedToday} khách bỏ về</>}{branch.lostToday > 0 && <> · mất trộm {branch.lostToday} món</>}</div>
-          <div>Chi phí mỗi ngày: {formatMoney(CONVENIENCE.rent)} thuê + {formatMoney(wages)} lương</div>
+          <div>Chi phí mỗi ngày: {formatMoney(wages)} lương (mặt bằng đã mua đứt, không thuê)</div>
           <div>Hàng trên kệ: <b>{shelfTotal(branch.shelf)}</b>/{CONVENIENCE.shelfCap} món (lấy từ kho chung)</div>
           {top.length > 0 && <div style={st.sub}>{top.map(([id, q]) => `${isHotFood(id) ? '🔥' : ''}${productById(id).name} ×${q}`).join(' · ')}</div>}
           {atBranch && <p style={{ ...st.sub, color: '#2ecc71' }}>🧑‍💼 Bạn đang ở chi nhánh — thiếu thu ngân thì bạn tự đứng quầy.</p>}

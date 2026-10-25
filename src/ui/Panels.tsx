@@ -26,6 +26,8 @@ import { CookPanel } from './panels/CookPanel';
 import { SocialPanel } from './panels/SocialPanel';
 import { OnlinePanel } from './panels/OnlinePanel';
 import { LicensesPanel } from './panels/LicensesPanel';
+import { GardenPanel } from './panels/GardenPanel';
+import { AnalyticsPanel } from './panels/AnalyticsPanel';
 
 export function Panels() {
   const panel = useGame((s) => s.panel);
@@ -70,6 +72,8 @@ export function Panels() {
         {panel.type === 'cook' && <CookPanel />}
         {panel.type === 'morning' && <MorningPanel />}
         {panel.type === 'history' && <HistoryPanel />}
+        {panel.type === 'garden' && <GardenPanel />}
+        {panel.type === 'analytics' && <AnalyticsPanel />}
       </div>
     </div>
   );

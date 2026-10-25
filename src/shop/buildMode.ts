@@ -62,7 +62,10 @@ export class BuildMode {
     for (const view of this.shop.views.values()) view.group.visible = true;
 
     if (!placing) {
-      if (this.ghost) this.scene.remove(this.ghost.group);
+      if (this.ghost) {
+        this.scene.remove(this.ghost.group);
+        this.ghost.dispose(); // bóng xem trước có material clone riêng, phải giải phóng
+      }
       this.ghost = null;
       this.ghostType = null;
       this.tile.visible = false;
@@ -73,7 +76,10 @@ export class BuildMode {
       if (original) original.group.visible = false;
     }
     if (this.ghostType !== placing.type) {
-      if (this.ghost) this.scene.remove(this.ghost.group);
+      if (this.ghost) {
+        this.scene.remove(this.ghost.group);
+        this.ghost.dispose();
+      }
       this.ghost = new FurnitureView(placing.type);
       this.ghost.makeGhost();
       this.ghostType = placing.type;

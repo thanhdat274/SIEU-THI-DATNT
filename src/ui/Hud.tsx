@@ -1,11 +1,12 @@
 import { CONVENIENCE } from '../data/branches';
+import { plotReady } from '../data/garden';
 import { activeBuzz, SOCIAL_UNLOCK } from '../data/social';
 import { ONLINE_UNLOCK } from '../data/online';
 import { licenseStatus, type LicenseId } from '../data/licenses';
 import { INSPECTION_UNLOCK } from '../data/biz';
 import { Joystick } from './Joystick';
 import { useEffect, useRef, useState } from 'react';
-import { formatClock, questContext, useGame } from '../core/store';
+import { formatClock, questContext, useClock, useGame } from '../core/store';
 import { claimableCount } from '../data/quests';
 import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
@@ -86,9 +87,12 @@ function MusicToggle() {
 
 export function Hud() {
   const {
-    day, minutes, speed, money, level, xp, location, hint, message, shopOpen, waiting, dirt, buildMode,
+    day, speed, money, level, xp, location, hint, message, shopOpen, waiting, dirt, buildMode,
     setSpeed, openPanel, setBuildMode, notify, toggleShop,
   } = useGame();
+  // Giờ trong game nằm ở store riêng (đổi mỗi khung hình): chọn theo phút nguyên để HUD
+  // không phải vẽ lại 60 lần/giây — chỉ vẽ lại khi đồng hồ chạy qua một phút mới.
+  const minutes = useClock((c) => Math.floor(c.minutes));
   const reviews = useGame((s) => s.reviews);
   const placing = useGame((s) => s.placing);
   const sellFurniture = useGame((s) => s.sellFurniture);
@@ -173,6 +177,13 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   const giftClaimable = useGame((s) => s.giftLastDay !== s.day);
   const wheelReady = useGame((s) => s.wheelLastDay !== s.day);
   const wheelBoost = useGame((s) => s.wheelBoost);
+  // Vườn nhà: chưa tưới (và trời không mưa) hoặc luống chờ thu hoạch thì nhắc trên nút
+  const gardenBadge = useGame((s) => {
+    if (s.level < 8) return undefined;
+    if (s.garden.plots.some(plotReady)) return '🧺 Thu được';
+    const dry = s.weather !== 'rain' && s.weather !== 'storm' && s.garden.plots.some((p) => p.crop && p.wateredDay !== s.day);
+    return dry ? '💧 Chưa tưới' : undefined;
+  });
   const atHome = location === 'Nhà của bạn';
   type Tool = { icon: string; label: string; on: () => void; badge?: string; lock?: number; active?: boolean; more?: boolean };
   const tools: Tool[] = [
@@ -201,6 +212,8 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     { icon: '📋', label: 'Hợp đồng', lock: 14, more: true, on: () => openPanel({ type: 'contracts' }) },
     { icon: '📈', label: 'Kinh doanh', lock: 3, badge: [loanBadge, rivalBadge].filter(Boolean).join(' · ') || undefined, on: () => openPanel({ type: 'business' }) },
     { icon: '📊', label: 'Sổ theo dõi', more: true, on: () => openPanel({ type: 'history' }) },
+    { icon: '🩺', label: 'Sức khoẻ món', more: true, on: () => openPanel({ type: 'analytics' }) },
+    { icon: '🌱', label: 'Vườn nhà', more: true, lock: 8, badge: gardenBadge, on: () => openPanel({ type: 'garden' }) },
     { icon: '👕', label: 'Trang phục', lock: 2, more: true, on: () => openPanel({ type: 'costume' }) },
     { icon: '🏅', label: 'Danh hiệu', more: true, badge: skillsLeft > 0 ? `+${skillsLeft} kỹ năng` : undefined, on: () => openPanel({ type: 'skills' }) },
     { icon: '💛', label: 'Khách quen', more: true, on: () => openPanel({ type: 'regulars' }) },
@@ -589,7 +602,7 @@ function StoryAlert() {
 /** Khách ở quầy xin ghi sổ / mặc cả / thiếu tiền lẻ: chọn nhanh, hết giờ thì tự chọn mặc định. */
 function CounterAskAlert() {
   const ask = useCounterAsk((s) => s.ask);
-  const minutes = useGame((s) => s.minutes);
+  const minutes = useClock((c) => Math.floor(c.minutes));
   if (!ask) return null;
   return (
     <div className="hud-alert phone ringing">
@@ -607,7 +620,7 @@ function CounterAskAlert() {
 /** Người bán rong đang đứng ở quầy xin lấy sỉ từ kho. */
 function VendorAlert() {
   const offer = useGame((s) => s.vendorOffer);
-  const minutes = useGame((s) => s.minutes);
+  const minutes = useClock((c) => Math.floor(c.minutes));
   const storage = useGame((s) => s.storage);
   const priceOf = useGame((s) => s.priceOf);
   const accept = useGame((s) => s.acceptWholesale);
@@ -630,7 +643,7 @@ function VendorAlert() {
 /** Điện thoại tiệm: cuộc gọi đang đổ chuông (nghe máy để soạn hàng) và đơn đang mang đi giao. */
 function PhoneAlerts() {
   const orders = useGame((s) => s.phoneOrders);
-  const minutes = useGame((s) => s.minutes);
+  const minutes = useClock((c) => Math.floor(c.minutes));
   const storage = useGame((s) => s.storage);
   const priceOf = useGame((s) => s.priceOf);
   const answer = useGame((s) => s.answerPhone);

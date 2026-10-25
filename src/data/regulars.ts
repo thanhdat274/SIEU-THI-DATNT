@@ -390,6 +390,9 @@ export const REGULARS: RegularDef[] = [
   },
 ];
 
+/** Khách quen influencer: bình thường mở ở cấp cao, nhưng bài khen lan truyền mời chị ấy ghé sớm. */
+export const INFLUENCER_ID = 'vy_live';
+
 export const regularById = (id: string) => REGULARS.find((r) => r.id === id);
 
 export const emptyProgress = (): RegularProgress => ({ friendship: 0, visits: 0, perks: [], discovered: [] });
@@ -442,9 +445,9 @@ export function visitsToday(def: RegularDef, day: number, seed: number, level: n
 }
 
 /** Khách quen hợp lệ để ghé ngay lúc này (đúng giờ, chưa có mặt trong tiệm). */
-export function pickRegular(day: number, minutes: number, seed: number, level: number, progress: Record<string, RegularProgress>, inStore: string[], rep?: Reputation) {
+export function pickRegular(day: number, minutes: number, seed: number, level: number, progress: Record<string, RegularProgress>, inStore: string[], rep?: Reputation, exclude: string[] = []) {
   return REGULARS.find((def) =>
-    !inStore.includes(def.id) && minutes >= def.visitFrom && minutes < def.visitUntil
+    !inStore.includes(def.id) && !exclude.includes(def.id) && minutes >= def.visitFrom && minutes < def.visitUntil
     && visitsToday(def, day, seed, level, progress[def.id], rep),
   );
 }

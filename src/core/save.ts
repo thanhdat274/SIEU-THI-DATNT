@@ -36,6 +36,7 @@ export function snapshot(): SaveData {
     giftStreak: s.giftStreak, giftLastDay: s.giftLastDay, wheelLastDay: s.wheelLastDay, wheelBoost: s.wheelBoost, shopName: s.shopName,
     history: s.history, activeCombos: s.activeCombos, order: s.order, ordersDone: s.ordersDone, cookJobs: s.cookJobs, phoneOrders: s.phoneOrders, phoneSlot: s.phoneSlot, phoneHintDay: s.phoneHintDay, phoneOrdersDone: s.phoneOrdersDone, debts: s.debts, allowCredit: s.allowCredit, biz: s.biz, vendorDay: s.vendorDay, vendorOffer: s.vendorOffer, skills: s.skills, titles: s.titles, fakeCash: s.fakeCash, branch: s.branch,
     social: s.social, online: s.online, licenses: s.licenses, inspection: s.inspection,
+    garden: s.garden, analytics: s.analytics,
     weatherSeed: s.weatherSeed, weather: s.weather, forecast: s.forecast,
     saveVersion: SAVE_VERSION,
   };
@@ -206,7 +207,7 @@ export function resetGame() {
  * Tự lưu khi đang chơi: sau mỗi thay đổi (gộp trong 1 giây), mỗi 30 giây, và ngay khi đóng/ẩn tab
  * (lúc đó ghi thêm bản khẩn cấp đồng bộ). `canSave` chặn lưu ở màn đăng nhập (chưa nạp bản lưu,
  * ghi lúc này sẽ đè mất tiệm) và khi đang là khách trong phòng người khác.
- * `onCloud`: đẩy lên cloud khi đã đăng nhập, thưa hơn (mỗi 2 phút và khi rời tab) để không dội server.
+ * `onCloud`: đẩy lên cloud khi đã đăng nhập, thưa hơn (mỗi 1 phút và khi rời tab) để không dội server.
  */
 export function startAutosave(canSave: () => boolean, onCloud?: () => void) {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -234,7 +235,7 @@ export function startAutosave(canSave: () => boolean, onCloud?: () => void) {
     }
   });
   setInterval(flush, 30000);
-  setInterval(cloud, 120000);
+  setInterval(cloud, 60000);
   const leave = () => {
     flush(true);
     cloud();

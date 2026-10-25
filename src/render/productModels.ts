@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { productById, type Product } from '../data/products';
 
 /** Kiểu dáng bày trên kệ; chọn theo tên món, không khớp thì theo ngành hàng. */
@@ -535,16 +536,50 @@ const BUILD: Record<Shape, (g: THREE.Group, c: number, w: number, h: number, d: 
 
 const templates = new Map<string, THREE.Group>();
 
+/**
+ * Gộp các mesh cùng vật liệu của mẫu thành đúng 1 hình mỗi vật liệu.
+ * Một kệ có thể bày cả nghìn hộp hàng: không gộp thì mỗi hộp tốn vài draw call,
+ * gộp xong mỗi hộp chỉ còn 1–2. Trả về nhóm mới, mẫu gốc bị hủy hình cũ.
+ */
+function bakeTemplate(tpl: THREE.Group): THREE.Group {
+  tpl.updateMatrixWorld(true);
+  const byMat = new Map<THREE.Material, THREE.BufferGeometry[]>();
+  tpl.traverse((o) => {
+    if (!(o instanceof THREE.Mesh)) return;
+    const list = byMat.get(o.material) ?? [];
+    list.push(o.geometry.clone().applyMatrix4(o.matrixWorld));
+    byMat.set(o.material, list);
+  });
+  const baked = new THREE.Group();
+  try {
+    for (const [material, geos] of byMat) {
+      const merged = geos.length > 1 ? mergeGeometries(geos, false) : geos[0];
+      if (!merged) throw new Error('geometry không gộp được');
+      baked.add(new THREE.Mesh(merged, material));
+      if (geos.length > 1) for (const geo of geos) geo.dispose();
+    }
+  } catch {
+    // Hình dáng lạ không gộp được (thuộc tính lẻ loi): dùng nguyên mẫu gốc cho an toàn
+    return tpl;
+  }
+  tpl.traverse((o) => {
+    if (o instanceof THREE.Mesh) o.geometry.dispose();
+  });
+  return baked;
+}
+
 /** Mô hình 3D của một món hàng, vừa trong khung w×h×d (dùng chung hình học/vật liệu, clone rẻ). */
 export function createProductModel(productId: string, w: number, h: number, d: number): THREE.Group {
   const key = `${productId}|${w.toFixed(3)}|${h.toFixed(3)}|${d.toFixed(3)}`;
   let tpl = templates.get(key);
   if (!tpl) {
     const p = productById(productId);
-    tpl = new THREE.Group();
-    BUILD[shapeOf(p)](tpl, p.color, w, h, d);
+    const raw = new THREE.Group();
+    BUILD[shapeOf(p)](raw, p.color, w, h, d);
+    // Hàng nhỏ xíu trên kệ không cần đổ bóng: bỏ để nửa số draw call của cả đống hàng
+    tpl = bakeTemplate(raw);
     tpl.traverse((o) => {
-      if (o instanceof THREE.Mesh) o.castShadow = true;
+      if (o instanceof THREE.Mesh) o.castShadow = false;
     });
     templates.set(key, tpl);
   }
