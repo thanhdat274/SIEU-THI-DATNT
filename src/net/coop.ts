@@ -36,6 +36,13 @@ const GUARDED: Record<string, (args: unknown[]) => string> = {
   sellFurniture: (a) => `furn:${a[0]}`,
   repairFurniture: (a) => `furn:${a[0]}`,
   setPrice: (a) => `price:${a[0]}`,
+  expandFarm: () => 'farm:land',
+  feedPen: (a) => `pen:${a[0]}`,
+  buyAnimal: (a) => `buyAnimal:${a[0]}`,
+  sellFattened: (a) => `pen:${a[0]}`,
+  cleanupFarm: () => 'farm:cleanup',
+  buyFarmBuilding: (a) => `farm:building:${a[0]}`,
+  upgradeFarmBuilding: (a) => `farm:building:${a[0]}`,
 };
 const GUARD_MS = 3000;
 /** Thao tác gửi đi chưa có kết quả quá lâu thì thôi chờ (mất gói, máy chạy vừa đổi). */

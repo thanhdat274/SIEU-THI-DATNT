@@ -26,9 +26,10 @@ export interface Counter {
   cashier: THREE.Vector3;
 }
 
-/** Kích thước sàn quầy thu ngân (đã xoay dọc). */
-const COUNTER_W = 0.7;
-const COUNTER_D = 1.6;
+/** Vị trí quầy chính trong tiệm: rot như đồ nội thất (hướng mặt trước, chỗ khách trả tiền). */
+export interface MainCounter { x: number; z: number; rot: number }
+/** Quầy chính mặc định quay mặt ra phía -x (rot 3). */
+const DEFAULT_COUNTER_ROT = 3;
 
 /**
  * Tiệm tạp hóa: tường, quầy thu ngân và nội thất do người chơi đặt.
@@ -48,6 +49,7 @@ export class GroceryShop {
     this.sync();
     useGame.subscribe((s, prev) => {
       if (s.shopTier !== prev.shopTier) this.rebuildShell();
+      else if (s.mainCounter !== prev.mainCounter) this.placeCounter();
       else if (s.style !== prev.style || s.stylePreview !== prev.stylePreview) this.applyStyle();
       if (s.furniture !== prev.furniture || s.shopTier !== prev.shopTier) this.sync();
     });
@@ -55,8 +57,17 @@ export class GroceryShop {
 
   get width() { return SHOP_TIERS[this.tier].width; }
   get depth() { return SHOP_TIERS[this.tier].depth; }
-  /** Tâm quầy (trong tiệm): góc phải phía trước, chừa lối sau quầy cho thu ngân đứng. */
-  private get counterPos() { return { x: this.width / 2 - 1.7, z: this.depth / 2 - 1.9 }; }
+  /** Quầy chính: người chơi dời được, chưa dời thì ở góc phải phía trước, chừa lối sau quầy cho thu ngân đứng. */
+  private get counterPos(): MainCounter {
+    return useGame.getState().mainCounter ?? { x: this.width / 2 - 1.7, z: this.depth / 2 - 1.9, rot: DEFAULT_COUNTER_ROT };
+  }
+
+  /** Đặt hình quầy chính theo vị trí hiện tại. */
+  private placeCounter() {
+    const c = this.counterPos;
+    this.counter.rotation.y = ((c.rot - 2) * Math.PI) / 2;
+    this.counter.position.set(c.x, 0, c.z);
+  }
 
   /** Xây (lại) tường, sàn, mái, quầy theo cấp tiệm hiện tại. */
   private rebuildShell() {
@@ -79,8 +90,7 @@ export class GroceryShop {
     this.building.group.add(this.furnitureGroup);
 
     this.counter = createCounter();
-    this.counter.rotation.y = Math.PI / 2;
-    this.counter.position.set(this.counterPos.x, 0, this.counterPos.z);
+    this.placeCounter();
     this.building.interior.add(this.counter);
     this.scene.add(this.building.group);
     this.applyStyle();
@@ -156,10 +166,10 @@ export class GroceryShop {
   }
 
   /** Các quầy (toạ độ trong tiệm): quầy chính cố định + quầy phụ do người chơi đặt. */
-  private localCounters(list: Furniture[]): LocalCounter[] {
-    const c = this.counterPos;
+  private localCounters(list: Furniture[], main: MainCounter = this.counterPos): LocalCounter[] {
+    const [mx, mz] = frontDir(main.rot);
     const counters: LocalCounter[] = [
-      { key: 'main', x: c.x, z: c.z, pay: [c.x - 1.0, c.z], dir: [-1, 0], cashier: [c.x + 0.95, c.z] },
+      { key: 'main', x: main.x, z: main.z, pay: [main.x + mx, main.z + mz], dir: [mx, mz], cashier: [main.x - mx * 0.95, main.z - mz * 0.95] },
     ];
     for (const f of list) {
       if (f.type !== 'checkout') continue;
@@ -196,14 +206,15 @@ export class GroceryShop {
   quickCheck(
     type: FurnitureType, x: number, z: number, rot: number, ignoreUid?: number,
     list: Furniture[] = useGame.getState().furniture,
+    main: MainCounter = this.counterPos,
   ): string | null {
     const [w, d] = footprint(type, rot);
     const margin = 0.12;
     if (Math.abs(x) + w / 2 > this.width / 2 - margin || Math.abs(z) + d / 2 > this.depth / 2 - margin) return 'Phải đặt trong tiệm';
-    const c = this.counterPos;
     const overlaps = (ox: number, oz: number, ow: number, od: number) =>
       Math.abs(x - ox) < (w + ow) / 2 && Math.abs(z - oz) < (d + od) / 2;
-    if (overlaps(c.x, c.z, COUNTER_W, COUNTER_D)) return 'Chồng lên quầy';
+    const [cw, cd] = footprint('checkout', main.rot);
+    if (overlaps(main.x, main.z, cw, cd)) return 'Chồng lên quầy';
     if (overlaps(0, this.depth / 2 - 0.5, 1.8, 1.0)) return 'Không được chắn cửa ra vào';
     if (overlaps(this.backDoorX, -this.depth / 2 + 0.5, 1.8, 1.0)) return 'Không được chắn cửa sang nhà kho';
     if (type !== 'plant') {
@@ -217,7 +228,7 @@ export class GroceryShop {
     }
     // Chỗ trả tiền và chỗ thu ngân của mọi quầy (kể cả quầy đang đặt) phải trống
     const candidate = { uid: -1, type, x, z, rot, tiers: [] } as Furniture;
-    const allCounters = this.localCounters([...others, candidate]);
+    const allCounters = this.localCounters([...others, candidate], main);
     const candidateCounter = allCounters.find((it) => it.key === 'f-1');
     for (const ct of allCounters) {
       if (ct === candidateCounter) continue;
@@ -245,14 +256,14 @@ export class GroceryShop {
   }
 
   /** Cả bố cục (vd. bản nháp ở màn sắp xếp): khách đi tới được mọi quầy và lấy được hàng ở mọi kệ. */
-  layoutCheck(all: Furniture[]): string | null {
+  layoutCheck(all: Furniture[], main: MainCounter = this.counterPos): string | null {
     if (!this.grid) return null;
     const grid = this.grid;
     grid.restoreBase();
     for (const f of all) grid.blockBox(this.footprintBox(f.type, f.x, f.z, f.rot));
     let reason: string | null = null;
     const start = this.doorInside;
-    for (const ct of this.localCounters(all)) {
+    for (const ct of this.localCounters(all, main)) {
       if (!grid.reachable(start, this.local(...ct.pay))) reason = 'Khách sẽ không tới được quầy';
       else if (!grid.reachable(start, this.local(...ct.cashier))) reason = 'Thu ngân sẽ không vào được quầy';
       if (reason) break;
@@ -264,6 +275,36 @@ export class GroceryShop {
     }
     this.applyToGrid(useGame.getState().furniture);
     return reason;
+  }
+
+  /** Kiểm tra dời quầy chính tới (x, z, rot): trong tiệm, không đè đồ/cửa, trước sau quầy trống và đi tới được. */
+  checkMainCounter(x: number, z: number, rot: number, list: Furniture[] = useGame.getState().furniture): string | null {
+    const [w, d] = footprint('checkout', rot);
+    if (Math.abs(x) + w / 2 > this.width / 2 - 0.12 || Math.abs(z) + d / 2 > this.depth / 2 - 0.12) return 'Phải đặt trong tiệm';
+    const overlaps = (ox: number, oz: number, ow: number, od: number) =>
+      Math.abs(x - ox) < (w + ow) / 2 && Math.abs(z - oz) < (d + od) / 2;
+    if (overlaps(0, this.depth / 2 - 0.5, 1.8, 1.0)) return 'Không được chắn cửa ra vào';
+    if (overlaps(this.backDoorX, -this.depth / 2 + 0.5, 1.8, 1.0)) return 'Không được chắn cửa sang nhà kho';
+    for (const wz of this.windowZones()) if (overlaps(wz.x, wz.z, wz.w, wz.d)) return 'Không được che cửa sổ (chắn ánh sáng)';
+    for (const f of list) {
+      const [ow, od] = footprint(f.type, f.rot);
+      if (overlaps(f.x, f.z, ow, od)) return 'Chồng lên đồ khác';
+    }
+    const main: MainCounter = { x, z, rot };
+    const mine = this.localCounters(list, main)[0];
+    const near = (px: number, pz: number, f: Furniture) => {
+      const [ow, od] = footprint(f.type, f.rot);
+      return Math.abs(px - f.x) < ow / 2 + 0.3 && Math.abs(pz - f.z) < od / 2 + 0.3;
+    };
+    for (const spot of [mine.pay, mine.cashier]) {
+      if (Math.abs(spot[0]) > this.width / 2 - 0.3 || Math.abs(spot[1]) > this.depth / 2 - 0.3) return 'Trước hoặc sau quầy sát tường';
+      if (list.some((f) => near(spot[0], spot[1], f))) return 'Trước hoặc sau quầy bị chắn';
+    }
+    // Quầy phụ không được bị quầy chính đè lên chỗ trả tiền / chỗ thu ngân
+    for (const ct of this.localCounters(list, main).slice(1)) {
+      if (overlaps(ct.pay[0], ct.pay[1], 0.6, 0.6) || overlaps(ct.cashier[0], ct.cashier[1], 0.6, 0.6)) return 'Chắn quầy thu ngân phụ';
+    }
+    return this.layoutCheck(list, main);
   }
 
   /** Khoảng sàn sát trước mỗi cửa sổ (sâu 0.5m) phải để trống cho ánh sáng vào. */
@@ -280,8 +321,9 @@ export class GroceryShop {
   /** Mặt bằng cho màn sắp xếp (toạ độ trong tiệm, gốc ở giữa sàn, +z là phía cửa). */
   plan() {
     const c = this.counterPos;
+    const [cw, cd] = footprint('checkout', c.rot);
     return {
-      width: this.width, depth: this.depth, counter: { x: c.x, z: c.z, w: COUNTER_W, d: COUNTER_D }, doorW: 1.4,
+      width: this.width, depth: this.depth, counter: { x: c.x, z: c.z, w: cw, d: cd, rot: c.rot }, doorW: 1.4,
       backDoorX: this.backDoorX, windows: this.windowZones(),
     };
   }

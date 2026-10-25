@@ -23,8 +23,10 @@ export interface World {
   nightstand: THREE.Vector3;
   /** Nhà riêng, để bày đồ mua thêm vào trong. */
   home: Building;
-  /** Chỗ đứng giữa trang trại để mở bảng vườn. */
+  /** Chỗ đứng giữa trang trại để mở bảng trang trại (trại nằm nam đường thứ hai). */
   farmSpot: THREE.Vector3;
+  /** Trang trại: dựng lại theo bậc đất, đổi đàn gà, cập nhật gà đi rong (chỉ khi chủ ở gần). */
+  farm: ReturnType<typeof createFarm>;
   /** Nhà chung nhiều phòng (chỉ hiện khi chơi hẻm online). */
   sharedHome: Building;
   /** Nhà đang dùng: nhà riêng, hoặc nhà chung nhiều phòng khi chơi hẻm online. */
@@ -55,18 +57,24 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   ground.receiveShadow = true;
   scene.add(ground);
 
+  // Đường chính: nhựa đường có vạch tim đứt và vạch biên (canvas texture, lặp theo chiều dài)
+  const roadTex = asphaltTexture();
+  roadTex.repeat.set(160 / 8, 1);
   const road = new THREE.Mesh(
     new THREE.PlaneGeometry(160, 6),
-    new THREE.MeshStandardMaterial({ color: 0x555555 }),
+    new THREE.MeshStandardMaterial({ map: roadTex }),
   );
   road.rotation.x = -Math.PI / 2;
   road.position.set(0, 0.01, 6);
   road.receiveShadow = true;
   scene.add(road);
 
+  // Vỉa hè lát gạch vuông theo ô 2 m
+  const paving = pavingTexture();
+  paving.repeat.set(80, 1);
   const sidewalk = new THREE.Mesh(
     new THREE.PlaneGeometry(160, 2),
-    new THREE.MeshStandardMaterial({ color: 0xbdbdbd }),
+    new THREE.MeshStandardMaterial({ map: paving }),
   );
   sidewalk.rotation.x = -Math.PI / 2;
   sidewalk.position.set(0, 0.02, 2);
@@ -74,15 +82,50 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   scene.add(sidewalk);
 
   // Con đường thứ hai cho cửa hàng tiện lợi, nối với đường chính bằng một hẻm dọc
-  const road2 = new THREE.Mesh(new THREE.PlaneGeometry(60, 6), new THREE.MeshStandardMaterial({ color: 0x555555 }));
+  const road2Tex = asphaltTexture();
+  road2Tex.repeat.set(60 / 8, 1);
+  const road2 = new THREE.Mesh(new THREE.PlaneGeometry(60, 6), new THREE.MeshStandardMaterial({ map: road2Tex }));
   road2.rotation.x = -Math.PI / 2;
   road2.position.set(LANE_X + 20, 0.01, ROAD2_Z);
   road2.receiveShadow = true;
-  const lane = new THREE.Mesh(new THREE.PlaneGeometry(5, 3 - ROAD2_Z), new THREE.MeshStandardMaterial({ color: 0x5e5e5e }));
+  // Hẻm dọc nối hai đường: bê tông lát sạn như hẻm Việt Nam (sáng hơn nhựa đường, có rãnh ô) —
+  // nhìn là lối đi bộ/xe nhỏ, không phải "con đường đen" trơn truồng
+  const lanePaving = pavingTexture();
+  lanePaving.repeat.set(2.5, 29.5);
+  const lane = new THREE.Mesh(new THREE.PlaneGeometry(5, 3 - ROAD2_Z), new THREE.MeshStandardMaterial({ map: lanePaving }));
   lane.rotation.x = -Math.PI / 2;
   lane.position.set(LANE_X, 0.012, (3 + ROAD2_Z) / 2);
   lane.receiveShadow = true;
   scene.add(road2, lane);
+
+  // Kè viền hai mép đường cho đường đỡ "nổi khối" trên nền cỏ
+  const curbMat = new THREE.MeshStandardMaterial({ color: 0x9c9c96 });
+  const curb = (x: number, z: number, len: number) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(len, 0.09, 0.14), curbMat);
+    m.position.set(x, 0.045, z);
+    m.receiveShadow = true;
+    scene.add(m);
+  };
+  curb(0, 6 - 3.07, 160);
+  curb(0, 6 + 3.07, 160);
+  curb(LANE_X + 20, ROAD2_Z - 3.07, 60);
+  curb(LANE_X + 20, ROAD2_Z + 3.07, 60);
+
+  // Vạch sang đường kiểu zebra chuẩn Việt Nam (vạch 13): các vạch DÀI THEO CHIỀU ĐƯỜNG
+  // (cùng hướng xe chạy) xếp thành hàng băng qua lòng đường cho người đi bộ — mỏng, sát mặt nhựa như sơn
+  const paintMat = new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 1 });
+  const zebra = (cx: number, cz: number) => {
+    for (let i = -3; i <= 3; i++) {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.008, 0.5), paintMat);
+      stripe.position.set(cx, 0.016, cz + i * 0.85);
+      stripe.receiveShadow = true;
+      scene.add(stripe);
+    }
+  };
+  // Chỗ băng đường hợp lý: trước cửa tiệm (đường chính) và trước cửa tiện lợi 24/7 (đường thứ hai) —
+  // miệng hẻm nhỏ không sơn vạch sang đường như đời thật
+  zebra(0, 6);
+  zebra(CONVENIENCE.x, ROAD2_Z);
 
   // Đèn đường dọc khu phố, cột đèn chặn nhẹ lưới đi lại
   const streetLamps = new StreetLamps();
@@ -107,7 +150,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   home.interior.add(bed, nightstand);
   // Thảm nằm sát sàn, không chặn đường đi
   home.group.add(rug);
-  // Trang trại riêng sau nhà: luống rau + chuồng gà trong rào (tương tác ở main.tsx, trạng thái ở core/slices/garden)
+  // Trang trại đầu ngõ nam đường thứ hai: luống rau + chuồng gà trong rào (tương tác ở main.tsx, trạng thái ở core/slices/garden)
   const farm = createFarm();
   scene.add(farm.group);
   grid.setStatic('garden', farm.boxes);
@@ -128,8 +171,8 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
       z -= reserved + 4;
     }
     // Chừa hẻm dọc, con đường thứ hai và mặt bằng cửa hàng tiện lợi
-    // Chừa mảnh trang trại sau nhà
-    if (Math.abs(x - FARM_CENTER.x) < 7 && Math.abs(z - FARM_CENTER.z) < 6.5) continue;
+    // Chừa mảnh trang trại nam đường thứ hai (26×20 m)
+    if (Math.abs(x - FARM_CENTER.x) < 14 && z > FARM_CENTER.z - 11 && z < FARM_CENTER.z + 13) continue;
     if (Math.abs(x - LANE_X) < 4 || (x > LANE_X - 12 && z < ROAD2_Z + 5)) continue;
     const tree = createTree(x, z);
     // Cây đứng yên: tính ma trận một lần rồi tắt auto-update
@@ -203,6 +246,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
     nightstand: nightstand.getWorldPosition(new THREE.Vector3()).setY(0).add(new THREE.Vector3(0.7, 0, 0.6)),
     home,
     farmSpot: farm.spot,
+    farm,
     shop,
     warehouse,
     convenience,
@@ -276,15 +320,60 @@ function createTree(x: number, z: number): THREE.Group {
     new THREE.MeshStandardMaterial({ color: 0x6e4b2a }),
   );
   trunk.position.y = 0.6;
-  const leaves = new THREE.Mesh(
-    new THREE.ConeGeometry(1, 2.2, 8),
-    new THREE.MeshStandardMaterial({ color: 0x2e7d32 }),
-  );
-  leaves.position.y = 2.2;
-  trunk.castShadow = leaves.castShadow = true;
-  tree.add(trunk, leaves);
+  // Hai tầng tán lệch màu nhẹ từng cây cho hàng phố không đều tăm tắp
+  const green = new THREE.Color(0x2e7d32).offsetHSL((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.1);
+  const leafMat = new THREE.MeshStandardMaterial({ color: green });
+  const leaves = new THREE.Mesh(new THREE.ConeGeometry(1, 1.7, 8), leafMat);
+  leaves.position.y = 1.9;
+  const leavesTop = new THREE.Mesh(new THREE.ConeGeometry(0.68, 1.2, 8), leafMat);
+  leavesTop.position.y = 2.85;
+  trunk.castShadow = leaves.castShadow = leavesTop.castShadow = true;
+  tree.add(trunk, leaves, leavesTop);
   tree.position.set(x, 0, z);
+  tree.scale.setScalar(0.85 + Math.random() * 0.35);
   return tree;
+}
+
+/** Nhựa đường: nền xám loang lổ + vạch tim đứt + vạch biên mờ, vẽ một lần rồi lặp theo chiều dài đường. */
+function asphaltTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 128;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#4d4d51';
+  g.fillRect(0, 0, 256, 128);
+  for (let i = 0; i < 260; i++) {
+    g.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.035)' : 'rgba(0,0,0,0.06)';
+    g.fillRect(Math.random() * 256, Math.random() * 128, 3, 3);
+  }
+  g.fillStyle = 'rgba(240,240,235,0.9)';
+  for (let x = 8; x < 256; x += 64) g.fillRect(x, 61, 34, 6);
+  g.fillStyle = 'rgba(240,240,235,0.45)';
+  g.fillRect(0, 8, 256, 3);
+  g.fillRect(0, 117, 256, 3);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+/** Gạch vỉa hè: ô vuông 2 m với rãnh mờ, lặp dọc theo chiều dài hè. */
+function pavingTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#b9b9b4';
+  g.fillRect(0, 0, 64, 64);
+  g.strokeStyle = 'rgba(0,0,0,0.14)';
+  g.lineWidth = 2;
+  g.strokeRect(1, 1, 62, 62);
+  g.fillStyle = 'rgba(0,0,0,0.03)';
+  for (let i = 0; i < 40; i++) g.fillRect(Math.random() * 64, Math.random() * 64, 2, 2);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 /** Số phòng ngủ của nhà chung, bằng số thành viên tối đa của một hẻm. */

@@ -110,10 +110,18 @@ export const createOnlineSlice = (set: SetState, get: GetState): Pick<GameState,
     }
     const k = copyStock(s);
     const lots: Record<string, Lot[]> = {};
-    for (const [pid, q] of Object.entries(o.items)) lots[pid] = takeStock(k, pid, q);
+    const hg = { ...s.garden.homegrown };
+    for (const [pid, q] of Object.entries(o.items)) {
+      lots[pid] = takeStock(k, pid, q);
+      // Hàng nhà trồng giao qua app cũng rút nhãn (app tính giá riêng, không cộng thưởng nhà trồng)
+      const left = (hg[pid] ?? 0) - q;
+      if (left > 0) hg[pid] = left;
+      else if (hg[pid] !== undefined) delete hg[pid];
+    }
     const arriveAt = Math.round(s.minutes + travel);
     set({
       ...k,
+      garden: { ...s.garden, homegrown: hg },
       money: s.money - fee,
       online: {
         ...s.online, grabFeesToday: s.online.grabFeesToday + fee,

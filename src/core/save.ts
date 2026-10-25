@@ -27,7 +27,7 @@ export function snapshot(): SaveData {
   const s = useGame.getState();
   return {
     day: s.day, minutes: s.minutes, money: s.money, level: s.level, xp: s.xp,
-    storage: s.storage, storageLots: s.storageLots, furniture: s.furniture, shelfHeat: s.shelfHeat, impulseHinted: s.impulseHinted, prices: s.prices, happyHour: s.happyHour, stats: s.stats,
+    storage: s.storage, storageLots: s.storageLots, furniture: s.furniture, mainCounter: s.mainCounter, shelfHeat: s.shelfHeat, impulseHinted: s.impulseHinted, prices: s.prices, happyHour: s.happyHour, stats: s.stats,
     shopTier: s.shopTier, pendingUpgrade: s.pendingUpgrade, style: s.style,
     staff: s.staff, candidates: s.candidates, autoOpen: s.autoOpen, autoRoutine: s.autoRoutine, autoSwap: s.autoSwap, totals: s.totals, questLog: s.questLog, warehouseTier: s.warehouseTier,
     reviews: s.reviews, deliveries: s.deliveries, demand: s.demand, demandToday: s.demandToday,
@@ -46,7 +46,12 @@ export function snapshot(): SaveData {
 export function applySnapshot(raw: Partial<SaveData>) {
   const data = migrate(raw);
   const fresh = newGameData();
-  const merged = { ...fresh, ...data, stats: { ...fresh.stats, ...data.stats }, totals: { ...fresh.totals, ...data.totals }, biz: { ...fresh.biz, ...data.biz } };
+  const merged = { ...fresh, ...data, stats: { ...fresh.stats, ...data.stats }, totals: { ...fresh.totals, ...data.totals }, biz: { ...fresh.biz, ...data.biz }, garden: { ...fresh.garden, ...data.garden } };
+  // Trang trại cũ chỉ có chuồng gà (garden.coop) — chuyển sang hệ chuồng theo loài (garden.pens)
+  const oldCoop = (merged.garden as { coop?: { chickens: number; fedDay: number; eggs: number; feedKg?: number } }).coop;
+  if (oldCoop?.chickens && !merged.garden.pens?.chicken) {
+    merged.garden = { ...merged.garden, pens: { ...merged.garden.pens, chicken: { count: oldCoop.chickens, fedDay: oldCoop.fedDay, pending: oldCoop.eggs, feedKg: oldCoop.feedKg ?? 0 } } };
+  }
   // Kệ kho, tủ lạnh kho từng đặt trong tiệm: giờ đã có nhà kho riêng, hoàn tiền mua
   const OLD_WAREHOUSE: Record<string, number> = { stockRack: 200000, coldStorage: 250000 };
   const refund = merged.furniture.reduce((n, f) => n + (OLD_WAREHOUSE[f.type] ?? 0), 0);

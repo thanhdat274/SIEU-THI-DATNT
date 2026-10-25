@@ -192,6 +192,15 @@ export function pickWeighted(ids: string[], minute: number): string {
  */
 export const BRANCH_LAYOUT: { type: FurnitureType; x: number; z: number; rot: number }[] = [
   { type: 'checkout', x: -5.6, z: 2.1, rot: 0 },
+  // Góc đồ nóng & đồ uống cạnh cửa (kiểu tiện lợi thật): mì ly ấm nước, xúc xích chiên, cà phê —
+  // khách bắt đầu mua từ bây giờ (đồ nóng chở từ bếp tiệm chính sang, xem isHotFood)
+  { type: 'fryer', x: 4.5, z: 3.9, rot: 2 },
+  { type: 'hot_kettle', x: 5.5, z: 3.9, rot: 2 },
+  { type: 'drink_counter', x: 6.8, z: 3.9, rot: 2 },
+  // Bãi xe đẩy cạnh cửa, bàn gói quà sau quầy thu ngân, quầy rau quả dọc tường đông
+  { type: 'cartStation', x: 2.4, z: 3.9, rot: 0 },
+  { type: 'gift_wrap', x: -7.2, z: 0.7, rot: 1 },
+  { type: 'produce', x: 7.3, z: 1.4, rot: 3 },
   // Dãy kệ siêu thị hai mặt giữa tiệm
   { type: 'bigShelf', x: 1.4, z: 0.6, rot: 0 }, { type: 'bigShelf', x: 4.0, z: 0.6, rot: 0 }, { type: 'bigShelf', x: 6.6, z: 0.6, rot: 0 },
   { type: 'bigShelf', x: 1.4, z: -0.05, rot: 2 }, { type: 'bigShelf', x: 4.0, z: -0.05, rot: 2 }, { type: 'bigShelf', x: 6.6, z: -0.05, rot: 2 },

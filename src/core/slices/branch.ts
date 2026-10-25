@@ -1,4 +1,5 @@
 import { formatMoney } from '../../data/products';
+import { HOMEGROWN_PREMIUM } from '../../data/garden';
 import { dailyWage, GUARD_DETECT, maxStaff, ROLES, type Staff } from '../../data/staff';
 import { BLACKOUT_LOSS, BONUS_RELIEF, COVER_WAGE_MUL, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, branchTrafficAt, isBranchNight, newBranch, onShift, shelfTotal, type BranchState } from '../../data/branches';
 import type { GameState, SetState, GetState } from '../gameTypes';
@@ -16,6 +17,13 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
   if (!b0) return {};
   const b: BranchState = { ...b0, shelf: { ...b0.shelf }, hourly: [...(b0.hourly ?? Array(24).fill(0))] };
   const k = copyStock(s);
+  // Nhãn hàng nhà trồng/nuôi: bán ở chi nhánh cũng được giá hơn và rút dần như ở quầy chính
+  const hg = { ...s.garden.homegrown };
+  const spendHomegrown = (id: string, n: number) => {
+    const left = (hg[id] ?? 0) - n;
+    if (left > 0) hg[id] = left;
+    else if (hg[id] !== undefined) delete hg[id];
+  };
   const news: string[] = [];
   let fees = 0;
   let revenue = 0;
@@ -67,6 +75,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
           if (!spoilsInBlackout(id)) continue;
           const n = Math.round(b.shelf[id] * BLACKOUT_LOSS);
           b.shelf[id] -= n;
+          spendHomegrown(id, n);
           lost += n;
         }
         b.lostToday += lost;
@@ -106,7 +115,10 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
         if (!pool.length) break;
         const id = pickWeighted(pool, m);
         b.shelf[id]--;
-        const price = Math.round((s.priceOf(id) * CONVENIENCE.priceMul * (isHotFood(id) ? HOT_FOOD_MUL : 1)) / 500) * 500;
+        // Hàng nhà trồng/nuôi bán ở chi nhánh được giá hơn như ở quầy chính
+        const premium = (hg[id] ?? 0) > 0;
+        if (premium) spendHomegrown(id, 1);
+        const price = Math.round((s.priceOf(id) * CONVENIENCE.priceMul * (isHotFood(id) ? HOT_FOOD_MUL : 1) * (premium ? 1 + HOMEGROWN_PREMIUM : 1)) / 500) * 500;
         revenue += price;
         b.hourly![Math.floor((((m % 1440) + 1440) % 1440) / 60)] += price;
       }
@@ -118,7 +130,9 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
         for (let i = 0; i < 3; i++) {
           const pool = Object.keys(b.shelf).filter((id) => b.shelf[id] > 0);
           if (!pool.length) break;
-          b.shelf[pool[Math.floor(Math.random() * pool.length)]]--;
+          const stolen = pool[Math.floor(Math.random() * pool.length)];
+          b.shelf[stolen]--;
+          spendHomegrown(stolen, 1);
           b.lostToday++;
         }
       }
@@ -129,6 +143,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
   for (const line of news) s.notify(line);
   return {
     branch: b, ...k,
+    garden: { ...s.garden, homegrown: hg },
     money: s.money - fees + revenue,
     stats: { ...s.stats, revenue: s.stats.revenue + revenue, spent: s.stats.spent + fees },
   };

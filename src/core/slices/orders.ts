@@ -7,7 +7,7 @@ import { FESTIVALS, festivalOn } from '../../data/calendar';
 import { vendorById } from '../../data/wholesale';
 import { CANCEL_AFTER_LATE, describeItems, FAST_TIP, fastWindow, houseById, ON_TIME_TIP, PHONE_FRIEND_GAIN, PHONE_SLOTS, phoneCallFor, phoneOrderValue, type PhoneOrder } from '../../data/phoneOrders';
 import { type CookingStation, COOKED_PRODUCT_IDS, RECIPE_MAP } from '../../data/recipes';
-import { SHIFTS } from '../../data/staff';
+import { BARTENDER_SPEED_PER_STAR, bestSkillOnDuty, SHIFTS } from '../../data/staff';
 import { workSpeed } from '../../data/staffTraits';
 import { contractValue, missingForContract, supplyContractById } from '../../data/contracts';
 import { describeRep, meetsRep, reputationOf } from '../../data/reputation';
@@ -30,6 +30,10 @@ export const cookSpeed = (get: GetState) => {
   }
   return best;
 };
+
+/** Pha chế trực ca: riêng mẻ ở trạm pha chế (cà phê, trà sữa...) nhanh thêm theo tay nghề, cộng cùng đầu bếp. */
+export const bartenderBoost = (get: GetState) =>
+  1 + BARTENDER_SPEED_PER_STAR * bestSkillOnDuty(get().staff, 'bartender', get().minutes);
 
 /** Điện thoại: đổ chuông theo khung giờ khi tiệm mở; cúp máy khi không nghe; huỷ khi trễ quá lâu. */
 export const updatePhones = (set: SetState, get: GetState) => {

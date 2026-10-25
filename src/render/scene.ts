@@ -103,6 +103,10 @@ const RAIN_DROPS = LOW_POWER ? 2000 : 5000;
 const RAIN_BOX = { w: 70, h: 30 };
 const CLOUDS = 14;
 const CLOUD_HEIGHT = 30;
+const STARS = LOW_POWER ? 160 : 280;
+const DOME_R = 470;
+/** Màu sương chân trời (trời đêm hơi sáng nhẹ như đô thị, trưa trắng hơn). */
+const SKY_HAZE = new THREE.Color(0xe6eef4);
 
 /**
  * Ánh sáng ngày đêm và thời tiết: mặt trời chạy theo giờ, bóng đổ bám theo chỗ camera nhìn,
@@ -118,6 +122,14 @@ export class Lighting {
   private clouds: THREE.Group[] = [];
   private flash = 0;
   private nextFlash = 5;
+  /** Vòm trời gradient + mặt trời / trăng / sao — toàn vật liệu Basic (không ăn đèn, khỏi recompile shader). */
+  private dome: THREE.Mesh;
+  private sunDisc: THREE.Mesh;
+  private moonDisc: THREE.Mesh;
+  private stars: THREE.Points;
+  private zenithC = new THREE.Color();
+  private horizonC = new THREE.Color();
+  private moonDir = new THREE.Vector3();
 
   constructor(private scene: THREE.Scene) {
     this.sun.castShadow = true;
@@ -132,6 +144,31 @@ export class Lighting {
     scene.add(this.sun, this.sun.target, this.ambient);
     scene.background = DAY_SKY.clone();
     scene.fog = new THREE.Fog(DAY_SKY.clone(), 60, 400);
+
+    // Vòm trời gradient: mỗi đỉnh tô màu giữa chân trời (sương sáng) và đỉnh trời (đậm),
+    // cập nhật theo giờ — thay cho nền một màu phẳng
+    const skyGeo = new THREE.SphereGeometry(DOME_R, 24, 14);
+    skyGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(skyGeo.attributes.position.count * 3), 3));
+    this.dome = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
+    this.dome.renderOrder = -1;
+    scene.add(this.dome);
+
+    // Mặt trời / trăng là đĩa Basic quay về tâm; sao là Points — đêm mới hiện (điều opacity, không bật/tắt visible để khỏi biên dịch lại pipeline)
+    this.sunDisc = new THREE.Mesh(new THREE.CircleGeometry(26, 24), new THREE.MeshBasicMaterial({ color: 0xffe8b0, fog: false, transparent: true, depthWrite: false }));
+    this.moonDisc = new THREE.Mesh(new THREE.CircleGeometry(15, 24), new THREE.MeshBasicMaterial({ color: 0xdfe6f0, fog: false, transparent: true, depthWrite: false }));
+    scene.add(this.sunDisc, this.moonDisc);
+    const starPos = new Float32Array(STARS * 3);
+    for (let i = 0; i < STARS; i++) {
+      const a = Math.random() * Math.PI * 2;
+      // Giữ sao ở dải thấp (3°–33°) cho camera city-builder vốn ngẩng max ~40°
+      const y = 0.05 + Math.random() * 0.5;
+      const r = Math.sqrt(1 - y * y);
+      starPos.set([Math.cos(a) * r * (DOME_R - 20), y * (DOME_R - 20), Math.sin(a) * r * (DOME_R - 20)], i * 3);
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    this.stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xdfe8ff, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false }));
+    scene.add(this.stars);
 
     // Mưa: mỗi giọt là một đoạn thẳng ngắn, rơi trong một hộp bám theo camera
     this.rainPos = new Float32Array(RAIN_DROPS * 6);
@@ -212,6 +249,34 @@ export class Lighting {
     sceneFog.color.copy(sky);
     sceneFog.near = THREE.MathUtils.lerp(80, 4, fog);
     sceneFog.far = THREE.MathUtils.lerp(400, 42, fog);
+
+    // Vòm trời: đỉnh trời đậm hơn chân trời; mây dày thì cả vòm xám đi
+    this.horizonC.copy(sky).lerp(SKY_HAZE, 0.12 + 0.26 * daylight).lerp(STORM_SKY, clouds * 0.35);
+    this.zenithC.copy(sky).multiplyScalar(0.7 + clouds * 0.12);
+    const domePos = this.dome.geometry.attributes.position;
+    const domeCol = this.dome.geometry.attributes.color;
+    for (let i = 0; i < domePos.count; i++) {
+      const t = Math.min(1, Math.max(0, domePos.getY(i) / DOME_R));
+      domeCol.setXYZ(
+        i,
+        this.horizonC.r + (this.zenithC.r - this.horizonC.r) * t,
+        this.horizonC.g + (this.zenithC.g - this.horizonC.g) * t,
+        this.horizonC.b + (this.zenithC.b - this.horizonC.b) * t,
+      );
+    }
+    domeCol.needsUpdate = true;
+
+    // Mặt trời theo hướng nắng; trăng đối diện mọc lúc mặt trời lặn; sao chỉ thấy trời quang đêm
+    this.sunDisc.position.copy(sunDir).multiplyScalar(DOME_R - 30);
+    this.sunDisc.lookAt(0, 0, 0);
+    (this.sunDisc.material as THREE.MeshBasicMaterial).opacity = Math.min(1, daylight * 1.4) * (1 - clouds * 0.75);
+    // Trăng đối diện mặt trời, mọc lúc mặt trời lặn — kẹp độ cao thấp vừa cho camera ngẩng max ~40° nhìn thấy được
+    this.moonDir.set(-sunDir.x, THREE.MathUtils.clamp(-sunDir.y * 0.9 + 0.12, 0.05, 0.42), -sunDir.z).normalize();
+    this.moonDisc.position.copy(this.moonDir).multiplyScalar(DOME_R - 30);
+    this.moonDisc.lookAt(0, 0, 0);
+    (this.moonDisc.material as THREE.MeshBasicMaterial).opacity = Math.min(1, Math.max(0, (0.45 - daylight) * 2)) * (1 - clouds * 0.8);
+    (this.stars.material as THREE.PointsMaterial).opacity = Math.min(1, Math.max(0, (0.35 - daylight) * 2)) * (1 - clouds * 0.85);
+    this.stars.rotation.y += dt * 0.004;
 
     // Mây trôi theo gió, ra khỏi vùng thì quay lại phía bên kia
     const visibleClouds = Math.round(clouds * CLOUDS);

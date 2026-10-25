@@ -177,7 +177,7 @@ export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
     poachedStaffId = best.id;
     news.push(`⚔️ ${r.name} móc ${best.name} sang làm với lương gấp rưỡi! Vào lại tuyển người ở bảng Nhân viên`);
   }
-  return { rival: next, news, poachedStaffId, returned: [] };
+  return { rival: next, news, poachedStaffId, returned };
 }
 
 // ───── Phản công đối thủ chủ động ─────
@@ -389,7 +389,7 @@ export const PETS: PetDef[] = [
   { kind: 'cat', icon: '🐱', name: 'Mèo Mướp', price: 300000, unlock: 5, food: 'x_thuc_an_meo', desc: 'Nằm quầy bắt chuột: hàng hỏng chậm hơn 20%. Trẻ con thích ghé vuốt mèo.' },
   { kind: 'dog', icon: '🐶', name: 'Chó Vàng', price: 500000, unlock: 12, food: 'x_thuc_an_cho', desc: 'Giữ cửa: kẻ trộm ít dám vào hơn một nửa, dễ bị bắt hơn.' },
 ];
-export interface PetState { fedDay: number; mood: number }
+export interface PetState { fedDay: number }
 export const petDef = (k: PetKind) => PETS.find((p) => p.kind === k)!;
 /** Thú được cho ăn hôm qua hoặc hôm nay thì mới có tác dụng. */
 export const petActive = (p: PetState | undefined, day: number) => !!p && day - p.fedDay <= 1;

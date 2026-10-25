@@ -5,6 +5,7 @@ import { productById } from '../data/products';
 import { ageLots, fitLots, mergeLots, needsCold, shelfLife, spoilRate, takeOldest, type Lot } from '../data/freshness';
 import { spoilFactor } from './biz';
 import { hasSkill } from '../data/titles';
+import { WAREHOUSE_KEEP_PER_STAR } from '../data/staff';
 import type { GameState, Furniture, Tier } from './gameTypes';
 
 export interface Stock { storage: Record<string, number>; storageLots: Record<string, Lot[]> }
@@ -35,7 +36,7 @@ export function returnTier(k: Stock, t: Tier) {
  * Qua đêm: trừ hạn mọi lô theo chỗ cất và thời tiết hôm nay, bỏ hàng hết hạn.
  * Trả về kho, nội thất mới và số món/tiền vốn bỏ đi.
  */
-export function spoilOvernight(s: Pick<GameState, 'storage' | 'storageLots' | 'furniture' | 'weather' | 'warehouseTier' | 'skills' | 'biz' | 'day'>) {
+export function spoilOvernight(s: Pick<GameState, 'storage' | 'storageLots' | 'furniture' | 'weather' | 'warehouseTier' | 'skills' | 'biz' | 'day' | 'staff'>) {
   let items = 0;
   let cost = 0;
   /** Số món hỏng theo từng sản phẩm — cho sổ phân tích 30 ngày. */
@@ -47,12 +48,15 @@ export function spoilOvernight(s: Pick<GameState, 'storage' | 'storageLots' | 'f
   // zero_waste: mở khóa ở cấp 35 – giảm 50% tốc độ hư hỏng thực phẩm tươi
   const zeroWasteMul = hasSkill(s.skills, 'zero_waste') ? 0.5 : 1;
   const effectiveKeeper = keeper * cooler * (zeroWasteMul === 0.5 ? (zeroWasteMul + (1 - zeroWasteMul) * keeper) : 1);
+  // Quản lý kho: sắp xếp xoay hàng, hàng hỏng chậm hơn theo tay nghề (không kể ca — dọn kho cả ngày)
+  const mgrSkill = s.staff.reduce((best, st) => (st.role === 'warehouse_mgr' ? Math.max(best, st.skill) : best), 0);
+  const keeperMgr = 1 - WAREHOUSE_KEEP_PER_STAR * mgrSkill;
   const spoil = (id: string, lots: Lot[], place: Parameters<typeof spoilRate>[1]) => {
     // Áp dụng zero_waste cho hàng tươi sống (fresh category)
     const product = productById(id);
     const isFresh = product.category === 'fresh';
     // Mèo giữ tiệm bắt chuột: hàng hỏng chậm hơn
-    const rate = spoilRate(id, place, s.weather) * (isFresh ? effectiveKeeper : keeper) * spoilFactor(s.biz, s.day);
+    const rate = spoilRate(id, place, s.weather) * (isFresh ? effectiveKeeper : keeper) * keeperMgr * spoilFactor(s.biz, s.day);
     const [kept, gone] = ageLots(lots, rate);
     items += gone;
     cost += gone * product.buy;

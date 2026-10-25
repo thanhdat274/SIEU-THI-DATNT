@@ -162,7 +162,7 @@ export function buyPet(kind: PetKind) {
   const s = S();
   const def = petDef(kind);
   if (s.biz.pets[kind] || s.level < def.unlock || !pay(def.price, `nuôi ${def.name}`)) return;
-  patch({ pets: { ...s.biz.pets, [kind]: { fedDay: s.day, mood: 100 } } });
+  patch({ pets: { ...s.biz.pets, [kind]: { fedDay: s.day } } });
   s.notify(`${def.icon} ${def.name} về tiệm rồi! Nhớ cho ăn mỗi ngày (${productById(def.food).name} trong kho)`);
   checkAchievements();
 }
@@ -177,7 +177,7 @@ export function feedPet(kind: PetKind) {
   if ((s.storage[def.food] ?? 0) > 0) {
     s.consumeStock(def.food, 1);
   } else if (!pay(productById(def.food).buy * 2, 'mua thức ăn lẻ')) return;
-  patch({ pets: { ...S().biz.pets, [kind]: { fedDay: s.day, mood: 100 } } });
+  patch({ pets: { ...S().biz.pets, [kind]: { fedDay: s.day } } });
   s.notify(`${def.icon} ${def.name} ăn no, vẫy đuôi rối rít`);
 }
 

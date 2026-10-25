@@ -25,7 +25,7 @@ import { isCookStation } from '../../data/furniture';
 import { COMPLAINTS_FOR_SURPRISE, LICENSE_FINE, LICENSE_GRACE, licenseById, licenseStatus, missingLicenses, newInspection, RENEW_WARN_DAYS, requiredLicenses, SURPRISE_INSPECTION, SUSPEND_AFTER } from '../../data/licenses';
 import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
-import { gardenNight } from '../../data/garden';
+import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
 import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
@@ -70,15 +70,41 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       shopTier: s.shopTier + 1,
       pendingUpgrade: false,
       furniture: s.furniture.map((f) => ({ ...f, z: f.z + shift })),
+      mainCounter: s.mainCounter && { ...s.mainCounter, z: s.mainCounter.z + shift },
       opening: { day: s.day + 1, tier: s.shopTier + 1 },
     });
     s.notify(`🏗️ Thợ đã xây xong: ${SHOP_TIERS[s.shopTier + 1].name}! Mai khai trương, cả hẻm sẽ tới mừng, xem mục tiêu ở Nhiệm vụ`);
   }
   // Qua đêm hàng cũ đi một ngày hạn, rồi hàng đặt hôm nay về kho lúc sáng mai (hạn đầy)
   const aged = spoilOvernight(get());
-  // Vườn rau + chuồng gà sau nhà qua một đêm: cây lớn theo tưới/mưa, bão phá vườn, gà đẻ trứng
-  const gardenNightResult = gardenNight(s.garden, { day: s.day, weather: s.weather, coopFedToday: s.garden.coop?.fedDay === s.day });
-  const garden = gardenNightResult.garden;
+  // Trang trại qua một đêm: cây lớn theo tưới/mưa, bão phá vườn, vật nuôi cho sản phẩm nếu được cho ăn.
+  // Có phụ trại (farmhand) thì lo sẵn từ tối: tưới luống khô, đổ cám từ kho cho chuồng đói, gom hàng chờ thu.
+  const farmhand = s.staff.find((st) => st.role === 'farmhand');
+  // Hàng nhà trồng/nhà nuôi hỏng qua đêm thì rút nhãn cho đúng số còn trong kho
+  let garden = Object.keys(aged.byId).length ? (() => {
+    const hg = { ...s.garden.homegrown };
+    for (const [id, n] of Object.entries(aged.byId)) {
+      const left = (hg[id] ?? 0) - n;
+      if (left > 0) hg[id] = left;
+      else if (hg[id] !== undefined) delete hg[id];
+    }
+    return { ...s.garden, homegrown: hg };
+  })() : s.garden;
+  let farmhandPicked: { productId: string; qty: number }[] = [];
+  let farmhandFeedUsed: { productId: string; bags: number }[] = [];
+  const farmhandNews: string[] = [];
+  const fed: Partial<Record<AnimalKind, boolean>> = {};
+  for (const kk of ANIMAL_ORDER) if (garden.pens[kk]?.fedDay === s.day) fed[kk] = true;
+  if (farmhand) {
+    const chores = farmhandChores(garden, aged.storage, s.day, { crit: farmCritChance(garden) });
+    garden = chores.garden;
+    farmhandPicked = chores.picked;
+    farmhandFeedUsed = chores.feedUsed;
+    for (const kk of chores.fedKinds) fed[kk] = true;
+    if (chores.news.length) farmhandNews.push(`🧑‍🌾 ${farmhand.name} lo trại hộ: ${chores.news.join(', ')}`);
+  }
+  const gardenNightResult = gardenNight(garden, { day: s.day, weather: s.weather, fed });
+  garden = gardenNightResult.garden;
   // Sổ phân tích 30 ngày: bán/hỏng/lỡ bán theo từng món + cờ combo & giờ vàng của hôm nay
   const lostPerItem: Record<string, number> = {};
   for (const [key, n] of Object.entries(s.stats.missLog ?? {})) {
@@ -89,6 +115,27 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     { combo: s.activeCombos.length > 0, happyHour: !!s.happyHour });
   const k: Stock = { storage: aged.storage, storageLots: aged.storageLots };
   for (const d of s.deliveries) for (const [id, qty] of Object.entries(d.items)) putStock(k, id, qty);
+  // Phụ trại đổ cám hộ + gom nông sản về kho (kèm nhãn nhà trồng/nhà nuôi bán được giá hơn)
+  for (const f of farmhandFeedUsed) takeStock(k, f.productId, f.bags);
+  if (farmhandPicked.length) {
+    const homegrown = { ...garden.homegrown };
+    for (const p of farmhandPicked) {
+      putStock(k, p.productId, p.qty);
+      homegrown[p.productId] = (homegrown[p.productId] ?? 0) + p.qty;
+    }
+    garden = { ...garden, homegrown };
+  }
+  // Đơn quán xóm đặt nông sản: quá hạn thì quán xin lỗi bỏ, trống thì có đơn mới chờ
+  const gardenNews = [...gardenNightResult.news, ...farmhandNews];
+  if (garden.farmOrder && s.day >= garden.farmOrder.dueDay) {
+    gardenNews.push(`📦 ${garden.farmOrder.from} huỷ đơn nông sản quá hạn — đơn khác sẽ ghé sau`);
+    garden = { ...garden, farmOrder: null };
+  }
+  if (!garden.farmOrder && s.level >= FARM_ORDER_UNLOCK) {
+    const order = makeFarmOrder(s.day + 1);
+    garden = { ...garden, farmOrder: order };
+    gardenNews.push(`📦 ${order.from} đặt mua nông sản, hạn ngày ${order.dueDay} — xem ở bảng Trang trại`);
+  }
   // Sổ nợ: nợ lâu thì nhắc chủ tiệm, quá hạn chót coi như mất
   const debts: Record<string, Debt> = {};
   for (const [rid, d] of Object.entries(s.debts)) {
@@ -169,7 +216,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   }
   const news = morningNews(s.weatherSeed, s.day + 1, s.level);
   if (nextEvent) news.push(`${nextEvent.icon} Sự kiện hôm nay: ${nextEvent.blurb}`);
-  news.push(...gardenNightResult.news);
+  news.push(...gardenNews);
   if (contractNews.length) news.push(...contractNews);
   if (order && !order.accepted) news.push(`📋 ${partyOrderById(order.id)!.from} muốn đặt đơn, xem ở Nhiệm vụ`);
   if (brokeNow) news.push(`🔧 ${brokeNow} kệ bị hỏng qua đêm, bấm vào kệ để sửa`);

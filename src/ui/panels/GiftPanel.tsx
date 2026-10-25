@@ -8,8 +8,12 @@ export function GiftPanel() {
   const { day, giftStreak, giftLastDay, wheelLastDay, wheelBoost, claimGift, spinWheel, closePanel } = useGame();
   const claimedToday = giftLastDay === day;
   const spunToday = wheelLastDay === day;
-  const nextIdx = giftStreak % DAILY_GIFTS.length;
-  const claimedIdx = claimedToday ? (giftStreak - 1) % DAILY_GIFTS.length : -1;
+  const cycle = DAILY_GIFTS.length;
+  // Chuỗi còn giữ được hôm nay không (bỏ lỡ một ngày là về ngày 1)
+  const live = claimedToday || giftLastDay === day - 1 ? giftStreak : 0;
+  // Số ô đã nhận trong vòng hiện tại; đủ 7 ô thì vòng mới bắt đầu từ ngày mai
+  const doneCount = claimedToday ? ((live - 1) % cycle) + 1 : live % cycle;
+  const nextIdx = claimedToday ? -1 : live % cycle;
   const [angle, setAngle] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<WheelPrize | null>(null);
@@ -40,8 +44,8 @@ export function GiftPanel() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
         {DAILY_GIFTS.map((g, i) => {
-          const done = i === claimedIdx;
-          const next = i === nextIdx && !claimedToday;
+          const done = i < doneCount;
+          const next = i === nextIdx;
           return (
             <div
               key={i}

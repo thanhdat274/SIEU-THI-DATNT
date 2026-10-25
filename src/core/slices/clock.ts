@@ -11,7 +11,7 @@ import { useClock } from '../store';
 import { runBranch } from './branch';
 import { endDay } from './endDay';
 import { updateOnline } from './online';
-import { updatePhones, cookSpeed } from './orders';
+import { updatePhones, cookSpeed, bartenderBoost } from './orders';
 
 /** Đồng hồ và nhịp ngày: tick mỗi khung hình (chi nhánh, điện thoại, mẻ nấu), đi ngủ, thông báo, mở bảng. */
 
@@ -53,8 +53,13 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     // Các mẻ nấu đang chạy: hết giờ thì thành phẩm vào kho (bày bán như hàng thường)
     const jobs = get().cookJobs;
     if (jobs.length && s.speed > 0) {
-      const step = dt * MINUTES_PER_SECOND * s.speed * cookSpeed(get);
-      const next = jobs.map((j) => ({ ...j, remaining: j.remaining - step }));
+      const base = dt * MINUTES_PER_SECOND * s.speed * cookSpeed(get);
+      // Mẻ ở trạm pha chế được pha chế trực ca tăng tốc thêm (cùng đầu bếp)
+      const drink = base * bartenderBoost(get);
+      const next = jobs.map((j) => {
+        const r = RECIPE_MAP[j.recipeId];
+        return { ...j, remaining: j.remaining - (r?.station === 'drink_counter' ? drink : base) };
+      });
       const done = next.filter((j) => j.remaining <= 0);
       if (done.length) {
         const k = copyStock(get());

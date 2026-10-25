@@ -1,4 +1,5 @@
 import { FURNITURE } from './furniture';
+import { GARDEN_UNLOCK, LAND_TIERS } from './garden';
 import { PAYMENTS } from './payments';
 import { PRODUCTS } from './products';
 import { SHOP_TIERS } from './shopTiers';
@@ -40,6 +41,8 @@ export function unlocksAt(level: number): string[] {
     ...(Object.keys(FEATURES) as (keyof typeof FEATURES)[])
       .filter((k) => FEATURES[k] === level)
       .map((k) => FEATURE_NAMES[k]),
+    ...(level === GARDEN_UNLOCK ? ['🚜 Trang trại đầu ngõ: trồng rau, nuôi gà lấy trứng'] : []),
+    ...LAND_TIERS.filter((t, i) => i > 0 && t.unlock === level).map((t) => `Mở rộng trang trại: ${t.name}`),
     ...PAYMENTS.filter((p) => p.unlock === level && level > 1).map((p) => `${p.icon} Thanh toán ${p.name}`),
     ...UPCOMING.filter((u) => u.level === level).map((u) => u.text),
   ];

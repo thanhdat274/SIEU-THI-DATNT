@@ -1,5 +1,5 @@
 import { CONVENIENCE } from '../data/branches';
-import { plotReady } from '../data/garden';
+import { ANIMALS, ANIMAL_ORDER, EGG_PER_TRAY, plotReady } from '../data/garden';
 import { activeBuzz, SOCIAL_UNLOCK } from '../data/social';
 import { ONLINE_UNLOCK } from '../data/online';
 import { licenseStatus, type LicenseId } from '../data/licenses';
@@ -177,14 +177,32 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   const giftClaimable = useGame((s) => s.giftLastDay !== s.day);
   const wheelReady = useGame((s) => s.wheelLastDay !== s.day);
   const wheelBoost = useGame((s) => s.wheelBoost);
-  // Vườn nhà: chưa tưới (và trời không mưa) hoặc luống chờ thu hoạch thì nhắc trên nút
+  // Trang trại: luống chờ thu, trứng/sữa chờ lấy, heo xuất chuồng được, gà đói mà kho hết cám, hoặc chưa tưới
   const gardenBadge = useGame((s) => {
     if (s.level < 8) return undefined;
+    if (s.garden.farmOrder && s.garden.farmOrder.dueDay === s.day + 1) return '📦 Đơn sắp hết hạn';
+    for (const kind of ANIMAL_ORDER) {
+      const pen = s.garden.pens[kind];
+      if (!pen?.count) continue;
+      const def = ANIMALS[kind];
+      if (kind === 'pig' && (pen.fattened ?? 0) >= (def.fattenDays ?? 0)) return '🐖 Xuất chuồng được';
+      if (kind !== 'pig' && pen.pending >= (kind === 'cow' ? 1 : EGG_PER_TRAY)) return kind === 'cow' ? '🥛 Sữa chờ vắt' : '🥚 Trứng chờ thu';
+    }
     if (s.garden.plots.some(plotReady)) return '🧺 Thu được';
+    const outOfFeed = ANIMAL_ORDER.some((kind) => {
+      const pen = s.garden.pens[kind];
+      if (!pen?.count || pen.fedDay === s.day) return false;
+      const def = ANIMALS[kind];
+      return pen.feedKg < pen.count * def.feedKgPerDay && (s.storage[def.feedProduct] ?? 0) === 0;
+    });
+    if (outOfFeed) return '🌽 Hết cám';
     const dry = s.weather !== 'rain' && s.weather !== 'storm' && s.garden.plots.some((p) => p.crop && p.wateredDay !== s.day);
     return dry ? '💧 Chưa tưới' : undefined;
   });
   const atHome = location === 'Nhà của bạn';
+  const atFarm = location === 'Trang trại đầu ngõ';
+  // Bảng nào đang mở thì nút mở bảng đó sáng lên
+  const openType = useGame((s) => s.panel?.type ?? null);
   type Tool = { icon: string; label: string; on: () => void; badge?: string; lock?: number; active?: boolean; more?: boolean };
   const tools: Tool[] = [
     {
@@ -192,38 +210,42 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
       on: () => worldActions.travel(atHome ? 'shop' : 'home'),
     },
     {
-      icon: '🗃️', label: 'Kho', badge: emptySlots ? `${emptySlots} trống` : undefined,
+      icon: atFarm ? '🛵' : '🚜', label: atFarm ? 'Ra tiệm' : 'Ra trại',
+      on: () => worldActions.travel(atFarm ? 'shop' : 'ranch'),
+    },
+    {
+      icon: '🗃️', label: 'Kho', badge: emptySlots ? `${emptySlots} trống` : undefined, active: openType === 'storage',
       on: () => openPanel({ type: 'storage' }),
     },
-    { icon: '🗺️', label: 'Sơ đồ kệ', on: () => openPanel({ type: 'planogram' }) },
-    { icon: '📦', label: 'Nhập hàng', on: () => openPanel({ type: 'order' }) },
-    { icon: '☀️', label: 'Sổ đầu ngày', on: () => openPanel({ type: 'morning' }) },
-    { icon: '📜', label: 'Nhiệm vụ', badge: questsReady ? `${questsReady} xong` : undefined, on: () => openPanel({ type: 'quests' }) },
+    { icon: '🗺️', label: 'Sơ đồ kệ', active: openType === 'planogram', on: () => openPanel({ type: 'planogram' }) },
+    { icon: '📦', label: 'Nhập hàng', active: openType === 'order', on: () => openPanel({ type: 'order' }) },
+    { icon: '☀️', label: 'Sổ đầu ngày', active: openType === 'morning', on: () => openPanel({ type: 'morning' }) },
+    { icon: '📜', label: 'Nhiệm vụ', badge: questsReady ? `${questsReady} xong` : undefined, active: openType === 'quests', on: () => openPanel({ type: 'quests' }) },
     {
-      icon: '🎁', label: 'Điểm danh',
+      icon: '🎁', label: 'Điểm danh', active: openType === 'gifts',
       badge: giftClaimable ? 'Có quà' : wheelReady ? '⭕ Quay' : undefined,
       on: () => openPanel({ type: 'gifts' }),
     },
-    { icon: '🗓️', label: 'Lịch sự kiện', more: true, on: () => openPanel({ type: 'calendar' }) },
-    { icon: '🍳', label: 'Sổ nấu', more: true, lock: 21, on: () => openPanel({ type: 'cook' }) },
-    { icon: '🛠️', label: 'Xây dựng', active: false, more: true, on: () => openPanel({ type: 'arrange' }) },
-    { icon: '💲', label: 'Giá bán', lock: FEATURES.prices, on: () => openPanel({ type: 'prices' }) },
-    { icon: '🎁', label: 'Combo', more: true, lock: COMBO_UNLOCK, on: () => openPanel({ type: 'combos' }) },
-    { icon: '📋', label: 'Hợp đồng', lock: 14, more: true, on: () => openPanel({ type: 'contracts' }) },
-    { icon: '📈', label: 'Kinh doanh', lock: 3, badge: [loanBadge, rivalBadge].filter(Boolean).join(' · ') || undefined, on: () => openPanel({ type: 'business' }) },
-    { icon: '📊', label: 'Sổ theo dõi', more: true, on: () => openPanel({ type: 'history' }) },
-    { icon: '🩺', label: 'Sức khoẻ món', more: true, on: () => openPanel({ type: 'analytics' }) },
-    { icon: '🌱', label: 'Vườn nhà', more: true, lock: 8, badge: gardenBadge, on: () => openPanel({ type: 'garden' }) },
-    { icon: '👕', label: 'Trang phục', lock: 2, more: true, on: () => openPanel({ type: 'costume' }) },
-    { icon: '🏅', label: 'Danh hiệu', more: true, badge: skillsLeft > 0 ? `+${skillsLeft} kỹ năng` : undefined, on: () => openPanel({ type: 'skills' }) },
-    { icon: '💛', label: 'Khách quen', more: true, on: () => openPanel({ type: 'regulars' }) },
-    { icon: '👥', label: 'Nhân viên', more: true, lock: FEATURES.staff, on: () => openPanel({ type: 'staff' }) },
-    { icon: '🏪', label: 'Tiện lợi 24/7', more: true, lock: CONVENIENCE.unlock, on: () => openPanel({ type: 'branch' }) },
-    { icon: '📱', label: 'Mạng xã hội', more: true, lock: SOCIAL_UNLOCK, badge: socialBadge, on: () => openPanel({ type: 'social' }) },
-    { icon: '📲', label: 'Bán online', more: true, lock: ONLINE_UNLOCK, badge: onlineBadge, on: () => openPanel({ type: 'online' }) },
-    { icon: '📜', label: 'Giấy phép', more: true, lock: INSPECTION_UNLOCK, badge: licenseBadge, on: () => openPanel({ type: 'licenses' }) },
+    { icon: '🗓️', label: 'Lịch sự kiện', more: true, active: openType === 'calendar', on: () => openPanel({ type: 'calendar' }) },
+    { icon: '🍳', label: 'Sổ nấu', more: true, lock: 21, active: openType === 'cook', on: () => openPanel({ type: 'cook' }) },
+    { icon: '🛠️', label: 'Xây dựng', more: true, active: openType === 'arrange', on: () => openPanel({ type: 'arrange' }) },
+    { icon: '💲', label: 'Giá bán', lock: FEATURES.prices, active: openType === 'prices', on: () => openPanel({ type: 'prices' }) },
+    { icon: '🎁', label: 'Combo', more: true, lock: COMBO_UNLOCK, active: openType === 'combos', on: () => openPanel({ type: 'combos' }) },
+    { icon: '📋', label: 'Hợp đồng', lock: 14, more: true, active: openType === 'contracts', on: () => openPanel({ type: 'contracts' }) },
+    { icon: '📈', label: 'Kinh doanh', lock: 3, badge: [loanBadge, rivalBadge].filter(Boolean).join(' · ') || undefined, active: openType === 'business', on: () => openPanel({ type: 'business' }) },
+    { icon: '📊', label: 'Sổ theo dõi', more: true, active: openType === 'history', on: () => openPanel({ type: 'history' }) },
+    { icon: '🩺', label: 'Sức khoẻ món', more: true, active: openType === 'analytics', on: () => openPanel({ type: 'analytics' }) },
+    { icon: '🚜', label: 'Trang trại', more: true, lock: 8, badge: gardenBadge, active: openType === 'garden', on: () => openPanel({ type: 'garden' }) },
+    { icon: '👕', label: 'Trang phục', lock: 2, more: true, active: openType === 'costume', on: () => openPanel({ type: 'costume' }) },
+    { icon: '🏅', label: 'Danh hiệu', more: true, badge: skillsLeft > 0 ? `+${skillsLeft} kỹ năng` : undefined, active: openType === 'skills', on: () => openPanel({ type: 'skills' }) },
+    { icon: '💛', label: 'Khách quen', more: true, active: openType === 'regulars', on: () => openPanel({ type: 'regulars' }) },
+    { icon: '👥', label: 'Nhân viên', more: true, lock: FEATURES.staff, active: openType === 'staff', on: () => openPanel({ type: 'staff' }) },
+    { icon: '🏪', label: 'Tiện lợi 24/7', more: true, lock: CONVENIENCE.unlock, active: openType === 'branch', on: () => openPanel({ type: 'branch' }) },
+    { icon: '📱', label: 'Mạng xã hội', more: true, lock: SOCIAL_UNLOCK, badge: socialBadge, active: openType === 'social', on: () => openPanel({ type: 'social' }) },
+    { icon: '📲', label: 'Bán online', more: true, lock: ONLINE_UNLOCK, badge: onlineBadge, active: openType === 'online', on: () => openPanel({ type: 'online' }) },
+    { icon: '📜', label: 'Giấy phép', more: true, lock: INSPECTION_UNLOCK, badge: licenseBadge, active: openType === 'licenses', on: () => openPanel({ type: 'licenses' }) },
     {
-      icon: '💬', label: 'Đánh giá', more: true, badge: rating.count ? `${rating.average.toFixed(1)}★` : undefined,
+      icon: '💬', label: 'Đánh giá', more: true, active: openType === 'reviews', badge: rating.count ? `${rating.average.toFixed(1)}★` : undefined,
       on: () => openPanel({ type: 'reviews' }),
     },
   ];
@@ -310,7 +332,12 @@ ${forecastText}`}>
       <div className="hud-alerts">
         {late && !message && <div className="hud-alert danger">🌙 Đã khuya! Về nhà ngủ trước 2:00 sáng kẻo ngất.</div>}
         {wheelBoost > 1 && <div className="hud-alert info">🍀 Vòng quay may mắn: hôm nay khách ghé đông thêm {Math.round((wheelBoost - 1) * 100)}%</div>}
-        {dirt >= 60 && <div className="hud-alert warn">🧹 Sàn tiệm bẩn ({Math.round(dirt)}%), khách ngại vào</div>}
+        {dirt >= 30 && (
+          <div className={`hud-alert ${dirt >= 60 ? 'warn' : 'info'}`}>
+            🧹 Sàn tiệm bẩn ({Math.round(dirt)}%){dirt >= 60 ? ', khách ngại vào' : ''} · đứng trong tiệm bấm <b>[C]</b> (giữ phím) để tự lau
+            <span className="hud-alert-actions"><button className="hud-btn" onClick={() => worldActions.mop()}>Lau nhà</button></span>
+          </div>
+        )}
         {waiting > 0 && !hint?.startsWith('💵') &&<div className="hud-alert warn">🛒 {waiting} khách đang chờ tính tiền ở quầy</div>}
         <PhoneAlerts />
         <VendorAlert />

@@ -15,8 +15,14 @@ export interface ComboDef {
 
 /** Cấp mở bảng combo. */
 export const COMBO_UNLOCK = 6;
-/** Số combo được chạy cùng lúc (ít thì mới phải chọn). */
+/** Số combo được chạy cùng lúc lúc mới mở bảng (ít thì mới phải chọn). */
 export const MAX_ACTIVE_COMBOS = 3;
+/** Cấp mở thêm mỗi chỗ chạy combo: cấp 12 → 4, cấp 18 → 5, cấp 25 → 6 combo. */
+export const COMBO_SLOT_LEVELS = [12, 18, 25];
+/** Số combo được chạy cùng lúc ở cấp `level`. */
+export const maxActiveCombos = (level: number) => MAX_ACTIVE_COMBOS + COMBO_SLOT_LEVELS.filter((l) => level >= l).length;
+/** Cấp kế tiếp được mở thêm chỗ, hoặc undefined nếu đã đủ. */
+export const nextComboSlotLevel = (level: number) => COMBO_SLOT_LEVELS.find((l) => level < l);
 /** Khách lấy một món trong combo đang chạy thì có chừng này khả năng lấy thêm món kia. */
 export const COMBO_PULL = 0.45;
 

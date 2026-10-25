@@ -24,6 +24,10 @@ const ICONS: Record<FurnitureType, string> = {
   fryer: '🍳', sugarcane_press: '🥤', rice_station: '🍚', steamer: '♨️', gift_wrap: '🎁',
 };
 
+/** uid giả của quầy chính trong bản nháp. */
+const MAIN_UID = 0;
+const nameOf = (f: Furniture) => (f.uid === MAIN_UID ? 'Quầy chính' : furnitureDef(f.type).name);
+
 type Tab = 'furniture' | 'paint' | 'expand';
 
 /**
@@ -32,8 +36,10 @@ type Tab = 'furniture' | 'paint' | 'expand';
  * Mọi thay đổi nằm trong bản nháp, bấm "Áp dụng" mới trả tiền và dọn đồ thật.
  */
 export function ArrangePanel() {
-  const { furniture: saved, money, level, closePanel, placeFurniture, moveFurniture, sellFurniture, notify } = useGame();
+  const { furniture: savedFurniture, money, level, closePanel, placeFurniture, moveFurniture, moveMainCounter, sellFurniture, notify } = useGame();
   const plan = useMemo(() => shopLayout.plan(), []);
+  // Quầy chính nằm trong bản nháp như một món có uid 0 (không mua/bán được, chỉ dời và xoay)
+  const saved = useMemo(() => [{ uid: MAIN_UID, type: 'checkout' as const, x: plan.counter.x, z: plan.counter.z, rot: plan.counter.rot, tiers: [] }, ...savedFurniture], [plan, savedFurniture]);
   // Sàn và tường bản vẽ theo màu tiệm (kể cả màu đang xem thử ở thẻ Sơn sửa)
   const style = useGame((s) => s.style);
   const preview = useGame((s) => s.stylePreview);
@@ -53,8 +59,10 @@ export function ArrangePanel() {
 
   const problems = useMemo(() => {
     const out = new Map<number, string>();
+    const others = draft.filter((f) => f.uid !== MAIN_UID);
+    const main = draft.find((f) => f.uid === MAIN_UID)!;
     for (const f of draft) {
-      const reason = shopLayout.check(f.type, f.x, f.z, f.rot, f.uid, draft);
+      const reason = f.uid === MAIN_UID ? shopLayout.checkMainCounter(f.x, f.z, f.rot, others) : shopLayout.check(f.type, f.x, f.z, f.rot, f.uid, others, main);
       if (reason) out.set(f.uid, reason);
     }
     return out;
@@ -82,6 +90,7 @@ export function ArrangePanel() {
   const rotate = () => sel && update(sel.uid, (f) => ({ ...f, rot: (f.rot + 1) % 4 }));
   const remove = () => {
     if (!sel) return;
+    if (sel.uid === MAIN_UID) return notify('Quầy chính không bán được, chỉ dời hoặc xoay thôi.');
     commit(draft.filter((f) => f.uid !== sel.uid));
     setSelected(null);
   };
@@ -96,18 +105,18 @@ export function ArrangePanel() {
   /** Mua món mới: tự tìm chỗ trống đầu tiên (từ trong ra ngoài), không có thì đặt giữa tiệm cho người chơi dời. */
   const buy = (type: FurnitureType) => {
     const uid = Math.min(0, ...draft.map((f) => f.uid)) - 1;
-    const spot = findSpot(type, draft, plan) ?? { x: 0, z: 0, rot: 0 };
+    const spot = findSpot(type, draft) ?? { x: 0, z: 0, rot: 0 };
     commit([...draft, { uid, type, ...spot, tiers: [] }]);
     setSelected(uid);
   };
 
   const apply = () => {
     if (problems.size) return setError(`Còn ${problems.size} món đặt chưa hợp lệ (viền đỏ).`);
-    const blocked = shopLayout.layoutCheck(draft);
+    const blocked = shopLayout.layoutCheck(draft.filter((f) => f.uid !== MAIN_UID), draft.find((f) => f.uid === MAIN_UID));
     if (blocked) return setError(blocked);
     if (cost - refund > money) return setError(`Thiếu ${formatMoney(cost - refund - money)} để áp dụng.`);
     for (const f of removed) sellFurniture(f.uid);
-    for (const f of moved) moveFurniture(f.uid, f.x, f.z, f.rot);
+    for (const f of moved) (f.uid === MAIN_UID ? moveMainCounter : moveFurniture)(...(f.uid === MAIN_UID ? [f.x, f.z, f.rot] : [f.uid, f.x, f.z, f.rot]) as [number, number, number, number]);
     for (const f of added) placeFurniture(f.type, f.x, f.z, f.rot);
     if (changes) notify(`✅ Đã áp dụng bố cục mới (${changes} thay đổi).`);
     closePanel();
@@ -181,12 +190,11 @@ export function ArrangePanel() {
     update(sel.uid, (f) => ({ ...f, x: snap(p.x), z: snap(p.z) }));
   };
 
-  const { width: W, depth: D, counter, doorW, backDoorX, windows } = plan;
+  const { width: W, depth: D, doorW, backDoorX, windows } = plan;
   // Hình dáng tiệm theo bản nháp (quầy chính + các quầy phụ đang đặt thử) để chấm điểm vị trí
   const geom: ShopGeom = useMemo(() => ({
     width: W, depth: D,
     paySpots: [
-      { x: counter.x - 1.0, z: counter.z },
       ...draft.filter((f) => f.type === 'checkout').map((f) => {
         const [fx, fz] = frontDir(f.rot);
         return { x: f.x + fx, z: f.z + fz };
@@ -194,7 +202,7 @@ export function ArrangePanel() {
     ],
     // phụ thuộc vị trí quầy trong nháp, không phụ thuộc selection
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [W, D, counter, draft]);
+  }), [W, D, draft]);
   const topHeat = Math.max(0, ...Object.values(shelfHeat));
   const selAttention = sel ? spotVisibility(sel.x, sel.z, geom) : 0;
   const pad = 0.6;
@@ -220,8 +228,8 @@ export function ArrangePanel() {
               <div className={`ar-status${sel ? (problems.has(sel.uid) ? ' bad' : ' sel') : ''}`}>
                 {sel ? (
                   problems.has(sel.uid)
-                    ? <>⚠️ <b>{furnitureDef(sel.type).name}</b>: {problems.get(sel.uid)}</>
-                    : <>✥ <b>{furnitureDef(sel.type).name}</b>: kéo để dời, hoặc chạm chỗ sàn trống để đưa tới đó.</>
+                    ? <>⚠️ <b>{nameOf(sel)}</b>: {problems.get(sel.uid)}</>
+                    : <>✥ <b>{nameOf(sel)}</b>: kéo để dời, hoặc chạm chỗ sàn trống để đưa tới đó.</>
                 ) : (
                   <>💡 Chạm vào một món trên bản vẽ để chọn, hoặc mua món mới ở danh mục.</>
                 )}
@@ -267,12 +275,6 @@ export function ArrangePanel() {
                 <text className="ar-door" x={0} y={D / 2 + 0.45}>▼ Cửa ra vào</text>
                 <rect className="ar-door-zone" x={-0.9} y={D / 2 - 1} width={1.8} height={1} />
 
-                {/* Quầy chính cố định */}
-                <g className="ar-counter">
-                  <rect x={counter.x - counter.w / 2} y={counter.z - counter.d / 2} width={counter.w} height={counter.d} rx={0.06} />
-                  <text x={counter.x} y={counter.z} transform={`rotate(90 ${counter.x} ${counter.z})`}>Quầy chính</text>
-                </g>
-
                 {draft.map((f) => {
                   const [w, d] = footprint(f.type, f.rot);
                   const [fx, fz] = frontDir(f.rot);
@@ -291,7 +293,7 @@ export function ArrangePanel() {
                         <line className="ar-front" {...frontLine(f.x, f.z, w, d, fx, fz)} />
                       ) : null}
                       <text x={f.x} y={f.z} className={small ? 'icon-only' : undefined}>
-                        {small ? ICONS[f.type] : `${ICONS[f.type]} ${furnitureDef(f.type).name}`}
+                        {small ? ICONS[f.type] : `${ICONS[f.type]} ${nameOf(f)}`}
                       </text>
                       {/* Lớp heatmap doanh số: phủ lên kệ đang bày hàng */}
                       {heat > 0 && (
@@ -328,8 +330,8 @@ export function ArrangePanel() {
             {sel && (
               <div className="ar-inspect">
                 <div className="ar-inspect-name">
-                  <b>{ICONS[sel.type]} {furnitureDef(sel.type).name}</b>
-                  <small>{sel.uid < 0 ? `Mua mới · ${formatMoney(furnitureDef(sel.type).price)}` : furnitureDef(sel.type).desc}</small>
+                  <b>{ICONS[sel.type]} {nameOf(sel)}</b>
+                  <small>{sel.uid === MAIN_UID ? 'Quầy chính của tiệm: kéo để dời, xoay để đổi hướng khách xếp hàng. Dời miễn phí.' : sel.uid < 0 ? `Mua mới · ${formatMoney(furnitureDef(sel.type).price)}` : furnitureDef(sel.type).desc}</small>
                   {isDisplay(sel) && (
                     <small>
                       📍 {visibilityLabel(selAttention)} · {Math.round(selAttention * 100)}%
@@ -344,9 +346,9 @@ export function ArrangePanel() {
                   <button onClick={() => nudge(0, STEP)} aria-label="Xuống">▼</button>
                 </div>
                 <button className="ar-btn" onClick={rotate}>↻ Xoay</button>
-                <button className="ar-btn danger" onClick={remove}>
+                {sel.uid !== MAIN_UID && <button className="ar-btn danger" onClick={remove}>
                   {sel.uid < 0 ? '✕ Bỏ món' : `🗑 Bán (+${formatMoney(Math.round(furnitureDef(sel.type).price * SELL_BACK))})`}
-                </button>
+                </button>}
                 <button className="ar-btn ghost" onClick={() => setSelected(null)}>Xong</button>
               </div>
             )}
@@ -422,17 +424,20 @@ const aisle = (f: Furniture): Rect => {
 const overlap = (a: Rect, b: Rect) => a.x0 < b.x1 && b.x0 < a.x1 && a.z0 < b.z1 && b.z0 < a.z1;
 
 /** Chỗ trống đầu tiên cho món mới (không chắn lối đi), quét từ góc trong cùng ra. */
-function findSpot(type: FurnitureType, list: Furniture[], plan: { width: number; depth: number }) {
+function findSpot(type: FurnitureType, draft: Furniture[]) {
+  const plan = shopLayout.plan();
+  const list = draft.filter((f) => f.uid !== MAIN_UID);
+  const main = draft.find((f) => f.uid === MAIN_UID);
   for (const rot of [0, 1]) {
     for (let z = -plan.depth / 2 + 0.5; z < plan.depth / 2; z += STEP) {
       for (let x = -plan.width / 2 + 0.5; x < plan.width / 2; x += STEP) {
         const sx = snap(x);
         const sz = snap(z);
-        if (shopLayout.check(type, sx, sz, rot, undefined, list)) continue;
+        if (shopLayout.check(type, sx, sz, rot, undefined, list, main)) continue;
         const me = { uid: -999, type, x: sx, z: sz, rot, tiers: [] };
-        if (list.some((f) => overlap(aisle(f), box(me)) || overlap(aisle(me), box(f)))) continue;
+        if (draft.some((f) => overlap(aisle(f), box(me)) || overlap(aisle(me), box(f)))) continue;
         // Chỗ này không được chắn lối tới kệ, quầy khác
-        if (!shopLayout.layoutCheck([...list, { uid: -999, type, x: sx, z: sz, rot, tiers: [] }])) return { x: sx, z: sz, rot };
+        if (!shopLayout.layoutCheck([...list, { uid: -999, type, x: sx, z: sz, rot, tiers: [] }], main)) return { x: sx, z: sz, rot };
       }
     }
   }

@@ -6,7 +6,7 @@ import { counterActive, PRICE_WAR_CUT } from '../../data/biz';
 import { RISK_RULES } from '../../data/risks';
 import { hasUpgrade } from '../../data/upgrades';
 import { isNight, NIGHT_PRICE_MUL } from '../../data/night';
-import { comboById, MAX_ACTIVE_COMBOS } from '../../data/combos';
+import { comboById, maxActiveCombos } from '../../data/combos';
 import { paymentById } from '../../data/payments';
 import { COOKED_PRODUCT_IDS } from '../../data/recipes';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
@@ -134,7 +134,8 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
   toggleCombo: (id) => {
     const s = get();
     if (s.activeCombos.includes(id)) return set({ activeCombos: s.activeCombos.filter((c) => c !== id) });
-    if (s.activeCombos.length >= MAX_ACTIVE_COMBOS) return s.notify(`Chỉ chạy được ${MAX_ACTIVE_COMBOS} combo cùng lúc, tắt bớt một cái nhé`);
+    const max = maxActiveCombos(s.level);
+    if (s.activeCombos.length >= max) return s.notify(`Chỉ chạy được ${max} combo cùng lúc, tắt bớt một cái nhé`);
     set({ activeCombos: [...s.activeCombos, id] });
     s.notify(`🎁 Bắt đầu chạy combo ${comboById(id)?.name}`);
   },

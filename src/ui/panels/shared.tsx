@@ -52,7 +52,8 @@ export const styles: Record<string, React.CSSProperties> = {
   },
   panel: {
     background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '18px 22px',
-    minWidth: 'min(360px, calc(100vw - 32px))', maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100dvh - 32px)', overflow: 'auto',
+    // Chừa đáy màn hình cho dock nút của HUD — hết cảnh dãy nút cuối panel bị dock đè lên
+    minWidth: 'min(360px, calc(100vw - 32px))', maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100dvh - 108px)', overflow: 'auto',
     boxSizing: 'border-box',
     boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
   },

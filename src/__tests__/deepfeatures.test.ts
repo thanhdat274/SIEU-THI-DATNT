@@ -75,13 +75,13 @@ describe('Vườn rau & chuồng gà', () => {
     const plots = g.plots.map((p, i) => (i === 0 ? { crop: 'rau_cai', growth: 0, wateredDay: 1 } : p));
     let state = { ...g, plots };
     // 3 ngày tưới đủ (ngày 2, 3 mưa tưới hộ)
-    state = gardenNight(state, { day: 1, weather: 'sunny', coopFedToday: false }).garden;
-    state = gardenNight(state, { day: 2, weather: 'rain', coopFedToday: false }).garden;
-    state = gardenNight(state, { day: 3, weather: 'rain', coopFedToday: false }).garden;
+    state = gardenNight(state, { day: 1, weather: 'sunny', fed: {} }).garden;
+    state = gardenNight(state, { day: 2, weather: 'rain', fed: {} }).garden;
+    state = gardenNight(state, { day: 3, weather: 'rain', fed: {} }).garden;
     expect(state.plots[0].growth).toBe(3);
     expect(plotReady(state.plots[0])).toBe(true);
     // Lô không tưới ngày 3: lớn chậm
-    const lazy = gardenNight({ ...state, plots: state.plots.map((p) => ({ ...p, wateredDay: 0 })) }, { day: 4, weather: 'sunny', coopFedToday: false }).garden;
+    const lazy = gardenNight({ ...state, plots: state.plots.map((p) => ({ ...p, wateredDay: 0 })) }, { day: 4, weather: 'sunny', fed: {} }).garden;
     expect(lazy.plots[0].growth).toBeCloseTo(3.4);
   });
 
@@ -89,20 +89,20 @@ describe('Vườn rau & chuồng gà', () => {
     const g = newGarden();
     const planted = { ...g, plots: g.plots.map((p) => ({ crop: 'bap', growth: 2, wateredDay: 5 })) };
     // Chạy nhiều lần với rng cố định 0 → mưa tưới hộ, không phá (0 < 0.4 là phá → dùng rng 0.9)
-    const ok = gardenNight(planted, { day: 5, weather: 'rain', coopFedToday: false, rng: () => 0.9 });
+    const ok = gardenNight(planted, { day: 5, weather: 'rain', fed: {}, rng: () => 0.9 });
     expect(ok.garden.plots[0].wateredDay).toBe(5);
     expect(ok.news.some((n) => n.includes('tưới hộ'))).toBe(true);
-    const broken = gardenNight(planted, { day: 5, weather: 'storm', coopFedToday: false, rng: () => 0.1 });
+    const broken = gardenNight(planted, { day: 5, weather: 'storm', fed: {}, rng: () => 0.1 });
     expect(broken.garden.plots[0].crop).toBeNull();
     expect(broken.news.some((n) => n.includes('sập'))).toBe(true);
   });
 
   it('gà được cho ăn thì đẻ trứng', () => {
-    const g = { ...newGarden(), coop: { chickens: 3, fedDay: 1, eggs: 0 } };
-    const res = gardenNight(g, { day: 1, weather: 'sunny', coopFedToday: true, rng: () => 0 });
-    expect(res.garden.coop!.eggs).toBe(3);
-    const hungry = gardenNight(res.garden, { day: 2, weather: 'sunny', coopFedToday: false, rng: () => 0 });
-    expect(hungry.garden.coop!.eggs).toBe(3);
+    const g = { ...newGarden(), pens: { chicken: { count: 3, fedDay: 1, feedKg: 1, pending: 0 } } };
+    const res = gardenNight(g, { day: 1, weather: 'sunny', fed: { chicken: true }, rng: () => 0 });
+    expect(res.garden.pens.chicken!.pending).toBe(3);
+    const hungry = gardenNight(res.garden, { day: 2, weather: 'sunny', fed: {}, rng: () => 0 });
+    expect(hungry.garden.pens.chicken!.pending).toBe(3);
     expect(hungry.news.some((n) => n.includes('đói'))).toBe(true);
   });
 

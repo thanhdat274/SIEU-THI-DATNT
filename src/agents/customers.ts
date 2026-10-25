@@ -24,7 +24,7 @@ import { earnService } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
 import { askAtCounter, askPending, clearAsk, expireAsk } from '../core/counterAsk';
 import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../data/wholesale';
-import { DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor, GUARD_DETECT } from '../data/staff';
+import { bestSkillOnDuty, CARE_PATIENCE_PER_STAR, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor, GUARD_DETECT } from '../data/staff';
 import { socialTraffic } from '../data/social';
 import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalUndercuts } from '../data/biz';
 import { redeemLoyalty, storyOnVisit, theftFactor } from '../core/biz';
@@ -361,6 +361,9 @@ export class CustomerManager {
     c.thief = !regular && !service && s.level >= RISK_RULES.theft.unlock && Math.random() < RISK_RULES.theft.chance * (hasUpgrade(s.biz, 'night') && isNight(s.minutes) ? NIGHT_THEFT_MUL : 1) * theftFactor(s.biz, s.day) * (hasUpgrade(s.biz, 'camera') ? 0.7 : 1);
     // Có mèo ở quầy: khách nhỏ (học sinh, mẹ bỉm) vui hơn, đỡ sốt ruột
     if (petActive(s.biz.pets.cat, s.day) && c.profession && ['student_highschool', 'student_college', 'mom'].includes(c.profession.id)) c.patience *= 1.3;
+    // Nhân viên chăm sóc khách trực ca: hỏi thăm khách chờ, ai cũng chịu chờ lâu hơn theo tay nghề
+    const care = bestSkillOnDuty(s.staff, 'customer_care', s.minutes);
+    if (care > 0) c.patience *= 1 + CARE_PATIENCE_PER_STAR * care;
     c.wants = regular
       ? this.regularWants(regular)
       : c.profession

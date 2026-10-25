@@ -659,12 +659,15 @@ export function createCounter(w = 1.6, d = 0.7): THREE.Group {
   sign.rotation.y = Math.PI;
   g.add(sign);
   // Máy tính tiền ở đầu quầy phía thu ngân
-  const pos = createRegister();
+  // Hai máy tính tiền, mỗi máy đúng chỗ một thu ngân đứng (xem cashierSpot trong staff.ts: lệch ±0.4 so với giữa quầy)
   // Mẫu máy tính tiền cũng lấy +z làm phía thu ngân nên giữ nguyên chiều: màn chính quay về thu ngân, màn phụ về khách
-  pos.position.set(w / 2 - 0.35, H, 0.1);
-  g.add(pos);
-  // Khay đặt hàng của khách và bảng mã QR thanh toán
-  box(Math.max(0.3, w / 2 - 0.45), 0.012, d * 0.55, new THREE.MeshStandardMaterial({ color: 0x2d3436 }), -w / 2 + Math.max(0.3, w / 2 - 0.45) / 2 + 0.08, H + 0.006, 0.02);
+  for (const rx of [-0.4, 0.4]) {
+    const pos = createRegister();
+    pos.position.set(rx, H, 0.1);
+    g.add(pos);
+  }
+  // Khay đặt hàng của khách (phía khách) và bảng mã QR thanh toán
+  box(0.5, 0.012, d * 0.35, new THREE.MeshStandardMaterial({ color: 0x2d3436 }), 0.1, H + 0.006, -0.12);
   const qr = new THREE.Group();
   qr.position.set(-0.1 + towerW / 2 + 0.12, H, -d / 2 + 0.12);
   qr.rotation.x = -0.25;

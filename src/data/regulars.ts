@@ -1,5 +1,6 @@
 import { meetsRep, type Reputation, type RepNeed } from './reputation';
 import { productById } from './products';
+import { COOKED_TIP_RANGE, STATION_BY_OUTPUT } from './recipes';
 import type { CharacterArchetype, HairStyle, PropKind } from '../render/characterModel';
 
 export type PerkEffect = 'bonus_tip' | 'extra_item' | 'frequent_visit' | 'refer_friend' | 'bulk_buy' | 'festival';
@@ -460,7 +461,7 @@ export interface RegularCheckout {
 }
 
 /** Thanh toán: có món ưa thích +2 điểm, không có +1; mỗi ngày tính điểm một lần; mở perk và tính tiền boa. */
-export function regularCheckout(def: RegularDef, prev: RegularProgress | undefined, basket: { id: string; price: number }[], day: number): RegularCheckout {
+export function regularCheckout(def: RegularDef, prev: RegularProgress | undefined, basket: { id: string; price: number }[], day: number, rng: () => number = Math.random): RegularCheckout {
   const prog: RegularProgress = prev ? { ...prev, perks: [...prev.perks], discovered: [...prev.discovered] } : emptyProgress();
   prog.visits++;
   prog.lastVisitDay = day;
@@ -471,7 +472,14 @@ export function regularCheckout(def: RegularDef, prev: RegularProgress | undefin
   const newPerks = def.perks.filter((p) => prog.friendship >= p.threshold && !prog.perks.includes(p.title));
   prog.perks.push(...newPerks.map((p) => p.title));
   const total = basket.reduce((n, it) => n + it.price, 0);
-  const tip = Math.round((total * perkValue(def, prog, 'bonus_tip')) / 100) * 100;
+  // Món nhà làm ngon miệng: khách quen mua món tự chế boa thêm tí tiền theo trạm nấu ra món
+  const homeTip = basket.reduce((n, it) => {
+    const station = STATION_BY_OUTPUT[it.id];
+    if (!station) return n;
+    const [lo, hi] = COOKED_TIP_RANGE[station] ?? [0, 0];
+    return n + lo + Math.floor(rng() * (hi - lo + 1));
+  }, 0);
+  const tip = Math.round((total * perkValue(def, prog, 'bonus_tip') + homeTip) / 100) * 100;
   return { progress: prog, points, newPerks, tip };
 }
 

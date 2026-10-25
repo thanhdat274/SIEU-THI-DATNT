@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { buildChibiCharacter, type CharacterParts } from '../render/characterModel';
 
 const WALK_SPEED = 1.6; // m/giây (thời gian game)
+export const RIDE_SPEED = 3.6; // m/giây khi cưỡi xe (nhanh gấp rưỡi chạy bộ của người chơi)
 
 // Vector tạm dùng lại mỗi khung cho mọi nhân vật đang đi (không cấp phát rác)
 const _stepDir = new THREE.Vector3();
@@ -90,6 +91,10 @@ export class Walker {
   /** Các bước còn lại sau khi tới đích hiện tại. */
   plan: (() => void)[] = [];
   pause = 0;
+  /** Tốc độ di chuyển hiện tại (m/giây) — tăng lên khi ngồi trên xe. */
+  speed = WALK_SPEED;
+  /** Đang ngồi trên xe: ngồi tư thế ngồi thật, không vung chân như đi bộ. */
+  riding = false;
   private emoji = emojiSprite();
   private emojiTimer = 0;
   /** Emoji hiện mãi (vd. biểu tượng nghề nhân viên) khi không nói gì. */
@@ -168,7 +173,7 @@ export class Walker {
       this.animate(dt, false);
       return false;
     }
-    let step = WALK_SPEED * dt;
+    let step = this.speed * dt;
     while (this.path.length && step > 0) {
       const next = this.path[0];
       const d = _stepDir.set(next.x - this.position.x, 0, next.z - this.position.z);
@@ -184,7 +189,7 @@ export class Walker {
         step = 0;
       }
     }
-    this.animate(dt, step < WALK_SPEED * dt || this.path.length > 0);
+    this.animate(dt, step < this.speed * dt || this.path.length > 0);
     return this.path.length === 0;
   }
 
@@ -196,22 +201,39 @@ export class Walker {
    * - Nhịp thở êm ái khi đứng yên (breathing idle)
    */
   private animate(dt: number, moving: boolean) {
+    const { torso, headGroup, leftLeg, rightLeg, leftShin, rightShin, leftArm, rightArm, leftForearm, rightForearm } = this.parts;
+    const ease = Math.min(1, dt * 10);
+
+    // Ngồi trên xe: đùi ngang trước, gối co xuống, hai tay vươn ra tay lái,
+    // thân hơi chúi về trước và rung nhẹ theo máy — không phải dáng đi bộ
+    if (this.riding) {
+      this.bobPhase += dt * 24;
+      const vibe = Math.sin(this.bobPhase) * 0.02;
+      leftLeg.rotation.x += (-1.3 + vibe - leftLeg.rotation.x) * ease;
+      rightLeg.rotation.x += (-1.25 - vibe - rightLeg.rotation.x) * ease;
+      leftLeg.rotation.z = 0.09;
+      rightLeg.rotation.z = -0.09;
+      leftShin.rotation.x += (1.15 - leftShin.rotation.x) * ease;
+      rightShin.rotation.x += (1.1 - rightShin.rotation.x) * ease;
+      leftArm.rotation.x += (-0.7 + vibe - leftArm.rotation.x) * ease;
+      rightArm.rotation.x += (-0.7 - vibe - rightArm.rotation.x) * ease;
+      leftArm.rotation.z = 0.12;
+      rightArm.rotation.z = -0.12;
+      leftForearm.rotation.x += (0.35 - leftForearm.rotation.x) * ease;
+      rightForearm.rotation.x += (0.35 - rightForearm.rotation.x) * ease;
+      torso.rotation.x += (0.14 - torso.rotation.x) * ease;
+      torso.position.y = Math.abs(Math.sin(this.bobPhase * 2)) * 0.012;
+      torso.rotation.y = 0;
+      torso.rotation.z = 0;
+      headGroup.rotation.y = 0;
+      headGroup.rotation.z = 0;
+      return;
+    }
+    torso.rotation.x += (0 - torso.rotation.x) * ease;
+
     this.bobPhase += dt * (moving ? 9.5 : 2.5);
     const swingTarget = moving ? Math.sin(this.bobPhase) * 0.58 : 0;
     this.gait += (swingTarget - this.gait) * Math.min(1, dt * 14);
-
-    const {
-      torso,
-      headGroup,
-      leftLeg,
-      rightLeg,
-      leftShin,
-      rightShin,
-      leftArm,
-      rightArm,
-      leftForearm,
-      rightForearm,
-    } = this.parts;
 
     // Chân & Đầu gối
     leftLeg.rotation.x = this.gait;

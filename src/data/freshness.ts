@@ -15,7 +15,7 @@ const CATEGORY_LIFE: Record<Category, number> = {
 };
 
 const PRODUCT_LIFE: Record<string, number> = {
-  banhmi: 2, dochin: 2, trung: 14, sua: 30, banh: 30, rau: 3, traicay: 5,
+  banhmi: 2, dochin: 2, trung: 14, trung_vit: 14, sua: 30, banh: 30, rau: 3, traicay: 5,
 };
 
 export function shelfLife(productId: string): number {

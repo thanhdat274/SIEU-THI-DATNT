@@ -5,6 +5,12 @@ import { STATIONS } from '../data/recipes';
 import { createCounter } from '../world/buildings';
 import { createProductModel } from '../render/productModels';
 
+/** Vật liệu dùng chung cho chi tiết trang trí kệ/tủ — dùng chung nên KHÔNG dispose theo từng kệ. */
+const PRICE_STRIP = new THREE.MeshStandardMaterial({ color: 0xf5efdc, roughness: 1 });
+const METAL_TRIM = new THREE.MeshStandardMaterial({ color: 0xb8bdc2, metalness: 0.5, roughness: 0.4 });
+const HANDLE = new THREE.MeshStandardMaterial({ color: 0xcfd6da, metalness: 0.6, roughness: 0.35 });
+const SHARED_MATS = new Set<THREE.Material>([PRICE_STRIP, METAL_TRIM, HANDLE]);
+
 /** Biểu tượng emoji lơ lửng (dấu hiệu kệ trống, biểu tượng trạm nấu). */
 function makeBadgeSprite(text: string, scale = 0.55): THREE.Sprite {
   const canvas = document.createElement('canvas');
@@ -60,8 +66,8 @@ export class FurnitureView {
       if (!(o instanceof THREE.Mesh || o instanceof THREE.Sprite)) return;
       o.geometry?.dispose();
       const mat = o.material as THREE.Material | THREE.Material[];
-      if (Array.isArray(mat)) mat.forEach(freeMat);
-      else freeMat(mat);
+      if (Array.isArray(mat)) mat.forEach((m) => { if (!SHARED_MATS.has(m)) freeMat(m); });
+      else if (!SHARED_MATS.has(mat)) freeMat(mat);
     });
   }
 
@@ -195,6 +201,10 @@ export class FurnitureView {
     const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.06, d), frameMat);
     top.position.y = height;
     this.group.add(top);
+    // Đế kệ thụt vào trong (tóc kệ) như kệ siêu thị thật
+    const plinth = new THREE.Mesh(new THREE.BoxGeometry(w - 0.06, 0.1, d - 0.06), new THREE.MeshStandardMaterial({ color: 0x3a3a40 }));
+    plinth.position.y = 0.05;
+    this.group.add(plinth);
 
     if (fridge) {
       const glass = new THREE.Mesh(
@@ -209,6 +219,12 @@ export class FurnitureView {
       );
       light.position.set(0, height - 0.08, d / 2 - 0.08);
       this.group.add(light);
+      // Tay nắm dọc hai bên cửa kính
+      for (const x of [-w / 2 + 0.12, w / 2 - 0.12]) {
+        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.035, height * 0.45, 0.045), HANDLE);
+        handle.position.set(x, height / 2, d / 2 + 0.025);
+        this.group.add(handle);
+      }
     }
 
     const slotW = (w - 0.2) / def.slots;
@@ -225,6 +241,12 @@ export class FurnitureView {
       board.position.y = y;
       this.group.add(board);
       this.boards.push(board);
+      // Kệ hở có thanh tem giá dọc mép trước từng tầng — kệ tạp hóa thật nào cũng có
+      if (!fridge) {
+        const strip = new THREE.Mesh(new THREE.BoxGeometry(w - 0.12, 0.055, 0.015), PRICE_STRIP);
+        strip.position.set(0, y + 0.045, d / 2 - 0.012);
+        this.group.add(strip);
+      }
 
       const boxH = Math.min(0.3, tierGap - 0.12);
       for (let s = 0; s < def.slots; s++) {
@@ -260,6 +282,13 @@ export class FurnitureView {
       );
       lid.position.y = height + 0.25;
       this.group.add(lid);
+      // Viền nhôm quanh miệng tủ đông + tay nắm phía trước
+      const rim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.07, d + 0.04), METAL_TRIM);
+      rim.position.y = height - 0.01;
+      this.group.add(rim);
+      const grip = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 0.07), HANDLE);
+      grip.position.set(0, height + 0.06, d / 2 - 0.02);
+      this.group.add(grip);
     }
     const slotW = (w - 0.16) / def.slots;
     const spacing = (slotW - 0.04) / def.capacity;

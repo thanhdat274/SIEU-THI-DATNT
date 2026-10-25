@@ -10,7 +10,7 @@ import { copyStock, returnTier, emptyTiers } from '../stock';
 export const updateFurniture = (set: SetState, get: GetState, uid: number, fn: (f: Furniture) => Furniture) =>
   set({ furniture: get().furniture.map((f) => (f.uid === uid ? fn(f) : f)) });
 
-export const createBuildSlice = (set: SetState, get: GetState): Pick<GameState, 'setBuildMode' | 'setPlacing' | 'placeFurniture' | 'moveFurniture' | 'sellFurniture' | 'demolishAll' | 'buyUpgrade' | 'repairFurniture' | 'paint'> => ({
+export const createBuildSlice = (set: SetState, get: GetState): Pick<GameState, 'setBuildMode' | 'setPlacing' | 'placeFurniture' | 'moveFurniture' | 'moveMainCounter' | 'sellFurniture' | 'demolishAll' | 'buyUpgrade' | 'repairFurniture' | 'paint'> => ({
   setBuildMode: (on) => set({ buildMode: on, placing: null, panel: on ? { type: 'build' } : null }),
   setPlacing: (placing) => set({ placing, panel: null }),
   placeFurniture: (type, x, z, rot) => {
@@ -30,6 +30,7 @@ export const createBuildSlice = (set: SetState, get: GetState): Pick<GameState, 
     return true;
   },
   moveFurniture: (uid, x, z, rot) => updateFurniture(set, get, uid, (f) => ({ ...f, x, z, rot })),
+  moveMainCounter: (x, z, rot) => set({ mainCounter: { x, z, rot } }),
   sellFurniture: (uid) => {
     const s = get();
     const f = s.furniture.find((it) => it.uid === uid);

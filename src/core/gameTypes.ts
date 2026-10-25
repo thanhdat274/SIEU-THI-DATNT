@@ -26,7 +26,7 @@ import type { BranchState } from '../data/branches';
 import type { SocialState } from '../data/social';
 import type { OnlineState } from '../data/online';
 import type { InspectionRecord, LicenseId } from '../data/licenses';
-import type { GardenState } from '../data/garden';
+import type { AnimalKind, FarmBuildingId, GardenState } from '../data/garden';
 import type { AnalyticsState } from '../data/analytics';
 
 /** Phút trong ngày khi bắt đầu ngày mới (06:00). */
@@ -222,6 +222,8 @@ export interface GameState {
   /** Các lô trong kho của từng món (khớp `storage`). */
   storageLots: Record<string, Lot[]>;
   furniture: Furniture[];
+  /** Quầy chính đã dời tới đâu (toạ độ trong tiệm); null = chỗ mặc định. */
+  mainCounter: { x: number; z: number; rot: number } | null;
   /** Số món đã bán ra của từng kệ/tủ (khóa là uid) — heatmap vị trí: kệ dễ thấy bán nhiều hơn. */
   shelfHeat: Record<number, number>;
   /** Đã nhắc người chơi về hàng chớp nhoáng cạnh quầy (chỉ nhắc một lần). */
@@ -434,6 +436,7 @@ export interface GameState {
   setPlacing: (placing: Placing | null) => void;
   placeFurniture: (type: FurnitureType, x: number, z: number, rot: number) => boolean;
   moveFurniture: (uid: number, x: number, z: number, rot: number) => void;
+  moveMainCounter: (x: number, z: number, rot: number) => void;
   sellFurniture: (uid: number) => void;
   /** Bán hết nội thất (đập đi làm lại). */
   demolishAll: () => void;
@@ -474,14 +477,31 @@ export interface GameState {
   inspection: InspectionRecord;
   buyLicense: (id: LicenseId) => void;
 
-  /** Vườn rau + chuồng gà sau nhà (trồng, tưới, thu hoạch, nuôi gà). */
+  /** Trang trại (trồng, bón phân, nuôi gà/vịt/ngỗng/bò/heo/dê/gà Đông Tảo, đơn quán xóm). */
   garden: GardenState;
   plantCrop: (plotIndex: number, cropId: string) => void;
   waterGarden: () => void;
+  /** Bón phân cho một luống: rút ngắn 30% thời gian vụ, 1 lần/vụ. */
+  fertilizePlot: (plotIndex: number) => void;
   harvestPlot: (plotIndex: number) => void;
-  buyChicken: () => void;
-  feedCoop: () => void;
-  collectEggs: () => void;
+  /** Mua một con vật nuôi theo loài (gà/vịt/ngỗng/bò/heo/dê/gà Đông Tảo). */
+  buyAnimal: (kind: AnimalKind) => void;
+  /** Cho cả chuồng một loài ăn: ăn cám máng trước, thiếu đổ từ kho, hết thì mua lẻ. */
+  feedPen: (kind: AnimalKind) => void;
+  /** Gom sản phẩm chuồng về kho: trứng gói vỉ, sữa thành lốc. */
+  collectPen: (kind: AnimalKind) => void;
+  /** Loài vỗ béo (heo, gà Đông Tảo) đủ ngày thì xuất chuồng: thịt về kho. */
+  sellFattened: (kind: AnimalKind) => void;
+  /** Mua đất mở rộng trang trại theo LAND_TIERS. */
+  expandFarm: () => void;
+  /** Giao đơn quán xóm đặt nông sản (giá hời ×1.25). */
+  deliverFarmOrder: () => void;
+  /** Mua công trình trại (ra sao 1) — hệ tưới, nhà lưới, bãi thả, bù nhìn. */
+  buyFarmBuilding: (id: FarmBuildingId) => void;
+  /** Nâng sao công trình trại: tốn tiền + gỗ + đá từ dọn trại. */
+  upgradeFarmBuilding: (id: FarmBuildingId) => void;
+  /** Dọn cỏ dại cành rụng trong trại: nhặt gỗ và đá để nâng sao công trình. */
+  cleanupFarm: () => void;
   /** Sổ phân tích 30 ngày theo món (sức khoẻ món, ABC, gợi ý). */
   analytics: AnalyticsState;
 }

@@ -119,7 +119,16 @@ export const PRODUCTS: Product[] = [
   p('botmi', 'Bột mì', 'dry', 18000, 26000, 0xf5e6c8, 1),
   p('nep', 'Gạo nếp (túi 5kg)', 'dry', 30000, 42000, 0xe8d8c0, 1),
   p('mia', 'Mía', 'fresh', 12000, 18000, 0x84c639, 1),
-  p('cam_ga', 'Cám gà (túi)', 'dry', 15000, 22000, 0xc9a86a, 1),
+  p('cam_ga', 'Cám gà (túi 1kg)', 'dry', 15000, 22000, 0xc9a86a, 1),
+  p('cam_heo', 'Cám heo (bao 5kg)', 'dry', 65000, 92000, 0xc9a86a, 1),
+  p('cam_bo', 'Cám bò (bao 5kg)', 'dry', 55000, 78000, 0xc9a86a, 1),
+  p('cam_de', 'Cám dê (bao 5kg)', 'dry', 58000, 80000, 0xc9a86a, 27),
+  p('trung_vit', 'Trứng vịt (vỉ 10)', 'dry', 32000, 45000, 0xeef0e2, 1),
+  p('trung_goos', 'Trứng ngỗng (vỉ 10)', 'dry', 280000, 350000, 0xf4f1e8, 18),
+  p('sua_de', 'Sữa dê (lốc)', 'cold', 45000, 60000, 0xfdf6ec, 27),
+  p('thit_ga_dt', 'Thịt gà Đông Tảo', 'fresh', 380000, 450000, 0xb03a2e, 30),
+  p('x_nhan', 'Nhãn', 'fresh', 24000, 34000, 0xcbc04d, 30),
+  p('phan_bon', 'Phân bón NPK (bao 5kg)', 'dry', 22000, 32000, 0x8d6e63, 1),
 ];
 
 /** Cấp sớm nhất bày được từng ngành (cần tủ mát, tủ đông, quầy rau quả). fresh=21 để khớp trạm nấu mở ở 21. */

@@ -73,6 +73,7 @@ export const newGameData = () => ({
     },
     { uid: 2, type: 'shelf', x: 0.4, z: -2.0, rot: 0, tiers: emptyTiers('shelf') },
   ] as Furniture[],
+  mainCounter: null as { x: number; z: number; rot: number } | null,
   shelfHeat: {} as Record<number, number>,
   impulseHinted: false,
   prices: {} as Record<string, number>,

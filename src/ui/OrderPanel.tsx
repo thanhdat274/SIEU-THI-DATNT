@@ -12,8 +12,6 @@ import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost,
 const NEW_WITHIN = 4;
 /** Món mới mở ở cấp này hoặc cấp trước, chưa ai hỏi mua: gợi ý nhập thử chừng này (thùng). */
 const TRIAL_CASES = 1;
-/** "Điền theo gợi ý" chỉ tiêu tối đa phần này của tiền đang có (sau khi chừa lương nhân viên), để dư tiền ăn uống và xoay vòng. */
-const SUGGEST_BUDGET = 0.6;
 
 /** Tiệm có kệ/tủ bày được món này không (không có chỗ bày thì nhập về chỉ nằm kho). */
 function displayable(productId: string) {
@@ -163,18 +161,19 @@ export function OrderPanel() {
     setCart((c) => ({ ...c, [id]: q }));
   };
   // Điền gợi ý theo thứ tự ưu tiên (món thiếu, bán chạy trước), mỗi món lấy tối đa phần còn vừa ngân sách và kho.
+  // Ngân sách: hết tiền đang có khi chưa thuê nhân viên, có nhân viên thì chừa đúng khoản lương cuối ngày.
   // Bỏ qua món tiệm chưa có chỗ bày.
   const fillSuggest = () => {
     const c: Record<string, number> = {};
     const wages = wagesDue(useGame.getState());
-    const budget = Math.max(0, Math.floor((money - wages) * SUGGEST_BUDGET));
+    const budget = Math.max(0, money - wages);
     let cut = false;
     for (const r of shown.filter((it) => it.suggest > 0 && displayable(it.p.id))) {
       c[r.p.id] = maxFit(c, r.p.id, r.suggest, budget);
       if (c[r.p.id] < r.suggest) cut = true;
     }
     setCart(c);
-    if (cut) notify(`Đã điền vừa ${Math.round(SUGGEST_BUDGET * 100)}% tiền đang có${wages ? ` (đã chừa ${formatMoney(wages)} lương)` : ''} và chỗ kho; vài món ít hơn gợi ý`);
+    if (cut) notify(`Đã điền vừa ${wages ? `tiền đang có sau khi chừa ${formatMoney(wages)} lương` : 'tiền đang có'} và chỗ kho; vài món ít hơn gợi ý`);
   };
   const categories = [...new Set(rows.map((r) => r.p.category))];
 
@@ -398,5 +397,10 @@ const st: Record<string, React.CSSProperties> = {
   badge: { marginLeft: 6, padding: '1px 6px', borderRadius: 4, fontSize: 10, color: '#fff', whiteSpace: 'nowrap' },
   step: { width: 24, height: 24, border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 14, padding: 0 },
   qty: { width: 48, height: 26, padding: 0, textAlign: 'center' },
-  footer: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' },
+  // Dính đáy panel: cuộn danh sách tới đâu vẫn luôn thấy tổng tiền + nút nhập
+  footer: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap',
+    position: 'sticky', bottom: -18, margin: '12px -22px -18px', padding: '10px 22px 18px',
+    background: '#2b2b3a', borderTop: '1px solid #ffffff14', zIndex: 2,
+  },
 };

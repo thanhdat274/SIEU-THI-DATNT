@@ -259,6 +259,9 @@ export const XOI_IDS: ReadonlySet<string> = new Set(
 /** Tất cả sản phẩm tự chế. */
 export const COOKED_PRODUCT_IDS: ReadonlySet<string> = new Set(RECIPES.map(r => r.outputId));
 
+/** Trạm nấu ra từng món nhà làm (món → trạm), để tính boa theo loại món. */
+export const STATION_BY_OUTPUT: Record<string, CookingStation> = Object.fromEntries(RECIPES.map(r => [r.outputId, r.station]));
+
 /** Cấp mở bếp: trạm nấu rẻ nhất (ấm nước nóng, bếp nướng) mở ở cấp này. */
 export const COOK_UNLOCK = 21;
 

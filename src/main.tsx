@@ -1,4 +1,5 @@
 import { skyAt } from './data/weather';
+import { ANIMAL_ORDER, type AnimalKind } from './data/garden';
 import * as THREE from 'three';
 import { createRoot } from 'react-dom/client';
 import { shopLayout, worldActions } from './core/actions';
@@ -48,7 +49,8 @@ const container = document.getElementById('game')!;
 const { renderer, scene, camera } = createRenderer(container);
 const controller = new CameraController(camera, renderer.domElement);
 const lighting = new Lighting(scene);
-const grid = new NavGrid();
+// Lưới đi bộ phủ cả mặt đất 160×160 (±80m) để đi bộ tới được cửa hàng tiện lợi 24/7 (x=60, z=-64)
+const grid = new NavGrid(80);
 const world = createWorld(scene, grid);
 const { shop } = world;
 const customers = new CustomerManager(scene, grid, shop);
@@ -150,21 +152,59 @@ customers.playerAtCounter = playerAt;
 
 /** Chỗ đứng khi tới tiệm: sau quầy chính, tính tiền được ngay. */
 const shopSpot = () => shop.counters()[0].cashier;
-/** Đi nhanh (xe ôm) mất chừng này phút trong game. */
-const TRAVEL_MINUTES = 10;
+/** Đi nhanh (xe ôm) mất chừng này phút trong game; trang trại ở cuối đường thứ hai nên xa hơn. */
+const TRAVEL_MINUTES: Record<'shop' | 'ranch', number> = { shop: 10, ranch: 15 };
 
 worldActions.travel = (to) => {
   const s = useGame.getState();
   if (!playing() || s.buildMode) return;
-  const spot = to === 'shop' ? shopSpot() : null;
+  const spot = to === 'shop' ? shopSpot() : to === 'ranch' ? world.farmSpot.clone() : null;
   if (spot) player.teleport(spot.x, spot.z);
   else wakeUp();
   controller.follow = player.position;
   // Ở hẻm online đồng hồ là chung: một người đi lại không được tua giờ của cả hẻm
-  const travel = inAlley() ? 0 : Math.round(TRAVEL_MINUTES * (vehicleDef(s.biz.vehicle)?.travel ?? 1));
+  const travel = to === 'home' ? 0 : inAlley() ? 0 : Math.round(TRAVEL_MINUTES[to] * (vehicleDef(s.biz.vehicle)?.travel ?? 1));
   useGame.setState({ minutes: s.minutes + travel, panel: null });
-  s.notify(to === 'shop' ? '🛵 Đã tới tiệm' : '🛵 Đã về nhà');
+  s.notify(to === 'shop' ? '🛵 Đã tới tiệm' : to === 'ranch' ? '🚜 Đã tới trang trại' : '🛵 Đã về nhà');
 };
+
+// Trang trại: dựng hình theo bậc đất đang mở và đàn vật nuôi trong chuồng (đổi khi mua / mở rộng)
+world.farm.rebuild(useGame.getState().garden.land);
+world.farm.setBuildings(useGame.getState().garden.buildings);
+world.farm.setPlots(useGame.getState().garden.plots, useGame.getState().day);
+let lastFarmLand = useGame.getState().garden.land;
+let lastPenCounts: Partial<Record<AnimalKind, number>> = {};
+let lastFarmBuildings = useGame.getState().garden.buildings;
+let lastPlots = useGame.getState().garden.plots;
+let lastFarmDay = useGame.getState().day;
+const syncFarmAnimals = (s: ReturnType<typeof useGame.getState>) => {
+  for (const kind of ANIMAL_ORDER) {
+    const n = s.garden.pens[kind]?.count ?? 0;
+    if (n !== lastPenCounts[kind]) {
+      lastPenCounts[kind] = n;
+      world.farm.setAnimals(kind, n);
+    }
+  }
+};
+syncFarmAnimals(useGame.getState());
+useGame.subscribe((s) => {
+  if (s.garden.land !== lastFarmLand) {
+    lastFarmLand = s.garden.land;
+    world.farm.rebuild(s.garden.land);
+    world.farm.setPlots(s.garden.plots, s.day);
+  }
+  if (s.garden.buildings !== lastFarmBuildings) {
+    lastFarmBuildings = s.garden.buildings;
+    world.farm.setBuildings(s.garden.buildings);
+  }
+  // Cây trên luống đổi khi trồng/tưới/thu hoạch hoặc sang ngày (đổi màu đất tưới)
+  if (s.garden.plots !== lastPlots || s.day !== lastFarmDay) {
+    lastPlots = s.garden.plots;
+    lastFarmDay = s.day;
+    world.farm.setPlots(s.garden.plots, s.day);
+  }
+  syncFarmAnimals(s);
+});
 
 /** Số món còn trên kệ và số ô trống, để báo lúc kiểm kê cuối ngày. */
 function stocktake() {
@@ -222,8 +262,10 @@ function runRoutine() {
 /** Quầy, kệ và tủ thay đổi khi xây dựng / mở rộng tiệm, nên tính lại mỗi lần. */
 const fixedInteractables: Interactable[] = [
   { position: bedPos, radius: 2, hint: () => (player.asleep ? '💤 Đang ngủ...' : '[N] Đi ngủ'), key: 'KeyN', action: goToBed },
-  // Trang trại sau nhà: đứng trong rào bấm V mở bảng vườn (trồng, tưới, thu hoạch, cho gà ăn)
+  // Trang trại nam đường thứ hai: đứng cạnh cổng bấm V mở bảng trại (trồng, tưới, thu hoạch, cho gà ăn)
   { position: world.farmSpot, radius: 4, hint: () => '[V] Trang trại', key: 'KeyV', action: () => useGame.getState().openPanel({ type: 'garden' }) },
+  // Giếng nước trong trại: tưới nhanh tất cả luống không cần mở bảng
+  { position: world.farm.wellSpot, radius: 2.6, hint: () => '[T] Tưới luống từ giếng', key: 'KeyT', action: () => useGame.getState().waterGarden() },
 ];
 
 // Danh sách đồ tương tác chỉ đổi khi đơn mang đi / đồ trong tiệm / chỗ kho đổi — cache theo dấu hiệu đó
@@ -321,6 +363,18 @@ function autoBreakfast() {
   atBreakfast = near;
 }
 
+/** Tự lau nhà: đứng trong tiệm bấm C (giữ để lau liên tục), mỗi lần bớt một ít bẩn. */
+const DIRT_PER_MOP = 5;
+function mopFloor() {
+  const s = useGame.getState();
+  if (s.panel || s.buildMode || !playing() || player.asleep) return;
+  if (s.location !== shop.building.opts.name) return void s.notify('🧹 Vào trong tiệm mới lau nhà được');
+  if (s.dirt < 1) return void s.notify('✨ Sàn tiệm đã sạch bong');
+  s.addDirt(-DIRT_PER_MOP);
+  const left = useGame.getState().dirt;
+  if (left < 1) s.notify('✨ Lau xong rồi, sàn tiệm sạch bong');
+}
+
 function interact() {
   const st = useGame.getState();
   if (st.panel || st.buildMode || !playing()) return;
@@ -335,6 +389,10 @@ window.addEventListener('keydown', (e) => {
     if (!st.panel && !st.buildMode && playing()) st.toggleShop();
     return;
   }
+  if (e.code === 'KeyC' && !e.ctrlKey && !e.metaKey) {
+    mopFloor();
+    return;
+  }
   // Mỗi việc một phím (N ngủ, G giao hàng, K kho, B bày hàng): chỉ chạy khi đứng gần đúng chỗ đó
   const it = nearestInteractable();
   if (!it || it.key !== e.code) return;
@@ -344,6 +402,7 @@ window.addEventListener('keydown', (e) => {
 
 Object.assign(worldActions, {
   interact,
+  mop: mopFloor,
   rotate: () => buildMode.rotate(),
   place: () => buildMode.confirm(),
   cancel: () => buildMode.cancel(),
@@ -353,12 +412,15 @@ Object.assign(shopLayout, {
   plan: () => shop.plan(),
   check: shop.quickCheck.bind(shop),
   layoutCheck: shop.layoutCheck.bind(shop),
+  checkMainCounter: shop.checkMainCounter.bind(shop),
 });
 
 function updateStatus() {
   const s = useGame.getState();
   const inside = world.buildings.find((b) => b.contains(player.position.x, player.position.z));
-  const location = inside ? inside.opts.name : 'Ngoài đường';
+  // Trang trại không có tòa nhà: đứng gần cổng là coi như đang ở trại (nút đi lại hiện "Về nhà")
+  const nearFarm = !inside && player.position.distanceTo(world.farmSpot) < 12;
+  const location = inside ? inside.opts.name : nearFarm ? 'Trang trại đầu ngõ' : 'Ngoài đường';
   if (s.buildMode) {
     // Gợi ý do chế độ xây quản lý
     if (!s.placing && s.hint !== null) useGame.setState({ hint: null });
@@ -418,6 +480,8 @@ function renderFrame() {
     if (!guest) residents.update(dt * speed);
     // Cửa hàng tiện lợi: chỉ dựng nhân vật khi chủ ghé; chủ đứng trong tiệm thì tự bán được khi thiếu thu ngân
     if (!guest) branchVisit.update(dt * speed, player.position);
+    // Gà trong trang trại chỉ đi rong khi chủ ở gần (đứng ở tiệm thì trại đứng yên, đỡ tốn FPS)
+    if (player.position.distanceTo(world.farmSpot) < 60) world.farm.update(dt * speed, (state.minutes / 60) % 24);
     const atBranch = world.convenience.contains(player.position.x, player.position.z);
     if (atBranch !== state.atBranch) useGame.setState({ atBranch });
     updateCoop(dt);
@@ -493,6 +557,7 @@ const PRECOMPILE_AREAS: [number, number, number, number, number, number][] = [
   [60, 8, -46, 60, 0, -60],  // tiện lợi 24/7
   [50, 6, -22, 50, 0, -32],  // hẻm dọc
   [-12, 6, 6, -12, 0, -2],   // nhà của bạn
+  [24, 8, -60, 24, 0, -72],  // trang trại đầu ngõ
 ];
 const precompileCamera = new THREE.PerspectiveCamera(70, 16 / 9, 0.1, 120);
 const precompile = async () => {

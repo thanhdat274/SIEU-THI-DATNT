@@ -1,23 +1,29 @@
 import { useGame } from '../../core/store';
 import { formatMoney, productById } from '../../data/products';
-import { COMBO_PULL, COMBO_UNLOCK, MAX_ACTIVE_COMBOS, unlockedCombos } from '../../data/combos';
+import { COMBO_PULL, COMBO_UNLOCK, maxActiveCombos, nextComboSlotLevel, unlockedCombos } from '../../data/combos';
 import { Footer, styles } from './shared';
 
 /** Bật/tắt combo khuyến mãi. */
 export function ComboPanel() {
   const { level, activeCombos, toggleCombo, closePanel, priceOf } = useGame();
   const combos = unlockedCombos(level);
+  const max = maxActiveCombos(level);
+  const nextSlot = nextComboSlotLevel(level);
   return (
     <>
       <h2 style={styles.title}>🎁 Combo khuyến mãi</h2>
       <p style={styles.sub}>
         Khách lấy một món trong combo đang chạy thì khoảng {Math.round(COMBO_PULL * 100)}% sẽ lấy thêm món kia, và được giảm giá khi mua đủ cặp.
-        Chạy tối đa {MAX_ACTIVE_COMBOS} combo cùng lúc ({activeCombos.length}/{MAX_ACTIVE_COMBOS}). Nhớ bày đủ cả hai món lên kệ.
+        Chạy tối đa {max} combo cùng lúc ({activeCombos.length}/{max}){nextSlot ? `, lên cấp ${nextSlot} được chạy thêm 1` : ''}. Nhớ bày đủ cả hai món lên kệ.
       </p>
+      {activeCombos.length >= max && (
+        <p style={{ ...styles.sub, color: '#f1c40f' }}>⚠️ Đã chạy đủ {max}/{max} combo. Bấm "Đang chạy" để tắt một combo thì mới bật được combo khác{nextSlot ? `, hoặc lên cấp ${nextSlot} để chạy thêm.` : '.'}</p>
+      )}
       {level < COMBO_UNLOCK ? <p style={styles.sub}>🔒 Mở ở cấp {COMBO_UNLOCK}.</p> : (
         <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
           {combos.map((c) => {
             const on = activeCombos.includes(c.id);
+            const blocked = !on && activeCombos.length >= max;
             const [a, b] = c.items.map(productById);
             const full = priceOf(a.id) + priceOf(b.id);
             const cut = Math.round((full * c.discount) / 100) * 100;
@@ -32,8 +38,13 @@ export function ComboPanel() {
                     <span style={{ color: margin > 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(margin)}</span>
                   </div>
                 </div>
-                <button style={{ ...styles.btn, background: on ? '#2ecc71' : '#fff', color: on ? '#fff' : undefined }} onClick={() => toggleCombo(c.id)}>
-                  {on ? 'Đang chạy' : 'Chạy'}
+                <button
+                  disabled={blocked}
+                  title={blocked ? `Đã chạy đủ ${max} combo, hãy tắt bớt một combo khác` : undefined}
+                  style={{ ...styles.btn, background: on ? '#2ecc71' : '#fff', color: on ? '#fff' : undefined, opacity: blocked ? 0.45 : 1, cursor: blocked ? 'not-allowed' : undefined }}
+                  onClick={() => toggleCombo(c.id)}
+                >
+                  {on ? 'Đang chạy' : blocked ? 'Đủ rồi' : 'Chạy'}
                 </button>
               </div>
             );

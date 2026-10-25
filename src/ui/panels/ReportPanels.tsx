@@ -479,7 +479,15 @@ export function HistoryChart({ history }: { history: DayRecord[] }) {
   const H = 70;
   return (
     <div style={{ marginTop: 12, maxWidth: 560 }}>
-      <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 4 }}>{history.length} ngày gần đây · cột vàng: doanh thu · cột xanh/đỏ: tiền vào − tiền ra</div>
+      <div style={{ fontSize: 12, marginBottom: 6, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px' }}>
+        <span style={{ opacity: 0.75 }}>{history.length} ngày gần đây</span>
+        {([['#f1c40f', 'Doanh thu'], ['#2ecc71', 'Tiền vào − ra: lãi'], ['#e74c3c', 'Tiền vào − ra: lỗ']] as const).map(([color, label]) => (
+          <span key={label} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <i style={{ width: 11, height: 11, borderRadius: 3, background: color, display: 'inline-block' }} />
+            {label}
+          </span>
+        ))}
+      </div>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: H + 18 }}>
         {history.map((h) => (
           <div key={h.day} title={`Ngày ${h.day}: doanh thu ${formatMoney(h.revenue)}, tiền vào − ra ${formatMoney(h.profit)}, ${h.customers} khách`}
