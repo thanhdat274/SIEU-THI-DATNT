@@ -13,6 +13,14 @@ export function AlleyPanel({ busy, run, onEnter }: {
   const [alleys, setAlleys] = useState<AlleySummary[] | null>(null);
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
+  /** Mã hẻm vừa sao chép, để đổi nút thành "Đã chép" vài giây. */
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const copyCode = (alleyId: string) => run(async () => {
+    await navigator.clipboard.writeText(alleyId);
+    setCopied(alleyId);
+    setTimeout(() => setCopied((c) => (c === alleyId ? null : c)), 1500);
+  });
 
   const refresh = () => run(async () => setAlleys(await listAlleys()));
   useEffect(() => {
@@ -62,6 +70,9 @@ export function AlleyPanel({ busy, run, onEnter }: {
                 <span>Ngày {a.day} · cấp {a.level} · {formatMoney(a.money)}</span>
                 <span>{a.members.map((m) => m.name).join(', ')} ({a.members.length}/4)</span>
                 {a.online > 0 && <span>🟢 {a.online} đang chơi</span>}
+              </button>
+              <button className="login-copy" disabled={busy} onClick={() => copyCode(a.id)} title="Sao chép mã hẻm để gửi cho bạn bè">
+                {copied === a.id ? '✅ Đã chép' : '📋 Sao chép mã'}
               </button>
               <button className="login-link" disabled={busy} onClick={() => quit(a)}>Rời hẻm</button>
             </div>

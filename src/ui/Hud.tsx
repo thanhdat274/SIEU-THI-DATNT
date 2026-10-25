@@ -111,6 +111,14 @@ export function Hud() {
   const { account, cloudStatus, conflict, coop } = useSession();
   /** Đang ở hẻm online: tiến trình là của cả hẻm, lưu trên server thay vì trong máy. */
   const online = !!coop;
+  const [copiedCode, setCopiedCode] = useState(false);
+  const copyRoomCode = () => {
+    if (!coop) return;
+    void navigator.clipboard.writeText(coop.alley).then(() => {
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 1500);
+    });
+  };
   const rating = summarizeReviews(reviews);
   const late = minutes >= 24 * 60;
   const progress = Math.min(1, xp / xpToNext(level));
@@ -304,6 +312,9 @@ ${forecastText}`}>
               <b>{coop.name} · {coop.alley}</b>
               <small>{coop.peers.length} online: {coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(', ')}</small>
             </span>
+            <button className="hud-link" onClick={copyRoomCode} title="Sao chép mã hẻm để gửi cho bạn bè">
+              {copiedCode ? '✅ Đã chép' : '📋'}
+            </button>
             <button className="hud-link" onClick={backToMenu}>Rời</button>
           </div>
         )}

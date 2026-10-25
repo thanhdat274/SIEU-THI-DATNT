@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Dropdown } from './Dropdown';
 import { useGame, type Furniture } from '../core/store';
 import { furnitureDef, type FurnitureType } from '../data/furniture';
@@ -10,40 +10,65 @@ const LOW = 0.5;
 
 type Filter = 'all' | 'need' | FurnitureType;
 
-/** Món bày được ở một kệ/tủ theo cấp hiện tại. */
-const allowed = (f: Furniture) => {
+/** Món bày được ở một kệ/tủ theo cấp hiện tại — dùng cache từ component để không tính lại mỗi slot. */
+const allowed = (f: Furniture, cache: ReadonlyMap<string, import('../data/products').Product[]>) => {
   const def = furnitureDef(f.type);
-  return unlockedProducts(useGame.getState().level).filter((p) => def.categories.includes(p.category));
+  return cache.get(def.name) ?? [];
 };
 
 /** Tự chọn món cho ô trống: món kho còn nhiều nhất, ưu tiên món chưa bày ở kệ này. */
-function autoPick(f: Furniture): string | null {
-  const s = useGame.getState();
+function autoPick(f: Furniture, storage: Record<string, number>, cache: ReadonlyMap<string, import('../data/products').Product[]>): string | null {
   const shown = new Set(f.tiers.map((t) => t.productId));
-  const options = allowed(f).filter((p) => (s.storage[p.id] ?? 0) > 0);
-  options.sort((a, b) => Number(shown.has(a.id)) - Number(shown.has(b.id)) || (s.storage[b.id] ?? 0) - (s.storage[a.id] ?? 0));
+  const products = cache.get(furnitureDef(f.type).name) ?? [];
+  const options = products.filter((p) => (storage[p.id] ?? 0) > 0);
+  options.sort((a, b) => Number(shown.has(a.id)) - Number(shown.has(b.id)) || (storage[b.id] ?? 0) - (storage[a.id] ?? 0));
   return options[0]?.id ?? null;
 }
 
 /** Bày đầy một kệ: ô đã gán món thì châm thêm, ô chưa gán thì tự chọn món từ kho. */
-function fillFixture(uid: number) {
-  const s0 = useGame.getState();
-  const tiers = s0.furniture.find((f) => f.uid === uid)?.tiers ?? [];
+function fillFixture(uid: number, furniture: Furniture[], storage: Record<string, number>, stockTier: (uid: number, i: number, id: string | null) => void, autoPickFn: (f: Furniture, storage: Record<string, number>, cache: ReadonlyMap<string, import('../data/products').Product[]>) => string | null, cache: ReadonlyMap<string, import('../data/products').Product[]>) {
+  const fixture = furniture.find((f) => f.uid === uid);
+  if (!fixture) return;
+  const tiers = fixture.tiers;
   tiers.forEach((_, i) => {
-    const s = useGame.getState();
-    const f = s.furniture.find((it) => it.uid === uid)!;
+    const f = furniture.find((it) => it.uid === uid)!;
     const t = f.tiers[i];
-    const id = t.productId ?? autoPick(f);
-    if (id && (s.storage[id] ?? 0) > 0 && t.count < furnitureDef(f.type).capacity) s.stockTier(uid, i, id);
+    const id = t.productId ?? autoPickFn(f, storage, cache);
+    if (id && (storage[id] ?? 0) > 0 && t.count < furnitureDef(f.type).capacity) stockTier(uid, i, id);
   });
 }
 
 /** Sơ đồ kệ: mọi kệ và tủ trong tiệm, từng ô đang bày gì, còn bao nhiêu, bày nhanh từ kho. */
 export function PlanogramPanel() {
-  const { furniture, storage, stockTier, unstockTier, openPanel, closePanel, autoSwap, replaceEmptySlots, notify } = useGame();
+  const { furniture, storage, stockTier, unstockTier, openPanel, closePanel, autoSwap, replaceEmptySlots, notify } = useGame((s) => ({
+    furniture: s.furniture,
+    storage: s.storage,
+    stockTier: s.stockTier,
+    unstockTier: s.unstockTier,
+    openPanel: s.openPanel,
+    closePanel: s.closePanel,
+    autoSwap: s.autoSwap,
+    replaceEmptySlots: s.replaceEmptySlots,
+    notify: s.notify,
+  }));
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const fixtures = furniture.filter((f) => furnitureDef(f.type).tiers > 0);
+
+  // Cache unlocked products và allowed per type — chỉ tính 1 lần mỗi level thay đổi
+  const level = useGame((s) => s.level);
+  const unlocked = useMemo(() => unlockedProducts(level), [level]);
+  const typeProducts = useMemo(() => {
+    const map = new Map<string, import('../data/products').Product[]>();
+    // Cache allowed per type name
+    fixtures.forEach((f) => {
+      const def = furnitureDef(f.type);
+      if (!map.has(def.name)) {
+        map.set(def.name, unlocked.filter((p) => def.categories.includes(p.category)));
+      }
+    });
+    return map;
+  }, [fixtures.length, unlocked]);
 
   const slotNeeds = (f: Furniture, i: number) => {
     const t = f.tiers[i];
@@ -52,7 +77,7 @@ export function PlanogramPanel() {
   const canFill = (f: Furniture, i: number) => {
     const t = f.tiers[i];
     if (t.count >= furnitureDef(f.type).capacity) return false;
-    return t.productId ? (storage[t.productId] ?? 0) > 0 : !!autoPick(f);
+    return t.productId ? (storage[t.productId] ?? 0) > 0 : !!autoPick(f, storage, typeProducts);
   };
 
   const all = fixtures.flatMap((f) => f.tiers.map((t, i) => ({ f, t, i })));
@@ -90,7 +115,8 @@ export function PlanogramPanel() {
         <Stat label="Bày được từ kho" value={stats.fillable} />
         <span style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' }}>
           <button style={{ ...st.btn, background: '#f1c40f', fontWeight: 700 }} disabled={!stats.fillable}
-            onClick={() => fixtures.forEach((f) => fillFixture(f.uid))} title="Châm mọi ô, ô trống tự chọn món kho đang có">
+            onClick={() => fillFixture(fixtures[0]?.uid, furniture, storage, stockTier, autoPick, typeProducts)}
+            title="Châm mọi ô, ô trống tự chọn món kho đang có">
             📥 Bày đầy cả tiệm
           </button>
           <button style={st.btn} onClick={() => openPanel({ type: 'storage' })}>🗃️ Kho</button>
@@ -126,13 +152,13 @@ export function PlanogramPanel() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {shown.map((f) => {
           const def = furnitureDef(f.type);
-          const products = allowed(f);
+          const products = allowed(f, typeProducts);
           return (
             <div key={f.uid} style={st.fixture}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <b>{label(f)}</b>
                 <span style={{ opacity: 0.6, fontSize: 12 }}>{def.tiers} tầng × {def.slots} ô · mỗi ô {def.capacity} món</span>
-                <button style={{ ...st.btn, marginLeft: 'auto' }} disabled={!f.tiers.some((_, i) => canFill(f, i))} onClick={() => fillFixture(f.uid)}>
+                <button style={{ ...st.btn, marginLeft: 'auto' }} disabled={!f.tiers.some((_, i) => canFill(f, i))} onClick={() => fillFixture(f.uid, furniture, storage, stockTier, autoPick, typeProducts)}>
                   📥 Bày đầy kệ này
                 </button>
               </div>
@@ -171,7 +197,7 @@ export function PlanogramPanel() {
                         </div>
                         <div style={{ display: 'flex', gap: 4 }}>
                           <button style={st.mini} disabled={!canFill(f, i)}
-                            onClick={() => stockTier(f.uid, i, t.productId ?? autoPick(f))}
+                            onClick={() => stockTier(f.uid, i, t.productId ?? autoPick(f, storage, typeProducts))}
                             title={t.productId ? 'Bày đầy ô này từ kho' : 'Tự chọn món kho đang có và bày'}>
                             {t.productId ? '＋ Bày' : '✨ Tự chọn'}
                           </button>
