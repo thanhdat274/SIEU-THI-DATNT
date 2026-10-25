@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { createRoot } from 'react-dom/client';
 import { shopLayout, worldActions } from './core/actions';
 import { initSaves, saveGame, startAutosave } from './core/save';
-import { formatClock, ROUTINE, SLEEP_FROM, useGame } from './core/store';
+import { formatClock, ROUTINE, SLEEP_FROM, useGame, type GameState } from './core/store';
 import { vehicleDef } from './data/biz';
 import { checkChapters, eatBreakfast, stockReminders } from './core/biz';
 import { hasSkill } from './data/titles';
@@ -23,7 +23,8 @@ import { BranchVisit } from './agents/branchVisit';
 import { BizView } from './render/bizView';
 import { CameraController } from './render/cameraController';
 import { InteriorView } from './render/interiorView';
-import { createRenderer, Lighting } from './render/scene';
+import { AdaptiveResolution, createRenderer, Lighting, LOW_POWER, type GameRenderer } from './render/scene';
+import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
 import { createWorld } from './world/world';
 import { Hud } from './ui/Hud';
@@ -117,6 +118,8 @@ useSession.subscribe((s, prev) => {
   }
   if (s.screen === 'game' && prev.screen !== 'game') {
     controller.follow = player.position;
+    // Lúc này save đã nạp xong, tiệm đã bày hàng: nạp trước nốt pipeline cho hàng hóa trong tiệm
+    precompile();
     if (!isGuest()) useGame.getState().notify(`🏪 Ngày ${useGame.getState().day} · chúc buôn may bán đắt!`);
   }
 });
@@ -216,9 +219,83 @@ function runRoutine() {
   }
 }
 
+/** Quầy, kệ và tủ thay đổi khi xây dựng / mở rộng tiệm, nên tính lại mỗi lần. */
 const fixedInteractables: Interactable[] = [
   { position: bedPos, radius: 2, hint: () => (player.asleep ? '💤 Đang ngủ...' : '[N] Đi ngủ'), key: 'KeyN', action: goToBed },
 ];
+
+// Danh sách đồ tương tác chỉ đổi khi đơn mang đi / đồ trong tiệm / chỗ kho đổi — cache theo dấu hiệu đó
+let interactablesKey = -1;
+let interactablesCache: Interactable[] = [];
+function currentInteractables(): Interactable[] {
+  const s = useGame.getState();
+  let carrying = 0;
+  for (const o of s.phoneOrders) if (o.status === 'carrying') carrying++;
+  const key = carrying * 100003 + s.furniture.length * 101 + world.warehouse.spots.length;
+  if (key !== interactablesKey) {
+    interactablesKey = key;
+    interactablesCache = buildInteractables();
+  }
+  return interactablesCache;
+}
+
+function buildInteractables(): Interactable[] {
+  return [
+    ...fixedInteractables,
+    // Đơn gọi điện đã soạn hàng: tới trước cửa nhà khách để giao
+    ...useGame.getState().phoneOrders
+      .filter((o) => o.status === 'carrying' && world.houses.has(o.houseId))
+      .map((o) => ({
+        position: world.houses.get(o.houseId)!.door,
+        radius: 1.6,
+        hint: () => {
+          const late = useGame.getState().minutes > o.dueAt;
+          return `[G] Giao hàng cho ${o.caller}${late ? ' (đã trễ hẹn)' : ` · hẹn ${formatClock(o.dueAt)}`}`;
+        },
+        key: 'KeyG',
+        action: () => useGame.getState().deliverPhone(o.id),
+      })),
+    ...world.warehouse.spots.map((spot) => ({
+      position: spot.position,
+      radius: 1.2,
+      hint: () => spot.kind === 'desk' ? '[K] Đặt hàng (bàn nhận hàng)' : '[K] Xem kho hàng',
+      key: 'KeyK',
+      action: () => useGame.getState().openPanel({ type: spot.kind === 'desk' ? 'order' : 'storage' }),
+    })),
+    ...useGame.getState().furniture
+      .filter((f) => furnitureDef(f.type).tiers > 0)
+      .map((f) => ({
+        position: shop.spotFor(f),
+        radius: 1.2,
+        hint: () => `[B] Bày hàng lên ${furnitureDef(f.type).name.toLowerCase()}`,
+        key: 'KeyB',
+        action: () => useGame.getState().openPanel({ type: 'shelf', uid: f.uid }),
+      })),
+    // Trạm nấu: đứng gần bấm M mở Sổ nấu (nguyên liệu lấy từ kho, nấu xong về kho)
+    ...useGame.getState().furniture
+      .filter((f) => isCookStation(f.type))
+      .map((f) => ({
+        position: shop.spotFor(f),
+        radius: 1.3,
+        hint: () => `[M] Nấu ăn ở ${furnitureDef(f.type).name.toLowerCase()}`,
+        key: 'KeyM',
+        action: () => useGame.getState().openPanel({ type: 'cook' }),
+      })),
+  ];
+}
+
+const nearestInteractable = () => {
+  let best: Interactable | null = null;
+  let bestDist = Infinity;
+  for (const it of currentInteractables()) {
+    const d = player.position.distanceTo(it.position);
+    if (d < it.radius && d < bestDist) {
+      best = it;
+      bestDist = d;
+    }
+  }
+  return best;
+};
 
 /** Nằm lên giường một lúc cho thấy nhân vật ngủ, rồi mới sang ngày mới. */
 function goToBed() {
@@ -241,63 +318,6 @@ function autoBreakfast() {
   if (near && !atBreakfast && s.minutes <= 11 * 60 && s.biz.breakfastDay !== s.day) eatBreakfast();
   atBreakfast = near;
 }
-
-/** Quầy, kệ và tủ thay đổi khi xây dựng / mở rộng tiệm, nên tính lại mỗi lần. */
-const interactables = (): Interactable[] => [
-  ...fixedInteractables,
-  // Đơn gọi điện đã soạn hàng: tới trước cửa nhà khách để giao
-  ...useGame.getState().phoneOrders
-    .filter((o) => o.status === 'carrying' && world.houses.has(o.houseId))
-    .map((o) => ({
-      position: world.houses.get(o.houseId)!.door,
-      radius: 1.6,
-      hint: () => {
-        const late = useGame.getState().minutes > o.dueAt;
-        return `[G] Giao hàng cho ${o.caller}${late ? ' (đã trễ hẹn)' : ` · hẹn ${formatClock(o.dueAt)}`}`;
-      },
-      key: 'KeyG',
-      action: () => useGame.getState().deliverPhone(o.id),
-    })),
-  ...world.warehouse.spots.map((spot) => ({
-    position: spot.position,
-    radius: 1.2,
-    hint: () => spot.kind === 'desk' ? '[K] Đặt hàng (bàn nhận hàng)' : '[K] Xem kho hàng',
-    key: 'KeyK',
-    action: () => useGame.getState().openPanel({ type: spot.kind === 'desk' ? 'order' : 'storage' }),
-  })),
-  ...useGame.getState().furniture
-    .filter((f) => furnitureDef(f.type).tiers > 0)
-    .map((f) => ({
-      position: shop.spotFor(f),
-      radius: 1.2,
-      hint: () => `[B] Bày hàng lên ${furnitureDef(f.type).name.toLowerCase()}`,
-      key: 'KeyB',
-      action: () => useGame.getState().openPanel({ type: 'shelf', uid: f.uid }),
-    })),
-  // Trạm nấu: đứng gần bấm M mở Sổ nấu (nguyên liệu lấy từ kho, nấu xong về kho)
-  ...useGame.getState().furniture
-    .filter((f) => isCookStation(f.type))
-    .map((f) => ({
-      position: shop.spotFor(f),
-      radius: 1.3,
-      hint: () => `[M] Nấu ăn ở ${furnitureDef(f.type).name.toLowerCase()}`,
-      key: 'KeyM',
-      action: () => useGame.getState().openPanel({ type: 'cook' }),
-    })),
-];
-
-const nearestInteractable = () => {
-  let best: Interactable | null = null;
-  let bestDist = Infinity;
-  for (const it of interactables()) {
-    const d = player.position.distanceTo(it.position);
-    if (d < it.radius && d < bestDist) {
-      best = it;
-      bestDist = d;
-    }
-  }
-  return best;
-};
 
 function interact() {
   const st = useGame.getState();
@@ -348,8 +368,21 @@ function updateStatus() {
 }
 
 let reminderSlot = -1;
+// Tự co giãn độ phân giải theo FPS + bóng đổ cập nhật 30 hình/giây
+initLightPool(scene, LOW_POWER ? 4 : 8);
+const resScale = new AdaptiveResolution(renderer);
+renderer.shadowMap.autoUpdate = false;
+let frameNo = 0;
+// Mảng người dùng lại mỗi khung cho updateDoor (không cấp phát mảng mới mỗi khung)
+const peopleScratch: THREE.Vector3[] = [];
+// Cờ giao hàng: chỉ tính lại khi danh sách đơn thay đổi
+let lastPhoneOrders: GameState['phoneOrders'] | null = null;
+const waitingHouses = new Set<string>();
+
 const clock = new THREE.Clock();
-renderer.setAnimationLoop(() => {
+
+/** Vòng lặp một khung hình — WebGPU cần renderer.init() xong mới được render nên tách ra riêng. */
+function renderFrame() {
   const dt = Math.min(clock.getDelta(), 0.1);
   const state = useGame.getState();
   if (!playing()) {
@@ -404,16 +437,27 @@ renderer.setAnimationLoop(() => {
     : interior.current && world.buildings.includes(interior.current) && interior.current.contains(x, z, 0.4) ? interior.current
     : world.buildings.find((b) => b.contains(x, z)) ?? null;
   interior.update(dt, at);
-  // Đèn trong nhà bật từ chập tối tới sáng; cửa mở khi có người tới gần
+  // Đèn trong nhà + đèn đường: bật từ chập tối (17h), tắt trước khi trời sáng hẳn (5h30).
+  // Nhớ đủ: chủ thường thức dậy 6h — nếu tắt muộn hơn thì đèn còn sáng lửng giữa trời sáng,
+  // vừa chói vừa thấy đèn bật–tắt khi đi lại.
   const hour = (useGame.getState().minutes / 60) % 24;
-  const lamp = THREE.MathUtils.clamp(Math.max(hour - 17, 6.5 - hour), 0, 1);
-  const people = [player.position, ...customers.customers.map((c) => c.position), ...[...staff.workers.values()].map((w) => w.position)];
-  people.push(...partnerPositions(), ...branchVisit.people);
-  // Cờ giao hàng: hiện trước cửa nhà có đơn đang mang đi, hộp hàng nhấp nhô cho dễ thấy
-  const waiting = new Set(g.phoneOrders.filter((o) => o.status === 'carrying').map((o) => o.houseId));
+  const lamp = THREE.MathUtils.clamp(Math.max(hour - 17, 5.5 - hour), 0, 1);
+  // Danh sách người dùng lại mỗi khung (không cấp phát mảng mới): cửa tự mở khi ai đó lại gần
+  peopleScratch.length = 0;
+  peopleScratch.push(player.position);
+  for (const c of customers.customers) peopleScratch.push(c.position);
+  for (const w of staff.workers.values()) peopleScratch.push(w.position);
+  for (const p of partnerPositions()) peopleScratch.push(p);
+  for (const p of branchVisit.people) peopleScratch.push(p);
+  // Cờ giao hàng: chỉ tính lại khi danh sách đơn đổi, không lọc lại Set mỗi khung
+  if (g.phoneOrders !== lastPhoneOrders) {
+    lastPhoneOrders = g.phoneOrders;
+    waitingHouses.clear();
+    for (const o of g.phoneOrders) if (o.status === 'carrying') waitingHouses.add(o.houseId);
+  }
   const bob = Math.sin(performance.now() / 300) * 0.12;
   for (const [id, h] of world.houses) {
-    h.marker.visible = waiting.has(id);
+    h.marker.visible = waitingHouses.has(id);
     const box = h.marker.getObjectByName('box');
     if (box) {
       box.position.y = 1.85 + bob;
@@ -423,10 +467,51 @@ renderer.setAnimationLoop(() => {
   for (const b of world.buildings) {
     b.updateView(camera, b === interior.current);
     b.setLamp(lamp);
-    b.updateDoor(dt, people);
+    b.updateDoor(dt, peopleScratch);
   }
+  // Đèn đường bật cùng giờ với đèn trong nhà; nguồn sáng thật chỉ dành cho đèn gần chỗ nhìn
+  world.streetLamps.update(lamp);
+  applyLightBudget(controller.target);
+  // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng
+  if ((frameNo++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
+  resScale.update(dt);
 
   renderer.render(scene, camera);
+}
+
+// WebGPU khởi tạo bất đồng bộ (xin device từ GPU): xong xuôi mới bắt đầu vẽ khung đầu tiên
+// Các góc đứng phủ kín thành phố: compileAsync chỉ biên dịch những gì camera thấy,
+// nên đặt camera lần lượt từng khu để nạp sẵn pipeline — tới đâu cũng không khựng nữa.
+const PRECOMPILE_AREAS: [number, number, number, number, number, number][] = [
+  [4, 8, 14, 4, 0, 0],       // tiệm + quầy + mặt tiền
+  [4, 6, -8, 4, 0, -4],      // nhìn vào kệ trong tiệm
+  [-1, 10, 8, 0, 0, 2],      // đường chính + vỉa hè giữa
+  [-26, 8, 6, -24, 0, -2],   // dãy nhà hàng xóm phía tây
+  [28, 8, 6, 26, 0, -2],     // dãy nhà hàng xóm phía đông
+  [60, 8, -46, 60, 0, -60],  // tiện lợi 24/7
+  [50, 6, -22, 50, 0, -32],  // hẻm dọc
+  [-12, 6, 6, -12, 0, -2],   // nhà của bạn
+];
+const precompileCamera = new THREE.PerspectiveCamera(70, 16 / 9, 0.1, 120);
+const precompile = async () => {
+  const r = renderer as GameRenderer & {
+    compileAsync?: (s: THREE.Scene, c: THREE.Camera) => Promise<unknown>;
+  };
+  if (!r.compileAsync) return;
+  for (const [x, y, z, lx, ly, lz] of PRECOMPILE_AREAS) {
+    precompileCamera.position.set(x, y, z);
+    precompileCamera.lookAt(lx, ly, lz);
+    precompileCamera.updateMatrixWorld();
+    try {
+      await r.compileAsync(scene, precompileCamera);
+    } catch {
+      return; // backend không hỗ trợ (WebGL cũ) thì thôi, không thử lại
+    }
+  }
+};
+void (renderer.init ? renderer.init() : Promise.resolve()).then(() => {
+  renderer.setAnimationLoop(renderFrame);
+  void precompile();
 });
 
 function App() {
@@ -439,7 +524,7 @@ initSaves().finally(() => createRoot(document.getElementById('ui')!).render(<App
 
 // Để debug trong console khi chạy dev
 if (import.meta.env.DEV) {
-  Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff } });
+  Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff, renderer, scene, lighting } });
   import('./dev/autoplay').then(({ createAutoplay }) =>
     Object.assign((window as unknown as { game: object }).game, { autoplay: createAutoplay(shop, customers, staff, player) }),
   );
