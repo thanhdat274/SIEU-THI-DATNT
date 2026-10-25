@@ -1,43 +1,39 @@
 {
-  "name": "tiem-tap-hoa-dau-hem",
-  "version": "0.1.0",
+  "name": "tap-hoa-3d",
   "private": true,
-  "packageManager": "yarn@1.22.22",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "version": "0.0.1",
+  "type": "module",
   "scripts": {
-    "dev:server": "yarn --cwd apps/server dev",
-    "verify:runtime": "yarn --cwd apps/server verify:runtime",
-    "dev:web": "yarn --cwd apps/web dev",
-    "dev": "node scripts/run-dev.js",
-    "start": "yarn --cwd apps/web dev",
-    "build": "yarn --cwd apps/server build && yarn --cwd apps/web build",
-    "typecheck": "tsc -b packages/shared packages/game-data packages/game-core packages/game-renderer-core packages/game-renderer-3d apps/server apps/web",
-    "test": "yarn --cwd packages/game-core test",
-    "test:all": "yarn test && yarn --cwd packages/game-renderer-core test && yarn --cwd packages/game-renderer-3d test && yarn --cwd apps/server test:unit && yarn --cwd apps/web test",
-    "test:all:db": "yarn test:all && yarn --cwd apps/server test:db",
-    "content:validate": "tsx tools/content-editor/cli.ts validate",
-    "content:export": "tsx tools/content-editor/cli.ts export",
-    "content:test": "tsx tools/content-editor/validate.test.ts",
-    "weather:sprites": "tsx tools/weather-sprites/build.ts",
-    "weather:sprites:test": "tsx tools/weather-sprites/validate.test.ts",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "server": "tsx watch server/index.ts"
+  },
+  "dependencies": {
+    "dexie": "^4.4.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.3.0",
+    "firebase": "^12.19.0",
+    "firebase-admin": "^14.5.0",
+    "mongodb": "^7.7.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "three": "^0.186.1",
+    "ws": "^8.22.0",
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
-    "@eslint/js": "^10",
-    "@typescript/native": "npm:typescript@^7.0.2",
-    "eslint": "^10",
-    "eslint-plugin-react-hooks": "^7",
-    "globals": "^17.13.0",
-    "npm-run-all2": "^9.0.3",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^6.1.2",
     "tsx": "^4.23.15",
-    "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "typescript-eslint": "^8"
-  },
-  "engines": {
-    "node": ">=22"
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^3.2.4"
   }
 }

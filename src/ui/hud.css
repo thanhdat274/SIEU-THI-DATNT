@@ -1,0 +1,487 @@
+/*
+ * HUD trong game: thông tin ở hai góc trên, thanh công cụ ở giữa dưới (kiểu game quản lý).
+ * Mọi thứ nổi trên cảnh 3D bằng nền tối mờ, chữ trắng; vàng là màu nhấn duy nhất.
+ */
+#ui {
+  --hud-bg: rgba(22, 24, 34, 0.82);
+  --hud-bg-solid: #1d1f2b;
+  --hud-line: rgba(255, 255, 255, 0.1);
+  --hud-text: #fff;
+  --hud-muted: rgba(255, 255, 255, 0.62);
+  --hud-accent: #f1c40f;
+  --hud-green: #2ecc71;
+  --hud-radius: 12px;
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+}
+
+#ui .hud-status,
+#ui .hud-meta,
+#ui .hud-bottom,
+#ui .hud-alerts {
+  position: absolute;
+  display: flex;
+  gap: 8px;
+  color: var(--hud-text);
+}
+
+/* ---------- Ô thông tin ---------- */
+#ui .hud-chip {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 6px 14px;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius);
+  background: var(--hud-bg);
+  backdrop-filter: blur(8px);
+  color: inherit;
+  font: inherit;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+#ui .hud-chip b { display: block; font-size: 15px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+#ui .hud-chip small { display: block; font-size: 11px; color: var(--hud-muted); line-height: 1.3; white-space: nowrap; }
+#ui button.hud-chip { cursor: pointer; text-align: left; }
+#ui button.hud-chip:hover { border-color: rgba(241, 196, 15, 0.6); }
+#ui button.hud-chip:focus-visible, #ui .hud-tool:focus-visible, #ui .hud-speed button:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: 2px;
+}
+
+#ui .hud-status { top: 12px; left: 12px; flex-wrap: wrap; align-items: flex-start; max-width: calc(100% - 300px); }
+#ui .hud-weather { font-size: 22px; }
+#ui .hud-forecast { opacity: 0.85; letter-spacing: 2px; }
+#ui .hud-forecast::before { content: "Dự báo "; letter-spacing: 0; }
+#ui .hud-time b { font-size: 18px; }
+#ui .hud-late { color: #ff7675; }
+#ui .hud-money b { color: var(--hud-accent); font-size: 17px; }
+
+#ui .hud-level-num {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--hud-accent);
+  color: #222;
+  font-weight: 800;
+  font-size: 15px;
+}
+#ui .hud-xp {
+  display: block;
+  width: 90px;
+  height: 6px;
+  margin-top: 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+#ui .hud-xp span { display: block; height: 100%; background: var(--hud-accent); border-radius: 3px; }
+
+#ui .hud-place {
+  flex-basis: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--hud-muted);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+#ui .hud-open {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #bbb;
+  text-shadow: none;
+}
+#ui .hud-open.on { background: rgba(46, 204, 113, 0.9); color: #0b2b17; font-weight: 600; }
+
+/* ---------- Góc phải: phòng chơi chung + tài khoản ---------- */
+#ui .hud-meta { top: 12px; right: 12px; align-items: flex-start; }
+#ui .hud-pop { position: relative; pointer-events: auto; }
+#ui .hud-account img, #ui .hud-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex: none;
+}
+#ui .hud-avatar {
+  display: grid;
+  place-items: center;
+  background: #3d4157;
+  font-weight: 700;
+}
+#ui .hud-account b { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+#ui .hud-caret { color: var(--hud-muted); font-size: 12px; }
+#ui .hud-link {
+  border: none;
+  background: none;
+  color: var(--hud-accent);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+#ui .hud-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  min-width: 200px;
+  padding: 6px;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius);
+  background: var(--hud-bg-solid);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+}
+#ui .hud-menu button {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--hud-text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+#ui .hud-menu button:hover, #ui .hud-menu button:focus-visible { background: rgba(255, 255, 255, 0.08); outline: none; }
+#ui .hud-menu button.danger { color: #ff7675; }
+
+/* ---------- Thông báo ---------- */
+#ui .hud-alerts {
+  top: 78px;
+  left: 50%;
+  transform: translateX(-50%);
+  flex-direction: column;
+  align-items: center;
+  width: max-content;
+  max-width: calc(100% - 24px);
+}
+#ui .hud-alert {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+#ui .hud-alert.danger { background: rgba(192, 57, 43, 0.92); }
+#ui .hud-alert.warn { background: rgba(230, 126, 34, 0.94); }
+#ui .hud-alert.info { background: rgba(41, 128, 185, 0.94); border-radius: var(--hud-radius); }
+#ui .hud-alert.build { background: rgba(41, 128, 185, 0.94); }
+#ui .hud-alert-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+#ui .hud-hint { font-size: 12px; font-style: italic; opacity: 0.9; }
+#ui .hud-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#ui .hud-toast {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 12px 22px;
+  border-radius: var(--hud-radius);
+  background: var(--hud-bg-solid);
+  border: 1px solid var(--hud-line);
+  color: var(--hud-text);
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Dưới: gợi ý + thanh công cụ ---------- */
+#ui .hud-bottom {
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  flex-direction: column;
+  align-items: center;
+  max-width: calc(100% - 24px);
+}
+#ui .hud-hint {
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(241, 196, 15, 0.95);
+  color: #222;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+#ui .hud-dock {
+  pointer-events: auto;
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  max-width: 100%;
+  padding: 6px;
+  border: 1px solid var(--hud-line);
+  border-radius: 16px;
+  background: var(--hud-bg);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+#ui .hud-divider { width: 1px; margin: 6px 4px; background: var(--hud-line); flex: none; }
+
+#ui .hud-speed {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+}
+#ui .hud-speed button {
+  min-width: 36px;
+  height: 100%;
+  min-height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--hud-muted);
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+#ui .hud-speed button:hover { color: var(--hud-text); }
+#ui .hud-speed button[aria-pressed='true'] { background: var(--hud-accent); color: #222; }
+
+#ui .hud-tool {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 70px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--hud-text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#ui .hud-tool-icon { font-size: 20px; line-height: 1; }
+#ui .hud-tool:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
+#ui .hud-tool.active { background: rgba(241, 196, 15, 0.2); box-shadow: inset 0 -2px 0 var(--hud-accent); }
+#ui .hud-tool:disabled { color: var(--hud-muted); cursor: not-allowed; }
+#ui .hud-badge {
+  position: absolute;
+  top: -6px;
+  right: 2px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--hud-accent);
+  color: #222;
+  font-size: 10px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+#ui .hud-badge.muted { background: rgba(255, 255, 255, 0.18); color: var(--hud-text); }
+
+#ui .hud-dock .hud-menu { top: auto; bottom: calc(100% + 10px); }
+#ui .hud-more {
+  right: 0;
+  left: auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(76px, 1fr));
+  width: max-content;
+  gap: 4px;
+  padding: 8px;
+}
+#ui .hud-more .hud-tool { display: flex; min-width: 0; padding: 10px 6px; font-size: 12px; text-align: center; }
+#ui .hud-more .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { display: inline; }
+#ui .hud-more .hud-help { grid-column: 1 / -1; width: max-content; min-width: 280px; }
+#ui .hud-help kbd, #ui .hud-help span { white-space: nowrap; }
+#ui .hud-badge.hud-dot { top: 2px; right: 10px; width: 9px; height: 9px; padding: 0; background: #e74c3c; }
+#ui .hud-help { min-width: 260px; display: grid; gap: 6px; padding: 10px 12px; font-size: 13px; }
+#ui .hud-help div { display: flex; justify-content: space-between; gap: 12px; }
+#ui .hud-help kbd {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ---------- Điện thoại ---------- */
+@media (max-width: 760px) {
+  #ui .hud-status { max-width: calc(100% - 80px); gap: 6px; }
+  #ui .hud-chip { min-height: 38px; padding: 4px 10px; gap: 6px; }
+  #ui .hud-time small, #ui .hud-level small { display: none; }
+  #ui .hud-xp { width: 50px; }
+  #ui .hud-account > span:not(.hud-avatar), #ui .hud-caret, #ui .hud-room small { display: none; }
+  #ui .hud-account { padding: 4px; }
+  #ui .hud-alerts { top: 110px; }
+  #ui .hud-bottom { bottom: 8px; width: calc(100% - 16px); }
+  #ui .hud-dock { width: 100%; }
+  #ui .hud-dock { justify-content: space-between; }
+  #ui .hud-tool { min-width: 40px; padding: 6px 4px; }
+  #ui .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; line-height: 1.1; text-align: center; white-space: normal; word-break: keep-all; }
+  #ui .hud-badge.muted { display: none; }
+  #ui .hud-divider { margin: 6px 1px; }
+  #ui .hud-speed button { min-width: 30px; }
+}
+
+/* Điện thoại không có bàn phím: bỏ nút xem phím, gom dock cho vừa màn hình */
+@media (max-width: 760px) {
+  #ui .hud-speed button { min-width: 26px; font-size: 12px; }
+  #ui .hud-tool { min-width: 36px; flex: 1; }
+}
+
+/* Nút mở/đóng cửa tiệm: xanh khi đang mở để nhìn là biết */
+#ui .hud-tool.hud-shop { background: rgba(255, 255, 255, 0.06); }
+#ui .hud-tool.hud-shop.open { background: rgba(46, 204, 113, 0.22); box-shadow: inset 0 -2px 0 var(--hud-green); }
+
+/* Gợi ý tương tác bấm được (chạm trên điện thoại) */
+#ui button.hud-hint { pointer-events: auto; border: none; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+#ui button.hud-hint:active { transform: scale(0.97); }
+#ui .hud-btn.primary { background: var(--hud-accent); }
+
+/* Nút trên màn cảm ứng: đủ to để chạm (tối thiểu ~40px) */
+@media (pointer: coarse) {
+  #ui .hud-btn { padding: 8px 14px; font-size: 14px; }
+  #ui button.hud-hint { padding: 12px 22px; }
+  #ui .hud-alert.build { border-radius: var(--hud-radius); }
+}
+
+/* Tai thỏ / thanh home trên điện thoại */
+#ui .hud-status { top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); }
+#ui .hud-meta { top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); }
+#ui .hud-bottom { bottom: max(14px, env(safe-area-inset-bottom)); }
+
+/* Điện thoại xoay ngang: màn thấp, thu nhỏ các ô cho đỡ che cảnh */
+@media (max-height: 480px) {
+  #ui .hud-chip { min-height: 36px; padding: 3px 10px; }
+  #ui .hud-place { display: none; }
+  #ui .hud-alerts { top: 58px; }
+  #ui .hud-tool { padding: 4px 6px; }
+  #ui .hud-tool-icon { font-size: 17px; }
+}
+
+/* Màn vừa (máy tính bảng, cửa sổ thu nhỏ): chữ dưới biểu tượng nhỏ lại cho vừa một hàng */
+@media (max-width: 1000px) {
+  #ui .hud-dock > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge),
+  #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 10px; white-space: nowrap; }
+  @media (max-width: 760px) { #ui .hud-dock > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge), #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; white-space: normal; } }
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { min-width: 46px; }
+}
+
+/* Màn rất hẹp: các nút chia đều một hàng (menu Thêm bật lên phía trên nên dock không được cắt tràn) */
+@media (max-width: 760px) {
+  #ui .hud-dock { justify-content: space-between; gap: 2px; padding: 4px; }
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 34px; min-width: 34px; padding: 6px 2px; }
+  #ui .hud-dock > .hud-pop { display: flex; flex: 1 0 34px; }
+  #ui .hud-speed { flex: none; }
+  #ui .hud-speed button { min-width: 24px; padding: 0 2px; }
+}
+
+#ui .hud-speed-cycle { display: none; }
+@media (max-width: 760px) {
+  #ui .hud-speed { display: none; }
+  #ui .hud-speed-cycle {
+    display: block;
+    flex: none;
+    width: 40px;
+    border: none;
+    border-radius: 10px;
+    background: var(--hud-accent);
+    color: #222;
+    font: inherit;
+    font-weight: 800;
+    font-size: 14px;
+  }
+}
+
+/* Cần điều khiển ảo (chỉ hiện trên màn cảm ứng) */
+#ui .hud-joystick {
+  position: absolute;
+  left: max(20px, env(safe-area-inset-left));
+  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 84px);
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  background: rgba(20, 20, 30, 0.35);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+  touch-action: none;
+}
+#ui .hud-joystick-knob {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--hud-accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+@media (max-height: 480px) {
+  #ui .hud-joystick { width: 100px; height: 100px; bottom: calc(max(10px, env(safe-area-inset-bottom)) + 64px); }
+}
+
+/* Điện thoại tiệm: đơn gọi giao trong hẻm */
+#ui .hud-alert.phone { background: rgba(21, 101, 192, 0.94); }
+#ui .hud-alert.phone.warn { background: rgba(230, 126, 34, 0.94); }
+#ui .hud-alert.phone.ringing { animation: hud-phone-ring 1.2s ease-in-out infinite; }
+@keyframes hud-phone-ring {
+  0%, 100% { transform: translateX(0); }
+  10%, 30% { transform: translateX(-3px); }
+  20%, 40% { transform: translateX(3px); }
+}
+@media (prefers-reduced-motion: reduce) { #ui .hud-alert.phone.ringing { animation: none; } }
+
+/* Hội thoại chương cốt truyện */
+#ui .hud-dialogue {
+  pointer-events: auto;
+  position: absolute;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px));
+  background: var(--hud-bg-solid);
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius);
+  color: var(--hud-text);
+  padding: 12px 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  z-index: 20;
+}
+#ui .hud-dialogue-title { font-size: 12px; color: var(--hud-accent); font-weight: 700; margin-bottom: 8px; }
+#ui .hud-dialogue-line { display: flex; gap: 12px; align-items: flex-start; }
+#ui .hud-dialogue-avatar { font-size: 34px; line-height: 1; }
+#ui .hud-dialogue-line p { margin: 4px 0 0; font-size: 15px; line-height: 1.45; }
+#ui .hud-dialogue-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; color: var(--hud-muted); }
+#ui .hud-alert.festival { background: rgba(192, 57, 43, 0.9); border-radius: var(--hud-radius); max-width: min(560px, calc(100vw - 32px)); }
+#ui .hud-tutorial { flex-direction: column; align-items: flex-start; }
+#ui .hud-tutorial ul { list-style: none; margin: 0; padding: 0; font-weight: 500; font-size: 13px; }
+#ui .hud-tutorial li.done { opacity: 0.6; text-decoration: line-through; }

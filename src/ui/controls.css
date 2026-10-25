@@ -1,0 +1,215 @@
+/* Ô chọn, ô nhập, hộp tick trong các bảng game: cùng tông với bảng tối và nút vàng. */
+#ui {
+  --ctl-bg: #3a3a4d;
+  --ctl-bg-hover: #45455c;
+  --ctl-border: #5a5a74;
+  --ctl-text: #fff;
+  --ctl-accent: #f1c40f;
+}
+
+#ui select,
+#ui input:not([type='checkbox']):not([type='radio']):not(.login-code) {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--ctl-border);
+  border-radius: 8px;
+  background-color: var(--ctl-bg);
+  color: var(--ctl-text);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.12s, background-color 0.12s, box-shadow 0.12s;
+}
+
+#ui select {
+  appearance: none;
+  padding-right: 30px;
+  cursor: pointer;
+  /* Mũi tên tự vẽ thay cho mũi tên mặc định của trình duyệt */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23f1c40f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+#ui select option {
+  background: #2b2b3a;
+  color: var(--ctl-text);
+}
+
+#ui select:hover,
+#ui input:not([type='checkbox']):hover {
+  background-color: var(--ctl-bg-hover);
+}
+
+#ui select:focus-visible,
+#ui input:focus-visible {
+  border-color: var(--ctl-accent);
+  box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.25);
+}
+
+#ui input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Hộp tick hiện thành công tắc gạt: rõ bật/tắt, dễ bấm trên điện thoại */
+#ui input[type='checkbox'] {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  margin: 0 8px 0 0;
+  vertical-align: -5px;
+  border: 1px solid var(--ctl-border);
+  border-radius: 999px;
+  background: var(--ctl-bg);
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+#ui input[type='checkbox']::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #c9cbd6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s, background-color 0.15s;
+}
+
+#ui input[type='checkbox']:checked {
+  background: var(--ctl-accent);
+  border-color: var(--ctl-accent);
+}
+
+#ui input[type='checkbox']:checked::after {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+#ui input[type='checkbox']:hover { border-color: var(--ctl-accent); }
+
+#ui input[type='checkbox']:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.35);
+}
+
+#ui input[type='checkbox']:disabled { opacity: 0.45; cursor: not-allowed; }
+
+#ui label:has(> input[type='checkbox']) {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Thanh cuộn trong bảng cho hợp nền tối */
+#ui * {
+  scrollbar-width: thin;
+  scrollbar-color: #5a5a74 transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #ui select,
+  #ui input,
+  #ui input[type='checkbox']::after {
+    transition: none;
+  }
+}
+
+/* Ô chọn tự vẽ (Dropdown.tsx) */
+#ui .dd-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 140px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--ctl-border);
+  border-radius: 8px;
+  background: var(--ctl-bg);
+  color: var(--ctl-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s, background-color 0.12s, box-shadow 0.12s;
+}
+#ui .dd-trigger:hover { background: var(--ctl-bg-hover); }
+#ui .dd-trigger:focus-visible,
+#ui .dd-trigger.open {
+  outline: none;
+  border-color: var(--ctl-accent);
+  box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.25);
+}
+#ui .dd-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ui .dd-arrow { flex: none; color: var(--ctl-accent); transition: transform 0.15s; }
+#ui .dd-trigger.open .dd-arrow { transform: rotate(180deg); }
+
+#ui .dd-list {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid var(--ctl-border);
+  border-radius: 10px;
+  background: #2f2f40;
+  color: var(--ctl-text);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+  pointer-events: auto;
+}
+#ui .dd-list .dd-search { margin: 2px 2px 6px; flex: none; }
+#ui .dd-options { overflow-y: auto; }
+#ui .dd-option {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#ui .dd-option.active { background: rgba(255, 255, 255, 0.08); }
+#ui .dd-option.selected { color: var(--ctl-accent); font-weight: 600; }
+#ui .dd-option.selected::after { content: '✓'; }
+#ui .dd-hint { opacity: 0.55; font-weight: 400; }
+#ui .dd-empty { padding: 8px 10px; opacity: 0.6; }
+
+@media (prefers-reduced-motion: reduce) {
+  #ui .dd-trigger, #ui .dd-arrow { transition: none; }
+}
+
+/* Bảng nhập hàng: 7 cột trên máy tính, thành thẻ 2–3 dòng trên điện thoại */
+#ui .or-row { grid-template-columns: minmax(170px, 2.2fr) 0.8fr 0.8fr 1fr 0.9fr 1.5fr 1fr; }
+
+@media (max-width: 700px) {
+  #ui .or-head { display: none !important; }
+  #ui .or-row { grid-template-columns: 1fr 1fr 1fr; row-gap: 6px; padding: 10px !important; }
+  #ui .or-name { grid-column: 1 / -1; font-weight: 600; }
+  #ui .or-row [data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10px;
+    opacity: 0.55;
+  }
+  #ui .or-qty { grid-column: 1 / 3; }
+  #ui .or-total { text-align: right; font-weight: 600; }
+}
+
+/* Bảng game trên màn hẹp: nút và ô to hơn để dễ chạm */
+@media (pointer: coarse) {
+  #ui .dd-trigger, #ui select, #ui input:not([type='checkbox']) { height: 38px; }
+  #ui .dd-option { padding: 11px 12px; }
+  #ui .or-qty button { width: 32px !important; height: 32px !important; }
+  #ui .or-qty input { height: 32px !important; }
+}
+
+/* Hẻm online: đang chờ máy chạy làm thao tác vừa bấm, làm mờ nút cho khỏi bấm lặp */
+body.net-busy { cursor: progress; }
+body.net-busy #ui button { opacity: 0.6; pointer-events: none; transition: opacity 0.15s; }

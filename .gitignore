@@ -1,17 +1,6 @@
 node_modules
 dist
-.turbo
-.next
-*.log
-.DS_Store
+yarn.lock
 .env
 .env.local
-*.tsbuildinfo
-*-firebase-adminsdk-*.json
-bash.exe.stackdump
-.qa
-# Atlas nhân vật LimeZu (bản free, cấm thương mại/không phát tán): giữ cục bộ, sinh lại bằng tools/sprite-atlas/build-limezu-chars.py
-apps/web/public/assets/sprites/chars/
-apps/web/public/assets/sprites/furniture/
-browser-screenshots
-.qa/
+server/.env
