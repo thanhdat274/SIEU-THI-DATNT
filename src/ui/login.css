@@ -182,6 +182,19 @@
 .login-code.login-name { flex: 1; min-width: 0; width: auto; font-size: 14px; letter-spacing: normal; text-transform: none; }
 .login-alley { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .login-alley .login-save { flex: 1; }
+.login-copy {
+  flex: none;
+  border: 2px solid var(--sign);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--sign);
+  font: 600 12px 'Be Vietnam Pro', system-ui, sans-serif;
+  padding: 4px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.login-copy:hover:not(:disabled), .login-copy:focus-visible { background: #eef3fb; outline: none; }
+.login-copy:disabled { cursor: default; }
 
 @media (max-width: 640px) {
   .login {

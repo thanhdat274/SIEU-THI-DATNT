@@ -17,7 +17,9 @@ import { useSession, type AlleyPeer } from './session';
  */
 
 /** Trạng thái riêng từng máy (giao diện, chỗ đứng, trang phục của mỗi người), không đồng bộ. */
-const LOCAL_STATE = new Set<string>(['location', 'hint', 'message', 'panel', 'buildMode', 'placing', 'stylePreview', 'costume']);
+const LOCAL_STATE = new Set<string>(['hint', 'message', 'panel', 'buildMode', 'placing', 'stylePreview', 'costume']);
+/** Trường đồng bộ qua sharedState nhưng không gửi PATCH ngược lại (chỉ runner tự cập nhật). */
+const NO_PATCH = new Set<string>(['location']);
 /** Hàm chạy tại chỗ: giao diện, hoặc chỉ đọc. */
 const LOCAL_ACTIONS = new Set<string>(['notify', 'openPanel', 'closePanel', 'setBuildMode', 'setPlacing', 'priceOf', 'tick', 'takeFromShelf', 'setCostume']);
 /** Giá trị trả về tạm của thao tác gửi đi, cho giao diện đọc kết quả dạng danh sách. */
@@ -116,7 +118,7 @@ export function initCoop(w: World) {
     if (role() !== 'player' || applyingRemote) return;
     const patch: Record<string, unknown> = {};
     for (const key of Object.keys(s) as (keyof GameState)[]) {
-      if (s[key] !== prev[key] && typeof s[key] !== 'function' && !LOCAL_STATE.has(key)) patch[key] = s[key];
+      if (s[key] !== prev[key] && typeof s[key] !== 'function' && !LOCAL_STATE.has(key) && !NO_PATCH.has(key)) patch[key] = s[key];
     }
     if (Object.keys(patch).length) send({ type: 'act', name: PATCH, args: [patch] });
   });
@@ -248,9 +250,11 @@ export function enterAlley(id: string): Promise<void> {
           coop: { role: msg.role, alley: msg.alley.id, name: msg.alley.name, selfId: msg.selfId, room: msg.room ?? 0, peers: msg.peers },
         });
         if (msg.role === 'runner') {
-          // Hẻm mới tạo chưa có tiến trình: bắt đầu tiệm mới
+          // Hẻm mới tạo chưa có tiến trình: bắt đầu tiệm mới.
+          // Hẻm chơi chung mặc định bật LỊCH TỰ ĐỘNG (autoRoutine=true) để 8h tự mở cửa, 22h30 tự
+          // đóng — thay vì để newGameData() ép về false khiến hẻm không bao giờ tự mở cửa lúc 8h.
           if (msg.data) applySnapshot(msg.data);
-          else useGame.setState({ ...newGameData(), shopOpen: false, panel: null });
+          else useGame.setState({ ...newGameData(), autoRoutine: true, shopOpen: false, panel: null });
           installGuards();
           ready = true;
           resolve();
@@ -363,7 +367,7 @@ function onMessage(msg: Msg) {
         if (!patch || typeof patch !== 'object') return;
         // Chỉ nhận trường dữ liệu tiệm đã có, không cho ghi đè hàm hay trạng thái giao diện
         const safe = Object.fromEntries(Object.entries(patch).filter(([k]) =>
-          k in game && typeof game[k as keyof GameState] !== 'function' && !LOCAL_STATE.has(k)));
+          k in game && typeof game[k as keyof GameState] !== 'function' && !LOCAL_STATE.has(k) && !NO_PATCH.has(k)));
         useGame.setState(safe as Partial<GameState>);
         return;
       }

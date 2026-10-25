@@ -119,6 +119,13 @@ useSession.subscribe((s, prev) => {
     standSpot.copy(spots.nightstand);
     wakeUp();
   }
+  // Máy này vừa được giao quyền chạy tiệm (thăng cấp từ khách): routineMarks/lastMinutes là
+  // biến cục bộ, lúc còn là khách không chạy runRoutine nên có thể mang giá trị cũ — reset lại
+  // để lịch tự động (mở/đóng cửa) chạy đúng từ trạng thái mới.
+  if (s.coop?.role === 'runner' && prev.coop?.role !== 'runner') {
+    routineMarks = newRoutineMarks();
+    lastMinutes = useGame.getState().minutes;
+  }
   if (s.screen === 'game' && prev.screen !== 'game') {
     controller.follow = player.position;
     // Lúc này save đã nạp xong, tiệm đã bày hàng: nạp trước nốt pipeline cho hàng hóa trong tiệm
@@ -165,7 +172,10 @@ worldActions.travel = (to) => {
   controller.follow = player.position;
   // Ở hẻm online đồng hồ là chung: một người đi lại không được tua giờ của cả hẻm
   const travel = to === 'home' ? 0 : inAlley() ? 0 : Math.round(TRAVEL_MINUTES[to] * (vehicleDef(s.biz.vehicle)?.travel ?? 1));
-  useGame.setState({ minutes: s.minutes + travel, panel: null });
+  // Cập nhật location ngay để UI phản hồi đúng vị trí sau khi di chuyển (đặc biệt quan trọng trong online mode)
+  const isShared = world.currentHome === world.sharedHome;
+  const location = to === 'shop' ? 'Tạp hóa' : to === 'ranch' ? 'Trang trại đầu ngõ' : (isShared ? 'Nhà chung của hẻm' : 'Nhà của bạn');
+  useGame.setState({ minutes: s.minutes + travel, panel: null, location });
   s.notify(to === 'shop' ? '🛵 Đã tới tiệm' : to === 'ranch' ? '🚜 Đã tới trang trại' : '🛵 Đã về nhà');
 };
 
