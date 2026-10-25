@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import { createRoot } from 'react-dom/client';
 import { shopLayout, worldActions } from './core/actions';
 import { initSaves, saveGame, startAutosave } from './core/save';
-import { formatClock, ROUTINE, SLEEP_FROM, useGame, type GameState } from './core/store';
+import { formatClock, SLEEP_FROM, useGame, type GameState } from './core/store';
+import { newRoutineMarks, planRoutine } from './core/routine';
 import { vehicleDef } from './data/biz';
 import { checkChapters, eatBreakfast, stockReminders } from './core/biz';
 import { hasSkill } from './data/titles';
@@ -217,42 +218,48 @@ function stocktake() {
 }
 
 /**
- * Lịch tự động: chạy khi đồng hồ vượt qua mỗi mốc (kể cả khi tua nhanh).
+ * Lịch tự động: chạy khi đồng hồ vượt qua mỗi mốc (kể cả khi tua 3×/8×).
  * Người chơi vẫn tự đóng/mở cửa, đi lại được; lịch chỉ làm việc chưa làm.
+ * Mốc giờ xét theo trạng thái (đã qua giờ chưa) chứ không chỉ "vừa vượt mốc" — xem core/routine.ts.
  */
 let lastMinutes = useGame.getState().minutes;
-let routineWalkDay = -1;
-let routineOpenDay = -1;
+let routineMarks = newRoutineMarks();
 function runRoutine() {
   const s = useGame.getState();
   const prev = lastMinutes;
   lastMinutes = s.minutes;
-  if (!s.autoRoutine || s.minutes <= prev) return;
-  const crossed = (at: number) => prev < at && s.minutes >= at;
-  const atShop = () => s.location === shop.building.opts.name;
-  // Ra tiệm / mở cửa mỗi ngày một lần, kể cả khi nạp save, ngủ dậy muộn hay tua qua mốc giờ
-  const inDay = (at: number) => s.minutes >= at && s.minutes < ROUTINE.close;
-  if (inDay(ROUTINE.goToShop) && routineWalkDay !== s.day && !atShop()) {
-    routineWalkDay = s.day;
+  // Đồng hồ lùi (ngủ dậy, nạp bản lưu) thì khung hình này không xét mốc nào. Lùi nhiều (qua đêm,
+  // đổi bản lưu) thì bỏ mốc cũ để lịch chạy lại đúng theo ngày/giờ mới.
+  if (s.minutes <= prev) {
+    if (prev - s.minutes > 120) routineMarks = newRoutineMarks();
+    return;
+  }
+  const atShop = s.location === shop.building.opts.name;
+  const todo = planRoutine({
+    day: s.day, minutes: s.minutes, autoRoutine: s.autoRoutine, atShop, shopOpen: s.shopOpen,
+  }, routineMarks);
+  routineMarks = todo.marks;
+
+  if (todo.walkToShop) {
     player.walkTo(shopSpot());
     controller.follow = player.position;
     s.notify(`🚶 ${formatClock(s.minutes)} · Ra tiệm chuẩn bị mở cửa`);
   }
-  if (inDay(ROUTINE.open) && routineOpenDay !== s.day) {
-    routineOpenDay = s.day;
+  if (todo.openShop) {
     // Tua nhanh thì đi bộ không kịp giờ mở cửa: tới thẳng quầy để không bỏ khách đứng chờ
-    if (!atShop()) {
+    if (!atShop) {
       const spot = shopSpot();
       player.teleport(spot.x, spot.z);
       controller.follow = player.position;
     }
     if (!s.shopOpen) s.toggleShop();
   }
-  if (s.minutes - prev > 120) return;
-  if (crossed(ROUTINE.close) && s.shopOpen) s.toggleShop();
-  if (crossed(ROUTINE.goHome)) {
-    s.notify(stocktake());
-    if (atShop()) {
+  if (todo.closeShop && s.shopOpen) s.toggleShop();
+  if (todo.goHome) {
+    if (todo.stocktake) s.notify(stocktake());
+    // Về nhà từ bất cứ đâu (trong tiệm, ngoài đường, trang trại...), không chỉ khi đang đứng trong tiệm.
+    // Đi bộ theo nhịp đồng hồ game nên tua 3×/8× vẫn về tới nhà trong cùng số phút như 1×.
+    if (player.position.distanceTo(wakeSpot) > 2) {
       player.walkTo(wakeSpot.clone());
       controller.follow = player.position;
     }
@@ -468,7 +475,9 @@ function renderFrame() {
       reminderSlot = slot;
     }
 
-    const moving = (speed > 0 || guest) && !state.panel && player.update(dt, controller.yaw);
+    // Tua 3×/8×: nhân vật đi bộ vẫn cùng nhịp đồng hồ game (đường tự động của lịch), còn người
+    // chơi tự bấm phím thì đi tốc độ thật — xem Player.update.
+    const moving = (speed > 0 || guest) && !state.panel && player.update(dt, controller.yaw, speed);
     if (moving) controller.follow = player.position;
     autoBreakfast();
     if (!guest) {

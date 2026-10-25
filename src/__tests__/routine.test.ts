@@ -1,0 +1,109 @@
+import { describe, expect, it } from 'vitest';
+import { newRoutineMarks, planRoutine, type RoutineMarks, type RoutineSnapshot } from '../core/routine';
+import { ROUTINE } from '../core/gameTypes';
+
+/** Lịch tự động: đóng cửa 22h30, kiểm kê & về nhà 23h — phải chạy y nhau ở 1×, 3×, 8×. */
+
+const snap = (minutes: number, extra: Partial<RoutineSnapshot> = {}): RoutineSnapshot => ({
+  day: 2, minutes, autoRoutine: true, atShop: true, shopOpen: true, ...extra,
+});
+
+/** Mốc buổi sáng đã làm xong (để test riêng phần buổi tối). */
+const morningDone = (day = 2): RoutineMarks => ({ walkDay: day, openDay: day, closeDay: -1, homeDay: -1 });
+
+/** Chạy lịch qua một dãy mốc giờ, trả về các lần việc gì đó thật sự xảy ra. */
+function run(minutesList: number[], extra: Partial<RoutineSnapshot> = {}, marks: RoutineMarks = morningDone()) {
+  const fired: { minutes: number; action: string }[] = [];
+  for (const minutes of minutesList) {
+    const todo = planRoutine(snap(minutes, extra), marks);
+    marks = todo.marks;
+    if (todo.walkToShop) fired.push({ minutes, action: 'walkToShop' });
+    if (todo.openShop) fired.push({ minutes, action: 'openShop' });
+    if (todo.closeShop) fired.push({ minutes, action: 'closeShop' });
+    if (todo.goHome) fired.push({ minutes, action: 'goHome' });
+    if (todo.stocktake) fired.push({ minutes, action: 'stocktake' });
+  }
+  return fired;
+}
+
+describe('lịch tự động: mốc buổi tối', () => {
+  it('qua 22h30 thì đóng cửa, qua 23h thì kiểm kê + về nhà, mỗi việc một lần', () => {
+    expect(run([22 * 60 + 20])).toEqual([]);
+    expect(run([22 * 60 + 20, 22 * 60 + 31])).toEqual([{ minutes: 22 * 60 + 31, action: 'closeShop' }]);
+    expect(run([22 * 60 + 31, 22 * 60 + 45, 23 * 60 + 1])).toEqual([
+      { minutes: 22 * 60 + 31, action: 'closeShop' },
+      { minutes: 23 * 60 + 1, action: 'goHome' },
+      { minutes: 23 * 60 + 1, action: 'stocktake' },
+    ]);
+  });
+
+  it('8× nhảy cóc qua cả hai mốc trong một khung vẫn đóng cửa + về nhà đủ', () => {
+    // 8×: mỗi khung hình ~1.6 phút; tua từ 22:29 lên 00:20 chỉ qua vài khung
+    const fired = run([22 * 60 + 20, 22 * 60 + 29, 22 * 60 + 47, 23 * 60 + 5, 23 * 60 + 21]);
+    expect(fired.map((f) => f.action)).toEqual(['closeShop', 'goHome', 'stocktake']);
+  });
+
+  it('1×/3×/8× cho cùng kết quả: mỗi mốc chỉ một lần trong ngày', () => {
+    const steps = {
+      '1×': [22 * 60 + 20, 22 * 60 + 41, 23 * 60 + 2, 23 * 60 + 23, 24 * 60],
+      '3×': [22 * 60 + 20, 22 * 60 + 26, 22 * 60 + 38, 22 * 60 + 50, 23 * 60 + 2, 23 * 60 + 14],
+      '8×': [22 * 60 + 20, 22 * 60 + 28, 22 * 60 + 44, 22 * 60 + 60, 23 * 60 + 4, 23 * 60 + 20],
+    };
+    const got = Object.fromEntries(Object.entries(steps).map(([k, v]) => [k, run(v).map((f) => f.action)]));
+    expect(new Set(Object.values(got).map((a) => a.join(','))).size).toBe(1);
+    expect(got['1×']).toEqual(['closeShop', 'goHome', 'stocktake']);
+  });
+
+  it('bật lịch tự động giữa buổi tối (đã qua 23h) thì về nhà ngay, như 1× vẫn làm', () => {
+    // Người chơi đứng trong tiệm lúc 1:24 rồi mới bật lịch (hoặc vừa nạp bản lưu) — trước đây kẹt luôn trong tiệm
+    const todo = planRoutine(snap(24 * 60 + 84), newRoutineMarks());
+    expect(todo.goHome).toBe(true);
+    expect(todo.stocktake).toBe(true);
+    expect(todo.closeShop).toBe(true);
+    expect(todo.walkToShop).toBe(false);
+  });
+
+  it('đang ở ngoài tiệm lúc 23h vẫn nhận việc về nhà (nhân vật tự đi bộ về)', () => {
+    const todo = planRoutine(snap(23 * 60 + 10, { atShop: false }), morningDone());
+    expect(todo.goHome).toBe(true);
+    expect(todo.walkToShop).toBe(false);
+  });
+
+  it('sang ngày mới thì lịch chạy lại từ đầu', () => {
+    const marks: RoutineMarks = { walkDay: 2, openDay: 2, closeDay: 2, homeDay: 2 };
+    const todo = planRoutine(snap(ROUTINE.goHome, { day: 3 }), marks);
+    expect(todo.closeShop).toBe(true);
+    expect(todo.goHome).toBe(true);
+    expect(todo.marks.homeDay).toBe(3);
+  });
+});
+
+describe('lịch tự động: mốc buổi sáng', () => {
+  it('7h ra tiệm (nếu chưa ở tiệm), 8h mở cửa, mỗi việc một lần', () => {
+    let marks: RoutineMarks = newRoutineMarks();
+    const step = (minutes: number, atShop: boolean) => {
+      const todo = planRoutine(snap(minutes, { atShop }), marks);
+      marks = todo.marks;
+      return todo;
+    };
+    expect(step(6 * 60 + 50, false).walkToShop).toBe(false);
+    expect(step(7 * 60 + 5, false).walkToShop).toBe(true);
+    expect(step(7 * 60 + 40, false).walkToShop).toBe(false); // cùng ngày, không lặp
+    expect(step(8 * 60 + 5, false).openShop).toBe(true);
+    expect(step(9 * 60, false).openShop).toBe(false);
+  });
+
+  it('đang ở tiệm lúc 7h thì không cần đi bộ ra nữa', () => {
+    const todo = planRoutine(snap(7 * 60 + 10, { atShop: true }), newRoutineMarks());
+    expect(todo.walkToShop).toBe(false);
+  });
+});
+
+describe('lịch tự động: tắt thì không làm gì', () => {
+  it('autoRoutine = false: không việc nào chạy, mốc giữ nguyên', () => {
+    const marks = newRoutineMarks();
+    const todo = planRoutine(snap(23 * 60 + 30, { autoRoutine: false }), marks);
+    expect([todo.walkToShop, todo.openShop, todo.closeShop, todo.goHome, todo.stocktake]).toEqual([false, false, false, false, false]);
+    expect(todo.marks).toEqual(marks);
+  });
+});

@@ -10,7 +10,6 @@ const SPEED = 3.5; // m/giây
 
 // Biến tạm dùng lại mỗi khung, tránh cấp phát rác trong vòng render
 const _input = new THREE.Vector2();
-const _dir = new THREE.Vector3();
 
 /** Nhân vật chính: đi bằng WASD / phím mũi tên, hoặc bấm chuột lên mặt đất. */
 export class Player {
@@ -70,13 +69,22 @@ export class Player {
     this.mesh.position.y = 0;
   }
 
-  /** Đi tới điểm, tự tìm đường vòng qua tường. */
+  /**
+   * Đi tới điểm, tự tìm đường vòng qua tường.
+   * Đường này do lịch tự động / nút đi nhanh vạch ra: nhân vật đi theo nhịp đồng hồ game
+   * (xem `timeScale` ở `update`) nên tua 3×, 8× vẫn về tới nơi trong cùng số phút như 1×.
+   */
   walkTo(target: THREE.Vector3) {
     this.path = this.grid.findPath(this.position, target);
   }
 
-  /** Trả về true nếu nhân vật đang di chuyển. */
-  update(dt: number, cameraYaw: number): boolean {
+  /**
+   * @param timeScale tốc độ tua thời gian (1 / 3 / 8): chỉ nhân vào lúc đi theo đường tự động,
+   *   để tua nhanh thì nhân vật kịp đi về nhà trong cùng số phút game như khi chạy 1×.
+   *   Người chơi tự bấm phím thì luôn đi tốc độ thật, không bị tua nhanh làm lao vọt.
+   * @returns true nếu nhân vật đang di chuyển.
+   */
+  update(dt: number, cameraYaw: number, timeScale = 1): boolean {
     if (this.asleep) return false;
     const input = _input.set(
       (this.has('d', 'arrowright') ? 1 : 0) - (this.has('a', 'arrowleft') ? 1 : 0),
@@ -89,42 +97,79 @@ export class Player {
       input.set(joystick.x, joystick.y);
       pace = Math.min(1, input.length() * 1.3);
     }
-
-    let dir: THREE.Vector3 | null = null;
-    if (input.lengthSq() > 0) {
+    // Người chơi đang tự điều khiển thì bỏ đường tự động, đi tốc độ thật (không nhân timeScale)
+    const manual = input.lengthSq() > 0;
+    if (manual) {
       this.path = [];
       input.normalize();
       // Đổi hướng phím theo góc camera: W luôn là "đi vào trong màn hình"
       const sin = Math.sin(cameraYaw);
       const cos = Math.cos(cameraYaw);
-      dir = _dir.set(input.x * cos + input.y * sin, 0, -input.x * sin + input.y * cos);
-    } else if (this.path.length) {
-      const next = this.path[0];
-      dir = _dir.set(next.x - this.position.x, 0, next.z - this.position.z);
-      if (dir.length() < 0.1) {
-        this.path.shift();
-        return this.path.length > 0;
-      }
-      dir.normalize();
-    } else {
+      const dx = input.x * cos + input.y * sin;
+      const dz = -input.x * sin + input.y * cos;
+      this.moveStep(dx, dz, SPEED * pace * this.paceMul() * dt);
+      this.face(dx, dz, dt);
+      this.animate(dt, true);
+      return true;
+    }
+    if (!this.path.length) {
       this.animate(dt, false);
       return false;
     }
 
-    // Nhà đẹp ngủ ngon, ăn sáng, có xe (ngoài đường) thì đi nhanh hơn
-    const g = useGame.getState();
-    const step = SPEED * pace * playerPace(g.biz, g.day, g.location === 'Ngoài đường') * dt;
-    const p = this.position;
-    // Thử đi từng trục để trượt dọc theo tường thay vì kẹt.
-    // Nếu đang đứng trong vật cản (vừa đặt đồ đè lên) thì cho đi ra.
-    const stuck = this.grid.isBlocked(p.x, p.z);
-    if (stuck || !this.grid.isBlocked(p.x + dir.x * step, p.z)) p.x += dir.x * step;
-    if (stuck || !this.grid.isBlocked(p.x, p.z + dir.z * step)) p.z += dir.z * step;
+    // Đi theo đường tự động. Tua 3×/8×: đi nhanh gấp bấy nhiêu lần để cùng số phút trong game
+    // là tới nơi như 1×. Chia bước ≤ 0.2 m để bước một khung quá dài không xuyên qua tường.
+    const stepDt = dt * timeScale;
+    let budget = SPEED * this.paceMul() * stepDt;
+    let moved = false;
+    let lastX = 0;
+    let lastZ = 0;
+    while (budget > 1e-4 && this.path.length) {
+      const next = this.path[0];
+      const dx = next.x - this.position.x;
+      const dz = next.z - this.position.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 0.05) {
+        this.path.shift();
+        continue;
+      }
+      const nx = dx / dist;
+      const nz = dz / dist;
+      const travel = Math.min(budget, dist, 0.2);
+      const px = this.position.x;
+      const pz = this.position.z;
+      this.moveStep(nx, nz, travel);
+      budget -= travel;
+      lastX = nx;
+      lastZ = nz;
+      if (this.position.x === px && this.position.z === pz) break; // kẹt vật cản: khung sau thử lại
+      moved = true;
+    }
+    if (moved) this.face(lastX, lastZ, stepDt);
+    this.animate(stepDt, moved);
+    return moved;
+  }
 
-    const targetAngle = Math.atan2(dir.x, dir.z);
-    this.mesh.rotation.y = lerpAngle(this.mesh.rotation.y, targetAngle, Math.min(1, dt * 14));
-    this.animate(dt, true);
-    return true;
+  /** Hệ số đi nhanh: nhà đẹp ngủ ngon, ăn sáng, có xe (ngoài đường). */
+  private paceMul() {
+    const g = useGame.getState();
+    return playerPace(g.biz, g.day, g.location === 'Ngoài đường');
+  }
+
+  /**
+   * Dời một bước ngắn theo hướng (dx, dz), trượt dọc theo tường thay vì kẹt.
+   * Đứng trong vật cản (vừa đặt đồ đè lên) thì cho đi ra.
+   */
+  private moveStep(dx: number, dz: number, meters: number) {
+    const p = this.position;
+    const stuck = this.grid.isBlocked(p.x, p.z);
+    if (stuck || !this.grid.isBlocked(p.x + dx * meters, p.z)) p.x += dx * meters;
+    if (stuck || !this.grid.isBlocked(p.x, p.z + dz * meters)) p.z += dz * meters;
+  }
+
+  /** Xoay dần người về hướng đi. */
+  private face(dx: number, dz: number, dt: number) {
+    this.mesh.rotation.y = lerpAngle(this.mesh.rotation.y, Math.atan2(dx, dz), Math.min(1, dt * 14));
   }
 
   /**
