@@ -24,6 +24,7 @@ import { paymentById, pickPayment } from '../data/payments';
 import { askAtCounter, askPending, clearAsk, expireAsk } from '../core/counterAsk';
 import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../data/wholesale';
 import { DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor, GUARD_DETECT } from '../data/staff';
+import { socialTraffic } from '../data/social';
 import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive } from '../data/biz';
 import { redeemLoyalty, storyOnVisit, theftFactor } from '../core/biz';
 import { hasUpgrade } from '../data/upgrades';
@@ -177,7 +178,7 @@ export class CustomerManager {
       // Bày hàng rẻ hơn giá gợi ý thì tiếng lành đồn xa, thêm người ghé; sàn bẩn thì ngại vào; giờ vàng kéo khách về đúng khung
       const happy = happyHourActive(s.happyHour, s.minutes) ? happyTraffic(s.happyHour!.off) : 1;
       const visit = (0.5 + Math.min(plants * 0.05, 0.25) + repVisitBonus(reputationOf(s.repLog))) * traffic * this.priceAppeal() * dirtVisitFactor(s.dirt)
-      * bizTraffic(s.biz, s.day) * happy;
+      * bizTraffic(s.biz, s.day) * happy * socialTraffic(s.social, s.day);
         const open = daytime && s.shopOpen;
         // Khách quen tới đúng giờ quen, không phụ thuộc người đi đường
         const regular = open ? pickRegular(s.day, s.minutes, s.weatherSeed, s.level, s.regulars, this.regularsToday, reputationOf(s.repLog)) : undefined;

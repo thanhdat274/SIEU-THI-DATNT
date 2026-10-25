@@ -1,4 +1,5 @@
 import type { CharacterArchetype } from '../render/characterModel';
+import { rollTrait, type StaffTrait } from './staffTraits';
 
 export type StaffRole = 'cashier' | 'stocker' | 'cleaner' | 'courier' | 'guard' | 'manager' | 'bartender' | 'cook' | 'warehouse_mgr' | 'customer_care';
 export type Shift = 'morning' | 'afternoon' | 'full' | 'night';
@@ -71,6 +72,16 @@ export interface Staff {
   /** Lương một ca (đ). */
   wage: number;
   shift: Shift;
+  /** Tính cách (xem staffTraits.ts); bản lưu cũ không có = bình thường. */
+  trait?: StaffTrait;
+  /** Kinh nghiệm tích luỹ tới sao kế tiếp. */
+  exp?: number;
+  /** Số ngày đã làm ở tiệm (đủ thì lộ tính). */
+  daysWorked?: number;
+  /** Ngày được đào tạo gần nhất (mỗi ngày một buổi). */
+  trainedDay?: number;
+  /** Đã bị bắt quả tang gian lận. */
+  caught?: boolean;
 }
 
 /** Lương phải trả mỗi ngày. */
@@ -112,6 +123,7 @@ export function generateCandidates(level: number, startId: number): Staff[] {
       skill,
       wage: Math.round(((8000 + skill * 8000) * ROLES[role].wageMul) / 1000) * 1000 + Math.round(Math.random() * 4) * 2000,
       shift: 'morning',
+      trait: rollTrait(),
     };
   });
 }

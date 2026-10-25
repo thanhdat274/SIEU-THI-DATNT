@@ -329,6 +329,8 @@ export interface InspectionCtx {
   priceIndex: number;
   /** Sao trung bình của các đánh giá gần nhất. */
   rating: number;
+  /** Tủ mát/tủ đông hỏng mà vẫn còn hàng (đứt chuỗi lạnh: tính vào tiêu chí quản lý hàng hoá). */
+  coldBroken?: number;
 }
 
 export interface InspectionResult {
@@ -343,7 +345,9 @@ export interface InspectionResult {
 export function inspectionResult(ctx: InspectionCtx): InspectionResult {
   const checks = [
     { ok: ctx.dirt <= 30, ok_: 'Sàn sạch sẽ', bad: 'Sàn bẩn, lau nhà đi' },
-    { ok: ctx.nearExpiryOnShelves <= INSPECTION_NEAR_MAX, ok_: 'Quản lý hàng cận hạn tốt', bad: `${ctx.nearExpiryOnShelves} món cận hạn còn bày la liệt trên kệ` },
+    ctx.coldBroken
+      ? { ok: false, ok_: '', bad: `${ctx.coldBroken} tủ lạnh hỏng vẫn bày hàng mát (đứt chuỗi lạnh)` }
+      : { ok: ctx.nearExpiryOnShelves <= INSPECTION_NEAR_MAX, ok_: 'Quản lý hàng cận hạn tốt', bad: `${ctx.nearExpiryOnShelves} món cận hạn còn bày la liệt trên kệ` },
     { ok: ctx.priceIndex <= 1.2, ok_: 'Giá niêm yết hợp lý', bad: 'Giá bán chung cao hơn giá gợi ý quá 20%' },
     { ok: ctx.rating >= 4, ok_: 'Khách đánh giá tốt', bad: `Đánh giá trung bình mới ${ctx.rating.toFixed(1)}★` },
   ];

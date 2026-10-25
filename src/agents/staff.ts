@@ -5,8 +5,9 @@ import { houseById, houseDoor } from '../data/phoneOrders';
 import { missingForOrder, partyOrderById } from '../data/orders';
 import { productById } from '../data/products';
 import {
-  DIRT_PER_SWEEP, MANAGER_CHECKS, MANAGER_LOW_STOCK, MANAGER_TARGET, ROLES, SHIFTS, skillSpeed, type Staff,
+  DIRT_PER_SWEEP, MANAGER_CHECKS, MANAGER_LOW_STOCK, MANAGER_TARGET, ROLES, SHIFTS, type Staff,
 } from '../data/staff';
+import { workSpeed } from '../data/staffTraits';
 import { orderTotal, SUPPLIERS, supplierSells } from '../data/suppliers';
 import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
@@ -101,7 +102,7 @@ export class StaffManager {
     for (const w of this.workers.values()) {
       if (w.staff.role !== 'cashier' || w.state !== 'working' || w.path.length) continue;
       const ct = counters.find((it) => it.key === w.post);
-      if (ct && w.position.distanceTo(ct.cashier) < 0.6) best = Math.max(best, skillSpeed(w.staff.skill));
+      if (ct && w.position.distanceTo(ct.cashier) < 0.6) best = Math.max(best, workSpeed(w.staff));
     }
     return best;
   }
@@ -165,7 +166,7 @@ export class StaffManager {
       if (t < 0) continue;
       w.job = `${f.uid}:${t}`;
       this.walk(w, this.shop.spotFor(f));
-      w.plan.push(() => (w.pause = 3 / skillSpeed(w.staff.skill)));
+      w.plan.push(() => (w.pause = 3 / workSpeed(w.staff)));
       w.plan.push(() => {
         const cur = useGame.getState().furniture.find((it) => it.uid === f.uid);
         const tier = cur?.tiers[t];
@@ -208,9 +209,9 @@ export class StaffManager {
     }
     const spots = s.furniture.map((f) => this.shop.spotFor(f, (Math.random() - 0.5) * 0.8));
     this.walk(w, spots.length ? spots[Math.floor(Math.random() * spots.length)] : this.shop.doorInside);
-    w.plan.push(() => (w.pause = 2.5 / skillSpeed(w.staff.skill)));
+    w.plan.push(() => (w.pause = 2.5 / workSpeed(w.staff)));
     w.plan.push(() => {
-      useGame.getState().addDirt(-DIRT_PER_SWEEP * skillSpeed(w.staff.skill));
+      useGame.getState().addDirt(-DIRT_PER_SWEEP * workSpeed(w.staff));
       w.say('🧹', 1.5);
     });
   }
@@ -239,7 +240,7 @@ export class StaffManager {
       w.plan.push(() => this.walk(w, new THREE.Vector3(door.x, 0, door.z)));
       w.plan.push(() => {
         if (useGame.getState().deliverPhone(call.id)) w.say('✅');
-        w.pause = 2 / skillSpeed(w.staff.skill);
+        w.pause = 2 / workSpeed(w.staff);
       });
       w.plan.push(() => this.walk(w, new THREE.Vector3(door.x, 0, SIDEWALK_Z)));
       w.plan.push(() => this.walk(w, this.shop.doorOutside));
@@ -258,7 +259,7 @@ export class StaffManager {
     this.walk(w, this.shop.doorInside);
     w.plan.push(() => this.walk(w, this.shop.doorOutside));
     w.plan.push(() => this.walk(w, new THREE.Vector3(this.shop.doorOutside.x + EDGE_X * 0.5, 0, SIDEWALK_Z)));
-    w.plan.push(() => (w.pause = 12 / skillSpeed(w.staff.skill)));
+    w.plan.push(() => (w.pause = 12 / workSpeed(w.staff)));
     w.plan.push(() => this.walk(w, this.shop.doorOutside));
     w.plan.push(() => this.walk(w, this.shop.doorInside));
     w.plan.push(() => {

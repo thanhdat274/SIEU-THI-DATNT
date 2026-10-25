@@ -1,4 +1,8 @@
 import { CONVENIENCE } from '../data/branches';
+import { activeBuzz, SOCIAL_UNLOCK } from '../data/social';
+import { ONLINE_UNLOCK } from '../data/online';
+import { licenseStatus, type LicenseId } from '../data/licenses';
+import { INSPECTION_UNLOCK } from '../data/biz';
 import { Joystick } from './Joystick';
 import { useEffect, useRef, useState } from 'react';
 import { formatClock, questContext, useGame } from '../core/store';
@@ -142,6 +146,22 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   // Nhiệm vụ đã xong chờ nhận thưởng
   const questsReady = useGame((s) => claimableCount(questContext(s)));
   const rivalBadge = useGame((s) => (s.biz.rival ? `⚔️ ${Math.round(s.biz.rival.strength)}` : undefined));
+  const socialBadge = useGame((s) => {
+    const buzz = activeBuzz(s.social, s.day);
+    return buzz?.kind === 'crisis' && !buzz.responded ? '⚠️ Khủng hoảng' : buzz?.kind === 'hype' ? '🔥 Hot' : undefined;
+  });
+  const onlineBadge = useGame((s) => {
+    const n = s.online.orders.filter((o) => o.status === 'new').length;
+    return n ? `${n} đơn mới` : undefined;
+  });
+  const licenseBadge = useGame((s) => {
+    if (s.inspection.suspendedDay === s.day) return '⛔ Đình chỉ';
+    const due = Object.keys(s.inspection.noticed ?? {}).filter((id) => {
+      const st = licenseStatus(s.licenses, id as LicenseId, s.day);
+      return st === 'none' || st === 'expired';
+    }).length;
+    return due ? `${due} cần xin` : undefined;
+  });
   // Vẫn còn nợ ngân hàng thì nhắc số gốc ngay trên nút Kinh doanh
   const loanBadge = useGame((s) => {
     const l = s.biz.loan;
@@ -186,6 +206,9 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     { icon: '💛', label: 'Khách quen', more: true, on: () => openPanel({ type: 'regulars' }) },
     { icon: '👥', label: 'Nhân viên', more: true, lock: FEATURES.staff, on: () => openPanel({ type: 'staff' }) },
     { icon: '🏪', label: 'Tiện lợi 24/7', more: true, lock: CONVENIENCE.unlock, on: () => openPanel({ type: 'branch' }) },
+    { icon: '📱', label: 'Mạng xã hội', more: true, lock: SOCIAL_UNLOCK, badge: socialBadge, on: () => openPanel({ type: 'social' }) },
+    { icon: '📲', label: 'Bán online', more: true, lock: ONLINE_UNLOCK, badge: onlineBadge, on: () => openPanel({ type: 'online' }) },
+    { icon: '📜', label: 'Giấy phép', more: true, lock: INSPECTION_UNLOCK, badge: licenseBadge, on: () => openPanel({ type: 'licenses' }) },
     {
       icon: '💬', label: 'Đánh giá', more: true, badge: rating.count ? `${rating.average.toFixed(1)}★` : undefined,
       on: () => openPanel({ type: 'reviews' }),
