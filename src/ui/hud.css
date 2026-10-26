@@ -49,7 +49,21 @@
   outline-offset: 2px;
 }
 
-#ui .hud-status { top: 12px; left: 12px; flex-wrap: wrap; align-items: flex-start; max-width: calc(100% - 300px); }
+/* Cột trái: ô trạng thái rồi thông báo xếp dọc, chừa chỗ cho cụm góc phải nên không bao giờ đè lên nhau */
+#ui .hud-left {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: calc(100% - 352px);
+  /* Không bao giờ dài quá chỗ trống phía trên thanh dưới: thông báo nhiều thì cuộn trong cột */
+  max-height: calc(100dvh - var(--hud-bottom-h, 96px) - 36px);
+  pointer-events: none;
+}
+#ui .hud-status { position: static; flex: none; flex-wrap: wrap; align-items: flex-start; max-width: 100%; }
 #ui .hud-weather { font-size: 22px; }
 #ui .hud-forecast { opacity: 0.85; letter-spacing: 2px; }
 #ui .hud-forecast::before { content: "Dự báo "; letter-spacing: 0; }
@@ -99,6 +113,12 @@
 
 /* ---------- Góc phải: phòng chơi chung + tài khoản ---------- */
 #ui .hud-meta { top: 12px; right: 12px; align-items: flex-start; }
+/* Chơi chung: hàng trên âm thanh/nhạc/tài khoản, chip hẻm online xuống hàng dưới, gọn trong cột phải */
+#ui .hud-meta.coop { flex-wrap: wrap; justify-content: flex-end; width: 320px; }
+#ui .hud-meta.coop .hud-room { order: 5; flex: 1 1 100%; min-width: 0; min-height: 40px; padding: 4px 10px; gap: 8px; }
+#ui .hud-meta.coop .hud-room > span:nth-child(2) { flex: 1; min-width: 0; }
+#ui .hud-meta.coop .hud-room b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ui .hud-meta.coop .hud-room small { overflow: hidden; text-overflow: ellipsis; }
 #ui .hud-pop { position: relative; pointer-events: auto; }
 #ui .hud-account img, #ui .hud-avatar {
   width: 32px;
@@ -154,23 +174,24 @@
 
 /* ---------- Thông báo ---------- */
 #ui .hud-alerts {
-  top: 78px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: static;
   flex-direction: column;
-  align-items: center;
-  width: max-content;
-  max-width: calc(100% - 24px);
+  align-items: flex-start;
+  max-width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 #ui .hud-alert {
   pointer-events: auto;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
   padding: 8px 16px;
-  border-radius: 999px;
+  border-radius: var(--hud-radius);
   font-size: 14px;
   font-weight: 600;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
@@ -348,13 +369,13 @@
 
 /* ---------- Điện thoại ---------- */
 @media (pointer: coarse) and (max-width: 1000px) {
-  #ui .hud-status { max-width: calc(100% - 80px); gap: 6px; }
+  #ui .hud-left { max-width: calc(100% - 96px); }
+  #ui .hud-status { gap: 6px; }
   #ui .hud-chip { min-height: 38px; padding: 4px 10px; gap: 6px; }
   #ui .hud-time small, #ui .hud-level small { display: none; }
   #ui .hud-xp { width: 50px; }
   #ui .hud-account > span:not(.hud-avatar), #ui .hud-caret, #ui .hud-room small { display: none; }
   #ui .hud-account { padding: 4px; }
-  #ui .hud-alerts { top: 110px; }
   #ui .hud-bottom { bottom: 8px; width: calc(100% - 16px); }
   #ui .hud-dock { width: 100%; }
   #ui .hud-dock { justify-content: space-between; }
@@ -388,7 +409,6 @@
 }
 
 /* Tai thỏ / thanh home trên điện thoại */
-#ui .hud-status { top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); }
 #ui .hud-meta { top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); }
 #ui .hud-bottom { bottom: max(14px, env(safe-area-inset-bottom)); }
 
@@ -400,6 +420,11 @@
  */
 @media (pointer: coarse) and (max-width: 1000px) {
   #ui .hud-meta { gap: 4px; max-width: calc(100% - 200px); }
+  #ui .hud-meta.coop { width: auto; max-width: 190px; flex-wrap: wrap; justify-content: flex-end; }
+  #ui .hud-meta.coop .hud-room { flex: 1 1 100%; max-width: none; min-height: 34px; padding: 2px 8px; }
+  #ui .hud-meta.coop .hud-room b { max-width: none; font-size: 12px; }
+  #ui .hud-room-name { display: none; }
+  #ui .hud-left { max-width: calc(100% - 206px); }
   #ui .hud-room { max-width: 46vw; }
   #ui .hud-room > span { min-width: 0; overflow: hidden; }
   #ui .hud-room b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 26vw; display: inline-block; vertical-align: bottom; }
@@ -411,7 +436,6 @@
 @media (max-height: 480px) {
   #ui .hud-chip { min-height: 36px; padding: 3px 10px; }
   #ui .hud-place { display: none; }
-  #ui .hud-alerts { top: 58px; }
   #ui .hud-tool { padding: 4px 6px; }
   #ui .hud-tool-icon { font-size: 17px; }
 }
@@ -420,7 +444,7 @@
 @media (max-width: 1000px) {
   #ui .hud-dock > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge),
   #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 10px; white-space: nowrap; }
-  @media (max-width: 760px) { #ui .hud-dock > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge), #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; white-space: normal; } }
+  @media (max-width: 900px) { #ui .hud-dock > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge), #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; white-space: normal; } }
   #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { min-width: 46px; }
 }
 
@@ -509,7 +533,9 @@
   pointer-events: auto;
   position: absolute;
   left: 50%;
-  bottom: 96px;
+  bottom: calc(var(--hud-bottom-h, 82px) + max(14px, env(safe-area-inset-bottom)) + 10px);
+  max-height: calc(100dvh - var(--hud-bottom-h, 82px) - 130px);
+  overflow-y: auto;
   transform: translateX(-50%);
   width: min(560px, calc(100vw - 32px));
   background: var(--hud-bg-solid);
@@ -529,3 +555,24 @@
 #ui .hud-tutorial { flex-direction: column; align-items: flex-start; }
 #ui .hud-tutorial ul { list-style: none; margin: 0; padding: 0; font-weight: 500; font-size: 13px; }
 #ui .hud-tutorial li.done { opacity: 0.6; text-decoration: line-through; }
+
+/*
+ * Màn dọc hẹp (điện thoại đứng, ~320-600px): cột phải chỉ còn nút nhỏ + chip hẻm, nên ô trạng thái co
+ * lại một nửa trên cùng, còn thông báo trải hết bề ngang ngay bên dưới (không bị bóp thành cột hẹp cao).
+ */
+@media (max-width: 600px) {
+  #ui .hud-left { max-width: calc(100% - 24px); }
+  #ui .hud-status { max-width: calc(100% - 206px); gap: 4px; }
+  #ui:has(.hud-meta.coop) .hud-status { min-height: 92px; align-content: flex-start; }
+  #ui .hud-status .hud-chip { min-height: 36px; padding: 3px 8px; gap: 6px; }
+  #ui .hud-time b { font-size: 15px; }
+  #ui .hud-money b { font-size: 14px; }
+  #ui .hud-alerts { width: 100%; }
+  #ui .hud-alert { font-size: 13px; padding: 6px 12px; width: 100%; }
+}
+
+/* Màn rất hẹp (~320-360px): nút dock co lại để dock luôn vừa một hàng, không đẩy nút Thêm ra khỏi màn */
+@media (max-width: 360px) {
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 1 26px; min-width: 26px; }
+  #ui .hud-speed button { min-width: 22px; }
+}

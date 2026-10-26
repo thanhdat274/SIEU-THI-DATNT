@@ -85,7 +85,34 @@ function MusicToggle() {
   );
 }
 
+/** Đo chiều cao thật của thanh dưới (dock + gợi ý) để hội thoại và cột thông báo né ra, mọi cỡ màn hình đều khớp. */
+function useNarrowScreen() {
+  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 480px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 480px)');
+    const on = () => setNarrow(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return narrow;
+}
+
+function useBottomBarHeight() {
+  useEffect(() => {
+    const el = document.querySelector('.hud-bottom');
+    const root = document.getElementById('ui');
+    if (!el || !root || typeof ResizeObserver === 'undefined') return;
+    const set = () => root.style.setProperty('--hud-bottom-h', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+}
+
 export function Hud() {
+  useBottomBarHeight();
+  const narrow = useNarrowScreen();
   const {
     day, speed, money, level, xp, location, hint, message, shopOpen, waiting, dirt, buildMode,
     setSpeed, openPanel, setBuildMode, notify, toggleShop,
@@ -212,7 +239,7 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   const atFarm = location === 'Trang trại đầu ngõ';
   // Bảng nào đang mở thì nút mở bảng đó sáng lên
   const openType = useGame((s) => s.panel?.type ?? null);
-  type Tool = { icon: string; label: string; on: () => void; badge?: string; lock?: number; active?: boolean; more?: boolean };
+  type Tool = { icon: string; label: string; on: () => void; badge?: string; lock?: number; active?: boolean; more?: boolean; /** Màn hẹp (điện thoại đứng): dời vào menu Thêm cho dock vừa một hàng */ narrowMore?: boolean };
   const tools: Tool[] = [
     {
       icon: atHome ? '🛵' : '🏠', label: atHome ? 'Ra tiệm' : 'Về nhà',
@@ -228,20 +255,20 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     },
     { icon: '🗺️', label: 'Sơ đồ kệ', active: openType === 'planogram', on: () => openPanel({ type: 'planogram' }) },
     { icon: '📦', label: 'Nhập hàng', active: openType === 'order', on: () => openPanel({ type: 'order' }) },
-    { icon: '☀️', label: 'Sổ đầu ngày', active: openType === 'morning', on: () => openPanel({ type: 'morning' }) },
+    { icon: '☀️', label: 'Sổ đầu ngày', narrowMore: true, active: openType === 'morning', on: () => openPanel({ type: 'morning' }) },
     { icon: '📜', label: 'Nhiệm vụ', badge: questsReady ? `${questsReady} xong` : undefined, active: openType === 'quests', on: () => openPanel({ type: 'quests' }) },
     {
-      icon: '🎁', label: 'Điểm danh', active: openType === 'gifts',
+      icon: '🎁', label: 'Điểm danh', narrowMore: true, active: openType === 'gifts',
       badge: giftClaimable ? 'Có quà' : wheelReady ? '⭕ Quay' : undefined,
       on: () => openPanel({ type: 'gifts' }),
     },
     { icon: '🗓️', label: 'Lịch sự kiện', more: true, active: openType === 'calendar', on: () => openPanel({ type: 'calendar' }) },
     { icon: '🍳', label: 'Sổ nấu', more: true, lock: 21, active: openType === 'cook', on: () => openPanel({ type: 'cook' }) },
     { icon: '🛠️', label: 'Xây dựng', more: true, active: openType === 'arrange', on: () => openPanel({ type: 'arrange' }) },
-    { icon: '💲', label: 'Giá bán', lock: FEATURES.prices, active: openType === 'prices', on: () => openPanel({ type: 'prices' }) },
+    { icon: '💲', label: 'Giá bán', narrowMore: true, lock: FEATURES.prices, active: openType === 'prices', on: () => openPanel({ type: 'prices' }) },
     { icon: '🎁', label: 'Combo', more: true, lock: COMBO_UNLOCK, active: openType === 'combos', on: () => openPanel({ type: 'combos' }) },
     { icon: '📋', label: 'Hợp đồng', lock: 14, more: true, active: openType === 'contracts', on: () => openPanel({ type: 'contracts' }) },
-    { icon: '📈', label: 'Kinh doanh', lock: 3, badge: [loanBadge, rivalBadge].filter(Boolean).join(' · ') || undefined, active: openType === 'business', on: () => openPanel({ type: 'business' }) },
+    { icon: '📈', label: 'Kinh doanh', narrowMore: true, lock: 3, badge: [loanBadge, rivalBadge].filter(Boolean).join(' · ') || undefined, active: openType === 'business', on: () => openPanel({ type: 'business' }) },
     { icon: '📊', label: 'Sổ theo dõi', more: true, active: openType === 'history', on: () => openPanel({ type: 'history' }) },
     { icon: '🩺', label: 'Sức khoẻ món', more: true, active: openType === 'analytics', on: () => openPanel({ type: 'analytics' }) },
     { icon: '🚜', label: 'Trang trại', more: true, lock: 8, badge: gardenBadge, active: openType === 'garden', on: () => openPanel({ type: 'garden' }) },
@@ -262,7 +289,8 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   return (
     <>
       <Joystick />
-      {/* Góc trái trên: ngày giờ, tiền, cấp */}
+      {/* Cột trái trên: ngày giờ, tiền, cấp; thông báo xếp ngay bên dưới nên không đè lên cụm bên phải */}
+      <div className="hud-left">
       <div className="hud-status">
         <div className="hud-chip hud-time" title={`${WEATHER[weather].tip}
 ${forecastText}`}>
@@ -302,15 +330,45 @@ ${forecastText}`}>
         </div>
       </div>
 
-      {/* Góc phải trên: âm thanh, nhạc nền, phòng chơi chung, tài khoản và menu */}
-      <div className="hud-meta">
+      {/* Thông báo: cột trái, dưới ô trạng thái */}
+      <div className="hud-alerts">
+        {late && !message && <div className="hud-alert danger">🌙 Đã khuya! Về nhà ngủ trước 2:00 sáng kẻo ngất.</div>}
+        {wheelBoost > 1 && <div className="hud-alert info">🍀 Vòng quay may mắn: hôm nay khách ghé đông thêm {Math.round((wheelBoost - 1) * 100)}%</div>}
+        {dirt >= 30 && (
+          <div className={`hud-alert ${dirt >= 60 ? 'warn' : 'info'}`}>
+            🧹 Sàn tiệm bẩn ({Math.round(dirt)}%){dirt >= 60 ? ', khách ngại vào' : ''} · đứng trong tiệm bấm <b>[C]</b> (giữ phím) để tự lau
+            <span className="hud-alert-actions"><button className="hud-btn" onClick={() => worldActions.mop()}>Lau nhà</button></span>
+          </div>
+        )}
+        {waiting > 0 && !hint?.startsWith('💵') &&<div className="hud-alert warn">🛒 {waiting} khách đang chờ tính tiền ở quầy</div>}
+        <PhoneAlerts />
+        <VendorAlert />
+        <CounterAskAlert />
+        <FestivalBanner />
+        <Tutorial />
+        <SurpriseAlert />
+        <StoryAlert />
+        {conflict && (
+          <div className="hud-alert info">
+            ☁️ Cloud có bản lưu mới hơn từ máy khác (ngày {conflict.day}, cấp {conflict.level}).
+            <span className="hud-alert-actions">
+              <button className="hud-btn" onClick={() => takeCloudSave()}>Tải bản cloud</button>
+              <button className="hud-btn" onClick={() => pushCloudSave(true)}>Ghi đè bằng bản này</button>
+            </span>
+          </div>
+        )}
+      </div>
+      </div>
+
+      {/* Góc phải trên: âm thanh, nhạc nền, tài khoản; chip hẻm online xuống hàng dưới */}
+      <div className={`hud-meta${coop ? ' coop' : ''}`}>
         <SoundToggle />
         <MusicToggle />
         {coop && (
           <div className="hud-chip hud-room" title={`Mã hẻm ${coop.alley}: gửi cho bạn bè để cùng vào (tối đa 4 người)`}>
             <span>👥</span>
             <span>
-              <b>{coop.name} · {coop.alley}</b>
+              <b><span className="hud-room-name">{coop.name} · </span>{coop.alley}</b>
               <small>{coop.peers.length} online: {coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(', ')}</small>
             </span>
             <button className="hud-link" onClick={copyRoomCode} title="Sao chép mã hẻm để gửi cho bạn bè">
@@ -338,35 +396,6 @@ ${forecastText}`}>
             ...(account ? [{ label: '↪ Đăng xuất', on: logout }] : []),
           ]}
         />
-      </div>
-
-      {/* Thông báo giữa trên */}
-      <div className="hud-alerts">
-        {late && !message && <div className="hud-alert danger">🌙 Đã khuya! Về nhà ngủ trước 2:00 sáng kẻo ngất.</div>}
-        {wheelBoost > 1 && <div className="hud-alert info">🍀 Vòng quay may mắn: hôm nay khách ghé đông thêm {Math.round((wheelBoost - 1) * 100)}%</div>}
-        {dirt >= 30 && (
-          <div className={`hud-alert ${dirt >= 60 ? 'warn' : 'info'}`}>
-            🧹 Sàn tiệm bẩn ({Math.round(dirt)}%){dirt >= 60 ? ', khách ngại vào' : ''} · đứng trong tiệm bấm <b>[C]</b> (giữ phím) để tự lau
-            <span className="hud-alert-actions"><button className="hud-btn" onClick={() => worldActions.mop()}>Lau nhà</button></span>
-          </div>
-        )}
-        {waiting > 0 && !hint?.startsWith('💵') &&<div className="hud-alert warn">🛒 {waiting} khách đang chờ tính tiền ở quầy</div>}
-        <PhoneAlerts />
-        <VendorAlert />
-        <CounterAskAlert />
-        <FestivalBanner />
-        <Tutorial />
-        <SurpriseAlert />
-        <StoryAlert />
-        {conflict && (
-          <div className="hud-alert info">
-            ☁️ Cloud có bản lưu mới hơn từ máy khác (ngày {conflict.day}, cấp {conflict.level}).
-            <span className="hud-alert-actions">
-              <button className="hud-btn" onClick={() => takeCloudSave()}>Tải bản cloud</button>
-              <button className="hud-btn" onClick={() => pushCloudSave(true)}>Ghi đè bằng bản này</button>
-            </span>
-          </div>
-        )}
       </div>
 
       {message && <div className="hud-toast" role="status">{message}</div>}
@@ -430,8 +459,8 @@ ${forecastText}`}>
             <span className="hud-tool-icon" aria-hidden="true">{shopOpen ? '🏪' : '🚪'}</span>
             <span>{shopOpen ? 'Đóng cửa' : 'Mở cửa'}</span>
           </button>
-          {tools.filter((t) => !t.more).map((t) => <ToolButton key={t.label} tool={t} level={level} />)}
-          <MoreMenu tools={tools.filter((t) => t.more)} level={level} />
+          {tools.filter((t) => !(t.more || (narrow && t.narrowMore))).map((t) => <ToolButton key={t.label} tool={t} level={level} />)}
+          <MoreMenu tools={tools.filter((t) => t.more || (narrow && t.narrowMore))} level={level} />
         </nav>
       </div>
       <Panels />
