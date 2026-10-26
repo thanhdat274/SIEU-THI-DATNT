@@ -365,8 +365,9 @@ ${forecastText}`}>
         <SoundToggle />
         <MusicToggle />
         {coop && (
-          <div className="hud-chip hud-room" title={`Mã hẻm ${coop.alley}: gửi cho bạn bè để cùng vào (tối đa 4 người)`}>
-            <span>👥</span>
+          <div className="hud-chip hud-room" title={`Mã hẻm ${coop.alley}: gửi cho bạn bè để cùng vào (tối đa 4 người)
+Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(', ')}`}>
+            <span className="hud-room-icon">👥<em>{coop.peers.length}</em></span>
             <span>
               <b><span className="hud-room-name">{coop.name} · </span>{coop.alley}</b>
               <small>{coop.peers.length} online: {coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(', ')}</small>

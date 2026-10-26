@@ -576,3 +576,25 @@
   #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 1 26px; min-width: 26px; }
   #ui .hud-speed button { min-width: 22px; }
 }
+
+/* Số người online hiện cạnh biểu tượng hẻm (danh sách tên nằm trong tooltip khi chip bị thu gọn) */
+#ui .hud-room-icon { display: inline-flex; align-items: center; gap: 3px; }
+#ui .hud-room-icon em { font-style: normal; font-weight: 700; font-size: 12px; }
+@media (min-width: 1001px) { #ui .hud-room-icon em { display: none; } }
+
+/* Khung hướng dẫn không bao giờ tràn ngang; đang có hội thoại thì cột thông báo nhường chỗ, khỏi bị che */
+#ui .hud-tutorial { box-sizing: border-box; max-width: 100%; min-width: 0; }
+#ui .hud-tutorial ul { max-width: 100%; overflow-wrap: anywhere; }
+@media (max-width: 760px), (max-height: 560px) {
+  #ui:has(.hud-dialogue) .hud-alerts { display: none; }
+}
+
+/* Điện thoại rất hẹp (<=400px): cột phải co lại để ô tiền/giờ bên trái không bị chip hẻm đè mất chữ */
+@media (max-width: 400px) {
+  #ui .hud-meta.coop { max-width: 160px; }
+  #ui .hud-status { max-width: calc(100% - 184px); }
+  #ui .hud-status .hud-chip { padding-left: 6px; padding-right: 6px; gap: 4px; }
+  #ui .hud-money b { font-size: 12px; white-space: nowrap; }
+  #ui .hud-money { min-width: 0; }
+  #ui .hud-meta.coop .hud-room { padding: 2px 6px; gap: 4px; }
+}
