@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useGame } from '../core/store';
-import { BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, BONUS_RELIEF, CONVENIENCE, FATIGUE_QUIT, FATIGUE_SLOW, ALCOHOL_BRAWL_CHANCE, COVER_WAGE_MUL, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, fatigueOf, hasAlcohol, hasPower, isHotFood, nightNeed, restingOn, shelfTotal, uncoveredHours, vendingTotal } from '../data/branches';
+import { BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, BONUS_RELIEF, CONVENIENCE, FATIGUE_QUIT, FATIGUE_SLOW, ALCOHOL_BRAWL_CHANCE, coverMul, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, fatigueOf, hasAlcohol, hasPower, isHotFood, nightNeed, restingOn, shelfTotal, uncoveredHours, vendingTotal } from '../data/branches';
 import { dailyWage, ROLES, type Shift } from '../data/staff';
 import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney, productById } from '../data/products';
 import { Dropdown } from './Dropdown';
+import { PromoteRow } from './panels/StaffPanel';
+import { RANKS } from '../data/careers';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
-  const { branch, level, money, day, candidates, storage, stats, atBranch, online, licenses, openBranch, toggleBranch, toggleVending, toggleNightDelivery, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel } = useGame();
+  const { branch, level, money, day, candidates, storage, stats, atBranch, online, licenses, openBranch, toggleBranch, toggleVending, toggleNightDelivery, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, promoteBranchStaff, closePanel } = useGame();
   const [tab, setTab] = useState<'info' | 'night' | 'team' | 'hire' | 'report'>('info');
   const [pick, setPick] = useState<Record<number, Shift>>({});
 
@@ -44,7 +46,7 @@ export function BranchPanel() {
   const others = branch.staff.filter((s) => !BRANCH_SHIFTS.includes(s.shift));
   const calloff = branch.event?.kind === 'calloff' ? branch.event : null;
   const calloffWho = calloff ? branch.staff.find((s) => s.id === calloff.staffId) : undefined;
-  const calloffCost = calloffWho ? Math.round(dailyWage(calloffWho) * COVER_WAGE_MUL) : 0;
+  const calloffCost = calloffWho ? Math.round(dailyWage(calloffWho) * coverMul(branch)) : 0;
   const mainHourly = Array.from({ length: 24 }, (_, h) => stats.byHour?.[h]?.revenue ?? 0);
   const branchHourly = branch.hourly ?? Array(24).fill(0);
   const peak = Math.max(1, ...mainHourly, ...branchHourly);
@@ -77,7 +79,7 @@ export function BranchPanel() {
               {calloff.covered
                 ? <span>✅ Đã có người làm thay.</span>
                 : <>
-                    <span style={st.sub}>Gọi người làm thay (gấp {COVER_WAGE_MUL} lương ca), hoặc tự chạy sang chi nhánh đứng quầy.</span>
+                    <span style={st.sub}>Gọi người làm thay (gấp {coverMul(branch)} lương ca), hoặc tự chạy sang chi nhánh đứng quầy.</span>
                     <button style={st.primary} onClick={coverCalloff}>Gọi người thay ({formatMoney(calloffCost)})</button>
                   </>}
             </div>
@@ -172,11 +174,12 @@ export function BranchPanel() {
               {!list.length && <span style={st.sub}>Chưa có ai.</span>}
               {list.map((s) => (
                 <div key={s.id} style={st.card}>
-                  <span>{ROLES[s.role].icon} <b>{s.name}</b> · {ROLES[s.role].name} · {'★'.repeat(s.skill)}
+                  <span>{ROLES[s.role].icon} <b>{s.name}</b> · {ROLES[s.role].name}{s.rank && <> · {RANKS[s.rank].icon} {RANKS[s.rank].name}</>} · {'★'.repeat(s.skill)}{s.daysWorked !== undefined && <> · {s.daysWorked} ngày</>}
                     {restingOn(branch, s.id, day) && <> · 🛌 nghỉ hôm nay</>}
                     {branch.restDay?.[s.id] === day + 1 && <> · 🛌 nghỉ ngày mai</>}
                   </span>
                   <Fatigue value={fatigueOf(branch, s.id)} />
+                  <PromoteRow st={s} level={level} money={money} onPromote={promoteBranchStaff} />
                   <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                     <Dropdown
                       value={s.shift}

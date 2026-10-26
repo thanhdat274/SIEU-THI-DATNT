@@ -3,6 +3,7 @@ import { productById } from './products';
 import type { FurnitureType } from './furniture';
 import { SHIFTS, type Shift, type Staff, type StaffRole } from './staff';
 import { isAlcohol } from './licenses';
+import { CHIEF_COVER_MUL } from './careers';
 
 /** Cửa hàng tiện lợi 24/7: chi nhánh xa tiệm chính, chủ không đứng bán, nhân viên lo hết. */
 export const CONVENIENCE = {
@@ -151,6 +152,8 @@ export const DRUNK_DAMAGE = 300_000;
 export const DRUNK_BLOCK = 60;
 /** Gọi người làm thay ca: trả gấp đôi lương ca. */
 export const COVER_WAGE_MUL = 2;
+/** Hệ số lương ca khi gọi người làm thay: có quản lý chi nhánh thăng từ trong ra thì rẻ hơn. */
+export const coverMul = (b: Pick<BranchState, 'staff'>) => (b.staff.some((st) => st.rank === 'chief') ? CHIEF_COVER_MUL : COVER_WAGE_MUL);
 /** Mất điện: hàng mát, đông lạnh, tươi sống, đồ nóng trên kệ hỏng mất phần này. */
 export const BLACKOUT_LOSS = 0.6;
 export const spoilsInBlackout = (id: string) => COOKED_PRODUCT_IDS.has(id) || ['cold', 'frozen', 'fresh', 'meat'].includes(productById(id).category);

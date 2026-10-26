@@ -1,5 +1,6 @@
 import type { CharacterArchetype } from '../render/characterModel';
 import { rollTrait, type StaffTrait } from './staffTraits';
+import type { Rank } from './careers';
 
 export type StaffRole = 'cashier' | 'stocker' | 'cleaner' | 'courier' | 'guard' | 'manager' | 'bartender' | 'cook' | 'warehouse_mgr' | 'customer_care' | 'farmhand' | 'butcher';
 export type Shift = 'morning' | 'afternoon' | 'full' | 'night';
@@ -84,6 +85,8 @@ export interface Staff {
   trainedDay?: number;
   /** Đã bị bắt quả tang gian lận. */
   caught?: boolean;
+  /** Chức vụ đã được thăng (xem careers.ts); bản lưu cũ không có = chưa thăng. */
+  rank?: Rank;
 }
 
 /** Lương phải trả mỗi ngày. */

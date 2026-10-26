@@ -1,4 +1,5 @@
-import { maxStaff, ROLES } from '../../data/staff';
+import { maxStaff, ROLES, type Staff } from '../../data/staff';
+import { nextPromotion, promoted } from '../../data/careers';
 import { gainExp, TRAIN_EXP, trainCost } from '../../data/staffTraits';
 import { formatMoney } from '../../data/products';
 import { hasUpgrade } from '../../data/upgrades';
@@ -6,7 +7,24 @@ import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Nhân viên tiệm chính: thuê, cho nghỉ, đổi ca, đào tạo. */
 
-export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 'hire' | 'fire' | 'setShift' | 'trainStaff'> => ({
+export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 'hire' | 'fire' | 'setShift' | 'trainStaff' | 'promoteStaff' | 'promoteBranchStaff'> => {
+  /** Kiểm tra điều kiện, trừ tiền thưởng; trả về người sau khi thăng chức hoặc null. */
+  const tryPromote = (st: Staff): Staff | null => {
+    const s = get();
+    const chk = nextPromotion(st, s.level);
+    if (!chk) { s.notify(`${st.name} đã ở bậc cao nhất`); return null; }
+    if (!chk.ok) { s.notify(`${st.name} chưa đủ điều kiện lên ${chk.def.name}: cần ${chk.missing.join(', ')}`); return null; }
+    if (s.money < chk.def.cost) { s.notify(`Không đủ tiền thưởng thăng chức (${formatMoney(chk.def.cost)})!`); return null; }
+    const next = promoted(st, chk.to);
+    set({
+      money: s.money - chk.def.cost,
+      stats: { ...s.stats, spent: s.stats.spent + chk.def.cost },
+      totals: { ...s.totals, spent: s.totals.spent + chk.def.cost },
+    });
+    s.notify(`${chk.def.icon} ${st.name} được thăng ${chk.def.name}! Thưởng ${formatMoney(chk.def.cost)}, lương mới ${formatMoney(next.wage)}/ca`);
+    return next;
+  };
+  return {
   hire: (id) => {
     const s = get();
     const c = s.candidates.find((it) => it.id === id);
@@ -48,4 +66,17 @@ export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 
       ? `🎓 ${st.name} học xong lên ${next.skill}★! Lương mới ${formatMoney(next.wage)}/ca`
       : `🎓 Đã cho ${st.name} học thêm (${formatMoney(cost)})`);
   },
-});
+  promoteStaff: (id) => {
+    const st = get().staff.find((it) => it.id === id);
+    const next = st && tryPromote(st);
+    if (next) set({ staff: get().staff.map((it) => (it.id === id ? next : it)) });
+  },
+  promoteBranchStaff: (id) => {
+    const b = get().branch;
+    const st = b?.staff.find((it) => it.id === id);
+    const next = st && tryPromote(st);
+    const cur = get().branch;
+    if (next && cur) set({ branch: { ...cur, staff: cur.staff.map((it) => (it.id === id ? next : it)) } });
+  },
+  };
+};

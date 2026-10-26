@@ -269,7 +269,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   }
   // Nhân viên: thêm ngày công, kinh nghiệm; người tắt mắt ra tay (bị bắt thì thu lại); người niềm nở được khen
   const crew = staffDayEnd(s.staff, {
-    revenue: s.stats.revenue, storage: k.storage, hasCamera: hasUpgrade(s.biz, 'camera'), hasManager: s.staff.some((st) => st.role === 'manager'),
+    revenue: s.stats.revenue, storage: k.storage, hasCamera: hasUpgrade(s.biz, 'camera'), hasManager: s.staff.some((st) => st.role === 'manager'), hasLead: s.staff.some((st) => st.rank === 'lead'),
   });
   for (const [id, q] of Object.entries(crew.goodsTaken)) takeStock(k, id, q);
   for (let i = 0; i < crew.praises; i++) get().addReview(5);

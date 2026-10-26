@@ -3,9 +3,11 @@ import { HOMEGROWN_PREMIUM } from '../../data/garden';
 import { dailyWage, GUARD_DETECT, maxStaff, ROLES, type Staff } from '../../data/staff';
 import { BLACKOUT_LOSS, BONUS_RELIEF, COVER_WAGE_MUL, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, VENDING_CAP, VENDING_COST, VENDING_ITEMS, VENDING_OFFTAKE, VENDING_THEFT, branchTrafficAt, isBranchNight, newBranch, onShift, shelfTotal, vendingTotal, type BranchState,
   ALCOHOL_BRAWL_CHANCE, ALCOHOL_NIGHT_MUL, BRAWL_BLOCK, BRAWL_DAMAGE, GENERATOR_FUEL, GENERATOR_LOSS_MUL, NIGHT_DELIVERY_MISHAP, NIGHT_DELIVERY_PER_HOUR, NIGHT_DELIVERY_SURCHARGE, PATROL_AT, PATROL_CHANCE, POWER_UPGRADES,
-  hasAlcohol, hasPower, pickForGroup, pickNightGroup, powerUpgradeById, type PowerUpgradeId } from '../../data/branches';
+  coverMul, hasAlcohol, hasPower, pickForGroup, pickNightGroup, powerUpgradeById, type PowerUpgradeId } from '../../data/branches';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
+import { CHIEF_QUIT_MUL, LEAD_FATIGUE_MUL, hasRank } from '../../data/careers';
+import { gainExp } from '../../data/staffTraits';
 import { LICENSE_FINE, isAlcohol, licenseById, licenseStatus } from '../../data/licenses';
 import { APP_COMMISSION, appRating } from '../../data/online';
 
@@ -98,7 +100,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
       const nightStaff = b.staff.filter((st) => st.shift === 'night' && !restingOn(b, st.id, s.day));
       if (r < EVENT_CHANCE.calloff && nightStaff.length) {
         const who = nightStaff.find((st) => st.role === 'cashier') ?? nightStaff[0];
-        const cover = Math.round(dailyWage(who) * COVER_WAGE_MUL);
+        const cover = Math.round(dailyWage(who) * coverMul(b));
         b.event = { kind: 'calloff', at: 22 * 60, staffId: who.id, covered: manager };
         if (manager) {
           fees += cover;
@@ -282,13 +284,22 @@ export const branchNewDay = (b: BranchState, day: number): { branch: BranchState
   let staff = b.staff.filter((st) => {
     if (restingOn(b, st.id, day)) { fatigue[st.id] = 0; return true; }
     if (b.event?.kind === 'calloff' && b.event.staffId === st.id) return true;
-    fatigue[st.id] = Math.min(100, (fatigue[st.id] ?? 0) + FATIGUE_PER_DAY[st.shift]);
-    if (st.role !== 'manager' && fatigue[st.id] >= FATIGUE_QUIT && Math.random() < QUIT_CHANCE) {
+    // Có trưởng quầy cùng ca đứng đầu thì mọi người làm đỡ mệt
+    const led = st.rank !== 'lead' && b.staff.some((l) => l.rank === 'lead' && l.shift === st.shift && !restingOn(b, l.id, day));
+    fatigue[st.id] = Math.min(100, Math.round((fatigue[st.id] ?? 0) + FATIGUE_PER_DAY[st.shift] * (led ? LEAD_FATIGUE_MUL : 1)));
+    if (st.role !== 'manager' && fatigue[st.id] >= FATIGUE_QUIT && Math.random() < QUIT_CHANCE * (hasRank(b.staff, 'chief') ? CHIEF_QUIT_MUL : 1)) {
       news.push(`😩 ${st.name} (${ROLES[st.role].name}) kiệt sức vì làm liên tục, đã xin nghỉ việc ở tiện lợi`);
       delete fatigue[st.id];
       return false;
     }
     return true;
+  });
+  // Làm việc đều thì thêm ngày công và kinh nghiệm (đủ thì lên sao, đủ điều kiện sẽ được cất nhắc)
+  staff = staff.map((st) => {
+    if (restingOn(b, st.id, day) || (b.event?.kind === 'calloff' && b.event.staffId === st.id)) return st;
+    const { staff: next, leveled } = gainExp({ ...st, daysWorked: (st.daysWorked ?? 0) + 1 }, 1);
+    if (leveled) news.push(`⭐ ${next.name} (tiện lợi) lên tay nghề ${next.skill}★ — lương mới ${Math.round(next.wage / 1000)}k/ca`);
+    return next;
   });
   const restDay: Record<number, number> = {};
   for (const [id, d] of Object.entries(b.restDay ?? {})) if (d > day) restDay[+id] = d;
@@ -349,7 +360,7 @@ export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState,
     const ev = b?.event;
     if (!b || ev?.kind !== 'calloff' || ev.covered) return;
     const who = b.staff.find((st) => st.id === ev.staffId);
-    const cost = who ? Math.round(dailyWage(who) * COVER_WAGE_MUL) : 0;
+    const cost = who ? Math.round(dailyWage(who) * coverMul(b)) : 0;
     if (s.money < cost) return s.notify('Không đủ tiền gọi người làm thay!');
     set({ money: s.money - cost, branch: { ...b, event: { ...ev, covered: true } }, stats: { ...s.stats, spent: s.stats.spent + cost } });
     s.notify(`📞 Đã gọi người làm thay ca đêm (${formatMoney(cost)})`);

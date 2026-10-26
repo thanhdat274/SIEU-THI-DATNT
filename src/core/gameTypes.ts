@@ -469,6 +469,10 @@ export interface GameState {
   restBranchStaff: (id: number) => void;
   /** Đào tạo nhân viên: tốn tiền, cộng kinh nghiệm, mỗi người một buổi mỗi ngày. */
   trainStaff: (id: number) => void;
+  /** Thăng chức nhân viên tiệm chính (thu ngân → trưởng quầy → quản lý). */
+  promoteStaff: (id: number) => void;
+  /** Thăng chức nhân viên chi nhánh. */
+  promoteBranchStaff: (id: number) => void;
   /** Trang mạng xã hội của tiệm. */
   social: SocialState;
   apologize: () => void;

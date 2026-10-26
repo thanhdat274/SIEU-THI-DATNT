@@ -7,10 +7,11 @@ import { formatMoney } from '../../data/products';
 import { hasUpgrade } from '../../data/upgrades';
 import { Footer, styles, Tabs } from './shared';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
+import { nextPromotion, RANKS } from '../../data/careers';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
-  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, closePanel, biz } = useGame();
+  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz } = useGame();
   const max = maxStaff(level);
   const total = staff.reduce((sum, st) => sum + dailyWage(st), 0);
   return (
@@ -28,6 +29,7 @@ export function StaffPanel() {
           {staff.map((st) => (
             <div key={st.id} style={staffSt.card}>
               <StaffInfo st={st} right={<span style={staffSt.wage}>{formatMoney(dailyWage(st))}<small>/ngày</small></span>} />
+              <PromoteRow st={st} level={level} money={money} onPromote={promoteStaff} />
               <div style={staffSt.actions}>
                 <span style={staffSt.label}>🕒 Ca làm</span>
                 {st.role === 'farmhand' ? (
@@ -94,6 +96,23 @@ export function StaffPanel() {
   );
 }
 
+/** Dòng thăng chức: điều kiện còn thiếu hoặc nút thăng chức (thu ngân → trưởng quầy → quản lý chi nhánh). */
+export function PromoteRow({ st, level, money, onPromote }: { st: Staff; level: number; money: number; onPromote: (id: number) => void }) {
+  const chk = nextPromotion(st, level);
+  if (!chk) return null;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 12 }}>
+      <span style={{ flex: 1, minWidth: 180, opacity: 0.85 }} title={chk.def.desc}>
+        {chk.def.icon} Lên <b>{chk.def.name}</b>
+        {chk.ok ? ` — đủ điều kiện (lương ×${chk.def.raise})` : ` — cần ${chk.missing.join(', ')}`}
+      </span>
+      <button style={styles.btn} disabled={!chk.ok || money < chk.def.cost} onClick={() => onPromote(st.id)}>
+        Thăng chức · {formatMoney(chk.def.cost)}
+      </button>
+    </div>
+  );
+}
+
 export function StaffInfo({ st, right }: { st: Staff; right?: React.ReactNode }) {
   const role = ROLES[st.role];
   const trait = shownTrait(st);
@@ -104,6 +123,7 @@ export function StaffInfo({ st, right }: { st: Staff; right?: React.ReactNode })
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <b style={{ fontSize: 15 }}>{st.name}</b>
           <span style={staffSt.role}>{role.name}</span>
+          {st.rank && <span style={{ ...staffSt.role, background: '#8e6b00' }} title={RANKS[st.rank].desc}>{RANKS[st.rank].icon} {RANKS[st.rank].name}</span>}
           <span style={staffSt.stars} aria-label={`Tay nghề ${st.skill}/5`}>{'★'.repeat(st.skill)}<span style={{ opacity: 0.3 }}>{'★'.repeat(5 - st.skill)}</span></span>
           {trait ? (
             <span style={{ ...staffSt.role, background: trait === 'sticky' ? '#c0392b' : staffSt.role.background }} title={TRAITS[trait].desc}>{TRAITS[trait].icon} {TRAITS[trait].name}</span>
