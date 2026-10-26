@@ -50,7 +50,8 @@ export function spoilOvernight(s: Pick<GameState, 'storage' | 'storageLots' | 'f
   const effectiveKeeper = keeper * cooler * (zeroWasteMul === 0.5 ? (zeroWasteMul + (1 - zeroWasteMul) * keeper) : 1);
   // Quản lý kho: sắp xếp xoay hàng, hàng hỏng chậm hơn theo tay nghề (không kể ca — dọn kho cả ngày)
   const mgrSkill = s.staff.reduce((best, st) => (st.role === 'warehouse_mgr' ? Math.max(best, st.skill) : best), 0);
-  const keeperMgr = 1 - WAREHOUSE_KEEP_PER_STAR * mgrSkill;
+  // Clamp ≥0.1 để nếu sau này skill vượt 5 (hoặc đổi hằng số) hệ số không thể âm — âm sẽ biến "hỏng hàng" thành "đẻ thêm hàng"
+  const keeperMgr = Math.max(0.1, 1 - WAREHOUSE_KEEP_PER_STAR * mgrSkill);
   const spoil = (id: string, lots: Lot[], place: Parameters<typeof spoilRate>[1]) => {
     // Áp dụng zero_waste cho hàng tươi sống (fresh category)
     const product = productById(id);

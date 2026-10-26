@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGame, formatClock } from '../../core/store';
 import { productById } from '../../data/products';
 import { productSummary, REASON_LABEL, summarizeReviews, type Review } from '../../data/reviews';
-import { stars, starColor, Footer, styles } from './shared';
+import { stars, starColor, Footer, styles, Tabs } from './shared';
 import { ReputationCard } from './ReportPanels';
 
 /** Lời khách nhận xét: điểm trung bình, biểu đồ số sao, lọc khen/chê. */
@@ -68,13 +68,7 @@ export function ReviewsPanel() {
               </div>
             </div>
           )}
-          <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-            {filters.map(([id, label]) => (
-              <button key={id} style={{ ...styles.btn, marginLeft: 0, background: filter === id ? '#f1c40f' : '#fff' }} onClick={() => setFilter(id)}>
-                {label}
-              </button>
-            ))}
-          </div>
+          <Tabs tabs={filters} value={filter} onChange={setFilter} />
           <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
             {shown.map((r) => (
               <div key={r.id} style={{ ...styles.card, display: 'block' }}>

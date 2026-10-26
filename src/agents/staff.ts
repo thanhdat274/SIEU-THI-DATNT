@@ -296,7 +296,10 @@ export class StaffManager {
       if (t < 0) continue;
       w.job = `${f.uid}:${t}`;
       this.walk(w, this.shop.spotFor(f));
-      w.plan.push(() => (w.pause = 3 / workSpeed(w.staff)));
+      w.plan.push(() => {
+        w.pause = 3 / workSpeed(w.staff);
+        w.working = true; // dáng bày hàng tại chỗ trong lúc xếp
+      });
       w.plan.push(() => {
         const cur = useGame.getState().furniture.find((it) => it.uid === f.uid);
         const tier = cur?.tiers[t];
@@ -304,6 +307,7 @@ export class StaffManager {
           useGame.getState().stockTier(cur.uid, t, tier.productId);
           w.say('📦');
         }
+        w.working = false;
         w.job = null;
       });
       return;

@@ -316,6 +316,20 @@
   gap: 4px;
   padding: 8px;
 }
+
+/* Màn cảm ứng nhỏ (điện thoại ngang — iPhone 15 landscape ~852px, 15 Plus/Pro Max ~932px,
+ * đều nằm dưới 1000px giống IS_MOBILE): menu Thêm nhiều nút dễ tràn hoặc vượt chiều cao
+ * màn. Chuyển sang 2 cột rộng hơn nhưng thấp hơn, giới hạn chiều cao và cho cuộn trong,
+ * canh theo mép an toàn. Desktop giữ nguyên 3 cột. */
+@media (pointer: coarse) and (max-width: 1000px) {
+  #ui .hud-more {
+    grid-template-columns: repeat(2, minmax(96px, 1fr));
+    width: min(92vw, 480px);
+    max-height: calc(100dvh - 140px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
 #ui .hud-more .hud-tool { display: flex; min-width: 0; padding: 10px 6px; font-size: 12px; text-align: center; }
 #ui .hud-more .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { display: inline; }
 #ui .hud-more .hud-help { grid-column: 1 / -1; width: max-content; min-width: 280px; }
@@ -378,6 +392,21 @@
 #ui .hud-meta { top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); }
 #ui .hud-bottom { bottom: max(14px, env(safe-area-inset-bottom)); }
 
+/*
+ * Điện thoại cảm ứng xoay ngang (iPhone 15 landscape ~852px, 15 Plus/Pro Max ~932px — đều
+ * dưới 1000px, khớp IS_MOBILE): chip hẻm online ở góc phải thu gọn cho khỏi tràn/đè lên
+ * hai ngón tay khi đang kéo camera, giữ lại mã hẻm và nút sao chép/rời. Các ô bên phải
+ * cũng nhỏ lại cho vừa một hàng. Desktop giữ nguyên.
+ */
+@media (pointer: coarse) and (max-width: 1000px) {
+  #ui .hud-meta { gap: 4px; max-width: calc(100% - 200px); }
+  #ui .hud-room { max-width: 46vw; }
+  #ui .hud-room > span { min-width: 0; overflow: hidden; }
+  #ui .hud-room b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 26vw; display: inline-block; vertical-align: bottom; }
+  #ui .hud-room small { display: none; }
+  #ui .hud-sound { min-height: 36px; padding: 0 10px; }
+}
+
 /* Điện thoại xoay ngang: màn thấp, thu nhỏ các ô cho đỡ che cảnh */
 @media (max-height: 480px) {
   #ui .hud-chip { min-height: 36px; padding: 3px 10px; }
@@ -405,7 +434,10 @@
 }
 
 #ui .hud-speed-cycle { display: none; }
-@media (max-width: 760px) {
+/* Màn cảm ứng (khớp IS_MOBILE, <=1000px): thay cả nhóm nút tốc độ bằng một nút bấm xoay
+   vòng. Trước đây gác ở max-width:760px nên điện thoại ngang (852–932px) vẫn hiện nhóm nút
+   to bản desktop làm dock chật. */
+@media (pointer: coarse) and (max-width: 1000px) {
   #ui .hud-speed { display: none; }
   #ui .hud-speed-cycle {
     display: block;
@@ -447,6 +479,18 @@
 }
 @media (max-height: 480px) {
   #ui .hud-joystick { width: 100px; height: 100px; bottom: calc(max(10px, env(safe-area-inset-bottom)) + 64px); }
+}
+
+/* Màn cảm ứng ngang thật ngắn (iPhone landscape): joystick nhỏ hơn và sát mép để không
+ * đè lên gợi ý tương tác ở giữa dưới hoặc thanh dock. Chỉ áp dụng khi cảm ứng + màn thấp,
+ * desktop giữ nguyên. */
+@media (pointer: coarse) and (max-height: 440px) {
+  #ui .hud-joystick {
+    width: 92px;
+    height: 92px;
+    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 52px);
+  }
+  #ui .hud-joystick-knob { width: 44px; height: 44px; }
 }
 
 /* Điện thoại tiệm: đơn gọi giao trong hẻm */

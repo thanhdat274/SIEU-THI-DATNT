@@ -158,12 +158,24 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     const missing = Object.entries(o.items)
       .map(([pid, q]) => [pid, q - (s.storage[pid] ?? 0)] as const)
       .filter(([, q]) => q > 0);
-    const cost = missing.reduce((sum, [pid, q]) => sum + productById(pid).buy * q, 0);
+    // Món nhà làm không nhập bù bằng đơn được: phải nấu ở trạm mới giao được — báo rõ thay vì fail im lặng
+    const cookedMissing = missing.filter(([pid]) => COOKED_PRODUCT_IDS.has(pid));
+    if (cookedMissing.length) {
+      s.notify(`🍳 ${cookedMissing.map(([pid, q]) => `${q} ${productById(pid).name}`).join(', ')} là món nhà làm — phải vào trạm chế biến nấu trước, không nhập bù được`);
+      return false;
+    }
+    const restockable = missing.filter(([pid]) => !COOKED_PRODUCT_IDS.has(pid));
+    const cost = restockable.reduce((sum, [pid, q]) => sum + productById(pid).buy * q, 0);
     if (s.money < cost) {
       s.notify(`Không đủ tiền nhập bù (cần ${formatMoney(cost)})`);
       return false;
     }
-    for (const [pid, q] of missing) get().buy(pid, q);
+    const failed: string[] = [];
+    for (const [pid, q] of restockable) if (!get().buy(pid, q)) failed.push(productById(pid).name);
+    if (failed.length) {
+      s.notify(`⚠️ Không nhập bù được: ${failed.join(', ')} (hết tiền hoặc kho không đủ chỗ). Vào bảng Kho xử lý rồi quay lại nghe máy`);
+      return false;
+    }
     if (missing.length) s.notify(`🛒 Đã nhập bù ${missing.map(([pid, q]) => `${q} ${productById(pid).name}`).join(', ')} (${formatMoney(cost)})`);
     return get().answerPhone(id);
   },

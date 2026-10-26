@@ -1,0 +1,33 @@
+{
+  "name": "Tạp Hóa 3D",
+  "short_name": "Tạp Hóa 3D",
+  "description": "Game mô phỏng mở cửa hàng tạp hóa 3D — bày hàng, phục vụ khách, mở trang trại và mở rộng tiệm.",
+  "lang": "vi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#1d1f2b",
+  "theme_color": "#1d1f2b",
+  "categories": ["games", "simulation"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

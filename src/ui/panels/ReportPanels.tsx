@@ -16,7 +16,7 @@ import { describeDay, WEATHER } from '../../data/weather';
 import { missingForContract, SUPPLY_CONTRACTS, supplyContractById } from '../../data/contracts';
 import { PHONE_SLOTS } from '../../data/phoneOrders';
 import { paymentById, type PaymentMethod } from '../../data/payments';
-import { Stat, starColor, Footer, Swatch, styles } from './shared';
+import { Stat, starColor, Footer, Swatch, styles, Tabs } from './shared';
 
 export function SummaryPanel({ day }: { day: number }) {
   const panel = useGame((s) => s.panel);
@@ -48,11 +48,7 @@ export function SummaryPanel({ day }: { day: number }) {
   return (
     <>
       <h2 style={styles.title}>🌙 {shopName} · Tổng kết ngày {day}</h2>
-      <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
-        {tabs.map(([id, label]) => (
-          <button key={id} style={{ ...styles.btn, marginLeft: 0, background: tab === id ? '#f1c40f' : '#fff' }} onClick={() => setTab(id)}>{label}</button>
-        ))}
-      </div>
+      <Tabs tabs={tabs} value={tab} onChange={setTab} />
       {tab === 'overview' ? (
         <>
           <table style={{ ...styles.table, fontSize: 15 }}>
@@ -450,6 +446,7 @@ export function ItemTable({ lines }: { lines: (ItemLine & { id: string; gross: n
     <th style={{ cursor: 'pointer', textDecoration: sort === key ? 'underline' : undefined }} onClick={() => setSort(key)}>{label}{sort === key ? ' ▾' : ''}</th>
   );
   return (
+    <div style={{ overflowX: 'auto' }}>
     <table style={styles.table}>
       <thead>
         <tr><th style={styles.left}>Mặt hàng</th>{head('qty', 'Số món')}{head('revenue', 'Doanh thu')}{head('gross', 'Lãi gộp')}<th>Lãi/món</th></tr>
@@ -468,7 +465,8 @@ export function ItemTable({ lines }: { lines: (ItemLine & { id: string; gross: n
           );
         })}
       </tbody>
-    </table>
+      </table>
+    </div>
   );
 }
 

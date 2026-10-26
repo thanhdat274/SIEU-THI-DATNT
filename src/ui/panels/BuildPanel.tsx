@@ -3,30 +3,20 @@ import { useGame } from '../../core/store';
 import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, type ShopStyle } from '../../data/shopTiers';
 import { FURNITURE } from '../../data/furniture';
 import { formatMoney } from '../../data/products';
-import { Footer, Swatch, styles } from './shared';
+import { Footer, Swatch, styles, Tabs } from './shared';
 
 export function BuildPanel() {
   const [tab, setTab] = useState<'furniture' | 'paint' | 'expand'>('furniture');
   const setBuildMode = useGame((s) => s.setBuildMode);
   const tabs = [
-    { id: 'furniture', label: '🪑 Nội thất' },
-    { id: 'paint', label: '🎨 Sơn sửa' },
-    { id: 'expand', label: '🏗️ Mở rộng tiệm' },
+    ['furniture', '🪑 Nội thất'],
+    ['paint', '🎨 Sơn sửa'],
+    ['expand', '🏗️ Mở rộng tiệm'],
   ] as const;
   return (
     <>
       <h2 style={styles.title}>🛠️ Xây dựng</h2>
-      <div style={{ display: 'flex', gap: 6, margin: '8px 0 12px' }}>
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            style={{ ...styles.btn, marginLeft: 0, background: tab === t.id ? '#f1c40f' : '#fff' }}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={tabs} value={tab} onChange={setTab} />
       {tab === 'furniture' && <FurnitureTab />}
       {tab === 'paint' && <PaintTab />}
       {tab === 'expand' && <ExpandTab />}

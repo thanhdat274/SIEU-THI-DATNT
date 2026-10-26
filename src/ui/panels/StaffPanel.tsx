@@ -4,12 +4,13 @@ import { Dropdown } from '../Dropdown';
 import { useGame } from '../../core/store';
 import { dailyWage, maxStaff, ROLES, SHIFTS, type Shift, type Staff } from '../../data/staff';
 import { formatMoney } from '../../data/products';
-import { Footer, styles } from './shared';
+import { hasUpgrade } from '../../data/upgrades';
+import { Footer, styles, Tabs } from './shared';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
-  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, closePanel } = useGame();
+  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, closePanel, biz } = useGame();
   const max = maxStaff(level);
   const total = staff.reduce((sum, st) => sum + dailyWage(st), 0);
   return (
@@ -19,17 +20,7 @@ export function StaffPanel() {
         <div style={staffSt.stat}><small>Nhân sự</small><b>{staff.length}/{max}</b><small>lên cấp để thuê thêm</small></div>
         <div style={staffSt.stat}><small>Tổng lương / ngày</small><b>{formatMoney(total)}</b><small>trả lúc đi ngủ</small></div>
       </div>
-      <div style={{ display: 'flex', gap: 6, margin: '8px 0 12px' }}>
-        {([['team', '📋 Đang làm'], ['hire', '🔍 Tuyển dụng']] as const).map(([id, label]) => (
-          <button
-            key={id}
-            style={{ ...styles.btn, marginLeft: 0, background: tab === id ? '#f1c40f' : '#fff' }}
-            onClick={() => setTab(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={[['team', '📋 Đang làm'], ['hire', '🔍 Tuyển dụng']]} value={tab} onChange={setTab} />
 
       {tab === 'team' && (
         <div style={{ display: 'grid', gap: 8 }}>
@@ -39,12 +30,18 @@ export function StaffPanel() {
               <StaffInfo st={st} right={<span style={staffSt.wage}>{formatMoney(dailyWage(st))}<small>/ngày</small></span>} />
               <div style={staffSt.actions}>
                 <span style={staffSt.label}>🕒 Ca làm</span>
-                <Dropdown
-                  value={st.shift}
-                  onChange={(v) => setShift(st.id, v)}
-                  ariaLabel={`Ca làm của ${st.name}`}
-                  options={(Object.keys(SHIFTS) as Shift[]).map((k) => ({ value: k, label: SHIFTS[k].name }))}
-                />
+                {st.role === 'farmhand' ? (
+                  <span style={{ fontSize: 12, opacity: 0.8 }}>Cả ngày (ở trại tự lo)</span>
+                ) : (
+                  <Dropdown
+                    value={st.shift}
+                    onChange={(v) => setShift(st.id, v)}
+                    ariaLabel={`Ca làm của ${st.name}`}
+                    options={(Object.keys(SHIFTS) as Shift[])
+                      .filter((k) => k !== 'night' || hasUpgrade(biz, 'night'))
+                      .map((k) => ({ value: k, label: SHIFTS[k].name + (k === 'night' ? ' (cần Mở ca đêm)' : '') }))}
+                  />
+                )}
                 {st.skill < 5 && (
                   <button
                     style={{ ...staffSt.train, opacity: st.trainedDay === day || money < trainCost(st.skill) ? 0.45 : 1 }}

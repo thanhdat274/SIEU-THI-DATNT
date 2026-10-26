@@ -118,7 +118,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
         // Hàng nhà trồng/nuôi bán ở chi nhánh được giá hơn như ở quầy chính
         const premium = (hg[id] ?? 0) > 0;
         if (premium) spendHomegrown(id, 1);
-        const price = Math.round((s.priceOf(id) * CONVENIENCE.priceMul * (isHotFood(id) ? HOT_FOOD_MUL : 1) * (premium ? 1 + HOMEGROWN_PREMIUM : 1)) / 500) * 500;
+        const price = Math.round((s.priceOf(id, m) * CONVENIENCE.priceMul * (isHotFood(id) ? HOT_FOOD_MUL : 1) * (premium ? 1 + HOMEGROWN_PREMIUM : 1)) / 500) * 500;
         revenue += price;
         b.hourly![Math.floor((((m % 1440) + 1440) % 1440) / 60)] += price;
       }

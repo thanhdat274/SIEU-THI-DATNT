@@ -30,6 +30,13 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
       s.notify('Không đủ tiền!');
       return false;
     }
+    // Nhập tay cũng phải có chỗ trong kho — thống nhất với placeOrder để không tràn thùng
+    const need = storageUsed(s.storage, { [productId]: qty });
+    const cap = storageCapacity(s.warehouseTier);
+    if (need > cap) {
+      s.notify(`📦 Nhà kho không đủ chỗ: cần thêm ${qty} thùng nhưng chỉ còn trống ${Math.max(0, cap - storageUsed(s.storage))}. Nâng cấp nhà kho hoặc nhập ít hơn nhé!`);
+      return false;
+    }
     const k = copyStock(s);
     putStock(k, productId, qty);
     set({
@@ -162,15 +169,18 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
       if (f.broken) continue;
       const j = f.tiers.findIndex((t) => t.productId === productId && t.count > 0);
       if (j < 0) continue;
+      const tier = f.tiers[j];
+      // Xác định phần còn lại sau khi khách cầm 1 món — dùng chung cho việc cập nhật kệ lẫn tính giảm giá
+      const [rest] = takeOldest(fitLots(tier.lots, tier.count, productId), 1);
       updateFurniture(set, get, f.uid, (old) => ({
         ...old,
-        tiers: old.tiers.map((t, i) => (i === j ? { ...t, count: t.count - 1, lots: takeOldest(fitLots(t.lots, t.count, productId), 1)[0] } : t)),
+        tiers: old.tiers.map((t, i) => (i === j ? { ...t, count: t.count - 1, lots: rest } : t)),
       }));
       // Heatmap vị trí: đếm số món bán ra của kệ vừa được lấy hàng
       const heat = get().shelfHeat;
       set({ shelfHeat: { ...heat, [f.uid]: (heat[f.uid] ?? 0) + 1 } });
-      // Lô cận hạn tự giảm giá
-      const sale = tierMarkdown(productId, f.tiers[j].lots, f.tiers[j].count);
+      // Lô cận hạn tự giảm giá — tính trên trạng thái kệ SAU khi trừ 1, khớp số còn lại thực tế
+      const sale = tierMarkdown(productId, rest, tier.count - 1);
       return Math.round(s.priceOf(productId) * (1 + (furnitureDef(f.type).priceBonus ?? 0)) * (1 - sale));
     }
     return null;

@@ -1,6 +1,7 @@
 import { maxStaff, ROLES } from '../../data/staff';
 import { gainExp, TRAIN_EXP, trainCost } from '../../data/staffTraits';
 import { formatMoney } from '../../data/products';
+import { hasUpgrade } from '../../data/upgrades';
 import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Nhân viên tiệm chính: thuê, cho nghỉ, đổi ca, đào tạo. */
@@ -19,7 +20,15 @@ export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 
     }
   },
   fire: (id) => set({ staff: get().staff.filter((it) => it.id !== id) }),
-  setShift: (id, shift) => set({ staff: get().staff.map((it) => (it.id === id ? { ...it, shift } : it)) }),
+  setShift: (id, shift) => {
+    const s = get();
+    // Ca đêm ở tiệm chính chỉ có ích khi mua nâng cấp "Mở ca đêm" (tiệm mới bán thâu đêm);
+    // trước đó cửa hàng đóng 22h30 nên ca đêm chỉ tốn lương ×1.5 vô ích
+    if (shift === 'night' && !hasUpgrade(s.biz, 'night')) {
+      return s.notify('🌙 Ca đêm mở khi mua nâng cấp "Mở ca đêm" (cấp 55) — giờ tiệm đóng lúc 22h30');
+    }
+    set({ staff: s.staff.map((it) => (it.id === id ? { ...it, shift } : it)) });
+  },
   trainStaff: (id) => {
     const s = get();
     const st = s.staff.find((it) => it.id === id);

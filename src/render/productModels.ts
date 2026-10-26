@@ -585,3 +585,14 @@ export function createProductModel(productId: string, w: number, h: number, d: n
   }
   return tpl.clone();
 }
+
+/** Các phần (geometry + vật liệu) của mẫu đã bake cho một món hàng — dùng chung, KHÔNG dispose theo từng kệ. */
+export function productParts(productId: string, w: number, h: number, d: number): { geometry: THREE.BufferGeometry; material: THREE.Material }[] {
+  const key = `${productId}|${w.toFixed(3)}|${h.toFixed(3)}|${d.toFixed(3)}`;
+  if (!templates.has(key)) createProductModel(productId, w, h, d);
+  const parts: { geometry: THREE.BufferGeometry; material: THREE.Material }[] = [];
+  templates.get(key)!.traverse((o) => {
+    if (o instanceof THREE.Mesh) parts.push({ geometry: o.geometry, material: o.material });
+  });
+  return parts;
+}

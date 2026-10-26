@@ -27,6 +27,13 @@ export const SHOP_CENTER_X = 4;
  */
 export const rentOf = (tier: number) => 20000 + tier * tier * 30000;
 
+/**
+ * Chi phí vận hành theo doanh thu (điện, nước, bảo trì): % doanh thu mỗi ngày, trừ ở bảng tổng kết.
+ * Nhỏ ở doanh thu thấp, nhưng lớn dần theo quy mô — để cuối game tiền vào không vượt xa tiền ra
+ * (tiền thuê là chi phí cố định duy nhất trước đây nên siêu thị dễ "tràn tiền").
+ */
+export const OPERATING_REVENUE_RATE = 0.02;
+
 export interface Swatch {
   name: string;
   color: number;

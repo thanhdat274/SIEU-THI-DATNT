@@ -124,7 +124,23 @@ const isJob = (a: CharacterArchetype): a is JobArchetype => a in JOB_UNIFORMS;
 
 const OUTDOOR_JOBS: CharacterArchetype[] = ['worker_driver', 'construction_worker', 'shipper', 'farmer', 'athlete', 'fisherman'];
 
-const mat = (color: number, roughness = 0.5, metalness = 0) => new THREE.MeshStandardMaterial({ color, roughness, metalness });
+// Vật liệu đặc cho nhân vật: dùng CHUNG giữa mọi nhân vật mang cùng màu — nhân vật dựng/hủy
+// liên tục quanh ngày mà vẫn tạo cùng số lượng material thì là phí shader; dùng chung thì mỗi
+// tổ hợp (màu, nhám, kim loại) chỉ có 1 material.
+const matCache = new Map<string, THREE.MeshStandardMaterial>();
+const sharedMats = new Set<THREE.Material>();
+/** Nhân vật đang chia sẻ vật liệu chung này — dispose không được hủy kẻo trắng mấy nhân vật khác. */
+export const isSharedMaterial = (m: THREE.Material) => sharedMats.has(m);
+const mat = (color: number, roughness = 0.5, metalness = 0) => {
+  const k = `${color}|${roughness}|${metalness}`;
+  let m = matCache.get(k);
+  if (!m) {
+    m = new THREE.MeshStandardMaterial({ color, roughness, metalness });
+    matCache.set(k, m);
+    sharedMats.add(m);
+  }
+  return m;
+};
 
 /** Mũ / nón đặc trưng của từng nghề. */
 function addJobHeadwear(job: JobArchetype, headGroup: THREE.Group, s: number) {

@@ -1,5 +1,5 @@
 import { ProductIcon } from './ProductIcon';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Dropdown } from './Dropdown';
 import { storageCapacity, storageUsed, useGame, wagesDue } from '../core/store';
 import { caseSize, CATEGORIES, describeUnits, formatMoney, productById, unlockedProducts, type Category } from '../data/products';
@@ -84,22 +84,26 @@ export function OrderPanel() {
   const supplier = SUPPLIERS.find((s) => s.id === supplierId)!;
   const hot = trending(day, level);
 
-  const rows = unlockedProducts(level)
-    .filter((p) => supplierSells(supplier, p.id))
-    .map((p) => {
-      const isNew = level - p.unlock < NEW_WITHIN && p.unlock > 1;
-      const isHot = hot.includes(p.id);
-      return {
-        p, isNew, isHot,
-        have: onHand(p.id),
-        coming: incoming(p.id),
-        demand: demand[p.id] ?? 0,
-        asked: demandToday[p.id] ?? 0,
-        cost: unitCost(supplier, p.id, day),
-        size: caseSize(p.id),
-        suggest: suggestQty(p.id, supplier, isHot, isNew),
-      };
-    });
+  // Memo: quét toàn bộ kệ/kho mỗi lần gõ số lượng (setCart) là tốn — chỉ tính lại khi dữ liệu nguồn thay đổi
+  const rows = useMemo(() => {
+    const isHot = trending(day, level);
+    return unlockedProducts(level)
+      .filter((p) => supplierSells(supplier, p.id))
+      .map((p) => {
+        const isNew = level - p.unlock < NEW_WITHIN && p.unlock > 1;
+        const hotP = isHot.includes(p.id);
+        return {
+          p, isNew, isHot: hotP,
+          have: onHand(p.id),
+          coming: incoming(p.id),
+          demand: demand[p.id] ?? 0,
+          asked: demandToday[p.id] ?? 0,
+          cost: unitCost(supplier, p.id, day),
+          size: caseSize(p.id),
+          suggest: suggestQty(p.id, supplier, hotP, isNew),
+        };
+      });
+  }, [level, day, supplierId, demand, demandToday, deliveries, storage, warehouseTier, weatherSeed, forecast, priceOf]);
 
   const shown = rows
     .filter((r) => filter === 'all' || (filter === 'suggest' ? r.suggest > 0 || (cart[r.p.id] ?? 0) > 0 : r.p.category === filter))

@@ -1,5 +1,5 @@
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
-import { SHOP_TIERS, rentOf } from '../../data/shopTiers';
+import { SHOP_TIERS, rentOf, OPERATING_REVENUE_RATE } from '../../data/shopTiers';
 import { describeDay, forecastFrom, WEATHER } from '../../data/weather';
 import { fitLots, nearestLife } from '../../data/freshness';
 import { regularById } from '../../data/regulars';
@@ -304,11 +304,14 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   // Trả lương và tiền nhà cuối ngày (kèm phí thợ bảo trì sáng nay nếu có); chi nhánh mua đứt nên không cộng tiền thuê
   const wages = wagesDue(s) + branchWages;
   const rent = rentOf(s.shopTier);
+  // Chi phí vận hành theo doanh thu (điện/nước/bảo trì): % doanh thu, nhỏ lúc đầu, đáng kể khi lên siêu thị
+  const opCost = Math.round((s.stats.revenue + onlineDay.money + crew.tips) * OPERATING_REVENUE_RATE);
   const stats = {
-    ...s.stats, wages, rent, spent: s.stats.spent + maintCost, spoiledItems: aged.items, spoiledCost: aged.cost,
+    ...s.stats, wages, rent, spent: s.stats.spent + maintCost + opCost, spoiledItems: aged.items, spoiledCost: aged.cost,
     revenue: s.stats.revenue + onlineDay.money + crew.tips, online: (s.stats.online ?? 0) + onlineDay.money,
     ...(crew.cashLoss || shrinkItems ? { shrinkCash: crew.cashLoss, shrinkItems } : {}),
   };
+  if (opCost >= 5000) s.notify(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}`);
   const biz = bizEndOfDay(s, stats);
   if (biz.news.length) s.notify(biz.news.join(' · '));
   const todayReviews = s.reviews.filter((r) => r.day === s.day);
@@ -335,7 +338,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     garden, analytics,
     weather: s.forecast[0], forecast: forecastFrom(s.weatherSeed, s.day + 1, s.forecast[0]),
     ...extra,
-    money: (extra.money ?? s.money) - wages - rent - maintCost + inspectPay + biz.money + onlineDay.money + crew.tips - crew.cashLoss,
+    money: (extra.money ?? s.money) - wages - rent - maintCost - opCost + inspectPay + biz.money + onlineDay.money + crew.tips - crew.cashLoss,
     staff: crew.staff.filter((st) => st.id !== biz.poachedStaffId), social: socialNext, online: onlineDay.online, inspection,
     biz: biz.biz,
     branch: nextBranch ? { ...nextBranch.branch, revenueToday: 0, customersToday: 0, lostToday: 0, missedToday: 0, simAt: wokeLate ? LATE_WAKE_AT : DAY_START, lastTrip: nextBranch.branch.lastTrip - 1440 } : null,

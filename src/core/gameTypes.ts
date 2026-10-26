@@ -416,7 +416,7 @@ export interface GameState {
   unstockTier: (uid: number, tier: number) => void;
   /** Khách lấy 1 món khỏi kệ; trả về giá phải trả, hoặc null nếu hết. */
   takeFromShelf: (productId: string, preferUid?: number) => number | null;
-  priceOf: (productId: string) => number;
+  priceOf: (productId: string, minutes?: number) => number;
   setPrice: (productId: string, price: number) => void;
   /** Tính tiền cho khách; `discount` là tiền giảm combo, `combos` là số combo trong giỏ,
    *  `payment` là hình thức thanh toán (mặc định tiền mặt) — ảnh hưởng phí và sổ thống kê. */
@@ -481,6 +481,8 @@ export interface GameState {
   garden: GardenState;
   plantCrop: (plotIndex: number, cropId: string) => void;
   waterGarden: () => void;
+  /** Tưới một luống (bấm theo từng luống thay vì cả vườn). */
+  waterPlot: (plotIndex: number) => void;
   /** Bón phân cho một luống: rút ngắn 30% thời gian vụ, 1 lần/vụ. */
   fertilizePlot: (plotIndex: number) => void;
   harvestPlot: (plotIndex: number) => void;

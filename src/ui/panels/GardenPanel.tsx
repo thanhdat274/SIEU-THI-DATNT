@@ -8,7 +8,7 @@ import { Footer, styles } from './shared';
 
 /** Trang trại đầu ngõ: trồng theo mùa vụ, nuôi 7 loài, công trình + dọn trại lấy gỗ đá nâng sao, đơn quán xóm. */
 export function GardenPanel() {
-  const { garden, level, money, day, weather, storage, plantCrop, waterGarden, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, closePanel } = useGame();
+  const { garden, level, money, day, weather, storage, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, closePanel } = useGame();
   const homegrown = Object.entries(garden.homegrown).filter(([, q]) => q > 0);
   const tier = LAND_TIERS[garden.land] ?? LAND_TIERS[LAND_TIERS.length - 1];
   const nextTier = LAND_TIERS[garden.land + 1];
@@ -63,6 +63,11 @@ export function GardenPanel() {
             <b>🚜 Đất trại: {tier.name}</b>
             <div style={{ fontSize: 12, marginTop: 4 }}>
               {garden.plots.length} luống · {ANIMAL_ORDER.filter((k) => penCap(garden.land, k) > 0).map((k) => `${ANIMALS[k].icon} ${penCap(garden.land, k)}`).join(' · ')}
+              {garden.plots.some((p) => p.crop && p.wateredDay !== day) && (
+                <button style={{ ...styles.btn, background: '#3498db', color: '#fff', marginLeft: 8 }} onClick={waterGarden} title="Tưới hết luống đang thiếu nước hôm nay">
+                  💧 Tưới cả vườn
+                </button>
+              )}
               {nextTier ? (
                 <button style={{ ...styles.btn, background: level >= nextTier.unlock && money >= nextTier.cost ? '#27ae60' : '#555', color: '#fff', marginLeft: 8 }}
                   onClick={expandFarm} title={level < nextTier.unlock ? `Cần cấp ${nextTier.unlock}` : `Mua thêm ${nextTier.plots - garden.plots.length} luống và chuồng mới`}>
@@ -94,7 +99,7 @@ export function GardenPanel() {
                         disabled={watered}
                         style={{ ...styles.btn, background: watered ? '#555' : '#3498db', color: '#fff', opacity: watered ? 0.6 : 1, cursor: watered ? 'not-allowed' : undefined }}
                         title={wateredWhy}
-                        onClick={waterGarden}
+                        onClick={() => waterPlot(i)}
                       >
                         {watered ? '✔️ Đã đủ nước' : '💧 Tưới'}
                       </button>

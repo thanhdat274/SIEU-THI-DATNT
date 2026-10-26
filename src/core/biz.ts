@@ -530,7 +530,7 @@ export function bizEndOfDay(s: GameState, stats: DayStats): { biz: BizState; mon
   }
   b.week = {
     ...b.week, items,
-    revenue: b.week.revenue + stats.revenue, profit: b.week.profit + stats.revenue - stats.spent - stats.wages,
+    revenue: b.week.revenue + stats.revenue, profit: b.week.profit + stats.revenue - stats.spent - stats.wages - (stats.rent ?? 0),
     customers: b.week.customers + stats.customers, unhappy: b.week.unhappy + stats.unhappy,
   };
   if (day - b.week.startDay + 1 >= WEEK_DAYS) {

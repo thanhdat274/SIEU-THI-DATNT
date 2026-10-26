@@ -3,7 +3,7 @@ import type { Tier } from '../core/store';
 import { furnitureDef, isCookStation, type FurnitureType } from '../data/furniture';
 import { STATIONS } from '../data/recipes';
 import { createCounter } from '../world/buildings';
-import { createProductModel } from '../render/productModels';
+import { productParts } from '../render/productModels';
 
 /** Vật liệu dùng chung cho chi tiết trang trí kệ/tủ — dùng chung nên KHÔNG dispose theo từng kệ. */
 const PRICE_STRIP = new THREE.MeshStandardMaterial({ color: 0xf5efdc, roughness: 1 });
@@ -35,6 +35,9 @@ export class FurnitureView {
   private topY = 2.2;
   /** Dấu ⚠️ nổi trên kệ khi có ô đã gán món mà hết hàng (kệ trống mà khách đang tìm). */
   private emptyMark: THREE.Sprite | null = null;
+  /** Hàng hóa trên kệ vẽ bằng InstancedMesh theo từng món: 1 draw call / món thay vì 1 draw call / hộp. */
+  private instanced = new Map<string, THREE.InstancedMesh[]>();
+  private readonly _m = new THREE.Matrix4();
 
   constructor(public type: FurnitureType) {
     if (type === 'plant') this.buildPlant();
@@ -58,11 +61,15 @@ export class FurnitureView {
 
   /** Giải phóng tài nguyên GPU khi món nội thất rời khỏi tiệm. */
   dispose() {
+    // InstancedMesh: geometry/vật liệu là DÙNG CHUNG cho mọi kệ, chỉ giải phóng bộ đệm instance
+    for (const parts of this.instanced.values()) for (const im of parts) im.dispose();
+    this.instanced.clear();
     const freeMat = (m: THREE.Material) => {
       (m as unknown as { map?: THREE.Texture }).map?.dispose();
       m.dispose();
     };
     this.group.traverse((o) => {
+      if (o instanceof THREE.InstancedMesh) return; // đã xử lý ở trên
       if (!(o instanceof THREE.Mesh || o instanceof THREE.Sprite)) return;
       o.geometry?.dispose();
       const mat = o.material as THREE.Material | THREE.Material[];
@@ -364,22 +371,58 @@ export class FurnitureView {
   }
 
   update(tiers: Tier[]) {
+    // Thu gom các hộp đang hiển thị theo từng món hàng; mỗi món được vẽ bằng 1 InstancedMesh cho cả kệ
+    const seen = new Map<string, THREE.Group[]>();
     tiers.forEach((tier, t) => {
-      this.boxes[t]?.forEach((box, i) => {
-        box.visible = !!tier.productId && i < tier.count;
-        if (!tier.productId || box.userData.productId === tier.productId) return;
-        box.userData.productId = tier.productId;
-        box.clear();
-        const [w, h, d] = box.userData.size as number[];
-        box.add(createProductModel(tier.productId, w, h, d));
-        // Hàng bày xong không nhúc nhích: đóng băng ma trận luôn
-        box.updateMatrixWorld(true);
-        box.traverse((o) => {
-          o.matrixAutoUpdate = false;
-        });
-      });
+      const slot = this.boxes[t];
+      if (!slot) return;
+      for (let i = 0; i < slot.length; i++) {
+        const box = slot[i];
+        if (!tier.productId || i >= tier.count) { box.visible = false; continue; }
+        box.visible = false; // InstancedMesh chịu trách nhiệm vẽ
+        let list = seen.get(tier.productId);
+        if (!list) { list = []; seen.set(tier.productId, list); }
+        list.push(box);
+      }
     });
+    // Gỡ InstancedMesh của món không còn trên kệ nữa
+    for (const pid of [...this.instanced.keys()]) if (!seen.has(pid)) this.dropInstanced(pid);
+    for (const [pid, boxes] of seen) this.renderInstanced(pid, boxes);
     this.refreshEmptyMark(tiers);
+  }
+
+  private renderInstanced(productId: string, boxes: THREE.Group[]) {
+    let parts = this.instanced.get(productId);
+    if (!parts) {
+      const [w, h, d] = boxes[0].userData.size as number[];
+      const cap = this.boxes.reduce((n, slot) => n + slot.length, 0);
+      parts = productParts(productId, w, h, d).map(({ geometry, material }) => {
+        const im = new THREE.InstancedMesh(geometry, material, cap);
+        im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        this.group.add(im);
+        return im;
+      });
+      this.instanced.set(productId, parts);
+    }
+    for (const im of parts) {
+      for (let i = 0; i < boxes.length; i++) {
+        this._m.identity().setPosition(boxes[i].position);
+        im.setMatrixAt(i, this._m);
+      }
+      im.count = boxes.length;
+      im.instanceMatrix.needsUpdate = true;
+      im.computeBoundingSphere();
+    }
+  }
+
+  private dropInstanced(productId: string) {
+    const parts = this.instanced.get(productId);
+    if (!parts) return;
+    for (const im of parts) {
+      this.group.remove(im);
+      im.dispose();
+    }
+    this.instanced.delete(productId);
   }
 
   /** Ô đã gán món mà hết hàng: tô đỏ mặt tầng đó và nổi dấu ⚠️ trên kệ — chủ tiệm nhìn phát biết chỗ cần châm. */

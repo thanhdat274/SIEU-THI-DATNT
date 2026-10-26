@@ -16,6 +16,11 @@ export function registerLight(light: THREE.PointLight, pos: THREE.Vector3) {
   light.visible = false;
 }
 
+/** Gỡ đèn đã đăng ký — dùng khi building/nhà bị tháo dỡ hoặc dựng lại, tránh đèn chết tích tụ trong quỹ. */
+export function unregisterLight(light: THREE.PointLight) {
+  for (let i = entries.length - 1; i >= 0; i--) if (entries[i].light === light) entries.splice(i, 1);
+}
+
 /**
  * Tạo bể `size` đèn cố định trong scene. WebGPU biên dịch shader theo TẬP đèn đang bật:
  * bật/tắt đèn (visible) mỗi lần camera đi là mỗi lần biên dịch lại cả loạt shader → khựng.

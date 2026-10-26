@@ -33,7 +33,7 @@ export function createRenderer(container: HTMLElement) {
   } catch { /* chế độ ẩn danh */ }
   const choice = pick ?? saved;
   const forceWebGL = choice ? choice === 'webgl' : /Windows/.test(navigator.userAgent);
-  const renderer = new WebGPURenderer({ antialias: true, powerPreference: 'high-performance', forceWebGL }) as unknown as WebGPURenderer & GameRenderer;
+  const renderer = new WebGPURenderer({ antialias: !LOW_POWER, powerPreference: 'high-performance', forceWebGL }) as unknown as WebGPURenderer & GameRenderer;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, LOW_POWER ? 1.5 : 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.shadowMap.enabled = true;
@@ -101,7 +101,7 @@ export class AdaptiveResolution {
 const SHADOW_RANGE = 26;
 const RAIN_DROPS = LOW_POWER ? 2000 : 5000;
 const RAIN_BOX = { w: 70, h: 30 };
-const CLOUDS = 14;
+const CLOUDS = LOW_POWER ? 8 : 14;
 const CLOUD_HEIGHT = 30;
 const STARS = LOW_POWER ? 160 : 280;
 const DOME_R = 470;
@@ -133,7 +133,7 @@ export class Lighting {
 
   constructor(private scene: THREE.Scene) {
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.setScalar(LOW_POWER ? 1024 : 2048);
+    this.sun.shadow.mapSize.setScalar(LOW_POWER ? 512 : 2048);
     this.sun.shadow.bias = -0.0004;
     this.sun.shadow.normalBias = 0.03;
     const cam = this.sun.shadow.camera;
@@ -189,7 +189,8 @@ export class Lighting {
         const puff = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), cloudMat);
         puff.position.set((j - puffs / 2) * 2.8 + Math.random(), Math.random() * 1.2, (Math.random() - 0.5) * 4);
         puff.scale.y = 0.5;
-        puff.castShadow = true;
+        // Mây đổ bóng tốn kém và bóng chúng cũng nhạt; tắt hẳn trên mobile để đỡ lãng phí shader
+        puff.castShadow = !LOW_POWER;
         cloud.add(puff);
       }
       cloud.position.set((Math.random() - 0.5) * 140, CLOUD_HEIGHT + Math.random() * 6, (Math.random() - 0.5) * 140);

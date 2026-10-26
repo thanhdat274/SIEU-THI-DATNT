@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { joystick } from '../core/actions';
-import { buildChibiCharacter, type CharacterParts } from '../render/characterModel';
+import { buildChibiCharacter, isSharedMaterial, type CharacterParts } from '../render/characterModel';
 import type { NavGrid } from '../world/navGrid';
 import { useGame } from '../core/store';
 import { costumeById } from '../data/costumes';
 import { playerPace } from '../data/biz';
 
 const SPEED = 3.5; // m/giây
+/** Giữ Shift để chạy: nhanh gấp rưỡi, dáng chạy nhịp nhanh hơn — Stardew-style. */
+const RUN_MUL = 1.6;
 
 // Biến tạm dùng lại mỗi khung, tránh cấp phát rác trong vòng render
 const _input = new THREE.Vector2();
@@ -37,9 +39,24 @@ export class Player {
 
   /** Dựng lại mô hình theo costume hiện tại (đổi trang phục giữa chừng). */
   rebuild() {
+    this.disposeParts(this.parts);
     this.mesh.remove(this.parts.root);
     this.parts = buildChibiCharacter(this.look());
     this.mesh.add(this.parts.root);
+  }
+
+  /** Giải phóng geometry/material của mô hình cũ trước khi thay — tránh rò GPU khi đổi nhiều lần. */
+  private disposeParts(parts: CharacterParts) {
+    parts.root.traverse((obj) => {
+      const m = obj as THREE.Mesh;
+      if ((m as THREE.Mesh).isMesh) {
+        m.geometry?.dispose();
+        const mat = m.material as THREE.Material | THREE.Material[] | undefined;
+        const free = (x: THREE.Material | undefined) => { if (x && !isSharedMaterial(x)) x.dispose(); };
+        if (Array.isArray(mat)) mat.forEach(free);
+        else free(mat);
+      }
+    });
   }
 
   get position() { return this.mesh.position; }
@@ -107,9 +124,9 @@ export class Player {
       const cos = Math.cos(cameraYaw);
       const dx = input.x * cos + input.y * sin;
       const dz = -input.x * sin + input.y * cos;
-      this.moveStep(dx, dz, SPEED * pace * this.paceMul() * dt);
+      this.moveStep(dx, dz, SPEED * pace * (this.has('shift') ? RUN_MUL : 1) * this.paceMul() * dt);
       this.face(dx, dz, dt);
-      this.animate(dt, true);
+      this.animate(dt, true, this.has('shift'));
       return true;
     }
     if (!this.path.length) {
@@ -146,7 +163,7 @@ export class Player {
       moved = true;
     }
     if (moved) this.face(lastX, lastZ, stepDt);
-    this.animate(stepDt, moved);
+    this.animate(stepDt, moved, false);
     return moved;
   }
 
@@ -178,9 +195,10 @@ export class Player {
    * - Đánh tay mềm mại
    * - Thân trên nhấp nhô & xoay nhẹ theo nhịp chạy
    */
-  private animate(dt: number, moving: boolean) {
-    this.phase += dt * (moving ? 13 : 2.5);
-    const targetGait = moving ? Math.sin(this.phase) * 0.65 : 0;
+  private animate(dt: number, moving: boolean, running = false) {
+    this.phase += dt * (moving ? (running ? 20 : 13) : 2.5);
+    const amp = moving ? (running ? 0.85 : 0.65) : 0;
+    const targetGait = moving ? Math.sin(this.phase) * amp : 0;
     this.gait += (targetGait - this.gait) * Math.min(1, dt * 14);
 
     const {
@@ -215,13 +233,14 @@ export class Player {
     leftForearm.rotation.x = moving ? 0.28 + Math.max(0, this.gait * 0.4) : 0.15;
     rightForearm.rotation.x = moving ? 0.28 + Math.max(0, -this.gait * 0.4) : 0.15;
 
-    // Thân trên và đầu
+    // Thân trên và đầu — chạy thì nhấp nhô và vặn mạnh hơn
     if (moving) {
-      torso.position.y = Math.abs(Math.sin(this.phase * 2)) * 0.055;
-      torso.rotation.y = Math.sin(this.phase) * 0.09;
-      torso.rotation.z = Math.sin(this.phase) * 0.04;
-      headGroup.rotation.y = -Math.sin(this.phase) * 0.05;
-      headGroup.rotation.z = -Math.sin(this.phase) * 0.025;
+      const bob = running ? 1.7 : 1;
+      torso.position.y = Math.abs(Math.sin(this.phase * 2)) * 0.055 * bob;
+      torso.rotation.y = Math.sin(this.phase) * 0.09 * bob;
+      torso.rotation.z = Math.sin(this.phase) * 0.04 * bob;
+      headGroup.rotation.y = -Math.sin(this.phase) * 0.05 * bob;
+      headGroup.rotation.z = -Math.sin(this.phase) * 0.025 * bob;
     } else {
       torso.position.y = Math.sin(this.phase) * 0.012;
       torso.rotation.y = 0;

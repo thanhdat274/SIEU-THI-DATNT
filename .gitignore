@@ -4,3 +4,4 @@ yarn.lock
 .env
 .env.local
 server/.env
+.zcode/

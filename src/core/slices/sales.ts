@@ -16,15 +16,15 @@ import { HOMEGROWN_PREMIUM } from '../../data/garden';
 /** Bán hàng ở quầy: giá, giờ vàng, tính tiền, bán sỉ, combo, trộm và tiền giả. */
 
 export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 'priceOf' | 'setPrice' | 'setHappyHour' | 'checkout' | 'noteMiss' | 'setAllowCredit' | 'offerWholesale' | 'acceptWholesale' | 'declineWholesale' | 'toggleCombo' | 'recordTheft' | 'recordCounterfeit'> => ({
-  priceOf: (productId) => {
+  priceOf: (productId, minutes = get().minutes) => {
     const s = get();
     let p = s.prices[productId] ?? productById(productId).sell;
     // Đợt đối đầu giá với đối thủ: mọi món bán rẻ hơn trong ngày
     if (counterActive(s.biz.counter, s.day, 'price')) p = Math.round(p * (1 - PRICE_WAR_CUT));
     // Giờ vàng tự đặt: giảm giá đúng khung 2 tiếng đã chọn
-    if (happyHourActive(s.happyHour, s.minutes)) p = Math.round(p * (1 - s.happyHour!.off / 100));
+    if (happyHourActive(s.happyHour, minutes)) p = Math.round(p * (1 - s.happyHour!.off / 100));
     // Ca đêm: khách khuya lười trả giá, được phép bán đắt hơn buổi ngày
-    if (hasUpgrade(s.biz, 'night') && isNight(s.minutes)) p = Math.round(p * NIGHT_PRICE_MUL);
+    if (hasUpgrade(s.biz, 'night') && isNight(minutes)) p = Math.round(p * NIGHT_PRICE_MUL);
     return p;
   },
   setPrice: (productId, price) => set({ prices: { ...get().prices, [productId]: price } }),
