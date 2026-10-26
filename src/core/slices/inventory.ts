@@ -178,10 +178,16 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
       }));
       // Heatmap vị trí: đếm số món bán ra của kệ vừa được lấy hàng
       const heat = get().shelfHeat;
-      set({ shelfHeat: { ...heat, [f.uid]: (heat[f.uid] ?? 0) + 1 } });
       // Lô cận hạn tự giảm giá — tính trên trạng thái kệ SAU khi trừ 1, khớp số còn lại thực tế
       const sale = tierMarkdown(productId, rest, tier.count - 1);
-      return Math.round(s.priceOf(productId) * (1 + (furnitureDef(f.type).priceBonus ?? 0)) * (1 - sale));
+      const price = Math.round(s.priceOf(productId) * (1 + (furnitureDef(f.type).priceBonus ?? 0)) * (1 - sale));
+      // Lời của kệ: giá khách trả trừ giá vốn, cộng dồn để báo cáo lời trên m²
+      const perf = get().shelfProfit[f.uid];
+      set({
+        shelfHeat: { ...heat, [f.uid]: (heat[f.uid] ?? 0) + 1 },
+        shelfProfit: { ...get().shelfProfit, [f.uid]: { profit: (perf?.profit ?? 0) + price - productById(productId).buy, since: perf?.since ?? s.day } },
+      });
+      return price;
     }
     return null;
   },

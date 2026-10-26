@@ -153,7 +153,7 @@ export const DRUNK_BLOCK = 60;
 export const COVER_WAGE_MUL = 2;
 /** Mất điện: hàng mát, đông lạnh, tươi sống, đồ nóng trên kệ hỏng mất phần này. */
 export const BLACKOUT_LOSS = 0.6;
-export const spoilsInBlackout = (id: string) => COOKED_PRODUCT_IDS.has(id) || ['cold', 'frozen', 'fresh'].includes(productById(id).category);
+export const spoilsInBlackout = (id: string) => COOKED_PRODUCT_IDS.has(id) || ['cold', 'frozen', 'fresh', 'meat'].includes(productById(id).category);
 
 // ── Tinh thần nhân viên ──
 /** Mệt thêm mỗi ngày theo ca; nghỉ một ngày thì hồi hết. */

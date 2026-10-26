@@ -281,6 +281,11 @@ export class StaffManager {
       if (bar.length) return this.watchStove(w, gameDt, bar);
       // Chưa mua quầy pha thì tạm bày hàng như xếp hàng
     }
+    // Bán thịt cá: đứng canh quầy thịt cá (hiệu ứng khách mua thêm xem customers.ts / data/meat.ts)
+    if (w.staff.role === 'butcher') {
+      const counters = useGame.getState().furniture.filter((f) => f.type === 'meat_counter');
+      if (counters.length) return this.watchStove(w, gameDt, counters);
+    }
     // Chăm sóc khách: đi lại hỏi thăm khách đang chờ (hiệu ứng kiên nhẫn xem customers.ts)
     if (w.staff.role === 'customer_care') return this.care(w, gameDt);
 

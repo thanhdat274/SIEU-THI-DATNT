@@ -24,6 +24,7 @@ import { earnService } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
 import { askAtCounter, askPending, clearAsk, expireAsk } from '../core/counterAsk';
 import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../data/wholesale';
+import { meatDemandFactor } from '../data/meat';
 import { bestSkillOnDuty, CARE_PATIENCE_PER_STAR, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor, GUARD_DETECT } from '../data/staff';
 import { socialTraffic } from '../data/social';
 import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalUndercuts } from '../data/biz';
@@ -324,6 +325,8 @@ export class CustomerManager {
     const homemade = shelved.filter((id) => COOKED_PRODUCT_IDS.has(id));
     // Kệ dễ thấy (gần cửa, sát lối đi chính) thì món trên đó được hỏi mua nhiều hơn
     const attention = stockedAttention(s.furniture, this.geom());
+    // Thịt cá tươi: không có người cân cắt trực ca thì khách ít hỏi mua
+    const butcher = bestSkillOnDuty(s.staff, 'butcher', s.minutes);
     return Array.from({ length: count }, () => {
       if (onSale.length && Math.random() < SALE_HUNT) return pick(onSale);
       if (homemade.length && Math.random() < 0.25) return pick(homemade);
@@ -334,7 +337,7 @@ export class CustomerManager {
       if (timely.length && Math.random() < 0.2) return pick(timely);
       if (hot.length && Math.random() < 0.15) return pick(hot);
       return stocked.length && Math.random() < WANTS_STOCKED
-        ? weightedPick(stocked, (id) => attention[id] ?? 1, Math.random)
+        ? weightedPick(stocked, (id) => (attention[id] ?? 1) * meatDemandFactor(id, butcher), Math.random)
         : pick(all);
     });
   }

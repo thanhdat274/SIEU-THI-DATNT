@@ -75,6 +75,7 @@ export const newGameData = () => ({
   ] as Furniture[],
   mainCounter: null as { x: number; z: number; rot: number } | null,
   shelfHeat: {} as Record<number, number>,
+  shelfProfit: {} as Record<number, { profit: number; since: number }>,
   impulseHinted: false,
   prices: {} as Record<string, number>,
   happyHour: null as HappyHour | null,

@@ -63,7 +63,7 @@ export interface LicenseNeedCtx {
 /** Các giấy phép tiệm đang bắt buộc phải có. */
 export function requiredLicenses(ctx: LicenseNeedCtx): LicenseId[] {
   const out: LicenseId[] = [];
-  const fresh = ctx.shelved.some((id) => productById(id).category === 'fresh');
+  const fresh = ctx.shelved.some((id) => productById(id).category === 'fresh' || productById(id).category === 'meat');
   for (const l of LICENSES) {
     if (ctx.level < l.unlock) continue;
     if (l.id === 'business') out.push(l.id);

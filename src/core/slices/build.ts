@@ -41,7 +41,9 @@ export const createBuildSlice = (set: SetState, get: GetState): Pick<GameState, 
     // Kệ đã bán đi thì bỏ luôn số heat của nó
     const heat = { ...s.shelfHeat };
     delete heat[uid];
-    set({ money: s.money + refund, ...k, furniture: s.furniture.filter((it) => it.uid !== uid), placing: null, shelfHeat: heat });
+    const perf = { ...s.shelfProfit };
+    delete perf[uid];
+    set({ money: s.money + refund, ...k, furniture: s.furniture.filter((it) => it.uid !== uid), placing: null, shelfHeat: heat, shelfProfit: perf });
     s.notify(`Đã bán ${furnitureDef(f.type).name}, nhận lại ${formatMoney(refund)}. Hàng trên kệ về kho.`);
   },
   demolishAll: () => {
@@ -52,7 +54,7 @@ export const createBuildSlice = (set: SetState, get: GetState): Pick<GameState, 
       for (const t of f.tiers) returnTier(k, t);
       refund += Math.round(furnitureDef(f.type).price * SELL_BACK);
     }
-    set({ money: s.money + refund, ...k, furniture: [], placing: null, shelfHeat: {} });
+    set({ money: s.money + refund, ...k, furniture: [], placing: null, shelfHeat: {}, shelfProfit: {} });
     s.notify(`🔨 Đã dọn sạch tiệm, nhận lại ${formatMoney(refund)}. Hàng về kho.`);
   },
   buyUpgrade: () => {

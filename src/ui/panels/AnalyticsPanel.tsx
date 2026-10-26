@@ -1,23 +1,54 @@
 import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import { analyticsAdvice, itemHealthList, promoEffect, shelfCount, type ItemHealth } from '../../data/analytics';
+import { furnitureDef } from '../../data/furniture';
+import { shelfEfficiency } from '../../data/layout';
 import { Footer, styles } from './shared';
 
 const abcColor = { A: '#2ecc71', B: '#f1c40f', C: '#95a5a6' } as const;
 
 /** Sổ phân tích 30 ngày: bảng sức khoẻ món, gợi ý việc cần làm, phân tích ABC và tác động combo/giờ vàng. */
 export function AnalyticsPanel() {
-  const { analytics, storage, furniture, demand, level, shelfHeat, history, activeCombos, happyHour, biz, closePanel } = useGame();
+  const { analytics, storage, furniture, demand, level, shelfHeat, shelfProfit, day, history, activeCombos, happyHour, biz, closePanel } = useGame();
   const onShelf = shelfCount(furniture);
   const list = itemHealthList(analytics, level, storage, onShelf, demand);
   const shelfIds = [...new Set(furniture.filter((f) => f.tiers.some((t) => t.count > 0)).map((f) => f.uid))];
   const advice = analyticsAdvice(list, shelfHeat, shelfIds);
+  const efficiency = shelfEfficiency(furniture, shelfProfit, day);
   const comboFx = promoEffect(analytics, history, 'combo');
   const happyFx = promoEffect(analytics, history, 'happyHour');
   const counts = { A: 0, B: 0, C: 0 } as Record<ItemHealth['abc'], number>;
   for (const h of list) counts[h.abc]++;
   return (
     <>
+      {!!efficiency.length && (
+        <>
+          <h2 style={styles.title}>📐 Lời trên mỗi m² kệ</h2>
+          <p style={styles.sub}>Kệ nào sinh lời nhiều nhất trên mỗi mét vuông sàn mỗi ngày — kệ cuối bảng chiếm chỗ mà ít lời, nên dời hoặc đổi hàng lời cao lên tầng ngang tầm mắt.</p>
+          <div style={{ overflowX: 'auto', marginBottom: 12 }}>
+            <table style={styles.table}>
+              <thead>
+                <tr style={{ opacity: 0.75, fontSize: 12 }}>
+                  <th style={styles.left}>Kệ</th><th>Diện tích</th><th>Lời tích luỹ</th><th>Số ngày</th><th>Lời/m²/ngày</th>
+                </tr>
+              </thead>
+              <tbody>
+                {efficiency.map((e, i) => (
+                  <tr key={e.uid}>
+                    <td style={styles.left}>{furnitureDef(e.type).name} #{e.uid}</td>
+                    <td>{e.area.toFixed(1)} m²</td>
+                    <td>{formatMoney(e.profit)}</td>
+                    <td>{e.days}</td>
+                    <td style={{ color: i === 0 ? '#2ecc71' : i === efficiency.length - 1 && efficiency.length > 2 ? '#e67e22' : undefined }}>
+                      <b>{formatMoney(e.perM2Day)}</b>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
       <h2 style={styles.title}>🩺 Sức khoẻ món hàng (30 ngày)</h2>
       {!list.length ? (
         <p style={styles.sub}>Chưa có số liệu: bán hàng một vài ngày là sổ tự ghi, phân tích hiện lên ở đây.</p>

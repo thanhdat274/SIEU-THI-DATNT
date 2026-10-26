@@ -1,7 +1,7 @@
 import type { CharacterArchetype } from '../render/characterModel';
 import { rollTrait, type StaffTrait } from './staffTraits';
 
-export type StaffRole = 'cashier' | 'stocker' | 'cleaner' | 'courier' | 'guard' | 'manager' | 'bartender' | 'cook' | 'warehouse_mgr' | 'customer_care' | 'farmhand';
+export type StaffRole = 'cashier' | 'stocker' | 'cleaner' | 'courier' | 'guard' | 'manager' | 'bartender' | 'cook' | 'warehouse_mgr' | 'customer_care' | 'farmhand' | 'butcher';
 export type Shift = 'morning' | 'afternoon' | 'full' | 'night';
 
 export interface RoleDef {
@@ -31,6 +31,7 @@ export const ROLES: Record<StaffRole, RoleDef> = {
   cook: { name: 'Chế biến thực phẩm', icon: '🍳', color: 0xc0392b, unlock: 25, wageMul: 1.5, archetype: 'chef', desc: 'Đứng bếp ở trạm nấu: các món đang nấu xong nhanh hơn theo tay nghề (1★ không nhanh hơn, 5★ nhanh gấp rưỡi)' },
   warehouse_mgr: { name: 'Quản lý kho', icon: '📦', color: 0x636e72, unlock: 30, wageMul: 1, archetype: 'gentleman', desc: 'Sắp xếp kho, xoay hàng cận hạn lên bán trước: hàng hỏng qua đêm chậm hơn theo tay nghề (5★ chậm 30%)' },
   customer_care: { name: 'Chăm sóc khách', icon: '💬', color: 0x00b894, unlock: 35, wageMul: 1, archetype: 'office_lady', desc: 'Hỏi thăm khách đang chờ ở quầy: khách kiên nhẫn hơn theo tay nghề (5★ chịu chờ lâu thêm 30%), đỡ khách bỏ về vì chờ' },
+  butcher: { name: 'Bán thịt cá', icon: '🔪', color: 0xa93226, unlock: 32, wageMul: 1.3, archetype: 'chef', desc: 'Đứng quầy thịt cá tươi: cân, cắt, lọc cá — có người trực thì khách mua thịt cá nhiều hơn (không có thì khách ngại mua)' },
   farmhand: { name: 'Phụ trại', icon: '🧑‍🌾', color: 0x8f5a2b, unlock: 18, wageMul: 1.1, archetype: 'farmer', desc: 'Ở trại suốt ngày, khỏi canh: mỗi tối tưới luống khô, đổ cám từ kho cho chuồng đói, gom trứng đủ vỉ và sữa về kho, thu hoạch luống chín — kể cả khi chủ bận bán hàng' },
 };
 

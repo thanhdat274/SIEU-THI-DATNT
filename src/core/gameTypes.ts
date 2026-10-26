@@ -226,6 +226,8 @@ export interface GameState {
   mainCounter: { x: number; z: number; rot: number } | null;
   /** Số món đã bán ra của từng kệ/tủ (khóa là uid) — heatmap vị trí: kệ dễ thấy bán nhiều hơn. */
   shelfHeat: Record<number, number>;
+  /** Lời tích luỹ của từng kệ/tủ (uid → lời và ngày bắt đầu tính) — báo cáo lời trên m². */
+  shelfProfit: Record<number, { profit: number; since: number }>;
   /** Đã nhắc người chơi về hàng chớp nhoáng cạnh quầy (chỉ nhắc một lần). */
   impulseHinted: boolean;
   /** Giá bán người chơi tự đặt; không có thì dùng giá gợi ý. */

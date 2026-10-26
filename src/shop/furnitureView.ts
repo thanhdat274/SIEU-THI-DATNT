@@ -47,6 +47,7 @@ export class FurnitureView {
     else if (isCookStation(type)) this.buildCookStation();
     else if (type === 'freezer') this.buildChest(0xf4f6f7, 0.85, true);
     else if (type === 'produce') this.buildChest(0x8b5a2b, 0.75, false);
+    else if (type === 'meat_counter') this.buildChest(0xf3e9e9, 0.9, true);
     else this.buildShelf(type === 'fridge' ? 0xdfe6e9 : type === 'bigShelf' ? 0x95a5a6 : 0x8b5a2b, type === 'fridge');
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.castShadow = true;

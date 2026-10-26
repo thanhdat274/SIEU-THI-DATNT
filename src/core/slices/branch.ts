@@ -1,4 +1,4 @@
-import { formatMoney } from '../../data/products';
+import { formatMoney, productById } from '../../data/products';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
 import { dailyWage, GUARD_DETECT, maxStaff, ROLES, type Staff } from '../../data/staff';
 import { BLACKOUT_LOSS, BONUS_RELIEF, COVER_WAGE_MUL, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, VENDING_CAP, VENDING_COST, VENDING_ITEMS, VENDING_OFFTAKE, VENDING_THEFT, branchTrafficAt, isBranchNight, newBranch, onShift, shelfTotal, vendingTotal, type BranchState,
@@ -162,6 +162,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
       let moved = 0;
       for (const id of Object.keys(k.storage)) {
         if (room <= 0) break;
+        if (productById(id).category === 'meat') continue; // thịt cá tươi cần quầy riêng, chi nhánh không có
         const want = Math.min(room, CONVENIENCE.perItem - (b.shelf[id] ?? 0), k.storage[id] ?? 0);
         if (want <= 0) continue;
         const got = takeStock(k, id, want).reduce((n, l) => n + l.qty, 0);

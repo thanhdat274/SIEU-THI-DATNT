@@ -83,7 +83,7 @@ const RULES: [RegExp, Shape][] = [
 ];
 
 const BY_CATEGORY: Record<Product['category'], Shape> = {
-  dry: 'packet', drink: 'bottle', cold: 'tub', frozen: 'meat', household: 'box', fresh: 'fruit',
+  dry: 'packet', drink: 'bottle', cold: 'tub', frozen: 'meat', household: 'box', fresh: 'fruit', meat: 'meat',
 };
 
 const plain = (s: string) =>
