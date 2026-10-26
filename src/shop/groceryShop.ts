@@ -343,6 +343,9 @@ export class GroceryShop {
   /** Ngay sau cửa, bên trong. */
   get doorInside() { return this.local(0, this.depth / 2 - 0.9); }
 
+  /** Điểm nhân viên xếp hàng lấy thùng trong kho (toạ độ thế giới). */
+  get warehousePickup() { return this.warehouse.pickupPoint; }
+
   /** Chỗ đứng trước một kệ để lấy hàng (offset ngang để khách không đứng chồng). */
   spotFor(f: Furniture, spread = 0) {
     const [fx, fz] = frontDir(f.rot);

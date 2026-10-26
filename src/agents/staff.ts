@@ -295,7 +295,13 @@ export class StaffManager {
       );
       if (t < 0) continue;
       w.job = `${f.uid}:${t}`;
-      this.walk(w, this.shop.spotFor(f));
+      // Đi qua cửa sau vào kho lấy thùng (đứng bàn nhận hàng) rồi mới ra bày kệ
+      this.walk(w, this.shop.warehousePickup);
+      w.plan.push(() => {
+        w.pause = 1.4 / workSpeed(w.staff);
+        w.working = true; // dáng cầm/nâng thùng tại bàn nhận hàng
+      });
+      w.plan.push(() => this.walk(w, this.shop.spotFor(f)));
       w.plan.push(() => {
         w.pause = 3 / workSpeed(w.staff);
         w.working = true; // dáng bày hàng tại chỗ trong lúc xếp
