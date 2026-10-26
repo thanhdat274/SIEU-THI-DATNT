@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { registerLight } from '../render/lightBudget';
+import { registerLight, unregisterLight } from '../render/lightBudget';
 
 // Biến tạm dùng lại mỗi khung cho updateDoor/updateView, tránh cấp phát rác
 const _doorRel = new THREE.Vector3();
@@ -354,6 +354,8 @@ export class Building {
   }
 
   dispose() {
+    // Gỡ đèn khỏi quỹ ánh sáng — nếu không, tháo dỡ/dựng lại nhà sẽ tích tụ đèn chết trong bể
+    if (this.lampRegistered) unregisterLight(this.lamp);
     this.group.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return;
       o.geometry.dispose();

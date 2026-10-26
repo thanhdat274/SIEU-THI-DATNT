@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { shopLayout } from '../core/actions';
 import { SELL_BACK, useGame, type Furniture } from '../core/store';
 import { FURNITURE, footprint, frontDir, furnitureDef, type FurnitureType } from '../data/furniture';
-import { heatColor, isDisplay, spotVisibility, visibilityLabel, type ShopGeom } from '../data/layout';
+import { EYE_LEVEL_BONUS, eyeRow, heatColor, isDisplay, shelfEfficiency, spotVisibility, visibilityLabel, type ShopGeom } from '../data/layout';
 import { formatMoney } from '../data/products';
 import { ExpandTab, PaintTab } from './Panels';
 import './arrange.css';
@@ -13,13 +13,13 @@ const SNAP = 0.05;
 const snap = (v: number) => Math.round(v / SNAP) * SNAP;
 
 const COLORS: Record<FurnitureType, string> = {
-  shelf: '#a0703f', bigShelf: '#7f8c99', fridge: '#4aa3df', freezer: '#76c7e8', produce: '#5fa846',
+  shelf: '#a0703f', bigShelf: '#7f8c99', fridge: '#4aa3df', freezer: '#76c7e8', produce: '#5fa846', meat_counter: '#c0504d',
   checkout: '#c0504d', cartStation: '#8e7cc3', plant: '#3f9d5a', wall: '#c9bfa6',
   hot_kettle: '#d4ac0d', food_grill: '#e67e22', blender: '#fd79a8', drink_counter: '#6e2c00',
   fryer: '#f9ca24', sugarcane_press: '#00b894', rice_station: '#f5cba7', steamer: '#95a5a6', gift_wrap: '#c0392b',
 };
 const ICONS: Record<FurnitureType, string> = {
-  shelf: '🗄️', bigShelf: '🏬', fridge: '🧊', freezer: '❄️', produce: '🥬', checkout: '🧾', cartStation: '🛒', plant: '🪴', wall: '🧱',
+  shelf: '🗄️', bigShelf: '🏬', fridge: '🧊', freezer: '❄️', produce: '🥬', meat_counter: '🥩', checkout: '🧾', cartStation: '🛒', plant: '🪴', wall: '🧱',
   hot_kettle: '🫖', food_grill: '🔥', blender: '🍹', drink_counter: '☕',
   fryer: '🍳', sugarcane_press: '🥤', rice_station: '🍚', steamer: '♨️', gift_wrap: '🎁',
 };
@@ -54,6 +54,8 @@ export function ArrangePanel() {
   // 🔥 Heatmap doanh số theo kệ: kệ nào bán chạy nhất kể từ khi đặt
   const [heatOn, setHeatOn] = useState(false);
   const shelfHeat = useGame((s) => s.shelfHeat);
+  const shelfProfit = useGame((s) => s.shelfProfit);
+  const today = useGame((s) => s.day);
   const svg = useRef<SVGSVGElement>(null);
   const drag = useRef<{ uid: number; dx: number; dz: number; moved: boolean; before: Furniture[] } | null>(null);
 
@@ -336,7 +338,14 @@ export function ArrangePanel() {
                     <small>
                       📍 {visibilityLabel(selAttention)} · {Math.round(selAttention * 100)}%
                       {sel.uid > 0 && shelfHeat[sel.uid] ? ` · 🔥 đã bán ${shelfHeat[sel.uid]} món từ khi đặt` : ''}
+                      {(() => {
+                        const eff = sel.uid > 0 ? shelfEfficiency([sel], shelfProfit, today)[0] : undefined;
+                        return eff ? ` · 💰 lời ${formatMoney(eff.perM2Day)}/m²/ngày` : '';
+                      })()}
                     </small>
+                  )}
+                  {isDisplay(sel) && eyeRow(furnitureDef(sel.type).tiers) >= 0 && (
+                    <small>👁️ Tầng {eyeRow(furnitureDef(sel.type).tiers) + 1} (tính từ dưới lên) ngang tầm mắt: món bày ở đó được để ý thêm {Math.round((EYE_LEVEL_BONUS - 1) * 100)}%, tầng sát sàn thì kém hơn — đặt món lời cao ở tầng này.</small>
                   )}
                 </div>
                 <div className="ar-pad" aria-label="Dời món đang chọn">

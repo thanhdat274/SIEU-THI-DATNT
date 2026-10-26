@@ -2,6 +2,8 @@ import { COOKED_PRODUCT_IDS } from './recipes';
 import { productById } from './products';
 import type { FurnitureType } from './furniture';
 import { SHIFTS, type Shift, type Staff, type StaffRole } from './staff';
+import { isAlcohol } from './licenses';
+import { CHIEF_COVER_MUL } from './careers';
 
 /** Cửa hàng tiện lợi 24/7: chi nhánh xa tiệm chính, chủ không đứng bán, nhân viên lo hết. */
 export const CONVENIENCE = {
@@ -68,6 +70,25 @@ export interface BranchState {
   eventDay?: number;
   /** Quầy bị khách say quậy, tạm ngưng bán tới phút này. */
   blockedUntil?: number;
+  /** Máy bán hàng tự động ngoài cửa: bật thì bán kể cả khi đóng cửa / không ai trực. */
+  vendingEnabled?: boolean;
+  /** Hàng đang nạp trong máy bán hàng tự động. */
+  vendingStock?: Record<string, number>;
+  /** Doanh thu từ máy bán hàng hôm nay. */
+  vendingRevenueToday?: number;
+  /** Khách đêm hôm nay theo nhóm (id nhóm → số khách). */
+  groupToday?: Record<string, number>;
+  /** Số món rượu bia bán đêm nay. */
+  alcoholToday?: number;
+  /** Ngày công an đã tuần tra đêm (mỗi đêm một lần). */
+  patrolDay?: number;
+  /** Nhận đơn app ban đêm (cần gian hàng app đã mở). */
+  nightDelivery?: boolean;
+  /** Đơn giao đêm và doanh thu (sau hoa hồng app) hôm nay. */
+  deliveryToday?: number;
+  deliveryRevenueToday?: number;
+  /** Nâng cấp điện đã mua. */
+  power?: PowerUpgradeId[];
 }
 
 export interface BranchEvent {
@@ -83,6 +104,7 @@ export interface BranchEvent {
 
 export const newBranch = (): BranchState => ({
   open: false, shelf: {}, staff: [], simAt: 0, lastTrip: -999, revenueToday: 0, customersToday: 0, lostToday: 0, missedToday: 0,
+  vendingEnabled: false, vendingStock: {}, vendingRevenueToday: 0,
 });
 
 /** Nhân viên `st` có trong ca lúc `minute` không (ca đêm nối qua nửa đêm). */
@@ -130,9 +152,11 @@ export const DRUNK_DAMAGE = 300_000;
 export const DRUNK_BLOCK = 60;
 /** Gọi người làm thay ca: trả gấp đôi lương ca. */
 export const COVER_WAGE_MUL = 2;
+/** Hệ số lương ca khi gọi người làm thay: có quản lý chi nhánh thăng từ trong ra thì rẻ hơn. */
+export const coverMul = (b: Pick<BranchState, 'staff'>) => (b.staff.some((st) => st.rank === 'chief') ? CHIEF_COVER_MUL : COVER_WAGE_MUL);
 /** Mất điện: hàng mát, đông lạnh, tươi sống, đồ nóng trên kệ hỏng mất phần này. */
 export const BLACKOUT_LOSS = 0.6;
-export const spoilsInBlackout = (id: string) => COOKED_PRODUCT_IDS.has(id) || ['cold', 'frozen', 'fresh'].includes(productById(id).category);
+export const spoilsInBlackout = (id: string) => COOKED_PRODUCT_IDS.has(id) || ['cold', 'frozen', 'fresh', 'meat'].includes(productById(id).category);
 
 // ── Tinh thần nhân viên ──
 /** Mệt thêm mỗi ngày theo ca; nghỉ một ngày thì hồi hết. */
@@ -176,8 +200,152 @@ export const isNightItem = (id: string) => NIGHT_ITEMS.has(id);
 /** Đồ nóng nấu ở bếp tiệm chính, chở sang bán đắt hơn. */
 export const isHotFood = (id: string) => COOKED_PRODUCT_IDS.has(id);
 export const HOT_FOOD_MUL = 1.3;
-/** Trọng số khách chọn món: đêm ưu tiên món đêm, đồ nóng lúc nào cũng hút khách. */
-export const itemWeight = (id: string, minute: number) => (isHotFood(id) ? 2.5 : 1) * (isBranchNight(minute) && isNightItem(id) ? 3 : 1);
+// ── Máy bán hàng tự động ──
+/** Mua/lắp máy bán hàng tự động (một lần, giữ lâu dài). */
+export const VENDING_COST = 400_000;
+/** Sức chứa tối đa của máy. */
+export const VENDING_CAP = 60;
+/** Tỷ lệ khách qua đường rút hàng từ máy (kể cả khi đóng cửa). */
+export const VENDING_OFFTAKE = 0.35;
+/** Xác suất mỗi 10 phút ban đêm máy bị trộm vặt (không cần bảo vệ — máy đặt ngoài cửa). */
+export const VENDING_THEFT = 0.04;
+/** Những món ưa chạy trong máy (đồ cầm tay, ăn liền, nước). */
+export const VENDING_ITEMS = new Set([
+  'mi', 'nuoc', 'x_mi_ly_tp', 'x_com_nam', 'x_bao_cao_su', 'x_thuoc_cam',
+  'x_sting_dau', 'x_sting_nhan_sam', 'x_redbull_lon', 'x_keo',
+]);
+export const vendingTotal = (v: Record<string, number>) => Object.values(v).reduce((n, q) => n + q, 0);
+
+// ── Nhóm khách đêm ──
+export interface NightGroup {
+  id: string;
+  icon: string;
+  name: string;
+  desc: string;
+  /** Khoảng giờ [từ, đến, trọng số]; giờ ≥ 24 là sau nửa đêm. */
+  ranges: [number, number, number][];
+  /** Món nhóm này hay mua. */
+  favorites: Set<string>;
+  /** Số món một lượt mua [ít nhất, nhiều nhất]. */
+  items: [number, number];
+}
+
+export const NIGHT_GROUPS: NightGroup[] = [
+  {
+    id: 'driver', icon: '🚚', name: 'Tài xế đường dài', desc: 'Ghé giữa đêm: nước tăng lực, cà phê, mì ly, xúc xích nướng.',
+    ranges: [[22, 27, 0.25]], items: [2, 3],
+    favorites: new Set(['x_redbull_lon', 'x_sting_dau', 'x_sting_nhan_sam', 'x_ca_phe_lon', 'x_mi_ly_tp', 'x_xuc_xich_nuong_tp', 'nuoc']),
+  },
+  {
+    id: 'worker', icon: '🏭', name: 'Công nhân tăng ca', desc: 'Đổ ra khi hết ca (21–23h, 5–6h): cơm nắm, mì, thuốc cảm, bia.',
+    ranges: [[21, 23, 0.3], [29, 30, 0.3]], items: [1, 2],
+    favorites: new Set(['mi', 'x_mi_ly_tp', 'x_com_nam', 'x_thuoc_cam', 'bia', 'nuoc']),
+  },
+  {
+    id: 'student', icon: '📚', name: 'Sinh viên ôn thi', desc: 'Thức khuya 23h–2h: cà phê, nước tăng lực, bánh, kẹo.',
+    ranges: [[23, 26, 0.25]], items: [1, 3],
+    favorites: new Set(['x_ca_phe_lon', 'x_ca_phe_sua_lon', 'x_ca_phe_sua_chai', 'x_redbull_lon', 'x_banh_quy', 'x_keo', 'x_mi_ly_tp']),
+  },
+  {
+    id: 'doctor', icon: '🩺', name: 'Bác sĩ trực đêm', desc: 'Từ bệnh viện qua mua 0–5h: cà phê, thuốc cảm, cơm nắm, khăn ướt.',
+    ranges: [[24, 29, 0.2]], items: [1, 2],
+    favorites: new Set(['x_thuoc_cam', 'x_ca_phe_sua_chai', 'x_com_nam', 'x_khan_uot', 'nuoc', 'x_ca_phe_lon']),
+  },
+  {
+    id: 'drinker', icon: '🍻', name: 'Dân nhậu về khuya', desc: 'Mua bia rượu và mồi 22h–2h. Cần giấy phép bán rượu bia, và nên có bảo vệ.',
+    ranges: [[22, 26, 0.25]], items: [2, 4],
+    favorites: new Set(['bia', 'bia_chai', 'ruou_gao', 'x_xuc_xich_nuong_tp', 'x_banh_que']),
+  },
+];
+export const nightGroupById = (id: string) => NIGHT_GROUPS.find((g) => g.id === id);
+
+const weightIn = (g: NightGroup, hour: number) =>
+  g.ranges.reduce((n, [from, to, w]) => n + ((hour >= from && hour < to) || (hour + 24 >= from && hour + 24 < to) ? w : 0), 0);
+
+/** Một khách ghé giờ này thuộc nhóm đêm nào (undefined = khách thường). */
+export function pickNightGroup(minute: number, rng: () => number = Math.random): NightGroup | undefined {
+  const hour = Math.floor((((minute % 1440) + 1440) % 1440) / 60);
+  const ws = NIGHT_GROUPS.map((g) => weightIn(g, hour));
+  const total = ws.reduce((n, w) => n + w, 0);
+  if (total <= 0 || rng() > Math.min(0.85, total)) return undefined;
+  let r = rng() * total;
+  for (let i = 0; i < ws.length; i++) if ((r -= ws[i]) <= 0) return NIGHT_GROUPS[i];
+  return NIGHT_GROUPS[NIGHT_GROUPS.length - 1];
+}
+
+/** Khách nhóm chọn món ưa thích (nếu kệ có), không thì chọn như khách thường. */
+export const GROUP_FAVORITE_BIAS = 0.75;
+export function pickForGroup(pool: string[], minute: number, group?: NightGroup, rng: () => number = Math.random): string {
+  if (group && rng() < GROUP_FAVORITE_BIAS) {
+    const fav = pool.filter((id) => group.favorites.has(id));
+    if (fav.length) return pickWeighted(fav, minute);
+  }
+  return pickWeighted(pool, minute);
+}
+
+// ── Rượu bia ban đêm ──
+/** Rượu bia bán giờ đêm lời hơn. */
+export const ALCOHOL_NIGHT_MUL = 1.15;
+/** Bán rượu bia ban đêm mà không có bảo vệ trực: xác suất mỗi lượt khách say gây gổ. */
+export const ALCOHOL_BRAWL_CHANCE = 0.05;
+export const BRAWL_DAMAGE = 150_000;
+export const BRAWL_BLOCK = 30;
+/** Công an tuần tra đêm: xác suất mỗi đêm (kiểm tra giấy phép bán rượu bia nếu kệ có rượu). */
+export const PATROL_CHANCE = 0.3;
+export const PATROL_AT = 23 * 60;
+export const hasAlcohol = (shelf: Record<string, number>) => Object.keys(shelf).some((id) => shelf[id] > 0 && isAlcohol(id));
+
+// ── Giao hàng đêm qua app ──
+/** Phụ phí giao đêm cộng vào giá món. */
+export const NIGHT_DELIVERY_SURCHARGE = 0.25;
+/** Số đơn đêm mỗi giờ khi app 5★ (nhân theo điểm app). */
+export const NIGHT_DELIVERY_PER_HOUR = 2;
+/** Shipper gặp sự cố ban đêm (ngã xe, lạc đường): mất đơn, không thu tiền. */
+export const NIGHT_DELIVERY_MISHAP = 0.05;
+
+// ── Điện ──
+export type PowerUpgradeId = 'generator' | 'efficient';
+export interface PowerUpgradeDef { id: PowerUpgradeId; icon: string; name: string; desc: string; price: number }
+export const POWER_UPGRADES: PowerUpgradeDef[] = [
+  { id: 'generator', icon: '⛽', name: 'Máy phát điện dự phòng', price: 1_800_000, desc: 'Mất điện chỉ hỏng ít hàng (còn 15% thiệt hại), nhưng tốn tiền dầu mỗi lần chạy máy.' },
+  { id: 'efficient', icon: '🌱', name: 'Tủ mát/đông tiết kiệm điện', price: 2_500_000, desc: 'Hóa đơn điện mỗi ngày giảm 35%.' },
+];
+export const powerUpgradeById = (id: PowerUpgradeId) => POWER_UPGRADES.find((u) => u.id === id)!;
+export const hasPower = (b: BranchState | null | undefined, id: PowerUpgradeId) => !!b?.power?.includes(id);
+/** Máy phát điện: phần thiệt hại còn lại khi mất điện và tiền dầu mỗi lần. */
+export const GENERATOR_LOSS_MUL = 0.25;
+export const GENERATOR_FUEL = 80_000;
+/** Hóa đơn điện mỗi ngày: nền + từng thiết bị chạy suốt 24h. */
+export const POWER_RATES = { base: 40_000, fridge: 12_000, freezer: 18_000, hot: 8_000, vending: 10_000 };
+export const EFFICIENT_MUL = 0.65;
+export function branchPowerBill(b: BranchState): number {
+  const count = (t: string) => BRANCH_LAYOUT.filter((f) => f.type === t).length;
+  const raw = POWER_RATES.base + count('fridge') * POWER_RATES.fridge + count('freezer') * POWER_RATES.freezer
+    + (count('fryer') + count('hot_kettle')) * POWER_RATES.hot + (b.vendingEnabled ? POWER_RATES.vending : 0);
+  return Math.round((raw * (hasPower(b, 'efficient') ? EFFICIENT_MUL : 1)) / 1000) * 1000;
+}
+
+// ── Thực đơn theo ca ──
+/** Đồ điểm tâm sáng (5h–11h): bánh mì, xôi, cà phê, cơm nắm, bánh bao. */
+const BREAKFAST_ITEMS = new Set([
+  'banh_mi_trung_nuong', 'ca_phe_sua_da', 'bac_xiu', 'ca_phe_trung',
+  'banh_bao_hap', 'xoi_dau_xanh', 'xoi_man', 'xoi_trung', 'xoi_bap', 'x_com_nam',
+]);
+/** Đồ ăn nhanh trưa (11h–15h): cơm hộp, cơm phần, mì nấu sẵn, bánh tráng trộn. */
+const LUNCH_ITEMS = new Set([
+  'com_hop_ga', 'com_suon_nuong', 'com_chien_trung', 'mi_trung_nong', 'banh_trang_tron', 'x_com_nam',
+]);
+/** Nhân thêm theo bữa ăn trong ngày — tiện lợi 24/7 xoay thực đơn theo ca. */
+export function mealFactor(id: string, minute: number): number {
+  const m = ((minute % 1440) + 1440) % 1440;
+  if (m >= 5 * 60 && m < 11 * 60 && BREAKFAST_ITEMS.has(id)) return 2.2;
+  if (m >= 11 * 60 && m < 15 * 60 && LUNCH_ITEMS.has(id)) return 2.2;
+  return 1;
+}
+
+/** Trọng số khách chọn món: đêm ưu tiên món đêm, đồ nóng lúc nào cũng hút khách, sáng/trưa ưu tiên món điểm tâm và đồ ăn nhanh. */
+export const itemWeight = (id: string, minute: number) =>
+  (isHotFood(id) ? 2.5 : 1) * (isBranchNight(minute) && isNightItem(id) ? 3 : 1) * mealFactor(id, minute);
 /** Chọn ngẫu nhiên một món theo trọng số. */
 export function pickWeighted(ids: string[], minute: number): string {
   const w = ids.map((id) => itemWeight(id, minute));

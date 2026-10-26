@@ -46,7 +46,7 @@ export const updatePhones = (set: SetState, get: GetState) => {
     // Có trạm nấu trong tiệm thì đôi khi cuộc gọi là đơn nấu món nhà làm (giá hời)
     const stations = [...new Set(s.furniture.filter((f) => isCookStation(f.type)).map((f) => f.type as CookingStation))];
     const call = s.shopOpen && s.minutes < PHONE_SLOTS[phoneSlot] + 30 && hasCourier
-      ? phoneCallFor(s.weatherSeed, s.day, phoneSlot, s.level, s.regulars, s.day * 100 + phoneSlot, s.weather, s.storage, stations, reputationOf(s.repLog).overall)
+      ? phoneCallFor(s.weatherSeed, s.day, phoneSlot, s.level, s.regulars, s.day * 100 + phoneSlot, s.weather, s.storage, stations, reputationOf(s.repLog).overall, s.furniture.some((f) => f.type === 'meat_counter'))
       : null;
     if (call) {
       phoneOrders = [...phoneOrders, call];
@@ -128,9 +128,20 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
       return false;
     }
     const k = copyStock(s);
-    for (const i of r.inputs) takeStock(k, i.productId, i.quantity);
+    // Nấu cũng tiêu HÀNG NHÀ TRỒNG/NHÀ NUÔI chứ không chỉ trừ kho chung: phải trừ luôn nhãn homegrown,
+    // nếu không sẽ "nấu hết hàng nhà trồng, nhập lại hàng mua rồi bán vẫn ăn premium +20%" (lệch sổ + exploit).
+    const homegrown = { ...s.garden.homegrown };
+    for (const i of r.inputs) {
+      takeStock(k, i.productId, i.quantity);
+      const h = homegrown[i.productId] ?? 0;
+      if (h > 0) {
+        const left = h - i.quantity;
+        if (left > 0) homegrown[i.productId] = left;
+        else delete homegrown[i.productId];
+      }
+    }
     const id = Math.max(0, ...s.cookJobs.map((j) => j.id)) + 1;
-    set({ ...k, cookJobs: [...s.cookJobs, { id, recipeId, remaining: r.durationMin, total: r.durationMin }] });
+    set({ ...k, garden: { ...s.garden, homegrown }, cookJobs: [...s.cookJobs, { id, recipeId, remaining: r.durationMin, total: r.durationMin }] });
     s.notify(`🍳 Đang nấu ${r.name} (${r.durationMin} phút) — nguyên liệu đã trừ kho, nấu xong tự vào kho`);
     return true;
   },
@@ -158,12 +169,24 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     const missing = Object.entries(o.items)
       .map(([pid, q]) => [pid, q - (s.storage[pid] ?? 0)] as const)
       .filter(([, q]) => q > 0);
-    const cost = missing.reduce((sum, [pid, q]) => sum + productById(pid).buy * q, 0);
+    // Món nhà làm không nhập bù bằng đơn được: phải nấu ở trạm mới giao được — báo rõ thay vì fail im lặng
+    const cookedMissing = missing.filter(([pid]) => COOKED_PRODUCT_IDS.has(pid));
+    if (cookedMissing.length) {
+      s.notify(`🍳 ${cookedMissing.map(([pid, q]) => `${q} ${productById(pid).name}`).join(', ')} là món nhà làm — phải vào trạm chế biến nấu trước, không nhập bù được`);
+      return false;
+    }
+    const restockable = missing.filter(([pid]) => !COOKED_PRODUCT_IDS.has(pid));
+    const cost = restockable.reduce((sum, [pid, q]) => sum + productById(pid).buy * q, 0);
     if (s.money < cost) {
       s.notify(`Không đủ tiền nhập bù (cần ${formatMoney(cost)})`);
       return false;
     }
-    for (const [pid, q] of missing) get().buy(pid, q);
+    const failed: string[] = [];
+    for (const [pid, q] of restockable) if (!get().buy(pid, q)) failed.push(productById(pid).name);
+    if (failed.length) {
+      s.notify(`⚠️ Không nhập bù được: ${failed.join(', ')} (hết tiền hoặc kho không đủ chỗ). Vào bảng Kho xử lý rồi quay lại nghe máy`);
+      return false;
+    }
     if (missing.length) s.notify(`🛒 Đã nhập bù ${missing.map(([pid, q]) => `${q} ${productById(pid).name}`).join(', ')} (${formatMoney(cost)})`);
     return get().answerPhone(id);
   },

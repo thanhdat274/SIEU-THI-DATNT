@@ -3,6 +3,7 @@ import { applySnapshot, snapshot } from '../core/save';
 import { newGameData, useGame, type GameState } from '../core/store';
 import { Walker } from '../agents/walker';
 import { costumeById } from '../data/costumes';
+import { cleanActionArgs } from './actionArgs';
 import { idToken } from './firebase';
 import { apiUrl, wsUrl } from './serverUrl';
 import { useSession, type AlleyPeer } from './session';
@@ -42,6 +43,13 @@ const GUARDED: Record<string, (args: unknown[]) => string> = {
   feedPen: (a) => `pen:${a[0]}`,
   buyAnimal: (a) => `buyAnimal:${a[0]}`,
   sellFattened: (a) => `pen:${a[0]}`,
+  collectPen: (a) => `pen:${a[0]}`,
+  plantCrop: (a) => `plot:${a[0]}`,
+  waterPlot: (a) => `plot:${a[0]}`,
+  fertilizePlot: (a) => `plot:${a[0]}`,
+  harvestPlot: (a) => `plot:${a[0]}`,
+  waterGarden: () => 'farm:water',
+  deliverFarmOrder: () => 'farm:order',
   cleanupFarm: () => 'farm:cleanup',
   buyFarmBuilding: (a) => `farm:building:${a[0]}`,
   upgradeFarmBuilding: (a) => `farm:building:${a[0]}`,
@@ -282,7 +290,8 @@ function installProxies() {
   for (const [name, fn] of Object.entries(state)) {
     if (typeof fn !== 'function' || LOCAL_ACTIONS.has(name)) continue;
     (originals as Record<string, unknown>)[name] = fn;
-    proxies[name] = (...args: unknown[]) => {
+    proxies[name] = (...rawArgs: unknown[]) => {
+      const args = cleanActionArgs(rawArgs);
       const result = name in PROXY_RESULT ? PROXY_RESULT[name] : true;
       // Bấm lặp lúc kết quả lần trước chưa về: bỏ qua, không gửi hai lần
       const key = name + JSON.stringify(args);

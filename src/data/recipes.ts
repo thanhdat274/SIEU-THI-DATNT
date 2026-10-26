@@ -51,31 +51,31 @@ export interface Recipe {
 /** Sản phẩm tự chế: được thêm vào PRODUCTS khi khởi tạo (xem products.ts). */
 export const COOKED_PRODUCTS: { id: string; name: string; category: import('./products').Category; buy: number; sell: number; color: number; unlock: number }[] = [
   // --- Bếp nướng (food_grill) ---
-  { id: 'banh_mi_trung_nuong', name: 'Bánh mì trứng nướng', category: 'fresh', buy: 13000, sell: 24700, color: 0xdc7633, unlock: 21 },
+  { id: 'banh_mi_trung_nuong', name: 'Bánh mì trứng nướng', category: 'fresh', buy: 13000, sell: 24700, color: 0xdc7633, unlock: 38 },
   { id: 'xuc_xich_nuong', name: 'Xúc xích nướng', category: 'fresh', buy: 3000, sell: 5700, color: 0xc0392b, unlock: 22 },
-  { id: 'com_hop_ga', name: 'Cơm hộp gà', category: 'fresh', buy: 8200, sell: 15600, color: 0xf5cba7, unlock: 23 },
-  { id: 'banh_trang_tron', name: 'Bánh tráng trộn', category: 'fresh', buy: 6700, sell: 12700, color: 0xe84393, unlock: 24 },
+  { id: 'com_hop_ga', name: 'Cơm hộp gà', category: 'fresh', buy: 8200, sell: 15600, color: 0xf5cba7, unlock: 30 },
+  { id: 'banh_trang_tron', name: 'Bánh tráng trộn', category: 'fresh', buy: 6700, sell: 12700, color: 0xe84393, unlock: 28 },
 
   // --- Ấm nước (hot_kettle) ---
-  { id: 'tra_gung_nong', name: 'Trà gừng nóng', category: 'drink', buy: 7200, sell: 13700, color: 0xd4ac0d, unlock: 21 },
+  { id: 'tra_gung_nong', name: 'Trà gừng nóng', category: 'drink', buy: 7200, sell: 13700, color: 0xd4ac0d, unlock: 23 },
   { id: 'mi_trung_nong', name: 'Mì trứng nấu sẵn', category: 'fresh', buy: 5500, sell: 10500, color: 0xe67e22, unlock: 21 },
   { id: 'che_dau_xanh', name: 'Chè đậu xanh', category: 'fresh', buy: 7800, sell: 14900, color: 0xfadbd8, unlock: 22 },
 
   // --- Máy xay (blender) ---
-  { id: 'sinh_to_trai_cay', name: 'Sinh tố trái cây', category: 'cold', buy: 7500, sell: 14300, color: 0xfd79a8, unlock: 25 },
+  { id: 'sinh_to_trai_cay', name: 'Sinh tố trái cây', category: 'cold', buy: 7500, sell: 14300, color: 0xfd79a8, unlock: 28 },
   { id: 'kem_trai_cay', name: 'Kem trái cây tự làm', category: 'frozen', buy: 9400, sell: 17900, color: 0xff9ff3, unlock: 28 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'ca_phe_sua_da', name: 'Cà phê sữa đá', category: 'drink', buy: 9800, sell: 18700, color: 0x6e2c00, unlock: 25 },
   { id: 'tra_sua', name: 'Trà sữa', category: 'drink', buy: 9800, sell: 18600, color: 0xdfe6e9, unlock: 25 },
   { id: 'bac_xiu', name: 'Bạc xỉu', category: 'drink', buy: 9600, sell: 18200, color: 0xf5cba7, unlock: 26 },
-  { id: 'tra_dao_cam_sa', name: 'Trà đào cam sả', category: 'drink', buy: 10300, sell: 19600, color: 0xfab1a0, unlock: 26 },
+  { id: 'tra_dao_cam_sa', name: 'Trà đào cam sả', category: 'drink', buy: 10300, sell: 19600, color: 0xfab1a0, unlock: 28 },
   { id: 'ca_phe_den_da', name: 'Cà phê đen đá', category: 'drink', buy: 7800, sell: 14900, color: 0x2c3e50, unlock: 34 },
   { id: 'ca_phe_trung', name: 'Cà phê trứng', category: 'drink', buy: 21500, sell: 40900, color: 0xe17055, unlock: 36 },
 
   // --- Chảo chiên (fryer) ---
   { id: 'bap_xao', name: 'Bắp xào', category: 'fresh', buy: 2700, sell: 5100, color: 0xf9ca24, unlock: 26 },
-  { id: 'ca_vien_chien', name: 'Cá viên chiên', category: 'fresh', buy: 5000, sell: 9500, color: 0xe55039, unlock: 26 },
+  { id: 'ca_vien_chien', name: 'Cá viên chiên', category: 'fresh', buy: 5000, sell: 9500, color: 0xe55039, unlock: 32 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -115,16 +115,16 @@ export const RECIPES: Recipe[] = [
   // --- Bếp nướng (food_grill) ---
   { id: 'recipe_banh_mi_trung', name: 'Bánh mì trứng nướng', station: 'food_grill',
     inputs: [{ productId: 'banhmi', quantity: 5 }, { productId: 'trung', quantity: 1 }],
-    outputId: 'banh_mi_trung_nuong', outputQty: 5, durationMin: 15, unlock: 21, reputationGain: 2 },
+    outputId: 'banh_mi_trung_nuong', outputQty: 5, durationMin: 15, unlock: 38, reputationGain: 2 },
   { id: 'recipe_xuc_xich', name: 'Xúc xích nướng', station: 'food_grill',
     inputs: [{ productId: 'xucxich', quantity: 2 }],
     outputId: 'xuc_xich_nuong', outputQty: 10, durationMin: 12, unlock: 22, reputationGain: 1 },
   { id: 'recipe_com_hop_ga', name: 'Cơm hộp gà', station: 'food_grill',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'thit', quantity: 5 }, { productId: 'rau', quantity: 3 }],
-    outputId: 'com_hop_ga', outputQty: 50, durationMin: 25, unlock: 23, reputationGain: 3 },
+    outputId: 'com_hop_ga', outputQty: 50, durationMin: 25, unlock: 30, reputationGain: 3 },
   { id: 'recipe_banh_trang', name: 'Bánh tráng trộn', station: 'food_grill',
     inputs: [{ productId: 'banhtrang', quantity: 3 }, { productId: 'traicay', quantity: 1 }],
-    outputId: 'banh_trang_tron', outputQty: 6, durationMin: 10, unlock: 24, reputationGain: 2 },
+    outputId: 'banh_trang_tron', outputQty: 6, durationMin: 10, unlock: 28, reputationGain: 2 },
   { id: 'recipe_com_suon', name: 'Cơm sườn nướng', station: 'food_grill',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'thit', quantity: 8 }, { productId: 'rau', quantity: 2 }],
     outputId: 'com_suon_nuong', outputQty: 50, durationMin: 30, unlock: 40, reputationGain: 4 },
@@ -138,7 +138,7 @@ export const RECIPES: Recipe[] = [
   // --- Ấm nước (hot_kettle) ---
   { id: 'recipe_tra_gung', name: 'Trà gừng nóng', station: 'hot_kettle',
     inputs: [{ productId: 'tra', quantity: 1 }, { productId: 'nuoc', quantity: 4 }],
-    outputId: 'tra_gung_nong', outputQty: 5, durationMin: 10, unlock: 21, reputationGain: 1 },
+    outputId: 'tra_gung_nong', outputQty: 5, durationMin: 10, unlock: 23, reputationGain: 1 },
   { id: 'recipe_mi_trung', name: 'Mì trứng nấu sẵn', station: 'hot_kettle',
     inputs: [{ productId: 'mi', quantity: 10 }, { productId: 'trung', quantity: 1 }],
     outputId: 'mi_trung_nong', outputQty: 10, durationMin: 8, unlock: 21, reputationGain: 2 },
@@ -149,7 +149,7 @@ export const RECIPES: Recipe[] = [
   // --- Máy xay (blender) ---
   { id: 'recipe_sinh_to', name: 'Sinh tố trái cây', station: 'blender',
     inputs: [{ productId: 'traicay', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
-    outputId: 'sinh_to_trai_cay', outputQty: 4, durationMin: 8, unlock: 25, reputationGain: 2 },
+    outputId: 'sinh_to_trai_cay', outputQty: 4, durationMin: 8, unlock: 28, reputationGain: 2 },
   { id: 'recipe_kem', name: 'Kem trái cây', station: 'blender',
     inputs: [{ productId: 'traicay', quantity: 1 }, { productId: 'suachua', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'kem_trai_cay', outputQty: 5, durationMin: 12, unlock: 28, reputationGain: 3 },
@@ -166,7 +166,7 @@ export const RECIPES: Recipe[] = [
     outputId: 'bac_xiu', outputQty: 5, durationMin: 8, unlock: 26, reputationGain: 2 },
   { id: 'recipe_tra_dao', name: 'Trà đào cam sả', station: 'drink_counter',
     inputs: [{ productId: 'tra', quantity: 1 }, { productId: 'traicay', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
-    outputId: 'tra_dao_cam_sa', outputQty: 6, durationMin: 10, unlock: 26, reputationGain: 3 },
+    outputId: 'tra_dao_cam_sa', outputQty: 6, durationMin: 10, unlock: 28, reputationGain: 3 },
   { id: 'recipe_ca_phe_den', name: 'Cà phê đen đá', station: 'drink_counter',
     inputs: [{ productId: 'caphe', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'ca_phe_den_da', outputQty: 6, durationMin: 5, unlock: 34, reputationGain: 2 },
@@ -180,7 +180,7 @@ export const RECIPES: Recipe[] = [
     outputId: 'bap_xao', outputQty: 6, durationMin: 12, unlock: 26, reputationGain: 2 },
   { id: 'recipe_ca_vien', name: 'Cá viên chiên', station: 'fryer',
     inputs: [{ productId: 'ca', quantity: 1 }],
-    outputId: 'ca_vien_chien', outputQty: 10, durationMin: 15, unlock: 26, reputationGain: 2 },
+    outputId: 'ca_vien_chien', outputQty: 10, durationMin: 15, unlock: 32, reputationGain: 2 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'recipe_banh_bao', name: 'Bánh bao hấp nóng', station: 'steamer',
@@ -188,23 +188,26 @@ export const RECIPES: Recipe[] = [
     outputId: 'banh_bao_hap', outputQty: 40, durationMin: 20, unlock: 39, reputationGain: 3 },
 
   // --- Quây xôi (rice_station) ---
+  // 6 món xôi theo công thức chuẩn món ăn VN (khách quen bắt lỗi nguyên liệu sai ngành): đậu xanh/bắp/dừa
+  // đều rưới nước cốt dừa + đường, món dừa thêm dừa nạo rắc mặt; mặn & thập cẩm có lạp xưởng + hành phi
+  // + nước tương. Nguyên liệu (đường, nước cốt dừa, dừa nạo, lạp xưởng, hành phi) mở ≤ cấp 36 khớp quây xôi.
   { id: 'recipe_xoi_dau_xanh', name: 'Xôi đậu xanh', station: 'rice_station',
-    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'traicay', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'dau_xanh', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'xoi_dau_xanh', outputQty: 40, durationMin: 15, unlock: 36, reputationGain: 2 },
   { id: 'recipe_xoi_man', name: 'Xôi mặn', station: 'rice_station',
-    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'trung', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'x_lap_xuong', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }, { productId: 'x_nuoc_tuong', quantity: 1 }],
     outputId: 'xoi_man', outputQty: 40, durationMin: 15, unlock: 36, reputationGain: 3 },
   { id: 'recipe_xoi_trung', name: 'Xôi trứng', station: 'rice_station',
-    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'trung', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'trung', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'xoi_trung', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
   { id: 'recipe_xoi_dua', name: 'Xôi dừa', station: 'rice_station',
-    inputs: [{ productId: 'nep', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_dua_nao', quantity: 1 }],
     outputId: 'xoi_dua', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
   { id: 'recipe_xoi_thap_cam', name: 'Xôi thập cẩm', station: 'rice_station',
-    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'trung', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'trung', quantity: 1 }, { productId: 'x_lap_xuong', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }, { productId: 'x_nuoc_tuong', quantity: 1 }],
     outputId: 'xoi_thap_cam', outputQty: 40, durationMin: 15, unlock: 36, reputationGain: 3 },
   { id: 'recipe_xoi_bap', name: 'Xôi bắp', station: 'rice_station',
-    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'traicay', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'bap', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'xoi_bap', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
 
   // --- Máy ép mía (sugarcane_press) ---

@@ -157,6 +157,18 @@ export const STORY_STEPS: readonly StoryStep[] = [
   { id: 'story_days_100', icon: '🎆', title: 'Tầm nhìn dài hạn', description: 'Mở tiệm tới ngày thứ 101', target: 101, money: 6000000, xp: 2000, measure: (c) => c.day },
   { id: 'story_review_perfect', icon: '⭐', title: 'Đánh giá hoàn hảo', description: 'Nhận 100 lời khen 5 sao', target: 100, money: 4000000, xp: 1600, measure: (c) => c.totals.fiveStars },
   { id: 'story_treasure', icon: '👑', title: 'Đầu tư lớn', description: 'Chi tổng cộng 1.000.000đ (nhập hàng, nội thất, nâng cấp)', target: 1000000, money: 5000000, xp: 2000, measure: (c) => c.totals.spent },
+  // ── Nội dung cuối game (cấp 51–100) ──
+  { id: 'story_level_60', icon: '🚀', title: 'Thương hiệu phố phường', description: 'Đạt cấp 60', target: 60, money: 12000000, xp: 3200, measure: (c) => c.level },
+  { id: 'story_shop_tier_6', icon: '🏗️', title: 'Siêu thị khang trang', description: 'Mở rộng tiệm lên bậc 6', target: 6, money: 15000000, xp: 3000, measure: (c) => c.shopTier },
+  { id: 'story_revenue_500m', icon: '🏆', title: 'Nửa tỷ doanh thu', description: 'Đạt tổng doanh thu 500.000.000đ', target: 500000000, money: 20000000, xp: 4000, measure: (c) => c.totals.revenue },
+  { id: 'story_hire_10', icon: '👥', title: 'Cơ ngơi lớn', description: 'Thuê 10 nhân viên', target: 10, money: 8000000, xp: 2400, measure: (c) => c.staffCount },
+  { id: 'story_warehouse_7', icon: '🏭', title: 'Tổng kho logistics', description: 'Nâng nhà kho lên cấp 7', target: 7, money: 12000000, xp: 2800, measure: (c) => c.warehouseTier },
+  { id: 'story_items_20000', icon: '📦', title: 'Hai vạn món bán chạy', description: 'Bán tổng cộng 20.000 món', target: 20000, money: 15000000, xp: 4000, measure: (c) => c.totals.itemsSold },
+  { id: 'story_level_75', icon: '⭐', title: 'Biểu tượng thành phố', description: 'Đạt cấp 75', target: 75, money: 20000000, xp: 5000, measure: (c) => c.level },
+  { id: 'story_shop_tier_7', icon: '🏗️', title: 'Đại siêu thị', description: 'Mở rộng tiệm lên bậc 7 (mặt bằng tối đa)', target: 7, money: 25000000, xp: 5000, measure: (c) => c.shopTier },
+  { id: 'story_revenue_1b', icon: '👑', title: 'Tỷ đồng doanh thu', description: 'Đạt tổng doanh thu 1.000.000.000đ', target: 1000000000, money: 50000000, xp: 9000, measure: (c) => c.totals.revenue },
+  { id: 'story_level_90', icon: '🎖️', title: 'Huyền thoại sống', description: 'Đạt cấp 90', target: 90, money: 30000000, xp: 7000, measure: (c) => c.level },
+  { id: 'story_level_100', icon: '🎆', title: 'Đỉnh cao tạp hóa', description: 'Đạt cấp 100 — mốc cuối game', target: 100, money: 100000000, xp: 20000, measure: (c) => c.level },
 ];
 
 /** Bước cốt truyện đang làm (bước đầu tiên chưa nhận thưởng); null khi đã xong hết. */

@@ -124,7 +124,7 @@ export const weatherPhoneMul = (weather: Weather) => (weather === 'storm' ? 1.8 
 export function phoneCallFor(
   seed: number, day: number, slot: number, level: number, regulars: Record<string, RegularProgress>, id: number,
   weather: Weather = 'sunny', stocked: Record<string, number> = {},
-  stations: CookingStation[] = [], rep: number = 0,
+  stations: CookingStation[] = [], rep: number = 0, hasMeatCounter = false,
 ): PhoneOrder | null {
   if (level < PHONE_UNLOCK) return null;
   const chance = Math.min(0.65, (0.3 + level * 0.01) * weatherPhoneMul(weather));
@@ -150,7 +150,7 @@ export function phoneCallFor(
     order.reason = COOK_REASONS[Math.floor(roll(seed, day, 1301 + slot) * COOK_REASONS.length)];
     return order;
   }
-  const pool = unlockedProducts(level).filter((p) => p.category !== 'frozen' && !SEASONAL_GOODS.has(p.id));
+  const pool = unlockedProducts(level).filter((p) => p.category !== 'frozen' && (hasMeatCounter || p.category !== 'meat') && !SEASONAL_GOODS.has(p.id));
   const inStock = pool.filter((p) => (stocked[p.id] ?? 0) > 0);
   const favorites = regular ? regular.favorites.filter((id) => pool.some((p) => p.id === id)) : [];
   // Đơn VIP: khách quen đủ thân giới thiệu "mối lớn" — gói 8–14 món một loại, giá hời ×1.5, hẹn lâu hơn chút

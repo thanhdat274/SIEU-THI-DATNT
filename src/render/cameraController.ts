@@ -28,10 +28,17 @@ export class CameraController {
   private pinch: { dist: number; angle: number; midY: number } | null = null;
   private lastX = 0;
   private lastY = 0;
+  /** Vận tốc quán tính khi kéo camera bằng ngón tay (đơn vị: đơn vị thế giới / giây). */
+  private inertiaX = 0;
+  private inertiaZ = 0;
+  /** Giây gần nhất ghi nhận chuyển động pan, để tính vận tốc theo thời gian thật. */
+  private lastPanTime = 0;
+  private isTouch = false;
 
   constructor(private camera: THREE.PerspectiveCamera, private dom: HTMLElement) {
     dom.addEventListener('contextmenu', (e) => e.preventDefault());
     dom.addEventListener('pointerdown', (e) => {
+      this.isTouch = e.pointerType === 'touch';
       if (e.pointerType === 'touch') {
         this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
         // Ngón thứ hai chạm xuống: chuyển sang chế độ hai ngón, không tính là bấm để đi
@@ -58,6 +65,7 @@ export class CameraController {
     dom.addEventListener('pointerup', (e) => queueMicrotask(() => lift(e)));
     dom.addEventListener('pointercancel', lift);
     dom.addEventListener('pointermove', (e) => {
+      this.isTouch = e.pointerType === 'touch';
       if (this.touches.has(e.pointerId)) this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (this.pinch) this.onPinch();
       else this.onDrag(e);
@@ -79,13 +87,28 @@ export class CameraController {
     this.lastY = e.clientY;
 
     if (this.dragButton === 2) {
-      this.yaw -= dx * 0.005;
-      this.pitch = THREE.MathUtils.clamp(this.pitch + dy * 0.005, 0.3, 1.45);
+      this.yaw -= dx * (this.isTouch ? 0.008 : 0.005);
+      this.pitch = THREE.MathUtils.clamp(this.pitch + dy * (this.isTouch ? 0.008 : 0.005), 0.3, 1.45);
     } else {
-      const scale = this.distance * 0.0015;
-      this.pan(-dx * scale, -dy * scale);
+      const scale = this.distance * (this.isTouch ? 0.0022 : 0.0015);
+      const panX = -dx * scale;
+      const panZ = -dy * scale;
+      this.pan(panX, panZ);
       this.follow = null;
       this.dragged += Math.abs(dx) + Math.abs(dy);
+      // Ghi vận tốc quán tính (thế giới/giây) cho cảm ứng; chuột thì không đổi hành vi cũ
+      if (this.isTouch) {
+        const now = performance.now();
+        const dt = Math.max(1 / 120, (now - this.lastPanTime) / 1000);
+        this.lastPanTime = now;
+        const sin = Math.sin(this.yaw);
+        const cos = Math.cos(this.yaw);
+        const vx = panX * cos + panZ * sin;
+        const vz = -panX * sin + panZ * cos;
+        // Đợi vài event cho dt ổn định; kéo quá chậm thì không để quán tính
+        this.inertiaX = Math.hypot(vx, vz) > 24 ? vx / dt : 0;
+        this.inertiaZ = Math.hypot(vx, vz) > 24 ? vz / dt : 0;
+      }
     }
   }
 
@@ -125,6 +148,18 @@ export class CameraController {
 
   update(dt: number) {
     if (this.follow) this.target.lerp(this.follow, Math.min(1, dt * 6));
+    // Quán tính kéo camera bằng cảm ứng: tiếp đà rồi tắt dần; dừng khi đang kéo/chụm
+    if (this.isTouch && this.dragButton < 0 && !this.pinch) {
+      if (this.touches.size === 0 && Math.hypot(this.inertiaX, this.inertiaZ) > 1) {
+        const decay = Math.max(0, 1 - 6 * dt);
+        this.target.x = THREE.MathUtils.clamp(this.target.x + this.inertiaX * dt, -this.bounds, this.bounds);
+        this.target.z = THREE.MathUtils.clamp(this.target.z + this.inertiaZ * dt, -this.bounds, this.bounds);
+        this.inertiaX *= decay;
+        this.inertiaZ *= decay;
+      } else {
+        this.inertiaX = this.inertiaZ = 0;
+      }
+    }
     if (this.keys.has('q')) this.yaw += 1.5 * dt;
     if (this.keys.has('e')) this.yaw -= 1.5 * dt;
 

@@ -97,6 +97,11 @@ export class Warehouse {
     for (const s of this.spots) s.position.set(c.x + s.local[0], 0, c.z + s.local[1]);
   }
 
+  /** Điểm nhân viên xếp hàng đứng lấy thùng trong kho (bàn nhận hàng cạnh cửa thông sang tiệm). */
+  get pickupPoint() {
+    return this.spots.find((s) => s.kind === 'desk')!.position;
+  }
+
   /** Cập nhật thùng trên kệ, số trên bảng và kệ/tủ nào đã mở. */
   refresh() {
     const s = useGame.getState();

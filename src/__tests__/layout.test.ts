@@ -3,7 +3,7 @@ import type { Furniture } from '../core/store';
 import { newGameData, useGame } from '../core/store';
 import { productById } from '../data/products';
 import {
-  heatColor, impulseChance, impulseOptions, impulseWeight, isDisplay, shelfAttention, spotVisibility,
+  heatColor, impulseChance, rowFactor, impulseOptions, impulseWeight, isDisplay, shelfAttention, spotVisibility,
   stockedAttention, visibilityLabel, weightedPick, type ShopGeom,
 } from '../data/layout';
 
@@ -52,7 +52,7 @@ describe('shelfAttention / stockedAttention — món được để ý theo kệ
   it('cùng món ở hai kệ: lấy kệ dễ thấy hơn', () => {
     const list = [mk(1, 0, 1.8, ['nuoc']), mk(2, -3.4, -2.4, ['nuoc'])];
     const att = stockedAttention(list, geom);
-    expect(att.nuoc).toBeCloseTo(spotVisibility(0, 1.8, geom), 5);
+    expect(att.nuoc).toBeCloseTo(spotVisibility(0, 1.8, geom) * rowFactor(0, 3), 5); // ô đầu nằm tầng sát sàn
   });
   it('isDisplay: đúng các loại bày được hàng', () => {
     expect(isDisplay({ uid: 1, type: 'fridge', x: 0, z: 0, rot: 0, tiers: [] })).toBe(true);

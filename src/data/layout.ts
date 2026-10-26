@@ -52,17 +52,70 @@ export function shelfAttention(list: Furniture[], geom: ShopGeom): Map<number, n
   return out;
 }
 
-/** Mỗi món đang bày được để ý bao nhiêu: lấy kệ dễ thấy nhất đang bày món đó. */
+// ──────────────────────────────────────────────
+// Tầng kệ: hàng ngang tầm mắt dễ được chú ý, hàng sát sàn khó
+// ──────────────────────────────────────────────
+
+/** Hàng ngang tầm mắt được để ý thêm chừng này; hàng sát sàn bị bớt (kệ từ 3 tầng trở lên). */
+export const EYE_LEVEL_BONUS = 1.25;
+export const FLOOR_LEVEL_PENALTY = 0.85;
+
+/** Tầng (đếm từ dưới lên, từ 0) ngang tầm mắt của kệ `rows` tầng; -1 nếu kệ quá thấp để phân biệt. */
+export const eyeRow = (rows: number) => (rows >= 3 ? Math.round((rows - 1) * 0.6) : -1);
+
+/** Hệ số để ý của một tầng: ngang tầm mắt cao nhất, sát sàn thấp nhất. */
+export function rowFactor(row: number, rows: number): number {
+  if (rows < 3) return 1;
+  if (row === eyeRow(rows)) return EYE_LEVEL_BONUS;
+  return row === 0 ? FLOOR_LEVEL_PENALTY : 1;
+}
+
+/** Mỗi món đang bày được để ý bao nhiêu: lấy chỗ dễ thấy nhất (kệ dễ thấy × tầng ngang tầm mắt) đang bày món đó. */
 export function stockedAttention(list: Furniture[], geom: ShopGeom): Record<string, number> {
   const out: Record<string, number> = {};
   for (const f of list) {
     if (!isDisplay(f) || f.broken) continue;
     const v = spotVisibility(f.x, f.z, geom);
-    for (const t of f.tiers) {
-      if (t.productId && t.count > 0 && v > (out[t.productId] ?? 0)) out[t.productId] = v;
-    }
+    const def = furnitureDef(f.type);
+    f.tiers.forEach((t, i) => {
+      if (!t.productId || t.count <= 0) return;
+      const a = v * rowFactor(Math.floor(i / Math.max(def.slots, 1)), def.tiers);
+      if (a > (out[t.productId] ?? 0)) out[t.productId] = a;
+    });
   }
   return out;
+}
+
+// ──────────────────────────────────────────────
+// Hiệu suất kệ: lời trên mỗi m² mỗi ngày
+// ──────────────────────────────────────────────
+
+/** Lời tích luỹ của một kệ từ ngày `since` (ngày đầu tiên kệ bán được hàng). */
+export interface ShelfPerf { profit: number; since: number }
+
+export interface ShelfEfficiency {
+  uid: number;
+  type: Furniture['type'];
+  /** Diện tích sàn (m²). */
+  area: number;
+  profit: number;
+  days: number;
+  /** Lời trên mỗi m² mỗi ngày. */
+  perM2Day: number;
+}
+
+/** Xếp các kệ đã có doanh số theo lời trên m² mỗi ngày (cao nhất trước). */
+export function shelfEfficiency(list: Furniture[], perf: Record<number, ShelfPerf>, day: number): ShelfEfficiency[] {
+  const out: ShelfEfficiency[] = [];
+  for (const f of list) {
+    const p = perf[f.uid];
+    if (!isDisplay(f) || !p) continue;
+    const [w, d] = furnitureDef(f.type).size;
+    const area = w * d;
+    const days = Math.max(1, day - p.since + 1);
+    out.push({ uid: f.uid, type: f.type, area, profit: p.profit, days, perM2Day: p.profit / days / area });
+  }
+  return out.sort((a, b) => b.perM2Day - a.perM2Day);
 }
 
 /** Chọn một phần tử theo trọng số (tổng trọng số không cần bằng 1). */

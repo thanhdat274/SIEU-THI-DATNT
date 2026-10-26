@@ -2,7 +2,7 @@ import { CATALOG_PRODUCTS } from './catalog';
 import { COOKED_PRODUCTS } from './recipes';
 
 /** Ngành hàng: quyết định bày ở đâu (kệ thường, tủ mát, tủ đông). */
-export type Category = 'dry' | 'drink' | 'cold' | 'frozen' | 'household' | 'fresh';
+export type Category = 'dry' | 'drink' | 'cold' | 'frozen' | 'household' | 'fresh' | 'meat';
 
 export const CATEGORIES: Record<Category, string> = {
   dry: 'Đồ khô',
@@ -11,6 +11,7 @@ export const CATEGORIES: Record<Category, string> = {
   frozen: 'Đông lạnh',
   household: 'Gia dụng',
   fresh: 'Tươi sống',
+  meat: 'Thịt cá tươi',
 };
 
 export interface Product {
@@ -128,11 +129,43 @@ export const PRODUCTS: Product[] = [
   p('sua_de', 'Sữa dê (lốc)', 'cold', 45000, 60000, 0xfdf6ec, 27),
   p('thit_ga_dt', 'Thịt gà Đông Tảo', 'fresh', 380000, 450000, 0xb03a2e, 30),
   p('x_nhan', 'Nhãn', 'fresh', 24000, 34000, 0xcbc04d, 30),
+  // Nội dung cuối game (53–78): hàng cao cấp/hàng biếu giá sỉ VN 2026, lấp các khoảng trống cấp
+  p('ca_hoi', 'Cá hồi phi lê (gói)', 'frozen', 320000, 440000, 0xff8a65, 53),
+  p('thit_cu', 'Thịt cừu (gói)', 'frozen', 250000, 350000, 0x9a5d3f, 56),
+  p('ngheu', 'Nghêu tươi (túi)', 'fresh', 45000, 65000, 0xcdd6d0, 57),
+  p('ruou_vang_nhap', 'Rượu vang nhập khẩu', 'drink', 450000, 620000, 0x5d3a6e, 58),
+  p('tra_thao_moc', 'Trà thảo mộc hộp', 'dry', 65000, 92000, 0x5a8a5f, 59),
+  p('jambon', 'Jambon (gói)', 'cold', 90000, 125000, 0xe88d8d, 61),
+  p('pate', 'Pate gan hộp', 'cold', 55000, 78000, 0xc9a07e, 62),
+  p('bo_sua', 'Bơ muối (hộp)', 'cold', 85000, 118000, 0xf6e6b2, 63),
+  p('ca_phe_xay', 'Cà phê xay nguyên chất', 'dry', 150000, 205000, 0x3e2723, 64),
+  p('banh_quy_nhap', 'Bánh quy nhập khẩu', 'dry', 120000, 168000, 0xd4ac0d, 65),
+  p('to_yen', 'Tổ yến hũ', 'dry', 700000, 950000, 0xf1e3c5, 66),
+  p('so_diep', 'Sò điệp đông lạnh', 'frozen', 180000, 250000, 0xe8c06a, 67),
+  p('ngu_coc', 'Ngũ cốc granola hộp', 'dry', 130000, 180000, 0xb8860b, 68),
+  p('thit_bo_nhat', 'Thăn bò Nhật (gói)', 'frozen', 450000, 620000, 0x68228b, 69),
+  p('nep_cam', 'Gạo nếp cẩm (túi)', 'dry', 55000, 78000, 0x7d3c98, 70),
+  p('ot_hien', 'Ớt tươi (rổ)', 'fresh', 20000, 30000, 0xd63031, 71),
+  p('ca_basa', 'Cá basa phi lê', 'frozen', 85000, 120000, 0x74b9ff, 72),
+  p('sua_yeu', 'Sữa yến mạch (hộp)', 'cold', 45000, 65000, 0xf7dc6f, 73),
+  p('hat_sen', 'Hạt sen tươi', 'fresh', 65000, 92000, 0xaed6f1, 74),
+  p('bia_nhap', 'Bia nhập khẩu (chai)', 'drink', 35000, 49000, 0xc0392b, 75),
+  p('cha_ca', 'Chả cá thác lác', 'fresh', 120000, 168000, 0x95a5a6, 76),
+  // Thịt cá tươi: bày ở quầy thịt cá, hạn rất ngắn
+  p('thit_heo_tuoi', 'Thịt heo tươi', 'meat', 95000, 130000, 0xe8a0a0, 32),
+  p('ca_loc_tuoi', 'Cá lóc tươi', 'meat', 70000, 98000, 0x7f8c8d, 33),
+  p('ga_ta_tuoi', 'Gà ta làm sẵn', 'meat', 130000, 178000, 0xf0c27b, 34),
+  p('ca_ro_phi_tuoi', 'Cá rô phi tươi', 'meat', 55000, 78000, 0x95a5a6, 35),
+  p('thit_bo_tuoi', 'Thịt bò tươi', 'meat', 210000, 285000, 0xb03a2e, 38),
+  p('tom_su_tuoi', 'Tôm sú tươi', 'meat', 190000, 260000, 0xff8c69, 42),
+  p('muc_ong_tuoi', 'Mực ống tươi', 'meat', 160000, 220000, 0xd7bde2, 46),
+  p('cua_bien_tuoi', 'Cua biển sống', 'meat', 280000, 380000, 0xe74c3c, 55),
+  p('ruou_whisky', 'Rượu whisky', 'drink', 480000, 660000, 0x8a5a2b, 78),
   p('phan_bon', 'Phân bón NPK (bao 5kg)', 'dry', 22000, 32000, 0x8d6e63, 1),
 ];
 
 /** Cấp sớm nhất bày được từng ngành (cần tủ mát, tủ đông, quầy rau quả). fresh=21 để khớp trạm nấu mở ở 21. */
-const SHELF_READY: Partial<Record<Category, number>> = { cold: 5, frozen: 14, fresh: 21 };
+const SHELF_READY: Partial<Record<Category, number>> = { cold: 5, frozen: 14, fresh: 21, meat: 32 };
 
 // Thêm mẫu hàng nhập từ catalog tham khảo; món chưa có chỗ bày thì lùi tới lúc có tủ/quầy
 PRODUCTS.push(...CATALOG_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
@@ -144,7 +177,7 @@ export const productById = (id: string) => PRODUCTS.find((it) => it.id === id)!;
 export const unlockedProducts = (level: number) => PRODUCTS.filter((it) => it.unlock <= level);
 
 /** Số món mỗi thùng theo ngành; hàng đắt thì thùng nhỏ lại cho vừa túi tiền (một thùng tối đa ~400k). */
-const CASE_BASE: Record<Category, number> = { dry: 24, drink: 24, household: 12, cold: 12, frozen: 10, fresh: 10 };
+const CASE_BASE: Record<Category, number> = { dry: 24, drink: 24, household: 12, cold: 12, frozen: 10, fresh: 10, meat: 6 };
 const CASE_OVERRIDE: Record<string, number> = {
   mi: 30, sua: 48, trung: 10, gao: 4, dauan: 12, banhmi: 20, keomut: 50, diem: 50, giay: 10, rau: 10, traicay: 10,
 };

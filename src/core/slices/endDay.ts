@@ -1,5 +1,5 @@
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
-import { SHOP_TIERS, rentOf } from '../../data/shopTiers';
+import { SHOP_TIERS, rentOf, OPERATING_REVENUE_RATE } from '../../data/shopTiers';
 import { describeDay, forecastFrom, WEATHER } from '../../data/weather';
 import { fitLots, nearestLife } from '../../data/freshness';
 import { regularById } from '../../data/regulars';
@@ -18,11 +18,11 @@ import { summarizeReviews } from '../../data/reviews';
 import { dailyWage, generateCandidates } from '../../data/staff';
 import { eventOn } from '../../data/events';
 import { supplyContractById } from '../../data/contracts';
-import { restingOn } from '../../data/branches';
+import { branchPowerBill, restingOn } from '../../data/branches';
 import { type GameState, type ContractState, type DayRecord, type SetState, type GetState, DAY_START, HISTORY_DAYS, wagesDue, emptyStats } from '../gameTypes';
 import { putStock, spoilOvernight, takeStock, type Stock } from '../stock';
 import { isCookStation } from '../../data/furniture';
-import { COMPLAINTS_FOR_SURPRISE, LICENSE_FINE, LICENSE_GRACE, licenseById, licenseStatus, missingLicenses, newInspection, RENEW_WARN_DAYS, requiredLicenses, SURPRISE_INSPECTION, SUSPEND_AFTER } from '../../data/licenses';
+import { COMPLAINTS_FOR_SURPRISE, isAlcohol, LICENSE_FINE, LICENSE_GRACE, licenseById, licenseStatus, missingLicenses, newInspection, RENEW_WARN_DAYS, requiredLicenses, SURPRISE_INSPECTION, SUSPEND_AFTER } from '../../data/licenses';
 import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
 import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
@@ -227,7 +227,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     && f.tiers.some((t) => t.count > 0));
   if (coldBroken.length) news.push(`🧊 ${coldBroken.length} tủ lạnh đang hỏng: hàng mát trong tủ không được giữ lạnh, hỏng nhanh như để ngoài kho — sửa sớm!`);
   // Giấy phép bắt buộc: lần đầu phải có thì được nhắc kèm hạn chót (ân hạn), quá hạn chót mà thiếu thì thanh tra phạt
-  const shelved = [...new Set(s.furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!)))];
+  const shelved = [...new Set([...s.furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!)), ...Object.keys(s.branch?.shelf ?? {}).filter(isAlcohol)])];
   const needLicenses = requiredLicenses({ level: s.level, hasCookStation: s.furniture.some((f) => isCookStation(f.type)), shelved });
   let inspection = s.inspection ?? newInspection();
   const noticed = { ...inspection.noticed };
@@ -269,7 +269,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   }
   // Nhân viên: thêm ngày công, kinh nghiệm; người tắt mắt ra tay (bị bắt thì thu lại); người niềm nở được khen
   const crew = staffDayEnd(s.staff, {
-    revenue: s.stats.revenue, storage: k.storage, hasCamera: hasUpgrade(s.biz, 'camera'), hasManager: s.staff.some((st) => st.role === 'manager'),
+    revenue: s.stats.revenue, storage: k.storage, hasCamera: hasUpgrade(s.biz, 'camera'), hasManager: s.staff.some((st) => st.role === 'manager'), hasLead: s.staff.some((st) => st.rank === 'lead'),
   });
   for (const [id, q] of Object.entries(crew.goodsTaken)) takeStock(k, id, q);
   for (let i = 0; i < crew.praises; i++) get().addReview(5);
@@ -304,11 +304,16 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   // Trả lương và tiền nhà cuối ngày (kèm phí thợ bảo trì sáng nay nếu có); chi nhánh mua đứt nên không cộng tiền thuê
   const wages = wagesDue(s) + branchWages;
   const rent = rentOf(s.shopTier);
+  // Chi phí vận hành theo doanh thu (điện/nước/bảo trì): % doanh thu, nhỏ lúc đầu, đáng kể khi lên siêu thị
+  // Tiện lợi chạy tủ mát/đông suốt 24h nên có hóa đơn điện riêng
+  const branchPower = br ? branchPowerBill(br) : 0;
+  const opCost = Math.round((s.stats.revenue + onlineDay.money + crew.tips) * OPERATING_REVENUE_RATE) + branchPower;
   const stats = {
-    ...s.stats, wages, rent, spent: s.stats.spent + maintCost, spoiledItems: aged.items, spoiledCost: aged.cost,
+    ...s.stats, wages, rent, spent: s.stats.spent + maintCost + opCost, spoiledItems: aged.items, spoiledCost: aged.cost,
     revenue: s.stats.revenue + onlineDay.money + crew.tips, online: (s.stats.online ?? 0) + onlineDay.money,
     ...(crew.cashLoss || shrinkItems ? { shrinkCash: crew.cashLoss, shrinkItems } : {}),
   };
+  if (opCost >= 5000) s.notify(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}${branchPower ? ` — riêng tiện lợi 24/7 ${formatMoney(branchPower)} tiền điện` : ''}`);
   const biz = bizEndOfDay(s, stats);
   if (biz.news.length) s.notify(biz.news.join(' · '));
   const todayReviews = s.reviews.filter((r) => r.day === s.day);
@@ -335,7 +340,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     garden, analytics,
     weather: s.forecast[0], forecast: forecastFrom(s.weatherSeed, s.day + 1, s.forecast[0]),
     ...extra,
-    money: (extra.money ?? s.money) - wages - rent - maintCost + inspectPay + biz.money + onlineDay.money + crew.tips - crew.cashLoss,
+    money: (extra.money ?? s.money) - wages - rent - maintCost - opCost + inspectPay + biz.money + onlineDay.money + crew.tips - crew.cashLoss,
     staff: crew.staff.filter((st) => st.id !== biz.poachedStaffId), social: socialNext, online: onlineDay.online, inspection,
     biz: biz.biz,
     branch: nextBranch ? { ...nextBranch.branch, revenueToday: 0, customersToday: 0, lostToday: 0, missedToday: 0, simAt: wokeLate ? LATE_WAKE_AT : DAY_START, lastTrip: nextBranch.branch.lastTrip - 1440 } : null,

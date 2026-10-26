@@ -82,6 +82,7 @@ export function PricePanel() {
         />
         <span style={styles.sub}>{filtered.length} món</span>
       </div>
+      <div style={{ overflowX: 'auto' }}>
       <table style={styles.table}>
         <thead>
           <tr><th style={styles.left}>Mặt hàng</th><th>Giá nhập</th><th>Gợi ý</th><th>Giá bán</th><th>Lời / món</th><th>Bán/ngày</th><th>Nên</th></tr>
@@ -129,7 +130,8 @@ export function PricePanel() {
             <tr><td style={styles.left} colSpan={7}>Không có mặt hàng nào khớp bộ lọc.</td></tr>
           )}
         </tbody>
-      </table>
+        </table>
+      </div>
       {pages > 1 && (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
           <button style={styles.btn} disabled={cur === 0} onClick={() => setPage(cur - 1)}>‹ Trước</button>

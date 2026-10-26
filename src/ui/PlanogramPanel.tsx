@@ -4,6 +4,7 @@ import { useGame, type Furniture } from '../core/store';
 import { furnitureDef, type FurnitureType } from '../data/furniture';
 import { fitLots, nearestLife, tierMarkdown } from '../data/freshness';
 import { describeUnits, productById, unlockedProducts } from '../data/products';
+import { Footer } from './panels/shared';
 
 /** Ô còn ít hơn chừng này phần sức chứa thì coi là sắp hết. */
 const LOW = 0.5;
@@ -40,17 +41,17 @@ function fillFixture(uid: number, furniture: Furniture[], storage: Record<string
 
 /** Sơ đồ kệ: mọi kệ và tủ trong tiệm, từng ô đang bày gì, còn bao nhiêu, bày nhanh từ kho. */
 export function PlanogramPanel() {
-  const { furniture, storage, stockTier, unstockTier, openPanel, closePanel, autoSwap, replaceEmptySlots, notify } = useGame((s) => ({
-    furniture: s.furniture,
-    storage: s.storage,
-    stockTier: s.stockTier,
-    unstockTier: s.unstockTier,
-    openPanel: s.openPanel,
-    closePanel: s.closePanel,
-    autoSwap: s.autoSwap,
-    replaceEmptySlots: s.replaceEmptySlots,
-    notify: s.notify,
-  }));
+  // Chọn từng field riêng (không gom vào object) — object selector tạo reference mới mỗi
+  // render, khiến React 19 + zustand rơi vào "Maximum update depth exceeded" và sập cả UI.
+  const furniture = useGame((s) => s.furniture);
+  const storage = useGame((s) => s.storage);
+  const stockTier = useGame((s) => s.stockTier);
+  const unstockTier = useGame((s) => s.unstockTier);
+  const openPanel = useGame((s) => s.openPanel);
+  const closePanel = useGame((s) => s.closePanel);
+  const autoSwap = useGame((s) => s.autoSwap);
+  const replaceEmptySlots = useGame((s) => s.replaceEmptySlots);
+  const notify = useGame((s) => s.notify);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const fixtures = furniture.filter((f) => furnitureDef(f.type).tiers > 0);
@@ -213,9 +214,7 @@ export function PlanogramPanel() {
         })}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
-        <button style={{ ...st.btn, background: '#f1c40f' }} onClick={closePanel}>Đóng</button>
-      </div>
+      <Footer onClose={closePanel} />
     </div>
   );
 }

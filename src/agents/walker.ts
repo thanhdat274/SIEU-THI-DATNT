@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildChibiCharacter, type CharacterParts } from '../render/characterModel';
+import { buildChibiCharacter, isSharedMaterial, type CharacterParts } from '../render/characterModel';
 
 const WALK_SPEED = 1.6; // m/giây (thời gian game)
 export const RIDE_SPEED = 3.6; // m/giây khi cưỡi xe (nhanh gấp rưỡi chạy bộ của người chơi)
@@ -99,6 +99,8 @@ export class Walker {
   private emojiTimer = 0;
   /** Emoji hiện mãi (vd. biểu tượng nghề nhân viên) khi không nói gì. */
   badge: string | null = null;
+  /** Đang làm việc tại chỗ (bày hàng, lau dọn...): dáng cúi + cử động tay thay vì đứng thở. */
+  working = false;
   /** Số định danh và màu áo, để gửi cho máy bạn khi chơi 2 người. */
   readonly id = ++walkerIds;
   readonly color: number;
@@ -145,6 +147,7 @@ export class Walker {
   /** Nhân vật rời khỏi sân khấu vĩnh viễn: giải phóng geometry/material để không rò rỉ bộ nhớ GPU. */
   dispose() {
     const freeMat = (m: THREE.Material) => {
+      if (isSharedMaterial(m)) return; // dùng chung cho nhiều nhân vật — không được hủy kẻo trắng người khác
       (m as unknown as { map?: THREE.Texture }).map?.dispose();
       m.dispose();
     };
@@ -262,6 +265,21 @@ export class Walker {
       torso.rotation.z = Math.sin(this.bobPhase) * 0.035;
       headGroup.rotation.y = -Math.sin(this.bobPhase) * 0.04;
       headGroup.rotation.z = -Math.sin(this.bobPhase) * 0.02;
+    } else if (this.working) {
+      // Dáng làm việc tại chỗ: hơi cúi người, hai tay xoay đều như đang bày hàng/lau dọn
+      const pump = Math.sin(this.bobPhase * 1.4);
+      torso.rotation.x += (0.2 - torso.rotation.x) * ease;
+      torso.position.y = Math.abs(Math.sin(this.bobPhase * 2)) * 0.018;
+      torso.rotation.y = 0;
+      torso.rotation.z = 0;
+      headGroup.rotation.y = 0;
+      headGroup.rotation.z = 0;
+      leftArm.rotation.x = -0.55 - pump * 0.4;
+      rightArm.rotation.x = -0.55 + pump * 0.4;
+      leftArm.rotation.z = 0.1;
+      rightArm.rotation.z = -0.1;
+      leftForearm.rotation.x = 1.05 + pump * 0.3;
+      rightForearm.rotation.x = 1.05 - pump * 0.3;
     } else {
       // Idle thở nhẹ nhàng
       torso.position.y = Math.sin(this.bobPhase) * 0.012;

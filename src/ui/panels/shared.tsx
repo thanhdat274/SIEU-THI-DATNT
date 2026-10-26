@@ -38,6 +38,27 @@ export function Footer({ onClose, closeLabel = 'Đóng', children }: { onClose: 
   );
 }
 
+/** Thanh tab chuyển đổi — dùng chung cho mọi panel; render giống nhau để UI nhất quán. */
+export function Tabs<T extends string>({ tabs, value, onChange }: {
+  tabs: readonly (readonly [T, string])[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '8px 0 12px' }}>
+      {tabs.map(([id, label]) => (
+        <button
+          key={id}
+          style={{ ...styles.btn, marginLeft: 0, background: value === id ? '#f1c40f' : '#fff', fontWeight: value === id ? 700 : undefined }}
+          onClick={() => onChange(id)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export const Swatch = ({ color }: { color: number }) => (
   <span style={{
     display: 'inline-block', width: 12, height: 12, borderRadius: 3, verticalAlign: 'middle',
@@ -45,18 +66,38 @@ export const Swatch = ({ color }: { color: number }) => (
   }} />
 );
 
+/**
+ * Màn hình cảm ứng nhỏ (điện thoại, iPad mini): panel thu nhỏ thành cửa sổ vừa phải,
+ * chừa nhiều cảnh game xung quanh hơn. `IS_MOBILE` chỉ đúng trên thiết bị touch có
+ * màn hẹp (max-width: 1000px) nên desktop, tablet lớn và laptop màn cảm ứng giữ nguyên
+ * full-width như cũ.
+ */
+const IS_MOBILE =
+  typeof matchMedia !== 'undefined' &&
+  matchMedia('(pointer: coarse) and (max-width: 1000px)').matches;
+
 export const styles: Record<string, React.CSSProperties> = {
   backdrop: {
     pointerEvents: 'auto', position: 'absolute', inset: 0,
     display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)',
   },
-  panel: {
-    background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '18px 22px',
-    // Chừa đáy màn hình cho dock nút của HUD — hết cảnh dãy nút cuối panel bị dock đè lên
-    minWidth: 'min(360px, calc(100vw - 32px))', maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100dvh - 108px)', overflow: 'auto',
-    boxSizing: 'border-box',
-    boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-  },
+  panel: IS_MOBILE
+    ? {
+        background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '12px 14px',
+        // Màn ngang: panel chiếm gần full chiều ngang như desktop để nhiều thông tin trên
+        // một tầm nhìn, đỡ phải cuộn dọc. Desktop giữ nguyên kích thước cũ.
+        minWidth: 'min(320px, calc(100vw - 24px))', maxWidth: 'calc(100vw - 24px)',
+        maxHeight: 'calc(100dvh - 96px)', overflow: 'auto',
+        boxSizing: 'border-box',
+        boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+      }
+    : {
+        background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '18px 22px',
+        // Chừa đáy màn hình cho dock nút của HUD — hết cảnh dãy nút cuối panel bị dock đè lên
+        minWidth: 'min(360px, calc(100vw - 32px))', maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100dvh - 108px)', overflow: 'auto',
+        boxSizing: 'border-box',
+        boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+      },
   title: { margin: '0 0 4px' },
   sub: { margin: '0 0 12px', opacity: 0.75, fontSize: 13, maxWidth: 520 },
   table: { borderCollapse: 'collapse', width: '100%', fontSize: 14, textAlign: 'right' },

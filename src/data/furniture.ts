@@ -2,7 +2,7 @@ import type { Category } from './products';
 import type { CookingStation } from './recipes';
 
 export type FurnitureType =
-  | 'shelf' | 'bigShelf' | 'fridge' | 'freezer' | 'produce'
+  | 'shelf' | 'bigShelf' | 'fridge' | 'freezer' | 'produce' | 'meat_counter'
   | 'checkout' | 'cartStation' | 'plant' | 'wall'
   | CookingStation;
 
@@ -70,6 +70,11 @@ export const FURNITURE: FurnitureDef[] = [
   {
     type: 'produce', name: 'Quầy rau quả', price: 300000, unlock: 21, size: [1.6, 1.0], tiers: 2, slots: 3, capacity: 8,
     categories: ['fresh'], desc: '2 tầng, mỗi tầng 3 ô × 8 món hàng tươi (rau, trái cây, bánh mì, món nấu ăn tươi)',
+  },
+  {
+    type: 'meat_counter', name: 'Quầy thịt cá tươi', price: 650000, unlock: 32, size: [2.0, 1.0], tiers: 2, slots: 3, capacity: 6,
+    categories: ['meat'], priceBonus: 0.15,
+    desc: '2 tầng × 3 ô × 6 món thịt cá tươi, quầy mát giữ hàng; khách trả thêm 15% vì tươi. Hạn dùng chỉ 2 ngày, cần giấy phép an toàn thực phẩm và người bán thịt cá đứng quầy',
   },
   // ──────────────────────────────────────────────
   // TRẠM NẤU: món nấu xong về kho, bày bán như hàng thường

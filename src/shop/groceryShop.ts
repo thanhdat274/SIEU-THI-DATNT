@@ -183,15 +183,24 @@ export class GroceryShop {
     return counters;
   }
 
-  /** Các quầy (toạ độ thế giới) để khách xếp hàng và thu ngân đứng. */
+  /** Các quầy (toạ độ thế giới) để khách xếp hàng và thu ngân đứng. Gọi nhiều lần mỗi khung nên cache
+   *  theo tham chiếu `furniture` + vị trí toà nhà — chỉ tính lại khi đổi kệ/đổi cấp tiệm (toạ độ quầy tịnh tiến theo nhà). */
+  private _countersCache: { furn: Furniture[]; main: MainCounter | null; tier: number; bx: number; bz: number; result: Counter[] } | null = null;
   counters(): Counter[] {
-    return this.localCounters(useGame.getState().furniture).map((c) => ({
-      key: c.key,
-      center: this.local(c.x, c.z),
-      cashier: this.local(...c.cashier),
-      dir: c.dir,
-      pay: this.local(...c.pay),
+    const { furniture: furn, mainCounter: main } = useGame.getState();
+    const bp = this.building.group.position;
+    const c = this._countersCache;
+    // Quầy chính dời được (mainCounter) và mặc định theo kích cỡ tiệm (tier) nên cũng là khoá cache
+    if (c && c.furn === furn && c.main === main && c.tier === this.tier && c.bx === bp.x && c.bz === bp.z) return c.result;
+    const result = this.localCounters(furn).map((cc) => ({
+      key: cc.key,
+      center: this.local(cc.x, cc.z),
+      cashier: this.local(...cc.cashier),
+      dir: cc.dir,
+      pay: this.local(...cc.pay),
     }));
+    this._countersCache = { furn, main, tier: this.tier, bx: bp.x, bz: bp.z, result };
+    return result;
   }
 
   /** Vị trí thứ i trong hàng chờ của một quầy; 0 là chỗ trả tiền. */
@@ -342,6 +351,9 @@ export class GroceryShop {
   get doorOutside() { return this.local(0, this.depth / 2 + 0.8); }
   /** Ngay sau cửa, bên trong. */
   get doorInside() { return this.local(0, this.depth / 2 - 0.9); }
+
+  /** Điểm nhân viên xếp hàng lấy thùng trong kho (toạ độ thế giới). */
+  get warehousePickup() { return this.warehouse.pickupPoint; }
 
   /** Chỗ đứng trước một kệ để lấy hàng (offset ngang để khách không đứng chồng). */
   spotFor(f: Furniture, spread = 0) {

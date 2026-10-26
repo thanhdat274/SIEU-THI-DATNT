@@ -5,6 +5,7 @@
  * Chỉ có dữ liệu và hàm thuần; áp vào trạng thái ở `core/slices/endDay` và `core/slices/staff`.
  */
 import { skillSpeed, type Staff } from './staff';
+import { LEAD_CATCH_BONUS, LEAD_SPEED_MUL } from './careers';
 
 export type StaffTrait = 'steady' | 'diligent' | 'friendly' | 'lazy' | 'sticky';
 
@@ -61,7 +62,7 @@ export function shownTrait(st: Staff): StaffTrait | null {
 }
 
 /** Tốc độ làm việc thật: theo sao và tính cách. */
-export const workSpeed = (st: Staff) => skillSpeed(st.skill) * TRAITS[traitOf(st)].speedMul;
+export const workSpeed = (st: Staff) => skillSpeed(st.skill) * TRAITS[traitOf(st)].speedMul * (st.rank === 'lead' ? LEAD_SPEED_MUL : 1);
 
 /** Bốc một tính theo tỉ trọng. */
 export function rollTrait(rng: () => number = Math.random): StaffTrait {
@@ -94,6 +95,8 @@ export interface StaffDayCtx {
   storage: Record<string, number>;
   hasCamera: boolean;
   hasManager: boolean;
+  /** Có trưởng quầy giám sát. */
+  hasLead?: boolean;
   rng?: () => number;
 }
 
@@ -147,7 +150,7 @@ export function staffDayEnd(list: Staff[], ctx: StaffDayCtx): StaffDayResult {
     }
     const items = Object.values(took).reduce((n, q) => n + q, 0);
     if (!cash && !items) return st;
-    const chance = Math.min(0.85, CATCH_BASE + (ctx.hasCamera ? CATCH_CAMERA : 0) + (ctx.hasManager ? CATCH_MANAGER : 0));
+    const chance = Math.min(0.85, CATCH_BASE + (ctx.hasCamera ? CATCH_CAMERA : 0) + (ctx.hasManager ? CATCH_MANAGER : 0) + (ctx.hasLead ? LEAD_CATCH_BONUS : 0));
     if (rng() < chance) {
       news.push(`🚨 Bắt quả tang ${st.name} ${cash ? `ăn bớt ${Math.round(cash / 1000)}k tiền két` : `lấy ${items} món trong kho`}! Đã thu lại, xem ở bảng Nhân viên để xử lý`);
       caught.push(st.name);

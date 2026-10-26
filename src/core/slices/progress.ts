@@ -40,6 +40,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     });
     if (gift.xp) get().addXp(gift.xp);
     s.notify(`🎁 Điểm danh ngày ${((streak - 1) % 7) + 1}: ${gift.icon} ${gift.label} — ${giftText(gift)}`);
+    playSfx('gift');
     return true;
   },
   spinWheel: () => {
@@ -53,6 +54,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     });
     if (prize.xp) get().addXp(prize.xp);
     s.notify(`🎡 Vòng quay may mắn: ${prize.icon} ${prize.label}!`);
+    playSfx('gift');
     return prize;
   },
   learnSkill: (id) => {
@@ -74,6 +76,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     if (!fresh.length) return;
     set({ titles: [...s.titles, ...fresh.map((t) => t.id)] });
     s.notify(`🏅 Danh hiệu mới: ${fresh.map((t) => `${t.icon} ${t.name}`).join(', ')}`);
+    playSfx('achieve');
   },
   claimQuest: (id) => {
     const s = get();
@@ -89,6 +92,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     });
     if (q.xp) get().addXp(q.xp);
     s.notify(`📜 Xong "${q.title}": +${formatMoney(q.money)}${q.xp ? ` · +${q.xp} XP` : ''}`);
+    playSfx('quest');
     return true;
   },
   addXp: (amount) => {

@@ -29,7 +29,7 @@ export const SUPPLIERS: Supplier[] = [
   },
   {
     id: 'cho', name: 'Chợ đầu mối', icon: '🧺', unlock: 3, discount: 0.12, delayDays: 1, minOrder: 150000, volatility: 0.08,
-    categories: ['dry', 'drink', 'fresh', 'cold'],
+    categories: ['dry', 'drink', 'fresh', 'cold', 'meat'],
     bulk: [{ minCases: 3, discount: 0.03 }, { minCases: 6, discount: 0.06 }],
     desc: 'Rẻ hơn 12%, giao 6h sáng mai. Giá lên xuống theo ngày. Có rau củ, trái cây tươi.',
   },

@@ -188,7 +188,7 @@
 /* Bảng nhập hàng: 7 cột trên máy tính, thành thẻ 2–3 dòng trên điện thoại */
 #ui .or-row { grid-template-columns: minmax(170px, 2.2fr) 0.8fr 0.8fr 1fr 0.9fr 1.5fr 1fr; }
 
-@media (max-width: 700px) {
+@media (pointer: coarse) and (max-width: 1000px) {
   #ui .or-head { display: none !important; }
   #ui .or-row { grid-template-columns: 1fr 1fr 1fr; row-gap: 6px; padding: 10px !important; }
   #ui .or-name { grid-column: 1 / -1; font-weight: 600; }
@@ -204,10 +204,13 @@
 
 /* Bảng game trên màn hẹp: nút và ô to hơn để dễ chạm */
 @media (pointer: coarse) {
-  #ui .dd-trigger, #ui select, #ui input:not([type='checkbox']) { height: 38px; }
+  #ui .dd-trigger, #ui select, #ui input:not([type='checkbox']) { height: 38px; font-size: 16px; }
   #ui .dd-option { padding: 11px 12px; }
   #ui .or-qty button { width: 32px !important; height: 32px !important; }
   #ui .or-qty input { height: 32px !important; }
+  /* Nút thao tác trong panel (inline styles.btn chỉ có padding 5px/10px nên cao ~28px):
+     nâng lên đủ chuẩn chạm ~40px cho điện thoại. */
+  #ui .panel button { min-height: 40px; }
 }
 
 /* Hẻm online: đang chờ máy chạy làm thao tác vừa bấm, làm mờ nút cho khỏi bấm lặp */

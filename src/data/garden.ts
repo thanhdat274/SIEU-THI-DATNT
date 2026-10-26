@@ -161,17 +161,19 @@ export interface CropDef {
  * Thời gian đã trừu tượng hoá theo nhịp game (cây ăn trái chung 7 ngày) chứ không đếm tháng thật.
  */
 export const CROPS: CropDef[] = [
-  { id: 'rau_cai', productId: 'rau', name: 'Rau cải', icon: '🥬', days: 3, seedCost: 8000, yieldQty: 8, unlock: 1 },
-  { id: 'bap', productId: 'bap', name: 'Bắp ngô', icon: '🌽', days: 4, seedCost: 12000, yieldQty: 6, unlock: 1 },
-  { id: 'mia', productId: 'mia', name: 'Mía', icon: '🎋', days: 6, seedCost: 20000, yieldQty: 8, unlock: 12 },
-  { id: 'traicay', productId: 'traicay', name: 'Cây ăn trái', icon: '🌳', days: 7, seedCost: 35000, yieldQty: 6, unlock: 20 },
-  { id: 'traicay_nam', productId: 'traicay', name: 'Cây ăn trái lâu năm', icon: '🌴', days: 7, regrowDays: 3, seedCost: 55000, yieldQty: 8, unlock: 20 },
+  // Giống tính theo giá trị hàng mua tránh được (~50% giá nhập của cả vụ): nông trại "đỡ nhập hàng"
+  // (tiết kiệm tiền nhập + hàng tươi + premium) chứ KHÔNG phải máy in tiền áp đảo doanh thu tiệm.
+  { id: 'rau_cai', productId: 'rau', name: 'Rau cải', icon: '🥬', days: 3, seedCost: 40000, yieldQty: 8, unlock: 1 },
+  { id: 'bap', productId: 'bap', name: 'Bắp ngô', icon: '🌽', days: 4, seedCost: 24000, yieldQty: 6, unlock: 1 },
+  { id: 'mia', productId: 'mia', name: 'Mía', icon: '🎋', days: 6, seedCost: 48000, yieldQty: 8, unlock: 12 },
+  { id: 'traicay', productId: 'traicay', name: 'Cây ăn trái', icon: '🌳', days: 7, seedCost: 75000, yieldQty: 6, unlock: 20 },
+  { id: 'traicay_nam', productId: 'traicay', name: 'Cây ăn trái lâu năm', icon: '🌴', days: 7, regrowDays: 3, seedCost: 100000, yieldQty: 8, unlock: 20 },
   { id: 'chuoi', productId: 'x_chuoi', name: 'Chuối', icon: '🍌', days: 8, regrowDays: 3, seedCost: 40000, yieldQty: 8, unlock: 22 },
   { id: 'oi', productId: 'x_oi', name: 'Ổi', icon: '🍏', days: 7, regrowDays: 3, seedCost: 45000, yieldQty: 7, unlock: 22 },
   { id: 'xoai', productId: 'x_xoai', name: 'Xoài', icon: '🥭', days: 12, regrowDays: 4, seedCost: 60000, yieldQty: 5, unlock: 26, season: [3, 6] },
   { id: 'cam', productId: 'x_cam', name: 'Cam', icon: '🍊', days: 10, regrowDays: 4, seedCost: 55000, yieldQty: 6, unlock: 28, season: [11, 2] },
   { id: 'vai', productId: 'x_vai', name: 'Vải thiều', icon: '🍒', days: 10, regrowDays: 3, seedCost: 70000, yieldQty: 6, unlock: 32, season: [5, 7] },
-  { id: 'nhan', productId: 'x_nhan', name: 'Nhãn', icon: '🍇', days: 11, regrowDays: 4, seedCost: 65000, yieldQty: 6, unlock: 32, season: [7, 9] },
+  { id: 'nhan', productId: 'x_nhan', name: 'Nhãn', icon: '🍇', days: 11, regrowDays: 4, seedCost: 72000, yieldQty: 6, unlock: 32, season: [7, 9] },
   { id: 'mit', productId: 'x_mit', name: 'Mít', icon: '🍍', days: 14, regrowDays: 5, seedCost: 90000, yieldQty: 3, unlock: 36 },
   { id: 'buoi', productId: 'x_buoi', name: 'Bưởi', icon: '🍐', days: 13, regrowDays: 5, seedCost: 80000, yieldQty: 4, unlock: 38, season: [12, 2] },
 ];

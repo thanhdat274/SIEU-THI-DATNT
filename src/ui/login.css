@@ -86,6 +86,26 @@
   margin: 0 0 2px;
   font-size: 17px;
 }
+/* Nhắc quà điểm danh + streak cho người chơi cũ ngay trên màn đăng nhập */
+.login-nudge {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #4a515f;
+  background: #eef2f7;
+  border: 1px solid #dde4ee;
+  border-radius: 10px;
+  padding: 9px 11px;
+}
+.login-nudge.claimable {
+  color: #7a4a12;
+  background: #fff5e3;
+  border-color: #f4d9a8;
+}
+.login-nudge b { color: #333b47; }
+.login-nudge.claimable b { color: #94520c; }
 .login-muted {
   margin: 0;
   font-size: 13px;
@@ -238,4 +258,12 @@
   .login-btn.small { min-height: 36px; padding: 0 10px; white-space: nowrap; }
   .login-code { width: 80px; flex: none; }
   .login-code.login-name { flex: 1; width: auto; }
+}
+
+/* Hẻm online trên điện thoại: nút Sao chép mã / Rời / gia nhập cũng đủ chuẩn chạm 40px
+   (các nút này nằm trong khung đăng nhập, không thuộc .panel nên phải phủ riêng). */
+@media (pointer: coarse) and (max-width: 1000px) {
+  .login-btn, .login-btn.small, .login-link, .login-save { min-height: 40px; }
+  .login-link { font-size: 14px; }
+  .login-copy { font-size: 13px; padding: 8px 10px; }
 }

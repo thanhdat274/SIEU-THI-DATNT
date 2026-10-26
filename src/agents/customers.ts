@@ -24,6 +24,7 @@ import { earnService } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
 import { askAtCounter, askPending, clearAsk, expireAsk } from '../core/counterAsk';
 import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../data/wholesale';
+import { meatDemandFactor } from '../data/meat';
 import { bestSkillOnDuty, CARE_PATIENCE_PER_STAR, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor, GUARD_DETECT } from '../data/staff';
 import { socialTraffic } from '../data/social';
 import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalUndercuts } from '../data/biz';
@@ -232,15 +233,22 @@ export class CustomerManager {
 
     for (const counter of counters) this.updateCheckout(counter, gameDt, cashierSpeed(counter));
 
-    // Xoá khách đã đi khỏi bản đồ (kèm giải phóng tài nguyên GPU)
-    this.customers = this.customers.filter((c) => {
-      const gone = c.state !== 'queued' && !(c.wholesale && c.offered) && c.idle;
-      if (gone) {
-        this.scene.remove(c.mesh);
-        c.dispose();
+    // Xoá khách đã đi khỏi bản đồ (kèm giải phóng tài nguyên GPU). Không cấp phát mảng mới mỗi khung:
+    // chỉ gộp mảng tại chỗ khi thật sự có người rời khỏi.
+    let anyGone = false;
+    for (const c of this.customers) {
+      if (c.state !== 'queued' && !(c.wholesale && c.offered) && c.idle) { anyGone = true; break; }
+    }
+    if (anyGone) {
+      let w = 0;
+      for (let r = 0; r < this.customers.length; r++) {
+        const c = this.customers[r];
+        const gone = c.state !== 'queued' && !(c.wholesale && c.offered) && c.idle;
+        if (gone) { this.scene.remove(c.mesh); c.dispose(); }
+        else this.customers[w++] = c;
       }
-      return !gone;
-    });
+      this.customers.length = w;
+    }
 
     const waiting = [...this.queues.values()].reduce((sum, q) => sum + q.length, 0);
     // Khách còn trong tiệm: đang chọn hàng / đi tới quầy / đang chờ thanh toán — nhân viên tan ca
@@ -324,6 +332,8 @@ export class CustomerManager {
     const homemade = shelved.filter((id) => COOKED_PRODUCT_IDS.has(id));
     // Kệ dễ thấy (gần cửa, sát lối đi chính) thì món trên đó được hỏi mua nhiều hơn
     const attention = stockedAttention(s.furniture, this.geom());
+    // Thịt cá tươi: không có người cân cắt trực ca thì khách ít hỏi mua
+    const butcher = bestSkillOnDuty(s.staff, 'butcher', s.minutes);
     return Array.from({ length: count }, () => {
       if (onSale.length && Math.random() < SALE_HUNT) return pick(onSale);
       if (homemade.length && Math.random() < 0.25) return pick(homemade);
@@ -334,7 +344,7 @@ export class CustomerManager {
       if (timely.length && Math.random() < 0.2) return pick(timely);
       if (hot.length && Math.random() < 0.15) return pick(hot);
       return stocked.length && Math.random() < WANTS_STOCKED
-        ? weightedPick(stocked, (id) => attention[id] ?? 1, Math.random)
+        ? weightedPick(stocked, (id) => (attention[id] ?? 1) * meatDemandFactor(id, butcher), Math.random)
         : pick(all);
     });
   }

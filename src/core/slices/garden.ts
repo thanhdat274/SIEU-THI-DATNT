@@ -14,7 +14,7 @@ import { copyStock, putStock, takeStock } from '../stock';
 const cropDef = (id: string): CropDef | undefined => CROPS.find((c) => c.id === id) ?? (cropById(id) ?? undefined);
 
 export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
-  'plantCrop' | 'waterGarden' | 'fertilizePlot' | 'harvestPlot' | 'buyAnimal' | 'feedPen' | 'collectPen' | 'sellFattened' | 'expandFarm' | 'deliverFarmOrder' | 'buyFarmBuilding' | 'upgradeFarmBuilding' | 'cleanupFarm'
+  'plantCrop' | 'waterGarden' | 'waterPlot' | 'fertilizePlot' | 'harvestPlot' | 'buyAnimal' | 'feedPen' | 'collectPen' | 'sellFattened' | 'expandFarm' | 'deliverFarmOrder' | 'buyFarmBuilding' | 'upgradeFarmBuilding' | 'cleanupFarm'
 > => ({
   plantCrop: (plotIndex, cropId) => {
     const s = get();
@@ -41,6 +41,16 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
     if (!todo) return s.notify('Đã tưới hết rồi');
     set({ garden: { ...s.garden, plots: s.garden.plots.map((p) => (p.crop ? { ...p, wateredDay: s.day } : p)) } });
     s.notify(`💧 Đã tưới ${todo} luống: tưới đủ mỗi ngày cây lớn nhanh gấp rưỡi, mưa thì khỏi tưới`);
+  },
+  waterPlot: (plotIndex) => {
+    const s = get();
+    if (s.weather === 'rain' || s.weather === 'storm') return s.notify('🌧️ Trời đang mưa, cây đã đủ nước');
+    if (s.garden.buildings.tuoi_tu_dong) return s.notify('💧 Hệ tưới nhỏ giọt tự lo rồi, khỏi tưới tay');
+    const plot = s.garden.plots[plotIndex];
+    if (!plot?.crop) return;
+    if (plot.wateredDay === s.day) return s.notify('Luống này hôm nay đã tưới rồi');
+    set({ garden: { ...s.garden, plots: s.garden.plots.map((p, i) => (i === plotIndex ? { ...p, wateredDay: s.day } : p)) } });
+    s.notify(`💧 Đã tưới luống ${plotIndex + 1}: tưới đủ mỗi ngày cây lớn nhanh gấp rưỡi, mưa thì khỏi`);
   },
   fertilizePlot: (plotIndex) => {
     const s = get();

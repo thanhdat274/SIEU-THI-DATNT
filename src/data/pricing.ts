@@ -26,6 +26,7 @@ const SENSITIVITY_BY_CATEGORY: Record<Category, number> = {
   frozen: 1.5,
   household: 1.0,
   fresh: 1.2,
+  meat: 1.3,
 };
 
 /** Riêng vài món lệch khỏi ngành hàng. */

@@ -15,6 +15,9 @@ export const SHOP_TIERS: ShopTier[] = [
   { name: 'Tạp hóa lớn', width: 12, depth: 8, unlock: 13, price: 2500000 },
   { name: 'Mini mart', width: 15, depth: 10, unlock: 30, price: 7000000 },
   { name: 'Siêu thị tạp hóa', width: 18, depth: 12, unlock: 45, price: 16000000 },
+  // Bậc cuối game: đại siêu thị. Chỉ nới vừa phải để không đụng nhà ở x −15..−9 và nhà kho phía sau.
+  { name: 'Siêu thị khang trang', width: 21, depth: 13, unlock: 58, price: 30000000 },
+  { name: 'Đại siêu thị', width: 24, depth: 14, unlock: 75, price: 52000000 },
 ];
 
 /** Mặt tiền tiệm luôn nằm ở z này (sát vỉa hè); tiệm mở rộng về phía sau. */
@@ -26,6 +29,13 @@ export const SHOP_CENTER_X = 4;
  * Nhẹ ở tiệm nhỏ, đáng kể khi lên siêu thị (20k → 50k → 140k → 290k → 500k).
  */
 export const rentOf = (tier: number) => 20000 + tier * tier * 30000;
+
+/**
+ * Chi phí vận hành theo doanh thu (điện, nước, bảo trì): % doanh thu mỗi ngày, trừ ở bảng tổng kết.
+ * Nhỏ ở doanh thu thấp, nhưng lớn dần theo quy mô — để cuối game tiền vào không vượt xa tiền ra
+ * (tiền thuê là chi phí cố định duy nhất trước đây nên siêu thị dễ "tràn tiền").
+ */
+export const OPERATING_REVENUE_RATE = 0.02;
 
 export interface Swatch {
   name: string;

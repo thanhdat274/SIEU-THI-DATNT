@@ -11,7 +11,7 @@ export interface Lot {
 
 /** Hạn dùng (ngày) khi mới nhập theo ngành hàng; Infinity = không hết hạn. */
 const CATEGORY_LIFE: Record<Category, number> = {
-  dry: 45, drink: 90, household: Infinity, cold: 6, frozen: 30, fresh: 3,
+  dry: 45, drink: 90, household: Infinity, cold: 6, frozen: 30, fresh: 3, meat: 2,
 };
 
 const PRODUCT_LIFE: Record<string, number> = {
@@ -25,14 +25,14 @@ export function shelfLife(productId: string): number {
 /** Chỗ cất: kho (nhiệt độ phòng) hoặc một loại kệ/tủ. */
 export type Place = 'storage' | 'coldStorage' | FurnitureType;
 
-const COOLED: Place[] = ['fridge', 'freezer', 'coldStorage'];
+const COOLED: Place[] = ['fridge', 'freezer', 'coldStorage', 'meat_counter'];
 
 /** Hàng cần lạnh mà để ngoài thì hỏng nhanh gấp mấy lần. */
-const WARM_PENALTY: Partial<Record<Category, number>> = { cold: 2, frozen: 3, fresh: 1.5 };
+const WARM_PENALTY: Partial<Record<Category, number>> = { cold: 2, frozen: 3, fresh: 1.5, meat: 2.5 };
 
 /** Trời nóng hay ẩm làm hàng để ngoài tủ hỏng nhanh hơn; trong tủ mát thì không sao. */
 const WEATHER_PENALTY: Record<Weather, Partial<Record<Category, number>>> = {
-  sunny: { fresh: 1.3, cold: 1.3, frozen: 1.2 },
+  sunny: { fresh: 1.3, cold: 1.3, frozen: 1.2, meat: 1.3 },
   cloudy: {},
   rain: { fresh: 1.15, dry: 1.1 },
   storm: { fresh: 1.2, dry: 1.15 },

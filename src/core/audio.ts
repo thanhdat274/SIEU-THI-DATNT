@@ -15,7 +15,7 @@ const lastPlay: Record<string, number> = {};
 /** Chống dội: hiệu ứng phát dồn trong khoảng này thì bỏ bớt. */
 const MIN_GAP: Partial<Record<Sfx, number>> = { door: 0.2, sale: 0.5, ring: 2, thunder: 6 };
 
-export type Sfx = 'door' | 'sale' | 'ring' | 'ding' | 'levelup' | 'thunder';
+export type Sfx = 'door' | 'sale' | 'ring' | 'ding' | 'levelup' | 'thunder' | 'achieve' | 'gift' | 'quest';
 
 export const isMuted = () => muted;
 
@@ -100,6 +100,22 @@ export function playSfx(name: Sfx) {
       blip(659, 0.12, 0.15, 'triangle', 0.05);
       blip(784, 0.24, 0.15, 'triangle', 0.05);
       blip(1046, 0.36, 0.4, 'triangle', 0.06);
+      break;
+    case 'achieve': // Thành tựu / danh hiệu: hợp âm sáng lên, lấp lánh
+      blip(784, 0, 0.16, 'triangle', 0.05);
+      blip(988, 0.09, 0.16, 'triangle', 0.05);
+      blip(1175, 0.18, 0.18, 'triangle', 0.05);
+      blip(1568, 0.26, 0.34, 'triangle', 0.05);
+      break;
+    case 'gift': // Nhận quà / quay vòng: hai nốt leng keng vui tai
+      blip(1319, 0, 0.1, 'sine', 0.05);
+      blip(1760, 0.07, 0.2, 'sine', 0.05);
+      blip(2637, 0.12, 0.28, 'sine', 0.045);
+      break;
+    case 'quest': // Xong nhiệm vụ: chuỗi nốt leo lên gọn gàng
+      blip(587, 0, 0.12, 'square', 0.035);
+      blip(740, 0.08, 0.12, 'square', 0.035);
+      blip(880, 0.16, 0.26, 'sine', 0.05);
       break;
     case 'thunder': {
       const buf = noiseBuffer(1.6);

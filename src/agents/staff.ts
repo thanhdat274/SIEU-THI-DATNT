@@ -281,6 +281,11 @@ export class StaffManager {
       if (bar.length) return this.watchStove(w, gameDt, bar);
       // Chưa mua quầy pha thì tạm bày hàng như xếp hàng
     }
+    // Bán thịt cá: đứng canh quầy thịt cá (hiệu ứng khách mua thêm xem customers.ts / data/meat.ts)
+    if (w.staff.role === 'butcher') {
+      const counters = useGame.getState().furniture.filter((f) => f.type === 'meat_counter');
+      if (counters.length) return this.watchStove(w, gameDt, counters);
+    }
     // Chăm sóc khách: đi lại hỏi thăm khách đang chờ (hiệu ứng kiên nhẫn xem customers.ts)
     if (w.staff.role === 'customer_care') return this.care(w, gameDt);
 
@@ -295,8 +300,17 @@ export class StaffManager {
       );
       if (t < 0) continue;
       w.job = `${f.uid}:${t}`;
-      this.walk(w, this.shop.spotFor(f));
-      w.plan.push(() => (w.pause = 3 / workSpeed(w.staff)));
+      // Đi qua cửa sau vào kho lấy thùng (đứng bàn nhận hàng) rồi mới ra bày kệ
+      this.walk(w, this.shop.warehousePickup);
+      w.plan.push(() => {
+        w.pause = 1.4 / workSpeed(w.staff);
+        w.working = true; // dáng cầm/nâng thùng tại bàn nhận hàng
+      });
+      w.plan.push(() => this.walk(w, this.shop.spotFor(f)));
+      w.plan.push(() => {
+        w.pause = 3 / workSpeed(w.staff);
+        w.working = true; // dáng bày hàng tại chỗ trong lúc xếp
+      });
       w.plan.push(() => {
         const cur = useGame.getState().furniture.find((it) => it.uid === f.uid);
         const tier = cur?.tiers[t];
@@ -304,6 +318,7 @@ export class StaffManager {
           useGame.getState().stockTier(cur.uid, t, tier.productId);
           w.say('📦');
         }
+        w.working = false;
         w.job = null;
       });
       return;

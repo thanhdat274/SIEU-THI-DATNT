@@ -27,7 +27,7 @@ export function snapshot(): SaveData {
   const s = useGame.getState();
   return {
     day: s.day, minutes: s.minutes, money: s.money, level: s.level, xp: s.xp,
-    storage: s.storage, storageLots: s.storageLots, furniture: s.furniture, mainCounter: s.mainCounter, shelfHeat: s.shelfHeat, impulseHinted: s.impulseHinted, prices: s.prices, happyHour: s.happyHour, stats: s.stats,
+    storage: s.storage, storageLots: s.storageLots, furniture: s.furniture, mainCounter: s.mainCounter, shelfHeat: s.shelfHeat, shelfProfit: s.shelfProfit, impulseHinted: s.impulseHinted, prices: s.prices, happyHour: s.happyHour, stats: s.stats,
     shopTier: s.shopTier, pendingUpgrade: s.pendingUpgrade, style: s.style,
     staff: s.staff, candidates: s.candidates, autoOpen: s.autoOpen, autoRoutine: s.autoRoutine, autoSwap: s.autoSwap, totals: s.totals, questLog: s.questLog, warehouseTier: s.warehouseTier,
     reviews: s.reviews, deliveries: s.deliveries, demand: s.demand, demandToday: s.demandToday,

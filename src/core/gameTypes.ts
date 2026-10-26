@@ -22,7 +22,7 @@ import type { RepSample } from '../data/reputation';
 import type { CommunityProgress, Opening } from '../data/community';
 import type { WheelPrize } from '../data/gifts';
 import type { PaymentMethod } from '../data/payments';
-import type { BranchState } from '../data/branches';
+import type { BranchState, PowerUpgradeId } from '../data/branches';
 import type { SocialState } from '../data/social';
 import type { OnlineState } from '../data/online';
 import type { InspectionRecord, LicenseId } from '../data/licenses';
@@ -226,6 +226,8 @@ export interface GameState {
   mainCounter: { x: number; z: number; rot: number } | null;
   /** Số món đã bán ra của từng kệ/tủ (khóa là uid) — heatmap vị trí: kệ dễ thấy bán nhiều hơn. */
   shelfHeat: Record<number, number>;
+  /** Lời tích luỹ của từng kệ/tủ (uid → lời và ngày bắt đầu tính) — báo cáo lời trên m². */
+  shelfProfit: Record<number, { profit: number; since: number }>;
   /** Đã nhắc người chơi về hàng chớp nhoáng cạnh quầy (chỉ nhắc một lần). */
   impulseHinted: boolean;
   /** Giá bán người chơi tự đặt; không có thì dùng giá gợi ý. */
@@ -416,7 +418,7 @@ export interface GameState {
   unstockTier: (uid: number, tier: number) => void;
   /** Khách lấy 1 món khỏi kệ; trả về giá phải trả, hoặc null nếu hết. */
   takeFromShelf: (productId: string, preferUid?: number) => number | null;
-  priceOf: (productId: string) => number;
+  priceOf: (productId: string, minutes?: number) => number;
   setPrice: (productId: string, price: number) => void;
   /** Tính tiền cho khách; `discount` là tiền giảm combo, `combos` là số combo trong giỏ,
    *  `payment` là hình thức thanh toán (mặc định tiền mặt) — ảnh hưởng phí và sổ thống kê. */
@@ -449,6 +451,11 @@ export interface GameState {
   branch: BranchState | null;
   openBranch: () => boolean;
   toggleBranch: () => void;
+  toggleVending: () => void;
+  /** Nhận/ngưng đơn app ban đêm ở chi nhánh. */
+  toggleNightDelivery: () => void;
+  /** Mua nâng cấp điện cho chi nhánh (máy phát, tủ tiết kiệm điện). */
+  buyBranchPower: (id: PowerUpgradeId) => void;
   hireForBranch: (id: number, shift: Shift) => void;
   fireFromBranch: (id: number) => void;
   setBranchShift: (id: number, shift: Shift) => void;
@@ -462,6 +469,14 @@ export interface GameState {
   restBranchStaff: (id: number) => void;
   /** Đào tạo nhân viên: tốn tiền, cộng kinh nghiệm, mỗi người một buổi mỗi ngày. */
   trainStaff: (id: number) => void;
+  /** Thăng chức nhân viên tiệm chính (thu ngân → trưởng quầy → quản lý). */
+  promoteStaff: (id: number) => void;
+  /** Thăng chức nhân viên chi nhánh. */
+  promoteBranchStaff: (id: number) => void;
+  /** Điều nhân viên giữa tiệm chính và cửa hàng tiện lợi (mỗi người một lần mỗi ngày). */
+  transferStaff: (id: number, to: 'main' | 'branch') => boolean;
+  /** Chi nhánh đóng cửa: dồn cả đội sang tiệm chính, người nào không vừa/không hợp thì ở lại. */
+  evacuateBranch: () => void;
   /** Trang mạng xã hội của tiệm. */
   social: SocialState;
   apologize: () => void;
@@ -481,6 +496,8 @@ export interface GameState {
   garden: GardenState;
   plantCrop: (plotIndex: number, cropId: string) => void;
   waterGarden: () => void;
+  /** Tưới một luống (bấm theo từng luống thay vì cả vườn). */
+  waterPlot: (plotIndex: number) => void;
   /** Bón phân cho một luống: rút ngắn 30% thời gian vụ, 1 lần/vụ. */
   fertilizePlot: (plotIndex: number) => void;
   harvestPlot: (plotIndex: number) => void;
