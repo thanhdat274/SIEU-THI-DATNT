@@ -612,8 +612,8 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
     }
   }
 
-  const skinMat = new THREE.MeshStandardMaterial({ color: skinHex, roughness: 0.55, metalness: 0.05 });
-  const hairMat = new THREE.MeshStandardMaterial({ color: hairHex, roughness: 0.5, metalness: 0.08 });
+  const skinMat = mat(skinHex, 0.55, 0.05);
+  const hairMat = mat(hairHex, 0.5, 0.08);
 
   // 1. ================= ĐẦU VÀ KHUÔN MẶT =================
   const headGroup = new THREE.Group();
@@ -650,8 +650,8 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
   const faceGroup = new THREE.Group();
   headGroup.add(faceGroup);
 
-  const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
-  const irisMat = new THREE.MeshStandardMaterial({ color: isElder ? 0x423832 : 0x221a15, roughness: 0.3 });
+  const eyeWhiteMat = mat(0xffffff, 0.2);
+  const irisMat = mat(isElder ? 0x423832 : 0x221a15, 0.3);
   const pupilMat = new THREE.MeshBasicMaterial({ color: 0x05070a });
   const glintMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
@@ -688,7 +688,7 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
     faceGroup.add(eyePivot);
 
     // Lông mày
-    const browMat = new THREE.MeshStandardMaterial({ color: hairHex, roughness: 0.8 });
+    const browMat = mat(hairHex, 0.8);
     const brow = new THREE.Mesh(new THREE.BoxGeometry(0.11 * headScale, isElder ? 0.035 : 0.024, 0.03), browMat);
     brow.position.set(side * 0.17 * headScale, 0.18 * headScale, 0.33 * headScale);
     brow.rotation.y = side * 0.18;
@@ -697,12 +697,12 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
   }
 
   // Mũi & Miệng
-  const noseMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(skinHex).offsetHSL(0, 0.1, -0.06), roughness: 0.5 });
+  const noseMat = mat(new THREE.Color(skinHex).offsetHSL(0, 0.1, -0.06).getHex(), 0.5);
   const nose = new THREE.Mesh(new THREE.SphereGeometry(isElder ? 0.048 : 0.036, 12, 12), noseMat);
   nose.position.set(0, -0.02 * headScale, 0.38 * headScale);
   faceGroup.add(nose);
 
-  const mouthMat = new THREE.MeshStandardMaterial({ color: 0x9b3c3c, roughness: 0.5 });
+  const mouthMat = mat(0x9b3c3c, 0.5);
   const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.045 * headScale, 0.012, 6, 14, Math.PI * 0.7), mouthMat);
   mouth.position.set(0, -0.13 * headScale, 0.37 * headScale);
   mouth.rotation.x = Math.PI * 0.5;
@@ -712,7 +712,7 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
 
   // Râu bạc cho Cụ ông / Bác tổ trưởng
   if (archetype === 'elder_man') {
-    const beardMat = new THREE.MeshStandardMaterial({ color: hairHex, roughness: 0.9 });
+    const beardMat = mat(hairHex, 0.9);
     // Ria mép
     const mustache = new THREE.Mesh(new THREE.CapsuleGeometry(0.03, 0.14, 4, 8), beardMat);
     mustache.rotation.z = Math.PI / 2;
@@ -725,7 +725,7 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
   if (wearGlasses) {
     const glassesGroup = new THREE.Group();
     const frameColor = archetype === 'elder_man' ? 0xd4af37 : (archetype === 'coder_guy' ? 0x111111 : 0x221f1e);
-    const frameMat = new THREE.MeshStandardMaterial({ color: frameColor, roughness: 0.3, metalness: 0.3 });
+    const frameMat = mat(frameColor, 0.3, 0.3);
 
     for (const side of [-1, 1]) {
       const ring = new THREE.Mesh(new THREE.TorusGeometry(0.11 * headScale, 0.015, 8, 20), frameMat);
@@ -779,7 +779,7 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
     }
   } else if (hairStyle === 'pigtails') {
     // Tóc 2 chùm cột nơ đáng yêu
-    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xff477e, roughness: 0.4 });
+    const ribbonMat = mat(0xff477e, 0.4);
     for (const side of [-1, 1]) {
       const pigtail = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), hairMat);
       pigtail.scale.set(0.8, 1.4, 0.8);
@@ -802,7 +802,7 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
     bun.position.set(0, 0.1, -0.38);
     hairGroup.add(bun);
     // Trâm cài tóc
-    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.36, 8), new THREE.MeshStandardMaterial({ color: 0x27ae60 }));
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.36, 8), mat(0x27ae60));
     pin.rotation.z = 1.1;
     pin.position.set(0, 0.1, -0.38);
     hairGroup.add(pin);
@@ -820,7 +820,7 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
     hairGroup.add(bangs);
   } else if (hairStyle === 'ponytail') {
     // Tóc cột đuôi ngựa sau gáy
-    const tie = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.02, 6, 12), new THREE.MeshStandardMaterial({ color: 0xfdcb6e, roughness: 0.4 }));
+    const tie = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.02, 6, 12), mat(0xfdcb6e, 0.4));
     tie.position.set(0, 0.2, -0.4);
     hairGroup.add(tie);
     const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.3, 4, 10), hairMat);
@@ -843,7 +843,7 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
     addJobHeadwear(archetype, headGroup, headScale);
   } else if (archetype === 'worker_driver' || options.hatColor !== undefined) {
     // Chú xe ôm: Nón bảo hiểm / mũ lưỡi trai nửa đầu
-    const capMat = new THREE.MeshStandardMaterial({ color: options.hatColor ?? 0x1e3799, roughness: 0.4 });
+    const capMat = mat(options.hatColor ?? 0x1e3799, 0.4);
     const cap = new THREE.Mesh(new THREE.SphereGeometry(0.42 * headScale, 16, 14, 0, Math.PI * 2, 0, Math.PI * 0.52), capMat);
     cap.position.set(0, 0.06 * headScale, 0);
     headGroup.add(cap);
@@ -854,19 +854,19 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
     headGroup.add(visor);
   } else if (archetype === 'coder_guy') {
     // Tai nghe Headphone trùm đầu đậm chất IT/Cú đêm
-    const hpMat = new THREE.MeshStandardMaterial({ color: 0xd63031, roughness: 0.4 });
+    const hpMat = mat(0xd63031, 0.4);
     const band = new THREE.Mesh(new THREE.TorusGeometry(0.42 * headScale, 0.025, 8, 20, Math.PI), hpMat);
     band.position.set(0, 0.06 * headScale, 0);
     headGroup.add(band);
     for (const side of [-1, 1]) {
-      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 12), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 }));
+      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 12), mat(0x111111, 0.5));
       cup.rotation.z = Math.PI / 2;
       cup.position.set(side * 0.42 * headScale, 0.04 * headScale, 0);
       headGroup.add(cup);
     }
   } else if (archetype === 'player' && options.hatColor === undefined) {
     // Nón lá người chơi
-    const hat = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.24, 20), new THREE.MeshStandardMaterial({ color: 0xf4d03f, roughness: 0.65 }));
+    const hat = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.24, 20), mat(0xf4d03f, 0.65));
     hat.position.set(0, 0.36, 0);
     hat.scale.set(1.25, 0.7, 1.25);
     headGroup.add(hat);
@@ -907,9 +907,9 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
   }
   if (options.topColor !== undefined) topColor = options.topColor;
 
-  const topMat = new THREE.MeshStandardMaterial({ color: topColor, roughness: 0.7 });
-  const shirtMat = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.8 });
-  const pantsMat = new THREE.MeshStandardMaterial({ color: pantsColor, roughness: 0.7 });
+  const topMat = mat(new THREE.Color(topColor).getHex(), 0.7);
+  const shirtMat = mat(shirtColor, 0.8);
+  const pantsMat = mat(pantsColor, 0.7);
 
   // Thân áo
   const bodyMesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.25 * headScale, 0.38 * bodyHeight, 6, 16), topMat);
@@ -919,7 +919,7 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
   outfitGroup.add(bodyMesh);
 
   // Thắt lưng hoặc viền áo
-  const beltMat = new THREE.MeshStandardMaterial({ color: 0x332219, roughness: 0.5 });
+  const beltMat = mat(0x332219, 0.5);
   const belt = new THREE.Mesh(new THREE.TorusGeometry(0.245 * headScale, 0.025, 6, 16), beltMat);
   belt.rotation.x = Math.PI / 2;
   belt.position.set(0, 0.48 * bodyHeight, 0);
@@ -928,14 +928,14 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
   // Chi tiết đặc thù cho từng nghề:
   if (archetype === 'gentleman' || archetype === 'player') {
     // Áo vest gile + Cà vạt
-    const tieMat = new THREE.MeshStandardMaterial({ color: 0x8a2b3b, roughness: 0.5 });
+    const tieMat = mat(0x8a2b3b, 0.5);
     const tie = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.22, 4), tieMat);
     tie.position.set(0, 0.8 * bodyHeight, 0.23);
     tie.rotation.x = Math.PI;
     outfitGroup.add(tie);
   } else if (archetype === 'student_boy' || archetype === 'student_girl') {
     // Khăn quàng đỏ học sinh
-    const scarfMat = new THREE.MeshStandardMaterial({ color: 0xd63031, roughness: 0.5 });
+    const scarfMat = mat(0xd63031, 0.5);
     const scarf = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.24, 3), scarfMat);
     scarf.position.set(0, 0.78 * bodyHeight, 0.22);
     scarf.rotation.x = Math.PI;
@@ -943,14 +943,14 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
     outfitGroup.add(scarf);
 
     // Balo học sinh trên lưng
-    const bagMat = new THREE.MeshStandardMaterial({ color: archetype === 'student_boy' ? 0x0984e3 : 0xfd79a8, roughness: 0.6 });
+    const bagMat = mat(archetype === 'student_boy' ? 0x0984e3 : 0xfd79a8, 0.6);
     const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.36, 0.16), bagMat);
     backpack.position.set(0, 0.72 * bodyHeight, -0.22);
     backpack.castShadow = true;
     outfitGroup.add(backpack);
   } else if (archetype === 'elder_woman') {
     // Khăn rằn Nam Bộ vắt vai bà cụ
-    const scarfMat = new THREE.MeshStandardMaterial({ color: 0xdfe6e9, roughness: 0.9 });
+    const scarfMat = mat(0xdfe6e9, 0.9);
     const ranScarf = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.44, 0.04), scarfMat);
     ranScarf.position.set(0.12, 0.74 * bodyHeight, 0.18);
     outfitGroup.add(ranScarf);
@@ -1001,10 +1001,7 @@ export function buildChibiCharacter(options: CharacterMeshOptions = {}): Charact
   let leftShin!: THREE.Group;
   let rightShin!: THREE.Group;
 
-  const shoeMat = new THREE.MeshStandardMaterial({
-    color: archetype === 'worker_driver' ? 0x2d3436 : (isElder ? 0x3d271d : 0x543828),
-    roughness: 0.5,
-  });
+  const shoeMat = mat(archetype === 'worker_driver' ? 0x2d3436 : (isElder ? 0x3d271d : 0x543828), 0.5);
 
   const createLeg = (side: number) => {
     const legPivot = side === -1 ? leftLeg : rightLeg;

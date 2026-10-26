@@ -560,10 +560,13 @@ function renderFrame() {
   const bob = Math.sin(performance.now() / 300) * 0.12;
   for (const [id, h] of world.houses) {
     h.marker.visible = waitingHouses.has(id);
-    const box = h.marker.getObjectByName('box');
-    if (box) {
-      box.position.y = 1.85 + bob;
-      box.rotation.y += dt * 1.5;
+    // Chỉ quay/nhấp nhô marker của nhà ĐANG đợi giao — không phí khi không có đơn nào trên đường
+    if (waitingHouses.has(id)) {
+      const box = h.marker.getObjectByName('box');
+      if (box) {
+        box.position.y = 1.85 + bob;
+        box.rotation.y += dt * 1.5;
+      }
     }
   }
   for (const b of world.buildings) {

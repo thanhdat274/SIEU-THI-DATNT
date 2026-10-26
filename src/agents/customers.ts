@@ -233,15 +233,22 @@ export class CustomerManager {
 
     for (const counter of counters) this.updateCheckout(counter, gameDt, cashierSpeed(counter));
 
-    // Xoá khách đã đi khỏi bản đồ (kèm giải phóng tài nguyên GPU)
-    this.customers = this.customers.filter((c) => {
-      const gone = c.state !== 'queued' && !(c.wholesale && c.offered) && c.idle;
-      if (gone) {
-        this.scene.remove(c.mesh);
-        c.dispose();
+    // Xoá khách đã đi khỏi bản đồ (kèm giải phóng tài nguyên GPU). Không cấp phát mảng mới mỗi khung:
+    // chỉ gộp mảng tại chỗ khi thật sự có người rời khỏi.
+    let anyGone = false;
+    for (const c of this.customers) {
+      if (c.state !== 'queued' && !(c.wholesale && c.offered) && c.idle) { anyGone = true; break; }
+    }
+    if (anyGone) {
+      let w = 0;
+      for (let r = 0; r < this.customers.length; r++) {
+        const c = this.customers[r];
+        const gone = c.state !== 'queued' && !(c.wholesale && c.offered) && c.idle;
+        if (gone) { this.scene.remove(c.mesh); c.dispose(); }
+        else this.customers[w++] = c;
       }
-      return !gone;
-    });
+      this.customers.length = w;
+    }
 
     const waiting = [...this.queues.values()].reduce((sum, q) => sum + q.length, 0);
     // Khách còn trong tiệm: đang chọn hàng / đi tới quầy / đang chờ thanh toán — nhân viên tan ca

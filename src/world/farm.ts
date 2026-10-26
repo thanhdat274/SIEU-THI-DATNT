@@ -922,6 +922,9 @@ export function createFarm() {
     while (list.length > n) group.remove(list.pop()!.root);
   };
 
+  // Vector tạm cho bước di chuyển của vật nuôi (không cấp phát mỗi khung)
+  const _dir = new THREE.Vector3();
+
   /** dt theo giờ game; ngoài ~60 m thì main không gọi (vật đứng yên). */
   const update = (dt: number, hour: number) => {
     const night = hour >= 18.5 || hour < 5.5;
@@ -933,7 +936,7 @@ export function createFarm() {
           b.target.set(pen.x1 + Math.random() * (pen.x2 - pen.x1), 0, pen.z1 + Math.random() * (pen.z2 - pen.z1));
           b.wait = 1.5 + Math.random() * 4;
         }
-        const dir = b.target.clone().sub(b.root.position);
+        const dir = _dir.copy(b.target).sub(b.root.position);
         dir.y = 0;
         const dist = dir.length();
         if (dist > 0.08) {
