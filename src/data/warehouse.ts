@@ -19,6 +19,8 @@ export const WAREHOUSE_TIERS: WarehouseTier[] = [
   // Cấp cuối game: chỗ đốt tiền cho giai đoạn siêu thị
   { name: 'Kho lạnh công nghiệp', cases: 120, cold: 350, racks: 6, fridges: 4, price: 9000000, unlock: 50 },
   { name: 'Trung tâm phân phối', cases: 180, cold: 600, racks: 9, fridges: 6, price: 25000000, unlock: 70 },
+  // Cấp cuối cùng cho giai đoạn đại siêu thị
+  { name: 'Tổng kho logistics', cases: 260, cold: 900, racks: 12, fridges: 8, price: 60000000, unlock: 90 },
 ];
 
 /** Mỗi kệ kho xếp được chừng này thùng (4 tầng × 5 thùng). */

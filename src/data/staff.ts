@@ -89,7 +89,7 @@ export interface Staff {
 export const dailyWage = (s: Staff) => Math.round(s.wage * SHIFTS[s.shift].pay);
 
 /** Số nhân viên tối đa theo cấp (0 = chưa mở khóa). */
-export const maxStaff = (level: number) => (level < 4 ? 0 : Math.min(20, 1 + Math.floor((level - 4) / 3)));
+export const maxStaff = (level: number) => (level < 4 ? 0 : Math.min(24, 1 + Math.floor((level - 4) / 3)));
 
 /** Hệ số tốc độ làm việc theo số sao (người chơi = 1). */
 export const skillSpeed = (skill: number) => 0.6 + skill * 0.2;
