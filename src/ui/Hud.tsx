@@ -207,7 +207,8 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     const dry = s.weather !== 'rain' && s.weather !== 'storm' && s.garden.plots.some((p) => p.crop && p.wateredDay !== s.day);
     return dry ? '💧 Chưa tưới' : undefined;
   });
-  const atHome = location === 'Nhà của bạn';
+  // Ở hẻm online nhà chung mang tên riêng; cả hai đều là "đang ở nhà" nên mới hiện nút Ra tiệm
+  const atHome = location === 'Nhà của bạn' || location === 'Nhà chung của hẻm';
   const atFarm = location === 'Trang trại đầu ngõ';
   // Bảng nào đang mở thì nút mở bảng đó sáng lên
   const openType = useGame((s) => s.panel?.type ?? null);
