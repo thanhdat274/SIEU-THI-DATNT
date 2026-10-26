@@ -239,3 +239,11 @@
   .login-code { width: 80px; flex: none; }
   .login-code.login-name { flex: 1; width: auto; }
 }
+
+/* Hẻm online trên điện thoại: nút Sao chép mã / Rời / gia nhập cũng đủ chuẩn chạm 40px
+   (các nút này nằm trong khung đăng nhập, không thuộc .panel nên phải phủ riêng). */
+@media (pointer: coarse) and (max-width: 1000px) {
+  .login-btn, .login-btn.small, .login-link, .login-save { min-height: 40px; }
+  .login-link { font-size: 14px; }
+  .login-copy { font-size: 13px; padding: 8px 10px; }
+}

@@ -188,7 +188,7 @@
 /* Bảng nhập hàng: 7 cột trên máy tính, thành thẻ 2–3 dòng trên điện thoại */
 #ui .or-row { grid-template-columns: minmax(170px, 2.2fr) 0.8fr 0.8fr 1fr 0.9fr 1.5fr 1fr; }
 
-@media (max-width: 700px) {
+@media (pointer: coarse) and (max-width: 1000px) {
   #ui .or-head { display: none !important; }
   #ui .or-row { grid-template-columns: 1fr 1fr 1fr; row-gap: 6px; padding: 10px !important; }
   #ui .or-name { grid-column: 1 / -1; font-weight: 600; }

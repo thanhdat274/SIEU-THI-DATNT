@@ -347,7 +347,7 @@
 }
 
 /* ---------- Điện thoại ---------- */
-@media (max-width: 760px) {
+@media (pointer: coarse) and (max-width: 1000px) {
   #ui .hud-status { max-width: calc(100% - 80px); gap: 6px; }
   #ui .hud-chip { min-height: 38px; padding: 4px 10px; gap: 6px; }
   #ui .hud-time small, #ui .hud-level small { display: none; }
@@ -366,7 +366,7 @@
 }
 
 /* Điện thoại không có bàn phím: bỏ nút xem phím, gom dock cho vừa màn hình */
-@media (max-width: 760px) {
+@media (pointer: coarse) and (max-width: 1000px) {
   #ui .hud-speed button { min-width: 26px; font-size: 12px; }
   #ui .hud-tool { min-width: 36px; flex: 1; }
 }
@@ -425,7 +425,7 @@
 }
 
 /* Màn rất hẹp: các nút chia đều một hàng (menu Thêm bật lên phía trên nên dock không được cắt tràn) */
-@media (max-width: 760px) {
+@media (pointer: coarse) and (max-width: 1000px) {
   #ui .hud-dock { justify-content: space-between; gap: 2px; padding: 4px; }
   #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 34px; min-width: 34px; padding: 6px 2px; }
   #ui .hud-dock > .hud-pop { display: flex; flex: 1 0 34px; }
