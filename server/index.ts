@@ -14,6 +14,7 @@ import { MongoClient, type Collection } from 'mongodb';
 import { cert, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { WebSocketServer, type WebSocket } from 'ws';
+import { MAX_MEMBERS, handOffPlan, isValidCheckpoint, newAlleyCode, releaseLocksFor, tryLock } from './room';
 
 config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '.env') });
 const env = process.env;
@@ -138,7 +139,6 @@ app.put('/api/save', async (req, res) => {
  * về server); máy chạy rời đi thì người còn lại kế tiếp nhận quyền. Server chỉ nhận trạng thái/tiến trình
  * từ đúng máy chạy, thao tác của người khác chỉ được chuyển tới máy chạy để làm.
  */
-const MAX_MEMBERS = 4;
 interface Member { uid: string; name: string }
 interface Alley {
   _id: string; name: string; owner: string; members: Member[];
@@ -154,10 +154,6 @@ const alleySummary = (a: Alley) => ({
   id: a._id, name: a.name, members: a.members, day: a.day, level: a.level, money: a.money, updatedAt: a.updatedAt,
   online: online.get(a._id)?.peers.size ?? 0,
 });
-
-// Bỏ chữ dễ nhầm (0/O, 1/I/L) cho mã đọc qua điện thoại
-const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const newAlleyCode = () => Array.from({ length: 6 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
 
 app.get('/api/alleys', async (_req, res) => {
   const { uid } = res.locals.account as Account;
@@ -240,21 +236,22 @@ const broadcastLocks = (room: Room, started?: string) => broadcast(room, {
  * cho người đang mở tab. Ai cũng ẩn tab thì giữ nguyên (không ai xem, game dừng cũng không sao).
  */
 function handOff(room: Room, reason: 'left' | 'hidden', oldName: string) {
-  const current = room.runner != null ? room.peers.get(room.runner) : undefined;
-  if (current?.visible) return;
-  const next = [...room.peers.values()].find((p) => p.visible && p.id !== room.runner)
-    ?? (current ? undefined : room.peers.values().next().value);
-  if (!next) return;
-  if (current) send(current.ws, { type: 'demote' });
-  room.runner = next.id;
-  send(next.ws, { type: 'promote' });
-  const why = reason === 'hidden' ? `${oldName} vừa ẩn tab` : `${oldName} đã rời hẻm`;
-  broadcast(room, { type: 'notify', text: `🏪 ${why}, máy ${next.name} đang chạy tiệm` }, next.id);
+  const plan = handOffPlan(
+    [...room.peers.values()].map((p) => ({ id: p.id, name: p.name, visible: p.visible })),
+    room.runner,
+    reason,
+    oldName,
+  );
+  if (plan.promote == null) return;
+  if (plan.demote != null) send(room.peers.get(plan.demote)?.ws, { type: 'demote' });
+  room.runner = plan.promote;
+  send(room.peers.get(plan.promote)?.ws, { type: 'promote' });
+  if (plan.notify) broadcast(room, { type: 'notify', text: plan.notify }, plan.promote);
 }
 
 async function saveCheckpoint(alleyId: string, data: unknown) {
-  const d = data as Record<string, unknown> | null;
-  if (!d || typeof d !== 'object' || typeof d.day !== 'number' || typeof d.money !== 'number') return;
+  if (!isValidCheckpoint(data)) return;
+  const d = data as { day: number; money: number; level?: unknown };
   await (await alleyCollection()).updateOne({ _id: alleyId }, {
     $set: { data: d, updatedAt: new Date().toISOString(), day: d.day, level: Number(d.level) || 1, money: d.money },
   });
@@ -323,16 +320,12 @@ wss.on('connection', (ws) => {
       case 'lock': {
         // Khoá một việc (vd. 'build' = sửa bố cục) để mỗi lúc chỉ một người làm
         const key = String(msg.key ?? '').slice(0, 32);
-        const holder = room.locks.get(key);
-        if (msg.on) {
-          if (holder != null && holder !== peer.id) {
-            send(ws, { type: 'lock-denied', key, by: room.peers.get(holder)?.name ?? 'Người khác' });
-            break;
-          }
-          room.locks.set(key, peer.id);
+        const r = tryLock(room.locks, key, peer.id, !!msg.on);
+        if (!r.granted) {
+          send(ws, { type: 'lock-denied', key, by: room.peers.get(r.deniedBy!)?.name ?? 'Người khác' });
+        } else if (msg.on) {
           broadcastLocks(room, peer.name);
-        } else if (holder === peer.id) {
-          room.locks.delete(key);
+        } else if (room.locks.has(key) === false) {
           broadcastLocks(room);
         }
         break;
@@ -355,9 +348,7 @@ wss.on('connection', (ws) => {
     room.peers.delete(peer.id);
     if (!room.peers.size) return void online.delete(alleyId);
     // Người rời đi thì nhả khoá đang giữ
-    let released = false;
-    for (const [key, id] of room.locks) if (id === peer.id) released = room.locks.delete(key);
-    if (released) broadcastLocks(room);
+    if (releaseLocksFor(room.locks, peer.id).length) broadcastLocks(room);
     if (room.runner === peer.id) {
       // Chuyển quyền chạy, ưu tiên người đang mở tab
       room.runner = null;
