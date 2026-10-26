@@ -8,6 +8,8 @@ import { hasUpgrade } from '../../data/upgrades';
 import { Footer, styles, Tabs } from './shared';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
 import { nextPromotion, RANKS } from '../../data/careers';
+import { CONVENIENCE } from '../../data/branches';
+import { gapsOf, SITE_NAME, type Site } from '../../data/transfer';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
@@ -25,6 +27,7 @@ export function StaffPanel() {
 
       {tab === 'team' && (
         <div style={{ display: 'grid', gap: 8 }}>
+          <DeployBoard />
           {!staff.length && <p style={styles.sub}>Chưa có ai. Qua tab Tuyển dụng để thuê.</p>}
           {staff.map((st) => (
             <div key={st.id} style={staffSt.card}>
@@ -54,6 +57,7 @@ export function StaffPanel() {
                     🎓 Đào tạo {formatMoney(trainCost(st.skill))}
                   </button>
                 )}
+                <TransferButton id={st.id} from="main" />
                 <button style={staffSt.fire} onClick={() => confirm(`Cho ${st.name} nghỉ việc?`) && fire(st.id)}>Cho nghỉ</button>
               </div>
             </div>
@@ -93,6 +97,63 @@ export function StaffPanel() {
       )}
       <Footer onClose={closePanel} />
     </>
+  );
+}
+
+/** Nút điều người sang tiệm còn lại; ẩn nếu chưa có chi nhánh. */
+export function TransferButton({ id, from }: { id: number; from: Site }) {
+  const { branch, day, staff, level, transferStaff } = useGame();
+  if (!branch) return null;
+  const to: Site = from === 'main' ? 'branch' : 'main';
+  const st = (from === 'main' ? staff : branch.staff).find((it) => it.id === id);
+  const full = to === 'branch' ? branch.staff.length >= CONVENIENCE.maxStaff : staff.length >= maxStaff(level);
+  const moved = st?.movedDay === day;
+  const why = moved ? 'Hôm nay đã điều rồi' : full ? `${to === 'branch' ? 'Chi nhánh' : 'Tiệm chính'} đã đủ người` : `Điều sang ${SITE_NAME[to]} (giữ nguyên tay nghề, lương, chức vụ; mỗi người một lần mỗi ngày)`;
+  return (
+    <button style={staffSt.train} disabled={moved || full} title={why} onClick={() => transferStaff(id, to)}>
+      🔀 Sang {to === 'branch' ? 'tiện lợi' : 'tiệm chính'}
+    </button>
+  );
+}
+
+/** Điều quân: so hai tiệm theo ca để biết chỗ nào thiếu người; chi nhánh đóng cửa thì dồn hết về tiệm chính. */
+export function DeployBoard() {
+  const { branch, staff, level, biz, evacuateBranch } = useGame();
+  if (!branch) return null;
+  const nightMain = hasUpgrade(biz, 'night');
+  const sites: { site: Site; n: number; max: number; gaps: string[] }[] = [
+    { site: 'main', n: staff.length, max: maxStaff(level), gaps: gapsOf(staff, 'main', nightMain) },
+    { site: 'branch', n: branch.staff.length, max: CONVENIENCE.maxStaff, gaps: gapsOf(branch.staff, 'branch', true) },
+  ];
+  return (
+    <div style={{ ...staffSt.card, background: '#2f3a4d' }}>
+      <b>🔀 Điều quân giữa hai tiệm</b>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {sites.map(({ site, n, max, gaps }) => (
+          <div key={site} style={staffSt.stat}>
+            <small>{site === 'main' ? '🏬 Tiệm chính' : '🏪 Tiện lợi 24/7'}</small>
+            <b>{n}/{max} người</b>
+            {gaps.length
+              ? gaps.map((g) => <small key={g} style={{ color: '#f39c12' }}>⚠️ {g}</small>)
+              : <small style={{ color: '#2ecc71' }}>✅ đủ người các ca</small>}
+            {site === 'branch' && (
+              <small style={{ opacity: 0.8 }}>
+                {branch.open ? 'Đang mở' : 'Đang đóng'} · hôm nay {branch.customersToday} khách{branch.missedToday ? `, bỏ lỡ ${branch.missedToday}` : ''}
+              </small>
+            )}
+          </div>
+        ))}
+      </div>
+      <small style={{ opacity: 0.75 }}>Bấm 🔀 trên từng người để điều. Giữ nguyên tay nghề, lương, chức vụ; mỗi người điều một lần mỗi ngày. Chi nhánh chỉ nhận thu ngân, xếp hàng, giao hàng, bảo vệ, quản lý.</small>
+      <button
+        style={{ ...staffSt.train, justifySelf: 'start' }}
+        disabled={branch.open || !branch.staff.length}
+        title={branch.open ? 'Đóng cửa chi nhánh trước' : 'Chuyển cả đội chi nhánh về tiệm chính (tới khi đủ chỗ)'}
+        onClick={() => confirm('Dồn hết nhân viên chi nhánh về tiệm chính?') && evacuateBranch()}
+      >
+        🏬 Dồn hết sang tiệm chính
+      </button>
+    </div>
   );
 }
 

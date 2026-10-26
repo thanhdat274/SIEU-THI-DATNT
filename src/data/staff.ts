@@ -87,6 +87,8 @@ export interface Staff {
   caught?: boolean;
   /** Chức vụ đã được thăng (xem careers.ts); bản lưu cũ không có = chưa thăng. */
   rank?: Rank;
+  /** Ngày được điều sang tiệm khác gần nhất (mỗi ngày điều một lần). */
+  movedDay?: number;
 }
 
 /** Lương phải trả mỗi ngày. */

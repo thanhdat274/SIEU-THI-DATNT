@@ -473,6 +473,10 @@ export interface GameState {
   promoteStaff: (id: number) => void;
   /** Thăng chức nhân viên chi nhánh. */
   promoteBranchStaff: (id: number) => void;
+  /** Điều nhân viên giữa tiệm chính và cửa hàng tiện lợi (mỗi người một lần mỗi ngày). */
+  transferStaff: (id: number, to: 'main' | 'branch') => boolean;
+  /** Chi nhánh đóng cửa: dồn cả đội sang tiệm chính, người nào không vừa/không hợp thì ở lại. */
+  evacuateBranch: () => void;
   /** Trang mạng xã hội của tiệm. */
   social: SocialState;
   apologize: () => void;

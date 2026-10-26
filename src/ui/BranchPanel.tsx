@@ -5,7 +5,7 @@ import { dailyWage, ROLES, type Shift } from '../data/staff';
 import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney, productById } from '../data/products';
 import { Dropdown } from './Dropdown';
-import { PromoteRow } from './panels/StaffPanel';
+import { DeployBoard, PromoteRow, TransferButton } from './panels/StaffPanel';
 import { RANKS } from '../data/careers';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
@@ -190,6 +190,7 @@ export function BranchPanel() {
                     <span>{formatMoney(dailyWage(s))}/ngày</span>
                     <button style={st.btn} title={`Tốn 1 ngày lương, giảm ${BONUS_RELIEF} mệt`} onClick={() => bonusBranchStaff(s.id)}>🎁 Thưởng</button>
                     <button style={st.btn} disabled={branch.restDay?.[s.id] === day + 1} title="Nghỉ ngày mai không lương, hồi hết mệt" onClick={() => restBranchStaff(s.id)}>🛌 Nghỉ mai</button>
+                    <TransferButton id={s.id} from="branch" />
                     <button style={st.btn} onClick={() => confirm(`Cho ${s.name} nghỉ việc?`) && fireFromBranch(s.id)}>Cho thôi việc</button>
                   </span>
                 </div>

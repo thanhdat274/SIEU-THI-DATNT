@@ -1,13 +1,15 @@
-import { maxStaff, ROLES, type Staff } from '../../data/staff';
+import { maxStaff, ROLES, SHIFTS, type Staff } from '../../data/staff';
 import { nextPromotion, promoted } from '../../data/careers';
 import { gainExp, TRAIN_EXP, trainCost } from '../../data/staffTraits';
 import { formatMoney } from '../../data/products';
 import { hasUpgrade } from '../../data/upgrades';
+import { CONVENIENCE } from '../../data/branches';
+import { moveStaff, SITE_NAME, type Site } from '../../data/transfer';
 import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Nhân viên tiệm chính: thuê, cho nghỉ, đổi ca, đào tạo. */
 
-export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 'hire' | 'fire' | 'setShift' | 'trainStaff' | 'promoteStaff' | 'promoteBranchStaff'> => {
+export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 'hire' | 'fire' | 'setShift' | 'trainStaff' | 'promoteStaff' | 'promoteBranchStaff' | 'transferStaff' | 'evacuateBranch'> => {
   /** Kiểm tra điều kiện, trừ tiền thưởng; trả về người sau khi thăng chức hoặc null. */
   const tryPromote = (st: Staff): Staff | null => {
     const s = get();
@@ -77,6 +79,43 @@ export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 
     const next = st && tryPromote(st);
     const cur = get().branch;
     if (next && cur) set({ branch: { ...cur, staff: cur.staff.map((it) => (it.id === id ? next : it)) } });
+  },
+  transferStaff: (id, to) => {
+    const s = get();
+    const b = s.branch;
+    if (!b) return false;
+    const from: Site = to === 'branch' ? 'main' : 'branch';
+    const st = (from === 'main' ? s.staff : b.staff).find((it) => it.id === id);
+    if (!st) return false;
+    if (to === 'branch' && b.staff.length >= CONVENIENCE.maxStaff) { s.notify('Chi nhánh đã đủ người'); return false; }
+    if (to === 'main' && s.staff.length >= maxStaff(s.level)) { s.notify('Tiệm chính đã đủ nhân viên ở cấp này'); return false; }
+    const r = moveStaff(st, to, s.day, hasUpgrade(s.biz, 'night'));
+    if (!r.ok) { s.notify(r.why); return false; }
+    // Rời chi nhánh thì xoá dấu vết mệt/nghỉ/xin nghỉ đột xuất gắn với người này
+    const fatigue = { ...b.fatigue };
+    const restDay = { ...b.restDay };
+    if (to === 'main') { delete fatigue[id]; delete restDay[id]; }
+    const event = to === 'main' && b.event?.kind === 'calloff' && b.event.staffId === id ? null : b.event;
+    set({
+      staff: to === 'main' ? [...s.staff, r.staff] : s.staff.filter((it) => it.id !== id),
+      branch: { ...b, fatigue, restDay, event, staff: to === 'branch' ? [...b.staff, r.staff] : b.staff.filter((it) => it.id !== id) },
+    });
+    s.notify(`🔀 ${st.name} chuyển sang ${SITE_NAME[to]}${r.staff.shift !== st.shift ? ` (đổi ca: ${SHIFTS[r.staff.shift].name})` : ''}`);
+    return true;
+  },
+  evacuateBranch: () => {
+    const s = get();
+    const b = s.branch;
+    if (!b) return;
+    if (b.open) return s.notify('Đóng cửa chi nhánh trước rồi mới dồn quân về tiệm chính');
+    let moved = 0;
+    for (const st of [...b.staff]) {
+      const cur = get();
+      if (cur.staff.length >= maxStaff(cur.level)) break;
+      if (cur.transferStaff(st.id, 'main')) moved++;
+    }
+    const left = get().branch?.staff.length ?? 0;
+    s.notify(moved ? `🔀 Đã dồn ${moved} người về tiệm chính${left ? `, ${left} người ở lại chi nhánh` : ''}` : 'Không điều được ai về tiệm chính');
   },
   };
 };
