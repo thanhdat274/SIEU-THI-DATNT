@@ -18,6 +18,7 @@ import { serviceById } from '../data/services';
 import { upgradeById, type UpgradeId } from '../data/upgrades';
 import { useGame, type DayStats, type GameState } from './store';
 import { copyStock, takeStock } from './stock';
+import { playSfx } from './audio';
 
 const S = () => useGame.getState();
 const patch = (b: Partial<BizState>) => useGame.setState({ biz: { ...S().biz, ...b } });
@@ -221,6 +222,7 @@ export function checkAchievements() {
   patch({ achievements: [...s.biz.achievements, ...fresh.map((a) => a.id)] });
   useGame.setState({ money: S().money + reward });
   for (const a of fresh) s.notify(`🏆 Thành tựu: ${a.icon} ${a.name} · +${formatMoney(a.reward)}`);
+  if (fresh.length) playSfx('achieve');
 }
 
 // ───── Sự kiện bất ngờ ─────
