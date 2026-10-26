@@ -188,23 +188,26 @@ export const RECIPES: Recipe[] = [
     outputId: 'banh_bao_hap', outputQty: 40, durationMin: 20, unlock: 39, reputationGain: 3 },
 
   // --- Quây xôi (rice_station) ---
+  // 6 món xôi theo công thức chuẩn món ăn VN (khách quen bắt lỗi nguyên liệu sai ngành): đậu xanh/bắp/dừa
+  // đều rưới nước cốt dừa + đường, món dừa thêm dừa nạo rắc mặt; mặn & thập cẩm có lạp xưởng + hành phi
+  // + nước tương. Nguyên liệu (đường, nước cốt dừa, dừa nạo, lạp xưởng, hành phi) mở ≤ cấp 36 khớp quây xôi.
   { id: 'recipe_xoi_dau_xanh', name: 'Xôi đậu xanh', station: 'rice_station',
-    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'traicay', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'dau_xanh', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'xoi_dau_xanh', outputQty: 40, durationMin: 15, unlock: 36, reputationGain: 2 },
   { id: 'recipe_xoi_man', name: 'Xôi mặn', station: 'rice_station',
-    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'trung', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'x_lap_xuong', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }, { productId: 'x_nuoc_tuong', quantity: 1 }],
     outputId: 'xoi_man', outputQty: 40, durationMin: 15, unlock: 36, reputationGain: 3 },
   { id: 'recipe_xoi_trung', name: 'Xôi trứng', station: 'rice_station',
-    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'trung', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'trung', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'xoi_trung', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
   { id: 'recipe_xoi_dua', name: 'Xôi dừa', station: 'rice_station',
-    inputs: [{ productId: 'nep', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_dua_nao', quantity: 1 }],
     outputId: 'xoi_dua', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
   { id: 'recipe_xoi_thap_cam', name: 'Xôi thập cẩm', station: 'rice_station',
-    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'trung', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'trung', quantity: 1 }, { productId: 'x_lap_xuong', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }, { productId: 'x_nuoc_tuong', quantity: 1 }],
     outputId: 'xoi_thap_cam', outputQty: 40, durationMin: 15, unlock: 36, reputationGain: 3 },
   { id: 'recipe_xoi_bap', name: 'Xôi bắp', station: 'rice_station',
-    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'traicay', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'bap', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'xoi_bap', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
 
   // --- Máy ép mía (sugarcane_press) ---

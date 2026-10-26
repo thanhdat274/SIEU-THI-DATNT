@@ -128,9 +128,20 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
       return false;
     }
     const k = copyStock(s);
-    for (const i of r.inputs) takeStock(k, i.productId, i.quantity);
+    // Nấu cũng tiêu HÀNG NHÀ TRỒNG/NHÀ NUÔI chứ không chỉ trừ kho chung: phải trừ luôn nhãn homegrown,
+    // nếu không sẽ "nấu hết hàng nhà trồng, nhập lại hàng mua rồi bán vẫn ăn premium +20%" (lệch sổ + exploit).
+    const homegrown = { ...s.garden.homegrown };
+    for (const i of r.inputs) {
+      takeStock(k, i.productId, i.quantity);
+      const h = homegrown[i.productId] ?? 0;
+      if (h > 0) {
+        const left = h - i.quantity;
+        if (left > 0) homegrown[i.productId] = left;
+        else delete homegrown[i.productId];
+      }
+    }
     const id = Math.max(0, ...s.cookJobs.map((j) => j.id)) + 1;
-    set({ ...k, cookJobs: [...s.cookJobs, { id, recipeId, remaining: r.durationMin, total: r.durationMin }] });
+    set({ ...k, garden: { ...s.garden, homegrown }, cookJobs: [...s.cookJobs, { id, recipeId, remaining: r.durationMin, total: r.durationMin }] });
     s.notify(`🍳 Đang nấu ${r.name} (${r.durationMin} phút) — nguyên liệu đã trừ kho, nấu xong tự vào kho`);
     return true;
   },
