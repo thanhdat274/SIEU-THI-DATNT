@@ -3,6 +3,7 @@ import { applySnapshot, loadGame, readLocalSave, type SaveData } from '../core/s
 import { useGame } from '../core/store';
 import { formatMoney } from '../data/products';
 import { fetchCloudSave } from '../net/cloud';
+import { giftOfStreak, giftText } from '../data/gifts';
 import { firebaseReady, loginGoogle, logoutGoogle } from '../net/firebase';
 import { useSession, type SaveSummary } from '../net/session';
 import { AlleyPanel } from './AlleyPanel';
@@ -94,6 +95,7 @@ export function LoginScreen() {
         </header>
 
         <section className="login-card" aria-live="polite">
+          {local && <DailyNudge g={local.data} />}
           {choice ? (
             <>
               <h2>Chọn bản lưu để chơi tiếp</h2>
@@ -138,6 +140,30 @@ export function LoginScreen() {
           {error && <p className="login-error">{error}</p>}
         </section>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Móc giữ chân người chơi cũ: nhắc quà điểm danh + streak ngay trên màn đăng nhập,
+ * cho lý do quay lại mỗi ngày. Không cần vào game cũng thấy được phần thưởng tiếp theo.
+ */
+function DailyNudge({ g }: { g: { day: number; giftStreak: number; giftLastDay: number } }) {
+  if (g.giftLastDay === g.day) {
+    const n = g.giftStreak;
+    return (
+      <div className="login-nudge">
+        <span aria-hidden="true">✅</span>
+        <span><b>Đã điểm danh hôm nay</b> · chuỗi {n} ngày — ngày mai quay lại để giữ mạch!</span>
+      </div>
+    );
+  }
+  const streak = g.giftLastDay === g.day - 1 ? g.giftStreak + 1 : 1;
+  const gift = giftOfStreak(streak);
+  return (
+    <div className="login-nudge claimable">
+      <span aria-hidden="true">🎁</span>
+      <span>Quà điểm danh hôm nay: <b>{gift.icon} {gift.label}</b> ({giftText(gift)}) · chuỗi sắp tới <b>{streak}</b> ngày — vào tiệm nhận ngay!</span>
     </div>
   );
 }
