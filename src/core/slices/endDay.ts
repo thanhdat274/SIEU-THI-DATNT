@@ -22,7 +22,7 @@ import { branchPowerBill, restingOn } from '../../data/branches';
 import { type GameState, type ContractState, type DayRecord, type SetState, type GetState, DAY_START, HISTORY_DAYS, wagesDue, emptyStats } from '../gameTypes';
 import { putStock, spoilOvernight, takeStock, type Stock } from '../stock';
 import { isCookStation } from '../../data/furniture';
-import { COMPLAINTS_FOR_SURPRISE, LICENSE_FINE, LICENSE_GRACE, licenseById, licenseStatus, missingLicenses, newInspection, RENEW_WARN_DAYS, requiredLicenses, SURPRISE_INSPECTION, SUSPEND_AFTER } from '../../data/licenses';
+import { COMPLAINTS_FOR_SURPRISE, isAlcohol, LICENSE_FINE, LICENSE_GRACE, licenseById, licenseStatus, missingLicenses, newInspection, RENEW_WARN_DAYS, requiredLicenses, SURPRISE_INSPECTION, SUSPEND_AFTER } from '../../data/licenses';
 import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
 import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
@@ -227,7 +227,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     && f.tiers.some((t) => t.count > 0));
   if (coldBroken.length) news.push(`🧊 ${coldBroken.length} tủ lạnh đang hỏng: hàng mát trong tủ không được giữ lạnh, hỏng nhanh như để ngoài kho — sửa sớm!`);
   // Giấy phép bắt buộc: lần đầu phải có thì được nhắc kèm hạn chót (ân hạn), quá hạn chót mà thiếu thì thanh tra phạt
-  const shelved = [...new Set([...s.furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!)), ...Object.keys(s.branch?.shelf ?? {})])];
+  const shelved = [...new Set([...s.furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!)), ...Object.keys(s.branch?.shelf ?? {}).filter(isAlcohol)])];
   const needLicenses = requiredLicenses({ level: s.level, hasCookStation: s.furniture.some((f) => isCookStation(f.type)), shelved });
   let inspection = s.inspection ?? newInspection();
   const noticed = { ...inspection.noticed };
