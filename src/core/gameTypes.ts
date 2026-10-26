@@ -22,7 +22,7 @@ import type { RepSample } from '../data/reputation';
 import type { CommunityProgress, Opening } from '../data/community';
 import type { WheelPrize } from '../data/gifts';
 import type { PaymentMethod } from '../data/payments';
-import type { BranchState } from '../data/branches';
+import type { BranchState, PowerUpgradeId } from '../data/branches';
 import type { SocialState } from '../data/social';
 import type { OnlineState } from '../data/online';
 import type { InspectionRecord, LicenseId } from '../data/licenses';
@@ -449,6 +449,11 @@ export interface GameState {
   branch: BranchState | null;
   openBranch: () => boolean;
   toggleBranch: () => void;
+  toggleVending: () => void;
+  /** Nhận/ngưng đơn app ban đêm ở chi nhánh. */
+  toggleNightDelivery: () => void;
+  /** Mua nâng cấp điện cho chi nhánh (máy phát, tủ tiết kiệm điện). */
+  buyBranchPower: (id: PowerUpgradeId) => void;
   hireForBranch: (id: number, shift: Shift) => void;
   fireFromBranch: (id: number) => void;
   setBranchShift: (id: number, shift: Shift) => void;

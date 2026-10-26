@@ -18,7 +18,7 @@ import { summarizeReviews } from '../../data/reviews';
 import { dailyWage, generateCandidates } from '../../data/staff';
 import { eventOn } from '../../data/events';
 import { supplyContractById } from '../../data/contracts';
-import { restingOn } from '../../data/branches';
+import { branchPowerBill, restingOn } from '../../data/branches';
 import { type GameState, type ContractState, type DayRecord, type SetState, type GetState, DAY_START, HISTORY_DAYS, wagesDue, emptyStats } from '../gameTypes';
 import { putStock, spoilOvernight, takeStock, type Stock } from '../stock';
 import { isCookStation } from '../../data/furniture';
@@ -227,7 +227,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     && f.tiers.some((t) => t.count > 0));
   if (coldBroken.length) news.push(`🧊 ${coldBroken.length} tủ lạnh đang hỏng: hàng mát trong tủ không được giữ lạnh, hỏng nhanh như để ngoài kho — sửa sớm!`);
   // Giấy phép bắt buộc: lần đầu phải có thì được nhắc kèm hạn chót (ân hạn), quá hạn chót mà thiếu thì thanh tra phạt
-  const shelved = [...new Set(s.furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!)))];
+  const shelved = [...new Set([...s.furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!)), ...Object.keys(s.branch?.shelf ?? {})])];
   const needLicenses = requiredLicenses({ level: s.level, hasCookStation: s.furniture.some((f) => isCookStation(f.type)), shelved });
   let inspection = s.inspection ?? newInspection();
   const noticed = { ...inspection.noticed };
@@ -305,13 +305,15 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   const wages = wagesDue(s) + branchWages;
   const rent = rentOf(s.shopTier);
   // Chi phí vận hành theo doanh thu (điện/nước/bảo trì): % doanh thu, nhỏ lúc đầu, đáng kể khi lên siêu thị
-  const opCost = Math.round((s.stats.revenue + onlineDay.money + crew.tips) * OPERATING_REVENUE_RATE);
+  // Tiện lợi chạy tủ mát/đông suốt 24h nên có hóa đơn điện riêng
+  const branchPower = br ? branchPowerBill(br) : 0;
+  const opCost = Math.round((s.stats.revenue + onlineDay.money + crew.tips) * OPERATING_REVENUE_RATE) + branchPower;
   const stats = {
     ...s.stats, wages, rent, spent: s.stats.spent + maintCost + opCost, spoiledItems: aged.items, spoiledCost: aged.cost,
     revenue: s.stats.revenue + onlineDay.money + crew.tips, online: (s.stats.online ?? 0) + onlineDay.money,
     ...(crew.cashLoss || shrinkItems ? { shrinkCash: crew.cashLoss, shrinkItems } : {}),
   };
-  if (opCost >= 5000) s.notify(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}`);
+  if (opCost >= 5000) s.notify(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}${branchPower ? ` — riêng tiện lợi 24/7 ${formatMoney(branchPower)} tiền điện` : ''}`);
   const biz = bizEndOfDay(s, stats);
   if (biz.news.length) s.notify(biz.news.join(' · '));
   const todayReviews = s.reviews.filter((r) => r.day === s.day);

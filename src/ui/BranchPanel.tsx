@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { useGame } from '../core/store';
-import { BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, BONUS_RELIEF, CONVENIENCE, COVER_WAGE_MUL, FATIGUE_QUIT, FATIGUE_SLOW, fatigueOf, isHotFood, nightNeed, restingOn, shelfTotal, uncoveredHours } from '../data/branches';
+import { BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, BONUS_RELIEF, CONVENIENCE, FATIGUE_QUIT, FATIGUE_SLOW, ALCOHOL_BRAWL_CHANCE, COVER_WAGE_MUL, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, fatigueOf, hasAlcohol, hasPower, isHotFood, nightNeed, restingOn, shelfTotal, uncoveredHours, vendingTotal } from '../data/branches';
 import { dailyWage, ROLES, type Shift } from '../data/staff';
+import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney, productById } from '../data/products';
 import { Dropdown } from './Dropdown';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
-  const { branch, level, money, day, candidates, storage, stats, atBranch, openBranch, toggleBranch, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel } = useGame();
-  const [tab, setTab] = useState<'info' | 'team' | 'hire' | 'report'>('info');
+  const { branch, level, money, day, candidates, storage, stats, atBranch, online, licenses, openBranch, toggleBranch, toggleVending, toggleNightDelivery, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel } = useGame();
+  const [tab, setTab] = useState<'info' | 'night' | 'team' | 'hire' | 'report'>('info');
   const [pick, setPick] = useState<Record<number, Shift>>({});
 
   if (!branch) {
@@ -56,7 +57,7 @@ export function BranchPanel() {
         <button style={st.primary} onClick={toggleBranch}>{branch.open ? 'Đóng cửa' : 'Mở cửa'}</button>
       </div>
       <div style={st.tabs}>
-        {([['info', '📊 Tình hình'], ['team', `👥 Nhân viên (${branch.staff.length}/${CONVENIENCE.maxStaff})`], ['hire', '🔍 Tuyển'], ['report', '📈 Theo giờ']] as const).map(([id, label]) => (
+        {([['info', '📊 Tình hình'], ['night', '🌙 Ban đêm'], ['team', `👥 Nhân viên (${branch.staff.length}/${CONVENIENCE.maxStaff})`], ['hire', '🔍 Tuyển'], ['report', '📈 Theo giờ']] as const).map(([id, label]) => (
           <button key={id} style={{ ...st.tab, background: tab === id ? '#f1c40f' : '#fff' }} onClick={() => setTab(id)}>{label}</button>
         ))}
       </div>
@@ -68,6 +69,7 @@ export function BranchPanel() {
           <div>Chi phí mỗi ngày: {formatMoney(wages)} lương (mặt bằng đã mua đứt, không thuê)</div>
           <div>Hàng trên kệ: <b>{shelfTotal(branch.shelf)}</b>/{CONVENIENCE.shelfCap} món (lấy từ kho chung)</div>
           {top.length > 0 && <div style={st.sub}>{top.map(([id, q]) => `${isHotFood(id) ? '🔥' : ''}${productById(id).name} ×${q}`).join(' · ')}</div>}
+          <div style={st.sub}>🍽️ Thực đơn xoay theo ca: sáng (5–11h) ưu tiên điểm tâm — bánh mì, xôi, cà phê; trưa (11–15h) ưu tiên cơm phần, đồ ăn nhanh; tối–đêm thiên về đồ nóng & món đêm (giá đêm cao hơn).</div>
           {atBranch && <p style={{ ...st.sub, color: '#2ecc71' }}>🧑‍💼 Bạn đang ở chi nhánh — thiếu thu ngân thì bạn tự đứng quầy.</p>}
           {calloff && (
             <div style={st.event}>
@@ -86,8 +88,78 @@ export function BranchPanel() {
           {!has('courier') && !has('stocker') && <p style={st.warn}>⚠️ Chưa có người giao/xếp hàng — kệ sẽ không được chở hàng từ kho chung.</p>}
           {!has('guard') && <p style={st.warn}>⚠️ Không có bảo vệ — ban đêm dễ mất trộm.</p>}
           {stockLeft < nightNeed() && <p style={st.warn}>⚠️ Kho chung sắp cạn (còn {stockLeft} món, mỗi đêm cần ~{nightNeed()}), đêm nay chi nhánh có thể hết hàng.</p>}
+          <div style={{ ...st.event, display: 'block' }}>
+            <div style={st.row}>
+              <b>🥤 Máy bán hàng tự động ngoài cửa</b>
+              <button style={st.primary} onClick={toggleVending}>{branch.vendingEnabled ? 'Tắt máy' : `Lắp máy · ${formatMoney(VENDING_COST)}`}</button>
+            </div>
+            <div style={st.sub}>
+              Bán kể cả khi đóng cửa / không ai trực — chỉ cần có người giao/xếp hàng trực để nạp hàng định kỳ từ kho chung.
+              {branch.vendingEnabled && <> Đang chạy: hàng trong máy <b>{vendingTotal(branch.vendingStock ?? {})}</b>/{VENDING_CAP}, hôm nay bán thêm được <b>{formatMoney(branch.vendingRevenueToday ?? 0)}</b>.</>}
+            </div>
+          </div>
         </div>
       )}
+
+      {tab === 'night' && (() => {
+        const alcLic = licenseStatus(licenses, 'alcohol', day);
+        const licOk = alcLic === 'valid' || alcLic === 'expiring';
+        const guardNight = branch.staff.some((s) => s.role === 'guard' && s.shift === 'night');
+        const groups = branch.groupToday ?? {};
+        const bill = branchPowerBill(branch);
+        return (
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div style={{ ...st.event, display: 'block', background: 'rgba(52,152,219,0.12)', border: '1px solid rgba(52,152,219,0.45)' }}>
+              <b>👥 Khách đêm theo nhóm</b>
+              <div style={st.sub}>Từ 21h khách chia thành các nhóm có giờ cao điểm và món ưa thích riêng — kệ có đúng món thì họ mua nhiều hơn.</div>
+              {NIGHT_GROUPS.map((g) => (
+                <div key={g.id} style={{ ...st.row, marginBottom: 2, alignItems: 'baseline' }}>
+                  <span style={{ minWidth: 190 }}>{g.icon} <b>{g.name}</b> · {groups[g.id] ?? 0} khách</span>
+                  <span style={st.sub}>{g.desc}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ ...st.event, display: 'block' }}>
+              <b>🍺 Rượu bia ban đêm</b>
+              <div style={st.sub}>
+                Bán rượu bia giờ đêm lời hơn (×1.15). Cần <b>{licenseById('alcohol').name}</b> (cấp {licenseById('alcohol').unlock}+): công an tuần tra đêm có thể phạt và tịch thu nếu thiếu phép.
+                Không có bảo vệ ca đêm thì khách say dễ gây gổ ({Math.round(ALCOHOL_BRAWL_CHANCE * 100)}% mỗi lượt bán).
+              </div>
+              <div style={st.sub}>
+                Giấy phép: <b style={{ color: licOk ? '#2ecc71' : '#e74c3c' }}>{licOk ? 'còn hạn' : alcLic === 'none' ? 'chưa có' : 'hết hạn'}</b>
+                {' · '}hôm nay bán {branch.alcoholToday ?? 0} món rượu bia
+              </div>
+              {hasAlcohol(branch.shelf) && !licOk && level >= licenseById('alcohol').unlock && <p style={st.warn}>⚠️ Kệ đang có rượu bia mà chưa có giấy phép — xin ở bảng Giấy phép trước khi công an ghé.</p>}
+              {hasAlcohol(branch.shelf) && !guardNight && <p style={st.warn}>⚠️ Ca đêm chưa có bảo vệ — bán rượu bia dễ xảy ra gây gổ.</p>}
+            </div>
+
+            <div style={{ ...st.event, display: 'block' }}>
+              <div style={st.row}>
+                <b>🛵 Giao hàng đêm qua app</b>
+                <button style={st.primary} onClick={toggleNightDelivery}>{branch.nightDelivery ? 'Ngưng nhận đơn đêm' : 'Nhận đơn đêm'}</button>
+              </div>
+              <div style={st.sub}>
+                Đơn app 22h–6h có phụ phí +{Math.round(NIGHT_DELIVERY_SURCHARGE * 100)}% (app giữ hoa hồng). Cần gian hàng app đã mở ({online.open ? 'đã mở' : 'chưa mở'}) và người giao hàng ca đêm không quá mệt; thiếu người giao thì đơn bị hủy, tụt điểm app. Shipper đêm đôi khi gặp sự cố mất đơn.
+                {branch.nightDelivery && <> Đêm nay: <b>{branch.deliveryToday ?? 0}</b> đơn, thu <b>{formatMoney(branch.deliveryRevenueToday ?? 0)}</b>.</>}
+              </div>
+            </div>
+
+            <div style={{ ...st.event, display: 'block' }}>
+              <b>⚡ Điện lạnh</b>
+              <div style={st.sub}>Tủ mát, tủ đông, bếp đồ nóng chạy suốt 24h: hóa đơn điện hôm nay <b>{formatMoney(bill)}</b> (trừ cuối ngày, nằm trong chi phí vận hành).</div>
+              {POWER_UPGRADES.map((u) => (
+                <div key={u.id} style={{ ...st.row, marginBottom: 2, alignItems: 'center' }}>
+                  <span style={{ flex: 1 }}>{u.icon} <b>{u.name}</b> <span style={st.sub}>— {u.desc}</span></span>
+                  {hasPower(branch, u.id)
+                    ? <span style={{ color: '#2ecc71' }}>✅ Đã lắp</span>
+                    : <button style={st.btn} disabled={money < u.price} onClick={() => buyBranchPower(u.id)}>Lắp · {formatMoney(u.price)}</button>}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {tab === 'team' && (
         <div style={{ display: 'grid', gap: 10 }}>

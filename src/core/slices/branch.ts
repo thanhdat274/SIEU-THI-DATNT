@@ -1,9 +1,13 @@
 import { formatMoney } from '../../data/products';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
 import { dailyWage, GUARD_DETECT, maxStaff, ROLES, type Staff } from '../../data/staff';
-import { BLACKOUT_LOSS, BONUS_RELIEF, COVER_WAGE_MUL, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, branchTrafficAt, isBranchNight, newBranch, onShift, shelfTotal, type BranchState } from '../../data/branches';
+import { BLACKOUT_LOSS, BONUS_RELIEF, COVER_WAGE_MUL, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, VENDING_CAP, VENDING_COST, VENDING_ITEMS, VENDING_OFFTAKE, VENDING_THEFT, branchTrafficAt, isBranchNight, newBranch, onShift, shelfTotal, vendingTotal, type BranchState,
+  ALCOHOL_BRAWL_CHANCE, ALCOHOL_NIGHT_MUL, BRAWL_BLOCK, BRAWL_DAMAGE, GENERATOR_FUEL, GENERATOR_LOSS_MUL, NIGHT_DELIVERY_MISHAP, NIGHT_DELIVERY_PER_HOUR, NIGHT_DELIVERY_SURCHARGE, PATROL_AT, PATROL_CHANCE, POWER_UPGRADES,
+  hasAlcohol, hasPower, pickForGroup, pickNightGroup, powerUpgradeById, type PowerUpgradeId } from '../../data/branches';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
+import { LICENSE_FINE, isAlcohol, licenseById, licenseStatus } from '../../data/licenses';
+import { APP_COMMISSION, appRating } from '../../data/online';
 
 /** Cửa hàng tiện lợi 24/7: mô phỏng ngầm theo bước 10 phút, sang ngày, thuê/xếp ca/thưởng nhân viên chi nhánh. */
 
@@ -27,6 +31,8 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
   const news: string[] = [];
   let fees = 0;
   let revenue = 0;
+  // Đơn app giao đêm: cộng dồn rồi trả về một lần
+  const onl = { ratingSum: 0, ratingCount: 0, done: 0, late: 0, pay: 0 };
   const STEP = 10;
   const manager = b.staff.some((st) => st.role === 'manager' && !restingOn(b, st.id, s.day));
   const absent = (st: Staff) => restingOn(b, st.id, s.day)
@@ -35,6 +41,54 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
   while (b.simAt + STEP <= to) {
     b.simAt += STEP;
     const m = b.simAt;
+    const on = b.staff.filter((st) => onShift(st, m) && !absent(st));
+
+    // Máy bán hàng tự động ngoài cửa: bán kể cả khi quầy đóng / không ai trực.
+    if (b.vendingEnabled && b.vendingStock) {
+      // Người giao/xếp hàng/quản lý trực thì định kỳ chở hàng nạp máy (không cần mở cửa)
+      const vStockman = on.some((st) => st.role === 'courier' || st.role === 'stocker' || st.role === 'manager');
+      if (vStockman && m - b.lastTrip >= CONVENIENCE.tripEvery) {
+        let vroom = VENDING_CAP - vendingTotal(b.vendingStock);
+        for (const id of Object.keys(k.storage)) {
+          if (vroom <= 0) break;
+          if (!VENDING_ITEMS.has(id)) continue;
+          const want = Math.min(vroom, k.storage[id] ?? 0);
+          if (want <= 0) continue;
+          const got = takeStock(k, id, want).reduce((n, l) => n + l.qty, 0);
+          b.vendingStock[id] = (b.vendingStock[id] ?? 0) + got;
+          vroom -= got;
+        }
+        if (vroom < VENDING_CAP) b.lastTrip = m; // thực sự nạp được hàng thì tính là một chuyến xe
+      }
+      // Bán hàng từ máy: một phần khách qua đường rút hàng mỗi 10 phút
+      let vTotal = vendingTotal(b.vendingStock);
+      if (vTotal > 0) {
+        const vExpect = (branchTrafficAt(m) * STEP) / 60 * VENDING_OFFTAKE;
+        let vn = Math.floor(vExpect) + (Math.random() < vExpect % 1 ? 1 : 0);
+        for (; vn > 0 && vTotal > 0; vn--) {
+          const pool: string[] = Object.keys(b.vendingStock).filter((id) => (b.vendingStock?.[id] ?? 0) > 0);
+          if (!pool.length) break;
+          const id = pool[Math.floor(Math.random() * pool.length)];
+          b.vendingStock[id]--;
+          const price = Math.round((s.priceOf(id, m) * CONVENIENCE.priceMul) / 500) * 500;
+          revenue += price;
+          b.vendingRevenueToday = (b.vendingRevenueToday ?? 0) + price;
+          b.hourly![Math.floor((((m % 1440) + 1440) % 1440) / 60)] += price;
+          vTotal--;
+        }
+        if (vTotal <= 0) news.push('🥤 Máy bán hàng tự động hết hàng — người giao hàng sẽ nạp lại khi có người trực.');
+      }
+      // Trộm vặt máy ban đêm (máy đặt ngoài cửa, bảo vệ không canh được)
+      if (isBranchNight(m) && Math.random() < VENDING_THEFT) {
+        const pool = Object.keys(b.vendingStock).filter((id) => (b.vendingStock?.[id] ?? 0) > 0);
+        for (let i = 0; i < 2 && pool.length; i++) {
+          const stolen = pool[Math.floor(Math.random() * pool.length)];
+          b.vendingStock[stolen]--;
+          b.lostToday++;
+        }
+      }
+    }
+
     if (!b.open) continue;
     // Tối nay có chuyện gì không (tung một lần lúc 21h)
     if (m >= EVENT_ROLL_AT && b.eventDay !== s.day) {
@@ -58,7 +112,20 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
         b.event = { kind: 'blackout', at: 22 * 60 + Math.floor(Math.random() * 7 * 60) };
       }
     }
-    const on = b.staff.filter((st) => onShift(st, m) && !absent(st));
+    // Công an tuần tra đêm: kệ có rượu bia mà thiếu giấy phép thì bị phạt và tịch thu
+    if (m >= PATROL_AT && b.patrolDay !== s.day) {
+      b.patrolDay = s.day;
+      if (Math.random() < PATROL_CHANCE && hasAlcohol(b.shelf) && s.level >= licenseById('alcohol').unlock) {
+        const lic = licenseStatus(s.licenses, 'alcohol', s.day);
+        if (lic === 'none' || lic === 'expired') {
+          let seized = 0;
+          for (const id of Object.keys(b.shelf)) if (isAlcohol(id)) { seized += b.shelf[id]; delete b.shelf[id]; }
+          b.lostToday += seized;
+          fees += LICENSE_FINE;
+          news.push(`👮 Công an tuần tra tiện lợi: bán rượu bia không giấy phép! Phạt ${formatMoney(LICENSE_FINE)}, tịch thu ${seized} món`);
+        } else news.push('👮 Công an tuần tra đêm ghé tiện lợi, giấy phép bán rượu bia hợp lệ — êm xuôi');
+      }
+    }
     const ev = b.event;
     if (ev && !ev.done && ev.kind !== 'calloff' && m >= ev.at) {
       ev.done = true;
@@ -71,15 +138,19 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
         }
       } else {
         let lost = 0;
+        const gen = hasPower(b, 'generator');
+        if (gen) fees += GENERATOR_FUEL;
         for (const id of Object.keys(b.shelf)) {
           if (!spoilsInBlackout(id)) continue;
-          const n = Math.round(b.shelf[id] * BLACKOUT_LOSS);
+          const n = Math.round(b.shelf[id] * BLACKOUT_LOSS * (gen ? GENERATOR_LOSS_MUL : 1));
           b.shelf[id] -= n;
           spendHomegrown(id, n);
           lost += n;
         }
         b.lostToday += lost;
-        news.push(`💡 Mất điện ở tiện lợi giữa đêm: tủ mát tắt, ${lost} món hàng mát/đồ nóng bị hỏng`);
+        news.push(gen
+          ? `💡 Mất điện ở tiện lợi nhưng máy phát đã chạy (dầu ${formatMoney(GENERATOR_FUEL)}): chỉ hỏng ${lost} món`
+          : `💡 Mất điện ở tiện lợi giữa đêm: tủ mát tắt, ${lost} món hàng mát/đồ nóng bị hỏng`);
       }
     }
     // Xe chở hàng: người giao/xếp hàng trực thì định kỳ chở; có quản lý thì kệ vơi là tự gọi xe
@@ -106,21 +177,72 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
     const cashiers = on.filter((st) => st.role === 'cashier');
     // Chủ đang có mặt ở chi nhánh thì tự đứng quầy được (không mệt)
     const tired = !s.atBranch && cashiers.length > 0 && cashiers.every((st) => fatigueOf(b, st.id) >= FATIGUE_SLOW);
-    const canSell = (cashiers.length > 0 || s.atBranch) && !(b.blockedUntil && m < b.blockedUntil);
+    const guardOn = on.some((st) => st.role === 'guard');
+    let canSell = (cashiers.length > 0 || s.atBranch) && !(b.blockedUntil && m < b.blockedUntil);
     for (; n > 0; n--) {
       if (!canSell || !Object.values(b.shelf).some((q) => q > 0) || (tired && Math.random() < TIRED_MISS)) { b.missedToday++; continue; }
       b.customersToday++;
-      for (let items = 1 + Math.floor(Math.random() * 2); items > 0; items--) {
+      // Giờ đêm: khách thuộc các nhóm riêng (tài xế, công nhân, sinh viên, bác sĩ, dân nhậu) mua theo sở thích
+      const group = isBranchNight(m) || m % 1440 >= 21 * 60 ? pickNightGroup(m) : undefined;
+      if (group) b.groupToday = { ...b.groupToday, [group.id]: (b.groupToday?.[group.id] ?? 0) + 1 };
+      const [lo, hi] = group?.items ?? [1, 2];
+      for (let items = lo + Math.floor(Math.random() * (hi - lo + 1)); items > 0; items--) {
         const pool = Object.keys(b.shelf).filter((id) => b.shelf[id] > 0);
         if (!pool.length) break;
-        const id = pickWeighted(pool, m);
+        const id = pickForGroup(pool, m, group);
         b.shelf[id]--;
         // Hàng nhà trồng/nuôi bán ở chi nhánh được giá hơn như ở quầy chính
         const premium = (hg[id] ?? 0) > 0;
         if (premium) spendHomegrown(id, 1);
-        const price = Math.round((s.priceOf(id, m) * CONVENIENCE.priceMul * (isHotFood(id) ? HOT_FOOD_MUL : 1) * (premium ? 1 + HOMEGROWN_PREMIUM : 1)) / 500) * 500;
+        const boozeNight = isBranchNight(m) && isAlcohol(id);
+        const price = Math.round((s.priceOf(id, m) * CONVENIENCE.priceMul * (isHotFood(id) ? HOT_FOOD_MUL : 1) * (premium ? 1 + HOMEGROWN_PREMIUM : 1) * (boozeNight ? ALCOHOL_NIGHT_MUL : 1)) / 500) * 500;
         revenue += price;
         b.hourly![Math.floor((((m % 1440) + 1440) % 1440) / 60)] += price;
+        if (boozeNight) {
+          b.alcoholToday = (b.alcoholToday ?? 0) + 1;
+          // Bán rượu bia đêm mà không có bảo vệ: khách say dễ gây gổ
+          if (!guardOn && !s.atBranch && canSell && Math.random() < ALCOHOL_BRAWL_CHANCE) {
+            fees += BRAWL_DAMAGE;
+            b.blockedUntil = m + BRAWL_BLOCK;
+            canSell = false;
+            news.push(`🍺 Khách nhậu say gây gổ ở tiện lợi (không có bảo vệ): đền ${formatMoney(BRAWL_DAMAGE)}, quầy ngưng bán ${BRAWL_BLOCK} phút`);
+          }
+        }
+      }
+    }
+    // Giao hàng đêm qua app: cần gian hàng app đang mở và người giao hàng trực; phụ phí đêm, app lấy hoa hồng
+    if (b.nightDelivery && s.online.open && isBranchNight(m) && !(b.blockedUntil && m < b.blockedUntil)) {
+      const couriers = on.filter((st) => st.role === 'courier' && fatigueOf(b, st.id) < FATIGUE_SLOW);
+      const dExpect = (NIGHT_DELIVERY_PER_HOUR * STEP) / 60 * (appRating(s.online) / 5);
+      for (let d = Math.floor(dExpect) + (Math.random() < dExpect % 1 ? 1 : 0); d > 0; d--) {
+        const pool = Object.keys(b.shelf).filter((id) => b.shelf[id] > 0);
+        if (!pool.length) break;
+        if (!couriers.length) { onl.ratingSum += 3; onl.ratingCount++; b.missedToday++; continue; }
+        let value = 0;
+        const taken: string[] = [];
+        for (let i = 1 + Math.floor(Math.random() * 3); i > 0; i--) {
+          const left = pool.filter((id) => b.shelf[id] > 0);
+          if (!left.length) break;
+          const id = pickWeighted(left, m);
+          b.shelf[id]--;
+          spendHomegrown(id, 1);
+          taken.push(id);
+          value += Math.round((s.priceOf(id, m) * CONVENIENCE.priceMul * (1 + NIGHT_DELIVERY_SURCHARGE)) / 500) * 500;
+        }
+        if (!taken.length) break;
+        if (Math.random() < NIGHT_DELIVERY_MISHAP) {
+          // Shipper ngã xe/lạc đường ban đêm: mất đơn, không thu tiền
+          onl.ratingSum += 2; onl.ratingCount++; onl.late++; b.lostToday += taken.length;
+          news.push('🛵 Shipper giao đêm gặp sự cố giữa đường — mất một đơn app');
+          continue;
+        }
+        const pay = Math.round(value * (1 - APP_COMMISSION));
+        revenue += pay;
+        onl.pay += pay;
+        onl.ratingSum += 5; onl.ratingCount++; onl.done++;
+        b.deliveryToday = (b.deliveryToday ?? 0) + 1;
+        b.deliveryRevenueToday = (b.deliveryRevenueToday ?? 0) + pay;
+        b.hourly![Math.floor((((m % 1440) + 1440) % 1440) / 60)] += pay;
       }
     }
     // Trộm đêm: có bảo vệ trực thì gần như bắt được hết
@@ -145,7 +267,10 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
     branch: b, ...k,
     garden: { ...s.garden, homegrown: hg },
     money: s.money - fees + revenue,
-    stats: { ...s.stats, revenue: s.stats.revenue + revenue, spent: s.stats.spent + fees },
+    stats: { ...s.stats, revenue: s.stats.revenue + revenue, spent: s.stats.spent + fees, ...(onl.pay ? { online: (s.stats.online ?? 0) + onl.pay } : {}) },
+    ...(onl.ratingCount
+      ? { online: { ...s.online, ratingSum: s.online.ratingSum + onl.ratingSum, ratingCount: s.online.ratingCount + onl.ratingCount, done: s.online.done + onl.done, late: s.online.late + onl.late, revenueToday: s.online.revenueToday + onl.pay } }
+      : {}),
   };
 };
 
@@ -179,10 +304,10 @@ export const branchNewDay = (b: BranchState, day: number): { branch: BranchState
     staff = autoSchedule(staff.filter((st) => restDay[st.id] !== day + 1), fatigue)
       .concat(staff.filter((st) => restDay[st.id] === day + 1));
   }
-  return { branch: { ...b, staff, fatigue, restDay, event: null, blockedUntil: undefined, hourly: Array(24).fill(0) }, news };
+  return { branch: { ...b, staff, fatigue, restDay, event: null, blockedUntil: undefined, hourly: Array(24).fill(0), vendingRevenueToday: 0, groupToday: {}, alcoholToday: 0, deliveryToday: 0, deliveryRevenueToday: 0 }, news };
 };
 
-export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState, 'openBranch' | 'toggleBranch' | 'hireForBranch' | 'fireFromBranch' | 'coverCalloff' | 'bonusBranchStaff' | 'restBranchStaff' | 'setBranchShift'> => ({
+export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState, 'openBranch' | 'toggleBranch' | 'hireForBranch' | 'fireFromBranch' | 'coverCalloff' | 'bonusBranchStaff' | 'restBranchStaff' | 'setBranchShift' | 'toggleVending' | 'toggleNightDelivery' | 'buyBranchPower'> => ({
   openBranch: () => {
     const s = get();
     if (s.branch) return false;
@@ -252,5 +377,46 @@ export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState,
   setBranchShift: (id, shift) => {
     const b = get().branch;
     if (b) set({ branch: { ...b, staff: b.staff.map((it) => (it.id === id ? { ...it, shift } : it)) } });
+  },
+  toggleVending: () => {
+    const s = get();
+    const b = s.branch;
+    if (!b) return;
+    if (b.vendingEnabled) {
+      set({ branch: { ...b, vendingEnabled: false } });
+      s.notify('Máy bán hàng tự động đã tắt.');
+      return;
+    }
+    if (s.money < VENDING_COST) return s.notify(`Không đủ tiền lắp máy bán hàng tự động (${formatMoney(VENDING_COST)})!`);
+    set({
+      money: s.money - VENDING_COST,
+      branch: { ...b, vendingEnabled: true, vendingStock: b.vendingStock ?? {} },
+      stats: { ...s.stats, spent: s.stats.spent + VENDING_COST },
+      totals: { ...s.totals, spent: s.totals.spent + VENDING_COST },
+    });
+    s.notify('🥤 Đã lắp máy bán hàng tự động ngoài cửa — bán kể cả khi đóng cửa; cần người giao/xếp hàng nạp hàng định kỳ.');
+  },
+  toggleNightDelivery: () => {
+    const s = get();
+    const b = s.branch;
+    if (!b) return;
+    if (b.nightDelivery) { set({ branch: { ...b, nightDelivery: false } }); return s.notify('Đã ngưng nhận đơn app ban đêm.'); }
+    if (!s.online.open) return s.notify('Cần mở gian hàng trên app (Bán online) trước khi nhận đơn đêm!');
+    set({ branch: { ...b, nightDelivery: true } });
+    s.notify(`🌙 Chi nhánh nhận đơn app ban đêm: phụ phí +${Math.round(NIGHT_DELIVERY_SURCHARGE * 100)}%, cần người giao hàng ca đêm.`);
+  },
+  buyBranchPower: (id: PowerUpgradeId) => {
+    const s = get();
+    const b = s.branch;
+    if (!b || hasPower(b, id) || !POWER_UPGRADES.some((u) => u.id === id)) return;
+    const def = powerUpgradeById(id);
+    if (s.money < def.price) return s.notify(`Không đủ tiền mua ${def.name} (${formatMoney(def.price)})!`);
+    set({
+      money: s.money - def.price,
+      branch: { ...b, power: [...(b.power ?? []), id] },
+      stats: { ...s.stats, spent: s.stats.spent + def.price },
+      totals: { ...s.totals, spent: s.totals.spent + def.price },
+    });
+    s.notify(`${def.icon} Đã lắp ${def.name} cho tiện lợi.`);
   },
 });

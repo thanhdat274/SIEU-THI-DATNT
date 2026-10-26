@@ -13,8 +13,8 @@ const STATUS = {
 } as const;
 
 export function LicensesPanel() {
-  const { licenses, inspection, furniture, level, day, money, buyLicense, closePanel } = useGame();
-  const shelved = [...new Set(furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!)))];
+  const { licenses, inspection, furniture, level, day, money, branch, buyLicense, closePanel } = useGame();
+  const shelved = [...new Set([...furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!)), ...Object.keys(branch?.shelf ?? {})])];
   const need = requiredLicenses({ level, hasCookStation: furniture.some((f) => isCookStation(f.type)), shelved });
   const nextPeriodic = Math.ceil(day / INSPECTION_EVERY) * INSPECTION_EVERY;
   return (
