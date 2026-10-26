@@ -4,6 +4,7 @@ import {
 } from '../../server/room';
 import { newGameData, useGame } from '../core/store';
 import { snapshot, applySnapshot } from '../core/save';
+import { cleanActionArgs } from '../net/actionArgs';
 import { newOnline, appRating, orderGap, makeOnlineOrder } from '../data/online';
 
 const peer = (id: number, name: string, visible = true) => ({ id, name, visible });
@@ -166,5 +167,20 @@ describe('bán hàng online — dữ liệu máy chạy dùng để mô phỏng'
     // cùng rng thì cùng đơn
     const o2 = makeOnlineOrder(7, 20, 9 * 60, () => 0.5);
     expect(o2.customer).toBe(o.customer);
+  });
+});
+
+describe('hẻm online — tham số thao tác của người không chạy', () => {
+  it('bỏ sự kiện click lọt vào tham số (onClick={toggleShop}) để gửi được sang máy chạy', () => {
+    const click: Record<string, unknown> = { preventDefault: () => {}, nativeEvent: {} };
+    click.target = click; // vòng tham chiếu như phần tử DOM thật
+    const args = cleanActionArgs([click]);
+    expect(args).toEqual([]);
+    expect(() => JSON.stringify(args)).not.toThrow();
+  });
+  it('giữ nguyên tham số thật, kể cả khi đi kèm sự kiện', () => {
+    const click = { preventDefault: () => {} };
+    expect(cleanActionArgs([3, 'bap', click, { a: 1 }, null])).toEqual([3, 'bap', { a: 1 }, null]);
+    expect(cleanActionArgs([])).toEqual([]);
   });
 });

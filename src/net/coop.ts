@@ -3,6 +3,7 @@ import { applySnapshot, snapshot } from '../core/save';
 import { newGameData, useGame, type GameState } from '../core/store';
 import { Walker } from '../agents/walker';
 import { costumeById } from '../data/costumes';
+import { cleanActionArgs } from './actionArgs';
 import { idToken } from './firebase';
 import { apiUrl, wsUrl } from './serverUrl';
 import { useSession, type AlleyPeer } from './session';
@@ -289,7 +290,8 @@ function installProxies() {
   for (const [name, fn] of Object.entries(state)) {
     if (typeof fn !== 'function' || LOCAL_ACTIONS.has(name)) continue;
     (originals as Record<string, unknown>)[name] = fn;
-    proxies[name] = (...args: unknown[]) => {
+    proxies[name] = (...rawArgs: unknown[]) => {
+      const args = cleanActionArgs(rawArgs);
       const result = name in PROXY_RESULT ? PROXY_RESULT[name] : true;
       // Bấm lặp lúc kết quả lần trước chưa về: bỏ qua, không gửi hai lần
       const key = name + JSON.stringify(args);
