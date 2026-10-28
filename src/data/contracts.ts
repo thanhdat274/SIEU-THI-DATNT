@@ -138,7 +138,7 @@ export interface ContractStreakProgress {
 /** Còn bao nhiêu ngày trước hạn thì coi là "sắp tới kỳ" cần cảnh báo đếm ngược. */
 export const CONTRACT_RISK_DAYS = 3;
 
-// ───── ROI nhận hợp đồng (GĐ150) ─────
+// ───── ROI nhận hợp đồng (GĐ151) ─────
 // Quyết định "CÓ NÊN ký hợp đồng này không" hiện là hộp đen: ContractsPanel chỉ show tổng giá kỳ
 // (contractValue — doanh thu thô) mà không cho thấy người chơi đang nhượng bao nhiêu margin so với
 // bán lẻ cùng lô, và lời THẬT sau tiền vốn là bao nhiêu mỗi kỳ/ngày. Helper THUẦN đọc định nghĩa hợp

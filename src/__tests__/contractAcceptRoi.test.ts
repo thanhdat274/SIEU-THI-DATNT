@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { contractAcceptRoi, contractValue, SUPPLY_CONTRACTS, supplyContractById } from '../data/contracts';
 
-/** ROI nhận hợp đồng (GĐ150): quyết định "có nên ký hợp đồng không" ra con số — lời THẬT sau vốn,
+/** ROI nhận hợp đồng (GĐ151): quyết định "có nên ký hợp đồng không" ra con số — lời THẬT sau vốn,
  *  nhượng bao nhiêu % so với bán lẻ cùng lô. Thuần đọc định nghĩa, không đụng state/save/kinh tế. */
 
 describe('contractAcceptRoi — tính đúng theo dữ liệu thật', () => {
