@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (28/10/2026)
 
-- **1713/1713 test pass (152 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
+- **1738/1738 test pass (153 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
 - Đã xong GĐ1–GĐ165.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) đã bão hòa; UI responsive đa thiết bị đã audit kỹ (GĐ85–104, 116); trục "giá trị vs chi phí" đã soi kín gần hết tài sản: nhân sự tiệm chính/ca đêm/chi nhánh (141/142/144), mối hàng (143), bếp (145), trại (146/147), danh tiếng (148), quầy thịt cá (149), sổ nợ (150), hợp đồng (151), chi nhánh sau điện (152/153). Mở rộng Gánh hàng rong / Chợ phiên đã có (135–138), NG+ có dự phóng + mục tiêu vòng (139/140).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
@@ -95,6 +95,22 @@
 - Quét màu lệch bảng rộng hơn đề bài: `#27ae60`→`#2ecc71` (15 chỗ), `#f39c12`→`#e67e22` (17 chỗ), `#c9a20a`→`#f1c40f` (7 chỗ, gồm 2 dead fallback gọn lại) — grep 6 màu lệch toàn src/ui/ = 0 kết quả. HistoryChart kiểm tra không trùng màu đường.
 - Còn cho đợt sau: Callout GardenPanel:79; họ banner guide xanh dương #0984e3/#74b9ff/#2e86de (OrderPanel/ReportPanels) cần quyết định bảng riêng — không phải "nốt vụn".
 - Test 1713/1713 + build sạch; chỉ style/màu, 0 chữ, 0 logic. File: 14 file UI.
+
+### GĐ168 — 🗺️ Nạp lại "Phía trước" cho cấp 30+ — XONG
+
+- Lý do: audit tiến trình — RoadmapPanel rỗng từ cấp 30 (mốc cuối cũ = 29) đúng đoạn khô 31–44 (14 cấp không hệ mới); các mốc thật (tier, chương, NG+) không nằm trong bản đồ nào. Nguyên lý GĐ81/132 "nhìn thấy cái sắp tới" bị rút mất đúng chỗ cần nhất.
+- Triển khai: SYSTEM_UNLOCKS thêm 10 mốc lấy đúng data thật (đất 16/24, Mini mart 30, chương 40/55/75, Siêu thị 45/58 + Đại siêu thị 75, Tái sinh 60 kèm điều kiện doanh thu 100tr) — tổng 20 mục, mốc cuối 75; `panel` thành optional (chương không có bảng riêng); RoadmapPanel chữ "hệ"→"mục", nút Xem chỉ khi có panel; badge HUD 🗺️ tự sống lại. Thuần data/đọc, không đụng logic mở khóa.
+- Test 34/34 liên quan (9 test mới: snapshot 20 mục, probe when() chương, mọi cấp 30–44 còn ≥1 mục, 75+ không crash).
+- File: `unlockMap.ts`, `RoadmapPanel.tsx`, `ReportPanels.tsx`, `Hud.tsx`, `unlockMap.test.ts`.
+
+### GĐ169 — 🎯 Nhịp tuần/tháng sống mãi: bó ratchet + thưởng chuỗi đổi XP — XONG
+
+- Lý do: audit tiến trình — goal doanh thu tuần/tháng nhân ×1.1/×1.15 trên max() cũ không trần → hụt vĩnh viễn sau vài chục tuần (nhịp tuần tự tắt); thưởng chuỗi trả tiền cho người thừa tiền.
+- Fix A (trần goal): `nextGoalCapped` — trần = doanh thu kỳ vừa chốt ×1.15 (bám năng lực thật từng save, tự kéo goal spike về tầm với sau 1 tuần hụt); ĐẠT mới tăng (hụt giữ goal cũ nhưng vẫn bó trần); goal đang lưu giữ nguyên tới lần đặt mới (save-an-toàn).
+- Fix B (XP chuỗi): bỏ nhân tiền chuỗi ×1.2→×1.8 (giữ thưởng gốc ×1.0); chuỗi ≥3 tuần → +35% xpToNext mỗi tuần (tháng ×2) — bù đúng cỡ 10–15%+ tốc độ lên cấp khi giữ chuỗi; notify "🔥 Chuỗi N tuần — +X XP"; XP qua addXp sau set state (1 luồng lên cấp).
+- Sim xác minh (harness GĐ105, seed 169, 28 ngày, trước/sau): trần ăn ngay (goalMới 31M→24.4M cấp 30; 58.7M→41M cấp 50); XP/cấp 2.80→2.55–2.80 ngày (cấp 30), 3.50→3.11 (cấp 50); dòng tiền bot ~0 (bot giữ chuỗi 0) — đối chiếu công thức: người giữ chuỗi mất ≤0.8× thưởng cũ/tuần, người đạt mục tiêu (giờ trong tầm với) nhận +5–6% doanh thu kỳ.
+- Test: `weeklyGoalCap.test.ts` 16 test (100 tuần hội tụ, hụt giữ goal, save cũ clamp, XP đúng/claim 1 lần, simSmoke cấp 30/50) + cập nhật weekly/monthly/weekPace (187 test liên quan xanh). **Full 1738/1738 (153 files)**.
+- File: `data/biz.ts`, `core/biz.ts`, `endDay.ts`, `BusinessPanel.tsx` (dòng "+X XP" + cảnh báo GĐ121 đổi chữ), 4 test file.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -298,3 +314,5 @@
 - GĐ165 — 🎲 Bổ sung 5 sự kiện một-phát cấp thấp
 - GĐ166 — 🧹 Đồng bộ hoá thẻ GĐ131–165 (Callout + bảng màu)
 - GĐ167 — 🧹 Nốt vụn màu + thẻ BusinessPanel
+- GĐ168 — 🗺️ Nạp lại Phía trước cho cấp 30+
+- GĐ169 — 🎯 Nhịp tuần/tháng sống mãi (bó ratchet + XP chuỗi)

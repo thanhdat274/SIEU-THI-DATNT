@@ -2,19 +2,20 @@ import { useGame } from '../../core/store';
 import { roadmapAhead, SYSTEM_UNLOCKS } from '../../data/unlockMap';
 import { Footer, styles } from './shared';
 
-/** 🗺️ Phía trước — bản đồ toàn ván các HỆ lớn mở khóa theo cấp (không phải từng món/kệ). */
+/** 🗺️ Phía trước — bản đồ toàn ván các HỆ lớn + MỐC lớn (tiệm/trại/chương/tái sinh) mở khóa theo cấp. */
 export function RoadmapPanel() {
   const { level, xp, closePanel, openPanel } = useGame();
   const road = roadmapAhead({ level, xp });
   const unlocked = SYSTEM_UNLOCKS.filter((s) => s.atLevel <= level);
   return (
     <>
-      <h2 style={styles.title}>🗺️ Phía trước — mở khóa các hệ</h2>
+      <h2 style={styles.title}>🗺️ Phía trước — mở khóa các hệ & mốc lớn</h2>
       <p style={styles.sub}>
-        Các hệ lớn sẽ mở theo cấp, xếp thứ tự trước→sau. Không còn thứ gì sắp mở thì làm sâu hệ đang có.
+        Hệ lớn, bậc mở rộng, chương truyện và tái sinh sẽ mở theo cấp, xếp thứ tự trước→sau.
+        Không còn thứ gì sắp mở thì làm sâu hệ đang có.
       </p>
       {road.length === 0 ? (
-        <p style={{ ...styles.card, opacity: 0.85 }}>🏁 Đã mở toàn bộ hệ lớn. Giờ là lúc vận hành và mở rộng sâu.</p>
+        <p style={{ ...styles.card, opacity: 0.85 }}>🏁 Đã mở toàn bộ hệ lớn & mốc lớn. Giờ là lúc vận hành và mở rộng sâu.</p>
       ) : (
         <div style={{ display: 'grid', gap: 6, marginTop: 8, maxWidth: 780 }}>
           {road.map((r, i) => (
@@ -30,12 +31,12 @@ export function RoadmapPanel() {
       )}
       {unlocked.length > 0 && (
         <details style={{ marginTop: 12, fontSize: 13 }}>
-          <summary>✓ Đã mở ({unlocked.length} hệ) — mở nhanh</summary>
+          <summary>✓ Đã mở ({unlocked.length} mục) — mở nhanh</summary>
           <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
             {unlocked.map((s) => (
               <div key={s.id} style={{ ...styles.card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                 <span>{s.icon} {s.name}</span>
-                <button style={styles.btn} onClick={() => openPanel(s.panel())}>Xem</button>
+                {s.panel && <button style={styles.btn} onClick={() => openPanel(s.panel!())}>Xem</button>}
               </div>
             ))}
           </div>

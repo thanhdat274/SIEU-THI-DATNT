@@ -293,10 +293,10 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     const n = dossierEarnedCount(d);
     return n > 0 ? `${n} huy hiệu` : undefined;
   });
-  // Bản đồ mở khóa: số hệ lớn chưa mở khóa theo cấp
+  // Bản đồ mở khóa: số hệ lớn + mốc lớn chưa mở khóa theo cấp (GĐ168 — bản đồ nạp tới cấp 75)
   const roadmapBadge = useGame((s) => {
     const n = SYSTEM_UNLOCKS.filter((u) => u.atLevel > s.level).length;
-    return n > 0 ? `${n} hệ` : undefined;
+    return n > 0 ? `${n} mục` : undefined;
   });
   // Trang trại: luống chờ thu, trứng/sữa chờ lấy, heo xuất chuồng được, gà đói mà kho hết cám, hoặc chưa tưới
   const gardenBadge = useGame((s) => {
