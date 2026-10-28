@@ -81,7 +81,7 @@
 
 ## Cần theo dõi / nợ mở
 
-- GĐ153/GĐ155/GĐ156/GĐ157/GĐ158: xác nhận trực quan khi có save cấp cao hơn (BranchPanel cần 22+, BuildPanel mở rộng, tab Thú cưng, LandmarkPanel); IAB hiện chỉ có save cấp 1 — đã kiểm bằng test + tsc, chưa QA mắt được.
+- QA trực quan GĐ155–158 đã xong trên save máy cấp 46 (ngày 1): Mở rộng hiện tiền nhà + dự phóng đúng cả desktop/390/320 (không tràn, wrap gọn); Sân chơi số ước khớp chính xác luật charge thật (28 lượt ≈ 504.000đ ở cấp 46 = 14×15k + 7×19k + 7×23k, đã đối chiếu feedCost + roundThousand); card "Bỏ lỡ" chi nhánh & tab Thú cưng đúng trạng thái rỗng ngày 1, 0 lỗi console xuyên suốt. Chưa QA mắt được: trạng thái CÓ dữ liệu của Bỏ lỡ/Thú cưng (cần chơi vài ngày — đã bọc bởi 38 test mới).
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cấp 50 cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi nếu có phản hồi người chơi.
 - Dock 1 hàng trên mobile — defer, chỉ làm khi có bằng chứng người chơi bấm nhầm.
 - Audit 28/10 còn sót hộp đen mờ-nhẹ (chưa đáng giai đoạn riêng): hụi thiếu "đã góp Xđ trong vòng này"; phản công đối thủ chưa quy "-1 sức mạnh ≈ 0,25% khách" ra tiền; xin lỗi MXH chưa đếm "còn N ngày khủng hoảng"; máy bán hàng chi nhánh chỉ có doanh thu hôm nay, không hoàn vốn.
