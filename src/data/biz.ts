@@ -8,6 +8,7 @@ import { newQuanNuoc, type QuanNuocState } from './quanNuoc';
 import type { HiepLucState } from './hiepLuc';
 import { monthOf } from './calendar';
 import { emptyYear } from './yearReport';
+import { xpToNext } from './levels';
 
 // ───────────────────────── Tiệm đối thủ ─────────────────────────
 
@@ -582,6 +583,8 @@ export interface WeekReport {
   challenge?: WeeklyChallengeResult;
   /** Chuỗi tuần hoàn thành thử thách tính SAU tuần này (để tuần mới hiển thị). */
   challengeStreak?: number;
+  /** GĐ169 — XP thưởng chuỗi nhận ở lần chốt này (≥3 tuần đạt); 0/không có khi chưa đủ chuỗi. */
+  streakXp?: number;
 }
 
 export const WEEK_DAYS = 7;
@@ -669,6 +672,41 @@ export function weeklyChallenge(week: number, level: number): WeeklyChallenge {
   return pool[week % pool.length] ?? WEEKLY_CHALLENGES[0];
 }
 
+// ── GĐ169: Trần ratchet mục tiêu doanh thu (audit tiến trình 29/10, phát hiện b) ──
+// Công thức cũ `max(doanh thu, goal) × 1.1/1.15` nhân kép KHÔNG TRẦN: max() nuôi goal từ đỉnh cũ
+// kể cả khi hụt → goal nhân 1.1/1.15 mỗi kỳ mãi mãi, trong khi năng lực doanh thu tiệm hữu hạn
+// (tier có hạn, khách +4/cấp) → sau vài chục tuần goal hụt vĩnh viễn, thưởng 5%/6% + news "đạt
+// mục tiêu" chết, nhịp tuần/tháng tự tắt ở cuối game.
+// Trần CỨNG khi ĐẶT goal mới = doanh thu của kỳ vừa chốt (chính là trung bình 7/30 ngày gần nhất)
+// × 1.15 — goal mới không bao giờ vượt quá năng lực gần nhất +15% (dư địa cho kỳ bán tốt).
+// Quy tắc đặt goal: ĐẠT → min(công thức cũ, trần); HỤT → giữ goal cũ (đừng phạt kép) nhưng vẫn bó
+// trần nếu goal cũ đã vượt năng lực (một tuần sau đỉnh spiked là goal trở lại tầm với).
+// Goal ĐANG LƯU trong save cũ giữ nguyên tới lần chốt kế tiếp (không migration — clamp chỉ xảy
+// ra lúc đặt mới, xem nextGoalCapped).
+export const GOAL_CAP_FACTOR = 1.15;
+
+/** GĐ169 — goal kỳ kế tiếp: ĐẠT → min(công thức cũ, trần năng lực); HỤT → giữ goal cũ nhưng vẫn
+ *  bó trần; kỳ 0 doanh thu (tiệm nghỉ cả kỳ) → giữ goal cũ, không nhân tiếp. Tròn 10k như cũ. */
+const nextGoalCapped = (revenue: number, oldGoal: number | null, met: boolean, ratchet: number): number => {
+  const raw = Math.round((Math.max(revenue, oldGoal ?? 0) * ratchet) / 10000) * 10000;
+  if (revenue <= 0) return oldGoal ?? raw;
+  const cap = Math.round((revenue * GOAL_CAP_FACTOR) / 10000) * 10000;
+  return Math.min(met ? raw : (oldGoal ?? raw), cap);
+};
+
+// ── GĐ169: Thưởng chuỗi thử thách tuần/tháng đổi sang XP (audit tiến trình 29/10, phát hiện c) ──
+// Cũ: tiền thưởng thử thách nhân hệ số chuỗi ×1.2→×1.8 — trả TIỀN cho người thừa tiền (GĐ105: tiền
+// hết là ràng buộc từ cấp 30) trong khi XP mới là thứ khan (4.8 ngày/cấp ở 31–44). Mới: tiền giữ hệ
+// số nhỏ nhất (thưởng gốc ×1.0 — bỏ nhân chuỗi), cộng thẳng XP khi giữ được chuỗi ≥3 kỳ: mỗi tuần
+// đạt chuỗi +35% xpToNext(level), tháng ×2. Đổi kinh tế NHẸ có chủ ý — Leader duyệt theo audit;
+// KHÔNG đụng kinh tế bán hàng/thưởng nhiệm vụ. Sim GĐ169 (seed 169, 28 ngày, harness GĐ105): bot
+// giữ chuỗi 0 + hụt goal mọi tuần → dòng tiền trực tiếp không đổi; XP/cấp không xuyên thừa (cấp 30
+// 2.80 → 2.55–2.80 ngày/cấp, cấp 50 3.50 → 3.11); khi GIỮ chuỗi đều: +24% XP tuần ở nhịp audit
+// 4.8 ngày/cấp, +14% ở nhịp bot 2.8 — bù đúng cỡ 10–15%+ (test weeklyGoalCap + simSmoke cấp 30/50).
+export const STREAK_XP_FROM = 3;
+export const STREAK_XP_RATE_WEEK = 0.35;
+export const STREAK_XP_RATE_MONTH = 0.7;
+
 export function closeWeek(t: WeekTally, endDay: number, level: number, streak: number): WeekReport {
   const lines = Object.entries(t.items);
   const best = [...lines].sort((a, b) => b[1].gross - a[1].gross)[0]?.[0];
@@ -679,13 +717,17 @@ export function closeWeek(t: WeekTally, endDay: number, level: number, streak: n
   const chTarget = ch.target(level);
   const chCurrent = ch.measure === 'revenue' ? t.revenue : (t[ch.measure] ?? 0);
   const chMet = chCurrent >= chTarget;
-  // Hoàn thành nhiều tuần liền thì thưởng gốc đậm thêm 20%/tuần, trần +80% (tuần thứ 5 trở đi)
-  const chReward = chMet ? Math.round((ch.reward(level) * (1 + 0.2 * Math.min(streak, 4))) / 1000) * 1000 : 0;
+  // GĐ169 — tiền thưởng thử thách giữ hệ số nhỏ nhất (thưởng gốc, bỏ nhân chuỗi ×1.2→×1.8 cũ);
+  // chuỗi được đền bằng XP (streakXp dưới đây) thay vì tiền.
+  const chReward = chMet ? Math.round(ch.reward(level) / 1000) * 1000 : 0;
+  // GĐ169 — XP chuỗi: từ tuần đạt thứ 3 liên tiếp trở đi, mỗi tuần giữ chuỗi +35% xpToNext.
+  const streakXp = chMet && streak + 1 >= STREAK_XP_FROM ? Math.round(STREAK_XP_RATE_WEEK * xpToNext(level)) : 0;
   return {
     week, endDay, revenue: t.revenue, profit: t.profit, customers: t.customers, unhappy: t.unhappy,
     best, worst: worst !== best ? worst : undefined, goal: t.goal, goalMet,
     reward: goalMet ? Math.round((t.goal! * 0.05) / 1000) * 1000 : 0,
-    nextGoal: Math.round((Math.max(t.revenue, t.goal ?? 0) * 1.1) / 10000) * 10000,
+    nextGoal: nextGoalCapped(t.revenue, t.goal, goalMet, 1.1),
+    streakXp,
     challenge: {
       id: ch.id, icon: ch.icon, title: ch.title, unit: ch.unit,
       target: chTarget, current: chCurrent, met: chMet, reward: chReward, desc: ch.desc(level),
@@ -708,13 +750,13 @@ export interface WeekPace {
   onTrack: boolean;
   /** Đang hụt MÀ đang có chuỗi → nguy cơ mất chuỗi/thưởng cộng dồn. */
   streakAtRisk: boolean;
-  /** Phần thưởng cộng chuỗi có nguy cơ mất (đ) = base × 0.2 × min(streak,4) — khớp closeWeek. */
-  streakExtra: number;
+  /** GĐ169 — XP chuỗi tuần này sẽ nhận nếu giữ chuỗi ≥3 (trượt tuần này là mất); 0 khi chưa đủ chuỗi. */
+  streakXp: number;
   /** Còn thiếu bao nhiêu so với mục tiêu (>=0). */
   missing: number;
 }
 export function weekPace(
-  current: number, target: number, remainingDays: number, streak: number, baseReward: number,
+  current: number, target: number, remainingDays: number, streak: number, level: number,
 ): WeekPace | null {
   if (target <= 0 || remainingDays <= 0) return null;
   const elapsed = WEEK_DAYS - remainingDays;
@@ -726,7 +768,7 @@ export function weekPace(
   return {
     pace: target > 0 ? current / target : 0, remainingDays, projected, onTrack,
     streakAtRisk: !onTrack && streak >= 1 && current < target,
-    streakExtra: Math.round(baseReward * 0.2 * Math.min(streak, 4)),
+    streakXp: streak + 1 >= STREAK_XP_FROM ? Math.round(STREAK_XP_RATE_WEEK * xpToNext(level)) : 0,
     missing,
   };
 }
@@ -778,6 +820,8 @@ export interface MonthReport {
   challenge?: WeeklyChallengeResult;
   /** Chuỗi tháng hoàn thành thử thách tính SAU tháng này. */
   monthStreak?: number;
+  /** GĐ169 — XP thưởng chuỗi tháng nhận ở lần chốt này (≥3 tháng đạt, ×2 tuần); 0 khi chưa đủ. */
+  streakXp?: number;
 }
 
 export const emptyMonth = (startDay: number, month: number, goal: number | null = null): MonthTally => ({
@@ -821,13 +865,16 @@ export function closeMonth(t: MonthTally, endDay: number, level: number, streak:
   const chTarget = ch.target(level);
   const chCurrent = ch.measure === 'revenue' ? t.revenue : (t[ch.measure] ?? 0);
   const chMet = chCurrent >= chTarget;
-  // Hoàn thành nhiều tháng liền thì thưởng thử thách đậm thêm 20%/tháng, trần +80% (tháng thứ 5 trở đi)
-  const chReward = chMet ? Math.round((ch.reward(level) * (1 + 0.2 * Math.min(streak, 4))) / 1000) * 1000 : 0;
+  // GĐ169 — tiền thưởng thử thách tháng giữ hệ số nhỏ nhất (thưởng gốc, bỏ nhân chuỗi ×1.2→×1.8 cũ);
+  // chuỗi tháng được đền bằng XP (streakXp) thay vì tiền, hệ số gấp đôi tuần.
+  const chReward = chMet ? Math.round(ch.reward(level) / 1000) * 1000 : 0;
+  const streakXp = chMet && streak + 1 >= STREAK_XP_FROM ? Math.round(STREAK_XP_RATE_MONTH * xpToNext(level)) : 0;
   return {
     month: t.month, startDay: t.startDay, endDay, revenue: t.revenue, profit: t.profit, customers: t.customers, unhappy: t.unhappy,
     best, worst: worst !== best ? worst : undefined, goal: t.goal, goalMet,
     reward: goalMet ? Math.round((t.goal! * 0.06) / 1000) * 1000 : 0,
-    nextGoal: Math.round((Math.max(t.revenue, t.goal ?? 0) * 1.15) / 10000) * 10000,
+    nextGoal: nextGoalCapped(t.revenue, t.goal, goalMet, 1.15),
+    streakXp,
     challenge: {
       id: ch.id, icon: ch.icon, title: ch.title, unit: ch.unit,
       target: chTarget, current: chCurrent, met: chMet, reward: chReward, desc: ch.desc(level),

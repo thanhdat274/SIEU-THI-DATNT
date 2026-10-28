@@ -562,11 +562,13 @@ export function buyVehicle(id: Exclude<Vehicle, 'none'>) {
  * Tổng kết phần kinh doanh thêm khi sang ngày mới: đối thủ, lãi vay, hụi, sổ tuần, thú cưng, thành tựu.
  * `stats` là số liệu của ngày vừa hết; trả về phần cần ghép vào trạng thái và tiền chênh lệch.
  */
-export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): { biz: BizState; money: number; news: string[]; poachedStaffId?: number } {
+export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): { biz: BizState; money: number; news: string[]; streakXp?: number; poachedStaffId?: number } {
   const b: BizState = { ...s.biz, ads: activeAds(s.biz.ads, s.day + 1) };
   let poachedStaffId: number | undefined;
   const news: string[] = [];
   let money = 0;
+  // GĐ169 — XP thưởng chuỗi tuần/tháng (trả về để endDay cộng qua addXp, giữ nhịp cấp kinh tế).
+  let streakXp = 0;
   const day = s.day;
 
   // Đối thủ
@@ -724,6 +726,9 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
         news.push(`🎯 Thử thách tuần ${ch.title} chưa xong (${fmtCh(ch.current)}/${fmtCh(ch.target)}) — tuần tới thử lại`);
       }
     }
+    // GĐ169 — thưởng chuỗi đổi sang XP: giữ chuỗi ≥3 tuần thì cộng thẳng XP (tiền giữ thưởng gốc).
+    if (report.streakXp) streakXp += report.streakXp;
+    if (report.streakXp) news.push(`🔥 Chuỗi ${report.challengeStreak ?? 3} tuần — +${report.streakXp} XP`);
     b.weekStreak = ch?.met ? (b.weekStreak ?? 0) + 1 : 0;
     b.lastWeek = report;
     b.week = emptyWeek(day + 1, report.nextGoal);
@@ -755,6 +760,9 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
         news.push(`🎯 Thử thách tháng ${mch.title} chưa xong (${fmtM(mch.current)}/${fmtM(mch.target)}) — tháng tới thử lại`);
       }
     }
+    // GĐ169 — thưởng chuỗi tháng đổi sang XP (×2 tuần): giữ chuỗi ≥3 tháng thì cộng thẳng XP.
+    if (report.streakXp) streakXp += report.streakXp;
+    if (report.streakXp) news.push(`🔥 Chuỗi ${report.monthStreak ?? 3} tháng — +${report.streakXp} XP`);
     b.monthStreak = mch?.met ? (b.monthStreak ?? 0) + 1 : 0;
     b.lastMonth = report;
     b.month = emptyMonth(day, m, report.nextGoal);
@@ -944,6 +952,6 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
     // (Không reset ở đây để không mất thông tin "mùa vừa gom N sao" kiểu danh dự.)
   }
 
-  return { biz: b, money, news, poachedStaffId };
+  return { biz: b, money, news, ...(streakXp ? { streakXp } : {}), poachedStaffId };
 }
 export const REGULAR_NAMES = Object.fromEntries(REGULARS.map((r) => [r.id, r.name]));

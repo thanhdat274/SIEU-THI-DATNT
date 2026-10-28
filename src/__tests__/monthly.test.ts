@@ -55,7 +55,7 @@ describe('monthlyChallenge — chọn thử thách xác định theo tháng', ()
 describe('closeMonth — chấm thử thách tháng', () => {
   const tally = (over: Partial<MonthTally> = {}): MonthTally => ({ ...emptyMonth(1, 1, 5000000), revenue: 5000000, ...over });
 
-  it('đạt mục tiêu: thưởng 6% mục tiêu + thử thách theo chuỗi 0/2/5 (nhân 1.0/1.4/1.8)', () => {
+  it('đạt mục tiêu: thưởng 6% mục tiêu + thử thách tiền giữ thưởng gốc (GĐ169 bỏ nhân tiền chuỗi), XP chuỗi từ tháng đạt thứ 3', () => {
     const r0 = closeMonth(tally(), 31, 1, 0);
     expect(r0.month).toBe(1);
     expect(r0.goalMet).toBe(true);
@@ -65,8 +65,12 @@ describe('closeMonth — chấm thử thách tháng', () => {
     expect(r0.challenge!.target).toBe(5000000);
     expect(r0.challenge!.reward).toBe(800000);
     expect(r0.monthStreak).toBe(1);
-    expect(closeMonth(tally(), 31, 1, 2).challenge!.reward).toBe(1120000); // ×1.4
-    expect(closeMonth(tally(), 31, 1, 5).challenge!.reward).toBe(1440000); // trần ×1.8
+    expect(r0.streakXp).toBe(0); // chuỗi 1 — chưa đủ mốc XP
+    // GĐ169: tiền không còn nhân 1.2→1.8 theo chuỗi — luôn thưởng gốc; XP tháng ×2 tuần (0.7×xpToNext(1)=35 → 25)
+    expect(closeMonth(tally(), 31, 1, 2).challenge!.reward).toBe(800000);
+    expect(closeMonth(tally(), 31, 1, 2).streakXp).toBe(25);
+    expect(closeMonth(tally(), 31, 1, 5).challenge!.reward).toBe(800000);
+    expect(closeMonth(tally(), 31, 1, 5).streakXp).toBe(25);
   });
 
   it('không đạt: thưởng 0, current/target đúng, chuỗi về 0', () => {

@@ -48,7 +48,7 @@ describe('weeklyChallenge — chọn thử thách xác định', () => {
 describe('closeWeek — chấm thử thách tuần', () => {
   const tally = (over: Partial<WeekTally> = {}): WeekTally => ({ ...emptyWeek(1), revenue: 900000, ...over });
 
-  it('đạt doanh thu: thưởng gốc, chuỗi 0/2/5 tuần nhân 1.0/1.4/1.8 (trần +80%)', () => {
+  it('đạt doanh thu: tiền thưởng giữ thưởng gốc (GĐ169 bỏ nhân tiền chuỗi), XP chuỗi từ tuần đạt thứ 3', () => {
     const r0 = closeWeek(tally(), 7, 1, 0);
     expect(r0.week).toBe(1);
     expect(r0.challenge!.id).toBe('wq_revenue');
@@ -56,10 +56,15 @@ describe('closeWeek — chấm thử thách tuần', () => {
     expect(r0.challenge!.target).toBe(900000);
     expect(r0.challenge!.reward).toBe(150000);
     expect(r0.challengeStreak).toBe(1);
-    expect(closeWeek(tally(), 7, 1, 2).challenge!.reward).toBe(210000);
+    expect(r0.streakXp).toBe(0); // chuỗi 1 — chưa đủ mốc XP
+    // GĐ169: tiền không còn nhân 1.2→1.8 theo chuỗi — luôn thưởng gốc
+    expect(closeWeek(tally(), 7, 1, 2).challenge!.reward).toBe(150000);
     const r5 = closeWeek(tally(), 7, 1, 5);
-    expect(r5.challenge!.reward).toBe(270000); // chuỗi trần 4 tuần → ×1.8
+    expect(r5.challenge!.reward).toBe(150000);
     expect(r5.challengeStreak).toBe(6);
+    // XP chuỗi: streak 2 (đạt tuần này lên 3) và streak 5 (lên 6) đều +35% xpToNext(1)=35 → +12
+    expect(closeWeek(tally(), 7, 1, 2).streakXp).toBe(12);
+    expect(r5.streakXp).toBe(12);
   });
 
   it('không đạt: thưởng 0, current/target đúng, chuỗi về 0', () => {
@@ -166,7 +171,7 @@ describe('Tích lũy tuần qua endDay', () => {
     expect(week2.last.news.some((n) => n.includes('🎯') && n.includes('chuỗi 1 tuần'))).toBe(true);
   });
 
-  it('hoàn thành tiếp tuần 3: thưởng nhân hệ số chuỗi ×1.2', () => {
+  it('hoàn thành tiếp tuần 3: tiền giữ thưởng gốc (chuỗi 2 — tuần sau mới tới mốc XP)', () => {
     let { state } = runWeek(useGame.getState(), 1);
     ({ state } = runWeek(state, 8, { services: 80000 }));
     const week3 = runWeek(state, 15, { combos: 10 });
@@ -174,7 +179,8 @@ describe('Tích lũy tuần qua endDay', () => {
     expect(r.challenge!.id).toBe('wq_combo');
     expect(r.challenge!.met).toBe(true);
     expect(r.challenge!.target).toBe(68); // 8 + 2×30
-    expect(r.challenge!.reward).toBe(1288000); // 130.000×8.25 = 1.073.000 (làm tròn nghìn) × 1.2 = 1.287.600 → 1.288.000
+    expect(r.challenge!.reward).toBe(1073000); // 130.000×8.25 = 1.073.000 — GĐ169 bỏ nhân ×1.2
+    expect(r.streakXp).toBe(0); // chuỗi 2 — chưa đủ 3
     expect(week3.state.biz.weekStreak).toBe(2);
   });
 

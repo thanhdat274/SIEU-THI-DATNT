@@ -403,6 +403,9 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     biz: biz.biz,
     branch: nextBranch ? { ...nextBranch.branch, revenueToday: 0, customersToday: 0, lostToday: 0, missedToday: 0, simAt: wokeLate ? LATE_WAKE_AT : DAY_START, lastTrip: nextBranch.branch.lastTrip - 1440 } : null,
   });
+  // GĐ169 — thưởng chuỗi tuần/tháng đổi XP: cộng sau khi state ngày mới đã set (đi qua addXp để
+  // lên cấp/mở khóa đúng một luồng; XP Chuỗi là thành phần kinh tế NHẸ Leader duyệt theo audit).
+  if (biz.streakXp) get().addXp(biz.streakXp);
   checkAchievements();
   // Hàng mới về sáng nay: ô kệ hết hàng mà kho không còn món đó thì đổi sang món khác
   get().checkTitles();

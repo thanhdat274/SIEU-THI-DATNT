@@ -10,8 +10,10 @@ import {
   ACHIEVEMENTS, activeAds, ADS, adRoi, BREAKFAST, COUNTERS, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, LOAN_DAILY_RATE,
   LOAN_UNLOCK, loanInterest, loanLimit, loanOptions, loanTopUps, LOYALTY_OPTIONS, LOYALTY_UNLOCK, loyaltyPayoff, petActive, PETS,
   RIVAL_PERSONALITIES, RIVAL_UNLOCK, rivalLeverFlags, rivalMomentum, rivalTier, rivalTrafficFactor, VEHICLES, WEEK_DAYS, weeklyChallenge, weekPace, monthlyChallenge, emptyMonth,
+  STREAK_XP_FROM, STREAK_XP_RATE_WEEK, STREAK_XP_RATE_MONTH,
 } from '../data/biz';
 import { monthOf } from '../data/calendar';
+import { xpToNext } from '../data/levels';
 import { promoEffect } from '../data/analytics';
 import { emptyYear, yearOf } from '../data/yearReport';
 import { readAlmanac, nextAlmanacMilestone, almanacMilestoneReward, ALMANAC_MILESTONES, ALMANAC_SEASONS } from '../data/seasonAlmanac';
@@ -504,7 +506,7 @@ function Week() {
   const chCurrent = ch.measure === 'revenue' ? w.revenue : (w[ch.measure] ?? 0);
   const chMet = chTarget > 0 && chCurrent >= chTarget;
   // GĐ121: nhịp chạy tuần — có theo kịp không? có nguy cơ mất chuỗi không? (thuần đọc tally+streak)
-  const pace = weekPace(chCurrent, chTarget, w.startDay + WEEK_DAYS - day, biz.weekStreak, ch.reward(level));
+  const pace = weekPace(chCurrent, chTarget, w.startDay + WEEK_DAYS - day, biz.weekStreak, level);
   const total = history.reduce((n, h) => n + h.profit, 0);
   const best = history.reduce<(typeof history)[number] | null>((b, h) => (!b || h.profit > b.profit ? h : b), null);
   return (
@@ -560,7 +562,7 @@ function Week() {
               </div>
               {pace.streakAtRisk && (
                 <div style={{ ...sub, color: '#e74c3c', marginTop: 3 }}>
-                  ⚠️ Đang hụt MÀ có chuỗi {biz.weekStreak} tuần — trượt tuần này sẽ mất dòng cộng {formatMoney(pace.streakExtra)} tuần sau.
+                  ⚠️ Đang hụt MÀ có chuỗi {biz.weekStreak} tuần — trượt tuần này sẽ mất +{pace.streakXp} XP chuỗi.
                 </div>
               )}
               <div style={{ ...sub, marginTop: 3 }}>
@@ -571,7 +573,9 @@ function Week() {
         })()}
         <div style={sub}>
           Thưởng {formatMoney(ch.reward(level))}
-          {biz.weekStreak > 0 && ` · chuỗi ${biz.weekStreak} tuần (càng dài thưởng càng lớn, tối đa +80%)`}
+          {biz.weekStreak > 0 && ` · chuỗi ${biz.weekStreak} tuần`}
+          {/* GĐ169 — chuỗi đền bằng XP thay vì nhân tiền: từ tuần đạt thứ 3 liên tiếp mỗi tuần +35% XP cần lên cấp. */}
+          {biz.weekStreak + 1 >= STREAK_XP_FROM && ` · đạt tuần này: +${Math.round(STREAK_XP_RATE_WEEK * xpToNext(level))} XP`}
         </div>
       </div>
       {r && (
@@ -586,7 +590,7 @@ function Week() {
                 : `🎯 ${r.challenge.icon} ${r.challenge.title}: ${Math.round(r.challenge.current).toLocaleString('vi-VN')}/${Math.round(r.challenge.target).toLocaleString('vi-VN')} ${r.challenge.unit} — chưa xong`}
             </div>
           )}
-          {(r.challengeStreak ?? biz.weekStreak) >= 2 && <div>🔥 Chuỗi {(r.challengeStreak ?? biz.weekStreak)} tuần</div>}
+          {(r.challengeStreak ?? biz.weekStreak) >= 2 && <div>🔥 Chuỗi {(r.challengeStreak ?? biz.weekStreak)} tuần{r.streakXp ? ` — +${r.streakXp} XP` : ''}</div>}
           {r.best && <div>💰 Lãi nhiều nhất: {productById(r.best).name}</div>}
           {r.worst && <div>📉 Lãi mỗi món thấp nhất: {productById(r.worst).name} · cân nhắc tăng giá hoặc bỏ bớt</div>}
           <div>🎯 Mục tiêu tuần tới: {formatMoney(r.nextGoal)}</div>
@@ -700,7 +704,9 @@ function Month() {
         </div>
         <div style={sub}>
           Thưởng {formatMoney(ch.reward(level))}
-          {biz.monthStreak > 0 && ` · chuỗi ${biz.monthStreak} tháng (càng dài thưởng càng lớn, tối đa +80%)`}
+          {biz.monthStreak > 0 && ` · chuỗi ${biz.monthStreak} tháng`}
+          {/* GĐ169 — chuỗi tháng đền bằng XP gấp đôi tuần (bỏ nhân tiền chuỗi cũ). */}
+          {biz.monthStreak + 1 >= STREAK_XP_FROM && ` · đạt tháng này: +${Math.round(STREAK_XP_RATE_MONTH * xpToNext(level))} XP`}
         </div>
       </div>
       {r && (
@@ -715,7 +721,7 @@ function Month() {
                 : `🎯 ${r.challenge.icon} ${r.challenge.title}: ${Math.round(r.challenge.current).toLocaleString('vi-VN')}/${Math.round(r.challenge.target).toLocaleString('vi-VN')} ${r.challenge.unit} — chưa xong`}
             </div>
           )}
-          {(r.monthStreak ?? biz.monthStreak) >= 2 && <div>🔥 Chuỗi {(r.monthStreak ?? biz.monthStreak)} tháng</div>}
+          {(r.monthStreak ?? biz.monthStreak) >= 2 && <div>🔥 Chuỗi {(r.monthStreak ?? biz.monthStreak)} tháng{r.streakXp ? ` — +${r.streakXp} XP` : ''}</div>}
           {r.best && <div>💰 Lãi nhiều nhất: {productById(r.best).name}</div>}
           {r.worst && <div>📉 Lãi mỗi món thấp nhất: {productById(r.worst).name} · cân nhắc tăng giá hoặc bỏ bớt</div>}
           <div>🎯 Mục tiêu tháng tới: {formatMoney(r.nextGoal)}</div>
