@@ -2,16 +2,21 @@ import { fitLots, nearestLife } from '../../data/freshness';
 import { storageCapacity, storageUsed, useGame } from '../../core/store';
 import { warehouseTier, WAREHOUSE_TIERS } from '../../data/warehouse';
 import { caseSize, describeUnits, formatMoney, productById } from '../../data/products';
+import { storeMissRevenue, coldOverflow } from '../../data/advice';
 import { LifeBadge, Footer, styles } from './shared';
 
 /** Kho hàng: thùng nguyên + hàng lẻ đã khui, hạn gần nhất, chỗ trống. */
 export function StoragePanel() {
-  const { storage, storageLots, deliveries, warehouseTier: tierIndex, level, money, autoSwap, upgradeWarehouse, openPanel, closePanel } = useGame();
+  const { storage, storageLots, deliveries, warehouseTier: tierIndex, level, money, autoSwap, upgradeWarehouse, openPanel, closePanel, stats, weather } = useGame();
   const tier = warehouseTier(tierIndex);
   const next = WAREHOUSE_TIERS[tierIndex + 1];
   const capacity = storageCapacity(tierIndex);
   const used = storageUsed(storage);
   const coming = storageUsed({}, ...deliveries.map((d) => d.items));
+  // GĐ131: lãi bỏ lỡ hôm qua vì kệ/kho hết hàng — ROI cho quyết định nâng kho (thuần đọc)
+  const missRev = storeMissRevenue(stats?.missLog, storage);
+  // GĐ134: tủ lạnh kho đầy — định lượng hàng cần lạnh vượt khả năng giữ lạnh (thuần đọc)
+  const coldOv = coldOverflow(storage, tierIndex, weather);
   const items = Object.entries(storage)
     .filter(([, q]) => q > 0)
     .map(([id, q]) => ({ id, q, life: nearestLife(fitLots(storageLots[id], q, id)) }))
@@ -26,6 +31,31 @@ export function StoragePanel() {
       <div style={{ height: 8, borderRadius: 4, background: '#ffffff22', margin: '6px 0 10px' }}>
         <div style={{ height: '100%', borderRadius: 4, width: `${Math.min(100, (used / capacity) * 100)}%`, background: used >= capacity ? '#e17055' : '#00b894' }} />
       </div>
+      {missRev && missRev.totalLoss > 0 && (
+        <div style={{ ...styles.card, borderLeft: '3px solid #e74c3c', marginBottom: 8, fontSize: 12, opacity: 0.9 }}>
+          <b>📦 Hôm qua bỏ lỡ ~{formatMoney(missRev.totalLoss)} vì hết chỗ/kho</b>
+          <div style={{ marginTop: 2 }}>
+            {missRev.inStorageCount > 0
+              ? `${missRev.rows[0]?.name} còn trong kho mà kệ hết chỗ — nâng kho/kệ thêm để bày đủ, thu hồi dần.`
+              : `${missRev.rows[0]?.name} hết cả kho — nhập thêm rồi nâng kho để chứa đủ.`}
+          </div>
+        </div>
+      )}
+      {coldOv && (
+        <div style={{ ...styles.card, borderLeft: '3px solid #f5b041', marginBottom: 8, fontSize: 12 }}>
+          <b>🧊 Tủ lạnh kho đầy: {coldOv.coldQty}/{coldOv.capacity} món cần lạnh</b>
+          <div style={{ marginTop: 2 }}>
+            Dư {coldOv.overflow} món phải để ngoài nhiệt độ thường — hỏng nhanh gấp ~
+            {coldOv.items[0]?.penalty.toFixed(1)}×{' '}
+            {coldOv.nextCapacity
+              ? `· nâng kho giữ lạnh được ${coldOv.nextCapacity} món.`
+              : '· đã kho tối đa, bán bớt món lạnh dự trữ.'}
+          </div>
+          <div style={{ marginTop: 2, opacity: 0.75 }}>
+            {coldOv.items.map((it) => `· ${it.name}: ${it.qty} món`).join(' ')}
+          </div>
+        </div>
+      )}
       {items.length === 0 ? <p style={styles.sub}>Kho trống. Vào Nhập hàng để đặt thêm.</p> : (
         <table style={styles.table}>
           <tbody>

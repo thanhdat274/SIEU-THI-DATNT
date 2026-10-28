@@ -2,6 +2,7 @@ import { FURNITURE } from './furniture';
 import { GARDEN_UNLOCK, LAND_TIERS } from './garden';
 import { PAYMENTS } from './payments';
 import { PRODUCTS } from './products';
+import { QUAN_NUOC_UNLOCK } from './quanNuoc';
 import { SHOP_TIERS } from './shopTiers';
 
 export const MAX_LEVEL = 100;
@@ -27,11 +28,6 @@ export const xpToNext = (level: number) => Math.round(35 * Math.pow(level, 1.25)
 /** Số khách ghé tiệm mỗi ngày (trung bình). */
 export const customersPerDay = (level: number) => 20 + level * 4;
 
-/** Tính năng đang phát triển: chỉ hiện ghi chú trong lộ trình cấp, chưa chơi được. */
-const UPCOMING: { level: number; text: string }[] = [
-  { level: 29, text: '🚧 Sắp có: mở thêm quán khác trong hẻm (đang phát triển)' },
-];
-
 /** Danh sách thứ mở khóa ở một cấp, để báo cho người chơi. */
 export function unlocksAt(level: number): string[] {
   return [
@@ -44,6 +40,6 @@ export function unlocksAt(level: number): string[] {
     ...(level === GARDEN_UNLOCK ? ['🚜 Trang trại đầu ngõ: trồng rau, nuôi gà lấy trứng'] : []),
     ...LAND_TIERS.filter((t, i) => i > 0 && t.unlock === level).map((t) => `Mở rộng trang trại: ${t.name}`),
     ...PAYMENTS.filter((p) => p.unlock === level && level > 1).map((p) => `${p.icon} Thanh toán ${p.name}`),
-    ...UPCOMING.filter((u) => u.level === level).map((u) => u.text),
+    ...(level === QUAN_NUOC_UNLOCK ? ['🧋 Quán Nước Đầu Ngõ: xây quán nước ở đầu hẻm, nguyên liệu lấy từ kho'] : []),
   ];
 }

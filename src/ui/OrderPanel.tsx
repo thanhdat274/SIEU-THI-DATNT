@@ -2,11 +2,19 @@ import { ProductIcon } from './ProductIcon';
 import { useMemo, useState } from 'react';
 import { Dropdown } from './Dropdown';
 import { storageCapacity, storageUsed, useGame, wagesDue } from '../core/store';
-import { caseSize, CATEGORIES, describeUnits, formatMoney, productById, unlockedProducts, type Category } from '../data/products';
+import { caseSize, casesFor, CATEGORIES, describeUnits, formatMoney, productById, unlockedProducts, type Category } from '../data/products';
 import { shelfLife } from '../data/freshness';
 import { furnitureDef } from '../data/furniture';
 import { dayTraffic, describeDay } from '../data/weather';
 import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost, type Supplier } from '../data/suppliers';
+import { guideActiveOn, guideInCart, guideIdsOf, guideProducts } from '../data/onboarding';
+import { buyCostTone, cheapestSupplier, orderAssessment, tomorrowCostDir, type AssessLevel, type AssessLine, type AssessLineOut, type BuyTone, type Dir } from '../data/procure';
+import { monthlyRelRebate, PARTNER_TIERS, tierProgress } from '../data/supplierRel';
+import { cheapestSupplierFor, commitRebateAdvice, type CheapestProductResult } from '../data/supplierValue';
+import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
+import { prodSuggestToday } from '../data/prodSuggest';
+import { acceptFairOffer } from '../core/biz';
+import { monthOf } from '../data/calendar';
 
 /** Món mở khóa trong vòng chừng này cấp gần đây được gắn nhãn "Mới". */
 const NEW_WITHIN = 4;
@@ -75,14 +83,89 @@ function forecastTraffic(supplier: Supplier) {
 
 type Filter = 'suggest' | 'all' | Category;
 
+// ─── GĐ57 "Mua khi rẻ": tóm tắt giá của một mối hôm nay / mai (thuần đọc, không đổi kinh tế) ───
+
+const BUY_TONE_LABEL: Record<BuyTone, string> = { cheap: 'nửa rẻ', normal: 'giữa khung', pricey: 'nửa đắt' };
+const BUY_TONE_ICON: Record<BuyTone, string> = { cheap: '📉 rẻ', normal: '• thường', pricey: '📈 đắt' };
+const BUY_TONE_COLOR: Record<BuyTone, string> = { cheap: '#55efc4', normal: '#dfe6e9', pricey: '#ff7675' };
+const DIR_WORD: Record<Dir, string> = { cheaper: 'mai rẻ hơn', pricier: 'mai đắt hơn', flat: 'mai tương đương' };
+
+// ─── GĐ103-2 "Dự phóng trước khi chốt đơn": ước ngày bán hết / thùng kho / nguy cơ hỏng hàng ───
+// Chỉ ĐỌC dữ liệu có sẵn (orderAssessment thuần) — nhãn luôn kèm "chừng/ước", không đổi kinh tế.
+// GD103-2b hotfix theo spec UI/UX: đỏ "nhập dư" chỉ khi bán không kịp hạn VÀ ước hỏng ≥ 2 món;
+// bán chậm hỏng ít → vàng; cầu thấp/chưa bán lần nào → xám "theo dõi thêm" (không ước ngày vô nghĩa).
+
+/** Dòng dự phóng trong ô tên món: ổn/chưa dữ liệu → chữ mờ; bán chậm → vàng #f1c40f; nhập dư → đỏ nổi nền. */
+const ASSESS_STYLE: Record<AssessLevel, React.CSSProperties> = {
+  ok: { color: '#bbb', opacity: 0.8 },
+  near: { color: '#f1c40f' },
+  over: { color: '#ff7675', background: 'rgba(231, 76, 60, 0.12)', borderRadius: 4, padding: '1px 6px' },
+};
+
+/** Text dự phóng của một dòng: gọn ≤ ~70 ký tự để ô tên món giữ tối đa 2 dòng. */
+function assessText(a: AssessLineOut, capacity: number): string {
+  const share = `chiếm ${a.caseUse}/${capacity} thùng kho`;
+  if (a.level === 'over') {
+    if (a.overWhy === 'kho') return `⚠️ kho không đủ chỗ: ${share}`;
+    const d = Math.max(1, Math.round(a.sellDays ?? 0));
+    return `⚠️ nhập dư: chừng ${d} ngày hết hàng > hạn ${Math.round(a.shelfDays)} ngày, ước hỏng ${a.spoil} món`;
+  }
+  if (a.level === 'near') {
+    const d = Math.max(1, Math.round(a.sellDays ?? 0));
+    return `⏳ bán chậm — chừng ${d} ngày hết hàng, cân nhắc bớt`;
+  }
+  // Chưa có dữ liệu bán (cầu < 0.5/ngày hoặc chưa bán lần nào) → xám, không ước ngày vô nghĩa.
+  return a.sellDays !== null ? `📦 chừng ${Math.max(1, Math.round(a.sellDays))} ngày hết hàng · ${share}` : `📦 chưa có dữ liệu bán — theo dõi thêm`;
+}
+
+/** Tóm tắt tone giá một mối hôm nay: độ lệch pct trung bình + nhãn rẻ/đắt theo đa số các món bán được đã mở khóa. */
+function supplierTone(s: Supplier, level: number, day: number): { pct: number; tone: BuyTone } | null {
+  const rows = unlockedProducts(level).filter((p) => supplierSells(s, p.id));
+  if (!rows.length) return null;
+  const pct = Math.round(rows.reduce((a, p) => a + buyCostTone(s, p.id, day).pct, 0) / rows.length);
+  const cheap = rows.filter((p) => buyCostTone(s, p.id, day).tone === 'cheap').length;
+  const pricey = rows.filter((p) => buyCostTone(s, p.id, day).tone === 'pricey').length;
+  const tone: BuyTone = pricey > cheap ? 'pricey' : cheap > pricey ? 'cheap' : 'normal';
+  return { pct, tone };
+}
+
+/** Hướng giá mai của một mối theo đa số món (chỉ hướng, giữ phán đoán). */
+function supplierTomorrow(s: Supplier, level: number, day: number): Dir {
+  const rows = unlockedProducts(level).filter((p) => supplierSells(s, p.id));
+  if (!rows.length) return 'flat';
+  const cheaper = rows.filter((p) => tomorrowCostDir(s, p.id, day) === 'cheaper').length;
+  const pricier = rows.filter((p) => tomorrowCostDir(s, p.id, day) === 'pricier').length;
+  return pricier > cheaper ? 'pricier' : cheaper > pricier ? 'cheaper' : 'flat';
+}
+
 export function OrderPanel() {
-  const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, warehouseTier, priceOf } = useGame();
+  const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, warehouseTier, priceOf, furniture, openPanel } = useGame();
   const unlockedSuppliers = SUPPLIERS.filter((s) => s.unlock <= level);
+  // GĐ57: lớp minh bạch giá mua chỉ bật khi đã mở mối dao động mạnh (Chợ đầu mối, cấp 3) — cấp <3 chưa thấy gì mới.
+  const showCost = level >= 3;
   const [supplierId, setSupplierId] = useState(SUPPLIERS[0].id);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [filter, setFilter] = useState<Filter>('suggest');
   const supplier = SUPPLIERS.find((s) => s.id === supplierId)!;
   const hot = trending(day, level);
+  // Lớp hướng dẫn ngày đầu Mua đơn đầu tiên (GĐ38): chỉ bật cho người mới thật (ngày 1, chưa ẩn hướng dẫn,
+  // chưa đặt đơn & chưa bán gì). Người chơi cũ (tutorialOff / ngày > 1 / đã đặt hoặc đã bán) không thấy.
+  const tutorialOff = useGame((s) => s.biz.tutorialOff);
+  const biz = useGame((s) => s.biz);
+  const branch = useGame((s) => s.branch);
+  const prodSugg = prodSuggestToday({
+    level, day, hot,
+    storage,
+    quanNuocOpen: !!biz.quanNuoc?.open,
+    quanNuocShort: !!biz.quanNuocLast && biz.quanNuocLast.served < biz.quanNuocLast.wanted,
+    stationOpen: (st) => furniture.some((f) => f.type === st),
+    branch,
+  });
+  const itemsSold = useGame((s) => s.totals.itemsSold);
+  const guideItems = guideProducts(level);
+  const guideIds = guideIdsOf(guideItems);
+  const guideOn = guideActiveOn(day, tutorialOff, deliveries, itemsSold);
+  const guideIn = guideInCart(guideIds, cart);
 
   // Memo: quét toàn bộ kệ/kho mỗi lần gõ số lượng (setCart) là tốn — chỉ tính lại khi dữ liệu nguồn thay đổi
   const rows = useMemo(() => {
@@ -130,6 +213,20 @@ export function OrderPanel() {
   );
   const lines = toLines(cart);
   const total = orderTotal(supplier, lines, day);
+  // GĐ57: tóm tắt giá từng mối (badge tab + dòng tiêu đề) — chỉ tính khi showCost để khỏi tốn ở ván mới.
+  const supSummary = useMemo(() => {
+    const m = new Map<string, { pct: number; tone: BuyTone; dir: Dir }>();
+    if (!showCost) return m;
+    for (const s of unlockedSuppliers) {
+      const t = supplierTone(s, level, day);
+      if (!t) continue;
+      m.set(s.id, { ...t, dir: supplierTomorrow(s, level, day) });
+    }
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCost, level, day]);
+  // Mối rẻ nhất cho giỏ hiện tại (+ độ lệch so mối kế) — chỉ so khi có giỏ trong showCost.
+  const cheapest = showCost && Object.keys(lines).length > 0 ? cheapestSupplier(lines, day, level) : null;
   const before = Object.entries(lines).reduce((sum, [id, q]) => sum + unitCost(supplier, id, day) * q, 0);
   const count = Object.values(lines).reduce((a, b) => a + b, 0);
   const cases = Object.entries(lines).reduce((n, [id, q]) => n + q / caseSize(id), 0);
@@ -140,6 +237,32 @@ export function OrderPanel() {
   const usedNow = storageUsed(storage, ...pending);
   const tooBig = storageUsed(storage, ...pending, lines) > capacity;
   const spaceLeft = capacity - storageUsed(storage, ...pending, lines);
+  // GĐ103-2: dự phóng từng dòng giỏ (chỉ món đã đặt qty > 0) — ước ngày bán hết, thùng kho, nguy cơ hỏng.
+  // Thuần đọc orderAssessment; dùng số bán trung bình (demand) + kho đang có + hạn dùng của món.
+  const assessById = useMemo(() => {
+    const assessLines: AssessLine[] = rows.map((r) => ({
+      productId: r.p.id,
+      cases: cart[r.p.id] ?? 0,
+      dailyQty: r.demand,
+      stockCases: casesFor(r.p.id, r.have),
+      shelfDays: shelfLife(r.p.id),
+    }));
+    return new Map(orderAssessment(assessLines, capacity, usedNow).lines.map((l) => [l.productId, l]));
+  }, [rows, cart, capacity, usedNow]);
+  // GĐ143 "Mối nào rẻ THẬT": mỗi món đang hiển thị, mối mở khóa KHÁC mối đang chọn có đơn giá hiệu lực
+  // rẻ hơn hôm nay (so theo bulk của số thùng đang đặt) — để đánh dấu món nên xẻ sang mối khác.
+  // Thuần đọc supplierValue; dùng để vẽ badge ⇄ mỗi dòng (chỉ khi có giỏ showCost để khỏi tốn ván mới).
+  const cheapById = useMemo(() => {
+    const m = new Map<string, CheapestProductResult | null>();
+    if (!showCost) return m;
+    const curId = supplier.id;
+    for (const r of shown) {
+      const qty = cart[r.p.id] ?? 0;
+      m.set(r.p.id, cheapestSupplierFor(r.p.id, qty, day, level, curId, null));
+    }
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCost, shown, cart, day, level, supplier.id]);
   const moneyLeft = money - total;
   // Tiền còn sau đơn không đủ trả lương cuối ngày: bấm lần đầu chỉ cảnh báo, bấm lần nữa mới nhập
   const wages = wagesDue(useGame.getState());
@@ -191,8 +314,24 @@ export function OrderPanel() {
   };
 
   return (
-    <div style={{ width: 'min(860px, calc(100vw - 76px))' }}>
+    <div style={{ width: '100%', maxWidth: 860 }}>
       <h2 style={{ margin: '0 0 4px' }}>📦 Nhập hàng</h2>
+      {guideOn && (
+        <div style={{ ...st.guideBanner, ...(guideIn.length ? st.guideBannerReady : {}) }}>
+          <div style={{ fontWeight: 700 }}>🧭 Ngày đầu tiên: nhập 3 món trước</div>
+          <div style={{ marginTop: 3, fontSize: 12 }}>
+            {guideItems.map((g, gi) => (
+              <span key={g.id}>
+                {guideIn.includes(g.id) ? '✅' : '⬜'} {g.name}
+                {gi < guideItems.length - 1 && <span style={{ opacity: 0.6 }}> · </span>}
+              </span>
+            ))}
+          </div>
+          <div style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: guideIn.length ? '#2ecc71' : '#f1c40f' }}>
+            {guideIn.length ? 'Sẵn sàng đặt hàng!' : 'Mỗi món một thùng là đủ cho ngày đầu.'}
+          </div>
+        </div>
+      )}
       <div style={st.meters}>
         <Meter
           label="💰 Tiền"
@@ -206,9 +345,51 @@ export function OrderPanel() {
         />
       </div>
 
+      {(() => {
+        const open = isFairOpen(day);
+        const taken = biz.fairTaken === monthOf(day);
+        if (!open) return null;
+        const offer = makeFairOffer(level, day);
+        if (!offer) return null;
+        return (
+          <div style={{ ...st.banner, marginTop: 8, background: 'rgba(155, 89, 182, 0.10)', border: '1px solid rgba(155,89,182,0.45)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+              <div>
+                <b style={{ color: '#d6a2ff' }}>🛒 Chợ phiên đầu tháng</b>
+                <span style={{ opacity: 0.8 }}> — thương lái ghé bán cả lô rẻ hơn mua lẻ</span>
+                {taken ? (
+                  <div style={{ marginTop: 4, fontSize: 12, color: '#2ecc71', fontWeight: 600 }}>✅ Đã nhận lô chợ phiên tháng này — tháng sau quay lại nhé</div>
+                ) : (
+                  <>
+                    <div style={{ marginTop: 5, fontSize: 12, opacity: 0.95 }}>
+                      {offer.lines.map((l) => `${productById(l.id).name} ×${l.qty}`).join(' · ')}
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: 12 }}>
+                      <span style={{ textDecoration: 'line-through', opacity: 0.55 }}>lẻ {formatMoney(offer.totalBuy)}</span>{' '}
+                      → <b style={{ color: '#2ecc71' }}>{formatMoney(offer.dealPrice)}</b>{' '}
+                      <span style={{ color: '#f1c40f' }}>tiết kiệm {formatMoney(offer.totalBuy - offer.dealPrice)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+              {!taken && (
+                <button
+                  onClick={acceptFairOffer}
+                  disabled={money < offer.dealPrice}
+                  style={{ ...st.btn, flexShrink: 0, background: money < offer.dealPrice ? 'rgba(255,255,255,0.08)' : 'rgba(155,89,182,0.5)' }}
+                >
+                  {money < offer.dealPrice ? 'Thiếu tiền' : 'Nhận lô'}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       <div style={st.tabs}>
         {SUPPLIERS.map((s) => {
           const locked = s.unlock > level;
+          const relHot = (biz.supplierRel?.[s.id]?.spent ?? 0) >= (PARTNER_TIERS.find((t) => t.level === 3)?.threshold ?? Infinity);
           return (
             <button
               key={s.id}
@@ -219,9 +400,15 @@ export function OrderPanel() {
               <span style={{ fontSize: 18 }}>{s.icon}</span>
               <span>
                 <b>{s.name}</b>
+                {!locked && showCost && (() => {
+                  const sm = supSummary.get(s.id);
+                  if (!sm) return null;
+                  return <span style={{ ...st.badge, marginLeft: 5, background: 'transparent', color: BUY_TONE_COLOR[sm.tone], border: `1px solid ${BUY_TONE_COLOR[sm.tone]}` }}>{BUY_TONE_ICON[sm.tone]}</span>;
+                })()}
                 <span style={st.tabMeta}>
                   {locked ? `🔒 Cấp ${s.unlock}` : `${s.discount > 0 ? `−${s.discount * 100}%` : s.discount < 0 ? `+${-s.discount * 100}%` : 'Giá chuẩn'} · ${s.delayDays ? 'giao sáng mai' : 'có ngay'}`}
                 </span>
+                {relHot && <span style={{ ...st.badge, marginLeft: 5, background: 'rgba(231, 76, 60, 0.15)', color: '#e74c3c', border: '1px solid rgba(231,76,60,0.5)' }}>🔥 Mối ruột</span>}
               </span>
             </button>
           );
@@ -233,6 +420,71 @@ export function OrderPanel() {
         {supplier.bulk && ` Mua nhiều: ${supplier.bulk.map((b) => `từ ${b.minCases} thùng một món bớt ${b.discount * 100}%`).join(', ')}.`}
         {' '}Hàng nhập theo thùng, về kho rồi khui ra bày lẻ.
       </p>
+      <div style={st.banner}>
+        {(() => {
+          const life = biz.supplierRel?.[supplier.id]?.spent ?? 0;
+          const { cur, next, pct } = tierProgress(life);
+          const monthSpent = biz.supplierRelMonth?.[supplier.id] ?? 0;
+          const rebate = monthlyRelRebate(life, monthSpent);
+          const monthLeft = Math.max(0, cur.commit - monthSpent);
+          return (
+            <span>
+              🤝 Mối quen: <b style={{ color: cur.level >= 3 ? '#e74c3c' : '#fff' }}>{cur.icon} {cur.name}</b>
+              {next ? ` · ${pct}% tới ${next.icon} ${next.name}` : ' · đã tối đa'}
+              {" "}· tháng này mua <b>{formatMoney(monthSpent)}</b>
+              {cur.level > 0 && (rebate > 0
+                ? <span style={{ color: '#2ecc71' }}> → sẽ hoàn {formatMoney(rebate)} cuối tháng ✓</span>
+                : <span style={{ opacity: 0.8 }}> · còn {formatMoney(monthLeft)} nữa đạt cam kết ({Math.round(cur.rate * 100)}% hoàn)</span>)}
+            </span>
+          );
+        })()}
+      </div>
+
+      {showCost && count > 0 && (() => {
+        // GĐ143 "Mối nào rẻ THẬT" — mồi gom cam kết tháng: nối zoom của banner Mối quen (bộ đếm tháng)
+        // thành QUYẾT ĐỊNH với giỏ hiện tại: gom doanh tháng về mối này lấy hoàn hay xẻ giỏ sang mối rẻ.
+        const life = biz.supplierRel?.[supplier.id]?.spent ?? 0;
+        const monthSpent = biz.supplierRelMonth?.[supplier.id] ?? 0;
+        const advice = commitRebateAdvice(life, monthSpent, total);
+        if (!advice.eligible) return null; // mối chưa đủ bậc mối quen → không lừa có hoàn
+        const rivalBest = cheapest && cheapest.best;
+        const curIsCheapest = rivalBest && rivalBest.id === supplier.id;
+        const committed = monthSpent >= advice.tier.commit;
+        const bridges = !committed && advice.projectedSpent >= advice.tier.commit;
+        const tailRival = rivalBest && !curIsCheapest && total > cheapest.total
+          ? ` · nhưng giỏ này mua ở ${rivalBest.name} chỉ ${formatMoney(cheapest.total)}, rẻ hơn ${formatMoney(total - cheapest.total)} so với mối ${supplier.name} — cân với hoàn tháng nếu chưa đạt cam kết`
+          : '';
+        let icon = '🤝'; let body: string;
+        if (committed) {
+          body = `mối ${supplier.name} đã đạt cam kết tháng ${formatMoney(advice.tier.commit)} → giỏ ${formatMoney(total)} này góp thêm, cuối tháng hoàn ~${formatMoney(advice.rebateIf)} (${Math.round(advice.tier.rate * 100)}%)`;
+        } else if (bridges) {
+          icon = '🎯';
+          body = `giỏ ${formatMoney(total)} này đẩy doanh tháng lên ${formatMoney(advice.projectedSpent)} → ĐẠT cam kết ${formatMoney(advice.tier.commit)}: hoàn ~${formatMoney(advice.rebateIf)} (${Math.round(advice.tier.rate * 100)}%) cuối tháng`;
+        } else {
+          icon = '🧲';
+          body = `còn ${formatMoney(advice.gapAfter)} nữa đạt cam kết tháng ${formatMoney(advice.tier.commit)} (${Math.round(advice.tier.rate * 100)}% hoàn) — giỏ này góp ${formatMoney(total)}, gom doanh tháng về mối ${supplier.name} để lấy hoàn`;
+        }
+        return (
+          <div style={{ ...st.banner, background: 'rgba(46, 204, 113, 0.07)', border: '1px solid rgba(85,239,196,0.25)' }}>
+            <span>{icon} Gom cam kết: {body}{tailRival}</span>
+          </div>
+        );
+      })()}
+
+      {showCost && (() => {
+        const sm = supSummary.get(supplier.id);
+        if (!sm) return null;
+        return (
+          <div style={{ ...st.banner, background: 'rgba(46, 204, 113, 0.08)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            💹 Hôm nay giá {supplier.name} đang ở <b style={{ color: BUY_TONE_COLOR[sm.tone] }}>{BUY_TONE_LABEL[sm.tone]}</b> khung giá (±{Math.round(supplier.volatility * 100)}%)<span style={{ opacity: 0.7 }}> · trung bình {sm.pct > 0 ? '+' : ''}{sm.pct}%</span> · <b>{DIR_WORD[sm.dir]}</b>
+          </div>
+        );
+      })()}
+      {cheapest && cheapest.rival && cheapest.delta > 0 && (
+        <div style={{ ...st.banner, background: 'rgba(241, 196, 15, 0.09)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          🧮 Với giỏ này <b>{cheapest.best.name}</b> rẻ hơn <b>{cheapest.rival.name}</b> {formatMoney(cheapest.delta)} hôm nay
+        </div>
+      )}
 
       <div style={st.banner}>
         🌦️ Dự báo: {forecast.map((w, i) => (
@@ -243,6 +495,22 @@ export function OrderPanel() {
         ))}
         <span style={{ opacity: 0.75 }}> · Số gợi ý đã tính theo thời tiết. Hàng mát, đông lạnh, tươi để trong kho hỏng nhanh: nên bày vào tủ.</span>
       </div>
+
+      {/* 🌾 Nên hôm nay — chuỗi sản xuất hội tụ (GĐ73) */}
+      {prodSugg.length > 0 && (
+        <div style={{ ...st.banner, background: 'rgba(46, 204, 113, 0.12)', outline: '1px solid rgba(46,204,113,0.35)' }}>
+          <b>🌾 Nên hôm nay — tự làm khi nên</b>
+          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
+            {prodSugg.map((s, i) => (
+              <button key={i} onClick={() => openPanel({ type: s.panel })}
+                style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: 'inherit', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+                <span style={{ minWidth: 130 }}>{s.icon} {s.label} →</span>
+                <span style={{ opacity: 0.85 }}>{s.detail}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {hot.length > 0 && (
         <div style={st.banner}>
@@ -283,6 +551,32 @@ export function OrderPanel() {
         <button style={st.btn} onClick={() => setCart({})} disabled={!count}>Xoá đơn</button>
       </div>
 
+      {guideOn && (
+        <div style={st.guideBox}>
+          {guideItems.map((g) => {
+            const inCart = (cart[g.id] ?? 0) > 0;
+            const row = rows.find((r) => r.p.id === g.id);
+            const cost = row ? row.cost : unitCost(supplier, g.id, day);
+            const caseCost = cost * caseSize(g.id);
+            return (
+              <div key={g.id} style={{ ...st.guideRow, ...(inCart ? st.guideRowOn : {}) }}>
+                <span className="or-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ProductIcon product={g} size={26} tile />
+                  <b>{g.name}</b>
+                  <span style={{ ...st.badge, background: '#0984e3' }}>Nên mua</span>
+                  {inCart && <span style={{ ...st.badge, background: '#2ecc71' }}>✓ trong giỏ</span>}
+                </span>
+                <span style={{ fontSize: 12, opacity: 0.8 }}>{formatMoney(caseCost)}/thùng</span>
+                <span style={{ whiteSpace: 'nowrap' }}>
+                  <button style={st.btn} onClick={() => setQty(g.id, (cart[g.id] ?? 0) + 1)}>+1 thùng</button>
+                  {(cart[g.id] ?? 0) > 0 && <span style={{ marginLeft: 8, fontSize: 12 }}>{cart[g.id]} thùng</span>}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div style={st.list}>
         <div className="or-row or-head" style={{ ...st.row, ...st.head }}>
           <span>Mặt hàng</span><span>Khách mua/ngày</span><span>Đang có (món)</span><span>Giá thùng</span><span>Lãi/thùng</span><span>Số thùng</span><span>Thành tiền</span>
@@ -300,6 +594,8 @@ export function OrderPanel() {
           const caseCost = r.cost * r.size;
           // Lãi dự kiến mỗi thùng ở giá bán hiện tại (chưa tính giảm giá cận hạn/combo)
           const margin = (priceOf(r.p.id) - r.cost) * r.size;
+          // GĐ103-2: dự phóng dòng này (chỉ khi đã đặt qty > 0) — gắn trong ô tên món, không thêm cột
+          const assess = assessById.get(r.p.id);
           return (
             <div key={r.p.id} className="or-row" style={st.row}>
               <span className="or-name">
@@ -311,6 +607,20 @@ export function OrderPanel() {
                 {r.isNew && <span style={{ ...st.badge, background: '#00b894' }}>Mới</span>}
                 {r.demand > 0 && r.have > 0 && r.have < r.demand && <span style={{ ...st.badge, background: '#e17055' }} title={`Còn ${r.have} món, khách mua ~${r.demand.toFixed(1)}/ngày — sắp hết`}>⚠️ Gần hết</span>}
                 {r.asked > 0 && r.have === 0 && <span style={{ ...st.badge, background: '#d63031' }}>Khách hỏi {r.asked} lần, hết hàng</span>}
+                {cheapById.get(r.p.id) && cheapById.get(r.p.id)!.delta > 0 && (
+                  <button
+                    onClick={() => setSupplierId(cheapById.get(r.p.id)!.supplier.id)}
+                    style={{ ...st.badge, background: 'rgba(85, 239, 196, 0.16)', color: '#55efc4', border: '1px solid #55efc433', cursor: 'pointer' }}
+                    title={`${cheapById.get(r.p.id)!.supplier.name} rẻ hơn ${formatMoney(cheapById.get(r.p.id)!.delta)}/món hôm nay (sau bớt số thùng) — bấm để sang mối này`}
+                  >
+                    ⇄ {cheapById.get(r.p.id)!.supplier.name} rẻ hơn {formatMoney(cheapById.get(r.p.id)!.delta)}
+                  </button>
+                )}
+                {assess && (
+                  <span style={{ display: 'block', width: '100%', marginTop: 2, fontSize: 11, lineHeight: 1.35, ...ASSESS_STYLE[assess.level] }}>
+                    {assessText(assess, capacity)}
+                  </span>
+                )}
               </span>
               <span data-label="Mua/ngày">{r.demand ? r.demand.toFixed(1) : '—'}</span>
               <span data-label="Đang có" title={`Trong kho: ${describeUnits(r.p.id, storage[r.p.id] ?? 0)}`}>{r.have}{r.coming > 0 && <span style={{ opacity: 0.7 }}> +{r.coming}</span>}</span>
@@ -324,7 +634,7 @@ export function OrderPanel() {
               </span>
               <span className="or-qty" style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
                 <button style={st.step} onClick={() => setQty(r.p.id, qty - 1)} aria-label={`Bớt một thùng ${r.p.name}`}>−</button>
-                <input style={st.qty} inputMode="numeric" value={qty || ''} placeholder={r.suggest ? String(r.suggest) : '0'}
+                <input style={assess?.level === 'over' ? { ...st.qty, border: '1px solid #ff7675' } : st.qty} inputMode="numeric" value={qty || ''} placeholder={r.suggest ? String(r.suggest) : '0'}
                   onChange={(e) => setQty(r.p.id, Number(e.target.value))} aria-label={`Số thùng ${r.p.name}`} />
                 <button style={st.step} disabled={!fits({ ...cart, [r.p.id]: qty + 1 })} onClick={() => setQty(r.p.id, qty + 1)}
                   title={fits({ ...cart, [r.p.id]: qty + 1 }) ? undefined : 'Hết tiền hoặc hết chỗ kho'} aria-label={`Thêm một thùng ${r.p.name}`}>+</button>
@@ -387,12 +697,21 @@ const st: Record<string, React.CSSProperties> = {
     display: 'flex', gap: 8, alignItems: 'center', textAlign: 'left', padding: '6px 10px', borderRadius: 8,
     border: '2px solid transparent', background: '#3a3a4d', color: '#fff', cursor: 'pointer', fontSize: 13,
   },
-  tabOn: { borderColor: '#f1c40f', background: '#4a4a60' },
+  tabOn: { border: '2px solid #f1c40f', background: '#4a4a60' },
   tabMeta: { display: 'block', fontSize: 11, opacity: 0.75 },
   banner: { background: 'rgba(225, 112, 85, 0.18)', borderRadius: 8, padding: '6px 10px', fontSize: 13, marginBottom: 8 },
   toolbar: { display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' },
   btn: { border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: 13 },
   list: { maxHeight: '45vh', overflow: 'auto', borderRadius: 8, background: '#232330' },
+  // Lớp hướng dẫn ngày đầu (GĐ38): banner + khối 3 món thiết yếu nổi bật, chỉ hiện khi guideOn
+  guideBanner: { background: 'rgba(52, 152, 219, 0.14)', border: '1px solid #0984e3', borderRadius: 8, padding: '10px 12px', margin: '6px 0 10px', fontSize: 13 },
+  guideBannerReady: { border: '1px solid #2ecc71', background: 'rgba(46, 204, 113, 0.12)' },
+  guideBox: { display: 'grid', gap: 6, margin: '0 0 10px', padding: 6, borderRadius: 8, background: 'rgba(9, 132, 227, 0.06)', border: '1px solid #0984e355' },
+  guideRow: {
+    display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '8px 10px',
+    border: '1px solid #0984e3', borderRadius: 6, background: 'rgba(9, 132, 227, 0.10)', fontSize: 13,
+  },
+  guideRowOn: { border: '1px solid #2ecc71', background: 'rgba(46, 204, 113, 0.10)' },
   row: {
     display: 'grid', gap: 8, alignItems: 'center',
     padding: '6px 10px', borderBottom: '1px solid #ffffff10', fontSize: 13,
@@ -401,10 +720,15 @@ const st: Record<string, React.CSSProperties> = {
   badge: { marginLeft: 6, padding: '1px 6px', borderRadius: 4, fontSize: 10, color: '#fff', whiteSpace: 'nowrap' },
   step: { width: 24, height: 24, border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 14, padding: 0 },
   qty: { width: 48, height: 26, padding: 0, textAlign: 'center' },
-  // Dính đáy panel: cuộn danh sách tới đâu vẫn luôn thấy tổng tiền + nút nhập
+  // Dính đáy panel: cuộn danh sách tới đâu vẫn luôn thấy tổng tiền + nút nhập.
+  // GD104: bỏ tràn viền NGANG (margin âm từng đẩy footer qua mép content-box khi panel có
+  // thanh cuộn dọc mỏng ~10px — margin âm chỉ recovering được padding, không recovering được
+  // chỗ thanh cuộn chiếm: đo @320 footer right 298 > contentR 294). Giữ dính đáy (GĐ95),
+  // footer nằm gọn trong content-box ở mọi width 320–1280; nền footer trùng nền panel nên
+  // chỉ khác biệt thị giác là đường kẻ trên thụt vào theo lề nội dung.
   footer: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap',
-    position: 'sticky', bottom: -18, margin: '12px -22px -18px', padding: '10px 22px 18px',
+    position: 'sticky', bottom: -18, margin: '12px 0 -18px', padding: '10px 0 18px',
     background: '#2b2b3a', borderTop: '1px solid #ffffff14', zIndex: 2,
   },
 };

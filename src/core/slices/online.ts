@@ -26,6 +26,8 @@ export const updateOnline = (set: SetState, get: GetState) => {
   const news: string[] = [];
   let money = 0;
   let items = 0;
+  let doneCount = 0; // số đơn app tới tay khách tick này (đo nhiệm vụ ngày)
+  const deliveredKeys: string[] = []; // món đã giao (cho Sổ tay Tiệm GĐ36)
   // Đơn mới: chỉ khi gian hàng mở, tiệm mở cửa và trong giờ app
   if (on.open && s.shopOpen && m >= ONLINE_HOURS[0] && m < ONLINE_HOURS[1] && m >= on.nextAt) {
     const order = makeOnlineOrder(on.nextId, s.level, m);
@@ -47,6 +49,8 @@ export const updateOnline = (set: SetState, get: GetState) => {
       const pay = Math.round(onlineValue(o, s.priceOf) * (1 - APP_COMMISSION));
       money += pay;
       items += Object.values(o.items).reduce((n, q) => n + q, 0);
+      doneCount++;
+      deliveredKeys.push(...Object.keys(o.items));
       online = {
         ...online, ratingSum: online.ratingSum + stars, ratingCount: online.ratingCount + 1, done: online.done + 1,
         late: online.late + (stars < 5 ? 1 : 0), revenueToday: online.revenueToday + pay,
@@ -60,10 +64,11 @@ export const updateOnline = (set: SetState, get: GetState) => {
   online = { ...online, orders: kept };
   set({
     online, money: s.money + money,
-    stats: { ...s.stats, revenue: s.stats.revenue + money, itemsSold: s.stats.itemsSold + items, online: (s.stats.online ?? 0) + money },
+    stats: { ...s.stats, revenue: s.stats.revenue + money, itemsSold: s.stats.itemsSold + items, online: (s.stats.online ?? 0) + money, onlineDone: (s.stats.onlineDone ?? 0) + doneCount },
     totals: { ...s.totals, revenue: s.totals.revenue + money, itemsSold: s.totals.itemsSold + items },
   });
   if (money) get().addXp(Math.round(money / 20000));
+  if (deliveredKeys.length) get().recordDiscovery(deliveredKeys); // Sổ tay Tiệm (GĐ36)
   if (news.length) s.notify(news.join(' · '));
 };
 

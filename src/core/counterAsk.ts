@@ -20,13 +20,23 @@ export const useCounterAsk = create<{ ask: CounterAsk | null }>(() => ({ ask: nu
 
 export const askPending = () => useCounterAsk.getState().ask !== null;
 
+// GĐ122 — thang thời gian THỰC (wall-clock) cho khách đang bị treo câu hỏi: thế giới dừng (GĐ102)
+// nhưng khách này vẫn mất kiên nhẫn theo giây thật để phá 'pause AFK vô hạn'. Chỉ Date.now() thuần
+// ứng — transient (không nằm trong state game / SaveState → không đụng SAVE_VERSION).
+let askStartedWall = 0;
+export function askWallElapsed(): number {
+  return askStartedWall ? (Date.now() - askStartedWall) / 1000 : 0;
+}
+
 export function askAtCounter(ask: CounterAsk) {
+  askStartedWall = Date.now();
   useCounterAsk.setState({ ask });
 }
 
 export function answerAsk(choice: number) {
   const ask = useCounterAsk.getState().ask;
   if (!ask) return;
+  askStartedWall = 0;
   useCounterAsk.setState({ ask: null });
   ask.resolve(choice);
 }
@@ -38,4 +48,7 @@ export function expireAsk(minutes: number) {
 }
 
 /** Sang ngày mới / dọn khách: bỏ câu hỏi đang treo. */
-export const clearAsk = () => useCounterAsk.setState({ ask: null });
+export const clearAsk = () => {
+  askStartedWall = 0;
+  useCounterAsk.setState({ ask: null });
+};

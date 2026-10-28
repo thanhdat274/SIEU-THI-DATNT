@@ -49,8 +49,10 @@ export function Tabs<T extends string>({ tabs, value, onChange }: {
       {tabs.map(([id, label]) => (
         <button
           key={id}
-          style={{ ...styles.btn, marginLeft: 0, background: value === id ? '#f1c40f' : '#fff', fontWeight: value === id ? 700 : undefined }}
+          style={{ ...styles.btn, marginLeft: 0, background: value === id ? '#f1c40f' : '#fff', fontWeight: value === id ? 700 : undefined, transition: 'background 0.12s', borderBottom: value === id ? '2px solid #e6b800' : undefined }}
           onClick={() => onChange(id)}
+          onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f0f0')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = value === id ? '#f1c40f' : '#fff')}
         >
           {label}
         </button>
@@ -67,34 +69,40 @@ export const Swatch = ({ color }: { color: number }) => (
 );
 
 /**
- * Màn hình cảm ứng nhỏ (điện thoại, iPad mini): panel thu nhỏ thành cửa sổ vừa phải,
- * chừa nhiều cảnh game xung quanh hơn. `IS_MOBILE` chỉ đúng trên thiết bị touch có
- * màn hẹp (max-width: 1000px) nên desktop, tablet lớn và laptop màn cảm ứng giữ nguyên
- * full-width như cũ.
+ * Màn hình hẹp (điện thoại, máy tính bảng nhỏ): panel thu gọn vừa vặn với viewport,
+ * chừa lề đều các cạnh. Kiểm tra theo chiều rộng thực tế (max-width: 1000px) thay vì chỉ (pointer: coarse)
+ * để đảm bảo mọi thiết bị (kể cả máy tính cửa sổ thu nhỏ hay môi trường WebView/IAB) đều nhận layout chuẩn.
  */
 const IS_MOBILE =
   typeof matchMedia !== 'undefined' &&
-  matchMedia('(pointer: coarse) and (max-width: 1000px)').matches;
+  (matchMedia('(max-width: 1000px)').matches || matchMedia('(pointer: coarse) and (max-width: 1000px)').matches);
+
+/** Biến padding ngang panel: footer dính/muốn tràn mép-edge tham chiếu var này thay vì
+ * số cứng — panel mobile padding 14px còn desktop 22px, số cứng làm tràn 8px mỗi mép (GĐ95). */
+const PANEL_VARS = (px: string) => ({ '--panel-px': px } as React.CSSProperties);
 
 export const styles: Record<string, React.CSSProperties> = {
   backdrop: {
     pointerEvents: 'auto', position: 'absolute', inset: 0,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.25)',
+    transition: 'background 0.2s',
   },
   panel: IS_MOBILE
     ? {
-        background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '12px 14px',
+        ...PANEL_VARS('14px'),
+        background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '12px var(--panel-px)',
         // Màn ngang: panel chiếm gần full chiều ngang như desktop để nhiều thông tin trên
         // một tầm nhìn, đỡ phải cuộn dọc. Desktop giữ nguyên kích thước cũ.
         minWidth: 'min(320px, calc(100vw - 24px))', maxWidth: 'calc(100vw - 24px)',
-        maxHeight: 'calc(100dvh - 96px)', overflow: 'auto',
+        maxHeight: 'calc(100dvh - 96px)', overflowY: 'auto', overflowX: 'hidden',
         boxSizing: 'border-box',
         boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
       }
     : {
-        background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '18px 22px',
+        ...PANEL_VARS('22px'),
+        background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '18px var(--panel-px)',
         // Chừa đáy màn hình cho dock nút của HUD — hết cảnh dãy nút cuối panel bị dock đè lên
-        minWidth: 'min(360px, calc(100vw - 32px))', maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100dvh - 108px)', overflow: 'auto',
+        minWidth: 'min(360px, calc(100vw - 32px))', maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100dvh - 108px)', overflowY: 'auto', overflowX: 'hidden',
         boxSizing: 'border-box',
         boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
       },
@@ -103,11 +111,12 @@ export const styles: Record<string, React.CSSProperties> = {
   table: { borderCollapse: 'collapse', width: '100%', fontSize: 14, textAlign: 'right' },
   left: { textAlign: 'left', padding: '6px 8px 6px 0' },
   row: { display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0' },
-  select: { flex: 1 },
+  select: { flex: 1, minWidth: 0 },
   card: { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', background: '#3a3a4d', borderRadius: 8 },
   btn: { border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', marginLeft: 4, fontSize: 13 },
   close: {
     position: 'sticky', top: 0, float: 'right', zIndex: 1, width: 30, height: 30, marginLeft: 8,
     border: 'none', borderRadius: 15, cursor: 'pointer', fontSize: 15, background: '#fff', color: '#222',
+    transition: 'background 0.12s, transform 0.1s',
   },
 };

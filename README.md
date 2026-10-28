@@ -1,52 +1,75 @@
-# Tạp Hóa 3D
+# 🏪 Tạp Hóa 3D
 
-Game 3D mở tiệm tạp hóa kiểu Stardew: sáng ở nhà, ra tiệm bán hàng, tối về ngủ. Tiệm lớn dần thành siêu thị, có chi nhánh tiện lợi 24/7, trang trại, chơi chung theo "hẻm" (2–4 người).
+Game quản lý **cửa hàng tạp hóa 3D**: chạy một tiệm tạp hóa, phục vụ khách vãng lai và khách quen, thuê nhân viên, mở rộng chi nhánh, ký hợp đồng, lập nghiệp đoàn (co-op)… Được xây dựng bằng **React + Three.js** và chạy trên web (mobile-first, có PWA).
 
-Công nghệ: React 19 + Three.js + Zustand, build bằng Vite. Server (Express + WebSocket) lo lưu cloud và hẻm online.
+> 📚 Tài liệu tham khảo: [`NGHIEN-CUU-TAP-HOA-2026-10-24.md`](NGHIEN-CUU-TAP-HOA-2026-10-24.md) là bản đồ hiện trạng chuẩn nhất của game. Các file `ANALYSIS_AND_FEATURES.md`, `PHAN-TICH-VA-DE-XUAT.md`, `PHAN-TICH-THAM-KHAO-HAPPYTOWN.md` là tài liệu lịch sử (số liệu đã cũ).
 
-## Chạy thử
+## ✨ Tính năng chính
+
+- **Thế giới 3D** bằng Three.js: shop 3D, khách đi lại, cây trồng, quán nước, chi nhánh.
+- **Kinh tế sâu**: đơn hàng, hợp đồng cung ứng, huy động vốn, đối tác chi nhánh, chuỗi sản xuất (trồng → nấu → quán nước), lễ hội theo mùa, tiện lợi 24/7.
+- **Nhân viên & nghề nghiệp**: tuyển dụng, xếp ca, huấn luyện, 10 vai nhân viên, 35 nghề khách vãng lai, 33 archetype.
+- **Meta-progression dài hạn**: hồ sơ tiệm, huy hiệu thâm niên, huy hiệu hợp đồng, nền móng vững chắc.
+- **Online / co-op**: hẻm online qua WebSocket, lập nghiệp đoàn, chống gian lận kinh tế (co-op guard).
+- **Lưu trữ**: IndexedDB (Dexie) cục bộ + cloud MongoDB + đăng nhập Firebase.
+- **Kiểm thử**: hơn 1000 unit test với vitest.
+
+## 🚀 Bắt đầu
+
+Yêu cầu: Node.js (18+), npm hoặc yarn.
 
 ```bash
+# cài phụ thuộc
 npm install
-npm run dev      # game, mặc định http://localhost:5173
-npm run server   # server cloud + hẻm online (cổng 3002), cần server/.env
-npm test         # vitest
-npm run build    # tsc + vite build ra dist/
+
+# chạy chế độ phát triển
+npm run dev            # mở http://localhost:5173
+
+# chạy test
+npm test
+
+# build trang game tĩnh (ra thư mục dist/)
+npm run build
 ```
 
-Triển khai: xem [DEPLOY.md](DEPLOY.md).
+## 🗂 Cấu trúc thư mục
 
-## Cấu trúc
+```
+src/
+  main.tsx        # điểm khởi động
+  world/          # thế giới & render 3D (Three.js)
+  render/         # vẽ / hiệu ứng
+  core/           # logic kinh tế cốt lõi (ngày, đơn hàng, chuỗi...)
+  data/           # dữ liệu thuần (hàng hóa, nghề, helper đọc...)
+  shop/           # logic cửa hàng / quầy
+  agents/         # hành vi khách & nhân viên
+  ui/             # giao diện (HUD, các panel)
+  net/            # mạng: WebSocket
+  __tests__/      # unit tests (vitest)
+server/
+  index.ts        # server lưu cloud + hẻm online (WebSocket)
+  room.ts         # quản lý phòng hẻm online
+dev/              # công cụ phát triển
+scripts/          # script phụ trợ
+```
 
-| Thư mục | Nội dung |
-| --- | --- |
-| `src/core` | Trạng thái game (store Zustand chia slice), lưu/đọc, âm thanh |
-| `src/data` | Dữ liệu và hàm thuần: sản phẩm, nhân viên, chi nhánh, thăng chức… |
-| `src/ui` | HUD và các bảng (nhân viên, kho, giá bán, tiện lợi 24/7…) |
-| `src/render`, `src/world`, `src/shop` | Cảnh 3D, tiệm, nhân vật |
-| `src/net` | Cloud save, đăng nhập Google, chơi chung |
-| `server` | Server lưu cloud và phòng hẻm online |
-| `src/__tests__` | Test logic game |
+## 🌐 Triển khai
 
-## Nhân viên hai tiệm
+Xem đầy đủ tại [`DEPLOY.md`](DEPLOY.md). Tóm tắt:
 
-Bảng **Nhân viên** gom cả tiệm chính và tiện lợi 24/7:
+- Game gồm 2 phần: **trang game tĩnh** (`dist/`) và **server WebSocket lâu dài** (`server/index.ts`).
+- ⚠️ **Vercel không chạy được server** (chỉ serverless, không giữ WebSocket). Trang game để được trên Vercel, còn server phải đặt ở Render / Railway / Fly.io (chọn vùng Singapore cho gần Việt Nam).
+- Hoặc tự host cả hai trên máy tính: `npx tsx server/index.ts` rồi dùng Cloudflare Tunnel để chia sẻ với bạn bè.
+- Biến môi trường: client dùng `VITE_SERVER_URL`, server dùng các biến trong `server/.env` (`MONGO_URI`, `FIREBASE_…`, `CORS_ORIGIN`). Không bao giờ bật `DEV_AUTH_BYPASS` trên server thật.
 
-- Danh sách chia hai mục, tiện lợi xếp theo ca sáng, chiều, đêm, có cảnh báo thiếu thu ngân hoặc bảo vệ đêm.
-- **Điều quân**: nút 🔀 trên từng người chuyển sang tiệm kia. Giữ nguyên tay nghề, kinh nghiệm, chức vụ, lương; không tốn phí; mỗi người một lần mỗi ngày.
-  - Tiện lợi chỉ nhận thu ngân, xếp hàng, giao hàng, bảo vệ, quản lý.
-  - Ca tự chỉnh cho hợp nơi mới (ca cả ngày thành ca sáng; ca đêm về tiệm chính khi chưa mở ca đêm thành ca chiều).
-  - Số người tối đa được kiểm tra ở cả hai đầu.
-- **Dồn hết sang tiệm chính**: chỉ khi chi nhánh đang đóng; chuyển tới khi tiệm chính đầy.
-- Tab **Tuyển dụng** cho thuê ứng viên vào tiệm chính hoặc tiện lợi (chọn ca).
+## 🧪 Kiểm thử
 
-Code: `src/data/transfer.ts` (luật điều quân), `src/core/slices/staff.ts` (`transferStaff`, `evacuateBranch`), `src/ui/panels/StaffPanel.tsx`.
+```bash
+npm test          # chạy toàn bộ unit test
+```
 
-## Chơi chung
+Bộ test bao phủ logic kinh tế, chuỗi sản xuất, hợp đồng, co-op, cân bằng, chống gian lận… Mỗi tính năng lớn đều có test riêng (ví dụ `hiepLuc.test.ts`, `festivalPrep.test.ts`, `dossier.test.ts`...).
 
-Hẻm có một máy chạy (runner) giữ trạng thái thật. Mọi hàm thao tác trong store của người chơi khác được gửi sang máy chạy rồi trạng thái đồng bộ lại (`src/net/coop.ts`). Hàm chỉ có tác dụng giao diện nằm trong `LOCAL_ACTIONS`.
+## 📈 Nhật ký phát triển
 
-## Quy ước
-
-- Giao diện và thông báo bằng tiếng Việt.
-- Thêm tính năng kèm test trong `src/__tests__`; chạy `npx tsc --noEmit` và `npm test` trước khi commit.
+Xem [`PROGRESS.md`](PROGRESS.md) — ghi chép từng đợt (GĐ) cập nhật tính năng theo thời gian.

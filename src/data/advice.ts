@@ -1,6 +1,9 @@
 import { productById } from './products';
 import type { ReviewReason } from './reviews';
-import { fitLots, needsCold, type Lot } from './freshness';
+import { fitLots, needsCold, shelfLife, spoilRate, type Lot } from './freshness';
+import { warehouseTier, WAREHOUSE_TIERS } from './warehouse';
+import type { Weather } from './weather';
+import type { AnalyticsState } from './analytics';
 
 /** Bảng mở ra khi bấm nút của một gợi ý. */
 export type AdviceAction = 'order' | 'arrange' | 'prices' | 'staff';
@@ -13,6 +16,151 @@ export const ACTION_LABEL: Record<AdviceAction, string> = {
 export type MissLog = Record<string, number>;
 
 export const missKey = (reason: ReviewReason, productId?: string) => `${reason}:${productId ?? ''}`;
+
+// ───── GĐ131: định lượng doanh thu/lãi bỏ lỡ vì kệ/kho hết hàng ở tiệm CHÍNH ─────
+// Đóng vòng phản hồi chi-vốn-lặp lại lớn nhất còn là hộp đen: mua kệ/kho có ROI.
+// THUẦN đọc từ `missLog` đã có — không đổi SAVE_VERSION/persist/kinh tế.
+
+export interface StoreMissRow {
+  id: string;
+  name: string;
+  count: number;
+  /** Còn trong kho không (0 = kho cũng hết → cần nhập; >0 = kho còn → chỉ thiếu chỗ bày). */
+  inStorage: number;
+  /** Lãi ước tính bỏ lỡ: (sell − buy) × count — món khách muốn mà kệ trống. */
+  estLoss: number;
+}
+
+export interface StoreMissRevenue {
+  rows: StoreMissRow[];
+  totalLoss: number;
+  /** Số món lỡ mà còn hàng trong kho (kết luận "bày thêm lên kệ"). */
+  inStorageCount: number;
+  /** Số món lỡ mà kho cũng hết (kết luận "nhập thêm"). */
+  outOfStockCount: number;
+}
+
+/** Quy mọi lần "khách tìm món mà kệ trống" (missLog['stock:<id>']) ra lãi bỏ lỡ. null khi không có món nào lỡ. */
+export function storeMissRevenue(log: MissLog | undefined, inStorage: Record<string, number>): StoreMissRevenue | null {
+  const rows = Object.entries(log ?? {})
+    .filter(([key]) => key.startsWith('stock:'))
+    .map(([key, count]) => {
+      const p = productById(key.slice('stock:'.length));
+      if (!p) return null;
+      return { id: p.id, name: p.name, count, inStorage: inStorage[p.id] ?? 0, estLoss: (p.sell - p.buy) * count };
+    })
+    .filter((x): x is StoreMissRow => x !== null)
+    .sort((a, b) => b.estLoss - a.estLoss);
+  if (!rows.length) return null;
+  const totalLoss = rows.reduce((n, r) => n + r.estLoss, 0);
+  return {
+    rows,
+    totalLoss,
+    inStorageCount: rows.filter((r) => r.inStorage > 0).length,
+    outOfStockCount: rows.filter((r) => r.inStorage === 0).length,
+  };
+}
+
+// ───── GĐ133: bản kê NGƯỢC "đêm qua món nào hỏng, tốn bao nhiêu, vì sao" ─────
+// Đóng nửa "sau" của vòng lặp quan trọng nhất (nhập → hỏng đêm → thấy số → chỉnh đơn).
+// Khác expiringSoon/nearExpiry (cảnh báo TRƯỚC) và khác storeMissRevenue (lãi bỏ lỡ vì THIẾU hàng);
+// cái này = THỪA/HỎNG đã xảy ra. THUẦN đọc từ `analytics.items[id][].spoiled` — không đổi state/kinh tế.
+
+/** Hệ số chi phí vốn của món: số món hỏng × giá nhập (đúng công thức `spoilOvernight`). */
+export interface SpoilRow {
+  id: string;
+  name: string;
+  spoiled: number;
+  cost: number;
+  /** Nguyên nhân gần đúng ("~" ước tính): cần lạnh để ngoài tủ / món tươi short-life / để lâu hết hạn. */
+  kind: 'cold' | 'short' | 'age';
+}
+
+export interface SpoilNightReport {
+  rows: SpoilRow[];
+  totalCost: number;
+}
+
+const SHORT_LIFE_DAYS = 3;
+
+/** Bản kê hàng hỏng đáng giá trong đêm vừa chốt (`closedDay`). null khi không món nào hỏng. */
+export function spoilNightReport(analytics: AnalyticsState | undefined, closedDay: number): SpoilNightReport | null {
+  const items = analytics?.items;
+  if (!items) return null;
+  const rows: SpoilRow[] = [];
+  for (const [id, recs] of Object.entries(items)) {
+    const rec = recs.find((r) => r.day === closedDay);
+    const spoiled = rec?.spoiled ?? 0;
+    if (spoiled <= 0) continue;
+    const p = productById(id);
+    const cost = spoiled * p.buy;
+    const kind = needsCold(id) ? 'cold' as const : shelfLife(id) <= SHORT_LIFE_DAYS ? 'short' as const : 'age' as const;
+    rows.push({ id, name: p.name, spoiled, cost, kind });
+  }
+  if (!rows.length) return null;
+  rows.sort((a, b) => b.cost - a.cost);
+  return { rows, totalCost: rows.reduce((n, r) => n + r.cost, 0) };
+}
+
+// ───── GĐ134: "🧊 Tủ lạnh kho đầy" — định lượng hàng cần lạnh vượt khả năng giữ lạnh ─────
+// Bổ sung cho GĐ133 (kê hàng hỏng): trỏ tới NGUYÊN NHÂN tắc vòng lạnh — tủ kho chỉ giữ lạnh
+// `cold` món, phần dư để ngoài hỏng nhanh hơn (spoilRate chỗ 'storage' > 'coldStorage').
+// THUẦN đọc `storage` + `warehouseTier(i).cold` — không đổi state/kinh tế; chỉ xuất hiện khi tràn.
+
+export interface ColdOverflowItem {
+  id: string;
+  name: string;
+  qty: number;
+  /** Tốc độ mất hạn khi để ngoài kho (chỗ 'storage') — cho người chơi thấy "hỏng nhanh gấp ~N×". */
+  penalty: number;
+}
+
+export interface ColdOverflow {
+  /** Tổng món cần lạnh đang nằm trong kho. */
+  coldQty: number;
+  /** Khả năng giữ lạnh của tủ kho hiện tại (`warehouseTier(i).cold`). */
+  capacity: number;
+  /** Số món dư ra phải để ngoài (nhiệt độ thường), hỏng nhanh hơn. */
+  overflow: number;
+  /** Khả năng giữ lạnh nếu nâng một bậc kho (null khi đã tối đa). */
+  nextCapacity: number | null;
+  /** Các món cần lạnh chiếm nhiều nhất trong kho (theo số món) để dễ nhận diện. */
+  items: ColdOverflowItem[];
+}
+
+/** Báo khi hàng cần lạnh trong kho vượt khả năng giữ lạnh của tủ kho. null khi chưa tràn. */
+export function coldOverflow(
+  storage: Record<string, number> | undefined,
+  tierIndex: number,
+  weather: Weather,
+): ColdOverflow | null {
+  const capacity = warehouseTier(tierIndex).cold;
+  const coldItems: { id: string; qty: number }[] = [];
+  let coldQty = 0;
+  for (const [id, qty] of Object.entries(storage ?? {})) {
+    if (qty > 0 && needsCold(id)) {
+      coldItems.push({ id, qty });
+      coldQty += qty;
+    }
+  }
+  if (coldQty <= capacity) return null;
+  const items: ColdOverflowItem[] = coldItems
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 3)
+    .map(({ id, qty }) => ({
+      id,
+      name: productById(id).name,
+      qty,
+      penalty: spoilRate(id, 'storage', weather),
+    }));
+  return {
+    coldQty,
+    capacity,
+    overflow: coldQty - capacity,
+    nextCapacity: WAREHOUSE_TIERS[tierIndex + 1]?.cold ?? null,
+    items,
+  };
+}
 
 export interface Advice {
   icon: string;
@@ -126,4 +274,29 @@ export function peakAdvice(peak: HourStat | undefined, waitMisses: number): Advi
   return waitMisses > 0
     ? [{ icon: '⏰', text: `Đông nhất lúc ${slot} (${peak.customers} khách) và có ${waitMisses} khách bỏ về vì chờ. Xếp ca thu ngân trùm giờ này.`, action: 'staff' }]
     : [{ icon: '⏰', text: `Đông nhất lúc ${slot} (${peak.customers} khách). Châm đầy kệ món bán chạy trước giờ này.`, action: 'arrange' }];
+}
+
+/**
+ * GĐ120: Khoảnh khắc phục vụ 'khách sốt ruột' (GĐ119) → phản hồi cuối ngày định lượng.
+ * Đọc thuần state có sẵn (stats.missed.wait, stats.byHour, stats.customers) — không đổi
+ * save/kinh tế. Trả về bức tranh 'mất khách vì chờ quầy' để vẽ thẻ dạy chơi trong Tổng kết
+ * ngày, hoặc null khi hôm đó không có ai bỏ vì chờ (không nhiễu ngày yên ả).
+ */
+export interface WaitLossView {
+  /** Số khách bỏ về vì chờ quầy. */
+  count: number;
+  /** Tỉ lệ so với tổng khách ghé (0–1). */
+  pct: number;
+  /** Giờ đông khách nhất trong ngày (nếu có), để trỏ tới gợi ý xếp ca. */
+  peakHour: number | null;
+}
+export function waitLossStats(
+  byHour: Record<number, { customers: number; revenue: number }> | undefined,
+  missed: { wait?: number } | undefined,
+  customers: number,
+): WaitLossView | null {
+  const count = missed?.wait ?? 0;
+  if (count <= 0) return null;
+  const peak = peakHours(byHour).peak;
+  return { count, pct: customers > 0 ? count / customers : 1, peakHour: peak ? peak.hour : null };
 }

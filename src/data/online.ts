@@ -64,6 +64,23 @@ export function orderGap(rating: number, level: number) {
   return base * (rating >= 4.5 ? 1 : rating >= 4 ? 1.4 : rating >= 3 ? 2.2 : 4);
 }
 
+/** Mô tả mức độ "dày đơn" theo điểm app — mồi minh bạch cho người chơi hiểu hộp đen đơn app. */
+export function orderRateTone(rating: number): string {
+  if (rating >= 4.5) return 'đơn dày (rất đông khách app)';
+  if (rating >= 4) return 'đơn khá đều';
+  if (rating >= 3) return 'đơn thưa hơn';
+  return 'đơn rất thưa — điểm thấp!';
+}
+
+/**
+ * Số lượng đơn tối đa gần đúng app có thể trút về một ngày (độ rộng khung giờ / khoảng cách 2 đơn).
+ * Dùng để hiển thị mức "dày đơn" minh bạch; đồng thời đúng là trần thực mà updateOnline chạm tới.
+ */
+export function onlineOrderCap(rating: number, level: number): number {
+  const span = ONLINE_HOURS[1] - ONLINE_HOURS[0];
+  return Math.round(span / orderGap(rating, level));
+}
+
 /** Nhân viên tiệm chở bằng xe máy: phút tới nơi theo km và tay nghề. */
 export const ownTravel = (km: number, skill: number) => Math.round(5 + (km * 6) / skillSpeed(skill));
 /** Grab: tới nhanh, có sẵn ngay. */
@@ -97,3 +114,67 @@ export const deliveryStars = (o: OnlineOrder, arriveAt: number) =>
 
 export const describeOnline = (o: OnlineOrder) =>
   Object.entries(o.items).map(([id, q]) => `${q} ${productById(id).name}`).join(', ');
+
+/** Giá vốn hàng của đơn (Σ q × giá nhập) — khớp căn bản checkout sales.ts (productById(id).buy). */
+export const orderCost = (o: OnlineOrder): number =>
+  Object.entries(o.items).reduce((n, [id, q]) => n + q * productById(id).buy, 0);
+
+/**
+ * Lãi ròng của đơn (chưa trừ phí giao): doanh thu sau hoa hồng − giá vốn hàng.
+ * Gross dùng Math.round(onlineValue×(1−commission)) — đúng số tiệm THỰC nhận khi giao (slices/online).
+ */
+export const orderNet = (o: OnlineOrder, priceOf: (id: string) => number): number =>
+  Math.round(onlineValue(o, priceOf) * (1 - APP_COMMISSION)) - orderCost(o);
+
+export interface OrderAssessment {
+  /** Tiền thật nhận được sau hoa hồng (đúng số khi giao). */
+  gross: number;
+  /** Giá vốn hàng. */
+  cost: number;
+  /** Lãi ròng chưa phí giao. */
+  net: number;
+  /** net/gross — âm khi lỗ. */
+  margin: number;
+  /** net − phí Grab (lãi nếu gọi Grab). */
+  grabNet: number;
+  /** Phút tự giao (0 khi không có người giao rảnh). */
+  ownTravelT: number;
+  /** Phút gọi Grab. */
+  grabTravelT: number;
+  /** Sao nếu tự giao (5/3/1). */
+  ownStars: number;
+  /** Grab luôn 5★ (không thể trễ). */
+  grabStars: number;
+  /** Tự giao có trễ hẹn không (now + ownTravelT > dueAt). */
+  urgent: boolean;
+}
+
+/** Đánh giá kinh tế + thời điểm của một đơn: giúp quyết lấy / lấy qua Grab / từ chối. Thuần đọc, không đổi state. */
+export function orderAssessment(o: OnlineOrder, priceOf: (id: string) => number, courierSkill: number | null, minutes: number): OrderAssessment {
+  const gross = Math.round(onlineValue(o, priceOf) * (1 - APP_COMMISSION));
+  const cost = orderCost(o);
+  const net = gross - cost;
+  const ownTravelT = courierSkill == null ? 0 : ownTravel(o.km, courierSkill);
+  const grabTravelT = grabTravel(o.km);
+  return {
+    gross, cost, net,
+    margin: gross > 0 ? net / gross : 0,
+    grabNet: net - grabFee(o.km),
+    ownTravelT, grabTravelT,
+    ownStars: deliveryStars(o, minutes + ownTravelT),
+    grabStars: 5,
+    urgent: minutes + ownTravelT > o.dueAt,
+  };
+}
+
+/** Điểm app sau khi giao đúng/stars (5/3/1) — mồi minh bạch payoff 1 đơn. Rỗng ratingCount → như gian hàng mới. */
+export function ratingImpact(stars: number, online: OnlineState): { nextRating: number; tone: string } {
+  const next = (online.ratingSum + stars) / (online.ratingCount + 1);
+  return { nextRating: next, tone: orderRateTone(next) };
+}
+
+/** Điểm app nếu TỪ CHỐI đơn này (nhánh 4.5 như declineOnline) — từ chối vẫn mất chút điểm. */
+export function declineRating(online: OnlineState): { nextRating: number; tone: string } {
+  const next = (online.ratingSum + 4.5) / (online.ratingCount + 1);
+  return { nextRating: next, tone: orderRateTone(next) };
+}

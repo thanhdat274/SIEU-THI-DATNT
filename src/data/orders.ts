@@ -2,6 +2,7 @@ import { festivalOn } from './calendar';
 import { productById } from './products';
 import { regularById, type RegularProgress } from './regulars';
 import { orderTotal, supplierById, supplierSells } from './suppliers';
+import { STATION_BY_OUTPUT, type CookingStation } from './recipes';
 
 /** Đơn tiệc/đơn đặt trước: hàng xóm đặt số lượng lớn, giao từ kho trước hạn thì được thưởng. */
 export interface PartyOrderDef {
@@ -215,6 +216,16 @@ export interface ActiveOrder {
 export const orderValue = (def: PartyOrderDef) =>
   Object.entries(def.items).reduce((n, [id, q]) => n + productById(id).sell * q, 0);
 
+/** Trạm nấu đủ để làm mọi món nhà làm trong đơn (món không phải nhà làm thì bỏ qua). */
+export const orderFulfillable = (def: PartyOrderDef, stations: CookingStation[]) =>
+  Object.keys(def.items).every((id) => {
+    const st = STATION_BY_OUTPUT[id as keyof typeof STATION_BY_OUTPUT];
+    return st === undefined || stations.includes(st);
+  });
+
+// Mặc định "có đủ mọi trạm" — chỉ dùng khi người gọi không truyền trạm thật (test/ước lượng).
+const ALL_STATIONS = [...new Set(Object.values(STATION_BY_OUTPUT)) as unknown as CookingStation[]];
+
 function roll(seed: number, day: number, salt: number) {
   let h = Math.imul((seed >>> 0) ^ (day * 2654435761), 2246822519) ^ salt;
   h ^= h >>> 13;
@@ -231,11 +242,11 @@ const storyReady = (o: PartyOrderDef, level: number, regulars: Record<string, Re
  * Sáng nay có ai mời đặt đơn không (theo hạt giống ván nên hai máy chơi chung khớp nhau).
  * Khoảng 1/3 số ngày có lời mời; nửa số lời mời là đơn riêng của khách quen đã thân (nếu có).
  */
-export function offerForDay(seed: number, day: number, level: number, regulars: Record<string, RegularProgress> = {}): ActiveOrder | null {
+export function offerForDay(seed: number, day: number, level: number, regulars: Record<string, RegularProgress> = {}, stations: CookingStation[] = ALL_STATIONS): ActiveOrder | null {
   // Đơn theo dịp lễ chỉ mời khi lịch đang đúng dịp (giỏ quà Tết chỉ hiện trong Tết)
   const inSeason = (o: PartyOrderDef) => !o.festival || festivalOn(day)?.id === o.festival;
-  const story = PARTY_ORDERS.filter((o) => inSeason(o) && storyReady(o, level, regulars));
-  const party = PARTY_ORDERS.filter((o) => inSeason(o) && !o.regular && o.unlock <= level);
+  const story = PARTY_ORDERS.filter((o) => inSeason(o) && storyReady(o, level, regulars) && orderFulfillable(o, stations));
+  const party = PARTY_ORDERS.filter((o) => inSeason(o) && !o.regular && o.unlock <= level && orderFulfillable(o, stations));
   const pool = story.length && (roll(seed, day, 17) < 0.5 || !party.length) ? story : party;
   if (!pool.length || day < 2 || roll(seed, day, 7) > 0.35) return null;
   const def = pool[Math.floor(roll(seed, day, 13) * pool.length)];

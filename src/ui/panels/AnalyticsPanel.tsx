@@ -17,6 +17,7 @@ export function AnalyticsPanel() {
   const efficiency = shelfEfficiency(furniture, shelfProfit, day);
   const comboFx = promoEffect(analytics, history, 'combo');
   const happyFx = promoEffect(analytics, history, 'happyHour');
+  const adsFx = promoEffect(analytics, history, 'ads');
   const counts = { A: 0, B: 0, C: 0 } as Record<ItemHealth['abc'], number>;
   for (const h of list) counts[h.abc]++;
   return (
@@ -106,6 +107,7 @@ export function AnalyticsPanel() {
             {' '}{happyFx
               ? `Giờ vàng: ${formatMoney(happyFx.withAvg)}/ngày vs ${formatMoney(happyFx.withoutAvg)}/ngày.`
               : ''}{' '}
+            {adsFx ? `Quảng cáo: ${formatMoney(adsFx.withAvg)}/ngày vs ${formatMoney(adsFx.withoutAvg)}/ngày (${adsFx.withDays} vs ${adsFx.withoutDays} ngày).` : ''}
             {activeCombos.length ? 'Đang chạy combo.' : ''}{happyHour ? ' Đang đặt giờ vàng.' : ''}
           </p>
         </>

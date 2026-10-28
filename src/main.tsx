@@ -1,6 +1,7 @@
 import { skyAt } from './data/weather';
 import { ANIMAL_ORDER, type AnimalKind } from './data/garden';
 import * as THREE from 'three';
+import { Component, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { shopLayout, worldActions } from './core/actions';
 import { initSaves, saveGame, startAutosave } from './core/save';
@@ -10,13 +11,14 @@ import { vehicleDef } from './data/biz';
 import { checkChapters, eatBreakfast, stockReminders } from './core/biz';
 import { hasSkill } from './data/titles';
 import { furnitureDef, isCookStation } from './data/furniture';
-import { initAudio, playSfx, setRain } from './core/audio';
+import { initAudio, playSfx, setAmbience, setRain } from './core/audio';
 import { hasUpgrade } from './data/upgrades';
 
 // Trình duyệt chỉ mở tiếng sau tương tác đầu tiên — mỗi cú click là một cơ hội khởi động AudioContext
 window.addEventListener('pointerdown', initAudio);
 import { BuildMode } from './shop/buildMode';
 import type { Counter } from './shop/groceryShop';
+import { askPending } from './core/counterAsk';
 import { CustomerManager } from './agents/customers';
 import { Player } from './agents/player';
 import { StaffManager } from './agents/staff';
@@ -29,7 +31,9 @@ import { AdaptiveResolution, createRenderer, Lighting, LOW_POWER, type GameRende
 import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
 import { createWorld } from './world/world';
-import { Hud } from './ui/Hud';
+import { quanNuocStandState } from './data/quanNuoc';
+import { branchStandState } from './data/branches';
+import { Hud, tutorialActive, tutorialStep } from './ui/Hud';
 import './ui/controls.css';
 import { LoginScreen } from './ui/LoginScreen';
 import { pushCloudSave } from './net/cloud';
@@ -232,6 +236,57 @@ useGame.subscribe((s) => {
     world.farm.setPlots(s.garden.plots, s.day);
   }
   syncFarmAnimals(s);
+});
+
+// Quán nước đầu hẻm: khoảnh đất hiện khi đủ cấp (29) chưa mua, dựng quầy khi đã mở; bật số bàn ghế
+// theo nhân viên (setStaff chỉ chạy khi staff đổi — tránh gán lại mỗi khung). Đồng bộ như pattern farm:
+// chạy một lần ngay sau khi tạo world, rồi qua subscribe khi cấp / trạng thái quán đổi.
+let lastStandStaff = -1;
+let lastStandLevel = 0;
+let lastStandOpen = false;
+const syncQuanNuocStand = () => {
+  const s = useGame.getState();
+  const st = quanNuocStandState(s.level, s.biz.quanNuoc.open);
+  world.quanNuoc.lot.visible = st === 'lot';
+  world.quanNuoc.stand.visible = st === 'open';
+  if (s.biz.quanNuoc.staff !== lastStandStaff) {
+    lastStandStaff = s.biz.quanNuoc.staff;
+    world.quanNuoc.setStaff(s.biz.quanNuoc.staff);
+  }
+};
+syncQuanNuocStand();
+useGame.subscribe((s) => {
+  if (s.level !== lastStandLevel || s.biz.quanNuoc.open !== lastStandOpen || s.biz.quanNuoc.staff !== lastStandStaff) {
+    lastStandLevel = s.level;
+    lastStandOpen = s.biz.quanNuoc.open;
+    syncQuanNuocStand();
+  }
+});
+
+// Cửa hàng tiện lợi theo trạng thái sở hữu (GĐ26): mảnh đất RAO BÁN khi đủ cấp chưa mua, toà nhà +
+// biển "ĐÓNG CỬA" khi đã mua, biển "MỞ CỬA 24/7" khi đang mở. Toà nhà cửa hàng tiện lợi (convenience)
+// là của chính nó, không chạm vào thế giới; chỉ bật/ẩn theo `branchStandState` trong subscribe.
+let lastBranchLevel = 0;
+let lastBranchBought: boolean | null = null;
+let lastBranchOpen: boolean | null = null;
+const syncBranchStand = () => {
+  const s = useGame.getState();
+  const st = branchStandState(s.level, !!s.branch, s.branch?.open ?? false);
+  world.convenience.group.visible = st === 'closed' || st === 'open';
+  world.branchStand.lot.visible = st === 'lot';
+  world.branchStand.openSign.visible = st === 'open';
+  world.branchStand.closedSign.visible = st === 'closed';
+};
+syncBranchStand();
+useGame.subscribe((s) => {
+  const bought = !!s.branch;
+  const open = s.branch?.open ?? false;
+  if (s.level !== lastBranchLevel || bought !== lastBranchBought || open !== lastBranchOpen) {
+    lastBranchLevel = s.level;
+    lastBranchBought = bought;
+    lastBranchOpen = open;
+    syncBranchStand();
+  }
 });
 
 /** Số món còn trên kệ và số ô trống, để báo lúc kiểm kê cuối ngày. */
@@ -477,6 +532,24 @@ const peopleScratch: THREE.Vector3[] = [];
 let lastPhoneOrders: GameState['phoneOrders'] | null = null;
 const waitingHouses = new Set<string>();
 
+// Marker hướng dẫn ngày đầu (bước "Đứng quầy"): đĩa và vòng vàng phát sáng trên sàn ngay chỗ
+// đứng sau quầy chính. Tạo một lần như marker giao hàng, chỉ hiện/ẩn theo điều kiện — không dựng
+// lại nên không có gì phải dọn dẹp.
+const tutorialMarker = new THREE.Group();
+const tutorialDisc = new THREE.Mesh(
+  new THREE.CircleGeometry(0.42, 32),
+  new THREE.MeshBasicMaterial({ color: 0xffc107, transparent: true, opacity: 0.28, depthWrite: false }),
+);
+const tutorialRing = new THREE.Mesh(
+  new THREE.RingGeometry(0.42, 0.6, 32),
+  new THREE.MeshBasicMaterial({ color: 0xffc107, transparent: true, opacity: 0.9, depthWrite: false }),
+);
+tutorialDisc.rotation.x = tutorialRing.rotation.x = -Math.PI / 2;
+tutorialDisc.position.y = tutorialRing.position.y = 0.03;
+tutorialMarker.add(tutorialDisc, tutorialRing);
+tutorialMarker.visible = false;
+scene.add(tutorialMarker);
+
 const clock = new THREE.Clock();
 
 /** Vòng lặp một khung hình — WebGPU cần renderer.init() xong mới được render nên tách ra riêng. */
@@ -488,8 +561,10 @@ function renderFrame() {
     controller.follow = null;
     controller.yaw += dt * 0.06;
   } else {
-    // Bảng tổng kết hoặc hội thoại cốt truyện đang mở thì dừng thời gian
-    const speed = state.panel?.type === 'summary' || state.biz.chapterPending ? 0 : state.speed;
+    // Bảng tổng kết hoặc hội thoại cốt truyện đang mở thì dừng thời gian; có câu hỏi ở quầy
+    // cũng dừng — khách đứng chờ chủ quyết định, không đếm ngược vội (GĐ102: ở 8× cửa sổ 15 phút
+    // game chỉ còn ~1 giây thực, người chơi không kịp đọc là cơ hội rơi hết vào chọn hộ).
+    const speed = state.panel?.type === 'summary' || state.biz.chapterPending || askPending() ? 0 : state.speed;
     const guest = isGuest();
     // Người vào phòng không tự chạy mô phỏng: giờ, khách, nhân viên đều do chủ phòng gửi sang
     if (speed && !guest) state.tick(dt);
@@ -543,6 +618,7 @@ function renderFrame() {
   // Nhớ đủ: chủ thường thức dậy 6h — nếu tắt muộn hơn thì đèn còn sáng lửng giữa trời sáng,
   // vừa chói vừa thấy đèn bật–tắt khi đi lại.
   const hour = (useGame.getState().minutes / 60) % 24;
+  setAmbience(hour);
   const lamp = THREE.MathUtils.clamp(Math.max(hour - 17, 5.5 - hour), 0, 1);
   // Danh sách người dùng lại mỗi khung (không cấp phát mảng mới): cửa tự mở khi ai đó lại gần
   peopleScratch.length = 0;
@@ -568,6 +644,32 @@ function renderFrame() {
         box.rotation.y += dt * 1.5;
       }
     }
+  }
+  // Quán nước đầu hẻm: hộp 🧋 của khoảnh đất nhấp nhô + xoay đánh mắt khi đang chờ mua (chỉ khoảnh đất hiện)
+  if (world.quanNuoc.lot.visible) {
+    const mbox = world.quanNuoc.lot.getObjectByName('markerBox');
+    if (mbox) {
+      mbox.position.y = 2.05 + bob;
+      mbox.rotation.y += dt * 1.5;
+    }
+  }
+  // Cửa hàng tiện lợi: marker 🏪 của mảnh đất RAO BÁN nhấp nhô + xoay khi đang chờ mua mặt bằng
+  if (world.branchStand.lot.visible) {
+    const mbox = world.branchStand.lot.getObjectByName('markerBox');
+    if (mbox) {
+      mbox.position.y = 2.05 + bob;
+      mbox.rotation.y += dt * 1.5;
+    }
+  }
+  // Hướng dẫn ngày đầu tới bước "Đứng quầy": đĩa vàng sáng dìm/nhạt ngay chỗ đứng sau quầy chính,
+  // chỉ hiện khi chủ đang ở trong tiệm (toạ độ quầy theo dõi cache của shop nên dời quầy vẫn đúng)
+  const tutStep = tutorialActive(g) ? tutorialStep(g) : -1;
+  tutorialMarker.visible = tutStep === 3 && g.location === shop.building.opts.name;
+  if (tutorialMarker.visible) {
+    tutorialMarker.position.copy(shopSpot());
+    const glow = 0.55 + Math.sin(performance.now() / 350) * 0.3;
+    (tutorialDisc.material as THREE.MeshBasicMaterial).opacity = glow * 0.35;
+    (tutorialRing.material as THREE.MeshBasicMaterial).opacity = glow;
   }
   for (const b of world.buildings) {
     b.updateView(camera, b === interior.current);
@@ -624,13 +726,48 @@ void (renderer.init ? renderer.init() : Promise.resolve()).then(() => {
   console.warn(`[render] ${backend?.isWebGPUBackend ? 'WebGPU' : 'WebGL2'}${info ? ` · ${info.vendor} ${info.architecture} ${info.description}` : ''}`);
 });
 
+/** Ranh giới lỗi React: một component sập (vd save schema cũ thiếu field) không được phép trắng
+ * cả game — 3D vẫn chạy, chỉ hiện dải nhỏ kèm nút tải lại thay vì mất trắng màn hình. */
+class UiBoundary extends Component<{ children: ReactNode }, { err: Error | null }> {
+  state = { err: null as Error | null };
+  static getDerivedStateFromError(err: Error) {
+    return { err };
+  }
+  componentDidCatch(err: Error, info: { componentStack?: string | null }) {
+    console.error('[ui] lỗi giao diện:', err.message, info.componentStack ?? '');
+  }
+  render() {
+    if (this.state.err) {
+      return (
+        <div
+          style={{
+            position: 'fixed', left: '50%', bottom: 18, transform: 'translateX(-50%)', zIndex: 1000,
+            background: '#3a3a4d', color: '#fff', border: '1px solid #f1c40f', borderRadius: 10,
+            padding: '10px 14px', fontFamily: 'inherit', fontSize: 14, maxWidth: 'min(92vw, 480px)',
+            boxShadow: '0 4px 16px rgba(0,0,0,.4)', lineHeight: 1.4,
+          }}
+        >
+          ⚠️ Giao diện gặp lỗi: {this.state.err.message}
+          <button
+            onClick={() => location.reload()}
+            style={{ marginLeft: 10, padding: '6px 12px', borderRadius: 8, border: 'none', background: '#f1c40f', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Tải lại
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function App() {
   const screen = useSession((s) => s.screen);
   return screen === 'game' ? <Hud /> : <LoginScreen />;
 }
 
 // Nạp bản lưu từ IndexedDB trước khi hiện màn đăng nhập (màn này đọc bản lưu đồng bộ)
-initSaves().finally(() => createRoot(document.getElementById('ui')!).render(<App />));
+initSaves().finally(() => createRoot(document.getElementById('ui')!).render(<UiBoundary><App /></UiBoundary>));
 
 // PWA: đăng ký service worker để game cài ra màn hình chính iPhone/iOS
 // (chỉ ở bản build/run thật; dev thì tắt để không gây nhiễu khi sửa code)

@@ -10,6 +10,8 @@ import { BRANCH_LAYOUT, CONVENIENCE, LANE_X, ROAD2_Z } from '../data/branches';
 import { FurnitureView } from '../shop/furnitureView';
 import { StreetLamps } from './streetLamps';
 import { registerLight } from '../render/lightBudget';
+import { createQuanNuocStand } from './quanNuocStand';
+import { createBranchStand } from './branchStand';
 
 /** Các điểm trong một phòng ngủ (toạ độ thế giới). */
 export interface RoomSpots { bed: THREE.Vector3; wake: THREE.Vector3; nightstand: THREE.Vector3 }
@@ -45,6 +47,10 @@ export interface World {
   houses: Map<string, { building: Building; door: THREE.Vector3; marker: THREE.Object3D }>;
   /** Đèn đường dọc khu phố, sáng lúc trời tối. */
   streetLamps: StreetLamps;
+  /** Quán nước đầu hẻm: khoảnh đất (đủ cấp chưa mua) / quầy (đã mở) — chỉ hình ảnh, không chặn lưới. */
+  quanNuoc: ReturnType<typeof createQuanNuocStand>;
+  /** Cửa hàng tiện lợi theo trạng thái sở hữu: mảnh đất RAO BÁN + biển MỞ/ĐÓNG CỬA — chỉ hình ảnh. */
+  branchStand: ReturnType<typeof createBranchStand>;
 }
 
 /** Thế giới ban đầu: mặt đất, con đường, nhà riêng và tiệm tạp hóa nhỏ. */
@@ -134,6 +140,29 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
 
   const { building: convenience, views: convenienceViews } = createConvenienceStore();
   scene.add(convenience.group);
+
+  // "Cái xác" chi nhánh theo trạng thái sở hữu (GĐ26): mảnh đất RAO BÁN đặt đúng footprint toà nhà,
+  // biển MỞ/ĐÓNG CỬA treo trên mặt tiền. Toà nhà cửa hàng tiện lợi trong mọi trạng thái vẫn (ẩn/hiện)
+  // qua main.tsx theo `branchStandState(level, bought, open)`; nav giữ nguyên (staticBoxes đã đăng ký).
+  const branchStand = createBranchStand();
+  branchStand.lot.position.set(CONVENIENCE.x, 0, CONVENIENCE.z);
+  const branchFront = CONVENIENCE.depth / 2;
+  branchStand.openSign.position.set(0, 2.15, branchFront + 0.3);
+  branchStand.closedSign.position.set(0, 2.15, branchFront + 0.3);
+  branchStand.lot.visible = false;
+  branchStand.openSign.visible = false;
+  branchStand.closedSign.visible = false;
+  scene.add(branchStand.lot);
+  convenience.facade.add(branchStand.openSign, branchStand.closedSign);
+
+  // Quán nước đầu hẻm: ở cửa hẻm dọc (x=LANE_X), phía đông, giữa đường chính và hẻm — không đè
+  // lối đi (lane 47.5..52.5) cũng không đè nhà hàng xóm (x=20..34). Đặt x = LANE_X + 4.4 = 54.4 để
+  // mép trái của quán (≈52.9) cách hẻm một chút; z=1 nằm ngay phần đầu hẻm nối đường chính (z≈3),
+  // trên đất trống ngoài khoảng cây (cây chỉ ở z ≤ -10 và đã chừa |x-LANE_X|<4). Cả hai lớp ẩn mặc
+  // định; main.tsx bật/ẩn theo cấp & trạng thái quán.
+  const quanNuoc = createQuanNuocStand();
+  quanNuoc.group.position.set(LANE_X + 4.4, 0, 1);
+  scene.add(quanNuoc.group);
 
   // Nhà riêng
   const home = new Building({
@@ -252,6 +281,8 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
     convenience,
     convenienceViews,
     streetLamps,
+    quanNuoc,
+    branchStand,
   };
 }
 

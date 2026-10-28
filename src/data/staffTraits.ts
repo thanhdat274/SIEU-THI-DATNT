@@ -106,6 +106,10 @@ export interface StaffDayResult {
   cashLoss: number;
   /** Hàng trong kho bị lấy mà không ai biết. */
   goodsTaken: Record<string, number>;
+  /** Tiền két người tắt mắt SẼ lấy nhưng bị bắt quả tang → đã thu lại (ghi vào sổ rủi ro là "chặn"). */
+  blockedCash: number;
+  /** Hàng trong kho người tắt mắt SẼ lấy nhưng bị bắt → đã thu lại (ghi vào sổ rủi ro là "chặn"). */
+  blockedGoods: Record<string, number>;
   /** Số lời khen 5★ thêm nhờ người niềm nở, và tiền boa thêm. */
   praises: number;
   tips: number;
@@ -119,10 +123,12 @@ export function staffDayEnd(list: Staff[], ctx: StaffDayCtx): StaffDayResult {
   const rng = ctx.rng ?? Math.random;
   const between = ([a, b]: [number, number]) => a + rng() * (b - a);
   const goodsTaken: Record<string, number> = {};
+  const blockedGoods: Record<string, number> = {};
   const caught: string[] = [];
   const left = { ...ctx.storage };
   const news: string[] = [];
   let cashLoss = 0;
+  let blockedCash = 0;
   let praises = 0;
   let tips = 0;
   const staff = list.map((st0) => {
@@ -153,6 +159,9 @@ export function staffDayEnd(list: Staff[], ctx: StaffDayCtx): StaffDayResult {
     const chance = Math.min(0.85, CATCH_BASE + (ctx.hasCamera ? CATCH_CAMERA : 0) + (ctx.hasManager ? CATCH_MANAGER : 0) + (ctx.hasLead ? LEAD_CATCH_BONUS : 0));
     if (rng() < chance) {
       news.push(`🚨 Bắt quả tang ${st.name} ${cash ? `ăn bớt ${Math.round(cash / 1000)}k tiền két` : `lấy ${items} món trong kho`}! Đã thu lại, xem ở bảng Nhân viên để xử lý`);
+      // Bắt được: số sẽ-lấy không bị mất thật — ghi vào sổ rủi ro là "chặn/thu lại" (thay vì vứt như trước).
+      blockedCash += cash;
+      for (const [id, q] of Object.entries(took)) blockedGoods[id] = (blockedGoods[id] ?? 0) + q;
       caught.push(st.name);
       return { ...st, caught: true };
     }
@@ -160,5 +169,5 @@ export function staffDayEnd(list: Staff[], ctx: StaffDayCtx): StaffDayResult {
     for (const [id, q] of Object.entries(took)) goodsTaken[id] = (goodsTaken[id] ?? 0) + q;
     return st;
   });
-  return { staff, cashLoss, goodsTaken, praises, tips, caught, news };
+  return { staff, cashLoss, goodsTaken, blockedCash, blockedGoods, praises, tips, caught, news };
 }

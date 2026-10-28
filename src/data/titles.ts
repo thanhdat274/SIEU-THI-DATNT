@@ -13,6 +13,8 @@ export interface TitleContext {
   closeRegulars: number;
   ordersDone: number;
   staffCount: number;
+  /** Số lần tái sinh (prestige) đã thực hiện — dùng cho danh hiệu NG+ độc quyền. */
+  prestige: number;
 }
 
 export interface TitleDef {
@@ -21,6 +23,10 @@ export interface TitleDef {
   name: string;
   description: string;
   done: (c: TitleContext) => boolean;
+  /** Số lần tái sinh tối thiểu để mở — danh hiệu NG+ độc quyền, giữ qua mọi vòng. */
+  prestige?: number;
+  /** Icon thay cho 🔒 khi chưa mở (danh hiệu NG+). */
+  lockIcon?: string;
 }
 
 export const TITLES: TitleDef[] = [
@@ -37,7 +43,28 @@ export const TITLES: TitleDef[] = [
   { id: 'cap_30', icon: '🏪', name: 'Chủ cửa hàng tiện lợi', description: 'Đạt cấp 30.', done: (c) => c.level >= 30 },
   { id: 'mot_nam', icon: '📅', name: 'Tròn một năm', description: 'Buôn bán qua 365 ngày (một năm trong game).', done: (c) => c.day > 365 },
   { id: 'cap_60', icon: '🏬', name: 'Ông trùm siêu thị', description: 'Đạt cấp 60.', done: (c) => c.level >= 60 },
+  // ── Mốc xa — cho người chơi dài hơi danh hiệu để phấn đấu ──
+  { id: 'tam_ky', icon: '🗓️', name: 'Bám trụ ba tháng', description: 'Buôn bán qua 90 ngày.', done: (c) => c.day > 90 },
+  { id: 'ngan_khach', icon: '👥', name: 'Ngàn khách tấp nập', description: 'Phục vụ 1.000 lượt khách.', done: (c) => c.customers >= 1000 },
+  { id: 'dai_gia', icon: '🏦', name: 'Tài phiệt đầu hẻm', description: 'Tổng doanh thu đạt 1 tỷ.', done: (c) => c.revenue >= 1_000_000_000 },
+  { id: 'cap_80', icon: '🎖️', name: 'Huyền thoại ngõ phố', description: 'Đạt cấp 80.', done: (c) => c.level >= 80 },
+  { id: 'cap_90', icon: '👑', name: 'Đệ nhất phố hẻm', description: 'Đạt cấp 90 — mốc hiếm cuối run.', done: (c) => c.level >= 90 },
 ];
+
+/**
+ * Danh hiệu NG+ độc quyền — chỉ mở khi đã tái sinh đủ số lần (prestige.level ≥ N) và vẫn phải
+ * thỏa `done`. Mỗi cấp tái sinh nhét một danh hiệu để người cày xong vòng 1 có lý do chạy thêm vòng.
+ */
+export const PRESTIGE_TITLES: TitleDef[] = [
+  { id: 'nguoi_giu_lua', icon: '🔥', lockIcon: '🥚', name: 'Người giữ lửa hẻm', prestige: 1, description: 'Tái sinh lần đầu — bắt đầu lại từ cấp 1 nhưng giữ bộ sưu tập.', done: () => true },
+  { id: 'do_ten_con', icon: '🏮', lockIcon: '🎐', name: 'Đệ tử giữ hồn', prestige: 2, description: 'Tái sinh hai lần — ngọn lửa buôn bán tiếp nối.', done: () => true },
+  { id: 'phu_gia_dai_do', icon: '🏛️', lockIcon: '🏚️', name: 'Phú gia đại hộ', prestige: 3, description: 'Tái sinh ba lần — của cải đổi đời, tiếng tăm đổi dòng.', done: () => true },
+  { id: 'long_than_hall', icon: '🐉', lockIcon: '🐍', name: 'Chủ tiệm thế hệ mới', prestige: 4, description: 'Tái sinh bốn lần — vượt qua chính mình ở mọi thế hệ.', done: () => true },
+  { id: 'bat_tu_thuong_nhan', icon: '♾️', lockIcon: '🔁', name: 'Thương nhân bất tử', prestige: 5, description: 'Tái sinh năm lần — gần chạm tới tuyệt đỉnh tiệm hẻm.', done: () => true },
+  { id: 'truyen_thuyet_sang_ngo', icon: '🌌', lockIcon: '🌫️', name: 'Truyền thuyết đầu ngõ', prestige: 6, description: 'Tái sinh tối đa — huyền thoại sống mãi trong từng ngõ.', done: () => true },
+];
+
+export const ALL_TITLES: TitleDef[] = [...TITLES, ...PRESTIGE_TITLES];
 
 export type SkillId =
   | 'quick_hands' | 'good_boss' | 'charm' | 'negotiator' | 'local_legend' | 'fresh_keeper' | 'sharp_eye' | 'big_basket'

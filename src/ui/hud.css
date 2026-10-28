@@ -14,6 +14,11 @@
   font-family: 'Be Vietnam Pro', system-ui, sans-serif;
 }
 
+/* Border-box toàn HUD: phần tử `width: 100%` cộng padding riêng không được tràn ra khỏi viewport
+   (GĐ100: prompt chốt deal quầy 100% + padding 24 = tràn 24px khỏi cột thông báo). */
+#ui,
+#ui * { box-sizing: border-box; }
+
 #ui .hud-status,
 #ui .hud-meta,
 #ui .hud-bottom,
@@ -70,6 +75,24 @@
 #ui .hud-time b { font-size: 18px; }
 #ui .hud-late { color: #ff7675; }
 #ui .hud-money b { color: var(--hud-accent); font-size: 17px; }
+#ui .hud-money { position: relative; }
+/* Juice tiền: nhảy to + đổi màu khi kiếm/chi, kèm số +/− nổi lên rồi tan */
+#ui .hud-money b.money-up { animation: money-pop 0.5s ease; color: #5bd28f; }
+#ui .hud-money b.money-down { animation: money-pop 0.5s ease; color: #ff8f7a; }
+#ui .hud-delta {
+  position: absolute;
+  left: 4px;
+  top: -2px;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+  animation: money-float 1.2s ease-out forwards;
+  white-space: nowrap;
+}
+#ui .hud-delta.up { color: #5bd28f; }
+#ui .hud-delta.down { color: #ff8f7a; }
+@keyframes money-pop { 0% { transform: scale(1); } 35% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes money-float { 0% { opacity: 0; transform: translateY(4px); } 18% { opacity: 1; } 100% { opacity: 0; transform: translateY(-16px); } }
 
 #ui .hud-level-num {
   display: grid;
@@ -92,6 +115,15 @@
   overflow: hidden;
 }
 #ui .hud-xp span { display: block; height: 100%; background: var(--hud-accent); border-radius: 3px; }
+
+/* Chip La bàn: mục tiêu cốt truyện đang làm, bấm mở bảng Nhiệm vụ */
+#ui .hud-goal-icon { font-size: 20px; line-height: 1; }
+#ui .hud-goal > span:nth-child(2) { min-width: 0; }
+#ui .hud-goal b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 600px) {
+  #ui .hud-goal-icon { font-size: 16px; }
+  #ui .hud-goal b { max-width: 34vw; }
+}
 
 #ui .hud-place {
   flex-basis: 100%;
@@ -247,8 +279,24 @@
   color: #222;
   font-size: 15px;
   font-weight: 600;
+  font-style: normal;   /* chữ thẳng, không nghiêng như rule chung */
+  opacity: 1;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   text-align: center;
+}
+
+/* Chip gợi ý giờ vắng khách: nút nhỏ cạnh dòng gợi ý, trên dock; chữ dài thì lược bớt */
+#ui .hud-chip.hud-idle {
+  min-height: 34px;
+  padding: 4px 14px;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  max-width: min(520px, calc(100vw - 24px));
+}
+#ui .hud-idle > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 1000px) {
+  #ui .hud-chip.hud-idle { min-height: 30px; padding: 3px 10px; font-size: 12px; max-width: calc(100vw - 40px); }
 }
 
 #ui .hud-dock {
@@ -327,6 +375,16 @@
 }
 #ui .hud-badge.muted { background: rgba(255, 255, 255, 0.18); color: var(--hud-text); }
 
+/* Nút dock nhấp nháy dẫn đường theo bước hướng dẫn ngày đầu */
+#ui .hud-tool.hud-pulse { animation: hud-pulse 1.2s ease-in-out infinite; }
+@keyframes hud-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(241, 196, 15, 0.2); }
+  50% { box-shadow: 0 0 0 5px rgba(241, 196, 15, 0.55); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #ui .hud-tool.hud-pulse { animation: none; box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.45); }
+}
+
 #ui .hud-dock .hud-menu { top: auto; bottom: calc(100% + 10px); }
 #ui .hud-more {
   right: 0;
@@ -336,17 +394,31 @@
   width: max-content;
   gap: 4px;
   padding: 8px;
+  /* Menu mở LÊN TRÊN từ dock nên chiều cao bị chặn bởi đỉnh màn — giới hạn ở MỌI width
+     (GĐ93: trước đây chỉ ≤1000px mới có, desktop 1280×800 bị cắt mất hàng nút đầu, không cuộn). */
+  max-height: calc(100dvh - var(--hud-bottom-h, 96px) - 60px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Màn cảm ứng nhỏ (điện thoại ngang — iPhone 15 landscape ~852px, 15 Plus/Pro Max ~932px,
  * đều nằm dưới 1000px giống IS_MOBILE): menu Thêm nhiều nút dễ tràn hoặc vượt chiều cao
  * màn. Chuyển sang 2 cột rộng hơn nhưng thấp hơn, giới hạn chiều cao và cho cuộn trong,
- * canh theo mép an toàn. Desktop giữ nguyên 3 cột. */
-@media (pointer: coarse) and (max-width: 1000px) {
+ * canh theo mép an toàn. Desktop giữ nguyên 3 cột.
+ * Áp theo CHIỀU RỘNG (không yêu cầu pointer:coarse): màn hẹp 390px với chuột vẫn phải
+ * cuộn — trước đây chỉ áp coarse nên menu 29 nút cao 886px tràn cả hai đầu màn (x=-97,
+ * y=-118), 15/29 nút không chạm được.
+ * Căn giữa theo THANH DOCK (hud-pop static → containing block là .hud-bottom ở giữa màn):
+ * neo theo nút "Thêm" sát mép phải làm menu tràn mép trái (x=-128) trên màn hẹp. */
+@media (max-width: 1000px) {
+  #ui .hud-dock > .hud-pop { position: static; }
   #ui .hud-more {
     grid-template-columns: repeat(2, minmax(96px, 1fr));
     width: min(92vw, 480px);
-    max-height: calc(100dvh - 140px);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-height: calc(100dvh - var(--hud-bottom-h, 96px) - 60px);
     overflow-y: auto;
     overscroll-behavior: contain;
   }
@@ -354,6 +426,16 @@
 #ui .hud-more .hud-tool { display: flex; min-width: 0; padding: 10px 6px; font-size: 12px; text-align: center; }
 #ui .hud-more .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { display: inline; }
 #ui .hud-more .hud-help { grid-column: 1 / -1; width: max-content; min-width: 280px; }
+/* Tiêu đề nhóm menu Thêm: chiếm trọn hàng lưới, chữ nhỏ mờ tách cụm nút mà không tăng cỡ menu */
+#ui .hud-more-group {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  opacity: 0.55;
+  padding: 2px 2px 0;
+  white-space: nowrap;
+}
 #ui .hud-help kbd, #ui .hud-help span { white-space: nowrap; }
 #ui .hud-badge.hud-dot { top: 2px; right: 10px; width: 9px; height: 9px; padding: 0; background: #e74c3c; }
 #ui .hud-help { min-width: 260px; display: grid; gap: 6px; padding: 10px 12px; font-size: 13px; }
@@ -367,8 +449,11 @@
   font-weight: 600;
 }
 
-/* ---------- Điện thoại ---------- */
-@media (pointer: coarse) and (max-width: 1000px) {
+/* ---------- Màn hẹp: co mật độ HUD theo CHIỀU RỘNG ----------
+   Bài học GĐ92b: pointer:coarse không đáng tin (môi trường giả lập báo sai, desktop cảm ứng
+   rơi vào khoảng chết) — mọi màn hẹp (điện thoại thật lẫn cửa sổ thu nhỏ) cần cùng bố cục gọn.
+   Chỉ giữ pointer:coarse cho thứ ĐẶC THÙ cảm ứng thật (joystick, nút tốc độ xoay vòng). */
+@media (max-width: 700px) {
   #ui .hud-left { max-width: calc(100% - 96px); }
   #ui .hud-status { gap: 6px; }
   #ui .hud-chip { min-height: 38px; padding: 4px 10px; gap: 6px; }
@@ -377,19 +462,15 @@
   #ui .hud-account > span:not(.hud-avatar), #ui .hud-caret, #ui .hud-room small { display: none; }
   #ui .hud-account { padding: 4px; }
   #ui .hud-bottom { bottom: 8px; width: calc(100% - 16px); }
-  #ui .hud-dock { width: 100%; }
-  #ui .hud-dock { justify-content: space-between; }
+  #ui .hud-dock { width: 100%; justify-content: space-between; gap: 2px; padding: 4px; }
   #ui .hud-tool { min-width: 40px; padding: 6px 4px; }
   #ui .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; line-height: 1.1; text-align: center; white-space: normal; word-break: keep-all; }
   #ui .hud-badge.muted { display: none; }
   #ui .hud-divider { margin: 6px 1px; }
-  #ui .hud-speed button { min-width: 30px; }
-}
-
-/* Điện thoại không có bàn phím: bỏ nút xem phím, gom dock cho vừa màn hình */
-@media (pointer: coarse) and (max-width: 1000px) {
-  #ui .hud-speed button { min-width: 26px; font-size: 12px; }
-  #ui .hud-tool { min-width: 36px; flex: 1; }
+  #ui .hud-speed { flex: none; }
+  #ui .hud-speed button { min-width: 26px; font-size: 12px; padding: 0 2px; }
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 34px; min-width: 34px; padding: 6px 2px; }
+  #ui .hud-dock > .hud-pop { display: flex; flex: 1 0 34px; }
 }
 
 /* Nút mở/đóng cửa tiệm: xanh khi đang mở để nhìn là biết */
@@ -401,9 +482,9 @@
 #ui button.hud-hint:active { transform: scale(0.97); }
 #ui .hud-btn.primary { background: var(--hud-accent); }
 
-/* Nút trên màn cảm ứng: đủ to để chạm (tối thiểu ~40px) */
-@media (pointer: coarse) {
-  #ui .hud-btn { padding: 8px 14px; font-size: 14px; }
+/* Nút bấm HUD trên màn hẹp: đủ to để chạm (tối thiểu ~40px) */
+@media (max-width: 700px) {
+  #ui .hud-btn { padding: 8px 14px; font-size: 14px; min-height: 36px; }
   #ui button.hud-hint { padding: 12px 22px; }
   #ui .hud-alert.build { border-radius: var(--hud-radius); }
 }
@@ -413,12 +494,11 @@
 #ui .hud-bottom { bottom: max(14px, env(safe-area-inset-bottom)); }
 
 /*
- * Điện thoại cảm ứng xoay ngang (iPhone 15 landscape ~852px, 15 Plus/Pro Max ~932px — đều
- * dưới 1000px, khớp IS_MOBILE): chip hẻm online ở góc phải thu gọn cho khỏi tràn/đè lên
- * hai ngón tay khi đang kéo camera, giữ lại mã hẻm và nút sao chép/rời. Các ô bên phải
- * cũng nhỏ lại cho vừa một hàng. Desktop giữ nguyên.
+ * Màn hẹp (điện thoại ngang iPhone ~852–932px, điện thoại đứng, cửa sổ thu nhỏ — cùng nhóm
+ * IS_MOBILE ≤1000px): chip hẻm online ở góc phải thu gọn cho khỏi tràn/đè chip khác, giữ lại
+ * mã hẻm và nút sao chép/rời. Các ô bên phải cũng nhỏ lại cho vừa một hàng. Desktop rộng giữ nguyên.
  */
-@media (pointer: coarse) and (max-width: 1000px) {
+@media (max-width: 1000px) {
   #ui .hud-meta { gap: 4px; max-width: calc(100% - 200px); }
   #ui .hud-meta.coop { width: auto; max-width: 190px; flex-wrap: wrap; justify-content: flex-end; }
   #ui .hud-meta.coop .hud-room { flex: 1 1 100%; max-width: none; min-height: 34px; padding: 2px 8px; }
@@ -440,22 +520,19 @@
   #ui .hud-tool-icon { font-size: 17px; }
 }
 
-/* Màn vừa (máy tính bảng, cửa sổ thu nhỏ): chữ dưới biểu tượng nhỏ lại cho vừa một hàng */
-@media (max-width: 1000px) {
+/* Màn vừa (701–1000px: máy tính bảng dọc, điện thoại ngang cỡ lớn): nút dock co lại +
+   nhãn xuống dòng để giữ một hàng như màn hẹp (trước đây chỉ áp pointer:coarse nên iPad dọc
+   và công cụ giả lập không nhận, dock tràn thành 2 hàng). */
+@media (min-width: 701px) and (max-width: 1000px) {
+  #ui .hud-dock { justify-content: space-between; }
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 40px; min-width: 40px; padding: 6px 2px; }
   #ui .hud-dock > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge),
-  #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 10px; white-space: nowrap; }
-  @media (max-width: 900px) { #ui .hud-dock > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge), #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; white-space: normal; } }
-  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { min-width: 46px; }
+  #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; white-space: normal; text-align: center; }
+  #ui .hud-speed button { min-width: 28px; }
 }
 
-/* Màn rất hẹp: các nút chia đều một hàng (menu Thêm bật lên phía trên nên dock không được cắt tràn) */
-@media (pointer: coarse) and (max-width: 1000px) {
-  #ui .hud-dock { justify-content: space-between; gap: 2px; padding: 4px; }
-  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 34px; min-width: 34px; padding: 6px 2px; }
-  #ui .hud-dock > .hud-pop { display: flex; flex: 1 0 34px; }
-  #ui .hud-speed { flex: none; }
-  #ui .hud-speed button { min-width: 24px; padding: 0 2px; }
-}
+/* (Màn rất hẹp ≤720px: đã gộp vào khối "Màn hẹp" ở trên — nút chia đều, menu Thêm bật lên
+   phía trên nên dock không bị cắt tràn.) */
 
 #ui .hud-speed-cycle { display: none; }
 /* Màn cảm ứng (khớp IS_MOBILE, <=1000px): thay cả nhóm nút tốc độ bằng một nút bấm xoay
@@ -528,13 +605,13 @@
 }
 @media (prefers-reduced-motion: reduce) { #ui .hud-alert.phone.ringing { animation: none; } }
 
-/* Hội thoại chương cốt truyện */
+/* Hội thoại chương cốt truyện — luôn nằm trên dock, không bao giờ che nút tương tác */
 #ui .hud-dialogue {
   pointer-events: auto;
   position: absolute;
   left: 50%;
-  bottom: calc(var(--hud-bottom-h, 82px) + max(14px, env(safe-area-inset-bottom)) + 10px);
-  max-height: calc(100dvh - var(--hud-bottom-h, 82px) - 130px);
+  bottom: 340px;  /* Đủ xa để không che dock + nút tương tác */
+  max-height: 40vh;
   overflow-y: auto;
   transform: translateX(-50%);
   width: min(560px, calc(100vw - 32px));
@@ -546,6 +623,22 @@
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
   z-index: 20;
 }
+/* Điện thoại: dialog nhỏ hơn + đẩy lên cao hơn */
+@media (max-width: 1000px) {
+  #ui .hud-dialogue {
+    bottom: 380px;  /* Khoảng an toàn với dock trên mobile */
+    max-height: 35vh;
+    width: min(340px, calc(100vw - 32px));
+  }
+}
+/* Màn THẤP (điện thoại ngang vh ≤ 520): bottom 380px vượt chiều cao màn → cắt đỉnh.
+   Hạ sát trên dock một hàng, vẫn không đè nút tương tác ở giữa dưới. */
+@media (max-height: 520px) {
+  #ui .hud-dialogue {
+    bottom: 110px;
+    max-height: 30vh;
+  }
+}
 #ui .hud-dialogue-title { font-size: 12px; color: var(--hud-accent); font-weight: 700; margin-bottom: 8px; }
 #ui .hud-dialogue-line { display: flex; gap: 12px; align-items: flex-start; }
 #ui .hud-dialogue-avatar { font-size: 34px; line-height: 1; }
@@ -555,6 +648,7 @@
 #ui .hud-tutorial { flex-direction: column; align-items: flex-start; }
 #ui .hud-tutorial ul { list-style: none; margin: 0; padding: 0; font-weight: 500; font-size: 13px; }
 #ui .hud-tutorial li.done { opacity: 0.6; text-decoration: line-through; }
+#ui .hud-tutorial p { margin: 0; font-weight: 500; font-size: 13px; }
 
 /*
  * Màn dọc hẹp (điện thoại đứng, ~320-600px): cột phải chỉ còn nút nhỏ + chip hẻm, nên ô trạng thái co
@@ -575,6 +669,14 @@
 @media (max-width: 360px) {
   #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 1 26px; min-width: 26px; }
   #ui .hud-speed button { min-width: 22px; }
+}
+
+/* Dock nhiều nút: khi màn hẹp, cho các nút xuống dòng thay vì bị cắt ở mép màn.
+   Bug thật (multi-size gate): dock ~575px tràn khỏi viewport 360–414px, `overflow-x: visible`
+   và không scroll → các nút cuối (Nhập hàng/Nhiệm vụ/Thêm) nằm ngoài màn, không chạm được.
+   Wrapping thành 2 hàng giữ mọi nút dùng được; desktop đủ rộng (>720px) vẫn một hàng y nguyên. */
+@media (max-width: 720px) {
+  #ui .hud-dock { flex-wrap: wrap; justify-content: center; row-gap: 4px; }
 }
 
 /* Số người online hiện cạnh biểu tượng hẻm (danh sách tên nằm trong tooltip khi chip bị thu gọn) */

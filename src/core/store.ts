@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { warehouseTier } from '../data/warehouse';
 import { emptyQuestLog, emptyTotals, type QuestContext } from '../data/quests';
+import { recentAvgProfit } from '../data/gifts';
 import { rentOf, type ShopStyle } from '../data/shopTiers';
 import type { Review } from '../data/reviews';
 import { forecastFrom, newWeatherSeed, type Weather } from '../data/weather';
@@ -9,6 +10,10 @@ import type { RegularProgress, Reservation } from '../data/regulars';
 import type { ActiveOrder } from '../data/orders';
 import { dayEffects, festivalOn, festivalStock } from '../data/calendar';
 import type { HappyHour } from '../data/rhythm';
+import type { VenueDay } from '../data/venueTrend';
+import type { RiskDay } from '../data/risk';
+import { emptyRiskToday } from '../data/risk';
+import { defaultCounterPolicy } from '../data/counterDeals';
 import type { Debt } from '../data/credit';
 import type { VendorOffer } from '../data/wholesale';
 import { newBiz } from '../data/biz';
@@ -41,6 +46,9 @@ import { createSocialSlice } from './slices/social';
 import { createOnlineSlice } from './slices/online';
 import { createGardenSlice } from './slices/garden';
 import { createLicensesSlice } from './slices/licenses';
+import { createQuanNuocSlice } from './slices/quanNuoc';
+import { createPrestigeSlice } from './slices/prestige';
+import { createDiscoverySlice } from './slices/discovery';
 
 export * from './gameTypes';
 export { migrateTiers } from './stock';
@@ -52,6 +60,7 @@ export const questContext = (s: GameState): QuestContext => ({
   festivalGoods: festivalOn(s.day) ? festivalStock(festivalOn(s.day)!, s.level) : [],
   reservationsToday: Object.values(s.reservations).filter((r) => r.day === s.day).length,
   rent: rentOf(s.shopTier),
+  avgDailyProfit: recentAvgProfit(s.history),
 });
 
 /** Trạng thái lúc bắt đầu game mới. */
@@ -69,6 +78,8 @@ export const newGameData = () => ({
       tiers: [
         { productId: 'mi', count: 4 }, { productId: 'mi', count: 2 }, { productId: 'nuoc', count: 4 },
         { productId: 'nuoc', count: 2 }, { productId: 'banh', count: 4 }, { productId: null, count: 0 },
+        // Kệ hiện nay 3 tầng × 4 ô = 12 ô: kit phải đủ số ô như kệ mua mới, kẻo panel Sơ đồ kệ đếm thiếu
+        ...emptyTiers('shelf').slice(6),
       ],
     },
     { uid: 2, type: 'shelf', x: 0.4, z: -2.0, rot: 0, tiers: emptyTiers('shelf') },
@@ -101,9 +112,14 @@ export const newGameData = () => ({
   demandToday: {} as Record<string, number>,
   sales: {} as Record<string, number>,
   salesToday: {} as Record<string, number>,
+  soldEver: {} as Record<string, number>,
+  comboHitCount: {} as Record<string, number>,
   regulars: {} as Record<string, RegularProgress>,
   reservations: {} as Record<string, Reservation>,
   history: [] as DayRecord[],
+  venueTrend: [] as VenueDay[],
+  riskToday: emptyRiskToday(),
+  riskTrend: [] as RiskDay[],
   activeCombos: [] as string[],
   order: null as ActiveOrder | null,
   ordersDone: 0,
@@ -116,16 +132,21 @@ export const newGameData = () => ({
   debts: {} as Record<string, Debt>,
   market: {} as Record<string, number>,
   allowCredit: true,
+  counterPolicy: defaultCounterPolicy(),
   biz: newBiz(),
   vendorDay: 0,
+  marketClearedDay: 0,
+  marketLast: { day: 0, units: 0, revenue: 0 } as { day: number; units: number; revenue: number },
   contracts: {} as Record<string, ContractState>,
   event: null as RandomEvent | null,
   costume: 'default',
   shopName: 'Tạp Hóa Đầu Ngõ',
   giftStreak: 0,
   giftLastDay: 0,
+  giftGraceDay: 0,
   wheelLastDay: 0,
   wheelBoost: 1,
+  lastSeenAt: 0,
   skills: [] as SkillId[],
   titles: [] as string[],
   fakeCash: 0,
@@ -189,6 +210,9 @@ export const useGame = create<GameState>((set, get) => {
     ...createOnlineSlice(set, get),
     ...createGardenSlice(set, get),
     ...createLicensesSlice(set, get),
+    ...createQuanNuocSlice(set, get),
+    ...createPrestigeSlice(set, get),
+    ...createDiscoverySlice(set, get),
   };
 });
 

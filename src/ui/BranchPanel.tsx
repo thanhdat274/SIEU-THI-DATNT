@@ -61,6 +61,7 @@ export function BranchPanel() {
           <div>Hôm nay: <b>{branch.customersToday}</b> khách · thu <b>{formatMoney(branch.revenueToday)}</b>
             {branch.missedToday > 0 && <> · {branch.missedToday} khách bỏ về</>}{branch.lostToday > 0 && <> · mất trộm {branch.lostToday} món</>}</div>
           <div>Chi phí mỗi ngày: {formatMoney(wages)} lương (mặt bằng đã mua đứt, không thuê)</div>
+          <div>💰 Lãi thô hôm nay: <b style={{ color: branch.revenueToday - wages >= 0 ? '#27ae60' : '#e67e22' }}>{formatMoney(branch.revenueToday - wages)}</b> <span style={st.sub}>(thu − lương; chưa trừ điện giảm vào cuối ngày)</span></div>
           <div>Hàng trên kệ: <b>{shelfTotal(branch.shelf)}</b>/{CONVENIENCE.shelfCap} món (lấy từ kho chung)</div>
           {top.length > 0 && <div style={st.sub}>{top.map(([id, q]) => `${isHotFood(id) ? '🔥' : ''}${productById(id).name} ×${q}`).join(' · ')}</div>}
           <div style={st.sub}>🍽️ Thực đơn xoay theo ca: sáng (5–11h) ưu tiên điểm tâm — bánh mì, xôi, cà phê; trưa (11–15h) ưu tiên cơm phần, đồ ăn nhanh; tối–đêm thiên về đồ nóng & món đêm (giá đêm cao hơn).</div>

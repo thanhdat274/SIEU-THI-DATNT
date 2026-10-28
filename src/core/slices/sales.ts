@@ -3,6 +3,7 @@ import { happyHourActive } from '../../data/rhythm';
 import { makeVendorOffer, vendorById, wholesaleTotal } from '../../data/wholesale';
 import { missKey } from '../../data/advice';
 import { counterActive, PRICE_WAR_CUT } from '../../data/biz';
+import { defaultCounterPolicy, type CounterPolicy } from '../../data/counterDeals';
 import { RISK_RULES } from '../../data/risks';
 import { hasUpgrade } from '../../data/upgrades';
 import { isNight, NIGHT_PRICE_MUL } from '../../data/night';
@@ -12,10 +13,13 @@ import { COOKED_PRODUCT_IDS } from '../../data/recipes';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
+import { marketClearValue } from '../../data/chophien';
+import { itemHealthList, shelfCount } from '../../data/analytics';
+import { revenueFactor } from '../prestige';
 
 /** Bán hàng ở quầy: giá, giờ vàng, tính tiền, bán sỉ, combo, trộm và tiền giả. */
 
-export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 'priceOf' | 'setPrice' | 'setHappyHour' | 'checkout' | 'noteMiss' | 'setAllowCredit' | 'offerWholesale' | 'acceptWholesale' | 'declineWholesale' | 'toggleCombo' | 'recordTheft' | 'recordCounterfeit'> => ({
+export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 'priceOf' | 'setPrice' | 'setHappyHour' | 'checkout' | 'noteMiss' | 'setAllowCredit' | 'setCounterPolicy' | 'offerWholesale' | 'acceptWholesale' | 'declineWholesale' | 'sellMarketSurplus' | 'toggleCombo' | 'noteComboHits' | 'recordTheft' | 'recordCounterfeit' | 'tallyDemographics'> => ({
   priceOf: (productId, minutes = get().minutes) => {
     const s = get();
     let p = s.prices[productId] ?? productById(productId).sell;
@@ -25,11 +29,13 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     if (happyHourActive(s.happyHour, minutes)) p = Math.round(p * (1 - s.happyHour!.off / 100));
     // Ca đêm: khách khuya lười trả giá, được phép bán đắt hơn buổi ngày
     if (hasUpgrade(s.biz, 'night') && isNight(minutes)) p = Math.round(p * NIGHT_PRICE_MUL);
+    // Tái sinh (NG+): tiệm tái sinh bán đắt hơn theo bonus (revenueFactor 0 → giữ nguyên như cũ)
+    p = Math.round(p * revenueFactor(s.biz.prestige.bonus));
     return p;
   },
   setPrice: (productId, price) => set({ prices: { ...get().prices, [productId]: price } }),
   setHappyHour: (hh) => set({ happyHour: hh }),
-  checkout: (items, discount = 0, combos = 0, payment = 'cash') => {
+  checkout: (items, discount = 0, combos = 0, payment = 'cash', profId?: string) => {
     const s = get();
     const total = items.reduce((sum, it) => sum + it.price, 0) - discount;
     // Ví điện tử / máy POS lấy ít % phí, tiền mặt và chuyển khoản không mất gì
@@ -74,6 +80,10 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     // Mỗi món 1 XP, hàng đắt cho thêm (cứ 20.000đ thêm 1 XP)
     s.addXp(items.reduce((sum, it) => sum + 1 + Math.floor(it.price / 20000), 0));
     get().communitySale(items.map((it) => it.id));
+    // Nhân khẩu học (GĐ62): ghi doanh thu theo nghề khách vãng lai khi quầy truyền profId
+    if (profId) get().tallyDemographics(profId, { revenue: total + premium });
+    // Sổ tay Tiệm (GĐ36): ghi món vừa bán để đếm "đã khám phá X/Y món"
+    get().recordDiscovery(items.map((it) => it.id));
   },
   noteMiss: (reason, productId) => {
     const s = get();
@@ -92,6 +102,10 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     }
   },
   setAllowCredit: (on) => set({ allowCredit: on }),
+  setCounterPolicy: (patch) => {
+    const cur = get().counterPolicy ?? defaultCounterPolicy();
+    set({ counterPolicy: { ...cur, ...patch } });
+  },
   offerWholesale: () => {
     const s = get();
     if (s.vendorOffer) return s.vendorOffer;
@@ -131,6 +145,36 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     return true;
   },
   declineWholesale: () => set({ vendorOffer: null }),
+  sellMarketSurplus: () => {
+    const s = get();
+    if (s.marketClearedDay === s.day) return { ok: false, reason: 'already' };
+    const shelved = shelfCount(s.furniture);
+    const val = marketClearValue({
+      day: s.day, storage: s.storage, shelved,
+      health: itemHealthList(s.analytics, s.level, s.storage, shelved, s.demand),
+    });
+    if (!val || val.rows.length === 0) return { ok: false, reason: 'no-surplus' };
+    const k = copyStock(s);
+    for (const r of val.rows) takeStock(k, r.id, r.qty);
+    const byItem = { ...s.stats.byItem };
+    let units = 0;
+    for (const r of val.rows) {
+      const p = productById(r.id);
+      const line = byItem[r.id] ?? { qty: 0, revenue: 0, cost: 0 };
+      byItem[r.id] = { qty: line.qty + r.qty, revenue: line.revenue + r.est, cost: line.cost + p.buy * r.qty };
+      units += r.qty;
+    }
+    const pay = val.total;
+    set({
+      ...k, marketClearedDay: s.day, marketLast: { day: s.day, units, revenue: pay },
+      money: s.money + pay,
+      stats: { ...s.stats, revenue: s.stats.revenue + pay, itemsSold: s.stats.itemsSold + units, byItem },
+      totals: { ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + units },
+    });
+    get().addXp(10 + Math.floor(units / 4));
+    s.notify(`🧺 Bán chợ phiên: ${units} món dư, +${formatMoney(pay)}`);
+    return { ok: true, units, pay };
+  },
   toggleCombo: (id) => {
     const s = get();
     if (s.activeCombos.includes(id)) return set({ activeCombos: s.activeCombos.filter((c) => c !== id) });
@@ -139,16 +183,63 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     set({ activeCombos: [...s.activeCombos, id] });
     s.notify(`🎁 Bắt đầu chạy combo ${comboById(id)?.name}`);
   },
+  noteComboHits: (byCombo) => {
+    if (!byCombo || !Object.keys(byCombo).length) return;
+    const s = get();
+    const merged = { ...s.comboHitCount };
+    let changed = false;
+    for (const [id, n] of Object.entries(byCombo)) {
+      if (!n) continue;
+      merged[id] = (merged[id] ?? 0) + n;
+      changed = true;
+    }
+    if (changed) set({ comboHitCount: merged });
+  },
   recordTheft: (value, caught) => {
     const s = get();
-    if (!caught) return s.notify(`🦹 Có kẻ lấy ${formatMoney(value)} hàng rồi chuồn mất!`);
+    const r = s.riskToday;
+    const riskToday = { leak: r.leak, blocked: r.blocked, events: r.events + 1 };
+    if (!caught) {
+      riskToday.leak += value;
+      set({ riskToday });
+      return s.notify(`🦹 Có kẻ lấy ${formatMoney(value)} hàng rồi chuồn mất!`);
+    }
     const fine = value * RISK_RULES.theft.fineMul;
-    set({ money: s.money + fine, stats: { ...s.stats, revenue: s.stats.revenue + fine } });
+    // Phạt đã cộng vào tiền (recovered) — ghi vào sổ rủi ro là "chặn/thu lại", kinh tế không đổi.
+    riskToday.blocked += fine;
+    set({ money: s.money + fine, stats: { ...s.stats, revenue: s.stats.revenue + fine }, riskToday });
     s.notify(`🚨 Bắt quả tang kẻ trộm! Trả hàng và nộp phạt ${formatMoney(fine)}`);
   },
   recordCounterfeit: (note, detected) => {
     const s = get();
-    if (detected) return s.notify(`🔍 Phát hiện tờ ${formatMoney(note)} giả, khách đành đổi tiền thật`);
-    set({ money: s.money - note, fakeCash: s.fakeCash + note });
+    const r = s.riskToday;
+    const riskToday = { leak: r.leak, blocked: r.blocked, events: r.events + 1 };
+    if (detected) {
+      // Chặn được tiền giả: khách đổi tiền thật, không mất — chỉ ghi vào sổ.
+      riskToday.blocked += note;
+      set({ riskToday });
+      return s.notify(`🔍 Phát hiện tờ ${formatMoney(note)} giả, khách đành đổi tiền thật`);
+    }
+    // Không phát hiện: két vẫn mất like trước (fakeCash++ giữ nguyên) — ghi là "lọt".
+    riskToday.leak += note;
+    set({ money: s.money - note, fakeCash: s.fakeCash + note, riskToday });
+  },
+  tallyDemographics: (id, patch) => {
+    const s = get();
+    if (!Object.keys(patch).length) return;
+    const cur = s.biz.demographics?.[id] ?? { visits: 0, revenue: 0, walkouts: 0 };
+    set({
+      biz: {
+        ...s.biz,
+        demographics: {
+          ...(s.biz.demographics ?? {}),
+          [id]: {
+            visits: cur.visits + (patch.visits ?? 0),
+            revenue: cur.revenue + (patch.revenue ?? 0),
+            walkouts: cur.walkouts + (patch.walkouts ?? 0),
+          },
+        },
+      },
+    });
   },
 });

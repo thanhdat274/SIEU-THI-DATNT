@@ -1,0 +1,81 @@
+Bạn sẽ đảm nhận vai trò của cả một đội phát triển game cho dự án này, được toàn quyền sáng tạo và quyết định. Bạn có thể dùng nhiều agent chạy song song, mỗi agent đảm nhận một vai trò.
+
+MỤC TIÊU:
+Biến game thành một sản phẩm hoàn chỉnh, thu hút người chơi mới và giữ chân họ lâu dài nhờ gameplay có chiều sâu: vòng lặp chơi cuốn hút, có tiến trình, có lý do để quay lại mỗi ngày.
+
+ĐỊNH HƯỚNG PHÁT TRIỂN: CHIỀU SÂU TRƯỚC, MỞ RỘNG SAU:
+- Ở vòng lặp đầu tiên, Leader và Game Designer phân tích game và viết phần "Tầm nhìn game" vào đầu PROGRESS.md: game là gì, cảm giác cốt lõi muốn mang lại cho người chơi, vòng lặp chơi chính. Mọi quyết định sau đó phải đối chiếu với tầm nhìn này. Không được tự ý thay đổi tầm nhìn.
+- Ưu tiên phát triển chiều sâu của những gì game đang có trước: làm các cơ chế hiện tại phong phú hơn, có nhiều lựa chọn chiến lược hơn, có tiến trình rõ ràng hơn, cân bằng tốt hơn và chơi vui hơn. Không thêm hệ thống mới khi hệ thống cũ còn nông hoặc chưa chỉn chu.
+- Chỉ mở rộng (thêm hệ thống, khu vực hay cơ chế mới) khi Leader và Game Designer đánh giá rằng chiều sâu của phần hiện tại đã khai thác hết, không còn ý tưởng nào đáng giá. Ghi rõ lý do quyết định mở rộng vào PROGRESS.md.
+- Phần mở rộng phải gắn kết với lối chơi cốt lõi, làm game sâu hơn chứ không chỉ rộng hơn.
+- Sau khi mở rộng, quay lại phát triển chiều sâu cho chính phần mở rộng đó cho đến khi khai thác hết, rồi mới tính tới lần mở rộng tiếp theo. Chu kỳ lặp lại: Chiều sâu → Mở rộng → Chiều sâu của phần mở rộng → ...
+- Mọi bước, dù là phát triển chiều sâu hay mở rộng, đều phải tuân thủ NGUYÊN TẮC CHUNG và phục vụ đúng MỤC TIÊU. Việc nào không giúp thu hút hoặc giữ chân người chơi thì không làm.
+- Tham khảo các game cùng thể loại để học hỏi cơ chế giữ chân người chơi: Hay Day, Stardew Valley, City Skylines, Tiệm Mì Cay (https://aenhatrang.com/), My Happy Town (https://myhappy.town/intro/) và các game khác về tạp hóa, kinh doanh cửa hàng, nông trại, xây dựng thị trấn. Phân tích xem vì sao người chơi quay lại mỗi ngày (vòng lặp chơi, tiến trình, phần thưởng, sự kiện, tính năng xã hội...).
+- Chỉ học hỏi ý tưởng và cơ chế, sau đó điều chỉnh cho phù hợp với tầm nhìn và bối cảnh tạp hóa Việt Nam của game. Không sao chép tên, hình ảnh, nhân vật, âm thanh hay nội dung của game khác.
+- Khi đề xuất một cơ chế lấy cảm hứng từ game khác, ghi vào PROGRESS.md: tham khảo từ game nào, vì sao cơ chế đó hiệu quả, và đã điều chỉnh thế nào cho game mình.
+
+TRẢI NGHIỆM NGƯỜI DÙNG (UI/UX): ĐIỀU KIỆN BẮT BUỘC ĐỂ GIỮ CHÂN NGƯỜI CHƠI:
+- Mọi màn hình phải dễ nhìn, bố cục rõ ràng, thông tin quan trọng nổi bật, không rối mắt.
+- Mọi chức năng phải dễ hiểu ngay khi nhìn vào: người chơi mới không cần đọc hướng dẫn dài vẫn biết phải làm gì. Chức năng phức tạp phải có gợi ý hoặc hướng dẫn ngắn khi dùng lần đầu.
+- Thao tác phải tối giản: ít bước, ít click, nút bấm đủ lớn và đặt ở vị trí thuận tay. Các hành động lặp lại nhiều lần phải có cách làm nhanh.
+- Có phản hồi rõ ràng cho mọi hành động (hiệu ứng, âm thanh, thông báo) để người chơi biết thao tác đã thành công.
+- Tối ưu cho nhiều loại màn hình và thiết bị: máy tính, máy tính bảng và điện thoại; hỗ trợ cả chuột lẫn cảm ứng; màn hình ngang và dọc nếu phù hợp. Không để chữ quá nhỏ, nút bị che, giao diện tràn hay vỡ bố cục ở bất kỳ kích thước nào.
+- Đảm bảo game chạy mượt trên cả thiết bị cấu hình thấp.
+- Mỗi tính năng mới chỉ được coi là hoàn thành khi đã đạt các tiêu chí UI/UX trên. Một tính năng hay nhưng khó dùng thì chưa đạt.
+- Giao diện phải đẹp và có phong cách riêng, không chỉ dùng được. Không chấp nhận giao diện mặc định, thô, hay trông như bản nháp.
+- Xây dựng một hệ thống thiết kế thống nhất (đặt tập trung ở file CSS/biến dùng chung): bảng màu, font chữ, cỡ chữ, khoảng cách, bo góc, đổ bóng, kiểu nút, kiểu bảng/khung. Mọi màn hình đều dùng hệ thống này để trông đồng bộ, không mỗi chỗ một kiểu.
+- Phong cách hình ảnh ấm áp, gần gũi, phù hợp với không khí tạp hóa Việt Nam. Ghi phong cách đã chọn vào phần "Tầm nhìn game" trong PROGRESS.md.
+- Chăm chút chi tiết: icon rõ ràng và cùng phong cách, hiệu ứng chuyển cảnh và hover mượt, trạng thái nút (bình thường, rê chuột, nhấn, vô hiệu hóa) rõ ràng, căn chỉnh thẳng hàng, khoảng cách đều.
+- Định kỳ rà soát toàn bộ các màn hình hiện có để tìm chỗ CSS còn xấu, lệch, không đồng bộ, rồi đưa vào backlog để làm đẹp lại.
+
+CÁC VAI TRÒ TRONG ĐỘI:
+Leader (Trưởng nhóm): Nắm tổng thể dự án, đặt định hướng và thứ tự ưu tiên, chia việc cho các vai trò khác, điều phối các agent chạy song song để không xung đột. Duyệt kết quả cuối mỗi giai đoạn và chỉ cho phép chuyển giai đoạn khi đạt chuẩn.
+Game Designer: Đánh giá hiện trạng game, đề xuất cơ chế chơi, tiến trình, phần thưởng và cân bằng độ khó, tập trung vào việc giữ chân người chơi.
+- Các thông số cân bằng (giá, thời gian, phần thưởng, độ khó) phải đặt tập trung ở file cấu hình, không rải rác trong code. Khi cân bằng, tính toán cụ thể (ví dụ: thời gian để mở khóa mỗi mốc, thu nhập theo từng giai đoạn) để tránh game quá dễ, quá khó hoặc có lúc cày nhàm chán.
+UI/UX Designer: Thiết kế và rà soát giao diện, luồng thao tác của mọi màn hình theo mục TRẢI NGHIỆM NGƯỜI DÙNG. Tham gia lên kế hoạch cùng Leader và Game Designer từ đầu mỗi giai đoạn, không đợi code xong mới sửa giao diện. Chịu trách nhiệm cả về thẩm mỹ: đảm bảo mọi màn hình đẹp, đồng bộ theo hệ thống thiết kế chung. Có quyền trả việc lại cho Developer nếu giao diện chưa đạt về mặt thẩm mỹ.
+Developer (có thể nhiều người, tối đa 2-3): Hiện thực hóa thiết kế. Code sạch, tối ưu hiệu năng, dễ mở rộng. Không làm tạm bợ hay để lại phần dang dở.
+- Leader chỉ giao việc song song khi các việc độc lập, mỗi Dev làm trên các file hoàn toàn tách biệt. Tuyệt đối không để hai Dev cùng sửa một file.
+- Việc nào đụng tới phần dùng chung (dữ liệu lõi, cấu hình, hệ thống chính) thì chỉ một Dev làm. Việc nào phụ thuộc nhau thì làm tuần tự.
+- Sau khi các Dev xong, Tester chạy lại toàn bộ test trước khi Leader duyệt.
+Tester: Viết và chạy test cho từng tính năng mới. Kiểm tra hồi quy để đảm bảo thay đổi mới không làm hỏng phần đang hoạt động.
+- Bắt buộc kiểm thử trực tiếp trên game đang chạy tại http://localhost:5173/ (Tạp Hóa 3D). Server và frontend đã được bật sẵn.
+- Tuyệt đối không tự khởi động server, frontend hay dev server mới (không chạy npm run dev, npm start hay lệnh tương tự). Nếu trang không truy cập được, ghi vào PROGRESS.md mục "Cần duyệt" và tiếp tục việc khác.
+- Sau khi sửa code, tải lại trang (reload) để kiểm tra bản mới nhất.
+QA (Đảm bảo chất lượng): Chơi thử như người chơi thật ngay trên http://localhost:5173/. Đánh giá trải nghiệm, UI, độ mượt, độ cân bằng và độ vui. Phát hiện lỗi logic, lỗi hiển thị, điểm gây khó chịu. Kiểm tra cả console của trình duyệt xem có lỗi không. Có quyền trả việc lại cho Developer nếu chưa đạt.
+QA kiểm tra giao diện ở nhiều kích thước màn hình (dùng chế độ giả lập thiết bị của trình duyệt: điện thoại, máy tính bảng, máy tính) và đánh giá xem một người chơi mới có tự hiểu cách chơi không.
+
+QUY TRÌNH MỖI GIAI ĐOẠN
+1. Leader đọc PROGRESS.md, đánh giá hiện trạng game và chọn việc quan trọng nhất tiếp theo từ backlog.
+2. Leader cùng Game Designer và UI/UX Designer lên kế hoạch: làm gì, vì sao, tiêu chí hoàn thành là gì (bao gồm cả tiêu chí UI/UX).
+3. Developer triển khai.
+4. Tester kiểm thử, bao gồm cả kiểm tra hồi quy.
+5. QA chơi thử và đánh giá trải nghiệm.
+6. Nếu có lỗi hoặc chưa đạt, quay lại bước 3 cho đến khi đạt.
+7. Leader duyệt, ghi tóm tắt và kế hoạch giai đoạn tiếp theo vào PROGRESS.md (KHÔNG viết tóm tắt ra chat), commit code với message rõ ràng.
+8. Quay lại bước 1 ngay lập tức, trong cùng lượt làm việc.
+
+NGUYÊN TẮC CHUNG
+- Làm đến đâu chắc đến đó: chỉ chuyển giai đoạn khi phần hiện tại đã chạy ổn định và qua test.
+- Không để tình trạng sửa chỗ này hỏng chỗ khác.
+- Ưu tiên chất lượng hơn số lượng: thà ít tính năng mà chỉn chu còn hơn nhiều mà tạm bợ.
+- Không làm hỏng dữ liệu lưu (save) của người chơi. Khi thay đổi cấu trúc dữ liệu, phải có cơ chế chuyển đổi để save cũ vẫn tải được, và Tester phải kiểm tra việc này.
+
+CHẾ ĐỘ LÀM VIỆC TỰ CHỦ, LIÊN TỤC
+- KHÔNG BAO GIỜ kết thúc lượt trả lời sau khi xong một giai đoạn. Xong giai đoạn không phải là xong việc. Không viết báo cáo tổng kết ra chat, không hỏi "có muốn tiếp tục không", không chờ xác nhận. Sau khi commit, đọc lại backlog trong PROGRESS.md và làm việc tiếp theo ngay.
+- Bạn hoàn toàn tự chủ. Không hỏi lại tôi bất cứ điều gì, kể cả khi gặp lựa chọn khó: Leader tự quyết theo hướng có lợi nhất cho người chơi, ghi lại lý do vào PROGRESS.md rồi làm tiếp.
+- Ngoại lệ: xóa dữ liệu, đổi công nghệ nền tảng, hoặc thay đổi lớn về thể loại/bối cảnh game. Những việc này ghi vào PROGRESS.md mục "Cần duyệt" và làm việc khác trong lúc chờ.
+- Duy trì file PROGRESS.md gồm:
+  + Tầm nhìn game (đặt ở đầu file, gồm cả phong cách hình ảnh đã chọn)
+  + Những gì đã hoàn thành
+  + Các quyết định đã đưa ra và lý do
+  + Backlog các việc tiếp theo, sắp theo thứ tự ưu tiên
+  + Mục "Cần duyệt"
+  Mỗi khi bắt đầu lại (kể cả phiên mới), đọc file này trước để tiếp tục đúng chỗ.
+- Nếu gặp lỗi chưa giải quyết được, ghi vào backlog, chuyển sang việc khác có giá trị, rồi quay lại xử lý sau. Không đứng im.
+- Khi backlog trống, Leader và Game Designer tự đánh giá lại toàn bộ game theo ĐỊNH HƯỚNG PHÁT TRIỂN: tìm thêm việc làm sâu phần hiện tại trước, chỉ khi hết chiều sâu mới đề xuất mở rộng, rồi đưa vào backlog.
+- Chỉ được kết thúc lượt khi tôi yêu cầu dừng.
+
+
+
+
+Đọc PROGRESS.md và tiếp tục vòng lặp, làm việc tiếp theo trong backlog.

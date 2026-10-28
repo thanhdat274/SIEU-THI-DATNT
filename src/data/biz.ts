@@ -3,7 +3,11 @@
  * báo cáo tuần, thú cưng, thành tựu, sự kiện bất ngờ, chuyện khách quen, nhà riêng, bữa sáng, xe cộ.
  * File này chỉ có dữ liệu và hàm thuần; hành động đổi trạng thái nằm ở `core/biz.ts`.
  */
-import { productById } from './products';
+import { formatMoney, productById } from './products';
+import { newQuanNuoc, type QuanNuocState } from './quanNuoc';
+import type { HiepLucState } from './hiepLuc';
+import { monthOf } from './calendar';
+import { emptyYear } from './yearReport';
 
 // ───────────────────────── Tiệm đối thủ ─────────────────────────
 
@@ -16,6 +20,8 @@ export interface Rival {
   saleUntil?: number;
   /** Tính cách: phá giá (cutter), chơi chất lượng (quality) hay máu liều (aggressive). */
   personality?: RivalPersonality;
+  /** Chuyện nền một câu của cửa hàng (thiếu ở rival cốt truyện và save cũ). */
+  blurb?: string;
   /** Bảng giá rival đang bán từng món (chỉ bày món có trong bảng); thiếu ở save cũ. */
   prices?: Record<string, number>;
   /** Kho hàng của rival theo món (để bớt dần khi mình đánh mạnh). */
@@ -33,7 +39,28 @@ export const RIVAL_PERSONALITIES: Record<RivalPersonality, { icon: string; name:
 };
 
 export const RIVAL_UNLOCK = 8;
-export const RIVAL_NAMES = ['Tạp hóa Phát Đạt', 'Mini mart Hưng Thịnh', 'Tiệm Cô Ba Mới', 'Cửa hàng 24h Ánh Dương'];
+/** Catalog 12 cửa hàng đối thủ xoay vòng theo thế hệ; 4 tên đầu là tên đời cũ giữ nguyên vị trí. */
+export const RIVAL_SHOPS: { name: string; blurb: string }[] = [
+  { name: 'Tạp hóa Phát Đạt', blurb: 'Ông chủ giữ tiệm từ thời bao cấp, nói chuyện với khách bằng trà đá và chưa để hỏng một thùng hàng nào.' },
+  { name: 'Mini mart Hưng Thịnh', blurb: 'Kệ hàng sáng bong, nhạc ngoại rền cả ngày — ông chủ từng đi xếp hàng ở siêu thị lớn về mở riêng.' },
+  { name: 'Tiệm Cô Ba Mới', blurb: 'Cô Ba bán đúng thứ xóm cần, đổi mặt hàng theo mùa nhanh hơn cả đổi thời tiết.' },
+  { name: 'Cửa hàng 24h Ánh Dương', blurb: 'Chị chủ thức trắng đêm xem doanh số của tiệm mình để điều giá từng giờ.' },
+  { name: 'Siêu thị Mini Quang Trung', blurb: 'Mới mở đã treo loa hô "giảm giá sâu" cả hẻm nghe rõ, poster dán kín cửa kính.' },
+  { name: 'Chợ Xanh Đầu Ngõ', blurb: 'Bà con chợ cũ góp vốn chung tay, rau củ xếp thành tháp, mùi ngò rí bay sang tận tiệm mình.' },
+  { name: 'Tạp Hóa Tám Sáng', blurb: 'Sáu giờ sáng đã mở cửa, chú Tám nhớ mặt từng khách đi làm và đoán trước họ cần mua gì.' },
+  { name: 'Cửa Hàng Bà Sáu', blurb: 'Bà Sáu bán chịu cho cả xóm mười năm, cuốn sổ nợ dày hơn sách giáo khoa mà chưa đòi nổi ai.' },
+  { name: 'Trung Tâm Thương Mại Hoàng Lan', blurb: 'Tầng một đầy hàng, tầng hai còn trống — cô Lan bảo để dành mở rộng sau khi hạ được tiệm mình.' },
+  { name: 'Mart Năm Cầu', blurb: 'Mới khai trương đã treo băng rôn "rẻ nhất hẻm" ngay trước cửa tiệm mình, ai đi qua cũng ngẩng lên đọc.' },
+  { name: 'Cửa Hàng Tân Kỷ', blurb: 'Chủ tiệm trẻ nhất xóm, quét mã thanh toán, livestream bán hàng ngay giữa hẻm đêm nào cũng lên sóng.' },
+  { name: 'Siêu Thị Sao Mai', blurb: 'Nghe đồn có hậu phương công ty lớn: khai trương pháo đỏ rực, phát quà tận từng nhà trong xóm.' },
+];
+/** Bậc quy mô của rival theo thế hệ (gen = rivalsBeaten + 1 với rival mới): càng về sau cửa hàng càng lớn. */
+export function rivalTier(gen: number): { label: string; icon: string } {
+  if (gen >= 10) return { label: 'trung tâm thương mại', icon: '🏛️' };
+  if (gen >= 6) return { label: 'chuỗi cửa hàng', icon: '🏢' };
+  if (gen >= 3) return { label: 'mini mart', icon: '🏬' };
+  return { label: 'cửa hàng', icon: '🏪' };
+}
 export const RIVAL_START = 60;
 export const RIVAL_BEAT_REWARD = 800000;
 export const RIVAL_BEAT_XP = 400;
@@ -57,6 +84,18 @@ export const RIVAL_SHOP_OFFER_DAYS = 10;
 export const RIVAL_BUY_TRAFFIC = 1.15;
 export const RIVAL_BUY_DAYS = 7;
 
+// ───── Xu hướng sức mạnh đối thủ (GĐ60 "Rival đang tiến hay lui") ─────
+/** Cửa sổ lăn nhật ký sức mạnh rival (nhịp tuần comeback, khác 14 ngày venue). */
+export const RIVAL_TREND_DAYS = 7;
+/** Vùng chết % để gọi rival 'gaining'/'fading' (cùng ngữ nghĩa venue/risk ≥3%). */
+export const RIVAL_TREND_FLAT = 3;
+/** Đòn bẩy ⭐: điểm đánh giá ≥ mốc này là ổn. */
+export const LEVER_RATING = 4;
+/** Đòn bẩy 🚚: tỉ lệ khách bỏ lỡ ≤ mốc này là ổn. */
+export const LEVER_MISS_RATE = 0.15;
+/** Đòn bẩy 🏷️: |chỉ số giá − 1| ≤ mốc này là ổn (giá không lệch giá gợi ý quá 5%). */
+export const LEVER_PRICE_INDEX = 0.05;
+
 /** Món rival đang bán rẻ hơn mình đáng kể (để khách nhạy giá chê mình đắt). */
 export function rivalUndercuts(r: Rival | null, priceOf: (id: string) => number, day: number): Set<string> {
   const out = new Set<string>();
@@ -66,6 +105,24 @@ export function rivalUndercuts(r: Rival | null, priceOf: (id: string) => number,
     if (rp * sale < priceOf(id) * 0.95) out.add(id);
   }
   return out;
+}
+
+/**
+ * Cảnh báo cạnh tranh cho HUD (GĐ42): rival đang bán rẻ ≥5% những món tiệm mình CÓ bày/bán
+ * (lọc nhiễu — chỉ nhắc món mình thực sự đang giữ). Trả null khi chưa có rival hoặc không trúng món nào.
+ */
+export function rivalUndercutAlerts(
+  r: Rival | null,
+  priceOf: (id: string) => number,
+  day: number,
+  carried: Set<string>,
+  n = 3,
+): { rival: string; items: string[] } | null {
+  if (!r) return null;
+  const under = rivalUndercuts(r, priceOf, day);
+  const matching = [...under].filter((id) => carried.has(id));
+  if (!matching.length) return null;
+  return { rival: r.name, items: matching.slice(0, n).map((id) => productById(id).name) };
 }
 
 /** Phần khách bị đối thủ hút đi: tối đa 25% khi đối thủ mạnh nhất, gấp đôi khi họ đang giảm giá. */
@@ -85,9 +142,97 @@ export function rivalNightly(r: Rival, ctx: { rating: number; missRate: number; 
   return Math.max(0, Math.min(100, r.strength + delta));
 }
 
-/** Tạo một rival ngẫu nhiên tính cách. */
-export function newRival(name: string, strength: number, openedDay: number, rng: () => number = Math.random): Rival {
-  const personalities: RivalPersonality[] = ['cutter', 'quality', 'aggressive'];
+/** Một ngày ghi nhận trong nhật ký sức mạnh rival (append cuối ngày, cửa sổ lăn − RIVAL_TREND_DAYS). */
+export interface RivalTrendDay {
+  day: number;
+  strength: number;
+  /** Đổi từ ngày trước (âm = rival yếu đi). */
+  delta: number;
+}
+
+export type RivalMomentum = 'gaining' | 'fading' | 'flat';
+
+export interface RivalMomentumResult {
+  dir: RivalMomentum;
+  /** Sức mạnh mới nhất. */
+  last: number;
+  /** Sức mạnh ngày đầu cửa sổ. */
+  start: number;
+  /** Số ngày liên tiếp cùng hướng tính từ cuối. */
+  streak: number;
+  /** Tổng nửa gần − tổng nửa trước. */
+  delta: number;
+  /** % chênh nửa gần vs nửa trước. */
+  pct: number;
+}
+
+/** Xu hướng sức mạnh rival trong cửa sổ: so tổng nửa gần vs nửa trước; |Δ| < RIVAL_TREND_FLAT% → flat. */
+export function rivalMomentum(t: RivalTrendDay[]): RivalMomentumResult {
+  const n = t.length;
+  const empty: RivalMomentumResult = { dir: 'flat', last: 0, start: 0, streak: 0, delta: 0, pct: 0 };
+  if (n === 0) return empty;
+  const last = t[n - 1].strength;
+  const start = t[0].strength;
+  if (n < 2) return { ...empty, last, start }; // chưa đủ tín hiệu → trung tính nhưng vẫn báo mốc
+  const half = Math.ceil(n / 2);
+  const sum = (xs: RivalTrendDay[]) => xs.reduce((a, d) => a + d.strength, 0);
+  const recent = sum(t.slice(n - half));
+  const earlier = sum(t.slice(0, n - half));
+  const delta = recent - earlier;
+  const pct = earlier === 0 ? (recent > 0 ? 100 : 0) : Math.round((recent / earlier - 1) * 100);
+  const dir: RivalMomentum = recent > earlier * (1 + RIVAL_TREND_FLAT / 100) ? 'gaining'
+    : recent < earlier * (1 - RIVAL_TREND_FLAT / 100) ? 'fading'
+    : 'flat';
+  // Chuỗi cùng hướng tính từ ngày cuối (delta ngày-ngày), chỉ tính khi có hướng rõ.
+  let streak = 0;
+  if (dir === 'gaining') for (let i = n - 1; i > 0 && t[i].delta > 0; i--) streak++;
+  else if (dir === 'fading') for (let i = n - 1; i > 0 && t[i].delta < 0; i--) streak++;
+  return { dir, last, start, streak, delta, pct };
+}
+
+/** 4 đòn bẩy hằng ngày quyết định sức mạnh rival (khớp đúng công thức rivalNightly ở core/biz). */
+export interface RivalLeverCtx {
+  /** Điểm đánh giá hiện tại (cùng nguồn rivalNightly). */
+  rating: number;
+  /** Tỉ lệ khách bỏ lỡ (missed / (missed + itemsSold)). */
+  missRate: number;
+  /** Chỉ số giá bán (mean giá/gợi ý; 1 = sát). */
+  priceIndex: number;
+  /** Đang có quảng cáo hoạt động ngày hôm nay. */
+  adsActive: boolean;
+}
+
+export interface RivalLeverFlag {
+  lever: 'rating' | 'miss' | 'price' | 'ads';
+  label: string;
+  ok: boolean;
+}
+
+/** Tính ✅/❌ 4 đòn bẩy của bạn từ số liệu sống — mồi "sửa cái nào" khi rival đang tiến. Thuần đọc. */
+export function rivalLeverFlags(ctx: RivalLeverCtx): RivalLeverFlag[] {
+  return [
+    { lever: 'rating', label: '⭐ Sao ≥ 4', ok: ctx.rating >= LEVER_RATING },
+    { lever: 'miss', label: '🚚 Bỏ lỡ ≤ 15%', ok: ctx.missRate <= LEVER_MISS_RATE },
+    { lever: 'price', label: '🏷️ Giá sát gợi ý ±5%', ok: Math.abs(ctx.priceIndex - 1) <= LEVER_PRICE_INDEX },
+    { lever: 'ads', label: '📢 Có quảng cáo', ok: ctx.adsActive },
+  ];
+}
+
+/** Ai đang nắm đầu: theo momentum (thắng nếu rival yếu dần), flat thì theo sức mạnh tuyệt đối. */
+export function rivalStanding(t: RivalTrendDay[], strength: number): 'ahead' | 'even' | 'behind' {
+  const m = rivalMomentum(t);
+  if (m.dir === 'gaining') return 'behind';
+  if (m.dir === 'fading') return 'ahead';
+  if (strength >= 75) return 'behind';
+  if (strength <= 40) return 'ahead';
+  return 'even';
+}
+
+/** Tạo một rival ngẫu nhiên tính cách; có `avoid` thì loại tính cách vừa gặp khỏi vòng quay (pool còn mới rút lại). */
+export function newRival(name: string, strength: number, openedDay: number, rng: () => number = Math.random, avoid?: RivalPersonality): Rival {
+  const all: RivalPersonality[] = ['cutter', 'quality', 'aggressive'];
+  const pool = avoid ? all.filter((p) => p !== avoid) : all;
+  const personalities = pool.length ? pool : all;
   return { name, strength, openedDay, personality: personalities[Math.floor(rng() * personalities.length)] };
 }
 
@@ -252,6 +397,41 @@ export const loyaltyTraffic = (l: Loyalty) => (l.on ? 1 + 0.6 / l.stamps : 1);
 /** Mỗi lần tính tiền, xác suất khách vừa đủ tem để đổi quà. */
 export const loyaltyRedeemChance = (l: Loyalty) => (l.on ? 1 / l.stamps : 0);
 
+/**
+ * GĐ129 — Chi phí–lợi ích Thẻ tích điểm: trả lời "thẻ có đáng không" bằng cách quy
+ * quà đã tặng (chi phí) ra so với khách kéo thêm nhờ +% traffic (lợi ích). THUẦN ĐỌC
+ * state có sẵn (loyalty.given/redeemed/stamps + stats.customers/revenue), không đổi
+ * save/kinh tế. `extraCustomers` ước theo đúng pattern `happyHourReport` (khách ×(1−1/mul)).
+ * Trả null khi tắt thẻ (không nhiễu); `verdict='soon'` khi chưa có lần đổi nào.
+ */
+export interface LoyaltyPayoff {
+  avgGift: number;
+  boostPct: number;
+  extraCustomers: number;
+  costToday: number;
+  extraValue: number;
+  net: number;
+  verdict: 'keep' | 'reduce' | 'soon';
+}
+export function loyaltyPayoff(l: Loyalty, stats: { customers: number; revenue: number }): LoyaltyPayoff | null {
+  if (!l.on) return null;
+  const mul = loyaltyTraffic(l); // 1.12 / 1.06 / 1.04
+  const boostPct = Math.round((mul - 1) * 100);
+  const avgGift = l.redeemed ? l.given / l.redeemed : 0;
+  const customers = Math.max(0, stats.customers);
+  const revenue = Math.max(0, stats.revenue);
+  // Khách ước tính nhờ thẻ: phần vượt nhịp tự nhiên (cùng trường phái happyHourReport)
+  const extraCustomers = Math.round(customers * (1 - 1 / mul));
+  // Chi phí quà hôm nay: ~customers/stamps lượt đổi × món rẻ nhất TB (given/redeemed)
+  const redemptionsToday = customers / l.stamps;
+  const costToday = Math.round(avgGift * redemptionsToday);
+  const avgRevPerCustomer = customers ? revenue / customers : 0;
+  const extraValue = Math.round(extraCustomers * avgRevPerCustomer);
+  const net = extraValue - costToday;
+  const verdict: LoyaltyPayoff['verdict'] = !l.redeemed ? 'soon' : net >= 0 ? 'keep' : 'reduce';
+  return { avgGift, boostPct, extraCustomers, costToday, extraValue, net, verdict };
+}
+
 // ───────────────────────── Quảng cáo ─────────────────────────
 
 export interface AdDef {
@@ -284,6 +464,26 @@ export const adsTraffic = (ads: ActiveAd[], day: number) =>
   activeAds(ads, day).reduce((n, a) => n * (adById(a.id)?.traffic ?? 1), 1);
 export const adTargets = (ads: ActiveAd[], day: number) =>
   activeAds(ads, day).flatMap((a) => adById(a.id)?.targets ?? []);
+
+/**
+ * GĐ128 — ROI quảng cáo: quy doanh thu chênh (ngày có ad vs ngày thường, từ `promoEffect`)
+ * ra lời/lỗ ròng so với CHI PHÍ quảng cáo/ngày. THUẦN đọc state/hằng số có sẵn — không
+ * đổi save/kinh tế. Trả null khi chưa đủ dữ liệu so sánh hoặc không có ad đang chạy.
+ */
+export interface AdRoi { withAvg: number; withoutAvg: number; adExtraRev: number; dailyCost: number; net: number; worth: 'yes' | 'no' }
+export function adRoi(
+  effect: { withAvg: number; withoutAvg: number } | null | undefined,
+  ads: ActiveAd[],
+  day: number,
+): AdRoi | null {
+  if (!effect) return null;
+  const running = activeAds(ads, day);
+  if (!running.length) return null;
+  const dailyCost = running.reduce((n, a) => n + (adById(a.id)?.price ?? 0) / Math.max(1, adById(a.id)?.days ?? 1), 0);
+  const adExtraRev = effect.withAvg - effect.withoutAvg;
+  const net = adExtraRev - dailyCost;
+  return { withAvg: effect.withAvg, withoutAvg: effect.withoutAvg, adExtraRev, dailyCost, net, worth: net > 0 ? 'yes' : 'no' };
+}
 
 // ───────────────────────── Vay vốn & hụi ─────────────────────────
 
@@ -346,6 +546,23 @@ export interface WeekTally {
   items: Record<string, { qty: number; gross: number }>;
   /** Mục tiêu doanh thu tuần này (null = tuần đầu, chưa đặt). */
   goal: number | null;
+  // ── Counter tuỳ chọn cho thử thách tuần (save cũ/tuần đang chạy thiếu thì coi như 0) ──
+  /** Số món nhà làm bán được trong tuần. */
+  cookedSold?: number;
+  /** Số đơn nấu đã giao trong tuần. */
+  cookOrders?: number;
+  /** Số đơn app giao tới tay khách trong tuần. */
+  onlineDone?: number;
+  /** Số nông sản thu hoạch trong tuần. */
+  farmHarvest?: number;
+  /** Số bài đăng mạng xã hội trong tuần. */
+  socialPosts?: number;
+  /** Tiền lời dịch vụ ở quầy trong tuần. */
+  services?: number;
+  /** Số combo bán ra trong tuần. */
+  combos?: number;
+  /** Số lời khen 5★ nhận trong tuần. */
+  fiveStars?: number;
 }
 
 export interface WeekReport {
@@ -361,6 +578,10 @@ export interface WeekReport {
   goalMet: boolean;
   reward: number;
   nextGoal: number;
+  /** Kết quả thử thách tuần của tuần vừa chốt (thiếu ở bản lưu cũ). */
+  challenge?: WeeklyChallengeResult;
+  /** Chuỗi tuần hoàn thành thử thách tính SAU tuần này (để tuần mới hiển thị). */
+  challengeStreak?: number;
 }
 
 export const WEEK_DAYS = 7;
@@ -368,16 +589,250 @@ export const emptyWeek = (startDay: number, goal: number | null = null): WeekTal
   startDay, revenue: 0, profit: 0, customers: 0, unhappy: 0, items: {}, goal,
 });
 
-export function closeWeek(t: WeekTally, endDay: number): WeekReport {
+// ───────────────────────── Thử thách tuần ─────────────────────────
+
+export interface WeeklyChallenge {
+  id: string;
+  icon: string;
+  title: string;
+  unit: string;
+  /** key đếm trong WeekTally, hoặc 'revenue' cho doanh thu tuần. */
+  measure: 'cookedSold' | 'cookOrders' | 'onlineDone' | 'farmHarvest' | 'socialPosts' | 'services' | 'combos' | 'fiveStars' | 'revenue';
+  /** Cấp tối thiểu mới vào vòng xoay thử thách này (bám mốc mở của từng hệ). */
+  minLevel: number;
+  /** Mục tiêu theo cấp (làm tròn đẹp). */
+  target: (level: number) => number;
+  /** Thưởng gốc theo cấp (làm tròn nghìn). */
+  reward: (level: number) => number;
+  /** Mô tả một câu, có mốc cụ thể theo cấp. */
+  desc: (level: number) => string;
+}
+
+/** Kết quả thử thách tuần của một tuần đã chốt. */
+export interface WeeklyChallengeResult {
+  id: string;
+  icon: string;
+  title: string;
+  unit: string;
+  target: number;
+  current: number;
+  met: boolean;
+  /** Tiền thưởng nhận được (đã nhân hệ số chuỗi); 0 nếu không đạt. */
+  reward: number;
+  desc: string;
+}
+
+const scale = (base: number, level: number, step: number) => Math.round(base * (1 + step * (level - 1)));
+const round10k = (n: number) => Math.round(n / 10000) * 10000;
+const round1k = (n: number) => Math.round(n / 1000) * 1000;
+
+/** Gói dựng gọn: `descText` nhận đúng mục tiêu đã tính nên mô tả luôn khớp mốc thật. */
+const weekly = (def: Omit<WeeklyChallenge, 'desc'>, descText: (target: number) => string): WeeklyChallenge => ({
+  ...def, desc: (level) => descText(def.target(level)),
+});
+
+/** Thử thách tuần: mục tiêu ~4–6× nhiệm vụ ngày cùng hệ, thưởng ~2× (dịch vụ đo tiền lời nên
+ *  mục tiêu = 5× nhiệm vụ ngày). Thứ tự trong bảng cũng là thứ tự xoay theo số tuần. */
+export const WEEKLY_CHALLENGES: WeeklyChallenge[] = [
+  weekly({ id: 'wq_revenue', icon: '💰', title: 'Doanh thu tuần', unit: 'đ', measure: 'revenue', minLevel: 1,
+    target: (lv) => round10k(900000 * (1 + 0.3 * (lv - 1))), reward: (lv) => round1k(150000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Doanh thu cả tuần đạt ${formatMoney(t)}`),
+  weekly({ id: 'wq_five', icon: '⭐', title: 'Khách khen 5★', unit: 'lời', measure: 'fiveStars', minLevel: 5,
+    target: (lv) => 5 + lv, reward: (lv) => round1k(120000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Nhận ${t} lời khen 5★ trong tuần`),
+  weekly({ id: 'wq_service', icon: '🧾', title: 'Lời từ dịch vụ', unit: 'đ', measure: 'services', minLevel: 3,
+    target: (lv) => round10k(scale(100000, lv, 0.15)), reward: (lv) => round1k(100000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Lời từ dịch vụ ở quầy cả tuần đạt ${formatMoney(t)}`),
+  weekly({ id: 'wq_combo', icon: '🎁', title: 'Bán theo combo', unit: 'combo', measure: 'combos', minLevel: 6,
+    target: (lv) => 8 + 2 * lv, reward: (lv) => round1k(130000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Bán ${t} combo trong tuần`),
+  weekly({ id: 'wq_online', icon: '🛵', title: 'Giao đơn app', unit: 'đơn', measure: 'onlineDone', minLevel: 10,
+    target: (lv) => 10 + lv, reward: (lv) => round1k(160000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Giao ${t} đơn app tới tay khách trong tuần`),
+  weekly({ id: 'wq_farm', icon: '🌾', title: 'Thu hoạch trại', unit: 'sản phẩm', measure: 'farmHarvest', minLevel: 8,
+    target: (lv) => 20 + 3 * lv, reward: (lv) => round1k(120000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Thu hoạch ${t} nông sản trong tuần`),
+  weekly({ id: 'wq_social', icon: '📱', title: 'Lên mạng xã hội', unit: 'bài', measure: 'socialPosts', minLevel: 8,
+    target: () => 4, reward: (lv) => round1k(90000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Đăng ${t} bài quảng bá trong tuần`),
+  weekly({ id: 'wq_cooked', icon: '🍲', title: 'Bán món nhà làm', unit: 'món', measure: 'cookedSold', minLevel: 21,
+    target: (lv) => 12 + 2 * lv, reward: (lv) => round1k(180000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Bán ${t} món nhà làm trong tuần`),
+  weekly({ id: 'wq_cook_orders', icon: '🥡', title: 'Giao đơn nấu', unit: 'đơn', measure: 'cookOrders', minLevel: 21,
+    target: (lv) => 4 + lv, reward: (lv) => round1k(170000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Giao ${t} đơn nấu trong tuần`),
+];
+
+/** Chọn thử thách tuần xác định theo số tuần và cấp: xoay vòng pool những thử thách đã mở, không random. */
+export function weeklyChallenge(week: number, level: number): WeeklyChallenge {
+  const pool = WEEKLY_CHALLENGES.filter((c) => c.minLevel <= level);
+  return pool[week % pool.length] ?? WEEKLY_CHALLENGES[0];
+}
+
+export function closeWeek(t: WeekTally, endDay: number, level: number, streak: number): WeekReport {
   const lines = Object.entries(t.items);
   const best = [...lines].sort((a, b) => b[1].gross - a[1].gross)[0]?.[0];
   const worst = lines.filter(([, l]) => l.qty > 0).sort((a, b) => a[1].gross / a[1].qty - b[1].gross / b[1].qty)[0]?.[0];
   const goalMet = t.goal !== null && t.revenue >= t.goal;
+  const week = Math.ceil(endDay / WEEK_DAYS);
+  const ch = weeklyChallenge(week, level);
+  const chTarget = ch.target(level);
+  const chCurrent = ch.measure === 'revenue' ? t.revenue : (t[ch.measure] ?? 0);
+  const chMet = chCurrent >= chTarget;
+  // Hoàn thành nhiều tuần liền thì thưởng gốc đậm thêm 20%/tuần, trần +80% (tuần thứ 5 trở đi)
+  const chReward = chMet ? Math.round((ch.reward(level) * (1 + 0.2 * Math.min(streak, 4))) / 1000) * 1000 : 0;
   return {
-    week: Math.ceil(endDay / WEEK_DAYS), endDay, revenue: t.revenue, profit: t.profit, customers: t.customers, unhappy: t.unhappy,
+    week, endDay, revenue: t.revenue, profit: t.profit, customers: t.customers, unhappy: t.unhappy,
     best, worst: worst !== best ? worst : undefined, goal: t.goal, goalMet,
     reward: goalMet ? Math.round((t.goal! * 0.05) / 1000) * 1000 : 0,
     nextGoal: Math.round((Math.max(t.revenue, t.goal ?? 0) * 1.1) / 10000) * 10000,
+    challenge: {
+      id: ch.id, icon: ch.icon, title: ch.title, unit: ch.unit,
+      target: chTarget, current: chCurrent, met: chMet, reward: chReward, desc: ch.desc(level),
+    },
+    challengeStreak: chMet ? streak + 1 : 0,
+  };
+}
+
+// GĐ121 — Nhịp chạy tuần: tín hiệu thuần đọc cho thử thách tuần (có theo kịp không? có nguy cơ
+// mất chuỗi không?), đúng mô-típ GĐ119/120 (đọc dữ liệu sẵn có → UI signal). KHÔNG đổi state/
+// save/kinh tế — chỉ quy đổi tally hiện tại + streak có sẵn. Trả null khi mục tiêu vô nghĩa.
+export interface WeekPace {
+  /** Nhịp hiện tại = current/target (0..). */
+  pace: number;
+  /** Số ngày còn lại trong tuần (1..7). */
+  remainingDays: number;
+  /** Dự kiến cuối tuần nếu giữ nguyên nhịp = current + pace × remainingDays. */
+  projected: number;
+  /** Có kịp mục tiêu cuối tuần theo dự kiến không. */
+  onTrack: boolean;
+  /** Đang hụt MÀ đang có chuỗi → nguy cơ mất chuỗi/thưởng cộng dồn. */
+  streakAtRisk: boolean;
+  /** Phần thưởng cộng chuỗi có nguy cơ mất (đ) = base × 0.2 × min(streak,4) — khớp closeWeek. */
+  streakExtra: number;
+  /** Còn thiếu bao nhiêu so với mục tiêu (>=0). */
+  missing: number;
+}
+export function weekPace(
+  current: number, target: number, remainingDays: number, streak: number, baseReward: number,
+): WeekPace | null {
+  if (target <= 0 || remainingDays <= 0) return null;
+  const elapsed = WEEK_DAYS - remainingDays;
+  // Dự đoán cuối tuần theo NHỊP HIỆN TẠI (giữ nguyên tốc độ mỗi ngày): current / số ngày đã trôi × 7.
+  // Ngày đầu (elapsed=0) chưa có nhịp → projected = hiện tại (chưa khẳng định hụt/kịp).
+  const projected = elapsed > 0 ? (current * WEEK_DAYS) / elapsed : current;
+  const onTrack = projected >= target;
+  const missing = Math.max(0, target - current);
+  return {
+    pace: target > 0 ? current / target : 0, remainingDays, projected, onTrack,
+    streakAtRisk: !onTrack && streak >= 1 && current < target,
+    streakExtra: Math.round(baseReward * 0.2 * Math.min(streak, 4)),
+    missing,
+  };
+}
+
+// ───────────────────────── Tháng vận hành ─────────────────────────
+// Lớp nhịp "tháng" (dương lịch 1–12) nối tiếp nhịp tuần: cho người chơi một mốc "quay lại trước
+// hết tháng" và giữ lý do trụ lâu. Giống tuần nhưng mục tiêu/thưởng to hơn, neo theo tháng thật mà
+// lịch trong game đã hiển thị (CalendarPanel), nên mốc luôn khớp với thứ người chơi nhìn thấy.
+
+/** Sổ tích lũy của một tháng vận hành. */
+export interface MonthTally {
+  /** Ngày bắt đầu theo dõi tháng này (ngày đầu tháng hoặc ngày load save cũ). */
+  startDay: number;
+  /** Tháng dương lịch (1–12) tally này đang đếm. */
+  month: number;
+  revenue: number;
+  profit: number;
+  customers: number;
+  unhappy: number;
+  items: Record<string, { qty: number; gross: number }>;
+  /** Mục tiêu doanh thu tháng này (null = tháng đầu tiên, chưa đặt). */
+  goal: number | null;
+  // ── Counter tuỳ chọn cho thử thách tháng (save cũ thiếu thì coi như 0) ──
+  cookedSold?: number;
+  cookOrders?: number;
+  onlineDone?: number;
+  farmHarvest?: number;
+  services?: number;
+  combos?: number;
+  fiveStars?: number;
+  socialPosts?: number;
+}
+
+export interface MonthReport {
+  month: number;
+  startDay: number;
+  endDay: number;
+  revenue: number;
+  profit: number;
+  customers: number;
+  unhappy: number;
+  best?: string;
+  worst?: string;
+  goal: number | null;
+  goalMet: boolean;
+  reward: number;
+  nextGoal: number;
+  /** Kết quả thử thách tháng vừa chốt. */
+  challenge?: WeeklyChallengeResult;
+  /** Chuỗi tháng hoàn thành thử thách tính SAU tháng này. */
+  monthStreak?: number;
+}
+
+export const emptyMonth = (startDay: number, month: number, goal: number | null = null): MonthTally => ({
+  startDay, month, revenue: 0, profit: 0, customers: 0, unhappy: 0, items: {}, goal,
+});
+
+/** Thử thách tháng: cùng cơ chế đo và xoay như tuần nhưng mục tiêu/thưởng to hơn hẳn. */
+export const MONTHLY_CHALLENGES: WeeklyChallenge[] = [
+  weekly({ id: 'mq_revenue', icon: '📈', title: 'Doanh thu tháng', unit: 'đ', measure: 'revenue', minLevel: 1,
+    target: (lv) => round10k(5000000 * (1 + 0.3 * (lv - 1))), reward: (lv) => round1k(800000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Doanh thu cả tháng đạt ${formatMoney(t)}`),
+  weekly({ id: 'mq_five', icon: '🌟', title: 'Một tháng khen ngợi', unit: 'lời', measure: 'fiveStars', minLevel: 5,
+    target: (lv) => 20 + 4 * lv, reward: (lv) => round1k(700000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Nhận ${t} lời khen 5★ trong tháng`),
+  weekly({ id: 'mq_online', icon: '🛵', title: 'Đơn app dày đặc', unit: 'đơn', measure: 'onlineDone', minLevel: 10,
+    target: (lv) => 60 + 5 * lv, reward: (lv) => round1k(900000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Giao ${t} đơn app tới tay khách trong tháng`),
+  weekly({ id: 'mq_farm', icon: '🌾', title: 'Mảnh vườn bội thu', unit: 'sản phẩm', measure: 'farmHarvest', minLevel: 8,
+    target: (lv) => 150 + 15 * lv, reward: (lv) => round1k(700000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Thu hoạch ${t} nông sản trong tháng`),
+  weekly({ id: 'mq_cooked', icon: '🍲', title: 'Bếp chạy cả tháng', unit: 'món', measure: 'cookedSold', minLevel: 21,
+    target: (lv) => 90 + 8 * lv, reward: (lv) => round1k(1100000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Bán ${t} món nhà làm trong tháng`),
+  weekly({ id: 'mq_services', icon: '🧾', title: 'Dịch vụ đều tay', unit: 'đ', measure: 'services', minLevel: 3,
+    target: (lv) => round10k(scale(700000, lv, 0.15)), reward: (lv) => round1k(600000 * (1 + 0.25 * (lv - 1))) },
+    (t) => `Lời từ dịch vụ ở quầy cả tháng đạt ${formatMoney(t)}`),
+];
+
+/** Chọn thử thách tháng xác định theo tháng và cấp: xoay vòng pool những thử thách đã mở, không random. */
+export function monthlyChallenge(month: number, level: number): WeeklyChallenge {
+  const pool = MONTHLY_CHALLENGES.filter((c) => c.minLevel <= level);
+  return pool[month % pool.length] ?? MONTHLY_CHALLENGES[0];
+}
+
+export function closeMonth(t: MonthTally, endDay: number, level: number, streak: number): MonthReport {
+  const lines = Object.entries(t.items);
+  const best = [...lines].sort((a, b) => b[1].gross - a[1].gross)[0]?.[0];
+  const worst = lines.filter(([, l]) => l.qty > 0).sort((a, b) => a[1].gross / a[1].qty - b[1].gross / b[1].qty)[0]?.[0];
+  const goalMet = t.goal !== null && t.revenue >= t.goal;
+  const ch = monthlyChallenge(t.month, level);
+  const chTarget = ch.target(level);
+  const chCurrent = ch.measure === 'revenue' ? t.revenue : (t[ch.measure] ?? 0);
+  const chMet = chCurrent >= chTarget;
+  // Hoàn thành nhiều tháng liền thì thưởng thử thách đậm thêm 20%/tháng, trần +80% (tháng thứ 5 trở đi)
+  const chReward = chMet ? Math.round((ch.reward(level) * (1 + 0.2 * Math.min(streak, 4))) / 1000) * 1000 : 0;
+  return {
+    month: t.month, startDay: t.startDay, endDay, revenue: t.revenue, profit: t.profit, customers: t.customers, unhappy: t.unhappy,
+    best, worst: worst !== best ? worst : undefined, goal: t.goal, goalMet,
+    reward: goalMet ? Math.round((t.goal! * 0.06) / 1000) * 1000 : 0,
+    nextGoal: Math.round((Math.max(t.revenue, t.goal ?? 0) * 1.15) / 10000) * 10000,
+    challenge: {
+      id: ch.id, icon: ch.icon, title: ch.title, unit: ch.unit,
+      target: chTarget, current: chCurrent, met: chMet, reward: chReward, desc: ch.desc(level),
+    },
+    monthStreak: chMet ? streak + 1 : 0,
   };
 }
 
@@ -445,6 +900,17 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'counter_kill', icon: '🎯', name: 'Đòn kết liễu', desc: 'Khiến đối thủ đóng cửa bằng đợt phản công chủ động', reward: 300000, done: (c) => c.counterKills >= 1 },
   { id: 'level_20', icon: '⭐', name: 'Chủ tiệm lành nghề', desc: 'Đạt cấp 20', reward: 200000, done: (c) => c.level >= 20 },
   { id: 'level_50', icon: '👑', name: 'Ông trùm siêu thị', desc: 'Đạt cấp 50', reward: 2000000, done: (c) => c.level >= 50 },
+  // ── Mốc xa — cho người chơi dài hơi mục tiêu để trụ lại ──
+  { id: 'level_80', icon: '🌟', name: 'Bậc thầy ngành tạp hóa', desc: 'Đạt cấp 80', reward: 3000000, done: (c) => c.level >= 80 },
+  { id: 'level_90', icon: '👑', name: 'Huyền thoại phố hẻm', desc: 'Đạt cấp 90', reward: 5000000, done: (c) => c.level >= 90 },
+  { id: 'level_100', icon: '🏆', name: 'Bá chủ ngõ phố', desc: 'Đạt cấp 100 (sẵn sàng tái sinh)', reward: 20000000, done: (c) => c.level >= 100 },
+  { id: 'rev_500m', icon: '🏬', name: 'Nửa tỷ đồng', desc: 'Tổng doanh thu 500 triệu', reward: 3000000, done: (c) => c.totals.revenue >= 500000000 },
+  { id: 'items_100k', icon: '🏭', name: 'Trăm nghìn món', desc: 'Bán 100.000 món', reward: 2000000, done: (c) => c.totals.itemsSold >= 100000 },
+  { id: 'cust_5000', icon: '🎪', name: 'Cả phường quen mặt', desc: 'Đón 5.000 lượt khách', reward: 800000, done: (c) => c.totals.customers >= 5000 },
+  { id: 'friends_10', icon: '💞', name: 'Hẻm tui thân nhau', desc: '10 khách quen thân từ 40 💛', reward: 400000, done: (c) => c.closeFriends >= 10 },
+  { id: 'perfect_10', icon: '🌈', name: 'Trọn một tháng không phật lòng', desc: 'Đạt 10 ngày hoàn hảo', reward: 1000000, done: (c) => c.perfectDays >= 10 },
+  { id: 'cooked_2000', icon: '🍱', name: 'Bếp chạy đều mỗi ngày', desc: 'Bán 2.000 món nhà làm', reward: 600000, done: (c) => c.cookedSold >= 2000 },
+  { id: 'impulse_500', icon: '🍭', name: 'Kệ cạnh quầy đắc ý', desc: 'Bán 500 món chớp nhoáng ở kệ bên quầy thu ngân', reward: 300000, done: (c) => c.impulseSold >= 500 },
 ];
 
 // ───────────────────────── Thanh tra thị trường ─────────────────────────
@@ -536,9 +1002,9 @@ export const SURPRISES: SurpriseDef[] = [
     id: 'tu_thien', icon: '🙏', title: 'Quyên góp từ thiện', unlock: 6,
     text: 'Tổ dân phố đi quyên góp cho bà con vùng lũ.',
     choices: [
-      { label: 'Góp 100.000đ', result: 'Tên tiệm được đọc trên loa phường, cả xóm quý.', money: -100000, rating: 5, xp: 30 },
-      { label: 'Góp ít hàng (20.000đ)', result: 'Bà con cảm ơn.', money: -20000, xp: 10 },
-      { label: 'Từ chối', result: 'Bác tổ trưởng hơi buồn.' },
+      { label: 'Góp 100.000đ', result: 'Tên tiệm được đọc trên loa phường, cả xóm quý.', money: -100000, rating: 5, xp: 30, friendship: { id: 'bac_tam', delta: 3 } },
+      { label: 'Góp ít hàng (20.000đ)', result: 'Bà con cảm ơn.', money: -20000, xp: 10, friendship: { id: 'bac_tam', delta: 2 } },
+      { label: 'Từ chối', result: 'Bác tổ trưởng hơi buồn.', friendship: { id: 'bac_tam', delta: -2 } },
     ],
   },
   {
@@ -563,6 +1029,193 @@ export const SURPRISES: SurpriseDef[] = [
     choices: [
       { label: 'Đồng ý, tặng ly trà đá', result: 'Clip nổi, khách lạ kéo tới!', money: -5000, xp: 50, rating: 5 },
       { label: 'Ngại lên hình', result: 'Bạn ấy đi quay tiệm khác.' },
+    ],
+  },
+  {
+    id: 'nhoc_an_trom', icon: '🍬', title: 'Nhóc con giấu kẹo', unlock: 2,
+    text: 'Bắt gặp thằng bé nhà cuối xóm giấu gói kẹo vào cặp.',
+    choices: [
+      { label: 'Nhắc nhở nhẹ nhàng', result: 'Thằng bé lí nhí xin lỗi, trả lại kẹo. Xóm thấy chủ tiệm hiền mà nghiêm.', xp: 20, rating: 5, friendship: { id: 'be_na', delta: 2 } },
+      { label: 'Gọi phụ huynh', result: 'Bố mẹ cuống quýt cảm ơn, mua tạ lỗi thêm ít đồ.', money: 30000, xp: 5, friendship: { id: 'be_na', delta: -2 } },
+      { label: 'Làm ngơ cho nó đi', result: 'Mất một gói kẹo — nhưng nó còn nhỏ, thôi kệ.', money: -6000 },
+    ],
+  },
+  {
+    id: 'ga_sot', icon: '🐔', title: 'Gà lạc vào tiệm', unlock: 3,
+    text: 'Con gà của nhà hàng xóm chạy vào tiệm, cả dãy phố rộn ràng đuổi bắt.',
+    choices: [
+      { label: 'Bắt giúp đem trả', result: 'Bà hàng xóm biếu chục trứng tươi để cảm ơn.', money: 25000, rating: 5, xp: 15 },
+      { label: 'Đuổi thẳng cổ ra ngoài', result: 'Con gà chạy mất, bà hàng xóm lẩm bẩm cả buổi.' },
+    ],
+  },
+  {
+    id: 'mua_roi', icon: '🌧️', title: 'Mưa rào, khách trú mưa', unlock: 1,
+    text: 'Trời đổ cơn mưa rào, mấy bác hàng xóm xin trú mưa trước hiên tiệm.',
+    choices: [
+      { label: 'Rót trà đá mời ngồi chơi', result: 'Trú mưa mà chuyện trò vui, ai nấy mua thêm ít đồ mới về.', money: 20000, rating: 5, xp: 15 },
+      { label: 'Bận quá, kệ', result: 'Mưa tạnh, mọi người rủ nhau ra về tay không.' },
+    ],
+  },
+  {
+    id: 'buc_hoa', icon: '🖌️', title: 'Họa sĩ xin vẽ tường', unlock: 11,
+    text: 'Một họa sĩ trẻ muốn vẽ bức tranh tường "tiệm tạp hóa xưa" bên hông tiệm.',
+    choices: [
+      { label: 'Đồng ý (góp 50.000đ sơn)', result: 'Bức tường nổi bần bật, khách lạ tò mò ghé chụp hình rồi vô mua.', money: -50000, xp: 60, rating: 5 },
+      { label: 'Từ chối, để tường trống', result: 'Họa sĩ vẽ nhà người khác, không sao.' },
+    ],
+  },
+  {
+    id: 'dam_cuoi', icon: '💒', title: 'Đám cưới xóm', unlock: 5,
+    text: 'Nhà đầu hẻm cưới, cô phù dâu ghé mua cả thùng nước ngọt với bánh kẹo làm quà cưới.',
+    choices: [
+      { label: 'Gói sỉ tính ưu đãi', result: 'Nhà cưới cảm ơn rối rít, xóm nghe tới đâu khen giá phải tới đó.', money: 85000, minutes: 15, xp: 20, rating: 5 },
+      { label: 'Bán lẻ giá thường', result: 'Thùng nước với bánh kẹo bán kha khá, hôm nay khá tiền.', money: 50000 },
+      { label: 'Hàng thiếu, từ chối', result: 'Nhà cưới ghé chợ lớn mua cho rồi.' },
+    ],
+  },
+  {
+    id: 'mua_dai', icon: '⛈️', title: 'Mưa dầm ngập hẻm', unlock: 6,
+    text: 'Mưa dầm cả buổi, đầu hẻm ngập trơn, nửa ngày chưa thấy bóng khách nào ghé.',
+    choices: [
+      { label: 'Lội nước giao hàng cho xóm', result: 'Giao tới từng nhà, ai cũng khen, chiều gọi điện đặt thêm.', money: 45000, minutes: 30, xp: 30, rating: 5 },
+      { label: 'Đóng cửa sớm né mưa', result: 'Ngồi chờ mưa tạnh, hôm nay doanh thu nhẹ tênh.' },
+    ],
+  },
+  {
+    id: 'tan_hoc', icon: '🎒', title: 'Tan học ùa vào tiệm', unlock: 1,
+    text: 'Chuông tan học vừa dứt, đám học sinh trường bên cắp cặp ùa vào mua kẹo bánh.',
+    choices: [
+      { label: 'Bày sẵn khay kẹo mời chọn', result: 'Tiếng cười rôm rả khắp tiệm, mỗi em một ít mà thu về cũng kha khá.', money: 35000, xp: 10 },
+      { label: 'Tặng thêm em nào mua một viên kẹo', result: 'Tụi nhỏ reo lên tưng bừng, chiều mai rủ nhau ghé đông hơn.', money: 25000, xp: 15, rating: 5, friendship: { id: 'be_na', delta: 2 } },
+      { label: 'Dặn mua nhanh, đừng nô đùa', result: 'Tụi nhỏ mua vội rồi tản ra, mai có khi ghé tiệm khác.', friendship: { id: 'be_na', delta: -1 } },
+    ],
+  },
+  {
+    id: 'khach_quen_vi', icon: '👛', title: 'Khách quên ví', unlock: 3,
+    text: 'Cô khách vừa bày hàng lên quầy mới hét lên: "Chết rồi, quên ví ở nhà!"',
+    choices: [
+      { label: 'Cho nợ, mai quay lại trả', result: 'Sáng hôm sau cô mang tiền tới đủ, còn dặn dì ghé mua chung.', money: 32000, xp: 15, rating: 5, friendship: { id: 'chi_lan', delta: 3 } },
+      { label: 'Gửi giỏ hàng lại, mai mua', result: 'Cô ôm giỏ ra về, món kia để tới mai không biết còn không.', friendship: { id: 'chi_lan', delta: -1 } },
+    ],
+  },
+  {
+    id: 'xe_chan_hem', icon: '🚛', title: 'Xe tải chắn hẻm', unlock: 5,
+    text: 'Xe tải chở tủ lạnh ghế ngang hẻm nghỉ trưa, hai đầu kẹt cứng không qua nổi.',
+    choices: [
+      { label: 'Mời bác tài vô uống trà, chỉ đường vòng', result: 'Xe lùi ra nhanh gọn, chú tài chiều nào qua hẻm cũng tạt ghé mua nước.', money: -15000, minutes: 10, xp: 20, rating: 5, friendship: { id: 'chu_ba', delta: 2 } },
+      { label: 'Chờ chú tài tự xoay xở', result: 'Đợi nửa tiếng hẻm mới thông, mấy chuyến khách lỡ dở đi.', minutes: 25 },
+    ],
+  },
+  {
+    id: 'ban_cu_xu', icon: '☕', title: 'Bạn cũ ghé thăm', unlock: 8,    text: 'Bạn cũ thời đi làm chung dừng xe đầu hẻm, gọi lớn: "Bữa nay làm chủ rồi hả?"',
+    choices: [
+      { label: 'Rót trà, ngồi chuyện chuyện xưởng cũ', result: 'Chuyện trò vui vẻ, bạn mua thùng mì về biếu, hứa dắt cả xưởng ghé.', money: 40000, minutes: 20, xp: 25 },
+      { label: 'Xin lỗi, hôm nay đông khách', result: 'Bạn cười xuề xòa phóng xe đi, hẹn dịp khác.' },
+    ],
+  },
+  {
+    id: 'gioi_chua', icon: '🍚', title: 'Giỗ chùa phát cơm', unlock: 12,
+    text: 'Sư cụ gửi lời: chùa giỗ lộc phụ phát cơm từ thiện, còn thiếu gạo với bánh.',
+    choices: [
+      { label: 'Góp 80 nghìn, chiều lên phụ phát', result: 'Phát cơm tới tối mỏi lưng mà lòng nhẹ tênh, Phật tử ghé mua nến về cúng.', money: -80000, minutes: 30, xp: 45, rating: 5, friendship: { id: 'suc_khanh_long', delta: 3 } },
+      { label: 'Góp túi bánh (20 nghìn)', result: 'Sư cụ cảm ơn, niệm phước cho cả tiệm.', money: -20000, xp: 15, friendship: { id: 'suc_khanh_long', delta: 2 } },
+      { label: 'Quán bận, thôi', result: 'Sư cụ gật đầu chào, nhờ nhà khác giúp.', friendship: { id: 'suc_khanh_long', delta: -1 } },
+    ],
+  },
+  {
+    id: 'meo_la', icon: '🐈', title: 'Mèo lạ vào tiệm', unlock: 2,
+    text: 'Một con mèo vàng gầy len vào nằm ngay kệ bánh, kêu khàn khàn nghe thương quá.',
+    choices: [
+      { label: 'Mua hộp sữa cho nó (10 nghìn)', result: 'Nó cuộn tròn ngủ cạnh quầy, tụi nhỏ ghé vuốt mèo rồi mua kẹo.', money: -10000, xp: 15, rating: 5 },
+      { label: 'Đuổi ra ngoài, khỏi phá hàng', result: 'Nó bỏ đi kêu la ngoài đường một lúc lâu mới lặng.' },
+    ],
+  },
+  {
+    id: 'cam_do_mo', icon: '🏦', title: 'Cầm đồ mở kế bên', unlock: 10,
+    text: 'Tiệm cầm đồ khai trương kế bên, chủ tiệm ghé chào hàng xóm mới cho vui.',
+    choices: [
+      { label: 'Chào hỏi niềm nở, biếu ly trà đá', result: 'Hai bên hứa giữ hòa khí, khách qua hẻm ghé cả hai tiệm.', money: -5000, xp: 10, rating: 5 },
+      { label: 'Treo khuyến mãi giữ chân khách', result: 'Giảm sâu vài món, lỗ nhẹ mà khách quen vẫn trụ lại.', money: -25000 },
+      { label: 'Cứ lo bán hàng của mình', result: 'Bên kia khai trương rộn ràng, buổi sáng tiệm mình vắng tiếng.' },
+    ],
+  },
+  {
+    id: 'ong_cu_khat', icon: '🫗', title: 'Ông cụ xin nước', unlock: 1,
+    text: 'Một ông cụ quần áo cũ đứng trước cửa, giọng khàn đặc: "Cho con xin miếng nước."',
+    choices: [
+      { label: 'Rót nước mát, kèm gói bánh', result: 'Ông cụ cúi đầu cảm ơn mãi, bà con qua đường nhìn vào ánh mắt dịu dàng.', money: -8000, xp: 20, rating: 5 },
+      { label: 'Rót nước thôi', result: 'Ông cụ uống xong cúi chào rồi đi tiếp.', xp: 5 },
+      { label: 'Chỉ vô lấy nước ở vòi sau', result: 'Ông cụ lầm lũi ra đi, người ngồi uống trà liếc nhìn.' },
+    ],
+  },
+  {
+    id: 'cho_giam_gia', icon: '🛍️', title: 'Chợ xả hàng giảm giá', unlock: 9,
+    text: 'Chợ phường xả hàng giảm tới nửa giá, buổi trưa tiệm mình vắng rõ.',
+    choices: [
+      { label: 'Treo bảng "giá xóm, hàng chuẩn"', result: 'Khách quen ghé lại, bảo tin tiệm mình hơn chợ giảm giá.', xp: 20, rating: 5, friendship: { id: 'chu_ba', delta: 2 } },
+      { label: 'Cắt giá theo vài món', result: 'Bán mỏng lãi mấy hôm nhưng đỡ hụt khách.', money: -30000 },
+      { label: 'Giữ nguyên giá', result: 'Vài khách xách túi chợ lướt qua, chiều nay nhẹ tênh.', friendship: { id: 'chu_ba', delta: -1 } },
+    ],
+  },
+  {
+    id: 'bong_da_kinh', icon: '⚽', title: 'Đá bóng vỡ kính', unlock: 4,
+    text: 'Tiếng "xoang" chói tai: trái bóng của đám trẻ bay thẳng vào vỡ cửa kính tiệm.',
+    choices: [
+      { label: 'Thay kính mới, nhẹ nhàng với tụi nhỏ', result: 'Bố mẹ tụi nhỏ ngại quá, tối ghé mua thêm ít đồ tạ lỗi.', money: -90000, xp: 10, rating: 5, friendship: { id: 'bac_tam', delta: 2 } },
+      { label: 'Vá tạm băng keo, dọn mảnh vỡ', result: 'Cửa chắp vá tạm, dăm bữa khách ngắm cửa cười khúc khích.', money: -10000 },
+      { label: 'Bắt đền bố mẹ thằng đá', result: 'Được đền đủ tiền kính, nhưng xóm dèm "tiệm nhỏ mà tính kỹ" mấy bữa.', money: 60000, friendship: { id: 'bac_tam', delta: -3 } },
+    ],
+  },
+  {
+    id: 'bac_tai_nuoc', icon: '🧃', title: 'Bác tài khát nước', unlock: 3,
+    text: 'Chú tài chở cát ghế giữa hẻm, mặt mũi lấm láp: "Cho xin chai nước với!"',
+    choices: [
+      { label: 'Biếu luôn thùng nước mát', result: 'Chú tài ghi mặt, sau nào xe cát qua hẻm cũng tạt ghé mua đồ.', money: -20000, xp: 20, rating: 5 },
+      { label: 'Bán chai nước giá thường', result: 'Chú tài mua nhanh rồi lên xe chạy tiếp.', money: 10000 },
+      { label: 'Hết nước rồi', result: 'Chú tài nhún vai lên xe, bụi cát lồng lộng trước cửa cả buổi.' },
+    ],
+  },
+  {
+    id: 'ba_ve_so', icon: '🎫', title: 'Bà bán vé số', unlock: 2,
+    text: 'Bà bán vé số đứng phất phơ trước cửa, nắng trưa đổ thẳng lưng bà cháy nắng.',
+    choices: [
+      { label: 'Mua giúp năm tờ vé số', result: 'Mua 50 nghìn trúng về 20 nghìn — coi như quen mặt bà, từ đó bà ngồi mé cửa tiệm.', money: -30000, xp: 10, rating: 5 },
+      { label: 'Mời ly trà, mua một tờ cho vui', result: 'Bà cảm ơn rối rít, dời ghế sang mé đường cho cửa tiệm thoáng.', money: -10000, xp: 5 },
+      { label: 'Lắc đầu', result: 'Bà đứng nguyên chỗ cũ, vài khách ngại bước qua mới vô.' },
+    ],
+  },
+  {
+    id: 'sinh_vien_quay', icon: '🎬', title: 'Sinh viên xin quay phim', unlock: 13,
+    text: 'Nhóm sinh viên môn ghi hình xin quay "một buổi ở tiệm tạp hóa" và phỏng vấn bạn mười lăm phút.',
+    choices: [
+      { label: 'Đồng ý, pha thêm ấm trà mời', result: 'Cuốn phim đạt điểm cao, phụ huynh lớp bên tìm tới hỏi thăm tiệm.', minutes: 15, xp: 35, rating: 5 },
+      { label: 'Cho chụp nhanh vài tấm', result: 'Nhóm quay vội vài cú rồi thu dọn ra đi.', xp: 5 },
+      { label: 'Từ chối, đang bận kiểm kê', result: 'Nhóm cảm ơn rồi ghé tiệm bên kia phường quay.' },
+    ],
+  },
+  {
+    id: 'anh_sang_hu', icon: '💡', title: 'Đèn cháy giữa cơn mưa', unlock: 6,
+    text: 'Đèn huỳnh quang chập chờn rồi tắt ngúm giữa cơn mưa, tiệm tối thui trưa ngày.',
+    choices: [
+      { label: 'Thay băng đèn mới ngay', result: 'Tiệm sáng choang như thường, khách ngại gì không ghé.', money: -45000, xp: 10 },
+      { label: 'Cầm đèn pin soi tạm', result: 'Soi đèn bán tạm cho vài khách quen, hẹn mai thay đèn sau.', money: 5000 },
+    ],
+  },
+  {
+    id: 'dam_hieu', icon: '🕯️', title: 'Nhà xóm có đám hiếu', unlock: 7,
+    text: 'Nhà cuối hẻm có đám hiếu, người nhà ghé mua nến, băng keo với mấy thùng nước.',
+    choices: [
+      { label: 'Gói gọn, bớt phần tiền nước', result: 'Nhà hiếu cảm tạ, cả dãy hẻm khen tiệm mình biết điều.', money: -10000, xp: 20, rating: 5 },
+      { label: 'Bán đủ giá, lo chu đáo', result: 'Đơn lớn hiếm hoi, hôm nay bù được kha khá.', money: 45000 },
+      { label: 'Hàng thiếu, xin lỗi', result: 'Nhà hiếu ghé tiệm đầu phường mua cho rồi.' },
+    ],
+  },
+  {
+    id: 'bien_hieu', icon: '🪧', title: 'Hãng nước rủ treo biển', unlock: 11,
+    text: 'Hãng nước ngọt rủ treo biển quảng cáo trước tiệm, trả tiền thuê mặt bằng đều tháng.',
+    choices: [
+      { label: 'Cho treo, nhận tiền thuê', result: 'Biển to rực rỡ, có khách chê rối mắt nhưng tiền thuê đều tay.', money: 60000, xp: 10, friendship: { id: 'ba_nam', delta: -2 } },
+      { label: 'Từ chối, giữ mặt tiền xưa', result: 'Mặt tiền mộc mạc như chục năm qua, khách quen tấm tắc "tiệm vẫn y cũ".', friendship: { id: 'ba_nam', delta: 2 } },
     ],
   },
 ];
@@ -605,6 +1258,26 @@ export const STORIES: Record<string, StoryChapter[]> = {
     { at: 10, title: 'Tổ trưởng tổ dân phố', text: 'Bác Tám lo việc chung cả hẻm, ghé tiệm là hỏi chuyện xóm.', reward: { xp: 20 } },
     { at: 30, title: 'Đèn hẻm hư', text: 'Bác than đèn đường hư, tối khách ngại đi. Bác vận động cả xóm góp tiền sửa.', reward: { xp: 40 } },
     { at: 60, title: 'Hẻm sáng đèn', text: 'Đèn hẻm sửa xong, bác Tám khen tiệm đóng góp nhiều nhất trước cuộc họp tổ.', reward: { money: 100000, xp: 80 } },
+  ],
+  co_mai_bar: [
+    { at: 10, title: 'Trước giờ mở quán', text: 'Sáng nào Cô Mai cũng tạt qua lấy lốc sữa đặc với túi cà phê rồi mới mở quán. Cô kể quán nhỏ mà sống nhờ hàng chuẩn.', reward: { xp: 20 } },
+    { at: 30, title: 'Cuối tuần cạn nguyên liệu', text: 'Quán cô cuối tuần đông bất thường, cà phê với sữa đặc cạn sạch. Cô ghé vay tạm mấy lốc của tiệm, hẹn mai trả; từ đó thân như người trong nhà.', reward: { xp: 40 } },
+    { at: 60, title: 'Cà phê phin đầu ngõ', text: 'Cô Mai ghi lên menu dòng "cà phê phin đầu ngõ", nguyên liệu lấy ở tiệm mình. Khách hỏi ở đâu mua gói cà phê ngon vậy, cô chỉ thẳng qua hẻm.', reward: { money: 120000, xp: 80 } },
+  ],
+  chu_tu_ho: [
+    { at: 10, title: 'Ca nung lò gạch', text: 'Chú Tư làm ca nung lò gạch cuối làng, mồ hôi nước gì cũng ra. Tan ca là ghé tiệm lấy bia mát với lon tăng lực bù sức.', reward: { xp: 20 } },
+    { at: 30, title: 'Trật khớp vai', text: 'Chú trật khớp vai phải nghỉ vài bữa, nhờ thằng con ghé mua hộ bia với nước tăng lực cho cả đội. Tiệm gói thêm hộp bánh gửi tặng, chú nhắn cám ơn tới tận cửa hàng.', reward: { xp: 40 } },
+    { at: 60, title: 'Cỗ ăn mừng của lò', text: 'Năm nay lò trả thưởng hậu, chú Tư rủ cả đội ghé tiệm mua nguyên thùng về làm cỗ. Chú chốt một câu: "Quán của anh em lò gạch đây rồi!"', reward: { money: 100000, xp: 80 } },
+  ],
+  co_xuan_cho: [
+    { at: 10, title: 'Hết chợ mới tiện ghé', text: 'Cô Xuân đi chợ rau từ bốn giờ sáng, hết chợ mới tiện ghé mua gia vị với xà phòng về nấu cơm. Cô khen tiệm bày hàng ngay ngắn, giá "chợ thật".', reward: { xp: 20 } },
+    { at: 30, title: 'Mưa lớn rau hư', text: 'Trận mưa lớn làm rau hư cả dãy. Cô Xuân rủ bà con chợ chở rau còn lành tặng xóm trũng, tiệm mình góp mấy lít nước mắm theo xe. Cô cám ơn ròng rã mấy hôm.', reward: { xp: 40 } },
+    { at: 60, title: 'Cả dãy hàng ghé', text: 'Cô Xuân rủ cả dãy hàng chợ ghé mua sỉ, bảo "tiệm này tính giá thiệt, khỏi phải mặc cả". Từ đó sáng nào trước cửa tiệm cũng nghe tiếng chợ rôm rả.', reward: { money: 80000, xp: 80 } },
+  ],
+  suc_khanh_long: [
+    { at: 10, title: 'Ly trà trước giờ tụng kinh', text: 'Sư cụ Khánh Long đi khất thực ngang hẻm, ghé lấy ít trà với chuối về chùa. Cụ kể nhà Tổ vừa sơn lại, khách thơ tới lễ ngày càng đông.', reward: { xp: 20 } },
+    { at: 30, title: 'Rằm giữ hẹn', text: 'Rằm Vu Lan chùa khách đông, cụ nhờ tiệm để dành trà với chuối. Tiệm giữ đúng lời hẹn, cụ gật gù: "Giữ đúng lời hẹn cũng là một phước."', reward: { xp: 40 } },
+    { at: 60, title: 'Trà của ngõ nhỏ', text: 'Sau giờ khóa tu, sư cụ mời chủ tiệm lên chùa uống trà, bảo "ngõ nhỏ mà lòng rộng". Phật tử theo cụ ghé tiệm mua trà về cúng, ai cũng khoan thai lễ phép.', reward: { money: 80000, xp: 80 } },
   ],
 };
 
@@ -651,6 +1324,18 @@ export interface BizState {
   hui: Hui | null;
   week: WeekTally;
   lastWeek: WeekReport | null;
+  /** Số tuần liên tiếp hoàn thành thử thách tuần (trật một tuần thì về 0). */
+  weekStreak: number;
+  /** Sổ tích lũy tháng vận hành + báo cáo tháng trước + chuỗi tháng hoàn thành thử thách. */
+  month: MonthTally;
+  lastMonth: MonthReport | null;
+  monthStreak: number;
+  /** Sổ tích lũy năm vận hành + báo cáo năm trước (GĐ82 — nhịp năm, nối 4 mùa). */
+  year: import('./yearReport').YearTally;
+  lastYear: import('./yearReport').YearReport | null;
+  /** Sổ Mùa (GĐ83): sao mọi mùa tích lũy qua TẤT CẢ năm + những mốc tổng sao đã nhận thưởng. */
+  seasonAlmanac?: Partial<Record<'spring' | 'summer' | 'autumn' | 'winter', number>>;
+  almanacClaimed?: number[];
   pets: Partial<Record<PetKind, PetState>>;
   achievements: string[];
   perfectDays: number;
@@ -670,26 +1355,118 @@ export interface BizState {
   counterKills: number;
   /** Rival vừa đóng cửa, chào bán mặt bằng: mua lại thành chi nhánh; hết hạn thì người khác thuê mất. */
   rivalForSale?: { name: string; price: number; until: number };
+  /** Tính cách của rival vừa đóng cửa gần nhất: thế hệ rival mới rút tính cách tránh lặp lượt trước. */
+  lastRivalPers?: RivalPersonality;
   /** Đã mua lại tiệm đối thủ: khách cũ của họ ghé thêm trong tới ngày này. */
   rivalBuyUntil?: number;
+  /** Nhật ký sức mạnh rival từng đêm (cửa sổ lăn − RIVAL_TREND_DAYS); clear khi rival đóng cửa.
+   *  Bản lưu cũ thiếu → tự bù [] qua default/MERGE_DEEP (không cần SAVE_VERSION). */
+  rivalTrend: RivalTrendDay[];
   /** Ngày gần nhất đã hiện một chương hội thoại (tối đa 1 chương/ngày, tránh dồn khi lên cấp nhanh). */
   chapterDay?: number;
   /** Đã tắt hướng dẫn ngày đầu. */
   tutorialOff: boolean;
+  /** Tái sinh (NG+): số lần đã tái sinh (0 = lần chơi đầu) và hệ số doanh thu đang hưởng (0 → không đổi).
+   *  `goalsClaimed` (GĐ140): mục tiêu vòng tái sinh đã nhận thưởng trong vòng hiện tại — reset mỗi vòng. */
+  prestige: { level: number; bonus: number; goalsClaimed?: string[] };
   /** Dịch vụ ở quầy đã mở (nạp tiền, thu hộ); thiếu ở save cũ. */
   services?: string[];
   /** Thiết bị đã mua (camera, máy POS); thiếu ở save cũ. */
   upgrades?: string[];
+  /** Quán nước đầu ngõ (GĐ7, bán đồ uống rút từ kho); thiếu ở save cũ — nạp bản cũ tự bù mặc định. */
+  quanNuoc: QuanNuocState;
+  /** Kết quả ngày vừa rồi của quán nước (để UI hiển thị); chưa từng chạy thì undefined.
+   *  wages = tổng lương nhân viên phải trả hôm đó, profit = revenue − wages (lời ròng thật). */
+  quanNuocLast?: { day: number; revenue: number; served: number; wanted: number; wages: number; profit: number };
+  /** Các mốc 'Sổ tay Tiệm' đã nhận thưởng (GĐ36): danh sách ngưỡng món đã bán. Bản lưu cũ thiếu thì coi như []. */
+  discoveryClaimed?: number[];
+  /** Công trình khu phố (GĐ40) — sân chơi trẻ em: mỗi ngày góp một lần cho tới khi khánh thành.
+   *  Bản lưu cũ thiếu thì `applySnapshot` bù mặc định {0, 0} qua MERGE_DEEP. */
+  landmark: { contributions: number; lastContributeDay: number };
+  /** Nhân khẩu học khách vãng lai (GĐ62): mỗi nghề một dòng tích lũy trong ván.
+   *  Bản lưu cũ thiếu → tự bù {} qua default/MERGE_DEEP (không cần SAVE_VERSION). */
+  demographics: Record<string, { visits: number; revenue: number; walkouts: number }>;
+  /** Các mồi "Thử ngay" mở khóa hệ mới đã xem (GĐ64): danh sách id đã hiện một lần.
+   *  Bản lưu cũ thiếu → tự bù [] qua default/MERGE_DEEP (không cần SAVE_VERSION). */
+  unlockActs: string[];
+  /** Tiền lời dịch vụ ở quầy tích lũy cả ván theo từng dịch vụ (GĐ66 — đo "đã hoàn vốn chưa").
+   *  Bản lưu cũ thiếu → tự bù {} qua default/MERGE_DEEP (không cần SAVE_VERSION). */
+  serviceLife: Record<string, number>;
+  /** Hồ sơ mối quen lâu dài (GĐ67): doanh mua + số đơn tích lũy cả ván theo từng nhà cung cấp.
+   *  Bản lưu cũ thiếu → tự bù {} qua default/MERGE_DEEP (không cần SAVE_VERSION). */
+  supplierRel: Record<string, { spent: number; orders: number }>;
+  /** Doanh mua tháng theo từng mối (GĐ67): so với cam kết để hoàn cuối tháng, rồi reset.
+   *  Bản lưu cũ thiếu → tự bù {} qua default/MERGE_DEEP (không cần SAVE_VERSION). */
+  supplierRelMonth: Record<string, number>;
+  /** Số hiệu phiên chợ (tháng) đã lấy lô chợ phiên đặc biệt (GĐ68).
+   *  Bản lưu cũ thiếu → undefined (chưa lấy tháng nào, không cần SAVE_VERSION). */
+  fairTaken?: number;
+  /** Lượt khách quen đã phục vụ trong tháng này (GĐ69, Sổ thương mến): cuối tháng
+   *  quy thành quà tri ân. Bản lưu cũ thiếu → 0 qua default/MERGE_DEEP. */
+  triAnMonth: number;
+  /** Tháng đã trả quà tri ân cuối tháng (GĐ69): tránh trả 2 lần cho cùng một tháng.
+   *  Bản lưu cũ thiếu → undefined (chưa trả tháng nào, không cần SAVE_VERSION). */
+  triAnPaidMonth?: number;
+  /** Ngày game đã nhận thưởng đón lễ (GĐ70): 1 dịp lễ 1 lần. Bản lưu cũ thiếu →
+   *  undefined (chưa nhận dịp nào, không cần SAVE_VERSION). */
+  prepClaimed?: number;
+  /** Đối tác Hiệp lực chi nhánh×quán nước (GĐ74): state cam kết tháng (m, active, cọc). Bản lưu cũ
+   *  thiếu → mặc định không đối tác (NO SAVE_VERSION, save cũ tự bù qua MERGE_DEEP). */
+  hiepLuc?: HiepLucState;
+  /** Doanh thu chung 2 cơ sở tích lũy trong tháng đối tác (GĐ74). */
+  hiepLucMonth?: number;
+  /** Số tháng liên tiếp đạt hiệp lực (GĐ74): thưởng chuỗi. */
+  hiepLucStreak?: number;
+  /** Sự kiện thử thách theo mùa (GĐ75): state đang theo dõi — `season` + sao đã gom + ngày mùa
+   *  đã nhận thưởng (dayIndex của mùa). Bản lưu cũ thiếu → mặc định trống (NO SAVE_VERSION). */
+  seasonEvt?: SeasonEventState;
+  /** Nếp vận hành (GĐ79): chuỗi ngày "sạch" liên tiếp (đủ đông khách, không ai bỏ vì chờ/hết hàng). */
+  cleanStreak?: number;
+  /** Kỷ lục chuỗi sạch từng đạt. */
+  cleanBest?: number;
+  /** Mốc chuỗi cao nhất đã nhận thưởng. */
+  cleanClaimed?: number;
+  /** Đợt nhờ vả khách quen (GĐ80): regularId → trạng thái câu chuyện 2–4 ngày. */
+  regularArcs?: Record<string, import('./regularArc').RegularArcState>;
+}
+
+/** Sự kiện thử thách theo mùa (GĐ75). */
+export interface SeasonEventState {
+  season: 'spring' | 'summer' | 'autumn' | 'winter';
+  /** Tổng sao gom được trong mùa (mỗi ngày hoàn mục tiêu +1). */
+  stars: number;
+  /** dayIndex (0–4) của mùa đã nhận thưởng — chống nhận 2 lần/ngày. */
+  claimedDay?: number;
 }
 
 export const newBiz = (): BizState => ({
-  rival: null, rivalsBeaten: 0, rivalNextDay: 0, counter: null, counterReady: {}, ads: [],
+  rival: null, rivalsBeaten: 0, rivalNextDay: 0, rivalTrend: [], counter: null, counterReady: {}, ads: [],
   loyalty: { on: false, stamps: 10, redeemed: 0, given: 0 },
-  loan: null, hui: null, week: emptyWeek(1), lastWeek: null,
+  loan: null, hui: null, week: emptyWeek(1), lastWeek: null, weekStreak: 0,
+  month: emptyMonth(1, monthOf(1)), lastMonth: null, monthStreak: 0,
+  year: emptyYear(1, 1), lastYear: null,
   pets: {}, achievements: [], perfectDays: 0,
   surprise: null, surpriseDay: 0, story: {}, storyPending: null,
   home: [], vehicle: 'none', breakfastDay: 0,
-  chapters: [], chapterPending: null, counterKills: 0, tutorialOff: false, services: [], upgrades: [],
+  chapters: [], chapterPending: null, counterKills: 0, tutorialOff: false, prestige: { level: 0, bonus: 0, goalsClaimed: [] }, services: [], upgrades: [],
+  quanNuoc: newQuanNuoc(),
+  discoveryClaimed: [],
+  landmark: { contributions: 0, lastContributeDay: 0 },
+  demographics: {},
+  unlockActs: [],
+  serviceLife: {},
+  supplierRel: {},
+  supplierRelMonth: {},
+  fairTaken: undefined,
+  triAnMonth: 0,
+  triAnPaidMonth: undefined,
+  prepClaimed: undefined,
+  hiepLuc: { m: 0, active: false, coc: 0 },
+  hiepLucMonth: 0,
+  hiepLucStreak: 0,
+  seasonEvt: undefined,
+  cleanStreak: 0, cleanBest: 0, cleanClaimed: 0, regularArcs: {},
+  seasonAlmanac: {}, almanacClaimed: [],
 });
 
 /** Hệ số đi bộ của chủ tiệm hôm nay: nhà đẹp ngủ ngon, ăn sáng, xe (chỉ khi ở ngoài đường). */

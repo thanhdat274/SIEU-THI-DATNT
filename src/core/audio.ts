@@ -166,6 +166,72 @@ export function setRain(intensity: number) {
   }
 }
 
+// ───────────────────────── Thế giới có tiếng động theo giờ ─────────────────────────
+// Bên trên là nhạc nền; đây là "tiếng đời" — âm thanh môi trường đổi theo giờ game:
+// chim lúc rạng đông (5–8h), rì rào ban ngày (8–19h), dế đêm (19–5h). Mưa/sấm nằm riêng.
+// Mọi tầng đều khẽ và im lặng hẳn khi tắt tiếng (master gain = 0).
+
+type AmbBand = 'bird' | 'day' | 'cricket';
+let ambBand: AmbBand | null = null;
+let ambTimer: ReturnType<typeof setTimeout> | undefined;
+let ambNoise: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
+
+function ambTick() {
+  if (!ambBand || !ctx || !master) return;
+  if (ambBand === 'bird') {
+    // Chim hót lúc hửng đông: cặp nốt cao vang, thưa thớt
+    blip(2400 + Math.random() * 300, 0, 0.08, 'sine', 0.018);
+    if (Math.random() < 0.6) blip(3000 + Math.random() * 400, 0.03, 0.07, 'triangle', 0.014);
+    ambTimer = setTimeout(ambTick, 50 + Math.random() * 50);
+  } else if (ambBand === 'cricket') {
+    // Dế đêm: chuỗi tiếng rít ngắn lặp lại
+    for (let i = 0; i < 4; i++) blip(4300, i * 0.05, 0.04, 'square', 0.012);
+    ambTimer = setTimeout(ambTick, 900 + Math.random() * 700);
+  }
+}
+
+function ambStartNoise() {
+  if (!ctx || !master || ambNoise) return;
+  const buf = noiseBuffer(2);
+  if (!buf) return;
+  const src = ctx.createBufferSource();
+  const filter = ctx.createBiquadFilter();
+  const gain = ctx.createGain();
+  src.buffer = buf;
+  src.loop = true;
+  filter.type = 'lowpass';
+  filter.frequency.value = 550;
+  gain.gain.value = 0;
+  src.connect(filter).connect(gain).connect(master);
+  src.start();
+  ambNoise = { src, gain };
+}
+
+function ambStop() {
+  if (ambTimer) { clearTimeout(ambTimer); ambTimer = undefined; }
+  if (ambNoise) {
+    ambNoise.gain.gain.value = 0;
+    try { ambNoise.src.stop(); } catch { /* đã dừng */ }
+    ambNoise = null;
+  }
+  ambBand = null;
+}
+
+/** Nhắc mỗi khung hình: bật tầng âm thanh đúng với giờ trong game. */
+export function setAmbience(hour: number) {
+  if (!ctx || !master) return;
+  const band: AmbBand = hour >= 5 && hour < 8 ? 'bird' : hour >= 8 && hour < 19 ? 'day' : 'cricket';
+  if (band === ambBand) return;
+  ambStop();
+  ambBand = band;
+  if (band === 'day') {
+    ambStartNoise();
+    if (ambNoise) ambNoise.gain.gain.setTargetAtTime(muted ? 0 : 0.02, ctx.currentTime, 1.5);
+  } else {
+    ambTick();
+  }
+}
+
 // ───────────────────────── Nhạc nền nhẹ ─────────────────────────
 // Giai điệu ngũ cung (đô re mi sol la) tự sinh ngẫu nhiên, chậm và khẽ như tiếng radio đầu hẻm.
 // Không dùng file nhạc; mỗi nốt là một tiếng đàn mộc tắt dần, hợp âm đệm đổi chậm.

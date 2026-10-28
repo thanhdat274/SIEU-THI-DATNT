@@ -89,6 +89,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
     homegrown[def.productId] = (homegrown[def.productId] ?? 0) + qty;
     set({
       ...k,
+      stats: { ...s.stats, farmHarvest: (s.stats.farmHarvest ?? 0) + qty },
       garden: {
         ...s.garden,
         plots: s.garden.plots.map((p, i) => (i === plotIndex

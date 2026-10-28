@@ -1,19 +1,31 @@
-import { CONVENIENCE } from '../data/branches';
+import { branchAlerts, CONVENIENCE } from '../data/branches';
 import { ANIMALS, ANIMAL_ORDER, EGG_PER_TRAY, plotReady } from '../data/garden';
+import { QUAN_NUOC_UNLOCK } from '../data/quanNuoc';
 import { activeBuzz, SOCIAL_UNLOCK } from '../data/social';
 import { ONLINE_UNLOCK } from '../data/online';
 import { licenseStatus, type LicenseId } from '../data/licenses';
-import { INSPECTION_UNLOCK } from '../data/biz';
+import { INSPECTION_UNLOCK, weeklyChallenge, rivalUndercutAlerts } from '../data/biz';
+import { nearExpiryItems } from '../data/freshness';
+import { pendingUnlockAct } from '../data/unlockActs';
 import { Joystick } from './Joystick';
-import { useEffect, useRef, useState } from 'react';
-import { formatClock, questContext, useClock, useGame } from '../core/store';
-import { claimableCount } from '../data/quests';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { formatClock, questContext, useClock, useGame, type GameState } from '../core/store';
+import { claimableCount, dailyQuests, dailySetProgress, storyQuest, STORY_STEPS } from '../data/quests';
+import { idleTip, isSlowHour } from '../data/idle';
 import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
 import { FEATURES, xpToNext } from '../data/levels';
+import { SYSTEM_UNLOCKS } from '../data/unlockMap';
 import { formatMoney, productById } from '../data/products';
 import { summarizeReviews } from '../data/reviews';
-import { dayEffects, describeDate, festivalStock, upcomingFestival } from '../data/calendar';
+import { dayEffects, describeDate, festivalStock, monthOf, upcomingFestival } from '../data/calendar';
+import { isFairOpen } from '../data/fairmerchant';
+import { lifetimeRegularVisits, vipTierOf, EMOTIONAL_FRIENDSHIP } from '../data/regularTrust';
+import { relTier } from '../data/supplierRel';
+import { serviceById } from '../data/services';
+import { ASK_RESOLVE_REAL_S } from '../data/counterDeals';
+import { dossierEarnedCount, type DossierInput } from '../data/dossier';
+import { describeHours, goldenHourBands, goldenPrepWants, inGoldenHour, minutesToGolden, nextGoldenBand } from '../data/rhythm';
 import { skillPoints } from '../data/titles';
 import { COMBO_UNLOCK } from '../data/combos';
 import { describeDay, describeRain, rainSpell, WEATHER } from '../data/weather';
@@ -28,7 +40,7 @@ import { chooseSurprise, closeChapter, closeStory, dismissTutorial, REGULAR_NAME
 import { chapterById } from '../data/chapters';
 import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
 import { Panels } from './Panels';
-import { answerAsk, useCounterAsk } from '../core/counterAsk';
+import { answerAsk, useCounterAsk, askWallElapsed } from '../core/counterAsk';
 import './hud.css';
 
 /** Màn hình cảm ứng: không có phím, thay chữ phím [X] bằng biểu tượng chạm. */
@@ -80,8 +92,33 @@ function MusicToggle() {
       title={on ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
       onClick={() => { const next = !on; setMusic(next); setLocal(next); }}
     >
-      <span aria-hidden="true">{on ? '🎵' : '🎶︎'}</span>
+      <span aria-hidden="true">{on ? '🎵' : '🎶'}</span>
     </button>
+  );
+}
+
+/** Tiền "pop" mỗi khi đổi: xanh khi kiếm, đỏ khi chi, kèm số +/− nổi lên rồi tan. */
+function MoneyChip({ money }: { money: number }) {
+  const [bump, setBump] = useState(0);
+  const [delta, setDelta] = useState<{ v: number; dir: 1 | -1 } | null>(null);
+  const prev = useRef(money);
+  useEffect(() => {
+    if (money === prev.current) return;
+    const diff = money - prev.current;
+    prev.current = money;
+    if (Math.abs(diff) >= 100) {
+      setDelta({ v: diff, dir: diff >= 0 ? 1 : -1 });
+      setBump((n) => n + 1);
+    }
+    const t = setTimeout(() => setDelta(null), 1300);
+    return () => clearTimeout(t);
+  }, [money]);
+  return (
+    <div className="hud-chip hud-money" title="Tiền hiện có">
+      <span aria-hidden="true">💰</span>
+      <b key={bump} className={delta ? (delta.dir === 1 ? 'money-up' : 'money-down') : undefined}>{formatMoney(money)}</b>
+      {delta && <span className={`hud-delta ${delta.dir === 1 ? 'up' : 'down'}`}>{delta.dir === 1 ? '+' : '−'}{formatMoney(Math.abs(delta.v))}</span>}
+    </div>
   );
 }
 
@@ -138,7 +175,11 @@ export function Hud() {
   const { account, cloudStatus, conflict, coop } = useSession();
   /** Đang ở hẻm online: tiến trình là của cả hẻm, lưu trên server thay vì trong máy. */
   const online = !!coop;
+  /** Số lượt đã góp sân chơi (GĐ40) — để nút menu hiện tiến độ n/28. */
+  const landmarkContrib = useGame((s) => s.biz.landmark.contributions);
   const [copiedCode, setCopiedCode] = useState(false);
+  // Xem lại hướng dẫn từ menu Thêm: bật thì Tutorial chuyển sang chế độ review
+  const [helpTutorial, setHelpTutorial] = useState(false);
   const copyRoomCode = () => {
     if (!coop) return;
     void navigator.clipboard.writeText(coop.alley).then(() => {
@@ -208,10 +249,51 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     const goc = l.principal >= 1000000 ? `${Math.round((l.principal / 1000000) * 10) / 10}tr` : `${Math.round(l.principal / 1000)}k`;
     return `🏦 ${goc}${s.day >= l.dueDay - 3 ? ' ⚠️' : ''}`;
   });
+  // Thử thách tuần sắp xong (≥80% mục tiêu) hoặc đã xong thì nhắc trên nút Kinh doanh;
+  // dưới 80% thì khỏi nhồi — nút khoá (cấp < 3) ToolButton tự ẩn badge.
+  const challengeBadge = useGame((s) => {
+    const ch = weeklyChallenge(Math.ceil(s.day / 7), s.level);
+    const target = ch.target(s.level);
+    // Save cũ thiếu counter trong tally thì tiến độ coi như 0 (giống tab Lãi lỗ)
+    const current = ch.measure === 'revenue' ? s.biz.week.revenue : (s.biz.week[ch.measure] ?? 0);
+    if (current >= target) return '🎯 xong';
+    return current >= target * 0.8 ? `🎯 ${ch.icon}` : undefined;
+  });
   // Điểm danh quà / lượt vòng quay hôm nay còn trống thì nhắc trên nút
   const giftClaimable = useGame((s) => s.giftLastDay !== s.day);
   const wheelReady = useGame((s) => s.wheelLastDay !== s.day);
   const wheelBoost = useGame((s) => s.wheelBoost);
+  // Đầu tháng có chợ phiên đặc biệt còn chưa lấy thì nhắc trên nút Nhập hàng
+  const fairBadge = useGame((s) => (isFairOpen(s.day) && s.biz.fairTaken !== monthOf(s.day)) ? '🛒 Phiên chợ' : undefined);
+  // Sổ thương mến (GĐ69): bậc Tiệm hiện tại (bể khách quen cả ván) — hiện trên nút Khách quen
+  const triBadge = useGame((s) => {
+    const t = vipTierOf(lifetimeRegularVisits(s.regulars ?? {}));
+    return t.level >= 1 ? `${t.icon} ${t.name}` : undefined;
+  });
+  // Hồ sơ tiệm (GĐ71): số huy hiệu thâm niên đã đạt — hiện trên nút Hồ sơ tiệm
+  const dossierBadge = useGame((s) => {
+    const d: DossierInput = {
+      supplierTier: Math.max(0, ...Object.values(s.biz.supplierRel ?? {}).map((r) => relTier(r.spent).level)),
+      regularTier: vipTierOf(lifetimeRegularVisits(s.regulars ?? {})).level,
+      closeRegulars: Object.values(s.regulars ?? {}).filter((r) => r.friendship >= EMOTIONAL_FRIENDSHIP).length,
+      fairTaken: s.biz.fairTaken !== undefined,
+      prepClaimed: s.biz.prepClaimed !== undefined,
+      servicesOwned: (s.biz.services ?? []).length,
+      servicesPaidBack: Object.entries(s.biz.serviceLife ?? {}).filter(([sid, life]) => (serviceById(sid)?.price ?? Infinity) <= life).length,
+      demographicsCount: Object.keys(s.biz.demographics ?? {}).length,
+      landmarkContrib: s.biz.landmark?.contributions ?? 0,
+      prestigeLevel: s.biz.prestige?.level ?? 0,
+      rivalArcs: (s.biz.rivalTrend ?? []).length,
+      perfectDays: s.biz.perfectDays ?? 0,
+    };
+    const n = dossierEarnedCount(d);
+    return n > 0 ? `${n} huy hiệu` : undefined;
+  });
+  // Bản đồ mở khóa: số hệ lớn chưa mở khóa theo cấp
+  const roadmapBadge = useGame((s) => {
+    const n = SYSTEM_UNLOCKS.filter((u) => u.atLevel > s.level).length;
+    return n > 0 ? `${n} hệ` : undefined;
+  });
   // Trang trại: luống chờ thu, trứng/sữa chờ lấy, heo xuất chuồng được, gà đói mà kho hết cám, hoặc chưa tưới
   const gardenBadge = useGame((s) => {
     if (s.level < 8) return undefined;
@@ -239,11 +321,17 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   const atFarm = location === 'Trang trại đầu ngõ';
   // Bảng nào đang mở thì nút mở bảng đó sáng lên
   const openType = useGame((s) => s.panel?.type ?? null);
-  type Tool = { icon: string; label: string; on: () => void; badge?: string; lock?: number; active?: boolean; more?: boolean; /** Màn hẹp (điện thoại đứng): dời vào menu Thêm cho dock vừa một hàng */ narrowMore?: boolean };
+  // Hướng dẫn ngày đầu đang hiện và đang dừng ở bước nào (để nhấp nháy đúng nút dock)
+  const tutActive = useGame(tutorialActive);
+  const tutStep = useGame(tutorialStep);
+  type Tool = { icon: string; label: string; on: () => void; badge?: string; lock?: number; active?: boolean; more?: boolean; /** Nhóm trong menu Thêm: tiêu đề nhỏ hiện trước cụm nút cùng nhóm */ group?: string; /** Màn hẹp (điện thoại đứng): dời vào menu Thêm cho dock vừa một hàng */ narrowMore?: boolean; /** Bước hướng dẫn ngày đầu đang chỉ tới nút này: viền vàng nhấp nháy */ pulse?: boolean };
   const tools: Tool[] = [
     {
       icon: atHome ? '🛵' : '🏠', label: atHome ? 'Ra tiệm' : 'Về nhà',
       on: () => worldActions.travel(atHome ? 'shop' : 'home'),
+      // Bước 3 "Đứng quầy": đang ở nhà thì nhấp nháy nút Ra tiệm dẫn đường (tới nơi rồi marker
+      // vàng trên sàn quầy lo việc dẫn tiếp); bước 4 "Tối về nhà" cũng là nút này
+      pulse: tutActive && (tutStep === 4 || (tutStep === 3 && atHome)),
     },
     {
       icon: atFarm ? '🛵' : '🚜', label: atFarm ? 'Ra tiệm' : 'Ra trại',
@@ -253,35 +341,43 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
       icon: '🗃️', label: 'Kho', badge: emptySlots ? `${emptySlots} trống` : undefined, active: openType === 'storage',
       on: () => openPanel({ type: 'storage' }),
     },
-    { icon: '🗺️', label: 'Sơ đồ kệ', active: openType === 'planogram', on: () => openPanel({ type: 'planogram' }) },
-    { icon: '📦', label: 'Nhập hàng', active: openType === 'order', on: () => openPanel({ type: 'order' }) },
-    { icon: '☀️', label: 'Sổ đầu ngày', narrowMore: true, active: openType === 'morning', on: () => openPanel({ type: 'morning' }) },
+    { icon: '🗺️', label: 'Sơ đồ kệ', active: openType === 'planogram', pulse: tutActive && tutStep === 1, on: () => openPanel({ type: 'planogram' }) },
+    { icon: '📦', label: 'Nhập hàng', badge: fairBadge, active: openType === 'order', pulse: tutActive && tutStep === 0, on: () => openPanel({ type: 'order' }) },
+    // GĐ98: ☀️ Sổ đầu ngày + 🎁 Điểm danh là NGHI THỨC HẰNG NGÀY (vòng lặp giữ chân) — ở ≤480px
+    // vẫn giữ trên dock (wrap 2 hàng chấp nhận được), không dời vào Thêm như 💲/📈.
+    { icon: '☀️', label: 'Sổ đầu ngày', group: 'Vận hành', active: openType === 'morning', on: () => openPanel({ type: 'morning' }) },
     { icon: '📜', label: 'Nhiệm vụ', badge: questsReady ? `${questsReady} xong` : undefined, active: openType === 'quests', on: () => openPanel({ type: 'quests' }) },
     {
-      icon: '🎁', label: 'Điểm danh', narrowMore: true, active: openType === 'gifts',
+      icon: '🎁', label: 'Điểm danh', group: 'Vận hành', active: openType === 'gifts',
       badge: giftClaimable ? 'Có quà' : wheelReady ? '⭕ Quay' : undefined,
       on: () => openPanel({ type: 'gifts' }),
     },
-    { icon: '🗓️', label: 'Lịch sự kiện', more: true, active: openType === 'calendar', on: () => openPanel({ type: 'calendar' }) },
-    { icon: '🍳', label: 'Sổ nấu', more: true, lock: 21, active: openType === 'cook', on: () => openPanel({ type: 'cook' }) },
-    { icon: '🛠️', label: 'Xây dựng', more: true, active: openType === 'arrange', on: () => openPanel({ type: 'arrange' }) },
-    { icon: '💲', label: 'Giá bán', narrowMore: true, lock: FEATURES.prices, active: openType === 'prices', on: () => openPanel({ type: 'prices' }) },
-    { icon: '🎁', label: 'Combo', more: true, lock: COMBO_UNLOCK, active: openType === 'combos', on: () => openPanel({ type: 'combos' }) },
-    { icon: '📋', label: 'Hợp đồng', lock: 14, more: true, active: openType === 'contracts', on: () => openPanel({ type: 'contracts' }) },
-    { icon: '📈', label: 'Kinh doanh', narrowMore: true, lock: 3, badge: [loanBadge, rivalBadge].filter(Boolean).join(' · ') || undefined, active: openType === 'business', on: () => openPanel({ type: 'business' }) },
-    { icon: '📊', label: 'Sổ theo dõi', more: true, active: openType === 'history', on: () => openPanel({ type: 'history' }) },
-    { icon: '🩺', label: 'Sức khoẻ món', more: true, active: openType === 'analytics', on: () => openPanel({ type: 'analytics' }) },
-    { icon: '🚜', label: 'Trang trại', more: true, lock: 8, badge: gardenBadge, active: openType === 'garden', on: () => openPanel({ type: 'garden' }) },
-    { icon: '👕', label: 'Trang phục', lock: 2, more: true, active: openType === 'costume', on: () => openPanel({ type: 'costume' }) },
-    { icon: '🏅', label: 'Danh hiệu', more: true, badge: skillsLeft > 0 ? `+${skillsLeft} kỹ năng` : undefined, active: openType === 'skills', on: () => openPanel({ type: 'skills' }) },
-    { icon: '💛', label: 'Khách quen', more: true, active: openType === 'regulars', on: () => openPanel({ type: 'regulars' }) },
-    { icon: '👥', label: 'Nhân viên', more: true, lock: FEATURES.staff, active: openType === 'staff', on: () => openPanel({ type: 'staff' }) },
-    { icon: '🏪', label: 'Tiện lợi 24/7', more: true, lock: CONVENIENCE.unlock, active: openType === 'branch', on: () => openPanel({ type: 'branch' }) },
-    { icon: '📱', label: 'Mạng xã hội', more: true, lock: SOCIAL_UNLOCK, badge: socialBadge, active: openType === 'social', on: () => openPanel({ type: 'social' }) },
-    { icon: '📲', label: 'Bán online', more: true, lock: ONLINE_UNLOCK, badge: onlineBadge, active: openType === 'online', on: () => openPanel({ type: 'online' }) },
-    { icon: '📜', label: 'Giấy phép', more: true, lock: INSPECTION_UNLOCK, badge: licenseBadge, active: openType === 'licenses', on: () => openPanel({ type: 'licenses' }) },
+    { icon: '🗓️', label: 'Lịch sự kiện', more: true, group: 'Vận hành', active: openType === 'calendar', on: () => openPanel({ type: 'calendar' }) },
+    { icon: '🍳', label: 'Sổ nấu', more: true, group: 'Vận hành', lock: 21, active: openType === 'cook', on: () => openPanel({ type: 'cook' }) },
+    { icon: '🛠️', label: 'Xây dựng', more: true, group: 'Vận hành', active: openType === 'arrange', on: () => openPanel({ type: 'arrange' }) },
+    { icon: '💲', label: 'Giá bán', narrowMore: true, group: 'Hàng hóa', lock: FEATURES.prices, active: openType === 'prices', on: () => openPanel({ type: 'prices' }) },
+    { icon: '🎁', label: 'Combo', more: true, group: 'Hàng hóa', lock: COMBO_UNLOCK, active: openType === 'combos', on: () => openPanel({ type: 'combos' }) },
+    { icon: '📋', label: 'Hợp đồng', group: 'Hàng hóa', lock: 14, more: true, active: openType === 'contracts', on: () => openPanel({ type: 'contracts' }) },
+    { icon: '🔍', label: 'Sổ tay Tiệm', group: 'Hàng hóa', more: true, active: openType === 'discovery', on: () => openPanel({ type: 'discovery' }) },
+    { icon: '📈', label: 'Kinh doanh', narrowMore: true, group: 'Kinh doanh & đối thủ', lock: 3, badge: [loanBadge, rivalBadge, challengeBadge].filter(Boolean).join(' · ') || undefined, active: openType === 'business', on: () => openPanel({ type: 'business' }) },
+    { icon: '📊', label: 'Sổ theo dõi', more: true, group: 'Kinh doanh & đối thủ', active: openType === 'history', on: () => openPanel({ type: 'history' }) },
+    { icon: '🏆', label: 'Sổ kỷ lục', more: true, group: 'Kinh doanh & đối thủ', active: openType === 'records', on: () => openPanel({ type: 'records' }) },
+    { icon: '📖', label: 'Hồ sơ tiệm', more: true, group: 'Kinh doanh & đối thủ', badge: dossierBadge, active: openType === 'dossier', on: () => openPanel({ type: 'dossier' }) },
+    { icon: '🗺️', label: 'Bản đồ mở khóa', more: true, group: 'Kinh doanh & đối thủ', badge: roadmapBadge, active: openType === 'roadmap', on: () => openPanel({ type: 'roadmap' }) },
+    { icon: '🩺', label: 'Sức khoẻ món', more: true, group: 'Kinh doanh & đối thủ', active: openType === 'analytics', on: () => openPanel({ type: 'analytics' }) },
+    { icon: '🚜', label: 'Trang trại', more: true, group: 'Ngoài tiệm', lock: 8, badge: gardenBadge, active: openType === 'garden', on: () => openPanel({ type: 'garden' }) },
+    { icon: '🧋', label: 'Quán nước', more: true, group: 'Ngoài tiệm', lock: QUAN_NUOC_UNLOCK, active: openType === 'quannuoc', on: () => openPanel({ type: 'quannuoc' }) },
+    { icon: '🏗️', label: 'Sân chơi', more: true, group: 'Ngoài tiệm', active: openType === 'landmark', badge: landmarkContrib >= 28 ? '✅ Xong' : `${landmarkContrib}/28`, on: () => openPanel({ type: 'landmark' }) },
+    { icon: '👕', label: 'Trang phục', group: 'Nhân sự & khách', lock: 2, more: true, active: openType === 'costume', on: () => openPanel({ type: 'costume' }) },
+    { icon: '🏅', label: 'Danh hiệu', more: true, group: 'Nhân sự & khách', badge: skillsLeft > 0 ? `+${skillsLeft} kỹ năng` : undefined, active: openType === 'skills', on: () => openPanel({ type: 'skills' }) },
+    { icon: '💛', label: 'Khách quen', more: true, group: 'Nhân sự & khách', badge: triBadge, active: openType === 'regulars', on: () => openPanel({ type: 'regulars' }) },
+    { icon: '👥', label: 'Nhân viên', more: true, group: 'Nhân sự & khách', lock: FEATURES.staff, active: openType === 'staff', on: () => openPanel({ type: 'staff' }) },
+    { icon: '🏪', label: 'Tiện lợi 24/7', more: true, group: 'Mở rộng', lock: CONVENIENCE.unlock, active: openType === 'branch', on: () => openPanel({ type: 'branch' }) },
+    { icon: '📱', label: 'Mạng xã hội', more: true, group: 'Mở rộng', lock: SOCIAL_UNLOCK, badge: socialBadge, active: openType === 'social', on: () => openPanel({ type: 'social' }) },
+    { icon: '📲', label: 'Bán online', more: true, group: 'Mở rộng', lock: ONLINE_UNLOCK, badge: onlineBadge, active: openType === 'online', on: () => openPanel({ type: 'online' }) },
+    { icon: '📜', label: 'Giấy phép', more: true, group: 'Pháp lý & danh tiếng', lock: INSPECTION_UNLOCK, badge: licenseBadge, active: openType === 'licenses', on: () => openPanel({ type: 'licenses' }) },
     {
-      icon: '💬', label: 'Đánh giá', more: true, active: openType === 'reviews', badge: rating.count ? `${rating.average.toFixed(1)}★` : undefined,
+      icon: '💬', label: 'Đánh giá', more: true, group: 'Pháp lý & danh tiếng', active: openType === 'reviews', badge: rating.count ? `${rating.average.toFixed(1)}★` : undefined,
       on: () => openPanel({ type: 'reviews' }),
     },
   ];
@@ -298,6 +394,23 @@ ${forecastText}`}>
           <span>
             <b className={late ? 'hud-late' : undefined}>{formatClock(minutes)}</b>
             <small>Ngày {day} ({describeDate(day)}) · {spell ? describeRain(spell, weather) : WEATHER[weather].name}</small>
+            <small className="hud-forecast">
+              <span title={(() => {
+                const next = nextGoldenBand(minutes);
+                const prep = next ? goldenPrepWants(minutes, level, 5).join(', ') : '';
+                return `⏰ Giờ vàng trong ngày: ${describeHours(goldenHourBands())} — đông khách, nhớ châm kệ trước giờ này.\n${next ? `Sắp tới (${next.name}): nên châm ${prep || 'món bán chạy trong khung'}.` : 'Hôm nay hết giờ vàng rồi.'}`;
+              })()}>
+                ⏰ {inGoldenHour(minutes) ? 'Đang giờ vàng — sẵn sàng đón khách!'
+                  : (() => {
+                      const mt = minutesToGolden(minutes);
+                      if (mt >= 0 && mt <= 120) {
+                        const prep = goldenPrepWants(minutes, level, 2).join(', ');
+                        return `Sắp tới giờ vàng (${Math.ceil(mt / 60) >= 1 ? `≈${Math.ceil(mt / 60)}h` : `${mt} phút`}): châm kệ ${prep}`;
+                      }
+                      return `Giờ vàng: ${describeHours(goldenHourBands())}`;
+                    })()}
+              </span>
+            </small>
             {(effects.festival || effects.market) && (
               <small title={[effects.festival && `${effects.festival.name}: ${effects.festival.blurb}`, effects.market?.label].filter(Boolean).join('\n')}>
                 {effects.festival && `${effects.festival.icon} ${effects.festival.name}`}
@@ -313,10 +426,7 @@ ${forecastText}`}>
             <small className="hud-forecast">{forecast.map((w, i) => <span key={i} title={describeDay(weatherSeed, day + 1 + i, w)}>{WEATHER[w].icon}</span>)}</small>
           </span>
         </div>
-        <div className="hud-chip hud-money" title="Tiền hiện có">
-          <span aria-hidden="true">💰</span>
-          <b>{formatMoney(money)}</b>
-        </div>
+        <MoneyChip money={money} />
         <button className="hud-chip hud-level" title={`${xp}/${xpToNext(level)} XP · xem lộ trình cấp`} onClick={() => openPanel({ type: 'levels' })}>
           <span className="hud-level-num">{level}</span>
           <span>
@@ -324,6 +434,7 @@ ${forecastText}`}>
             <span className="hud-xp"><span style={{ width: `${progress * 100}%` }} /></span>
           </span>
         </button>
+        <GoalChip ready={questsReady} />
         <div className="hud-place">
           <span>📍 {location}</span>
           <span className={`hud-open ${shopOpen ? 'on' : ''}`}>{shopOpen ? 'Đang mở cửa' : 'Tiệm đóng'}</span>
@@ -342,10 +453,14 @@ ${forecastText}`}>
         )}
         {waiting > 0 && !hint?.startsWith('💵') &&<div className="hud-alert warn">🛒 {waiting} khách đang chờ tính tiền ở quầy</div>}
         <PhoneAlerts />
+        <BranchAlert />
+        <RivalAlert />
+        <ExpiryAlert />
+        <UnlockActBanner />
         <VendorAlert />
         <CounterAskAlert />
         <FestivalBanner />
-        <Tutorial />
+        <Tutorial review={helpTutorial} onDone={() => setHelpTutorial(false)} />
         <SurpriseAlert />
         <StoryAlert />
         {conflict && (
@@ -402,8 +517,9 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
       {message && <div className="hud-toast" role="status">{message}</div>}
       <ChapterDialogue />
 
-      {/* Dưới cùng: gợi ý tương tác, rồi thanh công cụ */}
+      {/* Dưới cùng: gợi ý giờ vắng, gợi ý tương tác, rồi thanh công cụ */}
       <div className="hud-bottom">
+        <IdleChip />
         {buildMode && (
           <div className="hud-alert build">
             {placing ? (
@@ -452,7 +568,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
           </button>
           <span className="hud-divider" />
           <button
-            className={`hud-tool hud-shop${shopOpen ? ' open' : ''}`}
+            className={`hud-tool hud-shop${shopOpen ? ' open' : ''}${tutActive && tutStep === 2 ? ' hud-pulse' : ''}`}
             aria-pressed={shopOpen}
             title={shopOpen ? 'Đóng cửa tiệm: khách mới không vào nữa' : 'Mở cửa tiệm đón khách'}
             onClick={toggleShop}
@@ -461,7 +577,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
             <span>{shopOpen ? 'Đóng cửa' : 'Mở cửa'}</span>
           </button>
           {tools.filter((t) => !(t.more || (narrow && t.narrowMore))).map((t) => <ToolButton key={t.label} tool={t} level={level} />)}
-          <MoreMenu tools={tools.filter((t) => t.more || (narrow && t.narrowMore))} level={level} />
+          <MoreMenu tools={tools.filter((t) => t.more || (narrow && t.narrowMore))} level={level} onHelp={() => setHelpTutorial(true)} />
         </nav>
       </div>
       <Panels />
@@ -469,13 +585,13 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
   );
 }
 
-type ToolDef = { icon: string; label: string; on: () => void; badge?: string; lock?: number; active?: boolean };
+type ToolDef = { icon: string; label: string; on: () => void; badge?: string; lock?: number; active?: boolean; /** Nhóm trong menu Thêm: tiêu đề nhỏ hiện trước cụm nút cùng nhóm */ group?: string; /** Bước hướng dẫn ngày đầu đang chỉ tới nút này: viền vàng nhấp nháy */ pulse?: boolean };
 
 function ToolButton({ tool: t, level, onPicked }: { tool: ToolDef; level: number; onPicked?: () => void }) {
   const locked = t.lock !== undefined && level < t.lock;
   return (
     <button
-      className={`hud-tool${t.active ? ' active' : ''}`}
+      className={`hud-tool${t.active ? ' active' : ''}${t.pulse ? ' hud-pulse' : ''}`}
       disabled={locked}
       title={locked ? `Mở khóa ở cấp ${t.lock}` : t.label}
       onClick={() => { onPicked?.(); t.on(); }}
@@ -489,7 +605,7 @@ function ToolButton({ tool: t, level, onPicked }: { tool: ToolDef; level: number
 }
 
 /** Các bảng ít dùng gom vào một nút để thanh công cụ vừa màn hình; có việc cần xem thì hiện chấm báo. */
-function MoreMenu({ tools, level }: { tools: ToolDef[]; level: number }) {
+function MoreMenu({ tools, level, onHelp }: { tools: ToolDef[]; level: number; onHelp: () => void }) {
   const { open, setOpen, ref } = usePopover();
   const [keys, setKeys] = useState(false);
   const alert = tools.some((t) => t.badge && !(t.lock !== undefined && level < t.lock) && !t.badge.includes('★'));
@@ -510,8 +626,16 @@ function MoreMenu({ tools, level }: { tools: ToolDef[]; level: number }) {
             </div>
           ) : (
             <>
-              {tools.map((t) => <ToolButton key={t.label} tool={t} level={level} onPicked={() => setOpen(false)} />)}
+              {/* Tiêu đề nhóm nhỏ trước từng cụm liên tiếp; thứ tự nút giữ nguyên như cũ */}
+              {tools.map((t, i) => (
+                <Fragment key={t.label}>
+                  {t.group && t.group !== tools[i - 1]?.group && <div className="hud-more-group">{t.group}</div>}
+                  <ToolButton tool={t} level={level} onPicked={() => setOpen(false)} />
+                </Fragment>
+              ))}
               {!TOUCH && <ToolButton tool={{ icon: '⌨️', label: 'Phím', on: () => setKeys(true) }} level={level} />}
+              {/* Xem lại hướng dẫn mở tiệm: cả máy cảm xúc lẫn desktop đều cần */}
+              <ToolButton tool={{ icon: '📖', label: 'Hướng dẫn', on: onHelp }} level={level} onPicked={() => setOpen(false)} />
             </>
           )}
         </div>
@@ -566,6 +690,61 @@ function AccountMenu({ name, photo, status, items }: {
   );
 }
 
+/** Chi nhánh 24/7 "lên tiếng": đẩy cảnh báo (calloff/mất điện/trộm/kệ cạn/thiếu thu ngân) lên HUD. */
+function BranchAlert() {
+  const branch = useGame((s) => s.branch);
+  const minutes = useClock((c) => Math.floor(c.minutes));
+  if (!branch) return null;
+  const alerts = branchAlerts(branch, minutes);
+  if (!alerts.length) return null;
+  return (
+    <>
+      {alerts.map((a, i) => (
+        <div key={i} className={`hud-alert ${a.danger ? 'danger' : 'warn'}`}>{a.text}</div>
+      ))}
+    </>
+  );
+}
+
+/** Đối thủ đang bán rẻ những món mình có bày — nhắc ứng phó giá (GĐ42). */
+function RivalAlert() {
+  const biz = useGame((s) => s.biz);
+  const priceOf = useGame((s) => s.priceOf);
+  const day = useGame((s) => s.day);
+  const storage = useGame((s) => s.storage);
+  const furniture = useGame((s) => s.furniture);
+  const carried = new Set<string>();
+  for (const [id, q] of Object.entries(storage)) if (q > 0) carried.add(id);
+  for (const f of furniture) for (const t of f.tiers) if (t.productId && t.count > 0) carried.add(t.productId);
+  const alert = rivalUndercutAlerts(biz.rival, priceOf, day, carried);
+  if (!alert) return null;
+  return (
+    <div className="hud-alert warn">
+      ⚔️ {alert.rival} bán rẻ <b>{alert.items.join(', ')}</b> — khách nhạy giá các món này chê tiệm mình.
+      <span className="hud-alert-actions">
+        <button className="hud-btn primary" onClick={() => useGame.getState().openPanel({ type: 'prices' })}>Xem giá</button>
+      </span>
+    </div>
+  );
+}
+
+/** Lô cận hạn trong kho/kệ — nhắc xử lý trước khi hỏng mất vốn (GĐ43). */
+function ExpiryAlert() {
+  const storage = useGame((s) => s.storage);
+  const storageLots = useGame((s) => s.storageLots);
+  const furniture = useGame((s) => s.furniture);
+  const items = nearExpiryItems(storage, storageLots, furniture.flatMap((f) => f.tiers));
+  if (!items.length) return null;
+  return (
+    <div className="hud-alert warn">
+      ⏳ <b>Hàng sắp hết hạn:</b> {items.map((i) => `${i.name} (${i.qty})`).join(', ')}
+      <span className="hud-alert-actions">
+        <button className="hud-btn primary" onClick={() => useGame.getState().openPanel({ type: 'storage' })}>Xử lý</button>
+      </span>
+    </div>
+  );
+}
+
 /** Sự kiện bất ngờ trong ngày: chọn một cách xử lý. */
 function SurpriseAlert() {
   const active = useGame((s) => s.biz.surprise);
@@ -581,13 +760,38 @@ function SurpriseAlert() {
   );
 }
 
-/** Hội thoại chương cốt truyện: hiện từng câu, bấm để qua câu kế; game tạm dừng trong lúc đọc. */
+/** GĐ64 — mồi "Thử ngay" khi một hệ chính mới mở khóa: hiện trong cột alert, đóng vĩnh viễn. */
+function UnlockActBanner() {
+  const level = useGame((s) => s.level);
+  const biz = useGame((s) => s.biz);
+  const openPanel = useGame((s) => s.openPanel);
+  const act = pendingUnlockAct(biz, level);
+  if (!act) return null;
+  const done = () => {
+    const b = useGame.getState().biz;
+    useGame.setState({ biz: { ...b, unlockActs: [...(b.unlockActs ?? []), act.id] } });
+  };
+  return (
+    <div className="hud-alert" style={{ background: 'rgba(39,174,96,0.95)' }}>
+      <span>🔓 Mới mở: {act.icon} {act.title} — {act.hint}</span>
+      <span className="hud-alert-actions">
+        <button className="hud-btn" onClick={() => { openPanel(act.panel()); done(); }}>🚀 Thử ngay</button>
+        <button className="hud-btn" onClick={done} title="Bỏ qua (không hiện lại)">✕</button>
+      </span>
+    </div>
+  );
+}
+
+/** Hội thoại chương cốt truyện: hiện từng câu, bấm để qua câu kế; game tạm dừng trong lúc đọc.
+ *  Khi panel đang mở thì ẩn — chapterPending vẫn giữ trong state, đóng panel là hiện lại
+ *  (tránh đè nội dung panel trên màn hẹp, che khuất chức năng). */
 function ChapterDialogue() {
   const id = useGame((s) => s.biz.chapterPending);
+  const panelOpen = useGame((s) => s.panel !== null);
   const [line, setLine] = useState(0);
   useEffect(() => setLine(0), [id]);
   const ch = id ? chapterById(id) : undefined;
-  if (!ch) return null;
+  if (!ch || panelOpen) return null;
   const l = ch.lines[Math.min(line, ch.lines.length - 1)];
   const last = line >= ch.lines.length - 1;
   const reward = [ch.reward?.money && formatMoney(ch.reward.money), ch.reward?.xp && `${ch.reward.xp} XP`].filter(Boolean).join(', ');
@@ -628,26 +832,124 @@ function FestivalBanner() {
   );
 }
 
-/** Hướng dẫn ngày đầu: danh sách việc tự tích khi làm xong. */
-function Tutorial() {
-  const off = useGame((s) => s.biz.tutorialOff);
-  const day = useGame((s) => s.day);
-  const steps = useGame((s) => [
+/** 5 bước hướng dẫn ngày đầu — dùng chung cho bảng hướng dẫn, nhấp nháy nút dock và marker sau quầy. */
+export function tutorialSteps(s: GameState): { label: string; done: boolean }[] {
+  return [
     { label: 'Nhập hàng (📦 Nhập hàng)', done: Object.values(s.storage).some((q) => q > 0) || s.deliveries.length > 0 || s.totals.itemsSold > 0 },
     { label: 'Bày hàng lên kệ (bấm vào kệ)', done: s.furniture.some((f) => f.tiers.some((t) => t.count > 0)) },
     { label: 'Mở cửa tiệm', done: s.shopOpen || s.totals.customers > 0 },
     { label: 'Đứng quầy tính tiền cho khách', done: s.totals.itemsSold > 0 },
     { label: 'Tối về nhà đi ngủ', done: s.day > 1 },
-  ].map((x) => `${x.done ? 1 : 0}${x.label}`).join('|'));
-  // Chỉ hướng dẫn ngày đầu: sang ngày 2 là tắt, tránh đè thông báo mỗi sáng
-  if (off || day > 1) return null;
+  ];
+}
+
+/** Bước đang dừng của hướng dẫn (bước đầu chưa xong); -1 khi đã xong hết. */
+export const tutorialStep = (s: GameState): number => tutorialSteps(s).findIndex((x) => !x.done);
+
+/** Tutorial ngày đầu đang hiện: ngày 1, chưa bấm ẩn và còn bước chưa xong. */
+export const tutorialActive = (s: GameState): boolean => s.day === 1 && !s.biz.tutorialOff && tutorialStep(s) >= 0;
+
+/** Hướng dẫn ngày đầu: danh sách việc tự tích khi làm xong. Chế độ review (mục 📖 Hướng dẫn ở menu
+ *  Thêm) xem lại mọi lúc, chỉ đọc — không ghi cờ ẩn vào bản lưu. */
+function Tutorial({ review, onDone }: { review: boolean; onDone: () => void }) {
+  const off = useGame((s) => s.biz.tutorialOff);
+  const day = useGame((s) => s.day);
+  const steps = useGame((s) => tutorialSteps(s).map((x) => `${x.done ? 1 : 0}${x.label}`).join('|'));
+  // Chỉ hướng dẫn ngày đầu: sang ngày 2 là tắt, tránh đè thông báo mỗi sáng; review thì luôn hiện
+  if (!review && (off || day > 1)) return null;
   const list = steps.split('|').map((x) => ({ done: x[0] === '1', label: x.slice(1) }));
-  if (list.every((x) => x.done)) return null;
+  const allDone = list.every((x) => x.done);
+  // Ngày đầu mà đủ bước rồi thì khỏi hiện; chế độ review thì chuyển sang lời chúc
+  if (allDone && !review) return null;
   return (
     <div className="hud-alert info hud-tutorial">
-      <b>🧭 Ngày đầu mở tiệm</b>
-      <ul>{list.map((x) => <li key={x.label} className={x.done ? 'done' : undefined}>{x.done ? '✅' : '⬜'} {x.label}</li>)}</ul>
-      <button className="hud-btn" onClick={dismissTutorial}>Ẩn hướng dẫn</button>
+      <b>{review ? '🧭 Xem lại hướng dẫn' : '🧭 Ngày đầu mở tiệm'}</b>
+      {allDone ? (
+        <p>✅ Bạn đã làm đủ các bước mở tiệm rồi. Còn Việc hôm nay ở chip La bàn và nút 📜 Nhiệm vụ.</p>
+      ) : (
+        <ul>{list.map((x) => <li key={x.label} className={x.done ? 'done' : undefined}>{x.done ? '✅' : '⬜'} {x.label}</li>)}</ul>
+      )}
+      {review
+        ? <button className="hud-btn" onClick={onDone}>Xong</button>
+        : <button className="hud-btn" onClick={dismissTutorial}>Ẩn hướng dẫn</button>}
+    </div>
+  );
+}
+
+/** Chip "La bàn": bước cốt truyện đang làm (hay số việc hôm nay) — bấm mở bảng Nhiệm vụ. */
+function GoalChip({ ready }: { ready: number }) {
+  // storyQuest trả object mới mỗi lần gọi nên gói thành chuỗi nguyên thuỷ, selector mới so sánh được
+  // (quy tắc chung của dự án — như Tutorial bên dưới)
+  const story = useGame((s) => {
+    const q = storyQuest(questContext(s));
+    return q ? [q.icon, q.title, q.description, String(q.current), String(q.target)].join('|') : null;
+  });
+  const todo = useGame((s) => dailyQuests(questContext(s)).filter((q) => !q.claimed).length);
+  // Cả bộ nhiệm vụ ngày (đã xong/đã nhận/tổng) gói thành chuỗi nguyên thuỷ để selector so sánh được
+  // (như story phía trên) — tránh trả object mới từng lần render.
+  const set = useGame((s) => {
+    const p = dailySetProgress(questContext(s));
+    const remaining = p.total - p.claimed;
+    return `${p.done}|${p.total}|${remaining}|${p.allDone ? 1 : 0}|${p.allClaimed ? 1 : 0}`;
+  });
+  const [doneN, totalN, remaining, allDoneF, allClaimedF] = set.split('|');
+  const allDone = allDoneF === '1';
+  const allClaimed = allClaimedF === '1';
+  const stepNo = useGame((s) => questContext(s).log.claimedStory.length + 1);
+  const openPanel = useGame((s) => s.openPanel);
+  // Hết chuỗi cốt truyện: chip còn nhắc Việc hôm nay, nhận hết thưởng thì ẩn hẳn
+  if (!story) {
+    if (allClaimed) return null;
+    return (
+      <button className="hud-chip hud-goal" title={allDone ? 'Đã xong toàn bộ việc hôm nay — bấm để nhận thưởng' : 'Việc hôm nay đang chờ trong bảng Nhiệm vụ'} onClick={() => openPanel({ type: 'quests' })}>
+        <span className="hud-goal-icon" aria-hidden="true">☀️</span>
+        <span><b>{allDone ? 'Mọi việc đã xong' : `${doneN}/${totalN} việc hôm nay`}</b></span>
+        {allDone && <span className="hud-badge">🎯 Nhận thưởng</span>}
+        {!allDone && <span className="hud-badge muted">{`còn ${remaining}`}</span>}
+      </button>
+    );
+  }
+  const [icon, title, desc, current, target] = story.split('|');
+  return (
+    <button
+      className="hud-chip hud-goal"
+      title={`${desc}
+Bước ${stepNo}/${STORY_STEPS.length} của cốt truyện · bấm xem Nhiệm vụ`}
+      onClick={() => openPanel({ type: 'quests' })}
+    >
+      <span className="hud-goal-icon" aria-hidden="true">{icon}</span>
+      <span>
+        <b>{title}</b>
+        <small>{`${current}/${target}`}</small>
+      </span>
+      {ready > 0 && <span className="hud-badge">{`🎯 ${ready} xong`}</span>}
+      {ready === 0 && todo > 0 && <span className="hud-badge muted">{`☀️ ${todo} việc`}</span>}
+    </button>
+  );
+}
+
+/** Chip gợi ý giờ vắng khách: việc đáng làm nhất lúc này, bấm là mở đúng bảng (hay lau nhà luôn). */
+function IdleChip() {
+  const minutes = useClock((c) => Math.floor(c.minutes));
+  const s = useGame();
+  // Chỉ nhắc khi đúng là giờ vắng, tiệm đang mở, không bảng nào che màn, đồng hồ đang chạy,
+  // và tutorial ngày đầu không đang hiện (tránh chồng hướng dẫn mới vào game).
+  if (!(isSlowHour(minutes) && s.shopOpen && !s.panel && s.speed > 0 && !tutorialActive(s))) return null;
+  const tip = idleTip(s);
+  if (!tip) return null;
+  const go = () => {
+    if (tip.act === 'mop') worldActions.mop();
+    else if (tip.act) s.openPanel({ type: tip.act });
+  };
+  return tip.act ? (
+    <button className="hud-chip hud-idle" title={`${tip.text} · bấm để làm ngay`} onClick={go}>
+      <span aria-hidden="true">{tip.icon}</span>
+      <span>{tip.text}</span>
+    </button>
+  ) : (
+    <div className="hud-chip hud-idle" title={tip.text}>
+      <span aria-hidden="true">{tip.icon}</span>
+      <span>{tip.text}</span>
     </div>
   );
 }
@@ -668,15 +970,24 @@ function StoryAlert() {
   );
 }
 
-/** Khách ở quầy xin ghi sổ / mặc cả / thiếu tiền lẻ: chọn nhanh, hết giờ thì tự chọn mặc định. */
+/** Khách ở quầy xin ghi sổ / mặc cả / thiếu tiền lẻ: chọn nhanh, thế giới dừng chờ chủ quyết định (GĐ102). */
 function CounterAskAlert() {
   const ask = useCounterAsk((s) => s.ask);
-  const minutes = useClock((c) => Math.floor(c.minutes));
+  // GĐ122 — đồng hồ THỰC cho khách đang bị treo câu hỏi: khách vẫn mất kiên nhẫn theo giây thật
+  // (khác giờ game đang dừng), hiện còn bao nhiêu giây nữa sẽ tự chốt theo mặc định — để người chơi
+  // biết hậu quả trước khi muộn (không phạt bất ngờ), và khớp cùng ngân sách bong bóng 3D.
+  const rem = Math.ceil(ASK_RESOLVE_REAL_S - askWallElapsed());
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (!ask) return;
+    const id = setInterval(() => force((n) => n + 1), 400);
+    return () => clearInterval(id);
+  }, [ask]);
   if (!ask) return null;
   return (
     <div className="hud-alert phone ringing">
       {ask.icon} <b>{ask.who}</b> {ask.text}
-      <small> · còn {Math.max(0, Math.ceil(ask.expiresAt - minutes))} phút</small>
+      <small> · tiệm tạm dừng chờ cậu chọn · còn ~{Math.max(1, rem)}s nữa khách tự chốt theo mặc định</small>
       <span className="hud-alert-actions">
         {ask.options.map((label, i) => (
           <button key={label} className={`hud-btn${i === 0 ? ' primary' : ''}`} onClick={() => answerAsk(i)}>{label}</button>

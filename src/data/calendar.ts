@@ -117,6 +117,10 @@ function roll(seed: number, n: number, salt: number) {
 
 export const dayOfYear = (day: number) => (day - 1 + YEAR_OFFSET) % YEAR_DAYS;
 
+/** Tháng dương lịch (1–12) mà một ngày chơi đang thuộc về — dùng làm mốc "tháng vận hành". */
+export const monthOf = (day: number) => dateOfDoy(dayOfYear(day)).month;
+
+
 /** Ngày game hiện tại đổi ra ngày tháng trong năm, vd "24/3". */
 export function describeDate(day: number): string {
   const { month, day: d } = dateOfDoy(dayOfYear(day));

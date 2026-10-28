@@ -1,23 +1,40 @@
 import { useGame } from '../../core/store';
+import { useState } from 'react';
 import { RECIPES, STATIONS, type CookingStation } from '../../data/recipes';
 import { formatMoney, productById } from '../../data/products';
+import { kitchenValue } from '../../data/kitchenValue';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
-import { Footer, styles } from './shared';
+import { Footer, styles, Tabs } from './shared';
 
 /** Sổ nấu: công thức theo trạm, nguyên liệu lấy từ kho (lô cận hạn trước), mẻ xong về kho chờ bày kệ. */
 export function CookPanel() {
   const { level, storage, furniture, cookJobs, startCook, closePanel, openPanel, setBuildMode } = useGame();
   const day = useGame((s) => s.day);
+  // Tab theo trạm: sổ nấu đầy đủ dài ~9.000px trên điện thoại — chọn trạm là thấy ngay món cần nấu.
+  // Màn hẹp mặc định mở trạm đầu tiên đang sở hữu (ít cuộn nhất); desktop rộng giữ "Tất cả" để xem toàn cảnh.
+  const [station, setStation] = useState<'all' | CookingStation>(() => {
+    if (typeof matchMedia !== 'undefined' && matchMedia('(max-width: 700px)').matches) {
+      const owned = STATIONS.find((s) => furniture.some((f) => f.type === s.id));
+      return owned ? owned.id : 'all';
+    }
+    return 'all';
+  });
+  const stationTabs = [['all', '🏷️ Tất cả'] as const, ...STATIONS.map((s) => [s.id, `${s.icon} ${s.name}`] as const)];
   const stationCount = (st: CookingStation) => furniture.filter((f) => f.type === st).length;
   const busyAt = (st: CookingStation) => cookJobs.filter((j) => RECIPES.find((r) => r.id === j.recipeId)?.station === st).length;
   return (
     <>
       <h2 style={styles.title}>🍳 Sổ nấu</h2>
-      <p style={styles.sub}>
-        Món nhà làm không nhập được ở mối nào — chỉ có bằng cách nấu từ nguyên liệu trong kho (lô cận hạn dùng trước).
-        Nấu xong món tự về kho, bày lên kệ như hàng thường; khách thích món nhà làm nên hỏi mua nhiều hơn.
-        Mỗi trạm mỗi lúc nấu một mẻ; thuê 🍳 Chế biến (cấp 25) thì nấu nhanh hơn theo tay nghề.
+      {/* GĐ99: mô tả đủ 4 câu chiếm ~1/4 màn 390px — giữ 2 dòng chính, giải thích vào thẻ gập */}
+      <p style={{ ...styles.sub, marginBottom: 4 }}>
+        Món nhà làm không nhập được ở mối nào — nấu từ nguyên liệu trong kho (lô cận hạn dùng trước), nấu xong tự về kho bày như hàng thường.
       </p>
+      <details style={{ marginBottom: 10 }}>
+        <summary style={{ fontSize: 12, opacity: 0.7 }}>Vì sao nên nấu nhà làm?</summary>
+        <p style={{ ...styles.sub, margin: '4px 0 10px' }}>
+          Khách thích món nhà làm nên hỏi mua nhiều hơn. Mỗi trạm mỗi lúc nấu một mẻ; thuê 🍳 Chế biến (cấp 25) thì nấu nhanh hơn theo tay nghề.
+        </p>
+      </details>
       {cookJobs.length > 0 && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 10, maxWidth: 560 }}>
           <b style={{ fontSize: 13 }}>🔥 Đang nấu</b>
@@ -35,7 +52,8 @@ export function CookPanel() {
           })}
         </div>
       )}
-      {STATIONS.map((st) => {
+      <Tabs tabs={stationTabs} value={station} onChange={setStation} />
+      {STATIONS.filter((st) => station === 'all' || st.id === station).map((st) => {
         const own = stationCount(st.id);
         const busy = busyAt(st.id);
         const recipes = RECIPES.filter((r) => r.station === st.id).sort((a, b) => a.unlock - b.unlock);
@@ -53,8 +71,9 @@ export function CookPanel() {
             <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
               {recipes.map((r) => {
                 const out = productById(r.outputId);
-                const inputCost = r.inputs.reduce((n, i) => n + productById(i.productId).buy * i.quantity, 0);
-                const gross = out.sell * r.outputQty - inputCost;
+                // GĐ145: lãi mẻ (khớp dòng cũ) + băng thông ⏱/phút + chi phí cơ hội của nguyên liệu
+                const kv = kitchenValue(r);
+                const gross = kv.netMargin;
                 const missing = r.inputs.filter((i) => (storage[i.productId] ?? 0) < i.quantity);
                 const locked = level < r.unlock;
                 const noStation = !own;
@@ -77,10 +96,18 @@ export function CookPanel() {
                       </div>
                       <div style={{ fontSize: 12 }}>
                         Lãi gộp ~<b style={{ color: gross > 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(gross)}</b>/mẻ
+                        {own && (
+                          <span style={{ opacity: 0.85 }}> · ⏱ ~{formatMoney(Math.round(kv.perMinute))}/phút</span>
+                        )}
                         {missing.length > 0 && !locked && (
                           <span style={{ color: '#ff8a7a' }}> · thiếu: {missing.map((i) => productById(i.productId).name).join(', ')}</span>
                         )}
                       </div>
+                      {own && kv.verdict === 'sell_raw' && (
+                        <div style={{ fontSize: 12, color: '#e74c3c', marginTop: 2 }}>
+                          ⚠️ Nguyên liệu bán rời còn hời hơn nấu ~{formatMoney(kv.delta)}
+                        </div>
+                      )}
                     </div>
                     {locked ? (
                       <span style={{ fontSize: 12 }}>🔒 Cấp {r.unlock}</span>

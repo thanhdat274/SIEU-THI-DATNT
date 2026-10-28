@@ -21,8 +21,8 @@ import { useSession, type AlleyPeer } from './session';
 const LOCAL_STATE = new Set<string>(['hint', 'message', 'panel', 'buildMode', 'placing', 'stylePreview', 'costume']);
 /** Trường đồng bộ qua sharedState nhưng không gửi PATCH ngược lại (chỉ runner tự cập nhật). */
 const NO_PATCH = new Set<string>(['location']);
-/** Hàm chạy tại chỗ: giao diện, hoặc chỉ đọc. */
-const LOCAL_ACTIONS = new Set<string>(['notify', 'openPanel', 'closePanel', 'setBuildMode', 'setPlacing', 'priceOf', 'tick', 'takeFromShelf', 'setCostume']);
+/** Hàm chạy tại chỗ: giao diện, hoặc chỉ đọc. (Xuất ra cho test phủ kín phân loại thao tác.) */
+export const LOCAL_ACTIONS = new Set<string>(['notify', 'openPanel', 'closePanel', 'setBuildMode', 'setPlacing', 'priceOf', 'tick', 'takeFromShelf', 'setCostume']);
 /** Giá trị trả về tạm của thao tác gửi đi, cho giao diện đọc kết quả dạng danh sách. */
 const PROXY_RESULT: Record<string, unknown> = { replaceEmptySlots: [] };
 /** Chỉnh thẳng trạng thái (không qua hàm), ví dụ bật/tắt tuỳ chọn. */
@@ -31,13 +31,16 @@ const PATCH = '__patch';
 /**
  * Thao tác sửa đúng một chỗ (ô kệ, món đồ, giá một món). Người khác vừa sửa chỗ đó trong GUARD_MS thì
  * từ chối, để hai người không đè lên nhau mà không biết. Trả về khoá của chỗ bị sửa.
+ * (Xuất ra cho test phủ kín: mọi thao tác của store phải nằm trong bảng này hoặc là thuần cục bộ.)
  */
-const GUARDED: Record<string, (args: unknown[]) => string> = {
+export const GUARDED: Record<string, (args: unknown[]) => string> = {
   stockTier: (a) => `tier:${a[0]}:${a[1]}`,
   unstockTier: (a) => `tier:${a[0]}:${a[1]}`,
   moveFurniture: (a) => `furn:${a[0]}`,
+  moveMainCounter: () => 'counter',
   sellFurniture: (a) => `furn:${a[0]}`,
   repairFurniture: (a) => `furn:${a[0]}`,
+  paint: (a) => `style:${a[0]}`,
   setPrice: (a) => `price:${a[0]}`,
   expandFarm: () => 'farm:land',
   feedPen: (a) => `pen:${a[0]}`,
@@ -53,6 +56,11 @@ const GUARDED: Record<string, (args: unknown[]) => string> = {
   cleanupFarm: () => 'farm:cleanup',
   buyFarmBuilding: (a) => `farm:building:${a[0]}`,
   upgradeFarmBuilding: (a) => `farm:building:${a[0]}`,
+  // Quán nước đầu ngõ: cả cụm mua/tuyển/nghỉ/đổi giá là một chỗ chung "quan"
+  buyQuanNuoc: () => 'quan',
+  hireQuanNuoc: () => 'quan',
+  fireQuanNuoc: () => 'quan',
+  setQuanNuocPrice: () => 'quan',
 };
 const GUARD_MS = 3000;
 /** Thao tác gửi đi chưa có kết quả quá lâu thì thôi chờ (mất gói, máy chạy vừa đổi). */
@@ -70,6 +78,7 @@ type Msg =
   | { type: 'state'; game: Partial<GameState>; actors: Actor[] }
   | { type: 'pose'; from: number; pose: Pose; look?: string }
   | { type: 'notify'; text: string }
+  | { type: 'sys'; text: string }
   | { type: 'act'; from: number; seq?: number; name: string; args: unknown[] }
   | { type: 'result'; seq: number; ok: boolean; messages: string[] }
   | { type: 'locks'; locks: { key: string; id: number; name: string }[]; started?: string }
@@ -86,6 +95,8 @@ interface World {
 
 let ws: WebSocket | null = null;
 let world: World | null = null;
+/** Đã có trạng thái tiệm của hẻm (máy chạy nạp tiến trình lúc vào, hoặc người khác nhận trạng thái đầu tiên). */
+let gotState = false;
 /** Nhân vật của các thành viên khác đang online. */
 const others = new Map<number, { walker: Walker; target: THREE.Vector3; ry: number; name: string; look: string }>();
 /** Khách và nhân viên do máy chạy gửi sang (người không chạy dùng). */
@@ -264,6 +275,8 @@ export function enterAlley(id: string): Promise<void> {
           if (msg.data) applySnapshot(msg.data);
           else useGame.setState({ ...newGameData(), autoRoutine: true, shopOpen: false, panel: null });
           installGuards();
+          gotState = true;
+          send({ type: 'ready' });
           ready = true;
           resolve();
         } else installProxies();
@@ -273,6 +286,8 @@ export function enterAlley(id: string): Promise<void> {
       // Người không chạy: vào game khi nhận trạng thái đầu tiên
       if (msg.type === 'state' && !ready) {
         onMessage(msg);
+        gotState = true;
+        send({ type: 'ready' });
         ready = true;
         resolve();
         return;
@@ -367,6 +382,10 @@ function onMessage(msg: Msg) {
       setPose(msg.from, msg.pose, msg.look);
       break;
     case 'notify':
+      game.notify(msg.text);
+      break;
+    case 'sys':
+      // Tin hệ thống của server (đổi chủ hẻm...): mọi người trong phòng đều thấy, kể cả người không chạy
       game.notify(msg.text);
       break;
     case 'act':
@@ -496,7 +515,8 @@ function sharedState(): Partial<GameState> {
 
 /** Máy chạy ghi tiến trình hẻm về server. */
 export function checkpoint() {
-  if (role() === 'runner') send({ type: 'checkpoint', data: snapshot() });
+  // Chưa có trạng thái hẻm thì không ghi — tránh đè tiến trình hẻm bằng bản lưu cá nhân của máy này.
+  if (role() === 'runner' && gotState) send({ type: 'checkpoint', data: snapshot() });
 }
 
 let checkpointTimer = 0;

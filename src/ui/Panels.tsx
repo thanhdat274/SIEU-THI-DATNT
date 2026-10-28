@@ -28,6 +28,12 @@ import { OnlinePanel } from './panels/OnlinePanel';
 import { LicensesPanel } from './panels/LicensesPanel';
 import { GardenPanel } from './panels/GardenPanel';
 import { AnalyticsPanel } from './panels/AnalyticsPanel';
+import { QuanNuocPanel } from './panels/QuanNuocPanel';
+import { RecordsPanel } from './panels/RecordsPanel';
+import { DiscoveryPanel } from './panels/DiscoveryPanel';
+import { LandmarkPanel } from './panels/LandmarkPanel';
+import { DossierPanel } from './panels/DossierPanel';
+import { RoadmapPanel } from './panels/RoadmapPanel';
 
 export function Panels() {
   const panel = useGame((s) => s.panel);
@@ -44,7 +50,7 @@ export function Panels() {
   if (panel.type === 'arrange') return <ArrangePanel />;
   return (
     <div style={styles.backdrop} onClick={(e) => e.target === e.currentTarget && closePanel()}>
-      <div style={styles.panel}>
+      <div className="panel" style={styles.panel}>
         <button style={styles.close} title="Đóng (Esc)" aria-label="Đóng" onClick={closePanel}>✕</button>
         {panel.type === 'order' && <OrderPanel />}
         {panel.type === 'social' && <SocialPanel />}
@@ -73,7 +79,13 @@ export function Panels() {
         {panel.type === 'morning' && <MorningPanel />}
         {panel.type === 'history' && <HistoryPanel />}
         {panel.type === 'garden' && <GardenPanel />}
+        {panel.type === 'quannuoc' && <QuanNuocPanel />}
         {panel.type === 'analytics' && <AnalyticsPanel />}
+        {panel.type === 'discovery' && <DiscoveryPanel />}
+        {panel.type === 'landmark' && <LandmarkPanel />}
+        {panel.type === 'records' && <RecordsPanel />}
+        {panel.type === 'dossier' && <DossierPanel closePanel={closePanel} />}
+        {panel.type === 'roadmap' && <RoadmapPanel />}
       </div>
     </div>
   );

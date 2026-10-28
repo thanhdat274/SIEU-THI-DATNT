@@ -1,16 +1,23 @@
 import { useState } from 'react';
 import { useGame } from '../../core/store';
-import { DAILY_GIFTS, WHEEL_PRIZES, type WheelPrize } from '../../data/gifts';
+import { DAILY_GIFTS, WHEEL_PRIZES, giftText, recentAvgProfit, scaledGiftEco, scaledPrize, type WheelPrize } from '../../data/gifts';
 import { Footer, styles } from './shared';
+
+const formatMoneyShort = (v: number) => v >= 1_000_000 ? `${Math.round(v / 1_000_000)}tr` : `${Math.round(v / 1000)}k`;
 
 /** Điểm danh quà 7 ngày + vòng quay may mắn mỗi ngày một lượt. */
 export function GiftPanel() {
-  const { day, giftStreak, giftLastDay, wheelLastDay, wheelBoost, claimGift, spinWheel, closePanel } = useGame();
+  const { day, level, giftStreak, giftLastDay, giftGraceDay, wheelLastDay, wheelBoost, claimGift, spinWheel, closePanel, history } = useGame();
   const claimedToday = giftLastDay === day;
   const spunToday = wheelLastDay === day;
   const cycle = DAILY_GIFTS.length;
-  // Chuỗi còn giữ được hôm nay không (bỏ lỡ một ngày là về ngày 1)
-  const live = claimedToday || giftLastDay === day - 1 ? giftStreak : 0;
+  // Quà scale theo cấp + nền kinh tế gần đây: ô nào cũng hiện đúng số người chơi sẽ nhận hôm nay
+  const avg = recentAvgProfit(history);
+  const gifts = DAILY_GIFTS.map((g) => scaledGiftEco(g, level, avg));
+  const wheelPrizes = WHEEL_PRIZES.map((p) => scaledPrize(p, level));
+  // Chuỗi còn giữ được hôm nay không: nối tiếp bình thường, hoặc được tha vì bỏ quên đúng 1 ngày (chuỗi ≥3, hồi 7 ngày)
+  const graceToday = day - giftLastDay === 2 && giftStreak >= 3 && day - giftGraceDay >= 7;
+  const live = claimedToday || giftLastDay === day - 1 || graceToday ? giftStreak : 0;
   // Số ô đã nhận trong vòng hiện tại; đủ 7 ô thì vòng mới bắt đầu từ ngày mai
   const doneCount = claimedToday ? ((live - 1) % cycle) + 1 : live % cycle;
   const nextIdx = claimedToday ? -1 : live % cycle;
@@ -22,8 +29,9 @@ export function GiftPanel() {
     if (spunToday || spinning) return;
     const prize = spinWheel();
     if (!prize) return;
-    const i = WHEEL_PRIZES.indexOf(prize);
-    const step = 360 / WHEEL_PRIZES.length;
+    // Giải trả về là bản sao đã scale: tìm lại ô tương ứng trên vòng để kim chỉ đúng ô
+    const i = wheelPrizes.findIndex((p) => p.icon === prize.icon && p.label === prize.label);
+    const step = 360 / wheelPrizes.length;
     const jitter = (Math.random() - 0.5) * step * 0.6;
     const targetMod = (360 - (i * step + step / 2 + jitter)) % 360;
     setResult(null);
@@ -32,8 +40,8 @@ export function GiftPanel() {
     setTimeout(() => { setSpinning(false); setResult(prize); }, 3200);
   };
 
-  const wheelColors = WHEEL_PRIZES.map((_, i) => `${i % 2 ? '#4a4a5d' : '#3a3a4d'} ${i * (360 / WHEEL_PRIZES.length)}deg ${(i + 1) * (360 / WHEEL_PRIZES.length)}deg`).join(', ');
-  const step = 360 / WHEEL_PRIZES.length;
+  const wheelColors = wheelPrizes.map((_, i) => `${i % 2 ? '#4a4a5d' : '#3a3a4d'} ${i * (360 / wheelPrizes.length)}deg ${(i + 1) * (360 / wheelPrizes.length)}deg`).join(', ');
+  const step = 360 / wheelPrizes.length;
   return (
     <>
       <h2 style={styles.title}>🎁 Điểm danh & vòng quay</h2>
@@ -43,7 +51,7 @@ export function GiftPanel() {
       </p>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-        {DAILY_GIFTS.map((g, i) => {
+        {gifts.map((g, i) => {
           const done = i < doneCount;
           const next = i === nextIdx;
           return (
@@ -58,7 +66,7 @@ export function GiftPanel() {
               }}
             >
               <div style={{ fontSize: 22 }}>{done ? '✅' : g.icon}</div>
-              <div>{g.label}</div>
+              <div>{giftText(g)}</div>
               <small style={{ opacity: 0.65 }}>Ngày {i + 1}</small>
             </div>
           );
@@ -70,6 +78,12 @@ export function GiftPanel() {
           {claimedToday ? '✅ Hôm nay đã điểm danh' : 'Nhận quà hôm nay'}
         </button>
       </div>
+      <small style={{ display: 'block', opacity: 0.55, margin: '-8px 0 14px' }}>Chuỗi ≥3 ngày được tha 1 lần nếu bỏ quên 🛟</small>
+      {avg > 0 && (
+        <small style={{ display: 'block', opacity: 0.65, margin: '-6px 0 10px', color: '#e6c95c' }}>
+          📈 Quà tăng theo lợi nhuận gần đây của tiệm ({formatMoneyShort(avg)}/ngày) — tiệm càng lớn quà càng đáng.
+        </small>
+      )}
 
       <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', width: 232, height: 232, flexShrink: 0 }}>
@@ -85,7 +99,7 @@ export function GiftPanel() {
               position: 'relative',
             }}
           >
-            {WHEEL_PRIZES.map((p, i) => (
+            {wheelPrizes.map((p, i) => (
               // Nhãn xoay theo ô (kiểu vòng quay thật): biểu tượng sát mép, chữ bên dưới hướng vào tâm,
               // bề ngang giới hạn trong cung của ô để không tràn sang ô bên cạnh
               <div

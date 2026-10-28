@@ -1,3 +1,4 @@
+import { simRng } from '../rand';
 import { formatMoney, productById } from '../../data/products';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
 import { dailyWage, GUARD_DETECT, maxStaff, ROLES, type Staff } from '../../data/staff';
@@ -22,8 +23,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
   const b0 = s.branch;
   if (!b0) return {};
   const b: BranchState = { ...b0, shelf: { ...b0.shelf }, hourly: [...(b0.hourly ?? Array(24).fill(0))] };
-  const k = copyStock(s);
-  // Nhãn hàng nhà trồng/nuôi: bán ở chi nhánh cũng được giá hơn và rút dần như ở quầy chính
+  const k = copyStock(s);  // Nhãn hàng nhà trồng/nuôi: bán ở chi nhánh cũng được giá hơn và rút dần như ở quầy chính
   const hg = { ...s.garden.homegrown };
   const spendHomegrown = (id: string, n: number) => {
     const left = (hg[id] ?? 0) - n;
@@ -66,11 +66,11 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
       let vTotal = vendingTotal(b.vendingStock);
       if (vTotal > 0) {
         const vExpect = (branchTrafficAt(m) * STEP) / 60 * VENDING_OFFTAKE;
-        let vn = Math.floor(vExpect) + (Math.random() < vExpect % 1 ? 1 : 0);
+        let vn = Math.floor(vExpect) + (simRng()() < vExpect % 1 ? 1 : 0);
         for (; vn > 0 && vTotal > 0; vn--) {
           const pool: string[] = Object.keys(b.vendingStock).filter((id) => (b.vendingStock?.[id] ?? 0) > 0);
           if (!pool.length) break;
-          const id = pool[Math.floor(Math.random() * pool.length)];
+          const id = pool[Math.floor(simRng()() * pool.length)];
           b.vendingStock[id]--;
           const price = Math.round((s.priceOf(id, m) * CONVENIENCE.priceMul) / 500) * 500;
           revenue += price;
@@ -81,10 +81,10 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
         if (vTotal <= 0) news.push('🥤 Máy bán hàng tự động hết hàng — người giao hàng sẽ nạp lại khi có người trực.');
       }
       // Trộm vặt máy ban đêm (máy đặt ngoài cửa, bảo vệ không canh được)
-      if (isBranchNight(m) && Math.random() < VENDING_THEFT) {
+      if (isBranchNight(m) && simRng()() < VENDING_THEFT) {
         const pool = Object.keys(b.vendingStock).filter((id) => (b.vendingStock?.[id] ?? 0) > 0);
         for (let i = 0; i < 2 && pool.length; i++) {
-          const stolen = pool[Math.floor(Math.random() * pool.length)];
+          const stolen = pool[Math.floor(simRng()() * pool.length)];
           b.vendingStock[stolen]--;
           b.lostToday++;
         }
@@ -96,7 +96,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
     if (m >= EVENT_ROLL_AT && b.eventDay !== s.day) {
       b.eventDay = s.day;
       b.event = null;
-      const r = Math.random();
+      const r = simRng()();
       const nightStaff = b.staff.filter((st) => st.shift === 'night' && !restingOn(b, st.id, s.day));
       if (r < EVENT_CHANCE.calloff && nightStaff.length) {
         const who = nightStaff.find((st) => st.role === 'cashier') ?? nightStaff[0];
@@ -109,15 +109,15 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
           news.push(`📵 ${who.name} (${ROLES[who.role].name} ca đêm) xin nghỉ đột xuất! Mở bảng Tiện lợi 24/7 để gọi người thay (${formatMoney(cover)}), hoặc tự sang đứng quầy`);
         }
       } else if (r < EVENT_CHANCE.calloff + EVENT_CHANCE.drunk) {
-        b.event = { kind: 'drunk', at: 22 * 60 + Math.floor(Math.random() * 7 * 60) };
+        b.event = { kind: 'drunk', at: 22 * 60 + Math.floor(simRng()() * 7 * 60) };
       } else if (r < EVENT_CHANCE.calloff + EVENT_CHANCE.drunk + EVENT_CHANCE.blackout) {
-        b.event = { kind: 'blackout', at: 22 * 60 + Math.floor(Math.random() * 7 * 60) };
+        b.event = { kind: 'blackout', at: 22 * 60 + Math.floor(simRng()() * 7 * 60) };
       }
     }
     // Công an tuần tra đêm: kệ có rượu bia mà thiếu giấy phép thì bị phạt và tịch thu
     if (m >= PATROL_AT && b.patrolDay !== s.day) {
       b.patrolDay = s.day;
-      if (Math.random() < PATROL_CHANCE && hasAlcohol(b.shelf) && s.level >= licenseById('alcohol').unlock) {
+      if (simRng()() < PATROL_CHANCE && hasAlcohol(b.shelf) && s.level >= licenseById('alcohol').unlock) {
         const lic = licenseStatus(s.licenses, 'alcohol', s.day);
         if (lic === 'none' || lic === 'expired') {
           let seized = 0;
@@ -176,20 +176,20 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
     }
     // Khách ghé trong 10 phút; không ai đứng quầy, quầy đang ngưng hoặc hết hàng thì khách bỏ về
     const expect = (branchTrafficAt(m) * STEP) / 60;
-    let n = Math.floor(expect) + (Math.random() < expect % 1 ? 1 : 0);
+    let n = Math.floor(expect) + (simRng()() < expect % 1 ? 1 : 0);
     const cashiers = on.filter((st) => st.role === 'cashier');
     // Chủ đang có mặt ở chi nhánh thì tự đứng quầy được (không mệt)
     const tired = !s.atBranch && cashiers.length > 0 && cashiers.every((st) => fatigueOf(b, st.id) >= FATIGUE_SLOW);
     const guardOn = on.some((st) => st.role === 'guard');
     let canSell = (cashiers.length > 0 || s.atBranch) && !(b.blockedUntil && m < b.blockedUntil);
     for (; n > 0; n--) {
-      if (!canSell || !Object.values(b.shelf).some((q) => q > 0) || (tired && Math.random() < TIRED_MISS)) { b.missedToday++; continue; }
+      if (!canSell || !Object.values(b.shelf).some((q) => q > 0) || (tired && simRng()() < TIRED_MISS)) { b.missedToday++; continue; }
       b.customersToday++;
       // Giờ đêm: khách thuộc các nhóm riêng (tài xế, công nhân, sinh viên, bác sĩ, dân nhậu) mua theo sở thích
       const group = isBranchNight(m) || m % 1440 >= 21 * 60 ? pickNightGroup(m) : undefined;
       if (group) b.groupToday = { ...b.groupToday, [group.id]: (b.groupToday?.[group.id] ?? 0) + 1 };
       const [lo, hi] = group?.items ?? [1, 2];
-      for (let items = lo + Math.floor(Math.random() * (hi - lo + 1)); items > 0; items--) {
+      for (let items = lo + Math.floor(simRng()() * (hi - lo + 1)); items > 0; items--) {
         const pool = Object.keys(b.shelf).filter((id) => b.shelf[id] > 0);
         if (!pool.length) break;
         const id = pickForGroup(pool, m, group);
@@ -204,7 +204,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
         if (boozeNight) {
           b.alcoholToday = (b.alcoholToday ?? 0) + 1;
           // Bán rượu bia đêm mà không có bảo vệ: khách say dễ gây gổ
-          if (!guardOn && !s.atBranch && canSell && Math.random() < ALCOHOL_BRAWL_CHANCE) {
+          if (!guardOn && !s.atBranch && canSell && simRng()() < ALCOHOL_BRAWL_CHANCE) {
             fees += BRAWL_DAMAGE;
             b.blockedUntil = m + BRAWL_BLOCK;
             canSell = false;
@@ -217,13 +217,13 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
     if (b.nightDelivery && s.online.open && isBranchNight(m) && !(b.blockedUntil && m < b.blockedUntil)) {
       const couriers = on.filter((st) => st.role === 'courier' && fatigueOf(b, st.id) < FATIGUE_SLOW);
       const dExpect = (NIGHT_DELIVERY_PER_HOUR * STEP) / 60 * (appRating(s.online) / 5);
-      for (let d = Math.floor(dExpect) + (Math.random() < dExpect % 1 ? 1 : 0); d > 0; d--) {
+      for (let d = Math.floor(dExpect) + (simRng()() < dExpect % 1 ? 1 : 0); d > 0; d--) {
         const pool = Object.keys(b.shelf).filter((id) => b.shelf[id] > 0);
         if (!pool.length) break;
         if (!couriers.length) { onl.ratingSum += 3; onl.ratingCount++; b.missedToday++; continue; }
         let value = 0;
         const taken: string[] = [];
-        for (let i = 1 + Math.floor(Math.random() * 3); i > 0; i--) {
+        for (let i = 1 + Math.floor(simRng()() * 3); i > 0; i--) {
           const left = pool.filter((id) => b.shelf[id] > 0);
           if (!left.length) break;
           const id = pickWeighted(left, m);
@@ -233,7 +233,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
           value += Math.round((s.priceOf(id, m) * CONVENIENCE.priceMul * (1 + NIGHT_DELIVERY_SURCHARGE)) / 500) * 500;
         }
         if (!taken.length) break;
-        if (Math.random() < NIGHT_DELIVERY_MISHAP) {
+        if (simRng()() < NIGHT_DELIVERY_MISHAP) {
           // Shipper ngã xe/lạc đường ban đêm: mất đơn, không thu tiền
           onl.ratingSum += 2; onl.ratingCount++; onl.late++; b.lostToday += taken.length;
           news.push('🛵 Shipper giao đêm gặp sự cố giữa đường — mất một đơn app');
@@ -249,13 +249,13 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
       }
     }
     // Trộm đêm: có bảo vệ trực thì gần như bắt được hết
-    if (isBranchNight(m) && Math.random() < BRANCH_NIGHT_THEFT) {
+    if (isBranchNight(m) && simRng()() < BRANCH_NIGHT_THEFT) {
       const guard = on.some((st) => st.role === 'guard');
-      if (!guard || Math.random() > GUARD_DETECT) {
+      if (!guard || simRng()() > GUARD_DETECT) {
         for (let i = 0; i < 3; i++) {
           const pool = Object.keys(b.shelf).filter((id) => b.shelf[id] > 0);
           if (!pool.length) break;
-          const stolen = pool[Math.floor(Math.random() * pool.length)];
+          const stolen = pool[Math.floor(simRng()() * pool.length)];
           b.shelf[stolen]--;
           spendHomegrown(stolen, 1);
           b.lostToday++;
@@ -287,7 +287,7 @@ export const branchNewDay = (b: BranchState, day: number): { branch: BranchState
     // Có trưởng quầy cùng ca đứng đầu thì mọi người làm đỡ mệt
     const led = st.rank !== 'lead' && b.staff.some((l) => l.rank === 'lead' && l.shift === st.shift && !restingOn(b, l.id, day));
     fatigue[st.id] = Math.min(100, Math.round((fatigue[st.id] ?? 0) + FATIGUE_PER_DAY[st.shift] * (led ? LEAD_FATIGUE_MUL : 1)));
-    if (st.role !== 'manager' && fatigue[st.id] >= FATIGUE_QUIT && Math.random() < QUIT_CHANCE * (hasRank(b.staff, 'chief') ? CHIEF_QUIT_MUL : 1)) {
+    if (st.role !== 'manager' && fatigue[st.id] >= FATIGUE_QUIT && simRng()() < QUIT_CHANCE * (hasRank(b.staff, 'chief') ? CHIEF_QUIT_MUL : 1)) {
       news.push(`😩 ${st.name} (${ROLES[st.role].name}) kiệt sức vì làm liên tục, đã xin nghỉ việc ở tiện lợi`);
       delete fatigue[st.id];
       return false;

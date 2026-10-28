@@ -4,6 +4,7 @@ import { warehouseTier, WAREHOUSE_TIERS } from '../data/warehouse';
 import type { QuestLog, Totals } from '../data/quests';
 import { casesFor } from '../data/products';
 import { SHOP_TIERS, type ShopStyle } from '../data/shopTiers';
+import type { CounterPolicy } from '../data/counterDeals';
 import type { Review, ReviewReason } from '../data/reviews';
 import type { Weather } from '../data/weather';
 import type { Lot } from '../data/freshness';
@@ -14,6 +15,7 @@ import type { Debt } from '../data/credit';
 import type { VendorOffer } from '../data/wholesale';
 import type { MissLog } from '../data/advice';
 import type { BizState } from '../data/biz';
+import type { QuanNuocPrice } from '../data/quanNuoc';
 import { PHONE_SLOTS, type PhoneOrder } from '../data/phoneOrders';
 import { hasSkill, type SkillId } from '../data/titles';
 import { dailyWage, type Shift, type Staff } from '../data/staff';
@@ -23,6 +25,8 @@ import type { CommunityProgress, Opening } from '../data/community';
 import type { WheelPrize } from '../data/gifts';
 import type { PaymentMethod } from '../data/payments';
 import type { BranchState, PowerUpgradeId } from '../data/branches';
+import type { VenueDay } from '../data/venueTrend';
+import type { RiskDay, RiskToday } from '../data/risk';
 import type { SocialState } from '../data/social';
 import type { OnlineState } from '../data/online';
 import type { InspectionRecord, LicenseId } from '../data/licenses';
@@ -51,6 +55,14 @@ export interface ContractState {
   delivered: number;
   /** Chờ giao kỳ đầu tiên sau khi chấp nhận. */
   pending: boolean;
+  /** Kỳ giao đúng hẹn liên tiếp (trễ một kỳ thì về 0) — cho thưởng mốc mỗi N kỳ. */
+  streak?: number;
+  /** Kỳ này đã quá hạn (qua ngày mà chưa giao) — đang giao muộn thì không tính đúng hẹn. */
+  overdue?: boolean;
+  /** Cam kết kỳ: đã trữ sẵn đúng số hàng kỳ này khỏi quầy bán để nhận thưởng tin cậy. */
+  committed?: boolean;
+  /** Hàng đã trữ riêng cho kỳ đã cam kết (không bán dễ dàng ở quầy). */
+  locked?: Record<string, number>;
 }
 
 export interface Tier {
@@ -112,6 +124,8 @@ export interface DayStats {
   repaid?: number;
   /** Tiền lời dịch vụ ở quầy (nạp tiền, thu hộ) hôm nay. */
   services?: number;
+  /** Tiền lời dịch vụ hôm nay theo từng dịch vụ (GĐ66 — để xem dịch vụ nào đáng). */
+  byService?: Record<string, number>;
   /** Số combo bán ra và tiền đã giảm cho combo. */
   combos?: number;
   comboDiscount?: number;
@@ -131,6 +145,16 @@ export interface DayStats {
   /** Bán online hôm nay: tiền về (sau hoa hồng) và phí Grab. */
   online?: number;
   grabFees?: number;
+  /** Số đơn app giao tới tay khách hôm nay (đo nhiệm vụ ngày). */
+  onlineDone?: number;
+  /** Số nông sản thu hoạch được hôm nay (đo nhiệm vụ ngày). */
+  farmHarvest?: number;
+  /** Số bài chủ tiệm đăng lên mạng xã hội hôm nay (đo nhiệm vụ ngày). */
+  socialPosts?: number;
+  /** Số đơn nấu món nhà làm đã giao hôm nay (đo nhiệm vụ ngày). */
+  cookOrders?: number;
+  /** Số lời khen 5★ nhận hôm nay (đo thử thách tuần). */
+  fiveStars?: number;
 }
 
 export interface HourLine { customers: number; revenue: number }
@@ -190,6 +214,12 @@ export type Panel =
   | { type: 'licenses' }
   | { type: 'garden' }
   | { type: 'analytics' }
+  | { type: 'quannuoc' }
+  | { type: 'discovery' }
+  | { type: 'landmark' }
+  | { type: 'records' }
+  | { type: 'dossier' }
+  | { type: 'roadmap' }
   | { type: 'summary'; day: number; stats: DayStats };
 
 /** Đang cầm một món đồ để đặt (mua mới hoặc di chuyển món có sẵn). */
@@ -266,6 +296,10 @@ export interface GameState {
   questLog: QuestLog;
   /** Nhận thưởng một nhiệm vụ đã xong. */
   claimQuest: (id: string) => boolean;
+  /** GĐ140: nhận thưởng một mục tiêu vòng tái sinh (NG+) đã đạt — chỉ khi prestige.level≥1; reset mỗi vòng. */
+  claimNgGoal: (id: string) => boolean;
+  /** Chốt kèo hôm nay: mức `tier` (xem BET_TIERS) — cam kết làm trọn việc chính hôm nay (đông khách, bán hàng, doanh thu) ở mục tiêu cao hơn để nhận thêm thưởng. */
+  placeBet: (tier: number) => boolean;
   /** Đổi các ô hết hàng (kho không còn, không có đơn chờ) sang món khác trong kho; trả về các dòng mô tả đã đổi. */
   replaceEmptySlots: () => string[];
   /** Tự động theo lịch: 7h ra tiệm, 8h mở cửa, 22h30 đóng cửa, 23h kiểm kê rồi về nhà. */
@@ -287,6 +321,10 @@ export interface GameState {
   /** Số món bán được trung bình mỗi ngày của từng món (để gợi ý giá). */
   sales: Record<string, number>;
   salesToday: Record<string, number>;
+  /** Món đã bán được cả ván (Sổ tay Tiệm GĐ36): id → số món bán ra, để đếm 'đã khám phá X/Y món'. */
+  soldEver: Record<string, number>;
+  /** Số lần mỗi combo kích hoạt ở quầy cả ván (GĐ44) — để xoay combo hoạt động kém. */
+  comboHitCount: Record<string, number>;
   /** Thân thiết với từng khách quen. */
   regulars: Record<string, RegularProgress>;
   /** Lời hẹn giữ món của khách quen (mỗi người một hẹn): món, số lượng, ngày ghé lấy. */
@@ -301,6 +339,14 @@ export interface GameState {
   adjustFriendship: (id: string, delta: number) => void;
   /** Đối thủ, quảng cáo, tích điểm, vay, hụi, tuần, thú cưng, thành tựu, nhà, xe (xem data/biz.ts). */
   biz: BizState;
+  /** Mua mặt bằng quán nước đầu ngõ (cấp 29, bán đồ uống rút từ kho); trả false nếu chưa đủ điều kiện. */
+  buyQuanNuoc: () => boolean;
+  /** Tuyển thêm nhân viên quán nước (tối đa 3 người). */
+  hireQuanNuoc: () => boolean;
+  /** Cho một nhân viên quán nước nghỉ việc (không hoàn phí tuyển). */
+  fireQuanNuoc: () => boolean;
+  /** Đổi mức giá quán nước (bình dân / vừa phải / đắt hơn). */
+  setQuanNuocPrice: (p: QuanNuocPrice) => void;
   /** Lấy bớt hàng khỏi kho (vd. thức ăn cho thú cưng). */
   consumeStock: (productId: string, qty: number) => void;
   /** Sổ nợ khách quen (theo id khách quen). */
@@ -310,6 +356,9 @@ export interface GameState {
   /** Cho khách quen ghi sổ hay không. */
   allowCredit: boolean;
   setAllowCredit: (on: boolean) => void;
+  /** GĐ61 "Chính sách quầy": thái độ chủ tiệm mặc cả & tiền lẻ; 'ask' = hỏi như trước. */
+  counterPolicy: CounterPolicy;
+  setCounterPolicy: (patch: Partial<CounterPolicy>) => void;
   /** Tính tiền nhưng ghi vào sổ nợ của khách quen thay vì thu tiền mặt. */
   checkoutOnCredit: (regularId: string, items: CartItem[], discount?: number, combos?: number) => void;
   /** Khách quen trả hết nợ cũ; trả về số tiền thu được. */
@@ -320,10 +369,16 @@ export interface GameState {
   vendorOffer: VendorOffer | null;
   /** Ngày người bán rong đã ghé gần nhất (mỗi ngày tối đa một lần). */
   vendorDay: number;
+  /** Ngày đã bán chợ phiên gần nhất (chặn bán lại cùng một ngày chợ). */
+  marketClearedDay: number;
+  /** Bản ghi lần bán chợ phiên gần nhất (để tổng kết cuối ngày). */
+  marketLast: { day: number; units: number; revenue: number };
   /** Người bán rong vào tới quầy: đưa đề nghị lấy sỉ. */
   offerWholesale: () => VendorOffer | null;
   acceptWholesale: () => boolean;
   declineWholesale: () => void;
+  /** Bán chợ phiên: xả hàng DƯ định kỳ, một lần mỗi ngày chợ. */
+  sellMarketSurplus: () => { ok: boolean; reason?: 'already' | 'no-surplus'; units?: number; pay?: number };
   /** Đơn khách gọi điện hôm nay (đang đổ chuông hoặc đang mang đi giao). */
   phoneOrders: PhoneOrder[];
   /** Số khung giờ gọi điện hôm nay đã xét (chỉ số tiếp theo trong PHONE_SLOTS). */
@@ -348,6 +403,10 @@ export interface GameState {
   /** Hợp đồng cung cấp đang giữ (khách sỉ / đơn buôn dài hạn). */
   contracts: Record<string, ContractState>;
   acceptContract: (id: string) => void;
+  /** Cam kết: trữ sẵn đúng số hàng kỳ này khỏi kho bán chung để nhận thưởng tin cậy (cọc hoàn lại). */
+  commitContract: (id: string) => void;
+  /** Hủy cam kết: trả hàng về kho bán chung, hoàn lại tiền cọc. */
+  releaseContract: (id: string) => void;
   /** Món vừa bán tính vào mục tiêu chung của dịp; đủ thì trao thưởng. */
   communitySale: (ids: string[]) => void;
   /** Giao kỳ hiện tại của hợp đồng từ kho; trả true nếu giao xong. */
@@ -357,11 +416,19 @@ export interface GameState {
   /** Giữ chân: chuỗi điểm danh quà 7 ngày và lượt vòng quay may mắn mỗi ngày. */
   giftStreak: number;
   giftLastDay: number;
+  /** Ngày gần nhất dùng vé tha thứ streak (bỏ quên 1 ngày mà vẫn giữ chuỗi); 0 = chưa từng dùng. */
+  giftGraceDay: number;
   wheelLastDay: number;
   /** Nhân lượng khách ghé hôm nay khi trúng giải 🍀 trên vòng quay (1 = bình thường). */
   wheelBoost: number;
+  /** Mốc thời gian THẬT (epoch ms) lần ghé/hoạt động gần nhất — đo vắng mặt cho thưởng "Chào mừng quay lại". */
+  lastSeenAt: number;
+  /** Soát thưởng "Chào mừng quay lại" khi nạp bản lưu: đủ 2 ngày thật vắng thì thưởng một lần; luôn làm mới lastSeenAt. */
+  checkWelcomeBack: () => number;
   /** Điểm danh hôm nay; trả false nếu đã nhận rồi. */
   claimGift: () => boolean;
+  /** Góp vật liệu một lượt cho sân chơi (mỗi ngày một lần); trả false nếu không góp được. */
+  contributeLandmark: () => boolean;
   /** Quay vòng quay hôm nay; trả về giải trúng, hoặc null nếu hết lượt. */
   spinWheel: () => WheelPrize | null;
   /** Cấp ngoại hình/nhân vật chính đang dùng (id trong COSTUMES). */
@@ -383,6 +450,8 @@ export interface GameState {
   /** Danh hiệu đã đạt. */
   titles: string[];
   checkTitles: () => void;
+  /** Tái sinh (NG+): bắt đầu lại bản chạy tiệm từ cấp 1, giữ bộ sưu tập tài khoản và cộng bonus doanh thu. */
+  doPrestige: () => void;
   /** Sửa hoặc bảo trì một kệ. */
   repairFurniture: (uid: number) => void;
   /** Tiền giả lọt vào két hôm nay (phát hiện khi kiểm két cuối ngày). */
@@ -421,8 +490,9 @@ export interface GameState {
   priceOf: (productId: string, minutes?: number) => number;
   setPrice: (productId: string, price: number) => void;
   /** Tính tiền cho khách; `discount` là tiền giảm combo, `combos` là số combo trong giỏ,
-   *  `payment` là hình thức thanh toán (mặc định tiền mặt) — ảnh hưởng phí và sổ thống kê. */
-  checkout: (items: CartItem[], discount?: number, combos?: number, payment?: PaymentMethod) => void;
+   *  `payment` là hình thức thanh toán (mặc định tiền mặt) — ảnh hưởng phí và sổ thống kê.
+   *  `profId` (tuỳ chọn, GĐ62): nghề khách vãng lai — ghi doanh thu vào nhân khẩu học. */
+  checkout: (items: CartItem[], discount?: number, combos?: number, payment?: PaymentMethod, profId?: string) => void;
   /** Khách không mua được một món (hoặc bỏ về vì chờ lâu). */
   noteMiss: (reason: ReviewReason, productId?: string) => void;
   /** Lời/lỗ các ngày gần đây (cũ trước). */
@@ -449,6 +519,12 @@ export interface GameState {
   setShift: (id: number, shift: Shift) => void;
   /** Cửa hàng tiện lợi 24/7 (null = chưa thuê mặt bằng). */
   branch: BranchState | null;
+  /** Nhật ký từng ngày của chi nhánh 24/7 + quán nước (cửa sổ lăn) — nuôi mục "Xu hướng cơ sở". */
+  venueTrend: VenueDay[];
+  /** Rủi ro tích lũy trong ngày hôm nay ở tiệm chính (lọt thật / chặn / số lần) — sổ rủi ro GĐ58. Optional, save-safe. */
+  riskToday: RiskToday;
+  /** Nhật ký rủi ro từng ngày (cửa sổ lăn) — nuôi mục "Xu hướng rủi ro (14 ngày)". Optional, save-safe. */
+  riskTrend: RiskDay[];
   openBranch: () => boolean;
   toggleBranch: () => void;
   toggleVending: () => void;
@@ -521,6 +597,12 @@ export interface GameState {
   cleanupFarm: () => void;
   /** Sổ phân tích 30 ngày theo món (sức khoẻ món, ABC, gợi ý). */
   analytics: AnalyticsState;
+  /** Ghi món vừa bán vào 'Sổ tay Tiệm' và tự thưởng mốc thu thập khi vượt ngưỡng (GĐ36). */
+  recordDiscovery: (ids: string[]) => void;
+  /** Cộng dồn số lần mỗi combo kích hoạt ở quầy (GĐ44) — hiển thị ở ComboPanel. */
+  noteComboHits: (byCombo: Record<string, number>) => void;
+  /** Ghi sổ nhân khẩu học khách vãng lai theo nghề (GĐ62) — hiển thị ở "Khách của tôi". */
+  tallyDemographics: (id: string, patch: { visits?: number; revenue?: number; walkouts?: number }) => void;
 }
 
 export interface Delivery {

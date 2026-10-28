@@ -3,6 +3,7 @@ import { warehouseTier, WAREHOUSE_TIERS } from '../../data/warehouse';
 import { customersPerDay } from '../../data/levels';
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
 import { orderTotal, supplierById } from '../../data/suppliers';
+import { addRel } from '../../data/supplierRel';
 import { fitLots, mergeLots, tierMarkdown, takeOldest } from '../../data/freshness';
 import { COOKED_PRODUCT_IDS } from '../../data/recipes';
 import { type GameState, type Furniture, type SetState, type GetState, storageCapacity, storageUsed } from '../gameTypes';
@@ -71,14 +72,20 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
     }
     const stats = { ...s.stats, spent: s.stats.spent + cost };
     const totals = { ...s.totals, spent: s.totals.spent + cost };
+    // Mối quen lâu dài (GĐ67): ghi doanh mua + số đơn của mối (tích lũy cả ván + theo tháng để so cam kết)
+    const nbiz = {
+      ...s.biz,
+      supplierRel: { ...(s.biz.supplierRel ?? {}), [supplierId]: addRel(s.biz.supplierRel?.[supplierId], cost) },
+      supplierRelMonth: { ...(s.biz.supplierRelMonth ?? {}), [supplierId]: (s.biz.supplierRelMonth?.[supplierId] ?? 0) + cost },
+    };
     if (sup.delayDays === 0) {
       const k = copyStock(s);
       for (const [id, qty] of Object.entries(lines)) putStock(k, id, qty);
-      set({ money: s.money - cost, ...k, stats, totals });
+      set({ money: s.money - cost, ...k, stats, totals, biz: nbiz });
       const swapped = s.autoSwap ? get().replaceEmptySlots() : [];
       s.notify(`📦 Đã nhập hàng từ ${sup.name}: ${formatMoney(cost)}${swapped.length ? ` · 🔄 Thay ô hết hàng: ${swapped.join(', ')}` : ''}`);
     } else {
-      set({ money: s.money - cost, stats, totals, deliveries: [...s.deliveries, { supplierId, items: lines }] });
+      set({ money: s.money - cost, stats, totals, biz: nbiz, deliveries: [...s.deliveries, { supplierId, items: lines }] });
       s.notify(`🚚 Đã đặt ${sup.name} (${formatMoney(cost)}), hàng về lúc 6h sáng mai`);
     }
     return true;

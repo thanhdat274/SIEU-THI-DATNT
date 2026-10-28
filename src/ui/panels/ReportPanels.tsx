@@ -1,29 +1,71 @@
 import { ProductIcon } from '../ProductIcon';
 import { useState } from 'react';
-import { useGame, formatClock, type DayRecord, type ItemLine } from '../../core/store';
+import { useGame, formatClock, type DayRecord, type DayStats, type ItemLine } from '../../core/store';
 import { rentOf } from '../../data/shopTiers';
 import { furnitureDef } from '../../data/furniture';
 import { xpToNext } from '../../data/levels';
 import { formatMoney, productById } from '../../data/products';
 import { describeRep, meetsRep, REP_FACTORS, REP_INFO, REP_MIN_SAMPLES, reputationOf, type RepSample } from '../../data/reputation';
+import { repPayoff, repPayoffFocus } from '../../data/repPayoff';
+import { butcherValueToday, MAX_BUTCHER_STAR, meatFromByItem, missedMeatRevenue, recentMeatRevenue } from '../../data/butcherValue';
+import { debtLedger } from '../../data/debtLedger';
 import { regularRep, regularById, regularsExpectedToday, REGULARS } from '../../data/regulars';
-import { LOAN_DAILY_RATE } from '../../data/biz';
+import { LOAN_DAILY_RATE, loyaltyPayoff } from '../../data/biz';
+import { happyPayoff } from '../../data/rhythm';
+import { QUAN_NUOC_MAX_STAFF, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, quanNuocHealth } from '../../data/quanNuoc';
 import { CREDIT_FRIENDSHIP, CREDIT_UNLOCK, creditLimit, DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS } from '../../data/credit';
-import { ACTION_LABEL, expiringSoon, expiryAdvice, peakAdvice, peakHours, walkoutAdvice, type Advice, type HourStat } from '../../data/advice';
+import { CHANGE_OPTS, counterPolicySummary, defaultCounterPolicy, HAGGLE_OPTS } from '../../data/counterDeals';
+import { ACTION_LABEL, expiringSoon, expiryAdvice, peakAdvice, peakHours, spoilNightReport, storeMissRevenue, waitLossStats, walkoutAdvice, type Advice, type HourStat } from '../../data/advice';
 import { dateOfDoy, dayEffects, dayOfYear, festivalStock, upcomingFestival } from '../../data/calendar';
+import { prepItems, prepReadiness, prepBonus, PREP_MIN_QTY } from '../../data/festivalPrep';
+import { itemHealthList, shelfAttention, shelfCount } from '../../data/analytics';
+import { computeRecords, recordFeedToday } from '../../data/records';
+import { comboDaySnapshot, resetComboDay } from '../../core/slices/comboDay';
+import { comboById } from '../../data/combos';
+import { branchMorningPlan } from '../../data/branchMorning';
+import { storageUsed } from '../../core/gameTypes';
+import { hiepLucEligible, hiepLucPayoff, HIEPLUC_COC, HIEPLUC_MIN } from '../../data/hiepLuc';
+import { earlyUnlockTeaser } from '../../data/unlockMap';
+import { marketClearValue, isMarketDay } from '../../data/chophien';
+import { signHiepLuc } from '../../core/biz';
+import { seasonEvent, seasonObjective, seasonEventName, SEASON_EVENT_DAYS, SEASON_REWARD_PER_STAR } from '../../data/seasonEvent';
+import { planDay, type DayAction } from '../../data/dayPlan';
+import { demandForecast } from '../../data/counterDemand';
+import { hasSkill } from '../../data/titles';
+import { cleanBonus, CLEAN_TIERS, nextCleanTier } from '../../data/cleanOps';
+import { monthOf } from '../../data/calendar';
 import { trending } from '../../data/suppliers';
 import { describeDay, WEATHER } from '../../data/weather';
-import { missingForContract, SUPPLY_CONTRACTS, supplyContractById } from '../../data/contracts';
+import { tomorrowTeaser } from '../../data/tomorrowTeaser';
+import { missingForContract, reservedMissing, commitBonusValue, SUPPLY_CONTRACTS, supplyContractById, contractStreakProgress, CONTRACT_STREAK_EVERY, CONTRACT_STREAK_BONUS } from '../../data/contracts';
+import { leakTone, riskLiveToday } from '../../data/risk';
+import { nightPnl } from '../../data/nightReport';
 import { PHONE_SLOTS } from '../../data/phoneOrders';
 import { paymentById, type PaymentMethod } from '../../data/payments';
 import { Stat, starColor, Footer, Swatch, styles, Tabs } from './shared';
 
+/** Day-stats rỗng: SummaryPanel phải render được kể cả khi panel mở thiếu stats (đường mở lạ,
+ * save lệch schema) — đọc `.revenue` trên undefined là sập toàn bộ UI (GĐ93 audit bắt được). */
+export const EMPTY_DAY_STATS: DayStats = { revenue: 0, spent: 0, wages: 0, itemsSold: 0, customers: 0, unhappy: 0, xp: 0 };
+
 export function SummaryPanel({ day }: { day: number }) {
   const panel = useGame((s) => s.panel);
-  const { level, xp, history, closePanel, openPanel, storage, storageLots, furniture, priceOf } = useGame();
+  const { level, xp, history, closePanel, openPanel, storage, storageLots, furniture, priceOf, riskTrend, staff, skills, soldEver, comboHitCount, biz, weatherSeed, weather, regulars, totals, repLog, giftStreak, giftLastDay, giftGraceDay, happyHour, analytics, demand: stateDemand, marketClearedDay, marketLast, debts } = useGame();
   const [tab, setTab] = useState<'overview' | 'items'>('overview');
   if (panel?.type !== 'summary') return null;
-  const st = panel.stats;
+  // GĐ126: `day` prop = ngày VỪA KẾT THÚC (N), nhưng endDay đã sang ngày mới trong cùng set().
+  // Store `useGame(s => s.day)` = N+1 = MAI; weather/weatherSeed cũng là của mai. Luôn dùng MAI.
+  const nowDay = useGame((s) => s.day);
+  const teaserRows = tomorrowTeaser({
+    day: nowDay, level, weatherSeed, weather, regulars, repLog, totals, history,
+    giftStreak, giftLastDay, giftGraceDay,
+  });
+  const st = panel.stats ?? EMPTY_DAY_STATS;
+  // GĐ123: thẻ "phá kỷ lục" trong tổng kết cuối ngày — mồi quay lại mỗi ngày cho người chơi cấp cao,
+  // nơi mọi việc đã auto: chỉ còn mục tiêu "tự phá kỷ lục của mình" là còn chạm được.
+  const records = computeRecords({ history, soldEver, comboHitCount, level, prestigeBonus: biz.prestige.bonus });
+  const feed = recordFeedToday(st, records);
+  const feedActive = feed.filter((f) => f.best !== null);
   const profit = st.revenue - st.spent - st.wages - (st.rent ?? 0) - (st.fees ?? 0);
   const methods = (Object.entries(st.byMethod ?? {}) as [PaymentMethod, { revenue: number; count: number }][])
     .sort((a, b) => b[1].revenue - a[1].revenue);
@@ -36,6 +78,35 @@ export function SummaryPanel({ day }: { day: number }) {
   const missTotal = (missed.stock ?? 0) + (missed.price ?? 0) + (missed.wait ?? 0) + (missed.expired ?? 0);
   const { hours, peak, quiet } = peakHours(st.byHour);
   const timeAdvice = peakAdvice(peak, missed.wait ?? 0);
+  // GĐ120: thẻ dạy chơi 'mất khách vì chờ quầy' — đóng vòng lặp của dấu hiệu sốt ruột GĐ119
+  const waitLoss = waitLossStats(st.byHour, missed, st.customers);
+  // GĐ129: thẻ tích điểm đáng/không — quà đã tặng so khách kéo thêm nhờ +% (chỉ khi bật thẻ)
+  const loyaltyPay = loyaltyPayoff(biz.loyalty, st);
+  // GĐ148: danh tiếng ĐÁNG bao nhiêu khách — định lượng phần thưởng khách-vào-cửa của sao
+  const rep148 = reputationOf(repLog);
+  const payoff148 = repPayoff(rep148, level, furniture.filter((f) => f.type === 'plant').length);
+  // GĐ130: giờ vàng có đáng không hôm nay — khách kéo thêm quy ra tiền so tiền đã giảm giá (thuần đọc)
+  const happyPay = happyPayoff(happyHour, st.byHour);
+  // GĐ131: định lượng lãi bỏ lỡ vì kệ/kho hết hàng tiệm chính — đóng vòng mua kệ/kho có ROI (thuần đọc)
+  const missRev = storeMissRevenue(st.missLog, storage);
+  // GĐ149: quầy thịt cá — tổng kết cuối ngày định lượng tiền bỏ lỡ vì người bán thịt cá thiếu/giỏi chưa đủ.
+  // Thuần đọc: butcherValueToday(staff) + meatFromByItem(st.byItem) (+ recentMeatRevenue từ analytics).
+  const butcherV = butcherValueToday(staff);
+  const meatToday = meatFromByItem(st.byItem);
+  const meatMissed149 = missedMeatRevenue(meatToday.revenue, butcherV);
+  const hasMeatCounter = furniture.some((f) => f.type === 'meat_counter');
+  // GĐ150: Sổ nợ — định lượng tiền mặt đang bị khóa thành nợ + nợ quá hạn/sắp mất hẳn (thuần đọc).
+  // `nowDay` = MAI (N+1) — trùng cách endDay tính `age = s.day + 1 − d.since` khi xoá nợ xấu, nên
+  // với ngày vừa kết thúc N thì các món đã bị xoá tối nay sẽ hiện writeOffTonight = đúng thực tế.
+  const debt150 = debtLedger(debts, nowDay);
+  // GĐ133: bản kê NGƯỢC hàng hỏng đêm qua (theo món + chi phí + nguyên nhân) — đóng nửa "sau" của vòng nhập hàng
+  const spoilNite = spoilNightReport(analytics, day);
+  // GĐ137: mồi "🧺 Chợ phiên ngày mai" — tổng kết cuối ngày báo trước phiên chợ đầu ngõ (nếu ngày mai
+  // là ngày chợ) + hàng DƯ hiện có đáng gánh. THUẦN đọc state, không đổi save/kinh tế.
+  const marketTom = marketClearValue({
+    day: nowDay + 1, storage, shelved: shelfCount(furniture),
+    health: itemHealthList(analytics, level, storage, shelfCount(furniture), stateDemand),
+  });
   // Gợi ý giờ cao điểm đã nói chuyện chờ lâu thì bỏ dòng chờ lâu chung chung
   const advice = walkoutAdvice(st.missLog ?? {}, storage, priceOf)
     .filter((a) => !(timeAdvice[0]?.action === 'staff' && a.action === 'staff'))
@@ -51,6 +122,101 @@ export function SummaryPanel({ day }: { day: number }) {
       <Tabs tabs={tabs} value={tab} onChange={setTab} />
       {tab === 'overview' ? (
         <>
+          {/* GĐ126: Thẻ "Mai tiệm có gì" — mồi quay lại ngày mai. Đọc state có sẵn (đã sang ngày
+              mới nên `weather`, `day`… là của MAI), không đổi save/kinh tế. Ẩn khi không có dòng. */}
+          {teaserRows.length > 0 && (
+            <div style={{ ...styles.card, display: 'block', marginTop: 8, borderLeft: '3px solid #f1c40f' }}>
+              <b style={{ fontSize: 13, color: '#f1c40f' }}>🔮 Mai tiệm có gì</b>
+              <div style={{ marginTop: 2 }}>
+                {teaserRows.map((row) => (
+                  <button key={row.id} onClick={() => openPanel({ type: row.panel })}
+                    title={row.hint}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', background: 'transparent', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', color: 'inherit', fontSize: 12, padding: '4px 0', minHeight: 36, borderRadius: 6 }}>
+                    <span style={{ flexShrink: 0 }}>{row.icon}</span>
+                    <span style={{ flex: 1, minWidth: 0 }}>{row.text}</span>
+                    {row.hint && <span style={{ flexShrink: 0, textAlign: 'right', fontSize: 11, whiteSpace: 'nowrap', color: row.hintColor ?? 'rgba(255,255,255,0.8)' }}>{row.hint}</span>}
+                    <span style={{ flexShrink: 0, color: '#f1c40f' }}>→</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {marketLast && marketLast.day === day && marketLast.units > 0 && (
+            <div style={{ ...styles.card, display: 'block', marginTop: 8, borderLeft: '3px solid #2ecc71' }}>
+              <b style={{ fontSize: 13, color: '#2ecc71' }}>🧺 Chợ phiên hôm nay</b>
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                Đã gánh <b>{marketLast.units} món dư</b> ra chợ, thu về <b>{formatMoney(marketLast.revenue)}</b> thay vì để ế/hỏng.
+              </div>
+            </div>
+          )}
+          {marketTom && (
+            <div style={{ ...styles.card, display: 'block', marginTop: 8, borderLeft: '3px solid #2ecc71' }}>
+              <b style={{ fontSize: 13, color: '#2ecc71' }}>🧺 Chợ phiên ngày mai</b>
+              <div style={{ marginTop: 2 }}>
+                {marketTom.rows.map((r) => (
+                  <div key={r.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline', fontSize: 12 }}>
+                    <span style={{ minWidth: 150 }}>{r.name}: {r.qty} món</span>
+                    <span style={{ opacity: 0.8 }}>~{formatMoney(r.est)} · {r.reason === 'cold' ? 'cần lạnh dư' : 'bán chậm'}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                Gánh ~{marketTom.units} món dư ra chợ ngày mai, thu về ~<b>{formatMoney(marketTom.total)}</b> thay vì để ế/hỏng.
+              </div>
+            </div>
+          )}
+          {!payoff148.insufficient && Math.abs(payoff148.extraKhach) >= 3 && (
+            <div style={{ ...styles.card, display: 'block', marginTop: 8, borderLeft: '3px solid #9b59b6' }}>
+              <button onClick={() => openPanel({ type: 'reviews' })} title="Xem chi tiết danh tiếng"
+                style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', color: 'inherit', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
+                <b style={{ fontSize: 13, color: '#9b59b6' }}>⭐ Danh tiếng {rep148.overall.toFixed(1)}★</b>
+                <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.7 }}>xem →</span>
+              </button>
+              <div style={{ fontSize: 12, marginTop: 4, color: payoff148.extraKhach >= 0 ? '#4caf50' : '#e74c3c' }}>
+                {payoff148.extraKhach >= 0
+                  ? <>Giữ phong độ giúp tiệm được thêm <b>~{payoff148.extraKhach} khách/ngày</b> ({Math.round(Math.abs(payoff148.pct) * 100)}% người đi đường).</>
+                  : <>Danh tiếng đang tụt, mất khoảng <b>~{Math.abs(payoff148.extraKhach)} khách/ngày</b>. Sửa mặt yếu nhất để hút khách lại.</>}
+                <span style={{ opacity: 0.75 }}> Nâng 0.5★: thêm ~{payoff148.nextStarKhach} khách/ngày.</span>
+              </div>
+            </div>
+          )}
+          {hasMeatCounter && butcherV.skill < MAX_BUTCHER_STAR && meatToday.revenue > 0 && (
+            <div style={{ ...styles.card, display: 'block', marginTop: 8, borderLeft: `3px solid ${butcherV.present ? '#e67e22' : '#e74c3c'}`, background: butcherV.present ? undefined : 'rgba(231,76,60,0.12)' }}>
+              <b style={{ fontSize: 13, color: butcherV.present ? '#e67e22' : '#e74c3c' }}>🔪 Thịt cá hôm nay thu {formatMoney(meatToday.revenue)}</b>
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                {butcherV.present
+                  ? <>Người bán thịt cá {butcherV.skill}★ trực — bán được ~{butcherV.pct}% nhu cầu thịt cá.</>
+                  : <>Không có người bán thịt cá — khách chỉ mua ~{butcherV.pct}% nhu cầu (quầy thịt cá gần như đứng im).</>}
+                {meatMissed149 > 0 && (
+                  <span style={{ color: '#f1c40f' }}> Thuê/bồi dưỡng người bán 5★ có thể thêm ~{formatMoney(meatMissed149)}/ngày.</span>
+                )}
+              </div>
+              <div style={{ marginTop: 6 }}>
+                <button onClick={() => openPanel({ type: 'staff' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
+                  {butcherV.present ? '👥 Nâng người bán thịt cá →' : '👥 Xếp người bán thịt cá →'}
+                </button>
+              </div>
+            </div>
+          )}
+          {debt150.count > 0 && (
+            <div style={{ ...styles.card, display: 'block', marginTop: 8, borderLeft: `3px solid ${debt150.writeOffTonightAmount > 0 ? '#e74c3c' : debt150.lateAmount > 0 ? '#e67e22' : '#3498db'}`, background: debt150.writeOffTonightAmount > 0 ? 'rgba(231,76,60,0.12)' : undefined }}>
+              <b style={{ fontSize: 13, color: debt150.writeOffTonightAmount > 0 ? '#e74c3c' : debt150.lateAmount > 0 ? '#e67e22' : '#3498db' }}>💳 Sổ nợ đang khóa {formatMoney(debt150.lockedTotal)} tiền mặt</b>
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                {debt150.writeOffTonightAmount > 0 ? (
+                  <span style={{ color: '#e74c3c' }}>⚠️ <b>{formatMoney(debt150.writeOffTonightAmount)}</b> quá {DEBT_WRITE_OFF_DAYS} ngày — <b>mất hẳn</b> nếu không nhắc/xoá. Đã có {debt150.lateCount} món quá hạn ({formatMoney(debt150.lateAmount)}).</span>
+                ) : debt150.lateAmount > 0 ? (
+                  <span style={{ color: '#e67e22' }}>⚠️ {debt150.lateCount} món nợ quá {DEBT_LATE_DAYS} ngày ({formatMoney(debt150.lateAmount)}) — sau {DEBT_WRITE_OFF_DAYS} ngày sẽ mất hẳn. Hãy nhắc/xoá nợ.</span>
+                ) : (
+                  <span>Khách quen đang giữ {debt150.count} món nợ ({formatMoney(debt150.lockedTotal)}) — còn đang trong hạn.</span>
+                )}
+              </div>
+              <div style={{ marginTop: 6 }}>
+                <button onClick={() => openPanel({ type: 'regulars' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
+                  📒 Mở sổ nợ → nhắc / xoá
+                </button>
+              </div>
+            </div>
+          )}
           <table style={{ ...styles.table, fontSize: 15 }}>
             <tbody>
               <tr><td style={styles.left}>Doanh thu</td><td>{formatMoney(st.revenue)}</td></tr>
@@ -82,6 +248,161 @@ export function SummaryPanel({ day }: { day: number }) {
               <tr><td style={styles.left}>Kinh nghiệm</td><td>+{st.xp} XP · Cấp {level} ({xp}/{xpToNext(level)})</td></tr>
             </tbody>
           </table>
+          {(() => {
+            const last = riskTrend.length ? riskLiveToday(riskTrend[riskTrend.length - 1]) : { leak: 0, blocked: 0, events: 0 };
+            if (last.events <= 0) return null; // ngày yên ả (không rủi ro) thì không bày thẻ, tránh nhiễu
+            const tone = leakTone(last.leak, st.revenue);
+            const color = tone === 'bad' ? '#e74c3c' : tone === 'warn' ? '#f1c40f' : '#2ecc71';
+            return (
+              <div style={{ ...styles.card, borderLeft: `3px solid ${color}`, marginTop: 8 }}>
+                <b>🛡️ Rủi ro hôm nay — chặn {formatMoney(last.blocked)} · lọt {formatMoney(last.leak)} · {last.events} lần</b>
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                  Lọt: trộm khuất · tiền giả lọt · nhân viên gian lận · Chặn: bắt quả tang (phạt) · phát hiện tiền giả · thu lại khi bắt
+                </div>
+              </div>
+            );
+          })()}
+          {/* GĐ124: Thẻ "Combo hôm nay" trong tổng kết — đóng vòng phản hồi cho quyết định xoay slot
+              combo (combo chạy trong slot hạn chế mà trước đây chỉ có comboHitCount tích lũy cả đời = hộp đen).
+              Dữ liệu là transient per-day (comboDay, không persist); chỉ hiện khi hôm nay có combo kích hoạt. */}
+          {(() => {
+            const today = comboDaySnapshot();
+            const rows = Object.entries(today)
+              .map(([id, t]) => {
+                const def = comboById(id);
+                if (!def) return null;
+                const [a, b] = def.items.map(productById);
+                const full = priceOf(a.id) + priceOf(b.id);
+                const cut = Math.round((full * def.discount) / 100) * 100;
+                const margin = full - cut - a.buy - b.buy;
+                return { def, t, margin };
+              })
+              .filter((r): r is NonNullable<typeof r> => r !== null)
+              .sort((x, y) => (y.t.count ?? 0) - (x.t.count ?? 0))
+              .slice(0, 5);
+            if (!rows.length) return null;
+            return (
+              <div style={{ ...styles.card, marginTop: 8 }}>
+                <b>🎁 Combo hôm nay</b>
+                <div style={{ marginTop: 4, display: 'grid', gap: 3 }}>
+                  {rows.map(({ def, t, margin }) => (
+                    <div key={def.id} style={{ fontSize: 12, display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                      <span>{def.icon} {def.name}: <b>{t.count} lần</b> · giảm {formatMoney(t.discount)}</span>
+                      <span style={{ color: margin > 0 ? '#2ecc71' : '#e74c3c', fontWeight: 600 }}>lãi cả cặp {formatMoney(margin)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+          {/* GĐ123: Thẻ "phá kỷ lục" trong tổng kết ngày — mồi quay lại mỗi ngày cho người chơi cấp cao
+              (nơi mọi việc đã auto) bằng mục tiêu tự phá kỷ lục của chính mình. Chỉ hiện khi có kỷ lục
+              để so (best !== null); đọc state có sẵn (history/soldEver/comboHitCount), không đổi save. */}
+          {feedActive.length > 0 && (
+            <div style={{ ...styles.card, marginTop: 8 }}>
+              <b>🏆 Đang đua phá kỷ lục</b>
+              <div style={{ marginTop: 4, display: 'grid', gap: 3 }}>
+                {feedActive.map((f) => (
+                  <button key={f.label} onClick={() => openPanel({ type: 'records' })}
+                    style={{ background: 'transparent', border: 'none', padding: '6px 0', cursor: 'pointer', width: '100%', color: 'inherit', textAlign: 'left', fontSize: 12, display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', borderRadius: 6 }}>
+                    <span>{f.icon} {f.label}: <b>{f.unit === 'money' ? formatMoney(f.today) : `${f.today} lượt`}</b></span>
+                    {f.beating ? (
+                      <span style={{ color: '#27ae60', fontWeight: 600 }}>🔥 Đã phá {f.unit === 'money' ? formatMoney(f.best!) : `${f.best!} lượt`}</span>
+                    ) : (
+                      <span style={{ color: f.remaining <= Math.round((f.best ?? 1) * 0.2) ? '#c9a20a' : 'inherit', opacity: f.remaining > Math.round((f.best ?? 1) * 0.2) ? 0.75 : 1 }}>
+                        🎯 còn {f.unit === 'money' ? formatMoney(f.remaining) : `${f.remaining} lượt`}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => openPanel({ type: 'records' })} style={{ ...styles.btn, marginTop: 4 }}>Sổ kỷ lục</button>
+            </div>
+          )}
+          {/* Báo cáo ca đêm tiệm chính (GĐ65): lời/lỗ của khoản đầu tư 15 triệu "Mở ca đêm 24h".
+              Thuần đọc từ byHour (giờ ≥22) + nhân viên ca đêm (pay ×1.5) — không thêm state/save. */}
+          {(() => {
+            const np = nightPnl(st.byHour, staff, skills);
+            if (np.verdict === 'idle') return null; // chưa mở ca đêm / chưa thuê ai, không bày thẻ tránh nhiễu
+            const color = np.verdict === 'ok' ? '#2ecc71' : '#e74c3c';
+            return (
+              <div style={{ ...styles.card, borderLeft: `3px solid ${color}`, marginTop: 8 }}>
+                <b>🌙 Đêm qua: thu {formatMoney(np.revenue)} (ca đêm +15%) · lương ca đêm −{formatMoney(np.wages)} · <span style={{ color }}>lời ròng {formatMoney(np.net)}</span></b>
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                  {np.verdict === 'ok'
+                    ? 'Mở xuyên đêm đang có lời — bán được đắt hơn buổi ngày, khách khuya lười trả giá.'
+                    : '⚠️ Ca đêm đang lỗ — cân nhắc bớt nhân viên ca đêm, rút bảo vệ thừa, hoặc đóng cửa đúng giờ để khỏi trả lương ×1.5.'}
+                </div>
+              </div>
+            );
+          })()}
+          {/* GĐ120: Thẻ dạy chơi 'mất khách vì chờ quầy' — phản hồi cuối ngày của dấu hiệu sốt
+              ruột GĐ119. Chỉ hiện khi có ai bỏ về vì chờ; đọc state có sẵn (missed.wait /
+              byHour / customers), không đổi save/kinh tế. Nút trỏ tới gợi ý xếp ca đã có. */}
+          {waitLoss && (() => {
+            const pct = Math.round(waitLoss.pct * 100);
+            const bad = waitLoss.pct >= 0.1; // mất ≥10% khách vì chờ là đáng sốt
+            const color = bad ? '#e74c3c' : '#f1c40f';
+            return (
+              <div style={{ ...styles.card, borderLeft: `3px solid ${color}`, marginTop: 8 }}>
+                <b>⏳ Mất {waitLoss.count} khách vì chờ quầy quá lâu <span style={{ color }}>(bằng ~{pct}% khách ghé hôm nay)</span></b>
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                  Khách đứng chờ 😕😤 quá lâu rồi bỏ về. Đứng quầy giờ đông (giờ cao điểm nhất {waitLoss.peakHour !== null ? `${waitLoss.peakHour}h–${waitLoss.peakHour + 1}h` : 'trong hôm nay'}) hoặc thuê thêm thu ngân để không bỏ lỡ.
+                </div>
+              </div>
+            );
+          })()}
+          {loyaltyPay && loyaltyPay.verdict !== 'soon' && (
+            <div style={{ ...styles.card, borderLeft: `3px solid ${loyaltyPay.verdict === 'keep' ? '#2ecc71' : '#e67e22'}`, marginTop: 8 }}>
+              <b>🎫 Thẻ tích điểm hôm nay</b>
+              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                {loyaltyPay.verdict === 'keep'
+                  ? `Nhờ +${loyaltyPay.boostPct}% khách, kéo thêm ~${loyaltyPay.extraCustomers} khách (~${formatMoney(loyaltyPay.extraValue)}/ngày) — so với quà tặng ~${formatMoney(loyaltyPay.costToday)}/ngày (món ~${formatMoney(loyaltyPay.avgGift)}) là ĐÁNG giữ.`
+                  : `Quà tặng ~${formatMoney(loyaltyPay.costToday)}/ngày (món ~${formatMoney(loyaltyPay.avgGift)}) cao hơn giá trị khách kéo thêm (~${formatMoney(loyaltyPay.extraValue)}/ngày) — nâng lên ${5}/${10}/${15} tem hoặc tắt cho đỡ tốn.`}
+              </div>
+            </div>
+          )}
+          {happyPay && (
+            <div style={{ ...styles.card, borderLeft: `3px solid ${happyPay.verdict === 'great' ? '#2ecc71' : happyPay.verdict === 'ok' ? '#f1c40f' : '#e74c3c'}`, marginTop: 8 }}>
+              <b>🌞 Giờ vàng hôm nay ({happyPay.from}h–{happyPay.to}h)</b>
+              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                {happyPay.verdict === 'great'
+                  ? `Kéo thêm ~${happyPay.extraCustomers} khách (~${formatMoney(happyPay.extraValue)} lợi) so tiền giảm giá ~${formatMoney(happyPay.discountCost)} — hiệu quả ~${happyPay.efficiency.toFixed(1)}×, giữ mức này.`
+                  : happyPay.verdict === 'ok'
+                  ? `Kéo thêm ~${happyPay.extraCustomers} khách (~${formatMoney(happyPay.extraValue)} lợi) nhưng tiền giảm giá ~${formatMoney(happyPay.discountCost)} chiếm phần lớn (hiệu quả ~${happyPay.efficiency.toFixed(1)}×) — cân nhắc hạ mức chiết khấu để lời hơn.`
+                  : `Tiền giảm giá ~${formatMoney(happyPay.discountCost)} vượt lợi khách kéo thêm (~${formatMoney(happyPay.extraValue)}) — giờ vàng đang tốn, nên hạ mức giảm hoặc đổi giờ sang giờ vắng.`}
+              </div>
+            </div>
+          )}
+          {missRev && missRev.totalLoss > 0 && (
+            <div style={{ ...styles.card, borderLeft: '3px solid #e74c3c', marginTop: 8 }}>
+              <b>📦 Hết hàng bỏ lỡ ~{formatMoney(missRev.totalLoss)} hôm nay</b>
+              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                {missRev.inStorageCount > 0 && missRev.outOfStockCount > 0
+                  ? `${missRev.rows.length} món khách tìm mà kệ trống: ${missRev.inStorageCount} món còn trong kho (chỉ thiếu chỗ bày — xếp thêm lên kệ) · ${missRev.outOfStockCount} món hết cả kho (nhập thêm). ${missRev.rows.slice(0, 3).map((r) => `${r.name} ~${formatMoney(r.estLoss)}`).join(' · ')}`
+                  : missRev.inStorageCount > 0
+                  ? `${missRev.rows.length} món còn hàng trong kho nhưng kệ hết chỗ — bày thêm lên kệ để không bỏ lỡ: ${missRev.rows.slice(0, 3).map((r) => `${r.name} ~${formatMoney(r.estLoss)}`).join(' · ')}`
+                  : `${missRev.rows.length} món hết cả kho — nhập thêm để không bỏ lỡ: ${missRev.rows.slice(0, 3).map((r) => `${r.name} ~${formatMoney(r.estLoss)}`).join(' · ')}`}
+              </div>
+            </div>
+          )}
+          {spoilNite && spoilNite.totalCost > 0 && (
+            <div style={{ ...styles.card, borderLeft: '3px solid #e74c3c', marginTop: 8 }}>
+              <b>🥀 Đêm qua hỏng ~{formatMoney(spoilNite.totalCost)} hàng</b>
+              <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
+                {spoilNite.rows.slice(0, 3).map((r) => (
+                  <button key={r.id} onClick={() => openPanel({ type: 'order' })}
+                    style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: 'inherit', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+                    <span style={{ minWidth: 150 }}>{r.name}: {r.spoiled} món · vốn {formatMoney(r.cost)} →</span>
+                    <span style={{ opacity: 0.8 }}>
+                      {r.kind === 'cold' ? 'cần lạnh để ngoài tủ' : r.kind === 'short' ? 'món tươi hạn ngắn, nhập nhiều không kịp bán' : 'để lâu hết hạn'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 3 }}>Giảm bớt nhập món hay hỏng hoặc cất tủ lạnh hàng mát — chỉnh ở Nhập hàng.</div>
+            </div>
+          )}
           {methods.length > 0 && (
             <>
               <h3 style={{ margin: '12px 0 4px', fontSize: 14 }}>💳 Tiền vào theo hình thức thanh toán</h3>
@@ -136,11 +457,48 @@ export function SummaryPanel({ day }: { day: number }) {
  * hợp đồng tới kỳ giao và khe giờ điện thoại. Chỉ liệt kê, không tự quyết thay người chơi.
  */
 export function MorningPanel() {
-  const {
-    day, level, weatherSeed, weather, forecast, regulars, reservations, storage,
+  const { day, level, xp, weatherSeed, weather, forecast, regulars, reservations, storage,
     furniture, staff, contracts, deliveries, shopTier, closePanel, openPanel, repLog,
-    storageLots, debts, biz,
-  } = useGame();
+    storageLots, debts, biz, branch, licenses, skills, happyHour, analytics, marketClearedDay,
+    demand: stateDemand, activeCombos, priceOf, sellMarketSurplus } = useGame();
+  const branchChores = branch ? branchMorningPlan(branch, storageUsed(storage), licenses, day) : [];
+  // GĐ123: mồi "kệ cần chú ý" từ analytics có sẵn — giống hệt AnalyticsPanel để không lệch số liệu.
+  const shelved = shelfCount(furniture);
+  const sickest = shelfAttention(itemHealthList(analytics, level, storage, shelved, stateDemand), 3);
+  // GĐ124: mồi "combo hôm qua kém" từ dữ liệu transient per-day (comboDay vẫn còn data HÔM QUA khi vừa
+  // sang ngày mới, reset khi đóng Sổ đầu ngày). Giúp quyết định xoay slot combo — chỉ hiện khi có bằng chứng.
+  const yesterCombos = (() => {
+    const snap = comboDaySnapshot();
+    const running = activeCombos ?? [];
+    const rows = running
+      .map((id) => {
+        const def = comboById(id);
+        const t = snap[id];
+        if (!def || !t || !t.count) return null;
+        const [a, b] = def.items.map(productById);
+        const full = priceOf(a.id) + priceOf(b.id);
+        const cut = Math.round((full * def.discount) / 100) * 100;
+        const margin = full - cut - a.buy - b.buy;
+        return { def, t, margin };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      // chỉ nhắc combo đang chạy NHƯNG hôm qua ít bán (count < mức đáng kể) hoặc lỗ cả cặp
+      .filter((r) => r.margin < 0 || r.t.count <= 3)
+      .sort((x, y) => (x.margin === y.margin ? x.t.count - y.t.count : x.margin - y.margin))
+      .slice(0, 2);
+    return rows;
+  })();
+  // GĐ127: Sổ kinh doanh quán nước — mồi quyết định (thuê/sa thải, nhập kho, cân kho
+  // với kệ tiệm chính). THUẦN đọc state có sẵn; UI chỉ hiện dòng khi có tín hiệu.
+  const quanHealth = biz.quanNuoc.open ? quanNuocHealth(biz.quanNuoc, level, storage, biz.quanNuocLast ?? null) : null;
+  const demand = demandForecast({
+    level, day, weatherSeed,
+    localLegend: hasSkill(skills, 'local_legend'),
+    happy: happyHour,
+  });
+  const cleanStreak = biz.cleanStreak ?? 0;
+  const cleanNext = nextCleanTier(cleanStreak);
+  const cleanExtra = cleanNext ? `chạm ${cleanNext.name} → +${formatMoney(cleanBonus(cleanNext.n, level))}` : `đã đạt ${CLEAN_TIERS[CLEAN_TIERS.length - 1].name}`;
   const shopName = useGame((s) => s.shopName);
   const rep = reputationOf(repLog);
   const effects = dayEffects(weatherSeed, day, level);
@@ -153,6 +511,27 @@ export function MorningPanel() {
   const dueContracts = Object.entries(contracts)
     .map(([id, cs]) => ({ cs, def: supplyContractById(cs.defId) }))
     .filter(({ cs, def }) => def && cs.dueDay <= day + 1);
+  // GĐ76: gộp mọi nhắc chuẩn bị ngày thành một danh sách ưu tiên (danger trước, khử trùng, cap 7).
+  const candidates: DayAction[] = [];
+  for (const c of branchChores) candidates.push({ icon: c.icon, text: c.text, panel: 'branch', danger: c.danger, priority: 1 });
+  for (const { cs, def } of dueContracts) candidates.push({ icon: '📦', text: `${def!.title}: giao trước ngày ${cs.dueDay}`, panel: 'contracts', danger: cs.dueDay <= day, priority: cs.dueDay <= day ? 0 : 2 });
+  if (biz.loan && biz.loan.dueDay - day <= 3) candidates.push({ icon: '🏦', text: `Nợ ngân hàng sắp hạn (${Math.max(0, biz.loan.dueDay - day)} ngày)`, panel: 'business', danger: true, priority: 0 });
+  if (hiepLucEligible(branch, biz.quanNuoc, level) && !(biz.hiepLuc?.active && biz.hiepLuc.m === monthOf(day))) candidates.push({ icon: '🤝', text: 'Lập đối tác chi nhánh × quán nước', panel: 'morning', danger: false, priority: 3 });
+  const se = seasonEvent(day);
+  if (se) {
+    const obj = seasonObjective(weatherSeed ?? 0, day);
+    const claimed = biz.seasonEvt?.season === se.season && biz.seasonEvt.claimedDay === se.dayIndex;
+    if (obj && !claimed) candidates.push({ icon: obj.icon, text: `Sự kiện ${seasonEventName(se.season)}: ${obj.title} (${obj.detail})`, panel: 'morning', danger: false, priority: 3 });
+  }
+  const actions = planDay(candidates);
+  // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
+  const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });
+  // GĐ135: mồi "🧺 Hôm nay chợ phiên" — bản đánh giá (preview, pure-read) hàng DƯ đáng gánh ra bán.
+  // Chỉ hiện ngày chợ (mỗi tuần từ ngày 7), khi có món dư, và chưa bán hôm nay. Bán thật ở GĐ136.
+  const chophien = marketClearedDay === day ? null : marketClearValue({
+    day, storage, shelved,
+    health: itemHealthList(analytics, level, storage, shelved, stateDemand),
+  });
   const courier = staff.some((w) => w.role === 'courier');
   const pct = (x: number) => `${x >= 1 ? '+' : ''}${Math.round((x - 1) * 100)}%`;
   const today = dateOfDoy(dayOfYear(day));
@@ -165,6 +544,13 @@ export function MorningPanel() {
     const def = REGULARS.find((x) => x.id === rid);
     return def ? def.favorites.filter((id) => productById(id).unlock <= level) : [];
   };
+  // GĐ149: quầy thịt cá — đưa hộp đen nhu cầu (meat.ts NO_BUTCHER_DEMAND/meatDemandFactor) ra con số
+  // khách/tiền. Thuần đọc state có sẵn; hiện ở Sổ đầu ngày vì quyết định thuê/xếp người bán thịt cá
+  // là việc NÊN làm TRƯỚC khi mở cửa. Chỉ hiện khi có quầy thịt cá và chưa đủ người bán 5★.
+  const hasMeatCounter = furniture.some((f) => f.type === 'meat_counter');
+  const butcherV = butcherValueToday(staff);
+  const recentMeat = recentMeatRevenue(analytics, 7);
+  const meatMissed = missedMeatRevenue(recentMeat.revenue, butcherV);
   return (
     <>
       <h2 style={styles.title}>☀️ {shopName} · Sổ đầu ngày {day} ({today.day}/{today.month})</h2>
@@ -173,6 +559,87 @@ export function MorningPanel() {
         Đọc xong nên nhập hàng bày kệ trước khi mở cửa — khách quen ghé đúng giờ quen.
         🏠 Tiền nhà trả cuối ngày: <b>{formatMoney(rentOf(shopTier))}</b>.
       </p>
+
+      {earlyUnlocks && (
+        <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '2px solid #f1c40f' }}>
+          <b>🧭 Sắp mở khóa</b>
+          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
+            {earlyUnlocks.map((u) => (
+              <button key={u.id} onClick={() => openPanel(u.panel())}
+                style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: '#f1c40f', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+                <span style={{ minWidth: 150 }}>{u.icon} {u.name} →</span>
+                <span style={{ opacity: 0.8 }}>cấp {u.atLevel} · còn {u.xpAway.toLocaleString('vi-VN')} XP</span>
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, opacity: 0.7, marginTop: 3 }}>Bán hàng & làm khách vui để lấy XP.</div>
+        </div>
+      )}
+
+      {chophien && (
+        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #2ecc71' }}>
+          <b>🧺 Hôm nay chợ phiên đầu ngõ</b>
+          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
+            {chophien.rows.map((r) => (
+              <div key={r.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline', fontSize: 12 }}>
+                <span style={{ minWidth: 150 }}>{r.name}: {r.qty} món</span>
+                <span style={{ opacity: 0.8 }}>~{formatMoney(r.est)} · {r.reason === 'cold' ? 'cần lạnh dư' : 'bán chậm'}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 12, marginTop: 4 }}>
+            Gánh ~{chophien.units} món dư ra bán, thu về ~<b>{formatMoney(chophien.total)}</b> thay vì để ế/hỏng.
+          </div>
+          <button onClick={() => sellMarketSurplus()}
+            style={{ ...styles.btn, marginTop: 6, width: '100%', background: '#2ecc71', borderColor: '#27ae60' }}>
+            🧺 Gánh bán ngay (+~{formatMoney(chophien.total)})
+          </button>
+          <div style={{ fontSize: 11, opacity: 0.7, marginTop: 3 }}>Chợ trả thấp hơn giá bán lẻ nhưng giải phóng hàng tồn — mỗi phiên một lần.</div>
+        </div>
+      )}
+
+      {actions.length > 0 && (
+        <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '1px solid rgba(26,188,156,0.4)' }}>
+          <b>🗓️ Việc hôm nay · ưu tiên</b>
+          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
+            {actions.map((a, i) => (
+              <button key={i} onClick={() => openPanel({ type: a.panel as never })}
+                style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: a.danger ? '#e74c3c' : 'inherit', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+                <span style={{ minWidth: 140 }}>{a.icon} {a.text} →</span>
+                <span style={{ opacity: 0.8 }}>{a.danger ? 'bức thiết' : 'nên làm'}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {sickest.length > 0 && (
+        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #e74c3c' }}>
+          <b>🔎 Kệ cần chú ý</b>
+          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
+            {sickest.map((s, i) => (
+              <button key={i} onClick={() => openPanel({ type: 'analytics' })}
+                style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: '#e74c3c', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+                <span>{s.icon} {s.text} → sổ phân tích</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {yesterCombos.length > 0 && (
+        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #f1c40f' }}>
+          <b>💡 Combo hôm qua kém hiệu quả</b>
+          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
+            {yesterCombos.map(({ def, t, margin }) => (
+              <button key={def.id} onClick={() => openPanel({ type: 'combos' })}
+                style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: '#f1c40f', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+                <span>{def.icon} "{def.name}" hôm qua {t.count} lần · giảm {formatMoney(t.discount)} · <b>lãi cả cặp {formatMoney(margin)}</b> {margin < 0 ? '(lỗ)' : '(bán chậm)'} → xét xoay slot ở combo</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {biz.loan && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: biz.loan.dueDay - day <= 3 ? '2px solid #e74c3c' : undefined }}>
@@ -183,6 +650,59 @@ export function MorningPanel() {
           </div>
         </div>
       )}
+
+      {/* 🛒 Nhu cầu quầy: dự báo cầu theo giờ của tiệm chính (GĐ78) */}
+      <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '1px solid rgba(46,204,113,0.35)' }}>
+        <b>🛒 Nhu cầu quầy hôm nay</b>
+        <div style={{ fontSize: 12, marginTop: 2, opacity: 0.9 }}>
+          ~{demand.expectedTotal} khách dự kiến cả ngày · đỉnh: {demand.peakBands.join(', ')} (ước lượng theo nhịp + lễ/thời tiết)
+        </div>
+        <div style={{ marginTop: 6, display: 'flex', alignItems: 'flex-end', gap: 4, height: 44 }}>
+          {demand.bands.map((b, i) => (
+            <div key={i} title={`${b.label}: ~${b.expected} khách (${b.perHour}/giờ)`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+              <div style={{ width: '100%', height: Math.max(4, Math.round(b.pressure / 100 * 34)), background: b.peak ? '#2ecc71' : 'rgba(46,204,113,0.45)', borderRadius: 3 }} />
+              <span style={{ fontSize: 9, opacity: 0.8, whiteSpace: 'nowrap' }}>{b.label}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 12, marginTop: 4 }}>
+          ⏰ {demand.bands.filter((b) => b.peak).slice(0, 2).map((b) => b.label).join(' · ') || demand.bands[0]?.label} đông: bày sẵn món &nbsp;
+          <button onClick={() => openPanel({ type: 'order' })} style={{ ...styles.btn, fontSize: 11, padding: '1px 6px' }}>châm kệ món tủ →</button>
+          · <button onClick={() => openPanel({ type: 'staff' })} style={{ ...styles.btn, fontSize: 11, padding: '1px 6px' }}>đủ người đứng quầy →</button>
+        </div>
+        <div style={{ fontSize: 12, marginTop: 4, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          🧭 Nếp vận hành: chuỗi <b>{cleanStreak}</b> ngày sạch · kỷ lục <b>{biz.cleanBest ?? 0}</b> · {cleanExtra}
+        </div>
+      </div>
+
+      {hasMeatCounter && butcherV.skill < MAX_BUTCHER_STAR && (
+        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: `3px solid ${butcherV.present ? '#e67e22' : '#e74c3c'}`, background: butcherV.present ? undefined : 'rgba(231,76,60,0.12)' }}>
+          <b>🔪 {butcherV.present
+            ? `Người bán thịt cá ${butcherV.skill}★ trực hôm nay — bán được ~${butcherV.pct}% nhu cầu thịt cá`
+            : 'Không có người bán thịt cá trực hôm nay — khách chỉ mua ~22% nhu cầu thịt cá'}</b>
+          <div style={{ fontSize: 12, marginTop: 2 }}>
+            {butcherV.present
+              ? `Hệ số cầu ${butcherV.factor.toFixed(2).replace('.', ',')} so với mốc ${butcherV.maxFactor.toFixed(2).replace('.', ',')} (người bán 5★).`
+              : 'Quầy thịt cá (650k) đang hầu như đứng im — người bán thịt cá làm tăng gấp ~4,6 lần nhu cầu ban đầu.'}
+          </div>
+          {recentMeat.revenue > 0 && meatMissed > 0 && (
+            <div style={{ fontSize: 12, marginTop: 2, color: '#f1c40f' }}>
+              💸 Gần đây thịt cá thu ~{formatMoney(recentMeat.revenue)}/ngày{butcherV.present
+                ? ` — lên 5★ thêm ~${formatMoney(meatMissed)}/ngày`
+                : ` — thuê người bán 5★ có thể thêm ~${formatMoney(meatMissed)}/ngày`}
+            </div>
+          )}
+          <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button onClick={() => openPanel({ type: 'staff' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
+              {butcherV.present ? '👥 Nâng/bồi dưỡng người bán thịt cá →' : '👥 Xếp người bán thịt cá →'}
+            </button>
+            <button onClick={() => openPanel({ type: 'analytics' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
+              📊 Xem sổ thịt cá →
+            </button>
+          </div>
+        </div>
+      )}
+
       {biz.hui && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
           <b>🤝 Đang góp hụi {formatMoney(biz.hui.daily)}/ngày</b>
@@ -191,6 +711,89 @@ export function MorningPanel() {
           </div>
         </div>
       )}
+
+      {biz.quanNuoc.open && (
+        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: `3px solid ${biz.quanNuocLast && biz.quanNuocLast.served < biz.quanNuocLast.wanted ? '#e67e22' : '#2ecc71'}` }}>
+          <b>🧋 Quán nước</b>
+          {biz.quanNuocLast ? (
+            <>
+              <div style={{ fontSize: 12, marginTop: 2 }}>
+                Hôm qua: {biz.quanNuocLast.served}/{biz.quanNuocLast.wanted} ly · {formatMoney(biz.quanNuocLast.revenue)}
+              </div>
+              {quanHealth?.shortYesterday && quanHealth.missedRevenue > 0 && (
+                <div style={{ fontSize: 12, marginTop: 2, color: '#f39c12' }}>💸 Hôm qua bỏ lỡ ~{formatMoney(quanHealth.missedRevenue)} vì kho thiếu — nhập nước/ngọt/cà phê để bán đủ.</div>
+              )}
+            </>
+          ) : (
+            <div style={{ fontSize: 12, marginTop: 2 }}>Mới mở — kết quả có sau đêm đầu.</div>
+          )}
+          <div style={{ fontSize: 12, marginTop: 2 }}>
+            Hôm nay: {biz.quanNuoc.staff} nhân viên · giá {QUAN_PRICE_OPTIONS[biz.quanNuoc.price].label} · lương {formatMoney(biz.quanNuoc.staff * QUAN_NUOC_WAGE)}/ngày
+          </div>
+          {quanHealth && !quanHealth.driesMain && quanHealth.hire && quanHealth.hireMarginal !== null && (
+            <div style={{ fontSize: 12, marginTop: 2, color: quanHealth.hireMarginal >= 0 ? '#27ae60' : '#e67e22' }}>
+              {quanHealth.hireMarginal >= 0
+                ? `💰 Tuyển 1 người: lời ròng ~${formatMoney(quanHealth.hire.profit)} (đang ~${formatMoney(quanHealth.tonight.profit)}, +${formatMoney(quanHealth.hireMarginal)}/ngày) — đáng so với lương ${formatMoney(QUAN_NUOC_WAGE)}.`
+                : `💰 Tuyển thêm 1 người chưa đáng: bán thêm ${formatMoney(quanHealth.hire.served - quanHealth.tonight.served)} ly nhưng lương ${formatMoney(QUAN_NUOC_WAGE)}/ngày cao hơn lời tăng (lời ròng ~${formatMoney(quanHealth.hire.profit)} vs ~${formatMoney(quanHealth.tonight.profit)}).`}
+            </div>
+          )}
+          {quanHealth?.driesMain && (
+            <div style={{ fontSize: 12, marginTop: 2, color: '#e74c3c' }}>
+              🥤 Kho chỉ còn {quanHealth.drinkUnitsNow} ly đồ uống (quán tiêu {quanHealth.consumedYesterday} ly hôm qua) — tối nay ăn hết là kệ tiệm chính cạn nước. Nhập nước/ngọt/cà phê.
+            </div>
+          )}
+        </div>
+      )}
+
+      {branchChores.length > 0 && (
+        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #e67e22' }}>
+          <b>🏪 Tiện lợi 24/7: việc hôm nay</b>
+          {branchChores.map((c, i) => (
+            <button key={i} onClick={() => openPanel({ type: 'branch' })}
+              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', color: c.danger ? '#e74c3c' : '#f1c40f', fontSize: 12, marginTop: 2, cursor: 'pointer', padding: 0 }}>
+              {c.icon} {c.text}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {hiepLucEligible(branch, biz.quanNuoc, level) && (
+        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #8e44ad' }}>
+          <b>🤝 Đối tác chi nhánh × quán nước</b>
+          {biz.hiepLuc?.active && biz.hiepLuc.m === monthOf(day) ? (
+            <div style={{ fontSize: 12, marginTop: 2 }}>
+              Đang hiệp lực tháng này: gom {formatMoney(biz.hiepLucMonth ?? 0)}/{formatMoney(HIEPLUC_MIN)} doanh thu chung{biz.hiepLucStreak ? ` · chuỗi ${biz.hiepLucStreak} tháng` : ''}. Cuối tháng đủ ngưỡng được thưởng (cọc {formatMoney(HIEPLUC_COC)} hoàn lại).
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, marginTop: 2 }}>
+              Cả 2 cơ sở đang mở — lập đối tác để gom doanh thu chung mỗi tháng, đủ {formatMoney(HIEPLUC_MIN)} được thưởng + chuỗi tháng.
+              <button onClick={signHiepLuc} style={{ display: 'block', marginTop: 4, ...styles.btn }}>
+                🤝 Lập đối tác (cọc {formatMoney(HIEPLUC_COC)}, hoàn cuối tháng)
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {seasonEvent(day) && (() => {
+        const ev = seasonEvent(day)!;
+        const obj = seasonObjective(weatherSeed ?? 0, day);
+        const stars = biz.seasonEvt?.season === ev.season ? (biz.seasonEvt?.stars ?? 0) : 0;
+        const claimedToday = biz.seasonEvt?.claimedDay === ev.dayIndex;
+        const name = seasonEventName(ev.season);
+        return (
+          <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #1abc9c' }}>
+            <b>🌟 {name} · ngày {ev.dayIndex + 1}/{SEASON_EVENT_DAYS}</b>
+            {obj && (
+              <div style={{ fontSize: 12, marginTop: 2 }}>
+                {obj.icon} Mục tiêu hôm nay: <b>{obj.title}</b> ({obj.detail})
+                {claimedToday ? ' ✓ xong' : ' — làm để +1 sao'}
+              </div>
+            )}
+            <div style={{ fontSize: 12, marginTop: 2, opacity: 0.85 }}>⭐ {stars} sao mùa · mỗi mục tiêu thưởng {formatMoney(SEASON_REWARD_PER_STAR)}</div>
+          </div>
+        );
+      })()}
 
       {effects.festival && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '2px solid #f1c40f' }}>
@@ -221,7 +824,19 @@ export function MorningPanel() {
       {soon && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
           <b>⏳ {soon.festival.icon} {soon.festival.name} {soon.inDays === 1 ? 'ngày mai' : `sau ${soon.inDays} ngày`}</b>
-          <div style={{ fontSize: 12, marginTop: 2 }}>Nên nhập sẵn: {festivalStock(soon.festival, level).map((id) => productById(id).name).join(', ') || '—'}</div>
+          <div style={{ fontSize: 12, marginTop: 2 }}>
+            🎊 Đón lễ: trữ sẵn{' '}
+            {prepItems(soon.festival, level).map((id, i) => (
+              <span key={id}>
+                {i > 0 && ', '}
+                {productById(id).name}
+                {(storage[id] ?? 0) >= PREP_MIN_QTY
+                  ? <b style={{ color: '#2ecc71' }}> ✓</b>
+                  : <b style={{ color: '#f1c40f' }}> ⚠️ còn {Math.max(0, PREP_MIN_QTY - (storage[id] ?? 0))} thiếu</b>}
+              </span>
+            ))}
+            <span style={{ opacity: 0.7 }}> · đủ trước {soon.inDays === 1 ? 'ngày mai' : 'lễ'} → <b style={{ color: '#2ecc71' }}>+{formatMoney(prepBonus(soon.festival, level))}</b> đón lễ</span>
+          </div>
         </div>
       )}
 
@@ -296,16 +911,46 @@ export function MorningPanel() {
             {dueContracts.map(({ cs, def }) => def && (
               <div key={cs.defId} style={{ ...styles.card }}>
                 <span style={{ flex: 1, fontSize: 13 }}>
-                  <b>{def.title}</b> · hạn ngày {cs.dueDay}
-                  {(() => {
+                  <b>{def.title}</b>
+                  {cs.dueDay === day
+                    ? <span style={{ color: '#f1c40f', fontWeight: 600 }}> · HẠN HÔM NAY</span>
+                    : cs.dueDay < day
+                      ? <span style={{ color: '#e74c3c', fontWeight: 600 }}> · QUÁ HẠN (hạn ngày {cs.dueDay})</span>
+                      : <span> · hạn ngày mai ({cs.dueDay})</span>}
+                  {cs.committed ? (() => {
+                    const lm = reservedMissing(def, cs.locked);
+                    return lm.length
+                      ? <span style={{ color: '#ff8a7a' }}> 🤝 cam kết — ⚠️ ngăn thiếu {lm.map((m) => `${m.need} ${productById(m.id).name}`).join(', ')}</span>
+                      : <span style={{ color: '#2ecc71', marginLeft: 6 }}>🤝 đã cam kết — hàng trữ riêng sẵn sàng ✓</span>;
+                  })() : (() => {
                     const missing = missingForContract(def, storage);
                     return missing.length
                       ? <span style={{ color: '#ff8a7a' }}> · thiếu: {missing.map((m) => `${m.need} ${productById(m.id).name}`).join(', ')}</span>
-                      : <span style={{ color: '#2ecc71' }}> · kho đủ hàng ✓</span>;
+                      : <span style={{ color: '#c9a20a' }}> · kho đủ · nên 🤝 Cam kết để giao được thêm {formatMoney(commitBonusValue(def))} tin cậy</span>;
                   })()}
                 </span>
                 <button style={styles.btn} onClick={() => openPanel({ type: 'contracts' })}>Xem</button>
-              </div>
+              {(() => {
+                const p = contractStreakProgress(cs, day);
+                const riskColor = p.risk === 'overdue' ? '#e74c3c' : p.risk === 'due_soon' ? '#f1c40f' : '#c9a20a';
+                return (
+                  <div style={{ fontSize: 12, marginTop: 4, width: '100%' }}>
+                    {p.streak > 0 && (
+                      <span style={{ color: '#74b9ff' }}>🎯 Chuỗi {p.streak} · còn {p.toMilestone} kỳ nữa tới mốc +{Math.round(CONTRACT_STREAK_BONUS * 100)}% </span>
+                    )}
+                    {p.risk === 'overdue' && p.streak > 0 && (
+                      <span style={{ color: riskColor, fontWeight: 600 }}>⚠️ Giao sẽ đứt chuỗi {p.streak} kỳ về 0</span>
+                    )}
+                    {p.risk === 'overdue' && p.streak === 0 && (
+                      <span style={{ color: riskColor, fontWeight: 600 }}>⚠️ Đã quá hạn — giao sẽ tính muộn</span>
+                    )}
+                    {p.risk === 'due_soon' && p.streak > 0 && (
+                      <span style={{ color: riskColor }}>⏳ Còn {p.daysLeft} ngày nữa — giao đúng hẹn để giữ chuỗi {p.streak}</span>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
             ))}
           </div>
         </>
@@ -317,7 +962,7 @@ export function MorningPanel() {
           ? `Hôm nay có ${PHONE_SLOTS.length} khe giờ hàng xóm gọi điện đặt hàng: ${PHONE_SLOTS.map((m) => formatClock(m)).join(', ')}. Nghe máy kịp mới có đơn.`
           : `Chưa thuê 🛵 Giao hàng nên không có cuộc gọi nào. Thuê nhân viên giao hàng để mở đơn điện thoại (khe giờ: ${PHONE_SLOTS.map((m) => formatClock(m)).join(', ')}).`}
       </p>
-      <Footer onClose={closePanel}>
+      <Footer onClose={() => { resetComboDay(); closePanel(); }}>
         <button style={styles.btn} onClick={() => openPanel({ type: 'order' })}>📦 Nhập hàng</button>
         <button style={styles.btn} onClick={() => openPanel({ type: 'storage' })}>🏭 Kho</button>
       </Footer>
@@ -327,11 +972,15 @@ export function MorningPanel() {
 
 /** Sổ nợ: khách quen ghi sổ, nhắc nợ hoặc xoá nợ; bật/tắt cho ghi sổ. */
 export function DebtBook() {
-  const { level, day, debts, regulars, allowCredit, setAllowCredit, remindDebt, forgiveDebt } = useGame();
+  const { level, day, debts, regulars, allowCredit, setAllowCredit, remindDebt, forgiveDebt, counterPolicy, setCounterPolicy } = useGame();
   if (level < CREDIT_UNLOCK) return null;
   const rows = Object.entries(debts).filter(([, d]) => d.amount > 0);
   const total = rows.reduce((n, [, d]) => n + d.amount, 0);
+  const ledger = debtLedger(debts, day);
+  const policy = counterPolicy ?? defaultCounterPolicy();
+  const summ = counterPolicySummary(policy);
   return (
+    <>
     <div style={{ ...styles.card, display: 'block', maxWidth: 560, marginBottom: 8 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <b>📒 Sổ nợ {rows.length ? `· ${formatMoney(total)}` : ''}</b>
@@ -343,15 +992,34 @@ export function DebtBook() {
         Khách quen từ {CREDIT_FRIENDSHIP} 💛 có lúc quên ví, xin ghi sổ (hạn mức theo độ thân). Thường lần ghé sau sẽ trả.
         Quá {DEBT_LATE_DAYS} ngày nên nhắc nợ; quá {DEBT_WRITE_OFF_DAYS} ngày coi như mất.
       </div>
+      {ledger.count > 0 && (
+        <div style={{ fontSize: 12, marginTop: 4, fontWeight: 600, color: ledger.writeOffTonightAmount > 0 ? '#e74c3c' : ledger.lateAmount > 0 ? '#e67e22' : '#3498db' }}>
+          {ledger.lockedTotal > 0 && <>Tổng nợ đang khóa <b>{formatMoney(ledger.lockedTotal)}</b> tiền mặt.</>}
+          {ledger.writeOffTonightAmount > 0
+            ? <> <b>{formatMoney(ledger.writeOffTonightAmount)}</b> quá {DEBT_WRITE_OFF_DAYS} ngày — <b>sẽ mất hẳn tối nay</b> nếu không nhắc/xoá!</>
+            : ledger.lateAmount > 0
+              ? <> {ledger.lateCount} món quá hạn ({formatMoney(ledger.lateAmount)}) — còn {Math.min(...ledger.rows.filter((r) => r.late && !r.writeOffTonight).map((r) => r.daysLeft), DEBT_WRITE_OFF_DAYS)} ngày nữa là mất hẳn. Hãy nhắc/xoá.</>
+              : <> Còn trong hạn — nhớ nhắc/xoá khi tới hạn.</>}
+        </div>
+      )}
       {!rows.length && <div style={{ fontSize: 12, marginTop: 4 }}>Chưa ai nợ.</div>}
       {rows.map(([id, d]) => {
         const r = regularById(id);
         const age = day - d.since;
+        const daysLeft = DEBT_WRITE_OFF_DAYS - age;
+        const aboutToLose = daysLeft <= 0;
         return (
-          <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 13 }}>
+          <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 13, background: aboutToLose ? 'rgba(231,76,60,0.10)' : undefined, borderRadius: 4 }}>
             <span style={{ flex: 1 }}>
               {r?.name}: <b>{formatMoney(d.amount)}</b>
-              <span style={{ opacity: 0.7, fontSize: 12, color: age >= DEBT_LATE_DAYS ? '#e17055' : undefined }}> · {age} ngày · hạn mức {formatMoney(creditLimit(regulars[id]))}{d.reminded ? ' · đã nhắc' : ''}</span>
+              <span style={{ opacity: 0.7, fontSize: 12, color: aboutToLose ? '#e74c3c' : age >= DEBT_LATE_DAYS ? '#e17055' : undefined }}>
+                {' '}· {age} ngày · hạn mức {formatMoney(creditLimit(regulars[id]))}{d.reminded ? ' · đã nhắc' : ''}
+                {aboutToLose
+                  ? <b style={{ color: '#e74c3c' }}> — MẤT HẲN tối nay!</b>
+                  : age >= DEBT_LATE_DAYS
+                    ? ` — còn ${daysLeft} ngày nữa mất hẳn`
+                    : ''}
+              </span>
             </span>
             <button style={styles.btn} disabled={d.reminded} onClick={() => remindDebt(id)} title="Lần ghé tới chắc chắn trả, nhưng khách hơi ngại">Nhắc nợ</button>
             <button style={styles.btn} onClick={() => forgiveDebt(id)} title="Mất tiền nhưng khách thân hơn">Xoá nợ</button>
@@ -359,6 +1027,36 @@ export function DebtBook() {
         );
       })}
     </div>
+    <div style={{ ...styles.card, display: 'block', maxWidth: 560, marginBottom: 8 }}>
+      <div style={{ fontSize: 13 }}><b>🧾 Chính sách quầy</b> <span style={{ opacity: 0.7, fontSize: 11 }}>thái độ mặc cả & tiền lẻ</span></div>
+      <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>{summ.haggleText} {summ.changeText}</div>
+      <div style={{ marginTop: 6 }}>
+        <div style={{ fontSize: 12, opacity: 0.85 }}>🙏 Mặc cả</div>
+        {HAGGLE_OPTS.map((o) => (
+          <label key={o.value} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, marginTop: 3, cursor: 'pointer' }}>
+            <input type="radio" name="counter-haggle" checked={policy.haggle === o.value} onChange={() => setCounterPolicy({ haggle: o.value })} style={{ marginTop: 2 }} />
+            <span>
+              <b>{o.label}</b>
+              <span style={{ display: 'block', opacity: 0.7 }}>{o.note}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      <div style={{ marginTop: 6 }}>
+        <div style={{ fontSize: 12, opacity: 0.85 }}>🪙 Tiền lẻ</div>
+        {CHANGE_OPTS.map((o) => (
+          <label key={o.value} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, marginTop: 3, cursor: 'pointer' }}>
+            <input type="radio" name="counter-change" checked={policy.change === o.value} onChange={() => setCounterPolicy({ change: o.value })} style={{ marginTop: 2 }} />
+            <span>
+              <b>{o.label}</b>
+              <span style={{ display: 'block', opacity: 0.7 }}>{o.note}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      <div style={{ fontSize: 11, opacity: 0.6, marginTop: 6 }}>Nhắc mỗi lần = như trước (bạn quyết từng đơn). Luôn/không/thối kẹo = tự xử lý mãi, khỏi hỏi lại.</div>
+    </div>
+    </>
   );
 }
 
@@ -402,8 +1100,14 @@ export function HourChart({ hours, peak, quiet }: { hours: HourStat[]; peak?: nu
 
 /** Danh tiếng 5 mặt, mặt yếu nhất kèm cách sửa, và những gì danh tiếng đang mở hoặc còn khoá. */
 export function ReputationCard({ log }: { log: RepSample[] }) {
-  const { level, regulars } = useGame();
+  const { level, regulars, furniture } = useGame();
   const rep = reputationOf(log);
+  // GĐ148: định lượng phần thưởng khách-vào-cửa của danh tiếng (customers.ts:197)
+  const plants = furniture.filter((f) => f.type === 'plant').length;
+  const payoff = repPayoff(rep, level, plants);
+  const focus = repPayoffFocus(rep, level);
+  // Chưa đủ lượt khách: reputationOf trả placeholder 3.0 — không được hiện như điểm thật (GĐ37)
+  const insufficient = rep.samples < REP_MIN_SAMPLES;
   const gated = [
     ...SUPPLY_CONTRACTS.filter((c) => c.rep && c.unlock <= level + 5).map((c) => ({ name: `${c.icon} Hợp đồng ${c.title}`, need: c.rep! })),
     ...REGULARS.filter((r) => !regulars[r.id]?.visits && r.unlock <= level + 5 && regularRep(r)).map((r) => ({ name: `💛 Khách quen ${r.name}`, need: regularRep(r)! })),
@@ -411,21 +1115,30 @@ export function ReputationCard({ log }: { log: RepSample[] }) {
   return (
     <div style={{ ...styles.card, display: 'block', marginBottom: 10, maxWidth: 560 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <b>⭐ Danh tiếng {rep.overall.toFixed(1)}★</b>
+        <b>⭐ Danh tiếng {insufficient ? 'chưa đủ khách' : `${rep.overall.toFixed(1)}★`}</b>
         <span style={{ fontSize: 12, opacity: 0.7 }}>{rep.samples} lượt khách gần nhất</span>
       </div>
-      {rep.samples < REP_MIN_SAMPLES && <div style={{ fontSize: 12, opacity: 0.75 }}>Cần ít nhất {REP_MIN_SAMPLES} lượt khách mới chấm được, tạm tính 3★.</div>}
+      {insufficient && <div style={{ fontSize: 12, opacity: 0.75 }}>Cần ít nhất {REP_MIN_SAMPLES} lượt khách mới chấm được để có điểm thật.</div>}
       {REP_FACTORS.map((k) => (
-        <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginTop: 4 }}>
+        <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginTop: 4, opacity: insufficient ? 0.4 : 1 }}>
           <span style={{ width: 130 }}>{REP_INFO[k].icon} {REP_INFO[k].name}</span>
           <div style={{ flex: 1, height: 6, background: '#555', borderRadius: 3 }}>
             <div style={{ width: `${((rep.factors[k] - 1) / 4) * 100}%`, height: '100%', borderRadius: 3, background: starColor(Math.round(rep.factors[k])) }} />
           </div>
-          <span style={{ width: 30, textAlign: 'right' }}>{rep.factors[k].toFixed(1)}</span>
+          <span style={{ width: 30, textAlign: 'right' }}>{insufficient ? '—' : rep.factors[k].toFixed(1)}</span>
         </div>
       ))}
       {rep.weakest && rep.factors[rep.weakest] < 4 && (
-        <div style={{ fontSize: 12, marginTop: 6 }}>💡 Yếu nhất: <b>{REP_INFO[rep.weakest].name}</b>. {REP_INFO[rep.weakest].low}</div>
+        <div style={{ fontSize: 12, marginTop: 6 }}>💡 Yếu nhất: <b>{REP_INFO[rep.weakest].name}</b>. {REP_INFO[rep.weakest].low}{!payoff.insufficient && focus.gainKhach > 0 && (
+          <span style={{ color: '#e67e22' }}> Nâng mặt này lên 4★ được thêm <b>~{focus.gainKhach} khách/ngày</b>.</span>
+        )}</div>
+      )}
+      {!payoff.insufficient && (
+        <div style={{ fontSize: 12, marginTop: 6, color: payoff.extraKhach >= 0 ? '#4caf50' : '#e74c3c' }}>
+          🚶 Danh tiếng làm <b>{Math.abs(payoff.pct * 100).toFixed(0)}%</b> người đi đường ghé{payoff.extraKhach >= 0 ? ' hơn' : ' ít hơn'} →{' '}
+          <b>{payoff.extraKhach >= 0 ? '~+' : '~−'}{Math.abs(payoff.extraKhach)} khách/ngày</b>
+          <span style={{ opacity: 0.75 }}> (cấp {level}). Nâng 0.5★: thêm ~{payoff.nextStarKhach} khách/ngày.</span>
+        </div>
       )}
       {gated.length > 0 && (
         <div style={{ fontSize: 12, marginTop: 6 }}>
@@ -536,7 +1249,8 @@ export function HistoryPanel() {
     <>
       <h2 style={styles.title}>📈 Sổ theo dõi 30 ngày</h2>
       <p style={styles.sub}>Doanh thu và lãi từng ngày (lãi hôm nay chưa trừ lương/tiền nhà tới khi sang ngày mới). Cột xám là số lượt khách. Dùng để nhìn đà tăng trưởng: nhập thêm hàng thì doanh thu có nhích không, khách có đông dần không.</p>
-      <svg width={W} height={H} style={{ maxWidth: '100%', background: '#fafbfc', borderRadius: 8, border: '1px solid #e3e6ea' }}>
+      {/* viewBox để SVG co theo panel (max-width:100%) thay vì giữ cố định 600px tràn ngang màn hẹp */}
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: 600, background: '#fafbfc', borderRadius: 8, border: '1px solid #e3e6ea' }}>
         <line x1={padL} y1={zero} x2={W - padL} y2={zero} stroke="#d6dae0" />
         {days.map((d, i) => (
           <g key={d.day}>
@@ -556,7 +1270,7 @@ export function HistoryPanel() {
       <p style={styles.row}>
         🏆 Lãi nhất: <b>ngày {best.day}</b> — doanh thu {formatMoney(best.revenue)}, lãi {formatMoney(best.profit)}
       </p>
-      <p style={styles.row}>📊 Lãi bình quân {days.length} ngày: <b>{formatMoney(avgProfit)}</b>/ngày · khách bình quân <b>{Math.round(days.reduce((n, d) => n + d.customers, 0) / days.length)}</b> lượt/ngày</p>
+      <p style={{ ...styles.row, flexWrap: 'wrap' }}>📊 Lãi bình quân {days.length} ngày: <b>{formatMoney(avgProfit)}</b>/ngày · khách bình quân <b>{Math.round(days.reduce((n, d) => n + d.customers, 0) / days.length)}</b> lượt/ngày</p>
       {/* Heatmap vị trí kệ: kệ nào bán chạy nhất kể từ khi đặt (xem bản đồ màu ở màn 🏪 Sắp xếp → 🔥) */}
       {(() => {
         const ranked = furnitureList

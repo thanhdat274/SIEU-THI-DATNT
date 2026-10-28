@@ -3,7 +3,7 @@ import { applySnapshot, loadGame, readLocalSave, type SaveData } from '../core/s
 import { useGame } from '../core/store';
 import { formatMoney } from '../data/products';
 import { fetchCloudSave } from '../net/cloud';
-import { giftOfStreak, giftText } from '../data/gifts';
+import { giftOfStreak, giftText, scaledGift } from '../data/gifts';
 import { firebaseReady, loginGoogle, logoutGoogle } from '../net/firebase';
 import { useSession, type SaveSummary } from '../net/session';
 import { AlleyPanel } from './AlleyPanel';
@@ -14,6 +14,8 @@ export function startGame() {
   useSession.setState({ screen: 'game' });
   // Vào hẻm đang có người chạy: tốc độ là của cả hẻm, không chỉnh
   if (useSession.getState().coop?.role !== 'player') useGame.setState({ speed: 1 });
+  // Thưởng "Chào mừng quay lại" (GĐ39): soi khi nạp bản lưu và vào chơi đơn — không vào hẻm người khác
+  if (!useSession.getState().coop) useGame.getState().checkWelcomeBack();
 }
 
 const ago = (iso: string | number) => {
@@ -148,7 +150,7 @@ export function LoginScreen() {
  * Móc giữ chân người chơi cũ: nhắc quà điểm danh + streak ngay trên màn đăng nhập,
  * cho lý do quay lại mỗi ngày. Không cần vào game cũng thấy được phần thưởng tiếp theo.
  */
-function DailyNudge({ g }: { g: { day: number; giftStreak: number; giftLastDay: number } }) {
+function DailyNudge({ g }: { g: { day: number; level: number; giftStreak: number; giftLastDay: number } }) {
   if (g.giftLastDay === g.day) {
     const n = g.giftStreak;
     return (
@@ -159,7 +161,7 @@ function DailyNudge({ g }: { g: { day: number; giftStreak: number; giftLastDay: 
     );
   }
   const streak = g.giftLastDay === g.day - 1 ? g.giftStreak + 1 : 1;
-  const gift = giftOfStreak(streak);
+  const gift = scaledGift(giftOfStreak(streak), g.level);
   return (
     <div className="login-nudge claimable">
       <span aria-hidden="true">🎁</span>

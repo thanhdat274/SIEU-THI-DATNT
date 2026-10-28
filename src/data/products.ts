@@ -161,6 +161,12 @@ export const PRODUCTS: Product[] = [
   p('muc_ong_tuoi', 'Mực ống tươi', 'meat', 160000, 220000, 0xd7bde2, 46),
   p('cua_bien_tuoi', 'Cua biển sống', 'meat', 280000, 380000, 0xe74c3c, 55),
   p('ruou_whisky', 'Rượu whisky', 'drink', 480000, 660000, 0x8a5a2b, 78),
+  // Nội dung cuối run (82–100): hàng cao cấp/hàng biếu đắt tiền — lấp khoảng trống mở khóa sau cấp 78
+  p('mat_ong_rung', 'Mật ong rừng (chai)', 'dry', 260000, 360000, 0xf0b429, 82),
+  p('hat_macca', 'Hạt mắc ca rang (hộp)', 'dry', 320000, 440000, 0xc7a06b, 86),
+  p('ruou_remy', 'Rượu Remy XO (chai)', 'drink', 1200000, 1650000, 0x6d4c2b, 91),
+  p('yen_sao', 'Tổ yến sào tinh chế (hũ)', 'dry', 1500000, 2050000, 0xf5e6c8, 96),
+  p('ruou_dam_100', 'Rượu đế 100 năm (chai)', 'drink', 2500000, 3400000, 0xd4af37, 100),
   p('phan_bon', 'Phân bón NPK (bao 5kg)', 'dry', 22000, 32000, 0x8d6e63, 1),
 ];
 

@@ -3,6 +3,7 @@ import { composeReview, REVIEW_CAP } from '../../data/reviews';
 import { regularById, regularCheckout, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS } from '../../data/regulars';
 import { FORGIVE_FRIEND_GAIN, REMIND_FRIEND_LOSS } from '../../data/credit';
 import { counterActive } from '../../data/biz';
+import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
 import { REP_CAP } from '../../data/reputation';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 
@@ -35,7 +36,31 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
       regulars: { ...s.regulars, [id]: r.progress },
       money: s.money + r.tip,
       stats: { ...s.stats, revenue: s.stats.revenue + r.tip },
+      biz: { ...s.biz, triAnMonth: (s.biz.triAnMonth ?? 0) + 1 }, // Sổ thương mến (GĐ69): 1 khách quen được phục vụ
     });
+    // Câu chuyện khách quen (GĐ80): mời đợt nhờ vả nếu đủ thân & chưa có; đo tiến độ theo giỏ mua hôm nay
+    const arcBase = s.biz.regularArcs ?? {};
+    let arcState = arcBase[id];
+    const freshOffer = !arcState;
+    if (!arcState) {
+      const arcDef = arcForRegular(def, s.regulars[id], arcBase, s.level);
+      if (arcDef) arcState = { arcId: arcDef.id, step: 0, offerDay: s.day, expiresDay: s.day + arcDef.days, waitingReward: false };
+    }
+    let arcNote = '';
+    if (arcState) {
+      const arc = arcById(arcState.arcId);
+      const step = arc ? currentArcStep(arc, arcState) : null;
+      let next = arcState;
+      let advanceNote = '';
+      if (arc && step && !arcState.done && !arcState.waitingReward && arcStepFulfilled(step, basket)) {
+        const stepNext = arcState.step + 1;
+        const waiting = stepNext >= arc.steps.length;
+        next = { ...arcState, step: stepNext, waitingReward: waiting };
+        advanceNote = waiting ? ' — xong hết bước, tối nay gom thưởng' : ` — ${def.name} nhận đủ: ${arc.steps[stepNext]?.note}`;
+      }
+      set({ biz: { ...get().biz, regularArcs: { ...arcBase, [id]: next } } });
+      arcNote = freshOffer ? ` · 📖 bắt đầu: ${arc?.title} (hạn ${arc?.days} ngày)` : ` · 📖${advanceNote}`;
+    }
     // Influencer ghé: khán giả theo chân, trang mạng xã hội thêm người theo dõi
     if (id === INFLUENCER_ID) {
       set({ social: { ...get().social, followers: get().social.followers + 25 } });
@@ -64,8 +89,8 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
       set({ reservations: restRes });
     }
     const tip = r.tip ? ` · boa ${formatMoney(r.tip)}` : '';
-    if (r.newPerks.length) s.notify(`💛 ${def.name} thân thiết hơn: ${r.newPerks.map((p) => p.description).join(' ')}${tip}${resNote}${giftNote}`);
-    else s.notify(`😊 ${def.name}: "${def.lines.satisfied}"${tip}${resNote}${giftNote}`);
+    if (r.newPerks.length) s.notify(`💛 ${def.name} thân thiết hơn: ${r.newPerks.map((p) => p.description).join(' ')}${tip}${resNote}${giftNote}${arcNote}`);
+    else s.notify(`😊 ${def.name}: "${def.lines.satisfied}"${tip}${resNote}${giftNote}${arcNote}`);
     return r.tip;
   },
   addReservation: (regularId, productId, qty) => {
@@ -139,7 +164,11 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     });
     set({
       reviews: [...s.reviews, review].slice(-REVIEW_CAP),
-      ...(stars === 5 ? { totals: { ...s.totals, fiveStars: s.totals.fiveStars + 1 } } : {}),
+      ...(stars === 5 ? {
+        totals: { ...s.totals, fiveStars: s.totals.fiveStars + 1 },
+        // Đếm theo ngày song song với totals: sổ tuần dùng cái này cho thử thách "khách khen 5★"
+        stats: { ...s.stats, fiveStars: (s.stats.fiveStars ?? 0) + 1 },
+      } : {}),
     });
   },
 });

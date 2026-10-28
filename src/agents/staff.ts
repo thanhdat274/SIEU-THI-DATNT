@@ -552,7 +552,7 @@ export class StaffManager {
 
   private walk(w: Worker, target: THREE.Vector3) {
     const path = this.grid.findPath(w.position, target);
-    w.path = path.length ? path : [target.clone()];
+    w.path = path.length ? path : this.grid.approach(w.position, target);
   }
 
   /** Xoá hết nhân viên đang ở trên bản đồ (sang ngày mới). */

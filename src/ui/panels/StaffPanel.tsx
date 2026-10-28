@@ -7,17 +7,28 @@ import { formatMoney } from '../../data/products';
 import { hasUpgrade } from '../../data/upgrades';
 import { Footer, styles, Tabs } from './shared';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
+import { staffEff } from '../../data/staffEff';
+import { staffValueToday, staffShiftSummary } from '../../data/staffValue';
+import { branchShiftSummary, branchStaffValueToday } from '../../data/branchStaffValue';
+import { nightStaffValueToday } from '../../data/nightStaffValue';
+import { nightPnl } from '../../data/nightReport';
 import { nextPromotion, RANKS } from '../../data/careers';
 import { BONUS_RELIEF, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, FATIGUE_QUIT, FATIGUE_SLOW, fatigueOf, restingOn } from '../../data/branches';
 import { gapsOf, SITE_NAME, type Site } from '../../data/transfer';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
-  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch } = useGame();
+  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills } = useGame();
   const [pick, setPick] = useState<Record<number, Shift>>({});
   const max = maxStaff(level);
   const bStaff = branch?.staff ?? [];
   const total = [...staff, ...bStaff].reduce((sum, st) => sum + dailyWage(st), 0);
+  // GĐ141: giá trị hôm nay của từng nhân viên ca ngày tiệm chính so với lương (thuần đọc stats.byHour)
+  const staffValues = staffValueToday(stats?.byHour, staff);
+  const shiftSum = staffShiftSummary(stats?.byHour, staff);
+  // GĐ144: giá trị hôm nay của từng nhân viên CA ĐÊM tiệm chính so với lương (thuần đọc stats.byHour giờ ≥22)
+  const nightValues = nightStaffValueToday(stats?.byHour, staff, skills);
+  const nightStrip = nightPnl(stats?.byHour, staff, skills);
   // Ca mặc định khi thuê vào chi nhánh: ca đầu tiên còn thiếu thu ngân, đủ hết thì ca đêm
   const needShift = BRANCH_SHIFTS.find((sh) => !bStaff.some((x) => x.shift === sh && x.role === 'cashier')) ?? 'night';
   return (
@@ -32,11 +43,18 @@ export function StaffPanel() {
       {tab === 'team' && (
         <div style={{ display: 'grid', gap: 8 }}>
           <DeployBoard />
+          <ShiftValueStrip sum={shiftSum} hasData={!!stats?.byHour && Object.keys(stats.byHour).length > 0} />
+          <NightStrip p={nightStrip} />
           {branch && <b style={staffSt.section}>🏬 Tiệm chính ({staff.length}/{max})</b>}
           {!staff.length && <p style={styles.sub}>Chưa có ai. Qua tab Tuyển dụng để thuê.</p>}
           {staff.map((st) => (
             <div key={st.id} style={staffSt.card}>
               <StaffInfo st={st} right={<span style={staffSt.wage}>{formatMoney(dailyWage(st))}<small>/ngày</small></span>} />
+              {st.shift === 'night' ? (
+                <NightStaffLine sv={nightValues.find((v) => v.id === st.id)} />
+              ) : (
+                <StaffValueLine sv={staffValues.find((v) => v.id === st.id)} />
+              )}
               <PromoteRow st={st} level={level} money={money} onPromote={promoteStaff} />
               <div style={staffSt.actions}>
                 <span style={staffSt.label}>🕒 Ca làm</span>
@@ -134,6 +152,11 @@ export function Fatigue({ value }: { value: number }) {
 function BranchRoster() {
   const { branch, day, money, level, setBranchShift, bonusBranchStaff, restBranchStaff, fireFromBranch, promoteBranchStaff } = useGame();
   if (!branch) return null;
+  // GĐ142: giá trị hôm nay của từng nhân viên chi nhánh so với lương (thuần đọc branch.hourly — revenue từng giờ)
+  const bValues = branchStaffValueToday(branch.staff, branch.hourly);
+  const bValById = new Map(bValues.map((v) => [v.id, v]));
+  const bShiftSum = branchShiftSummary(branch.hourly, branch.staff);
+  const bHasData = !!branch.hourly && branch.hourly.some((v) => v > 0);
   const groups = [
     ...BRANCH_SHIFTS.map((sh) => [sh, BRANCH_SHIFT_NAME[sh], branch.staff.filter((x) => x.shift === sh)] as const),
     ...(branch.staff.some((x) => !BRANCH_SHIFTS.includes(x.shift)) ? [['full', 'Ca khác (chưa xếp vào 3 ca)', branch.staff.filter((x) => !BRANCH_SHIFTS.includes(x.shift))] as const] : []),
@@ -141,6 +164,7 @@ function BranchRoster() {
   return (
     <>
       <b style={staffSt.section}>🏪 Tiện lợi 24/7 ({branch.staff.length}/{CONVENIENCE.maxStaff})</b>
+      <BranchShiftStrip sum={bShiftSum} hasData={bHasData} hasStaff={branch.staff.length > 0} />
       {groups.map(([sh, label, list]) => (
         <div key={sh} style={{ display: 'grid', gap: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.85 }}>🕒 {label}</span>
@@ -150,6 +174,7 @@ function BranchRoster() {
           {list.map((x) => (
             <div key={x.id} style={staffSt.card}>
               <StaffInfo st={x} right={<span style={staffSt.wage}>{formatMoney(dailyWage(x))}<small>/ngày</small></span>} />
+              <BranchValueLine sv={bValById.get(x.id)} />
               <span style={{ fontSize: 12 }}>
                 {restingOn(branch, x.id, day) && <>🛌 nghỉ hôm nay · </>}
                 {branch.restDay?.[x.id] === day + 1 && <>🛌 nghỉ ngày mai · </>}
@@ -254,6 +279,7 @@ export function PromoteRow({ st, level, money, onPromote }: { st: Staff; level: 
 export function StaffInfo({ st, right }: { st: Staff; right?: React.ReactNode }) {
   const role = ROLES[st.role];
   const trait = shownTrait(st);
+  const eff = staffEff(st);
   return (
     <div style={staffSt.head}>
       <span style={staffSt.avatar}>{role.icon}</span>
@@ -273,9 +299,112 @@ export function StaffInfo({ st, right }: { st: Staff; right?: React.ReactNode })
         {st.skill < 5 && st.daysWorked !== undefined && (
           <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>Kinh nghiệm {st.exp ?? 0}/{expToNext(st.skill)} · đã làm {st.daysWorked} ngày</div>
         )}
+        <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2, color: '#f1c40f' }}>
+          ⚡ Làm nhanh ×{eff.speed.toFixed(2)}
+          {!eff.maxed && eff.roleBonus ? ` · ${eff.roleBonus}` : eff.roleBonus}
+          {!eff.maxed && ` · +1★ nhanh thêm ${eff.nextDeltaPct}%`}
+          {!eff.maxed && ` · đào tạo ${formatMoney(eff.trainCost)}/buổi (cộng 4 exp, cần ${eff.expNeeded})`}
+        </div>
         <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>{role.desc}</div>
       </div>
       {right}
+    </div>
+  );
+}
+
+/** GĐ141: dòng giá trị hôm nay của một nhân viên so với lương — thuần đọc, ẩn khi chưa có dữ liệu/ca đêm. */
+const VERDICT_META: Record<string, { color: string; label: string }> = {
+  ok: { color: '#2ecc71', label: 'đáng lương' },
+  warn: { color: '#f1c40f', label: 'vừa đủ' },
+  low: { color: '#e74c3c', label: 'đang lỗ' },
+  nodata: { color: '', label: '' },
+};
+function StaffValueLine({ sv }: { sv?: import('../../data/staffValue').StaffValue }) {
+  if (!sv || sv.verdict === 'nodata') return null;
+  const m = VERDICT_META[sv.verdict];
+  return (
+    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Ước tính: doanh thu các giờ ca mình trực chia cho số người cùng ca, so với lương ngày (thuần đọc sổ giờ)" >
+      💸 Hôm nay ~{formatMoney(sv.value)} · lương {formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
+    </div>
+  );
+}
+
+/** GĐ144: dòng giá trị ĐÊM QUA của một nhân viên CA ĐÊM tiệm chính so với lương thực trả (×1.5; good_boss −10%) — thuần đọc sổ giờ ≥22, ẩn khi chưa mở/bán đêm. */
+function NightStaffLine({ sv }: { sv?: import('../../data/nightStaffValue').NightStaffValue }) {
+  if (!sv || sv.verdict === 'nodata') return null;
+  const m = VERDICT_META[sv.verdict];
+  return (
+    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Ước tính: doanh thu các giờ đêm (≥22h) chia cho số người cùng ca đêm, so với lương thực trả ×1.5 (thuần đọc sổ giờ)">
+      🌙 Đêm qua ~{formatMoney(sv.value)} · lương {formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
+    </div>
+  );
+}
+
+/** GĐ141: thanh tóm tắt từng ca ngày (sáng/chiều/cả ngày): doanh thu ca · lương · net — để người chơi thấy ca nào đang nguồn lợi. */
+const SHIFT_LABEL: Record<string, string> = { morning: 'Ca sáng', afternoon: 'Ca chiều', full: 'Cả ngày' };
+function ShiftValueStrip({ sum, hasData }: { sum: ReturnType<typeof staffShiftSummary>; hasData: boolean }) {
+  const rows = (['morning', 'afternoon', 'full'] as const).filter((k) => sum[k].count > 0);
+  if (!rows.length || !hasData) return null;
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${rows.length}, 1fr)`, gap: 8 }}>
+      {rows.map((k) => {
+        const r = sum[k];
+        const net = r.net;
+        const color = net > 0 ? '#2ecc71' : net < 0 ? '#e74c3c' : '#f1c40f';
+        return (
+          <div key={k} style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 12 }}>
+            <div style={{ opacity: 0.75 }}>{SHIFT_LABEL[k]} · {r.count} người · doanh thu {formatMoney(r.revenue)}</div>
+            <div style={{ color }}><b>lời/lỗ {net >= 0 ? '+' : ''}{formatMoney(net)}</b> vs lương {formatMoney(r.wages)}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** GĐ144: thanh tóm tắt CA ĐÊM tiệm chính — doanh thu đêm · lương đêm (×1.5) · lời/lỗ — để người chơi thấy ca đêm đang nguồn lợi hay rò tiền. Ẩn khi chưa mở/bán đêm. */
+function NightStrip({ p }: { p: import('../../data/nightReport').NightPnl }) {
+  if (p.verdict === 'idle') return null;
+  const color = p.net > 0 ? '#2ecc71' : p.net < 0 ? '#e74c3c' : '#f1c40f';
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+      <div style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 12 }}>
+        <div style={{ opacity: 0.75 }}>🌙 Ca đêm · doanh thu {formatMoney(p.revenue)}</div>
+        <div style={{ color }}><b>lời/lỗ {p.net >= 0 ? '+' : ''}{formatMoney(p.net)}</b> vs lương {formatMoney(p.wages)} (×1.5)</div>
+      </div>
+    </div>
+  );
+}
+
+/** GĐ142: dòng giá trị hôm nay của một nhân viên CHI NHÁNH so với lương — thuần đọc branch.hourly, ẩn khi chưa có dữ liệu. */
+function BranchValueLine({ sv }: { sv?: import('../../data/branchStaffValue').BranchStaffValue }) {
+  if (!sv || sv.verdict === 'nodata') return null;
+  const m = VERDICT_META[sv.verdict];
+  return (
+    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Ước tính: doanh thu các giờ ca mình trực ở chi nhánh chia cho số người cùng ca, so với lương ngày (thuần đọc sổ giờ tiện lợi)">
+      💸 Chi nhánh hôm nay ~{formatMoney(sv.value)} · lương {formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
+    </div>
+  );
+}
+
+/** GĐ142: thanh tóm tắt từng ca chi nhánh (sáng/chiều/đêm · đêm ×1.5 lương): doanh thu ca · lương · net — để người chơi thấy ca nào đang nguồn lợi ở tiện lợi. */
+const BRANCH_SHIFT_LABEL: Record<string, string> = { morning: 'Ca sáng', afternoon: 'Ca chiều', night: 'Ca đêm' };
+function BranchShiftStrip({ sum, hasData, hasStaff }: { sum: ReturnType<typeof branchShiftSummary>; hasData: boolean; hasStaff: boolean }) {
+  const rows = BRANCH_SHIFTS.filter((k) => sum[k].count > 0);
+  if (!rows.length || !hasData || !hasStaff) return null;
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${rows.length}, 1fr)`, gap: 8 }}>
+      {rows.map((k) => {
+        const r = sum[k];
+        const net = r.net;
+        const color = net > 0 ? '#2ecc71' : net < 0 ? '#e74c3c' : '#f1c40f';
+        return (
+          <div key={k} style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 12 }}>
+            <div style={{ opacity: 0.75 }}>{BRANCH_SHIFT_LABEL[k]} · {r.count} người · doanh thu {formatMoney(r.revenue)}</div>
+            <div style={{ color }}><b>lời/lỗ {net >= 0 ? '+' : ''}{formatMoney(net)}</b> vs lương {formatMoney(r.wages)}</div>
+          </div>
+        );
+      })}
     </div>
   );
 }

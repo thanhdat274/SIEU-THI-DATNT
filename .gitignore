@@ -5,3 +5,5 @@ yarn.lock
 .env.local
 server/.env
 .zcode/
+scan_tmp.cjs
+.claude/
