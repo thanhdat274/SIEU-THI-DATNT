@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (28/10/2026)
 
-- **1738/1738 test pass (153 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
+- **1755/1755 test pass (154 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
 - Đã xong GĐ1–GĐ165.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) đã bão hòa; UI responsive đa thiết bị đã audit kỹ (GĐ85–104, 116); trục "giá trị vs chi phí" đã soi kín gần hết tài sản: nhân sự tiệm chính/ca đêm/chi nhánh (141/142/144), mối hàng (143), bếp (145), trại (146/147), danh tiếng (148), quầy thịt cá (149), sổ nợ (150), hợp đồng (151), chi nhánh sau điện (152/153). Mở rộng Gánh hàng rong / Chợ phiên đã có (135–138), NG+ có dự phóng + mục tiêu vòng (139/140).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
@@ -111,6 +111,15 @@
 - Sim xác minh (harness GĐ105, seed 169, 28 ngày, trước/sau): trần ăn ngay (goalMới 31M→24.4M cấp 30; 58.7M→41M cấp 50); XP/cấp 2.80→2.55–2.80 ngày (cấp 30), 3.50→3.11 (cấp 50); dòng tiền bot ~0 (bot giữ chuỗi 0) — đối chiếu công thức: người giữ chuỗi mất ≤0.8× thưởng cũ/tuần, người đạt mục tiêu (giờ trong tầm với) nhận +5–6% doanh thu kỳ.
 - Test: `weeklyGoalCap.test.ts` 16 test (100 tuần hội tụ, hụt giữ goal, save cũ clamp, XP đúng/claim 1 lần, simSmoke cấp 30/50) + cập nhật weekly/monthly/weekPace (187 test liên quan xanh). **Full 1738/1738 (153 files)**.
 - File: `data/biz.ts`, `core/biz.ts`, `endDay.ts`, `BusinessPanel.tsx` (dòng "+X XP" + cảnh báo GĐ121 đổi chữ), 4 test file.
+
+### GĐ170 — ⚔️ Rival có kết + sửa rival qua NG+ — XONG
+
+- Lý do: audit tiến trình — rival là hệ đối kháng sâu nhất nhưng không có đích cuối (hạ gen nào cũng 800k+400XP, tên lặp từ gen 13, truyện im sau ch5/ch8); bug thiết kế: prestigeRestart giữ rival thế hệ N → "thuế ~24–47% khách" đè lên cấp 1 vòng 2.
+- Chương 13 "Siêu Thị Sao Mai": fact-check thấy rival bị hạ thứ 12 ĐÃ SẴN là Siêu Thị Sao Mai (mục cuối catalog, blurb "hậu phương công ty lớn") → trùm cuối dùng đúng chất liệu có sẵn. Điều kiện `rivalsBeaten >= 12` (RIVAL_BOSS_GEN), thưởng 5M + 3.000 XP đúng 1 lần (cơ chế chương giữ qua NG+ nên không lặp; đối xứng 6×/7,5× thưởng hạ thường, giữa ch10 và ch12).
+- Gen 13+: news đời mới đổi nhãn ("Hàng mới về, hẻm lại đông" — không còn kêu gọi triệt hạ); tên gắn hậu tố "(cơ sở 2/3)" thay vì lặp vô nghĩa; rivalTier giữ trần gen 10.
+- Sửa NG+: prestigeRestart đặt rival null + rivalsBeaten = 0 (câu chuyện rival khởi lại từ thế hệ 1, hợp lý với việc khởi đầu lại từ tiệm nhỏ); chương đã xem không phát lại; cổng rival đời mới thêm `prestige.level > 0` (bắt buộc của phương án reset — nếu không rival không bao giờ quay lại ở vòng 2 vì ch4 không tái phát); notify tái sinh nhắc "rival đời mới quay lại từ cấp 8". Save schema 0 thay đổi.
+- Test: `rivalBoss.test.ts` 17 test (chương + ranh giới 11/12, thưởng đúng 1 lần, nhãn gen 13+, tái sinh + round-trip, cổng đời mới) + prestige/narrative cập nhật (331 test/24 file liên quan). **Full 1755/1755 (154 files)**.
+- File: `chapters.ts`, `data/biz.ts`, `core/biz.ts`, `core/prestige.ts`, `slices/prestige.ts`, `rivalBoss.test.ts`, `narrative.test.ts`, `prestige.test.ts`.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -316,3 +325,4 @@
 - GĐ167 — 🧹 Nốt vụn màu + thẻ BusinessPanel
 - GĐ168 — 🗺️ Nạp lại Phía trước cho cấp 30+
 - GĐ169 — 🎯 Nhịp tuần/tháng sống mãi (bó ratchet + XP chuỗi)
+- GĐ170 — ⚔️ Rival có kết (Chương 13 Siêu Thị Sao Mai) + sửa rival qua NG+

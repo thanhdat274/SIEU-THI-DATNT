@@ -4,7 +4,7 @@ import {
   counterById, emptyMonth, emptyWeek, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, newRival, RIVAL_BUY_DAYS,
   RIVAL_PERSONALITIES, RIVAL_SHOP_OFFER_DAYS, RIVAL_SHOP_PRICE, rivalNightAI,
   LOAN_DAILY_RATE, LOAN_DAYS, LOAN_UNLOCK, loanInterest, LOAN_OPTIONS_MIN, loanOptions, loanTopUps, petActive, petDef, PETS, PRICE_WAR_MIN_SALES, RIVAL_BEAT_REWARD,
-  RIVAL_BEAT_XP, RIVAL_COOLDOWN, RIVAL_SHOPS, RIVAL_START, RIVAL_TREND_DAYS, RIVAL_UNLOCK, rivalNightly, rivalTier, STORIES, SURPRISE_CHANCE, SURPRISES,
+  RIVAL_BEAT_XP, RIVAL_BOSS_GEN, RIVAL_COOLDOWN, RIVAL_SHOPS, RIVAL_START, RIVAL_TREND_DAYS, RIVAL_UNLOCK, rivalNightly, rivalTier, STORIES, SURPRISE_CHANCE, SURPRISES,
   VEHICLES, WEEK_DAYS, type AchievementCtx, type BizState, type CounterTactic, type PetKind, type Vehicle,
 } from '../data/biz';
 import { CONVENIENCE, newBranch, shelfTotal } from '../data/branches';
@@ -637,15 +637,26 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
     }
   } else if (b.counter) {
     b.counter = null; // đối thủ đóng cửa giữa chừng thì đợt phản công cũng kết thúc
-  } else if (s.level >= RIVAL_UNLOCK && b.rivalsBeaten > 0 && day + 1 >= b.rivalNextDay && simRng()() < 0.25) {
+  } else if (s.level >= RIVAL_UNLOCK && (b.rivalsBeaten > 0 || b.prestige.level > 0) && day + 1 >= b.rivalNextDay && simRng()() < 0.25) {
     // "Rival đời mới": chọn cửa hàng theo thế hệ trong catalog 12 tên, bậc quy mô càng lúc càng lớn,
     // tính cách rút tránh lặp ngay thế hệ trước (lastRivalPers do nhánh đóng cửa ghi lại).
+    // GĐ170: cổng thêm prestige.level > 0 — sau tái sinh rivalsBeaten đã về 0 (không giữ "thuế boss cũ"),
+    // mà chương ch4 không phát lại (đã xem, giữ qua NG+), nên đời mới quay lại bình thường từ cấp 8
+    // thay vì im lặng tới hết vòng. Ván mới (prestige 0) giữ nguyên: ch4 mới là lối vào có cốt truyện.
     const shop = RIVAL_SHOPS[b.rivalsBeaten % RIVAL_SHOPS.length];
     const tier = rivalTier(b.rivalsBeaten + 1);
-    const fresh = { ...newRival(shop.name, Math.min(95, RIVAL_START + b.rivalsBeaten * 10), day + 1, simRng(), b.lastRivalPers), blurb: shop.blurb };
+    // GĐ170: từ gen 13 tên catalog lặp vòng — gắn hậu tố "cơ sở" theo vòng lặp cho khỏi lặp vô nghĩa.
+    const cycle = Math.floor(b.rivalsBeaten / RIVAL_SHOPS.length);
+    const shopName = cycle > 0 ? `${shop.name} (cơ sở ${cycle + 1})` : shop.name;
+    const fresh = { ...newRival(shopName, Math.min(95, RIVAL_START + b.rivalsBeaten * 10), day + 1, simRng(), b.lastRivalPers), blurb: shop.blurb };
     b.rival = fresh;
     const pers = RIVAL_PERSONALITIES[fresh.personality!];
-    news.push(`⚔️ ${tier.icon} ${shop.name} (bậc ${tier.label}) vừa khai trương ở đầu hẻm! Tính cách: ${pers.icon} ${pers.name} — ${pers.desc}. "${shop.blurb}" Giữ giá tốt, hàng đầy, khách vui để họ đóng cửa`);
+    if (b.rivalsBeaten >= RIVAL_BOSS_GEN) {
+      // Sau trùm cuối: đời mới chỉ là cửa hàng thường — tin khác nhãn, không còn kêu gọi tổng tấn công.
+      news.push(`🛒 Hàng mới về, hẻm lại đông: ${shopName} sửa mặt bằng mở lại nhẹ nhàng. ${pers.icon} ${pers.name} — ${pers.desc}`);
+    } else {
+      news.push(`⚔️ ${tier.icon} ${shopName} (bậc ${tier.label}) vừa khai trương ở đầu hẻm! Tính cách: ${pers.icon} ${pers.name} — ${pers.desc}. "${shop.blurb}" Giữ giá tốt, hàng đầy, khách vui để họ đóng cửa`);
+    }
   }
   // Chào bán mặt bằng rival: hết hạn hoặc rival mới mở là người khác thuê mất
   if (b.rivalForSale && (b.rival || day + 1 > b.rivalForSale.until)) {

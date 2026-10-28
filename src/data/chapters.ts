@@ -3,7 +3,7 @@
  * (và có thể khởi động một hệ thống như tiệm đối thủ). Chỉ có dữ liệu; hiện/đóng nằm ở `core/biz.ts`.
  */
 
-import { RIVAL_UNLOCK } from './biz';
+import { RIVAL_BOSS_GEN, RIVAL_UNLOCK } from './biz';
 
 /** Những gì điều kiện mở chương cần đọc. */
 export interface ChapterContext {
@@ -169,6 +169,26 @@ export const CHAPTERS: readonly Chapter[] = [
       me('Tất cả là nhờ bà con hẻm mình cả. Mà chuyện con còn dài lắm, mai bà con lại ghé nghen.'),
     ],
     reward: { money: 20000000, xp: 5000 },
+  },
+  {
+    // GĐ170 — trùm cuối của truyện rival (audit tiến trình 29/10, phát hiện d): rival là hệ đối kháng
+    // sâu nhất game nhưng chưa có đích cuối — ch5/ch8 im từ rival thứ 2. Rival thứ 12 hạ được chính
+    // là 'Siêu Thị Sao Mai' (mục cuối RIVAL_SHOPS, blurb "hậu phương công ty lớn") → chương này khép
+    // truyện: chuỗi cửa hàng lớn với hậu phương công ty. when() bám đúng pattern ch5/ch8 (mốc rivalsBeaten).
+    id: 'ch13_sieu_thi_sao_mai', title: 'Chương 13 · Siêu Thị Sao Mai',
+    when: (c) => c.rivalsBeaten >= RIVAL_BOSS_GEN,
+    lines: [
+      say('👵', 'Bà Năm', 'Siêu Thị Sao Mai dẹp tiệm rồi con ơi! Nghe người quen ở quầy thu ngân của nó nói, công ty mẹ gọi cả bộ máy về trung tâm, bỏ luôn mặt bằng đầu hẻm.'),
+      me('Từ Siêu thị Hưng Thịnh ngày nào tới giờ... con đã hạ được mười hai đời đối thủ rồi bà.'),
+      say('🛵', 'Chú Ba xe ôm', 'Hậu phương công ty lớn cỡ đó mà vẫn thua. Tui hiểu ra rồi: máy lạnh với quà tặng không thắng nổi cái hẻm thương tiệm mình.'),
+      say('👴', 'Bác Tám tổ trưởng', 'Từ nay hẻm mình yên hẳn rồi. Sau này sẽ có tiệm nhỏ lẻ tẻ khai trương cho hẻm thêm đông, chớ chẳng ai nữa dám mang cả công ty vào đấu với con.'),
+      me('Dạ, vậy con cứ giữ đúng nếp: kệ đầy, giá phải chăng, khách tới là vui. Hẻm này là của bà con mình.'),
+    ],
+    // Thưởng thắng lớn MỘT LẦN khép truyện rival (chương đã xem không lặp, kể cả qua tái sinh —
+    // `chapters` giữ nguyên qua NG+). Đối xứng với thưởng hạ rival thường 800k + 400 XP
+    // (RIVAL_BEAT_REWARD/XP — giữ nguyên, KHÔNG đụng): tiền 5M (~6×) và XP 3.000 (7,5×) —
+    // tầm chương ch10–ch11 (6M/2.200 · 10M/3.200) đúng mốc rivalsBeaten 12 thường chạm cấp ~45+.
+    reward: { money: 5_000_000, xp: 3_000 },
   },
 ];
 

@@ -55,6 +55,14 @@ export const RIVAL_SHOPS: { name: string; blurb: string }[] = [
   { name: 'Cửa Hàng Tân Kỷ', blurb: 'Chủ tiệm trẻ nhất xóm, quét mã thanh toán, livestream bán hàng ngay giữa hẻm đêm nào cũng lên sóng.' },
   { name: 'Siêu Thị Sao Mai', blurb: 'Nghe đồn có hậu phương công ty lớn: khai trương pháo đỏ rực, phát quà tận từng nhà trong xóm.' },
 ];
+/**
+ * Thế hệ trùm cuối của truyện rival (GĐ170): rival thứ 12 hạ được — cũng là mục cuối catalog
+ * 'Siêu Thị Sao Mai' (blurb "hậu phương công ty lớn") — là đối thủ LỚN CUỐI CÙNG. Chương
+ * ch13_sieu_thi_sao_mai khép truyện rival ở mốc này; từ gen 13 (rivalsBeaten ≥ 12) rival đời mới
+ * chỉ là cửa hàng thường: tin khai trương khác nhãn + tên lặp vòng gắn hậu tố "cơ sở" (core/biz.ts).
+ * Số này trùng RIVAL_SHOPS.length — giữ là hằng riêng để định nghĩa truyện không phụ thuộc catalog.
+ */
+export const RIVAL_BOSS_GEN = 12;
 /** Bậc quy mô của rival theo thế hệ (gen = rivalsBeaten + 1 với rival mới): càng về sau cửa hàng càng lớn. */
 export function rivalTier(gen: number): { label: string; icon: string } {
   if (gen >= 10) return { label: 'trung tâm thương mại', icon: '🏛️' };

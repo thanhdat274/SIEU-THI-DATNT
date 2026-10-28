@@ -38,12 +38,20 @@ export function revenueFactor(bonus: number): number {
 
 /**
  * Trả về bản chạy mới (giữ nội dung bộ sưu tập tài khoản) sau một lần tái sinh.
- * - GIỮ: các trường sưu tập trong biz (thành tựu, cốt truyện, nhà, xe, thú cưng, rival...) và toàn
+ * - GIỮ: các trường sưu tập trong biz (thành tựu, cốt truyện, nhà, xe, thú cưng...) và toàn
  *   bộ top-level của tài khoản (titles, skills, costume, giftStreak, giftLastDay, giftGraceDay,
  *   wheelLastDay, wheelBoost, totals).
  * - TĂNG: prestige.level +1, bonus = nextBonus của mức cũ.
  * - RESET: mọi thứ còn lại về mặc định newGameData (money, level, day, furniture, storage, garden,
- *   branch, quanNuoc, inventory, licenses, staff, online, social, market, regulars, questLog, reviews...).
+ *   branch, quanNuoc, inventory, licenses, staff, online, social, market, regulars, questLog,
+ *   reviews...), cộng với rival + rivalsBeaten (GĐ170 — xem dưới).
+ *
+ * GĐ170 (bug thiết kế e — audit tiến trình 29/10): rival và rivalsBeaten KHÔNG giữ qua tái sinh
+ * (trước đây giữ nguyên → vòng 2 khởi đầu cấp 1 vẫn mang rival thế hệ N, sức mạnh tới 95 =
+ * trừ tới ~24–47% khách đúng giai đoạn yếu nhất — "thuế boss cũ"). Câu chuyện rival bắt đầu lại
+ * từ thế hệ 1 trong vòng mới (hợp lý: bạn khởi đầu lại từ tiệm nhỏ): rival đời mới quay lại bình
+ * thường từ cấp 8 qua nhánh đời mới ở core/biz.ts (cổng prestige.level > 0); các chương rival
+ * ch4–ch13 đã xem KHÔNG phát lại vì `chapters` giữ nguyên qua NG+.
  */
 export function prestigeRestart(prev: GameState): GameState {
   const base = newGameData();
@@ -78,8 +86,10 @@ export function prestigeRestart(prev: GameState): GameState {
       pets: b.pets,
       breakfastDay: b.breakfastDay,
       tutorialOff: b.tutorialOff,
-      rival: b.rival,
-      rivalsBeaten: b.rivalsBeaten,
+      // GĐ170: không giữ rival thế hệ N sang vòng mới ("thuế boss cũ" đè lên cấp 1) —
+      // rival đời mới quay lại từ cấp 8 qua nhánh đời mới (cổng prestige.level > 0 ở core/biz.ts).
+      rival: null,
+      rivalsBeaten: 0,
       prestige: { level, bonus, goalsClaimed: [] },
     },
     // Object dữ liệu này sẽ được store merge (set) lên state hiện có (vốn giữ sẵn các hàm slice),

@@ -36,14 +36,15 @@ const richState = (): GameState => {
   s.biz.pets = { cat: { fedDay: 30 }, dog: { fedDay: 40 } };
   s.biz.breakfastDay = 21;
   s.biz.tutorialOff = true;
-  s.biz.rival = { name: 'Đối thủ X', strength: 55, openedDay: 60 };
-  s.biz.rivalsBeaten = 7;
   s.titles = ['thuong_gia_tai_ba'];
   s.skills = ['negotiator', 'big_basket'];
   s.costume = 'ao_dai';
   s.giftStreak = 4; s.giftLastDay = 77; s.giftGraceDay = 10; s.wheelLastDay = 70; s.wheelBoost = 3;
   s.biz.prestige = { level: 2, bonus: 0.24 };
   // — Phần sẽ bị RESET —
+  // GĐ170: rival + rivalsBeaten về 0 khi tái sinh ("thuế boss cũ" — rival thế hệ N không sang vòng mới)
+  s.biz.rival = { name: 'Đối thủ X', strength: 55, openedDay: 60 };
+  s.biz.rivalsBeaten = 7;
   s.furniture = [...s.furniture, s.furniture[0], s.furniture[1], s.furniture[0]];
   s.storage = { mi: 500, nuoc: 400, banh: 300, cafe: 200 };
   s.garden = { ...s.garden, land: 3, wood: 99 };
@@ -161,8 +162,10 @@ describe('prestigeRestart (hàm thuần) — giữ bộ sưu tập', () => {
     expect(r.biz.pets).toEqual(rich.biz.pets);
     expect(r.biz.breakfastDay).toBe(rich.biz.breakfastDay);
     expect(r.biz.tutorialOff).toBe(true);
-    expect(r.biz.rival).toEqual(rich.biz.rival);
-    expect(r.biz.rivalsBeaten).toBe(7);
+    // GĐ170: rival + rivalsBeaten KHÔNG giữ qua tái sinh — vòng mới khởi đầu lại từ thế hệ 1,
+    // không mang "thuế boss cũ" (rival thế hệ N, sức mạnh tới 95) đè lên giai đoạn cấp 1.
+    expect(r.biz.rival).toBeNull();
+    expect(r.biz.rivalsBeaten).toBe(0);
     expect(r.titles).toEqual(rich.titles);
     expect(r.skills).toEqual(rich.skills);
     expect(r.costume).toBe(rich.costume);

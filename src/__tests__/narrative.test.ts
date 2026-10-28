@@ -13,10 +13,10 @@ const KHACH_QUEN_MOI = ['co_mai_bar', 'chu_tu_ho', 'co_xuan_cho', 'suc_khanh_lon
 /** Điều kiện `when` chỉ được đọc field của ChapterContext — TS kiểm tra lúc biên dịch (tsc --noEmit). */
 
 describe('Cốt truyện chương (chapters.ts)', () => {
-  it('có 12 chương, id duy nhất, 6 chương gốc giữ nguyên, 6 chương mới nối tiếp', () => {
+  it('có 13 chương, id duy nhất, 6 chương gốc giữ nguyên, các chương mới nối tiếp', () => {
     const ids = CHAPTERS.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.length).toBe(12);
+    expect(ids.length).toBe(13);
     expect(ids.slice(0, 6)).toEqual(IDS_GOC);
     ids.slice(6).forEach((id, i) => expect(id.startsWith(`ch${7 + i}`)).toBe(true));
   });
@@ -35,9 +35,15 @@ describe('Cốt truyện chương (chapters.ts)', () => {
     }
   });
 
-  it('thưởng tiền 6 chương mới tăng dần theo hành trình', () => {
-    const moneys = CHAPTERS.slice(6).map((c) => c.reward?.money ?? 0);
+  it('thưởng tiền 6 chương mốc cấp tăng dần; trùm cuối rival (ch13) thưởng khép truyện riêng', () => {
+    // ch7–ch12 là chuỗi theo cấp nên tiền tăng dần; ch13 là thưởng MỘT LẦN khép truyện rival
+    // (GĐ170) — tiền 5M đối xứng cấp ~45+ (tầm khi hạ được rival thứ 12) nên KHÔNG so tăng dần
+    // với ch12 (20M, cấp 75), XP 3.000 = 7,5× thưởng hạ rival thường (400).
+    const moneys = CHAPTERS.slice(6, 12).map((c) => c.reward?.money ?? 0);
     for (let i = 1; i < moneys.length; i++) expect(moneys[i]).toBeGreaterThan(moneys[i - 1]);
+    expect(CHAPTERS[12].id).toBe('ch13_sieu_thi_sao_mai');
+    expect(CHAPTERS[12].reward?.money).toBe(5_000_000);
+    expect(CHAPTERS[12].reward?.xp).toBe(3_000);
   });
 
   /**
@@ -59,6 +65,10 @@ describe('Cốt truyện chương (chapters.ts)', () => {
     { day: 110, level: 65,  customers: 800,  staffCount: 13, shopTier: 5, hasRival: true,  rivalsBeaten: 4 },
     { day: 130, level: 75,  customers: 950,  staffCount: 15, shopTier: 6, hasRival: true,  rivalsBeaten: 5 }, // ch12
     { day: 160, level: 100, customers: 1200, staffCount: 20, shopTier: 6, hasRival: false, rivalsBeaten: 6 },
+    // GĐ170: ch13 (trùm rival) cần rivalsBeaten 12 — thực tế mỗi rival cần nghỉ 20 ngày + cơ hội
+    // 25%/ngày nên truyện rival khép rất muộn, xa sau ch12 (hành trình dữ liệu chỉ cần đơn điệu).
+    { day: 210, level: 100, customers: 1400, staffCount: 22, shopTier: 6, hasRival: true,  rivalsBeaten: 9 },
+    { day: 280, level: 100, customers: 1600, staffCount: 24, shopTier: 6, hasRival: false, rivalsBeaten: 12 }, // ch13
   ];
 
   it('thứ tự mảng = thứ tự mốc đạt được: chương sau không mở trước chương trước', () => {
@@ -79,6 +89,10 @@ describe('Cốt truyện chương (chapters.ts)', () => {
     expect(levels[10]).toBeGreaterThanOrEqual(55); // ch11 (trùng mốc ca đêm)
     expect(levels[11]).toBeGreaterThanOrEqual(75); // ch12
     expect(CHAPTERS[11].when(hanhTrinh[0])).toBe(false);
+    // GĐ170 — ch13: chỉ mở ở cuối game (rivalsBeaten 12), ván mới chưa có gì phát cả
+    expect(CHAPTERS[12].when(hanhTrinh[0])).toBe(false);
+    expect(CHAPTERS[12].when(hanhTrinh[hanhTrinh.length - 2])).toBe(false); // rivalsBeaten 9
+    expect(CHAPTERS[12].when(hanhTrinh[hanhTrinh.length - 1])).toBe(true); // rivalsBeaten 12
   });
 });
 
