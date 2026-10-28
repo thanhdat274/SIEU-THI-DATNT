@@ -28,6 +28,7 @@ import { BizView } from './render/bizView';
 import { CameraController } from './render/cameraController';
 import { InteriorView } from './render/interiorView';
 import { AdaptiveResolution, createRenderer, Lighting, LOW_POWER, type GameRenderer } from './render/scene';
+import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
 import { createWorld } from './world/world';
@@ -54,6 +55,16 @@ const container = document.getElementById('game')!;
 const { renderer, scene, camera } = createRenderer(container);
 const controller = new CameraController(camera, renderer.domElement);
 const lighting = new Lighting(scene);
+// Tilt-shift: mép trên/dưới mờ nhẹ cho cảnh như mô hình thu nhỏ. Mặc định bật trên máy tính,
+// tắt trên điện thoại (tốn thêm 1 lượt vẽ toàn màn hình); `?tilt=on|off` để chọn tay, nhớ cho lần sau.
+const tiltPick = new URLSearchParams(location.search).get('tilt');
+let tiltSaved: string | null = null;
+try {
+  if (tiltPick) localStorage.setItem('tilt', tiltPick);
+  tiltSaved = localStorage.getItem('tilt');
+} catch { /* chế độ ẩn danh */ }
+const tiltChoice = tiltPick ?? tiltSaved;
+const tiltShift = (tiltChoice ? tiltChoice === 'on' : !LOW_POWER) ? createTiltShift(renderer, scene, camera) : null;
 // Lưới đi bộ phủ cả mặt đất 160×160 (±80m) để đi bộ tới được cửa hàng tiện lợi 24/7 (x=60, z=-64)
 const grid = new NavGrid(80);
 const world = createWorld(scene, grid);
@@ -683,7 +694,8 @@ function renderFrame() {
   if ((frameNo++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
   resScale.update(dt);
 
-  renderer.render(scene, camera);
+  if (tiltShift) tiltShift.render();
+  else renderer.render(scene, camera);
 }
 
 // WebGPU khởi tạo bất đồng bộ (xin device từ GPU): xong xuôi mới bắt đầu vẽ khung đầu tiên
