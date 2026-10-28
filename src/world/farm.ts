@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ANIMAL_ORDER, CROPS, landPlots, type AnimalKind, type Plot } from '../data/garden';
+import { riceGeometry, riceMaterial } from '../render/riceModel';
 
 /**
  * Trang trại đầu ngõ: mảnh đất có rào nằm nam con đường thứ hai (từ tiệm đi bằng nút 🚜).
@@ -603,7 +604,7 @@ export function createFarm() {
   const plotKeys: string[] = [];
 
   interface CropLook {
-    kind: 'leaf' | 'corn' | 'cane' | 'banana' | 'tree';
+    kind: 'leaf' | 'corn' | 'cane' | 'banana' | 'tree' | 'rice';
     canopy: number;
     trunk?: number;
     fruit?: number;
@@ -613,6 +614,7 @@ export function createFarm() {
   /** Bề ngoài từng giống: rau lá / bắp / mía / chuối / cây ăn trái (tán + màu trái chín). */
   const CROP_LOOK: Record<string, CropLook> = {
     rau_cai: { kind: 'leaf', canopy: 0x3f9b3f },
+    lua: { kind: 'rice', canopy: 0x5fae45 },
     bap: { kind: 'corn', canopy: 0x4f9e46, fruit: 0xe8c34a },
     mia: { kind: 'cane', canopy: 0x67a24a },
     traicay: { kind: 'tree', canopy: 0x3d8c3d, trunk: 0x7a5230, fruit: 0xd94f3d },
@@ -663,6 +665,12 @@ export function createFarm() {
       leaf.rotation.z = -0.7;
       if (ripe) add(g, plantSphere, look.fruit!, 0.05, 0.11, 0.05, x - 0.06, 0.5, z);
     }
+    return g;
+  };
+  /** Lúa: một mesh gộp cả luống; giai đoạn quyết định màu (xanh → trổ bông → vàng chín). */
+  const makeRice = (stage: number): THREE.Group => {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(riceGeometry(stage === 3 ? 'ripe' : stage === 2 ? 'heading' : 'young'), riceMaterial()));
     return g;
   };
   const makeCane = (look: CropLook): THREE.Group => {
@@ -729,6 +737,7 @@ export function createFarm() {
       let g: THREE.Group;
       if (look.kind === 'leaf') g = makeLeafy(look);
       else if (look.kind === 'corn') g = makeCorn(look, ripe);
+      else if (look.kind === 'rice') g = makeRice(stage);
       else if (look.kind === 'cane') g = makeCane(look);
       else if (look.kind === 'banana') g = makeBanana(look, ripe);
       else g = makeTree(look, ripe);

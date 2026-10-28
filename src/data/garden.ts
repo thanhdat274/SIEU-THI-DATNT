@@ -165,6 +165,8 @@ export const CROPS: CropDef[] = [
   // (tiết kiệm tiền nhập + hàng tươi + premium) chứ KHÔNG phải máy in tiền áp đảo doanh thu tiệm.
   { id: 'rau_cai', productId: 'rau', name: 'Rau cải', icon: '🥬', days: 3, seedCost: 40000, yieldQty: 8, unlock: 1 },
   { id: 'bap', productId: 'bap', name: 'Bắp ngô', icon: '🌽', days: 4, seedCost: 24000, yieldQty: 6, unlock: 1 },
+  // Lúa: ra túi gạo (hàng khô giá cao) nên ít món/vụ hơn rau; lợi nhuận/ngày ngang mía–cây ăn trái
+  { id: 'lua', productId: 'gao', name: 'Lúa', icon: '🌾', days: 5, seedCost: 90000, yieldQty: 2, unlock: 8 },
   { id: 'mia', productId: 'mia', name: 'Mía', icon: '🎋', days: 6, seedCost: 48000, yieldQty: 8, unlock: 12 },
   { id: 'traicay', productId: 'traicay', name: 'Cây ăn trái', icon: '🌳', days: 7, seedCost: 75000, yieldQty: 6, unlock: 20 },
   { id: 'traicay_nam', productId: 'traicay', name: 'Cây ăn trái lâu năm', icon: '🌴', days: 7, regrowDays: 3, seedCost: 100000, yieldQty: 8, unlock: 20 },
