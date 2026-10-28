@@ -10,7 +10,7 @@ Biến game thành một sản phẩm hoàn chỉnh, thu hút người chơi m�
 - Phần mở rộng phải gắn kết với lối chơi cốt lõi, làm game sâu hơn chứ không chỉ rộng hơn.
 - Sau khi mở rộng, quay lại phát triển chiều sâu cho chính phần mở rộng đó cho đến khi khai thác hết, rồi mới tính tới lần mở rộng tiếp theo. Chu kỳ lặp lại: Chiều sâu → Mở rộng → Chiều sâu của phần mở rộng → ...
 - Mọi bước, dù là phát triển chiều sâu hay mở rộng, đều phải tuân thủ NGUYÊN TẮC CHUNG và phục vụ đúng MỤC TIÊU. Việc nào không giúp thu hút hoặc giữ chân người chơi thì không làm.
-- Tham khảo các game cùng thể loại để học hỏi cơ chế giữ chân người chơi: Hay Day, Stardew Valley, City Skylines, Tiệm Mì Cay (https://aenhatrang.com/), My Happy Town (https://myhappy.town/intro/) và các game khác về tạp hóa, kinh doanh cửa hàng, nông trại, xây dựng thị trấn. Phân tích xem vì sao người chơi quay lại mỗi ngày (vòng lặp chơi, tiến trình, phần thưởng, sự kiện, tính năng xã hội...).
+- Tham khảo các game cùng thể loại để học hỏi cơ chế giữ chân người chơi: Hay Day, Stardew Valley, City Skylines, My Happy Town (https://myhappy.town/intro/) và các game khác về tạp hóa, kinh doanh cửa hàng, nông trại, xây dựng thị trấn. Phân tích xem vì sao người chơi quay lại mỗi ngày (vòng lặp chơi, tiến trình, phần thưởng, sự kiện, tính năng xã hội...).
 - Chỉ học hỏi ý tưởng và cơ chế, sau đó điều chỉnh cho phù hợp với tầm nhìn và bối cảnh tạp hóa Việt Nam của game. Không sao chép tên, hình ảnh, nhân vật, âm thanh hay nội dung của game khác.
 - Khi đề xuất một cơ chế lấy cảm hứng từ game khác, ghi vào PROGRESS.md: tham khảo từ game nào, vì sao cơ chế đó hiệu quả, và đã điều chỉnh thế nào cho game mình.
 
@@ -51,7 +51,7 @@ QUY TRÌNH MỖI GIAI ĐOẠN
 4. Tester kiểm thử, bao gồm cả kiểm tra hồi quy.
 5. QA chơi thử và đánh giá trải nghiệm.
 6. Nếu có lỗi hoặc chưa đạt, quay lại bước 3 cho đến khi đạt.
-7. Leader duyệt, ghi tóm tắt và kế hoạch giai đoạn tiếp theo vào PROGRESS.md (KHÔNG viết tóm tắt ra chat), commit code với message rõ ràng.
+7. Leader duyệt, ghi tóm tắt NGẮN (≤ ~15 dòng) của giai đoạn vào PROGRESS.md mục "Trạng thái hiện tại"/giai đoạn gần đây, thêm 1 dòng vào "Mục lục giai đoạn", cập nhật backlog (KHÔNG viết tóm tắt ra chat), commit code với message rõ ràng.
 8. Quay lại bước 1 ngay lập tức, trong cùng lượt làm việc.
 
 NGUYÊN TẮC CHUNG
@@ -64,13 +64,17 @@ CHẾ ĐỘ LÀM VIỆC TỰ CHỦ, LIÊN TỤC
 - KHÔNG BAO GIỜ kết thúc lượt trả lời sau khi xong một giai đoạn. Xong giai đoạn không phải là xong việc. Không viết báo cáo tổng kết ra chat, không hỏi "có muốn tiếp tục không", không chờ xác nhận. Sau khi commit, đọc lại backlog trong PROGRESS.md và làm việc tiếp theo ngay.
 - Bạn hoàn toàn tự chủ. Không hỏi lại tôi bất cứ điều gì, kể cả khi gặp lựa chọn khó: Leader tự quyết theo hướng có lợi nhất cho người chơi, ghi lại lý do vào PROGRESS.md rồi làm tiếp.
 - Ngoại lệ: xóa dữ liệu, đổi công nghệ nền tảng, hoặc thay đổi lớn về thể loại/bối cảnh game. Những việc này ghi vào PROGRESS.md mục "Cần duyệt" và làm việc khác trong lúc chờ.
-- Duy trì file PROGRESS.md gồm:
+- Duy trì file PROGRESS.md GỌN (mục tiêu dưới ~30KB) để phiên mới đọc hết được ngữ cảnh, gồm:
   + Tầm nhìn game (đặt ở đầu file, gồm cả phong cách hình ảnh đã chọn)
-  + Những gì đã hoàn thành
-  + Các quyết định đã đưa ra và lý do
+  + Trạng thái hiện tại + giai đoạn đang dở / vài giai đoạn gần nhất (mỗi giai đoạn tóm tắt ngắn)
+  + Quy ước kỹ thuật cần nhớ
+  + Các quyết định lớn đã đưa ra và lý do
+  + Mục "Cần theo dõi / Cần duyệt"
   + Backlog các việc tiếp theo, sắp theo thứ tự ưu tiên
-  + Mục "Cần duyệt"
-  Mỗi khi bắt đầu lại (kể cả phiên mới), đọc file này trước để tiếp tục đúng chỗ.
+  + Mục lục giai đoạn đã xong (mỗi giai đoạn 1 dòng)
+  Chi tiết đầy đủ của các giai đoạn cũ (công thức, số liệu QA...) nằm trong thư mục docs/progress-archive/ (hiện là PROGRESS-GD1-153.md). Chỉ mở archive khi cần tra chi tiết một giai đoạn cụ thể (grep theo "GĐxx"), không đọc toàn bộ.
+  Khi phần giai đoạn gần đây trong PROGRESS.md vượt ~10 giai đoạn hoặc file vượt ~30KB: chuyển chi tiết cũ sang một file archive mới trong docs/progress-archive/ (ví dụ PROGRESS-GD154-180.md), chỉ giữ lại 1 dòng trong Mục lục.
+  Mỗi khi bắt đầu lại (kể cả phiên mới), đọc PROGRESS.md trước để tiếp tục đúng chỗ.
 - Nếu gặp lỗi chưa giải quyết được, ghi vào backlog, chuyển sang việc khác có giá trị, rồi quay lại xử lý sau. Không đứng im.
 - Khi backlog trống, Leader và Game Designer tự đánh giá lại toàn bộ game theo ĐỊNH HƯỚNG PHÁT TRIỂN: tìm thêm việc làm sâu phần hiện tại trước, chỉ khi hết chiều sâu mới đề xuất mở rộng, rồi đưa vào backlog.
 - Chỉ được kết thúc lượt khi tôi yêu cầu dừng.
@@ -78,4 +82,4 @@ CHẾ ĐỘ LÀM VIỆC TỰ CHỦ, LIÊN TỤC
 
 
 
-Đọc PROGRESS.md và tiếp tục vòng lặp, làm việc tiếp theo trong backlog.
+Đọc PROGRESS.md (bản gọn; chi tiết cũ ở docs/progress-archive/ chỉ tra khi cần), hoàn tất giai đoạn đang dở nếu có, rồi tiếp tục vòng lặp với việc tiếp theo trong backlog.
