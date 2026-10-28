@@ -22,7 +22,7 @@
 ## Trạng thái hiện tại (28/10/2026)
 
 - **1527/1527 test pass (142 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
-- Đã xong GĐ1–GĐ152; **GĐ153 đang dở** (xem dưới).
+- Đã xong GĐ1–GĐ153.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) đã bão hòa; UI responsive đa thiết bị đã audit kỹ (GĐ85–104, 116); trục "giá trị vs chi phí" đã soi kín gần hết tài sản: nhân sự tiệm chính/ca đêm/chi nhánh (141/142/144), mối hàng (143), bếp (145), trại (146/147), danh tiếng (148), quầy thịt cá (149), sổ nợ (150), hợp đồng (151), chi nhánh sau điện (152/153). Mở rộng Gánh hàng rong / Chợ phiên đã có (135–138), NG+ có dự phóng + mục tiêu vòng (139/140).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -30,7 +30,7 @@
 
 - Lý do: GĐ152 tính `doanh thu − lương − điện` nhưng chưa có giá vốn hàng chi nhánh → gọi "lời ròng" dễ hiểu nhầm.
 - Triển khai (chưa commit): `branchNetToday`/`BranchNet` → `branchOperatingBalanceToday`/`BranchOperatingBalance`; `net`→`balance`, `marginPct`→`afterOperatingCostsPct`, verdict `profit/loss`→`surplus/deficit`. BranchPanel hiện "Còn lại sau lương & điện", chip "dư vận hành/âm/chưa có thu" + dòng "Số dư vận hành; chưa phân bổ giá vốn hàng đã nhập." Không đổi công thức/state/save/kinh tế. File: `src/data/branchNet.ts`, `src/ui/BranchPanel.tsx`, `src/__tests__/branchNet.test.ts`.
-- Còn lại: chạy full suite + build; QA live BranchPanel trong ván đủ cấp; commit.
+- Kết quả: `npm run test` **1527/1527 pass (142 files)**; `npm run build` sạch (cảnh báo bundle-size có sẵn); reload `localhost:5173` thành công. Browser hiện chỉ có save cấp 1 nên BranchPanel bị khóa; không thay đổi save để ép cấp. QA GĐ152 trước đó xác nhận 3 mức số dư và bố cục @390; thay đổi GĐ153 chỉ làm rõ nhãn/note, không đổi cấu trúc. **Commit kế tiếp.**
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -51,13 +51,14 @@
 
 ## Cần theo dõi / nợ mở
 
+- GĐ153: xác nhận trực quan câu chữ mới của BranchPanel khi có save cấp 22+; IAB hiện chỉ có save cấp 1 (GĐ152 đã xác nhận bố cục @390 và ba trạng thái cũ).
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cấp 50 cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi nếu có phản hồi người chơi.
 - Dock 1 hàng trên mobile — defer, chỉ làm khi có bằng chứng người chơi bấm nhầm.
 - Mỗi lần subagent bị "model concurrency limit" → chạy tuần tự/đợi rồi spawn lại.
 
 ## Backlog tiếp theo
 
-1. Hoàn tất GĐ153 (test + build + QA + commit).
+1. ~~Hoàn tất GĐ153 (test + build + QA + commit)~~ ✅ (commit sắp tạo; visual check câu chữ chờ save cấp 22+).
 2. Leader + Game Designer rà hộp đen còn lại (gợi ý: giá vốn hàng theo chi nhánh để có lời ròng thật — chỉ khi đo được dữ liệu; các hệ "dữ liệu lạnh" còn sót), ưu tiên làm sâu trước mở rộng.
 3. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (xem memory "multi-shop supply chain").
 

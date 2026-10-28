@@ -1,5 +1,5 @@
 /**
- * GĐ152 "Chi nhánh 24/7 hôm nay lời hay lỗ sau điện?" — đóng nốt hộp đen "chưa trừ điện".
+ * GĐ153: số dư vận hành của chi nhánh sau lương và điện, chưa phân bổ giá vốn hàng bán.
  *
  * BranchPanel đã cho "Lãi thô hôm nay (thu − lương)" nhưng CHÍNH nó ghi chú "(chưa trừ điện giảm vào cuối
  * ngày)" — người chơi quyết định mở/đóng/gắn máy bán hàng cho tiệm 24/7 (đầu tư 5M) mà không thấy con số
@@ -11,28 +11,28 @@
 import { branchPowerBill, type BranchState } from './branches';
 import { dailyWage } from './staff';
 
-export interface BranchNet {
+export interface BranchOperatingBalance {
   /** Tổng thu hôm nay = doanh thu quầy + doanh thu máy bán hàng tự động. */
   income: number;
   /** Tổng lương chi nhánh hôm nay (Σ dailyWage — chưa trừ good_boss, khớp màn "Lãi thô"). */
   wages: number;
   /** Hóa đơn điện mỗi ngày (branchPowerBill). */
   power: number;
-  /** Lời ròng = income − wages − power (sau mọi chi phí vận hành). */
-  net: number;
-  /** Tỉ lệ lãi trên doanh thu (net/income; 0 khi chưa có thu). */
-  marginPct: number;
-  /** 'profit' lời · 'loss' lỗ · 'nodata' chưa có doanh thu hôm nay (chưa vội kết luận lỗ). */
-  verdict: 'profit' | 'loss' | 'nodata';
+  /** Còn lại sau lương + điện; chưa trừ giá vốn hàng hóa. */
+  balance: number;
+  /** Tỉ lệ số dư vận hành trên doanh thu (0 khi chưa có thu). */
+  afterOperatingCostsPct: number;
+  /** 'surplus' dư vận hành · 'deficit' âm · 'nodata' chưa có doanh thu hôm nay. */
+  verdict: 'surplus' | 'deficit' | 'nodata';
 }
 
-/** Ngân sách lời ròng hôm nay của tiện lợi 24/7 — thuần đọc, không đổi state. */
-export function branchNetToday(b: BranchState): BranchNet {
+/** Số dư vận hành hôm nay — thuần đọc, không đổi state. Không gọi là lợi nhuận vì chưa trừ giá vốn hàng. */
+export function branchOperatingBalanceToday(b: BranchState): BranchOperatingBalance {
   const wages = b.staff.reduce((n, s) => n + dailyWage(s), 0);
   const power = branchPowerBill(b);
   const income = b.revenueToday + (b.vendingRevenueToday ?? 0);
-  const net = income - wages - power;
-  const marginPct = income > 0 ? net / income : 0;
-  const verdict: BranchNet['verdict'] = income <= 0 ? 'nodata' : net >= 0 ? 'profit' : 'loss';
-  return { income, wages, power, net, marginPct, verdict };
+  const balance = income - wages - power;
+  const afterOperatingCostsPct = income > 0 ? balance / income : 0;
+  const verdict: BranchOperatingBalance['verdict'] = income <= 0 ? 'nodata' : balance >= 0 ? 'surplus' : 'deficit';
+  return { income, wages, power, balance, afterOperatingCostsPct, verdict };
 }

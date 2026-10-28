@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../core/store';
 import { CONVENIENCE, ALCOHOL_BRAWL_CHANCE, coverMul, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, hasAlcohol, hasPower, isHotFood, nightNeed, shelfTotal, uncoveredHours, vendingTotal } from '../data/branches';
 import { dailyWage } from '../data/staff';
-import { branchNetToday } from '../data/branchNet';
+import { branchOperatingBalanceToday } from '../data/branchNet';
 import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney, productById } from '../data/products';
 
@@ -63,13 +63,15 @@ export function BranchPanel() {
             {branch.missedToday > 0 && <> · {branch.missedToday} khách bỏ về</>}{branch.lostToday > 0 && <> · mất trộm {branch.lostToday} món</>}</div>
           <div>Chi phí mỗi ngày: {formatMoney(wages)} lương (mặt bằng đã mua đứt, không thuê)</div>
           {(() => {
-            const bn = branchNetToday(branch);
-            const chipColor = bn.verdict === 'profit' ? '#27ae60' : bn.verdict === 'loss' ? '#e74c3c' : '#7f8c8d';
-            const chipText = bn.verdict === 'profit' ? 'lời' : bn.verdict === 'loss' ? 'lỗ' : 'chưa có thu';
+            const op = branchOperatingBalanceToday(branch);
+            const chipColor = op.verdict === 'surplus' ? '#27ae60' : op.verdict === 'deficit' ? '#e74c3c' : '#7f8c8d';
+            const chipText = op.verdict === 'surplus' ? 'dư vận hành' : op.verdict === 'deficit' ? 'âm' : 'chưa có thu';
             return (
-              <div>💰 Lời ròng hôm nay: <b style={{ color: chipColor }}>{formatMoney(bn.net)}</b>{' '}
+              <div>🧮 Còn lại sau lương & điện: <b style={{ color: chipColor }}>{formatMoney(op.balance)}</b>{' '}
                 <span style={{ color: chipColor, border: `1px solid ${chipColor}`, borderRadius: 10, padding: '0 7px', fontSize: 11 }}>{chipText}</span>{' '}
-                <span style={st.sub}>(quầy {formatMoney(branch.revenueToday)} + máy {formatMoney(branch.vendingRevenueToday ?? 0)} − lương {formatMoney(bn.wages)} − điện {formatMoney(bn.power)})</span></div>
+                <span style={st.sub}>(quầy {formatMoney(branch.revenueToday)} + máy {formatMoney(branch.vendingRevenueToday ?? 0)} − lương {formatMoney(op.wages)} − điện {formatMoney(op.power)})</span>
+                <div style={st.sub}>Số dư vận hành; chưa phân bổ giá vốn hàng đã nhập.</div>
+              </div>
             );
           })()}
           <div>Hàng trên kệ: <b>{shelfTotal(branch.shelf)}</b>/{CONVENIENCE.shelfCap} món (lấy từ kho chung)</div>
