@@ -21,8 +21,8 @@
 
 ## Trạng thái hiện tại (28/10/2026)
 
-- **1528/1528 test pass (142 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
-- Đã xong GĐ1–GĐ154.
+- **1577/1577 test pass (146 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
+- Đã xong GĐ1–GĐ158.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) đã bão hòa; UI responsive đa thiết bị đã audit kỹ (GĐ85–104, 116); trục "giá trị vs chi phí" đã soi kín gần hết tài sản: nhân sự tiệm chính/ca đêm/chi nhánh (141/142/144), mối hàng (143), bếp (145), trại (146/147), danh tiếng (148), quầy thịt cá (149), sổ nợ (150), hợp đồng (151), chi nhánh sau điện (152/153). Mở rộng Gánh hàng rong / Chợ phiên đã có (135–138), NG+ có dự phóng + mục tiêu vòng (139/140).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -37,6 +37,30 @@
 - Lỗi: bộ lọc `best !== null || last > 0` ẩn dòng "Chi nhánh 24/7 (lãi thô)" khi cửa sổ 14 ngày toàn lỗ — đúng lúc cần thấy xu hướng nhất thì lỗ biến mất khỏi tab Tuần.
 - Fix: lọc theo "có hoạt động" (`some(d => metric !== 0)`) thay vì "có lãi"; chuỗi toàn âm vẫn hiện, `best` giữ null (đã có test riêng). File: `src/data/venueTrend.ts`, `src/__tests__/venueTrend.test.ts`.
 - Kết quả: **1528/1528 test pass (142 files)** (thêm 1 test); build sạch. UI-only, không đổi save/kinh tế.
+
+### GĐ155 — 🚪 "Chi nhánh 24/7 bỏ lỡ bao nhiêu tiền mỗi tối?" — XONG
+
+- Lý do: audit hộp đen tài chính (sau GĐ154) xếp "khách bỏ về ở chi nhánh" là dữ liệu nghiệt còn sót lớn nhất — cơ sở doanh thu lớn nhất mà GĐ131 chưa soi tới.
+- Triển khai: `VenueDay` thêm field tùy chọn `branchMissed?` (save cũ coi 0, không đổi SAVE_VERSION); `endDay` ghi `br.missedToday` vào nhật ký trước khi reset; helper thuần đọc `branchMissSummary` (tiền ước = missed × bán bình quân ngày đó, chia 0 sạch); BranchPanel tab Tình hình có card "🚪 Bỏ lỡ hôm qua & gần đây" (hôm qua / 14 ngày / tệ nhất + câu hành động). File: `src/data/venueTrend.ts`, `src/core/slices/endDay.ts`, `src/ui/BranchPanel.tsx`, `src/__tests__/branchMiss.test.ts` (8 test).
+- Kinh tế/save không đổi (chỉ thêm field tùy chọn); Tester chạy round-trip save cũ qua test thiếu-field.
+
+### GĐ156 — 🏗️ "Mở rộng thì tiền nhà tăng bao nhiêu?" — XONG
+
+- Lý do: mở rộng là khoản tiền một-lần lớn nhất game nhưng tiền nhà tăng VĨNH VIỄN (`rentOf = 20k + tier²×30k`) không hiện ở điểm bấm — người chơi chỉ thấy "-Tiền nhà" sau khi đã nới (bậc cao: 30 ngày tiền nhà còn vượt thuê thợ).
+- Triển khai: helper `rentDelta` + `spaceUsePct` (diện tích đồ đã đặt / sàn bậc) trong `src/data/shopTiers.ts`; ExpandTab hiện "Tiền nhà bây giờ Xđ/ngày", mỗi bậc phía trước hiện "lên Y (+Z — 30 ngày ~+N), chưa kể thuê thợ" + % mặt bằng đang dùng với verdict (trống/vừa đà/sắp chật), bậc kế tiếp kèm "≈ R% doanh thu bình quân 7 ngày". File + `src/ui/panels/BuildPanel.tsx`, `src/__tests__/shopTiersRent.test.ts` (11 test khóa rentOf 0–6).
+- Thuần soi sáng, không đổi kinh tế.
+
+### GĐ157 — 🐱 "Con này đáng bữa cơm không?" (thú cưng payoff) — XONG
+
+- Lý do: mèo/chó là khoản tích lũy lớn (mua 300–500k + thức ăn hằng ngày) nhưng lợi ích chỉ là desc tĩnh — không ai biết nuôi có lời không.
+- Triển khai: `src/data/petPayoff.ts` thuần đọc — mèo: đại số 0.25 (quan sát = không-mèo × 0.8 → cứu = quan sát × 0.25), chỉ cộng công vào ngày mèo ĐANG làm việc; verdict lời/vừa đủ ăn/lỗ cơm/theo tuần sạch. Chó: chỉ báo tuần từ sổ rủi ro chung, không verdict cứng (không tách riêng được). UI tab 🐾 hiện "Hôm qua cứu ~X · bữa cơm ~Y → lời/lỗ" + nhắc cho ăn khi đói + pitch nuôi khi hỏng tuần ≥ 100k.
+- Leader sửa sau dev: chi phí thức ăn theo cơ chế thật `feedPet` — kho còn gói → giá thùng, hết kho → mua lẻ ×2 (mọi cấp); bỏ cổng "cấp 30" sai của audit. File: `src/data/petPayoff.ts`, `src/ui/BusinessPanel.tsx`, `src/__tests__/petPayoff.test.ts` (12 test).
+
+### GĐ158 — 🛝 "Sân chơi: góp bao nhiêu, còn bao nhiêu, đáng không?" — XONG
+
+- Lý do: sân chơi khu phố (GĐ40) — góp 28 lượt +6% khách tiệm chính, nhưng không ai biết đã góp hết bao nhiêu, còn thiếu bao nhiêu, +6% đáng ra bao nhiêu tiền.
+- Triển khai: `src/data/landmarkPayoff.ts` thuần đọc (spentEst ước theo level hiện tại — level lúc góp không lưu; remainingCostEst mirror đúng luật charge thật: lượt 1–14 giá 8k, 15–21 giá 12k, 22–28 giá 16k, tier 3 không bao giờ bị thu); LandmarkPanel thêm card "Đã góp ~X lượt (ước ~Yđ) · còn Z lượt ≈ ~Wđ" + "khách đông thêm 6% ≈ +Gđ/ngày, hòa lại sau ~P ngày" (doanh thu quá nhỏ → đổi giọng "góp nhỏ, được cái đẹp hẻm"). File + `src/ui/panels/LandmarkPanel.tsx`, `src/__tests__/landmarkPayoff.test.ts` (18 test).
+- Thuần soi sáng, không đổi kinh tế/save.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -57,15 +81,17 @@
 
 ## Cần theo dõi / nợ mở
 
-- GĐ153: xác nhận trực quan câu chữ mới của BranchPanel khi có save cấp 22+; IAB hiện chỉ có save cấp 1 (GĐ152 đã xác nhận bố cục @390 và ba trạng thái cũ).
+- GĐ153/GĐ155/GĐ156/GĐ157/GĐ158: xác nhận trực quan khi có save cấp cao hơn (BranchPanel cần 22+, BuildPanel mở rộng, tab Thú cưng, LandmarkPanel); IAB hiện chỉ có save cấp 1 — đã kiểm bằng test + tsc, chưa QA mắt được.
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cấp 50 cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi nếu có phản hồi người chơi.
 - Dock 1 hàng trên mobile — defer, chỉ làm khi có bằng chứng người chơi bấm nhầm.
+- Audit 28/10 còn sót hộp đen mờ-nhẹ (chưa đáng giai đoạn riêng): hụi thiếu "đã góp Xđ trong vòng này"; phản công đối thủ chưa quy "-1 sức mạnh ≈ 0,25% khách" ra tiền; xin lỗi MXH chưa đếm "còn N ngày khủng hoảng"; máy bán hàng chi nhánh chỉ có doanh thu hôm nay, không hoàn vốn.
+- Thời gian nhân viên rảnh KHÔNG được ghi ở state nào (chỉ runtime) — muốn soi phải thêm bộ đếm, đụng state nhẹ; nợ mở.
 - Mỗi lần subagent bị "model concurrency limit" → chạy tuần tự/đợi rồi spawn lại.
 
 ## Backlog tiếp theo
 
-1. ~~Hoàn tất GĐ153~~ ✅ (`a723733`) · ~~Audit giá vốn chi nhánh~~ ✅ (defer — cần mô hình cost-layer) · ~~GĐ154 fix xu hướng lỗ biến mất~~ ✅.
-2. Leader + Game Designer rà hộp đen tài chính còn lại, ưu tiên chiều sâu trước mở rộng.
+1. ~~GĐ153~~ ✅ · ~~Audit giá vốn~~ ✅ (defer — cần cost-layer) · ~~GĐ154~~ ✅ · ~~Audit hộp đen tài chính~~ ✅ (28/10: còn sót 4 hộp đen lớn → GĐ155–158 đã đóng hết; hộp đen mờ-nhẹ liệt kê ở "Cần theo dõi").
+2. Leader + Game Designer rà lại: sau khi trục "giá trị vs chi phí" đóng kín, đánh giá vòng ngày còn chỗ nào nông (onboarding người mới, nhịp sự kiện) trước khi tính mở rộng.
 3. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (xem memory "multi-shop supply chain").
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)
@@ -219,3 +245,7 @@
 - GĐ152 — 🏪 "Chi nhánh 24/7 hôm nay lời hay lỗ sau điện?" (đóng hộp đen "chưa trừ điện" của tiện lợi)
 - GĐ153 — 🧮 Gọi đúng tên số dư chi nhánh (chưa phân bổ giá vốn)
 - GĐ154 — 📉 Xu hướng cơ sở: lỗ không được biến mất
+- GĐ155 — 🚪 Chi nhánh bỏ lỡ bao nhiêu tiền mỗi tối
+- GĐ156 — 🏗️ Mở rộng thì tiền nhà tăng bao nhiêu
+- GĐ157 — 🐱 Thú cưng đáng bữa cơm không
+- GĐ158 — 🛝 Sân chơi: góp bao nhiêu, còn bao nhiêu, đáng không
