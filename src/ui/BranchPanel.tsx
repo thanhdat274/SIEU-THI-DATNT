@@ -4,6 +4,7 @@ import { CONVENIENCE, ALCOHOL_BRAWL_CHANCE, coverMul, NIGHT_DELIVERY_SURCHARGE, 
 import { dailyWage } from '../data/staff';
 import { branchOperatingBalanceToday } from '../data/branchNet';
 import { branchMissSummary } from '../data/venueTrend';
+import { vendingPayoff } from '../data/minorPayoff';
 import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney, productById } from '../data/products';
 
@@ -126,6 +127,20 @@ export function BranchPanel() {
               Bán kể cả khi đóng cửa / không ai trực — chỉ cần có người giao/xếp hàng trực để nạp hàng định kỳ từ kho chung.
               {branch.vendingEnabled && <> Đang chạy: hàng trong máy <b>{vendingTotal(branch.vendingStock ?? {})}</b>/{VENDING_CAP}, hôm nay bán thêm được <b>{formatMoney(branch.vendingRevenueToday ?? 0)}</b>.</>}
             </div>
+            {/* GĐ159: hoàn vốn máy theo nhịp doanh thu HÔM NAY. Doanh thu − điện máy là GROSS giá vốn (đúng quy ước
+                "chưa phân bổ giá vốn hàng đã nhập" từ GĐ153); trộm vặt đêm (VENDING_THEFT) làm hụt hàng chứ không
+                đụng doanh thu. Điện máy 10k/ngày, còn 6,5k nếu đã lắp 'efficient' (POWER_RATES.vending × EFFICIENT_MUL;
+                hóa đơn điện TỔNG mới làm tròn 1000 nên phần máy riêng là ước) — số ngày hoàn vốn luôn kèm "~". */}
+            {branch.vendingEnabled && (() => {
+              const vp = vendingPayoff(branch.vendingRevenueToday ?? 0, hasPower(branch, 'efficient'));
+              return (
+                <div style={st.sub}>
+                  {vp.days !== null
+                    ? <>Hoàn vốn sau ~{vp.days} ngày bán đều thế này (đã trừ điện máy ~{formatMoney(vp.electricityPerDay)}/ngày).</>
+                    : <>Hôm nay máy chưa đủ bù điện (~{formatMoney(vp.electricityPerDay)}/ngày) — xếp thêm món ưa chạy nhé.</>}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

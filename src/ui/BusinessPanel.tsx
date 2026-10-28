@@ -30,6 +30,7 @@ import { roiOf } from '../data/serviceRoi';
 import { venueTrendSummary } from '../data/venueTrend';
 import { riskTrendSummary } from '../data/risk';
 import { catPayoff, dogPayoff, CAT_PITCH_MIN } from '../data/petPayoff';
+import { counterPayoff, huiRoundSummary, recentAvgRevenue } from '../data/minorPayoff';
 import { summarizeDemographics, adReach, adTargetSuggest } from '../data/demographics';
 
 const card: React.CSSProperties = { background: '#3a3a4d', borderRadius: 10, padding: '12px 14px', marginBottom: 8, border: '1px solid rgba(255,255,255,0.06)' };
@@ -95,6 +96,10 @@ export function BusinessPanel() {
 function Market() {
   const { biz, day, level, money, branch, stats, prices, reviews, analytics, history } = useGame();
   const r = biz.rival;
+  // GĐ159: mốc quy đòn phản công ra tiền — bình quân doanh thu TIỆM CHÍNH 7 ngày (DayRecord.revenue),
+  // đúng luồng khách mà rivalTrafficFactor tác động; chưa có ngày nào thì đòn chỉ hiện %, không hiện tiền.
+  const avgRev7 = recentAvgRevenue(history);
+  const rivalOnSale = r?.saleUntil !== undefined && r.saleUntil >= day;
   // Thế hệ rival hiện tại: số rival đã hạ + 1 (rival cốt truyện là thế hệ đầu)
   const tier = rivalTier(biz.rivalsBeaten + 1);
   const running = activeAds(biz.ads, day);
@@ -214,6 +219,19 @@ function Market() {
                       {c.cost > 0 ? ` · ${formatMoney(c.cost)}` : ' · miễn phí (lãi mỏng)'}
                       {runningNow ? ' · ✅ đang chạy' : usedToday ? ' · hôm nay đã chạy đợt khác' : !ready ? ` · hồi từ ngày ${biz.counterReady[c.id]}` : ''}
                       <div style={sub}>{c.desc}</div>
+                      {/* GĐ159: quy "bớt N sức mạnh" ra khách & tiền — rivalTrafficFactor tuyến tính theo sức mạnh
+                          (1 sức mạnh ≈ 0,25% khách, ×2 khi rival xả hàng) nên quy được sạch. Số là ƯỚC: hit thật có
+                          thể nặng thêm tới +3 nhờ đối đầu liền ngày và đòn giá chỉ tính nếu bán đủ 30 món. */}
+                      {(() => {
+                        if (avgRev7 <= 0) return null;
+                        const g = counterPayoff(r.strength, c.hit, rivalOnSale, avgRev7);
+                        const pct1 = Math.round(g.pctCustomers * 10) / 10;
+                        return (
+                          <div style={{ ...sub, marginTop: 2 }}>
+                            Bớt ~{c.hit} sức mạnh ≈ khách đông lại ~{pct1}% — ước ~{formatMoney(g.moneyPerDay)}/ngày (bình quân 7 ngày).
+                          </div>
+                        );
+                      })()}
                     </button>
                   );
                 })}
@@ -442,6 +460,20 @@ function Money() {
           <>
             <div>Góp {formatMoney(hui.daily)}/ngày · đã góp {hui.paidDays}/{hui.members} ngày</div>
             <div>{hui.received ? '✅ Đã hốt hụi' : `Ngày ${hui.turnDay} tới lượt hốt ${formatMoney(hui.daily * hui.members)}`}</div>
+            {/* GĐ159: "đã góp bao nhiêu trong vòng này". contributed = daily × paidDays là số CHÍNH XÁC (mỗi tối
+                trừ đúng daily rồi mới tăng paidDays — news vỡ hụi cũng tính vậy), không phải ước. Vòng đều tay hòa
+                về danh nghĩa: góp đủ members ngày, hốt đúng 1 lần = cả vòng góp. Lệch audit 28/10: trong game này
+                chủ hụi ôm trốn là MẤT THẬT phần đã góp (không có "lời từ người vỡ hụi") — chỗ có lời thật là giá
+                trị thời điểm (hốt sớm thì được dùng tiền trước). */}
+            {(() => {
+              const hr = huiRoundSummary(hui);
+              return (
+                <div style={sub}>
+                  Đã góp <b>{formatMoney(hr.contributed)}</b> trong vòng này · còn góp {hr.daysLeft} ngày nữa. Vòng đều tay thì
+                  hòa (hốt 1 lần = cả vòng góp) — hốt sớm là có tiền dùng trước, còn chủ hụi ôm trốn thì mất thật phần đã góp.
+                </div>
+              );
+            })()}
             <div style={sub}>Tiền góp trừ mỗi tối. Mỗi ngày có {(HUI_COLLAPSE * 100).toFixed(1)}% chủ hụi ôm tiền trốn!</div>
           </>
         ) : (
