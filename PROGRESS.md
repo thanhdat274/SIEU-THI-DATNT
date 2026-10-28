@@ -129,9 +129,10 @@
 1. ~~Audit tài chính~~ ✅ (GĐ155–158) · ~~4 hộp mờ nhẹ~~ ✅ (GĐ159) · ~~Audit trải nghiệm~~ ✅ · ~~GĐ160 người mới~~ ✅ · ~~GĐ161 nấu theo giờ~~ ✅.
 2. ~~GĐ162 dải Kế hoạch hôm nay~~ ✅.
 3. ~~GĐ163 đợt nhờ vào khung vắng~~ ✅ — 5/5 đề xuất audit trải nghiệm đã xong (GĐ160–163).
-4. ~~GĐ165 bổ sung sự kiện cấp thấp~~ ✅ (5 def mới). Còn lại: arc E "Hàng xóm khai trương" (thay cam_do_mo) — chỉ làm khi 4 arc A–D chạy tốt trên save thật; theo dõi gặp arc trực tiếp khi chơi nhiều ngày.
-5. Theo dõi sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (cần save người thật / sim nhiều ngày); nếu vẫn lặp → thêm biến thể hoàn cảnh khác (lễ, weekend). Sau GĐ164: nếu pool sự kiện một-phát cấp thấp mỏng đi → thêm 1–2 def một-phát mới.
-6. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (multi-shop supply chain) — chỉ tính khi audit lần sau vẫn hết chiều sâu.
+4. ~~GĐ165 sự kiện cấp thấp~~ ✅ (5 def mới) · ~~GĐ166–167 đồng bộ UI~~ ✅. Còn lại: arc E "Hàng xóm khai trương" (thay cam_do_mo) — chỉ làm khi 4 arc A–D chạy tốt trên save thật; theo dõi gặp arc trực tiếp khi chơi nhiều ngày.
+5. **Audit tiến trình giữa–cuối game (29/10) → 4 giai đoạn chốt** (đều làm sâu, không mở hệ mới; KHÔNG làm: thêm hệ, thêm món — đã dày, đổi XP curve — nhịp 2–5 ngày/cấp hợp lý). Phát hiện: (a) "Phía trước" rỗng từ cấp 30 đúng đoạn khô 31–44; (b) mục tiêu doanh thu tuần/tháng ratchet ×1.1/×1.15 không trần → hụt vĩnh viễn sau vài chục tuần; (c) thưởng tuần/tháng trả tiền cho người thừa tiền; (d) rival không có đoạn kết; (e) NG+ giữ rival thế hệ N → "thuế ~24% khách" đè lên cấp 1 vòng 2 (bug thiết kế). Kế hoạch: **GĐ168** nạp lại Roadmap 30+ (mốc tier/chương/NG+ — thuần đọc); **GĐ169** bó ratchet mục tiêu + thưởng chuỗi tuần/tháng đổi XP (sim trước — tiền lệ GĐ105/110); **GĐ170** rival có kết (chương gen 12 "Siêu Thị Sao Mai" + nhãn rival đời mới + xử lý rival qua NG+); **GĐ171** NG+ mục tiêu vòng nhân theo vòng + đếm theo vòng.
+6. Theo dõi sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (cần save người thật / sim nhiều ngày); nếu vẫn lặp → thêm biến thể hoàn cảnh khác (lễ, weekend).
+7. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (multi-shop supply chain) — chỉ tính khi audit tiếp vẫn hết chiều sâu.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)
 
