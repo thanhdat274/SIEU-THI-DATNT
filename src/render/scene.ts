@@ -1,6 +1,7 @@
 import { WEATHER, type Sky, type WeatherInfo } from '../data/weather';
 import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
+import { windGust } from './fx/windSway';
 
 /** Điện thoại / máy tính bảng: giảm độ phân giải, bóng và hạt mưa cho đỡ nóng máy. */
 export const LOW_POWER = matchMedia('(pointer: coarse)').matches;
@@ -220,6 +221,8 @@ export class Lighting {
     this.now.rain += (target.rain - this.now.rain) * k;
     this.now.fog += (target.fog - this.now.fog) * k;
     const { clouds, rain, fog } = this.now;
+    // Mưa càng to gió càng giật: cây lắc mạnh hơn khi giông
+    windGust.value = 1 + rain * 1.5;
 
     const hour = (minutes / 60) % 24;
     // 5h mọc, 19h lặn

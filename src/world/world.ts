@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
+import { applyWind } from '../render/fx/windSway';
 import { createFarm, FARM_CENTER } from './farm';
 import { GroceryShop } from '../shop/groceryShop';
 import { Building } from './buildings';
@@ -353,10 +355,15 @@ function createTree(x: number, z: number): THREE.Group {
   trunk.position.y = 0.6;
   // Hai tầng tán lệch màu nhẹ từng cây cho hàng phố không đều tăm tắp
   const green = new THREE.Color(0x2e7d32).offsetHSL((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.1);
-  const leafMat = new THREE.MeshStandardMaterial({ color: green });
+  // Tán lá dùng vật liệu node để gió lắc ngọn; mỗi tầng một vật liệu vì cao độ chuẩn hóa tính từ gốc cây
+  const TREE_HEIGHT = 3.45;
+  const leafMat = new MeshStandardNodeMaterial({ color: green });
+  const leafTopMat = new MeshStandardNodeMaterial({ color: green });
+  applyWind(leafMat, { height: TREE_HEIGHT, baseY: 1.9 });
+  applyWind(leafTopMat, { height: TREE_HEIGHT, baseY: 2.85 });
   const leaves = new THREE.Mesh(new THREE.ConeGeometry(1, 1.7, 8), leafMat);
   leaves.position.y = 1.9;
-  const leavesTop = new THREE.Mesh(new THREE.ConeGeometry(0.68, 1.2, 8), leafMat);
+  const leavesTop = new THREE.Mesh(new THREE.ConeGeometry(0.68, 1.2, 8), leafTopMat);
   leavesTop.position.y = 2.85;
   trunk.castShadow = leaves.castShadow = leavesTop.castShadow = true;
   tree.add(trunk, leaves, leavesTop);
