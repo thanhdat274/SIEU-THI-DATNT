@@ -359,6 +359,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     branchRevenue: br ? br.revenueToday : 0,
     branchProfit: br ? Math.round(br.revenueToday - branchWages) : 0,
     branchCustomers: br ? br.customersToday : 0,
+    branchMissed: br ? br.missedToday : 0,
     quanRevenue: quanNuocLast ? quanNuocLast.revenue : 0,
     quanProfit: quanNuocLast ? quanNuocLast.profit : 0,
   };

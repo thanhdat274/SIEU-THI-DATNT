@@ -3,12 +3,13 @@ import { useGame } from '../core/store';
 import { CONVENIENCE, ALCOHOL_BRAWL_CHANCE, coverMul, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, hasAlcohol, hasPower, isHotFood, nightNeed, shelfTotal, uncoveredHours, vendingTotal } from '../data/branches';
 import { dailyWage } from '../data/staff';
 import { branchOperatingBalanceToday } from '../data/branchNet';
+import { branchMissSummary } from '../data/venueTrend';
 import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney, productById } from '../data/products';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
-  const { branch, level, money, day, candidates, storage, stats, atBranch, online, licenses, openBranch, toggleBranch, toggleVending, toggleNightDelivery, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel, openPanel } = useGame();
+  const { branch, level, money, day, candidates, storage, stats, atBranch, online, licenses, venueTrend, openBranch, toggleBranch, toggleVending, toggleNightDelivery, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel, openPanel } = useGame();
   const [tab, setTab] = useState<'info' | 'night' | 'report'>('info');
 
   if (!branch) {
@@ -71,6 +72,27 @@ export function BranchPanel() {
                 <span style={{ color: chipColor, border: `1px solid ${chipColor}`, borderRadius: 10, padding: '0 7px', fontSize: 11 }}>{chipText}</span>{' '}
                 <span style={st.sub}>(quầy {formatMoney(branch.revenueToday)} + máy {formatMoney(branch.vendingRevenueToday ?? 0)} − lương {formatMoney(op.wages)} − điện {formatMoney(op.power)})</span>
                 <div style={st.sub}>Số dư vận hành; chưa phân bổ giá vốn hàng đã nhập.</div>
+              </div>
+            );
+          })()}
+          {(() => {
+            const miss = branchMissSummary(venueTrend);
+            return (
+              <div style={{ ...st.event, display: 'block', background: 'rgba(241,196,15,0.09)', border: '1px solid rgba(241,196,15,0.4)' }}>
+                <b>🚪 Bỏ lỡ hôm qua & gần đây</b>
+                {miss.totalMissed === 0
+                  ? <div style={st.sub}>Chưa có số liệu bỏ lỡ — số này ghi lại mỗi tối.</div>
+                  : <>
+                      {miss.last && miss.last.missed > 0 && (
+                        <div style={st.sub}>
+                          Hôm qua <b>{miss.last.missed}</b> khách bỏ về — ước bỏ lỡ ~<b>{formatMoney(miss.last.estMoney)}</b>{' '}
+                          (bán bình quân {formatMoney(Math.round(miss.last.estMoney / miss.last.missed))}/khách).
+                        </div>
+                      )}
+                      <div style={st.sub}>14 ngày gần đây: ước ~<b>{formatMoney(miss.totalEstMoney)}</b>.</div>
+                      {miss.worst && miss.worst.estMoney > 0 && <div style={st.sub}>Tệ nhất ngày {miss.worst.day}: ~<b>{formatMoney(miss.worst.estMoney)}</b>.</div>}
+                      <div style={st.sub}>Khách bỏ về vì quầy vắng người trực hoặc kệ hết hàng — đủ người trực và trữ đủ hàng sẽ cứu được số này.</div>
+                    </>}
               </div>
             );
           })()}

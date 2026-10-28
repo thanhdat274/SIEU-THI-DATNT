@@ -7,6 +7,8 @@ export interface VenueDay {
   branchRevenue: number;
   branchProfit: number;
   branchCustomers: number;
+  /** Số khách bỏ về của chi nhánh hôm đó (GĐ155) — tùy chọn để save cũ thiếu field vẫn đọc được (coi như 0). */
+  branchMissed?: number;
   quanRevenue: number;
   quanProfit: number;
 }
@@ -68,4 +70,45 @@ export function venueTrendSummary(vt: VenueDay[]): VenueTrendLine[] {
     vt.some((d) => d.quanProfit !== 0),
   ];
   return lines.filter((l, i) => l.days > 0 && active[i]);
+}
+
+// ───── GĐ155: "Chi nhánh 24/7 bỏ lỡ bao nhiêu tiền mỗi tối?" ─────
+// Định lượng bộ đếm thô `branchMissed` (khách bỏ về vì quầy vắng người trực / kệ hết hàng / nhân viên mệt)
+// ra tiền ước tính, theo đúng mẫu "soi sáng" GĐ131 (storeMissRevenue của tiệm chính). THUẦN đọc — không đổi state/kinh tế/save.
+
+/** Một ngày bỏ lỡ của chi nhánh: số khách bỏ về + tiền ước tính bị mất (khi quy được). */
+export interface BranchMissDay {
+  day: number;
+  missed: number;
+  estMoney: number;
+}
+
+export interface BranchMissSummary {
+  /** Ngày gần nhất có dữ liệu bỏ lỡ (khách bỏ về > 0 hoặc ngày đó đã ghi field), null khi chưa ghi ngày nào. */
+  last: BranchMissDay | null;
+  /** Tổng khách bỏ về trong cửa sổ. */
+  totalMissed: number;
+  /** Tổng tiền ước tính bị bỏ lỡ trong cửa sổ. */
+  totalEstMoney: number;
+  /** Ngày bỏ lỡ nhiều tiền nhất (chỉ đếm ngày quy ra tiền được), null khi không ngày nào. */
+  worst: BranchMissDay | null;
+}
+
+/** Tóm tắt "bỏ lỡ" của chi nhánh 24/7 trong cửa sổ venueTrend — thuần đọc, save cũ (thiếu branchMissed) coi như 0. */
+export function branchMissSummary(vt: VenueDay[]): BranchMissSummary {
+  let totalMissed = 0;
+  let totalEstMoney = 0;
+  let worst: BranchMissDay | null = null;
+  let last: BranchMissDay | null = null;
+  for (const d of vt) {
+    const missed = d.branchMissed ?? 0; // ngày chưa ghi field (save cũ) coi như không bỏ lỡ
+    // Bán bình quân mỗi khách của ngày đó; ngày chi nhánh không hoạt động (khách 0 / thu 0) thì không quy ra tiền — chia 0 xử lý sạch.
+    const avgTicket = d.branchCustomers > 0 && d.branchRevenue > 0 ? d.branchRevenue / d.branchCustomers : 0;
+    const row: BranchMissDay = { day: d.day, missed, estMoney: Math.round(missed * avgTicket) };
+    totalMissed += row.missed;
+    totalEstMoney += row.estMoney;
+    if (row.estMoney > 0 && (!worst || row.estMoney > worst.estMoney)) worst = row;
+    if (row.missed > 0 || 'branchMissed' in d) last = row;
+  }
+  return { last, totalMissed, totalEstMoney, worst };
 }
