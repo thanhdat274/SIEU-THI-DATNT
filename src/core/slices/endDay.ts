@@ -7,6 +7,7 @@ import { offerForDay, partyOrderById, STORY_ORDER_FRIEND_LOSS } from '../../data
 import { morningNews } from '../../data/calendar';
 import { DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS, WRITE_OFF_FRIEND_LOSS, type Debt } from '../../data/credit';
 import { INSPECTION_EVERY, INSPECTION_FINE, INSPECTION_REWARD, INSPECTION_UNLOCK, activeAds, inspectionResult, type BizState } from '../../data/biz';
+import { sceneFor, surpriseArcById } from '../../data/surpriseArcs';
 import { quanNuocDay } from '../../data/quanNuoc';
 import { bizEndOfDay, checkAchievements } from '../biz';
 import { PHONE_FRIEND_GAIN } from '../../data/phoneOrders';
@@ -241,6 +242,13 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   }
   const news = morningNews(s.weatherSeed, s.day + 1, s.level);
   if (nextEvent) news.push(`${nextEvent.icon} Sự kiện hôm nay: ${nextEvent.blurb}`);
+  // GĐ164: chuyện sự kiện còn dở mà ngày mai vẫn trong hạn — nhắc trong tin sáng (gợi ý ngắn của cảnh kế)
+  const arcSt = s.biz.surpriseArc;
+  if (arcSt && !arcSt.done && s.day + 1 <= arcSt.expiresDay) {
+    const arc = surpriseArcById(arcSt.arcId);
+    const sc = arc ? sceneFor(arc, arcSt) : null;
+    if (arc && sc) news.push(`📖 Chuyện hôm qua còn dở: ${sc.teaser ?? arc.title}`);
+  }
   news.push(...gardenNews);
   if (quanNews.length) news.push(...quanNews);
   if (contractNews.length) news.push(...contractNews);

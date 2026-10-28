@@ -962,9 +962,26 @@ export function inspectionResult(ctx: InspectionCtx): InspectionResult {
 
 // ───────────────────────── Sự kiện bất ngờ ─────────────────────────
 
-export interface EventChoice { label: string; result: string; money?: number; xp?: number; minutes?: number; rating?: number; friendship?: { id: string; delta: number } }
+export interface EventChoice {
+  label: string;
+  result: string;
+  money?: number;
+  xp?: number;
+  minutes?: number;
+  rating?: number;
+  friendship?: { id: string; delta: number };
+  /** GĐ164: lựa chọn "ấm" — được đếm vào thưởng cuối của arc (arcGoodCount). */
+  good?: boolean;
+  /** GĐ164: cần hàng trong KHO đủ số lượng mới chọn được — UI xám + core chặn khi thiếu. */
+  needStock?: { productId: string; qty: number };
+}
 export interface SurpriseDef { id: string; icon: string; title: string; text: string; unlock: number; choices: EventChoice[] }
 
+/**
+ * Sự kiện bất ngờ một-phát (pool của `maybeSurprise`). GĐ164: 4 def cũ (mua_roi,
+ * bong_da_kinh, mua_dai, livestream) chuyển thành arc 2–3 ngày ở `data/surpriseArcs.ts`
+ * — pool trúng id-có-arc thì core mở arc thay vì phát def một-phát.
+ */
 export const SURPRISES: SurpriseDef[] = [
   {
     id: 'hoi_duong', icon: '🧭', title: 'Khách hỏi đường', unlock: 1,
@@ -1024,14 +1041,6 @@ export const SURPRISES: SurpriseDef[] = [
     ],
   },
   {
-    id: 'livestream', icon: '📱', title: 'Tiktoker xin quay clip', unlock: 10,
-    text: 'Một bạn trẻ muốn quay clip "tiệm tạp hóa hoài niệm" của bạn.',
-    choices: [
-      { label: 'Đồng ý, tặng ly trà đá', result: 'Clip nổi, khách lạ kéo tới!', money: -5000, xp: 50, rating: 5 },
-      { label: 'Ngại lên hình', result: 'Bạn ấy đi quay tiệm khác.' },
-    ],
-  },
-  {
     id: 'nhoc_an_trom', icon: '🍬', title: 'Nhóc con giấu kẹo', unlock: 2,
     text: 'Bắt gặp thằng bé nhà cuối xóm giấu gói kẹo vào cặp.',
     choices: [
@@ -1048,14 +1057,7 @@ export const SURPRISES: SurpriseDef[] = [
       { label: 'Đuổi thẳng cổ ra ngoài', result: 'Con gà chạy mất, bà hàng xóm lẩm bẩm cả buổi.' },
     ],
   },
-  {
-    id: 'mua_roi', icon: '🌧️', title: 'Mưa rào, khách trú mưa', unlock: 1,
-    text: 'Trời đổ cơn mưa rào, mấy bác hàng xóm xin trú mưa trước hiên tiệm.',
-    choices: [
-      { label: 'Rót trà đá mời ngồi chơi', result: 'Trú mưa mà chuyện trò vui, ai nấy mua thêm ít đồ mới về.', money: 20000, rating: 5, xp: 15 },
-      { label: 'Bận quá, kệ', result: 'Mưa tạnh, mọi người rủ nhau ra về tay không.' },
-    ],
-  },
+  // GĐ164: def "mua_roi" chuyển thành arc "Mưa rào trước hiên" (data/surpriseArcs.ts).
   {
     id: 'buc_hoa', icon: '🖌️', title: 'Họa sĩ xin vẽ tường', unlock: 11,
     text: 'Một họa sĩ trẻ muốn vẽ bức tranh tường "tiệm tạp hóa xưa" bên hông tiệm.',
@@ -1073,14 +1075,7 @@ export const SURPRISES: SurpriseDef[] = [
       { label: 'Hàng thiếu, từ chối', result: 'Nhà cưới ghé chợ lớn mua cho rồi.' },
     ],
   },
-  {
-    id: 'mua_dai', icon: '⛈️', title: 'Mưa dầm ngập hẻm', unlock: 6,
-    text: 'Mưa dầm cả buổi, đầu hẻm ngập trơn, nửa ngày chưa thấy bóng khách nào ghé.',
-    choices: [
-      { label: 'Lội nước giao hàng cho xóm', result: 'Giao tới từng nhà, ai cũng khen, chiều gọi điện đặt thêm.', money: 45000, minutes: 30, xp: 30, rating: 5 },
-      { label: 'Đóng cửa sớm né mưa', result: 'Ngồi chờ mưa tạnh, hôm nay doanh thu nhẹ tênh.' },
-    ],
-  },
+  // GĐ164: def "mua_dai" chuyển thành arc "Hẻm ngập ba ngày" (data/surpriseArcs.ts).
   {
     id: 'tan_hoc', icon: '🎒', title: 'Tan học ùa vào tiệm', unlock: 1,
     text: 'Chuông tan học vừa dứt, đám học sinh trường bên cắp cặp ùa vào mua kẹo bánh.',
@@ -1157,15 +1152,7 @@ export const SURPRISES: SurpriseDef[] = [
       { label: 'Giữ nguyên giá', result: 'Vài khách xách túi chợ lướt qua, chiều nay nhẹ tênh.', friendship: { id: 'chu_ba', delta: -1 } },
     ],
   },
-  {
-    id: 'bong_da_kinh', icon: '⚽', title: 'Đá bóng vỡ kính', unlock: 4,
-    text: 'Tiếng "xoang" chói tai: trái bóng của đám trẻ bay thẳng vào vỡ cửa kính tiệm.',
-    choices: [
-      { label: 'Thay kính mới, nhẹ nhàng với tụi nhỏ', result: 'Bố mẹ tụi nhỏ ngại quá, tối ghé mua thêm ít đồ tạ lỗi.', money: -90000, xp: 10, rating: 5, friendship: { id: 'bac_tam', delta: 2 } },
-      { label: 'Vá tạm băng keo, dọn mảnh vỡ', result: 'Cửa chắp vá tạm, dăm bữa khách ngắm cửa cười khúc khích.', money: -10000 },
-      { label: 'Bắt đền bố mẹ thằng đá', result: 'Được đền đủ tiền kính, nhưng xóm dèm "tiệm nhỏ mà tính kỹ" mấy bữa.', money: 60000, friendship: { id: 'bac_tam', delta: -3 } },
-    ],
-  },
+  // GĐ164: def "bong_da_kinh" chuyển thành arc "Cái kính vỡ" (data/surpriseArcs.ts).
   {
     id: 'bac_tai_nuoc', icon: '🧃', title: 'Bác tài khát nước', unlock: 3,
     text: 'Chú tài chở cát ghế giữa hẻm, mặt mũi lấm láp: "Cho xin chai nước với!"',
@@ -1428,6 +1415,11 @@ export interface BizState {
   cleanClaimed?: number;
   /** Đợt nhờ vả khách quen (GĐ80): regularId → trạng thái câu chuyện 2–4 ngày. */
   regularArcs?: Record<string, import('./regularArc').RegularArcState>;
+  /** Chuyện sự kiện bất ngờ đang kể dở (GĐ164): MỘT slot duy nhất. Bản lưu cũ thiếu →
+   *  undefined (chưa có arc nào, không cần SAVE_VERSION — biz nằm trong MERGE_DEEP). */
+  surpriseArc?: import('./surpriseArcs').SurpriseArcState;
+  /** Các arc sự kiện ĐÃ kể (kể xong lẫn khép sớm — GĐ164): không kể lại. Bản lưu cũ thiếu → []. */
+  surpriseArcsTold?: string[];
 }
 
 /** Sự kiện thử thách theo mùa (GĐ75). */

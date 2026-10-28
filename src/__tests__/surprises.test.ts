@@ -27,8 +27,8 @@ describe('SURPRISES — dữ liệu sự kiện bất ngờ nhất quán', () =>
     }
   });
 
-  it('pool đủ rộng cho lăn sự kiện dài hạn: tổng số mẫu ≥ 30', () => {
-    expect(SURPRISES.length).toBeGreaterThanOrEqual(30);
+  it('pool đủ rộng cho lăn sự kiện dài hạn: tổng số mẫu ≥ 26 (GĐ164: 4 def chuyển thành arc 2–3 ngày — surpriseArcs.ts)', () => {
+    expect(SURPRISES.length).toBeGreaterThanOrEqual(26);
   });
 
   it('mọi lựa chọn nằm trong biên cân bằng: money [-200000, 200000], xp [-80, 80], nhãn không rỗng', () => {

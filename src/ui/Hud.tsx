@@ -38,7 +38,8 @@ import { logoutGoogle } from '../net/firebase';
 import { useSession } from '../net/session';
 import { describeItems, houseById, phoneOrderValue } from '../data/phoneOrders';
 import { vendorById, wholesaleTotal } from '../data/wholesale';
-import { STORIES, SURPRISES } from '../data/biz';
+import { STORIES } from '../data/biz';
+import { findSurprise } from '../data/surpriseArcs';
 import { chooseSurprise, closeChapter, closeStory, dismissTutorial, REGULAR_NAMES } from '../core/biz';
 import { chapterById } from '../data/chapters';
 import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
@@ -758,16 +759,28 @@ function ExpiryAlert() {
   );
 }
 
-/** Sự kiện bất ngờ trong ngày: chọn một cách xử lý. */
+/** Sự kiện bất ngờ trong ngày: chọn một cách xử lý. GĐ164: tra ARC trước rồi mới tới
+ *  pool một-phát — cảnh arc resolve theo lựa chọn đã chốt; lựa chọn cần hàng kho mà
+ *  kho thiếu thì xám kèm chữ "kho hết {món} rồi" (core chooseSurprise chặn lại lần nữa). */
 function SurpriseAlert() {
   const active = useGame((s) => s.biz.surprise);
-  const ev = active && SURPRISES.find((e) => e.id === active.id);
+  const storage = useGame((s) => s.storage);
+  const ev = active && findSurprise(active.id, useGame.getState().biz.surpriseArc?.choices);
   if (!ev) return null;
   return (
     <div className="hud-alert phone">
       {ev.icon} <b>{ev.title}</b>: {ev.text}
       <span className="hud-alert-actions">
-        {ev.choices.map((c, i) => <button key={i} className={`hud-btn${i === 0 ? ' primary' : ''}`} onClick={() => chooseSurprise(i)}>{c.label}</button>)}
+        {ev.choices.map((c, i) => {
+          const short = c.needStock && (storage[c.needStock.productId] ?? 0) < c.needStock.qty;
+          return (
+            <button key={i} disabled={short} className={`hud-btn${i === 0 && !short ? ' primary' : ''}`}
+              onClick={() => chooseSurprise(i)}
+              title={short ? `Kho hết ${productById(c.needStock!.productId).name} rồi` : undefined}>
+              {c.label}{short && <small> (kho hết {productById(c.needStock!.productId).name} rồi)</small>}
+            </button>
+          );
+        })}
       </span>
     </div>
   );
@@ -986,6 +999,7 @@ function TodayAgendaStrip() {
     rep: reputationOf(s.repLog),
     reservations: s.reservations,
     regularArcs: s.biz.regularArcs, // GĐ163: bước nhờ của khách quen đang chờ → chip "Việc {khách} nhờ"
+    surpriseArc: s.biz.surpriseArc, // GĐ164: chuyện sự kiện đang kể dở → chip "📖 {tên} còn dở"
     cookJobs: s.cookJobs,
     stations: s.furniture.map((f) => f.type),
     storage: s.storage,

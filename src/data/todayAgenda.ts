@@ -9,6 +9,7 @@
 // 100%: không đổi bất kỳ slice/state nào, không SAVE_VERSION, không RNG mới
 // (mọi nguồn đều deterministic theo seed/ngày đã có sẵn). GĐ163 thêm nguồn thứ
 // 7: bước nhờ của khách quen đang chờ (cửa sổ "tiện làm" theo khung vắng).
+// GĐ164 thêm nguồn thứ 8: chuyện sự kiện bất ngờ đang kể dở (arc GĐ164).
 //
 // Mỗi nguồn là một helper riêng, nhận TỪNG tham số cụ thể (không nhận cả
 // GameState) để dễ test; `todayAgenda` ghép lại, lọc cái đã qua giờ và sắp
@@ -27,6 +28,7 @@ import { supplyContractById } from './contracts';
 import { partyOrderById } from './orders';
 import type { ActiveOrder } from './orders';
 import { errandWindow, pendingErrands, type RegularArcState } from './regularArc';
+import { arcScenePending, surpriseArcById, type SurpriseArcState } from './surpriseArcs';
 import type { ContractState, CookJob } from '../core/gameTypes';
 
 /** Bảng mở được khi bấm chip — tập con các Panel['type'] có thật (gameTypes.ts). */
@@ -209,7 +211,7 @@ export function partyOrderAgenda(day: number, order: ActiveOrder | null | undefi
   }];
 }
 
-// ───── 6. Bước nhờ của khách quen đang chờ (GĐ163) ─────
+// ───── 7. Bước nhờ của khách quen đang chờ (GĐ163) ─────
 
 /** Chip "HHh Việc {khách} nhờ" cho bước nhờ vả (GĐ80) đang chờ, đặt ở ĐẦU cửa sổ "tiện làm"
  *  (khung ghé của khách ∩ giờ vắng — errandWindow GĐ163). Chip hiện MỌI NGÀY đợt còn dở (đúng
@@ -237,6 +239,26 @@ export function errandAgenda(args: {
   return out;
 }
 
+// ───── 8. Chuyện sự kiện bất ngờ đang kể dở (GĐ164) ─────
+
+/** Chip "📖 {tên chuyện} còn dở" cho arc sự kiện (GĐ164) đang dở mà cảnh hôm nay CHƯA chốt.
+ *  Mốc 10h = khung phát cảnh arc (arcSceneAt 10h–11h30), giữ tới 20h = cảnh arc không tự mất.
+ *  Cảnh hôm nay đã chọn / đợt đã khép / đã quá hạn → không chip (arcScenePending lọc sẵn). */
+export function arcAgenda(args: { day: number; arc?: SurpriseArcState }): AgendaItem[] {
+  const st = args.arc;
+  if (!st || !arcScenePending(st, args.day)) return [];
+  const def = surpriseArcById(st.arcId);
+  if (!def) return [];
+  return [{
+    key: `arc-${st.arcId}`,
+    atMinutes: 10 * 60,
+    untilMinutes: 20 * 60,
+    icon: '📖',
+    label: `${def.title} còn dở`,
+    panel: 'morning' as const,
+  }];
+}
+
 // ───── Ghép lại: lọc quá giờ, sắp tăng dần ─────
 
 export interface TodayAgendaArgs {
@@ -250,6 +272,8 @@ export interface TodayAgendaArgs {
   reservations?: Record<string, Reservation>;
   /** Đợt nhờ vả đang chạy/đã xong (biz.regularArcs — GĐ80). */
   regularArcs?: Record<string, RegularArcState>;
+  /** Chuyện sự kiện bất ngờ đang kể dở (biz.surpriseArc — GĐ164). */
+  surpriseArc?: SurpriseArcState;
   cookJobs?: CookJob[];
   stations?: string[];
   storage?: Record<string, number>;
@@ -260,7 +284,7 @@ export interface TodayAgendaArgs {
   order?: ActiveOrder | null;
 }
 
-/** Dải "Kế hoạch hôm nay": ghép 7 nguồn có sẵn, lọc cái đã qua giờ (trừ cái đang
+/** Dải "Kế hoạch hôm nay": ghép 8 nguồn có sẵn, lọc cái đã qua giờ (trừ cái đang
  *  trong khung), sắp tăng dần. Chip ĐẦU TIÊN = việc kế tiếp đang đến hạn/đang trong
  *  khung — UI nhấn mạnh chip đó. 0 hẹn → mảng rỗng (UI ẩn dải, trả slot IdleChip). */
 export function todayAgenda(args: TodayAgendaArgs): AgendaItem[] {
@@ -281,6 +305,7 @@ export function todayAgenda(args: TodayAgendaArgs): AgendaItem[] {
     ...contractAgenda(args.day, args.contracts ?? {}),
     ...partyOrderAgenda(args.day, args.order),
     ...errandAgenda({ day: args.day, arcs: args.regularArcs }),
+    ...arcAgenda({ day: args.day, arc: args.surpriseArc }),
   ];
   return all
     .filter((it) => args.minutes < it.untilMinutes)

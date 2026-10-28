@@ -63,6 +63,7 @@ export function SummaryPanel({ day }: { day: number }) {
   const teaserRows = tomorrowTeaser({
     day: nowDay, level, weatherSeed, weather, regulars, repLog, totals, history,
     giftStreak, giftLastDay, giftGraceDay,
+    surpriseArc: biz.surpriseArc, // GĐ164: chuyện sự kiện còn dở → mồi "mai có tiếp"
   });
   const st = panel.stats ?? EMPTY_DAY_STATS;
   // GĐ123: thẻ "phá kỷ lục" trong tổng kết cuối ngày — mồi quay lại mỗi ngày cho người chơi cấp cao,

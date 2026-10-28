@@ -16,6 +16,7 @@ import type { RepSample } from './reputation';
 import { nearestMilestones } from './goals';
 import type { MilestoneDossier } from './goals';
 import { DAILY_GIFTS, scaledGiftEco, giftText, recentAvgProfit } from './gifts';
+import { arcScenePending, surpriseArcById, type SurpriseArcState } from './surpriseArcs';
 
 /**
  * Panel mà một dòng mồi sẽ mở khi bấm. Chỉ gồm 3 panel lá (không có trường bắt buộc),
@@ -37,10 +38,12 @@ export interface TeaserInput {
   giftStreak: number;
   giftLastDay: number;
   giftGraceDay: number;
+  /** Chuyện sự kiện đang kể dở (biz.surpriseArc — GĐ164); thiếu ở save cũ. */
+  surpriseArc?: SurpriseArcState;
 }
 
 export interface TeaserRow {
-  id: 'gift' | 'weather' | 'festival' | 'regulars' | 'milestone';
+  id: 'gift' | 'weather' | 'festival' | 'regulars' | 'milestone' | 'arc';
   icon: string;
   text: string;
   hint?: string;
@@ -128,6 +131,12 @@ export function tomorrowTeaser(input: TeaserInput): TeaserRow[] {
       text: `Sắp tới ${top.m.name} — còn ${top.remaining.toLocaleString('vi-VN')} ${UNIT[top.m.key]}`,
       panel: 'business',
     });
+  }
+
+  // R5 — Chuyện sự kiện đang kể dở (GĐ164): cảnh của NGÀY MAI chưa chốt và còn trong hạn.
+  if (input.surpriseArc && arcScenePending(input.surpriseArc, input.day)) {
+    const def = surpriseArcById(input.surpriseArc.arcId);
+    if (def) rows.push({ id: 'arc', icon: '📖', text: `Chuyện ${def.title} còn dở, mai có tiếp`, panel: 'morning' });
   }
 
   return rows;

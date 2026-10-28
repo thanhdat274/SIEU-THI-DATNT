@@ -21,8 +21,8 @@
 
 ## Trạng thái hiện tại (28/10/2026)
 
-- **1682/1682 test pass (151 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
-- Đã xong GĐ1–GĐ163.
+- **1709/1709 test pass (152 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
+- Đã xong GĐ1–GĐ164.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) đã bão hòa; UI responsive đa thiết bị đã audit kỹ (GĐ85–104, 116); trục "giá trị vs chi phí" đã soi kín gần hết tài sản: nhân sự tiệm chính/ca đêm/chi nhánh (141/142/144), mối hàng (143), bếp (145), trại (146/147), danh tiếng (148), quầy thịt cá (149), sổ nợ (150), hợp đồng (151), chi nhánh sau điện (152/153). Mở rộng Gánh hàng rong / Chợ phiên đã có (135–138), NG+ có dự phóng + mục tiêu vòng (139/140).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -65,6 +65,15 @@
 - Triển khai: `slowBands()` đối xứng goldenHourBands (rhythm.ts); `errandWindow`/`pendingErrands` thuần đọc (regularArc.ts); IdleChip mức ưu tiên 0 khi đang trong cửa sổ nhờ ("🤝 Bà Năm ... — 8h30–10h tiện làm", bấm mở Khách quen); chip "🤝 {giờ} Việc {khách} nhờ" trên dải GĐ162 mọi ngày đợt còn dở (cửa sổ là giờ TIỆN, không hứa khách ghé — chip ghé thật đã có ở nguồn riêng). Nhịp tiến/hết hạn/thưởng GĐ80 nguyên vẹn 100%.
 - File: `rhythm.ts`, `regularArc.ts`, `idle.ts`, `todayAgenda.ts`, `Hud.tsx` (1 dòng), test mới `errandTiming.test.ts` (17 test, quét 40 seed × 10 ngày). Lưu ý: khi có hẹn hôm nay, mặt hiển thị chính là chip trên dải GĐ162 (IdleChip nhường slot) — đã thiết kế cùng nhau.
 
+### GĐ164 — 📖 "Sự kiện bất ngờ" thành chuyện kể (mini-arc 2–3 ngày) — XONG
+
+- Lý do: audit trải nghiệm — sự kiện bất ngờ mật độ ổn nhưng một-phát quay số, không chuyện kể. 4 arc A–D thay 4 def một-phát cùng id (kể xong không lặp — giảm đúng pool lặp mà audit chê): "Mưa rào trước hiên" (mua_roi, cấp 1, 2 ngày), "Cái kính vỡ" (bong_da_kinh, cấp 4, 2 ngày), "Hẻm ngập ba ngày" (mua_dai, cấp 6, 3 ngày), "Đoạn clip hot" (livestream, cấp 10, 3 ngày, ngại lên hình = khép sớm). Mỗi ngày 1 cảnh, hệ quả hôm qua hiện trong văn cảnh hôm nay, chọn ấm (good) cộng thưởng cuối; tổng 1.5–2× def cũ.
+- Kỹ thuật: file mới `src/data/surpriseArcs.ts` (thuần dữ liệu + helper; pattern GĐ80 nhưng state riêng vì vòng khép regularArc xoá entry lạ); `BizState` thêm `surpriseArc?` + `surpriseArcsTold?` (cả hai tuỳ chọn, MERGE_DEEP — save cũ an toàn, không SAVE_VERSION); core `maybeSurprise`/`chooseSurprise` (+~60 dòng): arc dở → không quay pool, cảnh phát 10h–11h30 tất định, giữ tới 20h, lỡ hôm nay mai phát lại tới hết hạn, quá hạn khép nhẹ không phạt; `EventChoice` thêm `good?`/`needStock?` (lựa chọn cần hàng kho — xám khi thiếu).
+- UI 4 bề mặt tái dùng: SurpriseAlert (findSurprise), chip "📖 chuyện còn dở" trên dải GĐ162 (nguồn 8), tin sáng "Chuyện hôm qua còn dở", mồi GĐ126 "mai có tiếp".
+- Dev lệch spec có lý: thêm `surpriseArcsTold` (không có thì arc kể lại — spec "không lặp" yêu cầu vết); test ngưỡng 30→26 def (hệ quả xoá 4 def).
+- Test: `surpriseArc.test.ts` 27 test (helper + core setSimSeed + round-trip + sim 2 ngày Arc A ròng +28k đúng công thức) + 109 test liên quan xanh. QA live: save mới cấp 1 (phiên song song đã reset) load sạch với field mới, 0 lỗi console, đồng hồ chạy; gặp arc trực tiếp cần chơi nhiều ngày — để tự nhiên.
+- File: `surpriseArcs.ts`, `biz.ts` (data + core), `endDay.ts`, `todayAgenda.ts`, `tomorrowTeaser.ts`, `Hud.tsx`, `ReportPanels.tsx`, `surprises.test.ts` (ngưỡng).
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc trong `src/data/*.ts` + một thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -96,7 +105,7 @@
 1. ~~Audit tài chính~~ ✅ (GĐ155–158) · ~~4 hộp mờ nhẹ~~ ✅ (GĐ159) · ~~Audit trải nghiệm~~ ✅ · ~~GĐ160 người mới~~ ✅ · ~~GĐ161 nấu theo giờ~~ ✅.
 2. ~~GĐ162 dải Kế hoạch hôm nay~~ ✅.
 3. ~~GĐ163 đợt nhờ vào khung vắng~~ ✅ — 5/5 đề xuất audit trải nghiệm đã xong (GĐ160–163).
-4. **GĐ164 — 📖 "Sự kiện bất ngờ" thành chuyện kể (mini-arc 2–3 ngày) — ĐANG TRIỂN KHAI**: spec do Game Designer chốt 29/10, Leader duyệt: 4 arc A–D thay 4 def một-phát cùng id (mua_roi → "Mưa rào trước hiên", bong_da_kinh → "Cái kính vỡ", mua_dai → "Hẻm ngập ba ngày", livestream → "Đoạn clip hot"); state 1 field `surpriseArc?` (MERGE_DEEP an toàn save cũ); core ~+40 dòng (maybeSurprise/chooseSurprise); UI 4 bề mặt tái dùng (SurpriseAlert, chip dải GĐ162, tin sáng, mồi GĐ126); tổng thưởng arc 1.5–2× def cũ; arc E "Hàng xóm khai trương" để sau. Lý do: audit chỉ "sự kiện một-phát quay số, không chuyện kể" là điểm nông còn lại của vòng ngày sau khi 5 đề xuất đã xong.
+4. ~~GĐ164 sự kiện thành chuyện kể~~ ✅. Sau GĐ164: pool một-phát cấp thấp mỏng đi (còn ~3–4 def cấp 1–3 sau khi arc A thay mua_roi) → cân nhắc thêm 1–2 def một-phát mới cấp thấp; arc E "Hàng xóm khai trương" (thay cam_do_mo) nếu 4 arc chạy tốt. Theo dõi: gặp arc trực tiếp trên save thật khi chơi nhiều ngày.
 5. Theo dõi sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (cần save người thật / sim nhiều ngày); nếu vẫn lặp → thêm biến thể hoàn cảnh khác (lễ, weekend). Sau GĐ164: nếu pool sự kiện một-phát cấp thấp mỏng đi → thêm 1–2 def một-phát mới.
 6. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (multi-shop supply chain) — chỉ tính khi audit lần sau vẫn hết chiều sâu.
 
@@ -260,3 +269,4 @@
 - GĐ161 — 🍳 Kịch bản nấu theo giờ: hẹn-giờ-thu-hoạch trong phiên
 - GĐ162 — 🗓️ Dải Kế hoạch hôm nay trên HUD
 - GĐ163 — 🤝 Đợt nhờ khách quen rơi vào khung vắng
+- GĐ164 — 📖 Sự kiện bất ngờ thành chuyện kể (mini-arc)
