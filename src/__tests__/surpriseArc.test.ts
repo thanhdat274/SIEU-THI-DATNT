@@ -59,8 +59,8 @@ describe('GĐ164 — dữ liệu arc: thay thế def cũ, kết nối cảnh ch�
       expect(SURPRISES.some((e) => e.id === old), `${old} phải đã xoá`).toBe(false);
       expect(arcForEvent(old)?.id, `arc thay ${old}`).toBeTruthy();
     }
-    // Pool chọnarc = def một-phát + arc chưa kể → tổng mật độ giữ nguyên 30 mẫu
-    expect(SURPRISES.length + SURPRISE_ARCS.length).toBe(30);
+    // Pool chọn arc = def một-phát + arc chưa kể (GĐ164: 26+4=30; GĐ165: +5 def cấp thấp → 35)
+    expect(SURPRISES.length + SURPRISE_ARCS.length).toBe(35);
   });
 
   it('mỗi scene: options 2–3, nextByChoice đủ dài, index hợp lệ; mỗi nhánh cuối có reward hoặc khép', () => {

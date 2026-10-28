@@ -21,8 +21,8 @@
 
 ## Trạng thái hiện tại (28/10/2026)
 
-- **1709/1709 test pass (152 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
-- Đã xong GĐ1–GĐ164.
+- **1713/1713 test pass (152 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
+- Đã xong GĐ1–GĐ165.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) đã bão hòa; UI responsive đa thiết bị đã audit kỹ (GĐ85–104, 116); trục "giá trị vs chi phí" đã soi kín gần hết tài sản: nhân sự tiệm chính/ca đêm/chi nhánh (141/142/144), mối hàng (143), bếp (145), trại (146/147), danh tiếng (148), quầy thịt cá (149), sổ nợ (150), hợp đồng (151), chi nhánh sau điện (152/153). Mở rộng Gánh hàng rong / Chợ phiên đã có (135–138), NG+ có dự phóng + mục tiêu vòng (139/140).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -74,6 +74,13 @@
 - Test: `surpriseArc.test.ts` 27 test (helper + core setSimSeed + round-trip + sim 2 ngày Arc A ròng +28k đúng công thức) + 109 test liên quan xanh. QA live: save mới cấp 1 (phiên song song đã reset) load sạch với field mới, 0 lỗi console, đồng hồ chạy; gặp arc trực tiếp cần chơi nhiều ngày — để tự nhiên.
 - File: `surpriseArcs.ts`, `biz.ts` (data + core), `endDay.ts`, `todayAgenda.ts`, `tomorrowTeaser.ts`, `Hud.tsx`, `ReportPanels.tsx`, `surprises.test.ts` (ngưỡng).
 
+### GĐ165 — 🎲 Bổ sung 5 sự kiện một-phát cấp thấp — XONG
+
+- Lý do: GĐ164 thay 4 def một-phát bằng arc → pool cấp thấp mỏng; khôi phục độ đa dạng ngày 1–5 (cùng mục tiêu "mỗi sáng có thứ mới" của GĐ160).
+- 5 def mới (chỉ dùng effect có sẵn, quy mô ±2k–25k / xp 5–10 / friendship +1): `chuot_kho` 🐭 (cấp 1), `tre_dau_cau` 🎈 (cấp 1), `ban_ghe_hong` 🪑 (cấp 2), `mat_dien_trua` 🧊 (cấp 3), `xe_khach_do` 🚌 (cấp 5). Friendship nối vào khách quen thật (bác Tám / Bé Na / chú Ba).
+- Test: ngưỡng pool ≥31, arc+one-shot tổng 35; 4 assert dữ liệu mới. **1713/1713 (152 files)** xanh; build sạch. Thuần data — không đụng core/UI.
+- File: `src/data/biz.ts`, `surprises.test.ts`, `surpriseArc.test.ts`.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc trong `src/data/*.ts` + một thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -105,7 +112,7 @@
 1. ~~Audit tài chính~~ ✅ (GĐ155–158) · ~~4 hộp mờ nhẹ~~ ✅ (GĐ159) · ~~Audit trải nghiệm~~ ✅ · ~~GĐ160 người mới~~ ✅ · ~~GĐ161 nấu theo giờ~~ ✅.
 2. ~~GĐ162 dải Kế hoạch hôm nay~~ ✅.
 3. ~~GĐ163 đợt nhờ vào khung vắng~~ ✅ — 5/5 đề xuất audit trải nghiệm đã xong (GĐ160–163).
-4. ~~GĐ164 sự kiện thành chuyện kể~~ ✅. Sau GĐ164: pool một-phát cấp thấp mỏng đi (còn ~3–4 def cấp 1–3 sau khi arc A thay mua_roi) → cân nhắc thêm 1–2 def một-phát mới cấp thấp; arc E "Hàng xóm khai trương" (thay cam_do_mo) nếu 4 arc chạy tốt. Theo dõi: gặp arc trực tiếp trên save thật khi chơi nhiều ngày.
+4. ~~GĐ165 bổ sung sự kiện cấp thấp~~ ✅ (5 def mới). Còn lại: arc E "Hàng xóm khai trương" (thay cam_do_mo) — chỉ làm khi 4 arc A–D chạy tốt trên save thật; theo dõi gặp arc trực tiếp khi chơi nhiều ngày.
 5. Theo dõi sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (cần save người thật / sim nhiều ngày); nếu vẫn lặp → thêm biến thể hoàn cảnh khác (lễ, weekend). Sau GĐ164: nếu pool sự kiện một-phát cấp thấp mỏng đi → thêm 1–2 def một-phát mới.
 6. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (multi-shop supply chain) — chỉ tính khi audit lần sau vẫn hết chiều sâu.
 
@@ -270,3 +277,4 @@
 - GĐ162 — 🗓️ Dải Kế hoạch hôm nay trên HUD
 - GĐ163 — 🤝 Đợt nhờ khách quen rơi vào khung vắng
 - GĐ164 — 📖 Sự kiện bất ngờ thành chuyện kể (mini-arc)
+- GĐ165 — 🎲 Bổ sung 5 sự kiện một-phát cấp thấp

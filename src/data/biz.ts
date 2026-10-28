@@ -981,6 +981,7 @@ export interface SurpriseDef { id: string; icon: string; title: string; text: st
  * Sự kiện bất ngờ một-phát (pool của `maybeSurprise`). GĐ164: 4 def cũ (mua_roi,
  * bong_da_kinh, mua_dai, livestream) chuyển thành arc 2–3 ngày ở `data/surpriseArcs.ts`
  * — pool trúng id-có-arc thì core mở arc thay vì phát def một-phát.
+ * GĐ165: bổ sung 5 def một-phát cấp thấp (unlock 1–5) — pool ngày 1–5 dày lại sau khi arc A–D thay 4 def.
  */
 export const SURPRISES: SurpriseDef[] = [
   {
@@ -1203,6 +1204,52 @@ export const SURPRISES: SurpriseDef[] = [
     choices: [
       { label: 'Cho treo, nhận tiền thuê', result: 'Biển to rực rỡ, có khách chê rối mắt nhưng tiền thuê đều tay.', money: 60000, xp: 10, friendship: { id: 'ba_nam', delta: -2 } },
       { label: 'Từ chối, giữ mặt tiền xưa', result: 'Mặt tiền mộc mạc như chục năm qua, khách quen tấm tắc "tiệm vẫn y cũ".', friendship: { id: 'ba_nam', delta: 2 } },
+    ],
+  },
+  // ───── GĐ165: 5 def một-phát cấp thấp (pool mỏng sau khi GĐ164 chuyển 4 def thành arc) ─────
+  {
+    id: 'chuot_kho', icon: '🐭', title: 'Chuột quấy kho hàng đêm qua', unlock: 1,
+    text: 'Đêm qua nghe sột soạt trong kho, sáng ra bao mì bị gặm rách một góc.',
+    choices: [
+      { label: 'Đặt bẫy chuột (5.000đ)', result: 'Cài miếng bẫy gỗ sau bao mì, tối nghe "tách" một tiếng — kho lại yên ổn.', money: -5000 },
+      { label: 'Mời chú mèo hàng xóm sang trông giúp', result: 'Con mèo nhà bác Tám nằm chồm hổm ngay kho, chuột lánh khỏi tới. Bác Tám ghé thấy cười tít mắt.', minutes: 10, friendship: { id: 'bac_tam', delta: 1 } },
+      { label: 'Dọn lại kho', result: 'Chuyển bao đựng lên kệ gỗ, lấp kín lỗ chui — chuột hết chỗ nấp, mối lo hạ hỏa luôn.', minutes: 15 },
+    ],
+  },
+  {
+    id: 'tre_dau_cau', icon: '🎈', title: 'Bọn trẻ đá cầu vỡ chai nước trước cửa', unlock: 1,
+    text: 'Quả cầu của đám trẻ trước cửa bay trúng chai nước mắm bày ngoài bục, vỡ toang dưới chân.',
+    choices: [
+      { label: 'Đền chai, rồi mua vui cùng bọn trẻ', result: 'Đền chai nước mắm, tiện đá vài quả cho tụi nhỏ reo hò. Bé Na hứa chiều mai rủ cả lũ ghé mua kẹo.', minutes: 5, friendship: { id: 'be_na', delta: 1 } },
+      { label: 'Tính tiền chai cho xong', result: 'Trừ nhanh hai nghìn tiền chai, đám nhỏ lí nhí xin lỗi rồi dời sân đi chỗ khác.', money: -2000 },
+      { label: 'Dặn dò cho đá, đừng gần quầy', result: 'Tụi nhỏ ngoan ngoãn dời sân sang đất trống cuối hẻm, tiếng cầu vẫn rộn rã bên tai.' },
+    ],
+  },
+  {
+    id: 'ban_ghe_hong', icon: '🪑', title: 'Bàn ghế trước cửa sập một chân', unlock: 2,
+    text: 'Bộ bàn ghế nhỏ trước cửa sập một chân, cô khách đứng mua phải vịn vào quầy.',
+    choices: [
+      { label: 'Gọi thợ mộc đầu hẻm', result: 'Chú mộc sang bắt lại chân ghế chắc nịch, tiện chuyện chuyện xóm nửa buổi.', money: -15000 },
+      { label: 'Tự vót tre đựa lại', result: 'Vót khúc tre già chèn chân ghế, ngồi phịch phịch vẫn vững — tự tay làm được việc vui sao.', minutes: 20, xp: 5 },
+      { label: 'Để đó mai tính', result: 'Ghế nghiêng một bên, khách ghé đứng mua xong rồi ra luôn.' },
+    ],
+  },
+  {
+    id: 'mat_dien_trua', icon: '🧊', title: 'Mất điện trưa, tủ lạnh ngừng chạy', unlock: 3,
+    text: 'Trưa nắng oi cúp điện, tủ lạnh ngừng ù — sữa chua với kem nằm giữa tủ nghe đáng lo.',
+    choices: [
+      { label: 'Chạy mua đá cứu tủ', result: 'Gánh hai bao đá từ quán nước đổ đầy khoang đá, đồ giữa tủ giữ mát tới giờ có điện lại.', money: -10000 },
+      { label: 'Treo bảng giảm giá món dễ tan', result: 'Kem với sữa chua bán giá hời trước khi mềm nhũn, chị Lan ghé lấy luôn vài hộp.', money: 8000, xp: 10 },
+      { label: 'Chờ có điện lại thôi', result: 'Điện có lại thì gần chiều, mở tủ kem chảy nhũn — mấy hộp sữa chua đành bỏ.', money: -20000 },
+    ],
+  },
+  {
+    id: 'xe_khach_do', icon: '🚌', title: 'Xe khách đổ cả đoàn trước hẻm', unlock: 5,
+    text: 'Xe khách ghé giữa hẻm nhả cả đoàn khách xuống nghỉ chân, gói gánh la liệt trước cửa.',
+    choices: [
+      { label: 'Chào mồi nước mát mời nghỉ', result: 'Cà xoong trà đá mời từng người, mấy chú tài ghi mặt hẻm — chuyến sau ghé hẳn.', money: -3000, xp: 10 },
+      { label: 'Bán giá thường, phục vụ nhanh', result: 'Bánh mì, nước suối, bịch sữa — đoàn mua đủ thứ, mười phút quầy đông vui như chợ.', money: 25000, xp: 5 },
+      { label: 'Chào mồi rồi ghi sổ khách quen', result: 'Mời nước xong ghi sổ mấy chuyến xe, chú Ba xe ôm thấy cười: "Cả đoàn ghé thì ghi hẳn hoi đi!"', money: 15000, friendship: { id: 'chu_ba', delta: 1 } },
     ],
   },
 ];
