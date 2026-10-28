@@ -29,6 +29,7 @@ import { BILL_RUSH_DAYS, dayOfMonth, SERVICE_BUY_ALONG, SERVICES } from '../data
 import { roiOf } from '../data/serviceRoi';
 import { venueTrendSummary } from '../data/venueTrend';
 import { riskTrendSummary } from '../data/risk';
+import { catPayoff, dogPayoff, CAT_PITCH_MIN } from '../data/petPayoff';
 import { summarizeDemographics, adReach, adTargetSuggest } from '../data/demographics';
 
 const card: React.CSSProperties = { background: '#3a3a4d', borderRadius: 10, padding: '12px 14px', marginBottom: 8, border: '1px solid rgba(255,255,255,0.06)' };
@@ -727,7 +728,10 @@ function Month() {
 }
 
 function Pets() {
-  const { biz, day, level, storage } = useGame();
+  const { biz, day, level, storage, analytics, riskTrend } = useGame();
+  // GĐ157: "Con này đáng bữa cơm không?" — quy công nuôi ra tiền, đối chiếu tiền thức ăn (thuần đọc).
+  const cat = catPayoff(analytics, biz.pets, day, storage);
+  const dog = dogPayoff(riskTrend);
   return (
     <>
       {PETS.map((p) => {
@@ -744,6 +748,46 @@ function Pets() {
             {pet && (
               <div style={{ fontSize: 12, marginTop: 2, color: fed ? '#2ecc71' : '#e17055' }}>
                 {fed ? 'No bụng, đang làm việc' : 'Đói, không chịu làm việc'} · kho còn {storage[p.food] ?? 0} {productById(p.food).name} (không có thì mua lẻ giá gấp đôi)
+              </div>
+            )}
+            {/* GĐ157: payoff thú cưng — số tiền là ƯỚC từ sổ hỏng hàng / sổ rủi ro có sẵn. */}
+            {p.kind === 'cat' && pet && cat.verdict !== 'nothing-spoiled' && (
+              <div style={{ fontSize: 12, marginTop: 4, borderTop: '1px dashed rgba(255,255,255,0.12)', paddingTop: 4 }}>
+                <div>
+                  Hôm qua cứu <b>~{formatMoney(cat.savedYesterday)}</b> hàng hỏng · bữa cơm hôm nay ~{formatMoney(cat.foodCostToday)} →{' '}
+                  <b style={{ color: cat.savedYesterday >= cat.foodCostToday ? '#2ecc71' : '#e67e22' }}>
+                    {cat.savedYesterday >= cat.foodCostToday ? `đang lời ~${formatMoney(cat.savedYesterday - cat.foodCostToday)}` : `đang lỗ ~${formatMoney(cat.foodCostToday - cat.savedYesterday)}`}
+                  </b>
+                </div>
+                <div style={{ marginTop: 2 }}>
+                  7 ngày: cứu <b>~{formatMoney(cat.savedWeek)}</b> —{' '}
+                  {cat.verdict === 'saved' && <b style={{ color: '#2ecc71' }}>lời ~{formatMoney(cat.savedWeek - cat.foodWeek)}</b>}
+                  {cat.verdict === 'breakeven' && <b style={{ color: '#f1c40f' }}>vừa đủ ăn</b>}
+                  {cat.verdict === 'losing' && <b style={{ color: '#e67e22' }}>lỗ cơm ~{formatMoney(cat.foodWeek - cat.savedWeek)}</b>}
+                  {' '}(thức ăn ~{formatMoney(cat.foodWeek)}).
+                </div>
+                {!fed && <div style={{ color: '#e17055', marginTop: 2 }}>😾 Đói 1 ngày mất công dụng — cho ăn đều.</div>}
+              </div>
+            )}
+            {p.kind === 'cat' && pet && cat.verdict === 'nothing-spoiled' && (
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                7 ngày qua kho sạch, không hỏng gì — chưa thấy công, thức ăn vẫn ~{formatMoney(cat.foodCostToday)}/ngày.
+              </div>
+            )}
+            {p.kind === 'cat' && !pet && cat.weekSpoilCost >= CAT_PITCH_MIN && (
+              <div style={{ fontSize: 12, marginTop: 4, padding: '6px 8px', borderRadius: 8, background: 'rgba(231,76,60,0.1)', border: '1px dashed rgba(231,76,60,0.4)' }}>
+                🥀 Tuần này hàng hỏng <b>~{formatMoney(cat.weekSpoilCost)}</b> — nuôi mèo cứu được ~1/4 (~{formatMoney(Math.round(cat.weekSpoilCost * 0.25))}) với ~{formatMoney(cat.foodCostToday)}/ngày thức ăn.
+              </div>
+            )}
+            {p.kind === 'dog' && pet && dog.days > 0 && dog.weekBlocked > 0 && (
+              <div style={{ fontSize: 12, marginTop: 4, borderTop: '1px dashed rgba(255,255,255,0.12)', paddingTop: 4 }}>
+                🛡️ Tuần này chặn/thu lại <b>~{formatMoney(dog.weekBlocked)}</b> trộm & tiền giả.
+                <div style={{ ...sub, marginTop: 2 }}>Sổ rủi ro chung cả tiệm (gồm cả camera, mắt tinh) — không tách riêng được công con chó.</div>
+              </div>
+            )}
+            {p.kind === 'dog' && pet && dog.days > 0 && dog.weekBlocked <= 0 && dog.weekLeak > 0 && (
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                🛡️ Tuần này lọt <b>~{formatMoney(dog.weekLeak)}</b>, chưa chặn được gì — chó giữ cửa giúp giảm nguy cơ.
               </div>
             )}
           </div>
