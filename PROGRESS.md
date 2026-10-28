@@ -96,8 +96,9 @@
 1. ~~Audit tài chính~~ ✅ (GĐ155–158) · ~~4 hộp mờ nhẹ~~ ✅ (GĐ159) · ~~Audit trải nghiệm~~ ✅ · ~~GĐ160 người mới~~ ✅ · ~~GĐ161 nấu theo giờ~~ ✅.
 2. ~~GĐ162 dải Kế hoạch hôm nay~~ ✅.
 3. ~~GĐ163 đợt nhờ vào khung vắng~~ ✅ — 5/5 đề xuất audit trải nghiệm đã xong (GĐ160–163).
-4. Theo dõi sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (cần save người thật / sim nhiều ngày); nếu vẫn lặp → thêm biến thể hoàn cảnh khác (lễ, weekend).
-5. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (multi-shop supply chain) — chỉ tính khi GĐ162–163 xong và audit lần sau vẫn hết chiều sâu.
+4. **GĐ164 — 📖 "Sự kiện bất ngờ" thành chuyện kể (mini-arc 2–3 ngày) — ĐANG TRIỂN KHAI**: spec do Game Designer chốt 29/10, Leader duyệt: 4 arc A–D thay 4 def một-phát cùng id (mua_roi → "Mưa rào trước hiên", bong_da_kinh → "Cái kính vỡ", mua_dai → "Hẻm ngập ba ngày", livestream → "Đoạn clip hot"); state 1 field `surpriseArc?` (MERGE_DEEP an toàn save cũ); core ~+40 dòng (maybeSurprise/chooseSurprise); UI 4 bề mặt tái dùng (SurpriseAlert, chip dải GĐ162, tin sáng, mồi GĐ126); tổng thưởng arc 1.5–2× def cũ; arc E "Hàng xóm khai trương" để sau. Lý do: audit chỉ "sự kiện một-phát quay số, không chuyện kể" là điểm nông còn lại của vòng ngày sau khi 5 đề xuất đã xong.
+5. Theo dõi sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (cần save người thật / sim nhiều ngày); nếu vẫn lặp → thêm biến thể hoàn cảnh khác (lễ, weekend). Sau GĐ164: nếu pool sự kiện một-phát cấp thấp mỏng đi → thêm 1–2 def một-phát mới.
+6. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (multi-shop supply chain) — chỉ tính khi audit lần sau vẫn hết chiều sâu.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)
 
