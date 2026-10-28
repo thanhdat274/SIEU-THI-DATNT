@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../../core/store';
-import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, type ShopStyle } from '../../data/shopTiers';
+import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDelta, rentOf, spaceUsePct, type ShopStyle } from '../../data/shopTiers';
 import { FURNITURE } from '../../data/furniture';
 import { formatMoney } from '../../data/products';
 import { Footer, Swatch, styles, Tabs } from './shared';
@@ -179,16 +179,32 @@ export function ShopPreview({ style }: { style: ShopStyle }) {
 }
 
 export function ExpandTab() {
-  const { shopTier, pendingUpgrade, level, money, buyUpgrade } = useGame();
+  const { shopTier, pendingUpgrade, level, money, buyUpgrade, furniture, history } = useGame();
+  const rentNow = rentOf(shopTier);
+  // Doanh thu bình quân 7 ngày gần nhất — chỉ đáng tin khi có ≥ 3 ngày thật sự bán được hàng.
+  const recent = history.slice(-7);
+  const avgRev7 =
+    recent.filter((d) => d.revenue > 0).length >= 3
+      ? Math.round(recent.reduce((s, d) => s + d.revenue, 0) / recent.length)
+      : null;
+  const spaceVerdict = (pct: number) =>
+    pct < 50 ? 'còn nhiều chỗ trống, chưa vội mở rộng' : pct >= 80 ? 'sắp chật, mở để bày thêm' : 'vừa đà';
   return (
     <>
       <p style={styles.sub}>
         Mở rộng thì mặt tiền giữ nguyên, tiệm nới ra phía sau và hai bên. Đồ đạc giữ nguyên chỗ. Thợ làm qua đêm.
       </p>
+      <div style={{ fontSize: 13, margin: '0 0 10px' }}>
+        💰 Tiền nhà bây giờ: <b style={{ color: '#f1c40f' }}>{formatMoney(rentNow)}/ngày</b>
+      </div>
       <div style={{ display: 'grid', gap: 8 }}>
         {SHOP_TIERS.map((t, i) => {
           const done = i <= shopTier;
           const next = i === shopTier + 1;
+          const ahead = i > shopTier;
+          const rentThen = rentOf(i);
+          const rentUp = rentDelta(shopTier, i);
+          const usePct = spaceUsePct(furniture, i);
           return (
             <div key={t.name} style={{ ...styles.card, opacity: done || next ? 1 : 0.5 }}>
               <div style={{ flex: 1 }}>
@@ -196,6 +212,27 @@ export function ExpandTab() {
                 <div style={{ fontSize: 12, opacity: 0.75 }}>
                   {i === 0 ? 'Khởi đầu' : `${formatMoney(t.price)} · cần cấp ${t.unlock}`}
                 </div>
+                {i === shopTier && (
+                  <div style={{ fontSize: 12, marginTop: 2 }}>
+                    Tiền nhà hiện tại: <b style={{ color: '#f1c40f' }}>{formatMoney(rentNow)}/ngày</b>
+                    {' · '}Mặt bằng đang dùng ~{usePct}% — {spaceVerdict(usePct)}.
+                  </div>
+                )}
+                {ahead && (
+                  <div style={{ fontSize: 12, marginTop: 2 }}>
+                    Tiền nhà lên <b style={{ color: '#f1c40f' }}>{formatMoney(rentThen)}/ngày</b>
+                    {' '}(+<b style={{ color: '#f1c40f' }}>{formatMoney(rentUp)}</b>
+                    {' — '}30 ngày ~+{formatMoney(rentUp * 30)}), chưa kể thuê thợ.
+                    <div style={{ opacity: 0.75 }}>
+                      Đồ hiện tại chiếm ~{usePct}% — {spaceVerdict(usePct)}.
+                    </div>
+                    {next && avgRev7 !== null && (
+                      <div style={{ opacity: 0.75 }}>
+                        Tiền nhà mới ≈ {Math.round((rentThen / avgRev7) * 100)}% doanh thu bình quân 7 ngày.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               {done && <span>{i === shopTier ? '📍 Hiện tại' : '✅'}</span>}
               {next && pendingUpgrade && <span>🏗️ Đang thi công</span>}
