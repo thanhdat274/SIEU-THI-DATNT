@@ -21,8 +21,8 @@
 
 ## Trạng thái hiện tại (28/10/2026)
 
-- **1637/1637 test pass (149 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
-- Đã xong GĐ1–GĐ161.
+- **1665/1665 test pass (150 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
+- Đã xong GĐ1–GĐ162.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) đã bão hòa; UI responsive đa thiết bị đã audit kỹ (GĐ85–104, 116); trục "giá trị vs chi phí" đã soi kín gần hết tài sản: nhân sự tiệm chính/ca đêm/chi nhánh (141/142/144), mối hàng (143), bếp (145), trại (146/147), danh tiếng (148), quầy thịt cá (149), sổ nợ (150), hợp đồng (151), chi nhánh sau điện (152/153). Mở rộng Gánh hàng rong / Chợ phiên đã có (135–138), NG+ có dự phóng + mục tiêu vòng (139/140).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -50,6 +50,13 @@
 - Tuần đầu (ngày 1–5) nhiệm vụ ngày lặp y nguyên — pool tuỳ chọn rỗng ở cấp thấp; nhiệm vụ doanh thu ngày 1 = bán 100% kho khởi đầu (phạt người chỉnh giá thử).
 - Sự kiện bất ngờ: mật độ ổn nhưng một-phát quay số, không kéo dài thành chuyện kể.
 - 5 đề xuất làm sâu (không mở rộng): (1) mở pool nhiệm vụ tuỳ chọn từ cấp 1 + biến thể theo hoàn cảnh; (2) "kịch bản nấu theo giờ" (bám GĐ145); (3) dải "Kế hoạch hôm nay" gom mọi hẹn giờ lên 1 bề mặt; (4) đợt nhờ của khách quen rơi vào khung vắng (bám GĐ80); (5) vá 3 mớt ngày đầu (cảnh báo lịch tự động lỡ giờ vàng sáng · khoá Ra trại cấp 8 · nới nhiệm vụ doanh thu ngày 1). Nguyên lý tham chiếu: Stardew (thời gian rảnh = chi tiêu tự chọn), Hay Day (hẹn giờ thu hoạch trong phiên), My Happy Town (bảng tin mới mỗi sáng, NPC có việc). Ghi chi tiết đề xuất vào backlog GĐ160+.
+
+### GĐ162 — 🗓️ Dải "Kế hoạch hôm nay" trên HUD — XONG
+
+- Lý do: audit trải nghiệm — các mốc hẹn giờ nằm rải ở 6+ bảng; không có MỘT bề mặt trả lời "BÂY GIỜ việc kế tiếp là gì?" (nguyên lý Stardew "bảng việc-ngày" + My Happy Town đơn hẹn giờ — nguồn ghi ở audit GĐ159).
+- Triển khai: helper thuần đọc `src/data/todayAgenda.ts` ghép 6 nguồn có sẵn: khách quen ghé (visitsToday deterministic + lời hẹn giữ món), giờ vàng (3 band ×≥1.35), mẻ nấu đang chạy/xong + "nấu kịp 17h" (tái dùng GĐ161), khe điện thoại (chỉ khi có nhân viên giao — không có thì chip sẽ nói dối nên bỏ), hợp đồng/đơn tiệc hạn hôm nay (không có giờ trong state → xếp mốc 20h nhắc deadline, comment ghi rõ). Chợ phiên/sự kiện BỎ (cả ngày, không phải hẹn giờ).
+- UI: dải chip ngang trên HUD THAY slot IdleChip khi có hẹn (0 hẹn/hướng dẫn ngày đầu/panel mở → IdleChip như cũ hoặc ẩn); chip đầu (đến hạn/đang trong khung) viền vàng; bấm mở đúng panel; mobile cuộn ngang scrollbar ẩn — không đè dock (dùng ResizeObserver có sẵn); giờ qua useClock 1 lần/phút. QA mắt: 8 chip đúng thứ tự (5 khách quen + 3 giờ vàng), chip đầu nổi đúng, @390 không tràn, 0 lỗi console.
+- File: `todayAgenda.ts`, `Hud.tsx` (tối thiểu), `hud.css`, test 28 test.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -80,7 +87,7 @@
 ## Backlog tiếp theo
 
 1. ~~Audit tài chính~~ ✅ (GĐ155–158) · ~~4 hộp mờ nhẹ~~ ✅ (GĐ159) · ~~Audit trải nghiệm~~ ✅ · ~~GĐ160 người mới~~ ✅ · ~~GĐ161 nấu theo giờ~~ ✅.
-2. **GĐ162 — dải "Kế hoạch hôm nay"** (đề xuất #3 audit trải nghiệm): gom mọi hẹn giờ trong ngày (khách quen ghé, giờ vàng, khe điện thoại, đơn hạn, mẻ nấu kịp 17h, phiên chợ) thành MỘT dải theo thứ tự thời gian; UI/UX cẩn thận: thay slot IdleChip khi có hẹn, KHÔNG thêm card thứ 16 vào Sổ đầu ngày; 0 hẹn → ẩn; bấm mục mở đúng panel; không tràn @320/390.
+2. ~~GĐ162 dải Kế hoạch hôm nay~~ ✅.
 3. **GĐ163 — đợt nhờ của khách quen rơi vào khung vắng** (đề xuất #4): phân bố bước nhờ mới vào band ×0.6 + gợi ý IdleChip; giữ nguyên luật hết hạn không phạt của GĐ80; test phân bố theo seed.
 4. Theo dõi sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (cần save người thật / sim nhiều ngày); nếu vẫn lặp → thêm biến thể hoàn cảnh khác (lễ, weekend).
 5. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (multi-shop supply chain) — chỉ tính khi GĐ162–163 xong và audit lần sau vẫn hết chiều sâu.
@@ -243,3 +250,4 @@
 - GĐ159 — 🔍 Đóng nốt 4 hộp mờ nhẹ (hụi · phản công · MXH · máy bán hàng)
 - GĐ160 — 🌱 Người mới: vá ngày đầu + nhiệm vụ tuỳ chọn từ cấp 1
 - GĐ161 — 🍳 Kịch bản nấu theo giờ: hẹn-giờ-thu-hoạch trong phiên
+- GĐ162 — 🗓️ Dải Kế hoạch hôm nay trên HUD

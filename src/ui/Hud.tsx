@@ -12,6 +12,9 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { formatClock, questContext, useClock, useGame, type GameState } from '../core/store';
 import { claimableCount, dailyQuests, dailySetProgress, storyQuest, STORY_STEPS } from '../data/quests';
 import { idleTip, isSlowHour } from '../data/idle';
+import { todayAgenda, type AgendaPanel } from '../data/todayAgenda';
+import { reputationOf } from '../data/reputation';
+import { cookSpeed, bartenderBoost } from '../core/slices/orders';
 import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
 import { FEATURES, xpToNext } from '../data/levels';
@@ -524,9 +527,9 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
       {message && <div className="hud-toast" role="status">{message}</div>}
       <ChapterDialogue />
 
-      {/* Dưới cùng: gợi ý giờ vắng, gợi ý tương tác, rồi thanh công cụ */}
+      {/* Dưới cùng: dải kế hoạch hôm nay (hoặc gợi ý giờ vắng), gợi ý tương tác, rồi thanh công cụ */}
       <div className="hud-bottom">
-        <IdleChip />
+        <TodayAgendaStrip />
         {buildMode && (
           <div className="hud-alert build">
             {placing ? (
@@ -960,6 +963,55 @@ function IdleChip() {
     <div className="hud-chip hud-idle" title={tip.text}>
       <span aria-hidden="true">{tip.icon}</span>
       <span>{tip.text}</span>
+    </div>
+  );
+}
+
+/** GĐ162 — Dải "Kế hoạch hôm nay": mọi hẹn giờ trong ngày (khách quen ghé, giờ vàng,
+ *  mẻ nấu, khe điện thoại, hợp đồng/đơn tiệc hạn giao) ghép lại thành MỘT dải ngang
+ *  theo thứ tự thời gian, trả lời "BÂY GIỜ việc kế tiếp của tôi là gì?".
+ *  Hôm nay có ít nhất 1 hẹn → dải THAY slot IdleChip (chip đầu tiên — đang đến hạn
+ *  hoặc đang trong khung — được nhấn mạnh viền vàng); 0 hẹn → IdleChip hiện như cũ,
+ *  dải ẩn hoàn toàn. Bấm chip mở đúng bảng liên quan. Giờ đọc 1 lần/phút game
+ *  (useClock theo phút nguyên, như GĐ161) — không vẽ lại 60fps. */
+function TodayAgendaStrip() {
+  const minutes = useClock((c) => Math.floor(c.minutes));
+  const s = useGame();
+  const items = todayAgenda({
+    minutes,
+    day: s.day,
+    seed: s.weatherSeed,
+    level: s.level,
+    regulars: s.regulars,
+    rep: reputationOf(s.repLog),
+    reservations: s.reservations,
+    cookJobs: s.cookJobs,
+    stations: s.furniture.map((f) => f.type),
+    storage: s.storage,
+    cookSpeedMul: cookSpeed(useGame.getState),
+    bartenderBoost: bartenderBoost(useGame.getState),
+    hasCourier: s.staff.some((w) => w.role === 'courier'),
+    contracts: s.contracts,
+    order: s.order,
+  });
+  // Không có hẹn nào (hoặc đang hướng dẫn ngày đầu — như IdleChip, tránh chồng lớp) → trả slot IdleChip.
+  if (!items.length || tutorialActive(s)) return <IdleChip />;
+  // Bảng đang mở thì nhường chỗ (như IdleChip đã làm) — không chồng lớp dưới panel.
+  if (s.panel) return null;
+  return (
+    <div className="hud-agenda" role="list" aria-label="Kế hoạch hôm nay">
+      {items.map((it, i) => (
+        <button
+          key={it.key}
+          role="listitem"
+          className={`hud-agenda-chip${i === 0 ? ' next' : ''}`}
+          title={`${it.label} · bấm để mở bảng liên quan`}
+          onClick={() => s.openPanel({ type: it.panel as AgendaPanel })}
+        >
+          <span aria-hidden="true">{it.icon}</span>
+          <span>{it.label}</span>
+        </button>
+      ))}
     </div>
   );
 }
