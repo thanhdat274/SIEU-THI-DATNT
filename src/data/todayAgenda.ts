@@ -7,14 +7,15 @@
 // Nguyên lý Stardew ("bảng việc-ngày tự nhìn được") + My Happy Town (đơn hẹn giờ).
 // Tất cả nguyên liệu đã có từ các hệ GĐ trước — file này chỉ GHÉP, thuần đọc
 // 100%: không đổi bất kỳ slice/state nào, không SAVE_VERSION, không RNG mới
-// (mọi nguồn đều deterministic theo seed/ngày đã có sẵn).
+// (mọi nguồn đều deterministic theo seed/ngày đã có sẵn). GĐ163 thêm nguồn thứ
+// 7: bước nhờ của khách quen đang chờ (cửa sổ "tiện làm" theo khung vắng).
 //
 // Mỗi nguồn là một helper riêng, nhận TỪNG tham số cụ thể (không nhận cả
 // GameState) để dễ test; `todayAgenda` ghép lại, lọc cái đã qua giờ và sắp
 // tăng dần theo phút trong ngày.
 // ============================================================================
 
-import { REGULARS, visitsToday, type RegularProgress, type Reservation } from './regulars';
+import { REGULARS, regularById, visitsToday, type RegularProgress, type Reservation } from './regulars';
 import type { Reputation } from './reputation';
 import { productById } from './products';
 import { goldenHourBands } from './rhythm';
@@ -25,6 +26,7 @@ import { kitchenValue } from './kitchenValue';
 import { supplyContractById } from './contracts';
 import { partyOrderById } from './orders';
 import type { ActiveOrder } from './orders';
+import { errandWindow, pendingErrands, type RegularArcState } from './regularArc';
 import type { ContractState, CookJob } from '../core/gameTypes';
 
 /** Bảng mở được khi bấm chip — tập con các Panel['type'] có thật (gameTypes.ts). */
@@ -207,6 +209,34 @@ export function partyOrderAgenda(day: number, order: ActiveOrder | null | undefi
   }];
 }
 
+// ───── 6. Bước nhờ của khách quen đang chờ (GĐ163) ─────
+
+/** Chip "HHh Việc {khách} nhờ" cho bước nhờ vả (GĐ80) đang chờ, đặt ở ĐẦU cửa sổ "tiện làm"
+ *  (khung ghé của khách ∩ giờ vắng — errandWindow GĐ163). Chip hiện MỌI NGÀY đợt còn dở (đúng
+ *  chữ thiết kế: "hôm nay có cửa sổ nhờ (bước đang chờ)"): cửa sổ là giờ TIỆN trữ hàng chờ
+ *  khách, không hứa "khách ghé hôm nay" — ngày khách ghé thật thì chip "👋 {khách} ghé" ở nguồn
+ *  1 nói riêng. Đợt chờ thưởng / đã xong / đã quá hạn không chip (pendingErrands lọc sẵn). */
+export function errandAgenda(args: {
+  day: number;
+  arcs?: Record<string, RegularArcState>;
+}): AgendaItem[] {
+  const out: AgendaItem[] = [];
+  for (const e of pendingErrands(args.arcs, args.day)) {
+    const def = regularById(e.arc.regularId);
+    if (!def) continue;
+    const w = errandWindow(def);
+    out.push({
+      key: `errand-${e.regularId}`,
+      atMinutes: w.from,
+      untilMinutes: w.to,
+      icon: '🤝',
+      label: `${fmtHour(w.from)} Việc ${def.name} nhờ`,
+      panel: 'regulars',
+    });
+  }
+  return out;
+}
+
 // ───── Ghép lại: lọc quá giờ, sắp tăng dần ─────
 
 export interface TodayAgendaArgs {
@@ -218,6 +248,8 @@ export interface TodayAgendaArgs {
   regulars: Record<string, RegularProgress>;
   rep?: Reputation;
   reservations?: Record<string, Reservation>;
+  /** Đợt nhờ vả đang chạy/đã xong (biz.regularArcs — GĐ80). */
+  regularArcs?: Record<string, RegularArcState>;
   cookJobs?: CookJob[];
   stations?: string[];
   storage?: Record<string, number>;
@@ -228,7 +260,7 @@ export interface TodayAgendaArgs {
   order?: ActiveOrder | null;
 }
 
-/** Dải "Kế hoạch hôm nay": ghép 6 nguồn có sẵn, lọc cái đã qua giờ (trừ cái đang
+/** Dải "Kế hoạch hôm nay": ghép 7 nguồn có sẵn, lọc cái đã qua giờ (trừ cái đang
  *  trong khung), sắp tăng dần. Chip ĐẦU TIÊN = việc kế tiếp đang đến hạn/đang trong
  *  khung — UI nhấn mạnh chip đó. 0 hẹn → mảng rỗng (UI ẩn dải, trả slot IdleChip). */
 export function todayAgenda(args: TodayAgendaArgs): AgendaItem[] {
@@ -248,6 +280,7 @@ export function todayAgenda(args: TodayAgendaArgs): AgendaItem[] {
     ...phoneSlotAgenda(args.minutes, args.level, args.hasCourier ?? false),
     ...contractAgenda(args.day, args.contracts ?? {}),
     ...partyOrderAgenda(args.day, args.order),
+    ...errandAgenda({ day: args.day, arcs: args.regularArcs }),
   ];
   return all
     .filter((it) => args.minutes < it.untilMinutes)

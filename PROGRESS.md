@@ -21,8 +21,8 @@
 
 ## Trạng thái hiện tại (28/10/2026)
 
-- **1665/1665 test pass (150 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
-- Đã xong GĐ1–GĐ162.
+- **1682/1682 test pass (151 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
+- Đã xong GĐ1–GĐ163.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) đã bão hòa; UI responsive đa thiết bị đã audit kỹ (GĐ85–104, 116); trục "giá trị vs chi phí" đã soi kín gần hết tài sản: nhân sự tiệm chính/ca đêm/chi nhánh (141/142/144), mối hàng (143), bếp (145), trại (146/147), danh tiếng (148), quầy thịt cá (149), sổ nợ (150), hợp đồng (151), chi nhánh sau điện (152/153). Mở rộng Gánh hàng rong / Chợ phiên đã có (135–138), NG+ có dự phóng + mục tiêu vòng (139/140).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -58,6 +58,13 @@
 - UI: dải chip ngang trên HUD THAY slot IdleChip khi có hẹn (0 hẹn/hướng dẫn ngày đầu/panel mở → IdleChip như cũ hoặc ẩn); chip đầu (đến hạn/đang trong khung) viền vàng; bấm mở đúng panel; mobile cuộn ngang scrollbar ẩn — không đè dock (dùng ResizeObserver có sẵn); giờ qua useClock 1 lần/phút. QA mắt: 8 chip đúng thứ tự (5 khách quen + 3 giờ vàng), chip đầu nổi đúng, @390 không tràn, 0 lỗi console.
 - File: `todayAgenda.ts`, `Hud.tsx` (tối thiểu), `hud.css`, test 28 test.
 
+### GĐ163 — 🤝 Đợt nhờ của khách quen rơi vào khung vắng — XONG
+
+- Lý do: audit trải nghiệm — khung vắng 8:30–11h & 13–17h (×0.6) là "ca trực không quyết định". Nguyên lý NPC-có-việc (My Happy Town, ưu tiên Cao trong PHAN-TICH-THAM-KHAO-HAPPYTOWN.md) + Stardew "thời gian rảnh = chi tiêu tự chọn".
+- Fact-check: arc GĐ80 chốt bước mới chỉ tại lúc thanh toán của chính khách đó (regularVisit) — KHÔNG thể hẹn giờ lúc sinh. → Phương án ít đụng nhất (0 dòng core, 0 đổi save): SUY RA cửa sổ "tiện làm" thuần đọc `errandWindow(def)` = khung ghé ∩ khung vắng (lấy chồng dài nhất; không chạm → nguyên khung ghé, inSlow:false). Cả 3 đợt nhờ hiện có cửa sổ trọn trong khung vắng (Bà Năm 8h30–10h · Chú Ba 13–17h · Bé Na 16–17h).
+- Triển khai: `slowBands()` đối xứng goldenHourBands (rhythm.ts); `errandWindow`/`pendingErrands` thuần đọc (regularArc.ts); IdleChip mức ưu tiên 0 khi đang trong cửa sổ nhờ ("🤝 Bà Năm ... — 8h30–10h tiện làm", bấm mở Khách quen); chip "🤝 {giờ} Việc {khách} nhờ" trên dải GĐ162 mọi ngày đợt còn dở (cửa sổ là giờ TIỆN, không hứa khách ghé — chip ghé thật đã có ở nguồn riêng). Nhịp tiến/hết hạn/thưởng GĐ80 nguyên vẹn 100%.
+- File: `rhythm.ts`, `regularArc.ts`, `idle.ts`, `todayAgenda.ts`, `Hud.tsx` (1 dòng), test mới `errandTiming.test.ts` (17 test, quét 40 seed × 10 ngày). Lưu ý: khi có hẹn hôm nay, mặt hiển thị chính là chip trên dải GĐ162 (IdleChip nhường slot) — đã thiết kế cùng nhau.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc trong `src/data/*.ts` + một thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -88,7 +95,7 @@
 
 1. ~~Audit tài chính~~ ✅ (GĐ155–158) · ~~4 hộp mờ nhẹ~~ ✅ (GĐ159) · ~~Audit trải nghiệm~~ ✅ · ~~GĐ160 người mới~~ ✅ · ~~GĐ161 nấu theo giờ~~ ✅.
 2. ~~GĐ162 dải Kế hoạch hôm nay~~ ✅.
-3. **GĐ163 — đợt nhờ của khách quen rơi vào khung vắng** (đề xuất #4): phân bố bước nhờ mới vào band ×0.6 + gợi ý IdleChip; giữ nguyên luật hết hạn không phạt của GĐ80; test phân bố theo seed.
+3. ~~GĐ163 đợt nhờ vào khung vắng~~ ✅ — 5/5 đề xuất audit trải nghiệm đã xong (GĐ160–163).
 4. Theo dõi sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (cần save người thật / sim nhiều ngày); nếu vẫn lặp → thêm biến thể hoàn cảnh khác (lễ, weekend).
 5. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (multi-shop supply chain) — chỉ tính khi GĐ162–163 xong và audit lần sau vẫn hết chiều sâu.
 
@@ -251,3 +258,4 @@
 - GĐ160 — 🌱 Người mới: vá ngày đầu + nhiệm vụ tuỳ chọn từ cấp 1
 - GĐ161 — 🍳 Kịch bản nấu theo giờ: hẹn-giờ-thu-hoạch trong phiên
 - GĐ162 — 🗓️ Dải Kế hoạch hôm nay trên HUD
+- GĐ163 — 🤝 Đợt nhờ khách quen rơi vào khung vắng

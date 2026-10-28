@@ -32,6 +32,11 @@ export const GOLDEN_TRAFFIC = 1.3;
 /** Các khung giờ vàng (đông khách) trong ngày, theo nhịp cố định — dùng để báo trước cho người chơi. */
 export const goldenHourBands = () => TIME_BANDS.filter((b) => b.traffic >= GOLDEN_TRAFFIC);
 
+/** Các khung giờ vắng (band traffic < 0.8 — cùng ngưỡng `isSlowHour` ở idle.ts):
+ *  giữa buổi (8:30–11:00) và buổi chiều (13:00–17:00). Đối xứng với `goldenHourBands`
+ *  — GĐ163 dùng để đặt cửa sổ "tiện làm" cho việc nhờ của khách quen. */
+export const slowBands = () => TIME_BANDS.filter((b) => b.traffic < 0.8);
+
 /** Gộp danh sách khung giờ thành chuỗi "6h–8h30 · 11h–13h · 17h–20h". */
 export function describeHours(bands: TimeBand[]): string {
   return bands.map((b) => {

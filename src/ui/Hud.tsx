@@ -985,6 +985,7 @@ function TodayAgendaStrip() {
     regulars: s.regulars,
     rep: reputationOf(s.repLog),
     reservations: s.reservations,
+    regularArcs: s.biz.regularArcs, // GĐ163: bước nhờ của khách quen đang chờ → chip "Việc {khách} nhờ"
     cookJobs: s.cookJobs,
     stations: s.furniture.map((f) => f.type),
     storage: s.storage,

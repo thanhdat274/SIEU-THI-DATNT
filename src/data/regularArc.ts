@@ -4,6 +4,7 @@
 // này THUẦN ĐỌC (type-only, no store): mô tả "câu chuyện nhờ vả" — chuỗi 2–4 ngày, mỗi ngày
 // khách cần 1 món (đo bằng giỏ mua), xong đủ bước → phần thưởng + tiếng. Không import store.
 import { productById } from './products';
+import { slowBands } from './rhythm';
 
 export interface RegularArcStep {
   itemId: string;
@@ -113,4 +114,69 @@ export function arcReward(arc: RegularArcDef, level: number): number {
 /** Bước hiện tại của đợt (theo state.step); null nếu đã hết bước. */
 export function currentArcStep(arc: RegularArcDef, state: RegularArcState): RegularArcStep | null {
   return arc.steps[state.step] ?? null;
+}
+
+// ───── Cửa sổ "tiện làm" của bước nhờ (GĐ163) ─────
+// Audit trải nghiệm 28/10: khung vắng 8:30–11h & 13–17h (×0.6) là "ca trực không quyết định".
+// Cơ chế arc GĐ80 KHÔNG có khái niệm giờ: bước nhờ mới chỉ xuất hiện khi CHÍNH khách đó ghé
+// và thanh toán (core/slices/regulars.ts regularVisit) — không thể hẹn giờ lúc sinh bước. Phương
+// án ít đụng nhất đã chốt: SUY RA cửa sổ từ dữ liệu có sẵn (khung ghé visitFrom–visitUntil của
+// khách ∩ khung giờ vắng), KHÔNG thêm field vào save, KHÔNG đụng slice — nhịp tiến arc GĐ80
+// (theo lượt ghé, hết hạn không phạt) giữ nguyên 100%, chỉ thêm LỜI GỢI "việc này làm lúc nào".
+
+/** Cửa sổ gợi ý để lo bước nhờ: khoảng phút trong ngày. `inSlow` = cửa sổ nằm trong khung vắng
+ *  (fallback khi khung ghé của khách không chạm khung vắng nào — vd. khách chỉ ghé 6–9h sáng). */
+export interface ErrandWindow {
+  from: number;
+  to: number;
+  inSlow: boolean;
+}
+
+/**
+ * Cửa sổ "tiện làm" của việc nhờ của một khách quen: phần khung ghé của khách rơi vào GIỜ VẮNG
+ * (band traffic < 0.8, cùng ngưỡng isSlowHour) — lúc đó khách có mặt mà tiệm rảnh, chủ kẻo thời
+ * trữ hàng chờ khách. Nhiều khung vắng cùng chạm thì lấy khung CHỒNG DÀI NHẤT (khách ở quanh đây
+ * lâu nhất; hòa thì lấy khung sớm hơn). Khung ghé không chạm khung vắng nào → trả nguyên khung ghé
+ * (trung thực: đó vẫn là lúc duy nhất khách xuất hiện), `inSlow = false`.
+ * Xác định hoàn toàn theo def — không random, không state, gọi bao nhiêu lần cùng kết quả.
+ */
+export function errandWindow(def: { visitFrom: number; visitUntil: number }): ErrandWindow {
+  let best: ErrandWindow | null = null;
+  for (const b of slowBands()) {
+    const from = Math.max(def.visitFrom, b.from);
+    const to = Math.min(def.visitUntil, b.to);
+    if (to - from > (best ? best.to - best.from : 0)) best = { from, to, inSlow: true };
+  }
+  return best ?? { from: def.visitFrom, to: def.visitUntil, inSlow: false };
+}
+
+/** Một bước nhờ đang chờ người chơi lo (kèm định nghĩa arc + state để UI đọc thêm). */
+export interface PendingErrand {
+  /** Khóa của state trong biz.regularArcs (= regularId). */
+  regularId: string;
+  arc: RegularArcDef;
+  state: RegularArcState;
+  step: RegularArcStep;
+}
+
+/**
+ * Các bước nhờ ĐANG CHỜ của mọi đợt nhờ vả: đợt còn chạy (chưa done, chưa đủ bước đợi thưởng,
+ * chưa quá hạn — core/biz.ts khép đợt ở cuối ngày khi `expiresDay < day` nên trong ngày
+ * `expiresDay` đợt vẫn sống), có bước hiện tại hợp lệ, và arc tồn tại trong catalog (save lệch
+ * schema thì bỏ qua, không sập). Thứ tự theo key của record — xác định.
+ */
+export function pendingErrands(
+  arcs: Record<string, RegularArcState> | undefined,
+  day: number,
+): PendingErrand[] {
+  const out: PendingErrand[] = [];
+  for (const [regularId, st] of Object.entries(arcs ?? {})) {
+    if (st.done || st.waitingReward || day > st.expiresDay) continue;
+    const arc = arcById(st.arcId);
+    if (!arc) continue;
+    const step = currentArcStep(arc, st);
+    if (!step) continue;
+    out.push({ regularId, arc, state: st, step });
+  }
+  return out;
 }

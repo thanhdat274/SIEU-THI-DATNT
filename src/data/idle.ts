@@ -13,13 +13,16 @@ import { casesFor } from './products';
 import { ANIMALS, ANIMAL_ORDER, EGG_PER_TRAY, GARDEN_UNLOCK, plotReady } from './garden';
 import { SOCIAL_UNLOCK } from './social';
 import { FEATURES } from './levels';
+import { fmtHour } from './cookSchedule';
+import { regularById } from './regulars';
+import { errandWindow, pendingErrands } from './regularArc';
 
 /** Một gợi ý việc nên làm lúc vắng khách. */
 export interface IdleTip {
   icon: string;
   /** Tiếng Việt, ngắn (≤ 60 ký tự), bắt đầu bằng bối cảnh, ví dụ "🍃 Vắng khách — …". */
   text: string;
-  act: 'planogram' | 'order' | 'garden' | 'mop' | 'cook' | 'online' | 'prices' | 'social' | 'morning' | null;
+  act: 'planogram' | 'order' | 'garden' | 'mop' | 'cook' | 'online' | 'prices' | 'social' | 'morning' | 'regulars' | null;
 }
 
 /** Mở đầu mọi gợi ý: nêu bối cảnh vắng khách. */
@@ -75,9 +78,39 @@ const gardenTip = (s: GameState): IdleTip | null => {
   return null;
 };
 
+/** Việc nhờ của khách quen đáng làm NGAY LÚC NÀY không (GĐ163): duyệt các bước nhờ đang chờ
+ *  (pendingErrands — đợt còn chạy, chưa quá hạn), trả gợi ý khi đang đứng TRONG cửa sổ "tiện làm"
+ *  của bước đó (khung ghé của khách ∩ giờ vắng — errandWindow). Không gate theo visitsToday: cửa
+ *  sổ là "giờ TIỆN trữ hàng chờ khách" (trung thực mọi ngày của đợt), không hứa "khách ghé hôm
+ *  nay" — đúng chữ thiết kế GĐ163. Ngoài cửa sổ / không đợt nào chờ → null, rơi xuống các mức
+ *  gợi ý thường. Lưu ý xếp lớp với dải Kế hoạch hôm nay (GĐ162): ngày khách có ghé, dải chip
+ *  thường chiếm slot nên chip nhờ này hiện qua dải; IdleChip là mặt dự phòng khi dải nhường slot.
+ *  Text KHÔNG mở đầu bằng LEAD "🍃 Vắng khách —" như các mức khác: đây là lời nhờ cá nhân của
+ *  khách (icon 🤝 đủ nói bối cảnh) mà budget chữ ≤ 60 của IdleTip là có hạn. */
+const errandTip = (s: GameState): IdleTip | null => {
+  const now = ((s.minutes % 1440) + 1440) % 1440;
+  for (const e of pendingErrands(s.biz.regularArcs, s.day)) {
+    const def = regularById(e.arc.regularId);
+    if (!def) continue;
+    const w = errandWindow(def);
+    if (now < w.from || now >= w.to) continue;
+    return {
+      icon: '🤝',
+      text: `${def.name} nhờ ${e.step.note} — ${fmtHour(w.from)}–${fmtHour(w.to)} tiện làm`,
+      act: 'regulars',
+    };
+  }
+  return null;
+};
+
 /** Gợi ý ưu tiên cao nhất theo state; null khi state bất thường (thực tế luôn có mục 9 thay null).
  *  Duyệt theo thứ tự cố định, không random — gọi bao nhiêu lần cũng ra một kết quả. */
 export const idleTip = (s: GameState): IdleTip | null => {
+  // 0. Việc khách quen nhờ (GĐ80/GĐ163): đang trong cửa sổ "tiện làm" của bước nhờ đang chờ
+  //    (khung ghé của khách ∩ giờ vắng) → giờ chết có việc có đích, xếp trước mọi việc tiệm.
+  //    Ngoài cửa sổ thì rơi xuống các mức dưới như cũ.
+  const errand = errandTip(s);
+  if (errand) return errand;
   // 1. Bày hàng: còn ô kệ trống mà kho còn hàng bày được
   const empty = emptySlotCount(s);
   if (empty > 0 && Object.values(s.storage).some((q) => q > 0))
