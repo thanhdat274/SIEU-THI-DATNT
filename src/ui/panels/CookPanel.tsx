@@ -1,8 +1,10 @@
-import { useGame } from '../../core/store';
+import { useGame, useClock } from '../../core/store';
 import { useState } from 'react';
 import { RECIPES, STATIONS, type CookingStation } from '../../data/recipes';
 import { formatMoney, productById } from '../../data/products';
 import { kitchenValue } from '../../data/kitchenValue';
+import { cookAdvice } from '../../data/cookSchedule';
+import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
 import { Footer, styles, Tabs } from './shared';
 
@@ -10,6 +12,11 @@ import { Footer, styles, Tabs } from './shared';
 export function CookPanel() {
   const { level, storage, furniture, cookJobs, startCook, closePanel, openPanel, setBuildMode } = useGame();
   const day = useGame((s) => s.day);
+  // GĐ161: giờ hiện tại (vẽ lại 1 lần mỗi phút game như Hud) + tốc độ trạm thật
+  // (đầu bếp/pha chế trực ca — cùng nguồn cookSpeed/bartenderBoost với tick đồng hồ)
+  const minutes = useClock((c) => Math.floor(c.minutes));
+  const cSpeed = cookSpeed(useGame.getState);
+  const bBoost = bartenderBoost(useGame.getState);
   // Tab theo trạm: sổ nấu đầy đủ dài ~9.000px trên điện thoại — chọn trạm là thấy ngay món cần nấu.
   // Màn hẹp mặc định mở trạm đầu tiên đang sở hữu (ít cuộn nhất); desktop rộng giữ "Tất cả" để xem toàn cảnh.
   const [station, setStation] = useState<'all' | CookingStation>(() => {
@@ -82,6 +89,10 @@ export function CookPanel() {
                 const fest = r.festival ? FESTIVALS.find((f) => f.id === r.festival) : undefined;
                 const outOfSeason = !!fest && festivalOn(day)?.id !== fest.id;
                 const reason = locked ? `🔒 Cấp ${r.unlock}` : outOfSeason ? `Ngoài dịp ${fest!.name}` : noStation ? 'Thiếu trạm' : stationFull ? 'Trạm bận' : missing.length ? 'Thiếu nguyên liệu' : null;
+                // GĐ161: khuyến nghị thời điểm (kịp giờ vàng nào) — chỉ khi món nấu được ngay được
+                const advice = !reason
+                  ? cookAdvice(r.id, minutes, Math.ceil(r.durationMin / (cSpeed * (r.station === 'drink_counter' ? bBoost : 1))))
+                  : null;
                 return (
                   <div key={r.id} style={{ ...styles.card, opacity: locked || outOfSeason ? 0.5 : 1 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -107,6 +118,9 @@ export function CookPanel() {
                         <div style={{ fontSize: 12, color: '#e74c3c', marginTop: 2 }}>
                           ⚠️ Nguyên liệu bán rời còn hời hơn nấu ~{formatMoney(kv.delta)}
                         </div>
+                      )}
+                      {advice && (
+                        <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>⏰ {advice}</div>
                       )}
                     </div>
                     {locked ? (

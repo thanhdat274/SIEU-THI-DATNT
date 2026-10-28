@@ -1,9 +1,13 @@
 import { ProductIcon } from '../ProductIcon';
 import { useState } from 'react';
-import { useGame, formatClock, type DayRecord, type DayStats, type ItemLine } from '../../core/store';
+import { useGame, useClock, formatClock, type DayRecord, type DayStats, type ItemLine } from '../../core/store';
 import { rentOf } from '../../data/shopTiers';
 import { furnitureDef } from '../../data/furniture';
 import { xpToNext } from '../../data/levels';
+import { RECIPES } from '../../data/recipes';
+import { kitchenValue } from '../../data/kitchenValue';
+import { pickEveningPrep } from '../../data/cookSchedule';
+import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { formatMoney, productById } from '../../data/products';
 import { describeRep, meetsRep, REP_FACTORS, REP_INFO, REP_MIN_SAMPLES, reputationOf, type RepSample } from '../../data/reputation';
 import { repPayoff, repPayoffFocus } from '../../data/repPayoff';
@@ -551,6 +555,27 @@ export function MorningPanel() {
   const butcherV = butcherValueToday(staff);
   const recentMeat = recentMeatRevenue(analytics, 7);
   const meatMissed = missedMeatRevenue(recentMeat.revenue, butcherV);
+  // GĐ161 "kịch bản nấu theo giờ": khung 13–17h vắng là thời điểm bắt đầu mẻ nấu
+  // cho giờ vàng tối. 1 dòng duy nhất khi có món nấu được và giờ đang 13–17h —
+  // chọn món mẻ DÀI NHẤT vẫn kịp 17h (mốc bắt đầu muộn nhất còn đúng sự thật);
+  // hòa duration thì lấy món lời nhất/phút trạm (GĐ145). Thuần đọc, không đổi state.
+  const nowMinutes = useClock((c) => Math.floor(c.minutes));
+  const eveningPrep = (() => {
+    if (nowMinutes < 13 * 60 || nowMinutes >= 17 * 60) return null;
+    const cSpeed = cookSpeed(useGame.getState);
+    const bBoost = bartenderBoost(useGame.getState);
+    const cands = RECIPES
+      .filter((r) => !r.festival && level >= r.unlock
+        && furniture.some((f) => f.type === r.station)
+        && r.inputs.every((i) => (storage[i.productId] ?? 0) >= i.quantity))
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        durationMin: Math.ceil(r.durationMin / (cSpeed * (r.station === 'drink_counter' ? bBoost : 1))),
+        perMinute: kitchenValue(r).perMinute,
+      }));
+    return pickEveningPrep(cands, nowMinutes);
+  })();
   return (
     <>
       <h2 style={styles.title}>☀️ {shopName} · Sổ đầu ngày {day} ({today.day}/{today.month})</h2>
@@ -674,6 +699,15 @@ export function MorningPanel() {
           🧭 Nếp vận hành: chuỗi <b>{cleanStreak}</b> ngày sạch · kỷ lục <b>{biz.cleanBest ?? 0}</b> · {cleanExtra}
         </div>
       </div>
+
+      {/* GĐ161: 1 dòng gợi ý duy nhất khi mở sổ trong khung vắng 13–17h — nấu kịp giờ vàng tối */}
+      {eveningPrep && (
+        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #f1c40f' }}>
+          <div style={{ fontSize: 12 }}>
+            🍳 Muốn kịp giờ vàng tối: bắt đầu nấu <b>{eveningPrep.name}</b> trước ~{formatClock(eveningPrep.startBy)}.
+          </div>
+        </div>
+      )}
 
       {hasMeatCounter && butcherV.skill < MAX_BUTCHER_STAR && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: `3px solid ${butcherV.present ? '#e67e22' : '#e74c3c'}`, background: butcherV.present ? undefined : 'rgba(231,76,60,0.12)' }}>
