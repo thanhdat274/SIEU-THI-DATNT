@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../core/store';
 import { CONVENIENCE, ALCOHOL_BRAWL_CHANCE, coverMul, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, hasAlcohol, hasPower, isHotFood, nightNeed, shelfTotal, uncoveredHours, vendingTotal } from '../data/branches';
 import { dailyWage } from '../data/staff';
+import { branchNetToday } from '../data/branchNet';
 import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney, productById } from '../data/products';
 
@@ -61,7 +62,16 @@ export function BranchPanel() {
           <div>Hôm nay: <b>{branch.customersToday}</b> khách · thu <b>{formatMoney(branch.revenueToday)}</b>
             {branch.missedToday > 0 && <> · {branch.missedToday} khách bỏ về</>}{branch.lostToday > 0 && <> · mất trộm {branch.lostToday} món</>}</div>
           <div>Chi phí mỗi ngày: {formatMoney(wages)} lương (mặt bằng đã mua đứt, không thuê)</div>
-          <div>💰 Lãi thô hôm nay: <b style={{ color: branch.revenueToday - wages >= 0 ? '#27ae60' : '#e67e22' }}>{formatMoney(branch.revenueToday - wages)}</b> <span style={st.sub}>(thu − lương; chưa trừ điện giảm vào cuối ngày)</span></div>
+          {(() => {
+            const bn = branchNetToday(branch);
+            const chipColor = bn.verdict === 'profit' ? '#27ae60' : bn.verdict === 'loss' ? '#e74c3c' : '#7f8c8d';
+            const chipText = bn.verdict === 'profit' ? 'lời' : bn.verdict === 'loss' ? 'lỗ' : 'chưa có thu';
+            return (
+              <div>💰 Lời ròng hôm nay: <b style={{ color: chipColor }}>{formatMoney(bn.net)}</b>{' '}
+                <span style={{ color: chipColor, border: `1px solid ${chipColor}`, borderRadius: 10, padding: '0 7px', fontSize: 11 }}>{chipText}</span>{' '}
+                <span style={st.sub}>(quầy {formatMoney(branch.revenueToday)} + máy {formatMoney(branch.vendingRevenueToday ?? 0)} − lương {formatMoney(bn.wages)} − điện {formatMoney(bn.power)})</span></div>
+            );
+          })()}
           <div>Hàng trên kệ: <b>{shelfTotal(branch.shelf)}</b>/{CONVENIENCE.shelfCap} món (lấy từ kho chung)</div>
           {top.length > 0 && <div style={st.sub}>{top.map(([id, q]) => `${isHotFood(id) ? '🔥' : ''}${productById(id).name} ×${q}`).join(' · ')}</div>}
           <div style={st.sub}>🍽️ Thực đơn xoay theo ca: sáng (5–11h) ưu tiên điểm tâm — bánh mì, xôi, cà phê; trưa (11–15h) ưu tiên cơm phần, đồ ăn nhanh; tối–đêm thiên về đồ nóng & món đêm (giá đêm cao hơn).</div>
