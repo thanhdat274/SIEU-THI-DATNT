@@ -75,7 +75,7 @@ export function WearRow({ uid }: { uid: number }) {
     <div style={{ ...styles.card, gap: 10, marginBottom: 8, outline: f.broken ? '2px solid #e74c3c' : undefined }}>
       <span>{f.broken ? '❌ Đang hỏng: khách không lấy được hàng' : `🔧 Độ mòn ${wear}%`}</span>
       <div style={{ flex: 1, height: 6, background: '#555', borderRadius: 3 }}>
-        <div style={{ width: `${wear}%`, height: '100%', borderRadius: 3, background: wear >= RISK_RULES.wear.breakFrom ? '#e74c3c' : '#f39c12' }} />
+        <div style={{ width: `${wear}%`, height: '100%', borderRadius: 3, background: wear >= RISK_RULES.wear.breakFrom ? '#e74c3c' : '#e67e22' }} />
       </div>
       <button style={styles.btn} disabled={!canService} title={canService ? '' : `Mòn từ ${RISK_RULES.wear.serviceFrom}% mới cần bảo trì`} onClick={() => repairFurniture(uid)}>
         {f.broken ? 'Sửa' : 'Bảo trì'} {formatMoney(repairCost(f.type))}

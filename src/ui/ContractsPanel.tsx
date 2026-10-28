@@ -101,7 +101,7 @@ function ActiveContracts() {
                 const p = contractStreakProgress(cs, day);
                 const pct = Math.min(100, (p.cycle / CONTRACT_STREAK_EVERY) * 100);
                 const barColor = p.cycle >= CONTRACT_STREAK_EVERY - 1 || p.atMilestone ? '#f1c40f' : '#74b9ff';
-                const riskColor = p.risk === 'overdue' ? '#e74c3c' : p.risk === 'due_soon' ? '#f1c40f' : '#c9a20a';
+                const riskColor = p.risk === 'overdue' ? '#e74c3c' : '#f1c40f';
                 return (
                   <div style={{ fontSize: 12, marginTop: 6 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

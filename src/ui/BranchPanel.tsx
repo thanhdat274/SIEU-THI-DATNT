@@ -50,7 +50,7 @@ export function BranchPanel() {
     <>
       <h2 style={st.title}>🏪 {CONVENIENCE.name}</h2>
       <div style={st.row}>
-        <span style={{ ...st.badge, background: branch.open ? '#27ae60' : '#7f8c8d' }}>{branch.open ? 'ĐANG MỞ 24/7' : 'ĐANG ĐÓNG'}</span>
+        <span style={{ ...st.badge, background: branch.open ? '#2ecc71' : '#7f8c8d' }}>{branch.open ? 'ĐANG MỞ 24/7' : 'ĐANG ĐÓNG'}</span>
         <button style={st.primary} onClick={toggleBranch}>{branch.open ? 'Đóng cửa' : 'Mở cửa'}</button>
       </div>
       <div style={st.tabs}>
@@ -66,7 +66,7 @@ export function BranchPanel() {
           <div>Chi phí mỗi ngày: {formatMoney(wages)} lương (mặt bằng đã mua đứt, không thuê)</div>
           {(() => {
             const op = branchOperatingBalanceToday(branch);
-            const chipColor = op.verdict === 'surplus' ? '#27ae60' : op.verdict === 'deficit' ? '#e74c3c' : '#7f8c8d';
+            const chipColor = op.verdict === 'surplus' ? '#2ecc71' : op.verdict === 'deficit' ? '#e74c3c' : '#7f8c8d';
             const chipText = op.verdict === 'surplus' ? 'dư vận hành' : op.verdict === 'deficit' ? 'âm' : 'chưa có thu';
             return (
               <div>🧮 Còn lại sau lương & điện: <b style={{ color: chipColor }}>{formatMoney(op.balance)}</b>{' '}

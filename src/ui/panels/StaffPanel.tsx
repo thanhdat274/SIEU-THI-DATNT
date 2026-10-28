@@ -136,9 +136,9 @@ export function StaffPanel() {
   );
 }
 
-/** Thanh mệt: xanh → vàng (bán chậm) → đỏ (dễ nghỉ việc). */
+/** Thanh mệt: xanh → cam (bán chậm) → đỏ (dễ nghỉ việc). */
 export function Fatigue({ value }: { value: number }) {
-  const color = value >= FATIGUE_QUIT ? '#e74c3c' : value >= FATIGUE_SLOW ? '#f39c12' : '#2ecc71';
+  const color = value >= FATIGUE_QUIT ? '#e74c3c' : value >= FATIGUE_SLOW ? '#e67e22' : '#2ecc71';
   return (
     <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, minWidth: 140 }} title="Mệt cao: bán chậm, dễ nghỉ việc">
       😓 <span style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.15)' }}>
@@ -168,8 +168,8 @@ function BranchRoster() {
       {groups.map(([sh, label, list]) => (
         <div key={sh} style={{ display: 'grid', gap: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.85 }}>🕒 {label}</span>
-          {sh !== 'full' && !list.some((x) => x.role === 'cashier') && <small style={{ color: '#f39c12' }}>⚠️ Thiếu thu ngân — ca này khách tới không ai bán</small>}
-          {sh === 'night' && !list.some((x) => x.role === 'guard') && <small style={{ color: '#f39c12' }}>⚠️ Ca đêm chưa có bảo vệ</small>}
+          {sh !== 'full' && !list.some((x) => x.role === 'cashier') && <small style={{ color: '#e67e22' }}>⚠️ Thiếu thu ngân — ca này khách tới không ai bán</small>}
+          {sh === 'night' && !list.some((x) => x.role === 'guard') && <small style={{ color: '#e67e22' }}>⚠️ Ca đêm chưa có bảo vệ</small>}
           {!list.length && <small style={{ opacity: 0.6 }}>Chưa có ai.</small>}
           {list.map((x) => (
             <div key={x.id} style={staffSt.card}>
@@ -236,7 +236,7 @@ export function DeployBoard() {
             <small>{site === 'main' ? '🏬 Tiệm chính' : '🏪 Tiện lợi 24/7'}</small>
             <b>{n}/{max} người</b>
             {gaps.length
-              ? gaps.map((g) => <small key={g} style={{ color: '#f39c12' }}>⚠️ {g}</small>)
+              ? gaps.map((g) => <small key={g} style={{ color: '#e67e22' }}>⚠️ {g}</small>)
               : <small style={{ color: '#2ecc71' }}>✅ đủ người các ca</small>}
             {site === 'branch' && (
               <small style={{ opacity: 0.8 }}>

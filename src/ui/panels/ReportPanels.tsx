@@ -313,9 +313,9 @@ export function SummaryPanel({ day }: { day: number }) {
                     style={{ background: 'transparent', border: 'none', padding: '6px 0', cursor: 'pointer', width: '100%', color: 'inherit', textAlign: 'left', fontSize: 12, display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', borderRadius: 6 }}>
                     <span>{f.icon} {f.label}: <b>{f.unit === 'money' ? formatMoney(f.today) : `${f.today} lượt`}</b></span>
                     {f.beating ? (
-                      <span style={{ color: '#27ae60', fontWeight: 600 }}>🔥 Đã phá {f.unit === 'money' ? formatMoney(f.best!) : `${f.best!} lượt`}</span>
+                      <span style={{ color: '#2ecc71', fontWeight: 600 }}>🔥 Đã phá {f.unit === 'money' ? formatMoney(f.best!) : `${f.best!} lượt`}</span>
                     ) : (
-                      <span style={{ color: f.remaining <= Math.round((f.best ?? 1) * 0.2) ? '#c9a20a' : 'inherit', opacity: f.remaining > Math.round((f.best ?? 1) * 0.2) ? 0.75 : 1 }}>
+                      <span style={{ color: f.remaining <= Math.round((f.best ?? 1) * 0.2) ? '#f1c40f' : 'inherit', opacity: f.remaining > Math.round((f.best ?? 1) * 0.2) ? 0.75 : 1 }}>
                         🎯 còn {f.unit === 'money' ? formatMoney(f.remaining) : `${f.remaining} lượt`}
                       </span>
                     )}
@@ -752,7 +752,7 @@ export function MorningPanel() {
                 Hôm qua: {biz.quanNuocLast.served}/{biz.quanNuocLast.wanted} ly · {formatMoney(biz.quanNuocLast.revenue)}
               </div>
               {quanHealth?.shortYesterday && quanHealth.missedRevenue > 0 && (
-                <div style={{ fontSize: 12, marginTop: 2, color: '#f39c12' }}>💸 Hôm qua bỏ lỡ ~{formatMoney(quanHealth.missedRevenue)} vì kho thiếu — nhập nước/ngọt/cà phê để bán đủ.</div>
+                <div style={{ fontSize: 12, marginTop: 2, color: '#e67e22' }}>💸 Hôm qua bỏ lỡ ~{formatMoney(quanHealth.missedRevenue)} vì kho thiếu — nhập nước/ngọt/cà phê để bán đủ.</div>
               )}
             </>
           ) : (
@@ -762,7 +762,7 @@ export function MorningPanel() {
             Hôm nay: {biz.quanNuoc.staff} nhân viên · giá {QUAN_PRICE_OPTIONS[biz.quanNuoc.price].label} · lương {formatMoney(biz.quanNuoc.staff * QUAN_NUOC_WAGE)}/ngày
           </div>
           {quanHealth && !quanHealth.driesMain && quanHealth.hire && quanHealth.hireMarginal !== null && (
-            <div style={{ fontSize: 12, marginTop: 2, color: quanHealth.hireMarginal >= 0 ? '#27ae60' : '#e67e22' }}>
+            <div style={{ fontSize: 12, marginTop: 2, color: quanHealth.hireMarginal >= 0 ? '#2ecc71' : '#e67e22' }}>
               {quanHealth.hireMarginal >= 0
                 ? `💰 Tuyển 1 người: lời ròng ~${formatMoney(quanHealth.hire.profit)} (đang ~${formatMoney(quanHealth.tonight.profit)}, +${formatMoney(quanHealth.hireMarginal)}/ngày) — đáng so với lương ${formatMoney(QUAN_NUOC_WAGE)}.`
                 : `💰 Tuyển thêm 1 người chưa đáng: bán thêm ${formatMoney(quanHealth.hire.served - quanHealth.tonight.served)} ly nhưng lương ${formatMoney(QUAN_NUOC_WAGE)}/ngày cao hơn lời tăng (lời ròng ~${formatMoney(quanHealth.hire.profit)} vs ~${formatMoney(quanHealth.tonight.profit)}).`}
@@ -954,13 +954,13 @@ export function MorningPanel() {
                     const missing = missingForContract(def, storage);
                     return missing.length
                       ? <span style={{ color: '#ff8a7a' }}> · thiếu: {missing.map((m) => `${m.need} ${productById(m.id).name}`).join(', ')}</span>
-                      : <span style={{ color: '#c9a20a' }}> · kho đủ · nên 🤝 Cam kết để giao được thêm {formatMoney(commitBonusValue(def))} tin cậy</span>;
+                      : <span style={{ color: '#f1c40f' }}> · kho đủ · nên 🤝 Cam kết để giao được thêm {formatMoney(commitBonusValue(def))} tin cậy</span>;
                   })()}
                 </span>
                 <button style={styles.btn} onClick={() => openPanel({ type: 'contracts' })}>Xem</button>
               {(() => {
                 const p = contractStreakProgress(cs, day);
-                const riskColor = p.risk === 'overdue' ? '#e74c3c' : p.risk === 'due_soon' ? '#f1c40f' : '#c9a20a';
+                const riskColor = p.risk === 'overdue' ? '#e74c3c' : '#f1c40f';
                 return (
                   <div style={{ fontSize: 12, marginTop: 4, width: '100%' }}>
                     {p.streak > 0 && (
@@ -1289,11 +1289,11 @@ export function HistoryPanel() {
           </g>
         ))}
         <polyline points={line((d) => d.revenue)} fill="none" stroke="#2e86de" strokeWidth={2} />
-        <polyline points={line((d) => d.profit)} fill="none" stroke="#27ae60" strokeWidth={2} />
+        <polyline points={line((d) => d.profit)} fill="none" stroke="#2ecc71" strokeWidth={2} />
         {rated.length > 1 && <polyline points={ratingLine} fill="none" stroke="#f1c40f" strokeWidth={2} strokeDasharray="5 3" />}
       </svg>
       <p style={{ ...styles.sub, marginTop: 8 }}>
-        <span style={{ color: '#2e86de' }}>━ Doanh thu</span> · <span style={{ color: '#27ae60' }}>━ Lãi</span> · <span style={{ color: '#c9a20a' }}>╌ ⭐ đánh giá</span> · ▮ Khách
+        <span style={{ color: '#2e86de' }}>━ Doanh thu</span> · <span style={{ color: '#2ecc71' }}>━ Lãi</span> · <span style={{ color: '#f1c40f' }}>╌ ⭐ đánh giá</span> · ▮ Khách
       </p>
       <p style={styles.row}>
         🏆 Lãi nhất: <b>ngày {best.day}</b> — doanh thu {formatMoney(best.revenue)}, lãi {formatMoney(best.profit)}

@@ -76,11 +76,11 @@ export function GardenPanel() {
           })()}
 
           {order ? (
-            <div style={{ ...styles.card, display: 'block', borderLeft: '3px solid #f39c12' }}>
+            <div style={{ ...styles.card, display: 'block', borderLeft: '3px solid #e67e22' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
                 <b>📦 Đơn của {order.from}</b>
                 <span style={{ display: 'flex', gap: 4 }}>
-                  <button style={{ ...styles.btn, background: orderReady ? '#27ae60' : '#555', color: '#fff' }} onClick={deliverFarmOrder}>
+                  <button style={{ ...styles.btn, background: orderReady ? '#2ecc71' : '#555', color: '#fff' }} onClick={deliverFarmOrder}>
                     Giao đơn · {formatMoney(orderPay)}
                   </button>
                 </span>
@@ -117,7 +117,7 @@ export function GardenPanel() {
                 </button>
               )}
               {nextTier ? (
-                <button style={{ ...styles.btn, background: level >= nextTier.unlock && money >= nextTier.cost ? '#27ae60' : '#555', color: '#fff', marginLeft: 8 }}
+                <button style={{ ...styles.btn, background: level >= nextTier.unlock && money >= nextTier.cost ? '#2ecc71' : '#555', color: '#fff', marginLeft: 8 }}
                   onClick={expandFarm} title={level < nextTier.unlock ? `Cần cấp ${nextTier.unlock}` : `Mua thêm ${nextTier.plots - garden.plots.length} luống và chuồng mới`}>
                   ⬆️ Mở rộng "{nextTier.name}" ({formatMoney(nextTier.cost)}){level < nextTier.unlock ? ` — cấp ${nextTier.unlock}` : ''}
                 </button>
@@ -177,7 +177,7 @@ export function GardenPanel() {
                     {CROPS.filter((c) => c.unlock <= level).map((c) => {
                       const onSeason = inSeason(c, day);
                       return (
-                        <button key={c.id} style={{ ...styles.btn, background: money >= c.seedCost ? (onSeason && c.season ? '#1e8449' : '#27ae60') : '#555', color: '#fff' }}
+                        <button key={c.id} style={{ ...styles.btn, background: money >= c.seedCost ? (onSeason && c.season ? '#1e8449' : '#2ecc71') : '#555', color: '#fff' }}
                           onClick={() => plantCrop(i, c.id)}
                           title={`~${c.days} ngày, thu ${c.yieldQty} món${c.regrowDays ? `, sau đó mỗi ${c.regrowDays} ngày ra trái tiếp` : ''}${c.season ? `, mùa vụ tháng ${c.season[0]}–${c.season[1]} (đúng vụ ×1,5)` : ''}`}>
                           {c.icon} {c.name} ({formatMoney(c.seedCost)}){onSeason && c.season ? ' 🌤️' : ''}
@@ -210,7 +210,7 @@ export function GardenPanel() {
                         <button style={{ ...styles.btn, background: hungry ? '#c0392b' : '#8e44ad', color: '#fff' }} onClick={() => feedPen(kind)}>
                           {hungry ? '⚠️ Hết cám — mua lẻ' : '🌾 Cho ăn'}
                         </button>
-                        <button style={{ ...styles.btn, background: fattenReady(kind, pen) ? '#f39c12' : '#555', color: '#fff' }} onClick={() => sellFattened(kind)}
+                        <button style={{ ...styles.btn, background: fattenReady(kind, pen) ? '#e67e22' : '#555', color: '#fff' }} onClick={() => sellFattened(kind)}
                           title={fattenReady(kind, pen) ? `Xuất chuồng: ~${(def.meatPerHead ?? 0) * pen.count} ${productById(def.productId).name} vào kho` : `Cần cho ăn đủ ${def.fattenDays} ngày`}>
                           🏷️ Xuất chuồng ({pen.fattened ?? 0}/{def.fattenDays})
                         </button>
@@ -221,7 +221,7 @@ export function GardenPanel() {
                         <button style={{ ...styles.btn, background: hungry ? '#c0392b' : '#8e44ad', color: '#fff' }} onClick={() => feedPen(kind)}>
                           {hungry ? '⚠️ Hết cám — mua lẻ' : '🌾 Cho ăn'}
                         </button>
-                        <button style={{ ...styles.btn, background: pen.pending >= EGG_PER_TRAY ? '#f39c12' : '#555', color: '#fff' }} onClick={() => collectPen(kind)}>
+                        <button style={{ ...styles.btn, background: pen.pending >= EGG_PER_TRAY ? '#e67e22' : '#555', color: '#fff' }} onClick={() => collectPen(kind)}>
                           🥚 Lấy trứng ({pen.pending}/{EGG_PER_TRAY})
                         </button>
                       </>
@@ -231,7 +231,7 @@ export function GardenPanel() {
                         <button style={{ ...styles.btn, background: hungry ? '#c0392b' : '#8e44ad', color: '#fff' }} onClick={() => feedPen(kind)}>
                           {hungry ? '⚠️ Hết cám — mua lẻ' : '🌾 Cho ăn'}
                         </button>
-                        <button style={{ ...styles.btn, background: pen.pending >= 1 ? '#f39c12' : '#555', color: '#fff' }} onClick={() => collectPen(kind)}>
+                        <button style={{ ...styles.btn, background: pen.pending >= 1 ? '#e67e22' : '#555', color: '#fff' }} onClick={() => collectPen(kind)}>
                           🥛 Vắt sữa ({pen.pending})
                         </button>
                       </>

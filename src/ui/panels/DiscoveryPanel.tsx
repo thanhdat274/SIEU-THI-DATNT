@@ -113,7 +113,7 @@ export function DiscoveryPanel() {
                 <small style={{ opacity: 0.7, marginLeft: 8 }}>{CATEGORIES[r.category]}</small>
               </div>
               <small style={{ opacity: 0.7 }}>{formatMoney(r.sell)}</small>
-              <span style={{ fontSize: 12, color: r.status === 'sold' ? STATUS_COLOR.sold : r.status === 'unbought' ? (r.owned ? '#f39c12' : STATUS_COLOR.unbought) : STATUS_COLOR.locked, whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 12, color: r.status === 'sold' ? STATUS_COLOR.sold : r.status === 'unbought' ? (r.owned ? '#e67e22' : STATUS_COLOR.unbought) : STATUS_COLOR.locked, whiteSpace: 'nowrap' }}>
                 {r.status === 'sold' ? (`✅ đã bán${r.soldQty > 0 ? ' · ' + r.soldQty : ''}`) : r.status === 'locked' ? (`🔒 cấp ${r.unlock}`) : (r.owned ? '📦 đang có' : 'chưa bán')}
               </span>
             </div>

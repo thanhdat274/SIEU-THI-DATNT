@@ -68,7 +68,7 @@ export function CookPanel() {
           <div key={st.id} style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}>
               <b>{st.icon} {st.name}</b>
-              <span style={{ fontSize: 12, opacity: own ? 0.75 : 0.95, color: own ? undefined : '#f39c12' }}>
+              <span style={{ fontSize: 12, opacity: own ? 0.75 : 0.95, color: own ? undefined : '#e67e22' }}>
                 {own ? `${busy}/${own} trạm bận` : `chưa có trạm — mua ở 🛠️ Xây dựng (cấp ${st.unlock})`}
               </span>
               {!own && level >= st.unlock && (
@@ -97,7 +97,7 @@ export function CookPanel() {
                   <div key={r.id} style={{ ...styles.card, opacity: locked || outOfSeason ? 0.5 : 1 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <b>{r.name}</b>
-                      {fest && <span style={{ fontSize: 11, color: outOfSeason ? '#f39c12' : '#2ecc71', marginLeft: 6 }}>{fest.icon} {outOfSeason ? `chỉ trong dịp ${fest.name}` : 'đúng dịp — gói đi!'}</span>}
+                      {fest && <span style={{ fontSize: 11, color: outOfSeason ? '#e67e22' : '#2ecc71', marginLeft: 6 }}>{fest.icon} {outOfSeason ? `chỉ trong dịp ${fest.name}` : 'đúng dịp — gói đi!'}</span>}
                       <div style={{ fontSize: 12, opacity: 0.8 }}>
                         {r.inputs.map((i) => {
                           const have = storage[i.productId] ?? 0;

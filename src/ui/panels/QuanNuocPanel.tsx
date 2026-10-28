@@ -54,7 +54,7 @@ export function QuanNuocPanel() {
           <button
             style={{
               ...styles.btn, marginLeft: 0, marginTop: 10, padding: '8px 14px', fontWeight: 700,
-              background: canBuild ? '#27ae60' : '#555', color: '#fff',
+              background: canBuild ? '#2ecc71' : '#555', color: '#fff',
               opacity: canBuild ? 1 : 0.6, cursor: canBuild ? 'pointer' : 'not-allowed',
             }}
             disabled={!canBuild}
@@ -64,8 +64,8 @@ export function QuanNuocPanel() {
             🏗️ Xây quán ({formatMoney(QUAN_NUOC_PRICE)})
           </button>
           {locked
-            ? <p style={{ fontSize: 13, color: '#f39c12', margin: '6px 0 0' }}>🔒 Mở ở cấp {QUAN_NUOC_UNLOCK}.</p>
-            : money < QUAN_NUOC_PRICE && <p style={{ fontSize: 13, color: '#f39c12', margin: '6px 0 0' }}>Chưa đủ tiền — có thể vay ở mục Kinh doanh.</p>}
+            ? <p style={{ fontSize: 13, color: '#e67e22', margin: '6px 0 0' }}>🔒 Mở ở cấp {QUAN_NUOC_UNLOCK}.</p>
+            : money < QUAN_NUOC_PRICE && <p style={{ fontSize: 13, color: '#e67e22', margin: '6px 0 0' }}>Chưa đủ tiền — có thể vay ở mục Kinh doanh.</p>}
         </>
       ) : (
         <>
@@ -73,7 +73,7 @@ export function QuanNuocPanel() {
             <b style={{ flex: 1 }}>👥 Nhân viên: {quan.staff}/{QUAN_NUOC_MAX_STAFF} · lương {formatMoney(quan.staff * QUAN_NUOC_WAGE)}/ngày</b>
             <button
               style={{
-                ...styles.btn, background: canHire ? '#27ae60' : '#555', color: '#fff',
+                ...styles.btn, background: canHire ? '#2ecc71' : '#555', color: '#fff',
                 opacity: canHire ? 1 : 0.6, cursor: canHire ? 'pointer' : 'not-allowed',
               }}
               disabled={!canHire}
@@ -101,7 +101,7 @@ export function QuanNuocPanel() {
             Lợi nhuận ròng mỗi ly điều chỉnh bằng mức <b>Giờ bán</b> bên dưới.
           </p>
           {hireProj && tonightProj && (
-            <div style={{ fontSize: 12, margin: '0 0 6px', color: hireProj.served > tonightProj.served && hireProj.profit - tonightProj.profit >= 0 ? '#27ae60' : '#e67e22' }}>
+            <div style={{ fontSize: 12, margin: '0 0 6px', color: hireProj.served > tonightProj.served && hireProj.profit - tonightProj.profit >= 0 ? '#2ecc71' : '#e67e22' }}>
               {hireProj.served > tonightProj.served && hireProj.profit - tonightProj.profit >= 0
                 ? `💰 Dự phóng thuê thêm 1 người: lời ròng ~${formatMoney(hireProj.profit)}/ngày (đang ~${formatMoney(tonightProj.profit)}, +${formatMoney(hireProj.profit - tonightProj.profit)}) — đáng so với lương ${formatMoney(QUAN_NUOC_WAGE)}.`
                 : hireProj.served > tonightProj.served
@@ -127,11 +127,11 @@ export function QuanNuocPanel() {
               <b>🧾 Hôm qua: {last.served}/{last.wanted} ly · doanh thu {formatMoney(last.revenue)}</b>
               {last.wages !== undefined && last.profit !== undefined && (
                 <div style={{ fontSize: 12, marginTop: 4 }}>
-                  lương −{formatMoney(last.wages)} · lời ròng <b style={{ color: last.profit >= 0 ? '#27ae60' : '#e74c3c' }}>{formatMoney(last.profit)}</b>
+                  lương −{formatMoney(last.wages)} · lời ròng <b style={{ color: last.profit >= 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(last.profit)}</b>
                 </div>
               )}
               {last.served < last.wanted && (
-                <div style={{ fontSize: 12, marginTop: 4, color: '#f39c12' }}>⚠️ Kho thiếu đồ uống — nhập nước/ngọt/cà phê… để bán đủ.</div>
+                <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>⚠️ Kho thiếu đồ uống — nhập nước/ngọt/cà phê… để bán đủ.</div>
               )}
             </div>
           )}

@@ -89,6 +89,13 @@
 - Test 1713/1713 (chữ không đổi nên không test vỡ) + build sạch + QA live: load sạch, 0 lỗi console, panel render chuẩn. Còn lại cho đợt sau: chuyển tint/dashed BusinessPanel/OrderPanel sang Callout; #27ae60 còn sót 3 chỗ nhỏ.
 - File: `controls.css`, `shared.tsx`, `ReportPanels.tsx`, `BranchPanel.tsx`, `BusinessPanel.tsx`, `StoragePanel.tsx`, `LandmarkPanel.tsx`.
 
+### GĐ167 — 🧹 Nốt vụn màu + thẻ BusinessPanel — XONG
+
+- Chuyển 5 thẻ BusinessPanel sang Callout (GĐ128 quảng cáo, GĐ63 nên quảng cáo nghề nào, GĐ157 pitch mèo — danger strong, GĐ140 mục tiêu vòng — info, GĐ139 chuẩn bị tái sinh — ok). GIỮ banner GĐ143 OrderPanel (mint #55efc4 là màu nhận diện "mối rẻ"; cả họ 9 banner st.banner — chuyển 2/9 chỉ làm lệch hơn).
+- Quét màu lệch bảng rộng hơn đề bài: `#27ae60`→`#2ecc71` (15 chỗ), `#f39c12`→`#e67e22` (17 chỗ), `#c9a20a`→`#f1c40f` (7 chỗ, gồm 2 dead fallback gọn lại) — grep 6 màu lệch toàn src/ui/ = 0 kết quả. HistoryChart kiểm tra không trùng màu đường.
+- Còn cho đợt sau: Callout GardenPanel:79; họ banner guide xanh dương #0984e3/#74b9ff/#2e86de (OrderPanel/ReportPanels) cần quyết định bảng riêng — không phải "nốt vụn".
+- Test 1713/1713 + build sạch; chỉ style/màu, 0 chữ, 0 logic. File: 14 file UI.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc trong `src/data/*.ts` + một thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -289,3 +296,4 @@
 - GĐ164 — 📖 Sự kiện bất ngờ thành chuyện kể (mini-arc)
 - GĐ165 — 🎲 Bổ sung 5 sự kiện một-phát cấp thấp
 - GĐ166 — 🧹 Đồng bộ hoá thẻ GĐ131–165 (Callout + bảng màu)
+- GĐ167 — 🧹 Nốt vụn màu + thẻ BusinessPanel

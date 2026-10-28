@@ -115,7 +115,7 @@ function OrderCard() {
         <div style={{ fontSize: 13 }}>
           {Object.entries(def.items).map(([id, q]) => {
             const have = storage[id] ?? 0;
-            return <span key={id} style={{ marginRight: 10, color: have >= q ? '#2ecc71' : '#f39c12' }}>{productById(id).name} {Math.min(have, q)}/{q}</span>;
+            return <span key={id} style={{ marginRight: 10, color: have >= q ? '#2ecc71' : '#e67e22' }}>{productById(id).name} {Math.min(have, q)}/{q}</span>;
           })}
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
@@ -178,7 +178,7 @@ function QuestRow({ q, betBadge }: { q: Quest; betBadge?: boolean }) {
         </button>
       </div>
       <div style={{ height: 7, background: '#555', borderRadius: 4 }}>
-        <div style={{ width: `${pct * 100}%`, height: '100%', borderRadius: 4, background: q.done ? '#2ecc71' : '#f39c12' }} />
+        <div style={{ width: `${pct * 100}%`, height: '100%', borderRadius: 4, background: q.done ? '#2ecc71' : '#e67e22' }} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
         <span>{q.current.toLocaleString('vi-VN')} / {q.target.toLocaleString('vi-VN')}</span>

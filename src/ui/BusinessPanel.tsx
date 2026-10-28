@@ -5,6 +5,7 @@ import {
 } from '../core/biz';
 import { hasUpgrade, UPGRADES } from '../data/upgrades';
 import { HistoryChart } from './Panels';
+import { Callout } from './panels/shared';
 import {
   ACHIEVEMENTS, activeAds, ADS, adRoi, BREAKFAST, COUNTERS, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, LOAN_DAILY_RATE,
   LOAN_UNLOCK, loanInterest, loanLimit, loanOptions, loanTopUps, LOYALTY_OPTIONS, LOYALTY_UNLOCK, loyaltyPayoff, petActive, PETS,
@@ -349,8 +350,7 @@ function Market() {
       {/* GĐ128: ROI quảng cáo — trả lời "quảng cáo có đáng không" sau vài ngày chạy.
           Chỉ hiện khi có ad đang chạy VÀ đã có dữ liệu so sánh ngày có/không quảng cáo. */}
       {adRoiData && (
-        <div style={{ ...card, marginTop: 8, borderLeft: `3px solid ${adRoiData.worth === 'yes' ? '#2ecc71' : '#e67e22'}` }}>
-          <div style={title}>📈 Quảng cáo có đáng không?</div>
+        <Callout tone={adRoiData.worth === 'yes' ? 'ok' : 'warn'} title="📈 Quảng cáo có đáng không?" style={{ marginTop: 8 }}>
           <div style={sub}>
             Ngày có quảng cáo: doanh thu TB <b>{formatMoney(adRoiData.withAvg)}/ngày</b> vs{' '}
             <b>{formatMoney(adRoiData.withoutAvg)}/ngày</b> ngày thường → kéo thêm ~{formatMoney(adRoiData.adExtraRev)}/ngày.
@@ -360,7 +360,7 @@ function Market() {
               ? `✅ Đang chạy chi phí ${formatMoney(adRoiData.dailyCost)}/ngày — quảng cáo có lời ~${formatMoney(adRoiData.net)}/ngày. Giữ hoặc mua thêm.`
               : `⚠️ Đang chạy chi phí ${formatMoney(adRoiData.dailyCost)}/ngày — quảng cáo lỗ ~${formatMoney(-adRoiData.net)}/ngày. Cân nhắc bớt hoặc nhắm đúng nghề (xem Khách của tôi).`}
           </div>
-        </div>
+        </Callout>
       )}
 
       {/* GĐ62: nhân khẩu học khách vãng lai — "khách của tôi là ai" để nhắm ad đúng nghề */}
@@ -388,9 +388,11 @@ function Market() {
               Thống kê khách vãng lai. Mua 📢 quảng cáo nhắm đúng nghề đông nhất để kéo thêm người giống họ; ⚠️ = nhóm hay bỏ về — kiểm tra kệ/giá có đúng sở thích họ không.
             </div>
             {adSuggest && (
-              <div style={{ marginTop: 6, padding: '7px 9px', borderRadius: 8, background: 'rgba(46,204,113,0.12)', border: '1px solid rgba(46,204,113,0.4)', fontSize: 12 }}>
-                💡 Nên quảng cáo: <b>{adSuggest.ad.icon} {adSuggest.ad.name}</b> — nhắm {adSuggest.reason}.
-              </div>
+              <Callout tone="ok" style={{ marginTop: 6 }}>
+                <div style={{ fontSize: 12 }}>
+                  💡 Nên quảng cáo: <b>{adSuggest.ad.icon} {adSuggest.ad.name}</b> — nhắm {adSuggest.reason}.
+                </div>
+              </Callout>
             )}
           </>
         )}
@@ -807,9 +809,11 @@ function Pets() {
               </div>
             )}
             {p.kind === 'cat' && !pet && cat.weekSpoilCost >= CAT_PITCH_MIN && (
-              <div style={{ fontSize: 12, marginTop: 4, padding: '6px 8px', borderRadius: 8, background: 'rgba(231,76,60,0.1)', border: '1px dashed rgba(231,76,60,0.4)' }}>
-                🥀 Tuần này hàng hỏng <b>~{formatMoney(cat.weekSpoilCost)}</b> — nuôi mèo cứu được ~1/4 (~{formatMoney(Math.round(cat.weekSpoilCost * 0.25))}) với ~{formatMoney(cat.foodCostToday)}/ngày thức ăn.
-              </div>
+              <Callout tone="danger" strong style={{ marginTop: 4 }}>
+                <div style={{ fontSize: 12 }}>
+                  🥀 Tuần này hàng hỏng <b>~{formatMoney(cat.weekSpoilCost)}</b> — nuôi mèo cứu được ~1/4 (~{formatMoney(Math.round(cat.weekSpoilCost * 0.25))}) với ~{formatMoney(cat.foodCostToday)}/ngày thức ăn.
+                </div>
+              </Callout>
             )}
             {p.kind === 'dog' && pet && dog.days > 0 && dog.weekBlocked > 0 && (
               <div style={{ fontSize: 12, marginTop: 4, borderTop: '1px dashed rgba(255,255,255,0.12)', paddingTop: 4 }}>
@@ -1000,10 +1004,7 @@ function NgGoalsCard({ prestigeLevel, cachedGoals }: { prestigeLevel: number; ca
   const claimed = new Set(biz.prestige.goalsClaimed ?? []);
   const doneCount = cachedGoals.filter((g) => g.done).length;
   return (
-    <div style={{ marginTop: 10, padding: 8, borderRadius: 8, background: 'rgba(52,152,219,0.08)', border: '1px dashed rgba(52,152,219,0.35)' }}>
-      <div style={{ ...sub, marginTop: 0 }}>
-        <b style={{ color: '#3498db' }}>🌱 Mục tiêu vòng tái sinh</b>
-      </div>
+    <Callout tone="info" title="🌱 Mục tiêu vòng tái sinh" style={{ marginTop: 10 }}>
       <div style={sub}>Đạt {doneCount}/{cachedGoals.length} mốc của vòng này — nhận thưởng tiền, reset khi tái sinh lần sau.</div>
       {cachedGoals.map((g) => {
         const isClaimed = claimed.has(g.id);
@@ -1023,7 +1024,7 @@ function NgGoalsCard({ prestigeLevel, cachedGoals }: { prestigeLevel: number; ca
           </div>
         );
       })}
-    </div>
+    </Callout>
   );
 }
 
@@ -1067,10 +1068,7 @@ function PrestigeSection() {
             Vòng {p.level + 1}. Doanh thu đang +{Math.round(p.bonus * 100)}%, tái sinh thêm sẽ là +{Math.round((nextMult! - 1) * 100)}% (tối đa +{Math.round(PRESTIGE_MAX_LEVEL * PRESTIGE_BONUS * 100)}%).
           </div>
           {!capped && (
-            <div style={{ marginTop: 8, padding: 8, borderRadius: 8, background: 'rgba(46,204,113,0.08)', border: '1px dashed rgba(46,204,113,0.35)' }}>
-              <div style={{ ...sub, marginTop: 0 }}>
-                <b style={{ color: '#2ecc71' }}>🌳 Chuẩn bị tái sinh</b>
-              </div>
+            <Callout tone="ok" title="🌳 Chuẩn bị tái sinh" style={{ marginTop: 8 }}>
               {preview.projectedDailyGain > 0 && (
                 <div style={sub}>
                   Nhận: vòng sau lời thêm ≈ <b>{formatMoney(preview.projectedDailyGain)}/ngày</b> (thêm +{preview.nextBonus}% so với lãi hiện tại).
@@ -1084,7 +1082,7 @@ function PrestigeSection() {
                 {preview.analyticsDays > 0 ? <b>{preview.analyticsDays} ngày</b> : '0 ngày'} dữ liệu phân tích
                 {preview.unsoldMarketDay && <span style={{ color: '#f1c40f' }}> · 🧺 phiên chợ hôm nay chưa kịp gánh!</span>}
               </div>
-            </div>
+            </Callout>
           )}
           {online && <div style={sub}>Chơi hẻm online không tái sinh được — chỉ ở chế độ chơi đơn.</div>}
           {!online && (

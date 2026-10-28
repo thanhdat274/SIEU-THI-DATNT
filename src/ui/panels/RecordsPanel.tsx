@@ -30,14 +30,14 @@ export function RecordsPanel() {
               <div
                 key={f.label}
                 title="So với kỷ lục 1 ngày trọn vẹn — hôm nay chưa tính đơn online/ghi sổ nên thường còn tăng thêm cuối ngày"
-                style={{ ...styles.card, gap: 4, padding: '8px 12px', flex: '1 1 200px', minWidth: 190, borderColor: f.beating ? '#27ae60' : undefined }}
+                style={{ ...styles.card, gap: 4, padding: '8px 12px', flex: '1 1 200px', minWidth: 190, borderColor: f.beating ? '#2ecc71' : undefined }}
               >
                 <div style={{ fontSize: 13, opacity: 0.75 }}>{f.icon} {f.label}</div>
-                <b style={{ fontSize: 15, color: f.beating ? '#27ae60' : undefined }}>{fmt(f, f.today)}</b>
+                <b style={{ fontSize: 15, color: f.beating ? '#2ecc71' : undefined }}>{fmt(f, f.today)}</b>
                 {f.beating ? (
-                  <div style={{ fontSize: 12, color: '#27ae60', fontWeight: 600 }}>🔥 Đã phá kỷ lục! (cũ {fmt(f, f.best!)})</div>
+                  <div style={{ fontSize: 12, color: '#2ecc71', fontWeight: 600 }}>🔥 Đã phá kỷ lục! (cũ {fmt(f, f.best!)})</div>
                 ) : f.best !== null && f.remaining > 0 ? (
-                  <div style={{ fontSize: 12, ...(f.remaining <= Math.round(f.best * 0.2) ? { color: '#c9a20a', fontWeight: 600 } : { opacity: 0.7 }) }}>
+                  <div style={{ fontSize: 12, ...(f.remaining <= Math.round(f.best * 0.2) ? { color: '#f1c40f', fontWeight: 600 } : { opacity: 0.7 }) }}>
                     🎯 Còn {fmt(f, f.remaining)} nữa là phá kỷ lục (kỷ lục {fmt(f, f.best)})
                   </div>
                 ) : null}

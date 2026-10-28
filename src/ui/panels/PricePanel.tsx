@@ -145,7 +145,7 @@ export function PricePanel() {
                     const lv = sensitivityLevel(s);
                     const conf: Record<string, { txt: string; col: string; bg: string }> = {
                       hot: { txt: '🔴 nhạy', col: '#e74c3c', bg: 'rgba(231,76,60,0.16)' },
-                      mid: { txt: '🟠 vừa', col: '#c9a20a', bg: 'rgba(241,196,15,0.16)' },
+                      mid: { txt: '🟠 vừa', col: '#f1c40f', bg: 'rgba(241,196,15,0.16)' },
                       soft: { txt: '🟢 bền', col: '#2ecc71', bg: 'rgba(46,204,113,0.16)' },
                     };
                     const c = conf[lv];

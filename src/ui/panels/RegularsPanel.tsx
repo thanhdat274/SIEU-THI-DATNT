@@ -44,7 +44,7 @@ export function RegularsPanel() {
           {triNext ? (
             <>
               <div style={{ flex: 1, height: 6, background: '#555', borderRadius: 3 }}>
-                <div style={{ width: `${Math.min(100, ((triVisits - triPrev) / (triNext.threshold - triPrev || 1)) * 100)}%`, height: '100%', borderRadius: 3, background: '#f39c12' }} />
+                <div style={{ width: `${Math.min(100, ((triVisits - triPrev) / (triNext.threshold - triPrev || 1)) * 100)}%`, height: '100%', borderRadius: 3, background: '#e67e22' }} />
               </div>
               <span style={{ opacity: 0.8 }}>còn {triNext.threshold - triVisits} lượt tới {triNext.icon} {triNext.name}</span>
             </>
