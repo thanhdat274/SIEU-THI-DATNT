@@ -113,6 +113,8 @@ export const styles: Record<string, React.CSSProperties> = {
   row: { display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0' },
   select: { flex: 1, minWidth: 0 },
   card: { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', background: '#3a3a4d', borderRadius: 8 },
+  // Tiêu đề thẻ chuẩn (GĐ166): 13px — thống nhất các thẻ đang lẫn lộn <b> trần 16px / 13px cứng
+  cardTitle: { fontSize: 13 },
   btn: { border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', marginLeft: 4, fontSize: 13 },
   close: {
     position: 'sticky', top: 0, float: 'right', zIndex: 1, width: 30, height: 30, marginLeft: 8,
@@ -120,3 +122,44 @@ export const styles: Record<string, React.CSSProperties> = {
     transition: 'background 0.12s, transform 0.1s',
   },
 };
+
+/** Bảng màu ngữ cảnh của Callout (GĐ166) — trùng bảng màu chuẩn của dự án:
+ * đỏ=mất tiền thật · cam=cảnh báo nên xử lý · xanh lá=tốt/đáng giữ ·
+ * xanh dương=thông tin trung tính · vàng=nhấn mạnh/cơ hội · tím=sự kiện/meta. */
+export const CALLOUT_TONE = {
+  danger: '#e74c3c',
+  warn: '#e67e22',
+  ok: '#2ecc71',
+  info: '#3498db',
+  accent: '#f1c40f',
+  event: '#9b59b6',
+} as const;
+
+/** Thẻ nhấn mạnh DUY NHẤT của dự án (GĐ166, theo sketch audit — tinh chỉnh: `title` tuỳ chọn
+ * vì vài thẻ không có dòng tiêu đề riêng): viền trái 3px màu ngữ cảnh, tiêu đề 13px màu tone,
+ * thân 12px. Trước đây các thẻ kiểu này vẽ tay ~6 biến thể khác nhau — Callout thống nhất vỏ;
+ * chữ/câu và nút (truyền qua `actions`) GIỮ NGUYÊN 100%.
+ * `strong` + tone 'danger' = đang mất tiền thật (mẫu GĐ149/150): thêm nền đỏ nhạt báo động. */
+export function Callout({ tone, strong, title, children, actions, style }: {
+  tone: keyof typeof CALLOUT_TONE;
+  strong?: boolean;
+  title?: React.ReactNode;
+  children?: React.ReactNode;
+  actions?: React.ReactNode;
+  /** Ghi đè thêm (marginTop/marginBottom của từng panel) — không thay thế vỏ chuẩn. */
+  style?: React.CSSProperties;
+}) {
+  const color = CALLOUT_TONE[tone];
+  return (
+    <div style={{
+      ...styles.card, display: 'block',
+      borderLeft: `3px solid ${color}`,
+      background: strong && tone === 'danger' ? 'rgba(231,76,60,0.12)' : undefined,
+      ...style,
+    }}>
+      {title !== undefined && <b style={{ ...styles.cardTitle, color }}>{title}</b>}
+      {children}
+      {actions}
+    </div>
+  );
+}

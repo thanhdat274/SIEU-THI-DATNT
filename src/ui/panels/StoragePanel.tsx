@@ -42,7 +42,7 @@ export function StoragePanel() {
         </div>
       )}
       {coldOv && (
-        <div style={{ ...styles.card, borderLeft: '3px solid #f5b041', marginBottom: 8, fontSize: 12 }}>
+        <div style={{ ...styles.card, borderLeft: '3px solid #e67e22', marginBottom: 8, fontSize: 12 }}>
           <b>🧊 Tủ lạnh kho đầy: {coldOv.coldQty}/{coldOv.capacity} món cần lạnh</b>
           <div style={{ marginTop: 2 }}>
             Dư {coldOv.overflow} món phải để ngoài nhiệt độ thường — hỏng nhanh gấp ~

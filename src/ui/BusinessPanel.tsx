@@ -1002,7 +1002,7 @@ function NgGoalsCard({ prestigeLevel, cachedGoals }: { prestigeLevel: number; ca
   return (
     <div style={{ marginTop: 10, padding: 8, borderRadius: 8, background: 'rgba(52,152,219,0.08)', border: '1px dashed rgba(52,152,219,0.35)' }}>
       <div style={{ ...sub, marginTop: 0 }}>
-        <b style={{ color: '#5dade2' }}>🌱 Mục tiêu vòng tái sinh</b>
+        <b style={{ color: '#3498db' }}>🌱 Mục tiêu vòng tái sinh</b>
       </div>
       <div style={sub}>Đạt {doneCount}/{cachedGoals.length} mốc của vòng này — nhận thưởng tiền, reset khi tái sinh lần sau.</div>
       {cachedGoals.map((g) => {

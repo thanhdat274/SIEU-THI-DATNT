@@ -81,9 +81,19 @@
 - Test: ngưỡng pool ≥31, arc+one-shot tổng 35; 4 assert dữ liệu mới. **1713/1713 (152 files)** xanh; build sạch. Thuần data — không đụng core/UI.
 - File: `src/data/biz.ts`, `surprises.test.ts`, `surpriseArc.test.ts`.
 
+### GĐ166 — 🧹 Đồng bộ hoá thẻ GĐ131–165 (audit UI 29/10) — XONG
+
+- Audit UI/UX: 0 lỗi vỡ layout; nợ thật = "card nhấn mạnh có 6 biến thể vẽ khác nhau" + vài màu/font lệch bảng + nút disabled không tín hiệu.
+- Fix: (1) controls.css 2 rule chung — `button:disabled` (opacity .45 + not-allowed) và hover nút panel (brightness 1.1) phủ toàn bộ panel; (2) 7 vá màu/font lệch bảng (#4caf50→#2ecc71, #f5b041→#e67e22, fontSize 12.5→12, bỏ borderColor chết, 2 xanh dương GĐ140 về #3498db, st.warn #f39c12→#e67e22); (3) `styles.cardTitle` (13px) áp 13 tiêu đề thẻ SummaryPanel/MorningPanel; (4) component `Callout` (shared.tsx, 6 tone) — chuyển 22/22 thẻ borderLeft của ReportPanels, 0 sót, chữ giữ nguyên 100%; (5) BranchPanel: thẻ "Bỏ lỡ" GĐ155 bỏ tái dùng st.event đỏ, khách đêm GĐ152 bỏ minWidth cứng (wrap @320). Giữ nguyên: hệ card BusinessPanel/StaffPanel, thẻ tint/dashed BusinessPanel + OrderPanel GĐ143 (đợt sau), HUD (đã chuẩn).
+- Quy ước màu + Callout đã ghi vào "Quy ước kỹ thuật" (mục trên) — thẻ mới KHÔNG tự vẽ viền riêng.
+- Test 1713/1713 (chữ không đổi nên không test vỡ) + build sạch + QA live: load sạch, 0 lỗi console, panel render chuẩn. Còn lại cho đợt sau: chuyển tint/dashed BusinessPanel/OrderPanel sang Callout; #27ae60 còn sót 3 chỗ nhỏ.
+- File: `controls.css`, `shared.tsx`, `ReportPanels.tsx`, `BranchPanel.tsx`, `BusinessPanel.tsx`, `StoragePanel.tsx`, `LandmarkPanel.tsx`.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc trong `src/data/*.ts` + một thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
+- **Bảng màu ngữ cảnh UI (GĐ166 — KHÔNG tự chế màu mới):** accent vàng `#f1c40f` · lời `#2ecc71` · lỗ/mất-thật `#e74c3c` · cảnh báo `#e67e22` · info `#3498db` · sự kiện `#9b59b6`; chip = nền rgba cùng màu chữ. Bậc cảnh báo: đỏ = mất tiền thật, cam = cảnh báo nên xử lý, vàng = theo dõi/đang tốt.
+- **Thẻ nhấn mạnh dùng `Callout` (shared.tsx, GĐ166):** borderLeft 3px màu ngữ cảnh, tiêu đề 13px màu tone (`styles.cardTitle`), thân 12px; `strong` + danger → nền đỏ nhạt. Thẻ mới KHÔNG tự vẽ viền/tint riêng nữa. HUD chip/alert dùng class CSS riêng (mẫu GĐ162).
 - Test sim phải dùng **seed cố định** (`setSimSeed`, `simRng()` trong seam RNG — GĐ27/28) thay vì mock `Math.random`.
 - QA live trên `localhost:5173` (vite); kiểm không tràn ngang @320/390 (`scrollWidth == clientWidth`), 0 lỗi console.
 - Nhiều phiên có thể chạy song song trên cùng worktree → commit theo đường dẫn cụ thể.
@@ -278,3 +288,4 @@
 - GĐ163 — 🤝 Đợt nhờ khách quen rơi vào khung vắng
 - GĐ164 — 📖 Sự kiện bất ngờ thành chuyện kể (mini-arc)
 - GĐ165 — 🎲 Bổ sung 5 sự kiện một-phát cấp thấp
+- GĐ166 — 🧹 Đồng bộ hoá thẻ GĐ131–165 (Callout + bảng màu)

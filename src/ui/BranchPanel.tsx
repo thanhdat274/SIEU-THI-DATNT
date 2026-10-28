@@ -79,7 +79,7 @@ export function BranchPanel() {
           {(() => {
             const miss = branchMissSummary(venueTrend);
             return (
-              <div style={{ ...st.event, display: 'block', background: 'rgba(241,196,15,0.09)', border: '1px solid rgba(241,196,15,0.4)' }}>
+              <div style={{ ...st.card, display: 'block', borderLeft: '3px solid #e67e22' }}>
                 <b>🚪 Bỏ lỡ hôm qua & gần đây</b>
                 {miss.totalMissed === 0
                   ? <div style={st.sub}>Chưa có số liệu bỏ lỡ — số này ghi lại mỗi tối.</div>
@@ -157,9 +157,9 @@ export function BranchPanel() {
               <b>👥 Khách đêm theo nhóm</b>
               <div style={st.sub}>Từ 21h khách chia thành các nhóm có giờ cao điểm và món ưa thích riêng — kệ có đúng món thì họ mua nhiều hơn.</div>
               {NIGHT_GROUPS.map((g) => (
-                <div key={g.id} style={{ ...st.row, marginBottom: 2, alignItems: 'baseline' }}>
-                  <span style={{ minWidth: 190 }}>{g.icon} <b>{g.name}</b> · {groups[g.id] ?? 0} khách</span>
-                  <span style={st.sub}>{g.desc}</span>
+                <div key={g.id} style={{ ...st.row, marginBottom: 2, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                  <span>{g.icon} <b>{g.name}</b> · {groups[g.id] ?? 0} khách</span>
+                  <span style={{ ...st.sub, minWidth: 140 }}>{g.desc}</span>
                 </div>
               ))}
             </div>
@@ -240,7 +240,7 @@ const st: Record<string, React.CSSProperties> = {
   dot: { display: 'inline-block', width: 10, height: 10, borderRadius: 2, marginRight: 4 },
   title: { margin: '0 0 8px' },
   sub: { fontSize: 13, opacity: 0.8, margin: '4px 0' },
-  warn: { fontSize: 13, color: '#f39c12', margin: '2px 0' },
+  warn: { fontSize: 13, color: '#e67e22', margin: '2px 0' },
   row: { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 },
   badge: { padding: '4px 10px', borderRadius: 999, color: '#fff', fontWeight: 700, fontSize: 12 },
   tabs: { display: 'flex', gap: 6, margin: '4px 0 12px', flexWrap: 'wrap' },

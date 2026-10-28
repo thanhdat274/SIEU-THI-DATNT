@@ -227,6 +227,12 @@
 #ui .panel,
 #ui .panel * { box-sizing: border-box; }
 
+/* Trạng thái nút chung cho mọi panel (GĐ166): nút khoá phải nhìn là biết không bấm được,
+   hover là tín hiệu nhẹ (làm sáng) — áp sau các hiệu ứng hover riêng (brightness cộng thêm,
+   không đè background đã có). Agenda chip/HUD nằm ngoài .panel nên không ăn phải. */
+#ui .panel button:disabled { opacity: .45; cursor: not-allowed; }
+#ui .panel button:hover { filter: brightness(1.1); }
+
 /* Nút đóng panel: hover sáng lên, active hơi thu lại */
 #ui button[aria-label="Đóng"]:hover {
   background: #f1c40f !important;

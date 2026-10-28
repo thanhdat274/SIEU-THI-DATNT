@@ -81,7 +81,7 @@ export function LandmarkPanel() {
       {/* GĐ158 — Soi sáng: góp bao nhiêu, còn bao nhiêu, đáng không (thuần đọc) */}
       <div style={{ ...styles.card, display: 'block', marginTop: 12 }}>
         <b style={{ fontSize: 13 }}>💡 Góp bao nhiêu, đáng không?</b>
-        <div style={{ fontSize: 12.5, opacity: 0.88, marginTop: 4, lineHeight: 1.55 }}>
+        <div style={{ fontSize: 12, opacity: 0.88, marginTop: 4, lineHeight: 1.55 }}>
           {payoff.done ? (
             <>
               <div>

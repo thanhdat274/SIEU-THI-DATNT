@@ -46,7 +46,7 @@ import { leakTone, riskLiveToday } from '../../data/risk';
 import { nightPnl } from '../../data/nightReport';
 import { PHONE_SLOTS } from '../../data/phoneOrders';
 import { paymentById, type PaymentMethod } from '../../data/payments';
-import { Stat, starColor, Footer, Swatch, styles, Tabs } from './shared';
+import { Callout, Stat, starColor, Footer, Swatch, styles, Tabs } from './shared';
 
 /** Day-stats rỗng: SummaryPanel phải render được kể cả khi panel mở thiếu stats (đường mở lạ,
  * save lệch schema) — đọc `.revenue` trên undefined là sập toàn bộ UI (GĐ93 audit bắt được). */
@@ -130,8 +130,7 @@ export function SummaryPanel({ day }: { day: number }) {
           {/* GĐ126: Thẻ "Mai tiệm có gì" — mồi quay lại ngày mai. Đọc state có sẵn (đã sang ngày
               mới nên `weather`, `day`… là của MAI), không đổi save/kinh tế. Ẩn khi không có dòng. */}
           {teaserRows.length > 0 && (
-            <div style={{ ...styles.card, display: 'block', marginTop: 8, borderLeft: '3px solid #f1c40f' }}>
-              <b style={{ fontSize: 13, color: '#f1c40f' }}>🔮 Mai tiệm có gì</b>
+            <Callout tone="accent" title="🔮 Mai tiệm có gì" style={{ marginTop: 8 }}>
               <div style={{ marginTop: 2 }}>
                 {teaserRows.map((row) => (
                   <button key={row.id} onClick={() => openPanel({ type: row.panel })}
@@ -144,19 +143,17 @@ export function SummaryPanel({ day }: { day: number }) {
                   </button>
                 ))}
               </div>
-            </div>
+            </Callout>
           )}
           {marketLast && marketLast.day === day && marketLast.units > 0 && (
-            <div style={{ ...styles.card, display: 'block', marginTop: 8, borderLeft: '3px solid #2ecc71' }}>
-              <b style={{ fontSize: 13, color: '#2ecc71' }}>🧺 Chợ phiên hôm nay</b>
+            <Callout tone="ok" title="🧺 Chợ phiên hôm nay" style={{ marginTop: 8 }}>
               <div style={{ fontSize: 12, marginTop: 4 }}>
                 Đã gánh <b>{marketLast.units} món dư</b> ra chợ, thu về <b>{formatMoney(marketLast.revenue)}</b> thay vì để ế/hỏng.
               </div>
-            </div>
+            </Callout>
           )}
           {marketTom && (
-            <div style={{ ...styles.card, display: 'block', marginTop: 8, borderLeft: '3px solid #2ecc71' }}>
-              <b style={{ fontSize: 13, color: '#2ecc71' }}>🧺 Chợ phiên ngày mai</b>
+            <Callout tone="ok" title="🧺 Chợ phiên ngày mai" style={{ marginTop: 8 }}>
               <div style={{ marginTop: 2 }}>
                 {marketTom.rows.map((r) => (
                   <div key={r.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline', fontSize: 12 }}>
@@ -168,26 +165,33 @@ export function SummaryPanel({ day }: { day: number }) {
               <div style={{ fontSize: 12, marginTop: 4 }}>
                 Gánh ~{marketTom.units} món dư ra chợ ngày mai, thu về ~<b>{formatMoney(marketTom.total)}</b> thay vì để ế/hỏng.
               </div>
-            </div>
+            </Callout>
           )}
           {!payoff148.insufficient && Math.abs(payoff148.extraKhach) >= 3 && (
-            <div style={{ ...styles.card, display: 'block', marginTop: 8, borderLeft: '3px solid #9b59b6' }}>
+            <Callout tone="event" style={{ marginTop: 8 }}>
               <button onClick={() => openPanel({ type: 'reviews' })} title="Xem chi tiết danh tiếng"
                 style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', color: 'inherit', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
                 <b style={{ fontSize: 13, color: '#9b59b6' }}>⭐ Danh tiếng {rep148.overall.toFixed(1)}★</b>
                 <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.7 }}>xem →</span>
               </button>
-              <div style={{ fontSize: 12, marginTop: 4, color: payoff148.extraKhach >= 0 ? '#4caf50' : '#e74c3c' }}>
+              <div style={{ fontSize: 12, marginTop: 4, color: payoff148.extraKhach >= 0 ? '#2ecc71' : '#e74c3c' }}>
                 {payoff148.extraKhach >= 0
                   ? <>Giữ phong độ giúp tiệm được thêm <b>~{payoff148.extraKhach} khách/ngày</b> ({Math.round(Math.abs(payoff148.pct) * 100)}% người đi đường).</>
                   : <>Danh tiếng đang tụt, mất khoảng <b>~{Math.abs(payoff148.extraKhach)} khách/ngày</b>. Sửa mặt yếu nhất để hút khách lại.</>}
                 <span style={{ opacity: 0.75 }}> Nâng 0.5★: thêm ~{payoff148.nextStarKhach} khách/ngày.</span>
               </div>
-            </div>
+            </Callout>
           )}
           {hasMeatCounter && butcherV.skill < MAX_BUTCHER_STAR && meatToday.revenue > 0 && (
-            <div style={{ ...styles.card, display: 'block', marginTop: 8, borderLeft: `3px solid ${butcherV.present ? '#e67e22' : '#e74c3c'}`, background: butcherV.present ? undefined : 'rgba(231,76,60,0.12)' }}>
-              <b style={{ fontSize: 13, color: butcherV.present ? '#e67e22' : '#e74c3c' }}>🔪 Thịt cá hôm nay thu {formatMoney(meatToday.revenue)}</b>
+            <Callout tone={butcherV.present ? 'warn' : 'danger'} strong={!butcherV.present} style={{ marginTop: 8 }}
+              title={<>🔪 Thịt cá hôm nay thu {formatMoney(meatToday.revenue)}</>}
+              actions={
+                <div style={{ marginTop: 6 }}>
+                  <button onClick={() => openPanel({ type: 'staff' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
+                    {butcherV.present ? '👥 Nâng người bán thịt cá →' : '👥 Xếp người bán thịt cá →'}
+                  </button>
+                </div>
+              }>
               <div style={{ fontSize: 12, marginTop: 4 }}>
                 {butcherV.present
                   ? <>Người bán thịt cá {butcherV.skill}★ trực — bán được ~{butcherV.pct}% nhu cầu thịt cá.</>
@@ -196,16 +200,19 @@ export function SummaryPanel({ day }: { day: number }) {
                   <span style={{ color: '#f1c40f' }}> Thuê/bồi dưỡng người bán 5★ có thể thêm ~{formatMoney(meatMissed149)}/ngày.</span>
                 )}
               </div>
-              <div style={{ marginTop: 6 }}>
-                <button onClick={() => openPanel({ type: 'staff' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
-                  {butcherV.present ? '👥 Nâng người bán thịt cá →' : '👥 Xếp người bán thịt cá →'}
-                </button>
-              </div>
-            </div>
+            </Callout>
           )}
           {debt150.count > 0 && (
-            <div style={{ ...styles.card, display: 'block', marginTop: 8, borderLeft: `3px solid ${debt150.writeOffTonightAmount > 0 ? '#e74c3c' : debt150.lateAmount > 0 ? '#e67e22' : '#3498db'}`, background: debt150.writeOffTonightAmount > 0 ? 'rgba(231,76,60,0.12)' : undefined }}>
-              <b style={{ fontSize: 13, color: debt150.writeOffTonightAmount > 0 ? '#e74c3c' : debt150.lateAmount > 0 ? '#e67e22' : '#3498db' }}>💳 Sổ nợ đang khóa {formatMoney(debt150.lockedTotal)} tiền mặt</b>
+            <Callout tone={debt150.writeOffTonightAmount > 0 ? 'danger' : debt150.lateAmount > 0 ? 'warn' : 'info'}
+              strong={debt150.writeOffTonightAmount > 0} style={{ marginTop: 8 }}
+              title={`💳 Sổ nợ đang khóa ${formatMoney(debt150.lockedTotal)} tiền mặt`}
+              actions={
+                <div style={{ marginTop: 6 }}>
+                  <button onClick={() => openPanel({ type: 'regulars' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
+                    📒 Mở sổ nợ → nhắc / xoá
+                  </button>
+                </div>
+              }>
               <div style={{ fontSize: 12, marginTop: 4 }}>
                 {debt150.writeOffTonightAmount > 0 ? (
                   <span style={{ color: '#e74c3c' }}>⚠️ <b>{formatMoney(debt150.writeOffTonightAmount)}</b> quá {DEBT_WRITE_OFF_DAYS} ngày — <b>mất hẳn</b> nếu không nhắc/xoá. Đã có {debt150.lateCount} món quá hạn ({formatMoney(debt150.lateAmount)}).</span>
@@ -215,12 +222,7 @@ export function SummaryPanel({ day }: { day: number }) {
                   <span>Khách quen đang giữ {debt150.count} món nợ ({formatMoney(debt150.lockedTotal)}) — còn đang trong hạn.</span>
                 )}
               </div>
-              <div style={{ marginTop: 6 }}>
-                <button onClick={() => openPanel({ type: 'regulars' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
-                  📒 Mở sổ nợ → nhắc / xoá
-                </button>
-              </div>
-            </div>
+            </Callout>
           )}
           <table style={{ ...styles.table, fontSize: 15 }}>
             <tbody>
@@ -257,14 +259,13 @@ export function SummaryPanel({ day }: { day: number }) {
             const last = riskTrend.length ? riskLiveToday(riskTrend[riskTrend.length - 1]) : { leak: 0, blocked: 0, events: 0 };
             if (last.events <= 0) return null; // ngày yên ả (không rủi ro) thì không bày thẻ, tránh nhiễu
             const tone = leakTone(last.leak, st.revenue);
-            const color = tone === 'bad' ? '#e74c3c' : tone === 'warn' ? '#f1c40f' : '#2ecc71';
             return (
-              <div style={{ ...styles.card, borderLeft: `3px solid ${color}`, marginTop: 8 }}>
-                <b>🛡️ Rủi ro hôm nay — chặn {formatMoney(last.blocked)} · lọt {formatMoney(last.leak)} · {last.events} lần</b>
+              <Callout tone={tone === 'bad' ? 'danger' : tone === 'warn' ? 'accent' : 'ok'} style={{ marginTop: 8 }}
+                title={<>🛡️ Rủi ro hôm nay — chặn {formatMoney(last.blocked)} · lọt {formatMoney(last.leak)} · {last.events} lần</>}>
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                   Lọt: trộm khuất · tiền giả lọt · nhân viên gian lận · Chặn: bắt quả tang (phạt) · phát hiện tiền giả · thu lại khi bắt
                 </div>
-              </div>
+              </Callout>
             );
           })()}
           {/* GĐ124: Thẻ "Combo hôm nay" trong tổng kết — đóng vòng phản hồi cho quyết định xoay slot
@@ -288,7 +289,7 @@ export function SummaryPanel({ day }: { day: number }) {
             if (!rows.length) return null;
             return (
               <div style={{ ...styles.card, marginTop: 8 }}>
-                <b>🎁 Combo hôm nay</b>
+                <b style={styles.cardTitle}>🎁 Combo hôm nay</b>
                 <div style={{ marginTop: 4, display: 'grid', gap: 3 }}>
                   {rows.map(({ def, t, margin }) => (
                     <div key={def.id} style={{ fontSize: 12, display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
@@ -305,7 +306,7 @@ export function SummaryPanel({ day }: { day: number }) {
               để so (best !== null); đọc state có sẵn (history/soldEver/comboHitCount), không đổi save. */}
           {feedActive.length > 0 && (
             <div style={{ ...styles.card, marginTop: 8 }}>
-              <b>🏆 Đang đua phá kỷ lục</b>
+              <b style={styles.cardTitle}>🏆 Đang đua phá kỷ lục</b>
               <div style={{ marginTop: 4, display: 'grid', gap: 3 }}>
                 {feedActive.map((f) => (
                   <button key={f.label} onClick={() => openPanel({ type: 'records' })}
@@ -331,14 +332,14 @@ export function SummaryPanel({ day }: { day: number }) {
             if (np.verdict === 'idle') return null; // chưa mở ca đêm / chưa thuê ai, không bày thẻ tránh nhiễu
             const color = np.verdict === 'ok' ? '#2ecc71' : '#e74c3c';
             return (
-              <div style={{ ...styles.card, borderLeft: `3px solid ${color}`, marginTop: 8 }}>
-                <b>🌙 Đêm qua: thu {formatMoney(np.revenue)} (ca đêm +15%) · lương ca đêm −{formatMoney(np.wages)} · <span style={{ color }}>lời ròng {formatMoney(np.net)}</span></b>
+              <Callout tone={np.verdict === 'ok' ? 'ok' : 'danger'} style={{ marginTop: 8 }}
+                title={<>🌙 Đêm qua: thu {formatMoney(np.revenue)} (ca đêm +15%) · lương ca đêm −{formatMoney(np.wages)} · <span style={{ color }}>lời ròng {formatMoney(np.net)}</span></>}>
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                   {np.verdict === 'ok'
                     ? 'Mở xuyên đêm đang có lời — bán được đắt hơn buổi ngày, khách khuya lười trả giá.'
                     : '⚠️ Ca đêm đang lỗ — cân nhắc bớt nhân viên ca đêm, rút bảo vệ thừa, hoặc đóng cửa đúng giờ để khỏi trả lương ×1.5.'}
                 </div>
-              </div>
+              </Callout>
             );
           })()}
           {/* GĐ120: Thẻ dạy chơi 'mất khách vì chờ quầy' — phản hồi cuối ngày của dấu hiệu sốt
@@ -349,27 +350,26 @@ export function SummaryPanel({ day }: { day: number }) {
             const bad = waitLoss.pct >= 0.1; // mất ≥10% khách vì chờ là đáng sốt
             const color = bad ? '#e74c3c' : '#f1c40f';
             return (
-              <div style={{ ...styles.card, borderLeft: `3px solid ${color}`, marginTop: 8 }}>
-                <b>⏳ Mất {waitLoss.count} khách vì chờ quầy quá lâu <span style={{ color }}>(bằng ~{pct}% khách ghé hôm nay)</span></b>
+              <Callout tone={bad ? 'danger' : 'accent'} style={{ marginTop: 8 }}
+                title={<>⏳ Mất {waitLoss.count} khách vì chờ quầy quá lâu <span style={{ color }}>(bằng ~{pct}% khách ghé hôm nay)</span></>}>
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                   Khách đứng chờ 😕😤 quá lâu rồi bỏ về. Đứng quầy giờ đông (giờ cao điểm nhất {waitLoss.peakHour !== null ? `${waitLoss.peakHour}h–${waitLoss.peakHour + 1}h` : 'trong hôm nay'}) hoặc thuê thêm thu ngân để không bỏ lỡ.
                 </div>
-              </div>
+              </Callout>
             );
           })()}
           {loyaltyPay && loyaltyPay.verdict !== 'soon' && (
-            <div style={{ ...styles.card, borderLeft: `3px solid ${loyaltyPay.verdict === 'keep' ? '#2ecc71' : '#e67e22'}`, marginTop: 8 }}>
-              <b>🎫 Thẻ tích điểm hôm nay</b>
+            <Callout tone={loyaltyPay.verdict === 'keep' ? 'ok' : 'warn'} style={{ marginTop: 8 }} title="🎫 Thẻ tích điểm hôm nay">
               <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                 {loyaltyPay.verdict === 'keep'
                   ? `Nhờ +${loyaltyPay.boostPct}% khách, kéo thêm ~${loyaltyPay.extraCustomers} khách (~${formatMoney(loyaltyPay.extraValue)}/ngày) — so với quà tặng ~${formatMoney(loyaltyPay.costToday)}/ngày (món ~${formatMoney(loyaltyPay.avgGift)}) là ĐÁNG giữ.`
                   : `Quà tặng ~${formatMoney(loyaltyPay.costToday)}/ngày (món ~${formatMoney(loyaltyPay.avgGift)}) cao hơn giá trị khách kéo thêm (~${formatMoney(loyaltyPay.extraValue)}/ngày) — nâng lên ${5}/${10}/${15} tem hoặc tắt cho đỡ tốn.`}
               </div>
-            </div>
+            </Callout>
           )}
           {happyPay && (
-            <div style={{ ...styles.card, borderLeft: `3px solid ${happyPay.verdict === 'great' ? '#2ecc71' : happyPay.verdict === 'ok' ? '#f1c40f' : '#e74c3c'}`, marginTop: 8 }}>
-              <b>🌞 Giờ vàng hôm nay ({happyPay.from}h–{happyPay.to}h)</b>
+            <Callout tone={happyPay.verdict === 'great' ? 'ok' : happyPay.verdict === 'ok' ? 'accent' : 'danger'} style={{ marginTop: 8 }}
+              title={`🌞 Giờ vàng hôm nay (${happyPay.from}h–${happyPay.to}h)`}>
               <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                 {happyPay.verdict === 'great'
                   ? `Kéo thêm ~${happyPay.extraCustomers} khách (~${formatMoney(happyPay.extraValue)} lợi) so tiền giảm giá ~${formatMoney(happyPay.discountCost)} — hiệu quả ~${happyPay.efficiency.toFixed(1)}×, giữ mức này.`
@@ -377,11 +377,10 @@ export function SummaryPanel({ day }: { day: number }) {
                   ? `Kéo thêm ~${happyPay.extraCustomers} khách (~${formatMoney(happyPay.extraValue)} lợi) nhưng tiền giảm giá ~${formatMoney(happyPay.discountCost)} chiếm phần lớn (hiệu quả ~${happyPay.efficiency.toFixed(1)}×) — cân nhắc hạ mức chiết khấu để lời hơn.`
                   : `Tiền giảm giá ~${formatMoney(happyPay.discountCost)} vượt lợi khách kéo thêm (~${formatMoney(happyPay.extraValue)}) — giờ vàng đang tốn, nên hạ mức giảm hoặc đổi giờ sang giờ vắng.`}
               </div>
-            </div>
+            </Callout>
           )}
           {missRev && missRev.totalLoss > 0 && (
-            <div style={{ ...styles.card, borderLeft: '3px solid #e74c3c', marginTop: 8 }}>
-              <b>📦 Hết hàng bỏ lỡ ~{formatMoney(missRev.totalLoss)} hôm nay</b>
+            <Callout tone="danger" style={{ marginTop: 8 }} title={<>📦 Hết hàng bỏ lỡ ~{formatMoney(missRev.totalLoss)} hôm nay</>}>
               <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                 {missRev.inStorageCount > 0 && missRev.outOfStockCount > 0
                   ? `${missRev.rows.length} món khách tìm mà kệ trống: ${missRev.inStorageCount} món còn trong kho (chỉ thiếu chỗ bày — xếp thêm lên kệ) · ${missRev.outOfStockCount} món hết cả kho (nhập thêm). ${missRev.rows.slice(0, 3).map((r) => `${r.name} ~${formatMoney(r.estLoss)}`).join(' · ')}`
@@ -389,11 +388,10 @@ export function SummaryPanel({ day }: { day: number }) {
                   ? `${missRev.rows.length} món còn hàng trong kho nhưng kệ hết chỗ — bày thêm lên kệ để không bỏ lỡ: ${missRev.rows.slice(0, 3).map((r) => `${r.name} ~${formatMoney(r.estLoss)}`).join(' · ')}`
                   : `${missRev.rows.length} món hết cả kho — nhập thêm để không bỏ lỡ: ${missRev.rows.slice(0, 3).map((r) => `${r.name} ~${formatMoney(r.estLoss)}`).join(' · ')}`}
               </div>
-            </div>
+            </Callout>
           )}
           {spoilNite && spoilNite.totalCost > 0 && (
-            <div style={{ ...styles.card, borderLeft: '3px solid #e74c3c', marginTop: 8 }}>
-              <b>🥀 Đêm qua hỏng ~{formatMoney(spoilNite.totalCost)} hàng</b>
+            <Callout tone="danger" style={{ marginTop: 8 }} title={<>🥀 Đêm qua hỏng ~{formatMoney(spoilNite.totalCost)} hàng</>}>
               <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
                 {spoilNite.rows.slice(0, 3).map((r) => (
                   <button key={r.id} onClick={() => openPanel({ type: 'order' })}
@@ -406,7 +404,7 @@ export function SummaryPanel({ day }: { day: number }) {
                 ))}
               </div>
               <div style={{ fontSize: 12, opacity: 0.75, marginTop: 3 }}>Giảm bớt nhập món hay hỏng hoặc cất tủ lạnh hàng mát — chỉnh ở Nhập hàng.</div>
-            </div>
+            </Callout>
           )}
           {methods.length > 0 && (
             <>
@@ -588,7 +586,7 @@ export function MorningPanel() {
 
       {earlyUnlocks && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '2px solid #f1c40f' }}>
-          <b>🧭 Sắp mở khóa</b>
+          <b style={styles.cardTitle}>🧭 Sắp mở khóa</b>
           <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
             {earlyUnlocks.map((u) => (
               <button key={u.id} onClick={() => openPanel(u.panel())}
@@ -603,8 +601,7 @@ export function MorningPanel() {
       )}
 
       {chophien && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #2ecc71' }}>
-          <b>🧺 Hôm nay chợ phiên đầu ngõ</b>
+        <Callout tone="ok" title="🧺 Hôm nay chợ phiên đầu ngõ" style={{ marginBottom: 8 }}>
           <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
             {chophien.rows.map((r) => (
               <div key={r.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline', fontSize: 12 }}>
@@ -617,16 +614,16 @@ export function MorningPanel() {
             Gánh ~{chophien.units} món dư ra bán, thu về ~<b>{formatMoney(chophien.total)}</b> thay vì để ế/hỏng.
           </div>
           <button onClick={() => sellMarketSurplus()}
-            style={{ ...styles.btn, marginTop: 6, width: '100%', background: '#2ecc71', borderColor: '#27ae60' }}>
+            style={{ ...styles.btn, marginTop: 6, width: '100%', background: '#2ecc71' }}>
             🧺 Gánh bán ngay (+~{formatMoney(chophien.total)})
           </button>
           <div style={{ fontSize: 11, opacity: 0.7, marginTop: 3 }}>Chợ trả thấp hơn giá bán lẻ nhưng giải phóng hàng tồn — mỗi phiên một lần.</div>
-        </div>
+        </Callout>
       )}
 
       {actions.length > 0 && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '1px solid rgba(26,188,156,0.4)' }}>
-          <b>🗓️ Việc hôm nay · ưu tiên</b>
+          <b style={styles.cardTitle}>🗓️ Việc hôm nay · ưu tiên</b>
           <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
             {actions.map((a, i) => (
               <button key={i} onClick={() => openPanel({ type: a.panel as never })}
@@ -640,8 +637,7 @@ export function MorningPanel() {
       )}
 
       {sickest.length > 0 && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #e74c3c' }}>
-          <b>🔎 Kệ cần chú ý</b>
+        <Callout tone="danger" title="🔎 Kệ cần chú ý" style={{ marginBottom: 8 }}>
           <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
             {sickest.map((s, i) => (
               <button key={i} onClick={() => openPanel({ type: 'analytics' })}
@@ -650,12 +646,11 @@ export function MorningPanel() {
               </button>
             ))}
           </div>
-        </div>
+        </Callout>
       )}
 
       {yesterCombos.length > 0 && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #f1c40f' }}>
-          <b>💡 Combo hôm qua kém hiệu quả</b>
+        <Callout tone="accent" title="💡 Combo hôm qua kém hiệu quả" style={{ marginBottom: 8 }}>
           <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
             {yesterCombos.map(({ def, t, margin }) => (
               <button key={def.id} onClick={() => openPanel({ type: 'combos' })}
@@ -664,12 +659,12 @@ export function MorningPanel() {
               </button>
             ))}
           </div>
-        </div>
+        </Callout>
       )}
 
       {biz.loan && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: biz.loan.dueDay - day <= 3 ? '2px solid #e74c3c' : undefined }}>
-          <b>🏦 Đang nợ ngân hàng {formatMoney(biz.loan.principal)}</b>
+          <b style={styles.cardTitle}>🏦 Đang nợ ngân hàng {formatMoney(biz.loan.principal)}</b>
           <div style={{ fontSize: 12, marginTop: 2 }}>
             Tối nay trừ lãi {formatMoney(Math.round(biz.loan.principal * LOAN_DAILY_RATE))} · hạn trả ngày {biz.loan.dueDay} (còn {Math.max(0, biz.loan.dueDay - day)} ngày)
             · trả gốc ở Kinh doanh → Vay &amp; hụi.
@@ -679,7 +674,7 @@ export function MorningPanel() {
 
       {/* 🛒 Nhu cầu quầy: dự báo cầu theo giờ của tiệm chính (GĐ78) */}
       <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '1px solid rgba(46,204,113,0.35)' }}>
-        <b>🛒 Nhu cầu quầy hôm nay</b>
+        <b style={styles.cardTitle}>🛒 Nhu cầu quầy hôm nay</b>
         <div style={{ fontSize: 12, marginTop: 2, opacity: 0.9 }}>
           ~{demand.expectedTotal} khách dự kiến cả ngày · đỉnh: {demand.peakBands.join(', ')} (ước lượng theo nhịp + lễ/thời tiết)
         </div>
@@ -703,18 +698,28 @@ export function MorningPanel() {
 
       {/* GĐ161: 1 dòng gợi ý duy nhất khi mở sổ trong khung vắng 13–17h — nấu kịp giờ vàng tối */}
       {eveningPrep && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #f1c40f' }}>
+        <Callout tone="accent" style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 12 }}>
             🍳 Muốn kịp giờ vàng tối: bắt đầu nấu <b>{eveningPrep.name}</b> trước ~{formatClock(eveningPrep.startBy)}.
           </div>
-        </div>
+        </Callout>
       )}
 
       {hasMeatCounter && butcherV.skill < MAX_BUTCHER_STAR && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: `3px solid ${butcherV.present ? '#e67e22' : '#e74c3c'}`, background: butcherV.present ? undefined : 'rgba(231,76,60,0.12)' }}>
-          <b>🔪 {butcherV.present
+        <Callout tone={butcherV.present ? 'warn' : 'danger'} strong={!butcherV.present} style={{ marginBottom: 8 }}
+          title={<>🔪 {butcherV.present
             ? `Người bán thịt cá ${butcherV.skill}★ trực hôm nay — bán được ~${butcherV.pct}% nhu cầu thịt cá`
-            : 'Không có người bán thịt cá trực hôm nay — khách chỉ mua ~22% nhu cầu thịt cá'}</b>
+            : 'Không có người bán thịt cá trực hôm nay — khách chỉ mua ~22% nhu cầu thịt cá'}</>}
+          actions={
+            <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <button onClick={() => openPanel({ type: 'staff' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
+                {butcherV.present ? '👥 Nâng/bồi dưỡng người bán thịt cá →' : '👥 Xếp người bán thịt cá →'}
+              </button>
+              <button onClick={() => openPanel({ type: 'analytics' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
+                📊 Xem sổ thịt cá →
+              </button>
+            </div>
+          }>
           <div style={{ fontSize: 12, marginTop: 2 }}>
             {butcherV.present
               ? `Hệ số cầu ${butcherV.factor.toFixed(2).replace('.', ',')} so với mốc ${butcherV.maxFactor.toFixed(2).replace('.', ',')} (người bán 5★).`
@@ -727,20 +732,12 @@ export function MorningPanel() {
                 : ` — thuê người bán 5★ có thể thêm ~${formatMoney(meatMissed)}/ngày`}
             </div>
           )}
-          <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <button onClick={() => openPanel({ type: 'staff' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
-              {butcherV.present ? '👥 Nâng/bồi dưỡng người bán thịt cá →' : '👥 Xếp người bán thịt cá →'}
-            </button>
-            <button onClick={() => openPanel({ type: 'analytics' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
-              📊 Xem sổ thịt cá →
-            </button>
-          </div>
-        </div>
+        </Callout>
       )}
 
       {biz.hui && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
-          <b>🤝 Đang góp hụi {formatMoney(biz.hui.daily)}/ngày</b>
+          <b style={styles.cardTitle}>🤝 Đang góp hụi {formatMoney(biz.hui.daily)}/ngày</b>
           <div style={{ fontSize: 12, marginTop: 2 }}>
             Đã góp {biz.hui.paidDays}/{biz.hui.members} ngày{!biz.hui.received && ` · ngày ${biz.hui.turnDay} tới lượt hốt ${formatMoney(biz.hui.daily * biz.hui.members)}`}.
           </div>
@@ -748,8 +745,7 @@ export function MorningPanel() {
       )}
 
       {biz.quanNuoc.open && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: `3px solid ${biz.quanNuocLast && biz.quanNuocLast.served < biz.quanNuocLast.wanted ? '#e67e22' : '#2ecc71'}` }}>
-          <b>🧋 Quán nước</b>
+        <Callout tone={biz.quanNuocLast && biz.quanNuocLast.served < biz.quanNuocLast.wanted ? 'warn' : 'ok'} style={{ marginBottom: 8 }} title="🧋 Quán nước">
           {biz.quanNuocLast ? (
             <>
               <div style={{ fontSize: 12, marginTop: 2 }}>
@@ -777,24 +773,22 @@ export function MorningPanel() {
               🥤 Kho chỉ còn {quanHealth.drinkUnitsNow} ly đồ uống (quán tiêu {quanHealth.consumedYesterday} ly hôm qua) — tối nay ăn hết là kệ tiệm chính cạn nước. Nhập nước/ngọt/cà phê.
             </div>
           )}
-        </div>
+        </Callout>
       )}
 
       {branchChores.length > 0 && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #e67e22' }}>
-          <b>🏪 Tiện lợi 24/7: việc hôm nay</b>
+        <Callout tone="warn" title="🏪 Tiện lợi 24/7: việc hôm nay" style={{ marginBottom: 8 }}>
           {branchChores.map((c, i) => (
             <button key={i} onClick={() => openPanel({ type: 'branch' })}
               style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', color: c.danger ? '#e74c3c' : '#f1c40f', fontSize: 12, marginTop: 2, cursor: 'pointer', padding: 0 }}>
               {c.icon} {c.text}
             </button>
           ))}
-        </div>
+        </Callout>
       )}
 
       {hiepLucEligible(branch, biz.quanNuoc, level) && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #8e44ad' }}>
-          <b>🤝 Đối tác chi nhánh × quán nước</b>
+        <Callout tone="event" title="🤝 Đối tác chi nhánh × quán nước" style={{ marginBottom: 8 }}>
           {biz.hiepLuc?.active && biz.hiepLuc.m === monthOf(day) ? (
             <div style={{ fontSize: 12, marginTop: 2 }}>
               Đang hiệp lực tháng này: gom {formatMoney(biz.hiepLucMonth ?? 0)}/{formatMoney(HIEPLUC_MIN)} doanh thu chung{biz.hiepLucStreak ? ` · chuỗi ${biz.hiepLucStreak} tháng` : ''}. Cuối tháng đủ ngưỡng được thưởng (cọc {formatMoney(HIEPLUC_COC)} hoàn lại).
@@ -807,7 +801,7 @@ export function MorningPanel() {
               </button>
             </div>
           )}
-        </div>
+        </Callout>
       )}
 
       {seasonEvent(day) && (() => {
@@ -817,8 +811,7 @@ export function MorningPanel() {
         const claimedToday = biz.seasonEvt?.claimedDay === ev.dayIndex;
         const name = seasonEventName(ev.season);
         return (
-          <div style={{ ...styles.card, display: 'block', marginBottom: 8, borderLeft: '3px solid #1abc9c' }}>
-            <b>🌟 {name} · ngày {ev.dayIndex + 1}/{SEASON_EVENT_DAYS}</b>
+          <Callout tone="ok" title={`🌟 ${name} · ngày ${ev.dayIndex + 1}/${SEASON_EVENT_DAYS}`} style={{ marginBottom: 8 }}>
             {obj && (
               <div style={{ fontSize: 12, marginTop: 2 }}>
                 {obj.icon} Mục tiêu hôm nay: <b>{obj.title}</b> ({obj.detail})
@@ -826,13 +819,13 @@ export function MorningPanel() {
               </div>
             )}
             <div style={{ fontSize: 12, marginTop: 2, opacity: 0.85 }}>⭐ {stars} sao mùa · mỗi mục tiêu thưởng {formatMoney(SEASON_REWARD_PER_STAR)}</div>
-          </div>
+          </Callout>
         );
       })()}
 
       {effects.festival && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '2px solid #f1c40f' }}>
-          <b>{effects.festival.icon} {effects.festival.name} đang diễn ra</b>
+          <b style={styles.cardTitle}>{effects.festival.icon} {effects.festival.name} đang diễn ra</b>
           <div style={{ fontSize: 12, marginTop: 2 }}>
             👥 khách {pct(effects.festival.traffic)}{effects.festival.cost !== 1 && ` · 💰 giá nhập ${pct(effects.festival.cost)}`}
             {effects.festival.tolerance && ' · 😤 khách chịu giá cao'}
@@ -846,19 +839,19 @@ export function MorningPanel() {
       )}
       {effects.hot.length > 0 && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
-          <b>🎯 Hàng của dịp hôm nay</b>
+          <b style={styles.cardTitle}>🎯 Hàng của dịp hôm nay</b>
           <div style={{ fontSize: 12, marginTop: 2 }}>{effects.hot.map((id) => `${productById(id).name}${haveStock(id) ? ' ✓' : ' ⚠️ chưa có'}`).join(', ')}</div>
         </div>
       )}
       {hot.length > 0 && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
-          <b>🔥 Hàng hot tuần này</b>
+          <b style={styles.cardTitle}>🔥 Hàng hot tuần này</b>
           <div style={{ fontSize: 12, marginTop: 2 }}>{hot.map((id) => `${productById(id).name}${haveStock(id) ? ' ✓' : ' ⚠️ chưa có'}`).join(', ')}</div>
         </div>
       )}
       {soon && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
-          <b>⏳ {soon.festival.icon} {soon.festival.name} {soon.inDays === 1 ? 'ngày mai' : `sau ${soon.inDays} ngày`}</b>
+          <b style={styles.cardTitle}>⏳ {soon.festival.icon} {soon.festival.name} {soon.inDays === 1 ? 'ngày mai' : `sau ${soon.inDays} ngày`}</b>
           <div style={{ fontSize: 12, marginTop: 2 }}>
             🎊 Đón lễ: trữ sẵn{' '}
             {prepItems(soon.festival, level).map((id, i) => (
@@ -1098,7 +1091,7 @@ export function DebtBook() {
 export function AdviceCard({ title, items, onAct }: { title: string; items: Advice[]; onAct: (a: Advice) => void }) {
   return (
     <div style={{ ...styles.card, display: 'block', marginTop: 10, maxWidth: 560 }}>
-      <b style={{ fontSize: 13 }}>{title}</b>
+      <b style={styles.cardTitle}>{title}</b>
       {items.map((a, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginTop: 4 }}>
           <span style={{ flex: 1 }}>{a.icon} {a.text}</span>
@@ -1114,7 +1107,7 @@ export function HourChart({ hours, peak, quiet }: { hours: HourStat[]; peak?: nu
   const max = Math.max(1, ...hours.map((h) => h.customers));
   return (
     <div style={{ ...styles.card, display: 'block', marginTop: 10, maxWidth: 560 }}>
-      <b style={{ fontSize: 13 }}>🕒 Khách theo giờ</b>
+      <b style={styles.cardTitle}>🕒 Khách theo giờ</b>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 70, marginTop: 6 }}>
         {hours.map((h) => (
           <div key={h.hour} title={`${h.hour}h: ${h.customers} khách · ${formatMoney(h.revenue)}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
@@ -1169,7 +1162,7 @@ export function ReputationCard({ log }: { log: RepSample[] }) {
         )}</div>
       )}
       {!payoff.insufficient && (
-        <div style={{ fontSize: 12, marginTop: 6, color: payoff.extraKhach >= 0 ? '#4caf50' : '#e74c3c' }}>
+        <div style={{ fontSize: 12, marginTop: 6, color: payoff.extraKhach >= 0 ? '#2ecc71' : '#e74c3c' }}>
           🚶 Danh tiếng làm <b>{Math.abs(payoff.pct * 100).toFixed(0)}%</b> người đi đường ghé{payoff.extraKhach >= 0 ? ' hơn' : ' ít hơn'} →{' '}
           <b>{payoff.extraKhach >= 0 ? '~+' : '~−'}{Math.abs(payoff.extraKhach)} khách/ngày</b>
           <span style={{ opacity: 0.75 }}> (cấp {level}). Nâng 0.5★: thêm ~{payoff.nextStarKhach} khách/ngày.</span>
