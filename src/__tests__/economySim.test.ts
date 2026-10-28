@@ -137,6 +137,19 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
     expect(Object.keys(rows[0])).toEqual(expect.arrayContaining(['day', 'level', 'operationalProfit', 'quest', 'bet']));
     expect([rows[0].quest, rows[0].bet].every(Number.isFinite)).toBe(true);
   });
+
+  // GĐ160 — ngày 1 cấp 1: bot autoplay bán đúng vòng nhập-bày-bán, doanh thu phải chạm được mục tiêu
+  // doanh thu người mới (100.000đ = ~65% kho khởi đầu) — smoke ngắn, in số để Leader đối chiếu.
+  it('ngày 1 cấp 1 — bot đạt mục tiêu doanh thu người mới 100.000đ (in số, không assert cứng tỉ số)', async () => {
+    const { rows } = await runEconomySim(1, 1, { betTier: 1.0 });
+    expect(rows.length).toBe(1);
+    const revenue = useGame.getState().totals.revenue;
+    // eslint-disable-next-line no-console
+    console.log(`[GĐ160 smoke] ngày 1 cấp 1: doanh thu=${fmt(revenue)} · mục tiêu doanh thu người mới=${fmt(100_000)} · đạt=${revenue >= 100_000 ? 'ĐẠT' : 'CHƯA'} · tiền nhiệm vụ=${fmt(rows[0].quest)} · lãi vận hành=${fmt(rows[0].operationalProfit)}`);
+    // Assert mềm: bot chơi đúng nhịp thì số hữu hạn, và doanh thu ngày 1 không phải số 0 vô lý
+    expect(Number.isFinite(revenue)).toBe(true);
+    expect(revenue).toBeGreaterThan(0);
+  });
 });
 
 const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;

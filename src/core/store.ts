@@ -6,7 +6,8 @@ import { rentOf, type ShopStyle } from '../data/shopTiers';
 import type { Review } from '../data/reviews';
 import { forecastFrom, newWeatherSeed, type Weather } from '../data/weather';
 import type { Lot } from '../data/freshness';
-import type { RegularProgress, Reservation } from '../data/regulars';
+import { REGULARS, visitsToday, type RegularProgress, type Reservation } from '../data/regulars';
+import { reputationOf } from '../data/reputation';
 import type { ActiveOrder } from '../data/orders';
 import { dayEffects, festivalOn, festivalStock } from '../data/calendar';
 import type { HappyHour } from '../data/rhythm';
@@ -54,14 +55,26 @@ export * from './gameTypes';
 export { migrateTiers } from './stock';
 
 /** Số liệu nhiệm vụ đọc từ trạng thái game. */
-export const questContext = (s: GameState): QuestContext => ({
-  day: s.day, level: s.level, stats: s.stats, totals: s.totals, staffCount: s.staff.length,
-  shopTier: s.shopTier, warehouseTier: s.warehouseTier, ordersDone: s.ordersDone, log: s.questLog,
-  festivalGoods: festivalOn(s.day) ? festivalStock(festivalOn(s.day)!, s.level) : [],
-  reservationsToday: Object.values(s.reservations).filter((r) => r.day === s.day).length,
-  rent: rentOf(s.shopTier),
-  avgDailyProfit: recentAvgProfit(s.history),
-});
+export const questContext = (s: GameState): QuestContext => {
+  // GĐ160 — khách quen hôm nay: đã phục vụ (lastVisitDay === today) + dự kiến ghé (visitsToday là
+  // hàm thuần deterministic theo weatherSeed — ai sẽ ghé hôm nay biết trước, ai rồi thì chuyển qua
+  // cột "đã phục vụ" nên tổng `regularsComingToday` đứng nguyên trong ngày).
+  const regularsServedToday = Object.values(s.regulars).filter((p) => p.lastVisitDay === s.day).length;
+  const rep = reputationOf(s.repLog);
+  const regularsComingToday = regularsServedToday
+    + REGULARS.reduce((n, def) => n + (visitsToday(def, s.day, s.weatherSeed, s.level, s.regulars[def.id], rep) ? 1 : 0), 0);
+  return {
+    day: s.day, level: s.level, stats: s.stats, totals: s.totals, staffCount: s.staff.length,
+    shopTier: s.shopTier, warehouseTier: s.warehouseTier, ordersDone: s.ordersDone, log: s.questLog,
+    festivalGoods: festivalOn(s.day) ? festivalStock(festivalOn(s.day)!, s.level) : [],
+    reservationsToday: Object.values(s.reservations).filter((r) => r.day === s.day).length,
+    rent: rentOf(s.shopTier),
+    avgDailyProfit: recentAvgProfit(s.history),
+    weather: s.weather,
+    regularsServedToday,
+    regularsComingToday,
+  };
+};
 
 /** Trạng thái lúc bắt đầu game mới. */
 export const newGameData = () => ({

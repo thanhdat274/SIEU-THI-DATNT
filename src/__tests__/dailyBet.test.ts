@@ -6,6 +6,7 @@ import {
   betCoreSetProgress, isBetCore, emptyQuestLog, type QuestContext,
 } from '../data/quests';
 import { COOKED_PRODUCT_IDS } from '../data/recipes';
+import { REGULARS } from '../data/regulars';
 
 /** "Đặt kèo hôm nay": chốt 1 kèo/ngày — làm trọn BỘ nhiệm vụ ngày ở mục tiêu ×1.0/×1.5/×2.0 thì
  * nhận thêm 30/50/80% tổng thưởng bộ ngày (trần cứng 1×), hụt thì không phạt. */
@@ -18,16 +19,28 @@ const ctx = (over: Partial<QuestContext> = {}): QuestContext => ({
 
 // Cấp 30: cả 7 nhóm nhiệm vụ tuỳ chọn đều mở. Stats đè làm mọi việc đạt ở CẢ mục tiêu ×2.0
 // (revenue mục tiêu ×2 ở cấp 30 ≈ 2.475 triệu, khách ×2 ≈ 86, món ×2 ≈ 204, đơn app ×2 ≈ 18…)
+// GĐ160: thêm byHour (đầy nhiệm vụ mới "Sớm hôm đón khách" đo doanh thu 6h–9h).
 const bigStats = {
   ...newGameData().stats,
   customers: 500, revenue: 20_000_000, itemsSold: 999, unhappy: 0,
   services: 99_999_999, combos: 999, onlineDone: 999, farmHarvest: 999, socialPosts: 99, cookOrders: 999,
   byItem: { [[...COOKED_PRODUCT_IDS][0]]: { qty: 999, revenue: 1, cost: 1 } },
+  byHour: { 6: { customers: 99, revenue: 999_999_999 }, 7: { customers: 99, revenue: 999_999_999 }, 8: { customers: 99, revenue: 999_999_999 } },
 };
+
+// GĐ160 — khoá biến thể "Đón khách quen" về 0 cách tất định (mọi khách quen ghé HÔM QUA — luật
+// "không ghé hai ngày liền" của visitsToday tắt hết dự báo hôm nay) để pool nhiệm vụ không phụ thuộc
+// weatherSeed ngẫu nhiên của ván test.
+const allRegularsVisitedYesterday = (day: number) =>
+  Object.fromEntries(REGULARS.map((d) => [d.id, { friendship: 0, visits: 1, lastVisitDay: day - 1, perks: [], discovered: [] }]));
 
 /** State ván sạch ở ngày `day`, cấp 30, đã làm xong sẵn cả bộ (nếu big). */
 const freshGame = (day = 1, stats: Record<string, unknown> = {}) => {
-  useGame.setState({ ...newGameData(), day, level: 30, money: 1_000_000, stats: { ...newGameData().stats, ...stats } as never });
+  useGame.setState({
+    ...newGameData(), day, level: 30, money: 1_000_000,
+    stats: { ...newGameData().stats, ...stats } as never,
+    regulars: allRegularsVisitedYesterday(day),
+  });
 };
 
 /** Chốt kèo `tier` rồi nhận đủ thưởng cả bộ nhiệm vụ ngày, trả về { tổng thưởng bộ, tiền thêm, tiền cuối }. */
@@ -85,7 +98,7 @@ describe('chốt kèo — lưu theo ngày và nhân mục tiêu cả bộ', () =
   it('hụt không phạt: hết ngày không trọn việc chính thì không mất đồng nào, sang ngày đặt lại được', () => {
     const money0 = useGame.getState().money;
     expect(useGame.getState().placeBet(2.0)).toBe(true);
-    useGame.setState({ day: 6 }); // ngủ một giấc, bộ nhiệm vụ hôm qua không xong
+    useGame.setState({ day: 6, regulars: allRegularsVisitedYesterday(6) }); // ngủ một giấc, bộ nhiệm vụ hôm qua không xong
     const s = useGame.getState();
     expect(s.money).toBe(money0); // không phạt
     expect(dailyQuests(questContext(s)).every((q, i) => q.target === dailyQuests(ctx({ day: 6 }))[i].target)).toBe(true); // mục tiêu về lại bộ thường

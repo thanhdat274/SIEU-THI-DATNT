@@ -203,6 +203,15 @@
 }
 #ui .hud-menu button:hover, #ui .hud-menu button:focus-visible { background: rgba(255, 255, 255, 0.08); outline: none; }
 #ui .hud-menu button.danger { color: #ff7675; }
+/* GĐ160 — dòng nhỏ giải thích ngay dưới một mục menu (không bấm được): cảnh báo lịch tự động lỡ giờ vàng */
+#ui .hud-menu-hint {
+  padding: 2px 12px 8px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  pointer-events: none;
+}
 
 /* ---------- Thông báo ---------- */
 #ui .hud-alerts {

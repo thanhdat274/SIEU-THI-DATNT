@@ -335,6 +335,10 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     },
     {
       icon: atFarm ? '🛵' : '🚜', label: atFarm ? 'Ra tiệm' : 'Ra trại',
+      // GĐ160 — khoá chiều ĐI trại theo cấp 8 đúng cơ chế các nút khác (Trang trại panel cũng khoá 8):
+      // trước đó bấm được là dịch chuyển tới trại trống không giải thích. Chiều VỀ (đang ở trại) luôn mở
+      // — save cũ có thể đang đứng ở trại dưới cấp 8, không khoá kẻo mắc kẹt.
+      lock: atFarm ? undefined : 8,
       on: () => worldActions.travel(atFarm ? 'shop' : 'ranch'),
     },
     {
@@ -504,8 +508,11 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
               label: autoRoutine ? '⏰ Lịch tự động: Bật' : '⏰ Lịch tự động: Tắt',
               on: () => {
                 useGame.setState({ autoRoutine: !autoRoutine });
-                notify(autoRoutine ? 'Đã tắt lịch tự động' : '⏰ Bật lịch: 7h ra tiệm, 8h mở cửa, 22h30 đóng, 23h kiểm kê rồi về nhà');
+                notify(autoRoutine ? 'Đã tắt lịch tự động' : '⏰ Bật lịch: 7h ra tiệm, 8h mở cửa (lỡ nửa giờ vàng sáng 6h–8h30 — muốn đón đủ thì mở tay sớm hơn), 22h30 đóng, 23h kiểm kê rồi về nhà');
               },
+              // GĐ160 — lịch tự động mở cửa 8h bỏ lỡ nửa giờ vàng sáng (6h–8h30, band "sang" — rhythm.ts):
+              // minh bạch ngay cạnh công tắc (ROUTINE là quyết định cân bằng riêng, không đổi).
+              hint: autoRoutine ? '⏰ Lịch mở cửa 8h — lỡ nửa giờ vàng sáng (6h–8h30). Muốn đón đủ thì mở tay sớm hơn.' : undefined,
             },
             { label: '🏠 Màn hình chính', on: backToMenu },
             ...(!online ? [{ label: '🔄 Chơi lại từ đầu', danger: true, on: () => confirm('Xoá bản lưu và chơi lại từ đầu?') && resetGame() }] : []),
@@ -664,7 +671,7 @@ function usePopover() {
 
 function AccountMenu({ name, photo, status, items }: {
   name: string; photo: string | null; status: string;
-  items: { label: string; on: () => unknown; danger?: boolean }[];
+  items: { label: string; on: () => unknown; danger?: boolean; /** GĐ160: dòng nhỏ giải thích ngay dưới mục, không bấm được */ hint?: string }[];
 }) {
   const { open, setOpen, ref } = usePopover();
   return (
@@ -680,9 +687,12 @@ function AccountMenu({ name, photo, status, items }: {
       {open && (
         <div className="hud-menu" role="menu">
           {items.map((it) => (
-            <button key={it.label} role="menuitem" className={it.danger ? 'danger' : undefined} onClick={() => { setOpen(false); it.on(); }}>
-              {it.label}
-            </button>
+            <Fragment key={it.label}>
+              <button role="menuitem" className={it.danger ? 'danger' : undefined} onClick={() => { setOpen(false); it.on(); }}>
+                {it.label}
+              </button>
+              {it.hint && <div className="hud-menu-hint">{it.hint}</div>}
+            </Fragment>
           ))}
         </div>
       )}

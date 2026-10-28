@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { newGameData, questContext, useGame } from '../core/store';
 import { betCoreSetProgress, BET_TIERS, betStatus, dailyQuests, emptyQuestLog, isBetCore, questEcoCap, type QuestContext } from '../data/quests';
 import { COOKED_PRODUCT_IDS } from '../data/recipes';
+import { REGULARS } from '../data/regulars';
 
 /**
  * GĐ107 — "Kèo dễ trúng hơn": kèo bám bộ VIỆC CHÍNH hằng ngày (đông khách, bán hàng, doanh thu) thay vì
@@ -23,8 +24,18 @@ const bigStats = {
   byItem: { [[...COOKED_PRODUCT_IDS][0]]: { qty: 999, revenue: 1, cost: 1 } },
 };
 
+// GĐ160 — khoá biến thể "Đón khách quen" về 0 cách tất định (mọi khách quen ghé HÔM QUA — luật
+// "không ghé hai ngày liền" của visitsToday tắt hết dự báo hôm nay) để pool nhiệm vụ không phụ thuộc
+// weatherSeed ngẫu nhiên của ván test.
+const allRegularsVisitedYesterday = (day: number) =>
+  Object.fromEntries(REGULARS.map((d) => [d.id, { friendship: 0, visits: 1, lastVisitDay: day - 1, perks: [], discovered: [] }]));
+
 const freshGame = (day = 10, stats: Record<string, unknown> = {}, level = 30) => {
-  useGame.setState({ ...newGameData(), day, level, money: 1_000_000, stats: { ...newGameData().stats, ...stats } as never });
+  useGame.setState({
+    ...newGameData(), day, level, money: 1_000_000,
+    stats: { ...newGameData().stats, ...stats } as never,
+    regulars: allRegularsVisitedYesterday(day),
+  });
 };
 
 describe('isBetCore / BET_CORE_IDS — nhóm việc chính kèo bám', () => {
@@ -44,6 +55,10 @@ describe('isBetCore / BET_CORE_IDS — nhóm việc chính kèo bám', () => {
     expect(isBetCore('daily_services')).toBe(false);
     expect(isBetCore('daily_farm')).toBe(false);
     expect(isBetCore('daily_cook_orders')).toBe(false);
+    // GĐ160 — nhiệm vụ tuỳ chọn mới (mở từ cấp 1 / biến thể hoàn cảnh) cũng KHÔNG thuộc bộ kèo
+    expect(isBetCore('daily_morning')).toBe(false);
+    expect(isBetCore('daily_rain')).toBe(false);
+    expect(isBetCore('daily_regulars')).toBe(false);
   });
 });
 

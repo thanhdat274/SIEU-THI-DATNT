@@ -13,8 +13,13 @@ const ctx = (
   ordersDone: 0, log, festivalGoods: [], reservationsToday: 0, rent: 20000,
 });
 
-// Stats đủ đè làm cả bộ cấp 1 (customers/revenue/itemsSold đều vượt target, unhappy=0 để daily_smile tính được)
-const bigStats = { ...newGameData().stats, customers: 100, revenue: 200000, itemsSold: 100, unhappy: 0 };
+// Stats đủ đè làm cả bộ cấp 1 (customers/revenue/itemsSold đều vượt target, unhappy=0 để daily_smile
+// tính được; byHour đè nhiệm vụ GĐ160 "Sớm hôm đón khách" — doanh thu 6h–9h)
+const bigStats = {
+  ...newGameData().stats,
+  customers: 100, revenue: 200000, itemsSold: 100, unhappy: 0,
+  byHour: { 6: { customers: 9, revenue: 999_999 }, 7: { customers: 9, revenue: 999_999 }, 8: { customers: 9, revenue: 999_999 } },
+};
 
 describe('dailySetProgress — khép trọn bộ nhiệm vụ ngày', () => {
   it('đầu ngày (chưa làm gì): total = số việc hôm nay, done/claimed = 0, chưa khép bộ', () => {

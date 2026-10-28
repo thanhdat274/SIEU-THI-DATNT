@@ -21,8 +21,8 @@
 
 ## Trạng thái hiện tại (28/10/2026)
 
-- **1594/1594 test pass (147 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
-- Đã xong GĐ1–GĐ159.
+- **1637/1637 test pass (149 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
+- Đã xong GĐ1–GĐ161.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) đã bão hòa; UI responsive đa thiết bị đã audit kỹ (GĐ85–104, 116); trục "giá trị vs chi phí" đã soi kín gần hết tài sản: nhân sự tiệm chính/ca đêm/chi nhánh (141/142/144), mối hàng (143), bếp (145), trại (146/147), danh tiếng (148), quầy thịt cá (149), sổ nợ (150), hợp đồng (151), chi nhánh sau điện (152/153). Mở rộng Gánh hàng rong / Chợ phiên đã có (135–138), NG+ có dự phóng + mục tiêu vòng (139/140).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -68,6 +68,18 @@
 - Triển khai: helper thuần đọc `src/data/minorPayoff.ts` + 4 chỗ UI: (1) hụi — "Đã góp Xđ trong vòng này · còn góp N ngày" (chính xác, không phải ước; sửa chữ audit: chủ hụi ôm trốn là MẤT THẬT, không có "lời từ người vỡ"); (2) phản công — "Bớt ~N sức mạnh ≈ khách đông lại ~P% — ước ~Qđ/ngày" (rivalTrafficFactor tuyến tính, gọi hàm thật với rival giả); (3) khủng hoảng MXH (SocialPanel, không phải BusinessPanel như audit ghi) — "Còn N ngày — xin lỗi cứu ~20% khách/ngày, ước ~Qđ/ngày" (hệ số thật 0.72→0.92); (4) máy bán hàng — "Hoàn vốn sau ~N ngày (đã trừ điện máy ~10k/6.5k nếu efficient)". File: `minorPayoff.ts`, `BusinessPanel.tsx`, `SocialPanel.tsx`, `BranchPanel.tsx`, test 17 test.
 - Kinh tế/save không đổi; số ước đều có "~".
 
+### GĐ160 — 🌱 Người mới: vá 3 mớt ngày đầu + nhiệm vụ tuỳ chọn từ cấp 1 — XONG
+
+- Lý do: audit trải nghiệm — ngày 1–5 là cửa sổ bỏ game: nhiệm vụ lặp (pool tuỳ chọn rỗng cấp thấp), nhiệm vụ doanh thu ngày 1 đòi bán 100% kho (phạt người thử giá), Ra trại không khoá cấp, lịch tự động 8h lỡ giờ vàng sáng 6h–8h30 không báo.
+- Triển khai: (a) hint 1 dòng ở mục Lịch tự động (AccountMenu) khi Bật + cùng cảnh báo trong toast bật lịch — KHÔNG đổi ROUTINE; (b) khoá "Ra trại" cấp 8 theo cơ chế lock chung (chỉ khoá chiều ĐI — chiều về luôn mở để không mắc kẹt save cũ); (c) `NEWBIE_REVENUE_TARGET = 100.000đ` (~65% kho khởi đầu 150k) chỉ cấp 1, từ cấp 2 nguyên thang cũ — sim ngày 1 bot bán 646–861k → đạt thoải mái; (d) 3 nhiệm vụ tuỳ chọn mở từ cấp 1: "🌅 Sớm hôm đón khách" (doanh thu 6–9h qua sổ theo giờ GĐ78; thay ý gốc vì KHÔNG có field giờ châm kệ — trung thực thay vì váng), "🌧️ Bán đồ mưa" (chỉ ngày mưa/giông; ô dù + áo mưa có sẵn), "💛 Đón khách quen" (chỉ ngày có người hẹn ghé; `visitsToday` deterministic theo weatherSeed, loại người đã phục vụ nên không đếm trùng). `questContext` thêm 3 field tuỳ chọn (save cũ an toàn). BET_CORE_IDS nguyên vẹn.
+- File: `quests.ts`, `store.ts`, `Hud.tsx`, `hud.css`, test mới `newbieQuests.test.ts` (15) + điều chỉnh 4 test quest + smoke sim ngày 1.
+
+### GĐ161 — 🍳 "Kịch bản nấu theo giờ": hẹn-giờ-thu-hoạch trong phiên — XONG
+
+- Lý do: audit trải nghiệm — khung vắng 8:30–11h & 13–17h (×0.6) là "ca trực không quyết định". Nguyên lý Hay Day (đã ghi nguồn ở audit): mẻ nấu chạy trong phiên — bắt đầu TRƯỚC khung đông để kịp châm kệ giờ vàng là quyết định thời điểm có kỹ năng.
+- Triển khai: helper thuần đọc `src/data/cookSchedule.ts` — `cookAdvice` theo khung giờ (chỉ nói thời điểm xong + khung bán, KHÔNG hứa doanh số; null khi quá 17h hoặc mẻ xong sau 20h), `pickEveningPrep` chọn mẻ dài nhất vẫn kịp 17h (hòa duration lấy lời nhất/phút trạm GĐ145). CookPanel: dòng "⏰ ..." cho món nấu được ngay (phút trạm thật = cookSpeed × bartenderBoost cùng nguồn tick đồng hồ, giờ vẽ lại 1 lần/phút game). Sổ đầu ngày (MorningPanel): 1 dòng duy nhất khung 13–17h "Muốn kịp giờ vàng tối: bắt đầu nấu {món} trước ~HH:MM".
+- File: `cookSchedule.ts`, `CookPanel.tsx`, `ReportPanels.tsx`, test 27 test.
+
 ### Audit trải nghiệm (Game Designer, 28/10 sau GĐ159): vòng ngày còn 2 chỗ nông thật
 
 - Khung giờ vắng (8:30–11h, 13–17h ×0.6) là "ca trực không quyết định" — chờ khách, không có việc có đích; tua nhanh làm kiên nhẫn khách co lại (mâu thuẫn cấu trúc).
@@ -103,12 +115,11 @@
 
 ## Backlog tiếp theo
 
-1. ~~Audit tài chính~~ ✅ (GĐ155–158) · ~~4 hộp mờ nhẹ~~ ✅ (GĐ159) · ~~Audit trải nghiệm vòng ngày/onboarding~~ ✅ (28/10, kết luận ghi ở phần giai đoạn GĐ159).
-2. **GĐ160 — vá 3 mớt ngày đầu + mở pool nhiệm vụ tuỳ chọn từ cấp 1** (đề xuất #5+#1 audit trải nghiệm): (a) dòng cảnh báo lịch tự động mở 8h lỡ giờ vàng sáng; (b) khoá nút Ra trại cấp 8 kèm tooltip; (c) nới nhiệm vụ doanh thu ngày 1 về ~65% giá trị kho khởi đầu (verify sim trước); (d) thêm 2–3 nhiệm vụ tuỳ chọn cấp 1–2 (kèo, châm kệ trước giờ vàng, biến thể mưa) — giữ BET_CORE_IDS nguyên vẹn.
-3. **GĐ161 — "kịch bản nấu theo giờ"** (đề xuất #2): helper `cookSchedule` thuần đọc — "bắt đầu trước HH:MM để kịp giờ vàng 17h / khách quen ghé", hiện ở Sổ nấu + Sổ đầu ngày khung 13–17h.
-4. **GĐ162 — dải "Kế hoạch hôm nay"** (đề xuất #3): gom mọi hẹn giờ trong ngày thành 1 dải duy nhất (UI/UX cẩn thận: thay slot IdleChip khi có hẹn, không thêm card thứ 16).
-5. **GĐ163 — đợt nhờ khách quen rơi vào khung vắng** (đề xuất #4): phân bố bước nhờ vào band ×0.6 + gợi ý IdleChip, giữ nguyên luật hết hạn không phạt.
-6. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (multi-shop supply chain) — chỉ tính khi các GĐ trên xong và audit lần sau vẫn hết chiều sâu.
+1. ~~Audit tài chính~~ ✅ (GĐ155–158) · ~~4 hộp mờ nhẹ~~ ✅ (GĐ159) · ~~Audit trải nghiệm~~ ✅ · ~~GĐ160 người mới~~ ✅ · ~~GĐ161 nấu theo giờ~~ ✅.
+2. **GĐ162 — dải "Kế hoạch hôm nay"** (đề xuất #3 audit trải nghiệm): gom mọi hẹn giờ trong ngày (khách quen ghé, giờ vàng, khe điện thoại, đơn hạn, mẻ nấu kịp 17h, phiên chợ) thành MỘT dải theo thứ tự thời gian; UI/UX cẩn thận: thay slot IdleChip khi có hẹn, KHÔNG thêm card thứ 16 vào Sổ đầu ngày; 0 hẹn → ẩn; bấm mục mở đúng panel; không tràn @320/390.
+3. **GĐ163 — đợt nhờ của khách quen rơi vào khung vắng** (đề xuất #4): phân bố bước nhờ mới vào band ×0.6 + gợi ý IdleChip; giữ nguyên luật hết hạn không phạt của GĐ80; test phân bố theo seed.
+4. Theo dõi sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (cần save người thật / sim nhiều ngày); nếu vẫn lặp → thêm biến thể hoàn cảnh khác (lễ, weekend).
+5. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (multi-shop supply chain) — chỉ tính khi GĐ162–163 xong và audit lần sau vẫn hết chiều sâu.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)
 
@@ -266,3 +277,5 @@
 - GĐ157 — 🐱 Thú cưng đáng bữa cơm không
 - GĐ158 — 🛝 Sân chơi: góp bao nhiêu, còn bao nhiêu, đáng không
 - GĐ159 — 🔍 Đóng nốt 4 hộp mờ nhẹ (hụi · phản công · MXH · máy bán hàng)
+- GĐ160 — 🌱 Người mới: vá ngày đầu + nhiệm vụ tuỳ chọn từ cấp 1
+- GĐ161 — 🍳 Kịch bản nấu theo giờ: hẹn-giờ-thu-hoạch trong phiên

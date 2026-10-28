@@ -8,10 +8,15 @@ import { COOK_ORDER_MUL } from '../data/phoneOrders';
 
 /** Bộ test nhiệm vụ ngày đa dạng: hệ phụ vào pool xoay vòng theo ngày, counter ngày đo đúng hành động thật. */
 
-// Thứ tự pool tuỳ chọn trong dailyQuests — test xoay vòng đối chiếu đúng thứ tự này
-const OPTIONAL_POOL = ['daily_services', 'daily_combo', 'daily_cooked', 'daily_online', 'daily_farm', 'daily_social', 'daily_cook_orders'];
+// Thứ tự pool tuỳ chọn LUÔN hiện trong dailyQuests — test xoay vòng đối chiếu đúng thứ tự này.
+// GĐ160 thêm daily_morning (mở từ cấp 1, luôn trong pool); daily_rain / daily_regulars là biến thể
+// theo hoàn cảnh (chỉ ngày mưa / ngày có khách quen hẹn ghé — test riêng ở newbieQuests.test.ts,
+// ở đây ctx không có weather/regulars nên ẩn, không thuộc pool xoay tĩnh).
+const OPTIONAL_POOL = ['daily_services', 'daily_combo', 'daily_cooked', 'daily_online', 'daily_farm', 'daily_social', 'daily_cook_orders', 'daily_morning'];
 // Ba nhiệm vụ luôn hiện cố định (nhiệm vụ giữa đổi theo lễ/lời hẹn nên xét riêng)
 const ALWAYS_IDS = ['daily_customers', 'daily_revenue', 'daily_smile'];
+// Việc tuỳ chọn KHÔNG mở ở cấp 1 (cần dịch vụ/combo/trại/online/nấu — unlock 3+)
+const LOCKED_AT_LV1 = ['daily_services', 'daily_combo', 'daily_cooked', 'daily_online', 'daily_farm', 'daily_social', 'daily_cook_orders'];
 
 /** Ngữ cảnh nhiệm vụ dựng tay, thống kê ngày lấy mới (đúng như endDay dựng mỗi sáng). */
 const ctxAt = (day: number, level: number, stats = newGameData().stats): QuestContext => ({
@@ -22,15 +27,16 @@ const ctxAt = (day: number, level: number, stats = newGameData().stats): QuestCo
 const optionalIds = (c: QuestContext) => dailyQuests(c).map((q) => q.id).filter((id) => OPTIONAL_POOL.includes(id));
 
 describe('xoay vòng nhiệm vụ ngày', () => {
-  it('cấp 1: chỉ 4 nhiệm vụ luôn hiện, chưa có nhiệm vụ hệ phụ nào', () => {
+  it('cấp 1: 4 nhiệm vụ luôn hiện + pool tuỳ chọn KHÔNG còn rỗng (GĐ160: daily_morning mở từ cấp 1)', () => {
     const quests = dailyQuests(ctxAt(1, 1));
-    expect(quests).toHaveLength(4);
     const ids = quests.map((q) => q.id);
-    expect(ids).toEqual(expect.arrayContaining([...ALWAYS_IDS, 'daily_items']));
-    for (const id of OPTIONAL_POOL) expect(ids).not.toContain(id);
+    expect(ids).toEqual(expect.arrayContaining([...ALWAYS_IDS, 'daily_items', 'daily_morning']));
+    for (const id of LOCKED_AT_LV1) expect(ids).not.toContain(id);
+    // Cấp 1 chưa có biến thể hoàn cảnh (không mưa, chưa biết khách quen nào ghé) → đúng 5 việc
+    expect(quests).toHaveLength(5);
   });
 
-  it('cấp 30: đủ pool 7 mục, không quá 7 nhiệm vụ, 3 mục tuỳ chọn đúng công thức xoay theo ngày', () => {
+  it('cấp 30: đủ pool 8 mục, không quá 7 nhiệm vụ, 3 mục tuỳ chọn đúng công thức xoay theo ngày', () => {
     for (const day of [1, 5, 8, 21, 30]) {
       const quests = dailyQuests(ctxAt(day, 30));
       expect(quests.length).toBeLessThanOrEqual(7);
