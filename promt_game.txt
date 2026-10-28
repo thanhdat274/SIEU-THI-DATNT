@@ -79,7 +79,4 @@ CHẾ ĐỘ LÀM VIỆC TỰ CHỦ, LIÊN TỤC
 - Khi backlog trống, Leader và Game Designer tự đánh giá lại toàn bộ game theo ĐỊNH HƯỚNG PHÁT TRIỂN: tìm thêm việc làm sâu phần hiện tại trước, chỉ khi hết chiều sâu mới đề xuất mở rộng, rồi đưa vào backlog.
 - Chỉ được kết thúc lượt khi tôi yêu cầu dừng.
 
-
-
-
 Đọc PROGRESS.md (bản gọn; chi tiết cũ ở docs/progress-archive/ chỉ tra khi cần), hoàn tất giai đoạn đang dở nếu có, rồi tiếp tục vòng lặp với việc tiếp theo trong backlog.

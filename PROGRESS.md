@@ -21,16 +21,22 @@
 
 ## Trạng thái hiện tại (28/10/2026)
 
-- **1527/1527 test pass (142 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
-- Đã xong GĐ1–GĐ153.
+- **1528/1528 test pass (142 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
+- Đã xong GĐ1–GĐ154.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) đã bão hòa; UI responsive đa thiết bị đã audit kỹ (GĐ85–104, 116); trục "giá trị vs chi phí" đã soi kín gần hết tài sản: nhân sự tiệm chính/ca đêm/chi nhánh (141/142/144), mối hàng (143), bếp (145), trại (146/147), danh tiếng (148), quầy thịt cá (149), sổ nợ (150), hợp đồng (151), chi nhánh sau điện (152/153). Mở rộng Gánh hàng rong / Chợ phiên đã có (135–138), NG+ có dự phóng + mục tiêu vòng (139/140).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### GĐ153 — 🧮 Gọi đúng tên số dư chi nhánh (chưa phân bổ giá vốn) — ĐANG DỞ
+### GĐ153 — 🧮 Gọi đúng tên số dư chi nhánh (chưa phân bổ giá vốn) — XONG
 
 - Lý do: GĐ152 tính `doanh thu − lương − điện` nhưng chưa có giá vốn hàng chi nhánh → gọi "lời ròng" dễ hiểu nhầm.
-- Triển khai (chưa commit): `branchNetToday`/`BranchNet` → `branchOperatingBalanceToday`/`BranchOperatingBalance`; `net`→`balance`, `marginPct`→`afterOperatingCostsPct`, verdict `profit/loss`→`surplus/deficit`. BranchPanel hiện "Còn lại sau lương & điện", chip "dư vận hành/âm/chưa có thu" + dòng "Số dư vận hành; chưa phân bổ giá vốn hàng đã nhập." Không đổi công thức/state/save/kinh tế. File: `src/data/branchNet.ts`, `src/ui/BranchPanel.tsx`, `src/__tests__/branchNet.test.ts`.
-- Kết quả: `npm run test` **1527/1527 pass (142 files)**; `npm run build` sạch (cảnh báo bundle-size có sẵn); reload `localhost:5173` thành công. Browser hiện chỉ có save cấp 1 nên BranchPanel bị khóa; không thay đổi save để ép cấp. QA GĐ152 trước đó xác nhận 3 mức số dư và bố cục @390; thay đổi GĐ153 chỉ làm rõ nhãn/note, không đổi cấu trúc. **Commit kế tiếp.**
+- Triển khai: `branchNetToday`/`BranchNet` → `branchOperatingBalanceToday`/`BranchOperatingBalance`; `net`→`balance`, `marginPct`→`afterOperatingCostsPct`, verdict `profit/loss`→`surplus/deficit`. BranchPanel hiện "Còn lại sau lương & điện", chip "dư vận hành/âm/chưa có thu" + dòng "Số dư vận hành; chưa phân bổ giá vốn hàng đã nhập." Không đổi công thức/state/save/kinh tế. File: `src/data/branchNet.ts`, `src/ui/BranchPanel.tsx`, `src/__tests__/branchNet.test.ts`.
+- Kết quả: `npm run test` **1527/1527 pass (142 files)**; `npm run build` sạch (cảnh báo bundle-size có sẵn); reload `localhost:5173` thành công. Browser hiện chỉ có save cấp 1 nên BranchPanel bị khóa; không thay đổi save để ép cấp. QA GĐ152 trước đó xác nhận 3 mức số dư và bố cục @390; xác nhận trực quan câu chữ mới vẫn chờ save cấp 22+. Commit: `a723733`.
+
+### GĐ154 — 📉 Xu hướng cơ sở: lỗ không được biến mất — XONG
+
+- Lỗi: bộ lọc `best !== null || last > 0` ẩn dòng "Chi nhánh 24/7 (lãi thô)" khi cửa sổ 14 ngày toàn lỗ — đúng lúc cần thấy xu hướng nhất thì lỗ biến mất khỏi tab Tuần.
+- Fix: lọc theo "có hoạt động" (`some(d => metric !== 0)`) thay vì "có lãi"; chuỗi toàn âm vẫn hiện, `best` giữ null (đã có test riêng). File: `src/data/venueTrend.ts`, `src/__tests__/venueTrend.test.ts`.
+- Kết quả: **1528/1528 test pass (142 files)** (thêm 1 test); build sạch. UI-only, không đổi save/kinh tế.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -58,8 +64,8 @@
 
 ## Backlog tiếp theo
 
-1. ~~Hoàn tất GĐ153 (test + build + QA + commit)~~ ✅ (commit sắp tạo; visual check câu chữ chờ save cấp 22+).
-2. Leader + Game Designer rà hộp đen còn lại (gợi ý: giá vốn hàng theo chi nhánh để có lời ròng thật — chỉ khi đo được dữ liệu; các hệ "dữ liệu lạnh" còn sót), ưu tiên làm sâu trước mở rộng.
+1. ~~Hoàn tất GĐ153~~ ✅ (`a723733`) · ~~Audit giá vốn chi nhánh~~ ✅ (defer — cần mô hình cost-layer) · ~~GĐ154 fix xu hướng lỗ biến mất~~ ✅.
+2. Leader + Game Designer rà hộp đen tài chính còn lại, ưu tiên chiều sâu trước mở rộng.
 3. Tầm nhìn dài hạn: nhiều loại tiệm cung ứng cho nhau (xem memory "multi-shop supply chain").
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)
@@ -212,3 +218,4 @@
 - GĐ151 — 🤝 "Hợp đồng này có đáng ký?" — ROI nhận hợp đồng (đóng hộp đen "có nên ký hợp đồng không")
 - GĐ152 — 🏪 "Chi nhánh 24/7 hôm nay lời hay lỗ sau điện?" (đóng hộp đen "chưa trừ điện" của tiện lợi)
 - GĐ153 — 🧮 Gọi đúng tên số dư chi nhánh (chưa phân bổ giá vốn)
+- GĐ154 — 📉 Xu hướng cơ sở: lỗ không được biến mất

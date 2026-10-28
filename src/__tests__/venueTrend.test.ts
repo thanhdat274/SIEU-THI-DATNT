@@ -46,6 +46,16 @@ describe('venueTrendSummary — xu hướng 14 ngày cơ sở', () => {
     expect(lines[0].direction).toBe('up');
   });
 
+  it('chi nhánh lỗ mọi ngày vẫn hiện xu hướng lãi thô âm', () => {
+    const vt = [day(1, 100, -40, 0), day(2, 120, -60, 0), day(3, 90, -80, 0)];
+    const lines = venueTrendSummary(vt);
+    const branch = lines.find((l) => l.label.startsWith('Chi nhánh 24/7 (lãi'));
+    expect(branch).toBeDefined();
+    expect(branch!.last).toBe(-80);
+    expect(branch!.best).toBeNull();
+    expect(branch!.direction).toBe('down');
+  });
+
   it('cửa sổ lăn: nửa gần = vài ngày mới nhất, not cả chuỗi cũ', () => {
     // 6 ngày: 3 ngày đầu cao (100), 3 ngày sau thấp (10) → xu hướng giảm dù tuyệt đối vẫn dương
     const vt = [day(1, 0, 100, 0), day(2, 0, 100, 0), day(3, 0, 100, 0), day(4, 0, 10, 0), day(5, 0, 10, 0), day(6, 0, 10, 0)];
