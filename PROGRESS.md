@@ -64,10 +64,10 @@
 ## Cần theo dõi / nợ mở
 
 - ✅ ĐÃ ĐÓNG (30/10): QA mắt bù GĐ245–251 trên save máy — boot sạch, 0 lỗi console, 0 tràn @390/320 (chi tiết archive GĐ250-257).
-- QA mắt 3D/panel chập tối (save thật, foreground tab — IAB nền dừng rAF): GĐ177–194 đã QA @5173 từng giai đoạn lúc làm (đèn/biển/thẻ lương/thanh nạp...); cần đối chiếu lại khung giờ cụ thể thì xem archive.
+- QA mắt 3D/panel chập tối (IAB nền dừng rAF): GĐ177–194 đã QA @5173 lúc làm; đối chiếu lại thì xem archive.
 - ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap` cấp 50: bot bày lại tầng kệ ĐÃ ĐẦY mỗi 150 tick → bỏ qua tầng đầy + timeout 1.8tr ms → cả bộ ~4 phút. Nếu lại vượt ~10 phút: `npx vitest run --reporter=json` + profile trước khi làm tiếp.
-- GĐ171: scale mục tiêu vòng ×(1+0.5(N−1))/×(1+0.3(N−1)) — cần save thật vòng 2+ để xác nhận trad vẫn căng nhưng với tới; nếu vẫn quá dễ → siết trần.
-- (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi.
+- GĐ171: scale mục tiêu vòng NG+ — cần save thật vòng 2+ để xác nhận; nếu quá dễ → siết trần.
+- (GĐ110/117) Mục tiêu nhiệm vụ & kèo cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy trong năng lực → theo dõi.
 - QA mắt trạng thái CÓ dữ liệu của Bỏ lỡ/Thú cưng/hụi/khủng hoảng (GĐ155–159) — bọc bởi test; QA khi có save người thật.
 - Mỗi lần subagent bị "model concurrency limit" → chạy tuần tự/đợi rồi spawn lại.
 
