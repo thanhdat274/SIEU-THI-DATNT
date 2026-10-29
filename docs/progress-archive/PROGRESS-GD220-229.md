@@ -250,3 +250,14 @@ idle_heavy(≥65%), loại phụ trại; StaffPanel thêm dòng 🧍 từng ngư
 7 unit slice+helper (biên: dt=0, snapshot sâu, reset, tổng 0s) + 3 agent-level (kho trống → rảnh
 >30s/40s; các kệ vơi kho dư → làm > rảnh; reset dọn sạch) — mutation check: bỏ cờ idlePause nhánh
 "hết việc" → test đỏ đúng chỗ. (+10 test)
+
+---
+
+**GĐ247 festivalRestock** — trữ lễ MỘT CHẠM: biến nhắc trữ hàng (GĐ70) thành hành động ngay trong
+Nhập hàng (tiền lệ fillBranchSheet GĐ205 / fillQuanNuocDrinks GĐ209). Helper THUẦN ĐỌC
+`data/festivalRestock.ts`: lễ sắp tới trong PREP_NOTICE=3 ngày (upcomingFestival) + còn món thiếu
+(prepReadiness: kho < PREP_MIN_QTY=8) → phiếu lines {id, cases=ceil(thiếu/caseSize), units}, món mối
+hiện tại không bán vào skipped, kèm bonus đón lễ (prepBonus). Lễ ĐANG diễn ra không trả phiếu
+(thưởng cần trữ TRƯỚC lễ; lúc lễ thì GĐ245 soi khách/tiền). OrderPanel: Callout accent "⏳ Tết sau N
+ngày — trữ lễ còn thiếu X món" + nút "➕ Trữ lễ vào giỏ" (fillFestivalPrep — điền qua maxFit nên vẫn
+tôn trọng ngân sách chừa lương + chỗ nhà kho; notify kết quả). THUẦN ĐỌC, không đổi kinh tế. (+5 test)

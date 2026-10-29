@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **2162/2162 test pass (213 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ246. ⚠️ 29/10 phiên GĐ245–246: dev server 5173 KHÔNG chạy (xem "Cần theo dõi") — QA mắt hoãn, xác minh bằng test + build.
+- **2167/2167 test pass (214 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ247. ⚠️ 29/10 phiên GĐ245–247: dev server 5173 KHÔNG chạy (xem "Cần theo dõi") — QA mắt hoãn, xác minh bằng test + build.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -31,9 +31,10 @@
 - **GĐ199–209** 🔗 Trục multi-shop supply chain toàn mạch: rốn kho chung + chân trời ngày → nạp đúng chi nhánh → phiếu nạp → nhảy một chạm → nối OrderPanel → điền kệ chi nhánh vào giỏ → auto chuyển kho (chỉnh ngưỡng/hẹn giờ) → soi đồ uống quán nước → nạp đồ uống. Chi tiết: docs/progress-archive/PROGRESS-GD204-212.md.
 - **GĐ210–215** ✅ QA toàn diện (GĐ210) + bộ "soi tiền/vốn" khép mạch (GĐ211–215): bán sỉ có đáng (wholesale × freshness), cận hạn đáng bao nhiêu (spoilRisk value), kho chôn bao nhiêu vốn (stockCapital), tối nay có đáy không (solvency vs nợ), đơn gọi nhà lời ròng (phoneNet — đơn nấu trừ số mẻ nguyên liệu). Chi tiết: docs/progress-archive/PROGRESS-GD204-212.md.
 - **GĐ216–219** 💸 Mở rộng trục "soi tiền/vốn" sang NGƯỜI × DÒNG TIỀN × DANH MỤC: đội lương cần bao nhiêu khách tự nuôi (`wageCoverage`), lãi vay đang ngốn bao nhiêu % doanh thu (`loanBurden`), tháng này lời bao nhiêu/món nào gánh gần hết + rủi ro tập trung (`profitMix`), tiền mặt đủ trả lương cuối ngày chưa (`payrollRunway`). Chi tiết: docs/progress-archive/PROGRESS-GD213-219.md.
-- **GĐ220–246 bộ soi tiền/vốn/risks/vận hành/người** ✅ QA TOÀN DIỆN (GĐ230: branch 86.96%/fn 74.77%, 1280/390/320 không tràn · GĐ240: branch 86.85%/fn 74.84%, 2127/2127, browser console sạch): 226 shelfSlotValue · 227 priceGap · 228 lostSalesValue · 229 repMoney · 231 commitTry · 232 onlineNet · 233 wearRisk · 234 contractPortfolio · 235 stockTurn · 236 theftRisk · 237 serveCoverage · 238 onlineRatingValue · 239 categoryMix · 241 dirtLoss · 242 trafficForecast · 243 licenseHealth · 244 socialValue · 245 festivalValue · 246 staffIdle. Chi tiết: docs/progress-archive/PROGRESS-GD220-229.md.
+- **GĐ220–247 bộ soi tiền/vốn/risks/vận hành/người + hành động một chạm** ✅ QA TOÀN DIỆN (GĐ230: branch 86.96%/fn 74.77%, 1280/390/320 không tràn · GĐ240: branch 86.85%/fn 74.84%, 2127/2127, browser console sạch): 226 shelfSlotValue · 227 priceGap · 228 lostSalesValue · 229 repMoney · 231 commitTry · 232 onlineNet · 233 wearRisk · 234 contractPortfolio · 235 stockTurn · 236 theftRisk · 237 serveCoverage · 238 onlineRatingValue · 239 categoryMix · 241 dirtLoss · 242 trafficForecast · 243 licenseHealth · 244 socialValue · 245 festivalValue · 246 staffIdle · 247 festivalRestock. Chi tiết: docs/progress-archive/PROGRESS-GD220-229.md.
 - **GĐ221–229 bộ soi tiền/vốn**: lô chợ phiên đáng múc (221 fairLotValue) · nâng kho khi nào (222 warehouseUpgrade) · đào tạo hoà vốn (223 trainValue) · chi phí cố định/ngày (224 dailyBurn) · thù đối thủ hút khách (225 rivalDrag) · ô kệ lép vốn (226 shelfSlotValue) · bảng giá hụt tiền (227 priceGap) · khách tìm không mua mất tiền (228 lostSalesValue) · danh tiếng = tiền (229 repMoney).
 - **GĐ246 staffIdle soi người** 🧍: đóng nợ mở cũ "thời gian rảnh chỉ có ở runtime" — slice transient `core/slices/staffDay.ts` (tiền lệ comboDay; reset khi đóng Sổ đầu ngày) + agent đếm qua cờ `idlePause` (rảnh = đứng không chờ việc; trực quầy/canh bếp có mẻ tính làm; phụ trại loại) + helper `data/staffIdle.ts` (idlePct, verdict busy/balanced/idle_heavy @35/65%) + StaffPanel: dòng 🧍 từng người + Callout cam khi có người rảnh ≥65% ca.
+- **GĐ247 trữ lễ một chạm** ⏳: `data/festivalRestock.ts` (THUẦN ĐỌC) — lễ ≤3 ngày + món thiếu (kho < 8) → phiếu quy thùng, món mối không bán vào skipped; OrderPanel thêm Callout accent + nút "➕ Trữ lễ vào giỏ" (điền qua maxFit, tôn trọng ngân sách chừa lương + chỗ kho). Khép mạch GĐ70 nhắc → GĐ247 hành động.
 
 - > Chi tiết đầy đủ GĐ184–GĐ203: docs/progress-archive/PROGRESS-GD181-203.md.
 
@@ -296,3 +297,4 @@
 - GĐ225 — 🥊 Đối thủ hút mất bao nhiêu khách/ngày? (rivalDrag: % khách mất → tiền/ngày)
 - GĐ245 — 🎉 Dịp lễ ra bao nhiêu khách/tiền? (festivalValue: đang diễn ra + sắp tới, món hot, giá nhập)
 - GĐ246 — 🧍 Nhân viên rảnh bao nhiêu % ca? (staffIdle: agent đếm làm/rảnh, soi từng người bảng Nhân viên)
+- GĐ247 — ⏳ Trữ lễ một chạm (festivalRestock: phiếu trữ lễ thẳng vào giỏ Nhập hàng, đúng mẫu phiếu nạp kho)

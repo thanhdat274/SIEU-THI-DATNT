@@ -19,6 +19,8 @@ import { quanNuocRestockTip } from '../data/quanNuoc';
 import { supplyRestockManifest, supplyNetworkOrderVisible } from '../data/supplyChain';
 import { teahouseFillPlan } from '../data/teahouseHaul';
 import { quanNuocDrinkIds } from '../data/quanNuoc';
+import { festivalRestockPlan } from '../data/festivalRestock';
+import { PREP_MIN_QTY } from '../data/festivalPrep';
 import { Callout } from './panels/shared';
 import { acceptFairOffer } from '../core/biz';
 import { monthOf } from '../data/calendar';
@@ -178,6 +180,13 @@ export function OrderPanel() {
   // (chi nhánh thiếu kệ hoặc cần chở từ kho) — không lặp cái thẻ quán nước bên trên.
   const netManifest = supplyRestockManifest(storage, branch ?? undefined, biz.quanNuoc, level, biz.quanNuocLast);
   const netNeeds = supplyNetworkOrderVisible(netManifest);
+  // GĐ247: phiếu trữ lễ — lễ sắp tới (≤3 ngày) còn món chưa trữ đủ trong kho → một chạm vào giỏ.
+  // Món mối này không bán thì liệt kê ở skipped để gợi ý đổi mối (helper thuần, giỏ điền qua maxFit).
+  const festivalPlan = festivalRestockPlan({
+    day, level, storage,
+    sells: (id) => rows.some((r) => r.p.id === id),
+    caseSizeOf: caseSize,
+  });
   const guideItems = guideProducts(level);
   const guideIds = guideIdsOf(guideItems);
   const guideOn = guideActiveOn(day, tutorialOff, deliveries, itemsSold);
@@ -353,6 +362,23 @@ export function OrderPanel() {
       ? `🧾 Đã thêm ${filled} ly đồ uống thiếu cho quán nước vào giỏ (${plan.lines.map((l) => `${l.id}×${l.cases}`).join(', ')})`
       : '💰/📦 Đủ tiền hay chỗ kho không vừa thêm thùng nào — nâng cấp kho/nhập ít hơn');
   };
+  // GĐ247: một chạm trữ lễ — thêm món thiếu cho dịp sắp tới vào giỏ (quy thùng, đúng mẫu
+  // fillBranchSheet/fillQuanNuocDrinks: vẫn tôn trọng ngân sách chừa lương + chỗ nhà kho).
+  const fillFestivalPrep = () => {
+    if (!festivalPlan) return;
+    const wages = wagesDue(useGame.getState());
+    const budget = Math.max(0, money - wages);
+    let c = { ...cart };
+    let added = 0;
+    for (const l of festivalPlan.lines) {
+      c[l.id] = maxFit(c, l.id, l.cases, budget);
+      added += c[l.id] * caseSize(l.id);
+    }
+    setCart(c);
+    notify(added > 0
+      ? `🧾 Đã thêm trữ lễ ${festivalPlan.festival.name} vào giỏ (${festivalPlan.lines.map((l) => `${productById(l.id).name} ${c[l.id]} thùng`).join(', ')})`
+      : '💰/📦 Đủ tiền hay chỗ kho không vừa thêm thùng nào — nâng cấp kho/nhập ít hơn');
+  };
   const categories = [...new Set(rows.map((r) => r.p.category))];
 
   const order = () => {
@@ -402,6 +428,17 @@ export function OrderPanel() {
               ➕ Nạp đồ uống quán nước vào giỏ
             </button>
           )}
+        </Callout>
+      )}
+      {festivalPlan && (
+        <Callout tone="accent" title={`⏳ ${festivalPlan.festival.icon} ${festivalPlan.festival.name} ${festivalPlan.inDays === 1 ? 'ngày mai' : `sau ${festivalPlan.inDays} ngày`} — trữ lễ còn thiếu ${festivalPlan.lines.length} món`} style={{ margin: '8px 0 6px' }}>
+          <div style={{ fontSize: 12 }}>
+            Trữ đủ mỗi món ≥ {PREP_MIN_QTY} trong kho trước khi lễ bắt đầu → thưởng đón lễ <b style={{ color: '#2ecc71' }}>+{formatMoney(festivalPlan.bonus)}</b>.
+            {festivalPlan.skipped.length > 0 && <> Món mối này không bán: {festivalPlan.skipped.map((id) => productById(id).name).join(', ')} — đổi mối để trữ nốt.</>}
+          </div>
+          <button style={{ ...st.btn, fontSize: 11, marginTop: 6, padding: '2px 8px' }} onClick={fillFestivalPrep}>
+            ➕ Trữ lễ vào giỏ
+          </button>
         </Callout>
       )}
       {netNeeds && (
