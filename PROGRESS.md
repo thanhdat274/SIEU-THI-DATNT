@@ -28,9 +28,7 @@
 ### Giai đoạn gần đây · GĐ266–270 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–269: PROGRESS-GD250-257.md)
 
 - **GĐ177–261** đã dồn archive (docs/progress-archive/): 3D + đèn (177–198) · supply chain (199–209) · bộ soi tiền/vốn (210–229) · PROGRESS-GD230-249.md · PROGRESS-GD250-257.md (gồm phụ lục 258–261).
-- **GĐ251 giá dịp lễ** 💲 — suggestPrice/priceForecast theo tolerance của dịp lễ (THUẦN ĐỌC). Chi tiết: archive.
-- **GĐ252 vai hiện diện + sửa OrderPanel vỡ** 🧍 — thu ngân/bảo vệ/chăm khách khỏi bảng rảnh; sửa TDZ vỡ OrderPanel. Chi tiết: archive.
-- **GĐ253 xếp lại ca mai một chạm** 🔀 — nút trên thẻ recap cuối ngày chạy setShift (staffShiftFix). Chi tiết: archive.
+- **GĐ251–253** 💲🧍🔀 — giá dịp lễ theo tolerance · vai hiện diện khỏi bảng rảnh + sửa OrderPanel vỡ TDZ · xếp lại ca mai một chạm (staffShiftFix). Chi tiết: archive.
 - **GĐ254–257 nhịp CUỐI TUẦN** 📅 khép trọn 4 mạch: weekdayOf/isWeekend (ngày 1 = Thứ 2) + quest "🍬 Cuối tuần ăn vặt" (chỉ pool Thứ 7/CN, cuối pool — ngày thường xoay GIỮ NGUYÊN) → khách thèm ăn vặt (chooseWants ×0.2, list chung WEEKEND_SNACKS) → lịch tô sáng cuối tuần → việc sáng + "Mai tiệm có gì" nhắc. Chi tiết: archive. Cảm hứng Hay Day/Stardew; không đổi lượng khách, chỉ đổi nhiệm vụ + NMU trong ngày.
 - **GĐ258–261** 🎨🖼️ — gọn 6 họ màu cũ về bảng GĐ166 · coverage sweep (credit/services/professions, xoá 6 id chết `likes` nghề) · QA TOÀN DIỆN (34 panel × 3 cỡ màn 0 lỗi/0 tràn, autoplay 2 ngày sạch) · quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390, tương phản ô cuối tuần, 2 dropdown Sổ tay Tiệm cắt chữ @390. Chi tiết: archive PROGRESS-GD250-257.md (phụ lục 258–261).
 
