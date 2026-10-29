@@ -39,6 +39,8 @@
 
 - **GĐ271 lý do gọi khớp thời tiết** 📞: trước đây random cả "trời mưa..." trong ngày nắng → pool theo ngữ cảnh (mưa/nắng/chung; VIP + nấu giữ pool riêng); salt chọn biến thiên theo ngày (mẫu GĐ267/269). Audit nốt visitsToday/arcSceneAt — sạch. 2 test (sweep >200 đơn × 4 thời tiết); 2231 test xanh.
 
+- **GĐ272 quét 2 bề mặt cuối** 🖼️: màn đăng nhập (gặp mỗi boot nhưng chưa từng soi kỹ) + menu "Thêm" @320/390/768 bằng ảnh chụp + DOM — 0 lỗi: nút full-bề-rộng, lưới 2 cột cuộn tốt, câu chuyện Chương 1 đè menu đúng z-order và không gây tràn. Kết thúc chuỗi "rà soát toàn bộ màn hình" — mọi bề mặt đã được soi ít nhất một lần (GĐ264/265/272). 2231 test xanh (không đổi code).
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc + thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -313,3 +315,4 @@
 - GĐ266–269 — 🍬🎲 Cuối tuần vào nhập hàng/đơn gọi + phản hồi tổng kết · sửa 2 bug roll tương quan (chi tiết archive)
 - GĐ270 — ✅ QA TOÀN DIỆN: 34 panel + 0 tràn @320/390/768, autoplay sạch, coverage 87.40/76.17
 - GĐ271 — 📞 Lý do gọi điện khớp thời tiết (pool theo ngữ cảnh + salt biến thiên; audit nốt các hệ tất định)
+- GĐ272 — 🖼️ Quét đăng nhập + menu Thêm @320/390/768 — 0 lỗi, chốt chuỗi rà soát màn hình
