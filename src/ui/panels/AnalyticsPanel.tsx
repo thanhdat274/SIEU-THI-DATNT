@@ -1,9 +1,10 @@
 import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import { analyticsAdvice, itemHealthList, promoEffect, shelfCount, type ItemHealth } from '../../data/analytics';
+import { profitMix } from '../../data/profitMix';
 import { furnitureDef } from '../../data/furniture';
 import { shelfEfficiency } from '../../data/layout';
-import { Footer, styles } from './shared';
+import { Callout, Footer, styles } from './shared';
 
 const abcColor = { A: '#2ecc71', B: '#f1c40f', C: '#95a5a6' } as const;
 
@@ -69,6 +70,21 @@ export function AnalyticsPanel() {
             Phân tích ABC: nhóm <b style={{ color: abcColor.A }}>A</b> là {counts.A} món mang ~80% tổng lời,
             nhóm <b style={{ color: abcColor.B }}>B</b> {counts.B} món, còn lại <b>{counts.C}</b> món nhóm C — nhóm C nhiều quá thì dọn bớt cho kệ thoáng.
           </p>
+          {(() => {
+            const mix = profitMix(list);
+            if (mix.top.length === 0) return null;
+            return (
+              <Callout tone={mix.fragile ? 'warn' : 'accent'} style={{ marginBottom: 10 }} title={`📈 Lời 30 ngày: ${formatMoney(mix.totalProfit30)} · top ${mix.top.length} món gánh ${Math.round(mix.topShare * 100)}%`}>
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {mix.top.map((t) => `${t.name} ${formatMoney(t.profit30)} (${Math.round(t.share * 100)}%)`).join(' · ')}
+                  {mix.negativeCount > 0 && ` · ${mix.negativeCount} món đang lỗ tổng ${formatMoney(mix.negativeLoss30)}.`}
+                  {mix.fragile
+                    ? ' Chỉ dựa vài món — đứt nguồn món đó là mất phần lớn lời, nên đa dạng thêm.'
+                    : ' Lời dàn đều, bớt rủi ro tập trung.'}
+                </div>
+              </Callout>
+            );
+          })()}
           <div style={{ overflowX: 'auto' }}>
             <table style={styles.table}>
               <thead>

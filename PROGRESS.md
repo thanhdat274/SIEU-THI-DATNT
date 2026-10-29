@@ -21,17 +21,18 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **2020/2020 test pass (187 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ217.
+- **2026/2026 test pass (188 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ218.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–217 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md · GĐ184–209: docs/progress-archive/PROGRESS-GD181-203.md + PROGRESS-GD204-212.md)
+### Giai đoạn gần đây · GĐ177–218 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md · GĐ184–209: docs/progress-archive/PROGRESS-GD181-203.md + PROGRESS-GD204-212.md)
 
 - **GĐ177–198** 🏮→📖 (đèn lồng, biển mở/đóng, đèn chờ, chợ phiên, đóng nợ UI, sửa đường, đèn cơ ngơi, quán nước lên đèn + staff value + thiếu đồ uống → nạp kho, hồi vốn ca đêm/quán nước/chi nhánh, băng ghế, chợ/kệ ngồi, cờ lễ hội, đọc con hẻm) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md + PROGRESS-GD181-203.md.
 - **GĐ199–209** 🔗 Trục multi-shop supply chain toàn mạch: rốn kho chung + chân trời ngày → nạp đúng chi nhánh → phiếu nạp → nhảy một chạm → nối OrderPanel → điền kệ chi nhánh vào giỏ → auto chuyển kho (chỉnh ngưỡng/hẹn giờ) → soi đồ uống quán nước → nạp đồ uống. Chi tiết: docs/progress-archive/PROGRESS-GD204-212.md.
 - **GĐ210–215** ✅ QA toàn diện (GĐ210) + bộ "soi tiền/vốn" khép mạch (GĐ211–215): bán sỉ có đáng (wholesale × freshness), cận hạn đáng bao nhiêu (spoilRisk value), kho chôn bao nhiêu vốn (stockCapital), tối nay có đáy không (solvency vs nợ), đơn gọi nhà lời ròng (phoneNet — đơn nấu trừ số mẻ nguyên liệu). Chi tiết: docs/progress-archive/PROGRESS-GD204-212.md.
 - **GĐ216** 💸 Đội lương hôm nay cần bao nhiêu khách để TỰ NUÔI? (nối người × lưu lượng): `wageCoverage` = Σ dailyWage ÷ doanh thu bình quân mỗi lượt → số lượt hoà vốn lương + so lượt thật; StaffPanel thêm Callout ok/warn. `wageCoverage.ts` (mới), `StaffPanel.tsx`, (+5 test).
 - **GĐ217** 🏦 "Lãi vay đang ngốn bao nhiêu phần doanh thu hôm nay?" (chi phí nợ vs dòng tiền): `loanBurden` = `loanInterest` ÷ doanh thu hôm nay → % dòng tiền bị nợ ăn (null khi chưa có doanh thu) + lãi TIẾT KIỆM mỗi 1 triệu trả bớt gốc (0.8%/ngày → ~8.000đ/ngày); Sổ đầu ngày thêm Callout "Lãi vay ngốn Xđ/ngày = Y% doanh thu" (cam khi >10% → kíp trả bớt). `loanBurden.ts` (mới), `ReportPanels.tsx`, (+5 test).
+- **GĐ218** 📈 "Tháng này lời bao nhiêu, món nào gánh gần hết?" (sổ lời theo danh mục): từ bảng sức khoẻ món (`itemHealthList`) gộp tổng lời 30 ngày + top món gánh lời (share từng món) + RỦI RO TẬP TRUNG (≤2 món chiếm ≥60% lời → cam "đứt nguồn là mất phần lớn lời") + món đang âm/tổng lỗ. AnalyticsPanel thêm Callout "Lời 30 ngày Xđ · top N món gánh Y%" ngay trên bảng ABC. `profitMix.ts` (mới), `AnalyticsPanel.tsx`, (+6 test).
 
 - > Chi tiết đầy đủ GĐ184–GĐ203: docs/progress-archive/PROGRESS-GD181-203.md.
 
@@ -283,3 +284,4 @@
 - GĐ215 — 📞 Đơn gọi nhà lời ròng bao nhiêu? trừ giá vốn (đơn nấu theo số mẻ nguyên liệu)
 - GĐ216 — 💸 Đội lương cần ~N lượt khách tự nuôi? (wageCoverage: hòa vốn lương vs lượt hôm nay)
 - GĐ217 — 🏦 Lãi vay ngốn bao nhiêu % doanh thu hôm nay? (loanBurden + lãi tiết kiệm mỗi 1 triệu trả bớt)
+- GĐ218 — 📈 Lời 30 ngày bao nhiêu, món nào gánh gần hết? (profitMix: tổng lời + rủi ro tập trung + món âm)
