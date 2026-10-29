@@ -118,6 +118,8 @@ export function supplyChainOverview(
 
 export interface RestockLine {
   outlet: SupplyOutletId;
+  /** Mã món (chỉ có ở dòng chi nhánh — 1 món/kệ); quán nước là nhóm gộp nên bỏ trống. */
+  id?: string;
   /** Nhãn: tên món (chi nhánh) hoặc nhóm "Đồ uống" (quán nước — nước/ngọt/cà phê). */
   label: string;
   /** Đơn vị cần bổ sung cho điểm bán này. */
@@ -169,7 +171,7 @@ export function supplyRestockManifest(
       total += t.empty;
       warehouseCover += covered;
       buyNeed += buy;
-      lines.push({ outlet: 'branch', label: t.name, need: t.empty, inWarehouse: have, source: buy > 0 ? 'buy' : 'warehouse' });
+      lines.push({ outlet: 'branch', id: t.id, label: t.name, need: t.empty, inWarehouse: have, source: buy > 0 ? 'buy' : 'warehouse' });
     }
   }
 

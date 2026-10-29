@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1896/1896 test pass (172 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ204. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ ~113s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
+- **1898/1898 test pass (172 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ205. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ ~113s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–204 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md · GĐ184–203: docs/progress-archive/PROGRESS-GD181-203.md)
+### Giai đoạn gần đây · GĐ177–205 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md · GĐ184–203: docs/progress-archive/PROGRESS-GD181-203.md)
 
 - **GĐ177** 🏮 Đầu ngõ lên đèn: đèn lồng cột dựng Blender (`blender_lantern.py`) bật sáng ấm chập tối (lamp 17h–5h30, lightBudget) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md.
 - **GĐ178** 🎨 Gộp họ xanh dương guide/chuỗi/biểu đồ về info `#3498db` (16 chỗ) — chi tiết: archive trên.
@@ -56,6 +56,7 @@
 - **GĐ203** 🎯 Nạp kho một chạm: mỗi dòng phiếu nhảy đúng bảng xử lý (branch/quannuoc), nhãn theo nguồn.
 - **GĐ204** 🔗 Nối phiếu nạp kho vào OrderPanel (mẫu GĐ191): màn Nhập hàng thấy cả MẠNG LƯỚI cần nhập/chở bao nhiêu — helper thuần `supplyNetworkOrderVisible(manifest)` chỉ hiện thẻ "Nạp liền mạng lưới (rốn kho chung)" khi còn nhu cầu NGOÀI phần quán nước (đã có thẻ riêng GĐ191): chi nhánh thiếu kệ hoặc cần chở từ kho; hiện dòng tổng + chi tiết kệ chi nhánh (mua/chở). Khép vòng: phiếu (GĐ202) → nút nhảy (GĐ203) → đúng chỗ đặt đơn thấy con số cả mạng (GĐ204). THUẦN đọc helper đã test. `supplyChain.ts` (+helper), `supplyChain.test.ts` (+4), `OrderPanel.tsx`; tsc+build sạch; QA @5173 boot ổn.
 
+- **GĐ205** ➕ "Điền kệ chi nhánh vào giỏ": khép trục xong — phiếu nạp kho (GĐ202) giờ cho CẢ HÀNH ĐỘNG: dòng chi nhánh mang mã món `id` (bỏ trống cho nhóm gộp quán nước) để OrderPanel quy theo thùng `ceil(need/caseSize)` và nhét thẳng vào giỏ đặt đơn qua nút "➕ Điền kệ chi nhánh vào giỏ" trong thẻ mạng lưới — tái dùng `maxFit` (chừa lương cuối ngày + chỗ kho) như fillSuggest, chỉ thêm món nhà cung cấp hiện tại bán. Khép vòng supply-chain đọc→hành động: phiếu (202) → nhảy (203) → thấy cả mạng (204) → điền giỏ (205). THUẦN local-UI, không đổi kinh tế/save. `supplyChain.ts` (+id trên RestockLine), `OrderPanel.tsx` (+fillBranchSheet), `supplyChain.test.ts` (+2 contract); tsc+build sạch; QA @5173 boot ổn.
 - > Chi tiết đầy đủ GĐ184–GĐ203: docs/progress-archive/PROGRESS-GD181-203.md.
 
 ## Quy ước kỹ thuật cần nhớ
@@ -97,7 +98,7 @@
 3. Sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (save người thật); nếu vẫn lặp → thêm biến thể hoàn cảnh (lễ, weekend).
 4. GĐ164 theo dõi: arc E "Hàng xóm khai trương" (thay cam_do_mo) — chỉ làm khi 4 arc A–D chạy tốt trên save thật.
 5. ✅ UI nợ ĐÃ ĐÓNG (GĐ183): toàn bộ thẻ trong src/ui dùng `Callout`; 0 màu lệch bảng/toan trong UI. Hết món nợ UI còn thấy.
-6. 🔗 **Multi-shop supply chain (trục đang chạy, backlog 6)**: ĐÃ BẮT ĐẦU + SÂU — GĐ199 rốn kho chung (choke) → GĐ200 chân trời ngày (teahouseKhoDays) → GĐ201 nạp đúng thứ chi nhánh (branchThinShelves) → GĐ202 phiếu nạp kho (supplyRestockManifest đổi gợi ý thành số đơn vị chở/nhập cụ thể) → GĐ203 nạp một chạm (mỗi dòng phiếu nhảy đúng bảng xử lý) → GĐ204 nối vào OrderPanel (thấy cả mạng lưới ở màn nhập). Bước tiếp trên trục (theo depth-first): auto chuyển kho (chở hàng tự động khi lặp đủ, có ràng buộc phí xăng/chuyến) — cần cân nhắc đổi kinh tế/persist nên ghi chờ, không vội phình.
+6. 🔗 **Multi-shop supply chain (trục đang chạy, backlog 6)**: ĐÃ BẮT ĐẦU + SÂU — GĐ199 rốn kho chung (choke) → GĐ200 chân trời ngày (teahouseKhoDays) → GĐ201 nạp đúng thứ chi nhánh (branchThinShelves) → GĐ202 phiếu nạp kho (supplyRestockManifest đổi gợi ý thành số đơn vị chở/nhập cụ thể) → GĐ203 nạp một chạm (mỗi dòng phiếu nhảy đúng bảng xử lý) → GĐ204 nối vào OrderPanel (thấy cả mạng lưới ở màn nhập) → GĐ205 điền kệ chi nhánh vào giỏ đặt đơn. Bước tiếp trên trục (theo depth-first): auto chuyển kho (chở hàng tự động khi lặp đủ, có ràng buộc phí xăng/chuyến) — cần cân nhắc đổi kinh tế/persist nên ghi chờ, không vội phình.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)
 
@@ -300,3 +301,4 @@
 - GĐ202 — 🧾 Phiếu nạp kho
 - GĐ203 — 🎯 Nạp kho một chạm
 - GĐ204 — 🔗 Nối phiếu vào OrderPanel: thấy cả mạng lưới cần nhập/chở (rốn kho chung)
+- GĐ205 — ➕ Điền kệ chi nhánh vào giỏ: phiếu nạp kho thành hành động

@@ -312,7 +312,22 @@ export function OrderPanel() {
       if (c[r.p.id] < r.suggest) cut = true;
     }
     setCart(c);
-    if (cut) notify(`Đã điền vừa ${wages ? `tiền đang có sau khi chừa ${formatMoney(wages)} lương` : 'tiền đang có'} và chỗ kho; vài món ít hơn gợi ý`);
+    if (cut) notify('💰/📦 Điền tới hết tiền hoặc hết chỗ kho — nâng cấp để nhập thêm');
+  };
+  // GĐ205: điền giỏ đúng thứ mà rốn kho chung đang cần cho CHI NHÁNH (phiếu nạp kho GĐ202). Khác
+  // fillSuggest (đặt theo nhu cầu tiệm chính): ưu tiên đúng kệ chi nhánh đang trống, quy theo thùng.
+  // Chỉ thêm món nhà cung cấp hiện tại bán + còn vừa ngân sách (chừa lương) và chỗ kho.
+  const fillBranchSheet = () => {
+    const wages = wagesDue(useGame.getState());
+    const budget = Math.max(0, money - wages);
+    let c = { ...cart };
+    for (const l of netManifest.lines.filter((ll) => ll.outlet === 'branch')) {
+      if (!l.id || !rows.some((r) => r.p.id === l.id)) continue;
+      const casesWant = Math.ceil(l.need / caseSize(l.id));
+      if (casesWant > 0) c[l.id] = maxFit(c, l.id, casesWant, budget);
+    }
+    setCart(c);
+    notify('🧾 Đã thêm món chi nhánh thiếu vào giỏ (theo phiếu nạp kho)');
   };
   const categories = [...new Set(rows.map((r) => r.p.category))];
 
@@ -368,6 +383,11 @@ export function OrderPanel() {
               <div style={{ marginTop: 3, fontSize: 11, opacity: 0.9 }}>
                 Chi nhánh kệ cần: {netManifest.lines.filter((l) => l.outlet === 'branch').map((l) => `${l.label} ${l.need}${l.source === 'buy' ? ' (mua)' : ''}`).join(' · ')}
               </div>
+            )}
+            {netManifest.lines.some((l) => l.outlet === 'branch') && (
+              <button style={{ ...st.btn, fontSize: 11, marginTop: 6, padding: '2px 8px' }} onClick={fillBranchSheet}>
+                ➕ Điền kệ chi nhánh vào giỏ
+              </button>
             )}
           </div>
         </Callout>

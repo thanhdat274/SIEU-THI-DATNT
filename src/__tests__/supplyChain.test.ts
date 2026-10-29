@@ -264,3 +264,32 @@ describe('GĐ204 — thấy cả mạng lưới ở OrderPanel', () => {
     expect(supplyNetworkOrderVisible(rm)).toBe(false);
   });
 });
+
+/**
+ * GĐ205 — "Điền kệ chi nhánh vào giỏ": dòng chi nhánh của phiếu nạp kho mang mã món (`id`) để màn
+ * Nhập hàng có thể quy theo thùng [(ceil need/caseSize)] và đưa vào giỏ đặt đơn. THUẦN theo manifest.
+ */
+describe('GĐ205 — dòng chi nhánh mang mã món để điền giỏ', () => {
+  const quanFull = (open = true): QuanNuocState => ({ open, staff: 2, price: 'vua' });
+  const drinkStock = (units: number) => {
+    const s: Record<string, number> = {};
+    for (const id of quanNuocDrinkIds(30)) s[id] = units;
+    return s;
+  };
+
+  it('mỗi dòng branch có id = mã món hợp lệ', () => {
+    const rm = supplyRestockManifest({ mi: 60 }, { open: true, shelf: { mi: 0 } }, { open: false, staff: 0, price: 'vua' as const }, 30, null);
+    const b = rm.lines.filter((l) => l.outlet === 'branch');
+    expect(b.length).toBe(1);
+    expect(b[0].id).toBe('mi');
+    expect(b[0].need).toBe(CONVENIENCE.perItem);
+  });
+
+  it('dòng quán nước không mang id (nhóm gộp — không điền giỏ được theo món)', () => {
+    const storage = drinkStock(1);
+    const rm = supplyRestockManifest(storage, undefined, quanFull(true), 30, { served: 0, wanted: 0 });
+    const t = rm.lines.filter((l) => l.outlet === 'teahouse');
+    expect(t.length).toBe(1);
+    expect(t[0].id).toBeUndefined();
+  });
+});
