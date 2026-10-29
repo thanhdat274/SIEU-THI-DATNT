@@ -47,9 +47,9 @@
 
 - **GĐ278 QA mắt thẻ CÓ dữ liệu (GĐ155–159) — ĐÓNG watch-item cũ nhất** 👀: Thú cưng (verdict trung thực "kho sạch — chưa thấy công" + trạng thái cho ăn), Hụi (đủ số + hòa vốn), Khủng hoảng MXH (khách ×0.5), Bỏ lỡ (GĐ252). 0 lỗi console, 0 tràn @390. Không đổi code.
 
-- **GĐ279 note biết ai giữ cửa** 🧾: thu ngân autoOpen ca sáng mở 6h thì note "lịch 8h — lỡ giờ vàng" là SAI → `cashierOpensMorning` + "Thu ngân tự mở cửa sáng sớm"; ca chiều/không cờ → theo lịch chủ. 2 test; 2247 test xanh; QA @5173 đúng.
+- **GĐ279 note biết ai giữ cửa** 🧾: thu ngân autoOpen ca sáng mở 6h → "Thu ngân tự mở cửa sáng sớm"; ca chiều/không cờ → theo lịch chủ. 2 test; QA @5173 đúng.
 
-- **GĐ280 đóng GĐ110/117 bằng số liệu** 📊: instrument claimQuest đo 28 ngày cấp 50 (harness tất định) — 3 nhiệm vụ xương sống (khách/doanh thu/vui vẻ) bot đạt 24–26/28 (dao động theo yield async, ngưỡng test ≥22); 8 nhiệm vụ còn lại (nấu/MXH/dịch vụ/trại/online/combo) bot = 0 vì bot KHÔNG thực hiện hành động đó — giới hạn bot, không phải mục tiêu vô lý (khớp browser thật GĐ110/117) → CHỐT giữ nguyên mục tiêu. Test chính thức khoá tín hiệu cân bằng; 2248 test xanh; boot @5173 sạch.
+- **GĐ280 đóng GĐ110/117 bằng số liệu** 📊: đo 28 ngày cấp 50 — 3 nhiệm vụ xương sống bot đạt 24–26/28 (ngưỡng test ≥22); 8 nhiệm vụ còn lại bot = 0 vì bot KHÔNG làm hành động đó (giới hạn bot, không phải cân bằng) → CHỐT giữ nguyên mục tiêu. Test khoá tín hiệu; 2248 test xanh.
 
 ## Quy ước kỹ thuật cần nhớ
 
