@@ -21,46 +21,25 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1907/1907 test pass (174 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ206. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ ~113s — vẫn là flake biết trước, xem Cần theo dõi.)
+- **1964/1964 test pass (179 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ210.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–206 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md · GĐ184–203: docs/progress-archive/PROGRESS-GD181-203.md)
+### Giai đoạn gần đây · GĐ177–210 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md · GĐ184–203: docs/progress-archive/PROGRESS-GD181-203.md)
 
-- **GĐ177** 🏮 Đầu ngõ lên đèn: đèn lồng cột dựng Blender (`blender_lantern.py`) bật sáng ấm chập tối (lamp 17h–5h30, lightBudget) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md.
-- **GĐ178** 🎨 Gộp họ xanh dương guide/chuỗi/biểu đồ về info `#3498db` (16 chỗ) — chi tiết: archive trên.
-- **GĐ179** 🪧 Biển treo mở/đóng cửa (`bien_mo_cua.glb`): tấm trạng thái lời #2ecc71/đỏ dìm #e74c3c theo `shopOpen` + đung nhẹ — chi tiết: archive trên.
-- **GĐ180** 💡 Đèn báo khách đang đợi (`den_cho.glb`): sáng ấm tỉ lệ `waiting>0` khi tiệm mở — chi tiết: archive trên.
-- **GĐ181** 🛒 Chợ phiên sống: gánh hàng `xe_day` dựng thêm dọc vỉa hè khi `isMarketDay` (7 ngày/lần) — `KIT_MARKET_PLACEMENTS` + `marketGroup` + `kit.setMarketDay(on)` — chi tiết: archive trên.
-- **GĐ182** 🧺 Chợ phiên thành nhịp gameplay: `marketTrafficFactor(day)` ×1.15 nhân vào `rush` + toast sáng phiên (`lastMarketDay` guard) — chi tiết: archive trên.
-- **GĐ183** 🧹 Đóng nợ UI cuối: hết thẻ "callout vẽ tay" → `Callout` chuẩn; dọn teal `#16a085` lệch bảng (GardenPanel/BranchPanel/StoragePanel) — chi tiết: archive trên.
-- **GĐ184** 🚧 Sửa đường lên hiện trường: rào chắn `rao_chan` khi `isRoadworks` (kit roadworkGroup + setRoadwork). Chi tiết: docs/progress-archive/PROGRESS-GD181-203.md.
-- **GĐ185** 🏠 Cơ ngơi lên đèn: đèn ấm chập tối hiên nhà + cổng trại (compoundWarm, warmGlow 17h–5h30).
-- **GĐ186** 🚨 Đèn báo chờ thêm mức KHẨN "sắp mất khách" (queueUrgency nháy nhanh khi quầy đông lâu).
-- **GĐ187** 🍵 Quán nước lên đèn: 2 đèn ấm quanh quầy/bàn, chỉ sáng khi quán MỞ (quanNuocWarm).
-- **GĐ188** 🧑‍🤝‍🧑 Quán nước người thứ N đáng lương? `quanNuocStaffValues` giá trị biên + chiều lên (đóng bộ GĐ141–153).
-- **GĐ189** 🧋 Quán nước thiếu đồ uống thành "việc sáng" (quanNuocDayAction → DayAction danger/warn).
-- **GĐ190** 🧃 Nạp bao nhiêu cho quán? `quanNuocRestockTip` shortfall + verdict + nút "→ Nhập hàng".
-- **GĐ191** 🧾 Thấy ngay chỗ nhập: OrderPanel render callout nạp kho đúng con số (khép vòng GĐ189–191).
-- **GĐ192** 💸 Ca đêm 15tr hồi vốn sau bao lâu? `nightPayback` (good/slow/losing, trung thực caveat trộm đêm).
-- **GĐ193** 💧 Quán nước 25tr hồi vốn sau bao lâu? `quanNuocBuildPayback` (worth ≤60 ngày, giả định kho đủ).
-- **GĐ194** 🏪 Chi nhánh 5tr hồi vốn? `branchBuildPayback` theo dư vận hành hôm nay (mẫu GĐ192).
-- **GĐ195** 🪑 Con hẻm có chỗ ngồi: băng ghế gỗ `bang_ghe` (kit prop 3D, 3 chỗ).
-- **GĐ196** 🪑 Phiên chợ có chỗ ngồi: thêm bang_ghe + cho_nhua vào KIT_MARKET_PLACEMENTS (setMarketDay).
-- **GĐ197** 🎪 Con hẻm vào dịp: cờ treo `day_co` khi có lễ hội (KIT_FESTIVAL_PLACEMENTS + setFestival).
-- **GĐ198** 📖 Đọc con hẻm: `alleySignalsToday` gộp đúng nguồn chân lý (chợ/sửa đường/lễ/đèn ấm) → Callout.
+- **GĐ177–198** 🏮→📖 (đèn lồng, biển mở/đóng, đèn chờ, chợ phiên, đóng nợ UI, sửa đường, đèn cơ ngơi, quán nước lên đèn + staff value + thiếu đồ uống → nạp kho, hồi vốn ca đêm/quán nước/chi nhánh, băng ghế, chợ/kệ ngồi, cờ lễ hội, đọc con hẻm) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md + PROGRESS-GD181-203.md.
 - **GĐ199** 🔗 Rốn kho chung: `supplyChainOverview` nối 3 điểm bán + điểm NGHẼN (BẮT ĐẦU trục multi-shop).
 - **GĐ200** ⏳ Kho chung nuôi quán nước mấy ngày? `teahouseKhoDays` chân trời thời gian deterministic.
 - **GĐ201** 🏪 Nạp đúng thứ chi nhánh: `branchThinShelves` kệ trống theo headroom (trục multi-shop sâu).
 - **GĐ202** 🧾 Phiếu nạp kho: `supplyRestockManifest` đổi gợi ý thành số đơn vị chở/nhập cụ thể.
 - **GĐ203** 🎯 Nạp kho một chạm: mỗi dòng phiếu nhảy đúng bảng xử lý.
-- **GĐ204** 🔗 Nối phiếu vào OrderPanel: màn Nhập hàng thấy cả MẠNG LƯỚI cần nhập/chở — `supplyNetworkOrderVisible(manifest)` chỉ hiện thẻ khi còn nhu cầu NGOÀI quán nước. `supplyChain.ts`, (+4), `OrderPanel.tsx`.
-
-- **GĐ205** ➕ "Điền kệ chi nhánh vào giỏ": phiếu thành HÀNH ĐỘNG — dòng chi nhánh mang mã món `id` để OrderPanel quy thùng `ceil(need/caseSize)` + nút nhét thẳng vào giỏ đặt đơn (tái dùng `maxFit`). THUẦN local-UI. `supplyChain.ts`, `OrderPanel.tsx`, (+2).
-- **GĐ206** 🚚 "Auto chuyển kho": trục thành CƠ CHẾ thật — trước chỉ chở khi có người TRỰC/quản lý gọi xe; giờ chủ bật TỰ CHỞ: `branch.autoHaul` (optional) + helper thuần `autoHaulDue` (bật + kệ vơi <50% + cách 240') = điều kiện THỨ 3 vòng xe chở; `haulTripPlan` preview cùng công thức slice; vẫn trả phí xăng 15k. Khép backlog 6. `branchHaul.ts`, `slices/branch.ts` (+toggle), `branches.ts`, `gameTypes.ts`, `BranchPanel.tsx`, (+8).
-- **GĐ207** 🎛️ Auto chuyển kho CHỈNH NGƯỠNG/HẸN GIỜ: `setBranchAutoHaul(below,every)` (LOCAL_ONLY) lưu ngưỡng kệ vơi % + khoảng cách chuyến; helper thuần `autoHaulCfg` clamp (30–80% · 120–720') là NGUỒN CHÂN LÝ cho cả slice lẫn UI; thêm 2 ô số. `branchHaul.ts` (+cfg), `branches.ts`, `slices/branch.ts` (+set), `gameTypes.ts`, `BranchPanel.tsx`, (+5).
-- **GĐ208** 🥤 Quán nước SOI độ đủ đồ uống theo đêm (áp cơ chế chở sang quán nước, vế THUẦN): quan nước rút ĐỒ UỐNG từ kho CHUNG nên "kệ vơi" = kho chung bị ăn khô — `teahouseHaulRead(drinkUnits, quan, level)` dự phóng quán tiêu ~N ly/đêm + còn mấy đêm (daysLeft) + clue haulNow khi còn ≤2 đêm; UI thẻ Callout "Kho đồ uống sắp cạn + → Nhập đồ uống". `teahouseHaul.ts` (mới), `QuanNuocPanel.tsx`, (+5). tsc+build sạch; QA @5173.
-- **GĐ209** ➕ Nạp đồ uống quán nước (CƠ CHẾ CHỞ một-chạm): quán rút ĐỒ UỐNG từ kho CHUNG nên chở = đặt đồ uống về kho đủ tối nay — helper THUẦN `teahouseFillPlan(q,level,drinkUnits,supplierCase)` phân bổ thiếu vào món quán bán mà supplier có, quy thùng; OrderPanel nút nhét thẳng giỏ (tái dùng maxFit, chừa lương+kho; không đụng endDay). `teahouseHaul.ts` (+fillPlan), `OrderPanel.tsx`, (+4). tsc+build sạch; full suite 1921/1921.
+- **GĐ204** 🔗 Nối phiếu vào OrderPanel: cả MẠNG LƯỚI cần nhập/chở — `supplyNetworkOrderVisible` (mẫu GĐ191).
+- **GĐ205** ➕ "Điền kệ chi nhánh vào giỏ": phiếu thành HÀNH ĐỘNG — dòng chi nhánh mang mã món để OrderPanel quy thùng `ceil(need/caseSize)` + nút nhét thẳng giỏ (tái dùng `maxFit`). THUẦN local-UI. `supplyChain.ts`, `OrderPanel.tsx`, (+2).
+- **GĐ206** 🚚 "Auto chuyển kho": chủ bật TỰ CHỞ khi kệ vơi (<50% · cách 240') — điều kiện THỨ 3 vòng xe chở; `haulTripPlan` preview cùng công thức slice; phí xăng 15k. Khép backlog 6. `branchHaul.ts`, `slices/branch.ts` (+toggle), `branches.ts`, `gameTypes.ts`, `BranchPanel.tsx`, (+8).
+- **GĐ207** 🎛️ Auto chuyển kho CHỈNH NGƯỠNG/HẸN GIỜ: `setBranchAutoHaul` (LOCAL_ONLY) lưu ngưỡng kệ vơi % + khoảng cách; `autoHaulCfg` clamp (30–80% · 120–720') là NGUỒN CHÂN LÝ cho cả slice lẫn UI; 2 ô số. `branchHaul.ts` (+cfg), `slices/branch.ts` (+set), `BranchPanel.tsx`, (+5).
+- **GĐ208** 🥤 Quán nước SOI độ đủ đồ uống theo đêm: quán rút ĐỒ UỐNG từ kho CHUNG — `teahouseHaulRead` dự phóng còn mấy đêm (daysLeft) + clue haulNow khi ≤2 đêm; UI Callout "Kho đồ uống sắp cạn". `teahouseHaul.ts` (mới), `QuanNuocPanel.tsx`, (+5).
+- **GĐ209** ➕ Nạp đồ uống quán nước một-chạm (CƠ CHẾ CHỞ): helper THUẦN `teahouseFillPlan(q,level,drinkUnits,supplierCase)` phân bổ thiếu vào món quán bán mà supplier có, quy thùng; OrderPanel nút nhét thẳng giỏ (tái dùng maxFit, chừa lương+kho; không đụng endDay). `teahouseHaul.ts` (+fillPlan), `OrderPanel.tsx`, (+4). tsc+build sạch; full suite 1921/1921.
+- **GĐ210** ✅ QA TOÀN DIỆN + phủ test (mỗi 10 GĐ): chạy `test:coverage` → thêm 21 test cho các mô-đun business logic lộ hổng — `reputation.test.ts` (+10, danh tiếng có nguyên nhân: itemQuality/sampleVisit/reputationOf/repScore) · `wholesale.test.ts` (+5, bán sỉ: makeVendorOffer/wholesaleTotal) · `adviceMore.test.ts` (+9, gợi ý: walkoutAdvice/peakHours/peakAdvice/expiryAdvice/missKey). Coverage: statements 42.9% / branches 86% / functions 68.9% (phần thấp còn lại là render/world/audio 3D — không unit-test ý nghĩa). Cả vòng ngày ở nhiều cấp đã do simSmoke/simGolden/economySim bao; UI đa kích thước responsive audit trước đó. tsc+build sạch; full suite 1964/1964 (179 files).
 - > Chi tiết đầy đủ GĐ184–GĐ203: docs/progress-archive/PROGRESS-GD181-203.md.
 
 ## Quy ước kỹ thuật cần nhớ
@@ -303,3 +282,4 @@
 - GĐ207 — 🎛️ Auto chuyển kho chỉnh ngưỡng/hẹn giờ (autoHaulCfg clamp)
 - GĐ208 — 🥤 Quán nước soi độ đủ đồ uống theo đêm (còn mấy đêm, nên chở không)
 - GĐ209 — ➕ Nạp đồ uống quán nước một-chạm (chở đồ uống về kho đủ tối nay)
+- GĐ210 — ✅ QA toàn diện + phủ test (reputation/wholesale/adviceMore)
