@@ -9,6 +9,7 @@ import { Footer, Callout, styles, Tabs } from './shared';
 import { wageCoverage } from '../../data/wageCoverage';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
 import { payrollRunway } from '../../data/payrollRunway';
+import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
 import { staffValueToday, staffShiftSummary } from '../../data/staffValue';
 import { branchShiftSummary, branchStaffValueToday } from '../../data/branchStaffValue';
@@ -100,16 +101,27 @@ export function StaffPanel() {
                       .map((k) => ({ value: k, label: SHIFTS[k].name + (k === 'night' ? ' (cần Mở ca đêm)' : '') }))}
                   />
                 )}
-                {st.skill < 5 && (
-                  <button
-                    style={{ ...staffSt.train, opacity: st.trainedDay === day || money < trainCost(st.skill) ? 0.45 : 1 }}
-                    disabled={st.trainedDay === day || money < trainCost(st.skill)}
-                    title={st.trainedDay === day ? 'Hôm nay đã học rồi' : 'Cộng kinh nghiệm, đủ thì lên sao (lương tăng theo)'}
-                    onClick={() => trainStaff(st.id)}
-                  >
-                    🎓 Đào tạo {formatMoney(trainCost(st.skill))}
-                  </button>
-                )}
+                {st.skill < 5 && (() => {
+                  const eff = staffEff(st);
+                  const tv = trainValue(staffValues.find((v) => v.id === st.id)?.value ?? 0, eff);
+                  return (
+                    <>
+                      <button
+                        style={{ ...staffSt.train, opacity: st.trainedDay === day || money < trainCost(st.skill) ? 0.45 : 1 }}
+                        disabled={st.trainedDay === day || money < trainCost(st.skill)}
+                        title={st.trainedDay === day ? 'Hôm nay đã học rồi' : 'Cộng kinh nghiệm, đủ thì lên sao (lương tăng theo)'}
+                        onClick={() => trainStaff(st.id)}
+                      >
+                        🎓 Đào tạo {formatMoney(trainCost(st.skill))}
+                      </button>
+                      {tv.paybackDays !== null && (
+                        <span style={{ fontSize: 12, color: tv.worth ? '#2ecc71' : '#e67e22' }} title="Ước theo giá trị hôm nay của ca này">
+                          hoà vốn ~{tv.paybackDays} ngày
+                        </span>
+                      )}
+                    </>
+                  );
+                })()}
                 <TransferButton id={st.id} from="main" />
                 <button style={staffSt.fire} onClick={() => confirm(`Cho ${st.name} nghỉ việc?`) && fire(st.id)}>Cho nghỉ</button>
               </div>

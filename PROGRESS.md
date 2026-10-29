@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **2041/2041 test pass (191 files) + 2009/2009 (test:coverage, 186 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200, QA browser xác nhận). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ222.
+- **2046/2046 test pass (192 files) + 2009/2009 (test:coverage, 186 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200, QA browser xác nhận). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ223.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–222 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md · GĐ184–209: docs/progress-archive/PROGRESS-GD181-203.md + PROGRESS-GD204-212.md)
+### Giai đoạn gần đây · GĐ177–223 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md · GĐ184–209: docs/progress-archive/PROGRESS-GD181-203.md + PROGRESS-GD204-212.md)
 
 - **GĐ177–198** 🏮→📖 (đèn lồng, biển mở/đóng, đèn chờ, chợ phiên, đóng nợ UI, sửa đường, đèn cơ ngơi, quán nước lên đèn + staff value + thiếu đồ uống → nạp kho, hồi vốn ca đêm/quán nước/chi nhánh, băng ghế, chợ/kệ ngồi, cờ lễ hội, đọc con hẻm) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md + PROGRESS-GD181-203.md.
 - **GĐ199–209** 🔗 Trục multi-shop supply chain toàn mạch: rốn kho chung + chân trời ngày → nạp đúng chi nhánh → phiếu nạp → nhảy một chạm → nối OrderPanel → điền kệ chi nhánh vào giỏ → auto chuyển kho (chỉnh ngưỡng/hẹn giờ) → soi đồ uống quán nước → nạp đồ uống. Chi tiết: docs/progress-archive/PROGRESS-GD204-212.md.
@@ -33,6 +33,7 @@
 - **GĐ216–219** 💸 Mở rộng trục "soi tiền/vốn" sang NGƯỜI × DÒNG TIỀN × DANH MỤC: đội lương cần bao nhiêu khách tự nuôi (`wageCoverage`), lãi vay đang ngốn bao nhiêu % doanh thu (`loanBurden`), tháng này lời bao nhiêu/món nào gánh gần hết + rủi ro tập trung (`profitMix`), tiền mặt đủ trả lương cuối ngày chưa (`payrollRunway`). Chi tiết: docs/progress-archive/PROGRESS-GD213-219.md.
 - **GĐ220–221** ✅ QA TOÀN DIỆN (GĐ220, test:coverage branch 87% + browser 2 cỡ màn) + 🛒 lô chợ phiên đáng múc không (GĐ221 `fairLotValue`: lời so lẻ + món bán nhanh/dữ chôn vốn). Chi tiết: docs/progress-archive/PROGRESS-GD220-229.md.
 - **GĐ222** 🏭 "Bao giờ nên nâng kho?" (mở rộng kho theo sức chứa × hàng giữ): StoragePanel vốn chỉ chìa cấp kho + nút nâng; nay `warehouseUpgradeValue` đếm thùng (`casesFor`) vs trần, món cần lạnh (`needsCold`) vs trần giữ lạnh, chấm điểm tràn → giá trị LẺ (~) của phần lạnh đang hỏng nhanh (nối GĐ212), giá bậc kế vs tiền mặt → verdict nên nâng ngay (`upgrade`)/sắp (`soon`)/đang ổn (`ok`). `warehouseUpgrade.ts` (mới), `StoragePanel.tsx`, (+5 test).
+- **GĐ223** 🎓 "Đào tạo nhân viên có đáng không?" — đổi hiệu quả đào tạo (`staffEff`) thành TIỀN/ngày: staffEff vốn chỉ chìa % tăng tốc của +1★ + giá buổi; nay `trainValue` lấy giá trị ngày nhân viên (`staffValueToday.value` — doanh thu ca phủ) × % tăng tốc → mức tăng giá trị/ngày, so với tổng chi phí lên 1★ (`ceil(expNeeded/4)` buổi × giá buổi) → SỐ NGÀY HOÀ VỐN (≤14 → `worth`). StaffPanel thêm dòng "hoà vốn ~N ngày" cạnh nút đào tạo (xanh/cam). `trainValue.ts` (mới), `StaffPanel.tsx`, (+5 test).
 
 - > Chi tiết đầy đủ GĐ184–GĐ203: docs/progress-archive/PROGRESS-GD181-203.md.
 
@@ -289,3 +290,4 @@
 - GĐ220 — ✅ QA TOÀN DIỆN mỗi 10 GĐ: test:coverage (branch 87%) + QA browser 2 cỡ màn + sim đa cấp xanh
 - GĐ221 — 🛒 Lô chợ phiên đáng múc không? (fairLotValue: lời so lẻ + món bán nhanh/dữ chôn vốn)
 - GĐ222 — 🏭 Bao giờ nên nâng kho? (warehouseUpgradeValue: %thùng/%lạnh + giá trị tràn lạnh + giá vs tiền)
+- GĐ223 — 🎓 Đào tạo nhân viên đáng không? (trainValue: mức tăng giá trị/ngày + số ngày hoà vốn)
