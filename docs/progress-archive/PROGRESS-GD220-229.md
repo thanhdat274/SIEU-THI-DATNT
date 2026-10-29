@@ -109,3 +109,12 @@ savingsIfOwn = grabFees (cận trên tự chở bằng người giao rảnh). Ve
 tự chở), warn khi Grab ăn ≥15% doanh thu (OnlinePanel thẻ cam, mách tự chở giữ lại ~Xđ/ngày), good còn
 lại. OnlinePanel thêm thẻ "Online hôm nay: lời ròng Xđ (Grab −Yđ)". Nối GĐ59 (lời ròng/đơn) lên tầm
 NGÀY. THUẦN ĐỌC. (+6 test)
+
+## GĐ233 — 🔧 "Kệ đang mòn bao nhiêu nguy cơ, sửa có đáng?"
+Kệ hao mòn mỗi đêm; từ mòn ≥ 60% mới có thể HOẢN, xác suất = (mòn−60)×0.008/đêm (đúng công thức
+endDay), hỏng thì khách không lấy được hàng tới khi sửa (25% giá mới, tối thiểu 20k). WearRow chỉ hiện
+"Độ mòn X%" + nút Sửa/Bảo trì — CHƯA nói xác suất hỏng hay rủi ro tiền. `wearRisk` (data/wearRisk.ts)
+bóc tách: breakChance (xác suất hỏng/đêm), serviceable, repairCost, expectedRepairExposure =
+breakChance×repairCost (rổ rủi ro tiền sửa/đêm). Verdict: broken / danger (chance≥10%) / watch (đủ bảo
+trì) / ok. WearRow thêm dòng cảnh báo nguy cơ + rủi ro tiền, hoặc nhắc "đủ điều kiện bảo trì, về trắng
+phí sửa". THUẦN ĐỌC. (+6 test)
