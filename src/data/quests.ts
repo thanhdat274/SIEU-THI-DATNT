@@ -7,6 +7,7 @@ import { GARDEN_UNLOCK } from './garden';
 import { SOCIAL_UNLOCK } from './social';
 import type { Weather } from './weather';
 import { isWeekend } from './calendar';
+import { WEEKEND_SNACKS } from './products';
 
 /** Số liệu cộng dồn cả ván, để đo nhiệm vụ cốt truyện. */
 export interface Totals {
@@ -188,14 +189,12 @@ const morningRevenue = (stats: DayStats) =>
  * chooseWants). Dùng danh sách riêng cho nhiệm vụ để câu chữ khớp đúng "đồ mưa". */
 const RAIN_GEAR_IDS = ['o', 'aomua'];
 
-// ── GĐ254 — biến thể CUỐI TUẦN: Thứ 7/CN nhà bằng nghỉ học, khách ghé ăn vặt dày hơn ──
-// Nhóm món ăn vặt quen của tạp hoá (mở dần theo cấp); khác "Bán sạch kệ" (TỔNG món) vì dạy
-// trữ đúng NHÓM hàng đón cuối tuần. Chỉ vào pool ngày Thứ 7/Chủ nhật (isWeekend — calendar.ts).
-const WEEKEND_SNACK_IDS = ['mi', 'banh', 'ngot', 'keomut', 'bimbim', 'snack', 'banhgao', 'kem', 'tranhanh'];
-
-/** Số món ăn vặt bán được hôm nay (đọc sổ bán theo món). */
+// ── GĐ254 — biến thể CUỐI TUẦN: Thứ 7/CN nhà bằng nghỉ học, khách ghé ăn vặt dày hơn thật
+// (chooseWants ưu tiên nhóm này — agents/customers.ts, GĐ255). Khác "Bán sạch kệ" (TỔNG món) vì
+// dạy trữ đúng NHÓM hàng đón cuối tuần. Chỉ vào pool ngày Thứ 7/Chủ nhật (isWeekend — calendar.ts).
+/** Số món ăn vặt bán được hôm nay (đọc sổ bán theo món; nhóm chung WEEKEND_SNACKS — products.ts). */
 const weekendSnacksSold = (stats: DayStats) =>
-  WEEKEND_SNACK_IDS.reduce((n, id) => n + (stats.byItem?.[id]?.qty ?? 0), 0);
+  WEEKEND_SNACKS.reduce((n, id) => n + (stats.byItem?.[id]?.qty ?? 0), 0);
 
 /** Số món đồ mưa bán được hôm nay (đọc sổ bán theo món). */
 const rainGearSold = (stats: DayStats) =>

@@ -120,6 +120,7 @@ describe('daily_farm hoàn thành theo số thu hoạch', () => {
 
 // ── GĐ254 — biến thể CUỐI TUẦN: Thứ 7/CN có thêm nhiệm vụ "Cuối tuần ăn vặt" ──
 import { isWeekend, weekdayOf } from '../data/calendar';
+import { productById, WEEKEND_SNACKS } from '../data/products';
 import type { DayStats } from '../core/store';
 
 describe('biến thể cuối tuần (GĐ254)', () => {
@@ -139,6 +140,17 @@ describe('biến thể cuối tuần (GĐ254)', () => {
       expect(qs.map((q) => q.id)).toContain('daily_weekend');
       expect(qs).toHaveLength(6); // 5 việc ngày thường + biến thể cuối tuần
     }
+  });
+
+  it('nhóm ăn vặt cuối tuần toàn món THẬT trong bảng hàng, dùng chung quest + khách (GĐ255)', () => {
+    expect(WEEKEND_SNACKS.length).toBeGreaterThan(0);
+    for (const id of WEEKEND_SNACKS) {
+      const p = productById(id);
+      expect(p).toBeTruthy();
+      expect(p.unlock).toBeLessThanOrEqual(15); // nhóm có mặt từ sớm, mở dần theo cấp
+    }
+    // không trùng lặp
+    expect(new Set(WEEKEND_SNACKS).size).toBe(WEEKEND_SNACKS.length);
   });
 
   it('counter đếm đúng NHÓM món ăn vặt (không tính món ngoài nhóm)', () => {

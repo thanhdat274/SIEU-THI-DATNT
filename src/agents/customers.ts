@@ -3,13 +3,13 @@ import { simRng } from '../core/rand';
 import { MINUTES_PER_SECOND, useGame, type CartItem } from '../core/store';
 import { furnitureDef, isCookStation } from '../data/furniture';
 import { customersPerDay, FEATURES } from '../data/levels';
-import { formatMoney, productById, unlockedProducts } from '../data/products';
+import { WEEKEND_SNACKS, formatMoney, productById, unlockedProducts } from '../data/products';
 import { trending } from '../data/suppliers';
 import { skyAt } from '../data/weather';
 import { marketTrafficFactor } from '../data/chophien';
 import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../data/freshness';
 import { demandPriceFactor, keepChance } from '../data/pricing';
-import { dayEffects, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
+import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
 import { COOKED_PRODUCT_IDS, RECIPES } from '../data/recipes';
 import { happyHourActive, happyTraffic, timeBandAt } from '../data/rhythm';
 import { hasSkill } from '../data/titles';
@@ -372,6 +372,9 @@ export class CustomerManager {
     const rainy = (s.weather === 'rain' || s.weather === 'storm') ? ['aomua', 'o', 'nuoc', 'mi_trung_nong', 'tra_gung_nong', 'banh_bao_hap', 'che_dau_xanh'].filter(unlocked) : [];
     // Nắng đẹp: đồ mát mát lạnh bán bùng nổ
     const sunnyCool = s.weather === 'sunny' ? ['nuoc_mia', 'kem_trai_cay', 'sinh_to_trai_cay', 'tra_dao_cam_sa'].filter(unlocked) : [];
+    // Cuối tuần (Thứ 7/CN — GĐ255): nhà bằng nghỉ học, tụi nhỏ rủ nhau ghé mua ăn vặt — nhiệm vụ
+    // "Cuối tuần ăn vặt" (GĐ254) dạy trữ đúng nhóm này nên thế giới phải trả lời đúng hứa
+    const weekendSnacks = isWeekend(s.day) ? WEEKEND_SNACKS.filter(unlocked) : [];
     // Hàng cận hạn đang giảm giá: có khách chuyên săn đồ giảm
     const onSale = [
       ...new Set(s.furniture.flatMap((f) => f.tiers.filter((t) => tierMarkdown(t.productId, t.lots, t.count) > 0).map((t) => t.productId!))),
@@ -390,6 +393,7 @@ export class CustomerManager {
       if (sunnyCool.length && simRng()() < 0.25) return pick(sunnyCool);
       if (seasonal.length && simRng()() < effects.pull) return pick(seasonal);
       if (timely.length && simRng()() < 0.2) return pick(timely);
+      if (weekendSnacks.length && simRng()() < 0.2) return pick(weekendSnacks);
       if (hot.length && simRng()() < 0.15) return pick(hot);
       return stocked.length && simRng()() < WANTS_STOCKED
         ? weightedPick(stocked, (id) => (attention[id] ?? 1) * meatDemandFactor(id, butcher), simRng())

@@ -180,6 +180,11 @@ PRODUCTS.push(...CATALOG_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlo
 PRODUCTS.push(...COOKED_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
 
 export const productById = (id: string) => PRODUCTS.find((it) => it.id === id)!;
+
+// ── GĐ254/255 — nhóm món ĂN VẶT cuối tuần (Thứ 7/CN): nguồn chung cho nhiệm vụ "Cuối tuần ăn vặt"
+// (quests.ts) và sự thèm ăn vặt thật của khách (agents/customers.ts chooseWants) để quest dạy đúng
+// hành vi mà thế giới thưởng. Món mở dần theo cấp; hiện diện trong chooseWants chỉ khi đã unlock.
+export const WEEKEND_SNACKS = ['mi', 'banh', 'ngot', 'keomut', 'bimbim', 'snack', 'banhgao', 'kem', 'tranhanh'];
 export const unlockedProducts = (level: number) => PRODUCTS.filter((it) => it.unlock <= level);
 
 /** Số món mỗi thùng theo ngành; hàng đắt thì thùng nhỏ lại cho vừa túi tiền (một thùng tối đa ~400k). */
