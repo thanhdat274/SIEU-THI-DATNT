@@ -149,3 +149,27 @@
 - Kết quả kit 6 prop: **550KB → 68.6KB (gấp 8)**, màu giữ nguyên. Chọn `--no-bake` làm chuẩn cho kit hiện tại (màu phẳng — atlas 512 chỉ to thêm không đẹp hơn); bake atlas để sẵn khi prop có vân/texture vẽ tay. 3 vướng API 5.2 đã ghi trong script: color_attributes.new đổi thứ tự tham số, bỏ use_margin, importer đặt tên attribute 'Color' và chỉ nhận COLOR_0 VEC4 (script sinh kit bên ba.js đã sửa paint() ghi RGBA).
 - Game: `public/decoders/draco/` (copy từ node_modules/three, không phụ thuộc CDN), `kitProps.ts` cắm DRACOLoader. Verify mắt: 14/14 prop nén load đúng màu trong game (ban ngày + ban đêm).
 - File: `blender_kit_atlas.py`, `public/models/kit/` (6 GLB Draco + manifest), `public/decoders/draco/`, `kitProps.ts`, `dev/kit-previews/`.
+
+### GĐ177 — 🏮 Đầu ngõ lên đèn: đèn lồng cột bên cửa tiệm — XONG
+
+- Lý do: mở rộng "cảnh ấm" của con hẻm lúc chập tối — học cảm giác đèn đường ấm của Xóm Nông Trại, tựa giữ chân không lời.
+- `scripts/blender_lantern.py` → `public/models/facade/den_long.glb` (Draco 16KB): cột gỗ + nón chóp đỏ + thân thuỷ tinh cam ấm + lõi `den_long_glow`. `storefrontLantern.ts`: lazy GLB + fallback thủ tục + nguồn sáng thật warm #ffb35c đăng ký lightBudget + pulse sprite. `lanternGlow(minutes)` cùng công thức đèn đường (17h–5h30). QA bắt 1 bug: emissive mặc định GLB cháy cả ngày → track `glbGlow` bật/tắt theo lamp.
+- File: `storefrontLantern.ts`, `world.ts`, `main.tsx`, `storefrontLantern.test.ts`.
+
+### GĐ178 — 🎨 Gộp họ xanh dương hướng dẫn/chuỗi/biểu đồ về info #3498db — XONG
+
+- Lý do: đóng nợ màu GĐ167 — họ banner guide `#0984e3/#74b9ff/#2e86de` cần quyết định; chốt KHÔNG lập bảng riêng mà gộp về một sắc info duy nhất (chống "màu tự chế"). Giữ họ buy-tone `#55efc4/#ff7675` (ngoại lệ duyệt GĐ166).
+- sed 16 chỗ ở OrderPanel/ReportPanels/ContractsPanel/PricePanel. GardenPanel giữ họ "system card" riêng (cùng mẫu BusinessPanel) — không churn. tsc+build+reload @5175 sạch, grep 0-màu-cũ/16-màu-mới.
+- File: 4 UI panel.
+
+### GĐ179 — 🪧 Biển treo mở/đóng cửa: kit prop có mục đích gameplay — XONG
+
+- Lý do: kit prop (GĐ172-176) đang thuần hình ảnh → gắn mục đích gameplay: biển nói ra trạng thái tiệm, củng cố nhịp mở/đóng 8h/22h30.
+- `scripts/blender_sign.py` → `bien_mo_cua.glb` (6.9KB): cột gỗ + biển treo, tấm `bien_mo_cua_state` sáng xanh #2ecc71 (mở)/đỏ dìm #e74c3c (đóng) + đung nhẹ khi mở. Đặt (5.05,0,1.45) vỉa hè sát cửa, cao quá đầu (không chặn lưới). Nối `world.openSign.update(g.shopOpen, …)` trong loop main cùng chỗ cột đèn lồng. QA: update(true/false) xanh/đỏ đúng. Lưu ý: tab IAB nền dừng rAF (rafCount=0) nên không soi được loop khi QA — xác nhận trên save thật.
+- File: `storefrontSign.ts`, `world.ts`, `main.tsx`, `storefrontSign.test.ts`.
+
+### GĐ180 — 💡 Đèn báo "khách đang đợi" trước hiên — XONG
+
+- Lý do: tín hiệu không lời cho chủ khi khách chờ quầy (đang ở sau nhà/xa vẫn biết có khách); tái dùng world state `waiting` (sim có sẵn ở customers.ts) — KHÔNG thêm mô phỏng.
+- `scripts/blender_waitlamp.py` → `den_cho.glb` (13.4KB): quả đèn lồng nhỏ gắn tường trái cửa (3.1,0,1.3), lõi `cho_doi_glow` sáng ấm khi `waiting>0` và tiệm mở — càng đông càng sáng rõ (~1.0→1.8), tắt khi đóng/không ai chờ; pulse nhẹ. Không thêm nguồn sáng thật (chỉ tín hiệu). QA: waiting3+mở→glow1.6, đóng/0→0.
+- File: `storefrontWaitLamp.ts`, `world.ts`, `main.tsx`, `storefrontWaitLamp.test.ts`.

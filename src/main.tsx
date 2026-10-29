@@ -706,6 +706,8 @@ function renderFrame() {
   world.storefront.update(lamp);
   // Biển mở/đóng cửa trước tiệm (gđ179): tấm trạng thái đổi màu theo tiệm đang mở/đóng, đung nhẹ khi mở
   world.openSign.update(g.shopOpen, performance.now() / 1000);
+  // Đèn báo "khách đang đợi" cạnh cửa (gđ180): sáng ấm khi có khách chờ quầy và tiệm đang mở
+  world.waitLamp.update({ open: g.shopOpen, waiting: g.waiting ?? 0 }, performance.now() / 1000);
   applyLightBudget(controller.target);
   // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng
   if ((frameNo++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
