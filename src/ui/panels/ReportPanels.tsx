@@ -638,8 +638,14 @@ export function MorningPanel() {
                     {rm.lines.length > 0 && (
                       <div style={{ marginTop: 3, display: 'grid', gap: 2, fontSize: 11, opacity: 0.9 }}>
                         {rm.lines.map((l, i) => (
-                          <div key={i}>
-                            {l.outlet === 'teahouse' ? '🍵' : '🏪'} <b>{l.label}</b>: thêm <b>{l.need.toLocaleString('vi-VN')}</b> (kho chung có {l.inWarehouse.toLocaleString('vi-VN')}) — {l.source === 'warehouse' ? 'chở được' : 'nhập thêm'}
+                          <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span>
+                              {l.outlet === 'teahouse' ? '🍵' : '🏪'} <b>{l.label}</b>: thêm <b>{l.need.toLocaleString('vi-VN')}</b> (kho chung có {l.inWarehouse.toLocaleString('vi-VN')}) — {l.source === 'warehouse' ? 'chở được' : 'nhập thêm'}
+                            </span>
+                            <button onClick={() => openPanel({ type: l.outlet === 'teahouse' ? ('quannuoc' as never) : ('branch' as never) })}
+                              style={{ ...styles.btn, fontSize: 11, padding: '1px 6px', flex: '0 0 auto' }}>
+                              {l.source === 'warehouse' ? 'nạp →' : 'nhập →'}
+                            </button>
                           </div>
                         ))}
                       </div>
