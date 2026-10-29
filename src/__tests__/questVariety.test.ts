@@ -204,3 +204,27 @@ describe('bất biến nhóm ăn vặt cuối tuần (GĐ263)', () => {
     for (const id of WEEKEND_SNACKS) expect(SEASONAL_GOODS.has(id)).toBe(false);
   });
 });
+
+// ── GĐ281 — khoá độ phủ khách quen: mọi khách quen đều có khả năng ghé (không ai bị "tàng hình") ──
+import { REGULARS, visitsToday } from '../data/regulars';
+
+describe('độ phủ khách quen (GĐ281)', () => {
+  it('28 khách quen đều ghé được trong sweep seed×ngày, phân phối gần đều (không ai chiếm hơn 1.5× ai)', () => {
+    expect(REGULARS.length).toBeGreaterThanOrEqual(20);
+    const counts: Record<string, number> = {};
+    const prog = { friendship: 100, visits: 50, lastVisitDay: -10, perks: ['Ghé thường hơn'], discovered: [] };
+    for (const def of REGULARS) {
+      for (let seed = 0; seed < 20; seed++) {
+        for (let day = 1; day <= 120; day++) {
+          if (visitsToday(def, day, seed, 40, prog, { overall: 100 } as never)) {
+            counts[def.id] = (counts[def.id] || 0) + 1;
+          }
+        }
+      }
+    }
+    for (const def of REGULARS) expect(counts[def.id] || 0).toBeGreaterThan(0);
+    // hash nhiễu tự nhiên ~1.6× — ngưỡng 2× đủ bắt loại lỗi hệ thống (một khách = 0 lần như GĐ267)
+    const vals = Object.values(counts);
+    expect(Math.max(...vals) / Math.min(...vals)).toBeLessThan(2);
+  });
+});

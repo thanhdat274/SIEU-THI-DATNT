@@ -36,6 +36,8 @@
 
 - **GĐ272–280** 🖼️📞📊 — quét thẩm mỹ nốt đăng nhập + menu Thêm (0 lỗi, chốt chuỗi rà soát) · lý do gọi khớp thời tiết · QA mắt thẻ CÓ dữ liệu GĐ155–159 (đóng watch-item cũ nhất) · dự báo "tuần mai khách săn" (Nhập hàng tối CN + teaser) · lịch tự động chỉnh giờ mở cửa 6h–8h (autoOpenAt + note biết ai giữ cửa) · đóng GĐ110/117 bằng số liệu (xương sống 24–26/28, quest hành động bot không làm). Chi tiết: archive (phụ lục 2–4).
 
+- **GĐ281 độ phủ khách quen** 👥: probe 28 khách quen × 20 seed × 120 ngày — tất cả đều ghé được (834–839/2400, hash nhiễu tự nhiên 1.6×), không ai "tàng hình"; lock test ngưỡng 2× (bắt loại lỗi hệ thống GĐ267). Kết thúc chuỗi audit độ phủ: đơn (GĐ267) · sự kiện/thị trường (GĐ269) · khách quen (GĐ281). 2249 test xanh; boot @5173 sạch.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc + thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -310,6 +312,8 @@
 - GĐ275 — ⏰ Lịch tự động chỉnh giờ mở cửa 6h–8h (autoOpenAt + xoay vòng preset trong menu hồ sơ)
 - GĐ276 — ⏰ Dòng lịch tự động trên Sổ đầu ngày (autoOpenNote)
 - GĐ279 — 🧾 Note biết thu ngân tự mở cửa sáng sớm (cashierOpensMorning)
+- GĐ280 — 📊 Đóng GĐ110/117 bằng số liệu (xương sống 24–26/28; quest hành động bot không làm)
+- GĐ281 — 👥 Lock độ phủ 28 khách quen (tất cả ghé được, phân phối <2×)
 - GĐ280 — 📊 Đóng GĐ110/117: đo nhiệm vụ cấp 50 (xương sống 24–26/28; 8 quest hành động bot không làm) + test khoá tín hiệu
 - GĐ277 — 💾 Khoá autoOpenAt qua save (3 test) + lock chợ phiên luôn rơi Chủ nhật
 - GĐ278 — 👀 QA mắt thẻ CÓ dữ liệu GĐ155–159 (thú cưng/hụi/khủng hoảng/bỏ lỡ) — đóng watch-item
