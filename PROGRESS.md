@@ -47,7 +47,7 @@
 
 - **GĐ278 QA mắt thẻ CÓ dữ liệu (GĐ155–159) — ĐÓNG watch-item cũ nhất** 👀: Thú cưng (verdict trung thực "kho sạch — chưa thấy công" + trạng thái cho ăn), Hụi (đủ số + hòa vốn), Khủng hoảng MXH (khách ×0.5), Bỏ lỡ (GĐ252). 0 lỗi console, 0 tràn @390. Không đổi code.
 
-- **GĐ279 note biết ai giữ cửa** 🧾: khi thu ngân có cờ "tự mở cửa khi vào ca" (ca sáng/cả ngày — mở 6h, agents/staff.ts) thì note GĐ276 "lịch 8h — lỡ giờ vàng" là SAI → `cashierOpensMorning` + note "Thu ngân tự mở cửa sáng sớm (lịch chủ chỉ là dự phòng)"; thu ngân ca chiều/không cờ → note theo lịch chủ như cũ. 2 test mới; 2247 test xanh; QA @5173: thu ngân autoOpen → note đúng nhân vật, 0 lỗi console.
+- **GĐ279 note biết ai giữ cửa** 🧾: thu ngân autoOpen ca sáng mở 6h thì note "lịch 8h — lỡ giờ vàng" là SAI → `cashierOpensMorning` + "Thu ngân tự mở cửa sáng sớm"; ca chiều/không cờ → theo lịch chủ. 2 test; 2247 test xanh; QA @5173 đúng.
 
 ## Quy ước kỹ thuật cần nhớ
 
