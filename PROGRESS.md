@@ -78,7 +78,7 @@
 ## Backlog tiếp theo
 
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
-2. **Đang theo dõi, khoá chờ điều kiện:** arc E "Hàng xóm khai trương" (GĐ164) — chỉ khi 4 arc A–D xác minh được trên save thật · NG+ mục tiêu vòng (GĐ171) + kèo cấp 50+ (GĐ110/117) — cần save người thật · nhiệm vụ ngày 1–5 trên save người thật (GĐ254 đã giảm lặp).
+2. **Khoá chờ save người thật:** arc E (4 arc A–D phải xác minh trước) · NG+ mục tiêu vòng (GĐ171) · kèo cấp 50+ (GĐ110/117) · nhiệm vụ ngày 1–5 (GĐ254 đã giảm lặp).
 3. **Ý tưởng chờ Leader duyệt (chiều sâu, chưa làm):** (a) nhịp cuối tuần đậm hơn khi hệ đã ổn trên save thật (hàng đặc biệt ngày phiên chợ; không vội); (b) nhiệm vụ tuần/tháng biết đến thứ trong tuần (WeeklyPace hiện "còn X ngày tới Chủ nhật") — nhỏ, chỉ khi có việc khác đi kèm.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)## Mục lục giai đoạn đã xong (chi tiết trong archive)
