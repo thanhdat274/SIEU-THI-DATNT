@@ -3,7 +3,7 @@ import { storageCapacity, storageUsed, useGame } from '../../core/store';
 import { warehouseTier, WAREHOUSE_TIERS } from '../../data/warehouse';
 import { caseSize, describeUnits, formatMoney, productById } from '../../data/products';
 import { storeMissRevenue, coldOverflow } from '../../data/advice';
-import { LifeBadge, Footer, styles } from './shared';
+import { Callout, LifeBadge, Footer, styles } from './shared';
 
 /** Kho hàng: thùng nguyên + hàng lẻ đã khui, hạn gần nhất, chỗ trống. */
 export function StoragePanel() {
@@ -32,19 +32,17 @@ export function StoragePanel() {
         <div style={{ height: '100%', borderRadius: 4, width: `${Math.min(100, (used / capacity) * 100)}%`, background: used >= capacity ? '#e17055' : '#00b894' }} />
       </div>
       {missRev && missRev.totalLoss > 0 && (
-        <div style={{ ...styles.card, borderLeft: '3px solid #e74c3c', marginBottom: 8, fontSize: 12, opacity: 0.9 }}>
-          <b>📦 Hôm qua bỏ lỡ ~{formatMoney(missRev.totalLoss)} vì hết chỗ/kho</b>
-          <div style={{ marginTop: 2 }}>
+        <Callout tone="danger" style={{ marginBottom: 8 }} title={`📦 Hôm qua bỏ lỡ ~${formatMoney(missRev.totalLoss)} vì hết chỗ/kho`}>
+          <div style={{ marginTop: 2, fontSize: 12 }}>
             {missRev.inStorageCount > 0
               ? `${missRev.rows[0]?.name} còn trong kho mà kệ hết chỗ — nâng kho/kệ thêm để bày đủ, thu hồi dần.`
               : `${missRev.rows[0]?.name} hết cả kho — nhập thêm rồi nâng kho để chứa đủ.`}
           </div>
-        </div>
+        </Callout>
       )}
       {coldOv && (
-        <div style={{ ...styles.card, borderLeft: '3px solid #e67e22', marginBottom: 8, fontSize: 12 }}>
-          <b>🧊 Tủ lạnh kho đầy: {coldOv.coldQty}/{coldOv.capacity} món cần lạnh</b>
-          <div style={{ marginTop: 2 }}>
+        <Callout tone="warn" style={{ marginBottom: 8 }} title={`🧊 Tủ lạnh kho đầy: ${coldOv.coldQty}/${coldOv.capacity} món cần lạnh`}>
+          <div style={{ marginTop: 2, fontSize: 12 }}>
             Dư {coldOv.overflow} món phải để ngoài nhiệt độ thường — hỏng nhanh gấp ~
             {coldOv.items[0]?.penalty.toFixed(1)}×{' '}
             {coldOv.nextCapacity
@@ -54,7 +52,7 @@ export function StoragePanel() {
           <div style={{ marginTop: 2, opacity: 0.75 }}>
             {coldOv.items.map((it) => `· ${it.name}: ${it.qty} món`).join(' ')}
           </div>
-        </div>
+        </Callout>
       )}
       {items.length === 0 ? <p style={styles.sub}>Kho trống. Vào Nhập hàng để đặt thêm.</p> : (
         <table style={styles.table}>

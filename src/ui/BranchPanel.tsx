@@ -7,6 +7,7 @@ import { branchMissSummary } from '../data/venueTrend';
 import { vendingPayoff } from '../data/minorPayoff';
 import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney, productById } from '../data/products';
+import { Callout } from './panels/shared';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
@@ -79,8 +80,7 @@ export function BranchPanel() {
           {(() => {
             const miss = branchMissSummary(venueTrend);
             return (
-              <div style={{ ...st.card, display: 'block', borderLeft: '3px solid #e67e22' }}>
-                <b>🚪 Bỏ lỡ hôm qua & gần đây</b>
+              <Callout tone="warn" title="🚪 Bỏ lỡ hôm qua & gần đây">
                 {miss.totalMissed === 0
                   ? <div style={st.sub}>Chưa có số liệu bỏ lỡ — số này ghi lại mỗi tối.</div>
                   : <>
@@ -94,7 +94,7 @@ export function BranchPanel() {
                       {miss.worst && miss.worst.estMoney > 0 && <div style={st.sub}>Tệ nhất ngày {miss.worst.day}: ~<b>{formatMoney(miss.worst.estMoney)}</b>.</div>}
                       <div style={st.sub}>Khách bỏ về vì quầy vắng người trực hoặc kệ hết hàng — đủ người trực và trữ đủ hàng sẽ cứu được số này.</div>
                     </>}
-              </div>
+              </Callout>
             );
           })()}
           <div>Hàng trên kệ: <b>{shelfTotal(branch.shelf)}</b>/{CONVENIENCE.shelfCap} món (lấy từ kho chung)</div>

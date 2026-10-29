@@ -185,3 +185,10 @@
 - Lý do: nhịp tuần hiện chỉ là gánh hàng hình ảnh (GĐ181) + xả kho (GĐ135/136) — chưa ai biết đến; add đông khách để phiên chợ "cảm thấy" khác, toast để người chơi khám phá cơ hội.
 - `marketTrafficFactor(day)` (1.15 chợ / 1 thường, thuần đọc — không đổi SAVE_VERSION/kinh tế nền) nhân vào `rush` sinh khách trong `customers.ts`. Toast 1 lần/ngày chợ (guard `lastMarketDay` trong render loop): "🛒 Hôm nay phiên chợ cuối ngõ — khách đông hơn! Tối nhớ xem Chợ phiên để gánh bớt hàng dư".
 - File: `chophien.ts`, `customers.ts`, `main.tsx`, `marketClearValue.test.ts` (+1 test, tổng 9).
+
+### GĐ183 — 🧹 Đóng nợ UI cuối: mọi "callout vẽ tay" chuyển sang Callout chuẩn, dọn màu lệch — XONG
+
+- Lý do: sau GĐ166/167, vài thẻ nhấn mạnh vẫn vẽ tay vỏ riêng (trước Callout có), và màu teal #16a085 lọt lưới scan GĐ167 (GardenPanel ngoài phạm vi quét cũ).
+- Chuyển 8 thẻ sang `Callout` chuẩn: GardenPanel 5 (💡 Hôm nay đáng warn · 🧑🍳 Nấu hay bán lẻ event · 📦 Đơn quán xóm warn · 🌤️ Mùa vụ ok · 🧹 Dọn trại info), BranchPanel:82 (🚪 Bỏ lỡ warn), StoragePanel 2 (📦 Bỏ lỡ kho danger · 🧊 Tủ lạnh đầy warn). 2 nút `#16a085` (Xây/Lên sao) → accent `#f1c40f` (#222 text).
+- grep sạch: 0 `borderLeft:'3px solid #'` + 0 teal trong src/ui. `#16a085` còn ở data/agents = màu NPC/hàng hoá hợp lệ (không phải UI).
+- File: `GardenPanel.tsx`, `BranchPanel.tsx`, `StoragePanel.tsx`.
