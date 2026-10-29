@@ -1,0 +1,9 @@
+{
+  "note": "Tài sản 3D mặt tiền (gđ177): đèn lồng cột trước cửa tiệm. Dựng bằng Blender (scripts/blender_lantern.py), nén Draco. compressed=true.",
+  "modules": {
+    "den_long": {
+      "compressed": true,
+      "sizeBytes": 16148
+    }
+  }
+}

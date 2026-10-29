@@ -15,6 +15,7 @@ import { registerLight } from '../render/lightBudget';
 import { createQuanNuocStand } from './quanNuocStand';
 import { createBranchStand } from './branchStand';
 import { loadKitProps } from './kitProps';
+import { createStorefrontLantern } from './storefrontLantern';
 
 /** Các điểm trong một phòng ngủ (toạ độ thế giới). */
 export interface RoomSpots { bed: THREE.Vector3; wake: THREE.Vector3; nightstand: THREE.Vector3 }
@@ -56,6 +57,8 @@ export interface World {
   kit: ReturnType<typeof loadKitProps>;
   /** Cửa hàng tiện lợi theo trạng thái sở hữu: mảnh đất RAO BÁN + biển MỞ/ĐÓNG CỬA — chỉ hình ảnh. */
   branchStand: ReturnType<typeof createBranchStand>;
+  /** Đèn lồng cột trước cửa tiệm (gđ177): chỉ hình ảnh + nguồn sáng ấm chập tối — không chặn lưới. */
+  storefront: ReturnType<typeof createStorefrontLantern>;
 }
 
 /** Thế giới ban đầu: mặt đất, con đường, nhà riêng và tiệm tạp hóa nhỏ. */
@@ -197,6 +200,11 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   // thôi, không chặn lưới; tải lười nên thế giới có sẵn, prop vừa về vừa chen vào.
   const kit = loadKitProps();
   scene.add(kit.group);
+
+  // Đèn lồng cột trước cửa tiệm (gđ177): "đầu ngõ lên đèn" chập tối — chỉ hình ảnh, không chặn lưới;
+  // GLB Blender tải lười, có cái xác thủ tục dự phòng nên đèn luôn có hình.
+  const storefront = createStorefrontLantern();
+  scene.add(storefront.group);
   const maxTier = SHOP_TIERS[SHOP_TIERS.length - 1];
 
   // Vài cái cây cho sinh động
@@ -294,6 +302,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
     quanNuoc,
     kit,
     branchStand,
+    storefront,
   };
 }
 

@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1783/1783 test pass (158 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ176.
+- **1786/1787 test pass (158 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ177. (Sim nặng `weeklyGoalCap` cấp 50 timeout trong lần full do tranh CPU khi chạy Blender/browser; re-run isolated 16/16 xanh)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -36,6 +36,7 @@
 - **GĐ174** 📦 Tách chunk vendor (manualChunks: vendor-react/three/data/misc) — cache trình duyệt khỏi xả.
 - **GĐ175** 🛡️ Guard mất ngữ cảnh render (webglcontextlost / device.lost → toast + mời F5, chống spam 8s).
 - **GĐ176** 🎨 Blender 5.2 pipeline: `blender_kit_atlas.py` (import → gộp → Smart UV → bake EMIT atlas tùy chọn → Draco level 6 + preview). Kit 550KB→68.6KB. DRACOLoader ở `public/decoders/draco/`. Quy ước: `--no-bake` chuẩn cho prop màu phẳng.
+- **GĐ177** 🏮 "Đầu ngõ lên đèn": đèn lồng cột dựng Blender (`scripts/blender_lantern.py`, 16KB Draco) đặt bên cửa tiệm (5.9,0,2.1); nguồn sáng ấm #ffb35c qua quỹ ánh sáng (lightBudget) bật chập tối (lamp 17h–5h30); lõi phát sáng tắt hẳn ban ngày. Chrome: lazy GLB + fallback thủ tục + không chặn lưới (boxes rỗng — convention kit GĐ172). QA @5173: loaded=true, glow 2.6 đêm / 0 trưa; QA bắt 1 bug (GLB emissive mặc định cháy sáng cả ngày) → đã sửa điều khiển theo giờ. `storefrontLantern.ts`, `world.ts`, `main.tsx`, test 4.
 
 ### Giai đoạn gần đây · GĐ159–167 (chi tiết: docs/progress-archive/PROGRESS-GD154-180.md)
 
@@ -72,6 +73,7 @@
 
 ## Cần theo dõi / nợ mở
 
+- GĐ177: đèn lồng bật theo `lamp` (17h–5h30) chung toàn cảnh — xác nhận trên save thật vào khung chập tối không chói/gắt (nếu cần, bó thêm theo mưa/mây đậm); cũng nên mở rộng "cảnh ấm" sang bếp/trai khi làm depth tiếp.
 - GĐ171: scale mục tiêu vòng ×(1+0.5(N−1))/×(1+0.3(N−1)) — cần save thật vòng 2+ để xác nhận trad vẫn căng nhưng với tới; nếu vẫn quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi.
 - QA trực quan GĐ155–158 xong trên save máy cấp 46 ngày 1; chưa QA mắt được trạng thái CÓ dữ liệu của Bỏ lỡ/Thú cưng/hụi/khủng hoảng (cần play vài ngày — bọc bởi test). GĐ159 các dòng mới ẩn ngày 1 — QA mắt khi có save có doanh thu.
@@ -81,7 +83,7 @@
 ## Backlog tiếp theo
 
 1. **Audit trải nghiệm & tiến trình (GĐ168–171) đã xong** ✅ (mid/late-game: roadmap 30+, ratchet tuần/tháng, rival kết, NG+ mục tiêu vòng). Đánh giá lại: vòng ngày & tiến trình đã khai thác sâu; trục mới đáng làm là **trải nghiệm bim bim tài sản 3D + không gian con hẻm** — nối tiếp GĐ172–176.
-2. **Chiều sâu trải nghiệm 3D / con hẻm sống** (làm sâu, không mở hệ kinh tế): (a) đèn lồng Hiệu thuốc & sạp gánh hàng rong hiện render sẵn nhưng cảnh chưa có ánh sáng ấm chiều tối; (b) kit prop hiện đứng tĩnh — tạo 1–2 prop có mục đích gameplay (biển mở/đóng cửa, gánh hàng thay đổi khi chợ phiên); (c) đi bộ qua hẻm thấy khách quen đứng chờ/lê la trước hiên là dấu hiệu không lời cho "khách đang đợi" — tái dùng current world state, không thêm sim. Chọn (c) hoặc (a) làm việc kế — soi bằng Blender + lazy load chuẩn GĐ176. → UI/UX gate + QA 3 góc nhìn.
+2. 🏮 **Chiều sâu trải nghiệm 3D / con hẻm sống**: (a) đèn lồng cửa tiệm sáng ấm chập tối ✅ GĐ177. Còn: (b) kit prop có mục đích gameplay (biển mở/đóng cửa, gánh hàng đổi khi chợ phiên); (c) dấu hiệu không lời "khách đang đợi" trước hiên (tái dùng world state, không thêm sim). Làm (b) trước rồi (c) — Blender + lazy load chuẩn GĐ176 + QA 3 góc nhìn.
 3. Theo dõi sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (save người thật); nếu vẫn lặp → thêm biến thể hoàn cảnh (lễ, weekend).
 4. GĐ164 theo dõi: arc E "Hàng xóm khai trương" (thay cam_do_mo) — chỉ làm khi 4 arc A–D chạy tốt trên save thật.
 5. UI nợ: Callout GardenPanel:79; họ banner guide xanh dương OrderPanel/ReportPanels (quyết định bảng riêng — không phải nốt vụn).
@@ -260,3 +262,4 @@
 - GĐ174 — 📦 Tách chunk vendor (manualChunks)
 - GĐ175 — 🛡️ Guard mất ngữ cảnh render
 - GĐ176 — 🎨 Blender 5.2 vào pipeline: nén Draco + nướng atlas
+- GĐ177 — 🏮 Đầu ngõ lên đèn: đèn lồng cột bên cửa tiệm sáng ấm chập tối

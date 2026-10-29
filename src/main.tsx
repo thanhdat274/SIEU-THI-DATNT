@@ -702,6 +702,8 @@ function renderFrame() {
   }
   // Đèn đường bật cùng giờ với đèn trong nhà; nguồn sáng thật chỉ dành cho đèn gần chỗ nhìn
   world.streetLamps.update(lamp);
+  // Đèn lồng cửa tiệm (gđ177): bật sáng ấm chập tối, cùng giờ với đèn đường
+  world.storefront.update(lamp);
   applyLightBudget(controller.target);
   // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng
   if ((frameNo++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
