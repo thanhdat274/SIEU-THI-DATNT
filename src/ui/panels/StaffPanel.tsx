@@ -8,6 +8,7 @@ import { hasUpgrade } from '../../data/upgrades';
 import { Footer, Callout, styles, Tabs } from './shared';
 import { wageCoverage } from '../../data/wageCoverage';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
+import { payrollRunway } from '../../data/payrollRunway';
 import { staffEff } from '../../data/staffEff';
 import { staffValueToday, staffShiftSummary } from '../../data/staffValue';
 import { branchShiftSummary, branchStaffValueToday } from '../../data/branchStaffValue';
@@ -50,6 +51,19 @@ export function StaffPanel() {
                     ? `Hôm nay ${wageCov.customers} lượt, doanh thu trung bình đủ nuôi lương (mỗi lượt dư ${formatMoney(Math.round(wageCov.marginPerVisit))}).`
                     : `Hôm nay ${wageCov.customers} lượt, đang thiếu ${formatMoney(Math.round(-wageCov.marginPerVisit))}/lượt so với mức nuôi lương — kéo đông khách hơn hoặc cắt bớt người.`)
                 : 'Chưa có doanh thu hôm nay — để qua giữa ngày rồi xem lại.'}
+            </div>
+          </Callout>
+        );
+      })()}
+      {(() => {
+        const pr = payrollRunway(money ?? 0, total);
+        if (pr.wageBill <= 0) return null;
+        return (
+          <Callout tone={pr.covered ? 'ok' : 'danger'} style={{ marginBottom: 8 }} title={`🧾 Tiền mặt ${formatMoney(pr.cash)} — ${formatMoney(pr.wageBill)} lương trả tối nay: ${pr.covered ? 'đủ' : `thiếu ${formatMoney(pr.shortfall)}`}`}>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              {pr.covered
+                ? `Cầm đủ lương tối nay${pr.runwayDays != null && pr.runwayDays > 0 ? `, tạm đủ ${pr.runwayDays} ngày lương nữa` : ''}.`
+                : `Chưa đủ trả lương tối nay — bớt nhập hàng, xả sỉ/gánh chợ (GĐ211) hoặc lót vay (GĐ217) trước khi ngủ.`}
             </div>
           </Callout>
         );
