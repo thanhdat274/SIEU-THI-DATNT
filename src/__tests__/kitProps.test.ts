@@ -131,3 +131,42 @@ describe('GĐ184 — rào chắn sửa đường', () => {
     }
   });
 });
+
+/**
+ * GĐ195 — Băng ghế hẻm (`bang_ghe`): chỗ bà con ngồi hóng mát, nối tiếp mảng "con hẻm sống" + đèn
+ * ấm hoàng hôn (gđ185). Vẫn là kit prop trang trí KHÔNG chặn lưới; rủi ro duy nhất là đặt sai chỗ.
+ */
+describe('GĐ195 — băng ghế hẻm', () => {
+  it('bảng vị trí không vi phạm chỗ cấm (đã gộp vào kitPlacementProblems)', () => {
+    expect(kitPlacementProblems()).toEqual([]);
+  });
+
+  it('mỗi băng ghế đặt ở chỗ sinh hoạt mà không chen món nào (<0.55 m) trong toàn bảng', () => {
+    const bench = KIT_PLACEMENTS.filter((p) => p.module === 'bang_ghe');
+    expect(bench.length).toBeGreaterThanOrEqual(2);
+    const all = [...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS];
+    for (const b of bench) {
+      for (const o of all) {
+        if (o === b) continue;
+        const d = Math.hypot(b.pos[0] - o.pos[0], b.pos[2] - o.pos[2]);
+        expect(d).toBeGreaterThanOrEqual(0.55);
+      }
+    }
+  });
+
+  it('không chắn hai cửa đi chính (cửa nhà x=−12,z=1 · cửa tiệm x=4,z=1)', () => {
+    for (const p of KIT_PLACEMENTS.filter((x) => x.module === 'bang_ghe')) {
+      const dHome = Math.hypot(p.pos[0] - -12, p.pos[2] - 1);
+      const dShop = Math.hypot(p.pos[0] - 4, p.pos[2] - 1);
+      expect(dHome).toBeGreaterThan(0.8);
+      expect(dShop).toBeGreaterThan(1.2);
+    }
+  });
+
+  it('mỗi băng ghế tỉ lệ hợp lý (không âm, không phóng to vô lý)', () => {
+    for (const p of KIT_PLACEMENTS.filter((x) => x.module === 'bang_ghe')) {
+      expect(p.scale ?? 1).toBeGreaterThan(0.5);
+      expect(p.scale ?? 1).toBeLessThanOrEqual(2);
+    }
+  });
+});

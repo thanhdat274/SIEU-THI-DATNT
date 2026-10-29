@@ -11,7 +11,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
  */
 
 /** Toàn bộ module mà script hiện sinh ra — placement chỉ được trỏ vào đây. */
-export const KIT_MODULES = ['chau_cay', 'thung_go', 'khom_tre', 'bon_nuoc', 'cho_nhua', 'xe_day', 'rao_chan'] as const;
+export const KIT_MODULES = ['chau_cay', 'thung_go', 'khom_tre', 'bon_nuoc', 'cho_nhua', 'xe_day', 'rao_chan', 'bang_ghe'] as const;
 export type KitModule = (typeof KIT_MODULES)[number];
 
 export interface KitPlacement {
@@ -44,6 +44,11 @@ export const KIT_PLACEMENTS: KitPlacement[] = [
   { module: 'cho_nhua', pos: [-14.8, 0, 2.3], rotY: 2.2 },
   { module: 'cho_nhua', pos: [-15.6, 0, 1.7], rotY: 3.1 },
   { module: 'xe_day', pos: [17.5, 0, 2.15], rotY: 0.35 },
+  // Băng ghế hẻm (gđ195): chỗ bà con ngồi hóng mát — cạnh nhà phía tây, bên đống chậu cây gần tre,
+  // và trên vỉa hè phía đông đối diện dãy quán; vẫn chỉ đồ trang trí, không chặn lưới đi lại.
+  { module: 'bang_ghe', pos: [-18, 0, -6], rotY: 0.9 },
+  { module: 'bang_ghe', pos: [15.2, 0, 2.1], rotY: -0.4 },
+  { module: 'bang_ghe', pos: [-45, 0, -22], rotY: 2.2 },
 ];
 
 /**

@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1856/1856 test pass (170 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ194. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ 887s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
+- **1860/1860 test pass (170 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ195. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ ~106s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–194 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
+### Giai đoạn gần đây · GĐ177–195 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
 
 - **GĐ177** 🏮 Đầu ngõ lên đèn: đèn lồng cột dựng Blender (`blender_lantern.py`) bật sáng ấm chập tối (lamp 17h–5h30, lightBudget) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md.
 - **GĐ178** 🎨 Gộp họ xanh dương guide/chuỗi/biểu đồ về info `#3498db` (16 chỗ) — chi tiết: archive trên.
@@ -45,6 +45,7 @@
 - **GĐ192** 💸 "Mở ca đêm hồi vốn sau bao lâu?": món đầu tư LỚN NHẤT game (15tr, GĐ65 chỉ báo lời/lỗ từng đêm, chưa bao giờ nói ngày hồi vốn). Doanh thu đêm (byHour giờ ≥22) CHÍNH LÀ phần thặng dư mà nâng cấp mở ra (không mở thì tiệm đóng, không có giờ đêm) → chia vốn cho lời ròng mỗi đêm (đã trừ lương ca đêm ×1.5) được số đêm hồi. Helper thuần `nightPayback(np, cost)` + `nightPaybackLabel` → verdict good (hồi ≤30 đêm) / slow / losing. Thẻ ca đêm (ReportPanels) thêm dòng "💸 15tr nâng cấp: hồi vốn sau ~N đêm (lời X/đêm)" + caveat trung thực "*chưa tính trộm đêm ×2 & dậy trễ mất buổi sáng". `night.ts` (+nguồn sự thật `NIGHT_UPGRADE_PRICE`; upgrades.ts dùng lại để hết duplicate 15000000), `nightReport.ts` (+helper), `ReportPanels.tsx`, test +6; tsc+build sạch; QA @5173.
 - **GĐ193** 💧 "Xây quán nước 25tr hồi vốn sau bao lâu?": màn XÂY QUÁN chỉ cho giá + cấp yêu cầu, không nói kiếm về được bao nhiêu. Vì quán nước chạy công thức DETERMINISTIC (GĐ127) nên `quanNuocBuildPayback(level,staff,price)` ước lời ròng MỘT ngày (kho đủ bán hết nhu cầu — giới hạn trên tiềm năng) chia vốn → ngày hồi + verdict worth (≤60 ngày) / slow / notworth / noMenu. UI build-state của QuanNuocPanel hiện "💸 Ước hồi vốn 25tr: ~N ngày (lời X/ngày) · nếu kho đủ" — dạy chiến thuật "mở sớm cấp 29 thực đơn ít → lời thấp → hồi chậm; lên cấp thêm nước/ngọt/cà phê → hồi nhanh". Đối chiếu ground-truth projection (không hardcode). `quanNuoc.ts` (+helper), `QuanNuocPanel.tsx`, test +6; tsc+build sạch; QA @5173.
 - **GĐ194** 🏪 "Mở chi nhánh 5tr hồi vốn sau bao lâu?": màn mua chi nhánh chỉ cho giá + cấp yêu cầu. Chi nhánh chạy SIM (không deterministic như quán nước) nhưng QUAN SÁT được qua `branchOperatingBalanceToday` (GĐ153: thu − lương − điện) → helper thuần `branchBuildPayback(branch, cost)` lấy số dư vận hành hôm nay làm lời ròng MỘT NGÀY, chia vốn xây = ngày hồi (mẫu GĐ192) + verdict worth/slow/notworth/nodata. Info tab BranchPanel thêm "💸 5tr mua mặt bằng: hồi vốn sau ~N ngày (dư ~X/ngày) · theo hôm nay, chưa trừ giá vốn hàng" — feedback vận hành liên tục; ẩn khi chưa có thu (nodata) để không nhiễu. `branchNet.ts` (+helper, tái dùng branchOperatingBalanceToday), `BranchPanel.tsx`, test +5 (đối chiếu ground-truth balance); tsc+build sạch; QA @5173.
+- **GĐ195** 🪑 "Con hẻm có chỗ ngồi": thêm băng ghế gỗ hẻm (`bang_ghe`) vào bộ kit prop 3D (pipeline build-kit-assets.ts + Draco) — món đồ còn thiếu để cảnh "con hẻm sống" hoàn chỉnh: chỗ bà con ngồi hóng mát bên đống chậu cây, nối cảm giác với đèn ấm chập tối (GĐ177/185/187). Khung chân sắt loe + mặt ghế/tựa lưng nan gỗ sáng, 1056 tris / 149.8KB (dưới trần 2500), hợp màu bảng (thép/2 tông gỗ) — đặt 3 chỗ đã soi chỗ cấm: cạnh nhà tây [−18,−6], vỉa hè đông [15.2,2.1], gần tre tây [−45,−22]. Vẫn kit prop trang trí KHÔNG chặn lưới (convention GĐ172). `build-kit-assets.ts` (+`bangGhe`), `kitProps.ts` (+module +3 placement), test +4 (GĐ195); tsc+build sạch; QA @5173: boot ổn, GLB+manifest phục vụ 200.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -93,7 +94,7 @@
 
 ## Backlog tiếp theo
 
-1. **Audit trải nghiệm & tiến trình (GĐ168–171) đã xong** ✅ (mid/late-game: roadmap 30+, ratchet tuần/tháng, rival kết, NG+ mục tiêu vòng). Đánh giá lại: vòng ngày & tiến trình đã khai thác sâu; trục mới đáng làm là **trải nghiệm bim bim tài sản 3D + không gian con hẻm** — nối tiếp GĐ172–176.
+1. **Audit trải nghiệm & tiến trình (GĐ168–171) đã xong** ✅ (mid/late-game: roadmap 30+, ratchet tuần/tháng, rival kết, NG+ mục tiêu vòng). Đánh giá lại: vòng ngày & tiến trình đã khai thác sâu; trục "**tài sản 3D + không gian con hẻm**" (nối GĐ172–176) đang chạy — đã thêm băng ghế hẻm (GĐ195). Còn cấp độ sâu trên trục này: nhiều kit prop sinh hoạt (bàn hẻm, giá đỡ chậu, đèn hẻm...) nếu muốn dày cảnh hơn.
 2. 🎯 **Chợ phiên thành nhịp gameplay** ✅ (GĐ182: đông khách ×1.15 + toast nhắc). Giờ nhịp tuần: gánh hàng dựng (GĐ181) + xả kho (GĐ135/136) + đông khách. Nếu sau này muốn mạnh hơn: hàng đặc biệt bán giá tốt hơn ngày phiên, hoặc mùa/lễ hội riêng — ghi chờ, không vội.
 3. Sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (save người thật); nếu vẫn lặp → thêm biến thể hoàn cảnh (lễ, weekend).
 4. GĐ164 theo dõi: arc E "Hàng xóm khai trương" (thay cam_do_mo) — chỉ làm khi 4 arc A–D chạy tốt trên save thật.
@@ -291,3 +292,4 @@
 - GĐ192 — 💸 Hồi vốn ca đêm: món đầu tư 15tr "Mở ca đêm" cho thấy "hồi vốn sau ~N đêm" + caveat trộm ×2/dậy trễ — minh bạch khoản chi lớn nhất game
 - GĐ193 — 💧 Hồi vốn xây quán nước: màn XÂY QUÁN ước "hồi vốn 25tr sau ~N ngày · nếu kho đủ" — dạy chiến thuật mở sớm/chờ lên cấp
 - GĐ194 — 🏪 Hồi vốn xây chi nhánh: info tab ước "hồi vốn 5tr sau ~N ngày" theo số dư vận hành hôm nay (mẫu GĐ192) — khép bộ ROI 3 tài sản lớn (đêm/quán nước/chi nhánh)
+- GĐ195 — 🪑 Băng ghế hẻm: kit prop 3D mới ("con hẻm có chỗ ngồi") — hoàn thiện cảnh hẻm sống bên đèn ấm; 3 chỗ soi kín chỗ cấm, không chặn lưới

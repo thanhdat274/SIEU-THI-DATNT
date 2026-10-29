@@ -242,6 +242,35 @@ function raoChan() {
   return parts;
 }
 
+/** Băng ghế hẻm (gđ195): hai khung chân sắt loe, mặt ghế + tựa lưng nan gỗ sáng — chỗ bà con ngồi
+ * hóng mát bên đống chậu cây, nối tiếp mảng "con hẻm sống" với đèn ấm hoàng hôn (gđ185).
+ * Chỉ đồ trang trí, không chặn lưới đi lại — cùng convention với mọi kit prop. */
+function bangGhe() {
+  const W = 1.5, SEAT_Y = 0.46, D = 0.42;
+  const parts: THREE.BufferGeometry[] = [];
+  // Hai khung chân sắt: vai đứng + chân trước/sau nghiêng loe ra, nối nhau bằng đai ngang
+  for (const sx of [-1, 1]) {
+    const lx = sx * (W / 2 - 0.08);
+    parts.push(part(facet(new THREE.CylinderGeometry(0.02, 0.02, SEAT_Y - 0.05, 6)), STEEL, lx, (SEAT_Y - 0.05) / 2, -0.10));
+    parts.push(part(facet(new THREE.CylinderGeometry(0.022, 0.024, 0.52, 6)), STEEL, lx + 0.10, 0.26, 0.12, [0.28, 0, 0]));
+    parts.push(part(facet(new THREE.CylinderGeometry(0.022, 0.024, 0.52, 6)), STEEL, lx - 0.10, 0.26, -0.12, [-0.28, 0, 0]));
+    parts.push(part(facet(new THREE.CylinderGeometry(0.016, 0.016, 0.36, 6)), STEEL, lx, 0.22, 0.02));
+  }
+  // Mặt ghế: 4 nan gỗ sáng kê sát nhau
+  const SLATS = 4, slot = (W - 0.14) / SLATS;
+  for (let i = 0; i < SLATS; i++) {
+    const x = -W / 2 + 0.07 + slot * (i + 0.5);
+    parts.push(part(new RoundedBoxGeometry(slot - 0.012, 0.045, D, 1, 0.018), i % 2 ? WOOD : WOOD_L, x, SEAT_Y, 0));
+  }
+  // Tựa lưng: ba nan dọc + thanh đỉnh — hơi ngả về sau nhìn thư thả
+  for (let i = 0; i < 3; i++) {
+    const x = -W / 2 + 0.13 + (W - 0.26) * (i / 2);
+    parts.push(part(new RoundedBoxGeometry(0.05, 0.40, 0.035, 1, 0.015), WOOD_L, x, SEAT_Y + 0.21, -0.33, [0.08, 0, 0]));
+  }
+  parts.push(part(new RoundedBoxGeometry(W - 0.1, 0.045, 0.05, 1, 0.015), WOOD_D, 0, SEAT_Y + 0.42, -0.34));
+  return parts;
+}
+
 /** Khóm tre: ba thân đốt xanh, mỗi thân vót lá dẹt vươn ra. */
 function khomTre() {
   const parts: THREE.BufferGeometry[] = [];
@@ -302,6 +331,7 @@ const PROPS: Record<string, () => THREE.BufferGeometry[]> = {
   cho_nhua: choNhua,
   xe_day: xeDay,
   rao_chan: raoChan,
+  bang_ghe: bangGhe,
 };
 
 /** Trần triangle mỗi module: vượt là cảnh báo để kịp đơn giản hoá, đỡ phình to âm thầm. */
