@@ -34,7 +34,9 @@
 - **GĐ254–257 nhịp CUỐI TUẦN** 📅 khép trọn 4 mạch: weekdayOf/isWeekend (ngày 1 = Thứ 2) + quest "🍬 Cuối tuần ăn vặt" (chỉ pool Thứ 7/CN, cuối pool — ngày thường xoay GIỮ NGUYÊN) → khách thèm ăn vặt (chooseWants ×0.2, list chung WEEKEND_SNACKS) → lịch tô sáng cuối tuần → việc sáng + "Mai tiệm có gì" nhắc. Chi tiết: archive. Cảm hứng Hay Day/Stardew; không đổi lượng khách, chỉ đổi nhiệm vụ + NMU trong ngày.
 - **GĐ258–261** 🎨🖼️ — gọn 6 họ màu cũ về bảng GĐ166 · coverage sweep (credit/services/professions, xoá 6 id chết `likes` nghề) · QA TOÀN DIỆN (34 panel × 3 cỡ màn 0 lỗi/0 tràn, autoplay 2 ngày sạch) · quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390, tương phản ô cuối tuần, 2 dropdown Sổ tay Tiệm cắt chữ @390. Chi tiết: archive PROGRESS-GD250-257.md (phụ lục 258–261).
 
-- **GĐ266 nhập hàng biết cuối tuần** 🍬: `weekendRestock.ts` — `suggestQty` nhân ×1.25 cho WEEKEND_SNACKS khi khung bán lô rơi Thứ 7/CN (giao chậm nhìn mai+ngày kia), chỉ khi có cầu thật; badge "🍬 Cuối tuần" trên hàng mặt hàng. Chiều thứ Sáu đã thấy gợi ý trữ cao hơn. 3 test mới; 2220 test xanh; QA: Thứ 7 có badge, Thứ 4 không, 0 lỗi console.
+- **GĐ266 nhập hàng biết cuối tuần** 🍬: `weekendRestock.ts` — `suggestQty` ×1.25 cho WEEKEND_SNACKS khi khung bán lô rơi Thứ 7/CN, chỉ khi có cầu thật; badge "🍬 Cuối tuần" trên hàng mặt hàng. 3 test; QA: Thứ 7 có badge, Thứ 4 không.
+
+- **GĐ267 đơn cuối tuần + sửa bug roll chọn đơn** 📚: (1) `PartyOrderDef.weekendOnly` — "Nhóm học cuối tuần" (Bé Na) chỉ mời khi NGÀY CHÓT rơi Thứ 7/CN, khớp chuyện kể + nhịp cuối tuần. (2) Bug có từ trước: roll CHỌN đơn và roll MỜI dùng chung (seed, day) khác salt thấp → tương quan — phân phối đơn lệch nặng theo vị trí bảng (tat_nien gấp ~6 lần kỳ vọng, hoc_nhom + 7 đơn câu chuyện = 0/8340 lượt: người chơi gần như không bao giờ thấy) → salt chọn đơn theo ngày (1009 + day×7), mọi đơn trong pool cơ hội đều. 4 test (gate tất định + công bằng phân phối); 2224 test xanh (golden sim chấp nhận); boot @5173 sạch 0 lỗi console.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -311,3 +313,4 @@
 - GĐ264 — 🖼️ Quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390 + tăng tương phản ô cuối tuần
 - GĐ265 — 🖼️ Nốt quét thẩm mỹ: sửa 2 dropdown Sổ tay Tiệm cắt chữ @390
 - GĐ266 — 🍬 Nhập hàng biết cuối tuần (suggestQty ×1.25 nhóm ăn vặt khi lô bán Thứ 7/CN + badge)
+- GĐ267 — 📚 Đơn weekendOnly (hoc_nhom chốt Thứ 7/CN) + sửa roll chọn đơn tương quan (phân phối đơn đều)
