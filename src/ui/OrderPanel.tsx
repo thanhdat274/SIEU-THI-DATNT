@@ -13,6 +13,8 @@ import { monthlyRelRebate, PARTNER_TIERS, tierProgress } from '../data/supplierR
 import { cheapestSupplierFor, commitRebateAdvice, type CheapestProductResult } from '../data/supplierValue';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
 import { prodSuggestToday } from '../data/prodSuggest';
+import { quanNuocRestockTip } from '../data/quanNuoc';
+import { Callout } from './panels/shared';
 import { acceptFairOffer } from '../core/biz';
 import { monthOf } from '../data/calendar';
 
@@ -162,6 +164,10 @@ export function OrderPanel() {
     branch,
   });
   const itemsSold = useGame((s) => s.totals.itemsSold);
+  // GĐ190b: thấy được ngay chỗ nhập — quán nước tối nay cần thêm bao nhiêu ly đồ uống (chỉ khi quán mở + thiếu).
+  const restockTip = biz.quanNuoc?.open
+    ? quanNuocRestockTip(biz.quanNuoc, level, storage, biz.quanNuocLast)
+    : null;
   const guideItems = guideProducts(level);
   const guideIds = guideIdsOf(guideItems);
   const guideOn = guideActiveOn(day, tutorialOff, deliveries, itemsSold);
@@ -331,6 +337,22 @@ export function OrderPanel() {
             {guideIn.length ? 'Sẵn sàng đặt hàng!' : 'Mỗi món một thùng là đủ cho ngày đầu.'}
           </div>
         </div>
+      )}
+      {restockTip && (
+        <Callout
+          tone={restockTip.verdict}
+          title={restockTip.verdict === 'danger' ? '🚨 Nạp thêm đồ uống cho quán nước' : '🥤 Quán nước sắp ăn khô kho chung'}
+          style={{ margin: '8px 0 6px' }}
+        >
+          <div style={{ fontSize: 12 }}>
+            {restockTip.verdict === 'danger'
+              ? `Hôm qua quán nước bỏ lỡ ~${restockTip.missedRevenue.toLocaleString('vi-VN')}đ vì kho thiếu đồ uống. `
+              : 'Quán nước chung kho với kệ tiệm chính — '}
+            tối nay quán cần ~{restockTip.wanted} ly mà kho chỉ còn {restockTip.have}{restockTip.shortfall > 0
+              ? <> — nhập thêm ít nhất <b>{restockTip.shortfall} ly</b> nước/ngọt/cà phê</>
+              : ' (đã đủ, chỉ nhắc lại tín hiệu hôm qua)'}.
+          </div>
+        </Callout>
       )}
       <div style={st.meters}>
         <Meter
