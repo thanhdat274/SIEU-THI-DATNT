@@ -40,7 +40,7 @@
 
 - **GĐ268 phản hồi cuối tuần** 🍬: tổng kết Thứ 7/CN có thẻ "🍬 Cuối tuần: bán N món ăn vặt (~Xđ · Y%)" đối chiếu `weekendQuestTarget` (export dùng chung); `weekendRecap` thuần đọc. 2 test; QA @5173 đúng.
 
-- **GĐ269 phân phối sự kiện đều** 🎲: cùng mẫu bug GĐ267 ở 2 hệ — biến động thị trường (viral/roadworks ~115 vs shortage/glut ~12: hai loại thú vị nhất về kinh tế gần như không bao giờ ra) và sự kiện bất ngờ (lệch ~2.7×) → salt CHỌN biến thiên theo khối/ngày (marketEventNear, eventOn); product bị khan hiếm cũng không dồn vài món. 3 test fairness (sweep tất định); re-anchor test roadwork GĐ184 (ý đồ giữ nguyên); 2229 test xanh (golden sim chấp nhận); boot @5173 sạch.
+- **GĐ269 phân phối sự kiện đều** 🎲: cùng mẫu bug GĐ267 ở 2 hệ — biến động thị trường (viral/roadworks ~115 vs shortage/glut ~12) và sự kiện bất ngờ (lệch ~2.7×) → salt CHỌN biến thiên theo khối/ngày; hàng khan hiếm không dồn vài món. 3 test fairness; re-anchor roadwork GĐ184; 2229 test xanh.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -67,7 +67,7 @@
 
 ## Cần theo dõi / nợ mở
 
-- ✅ ĐÃ ĐÓNG (30/10): QA mắt bù GĐ245–251 — boot sạch, 0 lỗi console, 0 tràn @390/320 (archive GĐ250-257).
+- ✅ ĐÃ ĐÓNG (30/10): QA mắt bù GĐ245–251 — boot sạch, 0 lỗi console (archive GĐ250-257).
 - QA mắt 3D/panel chập tối (IAB nền dừng rAF): GĐ177–194 đã QA @5173 lúc làm; đối chiếu lại thì xem archive.
 - ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap`: bot bày lại tầng kệ đầy → bỏ qua tầng đầy + timeout 1.8tr ms. Nếu cả bộ lại > ~10 phút: profile trước khi làm tiếp.
 - GĐ171: scale mục tiêu vòng NG+ — cần save thật vòng 2+ để xác nhận; nếu quá dễ → siết trần.
