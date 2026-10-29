@@ -84,3 +84,12 @@ repPayoff (GĐ148) đã quy danh tiếng ra KHÁCH/ngày (extraKhach, nextStarKh
 nextStarMoney (doanh thu mỗi 0.5★ tới). Thẻ ⭐ Danh tiếng ở Sổ đầu ngày thêm dòng "≈ Xđ doanh thu/ngày
 vì có/thiếu danh tiếng · nâng 0.5★ ≈ +Yđ/ngày". Cùng mô-típ rivalDrag (GĐ225) đổi khách → đồng, khép
 trục "danh tiếng = tiền". THUẦN ĐỌC. (+4 test)
+
+## GĐ230 — ✅ QA TOÀN DIỆN
+- test:coverage 2055/2055 (195 files, bỏ 3 file sim nặng): branch 86.96% · function 74.77% ·
+  statement 49.38% (ngang/không thụt so GĐ220: 87.03/74.49/49.11 — function nhích nhẹ).
+- Full suite (GĐ229 trước QA) 2077/2077 (198 files) xanh; build sạch (chỉ bundle-size warning).
+- Browser @5173 (save máy ngày 4): Sổ đầu ngày / Sức khoẻ món / Nhập hàng / Kho / Sơ đồ kệ mở
+  đủ, render không lỗi; không tràn ngang @1280 / 390 / 320 (scrollWidth == clientWidth); dev 200.
+- Loạt soi mới GĐ226–229 (shelfSlotValue / priceGap / lostSalesValue / repMoney) là thẻ điều kiện —
+  trên save ngày 4 (level 1, <10 mẫu) ẩn sạch, đúng thiết kế; logic phủ bằng test riêng.
