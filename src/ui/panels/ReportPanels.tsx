@@ -30,6 +30,7 @@ import { computeRecords, recordFeedToday } from '../../data/records';
 import { comboDaySnapshot, resetComboDay } from '../../core/slices/comboDay';
 import { resetStaffDay, staffDaySnapshot } from '../../core/slices/staffDay';
 import { staffDayRecap, staffShiftFix } from '../../data/staffIdle';
+import { autoOpenNote } from '../../core/routine';
 import { weekendRecap } from '../../data/weekendRestock';
 import { weekendQuestTarget } from '../../data/quests';
 import { comboById } from '../../data/combos';
@@ -548,7 +549,7 @@ export function MorningPanel() {
   const { day, level, xp, weatherSeed, weather, forecast, regulars, reservations, storage,
     furniture, staff, contracts, deliveries, shopTier, closePanel, openPanel, repLog, history,
     storageLots, debts, biz, money, branch, licenses, skills, happyHour, analytics, marketClearedDay,
-    demand: stateDemand, activeCombos, priceOf, sellMarketSurplus, stats } = useGame();
+    demand: stateDemand, activeCombos, priceOf, sellMarketSurplus, stats, autoRoutine, autoOpenAt } = useGame();
   const branchChores = branch ? branchMorningPlan(branch, storageUsed(storage), licenses, day) : [];
   // GĐ123: mồi "kệ cần chú ý" từ analytics có sẵn — giống hệt AnalyticsPanel để không lệch số liệu.
   const shelved = shelfCount(furniture);
@@ -687,6 +688,11 @@ export function MorningPanel() {
       <h2 style={styles.title}>☀️ {shopName} · Sổ đầu ngày {day} ({today.day}/{today.month}) · {weekdayOf(day)}</h2>
       <p style={styles.sub}>
         {WEATHER[weather].icon} Hôm nay {describeDay(weatherSeed, day, weather)} · mai {WEATHER[forecast[0]].icon} {describeDay(weatherSeed, day + 1, forecast[0])}.
+        {(() => {
+          // GĐ276: phản chiếu lịch tự động ở mức lập kế hoạch — mở sớm thì khẳng định, 8h thì nhắc chỉnh.
+          const note = autoOpenNote(autoOpenAt, autoRoutine);
+          return note ? <div style={{ marginTop: 2 }}>{note}</div> : null;
+        })()}
         Đọc xong nên nhập hàng bày kệ trước khi mở cửa — khách quen ghé đúng giờ quen.
         🏠 Tiền nhà trả cuối ngày: <b>{formatMoney(rentOf(shopTier))}</b>.
         {(() => {

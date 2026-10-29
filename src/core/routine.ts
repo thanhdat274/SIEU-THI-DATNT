@@ -90,3 +90,16 @@ export function planRoutine(s: RoutineSnapshot, prev: RoutineMarks): RoutineActi
   }
   return out;
 }
+
+// ───── GĐ276: dòng trạng thái lịch tự động trên Sổ đầu ngày ─────
+// GĐ275 cho chỉnh giờ mở cửa — Sổ đầu ngày (mức lập kế hoạch sáng) phải phản chiếu lựa chọn đó:
+// mở sớm thì khẳng định "đón trọn giờ vàng", mở 8h thì nhắc gently kèm chỗ chỉnh. Thuần đọc.
+
+/** Dòng ghi chú lịch tự động cho Sổ đầu ngày; null khi lịch đang tắt (không nhiễu). */
+export function autoOpenNote(autoOpenAt: number | undefined, autoRoutine: boolean): string | null {
+  if (!autoRoutine) return null;
+  const at = autoOpenAt ?? ROUTINE.open;
+  return at < ROUTINE.open
+    ? `⏰ Lịch tự động mở cửa ${Math.floor(at / 60)}h${at % 60 ? '30' : ''} — đón trọn giờ vàng sáng 6h–8h30.`
+    : `⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong menu hồ sơ).`;
+}

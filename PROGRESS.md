@@ -25,17 +25,14 @@
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
 - Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
 
-### Giai đoạn gần đây · GĐ266–270 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–269: PROGRESS-GD250-257.md)
+### Giai đoạn gần đây · GĐ272–276 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–271: PROGRESS-GD250-257.md)
 
 - **GĐ177–261** đã dồn archive (docs/progress-archive/): 3D + đèn (177–198) · supply chain (199–209) · bộ soi tiền/vốn (210–229) · PROGRESS-GD230-249.md · PROGRESS-GD250-257.md (gồm phụ lục 258–261).
 - **GĐ251–253** 💲🧍🔀 — giá dịp lễ theo tolerance · vai hiện diện khỏi bảng rảnh + sửa OrderPanel vỡ TDZ · xếp lại ca mai một chạm (staffShiftFix). Chi tiết: archive.
 - **GĐ254–257 nhịp CUỐI TUẦN** 📅 khép trọn 4 mạch: weekdayOf/isWeekend (ngày 1 = Thứ 2) + quest "🍬 Cuối tuần ăn vặt" (chỉ pool Thứ 7/CN, cuối pool — ngày thường xoay GIỮ NGUYÊN) → khách thèm ăn vặt (chooseWants ×0.2, list chung WEEKEND_SNACKS) → lịch tô sáng cuối tuần → việc sáng + "Mai tiệm có gì" nhắc. Chi tiết: archive. Cảm hứng Hay Day/Stardew; không đổi lượng khách, chỉ đổi nhiệm vụ + NMU trong ngày.
 - **GĐ258–261** 🎨🖼️ — gọn 6 họ màu cũ về bảng GĐ166 · coverage sweep (credit/services/professions, xoá 6 id chết `likes` nghề) · QA TOÀN DIỆN (34 panel × 3 cỡ màn 0 lỗi/0 tràn, autoplay 2 ngày sạch) · quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390, tương phản ô cuối tuần, 2 dropdown Sổ tay Tiệm cắt chữ @390. Chi tiết: archive PROGRESS-GD250-257.md (phụ lục 258–261).
 
-- **GĐ266–269** 🍬🎲 — nhập hàng biết cuối tuần (×1.25 nhóm ăn vặt + badge) · đơn `weekendOnly` (hoc_nhom chốt Thứ 7/CN) · sửa 2 bug roll tương quan (8 đơn = 0 lượt, sự kiện lệch 2.7×) · phản hồi cuối tuần trong tổng kết. Chi tiết: archive (phụ lục 2).
-- **GĐ270 QA TOÀN DIỆN** ✅: coverage branch **87.40%**/fn **76.17%** (2229 test, 219 file, ↑ từ 87.17/75.59); browser: 34 panel render @desktop 0 lỗi console, **0 tràn ngang** @320/390/768 qua 12 bảng dày nhất + HUD; autoplay ngày thật sạch (108 khách, ~2.43tr doanh thu). Người mới: hệ thứ/cuối tuần tự dạy qua quest + HUD + lịch (QA từng mắt xích GĐ254–268). GĐ262–269 dồn archive (phụ lục 2).
-
-- **GĐ271 lý do gọi khớp thời tiết** 📞: trước đây random cả "trời mưa..." trong ngày nắng → pool theo ngữ cảnh (mưa/nắng/chung; VIP + nấu giữ pool riêng); salt chọn biến thiên theo ngày (mẫu GĐ267/269). Audit nốt visitsToday/arcSceneAt — sạch. 2 test (sweep >200 đơn × 4 thời tiết); 2231 test xanh.
+- **GĐ266–271** 🍬🎲📞 — nhập hàng biết cuối tuần (×1.25 + badge) · đơn `weekendOnly` (hoc_nhom chốt Thứ 7/CN) · sửa 2 bug roll tương quan (8 đơn = 0 lượt; sự kiện lệch 2.7×) · phản hồi cuối tuần trong tổng kết · lý do gọi khớp thời tiết · QA TOÀN DIỆN GĐ270. Chi tiết: archive (phụ lục 2–3).
 
 - **GĐ272 quét 2 bề mặt cuối** 🖼️: màn đăng nhập + menu "Thêm" @320/390/768 (ảnh + DOM) — 0 lỗi: nút full-bề-rộng, lưới 2 cột cuộn tốt, Chương 1 đè menu đúng z-order. Chuỗi "rà soát toàn bộ màn hình" chốt — mọi bề mặt đã soi (GĐ264/265/272). Không đổi code.
 
@@ -44,6 +41,7 @@
 - **GĐ274 mồi tuần mới tối CN** 🔮: "Mai tiệm có gì" tối CN thêm "🔥 Tuần mới khách săn: X, Y" (khớp GĐ273). 2 test; 2235 test xanh.
 
 - **GĐ275 lịch tự động chỉnh giờ mở cửa** ⏰: giải tension GĐ160 (lịch 8h lỡ nửa đầu giờ vàng) — `autoOpenAt` (mặc định 8h, save cũ tự bù — không cần MIGRATIONS) + presets 8h→6h30; `planRoutine` mở theo nó, ra tiệm trước 1h; menu hồ sơ xoay vòng giờ. 5 test routine; 2240 test xanh; QA @5173: bấm 3 lần → 6h30 đúng mốc.
+- **GĐ276 dòng lịch trên Sổ đầu ngày** ⏰: phản chiếu lựa chọn GĐ275 ở mức lập kế hoạch sáng — `autoOpenNote` (thuần đọc, core/routine.ts): mở sớm → "đón trọn giờ vàng", 8h → nhắc chỉnh kèm chỗ sửa; lịch tắt không hiện. 1 test; 2241 test xanh; QA @5173 cả hai nhánh đúng, 0 lỗi console.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -75,7 +73,6 @@
 - GĐ171: scale mục tiêu vòng NG+ — cần save thật vòng 2+ để xác nhận; nếu quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ & kèo cấp 50+: bot hụt ~40% nhưng browser thật cho thấy trong năng lực → theo dõi.
 - QA mắt trạng thái CÓ dữ liệu Bỏ lỡ/Thú cưng/hụi/khủng hoảng (GĐ155–159) — bọc bởi test; cần save người thật.
-
 
 ## Backlog tiếp theo
 
@@ -315,10 +312,9 @@
 - GĐ260 — ✅ QA TOÀN DIỆN: 34 panel × 3 cỡ màn 0 tràn/0 lỗi, autoplay ngày thật, coverage 87.17/75.75
 - GĐ261 — 🔮 Mồi cuối tuần tối thứ Sáu (Mai tiệm có gì nhắc châm kệ ăn vặt khi mai Thứ 7/CN)
 - GĐ262–265 — 📅🎨 Thẻ tuần biết thứ · khoá tuần×thứ · 2 đợt quét thẩm mỹ (chi tiết archive)
-- GĐ266–269 — 🍬🎲 Cuối tuần vào nhập hàng/đơn gọi + phản hồi tổng kết · sửa 2 bug roll tương quan (chi tiết archive)
-- GĐ270 — ✅ QA TOÀN DIỆN: 34 panel + 0 tràn @320/390/768, autoplay sạch, coverage 87.40/76.17
-- GĐ271 — 📞 Lý do gọi điện khớp thời tiết (pool theo ngữ cảnh + salt biến thiên; audit nốt các hệ tất định)
+- GĐ266–271 — 🍬🎲📞 Cuối tuần vào nhập hàng/đơn · sửa 2 bug roll tương quan · lý do gọi khớp thời tiết · QA GĐ270 (archive)
 - GĐ272 — 🖼️ Quét đăng nhập + menu Thêm @320/390/768 — 0 lỗi, chốt chuỗi rà soát màn hình
 - GĐ273 — 🔮 Dự báo "tuần mai khách săn" trên Nhập hàng tối CN + audit trending/weeklyChallenge
 - GĐ274 — 🔮 Mồi tuần mới tối CN trong Mai tiệm có gì (khớp GĐ273)
 - GĐ275 — ⏰ Lịch tự động chỉnh giờ mở cửa 6h–8h (autoOpenAt + xoay vòng preset trong menu hồ sơ)
+- GĐ276 — ⏰ Dòng lịch tự động trên Sổ đầu ngày (autoOpenNote)

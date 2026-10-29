@@ -145,3 +145,17 @@ describe('autoOpenAt — giờ mở cửa theo người chơi (GĐ275)', () => {
     expect(run([6 * 60, 8 * 60], { autoOpenAt: 6 * 60, autoRoutine: false }, fresh())).toEqual([]);
   });
 });
+
+// ── GĐ276 — dòng trạng thái lịch trên Sổ đầu ngày ──
+import { autoOpenNote } from '../core/routine';
+
+describe('autoOpenNote (GĐ276)', () => {
+  it('lịch tắt → null; 8h → nhắc chỉnh; mở sớm → khẳng định đón trọn giờ vàng', () => {
+    expect(autoOpenNote(480, false)).toBeNull();
+    expect(autoOpenNote(undefined, false)).toBeNull();
+    expect(autoOpenNote(480, true)).toBe('⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong menu hồ sơ).');
+    expect(autoOpenNote(undefined, true)).toBe('⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong menu hồ sơ).'); // save cũ tự bù
+    expect(autoOpenNote(360, true)).toBe('⏰ Lịch tự động mở cửa 6h — đón trọn giờ vàng sáng 6h–8h30.');
+    expect(autoOpenNote(450, true)).toBe('⏰ Lịch tự động mở cửa 7h30 — đón trọn giờ vàng sáng 6h–8h30.');
+  });
+});

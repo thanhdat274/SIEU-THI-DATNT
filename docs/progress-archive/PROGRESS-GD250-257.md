@@ -41,3 +41,10 @@ GĐ262–265: thẻ tuần biết thứ · khoá nhất quán tuần×thứ (tes
 - **GĐ268 phản hồi cuối tuần** 🍬: tổng kết Thứ 7/CN có thẻ "🍬 Cuối tuần: bán N món ăn vặt (~Xđ · Y%)" đối chiếu `weekendQuestTarget` (export dùng chung); `weekendRecap` thuần đọc. 2 test; QA @5173 đúng.
 
 - **GĐ269 phân phối sự kiện đều** 🎲: cùng mẫu bug GĐ267 ở 2 hệ — biến động thị trường (viral/roadworks ~115 vs shortage/glut ~12) và sự kiện bất ngờ (lệch ~2.7×) → salt CHỌN biến thiên theo khối/ngày; hàng khan hiếm không dồn vài món. 3 test fairness; re-anchor roadwork GĐ184; 2229 test xanh.
+
+---
+# Phụ lục 3: GĐ266–271 (dồn 30/10/2026 mốc GĐ276)
+
+- **GĐ266–269** 🍬🎲 — nhập hàng biết cuối tuần (×1.25 nhóm ăn vặt + badge) · đơn `weekendOnly` (hoc_nhom chốt Thứ 7/CN) · sửa 2 bug roll tương quan (8 đơn = 0 lượt, sự kiện lệch 2.7×) · phản hồi cuối tuần trong tổng kết. Chi tiết: archive (phụ lục 2).
+- **GĐ270 QA TOÀN DIỆN** ✅: coverage branch **87.40%**/fn **76.17%** (2229 test, 219 file, ↑ từ 87.17/75.59); browser: 34 panel render @desktop 0 lỗi console, **0 tràn ngang** @320/390/768 qua 12 bảng dày nhất + HUD; autoplay ngày thật sạch (108 khách, ~2.43tr doanh thu). Người mới: hệ thứ/cuối tuần tự dạy qua quest + HUD + lịch (QA từng mắt xích GĐ254–268). GĐ262–269 dồn archive (phụ lục 2).
+- **GĐ271 lý do gọi khớp thời tiết** 📞: trước đây random cả "trời mưa..." trong ngày nắng → pool theo ngữ cảnh (mưa/nắng/chung; VIP + nấu giữ pool riêng); salt chọn biến thiên theo ngày (mẫu GĐ267/269). Audit nốt visitsToday/arcSceneAt — sạch. 2 test (sweep >200 đơn × 4 thời tiết); 2231 test xanh.
