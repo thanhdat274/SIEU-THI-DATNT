@@ -162,3 +162,15 @@ describe('ghép chung', () => {
     }))).toEqual([]);
   });
 });
+
+describe('mồi cuối tuần (GĐ261 — khép mảnh nhịp GĐ254–257)', () => {
+  it('mai là Thứ 7/CN → có dòng "Mai Thứ 7 — cuối tuần"; mai ngày thường → không', () => {
+    // ngày 33 = Thứ 6 → mai (34) là Thứ 7
+    const before = tomorrowTeaser(base({ day: 33, weather: 'cloudy' }));
+    const wk = before.find((r) => r.id === 'weekend');
+    expect(wk).toBeTruthy();
+    expect(wk!.text).toContain('Thứ 7');
+    // ngày 29 = Thứ 2 → mai (30) là Thứ 3
+    expect(tomorrowTeaser(base({ day: 29, weather: 'cloudy' })).some((r) => r.id === 'weekend')).toBe(false);
+  });
+});

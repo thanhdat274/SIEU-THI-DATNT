@@ -8,7 +8,7 @@
  */
 import { WEATHER, describeDay } from './weather';
 import type { Weather } from './weather';
-import { upcomingFestival } from './calendar';
+import { upcomingFestival , isWeekend, weekdayOf } from './calendar';
 import { regularsExpectedToday } from './regulars';
 import type { RegularProgress } from './regulars';
 import { reputationOf } from './reputation';
@@ -43,7 +43,7 @@ export interface TeaserInput {
 }
 
 export interface TeaserRow {
-  id: 'gift' | 'weather' | 'festival' | 'regulars' | 'milestone' | 'arc';
+  id: 'gift' | 'weather' | 'festival' | 'regulars' | 'milestone' | 'arc' | 'weekend';
   icon: string;
   text: string;
   hint?: string;
@@ -92,6 +92,18 @@ export function tomorrowTeaser(input: TeaserInput): TeaserRow[] {
       text: `Mai ${describeDay(input.weatherSeed, nowDay, input.weather).replace(/^\S+\s/, '')}`,
       hint: low ? 'ít khách hơn' : input.weather === 'sunny' ? 'đông khách hơn' : undefined,
       hintColor: low ? '#e74c3c' : input.weather === 'sunny' ? '#2ecc71' : undefined,
+      panel: 'morning',
+    });
+  }
+
+  // R1b — Cuối tuần mai (GĐ261): Thứ 7/CN khách hay ghé mua ăn vặt (GĐ255) — mồi chuẩn bị trữ
+  // đúng nhóm từ tối hôm trước, khép mảnh cuối của nhịp cuối tuần GĐ254–257.
+  if (isWeekend(nowDay + 1)) {
+    rows.push({
+      id: 'weekend',
+      icon: '🍬',
+      text: `Mai ${weekdayOf(nowDay + 1)} — cuối tuần, khách hay ghé mua ăn vặt`,
+      hint: 'châm kệ mì, bánh kẹo, nước ngọt',
       panel: 'morning',
     });
   }
