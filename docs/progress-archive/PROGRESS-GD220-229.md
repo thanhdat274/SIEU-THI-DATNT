@@ -68,3 +68,11 @@ dương là tiền rò rỉ/ngày vì giữ giá lệch (chỉ cộng món thự
 nước suối tăng giá lại MẤT lời nên không tính). PricePanel thêm thẻ cảnh báo đầu bảng: "Đang để
 hụt ~Xđ/ngày (N món chưa về đúng gợi ý)" + top món rò rỉ. THUẦN ĐỌC, dùng lại đúng công thức mô
 phỏng. (+5 test)
+
+## GĐ228 — ⛔ "Khách tìm không mua được đang bỏ lỡ bao nhiêu/ngày?"
+analyticsAdvice đã có dòng "🚶 X% lượt tìm không mua được — bày đầy kệ", nhưng dừng ở TỈ LỆ.
+`lostSalesValue` (data/lostSalesValue.ts) đổi ra TIỀN: lostDay = dailyQty×lostShare/(1−lostShare)
+(ước lượt khách mất/ngày) × unitProfit = profit30/qty30 → moneyLostDay (đồng lỡ mỗi ngày). Cờ
+`stockout` (daysLeft ≤ 1.5) phân biệt "thiếu hàng → nên nhập" vs "còn hàng mà vẫn mất → do giá, xem
+Bảng giá (GĐ227)". AnalyticsPanel thêm thẻ danger ngay sau thẻ lép vốn (GĐ226) — cùng chỗ "Sức khoẻ
+món", xếp thứ tự theo ĐỒNG chứ không theo %. Lọc nhiễu qty30≤5 / lostShare<0.1. (+6 test)

@@ -3,6 +3,7 @@ import { formatMoney } from '../../data/products';
 import { analyticsAdvice, itemHealthList, promoEffect, shelfCount, type ItemHealth } from '../../data/analytics';
 import { profitMix } from '../../data/profitMix';
 import { shelfSlotValue } from '../../data/shelfSlotValue';
+import { lostSalesValue } from '../../data/lostSalesValue';
 import { furnitureDef } from '../../data/furniture';
 import { shelfEfficiency } from '../../data/layout';
 import { Callout, Footer, styles } from './shared';
@@ -97,6 +98,23 @@ export function AnalyticsPanel() {
                   {slot.best != null
                     ? ` · món khoẻ nhất kệ đạt ${formatMoney(slot.best)}/ô/ngày — ${worst.length} món trên đang chiếm chỗ mà sinh lời non nửa ngưỡng đó.`
                     : ' · đang lỗ, dọn sớm cho kệ thoáng.'}
+                </div>
+              </Callout>
+            );
+          })()}
+          {(() => {
+            const ls = lostSalesValue(list);
+            if (!ls.actionable) return null;
+            const top = ls.items.slice(0, 3);
+            const stockouts = ls.items.filter((i) => i.stockout).length;
+            return (
+              <Callout tone="danger" style={{ marginBottom: 10 }} title={`⛔ Khách tìm không mua được đang bỏ lỡ ~${formatMoney(ls.totalPerDay)}/ngày (${ls.count} món)`}>
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {top.map((i) => `${i.name} ~${formatMoney(i.moneyLostDay)}/ngày`).join(' · ')}
+                  {ls.items.length > top.length ? ` (+${ls.items.length - top.length} món)` : ''}.
+                  {stockouts > 0
+                    ? ` ${stockouts} món đang thiếu hàng — nhập lại là thu về chừng đó; còn lại có thể do giá, xem Bảng giá.`
+                    : ' Còn hàng mà vẫn bị mất khách — có thể do giá/xếp, xem Bảng giá.'}
                 </div>
               </Callout>
             );
