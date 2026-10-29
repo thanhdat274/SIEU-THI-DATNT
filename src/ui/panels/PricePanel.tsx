@@ -6,7 +6,8 @@ import { useClock, useGame } from '../../core/store';
 import { CATEGORIES, formatMoney, unlockedProducts, type Product } from '../../data/products';
 import { suggestPrice, referenceSell, productSensitivity, sensitivityLevel, priceForecast, formatDeltaK, FORECAST_FLAT_BAND } from '../../data/pricing';
 import { marketTrend } from '../../data/market';
-import { Footer, styles } from './shared';
+import { priceGap } from '../../data/priceGap';
+import { Footer, styles, Callout } from './shared';
 
 export const PRICE_PAGE = 12;
 
@@ -38,6 +39,20 @@ export function PricePanel() {
         Giá gợi ý hiện hành nhích nhẹ mỗi ngày theo khan hiếm hàng trên thị trường (hàng cạn → giá thị trường nhích lên, tồn nhiều → hạ xuống).
         Mũi tên ⬆/⬇/• bên cạnh "Gợi ý" báo giá thị trường hôm nay đang trôi về đâu (khan → trụ/nâng giá; thừa → hạ giá xả).
       </p>
+      {(() => {
+        const gap = priceGap(all.map((p) => ({ id: p.id, price: prices[p.id] ?? p.sell, soldPerDay: sales[p.id], wantedPerDay: demand[p.id] })));
+        if (!gap.actionable) return null;
+        const top = gap.offenders.slice(0, 3);
+        return (
+          <Callout tone="warn" style={{ marginBottom: 8 }} title={`💸 Giá hôm nay đang để hụt ~${formatMoney(gap.totalMissedPerDay)}/ngày (${gap.count} món chưa về đúng gợi ý)`}>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              {top.map((o) => `${o.name} ${formatMoney(o.gainPerDay)}/ngày`).join(' · ')}
+              {gap.offenders.length > top.length ? ` (+${gap.offenders.length - top.length} món nữa)` : ''}
+              . Điều chỉnh giá theo mũi ⬆/⬇ gần nút +/− là thu lại chừng đó mỗi ngày.
+            </div>
+          </Callout>
+        );
+      })()}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', margin: '8px 0' }}>
         <b style={{ flex: 'none' }}>⏰ Giờ vàng</b>
         <span style={{ ...styles.sub, flex: '1 1 220px', minWidth: 180 }}>giảm giá đúng khung 2 tiếng, khách kéo về đông hơn (giảm {HAPPY_OFF_OPTIONS.join('/')}% → +{HAPPY_OFF_OPTIONS.map((o) => Math.round(o * 2.5)).join('/')}% khách)</span>

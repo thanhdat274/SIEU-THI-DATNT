@@ -59,3 +59,12 @@ profitPerDay=profit30/30, perSlot=profitPerDay/onShelf (lời mỗi ô/ngày); c
 (món lỗ chiếm chỗ), cờ 'slow' nếu bày ≥3 ô mà perSlot < ngang nửa món khoẻ nhất (SLOT_ACTIONABLE_ON_SHELF=3,
 SLOT_SLOW_RATIO=0.5). AnalyticsPanel thêm thẻ cảnh báo giới thiệu top món lép vốn + món khoẻ nhất làm mốc.
 Khác profitMix (tập trung lời) và ABC (xếp hạng lời) — trả lời "đổi chỗ để món bán nhanh hơn". (+6 test)
+
+## GĐ227 — 💸 "Bảng giá hôm nay đang để hụt bao nhiêu?"
+PricePanel vốn soi TỪNG MÓN (suggestPrice + priceForecast 📈/📉/➖) nhưng không có con số TỔNG.
+`priceGap` (data/priceGap.ts) gộp chênh lãi/ngày của từng món: dự phóng lãi NẾU áp đúng giá gợi ý
+(`suggestPrice`) trừ lãi ở GIÁ ĐANG ĐẶT (`priceForecast`; khi giá = gốc thì lấy baseline) → chênh
+dương là tiền rò rỉ/ngày vì giữ giá lệch (chỉ cộng món thực sự CÓ LỢI khi đổi — món nhạy giá như
+nước suối tăng giá lại MẤT lời nên không tính). PricePanel thêm thẻ cảnh báo đầu bảng: "Đang để
+hụt ~Xđ/ngày (N món chưa về đúng gợi ý)" + top món rò rỉ. THUẦN ĐỌC, dùng lại đúng công thức mô
+phỏng. (+5 test)
