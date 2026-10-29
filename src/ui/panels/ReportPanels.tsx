@@ -11,6 +11,7 @@ import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { formatMoney, productById } from '../../data/products';
 import { describeRep, meetsRep, REP_FACTORS, REP_INFO, REP_MIN_SAMPLES, reputationOf, type RepSample } from '../../data/reputation';
 import { repPayoff, repPayoffFocus } from '../../data/repPayoff';
+import { repMoney, avgPerVisit } from '../../data/repMoney';
 import { butcherValueToday, MAX_BUTCHER_STAR, meatFromByItem, missedMeatRevenue, recentMeatRevenue } from '../../data/butcherValue';
 import { debtLedger } from '../../data/debtLedger';
 import { regularRep, regularById, regularsExpectedToday, REGULARS } from '../../data/regulars';
@@ -185,6 +186,14 @@ export function SummaryPanel({ day }: { day: number }) {
                   ? <>Giữ phong độ giúp tiệm được thêm <b>~{payoff148.extraKhach} khách/ngày</b> ({Math.round(Math.abs(payoff148.pct) * 100)}% người đi đường).</>
                   : <>Danh tiếng đang tụt, mất khoảng <b>~{Math.abs(payoff148.extraKhach)} khách/ngày</b>. Sửa mặt yếu nhất để hút khách lại.</>}
                 <span style={{ opacity: 0.75 }}> Nâng 0.5★: thêm ~{payoff148.nextStarKhach} khách/ngày.</span>
+                {(() => {
+                  const rm = repMoney(payoff148, avgPerVisit(st.revenue, st.customers));
+                  return (
+                    <div style={{ marginTop: 4, opacity: 0.9 }}>
+                      ≈ <b>{formatMoney(rm.moneyPerDay)}</b> doanh thu/ngày vì {rm.moneyPerDay >= 0 ? 'có' : 'thiếu'} danh tiếng · nâng 0.5★ ≈ +{formatMoney(rm.nextStarMoney)}/ngày.
+                    </div>
+                  );
+                })()}
               </div>
             </Callout>
           )}

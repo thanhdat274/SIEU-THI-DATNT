@@ -76,3 +76,11 @@ analyticsAdvice đã có dòng "🚶 X% lượt tìm không mua được — bà
 `stockout` (daysLeft ≤ 1.5) phân biệt "thiếu hàng → nên nhập" vs "còn hàng mà vẫn mất → do giá, xem
 Bảng giá (GĐ227)". AnalyticsPanel thêm thẻ danger ngay sau thẻ lép vốn (GĐ226) — cùng chỗ "Sức khoẻ
 món", xếp thứ tự theo ĐỒNG chứ không theo %. Lọc nhiễu qty30≤5 / lostShare<0.1. (+6 test)
+
+## GĐ229 — ⭐ "Danh tiếng đang kéo thêm / làm mất bao nhiêu đồng mỗi ngày?"
+repPayoff (GĐ148) đã quy danh tiếng ra KHÁCH/ngày (extraKhach, nextStarKhach) nhưng dừng ở "khách".
+`repMoney` (data/repMoney.ts) đổi sang ĐỒNG: nhân phí chi tiêu bình quân mỗi khách ghé
+(avgPerVisit = doanh thu/khách) → moneyPerDay (doanh thu thêm/mất mỗi ngày ở danh tiếng hiện tại) +
+nextStarMoney (doanh thu mỗi 0.5★ tới). Thẻ ⭐ Danh tiếng ở Sổ đầu ngày thêm dòng "≈ Xđ doanh thu/ngày
+vì có/thiếu danh tiếng · nâng 0.5★ ≈ +Yđ/ngày". Cùng mô-típ rivalDrag (GĐ225) đổi khách → đồng, khép
+trục "danh tiếng = tiền". THUẦN ĐỌC. (+4 test)
