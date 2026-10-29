@@ -8,7 +8,7 @@ import { RECIPES } from '../../data/recipes';
 import { kitchenValue } from '../../data/kitchenValue';
 import { pickEveningPrep } from '../../data/cookSchedule';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
-import { formatMoney, productById } from '../../data/products';
+import { caseSize, formatMoney, productById } from '../../data/products';
 import { describeRep, meetsRep, REP_FACTORS, REP_INFO, REP_MIN_SAMPLES, reputationOf, type RepSample } from '../../data/reputation';
 import { repPayoff, repPayoffFocus } from '../../data/repPayoff';
 import { repMoney, avgPerVisit } from '../../data/repMoney';
@@ -23,6 +23,7 @@ import { CHANGE_OPTS, counterPolicySummary, defaultCounterPolicy, HAGGLE_OPTS } 
 import { ACTION_LABEL, expiringSoon, expiryAdvice, peakAdvice, peakHours, spoilNightReport, storeMissRevenue, waitLossStats, walkoutAdvice, type Advice, type HourStat } from '../../data/advice';
 import { dateOfDoy, dayEffects, dayOfYear, festivalStock, upcomingFestival } from '../../data/calendar';
 import { festivalValue } from '../../data/festivalValue';
+import { festivalPrepAction, festivalRestockPlan } from '../../data/festivalRestock';
 import { prepItems, prepReadiness, prepBonus, PREP_MIN_QTY } from '../../data/festivalPrep';
 import { itemHealthList, shelfAttention, shelfCount } from '../../data/analytics';
 import { computeRecords, recordFeedToday } from '../../data/records';
@@ -590,6 +591,10 @@ export function MorningPanel() {
     const claimed = biz.seasonEvt?.season === se.season && biz.seasonEvt.claimedDay === se.dayIndex;
     if (obj && !claimed) candidates.push({ icon: obj.icon, text: `Sự kiện ${seasonEventName(se.season)}: ${obj.title} (${obj.detail})`, panel: 'morning', danger: false, priority: 3 });
   }
+  // GĐ249: trữ lễ thành việc sáng — lễ sắp tới còn món thiếu thì vào danh sách việc hôm nay (mẫu GĐ189).
+  // Việc sáng không lọc theo mối (chưa chọn mối nào) — món mối không bán OrderPanel tự nói rõ (GĐ247).
+  const festivalPrep = festivalPrepAction(festivalRestockPlan({ day, level, storage, sells: () => true, caseSizeOf: caseSize }), formatMoney);
+  if (festivalPrep) candidates.push(festivalPrep);
   const actions = planDay(candidates);
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
   const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });

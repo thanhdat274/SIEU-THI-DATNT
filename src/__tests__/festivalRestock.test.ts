@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { festivalRestockPlan } from '../data/festivalRestock';
+import { festivalPrepAction, festivalRestockPlan } from '../data/festivalRestock';
 import { PREP_MIN_QTY, prepItems } from '../data/festivalPrep';
-import { caseSize } from '../data/products';
+import { caseSize, formatMoney } from '../data/products';
 import { festivalOn } from '../data/calendar';
 
 // GĐ247: phiếu trữ lễ một chạm cho Nhập hàng. calendar: Tết = ngày game 28..39 (doy 27..38);
@@ -50,5 +50,30 @@ describe('festivalRestockPlan — phiếu trữ lễ một chạm', () => {
 
   it('ngày không gần lễ nào → null', () => {
     expect(festivalRestockPlan({ day: 100, level: 20, storage: {}, sells: allSell, caseSizeOf: caseSize })).toBeNull();
+  });
+});
+
+describe('festivalPrepAction — trữ lễ thành việc sáng (GĐ249)', () => {
+  it('phiếu có món thiếu → việc sáng, ngày gần lễ (≤1) là nguy cấp', () => {
+    // Ngày 27 → Tết ngày 28 (còn 1 ngày) → danger
+    const planUrgent = festivalRestockPlan({ day: 27, level: 20, storage: {}, sells: allSell, caseSizeOf: caseSize })!;
+    const act = festivalPrepAction(planUrgent, formatMoney)!;
+    expect(act.panel).toBe('order');
+    expect(act.danger).toBe(true);
+    expect(act.priority).toBe(1);
+    expect(act.text).toContain('Tết');
+    expect(act.text).toContain('còn 1 ngày');
+    expect(act.text).toContain(formatMoney(planUrgent.bonus));
+  });
+
+  it('còn ≥2 ngày → việc thường (priority 2, không danger)', () => {
+    const plan = festivalRestockPlan({ day: 26, level: 20, storage: {}, sells: allSell, caseSizeOf: caseSize })!;
+    const act = festivalPrepAction(plan, formatMoney)!;
+    expect(act.danger).toBe(false);
+    expect(act.priority).toBe(2);
+  });
+
+  it('không có phiếu (không gần lễ) → null', () => {
+    expect(festivalPrepAction(null, formatMoney)).toBeNull();
   });
 });

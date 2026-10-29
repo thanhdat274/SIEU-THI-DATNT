@@ -56,3 +56,31 @@ export function festivalRestockPlan(opts: {
   if (!lines.length) return null;
   return { festival: soon.festival, inDays: soon.inDays, lines, skipped, bonus: prepBonus(soon.festival, level) };
 }
+
+// ───── GĐ249: trữ lễ thành "việc sáng" ─────
+// Phiếu trữ lễ chỉ hiện trong Nhập hàng thì người chơi phải tự mở bảng mới thấy. Sổ đầu ngày có danh
+// sách "việc hôm nay" (planDay, GĐ76) — biến phiếu thành một việc ở đó (mẫu GĐ189 quán nước thành
+// việc sáng): đáng làm TRƯỚC khi mở cửa, càng gần lễ càng nguy cấp.
+
+/** Một mục "việc hôm nay" trên Sổ đầu ngày (khớp DayAction trong MorningPanel). */
+export interface FestivalPrepAction {
+  icon: string;
+  text: string;
+  panel: 'order';
+  /** Còn ≤1 ngày là nguy cấp (đỏ) — trễ là mất luôn thưởng đón lễ. */
+  danger: boolean;
+  priority: number;
+}
+
+/** Biến phiếu trữ lễ thành việc sáng: null khi không có phiếu. */
+export function festivalPrepAction(plan: FestivalRestockPlan | null, formatMoneyFn: (n: number) => string): FestivalPrepAction | null {
+  if (!plan || !plan.lines.length) return null;
+  const urgent = plan.inDays <= 1;
+  return {
+    icon: plan.festival.icon,
+    text: `Trữ lễ ${plan.festival.name} (còn ${plan.inDays} ngày): thiếu ${plan.lines.length} món → đón lễ +${formatMoneyFn(plan.bonus)}`,
+    panel: 'order',
+    danger: urgent,
+    priority: urgent ? 1 : 2,
+  };
+}

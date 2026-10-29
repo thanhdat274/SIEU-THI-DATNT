@@ -272,3 +272,14 @@ nodata (không ai vào ca) · ok (không ai rảnh ≥65%) · idle_heavy (rảnh
 vì chờ → bài toán XẾP CA chứ không phải thiếu người: dồn ca vào giờ đông, ca vắng cho nghỉ bớt).
 SummaryPanel overview thêm Callout warn ngay dưới thẻ "Mất khách vì chờ" (chỉ hiện 2 phán có việc
 làm; đội vừa sức im lặng cho đỡ ồn) + nút "👥 Bảng nhân viên". (+4 test, bộ staffIdle lên 11)
+
+---
+
+**GĐ249 festivalPrepAction** — trữ lễ thành "việc sáng": phiếu trữ lễ (GĐ247) chỉ hiện trong Nhập
+hàng thì người chơi phải tự mở bảng mới thấy. Helper `festivalPrepAction` (data/festivalRestock.ts,
+THUẦN ĐỌC, nhận plan|null) biến phiếu thành một mục trong danh sách "việc hôm nay" (planDay GĐ76,
+mẫu GĐ189 quán nước thành việc sáng): icon lễ + "Trữ lễ {tên} (còn N ngày): thiếu X món → đón lễ
++{bonus}", panel 'order', danger+priority 1 khi còn ≤1 ngày (trễ là mất luôn thưởng đón lễ), thường
+priority 2. Việc sáng không lọc theo mối (chưa chọn mối nào) — món mối không bán OrderPanel tự nói
+rõ (GĐ247 skipped). Khép mạch: Sổ đầu ngày → việc hôm nay → Nhập hàng → Callout → một chạm vào giỏ.
+(+3 test, bộ festivalRestock lên 8)
