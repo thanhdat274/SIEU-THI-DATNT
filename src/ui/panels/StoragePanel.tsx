@@ -4,6 +4,7 @@ import { warehouseTier, WAREHOUSE_TIERS } from '../../data/warehouse';
 import { caseSize, describeUnits, formatMoney, productById } from '../../data/products';
 import { storeMissRevenue, coldOverflow } from '../../data/advice';
 import { stockCapital } from '../../data/stockCapital';
+import { warehouseUpgradeValue } from '../../data/warehouseUpgrade';
 import { Callout, LifeBadge, Footer, styles } from './shared';
 
 /** Kho hàng: thùng nguyên + hàng lẻ đã khui, hạn gần nhất, chỗ trống. */
@@ -94,6 +95,19 @@ export function StoragePanel() {
           </button>
         </div>
       )}
+      {next && (() => {
+        const wu = warehouseUpgradeValue(tierIndex, storage, priceOf, money);
+        const tone = wu.verdict === 'upgrade' ? (wu.affordable ? 'warn' : 'danger') : wu.verdict === 'soon' ? 'accent' : 'ok';
+        return (
+          <Callout tone={tone} style={{ marginTop: 12 }} title={`🏭 Kho dùng ${wu.casePct}% thùng · giữ lạnh ${wu.coldPct}%${wu.overflow > 0 ? ` (tràn ${wu.overflow} → ~${formatMoney(wu.overflowValue)} hỏng nhanh)` : ''}`}>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              {wu.verdict === 'upgrade' && 'Đang tràn/đụng trần kho — nên nâng lên ' + wu.next!.name + ' (' + formatMoney(wu.next!.price) + ')' + (wu.affordable ? ', tiền đủ.' : ', tiền chưa đủ.' )}
+              {wu.verdict === 'soon' && `Sắp đụng trần (${Math.max(wu.coldPct, wu.casePct)}%) — chuẩn bị ${formatMoney(wu.next!.price)} cho ${wu.next!.name} (${wu.next!.cases} thùng / giữ lạnh ${wu.next!.cold}).`}
+              {wu.verdict === 'ok' && 'Kho còn rộng, chưa cần nâng.'}
+            </div>
+          </Callout>
+        );
+      })()}
       <label style={{ ...styles.card, display: 'flex', fontSize: 13, marginTop: 8 }}>
         <input type="checkbox" checked={autoSwap} onChange={(e) => useGame.setState({ autoSwap: e.target.checked })} />
         Tự thay ô kệ hết hàng (kho cũng hết, không có đơn chờ) bằng món khác đang có trong kho
