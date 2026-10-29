@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1786/1787 test pass (158 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ178. (Sim nặng `weeklyGoalCap` cấp 50 timeout trong lần full do tranh CPU khi chạy Blender/browser; re-run isolated 16/16 xanh)
+- **1786/1787 test pass (160 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ179. (Sim nặng `weeklyGoalCap` cấp 50 timeout trong lần full do tranh CPU khi chạy Blender/browser; re-run isolated 16/16 xanh)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ168–178 (chi tiết: docs/progress-archive/PROGRESS-GD154-180.md)
+### Giai đoạn gần đây · GĐ168–179 (chi tiết: docs/progress-archive/PROGRESS-GD154-180.md)
 
 - **GĐ168** 🗺️ Nạp lại "Phía trước" cho cấp 30+ (SYSTEM_UNLOCKS 10 mốc thật: đất 16/24, Mini mart 30, chương 40/55/75, siêu thị 45/58/75, Tái sinh 60; mốc cuối 75; RoadmapPanel "hệ"→"mục", badge HUD sống lại).
 - **GĐ169** 🎯 Nhịp tuần/tháng sống mãi: bó ratchet mục tiêu (trần doanh thu kỳ ×1.15) + thưởng chuỗi đổi XP (≥3 tuần +35% xpToNext). Sim seed 169: goal spike về tầm với, XP/cấp ổn.
@@ -38,6 +38,7 @@
 - **GĐ176** 🎨 Blender 5.2 pipeline: `blender_kit_atlas.py` (import → gộp → Smart UV → bake EMIT atlas tùy chọn → Draco level 6 + preview). Kit 550KB→68.6KB. DRACOLoader ở `public/decoders/draco/`. Quy ước: `--no-bake` chuẩn cho prop màu phẳng.
 - **GĐ177** 🏮 "Đầu ngõ lên đèn": đèn lồng cột dựng Blender (`scripts/blender_lantern.py`, 16KB Draco) đặt bên cửa tiệm (5.9,0,2.1); nguồn sáng ấm #ffb35c qua quỹ ánh sáng (lightBudget) bật chập tối (lamp 17h–5h30); lõi phát sáng tắt hẳn ban ngày. Chrome: lazy GLB + fallback thủ tục + không chặn lưới (boxes rỗng — convention kit GĐ172). QA @5173: loaded=true, glow 2.6 đêm / 0 trưa; QA bắt 1 bug (GLB emissive mặc định cháy sáng cả ngày) → đã sửa điều khiển theo giờ. `storefrontLantern.ts`, `world.ts`, `main.tsx`, test 4.
 - **GĐ178** 🎨 Gộp họ xanh dương hướng dẫn/chuỗi/biểu đồ (`#0984e3`/`#74b9ff`/`#2e86de` + tint `rgba(9,132,227,…)`) về đúng info `#3498db` ở OrderPanel/ReportPanels/ContractsPanel/PricePanel (16 chỗ). Giữ họ buy-tone `#55efc4`/`#ff7675` (ngoại lệ được duyệt GĐ166). "Quyết định lớn": họ banner guide = một sắc info duy nhất, không bảng riêng (đóng nợ GĐ167). GardenPanel giữ họ "system card" của nó — không churn. tsc + build sạch, reload @5175 game nạp ổn, grep 0-màu-cũ/16-màu-mới.
+- **GĐ179** 🪧 Biển treo "mở/đóng cửa": kit prop có mục đích gameplay. Cột gỗ + biển treo (`scripts/blender_sign.py` → `bien_mo_cua.glb` Draco 6.9KB, lazy) đặt vỉa hè sát cửa (5.05,0,1.45), tấm trạng thái `bien_mo_cua_state` sáng xanh #2ecc71 (mở)/đỏ dìm #e74c3c (đóng) + đung nhẹ khi mở; nối theo `shopOpen` trong loop main, cùng chỗ cột đèn lồng. Không chặn lưới (cao quá đầu). `storefrontSign.ts`, `world.ts`, `main.tsx`, test 4; tsc+build sạch, QA: update(true/false) xanh/đỏ đúng. (RAF=0 khi tab IAB nền — xác nhận loop không chạy lúc QA, không phải lỗi code; kiểm thật trên save khi mở/đóng 8h.)
 
 ### Giai đoạn gần đây · GĐ159–167 (chi tiết: docs/progress-archive/PROGRESS-GD154-180.md)
 
@@ -76,6 +77,7 @@
 ## Cần theo dõi / nợ mở
 
 - GĐ177: đèn lồng bật theo `lamp` (17h–5h30) chung toàn cảnh — xác nhận trên save thật vào khung chập tối không chói/gắt (nếu cần, bó thêm theo mưa/mây đậm); cũng nên mở rộng "cảnh ấm" sang bếp/trai khi làm depth tiếp.
+- GĐ179: biển mở/đóng cửa kiểm trên save thật khi mở cửa 8h (biển chuyển xanh + đung nhẹ) và đóng 22h30 (đỏ) — QA live trên tab foreground (tab IAB nền bị dừng rAF, không soi được loop). Cân nhắc đung đưa chỉ khi `speed>0` để đỡ nhiễu khi tạm dừng.
 - GĐ171: scale mục tiêu vòng ×(1+0.5(N−1))/×(1+0.3(N−1)) — cần save thật vòng 2+ để xác nhận trad vẫn căng nhưng với tới; nếu vẫn quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi.
 - QA trực quan GĐ155–158 xong trên save máy cấp 46 ngày 1; chưa QA mắt được trạng thái CÓ dữ liệu của Bỏ lỡ/Thú cưng/hụi/khủng hoảng (cần play vài ngày — bọc bởi test). GĐ159 các dòng mới ẩn ngày 1 — QA mắt khi có save có doanh thu.
@@ -85,7 +87,7 @@
 ## Backlog tiếp theo
 
 1. **Audit trải nghiệm & tiến trình (GĐ168–171) đã xong** ✅ (mid/late-game: roadmap 30+, ratchet tuần/tháng, rival kết, NG+ mục tiêu vòng). Đánh giá lại: vòng ngày & tiến trình đã khai thác sâu; trục mới đáng làm là **trải nghiệm bim bim tài sản 3D + không gian con hẻm** — nối tiếp GĐ172–176.
-2. 🏮 **Chiều sâu trải nghiệm 3D / con hẻm sống**: (a) đèn lồng cửa tiệm sáng ấm chập tối ✅ GĐ177. Còn: (b) kit prop có mục đích gameplay (biển mở/đóng cửa, gánh hàng đổi khi chợ phiên); (c) dấu hiệu không lời "khách đang đợi" trước hiên (tái dùng world state, không thêm sim). Làm (b) trước rồi (c) — Blender + lazy load chuẩn GĐ176 + QA 3 góc nhìn.
+2. 🏮 **Chiều sâu trải nghiệm 3D / con hẻm sống**: (a) đèn lồng cửa tiệm sáng ấm chập tối ✅ GĐ177; (b) kit prop có mục đích gameplay — biển mở/đóng cửa ✅ GĐ179, còn "gánh hàng đổi khi chợ phiên"; (c) dấu hiệu không lời "khách đang đợi" trước hiên (tái dùng world state, không thêm sim). Làm tiếp (c) [dấu hiệu khách đợi] rồi (b-gánh) — Blender + lazy load chuẩn GĐ176 + QA 3 góc nhìn.
 3. Theo dõi sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (save người thật); nếu vẫn lặp → thêm biến thể hoàn cảnh (lễ, weekend).
 4. GĐ164 theo dõi: arc E "Hàng xóm khai trương" (thay cam_do_mo) — chỉ làm khi 4 arc A–D chạy tốt trên save thật.
 5. UI nợ còn: Callout GardenPanel:79 vào Callout (chỉ còn một thẻ); các màu UI còn lại đều là màu ngữ cảnh/họ buy-tone đã duyệt.
@@ -266,3 +268,4 @@
 - GĐ176 — 🎨 Blender 5.2 vào pipeline: nén Draco + nướng atlas
 - GĐ177 — 🏮 Đầu ngõ lên đèn: đèn lồng cột bên cửa tiệm sáng ấm chập tối
 - GĐ178 — 🎨 Gộp họ xanh dương hướng dẫn/chuỗi/biểu đồ về info #3498db
+- GĐ179 — 🪧 Biển treo mở/đóng cửa: kit prop có mục đích gameplay (tấm trạng thái theo shopOpen)

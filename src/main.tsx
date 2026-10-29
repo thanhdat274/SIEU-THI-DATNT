@@ -704,6 +704,8 @@ function renderFrame() {
   world.streetLamps.update(lamp);
   // Đèn lồng cửa tiệm (gđ177): bật sáng ấm chập tối, cùng giờ với đèn đường
   world.storefront.update(lamp);
+  // Biển mở/đóng cửa trước tiệm (gđ179): tấm trạng thái đổi màu theo tiệm đang mở/đóng, đung nhẹ khi mở
+  world.openSign.update(g.shopOpen, performance.now() / 1000);
   applyLightBudget(controller.target);
   // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng
   if ((frameNo++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
