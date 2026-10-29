@@ -50,6 +50,8 @@ import { PHONE_SLOTS } from '../../data/phoneOrders';
 import { paymentById, type PaymentMethod } from '../../data/payments';
 import { solvency } from '../../data/solvency';
 import { loanBurden } from '../../data/loanBurden';
+import { dailyBurn } from '../../data/dailyBurn';
+import { recentAvgRevenue } from '../../data/minorPayoff';
 import { Callout, Stat, starColor, Footer, Swatch, styles, Tabs } from './shared';
 
 /** Day-stats rỗng: SummaryPanel phải render được kể cả khi panel mở thiếu stats (đường mở lạ,
@@ -472,7 +474,7 @@ export function SummaryPanel({ day }: { day: number }) {
  */
 export function MorningPanel() {
   const { day, level, xp, weatherSeed, weather, forecast, regulars, reservations, storage,
-    furniture, staff, contracts, deliveries, shopTier, closePanel, openPanel, repLog,
+    furniture, staff, contracts, deliveries, shopTier, closePanel, openPanel, repLog, history,
     storageLots, debts, biz, money, branch, licenses, skills, happyHour, analytics, marketClearedDay,
     demand: stateDemand, activeCombos, priceOf, sellMarketSurplus, stats } = useGame();
   const branchChores = branch ? branchMorningPlan(branch, storageUsed(storage), licenses, day) : [];
@@ -853,6 +855,29 @@ export function MorningPanel() {
               {lb.pctOfRevenue != null && lb.pctOfRevenue > 10
                 ? ' đang nặng (lãi ăn trên 10% dòng tiền): trả bớt càng sớm càng nhẹ.'
                 : ' đang nhẹ so với dòng tiền hôm nay.'}
+            </div>
+          </Callout>
+        );
+      })()}
+
+      {(() => {
+        const db = dailyBurn(
+          staff,
+          branch?.staff ?? [],
+          shopTier,
+          biz.loan,
+          biz.hui,
+          recentAvgRevenue(history, 7),
+        );
+        const tone = db.avgRevenue > 0 && db.burnShare != null && db.burnShare > 0.8 ? 'warn' : 'accent';
+        return (
+          <Callout tone={tone} style={{ marginBottom: 8 }} title={`🔥 Chi phí cố định/ngày: ${formatMoney(db.total)}${db.burnShare != null ? ` = ${Math.round(db.burnShare * 100)}% doanh thu bình quân` : ''}`}>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              Lương {formatMoney(db.wages)} · thuê {formatMoney(db.rent)} · lãi vay {formatMoney(db.loanInterest)} · góp hụi {formatMoney(db.huiDue)}.
+              {db.burnShare == null && ` Chưa có doanh thu bình quân để so — mở vài ngày rồi xem lại.`}
+              {db.burnShare != null && (db.covered
+                ? ` Doanh thu bình quân ${formatMoney(db.avgRevenue)} còn thừa ${formatMoney(db.margin)} sau chi phí cố định.`
+                : ` Doanh thu bình quân ${formatMoney(db.avgRevenue)} thiếu ${formatMoney(-db.margin)} để trùm chi phí cố định — tăng doanh thu hoặc cắt bớt lương/nợ.`)}
             </div>
           </Callout>
         );
