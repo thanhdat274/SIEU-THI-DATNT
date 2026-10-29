@@ -222,3 +222,14 @@ hype (×1.25 → thêm khách) / crisis chưa xin lỗi (×0.72 → mất khách
 cpd × (APOLOGY_MUL−CRISIS_MUL) = 20% khách/ngày so với mặc kệ) / đã xin lỗi (×0.92) / calm. SocialPanel
 thêm Callout "🔥 Buzz khen đang sinh tiền" (hype) và "🙏 Đã xin lỗi, khách đang quay lại" (crisis đã xin
 lỗi); khủng hoảng chưa xin lỗi vẫn dùng thẻ chi tiết GĐ159 sẵn có. THUẦN ĐỌC, deterministic. (+5 test)
+
+---
+
+**GĐ245 festivalValue** — soi dịp lễ ra khách/tiền, bổ sung cho trữ hàng (GĐ70). `festivalValue`
+(data/festivalValue.ts) THUẦN ĐỌC: nếu hôm nay có lễ (festivalOn) hoặc lễ sắp tới trong 3 ngày
+(upcomingFestival) thì lấy hệ số khách `traffic` (Tết 1.7, mùa hè 1.1...) và hệ số giá nhập `cost`,
+quy ra deltaKhách/ngày (so mức cơ bản customersPerDay) và tiền thêm/ngày theo giá giỏ ước (avg
+7 ngày). Phân loại verdict huge/big/modest theo traffic. Liệt kê số món hot đã mở khóa. Sổ đầu ngày
+(MorningPanel) hiện dòng định lượng ở CẢ HAI thẻ lễ: thẻ "đang diễn ra" (🎉 ước thêm ~N khách/ngày
+≈ +Xđ/ngày · N món hot) và thẻ "⏳ Lễ sắp tới" (Còn N ngày: khách ×traffic (~N khách ≈ +Xđ/ngày)
+· N món hot mở khóa · giá nhập +X% (bán đắt vẫn đông)). Không đụng state/save; deterministic. (+5 test)

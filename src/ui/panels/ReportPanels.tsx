@@ -22,6 +22,7 @@ import { CREDIT_FRIENDSHIP, CREDIT_UNLOCK, creditLimit, DEBT_LATE_DAYS, DEBT_WRI
 import { CHANGE_OPTS, counterPolicySummary, defaultCounterPolicy, HAGGLE_OPTS } from '../../data/counterDeals';
 import { ACTION_LABEL, expiringSoon, expiryAdvice, peakAdvice, peakHours, spoilNightReport, storeMissRevenue, waitLossStats, walkoutAdvice, type Advice, type HourStat } from '../../data/advice';
 import { dateOfDoy, dayEffects, dayOfYear, festivalStock, upcomingFestival } from '../../data/calendar';
+import { festivalValue } from '../../data/festivalValue';
 import { prepItems, prepReadiness, prepBonus, PREP_MIN_QTY } from '../../data/festivalPrep';
 import { itemHealthList, shelfAttention, shelfCount } from '../../data/analytics';
 import { computeRecords, recordFeedToday } from '../../data/records';
@@ -529,6 +530,18 @@ export function MorningPanel() {
   const rep = reputationOf(repLog);
   const effects = dayEffects(weatherSeed, day, level);
   const soon = upcomingFestival(day);
+  // GĐ245: soi dịp lễ ra khách/tiền — trên nền trữ hàng (GĐ70), định lượng hệ số khách và chi phí
+  // nhập ra con số: khách thêm/ngày × giỏ bình quân 7 ngày. Hiện ở CẢ thẻ lễ ĐANG diễn ra lẫn SẮP tới.
+  const last7 = history.slice(-7);
+  const avgCust7 = last7.length ? last7.reduce((a, h) => a + h.customers, 0) / last7.length : 0;
+  const fv = festivalValue({ day, level, customers: avgCust7, revenue: recentAvgRevenue(history, 7) });
+  const fvDelta = fv && (
+    <>
+      ~{Math.round(fv.deltaKhachPerDay)} khách/ngày
+      {avgCust7 > 0 && <> ≈ <b style={{ color: '#2ecc71' }}>+{formatMoney(Math.round(fv.moneyDeltaPerDay))}</b>/ngày</>}
+      {fv.hotIds.length > 0 && <> · {fv.hotIds.length} món hot mở khóa</>}
+    </>
+  );
   const hot = trending(day, level).filter((id) => !effects.hot.includes(id));
   const expected = regularsExpectedToday(day, weatherSeed, level, regulars, rep);
   const resList = Object.entries(reservations).filter(([, r]) => r.day === day);
@@ -991,6 +1004,11 @@ export function MorningPanel() {
               Hàng nên bày sẵn: {festivalStock(effects.festival, level).map((id) => `${productById(id).name}${haveStock(id) ? ' ✓' : ' ⚠️ kho không có'}`).join(', ')}
             </div>
           )}
+          {fv && fvDelta && (
+            <div style={{ fontSize: 12, marginTop: 2 }}>
+              🎉 ước thêm {fvDelta}
+            </div>
+          )}
         </div>
       )}
       {effects.hot.length > 0 && (
@@ -1021,6 +1039,12 @@ export function MorningPanel() {
             ))}
             <span style={{ opacity: 0.7 }}> · đủ trước {soon.inDays === 1 ? 'ngày mai' : 'lễ'} → <b style={{ color: '#2ecc71' }}>+{formatMoney(prepBonus(soon.festival, level))}</b> đón lễ</span>
           </div>
+          {fv && (
+            <div style={{ fontSize: 12, marginTop: 2 }}>
+              <b>Còn {fv.inDays} ngày:</b> khách ×{fv.traffic} ({fvDelta})
+              {fv.cost > 1 && <> · giá nhập +{Math.round((fv.cost - 1) * 100)}% (bán đắt vẫn đông)</>}
+            </div>
+          )}
         </div>
       )}
 
