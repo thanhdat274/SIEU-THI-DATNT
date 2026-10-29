@@ -6,6 +6,7 @@ import {
   QUAN_PRICE_OPTIONS, quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, quanNuocBuildPayback, type QuanNuocPrice,
 } from '../../data/quanNuoc';
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
+import { teahouseHaulRead } from '../../data/teahouseHaul';
 import { Callout, Footer, styles } from './shared';
 
 /** Thứ tự hiển thị 3 mức giờ bán: bình dân → vừa phải → đắt hơn. */
@@ -173,8 +174,29 @@ export function QuanNuocPanel() {
               </div>
             </Callout>
           )}
-          {staffValues.length > 0 && (
-            <Callout
+          {quan.open && (() => {
+            const hr = teahouseHaulRead(drinkUnits, quan, level);
+            if (hr.daysLeft >= 3) return null;
+            const tone = hr.verdict === 'danger' ? 'danger' : 'warn';
+            const nights = hr.daysLeft === Infinity ? 'vô hạn' : `~${Math.ceil(hr.daysLeft)} đêm`;
+            return (
+              <Callout tone={tone} title={hr.verdict === 'danger' ? '🚨 Kho đồ uống sắp cạn' : '🥤 Quán ăn khô kho chung'} style={{ marginTop: 6 }}>
+                <div style={{ fontSize: 12 }}>
+                  Kho chung chỉ còn <b>{hr.haveNow} ly</b> đồ uống, quán tiêu ~<b>{hr.needPerNight} ly/đêm</b> → còn {nights}.
+                  {hr.haulNow
+                    ? ' Nên chở thêm đồ uống về kho sớm (cửa sổ vài đêm), đừng chờ cạn đúng một đêm mới nhập.'
+                    : ' Quán đang đóng, không đụng kho.'}{' '}
+                  <button
+                    style={{ ...styles.btn, marginLeft: 0, padding: '2px 10px', background: '#e67e22', color: '#fff' }}
+                    onClick={() => openPanel({ type: 'order' })}
+                  >
+                    → Nhập đồ uống
+                  </button>
+                </div>
+              </Callout>
+            );
+          })()}
+          {staffValues.length > 0 && (            <Callout
               tone={staffValues.some((v) => v.verdict !== 'ok') ? 'warn' : 'ok'}
               title="🧑‍🤝‍🧑 Từng người đáng đồng lương?"
               style={{ marginTop: 6 }}
