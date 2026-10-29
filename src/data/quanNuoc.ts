@@ -6,6 +6,7 @@
  * File này chỉ có dữ liệu và hàm thuần; hành động mua/tuyển nằm ở `core/slices/quanNuoc.ts`.
  */
 import { productById, unlockedProducts } from './products';
+import type { DayAction } from './dayPlan';
 
 /** Cấp tối thiểu được mở quán nước. */
 export const QUAN_NUOC_UNLOCK = 29;
@@ -157,4 +158,31 @@ export function quanNuocHealth(
     hireMarginal,
     driesMain: q.open && q.staff > 0 && drinkUnits < tonight.wanted,
   };
+}
+
+/**
+ * GĐ189 — "Quán nước thiếu đồ uống thành việc sáng": Sổ đầu ngày (GĐ76) đã nhắc chi nhánh, hợp đồng,
+ * nợ ngân hàng, đối tác, sự kiện mùa — nhưng quán nước chỉ nằm ở thẻ phụ (Callout thụ động), KHÔNG vào
+ * danh sách ưu tiên "Việc hôm nay". Chuyển tín hiệu quán thiếu kho lên Sổ đầu ngày:
+ *   - Quán thiếu ly hôm qua (missedRevenue>0): việc sáng "Nạp đồ uống" (danger — đang mất tiền thật).
+ *   - Quán sắp ăn khô kho chung (driesMain — kệ tiệm chính cạn nước theo): cảnh báo nên xử lý.
+ * THUẦN ĐỌC health có sẵn — không đổi SAVE_VERSION/kinh tế/sim; DayAction layout tái dùng dayPlan.
+ */
+export function quanNuocDayAction(h: QuanNuocHealth | null | undefined): DayAction | null {
+  if (!h) return null;
+  if (h.missedRevenue > 0) {
+    return {
+      icon: '🧋', panel: 'quannuoc',
+      text: `Quán nước hôm qua thiếu đồ uống bỏ lỡ ~${h.missedRevenue.toLocaleString('vi-VN')}đ — nạp nước/ngọt/cà phê`,
+      danger: true, priority: 1,
+    };
+  }
+  if (h.driesMain) {
+    return {
+      icon: '🥤', panel: 'quannuoc',
+      text: `Kho đồ uống còn ${h.drinkUnitsNow} ly, quán tối nay ăn hết là kệ tiệm chính cạn nước — nạp trước`,
+      danger: false, priority: 2,
+    };
+  }
+  return null;
 }
