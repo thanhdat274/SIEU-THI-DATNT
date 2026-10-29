@@ -7,6 +7,8 @@
  * mới (N+1). Vì thế input.day ở đây phải là `useGame(s => s.day)` = N+1 = MAI.
  */
 import { WEATHER, describeDay } from './weather';
+import { trending } from './suppliers';
+import { productById } from './products';
 import type { Weather } from './weather';
 import { upcomingFestival , isWeekend, weekdayOf } from './calendar';
 import { regularsExpectedToday } from './regulars';
@@ -22,7 +24,7 @@ import { arcScenePending, surpriseArcById, type SurpriseArcState } from './surpr
  * Panel mà một dòng mồi sẽ mở khi bấm. Chỉ gồm 3 panel lá (không có trường bắt buộc),
  * nên `{ type: row.panel }` luôn hợp lệ với `openPanel` — đây là tập con của `Panel['type']`.
  */
-export type TeaserPanel = 'gifts' | 'morning' | 'business';
+export type TeaserPanel = 'gifts' | 'morning' | 'business' | 'order';
 
 export interface TeaserInput {
   /** NGÀY MAI (N+1), lấy từ store sau khi endDay đã sang ngày mới — KHÔNG dùng prop `day`. */
@@ -43,7 +45,7 @@ export interface TeaserInput {
 }
 
 export interface TeaserRow {
-  id: 'gift' | 'weather' | 'festival' | 'regulars' | 'milestone' | 'arc' | 'weekend';
+  id: 'gift' | 'weather' | 'festival' | 'regulars' | 'milestone' | 'arc' | 'weekend' | 'trend';
   icon: string;
   text: string;
   hint?: string;
@@ -105,6 +107,18 @@ export function tomorrowTeaser(input: TeaserInput): TeaserRow[] {
       text: `Mai ${weekdayOf(nowDay + 1)} — cuối tuần, khách hay ghé mua ăn vặt`,
       hint: 'châm kệ mì, bánh kẹo, nước ngọt',
       panel: 'morning',
+    });
+  }
+
+  // R1c — GĐ274: tối Chủ nhật (mai Thứ 2 = tuần mới) báo trước hàng hot TUẦN MAI — khớp dòng
+  // "🔮 Tuần mai" trên Nhập hàng (GĐ273), người chơi chốt ngày đã biết tuần mới khách săn gì.
+  if (weekdayOf(input.day) === 'Thứ 2') {
+    rows.push({
+      id: 'trend',
+      icon: '🔥',
+      text: `Tuần mới khách săn: ${trending(input.day, input.level).map((id) => productById(id).name).join(', ')}`,
+      hint: 'nhập sẵn sáng Thứ 2',
+      panel: 'order',
     });
   }
 

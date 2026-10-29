@@ -41,7 +41,9 @@
 
 - **GĐ272 quét 2 bề mặt cuối** 🖼️: màn đăng nhập + menu "Thêm" @320/390/768 (ảnh + DOM) — 0 lỗi: nút full-bề-rộng, lưới 2 cột cuộn tốt, Chương 1 đè menu đúng z-order. Chuỗi "rà soát toàn bộ màn hình" chốt — mọi bề mặt đã soi (GĐ264/265/272). Không đổi code.
 
-- **GĐ273 dự báo tuần mai** 🔮: audit trending + weeklyChallenge (sạch); Nhập hàng tối CN thêm "🔮 Tuần mai: X, Y" (day % 7 === 0 — đúng ranh giới khối). 2 test biên (70 ngày); 2233 test xanh; QA @5173 đúng.
+- **GĐ273 dự báo tuần mai** 🔮: audit trending + weeklyChallenge (sạch); Nhập hàng tối CN thêm "🔮 Tuần mai: X, Y" (đúng ranh giới khối). 2 test biên; 2233 test xanh.
+
+- **GĐ274 mồi tuần mới tối CN** 🔮: "Mai tiệm có gì" tối Chủ nhật thêm "🔥 Tuần mới khách săn: X, Y — nhập sẵn sáng Thứ 2" (khớp dòng GĐ273 trên Nhập hàng; TeaserPanel mở thêm 'order'). 2 test; 2235 test xanh; QA @5173 đúng.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -318,3 +320,4 @@
 - GĐ271 — 📞 Lý do gọi điện khớp thời tiết (pool theo ngữ cảnh + salt biến thiên; audit nốt các hệ tất định)
 - GĐ272 — 🖼️ Quét đăng nhập + menu Thêm @320/390/768 — 0 lỗi, chốt chuỗi rà soát màn hình
 - GĐ273 — 🔮 Dự báo "tuần mai khách săn" trên Nhập hàng tối CN + audit trending/weeklyChallenge
+- GĐ274 — 🔮 Mồi tuần mới tối CN trong Mai tiệm có gì (khớp GĐ273)

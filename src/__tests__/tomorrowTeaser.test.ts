@@ -174,3 +174,20 @@ describe('mồi cuối tuần (GĐ261 — khép mảnh nhịp GĐ254–257)', ()
     expect(tomorrowTeaser(base({ day: 29, weather: 'cloudy' })).some((r) => r.id === 'weekend')).toBe(false);
   });
 });
+
+// ── GĐ274 — tối Chủ nhật báo trước hàng hot tuần mới ──
+describe('mồi hàng hot tuần mới (GĐ274, khớp GĐ273 trên Nhập hàng)', () => {
+  it('mai Thứ 2 (day ≡ 1 mod 7) → có dòng "Tuần mới khách săn" với danh sách trending của tuần mới', () => {
+    const rows = tomorrowTeaser(base({ day: 8 })); // Thứ 2 — tuần mới bắt đầu
+    const t = rows.find((r) => r.id === 'trend');
+    expect(t).toBeTruthy();
+    expect(t!.text).toContain('Tuần mới khách săn:');
+    expect(t!.panel).toBe('order');
+  });
+
+  it('các ngày khác tuần → không có dòng này (chỉ cuối khối mới đổi hàng hot)', () => {
+    for (const day of [5, 6, 9, 12]) {
+      expect(tomorrowTeaser(base({ day })).some((r) => r.id === 'trend')).toBe(false);
+    }
+  });
+});
