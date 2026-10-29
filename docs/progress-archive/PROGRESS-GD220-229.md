@@ -101,3 +101,11 @@ cậy +6%. ContractsPanel hiện cọc/thưởng nhưng chưa nói ĐÁNG KHÔNG
 depositShareOfCash → verdict. skip khi không đủ cọc; tight khi cọc ≥25% tiền mặt hoặc vốn khóa ≥50%;
 worth khi tiền dư giả (cọc hoàn, thưởng thuần lợi) — khớp trục solvency/dailyBurn (GĐ214/224). Row
 commit thêm dòng chấm xanh/cam/đỏ. THUẦN ĐỌC. (+6 test)
+
+## GĐ232 — 📲 "Bán online hôm nay thực lời bao nhiêu sau phí giao?"
+OnlinePanel hiện riêng revenueToday ("💵 Hôm nay") + grabFeesToday dòng nhỏ, chưa ghép ra LỜI RÒNG.
+`onlineNet` (data/onlineNet.ts) gộp: net = revenue − grabFees, grabShare = phí Grab/doanh thu, và
+savingsIfOwn = grabFees (cận trên tự chở bằng người giao rảnh). Verdict: low khi lời âm (chọn đơn lời /
+tự chở), warn khi Grab ăn ≥15% doanh thu (OnlinePanel thẻ cam, mách tự chở giữ lại ~Xđ/ngày), good còn
+lại. OnlinePanel thêm thẻ "Online hôm nay: lời ròng Xđ (Grab −Yđ)". Nối GĐ59 (lời ròng/đơn) lên tầm
+NGÀY. THUẦN ĐỌC. (+6 test)

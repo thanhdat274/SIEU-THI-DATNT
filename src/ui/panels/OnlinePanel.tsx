@@ -4,7 +4,8 @@ import {
   orderAssessment, orderGap, orderRateTone, ratingImpact,
 } from '../../data/online';
 import { formatMoney } from '../../data/products';
-import { Footer, styles } from './shared';
+import { onlineNet } from '../../data/onlineNet';
+import { Footer, styles, Callout } from './shared';
 
 export function OnlinePanel() {
   const { online, level, money, staff, storage, priceOf, openOnline, toggleOnline, acceptOnline, declineOnline, closePanel } = useGame();
@@ -34,6 +35,20 @@ export function OnlinePanel() {
             <div style={{ ...styles.card, display: 'block' }}><small style={{ opacity: 0.7 }}>📦 Đã giao</small><div><b>{online.done}</b> <small>trễ {online.late}</small></div></div>
             <div style={{ ...styles.card, display: 'block' }}><small style={{ opacity: 0.7 }}>💵 Hôm nay</small><div><b>{formatMoney(online.revenueToday)}</b></div>{!!online.grabFeesToday && <small>Grab -{formatMoney(online.grabFeesToday)}</small>}</div>
           </div>
+          {(() => {
+            const on = onlineNet(online);
+            if (on.revenue <= 0) return null;
+            const line = on.verdict === 'low'
+              ? { tone: 'danger' as const, t: `đơn app hôm nay đang LỖ ${formatMoney(-on.net)} sau phí giao — nên chọn đơn lời / tự chở, đừng gọi Grab đủ mọi đơn.` }
+              : on.verdict === 'warn'
+                ? { tone: 'warn' as const, t: `phí Grab đang ngốn ${Math.round(on.grabShare * 100)}% doanh thu online — tự chở bằng người giao rảnh giữ lại ~${formatMoney(on.savingsIfOwn)}/ngày.` }
+                : { tone: 'ok' as const, t: `lời ròng ~${formatMoney(on.net)}/ngày sau phí giao.` };
+            return (
+              <Callout tone={line.tone} style={{ marginBottom: 10 }} title={`📲 Online hôm nay: lời ròng ${formatMoney(on.net)}${on.grabFees > 0 ? ` (Grab −${formatMoney(on.grabFees)})` : ''}`}>
+                <div style={{ marginTop: 2, fontSize: 12 }}>{line.t}</div>
+              </Callout>
+            );
+          })()}
           {/* Minh bạch hộp đen đơn app: điểm → độ dày đơn, số đơn tối đa/ngày, khung giờ */}
           <div style={{ ...styles.card, display: 'block', fontSize: 12, marginBottom: 10, background: '#323244' }}>
             <div>⏱️ Khung nhận đơn: <b>{Math.floor(ONLINE_HOURS[0] / 60)}h–{Math.floor(ONLINE_HOURS[1] / 60)}h30</b> · cách nhau trung bình ~{Math.round(orderGap(rating, level))} phút.</div>
