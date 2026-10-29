@@ -83,14 +83,15 @@ export function DiscoveryPanel() {
       </div>
       {next && <p style={{ ...styles.sub, color: '#f1c40f' }}>💡 Còn {next - sold} món nữa là tới mốc {next} (thưởng {formatMoney(discoveryReward(next).money)}).</p>}
 
-      {/* Bộ lọc */}
-      <div style={styles.row}>
-        <select style={styles.select} value={cat} onChange={(e) => setCat(e.target.value)}>
+      {/* Bộ lọc — GĐ264/265: @390 hai select Chia đôi bề rộng bị cắt chữ giữa từ → cho wrap,
+          select hẹp quá 180px thì rơi xuống dòng chiếm trọn bề rộng (chỉ đụng bảng này). */}
+      <div style={{ ...styles.row, flexWrap: 'wrap' }}>
+        <select style={{ ...styles.select, minWidth: 180 }} value={cat} onChange={(e) => setCat(e.target.value)}>
           {['all', ...Object.keys(CATEGORIES)].map((c) => (
             <option key={c} value={c}>{CATEGORY_LABEL[c as keyof typeof CATEGORY_LABEL]} ({catCounts[c] ?? 0})</option>
           ))}
         </select>
-        <select style={styles.select} value={stat} onChange={(e) => setStat(e.target.value as StatusFilter)}>
+        <select style={{ ...styles.select, minWidth: 180 }} value={stat} onChange={(e) => setStat(e.target.value as StatusFilter)}>
           {(Object.keys(STATUS_LABEL) as StatusFilter[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
         </select>
       </div>

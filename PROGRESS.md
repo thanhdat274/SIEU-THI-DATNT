@@ -43,6 +43,8 @@
 
 - **GĐ264 quét thẩm mỹ bằng ảnh chụp** 🖼️ (nhiệm vụ định kỳ promt): chụp Order/Lịch/Nhân viên @desktop+390 — bắt 2 lỗi: hàng nút nhân viên không wrap → card tràn 137px @390 (kiểm page-level không thấy vì card che) — thêm flexWrap; ô cuối tuần #4a4a63 gần nền — tăng #54546e. 2217 test xanh; QA ảnh sau sửa: 0 element tràn.
 
+- **GĐ265 nốt quét thẩm mỹ** 🖼️: Cook/Garden/Discovery/Analytics @390 — bắt thêm 1 lỗi: 2 dropdown lọc Sổ tay Tiệm chia đôi bề rộng bị cắt chữ giữa từ @390 → cho wrap + minWidth 180 (dropdown hẹp rơi xuống dòng trọn bề rộng). Còn lại renders tốt (Garden/Cook/Analytics đúng, không tràn); header trạm nấu @390 hơi chật nhưng đủ đọc — ghi chờ, không churn. 2217 test xanh; QA ảnh sau sửa: dropdown đủ chữ.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc trong `src/data/*.ts` + một thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -316,3 +318,4 @@
 - GĐ262 — 📅 Thẻ tuần Kinh doanh biết thứ (Thứ 2 → Chủ nhật khi cửa sổ khối-aligned)
 - GĐ263 — 🔒 Khoá nhất quán tuần×thứ (test 365 ngày) + chốt không mở bias cuối tuần sang sim ngầm
 - GĐ264 — 🖼️ Quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390 + tăng tương phản ô cuối tuần
+- GĐ265 — 🖼️ Nốt quét thẩm mỹ: sửa 2 dropdown Sổ tay Tiệm cắt chữ @390
