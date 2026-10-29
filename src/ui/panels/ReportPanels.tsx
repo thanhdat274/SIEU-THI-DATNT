@@ -48,6 +48,7 @@ import { leakTone, riskLiveToday } from '../../data/risk';
 import { nightPnl, nightPayback, nightPaybackLabel } from '../../data/nightReport';
 import { PHONE_SLOTS } from '../../data/phoneOrders';
 import { paymentById, type PaymentMethod } from '../../data/payments';
+import { solvency } from '../../data/solvency';
 import { Callout, Stat, starColor, Footer, Swatch, styles, Tabs } from './shared';
 
 /** Day-stats rỗng: SummaryPanel phải render được kể cả khi panel mở thiếu stats (đường mở lạ,
@@ -471,7 +472,7 @@ export function SummaryPanel({ day }: { day: number }) {
 export function MorningPanel() {
   const { day, level, xp, weatherSeed, weather, forecast, regulars, reservations, storage,
     furniture, staff, contracts, deliveries, shopTier, closePanel, openPanel, repLog,
-    storageLots, debts, biz, branch, licenses, skills, happyHour, analytics, marketClearedDay,
+    storageLots, debts, biz, money, branch, licenses, skills, happyHour, analytics, marketClearedDay,
     demand: stateDemand, activeCombos, priceOf, sellMarketSurplus } = useGame();
   const branchChores = branch ? branchMorningPlan(branch, storageUsed(storage), licenses, day) : [];
   // GĐ123: mồi "kệ cần chú ý" từ analytics có sẵn — giống hệt AnalyticsPanel để không lệch số liệu.
@@ -825,6 +826,22 @@ export function MorningPanel() {
           </div>
         </div>
       )}
+
+      {(biz.loan || biz.hui) && (() => {
+        const sol = solvency({ money, storage, priceOf, loan: biz.loan, hui: biz.hui, day });
+        return (
+          <Callout tone={sol.cover ? 'ok' : 'danger'} style={{ marginBottom: 8 }} title={`🪙 Cân đối: tiền + bán hết kho = ${formatMoney(sol.liquid)} (nợ gốc ${formatMoney(sol.liabilities)})`}>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              {sol.cover
+                ? `Bán hết kho cộng tiền mặt đủ trả gốc vay, còn thừa ${formatMoney(sol.margin)}.`
+                : `Còn thiếu ${formatMoney(-sol.margin)} để trả gốc vay nếu hôm nay không bán thêm — kíp bơm doanh thu hoặc xả sỉ/gánh chợ (GĐ211).`}
+              {' '}Mỗi tối cần gom ngoài quầy: lãi vay {formatMoney(sol.loanInterestToday)}
+              {sol.huiDueToday > 0 && ` + góp hụi ${formatMoney(sol.huiDueToday)}`}
+              {sol.daysToLoanDue != null && ` · hạn trả gốc còn ${sol.daysToLoanDue} ngày`}.
+            </div>
+          </Callout>
+        );
+      })()}
 
       {biz.quanNuoc.open && (
         <Callout tone={biz.quanNuocLast && biz.quanNuocLast.served < biz.quanNuocLast.wanted ? 'warn' : 'ok'} style={{ marginBottom: 8 }} title="🧋 Quán nước">
