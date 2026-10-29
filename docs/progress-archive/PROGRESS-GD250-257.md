@@ -27,3 +27,17 @@
 - **GĐ264 quét thẩm mỹ bằng ảnh chụp** 🖼️ (nhiệm vụ định kỳ promt): chụp Order/Lịch/Nhân viên @desktop+390 — bắt 2 lỗi: hàng nút nhân viên không wrap → card tràn 137px @390 (kiểm page-level không thấy vì card che) — thêm flexWrap; ô cuối tuần #4a4a63 gần nền — tăng #54546e. 2217 test xanh; QA ảnh sau sửa: 0 element tràn.
 
 - **GĐ265 nốt quét thẩm mỹ** 🖼️: Cook/Garden/Discovery/Analytics @390 — bắt thêm 1 lỗi: 2 dropdown lọc Sổ tay Tiệm chia đôi bề rộng bị cắt chữ giữa từ @390 → cho wrap + minWidth 180 (dropdown hẹp rơi xuống dòng trọn bề rộng). Còn lại renders tốt (Garden/Cook/Analytics đúng, không tràn); header trạm nấu @390 hơi chật nhưng đủ đọc — ghi chờ, không churn. 2217 test xanh; QA ảnh sau sửa: dropdown đủ chữ.
+
+
+---
+# Phụ lục 2: GĐ262–269 (dồn 30/10/2026 mốc GĐ270)
+
+GĐ262–265: thẻ tuần biết thứ · khoá nhất quán tuần×thứ (test 365 ngày) · 2 đợt quét thẩm mỹ ảnh chụp (wrap hàng nút Nhân viên @390, tương phản ô cuối tuần, 2 dropdown Sổ tay Tiệm cắt chữ @390).
+
+- **GĐ266 nhập hàng biết cuối tuần** 🍬: `weekendRestock.ts` — `suggestQty` ×1.25 cho WEEKEND_SNACKS khi khung bán lô rơi Thứ 7/CN, chỉ khi có cầu thật; badge "🍬 Cuối tuần" trên hàng mặt hàng. 3 test; QA: Thứ 7 có badge, Thứ 4 không.
+
+- **GĐ267 đơn cuối tuần + sửa bug roll chọn đơn** 📚: (1) `weekendOnly` — "Nhóm học cuối tuần" chỉ mời khi NGÀY CHÓT rơi Thứ 7/CN. (2) Bug cũ: roll CHỌN và roll MỜI dùng chung (seed, day) → tương quan, phân phối đơn lệch theo vị trí bảng (tat_nien ×6, 8 đơn = 0/8340 lượt) → salt chọn đơn theo ngày, mọi đơn cơ hội đều. 4 test; 2224 test xanh.
+
+- **GĐ268 phản hồi cuối tuần** 🍬: tổng kết Thứ 7/CN có thẻ "🍬 Cuối tuần: bán N món ăn vặt (~Xđ · Y%)" đối chiếu `weekendQuestTarget` (export dùng chung); `weekendRecap` thuần đọc. 2 test; QA @5173 đúng.
+
+- **GĐ269 phân phối sự kiện đều** 🎲: cùng mẫu bug GĐ267 ở 2 hệ — biến động thị trường (viral/roadworks ~115 vs shortage/glut ~12) và sự kiện bất ngờ (lệch ~2.7×) → salt CHỌN biến thiên theo khối/ngày; hàng khan hiếm không dồn vài món. 3 test fairness; re-anchor roadwork GĐ184; 2229 test xanh.

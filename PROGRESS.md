@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **2226/2226 test pass (218 files) + coverage branch 87.17%/fn 75.59%** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ268. QA TOÀN DIỆN GĐ260: 34 panel × 3 cỡ màn 0 tràn/0 lỗi.
+- **2229/2229 test pass (219 files) + coverage branch 87.40%/fn 76.17%** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ270. QA TOÀN DIỆN GĐ270: 34 panel + 0 tràn @320/390/768, autoplay sạch.
 - Bức tranh tổng: nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+ + CUỐI TUẦN GĐ254–261) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ làm khi đi kèm gameplay (pipeline GĐ172–176).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ262–268 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–261: PROGRESS-GD250-257.md)
+### Giai đoạn gần đây · GĐ266–270 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–269: PROGRESS-GD250-257.md)
 
 - **GĐ177–261** đã dồn archive (docs/progress-archive/): 3D + đèn (177–198) · supply chain (199–209) · bộ soi tiền/vốn (210–229) · PROGRESS-GD230-249.md · PROGRESS-GD250-257.md (gồm phụ lục 258–261).
 - **GĐ251 giá dịp lễ** 💲 — suggestPrice/priceForecast theo tolerance của dịp lễ (THUẦN ĐỌC). Chi tiết: archive.
@@ -34,13 +34,8 @@
 - **GĐ254–257 nhịp CUỐI TUẦN** 📅 khép trọn 4 mạch: weekdayOf/isWeekend (ngày 1 = Thứ 2) + quest "🍬 Cuối tuần ăn vặt" (chỉ pool Thứ 7/CN, cuối pool — ngày thường xoay GIỮ NGUYÊN) → khách thèm ăn vặt (chooseWants ×0.2, list chung WEEKEND_SNACKS) → lịch tô sáng cuối tuần → việc sáng + "Mai tiệm có gì" nhắc. Chi tiết: archive. Cảm hứng Hay Day/Stardew; không đổi lượng khách, chỉ đổi nhiệm vụ + NMU trong ngày.
 - **GĐ258–261** 🎨🖼️ — gọn 6 họ màu cũ về bảng GĐ166 · coverage sweep (credit/services/professions, xoá 6 id chết `likes` nghề) · QA TOÀN DIỆN (34 panel × 3 cỡ màn 0 lỗi/0 tràn, autoplay 2 ngày sạch) · quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390, tương phản ô cuối tuần, 2 dropdown Sổ tay Tiệm cắt chữ @390. Chi tiết: archive PROGRESS-GD250-257.md (phụ lục 258–261).
 
-- **GĐ266 nhập hàng biết cuối tuần** 🍬: `weekendRestock.ts` — `suggestQty` ×1.25 cho WEEKEND_SNACKS khi khung bán lô rơi Thứ 7/CN, chỉ khi có cầu thật; badge "🍬 Cuối tuần" trên hàng mặt hàng. 3 test; QA: Thứ 7 có badge, Thứ 4 không.
-
-- **GĐ267 đơn cuối tuần + sửa bug roll chọn đơn** 📚: (1) `weekendOnly` — "Nhóm học cuối tuần" chỉ mời khi NGÀY CHÓT rơi Thứ 7/CN. (2) Bug cũ: roll CHỌN và roll MỜI dùng chung (seed, day) → tương quan, phân phối đơn lệch theo vị trí bảng (tat_nien ×6, 8 đơn = 0/8340 lượt) → salt chọn đơn theo ngày, mọi đơn cơ hội đều. 4 test; 2224 test xanh.
-
-- **GĐ268 phản hồi cuối tuần** 🍬: tổng kết Thứ 7/CN có thẻ "🍬 Cuối tuần: bán N món ăn vặt (~Xđ · Y%)" đối chiếu `weekendQuestTarget` (export dùng chung); `weekendRecap` thuần đọc. 2 test; QA @5173 đúng.
-
-- **GĐ269 phân phối sự kiện đều** 🎲: cùng mẫu bug GĐ267 ở 2 hệ — biến động thị trường (viral/roadworks ~115 vs shortage/glut ~12) và sự kiện bất ngờ (lệch ~2.7×) → salt CHỌN biến thiên theo khối/ngày; hàng khan hiếm không dồn vài món. 3 test fairness; re-anchor roadwork GĐ184; 2229 test xanh.
+- **GĐ266–269** 🍬🎲 — nhập hàng biết cuối tuần (`suggestQty` ×1.25 WEEKEND_SNACKS khi lô bán Thứ 7/CN + badge "🍬 Cuối tuần") · đơn `weekendOnly` (hoc_nhom chốt Thứ 7/CN) + sửa bug roll CHỌN/roll MỜI tương quan (8 đơn câu chuyện = 0/8340 lượt, tat_nien ×6 kỳ vọng) · phản hồi cuối tuần trong tổng kết (`weekendRecap` đối chiếu `weekendQuestTarget`) · phân phối sự kiện đều (thị trường 4 loại 57–71 mỗi loại, trước fix shortage/glut ~1/10 viral; sự kiện bớt lệch 2.7×). Chi tiết: archive (phụ lục 2).
+- **GĐ270 QA TOÀN DIỆN** ✅: coverage branch **87.40%**/fn **76.17%** (2229 test, 219 file, ↑ từ 87.17/75.59); browser: 34 panel render @desktop 0 lỗi console, **0 tràn ngang** @320/390/768 qua 12 bảng dày nhất + HUD; autoplay ngày thật sạch (108 khách, ~2.43tr doanh thu). Người mới: hệ thứ/cuối tuần tự dạy qua quest + HUD + lịch (QA từng mắt xích GĐ254–268). GĐ262–269 dồn archive (phụ lục 2).
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -312,11 +307,6 @@
 - GĐ259 — 🧪 Coverage sweep: test credit/services/professions + xoá 6 id chết trong likes nghề
 - GĐ260 — ✅ QA TOÀN DIỆN: 34 panel × 3 cỡ màn 0 tràn/0 lỗi, autoplay ngày thật, coverage 87.17/75.75
 - GĐ261 — 🔮 Mồi cuối tuần tối thứ Sáu (Mai tiệm có gì nhắc châm kệ ăn vặt khi mai Thứ 7/CN)
-- GĐ262 — 📅 Thẻ tuần Kinh doanh biết thứ (Thứ 2 → Chủ nhật khi cửa sổ khối-aligned)
-- GĐ263 — 🔒 Khoá nhất quán tuần×thứ (test 365 ngày) + chốt không mở bias cuối tuần sang sim ngầm
-- GĐ264 — 🖼️ Quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390 + tăng tương phản ô cuối tuần
-- GĐ265 — 🖼️ Nốt quét thẩm mỹ: sửa 2 dropdown Sổ tay Tiệm cắt chữ @390
-- GĐ266 — 🍬 Nhập hàng biết cuối tuần (suggestQty ×1.25 nhóm ăn vặt khi lô bán Thứ 7/CN + badge)
-- GĐ267 — 📚 Đơn weekendOnly (hoc_nhom chốt Thứ 7/CN) + sửa roll chọn đơn tương quan (phân phối đơn đều)
-- GĐ268 — 🍬 Phản hồi cuối tuần trong tổng kết ngày (weekendRecap đối chiếu weekendQuestTarget)
-- GĐ269 — 🎲 Phân phối sự kiện đều (salt chọn biến thiên: thị trường 4 loại đều, sự kiện bớt lệch)
+- GĐ262–265 — 📅🎨 Thẻ tuần biết thứ · khoá tuần×thứ · 2 đợt quét thẩm mỹ (chi tiết archive)
+- GĐ266–269 — 🍬🎲 Cuối tuần vào nhập hàng/đơn gọi + phản hồi tổng kết · sửa 2 bug roll tương quan (chi tiết archive)
+- GĐ270 — ✅ QA TOÀN DIỆN: 34 panel + 0 tràn @320/390/768, autoplay sạch, coverage 87.40/76.17
