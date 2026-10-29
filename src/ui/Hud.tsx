@@ -22,7 +22,7 @@ import { FEATURES, xpToNext } from '../data/levels';
 import { SYSTEM_UNLOCKS } from '../data/unlockMap';
 import { formatMoney, productById } from '../data/products';
 import { summarizeReviews } from '../data/reviews';
-import { dayEffects, describeDate, festivalStock, monthOf, upcomingFestival } from '../data/calendar';
+import { dayEffects, describeDate, festivalStock, monthOf, upcomingFestival, weekdayOf } from '../data/calendar';
 import { isFairOpen } from '../data/fairmerchant';
 import { lifetimeRegularVisits, vipTierOf, EMOTIONAL_FRIENDSHIP } from '../data/regularTrust';
 import { relTier } from '../data/supplierRel';
@@ -405,7 +405,7 @@ ${forecastText}`}>
           <span className="hud-weather" aria-hidden="true">{skyIcon}</span>
           <span>
             <b className={late ? 'hud-late' : undefined}>{formatClock(minutes)}</b>
-            <small>Ngày {day} ({describeDate(day)}) · {spell ? describeRain(spell, weather) : WEATHER[weather].name}</small>
+            <small>Ngày {day} ({describeDate(day)}) · {weekdayOf(day)} · {spell ? describeRain(spell, weather) : WEATHER[weather].name}</small>
             <small className="hud-forecast">
               <span title={(() => {
                 const next = nextGoldenBand(minutes);

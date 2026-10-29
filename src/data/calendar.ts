@@ -127,6 +127,20 @@ export function describeDate(day: number): string {
   return `${d}/${month}`;
 }
 
+// ───── GĐ254 — ngày trong tuần (biến thể cuối tuần cho nhiệm vụ ngày) ─────
+// Game chưa từng có khái niệm thứ; định nghĩa tuần trùng nhịp tuần đã có (chợ phiên/sỉ theo
+// floor((day-1)/7)): ngày 1 = Thứ 2, Thứ 7 + Chủ nhật là CUỐI TUẦN — 2 ngày cuối mỗi khối 7 ngày.
+const WEEKDAY_NAMES = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+
+/** Tên thứ trong tuần của ngày chơi (ngày 1 = Thứ 2). */
+export const weekdayOf = (day: number): string => WEEKDAY_NAMES[((day - 1) % 7 + 7) % 7];
+
+/** Ngày cuối tuần (Thứ 7/Chủ nhật) — cửa sổ biến thể nhiệm vụ weekend. */
+export const isWeekend = (day: number): boolean => {
+  const i = ((day - 1) % 7 + 7) % 7;
+  return i === 5 || i === 6;
+};
+
 export function festivalOn(day: number): Festival | undefined {
   const d = dayOfYear(day);
   return FESTIVALS.find((f) => d >= f.from && d <= f.to);

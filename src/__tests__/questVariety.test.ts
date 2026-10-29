@@ -13,6 +13,8 @@ import { COOK_ORDER_MUL } from '../data/phoneOrders';
 // theo hoàn cảnh (chỉ ngày mưa / ngày có khách quen hẹn ghé — test riêng ở newbieQuests.test.ts,
 // ở đây ctx không có weather/regulars nên ẩn, không thuộc pool xoay tĩnh).
 const OPTIONAL_POOL = ['daily_services', 'daily_combo', 'daily_cooked', 'daily_online', 'daily_farm', 'daily_social', 'daily_cook_orders', 'daily_morning'];
+// GĐ254: "Cuối tuần ăn vặt" chỉ vào pool ngày Thứ 7/CN — ngày thường xoay đúng 8 mục dưới đây.
+const WEEKEND_QUEST = 'daily_weekend';
 // Ba nhiệm vụ luôn hiện cố định (nhiệm vụ giữa đổi theo lễ/lời hẹn nên xét riêng)
 const ALWAYS_IDS = ['daily_customers', 'daily_revenue', 'daily_smile'];
 // Việc tuỳ chọn KHÔNG mở ở cấp 1 (cần dịch vụ/combo/trại/online/nấu — unlock 3+)
@@ -36,13 +38,14 @@ describe('xoay vòng nhiệm vụ ngày', () => {
     expect(quests).toHaveLength(5);
   });
 
-  it('cấp 30: đủ pool 8 mục, không quá 7 nhiệm vụ, 3 mục tuỳ chọn đúng công thức xoay theo ngày', () => {
+  it('cấp 30: đủ pool 8 mục (cuối tuần 9), không quá 7 nhiệm vụ, 3 mục tuỳ chọn đúng công thức xoay theo ngày', () => {
     for (const day of [1, 5, 8, 21, 30]) {
       const quests = dailyQuests(ctxAt(day, 30));
       expect(quests.length).toBeLessThanOrEqual(7);
-      // start = ngày % độ dài pool, lấy 3 mục kế tiếp vòng tròn
-      const start = day % OPTIONAL_POOL.length;
-      const expected = [0, 1, 2].map((i) => OPTIONAL_POOL[(start + i) % OPTIONAL_POOL.length]);
+      // Pool ngày = 8 mục thường (+ weekend quest khi Thứ 7/CN); start = ngày % độ dài pool
+      const pool = isWeekend(day) ? [...OPTIONAL_POOL, WEEKEND_QUEST] : OPTIONAL_POOL;
+      const start = day % pool.length;
+      const expected = [0, 1, 2].map((i) => pool[(start + i) % pool.length]);
       expect(optionalIds(ctxAt(day, 30))).toEqual(expected);
     }
   });
@@ -112,5 +115,41 @@ describe('daily_farm hoàn thành theo số thu hoạch', () => {
     const farmShort = short.find((q) => q.id === 'daily_farm')!;
     expect(farmShort.done).toBe(false);
     expect(farmShort.current).toBe(farm!.target - 1);
+  });
+});
+
+// ── GĐ254 — biến thể CUỐI TUẦN: Thứ 7/CN có thêm nhiệm vụ "Cuối tuần ăn vặt" ──
+import { isWeekend, weekdayOf } from '../data/calendar';
+import type { DayStats } from '../core/store';
+
+describe('biến thể cuối tuần (GĐ254)', () => {
+  it('weekdayOf: ngày 1 = Thứ 2, Thứ 7/CN cuối tuần, lặp theo khối 7 ngày trùng nhịp tuần cũ', () => {
+    expect(weekdayOf(1)).toBe('Thứ 2');
+    expect(weekdayOf(6)).toBe('Thứ 7');
+    expect(weekdayOf(7)).toBe('Chủ nhật');
+    expect(weekdayOf(8)).toBe('Thứ 2');
+    expect([6, 7, 13, 14].every(isWeekend)).toBe(true);
+    expect([1, 5, 8, 30].some(isWeekend)).toBe(false);
+  });
+
+  it('cuối tuần pool thêm "Cuối tuần ăn vặt" cả cấp thấp; ngày thường không có', () => {
+    expect(dailyQuests(ctxAt(1, 1)).map((q) => q.id)).not.toContain('daily_weekend');
+    for (const d of [6, 7, 13]) {
+      const qs = dailyQuests(ctxAt(d, 1));
+      expect(qs.map((q) => q.id)).toContain('daily_weekend');
+      expect(qs).toHaveLength(6); // 5 việc ngày thường + biến thể cuối tuần
+    }
+  });
+
+  it('counter đếm đúng NHÓM món ăn vặt (không tính món ngoài nhóm)', () => {
+    const stats = {
+      ...newGameData().stats,
+      byItem: { mi: { qty: 3, revenue: 0, cost: 0 }, banh: { qty: 2, revenue: 0, cost: 0 }, giay: { qty: 5, revenue: 0, cost: 0 } },
+    } as DayStats;
+    const qs = dailyQuests(ctxAt(6, 1, stats));
+    const w = qs.find((q) => q.id === 'daily_weekend')!;
+    expect(w.current).toBe(5); // mì 3 + bánh 2, giấy vệ sinh không thuộc nhóm ăn vặt
+    expect(w.target).toBe(6);
+    expect(w.title).toBe('Cuối tuần ăn vặt');
   });
 });
