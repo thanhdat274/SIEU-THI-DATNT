@@ -31,6 +31,7 @@ import { storageUsed } from '../../core/gameTypes';
 import { hiepLucEligible, hiepLucPayoff, HIEPLUC_COC, HIEPLUC_MIN } from '../../data/hiepLuc';
 import { earlyUnlockTeaser } from '../../data/unlockMap';
 import { marketClearValue, isMarketDay } from '../../data/chophien';
+import { alleySignalsToday } from '../../data/alleySignals';
 import { signHiepLuc } from '../../core/biz';
 import { seasonEvent, seasonObjective, seasonEventName, SEASON_EVENT_DAYS, SEASON_REWARD_PER_STAR } from '../../data/seasonEvent';
 import { planDay, type DayAction } from '../../data/dayPlan';
@@ -593,6 +594,23 @@ export function MorningPanel() {
         Đọc xong nên nhập hàng bày kệ trước khi mở cửa — khách quen ghé đúng giờ quen.
         🏠 Tiền nhà trả cuối ngày: <b>{formatMoney(rentOf(shopTier))}</b>.
       </p>
+
+      {/* GĐ198: Đọc con hẻm — tín hiệu 3D hẻm đang bật hôm nay (chợ phiên / sửa đường / lễ hội).
+          Thuần đọc từng nguồn chân lý của bên dựng cảnh (gđ181/184/197), dạy "con hẻm đổi cảnh theo lịch". */}
+      {(() => {
+        const sigs = alleySignalsToday(weatherSeed ?? 0, day, level);
+        const busy = sigs.filter((s) => s.active);
+        return (
+          <Callout tone={busy.length ? 'accent' : 'info'} style={{ marginBottom: 8 }}
+            title={<>🌇 Con hẻm hôm nay{busy.length ? `: ${busy.map((s) => `${s.icon} ${s.name}`).join(' · ')}` : ''}</>}>
+            <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
+              {busy.length === 0
+                ? <div style={{ fontSize: 12, opacity: 0.78 }}>Hẻm thường vắng — vài chậu cây trước hiên, đèn ấm lên lúc chập tối. Ngày có chợ phiên / lễ hội / sửa đường thì cảnh đổi liền theo.</div>
+                : busy.map((s) => <div key={s.id} style={{ fontSize: 12 }}>{s.icon} <b>{s.name}</b>: {s.desc}</div>)}
+            </div>
+          </Callout>
+        );
+      })()}
 
       {earlyUnlocks && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '2px solid #f1c40f' }}>
