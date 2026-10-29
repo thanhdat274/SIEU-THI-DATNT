@@ -21,7 +21,7 @@ import { QUAN_NUOC_MAX_STAFF, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, quanNuocDayAct
 import { CREDIT_FRIENDSHIP, CREDIT_UNLOCK, creditLimit, DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS } from '../../data/credit';
 import { CHANGE_OPTS, counterPolicySummary, defaultCounterPolicy, HAGGLE_OPTS } from '../../data/counterDeals';
 import { ACTION_LABEL, expiringSoon, expiryAdvice, peakAdvice, peakHours, spoilNightReport, storeMissRevenue, waitLossStats, walkoutAdvice, type Advice, type HourStat } from '../../data/advice';
-import { dateOfDoy, dayEffects, dayOfYear, festivalStock, upcomingFestival } from '../../data/calendar';
+import { dateOfDoy, dayEffects, dayOfYear, festivalStock, isWeekend, upcomingFestival, weekdayOf } from '../../data/calendar';
 import { festivalValue } from '../../data/festivalValue';
 import { festivalPrepAction, festivalRestockPlan } from '../../data/festivalRestock';
 import { prepItems, prepReadiness, prepBonus, PREP_MIN_QTY } from '../../data/festivalPrep';
@@ -609,6 +609,9 @@ export function MorningPanel() {
   // Việc sáng không lọc theo mối (chưa chọn mối nào) — món mối không bán OrderPanel tự nói rõ (GĐ247).
   const festivalPrep = festivalPrepAction(festivalRestockPlan({ day, level, storage, sells: () => true, caseSizeOf: caseSize }), formatMoney);
   if (festivalPrep) candidates.push(festivalPrep);
+  // GĐ257: cuối tuần thành việc sáng — Thứ 7/CN khách thật sự hay mua ăn vặt (GĐ255) nên nhắc
+  // châm kệ đúng nhóm ngay buổi sáng, cùng nhịp "trữ lễ" GĐ249. Ưu tiên thấp (3) để nhường việc bức thiết.
+  if (isWeekend(day)) candidates.push({ icon: '🍬', text: `Cuối tuần (${weekdayOf(day)}): khách hay mua ăn vặt — nhớ châm kệ mì, bánh kẹo, nước ngọt`, panel: 'order', danger: false, priority: 3 });
   const actions = planDay(candidates);
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
   const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });
@@ -660,7 +663,7 @@ export function MorningPanel() {
   })();
   return (
     <>
-      <h2 style={styles.title}>☀️ {shopName} · Sổ đầu ngày {day} ({today.day}/{today.month})</h2>
+      <h2 style={styles.title}>☀️ {shopName} · Sổ đầu ngày {day} ({today.day}/{today.month}) · {weekdayOf(day)}</h2>
       <p style={styles.sub}>
         {WEATHER[weather].icon} Hôm nay {describeDay(weatherSeed, day, weather)} · mai {WEATHER[forecast[0]].icon} {describeDay(weatherSeed, day + 1, forecast[0])}.
         Đọc xong nên nhập hàng bày kệ trước khi mở cửa — khách quen ghé đúng giờ quen.
