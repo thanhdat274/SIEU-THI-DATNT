@@ -508,12 +508,13 @@ export const staffSt: Record<string, React.CSSProperties> = {
   stats: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, margin: '4px 0 4px' },
   stat: { display: 'grid', gap: 2, padding: '8px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 12 },
   card: { display: 'grid', gap: 10, padding: 12, background: '#3a3a4d', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' },
-  head: { display: 'flex', alignItems: 'center', gap: 12 },
+  head: { display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }, // GĐ264: @390 lương rơi xuống dòng thay vì bóp cột info
   avatar: { width: 40, height: 40, flex: 'none', display: 'grid', placeItems: 'center', borderRadius: '50%', background: 'rgba(241,196,15,0.15)', fontSize: 20 },
   role: { fontSize: 11, padding: '2px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.1)' },
   stars: { color: '#f1c40f', fontSize: 12, letterSpacing: 1 },
   wage: { flex: 'none', fontWeight: 700, color: '#f1c40f', whiteSpace: 'nowrap' },
-  actions: { display: 'flex', alignItems: 'center', gap: 8, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.08)' },
+  // GĐ264: flexWrap — @390 hàng 'Ca làm + Đào tạo + hoà vốn + Chuyển + Cho nghỉ' dài hơn card, tràn ngang
+  actions: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.08)' },
   label: { fontSize: 12, opacity: 0.7 },
   section: { fontSize: 15, marginTop: 6, paddingBottom: 4, borderBottom: '1px solid rgba(255,255,255,0.12)' },
   fire: { marginLeft: 'auto', border: '1px solid rgba(255,118,117,0.5)', background: 'transparent', color: '#ff7675', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 13 },

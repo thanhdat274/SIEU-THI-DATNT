@@ -41,6 +41,8 @@
 
 - **GĐ263 khoá nhất quán nhịp tuần × thứ** 🔒: test 365 ngày — khối [7k+1..7k+7] luôn Thứ 2→Chủ nhật, trùng khối của thử thách tuần (ceil(day/7)) và chợ phiên/sỉ (floor((day−1)/7)); bất biến WEEKEND_SNACKS ∩ hàng mùa lễ = ∅ (nhánh chooseWants cuối tuần không cần lọc off-season — ai thêm snack mùa phải lọc). **Quyết định: KHÔNG mở rộng bias cuối tuần sang sim ngầm chi nhánh/quán nước** (quest nhắm tiệm chính nơi người chơi hành động; sim ngầm có nhịp riêng). 2217 test xanh; build sạch.
 
+- **GĐ264 quét thẩm mỹ bằng ảnh chụp** 🖼️ (đúng nhiệm vụ định kỳ promt): chụp OrderPanel/Lịch/Nhân viên @desktop + 390 — bắt 2 lỗi thật: (1) hàng nút `staffSt.actions` (Ca làm + Đào tạo + hoà vốn + Chuyển + Cho nghỉ) không wrap → card tràn 137px @390, element "/ngày"·"hoà vốn" nhô quá mép (không bắt được bằng kiểm page-level vì card che) — thêm flexWrap; (2) ô cuối tuần #4a4a63 quá gần nền — tăng #54546e, mắt thường thấy được; head staff thêm wrap cho màn hẹp. 2217 test xanh; build sạch; QA ảnh sau sửa: 0 element tràn, ô cuối tuần thấy rõ.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc trong `src/data/*.ts` + một thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -313,3 +315,4 @@
 - GĐ261 — 🔮 Mồi cuối tuần tối thứ Sáu (Mai tiệm có gì nhắc châm kệ ăn vặt khi mai Thứ 7/CN)
 - GĐ262 — 📅 Thẻ tuần Kinh doanh biết thứ (Thứ 2 → Chủ nhật khi cửa sổ khối-aligned)
 - GĐ263 — 🔒 Khoá nhất quán tuần×thứ (test 365 ngày) + chốt không mở bias cuối tuần sang sim ngầm
+- GĐ264 — 🖼️ Quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390 + tăng tương phản ô cuối tuần
