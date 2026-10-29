@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **2229/2229 test pass (219 files) + coverage branch 87.40%/fn 76.17%** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ270. QA TOÀN DIỆN GĐ270: 34 panel + 0 tràn @320/390/768, autoplay sạch.
+- **2231/2231 test pass (220 files) + coverage branch 87.40%/fn 76.17%** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ271. QA TOÀN DIỆN GĐ270: 34 panel + 0 tràn @320/390/768, autoplay sạch.
 - Bức tranh tổng: nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+ + CUỐI TUẦN GĐ254–261) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ làm khi đi kèm gameplay (pipeline GĐ172–176).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -36,6 +36,8 @@
 
 - **GĐ266–269** 🍬🎲 — nhập hàng biết cuối tuần (`suggestQty` ×1.25 WEEKEND_SNACKS khi lô bán Thứ 7/CN + badge "🍬 Cuối tuần") · đơn `weekendOnly` (hoc_nhom chốt Thứ 7/CN) + sửa bug roll CHỌN/roll MỜI tương quan (8 đơn câu chuyện = 0/8340 lượt, tat_nien ×6 kỳ vọng) · phản hồi cuối tuần trong tổng kết (`weekendRecap` đối chiếu `weekendQuestTarget`) · phân phối sự kiện đều (thị trường 4 loại 57–71 mỗi loại, trước fix shortage/glut ~1/10 viral; sự kiện bớt lệch 2.7×). Chi tiết: archive (phụ lục 2).
 - **GĐ270 QA TOÀN DIỆN** ✅: coverage branch **87.40%**/fn **76.17%** (2229 test, 219 file, ↑ từ 87.17/75.59); browser: 34 panel render @desktop 0 lỗi console, **0 tràn ngang** @320/390/768 qua 12 bảng dày nhất + HUD; autoplay ngày thật sạch (108 khách, ~2.43tr doanh thu). Người mới: hệ thứ/cuối tuần tự dạy qua quest + HUD + lịch (QA từng mắt xích GĐ254–268). GĐ262–269 dồn archive (phụ lục 2).
+
+- **GĐ271 lý do gọi khớp thời tiết** 📞: đơn gọi nhà trước đây random cả "trời mưa không tiện ra ngoài" trong ngày nắng — chia pool lý do theo ngữ cảnh (mưa/giông có lý do mưa, nắng có lý do nóng, mây/sương pool chung; đơn VIP/nấu giữ pool riêng — ngày nào cũng hợp); salt chọn lý do biến thiên theo ngày (mẫu GĐ267/269). Audit nốt các hệ tất định: visitsToday (hash có id khách) / arcSceneAt — không còn mẫu tương quan. 2 test (sweep >200 đơn × 4 thời tiết); 2231 test xanh; boot @5173 sạch.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -310,3 +312,4 @@
 - GĐ262–265 — 📅🎨 Thẻ tuần biết thứ · khoá tuần×thứ · 2 đợt quét thẩm mỹ (chi tiết archive)
 - GĐ266–269 — 🍬🎲 Cuối tuần vào nhập hàng/đơn gọi + phản hồi tổng kết · sửa 2 bug roll tương quan (chi tiết archive)
 - GĐ270 — ✅ QA TOÀN DIỆN: 34 panel + 0 tràn @320/390/768, autoplay sạch, coverage 87.40/76.17
+- GĐ271 — 📞 Lý do gọi điện khớp thời tiết (pool theo ngữ cảnh + salt biến thiên; audit nốt các hệ tất định)
