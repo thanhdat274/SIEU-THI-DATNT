@@ -53,6 +53,13 @@ Developer (có thể nhiều người, tối đa 2-3): Hiện thực hóa thiế
 - Việc nào đụng tới phần dùng chung (dữ liệu lõi, cấu hình, hệ thống chính) thì chỉ một Dev làm. Việc nào phụ thuộc nhau thì làm tuần tự.
 - Sau khi các Dev xong, Tester chạy lại toàn bộ test trước khi Leader duyệt.
 Tester: Viết và chạy test cho từng tính năng mới. Kiểm tra hồi quy để đảm bảo thay đổi mới không làm hỏng phần đang hoạt động. Với tài sản 3D, kiểm tra thêm: file tải được, dung lượng trong ngân sách, fallback hoạt động, không lỗi console.
+- THÊM HAY SỬA GÌ CŨNG PHẢI CÓ TEST (không có test thì giai đoạn chưa xong):
+  + Tính năng mới: test cho hành vi chính + trường hợp biên (0 tiền, kho trống, ngày đầu, cấp thấp/cao, save cũ thiếu trường mới).
+  + Sửa/đổi hành vi cũ: cập nhật test cũ cho đúng hành vi mới (không xoá test cho xanh) và thêm case cho phần đổi.
+  + Sửa lỗi: viết test TÁI HIỆN lỗi trước (đỏ), sửa xong test xanh — để lỗi không quay lại.
+  + Đổi cấu trúc save: thêm bước MIGRATIONS + test nạp bản lưu cũ (xem saveStore.test.ts).
+  + Code logic mới đọc ngẫu nhiên phải dùng simRng() (không Math.random) để test mô phỏng còn tất định.
+  + Kiểm tra test có thật sự bắt lỗi: tạm làm hỏng đoạn code vừa viết, test phải đỏ; khôi phục lại.
 - Bắt buộc kiểm thử trực tiếp trên game đang chạy tại http://localhost:5173/ (Tạp Hóa 3D). Server và frontend đã được bật sẵn.
 - Tuyệt đối không tự khởi động server, frontend hay dev server mới (không chạy npm run dev, npm start hay lệnh tương tự). Nếu trang không truy cập được, ghi vào PROGRESS.md mục "Cần duyệt" và tiếp tục việc khác. (Chạy Blender CLI headless để tạo tài sản không phải là khởi động server nên được phép.)
 - Sau khi sửa code hoặc cập nhật tài sản, tải lại trang (reload) để kiểm tra bản mới nhất.

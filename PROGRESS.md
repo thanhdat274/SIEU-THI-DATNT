@@ -17,7 +17,7 @@
 
 **Nguyên tắc thiết kế:** (a) mọi quyết định hằng ngày phải có dữ liệu phản hồi (không hộp đen); (b) phần thưởng phụ có cổng (không farming được); (c) không đổi công thức kinh tế khi thêm meta — meta chỉ soi sáng/ghi nhận; (d) UI ấm áp, gọn, rõ — dùng được khi chưa đọc hướng dẫn.
 
-**Phong cách hình ảnh (2D + 3D):** low-poly 3D màu ấm, UI nền tím-than (#3a3a4d) accent vàng (#f1c40f), icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "TÀI SẢN 3D VỚI BLENDER" trong promt_game.txt). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
+**Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "TÀI SẢN 3D VỚI BLENDER" trong promt_game.txt). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (29/10/2026)
 
@@ -70,6 +70,7 @@
 - **Thẻ nhấn mạnh dùng `Callout` (shared.tsx, GĐ166):** borderLeft 3px màu ngữ cảnh, tiêu đề 13px màu tone (`styles.cardTitle`), thân 12px; `strong` + danger → nền đỏ nhạt. Thẻ mới KHÔNG tự vẽ viền/tint riêng. HUD chip/alert dùng class CSS riêng (mẫu GĐ162).
 - **Pipeline Blender (GĐ172–176):** script nguồn trong `scripts/` + G LB trong `public/models/kit/` được commit để dựng lại; chạy headless `blender -b -P scripts/blender_kit_atlas.py`; xuất Draco; lazy-load trong code (`kitProps.ts`), fallback warn khi load lỗi; prop chỉ hình ảnh KHÔNG chặn lưới điều hướng. Dung lượng: kit 7 prop (baked: `chau_cay`/`thung_go`/`khom_tre`/`bon_nuoc`/`cho_nhua`/`xe_day`/`rao_chan`) ~76KB baked tổng. Ngân sách: cap tris trong `build-kit-assets.ts`. KHÔNG commit file .blend nặng. 3D Artist giữ thư mục script/tài sản; Developer chỉ tích hợp.
 - Test sim phải dùng **seed cố định** (`setSimSeed`, `simRng()` trong seam RNG — GĐ27/28) thay vì mock `Math.random`.
+- **Hạ tầng test (29/10):** sim có seed là TẤT ĐỊNH — mọi rẽ ngẫu nhiên của logic đi qua `simRng()` (không seed = Math.random, game thật không đổi); chỉ hình ảnh (three.js, nhân vật, cây, gà) còn Math.random. Code logic mới KHÔNG dùng Math.random/Date.now trực tiếp. `simGolden.test.ts` bắt cả tất định vỡ lẫn lệch cân bằng ±5% so với mốc — đổi kinh tế CÓ CHỦ Ý thì chép số mới in ở stdout vào `GOLDEN` + ghi lý do ở đây. `npm run test:coverage` (~1 phút, bỏ 3 file sim) chạy mỗi ~10 GĐ. Test lớp lưu thật: `saveStore.test.ts` (IndexedDB giả, backup, bản hỏng, bản khẩn cấp, migrate); nhân viên: `staffAgent.test.ts` (đến/về ca, quầy, lao công, kho, quản lý). Cả hai đã kiểm bằng cài lỗi (mutation) — test đỏ đúng chỗ.
 - QA live trên `localhost:5173` (vite); kiểm không tràn ngang @320/390 (`scrollWidth == clientWidth`), 0 lỗi console.
 - Nhiều phiên có thể chạy song song trên cùng worktree → commit theo đường dẫn cụ thể.
 
@@ -80,7 +81,7 @@
 - Vé tha thứ streak: tối đa 1 lần/7 ngày, cần chuỗi ≥3. Thử thách tuần tích vào sổ tuần.
 - Sau GĐ83: ưu tiên chiều sâu UI/UX trước mở rộng hệ mới. Định hướng hiện tại: **chiều sâu-trước**.
 - Kèo "Đặt kèo hôm nay" bám bộ "việc chính" (đông khách + bán hàng + doanh thu), không gồm "Khách vui vẻ" (GĐ107); thưởng nhiệm vụ có trần theo lãi bình quân (GĐ106); người chơi mới không bị trần (GĐ114).
-- Khách treo câu hỏi quầy tự chốt theo giây thực (30s → 😕, 38s → 😤, 45s tự chốt — GĐ122).
+- Khách treo câu hỏi quầy tự chốt theo giây thực (30s → 😕, 38s → 😤, 45s tự chốt — GĐ122). Riêng sim có seed (test/bot): đếm theo tick (mỗi lần gọi ~0.1s) để kết quả không phụ thuộc máy nhanh/chậm.
 - Lương trong số dư chi nhánh KHÔNG áp good_boss −10% (bảo thủ, trung thực).
 - 3D: Tài sản 3D mới đều qua pipeline Blender (không dựng tạm khối nguyên thủy khi Blender làm đẹp hơn), làm chậm/lười để không chặn lần tải đầu.
 - Họ màu hướng dẫn/chuỗi/biểu đồ (GĐ178): gộp hết về một sắc info `#3498db`, KHÔNG lập bảng riêng — tránh "màu tự chế" trái GĐ166; giữ ngoại lệ duy nhất họ buy-tone `#55efc4`/`#ff7675`. GardenPanel dùng họ "system card" riêng (cùng mẫu BusinessPanel) nên giữ nguyên, không churn.
@@ -88,7 +89,7 @@
 ## Cần theo dõi / nợ mở
 
 - QA mắt 3D/panel chập tối (save thật, foreground tab — IAB nền dừng rAF): đèn lồng GĐ177, biển mở/đóng GĐ179, đèn khách đợi GĐ180 + mức khẩn GĐ186, rào sửa đường GĐ184, đèn ấm hiên/cổng GĐ185 + quán nước GĐ187, thẻ từng người đáng lương GĐ188, quán nước thành việc sáng GĐ189, thanh nạp kho GĐ190 + socket OrderPanel GĐ191, hồi vốn ca đêm GĐ192 + xây quán GĐ193 + xây chi nhánh GĐ194 — từng giai đoạn đã QA @5173 lúc làm; nếu cần đối chiếu lại trên save thật các khung giờ cụ thể, xem archive.
-- Flake `weeklyGoalCap` cấp 50: lần full + lần isolate đều timeout 900s (autoplay 28 ngày cấp 50 nặng ~908s, máy đang tải khi chạy liên tục) — ĐÃ xác nhận KHÔNG phải hồi quy của GĐ185/186 (thuần render/3D, node test không chạy); chạy lúc máy rảnh là 16/16 xanh (GĐ184 full run gần nhất). Nếu tái diễn: nâng timeout hoặc rút autoplay ngày ở cấp 50.
+- ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap` cấp 50: nguyên nhân là bot autoplay bày lại cả tầng kệ ĐÃ ĐẦY mỗi 150 tick → dựng lại 3D cả kệ (~44% CPU sim). Bỏ qua tầng đầy + timeout 1.800.000ms → cả bộ test 23 phút → ~4 phút, 0 đỏ. Nếu cả bộ lại vượt ~10 phút: đo `npx vitest run --reporter=json` + profile trước khi làm tiếp.
 - GĐ171: scale mục tiêu vòng ×(1+0.5(N−1))/×(1+0.3(N−1)) — cần save thật vòng 2+ để xác nhận trad vẫn căng nhưng với tới; nếu vẫn quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi.
 - QA trực quan GĐ155–158 xong trên save máy cấp 46 ngày 1; chưa QA mắt được trạng thái CÓ dữ liệu của Bỏ lỡ/Thú cưng/hụi/khủng hoảng (cần play vài ngày — bọc bởi test). GĐ159 các dòng mới ẩn ngày 1 — QA mắt khi có save có doanh thu.
