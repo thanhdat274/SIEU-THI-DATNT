@@ -203,3 +203,12 @@ trả today/tomorrowTraffic, khách ước lượng, deltaPct, verdict hot (≥1
 nhập thêm). Sổ đầu ngày thêm dòng sau dòng "Hôm nay/mai": "Mai ⛅: khách ghé ~100% mức thường (~N khách) ·
 Trời đông, trữ thêm món bán chạy / Trời vắng, đừng chất thêm hàng". deterministic (hằng số thời tiết).
 THUẦN ĐỌC. (+5 test)
+
+## GĐ243 — 📜 "Giấy phép còn thiếu/đang phạt tiền?"
+Tiệm từ cấp 12 cần giấy phép (business/food/alcohol); thiếu/hết hạn bị phạt từng tờ LICENSE_FINE (200k)
+và trượt thanh tra liền SUSPEND_AFTER (3) lần bị đình chỉ một ngày. Trước GĐ243 chưa có chỗ gộp "tiệm
+mình đang thiếu/hết hạn những phép nào và phạt bao nhiêu". `licenseHealth` (data/licenseHealth.ts)
+THUẦN ĐỌC map `licenses` + danh sách `need` (từ requiredLicenses) + `day`: liệt kê trạng thái từng phép
+bắt buộc, nhóm missing (→ fineExposure = missing × 200k) và expiring (trong RENEW_WARN_DAYS → nên gia
+hạn). Verdict ok/warn/danger. LicensesPanel thêm Callout đầu bảng: "🚨 Thiếu/hết hạn N phép — phạt tới
+Xđ" / "⏰ N phép sắp hết hạn, nên gia hạn" / "✅ Đủ phép". THUẦN ĐỌC, deterministic. (+5 test)
