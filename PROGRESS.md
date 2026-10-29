@@ -45,7 +45,7 @@
 
 - **GĐ274 mồi tuần mới tối CN** 🔮: "Mai tiệm có gì" tối CN thêm "🔥 Tuần mới khách săn: X, Y" (khớp GĐ273). 2 test; 2235 test xanh.
 
-- **GĐ275 lịch tự động chỉnh giờ mở cửa** ⏰: giải tension GĐ160 (lịch 8h lỡ nửa đầu giờ vàng 6h–8h30) — `autoOpenAt` (mặc định 8h, save cũ tự bù, không cần MIGRATIONS; vào whitelist snapshot) + `AUTO_OPEN_PRESETS` [8h/7h30/7h/6h30/6h]; `planRoutine` mở theo `autoOpenAt`, ra tiệm trước 1h (floor 5h); menu hồ sơ: Tắt → Bật, đang bật bấm tiếp xoay vòng giờ (mỗi mốc một notify). 5 test routine; 2240 test xanh; QA @5173: label "mở 8h", bấm 3 lần → 390 đúng mốc, boot sạch.
+- **GĐ275 lịch tự động chỉnh giờ mở cửa** ⏰: giải tension GĐ160 (lịch 8h lỡ nửa đầu giờ vàng) — `autoOpenAt` (mặc định 8h, save cũ tự bù — không cần MIGRATIONS) + presets 8h→6h30; `planRoutine` mở theo nó, ra tiệm trước 1h; menu hồ sơ xoay vòng giờ. 5 test routine; 2240 test xanh; QA @5173: bấm 3 lần → 6h30 đúng mốc.
 
 ## Quy ước kỹ thuật cần nhớ
 
