@@ -5,7 +5,8 @@ import { useGame } from '../../core/store';
 import { dailyWage, maxStaff, ROLES, SHIFTS, type Shift, type Staff } from '../../data/staff';
 import { formatMoney } from '../../data/products';
 import { hasUpgrade } from '../../data/upgrades';
-import { Footer, styles, Tabs } from './shared';
+import { Footer, Callout, styles, Tabs } from './shared';
+import { wageCoverage } from '../../data/wageCoverage';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
 import { staffEff } from '../../data/staffEff';
 import { staffValueToday, staffShiftSummary } from '../../data/staffValue';
@@ -38,6 +39,21 @@ export function StaffPanel() {
         <div style={staffSt.stat}><small>Nhân sự</small><b>{staff.length + bStaff.length}</b><small>{staff.length}/{max} tiệm chính{branch ? ` · ${bStaff.length}/${CONVENIENCE.maxStaff} tiện lợi` : ''}</small></div>
         <div style={staffSt.stat}><small>Tổng lương / ngày</small><b>{formatMoney(total)}</b><small>cả hai tiệm, trả lúc đi ngủ</small></div>
       </div>
+      {(() => {
+        const wageCov = wageCoverage(stats, staff);
+        if (wageCov.wageBill <= 0) return null;
+        return (
+          <Callout tone={wageCov.coverNow ? 'ok' : 'warn'} style={{ marginBottom: 8 }} title={`💸 Lương đội ${formatMoney(wageCov.wageBill)}/ngày — cần ~${wageCov.breakEvenVisits ?? '?'} lượt khách để vừa đủ (bình quân ${formatMoney(Math.round(wageCov.avgPerVisit))}/lượt)`}>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              {wageCov.avgPerVisit > 0
+                ? (wageCov.coverNow
+                    ? `Hôm nay ${wageCov.customers} lượt, doanh thu trung bình đủ nuôi lương (mỗi lượt dư ${formatMoney(Math.round(wageCov.marginPerVisit))}).`
+                    : `Hôm nay ${wageCov.customers} lượt, đang thiếu ${formatMoney(Math.round(-wageCov.marginPerVisit))}/lượt so với mức nuôi lương — kéo đông khách hơn hoặc cắt bớt người.`)
+                : 'Chưa có doanh thu hôm nay — để qua giữa ngày rồi xem lại.'}
+            </div>
+          </Callout>
+        );
+      })()}
       <Tabs tabs={[['team', '📋 Đang làm'], ['hire', '🔍 Tuyển dụng']]} value={tab} onChange={setTab} />
 
       {tab === 'team' && (
