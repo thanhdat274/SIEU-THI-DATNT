@@ -173,3 +173,15 @@ tin cậy theo category (ánh xạ qua resolver `categoryOf(id)` để tách r�
 Σ revenue30, itemCount, margin; xếp giảm dần; best/worst, losing (khu lỗ 30 ngày). AnalyticsPanel thêm
 Callout cạnh profitMix: "🚨 Khu hàng đang lỗ: X · Y — bớt nhập khu lỗ, đổi thêm mặt hàng khu chạy" hoặc
 "🗂️ Khu gánh lời nhất: Z". THUẦN ĐỌC, deterministic. (+5 test)
+
+## GĐ240 — ✅ QA TOÀN DIỆN (kết bộ soi tiền/vốn/risks GĐ226–239)
+COVERAGE (test:coverage): statements 49.45% (16273/32906) · branches 86.85% (6127/7054) · functions
+74.84% (1241/1658) · lines 49.45%. So với GĐ230: branch 86.96→86.85 (bộ helper mới thêm node rẽ nhánh,
+tổng mẫu branch tăng), fn 74.77→74.84 (tăng), statements 49.38→49.45 (tăng). KHÔNG THỤT LÙI — mọi helper
+mới đều có unit test deterministic (theftRisk/serveCoverage/onlineRatingValue/categoryMix: +21 test, 0
+RNG/seed). FULL SUITE: 2127/2127 (207 file, xanh). BUILD: tsc + vite sạch (chỉ cảnh báo kích cỡ bundle
+thường). BROWSER QA: IAB 1280px — tải game không lỗi, console không lỗi/exception nào, không tràn ngang
+(overflowX=0) khi mở các panel cấp 1 (Sổ đầu ngày / Nhiệm vụ / Nhập hàng / Kho). 390/320 đã xác nhận ở
+GĐ230 trên cùng vỏ UI; arc này chỉ thêm nội dung trong card responsive. LƯU Ý: 4 Callout mới đều gated
+theo cấp (camera L15 / online L10 / sức khoẻ món cấp cao / phủ ca cần có nhân viên) nên không hiển thị ở
+save cấp 1 — logic được test trực tiếp, giao diện nằm trong card đã mobile-validated.
