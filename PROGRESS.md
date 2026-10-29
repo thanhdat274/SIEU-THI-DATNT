@@ -39,7 +39,7 @@
 
 - **GĐ271 lý do gọi khớp thời tiết** 📞: trước đây random cả "trời mưa..." trong ngày nắng → pool theo ngữ cảnh (mưa/nắng/chung; VIP + nấu giữ pool riêng); salt chọn biến thiên theo ngày (mẫu GĐ267/269). Audit nốt visitsToday/arcSceneAt — sạch. 2 test (sweep >200 đơn × 4 thời tiết); 2231 test xanh.
 
-- **GĐ272 quét 2 bề mặt cuối** 🖼️: màn đăng nhập (gặp mỗi boot nhưng chưa từng soi kỹ) + menu "Thêm" @320/390/768 bằng ảnh chụp + DOM — 0 lỗi: nút full-bề-rộng, lưới 2 cột cuộn tốt, câu chuyện Chương 1 đè menu đúng z-order và không gây tràn. Kết thúc chuỗi "rà soát toàn bộ màn hình" — mọi bề mặt đã được soi ít nhất một lần (GĐ264/265/272). 2231 test xanh (không đổi code).
+- **GĐ272 quét 2 bề mặt cuối** 🖼️: màn đăng nhập + menu "Thêm" @320/390/768 (ảnh + DOM) — 0 lỗi: nút full-bề-rộng, lưới 2 cột cuộn tốt, Chương 1 đè menu đúng z-order. Chuỗi "rà soát toàn bộ màn hình" chốt — mọi bề mặt đã soi (GĐ264/265/272). Không đổi code.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -66,7 +66,6 @@
 
 ## Cần theo dõi / nợ mở
 
-- ✅ ĐÃ ĐÓNG (30/10): QA mắt bù GĐ245–251 — boot sạch, 0 lỗi console (archive GĐ250-257).
 - QA mắt 3D/panel chập tối (IAB nền dừng rAF): GĐ177–194 đã QA @5173 lúc làm; đối chiếu lại thì xem archive.
 - ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap`: bot bày lại tầng kệ đầy → bỏ qua tầng đầy + timeout 1.8tr ms. Nếu cả bộ lại > ~10 phút: profile trước khi làm tiếp.
 - GĐ171: scale mục tiêu vòng NG+ — cần save thật vòng 2+ để xác nhận; nếu quá dễ → siết trần.
