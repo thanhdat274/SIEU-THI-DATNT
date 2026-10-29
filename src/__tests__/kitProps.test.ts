@@ -54,13 +54,17 @@ describe('GĐ181 — gánh hàng chợ phiên', () => {
     expect(kitPlacementProblems()).toEqual([]);
   });
 
-  it('chỉ dùng module xe_day có trong kit, tựa vỉa hè sát lòng đường (z 1.5..3)', () => {
+  it('chỉ dùng module có trong kit, tựa vỉa hè sát lòng đường (z 1.4..3)', () => {
+    const carts = KIT_MARKET_PLACEMENTS.filter((p) => p.module === 'xe_day');
+    const seats = KIT_MARKET_PLACEMENTS.filter((p) => p.module !== 'xe_day');
     for (const p of KIT_MARKET_PLACEMENTS) {
       expect(KIT_MODULES).toContain(p.module);
-      expect([...new Set(KIT_MARKET_PLACEMENTS.map((x) => x.module))]).toEqual(['xe_day']);
       expect(p.pos[2]).toBeGreaterThan(1.4);
       expect(p.pos[2]).toBeLessThanOrEqual(3);
     }
+    // GĐ196: phiên chợ giờ là xe đẩy + chỗ ngồi (băng ghế/ghế nhựa) — vẫn ít nhất 2 xe đẩy chính
+    expect(carts.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(seats.map((s) => s.module)).size).toBeGreaterThanOrEqual(2);
   });
 
   it('không chèn sát món nào trong bảng hay chính nó (<0.55 m)', () => {
@@ -167,6 +171,44 @@ describe('GĐ195 — băng ghế hẻm', () => {
     for (const p of KIT_PLACEMENTS.filter((x) => x.module === 'bang_ghe')) {
       expect(p.scale ?? 1).toBeGreaterThan(0.5);
       expect(p.scale ?? 1).toBeLessThanOrEqual(2);
+    }
+  });
+});
+
+/**
+ * GĐ196 — "Phiên chợ có chỗ ngồi": ngoài gánh hàng (`xe_day`, gđ181), phiên chợ còn bày thêm băng ghế
+ * (`bang_ghe`) + ghế nhựa (`cho_nhua`) dọc vỉa hè cho người mua ngồi — đông vui hơn, vẫn không chặn lưới.
+ * Mọi chỗ đều tựa vỉa hè (z 1.4..3) và không chen món nào trong toàn bảng (đã gộp kitPlacementProblems).
+ */
+describe('GĐ196 — chỗ ngồi chợ phiên', () => {
+  it('chỗ ngồi chợ (bang_ghe/cho_nhua) chèn đúng hàng kit đã kiểm chỗ cấm (gộp kitPlacementProblems)', () => {
+    expect(kitPlacementProblems()).toEqual([]);
+  });
+
+  it('chỗ ngồi chợ chỉ dùng module có trong kit, tựa vỉa hè (z 1.4..3), không giữa lòng đường', () => {
+    for (const p of KIT_MARKET_PLACEMENTS.filter((x) => x.module !== 'xe_day')) {
+      expect(KIT_MODULES).toContain(p.module);
+      expect(p.pos[2]).toBeGreaterThan(1.4);
+      expect(p.pos[2]).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it('chỗ ngồi chợ không chen sát món nào trong toàn bảng hay chính nó (<0.55 m)', () => {
+    const all = [...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS];
+    for (let i = 0; i < all.length; i++) {
+      for (let j = i + 1; j < all.length; j++) {
+        const d = Math.hypot(all[i].pos[0] - all[j].pos[0], all[i].pos[2] - all[j].pos[2]);
+        expect(d).toBeGreaterThanOrEqual(0.55);
+      }
+    }
+  });
+
+  it('không chắn cửa tiệm (cửa x=4, z=1) hay cửa nhà (x=−12, z=1)', () => {
+    for (const p of KIT_MARKET_PLACEMENTS.filter((x) => x.module !== 'xe_day')) {
+      const dShop = Math.hypot(p.pos[0] - 4, p.pos[2] - 1);
+      const dHome = Math.hypot(p.pos[0] - -12, p.pos[2] - 1);
+      expect(dShop).toBeGreaterThan(1.2);
+      expect(dHome).toBeGreaterThan(0.8);
     }
   });
 });

@@ -56,11 +56,18 @@ export const KIT_PLACEMENTS: KitPlacement[] = [
  * (mỗi 7 ngày, GĐ135) — "con hẻm sống theo lịch": ngày thường vắng, phiên chợ thì hàng bày ra mép
  * vỉa hè sát lòng đường. Tái dùng module xe_day có sẵn (không cần Blender mới), bật/tắt bằng
  * `setMarketDay`; vẫn không chặn lưới đi lại (chỉ hình ảnh).
+ * GĐ196 — Phiên chợ có chỗ ngồi: bên cạnh gánh hàng, phiên chợ cũng bày thêm băng ghế hẻm (`bang_ghe`)
+ * + ghế nhựa (`cho_nhua`) dọc vỉa hè cho người mua ngồi — đông vui hơn, không chỉ xe đẩy trơ trọi.
  */
 export const KIT_MARKET_PLACEMENTS: KitPlacement[] = [
   { module: 'xe_day', pos: [-3.2, 0, 2.6], rotY: 0.5 },
   { module: 'xe_day', pos: [0.4, 0, 2.7], rotY: 1.4 },
   { module: 'xe_day', pos: [8.4, 0, 2.5], rotY: 4.6 },
+  // Chỗ ngồi họp chợ (gđ196): băng ghế + ghế nhựa rải mép vỉa hè (z 1.4..3), theo nhịp isMarketDay
+  { module: 'bang_ghe', pos: [-1.4, 0, 1.9], rotY: 0.3 },
+  { module: 'bang_ghe', pos: [-6.6, 0, 1.9], rotY: -0.2 },
+  { module: 'cho_nhua', pos: [-4.9, 0, 2.5], rotY: 1.1 },
+  { module: 'cho_nhua', pos: [2.4, 0, 2.2], rotY: -0.7 },
 ];
 
 /**
