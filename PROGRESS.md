@@ -38,7 +38,7 @@
 
 - **GĐ267 đơn cuối tuần + sửa bug roll chọn đơn** 📚: (1) `weekendOnly` — "Nhóm học cuối tuần" chỉ mời khi NGÀY CHÓT rơi Thứ 7/CN. (2) Bug cũ: roll CHỌN và roll MỜI dùng chung (seed, day) → tương quan, phân phối đơn lệch theo vị trí bảng (tat_nien ×6, 8 đơn = 0/8340 lượt) → salt chọn đơn theo ngày, mọi đơn cơ hội đều. 4 test; 2224 test xanh.
 
-- **GĐ268 phản hồi cuối tuần** 🍬: mảnh PHẢN HỒI cuối của nhịp GĐ254–267 — tổng kết ngày Thứ 7/CN có thẻ "🍬 Cuối tuần: bán N món ăn vặt (~Xđ · Y% doanh thu)" đối chiếu đúng mục tiêu quest (export `weekendQuestTarget` dùng chung, hết lặp công thức); `weekendRecap` (thuần đọc, `weekendRestock.ts`). 2 test; 2226 test xanh; QA @5173: Thứ 7 có thẻ đủ/sáp mục tiêu đúng tính, ngày thường không hiện, 0 lỗi console.
+- **GĐ268 phản hồi cuối tuần** 🍬: mảnh PHẢN HỒI cuối của nhịp GĐ254–267 — tổng kết Thứ 7/CN có thẻ "🍬 Cuối tuần: bán N món ăn vặt (~Xđ · Y% doanh thu)" đối chiếu đúng mục tiêu quest (export `weekendQuestTarget` dùng chung); `weekendRecap` thuần đọc. 2 test; 2226 test xanh; QA @5173 đúng, 0 lỗi console.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -65,9 +65,9 @@
 
 ## Cần theo dõi / nợ mở
 
-- ✅ ĐÃ ĐÓNG (30/10): QA mắt bù GĐ245–251 trên save máy — boot sạch, 0 lỗi console, 0 tràn @390/320 (chi tiết archive GĐ250-257).
+- ✅ ĐÃ ĐÓNG (30/10): QA mắt bù GĐ245–251 — boot sạch, 0 lỗi console, 0 tràn @390/320 (archive GĐ250-257).
 - QA mắt 3D/panel chập tối (IAB nền dừng rAF): GĐ177–194 đã QA @5173 lúc làm; đối chiếu lại thì xem archive.
-- ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap` cấp 50: bot bày lại tầng kệ ĐÃ ĐẦY mỗi 150 tick → bỏ qua tầng đầy + timeout 1.8tr ms → cả bộ ~4 phút. Nếu lại vượt ~10 phút: `npx vitest run --reporter=json` + profile trước khi làm tiếp.
+- ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap`: bot bày lại tầng kệ đầy → bỏ qua tầng đầy + timeout 1.8tr ms. Nếu cả bộ lại > ~10 phút: profile trước khi làm tiếp.
 - GĐ171: scale mục tiêu vòng NG+ — cần save thật vòng 2+ để xác nhận; nếu quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ & kèo cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy trong năng lực → theo dõi.
 - QA mắt trạng thái CÓ dữ liệu của Bỏ lỡ/Thú cưng/hụi/khủng hoảng (GĐ155–159) — bọc bởi test; QA khi có save người thật.
