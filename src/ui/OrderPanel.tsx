@@ -563,7 +563,7 @@ export function OrderPanel() {
                 <span className="or-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <ProductIcon product={g} size={26} tile />
                   <b>{g.name}</b>
-                  <span style={{ ...st.badge, background: '#0984e3' }}>Nên mua</span>
+                  <span style={{ ...st.badge, background: '#3498db' }}>Nên mua</span>
                   {inCart && <span style={{ ...st.badge, background: '#2ecc71' }}>✓ trong giỏ</span>}
                 </span>
                 <span style={{ fontSize: 12, opacity: 0.8 }}>{formatMoney(caseCost)}/thùng</span>
@@ -704,12 +704,12 @@ const st: Record<string, React.CSSProperties> = {
   btn: { border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: 13 },
   list: { maxHeight: '45vh', overflow: 'auto', borderRadius: 8, background: '#232330' },
   // Lớp hướng dẫn ngày đầu (GĐ38): banner + khối 3 món thiết yếu nổi bật, chỉ hiện khi guideOn
-  guideBanner: { background: 'rgba(52, 152, 219, 0.14)', border: '1px solid #0984e3', borderRadius: 8, padding: '10px 12px', margin: '6px 0 10px', fontSize: 13 },
+  guideBanner: { background: 'rgba(52, 152, 219, 0.14)', border: '1px solid #3498db', borderRadius: 8, padding: '10px 12px', margin: '6px 0 10px', fontSize: 13 },
   guideBannerReady: { border: '1px solid #2ecc71', background: 'rgba(46, 204, 113, 0.12)' },
-  guideBox: { display: 'grid', gap: 6, margin: '0 0 10px', padding: 6, borderRadius: 8, background: 'rgba(9, 132, 227, 0.06)', border: '1px solid #0984e355' },
+  guideBox: { display: 'grid', gap: 6, margin: '0 0 10px', padding: 6, borderRadius: 8, background: 'rgba(52, 152, 219, 0.06)', border: '1px solid #3498db55' },
   guideRow: {
     display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '8px 10px',
-    border: '1px solid #0984e3', borderRadius: 6, background: 'rgba(9, 132, 227, 0.10)', fontSize: 13,
+    border: '1px solid #3498db', borderRadius: 6, background: 'rgba(52, 152, 219, 0.10)', fontSize: 13,
   },
   guideRowOn: { border: '1px solid #2ecc71', background: 'rgba(46, 204, 113, 0.10)' },
   row: {

@@ -164,7 +164,7 @@ export function PricePanel() {
                 <td style={{ whiteSpace: 'nowrap' }}>
                   <button style={styles.btn} aria-label="Giảm giá" onClick={() => change(-step)}>−</button>
                   <b
-                    style={{ display: 'inline-block', width: 80, margin: '0 5px', textAlign: 'center', color: ratio > 1.3 ? '#e74c3c' : ratio < 0.8 ? '#74b9ff' : ratio > 1 ? '#f1c40f' : '#fff' }}
+                    style={{ display: 'inline-block', width: 80, margin: '0 5px', textAlign: 'center', color: ratio > 1.3 ? '#e74c3c' : ratio < 0.8 ? '#3498db' : ratio > 1 ? '#f1c40f' : '#fff' }}
                     title={ratio > 1.3
                       ? 'Đắt hơn 30% giá gợi ý: rất nhiều khách chê và bỏ đi (💸)'
                       : ratio < 0.8

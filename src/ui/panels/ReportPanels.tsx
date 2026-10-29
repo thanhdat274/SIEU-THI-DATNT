@@ -972,7 +972,7 @@ export function MorningPanel() {
                 return (
                   <div style={{ fontSize: 12, marginTop: 4, width: '100%' }}>
                     {p.streak > 0 && (
-                      <span style={{ color: '#74b9ff' }}>🎯 Chuỗi {p.streak} · còn {p.toMilestone} kỳ nữa tới mốc +{Math.round(CONTRACT_STREAK_BONUS * 100)}% </span>
+                      <span style={{ color: '#3498db' }}>🎯 Chuỗi {p.streak} · còn {p.toMilestone} kỳ nữa tới mốc +{Math.round(CONTRACT_STREAK_BONUS * 100)}% </span>
                     )}
                     {p.risk === 'overdue' && p.streak > 0 && (
                       <span style={{ color: riskColor, fontWeight: 600 }}>⚠️ Giao sẽ đứt chuỗi {p.streak} kỳ về 0</span>
@@ -1296,12 +1296,12 @@ export function HistoryPanel() {
                 <text x={x(i)} y={H - 6} textAnchor="middle" fontSize={10} fill="#8a919c">{d.day}</text>
           </g>
         ))}
-        <polyline points={line((d) => d.revenue)} fill="none" stroke="#2e86de" strokeWidth={2} />
+        <polyline points={line((d) => d.revenue)} fill="none" stroke="#3498db" strokeWidth={2} />
         <polyline points={line((d) => d.profit)} fill="none" stroke="#2ecc71" strokeWidth={2} />
         {rated.length > 1 && <polyline points={ratingLine} fill="none" stroke="#f1c40f" strokeWidth={2} strokeDasharray="5 3" />}
       </svg>
       <p style={{ ...styles.sub, marginTop: 8 }}>
-        <span style={{ color: '#2e86de' }}>━ Doanh thu</span> · <span style={{ color: '#2ecc71' }}>━ Lãi</span> · <span style={{ color: '#f1c40f' }}>╌ ⭐ đánh giá</span> · ▮ Khách
+        <span style={{ color: '#3498db' }}>━ Doanh thu</span> · <span style={{ color: '#2ecc71' }}>━ Lãi</span> · <span style={{ color: '#f1c40f' }}>╌ ⭐ đánh giá</span> · ▮ Khách
       </p>
       <p style={styles.row}>
         🏆 Lãi nhất: <b>ngày {best.day}</b> — doanh thu {formatMoney(best.revenue)}, lãi {formatMoney(best.profit)}

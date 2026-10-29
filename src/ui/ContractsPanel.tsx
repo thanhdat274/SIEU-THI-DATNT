@@ -100,12 +100,12 @@ function ActiveContracts() {
               {(() => {
                 const p = contractStreakProgress(cs, day);
                 const pct = Math.min(100, (p.cycle / CONTRACT_STREAK_EVERY) * 100);
-                const barColor = p.cycle >= CONTRACT_STREAK_EVERY - 1 || p.atMilestone ? '#f1c40f' : '#74b9ff';
+                const barColor = p.cycle >= CONTRACT_STREAK_EVERY - 1 || p.atMilestone ? '#f1c40f' : '#3498db';
                 const riskColor = p.risk === 'overdue' ? '#e74c3c' : '#f1c40f';
                 return (
                   <div style={{ fontSize: 12, marginTop: 6 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ color: '#74b9ff' }}>🎯 {p.cycle}/{CONTRACT_STREAK_EVERY} kỳ · còn {p.toMilestone} kỳ nữa tới mốc +{Math.round(CONTRACT_STREAK_BONUS * 100)}%</span>
+                      <span style={{ color: '#3498db' }}>🎯 {p.cycle}/{CONTRACT_STREAK_EVERY} kỳ · còn {p.toMilestone} kỳ nữa tới mốc +{Math.round(CONTRACT_STREAK_BONUS * 100)}%</span>
                       <span style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
                         <span style={{ display: 'block', height: '100%', width: `${pct}%`, background: barColor, borderRadius: 3 }} />
                       </span>
@@ -162,7 +162,7 @@ function ContractRow({ contract }: { contract: SupplyContract }) {
       </div>
       <div style={{ fontSize: 13, marginTop: 6 }}>
         {Object.entries(contract.items).map(([id, q]) => (
-          <span key={id} style={{ marginRight: 12, color: '#74b9ff' }}>
+          <span key={id} style={{ marginRight: 12, color: '#3498db' }}>
             {productById(id).name} ×{q}
           </span>
         ))}
