@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1839/1839 test pass (167 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ192. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ 887s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
+- **1856/1856 test pass (170 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ194. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ 887s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–193 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
+### Giai đoạn gần đây · GĐ177–194 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
 
 - **GĐ177** 🏮 Đầu ngõ lên đèn: đèn lồng cột dựng Blender (`blender_lantern.py`) bật sáng ấm chập tối (lamp 17h–5h30, lightBudget) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md.
 - **GĐ178** 🎨 Gộp họ xanh dương guide/chuỗi/biểu đồ về info `#3498db` (16 chỗ) — chi tiết: archive trên.
@@ -44,6 +44,7 @@
 - **GĐ191** 🧾 "Thấy được ngay chỗ nhập": GĐ190 cho nút "→ Nhập hàng" nhưng chỗ ĐẾN (OrderPanel) chưa nói rõ quán nước cần bao nhiêu ly để nhập cho vừa — số gợi ý `suggestQty` tính theo nhu cầu TIỆM CHÍNH, bỏ qua nhu cầu quán nước chung kho. Giờ chính OrderPanel (đầu ngày đầu đơn) render Callout nạp kho tái dùng `quanNuocRestockTip`: "tối nay quán cần ~N ly, kho chỉ còn M — nhập thêm ≥ N−M ly nước/ngọt/cà phê" (đỏ nếu hôm qua mất tiền / cam nếu sắp ăn khô kho chung; ẩn ngày sạch). Khép vòng: việc sáng (GĐ189) → nút một chạm (GĐ190) → đúng chỗ đặt đơn có sẵn con số (GĐ191). Thuần đọc helper đã test, KHÔNG đổi suggestQty/kinh tế/save. `OrderPanel.tsx`; tsc+build sạch; QA @5173.
 - **GĐ192** 💸 "Mở ca đêm hồi vốn sau bao lâu?": món đầu tư LỚN NHẤT game (15tr, GĐ65 chỉ báo lời/lỗ từng đêm, chưa bao giờ nói ngày hồi vốn). Doanh thu đêm (byHour giờ ≥22) CHÍNH LÀ phần thặng dư mà nâng cấp mở ra (không mở thì tiệm đóng, không có giờ đêm) → chia vốn cho lời ròng mỗi đêm (đã trừ lương ca đêm ×1.5) được số đêm hồi. Helper thuần `nightPayback(np, cost)` + `nightPaybackLabel` → verdict good (hồi ≤30 đêm) / slow / losing. Thẻ ca đêm (ReportPanels) thêm dòng "💸 15tr nâng cấp: hồi vốn sau ~N đêm (lời X/đêm)" + caveat trung thực "*chưa tính trộm đêm ×2 & dậy trễ mất buổi sáng". `night.ts` (+nguồn sự thật `NIGHT_UPGRADE_PRICE`; upgrades.ts dùng lại để hết duplicate 15000000), `nightReport.ts` (+helper), `ReportPanels.tsx`, test +6; tsc+build sạch; QA @5173.
 - **GĐ193** 💧 "Xây quán nước 25tr hồi vốn sau bao lâu?": màn XÂY QUÁN chỉ cho giá + cấp yêu cầu, không nói kiếm về được bao nhiêu. Vì quán nước chạy công thức DETERMINISTIC (GĐ127) nên `quanNuocBuildPayback(level,staff,price)` ước lời ròng MỘT ngày (kho đủ bán hết nhu cầu — giới hạn trên tiềm năng) chia vốn → ngày hồi + verdict worth (≤60 ngày) / slow / notworth / noMenu. UI build-state của QuanNuocPanel hiện "💸 Ước hồi vốn 25tr: ~N ngày (lời X/ngày) · nếu kho đủ" — dạy chiến thuật "mở sớm cấp 29 thực đơn ít → lời thấp → hồi chậm; lên cấp thêm nước/ngọt/cà phê → hồi nhanh". Đối chiếu ground-truth projection (không hardcode). `quanNuoc.ts` (+helper), `QuanNuocPanel.tsx`, test +6; tsc+build sạch; QA @5173.
+- **GĐ194** 🏪 "Mở chi nhánh 5tr hồi vốn sau bao lâu?": màn mua chi nhánh chỉ cho giá + cấp yêu cầu. Chi nhánh chạy SIM (không deterministic như quán nước) nhưng QUAN SÁT được qua `branchOperatingBalanceToday` (GĐ153: thu − lương − điện) → helper thuần `branchBuildPayback(branch, cost)` lấy số dư vận hành hôm nay làm lời ròng MỘT NGÀY, chia vốn xây = ngày hồi (mẫu GĐ192) + verdict worth/slow/notworth/nodata. Info tab BranchPanel thêm "💸 5tr mua mặt bằng: hồi vốn sau ~N ngày (dư ~X/ngày) · theo hôm nay, chưa trừ giá vốn hàng" — feedback vận hành liên tục; ẩn khi chưa có thu (nodata) để không nhiễu. `branchNet.ts` (+helper, tái dùng branchOperatingBalanceToday), `BranchPanel.tsx`, test +5 (đối chiếu ground-truth balance); tsc+build sạch; QA @5173.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -82,6 +83,7 @@
 - GĐ191: socket nạp kho ở OrderPanel — xác nhận trên save thật mở Nhập hàng khi quán thiếu thấy Callout đúng con số ở đầu panel; và (giống api GĐ179/181) QA 3D/panel foreground vì IAB nền dừng rAF không soi được animate, nhưng đây là panel DOM nên soi bằng snapshot được.
 - GĐ192: hồi vốn ca đêm — xác nhận trên save thật (đã mở ca đêm + staff) thẻ "Đêm qua" hiện dòng "hồi vốn sau ~N đêm" đúng con số theo nightPnl; disclaimer trộm ×2 & dậy trễ không bị quên; ngày chưa mở ca đêm vẫn ẩn (không nhiễu).
 - GĐ193: hồi vốn xây quán nước — xác nhận màn XÂY QUÁN (cấp ≥29, chưa mua) hiện "Ước hồi vốn 25tr: ~N ngày · nếu kho đủ" đúng theo projection level hiện tại; và số tiền càng lên cấp càng giảm (thực đơn thêm) là tín hiệu đúng.
+- GĐ194: hồi vốn xây chi nhánh — xác nhận trên save đã mở chi nhánh + có thu info tab hiện "hồi vốn 5tr sau ~N ngày" theo số dư vận hành hôm nay (đúng GĐ153); ngày chi nhánh chưa bán được (chưa thu) thì ẩn dòng (nodata, không nhiễu).
 - Flake `weeklyGoalCap` cấp 50: lần full + lần isolate đều timeout 900s (autoplay 28 ngày cấp 50 nặng ~908s, máy đang tải khi chạy liên tục) — ĐÃ xác nhận KHÔNG phải hồi quy của GĐ185/186 (thuần render/3D, node test không chạy); chạy lúc máy rảnh là 16/16 xanh (GĐ184 full run gần nhất). Nếu tái diễn: nâng timeout hoặc rút autoplay ngày ở cấp 50.
 - GĐ171: scale mục tiêu vòng ×(1+0.5(N−1))/×(1+0.3(N−1)) — cần save thật vòng 2+ để xác nhận trad vẫn căng nhưng với tới; nếu vẫn quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi.
@@ -288,3 +290,4 @@
 - GĐ191 — 🧾 Socket nạp kho ở OrderPanel: chỗ đặt đơn hiện rõ con số thiếu đồ uống của quán nước — khép vòng việc sáng → một chạm → đúng chỗ nhập
 - GĐ192 — 💸 Hồi vốn ca đêm: món đầu tư 15tr "Mở ca đêm" cho thấy "hồi vốn sau ~N đêm" + caveat trộm ×2/dậy trễ — minh bạch khoản chi lớn nhất game
 - GĐ193 — 💧 Hồi vốn xây quán nước: màn XÂY QUÁN ước "hồi vốn 25tr sau ~N ngày · nếu kho đủ" — dạy chiến thuật mở sớm/chờ lên cấp
+- GĐ194 — 🏪 Hồi vốn xây chi nhánh: info tab ước "hồi vốn 5tr sau ~N ngày" theo số dư vận hành hôm nay (mẫu GĐ192) — khép bộ ROI 3 tài sản lớn (đêm/quán nước/chi nhánh)

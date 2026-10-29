@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../core/store';
 import { CONVENIENCE, ALCOHOL_BRAWL_CHANCE, coverMul, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, hasAlcohol, hasPower, isHotFood, nightNeed, shelfTotal, uncoveredHours, vendingTotal } from '../data/branches';
 import { dailyWage } from '../data/staff';
-import { branchOperatingBalanceToday } from '../data/branchNet';
+import { branchOperatingBalanceToday, branchBuildPayback } from '../data/branchNet';
 import { branchMissSummary } from '../data/venueTrend';
 import { vendingPayoff } from '../data/minorPayoff';
 import { licenseById, licenseStatus } from '../data/licenses';
@@ -74,6 +74,20 @@ export function BranchPanel() {
                 <span style={{ color: chipColor, border: `1px solid ${chipColor}`, borderRadius: 10, padding: '0 7px', fontSize: 11 }}>{chipText}</span>{' '}
                 <span style={st.sub}>(quầy {formatMoney(branch.revenueToday)} + máy {formatMoney(branch.vendingRevenueToday ?? 0)} − lương {formatMoney(op.wages)} − điện {formatMoney(op.power)})</span>
                 <div style={st.sub}>Số dư vận hành; chưa phân bổ giá vốn hàng đã nhập.</div>
+              </div>
+            );
+          })()}
+          {(() => { // GĐ194: hồi vốn 5tr mua mặt bằng theo số dư vận hành hôm nay (mẫu GĐ192)
+            const pb = branchBuildPayback(branch);
+            if (pb.verdict === 'nodata') return null;
+            const c = pb.verdict === 'worth' ? '#2ecc71' : pb.verdict === 'slow' ? '#e67e22' : '#e74c3c';
+            return (
+              <div style={{ fontSize: 12, color: c }}>
+                💸 {formatMoney(CONVENIENCE.openCost)} mua mặt bằng:{' '}
+                {pb.verdict === 'notworth'
+                  ? <>số dư âm <b>~{formatMoney(-pb.netPerDay)}/ngày</b> — chưa hồi vốn (thu ít hơn lương+điện)</>
+                  : <>hồi vốn sau <b>~{pb.paybackDays} ngày</b> (dư ~{formatMoney(pb.netPerDay)}/ngày)</>}{' '}
+                <span style={st.sub}>· theo hôm nay, chưa trừ giá vốn hàng</span>
               </div>
             );
           })()}

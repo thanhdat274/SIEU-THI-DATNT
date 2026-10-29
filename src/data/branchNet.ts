@@ -8,7 +8,7 @@
  * "Lãi thô" đang hiện (cùng `wages = Σ dailyWage`, KHÔNG áp good_boss −10% — hơi bảo thủ, chỉ ra lời thấp
  * hơn một chút, đúng nguyên tắc trung thực).
  */
-import { branchPowerBill, type BranchState } from './branches';
+import { branchPowerBill, CONVENIENCE, type BranchState } from './branches';
 import { dailyWage } from './staff';
 
 export interface BranchOperatingBalance {
@@ -35,4 +35,42 @@ export function branchOperatingBalanceToday(b: BranchState): BranchOperatingBala
   const afterOperatingCostsPct = income > 0 ? balance / income : 0;
   const verdict: BranchOperatingBalance['verdict'] = income <= 0 ? 'nodata' : balance >= 0 ? 'surplus' : 'deficit';
   return { income, wages, power, balance, afterOperatingCostsPct, verdict };
+}
+
+/* —————————————————————————————————————————————————————————————————————
+ * GĐ194: "Mở chi nhánh 5tr hồi vốn sau bao lâu?" — màn mua chi nhánh (BranchPanel)
+ * chỉ cho giá + cấp yêu cầu, không nói kiếm về được bao nhiêu. Chi nhánh chạy SIM
+ * (không công thức deterministic như quán nước) nhưng theo QUAN SÁT được: số dư vận
+ * hành từ `branchOperatingBalanceToday` (thu − lương − điện) làm lời ròng MỘT NGÀY,
+ * chia vốn xây = số ngày hồi (mẫu GĐ192). THUẦN — đọc quan sát + CONVENIENCE.openCost,
+ * không đổi kinh tế/save. UI nói rõ là ước theo hôm nay & chưa trừ giá vốn hàng.
+ * ————————————————————————————————————————————————————————————————————— */
+
+export type BranchBuildPaybackVerdict = 'worth' | 'slow' | 'notworth' | 'nodata';
+
+export interface BranchBuildPayback {
+  cost: number;
+  /** Lời ròng ước MỘT NGÀY (= số dư vận hành hôm nay, chưa trừ giá vốn hàng). */
+  netPerDay: number;
+  /** Số ngày cần hồi vốn (làm tròn lên); null khi lỗ / chưa có số liệu. */
+  paybackDays: number | null;
+  verdict: BranchBuildPaybackVerdict;
+}
+
+/**
+ * Ước hồi vốn xây chi nhánh theo ngày quan sát hôm nay.
+ *  - 'worth':    lời và hồi ≤60 ngày.
+ *  - 'slow':     lời nhưng hồi chậm (>60).
+ *  - 'notworth': số dư vận hành âm (lỗ sau lương+điện) — chưa hồi vốn.
+ *  - 'nodata':   hôm nay chi nhánh chưa có doanh thu → chờ số liệu.
+ */
+export function branchBuildPayback(
+  b: BranchState,
+  cost: number = CONVENIENCE.openCost,
+): BranchBuildPayback {
+  const ob = branchOperatingBalanceToday(b);
+  if (ob.verdict === 'nodata') return { cost, netPerDay: 0, paybackDays: null, verdict: 'nodata' };
+  if (ob.balance <= 0) return { cost, netPerDay: ob.balance, paybackDays: null, verdict: 'notworth' };
+  const paybackDays = Math.ceil(cost / ob.balance);
+  return { cost, netPerDay: ob.balance, paybackDays, verdict: paybackDays <= 60 ? 'worth' : 'slow' };
 }
