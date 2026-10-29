@@ -37,7 +37,7 @@
 - **GĐ266–269** 🍬🎲 — nhập hàng biết cuối tuần (`suggestQty` ×1.25 WEEKEND_SNACKS khi lô bán Thứ 7/CN + badge "🍬 Cuối tuần") · đơn `weekendOnly` (hoc_nhom chốt Thứ 7/CN) + sửa bug roll CHỌN/roll MỜI tương quan (8 đơn câu chuyện = 0/8340 lượt, tat_nien ×6 kỳ vọng) · phản hồi cuối tuần trong tổng kết (`weekendRecap` đối chiếu `weekendQuestTarget`) · phân phối sự kiện đều (thị trường 4 loại 57–71 mỗi loại, trước fix shortage/glut ~1/10 viral; sự kiện bớt lệch 2.7×). Chi tiết: archive (phụ lục 2).
 - **GĐ270 QA TOÀN DIỆN** ✅: coverage branch **87.40%**/fn **76.17%** (2229 test, 219 file, ↑ từ 87.17/75.59); browser: 34 panel render @desktop 0 lỗi console, **0 tràn ngang** @320/390/768 qua 12 bảng dày nhất + HUD; autoplay ngày thật sạch (108 khách, ~2.43tr doanh thu). Người mới: hệ thứ/cuối tuần tự dạy qua quest + HUD + lịch (QA từng mắt xích GĐ254–268). GĐ262–269 dồn archive (phụ lục 2).
 
-- **GĐ271 lý do gọi khớp thời tiết** 📞: đơn gọi nhà trước đây random cả "trời mưa không tiện ra ngoài" trong ngày nắng — chia pool lý do theo ngữ cảnh (mưa/giông có lý do mưa, nắng có lý do nóng, mây/sương pool chung; đơn VIP/nấu giữ pool riêng — ngày nào cũng hợp); salt chọn lý do biến thiên theo ngày (mẫu GĐ267/269). Audit nốt các hệ tất định: visitsToday (hash có id khách) / arcSceneAt — không còn mẫu tương quan. 2 test (sweep >200 đơn × 4 thời tiết); 2231 test xanh; boot @5173 sạch.
+- **GĐ271 lý do gọi khớp thời tiết** 📞: trước đây random cả "trời mưa..." trong ngày nắng → pool theo ngữ cảnh (mưa/nắng/chung; VIP + nấu giữ pool riêng); salt chọn biến thiên theo ngày (mẫu GĐ267/269). Audit nốt visitsToday/arcSceneAt — sạch. 2 test (sweep >200 đơn × 4 thời tiết); 2231 test xanh.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -75,7 +75,7 @@
 ## Backlog tiếp theo
 
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
-2. **Khoá chờ save người thật:** arc E (4 arc A–D phải xác minh trước) · NG+ mục tiêu vòng (GĐ171) · kèo cấp 50+ (GĐ110/117) · nhiệm vụ ngày 1–5 (GĐ254 đã giảm lặp).
+2. **Khoá chờ save người thật:** arc E (4 arc A–D xác minh trước) · NG+ vòng (GĐ171) · kèo cấp 50+ (GĐ110/117) · nhiệm vụ ngày 1–5 (GĐ254 đã giảm lặp).
 3. **Ý tưởng chờ Leader duyệt (chiều sâu, chưa làm):** (a) nhịp cuối tuần đậm hơn khi hệ đã ổn trên save thật (hàng đặc biệt ngày phiên chợ; không vội); (b) nhiệm vụ tuần/tháng biết đến thứ trong tuần (WeeklyPace hiện "còn X ngày tới Chủ nhật") — nhỏ, chỉ khi có việc khác đi kèm.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)## Mục lục giai đoạn đã xong (chi tiết trong archive)
