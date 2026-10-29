@@ -45,7 +45,7 @@
 
 - **GĐ277 khoá đường lưu autoOpenAt + chợ phiên×CN** 💾: 3 test save — bản cũ thiếu trường → mặc định 8h, bản mới 6h nạp đúng, round-trip giữ nguyên; lock test: mọi ngày phiên chợ (7, 14, 21…) đều Chủ nhật — chợ phiên đôn tự nhiên vào cuối tuần (đồng bộ GĐ254, không cần code). 2245 test xanh; boot @5173 sạch.
 
-- **GĐ278 QA mắt thẻ CÓ dữ liệu (GĐ155–159) — ĐÓNG watch-item cũ nhất** 👀: dựng trạng thái qua dev tools trên save thật (pets + hụi + buzz khủng hoảng) — Thú cưng: cat/dog render đúng verdict trung thực "7 ngày qua kho sạch, chưa thấy công, thức ăn ~44.000đ/ngày" + trạng thái cho ăn/kho; Hụi: "Góp 30.000đ/ngày · đã góp 5/10 · Ngày 22 hốt 300.000đ" + giải thích hòa vốn; Khủng hoảng MXH: "⚠️ Khủng hoảng, khách ×0.5"; Bỏ lỡ (~275.000đ) đã xác minh từ phiên GĐ252. 0 lỗi console, 0 tràn @390. Không đổi code; 2245 test xanh.
+- **GĐ278 QA mắt thẻ CÓ dữ liệu (GĐ155–159) — ĐÓNG watch-item cũ nhất** 👀: Thú cưng (verdict trung thực "kho sạch — chưa thấy công" + trạng thái cho ăn), Hụi (đủ số + hòa vốn), Khủng hoảng MXH (khách ×0.5), Bỏ lỡ (GĐ252). 0 lỗi console, 0 tràn @390. Không đổi code.
 
 ## Quy ước kỹ thuật cần nhớ
 
