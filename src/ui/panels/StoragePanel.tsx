@@ -3,11 +3,12 @@ import { storageCapacity, storageUsed, useGame } from '../../core/store';
 import { warehouseTier, WAREHOUSE_TIERS } from '../../data/warehouse';
 import { caseSize, describeUnits, formatMoney, productById } from '../../data/products';
 import { storeMissRevenue, coldOverflow } from '../../data/advice';
+import { stockCapital } from '../../data/stockCapital';
 import { Callout, LifeBadge, Footer, styles } from './shared';
 
 /** Kho hàng: thùng nguyên + hàng lẻ đã khui, hạn gần nhất, chỗ trống. */
 export function StoragePanel() {
-  const { storage, storageLots, deliveries, warehouseTier: tierIndex, level, money, autoSwap, upgradeWarehouse, openPanel, closePanel, stats, weather } = useGame();
+  const { storage, storageLots, deliveries, warehouseTier: tierIndex, level, money, priceOf, autoSwap, upgradeWarehouse, openPanel, closePanel, stats, weather } = useGame();
   const tier = warehouseTier(tierIndex);
   const next = WAREHOUSE_TIERS[tierIndex + 1];
   const capacity = storageCapacity(tierIndex);
@@ -31,6 +32,21 @@ export function StoragePanel() {
       <div style={{ height: 8, borderRadius: 4, background: '#ffffff22', margin: '6px 0 10px' }}>
         <div style={{ height: '100%', borderRadius: 4, width: `${Math.min(100, (used / capacity) * 100)}%`, background: used >= capacity ? '#e17055' : '#00b894' }} />
       </div>
+      {(() => {
+        const cap = stockCapital(storage, priceOf);
+        if (!cap) return null;
+        const overCash = cap.totalRetail > money;
+        return (
+          <Callout tone={overCash ? 'warn' : 'info'} style={{ marginBottom: 8 }} title={`🪙 Kho đang chôn ${formatMoney(cap.totalCost)} vốn (giá nhập) · trị giá bán lẻ ${formatMoney(cap.totalRetail)}`}>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              {cap.lines.length > 0 && <>Chôn nhiều nhất: {cap.lines.slice(0, 3).map((l) => `${l.name} ${formatMoney(l.costTotal)}`).join(' · ')}.</>}{' '}
+              {overCash
+                ? `Trị giá kho còn vượt cả tiền mặt (${formatMoney(money)}) — kho ứ vốn, cân nhắc xả sỉ (GĐ211) hay bày kệ bán bớt trước khi nhập thêm.`
+                : 'Vốn nằm trong hàng hoá đang chờ bán; xem nếu muốn bơm vốn vào chỗ khác.'}
+            </div>
+          </Callout>
+        );
+      })()}
       {missRev && missRev.totalLoss > 0 && (
         <Callout tone="danger" style={{ marginBottom: 8 }} title={`📦 Hôm qua bỏ lỡ ~${formatMoney(missRev.totalLoss)} vì hết chỗ/kho`}>
           <div style={{ marginTop: 2, fontSize: 12 }}>
