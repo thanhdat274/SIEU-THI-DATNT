@@ -32,6 +32,7 @@ import { hiepLucEligible, hiepLucPayoff, HIEPLUC_COC, HIEPLUC_MIN } from '../../
 import { earlyUnlockTeaser } from '../../data/unlockMap';
 import { marketClearValue, isMarketDay } from '../../data/chophien';
 import { alleySignalsToday } from '../../data/alleySignals';
+import { supplyChainOverview } from '../../data/supplyChain';
 import { signHiepLuc } from '../../core/biz';
 import { seasonEvent, seasonObjective, seasonEventName, SEASON_EVENT_DAYS, SEASON_REWARD_PER_STAR } from '../../data/seasonEvent';
 import { planDay, type DayAction } from '../../data/dayPlan';
@@ -607,6 +608,26 @@ export function MorningPanel() {
               {busy.length === 0
                 ? <div style={{ fontSize: 12, opacity: 0.78 }}>Hẻm thường vắng — vài chậu cây trước hiên, đèn ấm lên lúc chập tối. Ngày có chợ phiên / lễ hội / sửa đường thì cảnh đổi liền theo.</div>
                 : busy.map((s) => <div key={s.id} style={{ fontSize: 12 }}>{s.icon} <b>{s.name}</b>: {s.desc}</div>)}
+            </div>
+          </Callout>
+        );
+      })()}
+
+      {/* GĐ199: Rốn kho chung — nối tiệm chính + chi nhánh + quán nước về một rốn kho (trục multi-shop).
+          Liệt kê mỗi điểm bán còn dư/cạn + điểm nghẽn nên xử lý trước (quán nước deterministic,
+          chi nhánh & kho chung quan sát được). Thuần đọc, không đổi save/kinh tế. */}
+      {(() => {
+        const sc = supplyChainOverview(storage, branch ?? undefined, biz.quanNuoc, level, biz.quanNuocLast ?? null);
+        return (
+          <Callout tone={sc.choke ? (sc.choke.state === 'danger' ? 'danger' : 'warn') : 'info'} style={{ marginBottom: 8 }}
+            title={<>🔗 Rốn kho chung{sc.choke ? ` — nghẽn: ${sc.choke.icon} ${sc.choke.name}` : ''}</>}>
+            <div style={{ marginTop: 4, display: 'grid', gap: 3 }}>
+              {sc.outlets.filter((o) => o.state !== 'idle').map((o) => (
+                <div key={o.id} style={{ fontSize: 12, color: o.state === 'danger' ? '#e74c3c' : o.state === 'warn' ? '#e67e22' : 'inherit', opacity: o.state === 'ok' ? 0.85 : 1 }}>
+                  {o.icon} <b>{o.name}</b>: {o.line}
+                </div>
+              ))}
+              {sc.choke && <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>Xử lý điểm nghẽn trước — nguồn cho các điểm còn lại là kho chung.</div>}
             </div>
           </Callout>
         );
