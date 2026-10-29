@@ -5,6 +5,7 @@ import {
 } from '../../data/online';
 import { formatMoney } from '../../data/products';
 import { onlineNet } from '../../data/onlineNet';
+import { onlineRatingValue, RATING_FLOOR, RATING_TARGET } from '../../data/onlineRatingValue';
 import { Footer, styles, Callout } from './shared';
 
 export function OnlinePanel() {
@@ -49,7 +50,31 @@ export function OnlinePanel() {
               </Callout>
             );
           })()}
-          {/* Minh bạch hộp đen đơn app: điểm → độ dày đơn, số đơn tối đa/ngày, khung giờ */}
+          {(() => {
+            const rv = onlineRatingValue({
+              rating, level,
+              revenueToday: online.revenueToday, done: online.done, grabFeesToday: online.grabFeesToday,
+            });
+            if (rv.verdict === 'noData') return null;
+            const bestTone = rv.verdict === 'best' ? 'ok' : rv.verdict === 'upside' ? 'warn' : 'info';
+            return (
+              <Callout tone={bestTone} style={{ marginBottom: 10 }} title={
+                rv.verdict === 'best'
+                  ? `🏆 Điểm ${rating.toFixed(1)}⭐ đã ở mức đơn dày nhất`
+                  : `📈 Lên ${RATING_TARGET}⭐ thêm được ~${rv.ordersToBest} đơn/ngày ≈ ${formatMoney(rv.moneyBestPerDay)} lời`
+              }>
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {rv.verdict !== 'best' && (
+                    <>Hiện ~{rv.capNow} đơn/ngày, mốc {RATING_TARGET}⭐ được ~{rv.capBest}.{' '}
+                    {rv.ordersToFloor > 0 && <>Nếu điểm rớt về {RATING_FLOOR} có thể mất ~{rv.ordersToFloor} đơn/ngày (≈{formatMoney(rv.moneyFloorPerDay)}). </>}
+                    </>)
+                  }
+                  {rv.verdict === 'best' && <>Không còn dư địa tăng đơn theo điểm — giờ tập trung vào giá trị giỏ và phí giao.</>}
+                  {' '}Bình quân {formatMoney(rv.avgRevenuePerOrder)}/đơn thật hôm nay.
+                </div>
+              </Callout>
+            );
+          })()}          {/* Minh bạch hộp đen đơn app: điểm → độ dày đơn, số đơn tối đa/ngày, khung giờ */}
           <div style={{ ...styles.card, display: 'block', fontSize: 12, marginBottom: 10, background: '#323244' }}>
             <div>⏱️ Khung nhận đơn: <b>{Math.floor(ONLINE_HOURS[0] / 60)}h–{Math.floor(ONLINE_HOURS[1] / 60)}h30</b> · cách nhau trung bình ~{Math.round(orderGap(rating, level))} phút.</div>
             <div>📈 Điểm {rating.toFixed(1)}⭐ → <b>{orderRateTone(rating)}</b> ({Math.round(cap)} đơn/ngày gần đúng).</div>

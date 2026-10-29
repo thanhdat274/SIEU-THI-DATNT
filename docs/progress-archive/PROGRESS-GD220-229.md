@@ -155,3 +155,13 @@ không ai trực → rủi ro bỏ về vì chờ. peak = giờ đông nhất; b
 trực; verdict warn khi có giờ đông-vắng. StaffPanel thêm Callout: "🍳 giờ Xh (~N khách) đông mà vắng
 người bán · đông nhất còn người trực: … — cân nhắc xếp ca nguyên ngày". THUẦN ĐỌC, deterministic.
 (+5 test)
+
+## GĐ238 — 📈 "Lên 4,5⭐ app được thêm bao nhiêu đơn/ngày ≈ tiền?"
+Giao đúng hẹn để điểm app lên 4,5⭐ là lời khuyên lặp đi lặp lại trong OnlinePanel/online.ts, nhưng
+chưa ai cho con số "lên 4,5⭐ được THÊM ~N đơn/ngày ≈ Xđ" — quyết định bỏ công giao đúng hạn so với
+nghỉ sớm. `onlineRatingValue` (data/onlineRatingValue.ts) đọc THUẦN: onlineOrderCap(rating, level) =
+span/orderGap (khớp hằng số orderGap: ×1 ở 4,5⭐, ×1.4 ≥4⭐, ×2.2 ≥3⭐, ×4 dưới 3⭐) · revenueToday/done
+= tiền/đơn thật hôm nay · grabFeesToday → phần trăm phí giao (ước lời ròng/đơn). So capNow với cap 4,5⭐
+→ ordersToBest × avgNet = moneyBestPerDay; ngược lại ordersToFloor × avgNet khi rớt về 3⭐. Verdict
+best/upside/nice/noData. OnlinePanel thêm Callout sau onlineNet: "📈 Lên 4,5⭐ thêm ~N đơn/ngày ≈ Xđ lời ·
+rớt về 3⭐ mất ~Yđ". deterministic, không RNG/seed. THUẦN ĐỌC. (+5 test)
