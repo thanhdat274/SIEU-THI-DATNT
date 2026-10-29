@@ -173,3 +173,9 @@
 - Lý do: tín hiệu không lời cho chủ khi khách chờ quầy (đang ở sau nhà/xa vẫn biết có khách); tái dùng world state `waiting` (sim có sẵn ở customers.ts) — KHÔNG thêm mô phỏng.
 - `scripts/blender_waitlamp.py` → `den_cho.glb` (13.4KB): quả đèn lồng nhỏ gắn tường trái cửa (3.1,0,1.3), lõi `cho_doi_glow` sáng ấm khi `waiting>0` và tiệm mở — càng đông càng sáng rõ (~1.0→1.8), tắt khi đóng/không ai chờ; pulse nhẹ. Không thêm nguồn sáng thật (chỉ tín hiệu). QA: waiting3+mở→glow1.6, đóng/0→0.
 - File: `storefrontWaitLamp.ts`, `world.ts`, `main.tsx`, `storefrontWaitLamp.test.ts`.
+
+### GĐ181 — 🛒 Chợ phiên sống: gánh hàng xe_day theo lịch tuần — XONG
+
+- Lý do: gắn nhịp tuần vào thế giới — ngày chợ (mỗi 7 ngày, `isMarketDay` GĐ135) con hẻm đổi cảnh, báo giữ chân "quay lại tuần sau".
+- `KIT_MARKET_PLACEMENTS` (3 chỗ xe_day: −3.2/0.4/8.4, z~2.5, mép vỉa hè sát lòng đường) + `marketGroup` con của group kit + `kit.setMarketDay(on)`. Tái dùng module `xe_day` có sẵn (không Blender mới); vẫn không chặn lưới. main.tsx đổi cảnh đúng 1 lần theo ngày (guard `lastMarketDay`). `kitPlacementProblems()` gộp kiểm cả base lẫn chợ phiên.
+- File: `kitProps.ts`, `main.tsx`, `kitProps.test.ts` (+4 test, tổng 10).

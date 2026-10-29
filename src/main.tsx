@@ -1,4 +1,5 @@
 import { skyAt } from './data/weather';
+import { isMarketDay } from './data/chophien';
 import { ANIMAL_ORDER, type AnimalKind } from './data/garden';
 import * as THREE from 'three';
 import { Component, type ReactNode } from 'react';
@@ -327,6 +328,8 @@ function stocktake() {
  * Mốc giờ xét theo trạng thái (đã qua giờ chưa) chứ không chỉ "vừa vượt mốc" — xem core/routine.ts.
  */
 let lastMinutes = useGame.getState().minutes;
+// Ngày gần nhất đã áp cảnh chợ phiên cho kit (gđ181): chỉ đổi khi isMarketDay(day) thay đổi
+let lastMarketDay = isMarketDay(useGame.getState().day);
 let routineMarks = newRoutineMarks();
 function runRoutine() {
   const s = useGame.getState();
@@ -708,6 +711,9 @@ function renderFrame() {
   world.openSign.update(g.shopOpen, performance.now() / 1000);
   // Đèn báo "khách đang đợi" cạnh cửa (gđ180): sáng ấm khi có khách chờ quầy và tiệm đang mở
   world.waitLamp.update({ open: g.shopOpen, waiting: g.waiting ?? 0 }, performance.now() / 1000);
+  // Chợ phiên (gđ181): 7 ngày một lần gánh hàng dựng thêm dọc hẻm — đổi cảnh một lần theo ngày
+  const marketDay = isMarketDay(g.day);
+  if (marketDay !== lastMarketDay) { lastMarketDay = marketDay; world.kit.setMarketDay(marketDay); }
   applyLightBudget(controller.target);
   // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng
   if ((frameNo++ & 1) === 0) renderer.shadowMap.needsUpdate = true;

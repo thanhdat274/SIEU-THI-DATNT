@@ -46,12 +46,25 @@ export const KIT_PLACEMENTS: KitPlacement[] = [
   { module: 'xe_day', pos: [17.5, 0, 2.15], rotY: 0.35 },
 ];
 
+/**
+ * Gánh hàng chợ phiên (gđ181): những món `xe_day` chỉ dựng thêm dọc hẻm khi `isMarketDay(day)`
+ * (mỗi 7 ngày, GĐ135) — "con hẻm sống theo lịch": ngày thường vắng, phiên chợ thì hàng bày ra mép
+ * vỉa hè sát lòng đường. Tái dùng module xe_day có sẵn (không cần Blender mới), bật/tắt bằng
+ * `setMarketDay`; vẫn không chặn lưới đi lại (chỉ hình ảnh).
+ */
+export const KIT_MARKET_PLACEMENTS: KitPlacement[] = [
+  { module: 'xe_day', pos: [-3.2, 0, 2.6], rotY: 0.5 },
+  { module: 'xe_day', pos: [0.4, 0, 2.7], rotY: 1.4 },
+  { module: 'xe_day', pos: [8.4, 0, 2.5], rotY: 4.6 },
+];
+
 /** Chỗ trượt đứng: đè vào nhà / lòng đường / ngoài thế giới là bug đặt chỗ, soi bằng test. */
 export function kitPlacementProblems(): string[] {
   const problems: string[] = [];
   const inRect = (x: number, z: number, x1: number, z1: number, x2: number, z2: number) =>
     x >= x1 && x <= x2 && z >= z1 && z <= z2;
-  for (const p of KIT_PLACEMENTS) {
+  const all = [...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS];
+  for (const p of all) {
     const [x, , z] = p.pos;
     if (!KIT_MODULES.includes(p.module)) problems.push(`${p.module}: không có trong kit`);
     if (Math.abs(x) > 80 || Math.abs(z) > 80) problems.push(`${p.module} @${x},${z}: ngoài thế giới ±80`);
@@ -63,12 +76,12 @@ export function kitPlacementProblems(): string[] {
     // Mặt tiền tiệm (x 0..8, front z=1) — tiệm lớn lên phía sau nên đủ cỡ siêu thị cũng chỉ về phía −z
     if (inRect(x, z, 0, -22, 8, 1)) problems.push(`${p.module} @${x},${z}: đè mặt tiền tiệm`);
   }
-  // Hai món chen nhau quá sát nhìn như lỗi đặt chỗ
-  for (let i = 0; i < KIT_PLACEMENTS.length; i++) {
-    for (let j = i + 1; j < KIT_PLACEMENTS.length; j++) {
-      const a = KIT_PLACEMENTS[i].pos, b = KIT_PLACEMENTS[j].pos;
+  // Hai món chen nhau quá sát nhìn như lỗi đặt chỗ (kể cả base lẫn chợ phiên)
+  for (let i = 0; i < all.length; i++) {
+    for (let j = i + 1; j < all.length; j++) {
+      const a = all[i].pos, b = all[j].pos;
       if (Math.hypot(a[0] - b[0], a[2] - b[2]) < 0.55) {
-        problems.push(`${KIT_PLACEMENTS[i].module} & ${KIT_PLACEMENTS[j].module}: chèn nhau <0.55 m`);
+        problems.push(`${all[i].module} & ${all[j].module}: chèn nhau <0.55 m`);
       }
     }
   }
@@ -81,16 +94,25 @@ export interface KitProps {
   loaded: number;
   /** Module tải lỗi (không còn file, mạng offline...) — game vẫn chơi bình thường. */
   failed: string[];
+  /** Nhóm gánh hàng chợ phiên (gđ181) — con của `group`, mặc định ẩn; bật bằng setMarketDay. */
+  marketGroup: THREE.Group;
+  /** Bật/tắt cảnh chợ phiên (gánh hàng dựng thêm dọc hẻm khi isMarketDay). */
+  setMarketDay(on: boolean): void;
 }
 
 /**
  * Bắt đầu tải kit: trả về group trống để `scene.add` NGAY (thế giới không phải chờ), các prop
  * vừa tải xong vừa chen vào. Lỗi mạng chỉ ghi console — kit là đồ trang trí, không có vẫn chơi được.
  */
-export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; done: Promise<KitProps> } {
+export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; done: Promise<KitProps>; marketGroup: THREE.Group; setMarketDay(on: boolean): void } {
   const group = new THREE.Group();
   group.name = 'kitProps';
-  const result: KitProps = { group, loaded: 0, failed: [] };
+  // Nhóm gánh hàng chợ phiên (gđ181): con của group, mặc định ẩn — setMarketDay bật khi isMarketDay.
+  const marketGroup = new THREE.Group();
+  marketGroup.name = 'marketDayProps';
+  marketGroup.visible = false;
+  group.add(marketGroup);
+  const result: KitProps = { group, loaded: 0, failed: [], marketGroup, setMarketDay: (on) => { marketGroup.visible = on; } };
   const done = new Promise<KitProps>((resolve) => {
     const finish = () => resolve(result);
     if (KIT_PLACEMENTS.length === 0) return finish();
@@ -100,6 +122,16 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
     // trình duyệt tải đúng một lần rồi cache cho mọi model nén sau này.
     const draco = new DRACOLoader().setDecoderPath('/decoders/draco/');
     loader.setDRACOLoader(draco);
+    // Đặt một GLB vào đúng chỗ (gốc, xoay, tới scale) + đổ bóng xuống đất
+    const place = (root: THREE.Object3D, p: KitPlacement, parent: THREE.Object3D) => {
+      root.position.set(...p.pos);
+      if (p.rotY) root.rotation.y = p.rotY;
+      if (p.scale) root.scale.setScalar(p.scale);
+      root.traverse((o) => {
+        if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = false; }
+      });
+      parent.add(root);
+    };
     let pending = KIT_PLACEMENTS.length;
     const settle = (ok: boolean, module: KitModule) => {
       if (!ok && !result.failed.includes(module)) result.failed.push(module);
@@ -120,23 +152,20 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
         for (const p of live) {
           loader.load(
             `${baseUrl}${p.module}.glb`,
-            (gltf) => {
-              const root = gltf.scene;
-              root.position.set(...p.pos);
-              if (p.rotY) root.rotation.y = p.rotY;
-              if (p.scale) root.scale.setScalar(p.scale);
-              // Prop trang trí không nhận bóng xiên (đỡ một nửa vệt vẽ bóng) nhưng vẫn đổ bóng xuống đất
-              root.traverse((o) => {
-                if ((o as THREE.Mesh).isMesh) {
-                  o.castShadow = true;
-                  o.receiveShadow = false;
-                }
-              });
-              group.add(root);
-              settle(true, p.module);
-            },
+            (gltf) => { place(gltf.scene, p, group); settle(true, p.module); },
             undefined,
             () => settle(false, p.module),
+          );
+        }
+        // Chợ phiên (gđ181): tải thêm vài `xe_day` vào marketGroup, ẩn cho tới setMarketDay(true).
+        // Load/hiển thị độc lập với nhóm base — không ảnh hưởng `done`/`loaded` của kit chính.
+        const marketLive = KIT_MARKET_PLACEMENTS.filter((p) => available.has(p.module));
+        for (const p of marketLive) {
+          loader.load(
+            `${baseUrl}${p.module}.glb`,
+            (gltf) => { place(gltf.scene, p, marketGroup); },
+            undefined,
+            () => { if (!result.failed.includes(p.module)) result.failed.push(p.module); },
           );
         }
       })
@@ -146,5 +175,5 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
         finish();
       });
   });
-  return { group, done };
+  return { group, done, marketGroup, setMarketDay: result.setMarketDay };
 }
