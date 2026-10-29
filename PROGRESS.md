@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **2187/2187 test pass (215 files) + 2159/2159 (test:coverage, 211 files; branch 87.14%/fn 75.59%)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ251. ⚠️ 29/10 phiên GĐ245–250: dev server 5173 KHÔNG chạy (xem "Cần theo dõi") — QA mắt hoãn, xác minh bằng test + build + coverage.
+- **2187/2187 test pass (215 files) + 2159/2159 (test:coverage, 211 files; branch 87.14%/fn 75.59%)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ251. ✅ QA mắt bù GĐ245–251 đã chạy 30/10 khi server bật lại (0 lỗi console, 0 tràn @390/320 — xem "Cần theo dõi").
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -56,7 +56,7 @@
 
 ## Cần theo dõi / nợ mở
 
-- ⚠️ (29/10, phiên GĐ245–) Dev server @5173 KHÔNG chạy trong phiên này (connection refused, không còn process vite). Theo quy tắc không tự khởi động server → QA mắt trực tiếp bị hoãn: GĐ245 festivalValue đã xác minh bằng test (2152/2152 xanh) + build sạch; khi server bật lại cần QA mắt thẻ lễ "đang diễn ra"/"sắp tới" ở Sổ đầu ngày (cả 390px).
+- ✅ ĐÃ ĐÓNG (30/10 phiên GĐ251): dev server @5173 bật lại giữa phiên → QA mắt bù cho GĐ245–251 trên save máy ngày 9 cấp 1 (bản QA trong IAB): boot sạch, 0 lỗi console, Sổ đầu ngày + Nhập hàng render chuẩn, 0 tràn ngang @390/320; thẻ lễ (GĐ245/247/249) + banner giá lễ (GĐ251) không hiện đúng vì 9/1 không gần lễ — UI lễ bọc bởi test; StaffPanel/Giá bán khóa cấp trên save này → dòng 🧍 (246/248) xác minh qua test.
 
 - QA mắt 3D/panel chập tối (save thật, foreground tab — IAB nền dừng rAF): GĐ177–194 đã QA @5173 từng giai đoạn lúc làm (đèn/biển/thẻ lương/thanh nạp...); cần đối chiếu lại khung giờ cụ thể thì xem archive.
 - ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap` cấp 50: nguyên nhân là bot autoplay bày lại cả tầng kệ ĐÃ ĐẦY mỗi 150 tick → dựng lại 3D cả kệ (~44% CPU sim). Bỏ qua tầng đầy + timeout 1.800.000ms → cả bộ test 23 phút → ~4 phút, 0 đỏ. Nếu cả bộ lại vượt ~10 phút: đo `npx vitest run --reporter=json` + profile trước khi làm tiếp.

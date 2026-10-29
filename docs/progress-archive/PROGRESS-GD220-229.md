@@ -311,3 +311,13 @@ PriceGapRow.tolerance truyền vào cả suggestPrice lẫn 2 lần priceForecas
 PricePanel: banner "🎉 Đang {lễ} — khách chịu giá cao..." + badge GĐ54 ghi "nhạy thực tế ×tol" +
 truyền tolOf vào bảng/Chỉnh-tất-cả/dự phóng. VD gao (nhập 80k, ref 100k): giá 135k ngày thường
 "hold", ngày Tết "raise → 155.500" và priceGap thấy +14k/ngày (dự phóng có tol). (+6 test)
+
+---
+
+**QA mắt bù GĐ245–251 (30/10, server bật lại giữa phiên)** — save máy IAB ngày 9 cấp 1: boot sạch,
+0 lỗi console (hook window error/unhandledrejection chạy 4s+ sau reload), Sổ đầu ngày + Nhập hàng
+render chuẩn (GĐ224 dailyBurn "🔥 Chi phí cố định/ngày", GĐ242 "mai 🌫️: khách ~90% (~22 khách)",
+rốn kho GĐ199, không thẻ lễ — đúng vì 9/1 cách Tết 19 ngày), 0 tràn ngang @390/320 trên cả 2 panel,
+OrderPanel trạng thái hết tiền disable nút nhập đúng. Các UI chỉ hiện NGÀY LỄ (GĐ245 dòng định lượng,
+GĐ247 Callout trữ lễ, GĐ249 việc sáng, GĐ251 banner giá) không hiện đúng do ngày thường; dòng 🧍
+(GĐ246/248) cần nhân viên — khóa cấp trên save này: cả hai nhóm đã bọc test deterministic.
