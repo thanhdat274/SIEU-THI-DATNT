@@ -19,6 +19,7 @@ import { createStorefrontLantern } from './storefrontLantern';
 import { createOpenSign } from './storefrontSign';
 import { createWaitLamp } from './storefrontWaitLamp';
 import { createCompoundWarm } from './compoundWarm';
+import { createQuanNuocWarm } from './quanNuocWarm';
 
 /** Các điểm trong một phòng ngủ (toạ độ thế giới). */
 export interface RoomSpots { bed: THREE.Vector3; wake: THREE.Vector3; nightstand: THREE.Vector3 }
@@ -68,6 +69,8 @@ export interface World {
   waitLamp: ReturnType<typeof createWaitLamp>;
   /** Đèn ấm chập tối của riêng người chơi (gđ185): hiên nhà + cổng trại — chỉ nguồn sáng, không chặn lưới. */
   compoundWarm: ReturnType<typeof createCompoundWarm>;
+  /** Đèn ấm chập tối của quán nước (gđ187): phủ ấm chỗ khách quen tụ họp khi quán MỞ — chỉ nguồn sáng, không chặn lưới. */
+  quanNuocWarm: ReturnType<typeof createQuanNuocWarm>;
 }
 
 /** Thế giới ban đầu: mặt đất, con đường, nhà riêng và tiệm tạp hóa nhỏ. */
@@ -217,6 +220,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   // Đèn ấm của riêng người chơi (gđ185 "Cơ ngơi lên đèn"): hiên nhà + cổng trại sáng ấm chập tối.
   // Đăng ký vào quỹ ánh sáng (lightBudget) nên không cần scene.add — chỉ cần giữ api để bật theo giờ.
   const compoundWarm = createCompoundWarm();
+  const quanNuocWarm = createQuanNuocWarm();
   const openSign = createOpenSign();
   scene.add(openSign.group);
   const waitLamp = createWaitLamp();
@@ -322,6 +326,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
     openSign,
     waitLamp,
     compoundWarm,
+    quanNuocWarm,
   };
 }
 
