@@ -81,7 +81,7 @@ function CommunityCard({ goal, inDays }: { goal: CommunityGoal; inDays: number }
       {p?.done ? (
         <div style={{ fontSize: 13, marginTop: 4 }}>🎉 Cả hẻm đã hoàn thành mục tiêu dịp này!</div>
       ) : locked ? (
-        <div style={{ fontSize: 12, marginTop: 4, color: '#e17055' }}>🔒 {goalLockText(goal)}</div>
+        <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>🔒 {goalLockText(goal)}</div>
       ) : (
         <>
           {bar(goal.items.length ? `🛍️ Bán hàng của dịp (${names})` : '🛍️ Bán món bất kỳ', p?.sold ?? 0, goal.itemTarget)}
@@ -139,7 +139,7 @@ function OrderCard() {
               <>
                 <span>
                   Nhập gấp phần thiếu ở 🏠 đại lý: <b>{formatMoney(rush.cost)}</b>
-                  {short > 0 && <span style={{ color: '#ff8a7a' }}> · thiếu {formatMoney(short)}</span>}
+                  {short > 0 && <span style={{ color: '#ff7675' }}> · thiếu {formatMoney(short)}</span>}
                 </span>
                 {short <= 0 ? (
                   <button style={{ ...btn, background: '#2ecc71', color: '#fff', whiteSpace: 'nowrap' }} onClick={rushDeliverOrder}>⚡ Nhập gấp & giao</button>

@@ -111,7 +111,7 @@ export function CookPanel() {
                           <span style={{ opacity: 0.85 }}> · ⏱ ~{formatMoney(Math.round(kv.perMinute))}/phút</span>
                         )}
                         {missing.length > 0 && !locked && (
-                          <span style={{ color: '#ff8a7a' }}> · thiếu: {missing.map((i) => productById(i.productId).name).join(', ')}</span>
+                          <span style={{ color: '#ff7675' }}> · thiếu: {missing.map((i) => productById(i.productId).name).join(', ')}</span>
                         )}
                       </div>
                       {own && kv.verdict === 'sell_raw' && (

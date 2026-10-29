@@ -372,11 +372,11 @@ export function StaffInfo({ st, right }: { st: Staff; right?: React.ReactNode })
           {st.rank && <span style={{ ...staffSt.role, background: '#8e6b00' }} title={RANKS[st.rank].desc}>{RANKS[st.rank].icon} {RANKS[st.rank].name}</span>}
           <span style={staffSt.stars} aria-label={`Tay nghề ${st.skill}/5`}>{'★'.repeat(st.skill)}<span style={{ opacity: 0.3 }}>{'★'.repeat(5 - st.skill)}</span></span>
           {trait ? (
-            <span style={{ ...staffSt.role, background: trait === 'sticky' ? '#c0392b' : staffSt.role.background }} title={TRAITS[trait].desc}>{TRAITS[trait].icon} {TRAITS[trait].name}</span>
+            <span style={{ ...staffSt.role, background: trait === 'sticky' ? '#e74c3c' : staffSt.role.background }} title={TRAITS[trait].desc}>{TRAITS[trait].icon} {TRAITS[trait].name}</span>
           ) : (
             <span style={{ ...staffSt.role, opacity: 0.6 }} title="Làm vài ngày mới biết tính">❔ Chưa rõ tính</span>
           )}
-          {st.caught && <span style={{ ...staffSt.role, background: '#c0392b' }}>🚨 Từng gian lận</span>}
+          {st.caught && <span style={{ ...staffSt.role, background: '#e74c3c' }}>🚨 Từng gian lận</span>}
         </div>
         {st.skill < 5 && st.daysWorked !== undefined && (
           <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>Kinh nghiệm {st.exp ?? 0}/{expToNext(st.skill)} · đã làm {st.daysWorked} ngày</div>

@@ -157,7 +157,7 @@ export function PlanogramPanel() {
           <b style={{ fontSize: 12 }}>📊 Kệ đang chạy thế nào</b>
           {heatRows.map((r) => (
             <div key={r.uid} title={r.text}
-              style={{ fontSize: 12, lineHeight: 1.5, color: r.cold ? '#fdcb6e' : undefined, opacity: r.cold ? 1 : 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              style={{ fontSize: 12, lineHeight: 1.5, color: r.cold ? '#f1c40f' : undefined, opacity: r.cold ? 1 : 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {r.text}
             </div>
           ))}
@@ -215,7 +215,7 @@ export function PlanogramPanel() {
                     const fill = t.count / def.capacity;
                     const kho = p ? storage[p.id] ?? 0 : 0;
                     return (
-                      <div key={i} style={{ ...st.slot, borderColor: !p || t.count === 0 ? '#e17055' : fill <= LOW ? '#fdcb6e' : '#ffffff22' }}>
+                      <div key={i} style={{ ...st.slot, borderColor: !p || t.count === 0 ? '#e67e22' : fill <= LOW ? '#f1c40f' : '#ffffff22' }}>
                         <div style={{ height: 4, borderRadius: 2, background: p ? `#${p.color.toString(16).padStart(6, '0')}` : '#ffffff22' }} />
                         <Dropdown
                           value={t.productId ?? ''}
@@ -228,7 +228,7 @@ export function PlanogramPanel() {
                           ]}
                         />
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                          <div style={st.bar}><div style={{ ...st.barFill, width: `${fill * 100}%`, background: fill <= LOW ? '#fdcb6e' : '#00b894' }} /></div>
+                          <div style={st.bar}><div style={{ ...st.barFill, width: `${fill * 100}%`, background: fill <= LOW ? '#f1c40f' : '#2ecc71' }} /></div>
                           <b>{t.count}/{def.capacity}</b>
                         </div>
                         <div style={{ fontSize: 11, opacity: 0.8, minHeight: 15 }}>
@@ -261,7 +261,7 @@ export function PlanogramPanel() {
 
 const Stat = ({ label, value, warn }: { label: string; value: number; warn?: boolean }) => (
   <span style={st.stat}>
-    <b style={{ fontSize: 18, color: warn ? '#fdcb6e' : undefined }}>{value}</b>
+    <b style={{ fontSize: 18, color: warn ? '#f1c40f' : undefined }}>{value}</b>
     <span style={{ fontSize: 11, opacity: 0.7 }}>{label}</span>
   </span>
 );

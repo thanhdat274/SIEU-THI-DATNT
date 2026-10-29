@@ -78,7 +78,7 @@
 #ui .hud-money { position: relative; }
 /* Juice tiền: nhảy to + đổi màu khi kiếm/chi, kèm số +/− nổi lên rồi tan */
 #ui .hud-money b.money-up { animation: money-pop 0.5s ease; color: #5bd28f; }
-#ui .hud-money b.money-down { animation: money-pop 0.5s ease; color: #ff8f7a; }
+#ui .hud-money b.money-down { animation: money-pop 0.5s ease; color: #ff7675; }
 #ui .hud-delta {
   position: absolute;
   left: 4px;
@@ -90,7 +90,7 @@
   white-space: nowrap;
 }
 #ui .hud-delta.up { color: #5bd28f; }
-#ui .hud-delta.down { color: #ff8f7a; }
+#ui .hud-delta.down { color: #ff7675; }
 @keyframes money-pop { 0% { transform: scale(1); } 35% { transform: scale(1.22); } 100% { transform: scale(1); } }
 @keyframes money-float { 0% { opacity: 0; transform: translateY(4px); } 18% { opacity: 1; } 100% { opacity: 0; transform: translateY(-16px); } }
 

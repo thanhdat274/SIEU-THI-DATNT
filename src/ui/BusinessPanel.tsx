@@ -788,7 +788,7 @@ function Pets() {
             </div>
             <div style={sub}>{p.desc}</div>
             {pet && (
-              <div style={{ fontSize: 12, marginTop: 2, color: fed ? '#2ecc71' : '#e17055' }}>
+              <div style={{ fontSize: 12, marginTop: 2, color: fed ? '#2ecc71' : '#e67e22' }}>
                 {fed ? 'No bụng, đang làm việc' : 'Đói, không chịu làm việc'} · kho còn {storage[p.food] ?? 0} {productById(p.food).name} (không có thì mua lẻ giá gấp đôi)
               </div>
             )}
@@ -808,7 +808,7 @@ function Pets() {
                   {cat.verdict === 'losing' && <b style={{ color: '#e67e22' }}>lỗ cơm ~{formatMoney(cat.foodWeek - cat.savedWeek)}</b>}
                   {' '}(thức ăn ~{formatMoney(cat.foodWeek)}).
                 </div>
-                {!fed && <div style={{ color: '#e17055', marginTop: 2 }}>😾 Đói 1 ngày mất công dụng — cho ăn đều.</div>}
+                {!fed && <div style={{ color: '#e67e22', marginTop: 2 }}>😾 Đói 1 ngày mất công dụng — cho ăn đều.</div>}
               </div>
             )}
             {p.kind === 'cat' && pet && cat.verdict === 'nothing-spoiled' && (

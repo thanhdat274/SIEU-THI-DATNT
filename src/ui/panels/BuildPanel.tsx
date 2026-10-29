@@ -146,7 +146,7 @@ export function PaintTab() {
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
         <span style={{ flex: 1, fontSize: 13, opacity: 0.8 }}>
           {changed.length ? `Sơn lại ${changed.length} phần: ${formatMoney(cost)}` : 'Chưa đổi màu nào'}
-          {cost > money && <b style={{ color: '#ff8a7a' }}> · không đủ tiền</b>}
+          {cost > money && <b style={{ color: '#ff7675' }}> · không đủ tiền</b>}
         </span>
         <button style={{ ...styles.btn, marginLeft: 0 }} disabled={!Object.keys(pick).length} onClick={() => setPick({})}>Về màu cũ</button>
         <button

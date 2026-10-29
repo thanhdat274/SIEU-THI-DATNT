@@ -103,7 +103,7 @@ function ActiveContracts() {
                 {committed ? (
                   <>
                     <span style={{ color: '#f1c40f' }}>🤝 Đã cam kết — trữ {Object.values(cs.locked ?? {}).reduce((n, q) => n + q, 0)} món riêng, cọc {formatMoney(deposit)} (hoàn khi giao).</span>
-                    <button style={{ ...btn, background: 'transparent', border: '1px solid #e17055', color: '#e17055' }} onClick={() => releaseContract(id)}>↩️ Hủy cam kết</button>
+                    <button style={{ ...btn, background: 'transparent', border: '1px solid #e67e22', color: '#e67e22' }} onClick={() => releaseContract(id)}>↩️ Hủy cam kết</button>
                   </>
                 ) : (
                   <>
@@ -210,7 +210,7 @@ function ContractRow({ contract }: { contract: SupplyContract }) {
       ) : (
         <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {contract.rep && (
-            <span style={{ fontSize: 12, color: trusted ? '#2ecc71' : '#e17055' }}>
+            <span style={{ fontSize: 12, color: trusted ? '#2ecc71' : '#e67e22' }}>
               {trusted ? '✅' : '🔒'} {describeRep(contract.rep)} (đang {repScore(rep, contract.rep).toFixed(1)}★)
             </span>
           )}

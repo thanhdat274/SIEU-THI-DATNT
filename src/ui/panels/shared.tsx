@@ -8,7 +8,7 @@ export const byCategory = (a: Product, b: Product) => CATEGORY_ORDER.indexOf(a.c
 /** Hạn gần nhất của hàng đang bày: đỏ khi còn 1 ngày, cam khi còn 2–3 ngày. */
 export function LifeBadge({ life, sale }: { life: number | null; sale: number }) {
   if (life === null) return <span style={{ width: 64 }} />;
-  const color = life <= 1 ? '#d63031' : life <= 3 ? '#e17055' : undefined;
+  const color = life <= 1 ? '#e74c3c' : life <= 3 ? '#e67e22' : undefined;
   return (
     <span style={{ minWidth: 64, fontSize: 12, color, opacity: color ? 1 : 0.7, whiteSpace: 'nowrap' }} title={sale ? `Lô cận hạn, tự bán giảm ${sale * 100}%` : 'Hạn dùng còn lại của lô cũ nhất'}>
       ⏳ {life} ngày{sale > 0 && <b> −{sale * 100}%</b>}

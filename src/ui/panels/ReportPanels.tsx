@@ -256,7 +256,7 @@ export function SummaryPanel({ day }: { day: number }) {
                 <td style={styles.left}><b>Tiền vào − tiền ra</b></td>
                 <td style={{ color: profit >= 0 ? '#2ecc71' : '#e74c3c' }}><b>{formatMoney(profit)}</b></td>
               </tr>
-              {!!st.credited && <tr><td style={styles.left}>  trong đó khách quen ghi sổ (chưa thu)</td><td style={{ color: '#e17055' }}>{formatMoney(st.credited)}</td></tr>}
+              {!!st.credited && <tr><td style={styles.left}>  trong đó khách quen ghi sổ (chưa thu)</td><td style={{ color: '#e67e22' }}>{formatMoney(st.credited)}</td></tr>}
               {!!st.repaid && <tr><td style={styles.left}>Thu nợ cũ</td><td style={{ color: '#2ecc71' }}>+{formatMoney(st.repaid)}</td></tr>}
               <tr><td style={styles.left}>Món đã bán</td><td>{st.itemsSold}</td></tr>
               {!!st.online && (
@@ -265,11 +265,11 @@ export function SummaryPanel({ day }: { day: number }) {
               {!!(st.shrinkCash || st.shrinkItems) && (
                 <tr>
                   <td style={styles.left} title="Két thiếu tiền hoặc kho hụt hàng mà không ai biết vì sao — có thể có người tắt mắt">🕵️ Thất thoát không rõ</td>
-                  <td style={{ color: '#e17055' }}>{[st.shrinkCash ? formatMoney(st.shrinkCash) : '', st.shrinkItems ? `${st.shrinkItems} món` : ''].filter(Boolean).join(' · ')}</td>
+                  <td style={{ color: '#e67e22' }}>{[st.shrinkCash ? formatMoney(st.shrinkCash) : '', st.shrinkItems ? `${st.shrinkItems} món` : ''].filter(Boolean).join(' · ')}</td>
                 </tr>
               )}
               {!!st.spoiledItems && (
-                <tr><td style={styles.left}>Hàng hết hạn bỏ đi</td><td style={{ color: '#e17055' }}>{st.spoiledItems} món (vốn {formatMoney(st.spoiledCost ?? 0)})</td></tr>
+                <tr><td style={styles.left}>Hàng hết hạn bỏ đi</td><td style={{ color: '#e67e22' }}>{st.spoiledItems} món (vốn {formatMoney(st.spoiledCost ?? 0)})</td></tr>
               )}
               <tr><td style={styles.left}>Khách ghé</td><td>{st.customers} ({st.unhappy} không hài lòng)</td></tr>
               <tr><td style={styles.left}>Kinh nghiệm</td><td>+{st.xp} XP · Cấp {level} ({xp}/{xpToNext(level)})</td></tr>
@@ -487,7 +487,7 @@ export function SummaryPanel({ day }: { day: number }) {
                   {!!st.fees && (
                     <tr title="Phí ví điện tử / máy POS đã trừ khỏi tiền thật về">
                       <td style={styles.left}>↳ Phí thanh toán</td>
-                      <td style={{ color: '#e17055' }}>-{formatMoney(st.fees)}</td>
+                      <td style={{ color: '#e67e22' }}>-{formatMoney(st.fees)}</td>
                     </tr>
                   )}
                 </tbody>
@@ -1126,7 +1126,7 @@ export function MorningPanel() {
               <div key={r.id} style={{ ...styles.card }}>
                 <span style={{ flex: 1, fontSize: 13 }}>
                   <b>{r.name}</b> nợ <b>{formatMoney(debt.amount)}</b> từ ngày {debt.since}
-                  {day - debt.since >= DEBT_LATE_DAYS && <span style={{ color: '#ff8a7a' }}> · quá {DEBT_LATE_DAYS} ngày, mất hẳn sau ngày {debt.since + DEBT_WRITE_OFF_DAYS}</span>}
+                  {day - debt.since >= DEBT_LATE_DAYS && <span style={{ color: '#ff7675' }}> · quá {DEBT_LATE_DAYS} ngày, mất hẳn sau ngày {debt.since + DEBT_WRITE_OFF_DAYS}</span>}
                   {debt.reminded && ' · đã nhắc, lần này chắc trả'}
                 </span>
                 {!debt.reminded && <button style={styles.btn} onClick={() => useGame.getState().remindDebt(r.id)}>Nhắc nợ</button>}
@@ -1175,12 +1175,12 @@ export function MorningPanel() {
                   {cs.committed ? (() => {
                     const lm = reservedMissing(def, cs.locked);
                     return lm.length
-                      ? <span style={{ color: '#ff8a7a' }}> 🤝 cam kết — ⚠️ ngăn thiếu {lm.map((m) => `${m.need} ${productById(m.id).name}`).join(', ')}</span>
+                      ? <span style={{ color: '#ff7675' }}> 🤝 cam kết — ⚠️ ngăn thiếu {lm.map((m) => `${m.need} ${productById(m.id).name}`).join(', ')}</span>
                       : <span style={{ color: '#2ecc71', marginLeft: 6 }}>🤝 đã cam kết — hàng trữ riêng sẵn sàng ✓</span>;
                   })() : (() => {
                     const missing = missingForContract(def, storage);
                     return missing.length
-                      ? <span style={{ color: '#ff8a7a' }}> · thiếu: {missing.map((m) => `${m.need} ${productById(m.id).name}`).join(', ')}</span>
+                      ? <span style={{ color: '#ff7675' }}> · thiếu: {missing.map((m) => `${m.need} ${productById(m.id).name}`).join(', ')}</span>
                       : <span style={{ color: '#f1c40f' }}> · kho đủ · nên 🤝 Cam kết để giao được thêm {formatMoney(commitBonusValue(def))} tin cậy</span>;
                   })()}
                 </span>
@@ -1267,7 +1267,7 @@ export function DebtBook() {
           <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 13, background: aboutToLose ? 'rgba(231,76,60,0.10)' : undefined, borderRadius: 4 }}>
             <span style={{ flex: 1 }}>
               {r?.name}: <b>{formatMoney(d.amount)}</b>
-              <span style={{ opacity: 0.7, fontSize: 12, color: aboutToLose ? '#e74c3c' : age >= DEBT_LATE_DAYS ? '#e17055' : undefined }}>
+              <span style={{ opacity: 0.7, fontSize: 12, color: aboutToLose ? '#e74c3c' : age >= DEBT_LATE_DAYS ? '#e67e22' : undefined }}>
                 {' '}· {age} ngày · hạn mức {formatMoney(creditLimit(regulars[id]))}{d.reminded ? ' · đã nhắc' : ''}
                 {aboutToLose
                   ? <b style={{ color: '#e74c3c' }}> — MẤT HẲN tối nay!</b>

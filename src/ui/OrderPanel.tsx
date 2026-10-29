@@ -739,12 +739,12 @@ export function OrderPanel() {
               <span className="or-name">
                 <ProductIcon product={r.p} size={26} tile />{r.p.name}
                 {Number.isFinite(shelfLife(r.p.id)) && shelfLife(r.p.id) <= 14 && (
-                  <span style={{ ...st.badge, background: shelfLife(r.p.id) <= 3 ? '#d63031' : '#636e72' }} title="Hạn dùng khi mới nhập">⏳ {shelfLife(r.p.id)} ngày</span>
+                  <span style={{ ...st.badge, background: shelfLife(r.p.id) <= 3 ? '#e74c3c' : '#636e72' }} title="Hạn dùng khi mới nhập">⏳ {shelfLife(r.p.id)} ngày</span>
                 )}
-                {r.isHot && <span style={{ ...st.badge, background: '#e17055' }}>🔥 Hot</span>}
-                {r.isNew && <span style={{ ...st.badge, background: '#00b894' }}>Mới</span>}
-                {r.demand > 0 && r.have > 0 && r.have < r.demand && <span style={{ ...st.badge, background: '#e17055' }} title={`Còn ${r.have} món, khách mua ~${r.demand.toFixed(1)}/ngày — sắp hết`}>⚠️ Gần hết</span>}
-                {r.asked > 0 && r.have === 0 && <span style={{ ...st.badge, background: '#d63031' }}>Khách hỏi {r.asked} lần, hết hàng</span>}
+                {r.isHot && <span style={{ ...st.badge, background: '#e67e22' }}>🔥 Hot</span>}
+                {r.isNew && <span style={{ ...st.badge, background: '#2ecc71' }}>Mới</span>}
+                {r.demand > 0 && r.have > 0 && r.have < r.demand && <span style={{ ...st.badge, background: '#e67e22' }} title={`Còn ${r.have} món, khách mua ~${r.demand.toFixed(1)}/ngày — sắp hết`}>⚠️ Gần hết</span>}
+                {r.asked > 0 && r.have === 0 && <span style={{ ...st.badge, background: '#e74c3c' }}>Khách hỏi {r.asked} lần, hết hàng</span>}
                 {cheapById.get(r.p.id) && cheapById.get(r.p.id)!.delta > 0 && (
                   <button
                     onClick={() => setSupplierId(cheapById.get(r.p.id)!.supplier.id)}
@@ -795,7 +795,7 @@ export function OrderPanel() {
           {before - total > 0 && <span style={{ color: '#55efc4' }}> (bớt {formatMoney(before - total)})</span>}
           {tooSmall && <span style={{ color: '#ff7675' }}> · cần thêm {formatMoney(supplier.minOrder - total)} cho đủ đơn tối thiểu</span>}
           {total > money && <span style={{ color: '#ff7675' }}> · không đủ tiền</span>}
-          {wageShort && <span style={{ color: '#fdcb6e' }}> · còn lại không đủ {formatMoney(wages)} lương cuối ngày</span>}
+          {wageShort && <span style={{ color: '#f1c40f' }}> · còn lại không đủ {formatMoney(wages)} lương cuối ngày</span>}
           {tooBig && <span style={{ color: '#ff7675' }}> · nhà kho không đủ chỗ (còn trống {Math.max(0, capacity - usedNow)} thùng), nâng cấp nhà kho</span>}
         </span>
         <span style={{ display: 'flex', gap: 8 }}>
@@ -820,8 +820,8 @@ function Meter({ label, used, max, base = 0, text }: { label: string; used: numb
         <b>{label}</b><span style={{ opacity: 0.8, color: over ? '#ff7675' : undefined }}>{text}</span>
       </div>
       <div style={{ position: 'relative', height: 8, borderRadius: 4, background: '#ffffff22', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, width: pct(used), background: over ? '#e17055' : '#fdcb6e' }} />
-        <div style={{ position: 'absolute', inset: 0, width: pct(base), background: '#00b894' }} />
+        <div style={{ position: 'absolute', inset: 0, width: pct(used), background: over ? '#e67e22' : '#f1c40f' }} />
+        <div style={{ position: 'absolute', inset: 0, width: pct(base), background: '#2ecc71' }} />
       </div>
     </div>
   );
