@@ -25,7 +25,7 @@
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
 - Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
 
-### Giai đoạn gần đây · GĐ272–276 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–271: PROGRESS-GD250-257.md)
+### Giai đoạn gần đây · GĐ281 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–280: PROGRESS-GD250-257.md)
 
 - **GĐ177–271** đã dồn archive (docs/progress-archive/): 3D + đèn · supply chain · bộ soi tiền/vốn · PROGRESS-GD230-249.md · PROGRESS-GD250-257.md (phụ lục 258–271).
 - **GĐ251–253** 💲🧍🔀 — giá dịp lễ theo tolerance · vai hiện diện khỏi bảng rảnh + sửa OrderPanel vỡ TDZ · xếp lại ca mai một chạm (staffShiftFix). Chi tiết: archive.
@@ -34,22 +34,7 @@
 
 - **GĐ266–271** 🍬🎲📞 — nhập hàng biết cuối tuần (×1.25 + badge) · đơn `weekendOnly` (hoc_nhom chốt Thứ 7/CN) · sửa 2 bug roll tương quan (8 đơn = 0 lượt; sự kiện lệch 2.7×) · phản hồi cuối tuần trong tổng kết · lý do gọi khớp thời tiết · QA TOÀN DIỆN GĐ270. Chi tiết: archive (phụ lục 2–3).
 
-- **GĐ272 quét 2 bề mặt cuối** 🖼️: đăng nhập + menu Thêm @320/390/768 — 0 lỗi; chốt chuỗi rà soát màn hình.
-
-- **GĐ273 dự báo tuần mai** 🔮: audit trending + weeklyChallenge (sạch); Nhập hàng tối CN thêm "🔮 Tuần mai: X, Y" (đúng ranh giới khối). 2 test biên; 2233 test xanh.
-
-- **GĐ274 mồi tuần mới tối CN** 🔮: "Mai tiệm có gì" tối CN thêm "🔥 Tuần mới khách săn: X, Y" (khớp GĐ273). 2 test; 2235 test xanh.
-
-- **GĐ275 lịch tự động chỉnh giờ mở cửa** ⏰: giải tension GĐ160 (lịch 8h lỡ nửa đầu giờ vàng) — `autoOpenAt` (mặc định 8h, save cũ tự bù — không cần MIGRATIONS) + presets 8h→6h30; `planRoutine` mở theo nó, ra tiệm trước 1h; menu hồ sơ xoay vòng giờ. 5 test routine; 2240 test xanh; QA @5173: bấm 3 lần → 6h30 đúng mốc.
-- **GĐ276 dòng lịch trên Sổ đầu ngày** ⏰: `autoOpenNote` (thuần đọc) — mở sớm → "đón trọn giờ vàng", 8h → nhắc chỉnh; lịch tắt không hiện. QA @5173 đúng.
-
-- **GĐ277 khoá đường lưu autoOpenAt + chợ phiên×CN** 💾: 3 test save — bản cũ thiếu trường → mặc định 8h, bản mới 6h nạp đúng, round-trip giữ nguyên; lock test: mọi ngày phiên chợ (7, 14, 21…) đều Chủ nhật — chợ phiên đôn tự nhiên vào cuối tuần (đồng bộ GĐ254, không cần code). 2245 test xanh; boot @5173 sạch.
-
-- **GĐ278 QA mắt thẻ CÓ dữ liệu (GĐ155–159) — ĐÓNG watch-item cũ nhất** 👀: Thú cưng (verdict trung thực "kho sạch — chưa thấy công" + trạng thái cho ăn), Hụi (đủ số + hòa vốn), Khủng hoảng MXH (khách ×0.5), Bỏ lỡ (GĐ252). 0 lỗi console, 0 tràn @390. Không đổi code.
-
-- **GĐ279 note biết ai giữ cửa** 🧾: thu ngân autoOpen ca sáng mở 6h → "Thu ngân tự mở cửa sáng sớm"; ca chiều/không cờ → theo lịch chủ. 2 test; QA @5173 đúng.
-
-- **GĐ280 đóng GĐ110/117 bằng số liệu** 📊: đo 28 ngày cấp 50 — 3 nhiệm vụ xương sống bot đạt 24–26/28 (ngưỡng test ≥22); 8 nhiệm vụ còn lại bot = 0 vì bot KHÔNG làm hành động đó (giới hạn bot, không phải cân bằng) → CHỐT giữ nguyên mục tiêu. Test khoá tín hiệu; 2248 test xanh.
+- **GĐ272–280** 🖼️📞📊 — quét thẩm mỹ nốt đăng nhập + menu Thêm (0 lỗi, chốt chuỗi rà soát) · lý do gọi khớp thời tiết · QA mắt thẻ CÓ dữ liệu GĐ155–159 (đóng watch-item cũ nhất) · dự báo "tuần mai khách săn" (Nhập hàng tối CN + teaser) · lịch tự động chỉnh giờ mở cửa 6h–8h (autoOpenAt + note biết ai giữ cửa) · đóng GĐ110/117 bằng số liệu (xương sống 24–26/28, quest hành động bot không làm). Chi tiết: archive (phụ lục 2–4).
 
 ## Quy ước kỹ thuật cần nhớ
 
