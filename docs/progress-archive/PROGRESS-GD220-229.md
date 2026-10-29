@@ -18,3 +18,20 @@ món đã có đủ trên `OVERSTOCK_DAYS=7` ngày là `overstock` → `hold` (m
 `fairLotValue` (data/fairLotValue.ts) trả savings/savePct/dealPrice/lines (id,name,qty,have,dailyQty,
 daysOfStock,beneficial,overstock)/beneficialCount/overstockCount/verdict (`grab`|`maybe`|`hold`).
 OrderPanel thêm dòng khuyên xanh/cam ngay trong banner chợ phiên. (+5 test).
+
+## GĐ222 — 🏭 "Bao giờ nên nâng kho?"
+Mở rộng kho theo sức chứa × hàng giữ: StoragePanel vốn chỉ chìa cấp kho + nút nâng; nay
+`warehouseUpgradeValue` (data/warehouseUpgrade.ts) đếm thùng (`casesFor`) vs trần (`tier.cases`),
+món cần lạnh (`needsCold`) vs trần giữ lạnh (`tier.cold`), chấm điểm tràn → giá trị LẺ (~) của phần
+lạnh đang hỏng nhanh (tràn lấy món chiếm nhiều nhất × `priceOf`, nối GĐ212/spoil), giá bậc kế
+(WAREHOUSE_TIERS) vs tiền mặt → verdict `upgrade` (tràn/đụng trần thùng) / `soon` (lạnh hoặc thùng
+≥80–85%) / `ok`. StoragePanel thêm Callout "Kho dùng %thùng · giữ lạnh %(· tràn → ~Xđ hỏng nhanh)".
+(+5 test).
+
+## GĐ223 — 🎓 "Đào tạo nhân viên có đáng không?"
+Đổi hiệu quả đào tạo (`staffEff`) thành TIỀN/ngày: staffEff vốn chỉ chìa % tăng tốc của +1★ + giá
+buổi; nay `trainValue` (data/trainValue.ts) lấy giá trị ngày nhân viên (`staffValueToday.value` —
+doanh thu ca phủ) × % tăng tốc (`nextDeltaPct`) → mức tăng giá trị/ngày, so với tổng chi phí lên 1★
+(`ceil(expNeeded/TRAIN_EXP_PER_SESSION)` buổi × `trainCost`) → SỐ NGÀY HOÀ VỐN (`ceil(cost/valueGain)`),
+`worth` khi ≤14 ngày. StaffPanel thêm dòng "hoà vốn ~N ngày" cạnh nút đào tạo (xanh khi đáng / cam
+khi chậm). (+5 test).
