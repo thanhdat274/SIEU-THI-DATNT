@@ -530,6 +530,8 @@ export interface GameState {
   toggleVending: () => void;
   /** Nhận/ngưng đơn app ban đêm ở chi nhánh. */
   toggleNightDelivery: () => void;
+  /** GĐ206: bật/tắt auto chuyển kho — tự chở hàng khi kệ vơi, trả phí xăng mỗi chuyến. */
+  toggleBranchAutoHaul: () => void;
   /** Mua nâng cấp điện cho chi nhánh (máy phát, tủ tiết kiệm điện). */
   buyBranchPower: (id: PowerUpgradeId) => void;
   hireForBranch: (id: number, shift: Shift) => void;

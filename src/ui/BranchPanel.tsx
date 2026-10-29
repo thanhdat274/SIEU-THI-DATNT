@@ -7,11 +7,12 @@ import { branchMissSummary } from '../data/venueTrend';
 import { vendingPayoff } from '../data/minorPayoff';
 import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney, productById } from '../data/products';
+import { haulTripPlan, HAUL_REFILL_BELOW, HAUL_TRIP_EVERY } from '../data/branchHaul';
 import { Callout } from './panels/shared';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
-  const { branch, level, money, day, candidates, storage, stats, atBranch, online, licenses, venueTrend, openBranch, toggleBranch, toggleVending, toggleNightDelivery, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel, openPanel } = useGame();
+  const { branch, level, money, day, candidates, storage, stats, atBranch, online, licenses, venueTrend, openBranch, toggleBranch, toggleVending, toggleNightDelivery, toggleBranchAutoHaul, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel, openPanel } = useGame();
   const [tab, setTab] = useState<'info' | 'night' | 'report'>('info');
 
   if (!branch) {
@@ -155,6 +156,19 @@ export function BranchPanel() {
                 </div>
               );
             })()}
+          </div>
+          <div style={{ ...st.event, display: 'block', marginTop: 8 }}>
+            <div style={st.row}>
+              <b>🚚 Auto chuyển kho</b>
+              <button style={st.primary} onClick={toggleBranchAutoHaul}>{branch.autoHaul ? 'Đang bật · Tắt' : 'Bật tự chở'}</button>
+            </div>
+            <div style={st.sub}>
+              Khi bật, chi nhánh tự chở hàng từ <b>kho chung</b> mỗi khi kệ vơi dưới ~{Math.round(HAUL_REFILL_BELOW * 100)}% sức chứa
+              (giãn ~{HAUL_TRIP_EVERY / 60}h/chuyến) — <b>không cần người giao/xếp/quản lý</b>; mỗi chuyến trả phí xăng {formatMoney(CONVENIENCE.tripFee)}.
+              {(() => { const plan = haulTripPlan(branch, storage); return plan.units > 0
+                ? <> Chuyến hiện tại sẽ chở <b>{plan.units} món</b> ({plan.cost ? formatMoney(plan.cost) : 'miễn phí'}).</>
+                : ' Kệ đang đủ / kho chung hết đồ để chở.'; })()}
+            </div>
           </div>
         </div>
       )}

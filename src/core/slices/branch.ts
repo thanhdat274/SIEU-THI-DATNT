@@ -7,6 +7,7 @@ import { BLACKOUT_LOSS, BONUS_RELIEF, COVER_WAGE_MUL, DRUNK_BLOCK, DRUNK_DAMAGE,
   coverMul, hasAlcohol, hasPower, pickForGroup, pickNightGroup, powerUpgradeById, type PowerUpgradeId } from '../../data/branches';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
+import { autoHaulDue } from '../../data/branchHaul';
 import { CHIEF_QUIT_MUL, LEAD_FATIGUE_MUL, hasRank } from '../../data/careers';
 import { gainExp } from '../../data/staffTraits';
 import { LICENSE_FINE, isAlcohol, licenseById, licenseStatus } from '../../data/licenses';
@@ -155,11 +156,13 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
           : `💡 Mất điện ở tiện lợi giữa đêm: tủ mát tắt, ${lost} món hàng mát/đồ nóng bị hỏng`);
       }
     }
-    // Xe chở hàng: người giao/xếp hàng trực thì định kỳ chở; có quản lý thì kệ vơi là tự gọi xe
+    // Xe chở hàng: người giao/xếp hàng trực thì định kỳ chở; có quản lý thì kệ vơi là tự gọi xe;
+    // GĐ206 chủ bật autoHaul thì tự chở khi kệ vơi (không cần nhân viên), vẫn trả phí xăng mỗi chuyến.
     const total = shelfTotal(b.shelf);
     const mover = on.some((st) => st.role === 'courier' || st.role === 'stocker') && m - b.lastTrip >= CONVENIENCE.tripEvery;
     const managerCall = manager && total < CONVENIENCE.shelfCap * MANAGER_REFILL_BELOW && m - b.lastTrip >= 30;
-    if (mover || managerCall) {
+    const autoHaul = autoHaulDue(b, m);
+    if (mover || managerCall || autoHaul) {
       let room = CONVENIENCE.shelfCap - total;
       let moved = 0;
       for (const id of Object.keys(k.storage)) {
@@ -173,6 +176,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
         moved += got;
       }
       if (moved) { fees += CONVENIENCE.tripFee; b.lastTrip = m; }
+      if (autoHaul && moved) news.push(`🚚 Chi nhánh đã tự chở ${moved} món từ kho chung sang (auto chuyển kho, phí xăng ${formatMoney(CONVENIENCE.tripFee)})`);
     }
     // Khách ghé trong 10 phút; không ai đứng quầy, quầy đang ngưng hoặc hết hàng thì khách bỏ về
     const expect = (branchTrafficAt(m) * STEP) / 60;
@@ -319,7 +323,7 @@ export const branchNewDay = (b: BranchState, day: number): { branch: BranchState
   return { branch: { ...b, staff, fatigue, restDay, event: null, blockedUntil: undefined, hourly: Array(24).fill(0), vendingRevenueToday: 0, groupToday: {}, alcoholToday: 0, deliveryToday: 0, deliveryRevenueToday: 0 }, news };
 };
 
-export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState, 'openBranch' | 'toggleBranch' | 'hireForBranch' | 'fireFromBranch' | 'coverCalloff' | 'bonusBranchStaff' | 'restBranchStaff' | 'setBranchShift' | 'toggleVending' | 'toggleNightDelivery' | 'buyBranchPower'> => ({
+export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState, 'openBranch' | 'toggleBranch' | 'hireForBranch' | 'fireFromBranch' | 'coverCalloff' | 'bonusBranchStaff' | 'restBranchStaff' | 'setBranchShift' | 'toggleVending' | 'toggleNightDelivery' | 'toggleBranchAutoHaul' | 'buyBranchPower'> => ({
   openBranch: () => {
     const s = get();
     if (s.branch) return false;
@@ -416,6 +420,16 @@ export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState,
     if (!s.online.open) return s.notify('Cần mở gian hàng trên app (Bán online) trước khi nhận đơn đêm!');
     set({ branch: { ...b, nightDelivery: true } });
     s.notify(`🌙 Chi nhánh nhận đơn app ban đêm: phụ phí +${Math.round(NIGHT_DELIVERY_SURCHARGE * 100)}%, cần người giao hàng ca đêm.`);
+  },
+  toggleBranchAutoHaul: () => {
+    const s = get();
+    const b = s.branch;
+    if (!b) return;
+    const next = !b.autoHaul;
+    set({ branch: { ...b, autoHaul: next } });
+    s.notify(next
+      ? '🚚 Đã bật auto chuyển kho: tự chở hàng sang chi nhánh khi kệ vơi (mỗi chuyến phí xăng 15k).'
+      : '🚚 Đã tắt auto chuyển kho — chi nhánh chỉ được chở khi có người giao/xếp/quản lý.');
   },
   buyBranchPower: (id: PowerUpgradeId) => {
     const s = get();

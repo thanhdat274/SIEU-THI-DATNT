@@ -80,6 +80,8 @@ export interface BranchState {
   missedToday: number;
   /** Ngày đã nhắc kho chung sắp cạn (nhắc một lần mỗi tối). */
   warnedDay?: number;
+  /** GĐ206: chủ bật auto chuyển kho — tự chở hàng khi kệ vơi (không cần người giao/xếp/quản lý), trả phí xăng mỗi chuyến. */
+  autoHaul?: boolean;
   /** Mức mệt của từng nhân viên (0–100). */
   fatigue?: Record<number, number>;
   /** Nhân viên được nghỉ (id → ngày nghỉ). */
