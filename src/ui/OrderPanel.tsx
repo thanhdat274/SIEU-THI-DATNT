@@ -15,6 +15,8 @@ import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
 import { prodSuggestToday } from '../data/prodSuggest';
 import { quanNuocRestockTip } from '../data/quanNuoc';
 import { supplyRestockManifest, supplyNetworkOrderVisible } from '../data/supplyChain';
+import { teahouseFillPlan } from '../data/teahouseHaul';
+import { quanNuocDrinkIds } from '../data/quanNuoc';
 import { Callout } from './panels/shared';
 import { acceptFairOffer } from '../core/biz';
 import { monthOf } from '../data/calendar';
@@ -329,6 +331,26 @@ export function OrderPanel() {
     setCart(c);
     notify('🧾 Đã thêm món chi nhánh thiếu vào giỏ (theo phiếu nạp kho)');
   };
+  // GĐ209: một-chạm nạp ĐỒ UỐNG cho quán nước — quán rút đồ uống từ kho CHUNG nên "chở" = đặt đồ uống
+  // về kho đủ tối nay. Dùng helper THUẦN teahouseFillPlan (phân bổ thiếu vào món quán bán mà supplier
+  // hiện có, quy thùng), lọc qua rows như fillBranchSheet, vẫn tôn trọng ngân sách (chừa lương) + kho.
+  const fillQuanNuocDrinks = () => {
+    const wages = wagesDue(useGame.getState());
+    const budget = Math.max(0, money - wages);
+    const drinkUnits = quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
+    const plan = teahouseFillPlan(biz.quanNuoc, level, drinkUnits, (id) => (rows.some((r) => r.p.id === id) ? caseSize(id) : 0));
+    if (plan.topup <= 0) return notify('🥤 Quán nước tối nay đã đủ đồ uống — không cần nạp.');
+    let c = { ...cart };
+    let filled = 0;
+    for (const ln of plan.lines) {
+      c[ln.id] = maxFit(c, ln.id, ln.cases, budget);
+      filled += c[ln.id] * caseSize(ln.id);
+    }
+    setCart(c);
+    notify(filled > 0
+      ? `🧾 Đã thêm ${filled} ly đồ uống thiếu cho quán nước vào giỏ (${plan.lines.map((l) => `${l.id}×${l.cases}`).join(', ')})`
+      : '💰/📦 Đủ tiền hay chỗ kho không vừa thêm thùng nào — nâng cấp kho/nhập ít hơn');
+  };
   const categories = [...new Set(rows.map((r) => r.p.category))];
 
   const order = () => {
@@ -373,6 +395,11 @@ export function OrderPanel() {
               ? <> — nhập thêm ít nhất <b>{restockTip.shortfall} ly</b> nước/ngọt/cà phê</>
               : ' (đã đủ, chỉ nhắc lại tín hiệu hôm qua)'}.
           </div>
+          {restockTip.shortfall > 0 && (
+            <button style={{ ...st.btn, fontSize: 11, marginTop: 6, padding: '2px 8px' }} onClick={fillQuanNuocDrinks}>
+              ➕ Nạp đồ uống quán nước vào giỏ
+            </button>
+          )}
         </Callout>
       )}
       {netNeeds && (

@@ -1,4 +1,4 @@
-import { quanNuocProjection, type QuanNuocState } from './quanNuoc';
+import { quanNuocProjection, quanNuocDrinkIds, type QuanNuocState } from './quanNuoc';
 
 /**
  * GĐ208 — "Quán nước soi độ đủ đồ uống theo đêm" (áp cơ chế chở sang quán nước, vế THUẦN đọc).
@@ -35,4 +35,35 @@ export function teahouseHaulRead(drinkUnits: number, q: QuanNuocState | undefine
   const daysLeft = need > 0 ? haveNow / need : Infinity;
   const verdict = daysLeft <= TEAHOUSE_HAUL_DAYS_DANGER ? 'danger' : daysLeft <= TEAHOUSE_HAUL_DAYS_WARN ? 'warn' : 'ok';
   return { needPerNight: need, haveNow, daysLeft, verdict, haulNow: q?.open === true && daysLeft <= TEAHOUSE_HAUL_DAYS_WARN };
+}
+
+export interface TeahouseFillLine { id: string; cases: number; units: number }
+
+/**
+ * GĐ209 — "Nạp đồ uống quán nước": CƠ CHẾ CHỞ thật cho quán nước. Quán nước rút ĐỒ UỐNG từ kho CHUNG
+ * nên không có kệ riêng để "chở vào"; cách trung thực là CHỞ = đặt đồ uống về kho (giỏ đặt đơn) đủ cho
+ * tối nay. Helper THUẦN phân bổ phần thiếu (wanted − drinkUnits) vào các món đồ uống quán bán mà nhà
+ * cung cấp hiện có (qua `supplierCase(id)` — trả caseSize nếu bán, 0 nếu không), quy theo thùng. OrderPanel
+ * dùng để một-chạm nhét vào giỏ (như fillBranchSheet GĐ205) — không tự sửa storage/cart ở đây.
+ */
+export function teahouseFillPlan(
+  q: QuanNuocState | undefined,
+  level: number,
+  drinkUnits: number,
+  supplierCase: (id: string) => number,
+): { lines: TeahouseFillLine[]; topup: number } {
+  const topup = q?.open ? Math.max(0, quanNuocProjection(q, level, Infinity).wanted - Math.max(0, drinkUnits)) : 0;
+  if (topup <= 0) return { lines: [], topup };
+  const add: Record<string, number> = {};
+  let remaining = topup;
+  for (const id of quanNuocDrinkIds(level)) {
+    if (remaining <= 0) break;
+    const cs = supplierCase(id);
+    if (cs < 1) continue;
+    const cases = Math.ceil(remaining / cs);
+    add[id] = cases;
+    remaining -= cases * cs;
+  }
+  const lines = Object.entries(add).map(([id, cases]) => ({ id, cases, units: cases * Math.max(1, supplierCase(id)) }));
+  return { lines, topup };
 }

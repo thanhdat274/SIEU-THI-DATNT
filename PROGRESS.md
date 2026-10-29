@@ -53,13 +53,14 @@
 - **GĐ200** ⏳ Kho chung nuôi quán nước mấy ngày? `teahouseKhoDays` chân trời thời gian deterministic.
 - **GĐ201** 🏪 Nạp đúng thứ chi nhánh: `branchThinShelves` kệ trống theo headroom (trục multi-shop sâu).
 - **GĐ202** 🧾 Phiếu nạp kho: `supplyRestockManifest` đổi gợi ý thành số đơn vị chở/nhập cụ thể.
-- **GĐ203** 🎯 Nạp kho một chạm: mỗi dòng phiếu nhảy đúng bảng xử lý, nhãn theo nguồn.
+- **GĐ203** 🎯 Nạp kho một chạm: mỗi dòng phiếu nhảy đúng bảng xử lý.
 - **GĐ204** 🔗 Nối phiếu vào OrderPanel: màn Nhập hàng thấy cả MẠNG LƯỚI cần nhập/chở — `supplyNetworkOrderVisible(manifest)` chỉ hiện thẻ khi còn nhu cầu NGOÀI quán nước. `supplyChain.ts`, (+4), `OrderPanel.tsx`.
 
 - **GĐ205** ➕ "Điền kệ chi nhánh vào giỏ": phiếu thành HÀNH ĐỘNG — dòng chi nhánh mang mã món `id` để OrderPanel quy thùng `ceil(need/caseSize)` + nút nhét thẳng vào giỏ đặt đơn (tái dùng `maxFit`). THUẦN local-UI. `supplyChain.ts`, `OrderPanel.tsx`, (+2).
-- **GĐ206** 🚚 "Auto chuyển kho": trục thành CƠ CHẾ thật — trước chỉ chở khi có người TRỰC/quản lý gọi xe; giờ chủ bật TỰ CHỞ: `branch.autoHaul` (optional) + helper thuần `branchHaul.ts` `autoHaulDue` (bật + kệ vơi <50% + cách `HAUL_TRIP_EVERY=240'`) = điều kiện THỨ 3 vòng xe chở; `haulTripPlan` preview cùng công thức slice; vẫn trả phí xăng 15k. Khép backlog 6. `branchHaul.ts`, `slices/branch.ts` (+toggle), `branches.ts`, `gameTypes.ts`, `BranchPanel.tsx`, (+8).
-- **GĐ207** 🎛️ Auto chuyển kho CHỈNH NGƯỠNG/HẸN GIỜ: `setBranchAutoHaul(below,every)` (LOCAL_ONLY) lưu ngưỡng kệ vơi % + khoảng cách chuyến lên branch (optional); helper thuần `autoHaulCfg` clamp (30–80% · 120–720') là NGUỒN CHÂN LÝ cho cả `autoHaulDue` lẫn BranchPanel; UI 2 ô số (% · h/chuyến). `branchHaul.ts` (+autoHaulCfg), `branches.ts`, `slices/branch.ts` (+set), `gameTypes.ts`, `BranchPanel.tsx`, (+5). tsc+build sạch; full suite 1912/1912.
-- **GĐ208** 🥤 Quán nước SOI độ đủ đồ uống theo đêm (áp cơ chế chở sang quán nước, vế THUẦN): quan nước rút ĐỒ UỐNG từ kho CHUNG nên "kệ vơi" = kho chung bị ăn khô — `teahouseHaulRead(drinkUnits, quan, level)` dự phóng quán tiêu ~N ly/đêm, còn mấy đêm (needPerNight/daysLeft), clue `haulNow` khi còn ≤2 đêm (bản autoHaulDue cho quan nước); UI thẻ Callout "Kho đồ uống sắp cạn/quán ăn khô kho + → Nhập đồ uống". `teahouseHaul.ts` (mới), `QuanNuocPanel.tsx`, `teahouseHaul.test.ts` (+5). tsc+build sạch; QA @5173.
+- **GĐ206** 🚚 "Auto chuyển kho": trục thành CƠ CHẾ thật — trước chỉ chở khi có người TRỰC/quản lý gọi xe; giờ chủ bật TỰ CHỞ: `branch.autoHaul` (optional) + helper thuần `autoHaulDue` (bật + kệ vơi <50% + cách 240') = điều kiện THỨ 3 vòng xe chở; `haulTripPlan` preview cùng công thức slice; vẫn trả phí xăng 15k. Khép backlog 6. `branchHaul.ts`, `slices/branch.ts` (+toggle), `branches.ts`, `gameTypes.ts`, `BranchPanel.tsx`, (+8).
+- **GĐ207** 🎛️ Auto chuyển kho CHỈNH NGƯỠNG/HẸN GIỜ: `setBranchAutoHaul(below,every)` (LOCAL_ONLY) lưu ngưỡng kệ vơi % + khoảng cách chuyến; helper thuần `autoHaulCfg` clamp (30–80% · 120–720') là NGUỒN CHÂN LÝ cho cả slice lẫn UI; thêm 2 ô số. `branchHaul.ts` (+cfg), `branches.ts`, `slices/branch.ts` (+set), `gameTypes.ts`, `BranchPanel.tsx`, (+5).
+- **GĐ208** 🥤 Quán nước SOI độ đủ đồ uống theo đêm (áp cơ chế chở sang quán nước, vế THUẦN): quan nước rút ĐỒ UỐNG từ kho CHUNG nên "kệ vơi" = kho chung bị ăn khô — `teahouseHaulRead(drinkUnits, quan, level)` dự phóng quán tiêu ~N ly/đêm + còn mấy đêm (daysLeft) + clue haulNow khi còn ≤2 đêm; UI thẻ Callout "Kho đồ uống sắp cạn + → Nhập đồ uống". `teahouseHaul.ts` (mới), `QuanNuocPanel.tsx`, (+5). tsc+build sạch; QA @5173.
+- **GĐ209** ➕ Nạp đồ uống quán nước (CƠ CHẾ CHỞ một-chạm): quán rút ĐỒ UỐNG từ kho CHUNG nên chở = đặt đồ uống về kho đủ tối nay — helper THUẦN `teahouseFillPlan(q,level,drinkUnits,supplierCase)` phân bổ thiếu vào món quán bán mà supplier có, quy thùng; OrderPanel nút nhét thẳng giỏ (tái dùng maxFit, chừa lương+kho; không đụng endDay). `teahouseHaul.ts` (+fillPlan), `OrderPanel.tsx`, (+4). tsc+build sạch; full suite 1921/1921.
 - > Chi tiết đầy đủ GĐ184–GĐ203: docs/progress-archive/PROGRESS-GD181-203.md.
 
 ## Quy ước kỹ thuật cần nhớ
@@ -101,7 +102,7 @@
 3. Sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (save người thật); nếu vẫn lặp → thêm biến thể hoàn cảnh (lễ, weekend).
 4. GĐ164 theo dõi: arc E "Hàng xóm khai trương" (thay cam_do_mo) — chỉ làm khi 4 arc A–D chạy tốt trên save thật.
 5. ✅ UI nợ ĐÃ ĐÓNG (GĐ183): toàn bộ thẻ trong src/ui dùng `Callout`; 0 màu lệch bảng/toan trong UI. Hết món nợ UI còn thấy.
-6. 🔗 **Multi-shop supply chain (trục đang chạy, backlog 6)**: ĐÃ BẮT ĐẦU + SÂU — GĐ199 rốn kho chung (choke) → GĐ200 chân trời ngày (teahouseKhoDays) → GĐ201 nạp đúng thứ chi nhánh (branchThinShelves) → GĐ202 phiếu nạp kho (supplyRestockManifest đổi gợi ý thành số đơn vị chở/nhập cụ thể) → GĐ203 nạp một chạm (mỗi dòng phiếu nhảy đúng bảng xử lý) → GĐ204 nối vào OrderPanel (thấy cả mạng lưới ở màn nhập) → GĐ205 điền kệ chi nhánh vào giỏ đặt đơn → GĐ206 auto chuyển kho (chủ bật tư chở khi kệ vơi, phí xăng/chuyến — CƠ CHẾ, lần đầu chạm kinh tế/persist) → GĐ207 chỉnh ngưỡng/hẹn giờ → GĐ208 soi quán nước còn mấy đêm đồ uống (mở rộng chở sang qn, vế thuần đọc). Đã khép mạch đọc→gợi ý→nhảy→thấy→điền→tự chở→chỉnh→soi qn. Mở rộng nhỏ còn: cho quán nước CHỞ thật (nút nạp/nhân viên) — ghi chờ.
+6. 🔗 **Multi-shop supply chain (backlog 6)** — ĐÃ SÂU VA KHÉP: GĐ199 rốn kho → GĐ200 chân trời ngày → GĐ201 nạp đúng chi nhánh → GĐ202 phiếu nạp → GĐ203 nhảy một chạm → GĐ204 thấy cả mạng ở Nhập hàng → GĐ205 điền kệ chi nhánh vào giỏ → GĐ206 auto chuyển kho (CƠ CHẾ, chạm kinh tế/persist) → GĐ207 chỉnh ngưỡng/hẹn giờ → GĐ208 soi quán nước còn mấy đêm đồ uống → GĐ209 NẠP đồ uống quán nước một-chạm (chở thật). Mạch đọc→gợi ý→nhảy→thấy→điền→tự chở→chỉnh→soi→nạp qn đã khép; hết ý mở rộng nhỏ.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)
 
@@ -300,3 +301,4 @@
 - GĐ206 — 🚚 Auto chuyển kho: chủ bật tự chở khi kệ vơi (trả phí xăng/chuyến, không cần nhân viên)
 - GĐ207 — 🎛️ Auto chuyển kho chỉnh ngưỡng/hẹn giờ (autoHaulCfg clamp)
 - GĐ208 — 🥤 Quán nước soi độ đủ đồ uống theo đêm (còn mấy đêm, nên chở không)
+- GĐ209 — ➕ Nạp đồ uống quán nước một-chạm (chở đồ uống về kho đủ tối nay)
