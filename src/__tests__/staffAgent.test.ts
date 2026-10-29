@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGame } from '../core/store';
 import { setSimSeed, clearSimSeed } from '../core/rand';
+import { resetStaffDay, staffDaySnapshot } from '../core/slices/staffDay';
 import { furnitureDef } from '../data/furniture';
 import { unlockedProducts } from '../data/products';
 import { DIRT_PER_SWEEP, type Staff } from '../data/staff';
@@ -276,5 +277,58 @@ describe('lao công / kho / quản lý', () => {
     for (let i = 0; i < 600; i++) world.staff.update(0.4, false);
     expect(useGame.getState().deliveries.length).toBe(0);
     expect(useGame.getState().money).toBe(before);
+  });
+});
+
+describe('GĐ246: đếm thời gian làm/rảnh trong ca (staffDay transient)', () => {
+  it('xếp hàng không có việc (kệ đầy, kho trống) → gần như toàn bộ vào cột RẢNH', () => {
+    resetStaffDay();
+    const st = hire('stocker');
+    const s = useGame.getState();
+    // Dọn sạch kệ + kho: không còn việc bày hàng nào
+    const emptyFurniture = s.furniture.map((it) => ({ ...it, tiers: it.tiers.map((t) => ({ ...t, productId: null, count: 0, lots: [] })) }));
+    useGame.setState({ furniture: emptyFurniture as never, storage: {}, deliveries: [] });
+    useGame.setState({ staff: [st] });
+    runUntil(() => worker(st)?.state === 'working');
+    for (let i = 0; i < 100; i++) world.staff.update(0.4, false); // 40s game
+    const stat = staffDaySnapshot()[st.id];
+    expect(stat).toBeDefined();
+    expect(stat.idleSec).toBeGreaterThan(30); // đứng không gần hết 40s
+    expect(stat.idleSec).toBeGreaterThan(stat.workSec * 5);
+  });
+
+  it('có việc (các kệ vơi + kho còn hàng) → cột LÀM vượt cột rảnh', () => {
+    resetStaffDay();
+    const st = hire('stocker');
+    const prods = shelfProducts();
+    const s = useGame.getState();
+    // Mọi tầng của mọi kệ đều vơi + kho dư → chuỗi việc bày hàng dài, không kịp nghỉ
+    const storage: Record<string, number> = {};
+    const furniture = s.furniture.map((it) => ({
+      ...it,
+      tiers: it.tiers.map((t, i) => {
+        const p = prods[i % prods.length];
+        storage[p.id] = 500;
+        return { ...t, productId: p.id, count: 0, lots: [] };
+      }),
+    }));
+    useGame.setState({ furniture: furniture as never, storage, deliveries: [], staff: [st] });
+    runUntil(() => worker(st)?.state === 'working');
+    for (let i = 0; i < 300; i++) world.staff.update(0.4, false); // 120s game: liên tục lấy-bày
+    const stat = staffDaySnapshot()[st.id];
+    expect(stat).toBeDefined();
+    expect(stat.workSec).toBeGreaterThan(10); // đi lấy hàng + bày kệ
+    expect(stat.workSec).toBeGreaterThan(stat.idleSec);
+  });
+
+  it('resetStaffDay (đóng Sổ đầu ngày) xoá số liệu đếm của agent', () => {
+    resetStaffDay();
+    const st = hire('stocker');
+    useGame.setState({ staff: [st], storage: {} });
+    runUntil(() => worker(st)?.state === 'working');
+    for (let i = 0; i < 50; i++) world.staff.update(0.4, false);
+    expect(Object.keys(staffDaySnapshot()).length).toBeGreaterThan(0);
+    resetStaffDay();
+    expect(staffDaySnapshot()).toEqual({});
   });
 });

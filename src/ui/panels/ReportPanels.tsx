@@ -27,6 +27,7 @@ import { prepItems, prepReadiness, prepBonus, PREP_MIN_QTY } from '../../data/fe
 import { itemHealthList, shelfAttention, shelfCount } from '../../data/analytics';
 import { computeRecords, recordFeedToday } from '../../data/records';
 import { comboDaySnapshot, resetComboDay } from '../../core/slices/comboDay';
+import { resetStaffDay } from '../../core/slices/staffDay';
 import { comboById } from '../../data/combos';
 import { branchMorningPlan } from '../../data/branchMorning';
 import { storageUsed } from '../../core/gameTypes';
@@ -1170,7 +1171,7 @@ export function MorningPanel() {
           ? `Hôm nay có ${PHONE_SLOTS.length} khe giờ hàng xóm gọi điện đặt hàng: ${PHONE_SLOTS.map((m) => formatClock(m)).join(', ')}. Nghe máy kịp mới có đơn.`
           : `Chưa thuê 🛵 Giao hàng nên không có cuộc gọi nào. Thuê nhân viên giao hàng để mở đơn điện thoại (khe giờ: ${PHONE_SLOTS.map((m) => formatClock(m)).join(', ')}).`}
       </p>
-      <Footer onClose={() => { resetComboDay(); closePanel(); }}>
+      <Footer onClose={() => { resetComboDay(); resetStaffDay(); closePanel(); }}>
         <button style={styles.btn} onClick={() => openPanel({ type: 'order' })}>📦 Nhập hàng</button>
         <button style={styles.btn} onClick={() => openPanel({ type: 'storage' })}>🏭 Kho</button>
       </Footer>

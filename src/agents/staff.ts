@@ -13,6 +13,7 @@ import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { Walker, RIDE_SPEED } from './walker';
 import { simRng } from '../core/rand';
+import { noteStaffTime } from '../core/slices/staffDay';
 
 const SIDEWALK_Z = 2.2;
 const EDGE_X = 38;
@@ -27,6 +28,8 @@ class Worker extends Walker {
   job: string | null = null;
   /** Quầy thu ngân đang phụ trách. */
   post: string | null = null;
+  /** Đang đứng không chờ việc (GĐ246): work() vừa xét xong và không tìm được việc — dùng để đếm thời gian rảnh. */
+  idlePause = false;
   /** Chỗ đứng ở quầy (0 = sau quầy, 1 = đứng cạnh phụ người thứ nhất). */
   slot = 0;
   /** Xe máy giao hàng (chỉ nhân viên giao hàng): hiện khi đang chở hàng đi giao. */
@@ -117,6 +120,8 @@ export class StaffManager {
       }
       w.step(gameDt);
       if (w.state === 'working' && w.idle) this.work(w, gameDt);
+      // GĐ246: đếm thời gian trong ca — "rảnh" khi lượt xét gần nhất của work() không tìm được việc
+      if (w.state === 'working') noteStaffTime(w.staff.id, gameDt, w.idlePause);
       if (w.state === 'leaving' && w.idle) {
         this.scene.remove(w.mesh);
         w.dispose();
@@ -258,8 +263,11 @@ export class StaffManager {
 
   /** Nhân viên đang rảnh: tìm việc tiếp theo. */
   private work(w: Worker, gameDt: number) {
+    // GĐ246: lượt xét mới — mặc định coi là có việc; các nhánh "không có việc" underneath sẽ bật lại
+    w.idlePause = false;
     // Phụ trại không có việc trong tiệm — mọi hiệu ứng chạy ở cuối ngày (endDay)
     if (w.staff.role === 'farmhand') {
+      w.idlePause = true;
       w.pause = Math.max(gameDt, 5);
       return;
     }
@@ -360,12 +368,14 @@ export class StaffManager {
       }
     }
     // Không có việc: đứng chờ một lát rồi kiểm tra lại
+    w.idlePause = true;
     w.pause = Math.max(gameDt, 2);
   }
 
   /** Đầu bếp/pha chế: tới đứng cạnh trạm nấu còn bỏ trống; mẻ nào xong thì bưng xuống kho. */
   private watchStove(w: Worker, gameDt: number, stations = useGame.getState().furniture.filter((f) => isCookStation(f.type))) {
     if (!stations.length) {
+      w.idlePause = true;
       w.pause = Math.max(gameDt, 5);
       return;
     }
@@ -376,13 +386,17 @@ export class StaffManager {
     const spot = this.shop.spotFor(post, (simRng()() - 0.5) * 0.4);
     if (w.position.distanceTo(spot) > 0.3) this.walk(w, spot);
     else if (useGame.getState().cookJobs.length) w.pause = Math.max(gameDt, 2);
-    else w.pause = Math.max(gameDt, 4);
+    else {
+      w.idlePause = true; // đứng cạnh bếp mà không có mẻ nào đang nấu
+      w.pause = Math.max(gameDt, 4);
+    }
   }
 
   /** Lao công: sàn có bẩn thì tới một chỗ ngẫu nhiên lau, sạch rồi thì nghỉ. */
   private sweep(w: Worker, gameDt: number) {
     const s = useGame.getState();
     if (s.dirt < 3) {
+      w.idlePause = true; // sàn sạch, không có gì lau
       w.pause = Math.max(gameDt, 4);
       return;
     }
@@ -443,6 +457,7 @@ export class StaffManager {
     const def = s.order?.accepted ? partyOrderById(s.order.id) : undefined;
     if (this.delivering || !def || missingForOrder(def, s.storage).length) {
       // Rảnh: đứng chờ ở chỗ quen cạnh cửa, khỏi chắn lối khách ra vào
+      w.idlePause = true; // GĐ246: không có đơn nào để đi giao
       if (w.position.distanceTo(idlePost) > 0.4) this.walk(w, idlePost);
       else w.pause = Math.max(gameDt, 5);
       return;
@@ -511,7 +526,10 @@ export class StaffManager {
     const main = this.shop.counters()[0];
     const spot = main ? main.center.clone().add(new THREE.Vector3(1.2, 0, 0.6)) : this.shop.doorInside;
     if (w.position.distanceTo(spot) > 0.5) this.walk(w, spot);
-    else w.pause = Math.max(gameDt, 4);
+    else {
+      w.idlePause = true; // GĐ246: hết giờ kiểm kho, không phải trực quầy thay — đứng nghỉ
+      w.pause = Math.max(gameDt, 4);
+    }
   }
 
   /** Đặt thêm các món đang bày mà kho (kể cả hàng đang về) sắp cạn; mối rẻ nhất trước, đại lý gần nhà lo phần còn lại. */

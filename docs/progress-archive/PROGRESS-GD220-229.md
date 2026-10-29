@@ -233,3 +233,20 @@ quy ra deltaKhách/ngày (so mức cơ bản customersPerDay) và tiền thêm/n
 (MorningPanel) hiện dòng định lượng ở CẢ HAI thẻ lễ: thẻ "đang diễn ra" (🎉 ước thêm ~N khách/ngày
 ≈ +Xđ/ngày · N món hot) và thẻ "⏳ Lễ sắp tới" (Còn N ngày: khách ×traffic (~N khách ≈ +Xđ/ngày)
 · N món hot mở khóa · giá nhập +X% (bán đắt vẫn đông)). Không đụng state/save; deterministic. (+5 test)
+
+---
+
+**GĐ246 staffIdle** — soi nhân viên rảnh bao nhiêu % ca, ĐÓNG NỢ MỞ cũ "thời gian rảnh không ghi ở
+state nào (chỉ runtime)". 3 mảnh: (1) slice transient `core/slices/staffDay.ts` (tiền lệ comboDay.ts
+GĐ124): noteStaffTime(id, dt, idle) mutate trực tiếp (gọi mỗi tick × mỗi người — không copy object),
+staffDaySnapshot() bản sao sâu, resetStaffDay() gọi cùng resetComboDay() lúc đóng Sổ đầu ngày; KHÔNG
+persist, KHÔNG đụng SAVE_VERSION. (2) agent `agents/staff.ts`: Worker có cờ `idlePause` — work() xoá
+cờ đầu lượt xét, các nhánh "không có việc" bật lại (xếp hàng hết việc, bếp không có mẻ, lau xong sàn,
+giao hàng không có đơn, quản lý hết giờ kiểm kho, phụ trại); update() đếm noteStaffTime mỗi tick khi
+state='working'. Rảnh = đứng không chờ việc; trực quầy/canh bếp có mẻ/đi làm việc = làm. (3) helper
+THUẦN ĐỌC `data/staffIdle.ts`: staffIdleStats → từng người idlePct + verdict busy(<35%)/balanced/
+idle_heavy(≥65%), loại phụ trại; StaffPanel thêm dòng 🧍 từng người (xanh dương = bận liền tay, vàng
+= vừa sức, cam = rảnh nhiều) + Callout cam khi có người rảnh ≥65% ca (gợi ý bớt ca/điều 🔀). Test:
+7 unit slice+helper (biên: dt=0, snapshot sâu, reset, tổng 0s) + 3 agent-level (kho trống → rảnh
+>30s/40s; các kệ vơi kho dư → làm > rảnh; reset dọn sạch) — mutation check: bỏ cờ idlePause nhánh
+"hết việc" → test đỏ đúng chỗ. (+10 test)

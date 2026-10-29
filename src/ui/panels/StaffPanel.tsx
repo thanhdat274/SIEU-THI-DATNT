@@ -13,6 +13,8 @@ import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
 import { serveCoverage, SERVE_TOP_HOURS } from '../../data/serveCoverage';
 import { staffValueToday, staffShiftSummary } from '../../data/staffValue';
+import { staffIdleStats, IDLE_HEAVY_PCT, type StaffIdleRow } from '../../data/staffIdle';
+import { staffDaySnapshot } from '../../core/slices/staffDay';
 import { branchShiftSummary, branchStaffValueToday } from '../../data/branchStaffValue';
 import { nightStaffValueToday } from '../../data/nightStaffValue';
 import { nightPnl } from '../../data/nightReport';
@@ -35,6 +37,8 @@ export function StaffPanel() {
   const nightStrip = nightPnl(stats?.byHour, staff, skills);
   // Ca mặc định khi thuê vào chi nhánh: ca đầu tiên còn thiếu thu ngân, đủ hết thì ca đêm
   const needShift = BRANCH_SHIFTS.find((sh) => !bStaff.some((x) => x.shift === sh && x.role === 'cashier')) ?? 'night';
+  // GĐ246: % rảnh từng người hôm nay (dữ liệu transient do agent đếm, reset đầu ngày)
+  const idleRows = staffIdleStats(staffDaySnapshot(), staff).rows;
   return (
     <>
       <h2 style={styles.title}>👥 Nhân viên</h2>
@@ -91,6 +95,19 @@ export function StaffPanel() {
           </Callout>
         );
       })()}
+      {(() => {
+        // GĐ246: soi nhân viên rảnh — chỉ lên Callout khi có người rảnh phần lớn ca (nên xử lý);
+        // còn lại xem từng người ở dòng 🧍 trong thẻ nhân viên, tránh ồn khi đội vừa sức.
+        const mostIdle = idleRows.reduce<StaffIdleRow | null>((a, b) => (!a || b.idlePct > a.idlePct ? b : a), null);
+        if (!mostIdle || mostIdle.verdict !== 'idle_heavy') return null;
+        return (
+          <Callout tone="warn" style={{ marginBottom: 8 }} title={`🧍 ${mostIdle.icon} ${mostIdle.name} rảnh ~${mostIdle.idlePct}% ca (làm ${mostIdle.workMin}m · nghỉ ${mostIdle.idleMin}m)`}>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              Vai này đang dư người hoặc thiếu việc: cân nhắc bớt một ca, điều sang tiệm kia (🔀) hoặc giảm tuyển vai tương tự. Xem % rảnh của từng người ngay dưới tên họ.
+            </div>
+          </Callout>
+        );
+      })()}
       <Tabs tabs={[['team', '📋 Đang làm'], ['hire', '🔍 Tuyển dụng']]} value={tab} onChange={setTab} />
 
       {tab === 'team' && (
@@ -108,6 +125,7 @@ export function StaffPanel() {
               ) : (
                 <StaffValueLine sv={staffValues.find((v) => v.id === st.id)} />
               )}
+              <StaffIdleLine row={idleRows.find((r) => r.id === st.id)} />
               <PromoteRow st={st} level={level} money={money} onPromote={promoteStaff} />
               <div style={staffSt.actions}>
                 <span style={staffSt.label}>🕒 Ca làm</span>
@@ -400,6 +418,19 @@ function NightStaffLine({ sv }: { sv?: import('../../data/nightStaffValue').Nigh
   return (
     <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Ước tính: doanh thu các giờ đêm (≥22h) chia cho số người cùng ca đêm, so với lương thực trả ×1.5 (thuần đọc sổ giờ)">
       🌙 Đêm qua ~{formatMoney(sv.value)} · lương {formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
+    </div>
+  );
+}
+
+/** GĐ246: dòng % rảnh hôm nay của một nhân viên (dữ liệu transient agent đếm) — ẩn khi chưa vào ca hôm nay.
+ *  Màu theo bậc: xanh dương = bận liền tay (cân nhắc thêm người), vàng = vừa sức, cam = rảnh nhiều nên xử lý. */
+function StaffIdleLine({ row }: { row?: StaffIdleRow }) {
+  if (!row) return null;
+  const color = row.verdict === 'idle_heavy' ? '#e67e22' : row.verdict === 'balanced' ? '#f1c40f' : '#3498db';
+  const label = row.verdict === 'idle_heavy' ? 'rảnh nhiều — dư người vai này?' : row.verdict === 'busy' ? 'bận liền tay — cân nhắc thêm người' : 'vừa sức';
+  return (
+    <div style={{ fontSize: 12, marginTop: 2, color }} title="Đo từ agent trong ca hôm nay: 'rảnh' là đứng không chờ việc; trực quầy/canh bếp có mẻ tính là đang làm. Phụ trại không đo (việc chạy cuối ngày).">
+      🧍 Sáng đến giờ: rảnh ~{row.idlePct}% ca · làm {row.workMin}m · nghỉ {row.idleMin}m — {label}
     </div>
   );
 }
