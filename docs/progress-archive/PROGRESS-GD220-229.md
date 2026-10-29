@@ -212,3 +212,13 @@ THUẦN ĐỌC map `licenses` + danh sách `need` (từ requiredLicenses) + `day
 bắt buộc, nhóm missing (→ fineExposure = missing × 200k) và expiring (trong RENEW_WARN_DAYS → nên gia
 hạn). Verdict ok/warn/danger. LicensesPanel thêm Callout đầu bảng: "🚨 Thiếu/hết hạn N phép — phạt tới
 Xđ" / "⏰ N phép sắp hết hạn, nên gia hạn" / "✅ Đủ phép". THUẦN ĐỌC, deterministic. (+5 test)
+
+---
+
+**GĐ244 socialValue** — soi hiệu ứng buzz mạng xã hội ra khách/tiền. `socialValue` (data/socialValue.ts)
+THUẦN ĐỌC: hệ số khách = `socialTraffic` (buzz.mul × promoBoost), rồi quy ra deltaKhach/ngày
+(so với mức khách cơ bản customersPerDay) và tiền bằng avg giỏ hôm nay (revenue/customers). Phân loại
+hype (×1.25 → thêm khách) / crisis chưa xin lỗi (×0.72 → mất khách, gợi ý xin lỗi: apologyGainKhach =
+cpd × (APOLOGY_MUL−CRISIS_MUL) = 20% khách/ngày so với mặc kệ) / đã xin lỗi (×0.92) / calm. SocialPanel
+thêm Callout "🔥 Buzz khen đang sinh tiền" (hype) và "🙏 Đã xin lỗi, khách đang quay lại" (crisis đã xin
+lỗi); khủng hoảng chưa xin lỗi vẫn dùng thẻ chi tiết GĐ159 sẵn có. THUẦN ĐỌC, deterministic. (+5 test)

@@ -2,7 +2,8 @@ import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import { activeBuzz, APOLOGY_COST, promoBoost, PROMO_MIN_FOLLOWERS, SOCIAL_UNLOCK } from '../../data/social';
 import { crisisStatus, recentAvgRevenue } from '../../data/minorPayoff';
-import { Footer, stars, starColor, styles } from './shared';
+import { socialValue } from '../../data/socialValue';
+import { Callout, Footer, stars, starColor, styles } from './shared';
 
 export function SocialPanel() {
   const { social, day, level, money, history, apologize, promoteShop, closePanel } = useGame();
@@ -24,6 +25,26 @@ export function SocialPanel() {
           {buzz && <small style={{ opacity: 0.7 }}>tới hết ngày {buzz.until}</small>}
         </div>
       </div>
+      {(() => {
+        // GĐ244: soi buzz mạng xã hội ra khách/tiền thật. Hype → thêm khách đều mỗi ngày; khủng hoàng đã xin
+        // lỗi thì vẫn mất chút khách (×APOLOGY_MUL) nhưng giữ lại hơn ~20% khách so với mặc kệ. Trường hợp chưa
+        // xin lỗi đã có thẻ chi tiết phía dưới nên không vẽ lại.
+        const stats = useGame.getState().stats;
+        const sv = socialValue({ social, day, level, customers: stats.customers, revenue: stats.revenue });
+        if (buzz?.kind === 'hype')
+          return (
+            <Callout tone="accent" title="🔥 Buzz khen đang sinh tiền" style={{ marginBottom: 10 }}>
+              Hệ số khách ×{sv.traffic} — thêm ~{Math.round(sv.deltaKhachPerDay)} khách/ngày, ước ~{formatMoney(Math.round(sv.moneyDeltaPerDay))}/ngày theo giá giỏ hôm nay.
+            </Callout>
+          );
+        if (buzz?.kind === 'crisis' && buzz.responded)
+          return (
+            <Callout tone="ok" title="🙏 Đã xin lỗi, khách đang quay lại" style={{ marginBottom: 10 }}>
+              Khách giữ ở ×{sv.traffic} — nhờ xin lỗi mà giữ thêm ~{Math.round(sv.apologyGainKhach)} khách/ngày so với mặc kệ (ước ~{formatMoney(Math.round(sv.apologyGainMoney))}/ngày).
+            </Callout>
+          );
+        return null;
+      })()}
       {buzz?.kind === 'crisis' && !buzz.responded && (() => {
         // GĐ159: đếm ngày khủng hoảng + quy "xin lỗi" ra khách/tiền. Hệ số thật: CRISIS_MUL 0.72 → APOLOGY_MUL
         // 0.92, chênh đúng 0.20 khách bình thường mỗi ngày còn lại; tiền ước theo bình quân doanh thu 7 ngày
