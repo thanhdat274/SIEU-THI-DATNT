@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1833/1833 test pass (166 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ189. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ 887s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
+- **1839/1839 test pass (167 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ190. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ 887s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–189 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
+### Giai đoạn gần đây · GĐ177–190 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
 
 - **GĐ177** 🏮 Đầu ngõ lên đèn: đèn lồng cột dựng Blender (`blender_lantern.py`) bật sáng ấm chập tối (lamp 17h–5h30, lightBudget) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md.
 - **GĐ178** 🎨 Gộp họ xanh dương guide/chuỗi/biểu đồ về info `#3498db` (16 chỗ) — chi tiết: archive trên.
@@ -40,6 +40,7 @@
 - **GĐ187** 🍵 "Quán nước lên đèn": hoàn tất chuỗi "cảnh ấm" (GĐ177 mặt tiền → GĐ185 cơ ngơi) cho điểm khách quen tụ họp — quán nước đầu ngõ. 2 nguồn sáng ấm `#ffb35c` (quanTây/quanĐông quanh quầy+bàn tại LANE_X+4.4) đăng ký lightBudget, sáng theo `warmGlow` (17h–5h30) NHƯNG chỉ khi quán MỞ (`open` gate = `world.quanNuoc.stand.visible`): mảnh đất trống/gộp chưa mua thì tối tẻ, mở rồi mới ấm — thưởng cảm xúc cho ai xây dựng không gian xã hội. Không đổi SAVE_VERSION/kinh tế/sim. `quanNuocWarm.ts` (+`warmGlow` re-export), `world.ts`, `main.tsx`, test +4 (tổng 4); tsc+build sạch, 1823/1824 (đỏ = flake weeklyGoalCap đã biết); QA @5173: update({lamp,open}) đúng gate, boot ổn.
 - **GĐ188** 🧑‍🤝‍🧑 Quán nước "người thứ N đáng đồng lương?": đóng nốt bộ GĐ141–153 "giá trị vs chi phí" — DUY NHẤT quán nước chưa có lời phán về người đang GIỮ (GĐ127 chỉ trả lời chiều LÊN "thuê thêm 1 người"). Helper thuần `quanNuocStaffValues(price,level,staff,drinkUnits)` tái dựng công thức GĐ127, tính GIÁ TRỊ BIÊN người thứ N = chênh doanh thu thô N−1→N (chặn kho) − lương 150k → verdict ok/warn/low + chiều LÊN `quanNuocNextStaffVerdict`. UI: Callout trong QuanNuocPanel hiện từng người (✔/◑/✖ + ±lãi/ngày + gợi "nên sa thải — kho cạn"), màu theo bảng ngữ cảnh. Không đổi SAVE_VERSION/kinh tế/sim. `quanNuocStaffValue.ts`, `QuanNuocPanel.tsx`, test +4 (đối chiếu ground-truth quanNuocProjection — không hardcode số); tsc+build sạch; QA @5173 sau khi hoàn tất.
 - **GĐ189** 🧋 Quán nước thiếu đồ uống thành "việc sáng": Sổ đầu ngày (GĐ76) nhắc chi nhánh/hợp đồng/nợ/đối tác/sự kiện nhưng quán nước chỉ nằm thẻ thụ động → giờ thành candidate ưu tiên: hôm qua bán thiếu ly (missedRevenue>0) → việc danger "Nạp đồ uống, bỏ lỡ ~Xđ"; sắp ăn khô kho chung (driesMain — kệ tiệm chính cạn nước theo) → cảnh báo nên nạp trước. Helper thuần `quanNuocDayAction(health)` → DayAction|null (layout tái dùng dayPlan, panel 'quannuoc'), nối vào candidates trong ReportPanels. Không đổi SAVE_VERSION/kinh tế/sim. `quanNuoc.ts`, `ReportPanels.tsx`, test +5; tsc+build sạch; QA @5173.
+- **GĐ190** 🧃 "Nạp bao nhiêu để bán đủ tối nay?": đóng vòng lặp GĐ189 — Sổ đầu ngày nhắc quán thiếu đồ uống (danger/warn) nhưng KHÔNG cho biết cần nhập thêm bao nhiêu ly và ấn ở đâu để xử lý (chữ "nhập nước/ngọt/cà phê" thụ động trong panel, tự đi tìm Nhập hàng). Helper thuần `quanNuocRestockTip(q,level,storage,last)` cũng cùng chân lý `quanNuocHealth`/`quanNuocProjection`: trả shortfall = max(0, wanted tối nay − tồn kho đồ uống) + verdict danger (hôm qua MẤT tiền vì thiếu) / warn (chưa mất nhưng đêm nay ăn khô kho chung) / null (ngày sạch). QuanNuocPanel hiện Callout nạp kho (đỏ/cam theo bảng ngữ cảnh) nêu con số "cần thêm N ly" + nút "→ Nhập hàng" (openPanel 'order') — chuyển khuyến nghị thành hành động một chạm. Không đổi SAVE_VERSION/kinh tế/sim. `quanNuoc.ts` (+`quanNuocRestockTip`), `QuanNuocPanel.tsx`, test +6; tsc+build sạch; QA @5173.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -74,6 +75,7 @@
 - GĐ187: quán nước lên đèn — xác nhận trên save thật (quán đã mua) chập tối 17h–5h30 chỗ quầy+bàn ấm, quán chỉ là mảnh đất/gộp chưa mua thì vẫn tối; và không chói khi đứng quầy tiệm (quán ở x=54.4 xa mặt tiền x<8). (IAB nền dừng rAF — verify thuần qua update(object,open) như các giai đoạn 3D gần đây.)
 - GĐ188: thẻ "từng người đáng đồng lương" quán nước — xác nhận trải nghiệm thật trên save có quán + staff: người thứ N đáng/nên bớt đúng theo kho (kho cạn → nên sa thải người cuối); hiển thị không nhiễu khi quán đông/nghỉ. Màu verdict ok/warn/low đúng bảng ngữ cảnh.
 - GĐ189: quán nước thành việc sáng — xác nhận Sổ đầu ngày hiện 1 dòng "Nạp đồ uống" khi hôm qua bán thiếu (danger đỏ) và cảnh báo "sắp ăn khô kho chung" khi driesMain; không nhiễu ngày quán khỏe.
+- GĐ190: thanh nạp kho — xác nhận trên save thật (quán + staff + kho thiếu) QuanNuocPanel hiện Callout đỏ/cam đúng mức, con số "cần N ly" khớp dự phóng và nút "→ Nhập hàng" mở đúng panel order; ngày kho đủ thì ẩn (không nhiễu).
 - Flake `weeklyGoalCap` cấp 50: lần full + lần isolate đều timeout 900s (autoplay 28 ngày cấp 50 nặng ~908s, máy đang tải khi chạy liên tục) — ĐÃ xác nhận KHÔNG phải hồi quy của GĐ185/186 (thuần render/3D, node test không chạy); chạy lúc máy rảnh là 16/16 xanh (GĐ184 full run gần nhất). Nếu tái diễn: nâng timeout hoặc rút autoplay ngày ở cấp 50.
 - GĐ171: scale mục tiêu vòng ×(1+0.5(N−1))/×(1+0.3(N−1)) — cần save thật vòng 2+ để xác nhận trad vẫn căng nhưng với tới; nếu vẫn quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi.
@@ -276,3 +278,4 @@
 - GĐ187 — 🍵 Quán nước lên đèn: đèn ấm chập tối ở điểm khách quen tụ họp (chỉ khi quán MỞ) — hoàn tất chuỗi "cảnh ấm"
 - GĐ188 — 🧑‍🤝‍🧑 Quán nước "người thứ N đáng đồng lương?": giá trị biên từng nhân viên + chiều bớt/sa thải — đóng nốt bộ GĐ141–153
 - GĐ189 — 📒 Quán nước thành việc sáng: thiếu đồ uống trở thành dòng ưu tiên "Việc hôm nay" (danger đỏ khi bán thiếu hôm qua, cảnh báo driesMain trước khi ăn khô kho chung)
+- GĐ190 — 🧃 Thanh nạp kho quán nước: con số "cần thêm N ly" để bán đủ tối nay + nút "→ Nhập hàng" — khuyến nghị GĐ189 thành hành động một chạm

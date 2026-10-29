@@ -3,7 +3,7 @@ import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import {
   QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE,
-  QUAN_PRICE_OPTIONS, quanNuocProjection, quanNuocDrinkIds, type QuanNuocPrice,
+  QUAN_PRICE_OPTIONS, quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, type QuanNuocPrice,
 } from '../../data/quanNuoc';
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
 import { Callout, Footer, styles } from './shared';
@@ -26,7 +26,7 @@ const priceTip = (mul: number, traffic: number) => {
 
 /** Quán Nước Đầu Ngõ: quán nước ở đầu hẻm, nguyên liệu lấy thẳng từ kho tiệm. */
 export function QuanNuocPanel() {
-  const { biz, level, money, storage, buyQuanNuoc, hireQuanNuoc, fireQuanNuoc, setQuanNuocPrice, closePanel } = useGame();
+  const { biz, level, money, storage, buyQuanNuoc, hireQuanNuoc, fireQuanNuoc, setQuanNuocPrice, closePanel, openPanel } = useGame();
   const quan = biz.quanNuoc;
   const last = biz.quanNuocLast;
   const locked = level < QUAN_NUOC_UNLOCK;
@@ -38,6 +38,8 @@ export function QuanNuocPanel() {
   const tonightProj = quan.open ? quanNuocProjection(quan, level, drinkUnits) : null;
   // GĐ188: "người thứ N đáng đồng lương?" — chiều xuống (nên giữ bớt ai / sa thải ai). Thuần đọc.
   const staffValues = quan.open ? quanNuocStaffValues(quan.price, level, quan.staff, drinkUnits) : [];
+  // GĐ190: thanh nạp kho — thiếu bao nhiêu ly để bán đủ tối nay + nút nhảy sang Nhập hàng.
+  const restockTip = quan.open ? quanNuocRestockTip(quan, level, storage, last) : null;
 
   return (
     <div style={{ width: '100%', maxWidth: 560 }}>
@@ -137,6 +139,25 @@ export function QuanNuocPanel() {
                 <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>⚠️ Kho thiếu đồ uống — nhập nước/ngọt/cà phê… để bán đủ.</div>
               )}
             </div>
+          )}
+          {restockTip && (
+            <Callout
+              tone={restockTip.verdict}
+              title={restockTip.verdict === 'danger' ? '🚨 Thiếu đồ uống tối nay' : '🥤 Sắp ăn khô kho chung'}
+              style={{ marginTop: 6 }}
+            >
+              <div style={{ fontSize: 12 }}>
+                {restockTip.verdict === 'danger'
+                  ? `Hôm qua đã bỏ lỡ ~${restockTip.missedRevenue.toLocaleString('vi-VN')}đ vì kho thiếu. Đêm nay quán cần ~${restockTip.wanted} ly nhưng kho chỉ còn ${restockTip.have} — cần thêm ${restockTip.shortfall} ly để bán đủ. `
+                  : `Đêm nay quán cần ~${restockTip.wanted} ly nhưng kho chỉ còn ${restockTip.have} — quán ăn hết là kệ tiệm chính cạn nước. Cần thêm ${restockTip.shortfall} ly. `}
+                <button
+                  style={{ ...styles.btn, marginLeft: 0, padding: '2px 10px', background: restockTip.verdict === 'danger' ? '#e74c3c' : '#e67e22', color: '#fff' }}
+                  onClick={() => openPanel({ type: 'order' })}
+                >
+                  → Nhập hàng
+                </button>
+              </div>
+            </Callout>
           )}
           {staffValues.length > 0 && (
             <Callout

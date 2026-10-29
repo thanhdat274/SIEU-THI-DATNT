@@ -186,3 +186,30 @@ export function quanNuocDayAction(h: QuanNuocHealth | null | undefined): DayActi
   }
   return null;
 }
+
+/**
+ * GĐ190 — "Nạp bao nhiêu để bán đủ tối nay?" — companion nạp kho của GĐ189: Sổ đầu ngày nhắc quán
+ * thiếu đồ uống, nhưng vế quan trọng là NGƯỜI CHƠI cần biết NHẬP THÊM BAO NHIÊU ly và ấn ở đâu để
+ * xử lý. Helper thuần này trả con số thiếu hụt tối nay (chênh giữa `tonight.wanted` — nhu cầu dự phóng
+ * — và tồn kho hiện tại) + mức khẩn cấp đúng bảng ngữ cảnh:
+ *   - danger: hôm qua BỊ MẤT tiền vì kho thiếu (missedRevenue>0) — đang rỉ máu.
+ *   - warn:   chưa mất nhưng đêm nay ăn khô kho chung (driesMain) — cần xử lý trước.
+ *   - null:   ngày sạch — không nhiễu.
+ * Cùng chân lý `quanNuocHealth` (tức `quanNuocDay`), KHÔNG đổi SAVE_VERSION/kinh tế/sim. UI dùng
+ * con số này để ra thẻ nạp kho + nút nhảy sang Nhập hàng (order).
+ */
+export interface QuanNuocRestockTip { shortfall: number; wanted: number; have: number; missedRevenue: number; verdict: 'danger' | 'warn' }
+
+export function quanNuocRestockTip(
+  q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null,
+): QuanNuocRestockTip | null {
+  const h = quanNuocHealth(q, level, storage, last);
+  const shortfall = Math.max(0, h.tonight.wanted - h.drinkUnitsNow);
+  if (h.missedRevenue > 0) {
+    return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: h.missedRevenue, verdict: 'danger' };
+  }
+  if (h.driesMain && shortfall > 0) {
+    return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: 0, verdict: 'warn' };
+  }
+  return null;
+}
