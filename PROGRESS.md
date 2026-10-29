@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1992/1992 test pass (181 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ211.
+- **1997/1997 test pass (182 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ212.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–211 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md · GĐ184–203: docs/progress-archive/PROGRESS-GD181-203.md)
+### Giai đoạn gần đây · GĐ177–212 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md · GĐ184–203: docs/progress-archive/PROGRESS-GD181-203.md)
 
 - **GĐ177–198** 🏮→📖 (đèn lồng, biển mở/đóng, đèn chờ, chợ phiên, đóng nợ UI, sửa đường, đèn cơ ngơi, quán nước lên đèn + staff value + thiếu đồ uống → nạp kho, hồi vốn ca đêm/quán nước/chi nhánh, băng ghế, chợ/kệ ngồi, cờ lễ hội, đọc con hẻm) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md + PROGRESS-GD181-203.md.
 - **GĐ199** 🔗 Rốn kho chung: `supplyChainOverview` nối 3 điểm bán + điểm NGHẼN (BẮT ĐẦU trục multi-shop).
@@ -39,8 +39,10 @@
 - **GĐ207** 🎛️ Auto chuyển kho CHỈNH NGƯỠNG/HẸN GIỜ: `setBranchAutoHaul` (LOCAL_ONLY) lưu ngưỡng kệ vơi % + khoảng cách; `autoHaulCfg` clamp (30–80% · 120–720') là NGUỒN CHÂN LÝ cho cả slice lẫn UI; 2 ô số. `branchHaul.ts` (+cfg), `slices/branch.ts` (+set), `BranchPanel.tsx`, (+5).
 - **GĐ208** 🥤 Quán nước SOI độ đủ đồ uống theo đêm: quán rút ĐỒ UỐNG từ kho CHUNG — `teahouseHaulRead` dự phóng còn mấy đêm (daysLeft) + clue haulNow khi ≤2 đêm; UI Callout "Kho đồ uống sắp cạn". `teahouseHaul.ts` (mới), `QuanNuocPanel.tsx`, (+5).
 - **GĐ209** ➕ Nạp đồ uống quán nước một-chạm (CƠ CHẾ CHỞ): helper THUẦN `teahouseFillPlan(q,level,drinkUnits,supplierCase)` phân bổ thiếu vào món quán bán mà supplier có, quy thùng; OrderPanel nút nhét thẳng giỏ (tái dùng maxFit, chừa lương+kho; không đụng endDay). `teahouseHaul.ts` (+fillPlan), `OrderPanel.tsx`, (+4). tsc+build sạch; full suite 1921/1921.
-- **GĐ210** ✅ QA TOÀN DIỆN + phủ test (mỗi 10 GĐ): chạy `test:coverage` → thêm 21 test cho các mô-đun business logic lộ hổng — `reputation.test.ts` (+10, danh tiếng có nguyên nhân: itemQuality/sampleVisit/reputationOf/repScore) · `wholesale.test.ts` (+5, bán sỉ: makeVendorOffer/wholesaleTotal) · `adviceMore.test.ts` (+9, gợi ý: walkoutAdvice/peakHours/peakAdvice/expiryAdvice/missKey). Coverage: statements 42.9% / branches 86% / functions 68.9% (phần thấp còn lại là render/world/audio 3D — không unit-test ý nghĩa). Cả vòng ngày ở nhiều cấp đã do simSmoke/simGolden/economySim bao; UI đa kích thước responsive audit trước đó. tsc+build sạch; full suite 1964/1964 (179 files).
-- **GĐ211** 🛺 "Bán sỉ cho người bán rong có đáng không?" — ống soi QUYẾT ĐỊNH buổi sáng: trước Hud chỉ chìa tổng tiền sỉ; nay phán TỪNG MÓN nên nhả hay giữ, đọc thuần (không đụng kinh tế/persist). Móc nối hai hệ đang rời rạc: bán sỉ (wholesale) × độ tươi lô (freshness). Giá sỉ `wholesaleUnit` (≥ nhập+5%, thường niêm yết ×85%) so với giá lẻ SAU giảm cận hạn `markdown` + độ ứ `nearestLife`+`storage`: cận hạn ≤2 ngày → bán ngay đỡ mất trắng · giá sỉ ≥ giá lẻ giảm cận hạn → nhả gọn · kho ứ ≥3×đơn → giải phóng chỗ · thiếu hàng → đừng nhận lời · còn tươi bán chạy → giữ bán lẻ. `wholesale.ts` (+wholesaleUnit, nguồn chân lý chung), `wholesaleValue.ts` (mới, WHOLESALE_SELL_DAYS=2), `Hud.tsx` (tip gọn trong banner sỉ), `hud.css`, (+9 test). tsc+build sạch; full suite 1992/1992 (181 files).
+- **GĐ210** ✅ QA TOÀN DIỆN + phủ test (mỗi 10 GĐ): `test:coverage` → thêm 21 test — reputation (+10) · wholesale (+5) · adviceMore (+9). Coverage: statements 42.9% / branches 86% / functions 68.9% (phần thấp còn lại là render/world/audio 3D). Vòng ngày nhiều cấp do simSmoke/simGolden/economySim bao; UI responsive audit trước. tsc+build sạch; full suite 1964/1964 (179 files).
+- **GĐ211** 🛺 "Bán sỉ có đáng không?" — ống soi QUYẾT ĐỊNH buổi sáng: trước Hud chỉ chìa tổng tiền sỉ; nay phán TỪNG MÓN nên nhả/giữ (đọc thuần). Móc nối bán sỉ × độ tươi lô: giá sỉ `wholesaleUnit` (≥ nhập+5%, thường niêm yết ×85%) so với giá lẻ SAU giảm cận hạn `markdown` + độ ứ `nearestLife`: cận hạn ≤2 ngày → bán ngay · giá sỉ ≥ giá lẻ giảm cận hạn → nhả gọn · kho ứ ≥3×đơn → giải phóng chỗ · thiếu hàng → đừng nhận · còn tươi bán chạy → giữ lẻ. `wholesale.ts` (+wholesaleUnit nguồn chung), `wholesaleValue.ts` (mới), `Hud.tsx`, `hud.css`, (+9). tsc+build sạch; full suite 1992/1992 (181 files).
+
+- **GĐ212** 💰 "Cận hạn đêm nay đáng bao nhiêu" — hệ quả TIỀN của cảnh báo GĐ43: trước chỉ liệt kê món + số lượng "sắp hết hạn"; giờ biết bằng tiền đang rủi ro mất nếu không xử lý. Helper THUẦN `spoilRiskValue` (tái dùng `nearExpiryItems` + `markdown`) quy giá trị lô cận hạn ở giá lẻ SAU giảm cận hạn × số lượng, tách riêng "hỏng đêm nay" (life=1) và tổng ở ngưỡng. Hud ExpiryAlert thêm dòng "≈ Xđ hỏng đêm nay · tổng Yđ — bày bán/hạ giá/bán sỉ kịp" (vòng tay nối với GĐ211 bán sỉ). `spoilRisk.ts` (mới), `Hud.tsx`, `hud.css`, (+5 test). tsc+build sạch; full suite 1997/1997 (182 files).
 
 - > Chi tiết đầy đủ GĐ184–GĐ203: docs/progress-archive/PROGRESS-GD181-203.md.
 
@@ -286,3 +288,4 @@
 - GĐ209 — ➕ Nạp đồ uống quán nước một-chạm (chở đồ uống về kho đủ tối nay)
 - GĐ210 — ✅ QA toàn diện + phủ test (reputation/wholesale/adviceMore)
 - GĐ211 — 🛺 Bán sỉ có đáng không? soi từng món (giá sỉ vs giá lẻ giảm cận hạn / độ ứ kho)
+- GĐ212 — 💰 Cận hạn đáng bao nhiêu? tiền rủi ro hỏng đêm nay (giá trị lô cận hạn sau giảm giá)

@@ -39,6 +39,7 @@ import { useSession } from '../net/session';
 import { describeItems, houseById, phoneOrderValue } from '../data/phoneOrders';
 import { vendorById, wholesaleTotal } from '../data/wholesale';
 import { wholesaleAdvice } from '../data/wholesaleValue';
+import { spoilRiskValue } from '../data/spoilRisk';
 import { STORIES } from '../data/biz';
 import { findSurprise } from '../data/surpriseArcs';
 import { chooseSurprise, closeChapter, closeStory, dismissTutorial, REGULAR_NAMES } from '../core/biz';
@@ -748,11 +749,20 @@ function ExpiryAlert() {
   const storage = useGame((s) => s.storage);
   const storageLots = useGame((s) => s.storageLots);
   const furniture = useGame((s) => s.furniture);
-  const items = nearExpiryItems(storage, storageLots, furniture.flatMap((f) => f.tiers));
+  const priceOf = useGame((s) => s.priceOf);
+  const shelves = furniture.flatMap((f) => f.tiers);
+  const items = nearExpiryItems(storage, storageLots, shelves);
   if (!items.length) return null;
+  const risk = spoilRiskValue(storage, storageLots, shelves, priceOf);
   return (
     <div className="hud-alert warn">
       ⏳ <b>Hàng sắp hết hạn:</b> {items.map((i) => `${i.name} (${i.qty})`).join(', ')}
+      {risk && (
+        <small className="hud-wholesale-tip">
+          ≈ {formatMoney(risk.tonightValue > 0 ? risk.tonightValue : risk.totalValue)}
+          {risk.tonightValue > 0 ? ' hỏng đêm nay' : ' đang cận hạn'} · tổng {formatMoney(risk.totalValue)} — bày bán / hạ giá / bán sỉ kịp kẻo mất.
+        </small>
+      )}
       <span className="hud-alert-actions">
         <button className="hud-btn primary" onClick={() => useGame.getState().openPanel({ type: 'storage' })}>Xử lý</button>
       </span>
