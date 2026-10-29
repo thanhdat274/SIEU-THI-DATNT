@@ -41,7 +41,9 @@
 - **GĐ274 mồi tuần mới tối CN** 🔮: "Mai tiệm có gì" tối CN thêm "🔥 Tuần mới khách săn: X, Y" (khớp GĐ273). 2 test; 2235 test xanh.
 
 - **GĐ275 lịch tự động chỉnh giờ mở cửa** ⏰: giải tension GĐ160 (lịch 8h lỡ nửa đầu giờ vàng) — `autoOpenAt` (mặc định 8h, save cũ tự bù — không cần MIGRATIONS) + presets 8h→6h30; `planRoutine` mở theo nó, ra tiệm trước 1h; menu hồ sơ xoay vòng giờ. 5 test routine; 2240 test xanh; QA @5173: bấm 3 lần → 6h30 đúng mốc.
-- **GĐ276 dòng lịch trên Sổ đầu ngày** ⏰: phản chiếu lựa chọn GĐ275 ở mức lập kế hoạch sáng — `autoOpenNote` (thuần đọc, core/routine.ts): mở sớm → "đón trọn giờ vàng", 8h → nhắc chỉnh kèm chỗ sửa; lịch tắt không hiện. 1 test; 2241 test xanh; QA @5173 cả hai nhánh đúng, 0 lỗi console.
+- **GĐ276 dòng lịch trên Sổ đầu ngày** ⏰: `autoOpenNote` (thuần đọc) — mở sớm → "đón trọn giờ vàng", 8h → nhắc chỉnh; lịch tắt không hiện. 1 test; QA @5173 cả hai nhánh đúng.
+
+- **GĐ277 khoá đường lưu autoOpenAt + chợ phiên×CN** 💾: 3 test save — bản cũ thiếu trường → mặc định 8h, bản mới 6h nạp đúng, round-trip giữ nguyên; lock test: mọi ngày phiên chợ (7, 14, 21…) đều Chủ nhật — chợ phiên đôn tự nhiên vào cuối tuần (đồng bộ GĐ254, không cần code). 2245 test xanh; boot @5173 sạch.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -318,3 +320,4 @@
 - GĐ274 — 🔮 Mồi tuần mới tối CN trong Mai tiệm có gì (khớp GĐ273)
 - GĐ275 — ⏰ Lịch tự động chỉnh giờ mở cửa 6h–8h (autoOpenAt + xoay vòng preset trong menu hồ sơ)
 - GĐ276 — ⏰ Dòng lịch tự động trên Sổ đầu ngày (autoOpenNote)
+- GĐ277 — 💾 Khoá autoOpenAt qua save (3 test) + lock chợ phiên luôn rơi Chủ nhật

@@ -265,3 +265,44 @@ describe('migrate 1→2 — bản lưu đời cũ', () => {
     expect(store.useGame.getState().money).toBe(1000);
   });
 });
+
+// ── GĐ277 — autoOpenAt (GĐ275) đi trọn đường lưu: thiếu ở save cũ → mặc định 8h, có → giữ nguyên ──
+describe('autoOpenAt qua applySnapshot (GĐ275/277)', () => {
+  it('bản lưu CŨ thiếu autoOpenAt → tự bù mặc định 480 (8h) — hành vi cũ nguyên vẹn', async () => {
+    idb.set('main', row('main', 100, { day: 12, money: 3_000_000, level: 8 }));
+    await save.initSaves();
+    save.loadGame();
+    expect(store.useGame.getState().autoOpenAt).toBe(480);
+  });
+
+  it('bản lưu MỚI có autoOpenAt 360 (6h) → nạp đúng, không bị ghi đè về mặc định', async () => {
+    idb.set('main', row('main', 100, { day: 12, money: 3_000_000, level: 8, autoOpenAt: 360 }));
+    await save.initSaves();
+    save.loadGame();
+    expect(store.useGame.getState().autoOpenAt).toBe(360);
+  });
+
+  it('round-trip: snapshot → apply giữ đúng autoOpenAt', () => {
+    store.useGame.setState({ autoOpenAt: 390 });
+    const snap = save.snapshot();
+    store.useGame.setState({ autoOpenAt: 480 });
+    save.applySnapshot(snap);
+    expect(store.useGame.getState().autoOpenAt).toBe(390);
+  });
+});
+
+// ── GĐ277 — phiên chợ luôn rơi Chủ nhật: đồng bộ nhịp chợ với nhịp cuối tuần ──
+import { isMarketDay, MARKET_EVERY, FIRST_MARKET } from '../data/chophien';
+import { weekdayOf } from '../data/calendar';
+
+describe('ngày phiên chợ × cuối tuần (GĐ277)', () => {
+  it('mọi ngày phiên (7, 14, 21…) đều là Chủ nhật — chợ phiền đôn cuối tuần, cùng nhịp GĐ254', () => {
+    for (let day = FIRST_MARKET; day <= 365; day += MARKET_EVERY) {
+      expect(isMarketDay(day)).toBe(true);
+      expect(weekdayOf(day)).toBe('Chủ nhật');
+    }
+    for (let day = 1; day <= 365; day++) {
+      if (isMarketDay(day)) expect(weekdayOf(day)).toBe('Chủ nhật');
+    }
+  });
+});
