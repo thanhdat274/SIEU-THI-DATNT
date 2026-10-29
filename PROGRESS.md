@@ -27,14 +27,14 @@
 
 ### Giai đoạn gần đây · GĐ272–276 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–271: PROGRESS-GD250-257.md)
 
-- **GĐ177–261** đã dồn archive (docs/progress-archive/): 3D + đèn (177–198) · supply chain (199–209) · bộ soi tiền/vốn (210–229) · PROGRESS-GD230-249.md · PROGRESS-GD250-257.md (gồm phụ lục 258–261).
+- **GĐ177–271** đã dồn archive (docs/progress-archive/): 3D + đèn · supply chain · bộ soi tiền/vốn · PROGRESS-GD230-249.md · PROGRESS-GD250-257.md (phụ lục 258–271).
 - **GĐ251–253** 💲🧍🔀 — giá dịp lễ theo tolerance · vai hiện diện khỏi bảng rảnh + sửa OrderPanel vỡ TDZ · xếp lại ca mai một chạm (staffShiftFix). Chi tiết: archive.
 - **GĐ254–257 nhịp CUỐI TUẦN** 📅 khép trọn 4 mạch: weekdayOf/isWeekend (ngày 1 = Thứ 2) + quest "🍬 Cuối tuần ăn vặt" (chỉ pool Thứ 7/CN, cuối pool — ngày thường xoay GIỮ NGUYÊN) → khách thèm ăn vặt (chooseWants ×0.2, list chung WEEKEND_SNACKS) → lịch tô sáng cuối tuần → việc sáng + "Mai tiệm có gì" nhắc. Chi tiết: archive. Cảm hứng Hay Day/Stardew; không đổi lượng khách, chỉ đổi nhiệm vụ + NMU trong ngày.
 - **GĐ258–261** 🎨🖼️ — gọn 6 họ màu cũ về bảng GĐ166 · coverage sweep (credit/services/professions, xoá 6 id chết `likes` nghề) · QA TOÀN DIỆN (34 panel × 3 cỡ màn 0 lỗi/0 tràn, autoplay 2 ngày sạch) · quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390, tương phản ô cuối tuần, 2 dropdown Sổ tay Tiệm cắt chữ @390. Chi tiết: archive PROGRESS-GD250-257.md (phụ lục 258–261).
 
 - **GĐ266–271** 🍬🎲📞 — nhập hàng biết cuối tuần (×1.25 + badge) · đơn `weekendOnly` (hoc_nhom chốt Thứ 7/CN) · sửa 2 bug roll tương quan (8 đơn = 0 lượt; sự kiện lệch 2.7×) · phản hồi cuối tuần trong tổng kết · lý do gọi khớp thời tiết · QA TOÀN DIỆN GĐ270. Chi tiết: archive (phụ lục 2–3).
 
-- **GĐ272 quét 2 bề mặt cuối** 🖼️: màn đăng nhập + menu "Thêm" @320/390/768 (ảnh + DOM) — 0 lỗi: nút full-bề-rộng, lưới 2 cột cuộn tốt, Chương 1 đè menu đúng z-order. Chuỗi "rà soát toàn bộ màn hình" chốt — mọi bề mặt đã soi (GĐ264/265/272). Không đổi code.
+- **GĐ272 quét 2 bề mặt cuối** 🖼️: đăng nhập + menu Thêm @320/390/768 — 0 lỗi; chốt chuỗi rà soát màn hình.
 
 - **GĐ273 dự báo tuần mai** 🔮: audit trending + weeklyChallenge (sạch); Nhập hàng tối CN thêm "🔮 Tuần mai: X, Y" (đúng ranh giới khối). 2 test biên; 2233 test xanh.
 
