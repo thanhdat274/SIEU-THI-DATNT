@@ -38,6 +38,8 @@
 
 - **GĐ281 độ phủ khách quen** 👥: probe 28 khách quen × 20 seed × 120 ngày — tất cả đều ghé được (834–839/2400, hash nhiễu tự nhiên 1.6×), không ai "tàng hình"; lock test ngưỡng 2× (bắt loại lỗi hệ thống GĐ267). Kết thúc chuỗi audit độ phủ: đơn (GĐ267) · sự kiện/thị trường (GĐ269) · khách quen (GĐ281). 2249 test xanh; boot @5173 sạch.
 
+- **GĐ282 QA mắt 4 arc A–D trọn vẹn** 📖: force từng arc qua dev state và đi hết mọi cảnh/lựa chọn — Mưa rào (needStock chặn nút thiếu kho — hoạt động thật), Cái kính, Hẻm ngập (3 cảnh, chuyện NỐI mạch), Clip hot (3 cảnh); cả 4 done + ghi choices đúng; 0 lỗi console. **Kết hợp test cấu trúc + pick đều + told-exclusion → gate arc E MỞ** (save 100 ngày chỉ thấy ~1–2 arc — chờ save thật không thực tế, QA dựng trạng thái là bằng chứng mạnh nhất).
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc + thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -70,7 +72,7 @@
 ## Backlog tiếp theo
 
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
-2. **Khoá chờ save người thật:** arc E (4 arc A–D xác minh trước) · NG+ vòng (GĐ171) · kèo cấp 50+ (GĐ110/117) · nhiệm vụ ngày 1–5 (GĐ254 đã giảm lặp).
+2. **Khoá chờ save người thật:** NG+ vòng (GĐ171) · nhiệm vụ ngày 1–5 (GĐ254 đã giảm lặp). (GĐ110/117 ĐÃ ĐÓNG GĐ280 bằng số liệu.) **Arc E ĐÃ MỞ (GĐ282): arc A–D QA mắt trọn vẹn + cấu trúc test xanh — làm arc E "Hàng xóm khai trương" là việc tiếp theo.**
 3. **Ý tưởng chờ Leader duyệt (chiều sâu, chưa làm):** (a) nhịp cuối tuần đậm hơn khi hệ đã ổn trên save thật (hàng đặc biệt ngày phiên chợ; không vội); (b) nhiệm vụ tuần/tháng biết đến thứ trong tuần (WeeklyPace hiện "còn X ngày tới Chủ nhật") — nhỏ, chỉ khi có việc khác đi kèm.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)## Mục lục giai đoạn đã xong (chi tiết trong archive)
@@ -314,6 +316,7 @@
 - GĐ279 — 🧾 Note biết thu ngân tự mở cửa sáng sớm (cashierOpensMorning)
 - GĐ280 — 📊 Đóng GĐ110/117 bằng số liệu (xương sống 24–26/28; quest hành động bot không làm)
 - GĐ281 — 👥 Lock độ phủ 28 khách quen (tất cả ghé được, phân phối <2×)
+- GĐ282 — 📖 QA mắt 4 arc A–D trọn vẹn — MỞ gate arc E
 - GĐ280 — 📊 Đóng GĐ110/117: đo nhiệm vụ cấp 50 (xương sống 24–26/28; 8 quest hành động bot không làm) + test khoá tín hiệu
 - GĐ277 — 💾 Khoá autoOpenAt qua save (3 test) + lock chợ phiên luôn rơi Chủ nhật
 - GĐ278 — 👀 QA mắt thẻ CÓ dữ liệu GĐ155–159 (thú cưng/hụi/khủng hoảng/bỏ lỡ) — đóng watch-item
