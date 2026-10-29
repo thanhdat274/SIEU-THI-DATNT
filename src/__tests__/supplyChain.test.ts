@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   supplyChainOverview,
   supplyRestockManifest,
+  supplyNetworkOrderVisible,
   storageTotal,
   teahouseKhoDays,
   branchThinShelves,
@@ -223,5 +224,43 @@ describe('GĐ202 — phiếu nạp kho', () => {
     expect(rm.total).toBe(0);
     expect(rm.lines).toEqual([]);
     expect(rm.line).toMatch(/không cần nạp/);
+  });
+});
+
+/**
+ * GĐ204 — "Nạp liền mạng lưới" ở màn Nhập hàng: chỉ hiện thẻ rốn kho chung khi còn nhu cầu NGOÀI phần
+ * quán nước đã có thẻ riêng (GĐ191) — chi nhánh thiếu kệ hoặc cần chở từ kho chung, để khỏi lặp.
+ */
+describe('GĐ204 — thấy cả mạng lưới ở OrderPanel', () => {
+  const quanFull = (open = true): QuanNuocState => ({ open, staff: 2, price: 'vua' });
+  const drinkStock = (units: number) => {
+    const s: Record<string, number> = {};
+    for (const id of quanNuocDrinkIds(30)) s[id] = units;
+    return s;
+  };
+
+  it('chỉ quán nước thiếu (kho chung cũng không gánh) → KHÔNG hiện thẻ mạng lưới (đã có thẻ quán nước)', () => {
+    const rm = supplyRestockManifest(drinkStock(1), undefined, quanFull(true), 30, { served: 0, wanted: 0 });
+    // lines chỉ có teahouse, warehouseCover = 0
+    expect(rm.lines.every((l) => l.outlet === 'teahouse')).toBe(true);
+    expect(rm.warehouseCover).toBe(0);
+    expect(supplyNetworkOrderVisible(rm)).toBe(false);
+  });
+
+  it('chi nhánh thiếu kệ → hiện thẻ mạng lưới', () => {
+    const rm = supplyRestockManifest({ mi: 60 }, { open: true, shelf: { mi: 0 } }, quanFull(false), 30, null);
+    expect(rm.lines.some((l) => l.outlet === 'branch')).toBe(true);
+    expect(supplyNetworkOrderVisible(rm)).toBe(true);
+  });
+
+  it('kho chung cần chở (warehouseCover>0) → hiện thẻ mạng lưới', () => {
+    const rm = supplyRestockManifest({ mi: 20 }, { open: true, shelf: { mi: 0 } }, quanFull(false), 30, null);
+    expect(rm.warehouseCover).toBe(20);
+    expect(supplyNetworkOrderVisible(rm)).toBe(true);
+  });
+
+  it('cả mạng lưới đủ → không hiện', () => {
+    const rm = supplyRestockManifest({ ...drinkStock(500), mi: 40 }, { open: true, shelf: { mi: CONVENIENCE.perItem } }, quanFull(true), 30, { served: 40, wanted: 40 });
+    expect(supplyNetworkOrderVisible(rm)).toBe(false);
   });
 });

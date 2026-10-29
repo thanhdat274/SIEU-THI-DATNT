@@ -189,3 +189,11 @@ export function supplyRestockManifest(
 
   return { lines, total, warehouseCover, buyNeed, line };
 }
+
+/**
+ * GĐ204 — Có đáng nhắc "nạp liền mạng lưới" ở màn Nhập hàng không? Chỉ hiện khi có nhu cầu NGOÀI phần
+ * quán nước (đã có thẻ riêng GĐ191): chi nhánh thiếu kệ (lines branch) hoặc cần chở từ kho chung
+ * (warehouseCover>0). Tránh lặp thẻ nạp kho quán nước bên trên. THUẦN theo manifest — test soi dễ.
+ */
+export const supplyNetworkOrderVisible = (manifest: RestockManifest): boolean =>
+  manifest.lines.some((l) => l.outlet === 'branch') || manifest.warehouseCover > 0;

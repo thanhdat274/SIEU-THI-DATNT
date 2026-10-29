@@ -14,6 +14,7 @@ import { cheapestSupplierFor, commitRebateAdvice, type CheapestProductResult } f
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
 import { prodSuggestToday } from '../data/prodSuggest';
 import { quanNuocRestockTip } from '../data/quanNuoc';
+import { supplyRestockManifest, supplyNetworkOrderVisible } from '../data/supplyChain';
 import { Callout } from './panels/shared';
 import { acceptFairOffer } from '../core/biz';
 import { monthOf } from '../data/calendar';
@@ -168,6 +169,11 @@ export function OrderPanel() {
   const restockTip = biz.quanNuoc?.open
     ? quanNuocRestockTip(biz.quanNuoc, level, storage, biz.quanNuocLast)
     : null;
+  // GĐ204: nối GĐ191 (quán nước) thành cả mạng lưới — rốn kho chung có điểm bán nào cần nhập/chở
+  // hôm nay (supplyRestockManifest, GĐ202). Chỉ hiện khi có nhu cầu NGOÀI phần quán nước đã báo trên
+  // (chi nhánh thiếu kệ hoặc cần chở từ kho) — không lặp cái thẻ quán nước bên trên.
+  const netManifest = supplyRestockManifest(storage, branch ?? undefined, biz.quanNuoc, level, biz.quanNuocLast);
+  const netNeeds = supplyNetworkOrderVisible(netManifest);
   const guideItems = guideProducts(level);
   const guideIds = guideIdsOf(guideItems);
   const guideOn = guideActiveOn(day, tutorialOff, deliveries, itemsSold);
@@ -351,6 +357,18 @@ export function OrderPanel() {
             tối nay quán cần ~{restockTip.wanted} ly mà kho chỉ còn {restockTip.have}{restockTip.shortfall > 0
               ? <> — nhập thêm ít nhất <b>{restockTip.shortfall} ly</b> nước/ngọt/cà phê</>
               : ' (đã đủ, chỉ nhắc lại tín hiệu hôm qua)'}.
+          </div>
+        </Callout>
+      )}
+      {netNeeds && (
+        <Callout tone={netManifest.buyNeed > 0 ? 'warn' : 'info'} title="🔗 Nạp liền mạng lưới (rốn kho chung)" style={{ margin: '8px 0 6px' }}>
+          <div style={{ fontSize: 12 }}>
+            <div>{netManifest.line}.</div>
+            {netManifest.lines.filter((l) => l.outlet === 'branch').length > 0 && (
+              <div style={{ marginTop: 3, fontSize: 11, opacity: 0.9 }}>
+                Chi nhánh kệ cần: {netManifest.lines.filter((l) => l.outlet === 'branch').map((l) => `${l.label} ${l.need}${l.source === 'buy' ? ' (mua)' : ''}`).join(' · ')}
+              </div>
+            )}
           </div>
         </Callout>
       )}
