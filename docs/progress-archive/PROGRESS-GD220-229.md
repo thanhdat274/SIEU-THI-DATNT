@@ -43,3 +43,10 @@ Gộp các khoản chi phí cố định/ngày thành con số GỘP so với do
 `burnShare` (% chi phí cố định ăn dòng tiền), `covered`, `margin` (thừa/thiếu đệm). Nối GĐ216 (lương),
 GĐ214 (nợ), GĐ217 (lãi). Sổ đầu ngày (ReportPanels) thêm Callout "Chi phí cố định/ngày Xđ = Y% doanh
 thu bình quân" (cam khi >80% → kíp tăng doanh thu hoặc cắt bớt lương/nợ). (+5 test).
+
+## GĐ225 — 🥊 "Đối thủ đang hút mất bao nhiêu khách/ngày của tôi?"
+BusinessPanel vốn chỉ chìa "% khách bị rival hút" (`rivalTrafficFactor`); nay `rivalDrag`
+(data/rivalDrag.ts) quy con số đó thành TIỀN: factor có-rival vs không-rival → `lostPct` (phần khách
+mất, sàn factor 0.5) × doanh thu bình quân 7 ngày (`recentAvgRevenue`) → `moneyPerDay` (ước ~$).
+BusinessPanel thêm "Đang hút mất X% khách → ~Yđ/ngày" (nối GĐ159 phản công + GĐ224 dòng tiền).
+(+5 test).
