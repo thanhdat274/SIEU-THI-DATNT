@@ -15,6 +15,8 @@ export interface AutoplayOptions {
   betTier?: number;
   /** Số tick giữa các lần nhả main thread (chỉ dùng ở biến thể async, để worker test đáp ứng RPC). */
   yieldEvery?: number;
+  /** Tốc độ game mỗi tick (mặc định 4). Cao hơn = ít tick/ngày hơn, chạy nhanh hơn nhưng bước mô phỏng thô hơn. */
+  speed?: number;
 }
 
 /**
@@ -38,6 +40,7 @@ export function createAutoplay(
 ) {
   const betTier = opts.betTier ?? 1.5;
   const yieldEvery = opts.yieldEvery ?? 0;
+  const speed = opts.speed ?? 4;
   const st = () => useGame.getState();
   /** Đổi đ thành 'k' như các cột tiền cũ của autoplay. */
   const k = (v: number) => `${Math.round(v / 1000)}k`;
@@ -55,6 +58,8 @@ export function createAutoplay(
         const id = tier.productId ?? ok[kk++ % ok.length].id;
         const need = def.capacity * 2 - tier.count - (st().storage[id] ?? 0);
         if (need > 0 && st().money > 200000) st().buy(id, Math.min(need, 50));
+        // Tầng đã đầy đúng món: bỏ qua — stockTier không đổi gì nhưng vẫn kích dựng lại 3D cả kệ (~40% thời gian sim)
+        if (tier.productId === id && tier.count >= def.capacity) return;
         st().stockTier(f.uid, i, id);
       });
     }
@@ -123,7 +128,6 @@ export function createAutoplay(
     player.teleport(main.center.x - 0.6, main.center.z - 0.9);
     if (!st().shopOpen) st().toggleShop();
     const day = st().day;
-    const speed = 4;
     // Chốt kèo buổi sáng trước khi chơi: mục tiêu cả bộ theo ×betTier
     lockBet();
     let questDay = 0;
@@ -183,7 +187,6 @@ export function createAutoplay(
     player.teleport(main.center.x - 0.6, main.center.z - 0.9);
     if (!st().shopOpen) st().toggleShop();
     const day = st().day;
-    const speed = 4;
     lockBet();
     let questDay = 0;
     let betDay = 0;

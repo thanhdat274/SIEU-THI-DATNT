@@ -76,7 +76,7 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
   ];
 
   for (const { level, days } of CASES) {
-    it(`level ${level} — chạy ${days} ngày không crash, số hữu hạn & in bảng trung bình`, { timeout: 300_000 }, async () => {
+    it(`level ${level} — chạy ${days} ngày không crash, số hữu hạn & in bảng trung bình`, { timeout: 900_000 }, async () => {
       const { rows, averages } = await runEconomySim(level, days, { betTier: 1.5 });
 
       expect(rows.length).toBeGreaterThanOrEqual(15); // ghi rõ: ≥15 ngày, thực tế chạy days

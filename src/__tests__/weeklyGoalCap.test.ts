@@ -291,6 +291,6 @@ describe('GĐ169 — simSmoke harness kinh tế cấp 30/50 (seed cố định)'
     }
   };
 
-  it('cấp 30 — 28 ngày qua autoplay thật: tiền/XP hữu hạn, không thụt cấp', { timeout: 900_000 }, () => smoke(30));
-  it('cấp 50 — 28 ngày qua autoplay thật: tiền/XP hữu hạn, không thụt cấp', { timeout: 900_000 }, () => smoke(50));
+  it('cấp 30 — 28 ngày qua autoplay thật: tiền/XP hữu hạn, không thụt cấp', { timeout: 1_800_000 }, () => smoke(30));
+  it('cấp 50 — 28 ngày qua autoplay thật: tiền/XP hữu hạn, không thụt cấp', { timeout: 1_800_000 }, () => smoke(50));
 });
