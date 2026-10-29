@@ -95,8 +95,22 @@ export function planRoutine(s: RoutineSnapshot, prev: RoutineMarks): RoutineActi
 // GĐ275 cho chỉnh giờ mở cửa — Sổ đầu ngày (mức lập kế hoạch sáng) phải phản chiếu lựa chọn đó:
 // mở sớm thì khẳng định "đón trọn giờ vàng", mở 8h thì nhắc gently kèm chỗ chỉnh. Thuần đọc.
 
-/** Dòng ghi chú lịch tự động cho Sổ đầu ngày; null khi lịch đang tắt (không nhiễu). */
-export function autoOpenNote(autoOpenAt: number | undefined, autoRoutine: boolean): string | null {
+/** Thu ngân có cờ "tự mở cửa khi vào ca" và ca bắt đầu 6h (sáng/cả ngày) → tiệm mở 6h bất kể lịch. */
+export const cashierOpensMorning = (
+  staff: { role: string; autoOpen?: boolean; shift: string }[],
+): boolean => staff.some((st) => st.role === 'cashier' && st.autoOpen && (st.shift === 'morning' || st.shift === 'full'));
+
+/** Dòng ghi chú lịch tự động cho Sổ đầu ngày; null khi lịch tắt VÀ không có thu ngân mở sớm.
+ *  GĐ279: thu ngân "tự mở cửa khi vào ca" (autoOpen, ca 6h) mở tiệm trước lịch — note phải nói
+ *  đúng nhân vật nào đang giữ cửa, không lại khuyên "lỡ giờ vàng" trong khi tiệm mở 6h. */
+export function autoOpenNote(
+  autoOpenAt: number | undefined,
+  autoRoutine: boolean,
+  cashierOpensMorning = false,
+): string | null {
+  if (cashierOpensMorning) {
+    return '🧾 Thu ngân tự mở cửa sáng sớm — đón trọn giờ vàng 6h–8h30 (lịch chủ chỉ là dự phòng).';
+  }
   if (!autoRoutine) return null;
   const at = autoOpenAt ?? ROUTINE.open;
   return at < ROUTINE.open

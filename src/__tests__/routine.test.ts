@@ -147,9 +147,9 @@ describe('autoOpenAt — giờ mở cửa theo người chơi (GĐ275)', () => {
 });
 
 // ── GĐ276 — dòng trạng thái lịch trên Sổ đầu ngày ──
-import { autoOpenNote } from '../core/routine';
+import { autoOpenNote, cashierOpensMorning } from '../core/routine';
 
-describe('autoOpenNote (GĐ276)', () => {
+describe('autoOpenNote (GĐ276, GĐ279 — thu ngân mở sớm)', () => {
   it('lịch tắt → null; 8h → nhắc chỉnh; mở sớm → khẳng định đón trọn giờ vàng', () => {
     expect(autoOpenNote(480, false)).toBeNull();
     expect(autoOpenNote(undefined, false)).toBeNull();
@@ -157,5 +157,21 @@ describe('autoOpenNote (GĐ276)', () => {
     expect(autoOpenNote(undefined, true)).toBe('⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong menu hồ sơ).'); // save cũ tự bù
     expect(autoOpenNote(360, true)).toBe('⏰ Lịch tự động mở cửa 6h — đón trọn giờ vàng sáng 6h–8h30.');
     expect(autoOpenNote(450, true)).toBe('⏰ Lịch tự động mở cửa 7h30 — đón trọn giờ vàng sáng 6h–8h30.');
+  });
+
+  it('GĐ279: thu ngân autoOpen ca sáng/cả ngày mở 6h → note nói thu ngân giữ cửa, dù lịch chủ 8h', () => {
+    const cashierEarly = [{ role: 'cashier', autoOpen: true, shift: 'morning' }];
+    expect(autoOpenNote(480, true, cashierOpensMorning(cashierEarly))).toBe(
+      '🧾 Thu ngân tự mở cửa sáng sớm — đón trọn giờ vàng 6h–8h30 (lịch chủ chỉ là dự phòng).');
+    expect(autoOpenNote(480, false, cashierOpensMorning(cashierEarly))).toBe(
+      '🧾 Thu ngân tự mở cửa sáng sớm — đón trọn giờ vàng 6h–8h30 (lịch chủ chỉ là dự phòng).');
+  });
+
+  it('GĐ279: thu ngân ca CHIỀU (không phủ 6h) hoặc không có cờ autoOpen → note theo lịch chủ', () => {
+    const afternoon = [{ role: 'cashier', autoOpen: true, shift: 'afternoon' }];
+    const noFlag = [{ role: 'cashier', autoOpen: false, shift: 'morning' }];
+    expect(autoOpenNote(480, true, cashierOpensMorning(afternoon))).toContain('lỡ nửa đầu giờ vàng');
+    expect(autoOpenNote(480, true, cashierOpensMorning(noFlag))).toContain('lỡ nửa đầu giờ vàng');
+    expect(autoOpenNote(480, false, cashierOpensMorning(noFlag))).toBeNull();
   });
 });

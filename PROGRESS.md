@@ -41,11 +41,13 @@
 - **GĐ274 mồi tuần mới tối CN** 🔮: "Mai tiệm có gì" tối CN thêm "🔥 Tuần mới khách săn: X, Y" (khớp GĐ273). 2 test; 2235 test xanh.
 
 - **GĐ275 lịch tự động chỉnh giờ mở cửa** ⏰: giải tension GĐ160 (lịch 8h lỡ nửa đầu giờ vàng) — `autoOpenAt` (mặc định 8h, save cũ tự bù — không cần MIGRATIONS) + presets 8h→6h30; `planRoutine` mở theo nó, ra tiệm trước 1h; menu hồ sơ xoay vòng giờ. 5 test routine; 2240 test xanh; QA @5173: bấm 3 lần → 6h30 đúng mốc.
-- **GĐ276 dòng lịch trên Sổ đầu ngày** ⏰: `autoOpenNote` (thuần đọc) — mở sớm → "đón trọn giờ vàng", 8h → nhắc chỉnh; lịch tắt không hiện. 1 test; QA @5173 cả hai nhánh đúng.
+- **GĐ276 dòng lịch trên Sổ đầu ngày** ⏰: `autoOpenNote` (thuần đọc) — mở sớm → "đón trọn giờ vàng", 8h → nhắc chỉnh; lịch tắt không hiện. QA @5173 đúng.
 
 - **GĐ277 khoá đường lưu autoOpenAt + chợ phiên×CN** 💾: 3 test save — bản cũ thiếu trường → mặc định 8h, bản mới 6h nạp đúng, round-trip giữ nguyên; lock test: mọi ngày phiên chợ (7, 14, 21…) đều Chủ nhật — chợ phiên đôn tự nhiên vào cuối tuần (đồng bộ GĐ254, không cần code). 2245 test xanh; boot @5173 sạch.
 
 - **GĐ278 QA mắt thẻ CÓ dữ liệu (GĐ155–159) — ĐÓNG watch-item cũ nhất** 👀: Thú cưng (verdict trung thực "kho sạch — chưa thấy công" + trạng thái cho ăn), Hụi (đủ số + hòa vốn), Khủng hoảng MXH (khách ×0.5), Bỏ lỡ (GĐ252). 0 lỗi console, 0 tràn @390. Không đổi code.
+
+- **GĐ279 note biết ai giữ cửa** 🧾: khi thu ngân có cờ "tự mở cửa khi vào ca" (ca sáng/cả ngày — mở 6h, agents/staff.ts) thì note GĐ276 "lịch 8h — lỡ giờ vàng" là SAI → `cashierOpensMorning` + note "Thu ngân tự mở cửa sáng sớm (lịch chủ chỉ là dự phòng)"; thu ngân ca chiều/không cờ → note theo lịch chủ như cũ. 2 test mới; 2247 test xanh; QA @5173: thu ngân autoOpen → note đúng nhân vật, 0 lỗi console.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -321,5 +323,6 @@
 - GĐ274 — 🔮 Mồi tuần mới tối CN trong Mai tiệm có gì (khớp GĐ273)
 - GĐ275 — ⏰ Lịch tự động chỉnh giờ mở cửa 6h–8h (autoOpenAt + xoay vòng preset trong menu hồ sơ)
 - GĐ276 — ⏰ Dòng lịch tự động trên Sổ đầu ngày (autoOpenNote)
+- GĐ279 — 🧾 Note biết thu ngân tự mở cửa sáng sớm (cashierOpensMorning)
 - GĐ277 — 💾 Khoá autoOpenAt qua save (3 test) + lock chợ phiên luôn rơi Chủ nhật
 - GĐ278 — 👀 QA mắt thẻ CÓ dữ liệu GĐ155–159 (thú cưng/hụi/khủng hoảng/bỏ lỡ) — đóng watch-item

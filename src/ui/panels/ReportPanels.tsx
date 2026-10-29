@@ -30,7 +30,7 @@ import { computeRecords, recordFeedToday } from '../../data/records';
 import { comboDaySnapshot, resetComboDay } from '../../core/slices/comboDay';
 import { resetStaffDay, staffDaySnapshot } from '../../core/slices/staffDay';
 import { staffDayRecap, staffShiftFix } from '../../data/staffIdle';
-import { autoOpenNote } from '../../core/routine';
+import { autoOpenNote, cashierOpensMorning } from '../../core/routine';
 import { weekendRecap } from '../../data/weekendRestock';
 import { weekendQuestTarget } from '../../data/quests';
 import { comboById } from '../../data/combos';
@@ -690,7 +690,7 @@ export function MorningPanel() {
         {WEATHER[weather].icon} Hôm nay {describeDay(weatherSeed, day, weather)} · mai {WEATHER[forecast[0]].icon} {describeDay(weatherSeed, day + 1, forecast[0])}.
         {(() => {
           // GĐ276: phản chiếu lịch tự động ở mức lập kế hoạch — mở sớm thì khẳng định, 8h thì nhắc chỉnh.
-          const note = autoOpenNote(autoOpenAt, autoRoutine);
+          const note = autoOpenNote(autoOpenAt, autoRoutine, cashierOpensMorning(staff));
           return note ? <div style={{ marginTop: 2 }}>{note}</div> : null;
         })()}
         Đọc xong nên nhập hàng bày kệ trước khi mở cửa — khách quen ghé đúng giờ quen.
