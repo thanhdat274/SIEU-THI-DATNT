@@ -41,7 +41,7 @@
 
 - **GĐ272 quét 2 bề mặt cuối** 🖼️: màn đăng nhập + menu "Thêm" @320/390/768 (ảnh + DOM) — 0 lỗi: nút full-bề-rộng, lưới 2 cột cuộn tốt, Chương 1 đè menu đúng z-order. Chuỗi "rà soát toàn bộ màn hình" chốt — mọi bề mặt đã soi (GĐ264/265/272). Không đổi code.
 
-- **GĐ273 dự báo tuần mai** 🔮: audit trending (hash theo id món — tự tách, sạch) + weeklyChallenge (modulo — không bao giờ undefined, sạch); thêm dòng "🔮 Tuần mai: X, Y" trên Nhập hàng tối Chủ nhật (day % 7 === 0 — đúng ranh giới khối Thứ 2→CN; trending(day+1) đổi khối đúng chỗ) — sáng Thứ 2 nhập không phải đoán. 2 test biên ranh giới (70 ngày); 2233 test xanh; QA @5173: CN có dòng, Thứ 7 không, 0 lỗi console.
+- **GĐ273 dự báo tuần mai** 🔮: audit trending + weeklyChallenge (sạch); Nhập hàng tối CN thêm "🔮 Tuần mai: X, Y" (day % 7 === 0 — đúng ranh giới khối). 2 test biên (70 ngày); 2233 test xanh; QA @5173 đúng.
 
 ## Quy ước kỹ thuật cần nhớ
 
