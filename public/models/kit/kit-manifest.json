@@ -1,36 +1,43 @@
 {
-  "updated": 1793228636.459,
+  "updated": 1793233523.066,
   "generator": "scripts/build-kit-assets.ts (three GLTFExporter, vertex color, không texture)",
   "modules": {
     "chau_cay": {
       "file": "chau_cay.glb",
       "tris": 264,
-      "kb": 35.4
+      "kb": 5.1,
+      "compressed": "draco (scripts/blender_kit_atlas.py --no-bake, Blender 5.2)"
     },
     "thung_go": {
       "file": "thung_go.glb",
       "tris": 756,
-      "kb": 98.8
+      "kb": 9.6,
+      "compressed": "draco (scripts/blender_kit_atlas.py --no-bake, Blender 5.2)"
     },
     "khom_tre": {
       "file": "khom_tre.glb",
       "tris": 1332,
-      "kb": 173
+      "kb": 24,
+      "compressed": "draco (scripts/blender_kit_atlas.py --no-bake, Blender 5.2)"
     },
     "bon_nuoc": {
       "file": "bon_nuoc.glb",
       "tris": 620,
-      "kb": 81.3
+      "kb": 9.3,
+      "compressed": "draco (scripts/blender_kit_atlas.py --no-bake, Blender 5.2)"
     },
     "cho_nhua": {
       "file": "cho_nhua.glb",
       "tris": 192,
-      "kb": 26.1
+      "kb": 4.3,
+      "compressed": "draco (scripts/blender_kit_atlas.py --no-bake, Blender 5.2)"
     },
     "xe_day": {
       "file": "xe_day.glb",
       "tris": 928,
-      "kb": 120.9
+      "kb": 14.7,
+      "compressed": "draco (scripts/blender_kit_atlas.py --no-bake, Blender 5.2)"
     }
-  }
+  },
+  "compressedAt": 1793233874.035
 }

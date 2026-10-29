@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
 /**
  * Kit prop GLB sinh bằng script (`scripts/build-kit-assets.ts` — Three.js → GLB, màu đỉnh,
@@ -94,6 +95,11 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
     const finish = () => resolve(result);
     if (KIT_PLACEMENTS.length === 0) return finish();
     const loader = new GLTFLoader();
+    // Kit đã qua bước nén Draco của Blender (scripts/blender_kit_atlas.py): nhỏ gấp ~8 lần.
+    // Decoder để local (public/decoders/draco, copy từ node_modules/three) — không phụ thuộc CDN,
+    // trình duyệt tải đúng một lần rồi cache cho mọi model nén sau này.
+    const draco = new DRACOLoader().setDecoderPath('/decoders/draco/');
+    loader.setDRACOLoader(draco);
     let pending = KIT_PLACEMENTS.length;
     const settle = (ok: boolean, module: KitModule) => {
       if (!ok && !result.failed.includes(module)) result.failed.push(module);

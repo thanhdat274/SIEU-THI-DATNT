@@ -38,17 +38,19 @@ function facet(geo: THREE.BufferGeometry) {
   return g;
 }
 
-/** Gán một màu phẳng cho toàn bộ đỉnh của khối (trước khi gộp). */
+/** Gán một màu phẳng cho toàn bộ đỉnh của khối (trước khi gộp). Ghi RGBA (4 kênh):
+ * Blender 5.2 chỉ nhận COLOR_0 dạng VEC4 khi import — VEC3 của ba.js bị bỏ qua yên tĩnh. */
 function paint(geo: THREE.BufferGeometry, hex: number) {
   const c = new THREE.Color(hex).convertSRGBToLinear();
   const n = geo.getAttribute('position').count;
-  const arr = new Float32Array(n * 3);
+  const arr = new Float32Array(n * 4);
   for (let i = 0; i < n; i++) {
-    arr[i * 3] = c.r;
-    arr[i * 3 + 1] = c.g;
-    arr[i * 3 + 2] = c.b;
+    arr[i * 4] = c.r;
+    arr[i * 4 + 1] = c.g;
+    arr[i * 4 + 2] = c.b;
+    arr[i * 4 + 3] = 1;
   }
-  geo.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(arr, 4));
   return geo;
 }
 

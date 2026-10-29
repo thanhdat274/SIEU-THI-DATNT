@@ -147,6 +147,14 @@
 - `installRenderGuard(renderer, onLost)` trong `scene.ts`: WebGL — `webglcontextlost` + preventDefault để three được quyền dựng lại; WebGPU — `backend.device.lost` (mất hẳn, mời F5). `main.tsx` báo qua `notify` (toast 3s) + console.error, chống spam 8s. Lời thoại theo backend ở `renderLoss.ts` (tách riêng vì scene.ts có matchMedia/WebGPU cấp module — node test không nạp được), 3 test.
 - File: `scene.ts`, `renderLoss.ts`, `main.tsx`, `renderGuard.test.ts`.
 
+### GĐ176 — 🎨 Blender 5.2 vào pipeline: nén Draco cả kit, nướng atlas khi cần — XONG
+
+- Lý do: cài Blender 5.2 (winget, plugin Blender của ZCode chỉ là skill hướng dẫn CLI) — mở được nốt phần "béo" của pipeline Xóm Nông Trại mà three.js thuần không làm được: nén Draco + nướng atlas.
+- `scripts/blender_kit_atlas.py` (chạy `blender --background --python`): import GLB → gộp mesh → Smart UV Project → nướng màu đỉnh ra atlas 512 (bake **EMIT** với node VertexColor — bake DIFFUSE của 5.2 trả về đen; `--no-bake` để giữ vertex color cho prop màu phẳng) → xuất GLB Draco level 6 + render preview PNG vào `dev/kit-previews/` để soi mắt.
+- Kết quả kit 6 prop: **550KB → 68.6KB (gấp 8)**, màu giữ nguyên. Chọn `--no-bake` làm chuẩn cho kit hiện tại (màu phẳng — atlas 512 chỉ to thêm không đẹp hơn); bake atlas để sẵn khi prop có vân/texture vẽ tay. 3 vướng API 5.2 đã ghi trong script: color_attributes.new đổi thứ tự tham số, bỏ use_margin, importer đặt tên attribute 'Color' và chỉ nhận COLOR_0 VEC4 (script sinh kit bên ba.js đã sửa paint() ghi RGBA).
+- Game: `public/decoders/draco/` (copy từ node_modules/three, không phụ thuộc CDN), `kitProps.ts` cắm DRACOLoader. Verify mắt: 14/14 prop nén load đúng màu trong game (ban ngày + ban đêm).
+- File: `blender_kit_atlas.py`, `public/models/kit/` (6 GLB Draco + manifest), `public/decoders/draco/`, `kitProps.ts`, `dev/kit-previews/`.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc trong `src/data/*.ts` + một thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
