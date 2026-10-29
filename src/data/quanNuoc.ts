@@ -213,3 +213,33 @@ export function quanNuocRestockTip(
   }
   return null;
 }
+
+/**
+ * GĐ193 — "Xây quán nước 25tr hồi vốn sau bao lâu?": màn XÂY QUÁN chỉ cho giá + cấp yêu cầu, không
+ * nói được sẽ kiếm về bao nhiêu để quyết mua. Vì quán nước chạy công thức DETERMINISTIC
+ * (`quanNuocProjection`, GĐ127) khác hẳn chi nhánh/sim, mình tính được lời ròng MỘT ngày (giả định kho
+ * ĐỦ đồ uống để bán hết nhu cầu — trường hợp tốt nhất) rồi chia vốn xây → số ngày hồi. Cực kỳ hữu ích:
+ * mở SỚM ở cấp 29 thực đơn ít → lời thấp → hồi vốn chậm; lên cấp thêm nước/ngọt/cà phê → hồi nhanh.
+ * THUẦN — đọc hằng số + projection, không đổi kinh tế/save. UI ghi rõ là ước tính "nếu kho đủ".
+ */
+export interface QuanNuocBuildPayback {
+  cost: number;
+  /** Lời ròng ước một ngày (1 nhân viên, giá vừa, kho đủ bán hết nhu cầu). */
+  netPerDay: number;
+  /** Số ngày cần để hồi vốn (làm tròn lên); null khi lỗ / chưa có thực đơn. */
+  paybackDays: number | null;
+  verdict: 'worth' | 'slow' | 'notworth' | 'noMenu';
+}
+
+export function quanNuocBuildPayback(level: number, staff: number = 1, price: QuanNuocPrice = 'vua'): QuanNuocBuildPayback {
+  if (quanNuocDrinkIds(level).length === 0) {
+    return { cost: QUAN_NUOC_PRICE, netPerDay: 0, paybackDays: null, verdict: 'noMenu' };
+  }
+  const q: QuanNuocState = { open: true, staff, price };
+  // Giả định kho đủ để bán hết nhu cầu (served = wanted) — giới hạn trên của tiềm năng hàng ngày.
+  const proj = quanNuocProjection(q, level, Number.MAX_SAFE_INTEGER);
+  const net = proj.profit;
+  if (net <= 0) return { cost: QUAN_NUOC_PRICE, netPerDay: net, paybackDays: null, verdict: 'notworth' };
+  const paybackDays = Math.ceil(QUAN_NUOC_PRICE / net);
+  return { cost: QUAN_NUOC_PRICE, netPerDay: net, paybackDays, verdict: paybackDays <= 60 ? 'worth' : 'slow' };
+}

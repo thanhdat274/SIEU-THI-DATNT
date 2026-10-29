@@ -3,7 +3,7 @@ import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import {
   QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE,
-  QUAN_PRICE_OPTIONS, quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, type QuanNuocPrice,
+  QUAN_PRICE_OPTIONS, quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, quanNuocBuildPayback, type QuanNuocPrice,
 } from '../../data/quanNuoc';
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
 import { Callout, Footer, styles } from './shared';
@@ -55,6 +55,20 @@ export function QuanNuocPanel() {
               <li>💰 Phí tuyển {formatMoney(QUAN_NUOC_HIRE_FEE)}/người, lương {formatMoney(QUAN_NUOC_WAGE)}/ngày, tối đa {QUAN_NUOC_MAX_STAFF} nhân viên</li>
               <li>⚙️ Ba mức giờ bán: bình dân kéo khách, đắt hơn lời cao</li>
             </ul>
+            {!locked && (() => { // GĐ193: ước hồi vốn — quyết định mua (giá 25tr) có đáng không
+              const bp = quanNuocBuildPayback(level);
+              if (bp.verdict === 'noMenu') return null;
+              const c = bp.verdict === 'worth' ? '#2ecc71' : bp.verdict === 'slow' ? '#e67e22' : '#e74c3c';
+              return (
+                <div style={{ fontSize: 12, marginTop: 6, color: c }}>
+                  💸 Ước hồi vốn 25tr:{' '}
+                  {bp.verdict === 'notworth'
+                    ? `đang lỗ ~${formatMoney(-bp.netPerDay)}/ngày (1 nhân viên, giá vừa) — chờ lên cấp thêm thực đơn`
+                    : `~${bp.paybackDays} ngày (lời ~${formatMoney(bp.netPerDay)}/ngày)`}{' '}
+                  · nếu kho đủ
+                </div>
+              );
+            })()}
           </div>
           <button
             style={{
