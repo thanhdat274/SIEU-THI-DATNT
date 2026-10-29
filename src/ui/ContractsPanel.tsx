@@ -2,7 +2,9 @@ import { useGame } from '../core/store';
 import { describeRep, meetsRep, repScore, reputationOf } from '../data/reputation';
 import { CONTRACT_STREAK_BONUS, CONTRACT_STREAK_EVERY, CONTRACT_COMMIT_BONUS, SUPPLY_CONTRACTS, supplyContractById, missingForContract, contractValue, commitBonusValue, commitDeposit, contractStreakProgress, contractAcceptRoi, type SupplyContract } from '../data/contracts';
 import { formatMoney, productById } from '../data/products';
+import { Callout } from './panels/shared';
 import { commitTry } from '../data/commitTry';
+import { contractPortfolio } from '../data/contractPortfolio';
 
 /** Panel Hợp đồng — xem, chấp nhận và giao hợp đồng cung cấp dài hạn. */
 export function ContractsPanel() {
@@ -57,6 +59,18 @@ function ActiveContracts() {
         🎯 Giao mỗi kỳ đúng hạn để giữ chuỗi; đủ {CONTRACT_STREAK_EVERY} kỳ liên tiếp được +{Math.round(CONTRACT_STREAK_BONUS * 100)}% thưởng mốc.
         · 🤝 <b>Cam kết kỳ</b>: trữ sẵn đúng hàng kỳ này để giao đúng hạn được thưởng tin cậy +{Math.round(CONTRACT_COMMIT_BONUS * 100)}%.
       </div>
+      {(() => {
+        const pf = contractPortfolio(active.map(([id]) => id));
+        if (pf.count === 0) return null;
+        return (
+          <Callout tone={pf.verdict === 'ok' ? 'ok' : 'warn'} style={{ marginBottom: 8 }} title={`📋 ${pf.count} hợp đồng đang đóng góp ~${formatMoney(pf.netPerDayTotal)}/ngày`}>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              Mỗi kỳ cần trữ ~{formatMoney(pf.capitalPerPeriod)} vốn hàng để giao đủ cả chùm
+              {pf.anyLosing ? ' · ⚠️ có hợp đồng đang lỗ thật — cân nhắc thả.' : ' — đối chiếu với kho và dòng tiền.'}
+            </div>
+          </Callout>
+        );
+      })()}
       <div style={{ display: 'grid', gap: 8 }}>
         {active.map(([id, cs]) => {
           const def = supplyContractById(id);

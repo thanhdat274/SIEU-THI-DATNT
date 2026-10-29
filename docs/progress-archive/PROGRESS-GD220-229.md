@@ -118,3 +118,11 @@ bóc tách: breakChance (xác suất hỏng/đêm), serviceable, repairCost, exp
 breakChance×repairCost (rổ rủi ro tiền sửa/đêm). Verdict: broken / danger (chance≥10%) / watch (đủ bảo
 trì) / ok. WearRow thêm dòng cảnh báo nguy cơ + rủi ro tiền, hoặc nhắc "đủ điều kiện bảo trì, về trắng
 phí sửa". THUẦN ĐỌC. (+6 test)
+
+## GĐ234 — 📋 "Chùm hợp đồng đang đóng góp bao nhiêu/ngày + vốn cột?"
+contractAcceptRoi (GĐ151) soi TỪNG hợp đồng; chưa có con số TỔNG cho cả chùm active. `contractPortfolio`
+(data/contractPortfolio.ts) gộp các hợp đồng đang hoạt động: netPerDayTotal = Σ netPerDay (lời ròng/ngày
+cả chùm), capitalPerPeriod = Σ costOfGoods (vốn hàng phải trữ cho một kỳ giao của cả chùm), giveUpPeriod
+(lời nhượng lại khách sỉ), anyLosing (có hợp đồng lỗ thật). Verdict ok/warn/empty. ActiveContracts thêm
+thẻ đầu danh sách "N hợp đồng đang đóng góp ~Xđ/ngày · mỗi kỳ cần trữ ~Yđ vốn". Nối GĐ213/224 dòng vốn.
+THUẦN ĐỌC. (+5 test)
