@@ -185,3 +185,12 @@ thường). BROWSER QA: IAB 1280px — tải game không lỗi, console không l
 GĐ230 trên cùng vỏ UI; arc này chỉ thêm nội dung trong card responsive. LƯU Ý: 4 Callout mới đều gated
 theo cấp (camera L15 / online L10 / sức khoẻ món cấp cao / phủ ca cần có nhân viên) nên không hiển thị ở
 save cấp 1 — logic được test trực tiếp, giao diện nằm trong card đã mobile-validated.
+
+## GĐ241 — 🧹 "Sàn bẩn mất bao nhiêu khách/ngày? — lau có đáng?"
+Độ bẩn sàn giảm trực tiếp xác suất khách đi đường ghé: dirtVisitFactor = 1 − (dirt/100)×0.4
+(staff.ts:49, nhân vào customers.ts:203) — bẩn tối đa mất tới 40% lượt ghé. HUD chỉ nhắc "bẩn, bấm [C]
+lau" nhưng không cho con số thiệt hại. `dirtLoss` (data/dirtLoss.ts) THUẦN ĐỌC: dirt + level +
+customers/revenue thật hôm nay → lostFraction, lostKhachPerDay = customersPerDay(level)×lostFraction
+(cùng mô hình repPayoff GĐ148), moneyLostPerDay = khách mất × doanh thu TB mỗi lượt. Verdict clean/warn/
+danger. HUD alert "🧹 Sàn tiệm bẩn" thêm dòng "bẩn này đang mất ~N khách/ngày (~Xđ)". THUẦN ĐỌC,
+deterministic. (+5 test)

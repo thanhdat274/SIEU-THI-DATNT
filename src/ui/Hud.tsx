@@ -14,6 +14,7 @@ import { claimableCount, dailyQuests, dailySetProgress, storyQuest, STORY_STEPS 
 import { idleTip, isSlowHour } from '../data/idle';
 import { todayAgenda, type AgendaPanel } from '../data/todayAgenda';
 import { reputationOf } from '../data/reputation';
+import { dirtLoss } from '../data/dirtLoss';
 import { cookSpeed, bartenderBoost } from '../core/slices/orders';
 import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
@@ -459,6 +460,12 @@ ${forecastText}`}>
         {dirt >= 30 && (
           <div className={`hud-alert ${dirt >= 60 ? 'warn' : 'info'}`}>
             🧹 Sàn tiệm bẩn ({Math.round(dirt)}%){dirt >= 60 ? ', khách ngại vào' : ''} · đứng trong tiệm bấm <b>[C]</b> (giữ phím) để tự lau
+            {(() => {
+              const s = useGame.getState().stats;
+              const dl = dirtLoss({ dirt, level, customers: s.customers, revenue: s.revenue });
+              if (!dl.avgPerVisit) return null;
+              return <span style={{ marginLeft: 6, opacity: 0.9 }}>· bẩn này đang mất ~{dl.lostKhachPerDay.toFixed(0)} khách/ngày ({formatMoney(dl.moneyLostPerDay)}).</span>;
+            })()}
             <span className="hud-alert-actions"><button className="hud-btn" onClick={() => worldActions.mop()}>Lau nhà</button></span>
           </div>
         )}
