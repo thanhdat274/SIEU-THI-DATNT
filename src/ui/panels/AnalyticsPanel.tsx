@@ -2,6 +2,7 @@ import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import { analyticsAdvice, itemHealthList, promoEffect, shelfCount, type ItemHealth } from '../../data/analytics';
 import { profitMix } from '../../data/profitMix';
+import { shelfSlotValue } from '../../data/shelfSlotValue';
 import { furnitureDef } from '../../data/furniture';
 import { shelfEfficiency } from '../../data/layout';
 import { Callout, Footer, styles } from './shared';
@@ -81,6 +82,21 @@ export function AnalyticsPanel() {
                   {mix.fragile
                     ? ' Chỉ dựa vài món — đứt nguồn món đó là mất phần lớn lời, nên đa dạng thêm.'
                     : ' Lời dàn đều, bớt rủi ro tập trung.'}
+                </div>
+              </Callout>
+            );
+          })()}
+          {(() => {
+            const slot = shelfSlotValue(list, onShelf);
+            if (!slot.actionable) return null;
+            const worst = slot.slow.slice(0, 3);
+            return (
+              <Callout tone="warn" style={{ marginBottom: 10 }} title={`🔎 Món đang chiếm kệ lép vốn (${worst.length}${slot.slow.length > worst.length ? '+' : ''}): nên bày bớt / đổi món`}>
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {worst.map((s) => `${s.name} (${s.onShelf} ô · ${formatMoney(s.perSlot ?? 0)}/ô/ngày)`).join(' · ')}
+                  {slot.best != null
+                    ? ` · món khoẻ nhất kệ đạt ${formatMoney(slot.best)}/ô/ngày — ${worst.length} món trên đang chiếm chỗ mà sinh lời non nửa ngưỡng đó.`
+                    : ' · đang lỗ, dọn sớm cho kệ thoáng.'}
                 </div>
               </Callout>
             );

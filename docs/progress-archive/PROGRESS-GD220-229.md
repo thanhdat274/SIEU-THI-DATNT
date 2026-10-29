@@ -50,3 +50,12 @@ BusinessPanel vốn chỉ chìa "% khách bị rival hút" (`rivalTrafficFactor`
 mất, sàn factor 0.5) × doanh thu bình quân 7 ngày (`recentAvgRevenue`) → `moneyPerDay` (ước ~$).
 BusinessPanel thêm "Đang hút mất X% khách → ~Yđ/ngày" (nối GĐ159 phản công + GĐ224 dòng tiền).
 (+5 test).
+
+## GĐ226 — 🔎 "Món nào đang chiếm ô kệ lép vốn?"
+Sức khoẻ món (itemHealthList) và lời/m² kệ (shelfEfficiency) xếp hạng theo TỔNG lời, bỏ qua năng
+suất MỖI Ô: một món vẫn lời tổng ổn nhưng bày nhiều ô, mỗi ô bán ì ạch, trong khi món bán nhanh chỉ
+có ít ô. `shelfSlotValue` (data/shelfSlotValue.ts) soi GÓC "ô kệ": với món đang bày (onShelf>0),
+profitPerDay=profit30/30, perSlot=profitPerDay/onShelf (lời mỗi ô/ngày); cờ 'lose' nếu profit30≤0
+(món lỗ chiếm chỗ), cờ 'slow' nếu bày ≥3 ô mà perSlot < ngang nửa món khoẻ nhất (SLOT_ACTIONABLE_ON_SHELF=3,
+SLOT_SLOW_RATIO=0.5). AnalyticsPanel thêm thẻ cảnh báo giới thiệu top món lép vốn + món khoẻ nhất làm mốc.
+Khác profitMix (tập trung lời) và ABC (xếp hạng lời) — trả lời "đổi chỗ để món bán nhanh hơn". (+6 test)
