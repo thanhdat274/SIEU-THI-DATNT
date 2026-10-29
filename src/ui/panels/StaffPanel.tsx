@@ -429,7 +429,7 @@ function StaffIdleLine({ row }: { row?: StaffIdleRow }) {
   const color = row.verdict === 'idle_heavy' ? '#e67e22' : row.verdict === 'balanced' ? '#f1c40f' : '#3498db';
   const label = row.verdict === 'idle_heavy' ? 'rảnh nhiều — dư người vai này?' : row.verdict === 'busy' ? 'bận liền tay — cân nhắc thêm người' : 'vừa sức';
   return (
-    <div style={{ fontSize: 12, marginTop: 2, color }} title="Đo từ agent trong ca hôm nay: 'rảnh' là đứng không chờ việc; trực quầy/canh bếp có mẻ tính là đang làm. Phụ trại không đo (việc chạy cuối ngày).">
+    <div style={{ fontSize: 12, marginTop: 2, color }} title="Đo từ agent trong ca hôm nay: 'rảnh' là đứng không chờ việc; trực quầy/canh bếp có mẻ tính là đang làm. Thu ngân/bảo vệ/chăm khách là vai hiện diện (%rảnh ~0) và phụ trại không đo.">
       🧍 Sáng đến giờ: rảnh ~{row.idlePct}% ca · làm {row.workMin}m · nghỉ {row.idleMin}m — {label}
     </div>
   );

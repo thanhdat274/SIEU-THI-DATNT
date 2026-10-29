@@ -180,13 +180,6 @@ export function OrderPanel() {
   // (chi nhánh thiếu kệ hoặc cần chở từ kho) — không lặp cái thẻ quán nước bên trên.
   const netManifest = supplyRestockManifest(storage, branch ?? undefined, biz.quanNuoc, level, biz.quanNuocLast);
   const netNeeds = supplyNetworkOrderVisible(netManifest);
-  // GĐ247: phiếu trữ lễ — lễ sắp tới (≤3 ngày) còn món chưa trữ đủ trong kho → một chạm vào giỏ.
-  // Món mối này không bán thì liệt kê ở skipped để gợi ý đổi mối (helper thuần, giỏ điền qua maxFit).
-  const festivalPlan = festivalRestockPlan({
-    day, level, storage,
-    sells: (id) => rows.some((r) => r.p.id === id),
-    caseSizeOf: caseSize,
-  });
   const guideItems = guideProducts(level);
   const guideIds = guideIdsOf(guideItems);
   const guideOn = guideActiveOn(day, tutorialOff, deliveries, itemsSold);
@@ -362,6 +355,14 @@ export function OrderPanel() {
       ? `🧾 Đã thêm ${filled} ly đồ uống thiếu cho quán nước vào giỏ (${plan.lines.map((l) => `${l.id}×${l.cases}`).join(', ')})`
       : '💰/📦 Đủ tiền hay chỗ kho không vừa thêm thùng nào — nâng cấp kho/nhập ít hơn');
   };
+  // GĐ247: phiếu trữ lễ — lễ sắp tới (≤3 ngày) còn món chưa trữ đủ trong kho → một chạm vào giỏ.
+  // Món mối này không bán thì liệt kê ở skipped để gợi ý đổi mối (helper thuần, giỏ điền qua maxFit).
+  // Đặt SAU `rows` (useMemo) — QA mắt 30/10 bắt lỗi "Cannot access 'rows' before initialization".
+  const festivalPlan = festivalRestockPlan({
+    day, level, storage,
+    sells: (id) => rows.some((r) => r.p.id === id),
+    caseSizeOf: caseSize,
+  });
   // GĐ247: một chạm trữ lễ — thêm món thiếu cho dịp sắp tới vào giỏ (quy thùng, đúng mẫu
   // fillBranchSheet/fillQuanNuocDrinks: vẫn tôn trọng ngân sách chừa lương + chỗ nhà kho).
   const fillFestivalPrep = () => {

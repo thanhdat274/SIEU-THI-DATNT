@@ -5,10 +5,15 @@ import type { StaffDayStat } from '../core/slices/staffDay';
 // ───── GĐ246: soi nhân viên rảnh bao nhiêu (THUẦN ĐỌC, dữ liệu transient từ staffDay) ─────
 // Các thẻ giá trị lương (GĐ141/142/144/188) ước từ DOANH THU. Bản này bổ sung mảnh thiếu: trong ca,
 // người đó BẬN bao nhiêu, RẢNH bao nhiêu — đóng nợ mở "thời gian rảnh chỉ có ở runtime". Rảnh nhiều
-// = vai đó dư người (cân nhắc bớt ca/vai); bận liền tay = cân nhắc thêm người. Thu ngân/bảo vệ trực
-// quầy tính là ĐANG LÀM (có mặt mới có dịch vụ); phụ trại bị loại (việc ở trại chạy cuối ngày).
+// = vai đó dư người (cân nhắc bớt ca/vai); bận liền tay = cân nhắc thêm người. Thu ngân/bảo vệ/chăm
+// khách là vai HIỆN DIỆN (trực quầy/đứng cửa/đi hỏi thăm chính là việc — %rảnh ~0 luôn, không có ý
+// nghĩa quyết định) → loại khỏi bảng như phụ trại; giá trị của họ xem GĐ141/144/237.
 
 export type IdleVerdict = 'busy' | 'balanced' | 'idle_heavy';
+
+/** Vai hiện diện: %rảnh cấu trúc ~0, không đưa vào bảng rảnh (QA mắt 30/10: dòng "bận liền tay —
+ *  cân nhắc thêm người" cho thu ngân gây hiểu lầm). */
+const PRESENCE_ROLES: ReadonlySet<StaffRole> = new Set(['cashier', 'guard', 'customer_care']);
 
 export interface StaffIdleRow {
   id: number;
@@ -42,6 +47,7 @@ export function staffIdleStats(snapshot: Record<number, StaffDayStat>, staff: St
   const rows: StaffIdleRow[] = [];
   for (const st of staff) {
     if (st.role === 'farmhand') continue; // việc phụ trại chạy ở endDay, trong tiệm đứng nghỉ là đúng
+    if (PRESENCE_ROLES.has(st.role)) continue; // vai hiện diện: trực quầy/đứng cửa là việc, %rảnh ~0
     const stat = snapshot[st.id];
     if (!stat) continue;
     const total = stat.workSec + stat.idleSec;

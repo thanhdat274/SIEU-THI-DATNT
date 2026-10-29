@@ -36,14 +36,15 @@ describe('staffDay slice — đếm thời gian trong ca (transient, không pers
 });
 
 describe('staffIdleStats — phân loại rảnh/bận', () => {
-  it('rảnh phần lớn ca → idle_heavy; bận nhiều → busy; phụ trại bị loại khỏi bảng', () => {
+  it('rảnh phần lớn ca → idle_heavy; bận nhiều → busy; phụ trại + vai hiện diện bị loại', () => {
     resetStaffDay();
     for (let i = 0; i < 6; i++) noteStaffTime(1, 60, true); // 6 phút rảnh
     noteStaffTime(1, 60, false); // 1 phút làm
     for (let i = 0; i < 5; i++) noteStaffTime(2, 60, false); // 5 phút làm
     noteStaffTime(2, 60, true); // 1 phút rảnh
     noteStaffTime(3, 120, true); // phụ trại: không được đưa vào bảng
-    const sum = staffIdleStats(staffDaySnapshot(), [st(1), st(2, 'cashier'), st(3, 'farmhand')]);
+    noteStaffTime(4, 120, false); // thu ngân (vai hiện diện): cũng không vào bảng
+    const sum = staffIdleStats(staffDaySnapshot(), [st(1), st(2, 'courier'), st(3, 'farmhand'), st(4, 'cashier')]);
     expect(sum.rows.length).toBe(2);
     const r1 = sum.rows.find((r) => r.id === 1)!;
     expect(r1.idlePct).toBe(86); // round(6/7 × 100)
