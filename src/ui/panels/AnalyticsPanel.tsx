@@ -1,7 +1,8 @@
 import { useGame } from '../../core/store';
-import { formatMoney } from '../../data/products';
+import { formatMoney, productById } from '../../data/products';
 import { analyticsAdvice, itemHealthList, promoEffect, shelfCount, type ItemHealth } from '../../data/analytics';
 import { profitMix } from '../../data/profitMix';
+import { categoryMix } from '../../data/categoryMix';
 import { shelfSlotValue } from '../../data/shelfSlotValue';
 import { lostSalesValue } from '../../data/lostSalesValue';
 import { furnitureDef } from '../../data/furniture';
@@ -83,6 +84,23 @@ export function AnalyticsPanel() {
                   {mix.fragile
                     ? ' Chỉ dựa vài món — đứt nguồn món đó là mất phần lớn lời, nên đa dạng thêm.'
                     : ' Lời dàn đều, bớt rủi ro tập trung.'}
+                </div>
+              </Callout>
+            );
+          })()}
+          {(() => {
+            const cm = categoryMix(list, (id) => productById(id)?.category ?? 'dry');
+            if (cm.lines.length === 0) return null;
+            const warn = cm.losing.length > 0;
+            return (
+              <Callout tone={warn ? 'warn' : 'info'} style={{ marginBottom: 10 }} title={warn
+                ? `🚨 Khu hàng đang lỗ 30 ngày: ${cm.losing.map((l) => `${l.label} ${formatMoney(l.profit30)}`).join(', ')}`
+                : `🗂️ Khu gánh lời nhất: ${cm.best?.label} ${formatMoney(cm.best?.profit30 ?? 0)}/30 ngày`}>
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {cm.lines.slice(0, 5).map((l) => `${l.label} ${formatMoney(l.profit30)}`).join(' · ')}
+                  {warn
+                    ? ' — cân nhắc bớt nhập khu lỗ, đổi thêm mặt hàng khu đang chạy.'
+                    : cm.lines.length > 5 ? ` (+${cm.lines.length - 5} khu)` : '.'}
                 </div>
               </Callout>
             );

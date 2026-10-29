@@ -165,3 +165,11 @@ span/orderGap (khớp hằng số orderGap: ×1 ở 4,5⭐, ×1.4 ≥4⭐, ×2.2
 → ordersToBest × avgNet = moneyBestPerDay; ngược lại ordersToFloor × avgNet khi rớt về 3⭐. Verdict
 best/upside/nice/noData. OnlinePanel thêm Callout sau onlineNet: "📈 Lên 4,5⭐ thêm ~N đơn/ngày ≈ Xđ lời ·
 rớt về 3⭐ mất ~Yđ". deterministic, không RNG/seed. THUẦN ĐỌC. (+5 test)
+
+## GĐ239 — 🗂️ "Khu hàng nào đang gánh lời / khu nào chảy máu?" (theo danh mục)
+profitMix (GĐ218) gộp lời theo TỪNG món, shelfSlotValue (GĐ226) theo ô kệ; chưa ai gộp theo KHU HÀNG
+(category: khô/uống/mát/đông/gia dụng/tươi/thịt). `categoryMix` (data/categoryMix.ts) gộp ItemHealth đã
+tin cậy theo category (ánh xạ qua resolver `categoryOf(id)` để tách rời, test dễ): mỗi khu = Σ profit30,
+Σ revenue30, itemCount, margin; xếp giảm dần; best/worst, losing (khu lỗ 30 ngày). AnalyticsPanel thêm
+Callout cạnh profitMix: "🚨 Khu hàng đang lỗ: X · Y — bớt nhập khu lỗ, đổi thêm mặt hàng khu chạy" hoặc
+"🗂️ Khu gánh lời nhất: Z". THUẦN ĐỌC, deterministic. (+5 test)
