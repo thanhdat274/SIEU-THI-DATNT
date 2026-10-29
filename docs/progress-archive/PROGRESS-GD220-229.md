@@ -194,3 +194,12 @@ customers/revenue thật hôm nay → lostFraction, lostKhachPerDay = customersP
 (cùng mô hình repPayoff GĐ148), moneyLostPerDay = khách mất × doanh thu TB mỗi lượt. Verdict clean/warn/
 danger. HUD alert "🧹 Sàn tiệm bẩn" thêm dòng "bẩn này đang mất ~N khách/ngày (~Xđ)". THUẦN ĐỌC,
 deterministic. (+5 test)
+
+## GĐ242 — 🌦️ "Ngày mai trời thế nào — đông hay vắng khách? (trữ/ né nhập)"
+HUD/buổi sáng chỉ hiện biểu tượng dự báo + tip mô tả, không cho con số. Mỗi thời tiết có hệ số ghé
+thiết kế `WEATHER[*].traffic` (sunny 1.1 / cloudy 1.0 / rain 0.8 / storm 0.55 / fog 0.9 — khớp lời tip).
+`trafficForecast` (data/trafficForecast.ts) THUẦN ĐỌC: khách đi đường ≈ customersPerDay(level)×traffic;
+trả today/tomorrowTraffic, khách ước lượng, deltaPct, verdict hot (≥1.05 → trữ thêm) / slow (≤0.85 → né
+nhập thêm). Sổ đầu ngày thêm dòng sau dòng "Hôm nay/mai": "Mai ⛅: khách ghé ~100% mức thường (~N khách) ·
+Trời đông, trữ thêm món bán chạy / Trời vắng, đừng chất thêm hàng". deterministic (hằng số thời tiết).
+THUẦN ĐỌC. (+5 test)

@@ -43,6 +43,7 @@ import { cleanBonus, CLEAN_TIERS, nextCleanTier } from '../../data/cleanOps';
 import { monthOf } from '../../data/calendar';
 import { trending } from '../../data/suppliers';
 import { describeDay, WEATHER } from '../../data/weather';
+import { trafficForecast } from '../../data/trafficForecast';
 import { tomorrowTeaser } from '../../data/tomorrowTeaser';
 import { missingForContract, reservedMissing, commitBonusValue, SUPPLY_CONTRACTS, supplyContractById, contractStreakProgress, CONTRACT_STREAK_EVERY, CONTRACT_STREAK_BONUS } from '../../data/contracts';
 import { leakTone, riskLiveToday } from '../../data/risk';
@@ -607,6 +608,13 @@ export function MorningPanel() {
         {WEATHER[weather].icon} Hôm nay {describeDay(weatherSeed, day, weather)} · mai {WEATHER[forecast[0]].icon} {describeDay(weatherSeed, day + 1, forecast[0])}.
         Đọc xong nên nhập hàng bày kệ trước khi mở cửa — khách quen ghé đúng giờ quen.
         🏠 Tiền nhà trả cuối ngày: <b>{formatMoney(rentOf(shopTier))}</b>.
+        {(() => {
+          const tf = trafficForecast({ weather, tomorrow: forecast[0], level });
+          return (
+            <> Mai {WEATHER[forecast[0]].icon}: khách ghé ~{Math.round(tf.tomorrowTraffic * 100)}% mức thường (~{Math.round(tf.tomorrowKhach)} khách).
+              {tf.verdict === 'hot' ? ' Trời đông, nên trữ thêm món bán chạy.' : tf.verdict === 'slow' ? ' Trời vắng — đừng chất thêm hàng kẻo tồn.' : ''}</>
+          );
+        })()}
       </p>
 
       {/* GĐ198: Đọc con hẻm — tín hiệu 3D hẻm đang bật hôm nay (chợ phiên / sửa đường / lễ hội).
