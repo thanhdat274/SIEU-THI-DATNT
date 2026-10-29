@@ -12,6 +12,8 @@ import { buyCostTone, cheapestSupplier, orderAssessment, tomorrowCostDir, type A
 import { monthlyRelRebate, PARTNER_TIERS, tierProgress } from '../data/supplierRel';
 import { cheapestSupplierFor, commitRebateAdvice, type CheapestProductResult } from '../data/supplierValue';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
+import { fairLotValue } from '../data/fairLotValue';
+import { itemHealthList, shelfCount } from '../data/analytics';
 import { prodSuggestToday } from '../data/prodSuggest';
 import { quanNuocRestockTip } from '../data/quanNuoc';
 import { supplyRestockManifest, supplyNetworkOrderVisible } from '../data/supplyChain';
@@ -144,7 +146,7 @@ function supplierTomorrow(s: Supplier, level: number, day: number): Dir {
 }
 
 export function OrderPanel() {
-  const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, warehouseTier, priceOf, furniture, openPanel } = useGame();
+  const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, warehouseTier, priceOf, furniture, openPanel, analytics } = useGame();
   const unlockedSuppliers = SUPPLIERS.filter((s) => s.unlock <= level);
   // GĐ57: lớp minh bạch giá mua chỉ bật khi đã mở mối dao động mạnh (Chợ đầu mối, cấp 3) — cấp <3 chưa thấy gì mới.
   const showCost = level >= 3;
@@ -456,6 +458,17 @@ export function OrderPanel() {
                       → <b style={{ color: '#2ecc71' }}>{formatMoney(offer.dealPrice)}</b>{' '}
                       <span style={{ color: '#f1c40f' }}>tiết kiệm {formatMoney(offer.totalBuy - offer.dealPrice)}</span>
                     </div>
+                    {(() => {
+                      const fv = fairLotValue(offer, storage, shelfCount(furniture), itemHealthList(analytics, level, storage, shelfCount(furniture), demand));
+                      const tone = fv.verdict === 'grab' ? '#2ecc71' : fv.verdict === 'hold' ? '#e67e22' : 'rgba(255,255,255,0.7)';
+                      return (
+                        <div style={{ marginTop: 4, fontSize: 12, color: tone, fontWeight: 600 }}>
+                          {fv.verdict === 'grab' && `Đáng múc: ${fv.beneficialCount} món đang bán nhanh, cầm ít — lô giúp đỡ thiếu hàng.`}
+                          {fv.verdict === 'hold' && `Cân nhắc: ${fv.overstockCount} món bạn đã có đủ lâu (${fv.overstockCount} món dư thừa) — mua sẽ chôn thêm vốn.`}
+                          {fv.verdict === 'maybe' && 'Chưa rõ sức bán — đang tiết kiệm ~' + Math.round(fv.savePct * 100) + '%, xem nhịp bán rồi quyết.'}
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
               </div>
