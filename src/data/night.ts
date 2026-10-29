@@ -8,6 +8,9 @@
 /** Cấp mở khóa nâng cấp ca đêm. */
 export const NIGHT_UNLOCK = 55;
 
+/** Giá mua nâng cấp "Mở ca đêm 24h" — nguồn sự thật duy nhất (upgrades.ts + nightReport.ts dùng chung). */
+export const NIGHT_UPGRADE_PRICE = 15_000_000;
+
 /** Ban đêm người đi đường thưa: nhân lượng người đi đường theo khung (22h–24h, 0h–6h).
  *  Tổng khách đêm ≈ 8–10% khách ngày — thưa nhưng giờ nào cũng có người ghé. */
 export const NIGHT_TRAFFIC = { evening: 0.15, late: 0.08 } as const;

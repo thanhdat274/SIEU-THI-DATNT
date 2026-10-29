@@ -43,7 +43,7 @@ import { describeDay, WEATHER } from '../../data/weather';
 import { tomorrowTeaser } from '../../data/tomorrowTeaser';
 import { missingForContract, reservedMissing, commitBonusValue, SUPPLY_CONTRACTS, supplyContractById, contractStreakProgress, CONTRACT_STREAK_EVERY, CONTRACT_STREAK_BONUS } from '../../data/contracts';
 import { leakTone, riskLiveToday } from '../../data/risk';
-import { nightPnl } from '../../data/nightReport';
+import { nightPnl, nightPayback, nightPaybackLabel } from '../../data/nightReport';
 import { PHONE_SLOTS } from '../../data/phoneOrders';
 import { paymentById, type PaymentMethod } from '../../data/payments';
 import { Callout, Stat, starColor, Footer, Swatch, styles, Tabs } from './shared';
@@ -331,6 +331,8 @@ export function SummaryPanel({ day }: { day: number }) {
             const np = nightPnl(st.byHour, staff, skills);
             if (np.verdict === 'idle') return null; // chưa mở ca đêm / chưa thuê ai, không bày thẻ tránh nhiễu
             const color = np.verdict === 'ok' ? '#2ecc71' : '#e74c3c';
+            const pb = nightPayback(np); // GĐ192: hồi vốn sau bao lâu cho khoản đầu tư 15tr
+            const pbColor = pb.verdict === 'good' ? '#2ecc71' : pb.verdict === 'slow' ? '#e67e22' : '#e74c3c';
             return (
               <Callout tone={np.verdict === 'ok' ? 'ok' : 'danger'} style={{ marginTop: 8 }}
                 title={<>🌙 Đêm qua: thu {formatMoney(np.revenue)} (ca đêm +15%) · lương ca đêm −{formatMoney(np.wages)} · <span style={{ color }}>lời ròng {formatMoney(np.net)}</span></>}>
@@ -338,6 +340,11 @@ export function SummaryPanel({ day }: { day: number }) {
                   {np.verdict === 'ok'
                     ? 'Mở xuyên đêm đang có lời — bán được đắt hơn buổi ngày, khách khuya lười trả giá.'
                     : '⚠️ Ca đêm đang lỗ — cân nhắc bớt nhân viên ca đêm, rút bảo vệ thừa, hoặc đóng cửa đúng giờ để khỏi trả lương ×1.5.'}
+                </div>
+                <div style={{ fontSize: 12, marginTop: 3, color: pbColor }}>
+                  💸 15tr nâng cấp "Mở ca đêm": <b>{nightPaybackLabel(pb)}</b>
+                  {pb.verdict !== 'losing' ? ` (lời ~${formatMoney(pb.netPerNight)}/đêm)` : ''}
+                  {' '}· <span style={{ opacity: 0.7 }}>*chưa tính trộm đêm ×2 & dậy trễ mất buổi sáng</span>
                 </div>
               </Callout>
             );

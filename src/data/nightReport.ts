@@ -10,6 +10,8 @@
  */
 import { dailyWage, type Staff } from './staff';
 import { hasSkill } from './titles';
+import { NIGHT_UPGRADE_PRICE } from './night';
+export { NIGHT_UPGRADE_PRICE };
 
 /** Một giờ trong ngày (0–30h kéo dài) có thuộc ban đêm không. Ngày bắt đầu ở 6h (DAY_START), nối tiếp
  *  qua nửa đêm tới 30h (= 0h–6h hôm sau), nên mọi giờ đêm ghi trong sổ đều là giờ ≥22. */
@@ -47,4 +49,47 @@ export function nightPnl(byHour: Record<number, { revenue: number }> | undefined
   const net = revenue - wages;
   const verdict: NightVerdict = revenue === 0 && wages === 0 ? 'idle' : net > 0 ? 'ok' : 'warn';
   return { revenue, wages, net, verdict };
+}
+
+/* —————————————————————————————————————————————————————————————————————
+ * GĐ192: "Mở ca đêm hồi vốn sau bao lâu?" — trả lời món đầu tư lớn nhất game
+ * (15tr) mà chưa nơi nào cho thấy ngày hồi vốn. Doanh thu đêm (byHour giờ ≥22) CHÍNH
+ * LÀ phần doanh thu thặng dư mà nâng cấp mở ra (không mở ca đêm thì tiệm đóng, không
+ * có giờ đêm), nên lời ròng mỗi đêm (đã trừ lương ca đêm ×1.5) chia vốn = số đêm hồi.
+ * THUẦN — đọc nightPnl + NIGHT_UPGRADE_PRICE, không đổi kinh tế/state/save.
+ * Lưu ý trung thực: con số này CHƯA tính trộm đêm ×2 (NIGHT_THEFT_MUL) và "dậy trễ
+ * mất buổi sáng" — UI phải nói rõ để không hứa hẹn quá.
+ * ————————————————————————————————————————————————————————————————————— */
+
+export type NightPaybackVerdict = 'good' | 'slow' | 'losing';
+
+export interface NightPayback {
+  /** Giá mua nâng cấp "Mở ca đêm 24h" (15tr). */
+  cost: number;
+  /** Lời ròng mỗi đêm theo đúng nightPnl (đã trừ lương ca đêm ×1.5). */
+  netPerNight: number;
+  /** Số đêm cần để hồi vốn (làm tròn lên); null khi đang lỗ / chưa có số liệu. */
+  paybackNights: number | null;
+  verdict: NightPaybackVerdict;
+}
+
+/**
+ * Phân tích hồi vốn nâng cấp ca đêm.
+ *  - 'good':   lời mỗi đêm, hồi vốn trong ~1 tháng (≤30 đêm) — đáng.
+ *  - 'slow':   lời nhưng hồi vốn chậm (>30 đêm) — vẫn giữ nhưng biết trước.
+ *  - 'losing': lỗ mỗi đêm (net ≤ 0) — chưa hồi vốn, cân nhắc bớt ca đêm.
+ */
+export function nightPayback(np: NightPnl, cost: number = NIGHT_UPGRADE_PRICE): NightPayback {
+  const net = np.net;
+  if (np.verdict === 'idle' || net <= 0) {
+    return { cost, netPerNight: net, paybackNights: null, verdict: 'losing' };
+  }
+  const paybackNights = Math.ceil(cost / net);
+  return { cost, netPerNight: net, paybackNights, verdict: paybackNights <= 30 ? 'good' : 'slow' };
+}
+
+/** Nhãn ngắn cho verdict — dùng trong UI ca đêm. */
+export const nightPaybackLabel = (p: NightPayback): string => {
+  if (p.verdict === 'losing') return p.netPerNight < 0 ? 'đang lỗ — chưa hồi vốn' : 'chưa đủ số liệu';
+  return p.verdict === 'good' ? `hồi vốn sau ~${p.paybackNights} đêm` : `hồi vốn chậm — ~${p.paybackNights} đêm`;
 }
