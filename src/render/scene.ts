@@ -53,6 +53,30 @@ export function createRenderer(container: HTMLElement) {
   return { renderer, scene, camera };
 }
 
+/** Thông báo khi mất ngữ cảnh render — lời thoại ở renderLoss.ts (tách để test thuần). */
+import { renderLossMessage } from './renderLoss';
+export { renderLossMessage };
+
+/**
+ * Cảnh báo mất ngữ cảnh render (GĐ175, học từ rendererGuard của Xóm Nông Trại): máy yếu hết
+ * VRAM, driver reset, mobile ẩn tab lâu... WebGL thì preventDefault để three được quyền dựng
+ * lại context; WebGPU thì device.lost là mất hẳn — người chơi cần được mời tải lại thay vì
+ * nhìn màn hình đen im lặng. onLost chỉ chạy một lần mỗi sự kiện.
+ */
+export function installRenderGuard(
+  renderer: GameRenderer,
+  onLost: (message: string) => void,
+) {
+  renderer.domElement.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    onLost(renderLossMessage('webgl'));
+  });
+  // WebGPURenderer giữ GPUDevice trong backend sau khi init; chưa init xong thì chưa có —
+  // tra tại lúc cài guard là đủ vì device mất sau đó vẫn được bắn qua promise này.
+  const device = (renderer as { backend?: { device?: { lost?: Promise<GPUDeviceLostInfo> } } }).backend?.device;
+  device?.lost?.then((info) => onLost(renderLossMessage('webgpu', info.reason ?? undefined)));
+}
+
 const DAY_SKY = new THREE.Color(0x87b5e0);
 const DUSK_SKY = new THREE.Color(0xf0a060);
 const NIGHT_SKY = new THREE.Color(0x0b1530);

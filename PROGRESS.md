@@ -19,11 +19,11 @@
 
 **Phong cách hình ảnh:** low-poly 3D màu ấm, UI nền tím-than (#3a3a4d) accent vàng (#f1c40f), icon emoji nhất quán, tiếng Việt đời thường. Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
-## Trạng thái hiện tại (28/10/2026)
+## Trạng thái hiện tại (29/10/2026)
 
-- **1755/1755 test pass (154 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
-- Đã xong GĐ1–GĐ165.
-- Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) đã bão hòa; UI responsive đa thiết bị đã audit kỹ (GĐ85–104, 116); trục "giá trị vs chi phí" đã soi kín gần hết tài sản: nhân sự tiệm chính/ca đêm/chi nhánh (141/142/144), mối hàng (143), bếp (145), trại (146/147), danh tiếng (148), quầy thịt cá (149), sổ nợ (150), hợp đồng (151), chi nhánh sau điện (152/153). Mở rộng Gánh hàng rong / Chợ phiên đã có (135–138), NG+ có dự phóng + mục tiêu vòng (139/140).
+- **1783/1783 test pass (158 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`.
+- Đã xong GĐ1–GĐ170; GĐ171 (NG+ mục tiêu vòng) đang làm dở ở working tree.
+- Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) đã bão hòa; UI responsive đa thiết bị đã audit kỹ (GĐ85–104, 116); trục "giá trị vs chi phí" đã soi kín gần hết tài sản: nhân sự tiệm chính/ca đêm/chi nhánh (141/142/144), mối hàng (143), bếp (145), trại (146/147), danh tiếng (148), quầy thịt cá (149), sổ nợ (150), hợp đồng (151), chi nhánh sau điện (152/153). Mở rộng Gánh hàng rong / Chợ phiên đã có (135–138), NG+ có dự phóng + mục tiêu vòng (139/140). GĐ172–175: lô "học từ Xóm Nông Trại" (asset kit GLB + juice + tách chunk + guard render).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
 ### GĐ159 — 🔍 Đóng nốt 4 hộp mờ nhẹ (hụi · phản công · khủng hoảng MXH · máy bán hàng) — XONG
@@ -120,6 +120,32 @@
 - Sửa NG+: prestigeRestart đặt rival null + rivalsBeaten = 0 (câu chuyện rival khởi lại từ thế hệ 1, hợp lý với việc khởi đầu lại từ tiệm nhỏ); chương đã xem không phát lại; cổng rival đời mới thêm `prestige.level > 0` (bắt buộc của phương án reset — nếu không rival không bao giờ quay lại ở vòng 2 vì ch4 không tái phát); notify tái sinh nhắc "rival đời mới quay lại từ cấp 8". Save schema 0 thay đổi.
 - Test: `rivalBoss.test.ts` 17 test (chương + ranh giới 11/12, thưởng đúng 1 lần, nhãn gen 13+, tái sinh + round-trip, cổng đời mới) + prestige/narrative cập nhật (331 test/24 file liên quan). **Full 1755/1755 (154 files)**.
 - File: `chapters.ts`, `data/biz.ts`, `core/biz.ts`, `core/prestige.ts`, `slices/prestige.ts`, `rivalBoss.test.ts`, `narrative.test.ts`, `prestige.test.ts`.
+
+### GĐ172 — 🧱 Kit prop GLB sinh bằng script (học pipeline Xóm Nông Trại) — XONG
+
+- Lý do: nghiên cứu nongtrai.jackle.dev (29/10, file `PHAN-TICH-THAM-KHAO-XOM-NONG-TRAI.md`) — đồ hoạ "nhìn đẹp" của nó không đến từ engine (cùng React+Zustand+Three) mà từ **quy trình asset**: kit low-poly → GLB nhẹ + manifest kiểm kê. Mình 100% procedural, `public/models` rỗng — đúng mảnh thiếu cho không gian ngoài trời (sân, trại, chợ phiên).
+- Script `scripts/build-kit-assets.ts` (chạy `npx tsx`, dùng three trong repo, KHÔNG cần Blender): 6 prop hẻm Việt — chậu cây, thùng gỗ, khóm tre, bồn nước tôn, ghế nhựa đỏ, gánh hàng rong — mỗi món nhiều khối gán màu đỉnh (vertex color, không texture) gộp thành 1 mesh; export GLB qua GLTFExporter (shim FileReader cho Node) + `kit-manifest.json` kiểm kê tris/KB, cảnh báo vượt cap 2500 tris. Tổng 3.7k tris / ~550KB, prop nặng nhất 928 tris. Xem mắt: `asset-preview.html` (dev).
+- Loader `src/world/kitProps.ts`: fetch manifest trước (bỏ module đã mất), GLTFLoader nạp lười sau khi thế giới đứng yên — prop vừa về vừa chen vào, lỗi mạng chỉ warn (không có kit vẫn chơi được). **Đặt theo convention quán nước: chỉ hình ảnh, không chặn lưới** (boxes rỗng). 14 placement quanh nhà/tiệm/vỉa hè/khu cây, soi bằng test thuần `kitProps.test.ts` (5 test: không đè nhà/lòng đường, không chèn nhau, đúng module...) — bắt ngay 1 bug destructure `[x,z]` lấy nhầm trục Y lúc code.
+- File: `scripts/build-kit-assets.ts`, `public/models/kit/` (6 GLB + manifest), `src/world/kitProps.ts`, `world.ts`, `asset-preview.html`, `kitProps.test.ts`.
+
+### GĐ173 — 💰 Juice bán hàng: bong bóng tiền bay ở quầy (học Xóm Nông Trại) — XONG
+
+- Lý do: nguyên tắc "mọi quyết định có dữ liệu phản hồi" — chip tiền HUD đã nhấp nháy, nhưng không nói ra **tiền vừa vào bao nhiêu, ở quầy nào**; game nông trại cho thấy "+số" bay lên tại chỗ thu là phản hồi rẻ mà đã tay nhất.
+- `src/render/fx/coinPop.ts`: sprite canvas vẽ pill "+12.000đ" (nền tím-than viền vàng, đúng bảng màu GĐ166), bay ease-out 1.4s mờ dần cuối; pool 10 tái dùng (hết pool giật của bay lâu nhất); update bằng giây THẬT (tua 8× vẫn kịp đọc). `customers.updateCheckout` gọi `coinFx.spawn(counter.center, total)` ngay sau `checkout` + sfx 'sale'; main gọi `coinFx.update(dt)` mỗi khung.
+- Thuần để test: `coinPopLabel` (kẹp âm về 0, dùng `formatMoney` chuẩn game) + `coinPopPose` (sinh thấp→lên chậm dần→tan trên cao), 4 test.
+- File: `fx/coinPop.ts`, `customers.ts`, `main.tsx`, `coinPop.test.ts`.
+
+### GĐ174 — 📦 Tách chunk vendor (manualChunks của Vite) — XONG
+
+- Lý do: 1 bundle ~2.3MB đổi mỗi lần sửa code → cache trình duyệt xả hết; học từ cách Xóm Nông Trại chia `vendor-react`/`vendor-state`.
+- `vite.config.ts` thêm `manualChunks`: `vendor-react` (react/react-dom/scheduler, 211KB), `vendor-three` (997KB), `vendor-data` (zustand/dexie/firebase, 200KB), còn lại `vendor-misc` — code game 1035KB ở `index`. Thư viện ít đổi ở lại cache qua các bản update; tải song song. Build sạch (cảnh báo >500KB có sẵn, 2 chunk lớn không mới).
+- File: `vite.config.ts`.
+
+### GĐ175 — 🛡️ Guard mất ngữ cảnh render (học rendererGuard của Xóm Nông Trại) — XONG
+
+- Lý do: máy hết VRAM/driver reset/mobile ẩn tab lâu → context GPU bị giết, trước đây người chơi chỉ thấy màn đen im lặng. LÀM XONG LIỀN GẶP THẬT trong buổi verify (reload dev dồn dập, Chrome giết context cũ nhất — màn đen đúng kịch bản này).
+- `installRenderGuard(renderer, onLost)` trong `scene.ts`: WebGL — `webglcontextlost` + preventDefault để three được quyền dựng lại; WebGPU — `backend.device.lost` (mất hẳn, mời F5). `main.tsx` báo qua `notify` (toast 3s) + console.error, chống spam 8s. Lời thoại theo backend ở `renderLoss.ts` (tách riêng vì scene.ts có matchMedia/WebGPU cấp module — node test không nạp được), 3 test.
+- File: `scene.ts`, `renderLoss.ts`, `main.tsx`, `renderGuard.test.ts`.
 
 ## Quy ước kỹ thuật cần nhớ
 

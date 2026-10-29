@@ -27,7 +27,7 @@ import { BranchVisit } from './agents/branchVisit';
 import { BizView } from './render/bizView';
 import { CameraController } from './render/cameraController';
 import { InteriorView } from './render/interiorView';
-import { AdaptiveResolution, createRenderer, Lighting, LOW_POWER, type GameRenderer } from './render/scene';
+import { AdaptiveResolution, createRenderer, installRenderGuard, Lighting, LOW_POWER, type GameRenderer } from './render/scene';
 import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
@@ -53,6 +53,17 @@ watchUser((user) => useSession.setState({
 const playing = () => useSession.getState().screen === 'game';
 const container = document.getElementById('game')!;
 const { renderer, scene, camera } = createRenderer(container);
+// Guard mất ngữ cảnh render (GĐ175): máy hết VRAM/driver reset/mobile ẩn tab lâu — hiện dải
+// cảnh báo trong UI (UiBoundary khống chế) thay vì màn hình đen im lặng.
+let lossNotified = false;
+installRenderGuard(renderer, (message) => {
+  if (lossNotified) return;
+  lossNotified = true;
+  console.error('[render]', message);
+  useGame.getState().notify(message);
+  // Mất context đôi khi three tự dựng lại được (WebGL): 8 giây sau cho phép báo lại nếu tái diễn
+  setTimeout(() => (lossNotified = false), 8000);
+});
 const controller = new CameraController(camera, renderer.domElement);
 const lighting = new Lighting(scene);
 // Tilt-shift: mép trên/dưới mờ nhẹ cho cảnh như mô hình thu nhỏ. Mặc định bật trên máy tính,
