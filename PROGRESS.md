@@ -49,6 +49,8 @@
 
 - **GĐ279 note biết ai giữ cửa** 🧾: thu ngân autoOpen ca sáng mở 6h thì note "lịch 8h — lỡ giờ vàng" là SAI → `cashierOpensMorning` + "Thu ngân tự mở cửa sáng sớm"; ca chiều/không cờ → theo lịch chủ. 2 test; 2247 test xanh; QA @5173 đúng.
 
+- **GĐ280 đóng GĐ110/117 bằng số liệu** 📊: instrument claimQuest đo 28 ngày cấp 50 (harness tất định) — 3 nhiệm vụ xương sống (khách/doanh thu/vui vẻ) bot đạt 24–26/28 (dao động theo yield async, ngưỡng test ≥22); 8 nhiệm vụ còn lại (nấu/MXH/dịch vụ/trại/online/combo) bot = 0 vì bot KHÔNG thực hiện hành động đó — giới hạn bot, không phải mục tiêu vô lý (khớp browser thật GĐ110/117) → CHỐT giữ nguyên mục tiêu. Test chính thức khoá tín hiệu cân bằng; 2248 test xanh; boot @5173 sạch.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc + thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -77,7 +79,6 @@
 - QA mắt 3D/panel chập tối (IAB nền dừng rAF): GĐ177–194 đã QA @5173 lúc làm; đối chiếu lại thì xem archive.
 - ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap`: bot bày lại tầng kệ đầy → bỏ qua tầng đầy + timeout 1.8tr ms. Nếu cả bộ lại > ~10 phút: profile trước khi làm tiếp.
 - GĐ171: scale mục tiêu vòng NG+ — cần save thật vòng 2+ để xác nhận; nếu quá dễ → siết trần.
-- (GĐ110/117) Mục tiêu nhiệm vụ & kèo cấp 50+: bot hụt ~40% nhưng browser thật cho thấy trong năng lực → theo dõi.
 
 ## Backlog tiếp theo
 
@@ -324,5 +325,6 @@
 - GĐ275 — ⏰ Lịch tự động chỉnh giờ mở cửa 6h–8h (autoOpenAt + xoay vòng preset trong menu hồ sơ)
 - GĐ276 — ⏰ Dòng lịch tự động trên Sổ đầu ngày (autoOpenNote)
 - GĐ279 — 🧾 Note biết thu ngân tự mở cửa sáng sớm (cashierOpensMorning)
+- GĐ280 — 📊 Đóng GĐ110/117: đo nhiệm vụ cấp 50 (xương sống 24–26/28; 8 quest hành động bot không làm) + test khoá tín hiệu
 - GĐ277 — 💾 Khoá autoOpenAt qua save (3 test) + lock chợ phiên luôn rơi Chủ nhật
 - GĐ278 — 👀 QA mắt thẻ CÓ dữ liệu GĐ155–159 (thú cưng/hụi/khủng hoảng/bỏ lỡ) — đóng watch-item
