@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **2215/2215 test pass (216 files) + test:coverage branch 87.17%/fn 75.59%** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ261. QA TOÀN DIỆN GĐ260: 34 panel × 3 cỡ màn 0 tràn/0 lỗi, autoplay ngày thật (132 khách) sạch.
+- **2226/2226 test pass (218 files) + coverage branch 87.17%/fn 75.59%** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ268. QA TOÀN DIỆN GĐ260: 34 panel × 3 cỡ màn 0 tràn/0 lỗi.
 - Bức tranh tổng: nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+ + CUỐI TUẦN GĐ254–261) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ làm khi đi kèm gameplay (pipeline GĐ172–176).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ258–261 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–257: PROGRESS-GD250-257.md)
+### Giai đoạn gần đây · GĐ262–268 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–261: PROGRESS-GD250-257.md)
 
 - **GĐ177–261** đã dồn archive (docs/progress-archive/): 3D + đèn (177–198) · supply chain (199–209) · bộ soi tiền/vốn (210–229) · PROGRESS-GD230-249.md · PROGRESS-GD250-257.md (gồm phụ lục 258–261).
 - **GĐ251 giá dịp lễ** 💲 — suggestPrice/priceForecast theo tolerance của dịp lễ (THUẦN ĐỌC). Chi tiết: archive.
