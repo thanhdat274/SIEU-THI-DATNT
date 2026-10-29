@@ -115,6 +115,12 @@ QA kiểm tra giao diện ở nhiều kích thước màn hình (dùng chế đ�
   - Kiểm tra màn hình: tính năng mới xem ở điện thoại (390px) + máy tính. Chỉ quét ĐỦ mọi kích thước (320/390/768/máy tính) và mọi panel khi giai đoạn đụng tới giao diện chung (HUD, panel/thành phần dùng chung, CSS chung).
   - QA TOÀN DIỆN mỗi 10 giai đoạn (GĐ chia hết cho 10): chơi lại cả vòng ngày ở nhiều cấp, mọi panel, mọi kích thước màn hình, đánh giá người chơi mới có tự hiểu không — ghi kết quả vào PROGRESS.md.
   - Không chơi lại toàn bộ các giai đoạn cũ mỗi lần; nếu nghi một giai đoạn cũ bị ảnh hưởng thì chỉ kiểm tra riêng phần đó.
+- **QA nhanh — không chờ thời gian thật trôi:**
+  - Dựng thẳng trạng thái cần xem bằng công cụ dev trong console: `game.useGame.setState({ minutes: 20 * 60, money: 50_000_000, level: 30, staff: [...] })` (giờ, tiền, cấp, nhân viên, kệ...) thay vì chơi/chờ tới đó. `game.autoplay(n)` / `game.playtest` khi cần vài ngày dữ liệu.
+  - Thế giới TỰ DỪNG khi HUD có câu hỏi/khách hỏi ở quầy (ghi sổ, mặc cả — GĐ102) hoặc panel tổng kết đang mở: đây là thiết kế, không phải lỗi. Đồng hồ đứng thì việc đầu tiên là trả lời/đóng các câu hỏi đó (hoặc `game.useGame.setState({ panel: null })`), không chạy thêm thời gian hay soi nguyên nhân.
+  - Đọc kết quả bằng chữ (đọc trang/DOM, `game.useGame.getState()`), chỉ chụp ảnh khi cần xem hình ảnh/bố cục.
+  - Logic và số liệu đã có test tự động lo — QA trình duyệt chỉ xem phần người chơi THẤY và CẢM (hiển thị, thao tác, độ rõ, độ vui), không mô phỏng lại nhiều ngày trên trình duyệt để kiểm số.
+  - Giới hạn ~10–15 phút QA mỗi giai đoạn thường. Kẹt vì môi trường (trang không tải, tab nền dừng hoạt ảnh, popup lạ) quá ~5 phút thì ghi vào PROGRESS.md mục "Cần theo dõi" và làm tiếp, không vật lộn.
 
 ## Quy trình mỗi giai đoạn
 
