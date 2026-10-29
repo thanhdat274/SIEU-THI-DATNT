@@ -32,7 +32,7 @@ import { hiepLucEligible, hiepLucPayoff, HIEPLUC_COC, HIEPLUC_MIN } from '../../
 import { earlyUnlockTeaser } from '../../data/unlockMap';
 import { marketClearValue, isMarketDay } from '../../data/chophien';
 import { alleySignalsToday } from '../../data/alleySignals';
-import { supplyChainOverview } from '../../data/supplyChain';
+import { supplyChainOverview, supplyRestockManifest } from '../../data/supplyChain';
 import { signHiepLuc } from '../../core/biz';
 import { seasonEvent, seasonObjective, seasonEventName, SEASON_EVENT_DAYS, SEASON_REWARD_PER_STAR } from '../../data/seasonEvent';
 import { planDay, type DayAction } from '../../data/dayPlan';
@@ -627,7 +627,26 @@ export function MorningPanel() {
                   {o.icon} <b>{o.name}</b>: {o.line}
                 </div>
               ))}
-              {sc.choke && <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>Xử lý điểm nghẽn trước — nguồn cho các điểm còn lại là kho chung.</div>}
+               {sc.choke && <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>Xử lý điểm nghẽn trước — nguồn cho các điểm còn lại là kho chung.</div>}
+              {(() => {
+                // GĐ202: "Phiếu nạp kho" — biến gợi ý thành số đơn vị cụ thể cần chở/nhập cho từng điểm bán.
+                const rm = supplyRestockManifest(storage, branch ?? undefined, biz.quanNuoc, level, biz.quanNuocLast ?? null);
+                if (rm.total === 0 && sc.choke) return null;
+                return (
+                  <div style={{ marginTop: 6, borderTop: '1px dashed rgba(255,255,255,0.18)', paddingTop: 6 }}>
+                    <div style={{ fontSize: 12 }}>🧾 Phiếu nạp kho: {rm.line}</div>
+                    {rm.lines.length > 0 && (
+                      <div style={{ marginTop: 3, display: 'grid', gap: 2, fontSize: 11, opacity: 0.9 }}>
+                        {rm.lines.map((l, i) => (
+                          <div key={i}>
+                            {l.outlet === 'teahouse' ? '🍵' : '🏪'} <b>{l.label}</b>: thêm <b>{l.need.toLocaleString('vi-VN')}</b> (kho chung có {l.inWarehouse.toLocaleString('vi-VN')}) — {l.source === 'warehouse' ? 'chở được' : 'nhập thêm'}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </Callout>
         );

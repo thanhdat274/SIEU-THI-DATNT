@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   supplyChainOverview,
+  supplyRestockManifest,
   storageTotal,
   teahouseKhoDays,
   branchThinShelves,
@@ -165,5 +166,62 @@ describe('GĐ201 — kệ trống chi nhánh', () => {
     const b = sc.outlets.find((o) => o.id === 'branch')!;
     expect(b.state).toBe('warn');
     expect(b.line).toMatch(/trống:/);
+  });
+});
+
+/**
+ * GĐ202 — "Phiếu nạp kho": biến gợi ý (GĐ199–201) thành danh sách đơn vị cụ thể cần chở từ kho chung /
+ * nhập thêm cho từng điểm bán. THUẦN, deterministic — không đổi sim/save.
+ */
+describe('GĐ202 — phiếu nạp kho', () => {
+  const quanFull = (open = true): QuanNuocState => ({ open, staff: 2, price: 'vua' });
+  const drinkStock = (units: number) => {
+    const s: Record<string, number> = {};
+    for (const id of quanNuocDrinkIds(30)) s[id] = units;
+    return s;
+  };
+
+  it('chi nhánh kệ trống, kho chung đủ → chở từ kho, buyNeed = 0', () => {
+    const rm = supplyRestockManifest({ mi: 60 }, { open: true, shelf: { mi: 0 } }, quanFull(false), 30, null);
+    const b = rm.lines.find((l) => l.outlet === 'branch')!;
+    expect(b.need).toBe(CONVENIENCE.perItem); // headroom 40
+    expect(b.inWarehouse).toBe(60);
+    expect(b.source).toBe('warehouse');
+    expect(rm.warehouseCover).toBe(CONVENIENCE.perItem);
+    expect(rm.buyNeed).toBe(0);
+    expect(rm.total).toBe(CONVENIENCE.perItem);
+    expect(rm.line).toMatch(/chở \d+ từ kho chung/);
+  });
+
+  it('chi nhánh kệ trống, kho chung hụt → phần hụt nhập thêm (buy)', () => {
+    const rm = supplyRestockManifest({ mi: 10 }, { open: true, shelf: { mi: 0 } }, quanFull(false), 30, null);
+    const b = rm.lines.find((l) => l.outlet === 'branch')!;
+    expect(b.need).toBe(CONVENIENCE.perItem);
+    expect(b.source).toBe('buy');
+    expect(rm.warehouseCover).toBe(10);
+    expect(rm.buyNeed).toBe(CONVENIENCE.perItem - 10);
+  });
+
+  it('quán nước thiếu đồ uống → toàn bộ shortfall là nhập thêm (kho chung đã tính trong have)', () => {
+    // drinkStock(1): 76 món × 1 = 76 ly < wanted 89 (cấp 30, 2 NV, giá vừa) → driesMain, shortfall>0
+    const storage = drinkStock(1);
+    const rm = supplyRestockManifest(storage, undefined, quanFull(true), 30, { served: 0, wanted: 0 });
+    const t = rm.lines.find((l) => l.outlet === 'teahouse');
+    expect(t).toBeTruthy();
+    expect(t!.source).toBe('buy');
+    expect(t!.inWarehouse).toBe(76);
+    expect(t!.need).toBeGreaterThan(0);
+    expect(rm.buyNeed).toBe(t!.need);
+    expect(rm.total).toBe(t!.need);
+    expect(rm.warehouseCover).toBe(0);
+    expect(rm.line).toMatch(/nhập thêm/);
+  });
+
+  it('cả mạng lưới đủ → không có dòng, tổng 0, dòng "không cần nạp"', () => {
+    const storage = { ...drinkStock(500), mi: 40 };
+    const rm = supplyRestockManifest(storage, { open: true, shelf: { mi: CONVENIENCE.perItem } }, quanFull(true), 30, { served: 40, wanted: 40 });
+    expect(rm.total).toBe(0);
+    expect(rm.lines).toEqual([]);
+    expect(rm.line).toMatch(/không cần nạp/);
   });
 });

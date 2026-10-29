@@ -1,6 +1,6 @@
 import { shelfTotal, CONVENIENCE } from './branches';
 import { quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, type QuanNuocState } from './quanNuoc';
-import { productById } from './products';
+import { productById, type Product } from './products';
 
 /**
  * GĐ199 — "Rốn kho chung": bắt đầu trục multi-shop supply chain (backlog 6) bằng một bước soi sáng —
@@ -114,4 +114,78 @@ export function supplyChainOverview(
     ?? outlets.find((o) => o.state === 'warn')
     ?? null;
   return { outlets, choke };
+}
+
+export interface RestockLine {
+  outlet: SupplyOutletId;
+  /** Nhãn: tên món (chi nhánh) hoặc nhóm "Đồ uống" (quán nước — nước/ngọt/cà phê). */
+  label: string;
+  /** Đơn vị cần bổ sung cho điểm bán này. */
+  need: number;
+  /** Đơn vị kho chung đang có cho nhu cầu này (phần hụt phải nhập thêm). */
+  inWarehouse: number;
+  /** Đủ kho chung để chở, hay phải nhập thêm từ nhà cung cấp. */
+  source: 'warehouse' | 'buy';
+}
+
+export interface RestockManifest {
+  lines: RestockLine[];
+  /** Tổng đơn vị cần bổ sung cho mạng lưới. */
+  total: number;
+  /** Phần kéo được từ kho chung (chở là đủ). */
+  warehouseCover: number;
+  /** Phần phải nhập thêm (kho chung cũng không có). */
+  buyNeed: number;
+  /** Chuỗi tóm tắt một dòng cho thẻ UI. */
+  line: string;
+}
+
+/**
+ * GĐ202 — "Phiếu nạp kho": GĐ199–201 mới SOI điểm bán nào thiếu; vế người chơi cần làm là biết NẠP
+ * BAO NHIÊU từng món cho đúng chỗ. Helper thuần này biến các gợi ý đó thành một danh sách hàng cụ thể:
+ *   - Chi nhánh: từng kệ trống (branchThinShelves) cần `empty` đơn vị; kéo được từ kho chung theo
+ *     đơn vị món đang có (min(empty, storage[id])), phần hụt phải nhập.
+ *   - Quán nước: thiếu đồ uống tối nay (quanNuocRestockTip); vì `have` đã gồm cả kho chung, toàn bộ
+ *     shortfall là NHẬP THÊM (kho chung không gánh được).
+ * Tổng → `buyNeed` = số đơn vị thực sự phải mua để lấp cả mạng lưới (hướng dẫn "mua bao nhiêu" ngay
+ * trong một chuyến nạp). THUẦN — chỉ đọc storage/shelf/projection, không đổi sim/save.
+ */
+export function supplyRestockManifest(
+  storage: Record<string, number>,
+  branch: { open: boolean; shelf: Record<string, number> } | undefined,
+  quan: QuanNuocState,
+  level: number,
+  last?: { served?: number; wanted?: number } | null,
+): RestockManifest {
+  const lines: RestockLine[] = [];
+  let total = 0, warehouseCover = 0, buyNeed = 0;
+
+  // Chi nhánh: chở theo kệ — từng món cần bao nhiêu, kho chung có mấy đơn vị.
+  if (branch?.open) {
+    for (const t of branchThinShelves(branch)) {
+      const have = storage[t.id] ?? 0;
+      const covered = Math.min(t.empty, have);
+      const buy = t.empty - covered;
+      total += t.empty;
+      warehouseCover += covered;
+      buyNeed += buy;
+      lines.push({ outlet: 'branch', label: t.name, need: t.empty, inWarehouse: have, source: buy > 0 ? 'buy' : 'warehouse' });
+    }
+  }
+
+  // Quán nước: shortfall đã gồm kho chung → phần hụt là nhập thêm.
+  if (quan.open) {
+    const tip = quanNuocRestockTip(quan, level, storage, last);
+    if (tip && tip.shortfall > 0) {
+      total += tip.shortfall;
+      buyNeed += tip.shortfall;
+      lines.push({ outlet: 'teahouse', label: `Đồ uống (${quanNuocDrinkIds(level).length} món nước/ngọt/cà phê)`, need: tip.shortfall, inWarehouse: tip.have, source: 'buy' });
+    }
+  }
+
+  const line = (total === 0
+    ? 'kho chung & các điểm bán đều đủ cho hôm nay — không cần nạp thêm'
+    : `cần ~${total.toLocaleString('vi-VN')} đơn vị: ${warehouseCover > 0 ? `chở ${warehouseCover.toLocaleString('vi-VN')} từ kho chung` : 'chở 0 từ kho chung'}${buyNeed > 0 ? `, nhập thêm ${buyNeed.toLocaleString('vi-VN')} từ nhà cung cấp` : ''}`);
+
+  return { lines, total, warehouseCover, buyNeed, line };
 }

@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1888/1888 test pass (172 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ201. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ ~113s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
+- **1892/1892 test pass (172 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ202. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ ~113s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–201 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
+### Giai đoạn gần đây · GĐ177–202 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
 
 - **GĐ177** 🏮 Đầu ngõ lên đèn: đèn lồng cột dựng Blender (`blender_lantern.py`) bật sáng ấm chập tối (lamp 17h–5h30, lightBudget) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md.
 - **GĐ178** 🎨 Gộp họ xanh dương guide/chuỗi/biểu đồ về info `#3498db` (16 chỗ) — chi tiết: archive trên.
@@ -52,6 +52,7 @@
 - **GĐ199** 🔗 "Rốn kho chung": BẮT ĐẦU trục multi-shop supply chain (backlog 6) bằng bước soi sáng — nối ba điểm bán (tiệm chính + chi nhánh + quán nước) về một rốn kho chung, liệt kê mỗi điểm còn dư/cạn + điểm NGHẼN. Helper thuần `supplyChainOverview(storage,branch,quan,level,last)` gộp ĐÚNG nguồn chân lý có sẵn: quán nước deterministic qua `quanNuocRestockTip` (GĐ190), chi nhánh quan sát được qua `shelfTotal/shelfCap` (GĐ153) với ngưỡng 15%/35%, kho chung qua `storageTotal`; `choke` = first danger→warn cho biết xử lý đâu trước. Sổ đầu ngày thêm Callout "🔗 Rốn kho chung — nghẽn: ..." dưới thẻ "Đọc con hẻm". Thuần đọc, không đổi save/kinh tế/persist. `supplyChain.ts`, `supplyChain.test.ts` (+9, fixture cố định), `ReportPanels.tsx`; tsc+build sạch; QA @5173.
 - **GĐ200** ⏳ "Kho chung nuôi quán nước mấy ngày?": biến tấm ảnh rốn kho (GĐ199) thành CHÂN TRỜI THỜI GIAN — vì nhu cầu quán nước deterministic (GĐ127/187), helper thuần `teahouseKhoDays(q,level,storage)` = floor(đơn vị đồ uống trong kho ÷ nhu cầu `wanted` mỗi đêm) cho biết kho chung còn nuôi được ~N ngày; nạp sớm khi N ít. Gắn vào dòng ok của quán nước trong thẻ rốn kho ("đủ đồ uống cho tối nay · kho chung nuôi ~N ngày"). THUẦN, đối chiếu quanNuocProjection. `supplyChain.ts` (+helper), `supplyChain.test.ts` (+4); tsc+build sạch; QA @5173.
 - **GĐ201** 🏪 "Nạp đúng thứ cho chi nhánh": trục multi-shop sâu thêm một bước — vì nhu cầu chi nhánh là SIM (không ước chính xác từng món), gợi ý nạp theo thứ QUAN SÁT được: helper thuần `branchThinShelves(branch)` liệt kê kệ TRỐNG NHIỀU NHẤT (headroom = perItem − đang có, giảm dần, bỏ kệ đầy) → cho biết "chở loại gì từ kho chung". Gắn vào dòng chi nhánh trong thẻ rốn kho khi kệ cạn ("kệ còn ~X% (trống: ...) — chở thêm"). THUẦN theo shelf + productById, deterministic. `supplyChain.ts` (+helper), `supplyChain.test.ts` (+4); tsc+build sạch; QA @5173.
+- **GĐ202** 🧾 "Phiếu nạp kho": GĐ199–201 mới SOI điểm bán nào thiếu; vế người chơi cần biết là NẠP BAO NHIÊU từng món cho đúng chỗ. Helper thuần `supplyRestockManifest(storage,branch,quan,level,last)` biến gợi ý thành danh sách hàng cụ thể: chi nhánh theo từng kệ trống (need = headroom; kéo được min(empty, storage[id]) từ kho chung, phần hụt nhập thêm → source warehouse/buy), quán nước shortfall toàn bộ là NHẬP THÊM (haven đã gồm kho chung). Tổng `total`/`warehouseCover`/`buyNeed` + chuỗi `line`; gắn dưới thẻ rốn kho ("Phiếu nạp kho: ... cần ~N đơn vị ..."). THUẦN đọc storage/shelf/projection. `supplyChain.ts` (+helper), `supplyChain.test.ts` (+4), `ReportPanels.tsx`; tsc+build sạch (1892/1892); QA @5173 boot ổn.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -105,7 +106,7 @@
 3. Sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (save người thật); nếu vẫn lặp → thêm biến thể hoàn cảnh (lễ, weekend).
 4. GĐ164 theo dõi: arc E "Hàng xóm khai trương" (thay cam_do_mo) — chỉ làm khi 4 arc A–D chạy tốt trên save thật.
 5. ✅ UI nợ ĐÃ ĐÓNG (GĐ183): toàn bộ thẻ trong src/ui dùng `Callout`; 0 màu lệch bảng/toan trong UI. Hết món nợ UI còn thấy.
-6. 🔗 **Multi-shop supply chain (trục đang chạy, backlog 6)**: ĐÃ BẮT ĐẦU + SÂU — GĐ199 rốn kho chung (choke) → GĐ200 chân trời ngày (teahouseKhoDays) → GĐ201 nạp đúng thứ chi nhánh (branchThinShelves). Bước tiếp trên trục (theo depth-first): nối gợi ý thành hành động (nút "chở/đặt xe" cho chi nhánh như GĐ190/191 đã làm cho quán nước), hoặc auto chuyển kho khi lặp đủ — ghi chờ, không vội phình.
+6. 🔗 **Multi-shop supply chain (trục đang chạy, backlog 6)**: ĐÃ BẮT ĐẦU + SÂU — GĐ199 rốn kho chung (choke) → GĐ200 chân trời ngày (teahouseKhoDays) → GĐ201 nạp đúng thứ chi nhánh (branchThinShelves) → GĐ202 phiếu nạp kho (supplyRestockManifest đổi gợi ý thành số đơn vị chở/nhập cụ thể). Bước tiếp trên trục (theo depth-first): nối gợi ý thành hành động (nút "chở/đặt xe" cho chi nhánh như GĐ190/191 đã làm cho quán nước), hoặc auto chuyển kho khi lặp đủ — ghi chờ, không vội phình.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)
 
@@ -305,3 +306,4 @@
 - GĐ199 — 🔗 Rốn kho chung: Sổ đầu ngày nối tiệm chính + chi nhánh + quán nước về một rốn kho, chỉ điểm nghẽn — BẮT ĐẦU trục multi-shop supply chain
 - GĐ200 — ⏳ Kho chung nuôi quán nước mấy ngày: chân trời thời gian (floor kho ÷ nhu cầu/đêm) cho rốn kho — nạp sớm khi N ít
 - GĐ201 — 🏪 Nạp đúng thứ cho chi nhánh: liệt kê kệ trống nhiều nhất (headroom) làm gợi ý chở loại gì từ kho chung — sâu trục multi-shop theo thứ quan sát được
+- GĐ202 — 🧾 Phiếu nạp kho: biến gợi ý thành số đơn vị cụ thể cần chở từ kho chung / nhập thêm cho từng điểm bán
