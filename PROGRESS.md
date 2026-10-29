@@ -22,8 +22,8 @@
 ## Trạng thái hiện tại (29/10/2026)
 
 - **2235/2235 test pass (220 files) + coverage branch 87.40%/fn 76.17%** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ274. QA TOÀN DIỆN GĐ270: 34 panel + 0 tràn @320/390/768.
-- Bức tranh tổng: nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+ + CUỐI TUẦN GĐ254–261) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ làm khi đi kèm gameplay (pipeline GĐ172–176).
-- Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
+- Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
+- Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
 
 ### Giai đoạn gần đây · GĐ266–270 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–269: PROGRESS-GD250-257.md)
 
