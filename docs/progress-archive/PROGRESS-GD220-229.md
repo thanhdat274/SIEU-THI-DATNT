@@ -35,3 +35,11 @@ doanh thu ca phủ) × % tăng tốc (`nextDeltaPct`) → mức tăng giá trị
 (`ceil(expNeeded/TRAIN_EXP_PER_SESSION)` buổi × `trainCost`) → SỐ NGÀY HOÀ VỐN (`ceil(cost/valueGain)`),
 `worth` khi ≤14 ngày. StaffPanel thêm dòng "hoà vốn ~N ngày" cạnh nút đào tạo (xanh khi đáng / cam
 khi chậm). (+5 test).
+
+## GĐ224 — 🔥 "Mỗi ngày gầm bao nhiêu tiền cố định?"
+Gộp các khoản chi phí cố định/ngày thành con số GỘP so với doanh thu bình quân: `dailyBurn`
+(data/dailyBurn.ts) = lương (Σ `dailyWage` cả hai tiệm) + thuê (`rentOf(shopTier)`) + lãi vay
+(`loanInterest`) + góp hụi (`hui.daily`) so doanh thu bình quân 7 ngày (`recentAvgRevenue`) →
+`burnShare` (% chi phí cố định ăn dòng tiền), `covered`, `margin` (thừa/thiếu đệm). Nối GĐ216 (lương),
+GĐ214 (nợ), GĐ217 (lãi). Sổ đầu ngày (ReportPanels) thêm Callout "Chi phí cố định/ngày Xđ = Y% doanh
+thu bình quân" (cam khi >80% → kíp tăng doanh thu hoặc cắt bớt lương/nợ). (+5 test).
