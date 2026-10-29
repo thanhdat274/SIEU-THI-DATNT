@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   supplyChainOverview,
   storageTotal,
+  teahouseKhoDays,
   SUPPLY_BRANCH_WARN,
   SUPPLY_BRANCH_DANGER,
 } from '../data/supplyChain';
-import { quanNuocDrinkIds, type QuanNuocState } from '../data/quanNuoc';
+import { quanNuocProjection, quanNuocDrinkIds, type QuanNuocState } from '../data/quanNuoc';
 import { shelfTotal, CONVENIENCE } from '../data/branches';
 
 /**
@@ -91,5 +92,45 @@ describe('GĐ199 — Rốn kho chung', () => {
   it('có đủ 3 điểm bán trong thẻ, đúng thứ tự main → teahouse → branch', () => {
     const sc = supplyChainOverview(new Array(5).fill(0).reduce((o, _, i) => ({ ...o, [`m${i}`]: 1 }), {}), { open: true, shelf: {} }, quanFull(false), 30, null);
     expect(sc.outlets.map((o) => o.id)).toEqual(['main', 'teahouse', 'branch']);
+  });
+});
+
+/**
+ * GĐ200 — "Kho chung nuôi quán nước mấy ngày": chân trời thời gian cho rốn kho (GĐ199). THUẦN, đối
+ * chiếu đúng chân lý dự phóng quanNuocProjection (wanted/đêm) — không hardcode.
+ */
+describe('GĐ200 — kho chung nuôi quán nước mấy ngày', () => {
+  const quanFull = (open = true): QuanNuocState => ({ open, staff: 2, price: 'vua' });
+  const drinkStock = (units: number) => {
+    const s: Record<string, number> = {};
+    for (const id of quanNuocDrinkIds(30)) s[id] = units;
+    return s;
+  };
+
+  it('quán đóng → null (không tiêu kho)', () => {
+    expect(teahouseKhoDays({ open: false, staff: 0, price: 'vua' as const }, 30, {})).toBeNull();
+  });
+
+  it('ngày = floor(đơn vị đồ uống trong kho / nhu cầu wanted mỗi đêm)', () => {
+    const q = quanFull(true);
+    const storage = drinkStock(120);
+    const units = quanNuocDrinkIds(30).reduce((n, id) => n + (storage[id] ?? 0), 0);
+    const wanted = quanNuocProjection(q, 30, units).wanted;
+    expect(teahouseKhoDays(q, 30, storage)).toBe(Math.floor(units / wanted));
+  });
+
+  it('càng ít hàng càng ít ngày (kho mỏng → cần nạp sớm), cùng q/level', () => {
+    const q = quanFull(true);
+    const dFull = teahouseKhoDays(q, 30, drinkStock(300))!;
+    const dThin = teahouseKhoDays(q, 30, drinkStock(30))!;
+    expect(dThin).toBeGreaterThan(0);
+    expect(dThin).toBeLessThan(dFull);
+  });
+
+  it('quán đang đủ (tip null) thì dòng ok gồm chân trời ngày', () => {
+    const sc = supplyChainOverview(drinkStock(500), { open: true, shelf: { mi: 800 } }, quanFull(true), 30, { served: 40, wanted: 40 });
+    const t = sc.outlets.find((o) => o.id === 'teahouse')!;
+    expect(t.state).toBe('ok');
+    expect(t.line).toMatch(/nuôi ~\d+ ngày/);
   });
 });

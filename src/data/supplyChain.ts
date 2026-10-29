@@ -1,5 +1,5 @@
 import { shelfTotal, CONVENIENCE } from './branches';
-import { quanNuocRestockTip, type QuanNuocState } from './quanNuoc';
+import { quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, type QuanNuocState } from './quanNuoc';
 
 /**
  * GĐ199 — "Rốn kho chung": bắt đầu trục multi-shop supply chain (backlog 6) bằng một bước soi sáng —
@@ -33,6 +33,19 @@ export const SUPPLY_BRANCH_DANGER = 0.15;
 export const storageTotal = (storage: Record<string, number>) =>
   Object.values(storage).reduce((n, q) => n + q, 0);
 
+/**
+ * GĐ200 — Kho chung nuôi quán nước được MẤY NGÀY: số đơn vị đồ uống trong kho chia nhu cầu deterministc
+ * mỗi đêm (`wanted` — GĐ127/187) → chân trời thời gian cho "rốn kho chung" (GĐ199). Ít ngày = nạp sớm.
+ * THUẦN — chỉ đọc storage + dự phóng, không đổi sim/save.
+ */
+export const teahouseKhoDays = (q: QuanNuocState, level: number, storage: Record<string, number>): number | null => {
+  if (!q.open) return null;
+  const units = quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
+  const burn = quanNuocProjection(q, level, units).wanted;
+  if (burn <= 0) return null;
+  return Math.floor(units / burn);
+};
+
 export function supplyChainOverview(
   storage: Record<string, number>,
   branch: { open: boolean; shelf: Record<string, number> } | undefined,
@@ -57,8 +70,9 @@ export function supplyChainOverview(
     outlets.push({ id: 'teahouse', icon: '🍵', name: 'Quán nước', state: 'idle', line: 'chưa mở — không dùng kho chung' });
   } else {
     const tip = quanNuocRestockTip(quan, level, storage, last);
+    const days = teahouseKhoDays(quan, level, storage);
     outlets.push(tip === null
-      ? { id: 'teahouse', icon: '🍵', name: 'Quán nước', state: 'ok', line: 'đủ đồ uống cho tối nay' }
+      ? { id: 'teahouse', icon: '🍵', name: 'Quán nước', state: 'ok', line: `đủ đồ uống cho tối nay${days !== null ? ` · kho chung nuôi ~${days} ngày` : ''}` }
       : tip.verdict === 'danger'
         ? { id: 'teahouse', icon: '🍵', name: 'Quán nước', state: 'danger', line: `thiếu ~${tip.shortfall} ly (hôm qua mất ${tip.missedRevenue.toLocaleString('vi-VN')}đ) — nhập nước/ngọt/cà phê` }
         : { id: 'teahouse', icon: '🍵', name: 'Quán nước', state: 'warn', line: `sắp cạn kho chung — đêm nay cần thêm ~${tip.shortfall} ly` });

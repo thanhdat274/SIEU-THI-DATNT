@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1880/1880 test pass (172 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ199. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ ~113s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
+- **1884/1884 test pass (172 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ200. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ ~113s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–199 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
+### Giai đoạn gần đây · GĐ177–200 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
 
 - **GĐ177** 🏮 Đầu ngõ lên đèn: đèn lồng cột dựng Blender (`blender_lantern.py`) bật sáng ấm chập tối (lamp 17h–5h30, lightBudget) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md.
 - **GĐ178** 🎨 Gộp họ xanh dương guide/chuỗi/biểu đồ về info `#3498db` (16 chỗ) — chi tiết: archive trên.
@@ -50,6 +50,7 @@
 - **GĐ197** 🎪 "Con hẻm vào dịp": lễ hội trong calendar (Tết ×1.7, Trung thu ×1.3, 20/11...) từ trước chỉ đổi kinh tế ngày (traffic/món hot) — hẻm không hề đổi cảnh. Thêm kit prop 3D `day_co` — sợi dây võng + 9 lá cờ tam giác màu dịp (đỏ/vàng/xanh/lam/hồng) treo ngang qua hẻm cao ~3m, 378 tris / 6.0KB Draco — dựng đúng ngày có lễ hội. Helper thuần `festivalDeco.ts` `isFestivalDeco(day)` đọc cùng chân lý `festivalOn`; `KIT_FESTIVAL_PLACEMENTS` (3 dây: miệng hẻm [−0.4,2.6], giữa hẻm [5.2,1.6], dãy nhà tây [−18,0.6]) + `festivalGroup` + `kit.setFestival(on)` (mẫu GĐ181/184, không chặn lưới) + main.tsx đổi cảnh 1 lần theo ngày (guard `lastFestival`). `day_co` trong build-kit-assets + kitProps + main.tsx, test +4 (soi chân lý festivalOn); tsc+build sạch; QA @5173.
 - **GĐ198** 📖 "Đọc con hẻm": khép trục hẻm-3D bằng dạy người chơi ĐỌC các tín hiệu hình đã xây (chợ phiên GĐ181/196, sửa đường GĐ184, lễ hội GĐ197, đèn ấm GĐ177/185/187). Helper thuần `alleySignalsToday(seed,day,level)` gộp ĐÚNG từng nguồn chân lý mà bên dựng cảnh dùng (= helper riêng mỗi nhịp, không hardcode) + `alleyBusyToday`; Sổ đầu ngày (ReportPanels) thêm Callout "🌇 Con hẻm hôm nay" liệt kê quang cảnh đang bật + ý nghĩa kinh tế ("hẻm thường vắng" khi không có nhịp nào, kèm gợi ý đèn ấm). Thuần đọc, không đổi SAVE_VERSION/kinh tế/persist. `alleySignals.ts`, `alleySignals.test.ts`, `ReportPanels.tsx`, test +3 (soi từng nguồn chân lý 100 ngày); tsc+build sạch; QA @5173.
 - **GĐ199** 🔗 "Rốn kho chung": BẮT ĐẦU trục multi-shop supply chain (backlog 6) bằng bước soi sáng — nối ba điểm bán (tiệm chính + chi nhánh + quán nước) về một rốn kho chung, liệt kê mỗi điểm còn dư/cạn + điểm NGHẼN. Helper thuần `supplyChainOverview(storage,branch,quan,level,last)` gộp ĐÚNG nguồn chân lý có sẵn: quán nước deterministic qua `quanNuocRestockTip` (GĐ190), chi nhánh quan sát được qua `shelfTotal/shelfCap` (GĐ153) với ngưỡng 15%/35%, kho chung qua `storageTotal`; `choke` = first danger→warn cho biết xử lý đâu trước. Sổ đầu ngày thêm Callout "🔗 Rốn kho chung — nghẽn: ..." dưới thẻ "Đọc con hẻm". Thuần đọc, không đổi save/kinh tế/persist. `supplyChain.ts`, `supplyChain.test.ts` (+9, fixture cố định), `ReportPanels.tsx`; tsc+build sạch; QA @5173.
+- **GĐ200** ⏳ "Kho chung nuôi quán nước mấy ngày?": biến tấm ảnh rốn kho (GĐ199) thành CHÂN TRỜI THỜI GIAN — vì nhu cầu quán nước deterministic (GĐ127/187), helper thuần `teahouseKhoDays(q,level,storage)` = floor(đơn vị đồ uống trong kho ÷ nhu cầu `wanted` mỗi đêm) cho biết kho chung còn nuôi được ~N ngày; nạp sớm khi N ít. Gắn vào dòng ok của quán nước trong thẻ rốn kho ("đủ đồ uống cho tối nay · kho chung nuôi ~N ngày"). THUẦN, đối chiếu quanNuocProjection. `supplyChain.ts` (+helper), `supplyChain.test.ts` (+4); tsc+build sạch; QA @5173.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -301,3 +302,4 @@
 - GĐ197 — 🎪 Con hẻm vào dịp: dãy cờ tam giác 3D (`day_co`) treo ngang hẻm đúng ngày lễ hội (Tết/Trung thu...) — lễ hội kinh tế giờ hiện ra bằng màu
 - GĐ198 — 📖 Đọc con hẻm: Sổ đầu ngày liệt kê tín hiệu 3D hẻm đang bật (chợ/sửa đường/dịp/đèn ấm) — khép trục hẻm-3D bằng cách dạy người chơi đọc cảnh
 - GĐ199 — 🔗 Rốn kho chung: Sổ đầu ngày nối tiệm chính + chi nhánh + quán nước về một rốn kho, chỉ điểm nghẽn — BẮT ĐẦU trục multi-shop supply chain
+- GĐ200 — ⏳ Kho chung nuôi quán nước mấy ngày: chân trời thời gian (floor kho ÷ nhu cầu/đêm) cho rốn kho — nạp sớm khi N ít
