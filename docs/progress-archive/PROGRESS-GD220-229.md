@@ -297,3 +297,17 @@ priceGap còn 75% (nhánh ahead:null/gain≤0 khó dựng đúng công thức pr
 QA mắt browser @5173: KHÔNG chạy được trong phiên này (dev server không bật, xem "Cần theo dõi"
 PROGRESS.md) — vòng ngày/panel/đa kích thước hoãn sang phiên có server; phần logic đã phủ test.
 (+7 test audit)
+
+---
+
+**GĐ251 giá dịp lễ** — bảng giá biết khách lễ chịu giá cao (khép nhánh mù của tolerance). Trước đó
+`tolerance` (dayEffects — Tết 0.5, 8/3 0.7...) chỉ chạy trong agents/customers.ts keepChance, còn
+`suggestPrice` gợi ý như ngày thường: lúc lễ lại bảo hạ giá vì "khách hỏi nhiều mà bán ít" (khách lễ
+hỏi nhiều do ×traffic, chưa mua kịp), và trần gợi ý TĂNG chặt ở ref×1.3 dù khách lễ chịu được cao hơn.
+Giờ cả chuỗi giá THUẦN ĐỌC nhận `tolerance` (mặc định 1 = hành vi cũ, mọi caller cũ không đổi):
+suggestPrice — trần raise ref×(1.3+(1−tol)×0.3) (Tết 1.45), ngưỡng turnedAway sold<wanted×0.5×tol,
+reason nói rõ "đang lễ"; priceForecast — keepChance nhận tol → dự phóng đúng khách lễ; priceGap —
+PriceGapRow.tolerance truyền vào cả suggestPrice lẫn 2 lần priceForecast → khoản hụt lễ hiện đúng.
+PricePanel: banner "🎉 Đang {lễ} — khách chịu giá cao..." + badge GĐ54 ghi "nhạy thực tế ×tol" +
+truyền tolOf vào bảng/Chỉnh-tất-cả/dự phóng. VD gao (nhập 80k, ref 100k): giá 135k ngày thường
+"hold", ngày Tết "raise → 155.500" và priceGap thấy +14k/ngày (dự phóng có tol). (+6 test)

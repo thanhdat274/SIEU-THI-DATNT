@@ -95,24 +95,29 @@ const roundStep = (n: number) => Math.max(STEP, Math.round(n / STEP) * STEP);
 /**
  * Gợi ý giá từ số món bán được và số lượt khách hỏi mua mỗi ngày (trung bình trượt đã lưu).
  * Không dùng ngẫu nhiên nên hai máy chơi chung luôn thấy cùng gợi ý.
+ * `tolerance` (GĐ251): hệ số "khách chịu giá" của dịp lễ (dayEffects.tolerance — Tết 0.5, ngày
+ * thường 1). Bỏ qua → hành vi như cũ (mặc định 1). Đang lễ: trần gợi ý TĂNG nới rộng thêm
+ * (1 − tol)×0.3 — khách lễ ít chê đắt hơn — và ngưỡng "đắt quá phải hạ" cũng khắt khe hơn
+ * (sold < wanted×0.5×tol): không bảo hạ giá chỉ vì khách lễ hỏi nhiều mà chưa mua kịp.
  */
-export function suggestPrice(productId: string, price: number, soldPerDay: number | undefined, wantedPerDay: number | undefined): PriceSuggestion {
+export function suggestPrice(productId: string, price: number, soldPerDay: number | undefined, wantedPerDay: number | undefined, tolerance = 1): PriceSuggestion {
   const p = productById(productId);
   const ref = referenceSell(productId);
   const floor = roundStep(Math.ceil(p.buy * 1.05));
   const margin = price > 0 ? (price - p.buy) / price : 0;
+  const tol = tolerance >= 1 ? 1 : Math.max(0, tolerance);
   if (soldPerDay === undefined && wantedPerDay === undefined) {
     return { action: 'hold', price, reason: 'Chưa đủ dữ liệu bán, giữ giá.' };
   }
   const sold = soldPerDay ?? 0;
   const wanted = wantedPerDay ?? 0;
   // Khách hỏi nhiều mà bán được ít hẳn: đang đắt quá (hoặc hết hàng) — chỉ hạ khi giá đang trên gợi ý
-  const turnedAway = wanted >= 2 && sold < wanted * 0.5 && price > ref;
+  const turnedAway = wanted >= 2 && sold < wanted * 0.5 * tol && price > ref;
   if (turnedAway) {
     return { action: 'cut', price: Math.max(floor, roundStep(Math.max(ref, price * (1 - MAX_CUT)))), reason: 'Khách hỏi nhiều mà chê đắt, nên hạ giá.' };
   }
-  if (sold >= FAST_UNITS && margin > MIN_MARGIN && price < ref * 1.3) {
-    return { action: 'raise', price: roundStep(price * (1 + MAX_RAISE)), reason: 'Bán chạy, khách chịu giá — có thể tăng nhẹ.' };
+  if (sold >= FAST_UNITS && margin > MIN_MARGIN && price < ref * (1.3 + (1 - tol) * 0.3)) {
+    return { action: 'raise', price: roundStep(price * (1 + MAX_RAISE)), reason: tol < 1 ? 'Bán chạy, đang lễ khách chịu giá cao — tăng được mạnh hơn bình thường.' : 'Bán chạy, khách chịu giá — có thể tăng nhẹ.' };
   }
   if (sold < SLOW_UNITS && wanted < SLOW_UNITS && margin > MIN_MARGIN) {
     return { action: 'cut', price: Math.max(floor, roundStep(price * (1 - MAX_CUT))), reason: 'Bán chậm, hạ giá nhẹ để kích cầu.' };
@@ -171,7 +176,7 @@ export const formatDeltaK = (v: number) => {
  * Trả `null` khi: món nhà làm/nấu (giá do công thức quyết), chưa có dữ liệu bán,
  * hoặc giá trùng giá gốc (không có gì để dự phóng).
  */
-export function priceForecast(productId: string, price: number, input: PriceForecastInput = {}): PriceForecast | null {
+export function priceForecast(productId: string, price: number, input: PriceForecastInput = {}, tolerance = 1): PriceForecast | null {
   if (COOKED_PRODUCT_IDS.has(productId)) return null;
   const p = productById(productId);
   if (!p || !Number.isFinite(price) || price === p.sell) return null;
@@ -181,7 +186,8 @@ export function priceForecast(productId: string, price: number, input: PriceFore
 
   const basePrice = p.sell;
   // Hệ số chuyển cầu → bán được tại từng mức giá: khách vẫn lấy (keepChance) × khách ghé thêm vì rẻ (demandPriceFactor)
-  const factorAt = (at: number) => keepChance(productId, at) * demandPriceFactor(productId, at);
+  // GĐ251: tolerance của dịp lễ đi vào keepChance (khách lễ chê đắt ít hơn), mặc định 1 = hành vi cũ
+  const factorAt = (at: number) => keepChance(productId, at, tolerance) * demandPriceFactor(productId, at);
   const baseFactor = factorAt(basePrice);
   const newFactor = factorAt(price);
 

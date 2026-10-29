@@ -18,6 +18,8 @@ export interface PriceGapRow {
   price: number;
   soldPerDay?: number;
   wantedPerDay?: number;
+  /** Hệ số khách chịu giá hôm nay (GĐ251 — dayEffects.tolerance; bỏ qua = ngày thường 1). */
+  tolerance?: number;
 }
 
 export interface PriceGapOffender {
@@ -52,11 +54,12 @@ export const PRICE_GAP_MIN_TOTAL = 5_000;
 export function priceGap(rows: PriceGapRow[]): PriceGapRead {
   const offenders: PriceGapOffender[] = [];
   for (const r of rows) {
-    const tip = suggestPrice(r.id, r.price, r.soldPerDay, r.wantedPerDay);
+    // GĐ251: món đang lễ (tolerance < 1) gợi ý tăng rộng hơn — chênh lệch tính theo cùng hệ số
+    const tip = suggestPrice(r.id, r.price, r.soldPerDay, r.wantedPerDay, r.tolerance);
     if (tip.action === 'hold' || tip.price === r.price) continue; // gợi ý giữ giá — không rò rỉ
     const input = { soldPerDay: r.soldPerDay, wantedPerDay: r.wantedPerDay };
-    const cur = priceForecast(r.id, r.price, input);
-    const ahead = priceForecast(r.id, tip.price, input);
+    const cur = priceForecast(r.id, r.price, input, r.tolerance);
+    const ahead = priceForecast(r.id, tip.price, input, r.tolerance);
     if (!ahead) continue; // không dự phóng được giá mới (món nấu/thiếu dữ liệu)
     const nowProfit = cur ? cur.profitPerDay : ahead.baseProfitPerDay;
     const gain = ahead.profitPerDay - nowProfit;

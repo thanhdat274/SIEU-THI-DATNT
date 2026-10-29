@@ -5,6 +5,7 @@ import { HAPPY_FROM_MAX, HAPPY_FROM_MIN, HAPPY_HOURS, HAPPY_OFF_OPTIONS, happyHo
 import { useClock, useGame } from '../../core/store';
 import { CATEGORIES, formatMoney, unlockedProducts, type Product } from '../../data/products';
 import { suggestPrice, referenceSell, productSensitivity, sensitivityLevel, priceForecast, formatDeltaK, FORECAST_FLAT_BAND } from '../../data/pricing';
+import { dayEffects } from '../../data/calendar';
 import { marketTrend } from '../../data/market';
 import { priceGap } from '../../data/priceGap';
 import { Footer, styles, Callout } from './shared';
@@ -15,12 +16,15 @@ export const PRICE_PAGE = 12;
 const fmtUnits = (v: number) => v.toFixed(1).replace('.', ',');
 
 export function PricePanel() {
-  const { level, prices, setPrice, closePanel, sales, demand, market, storage, furniture } = useGame();
+  const { level, day, weatherSeed, prices, setPrice, closePanel, sales, demand, market, storage, furniture } = useGame();
   const stats = useGame((s) => s.stats);
   const happyHour = useGame((s) => s.happyHour);
   const minutes = useClock((c) => Math.floor(c.minutes));
   const setHappyHour = useGame((s) => s.setHappyHour);
   const running = happyHourActive(happyHour, minutes);
+  // GĐ251: hệ số "khách chịu giá" hôm nay — đang lễ (Tết 0.5...) thì gợi ý giá tính theo khách lễ
+  const priceEffects = dayEffects(weatherSeed, day, level);
+  const tolOf = (id: string) => priceEffects.tolerance(id);
   // Lọc theo ngành + tìm theo tên, rồi phân trang cho đỡ kéo dài
   const [cat, setCat] = useState<'all' | Product['category']>('all');
   const [query, setQuery] = useState('');
@@ -39,8 +43,13 @@ export function PricePanel() {
         Giá gợi ý hiện hành nhích nhẹ mỗi ngày theo khan hiếm hàng trên thị trường (hàng cạn → giá thị trường nhích lên, tồn nhiều → hạ xuống).
         Mũi tên ⬆/⬇/• bên cạnh "Gợi ý" báo giá thị trường hôm nay đang trôi về đâu (khan → trụ/nâng giá; thừa → hạ giá xả).
       </p>
+      {priceEffects.festival && (
+        <div style={{ fontSize: 12, padding: '6px 12px', borderRadius: 10, background: 'rgba(241,196,15,0.12)', color: '#f1c40f', margin: '4px 0 8px' }}>
+          🎉 Đang {priceEffects.festival.name} — khách chịu giá cao hơn (món của dịp nhạy giá giảm còn ×{priceEffects.festival.tolerance ?? 1}): cột "Nên" đã tính điều chỉnh, tăng giá mạnh hơn ngày thường vẫn bán được.
+        </div>
+      )}
       {(() => {
-        const gap = priceGap(all.map((p) => ({ id: p.id, price: prices[p.id] ?? p.sell, soldPerDay: sales[p.id], wantedPerDay: demand[p.id] })));
+        const gap = priceGap(all.map((p) => ({ id: p.id, price: prices[p.id] ?? p.sell, soldPerDay: sales[p.id], wantedPerDay: demand[p.id], tolerance: tolOf(p.id) })));
         if (!gap.actionable) return null;
         const top = gap.offenders.slice(0, 3);
         return (
@@ -141,7 +150,7 @@ export function PricePanel() {
             const step = 500;
             const change = (delta: number) => setPrice(p.id, Math.max(step, price + delta));
             const ratio = price / ref;
-            const tip = suggestPrice(p.id, price, sales[p.id], demand[p.id]);
+            const tip = suggestPrice(p.id, price, sales[p.id], demand[p.id], tolOf(p.id));
             const onHand = (storage[p.id] ?? 0) + furniture.reduce((n, f) => n + f.tiers.reduce((m, t) => m + (t.productId === p.id ? t.count : 0), 0), 0);
             const trend = marketTrend(market[p.id] ?? 1, onHand, 0, demand[p.id] ?? 0);
             const trendMark = trend.dir === 'up' ? '⬆' : trend.dir === 'down' ? '⬇' : '•';
@@ -166,7 +175,7 @@ export function PricePanel() {
                     const c = conf[lv];
                     return (
                       <span
-                        title={`Độ nhạy giá ${s.toFixed(1)} — ${lv === 'hot' ? 'khách bỏ hàng nhanh khi tăng giá, nên cẩn' : lv === 'soft' ? 'khách gần như vẫn mua dù giá cao, tăng được' : 'khách bớt mua khi tăng giá vừa phải'}`}
+                        title={`Độ nhạy giá ${s.toFixed(1)} — ${lv === 'hot' ? 'khách bỏ hàng nhanh khi tăng giá, nên cẩn' : lv === 'soft' ? 'khách gần như vẫn mua dù giá cao, tăng được' : 'khách bớt mua khi tăng giá vừa phải'}${tolOf(p.id) < 1 ? ` · Hôm nay lễ (${priceEffects.festival?.name}): khách chịu giá cao, nhạy giá thực tế ×${tolOf(p.id).toFixed(2)}` : ''}`}
                         style={{ fontSize: 11, marginLeft: 6, padding: '1px 6px', borderRadius: 999, background: c.bg, color: c.col, whiteSpace: 'nowrap' }}
                       >{c.txt}</span>
                     );
@@ -192,7 +201,7 @@ export function PricePanel() {
                   </b>
                   <button style={styles.btn} aria-label="Tăng giá" onClick={() => change(step)}>+</button>
                   {price !== p.sell && (() => {
-                    const fc = priceForecast(p.id, price, { soldPerDay: sales[p.id], wantedPerDay: demand[p.id] });
+                    const fc = priceForecast(p.id, price, { soldPerDay: sales[p.id], wantedPerDay: demand[p.id] }, tolOf(p.id));
                     if (!fc) return null;
                     const up = fc.profitRatio > 1 + FORECAST_FLAT_BAND;
                     const down = fc.profitRatio < 1 - FORECAST_FLAT_BAND || fc.unitsRatio < 1 - FORECAST_FLAT_BAND;
@@ -243,7 +252,7 @@ export function PricePanel() {
             let changed = 0;
             for (const p of unlockedProducts(s.level)) {
               const price = s.prices[p.id] ?? p.sell;
-              const tip = suggestPrice(p.id, price, s.sales[p.id], s.demand[p.id]);
+              const tip = suggestPrice(p.id, price, s.sales[p.id], s.demand[p.id], dayEffects(s.weatherSeed, s.day, s.level).tolerance(p.id));
               // Món chưa bán được lần nào thì về giá gợi ý hiện hành thay vì "giữ" vô thông tin
               const noData = (s.sales[p.id] ?? 0) === 0 && (s.demand[p.id] ?? 0) === 0;
               const target = tip.action === 'hold' && noData ? referenceSell(p.id) : tip.price;
