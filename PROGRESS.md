@@ -36,7 +36,7 @@
 
 - **GĐ266 nhập hàng biết cuối tuần** 🍬: `weekendRestock.ts` — `suggestQty` ×1.25 cho WEEKEND_SNACKS khi khung bán lô rơi Thứ 7/CN, chỉ khi có cầu thật; badge "🍬 Cuối tuần" trên hàng mặt hàng. 3 test; QA: Thứ 7 có badge, Thứ 4 không.
 
-- **GĐ267 đơn cuối tuần + sửa bug roll chọn đơn** 📚: (1) `PartyOrderDef.weekendOnly` — "Nhóm học cuối tuần" (Bé Na) chỉ mời khi NGÀY CHÓT rơi Thứ 7/CN, khớp chuyện kể + nhịp cuối tuần. (2) Bug có từ trước: roll CHỌN đơn và roll MỜI dùng chung (seed, day) khác salt thấp → tương quan — phân phối đơn lệch nặng theo vị trí bảng (tat_nien gấp ~6 lần kỳ vọng, hoc_nhom + 7 đơn câu chuyện = 0/8340 lượt: người chơi gần như không bao giờ thấy) → salt chọn đơn theo ngày (1009 + day×7), mọi đơn trong pool cơ hội đều. 4 test (gate tất định + công bằng phân phối); 2224 test xanh (golden sim chấp nhận); boot @5173 sạch 0 lỗi console.
+- **GĐ267 đơn cuối tuần + sửa bug roll chọn đơn** 📚: (1) `weekendOnly` — "Nhóm học cuối tuần" chỉ mời khi NGÀY CHÓT rơi Thứ 7/CN, khớp chuyện kể + nhịp cuối tuần. (2) Bug cũ: roll CHỌN và roll MỜI dùng chung (seed, day) khác salt thấp → tương quan — phân phối đơn lệch theo vị trí bảng (tat_nien ×6 kỳ vọng, 8 đơn câu chuyện = 0/8340 lượt) → salt chọn đơn theo ngày, mọi đơn cơ hội đều. 4 test; 2224 test xanh; boot @5173 sạch.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -68,7 +68,7 @@
 - ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap` cấp 50: bot bày lại tầng kệ ĐÃ ĐẦY mỗi 150 tick → bỏ qua tầng đầy + timeout 1.8tr ms → cả bộ ~4 phút. Nếu lại vượt ~10 phút: `npx vitest run --reporter=json` + profile trước khi làm tiếp.
 - GĐ171: scale mục tiêu vòng ×(1+0.5(N−1))/×(1+0.3(N−1)) — cần save thật vòng 2+ để xác nhận trad vẫn căng nhưng với tới; nếu vẫn quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi.
-- QA mắt trạng thái CÓ dữ liệu của Bỏ lỡ/Thú cưng/hụi/khủng hoảng (GĐ155–159) chưa trọn — các dòng bọc bởi test; QA mắt khi có save người thật có doanh thu.
+- QA mắt trạng thái CÓ dữ liệu của Bỏ lỡ/Thú cưng/hụi/khủng hoảng (GĐ155–159) — bọc bởi test; QA khi có save người thật.
 - Mỗi lần subagent bị "model concurrency limit" → chạy tuần tự/đợi rồi spawn lại.
 
 ## Backlog tiếp theo
