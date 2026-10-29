@@ -45,7 +45,7 @@
 - **Thẻ nhấn mạnh dùng `Callout` (shared.tsx, GĐ166):** borderLeft 3px màu ngữ cảnh, tiêu đề 13px màu tone (`styles.cardTitle`), thân 12px; `strong` + danger → nền đỏ nhạt. Thẻ mới KHÔNG tự vẽ viền/tint riêng. HUD chip/alert dùng class CSS riêng (mẫu GĐ162).
 - **Pipeline Blender (GĐ172–176):** script nguồn trong `scripts/` + G LB trong `public/models/kit/` được commit để dựng lại; chạy headless `blender -b -P scripts/blender_kit_atlas.py`; xuất Draco; lazy-load trong code (`kitProps.ts`), fallback warn khi load lỗi; prop chỉ hình ảnh KHÔNG chặn lưới điều hướng. Dung lượng: kit 7 prop (baked: `chau_cay`/`thung_go`/`khom_tre`/`bon_nuoc`/`cho_nhua`/`xe_day`/`rao_chan`) ~76KB baked tổng. Ngân sách: cap tris trong `build-kit-assets.ts`. KHÔNG commit file .blend nặng. 3D Artist giữ thư mục script/tài sản; Developer chỉ tích hợp.
 - Test sim dùng **seed cố định** (`setSimSeed`/`simRng()` — GĐ27/28), không mock `Math.random`.
-- **Hạ tầng test:** sim có seed là TẤT ĐỊNH — logic đi qua `simRng()` (code logic mới KHÔNG dùng Math.random/Date.now trực tiếp; chỉ hình ảnh 3D còn). `simGolden.test.ts` bắt tất định vỡ + lệch cân bằng ±5% — đổi kinh tế CÓ CHỦ Ý thì chép số mới vào `GOLDEN` + ghi lý do ở đây. `npm run test:coverage` chạy mỗi ~10 GĐ (ưu tiên phủ logic: core/data/agents/save; ui/world 3D QA mắt là chính). Test lưu: `saveStore.test.ts`; nhân viên: `staffAgent.test.ts` — đều đã mutation-check.
+- **Hạ tầng test:** sim seed TẤT ĐỊNH — logic qua `simRng()`, không Math.random/Date.now (chỉ hình ảnh 3D còn). `simGolden.test.ts` bắt tất định vỡ + lệch ±5% — đổi kinh tế CÓ CHỦ Ý thì chép số vào `GOLDEN` + ghi lý do. `test:coverage` mỗi ~10 GĐ (ưu tiên core/data/agents/save). `saveStore`/`staffAgent` đã mutation-check.
 - QA live trên `localhost:5173` (vite); kiểm không tràn ngang @320/390 (`scrollWidth == clientWidth`), 0 lỗi console.
 - Nhiều phiên chạy song song trên cùng worktree → commit theo đường dẫn cụ thể.
 
@@ -69,7 +69,7 @@
 - GĐ171: scale mục tiêu vòng NG+ — cần save thật vòng 2+ để xác nhận; nếu quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ & kèo cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy trong năng lực → theo dõi.
 - QA mắt trạng thái CÓ dữ liệu của Bỏ lỡ/Thú cưng/hụi/khủng hoảng (GĐ155–159) — bọc bởi test; QA khi có save người thật.
-- Mỗi lần subagent bị "model concurrency limit" → chạy tuần tự/đợi rồi spawn lại.
+
 
 ## Backlog tiếp theo
 
