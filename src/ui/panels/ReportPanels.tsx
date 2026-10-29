@@ -49,6 +49,7 @@ import { nightPnl, nightPayback, nightPaybackLabel } from '../../data/nightRepor
 import { PHONE_SLOTS } from '../../data/phoneOrders';
 import { paymentById, type PaymentMethod } from '../../data/payments';
 import { solvency } from '../../data/solvency';
+import { loanBurden } from '../../data/loanBurden';
 import { Callout, Stat, starColor, Footer, Swatch, styles, Tabs } from './shared';
 
 /** Day-stats rỗng: SummaryPanel phải render được kể cả khi panel mở thiếu stats (đường mở lạ,
@@ -473,7 +474,7 @@ export function MorningPanel() {
   const { day, level, xp, weatherSeed, weather, forecast, regulars, reservations, storage,
     furniture, staff, contracts, deliveries, shopTier, closePanel, openPanel, repLog,
     storageLots, debts, biz, money, branch, licenses, skills, happyHour, analytics, marketClearedDay,
-    demand: stateDemand, activeCombos, priceOf, sellMarketSurplus } = useGame();
+    demand: stateDemand, activeCombos, priceOf, sellMarketSurplus, stats } = useGame();
   const branchChores = branch ? branchMorningPlan(branch, storageUsed(storage), licenses, day) : [];
   // GĐ123: mồi "kệ cần chú ý" từ analytics có sẵn — giống hệt AnalyticsPanel để không lệch số liệu.
   const shelved = shelfCount(furniture);
@@ -838,6 +839,20 @@ export function MorningPanel() {
               {' '}Mỗi tối cần gom ngoài quầy: lãi vay {formatMoney(sol.loanInterestToday)}
               {sol.huiDueToday > 0 && ` + góp hụi ${formatMoney(sol.huiDueToday)}`}
               {sol.daysToLoanDue != null && ` · hạn trả gốc còn ${sol.daysToLoanDue} ngày`}.
+            </div>
+          </Callout>
+        );
+      })()}
+
+      {biz.loan && (() => {
+        const lb = loanBurden(biz.loan.principal, stats?.revenue ?? 0);
+        return (
+          <Callout tone={lb.pctOfRevenue != null && lb.pctOfRevenue > 10 ? 'warn' : 'accent'} style={{ marginBottom: 8 }} title={`🏦 Lãi vay ngốn ${formatMoney(lb.interest)}/ngày${lb.pctOfRevenue != null ? ` = ${lb.pctOfRevenue.toFixed(0)}% doanh thu hôm nay` : ''}`}>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              Mỗi 1.000.000đ trả bớt gốc tiết kiệm ~{formatMoney(lb.interestSavedPerMillion)} lãi mỗi ngày —
+              {lb.pctOfRevenue != null && lb.pctOfRevenue > 10
+                ? ' đang nặng (lãi ăn trên 10% dòng tiền): trả bớt càng sớm càng nhẹ.'
+                : ' đang nhẹ so với dòng tiền hôm nay.'}
             </div>
           </Callout>
         );
