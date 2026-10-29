@@ -58,7 +58,7 @@
 
 - ⚠️ (29/10, phiên GĐ245–) Dev server @5173 KHÔNG chạy trong phiên này (connection refused, không còn process vite). Theo quy tắc không tự khởi động server → QA mắt trực tiếp bị hoãn: GĐ245 festivalValue đã xác minh bằng test (2152/2152 xanh) + build sạch; khi server bật lại cần QA mắt thẻ lễ "đang diễn ra"/"sắp tới" ở Sổ đầu ngày (cả 390px).
 
-- QA mắt 3D/panel chập tối (save thật, foreground tab — IAB nền dừng rAF): đèn lồng GĐ177, biển mở/đóng GĐ179, đèn khách đợi GĐ180 + mức khẩn GĐ186, rào sửa đường GĐ184, đèn ấm hiên/cổng GĐ185 + quán nước GĐ187, thẻ từng người đáng lương GĐ188, quán nước thành việc sáng GĐ189, thanh nạp kho GĐ190 + socket OrderPanel GĐ191, hồi vốn ca đêm GĐ192 + xây quán GĐ193 + xây chi nhánh GĐ194 — từng giai đoạn đã QA @5173 lúc làm; nếu cần đối chiếu lại trên save thật các khung giờ cụ thể, xem archive.
+- QA mắt 3D/panel chập tối (save thật, foreground tab — IAB nền dừng rAF): GĐ177–194 đã QA @5173 từng giai đoạn lúc làm (đèn/biển/thẻ lương/thanh nạp...); cần đối chiếu lại khung giờ cụ thể thì xem archive.
 - ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap` cấp 50: nguyên nhân là bot autoplay bày lại cả tầng kệ ĐÃ ĐẦY mỗi 150 tick → dựng lại 3D cả kệ (~44% CPU sim). Bỏ qua tầng đầy + timeout 1.800.000ms → cả bộ test 23 phút → ~4 phút, 0 đỏ. Nếu cả bộ lại vượt ~10 phút: đo `npx vitest run --reporter=json` + profile trước khi làm tiếp.
 - GĐ171: scale mục tiêu vòng ×(1+0.5(N−1))/×(1+0.3(N−1)) — cần save thật vòng 2+ để xác nhận trad vẫn căng nhưng với tới; nếu vẫn quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi.
