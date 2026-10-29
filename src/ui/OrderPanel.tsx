@@ -24,6 +24,7 @@ import { PREP_MIN_QTY } from '../data/festivalPrep';
 import { Callout } from './panels/shared';
 import { acceptFairOffer } from '../core/biz';
 import { monthOf } from '../data/calendar';
+import { weekendPullOf, weekendSellingDays } from '../data/weekendRestock';
 
 /** Món mở khóa trong vòng chừng này cấp gần đây được gắn nhãn "Mới". */
 const NEW_WITHIN = 4;
@@ -77,6 +78,9 @@ function suggestQty(productId: string, supplier: Supplier, hot: boolean, isNew: 
   const fresh = isNew && s.level - productById(productId).unlock <= 1;
   const size = caseSize(productId);
   let target = demand ? Math.ceil(demand * days * (hot ? 1.5 : 1) * forecastTraffic(supplier)) : fresh || hot ? TRIAL_CASES * size : 0;
+  // GĐ266: lô bán vào cuối tuần mà món thuộc nhóm ăn vặt (khách thèm thật — GĐ255) → nhân thêm
+  // hệ số kéo cầu, để chiều thứ Sáu gợi ý đã biết trữ nhiều hơn (chỉ khi có cầu thật, không nhân món nhập thử)
+  target = Math.ceil(target * weekendPullOf(productId, demand, weekendSellingDays(s.day, supplier.delayDays)));
   // Chặn trên: sức bày của món + một thùng dự phòng kho, để không nhập về nằm ứ
   target = Math.min(target, displayCapacityFor(productId) + size);
   const need = target - onHand(productId) - incoming(productId);
@@ -202,6 +206,7 @@ export function OrderPanel() {
           cost: unitCost(supplier, p.id, day),
           size: caseSize(p.id),
           suggest: suggestQty(p.id, supplier, hotP, isNew),
+          weekendPull: (demand[p.id] ?? 0) > 0 && weekendPullOf(p.id, demand[p.id] ?? 0, weekendSellingDays(day, supplier.delayDays)) > 1,
         };
       });
   }, [level, day, supplierId, demand, demandToday, deliveries, storage, warehouseTier, weatherSeed, forecast, priceOf]);
@@ -742,6 +747,7 @@ export function OrderPanel() {
                   <span style={{ ...st.badge, background: shelfLife(r.p.id) <= 3 ? '#e74c3c' : '#636e72' }} title="Hạn dùng khi mới nhập">⏳ {shelfLife(r.p.id)} ngày</span>
                 )}
                 {r.isHot && <span style={{ ...st.badge, background: '#e67e22' }}>🔥 Hot</span>}
+                {r.weekendPull && <span style={{ ...st.badge, background: '#f1c40f', color: '#222' }} title="Lô này bán vào Thứ 7/Chủ nhật — khách hay ghé mua ăn vặt (GĐ255), gợi ý đã nhân thêm">🍬 Cuối tuần</span>}
                 {r.isNew && <span style={{ ...st.badge, background: '#2ecc71' }}>Mới</span>}
                 {r.demand > 0 && r.have > 0 && r.have < r.demand && <span style={{ ...st.badge, background: '#e67e22' }} title={`Còn ${r.have} món, khách mua ~${r.demand.toFixed(1)}/ngày — sắp hết`}>⚠️ Gần hết</span>}
                 {r.asked > 0 && r.have === 0 && <span style={{ ...st.badge, background: '#e74c3c' }}>Khách hỏi {r.asked} lần, hết hàng</span>}

@@ -34,6 +34,8 @@
 - **GĐ254–257 nhịp CUỐI TUẦN** 📅 khép trọn 4 mạch: weekdayOf/isWeekend (ngày 1 = Thứ 2) + quest "🍬 Cuối tuần ăn vặt" (chỉ pool Thứ 7/CN, cuối pool — ngày thường xoay GIỮ NGUYÊN) → khách thèm ăn vặt (chooseWants ×0.2, list chung WEEKEND_SNACKS) → lịch tô sáng cuối tuần → việc sáng + "Mai tiệm có gì" nhắc. Chi tiết: archive. Cảm hứng Hay Day/Stardew; không đổi lượng khách, chỉ đổi nhiệm vụ + NMU trong ngày.
 - **GĐ258–261** 🎨🖼️ — gọn 6 họ màu cũ về bảng GĐ166 · coverage sweep (credit/services/professions, xoá 6 id chết `likes` nghề) · QA TOÀN DIỆN (34 panel × 3 cỡ màn 0 lỗi/0 tràn, autoplay 2 ngày sạch) · quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390, tương phản ô cuối tuần, 2 dropdown Sổ tay Tiệm cắt chữ @390. Chi tiết: archive PROGRESS-GD250-257.md (phụ lục 258–261).
 
+- **GĐ266 nhập hàng biết cuối tuần** 🍬: `weekendRestock.ts` — `suggestQty` nhân ×1.25 cho WEEKEND_SNACKS khi khung bán lô rơi Thứ 7/CN (giao chậm nhìn mai+ngày kia), chỉ khi có cầu thật; badge "🍬 Cuối tuần" trên hàng mặt hàng. Chiều thứ Sáu đã thấy gợi ý trữ cao hơn. 3 test mới; 2220 test xanh; QA: Thứ 7 có badge, Thứ 4 không, 0 lỗi console.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc trong `src/data/*.ts` + một thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -308,3 +310,4 @@
 - GĐ263 — 🔒 Khoá nhất quán tuần×thứ (test 365 ngày) + chốt không mở bias cuối tuần sang sim ngầm
 - GĐ264 — 🖼️ Quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390 + tăng tương phản ô cuối tuần
 - GĐ265 — 🖼️ Nốt quét thẩm mỹ: sửa 2 dropdown Sổ tay Tiệm cắt chữ @390
+- GĐ266 — 🍬 Nhập hàng biết cuối tuần (suggestQty ×1.25 nhóm ăn vặt khi lô bán Thứ 7/CN + badge)
