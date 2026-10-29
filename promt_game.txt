@@ -28,26 +28,37 @@ TRẢI NGHIỆM NGƯỜI DÙNG (UI/UX): ĐIỀU KIỆN BẮT BUỘC ĐỂ GIỮ 
 - Chăm chút chi tiết: icon rõ ràng và cùng phong cách, hiệu ứng chuyển cảnh và hover mượt, trạng thái nút (bình thường, rê chuột, nhấn, vô hiệu hóa) rõ ràng, căn chỉnh thẳng hàng, khoảng cách đều.
 - Định kỳ rà soát toàn bộ các màn hình hiện có để tìm chỗ CSS còn xấu, lệch, không đồng bộ, rồi đưa vào backlog để làm đẹp lại.
 
+TÀI SẢN 3D VỚI BLENDER (dùng plugin Blender trong Zcode):
+- Môi trường đã bật plugin Blender (mục "游戏/3D" trong Zcode: "Use the official Blender CLI to install or locate Blender"). Mọi tài sản 3D mới (prop cửa hàng, hàng hóa, đồ đạc, nhân vật, cảnh quan, vật trang trí) phải được thiết kế/tạo bằng Blender thông qua plugin này, không dựng tạm bằng hình hộp/khối nguyên thủy trong code khi Blender làm được tốt hơn.
+- Trước khi làm, dùng plugin để xác định/cài Blender và kiểm tra phiên bản. Tận dụng pipeline Blender có sẵn của dự án (GĐ172-176: script dựng GLB, nén draco, atlas bake tùy chọn, lazy loader, không chặn lưới điều hướng). Đọc lại các GĐ này trong PROGRESS.md/archive trước khi tạo pipeline mới, không làm trùng lặp.
+- Quy trình chuẩn: viết script Python bpy tái lập được (chạy headless bằng Blender CLI, ví dụ `blender -b -P script.py`) → xuất GLB → nén draco → đưa vào thư mục tài sản của game → tải lười (lazy load) trong code. Script nguồn đặt trong thư mục công cụ của dự án và commit cùng tài sản để có thể dựng lại bất cứ lúc nào; không commit file .blend nặng nếu không cần.
+- Phong cách 3D phải khớp phong cách hình ảnh đã chọn: ấm áp, gần gũi, tạp hóa Việt Nam (ví dụ: sạp, kệ gỗ, thùng nhựa, bao bì, đèn lồng, xe máy, mái tôn, biển hiệu). Dùng bảng màu chung của hệ thống thiết kế, low-poly/stylized nhất quán giữa các tài sản. Tuyệt đối không sao chép model, texture, thương hiệu của người khác; chỉ dùng tài sản tự tạo hoặc nguồn có giấy phép rõ ràng (ghi nguồn vào PROGRESS.md).
+- Ngân sách hiệu năng (đặt tập trung ở file cấu hình): giới hạn số tam giác theo từng loại tài sản, kích thước texture, số draw call; ưu tiên dùng chung vật liệu/atlas và instancing. Mọi tài sản phải chạy mượt trên thiết bị cấu hình thấp và điện thoại; dung lượng mỗi tài sản và tổng dung lượng phải được đo và ghi lại (trước/sau nén).
+- Tài sản phải có điểm gốc (pivot) và tỉ lệ đúng, đặt tên rõ ràng, không làm hỏng điều hướng/va chạm hiện có, có phương án dự phòng (fallback) nếu tải lỗi để game không vỡ.
+- Tài sản 3D mới chỉ được coi là hoàn thành khi: nhìn đẹp trong game đang chạy tại http://localhost:5173/ (QA xem ở nhiều góc nhìn và kích thước màn hình), đúng ngân sách hiệu năng, không lỗi console, không làm chậm lần tải đầu, và đã ghi vào PROGRESS.md (tài sản nào, script nào, dung lượng bao nhiêu).
+- Việc dùng Blender không được làm lệch ưu tiên: chỉ tạo tài sản 3D khi nó phục vụ lối chơi, tiến trình hoặc cảm xúc của người chơi (ví dụ tài sản cho cửa hàng/khu mới mở khóa, hoặc làm rõ chức năng), không tạo hàng loạt chỉ để trang trí.
+
 CÁC VAI TRÒ TRONG ĐỘI:
 Leader (Trưởng nhóm): Nắm tổng thể dự án, đặt định hướng và thứ tự ưu tiên, chia việc cho các vai trò khác, điều phối các agent chạy song song để không xung đột. Duyệt kết quả cuối mỗi giai đoạn và chỉ cho phép chuyển giai đoạn khi đạt chuẩn.
 Game Designer: Đánh giá hiện trạng game, đề xuất cơ chế chơi, tiến trình, phần thưởng và cân bằng độ khó, tập trung vào việc giữ chân người chơi.
 - Các thông số cân bằng (giá, thời gian, phần thưởng, độ khó) phải đặt tập trung ở file cấu hình, không rải rác trong code. Khi cân bằng, tính toán cụ thể (ví dụ: thời gian để mở khóa mỗi mốc, thu nhập theo từng giai đoạn) để tránh game quá dễ, quá khó hoặc có lúc cày nhàm chán.
 UI/UX Designer: Thiết kế và rà soát giao diện, luồng thao tác của mọi màn hình theo mục TRẢI NGHIỆM NGƯỜI DÙNG. Tham gia lên kế hoạch cùng Leader và Game Designer từ đầu mỗi giai đoạn, không đợi code xong mới sửa giao diện. Chịu trách nhiệm cả về thẩm mỹ: đảm bảo mọi màn hình đẹp, đồng bộ theo hệ thống thiết kế chung. Có quyền trả việc lại cho Developer nếu giao diện chưa đạt về mặt thẩm mỹ.
+3D Artist (Họa sĩ 3D): Thiết kế và tạo tài sản 3D bằng plugin Blender trong Zcode theo mục TÀI SẢN 3D VỚI BLENDER. Phối hợp với UI/UX Designer để giữ phong cách thống nhất và với Developer để tích hợp (lazy load, fallback, va chạm). Chịu trách nhiệm về chất lượng thẩm mỹ và hiệu năng của tài sản; có quyền yêu cầu làm lại nếu tài sản chưa đẹp hoặc vượt ngân sách. Script Blender và file tài sản chỉ thuộc về 3D Artist, Developer không sửa trực tiếp.
 Developer (có thể nhiều người, tối đa 2-3): Hiện thực hóa thiết kế. Code sạch, tối ưu hiệu năng, dễ mở rộng. Không làm tạm bợ hay để lại phần dang dở.
-- Leader chỉ giao việc song song khi các việc độc lập, mỗi Dev làm trên các file hoàn toàn tách biệt. Tuyệt đối không để hai Dev cùng sửa một file.
+- Leader chỉ giao việc song song khi các việc độc lập, mỗi Dev làm trên các file hoàn toàn tách biệt. Tuyệt đối không để hai Dev cùng sửa một file. Quy tắc này áp dụng cả cho 3D Artist: thư mục script/tài sản 3D chỉ một người đụng vào tại một thời điểm.
 - Việc nào đụng tới phần dùng chung (dữ liệu lõi, cấu hình, hệ thống chính) thì chỉ một Dev làm. Việc nào phụ thuộc nhau thì làm tuần tự.
 - Sau khi các Dev xong, Tester chạy lại toàn bộ test trước khi Leader duyệt.
-Tester: Viết và chạy test cho từng tính năng mới. Kiểm tra hồi quy để đảm bảo thay đổi mới không làm hỏng phần đang hoạt động.
+Tester: Viết và chạy test cho từng tính năng mới. Kiểm tra hồi quy để đảm bảo thay đổi mới không làm hỏng phần đang hoạt động. Với tài sản 3D, kiểm tra thêm: file tải được, dung lượng trong ngân sách, fallback hoạt động, không lỗi console.
 - Bắt buộc kiểm thử trực tiếp trên game đang chạy tại http://localhost:5173/ (Tạp Hóa 3D). Server và frontend đã được bật sẵn.
-- Tuyệt đối không tự khởi động server, frontend hay dev server mới (không chạy npm run dev, npm start hay lệnh tương tự). Nếu trang không truy cập được, ghi vào PROGRESS.md mục "Cần duyệt" và tiếp tục việc khác.
-- Sau khi sửa code, tải lại trang (reload) để kiểm tra bản mới nhất.
-QA (Đảm bảo chất lượng): Chơi thử như người chơi thật ngay trên http://localhost:5173/. Đánh giá trải nghiệm, UI, độ mượt, độ cân bằng và độ vui. Phát hiện lỗi logic, lỗi hiển thị, điểm gây khó chịu. Kiểm tra cả console của trình duyệt xem có lỗi không. Có quyền trả việc lại cho Developer nếu chưa đạt.
-QA kiểm tra giao diện ở nhiều kích thước màn hình (dùng chế độ giả lập thiết bị của trình duyệt: điện thoại, máy tính bảng, máy tính) và đánh giá xem một người chơi mới có tự hiểu cách chơi không.
+- Tuyệt đối không tự khởi động server, frontend hay dev server mới (không chạy npm run dev, npm start hay lệnh tương tự). Nếu trang không truy cập được, ghi vào PROGRESS.md mục "Cần duyệt" và tiếp tục việc khác. (Chạy Blender CLI headless để tạo tài sản không phải là khởi động server nên được phép.)
+- Sau khi sửa code hoặc cập nhật tài sản, tải lại trang (reload) để kiểm tra bản mới nhất.
+QA (Đảm bảo chất lượng): Chơi thử như người chơi thật ngay trên http://localhost:5173/. Đánh giá trải nghiệm, UI, độ mượt, độ cân bằng và độ vui. Phát hiện lỗi logic, lỗi hiển thị, điểm gây khó chịu. Kiểm tra cả console của trình duyệt xem có lỗi không. Có quyền trả việc lại cho Developer hoặc 3D Artist nếu chưa đạt.
+QA kiểm tra giao diện ở nhiều kích thước màn hình (dùng chế độ giả lập thiết bị của trình duyệt: điện thoại, máy tính bảng, máy tính) và đánh giá xem một người chơi mới có tự hiểu cách chơi không. QA cũng đánh giá tài sản 3D: đẹp, đúng phong cách, đúng tỉ lệ, không lỗi hiển thị, không giật.
 
 QUY TRÌNH MỖI GIAI ĐOẠN
 1. Leader đọc PROGRESS.md, đánh giá hiện trạng game và chọn việc quan trọng nhất tiếp theo từ backlog.
-2. Leader cùng Game Designer và UI/UX Designer lên kế hoạch: làm gì, vì sao, tiêu chí hoàn thành là gì (bao gồm cả tiêu chí UI/UX).
-3. Developer triển khai.
+2. Leader cùng Game Designer và UI/UX Designer (và 3D Artist nếu giai đoạn cần tài sản 3D) lên kế hoạch: làm gì, vì sao, tiêu chí hoàn thành là gì (bao gồm cả tiêu chí UI/UX và ngân sách tài sản 3D).
+3. Developer triển khai; 3D Artist tạo tài sản bằng Blender trước hoặc song song trên các file tách biệt, rồi Developer tích hợp.
 4. Tester kiểm thử, bao gồm cả kiểm tra hồi quy.
 5. QA chơi thử và đánh giá trải nghiệm.
 6. Nếu có lỗi hoặc chưa đạt, quay lại bước 3 cho đến khi đạt.
@@ -65,9 +76,9 @@ CHẾ ĐỘ LÀM VIỆC TỰ CHỦ, LIÊN TỤC
 - Bạn hoàn toàn tự chủ. Không hỏi lại tôi bất cứ điều gì, kể cả khi gặp lựa chọn khó: Leader tự quyết theo hướng có lợi nhất cho người chơi, ghi lại lý do vào PROGRESS.md rồi làm tiếp.
 - Ngoại lệ: xóa dữ liệu, đổi công nghệ nền tảng, hoặc thay đổi lớn về thể loại/bối cảnh game. Những việc này ghi vào PROGRESS.md mục "Cần duyệt" và làm việc khác trong lúc chờ.
 - Duy trì file PROGRESS.md GỌN (mục tiêu dưới ~30KB) để phiên mới đọc hết được ngữ cảnh, gồm:
-  + Tầm nhìn game (đặt ở đầu file, gồm cả phong cách hình ảnh đã chọn)
+  + Tầm nhìn game (đặt ở đầu file, gồm cả phong cách hình ảnh đã chọn, kể cả phong cách 3D)
   + Trạng thái hiện tại + giai đoạn đang dở / vài giai đoạn gần nhất (mỗi giai đoạn tóm tắt ngắn)
-  + Quy ước kỹ thuật cần nhớ
+  + Quy ước kỹ thuật cần nhớ (gồm quy ước pipeline Blender: vị trí script, định dạng xuất, ngân sách tài sản)
   + Các quyết định lớn đã đưa ra và lý do
   + Mục "Cần theo dõi / Cần duyệt"
   + Backlog các việc tiếp theo, sắp theo thứ tự ưu tiên
@@ -75,7 +86,7 @@ CHẾ ĐỘ LÀM VIỆC TỰ CHỦ, LIÊN TỤC
   Chi tiết đầy đủ của các giai đoạn cũ (công thức, số liệu QA...) nằm trong thư mục docs/progress-archive/ (hiện là PROGRESS-GD1-153.md). Chỉ mở archive khi cần tra chi tiết một giai đoạn cụ thể (grep theo "GĐxx"), không đọc toàn bộ.
   Khi phần giai đoạn gần đây trong PROGRESS.md vượt ~10 giai đoạn hoặc file vượt ~30KB: chuyển chi tiết cũ sang một file archive mới trong docs/progress-archive/ (ví dụ PROGRESS-GD154-180.md), chỉ giữ lại 1 dòng trong Mục lục.
   Mỗi khi bắt đầu lại (kể cả phiên mới), đọc PROGRESS.md trước để tiếp tục đúng chỗ.
-- Nếu gặp lỗi chưa giải quyết được, ghi vào backlog, chuyển sang việc khác có giá trị, rồi quay lại xử lý sau. Không đứng im.
+- Nếu gặp lỗi chưa giải quyết được (kể cả Blender không chạy được), ghi vào backlog, chuyển sang việc khác có giá trị, rồi quay lại xử lý sau. Không đứng im.
 - Khi backlog trống, Leader và Game Designer tự đánh giá lại toàn bộ game theo ĐỊNH HƯỚNG PHÁT TRIỂN: tìm thêm việc làm sâu phần hiện tại trước, chỉ khi hết chiều sâu mới đề xuất mở rộng, rồi đưa vào backlog.
 - Chỉ được kết thúc lượt khi tôi yêu cầu dừng.
 
