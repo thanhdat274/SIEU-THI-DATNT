@@ -46,6 +46,7 @@ import { OPENING_TRAFFIC } from '../data/community';
 import { createCart } from '../shop/furnitureView';
 import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
+import { CoinPopFX } from '../render/fx/coinPop';
 import { Walker } from './walker';
 
 const SIDEWALK_Z = 2.2;
@@ -151,8 +152,12 @@ export class CustomerManager {
   guardOnDuty: () => boolean = () => false;
   /** Người chơi đang đứng quầy này (mới hỏi ý; nhân viên đứng quầy thì tự chọn mặc định). */
   playerAtCounter: (counter: Counter) => boolean = () => false;
+  /** Bong bóng "+12.000đ" bay lên từ quầy vừa bán xong (main.update bằng giây thật). */
+  readonly coinFx: CoinPopFX;
 
-  constructor(private scene: THREE.Scene, private grid: NavGrid, private shop: GroceryShop) {}
+  constructor(private scene: THREE.Scene, private grid: NavGrid, private shop: GroceryShop) {
+    this.coinFx = new CoinPopFX(scene);
+  }
 
   /**
    * @param gameDt giây đã nhân tốc độ game
@@ -613,6 +618,8 @@ export class CustomerManager {
     else if (first.basket.length) {
       st.checkout(first.basket, combo.discount, combo.count, method, first.profession?.id);
       playSfx('sale');
+      // Juice GĐ173: bong bóng tiền bay lên ngay tại quầy vừa thu — phản hồi tức thì bằng mắt
+      this.coinFx.spawn(counter.center, total);
     }
     if (first.service) {
       earnService(first.service.def.id, first.service.fee);

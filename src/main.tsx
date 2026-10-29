@@ -599,6 +599,8 @@ function renderFrame() {
         Math.max(playerAt(counter) || partnerAt(counter) ? (hasSkill(useGame.getState().skills, 'quick_hands') ? 1.2 : 1) : 0, staff.cashierSpeed(counter))
         * (hasUpgrade(useGame.getState().biz, 'pos') ? 1.5 : 1));
     }
+    // Bong bóng tiền ở quầy bay theo giờ THỰC: tua 8× vẫn kịp đọc "+12.000đ" trước khi tan
+    customers.coinFx.update(dt);
     if (!guest) residents.update(dt * speed);
     // Cửa hàng tiện lợi: chỉ dựng nhân vật khi chủ ghé; chủ đứng trong tiệm thì tự bán được khi thiếu thu ngân
     if (!guest) branchVisit.update(dt * speed, player.position);
