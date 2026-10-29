@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isMarketDay, marketClearValue, CLEAR_DISCOUNT, MAX_CLEAR_ITEMS, MAX_CLEAR_UNITS } from '../data/chophien';
+import { isMarketDay, marketClearValue, marketTrafficFactor, MARKET_TRAFFIC, CLEAR_DISCOUNT, MAX_CLEAR_ITEMS, MAX_CLEAR_UNITS } from '../data/chophien';
 import { scarcityMul } from '../data/market';
 
 // GĐ135: "🧺 Chợ phiên cuối ngõ" — bản đánh giá thuần-đọc hàng DƯ (slice 1 của mở rộng Gánh hàng rong).
@@ -23,6 +23,15 @@ describe('isMarketDay', () => {
     expect(isMarketDay(14)).toBe(true);
     expect(isMarketDay(8)).toBe(false);
     expect(isMarketDay(21)).toBe(true);
+  });
+
+  it('GĐ182 — hôm phiên chợ đông khách hơn (1.15), ngày thường bằng 1', () => {
+    expect(marketTrafficFactor(7)).toBe(MARKET_TRAFFIC);
+    expect(marketTrafficFactor(14)).toBe(MARKET_TRAFFIC);
+    expect(marketTrafficFactor(6)).toBe(1);
+    expect(marketTrafficFactor(8)).toBe(1);
+    expect(MARKET_TRAFFIC).toBeGreaterThan(1);
+    expect(MARKET_TRAFFIC).toBeLessThan(1.5); // nâng nhẹ, không phá cân bằng
   });
 });
 

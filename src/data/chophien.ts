@@ -24,6 +24,14 @@ export function isMarketDay(day: number): boolean {
   return day >= FIRST_MARKET && day % MARKET_EVERY === 0;
 }
 
+/** Khách ra đường ngày chợ đông hơn ngày thường (GĐ182: phiên chợ thành nhịp gameplay). */
+export const MARKET_TRAFFIC = 1.15;
+
+/** Hệ số giờ đông khách của một ngày: 1.15 khi phiên chợ, 1 ngày thường — thuần đọc, test được. */
+export function marketTrafficFactor(day: number): number {
+  return isMarketDay(day) ? MARKET_TRAFFIC : 1;
+}
+
 export interface MarketClearRow {
   id: string;
   name: string;

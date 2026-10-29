@@ -21,17 +21,18 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1786/1787 test pass (161 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ181. (Sim nặng `weeklyGoalCap` cấp 50 timeout trong lần full do tranh CPU khi chạy Blender/browser; re-run isolated 16/16 xanh)
+- **1786/1787 test pass (161 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ182. (Sim nặng `weeklyGoalCap` cấp 50 timeout trong lần full do tranh CPU khi chạy Blender/browser; re-run isolated 16/16 xanh)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–181 (chi tiết GĐ159–176: docs/progress-archive/PROGRESS-GD154-180.md)
+### Giai đoạn gần đây · GĐ177–182 (chi tiết GĐ159–176: docs/progress-archive/PROGRESS-GD154-180.md)
 
 - **GĐ177** 🏮 "Đầu ngõ lên đèn": đèn lồng cột dựng Blender (`scripts/blender_lantern.py`, 16KB Draco) đặt bên cửa tiệm (5.9,0,2.1); nguồn sáng ấm #ffb35c qua quỹ ánh sáng (lightBudget) bật chập tối (lamp 17h–5h30); lõi phát sáng tắt hẳn ban ngày. Chrome: lazy GLB + fallback thủ tục + không chặn lưới (boxes rỗng — convention kit GĐ172). QA @5173: loaded=true, glow 2.6 đêm / 0 trưa; QA bắt 1 bug (GLB emissive mặc định cháy sáng cả ngày) → đã sửa điều khiển theo giờ. `storefrontLantern.ts`, `world.ts`, `main.tsx`, test 4.
 - **GĐ178** 🎨 Gộp họ xanh dương hướng dẫn/chuỗi/biểu đồ (`#0984e3`/`#74b9ff`/`#2e86de` + tint `rgba(9,132,227,…)`) về đúng info `#3498db` ở OrderPanel/ReportPanels/ContractsPanel/PricePanel (16 chỗ). Giữ họ buy-tone `#55efc4`/`#ff7675` (ngoại lệ được duyệt GĐ166). "Quyết định lớn": họ banner guide = một sắc info duy nhất, không bảng riêng (đóng nợ GĐ167). GardenPanel giữ họ "system card" của nó — không churn. tsc + build sạch, reload @5175 game nạp ổn, grep 0-màu-cũ/16-màu-mới.
 - **GĐ179** 🪧 Biển treo "mở/đóng cửa": kit prop có mục đích gameplay. Cột gỗ + biển treo (`scripts/blender_sign.py` → `bien_mo_cua.glb` Draco 6.9KB, lazy) đặt vỉa hè sát cửa (5.05,0,1.45), tấm trạng thái `bien_mo_cua_state` sáng xanh #2ecc71 (mở)/đỏ dìm #e74c3c (đóng) + đung nhẹ khi mở; nối theo `shopOpen` trong loop main, cùng chỗ cột đèn lồng. Không chặn lưới (cao quá đầu). `storefrontSign.ts`, `world.ts`, `main.tsx`, test 4; tsc+build sạch, QA: update(true/false) xanh/đỏ đúng. (RAF=0 khi tab IAB nền — xác nhận loop không chạy lúc QA, không phải lỗi code; kiểm thật trên save khi mở/đóng 8h.)
 - **GĐ180** 💡 Đèn báo "khách đang đợi" trước hiên: kit prop có mục đích gameplay (tái dùng world state, **không thêm sim**). Quả đèn lồng nhỏ gắn tường trái cửa (3.1,0,1.3) (`scripts/blender_waitlamp.py` → `den_cho.glb` Draco 13.4KB, lazy), lõi `cho_doi_glow` sáng ấm khi `waiting>0` và tiệm mở — càng đông khách đợi càng sáng rõ (1.0→~1.8), tắt khi đóng/không ai chờ; quầng pulse nhẹ như đèn lồng. `storefrontWaitLamp.ts`, `world.ts`, `main.tsx`, test 4; tsc+build sạch; QA: waiting=3+mở → glow 1.6, đóng/0 → 0.
 - **GĐ181** 🛒 Chợ phiên sống: 7 ngày một lần (`isMarketDay`, GĐ135) vài gánh hàng `xe_day` tái dùng kit (không Blender mới) dựng thêm dọc mép vỉa hè (3 chỗ: −3.2/0.4/8.4, z~2.5) — con hẻm đổi cảnh theo lịch tuần, vẫn không chặn lưới. `KIT_MARKET_PLACEMENTS` + `marketGroup` + `kit.setMarketDay(on)`; main.tsx đổi cảnh đúng 1 lần theo ngày (guard `lastMarketDay`). `kitProps.ts`, `main.tsx`, test +4 (total 10); tsc+build sạch; QA: setMarketDay true/false bật/tắt 3 gánh, day1 mặc định ẩn.
+- **GĐ182** 🧺 Chợ phiên thành nhịp gameplay: thêm đông khách ngày phiên + nhắc sáng hôm đó. `marketTrafficFactor(day)` (1.15 ngày chợ / 1 thường) nhân vào `rush` sinh khách (`customers.ts`) — nâng nhẹ không phá cân bằng; toast 1 lần ngày chợ (guard `lastMarketDay`): "🛒 Hôm nay phiên chợ cuối ngõ — khách đông hơn! Tối nhớ xem Chợ phiên để gánh bớt hàng dư". Không đổi SAVE_VERSION/kinh tế (factor thuần đọc). `chophien.ts`, `customers.ts`, `main.tsx`, test +1; tsc+build sạch, 19 test customer/chợ xanh, reload @5175 boot ổn.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -69,7 +70,7 @@
 ## Backlog tiếp theo
 
 1. **Audit trải nghiệm & tiến trình (GĐ168–171) đã xong** ✅ (mid/late-game: roadmap 30+, ratchet tuần/tháng, rival kết, NG+ mục tiêu vòng). Đánh giá lại: vòng ngày & tiến trình đã khai thác sâu; trục mới đáng làm là **trải nghiệm bim bim tài sản 3D + không gian con hẻm** — nối tiếp GĐ172–176.
-2. 🎯 **Chợ phiên thành nhịp gameplay (GĐ182)**: 3D/alley đã bão hoà (GĐ177–181). Chợ phiên hiện chỉ là gánh hàng hình ảnh + xả kho — làm tiếp cho xứng nhịp tuần: phiên chợ đông khách hơn + hàng đặc biệt bán giá tốt hơn + toast hướng dẫn "Hôm nay phiên chợ". Giữ chân lý do quay lại mỗi tuần. (Mở rộng ra sau nếu cần: mùa/lễ hội.)
+2. 🎯 **Chợ phiên thành nhịp gameplay** ✅ (GĐ182: đông khách ×1.15 + toast nhắc). Giờ nhịp tuần: gánh hàng dựng (GĐ181) + xả kho (GĐ135/136) + đông khách. Nếu sau này muốn mạnh hơn: hàng đặc biệt bán giá tốt hơn ngày phiên, hoặc mùa/lễ hội riêng — ghi chờ, không vội.
 3. Sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (save người thật); nếu vẫn lặp → thêm biến thể hoàn cảnh (lễ, weekend).
 4. GĐ164 theo dõi: arc E "Hàng xóm khai trương" (thay cam_do_mo) — chỉ làm khi 4 arc A–D chạy tốt trên save thật.
 5. UI nợ còn: Callout GardenPanel:79 vào Callout (chỉ còn một thẻ); các màu UI còn lại đều là màu ngữ cảnh/họ buy-tone đã duyệt.
@@ -253,3 +254,4 @@
 - GĐ179 — 🪧 Biển treo mở/đóng cửa: kit prop có mục đích gameplay (tấm trạng thái theo shopOpen)
 - GĐ180 — 💡 Đèn báo "khách đang đợi" trước hiên (tái dùng world state `waiting`, không thêm sim)
 - GĐ181 — 🛒 Chợ phiên sống: gánh hàng `xe_day` dựng thêm dọc hẻm ngày chợ (mỗi 7 ngày)
+- GĐ182 — 🧺 Chợ phiên thành nhịp gameplay: đông khách ×1.15 ngày phiên + toast nhắc (không đổi balance nền)

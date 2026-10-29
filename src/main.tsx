@@ -713,7 +713,12 @@ function renderFrame() {
   world.waitLamp.update({ open: g.shopOpen, waiting: g.waiting ?? 0 }, performance.now() / 1000);
   // Chợ phiên (gđ181): 7 ngày một lần gánh hàng dựng thêm dọc hẻm — đổi cảnh một lần theo ngày
   const marketDay = isMarketDay(g.day);
-  if (marketDay !== lastMarketDay) { lastMarketDay = marketDay; world.kit.setMarketDay(marketDay); }
+  if (marketDay !== lastMarketDay) {
+    lastMarketDay = marketDay;
+    world.kit.setMarketDay(marketDay);
+    // (GĐ182) Sáng phiên chợ: nhắc để người chơi biết hôm nay đông khách + tối gánh hàng dư
+    if (marketDay) g.notify('🛒 Hôm nay phiên chợ cuối ngõ — khách đông hơn! Tối nhớ xem "Chợ phiên" để gánh bớt hàng dư.');
+  }
   applyLightBudget(controller.target);
   // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng
   if ((frameNo++ & 1) === 0) renderer.shadowMap.needsUpdate = true;

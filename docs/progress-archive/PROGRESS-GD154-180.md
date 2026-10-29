@@ -179,3 +179,9 @@
 - Lý do: gắn nhịp tuần vào thế giới — ngày chợ (mỗi 7 ngày, `isMarketDay` GĐ135) con hẻm đổi cảnh, báo giữ chân "quay lại tuần sau".
 - `KIT_MARKET_PLACEMENTS` (3 chỗ xe_day: −3.2/0.4/8.4, z~2.5, mép vỉa hè sát lòng đường) + `marketGroup` con của group kit + `kit.setMarketDay(on)`. Tái dùng module `xe_day` có sẵn (không Blender mới); vẫn không chặn lưới. main.tsx đổi cảnh đúng 1 lần theo ngày (guard `lastMarketDay`). `kitPlacementProblems()` gộp kiểm cả base lẫn chợ phiên.
 - File: `kitProps.ts`, `main.tsx`, `kitProps.test.ts` (+4 test, tổng 10).
+
+### GĐ182 — 🧺 Chợ phiên thành nhịp gameplay (đông khách + toast nhắc) — XONG
+
+- Lý do: nhịp tuần hiện chỉ là gánh hàng hình ảnh (GĐ181) + xả kho (GĐ135/136) — chưa ai biết đến; add đông khách để phiên chợ "cảm thấy" khác, toast để người chơi khám phá cơ hội.
+- `marketTrafficFactor(day)` (1.15 chợ / 1 thường, thuần đọc — không đổi SAVE_VERSION/kinh tế nền) nhân vào `rush` sinh khách trong `customers.ts`. Toast 1 lần/ngày chợ (guard `lastMarketDay` trong render loop): "🛒 Hôm nay phiên chợ cuối ngõ — khách đông hơn! Tối nhớ xem Chợ phiên để gánh bớt hàng dư".
+- File: `chophien.ts`, `customers.ts`, `main.tsx`, `marketClearValue.test.ts` (+1 test, tổng 9).

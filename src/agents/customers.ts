@@ -6,6 +6,7 @@ import { customersPerDay, FEATURES } from '../data/levels';
 import { formatMoney, productById, unlockedProducts } from '../data/products';
 import { trending } from '../data/suppliers';
 import { skyAt } from '../data/weather';
+import { marketTrafficFactor } from '../data/chophien';
 import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../data/freshness';
 import { demandPriceFactor, keepChance } from '../data/pricing';
 import { dayEffects, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
@@ -191,7 +192,7 @@ export class CustomerManager {
         const night = nightTrafficAt(s.minutes);
         const bandTraffic = night ?? timeBandAt(s.minutes)?.traffic ?? 1;
         const rush = bandTraffic * dayEffects(s.weatherSeed, s.day, s.level).traffic
-          * (hasSkill(s.skills, 'local_legend') ? 1.1 : 1) * festival * eventTraffic;
+          * (hasSkill(s.skills, 'local_legend') ? 1.1 : 1) * festival * eventTraffic * marketTrafficFactor(s.day);
         this.spawnIn = (daytime ? (night ? NIGHT_SPAN : OPEN_UNTIL - OPEN_FROM) / perDay / rush : 60) * (0.5 + simRng()());
         // Mỗi chậu cây +5% khách ghé, tối đa +25%
         const plants = s.furniture.filter((f) => f.type === 'plant').length;
