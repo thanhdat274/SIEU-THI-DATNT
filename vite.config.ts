@@ -26,6 +26,21 @@ function gameServer(): Plugin {
 // /api và /ws chuyển sang server lưu cloud + chơi 2 người (cổng 3002)
 export default defineConfig({
   plugins: [react(), gameServer()],
+  build: {
+    rollupOptions: {
+      output: {
+        // Tách vendor thành chunk riêng (GĐ174, học từ Xóm Nông Trại): thư viện ít đổi ở lại
+        // nguyên trong cache trình duyệt qua các bản update code game, và tải song song.
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return undefined;
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react';
+          if (/[\\/]node_modules[\\/]three[\\/]/.test(id)) return 'vendor-three';
+          if (/[\\/]node_modules[\\/](zustand|dexie|firebase)[\\/]/.test(id)) return 'vendor-data';
+          return 'vendor-misc';
+        },
+      },
+    },
+  },
   server: {
     // Mở cho máy khác cùng mạng (điện thoại) vào được qua IP của máy tính
     host: true,
