@@ -35,6 +35,7 @@ import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
 import { runBranch, branchNewDay } from './branch';
+import { simRng } from '../rand';
 
 /** Cuối ngày: chi nhánh chạy qua đêm, hàng hỏng, nợ, đơn, thanh tra, thị trường, lương, sang ngày mới. */
 
@@ -205,8 +206,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   let brokeNow = 0;
   let furniture = aged.furniture.map((f) => {
     if (s.level < w.unlock || !wears(f.type) || f.broken) return f;
-    const wear = Math.min(100, (f.wear ?? 0) + w.perNight[0] + Math.floor(Math.random() * (w.perNight[1] - w.perNight[0] + 1)));
-    const broken = Math.random() < (wear - w.breakFrom) * w.perPoint;
+    const wear = Math.min(100, (f.wear ?? 0) + w.perNight[0] + Math.floor(simRng()() * (w.perNight[1] - w.perNight[0] + 1)));
+    const broken = simRng()() < (wear - w.breakFrom) * w.perPoint;
     if (broken) brokeNow++;
     return { ...f, wear, broken };
   });
@@ -279,7 +280,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   let inspectPay = 0;
   const complaints = s.reviews.filter((r) => r.day === s.day && r.stars <= 2).length;
   const periodic = s.day % INSPECTION_EVERY === 0;
-  const surprise = !periodic && (complaints >= COMPLAINTS_FOR_SURPRISE || inspection.strikes > 0) && Math.random() < SURPRISE_INSPECTION;
+  const surprise = !periodic && (complaints >= COMPLAINTS_FOR_SURPRISE || inspection.strikes > 0) && simRng()() < SURPRISE_INSPECTION;
   if (s.level >= INSPECTION_UNLOCK && (periodic || surprise)) {
     const near = furniture.reduce((n, f) => n + f.tiers.reduce((m, t) => {
       if (!t.productId || t.count <= 0) return m;
@@ -315,7 +316,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   news.push(...socialDay.news);
   // Bắt được nhân viên ăn bớt hàng: tin xấu lan trên mạng thành khủng hoảng nhỏ (mỗi lần một nửa cơ hội)
   let socialNext = socialDay.social;
-  if (crew.caught.length && !socialNext.buzz && s.level >= SOCIAL_UNLOCK && Math.random() < 0.5) {
+  if (crew.caught.length && !socialNext.buzz && s.level >= SOCIAL_UNLOCK && simRng()() < 0.5) {
     const id = (socialNext.posts.at(-1)?.id ?? 0) + 1;
     const post: SocialPost = {
       id, day: s.day, author: 'Khách qua đường', stars: 1,

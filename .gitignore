@@ -7,3 +7,4 @@ server/.env
 .zcode/
 scan_tmp.cjs
 .claude/
+coverage/

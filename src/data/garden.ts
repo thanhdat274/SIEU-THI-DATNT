@@ -15,6 +15,7 @@
  */
 import type { Weather } from './weather';
 import { dateOfDoy, YEAR_DAYS } from './calendar';
+import { simRng } from '../core/rand';
 
 /** Mở trang trại từ cấp này. */
 export const GARDEN_UNLOCK = 8;
@@ -323,7 +324,7 @@ export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 
 
 let farmOrderId = 1;
 /** Tạo đơn mới cho quán xóm: 2 món trong pool, số lượng 3–8, hạn 2 ngày. */
-export function makeFarmOrder(day: number, rng: () => number = Math.random): FarmOrder {
+export function makeFarmOrder(day: number, rng: () => number = simRng()): FarmOrder {
   const pool = [...FARM_ORDER_POOL];
   const items: { productId: string; qty: number }[] = [];
   for (let i = 0; i < 2; i++) {
@@ -366,7 +367,7 @@ export function gardenNight(
   g: GardenState,
   ctx: { day: number; weather: Weather; fed: Partial<Record<AnimalKind, boolean>>; rng?: () => number },
 ): { garden: GardenState; news: string[] } {
-  const rng = ctx.rng ?? Math.random;
+  const rng = ctx.rng ?? simRng();
   const news: string[] = [];
   const rain = ctx.weather === 'rain' || ctx.weather === 'storm';
   const pct = farmGrowthPct(g);
@@ -442,7 +443,7 @@ export function farmhandChores(
   day: number,
   opts: { crit?: number; rng?: () => number } = {},
 ): { garden: GardenState; picked: { productId: string; qty: number }[]; fedKinds: AnimalKind[]; feedUsed: { productId: string; bags: number }[]; news: string[] } {
-  const rng = opts.rng ?? Math.random;
+  const rng = opts.rng ?? simRng();
   const crit = opts.crit ?? 0;
   const news: string[] = [];
   const picked: { productId: string; qty: number }[] = [];

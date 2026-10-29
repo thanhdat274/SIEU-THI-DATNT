@@ -1,3 +1,4 @@
+import { simRng } from '../core/rand';
 /**
  * Giữ chân người chơi: điểm danh mỗi ngày nhận quà tăng dần theo chuỗi 7 ngày,
  * và mỗi ngày một lượt vòng quay may mắn. Chỉ có dữ liệu; nhận/quay nằm ở `core/store`.
@@ -126,7 +127,7 @@ export const scaledPrize = (p: WheelPrize, level: number): WheelPrize => {
 /** Xoay một lượt: chọn giải theo trọng số. */
 export function spinWheelPrize(): WheelPrize {
   const total = WHEEL_PRIZES.reduce((n, p) => n + p.weight, 0);
-  let roll = Math.random() * total;
+  let roll = simRng()() * total;
   for (const p of WHEEL_PRIZES) {
     roll -= p.weight;
     if (roll <= 0) return p;

@@ -6,6 +6,7 @@
  */
 import { skillSpeed, type Staff } from './staff';
 import { LEAD_CATCH_BONUS, LEAD_SPEED_MUL } from './careers';
+import { simRng } from '../core/rand';
 
 export type StaffTrait = 'steady' | 'diligent' | 'friendly' | 'lazy' | 'sticky';
 
@@ -65,7 +66,7 @@ export function shownTrait(st: Staff): StaffTrait | null {
 export const workSpeed = (st: Staff) => skillSpeed(st.skill) * TRAITS[traitOf(st)].speedMul * (st.rank === 'lead' ? LEAD_SPEED_MUL : 1);
 
 /** Bốc một tính theo tỉ trọng. */
-export function rollTrait(rng: () => number = Math.random): StaffTrait {
+export function rollTrait(rng: () => number = simRng()): StaffTrait {
   const ids = Object.keys(TRAITS) as StaffTrait[];
   let r = rng() * ids.reduce((n, id) => n + TRAITS[id].weight, 0);
   for (const id of ids) {
@@ -120,7 +121,7 @@ export interface StaffDayResult {
 
 /** Hết ngày: ai cũng thêm một ngày công và kinh nghiệm; người tắt mắt ra tay; người niềm nở được khen. */
 export function staffDayEnd(list: Staff[], ctx: StaffDayCtx): StaffDayResult {
-  const rng = ctx.rng ?? Math.random;
+  const rng = ctx.rng ?? simRng();
   const between = ([a, b]: [number, number]) => a + rng() * (b - a);
   const goodsTaken: Record<string, number> = {};
   const blockedGoods: Record<string, number> = {};

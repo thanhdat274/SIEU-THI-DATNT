@@ -1,4 +1,5 @@
 import type { CharacterArchetype, PropKind } from '../render/characterModel';
+import { simRng } from '../core/rand';
 
 /** Nghề của khách vãng lai: quyết định ngoại hình, giờ hay ghé và thói quen mua hàng. */
 export interface ProfessionDef {
@@ -283,9 +284,9 @@ const inHours = (p: ProfessionDef, minutes: number) => p.hours.some(([a, b]) => 
 /** Chọn nghề cho khách vãng lai: nghề đang giờ ghé được ưu tiên gấp 4 lần. */
 /** `boosted`: nghề đang được quảng cáo nhắm tới, hay ghé gấp 3. */
 export function pickProfession(minutes: number, boosted: string[] = []): ProfessionDef | null {
-  if (Math.random() > PROFESSION_SHARE * (boosted.length ? 1.3 : 1)) return null;
+  if (simRng()() > PROFESSION_SHARE * (boosted.length ? 1.3 : 1)) return null;
   const weights = PROFESSIONS.map((p) => (inHours(p, minutes) ? 4 : 0.5) * (boosted.includes(p.id) ? 3 : 1));
-  let roll = Math.random() * weights.reduce((a, b) => a + b, 0);
+  let roll = simRng()() * weights.reduce((a, b) => a + b, 0);
   for (let i = 0; i < PROFESSIONS.length; i++) {
     roll -= weights[i];
     if (roll <= 0) return PROFESSIONS[i];

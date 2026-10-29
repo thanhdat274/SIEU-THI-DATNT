@@ -1,6 +1,7 @@
 import type { CharacterArchetype } from '../render/characterModel';
 import { rollTrait, type StaffTrait } from './staffTraits';
 import type { Rank } from './careers';
+import { simRng } from '../core/rand';
 
 export type StaffRole = 'cashier' | 'stocker' | 'cleaner' | 'courier' | 'guard' | 'manager' | 'bartender' | 'cook' | 'warehouse_mgr' | 'customer_care' | 'farmhand' | 'butcher';
 export type Shift = 'morning' | 'afternoon' | 'full' | 'night';
@@ -123,7 +124,7 @@ const TEN = [
   'An', 'Bình', 'Chi', 'Dũng', 'Giang', 'Hà', 'Hùng', 'Lan', 'Linh', 'Minh',
   'Nam', 'Ngọc', 'Phúc', 'Quân', 'Thảo', 'Trang', 'Tuấn', 'Vy', 'Yến', 'Khoa',
 ];
-const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
+const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
 
 /** Ứng viên mới mỗi sáng; cấp càng cao càng có người giỏi. */
 export function generateCandidates(level: number, startId: number): Staff[] {
@@ -132,7 +133,7 @@ export function generateCandidates(level: number, startId: number): Staff[] {
   const allRoles = Object.keys(ROLES) as StaffRole[];
   const roles: StaffRole[] = ['cashier', 'stocker'];
   for (let i = 2; i < 6; i++) {
-    if (extra.length && Math.random() < 0.75) {
+    if (extra.length && simRng()() < 0.75) {
       roles.push(pick(extra));
     } else if (allRoles.length > 2) {
       const otherRoles = allRoles.filter((r) => r !== 'cashier' && r !== 'stocker');
@@ -140,13 +141,13 @@ export function generateCandidates(level: number, startId: number): Staff[] {
     }
   }
   return roles.map((role, i) => {
-    const skill = Math.min(5, 1 + Math.floor(Math.random() * 3) + Math.floor(level / 15));
+    const skill = Math.min(5, 1 + Math.floor(simRng()() * 3) + Math.floor(level / 15));
     return {
       id: startId + i,
       name: `${pick(HO)} ${pick(TEN)}`,
       role,
       skill,
-      wage: Math.round(((8000 + skill * 8000) * ROLES[role].wageMul) / 1000) * 1000 + Math.round(Math.random() * 4) * 2000,
+      wage: Math.round(((8000 + skill * 8000) * ROLES[role].wageMul) / 1000) * 1000 + Math.round(simRng()() * 4) * 2000,
       shift: 'morning',
       trait: rollTrait(),
     };

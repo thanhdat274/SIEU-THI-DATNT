@@ -2,6 +2,7 @@ import { meetsRep, type Reputation, type RepNeed } from './reputation';
 import { productById } from './products';
 import { COOKED_TIP_RANGE, STATION_BY_OUTPUT } from './recipes';
 import type { CharacterArchetype, HairStyle, PropKind } from '../render/characterModel';
+import { simRng } from '../core/rand';
 
 export type PerkEffect = 'bonus_tip' | 'extra_item' | 'frequent_visit' | 'refer_friend' | 'bulk_buy' | 'festival';
 
@@ -461,7 +462,7 @@ export interface RegularCheckout {
 }
 
 /** Thanh toán: có món ưa thích +2 điểm, không có +1; mỗi ngày tính điểm một lần; mở perk và tính tiền boa. */
-export function regularCheckout(def: RegularDef, prev: RegularProgress | undefined, basket: { id: string; price: number }[], day: number, rng: () => number = Math.random): RegularCheckout {
+export function regularCheckout(def: RegularDef, prev: RegularProgress | undefined, basket: { id: string; price: number }[], day: number, rng: () => number = simRng()): RegularCheckout {
   const prog: RegularProgress = prev ? { ...prev, perks: [...prev.perks], discovered: [...prev.discovered] } : emptyProgress();
   prog.visits++;
   prog.lastVisitDay = day;

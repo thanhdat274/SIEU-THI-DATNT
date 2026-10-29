@@ -58,6 +58,12 @@ Tester: Viết và chạy test cho từng tính năng mới. Kiểm tra hồi qu
 - Sau khi sửa code hoặc cập nhật tài sản, tải lại trang (reload) để kiểm tra bản mới nhất.
 QA (Đảm bảo chất lượng): Chơi thử như người chơi thật ngay trên http://localhost:5173/. Đánh giá trải nghiệm, UI, độ mượt, độ cân bằng và độ vui. Phát hiện lỗi logic, lỗi hiển thị, điểm gây khó chịu. Kiểm tra cả console của trình duyệt xem có lỗi không. Có quyền trả việc lại cho Developer hoặc 3D Artist nếu chưa đạt.
 QA kiểm tra giao diện ở nhiều kích thước màn hình (dùng chế độ giả lập thiết bị của trình duyệt: điện thoại, máy tính bảng, máy tính) và đánh giá xem một người chơi mới có tự hiểu cách chơi không. QA cũng đánh giá tài sản 3D: đẹp, đúng phong cách, đúng tỉ lệ, không lỗi hiển thị, không giật.
+- PHẠM VI QA MỖI GIAI ĐOẠN (để thời gian QA không phình theo số giai đoạn; phần logic đã có test tự động bao):
+  + Luôn làm: chơi thử kỹ TÍNH NĂNG MỚI của giai đoạn (cả trường hợp biên: hết tiền, kho trống, ngày đầu, save cũ) + LUỒNG CỐ ĐỊNH ngắn: vào game → mở cửa → bán vài khách → ngủ → xem tổng kết; 0 lỗi console.
+  + Kiểm tra màn hình: tính năng mới xem ở điện thoại (390px) + máy tính. Chỉ quét ĐỦ mọi kích thước (320/390/768/máy tính) và mọi panel khi giai đoạn đụng tới giao diện chung (HUD, panel/thành phần dùng chung, CSS chung).
+  + QA TOÀN DIỆN mỗi 10 giai đoạn (GĐ chia hết cho 10): chơi lại cả vòng ngày ở nhiều cấp, mọi panel, mọi kích thước màn hình, đánh giá người chơi mới có tự hiểu không — ghi kết quả vào PROGRESS.md.
+  + Không chơi lại toàn bộ các giai đoạn cũ mỗi lần; nếu nghi một giai đoạn cũ bị ảnh hưởng thì chỉ kiểm tra riêng phần đó.
+- TEST TỰ ĐỘNG: `npm run test` chạy toàn bộ mỗi giai đoạn (hiện ~4–5 phút). Test mô phỏng (autoplay) là tất định theo seed và có số mốc cân bằng — nếu đỏ vì lệch số mốc, phải xem lệch là CÓ CHỦ Ý (đổi kinh tế đã duyệt → cập nhật mốc, ghi lý do vào PROGRESS.md) hay là lỗi. Mỗi 10 giai đoạn chạy `npm run test:coverage` (~1 phút, bỏ qua 3 file mô phỏng nặng) để tìm phần LOGIC chưa có test (ưu tiên core/, data/, agents/, save) và bổ sung — ui/ và world/render 3D do QA kiểm bằng mắt nên coverage thấp là bình thường. Nếu toàn bộ test vượt ~10 phút: đo file chậm nhất (`npx vitest run --reporter=json`) và tối ưu trước khi làm tiếp.
 
 QUY TRÌNH MỖI GIAI ĐOẠN
 1. Leader đọc PROGRESS.md, đánh giá hiện trạng game và chọn việc quan trọng nhất tiếp theo từ backlog.

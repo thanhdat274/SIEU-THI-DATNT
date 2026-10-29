@@ -8,6 +8,7 @@
 import type { Lot } from './freshness';
 import { productById, unlockedProducts } from './products';
 import { skillSpeed } from './staff';
+import { simRng } from '../core/rand';
 
 export const ONLINE_UNLOCK = 10;
 /** Phí mở gian hàng trên app (trả một lần). */
@@ -90,7 +91,7 @@ export const grabFee = (km: number) => Math.round((8000 + km * 4000) / 1000) * 1
 const NAMES = ['Chị Mai Q.7', 'Anh Tuấn Q.3', 'Bạn Hân', 'Cô Lệ', 'Anh Khoa', 'Chị Thu', 'Em Bảo', 'Chú Sáu', 'Chị Hồng', 'Anh Phát'];
 
 /** Tạo một đơn app: 1–3 món đang mở khoá (không phải món nhà làm nếu cấp đã mở), 1–8 km. */
-export function makeOnlineOrder(id: number, level: number, minutes: number, rng: () => number = Math.random): OnlineOrder {
+export function makeOnlineOrder(id: number, level: number, minutes: number, rng: () => number = simRng()): OnlineOrder {
   const pool = unlockedProducts(level);
   const items: Record<string, number> = {};
   for (let n = 1 + Math.floor(rng() * 3); n > 0 && pool.length; n--) {

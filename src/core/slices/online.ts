@@ -7,6 +7,7 @@ import { formatMoney, productById } from '../../data/products';
 import { playSfx } from '../audio';
 import type { GameState, GetState, SetState } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
+import { simRng } from '../rand';
 
 /** Bán online qua app: nhận/từ chối đơn, chọn người chở; đơn đổ về và giao tới nơi chạy trong tick. */
 
@@ -32,7 +33,7 @@ export const updateOnline = (set: SetState, get: GetState) => {
   if (on.open && s.shopOpen && m >= ONLINE_HOURS[0] && m < ONLINE_HOURS[1] && m >= on.nextAt) {
     const order = makeOnlineOrder(on.nextId, s.level, m);
     const gap = orderGap(appRating(on), s.level);
-    online = { ...online, orders: [...online.orders, order], nextId: on.nextId + 1, nextAt: m + gap * (0.6 + Math.random() * 0.8) };
+    online = { ...online, orders: [...online.orders, order], nextId: on.nextId + 1, nextAt: m + gap * (0.6 + simRng()() * 0.8) };
     playSfx('ring');
     news.push(`📲 Đơn app mới: ${order.customer} (${order.km} km) — mở Bán online để nhận`);
   }

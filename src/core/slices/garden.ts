@@ -7,6 +7,7 @@ import {
 import { CROPS, cropById, type CropDef } from '../../data/garden';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { copyStock, putStock, takeStock } from '../stock';
+import { simRng } from '../rand';
 
 /** Trang trại đầu ngõ: trồng, tưới, bón phân, thu hoạch, nuôi vật nuôi, công trình, dọn trại, đơn quán xóm. */
 
@@ -81,7 +82,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
     if (!plotReady(plot)) return s.notify(`${def.name} chưa lớn xong (còn ~${Math.ceil(def.days - plot.growth)} ngày)`);
     // Mùa vụ tính theo ngày cây CHÍN (không cho để chín chờ đúng vụ); bù nhìn may thì thu gấp đôi
     let qty = harvestYield(def, s.day, plot.ripeDay);
-    const doubled = Math.random() < farmCritChance(s.garden);
+    const doubled = simRng()() < farmCritChance(s.garden);
     if (doubled) qty *= 2;
     const k = copyStock(s);
     putStock(k, def.productId, qty);
@@ -293,7 +294,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
     for (let i = 0; i < debris; i++) {
       wood++;
       stone++;
-      if (Math.random() < 0.5) wood++;
+      if (simRng()() < 0.5) wood++;
     }
     set({ garden: { ...s.garden, debris: 0, wood: s.garden.wood + wood, stone: s.garden.stone + stone } });
     s.notify(`🧹 Dọn ${debris} đống cỏ cành: nhặt ${wood} gỗ, ${stone} đá — dành nâng sao công trình (đang có ${s.garden.wood + wood} gỗ, ${s.garden.stone + stone} đá)`);

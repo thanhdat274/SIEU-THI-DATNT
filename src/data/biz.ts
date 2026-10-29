@@ -9,6 +9,7 @@ import type { HiepLucState } from './hiepLuc';
 import { monthOf } from './calendar';
 import { emptyYear } from './yearReport';
 import { xpToNext } from './levels';
+import { simRng } from '../core/rand';
 
 // ───────────────────────── Tiệm đối thủ ─────────────────────────
 
@@ -238,7 +239,7 @@ export function rivalStanding(t: RivalTrendDay[], strength: number): 'ahead' | '
 }
 
 /** Tạo một rival ngẫu nhiên tính cách; có `avoid` thì loại tính cách vừa gặp khỏi vòng quay (pool còn mới rút lại). */
-export function newRival(name: string, strength: number, openedDay: number, rng: () => number = Math.random, avoid?: RivalPersonality): Rival {
+export function newRival(name: string, strength: number, openedDay: number, rng: () => number = simRng(), avoid?: RivalPersonality): Rival {
   const all: RivalPersonality[] = ['cutter', 'quality', 'aggressive'];
   const pool = avoid ? all.filter((p) => p !== avoid) : all;
   const personalities = pool.length ? pool : all;
@@ -275,7 +276,7 @@ export interface RivalNightResult {
  * là hai cách giành lại khách quen.
  */
 export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
-  const rng = ctx.rng ?? Math.random;
+  const rng = ctx.rng ?? simRng();
   const news: string[] = [];
   const pers = r.personality ?? 'cutter';
   const undercut = RIVAL_UNDERCUT[pers];

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { isSimSeeded } from './rand';
 
 /**
  * Câu hỏi ở quầy: khách xin ghi sổ, mặc cả, hoặc tiệm thiếu tiền lẻ.
@@ -24,12 +25,18 @@ export const askPending = () => useCounterAsk.getState().ask !== null;
 // nhưng khách này vẫn mất kiên nhẫn theo giây thật để phá 'pause AFK vô hạn'. Chỉ Date.now() thuần
 // ứng — transient (không nằm trong state game / SaveState → không đụng SAVE_VERSION).
 let askStartedWall = 0;
+// Sim có seed (test/bot): đồng hồ chờ đếm theo LẦN GỌI (mỗi lần ~ 1 tick 0.1s) thay vì giây thật —
+// không thì kết quả phụ thuộc máy nhanh/chậm và cùng seed ra số khác nhau. Game thật không đổi.
+let askSimCalls = 0;
 export function askWallElapsed(): number {
-  return askStartedWall ? (Date.now() - askStartedWall) / 1000 : 0;
+  if (!askStartedWall) return 0;
+  if (isSimSeeded()) return askSimCalls++ * 0.1;
+  return (Date.now() - askStartedWall) / 1000;
 }
 
 export function askAtCounter(ask: CounterAsk) {
   askStartedWall = Date.now();
+  askSimCalls = 0;
   useCounterAsk.setState({ ask });
 }
 

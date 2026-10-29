@@ -1,4 +1,5 @@
 import { productById, unlockedProducts } from './products';
+import { simRng } from '../core/rand';
 
 /** Người bán rong sáng sớm ghé tiệm lấy sỉ từ kho về bán lại. */
 export interface VendorDef {
@@ -33,7 +34,7 @@ export interface VendorOffer {
   expiresAt: number;
 }
 
-const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
+const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
 
 /** Hôm nay người bán rong nào ghé, muốn lấy bao nhiêu món (theo hàng đã mở khóa). */
 export function makeVendorOffer(level: number, minutes: number): VendorOffer | null {
@@ -43,8 +44,8 @@ export function makeVendorOffer(level: number, minutes: number): VendorOffer | n
   const v = pick(candidates);
   const likes = v.likes.filter((id) => open.has(id));
   const items: Record<string, number> = {};
-  const lines = Math.min(likes.length, 2 + Math.floor(Math.random() * 2));
-  for (const id of [...likes].sort(() => Math.random() - 0.5).slice(0, lines)) items[id] = 6 + Math.floor(Math.random() * 3) * 3;
+  const lines = Math.min(likes.length, 2 + Math.floor(simRng()() * 2));
+  for (const id of [...likes].sort(() => simRng()() - 0.5).slice(0, lines)) items[id] = 6 + Math.floor(simRng()() * 3) * 3;
   return { vendorId: v.id, items, expiresAt: minutes + VENDOR_WAIT };
 }
 

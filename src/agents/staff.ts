@@ -12,6 +12,7 @@ import { orderTotal, SUPPLIERS, supplierSells } from '../data/suppliers';
 import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { Walker, RIDE_SPEED } from './walker';
+import { simRng } from '../core/rand';
 
 const SIDEWALK_Z = 2.2;
 const EDGE_X = 38;
@@ -229,7 +230,7 @@ export class StaffManager {
       return;
     }
     const door = this.shop.doorOutside;
-    const w = new Worker(st, door.x + (Math.random() < 0.5 ? -EDGE_X : EDGE_X) * 0.3);
+    const w = new Worker(st, door.x + (simRng()() < 0.5 ? -EDGE_X : EDGE_X) * 0.3);
     this.workers.set(st.id, w);
     this.scene.add(w.mesh);
     this.walk(w, door);
@@ -372,7 +373,7 @@ export class StaffManager {
     const free = stations.find((f) => !taken.has(`stove:${f.uid}`));
     const post = free ?? stations[0];
     w.post = `stove:${post.uid}`;
-    const spot = this.shop.spotFor(post, (Math.random() - 0.5) * 0.4);
+    const spot = this.shop.spotFor(post, (simRng()() - 0.5) * 0.4);
     if (w.position.distanceTo(spot) > 0.3) this.walk(w, spot);
     else if (useGame.getState().cookJobs.length) w.pause = Math.max(gameDt, 2);
     else w.pause = Math.max(gameDt, 4);
@@ -385,8 +386,8 @@ export class StaffManager {
       w.pause = Math.max(gameDt, 4);
       return;
     }
-    const spots = s.furniture.map((f) => this.shop.spotFor(f, (Math.random() - 0.5) * 0.8));
-    this.walk(w, spots.length ? spots[Math.floor(Math.random() * spots.length)] : this.shop.doorInside);
+    const spots = s.furniture.map((f) => this.shop.spotFor(f, (simRng()() - 0.5) * 0.8));
+    this.walk(w, spots.length ? spots[Math.floor(simRng()() * spots.length)] : this.shop.doorInside);
     w.plan.push(() => (w.pause = 2.5 / workSpeed(w.staff)));
     w.plan.push(() => {
       useGame.getState().addDirt(-DIRT_PER_SWEEP * workSpeed(w.staff));
@@ -476,7 +477,7 @@ export class StaffManager {
       ...this.shop.counters().map((ct) => ct.center.clone().add(new THREE.Vector3(1, 0, 0.7))),
       this.shop.doorInside.clone().add(new THREE.Vector3(0.8, 0, -0.5)),
     ];
-    this.walk(w, spots[Math.floor(Math.random() * spots.length)]);
+    this.walk(w, spots[Math.floor(simRng()() * spots.length)]);
     w.plan.push(() => (w.pause = 3 / workSpeed(w.staff)));
     w.plan.push(() => {
       if (useGame.getState().waiting > 0) w.say('💬', 2);
