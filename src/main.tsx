@@ -710,6 +710,8 @@ function renderFrame() {
   world.streetLamps.update(lamp);
   // Đèn lồng cửa tiệm (gđ177): bật sáng ấm chập tối, cùng giờ với đèn đường
   world.storefront.update(lamp);
+  // Đèn ấm của riêng người chơi (gđ185): hiên nhà + cổng trại sáng ấm cùng giờ
+  world.compoundWarm.update(lamp);
   // Biển mở/đóng cửa trước tiệm (gđ179): tấm trạng thái đổi màu theo tiệm đang mở/đóng, đung nhẹ khi mở
   world.openSign.update(g.shopOpen, performance.now() / 1000);
   // Đèn báo "khách đang đợi" cạnh cửa (gđ180): sáng ấm khi có khách chờ quầy và tiệm đang mở

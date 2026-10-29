@@ -18,6 +18,7 @@ import { loadKitProps } from './kitProps';
 import { createStorefrontLantern } from './storefrontLantern';
 import { createOpenSign } from './storefrontSign';
 import { createWaitLamp } from './storefrontWaitLamp';
+import { createCompoundWarm } from './compoundWarm';
 
 /** Các điểm trong một phòng ngủ (toạ độ thế giới). */
 export interface RoomSpots { bed: THREE.Vector3; wake: THREE.Vector3; nightstand: THREE.Vector3 }
@@ -65,6 +66,8 @@ export interface World {
   openSign: ReturnType<typeof createOpenSign>;
   /** Đèn báo "khách đang đợi" cạnh cửa (gđ180): chỉ hình ảnh, sáng ấm khi waiting>0 — không chặn lưới. */
   waitLamp: ReturnType<typeof createWaitLamp>;
+  /** Đèn ấm chập tối của riêng người chơi (gđ185): hiên nhà + cổng trại — chỉ nguồn sáng, không chặn lưới. */
+  compoundWarm: ReturnType<typeof createCompoundWarm>;
 }
 
 /** Thế giới ban đầu: mặt đất, con đường, nhà riêng và tiệm tạp hóa nhỏ. */
@@ -211,6 +214,9 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   // GLB Blender tải lười, có cái xác thủ tục dự phòng nên đèn luôn có hình.
   const storefront = createStorefrontLantern();
   scene.add(storefront.group);
+  // Đèn ấm của riêng người chơi (gđ185 "Cơ ngơi lên đèn"): hiên nhà + cổng trại sáng ấm chập tối.
+  // Đăng ký vào quỹ ánh sáng (lightBudget) nên không cần scene.add — chỉ cần giữ api để bật theo giờ.
+  const compoundWarm = createCompoundWarm();
   const openSign = createOpenSign();
   scene.add(openSign.group);
   const waitLamp = createWaitLamp();
@@ -315,6 +321,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
     storefront,
     openSign,
     waitLamp,
+    compoundWarm,
   };
 }
 

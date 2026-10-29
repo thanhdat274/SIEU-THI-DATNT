@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1812/1812 test pass (162 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ184.
+- **1816/1816 test pass (162 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ185.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–184 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
+### Giai đoạn gần đây · GĐ177–185 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
 
 - **GĐ177** 🏮 Đầu ngõ lên đèn: đèn lồng cột dựng Blender (`blender_lantern.py`) bật sáng ấm chập tối (lamp 17h–5h30, lightBudget) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md.
 - **GĐ178** 🎨 Gộp họ xanh dương guide/chuỗi/biểu đồ về info `#3498db` (16 chỗ) — chi tiết: archive trên.
@@ -35,6 +35,7 @@
 - **GĐ182** 🧺 Chợ phiên thành nhịp gameplay: `marketTrafficFactor(day)` ×1.15 nhân vào `rush` + toast sáng phiên (`lastMarketDay` guard) — chi tiết: archive trên.
 - **GĐ183** 🧹 Đóng nợ UI cuối: hết thẻ "callout vẽ tay" → `Callout` chuẩn; dọn teal `#16a085` lệch bảng (GardenPanel/BranchPanel/StoragePanel) — chi tiết: archive trên.
 - **GĐ184** 🚧 "Sửa đường lên hiện trường": sự kiện market `roadworks` (đã giảm lượt khách ×0.8 trong `dayEffects`) giờ hiện ra bằng hình — hôm nào đang sửa đường, dựng rào chắn công trình ở mép vỉa hè trước mặt tiền. Kit prop `rao_chan` mới (vạch đỏ/kem, `build-kit-assets.ts` + nén Draco Blender `--no-bake`, 8.6KB) ở 2 chỗ [−2.2,2.6] & [4.6,2.5]; `KIT_ROADWORK_PLACEMENTS` + `roadworkGroup` + `kit.setRoadwork(on)` (mẫu GĐ181). Helper thuần đọc `isRoadworks(seed,day,level)` = `dayEffects().market.kind==='roadworks'` cùng chân lý với sim, không đổi SAVE_VERSION/kinh tế. main.tsx đổi cảnh đúng 1 lần theo ngày (guard `lastRoadwork`). `roadwork.ts`, `kitProps.ts`, `main.tsx`, test +11; tsc+build sạch, full 1812/1812; QA @5173: setRoadwork on/off bật/tắt 2 rào đúng toạ độ, day1 mặc định ẩn. (Miền trong grid cứng hóa: anchor seed 12345 ngày 358/359 true, 360 false.)
+- **GĐ185** 🏠 "Cơ ngơi lên đèn": lan toả đèn ấm chập tối từ mặt tiền (GĐ177) tới của riêng người chơi — hiên nhà (ngay cửa ra vào) + cổng trại (gần giếng) cùng bật lúc 17h–5h30 theo công thức `lamp` cũ. `compoundWarm.ts`: `COMPOUND_WARM_PLACES` (2 điểm) + `createCompoundWarm()` đăng ký đèn ấm 0xffb35c vào quỹ ánh sáng (lightBudget) — không thêm sim/save/khối, chỉ nguồn sáng nên không chặn lưới; `warmGlow(minutes)` cùng nhịp đèn đường/lồng. world.ts + main.tsx gọi `world.compoundWarm.update(lamp)` cùng chỗ `storefront.update(lamp)`. `compoundWarm.ts`, `world.ts`, `main.tsx`, test 4; tsc+build sạch; QA @5173: update(0)→[0,0] trưa, update(1)→[16,16] chập tối (2 đèn đăng ký đúng).
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -60,10 +61,11 @@
 
 ## Cần theo dõi / nợ mở
 
-- GĐ177: đèn lồng bật theo `lamp` (17h–5h30) chung toàn cảnh — xác nhận trên save thật vào khung chập tối không chói/gắt (nếu cần, bó thêm theo mưa/mây đậm); cũng nên mở rộng "cảnh ấm" sang bếp/trai khi làm depth tiếp.
+- GĐ177: đèn lồng bật theo `lamp` (17h–5h30) chung toàn cảnh — xác nhận trên save thật vào khung chập tối không chói/gắt (nếu cần, bó thêm theo mưa/mây đậm). "Cảnh ấm" đã lan tới hiên nhà + cổng trại (GĐ185); nếu muốn sâu hơn nữa mới tính bếp/trai (chưa có khối 3D riêng).
 - GĐ179: biển mở/đóng cửa kiểm trên save thật khi mở cửa 8h (biển chuyển xanh + đung nhẹ) và đóng 22h30 (đỏ) — QA live trên tab foreground (tab IAB nền bị dừng rAF, không soi được loop). Cân nhắc đung đưa chỉ khi `speed>0` để đỡ nhiễu khi tạm dừng.
 - GĐ180: đèn báo khách đợi — xác nhận trải nghiệm thật (đông khách thì đèn rõ, vắng thì tắt; không nhiễu mắt khi đứng quầy). Ý tưởng nối: nhấp nhô đèn theo nhịp "sắp mất khách" (waiting lớn + lâu) nếu cần tín hiệu mạnh hơn.
 - GĐ184: rào chắn sửa đường — xác nhận trên save thật đúng ngày roadworks (seed 12345 ngày 357–359) rào dựng + hôm sau tự gỡ; QA live trên tab foreground (IAB nền dừng rAF nên loop không chạy lúc QA — đồng cảnh với GĐ179–181, verify cấu trúc qua setRoadwork trực tiếp).
+- GĐ185: đèn ấm hiên nhà + cổng trại — xác nhận trải nghiệm thật chập tối (17h–5h30) đứng gần hiên/cổng trại thấy vũng sáng ấm, ban ngày tắt; và không chói khi đứng quầy (2 đèn ở chỗ riêng, xa mặt tiền).
 - GĐ171: scale mục tiêu vòng ×(1+0.5(N−1))/×(1+0.3(N−1)) — cần save thật vòng 2+ để xác nhận trad vẫn căng nhưng với tới; nếu vẫn quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi.
 - QA trực quan GĐ155–158 xong trên save máy cấp 46 ngày 1; chưa QA mắt được trạng thái CÓ dữ liệu của Bỏ lỡ/Thú cưng/hụi/khủng hoảng (cần play vài ngày — bọc bởi test). GĐ159 các dòng mới ẩn ngày 1 — QA mắt khi có save có doanh thu.
@@ -260,3 +262,4 @@
 - GĐ182 — 🧺 Chợ phiên thành nhịp gameplay: đông khách ×1.15 ngày phiên + toast nhắc (không đổi balance nền)
 - GĐ183 — 🧹 Đóng nợ UI cuối: mọi thẻ "callout vẽ tay" chuyển sang Callout chuẩn, dọn màu lệch bảng
 - GĐ184 — 🚧 Nâng hiệu ứng sửa đường lên 3D: rào chắn công trình dựng đúng ngày roadworks (ít khách đi ngang)
+- GĐ185 — 🏠 Cơ ngơi lên đèn: đèn ấm chập tối lan tới hiên nhà + cổng trại (nối GĐ177 mặt tiền)
