@@ -21,25 +21,21 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **2006/2006 test pass (184 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ214.
+- **2010/2010 test pass (185 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ215.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–214 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md · GĐ184–209: docs/progress-archive/PROGRESS-GD181-203.md + PROGRESS-GD204-212.md)
+### Giai đoạn gần đây · GĐ177–215 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md · GĐ184–209: docs/progress-archive/PROGRESS-GD181-203.md + PROGRESS-GD204-212.md)
 
 - **GĐ177–198** 🏮→📖 (đèn lồng, biển mở/đóng, đèn chờ, chợ phiên, đóng nợ UI, sửa đường, đèn cơ ngơi, quán nước lên đèn + staff value + thiếu đồ uống → nạp kho, hồi vốn ca đêm/quán nước/chi nhánh, băng ghế, chợ/kệ ngồi, cờ lễ hội, đọc con hẻm) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md + PROGRESS-GD181-203.md.
-- **GĐ199** 🔗 Rốn kho chung: `supplyChainOverview` nối 3 điểm bán + điểm NGHẼN (BẮT ĐẦU trục multi-shop).
-- **GĐ200** ⏳ Kho chung nuôi quán nước mấy ngày? `teahouseKhoDays` chân trời thời gian deterministic.
-- **GĐ201** 🏪 Nạp đúng thứ chi nhánh: `branchThinShelves` kệ trống theo headroom (trục multi-shop sâu).
-- **GĐ202** 🧾 Phiếu nạp kho: `supplyRestockManifest` đổi gợi ý thành số đơn vị chở/nhập cụ thể.
-- **GĐ203** 🎯 Nạp kho một chạm: mỗi dòng phiếu nhảy đúng bảng xử lý.
-- **GĐ204–209** 🔗 Mạch nạp/chở MẠNG LƯỚI: nối phiếu OrderPanel → điền kệ chi nhánh vào giỏ → auto chuyển kho (điều kiện thứ 3 vòng xe + chỉnh ngưỡng/hẹn giờ) → soi đồ uống quán nước còn mấy đêm → nạp đồ uống một-chạm. Chi tiết: docs/progress-archive/PROGRESS-GD204-212.md.
+- **GĐ199–209** 🔗 Trục multi-shop supply chain toàn mạch: rốn kho chung + chân trời ngày → nạp đúng chi nhánh → phiếu nạp → nhảy một chạm → nối OrderPanel → điền kệ chi nhánh vào giỏ → auto chuyển kho (chỉnh ngưỡng/hẹn giờ) → soi đồ uống quán nước → nạp đồ uống. Chi tiết: docs/progress-archive/PROGRESS-GD204-212.md.
 - **GĐ210** ✅ QA TOÀN DIỆN + phủ test (mỗi 10 GĐ): `test:coverage` → thêm 21 test — reputation (+10) · wholesale (+5) · adviceMore (+9). Coverage: statements 42.9% / branches 86% / functions 68.9% (phần thấp còn lại là render/world/audio 3D). Vòng ngày nhiều cấp do simSmoke/simGolden/economySim bao; UI responsive audit trước. tsc+build sạch; full suite 1964/1964 (179 files).
 - **GĐ211** 🛺 "Bán sỉ có đáng không?" — ống soi QUYẾT ĐỊNH buổi sáng: trước Hud chỉ chìa tổng tiền sỉ; nay phán TỪNG MÓN nên nhả/giữ (đọc thuần). Móc nối bán sỉ × độ tươi lô: giá sỉ `wholesaleUnit` (≥ nhập+5%, thường niêm yết ×85%) so với giá lẻ SAU giảm cận hạn `markdown` + độ ứ `nearestLife`: cận hạn ≤2 ngày → bán ngay · giá sỉ ≥ giá lẻ giảm cận hạn → nhả gọn · kho ứ ≥3×đơn → giải phóng chỗ · thiếu hàng → đừng nhận · còn tươi bán chạy → giữ lẻ. `wholesale.ts` (+wholesaleUnit nguồn chung), `wholesaleValue.ts` (mới), `Hud.tsx`, `hud.css`, (+9). tsc+build sạch; full suite 1992/1992 (181 files).
 
 - **GĐ212** 💰 "Cận hạn đêm nay đáng bao nhiêu" — hệ quả TIỀN của cảnh báo GĐ43: trước chỉ liệt kê món + số lượng "sắp hết hạn"; giờ biết bằng tiền đang rủi ro mất nếu không xử lý. Helper THUẦN `spoilRiskValue` (tái dùng `nearExpiryItems` + `markdown`) quy giá trị lô cận hạn ở giá lẻ SAU giảm cận hạn × số lượng, tách riêng "hỏng đêm nay" (life=1) và tổng ở ngưỡng. Hud ExpiryAlert thêm dòng "≈ Xđ hỏng đêm nay · tổng Yđ — bày bán/hạ giá/bán sỉ kịp" (vòng tay nối với GĐ211 bán sỉ). `spoilRisk.ts` (mới), `Hud.tsx`, `hud.css`, (+5 test). tsc+build sạch; full suite 1997/1997 (182 files).
 - **GĐ213** 🪙 "Kho đang chôn bao nhiêu vốn?" — lượng tiền ĐÓNG BĂNG trong tồn kho: trước kho chỉ báo chỗ + "sắp hết"; giờ biết bằng TIỀN vốn chôn theo giá nhập (buy × qty) và trị giá bán lẻ hiện tại, gộp tổng + top món chôn vốn. StoragePanel thêm thẻ Callout "Kho chôn Xđ · trị giá lẻ Yđ", cảnh báo cam khi trị giá kho vượt cả tiền mặt (ứ vốn → xả sỉ/bày bán — nối GĐ211). `stockCapital.ts` (mới), `StoragePanel.tsx`, (+4 test). tsc+build sạch; full suite 2001/2001 (183 files).
 - **GĐ214** 🪙 "Tối nay có 'đáy' không?" — bảng cân đối THANH KHOẢN khi có nợ (capstone trục tiền/vốn GĐ211–213): tài sản lỏng = tiền mặt + trị giá bán hết kho (tái dùng `stockCapital`) đối chiếu nợ gốc vay; `solvency` trả cover/margin + dòng tiền ra hằng ngày ngoài quầy (lãi vay `loanInterest` + góp hụi nếu đang góp). Sổ đầu ngày thêm thẻ Callout "Cân đối: tiền + bán hết kho = Xđ · nợ gốc Yđ" (đỏ khi thiếu margin → kíp bơm doanh thu/xả sỉ — nối GĐ211). `solvency.ts` (mới), `ReportPanels.tsx`, (+5 test). tsc+build sạch; full suite 2006/2006 (184 files).
+- **GĐ215** 📞 "Đơn gọi nhà lời ròng bao nhiêu?" — khi nghe máy chỉ thấy GIÁ (gross); nay trừ đúng chi phí → lời ròng. `phoneNetProfit` (`phoneCostUnit`: đơn thường/VIP = buy × q; đơn NẤU = số mẻ `ceil(qty/outputQty)` × tổng nguyên liệu bếp) + tỉ lệ lời; Hud báo "lời ròng ~Xđ (đã trừ chi phí…)" + đỏ khi đơn lỗ. Móc nối đơn gọi điện × giá vốn/bếp (mẫu GĐ211–214). `phoneNet.ts` (mới), `Hud.tsx`, (+4 test). tsc+build sạch; full suite 2010/2010 (185 files).
 
 - > Chi tiết đầy đủ GĐ184–GĐ203: docs/progress-archive/PROGRESS-GD181-203.md.
 
@@ -288,3 +284,4 @@
 - GĐ212 — 💰 Cận hạn đáng bao nhiêu? tiền rủi ro hỏng đêm nay (giá trị lô cận hạn sau giảm giá)
 - GĐ213 — 🪙 Kho chôn bao nhiêu vốn? vốn đóng băng theo giá nhập + trị giá bán lẻ
 - GĐ214 — 🪙 Tối nay có đáy không? cân đối thanh khoản (tiền + bán hết kho) vs nợ gốc vay
+- GĐ215 — 📞 Đơn gọi nhà lời ròng bao nhiêu? trừ giá vốn (đơn nấu theo số mẻ nguyên liệu)

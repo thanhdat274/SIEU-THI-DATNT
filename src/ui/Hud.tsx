@@ -37,6 +37,7 @@ import { leaveRoom } from '../net/coop';
 import { logoutGoogle } from '../net/firebase';
 import { useSession } from '../net/session';
 import { describeItems, houseById, phoneOrderValue } from '../data/phoneOrders';
+import { phoneNetProfit } from '../data/phoneNet';
 import { vendorById, wholesaleTotal } from '../data/wholesale';
 import { wholesaleAdvice } from '../data/wholesaleValue';
 import { spoilRiskValue } from '../data/spoilRisk';
@@ -1140,11 +1141,13 @@ function PhoneAlerts() {
           const short = shortCost > 0;
           const cook = !!o.premium && !o.vip;
           const vip = !!o.vip;
+          const net = phoneNetProfit(o, priceOf);
           return (
             <div key={o.id} className="hud-alert phone ringing">
               {vip ? '👑' : cook ? '🍳' : '📞'} <b>{o.caller}</b> ({house}, {o.reason}): {describeItems(o.items)} · {formatMoney(phoneOrderValue(o, priceOf))}
               {vip && <b> (đơn VIP, giá hời ×{o.premium})</b>}
               {cook && <b> (đơn nấu, giá hời ×{o.premium})</b>}
+              <small className="hud-wholesale-tip"> · lời ròng ~{formatMoney(net.net)} (đã trừ chi phí {cook ? 'nguyên liệu bếp' : 'giá mua nhập'}){net.net < 0 ? ' — đơn này lỗ, cân nhắc!' : ''}</small>
               <small> · còn {Math.max(0, Math.ceil(o.answerBy - minutes))} phút để nghe máy</small>
               <span className="hud-alert-actions">
                 {short ? (
