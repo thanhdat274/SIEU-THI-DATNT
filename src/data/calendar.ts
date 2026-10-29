@@ -166,9 +166,12 @@ export function marketEventNear(seed: number, day: number, level: number): Marke
   if (roll(seed, block, 3) > 0.5) return undefined;
   const from = block * BLOCK + 2;
   const kinds: MarketKind[] = ['shortage', 'glut', 'viral', 'roadworks'];
-  const kind = kinds[Math.floor(roll(seed, block, 5) * kinds.length)];
+  // GĐ269 — salt chọn kind/sản phẩm biến thiên theo khối: salt cố định khiến roll CHỌN tương quan
+  // roll GATE (cùng cặp seed, block) — đo thực tế: viral/roadworks ~115, shortage/glut ~12 (khan hiếm
+  // 10×); hai loại thú vị nhất về kinh tế gần như không bao giờ ra. Salt theo khối → đều nhau.
+  const kind = kinds[Math.floor(roll(seed, block, 1009 + block * 7) * kinds.length)];
   const pool = PRODUCTS.filter((p) => p.unlock <= level);
-  const productId = kind === 'roadworks' ? undefined : pool[Math.floor(roll(seed, block, 11) * pool.length)].id;
+  const productId = kind === 'roadworks' ? undefined : pool[Math.floor(roll(seed, block, 2003 + block * 11) * pool.length)].id;
   const text = MARKET_TEXT[kind];
   return { kind, icon: text.icon, label: text.label(productId ? productById(productId).name : ''), productId, from, to: from + 2 };
 }

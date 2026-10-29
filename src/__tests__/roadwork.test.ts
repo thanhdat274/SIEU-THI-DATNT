@@ -25,13 +25,13 @@ describe('GĐ184 — isRoadworks (sự kiện market roadworks)', () => {
     }
   });
 
-  it('ngày nằm trong cửa sổ 3 ngày của sự kiện là true (anchor seed 12345)', () => {
-    expect(isRoadworks(12345, 358, 1)).toBe(true);
-    expect(isRoadworks(12345, 359, 1)).toBe(true);
+  it('ngày nằm trong cửa sổ 3 ngày của sự kiện là true (anchor seed 12345 — re-anchor GĐ269 khi salt chọn kind đổi để phân phối đều)', () => {
+    expect(isRoadworks(12345, 47, 1)).toBe(true);
+    expect(isRoadworks(12345, 48, 1)).toBe(true);
   });
 
   it('ngày ngoài cửa sổ là false (anchor seed 12345)', () => {
-    expect(isRoadworks(12345, 360, 1)).toBe(false);
+    expect(isRoadworks(12345, 50, 1)).toBe(false);
     expect(isRoadworks(12345, 2, 1)).toBe(false);
   });
 

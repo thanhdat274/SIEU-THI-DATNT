@@ -38,7 +38,9 @@
 
 - **GĐ267 đơn cuối tuần + sửa bug roll chọn đơn** 📚: (1) `weekendOnly` — "Nhóm học cuối tuần" chỉ mời khi NGÀY CHÓT rơi Thứ 7/CN. (2) Bug cũ: roll CHỌN và roll MỜI dùng chung (seed, day) → tương quan, phân phối đơn lệch theo vị trí bảng (tat_nien ×6, 8 đơn = 0/8340 lượt) → salt chọn đơn theo ngày, mọi đơn cơ hội đều. 4 test; 2224 test xanh.
 
-- **GĐ268 phản hồi cuối tuần** 🍬: mảnh PHẢN HỒI cuối của nhịp GĐ254–267 — tổng kết Thứ 7/CN có thẻ "🍬 Cuối tuần: bán N món ăn vặt (~Xđ · Y% doanh thu)" đối chiếu đúng mục tiêu quest (export `weekendQuestTarget` dùng chung); `weekendRecap` thuần đọc. 2 test; 2226 test xanh; QA @5173 đúng, 0 lỗi console.
+- **GĐ268 phản hồi cuối tuần** 🍬: tổng kết Thứ 7/CN có thẻ "🍬 Cuối tuần: bán N món ăn vặt (~Xđ · Y%)" đối chiếu `weekendQuestTarget` (export dùng chung); `weekendRecap` thuần đọc. 2 test; QA @5173 đúng.
+
+- **GĐ269 phân phối sự kiện đều** 🎲: cùng mẫu bug GĐ267 ở 2 hệ — biến động thị trường (viral/roadworks ~115 vs shortage/glut ~12: hai loại thú vị nhất về kinh tế gần như không bao giờ ra) và sự kiện bất ngờ (lệch ~2.7×) → salt CHỌN biến thiên theo khối/ngày (marketEventNear, eventOn); product bị khan hiếm cũng không dồn vài món. 3 test fairness (sweep tất định); re-anchor test roadwork GĐ184 (ý đồ giữ nguyên); 2229 test xanh (golden sim chấp nhận); boot @5173 sạch.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -317,3 +319,4 @@
 - GĐ266 — 🍬 Nhập hàng biết cuối tuần (suggestQty ×1.25 nhóm ăn vặt khi lô bán Thứ 7/CN + badge)
 - GĐ267 — 📚 Đơn weekendOnly (hoc_nhom chốt Thứ 7/CN) + sửa roll chọn đơn tương quan (phân phối đơn đều)
 - GĐ268 — 🍬 Phản hồi cuối tuần trong tổng kết ngày (weekendRecap đối chiếu weekendQuestTarget)
+- GĐ269 — 🎲 Phân phối sự kiện đều (salt chọn biến thiên: thị trường 4 loại đều, sự kiện bớt lệch)
