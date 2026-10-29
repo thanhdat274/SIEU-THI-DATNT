@@ -64,3 +64,36 @@ export function staffIdleStats(snapshot: Record<number, StaffDayStat>, staff: St
     : null;
   return { rows, mostIdle, teamIdlePct };
 }
+
+// ───── GĐ248: tổng kết đội cuối ngày — phân biệt "dư người" với "lệch ca" ─────
+// Chỉ soi % rảnh chưa đủ để quyết: đội rảnh nhiều NHƯNG vẫn mất khách vì chờ quầy (GĐ120) là bài toán
+// XẾP CA (dồn người vào giờ đông), không phải bài toán BỚT NGƯỜI. Recap gộp hai tín hiệu để tổng kết
+// cuối ngày nói đúng việc cần làm. THUẦN ĐỌC — dữ liệu staffDay (transient) + waitLoss có sẵn.
+
+export type StaffDayRecapVerdict = 'nodata' | 'ok' | 'idle_heavy' | 'shift_mismatch';
+
+export interface StaffDayRecap {
+  verdict: StaffDayRecapVerdict;
+  mostIdle: StaffIdleRow | null;
+  teamIdlePct: number | null;
+}
+
+/** Tổng kết đội của ngày vừa kết thúc: nodata (không ai vào ca) · ok (không ai rảnh bất thường) ·
+ *  idle_heavy (có người rảnh phần lớn ca, không mất khách vì chờ → dư người/vai) ·
+ *  shift_mismatch (rảnh nhiều mà vẫn mất khách vì chờ → lệch ca, dồn ca vào giờ đông). */
+export function staffDayRecap(
+  snapshot: Record<number, StaffDayStat>,
+  staff: Staff[],
+  waitLostCustomers: number,
+): StaffDayRecap {
+  const s = staffIdleStats(snapshot, staff);
+  if (!s.rows.length || !s.mostIdle) return { verdict: 'nodata', mostIdle: null, teamIdlePct: null };
+  if (s.mostIdle.verdict !== 'idle_heavy') {
+    return { verdict: 'ok', mostIdle: s.mostIdle, teamIdlePct: s.teamIdlePct };
+  }
+  return {
+    verdict: waitLostCustomers > 0 ? 'shift_mismatch' : 'idle_heavy',
+    mostIdle: s.mostIdle,
+    teamIdlePct: s.teamIdlePct,
+  };
+}

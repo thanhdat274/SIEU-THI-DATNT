@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { noteStaffTime, staffDaySnapshot, resetStaffDay } from '../core/slices/staffDay';
-import { staffIdleStats, idleVerdict, IDLE_HEAVY_PCT, IDLE_BUSY_PCT } from '../data/staffIdle';
+import { staffIdleStats, staffDayRecap, idleVerdict, IDLE_HEAVY_PCT, IDLE_BUSY_PCT } from '../data/staffIdle';
 import type { Staff } from '../data/staff';
 
 // GĐ246: soi nhân viên rảnh — slice transient (đếm runtime) + helper thuần đọc.
@@ -80,5 +80,40 @@ describe('staffIdleStats — phân loại rảnh/bận', () => {
     expect(idleVerdict(IDLE_BUSY_PCT)).toBe('balanced');
     expect(idleVerdict(IDLE_BUSY_PCT - 1)).toBe('busy');
     expect(idleVerdict(0)).toBe('busy');
+  });
+});
+
+describe('staffDayRecap — tổng kết đội cuối ngày (GĐ248)', () => {
+  const idlePerson = () => {
+    resetStaffDay();
+    for (let i = 0; i < 7; i++) noteStaffTime(1, 60, true); // 7 phút rảnh
+    noteStaffTime(1, 60, false); // 1 phút làm
+  };
+
+  it('không ai vào ca → nodata', () => {
+    resetStaffDay();
+    expect(staffDayRecap(staffDaySnapshot(), [st(1)], 0).verdict).toBe('nodata');
+  });
+
+  it('có người rảnh ≥65% ca, không mất khách vì chờ → idle_heavy (dư người/vai)', () => {
+    idlePerson();
+    const r = staffDayRecap(staffDaySnapshot(), [st(1)], 0);
+    expect(r.verdict).toBe('idle_heavy');
+    expect(r.mostIdle!.id).toBe(1);
+    expect(r.mostIdle!.idlePct).toBe(88); // round(7/8 × 100)
+  });
+
+  it('rảnh ≥65% ca NHƯNG vẫn mất khách vì chờ → shift_mismatch (lệch ca, không phải bớt người)', () => {
+    idlePerson();
+    const r = staffDayRecap(staffDaySnapshot(), [st(1)], 4);
+    expect(r.verdict).toBe('shift_mismatch');
+    expect(r.teamIdlePct).toBe(88);
+  });
+
+  it('đội vừa sức (ai cũng <65% rảnh) → ok, dù hôm đó có mất khách vì chờ', () => {
+    resetStaffDay();
+    for (let i = 0; i < 6; i++) noteStaffTime(1, 60, false); // 6 phút làm
+    noteStaffTime(1, 60, true); // 1 phút rảnh → ~14%
+    expect(staffDayRecap(staffDaySnapshot(), [st(1)], 3).verdict).toBe('ok');
   });
 });

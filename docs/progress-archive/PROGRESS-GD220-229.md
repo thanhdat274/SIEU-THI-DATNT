@@ -261,3 +261,14 @@ hiện tại không bán vào skipped, kèm bonus đón lễ (prepBonus). Lễ �
 (thưởng cần trữ TRƯỚC lễ; lúc lễ thì GĐ245 soi khách/tiền). OrderPanel: Callout accent "⏳ Tết sau N
 ngày — trữ lễ còn thiếu X món" + nút "➕ Trữ lễ vào giỏ" (fillFestivalPrep — điền qua maxFit nên vẫn
 tôn trọng ngân sách chừa lương + chỗ nhà kho; notify kết quả). THUẦN ĐỌC, không đổi kinh tế. (+5 test)
+
+---
+
+**GĐ248 staffDayRecap** — tổng kết đội hôm nay ở chốt ngày, KHÉP VÒNG GĐ246: soi % rảnh đúng lúc
+quyết định xếp ca mai. Helper `staffDayRecap` (data/staffIdle.ts, THUẦN ĐỌC) gộp 2 tín hiệu:
+% rảnh cao nhất đội (staffDay transient) × số khách mất vì chờ quầy (GĐ120 waitLossStats) → 4 phán:
+nodata (không ai vào ca) · ok (không ai rảnh ≥65%) · idle_heavy (rảnh ≥65% + KHÔNG mất khách vì chờ
+→ dư người/vai: bớt ca, 🔀 điều, ngừng tuyển vai đó) · shift_mismatch (rảnh ≥65% nhưng VẪN mất khách
+vì chờ → bài toán XẾP CA chứ không phải thiếu người: dồn ca vào giờ đông, ca vắng cho nghỉ bớt).
+SummaryPanel overview thêm Callout warn ngay dưới thẻ "Mất khách vì chờ" (chỉ hiện 2 phán có việc
+làm; đội vừa sức im lặng cho đỡ ồn) + nút "👥 Bảng nhân viên". (+4 test, bộ staffIdle lên 11)

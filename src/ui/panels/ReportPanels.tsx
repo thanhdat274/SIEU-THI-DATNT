@@ -27,7 +27,8 @@ import { prepItems, prepReadiness, prepBonus, PREP_MIN_QTY } from '../../data/fe
 import { itemHealthList, shelfAttention, shelfCount } from '../../data/analytics';
 import { computeRecords, recordFeedToday } from '../../data/records';
 import { comboDaySnapshot, resetComboDay } from '../../core/slices/comboDay';
-import { resetStaffDay } from '../../core/slices/staffDay';
+import { resetStaffDay, staffDaySnapshot } from '../../core/slices/staffDay';
+import { staffDayRecap } from '../../data/staffIdle';
 import { comboById } from '../../data/combos';
 import { branchMorningPlan } from '../../data/branchMorning';
 import { storageUsed } from '../../core/gameTypes';
@@ -380,6 +381,29 @@ export function SummaryPanel({ day }: { day: number }) {
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                   Khách đứng chờ 😕😤 quá lâu rồi bỏ về. Đứng quầy giờ đông (giờ cao điểm nhất {waitLoss.peakHour !== null ? `${waitLoss.peakHour}h–${waitLoss.peakHour + 1}h` : 'trong hôm nay'}) hoặc thuê thêm thu ngân để không bỏ lỡ.
                 </div>
+              </Callout>
+            );
+          })()}
+          {(() => {
+            // GĐ248: tổng kết đội hôm nay — soi % rảnh (GĐ246) đúng lúc chốt ngày, khi quyết định
+            // xếp ca mai. Phân biệt "dư người" với "lệch ca" bằng tín hiệu mất khách vì chờ (GĐ120).
+            // Chỉ lên thẻ khi có người rảnh bất thường; đội vừa sức thì khỏi ồn.
+            const recap = staffDayRecap(staffDaySnapshot(), staff, waitLoss?.count ?? 0);
+            if (recap.verdict !== 'idle_heavy' && recap.verdict !== 'shift_mismatch') return null;
+            const mi = recap.mostIdle!;
+            return (
+              <Callout tone="warn" style={{ marginTop: 8 }}
+                title={recap.verdict === 'shift_mismatch'
+                  ? <>🧍 Đội lệch ca: rảnh lúc vắng, mất khách lúc đông</>
+                  : <>🧍 {mi.icon} {mi.name} rảnh ~{mi.idlePct}% ca hôm nay</>}>
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                  {recap.verdict === 'shift_mismatch'
+                    ? `${mi.name} rảnh ~${mi.idlePct}% ca (đứng không ~${mi.idleMin}′) nhưng vẫn mất ${waitLoss?.count} khách vì chờ quầy — bài toán xếp ca chứ không phải thiếu người: dồn ca vào giờ đông, ca vắng cho nghỉ bớt.`
+                    : `Đứng không ~${mi.idleMin}′ trên ~${mi.workMin + mi.idleMin}′ có mặt. Mai xem lại vai này: bớt một ca, 🔀 điều sang tiệm kia hoặc không tuyển thêm vai tương tự.`}
+                </div>
+                <button style={{ ...styles.btn, fontSize: 11, marginTop: 6, padding: '2px 8px' }} onClick={() => openPanel({ type: 'staff' })}>
+                  👥 Bảng nhân viên
+                </button>
               </Callout>
             );
           })()}
