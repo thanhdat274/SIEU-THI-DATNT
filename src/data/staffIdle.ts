@@ -1,5 +1,5 @@
-import type { Staff, StaffRole } from './staff';
-import { ROLES } from './staff';
+import type { Staff, StaffRole, Shift } from './staff';
+import { ROLES, SHIFTS } from './staff';
 import type { StaffDayStat } from '../core/slices/staffDay';
 
 // ───── GĐ246: soi nhân viên rảnh bao nhiêu (THUẦN ĐỌC, dữ liệu transient từ staffDay) ─────
@@ -102,4 +102,82 @@ export function staffDayRecap(
     mostIdle: s.mostIdle,
     teamIdlePct: s.teamIdlePct,
   };
+}
+
+// ───── GĐ253: từ tổng kết đội → xếp lại ca mai MỘT CHẠM ─────
+// Recap GĐ248 nói đúng việc nhưng người chơi phải tự mở bảng nhân viên sửa từng người. Helper
+// này biến tín hiệu rảnh thành gợi ý bằng HÀNH ĐỘNG có sẵn (setShift): ai ca 'full' mà rảnh ≥65%
+// thì bớt còn nửa ca đông khách hơn (tiết kiệm lương); ai nửa ca mà rảnh khi tiệm vẫn mất khách
+// vì chờ thì dồn sang nửa ca có giờ đông (không đổi lương). Không tự tuyển/bớt người, không đụng
+// kinh tế — nút bấm chỉ chạy setShift, người chơi bấm mới đổi; vai hiện diện (GĐ252) và ca đêm
+// là quyết định riêng nên không tự dời.
+
+export interface ShiftFixSuggestion {
+  id: number;
+  name: string;
+  icon: string;
+  /** Ca đề xuất cho mai. */
+  to: Shift;
+  /** Lương/ngày thay đổi (âm = tiết kiệm). */
+  wageDelta: number;
+  /** Nhãn nút, vd "bớt còn ca sáng" / "dồn sang ca chiều". */
+  label: string;
+}
+
+const halfName = (s: Shift) => (s === 'morning' ? 'sáng' : 'chiều');
+
+const sumHalf = (
+  byHour: Record<number, { customers: number }> | undefined,
+  from: number,
+  to: number,
+): number => {
+  let n = 0;
+  if (byHour) for (let h = from; h <= to; h++) n += byHour[h]?.customers ?? 0;
+  return n;
+};
+
+/** Gợi ý xếp lại ca cho người rảnh nặng nhất còn cách sửa rõ ràng; null khi đội vừa sức hoặc
+ *  không có chuyển ca nào đáng. `byHour`/`peakHour` của ngày VỪA KẾT THÚC (từ SummaryPanel). */
+export function staffShiftFix(
+  snapshot: Record<number, StaffDayStat>,
+  staff: Staff[],
+  waitLostCustomers: number,
+  peakHour: number | null,
+  byHour: Record<number, { customers: number; revenue: number }> | undefined,
+): ShiftFixSuggestion | null {
+  const s = staffIdleStats(snapshot, staff);
+  if (!s.rows.length) return null;
+  const morning = sumHalf(byHour, 6, 13);
+  const afternoon = sumHalf(byHour, 14, 22);
+  const busyHalf: Shift = afternoon > morning
+    ? 'afternoon'
+    : morning > afternoon
+      ? 'morning'
+      : peakHour !== null && peakHour >= 14 ? 'afternoon' : 'morning';
+  const cands = [...s.rows].filter((r) => r.verdict === 'idle_heavy').sort((a, b) => b.idlePct - a.idlePct);
+  for (const row of cands) {
+    const st = staff.find((x) => x.id === row.id);
+    if (!st || st.shift === 'night') continue; // ca đêm là quyết định riêng (GĐ65), không tự dời
+    if (st.shift === 'full') {
+      return {
+        id: st.id,
+        name: st.name,
+        icon: row.icon,
+        to: busyHalf,
+        wageDelta: Math.round(st.wage * (SHIFTS[busyHalf].pay - SHIFTS.full.pay)),
+        label: `bớt còn ca ${halfName(busyHalf)}`,
+      };
+    }
+    if (waitLostCustomers > 0 && st.shift !== busyHalf) {
+      return {
+        id: st.id,
+        name: st.name,
+        icon: row.icon,
+        to: busyHalf,
+        wageDelta: 0,
+        label: `dồn sang ca ${halfName(busyHalf)}`,
+      };
+    }
+  }
+  return null;
 }

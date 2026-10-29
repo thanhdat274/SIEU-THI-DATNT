@@ -29,7 +29,7 @@ import { itemHealthList, shelfAttention, shelfCount } from '../../data/analytics
 import { computeRecords, recordFeedToday } from '../../data/records';
 import { comboDaySnapshot, resetComboDay } from '../../core/slices/comboDay';
 import { resetStaffDay, staffDaySnapshot } from '../../core/slices/staffDay';
-import { staffDayRecap } from '../../data/staffIdle';
+import { staffDayRecap, staffShiftFix } from '../../data/staffIdle';
 import { comboById } from '../../data/combos';
 import { branchMorningPlan } from '../../data/branchMorning';
 import { storageUsed } from '../../core/gameTypes';
@@ -66,7 +66,7 @@ export const EMPTY_DAY_STATS: DayStats = { revenue: 0, spent: 0, wages: 0, items
 
 export function SummaryPanel({ day }: { day: number }) {
   const panel = useGame((s) => s.panel);
-  const { level, xp, history, closePanel, openPanel, storage, storageLots, furniture, priceOf, riskTrend, staff, skills, soldEver, comboHitCount, biz, weatherSeed, weather, regulars, totals, repLog, giftStreak, giftLastDay, giftGraceDay, happyHour, analytics, demand: stateDemand, marketClearedDay, marketLast, debts } = useGame();
+  const { level, xp, history, closePanel, openPanel, setShift, notify, storage, storageLots, furniture, priceOf, riskTrend, staff, skills, soldEver, comboHitCount, biz, weatherSeed, weather, regulars, totals, repLog, giftStreak, giftLastDay, giftGraceDay, happyHour, analytics, demand: stateDemand, marketClearedDay, marketLast, debts } = useGame();
   const [tab, setTab] = useState<'overview' | 'items'>('overview');
   if (panel?.type !== 'summary') return null;
   // GĐ126: `day` prop = ngày VỪA KẾT THÚC (N), nhưng endDay đã sang ngày mới trong cùng set().
@@ -402,9 +402,23 @@ export function SummaryPanel({ day }: { day: number }) {
                     ? `${mi.name} rảnh ~${mi.idlePct}% ca (đứng không ~${mi.idleMin}′) nhưng vẫn mất ${waitLoss?.count} khách vì chờ quầy — bài toán xếp ca chứ không phải thiếu người: dồn ca vào giờ đông, ca vắng cho nghỉ bớt.`
                     : `Đứng không ~${mi.idleMin}′ trên ~${mi.workMin + mi.idleMin}′ có mặt. Mai xem lại vai này: bớt một ca, 🔀 điều sang tiệm kia hoặc không tuyển thêm vai tương tự.`}
                 </div>
-                <button style={{ ...styles.btn, fontSize: 11, marginTop: 6, padding: '2px 8px' }} onClick={() => openPanel({ type: 'staff' })}>
-                  👥 Bảng nhân viên
-                </button>
+                <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {(() => {
+                    // GĐ253: biến gợi ý thành hành động — nút chạy setShift có sẵn, người chơi bấm mới đổi.
+                    const fix = staffShiftFix(staffDaySnapshot(), staff, waitLoss?.count ?? 0, waitLoss?.peakHour ?? null, st.byHour);
+                    if (!fix) return null;
+                    const save = fix.wageDelta < 0 ? ` (tiết kiệm ~${formatMoney(-fix.wageDelta)}/ngày)` : '';
+                    return (
+                      <button style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}
+                        onClick={() => { setShift(fix.id, fix.to); notify(`🔀 Đã xếp lại ca mai cho ${fix.name}: ${fix.label}${save}`); }}>
+                        🔀 {fix.name} — {fix.label}{save}
+                      </button>
+                    );
+                  })()}
+                  <button style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }} onClick={() => openPanel({ type: 'staff' })}>
+                    👥 Bảng nhân viên
+                  </button>
+                </div>
               </Callout>
             );
           })()}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { noteStaffTime, staffDaySnapshot, resetStaffDay } from '../core/slices/staffDay';
-import { staffIdleStats, staffDayRecap, idleVerdict, IDLE_HEAVY_PCT, IDLE_BUSY_PCT } from '../data/staffIdle';
+import { staffIdleStats, staffDayRecap, staffShiftFix, idleVerdict, IDLE_HEAVY_PCT, IDLE_BUSY_PCT } from '../data/staffIdle';
 import type { Staff } from '../data/staff';
 
 // GĐ246: soi nhân viên rảnh — slice transient (đếm runtime) + helper thuần đọc.
@@ -116,5 +116,96 @@ describe('staffDayRecap — tổng kết đội cuối ngày (GĐ248)', () => {
     for (let i = 0; i < 6; i++) noteStaffTime(1, 60, false); // 6 phút làm
     noteStaffTime(1, 60, true); // 1 phút rảnh → ~14%
     expect(staffDayRecap(staffDaySnapshot(), [st(1)], 3).verdict).toBe('ok');
+  });
+});
+
+describe('staffShiftFix — gợi ý xếp lại ca mai một chạm (GĐ253)', () => {
+  const idlePerson = (id = 1) => {
+    for (let i = 0; i < 7; i++) noteStaffTime(id, 60, true); // 7 phút rảnh (88%)
+    noteStaffTime(id, 60, false); // 1 phút làm
+  };
+
+  it('không ai vào ca → null', () => {
+    resetStaffDay();
+    expect(staffShiftFix(staffDaySnapshot(), [st(1)], 0, null, undefined)).toBeNull();
+  });
+
+  it('đội vừa sức → null', () => {
+    resetStaffDay();
+    for (let i = 0; i < 6; i++) noteStaffTime(1, 60, false);
+    noteStaffTime(1, 60, true);
+    expect(staffShiftFix(staffDaySnapshot(), [st(1)], 0, null, undefined)).toBeNull();
+  });
+
+  it('ca full rảnh 88% → bớt còn nửa ca ĐÔNG khách hơn, tiết kiệm ~60% lương', () => {
+    resetStaffDay();
+    idlePerson();
+    // chiều đông hơn sáng
+    const byHour: Record<number, { customers: number; revenue: number }> = {};
+    for (let h = 6; h <= 13; h++) byHour[h] = { customers: 2, revenue: 0 };
+    for (let h = 14; h <= 21; h++) byHour[h] = { customers: 5, revenue: 0 };
+    const person = { ...st(1), wage: 200000 };
+    const fix = staffShiftFix(staffDaySnapshot(), [person], 0, null, byHour);
+    expect(fix).not.toBeNull();
+    expect(fix!.id).toBe(1);
+    expect(fix!.to).toBe('afternoon');
+    expect(fix!.label).toBe('bớt còn ca chiều');
+    expect(fix!.wageDelta).toBe(-120000); // 200000 × (1 − 1.6)
+  });
+
+  it('byHour trống → rơi về peakHour (≥14 → ca chiều)', () => {
+    resetStaffDay();
+    idlePerson();
+    const fix = staffShiftFix(staffDaySnapshot(), [st(1)], 0, 16, undefined);
+    expect(fix!.to).toBe('afternoon');
+  });
+
+  it('người ca NỬA rảnh + KHÔNG mất khách vì chờ → không dời (bớt ca chỉ dành cho full)', () => {
+    resetStaffDay();
+    idlePerson();
+    const person = { ...st(1), shift: 'morning' as const };
+    expect(staffShiftFix(staffDaySnapshot(), [person], 0, null, undefined)).toBeNull();
+  });
+
+  it('người ca NỬA rảnh + mất khách vì chờ → dồn sang nửa ca đông, không đổi lương', () => {
+    resetStaffDay();
+    idlePerson();
+    const person = { ...st(1), shift: 'afternoon' as const, wage: 150000 };
+    const fix = staffShiftFix(staffDaySnapshot(), [person], 4, 12, undefined);
+    expect(fix).not.toBeNull();
+    expect(fix!.to).toBe('morning'); // peakHour 12 < 14 → sáng
+    expect(fix!.label).toBe('dồn sang ca sáng');
+    expect(fix!.wageDelta).toBe(0);
+  });
+
+  it('người nửa ca rảnh nhưng ĐANG đứng đúng nửa ca đông → không dời', () => {
+    resetStaffDay();
+    idlePerson();
+    const person = { ...st(1), shift: 'morning' as const };
+    expect(staffShiftFix(staffDaySnapshot(), [person], 4, 12, undefined)).toBeNull();
+  });
+
+  it('ca đêm không tự dời', () => {
+    resetStaffDay();
+    idlePerson();
+    const person = { ...st(1), shift: 'night' as const };
+    expect(staffShiftFix(staffDaySnapshot(), [person], 4, 16, undefined)).toBeNull();
+  });
+
+  it('vai hiện diện (thu ngân) không được đề xuất dời ca', () => {
+    resetStaffDay();
+    idlePerson(2);
+    const person = { ...st(2, 'cashier'), wage: 100000 };
+    expect(staffShiftFix(staffDaySnapshot(), [person], 0, null, undefined)).toBeNull();
+  });
+
+  it('nhiều người rảnh → ưu tiên người rảnh NẶNG nhất', () => {
+    resetStaffDay();
+    for (let i = 0; i < 6; i++) noteStaffTime(1, 60, true); // ~86%
+    noteStaffTime(1, 60, false);
+    for (let i = 0; i < 7; i++) noteStaffTime(2, 60, true); // 88%
+    noteStaffTime(2, 60, false);
+    const fix = staffShiftFix(staffDaySnapshot(), [st(1), st(2)], 0, null, undefined);
+    expect(fix!.id).toBe(2);
   });
 });
