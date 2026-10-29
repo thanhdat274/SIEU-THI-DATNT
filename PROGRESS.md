@@ -43,7 +43,7 @@
 
 - **GĐ273 dự báo tuần mai** 🔮: audit trending + weeklyChallenge (sạch); Nhập hàng tối CN thêm "🔮 Tuần mai: X, Y" (đúng ranh giới khối). 2 test biên; 2233 test xanh.
 
-- **GĐ274 mồi tuần mới tối CN** 🔮: "Mai tiệm có gì" tối Chủ nhật thêm "🔥 Tuần mới khách săn: X, Y — nhập sẵn sáng Thứ 2" (khớp dòng GĐ273 trên Nhập hàng; TeaserPanel mở thêm 'order'). 2 test; 2235 test xanh; QA @5173 đúng.
+- **GĐ274 mồi tuần mới tối CN** 🔮: "Mai tiệm có gì" tối CN thêm "🔥 Tuần mới khách săn: X, Y" (khớp GĐ273; TeaserPanel thêm 'order'). 2 test; 2235 test xanh.
 
 ## Quy ước kỹ thuật cần nhớ
 
