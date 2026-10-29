@@ -30,6 +30,8 @@ import { computeRecords, recordFeedToday } from '../../data/records';
 import { comboDaySnapshot, resetComboDay } from '../../core/slices/comboDay';
 import { resetStaffDay, staffDaySnapshot } from '../../core/slices/staffDay';
 import { staffDayRecap, staffShiftFix } from '../../data/staffIdle';
+import { weekendRecap } from '../../data/weekendRestock';
+import { weekendQuestTarget } from '../../data/quests';
 import { comboById } from '../../data/combos';
 import { branchMorningPlan } from '../../data/branchMorning';
 import { storageUsed } from '../../core/gameTypes';
@@ -381,6 +383,25 @@ export function SummaryPanel({ day }: { day: number }) {
                 title={<>⏳ Mất {waitLoss.count} khách vì chờ quầy quá lâu <span style={{ color }}>(bằng ~{pct}% khách ghé hôm nay)</span></>}>
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                   Khách đứng chờ 😕😤 quá lâu rồi bỏ về. Đứng quầy giờ đông (giờ cao điểm nhất {waitLoss.peakHour !== null ? `${waitLoss.peakHour}h–${waitLoss.peakHour + 1}h` : 'trong hôm nay'}) hoặc thuê thêm thu ngân để không bỏ lỡ.
+                </div>
+              </Callout>
+            );
+          })()}
+          {/* GĐ268: phản hồi cuối ngày CUỐI TUẦN — Thứ 7/CN vừa khép thì gộp nhóm ăn vặt ra
+              số: bán được bao nhiêu, đáng bao nhiêu % doanh thu, đủ mục tiêu "Cuối tuần ăn vặt"
+              chưa. Khép mảnh PHẢN HỒI của nhịp GĐ254–267 (kế hoạch → hành động → phản hồi).
+              Thuần đọc sổ bán của ngày vừa kết thúc, không đổi kinh tế. */}
+          {isWeekend(day) && (() => {
+            const wr = weekendRecap(st, level, weekendQuestTarget(level));
+            const isSunday = (day - 1) % 7 === 6;
+            return (
+              <Callout tone={wr.met ? 'ok' : 'accent'} style={{ marginTop: 8 }}
+                title={<>🍬 Cuối tuần: bán {wr.sold} món ăn vặt <span style={{ opacity: 0.75 }}>(~{formatMoney(wr.value)} · {wr.sharePct}% doanh thu)</span></>}>
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                  {wr.met
+                    ? `Đủ mục tiêu ${wr.target} món của "Cuối tuần ăn vặt" — khách cuối tuần được đã giò.`
+                    : `Mục tiêu ${wr.target} món — còn thiếu ${wr.target - wr.sold} món. Cuối tuần sau nhớ châm kệ từ sáng.${isSunday ? '' : ' Mai Chủ nhật còn một ngày.'}`}
+                  {isSunday && ' Tuần mới bắt đầu Thứ 2 — chúc buôn may bán đắt!'}
                 </div>
               </Callout>
             );

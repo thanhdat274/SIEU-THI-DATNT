@@ -36,7 +36,9 @@
 
 - **GĐ266 nhập hàng biết cuối tuần** 🍬: `weekendRestock.ts` — `suggestQty` ×1.25 cho WEEKEND_SNACKS khi khung bán lô rơi Thứ 7/CN, chỉ khi có cầu thật; badge "🍬 Cuối tuần" trên hàng mặt hàng. 3 test; QA: Thứ 7 có badge, Thứ 4 không.
 
-- **GĐ267 đơn cuối tuần + sửa bug roll chọn đơn** 📚: (1) `weekendOnly` — "Nhóm học cuối tuần" chỉ mời khi NGÀY CHÓT rơi Thứ 7/CN, khớp chuyện kể + nhịp cuối tuần. (2) Bug cũ: roll CHỌN và roll MỜI dùng chung (seed, day) khác salt thấp → tương quan — phân phối đơn lệch theo vị trí bảng (tat_nien ×6 kỳ vọng, 8 đơn câu chuyện = 0/8340 lượt) → salt chọn đơn theo ngày, mọi đơn cơ hội đều. 4 test; 2224 test xanh; boot @5173 sạch.
+- **GĐ267 đơn cuối tuần + sửa bug roll chọn đơn** 📚: (1) `weekendOnly` — "Nhóm học cuối tuần" chỉ mời khi NGÀY CHÓT rơi Thứ 7/CN. (2) Bug cũ: roll CHỌN và roll MỜI dùng chung (seed, day) → tương quan, phân phối đơn lệch theo vị trí bảng (tat_nien ×6, 8 đơn = 0/8340 lượt) → salt chọn đơn theo ngày, mọi đơn cơ hội đều. 4 test; 2224 test xanh.
+
+- **GĐ268 phản hồi cuối tuần** 🍬: mảnh PHẢN HỒI cuối của nhịp GĐ254–267 — tổng kết ngày Thứ 7/CN có thẻ "🍬 Cuối tuần: bán N món ăn vặt (~Xđ · Y% doanh thu)" đối chiếu đúng mục tiêu quest (export `weekendQuestTarget` dùng chung, hết lặp công thức); `weekendRecap` (thuần đọc, `weekendRestock.ts`). 2 test; 2226 test xanh; QA @5173: Thứ 7 có thẻ đủ/sáp mục tiêu đúng tính, ngày thường không hiện, 0 lỗi console.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -314,3 +316,4 @@
 - GĐ265 — 🖼️ Nốt quét thẩm mỹ: sửa 2 dropdown Sổ tay Tiệm cắt chữ @390
 - GĐ266 — 🍬 Nhập hàng biết cuối tuần (suggestQty ×1.25 nhóm ăn vặt khi lô bán Thứ 7/CN + badge)
 - GĐ267 — 📚 Đơn weekendOnly (hoc_nhom chốt Thứ 7/CN) + sửa roll chọn đơn tương quan (phân phối đơn đều)
+- GĐ268 — 🍬 Phản hồi cuối tuần trong tổng kết ngày (weekendRecap đối chiếu weekendQuestTarget)

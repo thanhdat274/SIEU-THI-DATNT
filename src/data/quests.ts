@@ -196,6 +196,10 @@ const RAIN_GEAR_IDS = ['o', 'aomua'];
 const weekendSnacksSold = (stats: DayStats) =>
   WEEKEND_SNACKS.reduce((n, id) => n + (stats.byItem?.[id]?.qty ?? 0), 0);
 
+/** Mục tiêu nhiệm vụ "Cuối tuần ăn vặt" — xuất công khai để tổng kết cuối ngày (GĐ268) đối chiếu
+ *  cùng một thang, không lặp công thức. */
+export const weekendQuestTarget = (lv: number) => scale(6, lv, 0.15);
+
 /** Số món đồ mưa bán được hôm nay (đọc sổ bán theo món). */
 const rainGearSold = (stats: DayStats) =>
   RAIN_GEAR_IDS.reduce((n, id) => n + (stats.byItem?.[id]?.qty ?? 0), 0);
@@ -264,7 +268,7 @@ export function dailyQuests(c: QuestContext): Quest[] {
     { id: 'daily_regulars', icon: '💛', title: 'Đón khách quen', unit: 'lượt', target: Math.min(scale(2, lv, 0.05), Math.max(0, c.regularsComingToday ?? 0)), current: c.regularsServedToday ?? 0, money: scale(70000, lv, 0.25), xp: scale(45, lv, 0.1), show: (c.regularsComingToday ?? 0) > 0, desc: 'Phục vụ {n} khách quen ghé hôm nay — mỗi người chỉ ghé đúng khung giờ của mình' },
     // GĐ254 — "Cuối tuần ăn vặt": biến thể theo THỨ (Thứ 7/CN), cuối pool nên ngày thường
     // xoay vòng GIỮ NGUYÊN, chỉ cuối tuần mới có thêm mục này trong pool.
-    { id: 'daily_weekend', icon: '🍬', title: 'Cuối tuần ăn vặt', unit: 'món', target: scale(6, lv, 0.15), current: weekendSnacksSold(c.stats), money: scale(70000, lv, 0.25), xp: scale(40, lv, 0.1), show: isWeekend(c.day), desc: 'Cuối tuần: bán {n} món ăn vặt (mì gói, bánh kẹo, nước ngọt, bim bim...)' },
+    { id: 'daily_weekend', icon: '🍬', title: 'Cuối tuần ăn vặt', unit: 'món', target: weekendQuestTarget(lv), current: weekendSnacksSold(c.stats), money: scale(70000, lv, 0.25), xp: scale(40, lv, 0.1), show: isWeekend(c.day), desc: 'Cuối tuần: bán {n} món ăn vặt (mì gói, bánh kẹo, nước ngọt, bim bim...)' },
   ].filter((d) => d.show);
   const start = optional.length ? c.day % optional.length : 0;
   const picked = Array.from({ length: Math.min(3, optional.length) }, (_, i) => optional[(start + i) % optional.length]);
