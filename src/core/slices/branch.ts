@@ -7,7 +7,7 @@ import { BLACKOUT_LOSS, BONUS_RELIEF, COVER_WAGE_MUL, DRUNK_BLOCK, DRUNK_DAMAGE,
   coverMul, hasAlcohol, hasPower, pickForGroup, pickNightGroup, powerUpgradeById, type PowerUpgradeId } from '../../data/branches';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
-import { autoHaulDue } from '../../data/branchHaul';
+import { autoHaulDue, autoHaulCfg } from '../../data/branchHaul';
 import { CHIEF_QUIT_MUL, LEAD_FATIGUE_MUL, hasRank } from '../../data/careers';
 import { gainExp } from '../../data/staffTraits';
 import { LICENSE_FINE, isAlcohol, licenseById, licenseStatus } from '../../data/licenses';
@@ -323,7 +323,7 @@ export const branchNewDay = (b: BranchState, day: number): { branch: BranchState
   return { branch: { ...b, staff, fatigue, restDay, event: null, blockedUntil: undefined, hourly: Array(24).fill(0), vendingRevenueToday: 0, groupToday: {}, alcoholToday: 0, deliveryToday: 0, deliveryRevenueToday: 0 }, news };
 };
 
-export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState, 'openBranch' | 'toggleBranch' | 'hireForBranch' | 'fireFromBranch' | 'coverCalloff' | 'bonusBranchStaff' | 'restBranchStaff' | 'setBranchShift' | 'toggleVending' | 'toggleNightDelivery' | 'toggleBranchAutoHaul' | 'buyBranchPower'> => ({
+export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState, 'openBranch' | 'toggleBranch' | 'hireForBranch' | 'fireFromBranch' | 'coverCalloff' | 'bonusBranchStaff' | 'restBranchStaff' | 'setBranchShift' | 'toggleVending' | 'toggleNightDelivery' | 'toggleBranchAutoHaul' | 'setBranchAutoHaul' | 'buyBranchPower'> => ({
   openBranch: () => {
     const s = get();
     if (s.branch) return false;
@@ -430,6 +430,19 @@ export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState,
     s.notify(next
       ? '🚚 Đã bật auto chuyển kho: tự chở hàng sang chi nhánh khi kệ vơi (mỗi chuyến phí xăng 15k).'
       : '🚚 Đã tắt auto chuyển kho — chi nhánh chỉ được chở khi có người giao/xếp/quản lý.');
+  },
+  // GĐ207: chủ chỉnh ngưỡng kệ vơi (%) và khoảng cách giữa các chuyến auto — clamp an toàn, hiển thị hiệu lực.
+  setBranchAutoHaul: (below?: number, every?: number) => {
+    const b = get().branch;
+    if (!b) return;
+    const next: BranchState = { ...b };
+    if (below !== undefined) next.autoHaulBelow = below;
+    if (every !== undefined) next.autoHaulEvery = every;
+    const cfg = autoHaulCfg(next);
+    if (below !== undefined) next.autoHaulBelow = cfg.below;
+    if (every !== undefined) next.autoHaulEvery = cfg.every;
+    set({ branch: next });
+    get().notify(`🚚 Auto chuyển kho: tự chở khi kệ vơi dưới ${Math.round(cfg.below * 100)}% · giãn ${Math.round(cfg.every / 60)}h/chuyến`);
   },
   buyBranchPower: (id: PowerUpgradeId) => {
     const s = get();

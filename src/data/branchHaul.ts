@@ -15,6 +15,24 @@ export const HAUL_REFILL_BELOW = 0.5;
 /** Tối thiểu bao nhiêu phút giữa 2 chuyến auto khi chủ bật (chủ trả phí nên dãn hơn staff 120'). */
 export const HAUL_TRIP_EVERY = 240;
 
+// GĐ207: ngưỡng kệ vơi và khoảng cách giữa các chuyến auto do CHỦ chỉnh được, nhưng clamp trong
+// khoảng an toàn — kệ vơi quá thì vừa tốn phí vừa hết hàng, kệ đầy quá thì chuyến nhỏ; chuyến sát quá
+// thì phí xăng đội lên. Xem `autoHaulCfg` để đọc hiệu lực (branch thiếu → mặc định, nhiều → clamp).
+export const HAUL_BELOW_MIN = 0.3;
+export const HAUL_BELOW_MAX = 0.8;
+export const HAUL_EVERY_MIN = 120;
+export const HAUL_EVERY_MAX = 720;
+
+const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
+
+/** Cấu hình auto chuyển kho đang áp dụng (GĐ207): đọc từ branch, thiếu thì về mặc định, luôn clamp an toàn. */
+export function autoHaulCfg(branch: { autoHaulBelow?: number; autoHaulEvery?: number } | undefined): { below: number; every: number } {
+  return {
+    below: clamp(branch?.autoHaulBelow ?? HAUL_REFILL_BELOW, HAUL_BELOW_MIN, HAUL_BELOW_MAX),
+    every: clamp(branch?.autoHaulEvery ?? HAUL_TRIP_EVERY, HAUL_EVERY_MIN, HAUL_EVERY_MAX),
+  };
+}
+
 export interface HaulMove { id: string; qty: number }
 export interface HaulPlan {
   moves: HaulMove[];
@@ -49,9 +67,10 @@ export function haulTripPlan(branch: { shelf: Record<string, number> } | undefin
  * Có nên nổ chuyến auto chuyển kho lúc `m` này không (thuần): đã bật `autoHaul`, kệ vơi dưới ngưỡng,
  * và đã đủ khoảng cách với chuyến gần nhất. Trả false khi kệ còn đủ — để không tốn phí xăng vô ích.
  */
-export function autoHaulDue(branch: { autoHaul?: boolean; lastTrip: number; shelf: Record<string, number> } | undefined, m: number): boolean {
+export function autoHaulDue(branch: { autoHaul?: boolean; lastTrip: number; shelf: Record<string, number>; autoHaulBelow?: number; autoHaulEvery?: number } | undefined, m: number): boolean {
   if (!branch?.autoHaul) return false;
-  if (shelfTotal(branch.shelf) >= CONVENIENCE.shelfCap * HAUL_REFILL_BELOW) return false;
-  if (m - branch.lastTrip < HAUL_TRIP_EVERY) return false;
+  const { below, every } = autoHaulCfg(branch);
+  if (shelfTotal(branch.shelf) >= CONVENIENCE.shelfCap * below) return false;
+  if (m - branch.lastTrip < every) return false;
   return true;
 }

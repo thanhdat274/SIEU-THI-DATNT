@@ -122,6 +122,7 @@ const LOCAL_ONLY: Record<string, string> = {
   toggleVending: 'lắp/tắt máy bán hàng — công tắc toàn cục',
   toggleNightDelivery: 'bật/tắt nhận đơn app đêm ở chi nhánh — công tắc toàn cục',
   toggleBranchAutoHaul: 'bật/tắt auto chuyển kho chi nhánh — công tắc toàn cục',
+  setBranchAutoHaul: 'chỉnh ngưỡng/hẹn giờ auto chuyển kho chi nhánh — cấu hình toàn cục',
   buyBranchPower: 'mua nâng cấp điện chi nhánh theo id (thêm vào danh sách)',
   promoteBranchStaff: 'thăng chức nhân viên chi nhánh theo id người',
   evacuateBranch: 'dồn cả đội chi nhánh về tiệm chính — xếp lại toàn bộ một lượt',

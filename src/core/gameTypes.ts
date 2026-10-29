@@ -532,6 +532,8 @@ export interface GameState {
   toggleNightDelivery: () => void;
   /** GĐ206: bật/tắt auto chuyển kho — tự chở hàng khi kệ vơi, trả phí xăng mỗi chuyến. */
   toggleBranchAutoHaul: () => void;
+  /** GĐ207: chỉnh ngưỡng kệ vơi (%) và khoảng cách (phút) để auto chuyển kho nổ chuyến — clamp an toàn. */
+  setBranchAutoHaul: (below?: number, every?: number) => void;
   /** Mua nâng cấp điện cho chi nhánh (máy phát, tủ tiết kiệm điện). */
   buyBranchPower: (id: PowerUpgradeId) => void;
   hireForBranch: (id: number, shift: Shift) => void;

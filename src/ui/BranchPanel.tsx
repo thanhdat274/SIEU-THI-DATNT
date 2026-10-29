@@ -7,12 +7,12 @@ import { branchMissSummary } from '../data/venueTrend';
 import { vendingPayoff } from '../data/minorPayoff';
 import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney, productById } from '../data/products';
-import { haulTripPlan, HAUL_REFILL_BELOW, HAUL_TRIP_EVERY } from '../data/branchHaul';
+import { haulTripPlan, autoHaulCfg, HAUL_REFILL_BELOW, HAUL_TRIP_EVERY, HAUL_BELOW_MIN, HAUL_BELOW_MAX, HAUL_EVERY_MIN, HAUL_EVERY_MAX } from '../data/branchHaul';
 import { Callout } from './panels/shared';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
-  const { branch, level, money, day, candidates, storage, stats, atBranch, online, licenses, venueTrend, openBranch, toggleBranch, toggleVending, toggleNightDelivery, toggleBranchAutoHaul, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel, openPanel } = useGame();
+  const { branch, level, money, day, candidates, storage, stats, atBranch, online, licenses, venueTrend, openBranch, toggleBranch, toggleVending, toggleNightDelivery, toggleBranchAutoHaul, setBranchAutoHaul, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel, openPanel } = useGame();
   const [tab, setTab] = useState<'info' | 'night' | 'report'>('info');
 
   if (!branch) {
@@ -162,6 +162,23 @@ export function BranchPanel() {
               <b>🚚 Auto chuyển kho</b>
               <button style={st.primary} onClick={toggleBranchAutoHaul}>{branch.autoHaul ? 'Đang bật · Tắt' : 'Bật tự chở'}</button>
             </div>
+            {(() => {
+              const cfg = autoHaulCfg(branch);
+              return (
+                <div style={{ ...st.row, marginBottom: 4, flexWrap: 'wrap', gap: 6 }}>
+                  <span style={st.sub}>Chở khi kệ vơi dưới</span>
+                  <input type="number" min={Math.round(HAUL_BELOW_MIN * 100)} max={Math.round(HAUL_BELOW_MAX * 100)} step={5}
+                    defaultValue={Math.round(cfg.below * 100)} style={{ width: 54, padding: '3px 6px', borderRadius: 6, border: 'none', color: '#222' }}
+                    onBlur={(e) => { const v = parseInt(e.target.value, 10); if (!Number.isNaN(v)) setBranchAutoHaul(v / 100, undefined); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />%
+                  <span style={st.sub}>· giãn</span>
+                  <input type="number" min={Math.round(HAUL_EVERY_MIN / 60)} max={Math.round(HAUL_EVERY_MAX / 60)} step={1}
+                    defaultValue={Math.round(cfg.every / 60)} style={{ width: 46, padding: '3px 6px', borderRadius: 6, border: 'none', color: '#222' }}
+                    onBlur={(e) => { const v = parseInt(e.target.value, 10); if (!Number.isNaN(v)) setBranchAutoHaul(undefined, v * 60); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />h/chuyến
+                </div>
+              );
+            })()}
             <div style={st.sub}>
               Khi bật, chi nhánh tự chở hàng từ <b>kho chung</b> mỗi khi kệ vơi dưới ~{Math.round(HAUL_REFILL_BELOW * 100)}% sức chứa
               (giãn ~{HAUL_TRIP_EVERY / 60}h/chuyến) — <b>không cần người giao/xếp/quản lý</b>; mỗi chuyến trả phí xăng {formatMoney(CONVENIENCE.tripFee)}.

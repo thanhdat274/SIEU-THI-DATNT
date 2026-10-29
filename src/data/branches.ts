@@ -82,6 +82,10 @@ export interface BranchState {
   warnedDay?: number;
   /** GĐ206: chủ bật auto chuyển kho — tự chở hàng khi kệ vơi (không cần người giao/xếp/quản lý), trả phí xăng mỗi chuyến. */
   autoHaul?: boolean;
+  /** GĐ207: ngưỡng kệ vơi (%) để auto chuyển kho nổ chuyến — thiếu thì mặc định HAUL_REFILL_BELOW, clamp 30–80%. */
+  autoHaulBelow?: number;
+  /** GĐ207: tối thiểu bao nhiêu phút giữa 2 chuyến auto — thiếu thì mặc định HAUL_TRIP_EVERY, clamp 120–720'. */
+  autoHaulEvery?: number;
   /** Mức mệt của từng nhân viên (0–100). */
   fatigue?: Record<number, number>;
   /** Nhân viên được nghỉ (id → ngày nghỉ). */
