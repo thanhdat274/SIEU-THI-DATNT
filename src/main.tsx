@@ -1,5 +1,6 @@
 import { skyAt } from './data/weather';
 import { isMarketDay } from './data/chophien';
+import { isRoadworks } from './data/roadwork';
 import { ANIMAL_ORDER, type AnimalKind } from './data/garden';
 import * as THREE from 'three';
 import { Component, type ReactNode } from 'react';
@@ -330,6 +331,8 @@ function stocktake() {
 let lastMinutes = useGame.getState().minutes;
 // Ngày gần nhất đã áp cảnh chợ phiên cho kit (gđ181): chỉ đổi khi isMarketDay(day) thay đổi
 let lastMarketDay = isMarketDay(useGame.getState().day);
+// Hôm nay có sửa đường trước hẻm không (gđ184): đổi cảnh rào chắn khi sự kiện market roadworks thay đổi
+let lastRoadwork = isRoadworks(useGame.getState().weatherSeed, useGame.getState().day, useGame.getState().level);
 let routineMarks = newRoutineMarks();
 function runRoutine() {
   const s = useGame.getState();
@@ -718,6 +721,13 @@ function renderFrame() {
     world.kit.setMarketDay(marketDay);
     // (GĐ182) Sáng phiên chợ: nhắc để người chơi biết hôm nay đông khách + tối gánh hàng dư
     if (marketDay) g.notify('🛒 Hôm nay phiên chợ cuối ngõ — khách đông hơn! Tối nhớ xem "Chợ phiên" để gánh bớt hàng dư.');
+  }
+  // Sửa đường trước hẻm (gđ184): hôm nào có sự kiện market roadworks, dựng rào chắn công trình ở mép vỉa hè —
+  // người chơi thấy "đường đang sửa" bằng hình (đồng thời kinh tế ngày vẫn ít khách đi ngang như sim đã tính)
+  const roadwork = isRoadworks(g.weatherSeed, g.day, g.level);
+  if (roadwork !== lastRoadwork) {
+    lastRoadwork = roadwork;
+    world.kit.setRoadwork(roadwork);
   }
   applyLightBudget(controller.target);
   // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng

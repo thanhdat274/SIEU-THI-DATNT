@@ -3,6 +3,7 @@ import {
   KIT_MODULES,
   KIT_PLACEMENTS,
   KIT_MARKET_PLACEMENTS,
+  KIT_ROADWORK_PLACEMENTS,
   kitPlacementProblems,
 } from '../world/kitProps';
 import { isMarketDay } from '../data/chophien';
@@ -24,8 +25,8 @@ describe('GĐ172 — kit prop GLB', () => {
     }
   });
 
-  it('đủ 6 module của kit đều được dùng ít nhất một chỗ', () => {
-    const used = new Set(KIT_PLACEMENTS.map((p) => p.module));
+  it('đủ module của kit đều được dùng ít nhất một chỗ (tính cả chợ phiên + sửa đường)', () => {
+    const used = new Set([...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS].map((p) => p.module));
     for (const m of KIT_MODULES) expect(used.has(m)).toBe(true);
   });
 
@@ -84,5 +85,49 @@ describe('GĐ181 — gánh hàng chợ phiên', () => {
     expect(isMarketDay(14)).toBe(true);
     expect(isMarketDay(6)).toBe(false);
     expect(isMarketDay(8)).toBe(false);
+  });
+});
+
+/**
+ * GĐ184 — Sửa đường: rào chắn công trình (`rao_chan`) dựng ở mép vỉa hè trước hẻm khi hôm nay có
+ * sự kiện market `roadworks` (giảm lượt khách đi ngang) — con hẻm "đang sửa" hiện ra bằng hình.
+ * Kiểu GĐ181/182: chỉ báo tín hiệu, không chặn lưới. Rủi ro duy nhất là đặt sai chỗ, soi bằng test.
+ */
+describe('GĐ184 — rào chắn sửa đường', () => {
+  it('bảng vị trí rào chắn không vi phạm chỗ cấm (đã gộp vào kitPlacementProblems)', () => {
+    expect(kitPlacementProblems()).toEqual([]);
+  });
+
+  it('chỉ dùng module rao_chan có trong kit, đặt ở mép vỉa hè (z 1.5..3), không giữa lòng đường', () => {
+    for (const p of KIT_ROADWORK_PLACEMENTS) {
+      expect(KIT_MODULES).toContain(p.module);
+      expect([...new Set(KIT_ROADWORK_PLACEMENTS.map((x) => x.module))]).toEqual(['rao_chan']);
+      expect(p.pos[2]).toBeGreaterThan(1.4);
+      expect(p.pos[2]).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it('không chèn sát món nào trong toàn bộ bảng hay chính nó (<0.55 m)', () => {
+    const all = [...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS];
+    for (let i = 0; i < all.length; i++) {
+      for (let j = i + 1; j < all.length; j++) {
+        const d = Math.hypot(all[i].pos[0] - all[j].pos[0], all[i].pos[2] - all[j].pos[2]);
+        expect(d).toBeGreaterThanOrEqual(0.55);
+      }
+    }
+  });
+
+  it('không chắn cửa tiệm (cửa x=4, z=1) mà chỉ rào mép đường phía trước', () => {
+    for (const p of KIT_ROADWORK_PLACEMENTS) {
+      const d = Math.hypot(p.pos[0] - 4, p.pos[2] - 1);
+      expect(d).toBeGreaterThan(1.2);
+    }
+  });
+
+  it('tỉ lệ rào chắn hợp lý (không phóng to vô lý)', () => {
+    for (const p of KIT_ROADWORK_PLACEMENTS) {
+      expect(p.scale ?? 1).toBeGreaterThan(0.5);
+      expect(p.scale ?? 1).toBeLessThanOrEqual(2);
+    }
   });
 });

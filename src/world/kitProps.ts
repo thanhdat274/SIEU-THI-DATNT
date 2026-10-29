@@ -11,7 +11,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
  */
 
 /** Toàn bộ module mà script hiện sinh ra — placement chỉ được trỏ vào đây. */
-export const KIT_MODULES = ['chau_cay', 'thung_go', 'khom_tre', 'bon_nuoc', 'cho_nhua', 'xe_day'] as const;
+export const KIT_MODULES = ['chau_cay', 'thung_go', 'khom_tre', 'bon_nuoc', 'cho_nhua', 'xe_day', 'rao_chan'] as const;
 export type KitModule = (typeof KIT_MODULES)[number];
 
 export interface KitPlacement {
@@ -58,12 +58,24 @@ export const KIT_MARKET_PLACEMENTS: KitPlacement[] = [
   { module: 'xe_day', pos: [8.4, 0, 2.5], rotY: 4.6 },
 ];
 
+/**
+ * Rào chắn công trình "đang sửa đường" (gđ184): những `rao_chan` chỉ dựng ở mép vỉa hè trước mặt
+ * tiền khi hôm nay có sự kiện market `roadworks` (giảm lượt khách đi ngang — xem `dayEffects`).
+ * Cùng kiểu GĐ181/182: con hẻm đổi cảnh theo lịch kinh tế, chỉ báo tín hiệu bằng hình; bật/tắt
+ * bằng `setRoadwork`; KHÔNG chặn lưới đi lại (chỉ trang trí). Đặt ở mép vỉa hè (z 1.5..3), không
+ * giữa lòng đường — "đường phía trước đang sửa" chứ không chắn lối.
+ */
+export const KIT_ROADWORK_PLACEMENTS: KitPlacement[] = [
+  { module: 'rao_chan', pos: [-2.2, 0, 2.6], rotY: 0.08, scale: 1.05 },
+  { module: 'rao_chan', pos: [4.6, 0, 2.5], rotY: -0.06, scale: 1.05 },
+];
+
 /** Chỗ trượt đứng: đè vào nhà / lòng đường / ngoài thế giới là bug đặt chỗ, soi bằng test. */
 export function kitPlacementProblems(): string[] {
   const problems: string[] = [];
   const inRect = (x: number, z: number, x1: number, z1: number, x2: number, z2: number) =>
     x >= x1 && x <= x2 && z >= z1 && z <= z2;
-  const all = [...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS];
+  const all = [...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS];
   for (const p of all) {
     const [x, , z] = p.pos;
     if (!KIT_MODULES.includes(p.module)) problems.push(`${p.module}: không có trong kit`);
@@ -98,13 +110,17 @@ export interface KitProps {
   marketGroup: THREE.Group;
   /** Bật/tắt cảnh chợ phiên (gánh hàng dựng thêm dọc hẻm khi isMarketDay). */
   setMarketDay(on: boolean): void;
+  /** Nhóm rào chắn sửa đường (gđ184) — con của `group`, mặc định ẩn; bật bằng setRoadwork. */
+  roadworkGroup: THREE.Group;
+  /** Bật/tắt cảnh "đang sửa đường" (rào chắn trước hẻm khi có sự kiện market roadworks). */
+  setRoadwork(on: boolean): void;
 }
 
 /**
  * Bắt đầu tải kit: trả về group trống để `scene.add` NGAY (thế giới không phải chờ), các prop
  * vừa tải xong vừa chen vào. Lỗi mạng chỉ ghi console — kit là đồ trang trí, không có vẫn chơi được.
  */
-export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; done: Promise<KitProps>; marketGroup: THREE.Group; setMarketDay(on: boolean): void } {
+export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; done: Promise<KitProps>; marketGroup: THREE.Group; setMarketDay(on: boolean): void; roadworkGroup: THREE.Group; setRoadwork(on: boolean): void } {
   const group = new THREE.Group();
   group.name = 'kitProps';
   // Nhóm gánh hàng chợ phiên (gđ181): con của group, mặc định ẩn — setMarketDay bật khi isMarketDay.
@@ -112,7 +128,12 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
   marketGroup.name = 'marketDayProps';
   marketGroup.visible = false;
   group.add(marketGroup);
-  const result: KitProps = { group, loaded: 0, failed: [], marketGroup, setMarketDay: (on) => { marketGroup.visible = on; } };
+  // Nhóm rào chắn sửa đường (gđ184): con của group, mặc định ẩn — setRoadwork bật khi roadworks.
+  const roadworkGroup = new THREE.Group();
+  roadworkGroup.name = 'roadworkProps';
+  roadworkGroup.visible = false;
+  group.add(roadworkGroup);
+  const result: KitProps = { group, loaded: 0, failed: [], marketGroup, setMarketDay: (on) => { marketGroup.visible = on; }, roadworkGroup, setRoadwork: (on) => { roadworkGroup.visible = on; } };
   const done = new Promise<KitProps>((resolve) => {
     const finish = () => resolve(result);
     if (KIT_PLACEMENTS.length === 0) return finish();
@@ -168,6 +189,16 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
             () => { if (!result.failed.includes(p.module)) result.failed.push(p.module); },
           );
         }
+        // Sửa đường (gđ184): tải `rao_chan` vào roadworkGroup, ẩn cho tới setRoadwork(true).
+        const roadworkLive = KIT_ROADWORK_PLACEMENTS.filter((p) => available.has(p.module));
+        for (const p of roadworkLive) {
+          loader.load(
+            `${baseUrl}${p.module}.glb`,
+            (gltf) => { place(gltf.scene, p, roadworkGroup); },
+            undefined,
+            () => { if (!result.failed.includes(p.module)) result.failed.push(p.module); },
+          );
+        }
       })
       .catch((err) => {
         console.warn('[kit] Không tải được kit prop — chơi tiếp không sao:', err?.message ?? err);
@@ -175,5 +206,5 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
         finish();
       });
   });
-  return { group, done, marketGroup, setMarketDay: result.setMarketDay };
+  return { group, done, marketGroup, setMarketDay: result.setMarketDay, roadworkGroup, setRoadwork: result.setRoadwork };
 }

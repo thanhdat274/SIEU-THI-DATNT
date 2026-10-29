@@ -131,20 +131,61 @@ function bonNuoc() {
 
 /** Ghế nhựa đỏ thấp — chuẩn ngồi hẻm Sài Gòn. */
 function choNhua() {
-  const parts = [
-    part(facet(new THREE.CylinderGeometry(0.17, 0.155, 0.045, 12)), RED, 0, 0.42, 0),
-    // Mặt dưới loe ra đỡ đít, đậm hơn mặt ngồi
-    part(facet(new THREE.CylinderGeometry(0.10, 0.145, 0.05, 12)), RED_D, 0, 0.37, 0),
+  const parts: THREE.BufferGeometry[] = [
+    // Mặt ghế: đĩa dày bo tròn, 16 cạnh mềm
+    part(facet(new THREE.CylinderGeometry(0.18, 0.16, 0.035, 16)), RED, 0, 0.44, 0),
+    // Viền mép dưới: vành dày 6 mm
+    part(facet(new THREE.TorusGeometry(0.16, 0.006, 4, 16)), RED, 0, 0.422, 0, [Math.PI / 2, 0, 0]),
+    // Thân ghế (vỏ dưới): chỏm cong ngược, nối liền với mặt
+    part(
+      facet(new THREE.SphereGeometry(0.165, 14, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2)),
+      RED, 0, 0.44, 0,
+    ),
+    // Đế loe: đáy rộng hơn để ngồi thoải mái
+    part(facet(new THREE.CylinderGeometry(0.14, 0.12, 0.04, 14)), RED_D, 0, 0.395, 0),
+    // Chân trước: thẳng đứng hơn một chút
+    part(
+      facet(new THREE.CylinderGeometry(0.018, 0.02, 0.37, 6)),
+      RED_D, 0, 0.185, 0.12,
+    ),
+    // Chân sau: hơi ngả về sau
+    part(
+      facet(new THREE.CylinderGeometry(0.018, 0.02, 0.37, 6)),
+      RED_D, 0, 0.185, -0.12,
+      [0.10, 0, 0],
+    ),
+    // Hai chân bên
+    part(
+      facet(new THREE.CylinderGeometry(0.016, 0.018, 0.36, 6)),
+      RED_D, -0.12, 0.18, 0,
+      [-0.06, 0, 0],
+    ),
+    part(
+      facet(new THREE.CylinderGeometry(0.016, 0.018, 0.36, 6)),
+      RED_D, 0.12, 0.18, 0,
+      [0.06, 0, 0],
+    ),
+    // Tựa lưng: thanh dọc trái + phải
+    part(
+      facet(new THREE.CylinderGeometry(0.014, 0.014, 0.26, 6)),
+      RED_D, -0.07, 0.60, -0.13,
+    ),
+    part(
+      facet(new THREE.CylinderGeometry(0.014, 0.014, 0.26, 6)),
+      RED_D, 0.07, 0.60, -0.13,
+    ),
+    // Thanh ngang tựa lưng
+    part(
+      facet(new THREE.CylinderGeometry(0.012, 0.012, 0.28, 6)),
+      RED_D, 0, 0.73, -0.13,
+      [0, 0, 0],
+    ),
+    // Nắp tựa lưng: vòm cong nhẹ
+    part(
+      facet(new THREE.SphereGeometry(0.08, 10, 4, 0, Math.PI, 0, Math.PI / 2)),
+      RED, 0, 0.73, -0.13,
+    ),
   ];
-  // Bốn chân loe ra ngoài cho đứng vững
-  for (const [sx, sz] of [[-1, -1], [-1, 1], [1, -1], [1, 1]] as const) {
-    parts.push(part(
-      facet(new THREE.CylinderGeometry(0.013, 0.016, 0.36, 6)),
-      RED_D,
-      sx * 0.115, 0.18, sz * 0.115,
-      [sz * 0.14, 0, -sx * 0.14],
-    ));
-  }
   return parts;
 }
 
@@ -176,6 +217,28 @@ function xeDay() {
     part(facet(new THREE.IcosahedronGeometry(0.09, 0)), 0x00b894, 0.2, 0.99, 0.12),
     part(facet(new THREE.IcosahedronGeometry(0.075, 0)), 0xe17055, 0.34, 0.97, -0.1),
   ];
+  return parts;
+}
+
+/** Rào chắn công trình "đang sửa đường" (gđ184): thanh ngang vạch đỏ/kem + hai chân đỏ + đế.
+ * Dựng ở mép vỉa hè trước hẻm khi hôm nay có sự kiện market `roadworks` (lượt khách giảm) —
+ * tiếng "đường đang sửa" hiện ra bằng hình, không chỉ ở bản tin. */
+function raoChan() {
+  const RED = 0xd63031, RED_D = 0x9f2626, CREAM = 0xf0e9da;
+  const W = 1.3, H = 0.17;
+  const parts: THREE.BufferGeometry[] = [];
+  // Thanh ngang vạch cảnh báo: 5 đoạn đỏ/kem đan kề nhau (không chồng → không z-fight khi gộp)
+  const n = 5, gap = 0.002;
+  const segW = (W - gap * (n - 1)) / n;
+  for (let i = 0; i < n; i++) {
+    const x = -W / 2 + segW / 2 + i * (segW + gap);
+    parts.push(part(new RoundedBoxGeometry(segW, H, 0.06, 1, 0.02), i % 2 ? RED : CREAM, x, 0.88, 0));
+  }
+  // Hai chân đỏ hơi loe xuống đế
+  parts.push(part(facet(new THREE.CylinderGeometry(0.03, 0.034, 0.72, 6)), RED_D, -0.34, 0.36, 0));
+  parts.push(part(facet(new THREE.CylinderGeometry(0.03, 0.034, 0.72, 6)), RED_D, 0.34, 0.36, 0));
+  // Đế chống trượt ngang chân đế
+  parts.push(part(new RoundedBoxGeometry(0.95, 0.05, 0.05, 1, 0.02), RED_D, 0, 0.05, 0));
   return parts;
 }
 
@@ -238,6 +301,7 @@ const PROPS: Record<string, () => THREE.BufferGeometry[]> = {
   bon_nuoc: bonNuoc,
   cho_nhua: choNhua,
   xe_day: xeDay,
+  rao_chan: raoChan,
 };
 
 /** Trần triangle mỗi module: vượt là cảnh báo để kịp đơn giản hoá, đỡ phình to âm thầm. */
