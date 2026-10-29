@@ -107,3 +107,41 @@ describe('lịch tự động: tắt thì không làm gì', () => {
     expect(todo.marks).toEqual(marks);
   });
 });
+
+// ── GĐ275 — lịch tự động chỉnh được giờ mở cửa (6h–8h) ──
+describe('autoOpenAt — giờ mở cửa theo người chơi (GĐ275)', () => {
+  const fresh = (day = 2): RoutineMarks => ({ walkDay: -1, openDay: -1, closeDay: -1, homeDay: -1 });
+
+  it('mặc định (save cũ không có autoOpenAt) = 8h: mở 8h, ra tiệm 7h — hành vi cũ nguyên vẹn', () => {
+    const fired = run([6 * 60 + 30, 7 * 60, 8 * 60 - 1, 8 * 60], { autoOpenAt: undefined, atShop: false }, fresh());
+    expect(fired).toEqual([
+      { minutes: 7 * 60, action: 'walkToShop' },
+      { minutes: 8 * 60, action: 'openShop' },
+    ]);
+  });
+
+  it('autoOpenAt 6h: mở 6h đón nửa đầu giờ vàng, ra tiệm 5h', () => {
+    const fired = run([5 * 60, 6 * 60], { autoOpenAt: 6 * 60, atShop: false }, fresh());
+    expect(fired).toEqual([
+      { minutes: 5 * 60, action: 'walkToShop' },
+      { minutes: 6 * 60, action: 'openShop' },
+    ]);
+  });
+
+  it('6h30: mở 6h30, ra tiệm 5h30', () => {
+    const fired = run([5 * 60 + 29, 5 * 60 + 30, 6 * 60 + 30], { autoOpenAt: 6 * 60 + 30, atShop: false }, fresh());
+    expect(fired).toEqual([
+      { minutes: 5 * 60 + 30, action: 'walkToShop' },
+      { minutes: 6 * 60 + 30, action: 'openShop' },
+    ]);
+  });
+
+  it('mở sớm không đụng mốc tối: vẫn đóng 22h30, về 23h', () => {
+    const fired = run([6 * 60, 22 * 60 + 31, 23 * 60 + 1], { autoOpenAt: 6 * 60 }, fresh());
+    expect(fired.map((f) => f.action)).toEqual(['openShop', 'closeShop', 'goHome', 'stocktake']);
+  });
+
+  it('lịch tắt thì không mở dù autoOpenAt là gì', () => {
+    expect(run([6 * 60, 8 * 60], { autoOpenAt: 6 * 60, autoRoutine: false }, fresh())).toEqual([]);
+  });
+});

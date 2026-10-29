@@ -12,6 +12,8 @@ export interface RoutineSnapshot {
   day: number;
   minutes: number;
   autoRoutine: boolean;
+  /** Giờ mở cửa do người chơi chỉnh (GĐ275, phút trong ngày); thiếu ở save cũ = 8h. */
+  autoOpenAt?: number;
   /** Người chơi đang đứng trong tiệm (đúng chỗ mở cửa, tính tiền được). */
   atShop: boolean;
   shopOpen: boolean;
@@ -62,9 +64,12 @@ export function planRoutine(s: RoutineSnapshot, prev: RoutineMarks): RoutineActi
   };
   if (!s.autoRoutine) return out;
 
+  // GĐ275: giờ mở cửa theo người chơi (6h–8h); ra tiệm trước giờ mở 1 giờ để kịp bày/khoan nhập
+  const openAt = s.autoOpenAt ?? ROUTINE.open;
+  const walkAt = Math.max(5 * 60, openAt - 60);
   // Sáng: ra tiệm rồi mở cửa, chỉ trong khung giờ bán hàng (qua 22h30 thì thôi)
-  const inSellingHours = s.minutes >= ROUTINE.open && s.minutes < ROUTINE.close;
-  if (s.minutes >= ROUTINE.goToShop && s.minutes < ROUTINE.close && marks.walkDay !== s.day) {
+  const inSellingHours = s.minutes >= openAt && s.minutes < ROUTINE.close;
+  if (s.minutes >= walkAt && s.minutes < ROUTINE.close && marks.walkDay !== s.day) {
     marks.walkDay = s.day;
     if (!s.atShop) out.walkToShop = true;
   }

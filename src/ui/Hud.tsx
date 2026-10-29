@@ -22,7 +22,11 @@ import { FEATURES, xpToNext } from '../data/levels';
 import { SYSTEM_UNLOCKS } from '../data/unlockMap';
 import { formatMoney, productById } from '../data/products';
 import { summarizeReviews } from '../data/reviews';
+import { AUTO_OPEN_PRESETS } from '../core/gameTypes';
 import { dayEffects, describeDate, festivalStock, monthOf, upcomingFestival, weekdayOf } from '../data/calendar';
+
+/** GĐ275 — "7h30" / "8h": nhãn giờ mở cửa cho menu lịch tự động. */
+const fmtOpenAt = (m: number) => `${Math.floor(m / 60)}h${m % 60 ? '30' : ''}`;
 import { isFairOpen } from '../data/fairmerchant';
 import { lifetimeRegularVisits, vipTierOf, EMOTIONAL_FRIENDSHIP } from '../data/regularTrust';
 import { relTier } from '../data/supplierRel';
@@ -519,14 +523,26 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
             ...(!online ? [{ label: '💾 Lưu game', on: save }] : []),
             ...(!online ? [{ label: '⏪ Khôi phục bản lưu trước', on: restore }] : []),
             {
-              label: autoRoutine ? '⏰ Lịch tự động: Bật' : '⏰ Lịch tự động: Tắt',
+              // GĐ275 — lịch tự động chỉnh được giờ mở cửa (6h–8h): tắt → bật; đang bật → xoay vòng
+              // 8h → 7h30 → 7h → 6h30 → 6h → 8h. Giờ vàng sáng 6h–8h30 kéo 2h30, lịch 8h lỡ nửa đầu
+              // (tension GĐ160) — giờ người chơi chỉnh lịch thay vì phải mở tay mỗi sáng.
+              label: autoRoutine ? `⏰ Lịch tự động: mở ${fmtOpenAt(useGame.getState().autoOpenAt)}` : '⏰ Lịch tự động: Tắt',
               on: () => {
-                useGame.setState({ autoRoutine: !autoRoutine });
-                notify(autoRoutine ? 'Đã tắt lịch tự động' : '⏰ Bật lịch: 7h ra tiệm, 8h mở cửa (lỡ nửa giờ vàng sáng 6h–8h30 — muốn đón đủ thì mở tay sớm hơn), 22h30 đóng, 23h kiểm kê rồi về nhà');
+                if (!autoRoutine) {
+                  const at = useGame.getState().autoOpenAt;
+                  useGame.setState({ autoRoutine: true });
+                  notify(`⏰ Bật lịch tự động: mở cửa ${fmtOpenAt(at)} (bấm tiếp để đổi giờ 6h–8h), 22h30 đóng, 23h kiểm kê rồi về nhà`);
+                } else {
+                  const cur = useGame.getState().autoOpenAt;
+                  const i = AUTO_OPEN_PRESETS.indexOf(cur);
+                  const next = AUTO_OPEN_PRESETS[(i + 1) % AUTO_OPEN_PRESETS.length];
+                  useGame.setState({ autoOpenAt: next });
+                  notify(`⏰ Lịch tự động mở cửa ${fmtOpenAt(next)}${next < cur ? ' — đón thêm giờ vàng sáng' : next > cur ? ' — mở trễ hơn' : ' (về mặc định)'}, 22h30 đóng, 23h kiểm kê`);
+                }
               },
-              // GĐ160 — lịch tự động mở cửa 8h bỏ lỡ nửa giờ vàng sáng (6h–8h30, band "sang" — rhythm.ts):
-              // minh bạch ngay cạnh công tắc (ROUTINE là quyết định cân bằng riêng, không đổi).
-              hint: autoRoutine ? '⏰ Lịch mở cửa 8h — lỡ nửa giờ vàng sáng (6h–8h30). Muốn đón đủ thì mở tay sớm hơn.' : undefined,
+              hint: autoRoutine
+                ? `⏰ Lịch mở cửa ${fmtOpenAt(useGame.getState().autoOpenAt)} — bấm để đổi (6h–8h). Mở sớm đón nửa giờ vàng sáng 6h–8h30.`
+                : undefined,
             },
             { label: '🏠 Màn hình chính', on: backToMenu },
             ...(!online ? [{ label: '🔄 Chơi lại từ đầu', danger: true, on: () => confirm('Xoá bản lưu và chơi lại từ đầu?') && resetGame() }] : []),

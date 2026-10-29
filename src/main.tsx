@@ -352,7 +352,7 @@ function runRoutine() {
   }
   const atShop = s.location === shop.building.opts.name;
   const todo = planRoutine({
-    day: s.day, minutes: s.minutes, autoRoutine: s.autoRoutine, atShop, shopOpen: s.shopOpen,
+    day: s.day, minutes: s.minutes, autoRoutine: s.autoRoutine, autoOpenAt: s.autoOpenAt, atShop, shopOpen: s.shopOpen,
   }, routineMarks);
   routineMarks = todo.marks;
 

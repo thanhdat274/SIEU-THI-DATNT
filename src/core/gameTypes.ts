@@ -41,6 +41,11 @@ export const SLEEP_FROM = 18 * 60;
 export const FAINT_AT = 26 * 60;
 /** Lịch tự động mỗi ngày (khi bật): ra tiệm, mở cửa, đóng cửa, kiểm kê rồi về nhà. */
 export const ROUTINE = { goToShop: 7 * 60, open: 8 * 60, close: 22 * 60 + 30, goHome: 23 * 60 };
+
+/** GĐ275 — giờ mở cửa của lịch tự động, người chơi chỉnh được (6h→8h): giờ vàng sáng 6h–8h30
+ *  kéo dài 2h30 mà lịch cũ mở 8h thì lỡ nửa đầu — GĐ160 đã ghi tension này. Mặc định 8h = hành
+ *  vi cũ; save cũ thiếu trường thì applySnapshot tự bù (không cần MIGRATIONS). */
+export const AUTO_OPEN_PRESETS = [8 * 60, 7 * 60 + 30, 7 * 60, 6 * 60 + 30, 6 * 60];
 /** Mỗi giây thật = bao nhiêu phút trong game ở tốc độ x1. */
 export const MINUTES_PER_SECOND = 2;
 /** Bán lại đồ nội thất được bao nhiêu phần giá mua. */
@@ -304,6 +309,8 @@ export interface GameState {
   replaceEmptySlots: () => string[];
   /** Tự động theo lịch: 7h ra tiệm, 8h mở cửa, 22h30 đóng cửa, 23h kiểm kê rồi về nhà. */
   autoRoutine: boolean;
+  /** Giờ mở cửa của lịch tự động (phút trong ngày, 6h–8h — GĐ275); thiếu ở save cũ = 8h. */
+  autoOpenAt: number;
   /** Lời khách nhận xét gần nhất (cũ trước, mới sau). */
   reviews: Review[];
   /** Điểm danh tiếng 5 mặt của các lượt khách gần nhất. */

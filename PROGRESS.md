@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **2235/2235 test pass (220 files) + coverage branch 87.40%/fn 76.17%** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ274. QA TOÀN DIỆN GĐ270: 34 panel + 0 tràn @320/390/768.
+- **2240/2240 test pass (220 files) + coverage branch 87.40%/fn 76.17%** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ275. QA TOÀN DIỆN GĐ270: 34 panel + 0 tràn @320/390/768.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
 - Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
 
@@ -43,7 +43,9 @@
 
 - **GĐ273 dự báo tuần mai** 🔮: audit trending + weeklyChallenge (sạch); Nhập hàng tối CN thêm "🔮 Tuần mai: X, Y" (đúng ranh giới khối). 2 test biên; 2233 test xanh.
 
-- **GĐ274 mồi tuần mới tối CN** 🔮: "Mai tiệm có gì" tối CN thêm "🔥 Tuần mới khách săn: X, Y" (khớp GĐ273; TeaserPanel thêm 'order'). 2 test; 2235 test xanh.
+- **GĐ274 mồi tuần mới tối CN** 🔮: "Mai tiệm có gì" tối CN thêm "🔥 Tuần mới khách săn: X, Y" (khớp GĐ273). 2 test; 2235 test xanh.
+
+- **GĐ275 lịch tự động chỉnh giờ mở cửa** ⏰: giải tension GĐ160 (lịch 8h lỡ nửa đầu giờ vàng 6h–8h30) — `autoOpenAt` (mặc định 8h, save cũ tự bù, không cần MIGRATIONS; vào whitelist snapshot) + `AUTO_OPEN_PRESETS` [8h/7h30/7h/6h30/6h]; `planRoutine` mở theo `autoOpenAt`, ra tiệm trước 1h (floor 5h); menu hồ sơ: Tắt → Bật, đang bật bấm tiếp xoay vòng giờ (mỗi mốc một notify). 5 test routine; 2240 test xanh; QA @5173: label "mở 8h", bấm 3 lần → 390 đúng mốc, boot sạch.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -321,3 +323,4 @@
 - GĐ272 — 🖼️ Quét đăng nhập + menu Thêm @320/390/768 — 0 lỗi, chốt chuỗi rà soát màn hình
 - GĐ273 — 🔮 Dự báo "tuần mai khách săn" trên Nhập hàng tối CN + audit trending/weeklyChallenge
 - GĐ274 — 🔮 Mồi tuần mới tối CN trong Mai tiệm có gì (khớp GĐ273)
+- GĐ275 — ⏰ Lịch tự động chỉnh giờ mở cửa 6h–8h (autoOpenAt + xoay vòng preset trong menu hồ sơ)
