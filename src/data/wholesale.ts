@@ -51,10 +51,12 @@ export function makeVendorOffer(level: number, minutes: number): VendorOffer | n
 
 export const vendorById = (id: string) => VENDORS.find((v) => v.id === id);
 
+/** Giá sỉ 1 món (đ): không dưới "giá nhập + 5%", thường là "giá niêm yết × 85%", làm tròn 100đ. */
+export function wholesaleUnit(id: string, priceOf: (id: string) => number): number {
+  return Math.max(Math.round(productById(id).buy * 1.05), Math.round(priceOf(id) * WHOLESALE_RATE / 100) * 100);
+}
+
 /** Tiền sỉ cho cả đơn: giảm theo WHOLESALE_RATE, mỗi món không dưới giá nhập + 5%. */
 export function wholesaleTotal(items: Record<string, number>, priceOf: (id: string) => number) {
-  return Object.entries(items).reduce((n, [id, q]) => {
-    const unit = Math.max(Math.round(productById(id).buy * 1.05), Math.round(priceOf(id) * WHOLESALE_RATE / 100) * 100);
-    return n + unit * q;
-  }, 0);
+  return Object.entries(items).reduce((n, [id, q]) => n + wholesaleUnit(id, priceOf) * q, 0);
 }

@@ -242,6 +242,7 @@
 #ui .hud-alert.info { background: rgba(41, 128, 185, 0.94); border-radius: var(--hud-radius); }
 #ui .hud-alert.build { background: rgba(41, 128, 185, 0.94); }
 #ui .hud-alert-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+#ui .hud-wholesale-tip { font-size: 12px; font-weight: 500; opacity: 0.95; width: 100%; color: #ffeaa7; }
 #ui .hud-hint { font-size: 12px; font-style: italic; opacity: 0.9; }
 #ui .hud-btn {
   border: none;
