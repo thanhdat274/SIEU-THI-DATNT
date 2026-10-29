@@ -12,7 +12,7 @@ import {
   RIVAL_PERSONALITIES, RIVAL_UNLOCK, rivalLeverFlags, rivalMomentum, rivalTier, rivalTrafficFactor, VEHICLES, WEEK_DAYS, weeklyChallenge, weekPace, monthlyChallenge, emptyMonth,
   STREAK_XP_FROM, STREAK_XP_RATE_WEEK, STREAK_XP_RATE_MONTH,
 } from '../data/biz';
-import { monthOf } from '../data/calendar';
+import { monthOf, weekdayOf } from '../data/calendar';
 import { xpToNext } from '../data/levels';
 import { promoEffect } from '../data/analytics';
 import { emptyYear, yearOf } from '../data/yearReport';
@@ -522,7 +522,7 @@ function Week() {
         {history.length < 2 ? <div style={sub}>Chơi thêm vài ngày để xem biểu đồ.</div> : <HistoryChart history={history} />}
       </div>
       <div style={card}>
-        <b>📅 Tuần này (ngày {w.startDay}–{w.startDay + WEEK_DAYS - 1}, hôm nay ngày {day})</b>
+        <b>📅 Tuần này (ngày {w.startDay}–{w.startDay + WEEK_DAYS - 1}{(w.startDay - 1) % WEEK_DAYS === 0 ? ' · Thứ 2 → Chủ nhật' : ''}) — hôm nay {weekdayOf(day)}</b>
         <div>Doanh thu {formatMoney(w.revenue)} · Lãi {formatMoney(w.profit)} · {w.customers} khách</div>
         {w.goal !== null ? (
           <>
@@ -554,13 +554,18 @@ function Week() {
         {!chMet && pace && (() => {
           const pctPace = Math.round(pace.pace * 100);
           const pctProj = Math.round(pace.projected).toLocaleString('vi-VN');
+          // GĐ262: nói "tới Chủ nhật" chỉ khi cửa sổ tuần khối-aligned (startDay 1/8/15… — play thường
+          // luôn đúng vì endDay tăng 1 ngày each; save lệch do can thiệp tay thì nói trung tính).
+          const aligned = (w.startDay - 1) % WEEK_DAYS === 0;
+          const due = aligned ? ' (tới Chủ nhật)' : '';
+          const dueLong = aligned ? ' trước Chủ nhật' : '';
           return (
             <>
               <div style={{ ...row, marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
-                <span style={{ opacity: 0.85 }}>⏱ Nhịp {pctPace}% mục tiêu · còn {pace.remainingDays} ngày</span>
+                <span style={{ opacity: 0.85 }}>⏱ Nhịp {pctPace}% mục tiêu · còn {pace.remainingDays} ngày{due}</span>
                 {pace.onTrack
                   ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>📈 Dự kiến kịp ({pctProj} {ch.unit})</span>
-                  : <span style={{ ...pill, background: 'rgba(241,196,15,0.2)', color: '#f1c40f' }}>📉 Dự kiến hụt — còn {pace.remainingDays} ngày để bù</span>}
+                  : <span style={{ ...pill, background: 'rgba(241,196,15,0.2)', color: '#f1c40f' }}>📉 Dự kiến hụt — còn {pace.remainingDays} ngày để bù{dueLong}</span>}
               </div>
               {pace.streakAtRisk && (
                 <div style={{ ...sub, color: '#e74c3c', marginTop: 3 }}>

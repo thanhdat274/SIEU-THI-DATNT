@@ -37,6 +37,8 @@
 - **GĐ260 QA TOÀN DIỆN** ✅: coverage 87.17%/75.75% (2214 test); browser: 34 panel render 0 lỗi console, 0 tràn @320/390/768 qua 10 bảng dày nhất; autoplay 2 ngày sạch (132 khách, ~1,8tr/ngày); người mới tự hiểu hệ cuối tuần qua quest + HUD. GĐ230–249 dồn archive (PROGRESS-GD230-249.md).
 - **GĐ261 mồi cuối tuần tối thứ Sáu** 🔮: mảnh cuối của nhịp cuối tuần — "Mai tiệm có gì" (tổng kết cuối ngày) thêm dòng "🍬 Mai Thứ 7 — cuối tuần, khách hay ghé mua ăn vặt · châm kệ mì, bánh kẹo, nước ngọt" khi mai là Thứ 7/CN (thuần đọc, `tomorrowTeaser.ts`; người mới thấy tối thứ Sáu là biết chuẩn bị). 1 test mới; 2215 test xanh; build sạch; QA mắt @5173: ngày 33 (Thứ 6) hiện đúng dòng cạnh thời tiết/khách quen, ngày thường không hiện, 0 lỗi console.
 
+- **GĐ262 thẻ tuần biết thứ** 📅: Kinh doanh → Lãi lỗ: thẻ tuần ghi "ngày 29–35 · Thứ 2 → Chủ nhật — hôm nay Thứ 6"; dòng nhịp "còn N ngày (tới Chủ nhật)". Nói "tới Chủ nhật" CHỈ khi cửa sổ tuần khối-aligned (`(startDay−1)%7===0` — play thường luôn đúng vì endDay tăng đều 1 ngày; save can thiệp tay thì nói trung tính). Thuần đọc, nối hệ thứ GĐ254. 2215 test xanh; build sạch; QA mắt @5173: cả hai nhánh (aligned/lệch) hiển thị đúng, 0 lỗi console, 0 tràn @390/320.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc trong `src/data/*.ts` + một thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -307,3 +309,4 @@
 - GĐ259 — 🧪 Coverage sweep: test credit/services/professions + xoá 6 id chết trong likes nghề
 - GĐ260 — ✅ QA TOÀN DIỆN: 34 panel × 3 cỡ màn 0 tràn/0 lỗi, autoplay ngày thật, coverage 87.17/75.75
 - GĐ261 — 🔮 Mồi cuối tuần tối thứ Sáu (Mai tiệm có gì nhắc châm kệ ăn vặt khi mai Thứ 7/CN)
+- GĐ262 — 📅 Thẻ tuần Kinh doanh biết thứ (Thứ 2 → Chủ nhật khi cửa sổ khối-aligned)
