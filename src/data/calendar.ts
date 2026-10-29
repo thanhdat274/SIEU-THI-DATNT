@@ -135,6 +135,10 @@ const WEEKDAY_NAMES = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'T
 /** Tên thứ trong tuần của ngày chơi (ngày 1 = Thứ 2). */
 export const weekdayOf = (day: number): string => WEEKDAY_NAMES[((day - 1) % 7 + 7) % 7];
 
+/** Ngày chơi tương ứng một ngày trong năm (đảo của dayOfYear) — để lịch cả năm biết ô nào cuối tuần. */
+export const gameDayOfDoy = (doy: number): number =>
+  ((doy - YEAR_OFFSET) % YEAR_DAYS + YEAR_DAYS) % YEAR_DAYS + 1;
+
 /** Ngày cuối tuần (Thứ 7/Chủ nhật) — cửa sổ biến thể nhiệm vụ weekend. */
 export const isWeekend = (day: number): boolean => {
   const i = ((day - 1) % 7 + 7) % 7;

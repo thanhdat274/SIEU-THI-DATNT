@@ -1,6 +1,6 @@
 import { useGame } from '../../core/store';
 import { productById } from '../../data/products';
-import { CUM_DAYS, dateOfDoy, dayOfYear, FESTIVALS, festivalOn, festivalStock, MONTH_LENGTHS, YEAR_DAYS } from '../../data/calendar';
+import { CUM_DAYS, dateOfDoy, dayOfYear, FESTIVALS, festivalOn, festivalStock, gameDayOfDoy, isWeekend, MONTH_LENGTHS, weekdayOf, YEAR_DAYS } from '../../data/calendar';
 import { Footer, styles } from './shared';
 
 /** Lịch sự kiện cả năm: lưới 12 tháng tô màu theo dịp lễ, kèm hiệu ứng từng dịp để nhập hàng trước. */
@@ -28,8 +28,9 @@ export function CalendarPanel() {
     <>
       <h2 style={styles.title}>🗓️ Lịch sự kiện</h2>
       <p style={styles.sub}>
-        Một năm trong game dài 365 ngày theo lịch thật. Hôm nay là ngày {today.day}/{today.month}
-        {current ? ` — đang trong ${current.icon} ${current.name}` : ''}. Xem trước dịp nào tới để nhập sẵn hàng:
+        Một năm trong game dài 365 ngày theo lịch thật. Hôm nay là {weekdayOf(day)}, ngày {today.day}/{today.month}
+        {current ? ` — đang trong ${current.icon} ${current.name}` : ''}. Ô nền sáng hơn là Thứ 7/Chủ nhật — cuối tuần
+        khách ghé mua ăn vặt nhiều hơn. Xem trước dịp nào tới để nhập sẵn hàng:
         giá nhập thay đổi theo dịp, khách chịu giá cao với hàng mùa.
       </p>
       <div style={{ display: 'grid', gap: 3, marginBottom: 14, maxWidth: 660, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 6 }}>
@@ -40,13 +41,15 @@ export function CalendarPanel() {
               const doy0 = CUM_DAYS[m] + d;
               const f = FESTIVALS.find((x) => doy0 >= x.from && doy0 <= x.to);
               const idx = f ? FESTIVALS.indexOf(f) : -1;
+              const gd = gameDayOfDoy(doy0);
+              const wknd = isWeekend(gd);
               return (
                 <div
                   key={d}
-                  title={`${d}/${m + 1}${f ? `: ${f.name}` : ''}`}
+                  title={`${d}/${m + 1} · ${weekdayOf(gd)}${f ? `: ${f.name}` : ''}${wknd ? ' · cuối tuần' : ''}`}
                   style={{
                     height: 16, borderRadius: 3, fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: f ? `hsl(${(idx * 47) % 360} 55% 42%)` : '#3a3a4d',
+                    background: f ? `hsl(${(idx * 47) % 360} 55% 42%)` : wknd ? '#4a4a63' : '#3a3a4d',
                     outline: doy0 === doy ? '2px solid #fff' : undefined,
                     cursor: 'default',
                   }}

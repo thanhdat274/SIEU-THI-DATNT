@@ -119,7 +119,7 @@ describe('daily_farm hoàn thành theo số thu hoạch', () => {
 });
 
 // ── GĐ254 — biến thể CUỐI TUẦN: Thứ 7/CN có thêm nhiệm vụ "Cuối tuần ăn vặt" ──
-import { isWeekend, weekdayOf } from '../data/calendar';
+import { gameDayOfDoy, isWeekend, dayOfYear, weekdayOf } from '../data/calendar';
 import { productById, WEEKEND_SNACKS } from '../data/products';
 import type { DayStats } from '../core/store';
 
@@ -163,5 +163,16 @@ describe('biến thể cuối tuần (GĐ254)', () => {
     expect(w.current).toBe(5); // mì 3 + bánh 2, giấy vệ sinh không thuộc nhóm ăn vặt
     expect(w.target).toBe(6);
     expect(w.title).toBe('Cuối tuần ăn vặt');
+  });
+});
+
+describe('lịch cả năm biết ô nào cuối tuần (GĐ256)', () => {
+  it('gameDayOfDoy đảo đúng của dayOfYear; ô lịch giữ đúng thứ của ngày chơi', () => {
+    expect(gameDayOfDoy(dayOfYear(1))).toBe(1);
+    expect(gameDayOfDoy(dayOfYear(34))).toBe(34);
+    expect(gameDayOfDoy(dayOfYear(365))).toBe(365);
+    // ô của ngày 34 (Thứ 7) phải được đánh dấu cuối tuần qua nghịch đảo
+    expect(isWeekend(gameDayOfDoy(dayOfYear(34)))).toBe(true);
+    expect(isWeekend(gameDayOfDoy(dayOfYear(31)))).toBe(false);
   });
 });
