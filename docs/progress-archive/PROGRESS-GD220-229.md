@@ -93,3 +93,11 @@ trục "danh tiếng = tiền". THUẦN ĐỌC. (+4 test)
   đủ, render không lỗi; không tràn ngang @1280 / 390 / 320 (scrollWidth == clientWidth); dev 200.
 - Loạt soi mới GĐ226–229 (shelfSlotValue / priceGap / lostSalesValue / repMoney) là thẻ điều kiện —
   trên save ngày 4 (level 1, <10 mẫu) ẩn sạch, đúng thiết kế; logic phủ bằng test riêng.
+
+## GĐ231 — 🤝 "Cam kết kỳ hợp đồng đáng cọc không?"
+Commit kỳ ở panel Hợp đồng: cọc 10% giá trị kỳ (hoàn khi giao) + trữ riêng hàng kỳ này → thưởng tin
+cậy +6%. ContractsPanel hiện cọc/thưởng nhưng chưa nói ĐÁNG KHÔNG về dòng tiền. `commitTry`
+(data/commitTry.ts) gộp: deposit (cọc), bonus (thưởng), reservedValue (vốn khóa = Σ món × giá mua),
+depositShareOfCash → verdict. skip khi không đủ cọc; tight khi cọc ≥25% tiền mặt hoặc vốn khóa ≥50%;
+worth khi tiền dư giả (cọc hoàn, thưởng thuần lợi) — khớp trục solvency/dailyBurn (GĐ214/224). Row
+commit thêm dòng chấm xanh/cam/đỏ. THUẦN ĐỌC. (+6 test)

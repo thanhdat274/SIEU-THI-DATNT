@@ -2,6 +2,7 @@ import { useGame } from '../core/store';
 import { describeRep, meetsRep, repScore, reputationOf } from '../data/reputation';
 import { CONTRACT_STREAK_BONUS, CONTRACT_STREAK_EVERY, CONTRACT_COMMIT_BONUS, SUPPLY_CONTRACTS, supplyContractById, missingForContract, contractValue, commitBonusValue, commitDeposit, contractStreakProgress, contractAcceptRoi, type SupplyContract } from '../data/contracts';
 import { formatMoney, productById } from '../data/products';
+import { commitTry } from '../data/commitTry';
 
 /** Panel Hợp đồng — xem, chấp nhận và giao hợp đồng cung cấp dài hạn. */
 export function ContractsPanel() {
@@ -93,6 +94,15 @@ function ActiveContracts() {
                 ) : (
                   <>
                     <span style={{ opacity: 0.75 }}>🤝 Cam kết kỳ: cọc {formatMoney(deposit)} (hoàn), trữ hàng riêng → giao đúng hạn được <b style={{ color: '#f1c40f' }}>+{formatMoney(bonus)} tin cậy</b>.</span>
+                    {(() => {
+                      const ct = commitTry(def, money);
+                      const line = ct.verdict === 'skip'
+                        ? { c: '#e74c3c', t: `không đủ cọc (cần ${formatMoney(ct.deposit)})` }
+                        : ct.verdict === 'tight'
+                          ? { c: '#f1c40f', t: `cọc/${formatMoney(ct.reservedValue)} vốn khóa chiếm phần lớn tiền mặt — tiền còn mỏng thì để thoáng hơn` }
+                          : { c: '#2ecc71', t: `đáng: cọc ${formatMoney(ct.deposit)} hoàn khi giao, lấy +${formatMoney(ct.bonus)}` };
+                      return <span style={{ color: line.c, width: '100%' }}>{line.t}.</span>;
+                    })()}
                     <button style={{ ...btn, background: money < deposit ? '#777' : '#f1c40f', color: '#222' }} disabled={money < deposit} onClick={() => commitContract(id)}>🤝 Cam kết</button>
                   </>
                 )}
