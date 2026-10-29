@@ -126,3 +126,11 @@ cả chùm), capitalPerPeriod = Σ costOfGoods (vốn hàng phải trữ cho m�
 (lời nhượng lại khách sỉ), anyLosing (có hợp đồng lỗ thật). Verdict ok/warn/empty. ActiveContracts thêm
 thẻ đầu danh sách "N hợp đồng đang đóng góp ~Xđ/ngày · mỗi kỳ cần trữ ~Yđ vốn". Nối GĐ213/224 dòng vốn.
 THUẦN ĐỌC. (+5 test)
+
+## GĐ235 — ⏳ "Tồn kho quay bao lâu một vòng / món nào chôn lâu nhất?"
+stockCapital (GĐ213) đếm kho chôn BAO NHIÊU vốn; chưa trả lời "BAO LÂU xoay hết" theo GIÁ TRỊ.
+`stockTurn` (data/stockTurn.ts) gộp theo giá trị (số món đang có kệ+kho × giá mua):
+avgDays = Σ(value×daysLeft)/Σvalue (ngày xoay vòng trung bình), topStale = món daysLeft null (không
+bán) hoặc ≥ 20 ngày, xếp theo vốn chôn. StoragePanel thêm thẻ cạnh stockCapital: "⏳ Tồn kho quay
+~N ngày/lần · chôn lâu nhất: X (Yđ) — xả sớm / giảm nhập". Nối GĐ211 (xả sỉ) / GĐ213 (vốn chôn) thêm
+chiều THỜI GIAN. THUẦN ĐỌC. (+6 test)

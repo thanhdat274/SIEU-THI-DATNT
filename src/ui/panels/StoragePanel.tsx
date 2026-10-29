@@ -4,12 +4,15 @@ import { warehouseTier, WAREHOUSE_TIERS } from '../../data/warehouse';
 import { caseSize, describeUnits, formatMoney, productById } from '../../data/products';
 import { storeMissRevenue, coldOverflow } from '../../data/advice';
 import { stockCapital } from '../../data/stockCapital';
+import { stockTurn } from '../../data/stockTurn';
+import { shelfCount } from '../../data/analytics';
+import { itemHealthList } from '../../data/analytics';
 import { warehouseUpgradeValue } from '../../data/warehouseUpgrade';
 import { Callout, LifeBadge, Footer, styles } from './shared';
 
 /** Kho hàng: thùng nguyên + hàng lẻ đã khui, hạn gần nhất, chỗ trống. */
 export function StoragePanel() {
-  const { storage, storageLots, deliveries, warehouseTier: tierIndex, level, money, priceOf, autoSwap, upgradeWarehouse, openPanel, closePanel, stats, weather } = useGame();
+  const { storage, storageLots, deliveries, warehouseTier: tierIndex, level, money, priceOf, autoSwap, upgradeWarehouse, openPanel, closePanel, stats, weather, analytics, furniture, demand } = useGame();
   const tier = warehouseTier(tierIndex);
   const next = WAREHOUSE_TIERS[tierIndex + 1];
   const capacity = storageCapacity(tierIndex);
@@ -44,6 +47,21 @@ export function StoragePanel() {
               {overCash
                 ? `Trị giá kho còn vượt cả tiền mặt (${formatMoney(money)}) — kho ứ vốn, cân nhắc xả sỉ (GĐ211) hay bày kệ bán bớt trước khi nhập thêm.`
                 : 'Vốn nằm trong hàng hoá đang chờ bán; xem nếu muốn bơm vốn vào chỗ khác.'}
+            </div>
+          </Callout>
+        );
+      })()}
+      {(() => {
+        const onShelf = shelfCount(furniture);
+        const list = itemHealthList(analytics, level, storage, onShelf, demand);
+        const turn = stockTurn(list, storage, onShelf);
+        if (turn.avgDays == null && turn.topStale.length === 0) return null;
+        const worst = turn.topStale[0];
+        return (
+          <Callout tone={turn.topStale.length > 0 ? 'warn' : 'accent'} style={{ marginBottom: 8 }} title={`⏳ Tồn kho quay ${turn.avgDays != null ? `~${turn.avgDays.toFixed(0)} ngày/lần` : 'chậm (chưa ước được ngày)'}`}>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              Vốn hàng ~{formatMoney(turn.totalValue)} đang chờ bán hết.
+              {worst ? ` ⚠️ Chôn lâu nhất theo giá trị: ${worst.name} (${formatMoney(worst.value)}, ${worst.daysLeft == null ? 'không bán' : `còn ~${worst.daysLeft.toFixed(0)} ngày`}) — xả sớm / giảm nhập.` : ' Xoay vòng ổn, không món nào kẹt lâu.'}
             </div>
           </Callout>
         );
