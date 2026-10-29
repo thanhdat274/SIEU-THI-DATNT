@@ -11,6 +11,7 @@ import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits
 import { payrollRunway } from '../../data/payrollRunway';
 import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
+import { serveCoverage, SERVE_TOP_HOURS } from '../../data/serveCoverage';
 import { staffValueToday, staffShiftSummary } from '../../data/staffValue';
 import { branchShiftSummary, branchStaffValueToday } from '../../data/branchStaffValue';
 import { nightStaffValueToday } from '../../data/nightStaffValue';
@@ -65,6 +66,27 @@ export function StaffPanel() {
               {pr.covered
                 ? `Cầm đủ lương tối nay${pr.runwayDays != null && pr.runwayDays > 0 ? `, tạm đủ ${pr.runwayDays} ngày lương nữa` : ''}.`
                 : `Chưa đủ trả lương tối nay — bớt nhập hàng, xả sỉ/gánh chợ (GĐ211) hoặc lót vay (GĐ217) trước khi ngủ.`}
+            </div>
+          </Callout>
+        );
+      })()}
+      {(() => {
+        if (!stats?.byHour || Object.keys(stats.byHour).length === 0 || !staff.length) return null;
+        const cov = serveCoverage({ staff, byHour: stats.byHour });
+        if (cov.verdict === 'empty') return null;
+        const noVacant = cov.vacantBusy.length === 0;
+        return (
+          <Callout tone={noVacant ? 'ok' : 'warn'} style={{ marginBottom: 8 }} title={
+            noVacant
+              ? (cov.peak ? `👥 Giờ ${cov.peak.hour}h đông nhất (~${cov.peak.customers} khách) vẫn có người trực` : '👥 Chưa có khách hôm nay')
+              : `🧑🍳 ${cov.vacantBusy.map((v) => `giờ ${v.hour}h (~${v.customers} khách)`).join(', ')} đông mà vắng người bán`
+          }>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              {cov.vacantBusy.length > 0 && <>Những giờ đó không ai trực → khách chờ lâu dễ bỏ về. {''}</>}
+              {cov.busiestStaffed.length > 0 && (
+                <>Đông nhất còn người trực: {cov.busiestStaffed.slice(0, SERVE_TOP_HOURS).map((h) => `giờ ${h.hour}h (${h.customers} khách/${h.onDuty} người)`).join(', ')}.</>
+              )}
+              {' '}Cân nhắc xếp người ca nguyên ngày/đổi ca để phủ giờ đông.
             </div>
           </Callout>
         );

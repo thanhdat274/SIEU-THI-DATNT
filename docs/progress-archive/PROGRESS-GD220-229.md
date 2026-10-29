@@ -145,3 +145,13 @@ hôm nay → trộm kỳ vọng/ngày × giỏ = giá trị hàng "lộ ra" mỗ
 BusinessPanel thẻ camera thêm Callout cạnh nút mua: "🦹 Mỗi ngày trộm rút ~Xđ hàng · lắp camera tiết
 kiệm ~Yđ/ngày, hoàn vốn ~Z ngày". UỚC LƯỢNG trung bình, deterministic (không RNG/seed). THUẦN ĐỌC.
 (+6 test)
+
+## GĐ237 — 🧑🍳 "Giờ nào đông mà vắng người bán? (xếp ca)"
+staffValue (GĐ141) gán doanh thu/giờ cho TỪNG nhân viên; chưa ai trả lời "GIỜ nào đông nhưng vắng người
+trực kịp" — quyết định xếp ca sáng/chiều/nguyên ngày. `serveCoverage` (data/serveCoverage.ts) đọc THUẦN
+state: stats.byHour (khách/giờ 6–22) × staff[].shift (dùng shiftHourWindow, trùng cách staffValue). Mỗi
+giờ: onDuty = số người trực, load = khách/onDuty, crowdedVacant = giờ ≥ 25 khách (SERVE_CROWD_MIN) mà
+không ai trực → rủi ro bỏ về vì chờ. peak = giờ đông nhất; busiestStaffed = top 3 giờ đông còn người
+trực; verdict warn khi có giờ đông-vắng. StaffPanel thêm Callout: "🍳 giờ Xh (~N khách) đông mà vắng
+người bán · đông nhất còn người trực: … — cân nhắc xếp ca nguyên ngày". THUẦN ĐỌC, deterministic.
+(+5 test)
