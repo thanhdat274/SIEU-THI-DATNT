@@ -35,6 +35,7 @@ import { riskTrendSummary } from '../data/risk';
 import { catPayoff, dogPayoff, CAT_PITCH_MIN } from '../data/petPayoff';
 import { counterPayoff, huiRoundSummary, recentAvgRevenue } from '../data/minorPayoff';
 import { rivalDrag } from '../data/rivalDrag';
+import { theftRisk, THEFT_LEAK_HIGH, THEFT_LEAK_MODERATE, THEFT_UNLOCK } from '../data/theftRisk';
 import { summarizeDemographics, adReach, adTargetSuggest } from '../data/demographics';
 
 const card: React.CSSProperties = { background: '#3a3a4d', borderRadius: 10, padding: '12px 14px', marginBottom: 8, border: '1px solid rgba(255,255,255,0.06)' };
@@ -924,7 +925,7 @@ function Life() {
 
 /** Tab nâng cấp: thiết bị mua một lần dùng vĩnh viễn. */
 function Upgrades() {
-  const { level, money, biz } = useGame();
+  const { level, money, biz, stats, day } = useGame();
   return (
     <>
       <div style={{ ...card, marginBottom: 8 }}>
@@ -933,6 +934,12 @@ function Upgrades() {
       </div>
       {UPGRADES.map((u) => {
         const owned = hasUpgrade(biz, u.id);
+        const cameraRisk = u.id === 'camera' && level >= THEFT_UNLOCK
+          ? theftRisk({
+              level, customers: stats.customers, revenue: stats.revenue,
+              hasCamera: owned, hasDog: !!petActive(biz.pets?.dog, day),
+            })
+          : null;
         return (
           <div key={u.id} style={card}>
             <div style={row}>
@@ -952,6 +959,21 @@ function Upgrades() {
                 </button>
               )}
             </div>
+            {cameraRisk && (
+              <Callout
+                tone={cameraRisk.hasCamera ? 'ok' : cameraRisk.leakExposureToday >= THEFT_LEAK_HIGH ? 'danger' : cameraRisk.leakExposureToday >= THEFT_LEAK_MODERATE ? 'warn' : 'info'}
+                style={{ marginTop: 8 }}
+                title={cameraRisk.hasCamera
+                  ? '📹 Đã lắp camera — kẻ trộm né tiệm'
+                  : `🦹 Mỗi ngày trộm rút ~${formatMoney(cameraRisk.leakExposureToday)} hàng`}
+              >
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {cameraRisk.hasCamera
+                    ? 'Đã lắp: kẻ trộm né tiệm (mất bớt ~30% vụ trộm).'
+                    : `~${Math.round(cameraRisk.expectedThievesToday * 10) / 10} khách/ngày là kẻ trộm (giỏ trung bình ${formatMoney(cameraRisk.avgBasketRetail)}). Lắp camera kìm còn 70% → tiết kiệm ước ~${formatMoney(cameraRisk.cameraSavesPerDay)}/ngày, hoàn vốn sau ~${cameraRisk.cameraPaybackDays ?? '?'} ngày.`}
+                </div>
+              </Callout>
+            )}
           </div>
         );
       })}

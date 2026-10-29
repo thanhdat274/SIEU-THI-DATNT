@@ -134,3 +134,14 @@ avgDays = Σ(value×daysLeft)/Σvalue (ngày xoay vòng trung bình), topStale =
 bán) hoặc ≥ 20 ngày, xếp theo vốn chôn. StoragePanel thêm thẻ cạnh stockCapital: "⏳ Tồn kho quay
 ~N ngày/lần · chôn lâu nhất: X (Yđ) — xả sớm / giảm nhập". Nối GĐ211 (xả sỉ) / GĐ213 (vốn chôn) thêm
 chiều THỜI GIAN. THUẦN ĐỌC. (+6 test)
+
+## GĐ236 — 🦹 "Rò tiền vì trộm vặt — camera có đáng không?"
+Camera (📹 800k, unlock 15) là nâng cấp đắt nhưng tính tới GĐ235 chưa nơi nào cho con số "mỗi ngày trộm
+rút ~bao nhiêu hàng" — người chơi chỉ thấy thỉnh thoảng 🚨/🦹, không thấy payoff. `theftRisk`
+(data/theftRisk.ts) đọc thuần hằng số cơ chế thật: RISK_RULES.theft.chance (0.015) × chó trông tiệm
+(×0.45, khớp theftFactor) × camera (×0.7, khớp agents/customers.ts); giỏ bán lẻ TB = revenue/customers
+hôm nay → trộm kỳ vọng/ngày × giỏ = giá trị hàng "lộ ra" mỗi ngày. Camera được ước lượng tiết kiệm
+×0.3 mức lộ ra (kìm còn 70%) → số ngày hoàn vốn. Verdict low/moderate/high; locked khi chưa đủ cấp 15.
+BusinessPanel thẻ camera thêm Callout cạnh nút mua: "🦹 Mỗi ngày trộm rút ~Xđ hàng · lắp camera tiết
+kiệm ~Yđ/ngày, hoàn vốn ~Z ngày". UỚC LƯỢNG trung bình, deterministic (không RNG/seed). THUẦN ĐỌC.
+(+6 test)
