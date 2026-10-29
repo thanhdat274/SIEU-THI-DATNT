@@ -121,6 +121,7 @@ describe('daily_farm hoàn thành theo số thu hoạch', () => {
 // ── GĐ254 — biến thể CUỐI TUẦN: Thứ 7/CN có thêm nhiệm vụ "Cuối tuần ăn vặt" ──
 import { gameDayOfDoy, isWeekend, dayOfYear, weekdayOf } from '../data/calendar';
 import { productById, WEEKEND_SNACKS } from '../data/products';
+import { SEASONAL_GOODS } from '../data/calendar';
 import type { DayStats } from '../core/store';
 
 describe('biến thể cuối tuần (GĐ254)', () => {
@@ -174,5 +175,32 @@ describe('lịch cả năm biết ô nào cuối tuần (GĐ256)', () => {
     // ô của ngày 34 (Thứ 7) phải được đánh dấu cuối tuần qua nghịch đảo
     expect(isWeekend(gameDayOfDoy(dayOfYear(34)))).toBe(true);
     expect(isWeekend(gameDayOfDoy(dayOfYear(31)))).toBe(false);
+  });
+});
+
+describe('nhất quán nhịp tuần × thứ (GĐ263 — khoá hệ cuối tuần với các nhịp 7 ngày cũ)', () => {
+  it('mọi khối tuần [7k+1..7k+7] luôn bắt đầu Thứ 2, kết thúc Chủ nhật; thử thách tuần (ceil(day/7)) và chợ phiên (floor((day-1)/7)) cùng khối', () => {
+    for (let day = 1; day <= 365; day++) {
+      const blockStart = day - ((day - 1) % 7); // 1, 8, 15, …
+      const blockEnd = blockStart + 6;
+      expect(weekdayOf(blockStart)).toBe('Thứ 2');
+      expect(weekdayOf(blockEnd)).toBe('Chủ nhật');
+      expect(isWeekend(blockStart)).toBe(false);
+      expect(isWeekend(blockEnd)).toBe(true);
+      // cả tuần thử thách (ceil) lẫn tuần chợ phiên/sỉ (floor 0-based) chia đúng khối này
+      const ceilWeek = Math.ceil(day / 7);
+      const floorWeek = Math.floor((day - 1) / 7);
+      expect(Math.ceil(blockEnd / 7)).toBe(ceilWeek);
+      expect(Math.ceil(blockStart / 7)).toBe(ceilWeek);
+      expect(floorWeek).toBe(ceilWeek - 1);
+      // giữa tuần không phải cuối tuần: chỉ 2 ngày cuối khối là Thứ 7/CN
+      if (day - blockStart < 5) expect(isWeekend(day)).toBe(false);
+    }
+  });
+});
+
+describe('bất biến nhóm ăn vặt cuối tuần (GĐ263)', () => {
+  it('WEEKEND_SNACKS không chứa hàng mùa lễ (SEASONAL_GOODS) — nhánh chooseWants cuối tuần không cần lọc off-season', () => {
+    for (const id of WEEKEND_SNACKS) expect(SEASONAL_GOODS.has(id)).toBe(false);
   });
 });

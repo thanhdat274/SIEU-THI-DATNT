@@ -39,6 +39,8 @@
 
 - **GĐ262 thẻ tuần biết thứ** 📅: Kinh doanh → Lãi lỗ: thẻ tuần ghi "ngày 29–35 · Thứ 2 → Chủ nhật — hôm nay Thứ 6"; dòng nhịp "còn N ngày (tới Chủ nhật)". Nói "tới Chủ nhật" CHỈ khi cửa sổ tuần khối-aligned (`(startDay−1)%7===0` — play thường luôn đúng vì endDay tăng đều 1 ngày; save can thiệp tay thì nói trung tính). Thuần đọc, nối hệ thứ GĐ254. 2215 test xanh; build sạch; QA mắt @5173: cả hai nhánh (aligned/lệch) hiển thị đúng, 0 lỗi console, 0 tràn @390/320.
 
+- **GĐ263 khoá nhất quán nhịp tuần × thứ** 🔒: test 365 ngày — khối [7k+1..7k+7] luôn Thứ 2→Chủ nhật, trùng khối của thử thách tuần (ceil(day/7)) và chợ phiên/sỉ (floor((day−1)/7)); bất biến WEEKEND_SNACKS ∩ hàng mùa lễ = ∅ (nhánh chooseWants cuối tuần không cần lọc off-season — ai thêm snack mùa phải lọc). **Quyết định: KHÔNG mở rộng bias cuối tuần sang sim ngầm chi nhánh/quán nước** (quest nhắm tiệm chính nơi người chơi hành động; sim ngầm có nhịp riêng). 2217 test xanh; build sạch.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc trong `src/data/*.ts` + một thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -310,3 +312,4 @@
 - GĐ260 — ✅ QA TOÀN DIỆN: 34 panel × 3 cỡ màn 0 tràn/0 lỗi, autoplay ngày thật, coverage 87.17/75.75
 - GĐ261 — 🔮 Mồi cuối tuần tối thứ Sáu (Mai tiệm có gì nhắc châm kệ ăn vặt khi mai Thứ 7/CN)
 - GĐ262 — 📅 Thẻ tuần Kinh doanh biết thứ (Thứ 2 → Chủ nhật khi cửa sổ khối-aligned)
+- GĐ263 — 🔒 Khoá nhất quán tuần×thứ (test 365 ngày) + chốt không mở bias cuối tuần sang sim ngầm
