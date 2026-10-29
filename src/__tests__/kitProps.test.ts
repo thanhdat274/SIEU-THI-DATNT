@@ -4,9 +4,12 @@ import {
   KIT_PLACEMENTS,
   KIT_MARKET_PLACEMENTS,
   KIT_ROADWORK_PLACEMENTS,
+  KIT_FESTIVAL_PLACEMENTS,
   kitPlacementProblems,
 } from '../world/kitProps';
 import { isMarketDay } from '../data/chophien';
+import { isFestivalDeco } from '../data/festivalDeco';
+import { festivalOn } from '../data/calendar';
 
 /**
  * GĐ172 — Kit prop GLB trang trí (pipeline kiểu Xóm Nông Trại): model sinh bằng script ra
@@ -26,7 +29,7 @@ describe('GĐ172 — kit prop GLB', () => {
   });
 
   it('đủ module của kit đều được dùng ít nhất một chỗ (tính cả chợ phiên + sửa đường)', () => {
-    const used = new Set([...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS].map((p) => p.module));
+    const used = new Set([...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS, ...KIT_FESTIVAL_PLACEMENTS].map((p) => p.module));
     for (const m of KIT_MODULES) expect(used.has(m)).toBe(true);
   });
 
@@ -209,6 +212,45 @@ describe('GĐ196 — chỗ ngồi chợ phiên', () => {
       const dHome = Math.hypot(p.pos[0] - -12, p.pos[2] - 1);
       expect(dShop).toBeGreaterThan(1.2);
       expect(dHome).toBeGreaterThan(0.8);
+    }
+  });
+});
+
+/**
+ * GĐ197 — "Con hẻm vào dịp": dãy cờ `day_co` chỉ dựng ngang hẻm khi hôm nay có lễ hội (`festivalOn`).
+ * Cùng kiểu GĐ181/184: bật/tắt bằng `setFestival`, không chặn lưới; rủi ro duy nhất là đặt sai chỗ.
+ */
+describe('GĐ197 — dãy cờ lễ hội', () => {
+  it('bảng vị trí dãy cờ không vi phạm chỗ cấm (đã gộp vào kitPlacementProblems)', () => {
+    expect(kitPlacementProblems()).toEqual([]);
+  });
+
+  it('chỉ dùng module day_co có trong kit, không chen món nào trong toàn bảng (<0.55 m)', () => {
+    for (const p of KIT_FESTIVAL_PLACEMENTS) {
+      expect(KIT_MODULES).toContain(p.module);
+      expect(p.module).toBe('day_co');
+    }
+    const all = [...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS, ...KIT_FESTIVAL_PLACEMENTS];
+    for (let i = 0; i < all.length; i++) {
+      for (let j = i + 1; j < all.length; j++) {
+        const d = Math.hypot(all[i].pos[0] - all[j].pos[0], all[i].pos[2] - all[j].pos[2]);
+        expect(d).toBeGreaterThanOrEqual(0.55);
+      }
+    }
+  });
+
+  it('dãy cờ đặt vượt lối đi thoáng, không chắn hai cửa chính (tiệm x=4,z=1 · nhà x=−12,z=1)', () => {
+    for (const p of KIT_FESTIVAL_PLACEMENTS) {
+      const dShop = Math.hypot(p.pos[0] - 4, p.pos[2] - 1);
+      const dHome = Math.hypot(p.pos[0] - -12, p.pos[2] - 1);
+      expect(dShop).toBeGreaterThan(1.2);
+      expect(dHome).toBeGreaterThan(0.8);
+    }
+  });
+
+  it('có đúng dịp thì bật (soi chân lý festivalOn — đồng nhất trên một loạt ngày, gồm Tết)', () => {
+    for (let day = 1; day <= 90; day++) {
+      expect(isFestivalDeco(day)).toBe(festivalOn(day) !== undefined);
     }
   });
 });

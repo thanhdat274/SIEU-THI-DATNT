@@ -11,7 +11,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
  */
 
 /** Toàn bộ module mà script hiện sinh ra — placement chỉ được trỏ vào đây. */
-export const KIT_MODULES = ['chau_cay', 'thung_go', 'khom_tre', 'bon_nuoc', 'cho_nhua', 'xe_day', 'rao_chan', 'bang_ghe'] as const;
+export const KIT_MODULES = ['chau_cay', 'thung_go', 'khom_tre', 'bon_nuoc', 'cho_nhua', 'xe_day', 'rao_chan', 'bang_ghe', 'day_co'] as const;
 export type KitModule = (typeof KIT_MODULES)[number];
 
 export interface KitPlacement {
@@ -82,12 +82,24 @@ export const KIT_ROADWORK_PLACEMENTS: KitPlacement[] = [
   { module: 'rao_chan', pos: [4.6, 0, 2.5], rotY: -0.06, scale: 1.05 },
 ];
 
+/**
+ * Con hẻm vào dịp (gđ197): những dãy cờ `day_co` chỉ dựng ngang qua hẻm khi hôm nay có lễ hội
+ * (`festivalOn` — Tết, Trung thu, 20/11...). Cùng kiểu GĐ181/184: con hẻm đổi cảnh theo lịch kinh tế,
+ * bật/tắt bằng `setFestival`; KHÔNG chặn lưới đi lại (chỉ trang trí). Đặt dây cờ cao ~3m, span ~5.6m
+ * ngang hẻm tại các chỗ vượt lối đi thoáng (giữa hẻm / cửa vào / dãy nhà tây).
+ */
+export const KIT_FESTIVAL_PLACEMENTS: KitPlacement[] = [
+  { module: 'day_co', pos: [-0.4, 0, 2.6], rotY: 0.05 },
+  { module: 'day_co', pos: [5.2, 0, 1.6], rotY: 0.1 },
+  { module: 'day_co', pos: [-18, 0, 0.6], rotY: 0.1 },
+];
+
 /** Chỗ trượt đứng: đè vào nhà / lòng đường / ngoài thế giới là bug đặt chỗ, soi bằng test. */
 export function kitPlacementProblems(): string[] {
   const problems: string[] = [];
   const inRect = (x: number, z: number, x1: number, z1: number, x2: number, z2: number) =>
     x >= x1 && x <= x2 && z >= z1 && z <= z2;
-  const all = [...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS];
+  const all = [...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS, ...KIT_FESTIVAL_PLACEMENTS];
   for (const p of all) {
     const [x, , z] = p.pos;
     if (!KIT_MODULES.includes(p.module)) problems.push(`${p.module}: không có trong kit`);
@@ -126,13 +138,17 @@ export interface KitProps {
   roadworkGroup: THREE.Group;
   /** Bật/tắt cảnh "đang sửa đường" (rào chắn trước hẻm khi có sự kiện market roadworks). */
   setRoadwork(on: boolean): void;
+  /** Nhóm con hẻm vào dịp (gđ197) — con của `group`, mặc định ẩn; bật bằng setFestival. */
+  festivalGroup: THREE.Group;
+  /** Bật/tắt cảnh "con hẻm vào dịp" (dãy cờ ngang hẻm khi có lễ hội — festivalOn). */
+  setFestival(on: boolean): void;
 }
 
 /**
  * Bắt đầu tải kit: trả về group trống để `scene.add` NGAY (thế giới không phải chờ), các prop
  * vừa tải xong vừa chen vào. Lỗi mạng chỉ ghi console — kit là đồ trang trí, không có vẫn chơi được.
  */
-export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; done: Promise<KitProps>; marketGroup: THREE.Group; setMarketDay(on: boolean): void; roadworkGroup: THREE.Group; setRoadwork(on: boolean): void } {
+export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; done: Promise<KitProps>; marketGroup: THREE.Group; setMarketDay(on: boolean): void; roadworkGroup: THREE.Group; setRoadwork(on: boolean): void; festivalGroup: THREE.Group; setFestival(on: boolean): void } {
   const group = new THREE.Group();
   group.name = 'kitProps';
   // Nhóm gánh hàng chợ phiên (gđ181): con của group, mặc định ẩn — setMarketDay bật khi isMarketDay.
@@ -145,7 +161,12 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
   roadworkGroup.name = 'roadworkProps';
   roadworkGroup.visible = false;
   group.add(roadworkGroup);
-  const result: KitProps = { group, loaded: 0, failed: [], marketGroup, setMarketDay: (on) => { marketGroup.visible = on; }, roadworkGroup, setRoadwork: (on) => { roadworkGroup.visible = on; } };
+  // Nhóm con hẻm vào dịp (gđ197): con của group, mặc định ẩn — setFestival bật khi có lễ hội.
+  const festivalGroup = new THREE.Group();
+  festivalGroup.name = 'festivalProps';
+  festivalGroup.visible = false;
+  group.add(festivalGroup);
+  const result: KitProps = { group, loaded: 0, failed: [], marketGroup, setMarketDay: (on) => { marketGroup.visible = on; }, roadworkGroup, setRoadwork: (on) => { roadworkGroup.visible = on; }, festivalGroup, setFestival: (on) => { festivalGroup.visible = on; } };
   const done = new Promise<KitProps>((resolve) => {
     const finish = () => resolve(result);
     if (KIT_PLACEMENTS.length === 0) return finish();
@@ -211,6 +232,16 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
             () => { if (!result.failed.includes(p.module)) result.failed.push(p.module); },
           );
         }
+        // Con hẻm vào dịp (gđ197): tải `day_co` vào festivalGroup, ẩn cho tới setFestival(true).
+        const festivalLive = KIT_FESTIVAL_PLACEMENTS.filter((p) => available.has(p.module));
+        for (const p of festivalLive) {
+          loader.load(
+            `${baseUrl}${p.module}.glb`,
+            (gltf) => { place(gltf.scene, p, festivalGroup); },
+            undefined,
+            () => { if (!result.failed.includes(p.module)) result.failed.push(p.module); },
+          );
+        }
       })
       .catch((err) => {
         console.warn('[kit] Không tải được kit prop — chơi tiếp không sao:', err?.message ?? err);
@@ -218,5 +249,5 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
         finish();
       });
   });
-  return { group, done, marketGroup, setMarketDay: result.setMarketDay, roadworkGroup, setRoadwork: result.setRoadwork };
+  return { group, done, marketGroup, setMarketDay: result.setMarketDay, roadworkGroup, setRoadwork: result.setRoadwork, festivalGroup, setFestival: result.setFestival };
 }

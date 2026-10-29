@@ -271,6 +271,32 @@ function bangGhe() {
   return parts;
 }
 
+/** Dãy cờ hẻm (gđ197): sợi dây hơi võng + nhiều lá cờ tam giác màu dịp treo ngang qua hẻm khi có lễ
+ * hội (festivalOn — Tết/Trung thu...) — "con hẻm vào dịp" hiện ra bằng màu, không chỉ doanh số. */
+function dayCo() {
+  const parts: THREE.BufferGeometry[] = [];
+  const flags = 9, span = 5.6, topY = 3.1, sag = 0.5;
+  const COL = [0xd63031, 0xf1c40f, 0x2ecc71, 0x3498db, 0xeb2f96];
+  const sagAt = (t: number) => topY - sag * Math.sin(Math.PI * t);
+  // Dây treo: vài đoạn ngắn dốc nhẹ tạo võng (giữ triangle thấp)
+  const segs = 3;
+  for (let i = 0; i < segs; i++) {
+    const a = i / segs, b = (i + 1) / segs;
+    const xa = -span / 2 + span * a, xb = -span / 2 + span * b;
+    const ya = sagAt(a), yb = sagAt(b);
+    const dx = xb - xa, dy = ya - yb, len = Math.hypot(dx, dy);
+    parts.push(part(new RoundedBoxGeometry(len, 0.02, 0.02, 1, 0.01), 0x555a63,
+      (xa + xb) / 2, (ya + yb) / 2, 0, [0, 0, -Math.atan2(dy, dx)]));
+  }
+  // Lá cờ tam giác: cone 3 cạnh ép mỏng, đỉnh chúi xuống treo dọc dây
+  for (let i = 0; i < flags; i++) {
+    const t = (i + 0.5) / flags;
+    const c = new THREE.ConeGeometry(0.15, 0.34, 3);
+    parts.push(part(facet(c), COL[i % COL.length], -span / 2 + span * t, sagAt(t) - 0.17, 0, [0, 0, Math.PI], [1, 1, 0.12]));
+  }
+  return parts;
+}
+
 /** Khóm tre: ba thân đốt xanh, mỗi thân vót lá dẹt vươn ra. */
 function khomTre() {
   const parts: THREE.BufferGeometry[] = [];
@@ -332,6 +358,7 @@ const PROPS: Record<string, () => THREE.BufferGeometry[]> = {
   xe_day: xeDay,
   rao_chan: raoChan,
   bang_ghe: bangGhe,
+  day_co: dayCo,
 };
 
 /** Trần triangle mỗi module: vượt là cảnh báo để kịp đơn giản hoá, đỡ phình to âm thầm. */

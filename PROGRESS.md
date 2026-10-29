@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1864/1864 test pass (170 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ196. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ ~99s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
+- **1868/1868 test pass (170 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ197. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ ~113s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–196 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
+### Giai đoạn gần đây · GĐ177–197 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
 
 - **GĐ177** 🏮 Đầu ngõ lên đèn: đèn lồng cột dựng Blender (`blender_lantern.py`) bật sáng ấm chập tối (lamp 17h–5h30, lightBudget) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md.
 - **GĐ178** 🎨 Gộp họ xanh dương guide/chuỗi/biểu đồ về info `#3498db` (16 chỗ) — chi tiết: archive trên.
@@ -47,6 +47,7 @@
 - **GĐ194** 🏪 "Mở chi nhánh 5tr hồi vốn sau bao lâu?": màn mua chi nhánh chỉ cho giá + cấp yêu cầu. Chi nhánh chạy SIM (không deterministic như quán nước) nhưng QUAN SÁT được qua `branchOperatingBalanceToday` (GĐ153: thu − lương − điện) → helper thuần `branchBuildPayback(branch, cost)` lấy số dư vận hành hôm nay làm lời ròng MỘT NGÀY, chia vốn xây = ngày hồi (mẫu GĐ192) + verdict worth/slow/notworth/nodata. Info tab BranchPanel thêm "💸 5tr mua mặt bằng: hồi vốn sau ~N ngày (dư ~X/ngày) · theo hôm nay, chưa trừ giá vốn hàng" — feedback vận hành liên tục; ẩn khi chưa có thu (nodata) để không nhiễu. `branchNet.ts` (+helper, tái dùng branchOperatingBalanceToday), `BranchPanel.tsx`, test +5 (đối chiếu ground-truth balance); tsc+build sạch; QA @5173.
 - **GĐ195** 🪑 "Con hẻm có chỗ ngồi": thêm băng ghế gỗ hẻm (`bang_ghe`) vào bộ kit prop 3D (pipeline build-kit-assets.ts + Draco) — món đồ còn thiếu để cảnh "con hẻm sống" hoàn chỉnh: chỗ bà con ngồi hóng mát bên đống chậu cây, nối cảm giác với đèn ấm chập tối (GĐ177/185/187). Khung chân sắt loe + mặt ghế/tựa lưng nan gỗ sáng, 1056 tris / 149.8KB (dưới trần 2500), hợp màu bảng (thép/2 tông gỗ) — đặt 3 chỗ đã soi chỗ cấm: cạnh nhà tây [−18,−6], vỉa hè đông [15.2,2.1], gần tre tây [−45,−22]. Vẫn kit prop trang trí KHÔNG chặn lưới (convention GĐ172). `build-kit-assets.ts` (+`bangGhe`), `kitProps.ts` (+module +3 placement), test +4 (GĐ195); tsc+build sạch; QA @5173: boot ổn, GLB+manifest phục vụ 200.
 - **GĐ196** 🪑 "Phiên chợ có chỗ ngồi": bữa trước chợ phiên (GĐ181/182) chỉ dựng xe đẩy `xe_day` + đông khách ×1.15 — đám người mua chẳng có chỗ ngồi. Giờ cùng nhịp `isMarketDay`, phiên chợ còn bày thêm chỗ ngồi dọc vỉa hè: tái dùng `bang_ghe` (GĐ195) 2 băng + `cho_nhua` 2 ghế trong `KIT_MARKET_PLACEMENTS` → bật/tắt chung `setMarketDay` (không cần 3D mới, không chặn lưới). "Hôm nay phiên chợ" chuyển từ mấy xe đẩy trơ trọi thành một cảnh họp mặt đông vui. `kitProps.ts` (+4 placement), test +4 (GĐ196, gộp soi chỗ cấm); tsc+build sạch; QA @5173.
+- **GĐ197** 🎪 "Con hẻm vào dịp": lễ hội trong calendar (Tết ×1.7, Trung thu ×1.3, 20/11...) từ trước chỉ đổi kinh tế ngày (traffic/món hot) — hẻm không hề đổi cảnh. Thêm kit prop 3D `day_co` — sợi dây võng + 9 lá cờ tam giác màu dịp (đỏ/vàng/xanh/lam/hồng) treo ngang qua hẻm cao ~3m, 378 tris / 6.0KB Draco — dựng đúng ngày có lễ hội. Helper thuần `festivalDeco.ts` `isFestivalDeco(day)` đọc cùng chân lý `festivalOn`; `KIT_FESTIVAL_PLACEMENTS` (3 dây: miệng hẻm [−0.4,2.6], giữa hẻm [5.2,1.6], dãy nhà tây [−18,0.6]) + `festivalGroup` + `kit.setFestival(on)` (mẫu GĐ181/184, không chặn lưới) + main.tsx đổi cảnh 1 lần theo ngày (guard `lastFestival`). `day_co` trong build-kit-assets + kitProps + main.tsx, test +4 (soi chân lý festivalOn); tsc+build sạch; QA @5173.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -95,7 +96,7 @@
 
 ## Backlog tiếp theo
 
-1. **Audit trải nghiệm & tiến trình (GĐ168–171) đã xong** ✅ (mid/late-game: roadmap 30+, ratchet tuần/tháng, rival kết, NG+ mục tiêu vòng). Đánh giá lại: vòng ngày & tiến trình đã khai thác sâu; trục "**tài sản 3D + không gian con hẻm**" (nối GĐ172–176) đang chạy — đã thêm băng ghế hẻm (GĐ195) và biến phiên chợ thành cảnh họp mặt có chỗ ngồi (GĐ196). Còn cấp độ sâu trên trục này: nhiều kit prop sinh hoạt + gắn thêm kit prop vào các beat đã có (roadworks/chợ/giờ ấm) nếu muốn dày cảnh hơn.
+1. **Audit trải nghiệm & tiến trình (GĐ168–171) đã xong** ✅ (mid/late-game: roadmap 30+, ratchet tuần/tháng, rival kết, NG+ mục tiêu vòng). Đánh giá lại: vòng ngày & tiến trình đã khai thác sâu; trục "**tài sản 3D + không gian con hẻm**" (nối GĐ172–176) đang chạy — đã thêm băng ghế hẻm (GĐ195), biến phiên chợ thành cảnh họp mặt (GĐ196), và cho lễ hội dãy cờ 3D (GĐ197). Còn cấp độ sâu trên trục này: đã phủ kit prop cho gần hết beat của con hẻm (chợ/roadworks/dịp/đèn ấm) — trục gần cạn; khi cạn thì đổi trục song song theo backlog 2/6.
 2. 🎯 **Chợ phiên thành nhịp gameplay** ✅ (GĐ182: đông khách ×1.15 + toast nhắc). Giờ nhịp tuần: gánh hàng dựng (GĐ181) + xả kho (GĐ135/136) + đông khách. Nếu sau này muốn mạnh hơn: hàng đặc biệt bán giá tốt hơn ngày phiên, hoặc mùa/lễ hội riêng — ghi chờ, không vội.
 3. Sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (save người thật); nếu vẫn lặp → thêm biến thể hoàn cảnh (lễ, weekend).
 4. GĐ164 theo dõi: arc E "Hàng xóm khai trương" (thay cam_do_mo) — chỉ làm khi 4 arc A–D chạy tốt trên save thật.
@@ -295,3 +296,4 @@
 - GĐ194 — 🏪 Hồi vốn xây chi nhánh: info tab ước "hồi vốn 5tr sau ~N ngày" theo số dư vận hành hôm nay (mẫu GĐ192) — khép bộ ROI 3 tài sản lớn (đêm/quán nước/chi nhánh)
 - GĐ195 — 🪑 Băng ghế hẻm: kit prop 3D mới ("con hẻm có chỗ ngồi") — hoàn thiện cảnh hẻm sống bên đèn ấm; 3 chỗ soi kín chỗ cấm, không chặn lưới
 - GĐ196 — 🪑 Phiên chợ có chỗ ngồi: phiên chợ (GĐ181) giờ bày thêm băng ghế + ghế nhựa dọc vỉa hè cho người mua — xe đẩy không còn trơ trọi
+- GĐ197 — 🎪 Con hẻm vào dịp: dãy cờ tam giác 3D (`day_co`) treo ngang hẻm đúng ngày lễ hội (Tết/Trung thu...) — lễ hội kinh tế giờ hiện ra bằng màu

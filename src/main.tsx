@@ -1,6 +1,7 @@
 import { skyAt } from './data/weather';
 import { isMarketDay } from './data/chophien';
 import { isRoadworks } from './data/roadwork';
+import { isFestivalDeco } from './data/festivalDeco';
 import { queueUrgency, accumulateBackup } from './world/storefrontWaitLamp';
 import { ANIMAL_ORDER, type AnimalKind } from './data/garden';
 import * as THREE from 'three';
@@ -334,6 +335,7 @@ let lastMinutes = useGame.getState().minutes;
 let lastMarketDay = isMarketDay(useGame.getState().day);
 // Hôm nay có sửa đường trước hẻm không (gđ184): đổi cảnh rào chắn khi sự kiện market roadworks thay đổi
 let lastRoadwork = isRoadworks(useGame.getState().weatherSeed, useGame.getState().day, useGame.getState().level);
+let lastFestival = isFestivalDeco(useGame.getState().day);
 // GĐ186 "sắp mất khách": đếm thời lượng game mà quầy có ~BACKUP_WAITING khách đợi trở lên (0 khi dừng)
 let lastUrgMinutes = useGame.getState().minutes;
 let backedUpGameSec = 0;
@@ -744,6 +746,13 @@ function renderFrame() {
   if (roadwork !== lastRoadwork) {
     lastRoadwork = roadwork;
     world.kit.setRoadwork(roadwork);
+  }
+  // Con hẻm vào dịp (gđ197): hôm nào có lễ hội (Tết, Trung thu, 20/11...), dựng dãy cờ ngang hẻm —
+  // kinh tế ngày vẫn đông khách theo sim, cảnh hẻm "vào dịp" hiện ra bằng màu.
+  const festival = isFestivalDeco(g.day);
+  if (festival !== lastFestival) {
+    lastFestival = festival;
+    world.kit.setFestival(festival);
   }
   applyLightBudget(controller.target);
   // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng

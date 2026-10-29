@@ -49,6 +49,12 @@
       "tris": 1056,
       "kb": 14.9,
       "compressed": "draco (scripts/blender_kit_atlas.py --no-bake, Blender 5.2)"
+    },
+    "day_co": {
+      "file": "day_co.glb",
+      "tris": 378,
+      "kb": 6.0,
+      "compressed": "draco (scripts/blender_kit_atlas.py --no-bake, Blender 5.2)"
     }
   },
   "compressedAt": 1793320000.0
