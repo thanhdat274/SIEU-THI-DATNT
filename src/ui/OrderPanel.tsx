@@ -161,6 +161,9 @@ export function OrderPanel() {
   const [filter, setFilter] = useState<Filter>('suggest');
   const supplier = SUPPLIERS.find((s) => s.id === supplierId)!;
   const hot = trending(day, level);
+  // GĐ273: tối Chủ nhật (ngày cuối khối tuần Thứ 2→CN) báo trước hàng hot TUẦN MAI — người chơi
+  // nhập sáng Thứ 2 không phải đoán. trending(day + 1) đổi khối đúng ở ranh giới này.
+  const hotNextWeek = (day % 7 === 0) ? trending(day + 1, level) : [];
   // Lớp hướng dẫn ngày đầu Mua đơn đầu tiên (GĐ38): chỉ bật cho người mới thật (ngày 1, chưa ẩn hướng dẫn,
   // chưa đặt đơn & chưa bán gì). Người chơi cũ (tutorialOff / ngày > 1 / đã đặt hoặc đã bán) không thấy.
   const tutorialOff = useGame((s) => s.biz.tutorialOff);
@@ -658,6 +661,11 @@ export function OrderPanel() {
       {hot.length > 0 && (
         <div style={st.banner}>
           🔥 Tuần này khách săn: <b>{hot.map((id) => productById(id).name).join(', ')}</b>
+          {hotNextWeek.length > 0 && (
+            <span style={{ opacity: 0.85 }} title="Tuần mới bắt đầu Thứ 2 — nhập sẵn hôm nay để không lỡ nhịp">
+              {' '}· 🔮 Tuần mai: <b>{hotNextWeek.map((id) => productById(id).name).join(', ')}</b>
+            </span>
+          )}
           {unlockedSuppliers.length < SUPPLIERS.length && (
             <span style={{ opacity: 0.75 }}> · Mối mới mở ở cấp {SUPPLIERS.find((s) => s.unlock > level)!.unlock}</span>
           )}

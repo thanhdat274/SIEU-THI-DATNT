@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { trending } from '../data/suppliers';
+import { productById } from '../data/products';
 import {
   MARKET_MAX,
   MARKET_MAX_STEP,
@@ -104,5 +106,28 @@ describe('dir hợp lệ cho mọi tổ hợp ranh giới', () => {
     }
     expect(dirs.has('up')).toBe(true);
     expect(dirs.has('down')).toBe(true);
+  });
+});
+
+// ── GĐ273 — dự báo "tuần mai khách săn" trên màn nhập hàng (tối Chủ nhật) ──
+describe('trending qua ranh giới tuần (GĐ267 khối Thứ 2→CN)', () => {
+  it('ngày ≡ 0 mod 7 (Chủ nhật) là ngày cuối khối: trending(day+1) đổi danh sách đúng ranh giới', () => {
+    for (let day = 1; day <= 70; day++) {
+      const isSunday = day % 7 === 0;
+      const crosses = Math.floor(day / 7) > Math.floor((day - 1) / 7);
+      expect(isSunday).toBe(crosses); // điều kiện hiện "tuần mai" khớp chính ranh giới khối
+      if (isSunday) {
+        // đầu tuần mới: danh sách của "mai" = danh sách dùng nguyên tuần kế (8..14 với day=7)
+        expect(trending(day + 1, 30)).toEqual(trending(day + 7, 30));
+      } else {
+        expect(trending(day + 1, 30)).toEqual(trending(day, 30)); // giữa tuần: mai vẫn tuần này
+      }
+    }
+  });
+
+  it('danh sách tuần sau luôn 2 món (pool đủ rộng) và khác/similar hợp lệ', () => {
+    const next = trending(8, 30);
+    expect(next.length).toBe(2);
+    for (const id of next) expect(productById(id)).toBeTruthy();
   });
 });

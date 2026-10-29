@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **2231/2231 test pass (220 files) + coverage branch 87.40%/fn 76.17%** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ271. QA TOÀN DIỆN GĐ270: 34 panel + 0 tràn @320/390/768, autoplay sạch.
+- **2233/2233 test pass (220 files) + coverage branch 87.40%/fn 76.17%** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ273. QA TOÀN DIỆN GĐ270: 34 panel + 0 tràn @320/390/768, autoplay sạch.
 - Bức tranh tổng: nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+ + CUỐI TUẦN GĐ254–261) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ làm khi đi kèm gameplay (pipeline GĐ172–176).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -40,6 +40,8 @@
 - **GĐ271 lý do gọi khớp thời tiết** 📞: trước đây random cả "trời mưa..." trong ngày nắng → pool theo ngữ cảnh (mưa/nắng/chung; VIP + nấu giữ pool riêng); salt chọn biến thiên theo ngày (mẫu GĐ267/269). Audit nốt visitsToday/arcSceneAt — sạch. 2 test (sweep >200 đơn × 4 thời tiết); 2231 test xanh.
 
 - **GĐ272 quét 2 bề mặt cuối** 🖼️: màn đăng nhập + menu "Thêm" @320/390/768 (ảnh + DOM) — 0 lỗi: nút full-bề-rộng, lưới 2 cột cuộn tốt, Chương 1 đè menu đúng z-order. Chuỗi "rà soát toàn bộ màn hình" chốt — mọi bề mặt đã soi (GĐ264/265/272). Không đổi code.
+
+- **GĐ273 dự báo tuần mai** 🔮: audit trending (hash theo id món — tự tách, sạch) + weeklyChallenge (modulo — không bao giờ undefined, sạch); thêm dòng "🔮 Tuần mai: X, Y" trên Nhập hàng tối Chủ nhật (day % 7 === 0 — đúng ranh giới khối Thứ 2→CN; trending(day+1) đổi khối đúng chỗ) — sáng Thứ 2 nhập không phải đoán. 2 test biên ranh giới (70 ngày); 2233 test xanh; QA @5173: CN có dòng, Thứ 7 không, 0 lỗi console.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -315,3 +317,4 @@
 - GĐ270 — ✅ QA TOÀN DIỆN: 34 panel + 0 tràn @320/390/768, autoplay sạch, coverage 87.40/76.17
 - GĐ271 — 📞 Lý do gọi điện khớp thời tiết (pool theo ngữ cảnh + salt biến thiên; audit nốt các hệ tất định)
 - GĐ272 — 🖼️ Quét đăng nhập + menu Thêm @320/390/768 — 0 lỗi, chốt chuỗi rà soát màn hình
+- GĐ273 — 🔮 Dự báo "tuần mai khách săn" trên Nhập hàng tối CN + audit trending/weeklyChallenge
