@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1884/1884 test pass (172 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ200. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ ~113s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
+- **1888/1888 test pass (172 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ201. (Lượt này `weeklyGoalCap` cấp 50 autoplay pass đủ ~113s — vẫn là flake thời gian nặng đã biết do môi trường, xem Cần theo dõi.)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–200 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
+### Giai đoạn gần đây · GĐ177–201 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
 
 - **GĐ177** 🏮 Đầu ngõ lên đèn: đèn lồng cột dựng Blender (`blender_lantern.py`) bật sáng ấm chập tối (lamp 17h–5h30, lightBudget) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md.
 - **GĐ178** 🎨 Gộp họ xanh dương guide/chuỗi/biểu đồ về info `#3498db` (16 chỗ) — chi tiết: archive trên.
@@ -51,6 +51,7 @@
 - **GĐ198** 📖 "Đọc con hẻm": khép trục hẻm-3D bằng dạy người chơi ĐỌC các tín hiệu hình đã xây (chợ phiên GĐ181/196, sửa đường GĐ184, lễ hội GĐ197, đèn ấm GĐ177/185/187). Helper thuần `alleySignalsToday(seed,day,level)` gộp ĐÚNG từng nguồn chân lý mà bên dựng cảnh dùng (= helper riêng mỗi nhịp, không hardcode) + `alleyBusyToday`; Sổ đầu ngày (ReportPanels) thêm Callout "🌇 Con hẻm hôm nay" liệt kê quang cảnh đang bật + ý nghĩa kinh tế ("hẻm thường vắng" khi không có nhịp nào, kèm gợi ý đèn ấm). Thuần đọc, không đổi SAVE_VERSION/kinh tế/persist. `alleySignals.ts`, `alleySignals.test.ts`, `ReportPanels.tsx`, test +3 (soi từng nguồn chân lý 100 ngày); tsc+build sạch; QA @5173.
 - **GĐ199** 🔗 "Rốn kho chung": BẮT ĐẦU trục multi-shop supply chain (backlog 6) bằng bước soi sáng — nối ba điểm bán (tiệm chính + chi nhánh + quán nước) về một rốn kho chung, liệt kê mỗi điểm còn dư/cạn + điểm NGHẼN. Helper thuần `supplyChainOverview(storage,branch,quan,level,last)` gộp ĐÚNG nguồn chân lý có sẵn: quán nước deterministic qua `quanNuocRestockTip` (GĐ190), chi nhánh quan sát được qua `shelfTotal/shelfCap` (GĐ153) với ngưỡng 15%/35%, kho chung qua `storageTotal`; `choke` = first danger→warn cho biết xử lý đâu trước. Sổ đầu ngày thêm Callout "🔗 Rốn kho chung — nghẽn: ..." dưới thẻ "Đọc con hẻm". Thuần đọc, không đổi save/kinh tế/persist. `supplyChain.ts`, `supplyChain.test.ts` (+9, fixture cố định), `ReportPanels.tsx`; tsc+build sạch; QA @5173.
 - **GĐ200** ⏳ "Kho chung nuôi quán nước mấy ngày?": biến tấm ảnh rốn kho (GĐ199) thành CHÂN TRỜI THỜI GIAN — vì nhu cầu quán nước deterministic (GĐ127/187), helper thuần `teahouseKhoDays(q,level,storage)` = floor(đơn vị đồ uống trong kho ÷ nhu cầu `wanted` mỗi đêm) cho biết kho chung còn nuôi được ~N ngày; nạp sớm khi N ít. Gắn vào dòng ok của quán nước trong thẻ rốn kho ("đủ đồ uống cho tối nay · kho chung nuôi ~N ngày"). THUẦN, đối chiếu quanNuocProjection. `supplyChain.ts` (+helper), `supplyChain.test.ts` (+4); tsc+build sạch; QA @5173.
+- **GĐ201** 🏪 "Nạp đúng thứ cho chi nhánh": trục multi-shop sâu thêm một bước — vì nhu cầu chi nhánh là SIM (không ước chính xác từng món), gợi ý nạp theo thứ QUAN SÁT được: helper thuần `branchThinShelves(branch)` liệt kê kệ TRỐNG NHIỀU NHẤT (headroom = perItem − đang có, giảm dần, bỏ kệ đầy) → cho biết "chở loại gì từ kho chung". Gắn vào dòng chi nhánh trong thẻ rốn kho khi kệ cạn ("kệ còn ~X% (trống: ...) — chở thêm"). THUẦN theo shelf + productById, deterministic. `supplyChain.ts` (+helper), `supplyChain.test.ts` (+4); tsc+build sạch; QA @5173.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -104,7 +105,7 @@
 3. Sau GĐ160: nhiệm vụ mới có làm ngày 1–5 bớt lặp không (save người thật); nếu vẫn lặp → thêm biến thể hoàn cảnh (lễ, weekend).
 4. GĐ164 theo dõi: arc E "Hàng xóm khai trương" (thay cam_do_mo) — chỉ làm khi 4 arc A–D chạy tốt trên save thật.
 5. ✅ UI nợ ĐÃ ĐÓNG (GĐ183): toàn bộ thẻ trong src/ui dùng `Callout`; 0 màu lệch bảng/toan trong UI. Hết món nợ UI còn thấy.
-6. 🔗 **Multi-shop supply chain (trục đang chạy, backlog 6)**: ĐÃ BẮT ĐẦU — GĐ199 "Rốn kho chung" nối tiệm chính + chi nhánh + quán nước về một cái nhìn nguồn cung + điểm nghẽn. Bước tiếp trên trục (làm khi mỗi điểm sâu hơn, theo depth-first): đưa quán nước/chi nhánh CHIA nhưng tiêu thụ đúng nguồn kho thật (gợi ý nạp theo đúng loại món từng điểm bán), hoặc auto chuyển kho — ghi chờ, không vội phình.
+6. 🔗 **Multi-shop supply chain (trục đang chạy, backlog 6)**: ĐÃ BẮT ĐẦU + SÂU — GĐ199 rốn kho chung (choke) → GĐ200 chân trời ngày (teahouseKhoDays) → GĐ201 nạp đúng thứ chi nhánh (branchThinShelves). Bước tiếp trên trục (theo depth-first): nối gợi ý thành hành động (nút "chở/đặt xe" cho chi nhánh như GĐ190/191 đã làm cho quán nước), hoặc auto chuyển kho khi lặp đủ — ghi chờ, không vội phình.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)
 
@@ -303,3 +304,4 @@
 - GĐ198 — 📖 Đọc con hẻm: Sổ đầu ngày liệt kê tín hiệu 3D hẻm đang bật (chợ/sửa đường/dịp/đèn ấm) — khép trục hẻm-3D bằng cách dạy người chơi đọc cảnh
 - GĐ199 — 🔗 Rốn kho chung: Sổ đầu ngày nối tiệm chính + chi nhánh + quán nước về một rốn kho, chỉ điểm nghẽn — BẮT ĐẦU trục multi-shop supply chain
 - GĐ200 — ⏳ Kho chung nuôi quán nước mấy ngày: chân trời thời gian (floor kho ÷ nhu cầu/đêm) cho rốn kho — nạp sớm khi N ít
+- GĐ201 — 🏪 Nạp đúng thứ cho chi nhánh: liệt kê kệ trống nhiều nhất (headroom) làm gợi ý chở loại gì từ kho chung — sâu trục multi-shop theo thứ quan sát được

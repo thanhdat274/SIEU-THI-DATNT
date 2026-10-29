@@ -1,5 +1,6 @@
 import { shelfTotal, CONVENIENCE } from './branches';
 import { quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, type QuanNuocState } from './quanNuoc';
+import { productById } from './products';
 
 /**
  * GĐ199 — "Rốn kho chung": bắt đầu trục multi-shop supply chain (backlog 6) bằng một bước soi sáng —
@@ -46,6 +47,21 @@ export const teahouseKhoDays = (q: QuanNuocState, level: number, storage: Record
   return Math.floor(units / burn);
 };
 
+export interface ThinShelf { id: string; name: string; empty: number }
+
+/**
+ * GĐ201 — Những kệ chi nhánh trống nhiều nhất: headroom = perItem − đang có (quan sát được, không dự
+ * đoán nhu cầu sim) → gợi ý "chở loại gì từ kho chung" cho người chơi khi kệ cạn. THUẦN theo shelf.
+ */
+export const branchThinShelves = (branch: { shelf: Record<string, number> } | undefined, n = 4): ThinShelf[] => {
+  if (!branch) return [];
+  return Object.entries(branch.shelf ?? {})
+    .map(([id, qty]) => ({ id, name: productById(id)?.name ?? id, empty: Math.max(0, CONVENIENCE.perItem - (qty ?? 0)) }))
+    .filter((t) => t.empty > 0)
+    .sort((a, b) => b.empty - a.empty)
+    .slice(0, n);
+};
+
 export function supplyChainOverview(
   storage: Record<string, number>,
   branch: { open: boolean; shelf: Record<string, number> } | undefined,
@@ -84,10 +100,12 @@ export function supplyChainOverview(
   } else {
     const ratio = shelfTotal(branch.shelf ?? {}) / CONVENIENCE.shelfCap;
     const pct = Math.round(ratio * 100);
+    const thin = branchThinShelves(branch).map((t) => t.name).join(', ');
+    const tron = thin ? ` (trống: ${thin})` : '';
     outlets.push(ratio < SUPPLY_BRANCH_DANGER
-      ? { id: 'branch', icon: '🏪', name: 'Chi nhánh', state: 'danger', line: `kệ còn ~${pct}% — chở thêm từ kho chung (phí xăng/chuyến) kẻo trống` }
+      ? { id: 'branch', icon: '🏪', name: 'Chi nhánh', state: 'danger', line: `kệ còn ~${pct}%${tron} — chở thêm từ kho chung (phí xăng/chuyến) kẻo trống` }
       : ratio < SUPPLY_BRANCH_WARN
-        ? { id: 'branch', icon: '🏪', name: 'Chi nhánh', state: 'warn', line: `kệ còn ~${pct}% — cân nhắc chở thêm từ kho chung` }
+        ? { id: 'branch', icon: '🏪', name: 'Chi nhánh', state: 'warn', line: `kệ còn ~${pct}%${tron} — cân nhắc chở thêm từ kho chung` }
         : { id: 'branch', icon: '🏪', name: 'Chi nhánh', state: 'ok', line: `kệ dày ~${pct}% — đủ bán` });
   }
 

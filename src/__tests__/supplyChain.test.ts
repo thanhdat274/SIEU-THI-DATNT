@@ -3,6 +3,7 @@ import {
   supplyChainOverview,
   storageTotal,
   teahouseKhoDays,
+  branchThinShelves,
   SUPPLY_BRANCH_WARN,
   SUPPLY_BRANCH_DANGER,
 } from '../data/supplyChain';
@@ -132,5 +133,37 @@ describe('GĐ200 — kho chung nuôi quán nước mấy ngày', () => {
     const t = sc.outlets.find((o) => o.id === 'teahouse')!;
     expect(t.state).toBe('ok');
     expect(t.line).toMatch(/nuôi ~\d+ ngày/);
+  });
+});
+
+/**
+ * GĐ201 — "Nạp đúng thứ cho chi nhánh": liệt kê kệ trống nhiều nhất (headroom = perItem − đang có) làm
+ * gợi ý chở loại gì từ kho chung. THUẦN theo shelf — deterministic, không hardcode nhu cầu sim.
+ */
+describe('GĐ201 — kệ trống chi nhánh', () => {
+  it('branch undefined → rỗng (chưa mở không có gợi ý)', () => {
+    expect(branchThinShelves(undefined)).toEqual([]);
+  });
+
+  it('kệ đầy (headroom = 0) → không đề xuất; chọn theo headroom giảm dần, bỏ qua headroom 0', () => {
+    expect(branchThinShelves({ shelf: { aa: CONVENIENCE.perItem } }, 3)).toEqual([]);
+    const got = branchThinShelves({ shelf: { aa: 5, bb: 1, cc: 0, dd: 40 } }, 3);
+    // headroom: cc=40, bb=39, aa=35, dd=0(bỏ) → chọn cc,bb,aa
+    expect(got.map((t) => t.id)).toEqual(['cc', 'bb', 'aa']);
+    expect(got[0].empty).toBe(CONVENIENCE.perItem);
+  });
+
+  it('giới hạn n món, thứ tự đúng (bỏ trống nhiều lên trước)', () => {
+    const got = branchThinShelves({ shelf: { a: 1, b: 2, c: 39, d: 38 } }, 2);
+    expect(got.map((t) => t.id)).toEqual(['a', 'b']); // headroom 39,38
+  });
+
+  it('kệ cạn (warn) thì dòng chi nhánh có liệt kê "trống: ..."', () => {
+    const shelf: Record<string, number> = {};
+    for (let i = 0; i < 6; i++) shelf[`m${i}`] = 25; // tổng 150 → 16.7% (warn), mỗi món headroom 15
+    const sc = supplyChainOverview({}, { open: true, shelf }, { open: false, staff: 0, price: 'vua' as const }, 30, null);
+    const b = sc.outlets.find((o) => o.id === 'branch')!;
+    expect(b.state).toBe('warn');
+    expect(b.line).toMatch(/trống:/);
   });
 });
