@@ -82,3 +82,14 @@ describe('GĐ70 — Đón lễ: trữ sẵn trước mùa (festivalPrep, trục 
     });
   });
 });
+
+describe('GĐ250 audit — prepBonus chặn trên 3 ngày dịp dài (Tết)', () => {
+  it('dịp 12 ngày (Tết) vẫn tính thưởng như dịp 3 ngày', () => {
+    const tet = FESTIVALS.find((f) => f.id === 'tet')!;
+    expect(tet.to - tet.from + 1).toBeGreaterThan(3);
+    const days = tet.to - tet.from + 1;
+    const expected = (Math.floor((15000 + 10 * 1500) * Math.min(days, 3) * (tet.traffic ?? 1)) / 1000) * 1000;
+    expect(prepBonus(tet, 10)).toBe(expected);
+    expect(prepBonus(tet, 10)).toBe((Math.floor((15000 + 10 * 1500) * 3 * (tet.traffic ?? 1)) / 1000) * 1000);
+  });
+});

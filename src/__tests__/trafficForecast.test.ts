@@ -40,3 +40,18 @@ describe('trafficForecast — định lượng lượt ghé theo thời tiết h
     expect(rainR.tomorrowTraffic).toBeLessThan(sunnyR.tomorrowTraffic);
   });
 });
+
+describe('GĐ250 audit — vá nhánh chưa phủ của trafficForecast', () => {
+  it('trời râm/mù (0.85 < hệ số < 1.05) → verdict normal', () => {
+    expect(trafficForecast({ weather: 'sunny', tomorrow: 'cloudy', level: 20 }).verdict).toBe('normal');
+    expect(trafficForecast({ weather: 'sunny', tomorrow: 'fog', level: 20 }).verdict).toBe('normal');
+    expect(trafficForecast({ weather: 'rain', tomorrow: 'cloudy', level: 20 }).verdict).toBe('normal');
+  });
+
+  it('deltaPct: mai mưa so hôm nay nắng = (0.8/1.1 − 1)×100 ≈ −27.3%', () => {
+    const r = trafficForecast({ weather: 'sunny', tomorrow: 'rain', level: 20 });
+    expect(r.deltaPct).toBeCloseTo(((WEATHER.rain.traffic / WEATHER.sunny.traffic) - 1) * 100, 6);
+    const same = trafficForecast({ weather: 'cloudy', tomorrow: 'cloudy', level: 20 });
+    expect(same.deltaPct).toBe(0);
+  });
+});

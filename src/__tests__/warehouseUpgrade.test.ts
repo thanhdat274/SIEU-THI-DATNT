@@ -3,6 +3,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { warehouseUpgradeValue } from '../data/warehouseUpgrade';
+import { caseSize } from '../data/products';
 
 // nuoc không cần lạnh (nước suối); suachua cần lạnh (cold, giá lẻ 8000); vo (gà) giá 25000.
 const priceOf = (id: string) => (id === 'nuoc' ? 4000 : id === 'suachua' ? 8000 : 25000);
@@ -46,5 +47,42 @@ describe('GĐ222 warehouseUpgradeValue — sức chứa kho vs hàng', () => {
     const v = warehouseUpgradeValue(0, { suachua: 32 }, priceOf, cash);
     expect(v.coldPct).toBe(80);
     expect(v.verdict).toBe('soon');
+  });
+});
+
+describe('GĐ250 audit — vá nhánh chưa phủ của warehouseUpgradeValue', () => {
+  const priceOf = (id: string) => (id === 'suachua' ? 8000 : id === 'xucxich' ? 22000 : id === 'nuoc' ? 4000 : 25000);
+
+  it('bậc kho cao nhất (index 7): next null, không đủ "affordable" (so với Infinity)', () => {
+    const last = 7; // WAREHOUSE_TIERS.length - 1
+    const v = warehouseUpgradeValue(last, {}, priceOf, 500_000_000);
+    expect(v.next).toBeNull();
+    expect(v.affordable).toBe(false);
+    expect(v.verdict).toBe('ok');
+  });
+
+  it('storage undefined (chưa có gì) → 0 dùng, ok', () => {
+    const v = warehouseUpgradeValue(0, undefined, priceOf, 0);
+    expect(v.casesUsed).toBe(0);
+    expect(v.coldUsed).toBe(0);
+    expect(v.overflow).toBe(0);
+    expect(v.verdict).toBe('ok');
+    expect(v.affordable).toBe(false); // 0 tiền, giá nâng > 0
+  });
+
+  it('đầy thùng 85–95% (chưa tràn lạnh) → soon qua casePct', () => {
+    const units = caseSize('vo') * 17; // 17/20 thùng = 85%
+    const v = warehouseUpgradeValue(0, { vo: units }, priceOf, 5_000_000);
+    expect(v.casePct).toBe(85);
+    expect(v.verdict).toBe('soon');
+  });
+
+  it('tràn lạnh nhiều món: số tràn vượt món giữ lạnh nhiều nhất thì quét sang món kế (lấy từng phần)', () => {
+    // cấp 0 giữ lạnh 40: xucxich 50 (tràn 50×22000) + suachua 5 phần còn (5×8000) = 1.140.000
+    const v = warehouseUpgradeValue(0, { suachua: 45, xucxich: 50 }, priceOf, 5_000_000);
+    expect(v.coldUsed).toBe(95);
+    expect(v.overflow).toBe(55);
+    expect(v.overflowValue).toBe(50 * 22000 + 5 * 8000);
+    expect(v.verdict).toBe('upgrade');
   });
 });

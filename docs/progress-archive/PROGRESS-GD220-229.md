@@ -283,3 +283,17 @@ mẫu GĐ189 quán nước thành việc sáng): icon lễ + "Trữ lễ {tên} 
 priority 2. Việc sáng không lọc theo mối (chưa chọn mối nào) — món mối không bán OrderPanel tự nói
 rõ (GĐ247 skipped). Khép mạch: Sổ đầu ngày → việc hôm nay → Nhập hàng → Callout → một chạm vào giỏ.
 (+3 test, bộ festivalRestock lên 8)
+
+---
+
+**GĐ250 QA TOÀN DIỆN (mỗi 10 GĐ)** — test:coverage sau GĐ241–249: 2159/2159 (211 file, bỏ 3 sim nặng),
+branch 87.14% / fn 75.59% (từ 86.85/74.84 ở GĐ240). Rà file LOGIC yếu nhất (core/data/agents): agents
+branchVisit/residents 0% + customers fn thấp là agent world-3D (chạy qua harness sim bị BỎ trong
+coverage — không phải khoảng trống thật); các helper thuần yếu nhất được VÁ TEST THẲNG:
+trafficForecast (br 50% → thêm verdict 'normal' trời râm/mù + deltaPct), warehouseUpgrade (br 70.6% →
+bậc kho cuối next:null/affordable:false, storage undefined, soon qua casePct 85, tràn lạnh quét nhiều
+món lấy từng phần 50×22000+5×8000), festivalPrep (prepBonus chặn min(days,3) với Tết 12 ngày).
+priceGap còn 75% (nhánh ahead:null/gain≤0 khó dựng đúng công thức pricing — ghi nhận, không gượng).
+QA mắt browser @5173: KHÔNG chạy được trong phiên này (dev server không bật, xem "Cần theo dõi"
+PROGRESS.md) — vòng ngày/panel/đa kích thước hoãn sang phiên có server; phần logic đã phủ test.
+(+7 test audit)

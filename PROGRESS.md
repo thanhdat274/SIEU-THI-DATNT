@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **2174/2174 test pass (214 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ249. ⚠️ 29/10 phiên GĐ245–249: dev server 5173 KHÔNG chạy (xem "Cần theo dõi") — QA mắt hoãn, xác minh bằng test + build.
+- **2181/2181 test pass (214 files) + 2159/2159 (test:coverage, 211 files; branch 87.14%/fn 75.59%)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ250. ⚠️ 29/10 phiên GĐ245–250: dev server 5173 KHÔNG chạy (xem "Cần theo dõi") — QA mắt hoãn, xác minh bằng test + build + coverage.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
@@ -37,6 +37,7 @@
 - **GĐ247 trữ lễ một chạm** ⏳: `data/festivalRestock.ts` (THUẦN ĐỌC) — lễ ≤3 ngày + món thiếu (kho < 8) → phiếu quy thùng, món mối không bán vào skipped; OrderPanel thêm Callout accent + nút "➕ Trữ lễ vào giỏ" (điền qua maxFit, tôn trọng ngân sách chừa lương + chỗ kho). Khép mạch GĐ70 nhắc → GĐ247 hành động.
 - **GĐ248 tổng kết đội cuối ngày** 🧍: `staffDayRecap` gộp % rảnh (GĐ246) × mất khách vì chờ (GĐ120) → phân biệt "dư người" (idle_heavy) với "lệch ca" (shift_mismatch — rảnh mà vẫn mất khách vì chờ → dồn ca vào giờ đông); SummaryPanel thêm Callout warn + nút Bảng nhân viên, chỉ hiện khi có việc làm.
 - **GĐ249 trữ lễ thành việc sáng** ⏳: `festivalPrepAction` biến phiếu trữ lễ (GĐ247) thành mục "việc hôm nay" trên Sổ đầu ngày (mẫu GĐ189) — danger khi còn ≤1 ngày; khép mạch Sổ đầu ngày → việc → Nhập hàng → một chạm vào giỏ.
+- **GĐ250 QA TOÀN DIỆN** ✅ test:coverage sau 9 GĐ: branch 87.14% / fn 75.59% (↑ từ 86.85/74.84 GĐ240); vá test cho 3 helper logic yếu nhất (trafficForecast verdict normal + deltaPct, warehouseUpgrade 4 nhánh biên, festivalPrep chặn 3 ngày Tết); QA mắt @5173 hoãn — dev server không chạy phiên này (xem "Cần theo dõi").
 
 - > Chi tiết đầy đủ GĐ184–GĐ203: docs/progress-archive/PROGRESS-GD181-203.md.
 
@@ -302,3 +303,4 @@
 - GĐ247 — ⏳ Trữ lễ một chạm (festivalRestock: phiếu trữ lễ thẳng vào giỏ Nhập hàng, đúng mẫu phiếu nạp kho)
 - GĐ248 — 🧍 Tổng kết đội cuối ngày (staffDayRecap: dư người vs lệch ca, gợi ý xếp ca mai)
 - GĐ249 — ⏳ Trữ lễ thành việc sáng (festivalPrepAction: vào danh sách việc hôm nay, danger khi sát lễ)
+- GĐ250 — ✅ QA TOÀN DIỆN: coverage branch 87.14%/fn 75.59%, vá test 3 helper yếu; QA mắt hoãn (không có server)
