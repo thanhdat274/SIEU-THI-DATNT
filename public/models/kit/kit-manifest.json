@@ -1,0 +1,36 @@
+{
+  "updated": 1793228636.459,
+  "generator": "scripts/build-kit-assets.ts (three GLTFExporter, vertex color, không texture)",
+  "modules": {
+    "chau_cay": {
+      "file": "chau_cay.glb",
+      "tris": 264,
+      "kb": 35.4
+    },
+    "thung_go": {
+      "file": "thung_go.glb",
+      "tris": 756,
+      "kb": 98.8
+    },
+    "khom_tre": {
+      "file": "khom_tre.glb",
+      "tris": 1332,
+      "kb": 173
+    },
+    "bon_nuoc": {
+      "file": "bon_nuoc.glb",
+      "tris": 620,
+      "kb": 81.3
+    },
+    "cho_nhua": {
+      "file": "cho_nhua.glb",
+      "tris": 192,
+      "kb": 26.1
+    },
+    "xe_day": {
+      "file": "xe_day.glb",
+      "tris": 928,
+      "kb": 120.9
+    }
+  }
+}
