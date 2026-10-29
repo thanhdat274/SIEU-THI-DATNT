@@ -5,7 +5,8 @@ import {
   QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE,
   QUAN_PRICE_OPTIONS, quanNuocProjection, quanNuocDrinkIds, type QuanNuocPrice,
 } from '../../data/quanNuoc';
-import { Footer, styles } from './shared';
+import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
+import { Callout, Footer, styles } from './shared';
 
 /** Thứ tự hiển thị 3 mức giờ bán: bình dân → vừa phải → đắt hơn. */
 const PRICE_ORDER: readonly QuanNuocPrice[] = ['re', 'vua', 'cao'];
@@ -35,6 +36,8 @@ export function QuanNuocPanel() {
   const drinkUnits = quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
   const hireProj = quan.open && quan.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...quan, staff: quan.staff + 1 }, level, drinkUnits) : null;
   const tonightProj = quan.open ? quanNuocProjection(quan, level, drinkUnits) : null;
+  // GĐ188: "người thứ N đáng đồng lương?" — chiều xuống (nên giữ bớt ai / sa thải ai). Thuần đọc.
+  const staffValues = quan.open ? quanNuocStaffValues(quan.price, level, quan.staff, drinkUnits) : [];
 
   return (
     <div style={{ width: '100%', maxWidth: 560 }}>
@@ -134,6 +137,32 @@ export function QuanNuocPanel() {
                 <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>⚠️ Kho thiếu đồ uống — nhập nước/ngọt/cà phê… để bán đủ.</div>
               )}
             </div>
+          )}
+          {staffValues.length > 0 && (
+            <Callout
+              tone={staffValues.some((v) => v.verdict !== 'ok') ? 'warn' : 'ok'}
+              title="🧑‍🤝‍🧑 Từng người đáng đồng lương?"
+              style={{ marginTop: 6 }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {staffValues.map((v) => (
+                  <div key={v.index} style={{ fontSize: 12 }}>
+                    <b style={{ color: v.verdict === 'ok' ? '#2ecc71' : '#e67e22' }}>
+                      {v.verdict === 'ok' ? '✔' : v.verdict === 'warn' ? '◑' : '✖'} Người thứ {v.index}
+                    </b>
+                    {' · '}{v.marginalValue >= 0 ? '+' : ''}{formatMoney(v.marginalValue)} /ngày —
+                    {v.marginNet >= 0
+                      ? ` đáng lương ${formatMoney(v.wage)} (lãi +${formatMoney(v.marginNet)})`
+                      : v.ratio >= 0.5
+                        ? ` chưa đáng ${formatMoney(v.wage)} (lỗ ${formatMoney(-v.marginNet)}/ngày)`
+                        : ` nên sa thải — kho chỉ còn ${drinkUnits} ly`}
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, opacity: 0.7, marginTop: 4 }}>
+                Giá trị biên = doanh thu người này mang thêm so với ít hơn 1 người, trừ lương. Kho cạn đồ uống thì người cuối không bán thêm được.
+              </div>
+            </Callout>
           )}
           <p style={{ fontSize: 12, opacity: 0.7, margin: '8px 0 0' }}>🧃 Nguyên liệu lấy thẳng từ kho: kho hết nước là quán bán không được.</p>
         </>

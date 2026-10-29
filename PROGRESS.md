@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1823/1824 test pass (164 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ187. (1 đỏ duy nhất = `weeklyGoalCap` cấp 50 autoplay timeout 900s — flake nặng đã biết, thấy chi tiết Cần theo dõi.)
+- **1823/1824 test pass (164 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ188. (1 đỏ duy nhất = `weeklyGoalCap` cấp 50 autoplay timeout 900s — flake nặng đã biết, thấy chi tiết Cần theo dõi.)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–187 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
+### Giai đoạn gần đây · GĐ177–188 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
 
 - **GĐ177** 🏮 Đầu ngõ lên đèn: đèn lồng cột dựng Blender (`blender_lantern.py`) bật sáng ấm chập tối (lamp 17h–5h30, lightBudget) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md.
 - **GĐ178** 🎨 Gộp họ xanh dương guide/chuỗi/biểu đồ về info `#3498db` (16 chỗ) — chi tiết: archive trên.
@@ -38,6 +38,7 @@
 - **GĐ185** 🏠 "Cơ ngơi lên đèn": lan toả đèn ấm chập tối từ mặt tiền (GĐ177) tới của riêng người chơi — hiên nhà (ngay cửa ra vào) + cổng trại (gần giếng) cùng bật lúc 17h–5h30 theo công thức `lamp` cũ. `compoundWarm.ts`: `COMPOUND_WARM_PLACES` (2 điểm) + `createCompoundWarm()` đăng ký đèn ấm 0xffb35c vào quỹ ánh sáng (lightBudget) — không thêm sim/save/khối, chỉ nguồn sáng nên không chặn lưới; `warmGlow(minutes)` cùng nhịp đèn đường/lồng. world.ts + main.tsx gọi `world.compoundWarm.update(lamp)` cùng chỗ `storefront.update(lamp)`. `compoundWarm.ts`, `world.ts`, `main.tsx`, test 4; tsc+build sạch; QA @5173: update(0)→[0,0] trưa, update(1)→[16,16] chập tối (2 đèn đăng ký đúng).
 - **GĐ186** 🚨 Đèn báo khách đợi thêm mức KHẨN "sắp mất khách": ngoài sáng ấm theo `waiting` (GĐ180), khi quầy có ~3 khách đợi trở lên `BACKUP_WAITING` và giữ lâu (`BACKUP_AFTER_GAME_S=15`s game) thì chuyển nháy NHANH + sáng tối đa — tín hiệu "phải ghé về quầy / mở quầy thêm kẻo mất khách vì chờ". `queueUrgency`/`accumulateBackup`/`waitLampIntensity` thuần (soi bằng test), FIFO game-time từ đồng hồ `g.minutes` (pause an toàn — dừng game thì tích 0). `storefrontWaitLamp.ts`, `main.tsx`, test +4 (tổng 8); tsc+build sạch; QA @5173: update({open,waiting,urgency}) không ném lỗi, boot ổn.
 - **GĐ187** 🍵 "Quán nước lên đèn": hoàn tất chuỗi "cảnh ấm" (GĐ177 mặt tiền → GĐ185 cơ ngơi) cho điểm khách quen tụ họp — quán nước đầu ngõ. 2 nguồn sáng ấm `#ffb35c` (quanTây/quanĐông quanh quầy+bàn tại LANE_X+4.4) đăng ký lightBudget, sáng theo `warmGlow` (17h–5h30) NHƯNG chỉ khi quán MỞ (`open` gate = `world.quanNuoc.stand.visible`): mảnh đất trống/gộp chưa mua thì tối tẻ, mở rồi mới ấm — thưởng cảm xúc cho ai xây dựng không gian xã hội. Không đổi SAVE_VERSION/kinh tế/sim. `quanNuocWarm.ts` (+`warmGlow` re-export), `world.ts`, `main.tsx`, test +4 (tổng 4); tsc+build sạch, 1823/1824 (đỏ = flake weeklyGoalCap đã biết); QA @5173: update({lamp,open}) đúng gate, boot ổn.
+- **GĐ188** 🧑‍🤝‍🧑 Quán nước "người thứ N đáng đồng lương?": đóng nốt bộ GĐ141–153 "giá trị vs chi phí" — DUY NHẤT quán nước chưa có lời phán về người đang GIỮ (GĐ127 chỉ trả lời chiều LÊN "thuê thêm 1 người"). Helper thuần `quanNuocStaffValues(price,level,staff,drinkUnits)` tái dựng công thức GĐ127, tính GIÁ TRỊ BIÊN người thứ N = chênh doanh thu thô N−1→N (chặn kho) − lương 150k → verdict ok/warn/low + chiều LÊN `quanNuocNextStaffVerdict`. UI: Callout trong QuanNuocPanel hiện từng người (✔/◑/✖ + ±lãi/ngày + gợi "nên sa thải — kho cạn"), màu theo bảng ngữ cảnh. Không đổi SAVE_VERSION/kinh tế/sim. `quanNuocStaffValue.ts`, `QuanNuocPanel.tsx`, test +4 (đối chiếu ground-truth quanNuocProjection — không hardcode số); tsc+build sạch; QA @5173 sau khi hoàn tất.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -70,6 +71,7 @@
 - GĐ185: đèn ấm hiên nhà + cổng trại — xác nhận trải nghiệm thật chập tối (17h–5h30) đứng gần hiên/cổng trại thấy vũng sáng ấm, ban ngày tắt; và không chói khi đứng quầy (2 đèn ở chỗ riêng, xa mặt tiền).
 - GĐ186: mức khẩn "sắp mất khách" — xác nhận trên foreground thật khi quầy đông lâu (≥3 khách đợi ~vài giây thật) đèn nháy nhanh hơn hẳn, chủ về quầy thì dịu lại; ngưỡng `BACKUP_WAITING=3`/`BACKUP_AFTER_GAME_S=15` có thể chỉnh cho khớp cảm giác. (IAB nền dừng rAF nên không soi loop lúc QA — verify thuần như các giai đoạn trước.)
 - GĐ187: quán nước lên đèn — xác nhận trên save thật (quán đã mua) chập tối 17h–5h30 chỗ quầy+bàn ấm, quán chỉ là mảnh đất/gộp chưa mua thì vẫn tối; và không chói khi đứng quầy tiệm (quán ở x=54.4 xa mặt tiền x<8). (IAB nền dừng rAF — verify thuần qua update(object,open) như các giai đoạn 3D gần đây.)
+- GĐ188: thẻ "từng người đáng đồng lương" quán nước — xác nhận trải nghiệm thật trên save có quán + staff: người thứ N đáng/nên bớt đúng theo kho (kho cạn → nên sa thải người cuối); hiển thị không nhiễu khi quán đông/nghỉ. Màu verdict ok/warn/low đúng bảng ngữ cảnh.
 - Flake `weeklyGoalCap` cấp 50: lần full + lần isolate đều timeout 900s (autoplay 28 ngày cấp 50 nặng ~908s, máy đang tải khi chạy liên tục) — ĐÃ xác nhận KHÔNG phải hồi quy của GĐ185/186 (thuần render/3D, node test không chạy); chạy lúc máy rảnh là 16/16 xanh (GĐ184 full run gần nhất). Nếu tái diễn: nâng timeout hoặc rút autoplay ngày ở cấp 50.
 - GĐ171: scale mục tiêu vòng ×(1+0.5(N−1))/×(1+0.3(N−1)) — cần save thật vòng 2+ để xác nhận trad vẫn căng nhưng với tới; nếu vẫn quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi.
@@ -270,3 +272,4 @@
 - GĐ185 — 🏠 Cơ ngơi lên đèn: đèn ấm chập tối lan tới hiên nhà + cổng trại (nối GĐ177 mặt tiền)
 - GĐ186 — 🚨 Đèn báo khách đợi thêm mức KHẨN "sắp mất khách": nháy nhanh khi quầy đông lâu (loss-predictor)
 - GĐ187 — 🍵 Quán nước lên đèn: đèn ấm chập tối ở điểm khách quen tụ họp (chỉ khi quán MỞ) — hoàn tất chuỗi "cảnh ấm"
+- GĐ188 — 🧑‍🤝‍🧑 Quán nước "người thứ N đáng đồng lương?": giá trị biên từng nhân viên + chiều bớt/sa thải — đóng nốt bộ GĐ141–153
