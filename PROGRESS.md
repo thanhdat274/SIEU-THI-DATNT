@@ -45,6 +45,8 @@
 
 - **GĐ277 khoá đường lưu autoOpenAt + chợ phiên×CN** 💾: 3 test save — bản cũ thiếu trường → mặc định 8h, bản mới 6h nạp đúng, round-trip giữ nguyên; lock test: mọi ngày phiên chợ (7, 14, 21…) đều Chủ nhật — chợ phiên đôn tự nhiên vào cuối tuần (đồng bộ GĐ254, không cần code). 2245 test xanh; boot @5173 sạch.
 
+- **GĐ278 QA mắt thẻ CÓ dữ liệu (GĐ155–159) — ĐÓNG watch-item cũ nhất** 👀: dựng trạng thái qua dev tools trên save thật (pets + hụi + buzz khủng hoảng) — Thú cưng: cat/dog render đúng verdict trung thực "7 ngày qua kho sạch, chưa thấy công, thức ăn ~44.000đ/ngày" + trạng thái cho ăn/kho; Hụi: "Góp 30.000đ/ngày · đã góp 5/10 · Ngày 22 hốt 300.000đ" + giải thích hòa vốn; Khủng hoảng MXH: "⚠️ Khủng hoảng, khách ×0.5"; Bỏ lỡ (~275.000đ) đã xác minh từ phiên GĐ252. 0 lỗi console, 0 tràn @390. Không đổi code; 2245 test xanh.
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc + thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -74,7 +76,6 @@
 - ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap`: bot bày lại tầng kệ đầy → bỏ qua tầng đầy + timeout 1.8tr ms. Nếu cả bộ lại > ~10 phút: profile trước khi làm tiếp.
 - GĐ171: scale mục tiêu vòng NG+ — cần save thật vòng 2+ để xác nhận; nếu quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ & kèo cấp 50+: bot hụt ~40% nhưng browser thật cho thấy trong năng lực → theo dõi.
-- QA mắt trạng thái CÓ dữ liệu Bỏ lỡ/Thú cưng/hụi/khủng hoảng (GĐ155–159) — bọc bởi test; cần save người thật.
 
 ## Backlog tiếp theo
 
@@ -321,3 +322,4 @@
 - GĐ275 — ⏰ Lịch tự động chỉnh giờ mở cửa 6h–8h (autoOpenAt + xoay vòng preset trong menu hồ sơ)
 - GĐ276 — ⏰ Dòng lịch tự động trên Sổ đầu ngày (autoOpenNote)
 - GĐ277 — 💾 Khoá autoOpenAt qua save (3 test) + lock chợ phiên luôn rơi Chủ nhật
+- GĐ278 — 👀 QA mắt thẻ CÓ dữ liệu GĐ155–159 (thú cưng/hụi/khủng hoảng/bỏ lỡ) — đóng watch-item
