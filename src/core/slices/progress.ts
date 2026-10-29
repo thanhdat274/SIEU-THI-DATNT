@@ -126,11 +126,25 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
   checkTitles: () => {
     const s = get();
     const rating = summarizeReviews(s.reviews);
+    // GĐ171: danh hiệu "Chủ hẻm lão làng" — hoàn thành TRỌN BỘ mục tiêu vòng tái sinh hiện tại
+    // (chỉ xét ở vòng NG+; mục tiêu đọc state reset-vòng nên là thành tích của MỘT vòng cụ thể).
+    const ngGoalsAllDone =
+      s.biz.prestige.level >= 1 &&
+      ngGoalProgress({
+        prestigeLevel: s.biz.prestige.level,
+        level: s.level,
+        staffCount: s.staff.length,
+        ordersDone: s.ordersDone,
+        supplierRel: s.biz.supplierRel ?? {},
+        marketClearedDay: s.marketClearedDay,
+        rivalsBeaten: s.biz.rivalsBeaten,
+      }).every((g) => g.done);
     const ctx: TitleContext = {
       level: s.level, day: s.day, customers: s.totals.customers, itemsSold: s.totals.itemsSold, revenue: s.totals.revenue,
       rating: rating.average, reviewCount: rating.count, ordersDone: s.ordersDone, staffCount: s.staff.length,
       closeRegulars: Object.values(s.regulars).filter((r) => r.perks.length).length,
       prestige: s.biz.prestige.level,
+      ngGoalsAllDone,
     };
     const fresh = TITLES.filter((t) => !s.titles.includes(t.id) && t.done(ctx));
     // Danh hiệu NG+ độc quyền: cần đủ số lần tái sinh (bộ sưu tập giữ qua vòng) + thỏa điều kiện thường.
@@ -190,6 +204,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
       ordersDone: s.ordersDone,
       supplierRel: s.biz.supplierRel ?? {},
       marketClearedDay: s.marketClearedDay,
+      rivalsBeaten: s.biz.rivalsBeaten, // GĐ171: mục tiêu rival đo theo vòng (reset mỗi tái sinh — GĐ170)
     });
     const goal = progress.find((g) => g.id === id);
     if (!goal || !goal.done) return false;
@@ -199,6 +214,8 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     });
     s.notify(`${goal.icon} Mục tiêu vòng mới "${goal.name}": +${formatMoney(goal.reward)}`);
     playSfx('quest');
+    // GĐ171: nhận mốc cuối có thể hoàn thành TRỌN BỘ mục tiêu vòng → xét ngay danh hiệu "Chủ hẻm lão làng".
+    get().checkTitles();
     return true;
   },
   placeBet: (tier) => {

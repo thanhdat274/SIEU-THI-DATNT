@@ -15,6 +15,8 @@ export interface TitleContext {
   staffCount: number;
   /** Số lần tái sinh (prestige) đã thực hiện — dùng cho danh hiệu NG+ độc quyền. */
   prestige: number;
+  /** GĐ171: đã hoàn thành TRỌN BỘ mục tiêu vòng tái sinh hiện tại (checkTitles tính qua ngGoalProgress). */
+  ngGoalsAllDone?: boolean;
 }
 
 export interface TitleDef {
@@ -49,6 +51,9 @@ export const TITLES: TitleDef[] = [
   { id: 'dai_gia', icon: '🏦', name: 'Tài phiệt đầu hẻm', description: 'Tổng doanh thu đạt 1 tỷ.', done: (c) => c.revenue >= 1_000_000_000 },
   { id: 'cap_80', icon: '🎖️', name: 'Huyền thoại ngõ phố', description: 'Đạt cấp 80.', done: (c) => c.level >= 80 },
   { id: 'cap_90', icon: '👑', name: 'Đệ nhất phố hẻm', description: 'Đạt cấp 90 — mốc hiếm cuối run.', done: (c) => c.level >= 90 },
+  // GĐ171: danh hiệu trọn bộ mục tiêu vòng tái sinh — nhét một lần duy nhất (titles giữ qua NG+),
+  // đích cuối hướng danh hiệu cho cuốn mục tiêu vòng thay vì chỉ tiền.
+  { id: 'chu_hem_lao_lang', icon: '🧭', name: 'Chủ hẻm lão làng', description: 'Hoàn thành trọn bộ mục tiêu của một vòng tái sinh (NG+).', done: (c) => c.ngGoalsAllDone === true },
 ];
 
 /**

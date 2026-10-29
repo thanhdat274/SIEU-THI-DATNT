@@ -23,7 +23,7 @@ import { REGULAR_NAMES } from '../core/biz';
 import { nextBonus, prestigeEligible, prestigePreview, PRESTIGE_BONUS, PRESTIGE_MAX_LEVEL, PRESTIGE_MIN_LEVEL, PRESTIGE_MIN_REVENUE, revenueFactor } from '../core/prestige';
 import { PARTNER_TIERS } from '../data/supplierRel';
 import { recentAvgProfit } from '../data/gifts';
-import { ngGoalProgress, type NgGoal } from '../data/ngGoals';
+import { ngGoalProgress, runRewardScale, runTargetScale, type NgGoal } from '../data/ngGoals';
 import { PRESTIGE_TITLES } from '../data/titles';
 import { PRESTIGE_COSTUMES } from '../data/costumes';
 import { useSession } from '../net/session';
@@ -1003,14 +1003,21 @@ function NearMilestones() {
   );
 }
 
-/** 🌱 Mục tiêu vòng tái sinh (GĐ140): danh sách mốc NG+ theo vòng, nhận thưởng khi đạt — chỉ hiện ở vòng NG+ (prestige ≥ 1). */
-function NgGoalsCard({ prestigeLevel, cachedGoals }: { prestigeLevel: number; cachedGoals: Array<Omit<NgGoal, 'done'> & { done: boolean }> }) {
+/** 🌱 Mục tiêu vòng tái sinh (GĐ140): danh sách mốc NG+ theo vòng, nhận thưởng khi đạt — chỉ hiện ở vòng NG+ (prestige ≥ 1).
+ * GĐ171: mục tiêu/thưởng nhân theo vòng (mục tiêu ×k, thưởng ×m) — dòng đầu báo rõ để người chơi thấy vòng sau khác vòng trước. */
+function NgGoalsCard({ prestigeLevel, cachedGoals }: { prestigeLevel: number; cachedGoals: Array<Omit<NgGoal, 'done'> & { done: boolean; target?: number }> }) {
   const { claimNgGoal, biz } = useGame();
   if (prestigeLevel < 1) return null;
   const claimed = new Set(biz.prestige.goalsClaimed ?? []);
   const doneCount = cachedGoals.filter((g) => g.done).length;
+  const tScale = runTargetScale(prestigeLevel);
+  const rScale = runRewardScale(prestigeLevel);
+  const fmtScale = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
   return (
     <Callout tone="info" title="🌱 Mục tiêu vòng tái sinh" style={{ marginTop: 10 }}>
+      <div style={sub}>
+        Vòng {prestigeLevel + 1} — mục tiêu ×{fmtScale(tScale)}, thưởng ×{fmtScale(rScale)} (vòng sau khó hơn, đền xứng hơn; trần ×3 / ×2.5).
+      </div>
       <div style={sub}>Đạt {doneCount}/{cachedGoals.length} mốc của vòng này — nhận thưởng tiền, reset khi tái sinh lần sau.</div>
       {cachedGoals.map((g) => {
         const isClaimed = claimed.has(g.id);
@@ -1060,6 +1067,7 @@ function PrestigeSection() {
     ordersDone,
     supplierRel: biz.supplierRel ?? {},
     marketClearedDay,
+    rivalsBeaten: biz.rivalsBeaten, // GĐ171: mục tiêu rival đo theo vòng (reset mỗi tái sinh — GĐ170)
   });
   return (
     <div style={{ ...card, marginTop: 8, border: '1px solid rgba(241,196,15,0.4)' }}>
