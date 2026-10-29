@@ -22,28 +22,17 @@
 ## Trạng thái hiện tại (29/10/2026)
 
 - **2215/2215 test pass (216 files) + test:coverage branch 87.17%/fn 75.59%** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định (dev boot @5173 200). Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ261. QA TOÀN DIỆN GĐ260: 34 panel × 3 cỡ màn 0 tràn/0 lỗi, autoplay ngày thật (132 khách) sạch.
-- Bức tranh tổng: nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+ + CUỐI TUẦN GĐ254–261) bão hòa; UI responsive audit kỹ (GĐ85–104, 116, 166–167, 258); trục "giá trị vs chi phí" soi kín (GĐ141–153, 210–251); pipeline Blender 3D (GĐ172–176, 3D mới chỉ khi đi kèm gameplay).
+- Bức tranh tổng: nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+ + CUỐI TUẦN GĐ254–261) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ làm khi đi kèm gameplay (pipeline GĐ172–176).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
 ### Giai đoạn gần đây · GĐ258–261 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–257: PROGRESS-GD250-257.md)
 
-- **GĐ177–257** đã dồn archive (docs/progress-archive/): 3D + đèn (177–198) · supply chain khép mạch (199–209) · bộ soi tiền/vốn (210–229) · QA + soi lễ/đội ngũ (230–249, PROGRESS-GD230-249.md) · lễ + đội + CUỐI TUẦN (250–257, PROGRESS-GD250-257.md).
+- **GĐ177–261** đã dồn archive (docs/progress-archive/): 3D + đèn (177–198) · supply chain (199–209) · bộ soi tiền/vốn (210–229) · PROGRESS-GD230-249.md · PROGRESS-GD250-257.md (gồm phụ lục 258–261).
 - **GĐ251 giá dịp lễ** 💲 — suggestPrice/priceForecast theo tolerance của dịp lễ (THUẦN ĐỌC). Chi tiết: archive.
 - **GĐ252 vai hiện diện + sửa OrderPanel vỡ** 🧍 — thu ngân/bảo vệ/chăm khách khỏi bảng rảnh; sửa TDZ vỡ OrderPanel. Chi tiết: archive.
 - **GĐ253 xếp lại ca mai một chạm** 🔀 — nút trên thẻ recap cuối ngày chạy setShift (staffShiftFix). Chi tiết: archive.
 - **GĐ254–257 nhịp CUỐI TUẦN** 📅 khép trọn 4 mạch: weekdayOf/isWeekend (ngày 1 = Thứ 2) + quest "🍬 Cuối tuần ăn vặt" (chỉ pool Thứ 7/CN, cuối pool — ngày thường xoay GIỮ NGUYÊN) → khách thèm ăn vặt (chooseWants ×0.2, list chung WEEKEND_SNACKS) → lịch tô sáng cuối tuần → việc sáng + "Mai tiệm có gì" nhắc. Chi tiết: archive. Cảm hứng Hay Day/Stardew; không đổi lượng khách, chỉ đổi nhiệm vụ + NMU trong ngày.
-- **GĐ258 gọn họ màu (xem chi tiết ở Quy ước bảng màu)** 🎨: chuẩn hoá 6 màu cũ còn sót trước GĐ166 về bảng duyệt; grep còn 0 (giữ màu nhận diện ArrangePanel/GardenPanel/art SVG). 2202 test xanh.
-- **GĐ259 coverage sweep** 🧪: phủ test `credit.ts`/`services.ts`/`professions.ts`; bắt 6 tham chiếu chết trong `likes` nghề → XOÁ giữ hành vi (thay id thật làm golden −15% — không làm).
-- **GĐ260 QA TOÀN DIỆN** ✅: coverage 87.17%/75.75%; 34 panel render 0 lỗi console, 0 tràn @320/390/768; autoplay 2 ngày sạch (132 khách). GĐ230–249 dồn archive.
-- **GĐ261 mồi cuối tuần tối thứ Sáu** 🔮: "Mai tiệm có gì" thêm "🍬 Mai Thứ 7 — cuối tuần, khách hay ghé mua ăn vặt" khi mai Thứ 7/CN (thuần đọc `tomorrowTeaser.ts`). QA @5173: Thứ 6 hiện, ngày thường không, 0 lỗi console.
-
-- **GĐ262 thẻ tuần biết thứ** 📅: Kinh doanh → Lãi lỗ ghi "ngày 29–35 · Thứ 2 → Chủ nhật — hôm nay Thứ 6"; nhịp "còn N ngày (tới Chủ nhật)" — CHỈ khi cửa sổ khối-aligned (`(startDay−1)%7===0`, play thường luôn đúng; save can thiệp tay → trung tính). Thuần đọc. QA mắt @5173 cả hai nhánh đúng, 0 lỗi console, 0 tràn @390/320.
-
-- **GĐ263 khoá nhất quán tuần × thứ** 🔒: test 365 ngày — khối [7k+1..7k+7] luôn Thứ 2→CN, trùng khối thử thách tuần (ceil) và chợ phiên/sỉ (floor); bất biến WEEKEND_SNACKS ∩ hàng mùa lễ = ∅. **Chốt: KHÔNG mở bias cuối tuần sang sim ngầm chi nhánh/quán nước** (quest nhắm tiệm chính). 2217 test xanh.
-
-- **GĐ264 quét thẩm mỹ bằng ảnh chụp** 🖼️ (nhiệm vụ định kỳ promt): chụp Order/Lịch/Nhân viên @desktop+390 — bắt 2 lỗi: hàng nút nhân viên không wrap → card tràn 137px @390 (kiểm page-level không thấy vì card che) — thêm flexWrap; ô cuối tuần #4a4a63 gần nền — tăng #54546e. 2217 test xanh; QA ảnh sau sửa: 0 element tràn.
-
-- **GĐ265 nốt quét thẩm mỹ** 🖼️: Cook/Garden/Discovery/Analytics @390 — bắt thêm 1 lỗi: 2 dropdown lọc Sổ tay Tiệm chia đôi bề rộng bị cắt chữ giữa từ @390 → cho wrap + minWidth 180 (dropdown hẹp rơi xuống dòng trọn bề rộng). Còn lại renders tốt (Garden/Cook/Analytics đúng, không tràn); header trạm nấu @390 hơi chật nhưng đủ đọc — ghi chờ, không churn. 2217 test xanh; QA ảnh sau sửa: dropdown đủ chữ.
+- **GĐ258–261** 🎨🖼️ — gọn 6 họ màu cũ về bảng GĐ166 · coverage sweep (credit/services/professions, xoá 6 id chết `likes` nghề) · QA TOÀN DIỆN (34 panel × 3 cỡ màn 0 lỗi/0 tràn, autoplay 2 ngày sạch) · quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390, tương phản ô cuối tuần, 2 dropdown Sổ tay Tiệm cắt chữ @390. Chi tiết: archive PROGRESS-GD250-257.md (phụ lục 258–261).
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -66,7 +55,7 @@
 - Khách treo câu hỏi quầy tự chốt theo giây thực (30s → 😕, 38s → 😤, 45s tự chốt — GĐ122). Riêng sim có seed (test/bot): đếm theo tick (mỗi lần gọi ~0.1s) để kết quả không phụ thuộc máy nhanh/chậm.
 - Lương trong số dư chi nhánh KHÔNG áp good_boss −10% (bảo thủ, trung thực).
 - 3D: Tài sản 3D mới đều qua pipeline Blender (không dựng tạm khối nguyên thủy khi Blender làm đẹp hơn), làm chậm/lười để không chặn lần tải đầu.
-- Họ màu hướng dẫn/chuỗi/biểu đồ (GĐ178): gộp hết về một sắc info `#3498db`, KHÔNG lập bảng riêng — tránh "màu tự chế" trái GĐ166; giữ ngoại lệ duy nhất họ buy-tone `#55efc4`/`#ff7675`. GardenPanel dùng họ "system card" riêng (cùng mẫu BusinessPanel) nên giữ nguyên, không churn.
+- Họ màu hướng dẫn/chuỗi/biểu đồ: gộp về một sắc info `#3498db` (GĐ178); ngoại lệ duy nhất: buy-tone `#55efc4`/`#ff7675`; GardenPanel giữ họ riêng. GĐ258 quét nốt 6 màu cũ — src/ui chỉ còn bảng duyệt + màu nhận diện.
 
 ## Cần theo dõi / nợ mở
 

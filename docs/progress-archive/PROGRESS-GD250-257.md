@@ -10,3 +10,20 @@
 - **GĐ255 cuối tuần thành nhịp thật** 🍬: GĐ254 dạy trữ đồ ăn vặt nhưng thế giới chưa trả lời — `chooseWants` (agents/customers.ts) thêm 1 nhánh bối cảnh đúng mẫu mưa/nắng/giờ vàng: cuối tuần khách hỏi món nhóm `WEEKEND_SNACKS` với xác suất 0.2 (nhóm list dùng CHUNG với quest ở `products.ts` — quest dạy đúng hành vi mà thế giới thưởng). Không đổi lượng khách, chỉ dồn NMU trong ngày cuối tuần; golden sim xanh (trong dung sai ±5%), 2201 test xanh, build sạch. QA mắt @5173: boot sạch 0 lỗi console (rAF nền IAB dừng nên không xem được khách hỏi món trực tiếp — bọc bởi sim).
 - **GĐ256 lịch hiện cuối tuần** 🗓️: CalendarPanel: ô Thứ 7/CN nền sáng hơn cùng họ tím-than (#4a4a63, surface tone chứ không phải màu ngữ cảnh), tooltip từng ô có "· Thứ 4 · cuối tuần", dòng mở đầu nói "Hôm nay là Thứ…, ô nền sáng hơn là cuối tuần — khách ghé mua ăn vặt nhiều hơn". Helper đảo `gameDayOfDoy` (calendar.ts). 1 test roundtrip; 2202 test xanh; QA mắt @5173: lịch render đúng thứ từng ô, 0 lỗi console, 0 tràn @390/320.
 - **GĐ257 cuối tuần thành việc sáng** ☀️: Sổ đầu ngày: tiêu đề có "· Thứ 4"; sáng Thứ 7/CN có thêm việc "🍬 Cuối tuần (Thứ 7): khách hay mua ăn vặt — nhớ châm kệ mì, bánh kẹo, nước ngọt" trong danh sách việc hôm nay (mẫu GĐ249 trữ lễ, priority 3 nhường việc bức thiết, nhảy thẳng Nhập hàng). Thuần đọc, không đổi kinh tế. 2202 test xanh; QA mắt @5173: ngày 34 (Thứ 7) có việc, ngày 31 (Thứ 4) không, 0 lỗi console, 0 tràn @390/320. **Nhịp cuối tuần khép trọn 4 mạch: thứ trên HUD → quest dạy trữ → khách thật sự thèm (GĐ255) → lịch + việc sáng nhớ đúng.**
+
+
+---
+# Phụ lục: GĐ258–261 (dồn 30/10/2026 khi file chính vượt ~30KB)
+
+- **GĐ258 gọn họ màu (xem chi tiết ở Quy ước bảng màu)** 🎨: chuẩn hoá 6 màu cũ còn sót trước GĐ166 về bảng duyệt; grep còn 0 (giữ màu nhận diện ArrangePanel/GardenPanel/art SVG). 2202 test xanh.
+- **GĐ259 coverage sweep** 🧪: phủ test `credit.ts`/`services.ts`/`professions.ts`; bắt 6 tham chiếu chết trong `likes` nghề → XOÁ giữ hành vi (thay id thật làm golden −15% — không làm).
+- **GĐ260 QA TOÀN DIỆN** ✅: coverage 87.17%/75.75%; 34 panel render 0 lỗi console, 0 tràn @320/390/768; autoplay 2 ngày sạch (132 khách). GĐ230–249 dồn archive.
+- **GĐ261 mồi cuối tuần tối thứ Sáu** 🔮: "Mai tiệm có gì" thêm "🍬 Mai Thứ 7 — cuối tuần, khách hay ghé mua ăn vặt" khi mai Thứ 7/CN (thuần đọc `tomorrowTeaser.ts`). QA @5173: Thứ 6 hiện, ngày thường không, 0 lỗi console.
+
+- **GĐ262 thẻ tuần biết thứ** 📅: Kinh doanh → Lãi lỗ ghi "ngày 29–35 · Thứ 2 → Chủ nhật — hôm nay Thứ 6"; nhịp "còn N ngày (tới Chủ nhật)" — CHỈ khi cửa sổ khối-aligned (`(startDay−1)%7===0`, play thường luôn đúng; save can thiệp tay → trung tính). Thuần đọc. QA mắt @5173 cả hai nhánh đúng, 0 lỗi console, 0 tràn @390/320.
+
+- **GĐ263 khoá nhất quán tuần × thứ** 🔒: test 365 ngày — khối [7k+1..7k+7] luôn Thứ 2→CN, trùng khối thử thách tuần (ceil) và chợ phiên/sỉ (floor); bất biến WEEKEND_SNACKS ∩ hàng mùa lễ = ∅. **Chốt: KHÔNG mở bias cuối tuần sang sim ngầm chi nhánh/quán nước** (quest nhắm tiệm chính). 2217 test xanh.
+
+- **GĐ264 quét thẩm mỹ bằng ảnh chụp** 🖼️ (nhiệm vụ định kỳ promt): chụp Order/Lịch/Nhân viên @desktop+390 — bắt 2 lỗi: hàng nút nhân viên không wrap → card tràn 137px @390 (kiểm page-level không thấy vì card che) — thêm flexWrap; ô cuối tuần #4a4a63 gần nền — tăng #54546e. 2217 test xanh; QA ảnh sau sửa: 0 element tràn.
+
+- **GĐ265 nốt quét thẩm mỹ** 🖼️: Cook/Garden/Discovery/Analytics @390 — bắt thêm 1 lỗi: 2 dropdown lọc Sổ tay Tiệm chia đôi bề rộng bị cắt chữ giữa từ @390 → cho wrap + minWidth 180 (dropdown hẹp rơi xuống dòng trọn bề rộng). Còn lại renders tốt (Garden/Cook/Analytics đúng, không tràn); header trạm nấu @390 hơi chật nhưng đủ đọc — ghi chờ, không churn. 2217 test xanh; QA ảnh sau sửa: dropdown đủ chữ.
