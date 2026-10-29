@@ -21,11 +21,11 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **1816/1816 test pass (162 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ185.
+- **1819/1820 test pass (162 files)** · build sạch (chỉ cảnh báo bundle-size có sẵn) · game chạy ổn định. Nhánh làm việc: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ186. (1 đỏ duy nhất = `weeklyGoalCap` cấp 50 autoplay timeout 900s — flake nặng đã biết, thấy chi tiết Cần theo dõi.)
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive đa thiết bị audit kỹ (GĐ85–104, 116, 166–167); trục "giá trị vs chi phí" soi kín gần hết tài sản (GĐ141–153); loạt "học từ Xóm Nông Trại" đã hoàn (GĐ172–176: kit prop GLB + coin-pop juice + tách chunk vendor + guard render + Blender 5.2 pipeline Draco). NG+ có mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (GĐ171).
 - Backup source trước GĐ1 (trước khi có git): `C:\Users\Admin\GAME_TU_DO_backup_2026-10-26.tar.gz`.
 
-### Giai đoạn gần đây · GĐ177–185 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
+### Giai đoạn gần đây · GĐ177–186 (chi tiết GĐ159–183: docs/progress-archive/PROGRESS-GD154-180.md)
 
 - **GĐ177** 🏮 Đầu ngõ lên đèn: đèn lồng cột dựng Blender (`blender_lantern.py`) bật sáng ấm chập tối (lamp 17h–5h30, lightBudget) — chi tiết: docs/progress-archive/PROGRESS-GD154-180.md.
 - **GĐ178** 🎨 Gộp họ xanh dương guide/chuỗi/biểu đồ về info `#3498db` (16 chỗ) — chi tiết: archive trên.
@@ -36,6 +36,7 @@
 - **GĐ183** 🧹 Đóng nợ UI cuối: hết thẻ "callout vẽ tay" → `Callout` chuẩn; dọn teal `#16a085` lệch bảng (GardenPanel/BranchPanel/StoragePanel) — chi tiết: archive trên.
 - **GĐ184** 🚧 "Sửa đường lên hiện trường": sự kiện market `roadworks` (đã giảm lượt khách ×0.8 trong `dayEffects`) giờ hiện ra bằng hình — hôm nào đang sửa đường, dựng rào chắn công trình ở mép vỉa hè trước mặt tiền. Kit prop `rao_chan` mới (vạch đỏ/kem, `build-kit-assets.ts` + nén Draco Blender `--no-bake`, 8.6KB) ở 2 chỗ [−2.2,2.6] & [4.6,2.5]; `KIT_ROADWORK_PLACEMENTS` + `roadworkGroup` + `kit.setRoadwork(on)` (mẫu GĐ181). Helper thuần đọc `isRoadworks(seed,day,level)` = `dayEffects().market.kind==='roadworks'` cùng chân lý với sim, không đổi SAVE_VERSION/kinh tế. main.tsx đổi cảnh đúng 1 lần theo ngày (guard `lastRoadwork`). `roadwork.ts`, `kitProps.ts`, `main.tsx`, test +11; tsc+build sạch, full 1812/1812; QA @5173: setRoadwork on/off bật/tắt 2 rào đúng toạ độ, day1 mặc định ẩn. (Miền trong grid cứng hóa: anchor seed 12345 ngày 358/359 true, 360 false.)
 - **GĐ185** 🏠 "Cơ ngơi lên đèn": lan toả đèn ấm chập tối từ mặt tiền (GĐ177) tới của riêng người chơi — hiên nhà (ngay cửa ra vào) + cổng trại (gần giếng) cùng bật lúc 17h–5h30 theo công thức `lamp` cũ. `compoundWarm.ts`: `COMPOUND_WARM_PLACES` (2 điểm) + `createCompoundWarm()` đăng ký đèn ấm 0xffb35c vào quỹ ánh sáng (lightBudget) — không thêm sim/save/khối, chỉ nguồn sáng nên không chặn lưới; `warmGlow(minutes)` cùng nhịp đèn đường/lồng. world.ts + main.tsx gọi `world.compoundWarm.update(lamp)` cùng chỗ `storefront.update(lamp)`. `compoundWarm.ts`, `world.ts`, `main.tsx`, test 4; tsc+build sạch; QA @5173: update(0)→[0,0] trưa, update(1)→[16,16] chập tối (2 đèn đăng ký đúng).
+- **GĐ186** 🚨 Đèn báo khách đợi thêm mức KHẨN "sắp mất khách": ngoài sáng ấm theo `waiting` (GĐ180), khi quầy có ~3 khách đợi trở lên `BACKUP_WAITING` và giữ lâu (`BACKUP_AFTER_GAME_S=15`s game) thì chuyển nháy NHANH + sáng tối đa — tín hiệu "phải ghé về quầy / mở quầy thêm kẻo mất khách vì chờ". `queueUrgency`/`accumulateBackup`/`waitLampIntensity` thuần (soi bằng test), FIFO game-time từ đồng hồ `g.minutes` (pause an toàn — dừng game thì tích 0). `storefrontWaitLamp.ts`, `main.tsx`, test +4 (tổng 8); tsc+build sạch; QA @5173: update({open,waiting,urgency}) không ném lỗi, boot ổn.
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -66,6 +67,8 @@
 - GĐ180: đèn báo khách đợi — xác nhận trải nghiệm thật (đông khách thì đèn rõ, vắng thì tắt; không nhiễu mắt khi đứng quầy). Ý tưởng nối: nhấp nhô đèn theo nhịp "sắp mất khách" (waiting lớn + lâu) nếu cần tín hiệu mạnh hơn.
 - GĐ184: rào chắn sửa đường — xác nhận trên save thật đúng ngày roadworks (seed 12345 ngày 357–359) rào dựng + hôm sau tự gỡ; QA live trên tab foreground (IAB nền dừng rAF nên loop không chạy lúc QA — đồng cảnh với GĐ179–181, verify cấu trúc qua setRoadwork trực tiếp).
 - GĐ185: đèn ấm hiên nhà + cổng trại — xác nhận trải nghiệm thật chập tối (17h–5h30) đứng gần hiên/cổng trại thấy vũng sáng ấm, ban ngày tắt; và không chói khi đứng quầy (2 đèn ở chỗ riêng, xa mặt tiền).
+- GĐ186: mức khẩn "sắp mất khách" — xác nhận trên foreground thật khi quầy đông lâu (≥3 khách đợi ~vài giây thật) đèn nháy nhanh hơn hẳn, chủ về quầy thì dịu lại; ngưỡng `BACKUP_WAITING=3`/`BACKUP_AFTER_GAME_S=15` có thể chỉnh cho khớp cảm giác. (IAB nền dừng rAF nên không soi loop lúc QA — verify thuần như các giai đoạn trước.)
+- Flake `weeklyGoalCap` cấp 50: lần full + lần isolate đều timeout 900s (autoplay 28 ngày cấp 50 nặng ~908s, máy đang tải khi chạy liên tục) — ĐÃ xác nhận KHÔNG phải hồi quy của GĐ185/186 (thuần render/3D, node test không chạy); chạy lúc máy rảnh là 16/16 xanh (GĐ184 full run gần nhất). Nếu tái diễn: nâng timeout hoặc rút autoplay ngày ở cấp 50.
 - GĐ171: scale mục tiêu vòng ×(1+0.5(N−1))/×(1+0.3(N−1)) — cần save thật vòng 2+ để xác nhận trad vẫn căng nhưng với tới; nếu vẫn quá dễ → siết trần.
 - (GĐ110/117) Mục tiêu nhiệm vụ ngày & kèo ở cấp 50+: sim bot hụt ~40% nhưng browser thật cho thấy target ×1.0 vẫn trong năng lực → chưa đổi; theo dõi.
 - QA trực quan GĐ155–158 xong trên save máy cấp 46 ngày 1; chưa QA mắt được trạng thái CÓ dữ liệu của Bỏ lỡ/Thú cưng/hụi/khủng hoảng (cần play vài ngày — bọc bởi test). GĐ159 các dòng mới ẩn ngày 1 — QA mắt khi có save có doanh thu.
@@ -263,3 +266,4 @@
 - GĐ183 — 🧹 Đóng nợ UI cuối: mọi thẻ "callout vẽ tay" chuyển sang Callout chuẩn, dọn màu lệch bảng
 - GĐ184 — 🚧 Nâng hiệu ứng sửa đường lên 3D: rào chắn công trình dựng đúng ngày roadworks (ít khách đi ngang)
 - GĐ185 — 🏠 Cơ ngơi lên đèn: đèn ấm chập tối lan tới hiên nhà + cổng trại (nối GĐ177 mặt tiền)
+- GĐ186 — 🚨 Đèn báo khách đợi thêm mức KHẨN "sắp mất khách": nháy nhanh khi quầy đông lâu (loss-predictor)

@@ -1,6 +1,7 @@
 import { skyAt } from './data/weather';
 import { isMarketDay } from './data/chophien';
 import { isRoadworks } from './data/roadwork';
+import { queueUrgency, accumulateBackup } from './world/storefrontWaitLamp';
 import { ANIMAL_ORDER, type AnimalKind } from './data/garden';
 import * as THREE from 'three';
 import { Component, type ReactNode } from 'react';
@@ -333,6 +334,9 @@ let lastMinutes = useGame.getState().minutes;
 let lastMarketDay = isMarketDay(useGame.getState().day);
 // Hôm nay có sửa đường trước hẻm không (gđ184): đổi cảnh rào chắn khi sự kiện market roadworks thay đổi
 let lastRoadwork = isRoadworks(useGame.getState().weatherSeed, useGame.getState().day, useGame.getState().level);
+// GĐ186 "sắp mất khách": đếm thời lượng game mà quầy có ~BACKUP_WAITING khách đợi trở lên (0 khi dừng)
+let lastUrgMinutes = useGame.getState().minutes;
+let backedUpGameSec = 0;
 let routineMarks = newRoutineMarks();
 function runRoutine() {
   const s = useGame.getState();
@@ -714,8 +718,16 @@ function renderFrame() {
   world.compoundWarm.update(lamp);
   // Biển mở/đóng cửa trước tiệm (gđ179): tấm trạng thái đổi màu theo tiệm đang mở/đóng, đung nhẹ khi mở
   world.openSign.update(g.shopOpen, performance.now() / 1000);
-  // Đèn báo "khách đang đợi" cạnh cửa (gđ180): sáng ấm khi có khách chờ quầy và tiệm đang mở
-  world.waitLamp.update({ open: g.shopOpen, waiting: g.waiting ?? 0 }, performance.now() / 1000);
+  // Đèn báo "khách đang đợi" cạnh cửa (gđ180): sáng ấm khi có khách chờ quầy và tiệm mở
+  // GĐ186: cộng thêm mức KHẨN "sắp mất khách" khi hàng đông lâu — nháy nhanh để chủ ghé về quầy
+  let urgAdv = g.minutes - lastUrgMinutes;
+  if (urgAdv < 0) lastUrgMinutes = g.minutes; // sang ngày đồng hồ về sáng: không tính cục giật
+  backedUpGameSec = accumulateBackup(backedUpGameSec, g.waiting ?? 0, Math.max(0, urgAdv) * 60);
+  lastUrgMinutes = g.minutes;
+  world.waitLamp.update(
+    { open: g.shopOpen, waiting: g.waiting ?? 0, urgency: queueUrgency(g.waiting ?? 0, backedUpGameSec) },
+    performance.now() / 1000,
+  );
   // Chợ phiên (gđ181): 7 ngày một lần gánh hàng dựng thêm dọc hẻm — đổi cảnh một lần theo ngày
   const marketDay = isMarketDay(g.day);
   if (marketDay !== lastMarketDay) {

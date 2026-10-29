@@ -17,7 +17,38 @@ export const GLOW_NODE = 'cho_doi_glow';
 /** Quá nhiều đèn phát sáng cũng được, nhưng đừng để đèn rời đèn khác quá dày — rà bằng test. */
 
 /** Đèn báo chỉ có ý nghĩa khi tiệm đang mở; cuối ngày đóng cửa thì không còn khách chờ. */
-export interface WaitLampActive { open: boolean; waiting: number }
+export interface WaitLampActive { open: boolean; waiting: number; urgency?: 0 | 1 | 2 }
+
+/**
+ * GĐ186 — "Sắp mất khách": quầy bắt đầu tắc khi có từ `BACKUP_WAITING` khách đợi trở lên, và được
+ * coi là sắp mất khách khi giữ mức đó đủ `BACKUP_AFTER_GAME_S` giây game (hàng không tiêu tán).
+ * Đèn báo lúc đó chuyển sang nháy KHẨN để chủ "nhìn là biết phải về quầy / mở quầy thêm", chứ không
+ * chỉ sáng đều như GĐ180. Thời gian game thuần đọc từ đồng hồ (pause an toàn — dừng game thì tích 0).
+ */
+export const BACKUP_WAITING = 3;
+export const BACKUP_AFTER_GAME_S = 15;
+const MAX_BACKUP = 60;
+
+/** Mức báo: 0 = không ai chờ; 1 = có khách chờ (bình thường); 2 = sắp mất khách (hàng đông lâu). */
+export function queueUrgency(waiting: number, backedUpGameSeconds: number): 0 | 1 | 2 {
+  if (waiting <= 0) return 0;
+  if (waiting >= BACKUP_WAITING && backedUpGameSeconds >= BACKUP_AFTER_GAME_S) return 2;
+  return 1;
+}
+
+/** Giữ thời lượng "hàng đông" trong khoảng 0..MAX: cộng khi tắc, rút dần (2×) khi tiêu tán. */
+export function accumulateBackup(prev: number, waiting: number, gameSeconds: number): number {
+  if (waiting >= BACKUP_WAITING) return Math.min(prev + gameSeconds, MAX_BACKUP);
+  return Math.max(0, prev - gameSeconds * 2);
+}
+
+/** Độ sáng lõi đèn (để test thuần — update() dùng luôn): tắt khi đóng/khi không ai chờ; khẩn thì giữ tối đa. */
+export function waitLampIntensity(a: { open: boolean; waiting: number; urgency?: 0 | 1 | 2 }): number {
+  if (!a.open || a.waiting <= 0) return 0;
+  const u = a.urgency ?? 1;
+  const base = Math.min(1, 0.55 + a.waiting * 0.25);
+  return (u === 2 ? 1 : base) * 1.6;
+}
 
 /** Rà vị trí đặt: ngoài thế giới / giữa lòng đường / đè mặt tiền / chắn cửa / chồng cột đèn biển là bug. */
 export function waitLampProblems(): string[] {
@@ -94,13 +125,16 @@ export function createWaitLamp(baseUrl = '/models/facade/'): WaitLamp {
   group.add(fallback);
 
   const api: WaitLamp = { group, loaded: false, update: (a, time) => {
-    const on = a.open && a.waiting > 0 ? 1 : 0;
-    // Càng đông khách đợi càng sáng rõ (1..~1.8); tắt hẳn khi không ai chờ
-    const level = Math.min(1, 0.55 + a.waiting * 0.25);
-    const intensity = on * level * 1.6;
+    const on = a.open && a.waiting > 0;
+    const u = a.urgency ?? (a.waiting > 0 ? 1 : 0);
+    const intensity = waitLampIntensity(a);
     glowMat.emissiveIntensity = intensity;
     if (glbGlow) glbGlow.emissiveIntensity = intensity;
-    pulse.material.opacity = on * (0.35 + 0.25 * Math.sin(time * 3));
+    // Nhấp nhô: khẩn (sắp mất khách) thì nháy NHANH và RÕ hơn hẳn để đánh mắt; bình thường dịu êm
+    const freq = u === 2 ? 9 : 3;
+    pulse.material.opacity = on
+      ? (u === 2 ? 0.5 + 0.5 * Math.sin(time * freq) : 0.35 + 0.25 * Math.sin(time * freq))
+      : 0;
     // Không có nguồn sáng thật — chỉ là tín hiệu không lời, tránh thêm light cho một prop nhỏ
   } };
 
