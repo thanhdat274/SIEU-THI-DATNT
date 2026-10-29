@@ -34,6 +34,7 @@ import { venueTrendSummary } from '../data/venueTrend';
 import { riskTrendSummary } from '../data/risk';
 import { catPayoff, dogPayoff, CAT_PITCH_MIN } from '../data/petPayoff';
 import { counterPayoff, huiRoundSummary, recentAvgRevenue } from '../data/minorPayoff';
+import { rivalDrag } from '../data/rivalDrag';
 import { summarizeDemographics, adReach, adTargetSuggest } from '../data/demographics';
 
 const card: React.CSSProperties = { background: '#3a3a4d', borderRadius: 10, padding: '12px 14px', marginBottom: 8, border: '1px solid rgba(255,255,255,0.06)' };
@@ -196,7 +197,7 @@ function Market() {
                 </div>
               )}
               <div style={sub}>
-                Đang hút mất {Math.round((1 - rivalTrafficFactor(r, day)) * 100)}% khách{r.saleUntil !== undefined && r.saleUntil >= day ? ` (đang giảm giá tới ngày ${r.saleUntil})` : ''}.
+                Đang hút mất {rivalDrag(r, day, avgRev7).lostPct.toFixed(0)}% khách{r.saleUntil !== undefined && r.saleUntil >= day ? ` (đang giảm giá tới ngày ${r.saleUntil})` : ''}{avgRev7 > 0 ? ` → ~${formatMoney(rivalDrag(r, day, avgRev7).moneyPerDay)}/ngày` : ''}.
                 Mỗi đêm họ yếu đi khi tiệm bạn được đánh giá cao, ít để khách hụt hàng, giá không đắt hơn giá gợi ý, và có chạy quảng cáo.
               </div>
               <div style={{ ...title, marginTop: 8 }}>🎯 Phản công (mỗi ngày một đợt)</div>
