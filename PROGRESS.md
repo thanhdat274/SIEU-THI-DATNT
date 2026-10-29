@@ -58,6 +58,7 @@
 
 - **GĐ205** ➕ "Điền kệ chi nhánh vào giỏ": phiếu nạp kho thành HÀNH ĐỘNG — dòng chi nhánh mang mã món `id` để OrderPanel quy thùng `ceil(need/caseSize)` + nút "➕ Điền kệ chi nhánh vào giỏ" nhét thẳng vào giỏ đặt đơn (tái dùng `maxFit` như fillSuggest). THUẦN local-UI. `supplyChain.ts`, `OrderPanel.tsx`, `supplyChain.test.ts` (+2).
 - **GĐ206** 🚚 "Auto chuyển kho": trục multi-shop thành CƠ CHẾ thật — trước chỉ chở khi có người giao/xếp TRỰC hoặc quản lý gọi xe; giờ chủ bật TỰ CHỞ: `branch.autoHaul` (optional) + helper thuần `branchHaul.ts` `autoHaulDue` (bật + kệ vơi <50% `HAUL_REFILL_BELOW` + cách `HAUL_TRIP_EVERY=240'`) = điều kiện THỨ 3 vòng xe chở; `haulTripPlan` preview chuyến chở gì cùng công thức slice; vẫn trả phí xăng `tripFee` 15k. BranchPanel nút bật + preview. Khép backlog 6. `branchHaul.ts`, `slices/branch.ts` (+toggleBranchAutoHaul), `branches.ts`, `gameTypes.ts`, `BranchPanel.tsx`, `branchHaul.test.ts` (+8).
+- **GĐ207** 🎛️ Auto chuyển kho CHỈNH NGƯỠNG/HẸN GIỜ: chủ tự cân phí xăng — `setBranchAutoHaul(below,every)` (action mới, LOCAL_ONLY) lưu ngưỡng kệ vơi % + khoảng cách giữa chuyến lên branch (optional); helper thuần `autoHaulCfg` clamp an toàn (30–80% · 120–720') là NGUỒN CHÂN LÝ cho cả `autoHaulDue` (slice) lẫn BranchPanel nên số luôn khớp; UI 2 ô số (% · h/chuyến) dưới nút bật. `branchHaul.ts` (+autoHaulCfg), `branches.ts`, `slices/branch.ts` (+setBranchAutoHaul), `gameTypes.ts`, `BranchPanel.tsx`, `branchHaul.test.ts` (+5). tsc+build sạch; full suite 1912/1912 (174 files); QA @5173 boot 200.
 
 ## Quy ước kỹ thuật cần nhớ
 
