@@ -555,7 +555,11 @@
  * mã hẻm và nút sao chép/rời. Các ô bên phải cũng nhỏ lại cho vừa một hàng. Desktop rộng giữ nguyên.
  */
 @media (max-width: 1000px) {
-  #ui .hud-meta { gap: 4px; max-width: calc(100% - 200px); }
+  /* GĐ297: cột góc phải bị cap max-width (≤120px @320) trong khi 3 chip âm thanh/nhạc/tài khoản
+   * cần ~134px → với nowrap chúng tràn sang PHẢI, ra ngoài màn hình (html/body overflow:hidden che
+   * mất nên scrollWidth vẫn = clientWidth, kiểm 0-tràn không bắt được). Cho phép xuống hàng + canh
+   * phải để chip nào cũng nằm trọn trong màn hình ở mọi cỡ hẹp. */
+  #ui .hud-meta { gap: 4px; max-width: calc(100% - 200px); flex-wrap: wrap; justify-content: flex-end; }
   #ui .hud-meta.coop { width: auto; max-width: 190px; flex-wrap: wrap; justify-content: flex-end; }
   #ui .hud-meta.coop .hud-room { flex: 1 1 100%; max-width: none; min-height: 34px; padding: 2px 8px; }
   #ui .hud-meta.coop .hud-room b { max-width: none; font-size: 12px; }

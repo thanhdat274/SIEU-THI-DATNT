@@ -879,4 +879,9 @@ if (import.meta.env.DEV) {
   import('./dev/playtest').then(({ createPlaytest }) =>
     Object.assign((window as unknown as { game: object }).game, { playtest: createPlaytest(shop, customers, staff, player) }),
   );
+  // GĐ297: soi nút bị CẮT ở mép màn hình — `scrollWidth == clientWidth` không bắt được vì
+  // html/body overflow:hidden. QA gọi `game.layoutAudit()` sau mỗi lần đổi cỡ màn.
+  import('./dev/layoutAudit').then(({ layoutAudit }) =>
+    Object.assign((window as unknown as { game: object }).game, { layoutAudit }),
+  );
 }
