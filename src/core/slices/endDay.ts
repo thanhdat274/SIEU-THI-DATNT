@@ -394,6 +394,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     buildMode: false,
     placing: null,
     panel: { type: 'summary', day: s.day, stats },
+    lastSummary: { day: s.day, stats },
     stats: emptyStats(),
     ...k, furniture, order, phoneOrders: [], phoneSlot: 0, debts, vendorOffer: null, event: nextEvent, contracts, fakeCash: 0, wheelBoost: 1, history: [...s.history, record].slice(-HISTORY_DAYS), venueTrend: [...s.venueTrend, venueDay].slice(-VENUE_TREND_DAYS), riskTrend: [...s.riskTrend, riskDay].slice(-RISK_TREND_DAYS), riskToday: emptyRiskToday(), deliveries: [], demand, demandToday: {}, sales, salesToday: {}, reservations, market,
     garden, analytics,

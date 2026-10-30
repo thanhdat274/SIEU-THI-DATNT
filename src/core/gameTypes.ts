@@ -247,6 +247,8 @@ export interface GameState {
   /** Thông báo ngắn ở giữa màn hình. */
   message: string | null;
   panel: Panel | null;
+  /** Tổng kết ngày vừa qua (máy chạy hẻm gửi sang để máy khách cũng mở bảng tổng kết). */
+  lastSummary: { day: number; stats: DayStats } | null;
   /** Đang ở chế độ xây dựng. */
   buildMode: boolean;
   placing: Placing | null;
@@ -501,6 +503,7 @@ export interface GameState {
   takeFromShelf: (productId: string, preferUid?: number) => number | null;
   priceOf: (productId: string, minutes?: number) => number;
   setPrice: (productId: string, price: number) => void;
+  setPrices: (changes: Record<string, { from: number | undefined; to: number | null }>) => number;
   /** Tính tiền cho khách; `discount` là tiền giảm combo, `combos` là số combo trong giỏ,
    *  `payment` là hình thức thanh toán (mặc định tiền mặt) — ảnh hưởng phí và sổ thống kê.
    *  `profId` (tuỳ chọn, GĐ62): nghề khách vãng lai — ghi doanh thu vào nhân khẩu học. */

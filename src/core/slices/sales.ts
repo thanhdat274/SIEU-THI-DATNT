@@ -19,7 +19,7 @@ import { revenueFactor } from '../prestige';
 
 /** Bán hàng ở quầy: giá, giờ vàng, tính tiền, bán sỉ, combo, trộm và tiền giả. */
 
-export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 'priceOf' | 'setPrice' | 'setHappyHour' | 'checkout' | 'noteMiss' | 'setAllowCredit' | 'setCounterPolicy' | 'offerWholesale' | 'acceptWholesale' | 'declineWholesale' | 'sellMarketSurplus' | 'toggleCombo' | 'noteComboHits' | 'recordTheft' | 'recordCounterfeit' | 'tallyDemographics'> => ({
+export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 'priceOf' | 'setPrice' | 'setPrices' | 'setHappyHour' | 'checkout' | 'noteMiss' | 'setAllowCredit' | 'setCounterPolicy' | 'offerWholesale' | 'acceptWholesale' | 'declineWholesale' | 'sellMarketSurplus' | 'toggleCombo' | 'noteComboHits' | 'recordTheft' | 'recordCounterfeit' | 'tallyDemographics'> => ({
   priceOf: (productId, minutes = get().minutes) => {
     const s = get();
     let p = s.prices[productId] ?? productById(productId).sell;
@@ -34,6 +34,20 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     return p;
   },
   setPrice: (productId, price) => set({ prices: { ...get().prices, [productId]: price } }),
+  // Đổi nhiều giá một lúc, chỉ món còn đúng giá người bấm vừa thấy (from): ở hẻm online người khác
+  // vừa đổi giá món đó thì giữ giá của họ, không đè bằng bảng giá cũ. to = null là về giá gợi ý.
+  setPrices: (changes) => {
+    const prices = { ...get().prices };
+    let applied = 0;
+    for (const [id, { from, to }] of Object.entries(changes)) {
+      if (prices[id] !== from) continue;
+      if (to == null) delete prices[id];
+      else prices[id] = to;
+      applied++;
+    }
+    set({ prices });
+    return applied;
+  },
   setHappyHour: (hh) => set({ happyHour: hh }),
   checkout: (items, discount = 0, combos = 0, payment = 'cash', profId?: string) => {
     const s = get();

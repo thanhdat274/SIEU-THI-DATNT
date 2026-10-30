@@ -32,7 +32,7 @@ import { newOnline } from '../data/online';
 import { newGarden } from '../data/garden';
 import { newAnalytics } from '../data/analytics';
 import { newInspection, type LicenseId } from '../data/licenses';
-import { type GameState, type Furniture, type ContractState, type Delivery, type DayRecord, DAY_START, emptyStats, type CookJob , ROUTINE } from './gameTypes';
+import { type GameState, type Furniture, type ContractState, type Delivery, type DayRecord, type DayStats, DAY_START, emptyStats, type CookJob , ROUTINE } from './gameTypes';
 import { emptyTiers } from './stock';
 import { createBranchSlice } from './slices/branch';
 import { createOrdersSlice } from './slices/orders';
@@ -204,6 +204,7 @@ export const useGame = create<GameState>((set, get) => {
     hint: null,
     message: null,
     panel: null,
+    lastSummary: null as { day: number; stats: DayStats } | null,
     buildMode: false,
     placing: null,
     shopOpen: false,

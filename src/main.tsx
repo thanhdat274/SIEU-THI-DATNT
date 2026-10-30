@@ -42,7 +42,7 @@ import { Hud, tutorialActive, tutorialStep } from './ui/Hud';
 import './ui/controls.css';
 import { LoginScreen } from './ui/LoginScreen';
 import { pushCloudSave } from './net/cloud';
-import { checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';
+import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';
 import { watchUser } from './net/firebase';
 import { useSession } from './net/session';
 
@@ -385,7 +385,7 @@ function runRoutine() {
 
 /** Quầy, kệ và tủ thay đổi khi xây dựng / mở rộng tiệm, nên tính lại mỗi lần. */
 const fixedInteractables: Interactable[] = [
-  { position: bedPos, radius: 2, hint: () => (player.asleep ? '💤 Đang ngủ...' : '[N] Đi ngủ'), key: 'KeyN', action: goToBed },
+  { position: bedPos, radius: 2, hint: () => (player.asleep ? (inAlley() ? '💤 Chờ cả hẻm ngủ... [N] Dậy' : '💤 Đang ngủ...') : '[N] Đi ngủ'), key: 'KeyN', action: goToBed },
   // Trang trại nam đường thứ hai: đứng cạnh cổng bấm V mở bảng trại (trồng, tưới, thu hoạch, cho gà ăn)
   { position: world.farmSpot, radius: 4, hint: () => '[V] Trang trại', key: 'KeyV', action: () => useGame.getState().openPanel({ type: 'garden' }) },
   // Giếng nước trong trại: tưới nhanh tất cả luống không cần mở bảng
@@ -468,7 +468,14 @@ const nearestInteractable = () => {
 /** Nằm lên giường một lúc cho thấy nhân vật ngủ, rồi mới sang ngày mới. */
 function goToBed() {
   const s = useGame.getState();
-  if (player.asleep) return;
+  if (player.asleep) {
+    // Ở hẻm: đang nằm chờ người khác thì được dậy (rút phiếu ngủ)
+    if (inAlley()) {
+      cancelSleep();
+      player.standUp();
+    }
+    return;
+  }
   if (s.minutes < SLEEP_FROM) return void s.sleep(); // báo "chưa buồn ngủ"
   player.lieOn(bedPos);
   controller.follow = player.position;
@@ -599,7 +606,8 @@ function renderFrame() {
     // Bảng tổng kết hoặc hội thoại cốt truyện đang mở thì dừng thời gian; có câu hỏi ở quầy
     // cũng dừng — khách đứng chờ chủ quyết định, không đếm ngược vội (GĐ102: ở 8× cửa sổ 15 phút
     // game chỉ còn ~1 giây thực, người chơi không kịp đọc là cơ hội rơi hết vào chọn hộ).
-    const speed = state.panel?.type === 'summary' || state.biz.chapterPending || askPending() ? 0 : state.speed;
+    // Ở hẻm bảng tổng kết không dừng giờ: một người đọc tổng kết không bắt cả hẻm đứng chờ
+    const speed = (state.panel?.type === 'summary' && !inAlley()) || state.biz.chapterPending || askPending() ? 0 : state.speed;
     const guest = isGuest();
     // Người vào phòng không tự chạy mô phỏng: giờ, khách, nhân viên đều do chủ phòng gửi sang
     if (speed && !guest) state.tick(dt);

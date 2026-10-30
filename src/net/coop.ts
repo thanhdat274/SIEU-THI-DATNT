@@ -3,6 +3,7 @@ import { applySnapshot, snapshot } from '../core/save';
 import { newGameData, useGame, type GameState } from '../core/store';
 import { Walker } from '../agents/walker';
 import { costumeById } from '../data/costumes';
+import { SLEEP_FROM, type DayStats } from '../core/gameTypes';
 import { answerAskById, applyRemoteAsk, clearAsk, sharedAsk, type SharedAsk } from '../core/counterAsk';
 import { cleanActionArgs } from './actionArgs';
 import { idToken } from './firebase';
@@ -32,6 +33,8 @@ const PROXY_RESULT: Record<string, unknown> = { replaceEmptySlots: [] };
 const PATCH = '__patch';
 /** Máy khách trả lời câu hỏi ở quầy (mặc cả/ghi sổ/tiền lẻ): args = [mã câu hỏi, phương án]. */
 export const ANSWER_ASK = '__answerAsk';
+/** Người đang nằm giường chờ cả hẻm ngủ thì đứng dậy: rút phiếu ngủ. */
+export const CANCEL_SLEEP = '__cancelSleep';
 
 /**
  * Thao tác sửa đúng một chỗ (ô kệ, món đồ, giá một món). Người khác vừa sửa chỗ đó trong GUARD_MS thì
@@ -194,6 +197,56 @@ function installGuards() {
     wrapped[name] = guard;
   }
   useGame.setState(wrapped as Partial<GameState>);
+  installSleepVote();
+}
+
+/** Máy chạy: ai trong hẻm đang nằm giường chờ sang ngày (id người chơi), của ngày sleepDay. */
+const sleepers = new Set<number>();
+let sleepDay = -1;
+let realSleep: (() => boolean) | null = null;
+
+/**
+ * Máy chạy: ở hẻm, đi ngủ là bỏ phiếu — cả hẻm (mọi người đang online) cùng nằm giường mới sang
+ * ngày, không để một người ngủ là kéo cả hẻm sang ngày giữa lúc người khác còn đang bán.
+ */
+function installSleepVote() {
+  const fn = useGame.getState().sleep as (() => boolean) & { vote?: boolean };
+  if (fn.vote) return;
+  realSleep = fn;
+  const vote = () => {
+    const s = useGame.getState();
+    if (s.minutes < SLEEP_FROM) return fn();
+    if (sleepDay !== s.day) {
+      sleepers.clear();
+      sleepDay = s.day;
+    }
+    const actor = currentActor ?? useSession.getState().coop?.selfId ?? 0;
+    sleepers.add(actor);
+    if (settleSleep()) return true;
+    const peers = useSession.getState().coop?.peers ?? [];
+    const name = peers.find((p) => p.id === actor)?.name ?? 'Một người';
+    const waiting = peers.filter((p) => !sleepers.has(p.id)).map((p) => p.name).join(', ');
+    s.notify(`💤 Đã lên giường (${sleepers.size}/${peers.length}) — chờ ${waiting} cùng ngủ mới sang ngày`);
+    if (currentActor != null) send({ type: 'notify', text: `💤 ${name} đã đi ngủ (${sleepers.size}/${peers.length})` });
+    return true;
+  };
+  vote.vote = true;
+  useGame.setState({ sleep: vote });
+}
+
+/** Máy chạy: đủ phiếu (mọi người còn trong hẻm đã nằm giường) thì sang ngày. */
+function settleSleep(): boolean {
+  const peers = useSession.getState().coop?.peers ?? [];
+  if (!sleepers.size || !realSleep || useGame.getState().day !== sleepDay) return false;
+  if (peers.some((p) => !sleepers.has(p.id))) return false;
+  sleepers.clear();
+  return realSleep();
+}
+
+/** Đứng dậy khỏi giường lúc đang chờ cả hẻm: rút phiếu (máy khách gửi cho máy chạy). */
+export function cancelSleep() {
+  if (isGuest()) return void send({ type: 'act', name: CANCEL_SLEEP, args: [] });
+  sleepers.delete(useSession.getState().coop?.selfId ?? 0);
 }
 
 /**
@@ -369,6 +422,7 @@ function becomeRunner() {
 function becomePlayer() {
   checkpoint();
   touched.clear();
+  sleepers.clear();
   // Khách đang chờ câu trả lời bị dọn cùng mô phỏng: bỏ câu hỏi, từ giờ nhận câu hỏi từ máy chạy mới
   clearAsk();
   useSession.setState((s) => ({ coop: s.coop && { ...s.coop, role: 'player' } }));
@@ -390,6 +444,8 @@ function onMessage(msg: Msg) {
         others.delete(id);
       }
       for (const p of msg.peers) if (p.id !== self) addOther(p);
+      // Người còn thiếu phiếu vừa rời hẻm: những người còn lại đã ngủ hết thì sang ngày
+      if (role() === 'runner') settleSleep();
       if (msg.joined) game.notify(`👋 ${msg.joined} đã vào hẻm`);
       if (msg.left) game.notify(`👋 ${msg.left} đã rời hẻm`);
       break;
@@ -419,6 +475,10 @@ function onMessage(msg: Msg) {
         const safe = Object.fromEntries(Object.entries(patch).filter(([k]) =>
           k in game && typeof game[k as keyof GameState] !== 'function' && !LOCAL_STATE.has(k) && !NO_PATCH.has(k)));
         useGame.setState(safe as Partial<GameState>);
+        return;
+      }
+      if (msg.name === CANCEL_SLEEP) {
+        sleepers.delete(msg.from);
         return;
       }
       if (msg.name === ANSWER_ASK) {
@@ -460,11 +520,19 @@ function onMessage(msg: Msg) {
       applyingRemote = true;
       useGame.setState(msg.game);
       applyingRemote = false;
+      showDaySummary(game.day, msg.game);
       syncPuppets(msg.actors);
       // Câu hỏi ở quầy của máy chạy: hiện cho cả hẻm (thế giới đang dừng chờ — ai cũng thấy vì sao)
       applyRemoteAsk(msg.ask ?? null, (id, choice) => send({ type: 'act', name: ANSWER_ASK, args: [id, choice] }));
       break;
   }
+}
+
+/** Máy khách: hẻm vừa sang ngày thì mở bảng tổng kết ngày hôm qua (máy chạy ghi ở lastSummary). */
+function showDaySummary(prevDay: number, next: Partial<GameState>) {
+  const sum = next.lastSummary as { day: number; stats: DayStats } | null | undefined;
+  if (!sum || next.day !== prevDay + 1 || sum.day !== prevDay) return;
+  useGame.setState({ panel: { type: 'summary', day: sum.day, stats: sum.stats } });
 }
 
 /** Nhân vật của thành viên khác, mặc đúng trang phục người đó đang chọn. */

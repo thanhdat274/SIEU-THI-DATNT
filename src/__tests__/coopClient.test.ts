@@ -338,3 +338,116 @@ describe('vòng quay may mắn: máy khách biết giải trúng', () => {
     expect(store.useGame.getState().spinWheel()).toBe(true);
   });
 });
+
+describe('đi ngủ ở hẻm: cả hẻm cùng nằm giường mới sang ngày', () => {
+  const night = () => store.useGame.setState({ minutes: 20 * 60, message: null });
+
+  it('một người ngủ: KHÔNG sang ngày, báo còn chờ ai; đủ cả 3 người thì sang ngày đúng 1 lần', async () => {
+    await join('runner');
+    night();
+    const day = store.useGame.getState().day;
+    expect(store.useGame.getState().sleep()).toBe(true); // máy chạy (An) lên giường
+    expect(store.useGame.getState().day).toBe(day);
+    expect(store.useGame.getState().message).toMatch(/1\/3.*Bình, Chi/);
+    recv({ type: 'act', from: 2, seq: 1, name: 'sleep', args: [] });
+    expect(store.useGame.getState().day).toBe(day);
+    expect(ofType('notify').map((m) => m.text)).toContainEqual(expect.stringContaining('Bình đã đi ngủ (2/3)'));
+    recv({ type: 'act', from: 3, seq: 1, name: 'sleep', args: [] });
+    expect(store.useGame.getState().day).toBe(day + 1);
+    recv({ type: 'act', from: 3, seq: 2, name: 'sleep', args: [] }); // gói lặp sau khi đã sang ngày
+    expect(store.useGame.getState().day).toBe(day + 1);
+  });
+
+  it('nằm rồi đứng dậy (rút phiếu): người cuối ngủ cũng KHÔNG sang ngày', async () => {
+    await join('runner');
+    night();
+    const day = store.useGame.getState().day;
+    recv({ type: 'act', from: 2, seq: 1, name: 'sleep', args: [] });
+    recv({ type: 'act', from: 2, name: coop.CANCEL_SLEEP, args: [] });
+    store.useGame.getState().sleep();
+    recv({ type: 'act', from: 3, seq: 1, name: 'sleep', args: [] });
+    expect(store.useGame.getState().day).toBe(day);
+  });
+
+  it('người chưa ngủ rời hẻm: những người còn lại đã ngủ hết thì sang ngày luôn', async () => {
+    await join('runner');
+    night();
+    const day = store.useGame.getState().day;
+    store.useGame.getState().sleep();
+    recv({ type: 'act', from: 2, seq: 1, name: 'sleep', args: [] });
+    recv({ type: 'peers', peers: PEERS.slice(0, 2), left: 'Chi' });
+    expect(store.useGame.getState().day).toBe(day + 1);
+  });
+
+  it('phiếu hôm qua không tính sang hôm nay', async () => {
+    await join('runner');
+    night();
+    const day = store.useGame.getState().day;
+    recv({ type: 'act', from: 2, seq: 1, name: 'sleep', args: [] });
+    store.useGame.setState({ day: day + 1 }); // vd. thức khuya ngất → sang ngày không qua bỏ phiếu
+    night();
+    store.useGame.getState().sleep();
+    recv({ type: 'act', from: 3, seq: 1, name: 'sleep', args: [] });
+    expect(store.useGame.getState().day).toBe(day + 1); // Bình chưa ngủ lại hôm nay
+  });
+
+  it('trước 18h vẫn báo "chưa buồn ngủ", không ghi phiếu', async () => {
+    await join('runner');
+    store.useGame.setState({ minutes: 9 * 60 });
+    expect(store.useGame.getState().sleep()).toBe(false);
+  });
+
+  it('máy khách đứng dậy: gửi rút phiếu cho máy chạy', async () => {
+    await join('player');
+    coop.cancelSleep();
+    expect(acts()).toEqual([expect.objectContaining({ name: coop.CANCEL_SLEEP })]);
+  });
+});
+
+describe('bảng tổng kết ngày ở hẻm', () => {
+  it('máy khách: hẻm sang ngày → mở bảng tổng kết của ngày vừa qua (như chơi đơn)', async () => {
+    await join('player');
+    const stats = { ...store.useGame.getState().stats, revenue: 123_000 };
+    recv({ type: 'state', game: { ...stateOf(store.newGameData()), day: 6, lastSummary: { day: 5, stats } }, actors: [] });
+    expect(store.useGame.getState().panel).toEqual({ type: 'summary', day: 5, stats });
+    expect(ofType('act')).toHaveLength(0); // mở bảng là việc riêng máy này, không gửi PATCH
+  });
+
+  it('máy khách mới vào hẻm (nhảy nhiều ngày) hoặc gói state lặp cùng ngày: KHÔNG bật bảng cũ', async () => {
+    await join('player');
+    const stats = store.useGame.getState().stats;
+    recv({ type: 'state', game: { ...stateOf(store.newGameData()), day: 5, lastSummary: { day: 4, stats } }, actors: [] });
+    expect(store.useGame.getState().panel).toBeNull();
+    recv({ type: 'state', game: { ...stateOf(store.newGameData()), day: 9, lastSummary: { day: 8, stats } }, actors: [] });
+    expect(store.useGame.getState().panel).toBeNull();
+  });
+
+  it('sang ngày ghi lastSummary vào trạng thái chung (gửi kèm state cho máy khách)', async () => {
+    await join('runner');
+    store.useGame.setState({ minutes: 20 * 60 });
+    const day = store.useGame.getState().day;
+    store.useGame.getState().sleep();
+    recv({ type: 'act', from: 2, seq: 1, name: 'sleep', args: [] });
+    recv({ type: 'act', from: 3, seq: 1, name: 'sleep', args: [] });
+    expect(store.useGame.getState().lastSummary?.day).toBe(day);
+    const st = ofType('state').at(-1)!.game as Record<string, { day: number }>;
+    expect(st.lastSummary.day).toBe(day);
+  });
+});
+
+describe('chỉnh nhiều giá một lúc (setPrices) không đè giá người khác vừa đổi', () => {
+  it('món người khác vừa đổi (giá khác giá mình thấy) giữ nguyên; món còn lại đổi; null = về giá gợi ý', async () => {
+    await join('runner');
+    store.useGame.setState({ prices: { mi: 5000, nuoc: 8000 } });
+    recv({ type: 'act', from: 3, seq: 1, name: 'setPrice', args: ['mi', 6000] }); // Chi đổi mì trước
+    // Bình bấm "chỉnh tất cả" từ bảng giá cũ (mì 5000)
+    recv({ type: 'act', from: 2, seq: 1, name: 'setPrices', args: [{ mi: { from: 5000, to: 4500 }, nuoc: { from: 8000, to: null }, keo: { to: 2000 } }] });
+    expect(store.useGame.getState().prices).toEqual({ mi: 6000, keo: 2000 });
+  });
+
+  it('chơi đơn: trả về số món đã đổi', async () => {
+    await join('runner');
+    store.useGame.setState({ prices: { mi: 5000 } });
+    expect(store.useGame.getState().setPrices({ mi: { from: 5000, to: 5500 }, keo: { from: 1, to: 2 } })).toBe(1);
+  });
+});

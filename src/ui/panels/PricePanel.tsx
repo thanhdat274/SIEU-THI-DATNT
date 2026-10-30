@@ -243,24 +243,29 @@ export function PricePanel() {
         </div>
       )}
       <Footer onClose={closePanel}>
-        <button style={styles.btn} onClick={() => useGame.setState({ prices: {} })}>Về giá gợi ý</button>
+        <button style={styles.btn} onClick={() => {
+          const { prices, setPrices } = useGame.getState();
+          setPrices(Object.fromEntries(Object.entries(prices).map(([id, from]) => [id, { from, to: null }])));
+        }}>Về giá gợi ý</button>
         <button
           style={styles.hire}
           onClick={() => {
             const s = useGame.getState();
-            const next: Record<string, number> = {};
+            const changes: Parameters<typeof s.setPrices>[0] = {};
             let changed = 0;
+            let total = 0;
             for (const p of unlockedProducts(s.level)) {
+              total++;
               const price = s.prices[p.id] ?? p.sell;
               const tip = suggestPrice(p.id, price, s.sales[p.id], s.demand[p.id], dayEffects(s.weatherSeed, s.day, s.level).tolerance(p.id));
               // Món chưa bán được lần nào thì về giá gợi ý hiện hành thay vì "giữ" vô thông tin
               const noData = (s.sales[p.id] ?? 0) === 0 && (s.demand[p.id] ?? 0) === 0;
               const target = tip.action === 'hold' && noData ? referenceSell(p.id) : tip.price;
               if (target !== price) changed++;
-              next[p.id] = target;
+              if (target !== s.prices[p.id]) changes[p.id] = { from: s.prices[p.id], to: target };
             }
-            useGame.setState({ prices: next });
-            s.notify(`💲 Đã chỉnh giá ${changed}/${Object.keys(next).length} món mở theo cột "Nên"`);
+            s.setPrices(changes);
+            s.notify(`💲 Đã chỉnh giá ${changed}/${total} món mở theo cột "Nên"`);
           }}
         >
           ✨ Chỉnh tất cả về giá nên

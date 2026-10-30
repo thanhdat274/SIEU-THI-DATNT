@@ -73,7 +73,7 @@
 - QA mắt 3D/panel chập tối (IAB nền dừng rAF): GĐ177–194 đã QA @5173 lúc làm; đối chiếu lại thì xem archive.
 - ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap`: bot bày lại tầng kệ đầy → bỏ qua tầng đầy + timeout 1.8tr ms. Nếu cả bộ lại > ~10 phút: profile trước khi làm tiếp.
 - GĐ171: scale mục tiêu vòng NG+ — cần save thật vòng 2+ để xác nhận; nếu quá dễ → siết trần.
-- Co-op còn để ngỏ (thiết kế, chưa coi là lỗi): (a) một thành viên đi ngủ là cả hẻm sang ngày; (b) máy chạy mở bảng tổng kết thì cả hẻm dừng; (c) "Về giá gợi ý"/"Chỉnh tất cả giá" thay cả bảng giá — người khác đổi giá một món đúng lúc đó (~0.2s) bị ghi đè. Cần QA 2 tab (`?dev=a` / `?dev=b`) xác nhận cảm giác chơi chung với 3 bản sửa 30/10 (vòng quay, chi nhánh, câu hỏi quầy).
+- Co-op (30/10, đã xử lý 3 điểm để ngỏ): (a) đi ngủ ở hẻm là **bỏ phiếu** — cả hẻm cùng nằm giường mới sang ngày, nằm chờ thì bấm [N] để dậy rút phiếu, người chưa ngủ rời hẻm thì tự sang ngày; (b) bảng tổng kết **không dừng giờ ở hẻm**, máy khách cũng tự mở bảng tổng kết (qua `lastSummary`); (c) "Về giá gợi ý"/"Chỉnh tất cả giá" dùng `setPrices`: món người khác vừa đổi giá thì giữ giá của họ. Đã QA 2 tab (`?dev=a`/`?dev=b`) cho (a)(b). **Còn để ngỏ:** hội thoại cốt truyện (`chapterPending`) vẫn dừng giờ cả hẻm tới khi có người đóng; ngất lúc thức khuya vẫn sang ngày cả hẻm (đồng hồ chung).
 
 ## Backlog tiếp theo
 
