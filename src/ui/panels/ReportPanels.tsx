@@ -29,7 +29,7 @@ import { itemHealthList, shelfAttention, shelfCount } from '../../data/analytics
 import { computeRecords, recordFeedToday } from '../../data/records';
 import { comboDaySnapshot, resetComboDay } from '../../core/slices/comboDay';
 import { resetStaffDay, staffDaySnapshot } from '../../core/slices/staffDay';
-import { staffDayRecap, staffShiftFix } from '../../data/staffIdle';
+import { morningShiftAction, staffDayRecap, staffShiftFix } from '../../data/staffIdle';
 import { autoOpenNote, cashierOpensMorning } from '../../core/routine';
 import { weekendRecap } from '../../data/weekendRestock';
 import { weekendQuestTarget } from '../../data/quests';
@@ -550,7 +550,7 @@ export function MorningPanel() {
   const { day, level, xp, weatherSeed, weather, forecast, regulars, reservations, storage,
     furniture, staff, contracts, deliveries, shopTier, closePanel, openPanel, repLog, history,
     storageLots, debts, biz, money, branch, licenses, skills, happyHour, analytics, marketClearedDay,
-    demand: stateDemand, activeCombos, priceOf, sellMarketSurplus, stats, autoRoutine, autoOpenAt } = useGame();
+    demand: stateDemand, activeCombos, priceOf, sellMarketSurplus, stats, autoRoutine, autoOpenAt, lastSummary } = useGame();
   const branchChores = branch ? branchMorningPlan(branch, storageUsed(storage), licenses, day) : [];
   // GĐ123: mồi "kệ cần chú ý" từ analytics có sẵn — giống hệt AnalyticsPanel để không lệch số liệu.
   const shelved = shelfCount(furniture);
@@ -648,6 +648,12 @@ export function MorningPanel() {
   // xem lô sỉ chiết khấu trong Nhập hàng; lấy lô xong (biz.fairTaken = tháng) tự ẩn.
   const fairAct = fairMerchantAction(day, biz.fairTaken);
   if (fairAct) candidates.push(fairAct);
+  // GĐ295: tổng kết đội hôm qua thành việc sáng — khép vòng GĐ248/253. Snapshot staffDay transient
+  // vẫn còn nguyên ngày hôm qua lúc sáng (reset khi đóng sổ); lastSummary giữ DayStats vừa chốt.
+  // Chỉ nhắc khi staffShiftFix còn cách sửa — đã bấm 🔀 tối qua thì hết gợi ý, không nhắc lại.
+  const yStats = lastSummary && lastSummary.day === day - 1 ? lastSummary.stats : undefined;
+  const shiftAct = morningShiftAction(staffDaySnapshot(), staff, yStats);
+  if (shiftAct) candidates.push(shiftAct);
   const actions = planDay(candidates);
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
   const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });

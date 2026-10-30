@@ -1,6 +1,8 @@
 import type { Staff, StaffRole, Shift } from './staff';
 import { ROLES, SHIFTS } from './staff';
 import type { StaffDayStat } from '../core/slices/staffDay';
+import type { DayAction } from './dayPlan';
+import type { DayStats } from '../core/gameTypes';
 
 // ───── GĐ246: soi nhân viên rảnh bao nhiêu (THUẦN ĐỌC, dữ liệu transient từ staffDay) ─────
 // Các thẻ giá trị lương (GĐ141/142/144/188) ước từ DOANH THU. Bản này bổ sung mảnh thiếu: trong ca,
@@ -180,4 +182,29 @@ export function staffShiftFix(
     }
   }
   return null;
+}
+
+// ───── GĐ295: tổng kết đội hôm qua thành việc sáng — khép vòng GĐ248/253 ─────
+// Recap GĐ248 chỉ hiện ở tổng kết cuối ngày; người chơi đóng tổng kết không bấm 🔀 thì lời hứa
+// "mai xem lại vai này" không ai theo. Sáng hôm sau snapshot staffDay (transient) vẫn còn nguyên
+// ngày hôm qua (reset khi đóng Sổ đầu ngày) + lastSummary giữ DayStats vừa chốt — đủ dữ liệu để
+// nhắc lại MỘT LẦN, và chỉ khi staffShiftFix còn cách sửa (đã sửa tối qua thì hết gợi ý → không
+// nhắc lại). THUẦN ĐỌC, không đụng kinh tế/save; hành động sửa ca vẫn là setShift có sẵn.
+export function morningShiftAction(
+  snapshot: Record<number, StaffDayStat>,
+  staff: Staff[],
+  lastStats: DayStats | undefined,
+): DayAction | null {
+  const waitLost = lastStats?.missed?.wait ?? 0;
+  const recap = staffDayRecap(snapshot, staff, waitLost);
+  if (recap.verdict !== 'idle_heavy' && recap.verdict !== 'shift_mismatch') return null;
+  const fix = staffShiftFix(snapshot, staff, waitLost, null, lastStats?.byHour);
+  if (!fix) return null; // đã xử lý tối qua (hoặc không còn chuyển ca đáng) → khỏi ồn
+  return {
+    icon: '🧍',
+    text: `Hôm qua ${fix.name} rảnh ~${recap.mostIdle?.idlePct ?? '?'}% ca${waitLost > 0 ? ' mà vẫn mất khách vì chờ' : ''} — xem xếp lại ca hôm nay`,
+    panel: 'staff',
+    danger: false,
+    priority: 2,
+  };
 }

@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
+- **GĐ295:** "Tổng kết đội hôm qua" thành việc sáng — khép vòng GĐ248/253. Helper `morningShiftAction(snapshot, staff, lastStats)` trong `data/staffIdle.ts`: khi tổng kết đội hôm qua (staffDayRecap từ snapshot transient — lúc sáng vẫn còn nguyên ngày hôm qua, reset khi đóng sổ) cho verdict `idle_heavy`/`shift_mismatch` VÀ `staffShiftFix` còn cách sửa (đã bấm 🔀 tối qua → hết gợi ý → không nhắc lại) thì Sổ đầu ngày hiện việc 🧍 ưu tiên 2 trỏ bảng Nhân viên. Dữ liệu mất khách vì chờ lấy từ `lastSummary.stats` (missed.wait/byHour — đã persist trong store, co-op cũng thấy). 5 test mới (26/26 staffIdle); QA live: hiện đúng lời nhắc, setShift xong tự ẩn, bấm mở đúng bảng staff. Co-op: chỉ là thẻ hiển thị (snapshot staffDay per-máy — giống recap card GĐ248 đã chấp nhận), hành động sửa ca vẫn qua runner setShift.
 - **GĐ294:** HOÀN THIỆN GĐ293 bị sót — commit GĐ293 chỉ thêm import `fairMerchantAction` vào ReportPanels.tsx mà KHÔNG push vào `candidates` → việc 🛒 chưa bao giờ hiện trong game (test helper vẫn xanh nên lọt qua). Đã: (a) test GUARD đọc source chặn lỗi tích hợp (đỏ trước → xanh sau, 18/18 fairmerchant); (b) push `fairMerchantAction(day, biz.fairTaken)` vào danh sách việc hôm nay sau marketAction; (c) QA live @5173: ngày 1 chưa lấy lô → việc hiện trong 'Việc hôm nay'; acceptFairOffer xong (fairTaken=1) → tự ẩn. Co-op parity: đọc state chung, không có thao tác mới.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
 - Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
@@ -84,7 +85,7 @@
 3. **Ý tưởng chờ Leader duyệt (chiều sâu, chưa làm):** (a) nhịp cuối tuần đậm hơn — **ĐÃ HOÀN THÀNH GĐ291** (lô chợ phiên đầu tháng nhận biết món ăn vặt cuối tuần + gợi ý trữ hàng đặc biệt); (b) nhiệm vụ tuần/tháng biết đến thứ/ngày trong kỳ — **ĐÃ HOÀN THÀNH GĐ289** (nhịp tháng monthPace hiển thị ngày còn lại tới hết tháng + dự báo kịp/hụt và bảo vệ chuỗi tháng).
 4. 👥 **Đủ 2 chế độ (ĐÃ CHỐT GĐ288):** Hoàn thành rà soát và khoá chính sách parity cho 2 chế độ: (a) Sân chơi GĐ287 (chung tiến độ/lượt ngày); (b) Tái sinh NG+ (doPrestige) và Chào mừng quay lại (checkWelcomeBack) giữ nguyên thiết kế an toàn: Tái sinh NG+ chỉ chạy ở chơi đơn (bảo vệ thế giới hẻm online không bị reset đột ngột làm mất dữ liệu của đồng đội), Chào mừng quay lại chạy cục bộ theo máy để thưởng công bằng khi người chơi đăng nhập trở lại mà không tạo lạm phát hay gian lận két tiền chung. Đã bổ sung bộ test tự động trong coopClient.test.ts.
 
-## Mục lục giai đoạn đã xong (chi tiết trong archive)## Mục lục giai đoạn đã xong (chi tiết trong archive)
+## Mục lục giai đoạn đã xong (chi tiết trong archive)
 
 - GĐ1 — Nền vững + vòng ngày sâu hơn
 - GĐ2 — Người mới không lạc đường
@@ -341,3 +342,4 @@
 - GĐ292 — 🧺 Đồng bộ bán chợ phiên ở co-op (sellMarketSurplus qua runner, chặn trùng phiên)
 - GĐ293 — 🛒 Thương lái đầu tháng thành việc sáng trong Việc hôm nay (fairMerchantAction)
 - GĐ294 — 🩹 Hoàn tất tích hợp fairMerchantAction bị sót ở GĐ293 + test guard đọc source
+- GĐ295 — 🧍 Tổng kết đội hôm qua thành việc sáng (morningShiftAction, khép vòng GĐ248/253)

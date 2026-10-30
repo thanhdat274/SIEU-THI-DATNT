@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { noteStaffTime, staffDaySnapshot, resetStaffDay } from '../core/slices/staffDay';
-import { staffIdleStats, staffDayRecap, staffShiftFix, idleVerdict, IDLE_HEAVY_PCT, IDLE_BUSY_PCT } from '../data/staffIdle';
+import { staffIdleStats, staffDayRecap, staffShiftFix, morningShiftAction, idleVerdict, IDLE_HEAVY_PCT, IDLE_BUSY_PCT } from '../data/staffIdle';
 import type { Staff } from '../data/staff';
 
 // GĐ246: soi nhân viên rảnh — slice transient (đếm runtime) + helper thuần đọc.
@@ -207,5 +207,55 @@ describe('staffShiftFix — gợi ý xếp lại ca mai một chạm (GĐ253)', 
     noteStaffTime(2, 60, false);
     const fix = staffShiftFix(staffDaySnapshot(), [st(1), st(2)], 0, null, undefined);
     expect(fix!.id).toBe(2);
+  });
+});
+
+describe('morningShiftAction — tổng kết đội hôm qua thành việc sáng (GĐ295)', () => {
+  const idlePerson = () => {
+    for (let i = 0; i < 7; i++) noteStaffTime(1, 60, true); // ~88% rảnh
+    noteStaffTime(1, 60, false);
+  };
+
+  it('hôm qua có người rảnh nặng còn cách sửa → sinh việc sáng ưu tiên 2 trỏ bảng nhân viên', () => {
+    resetStaffDay();
+    idlePerson();
+    const act = morningShiftAction(staffDaySnapshot(), [{ ...st(1), wage: 150000 }], undefined);
+    expect(act).not.toBeNull();
+    expect(act!.panel).toBe('staff');
+    expect(act!.priority).toBe(2);
+    expect(act!.danger).toBe(false);
+    expect(act!.icon).toBe('🧍');
+    expect(act!.text).toContain('NV1');
+  });
+
+  it('hôm qua mất khách vì chờ (shift_mismatch) → lời nhắc nói rõ mất khách', () => {
+    resetStaffDay();
+    idlePerson();
+    // người rảnh đứng nửa ca VẮNG (sáng) nhưng tiệm đông & mất khách buổi chiều → còn cách dồn ca
+    const lastStats = { missed: { wait: 4 }, byHour: { 15: { customers: 10, revenue: 0 } } } as never;
+    const act = morningShiftAction(staffDaySnapshot(), [{ ...st(1), shift: 'morning' as const }], lastStats);
+    expect(act).not.toBeNull();
+    expect(act!.text).toContain('mất khách vì chờ');
+  });
+
+  it('đội vừa sức (không ai rảnh nặng) → null', () => {
+    resetStaffDay();
+    noteStaffTime(1, 80, false);
+    noteStaffTime(1, 20, true);
+    expect(morningShiftAction(staffDaySnapshot(), [st(1)], undefined)).toBeNull();
+  });
+
+  it('gợi ý đã được áp dụng tối qua (không còn cách sửa) → null, không nhắc lại', () => {
+    resetStaffDay();
+    idlePerson();
+    // người rảnh đang ca full → fix là "bớt còn nửa ca"; nếu đã chuyển sang nửa ca (không full)
+    // và không mất khách vì chờ thì staffShiftFix hết cách sửa → không nhắc lại
+    const act = morningShiftAction(staffDaySnapshot(), [{ ...st(1), shift: 'morning' as const }], undefined);
+    expect(act).toBeNull();
+  });
+
+  it('không có dữ liệu đội hôm qua (snapshot rỗng) → null', () => {
+    resetStaffDay();
+    expect(morningShiftAction(staffDaySnapshot(), [st(1)], undefined)).toBeNull();
   });
 });
