@@ -204,6 +204,41 @@ describe('máy chạy: làm thao tác của người khác', () => {
     expect(ofType('result').find((r) => r.to === 3)).toMatchObject({ ok: false, messages: [expect.stringContaining('Hôm nay đã góp')] });
   });
 
+  it('chợ phiên ở hẻm online: thành viên gửi sellMarketSurplus qua máy chạy, kho và tiền đồng bộ, người thứ hai cùng ngày bị chặn', async () => {
+    await join('runner');
+    const recs = (idQty: number) => {
+      const out = [];
+      for (let i = 1; i <= 14; i++) out.push({ day: i, qty: idQty, revenue: 5000, cost: 3000, spoiled: 0, lost: 0 });
+      return out;
+    };
+    store.useGame.setState({
+      day: 7, marketClearedDay: 0,
+      storage: { mi: 20 }, storageLots: {},
+      furniture: [],
+      demand: { mi: 1 },
+      analytics: { items: { mi: recs(1) }, flags: {} },
+      money: 100_000,
+    });
+    const beforeStorage = store.useGame.getState().storage.mi;
+    const beforeMoney = store.useGame.getState().money;
+
+    recv({ type: 'act', from: 2, seq: 1, name: 'sellMarketSurplus', args: [] });
+    const afterFirst = store.useGame.getState();
+    expect(afterFirst.marketClearedDay).toBe(7);
+    expect(afterFirst.storage.mi).toBe(beforeStorage - 15);
+    expect(afterFirst.money).toBeGreaterThan(beforeMoney);
+    expect(ofType('result').find((r) => r.to === 2)).toMatchObject({ ok: true });
+
+    const moneyAfterFirst = afterFirst.money;
+    recv({ type: 'act', from: 3, seq: 2, name: 'sellMarketSurplus', args: [] });
+    expect(store.useGame.getState().marketClearedDay).toBe(7);
+    expect(store.useGame.getState().storage.mi).toBe(beforeStorage - 15);
+    expect(store.useGame.getState().money).toBe(moneyAfterFirst);
+    const res3 = ofType('result').find((r) => r.to === 3 && r.seq === 2);
+    expect(res3).toBeTruthy();
+    expect(res3!.ok).toBe(false);
+  });
+
   it('2 người sửa CÙNG một chỗ trong 3 giây: người sau bị chặn kèm tên người trước; cùng người thì được', async () => {
     await join('runner');
     recv({ type: 'act', from: 2, seq: 1, name: 'setPrice', args: ['mi', 9000] });

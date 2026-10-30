@@ -270,7 +270,12 @@ function runRemote(from: number, name: string, args: unknown[]): { ok: boolean; 
   currentActor = from;
   let ok = false;
   try {
-    ok = (fn as (...a: unknown[]) => unknown)(...args) !== false;
+    const raw = (fn as (...a: unknown[]) => unknown)(...args);
+    if (typeof raw === 'object' && raw !== null && 'ok' in raw) {
+      ok = Boolean((raw as { ok: boolean }).ok);
+    } else {
+      ok = raw !== false;
+    }
   } catch (err) {
     console.warn('[coop] thao tác lỗi', name, err);
   } finally {

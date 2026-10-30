@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
-- **GĐ291:** 6 test fairLotValue xanh · build sạch · http://localhost:5173/ trả về 200 OK. Lô chợ phiên nhận biết món ăn vặt cuối tuần (`weekendSnacksCount`, `isWeekendFair`): hiển thị badge hỗ trợ quyết định mua khi phiên chợ rơi vào cuối tuần hoặc trữ trước cho đợt cao điểm ăn vặt. Nhánh: `phat-trien-game-tu-do`.
+- **GĐ292:** 42 test coopClient pass (1 test mới sellMarketSurplus) · build sạch · http://localhost:5173/ 200 OK. Đồng bộ bán chợ phiên ở hẻm online: `sellMarketSurplus` thực thi nhất quán qua máy chạy (runner), cập nhật kho/tiền chung và trả về kết quả `{ ok: boolean }` chính xác cho người bấm, chặn người thứ hai trong cùng phiên ngày. Nhánh: `phat-trien-game-tu-do`.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
 - Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
 
@@ -338,3 +338,4 @@
 - GĐ289 — 📆 Nhịp tháng vận hành: monthPace, dự báo hoàn thành thử thách tháng & cảnh báo chuỗi
 - GĐ290 — 🧺 Chợ phiên đầu ngõ thành việc sáng trong Việc hôm nay (Sổ đầu ngày)
 - GĐ291 — 🍬 Lô chợ phiên đầu tháng nhận biết món ăn vặt cuối tuần & gợi ý trữ hàng
+- GĐ292 — 🧺 Đồng bộ bán chợ phiên ở co-op (sellMarketSurplus qua runner, chặn trùng phiên)
