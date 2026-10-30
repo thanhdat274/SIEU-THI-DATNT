@@ -40,8 +40,7 @@
 
 - **GĐ282 QA mắt 4 arc A–D trọn vẹn** 📖: force từng arc qua dev state và đi hết mọi cảnh/lựa chọn — Mưa rào (needStock chặn nút thiếu kho — hoạt động thật), Cái kính, Hẻm ngập (3 cảnh, chuyện NỐI mạch), Clip hot (3 cảnh); cả 4 done + ghi choices đúng; 0 lỗi console. **Kết hợp test cấu trúc + pick đều + told-exclusion → gate arc E MỞ** (save 100 ngày chỉ thấy ~1–2 arc — chờ save thật không thực tế, QA dựng trạng thái là bằng chứng mạnh nhất).
 
-- **GĐ283 arc E "Hàng xóm khai trương"** 🎊: def `cam_do_mo` (unlock 10) chuyển thành arc thứ 5 — 2 ngày, 4 cảnh 3 nhánh (chúc mừng/khuyến mãi/lỡ → trả lễ chia mặt hàng / chiến giá cùng lỗ / khách quen vẫn ghé), thưởng reward đúng ArcReward (perGood bắt buộc); bài học hẻm: hẻm đủ chỗ cho cả hai, cắn nhau chỉ mất cả hai. Test cập nhật: 5 arc (ids/unlocks/days), cam_do_mo vào danh sách def đã xoá, pool ≥30; 2249 test xanh; QA mắt @5173 đi trọn 2 cảnh (chọn chúc mừng → bắt tay chia hàng → done), 0 lỗi console.
-
+- **GĐ283 arc E "Hàng xóm khai trương"** 🎊 — def cam_do_mo thành arc thứ 5 (2 ngày 4 cảnh 3 nhánh). Chi tiết: archive (phụ lục 5).
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc + thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -319,7 +318,7 @@
 - GĐ280 — 📊 Đóng GĐ110/117 bằng số liệu (xương sống 24–26/28; quest hành động bot không làm)
 - GĐ281 — 👥 Lock độ phủ 28 khách quen (tất cả ghé được, phân phối <2×)
 - GĐ282 — 📖 QA mắt 4 arc A–D trọn vẹn — MỞ gate arc E
-- GĐ283 — 🎊 Arc E "Hàng xóm khai trương" (thay cam_do_mo, 2 ngày 4 cảnh 3 nhánh)
+- GĐ283 — 🎊 Arc E "Hàng xóm khai trương" (thay cam_do_mo)
 - GĐ280 — 📊 Đóng GĐ110/117: đo nhiệm vụ cấp 50 (xương sống 24–26/28; 8 quest hành động bot không làm) + test khoá tín hiệu
 - GĐ277 — 💾 Khoá autoOpenAt qua save (3 test) + lock chợ phiên luôn rơi Chủ nhật
 - GĐ278 — 👀 QA mắt thẻ CÓ dữ liệu GĐ155–159 (thú cưng/hụi/khủng hoảng/bỏ lỡ) — đóng watch-item
