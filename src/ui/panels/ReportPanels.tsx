@@ -644,6 +644,10 @@ export function MorningPanel() {
   // GĐ290: chợ phiên thành việc sáng — đưa vào danh sách việc hôm nay khi có hàng dư
   const marketAction = marketDayAction(chophien);
   if (marketAction) candidates.push(marketAction);
+  // GĐ293/294: thương lái ghé đầu tháng thành việc sáng — ngày 1–2 chưa lấy lô thì nhắc
+  // xem lô sỉ chiết khấu trong Nhập hàng; lấy lô xong (biz.fairTaken = tháng) tự ẩn.
+  const fairAct = fairMerchantAction(day, biz.fairTaken);
+  if (fairAct) candidates.push(fairAct);
   const actions = planDay(candidates);
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
   const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });

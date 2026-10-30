@@ -121,6 +121,13 @@ describe('GĐ68 — Chợ phiên nhà cung cấp đặc biệt (fairmerchant)', 
   });
 
   describe('fairMerchantAction — việc hôm nay nhắc phiên chợ đầu tháng (GĐ293)', () => {
+    it('GUARD tích hợp: Sổ đầu ngày gọi thật fairMerchantAction (không chỉ import — GĐ294)', async () => {
+      // GĐ293 sót: helper có test xanh nhưng MorningPanel chưa push vào candidates
+      // → việc 🛒 không bao giờ hiện trong game. Test đọc source chặn lại lỗi này.
+      const { readFileSync } = await import('node:fs');
+      const src = readFileSync(new URL('../ui/panels/ReportPanels.tsx', import.meta.url), 'utf8');
+      expect(src).toMatch(/fairMerchantAction\s*\(\s*day/); // lời gọi thật với day
+    });
     it('ngày 1 hoặc ngày 2 chưa lấy lô tháng này → sinh việc sáng ưu tiên 3 trỏ đến order', () => {
       const act1 = fairMerchantAction(1, undefined);
       expect(act1).toEqual({

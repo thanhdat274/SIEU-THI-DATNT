@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
-- **GĐ293:** 23 test fairmerchant pass (3 test mới fairMerchantAction) · build sạch · http://localhost:5173/ 200 OK. Thương lái ghé đầu tháng thành việc sáng: `fairMerchantAction` tích hợp vào Sổ đầu ngày ('Việc hôm nay' ưu tiên 3) vào ngày 1–2 mỗi tháng khi chưa lấy lô, dẫn thẳng tới Nhập hàng để xem sỉ chiết khấu. Nhánh: `phat-trien-game-tu-do`.
+- **GĐ294:** HOÀN THIỆN GĐ293 bị sót — commit GĐ293 chỉ thêm import `fairMerchantAction` vào ReportPanels.tsx mà KHÔNG push vào `candidates` → việc 🛒 chưa bao giờ hiện trong game (test helper vẫn xanh nên lọt qua). Đã: (a) test GUARD đọc source chặn lỗi tích hợp (đỏ trước → xanh sau, 18/18 fairmerchant); (b) push `fairMerchantAction(day, biz.fairTaken)` vào danh sách việc hôm nay sau marketAction; (c) QA live @5173: ngày 1 chưa lấy lô → việc hiện trong 'Việc hôm nay'; acceptFairOffer xong (fairTaken=1) → tự ẩn. Co-op parity: đọc state chung, không có thao tác mới.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
 - Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
 
@@ -340,3 +340,4 @@
 - GĐ291 — 🍬 Lô chợ phiên đầu tháng nhận biết món ăn vặt cuối tuần & gợi ý trữ hàng
 - GĐ292 — 🧺 Đồng bộ bán chợ phiên ở co-op (sellMarketSurplus qua runner, chặn trùng phiên)
 - GĐ293 — 🛒 Thương lái đầu tháng thành việc sáng trong Việc hôm nay (fairMerchantAction)
+- GĐ294 — 🩹 Hoàn tất tích hợp fairMerchantAction bị sót ở GĐ293 + test guard đọc source
