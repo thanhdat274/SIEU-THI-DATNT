@@ -53,7 +53,6 @@ export function PlanogramPanel() {
   const closePanel = useGame((s) => s.closePanel);
   const autoSwap = useGame((s) => s.autoSwap);
   const replaceEmptySlots = useGame((s) => s.replaceEmptySlots);
-  const notify = useGame((s) => s.notify);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const fixtures = furniture.filter((f) => furnitureDef(f.type).tiers > 0);
@@ -180,10 +179,7 @@ export function PlanogramPanel() {
           <input type="checkbox" checked={autoSwap} onChange={(e) => useGame.setState({ autoSwap: e.target.checked })} />
           🔄 Tự thay món hết hàng
         </label>
-        <button style={st.btn} onClick={() => {
-          const done = replaceEmptySlots();
-          notify(done.length ? `🔄 Đã thay: ${done.join(', ')}` : 'Không có ô nào cần thay (hoặc kho chưa có món phù hợp)');
-        }}>🔄 Thay ngay</button>
+        <button style={st.btn} onClick={() => replaceEmptySlots(true)}>🔄 Thay ngay</button>
       </div>
 
       {fixtures.length === 0 && <p style={st.sub}>Tiệm chưa có kệ nào. Vào Xây dựng để mua kệ.</p>}

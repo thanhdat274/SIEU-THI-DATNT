@@ -83,6 +83,7 @@ const LOCAL_ONLY: Record<string, string> = {
   spinWheel: 'quay vòng quay ngày — cờ toàn cục, một lượt mỗi ngày',
   contributeLandmark: 'sân chơi (GĐ40) — mục tiêu chơi đơn một mình, mỗi ngày góp 1 lượt có ghi ngày góp, không dùng ở hẻm online, chạy cục bộ',
   checkWelcomeBack: 'thưởng "Chào mừng quay lại" khi nạp bản lưu chơi đơn — theo lastSeenAt lưu trong máy, không dùng ở hẻm online, chạy cục bộ',
+  dismissUnlockAct: 'đóng banner "Mới mở" — thêm một id vào danh sách chung, làm lại nhiều lần không đổi gì nên không cần khoá chỗ',
   learnSkill: 'học một kỹ năng theo id (thêm vào danh sách, không đè)',
   buyLicense: 'mua giấy phép theo id tờ',
   setShopName: 'đổi tên tiệm — một trường toàn cục, ai đặt cũng là tên chung',

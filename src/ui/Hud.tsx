@@ -828,10 +828,7 @@ function UnlockActBanner() {
   const openPanel = useGame((s) => s.openPanel);
   const act = pendingUnlockAct(biz, level);
   if (!act) return null;
-  const done = () => {
-    const b = useGame.getState().biz;
-    useGame.setState({ biz: { ...b, unlockActs: [...(b.unlockActs ?? []), act.id] } });
-  };
+  const done = () => useGame.getState().dismissUnlockAct(act.id);
   return (
     <div className="hud-alert" style={{ background: 'rgba(39,174,96,0.95)' }}>
       <span>🔓 Mới mở: {act.icon} {act.title} — {act.hint}</span>

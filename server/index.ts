@@ -416,7 +416,7 @@ wss.on('connection', (ws) => {
         break;
       }
       case 'state':
-        if (isRunner) broadcast(room, { type: 'state', game: msg.game, actors: msg.actors }, peer.id);
+        if (isRunner) broadcast(room, { type: 'state', game: msg.game, actors: msg.actors, ask: msg.ask ?? null }, peer.id);
         break;
       case 'notify':
         if (isRunner) broadcast(room, { type: 'notify', text: msg.text }, peer.id);

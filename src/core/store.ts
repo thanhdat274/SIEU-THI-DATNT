@@ -159,6 +159,7 @@ export const newGameData = () => ({
   giftLastDay: 0,
   giftGraceDay: 0,
   wheelLastDay: 0,
+  wheelLastPrize: null as { icon: string; label: string } | null,
   wheelBoost: 1,
   lastSeenAt: 0,
   skills: [] as SkillId[],

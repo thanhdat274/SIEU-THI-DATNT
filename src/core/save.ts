@@ -59,7 +59,7 @@ export function snapshot(): SaveData {
     reviews: s.reviews, deliveries: s.deliveries, demand: s.demand, demandToday: s.demandToday,
     sales: s.sales, salesToday: s.salesToday, soldEver: s.soldEver, comboHitCount: s.comboHitCount, regulars: s.regulars, reservations: s.reservations, market: s.market,
     contracts: s.contracts, repLog: s.repLog, community: s.community, opening: s.opening, costume: s.costume, event: s.event,
-    giftStreak: s.giftStreak, giftLastDay: s.giftLastDay, giftGraceDay: s.giftGraceDay, wheelLastDay: s.wheelLastDay, wheelBoost: s.wheelBoost, shopName: s.shopName,
+    giftStreak: s.giftStreak, giftLastDay: s.giftLastDay, giftGraceDay: s.giftGraceDay, wheelLastDay: s.wheelLastDay, wheelLastPrize: s.wheelLastPrize, wheelBoost: s.wheelBoost, shopName: s.shopName,
     // Mỗi lần ghi bản lưu đều làm mới mốc "còn chơi" — chơi hằng ngày giữ bản tươi nên không bị tính là vắng.
     lastSeenAt: Date.now(),
     history: s.history, activeCombos: s.activeCombos, order: s.order, ordersDone: s.ordersDone, cookJobs: s.cookJobs, phoneOrders: s.phoneOrders, phoneSlot: s.phoneSlot, phoneHintDay: s.phoneHintDay, phoneOrdersDone: s.phoneOrdersDone, debts: s.debts, allowCredit: s.allowCredit, counterPolicy: s.counterPolicy, biz: s.biz, vendorDay: s.vendorDay, vendorOffer: s.vendorOffer, marketClearedDay: s.marketClearedDay, marketLast: s.marketLast, skills: s.skills, titles: s.titles, fakeCash: s.fakeCash, branch: s.branch, venueTrend: s.venueTrend, riskToday: s.riskToday, riskTrend: s.riskTrend,

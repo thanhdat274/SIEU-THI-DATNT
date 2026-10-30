@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGame } from '../../core/store';
 import { DAILY_GIFTS, WHEEL_PRIZES, giftText, recentAvgProfit, scaledGiftEco, scaledPrize, type WheelPrize } from '../../data/gifts';
 import { Footer, styles } from './shared';
@@ -7,7 +7,7 @@ const formatMoneyShort = (v: number) => v >= 1_000_000 ? `${Math.round(v / 1_000
 
 /** Điểm danh quà 7 ngày + vòng quay may mắn mỗi ngày một lượt. */
 export function GiftPanel() {
-  const { day, level, giftStreak, giftLastDay, giftGraceDay, wheelLastDay, wheelBoost, claimGift, spinWheel, closePanel, history } = useGame();
+  const { day, level, giftStreak, giftLastDay, giftGraceDay, wheelLastDay, wheelLastPrize, wheelBoost, claimGift, spinWheel, closePanel, history } = useGame();
   const claimedToday = giftLastDay === day;
   const spunToday = wheelLastDay === day;
   const cycle = DAILY_GIFTS.length;
@@ -25,10 +25,29 @@ export function GiftPanel() {
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<WheelPrize | null>(null);
 
+  // Hẻm online, máy khách: thao tác chạy ở máy chạy nên spinWheel() chỉ trả `true` — chờ giải về qua state
+  const [awaiting, setAwaiting] = useState(false);
+  useEffect(() => {
+    if (!awaiting) return;
+    if (wheelLastDay === day && wheelLastPrize) {
+      setAwaiting(false);
+      const prize = wheelPrizes.find((p) => p.icon === wheelLastPrize.icon && p.label === wheelLastPrize.label);
+      if (prize) animate(prize);
+      return;
+    }
+    const t = setTimeout(() => setAwaiting(false), 5000); // máy chạy từ chối / mất gói: thôi chờ
+    return () => clearTimeout(t);
+  }, [awaiting, wheelLastDay, wheelLastPrize, day]);
+
   const doSpin = () => {
-    if (spunToday || spinning) return;
-    const prize = spinWheel();
+    if (spunToday || spinning || awaiting) return;
+    const prize = spinWheel() as WheelPrize | null | boolean;
+    if (prize === true) return setAwaiting(true);
     if (!prize) return;
+    animate(prize);
+  };
+
+  const animate = (prize: WheelPrize) => {
     // Giải trả về là bản sao đã scale: tìm lại ô tương ứng trên vòng để kim chỉ đúng ô
     const i = wheelPrizes.findIndex((p) => p.icon === prize.icon && p.label === prize.label);
     const step = 360 / wheelPrizes.length;
@@ -136,9 +155,9 @@ export function GiftPanel() {
             <p style={styles.sub}>Mỗi ngày một lượt quay. Trúng 🍀 thì cả ngày khách ghé đông thêm!</p>
           )}
           <button
-            style={{ ...styles.btn, marginLeft: 0, background: spunToday || spinning ? '#666' : '#e67e22', color: '#fff', cursor: spunToday || spinning ? 'default' : 'pointer', padding: '8px 16px' }}
+            style={{ ...styles.btn, marginLeft: 0, background: spunToday || spinning || awaiting ? '#666' : '#e67e22', color: '#fff', cursor: spunToday || spinning || awaiting ? 'default' : 'pointer', padding: '8px 16px' }}
             onClick={doSpin}
-            disabled={spunToday || spinning}
+            disabled={spunToday || spinning || awaiting}
           >
             🎡 Quay ngay
           </button>

@@ -1,6 +1,7 @@
 import { ProductIcon } from './ProductIcon';
 import { useMemo, useState } from 'react';
 import { Dropdown } from './Dropdown';
+import { lastActionResult } from '../net/coop';
 import { storageCapacity, storageUsed, useGame, wagesDue } from '../core/store';
 import { caseSize, casesFor, CATEGORIES, describeUnits, formatMoney, productById, unlockedProducts, type Category } from '../data/products';
 import { shelfLife } from '../data/freshness';
@@ -396,7 +397,8 @@ export function OrderPanel() {
       notify(`⚠️ Sau đơn này chỉ còn ${formatMoney(Math.max(0, moneyLeft))}, chưa đủ ${formatMoney(wages)} lương cuối ngày. Bấm lần nữa nếu vẫn nhập.`);
       return;
     }
-    if (placeOrder(supplierId, lines)) setCart({});
+    // Hẻm online, máy khách: placeOrder trả `true` tạm — chỉ xoá giỏ khi máy chạy báo đặt được thật
+    if (placeOrder(supplierId, lines)) void lastActionResult().then((ok) => ok && setCart({}));
   };
 
   return (

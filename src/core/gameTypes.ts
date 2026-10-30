@@ -306,7 +306,8 @@ export interface GameState {
   /** Chốt kèo hôm nay: mức `tier` (xem BET_TIERS) — cam kết làm trọn việc chính hôm nay (đông khách, bán hàng, doanh thu) ở mục tiêu cao hơn để nhận thêm thưởng. */
   placeBet: (tier: number) => boolean;
   /** Đổi các ô hết hàng (kho không còn, không có đơn chờ) sang món khác trong kho; trả về các dòng mô tả đã đổi. */
-  replaceEmptySlots: () => string[];
+  /** `announce`: báo kết quả bằng notify (nút bấm của người chơi); gọi nội bộ lúc hàng về/cuối ngày thì im. */
+  replaceEmptySlots: (announce?: boolean) => string[];
   /** Tự động theo lịch: 7h ra tiệm, 8h mở cửa, 22h30 đóng cửa, 23h kiểm kê rồi về nhà. */
   autoRoutine: boolean;
   /** Giờ mở cửa của lịch tự động (phút trong ngày, 6h–8h — GĐ275); thiếu ở save cũ = 8h. */
@@ -426,12 +427,16 @@ export interface GameState {
   /** Ngày gần nhất dùng vé tha thứ streak (bỏ quên 1 ngày mà vẫn giữ chuỗi); 0 = chưa từng dùng. */
   giftGraceDay: number;
   wheelLastDay: number;
+  /** Giải vừa trúng ở lượt quay gần nhất (cùng ngày wheelLastDay) — để máy khách hẻm online biết kim dừng ô nào. Không lưu. */
+  wheelLastPrize: { icon: string; label: string } | null;
   /** Nhân lượng khách ghé hôm nay khi trúng giải 🍀 trên vòng quay (1 = bình thường). */
   wheelBoost: number;
   /** Mốc thời gian THẬT (epoch ms) lần ghé/hoạt động gần nhất — đo vắng mặt cho thưởng "Chào mừng quay lại". */
   lastSeenAt: number;
   /** Soát thưởng "Chào mừng quay lại" khi nạp bản lưu: đủ 2 ngày thật vắng thì thưởng một lần; luôn làm mới lastSeenAt. */
   checkWelcomeBack: () => number;
+  /** GĐ64 — đóng vĩnh viễn banner "Mới mở: …" (ghi id vào biz.unlockActs). Là thao tác để hẻm online chạy trên máy chạy — không ghi đè cả `biz`. */
+  dismissUnlockAct: (id: string) => void;
   /** Điểm danh hôm nay; trả false nếu đã nhận rồi. */
   claimGift: () => boolean;
   /** Góp vật liệu một lượt cho sân chơi (mỗi ngày một lần); trả false nếu không góp được. */

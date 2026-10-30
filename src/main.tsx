@@ -203,7 +203,8 @@ const playerAt = (counter: Counter) => player.position.distanceTo(counter.center
 /** Thành viên khác trong hẻm đứng quầy cũng tính tiền được. */
 const partnerAt = (counter: Counter) => partnerPositions().some((p) => p.distanceTo(counter.center) < 2);
 const nearCounter = () => shop.counters().some(playerAt);
-customers.playerAtCounter = playerAt;
+// Hẻm online: thành viên khác đứng quầy cũng được khách hỏi (mặc cả/ghi sổ) như chơi đơn — câu hỏi hiện cho cả hẻm
+customers.playerAtCounter = (counter) => playerAt(counter) || partnerAt(counter);
 
 /** Chỗ đứng khi tới tiệm: sau quầy chính, tính tiền được ngay. */
 const shopSpot = () => shop.counters()[0].cashier;
@@ -629,8 +630,12 @@ function renderFrame() {
     if (!guest) branchVisit.update(dt * speed, player.position);
     // Gà trong trang trại chỉ đi rong khi chủ ở gần (đứng ở tiệm thì trại đứng yên, đỡ tốn FPS)
     if (player.position.distanceTo(world.farmSpot) < 60) world.farm.update(dt * speed, (state.minutes / 60) % 24);
-    const atBranch = world.convenience.contains(player.position.x, player.position.z);
-    if (atBranch !== state.atBranch) useGame.setState({ atBranch });
+    // Hẻm online: chỉ máy chạy tính (ai trong hẻm đứng ở chi nhánh cũng tính), máy khách nhận qua state —
+    // máy khách tự ghi thì hai máy giành nhau giá trị này mỗi khung hình
+    if (!guest) {
+      const atBranch = [player.position, ...partnerPositions()].some((p) => world.convenience.contains(p.x, p.z));
+      if (atBranch !== state.atBranch) useGame.setState({ atBranch });
+    }
     updateCoop(dt);
     updateStatus();
   }

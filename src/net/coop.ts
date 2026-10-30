@@ -3,6 +3,7 @@ import { applySnapshot, snapshot } from '../core/save';
 import { newGameData, useGame, type GameState } from '../core/store';
 import { Walker } from '../agents/walker';
 import { costumeById } from '../data/costumes';
+import { answerAskById, applyRemoteAsk, clearAsk, sharedAsk, type SharedAsk } from '../core/counterAsk';
 import { cleanActionArgs } from './actionArgs';
 import { idToken } from './firebase';
 import { apiUrl, wsUrl } from './serverUrl';
@@ -20,13 +21,17 @@ import { useSession, type AlleyPeer } from './session';
 /** Trạng thái riêng từng máy (giao diện, chỗ đứng, trang phục của mỗi người), không đồng bộ. */
 const LOCAL_STATE = new Set<string>(['hint', 'message', 'panel', 'buildMode', 'placing', 'stylePreview', 'costume']);
 /** Trường đồng bộ qua sharedState nhưng không gửi PATCH ngược lại (chỉ runner tự cập nhật). */
-const NO_PATCH = new Set<string>(['location']);
+export const NO_PATCH = new Set<string>(['location', 'atBranch']);
 /** Hàm chạy tại chỗ: giao diện, hoặc chỉ đọc. (Xuất ra cho test phủ kín phân loại thao tác.) */
 export const LOCAL_ACTIONS = new Set<string>(['notify', 'openPanel', 'closePanel', 'setBuildMode', 'setPlacing', 'priceOf', 'tick', 'takeFromShelf', 'setCostume']);
+/** Thao tác cố ý lặp nhanh (giữ phím lau nhà): không gộp lần bấm trùng — máy khách phải lau nhanh như chơi đơn. */
+export const REPEATABLE = new Set<string>(['addDirt']);
 /** Giá trị trả về tạm của thao tác gửi đi, cho giao diện đọc kết quả dạng danh sách. */
 const PROXY_RESULT: Record<string, unknown> = { replaceEmptySlots: [] };
 /** Chỉnh thẳng trạng thái (không qua hàm), ví dụ bật/tắt tuỳ chọn. */
 const PATCH = '__patch';
+/** Máy khách trả lời câu hỏi ở quầy (mặc cả/ghi sổ/tiền lẻ): args = [mã câu hỏi, phương án]. */
+export const ANSWER_ASK = '__answerAsk';
 
 /**
  * Thao tác sửa đúng một chỗ (ô kệ, món đồ, giá một món). Người khác vừa sửa chỗ đó trong GUARD_MS thì
@@ -75,7 +80,7 @@ type Msg =
   | { type: 'peers'; peers: AlleyPeer[]; joined?: string; left?: string }
   | { type: 'promote' }
   | { type: 'demote' }
-  | { type: 'state'; game: Partial<GameState>; actors: Actor[] }
+  | { type: 'state'; game: Partial<GameState>; actors: Actor[]; ask?: SharedAsk | null }
   | { type: 'pose'; from: number; pose: Pose; look?: string }
   | { type: 'notify'; text: string }
   | { type: 'sys'; text: string }
@@ -109,8 +114,16 @@ let applyingRemote = false;
 let originals: Partial<GameState> | null = null;
 
 /** Người không chạy: thao tác đã gửi, chờ máy chạy báo kết quả. Khoá = tên + tham số, để bấm lặp không gửi hai lần. */
-const pending = new Map<number, { key: string; timer: ReturnType<typeof setTimeout> }>();
+const pending = new Map<number, { key: string; timer: ReturnType<typeof setTimeout>; done: (ok: boolean) => void }>();
 let nextSeq = 1;
+/** Kết quả thật (máy chạy báo về) của thao tác vừa gửi — xem lastActionResult. */
+let lastSent: Promise<boolean> = Promise.resolve(true);
+
+/**
+ * Máy khách: thao tác gửi đi trả ngay giá trị tạm (`true`); UI nào cần biết thật sự thành công hay không
+ * (vd. xoá giỏ hàng sau khi đặt) thì chờ promise này. Chơi đơn / máy chạy: luôn `true` ngay.
+ */
+export const lastActionResult = (): Promise<boolean> => (isGuest() ? lastSent : Promise.resolve(true));
 const setPendingFlag = () => {
   const busy = pending.size > 0;
   if (useSession.getState().netBusy === busy) return;
@@ -310,9 +323,11 @@ function installProxies() {
       const result = name in PROXY_RESULT ? PROXY_RESULT[name] : true;
       // Bấm lặp lúc kết quả lần trước chưa về: bỏ qua, không gửi hai lần
       const key = name + JSON.stringify(args);
-      if ([...pending.values()].some((p) => p.key === key)) return result;
+      if (!REPEATABLE.has(name) && [...pending.values()].some((p) => p.key === key)) return result;
       const seq = nextSeq++;
-      pending.set(seq, { key, timer: setTimeout(() => (pending.delete(seq), setPendingFlag()), PENDING_TIMEOUT) });
+      let done: (ok: boolean) => void = () => {};
+      lastSent = new Promise<boolean>((r) => (done = r));
+      pending.set(seq, { key, done, timer: setTimeout(() => (pending.delete(seq), setPendingFlag(), done(false)), PENDING_TIMEOUT) });
       setPendingFlag();
       send({ type: 'act', seq, name, args });
       return result;
@@ -336,7 +351,12 @@ function becomeRunner() {
     p.walker.dispose();
   }
   puppets.clear();
-  for (const p of pending.values()) clearTimeout(p.timer);
+  // Câu hỏi đang hiện là của máy chạy cũ (khách đó không có ở máy này): bỏ
+  clearAsk();
+  for (const p of pending.values()) {
+    clearTimeout(p.timer);
+    p.done(false);
+  }
   pending.clear();
   setPendingFlag();
   useSession.setState((s) => ({ coop: s.coop && { ...s.coop, role: 'runner' } }));
@@ -349,6 +369,8 @@ function becomeRunner() {
 function becomePlayer() {
   checkpoint();
   touched.clear();
+  // Khách đang chờ câu trả lời bị dọn cùng mô phỏng: bỏ câu hỏi, từ giờ nhận câu hỏi từ máy chạy mới
+  clearAsk();
   useSession.setState((s) => ({ coop: s.coop && { ...s.coop, role: 'player' } }));
   installProxies();
   world?.resetSim();
@@ -399,6 +421,11 @@ function onMessage(msg: Msg) {
         useGame.setState(safe as Partial<GameState>);
         return;
       }
+      if (msg.name === ANSWER_ASK) {
+        // Ai trong hẻm bấm trả lời trước thì chốt; câu đã đổi/đã chốt thì bỏ qua
+        if (answerAskById(Number(msg.args[0]), Number(msg.args[1]))) sendState();
+        return;
+      }
       {
         const result = runRemote(msg.from, msg.name, msg.args);
         // Gửi trạng thái mới trước, rồi kết quả: người bấm thấy số liệu đổi cùng lúc với lời nhắn
@@ -408,7 +435,10 @@ function onMessage(msg: Msg) {
       break;
     case 'result': {
       const p = pending.get(msg.seq);
-      if (p) clearTimeout(p.timer);
+      if (p) {
+        clearTimeout(p.timer);
+        p.done(msg.ok);
+      }
       pending.delete(msg.seq);
       setPendingFlag();
       for (const text of msg.messages) game.notify(text);
@@ -431,6 +461,8 @@ function onMessage(msg: Msg) {
       useGame.setState(msg.game);
       applyingRemote = false;
       syncPuppets(msg.actors);
+      // Câu hỏi ở quầy của máy chạy: hiện cho cả hẻm (thế giới đang dừng chờ — ai cũng thấy vì sao)
+      applyRemoteAsk(msg.ask ?? null, (id, choice) => send({ type: 'act', name: ANSWER_ASK, args: [id, choice] }));
       break;
   }
 }
@@ -560,7 +592,7 @@ function sendState() {
   if (!world) return;
   sendTimer = 0.2;
   const actors = world.actors().map((w) => ({ ...pose(w.mesh), id: w.id, color: w.color, hat: w.hatColor }));
-  send({ type: 'state', game: sharedState(), actors });
+  send({ type: 'state', game: sharedState(), actors, ask: sharedAsk() });
 }
 
 // Rời/ẩn tab: máy chạy ghi tiến trình ngay

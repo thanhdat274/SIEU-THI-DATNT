@@ -13,7 +13,7 @@ import { questContext } from '../store';
 
 /** Tiến trình: XP, nhiệm vụ, danh hiệu, kỹ năng, quà điểm danh, vòng quay, trang phục, tên tiệm. */
 
-export const createProgressSlice = (set: SetState, get: GetState): Pick<GameState, 'setCostume' | 'setShopName' | 'claimGift' | 'spinWheel' | 'learnSkill' | 'checkTitles' | 'claimQuest' | 'claimNgGoal' | 'placeBet' | 'addXp' | 'checkWelcomeBack' | 'contributeLandmark'> => ({
+export const createProgressSlice = (set: SetState, get: GetState): Pick<GameState, 'setCostume' | 'setShopName' | 'claimGift' | 'spinWheel' | 'learnSkill' | 'checkTitles' | 'claimQuest' | 'claimNgGoal' | 'placeBet' | 'addXp' | 'checkWelcomeBack' | 'contributeLandmark' | 'dismissUnlockAct'> => ({
   setCostume: (id) => {
     const s = get();
     const def = costumeById(id);
@@ -108,6 +108,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     const prize = scaledPrize(spinWheelPrize(), s.level);
     set({
       wheelLastDay: s.day,
+      wheelLastPrize: { icon: prize.icon, label: prize.label },
       ...(prize.boost ? { wheelBoost: 1 + prize.boost } : {}),
       ...(prize.money ? { money: s.money + prize.money } : {}),
     });
@@ -115,6 +116,11 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     s.notify(`🎡 Vòng quay may mắn: ${prize.icon} ${prize.label}!`);
     playSfx('gift');
     return prize;
+  },
+  dismissUnlockAct: (id) => {
+    const b = get().biz;
+    if ((b.unlockActs ?? []).includes(id)) return;
+    set({ biz: { ...b, unlockActs: [...(b.unlockActs ?? []), id] } });
   },
   learnSkill: (id) => {
     const s = get();

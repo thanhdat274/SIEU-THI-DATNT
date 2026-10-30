@@ -64,6 +64,7 @@
 - Kèo hôm nay bám bộ "việc chính" (GĐ107); thưởng nhiệm vụ có trần theo lãi bình quân (GĐ106); người mới không bị trần (GĐ114).
 - Khách treo câu hỏi quầy tự chốt theo giây thực (30s → 😕, 45s tự chốt — GĐ122); sim có seed đếm theo tick.
 - Lương trong số dư chi nhánh KHÔNG áp good_boss −10% (bảo thủ, trung thực).
+- Ngoại lệ "đủ 2 chế độ" (30/10): ở hẻm online đi lại tiệm/trại tốn 0 phút (chơi đơn 10–15 phút) — đồng hồ dùng chung, một người đi không được tua giờ cả hẻm.
 - 3D: Tài sản 3D mới đều qua pipeline Blender (không dựng tạm khối nguyên thủy khi Blender làm đẹp hơn), làm chậm/lười để không chặn lần tải đầu.
 - Họ màu hướng dẫn/chuỗi/biểu đồ: gộp về một sắc info `#3498db` (GĐ178); ngoại lệ duy nhất: buy-tone `#55efc4`/`#ff7675`; GardenPanel giữ họ riêng. GĐ258 quét nốt 6 màu cũ — src/ui chỉ còn bảng duyệt + màu nhận diện.
 
@@ -79,6 +80,7 @@
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
 2. **Khoá chờ save người thật:** NG+ vòng (GĐ171) · nhiệm vụ ngày 1–5 (GĐ254 đã giảm lặp). (GĐ110/117 ĐÃ ĐÓNG GĐ280 bằng số liệu.) **Arc E ĐÃ MỞ (GĐ282): arc A–D QA mắt trọn vẹn + cấu trúc test xanh — làm arc E "Hàng xóm khai trương" là việc tiếp theo.**
 3. **Ý tưởng chờ Leader duyệt (chiều sâu, chưa làm):** (a) nhịp cuối tuần đậm hơn khi hệ đã ổn trên save thật (hàng đặc biệt ngày phiên chợ; không vội); (b) nhiệm vụ tuần/tháng biết đến thứ trong tuần (WeeklyPace hiện "còn X ngày tới Chủ nhật") — nhỏ, chỉ khi có việc khác đi kèm.
+4. 👥 **Đủ 2 chế độ — 3 tính năng đang CHỈ chơi đơn (luật mới 30/10, promt_game.md "Nguyên tắc chung"):** Kỹ sư đồng bộ co-op cùng Game Designer thiết kế bản hẻm online cho từng cái, làm lần lượt: (a) **Tái sinh NG+** (`prestige.ts:13` chặn ở hẻm) — cả hẻm cùng bỏ phiếu tái sinh? giữ bộ sưu tập chung? (b) **Sân chơi góp xây** (`contributeLandmark`, mỗi ngày 1 lượt) — mỗi thành viên góp một lượt/ngày vào công trình chung của hẻm? (c) **Thưởng "Chào mừng quay lại"** (`checkWelcomeBack`, theo `lastSeenAt` lưu trong máy) — đo vắng mặt theo lần hẻm có người online gần nhất? Ngoại lệ đã chốt, không cần làm: thời gian đi lại = 0 ở hẻm (đồng hồ chung, một người đi không được tua giờ cả hẻm).
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)## Mục lục giai đoạn đã xong (chi tiết trong archive)
 

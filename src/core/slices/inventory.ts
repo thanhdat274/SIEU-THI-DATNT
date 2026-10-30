@@ -110,7 +110,7 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
     s.notify(`🏭 Đã nâng cấp ${next.name}: chứa ${next.cases} thùng, giữ lạnh ${next.cold} món`);
     return true;
   },
-  replaceEmptySlots: () => {
+  replaceEmptySlots: (announce = false) => {
     const done: string[] = [];
     const incoming = new Set(get().deliveries.flatMap((d) => Object.keys(d.items)));
     for (const f0 of get().furniture) {
@@ -131,6 +131,9 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
         done.push(`${productById(old).name} → ${pick.name}`);
       });
     }
+    // Báo ngay trong thao tác (không để UI tự báo theo giá trị trả về): hẻm online máy khách chỉ nhận
+    // lời nhắn máy chạy gửi về, giá trị trả về luôn là bản tạm
+    if (announce) get().notify(done.length ? `🔄 Đã thay: ${done.join(', ')}` : 'Không có ô nào cần thay (hoặc kho chưa có món phù hợp)');
     return done;
   },
   unstockTier: (uid, tierIndex) => {

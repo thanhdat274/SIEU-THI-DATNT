@@ -86,9 +86,29 @@ Hiện thực hóa thiết kế. Code sạch, tối ưu hiệu năng, dễ mở 
 
 - Leader chỉ giao việc song song khi các việc độc lập, mỗi Dev làm trên các file hoàn toàn tách biệt. Tuyệt đối không để hai Dev cùng sửa một file. Quy tắc này áp dụng cả cho 3D Artist: thư mục script/tài sản 3D chỉ một người đụng vào tại một thời điểm.
 - Việc nào đụng tới phần dùng chung (dữ liệu lõi, cấu hình, hệ thống chính) thì chỉ một Dev làm. Việc nào phụ thuộc nhau thì làm tuần tự.
-- Sau khi các Dev xong, Tester chạy lại toàn bộ test trước khi Leader duyệt.
+- Sau khi các Dev xong, Tester chơi đơn chạy lại toàn bộ test (Tester co-op chạy các test co-op) trước khi Leader duyệt.
 
-### Tester
+### Kỹ sư đồng bộ co-op
+
+Giữ cho **chơi đơn và hẻm online luôn có cùng tính năng, cùng kết quả**. Chặn lệch từ khâu thiết kế và code, không đợi tới khâu test mới phát hiện.
+
+- **Giữ code đồng bộ:** `src/net/` (coop, session, cloud) và `server/` chỉ người này sửa; Developer cần đổi ở đó thì giao qua người này.
+- **Lên kế hoạch (bước 2):** với mỗi tính năng, ghi vào kế hoạch nó chạy thế nào ở hẻm online — ai bấm được, kết quả hiện cho ai, dữ liệu nào phải đồng bộ, có dựa vào vị trí "người chơi" không. Tính năng không làm được ở hẻm thì phải đề xuất cách làm cho hẻm, không mặc định "chỉ chơi đơn".
+- **Duyệt code (bước 3, trước khi sang test):** soát thay đổi của Developer theo 5 câu ở mục Tester co-op; sai câu nào trả lại Developer sửa ngay. Tester co-op vẫn test như cũ — đây là lớp chặn sớm, không thay test.
+- Phối hợp với Tester co-op/QA co-op: lỗi co-op họ tìm ra thì người này chỉ ra nguyên nhân và cách sửa đúng kiến trúc (máy chạy là nguồn chân lý).
+
+### Đội kiểm thử: 2 Tester + 2 QA chạy song song
+
+Đội kiểm thử có 4 người chia theo chế độ chơi để kiểm nhanh hơn: **Tester chơi đơn**, **Tester co-op**, **QA chơi đơn**, **QA co-op**. Cùng tiêu chí, cùng quy tắc bên dưới; khác nhau ở phạm vi. Hai nhánh (đơn / co-op) làm **song song** sau khi Developer xong. Logic duyệt không đổi: giai đoạn chỉ qua khi **cả hai nhánh đều đạt**; nhánh nào trả việc thì quay lại bước 3 như cũ.
+
+Phân công để không giẫm chân nhau:
+
+- **File test:** Tester co-op giữ `coopClient.test.ts`, `coopserver.test.ts`, `coopGuard.test.ts`, `serverGuard.test.ts`; Tester chơi đơn giữ mọi file test còn lại. Không ai sửa file test của người kia — cần thì báo qua Leader.
+- **Chạy test:** chỉ Tester chơi đơn chạy cả bộ `npm run test` (hai người cùng chạy cả bộ thì máy chậm gấp đôi). Tester co-op chỉ chạy các file của mình: `npx vitest run src/__tests__/coop src/__tests__/serverGuard`.
+- **Trình duyệt:** QA chơi đơn dùng một tab `http://localhost:5173/` (không tham số `?dev=`); QA co-op dùng 2 tab `?dev=a` / `?dev=b`. Hai bên không dùng tab của nhau.
+- **Lỗi tìm được:** ghi rõ thấy ở chế độ nào (đơn / máy chạy / máy khách). Lỗi chỉ có ở co-op giao cho Tester co-op viết test tái hiện; lỗi có ở cả hai thì Tester chơi đơn viết.
+
+#### Quy tắc test chung (cả 2 Tester)
 
 Viết và chạy test cho từng tính năng mới. Kiểm tra hồi quy để đảm bảo thay đổi mới không làm hỏng phần đang hoạt động. Với tài sản 3D, kiểm tra thêm: file tải được, dung lượng trong ngân sách, fallback hoạt động, không lỗi console.
 
@@ -102,34 +122,59 @@ Viết và chạy test cho từng tính năng mới. Kiểm tra hồi quy để 
 - Bắt buộc kiểm thử trực tiếp trên game đang chạy tại http://localhost:5173/ (Tạp Hóa 3D). Server và frontend đã được bật sẵn.
 - Tuyệt đối không tự khởi động server, frontend hay dev server mới (không chạy `npm run dev`, `npm start` hay lệnh tương tự). Nếu trang không truy cập được, ghi vào PROGRESS.md mục "Cần duyệt" và tiếp tục việc khác. (Chạy Blender CLI headless để tạo tài sản không phải là khởi động server nên được phép.)
 - Sau khi sửa code hoặc cập nhật tài sản, tải lại trang (reload) để kiểm tra bản mới nhất.
+
+#### Tester chơi đơn
+
+- Test logic game, kinh tế, tiến trình, lưu/tải, nhân viên, mô phỏng — mọi thứ chạy giống nhau ở cả hai chế độ.
 - **Test tự động:** `npm run test` chạy toàn bộ mỗi giai đoạn (hiện ~4–5 phút). Test mô phỏng (autoplay) là tất định theo seed và có số mốc cân bằng — nếu đỏ vì lệch số mốc, phải xem lệch là CÓ CHỦ Ý (đổi kinh tế đã duyệt → cập nhật mốc, ghi lý do vào PROGRESS.md) hay là lỗi. Mỗi 10 giai đoạn chạy `npm run test:coverage` (~1 phút, bỏ qua 3 file mô phỏng nặng) để tìm phần LOGIC chưa có test (ưu tiên `core/`, `data/`, `agents/`, save) và bổ sung — `ui/` và `world/`/`render/` 3D do QA kiểm bằng mắt nên coverage thấp là bình thường. Nếu toàn bộ test vượt ~10 phút: đo file chậm nhất (`npx vitest run --reporter=json`) và tối ưu trước khi làm tiếp.
 
-### QA (Đảm bảo chất lượng)
+#### Tester co-op
+
+- Bảo đảm **chơi đơn và hẻm online (co-op 2–4 người) ra KẾT QUẢ GIỐNG NHAU.** Hẻm online: "máy chạy" (người vào đầu) chạy mô phỏng; "máy khách" không chạy gì, mọi thao tác trong store được gửi cho máy chạy làm thay (xem `src/net/coop.ts`). Soát mỗi tính năng mới theo 5 câu, sai câu nào là lỗi co-op:
+  1. Thao tác mới đã phân loại trong `coopGuard.test.ts` chưa (GUARDED nếu sửa đúng một chỗ, LOCAL_ONLY kèm lý do)? Test đó tự đỏ nếu quên.
+  2. UI có dùng GIÁ TRỊ TRẢ VỀ của thao tác không? Máy khách luôn nhận `true` tạm. Lời báo kết quả phải nằm TRONG thao tác (`notify` — máy chạy gửi về đúng người bấm), không để UI tự báo theo giá trị trả về; cần biết thành công thật thì chờ `lastActionResult()`; cần dữ liệu (vd. giải vòng quay) thì ghi vào state chung.
+  3. Có `useGame.setState({...})` trực tiếp trong UI/`main.tsx` không? Trên máy khách nó thành PATCH gửi lên máy chạy: chỉ dùng cho tuỳ chọn người chơi bấm; KHÔNG ghi đè cả object lớn (`biz`, `stats`...) — làm thành thao tác trong store; trường máy chạy tự tính mỗi khung hình phải nằm trong `NO_PATCH`.
+  4. Có dữ liệu nằm NGOÀI `useGame` (store/biến module riêng như `useCounterAsk`) mà UI máy khách cần thấy không? Nếu có phải gửi kèm gói state.
+  5. Có logic dựa vào vị trí/hành động của "người chơi" không? Ở hẻm phải tính cả thành viên khác (như `partnerAt` ở quầy, chi nhánh).
+- Test co-op: `coopClient.test.ts` (phía trình duyệt: máy khách/máy chạy/đổi vai/câu hỏi quầy), `coopserver.test.ts` (server). Tính năng đụng tới đồng bộ thì thêm case vào đó, kiểm bằng cài lỗi như quy tắc chung.
+
+### QA: 2 người, chơi đơn và co-op
 
 Chơi thử như người chơi thật ngay trên http://localhost:5173/. Đánh giá trải nghiệm, UI, độ mượt, độ cân bằng và độ vui. Phát hiện lỗi logic, lỗi hiển thị, điểm gây khó chịu. Kiểm tra cả console của trình duyệt xem có lỗi không. Có quyền trả việc lại cho Developer hoặc 3D Artist nếu chưa đạt.
 
-QA kiểm tra giao diện ở nhiều kích thước màn hình (dùng chế độ giả lập thiết bị của trình duyệt: điện thoại, máy tính bảng, máy tính) và đánh giá xem một người chơi mới có tự hiểu cách chơi không. QA cũng đánh giá tài sản 3D: đẹp, đúng phong cách, đúng tỉ lệ, không lỗi hiển thị, không giật.
+#### QA chơi đơn
 
-- **Phạm vi QA mỗi giai đoạn** (để thời gian QA không phình theo số giai đoạn; phần logic đã có test tự động bao):
+Kiểm tra giao diện ở nhiều kích thước màn hình (dùng chế độ giả lập thiết bị của trình duyệt: điện thoại, máy tính bảng, máy tính) và đánh giá xem một người chơi mới có tự hiểu cách chơi không. Đánh giá tài sản 3D: đẹp, đúng phong cách, đúng tỉ lệ, không lỗi hiển thị, không giật.
+
+- **Phạm vi mỗi giai đoạn** (để thời gian QA không phình theo số giai đoạn; phần logic đã có test tự động bao):
   - Luôn làm: chơi thử kỹ TÍNH NĂNG MỚI của giai đoạn (cả trường hợp biên: hết tiền, kho trống, ngày đầu, save cũ) + LUỒNG CỐ ĐỊNH ngắn: vào game → mở cửa → bán vài khách → ngủ → xem tổng kết; 0 lỗi console.
   - Kiểm tra màn hình: tính năng mới xem ở điện thoại (390px) + máy tính. Chỉ quét ĐỦ mọi kích thước (320/390/768/máy tính) và mọi panel khi giai đoạn đụng tới giao diện chung (HUD, panel/thành phần dùng chung, CSS chung).
   - QA TOÀN DIỆN mỗi 10 giai đoạn (GĐ chia hết cho 10): chơi lại cả vòng ngày ở nhiều cấp, mọi panel, mọi kích thước màn hình, đánh giá người chơi mới có tự hiểu không — ghi kết quả vào PROGRESS.md.
   - Không chơi lại toàn bộ các giai đoạn cũ mỗi lần; nếu nghi một giai đoạn cũ bị ảnh hưởng thì chỉ kiểm tra riêng phần đó.
-- **QA nhanh — không chờ thời gian thật trôi:**
-  - Dựng thẳng trạng thái cần xem bằng công cụ dev trong console: `game.useGame.setState({ minutes: 20 * 60, money: 50_000_000, level: 30, staff: [...] })` (giờ, tiền, cấp, nhân viên, kệ...) thay vì chơi/chờ tới đó. `game.autoplay(n)` / `game.playtest` khi cần vài ngày dữ liệu.
-  - Thế giới TỰ DỪNG khi HUD có câu hỏi/khách hỏi ở quầy (ghi sổ, mặc cả — GĐ102) hoặc panel tổng kết đang mở: đây là thiết kế, không phải lỗi. Đồng hồ đứng thì việc đầu tiên là nhìn HUD và **bấm trả lời/đóng như người chơi thật** (chọn phương án, bấm ✕) — vừa gỡ dừng vừa QA luôn chính các câu hỏi đó: nút dễ bấm không, chữ rõ không, bấm xong có phản hồi không. Không chạy thêm thời gian hay soi nguyên nhân. Chỉ khi bấm không được (nút bị che, tab nền) mới gỡ bằng lệnh `game.useGame.setState({ panel: null })` — và ghi lại đó là lỗi UI cần xem.
-  - Đọc kết quả bằng chữ (đọc trang/DOM, `game.useGame.getState()`), chỉ chụp ảnh khi cần xem hình ảnh/bố cục.
-  - Logic và số liệu đã có test tự động lo — QA trình duyệt chỉ xem phần người chơi THẤY và CẢM (hiển thị, thao tác, độ rõ, độ vui), không mô phỏng lại nhiều ngày trên trình duyệt để kiểm số.
-  - Giới hạn ~10–15 phút QA mỗi giai đoạn thường. Kẹt vì môi trường (trang không tải, tab nền dừng hoạt ảnh, popup lạ) quá ~5 phút thì ghi vào PROGRESS.md mục "Cần theo dõi" và làm tiếp, không vật lộn.
+
+#### QA co-op
+
+- **Khi nào làm:** giai đoạn có thao tác mới của người chơi, panel mới đọc dữ liệu chung, hoặc đụng tới `src/net/` / server. Giai đoạn thuần hình ảnh/3D hay chỉ đọc dữ liệu của riêng máy thì QA co-op chỉ chạy luồng cố định ngắn. QA toàn diện mỗi 10 GĐ luôn gồm một vòng ngày ở hẻm online 2 tab.
+- **Cách mở hẻm (không cần đăng nhập Google):** tab 1 `http://localhost:5173/?dev=a`, tab 2 `http://localhost:5173/?dev=b` (server 3002 đang chạy sẵn với `DEV_AUTH_BYPASS` — log có dòng "DEV_AUTH_BYPASS đang bật"; không tự bật server). Tab a tạo hẻm, lấy mã mời; tab b nhập mã vào cùng hẻm. Người vào trước (tab a) là máy chạy, tab b là máy khách; giữ tab a đang hiển thị (ẩn tab máy chạy thì quyền chạy chuyển sang tab kia). Xem vai hiện tại trong console: `(await import('/src/net/session.ts')).useSession.getState().coop`.
+- **Kiểm gì:** bấm thử tính năng mới ở tab máy khách — kết quả, lời nhắn, số liệu phải như chơi đơn; tab máy chạy thấy thay đổi; câu hỏi ở quầy/HUD hiện ở cả hai tab; đổi vai (ẩn tab máy chạy) không mất thao tác hay số liệu.
+- **Môi trường:** code đổi (kể cả phiên khác đang sửa) thì Vite tải lại trang và tab rời hẻm — vào lại hẻm, không tính là lỗi. Không vào được hẻm (server tắt / không có bypass) thì ghi "Cần theo dõi" và làm tiếp.
+
+#### QA nhanh (cả 2 QA)
+
+- Dựng thẳng trạng thái cần xem bằng công cụ dev trong console: `game.useGame.setState({ minutes: 20 * 60, money: 50_000_000, level: 30, staff: [...] })` (giờ, tiền, cấp, nhân viên, kệ...) thay vì chơi/chờ tới đó. `game.autoplay(n)` / `game.playtest` khi cần vài ngày dữ liệu. Ở hẻm online chỉ dựng trạng thái trên tab máy chạy.
+- Thế giới TỰ DỪNG khi HUD có câu hỏi/khách hỏi ở quầy (ghi sổ, mặc cả — GĐ102) hoặc panel tổng kết đang mở: đây là thiết kế, không phải lỗi. Đồng hồ đứng thì việc đầu tiên là nhìn HUD và **bấm trả lời/đóng như người chơi thật** (chọn phương án, bấm ✕) — vừa gỡ dừng vừa QA luôn chính các câu hỏi đó: nút dễ bấm không, chữ rõ không, bấm xong có phản hồi không. Không chạy thêm thời gian hay soi nguyên nhân. Chỉ khi bấm không được (nút bị che, tab nền) mới gỡ bằng lệnh `game.useGame.setState({ panel: null })` — và ghi lại đó là lỗi UI cần xem.
+- Đọc kết quả bằng chữ (đọc trang/DOM, `game.useGame.getState()`), chỉ chụp ảnh khi cần xem hình ảnh/bố cục.
+- Logic và số liệu đã có test tự động lo — QA trình duyệt chỉ xem phần người chơi THẤY và CẢM (hiển thị, thao tác, độ rõ, độ vui), không mô phỏng lại nhiều ngày trên trình duyệt để kiểm số.
+- Giới hạn ~10–15 phút QA mỗi giai đoạn thường. Kẹt vì môi trường (trang không tải, tab nền dừng hoạt ảnh, popup lạ) quá ~5 phút thì ghi vào PROGRESS.md mục "Cần theo dõi" và làm tiếp, không vật lộn.
 
 ## Quy trình mỗi giai đoạn
 
 1. Leader đọc PROGRESS.md, đánh giá hiện trạng game và chọn việc quan trọng nhất tiếp theo từ backlog.
-2. Leader cùng Game Designer và UI/UX Designer (và 3D Artist nếu giai đoạn cần tài sản 3D) lên kế hoạch: làm gì, vì sao, tiêu chí hoàn thành là gì (bao gồm cả tiêu chí UI/UX và ngân sách tài sản 3D).
-3. Developer triển khai; 3D Artist tạo tài sản bằng Blender trước hoặc song song trên các file tách biệt, rồi Developer tích hợp.
-4. Tester kiểm thử, bao gồm cả kiểm tra hồi quy.
-5. QA chơi thử và đánh giá trải nghiệm.
-6. Nếu có lỗi hoặc chưa đạt, quay lại bước 3 cho đến khi đạt.
+2. Leader cùng Game Designer, UI/UX Designer và Kỹ sư đồng bộ co-op (và 3D Artist nếu giai đoạn cần tài sản 3D) lên kế hoạch: làm gì, vì sao, tiêu chí hoàn thành là gì (bao gồm cả tiêu chí UI/UX, ngân sách tài sản 3D, và cách tính năng chạy ở hẻm online).
+3. Developer triển khai; 3D Artist tạo tài sản bằng Blender trước hoặc song song trên các file tách biệt, rồi Developer tích hợp. Kỹ sư đồng bộ co-op duyệt code theo 5 câu trước khi chuyển sang test.
+4. Hai Tester kiểm thử SONG SONG (chơi đơn + co-op), bao gồm cả kiểm tra hồi quy.
+5. Hai QA chơi thử SONG SONG (chơi đơn + hẻm online) và đánh giá trải nghiệm. Bước 4 và 5 có thể chồng lên nhau khi tính năng đã chạy được.
+6. Nếu có lỗi hoặc chưa đạt ở BẤT KỲ nhánh nào, quay lại bước 3 cho đến khi cả hai nhánh đều đạt.
 7. Leader duyệt, ghi tóm tắt NGẮN (≤ ~15 dòng) của giai đoạn vào PROGRESS.md mục "Trạng thái hiện tại"/giai đoạn gần đây, thêm 1 dòng vào "Mục lục giai đoạn", cập nhật backlog (KHÔNG viết tóm tắt ra chat), commit code với message rõ ràng.
 8. Quay lại bước 1 ngay lập tức, trong cùng lượt làm việc.
 
@@ -137,6 +182,7 @@ QA kiểm tra giao diện ở nhiều kích thước màn hình (dùng chế đ�
 
 - Làm đến đâu chắc đến đó: chỉ chuyển giai đoạn khi phần hiện tại đã chạy ổn định và qua test.
 - Không để tình trạng sửa chỗ này hỏng chỗ khác.
+- **Đủ 2 chế độ:** tính năng chỉ được tính là xong khi chạy được và ra kết quả giống nhau ở cả chơi đơn lẫn hẻm online. Ngoại lệ chỉ khi không thể làm khác (vd. thời gian đi lại = 0 ở hẻm vì đồng hồ chung), và Leader phải ghi lý do vào PROGRESS.md mục "Quyết định lớn". Tính năng cũ đang chỉ có ở một chế độ nằm trong backlog để làm cho đủ.
 - Ưu tiên chất lượng hơn số lượng: thà ít tính năng mà chỉn chu còn hơn nhiều mà tạm bợ.
 - Không làm hỏng dữ liệu lưu (save) của người chơi. Khi thay đổi cấu trúc dữ liệu, phải có cơ chế chuyển đổi để save cũ vẫn tải được, và Tester phải kiểm tra việc này.
 
