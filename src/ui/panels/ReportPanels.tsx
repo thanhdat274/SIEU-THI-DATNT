@@ -38,7 +38,7 @@ import { branchMorningPlan } from '../../data/branchMorning';
 import { storageUsed } from '../../core/gameTypes';
 import { hiepLucEligible, hiepLucPayoff, HIEPLUC_COC, HIEPLUC_MIN } from '../../data/hiepLuc';
 import { earlyUnlockTeaser } from '../../data/unlockMap';
-import { marketClearValue, isMarketDay } from '../../data/chophien';
+import { marketClearValue, isMarketDay, marketDayAction } from '../../data/chophien';
 import { alleySignalsToday } from '../../data/alleySignals';
 import { supplyChainOverview, supplyRestockManifest } from '../../data/supplyChain';
 import { signHiepLuc } from '../../core/biz';
@@ -634,15 +634,18 @@ export function MorningPanel() {
   // GĐ257: cuối tuần thành việc sáng — Thứ 7/CN khách thật sự hay mua ăn vặt (GĐ255) nên nhắc
   // châm kệ đúng nhóm ngay buổi sáng, cùng nhịp "trữ lễ" GĐ249. Ưu tiên thấp (3) để nhường việc bức thiết.
   if (isWeekend(day)) candidates.push({ icon: '🍬', text: `Cuối tuần (${weekdayOf(day)}): khách hay mua ăn vặt — nhớ châm kệ mì, bánh kẹo, nước ngọt`, panel: 'order', danger: false, priority: 3 });
-  const actions = planDay(candidates);
-  // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
-  const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });
   // GĐ135: mồi "🧺 Hôm nay chợ phiên" — bản đánh giá (preview, pure-read) hàng DƯ đáng gánh ra bán.
   // Chỉ hiện ngày chợ (mỗi tuần từ ngày 7), khi có món dư, và chưa bán hôm nay. Bán thật ở GĐ136.
   const chophien = marketClearedDay === day ? null : marketClearValue({
     day, storage, shelved,
     health: itemHealthList(analytics, level, storage, shelved, stateDemand),
   });
+  // GĐ290: chợ phiên thành việc sáng — đưa vào danh sách việc hôm nay khi có hàng dư
+  const marketAction = marketDayAction(chophien);
+  if (marketAction) candidates.push(marketAction);
+  const actions = planDay(candidates);
+  // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
+  const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });
   const courier = staff.some((w) => w.role === 'courier');
   const pct = (x: number) => `${x >= 1 ? '+' : ''}${Math.round((x - 1) * 100)}%`;
   const today = dateOfDoy(dayOfYear(day));

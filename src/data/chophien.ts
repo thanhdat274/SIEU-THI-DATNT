@@ -1,3 +1,4 @@
+import type { DayAction } from './dayPlan';
 import { WEEK_DAYS } from './biz';
 import { productById } from './products';
 import { needsCold } from './freshness';
@@ -109,5 +110,17 @@ export function marketClearValue(input: MarketClearInput): MarketClearValue | nu
     rows: final,
     total: final.reduce((n, r) => n + r.est, 0),
     units,
+  };
+}
+
+/** GĐ290: Biến phiên chợ đầu ngõ thành việc sáng trong 'Việc hôm nay' khi có hàng dư đáng gánh. */
+export function marketDayAction(val: MarketClearValue | null): DayAction | null {
+  if (!val || val.units <= 0) return null;
+  return {
+    icon: '🧺',
+    text: `Chợ phiên đầu ngõ hôm nay: gánh ${val.units} món dư thu ~${val.total.toLocaleString('vi-VN')}đ`,
+    panel: 'morning',
+    danger: false,
+    priority: 2,
   };
 }

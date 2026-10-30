@@ -98,3 +98,26 @@ describe('marketClearValue', () => {
     expect(Number.isFinite(v2.total)).toBe(true);
   });
 });
+
+import { marketDayAction } from '../data/chophien';
+
+describe('marketDayAction — chợ phiên thành việc sáng (GĐ290)', () => {
+  it('không có hàng dư hoặc null -> null', () => {
+    expect(marketDayAction(null)).toBeNull();
+    expect(marketDayAction({ day: 7, rows: [], total: 0, units: 0 })).toBeNull();
+  });
+
+  it('có hàng dư đáng gánh -> trả về DayAction với icon 🧺 và số món', () => {
+    const act = marketDayAction({
+      day: 7,
+      rows: [{ id: 'mi', name: 'Mì', qty: 5, est: 20000, reason: 'slow' }],
+      total: 20000,
+      units: 5,
+    });
+    expect(act).not.toBeNull();
+    expect(act!.icon).toBe('🧺');
+    expect(act!.text).toContain('5 món dư');
+    expect(act!.text).toContain('20.000đ');
+    expect(act!.panel).toBe('morning');
+  });
+});
