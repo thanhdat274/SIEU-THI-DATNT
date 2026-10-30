@@ -68,3 +68,8 @@ GĐ262–265: thẻ tuần biết thứ · khoá nhất quán tuần×thứ (tes
 - **GĐ279 note biết ai giữ cửa** 🧾: thu ngân autoOpen ca sáng mở 6h → "Thu ngân tự mở cửa sáng sớm"; ca chiều/không cờ → theo lịch chủ. 2 test; QA @5173 đúng.
 
 - **GĐ280 đóng GĐ110/117 bằng số liệu** 📊: đo 28 ngày cấp 50 — 3 nhiệm vụ xương sống bot đạt 24–26/28 (ngưỡng test ≥22); 8 nhiệm vụ còn lại bot = 0 vì bot KHÔNG làm hành động đó (giới hạn bot, không phải cân bằng) → CHỐT giữ nguyên mục tiêu. Test khoá tín hiệu; 2248 test xanh.
+
+---
+# Phụ lục 5: GĐ283 (dồn 30/10/2026)
+
+- **GĐ283 arc E "Hàng xóm khai trương"** 🎊: def `cam_do_mo` (unlock 10) chuyển thành arc thứ 5 — 2 ngày, 4 cảnh 3 nhánh (chúc mừng/khuyến mãi/lỡ → trả lễ chia mặt hàng / chiến giá cùng lỗ / khách quen vẫn ghé), thưởng reward đúng ArcReward (perGood bắt buộc); bài học hẻm: hẻm đủ chỗ cho cả hai, cắn nhau chỉ mất cả hai. Test cập nhật: 5 arc (ids/unlocks/days), cam_do_mo vào danh sách def đã xoá, pool ≥30; 2249 test xanh; QA mắt @5173 đi trọn 2 cảnh (chọn chúc mừng → bắt tay chia hàng → done), 0 lỗi console.
