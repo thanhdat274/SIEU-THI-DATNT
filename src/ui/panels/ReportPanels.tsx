@@ -39,6 +39,7 @@ import { storageUsed } from '../../core/gameTypes';
 import { hiepLucEligible, hiepLucPayoff, HIEPLUC_COC, HIEPLUC_MIN } from '../../data/hiepLuc';
 import { earlyUnlockTeaser } from '../../data/unlockMap';
 import { marketClearValue, isMarketDay, marketDayAction } from '../../data/chophien';
+import { fairMerchantAction } from '../../data/fairmerchant';
 import { alleySignalsToday } from '../../data/alleySignals';
 import { supplyChainOverview, supplyRestockManifest } from '../../data/supplyChain';
 import { signHiepLuc } from '../../core/biz';

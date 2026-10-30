@@ -4,7 +4,7 @@ import { newGameData } from '../core/store';
 import { acceptFairOffer } from '../core/biz';
 import {
   FAIR_DAYS, FAIR_DISCOUNT, FAIR_QTY_MIN, FAIR_QTY_MAX, FAIR_ITEMS,
-  isFairOpen, makeFairOffer,
+  isFairOpen, makeFairOffer, fairMerchantAction,
 } from '../data/fairmerchant';
 import { unlockedProducts, productById } from '../data/products';
 import { COOKED_PRODUCT_IDS } from '../data/recipes';
@@ -117,6 +117,37 @@ describe('GĐ68 — Chợ phiên nhà cung cấp đặc biệt (fairmerchant)', 
       const s = useGame.getState();
       expect(s.money).toBe(before.money);
       expect(s.biz.fairTaken).toBeUndefined();
+    });
+  });
+
+  describe('fairMerchantAction — việc hôm nay nhắc phiên chợ đầu tháng (GĐ293)', () => {
+    it('ngày 1 hoặc ngày 2 chưa lấy lô tháng này → sinh việc sáng ưu tiên 3 trỏ đến order', () => {
+      const act1 = fairMerchantAction(1, undefined);
+      expect(act1).toEqual({
+        icon: '🛒',
+        text: 'Thương lái ghé đầu ngõ (ngày 1–2): xem lô hàng sỉ chiết khấu trong Nhập hàng',
+        panel: 'order',
+        danger: false,
+        priority: 3,
+      });
+
+      const act2 = fairMerchantAction(2, 0);
+      expect(act2).not.toBeNull();
+      expect(act2?.panel).toBe('order');
+    });
+
+    it('ngày ngoài phiên chợ (ngày 3 trở đi) → null', () => {
+      expect(fairMerchantAction(3, undefined)).toBeNull();
+      expect(fairMerchantAction(15, undefined)).toBeNull();
+    });
+
+    it('đã lấy lô phiên chợ tháng này (fairTaken === monthOf(day)) → null, không nhắc thừa', () => {
+      // ngày 1 tháng 1 (month 1), đã lấy tháng 1
+      expect(fairMerchantAction(1, 1)).toBeNull();
+      // ngày 32 (mùng 1 tháng 2), mới chỉ lấy tháng 1 → vẫn hiện
+      expect(fairMerchantAction(32, 1)).not.toBeNull();
+      // ngày 32 lấy tháng 2 rồi → null
+      expect(fairMerchantAction(32, 2)).toBeNull();
     });
   });
 });

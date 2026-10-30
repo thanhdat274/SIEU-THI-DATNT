@@ -1,3 +1,4 @@
+import type { DayAction } from './dayPlan';
 import { dateOfDoy, dayOfYear, monthOf } from './calendar';
 import { productById, unlockedProducts } from './products';
 import { COOKED_PRODUCT_IDS } from './recipes';
@@ -66,4 +67,18 @@ export function makeFairOffer(level: number, day: number): FairOffer | undefined
   const totalBuy = lines.reduce((n, l) => n + productById(l.id).buy * l.qty, 0);
   const dealPrice = Math.floor((totalBuy * FAIR_DISCOUNT) / 1000) * 1000; // làm tròn xuống nghìn
   return { month, lines, totalBuy, dealPrice };
+}
+
+/** GĐ293: Nhắc việc sáng khi có phiên chợ thương lái đầu tháng và người chơi chưa lấy lô tháng này. */
+export function fairMerchantAction(day: number, fairTaken?: number): DayAction | null {
+  if (!isFairOpen(day)) return null;
+  const m = monthOf(day);
+  if (fairTaken === m) return null;
+  return {
+    icon: '🛒',
+    text: 'Thương lái ghé đầu ngõ (ngày 1–2): xem lô hàng sỉ chiết khấu trong Nhập hàng',
+    panel: 'order',
+    danger: false,
+    priority: 3,
+  };
 }

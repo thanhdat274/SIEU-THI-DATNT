@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
-- **GĐ292:** 42 test coopClient pass (1 test mới sellMarketSurplus) · build sạch · http://localhost:5173/ 200 OK. Đồng bộ bán chợ phiên ở hẻm online: `sellMarketSurplus` thực thi nhất quán qua máy chạy (runner), cập nhật kho/tiền chung và trả về kết quả `{ ok: boolean }` chính xác cho người bấm, chặn người thứ hai trong cùng phiên ngày. Nhánh: `phat-trien-game-tu-do`.
+- **GĐ293:** 23 test fairmerchant pass (3 test mới fairMerchantAction) · build sạch · http://localhost:5173/ 200 OK. Thương lái ghé đầu tháng thành việc sáng: `fairMerchantAction` tích hợp vào Sổ đầu ngày ('Việc hôm nay' ưu tiên 3) vào ngày 1–2 mỗi tháng khi chưa lấy lô, dẫn thẳng tới Nhập hàng để xem sỉ chiết khấu. Nhánh: `phat-trien-game-tu-do`.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
 - Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
 
@@ -31,7 +31,7 @@
 
 
 
-- **GĐ286 co-op không dừng/phạt cả hẻm** 🛏️: ở hẻm (`inAlley()`) hội thoại cốt truyện vẫn hiện nhưng không dừng giờ (`main.tsx`); tới `FAINT_AT` mà đã có người nằm giường chờ phiếu thì `faintGuard.spare` (gameTypes, gắn ở `coop.ts`) cho sang ngày không trừ 10% tiền. Test mới trong `coopClient.test.ts`. Chưa QA 2 tab (không có trình duyệt/server sống trong phiên này).
+- **GĐ293 thương lái đầu tháng thành việc sáng** 🛒: đưa `fairMerchantAction(day, biz.fairTaken)` vào danh sách Việc hôm nay (Sổ đầu ngày) tương tự chợ phiên GĐ290. Ngày 1–2 đầu tháng khi thương lái ghé và tiệm chưa lấy lô tháng này, việc sáng hiển thị nhắc người chơi xem lô sỉ chiết khấu trong Nhập hàng (panel 'order', ưu tiên 3). Lấy lô xong tự ẩn việc nhắc. Test trong `src/__tests__/fairmerchant.test.ts`.
 - **GĐ287 sân chơi dùng chung ở co-op** 🏗️: `contributeLandmark` được xác nhận là action chung qua máy chạy; lượt góp/ngày và tiền vật liệu là state của cả hẻm, giữ đúng luật 1 lượt/ngày như chơi đơn (không thêm quota riêng mỗi thành viên để tránh lệch kinh tế). Test client/server khóa tiến độ + tiền + chặn người thứ hai cùng ngày; sửa mô tả phân loại trong `coopGuard.test.ts`. QA live bảng hiện 0→1/28, trừ 8.000đ; thao tác client→runner đã có test tự động, chưa kiểm tra trực tiếp hai vai cùng lúc.
 - **GĐ288 co-op parity: khoá chính sách tái sinh NG+ & chào mừng quay lại** 👥: (a) Tái sinh NG+ (doPrestige) giữ nguyên thiết kế an toàn chỉ chạy ở chơi đơn — tránh reset làm mất tiệm chung của cả hẻm; (b) Chào mừng quay lại (checkWelcomeBack) duy trì cơ chế nạp thưởng cục bộ theo máy khi đăng nhập chơi đơn, không can thiệp hẻm online; (c) Danh hiệu chung (checkTitles) do máy chạy soát và đồng bộ sau khi sang ngày. Bổ sung 2 unit test trong coopClient.test.ts.
 - **GĐ291 lô chợ phiên nhận biết ăn vặt cuối tuần** 🍬: kết nối phiên chợ thương lái (GĐ68/GĐ221) với nhịp cuối tuần (GĐ254/255). Helper `fairLotValue` nhận thêm tham số `day`, phát hiện các món thuộc `WEEKEND_SNACKS` và xác định `isWeekendFair`. OrderPanel hiển thị gợi ý đặc biệt màu vàng khi lô chứa món ăn vặt cuối tuần, giúp người chơi tận dụng chiết khấu để chuẩn bị cho nhu cầu tăng cao. Test trong `src/__tests__/fairLotValue.test.ts`.
@@ -339,3 +339,4 @@
 - GĐ290 — 🧺 Chợ phiên đầu ngõ thành việc sáng trong Việc hôm nay (Sổ đầu ngày)
 - GĐ291 — 🍬 Lô chợ phiên đầu tháng nhận biết món ăn vặt cuối tuần & gợi ý trữ hàng
 - GĐ292 — 🧺 Đồng bộ bán chợ phiên ở co-op (sellMarketSurplus qua runner, chặn trùng phiên)
+- GĐ293 — 🛒 Thương lái đầu tháng thành việc sáng trong Việc hôm nay (fairMerchantAction)
