@@ -32,9 +32,9 @@
 - **GĐ254–257 nhịp CUỐI TUẦN** 📅 khép trọn 4 mạch: weekdayOf/isWeekend (ngày 1 = Thứ 2) + quest "🍬 Cuối tuần ăn vặt" (chỉ pool Thứ 7/CN, cuối pool — ngày thường xoay GIỮ NGUYÊN) → khách thèm ăn vặt (chooseWants ×0.2, list chung WEEKEND_SNACKS) → lịch tô sáng cuối tuần → việc sáng + "Mai tiệm có gì" nhắc. Chi tiết: archive. Cảm hứng Hay Day/Stardew; không đổi lượng khách, chỉ đổi nhiệm vụ + NMU trong ngày.
 - **GĐ258–261** 🎨🖼️ — gọn 6 họ màu cũ về bảng GĐ166 · coverage sweep (credit/services/professions, xoá 6 id chết `likes` nghề) · QA TOÀN DIỆN (34 panel × 3 cỡ màn 0 lỗi/0 tràn, autoplay 2 ngày sạch) · quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390, tương phản ô cuối tuần, 2 dropdown Sổ tay Tiệm cắt chữ @390. Chi tiết: archive PROGRESS-GD250-257.md (phụ lục 258–261).
 
-- **GĐ266–271** 🍬🎲📞 — nhập hàng biết cuối tuần (×1.25 + badge) · đơn `weekendOnly` (hoc_nhom chốt Thứ 7/CN) · sửa 2 bug roll tương quan (8 đơn = 0 lượt; sự kiện lệch 2.7×) · phản hồi cuối tuần trong tổng kết · lý do gọi khớp thời tiết · QA TOÀN DIỆN GĐ270. Chi tiết: archive (phụ lục 2–3).
+- **GĐ266–271** 🍬🎲📞 — nhập hàng biết cuối tuần (×1.25 + badge) · đơn `weekendOnly` · sửa 2 bug roll tương quan · phản hồi cuối tuần trong tổng kết · lý do gọi khớp thời tiết · QA TOÀN DIỆN GĐ270. Chi tiết: archive (phụ lục 2–3).
 
-- **GĐ272–280** 🖼️📞📊 — quét thẩm mỹ nốt đăng nhập + menu Thêm (0 lỗi, chốt chuỗi rà soát) · lý do gọi khớp thời tiết · QA mắt thẻ CÓ dữ liệu GĐ155–159 (đóng watch-item cũ nhất) · dự báo "tuần mai khách săn" (Nhập hàng tối CN + teaser) · lịch tự động chỉnh giờ mở cửa 6h–8h (autoOpenAt + note biết ai giữ cửa) · đóng GĐ110/117 bằng số liệu (xương sống 24–26/28, quest hành động bot không làm). Chi tiết: archive (phụ lục 2–4).
+- **GĐ272–280** 🖼️📞📊 — quét nốt đăng nhập + menu Thêm · lý do gọi khớp thời tiết · QA mắt thẻ GĐ155–159 · dự báo tuần mai · lịch tự động chỉnh giờ mở (GĐ275/276/279) · đóng GĐ110/117 bằng số liệu. Chi tiết: archive (phụ lục 2–4).
 
 - **GĐ281 độ phủ khách quen** 👥: probe 28 khách quen × 20 seed × 120 ngày — tất cả đều ghé được (834–839/2400, hash nhiễu tự nhiên 1.6×), không ai "tàng hình"; lock test ngưỡng 2× (bắt loại lỗi hệ thống GĐ267). Kết thúc chuỗi audit độ phủ: đơn (GĐ267) · sự kiện/thị trường (GĐ269) · khách quen (GĐ281). 2249 test xanh; boot @5173 sạch.
 
