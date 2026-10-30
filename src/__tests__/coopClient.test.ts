@@ -484,3 +484,28 @@ describe('chỉnh nhiều giá một lúc (setPrices) không đè giá người 
     expect(store.useGame.getState().setPrices({ mi: { from: 5000, to: 5500 }, keo: { from: 1, to: 2 } })).toBe(1);
   });
 });
+
+describe('chính sách vận hành co-op parity: tái sinh & chào mừng quay lại', () => {
+  it('tái sinh NG+ (doPrestige) bị chặn có chủ đích khi đang ở hẻm online', async () => {
+    await join('runner');
+    const s0 = store.useGame.getState();
+    store.useGame.setState({
+      level: 60,
+      totals: { ...s0.totals, revenue: 500_000_000 },
+      message: null,
+    });
+    const beforeLevel = store.useGame.getState().level;
+    const beforePrestige = store.useGame.getState().biz.prestige;
+    store.useGame.getState().doPrestige();
+    expect(store.useGame.getState().level).toBe(beforeLevel);
+    expect(store.useGame.getState().biz.prestige).toEqual(beforePrestige);
+    expect(store.useGame.getState().message).toMatch(/Tái sinh chỉ dùng ở chế độ chơi đơn/);
+  });
+
+  it('danh hiệu chung (checkTitles) sau sang ngày được máy chạy soát và cập nhật danh sách', async () => {
+    await join('runner');
+    store.useGame.setState({ titles: [] });
+    store.useGame.getState().checkTitles();
+    expect(store.useGame.getState().titles).toContain('tap_su');
+  });
+});
