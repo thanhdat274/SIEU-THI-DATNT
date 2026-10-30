@@ -265,10 +265,10 @@ describe('GĐ169.B — XP chuỗi chảy qua bizEndOfDay (claim 1 lần/tuần, 
   });
 });
 
-// ── GĐ169 simSmoke: harness thật (GĐ105) cấp 30/50 — Regression: harness chạy được, tiền/XP hữu hạn.
+// ── GĐ169 simSmoke: harness thật cấp 30 — cấp 50 đã được gộp vào sim GĐ280 trong economySim.test.ts.
 // Số đối chiếu trước/sau in ra stdout; ngưỡng mềm (không assert cứng tỉ số — tiền lệ economySim GĐ105).
-describe('GĐ169 — simSmoke harness kinh tế cấp 30/50 (seed cố định)', () => {
-  const smoke = async (level: 30 | 50) => {
+describe('GĐ169 — simSmoke harness kinh tế cấp 30 (seed cố định)', () => {
+  const smoke = async (level: 30) => {
     const { runEconomySim } = await import('../dev/simEconomy');
     setSimSeed(169);
     try {
@@ -292,5 +292,4 @@ describe('GĐ169 — simSmoke harness kinh tế cấp 30/50 (seed cố định)'
   };
 
   it('cấp 30 — 28 ngày qua autoplay thật: tiền/XP hữu hạn, không thụt cấp', { timeout: 1_800_000 }, () => smoke(30));
-  it('cấp 50 — 28 ngày qua autoplay thật: tiền/XP hữu hạn, không thụt cấp', { timeout: 1_800_000 }, () => smoke(50));
 });

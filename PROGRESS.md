@@ -19,9 +19,9 @@
 
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
-## Trạng thái hiện tại (29/10/2026)
+## Trạng thái hiện tại (30/10/2026)
 
-- **2249/2249 test pass (220 files; +1 FAIL = coopClient.test.ts — WIP phiên song song, ngoài phạm vi) + coverage 87.40/76.17** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ286. QA TOÀN DIỆN GĐ270: 34 panel + 0 tràn @320/390/768.
+- **GĐ287:** 67 test mục tiêu xanh (coopClient/coopGuard/landmark) · build sạch. Full `npm run test` vượt 11 phút do simSmoke cũ rồi dừng trước summary; profile sơ bộ: `weeklyGoalCap.test.ts` 320 giây, cộng ba sim dài trong `economySim.test.ts`. Thử tăng khoảng nhả event loop không giảm đáng kể thời gian và làm số liệu sim dao động, đã hoàn nguyên; chưa coi full suite là xanh. QA live: tạo hẻm thử D45CFD, bảng Sân chơi mở được và góp từ UI cập nhật 0→1/28, trừ 8.000đ. Chưa xác minh thao tác client→runner trực tiếp do đổi tab tự chuyển vai; đã khóa luồng đó bằng test coopClient. Nhánh: `phat-trien-game-tu-do`.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
 - Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
 
@@ -37,6 +37,7 @@
 - **GĐ272–280** 🖼️📞📊 — quét nốt đăng nhập + menu Thêm · lý do gọi khớp thời tiết · QA mắt thẻ GĐ155–159 · dự báo tuần mai · lịch tự động chỉnh giờ mở (GĐ275/276/279) · đóng GĐ110/117 bằng số liệu. Chi tiết: archive (phụ lục 2–4).
 
 - **GĐ286 co-op không dừng/phạt cả hẻm** 🛏️: ở hẻm (`inAlley()`) hội thoại cốt truyện vẫn hiện nhưng không dừng giờ (`main.tsx`); tới `FAINT_AT` mà đã có người nằm giường chờ phiếu thì `faintGuard.spare` (gameTypes, gắn ở `coop.ts`) cho sang ngày không trừ 10% tiền. Test mới trong `coopClient.test.ts`. Chưa QA 2 tab (không có trình duyệt/server sống trong phiên này).
+- **GĐ287 sân chơi dùng chung ở co-op** 🏗️: `contributeLandmark` được xác nhận là action chung qua máy chạy; lượt góp/ngày và tiền vật liệu là state của cả hẻm, giữ đúng luật 1 lượt/ngày như chơi đơn (không thêm quota riêng mỗi thành viên để tránh lệch kinh tế). Test client/server khóa tiến độ + tiền + chặn người thứ hai cùng ngày; sửa mô tả phân loại trong `coopGuard.test.ts`. QA live bảng hiện 0→1/28, trừ 8.000đ; thao tác client→runner đã có test tự động, chưa kiểm tra trực tiếp hai vai cùng lúc.
 - **GĐ281 độ phủ khách quen** 👥: probe 28 khách quen × 20 seed × 120 ngày — tất cả đều ghé được (834–839/2400, hash nhiễu tự nhiên 1.6×), không ai "tàng hình"; lock test ngưỡng 2× (bắt loại lỗi hệ thống GĐ267). Kết thúc chuỗi audit độ phủ: đơn (GĐ267) · sự kiện/thị trường (GĐ269) · khách quen (GĐ281). 2249 test xanh; boot @5173 sạch.
 
 - **GĐ282 QA mắt 4 arc A–D trọn vẹn** 📖: force từng arc qua dev state và đi hết mọi cảnh/lựa chọn — Mưa rào (needStock chặn nút thiếu kho — hoạt động thật), Cái kính, Hẻm ngập (3 cảnh, chuyện NỐI mạch), Clip hot (3 cảnh); cả 4 done + ghi choices đúng; 0 lỗi console. **Kết hợp test cấu trúc + pick đều + told-exclusion → gate arc E MỞ** (save 100 ngày chỉ thấy ~1–2 arc — chờ save thật không thực tế, QA dựng trạng thái là bằng chứng mạnh nhất).
@@ -73,6 +74,7 @@
 
 - QA mắt 3D/panel chập tối (IAB nền dừng rAF): GĐ177–194 đã QA @5173 lúc làm; đối chiếu lại thì xem archive.
 - ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap`: bot bày lại tầng kệ đầy → bỏ qua tầng đầy + timeout 1.8tr ms. Nếu cả bộ lại > ~10 phút: profile trước khi làm tiếp.
+- Regression toàn bộ vượt 11 phút; `weeklyGoalCap.test.ts` đo 320 giây (hai simSmoke 28 ngày), còn `economySim.test.ts` có 3 lượt sim dài. Cần profile bằng reporter JSON để tách chính xác thời gian/worker và tối ưu harness mà không đổi nhịp mô phỏng.
 - GĐ171: scale mục tiêu vòng NG+ — cần save thật vòng 2+ để xác nhận; nếu quá dễ → siết trần.
 - Co-op (30/10, đã xử lý 3 điểm để ngỏ): (a) đi ngủ ở hẻm là **bỏ phiếu** — cả hẻm cùng nằm giường mới sang ngày, nằm chờ thì bấm [N] để dậy rút phiếu, người chưa ngủ rời hẻm thì tự sang ngày; (b) bảng tổng kết **không dừng giờ ở hẻm**, máy khách cũng tự mở bảng tổng kết (qua `lastSummary`); (c) "Về giá gợi ý"/"Chỉnh tất cả giá" dùng `setPrices`: món người khác vừa đổi giá thì giữ giá của họ. Đã QA 2 tab (`?dev=a`/`?dev=b`) cho (a)(b). GĐ286 đã đóng nốt 2 điểm ngỏ (hội thoại cốt truyện không dừng giờ hẻm; ngất khuya có người ngủ thì không phạt).
 
@@ -81,7 +83,7 @@
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
 2. **Khoá chờ save người thật:** NG+ vòng (GĐ171) · nhiệm vụ ngày 1–5 (GĐ254 đã giảm lặp). (GĐ110/117 ĐÃ ĐÓNG GĐ280 bằng số liệu.) **Arc E ĐÃ MỞ (GĐ282): arc A–D QA mắt trọn vẹn + cấu trúc test xanh — làm arc E "Hàng xóm khai trương" là việc tiếp theo.**
 3. **Ý tưởng chờ Leader duyệt (chiều sâu, chưa làm):** (a) nhịp cuối tuần đậm hơn khi hệ đã ổn trên save thật (hàng đặc biệt ngày phiên chợ; không vội); (b) nhiệm vụ tuần/tháng biết đến thứ trong tuần (WeeklyPace hiện "còn X ngày tới Chủ nhật") — nhỏ, chỉ khi có việc khác đi kèm.
-4. 👥 **Đủ 2 chế độ — 3 tính năng đang CHỈ chơi đơn (luật mới 30/10, promt_game.md "Nguyên tắc chung"):** Kỹ sư đồng bộ co-op cùng Game Designer thiết kế bản hẻm online cho từng cái, làm lần lượt: (a) **Tái sinh NG+** (`prestige.ts:13` chặn ở hẻm) — cả hẻm cùng bỏ phiếu tái sinh? giữ bộ sưu tập chung? (b) **Sân chơi góp xây** (`contributeLandmark`, mỗi ngày 1 lượt) — mỗi thành viên góp một lượt/ngày vào công trình chung của hẻm? (c) **Thưởng "Chào mừng quay lại"** (`checkWelcomeBack`, theo `lastSeenAt` lưu trong máy) — đo vắng mặt theo lần hẻm có người online gần nhất? Ngoại lệ đã chốt, không cần làm: thời gian đi lại = 0 ở hẻm (đồng hồ chung, một người đi không được tua giờ cả hẻm).
+4. 👥 **Đủ 2 chế độ:** (a) **Tái sinh NG+** (`prestige.ts:13` chặn ở hẻm) — thiết kế bỏ phiếu cả hẻm, bộ sưu tập chung rồi hiện thực; (b) **Chào mừng quay lại** (`checkWelcomeBack`, theo `lastSeenAt` local) — đo vắng theo lần gần nhất có thành viên online. Sân chơi đã đóng GĐ287: tiến độ + lượt/ngày chung như chơi đơn; không tạo quota cá nhân làm đổi tốc độ kinh tế. Ngoại lệ đã chốt: thời gian đi lại = 0 ở hẻm vì đồng hồ chung.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)## Mục lục giai đoạn đã xong (chi tiết trong archive)
 
@@ -332,3 +334,4 @@
 - GĐ277 — 💾 Khoá autoOpenAt qua save (3 test) + lock chợ phiên luôn rơi Chủ nhật
 - GĐ278 — 👀 QA mắt thẻ CÓ dữ liệu GĐ155–159 (thú cưng/hụi/khủng hoảng/bỏ lỡ) — đóng watch-item
 - GĐ286 — Co-op: hội thoại cốt truyện không dừng giờ hẻm + ngất khuya khi có người ngủ
+- GĐ287 — 🏗️ Sân chơi dùng chung ở hẻm online (1 lượt/ngày theo state chung; chặn góp kép, test co-op)

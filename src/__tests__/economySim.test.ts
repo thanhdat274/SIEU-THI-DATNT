@@ -66,6 +66,7 @@ import { runEconomySim } from '../dev/simEconomy';
 import { questContext } from '../core/store';
 import { dailyQuests } from '../data/quests';
 import { emptyTiers } from '../core/stock';
+import { clearSimSeed, setSimSeed } from '../core/rand';
 
 describe('khảo sát kinh tế vòng ngày — simulator thật trên store', () => {
   // 3 mức cấp (5/10/20) × ~30 ngày. Autoplay chạy tick thật + customer thật headless.
@@ -174,15 +175,27 @@ it('GĐ280 — cấp 50: 3 nhiệm vụ xương sống bot đạt ≥25/28 (kho�
       return orig(id);
     },
   });
-  const { rows } = await runEconomySim(50, 28, { betTier: 1.0 });
-  expect(rows.length).toBe(28);
-  const doneCount: Record<string, number> = {};
-  for (const set of Object.values(doneByDay)) for (const id of set) doneCount[id] = (doneCount[id] || 0) + 1;
-  for (const id of ['daily_customers', 'daily_revenue', 'daily_smile']) {
-    // eslint-disable-next-line no-console
-    console.log(`[GĐ280] ${id}: bot đạt ${doneCount[id] || 0}/28 ngày ở cấp 50`);
-    // Đo thực tế dao động 24–26/28 (yield async ảnh hưởng nhẹ tới tick) — ngưỡng 22 (~80%) đủ
-    // bắt mục tiêu vô lý (sẽ tuột về ~10) mà không rung đỏ vì nhiễu môi trường.
-    expect(doneCount[id] || 0).toBeGreaterThanOrEqual(22);
+  setSimSeed(280);
+  try {
+    const { rows } = await runEconomySim(50, 28, { betTier: 1.0 });
+    const s = useGame.getState();
+    expect(rows.length).toBe(28);
+    expect(Number.isFinite(s.money)).toBe(true); // GĐ169 simSmoke cấp 50 dùng chung lượt mô phỏng này
+    expect(s.level).toBeGreaterThanOrEqual(50);
+    expect(Number.isFinite(s.stats.xp)).toBe(true);
+    expect(Number.isFinite(s.biz.lastWeek?.goal)).toBe(true);
+    expect(Number.isFinite(s.biz.lastWeek?.nextGoal)).toBe(true);
+    const doneCount: Record<string, number> = {};
+    for (const set of Object.values(doneByDay)) for (const id of set) doneCount[id] = (doneCount[id] || 0) + 1;
+    for (const id of ['daily_customers', 'daily_revenue', 'daily_smile']) {
+      // eslint-disable-next-line no-console
+      console.log(`[GĐ280] ${id}: bot đạt ${doneCount[id] || 0}/28 ngày ở cấp 50`);
+      // Đo thực tế dao động 24–26/28 (yield async ảnh hưởng nhẹ tới tick) — ngưỡng 22 (~80%) đủ
+      // bắt mục tiêu vô lý (sẽ tuột về ~10) mà không rung đỏ vì nhiễu môi trường.
+      expect(doneCount[id] || 0).toBeGreaterThanOrEqual(22);
+    }
+  } finally {
+    clearSimSeed();
+    useGame.setState({ claimQuest: orig });
   }
 });

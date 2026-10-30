@@ -187,6 +187,23 @@ describe('máy chạy: làm thao tác của người khác', () => {
     expect(ofType('result')[0]).toMatchObject({ ok: true });
   });
 
+  it('sân chơi: một thành viên góp thì cả hẻm thấy tiến độ; lượt góp chung vẫn chỉ một lần mỗi ngày', async () => {
+    await join('runner');
+    store.useGame.setState({ money: 1_000_000, message: null });
+    const before = store.useGame.getState().money;
+    recv({ type: 'act', from: 2, seq: 1, name: 'contributeLandmark', args: [] });
+    const afterFirst = store.useGame.getState();
+    expect(afterFirst.biz.landmark).toEqual({ contributions: 1, lastContributeDay: afterFirst.day });
+    expect(afterFirst.money).toBeLessThan(before);
+    expect(ofType('result').find((r) => r.to === 2)).toMatchObject({ ok: true });
+
+    const afterCost = afterFirst.money;
+    recv({ type: 'act', from: 3, seq: 2, name: 'contributeLandmark', args: [] });
+    expect(store.useGame.getState().biz.landmark.contributions).toBe(1);
+    expect(store.useGame.getState().money).toBe(afterCost);
+    expect(ofType('result').find((r) => r.to === 3)).toMatchObject({ ok: false, messages: [expect.stringContaining('Hôm nay đã góp')] });
+  });
+
   it('2 người sửa CÙNG một chỗ trong 3 giây: người sau bị chặn kèm tên người trước; cùng người thì được', async () => {
     await join('runner');
     recv({ type: 'act', from: 2, seq: 1, name: 'setPrice', args: ['mi', 9000] });

@@ -82,7 +82,7 @@ const LOCAL_ONLY: Record<string, string> = {
   placeBet: 'chốt kèo hôm nay — ghi questLog.bet của chính máy này (1 kèo/ngày), không đụng trạng thái chung',
   claimGift: 'điểm danh quà ngày — cờ toàn cục, nhận một lần mỗi ngày',
   spinWheel: 'quay vòng quay ngày — cờ toàn cục, một lượt mỗi ngày',
-  contributeLandmark: 'sân chơi (GĐ40) — mục tiêu chơi đơn một mình, mỗi ngày góp 1 lượt có ghi ngày góp, không dùng ở hẻm online, chạy cục bộ',
+  contributeLandmark: 'sân chơi — lượt góp và tiền là trạng thái chung; cả hẻm góp tối đa 1 lượt/ngày như chơi đơn, máy chạy kiểm tra và cập nhật nguồn chân lý',
   checkWelcomeBack: 'thưởng "Chào mừng quay lại" khi nạp bản lưu chơi đơn — theo lastSeenAt lưu trong máy, không dùng ở hẻm online, chạy cục bộ',
   dismissUnlockAct: 'đóng banner "Mới mở" — thêm một id vào danh sách chung, làm lại nhiều lần không đổi gì nên không cần khoá chỗ',
   learnSkill: 'học một kỹ năng theo id (thêm vào danh sách, không đè)',
