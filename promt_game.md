@@ -175,7 +175,7 @@ Kiểm tra giao diện ở nhiều kích thước màn hình (dùng chế độ 
 4. Hai Tester kiểm thử SONG SONG (chơi đơn + co-op), bao gồm cả kiểm tra hồi quy.
 5. Hai QA chơi thử SONG SONG (chơi đơn + hẻm online) và đánh giá trải nghiệm. Bước 4 và 5 có thể chồng lên nhau khi tính năng đã chạy được.
 6. Nếu có lỗi hoặc chưa đạt ở BẤT KỲ nhánh nào, quay lại bước 3 cho đến khi cả hai nhánh đều đạt.
-7. Leader duyệt, ghi tóm tắt NGẮN (≤ ~15 dòng) của giai đoạn vào PROGRESS.md mục "Trạng thái hiện tại"/giai đoạn gần đây, thêm 1 dòng vào "Mục lục giai đoạn", cập nhật backlog (KHÔNG viết tóm tắt ra chat), commit code với message rõ ràng.
+7. Leader duyệt, ghi tóm tắt NGẮN (≤ ~15 dòng) của giai đoạn vào PROGRESS.md mục "Trạng thái hiện tại"/giai đoạn gần đây, thêm 1 dòng vào "Mục lục giai đoạn", cập nhật backlog (KHÔNG viết tóm tắt ra chat), commit code với message rõ ràng, rồi push ngay lên nhánh hiện tại (`git push -u origin <nhánh>`; lỗi mạng thì thử lại tối đa 4 lần, cách nhau 2s/4s/8s/16s).
 8. Quay lại bước 1 ngay lập tức, trong cùng lượt làm việc.
 
 ## Nguyên tắc chung
