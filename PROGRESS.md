@@ -73,6 +73,7 @@
 
 ## Cần theo dõi / nợ mở
 
+- ⏱️ (GĐ296) `npm run test` đo được **733s (12.2 phút)** ở lần chạy GĐ296, trong khi 2 lần liền trước cùng bộ test là **355s** và **405s** — nghi do tranh CPU (máy chạy song song việc khác), KHÔNG phải test mới chậm (12 test mới chạy 19–28ms). Chưa tối ưu gì. Nếu lần chạy sau vẫn >10 phút trên máy rảnh thì đo file chậm nhất (`npx vitest run --reporter=json`) rồi tối ưu — nghi phạm cũ vẫn là cụm sim cấp 50 (GĐ280 ~242s/file, đã gom vòng ở GĐ287).
 - QA mắt 3D/panel chập tối (IAB nền dừng rAF): GĐ177–194 đã QA @5173 lúc làm; đối chiếu lại thì xem archive.
 - ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap`: bot bày lại tầng kệ đầy → bỏ qua tầng đầy + timeout 1.8tr ms. Nếu cả bộ lại > ~10 phút: profile trước khi làm tiếp.
 - ✅ ĐÃ ĐÓNG (GĐ287): Tối ưu regression suite toàn bộ — gom vòng sim lặp cấp 50 giữa `weeklyGoalCap` và `economySim`; thời gian chạy `weeklyGoalCap.test.ts` giảm từ 320s xuống ~53s. Tổng thời gian test giảm từ 11+ phút xuống ~6.6 phút an toàn trong giới hạn 10 phút.
