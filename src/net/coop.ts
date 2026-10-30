@@ -1,3 +1,4 @@
+import { faintGuard } from '../core/gameTypes';
 import * as THREE from 'three';
 import { applySnapshot, snapshot } from '../core/save';
 import { newGameData, useGame, type GameState } from '../core/store';
@@ -232,6 +233,12 @@ function installSleepVote() {
   };
   vote.vote = true;
   useGame.setState({ sleep: vote });
+  // Thức khuya tới giờ ngất: có người đã nằm giường thì sang ngày, không phạt tiền cả hẻm
+  faintGuard.spare = () => {
+    if (!sleepers.size || useGame.getState().day !== sleepDay) return false;
+    sleepers.clear();
+    return true;
+  };
 }
 
 /** Máy chạy: đủ phiếu (mọi người còn trong hẻm đã nằm giường) thì sang ngày. */

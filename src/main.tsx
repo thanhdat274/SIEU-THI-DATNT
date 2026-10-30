@@ -606,8 +606,8 @@ function renderFrame() {
     // Bảng tổng kết hoặc hội thoại cốt truyện đang mở thì dừng thời gian; có câu hỏi ở quầy
     // cũng dừng — khách đứng chờ chủ quyết định, không đếm ngược vội (GĐ102: ở 8× cửa sổ 15 phút
     // game chỉ còn ~1 giây thực, người chơi không kịp đọc là cơ hội rơi hết vào chọn hộ).
-    // Ở hẻm bảng tổng kết không dừng giờ: một người đọc tổng kết không bắt cả hẻm đứng chờ
-    const speed = (state.panel?.type === 'summary' && !inAlley()) || state.biz.chapterPending || askPending() ? 0 : state.speed;
+    // Ở hẻm bảng tổng kết và hội thoại cốt truyện không dừng giờ: một người đọc tổng kết không bắt cả hẻm đứng chờ
+    const speed = (state.panel?.type === 'summary' && !inAlley()) || (state.biz.chapterPending && !inAlley()) || askPending() ? 0 : state.speed;
     const guest = isGuest();
     // Người vào phòng không tự chạy mô phỏng: giờ, khách, nhân viên đều do chủ phòng gửi sang
     if (speed && !guest) state.tick(dt);

@@ -5,7 +5,7 @@ import { DIRT_MAX } from '../../data/staff';
 import { RECIPE_MAP } from '../../data/recipes';
 import { playSfx } from '../audio';
 import { STOCK_WARN_AT, nightNeed, shelfTotal } from '../../data/branches';
-import { type GameState, type SetState, type GetState, SLEEP_FROM, FAINT_AT, MINUTES_PER_SECOND } from '../gameTypes';
+import { type GameState, type SetState, type GetState, SLEEP_FROM, FAINT_AT, faintGuard, MINUTES_PER_SECOND } from '../gameTypes';
 import { copyStock, putStock } from '../stock';
 import { useClock } from '../store';
 import { runBranch } from './branch';
@@ -30,6 +30,11 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     const minutes = s.minutes + dt * MINUTES_PER_SECOND * s.speed;
     // Ăn sáng no bụng thì thức khuya được thêm một chút mới ngất
     if (minutes >= FAINT_AT + (s.biz.breakfastDay === s.day ? BREAKFAST.lateMinutes : 0)) {
+      if (faintGuard.spare()) {
+        endDay(set, get, {});
+        s.notify('💤 Đã khuya, cả hẻm sang ngày mới.');
+        return;
+      }
       const lost = Math.floor(s.money * 0.1);
       endDay(set, get, { money: s.money - lost });
       s.notify(`😵 Bạn thức quá khuya và ngất đi... Mất ${formatMoney(lost)} tiền thuốc.`);

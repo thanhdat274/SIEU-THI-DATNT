@@ -379,6 +379,22 @@ describe('đi ngủ ở hẻm: cả hẻm cùng nằm giường mới sang ngày
     expect(store.useGame.getState().day).toBe(day + 1);
   });
 
+  it('thức khuya tới giờ ngất: có người đã nằm giường thì sang ngày KHÔNG mất tiền; không ai ngủ thì vẫn bị phạt', async () => {
+    await join('runner');
+    night();
+    const day = store.useGame.getState().day;
+    store.useGame.setState({ money: 1_000_000 });
+    recv({ type: 'act', from: 2, seq: 1, name: 'sleep', args: [] });
+    store.useGame.setState({ minutes: 26 * 60 });
+    store.useGame.getState().tick(0.01);
+    expect(store.useGame.getState().day).toBe(day + 1);
+    expect(store.useGame.getState().money).toBeGreaterThan(950_000); // chỉ trừ chi phí cuối ngày thường, không phạt 10%
+    store.useGame.setState({ minutes: 26 * 60, money: 1_000_000 });
+    store.useGame.getState().tick(0.01);
+    expect(store.useGame.getState().day).toBe(day + 2);
+    expect(store.useGame.getState().money).toBeLessThan(920_000);
+  });
+
   it('phiếu hôm qua không tính sang hôm nay', async () => {
     await join('runner');
     night();

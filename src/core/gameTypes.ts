@@ -39,6 +39,8 @@ export const DAY_START = 6 * 60;
 export const SLEEP_FROM = 18 * 60;
 /** Quá giờ này mà chưa ngủ thì ngất (02:00 sáng hôm sau). */
 export const FAINT_AT = 26 * 60;
+/** Hẻm online gắn vào: có người đã nằm giường chờ phiếu ngủ thì thức khuya không bị phạt, cả hẻm sang ngày như ngủ bình thường. */
+export const faintGuard = { spare: () => false };
 /** Lịch tự động mỗi ngày (khi bật): ra tiệm, mở cửa, đóng cửa, kiểm kê rồi về nhà. */
 export const ROUTINE = { goToShop: 7 * 60, open: 8 * 60, close: 22 * 60 + 30, goHome: 23 * 60 };
 
