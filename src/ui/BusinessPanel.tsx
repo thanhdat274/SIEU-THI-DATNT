@@ -9,10 +9,10 @@ import { Callout } from './panels/shared';
 import {
   ACHIEVEMENTS, activeAds, ADS, adRoi, BREAKFAST, COUNTERS, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, LOAN_DAILY_RATE,
   LOAN_UNLOCK, loanInterest, loanLimit, loanOptions, loanTopUps, LOYALTY_OPTIONS, LOYALTY_UNLOCK, loyaltyPayoff, petActive, PETS,
-  RIVAL_PERSONALITIES, RIVAL_UNLOCK, rivalLeverFlags, rivalMomentum, rivalTier, rivalTrafficFactor, VEHICLES, WEEK_DAYS, weeklyChallenge, weekPace, monthlyChallenge, emptyMonth,
+  RIVAL_PERSONALITIES, RIVAL_UNLOCK, rivalLeverFlags, rivalMomentum, rivalTier, rivalTrafficFactor, VEHICLES, WEEK_DAYS, weeklyChallenge, weekPace, monthlyChallenge, emptyMonth, monthPace,
   STREAK_XP_FROM, STREAK_XP_RATE_WEEK, STREAK_XP_RATE_MONTH,
 } from '../data/biz';
-import { monthOf, weekdayOf } from '../data/calendar';
+import { monthOf, weekdayOf, daysRemainingInMonth, MONTH_LENGTHS } from '../data/calendar';
 import { xpToNext } from '../data/levels';
 import { promoEffect } from '../data/analytics';
 import { emptyYear, yearOf } from '../data/yearReport';
@@ -679,6 +679,9 @@ function Month() {
   const chTarget = ch.target(level);
   const chCurrent = ch.measure === 'revenue' ? mo.revenue : (mo[ch.measure] ?? 0);
   const chMet = chTarget > 0 && chCurrent >= chTarget;
+  const remainingDays = daysRemainingInMonth(day);
+  const totalDays = MONTH_LENGTHS[m - 1];
+  const mPace = monthPace(chCurrent, chTarget, remainingDays, totalDays, biz.monthStreak, level);
   return (
     <>
       <div style={card}>
@@ -709,6 +712,28 @@ function Month() {
           <span>{Math.round(chCurrent).toLocaleString('vi-VN')}/{Math.round(chTarget).toLocaleString('vi-VN')} {ch.unit}</span>
           {chMet && <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✅ Đã đủ — giữ đều nhé!</span>}
         </div>
+        {!chMet && mPace && (() => {
+          const pctPace = Math.round(mPace.pace * 100);
+          const pctProj = Math.round(mPace.projected).toLocaleString('vi-VN');
+          return (
+            <>
+              <div style={{ ...row, marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
+                <span style={{ opacity: 0.85 }}>⏱ Nhịp {pctPace}% mục tiêu · còn {mPace.remainingDays} ngày (hết tháng {m})</span>
+                {mPace.onTrack
+                  ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>📈 Dự kiến kịp ({pctProj} {ch.unit})</span>
+                  : <span style={{ ...pill, background: 'rgba(241,196,15,0.2)', color: '#f1c40f' }}>📉 Dự kiến hụt — còn {mPace.remainingDays} ngày để bù</span>}
+              </div>
+              {mPace.streakAtRisk && (
+                <div style={{ ...sub, color: '#e74c3c', marginTop: 3 }}>
+                  ⚠️ Đang hụt MÀ có chuỗi {biz.monthStreak} tháng — trượt tháng này sẽ mất +{mPace.streakXp} XP chuỗi.
+                </div>
+              )}
+              <div style={{ ...sub, marginTop: 3 }}>
+                Còn thiếu {Math.round(mPace.missing).toLocaleString('vi-VN')} {ch.unit} nữa là đủ mục tiêu tháng này.
+              </div>
+            </>
+          );
+        })()}
         <div style={sub}>
           Thưởng {formatMoney(ch.reward(level))}
           {biz.monthStreak > 0 && ` · chuỗi ${biz.monthStreak} tháng`}

@@ -230,3 +230,11 @@ export function morningNews(seed: number, day: number, level: number): string[] 
   if (m && day === m.from - 1) out.push(`${m.icon} Ngày mai: ${m.label}`);
   return out;
 }
+
+/** Số ngày còn lại của tháng dương lịch hiện tại (tính cả ngày hôm nay). */
+export function daysRemainingInMonth(day: number): number {
+  const doy = dayOfYear(day);
+  const { month, day: d } = dateOfDoy(doy);
+  const len = MONTH_LENGTHS[month - 1];
+  return Math.max(1, len - d + 1);
+}

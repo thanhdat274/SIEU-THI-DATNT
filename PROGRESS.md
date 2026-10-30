@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
-- **GĐ288:** 41 test coopClient xanh · coopGuard xanh · build sạch · http://localhost:5173/ trả về 200 OK. Đã khóa chính sách parity cho 2 chế độ: Tái sinh NG+ (doPrestige) an toàn ở chơi đơn và Chào mừng quay lại (checkWelcomeBack) duy trì thưởng cục bộ không làm lạm phát két hẻm. Nhánh: phat-trien-game-tu-do.
+- **GĐ289:** 17 test monthly xanh · build sạch · http://localhost:5173/ trả về 200 OK. Đồng bộ nhịp chạy tháng vận hành (monthPace, daysRemainingInMonth): dự báo tốc độ đạt thử thách tháng, hiển thị số ngày còn lại theo lịch dương, cảnh báo nguy cơ gãy chuỗi tháng kèm XP phạt. Nhánh: `phat-trien-game-tu-do`.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
 - Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
 
@@ -39,6 +39,7 @@
 - **GĐ286 co-op không dừng/phạt cả hẻm** 🛏️: ở hẻm (`inAlley()`) hội thoại cốt truyện vẫn hiện nhưng không dừng giờ (`main.tsx`); tới `FAINT_AT` mà đã có người nằm giường chờ phiếu thì `faintGuard.spare` (gameTypes, gắn ở `coop.ts`) cho sang ngày không trừ 10% tiền. Test mới trong `coopClient.test.ts`. Chưa QA 2 tab (không có trình duyệt/server sống trong phiên này).
 - **GĐ287 sân chơi dùng chung ở co-op** 🏗️: `contributeLandmark` được xác nhận là action chung qua máy chạy; lượt góp/ngày và tiền vật liệu là state của cả hẻm, giữ đúng luật 1 lượt/ngày như chơi đơn (không thêm quota riêng mỗi thành viên để tránh lệch kinh tế). Test client/server khóa tiến độ + tiền + chặn người thứ hai cùng ngày; sửa mô tả phân loại trong `coopGuard.test.ts`. QA live bảng hiện 0→1/28, trừ 8.000đ; thao tác client→runner đã có test tự động, chưa kiểm tra trực tiếp hai vai cùng lúc.
 - **GĐ288 co-op parity: khoá chính sách tái sinh NG+ & chào mừng quay lại** 👥: (a) Tái sinh NG+ (doPrestige) giữ nguyên thiết kế an toàn chỉ chạy ở chơi đơn — tránh reset làm mất tiệm chung của cả hẻm; (b) Chào mừng quay lại (checkWelcomeBack) duy trì cơ chế nạp thưởng cục bộ theo máy khi đăng nhập chơi đơn, không can thiệp hẻm online; (c) Danh hiệu chung (checkTitles) do máy chạy soát và đồng bộ sau khi sang ngày. Bổ sung 2 unit test trong coopClient.test.ts.
+- **GĐ289 nhịp tháng vận hành (monthPace)** 📆: hoàn thiện đối xứng với nhịp tuần (weekPace) cho tab Tháng. Tính năng: (a) `daysRemainingInMonth(day)` tính chính xác số ngày còn lại của tháng dương lịch; (b) `monthPace` dự báo khả năng hoàn thành thử thách tháng theo tiến độ thực tế; (c) UI BusinessPanel tab Tháng hiển thị % nhịp, dự kiến kịp/hụt, số ngày còn lại đến hết tháng và cảnh báo nguy cơ đứt chuỗi tháng (streakAtRisk) kèm XP chuỗi; (d) Unit test đầy đủ trong `src/__tests__/monthly.test.ts`.
 - **GĐ281 độ phủ khách quen** 👥: probe 28 khách quen × 20 seed × 120 ngày — tất cả đều ghé được (834–839/2400, hash nhiễu tự nhiên 1.6×), không ai "tàng hình"; lock test ngưỡng 2× (bắt loại lỗi hệ thống GĐ267). Kết thúc chuỗi audit độ phủ: đơn (GĐ267) · sự kiện/thị trường (GĐ269) · khách quen (GĐ281). 2249 test xanh; boot @5173 sạch.
 
 - **GĐ282 QA mắt 4 arc A–D trọn vẹn** 📖: force từng arc qua dev state và đi hết mọi cảnh/lựa chọn — Mưa rào (needStock chặn nút thiếu kho — hoạt động thật), Cái kính, Hẻm ngập (3 cảnh, chuyện NỐI mạch), Clip hot (3 cảnh); cả 4 done + ghi choices đúng; 0 lỗi console. **Kết hợp test cấu trúc + pick đều + told-exclusion → gate arc E MỞ** (save 100 ngày chỉ thấy ~1–2 arc — chờ save thật không thực tế, QA dựng trạng thái là bằng chứng mạnh nhất).
@@ -83,7 +84,7 @@
 
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
 2. **Khoá chờ save người thật:** NG+ vòng (GĐ171) · nhiệm vụ ngày 1–5 (GĐ254 đã giảm lặp). (GĐ110/117 ĐÃ ĐÓNG GĐ280 bằng số liệu.) **Arc E ĐÃ MỞ (GĐ282): arc A–D QA mắt trọn vẹn + cấu trúc test xanh — làm arc E "Hàng xóm khai trương" là việc tiếp theo.**
-3. **Ý tưởng chờ Leader duyệt (chiều sâu, chưa làm):** (a) nhịp cuối tuần đậm hơn khi hệ đã ổn trên save thật (hàng đặc biệt ngày phiên chợ; không vội); (b) nhiệm vụ tuần/tháng biết đến thứ trong tuần (WeeklyPace hiện "còn X ngày tới Chủ nhật") — nhỏ, chỉ khi có việc khác đi kèm.
+3. **Ý tưởng chờ Leader duyệt (chiều sâu, chưa làm):** (a) nhịp cuối tuần đậm hơn khi hệ đã ổn trên save thật (hàng đặc biệt ngày phiên chợ; không vội); (b) nhiệm vụ tuần/tháng biết đến thứ/ngày trong kỳ — **ĐÃ HOÀN THÀNH GĐ289** (nhịp tháng monthPace hiển thị ngày còn lại tới hết tháng + dự báo kịp/hụt và bảo vệ chuỗi tháng).
 4. 👥 **Đủ 2 chế độ (ĐÃ CHỐT GĐ288):** Hoàn thành rà soát và khoá chính sách parity cho 2 chế độ: (a) Sân chơi GĐ287 (chung tiến độ/lượt ngày); (b) Tái sinh NG+ (doPrestige) và Chào mừng quay lại (checkWelcomeBack) giữ nguyên thiết kế an toàn: Tái sinh NG+ chỉ chạy ở chơi đơn (bảo vệ thế giới hẻm online không bị reset đột ngột làm mất dữ liệu của đồng đội), Chào mừng quay lại chạy cục bộ theo máy để thưởng công bằng khi người chơi đăng nhập trở lại mà không tạo lạm phát hay gian lận két tiền chung. Đã bổ sung bộ test tự động trong coopClient.test.ts.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)## Mục lục giai đoạn đã xong (chi tiết trong archive)
@@ -338,3 +339,4 @@
 - GĐ287 — 🏗️ Sân chơi dùng chung ở hẻm online (1 lượt/ngày theo state chung; chặn góp kép, test co-op)
 
 - GĐ288 — 👥 Co-op parity: khoá chính sách tái sinh NG+ & chào mừng quay lại
+- GĐ289 — 📆 Nhịp tháng vận hành: monthPace, dự báo hoàn thành thử thách tháng & cảnh báo chuỗi

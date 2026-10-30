@@ -153,3 +153,39 @@ describe('Tích lũy tháng qua endDay', () => {
     expect(out.biz.lastMonth!.reward).toBe(0);
   });
 });
+
+import { monthPace } from '../data/biz';
+import { daysRemainingInMonth } from '../data/calendar';
+
+describe('daysRemainingInMonth & monthPace (GĐ289)', () => {
+  it('daysRemainingInMonth: tính đúng số ngày còn lại trong tháng', () => {
+    // Ngày 1 (1/1): tháng 1 có 31 ngày -> còn 31 ngày
+    expect(daysRemainingInMonth(1)).toBe(31);
+    // Ngày 31 (31/1): còn 1 ngày
+    expect(daysRemainingInMonth(31)).toBe(1);
+    // Ngày 32 (1/2): tháng 2 có 28 ngày -> còn 28 ngày
+    expect(daysRemainingInMonth(32)).toBe(28);
+    // Ngày 59 (28/2): còn 1 ngày
+    expect(daysRemainingInMonth(59)).toBe(1);
+  });
+
+  it('monthPace: trả về null khi target hoặc remainingDays <= 0', () => {
+    expect(monthPace(10, 0, 15, 30, 0, 10)).toBeNull();
+    expect(monthPace(10, 100, 0, 30, 0, 10)).toBeNull();
+  });
+
+  it('monthPace: tính nhịp dự báo và cảnh báo streak nguy cơ', () => {
+    // Tháng 30 ngày, còn 15 ngày, đã qua 15 ngày, đạt 60/100 -> projected = 120 >= 100 (onTrack: true)
+    const p1 = monthPace(60, 100, 15, 30, 2, 10);
+    expect(p1).not.toBeNull();
+    expect(p1!.onTrack).toBe(true);
+    expect(p1!.streakAtRisk).toBe(false);
+
+    // Đạt 20/100, còn 15 ngày, đã qua 15 ngày -> projected = 40 < 100 (onTrack: false, streakAtRisk: true vì streak >= 1)
+    const p2 = monthPace(20, 100, 15, 30, 3, 10);
+    expect(p2).not.toBeNull();
+    expect(p2!.onTrack).toBe(false);
+    expect(p2!.streakAtRisk).toBe(true);
+    expect(p2!.streakXp).toBeGreaterThan(0);
+  });
+});

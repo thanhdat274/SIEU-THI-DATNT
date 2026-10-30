@@ -1567,3 +1567,33 @@ export function playerPace(b: BizState, day: number, outdoors: boolean) {
 export const bizTraffic = (b: BizState, day: number) => rivalTrafficFactor(b.rival, day) * adsTraffic(b.ads, day)
   * loyaltyTraffic(b.loyalty) * (counterActive(b.counter, day, 'ad') ? COUNTER_AD_TRAFFIC : 1)
   * (b.rivalBuyUntil !== undefined && day <= b.rivalBuyUntil ? RIVAL_BUY_TRAFFIC : 1);
+
+// ───────────────────────── Nhịp tháng vận hành ─────────────────────────
+export interface MonthPace {
+  pace: number;
+  remainingDays: number;
+  projected: number;
+  onTrack: boolean;
+  streakAtRisk: boolean;
+  streakXp: number;
+  missing: number;
+}
+
+export function monthPace(
+  current: number, target: number, remainingDays: number, totalDaysInMonth: number, streak: number, level: number,
+): MonthPace | null {
+  if (target <= 0 || remainingDays <= 0 || totalDaysInMonth <= 0) return null;
+  const elapsed = totalDaysInMonth - remainingDays;
+  const projected = elapsed > 0 ? (current * totalDaysInMonth) / elapsed : current;
+  const onTrack = projected >= target;
+  const missing = Math.max(0, target - current);
+  return {
+    pace: target > 0 ? current / target : 0,
+    remainingDays,
+    projected,
+    onTrack,
+    streakAtRisk: !onTrack && streak >= 1 && current < target,
+    streakXp: streak + 1 >= STREAK_XP_FROM ? Math.round(STREAK_XP_RATE_MONTH * xpToNext(level)) : 0,
+    missing,
+  };
+}
