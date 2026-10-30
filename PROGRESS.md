@@ -21,24 +21,20 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
-- **GĐ290:** 11 test marketClearValue xanh · build sạch · http://localhost:5173/ trả về 200 OK. Đưa phiên chợ đầu ngõ thành việc sáng trong danh sách "Việc hôm nay" (Sổ đầu ngày) khi có hàng dư đáng gánh, khép kín nhịp phiên chợ từ kế hoạch sáng đến bán thật. Nhánh: `phat-trien-game-tu-do`.
+- **GĐ291:** 6 test fairLotValue xanh · build sạch · http://localhost:5173/ trả về 200 OK. Lô chợ phiên nhận biết món ăn vặt cuối tuần (`weekendSnacksCount`, `isWeekendFair`): hiển thị badge hỗ trợ quyết định mua khi phiên chợ rơi vào cuối tuần hoặc trữ trước cho đợt cao điểm ăn vặt. Nhánh: `phat-trien-game-tu-do`.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
 - Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
 
 ### Giai đoạn gần đây · GĐ281 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–280: PROGRESS-GD250-257.md)
 
 - **GĐ177–271** đã dồn archive (docs/progress-archive/): 3D + đèn · supply chain · bộ soi tiền/vốn · PROGRESS-GD230-249.md · PROGRESS-GD250-257.md (phụ lục 258–271).
-- **GĐ251–253** 💲🧍🔀 — giá dịp lễ theo tolerance · vai hiện diện khỏi bảng rảnh + sửa OrderPanel vỡ TDZ · xếp lại ca mai một chạm (staffShiftFix). Chi tiết: archive.
-- **GĐ254–257 nhịp CUỐI TUẦN** 📅 khép trọn 4 mạch: weekdayOf/isWeekend (ngày 1 = Thứ 2) + quest "🍬 Cuối tuần ăn vặt" (chỉ pool Thứ 7/CN, cuối pool — ngày thường xoay GIỮ NGUYÊN) → khách thèm ăn vặt (chooseWants ×0.2, list chung WEEKEND_SNACKS) → lịch tô sáng cuối tuần → việc sáng + "Mai tiệm có gì" nhắc. Chi tiết: archive. Cảm hứng Hay Day/Stardew; không đổi lượng khách, chỉ đổi nhiệm vụ + NMU trong ngày.
-- **GĐ258–261** 🎨🖼️ — gọn 6 họ màu cũ về bảng GĐ166 · coverage sweep (credit/services/professions, xoá 6 id chết `likes` nghề) · QA TOÀN DIỆN (34 panel × 3 cỡ màn 0 lỗi/0 tràn, autoplay 2 ngày sạch) · quét thẩm mỹ ảnh chụp: wrap hàng nút Nhân viên @390, tương phản ô cuối tuần, 2 dropdown Sổ tay Tiệm cắt chữ @390. Chi tiết: archive PROGRESS-GD250-257.md (phụ lục 258–261).
 
-- **GĐ266–271** 🍬🎲📞 — nhập hàng biết cuối tuần (×1.25 + badge) · đơn `weekendOnly` · sửa 2 bug roll tương quan · phản hồi cuối tuần trong tổng kết · lý do gọi khớp thời tiết · QA TOÀN DIỆN GĐ270. Chi tiết: archive (phụ lục 2–3).
 
-- **GĐ272–280** 🖼️📞📊 — quét nốt đăng nhập + menu Thêm · lý do gọi khớp thời tiết · QA mắt thẻ GĐ155–159 · dự báo tuần mai · lịch tự động chỉnh giờ mở (GĐ275/276/279) · đóng GĐ110/117 bằng số liệu. Chi tiết: archive (phụ lục 2–4).
 
 - **GĐ286 co-op không dừng/phạt cả hẻm** 🛏️: ở hẻm (`inAlley()`) hội thoại cốt truyện vẫn hiện nhưng không dừng giờ (`main.tsx`); tới `FAINT_AT` mà đã có người nằm giường chờ phiếu thì `faintGuard.spare` (gameTypes, gắn ở `coop.ts`) cho sang ngày không trừ 10% tiền. Test mới trong `coopClient.test.ts`. Chưa QA 2 tab (không có trình duyệt/server sống trong phiên này).
 - **GĐ287 sân chơi dùng chung ở co-op** 🏗️: `contributeLandmark` được xác nhận là action chung qua máy chạy; lượt góp/ngày và tiền vật liệu là state của cả hẻm, giữ đúng luật 1 lượt/ngày như chơi đơn (không thêm quota riêng mỗi thành viên để tránh lệch kinh tế). Test client/server khóa tiến độ + tiền + chặn người thứ hai cùng ngày; sửa mô tả phân loại trong `coopGuard.test.ts`. QA live bảng hiện 0→1/28, trừ 8.000đ; thao tác client→runner đã có test tự động, chưa kiểm tra trực tiếp hai vai cùng lúc.
 - **GĐ288 co-op parity: khoá chính sách tái sinh NG+ & chào mừng quay lại** 👥: (a) Tái sinh NG+ (doPrestige) giữ nguyên thiết kế an toàn chỉ chạy ở chơi đơn — tránh reset làm mất tiệm chung của cả hẻm; (b) Chào mừng quay lại (checkWelcomeBack) duy trì cơ chế nạp thưởng cục bộ theo máy khi đăng nhập chơi đơn, không can thiệp hẻm online; (c) Danh hiệu chung (checkTitles) do máy chạy soát và đồng bộ sau khi sang ngày. Bổ sung 2 unit test trong coopClient.test.ts.
+- **GĐ291 lô chợ phiên nhận biết ăn vặt cuối tuần** 🍬: kết nối phiên chợ thương lái (GĐ68/GĐ221) với nhịp cuối tuần (GĐ254/255). Helper `fairLotValue` nhận thêm tham số `day`, phát hiện các món thuộc `WEEKEND_SNACKS` và xác định `isWeekendFair`. OrderPanel hiển thị gợi ý đặc biệt màu vàng khi lô chứa món ăn vặt cuối tuần, giúp người chơi tận dụng chiết khấu để chuẩn bị cho nhu cầu tăng cao. Test trong `src/__tests__/fairLotValue.test.ts`.
 - **GĐ290 phiên chợ đầu ngõ thành việc sáng** 🧺: đưa `marketDayAction(chophien)` vào danh sách Việc hôm nay (Sổ đầu ngày) tương tự mẫu GĐ249 (trữ lễ) và GĐ257 (cuối tuần). Khi đến ngày chợ phiên (ngày 7, 14, 21...) và có hàng dư đọng vốn/cần lạnh, việc sáng hiển thị rõ số món dư và số tiền ước thu về để người chơi giải phóng kho trước giờ mở cửa. Test kiểm chứng trong `src/__tests__/marketClearValue.test.ts`.
 - **GĐ289 nhịp tháng vận hành (monthPace)** 📆: hoàn thiện đối xứng với nhịp tuần (weekPace) cho tab Tháng. Tính năng: (a) `daysRemainingInMonth(day)` tính chính xác số ngày còn lại của tháng dương lịch; (b) `monthPace` dự báo khả năng hoàn thành thử thách tháng theo tiến độ thực tế; (c) UI BusinessPanel tab Tháng hiển thị % nhịp, dự kiến kịp/hụt, số ngày còn lại đến hết tháng và cảnh báo nguy cơ đứt chuỗi tháng (streakAtRisk) kèm XP chuỗi; (d) Unit test đầy đủ trong `src/__tests__/monthly.test.ts`.
 - **GĐ281 độ phủ khách quen** 👥: probe 28 khách quen × 20 seed × 120 ngày — tất cả đều ghé được (834–839/2400, hash nhiễu tự nhiên 1.6×), không ai "tàng hình"; lock test ngưỡng 2× (bắt loại lỗi hệ thống GĐ267). Kết thúc chuỗi audit độ phủ: đơn (GĐ267) · sự kiện/thị trường (GĐ269) · khách quen (GĐ281). 2249 test xanh; boot @5173 sạch.
@@ -85,7 +81,7 @@
 
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
 2. **Khoá chờ save người thật:** NG+ vòng (GĐ171) · nhiệm vụ ngày 1–5 (GĐ254 đã giảm lặp). (GĐ110/117 ĐÃ ĐÓNG GĐ280 bằng số liệu.) **Arc E ĐÃ MỞ (GĐ282): arc A–D QA mắt trọn vẹn + cấu trúc test xanh — làm arc E "Hàng xóm khai trương" là việc tiếp theo.**
-3. **Ý tưởng chờ Leader duyệt (chiều sâu, chưa làm):** (a) nhịp cuối tuần đậm hơn khi hệ đã ổn trên save thật (hàng đặc biệt ngày phiên chợ; không vội); (b) nhiệm vụ tuần/tháng biết đến thứ/ngày trong kỳ — **ĐÃ HOÀN THÀNH GĐ289** (nhịp tháng monthPace hiển thị ngày còn lại tới hết tháng + dự báo kịp/hụt và bảo vệ chuỗi tháng).
+3. **Ý tưởng chờ Leader duyệt (chiều sâu, chưa làm):** (a) nhịp cuối tuần đậm hơn — **ĐÃ HOÀN THÀNH GĐ291** (lô chợ phiên đầu tháng nhận biết món ăn vặt cuối tuần + gợi ý trữ hàng đặc biệt); (b) nhiệm vụ tuần/tháng biết đến thứ/ngày trong kỳ — **ĐÃ HOÀN THÀNH GĐ289** (nhịp tháng monthPace hiển thị ngày còn lại tới hết tháng + dự báo kịp/hụt và bảo vệ chuỗi tháng).
 4. 👥 **Đủ 2 chế độ (ĐÃ CHỐT GĐ288):** Hoàn thành rà soát và khoá chính sách parity cho 2 chế độ: (a) Sân chơi GĐ287 (chung tiến độ/lượt ngày); (b) Tái sinh NG+ (doPrestige) và Chào mừng quay lại (checkWelcomeBack) giữ nguyên thiết kế an toàn: Tái sinh NG+ chỉ chạy ở chơi đơn (bảo vệ thế giới hẻm online không bị reset đột ngột làm mất dữ liệu của đồng đội), Chào mừng quay lại chạy cục bộ theo máy để thưởng công bằng khi người chơi đăng nhập trở lại mà không tạo lạm phát hay gian lận két tiền chung. Đã bổ sung bộ test tự động trong coopClient.test.ts.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)## Mục lục giai đoạn đã xong (chi tiết trong archive)
@@ -320,7 +316,6 @@
 - GĐ260 — ✅ QA TOÀN DIỆN: 34 panel × 3 cỡ màn 0 tràn/0 lỗi, autoplay ngày thật, coverage 87.17/75.75
 - GĐ261 — 🔮 Mồi cuối tuần tối thứ Sáu (Mai tiệm có gì nhắc châm kệ ăn vặt khi mai Thứ 7/CN)
 - GĐ262–265 — 📅🎨 Thẻ tuần biết thứ · khoá tuần×thứ · 2 đợt quét thẩm mỹ (chi tiết archive)
-- GĐ266–271 — 🍬🎲📞 Cuối tuần vào nhập hàng/đơn · sửa 2 bug roll tương quan · lý do gọi khớp thời tiết · QA GĐ270 (archive)
 - GĐ272 — 🖼️ Quét đăng nhập + menu Thêm @320/390/768 — 0 lỗi, chốt chuỗi rà soát màn hình
 - GĐ273 — 🔮 Dự báo "tuần mai khách săn" trên Nhập hàng tối CN + audit trending/weeklyChallenge
 - GĐ274 — 🔮 Mồi tuần mới tối CN trong Mai tiệm có gì (khớp GĐ273)
@@ -342,3 +337,4 @@
 - GĐ288 — 👥 Co-op parity: khoá chính sách tái sinh NG+ & chào mừng quay lại
 - GĐ289 — 📆 Nhịp tháng vận hành: monthPace, dự báo hoàn thành thử thách tháng & cảnh báo chuỗi
 - GĐ290 — 🧺 Chợ phiên đầu ngõ thành việc sáng trong Việc hôm nay (Sổ đầu ngày)
+- GĐ291 — 🍬 Lô chợ phiên đầu tháng nhận biết món ăn vặt cuối tuần & gợi ý trữ hàng

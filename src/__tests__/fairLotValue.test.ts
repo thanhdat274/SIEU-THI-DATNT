@@ -55,4 +55,25 @@ describe('GĐ221 fairLotValue — lô chợ phiên đáng múc?', () => {
     expect(v.lines[0].daysOfStock).toBe(6);
     expect(v.overstockCount).toBe(0);
   });
+  it('GĐ291: phát hiện món ăn vặt cuối tuần trong lô và cờ isWeekendFair', () => {
+    // Ngày 6: Thứ 7 (cuối tuần)
+    const offerSnacks: FairOffer = {
+      month: 1,
+      lines: [
+        { id: 'bimbim', qty: 10 },
+        { id: 'mi', qty: 12 },
+        { id: 'sua', qty: 5 },
+      ],
+      totalBuy: 100000,
+      dealPrice: 84000,
+    };
+    const vSat = fairLotValue(offerSnacks, {}, {}, [], 6); // day 6 = Thứ 7
+    expect(vSat.isWeekendFair).toBe(true);
+    expect(vSat.weekendSnacksCount).toBe(2); // bimbim, mi
+
+    // Ngày 1: Thứ 2 (ngày thường)
+    const vMon = fairLotValue(offerSnacks, {}, {}, [], 1);
+    expect(vMon.isWeekendFair).toBe(false);
+    expect(vMon.weekendSnacksCount).toBe(2);
+  });
 });

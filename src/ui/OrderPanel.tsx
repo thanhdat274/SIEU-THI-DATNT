@@ -507,13 +507,18 @@ export function OrderPanel() {
                       <span style={{ color: '#f1c40f' }}>tiết kiệm {formatMoney(offer.totalBuy - offer.dealPrice)}</span>
                     </div>
                     {(() => {
-                      const fv = fairLotValue(offer, storage, shelfCount(furniture), itemHealthList(analytics, level, storage, shelfCount(furniture), demand));
+                      const fv = fairLotValue(offer, storage, shelfCount(furniture), itemHealthList(analytics, level, storage, shelfCount(furniture), demand), day);
                       const tone = fv.verdict === 'grab' ? '#2ecc71' : fv.verdict === 'hold' ? '#e67e22' : 'rgba(255,255,255,0.7)';
                       return (
                         <div style={{ marginTop: 4, fontSize: 12, color: tone, fontWeight: 600 }}>
                           {fv.verdict === 'grab' && `Đáng múc: ${fv.beneficialCount} món đang bán nhanh, cầm ít — lô giúp đỡ thiếu hàng.`}
                           {fv.verdict === 'hold' && `Cân nhắc: ${fv.overstockCount} món bạn đã có đủ lâu (${fv.overstockCount} món dư thừa) — mua sẽ chôn thêm vốn.`}
                           {fv.verdict === 'maybe' && 'Chưa rõ sức bán — đang tiết kiệm ~' + Math.round(fv.savePct * 100) + '%, xem nhịp bán rồi quyết.'}
+                          {fv.weekendSnacksCount > 0 && (
+                            <div style={{ marginTop: 3, color: '#f1c40f', fontWeight: 500 }}>
+                              🍬 Lô có {fv.weekendSnacksCount} món ăn vặt cuối tuần{fv.isWeekendFair ? ' — hôm nay cuối tuần khách mua nhiều!' : ' — trữ sẵn cho cuối tuần'} (GĐ291)
+                            </div>
+                          )}
                         </div>
                       );
                     })()}

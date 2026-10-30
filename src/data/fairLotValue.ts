@@ -9,7 +9,8 @@
 
 import type { FairOffer } from './fairmerchant';
 import type { ItemHealth } from './analytics';
-import { productById } from './products';
+import { productById, WEEKEND_SNACKS } from './products';
+import { isWeekend } from './calendar';
 
 /** Món trong lô đang cầm dưới ngưỡng ngày này → lô là "cần" (bán nhanh, thêm là hợp). */
 const BENEFIT_DAYS = 3;
@@ -46,6 +47,10 @@ export interface FairLotValue {
   beneficialCount: number;
   /** Số món trong lô đã dư (chôn vốn). */
   overstockCount: number;
+  /** Số món trong lô thuộc nhóm ăn vặt cuối tuần (GĐ255/GĐ291). */
+  weekendSnacksCount: number;
+  /** Phiên chợ rơi vào cuối tuần (Thứ 7 / CN) hay không. */
+  isWeekendFair: boolean;
   verdict: FairLotVerdict;
 }
 
@@ -55,6 +60,7 @@ export function fairLotValue(
   storage: Record<string, number>,
   onShelf: Record<string, number>,
   health: ItemHealth[],
+  day: number = 1,
 ): FairLotValue {
   const daily = new Map<string, number>();
   for (const h of health) daily.set(h.id, h.dailyQty);
@@ -79,11 +85,13 @@ export function fairLotValue(
   const overstockCount = lines.filter((l) => l.overstock).length;
   const savings = Math.max(0, offer.totalBuy - offer.dealPrice);
   const savePct = offer.totalBuy > 0 ? savings / offer.totalBuy : 0;
+  const weekendSnacksCount = lines.filter((l) => WEEKEND_SNACKS.includes(l.id)).length;
+  const isWeekendFair = isWeekend(day);
 
   // Verdict: chủ yếu hàng đã dư → không múc; có món bán nhanh + có lời → múc; còn lại cân nhắc.
   let verdict: FairLotVerdict = 'maybe';
   if (lines.length && overstockCount > lines.length / 2) verdict = 'hold';
   else if (beneficialCount > 0 && savings > 0) verdict = 'grab';
 
-  return { savings, savePct, dealPrice: offer.dealPrice, lines, beneficialCount, overstockCount, verdict };
+  return { savings, savePct, dealPrice: offer.dealPrice, lines, beneficialCount, overstockCount, weekendSnacksCount, isWeekendFair, verdict };
 }
