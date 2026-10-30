@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (29/10/2026)
 
-- **2245/2245 test pass (220 files) + coverage branch 87.40%/fn 76.17%** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ277. QA TOÀN DIỆN GĐ270: 34 panel + 0 tràn @320/390/768.
+- **2249/2249 test pass (220 files; +1 FAIL = coopClient.test.ts — WIP phiên song song, ngoài phạm vi) + coverage 87.40/76.17** · build sạch · boot @5173 200. Nhánh: `phat-trien-game-tu-do`. Đã xong GĐ1–GĐ285. QA TOÀN DIỆN GĐ270: 34 panel + 0 tràn @320/390/768.
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
 - Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
 
@@ -41,6 +41,8 @@
 - **GĐ282 QA mắt 4 arc A–D trọn vẹn** 📖: force từng arc qua dev state và đi hết mọi cảnh/lựa chọn — Mưa rào (needStock chặn nút thiếu kho — hoạt động thật), Cái kính, Hẻm ngập (3 cảnh, chuyện NỐI mạch), Clip hot (3 cảnh); cả 4 done + ghi choices đúng; 0 lỗi console. **Kết hợp test cấu trúc + pick đều + told-exclusion → gate arc E MỞ** (save 100 ngày chỉ thấy ~1–2 arc — chờ save thật không thực tế, QA dựng trạng thái là bằng chứng mạnh nhất).
 
 - **GĐ283 arc E "Hàng xóm khai trương"** 🎊 — def cam_do_mo thành arc thứ 5 (2 ngày 4 cảnh 3 nhánh). Chi tiết: archive (phụ lục 5).
+- **GĐ285 khoá cấu trúc TIME_BANDS** ⏰: 6 khung phủ LIÊN TỤC 6h–22h không hở/chồng; wants toàn món thật (chặn loại id chết GĐ259); phân loại vàng (≥1.3: sáng/trưa/tối) / vắng (<0.8) / trung tính (khuya 0.8); trung bình trọng số 1.08 là số CÂN BẰNG THỰC NGHIỆM — không "sửa" về 1. 3 test; boot @5173 sạch (chip "Sắp đến giờ vàng" đúng ranh giới 6h).
+
 ## Quy ước kỹ thuật cần nhớ
 
 - Thay đổi "soi sáng" (helper thuần đọc + thẻ UI gọn) là mẫu mặc định — **không đổi SAVE_VERSION/kinh tế/persist** trừ khi bắt buộc.
@@ -321,6 +323,8 @@
 - GĐ281 — 👥 Lock độ phủ 28 khách quen (tất cả ghé được, phân phối <2×)
 - GĐ282 — 📖 QA mắt 4 arc A–D trọn vẹn — MỞ gate arc E
 - GĐ283 — 🎊 Arc E "Hàng xóm khai trương" (thay cam_do_mo)
+- GĐ284 — 🧹 Dồn GĐ283 sang archive
+- GĐ285 — ⏰ Khoá cấu trúc TIME_BANDS (liên tục 6h–22h, wants món thật, phân loại)
 - GĐ280 — 📊 Đóng GĐ110/117: đo nhiệm vụ cấp 50 (xương sống 24–26/28; 8 quest hành động bot không làm) + test khoá tín hiệu
 - GĐ277 — 💾 Khoá autoOpenAt qua save (3 test) + lock chợ phiên luôn rơi Chủ nhật
 - GĐ278 — 👀 QA mắt thẻ CÓ dữ liệu GĐ155–159 (thú cưng/hụi/khủng hoảng/bỏ lỡ) — đóng watch-item
