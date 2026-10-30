@@ -48,14 +48,14 @@ afterEach(() => clearSimSeed());
 // ───────────────────── Dữ liệu: 4 arc thay 4 def một-phát ─────────────────────
 
 describe('GĐ164 — dữ liệu arc: thay thế def cũ, kết nối cảnh chặt chẽ', () => {
-  it('đủ 4 arc, unlock/days khớp def cũ đã xoá (mua_roi 1 · bong_da_kinh 4 · mua_dai 6 · livestream 10)', () => {
-    expect(SURPRISE_ARCS.map((a) => a.id)).toEqual([ARCA, ARCB, ARCC, ARCD]);
-    expect(SURPRISE_ARCS.map((a) => a.unlock)).toEqual([1, 4, 6, 10]);
-    expect(SURPRISE_ARCS.map((a) => a.days)).toEqual([2, 2, 3, 3]);
+  it('đủ 5 arc, unlock/days khớp def cũ đã xoá (mua_roi 1 · bong_da_kinh 4 · mua_dai 6 · livestream 10 · cam_do_mo 10) — GĐ283', () => {
+    expect(SURPRISE_ARCS.map((a) => a.id)).toEqual([ARCA, ARCB, ARCC, ARCD, 'arc_hang_xom_khai_truong']);
+    expect(SURPRISE_ARCS.map((a) => a.unlock)).toEqual([1, 4, 6, 10, 10]);
+    expect(SURPRISE_ARCS.map((a) => a.days)).toEqual([2, 2, 3, 3, 2]);
   });
 
   it('4 def một-phát cũ đã XÓA khỏi SURPRISES (kể xong arc không lặp — arc đứng trong told)', () => {
-    for (const old of ['mua_roi', 'bong_da_kinh', 'mua_dai', 'livestream']) {
+    for (const old of ['mua_roi', 'bong_da_kinh', 'mua_dai', 'livestream', 'cam_do_mo']) {
       expect(SURPRISES.some((e) => e.id === old), `${old} phải đã xoá`).toBe(false);
       expect(arcForEvent(old)?.id, `arc thay ${old}`).toBeTruthy();
     }

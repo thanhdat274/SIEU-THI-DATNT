@@ -27,8 +27,9 @@ describe('SURPRISES — dữ liệu sự kiện bất ngờ nhất quán', () =>
     }
   });
 
-  it('pool đủ rộng cho lăn sự kiện dài hạn: tổng số mẫu ≥ 31 (GĐ164: 4 def chuyển thành arc 2–3 ngày; GĐ165: bổ sung 5 def một-phát cấp thấp)', () => {
-    expect(SURPRISES.length).toBeGreaterThanOrEqual(31);
+  it('pool đủ rộng cho lăn sự kiện dài hạn: tổng số mẫu ≥ 30 (GĐ164: 4 def chuyển thành arc 2–3 ngày; GĐ165: bổ sung 5 def; GĐ283: cam_do_mo chuyển thành arc thứ 5)', () => {
+    // SURPRISES −1 (cam_do_mo) + SURPRISE_ARCS +1 (arc E) → tổng pool 35 giữ nguyên
+    expect(SURPRISES.length).toBeGreaterThanOrEqual(30);
   });
 
   it('mọi lựa chọn nằm trong biên cân bằng: money [-200000, 200000], xp [-80, 80], nhãn không rỗng', () => {

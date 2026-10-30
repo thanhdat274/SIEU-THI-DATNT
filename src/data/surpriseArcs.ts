@@ -244,6 +244,54 @@ export const SURPRISE_ARCS: SurpriseArcDef[] = [
       },
     ],
   },
+  {
+    // GĐ283 — thay def một-phát "cam_do_mo" (unlock 10): bài học hẻm — hẻm đủ chỗ cho cả hai,
+    // cắn nhau chỉ mất cả hai; nối mạch 2 ngày: chúc mừng/khuyến mãi/lỡ → hậu quả sáng hôm sau.
+    id: 'arc_hang_xom_khai_truong', baseEventId: 'cam_do_mo', icon: '🎊', title: 'Hàng xóm khai trương', unlock: 10, days: 2,
+    scenes: [
+      {
+        id: 'khai-1',
+        teaser: 'tiệm kế bên khai trương, băng rôn pháo giấy',
+        text: 'Sáng mở cửa đã nghe tiếng pháo giấy: tiệm tạp hóa "Nhật Linh" khai trương ngay kế bên, băng rôn đỏ chót. Vài người quen ghé dò: "Chú định thế nào?"',
+        options: [
+          { label: '🎉 Ghé chúc mừng, biếu giỏ trà', result: 'Chủ tiệm mới trẻ lắm, cầm giỏ trà lúng túng rồi tươi cười hứa "co nhau làm ăn".', money: -20000, xp: 10, good: true },
+          { label: '🏷️ Treo ngay khuyến mãi giữ khách', result: 'Giảm sâu mấy món bán chạy, bảng giá đỏ lên cạnh băng rôn bên kia.', money: -25000, xp: 5 },
+          { label: '😐 Cứ lo bán hàng của mình', result: 'Cười chào cho qua rồi quay vô sắp kệ, để bên kia ồn ào của họ.', xp: 5 },
+        ],
+        nextByChoice: [1, 2, 3],
+      },
+      {
+        id: 'khai-2a',
+        teaser: 'chủ tiệm mới ghé trả lễ, rủ chia mặt hàng',
+        text: 'Chiều, chủ "Nhật Linh" ghé trả lễ một giỏ cam: "Em bán đồ khô, chú bán đồ mát — mình đừng cắn nhau."',
+        options: [
+          { label: '🤝 Bắt tay chia mặt hàng luôn', result: 'Hai bên dặn khách qua hẻm "ghé cả hai" — chiều đó khách bên ấy ghé mình mua nước mát.', money: 30000, good: true },
+          { label: '🙂 Cảm ơn, còn tính', result: 'Giỏ cam để trên quầy, hai bên vẫn chào nhau nhưng chuyện chia hàng thì… để mai.', xp: 5 },
+        ],
+        reward: { base: 25000, perLevel: 1500, perGood: 5000, rating: 5, xp: 15 },
+      },
+      {
+        id: 'khai-2b',
+        teaser: 'chiến giá xuống, cả hai lỗ',
+        text: 'Cuối ngày đối chiếu sổ: giảm sâu mà khách cũng chẳng đông thêm mấy — bên kia cũng lỗ tương tự. Chủ bên ghé ngồi: "Mình cắn nhau thì ai được lợi?"',
+        options: [
+          { label: '🤝 Gác lại, trả giá cũ', result: 'Hai bên gỡ bảng khuyến mãi cùng lúc, khách quen thở phào: "giờ này mới giống xóm mình".', xp: 15, good: true },
+          { label: '😤 Giữ khuyến mãi thêm tuần', result: 'Bảng đỏ vẫn treo, lỗ thêm mỗi ngày và khách bắt đầu quen chờ giảm mới mua.', money: -15000 },
+        ],
+        reward: { base: 20000, perLevel: 1200, perGood: 5000, xp: 10 },
+      },
+      {
+        id: 'khai-2c',
+        teaser: 'sáng vắng tiếng nhưng khách quen vẫn ghé',
+        text: 'Sáng bên kia rộn ràng, tiệm mình vắng tiếng thật — nhưng tới giờ, khách quen vẫn lók vào "chú ơi nước mát cho con".',
+        options: [
+          { label: '😊 Cười: hẻm đủ chỗ cho cả hai', result: 'Chiều ghé chúc mừng bên kia, chủ tiệm mới sẵn sàng giới thiệu khách sang mua đồ khô của mình.', money: 15000, good: true },
+          { label: '😕 Thì thôi, kệ', result: 'Ngày trôi qua êm, chỉ là tự dưng thấy hẻm rộng hơn một chút.', xp: 5 },
+        ],
+        reward: { base: 20000, perLevel: 1200, perGood: 5000, xp: 10 },
+      },
+    ],
+  },
 ];
 
 export const surpriseArcById = (id: string) => SURPRISE_ARCS.find((a) => a.id === id);

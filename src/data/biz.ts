@@ -1182,15 +1182,7 @@ export const SURPRISES: SurpriseDef[] = [
       { label: 'Đuổi ra ngoài, khỏi phá hàng', result: 'Nó bỏ đi kêu la ngoài đường một lúc lâu mới lặng.' },
     ],
   },
-  {
-    id: 'cam_do_mo', icon: '🏦', title: 'Cầm đồ mở kế bên', unlock: 10,
-    text: 'Tiệm cầm đồ khai trương kế bên, chủ tiệm ghé chào hàng xóm mới cho vui.',
-    choices: [
-      { label: 'Chào hỏi niềm nở, biếu ly trà đá', result: 'Hai bên hứa giữ hòa khí, khách qua hẻm ghé cả hai tiệm.', money: -5000, xp: 10, rating: 5 },
-      { label: 'Treo khuyến mãi giữ chân khách', result: 'Giảm sâu vài món, lỗ nhẹ mà khách quen vẫn trụ lại.', money: -25000 },
-      { label: 'Cứ lo bán hàng của mình', result: 'Bên kia khai trương rộn ràng, buổi sáng tiệm mình vắng tiếng.' },
-    ],
-  },
+  // GĐ283: def "cam_do_mo" chuyển thành arc "Hàng xóm khai trương" (data/surpriseArcs.ts).
   {
     id: 'ong_cu_khat', icon: '🫗', title: 'Ông cụ xin nước', unlock: 1,
     text: 'Một ông cụ quần áo cũ đứng trước cửa, giọng khàn đặc: "Cho con xin miếng nước."',
