@@ -181,3 +181,4 @@
 - GĐ457: QA sandbox: StoryAlert lazy vẫn hiện (Bà Năm · Chương 1) sau tách GĐ456.
 - GĐ458: FestivalBanner cũng tách lazy sang HudAlerts.tsx (chừa chỗ ngân sách tải ban đầu).
 - GĐ459: Tách lazy TodayAgendaStrip+IdleChip sang HudAgenda.tsx — tải ban đầu 598→595 KB.
+- GĐ460: QA sandbox: FestivalBanner và dải hẹn hôm nay (lazy) hiện đúng, không lỗi console.
