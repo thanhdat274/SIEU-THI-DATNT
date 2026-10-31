@@ -151,6 +151,7 @@
 - GĐ470: Ghi Cần duyệt nâng tiệm xôi thành cửa hàng nhỏ (chờ người dùng chọn).
 - GĐ471: Bảng quán ghi rõ 'bậc x/3: Quầy nước → Quán nước → Quán cà phê — cùng một cửa hàng' (người dùng tưởng cà phê là tiệm riêng).
 - GĐ472: QA sandbox: bảng quán hiện 'bậc 3/3 … cùng một cửa hàng' và '🎉 Cuối tuần ×1.2' (ngày 6).
+- GĐ498: Mở rộng bản đồ B1 (tiếp): save biz.zones? tuỳ chọn + hành động openZone (cấp/tiền, một lần, coop 'zone:id') + test. Chưa có UI/3D.
 - GĐ497: Mở rộng bản đồ B1: dữ liệu khu (src/data/zones.ts: hẻm đầu + Ngõ 2 cấp 45/50tr, openZones/zoneAt/canOpenZone) + test. Chưa nối save/UI; ranh giới tạm, sẽ chỉnh khi dựng Ngõ 2.
 - GĐ496: Tiệm xôi có nhà: mưa/bão khách vào trú ăn thêm ×1.2 suất, dòng panel + test.
 - GĐ495: QA nhãn ♨ đồ nóng (3 món hiện đúng) + ghi kế hoạch nháp mở rộng bản đồ 5 bước vào Backlog.

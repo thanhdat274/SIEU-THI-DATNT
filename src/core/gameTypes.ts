@@ -386,6 +386,8 @@ export interface GameState {
   fireTiemXoi: () => boolean;
   steamXoiHand: () => boolean;
   expandTiemXoi: () => boolean;
+  /** GĐ498: mở một khu bản đồ mới (mở rộng bản đồ). */
+  openZone: (id: string) => boolean;
   /** Lấy bớt hàng khỏi kho (vd. thức ăn cho thú cưng). */
   consumeStock: (productId: string, qty: number) => void;
   /** Sổ nợ khách quen (theo id khách quen). */

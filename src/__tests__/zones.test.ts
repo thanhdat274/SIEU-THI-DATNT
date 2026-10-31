@@ -31,3 +31,20 @@ describe('khu bản đồ', () => {
     expect(canOpenZone('zz', [], 1, 0)).toBe('unknown');
   });
 });
+
+describe('GĐ498: openZone', () => {
+  it('cần cấp + tiền, một lần, lưu biz.zones, tin ≤90', async () => {
+    const { newGameData, useGame } = await import('../core/store');
+    const msgs: string[] = [];
+    useGame.setState({ ...newGameData(), level: 10, money: 1e9, notify: (m: string) => { msgs.push(m); } });
+    const g = () => useGame.getState();
+    expect(g().openZone('ngo2')).toBe(false);
+    useGame.setState({ level: 45 });
+    expect(g().openZone('ngo2')).toBe(true);
+    expect(g().biz.zones).toEqual(['ngo2']);
+    expect(g().money).toBe(1e9 - 50_000_000);
+    expect(g().openZone('ngo2')).toBe(false);
+    expect(g().openZone('hem')).toBe(false);
+    for (const m of msgs) expect(m.length).toBeLessThanOrEqual(90);
+  });
+});

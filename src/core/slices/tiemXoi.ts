@@ -1,11 +1,12 @@
 import { formatMoney, productById } from '../../data/products';
 import { copyStock, putStock } from '../stock';
 import { TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_UNLOCK, TIEM_XOI_COST_MUL, tiemXoiHandQty, tiemXoiHandPick, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL } from '../../data/tiemXoi';
+import { canOpenZone, openZones, zoneById } from '../../data/zones';
 import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Tiệm xôi (GĐ411): mua mặt bằng, tuyển/cho nghỉ thợ nấu. Mô phỏng nấu chạy trong endDay. */
 
-export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi'> => ({
+export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi' | 'openZone'> => ({
   buyTiemXoi: () => {
     const s = get();
     if (s.biz.tiemXoi.open) return false;
@@ -71,6 +72,19 @@ export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState
     if (s.money < TIEM_XOI_BIG_COST) { s.notify(`Cần ${formatMoney(TIEM_XOI_BIG_COST)} để mở rộng bếp xôi`); return false; }
     set({ money: s.money - TIEM_XOI_BIG_COST, biz: { ...s.biz, tiemXoi: { ...t, big: true } } });
     s.notify('🍚 Bếp xôi mở rộng: giữ 120 phần mỗi món, nấu nhanh gấp rưỡi');
+    return true;
+  },
+  /** GĐ498: mở khu bản đồ mới — trừ tiền, ghi biz.zones. */
+  openZone: (id) => {
+    const s = get();
+    const z = zoneById(id);
+    const c = canOpenZone(id, s.biz.zones, s.level, s.money);
+    if (!z || c === 'unknown') return false;
+    if (c === 'opened') { s.notify(`${z.icon} ${z.name} đã mở rồi`); return false; }
+    if (c === 'level') { s.notify(`${z.icon} ${z.name} mở ở cấp ${z.unlock}`); return false; }
+    if (c === 'money') { s.notify(`Cần ${formatMoney(z.cost)} để mở ${z.name}`); return false; }
+    set({ money: s.money - z.cost, biz: { ...s.biz, zones: openZones([...(s.biz.zones ?? []), id]).filter((x) => x !== 'hem') } });
+    s.notify(`${z.icon} Đã mở ${z.name}! ${z.desc}`.slice(0, 90));
     return true;
   },
 });
