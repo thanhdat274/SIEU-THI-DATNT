@@ -1,14 +1,14 @@
 import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import {
-  TIEM_XOI_COST_MUL, TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_TARGET, TIEM_XOI_UNLOCK,
+  TIEM_XOI_COST_MUL, TIEM_XOI_HAND, TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_TARGET, TIEM_XOI_UNLOCK,
   TIEM_XOI_WAGE, tiemXoiCapacity,
 } from '../../data/tiemXoi';
 import { styles } from './shared';
 
 /** Tiệm xôi (GĐ412): mục riêng trong bảng Quán nước — không thêm nút HUD. Hiện từ cấp mở khoá. */
 export function TiemXoiSection() {
-  const { biz, level, money, buyTiemXoi, hireTiemXoi, fireTiemXoi } = useGame();
+  const { biz, level, money, day, buyTiemXoi, hireTiemXoi, fireTiemXoi, steamXoiHand } = useGame();
   const t = biz.tiemXoi;
   const last = biz.tiemXoiLast;
   if (!t.open && level < TIEM_XOI_UNLOCK) return null;
@@ -42,6 +42,9 @@ export function TiemXoiSection() {
               Tuyển thợ ({formatMoney(TIEM_XOI_HIRE_FEE)})
             </button>
             <button style={styles.btn} disabled={t.staff <= 0} onClick={fireTiemXoi}>Cho nghỉ 1 thợ</button>
+            <button style={styles.btn} disabled={t.handDay === day} onClick={() => steamXoiHand()} title="Phím J ở sạp xôi cũng được">
+              🍚 Tự đồ {TIEM_XOI_HAND} phần{t.handDay === day ? ' (mai đồ tiếp)' : ''}
+            </button>
           </div>
         </>
       )}

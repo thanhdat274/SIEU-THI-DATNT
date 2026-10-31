@@ -161,3 +161,4 @@
 - GĐ437 — 📰 Tin cuối ngày quán nước ghi "tự pha N mẻ" nếu hôm nay có đứng quầy. 2579 test xanh.
 - GĐ438 — ✂️ Tin quán nước giữ ≤90 ký tự: dài quá thì phần thiếu chỉ ghi "thiếu N món". Test ca dài nhất (3 nhân viên, tự pha 5 mẻ, 4 món thiếu).
 - GĐ439: Phím J ở sạp xôi: chủ tự đồ 20 phần món thiếu nhất vào kho, mỗi ngày một lần (steamXoiHand).
+- GĐ440: Bảng tiệm xôi có nút Tự đồ 20 phần (cùng hành động phím J).
