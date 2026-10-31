@@ -26,7 +26,7 @@ export function QuanMenuSection() {
         {QUAN_TIERS[tier].icon} <b>{QUAN_TIERS[tier].name}</b>
         {nextTier && (
           <button style={styles.btn} disabled={level < nextTier.level} onClick={() => upgradeQuanTier()}>
-            {level < nextTier.level ? `${nextTier.name}: cấp ${nextTier.level}` : `Nâng lên ${nextTier.name} ${formatMoney(nextTier.cost)} (khách ×${nextTier.mul})`}
+            {level < nextTier.level ? `${nextTier.name}: cấp ${nextTier.level}` : `Nâng lên ${nextTier.name} ${formatMoney(nextTier.cost)} (khách ×${nextTier.mul}${quanMenuSlots({ tier: tier + 1 }) > slots ? ', +1 ô món' : ''})`}
           </button>
         )}
       </div>
