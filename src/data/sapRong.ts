@@ -58,3 +58,7 @@ export function sapStrollerCount(lots: number | undefined, weather: Weather | un
   if (!lots || weather === 'rain' || weather === 'storm' || m < 6 * 60 || m >= 20 * 60) return 0;
   return Math.min(6, Math.min(SAP_LOTS, lots) * 2);
 }
+
+/** GĐ509: icon món các lô cho tin cuối ngày, vd "🥤🥤🥖" (thiếu món = 🛒). */
+export const sapKindIcons = (lots: number | undefined, kinds?: readonly string[]) =>
+  Array.from({ length: Math.max(0, Math.min(SAP_LOTS, lots ?? 0)) }, (_, i) => sapKindOf(kinds, i).icon).join('');

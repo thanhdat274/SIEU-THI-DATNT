@@ -105,3 +105,12 @@ describe('GĐ508: gợi ý món theo dự báo', () => {
     expect(bestSapKind('rain', 1).id).toBe('tonghop');
   });
 });
+
+describe('GĐ509: icon món trong tin cuối ngày', () => {
+  it('mỗi lô một icon, thiếu món = 🛒, giới hạn 4 lô', async () => {
+    const { sapKindIcons } = await import('../data/sapRong');
+    expect(sapKindIcons(3, ['nuocmia', 'banhmi'])).toBe('🥤🥖🛒');
+    expect(sapKindIcons(0)).toBe('');
+    expect([...sapKindIcons(9)].length).toBe(SAP_LOTS);
+  });
+});
