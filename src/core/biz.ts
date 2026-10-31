@@ -228,6 +228,8 @@ export function achievementCtx(s: GameState): AchievementCtx {
     impulseSold: s.totals.impulseSold,
     cookOrdersDone: s.totals.cookOrdersDone,
     counterKills: s.biz.counterKills,
+    quanTier: s.biz.quanNuoc?.tier ?? 0,
+    xoiBig: !!s.biz.tiemXoi?.big,
   };
 }
 

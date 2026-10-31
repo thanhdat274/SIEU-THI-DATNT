@@ -84,3 +84,16 @@ describe('GĐ461: mở rộng bếp xôi', () => {
     for (const x of msgs) expect(x.length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('GĐ464: thành tựu quán cà phê / bếp xôi lớn', () => {
+  it('done theo ctx', async () => {
+    const { ACHIEVEMENTS } = await import('../data/biz');
+    const { achievementCtx } = await import('../core/biz');
+    const a = (id: string) => ACHIEVEMENTS.find((x) => x.id === id)!;
+    const ctx = achievementCtx(g());
+    expect(a('quan_cafe').done(ctx)).toBe(false);
+    expect(a('xoi_big').done(ctx)).toBe(false);
+    expect(a('quan_cafe').done({ ...ctx, quanTier: 2 })).toBe(true);
+    expect(a('xoi_big').done({ ...ctx, xoiBig: true })).toBe(true);
+  });
+});

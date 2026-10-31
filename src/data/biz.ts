@@ -934,10 +934,15 @@ export interface AchievementCtx {
   cookOrdersDone: number;
   /** Số đối thủ bị hạ bởi đợt phản công chủ động. */
   counterKills: number;
+  /** GĐ464: bậc cửa hàng nước (0..2) và tiệm xôi đã mở rộng — tuỳ chọn để ctx test cũ vẫn hợp lệ. */
+  quanTier?: number;
+  xoiBig?: boolean;
 }
 export interface Achievement { id: string; icon: string; name: string; desc: string; reward: number; done: (c: AchievementCtx) => boolean }
 
 export const ACHIEVEMENTS: Achievement[] = [
+  { id: 'quan_cafe', icon: '☕', name: 'Quán cà phê', desc: 'Nâng cửa hàng nước lên Quán cà phê', reward: 2000000, done: (c) => (c.quanTier ?? 0) >= 2 },
+  { id: 'xoi_big', icon: '🍚', name: 'Bếp xôi lớn', desc: 'Mở rộng bếp tiệm xôi', reward: 1500000, done: (c) => !!c.xoiBig },
   { id: 'first_100', icon: '🛒', name: 'Mối đầu tiên', desc: 'Bán 100 món', reward: 20000, done: (c) => c.totals.itemsSold >= 100 },
   { id: 'items_1000', icon: '📦', name: 'Nghìn món', desc: 'Bán 1.000 món', reward: 100000, done: (c) => c.totals.itemsSold >= 1000 },
   { id: 'items_10000', icon: '🏭', name: 'Vạn món', desc: 'Bán 10.000 món', reward: 600000, done: (c) => c.totals.itemsSold >= 10000 },
