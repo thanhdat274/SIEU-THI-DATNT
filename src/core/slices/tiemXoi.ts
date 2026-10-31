@@ -1,7 +1,7 @@
 import { formatMoney, productById } from '../../data/products';
 import { copyStock, putStock } from '../stock';
 import { TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_UNLOCK, TIEM_XOI_COST_MUL, tiemXoiHandQty, tiemXoiHandPick, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL } from '../../data/tiemXoi';
-import { SAP_LOT_COST, SAP_LOTS, SAP_TIERS, nextSapKinds, sapKindOf, sapTierOf } from '../../data/sapRong';
+import { SAP_LOT_COST, SAP_LOTS, SAP_TIERS, nextSapKinds, sapKindOf, sapTierOf, sapRongIncome } from '../../data/sapRong';
 import { canOpenZone, openZones, zoneById } from '../../data/zones';
 import type { GameState, SetState, GetState } from '../gameTypes';
 
@@ -119,7 +119,8 @@ export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState
     if (s.weather === 'rain' || s.weather === 'storm') { s.notify('Trời mưa, sạp nghỉ bán hôm nay'); return false; }
     set({ biz: { ...s.biz, sapHandDay: s.day } });
     get().addXp(4);
-    s.notify('🙋 Đứng sạp Ngõ 2: hôm nay mọi lô thu thêm 25%');
+    const b = s.biz, inc = (h: boolean) => sapRongIncome(b.sapRong, s.weather, s.day, b.sapKinds, b.sapTiers, b.tiemXoi.open, h);
+    s.notify(`🙋 Đứng sạp Ngõ 2: hôm nay mọi lô thu thêm 25% (≈+${formatMoney(inc(true) - inc(false))})`);
     return true;
   },
   cycleSapKind: (i: number) => {

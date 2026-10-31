@@ -180,6 +180,7 @@ describe('GĐ521: tự đứng sạp', () => {
     const xp = g().xp;
     expect(g().tendSapHand()).toBe(true);
     expect(g().biz.sapHandDay).toBe(g().day);
+    expect(msgs.some((x) => x.includes('≈+'))).toBe(true); // GĐ526: báo số tiền thêm
     expect(g().xp).toBeGreaterThan(xp);
     expect(g().tendSapHand()).toBe(false);
     expect(sapRongIncome(2, 'sunny', 1, undefined, undefined, false, true)).toBe(Math.round(sapRongIncome(2, 'sunny', 1) * SAP_HAND_MUL));
