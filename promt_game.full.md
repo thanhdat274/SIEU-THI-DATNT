@@ -114,7 +114,7 @@ Làm việc tự chủ dễ trôi theo kiểu "mỗi giai đoạn thêm một th
 | Thông báo trong ngày đầu người mới | 10 — đạt | ≤ 10 | `economySim.test.ts` |
 | (Nhiệm vụ + kèo) / lãi bán hàng thật, cấp 5 / 10 / 20 | 1.0 / 0.92 / 0.67 (đo 0.99 / 0.89 / 0.64) — đạt | ≤ 1 | `economySim.test.ts` |
 | Tải ban đầu / chunk lớn nhất (gzip) | 598 KB / 255 KB — đạt | ≤ 600 KB | `npm run check:bundle` |
-| Rò rỉ khi chơi nhiều ngày | object ngoài tiệm +2%, nhân vật sống +20 | 0 | `longSessionLeak.test.ts` |
+| Rò rỉ khi chơi nhiều ngày | object ngoài tiệm 0% — đạt, nhân vật sống +20 (dao động số khách đang ở ngoài, không phải rò rỉ) | 0 | `longSessionLeak.test.ts` |
 | Thời gian `npm run test` | ~2,7–3 phút (dao động theo tải máy) — đạt | ≤ 5 phút | đo mỗi giai đoạn |
 
 - **Tính năng mới phải gộp vào bảng có sẵn hoặc thay một tính năng cũ.** Không thêm nút HUD mới khi chưa bỏ được một nút. Mỗi 10 giai đoạn, Leader + Game Designer rà mọi tính năng, gộp hoặc bỏ những cái ít dùng, chồng chéo hay nông, rồi hạ trần. Ghi lý do vào PROGRESS.md.

@@ -51,8 +51,8 @@ describe('phiên chơi dài không rò rỉ', () => {
     }
     // eslint-disable-next-line no-console
     console.log(`[rò rỉ] object ngoài nhân vật: ${objs0} → ${objs.join(' → ')} · nhân vật sống: ${walkers0} → ${walkers.join(' → ')}`);
-    // Ngoài tiệm và nhân vật thì cảnh gần như cố định: phình quá 2% sau 6 ngày (đo thực tế: 0%) là có thứ không được dọn
-    expect(Math.max(...objs)).toBeLessThanOrEqual(objs0 * 1.02);
+    // Ngoài tiệm và nhân vật thì cảnh cố định: GĐ399 hạ trần 2% → 0% (đo 563 → 563 suốt 6 ngày); tăng dù 1 object là có thứ không được dọn
+    expect(Math.max(...objs)).toBeLessThanOrEqual(objs0);
     // Toà tiệm cũ khi nâng tier phải được gỡ khỏi scene (chỉ còn đúng một toà)
     expect(world.scene.children.filter((c) => c === world.shop.building.group)).toHaveLength(1);
     // Nhân vật bị dispose đúng khi rời đi: không tích luỹ theo ngày
