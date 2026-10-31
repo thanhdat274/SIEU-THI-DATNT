@@ -158,3 +158,4 @@
 - GĐ434 — 👩‍🍳 Sạp xôi 3D có người nấu đội nón: chủ sạp + mỗi thợ một người (tối đa 3, `setCooks`). QA `?thu=1` 2 thợ → 3 người đứng sau sạp. Bộ test đầy đủ 2577 xanh.
 - GĐ435 — 🍚 Đứng trước sạp xôi bấm [J] mở bảng quán nước (mục tiệm xôi); chưa cấp 40 thì không hiện gợi ý (gợi ý rỗng coi như không có). QA `?thu=1` ok, 2577 test xanh.
 - GĐ436 — 🔄 Tự pha xoay vòng thực đơn: mẻ thứ n bắt đầu từ món thứ n, bỏ món thiếu nguyên liệu (trước luôn pha món đầu). 2578 test xanh.
+- GĐ437 — 📰 Tin cuối ngày quán nước ghi "tự pha N mẻ" nếu hôm nay có đứng quầy. 2579 test xanh.

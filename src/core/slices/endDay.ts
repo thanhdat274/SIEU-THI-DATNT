@@ -139,6 +139,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       quanWages = q.wages;
       quanNuocLast = { day: s.day, revenue: q.revenue, served: q.served, wanted: q.wanted, wages: q.wages, profit: q.revenue - q.wages };
       quanNews.push(`🧋 Quán nước: ${q.served}/${q.wanted} ly · ${formatMoney(q.revenue)} · lương −${formatMoney(q.wages)}`
+        + (s.biz.quanNuoc.hand?.day === s.day ? ` · tự pha ${s.biz.quanNuoc.hand.n} mẻ` : '')
         + (q.brewShort.length ? ` · thiếu ${quanRecipeById(q.brewShort[0])?.name}${q.brewShort.length > 1 ? ` +${q.brewShort.length - 1}` : ''}` : q.short ? ' · kho thiếu đồ uống, nhập thêm' : ''));
     }
   }

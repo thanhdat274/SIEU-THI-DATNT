@@ -189,6 +189,15 @@ describe('endDay tích hợp — quán chạy theo ngày', () => {
     expect(msgs.some((m) => m.includes('🧋 Quán nước: 68/68 ly'))).toBe(true);
   });
 
+  it('GĐ437: hôm nay có tự pha thì tin cuối ngày ghi số mẻ', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    const msgs = setupQuan({ nuoc: 40, ngot: 40, bia: 40 });
+    const st = useGame.getState();
+    useGame.setState({ biz: { ...st.biz, quanNuoc: { ...st.biz.quanNuoc, hand: { day: st.day, n: 2 } } } });
+    expect(useGame.getState().sleep()).toBe(true);
+    expect(msgs.some((m) => m.includes('🧋 Quán nước:') && m.includes('tự pha 2 mẻ'))).toBe(true);
+  });
+
   it('có nhân viên + mức giá bình dân: doanh thu theo mul, lương trừ đủ', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99);
     setupQuan({ nuoc: 500 }, { staff: 1, price: 're' });
