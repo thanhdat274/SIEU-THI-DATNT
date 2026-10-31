@@ -322,6 +322,8 @@ useGame.subscribe((s) => {
 // hẻm đối diện quán nước, chỉ hình ảnh, không chặn lưới.
 let tiemXoiStand: import('./world/tiemXoiStand').TiemXoiStand | null = null;
 let tiemXoiLoading = false;
+let lastXoiWalls = false;
+let xoiHouseBoxesFn: typeof import('./world/tiemXoiStand').xoiHouseBoxes | null = null;
 const syncTiemXoi = () => {
   const s = useGame.getState();
   const st = tiemXoiStandState(s.level, !!s.biz.tiemXoi?.open);
@@ -330,6 +332,7 @@ const syncTiemXoi = () => {
       tiemXoiLoading = true;
       void import('./world/tiemXoiStand').then((m) => {
         tiemXoiStand = m.createTiemXoiStand();
+        xoiHouseBoxesFn = m.xoiHouseBoxes;
         tiemXoiStand.group.position.set(LANE_X - 4, 0, 1);
         scene.add(tiemXoiStand.group);
         syncTiemXoi();
@@ -339,6 +342,13 @@ const syncTiemXoi = () => {
   }
   tiemXoiStand.lot.visible = st === 'lot';
   tiemXoiStand.stall.visible = st === 'open';
+  // GĐ483: nhà tiệm xôi chặn lưới khi đã mở (chỉ vào qua cửa)
+  if ((st === 'open') !== lastXoiWalls) {
+    lastXoiWalls = st === 'open';
+    const p = tiemXoiStand.group.position;
+    grid.setStatic('tiemXoi', lastXoiWalls ? xoiHouseBoxesFn!(p.x, p.z) : []);
+    shop.attachGrid(grid);
+  }
   tiemXoiStand.setCooks(1 + (s.biz.tiemXoi?.staff ?? 0));
   tiemXoiStand.setSteaming(s.biz.tiemXoi?.handDay === s.day);
   tiemXoiStand.setBig(!!s.biz.tiemXoi?.big);
@@ -453,8 +463,8 @@ const fixedInteractables: Interactable[] = [
       const left = quanHandLeft(g.biz.quanNuoc, g.day);
       return left > 0 ? `[P] Tự pha 5 ly ở quầy (còn ${left} mẻ)` : 'Hôm nay đã pha hết mẻ, mai pha tiếp';
     }, key: 'KeyP', action: () => { useGame.getState().brewQuanHand(); } },
-  // GĐ435: trước sạp tiệm xôi (x=46, z≈2.4) bấm J mở bảng quán nước — nơi có mục tiệm xôi
-  { position: new THREE.Vector3(LANE_X - 4, 0, 2.4), radius: 1.8,
+  // GĐ435/GĐ483: trước quầy trong nhà tiệm xôi (x=46, z≈0.5; chưa mở thì biển đất ở z≈1) bấm J
+  { position: new THREE.Vector3(LANE_X - 4, 0, 0.8), radius: 1.8,
     hint: () => (useGame.getState().biz.tiemXoi?.open ? (useGame.getState().biz.tiemXoi.handDay === useGame.getState().day ? '[J] Xem tiệm xôi (hôm nay đã đồ)' : `[J] Tự đồ ${tiemXoiHandQty(useGame.getState().biz.tiemXoi.staff)} phần xôi`) : useGame.getState().level >= 40 ? '[J] Mở tiệm xôi' : ''), key: 'KeyJ',
     action: () => {
       const g = useGame.getState();

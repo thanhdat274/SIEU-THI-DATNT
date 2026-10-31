@@ -1,10 +1,31 @@
 import * as THREE from 'three';
 
 /**
- * Tiệm xôi 3D (GĐ430): gian hàng nhỏ phía tây đầu hẻm, đối diện quán nước. Chỉ hình ảnh, không chặn
+ * Tiệm xôi 3D (GĐ430, GĐ483 thành nhà): cửa hàng nhỏ phía tây đầu hẻm, đối diện quán nước. Chỉ hình ảnh, không chặn
  * lưới đi lại. `lot` = biển gỗ "TIỆM XÔI" khi đủ cấp chưa mở; `stall` = sạp có nồi chõ bốc hơi, mâm xôi
  * màu và mái che vàng khi đã mở. main.tsx bật/ẩn theo `tiemXoiStandState`.
  */
+/** GĐ483: tiệm xôi thành cửa hàng nhỏ có nhà (người chơi chọn) — toạ độ cục bộ quanh gốc tiệm (thế giới 46, 0, 1).
+ *  Mặt tiền z 0.4 (thế giới 1.4) chừa vỉa hè; cửa giữa rộng 1.5 m; quầy + nồi trong nhà nên mưa vẫn bán. */
+export const XOI_HOUSE = { x: 0, z: -1.4, width: 4.2, depth: 3.6, height: 2.8 } as const;
+export const XOI_DOOR_HALF = 0.75;
+
+/** Khối chặn lưới đi lại (toạ độ thế giới theo gốc ox, oz): tường sau, hai hông, hai đoạn mặt tiền, quầy. */
+export function xoiHouseBoxes(ox: number, oz: number): THREE.Box3[] {
+  const { x, z, width: W, depth: D, height: H } = XOI_HOUSE;
+  const cx = ox + x, cz = oz + z, t = 0.12;
+  const b = (x1: number, z1: number, x2: number, z2: number) => new THREE.Box3(new THREE.Vector3(x1, 0, z1), new THREE.Vector3(x2, H, z2));
+  const front = cz + D / 2, back = cz - D / 2;
+  return [
+    b(cx - W / 2, back - t / 2, cx + W / 2, back + t / 2),
+    b(cx - W / 2 - t / 2, back, cx - W / 2 + t / 2, front),
+    b(cx + W / 2 - t / 2, back, cx + W / 2 + t / 2, front),
+    b(cx - W / 2, front - t / 2, cx - XOI_DOOR_HALF, front + t / 2),
+    b(cx + XOI_DOOR_HALF, front - t / 2, cx + W / 2, front + t / 2),
+    b(cx - 0.95, cz - 0.45, cx + 0.95, cz + 0.45),
+  ];
+}
+
 export interface TiemXoiStand { group: THREE.Group; lot: THREE.Group; stall: THREE.Group; /** GĐ434: số người nấu đứng sau sạp (chủ + thợ). */ setCooks(n: number): void; /** GĐ447: hơi bốc to khi chủ đã đồ mẻ hôm nay. */ setSteaming(on: boolean): void; setBig(on: boolean): void }
 
 const mat = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 0.8 });
@@ -37,36 +58,51 @@ export function createTiemXoiStand(): TiemXoiStand {
   lot.add(post, board);
 
   const stall = new THREE.Group();
-  const counter = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 0.9), mat(0xa0522d));
-  counter.position.y = 0.45;
+  const counter = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.9, 0.9), mat(0xa0522d));
+  counter.position.set(0, 0.45, XOI_HOUSE.z);
   stall.add(counter);
   // Nồi chõ đồ xôi + hơi nước
   const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.28, 0.5, 14), mat(0x95a5a6));
-  pot.position.set(-0.6, 1.15, 0);
+  pot.position.set(-0.7, 1.15, XOI_HOUSE.z);
   const steam = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 }));
-  steam.position.set(-0.6, 1.62, 0);
+  steam.position.set(-0.7, 1.62, XOI_HOUSE.z);
   stall.add(pot, steam);
   // GĐ462: bếp mở rộng thêm nồi thứ hai sau sạp
   const pot2 = pot.clone();
-  pot2.position.set(-0.6, 0.25, -0.75);
+  pot2.position.set(1.4, 0.25, XOI_HOUSE.z - 1.2);
   pot2.visible = false;
   stall.add(pot2);
   // Mâm xôi màu: gấc đỏ, lá dứa xanh, đậu xanh vàng, nếp trắng
   [0xe74c3c, 0x27ae60, 0xf1c40f, 0xfdfdfd].forEach((c, i) => {
     const tray = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.08, 12), mat(c));
-    tray.position.set(0.05 + i * 0.32, 0.94, 0.1);
+    tray.position.set(-0.15 + i * 0.27, 0.94, XOI_HOUSE.z + 0.1);
     stall.add(tray);
   });
-  for (const x of [-1.15, 1.15]) {
-    const pole = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.3, 0.08), mat(0x5d4037));
-    pole.position.set(x, 1.15, 0.4);
-    stall.add(pole);
-  }
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.06, 1.4), mat(0xf6c445));
-  roof.position.set(0, 2.32, 0.15);
-  roof.rotation.x = 0.2;
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.5), new THREE.MeshStandardMaterial({ map: signTexture('XÔI NÓNG') }));
-  sign.position.set(0, 2.0, 0.46);
+  // Nhà: sàn, tường, mái, mặt tiền có cửa giữa, biển TIỆM XÔI
+  const { width: W, depth: D, height: H } = XOI_HOUSE;
+  const hz = XOI_HOUSE.z, front = hz + D / 2, back = hz - D / 2, T = 0.12;
+  const wallM = mat(0xfff1d6), trimM = mat(0xc0392b);
+  const add = (w: number, h: number, d: number, m: THREE.Material, x: number, y: number, z: number) => {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+    b.position.set(x, y, z);
+    b.castShadow = b.receiveShadow = true;
+    stall.add(b);
+  };
+  add(W, 0.06, D, mat(0xd9c7a8), 0, 0.03, hz);
+  add(W, H, T, wallM, 0, H / 2, back);
+  add(T, H, D, wallM, -W / 2, H / 2, hz);
+  add(T, H, D, wallM, W / 2, H / 2, hz);
+  const seg = W / 2 - XOI_DOOR_HALF;
+  add(seg, H, T, wallM, -(XOI_DOOR_HALF + seg / 2), H / 2, front);
+  add(seg, H, T, wallM, XOI_DOOR_HALF + seg / 2, H / 2, front);
+  add(XOI_DOOR_HALF * 2, 0.5, T, wallM, 0, H - 0.25, front);
+  add(W + 0.4, 0.16, D + 0.5, mat(0x8e2a1f), 0, H + 0.08, hz + 0.1);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(W + 0.2, 0.05, 0.8), mat(0xf6c445));
+  roof.position.set(0, H - 0.5, front + 0.4);
+  roof.rotation.x = 0.28;
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.5), new THREE.MeshStandardMaterial({ map: signTexture('TIỆM XÔI') }));
+  sign.position.set(0, H + 0.45, front + 0.32);
+  add(2.35, 0.6, 0.06, trimM, 0, H + 0.45, front + 0.28);
   stall.add(roof, sign);
 
   // Người nấu đứng sau sạp: một chủ sạp luôn có + mỗi thợ thêm một người (tối đa 3)
@@ -81,7 +117,7 @@ export function createTiemXoiStand(): TiemXoiStand {
     const hat = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.16, 12), mat(0xf5deb3));
     hat.position.y = 1.6;
     c.add(body, head, hat);
-    c.position.set(x, 0, -0.75);
+    c.position.set(x, 0, XOI_HOUSE.z - 0.8);
     c.visible = i === 0;
     stall.add(c);
     cooks.push(c);

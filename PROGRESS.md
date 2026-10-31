@@ -96,7 +96,7 @@
 
 
 ## Backlog tiếp theo
-- 🙋 **Cần duyệt (GĐ470, 31/10):** người dùng hỏi sao tiệm xôi là sạp vỉa hè, mưa bán sao được. Đề xuất: nâng tiệm xôi thành cửa hàng nhỏ có nhà (biển TIỆM XÔI, quầy + nồi trong nhà, vào đứng quầy bấm J), giữ nguyên luật/save. Chờ chọn: (a) cửa hàng nhỏ (b) giữ sạp. Đã giải thích: Quán cà phê là bậc 3 của chính quán nước, không phải tiệm riêng.
+- ✅ **Đã duyệt (GĐ483):** người dùng chọn (a) — tiệm xôi thành cửa hàng nhỏ có nhà. Sạp/quầy hàng rong sau này bán ở ngõ khác khi **mở rộng bản đồ** (hướng kiểu Cities: Skylines 2: thêm ngõ/khu mới mở dần) — backlog lớn.
 - ✅ **Đã duyệt (a) cửa hàng nước thật** — lộ trình: B1 nhà thật có quầy pha/tủ mát bên trong (hình) → B2 vào trong được (nav) → B3 khách 3D gọi món/ngồi → B4 tự đứng quầy pha → B5 lớn dần quầy→quán→cà phê. Đề xuất gốc GĐ422: — Người dùng hỏi sao quán nước chưa là cửa hàng như tạp hóa. Hiện là quầy ngoài trời ở (54.4,0,1), sim theo ngày, không vào trong được. Đề xuất: (a) nâng thành cửa hàng nước thật — nhà có quầy pha + tủ mát, khách 3D vào gọi món/ngồi, tự đứng quầy pha, lớn dần quầy→quán→cà phê (thay đổi lớn: sim, nav, migration); (b) giữ quầy, chỉ đẹp/to dần theo cấp; (c) hướng khác. Chờ người dùng chọn; trong lúc chờ làm tiếp tiệm xôi.
 
 - 🔍 **Rà 3 cơ sở (GĐ413, theo yêu cầu người dùng trước khi mở rộng tiệm xôi):**
@@ -150,6 +150,7 @@
 - GĐ470: Ghi Cần duyệt nâng tiệm xôi thành cửa hàng nhỏ (chờ người dùng chọn).
 - GĐ471: Bảng quán ghi rõ 'bậc x/3: Quầy nước → Quán nước → Quán cà phê — cùng một cửa hàng' (người dùng tưởng cà phê là tiệm riêng).
 - GĐ472: QA sandbox: bảng quán hiện 'bậc 3/3 … cùng một cửa hàng' và '🎉 Cuối tuần ×1.2' (ngày 6).
+- GĐ483: Tiệm xôi thành cửa hàng nhỏ: nhà tường/mái/cửa, biển TIỆM XÔI, quầy + nồi trong nhà, tường chặn lưới (vào qua cửa), J ở quầy trong nhà + test lưới. QA bản thử: nhà hiện cạnh vỉa hè, J “Tự đồ 35 phần xôi”.
 - GĐ482: Panel quán nhắc đồ nóng cả tháng rét (×1.1) + test.
 - GĐ481: Tháng rét (12–2) đồ nóng trên thực đơn kéo thêm 10% khách + test.
 - GĐ480: Món nóng thứ ba Ca cao nóng (cấp 38) + test.
