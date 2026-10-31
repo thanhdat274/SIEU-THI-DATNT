@@ -108,6 +108,9 @@ export const tiemXoiHandPick = (level: number, storage: Record<string, number>):
 };
 
 /** GĐ484: tiệm xôi có nhà nên có khách ngồi ăn tại chỗ — 10 suất + 5/thợ (bếp lớn ×1.5) mỗi ngày. */
+/** GĐ486: số khách ngồi hiện trong tiệm theo suất ăn hôm qua: 0 / 1 (<15) / 2. */
+export const tiemXoiDinerFigures = (dine?: number) => (!dine ? 0 : dine < 15 ? 1 : 2);
+
 export const tiemXoiDineCap = (staff: number, big = false) => Math.round((10 + 5 * staff) * (big ? 1.5 : 1));
 
 /**

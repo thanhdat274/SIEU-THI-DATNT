@@ -128,3 +128,17 @@ describe('GĐ484: khách ăn tại chỗ', () => {
     expect(typeof m0).toBe('number');
   });
 });
+
+describe('GĐ486: khách ngồi hiện trong tiệm', () => {
+  it('số hình theo suất hôm qua; cuối ngày ghi dine vào tiemXoiLast', async () => {
+    const { tiemXoiDinerFigures } = await import('../data/tiemXoi');
+    expect(tiemXoiDinerFigures(undefined)).toBe(0);
+    expect(tiemXoiDinerFigures(0)).toBe(0);
+    expect(tiemXoiDinerFigures(10)).toBe(1);
+    expect(tiemXoiDinerFigures(20)).toBe(2);
+    g().buyTiemXoi();
+    useGame.setState({ minutes: 20 * 60 });
+    g().sleep();
+    expect(g().biz.tiemXoiLast?.dine).toBeGreaterThan(0);
+  });
+});

@@ -39,7 +39,7 @@ import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
 import { createWorld } from './world/world';
-import { tiemXoiStandState, tiemXoiHandQty } from './data/tiemXoi';
+import { tiemXoiStandState, tiemXoiHandQty, tiemXoiDinerFigures } from './data/tiemXoi';
 import { quanHandLeft, quanNuocStandState, quanPatrons, quanTierOf } from './data/quanNuoc';
 import { menuBoardLines } from './data/quanRecipes';
 import { QUAN_HOUSE, quanHouseBoxes } from './world/quanNuocStand';
@@ -352,6 +352,7 @@ const syncTiemXoi = () => {
   tiemXoiStand.setCooks(1 + (s.biz.tiemXoi?.staff ?? 0));
   tiemXoiStand.setSteaming(s.biz.tiemXoi?.handDay === s.day);
   tiemXoiStand.setBig(!!s.biz.tiemXoi?.big);
+  tiemXoiStand.setDiners(tiemXoiDinerFigures(s.biz.tiemXoiLast?.dine));
 };
 syncTiemXoi();
 useGame.subscribe(syncTiemXoi);

@@ -26,7 +26,7 @@ export function xoiHouseBoxes(ox: number, oz: number): THREE.Box3[] {
   ];
 }
 
-export interface TiemXoiStand { group: THREE.Group; lot: THREE.Group; stall: THREE.Group; /** GĐ434: số người nấu đứng sau sạp (chủ + thợ). */ setCooks(n: number): void; /** GĐ447: hơi bốc to khi chủ đã đồ mẻ hôm nay. */ setSteaming(on: boolean): void; setBig(on: boolean): void }
+export interface TiemXoiStand { group: THREE.Group; lot: THREE.Group; stall: THREE.Group; /** GĐ434: số người nấu đứng sau sạp (chủ + thợ). */ setCooks(n: number): void; /** GĐ447: hơi bốc to khi chủ đã đồ mẻ hôm nay. */ setSteaming(on: boolean): void; setBig(on: boolean): void; /** GĐ486: số khách ngồi ăn (0–2). */ setDiners(n: number): void }
 
 const mat = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 0.8 });
 
@@ -112,6 +112,18 @@ export function createTiemXoiStand(): TiemXoiStand {
     stool.position.set(1.45 + dx, 0.2, front - 0.6);
     stall.add(stool);
   }
+  const diners: THREE.Group[] = [-0.42, 0.42].map((dx, i) => {
+    const d = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 0.55, 8), mat([0x27ae60, 0x8e44ad][i]));
+    body.position.y = 0.68;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), mat(0xf1c27d));
+    head.position.y = 1.1;
+    d.add(body, head);
+    d.position.set(1.45 + dx, 0, front - 0.6);
+    d.visible = false;
+    stall.add(d);
+    return d;
+  });
   const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.07, 0.07, 10), mat(0xfdfdfd));
   bowl.position.set(1.45, 0.69, front - 0.6);
   stall.add(bowl);
@@ -140,5 +152,6 @@ export function createTiemXoiStand(): TiemXoiStand {
   stall.visible = false;
   const setSteaming = (on: boolean) => { steam.scale.setScalar(on ? 1.8 : 1); (steam.material as THREE.MeshStandardMaterial).opacity = on ? 0.6 : 0.45; };
   const setBig = (on: boolean) => { pot2.visible = on; };
-  return { group, lot, stall, setCooks, setSteaming, setBig };
+  const setDiners = (n: number) => diners.forEach((d, i) => { d.visible = i < n; });
+  return { group, lot, stall, setCooks, setSteaming, setBig, setDiners };
 }

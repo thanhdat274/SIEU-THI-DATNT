@@ -1160,7 +1160,7 @@ export interface BizState {
   quanNuoc: QuanNuocState;
   /** Tiệm xôi (GĐ410): xưởng nấu xôi số lượng lớn đổ vào kho chung mỗi đêm. */
   tiemXoi: TiemXoiState;
-  tiemXoiLast?: { day: number; total: number; cost: number; wages: number; saved: number };
+  tiemXoiLast?: { day: number; total: number; cost: number; wages: number; saved: number; /** GĐ486: suất khách ăn tại chỗ. */ dine?: number };
   /** Kết quả ngày vừa rồi của quán nước (để UI hiển thị); chưa từng chạy thì undefined.
    *  wages = tổng lương nhân viên phải trả hôm đó, profit = revenue − wages (lời ròng thật). */
   quanNuocLast?: { day: number; revenue: number; served: number; wanted: number; wages: number; profit: number };
