@@ -580,7 +580,7 @@ export function MorningPanel() {
   })();
   // GĐ127: Sổ kinh doanh quán nước — mồi quyết định (thuê/sa thải, nhập kho, cân kho
   // với kệ tiệm chính). THUẦN đọc state có sẵn; UI chỉ hiện dòng khi có tín hiệu.
-  const quanHealth = biz.quanNuoc.open ? quanNuocHealth(biz.quanNuoc, level, storage, biz.quanNuocLast ?? null) : null;
+  const quanHealth = biz.quanNuoc.open ? quanNuocHealth(biz.quanNuoc, level, storage, biz.quanNuocLast ?? null, weather) : null;
   const demand = demandForecast({
     level, day, weatherSeed,
     localLegend: hasSkill(skills, 'local_legend'),
