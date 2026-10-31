@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newGameData, useGame } from '../core/store';
-import { TIEM_XOI_HAND, TIEM_XOI_UNLOCK, tiemXoiHandPick, tiemXoiIds } from '../data/tiemXoi';
+import { TIEM_XOI_HAND, tiemXoiHandQty, TIEM_XOI_UNLOCK, tiemXoiHandPick, tiemXoiIds } from '../data/tiemXoi';
 
 /** GĐ439 — chủ tự đồ một mẻ xôi ở sạp, mỗi ngày một lần. */
 const g = () => useGame.getState();
@@ -42,5 +42,18 @@ describe('tin cuối ngày', () => {
     const seg = msgs.join('|').match(/🍚 Tiệm xôi.*?chủ tự đồ 1 mẻ/)?.[0];
     expect(seg).toBeTruthy();
     expect(seg!.length).toBeLessThanOrEqual(90);
+  });
+});
+
+describe('GĐ444: thợ phụ tăng mẻ', () => {
+  it('mỗi thợ +5 phần', () => {
+    expect(tiemXoiHandQty(0)).toBe(TIEM_XOI_HAND);
+    expect(tiemXoiHandQty(2)).toBe(TIEM_XOI_HAND + 10);
+    g().buyTiemXoi();
+    g().hireTiemXoi();
+    const id = tiemXoiHandPick(g().level, g().storage)!;
+    const before = g().storage[id] ?? 0;
+    g().steamXoiHand();
+    expect(g().storage[id]).toBe(before + TIEM_XOI_HAND + 5);
   });
 });

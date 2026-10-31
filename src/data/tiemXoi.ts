@@ -95,6 +95,8 @@ export const tiemXoiStandState = (level: number, open: boolean): 'hidden' | 'lot
 
 /** GĐ439 — chủ tự đồ một mẻ ở sạp mỗi ngày: 20 phần món đang thiếu nhiều nhất, vào kho ngay, giá vốn như tiệm. */
 export const TIEM_XOI_HAND = 20;
+/** GĐ444: mỗi thợ phụ thêm 5 phần cho mẻ chủ tự đồ. */
+export const tiemXoiHandQty = (staff: number) => TIEM_XOI_HAND + 5 * Math.max(0, staff);
 export const tiemXoiHandPick = (level: number, storage: Record<string, number>): string | null => {
   let pick: string | null = null;
   for (const id of tiemXoiIds(level)) if (pick === null || (storage[id] ?? 0) < (storage[pick] ?? 0)) pick = id;

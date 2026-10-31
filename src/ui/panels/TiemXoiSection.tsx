@@ -1,8 +1,8 @@
 import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import {
-  TIEM_XOI_COST_MUL, TIEM_XOI_HAND, TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_TARGET, TIEM_XOI_UNLOCK,
-  TIEM_XOI_WAGE, tiemXoiCapacity,
+  TIEM_XOI_COST_MUL, TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_TARGET, TIEM_XOI_UNLOCK,
+  TIEM_XOI_WAGE, tiemXoiCapacity, tiemXoiHandQty,
 } from '../../data/tiemXoi';
 import { styles } from './shared';
 
@@ -43,7 +43,7 @@ export function TiemXoiSection() {
             </button>
             <button style={styles.btn} disabled={t.staff <= 0} onClick={fireTiemXoi}>Cho nghỉ 1 thợ</button>
             <button style={styles.btn} disabled={t.handDay === day} onClick={() => steamXoiHand()} title="Phím J ở sạp xôi cũng được">
-              🍚 Tự đồ {TIEM_XOI_HAND} phần{t.handDay === day ? ' (mai đồ tiếp)' : ''}
+              🍚 Tự đồ {tiemXoiHandQty(t.staff)} phần{t.handDay === day ? ' (mai đồ tiếp)' : ''}
             </button>
           </div>
         </>
