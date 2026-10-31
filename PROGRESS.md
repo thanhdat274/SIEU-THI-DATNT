@@ -135,3 +135,4 @@
 - GĐ380 — 📉 Test `stockReminders` (4 test, mutation 3/3): nhắc sắp hết đúng một lần/ngày, nhắc lại ngày mới, im lặng khi kho còn/không có nhu cầu/kệ đủ, gộp nhiều món một thông báo
 - GĐ381 — 📏 Mốc: 245 file / 2467 test xanh 159s (+1 hở: nhắc hàng sắp HỎNG của stockReminders chưa test)
 - GĐ382 — 🗜️ Dồn mục lục GĐ301–349 sang archive (INDEX-GD301-349.md), PROGRESS.md 30,3KB → 26,7KB (về dưới trần 30KB)
+- GĐ383 — ⏳ Test nhắc hàng sắp HỎNG của `stockReminders` (+3 test, mutation 2/2): lô trên kệ/trong kho còn <1 ngày nhắc một lần/ngày, hạn dài im lặng, kho hết hàng thì không nhắc; đóng chỗ hở GĐ381
