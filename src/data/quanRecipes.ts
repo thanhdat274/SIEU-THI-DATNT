@@ -50,6 +50,12 @@ export function cleanMenu(menu: readonly string[] | undefined, level: number): s
   return out.slice(0, QUAN_MENU_SLOTS);
 }
 
+/** Dòng chữ bảng phấn trên quầy 3D (GĐ416): tên món + giá nghìn đồng; chưa chọn món = nước chai. */
+export const menuBoardLines = (menu: readonly string[] | undefined): string[] => {
+  const rs = (menu ?? []).map(quanRecipeById).filter((r): r is QuanRecipe => !!r);
+  return rs.length ? rs.map((r) => `${r.name} ${r.price / 1000}k`) : ['Nước giải khát chai'];
+};
+
 /** Hệ số khách theo độ đa dạng thực đơn: 1 món ×1, 4 món ×1.24. */
 export const varietyMul = (menuSize: number) => 1 + QUAN_VARIETY_BONUS * Math.max(0, menuSize - 1);
 

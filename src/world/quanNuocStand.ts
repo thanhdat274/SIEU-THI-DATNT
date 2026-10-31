@@ -16,6 +16,8 @@ export interface QuanNuocStand {
   stand: THREE.Group;
   /** Bật/ẩn số bàn ghế theo số nhân viên: 0 = chỉ quầy + cây dù; 1→3 = thêm bàn. */
   setStaff(n: number): void;
+  /** Vẽ lại bảng phấn thực đơn sau quầy (GĐ416) từ các dòng `menuBoardLines`. */
+  setMenu(lines: string[]): void;
   /** Hộp các khối chính nếu muốn chặn nav — để rỗng cho an toàn đi lại. */
   boxes: THREE.Box3[];
 }
@@ -30,7 +32,7 @@ export function createQuanNuocStand(): QuanNuocStand {
   group.add(lot, stand.group);
   lot.visible = false;
   stand.group.visible = false;
-  return { group, lot, stand: stand.group, setStaff: stand.setStaff, boxes: [] };
+  return { group, lot, stand: stand.group, setStaff: stand.setStaff, setMenu: stand.setMenu, boxes: [] };
 }
 
 /** Khoảnh đất trống đủ cấp chưa mua: sàn mỏng, gạch mép, biển gỗ "ĐỒ UỐNG", marker 🧋 gợi chú ý. */
@@ -70,7 +72,7 @@ function buildLot(): THREE.Group {
 }
 
 /** Quầy nước thật sự: mặt quầy + ly/chai màu + cây dù, và bàn ghế bật theo nhân viên. */
-function buildStand(): { group: THREE.Group; setStaff(n: number): void } {
+function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(lines: string[]): void } {
   const g = new THREE.Group();
   const wood = new THREE.MeshStandardMaterial({ color: 0xe8c190, roughness: 0.7 });
   const woodDark = new THREE.MeshStandardMaterial({ color: 0xb98a4a, roughness: 0.75 });
@@ -141,7 +143,32 @@ function buildStand(): { group: THREE.Group; setStaff(n: number): void } {
     const count = THREE.MathUtils.clamp(Math.floor(n), 0, tableGroups.length);
     tableGroups.forEach((t, i) => { t.visible = i < count; });
   };
-  return { group: g, setStaff };
+  // Bảng phấn thực đơn dựng đứng sau quầy: khách nhìn thấy món đang bán
+  const boardCanvas = document.createElement('canvas');
+  boardCanvas.width = 256;
+  boardCanvas.height = 192;
+  const boardTex = new THREE.CanvasTexture(boardCanvas);
+  boardTex.colorSpace = THREE.SRGBColorSpace;
+  box(0.06, 1.0, 0.06, woodDark, 0.55, 1.45, -1.3);
+  box(0.06, 1.0, 0.06, woodDark, 1.45, 1.45, -1.3);
+  box(1.0, 0.78, 0.04, woodDark, 1.0, 1.75, -1.3);
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(0.92, 0.7), new THREE.MeshStandardMaterial({ map: boardTex, roughness: 0.9 }));
+  board.position.set(1.0, 1.75, -1.275);
+  g.add(board);
+  const setMenu = (lines: string[]) => {
+    const ctx = boardCanvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#2f3b33';
+    ctx.fillRect(0, 0, 256, 192);
+    ctx.fillStyle = '#f5f1e6';
+    ctx.font = '700 26px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('THỰC ĐƠN', 14, 32);
+    ctx.font = '22px "Segoe UI", Arial, sans-serif';
+    lines.slice(0, 4).forEach((l, i) => ctx.fillText(l, 14, 70 + i * 34, 228));
+    boardTex.needsUpdate = true;
+  };
+  setMenu([]);
+  return { group: g, setStaff, setMenu };
 }
 
 /** Mặt biển "ĐỒ UỐNG": chữ trắng đậm trên nền xanh cyan (màu thương hiệu quán). */

@@ -40,6 +40,7 @@ import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
 import { createWorld } from './world/world';
 import { quanNuocStandState } from './data/quanNuoc';
+import { menuBoardLines } from './data/quanRecipes';
 import { branchStandState } from './data/branches';
 import { Hud, tutorialActive, tutorialStep } from './ui/Hud';
 import './ui/controls.css';
@@ -275,6 +276,7 @@ useGame.subscribe((s) => {
 let lastStandStaff = -1;
 let lastStandLevel = 0;
 let lastStandOpen = false;
+let lastStandMenu: string | null = null;
 const syncQuanNuocStand = () => {
   const s = useGame.getState();
   const st = quanNuocStandState(s.level, s.biz.quanNuoc.open);
@@ -284,10 +286,15 @@ const syncQuanNuocStand = () => {
     lastStandStaff = s.biz.quanNuoc.staff;
     world.quanNuoc.setStaff(s.biz.quanNuoc.staff);
   }
+  const menuKey = (s.biz.quanNuoc.menu ?? []).join();
+  if (menuKey !== lastStandMenu) {
+    lastStandMenu = menuKey;
+    world.quanNuoc.setMenu(menuBoardLines(s.biz.quanNuoc.menu));
+  }
 };
 syncQuanNuocStand();
 useGame.subscribe((s) => {
-  if (s.level !== lastStandLevel || s.biz.quanNuoc.open !== lastStandOpen || s.biz.quanNuoc.staff !== lastStandStaff) {
+  if (s.level !== lastStandLevel || s.biz.quanNuoc.open !== lastStandOpen || s.biz.quanNuoc.staff !== lastStandStaff || (s.biz.quanNuoc.menu ?? []).join() !== lastStandMenu) {
     lastStandLevel = s.level;
     lastStandOpen = s.biz.quanNuoc.open;
     syncQuanNuocStand();

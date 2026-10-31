@@ -45,7 +45,7 @@ import { wholesaleAdvice } from '../data/wholesaleValue';
 import { spoilRiskValue } from '../data/spoilRisk';
 import { STORIES } from '../data/biz';
 import { findSurprise } from '../data/surpriseArcs';
-import { chooseSurprise, closeStory, dismissTutorial, REGULAR_NAMES } from '../core/biz';
+import { chooseSurprise, closeStory, REGULAR_NAMES } from '../core/biz';
 import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
 import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
@@ -53,6 +53,9 @@ import { answerAsk, useCounterAsk, askWallElapsed } from '../core/counterAsk';
 import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice } from '../render/graphicsQuality';
 import './hud.css';
 
+export { tutorialActive, tutorialStep, tutorialSteps } from './tutorialSteps';
+import { tutorialActive, tutorialStep } from './tutorialSteps';
+const Tutorial = lazy(() => import('./Tutorial').then((m) => ({ default: m.Tutorial })));
 const ChapterDialogue = lazy(() => import('./ChapterDialogue').then((m) => ({ default: m.ChapterDialogue })));
 
 /** Màn hình cảm ứng: không có phím, thay chữ phím [X] bằng biểu tượng chạm. */
@@ -462,7 +465,7 @@ ${forecastText}`}>
         <VendorAlert />
         <CounterAskAlert />
         <FestivalBanner />
-        <Tutorial review={helpTutorial} onDone={() => setHelpTutorial(false)} />
+        <Suspense fallback={null}><Tutorial review={helpTutorial} onDone={() => setHelpTutorial(false)} /></Suspense>
         <SurpriseAlert />
         <StoryAlert />
         {conflict && (
@@ -850,50 +853,6 @@ function FestivalBanner() {
     <div className="hud-alert festival">
       {f.icon} <b>{f.name}</b>: khách {pct(f.traffic)}{f.cost !== 1 && ` · giá nhập ${pct(f.cost)}`}
       {f.tolerance && ' · khách chịu giá cao'}{goods && <small> · hàng hút: {goods}</small>}
-    </div>
-  );
-}
-
-/** 5 bước hướng dẫn ngày đầu — dùng chung cho bảng hướng dẫn, nhấp nháy nút dock và marker sau quầy. */
-export function tutorialSteps(s: GameState): { label: string; done: boolean }[] {
-  return [
-    { label: 'Nhập hàng (📦 Nhập hàng)', done: Object.values(s.storage).some((q) => q > 0) || s.deliveries.length > 0 || s.totals.itemsSold > 0 },
-    { label: 'Bày hàng lên kệ (bấm vào kệ)', done: s.furniture.some((f) => f.tiers.some((t) => t.count > 0)) },
-    { label: 'Mở cửa tiệm', done: s.shopOpen || s.totals.customers > 0 },
-    { label: 'Đứng quầy tính tiền cho khách', done: s.totals.itemsSold > 0 },
-    { label: 'Tối về nhà đi ngủ', done: s.day > 1 },
-  ];
-}
-
-/** Bước đang dừng của hướng dẫn (bước đầu chưa xong); -1 khi đã xong hết. */
-export const tutorialStep = (s: GameState): number => tutorialSteps(s).findIndex((x) => !x.done);
-
-/** Tutorial ngày đầu đang hiện: ngày 1, chưa bấm ẩn và còn bước chưa xong. */
-export const tutorialActive = (s: GameState): boolean => s.day === 1 && !s.biz.tutorialOff && tutorialStep(s) >= 0;
-
-/** Hướng dẫn ngày đầu: danh sách việc tự tích khi làm xong. Chế độ review (mục 📖 Hướng dẫn ở menu
- *  Thêm) xem lại mọi lúc, chỉ đọc — không ghi cờ ẩn vào bản lưu. */
-function Tutorial({ review, onDone }: { review: boolean; onDone: () => void }) {
-  const off = useGame((s) => s.biz.tutorialOff);
-  const day = useGame((s) => s.day);
-  const steps = useGame((s) => tutorialSteps(s).map((x) => `${x.done ? 1 : 0}${x.label}`).join('|'));
-  // Chỉ hướng dẫn ngày đầu: sang ngày 2 là tắt, tránh đè thông báo mỗi sáng; review thì luôn hiện
-  if (!review && (off || day > 1)) return null;
-  const list = steps.split('|').map((x) => ({ done: x[0] === '1', label: x.slice(1) }));
-  const allDone = list.every((x) => x.done);
-  // Ngày đầu mà đủ bước rồi thì khỏi hiện; chế độ review thì chuyển sang lời chúc
-  if (allDone && !review) return null;
-  return (
-    <div className="hud-alert info hud-tutorial">
-      <b>{review ? '🧭 Xem lại hướng dẫn' : '🧭 Ngày đầu mở tiệm'}</b>
-      {allDone ? (
-        <p>✅ Bạn đã làm đủ các bước mở tiệm rồi. Còn Việc hôm nay ở chip La bàn và nút 📜 Nhiệm vụ.</p>
-      ) : (
-        <ul>{list.map((x) => <li key={x.label} className={x.done ? 'done' : undefined}>{x.done ? '✅' : '⬜'} {x.label}</li>)}</ul>
-      )}
-      {review
-        ? <button className="hud-btn" onClick={onDone}>Xong</button>
-        : <button className="hud-btn" onClick={dismissTutorial}>Ẩn hướng dẫn</button>}
     </div>
   );
 }

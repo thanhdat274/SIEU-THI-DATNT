@@ -4,8 +4,8 @@ import { applySnapshot, snapshot } from '../core/save';
 import { productById } from '../data/products';
 import { quanNuocCupSupply, quanNuocDay, quanNuocProjection } from '../data/quanNuoc';
 import {
-  brewMenu, cleanMenu, QUAN_MENU_SLOTS, QUAN_RECIPES, quanRecipeById, recipeCapacity, recipeCupCost, varietyMul,
-} from '../data/quanRecipes';
+  brewMenu, cleanMenu, QUAN_MENU_SLOTS, QUAN_RECIPES, quanRecipeById, recipeCapacity, recipeCupCost, varietyMul, menuBoardLines,
+ } from '../data/quanRecipes';
 
 /** GĐ415 — Pha chế quán nước: công thức từ kho chung, thực đơn đa dạng kéo khách. */
 
@@ -112,5 +112,15 @@ describe('store + save', () => {
     expect(useGame.getState().biz.quanNuoc.menu).toEqual(['nuoc_mia']);
     const old = { open: true, staff: 0, price: 'vua' as const };
     expect(quanNuocDay(old, 29, { nuoc: 100 }, () => {})!.brewed).toEqual({});
+  });
+});
+
+describe('menuBoardLines (GĐ416 bảng phấn quầy 3D)', () => {
+  it('chưa chọn món: báo nước chai', () => {
+    expect(menuBoardLines(undefined)).toEqual(['Nước giải khát chai']);
+    expect(menuBoardLines(['khong_co'])).toEqual(['Nước giải khát chai']);
+  });
+  it('liệt kê tên + giá nghìn đồng theo thứ tự thực đơn', () => {
+    expect(menuBoardLines(['ca_phe_sua', 'tra_da'])).toEqual(['Cà phê sữa đá 20k', 'Trà đá 5k']);
   });
 });
