@@ -49,6 +49,7 @@ const windowStub = {
 } as unknown as Window & typeof globalThis;
 
 beforeEach(() => {
+  vi.spyOn(Math, 'random').mockImplementation(mulberry32(20261031)); // GĐ321: sim tất định → tỉ số đo được chính xác
   prevDoc = globalThis.document;
   prevWin = globalThis.window;
   globalThis.document = documentStub;
@@ -66,7 +67,7 @@ import { runEconomySim } from '../dev/simEconomy';
 import { questContext } from '../core/store';
 import { dailyQuests } from '../data/quests';
 import { emptyTiers } from '../core/stock';
-import { clearSimSeed, setSimSeed } from '../core/rand';
+import { clearSimSeed, setSimSeed, mulberry32 } from '../core/rand';
 
 describe('khảo sát kinh tế vòng ngày — simulator thật trên store', () => {
   // 3 mức cấp (5/10/20) × ~30 ngày. Autoplay chạy tick thật + customer thật headless.
@@ -179,7 +180,7 @@ const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
  * HẠ trần này theo số đo mới — không bao giờ nâng lên.
  */
 /** Số thông báo tối đa trong ngày đầu của bot chơi cấp 1 (mức đo 2026-10-31; chỉ được hạ). */
-const DAY1_TOAST_CEILING = 15; // GĐ316: không đếm thông báo nhận thưởng (📜/🎯), đo 11–14; đo 18 sau GĐ309 (dời danh hiệu/kèo/chi phí/thay ô sang ngày 2+; GĐ302: 22; ban đầu 27)
+const DAY1_TOAST_CEILING = 13; // GĐ316: không đếm thông báo nhận thưởng (📜/🎯), đo 11–14; đo 18 sau GĐ309 (dời danh hiệu/kèo/chi phí/thay ô sang ngày 2+; GĐ302: 22; ban đầu 27)
 
-// Đo GĐ311 (3 lần): cấp 5 1.7–2.0 · cấp 10 1.4–2.0 · cấp 20 0.94–1.53 (trước đó 3.6 / 1.7 / 1.2); trần = đỉnh dải + đệm. Chỉ được hạ.
-const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 3, 10: 2.5, 20: 1.8 };
+// GĐ321: sim TẤT ĐỊNH (Math.random seed 20261031) đo cấp 5 1.53 · cấp 10 1.29 · cấp 20 0.96; trần = đo + đệm nhỏ. Chỉ được hạ.
+const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 1.6, 10: 1.4, 20: 1.05 };

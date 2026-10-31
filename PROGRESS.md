@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
+- **GĐ321:** 🎯 Sim kinh tế TẤT ĐỊNH: `economySim*.test.ts` khoá `Math.random` bằng `mulberry32(20261031)` → hai lần chạy ra đúng cùng số (trước đây lãi bán cấp 5 dao động 82k–150k nên không chỉnh được). Đo chuẩn: tỉ số thưởng/lãi bán cấp 5 **1,53** · cấp 10 **1,29** · cấp 20 **0,96**; thông báo ngày 1 = **12**. Trần hạ: 3/2,5/1,8 → **1,6/1,4/1,05**; thông báo ngày 1 15 → **13**. Giờ chỉnh cân bằng đo trước/sau được chính xác.
 - **GĐ319:** 🧭 Panel Nhập hàng ngày 1 gọn lại (theo QA GĐ318): ẩn khối Mối quen, Dự báo, Tuần này khách săn khi `day <= 1` (hiện từ ngày 2) — chỉ còn gợi ý nhập, "cần nhập gấp", lô chợ phiên. Kiểm tra mắt trên save sạch 127.0.0.1:5173: 3 khối biến mất, danh sách nhập vẫn đủ.
 - **GĐ316:** 🔕 Đo thông báo ngày đầu đúng người chơi thật: không đếm 📜/🎯 (phản hồi cú bấm nhận thưởng, bot nhận dồn 7 cái một lượt). Đo 11–14; trần 20 → 15. GĐ315 in danh sách thông báo để truy vết. Còn lại ≤10: dồn thông báo lên cấp liền nhau.
 - **GĐ312:** 💰 Hạ trần thưởng nhiệm vụ theo lãi: sàn 150k→110k, hệ số 0,7→0,6 (`questEcoCap`). Giữ nguyên luật người mới chưa có lãi = không trần. Đo: cấp 5 **1,44**, cấp 10 **1,17**, cấp 20 **1,17** (trước 1,7–2,0 / 1,4–2,0 / 0,94–1,53). Toàn bộ 2356 test xanh. Còn lại tới ≤1: cấp 5/10, cần tăng lãi gộp.
@@ -164,6 +165,7 @@
 - GĐ308 — 📦 Firebase nạp động + chunk riêng: tải đầu 646→618 KB, trần 640/290
 - GĐ309 — 🔕 Dời 4 thông báo phụ khỏi ngày đầu: 22→18, trần 20
 - GĐ310 — 🔒 Hạ trần rò rỉ: object +2%, nhân vật +20 (đo 0% / +11)
+- GĐ321 — 🎯 Sim kinh tế tất định (seed); trần tỉ số 1,6/1,4/1,05, thông báo ngày 1 ≤13
 - GĐ319 — 🧭 Ngày 1: ẩn Mối quen/Dự báo/khách săn trong panel Nhập hàng
 - GĐ316 — 🔕 Đo thông báo ngày 1 đúng người chơi (bỏ 📜/🎯): 11–14, trần 15
 - GĐ312 — 💰 Hạ trần thưởng nhiệm vụ (sàn 110k, ×0,6); tỉ số 1,44/1,17/1,17
