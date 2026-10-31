@@ -75,3 +75,16 @@ export function tiemXoiDay(
 /** Phần tiết kiệm so với nhập lẻ cùng số xôi đó (để báo người chơi tiệm xôi đáng đồng nào). */
 export const tiemXoiSaved = (made: Record<string, number>): number =>
   Math.round(Object.entries(made).reduce((n, [id, q]) => n + q * productById(id).buy * (1 - TIEM_XOI_COST_MUL), 0));
+
+/**
+ * Dòng Sổ đầu ngày cho tiệm xôi (GĐ421): hôm qua nấu bao nhiêu, tiết kiệm so với nhập lẻ trừ lương
+ * còn lời hay lỗ, và gợi ý khi thợ dư sức (kho đã đủ) — cho nghỉ bớt đỡ lương.
+ */
+export function tiemXoiMorning(
+  t: TiemXoiState, last: { total: number; saved: number; wages: number } | null | undefined,
+): { net: number | null; idle: boolean } {
+  if (!last) return { net: null, idle: false };
+  const net = last.saved - last.wages;
+  const idle = t.staff > 0 && last.total <= tiemXoiCapacity(t.staff - 1);
+  return { net, idle };
+}

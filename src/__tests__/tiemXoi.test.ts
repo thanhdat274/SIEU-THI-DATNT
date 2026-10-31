@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { productById } from '../data/products';
 import {
-  newTiemXoi, tiemXoiCapacity, tiemXoiDay, tiemXoiIds, tiemXoiSaved,
+  newTiemXoi, tiemXoiCapacity, tiemXoiDay, tiemXoiIds, tiemXoiMorning, tiemXoiSaved,
   TIEM_XOI_COST_MUL, TIEM_XOI_PER_COOK, TIEM_XOI_TARGET, TIEM_XOI_UNLOCK, TIEM_XOI_WAGE,
 } from '../data/tiemXoi';
 
@@ -61,5 +61,17 @@ describe('tiemXoi', () => {
 
   it('xác định: chạy hai lần cùng đầu vào ra cùng kết quả', () => {
     expect(run(2, { xoi_bap: 30 }).r).toEqual(run(2, { xoi_bap: 30 }).r);
+  });
+});
+
+describe('tiemXoiMorning (GĐ421 Sổ đầu ngày)', () => {
+  it('chưa có kết quả', () => {
+    expect(tiemXoiMorning({ open: true, staff: 1 }, null).net).toBeNull();
+  });
+  it('lời = tiết kiệm − lương; thợ dư sức thì báo idle', () => {
+    const r = tiemXoiMorning({ open: true, staff: 2 }, { total: 50, saved: 500_000, wages: 360_000 });
+    expect(r.net).toBe(140_000);
+    expect(r.idle).toBe(true);
+    expect(tiemXoiMorning({ open: true, staff: 2 }, { total: 180, saved: 1, wages: 1 }).idle).toBe(false);
   });
 });

@@ -142,3 +142,4 @@
 - GĐ418 — 🧪 Chế độ chơi thử `?thu=1`: IndexedDB riêng `taphoa3d-thu`, khóa khẩn cấp riêng, bỏ qua bản localStorage cũ, không kéo/đẩy cloud — QA không đụng save thật. Bù ngân sách: `VendorAlert` tải lười.
 - GĐ419 — QA bằng `?thu=1` (cấp 40, mở đủ 3 cơ sở): bảng phấn quầy vẽ đúng "Trà đá 5k / Cà phê sữa đá 20k / Sinh tố trái cây 28k"; ChapterDialogue tải lười vẫn hiện; save thật giữ nguyên (cấp 1, savedAt trước QA). Mẹo QA: lệnh browser luôn ghi `tabId`.
 - GĐ420 — QA `?thu=1` tiếp: cửa hàng tiện lợi (60,−64) hiện đủ kệ/quầy/biển ĐÓNG CỬA; nông trại (18,−63.5) đủ rào/chuồng/giếng/lối đất. Save thật vẫn cấp 1, savedAt cũ. Mẹo: tab nền không vẽ (màn đen) — `tabs_select` trước khi chụp. Rà 3 cơ sở xong.
+- GĐ421 — 🍚 Sổ đầu ngày có mục Tiệm xôi: hôm qua nấu bao nhiêu, tiết kiệm so với nhập lẻ − lương = lời/lỗ ròng; kho đủ mà thợ dư sức thì gợi ý cho nghỉ bớt (`tiemXoiMorning`).
