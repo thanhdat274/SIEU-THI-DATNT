@@ -941,8 +941,6 @@ export interface AchievementCtx {
 export interface Achievement { id: string; icon: string; name: string; desc: string; reward: number; done: (c: AchievementCtx) => boolean }
 
 export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'quan_cafe', icon: '☕', name: 'Quán cà phê', desc: 'Nâng cửa hàng nước lên Quán cà phê', reward: 2000000, done: (c) => (c.quanTier ?? 0) >= 2 },
-  { id: 'xoi_big', icon: '🍚', name: 'Bếp xôi lớn', desc: 'Mở rộng bếp tiệm xôi', reward: 1500000, done: (c) => !!c.xoiBig },
   { id: 'first_100', icon: '🛒', name: 'Mối đầu tiên', desc: 'Bán 100 món', reward: 20000, done: (c) => c.totals.itemsSold >= 100 },
   { id: 'items_1000', icon: '📦', name: 'Nghìn món', desc: 'Bán 1.000 món', reward: 100000, done: (c) => c.totals.itemsSold >= 1000 },
   { id: 'items_10000', icon: '🏭', name: 'Vạn món', desc: 'Bán 10.000 món', reward: 600000, done: (c) => c.totals.itemsSold >= 10000 },
@@ -976,6 +974,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'perfect_10', icon: '🌈', name: 'Trọn một tháng không phật lòng', desc: 'Đạt 10 ngày hoàn hảo', reward: 1000000, done: (c) => c.perfectDays >= 10 },
   { id: 'cooked_2000', icon: '🍱', name: 'Bếp chạy đều mỗi ngày', desc: 'Bán 2.000 món nhà làm', reward: 600000, done: (c) => c.cookedSold >= 2000 },
   { id: 'impulse_500', icon: '🍭', name: 'Kệ cạnh quầy đắc ý', desc: 'Bán 500 món chớp nhoáng ở kệ bên quầy thu ngân', reward: 300000, done: (c) => c.impulseSold >= 500 },
+  { id: 'quan_cafe', icon: '☕', name: 'Quán cà phê', desc: 'Nâng cửa hàng nước lên Quán cà phê', reward: 2000000, done: (c) => (c.quanTier ?? 0) >= 2 },
+  { id: 'xoi_big', icon: '🍚', name: 'Bếp xôi lớn', desc: 'Mở rộng bếp tiệm xôi', reward: 1500000, done: (c) => !!c.xoiBig },
 ];
 
 // ───────────────────────── Thanh tra thị trường ─────────────────────────

@@ -186,3 +186,4 @@
 - GĐ462: Sạp xôi 3D thêm nồi thứ hai sau quầy khi đã mở rộng bếp (setBig).
 - GĐ463: QA sandbox: mở rộng bếp xôi chạy (big=true), sạp hiện bình thường; nồi thứ hai quá nhỏ ở góc camera mặc định để thấy rõ.
 - GĐ464: Thành tựu mới: Quán cà phê (+2tr) và Bếp xôi lớn (+1,5tr).
+- GĐ465: Đưa 2 thành tựu mới xuống cuối danh sách (không chen lên đầu bảng).
