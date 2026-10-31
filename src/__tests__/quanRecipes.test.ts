@@ -133,6 +133,12 @@ describe('brewQuanHand (GĐ427 tự pha ở quầy)', () => {
     useGame.setState({ ...d, level: 33, storage: full(10), storageLots: {}, notify: (m: string) => { msgs.push(m); },
       biz: { ...d.biz, quanNuoc: { ...d.biz.quanNuoc, open: true, menu: ['tra_da'] } } });
   });
+  it('GĐ453: mỗi mẻ +2 XP', () => {
+    const g = useGame.getState;
+    const xp = g().xp;
+    expect(g().brewQuanHand()).toBe(true);
+    expect(g().xp).toBe(xp + 2);
+  });
   it('pha 5 ly bán ngay +20%, trừ kho, tối đa 3 mẻ/ngày, thông báo ≤90 ký tự', () => {
     const g = useGame.getState;
     const m0 = g().money;
