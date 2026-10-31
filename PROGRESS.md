@@ -96,6 +96,7 @@
 
 
 ## Backlog tiếp theo
+- 🙋 **Cần duyệt (GĐ470, 31/10):** người dùng hỏi sao tiệm xôi là sạp vỉa hè, mưa bán sao được. Đề xuất: nâng tiệm xôi thành cửa hàng nhỏ có nhà (biển TIỆM XÔI, quầy + nồi trong nhà, vào đứng quầy bấm J), giữ nguyên luật/save. Chờ chọn: (a) cửa hàng nhỏ (b) giữ sạp. Đã giải thích: Quán cà phê là bậc 3 của chính quán nước, không phải tiệm riêng.
 - ✅ **Đã duyệt (a) cửa hàng nước thật** — lộ trình: B1 nhà thật có quầy pha/tủ mát bên trong (hình) → B2 vào trong được (nav) → B3 khách 3D gọi món/ngồi → B4 tự đứng quầy pha → B5 lớn dần quầy→quán→cà phê. Đề xuất gốc GĐ422: — Người dùng hỏi sao quán nước chưa là cửa hàng như tạp hóa. Hiện là quầy ngoài trời ở (54.4,0,1), sim theo ngày, không vào trong được. Đề xuất: (a) nâng thành cửa hàng nước thật — nhà có quầy pha + tủ mát, khách 3D vào gọi món/ngồi, tự đứng quầy pha, lớn dần quầy→quán→cà phê (thay đổi lớn: sim, nav, migration); (b) giữ quầy, chỉ đẹp/to dần theo cấp; (c) hướng khác. Chờ người dùng chọn; trong lúc chờ làm tiếp tiệm xôi.
 
 - 🔍 **Rà 3 cơ sở (GĐ413, theo yêu cầu người dùng trước khi mở rộng tiệm xôi):**
@@ -146,3 +147,4 @@
 - GĐ467: Quán nước cuối tuần (T7/CN) khách ×1.2 — áp cho ngày bán thật và dự phóng trong bảng (quanWeekendMul).
 - GĐ468: Bảng quán nước ghi '🎉 Cuối tuần: khách đông hơn ×1.2' vào T7/CN.
 - GĐ469: Ước tính chở/nạp đồ uống cho quán (teahouseHaul, đơn nhập) tính cả cuối tuần ×1.2.
+- GĐ470: Ghi Cần duyệt nâng tiệm xôi thành cửa hàng nhỏ (chờ người dùng chọn).
