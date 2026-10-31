@@ -287,6 +287,7 @@ const syncQuanNuocStand = () => {
   const st = quanNuocStandState(s.level, s.biz.quanNuoc.open);
   world.quanNuoc.lot.visible = st === 'lot';
   world.quanNuoc.stand.visible = st === 'open';
+  world.kit.setQuanDecor(st === 'open');
   // GĐ425: nhà quán nước chặn lưới đi lại khi đã mở (chỉ vào qua cửa); đổi trạng thái thì dựng lại lưới
   if ((st === 'open') !== lastStandWalls) {
     lastStandWalls = st === 'open';

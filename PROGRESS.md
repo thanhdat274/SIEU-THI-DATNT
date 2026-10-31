@@ -152,3 +152,4 @@
 - GĐ428 — ☕ Cửa hàng nước B5: nâng bậc Quầy → Quán (cấp 33, 15tr, khách ×1.25) → Quán cà phê (cấp 38, 40tr, ×1.5) qua `upgradeQuanTier`; `biz.quanNuoc.tier` tùy chọn, dự phóng khớp ngày bán. Lộ trình B1–B5 xong.
 - GĐ429 — 🪧 Cửa hàng nước đổi diện mạo theo bậc: biển QUẦY NƯỚC / QUÁN NƯỚC / CÀ PHÊ + mái hiên cam / xanh / nâu (`setTier`). Bù bundle: lazy `SurpriseAlert`, `ExpiryAlert`.
 - GĐ430 — 🍚 Tiệm xôi 3D: biển đất "TIỆM XÔI" khi đủ cấp 40, sạp xôi (nồi chõ bốc hơi, 4 mâm xôi màu, mái vàng, biển XÔI NÓNG) khi mở; phía tây hẻm (x=46, z=1), chỉ hình ảnh, tải lười từ main nên bundle ban đầu không đổi. QA `?thu=1`: sạp xôi bên trái hẻm, quán cà phê có khách ngồi bên phải, không đè đường.
+- GĐ431 — 🪴 Cửa hàng nước dùng kit Blender: 2 chậu cây hai bên cửa + băng ghế hiên (`KIT_QUAN_PLACEMENTS`, nhóm `quanProps` chỉ hiện khi quán mở). Xong mục (3) rà 3 cơ sở. QA `?thu=1` ok.

@@ -254,3 +254,14 @@ describe('GĐ197 — dãy cờ lễ hội', () => {
     }
   });
 });
+
+import { KIT_QUAN_PLACEMENTS } from '../world/kitProps';
+describe('GĐ431 kit trước cửa hàng nước', () => {
+  it('ngoài hẻm (x>52.5), trên hiên không xuống đường (z<3), chừa cửa x≈55.4', () => {
+    for (const p of KIT_QUAN_PLACEMENTS) {
+      expect(p.pos[0]).toBeGreaterThan(52.5);
+      expect(p.pos[2]).toBeLessThan(3);
+      expect(Math.abs(p.pos[0] - 55.4)).toBeGreaterThanOrEqual(1.3);
+    }
+  });
+});

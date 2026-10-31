@@ -45,6 +45,17 @@ export const KIT_PLACEMENTS: KitPlacement[] = [
 ];
 
 /**
+ * Cửa hàng nước (GĐ431): hai chậu cây hai bên cửa + băng ghế hiên, chỉ hiện khi quán đã mở
+ * (`setQuanDecor`). Cửa nhà quán ở x≈55.4, mặt trước z≈1.8; đồ đặt sát mép hiên (z ≤ 2.6), cách
+ * cửa ≥1.3 m để lối vào thông, không chặn lưới.
+ */
+export const KIT_QUAN_PLACEMENTS: KitPlacement[] = [
+  { module: 'chau_cay', pos: [54.0, 0, 2.15], rotY: 0.9, scale: 1.1 },
+  { module: 'chau_cay', pos: [56.8, 0, 2.15], rotY: 3.3, scale: 1.1 },
+  { module: 'bang_ghe', pos: [57.9, 0, 2.5], rotY: 0 },
+];
+
+/**
  * Gánh hàng chợ phiên (gđ181): những món `xe_day` chỉ dựng thêm dọc hẻm khi `isMarketDay(day)`
  * (mỗi 7 ngày, GĐ135) — "con hẻm sống theo lịch": ngày thường vắng, phiên chợ thì hàng bày ra mép
  * vỉa hè sát lòng đường. Tái dùng module xe_day có sẵn (không cần Blender mới), bật/tắt bằng
@@ -146,7 +157,7 @@ export interface KitProps {
  * Bắt đầu tải kit: trả về group trống để `scene.add` NGAY (thế giới không phải chờ), các prop
  * vừa tải xong vừa chen vào. Lỗi mạng chỉ ghi console — kit là đồ trang trí, không có vẫn chơi được.
  */
-export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; done: Promise<KitProps>; marketGroup: THREE.Group; setMarketDay(on: boolean): void; roadworkGroup: THREE.Group; setRoadwork(on: boolean): void; festivalGroup: THREE.Group; setFestival(on: boolean): void; setDecor(on: boolean): void } {
+export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; done: Promise<KitProps>; marketGroup: THREE.Group; setMarketDay(on: boolean): void; roadworkGroup: THREE.Group; setRoadwork(on: boolean): void; festivalGroup: THREE.Group; setFestival(on: boolean): void; setDecor(on: boolean): void; setQuanDecor(on: boolean): void } {
   const group = new THREE.Group();
   group.name = 'kitProps';
   // Nhóm gánh hàng chợ phiên (gđ181): con của group, mặc định ẩn — setMarketDay bật khi isMarketDay.
@@ -164,9 +175,13 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
   festivalGroup.name = 'festivalProps';
   festivalGroup.visible = false;
   group.add(festivalGroup);
+  const quanGroup = new THREE.Group();
+  quanGroup.name = 'quanProps';
+  quanGroup.visible = false;
+  group.add(quanGroup);
   // Đồ trang trí thường ngày là con trực tiếp của group (trừ 3 nhóm sự kiện); prop tải muộn đọc cờ này
   let decorOn = true;
-  const isEventGroup = (o: THREE.Object3D) => o === marketGroup || o === roadworkGroup || o === festivalGroup;
+  const isEventGroup = (o: THREE.Object3D) => o === marketGroup || o === roadworkGroup || o === festivalGroup || o === quanGroup;
   const setDecor = (on: boolean) => {
     decorOn = on;
     for (const c of group.children) if (!isEventGroup(c)) c.visible = on;
@@ -246,6 +261,9 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
             () => { if (!result.failed.includes(p.module)) result.failed.push(p.module); },
           );
         }
+        for (const p of KIT_QUAN_PLACEMENTS.filter((q) => available.has(q.module))) {
+          loader.load(`${baseUrl}${p.module}.glb`, (gltf) => { place(gltf.scene, p, quanGroup); }, undefined, () => {});
+        }
       })
       .catch((err) => {
         console.warn('[kit] Không tải được kit prop — chơi tiếp không sao:', err?.message ?? err);
@@ -253,5 +271,5 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
         finish();
       });
   });
-  return { group, done, marketGroup, setMarketDay: result.setMarketDay, roadworkGroup, setRoadwork: result.setRoadwork, festivalGroup, setFestival: result.setFestival, setDecor };
+  return { group, done, marketGroup, setMarketDay: result.setMarketDay, roadworkGroup, setRoadwork: result.setRoadwork, festivalGroup, setFestival: result.setFestival, setDecor, setQuanDecor: (on) => { quanGroup.visible = on; } };
 }
