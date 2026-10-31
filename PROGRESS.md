@@ -180,3 +180,4 @@
 - GĐ456: Tách lazy BranchAlert/RivalAlert/StoryAlert sang HudAlerts.tsx — tải ban đầu về lại 598 KB sau GĐ455 lỡ lên 599.
 - GĐ457: QA sandbox: StoryAlert lazy vẫn hiện (Bà Năm · Chương 1) sau tách GĐ456.
 - GĐ458: FestivalBanner cũng tách lazy sang HudAlerts.tsx (chừa chỗ ngân sách tải ban đầu).
+- GĐ459: Tách lazy TodayAgendaStrip+IdleChip sang HudAgenda.tsx — tải ban đầu 598→595 KB.
