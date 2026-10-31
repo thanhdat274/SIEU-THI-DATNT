@@ -1,7 +1,8 @@
 import { playerPos } from '../../core/playerPos';
 import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
-import { SAP_LOTS, sapKindOf, sapLotIncome } from '../../data/sapRong';
+import { SAP_LOTS, bestSapKind, sapKindOf, sapLotIncome } from '../../data/sapRong';
+import { WEATHER } from '../../data/weather';
 import { MAP_LANDMARKS, ZONES, zoneMapView } from '../../data/zones';
 import { styles } from './shared';
 
@@ -13,7 +14,9 @@ const Z2 = Math.max(...ZONES.map((z) => z.bounds.z2));
 
 /** Bản đồ thu nhỏ các khu (GĐ504, bước 5 mở rộng bản đồ): khu đã mở / khoá, đường chính, sạp Ngõ 2. */
 export function ZoneMapSection() {
-  const { biz, level, money, openZone, cycleSapKind, weather, day } = useGame();
+  const { biz, level, money, openZone, cycleSapKind, weather, day, forecast } = useGame();
+  const tmr = forecast[0];
+  const tip = tmr ? bestSapKind(tmr, day + 1) : undefined;
   const cells = zoneMapView(biz.zones, level, money);
   const sap = biz.sapRong ?? 0;
   return (
@@ -57,6 +60,11 @@ export function ZoneMapSection() {
               </button>
             );
           })}
+          {tmr && tip && (
+            <div style={{ fontSize: 12, opacity: 0.8, width: '100%' }}>
+              {WEATHER[tmr].icon} Mai {WEATHER[tmr].name.toLowerCase()}: {tmr === 'rain' || tmr === 'storm' ? 'sạp nghỉ bán' : `nên bán ${tip.icon} ${tip.name}`}
+            </div>
+          )}
         </div>
       )}
     </div>

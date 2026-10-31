@@ -151,6 +151,7 @@
 - GĐ470: Ghi Cần duyệt nâng tiệm xôi thành cửa hàng nhỏ (chờ người dùng chọn).
 - GĐ471: Bảng quán ghi rõ 'bậc x/3: Quầy nước → Quán nước → Quán cà phê — cùng một cửa hàng' (người dùng tưởng cà phê là tiệm riêng).
 - GĐ472: QA sandbox: bảng quán hiện 'bậc 3/3 … cùng một cửa hàng' và '🎉 Cuối tuần ×1.2' (ngày 6).
+- GĐ508: Bản đồ khu phố gợi ý món sạp theo dự báo ngày mai (bestSapKind; mưa/bão báo sạp nghỉ) + test; 2634 test xanh.
 - GĐ507: Chiều sâu Ngõ 2: mỗi lô sạp chọn món (Tổng hợp/Nước mía nắng ×1,5/Bánh mì ngày thường ×1,2/Xôi sương ×1,25) — nút đổi món + lãi hôm nay trong Bản đồ khu phố; save biz.sapKinds? (thiếu = Tổng hợp), coop 'sap' + test. economySim ngày 1 đỏ 1 lần khi cả bộ chạy nặng, chạy riêng xanh.
 - GĐ506: Mốc bản đồ chuyển vào data/zones (MAP_LANDMARKS, có tên khi rê chuột) + test mốc nằm trong hẻm đầu; 2630 test xanh 256s.
 - GĐ505: Bản đồ khu phố: mốc nhà/tạp hoá/tiệm xôi/quán nước/trại/cửa hàng tiện lợi + chấm vị trí nhân vật (core/playerPos, không lưu save).

@@ -36,6 +36,11 @@ export function sapLotIncome(kind: SapKind, weather?: Weather, day?: number): nu
   return Math.round(SAP_BASE_INCOME * wk * (weather ? kind.weather[weather] ?? 1 : 1));
 }
 
+/** GĐ508: món lãi nhất cho một ngày (để gợi ý theo dự báo ngày mai); hoà thì giữ món đứng trước. */
+export function bestSapKind(weather: Weather | undefined, day?: number): SapKind {
+  return SAP_KINDS.reduce((a, b) => (sapLotIncome(b, weather, day) > sapLotIncome(a, weather, day) ? b : a));
+}
+
 /** Lãi ròng một ngày của các sạp đã thuê (0 khi mưa/bão). */
 export function sapRongIncome(lots: number | undefined, weather?: Weather, day?: number, kinds?: readonly string[]): number {
   const n = Math.max(0, Math.min(SAP_LOTS, lots ?? 0));

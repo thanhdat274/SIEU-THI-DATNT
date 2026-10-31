@@ -96,3 +96,12 @@ describe('GĐ507: món từng lô sạp', () => {
     expect(msgs.every((x) => [...x].length <= 90)).toBe(true);
   });
 });
+
+describe('GĐ508: gợi ý món theo dự báo', () => {
+  it('bestSapKind: nắng → nước mía, sương → xôi, mưa → Tổng hợp (đều nghỉ)', async () => {
+    const { bestSapKind } = await import('../data/sapRong');
+    expect(bestSapKind('sunny', 1).id).toBe('nuocmia');
+    expect(bestSapKind('fog', 1).id).toBe('xoi');
+    expect(bestSapKind('rain', 1).id).toBe('tonghop');
+  });
+});
