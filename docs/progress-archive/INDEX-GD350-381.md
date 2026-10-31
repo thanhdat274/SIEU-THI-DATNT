@@ -1,0 +1,28 @@
+# Mục lục GĐ350–381 (đã dồn khỏi PROGRESS.md ở GĐ395)
+
+- GĐ350 — 🧹 Quét panel cấp 30 (save sạch): 7 nút dock + 9 mục menu Thêm mở/đóng, 0 lỗi, 0 tràn ngang (chỉ dải Kế hoạch cuộn ngang theo thiết kế)
+- GĐ351 — 🛡️ Phím tắt chịu được sự kiện bàn phím có target không phải Element (closest?.), tsc sạch
+- GĐ352 — ⚡ Kệ bỏ qua dựng lại InstancedMesh khi hộp không đổi (sim đơn lẻ 85→69s); bộ test chấp nhận ~175s. Chi tiết + vì sao KHÔNG chia sẻ hình học nhân vật (UUID three ăn Math.random của sim): docs/progress-archive/PROGRESS-GD352.md
+- GĐ353 — 📱 QA tablet 768×1024: 6 panel dock (Sơ đồ kệ, Nhập hàng, Sổ đầu ngày, Nhiệm vụ, Giá bán, Kinh doanh) 0 tràn ngang, 0 lỗi
+- GĐ354 — 🧪 faintMinutes() dùng chung cho tick ngất + biển báo khuya (hết chép công thức 2 nơi) + test faintDeadline
+- GĐ355 — 🗜️ Dồn chi tiết GĐ352 sang archive, PROGRESS.md 29,5KB
+- GĐ357 — 🧭 Leader review (GĐ347–357): 2361 test xanh (~177s, chấp nhận), tsc sạch, bundle 596/253, PROGRESS.md 29,5KB. Rà tính năng: không có dữ liệu dùng thật để gộp/bỏ → giữ nguyên, KHÔNG thêm nút HUD/hệ mới. Phát hiện kỹ thuật: sim phụ thuộc số đối tượng three (UUID↔Math.random). Việc kế: QA định kỳ, chờ save người thật (NG+, nhiệm vụ ngày 1–5)
+- GĐ358 — 🛌 QA "Chào mừng quay lại" (save sạch, cấp thấp): vắng 3 ngày → +6.000đ (2k/ngày), thông báo đúng, 0 lỗi; không lạm phát; cấp 10→+60k, cấp 30→+180k (3 ngày)/+420k (30 ngày); mobile 375px không tràn ngang
+- GĐ364 — 🧭 Leader review sớm (backlog cạn): QA 18 panel, 15 ngày autoplay, 60 FPS mặc định, mobile 375px đều sạch; trục chiều sâu vẫn bão hòa, không thêm hệ thống mới. Chờ: save người chơi thật (NG+, nhiệm vụ ngày 1–5). Review kế tiếp ~GĐ374
+- GĐ365 — 🛡️ Test `startAutosave` (7 test, mutation 2/2): gộp ghi 1 giây, chỉ đổi giờ không hẹn ghi, `canSave=false` (màn đăng nhập/khách) KHÔNG ghi kể cả đóng tab, pagehide/ẩn tab ghi khẩn cấp + đẩy cloud, cloud thưa. Coverage đo lại: lõi core/data ≥62%; `test:coverage` dưới tải bị `phoneReasons` quá 5s (chạy `--testTimeout=60000`)
+- GĐ366 — 🏗️ Test `build.ts` (10 test, mutation 2/2): đặt đồ (trừ giá, uid, thiếu tiền), bán/dọn sạch (hoàn SELL_BACK, hàng kệ về kho, bỏ heat/lợi nhuận), nâng bậc (cấp/tiền/chờ không trừ kép), sửa kệ, sơn
+- GĐ367 — 📒 Test slice khách quen `regulars.ts` (7 test, mutation 2/2): ghi sổ nợ giữ két nguyên + cộng dồn nợ, thu nợ cộng két/repaid, nhắc nợ chỉ trừ thân thiết 1 lần, xoá nợ +thân thiết không cộng tiền, hẹn giữ món cho ngày mai, trần REVIEW_CAP + đếm 5★
+- GĐ368 — 📞 Test slice đơn điện thoại `orders.ts` (7 test, mutation 2/2): nghe máy trừ kho/thiếu hàng chặn, từ chối không mất gì, giao lẹ boa x2, kịp hẹn boa thường, trễ không boa + 3★
+- GĐ369 — 🎉 Test đơn tiệc `orders.ts` (5 test, mutation 2/2): giao đủ hàng nhận giá+thưởng/5★, thiếu hàng hoặc chưa nhận bị chặn, nhập gấp trừ đại lý rồi giao, thiếu tiền không giao; gỡ `console.log("DBG PICKED")` sót trong data/orders.ts
+- GĐ370 — 🎊 Test `communitySale` khai trương (4 test, mutation 2/2): tiến độ cộng dồn, thưởng đúng một lần, thiếu chậu cây chưa xong, sai ngày không ghi
+- GĐ371 — 🗄️ Test slice kho `inventory.ts` (10 test, mutation 2/2): bày/dọn kệ giữ nguyên tổng hàng, đổi loại trả hàng cũ về kho, khách lấy hàng (heat, lời kệ), kệ hỏng bỏ qua, tự thay ô trống, consumeStock không âm
+- GĐ372 — 📏 Mốc: 238 file / 2411 test xanh, 129s (dưới mục tiêu ~150s; dao động theo tải máy, chưa đổi gì về tốc độ)
+- GĐ373 — 🏦 Test vay vốn/hụi/thú cưng `biz.ts` (13 test, mutation 3/3): vay đúng gói theo cấp, vay gấp chỉ gói nhỏ nhất, trả nợ không vượt két/dư nợ, hụi một vòng + cấp mở, mua thú trừ một lần, cho ăn mỗi ngày một bữa (mua lẻ gấp đôi)
+- GĐ374 — 🧭 Leader review (giữa GĐ364–374): chỉ thêm test + gỡ 1 console.log sót, không đổi gameplay/ngân sách. 238 file / 2411 test xanh 129s, tsc sạch, build OK (chunk chính gzip 244KB < 255), PROGRESS.md 28KB. Backlog chức năng vẫn chờ save thật (NG+, nhiệm vụ ngày 1–5). Review kế tiếp ~GĐ384; còn hở phủ: branch.ts, biz.ts (khảo sát/chương), orders.ts nhánh hợp đồng.
+- GĐ375 — 🏪 Test slice chi nhánh `branch.ts` (12 test, mutation 3/3): mua mặt bằng 5tr (cấp/tiền, không mua hai lần), không mở cửa khi chưa có thu ngân, giới hạn maxStaff + vai trò, máy bán tự động trừ phí, nâng cấp điện không mua lại, đơn đêm cần online
+- GĐ376 — 📞 Test chăm nhân sự chi nhánh (7 test, mutation 2/2): gọi người thay ca nghỉ trừ công×hệ số một lần, thưởng giảm mệt không âm, thiếu tiền không làm gì, ngưỡng auto chuyển kho bị kẹp an toàn
+- GĐ377 — 📖 Test chuyện khách quen `biz.ts` (5 test, mutation 2/2): chương mở theo thân thiết, chỉ một chương chờ, đọc xong mới thưởng + sang chương sau, đóng hai lần không thưởng kép; lưu ý STORIES nạp lười phải `loadStories()` trong test
+- GĐ378 — 🏠 Test đồ nhà/xe/bữa sáng/dịch vụ quầy `biz.ts` (8 test, mutation 3/3): mua một lần đúng cấp-tiền, xe chỉ nâng cấp không hạ, bữa sáng một lần/ngày và trước 11h, dịch vụ ghi sổ theo id. Cả bộ 242 file / 2448 test xanh 160s
+- GĐ379 — 📢 Test quảng cáo/thẻ tích điểm/mua lại mặt bằng rival `biz.ts` (7 test, mutation 3/3): quảng cáo chạy đúng số ngày và không mua chồng, thẻ tặng món rẻ nhất, mua mặt bằng trừ giá + tạo chi nhánh + xoá lời chào bán
+- GĐ380 — 📉 Test `stockReminders` (4 test, mutation 3/3): nhắc sắp hết đúng một lần/ngày, nhắc lại ngày mới, im lặng khi kho còn/không có nhu cầu/kệ đủ, gộp nhiều món một thông báo
+- GĐ381 — 📏 Mốc: 245 file / 2467 test xanh 159s (+1 hở: nhắc hàng sắp HỎNG của stockReminders chưa test)
