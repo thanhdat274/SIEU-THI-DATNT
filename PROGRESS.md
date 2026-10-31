@@ -165,6 +165,7 @@
 - GĐ348 — 🔬 Coverage (test:coverage): dòng 55% (phần thiếu là UI/3D), nhánh 88,8%, hàm 83%; không file core/data nào >60 dòng mà <50% — không cần test bù
 - GĐ349 — 🌙 Sửa chữ cảnh báo khuya: ăn sáng dời giờ ngất tới 3:00 nhưng biển báo vẫn ghi 2:00 (Hud.tsx) · QA live: 02:24 ngày 4 hiện "trước 3:00"
 - GĐ350 — 🧹 Quét panel cấp 30 (save sạch): 7 nút dock + 9 mục menu Thêm mở/đóng, 0 lỗi, 0 tràn ngang (chỉ dải Kế hoạch cuộn ngang theo thiết kế)
+- GĐ351 — 🛡️ Phím tắt chịu được sự kiện bàn phím có target không phải Element (closest?.), tsc sạch
 - GĐ343 — 📦 Siết trần bundle 598/255
 - GĐ336–342 — 📦 Bundle 596 KB (nạp lười STORIES/SURPRISES/GLTF, test hợp đồng); QA gfx=low ~58 FPS, mobile/tablet không tràn; Leader review GĐ337
 - GĐ332 — 💰 % kèo 25/40/65; tỉ số thưởng/lãi 0,99/0,89/0,64

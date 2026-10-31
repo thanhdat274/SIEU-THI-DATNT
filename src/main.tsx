@@ -517,7 +517,7 @@ function interact() {
 }
 
 window.addEventListener('keydown', (e) => {
-  if ((e.target as HTMLElement).closest('input, textarea')) return;
+  if ((e.target as HTMLElement).closest?.('input, textarea')) return;
   // Phím O: đóng / mở cửa tiệm ở bất cứ đâu
   if (e.code === 'KeyO') {
     const st = useGame.getState();
