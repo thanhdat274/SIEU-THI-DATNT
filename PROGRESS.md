@@ -147,3 +147,4 @@
 - GĐ312 — 💰 Hạ trần thưởng nhiệm vụ (sàn 110k, ×0,6); tỉ số 1,44/1,17/1,17
 - GĐ311 — 💰 Đo tỉ số thưởng/lãi bán: 1,7–2,0 / 1,4–2,0 / 0,94–1,53; trần 3/2,5/1,8
 - GĐ359–363 — 🧹 QA thưởng quay lại theo cấp, mobile 375px, ngất đúng giờ; gỡ 31 tên import không dùng (tsc sạch, 2361 test, bundle 596/253); chuyển mục lục GĐ251–300 sang archive (PROGRESS.md 25KB)
+- GĐ364 — 🧭 Leader review sớm (backlog cạn): QA 18 panel, 15 ngày autoplay, 60 FPS mặc định, mobile 375px đều sạch; trục chiều sâu vẫn bão hòa, không thêm hệ thống mới. Chờ: save người chơi thật (NG+, nhiệm vụ ngày 1–5). Review kế tiếp ~GĐ374
