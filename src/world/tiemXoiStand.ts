@@ -104,6 +104,17 @@ export function createTiemXoiStand(): TiemXoiStand {
   sign.position.set(0, H + 0.45, front + 0.32);
   add(2.35, 0.6, 0.06, trimM, 0, H + 0.45, front + 0.28);
   stall.add(roof, sign);
+  // GĐ485: bàn nhỏ + 2 ghế đẩu cho khách ngồi ăn tại chỗ (góc trong bên phải cửa, chỉ hình ảnh)
+  add(0.6, 0.06, 0.6, mat(0x8b5a2b), 1.45, 0.62, front - 0.6);
+  add(0.08, 0.6, 0.08, mat(0x5d4037), 1.45, 0.3, front - 0.6);
+  for (const dx of [-0.42, 0.42]) {
+    const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.4, 10), mat(0x2e86de));
+    stool.position.set(1.45 + dx, 0.2, front - 0.6);
+    stall.add(stool);
+  }
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.07, 0.07, 10), mat(0xfdfdfd));
+  bowl.position.set(1.45, 0.69, front - 0.6);
+  stall.add(bowl);
 
   // Người nấu đứng sau sạp: một chủ sạp luôn có + mỗi thợ thêm một người (tối đa 3)
   const cooks: THREE.Group[] = [];
