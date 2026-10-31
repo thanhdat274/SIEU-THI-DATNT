@@ -97,13 +97,13 @@ export const BET_BONUS_CAP = 1.0;
 
 // 2026-10-31 — đo lại bằng cột salesProfit (lãi bán hàng thật): trần cũ 3× và chỉ bật khi lãi > 150k nên
 // cấp 10 (lãi ~146k) không bị chặn, thưởng nhiệm vụ + kèo gấp 7–20× lãi bán. Luật cứng 10 của
-// promt_game.md: bán hàng là nguồn thu chính → trần 0.7× lãi (kèo vừa +50% đưa tổng về ~1× lãi), luôn
+// promt_game.md: bán hàng là nguồn thu chính → trần 0.7× lãi (GĐ312: hạ 0.6× và sàn 110k) (kèo vừa +50% đưa tổng về ~1× lãi), luôn
 // bật khi đã có lịch sử lãi; sàn QUEST_ECO_FLOOR giữ thưởng đáng kể cho tiệm nhỏ.
 
 /** Sàn của trần tổng thưởng bộ ngày (≈ giá trị kho khởi đầu) — tiệm nhỏ vẫn có thưởng đáng nhận. */
-export const QUEST_ECO_FLOOR = 150_000;
+export const QUEST_ECO_FLOOR = 110_000;
 /** Trần tổng thưởng bộ ngày = QUEST_ECO_MULT × lãi bình quân/ngày (không thấp hơn sàn). */
-export const QUEST_ECO_MULT = 0.7;
+export const QUEST_ECO_MULT = 0.6;
 
 /** Trần tổng thưởng tiền của bộ nhiệm vụ ngày. Chưa có lịch sử lãi (ngày đầu) → Infinity. */
 export function questEcoCap(avgDailyProfit: number): number {

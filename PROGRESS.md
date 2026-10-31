@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
+- **GĐ312:** 💰 Hạ trần thưởng nhiệm vụ theo lãi: sàn 150k→110k, hệ số 0,7→0,6 (`questEcoCap`). Giữ nguyên luật người mới chưa có lãi = không trần. Đo: cấp 5 **1,44**, cấp 10 **1,17**, cấp 20 **1,17** (trước 1,7–2,0 / 1,4–2,0 / 0,94–1,53). Toàn bộ 2356 test xanh. Còn lại tới ≤1: cấp 5/10, cần tăng lãi gộp.
 - **GĐ311:** 💰 Đo lại tỉ số (nhiệm vụ+kèo)/lãi bán hàng thật (4 lần chạy): cấp 5 **1,7–2,0**, cấp 10 **1,4–2,0**, cấp 20 **0,94–1,53** (trước: 3,6/1,7/1,2) — thưởng không còn lấn lãi bán hàng rõ rệt, cấp 20 có lúc ≤1. Trần test hạ 5/3/2 → 3/2,5/1,8 (thử 4/2,2/1,4 thì đỏ do nhiễu mô phỏng, nên đặt theo đỉnh dải + đệm). Chưa đổi công thức kinh tế. Mục tiêu ≤1 còn ở cấp 5/10: cần giảm thưởng nhiệm vụ cấp thấp hoặc tăng lãi gộp — để Game Designer cân nhắc, đo trước/sau.
 
 - **GĐ310:** 🔒 Khoá rò rỉ chặt hơn: đo 8 ngày liền object ngoài tiệm đứng yên 563 → 563 (0%), nhân vật sống dao động 13–26 (+11 tối đa). Trần `longSessionLeak` hạ: object +10% → +2%, nhân vật +40 → +20 (hai lần chạy liên tiếp đạt). Full suite GĐ309: 2356 xanh, 157s. Ghi nhận: tải ban đầu 618 KB còn lại chủ yếu `three` (267) + app (247); muốn ≤600 phải lazy-load `world/farm.ts` (chỉ cần từ cấp 8) — đụng khởi tạo thế giới 3D, để dành giai đoạn có QA 3D riêng. Toast ngày đầu 18 còn lại là mốc thật (lên cấp, nhiệm vụ xong do bot chơi nhanh) — không gộp vì mỗi lần bấm nhận cần phản hồi riêng.
@@ -390,4 +391,5 @@
 - GĐ308 — 📦 Firebase nạp động + chunk riêng: tải đầu 646→618 KB, trần 640/290
 - GĐ309 — 🔕 Dời 4 thông báo phụ khỏi ngày đầu: 22→18, trần 20
 - GĐ310 — 🔒 Hạ trần rò rỉ: object +2%, nhân vật +20 (đo 0% / +11)
+- GĐ312 — 💰 Hạ trần thưởng nhiệm vụ (sàn 110k, ×0,6); tỉ số 1,44/1,17/1,17
 - GĐ311 — 💰 Đo tỉ số thưởng/lãi bán: 1,7–2,0 / 1,4–2,0 / 0,94–1,53; trần 3/2,5/1,8
