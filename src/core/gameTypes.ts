@@ -378,6 +378,7 @@ export interface GameState {
   setQuanNuocPrice: (p: QuanNuocPrice) => void;
   /** GĐ415: thêm/bỏ món pha chế trên thực đơn quán nước. */
   toggleQuanRecipe: (id: string) => void;
+  brewQuanHand: () => boolean;
   /** Tiệm xôi (GĐ411): mua mặt bằng, tuyển/cho nghỉ thợ nấu. */
   buyTiemXoi: () => boolean;
   hireTiemXoi: () => boolean;

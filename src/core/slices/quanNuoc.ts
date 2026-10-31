@@ -1,9 +1,10 @@
 import { formatMoney } from '../../data/products';
 import {
-  QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_PRICE_OPTIONS,
+  QUAN_HAND_BONUS, QUAN_HAND_CUPS, quanHandLeft, QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_PRICE_OPTIONS,
   type QuanNuocPrice,
 } from '../../data/quanNuoc';
-import { cleanMenu, quanRecipeById, QUAN_MENU_SLOTS } from '../../data/quanRecipes';
+import { brewMenu, cleanMenu, quanRecipeById, recipeCapacity, QUAN_MENU_SLOTS } from '../../data/quanRecipes';
+import { copyStock, takeStock } from '../stock';
 import type { GameState, SetState, GetState } from '../gameTypes';
 
 /**
@@ -11,7 +12,7 @@ import type { GameState, SetState, GetState } from '../gameTypes';
  * chung, chạy theo ngày trong endDay (không mô phỏng real-time). Khớp pattern slice branch.ts.
  */
 
-export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameState, 'buyQuanNuoc' | 'hireQuanNuoc' | 'fireQuanNuoc' | 'setQuanNuocPrice' | 'toggleQuanRecipe'> => ({
+export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameState, 'buyQuanNuoc' | 'hireQuanNuoc' | 'fireQuanNuoc' | 'setQuanNuocPrice' | 'toggleQuanRecipe' | 'brewQuanHand'> => ({
   /** Mua mặt bằng quán nước: cần đủ cấp và đủ tiền; mua xong là mở bán ngay từ tối nay. */
   buyQuanNuoc: () => {
     const s = get();
@@ -71,5 +72,23 @@ export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameStat
     const on = menu.includes(id);
     if (!on && menu.length >= QUAN_MENU_SLOTS) { s.notify(`Thực đơn tối đa ${QUAN_MENU_SLOTS} món, bỏ bớt một món trước`); return; }
     set({ biz: { ...s.biz, quanNuoc: { ...q, menu: on ? menu.filter((m) => m !== id) : [...menu, id] } } });
+  },
+  /** GĐ427: đứng quầy tự pha một mẻ món đầu tiên còn đủ nguyên liệu trên thực đơn, bán ngay. */
+  brewQuanHand: () => {
+    const s = get();
+    const q = s.biz.quanNuoc;
+    if (!q.open) { s.notify('Chưa mở quán nước!'); return false; }
+    const left = quanHandLeft(q, s.day);
+    if (left <= 0) { s.notify('Hôm nay đã tự pha đủ mẻ, để nhân viên lo phần còn lại'); return false; }
+    const r = cleanMenu(q.menu, s.level).map(quanRecipeById).find((x) => x && recipeCapacity(x, s.storage) >= QUAN_HAND_CUPS);
+    if (!r) { s.notify('Chưa có món nào đủ nguyên liệu cho 5 ly, nhập thêm hoặc chọn thực đơn'); return false; }
+    const k = copyStock(s);
+    const b = brewMenu([r.id], k.storage, QUAN_HAND_CUPS, QUAN_PRICE_OPTIONS[q.price].mul * QUAN_HAND_BONUS, (id, n) => { takeStock(k, id, n); });
+    set({
+      storage: k.storage, storageLots: k.storageLots, money: s.money + b.revenue,
+      biz: { ...s.biz, quanNuoc: { ...q, hand: { day: s.day, n: (q.hand?.day === s.day ? q.hand.n : 0) + 1 } } },
+    });
+    s.notify(`${r.icon} Tự pha ${QUAN_HAND_CUPS} ly ${r.name}: +${formatMoney(b.revenue)} (còn ${left - 1} mẻ hôm nay)`);
+    return true;
   },
 });

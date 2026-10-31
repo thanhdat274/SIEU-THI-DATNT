@@ -124,3 +124,30 @@ describe('menuBoardLines (GĐ416 bảng phấn quầy 3D)', () => {
     expect(menuBoardLines(['ca_phe_sua', 'tra_da'])).toEqual(['Cà phê sữa đá 20k', 'Trà đá 5k']);
   });
 });
+
+describe('brewQuanHand (GĐ427 tự pha ở quầy)', () => {
+  const msgs: string[] = [];
+  beforeEach(() => {
+    msgs.length = 0;
+    const d = newGameData();
+    useGame.setState({ ...d, level: 33, storage: full(10), storageLots: {}, notify: (m: string) => { msgs.push(m); },
+      biz: { ...d.biz, quanNuoc: { ...d.biz.quanNuoc, open: true, menu: ['tra_da'] } } });
+  });
+  it('pha 5 ly bán ngay +20%, trừ kho, tối đa 3 mẻ/ngày, thông báo ≤90 ký tự', () => {
+    const g = useGame.getState;
+    const m0 = g().money;
+    expect(g().brewQuanHand()).toBe(true);
+    expect(g().money - m0).toBe(Math.round(5 * 5_000 * 1.2));
+    expect(g().storage.tra).toBe(9);
+    expect(g().brewQuanHand()).toBe(true);
+    expect(g().brewQuanHand()).toBe(true);
+    expect(g().brewQuanHand()).toBe(false);
+    useGame.setState({ day: g().day + 1 });
+    expect(g().brewQuanHand()).toBe(true);
+    for (const m of msgs) expect(m.length).toBeLessThanOrEqual(90);
+  });
+  it('không đủ nguyên liệu: không pha', () => {
+    useGame.setState({ storage: {} });
+    expect(useGame.getState().brewQuanHand()).toBe(false);
+  });
+});

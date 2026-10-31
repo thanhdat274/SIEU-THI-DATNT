@@ -34,7 +34,7 @@ export const QUAN_WEATHER_MUL: Record<Weather, number> = { sunny: 1.25, cloudy: 
 const weatherMul = (w?: Weather) => (w ? QUAN_WEATHER_MUL[w] ?? 1 : 1);
 
 /** `menu` (GĐ415): id công thức pha chế trên thực đơn; trống = chỉ bán nước chai như cũ. Save cũ thiếu = []. */
-export interface QuanNuocState { open: boolean; staff: number; price: QuanNuocPrice; menu?: string[] }
+export interface QuanNuocState { open: boolean; staff: number; price: QuanNuocPrice; menu?: string[]; /** GĐ427: mẻ tự pha ở quầy hôm nay. */ hand?: { day: number; n: number } }
 export const newQuanNuoc = (): QuanNuocState => ({ open: false, staff: 0, price: 'vua' });
 
 /** Trạng thái hình ảnh của quán nước trong thế giới 3D đầu hẻm. */
@@ -272,3 +272,9 @@ export function quanNuocBuildPayback(level: number, staff: number = 1, price: Qu
 /** Số khách ngồi trong quán 3D (GĐ426): theo số ly bán hôm qua, mỗi 12 ly một khách, tối đa 2 ghế/bàn. */
 export const quanPatrons = (staff: number, servedYesterday: number | undefined) =>
   Math.min(2 * Math.max(0, Math.min(3, Math.floor(staff))), Math.ceil(Math.max(0, servedYesterday ?? 0) / 12));
+
+/** GĐ427 — tự pha ở quầy: mỗi mẻ 5 ly bán ngay cho khách đang chờ, tối đa 3 mẻ/ngày, tiền thưởng tay nghề +20%. */
+export const QUAN_HAND_CUPS = 5;
+export const QUAN_HAND_BATCHES = 3;
+export const QUAN_HAND_BONUS = 1.2;
+export const quanHandLeft = (q: QuanNuocState, day: number) => QUAN_HAND_BATCHES - (q.hand?.day === day ? q.hand.n : 0);
