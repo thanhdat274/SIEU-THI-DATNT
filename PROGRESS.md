@@ -132,6 +132,7 @@
 - GĐ531: Bảng tiệm xôi hiện '👨‍👩‍👧 cuối tuần ×1.15 suất' vào ngày cuối tuần (cạnh dòng mưa). Hàm đã có test GĐ530; 2645 test xanh, bundle 598.
 - GĐ532: Tiện lợi 24/7: đêm cuối tuần (22h–6h) khách ghé ×1,3 (branchWeekendMul trong runBranch) + branchWeekend.test.ts. Không thêm save. 2646 test xanh, bundle 598/253.
 - GĐ533: Bảng tiện lợi hiện '🌙 đêm cuối tuần khách ×1,3' trên dòng hôm nay vào ngày cuối tuần. Hàm đã có test GĐ532; 2646 test xanh, bundle 598/253.
+- GĐ534: QA sandbox dòng cuối tuần: tiện lợi '🌙 đêm cuối tuần khách ×1,3' + tiệm xôi '👨‍👩‍👧 cuối tuần' hiện ngày 13 (thứ 7), ẩn ngày 15. Sửa tiệm xôi ×1.2/×1.15 → ×1,2/×1,15 cho đồng bộ dấu phẩy. 2646 test xanh.
 
 - GĐ522: QA gợi ý phím Ngõ 2 (cần pane hiện để vòng render chạy): lô có sạp hiện '[L] Đứng sạp hôm nay (+25%)', lô trống kế tiếp hiện '[L] Thuê lô sạp…'.
 - GĐ523: Đo FPS sandbox preset Thấp (auto): Ngõ 2 có sạp + người dạo 35–37 FPS, trước tiệm chính 36,5 — đạt ≥30, Ngõ 2 không làm nặng thêm.

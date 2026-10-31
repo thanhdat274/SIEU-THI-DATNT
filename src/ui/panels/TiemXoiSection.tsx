@@ -32,7 +32,7 @@ export function TiemXoiSection() {
           <div style={{ fontSize: 13, marginTop: 4 }}>
             👩‍🍳 Thợ {t.staff}/{TIEM_XOI_MAX_STAFF} · nấu tối đa {tiemXoiCapacity(t.staff, !!t.big)} phần/đêm · giữ {tiemXoiTarget(t)} phần/món
           </div>
-          <div style={{ fontSize: 12, opacity: 0.85 }}>🪑 Khách ngồi ăn tại tiệm tối đa {tiemXoiDineCap(t.staff, !!t.big)} suất/ngày (lấy xôi trong kho, bán giá lẻ) · đã phục vụ {t.dineTotal ?? 0} suất{tiemXoiRainMul(weather) > 1 ? ' · 🌧️ mưa: khách vào trú, ×1.2 suất' : ''}{tiemXoiWeekendMul(day) > 1 ? ' · 👨‍👩‍👧 cuối tuần ×1.15 suất' : ''}</div>
+          <div style={{ fontSize: 12, opacity: 0.85 }}>🪑 Khách ngồi ăn tại tiệm tối đa {tiemXoiDineCap(t.staff, !!t.big)} suất/ngày (lấy xôi trong kho, bán giá lẻ) · đã phục vụ {t.dineTotal ?? 0} suất{tiemXoiRainMul(weather) > 1 ? ' · 🌧️ mưa: khách vào trú, ×1,2 suất' : ''}{tiemXoiWeekendMul(day) > 1 ? ' · 👨‍👩‍👧 cuối tuần ×1,15 suất' : ''}</div>
           {last && (
             <div style={{ fontSize: 13, marginTop: 4 }}>
               Hôm qua: {last.total} phần · chi {formatMoney(last.cost + last.wages)} · rẻ hơn nhập lẻ {formatMoney(last.saved)}
