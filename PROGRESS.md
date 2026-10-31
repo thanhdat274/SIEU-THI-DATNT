@@ -101,7 +101,7 @@
   - Cửa hàng tiện lợi: luật chơi SÂU (ca kíp, mệt mỏi, sự cố đêm, máy bán hàng, điện, nhóm khách đêm). Nợ: BranchPanel 297 dòng gánh hết, cần soát độ rối; chưa có đợt chụp QA 3D.
   - Nông trại: SÂU (mùa vụ, 7 vật nuôi, công trình 3 sao, đơn đặt hàng, phụ trại; world/farm.ts 996 dòng). Nợ: chưa chụp QA 3D gần đây.
   - Quán nước: MỎNG — chỉ 2 nút (số nhân viên, 3 mức giá), thực đơn tự lấy mọi đồ uống, thời tiết không ảnh hưởng, không sự kiện; panel 230 dòng phần lớn là bảng phân tích quanh 2 nút. 3D dựng hộp thủ tục, chưa dùng kit Blender (bang_ghe, chau_cay có sẵn).
-  - Thứ tự sửa: ~~(1) thời tiết~~ xong GĐ414, ~~(2) chọn món~~ thành thực đơn pha chế GĐ415, (3) 3D quán dùng kit, ~~(4) gọn BranchPanel~~ xong GĐ417, (5) chụp QA 3D cả ba. Tiệm xôi phần còn lại để sau.
+  - Thứ tự sửa: ~~(1) thời tiết~~ xong GĐ414, ~~(2) chọn món~~ thành thực đơn pha chế GĐ415, (3) 3D quán dùng kit, ~~(4) gọn BranchPanel~~ xong GĐ417, ~~(5) QA 3D~~ GĐ419 (quán nước; tiện lợi/trại chụp sau). Tiệm xôi phần còn lại để sau.
   - QA 3D cần save thử riêng: không có chế độ sandbox, không được sửa save thật của người dùng.
 
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
@@ -140,3 +140,4 @@
 - GĐ416 — 🪧 Quầy 3D quán nước có bảng phấn "THỰC ĐƠN" vẽ đúng các món đang bán + giá (chưa chọn món ghi nước chai), cập nhật khi đổi thực đơn. Bù ngân sách: tách `Tutorial` khỏi Hud, tải lười.
 - GĐ417 — 🧹 Gọn BranchPanel (297→221 dòng): tab Ban đêm sang `BranchNightTab.tsx`, style sang `branchStyles.ts`; sửa lỗi nút "Đóng" hiện hai lần.
 - GĐ418 — 🧪 Chế độ chơi thử `?thu=1`: IndexedDB riêng `taphoa3d-thu`, khóa khẩn cấp riêng, bỏ qua bản localStorage cũ, không kéo/đẩy cloud — QA không đụng save thật. Bù ngân sách: `VendorAlert` tải lười.
+- GĐ419 — QA bằng `?thu=1` (cấp 40, mở đủ 3 cơ sở): bảng phấn quầy vẽ đúng "Trà đá 5k / Cà phê sữa đá 20k / Sinh tố trái cây 28k"; ChapterDialogue tải lười vẫn hiện; save thật giữ nguyên (cấp 1, savedAt trước QA). Mẹo QA: lệnh browser luôn ghi `tabId`.
