@@ -123,6 +123,7 @@
 - GĐ450–499 (quán nước đồ nóng, tiệm xôi có nhà, khu bản đồ B1–B2): xem docs/progress-archive/INDEX-GD450-499.md
 - GĐ359–399 (lẻ) + GĐ500–511 (Ngõ 2 B2–B5, món sạp): xem docs/progress-archive/INDEX-GD359-399-500-511.md
 - GĐ524: Dồn mục lục GĐ359–399 + GĐ500–511 sang archive (PROGRESS.md dưới 30KB).
+- GĐ525: 🧭 Rà GĐ515–524: 269 file/2642 test xanh 160s, bundle 598/598 (sát trần), chunk 253/255, PROGRESS 26KB. Ngõ 2 đủ sâu (món, bậc, tự đứng sạp, chuỗi xôi, 3D, FPS 35+). Kế: chiều sâu khác ngoài Ngõ 2; review kế ~GĐ535.
 
 - GĐ522: QA gợi ý phím Ngõ 2 (cần pane hiện để vòng render chạy): lô có sạp hiện '[L] Đứng sạp hôm nay (+25%)', lô trống kế tiếp hiện '[L] Thuê lô sạp…'.
 - GĐ523: Đo FPS sandbox preset Thấp (auto): Ngõ 2 có sạp + người dạo 35–37 FPS, trước tiệm chính 36,5 — đạt ≥30, Ngõ 2 không làm nặng thêm.
