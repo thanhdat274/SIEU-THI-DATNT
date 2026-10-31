@@ -76,3 +76,21 @@ describe('walkoutLine (GĐ405)', () => {
     expect(msgs.at(-1)).toContain(PRODUCTS.find((p) => p.id === def.favorites[0])!.name);
   });
 });
+
+describe('regularWalkout ghi món ưa thích bị hụt (GĐ407)', () => {
+  it('món ưa thích → thêm vào discovered một lần; món không ưa thích hoặc không rõ → không thêm', async () => {
+    const { regularWalkout } = await import('../data/regulars');
+    const fav = def.favorites[0];
+    const p1 = regularWalkout(undefined, 3, def, fav);
+    expect(p1.discovered).toEqual([fav]);
+    expect(regularWalkout(p1, 4, def, fav).discovered).toEqual([fav]);
+    expect(regularWalkout(undefined, 3, def, 'khong_phai_mon_ua_thich').discovered).toEqual([]);
+    expect(regularWalkout(undefined, 3).discovered).toEqual([]);
+  });
+
+  it('qua store: bỏ về vì hết món ưa thích → sổ khách quen biết món đó', () => {
+    useGame.setState({ ...newGameData(), level: 20, notify: () => {} });
+    useGame.getState().regularVisit(def.id, [], false, { id: def.favorites[1], why: 'stock' });
+    expect(useGame.getState().regulars[def.id].discovered).toContain(def.favorites[1]);
+  });
+});

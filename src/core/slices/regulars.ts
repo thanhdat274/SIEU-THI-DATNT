@@ -28,7 +28,7 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     const def = regularById(id);
     if (!def) return 0;
     if (!paid) {
-      set({ regulars: { ...s.regulars, [id]: regularWalkout(s.regulars[id], s.day) } });
+      set({ regulars: { ...s.regulars, [id]: regularWalkout(s.regulars[id], s.day, def, miss?.id) } });
       s.notify(`😞 ${def.name}: "${walkoutLine(def.lines.walkout, miss && { name: productById(miss.id).name, why: miss.why })}"`);
       return 0;
     }

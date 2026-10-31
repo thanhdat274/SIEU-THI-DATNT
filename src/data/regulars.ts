@@ -493,9 +493,13 @@ export function regularFriendship(def: RegularDef, prev: RegularProgress | undef
   return { progress: prog, newPerks };
 }
 
-/** Bỏ về tay không hoặc chờ quá lâu: vẫn tính là đã ghé, mất một điểm thân thiết. */
-export function regularWalkout(prev: RegularProgress | undefined, day: number): RegularProgress {
+/**
+ * Bỏ về tay không hoặc chờ quá lâu: vẫn tính là đã ghé, mất một điểm thân thiết.
+ * GĐ407: khách đã nói thẳng món ưa thích bị hụt ("Hết Sữa rồi…") thì sổ khách quen ghi món đó là đã biết.
+ */
+export function regularWalkout(prev: RegularProgress | undefined, day: number, def?: RegularDef, missedId?: string): RegularProgress {
   const prog: RegularProgress = prev ? { ...prev, perks: [...prev.perks], discovered: [...prev.discovered] } : emptyProgress();
+  if (def && missedId && def.favorites.includes(missedId) && !prog.discovered.includes(missedId)) prog.discovered.push(missedId);
   prog.visits++;
   prog.lastVisitDay = day;
   prog.friendship = Math.max(0, prog.friendship - 1);
