@@ -277,7 +277,9 @@ export const quanPatrons = (staff: number, servedYesterday: number | undefined) 
 export const QUAN_HAND_CUPS = 5;
 export const QUAN_HAND_BATCHES = 3;
 export const QUAN_HAND_BONUS = 1.2;
-export const quanHandLeft = (q: QuanNuocState, day: number) => QUAN_HAND_BATCHES - (q.hand?.day === day ? q.hand.n : 0);
+/** GĐ433: mỗi bậc cửa hàng thêm 1 mẻ tự pha/ngày (quầy 3, quán 4, cà phê 5). */
+export const quanHandMax = (q: QuanNuocState) => QUAN_HAND_BATCHES + quanTierOf(q);
+export const quanHandLeft = (q: QuanNuocState, day: number) => quanHandMax(q) - (q.hand?.day === day ? q.hand.n : 0);
 
 /** GĐ428 — nâng bậc cửa hàng nước: quầy → quán → cà phê. Mỗi bậc kéo thêm khách, cần cấp và tiền. */
 export const QUAN_TIERS = [

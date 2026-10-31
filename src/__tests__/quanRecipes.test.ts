@@ -172,3 +172,12 @@ describe('upgradeQuanTier (GĐ428 quầy → quán → cà phê)', () => {
     for (const m of msgs) expect(m.length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('quanHandMax (GĐ433)', () => {
+  it('quầy 3, quán 4, cà phê 5 mẻ', async () => {
+    const { quanHandMax, quanHandLeft } = await import('../data/quanNuoc');
+    const q = { open: true, staff: 0, price: 'vua' as const };
+    expect([0, 1, 2].map((tier) => quanHandMax({ ...q, tier }))).toEqual([3, 4, 5]);
+    expect(quanHandLeft({ ...q, tier: 2, hand: { day: 4, n: 2 } }, 4)).toBe(3);
+  });
+});
