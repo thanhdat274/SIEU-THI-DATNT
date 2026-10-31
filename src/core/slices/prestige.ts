@@ -1,7 +1,7 @@
 import { useSession } from '../../net/session';
 import { RIVAL_UNLOCK } from '../../data/biz';
 import {
-  nextBonus, prestigeEligible, prestigeRestart, PRESTIGE_MAX_LEVEL, PRESTIGE_MIN_LEVEL, PRESTIGE_MIN_REVENUE,
+  prestigeEligible, prestigeRestart, PRESTIGE_MAX_LEVEL, PRESTIGE_MIN_LEVEL, PRESTIGE_MIN_REVENUE,
 } from '../prestige';
 import type { GameState, SetState, GetState } from '../gameTypes';
 

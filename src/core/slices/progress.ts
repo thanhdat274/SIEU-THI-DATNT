@@ -1,4 +1,4 @@
-import { dailyQuests, betBonusMoney, betStatus, BET_TIERS, BET_QUEST_ID, betCoreSetProgress, dailySetProgress, storyQuest } from '../../data/quests';
+import { dailyQuests, betBonusMoney, betStatus, BET_TIERS, BET_QUEST_ID, betCoreSetProgress, storyQuest } from '../../data/quests';
 import { MAX_LEVEL, unlocksAt, xpToNext } from '../../data/levels';
 import { formatMoney } from '../../data/products';
 import { SKILLS, skillPoints, TITLES, PRESTIGE_TITLES, type TitleContext } from '../../data/titles';

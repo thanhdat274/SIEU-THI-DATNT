@@ -1,5 +1,5 @@
 import { furnitureDef } from '../../data/furniture';
-import { warehouseTier, WAREHOUSE_TIERS } from '../../data/warehouse';
+import { WAREHOUSE_TIERS } from '../../data/warehouse';
 import { customersPerDay } from '../../data/levels';
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
 import { orderTotal, supplierById } from '../../data/suppliers';

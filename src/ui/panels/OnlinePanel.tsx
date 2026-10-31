@@ -1,6 +1,6 @@
 import { formatClock, useClock, useGame } from '../../core/store';
 import {
-  ACCEPT_WINDOW, APP_COMMISSION, appRating, declineRating, describeOnline, grabFee, grabTravel, ONLINE_HOURS, ONLINE_OPEN_COST, ONLINE_UNLOCK, onlineOrderCap,
+  ACCEPT_WINDOW, APP_COMMISSION, appRating, declineRating, describeOnline, grabFee, ONLINE_HOURS, ONLINE_OPEN_COST, ONLINE_UNLOCK, onlineOrderCap,
   orderAssessment, orderGap, orderRateTone, ratingImpact,
 } from '../../data/online';
 import { formatMoney } from '../../data/products';

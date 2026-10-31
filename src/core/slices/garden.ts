@@ -1,8 +1,8 @@
 import { formatMoney, productById } from '../../data/products';
 import {
-  ANIMALS, emptyPlot, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FARM_ORDER_UNLOCK, FERTILIZER_BOOST, FERTILIZER_PRODUCT,
+  ANIMALS, emptyPlot, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FERTILIZER_BOOST, FERTILIZER_PRODUCT,
   GARDEN_UNLOCK, HOMEGROWN_PREMIUM, LAND_TIERS, animalMode, farmCritChance, farmGrazeDiscount, fattenReady, harvestYield, inSeason, penCap, plotReady,
-  type AnimalKind, type FarmBuildingId, type GardenState, type Plot,
+  type AnimalKind, type Plot,
 } from '../../data/garden';
 import { CROPS, cropById, type CropDef } from '../../data/garden';
 import type { GameState, SetState, GetState } from '../gameTypes';

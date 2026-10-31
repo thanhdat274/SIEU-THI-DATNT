@@ -1,6 +1,6 @@
 import { useGame } from '../core/store';
 import { describeRep, meetsRep, repScore, reputationOf } from '../data/reputation';
-import { CONTRACT_STREAK_BONUS, CONTRACT_STREAK_EVERY, CONTRACT_COMMIT_BONUS, SUPPLY_CONTRACTS, supplyContractById, missingForContract, contractValue, commitBonusValue, commitDeposit, contractStreakProgress, contractAcceptRoi, type SupplyContract } from '../data/contracts';
+import { CONTRACT_STREAK_BONUS, CONTRACT_STREAK_EVERY, CONTRACT_COMMIT_BONUS, SUPPLY_CONTRACTS, supplyContractById, contractValue, commitBonusValue, commitDeposit, contractStreakProgress, contractAcceptRoi, type SupplyContract } from '../data/contracts';
 import { formatMoney, productById } from '../data/products';
 import { Callout } from './panels/shared';
 import { commitTry } from '../data/commitTry';
