@@ -351,7 +351,7 @@ export function OrderPanel() {
     const wages = wagesDue(useGame.getState());
     const budget = Math.max(0, money - wages);
     const drinkUnits = quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
-    const plan = teahouseFillPlan(biz.quanNuoc, level, drinkUnits, (id) => (rows.some((r) => r.p.id === id) ? caseSize(id) : 0));
+    const plan = teahouseFillPlan(biz.quanNuoc, level, drinkUnits, (id) => (rows.some((r) => r.p.id === id) ? caseSize(id) : 0), day);
     if (plan.topup <= 0) return notify('🥤 Quán nước tối nay đã đủ đồ uống — không cần nạp.');
     let c = { ...cart };
     let filled = 0;

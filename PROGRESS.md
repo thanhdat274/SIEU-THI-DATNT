@@ -145,3 +145,4 @@
 - GĐ466: Dồn GĐ400–449 sang docs/progress-archive/PROGRESS-GD400-449.md, PROGRESS 37,6→27 KB.
 - GĐ467: Quán nước cuối tuần (T7/CN) khách ×1.2 — áp cho ngày bán thật và dự phóng trong bảng (quanWeekendMul).
 - GĐ468: Bảng quán nước ghi '🎉 Cuối tuần: khách đông hơn ×1.2' vào T7/CN.
+- GĐ469: Ước tính chở/nạp đồ uống cho quán (teahouseHaul, đơn nhập) tính cả cuối tuần ×1.2.

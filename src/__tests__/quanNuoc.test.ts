@@ -311,3 +311,14 @@ describe('GĐ467: cuối tuần quán đông hơn', () => {
     expect(quanNuocProjection(q, 29, 1e9, 'cloudy', sat).customers).toBeGreaterThan(quanNuocProjection(q, 29, 1e9, 'cloudy', mon).customers);
   });
 });
+
+describe('GĐ469: ước tính chở hàng biết cuối tuần', () => {
+  it('teahouseHaulRead cuối tuần cần nhiều hơn ngày thường', async () => {
+    const { teahouseHaulRead } = await import('../data/teahouseHaul');
+    const { isWeekend } = await import('../data/calendar');
+    const sat = [1, 2, 3, 4, 5, 6, 7].find((d) => isWeekend(d))!;
+    const mon = [1, 2, 3, 4, 5, 6, 7].find((d) => !isWeekend(d))!;
+    const q = { open: true, staff: 0, price: 'vua' as const };
+    expect(teahouseHaulRead(100, q, 29, sat).daysLeft).toBeLessThan(teahouseHaulRead(100, q, 29, mon).daysLeft);
+  });
+});

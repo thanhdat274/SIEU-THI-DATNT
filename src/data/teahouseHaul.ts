@@ -29,8 +29,8 @@ export interface TeahouseHaulRead {
   haulNow: boolean;
 }
 
-export function teahouseHaulRead(drinkUnits: number, q: QuanNuocState | undefined, level: number): TeahouseHaulRead {
-  const need = q?.open ? quanNuocProjection(q, level, Infinity).wanted : 0;
+export function teahouseHaulRead(drinkUnits: number, q: QuanNuocState | undefined, level: number, day?: number): TeahouseHaulRead {
+  const need = q?.open ? quanNuocProjection(q, level, Infinity, undefined, day).wanted : 0;
   const haveNow = Math.max(0, drinkUnits);
   const daysLeft = need > 0 ? haveNow / need : Infinity;
   const verdict = daysLeft <= TEAHOUSE_HAUL_DAYS_DANGER ? 'danger' : daysLeft <= TEAHOUSE_HAUL_DAYS_WARN ? 'warn' : 'ok';
@@ -51,8 +51,9 @@ export function teahouseFillPlan(
   level: number,
   drinkUnits: number,
   supplierCase: (id: string) => number,
+  day?: number,
 ): { lines: TeahouseFillLine[]; topup: number } {
-  const topup = q?.open ? Math.max(0, quanNuocProjection(q, level, Infinity).wanted - Math.max(0, drinkUnits)) : 0;
+  const topup = q?.open ? Math.max(0, quanNuocProjection(q, level, Infinity, undefined, day).wanted - Math.max(0, drinkUnits)) : 0;
   if (topup <= 0) return { lines: [], topup };
   const add: Record<string, number> = {};
   let remaining = topup;

@@ -186,7 +186,7 @@ export function QuanNuocPanel() {
             </Callout>
           )}
           {quan.open && (() => {
-            const hr = teahouseHaulRead(drinkUnits, quan, level);
+            const hr = teahouseHaulRead(drinkUnits, quan, level, day);
             if (hr.daysLeft >= 3) return null;
             const tone = hr.verdict === 'danger' ? 'danger' : 'warn';
             const nights = hr.daysLeft === Infinity ? 'vô hạn' : `~${Math.ceil(hr.daysLeft)} đêm`;
