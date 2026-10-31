@@ -5,7 +5,7 @@ import * as THREE from 'three';
  * lưới đi lại. `lot` = biển gỗ "TIỆM XÔI" khi đủ cấp chưa mở; `stall` = sạp có nồi chõ bốc hơi, mâm xôi
  * màu và mái che vàng khi đã mở. main.tsx bật/ẩn theo `tiemXoiStandState`.
  */
-export interface TiemXoiStand { group: THREE.Group; lot: THREE.Group; stall: THREE.Group; /** GĐ434: số người nấu đứng sau sạp (chủ + thợ). */ setCooks(n: number): void }
+export interface TiemXoiStand { group: THREE.Group; lot: THREE.Group; stall: THREE.Group; /** GĐ434: số người nấu đứng sau sạp (chủ + thợ). */ setCooks(n: number): void; /** GĐ447: hơi bốc to khi chủ đã đồ mẻ hôm nay. */ setSteaming(on: boolean): void }
 
 const mat = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 0.8 });
 
@@ -86,5 +86,6 @@ export function createTiemXoiStand(): TiemXoiStand {
   group.add(lot, stall);
   lot.visible = false;
   stall.visible = false;
-  return { group, lot, stall, setCooks };
+  const setSteaming = (on: boolean) => { steam.scale.setScalar(on ? 1.8 : 1); (steam.material as THREE.MeshStandardMaterial).opacity = on ? 0.6 : 0.45; };
+  return { group, lot, stall, setCooks, setSteaming };
 }

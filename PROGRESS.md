@@ -168,3 +168,4 @@
 - GĐ444: Mẻ chủ tự đồ xôi +5 phần mỗi thợ phụ (tiemXoiHandQty).
 - GĐ445: Gợi ý phím J ghi số phần xôi sẽ đồ.
 - GĐ446: Gợi ý phím P ở quầy pha ghi số mẻ tự pha còn lại trong ngày.
+- GĐ447: Sạp xôi 3D bốc hơi to khi chủ đã đồ mẻ hôm nay (setSteaming).
