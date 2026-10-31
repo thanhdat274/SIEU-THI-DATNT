@@ -155,3 +155,4 @@
 - GĐ369 — 🎉 Test đơn tiệc `orders.ts` (5 test, mutation 2/2): giao đủ hàng nhận giá+thưởng/5★, thiếu hàng hoặc chưa nhận bị chặn, nhập gấp trừ đại lý rồi giao, thiếu tiền không giao; gỡ `console.log("DBG PICKED")` sót trong data/orders.ts
 - GĐ370 — 🎊 Test `communitySale` khai trương (4 test, mutation 2/2): tiến độ cộng dồn, thưởng đúng một lần, thiếu chậu cây chưa xong, sai ngày không ghi
 - GĐ371 — 🗄️ Test slice kho `inventory.ts` (10 test, mutation 2/2): bày/dọn kệ giữ nguyên tổng hàng, đổi loại trả hàng cũ về kho, khách lấy hàng (heat, lời kệ), kệ hỏng bỏ qua, tự thay ô trống, consumeStock không âm
+- GĐ372 — 📏 Mốc: 238 file / 2411 test xanh, 129s (dưới mục tiêu ~150s; dao động theo tải máy, chưa đổi gì về tốc độ)
