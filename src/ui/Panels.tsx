@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect } from 'react';
 import { useGame } from '../core/store';
-import { styles } from './panels/shared';
+import { styles, Tabs } from './panels/shared';
 
 // Mỗi bảng là một chunk riêng: chỉ tải khi người chơi mở lần đầu (giữ tải ban đầu nhẹ).
 const BranchPanel = lazy(() => import('./BranchPanel').then((m) => ({ default: m.BranchPanel })));
@@ -39,9 +39,22 @@ const LandmarkPanel = lazy(() => import('./panels/LandmarkPanel').then((m) => ({
 const DossierPanel = lazy(() => import('./panels/DossierPanel').then((m) => ({ default: m.DossierPanel })));
 const RoadmapPanel = lazy(() => import('./panels/RoadmapPanel').then((m) => ({ default: m.RoadmapPanel })));
 
+/** Một nút HUD "Sổ sách" gom các bảng tra cứu/ghi nhận; chuyển qua lại bằng thanh tab (chống phình nút HUD). */
+export const SO_SACH_TABS = [
+  ['history', '📊 Theo dõi'],
+  ['records', '🏆 Kỷ lục'],
+  ['analytics', '🩺 Sức khoẻ món'],
+  ['dossier', '📖 Hồ sơ'],
+  ['roadmap', '🗺️ Mở khóa'],
+  ['discovery', '🔍 Sổ tay'],
+] as const;
+type SoSachTab = (typeof SO_SACH_TABS)[number][0];
+const isSoSach = (t: string): t is SoSachTab => SO_SACH_TABS.some(([id]) => id === t);
+
 export function Panels() {
   const panel = useGame((s) => s.panel);
   const closePanel = useGame((s) => s.closePanel);
+  const openPanel = useGame((s) => s.openPanel);
   // Esc để đóng bảng đang mở
   useEffect(() => {
     if (!panel) return;
@@ -56,6 +69,9 @@ export function Panels() {
     <div style={styles.backdrop} onClick={(e) => e.target === e.currentTarget && closePanel()}>
       <div className="panel" style={styles.panel}>
         <button style={styles.close} title="Đóng (Esc)" aria-label="Đóng" onClick={closePanel}>✕</button>
+        {isSoSach(panel.type) && (
+          <Tabs tabs={SO_SACH_TABS} value={panel.type} onChange={(t) => openPanel({ type: t })} />
+        )}
         <Suspense fallback={null}>
         {panel.type === 'order' && <OrderPanel />}
         {panel.type === 'social' && <SocialPanel />}

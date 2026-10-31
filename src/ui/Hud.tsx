@@ -51,7 +51,7 @@ import { findSurprise } from '../data/surpriseArcs';
 import { chooseSurprise, closeChapter, closeStory, dismissTutorial, REGULAR_NAMES } from '../core/biz';
 import { chapterById } from '../data/chapters';
 import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
-import { Panels } from './Panels';
+import { Panels, SO_SACH_TABS } from './Panels';
 import { answerAsk, useCounterAsk, askWallElapsed } from '../core/counterAsk';
 import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice } from '../render/graphicsQuality';
 import './hud.css';
@@ -302,11 +302,6 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     const n = dossierEarnedCount(d);
     return n > 0 ? `${n} huy hiệu` : undefined;
   });
-  // Bản đồ mở khóa: số hệ lớn + mốc lớn chưa mở khóa theo cấp (GĐ168 — bản đồ nạp tới cấp 75)
-  const roadmapBadge = useGame((s) => {
-    const n = SYSTEM_UNLOCKS.filter((u) => u.atLevel > s.level).length;
-    return n > 0 ? `${n} mục` : undefined;
-  });
   // Trang trại: luống chờ thu, trứng/sữa chờ lấy, heo xuất chuồng được, gà đói mà kho hết cám, hoặc chưa tưới
   const gardenBadge = useGame((s) => {
     if (s.level < 8) return undefined;
@@ -375,13 +370,8 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     { icon: '💲', label: 'Giá bán', narrowMore: true, group: 'Hàng hóa', lock: FEATURES.prices, active: openType === 'prices', on: () => openPanel({ type: 'prices' }) },
     { icon: '🎁', label: 'Combo', more: true, group: 'Hàng hóa', lock: COMBO_UNLOCK, active: openType === 'combos', on: () => openPanel({ type: 'combos' }) },
     { icon: '📋', label: 'Hợp đồng', group: 'Hàng hóa', lock: 14, more: true, active: openType === 'contracts', on: () => openPanel({ type: 'contracts' }) },
-    { icon: '🔍', label: 'Sổ tay Tiệm', group: 'Hàng hóa', more: true, active: openType === 'discovery', on: () => openPanel({ type: 'discovery' }) },
     { icon: '📈', label: 'Kinh doanh', narrowMore: true, group: 'Kinh doanh & đối thủ', lock: 3, badge: [loanBadge, rivalBadge, challengeBadge].filter(Boolean).join(' · ') || undefined, active: openType === 'business', on: () => openPanel({ type: 'business' }) },
-    { icon: '📊', label: 'Sổ theo dõi', more: true, group: 'Kinh doanh & đối thủ', active: openType === 'history', on: () => openPanel({ type: 'history' }) },
-    { icon: '🏆', label: 'Sổ kỷ lục', more: true, group: 'Kinh doanh & đối thủ', active: openType === 'records', on: () => openPanel({ type: 'records' }) },
-    { icon: '📖', label: 'Hồ sơ tiệm', more: true, group: 'Kinh doanh & đối thủ', badge: dossierBadge, active: openType === 'dossier', on: () => openPanel({ type: 'dossier' }) },
-    { icon: '🗺️', label: 'Bản đồ mở khóa', more: true, group: 'Kinh doanh & đối thủ', badge: roadmapBadge, active: openType === 'roadmap', on: () => openPanel({ type: 'roadmap' }) },
-    { icon: '🩺', label: 'Sức khoẻ món', more: true, group: 'Kinh doanh & đối thủ', active: openType === 'analytics', on: () => openPanel({ type: 'analytics' }) },
+    { icon: '📊', label: 'Sổ sách', more: true, group: 'Kinh doanh & đối thủ', badge: dossierBadge, active: !!openType && SO_SACH_TABS.some(([id]) => id === openType), on: () => openPanel({ type: 'history' }) },
     { icon: '🚜', label: 'Trang trại', more: true, group: 'Ngoài tiệm', lock: 8, badge: gardenBadge, active: openType === 'garden', on: () => openPanel({ type: 'garden' }) },
     { icon: '🧋', label: 'Quán nước', more: true, group: 'Ngoài tiệm', lock: QUAN_NUOC_UNLOCK, active: openType === 'quannuoc', on: () => openPanel({ type: 'quannuoc' }) },
     { icon: '🏗️', label: 'Sân chơi', more: true, group: 'Ngoài tiệm', active: openType === 'landmark', badge: landmarkContrib >= 28 ? '✅ Xong' : `${landmarkContrib}/28`, on: () => openPanel({ type: 'landmark' }) },
