@@ -26,3 +26,12 @@ describe('nhà tiệm xôi trên lưới đi lại', () => {
     expect(g.isBlocked(cx, front)).toBe(false);
   });
 });
+
+describe('GĐ487: trong nhà tiệm xôi', async () => {
+  const { insideXoiHouse } = await import('../world/tiemXoiStand');
+  it('trước quầy trong nhà là bên trong; vỉa hè là bên ngoài', () => {
+    expect(insideXoiHouse(46, 1, 46, 0.7)).toBe(true);
+    expect(insideXoiHouse(46, 1, 46, 2.8)).toBe(false);
+    expect(insideXoiHouse(46, 1, 50, 0)).toBe(false);
+  });
+});

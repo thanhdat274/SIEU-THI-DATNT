@@ -26,7 +26,11 @@ export function xoiHouseBoxes(ox: number, oz: number): THREE.Box3[] {
   ];
 }
 
-export interface TiemXoiStand { group: THREE.Group; lot: THREE.Group; stall: THREE.Group; /** GĐ434: số người nấu đứng sau sạp (chủ + thợ). */ setCooks(n: number): void; /** GĐ447: hơi bốc to khi chủ đã đồ mẻ hôm nay. */ setSteaming(on: boolean): void; setBig(on: boolean): void; /** GĐ486: số khách ngồi ăn (0–2). */ setDiners(n: number): void }
+/** GĐ487: điểm (thế giới) có nằm trong nhà tiệm xôi đặt ở gốc (ox, oz) không. */
+export const insideXoiHouse = (ox: number, oz: number, x: number, z: number) =>
+  Math.abs(x - ox - XOI_HOUSE.x) < XOI_HOUSE.width / 2 && Math.abs(z - oz - XOI_HOUSE.z) < XOI_HOUSE.depth / 2;
+
+export interface TiemXoiStand { group: THREE.Group; lot: THREE.Group; stall: THREE.Group; /** GĐ434: số người nấu đứng sau sạp (chủ + thợ). */ setCooks(n: number): void; /** GĐ447: hơi bốc to khi chủ đã đồ mẻ hôm nay. */ setSteaming(on: boolean): void; setBig(on: boolean): void; /** GĐ486: số khách ngồi ăn (0–2). */ setDiners(n: number): void; /** GĐ487: ẩn mái khi chủ đứng trong tiệm. */ setRoofHidden(on: boolean): void }
 
 const mat = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 0.8 });
 
@@ -97,6 +101,7 @@ export function createTiemXoiStand(): TiemXoiStand {
   add(seg, H, T, wallM, XOI_DOOR_HALF + seg / 2, H / 2, front);
   add(XOI_DOOR_HALF * 2, 0.5, T, wallM, 0, H - 0.25, front);
   add(W + 0.4, 0.16, D + 0.5, mat(0x8e2a1f), 0, H + 0.08, hz + 0.1);
+  const roofSlab = stall.children[stall.children.length - 1];
   const roof = new THREE.Mesh(new THREE.BoxGeometry(W + 0.2, 0.05, 0.8), mat(0xf6c445));
   roof.position.set(0, H - 0.5, front + 0.4);
   roof.rotation.x = 0.28;
@@ -153,5 +158,6 @@ export function createTiemXoiStand(): TiemXoiStand {
   const setSteaming = (on: boolean) => { steam.scale.setScalar(on ? 1.8 : 1); (steam.material as THREE.MeshStandardMaterial).opacity = on ? 0.6 : 0.45; };
   const setBig = (on: boolean) => { pot2.visible = on; };
   const setDiners = (n: number) => diners.forEach((d, i) => { d.visible = i < n; });
-  return { group, lot, stall, setCooks, setSteaming, setBig, setDiners };
+  const setRoofHidden = (on: boolean) => { roofSlab.visible = !on; };
+  return { group, lot, stall, setCooks, setSteaming, setBig, setDiners, setRoofHidden };
 }

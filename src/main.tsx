@@ -323,6 +323,7 @@ useGame.subscribe((s) => {
 let tiemXoiStand: import('./world/tiemXoiStand').TiemXoiStand | null = null;
 let tiemXoiLoading = false;
 let lastXoiWalls = false;
+let insideXoiHouseFn: typeof import('./world/tiemXoiStand').insideXoiHouse | null = null;
 let xoiHouseBoxesFn: typeof import('./world/tiemXoiStand').xoiHouseBoxes | null = null;
 const syncTiemXoi = () => {
   const s = useGame.getState();
@@ -333,6 +334,7 @@ const syncTiemXoi = () => {
       void import('./world/tiemXoiStand').then((m) => {
         tiemXoiStand = m.createTiemXoiStand();
         xoiHouseBoxesFn = m.xoiHouseBoxes;
+        insideXoiHouseFn = m.insideXoiHouse;
         tiemXoiStand.group.position.set(LANE_X - 4, 0, 1);
         scene.add(tiemXoiStand.group);
         syncTiemXoi();
@@ -704,6 +706,8 @@ const clock = new THREE.Clock();
 /** Vòng lặp một khung hình — WebGPU cần renderer.init() xong mới được render nên tách ra riêng. */
 function renderFrame() {
   const dt = Math.min(clock.getDelta(), 0.1);
+  // GĐ487: chủ đứng trong nhà tiệm xôi thì ẩn mái để nhìn thấy quầy, nồi và khách ngồi ăn
+  if (tiemXoiStand && insideXoiHouseFn) tiemXoiStand.setRoofHidden(insideXoiHouseFn(tiemXoiStand.group.position.x, tiemXoiStand.group.position.z, player.position.x, player.position.z));
   const state = useGame.getState();
   if (!playing()) {
     // Màn đăng nhập: thị trấn làm phông nền, camera lượn chậm quanh tiệm
