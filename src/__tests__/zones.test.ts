@@ -20,7 +20,8 @@ describe('khu bản đồ', () => {
     expect(zoneAt(0, 0)?.id).toBe('hem');
     expect(zoneAt(54.4, 1)?.id).toBe('hem');
     expect(zoneAt(46, 1)?.id).toBe('hem');
-    expect(zoneAt(0, -60)?.id).toBe('ngo2');
+    expect(zoneAt(0, -60)?.id).toBe('hem');
+    expect(zoneAt(100, 5)?.id).toBe('ngo2');
   });
   it('kiểm tra mở khu theo cấp/tiền', () => {
     expect(canOpenZone('ngo2', [], 10, 1e9)).toBe('level');

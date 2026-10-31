@@ -18,8 +18,8 @@ export interface Zone {
 }
 
 export const ZONES: Zone[] = [
-  { id: 'hem', name: 'Hẻm đầu ngõ', icon: '🏘️', unlock: 1, cost: 0, bounds: { x1: -40, z1: -40, x2: 80, z2: 40 }, desc: 'Hẻm nhà mình: tạp hoá, quán nước, tiệm xôi' },
-  { id: 'ngo2', name: 'Ngõ 2', icon: '🛤️', unlock: 45, cost: 50_000_000, bounds: { x1: -40, z1: -110, x2: 80, z2: -40 }, desc: 'Ngõ mới phía bắc: lô đất trống, chỗ cho sạp hàng rong' },
+  { id: 'hem', name: 'Hẻm đầu ngõ', icon: '🏘️', unlock: 1, cost: 0, bounds: { x1: -80, z1: -80, x2: 80, z2: 80 }, desc: 'Hẻm nhà mình: tạp hoá, quán nước, tiệm xôi' },
+  { id: 'ngo2', name: 'Ngõ 2', icon: '🛤️', unlock: 45, cost: 50_000_000, bounds: { x1: 80, z1: -40, x2: 120, z2: 40 }, desc: 'Ngõ mới phía đông nối đường chính: lô trống, chỗ cho sạp hàng rong' },
 ];
 
 export const zoneById = (id: string) => ZONES.find((z) => z.id === id);
