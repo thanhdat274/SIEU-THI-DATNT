@@ -169,6 +169,8 @@
 - GĐ352 — ⚡ Kệ bỏ qua dựng lại InstancedMesh khi hộp không đổi (sim đơn lẻ 85→69s); bộ test chấp nhận ~175s. Chi tiết + vì sao KHÔNG chia sẻ hình học nhân vật (UUID three ăn Math.random của sim): docs/progress-archive/PROGRESS-GD352.md
 - GĐ353 — 📱 QA tablet 768×1024: 6 panel dock (Sơ đồ kệ, Nhập hàng, Sổ đầu ngày, Nhiệm vụ, Giá bán, Kinh doanh) 0 tràn ngang, 0 lỗi
 - GĐ354 — 🧪 faintMinutes() dùng chung cho tick ngất + biển báo khuya (hết chép công thức 2 nơi) + test faintDeadline
+- GĐ355 — 🗜️ Dồn chi tiết GĐ352 sang archive, PROGRESS.md 29,5KB
+- GĐ357 — 🧭 Leader review (GĐ347–357): 2361 test xanh (~177s, chấp nhận), tsc sạch, bundle 596/253, PROGRESS.md 29,5KB. Rà tính năng: không có dữ liệu dùng thật để gộp/bỏ → giữ nguyên, KHÔNG thêm nút HUD/hệ mới. Phát hiện kỹ thuật: sim phụ thuộc số đối tượng three (UUID↔Math.random). Việc kế: QA định kỳ, chờ save người thật (NG+, nhiệm vụ ngày 1–5)
 - GĐ343 — 📦 Siết trần bundle 598/255
 - GĐ336–342 — 📦 Bundle 596 KB (nạp lười STORIES/SURPRISES/GLTF, test hợp đồng); QA gfx=low ~58 FPS, mobile/tablet không tràn; Leader review GĐ337
 - GĐ332 — 💰 % kèo 25/40/65; tỉ số thưởng/lãi 0,99/0,89/0,64
