@@ -52,7 +52,7 @@ export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState
     if (!t.open) { s.notify('Chưa mở tiệm xôi!'); return false; }
     if (t.handDay === s.day) { s.notify('Hôm nay đã tự đồ một mẻ rồi, mai đồ tiếp'); return false; }
     const id = tiemXoiHandPick(s.level, s.storage);
-    if (!id) return false;
+    if (!id) { s.notify('Chưa có món xôi nào mở ở cấp này'); return false; }
     const qty = tiemXoiHandQty(t.staff);
     const cost = Math.round(qty * productById(id).buy * TIEM_XOI_COST_MUL);
     if (s.money < cost) { s.notify(`Cần ${formatMoney(cost)} nguyên liệu để đồ xôi`); return false; }
