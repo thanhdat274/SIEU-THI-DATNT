@@ -351,7 +351,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     revenue: s.stats.revenue + onlineDay.money + crew.tips + quanRevenue, online: (s.stats.online ?? 0) + onlineDay.money,
     ...(crew.cashLoss || shrinkItems ? { shrinkCash: crew.cashLoss, shrinkItems } : {}),
   };
-  if (opCost >= 5000) s.notify(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}${branchPower ? ` — riêng tiện lợi 24/7 ${formatMoney(branchPower)} tiền điện` : ''}`);
+  if (opCost >= 5000 && s.day > 1) s.notify(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}${branchPower ? ` — riêng tiện lợi 24/7 ${formatMoney(branchPower)} tiền điện` : ''}`);
   // GĐ300: chốt sẵn việc sáng 🧍 NGAY TẠI MÁY CHẠY. Snapshot staffDay là transient ngoài useGame
   // (chỉ máy chạy mô phỏng mới có), nên nếu để Sổ đầu ngày tự đọc thì máy khách hẻm online sẽ không
   // bao giờ thấy việc này. Tính ở đây rồi gửi kèm lastSummary → hai chế độ ra KẾT QUẢ GIỐNG NHAU.
@@ -421,6 +421,6 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   get().checkTitles();
   if (s.autoSwap) {
     const swapped = get().replaceEmptySlots();
-    if (swapped.length) s.notify(`🔄 Thay ô hết hàng: ${swapped.join(', ')}`);
+    if (swapped.length && s.day > 1) s.notify(`🔄 Thay ô hết hàng: ${swapped.join(', ')}`);
   }
 };

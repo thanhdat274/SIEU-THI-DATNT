@@ -160,7 +160,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     const all = [...fresh, ...freshPrestige];
     if (!all.length) return;
     set({ titles: [...s.titles, ...all.map((t) => t.id)] });
-    s.notify(`🏅 Danh hiệu mới: ${all.map((t) => `${t.icon} ${t.name}`).join(', ')}`);
+    if (s.day > 1 || freshPrestige.length) s.notify(`🏅 Danh hiệu mới: ${all.map((t) => `${t.icon} ${t.name}`).join(', ')}`);
     playSfx('achieve');
   },
   claimQuest: (id) => {
@@ -234,7 +234,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     // Sang ngày mới (hoặc hụt hôm qua): kèo cũ hết giá trị, được chốt kèo mới — 1 kèo/ngày
     const log = s.questLog.day === s.day ? s.questLog : { ...s.questLog, day: s.day, claimedDaily: [], bet: null };
     set({ questLog: { ...log, bet: { day: s.day, questId: BET_QUEST_ID, tier, bonus: 0 } } });
-    s.notify(`🎯 Chốt "${def.name}": làm trọn việc chính ×${def.tier} là trúng kèo, hụt không mất gì!`);
+    if (s.day > 1) s.notify(`🎯 Chốt "${def.name}": làm trọn việc chính ×${def.tier} là trúng kèo, hụt không mất gì!`);
     playSfx('gift');
     return true;
   },
