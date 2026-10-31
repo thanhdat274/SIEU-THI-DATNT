@@ -171,6 +171,7 @@
 - GĐ354 — 🧪 faintMinutes() dùng chung cho tick ngất + biển báo khuya (hết chép công thức 2 nơi) + test faintDeadline
 - GĐ355 — 🗜️ Dồn chi tiết GĐ352 sang archive, PROGRESS.md 29,5KB
 - GĐ357 — 🧭 Leader review (GĐ347–357): 2361 test xanh (~177s, chấp nhận), tsc sạch, bundle 596/253, PROGRESS.md 29,5KB. Rà tính năng: không có dữ liệu dùng thật để gộp/bỏ → giữ nguyên, KHÔNG thêm nút HUD/hệ mới. Phát hiện kỹ thuật: sim phụ thuộc số đối tượng three (UUID↔Math.random). Việc kế: QA định kỳ, chờ save người thật (NG+, nhiệm vụ ngày 1–5)
+- GĐ358 — 🛌 QA "Chào mừng quay lại" (save sạch, cấp thấp): vắng 3 ngày → +6.000đ (2k/ngày), thông báo đúng, 0 lỗi; không lạm phát
 - GĐ343 — 📦 Siết trần bundle 598/255
 - GĐ336–342 — 📦 Bundle 596 KB (nạp lười STORIES/SURPRISES/GLTF, test hợp đồng); QA gfx=low ~58 FPS, mobile/tablet không tràn; Leader review GĐ337
 - GĐ332 — 💰 % kèo 25/40/65; tỉ số thưởng/lãi 0,99/0,89/0,64
