@@ -99,7 +99,7 @@
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
 2. **Khoá chờ save người thật:** NG+ vòng (GĐ171) · nhiệm vụ ngày 1–5 (GĐ254 đã giảm lặp). (GĐ110/117 ĐÃ ĐÓNG GĐ280 bằng số liệu; Arc E "Hàng xóm khai trương" ĐÃ HOÀN THÀNH GĐ283, 27 test cấu trúc xanh).
 3. **Ý tưởng chờ Leader duyệt (chiều sâu, chưa làm):** (a) nhịp cuối tuần đậm hơn — **ĐÃ HOÀN THÀNH GĐ291** (lô chợ phiên đầu tháng nhận biết món ăn vặt cuối tuần + gợi ý trữ hàng đặc biệt); (b) nhiệm vụ tuần/tháng biết đến thứ/ngày trong kỳ — **ĐÃ HOÀN THÀNH GĐ289** (nhịp tháng monthPace hiển thị ngày còn lại tới hết tháng + dự báo kịp/hụt và bảo vệ chuỗi tháng).
-4. 👥 **Đủ 2 chế độ (ĐÃ CHỐT GĐ288):** Hoàn thành rà soát và khoá chính sách parity cho 2 chế độ: (a) Sân chơi GĐ287 (chung tiến độ/lượt ngày); (b) Tái sinh NG+ (doPrestige) và Chào mừng quay lại (checkWelcomeBack) giữ nguyên thiết kế an toàn: Tái sinh NG+ chỉ chạy ở chơi đơn (bảo vệ thế giới hẻm online không bị reset đột ngột làm mất dữ liệu của đồng đội), Chào mừng quay lại chạy cục bộ theo máy để thưởng công bằng khi người chơi đăng nhập trở lại mà không tạo lạm phát hay gian lận két tiền chung. Đã bổ sung bộ test tự động trong coopClient.test.ts.
+4. 👥 **Đủ 2 chế độ (ĐÃ CHỐT GĐ288):** khoá chính sách parity chơi đơn/hẻm online: Sân chơi chung tiến độ; Tái sinh NG+ chỉ chơi đơn; Chào mừng quay lại chạy cục bộ. Test: coopClient.test.ts. Chi tiết: docs/progress-archive/BACKLOG-parity-GD288.md.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)
 
