@@ -178,3 +178,4 @@
 - GĐ454: Test XP +2 cho mỗi mẻ tự pha ở quán nước.
 - GĐ455: Món mới Sinh tố xoài (cấp 39, 30k, xoài + sữa đặc + đá) — xoài trồng được ở trại.
 - GĐ456: Tách lazy BranchAlert/RivalAlert/StoryAlert sang HudAlerts.tsx — tải ban đầu về lại 598 KB sau GĐ455 lỡ lên 599.
+- GĐ457: QA sandbox: StoryAlert lazy vẫn hiện (Bà Năm · Chương 1) sau tách GĐ456.
