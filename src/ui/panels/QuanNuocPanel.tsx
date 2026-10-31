@@ -58,8 +58,8 @@ export function QuanNuocPanel() {
       {quan.open && quanWeekendMul(day) !== 1 && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>🎉 Cuối tuần: khách ngồi quán đông hơn ×{quanWeekendMul(day)} — nạp thêm nguyên liệu</p>
       )}
-      {quan.open && quanHotNote(quan.menu ?? [], weather, level) && (
-        <p style={{ fontSize: 12, margin: '0 0 6px' }}>{quanHotNote(quan.menu ?? [], weather, level)}</p>
+      {quan.open && quanHotNote(quan.menu ?? [], weather, level, day) && (
+        <p style={{ fontSize: 12, margin: '0 0 6px' }}>{quanHotNote(quan.menu ?? [], weather, level, day)}</p>
       )}
       {!quan.open ? (
         <>

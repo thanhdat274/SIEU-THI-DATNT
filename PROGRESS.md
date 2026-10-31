@@ -150,6 +150,7 @@
 - GĐ470: Ghi Cần duyệt nâng tiệm xôi thành cửa hàng nhỏ (chờ người dùng chọn).
 - GĐ471: Bảng quán ghi rõ 'bậc x/3: Quầy nước → Quán nước → Quán cà phê — cùng một cửa hàng' (người dùng tưởng cà phê là tiệm riêng).
 - GĐ472: QA sandbox: bảng quán hiện 'bậc 3/3 … cùng một cửa hàng' và '🎉 Cuối tuần ×1.2' (ngày 6).
+- GĐ482: Panel quán nhắc đồ nóng cả tháng rét (×1.1) + test.
 - GĐ481: Tháng rét (12–2) đồ nóng trên thực đơn kéo thêm 10% khách + test.
 - GĐ480: Món nóng thứ ba Ca cao nóng (cấp 38) + test.
 - GĐ479: Test bán thật ngày mưa: thực đơn có đồ nóng đông khách hơn.

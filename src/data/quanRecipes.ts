@@ -73,11 +73,14 @@ export const quanHotMul = (menu: readonly string[], weather?: string, day?: numb
 };
 
 /** GĐ477: dòng nhắc ngày mưa trong panel quán (null = không cần nhắc). */
-export function quanHotNote(menu: readonly string[], weather: string | undefined, level: number): string | null {
-  if (weather !== 'rain' && weather !== 'storm') return null;
-  if (quanHotMul(menu, weather) > 1) return '🫚 Có đồ nóng trên thực đơn: giữ thêm khách ×1.2';
+export function quanHotNote(menu: readonly string[], weather: string | undefined, level: number, day?: number): string | null {
+  const rain = weather === 'rain' || weather === 'storm';
+  const cold = day !== undefined && [12, 1, 2].includes(monthOf(day));
+  if (!rain && !cold) return null;
+  const mul = rain ? 1.2 : 1.1;
+  if (quanHotMul(menu, weather, day) > 1) return `🫚 Có đồ nóng trên thực đơn: thêm khách ×${mul}`;
   const hot = QUAN_RECIPES.find((r) => r.hot && level >= r.unlock);
-  return hot ? `🫚 Trời mưa: thêm ${hot.name} vào thực đơn để giữ khách ×1.2` : null;
+  return hot ? `🫚 ${rain ? 'Trời mưa' : 'Tháng rét'}: thêm ${hot.name} vào thực đơn để kéo khách ×${mul}` : null;
 }
 
 /** Hệ số khách theo độ đa dạng thực đơn: 1 món ×1, 4 món ×1.24. */

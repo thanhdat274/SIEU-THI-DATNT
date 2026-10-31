@@ -319,3 +319,16 @@ describe('GĐ481: tháng rét đồ nóng kéo khách', () => {
     expect(quanHotMul(['tra_da'], 'sunny', winter)).toBe(1);
   });
 });
+
+describe('GĐ482: nhắc đồ nóng tháng rét', () => {
+  it('tháng rét trời khô gợi ý ×1.1; tháng hè không nhắc', async () => {
+    const { quanHotNote } = await import('../data/quanRecipes');
+    const { monthOf } = await import('../data/calendar');
+    const find = (ms: number[]) => { for (let d = 1; d < 400; d++) if (ms.includes(monthOf(d))) return d; return -1; };
+    const w = find([1]);
+    expect(quanHotNote(['tra_da'], 'sunny', 40, w)).toContain('Tháng rét');
+    expect(quanHotNote(['tra_gung'], 'sunny', 40, w)).toContain('×1.1');
+    expect(quanHotNote(['tra_da'], 'sunny', 40, find([7]))).toBeNull();
+    expect(quanHotNote(['tra_da'], 'sunny', 40, w)!.length).toBeLessThanOrEqual(90);
+  });
+});
