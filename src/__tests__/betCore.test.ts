@@ -127,8 +127,8 @@ describe('kèo — làm đủ việc CHÍNH là trúng, việc phụ không bắ
     for (const q of core) useGame.getState().claimQuest(q.id);
     const bet = useGame.getState().questLog.bet!;
     expect(bet.bonus).toBeGreaterThan(0);
-    // tiền kèo = % tổng thưởng bộ (tier 1.5 → 50%), chặn trần 100%
-    expect(bet.bonus).toBe(Math.min(Math.round(totalDailyMoney * 0.5), Math.round(totalDailyMoney * 1.0)));
+    // tiền kèo = % tổng thưởng bộ (tier 1.5 → 40%), chặn trần 100%
+    expect(bet.bonus).toBe(Math.min(Math.round(totalDailyMoney * 0.4), Math.round(totalDailyMoney * 1.0)));
   });
 
   it('thiếu 1 việc chính → không trúng dù làm hết việc phụ', () => {

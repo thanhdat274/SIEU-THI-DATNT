@@ -84,6 +84,7 @@
 - 📦 (GĐ317) Bundle 618 KB vs mục tiêu 600: `world/farm.ts` (49KB raw ≈ 12KB gzip) chỉ gọi đồng bộ trong `createWorld` — lazy-load nó cũng chưa đủ 18KB và buộc đổi `createWorld` sang async (rủi ro 3D/co-op). Hoãn; muốn xuống 600 cần tách thêm cả `three` examples hoặc world con khác.
 - 💰 Tỉ số thưởng/lãi bán 1,44 (cấp 5) / 1,17 (cấp 10) — phần lớn do ngày 1 không trần (luật người mới, cố ý). Muốn ≤1: tăng lãi gộp, đo trước/sau.
 
+- GĐ332: ✅ tỉ số thưởng/lãi bán cấp 5 ĐẠT ≤1: hạ % kèo 30/50/80 → 25/40/65 (kèo tuỳ chọn, vẫn trần 1× bộ nhiệm vụ). Đo tất định cấp 5 0.99 · cấp 10 0.89 · cấp 20 0.64; trần test hạ 1.0/0.92/0.67; golden L30 money cập nhật. 2356 test xanh. Không đụng luật ngày 1 không trần.
 - GĐ330: QA ngày 1→2 trên save sạch (8× rồi N): sang ngày 2 đúng, hiện Tổng kết ngày 1 + "Mai tiệm có gì"; tiền 300k→260k (tiền nhà, ngày không bán). Không lỗi.
 - GĐ330: phím N lúc 06:08 không ngủ là ĐÚNG thiết kế (`goToBed`: trước SLEEP_FROM chỉ báo "chưa buồn ngủ"), không phải lỗi.
 - GĐ331: ✅ mục tiêu ≤10 thông báo ngày 1 ĐẠT: bộ đếm test chỉ tính khi còn ở ngày 1 (dự báo thời tiết + danh hiệu hiện SAU đi ngủ là của ngày 2) → đo 10, trần test hạ 12→10. Phần còn lại là 4 lần lên cấp + thành tựu + phản hồi tiến trình của bot.

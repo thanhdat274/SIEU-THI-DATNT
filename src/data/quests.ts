@@ -78,9 +78,9 @@ export interface BetTier {
  * ×1.0 là "kèo nhẹ" cho người mới (thêm 1/3), ×1.5 là bước ngoặt vất vả thật sự (+50%), ×2.0 gần chạm
  * trần — khó nhất mà vẫn không vượt trần cứng bên dưới. */
 export const BET_TIERS: readonly BetTier[] = [
-  { icon: '☕', name: 'Kèo nhẹ', tier: 1.0, bonusPct: 0.30 },
-  { icon: '🔥', name: 'Kèo vừa', tier: 1.5, bonusPct: 0.50 },
-  { icon: '💥', name: 'Kèo to', tier: 2.0, bonusPct: 0.80 },
+  { icon: '☕', name: 'Kèo nhẹ', tier: 1.0, bonusPct: 0.25 },
+  { icon: '🔥', name: 'Kèo vừa', tier: 1.5, bonusPct: 0.40 },
+  { icon: '💥', name: 'Kèo to', tier: 2.0, bonusPct: 0.65 },
 ];
 
 /** Trần cứng: tổng tiền thêm của kèo tối đa = 1× tổng thưởng nhiệm vụ ngày — kèo không bao giờ
