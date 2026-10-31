@@ -150,3 +150,4 @@
 - GĐ470: Ghi Cần duyệt nâng tiệm xôi thành cửa hàng nhỏ (chờ người dùng chọn).
 - GĐ471: Bảng quán ghi rõ 'bậc x/3: Quầy nước → Quán nước → Quán cà phê — cùng một cửa hàng' (người dùng tưởng cà phê là tiệm riêng).
 - GĐ472: QA sandbox: bảng quán hiện 'bậc 3/3 … cùng một cửa hàng' và '🎉 Cuối tuần ×1.2' (ngày 6).
+- GĐ473: Test teahouseFillPlan nạp nhiều hơn vào cuối tuần.

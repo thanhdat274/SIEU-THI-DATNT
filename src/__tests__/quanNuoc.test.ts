@@ -322,3 +322,14 @@ describe('GĐ469: ước tính chở hàng biết cuối tuần', () => {
     expect(teahouseHaulRead(100, q, 29, sat).daysLeft).toBeLessThan(teahouseHaulRead(100, q, 29, mon).daysLeft);
   });
 });
+
+describe('GĐ473: kế hoạch nạp đồ uống biết cuối tuần', () => {
+  it('teahouseFillPlan cuối tuần nạp nhiều hơn', async () => {
+    const { teahouseFillPlan } = await import('../data/teahouseHaul');
+    const { isWeekend } = await import('../data/calendar');
+    const sat = [1, 2, 3, 4, 5, 6, 7].find((d) => isWeekend(d))!;
+    const mon = [1, 2, 3, 4, 5, 6, 7].find((d) => !isWeekend(d))!;
+    const q = { open: true, staff: 0, price: 'vua' as const };
+    expect(teahouseFillPlan(q, 29, 0, () => 24, sat).topup).toBeGreaterThan(teahouseFillPlan(q, 29, 0, () => 24, mon).topup);
+  });
+});
