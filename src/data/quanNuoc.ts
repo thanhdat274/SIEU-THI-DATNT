@@ -77,7 +77,7 @@ export function quanNuocDay(
   const menu = cleanMenu(q.menu, level, quanMenuSlots(q));
   // Giá bán trung bình nước chai đã mở: tính một lần rồi nhân hệ số mức giá
   const avgPrice = drinks.length ? drinks.reduce((n, id) => n + productById(id).sell, 0) / drinks.length : 0;
-  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(menu.length) * quanWeekendMul(day) * quanHotMul(menu, weather));
+  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(menu.length) * quanWeekendMul(day) * quanHotMul(menu, weather, day));
   const wanted = Math.ceil(customers * 1.5);
   // Món pha chế phục vụ trước; khách còn lại mua nước chai
   const brew = brewMenu(menu, storage, wanted, opt.mul, take);
@@ -134,7 +134,7 @@ export interface QuanNuocProjection { customers: number; wanted: number; served:
 export function quanNuocProjection(q: QuanNuocState, level: number, drinkUnits: number, weather?: Weather, day?: number): QuanNuocProjection {
   const opt = QUAN_PRICE_OPTIONS[q.price];
   const avgPrice = quanNuocAvgSell(level, q.menu);
-  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(cleanMenu(q.menu, level, quanMenuSlots(q)).length) * quanWeekendMul(day) * quanHotMul(cleanMenu(q.menu, level, quanMenuSlots(q)), weather));
+  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(cleanMenu(q.menu, level, quanMenuSlots(q)).length) * quanWeekendMul(day) * quanHotMul(cleanMenu(q.menu, level, quanMenuSlots(q)), weather, day));
   const wanted = Math.ceil(customers * 1.5);
   const served = Math.min(wanted, Math.max(0, drinkUnits));
   const revenue = Math.round(served * avgPrice * opt.mul);

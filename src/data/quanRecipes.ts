@@ -5,6 +5,7 @@
  * từng nguyên liệu — thiếu một thứ là món đó ngừng bán. Hoàn toàn xác định (không Math.random).
  */
 import { productById } from './products';
+import { monthOf } from './calendar';
 
 export interface QuanRecipe {
   id: string;
@@ -64,8 +65,12 @@ export const menuBoardLines = (menu: readonly string[] | undefined): string[] =>
 };
 
 /** GĐ476: mưa/bão mà thực đơn có đồ nóng thì khách ghé thêm 20%. */
-export const quanHotMul = (menu: readonly string[], weather?: string) =>
-  (weather === 'rain' || weather === 'storm') && menu.some((id) => quanRecipeById(id)?.hot) ? 1.2 : 1;
+export const quanHotMul = (menu: readonly string[], weather?: string, day?: number) => {
+  if (!menu.some((id) => quanRecipeById(id)?.hot)) return 1;
+  if (weather === 'rain' || weather === 'storm') return 1.2;
+  /** GĐ481: tháng rét (12, 1, 2) đồ nóng vẫn kéo thêm 10% khách. */
+  return day !== undefined && [12, 1, 2].includes(monthOf(day)) ? 1.1 : 1;
+};
 
 /** GĐ477: dòng nhắc ngày mưa trong panel quán (null = không cần nhắc). */
 export function quanHotNote(menu: readonly string[], weather: string | undefined, level: number): string | null {

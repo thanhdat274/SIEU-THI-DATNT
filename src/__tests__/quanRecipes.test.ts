@@ -305,3 +305,17 @@ describe('GĐ480: ca cao nóng', () => {
     expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3);
   });
 });
+
+describe('GĐ481: tháng rét đồ nóng kéo khách', () => {
+  it('tháng 12-2 trời khô ×1.1, mưa vẫn ×1.2, tháng hè ×1', async () => {
+    const { quanHotMul } = await import('../data/quanRecipes');
+    const { monthOf } = await import('../data/calendar');
+    const find = (ms: number[]) => { for (let d = 1; d < 400; d++) if (ms.includes(monthOf(d))) return d; return -1; };
+    const winter = find([12, 1, 2]);
+    const summer = find([6, 7]);
+    expect(quanHotMul(['tra_gung'], 'sunny', winter)).toBe(1.1);
+    expect(quanHotMul(['tra_gung'], 'rain', winter)).toBe(1.2);
+    expect(quanHotMul(['tra_gung'], 'sunny', summer)).toBe(1);
+    expect(quanHotMul(['tra_da'], 'sunny', winter)).toBe(1);
+  });
+});
