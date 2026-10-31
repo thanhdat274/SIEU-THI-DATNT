@@ -39,7 +39,7 @@ import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
 import { createWorld } from './world/world';
-import { tiemXoiStandState } from './data/tiemXoi';
+import { tiemXoiStandState, tiemXoiHandQty } from './data/tiemXoi';
 import { quanNuocStandState, quanPatrons, quanTierOf } from './data/quanNuoc';
 import { menuBoardLines } from './data/quanRecipes';
 import { QUAN_HOUSE, quanHouseBoxes } from './world/quanNuocStand';
@@ -448,7 +448,7 @@ const fixedInteractables: Interactable[] = [
     hint: () => (useGame.getState().biz.quanNuoc.open ? '[P] Tự pha 5 ly ở quầy' : 'Quán nước chưa mở'), key: 'KeyP', action: () => { useGame.getState().brewQuanHand(); } },
   // GĐ435: trước sạp tiệm xôi (x=46, z≈2.4) bấm J mở bảng quán nước — nơi có mục tiệm xôi
   { position: new THREE.Vector3(LANE_X - 4, 0, 2.4), radius: 1.8,
-    hint: () => (useGame.getState().biz.tiemXoi?.open ? (useGame.getState().biz.tiemXoi.handDay === useGame.getState().day ? '[J] Xem tiệm xôi (hôm nay đã đồ)' : '[J] Tự đồ một mẻ xôi') : useGame.getState().level >= 40 ? '[J] Mở tiệm xôi' : ''), key: 'KeyJ',
+    hint: () => (useGame.getState().biz.tiemXoi?.open ? (useGame.getState().biz.tiemXoi.handDay === useGame.getState().day ? '[J] Xem tiệm xôi (hôm nay đã đồ)' : `[J] Tự đồ ${tiemXoiHandQty(useGame.getState().biz.tiemXoi.staff)} phần xôi`) : useGame.getState().level >= 40 ? '[J] Mở tiệm xôi' : ''), key: 'KeyJ',
     action: () => {
       const g = useGame.getState();
       if (g.biz.tiemXoi?.open && g.biz.tiemXoi.handDay !== g.day) g.steamXoiHand();
