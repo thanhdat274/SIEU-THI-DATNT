@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
+- **GĐ322:** 💰 Trần thưởng nhiệm vụ 0,6×/sàn 110k → **0,4×/sàn 70k** (`QUEST_ECO_*`), đo bằng sim tất định GĐ321 (cùng lãi bán, chỉ đổi trần): tỉ số thưởng/lãi bán cấp 5 **1,53→1,13**, cấp 10 **1,29→1,02**, cấp 20 **0,96→0,71** (mốc trung gian 0,5×/90k: 1,33/1,15/0,83). Luật người mới chưa có lãi = không trần giữ nguyên. Cập nhật: trần test 1,2/1,1/0,8; `questEco` (cấp 1 dùng lãi 2M), `betCore`, mốc `simGolden` cấp 30 (quest ngày 2–3: 160k→92k, 326k→186k). 2356 test xanh. Còn ~1 ở cấp 5/10: gần đạt, theo dõi cảm giác thưởng ở người chơi thật.
 - **GĐ321:** 🎯 Sim kinh tế TẤT ĐỊNH: `economySim*.test.ts` khoá `Math.random` bằng `mulberry32(20261031)` → hai lần chạy ra đúng cùng số (trước đây lãi bán cấp 5 dao động 82k–150k nên không chỉnh được). Đo chuẩn: tỉ số thưởng/lãi bán cấp 5 **1,53** · cấp 10 **1,29** · cấp 20 **0,96**; thông báo ngày 1 = **12**. Trần hạ: 3/2,5/1,8 → **1,6/1,4/1,05**; thông báo ngày 1 15 → **13**. Giờ chỉnh cân bằng đo trước/sau được chính xác.
 - **GĐ319:** 🧭 Panel Nhập hàng ngày 1 gọn lại (theo QA GĐ318): ẩn khối Mối quen, Dự báo, Tuần này khách săn khi `day <= 1` (hiện từ ngày 2) — chỉ còn gợi ý nhập, "cần nhập gấp", lô chợ phiên. Kiểm tra mắt trên save sạch 127.0.0.1:5173: 3 khối biến mất, danh sách nhập vẫn đủ.
 - **GĐ316:** 🔕 Đo thông báo ngày đầu đúng người chơi thật: không đếm 📜/🎯 (phản hồi cú bấm nhận thưởng, bot nhận dồn 7 cái một lượt). Đo 11–14; trần 20 → 15. GĐ315 in danh sách thông báo để truy vết. Còn lại ≤10: dồn thông báo lên cấp liền nhau.
@@ -165,6 +166,7 @@
 - GĐ308 — 📦 Firebase nạp động + chunk riêng: tải đầu 646→618 KB, trần 640/290
 - GĐ309 — 🔕 Dời 4 thông báo phụ khỏi ngày đầu: 22→18, trần 20
 - GĐ310 — 🔒 Hạ trần rò rỉ: object +2%, nhân vật +20 (đo 0% / +11)
+- GĐ322 — 💰 Trần thưởng 0,4×/sàn 70k; tỉ số 1,13/1,02/0,71 (≈1)
 - GĐ321 — 🎯 Sim kinh tế tất định (seed); trần tỉ số 1,6/1,4/1,05, thông báo ngày 1 ≤13
 - GĐ319 — 🧭 Ngày 1: ẩn Mối quen/Dự báo/khách săn trong panel Nhập hàng
 - GĐ316 — 🔕 Đo thông báo ngày 1 đúng người chơi (bỏ 📜/🎯): 11–14, trần 15

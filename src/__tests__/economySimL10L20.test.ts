@@ -141,4 +141,4 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
 
 const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
 
-const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 1.6, 10: 1.4, 20: 1.05 };
+const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 1.2, 10: 1.1, 20: 0.8 };

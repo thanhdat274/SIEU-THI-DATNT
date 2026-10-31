@@ -72,8 +72,8 @@ describe('dailyQuests — áp trần theo lãi bình quân', () => {
   });
 
   it('tổng bộ dưới trần → không đổi (tiệm vừa đủ lãi vẫn nhận trọn)', () => {
-    // Cấp 1 có tổng bộ ~495k; lãi bình quân 1M → trần 3M → không bị giới hạn
-    const daily = dailyQuests(ctx({ level: 1, avgDailyProfit: 1_000_000 }));
+    // Cấp 1 có tổng bộ ~495k; lãi bình quân 2M → trần 0,4× = 800k → không bị giới hạn
+    const daily = dailyQuests(ctx({ level: 1, avgDailyProfit: 2_000_000 }));
     const ref = dailyQuests(ctx({ level: 1, avgDailyProfit: 0 }));
     expect(daily.reduce((n, q) => n + q.money, 0)).toBe(ref.reduce((n, q) => n + q.money, 0));
   });

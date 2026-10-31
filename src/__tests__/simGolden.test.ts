@@ -40,8 +40,8 @@ const TOL = 0.05;
 interface Snap { money: number; level: number; xp: number; profit: number[]; quest: number[] }
 
 const GOLDEN: Record<number, Snap> = {
-  // Mốc lấy 31/10/2026: trần thưởng nhiệm vụ neo vào lãi bán hàng (salesProfit) — từ ngày 2 quest co lại.
-  30: { money: 25_211_511, level: 31, xp: 1917, profit: [-16_989_000, -11_669_000, -1_860_000], quest: [2_145_000, 160_396, 325_942] },
+  // Mốc lấy lại GĐ322 (trần thưởng 0,4× / sàn 70k), trước đó 31/10/2026: trần thưởng nhiệm vụ neo vào lãi bán hàng (salesProfit) — từ ngày 2 quest co lại.
+  30: { money: 24_875_714, level: 31, xp: 1917, profit: [-16_989_000, -11_669_000, -1_860_000], quest: [2_145_000, 91_654, 186_252] },
 };
 
 async function run(level: number, days: number): Promise<Snap> {
