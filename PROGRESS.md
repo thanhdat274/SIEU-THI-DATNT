@@ -105,23 +105,8 @@
 
 - GĐ1–250: xem docs/progress-archive/INDEX-GD1-250.md
 - GĐ251–300: xem docs/progress-archive/INDEX-GD251-300.md
+- GĐ301–349: xem docs/progress-archive/INDEX-GD301-349.md
 
-- GĐ301 — ✂️ Rút 22 thông báo dài về ≤90 ký tự, trần ngân sách 90/0
-- GĐ302 — 🔕 Báo hết hàng 1 lần/ngày, thông báo ngày đầu 27→22
-- GĐ303 — 📦 Hạ trần bundle 780/380 KB; full suite 2356 xanh
-- GĐ304 — ⚡ Bảng tải lười: tải đầu 758→646 KB, trần bundle 680/300
-- GĐ305 — ⏱️ Tách economySim thành 3 file song song: test 427s → 194s
-- GĐ306 — 🧹 Gộp 6 nút tra cứu thành "Sổ sách" (tab): nút HUD 33→28
-- GĐ307 — 🧹 Hub tab Danh tiếng/Mở rộng: nút HUD 28→20 (đạt mục tiêu)
-- GĐ308 — 📦 Firebase nạp động + chunk riêng: tải đầu 646→618 KB, trần 640/290
-- GĐ309 — 🔕 Dời 4 thông báo phụ khỏi ngày đầu: 22→18, trần 20
-- GĐ310 — 🔒 Hạ trần rò rỉ: object +2%, nhân vật +20 (đo 0% / +11)
-- GĐ344 — 🧪 QA bán hàng ngày 2/3 (save sạch): mở cửa, tiền đổi; tải mới 0 lỗi (emptyTiers/depthTexture trong console là dấu vết HMR cũ)
-- GĐ345 — ⏱️ Đo lại bộ test: 2359 xanh; nặng nhất economySimL50/L10L20/weeklyGoalCap/economySim (giữ nguyên, là tín hiệu cân bằng) · thử --pool=threads: 178s, không nhanh hơn (đừng thử lại); --no-isolate: 14 test hỏng + 198s; --maxWorkers=8: 203s
-- GĐ346 — 🧭 Leader review (giữa GĐ337–347): 2359 test xanh, tsc sạch, bundle 596/253 KB, nút HUD 20; mọi trục chiều sâu đã bão hòa → KHÔNG mở rộng mới, chờ dữ liệu save người thật (NG+, nhiệm vụ ngày 1–5); việc kế: giữ ngân sách, QA định kỳ
-- GĐ347 — 📱 QA 320×640 (save sạch, ngày 3): quét mọi phần tử ngoài viewport (kể cả bị cắt bởi overflow hidden) = 0
-- GĐ348 — 🔬 Coverage (test:coverage): dòng 55% (phần thiếu là UI/3D), nhánh 88,8%, hàm 83%; không file core/data nào >60 dòng mà <50% — không cần test bù
-- GĐ349 — 🌙 Sửa chữ cảnh báo khuya: ăn sáng dời giờ ngất tới 3:00 nhưng biển báo vẫn ghi 2:00 (Hud.tsx) · QA live: 02:24 ngày 4 hiện "trước 3:00"
 - GĐ350 — 🧹 Quét panel cấp 30 (save sạch): 7 nút dock + 9 mục menu Thêm mở/đóng, 0 lỗi, 0 tràn ngang (chỉ dải Kế hoạch cuộn ngang theo thiết kế)
 - GĐ351 — 🛡️ Phím tắt chịu được sự kiện bàn phím có target không phải Element (closest?.), tsc sạch
 - GĐ352 — ⚡ Kệ bỏ qua dựng lại InstancedMesh khi hộp không đổi (sim đơn lẻ 85→69s); bộ test chấp nhận ~175s. Chi tiết + vì sao KHÔNG chia sẻ hình học nhân vật (UUID three ăn Math.random của sim): docs/progress-archive/PROGRESS-GD352.md
@@ -130,22 +115,6 @@
 - GĐ355 — 🗜️ Dồn chi tiết GĐ352 sang archive, PROGRESS.md 29,5KB
 - GĐ357 — 🧭 Leader review (GĐ347–357): 2361 test xanh (~177s, chấp nhận), tsc sạch, bundle 596/253, PROGRESS.md 29,5KB. Rà tính năng: không có dữ liệu dùng thật để gộp/bỏ → giữ nguyên, KHÔNG thêm nút HUD/hệ mới. Phát hiện kỹ thuật: sim phụ thuộc số đối tượng three (UUID↔Math.random). Việc kế: QA định kỳ, chờ save người thật (NG+, nhiệm vụ ngày 1–5)
 - GĐ358 — 🛌 QA "Chào mừng quay lại" (save sạch, cấp thấp): vắng 3 ngày → +6.000đ (2k/ngày), thông báo đúng, 0 lỗi; không lạm phát; cấp 10→+60k, cấp 30→+180k (3 ngày)/+420k (30 ngày); mobile 375px không tràn ngang
-- GĐ343 — 📦 Siết trần bundle 598/255
-- GĐ336–342 — 📦 Bundle 596 KB (nạp lười STORIES/SURPRISES/GLTF, test hợp đồng); QA gfx=low ~58 FPS, mobile/tablet không tràn; Leader review GĐ337
-- GĐ332 — 💰 % kèo 25/40/65; tỉ số thưởng/lãi 0,99/0,89/0,64
-- GĐ331 — 🔕 Thông báo ngày 1 đếm đúng ngày → 10, trần 10
-- GĐ330 — 🧭 QA lưu máy khách + ngày 1→2: không lỗi
-- GĐ329 — 🪙 Thiếu tiền lẻ mở từ cấp 2 (lần bán đầu sạch)
-- GĐ328 — 🧭 Đo lần bán đầu: ~4 phút (≤5 ✅); khách đầu gặp hộp thoại thiếu tiền lẻ
-- GĐ327 — 🧮 Rà ngân sách đợt GĐ316–326; siết trần bundle 625/275
-- GĐ326 — 🔕 Ẩn thông báo Sổ tay mốc nhỏ ngày 1; thông báo ngày 1 = 11, trần 12
-- GĐ325 — 💰 Trần thưởng 0,37×/66k; tỉ số 1,07/0,98/0,67 (cấp 10 ≤1)
-- GĐ322 — 💰 Trần thưởng 0,4×/sàn 70k; tỉ số 1,13/1,02/0,71 (≈1)
-- GĐ321 — 🎯 Sim kinh tế tất định (seed); trần tỉ số 1,6/1,4/1,05, thông báo ngày 1 ≤13
-- GĐ319 — 🧭 Ngày 1: ẩn Mối quen/Dự báo/khách săn trong panel Nhập hàng
-- GĐ316 — 🔕 Đo thông báo ngày 1 đúng người chơi (bỏ 📜/🎯): 11–14, trần 15
-- GĐ312 — 💰 Hạ trần thưởng nhiệm vụ (sàn 110k, ×0,6); tỉ số 1,44/1,17/1,17
-- GĐ311 — 💰 Đo tỉ số thưởng/lãi bán: 1,7–2,0 / 1,4–2,0 / 0,94–1,53; trần 3/2,5/1,8
 - GĐ359–363 — 🧹 QA thưởng quay lại theo cấp, mobile 375px, ngất đúng giờ; gỡ 31 tên import không dùng (tsc sạch, 2361 test, bundle 596/253); chuyển mục lục GĐ251–300 sang archive (PROGRESS.md 25KB)
 - GĐ364 — 🧭 Leader review sớm (backlog cạn): QA 18 panel, 15 ngày autoplay, 60 FPS mặc định, mobile 375px đều sạch; trục chiều sâu vẫn bão hòa, không thêm hệ thống mới. Chờ: save người chơi thật (NG+, nhiệm vụ ngày 1–5). Review kế tiếp ~GĐ374
 - GĐ365 — 🛡️ Test `startAutosave` (7 test, mutation 2/2): gộp ghi 1 giây, chỉ đổi giờ không hẹn ghi, `canSave=false` (màn đăng nhập/khách) KHÔNG ghi kể cả đóng tab, pagehide/ẩn tab ghi khẩn cấp + đẩy cloud, cloud thưa. Coverage đo lại: lõi core/data ≥62%; `test:coverage` dưới tải bị `phoneReasons` quá 5s (chạy `--testTimeout=60000`)
@@ -165,3 +134,4 @@
 - GĐ379 — 📢 Test quảng cáo/thẻ tích điểm/mua lại mặt bằng rival `biz.ts` (7 test, mutation 3/3): quảng cáo chạy đúng số ngày và không mua chồng, thẻ tặng món rẻ nhất, mua mặt bằng trừ giá + tạo chi nhánh + xoá lời chào bán
 - GĐ380 — 📉 Test `stockReminders` (4 test, mutation 3/3): nhắc sắp hết đúng một lần/ngày, nhắc lại ngày mới, im lặng khi kho còn/không có nhu cầu/kệ đủ, gộp nhiều món một thông báo
 - GĐ381 — 📏 Mốc: 245 file / 2467 test xanh 159s (+1 hở: nhắc hàng sắp HỎNG của stockReminders chưa test)
+- GĐ382 — 🗜️ Dồn mục lục GĐ301–349 sang archive (INDEX-GD301-349.md), PROGRESS.md 30,3KB → 26,7KB (về dưới trần 30KB)
