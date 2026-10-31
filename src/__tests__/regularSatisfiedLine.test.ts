@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newGameData, useGame } from '../core/store';
 import { emptyProgress, REGULARS } from '../data/regulars';
-import { EMOTIONAL_FRIENDSHIP, satisfiedLine } from '../data/regularTrust';
+import { EMOTIONAL_FRIENDSHIP, regularQuote, satisfiedLine } from '../data/regularTrust';
 
 /** GĐ402 — mối ruột (thân thiết ≥ EMOTIONAL_FRIENDSHIP) gọi đúng tên tiệm người chơi đặt khi mua xong. */
 
@@ -41,5 +41,15 @@ describe('regularVisit — câu hài lòng qua store', () => {
   it('khách mới: không nhắc tên tiệm', () => {
     useGame.getState().regularVisit(def.id, [{ id: def.favorites[0], price: 10_000 }], true);
     expect(msgs.some((m) => m.includes('Tiệm Cô Tư'))).toBe(false);
+  });
+});
+
+describe('regularQuote (GĐ404)', () => {
+  it('chưa ghé lần nào: chưa lộ câu cửa miệng', () => {
+    expect(regularQuote(def.lines.greeting, undefined)).toBeNull();
+    expect(regularQuote(def.lines.greeting, emptyProgress())).toBeNull();
+  });
+  it('đã ghé: hiện đúng lời chào của khách', () => {
+    expect(regularQuote(def.lines.greeting, { ...emptyProgress(), visits: 1 })).toBe(def.lines.greeting);
   });
 });

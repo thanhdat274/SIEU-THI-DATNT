@@ -59,3 +59,7 @@ export function satisfiedLine(own: string, prog: RegularProgress | undefined, sh
   if ((prog?.friendship ?? 0) < EMOTIONAL_FRIENDSHIP) return own;
   return `Mua ở ${shopName.trim() || 'tiệm mình'} quen rồi, đi đâu nữa!`;
 }
+
+/** Câu cửa miệng hiện trong sổ khách quen (GĐ404): chỉ lộ sau lần ghé đầu — gặp rồi mới biết người ta hay nói gì. */
+export const regularQuote = (greeting: string, prog: RegularProgress | undefined): string | null =>
+  (prog?.visits ?? 0) > 0 ? greeting : null;

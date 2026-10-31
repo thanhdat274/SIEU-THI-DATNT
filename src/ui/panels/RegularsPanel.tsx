@@ -2,7 +2,7 @@ import { useGame, formatClock } from '../../core/store';
 import { productById, formatMoney } from '../../data/products';
 import { nextPerk, REGULARS, type PerkEffect } from '../../data/regulars';
 import { arcById, currentArcStep } from '../../data/regularArc';
-import { lifetimeRegularVisits, vipTierOf, nextTierOf, monthlyTriAn, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
+import { lifetimeRegularVisits, vipTierOf, nextTierOf, monthlyTriAn, regularQuote, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
 import { Footer, Swatch, styles } from './shared';
 import { DebtBook } from './ReportPanels';
 
@@ -83,6 +83,9 @@ export function RegularsPanel() {
                   <span>{formatClock(r.visitFrom)}–{formatClock(r.visitUntil)}</span>
                 </div>
                 <div style={{ fontSize: 12, opacity: 0.8 }}>{r.bio}</div>
+                {regularQuote(r.lines.greeting, prog) && (
+                  <div style={{ fontSize: 12, fontStyle: 'italic', marginTop: 2 }}>💬 “{r.lines.greeting}”</div>
+                )}
                 <div style={{ fontSize: 12, marginTop: 4 }}>
                   Thích: {r.favorites.map((id) => (prog?.discovered.includes(id) ? productById(id).name : '???')).join(', ')}
                 </div>
