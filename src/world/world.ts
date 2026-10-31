@@ -415,7 +415,7 @@ function createTree(x: number, z: number): THREE.Group {
 }
 
 /** Nhựa đường: nền xám loang lổ + vạch tim đứt + vạch biên mờ, vẽ một lần rồi lặp theo chiều dài đường. */
-function asphaltTexture(): THREE.CanvasTexture {
+export function asphaltTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 256;
   c.height = 128;

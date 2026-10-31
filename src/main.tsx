@@ -51,7 +51,7 @@ import { pushCloudSave } from './net/cloud';
 import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';
 import { watchUser } from './net/firebase';
 import { useSession } from './net/session';
-import { SAP_LOT_COST } from './data/sapRong';
+import { SAP_LOT_COST, sapStallBox } from './data/sapRong';
 import { openZones, zoneBlockRects, zoneById } from './data/zones';
 import { formatMoney } from './data/products';
 
@@ -365,11 +365,21 @@ useGame.subscribe(syncTiemXoi);
 // GĐ500: khu bản đồ — chặn lưới ngoài khu đã mở; Ngõ 2 (tải lười) có rào RAO BÁN khi chưa mở
 let lastZonesKey = '';
 let ngo2View: import('./world/ngo2').Ngo2View | null = null;
+let lastSapN = 0;
 const syncZones = () => {
   const zones = useGame.getState().biz.zones;
   const key = openZones(zones).join(',');
   ngo2View?.setOpen(key.includes('ngo2'));
-  ngo2View?.setStalls(useGame.getState().biz.sapRong ?? 0);
+  const sapN = useGame.getState().biz.sapRong ?? 0;
+  ngo2View?.setStalls(sapN);
+  if (sapN !== lastSapN) {
+    lastSapN = sapN;
+    grid.setStatic('sapRong', Array.from({ length: sapN }, (_, i) => {
+      const b = sapStallBox(i);
+      return new THREE.Box3(new THREE.Vector3(b.x1, 0, b.z1), new THREE.Vector3(b.x2, 1, b.z2));
+    }));
+    shop.attachGrid(grid);
+  }
   if (key === lastZonesKey) return;
   lastZonesKey = key;
   grid.setStatic('zones', zoneBlockRects(zones, grid.extent).map((r) => new THREE.Box3(new THREE.Vector3(r.x1, 0, r.z1), new THREE.Vector3(r.x2, 2, r.z2))));

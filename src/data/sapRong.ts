@@ -15,3 +15,6 @@ export function sapRongIncome(lots: number | undefined, weather?: Weather, day?:
   if (!n || weather === 'rain' || weather === 'storm') return 0;
   return Math.round(n * SAP_BASE_INCOME * (day !== undefined && isWeekend(day) ? 1.3 : 1));
 }
+
+/** GĐ502: hộp chặn lưới của bàn sạp thứ i (bàn 1,8×0,9 tại x 86+8i, z −0,5). */
+export const sapStallBox = (i: number) => ({ x1: 85.1 + i * 8, z1: -0.95, x2: 86.9 + i * 8, z2: -0.05 });

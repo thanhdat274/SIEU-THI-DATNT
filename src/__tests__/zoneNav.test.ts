@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
+import { sapStallBox } from '../data/sapRong';
 import { zoneBlockRects } from '../data/zones';
 import { NavGrid } from '../world/navGrid';
 
@@ -20,5 +21,16 @@ describe('tường khu trên lưới (GĐ500)', () => {
     const open = gridFor(['ngo2']);
     expect(open.reachable(new THREE.Vector3(70, 0, 6), new THREE.Vector3(100, 0, 6))).toBe(true);
     expect(open.isBlocked(100, 60)).toBe(true);
+  });
+});
+
+describe('bàn sạp hàng rong chặn lưới (GĐ502)', () => {
+  it('bàn sạp chặn, lề đường trước sạp vẫn đi được', () => {
+    const g = new NavGrid(120);
+    const b = sapStallBox(0);
+    g.setStatic('sapRong', [new THREE.Box3(new THREE.Vector3(b.x1, 0, b.z1), new THREE.Vector3(b.x2, 1, b.z2))]);
+    g.rebuildBase();
+    expect(g.isBlocked(86, -0.5)).toBe(true);
+    expect(g.isBlocked(86, 1.6)).toBe(false);
   });
 });

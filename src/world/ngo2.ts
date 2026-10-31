@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { asphaltTexture } from './world';
 
 /**
  * Ngõ 2 (GĐ500, bước 2 mở rộng bản đồ): mặt đất x 80..120, đường chính nối dài, rào chắn + biển RAO BÁN
@@ -44,7 +45,9 @@ export function createNgo2(): Ngo2View {
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(100, -0.005, 0);
   ground.receiveShadow = true;
-  const road = new THREE.Mesh(new THREE.PlaneGeometry(40, 6), mat(0x4a4a4a));
+  const roadTex = asphaltTexture();
+  roadTex.repeat.set(40 / 8, 1);
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(40, 6), new THREE.MeshStandardMaterial({ map: roadTex }));
   road.rotation.x = -Math.PI / 2;
   road.position.set(100, 0.01, 6);
   const walk = new THREE.Mesh(new THREE.PlaneGeometry(40, 1.6), mat(0xbdb5a6));
