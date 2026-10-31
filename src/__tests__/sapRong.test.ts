@@ -55,3 +55,14 @@ describe('endDay — sạp hàng rong', () => {
     expect(run('rain')).toContain('nghỉ bán');
   });
 });
+
+describe('sapStrollerCount (GĐ503)', () => {
+  it('2 người/sạp tối đa 6, chỉ ban ngày, mưa vắng', async () => {
+    const { sapStrollerCount } = await import('../data/sapRong');
+    expect(sapStrollerCount(2, 'sunny', 9 * 60)).toBe(4);
+    expect(sapStrollerCount(4, 'sunny', 9 * 60)).toBe(6);
+    expect(sapStrollerCount(4, 'rain', 9 * 60)).toBe(0);
+    expect(sapStrollerCount(4, 'sunny', 21 * 60)).toBe(0);
+    expect(sapStrollerCount(undefined, 'sunny', 9 * 60)).toBe(0);
+  });
+});

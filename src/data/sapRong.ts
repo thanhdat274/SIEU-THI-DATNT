@@ -18,3 +18,10 @@ export function sapRongIncome(lots: number | undefined, weather?: Weather, day?:
 
 /** GĐ502: hộp chặn lưới của bàn sạp thứ i (bàn 1,8×0,9 tại x 86+8i, z −0,5). */
 export const sapStallBox = (i: number) => ({ x1: 85.1 + i * 8, z1: -0.95, x2: 86.9 + i * 8, z2: -0.05 });
+
+/** GĐ503: số người dạo phố Ngõ 2 (2 người/sạp, tối đa 6): chỉ 6h–20h, mưa/bão vắng. */
+export function sapStrollerCount(lots: number | undefined, weather: Weather | undefined, minutes: number): number {
+  const m = minutes % 1440;
+  if (!lots || weather === 'rain' || weather === 'storm' || m < 6 * 60 || m >= 20 * 60) return 0;
+  return Math.min(6, Math.min(SAP_LOTS, lots) * 2);
+}

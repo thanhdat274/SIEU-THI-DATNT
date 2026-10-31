@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { asphaltTexture } from './world';
+import { Walker } from '../agents/walker';
 
 /**
  * Ngõ 2 (GĐ500, bước 2 mở rộng bản đồ): mặt đất x 80..120, đường chính nối dài, rào chắn + biển RAO BÁN
@@ -109,4 +110,50 @@ export function createNgo2(): Ngo2View {
       stalls.forEach((s, i) => { s.visible = i < n; signs[i].visible = i >= n; });
     },
   };
+}
+
+const STROLL_COLORS = [0xe17055, 0x6c5ce7, 0x00b894, 0xfdcb6e, 0x0984e3, 0xd63031];
+
+/**
+ * Người dạo phố Ngõ 2 (GĐ503, bước 4): đi từ đầu ngõ (x≈81) dọc vỉa hè, ghé lần lượt các sạp đã thuê
+ * rồi quay ra; số người theo `sapStrollerCount`. Chỉ hình ảnh, không đổi số liệu.
+ */
+export class Ngo2Strollers {
+  private walkers: Walker[] = [];
+  constructor(private scene: THREE.Scene) {}
+
+  update(dt: number, count: number, stalls: number) {
+    while (this.walkers.length < count) {
+      const w = new Walker(STROLL_COLORS[this.walkers.length % STROLL_COLORS.length], undefined, 'customer');
+      w.position.set(81, 0, 1.6);
+      this.scene.add(w.mesh);
+      this.walkers.push(w);
+    }
+    this.walkers.forEach((w, i) => {
+      const on = i < count;
+      w.mesh.visible = on;
+      if (!on) return;
+      if (!w.path.length && !w.plan.length && w.pause <= 0) this.route(w, i, stalls);
+      w.step(dt);
+    });
+  }
+
+  private route(w: Walker, i: number, stalls: number) {
+    const lane = 1.4 + (i % 3) * 0.3;
+    const out = w.position.x > 83;
+    if (out) {
+      w.path = [new THREE.Vector3(81, 0, lane)];
+      return;
+    }
+    const n = Math.max(1, stalls);
+    w.path = [];
+    w.plan = [];
+    // Ghé từng sạp: đứng trước bàn một lúc rồi đi tiếp
+    for (let k = 0; k < n; k++) {
+      const s = (k + i) % n;
+      w.plan.push(() => { w.path = [new THREE.Vector3(86 + s * 8 + (i % 2 ? 0.6 : -0.6), 0, 0.5)]; });
+      w.plan.push(() => { w.pause = 2 + (i % 3); if (k === 0) w.say(['🛒', '😋', '👀'][i % 3], 2); });
+    }
+    w.path = [new THREE.Vector3(84, 0, lane)];
+  }
 }

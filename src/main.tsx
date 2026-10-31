@@ -51,7 +51,7 @@ import { pushCloudSave } from './net/cloud';
 import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';
 import { watchUser } from './net/firebase';
 import { useSession } from './net/session';
-import { SAP_LOT_COST, sapStallBox } from './data/sapRong';
+import { SAP_LOT_COST, sapStallBox, sapStrollerCount } from './data/sapRong';
 import { openZones, zoneBlockRects, zoneById } from './data/zones';
 import { formatMoney } from './data/products';
 
@@ -366,6 +366,7 @@ useGame.subscribe(syncTiemXoi);
 let lastZonesKey = '';
 let ngo2View: import('./world/ngo2').Ngo2View | null = null;
 let lastSapN = 0;
+let ngo2Strollers: import('./world/ngo2').Ngo2Strollers | null = null;
 const syncZones = () => {
   const zones = useGame.getState().biz.zones;
   const key = openZones(zones).join(',');
@@ -389,6 +390,7 @@ syncZones();
 useGame.subscribe(syncZones);
 void import('./world/ngo2').then((m) => {
   ngo2View = m.createNgo2();
+  ngo2Strollers = new m.Ngo2Strollers(scene);
   scene.add(ngo2View.group);
   syncZones();
 });
@@ -796,6 +798,7 @@ function renderFrame() {
     // Bong bóng tiền ở quầy bay theo giờ THỰC: tua 8× vẫn kịp đọc "+12.000đ" trước khi tan
     customers.coinFx.update(dt);
     if (!guest) residents.update(dt * speed);
+    if (ngo2Strollers) { const gs = useGame.getState(); ngo2Strollers.update(dt * speed, sapStrollerCount(gs.biz.sapRong, gs.weather, gs.minutes), gs.biz.sapRong ?? 0); }
     // Cửa hàng tiện lợi: chỉ dựng nhân vật khi chủ ghé; chủ đứng trong tiệm thì tự bán được khi thiếu thu ngân
     if (!guest) branchVisit.update(dt * speed, player.position);
     // Gà trong trang trại chỉ đi rong khi chủ ở gần (đứng ở tiệm thì trại đứng yên, đỡ tốn FPS)
