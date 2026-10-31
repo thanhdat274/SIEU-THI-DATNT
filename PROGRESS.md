@@ -145,3 +145,4 @@
 - GĐ390: test restockAndAnswerPhone (nhập bù, thiếu tiền, món nhà làm), mutation 2/2 — phoneRestock.test.ts
 - GĐ391: test learnSkill (cấp, điểm kỹ năng, trùng, id lạ), mutation 3/3 — learnSkill.test.ts
 - GĐ392: test setShopName/setCostume (cắt 24 ký tự, mặc định, cấp, tái sinh), mutation 4/4 — shopNameCostume.test.ts
+- GĐ393: rà checkWelcomeBack/contributeLandmark (đã có test riêng). Full suite 252 file/2506 test xanh, tsc sạch, build OK, main gzip 244KB, PROGRESS 29KB. Leader review kế GĐ394.
