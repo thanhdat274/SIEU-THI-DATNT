@@ -150,11 +150,11 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
   // GĐ160 — ngày 1 cấp 1: bot autoplay bán đúng vòng nhập-bày-bán, doanh thu phải chạm được mục tiêu
   // doanh thu người mới (100.000đ = ~65% kho khởi đầu) — smoke ngắn, in số để Leader đối chiếu.
   it('ngày 1 cấp 1 — bot đạt mục tiêu doanh thu người mới 100.000đ (in số, không assert cứng tỉ số)', async () => {
-    // Người chơi mới: đếm số thông báo bật lên trong ngày đầu (ô thông báo chỉ có một chỗ, 3 giây —
+    // Người chơi mới: đếm (bỏ 📜/🎯: đó là phản hồi cho cú bấm nhận thưởng của chính người chơi, bot nhận dồn một lượt) số thông báo bật lên trong ngày đầu (ô thông báo chỉ có một chỗ, 3 giây —
     // dồn dập thì người mới đọc không kịp và mất luôn thông báo trước). Trần = mức đo 2026-10-31.
     let toasts = 0;
     const seen: string[] = [];
-    const unsub = useGame.subscribe((st, prev) => { if (st.message && st.message !== prev.message) { toasts++; seen.push(String(st.message)); } });
+    const unsub = useGame.subscribe((st, prev) => { if (st.message && st.message !== prev.message && !/^(📜|🎯)/.test(String(st.message))) { toasts++; seen.push(String(st.message)); } });
     const { rows } = await runEconomySim(1, 1, { betTier: 1.0 });
     unsub();
     expect(rows.length).toBe(1);
@@ -179,7 +179,7 @@ const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
  * HẠ trần này theo số đo mới — không bao giờ nâng lên.
  */
 /** Số thông báo tối đa trong ngày đầu của bot chơi cấp 1 (mức đo 2026-10-31; chỉ được hạ). */
-const DAY1_TOAST_CEILING = 20; // đo 18 sau GĐ309 (dời danh hiệu/kèo/chi phí/thay ô sang ngày 2+; GĐ302: 22; ban đầu 27)
+const DAY1_TOAST_CEILING = 15; // GĐ316: không đếm thông báo nhận thưởng (📜/🎯), đo 11–14; đo 18 sau GĐ309 (dời danh hiệu/kèo/chi phí/thay ô sang ngày 2+; GĐ302: 22; ban đầu 27)
 
 // Đo GĐ311 (3 lần): cấp 5 1.7–2.0 · cấp 10 1.4–2.0 · cấp 20 0.94–1.53 (trước đó 3.6 / 1.7 / 1.2); trần = đỉnh dải + đệm. Chỉ được hạ.
 const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 3, 10: 2.5, 20: 1.8 };

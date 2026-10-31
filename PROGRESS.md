@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
+- **GĐ316:** 🔕 Đo thông báo ngày đầu đúng người chơi thật: không đếm 📜/🎯 (phản hồi cú bấm nhận thưởng, bot nhận dồn 7 cái một lượt). Đo 11–14; trần 20 → 15. GĐ315 in danh sách thông báo để truy vết. Còn lại ≤10: dồn thông báo lên cấp liền nhau.
 - **GĐ312:** 💰 Hạ trần thưởng nhiệm vụ theo lãi: sàn 150k→110k, hệ số 0,7→0,6 (`questEcoCap`). Giữ nguyên luật người mới chưa có lãi = không trần. Đo: cấp 5 **1,44**, cấp 10 **1,17**, cấp 20 **1,17** (trước 1,7–2,0 / 1,4–2,0 / 0,94–1,53). Toàn bộ 2356 test xanh. Còn lại tới ≤1: cấp 5/10, cần tăng lãi gộp.
 - **GĐ311:** 💰 Đo lại tỉ số (nhiệm vụ+kèo)/lãi bán hàng thật (4 lần chạy): cấp 5 **1,7–2,0**, cấp 10 **1,4–2,0**, cấp 20 **0,94–1,53** (trước: 3,6/1,7/1,2) — thưởng không còn lấn lãi bán hàng rõ rệt, cấp 20 có lúc ≤1. Trần test hạ 5/3/2 → 3/2,5/1,8 (thử 4/2,2/1,4 thì đỏ do nhiễu mô phỏng, nên đặt theo đỉnh dải + đệm). Chưa đổi công thức kinh tế. Mục tiêu ≤1 còn ở cấp 5/10: cần giảm thưởng nhiệm vụ cấp thấp hoặc tăng lãi gộp — để Game Designer cân nhắc, đo trước/sau.
 
@@ -156,5 +157,6 @@
 - GĐ308 — 📦 Firebase nạp động + chunk riêng: tải đầu 646→618 KB, trần 640/290
 - GĐ309 — 🔕 Dời 4 thông báo phụ khỏi ngày đầu: 22→18, trần 20
 - GĐ310 — 🔒 Hạ trần rò rỉ: object +2%, nhân vật +20 (đo 0% / +11)
+- GĐ316 — 🔕 Đo thông báo ngày 1 đúng người chơi (bỏ 📜/🎯): 11–14, trần 15
 - GĐ312 — 💰 Hạ trần thưởng nhiệm vụ (sàn 110k, ×0,6); tỉ số 1,44/1,17/1,17
 - GĐ311 — 💰 Đo tỉ số thưởng/lãi bán: 1,7–2,0 / 1,4–2,0 / 0,94–1,53; trần 3/2,5/1,8
