@@ -174,3 +174,4 @@
 - GĐ450: Nút nâng lên Quán cà phê ghi thêm '+1 ô món'.
 - GĐ451: QA sandbox: nút nâng ghi '+1 ô món', sau nâng thực đơn hiện x/5.
 - GĐ452: QA sandbox: gợi ý P 'còn 4 mẻ' và 'đã pha hết mẻ' đúng.
+- GĐ453: Việc tay cho XP: tự đồ xôi +4, tự pha 1 mẻ nước +2.

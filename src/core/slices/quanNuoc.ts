@@ -92,6 +92,7 @@ export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameStat
       storage: k.storage, storageLots: k.storageLots, money: s.money + b.revenue,
       biz: { ...s.biz, quanNuoc: { ...q, hand: { day: s.day, n: (q.hand?.day === s.day ? q.hand.n : 0) + 1 } } },
     });
+    get().addXp(2); // GĐ453
     s.notify(`${r.icon} Tự pha ${QUAN_HAND_CUPS} ly ${r.name}: +${formatMoney(b.revenue)} (còn ${left - 1} mẻ hôm nay)`);
     return true;
   },

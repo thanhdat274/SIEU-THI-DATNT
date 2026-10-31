@@ -57,3 +57,12 @@ describe('GĐ444: thợ phụ tăng mẻ', () => {
     expect(g().storage[id]).toBe(before + TIEM_XOI_HAND + 5);
   });
 });
+
+describe('GĐ453: việc tay cho XP', () => {
+  it('đồ xôi +4 XP', () => {
+    g().buyTiemXoi();
+    const xp = g().xp;
+    g().steamXoiHand();
+    expect(g().xp === xp + 4 || g().level > TIEM_XOI_UNLOCK).toBe(true);
+  });
+});

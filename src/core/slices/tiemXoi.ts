@@ -57,6 +57,7 @@ export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState
     const k = copyStock(s);
     putStock(k, id, qty);
     set({ storage: k.storage, storageLots: k.storageLots, money: s.money - cost, biz: { ...s.biz, tiemXoi: { ...t, handDay: s.day } } });
+    get().addXp(4); // GĐ453: việc tay như làm vườn
     s.notify(`🍚 Tự đồ ${qty} phần ${productById(id).name} vào kho (−${formatMoney(cost)})`);
     return true;
   },
