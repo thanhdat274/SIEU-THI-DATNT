@@ -138,9 +138,11 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       quanRevenue = q.revenue;
       quanWages = q.wages;
       quanNuocLast = { day: s.day, revenue: q.revenue, served: q.served, wanted: q.wanted, wages: q.wages, profit: q.revenue - q.wages };
-      quanNews.push(`🧋 Quán nước: ${q.served}/${q.wanted} ly · ${formatMoney(q.revenue)} · lương −${formatMoney(q.wages)}`
-        + (s.biz.quanNuoc.hand?.day === s.day ? ` · tự pha ${s.biz.quanNuoc.hand.n} mẻ` : '')
-        + (q.brewShort.length ? ` · thiếu ${quanRecipeById(q.brewShort[0])?.name}${q.brewShort.length > 1 ? ` +${q.brewShort.length - 1}` : ''}` : q.short ? ' · kho thiếu đồ uống, nhập thêm' : ''));
+      const head = `🧋 Quán nước: ${q.served}/${q.wanted} ly · ${formatMoney(q.revenue)} · lương −${formatMoney(q.wages)}`
+        + (s.biz.quanNuoc.hand?.day === s.day ? ` · tự pha ${s.biz.quanNuoc.hand.n} mẻ` : '');
+      const tail = q.brewShort.length ? ` · thiếu ${quanRecipeById(q.brewShort[0])?.name}${q.brewShort.length > 1 ? ` +${q.brewShort.length - 1}` : ''}` : q.short ? ' · kho thiếu đồ uống, nhập thêm' : '';
+      // Giữ thông báo ≤90 ký tự: dài quá thì phần thiếu chỉ ghi số món
+      quanNews.push([...(head + tail)].length <= 90 ? head + tail : head + (q.brewShort.length ? ` · thiếu ${q.brewShort.length} món` : ' · kho thiếu'));
     }
   }
   // Tiệm xôi (GĐ410): nấu bù xôi vào kho thật `k` sau quán nước, giá vốn + lương trừ két.

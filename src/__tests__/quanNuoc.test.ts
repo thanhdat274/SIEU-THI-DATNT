@@ -198,6 +198,17 @@ describe('endDay tích hợp — quán chạy theo ngày', () => {
     expect(msgs.some((m) => m.includes('🧋 Quán nước:') && m.includes('tự pha 2 mẻ'))).toBe(true);
   });
 
+  it('GĐ438: tin quán dài nhất (3 nhân viên, tự pha, 4 món thiếu) vẫn ≤90 ký tự', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    const msgs = setupQuan({ nuoc: 400 }, { staff: 3, menu: ['tra_da', 'ca_phe_den', 'nuoc_chanh', 'nuoc_mia'], hand: { day: 1, n: 5 } });
+    expect(useGame.getState().sleep()).toBe(true);
+    // Tin quán nằm trong dòng tóm tắt sáng ghép bằng " · "; cắt riêng đoạn quán (tới mục kế tiếp có icon 📋)
+    const all = msgs.find((m) => m.includes('🧋 Quán nước:'))!;
+    const line = all.slice(all.indexOf('🧋 Quán nước:')).split(' · 📋')[0];
+    expect(line).toContain('tự pha 5 mẻ');
+    expect([...line].length).toBeLessThanOrEqual(90);
+  });
+
   it('có nhân viên + mức giá bình dân: doanh thu theo mul, lương trừ đủ', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99);
     setupQuan({ nuoc: 500 }, { staff: 1, price: 're' });

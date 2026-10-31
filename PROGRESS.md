@@ -159,3 +159,4 @@
 - GĐ435 — 🍚 Đứng trước sạp xôi bấm [J] mở bảng quán nước (mục tiệm xôi); chưa cấp 40 thì không hiện gợi ý (gợi ý rỗng coi như không có). QA `?thu=1` ok, 2577 test xanh.
 - GĐ436 — 🔄 Tự pha xoay vòng thực đơn: mẻ thứ n bắt đầu từ món thứ n, bỏ món thiếu nguyên liệu (trước luôn pha món đầu). 2578 test xanh.
 - GĐ437 — 📰 Tin cuối ngày quán nước ghi "tự pha N mẻ" nếu hôm nay có đứng quầy. 2579 test xanh.
+- GĐ438 — ✂️ Tin quán nước giữ ≤90 ký tự: dài quá thì phần thiếu chỉ ghi "thiếu N món". Test ca dài nhất (3 nhân viên, tự pha 5 mẻ, 4 món thiếu).
