@@ -339,6 +339,7 @@ const syncTiemXoi = () => {
   }
   tiemXoiStand.lot.visible = st === 'lot';
   tiemXoiStand.stall.visible = st === 'open';
+  tiemXoiStand.setCooks(1 + (s.biz.tiemXoi?.staff ?? 0));
 };
 syncTiemXoi();
 useGame.subscribe(syncTiemXoi);

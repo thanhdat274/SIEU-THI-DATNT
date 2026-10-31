@@ -5,7 +5,7 @@ import * as THREE from 'three';
  * lưới đi lại. `lot` = biển gỗ "TIỆM XÔI" khi đủ cấp chưa mở; `stall` = sạp có nồi chõ bốc hơi, mâm xôi
  * màu và mái che vàng khi đã mở. main.tsx bật/ẩn theo `tiemXoiStandState`.
  */
-export interface TiemXoiStand { group: THREE.Group; lot: THREE.Group; stall: THREE.Group }
+export interface TiemXoiStand { group: THREE.Group; lot: THREE.Group; stall: THREE.Group; /** GĐ434: số người nấu đứng sau sạp (chủ + thợ). */ setCooks(n: number): void }
 
 const mat = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 0.8 });
 
@@ -64,8 +64,27 @@ export function createTiemXoiStand(): TiemXoiStand {
   sign.position.set(0, 2.0, 0.46);
   stall.add(roof, sign);
 
+  // Người nấu đứng sau sạp: một chủ sạp luôn có + mỗi thợ thêm một người (tối đa 3)
+  const cooks: THREE.Group[] = [];
+  const skin = mat(0xf1c27d);
+  [-0.7, 0, 0.7].forEach((x, i) => {
+    const c = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.75, 8), mat([0xffffff, 0x3498db, 0xe67e22][i]));
+    body.position.y = 0.9;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 8), skin);
+    head.position.y = 1.43;
+    const hat = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.16, 12), mat(0xf5deb3));
+    hat.position.y = 1.6;
+    c.add(body, head, hat);
+    c.position.set(x, 0, -0.75);
+    c.visible = i === 0;
+    stall.add(c);
+    cooks.push(c);
+  });
+  const setCooks = (n: number) => cooks.forEach((c, i) => { c.visible = i < Math.max(1, Math.min(3, n)); });
+
   group.add(lot, stall);
   lot.visible = false;
   stall.visible = false;
-  return { group, lot, stall };
+  return { group, lot, stall, setCooks };
 }
