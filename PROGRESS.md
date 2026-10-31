@@ -158,6 +158,11 @@
 - GĐ308 — 📦 Firebase nạp động + chunk riêng: tải đầu 646→618 KB, trần 640/290
 - GĐ309 — 🔕 Dời 4 thông báo phụ khỏi ngày đầu: 22→18, trần 20
 - GĐ310 — 🔒 Hạ trần rò rỉ: object +2%, nhân vật +20 (đo 0% / +11)
+- GĐ343 — 📦 Siết trần bundle 598/255
+- GĐ336–342 — 📦 Bundle 596 KB (nạp lười STORIES/SURPRISES/GLTF, test hợp đồng); QA gfx=low ~58 FPS, mobile/tablet không tràn; Leader review GĐ337
+- GĐ332 — 💰 % kèo 25/40/65; tỉ số thưởng/lãi 0,99/0,89/0,64
+- GĐ331 — 🔕 Thông báo ngày 1 đếm đúng ngày → 10, trần 10
+- GĐ330 — 🧭 QA lưu máy khách + ngày 1→2: không lỗi
 - GĐ329 — 🪙 Thiếu tiền lẻ mở từ cấp 2 (lần bán đầu sạch)
 - GĐ328 — 🧭 Đo lần bán đầu: ~4 phút (≤5 ✅); khách đầu gặp hộp thoại thiếu tiền lẻ
 - GĐ327 — 🧮 Rà ngân sách đợt GĐ316–326; siết trần bundle 625/275
