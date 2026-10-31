@@ -40,7 +40,7 @@ import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
 import { createWorld } from './world/world';
 import { tiemXoiStandState, tiemXoiHandQty } from './data/tiemXoi';
-import { quanNuocStandState, quanPatrons, quanTierOf } from './data/quanNuoc';
+import { quanHandLeft, quanNuocStandState, quanPatrons, quanTierOf } from './data/quanNuoc';
 import { menuBoardLines } from './data/quanRecipes';
 import { QUAN_HOUSE, quanHouseBoxes } from './world/quanNuocStand';
 import { branchStandState, LANE_X } from './data/branches';
@@ -445,7 +445,12 @@ const fixedInteractables: Interactable[] = [
   // Giếng nước trong trại: tưới nhanh tất cả luống không cần mở bảng
   // GĐ432 cửa hàng nước: đứng sau quầy pha bấm P tự pha một mẻ (B4 "tự đứng quầy")
   { position: world.quanNuoc.group.position.clone().add(new THREE.Vector3(QUAN_HOUSE.x, 0, QUAN_HOUSE.z - 0.9)), radius: 1.6,
-    hint: () => (useGame.getState().biz.quanNuoc.open ? '[P] Tự pha 5 ly ở quầy' : 'Quán nước chưa mở'), key: 'KeyP', action: () => { useGame.getState().brewQuanHand(); } },
+    hint: () => {
+      const g = useGame.getState();
+      if (!g.biz.quanNuoc.open) return 'Quán nước chưa mở';
+      const left = quanHandLeft(g.biz.quanNuoc, g.day);
+      return left > 0 ? `[P] Tự pha 5 ly ở quầy (còn ${left} mẻ)` : 'Hôm nay đã pha hết mẻ, mai pha tiếp';
+    }, key: 'KeyP', action: () => { useGame.getState().brewQuanHand(); } },
   // GĐ435: trước sạp tiệm xôi (x=46, z≈2.4) bấm J mở bảng quán nước — nơi có mục tiệm xôi
   { position: new THREE.Vector3(LANE_X - 4, 0, 2.4), radius: 1.8,
     hint: () => (useGame.getState().biz.tiemXoi?.open ? (useGame.getState().biz.tiemXoi.handDay === useGame.getState().day ? '[J] Xem tiệm xôi (hôm nay đã đồ)' : `[J] Tự đồ ${tiemXoiHandQty(useGame.getState().biz.tiemXoi.staff)} phần xôi`) : useGame.getState().level >= 40 ? '[J] Mở tiệm xôi' : ''), key: 'KeyJ',
