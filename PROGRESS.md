@@ -125,6 +125,7 @@
 - GĐ524: Dồn mục lục GĐ359–399 + GĐ500–511 sang archive (PROGRESS.md dưới 30KB).
 - GĐ525: 🧭 Rà GĐ515–524: 269 file/2642 test xanh 160s, bundle 598/598 (sát trần), chunk 253/255, PROGRESS 26KB. Ngõ 2 đủ sâu (món, bậc, tự đứng sạp, chuỗi xôi, 3D, FPS 35+). Kế: chiều sâu khác ngoài Ngõ 2; review kế ~GĐ535.
 - GĐ526: Thông báo tự đứng sạp Ngõ 2 kèm số tiền thêm ước tính hôm nay (≈+…) + test. 2642 test xanh, bundle 598.
+- GĐ527: QA 3D cửa hàng tiện lợi (sandbox, openBranch @1280×800): nhà mái xanh, vạch qua đường, đèn đường gọn, không lấn đường, không lỗi. Nông trại chưa QA (sandbox chưa có trại) → kế.
 
 - GĐ522: QA gợi ý phím Ngõ 2 (cần pane hiện để vòng render chạy): lô có sạp hiện '[L] Đứng sạp hôm nay (+25%)', lô trống kế tiếp hiện '[L] Thuê lô sạp…'.
 - GĐ523: Đo FPS sandbox preset Thấp (auto): Ngõ 2 có sạp + người dạo 35–37 FPS, trước tiệm chính 36,5 — đạt ≥30, Ngõ 2 không làm nặng thêm.
