@@ -71,3 +71,12 @@ describe('quanNuocStandState — quét toàn dải cấp (đủ ngưỡng là đ
     }
   });
 });
+
+describe('GĐ424 — nhà quán nước không lấn hẻm / đường', async () => {
+  const { QUAN_HOUSE } = await import('../world/quanNuocStand');
+  const ox = 54.4, oz = 1;
+  it('mép tây ngoài hẻm (x>52.5), mép trước + mái hiên trước lòng đường (z<3)', () => {
+    expect(ox + QUAN_HOUSE.x - QUAN_HOUSE.width / 2).toBeGreaterThan(52.5);
+    expect(oz + QUAN_HOUSE.z + QUAN_HOUSE.depth / 2 + 0.9).toBeLessThan(3);
+  });
+});
