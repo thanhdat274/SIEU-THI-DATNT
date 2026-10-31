@@ -446,6 +446,10 @@ const fixedInteractables: Interactable[] = [
   // GĐ432 cửa hàng nước: đứng sau quầy pha bấm P tự pha một mẻ (B4 "tự đứng quầy")
   { position: world.quanNuoc.group.position.clone().add(new THREE.Vector3(QUAN_HOUSE.x, 0, QUAN_HOUSE.z - 0.9)), radius: 1.6,
     hint: () => (useGame.getState().biz.quanNuoc.open ? '[P] Tự pha 5 ly ở quầy' : 'Quán nước chưa mở'), key: 'KeyP', action: () => { useGame.getState().brewQuanHand(); } },
+  // GĐ435: trước sạp tiệm xôi (x=46, z≈2.4) bấm J mở bảng quán nước — nơi có mục tiệm xôi
+  { position: new THREE.Vector3(LANE_X - 4, 0, 2.4), radius: 1.8,
+    hint: () => (useGame.getState().biz.tiemXoi?.open ? '[J] Xem tiệm xôi' : useGame.getState().level >= 40 ? '[J] Mở tiệm xôi' : ''), key: 'KeyJ',
+    action: () => { if (useGame.getState().level >= 40) useGame.getState().openPanel({ type: 'quannuoc' }); } },
   { position: world.farm.wellSpot, radius: 2.6, hint: () => '[T] Tưới luống từ giếng', key: 'KeyT', action: () => useGame.getState().waterGarden() },
 ];
 
@@ -615,7 +619,7 @@ function updateStatus() {
     if (location !== s.location) useGame.setState({ location });
     return;
   }
-  const hint = s.panel ? null : nearestInteractable()?.hint() ?? null;
+  const hint = s.panel ? null : nearestInteractable()?.hint() || null;
   if (location !== s.location || hint !== s.hint) useGame.setState({ location, hint });
 }
 

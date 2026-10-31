@@ -156,3 +156,4 @@
 - GĐ432 — 🍹 Tự đứng quầy pha thật: đứng sau quầy cửa hàng nước bấm [P] pha một mẻ (`brewQuanHand`), chỗ đứng đi tới được (test lưới). Bù bundle: lazy `UnlockActBanner`. QA `?thu=1`: đứng sau quầy hiện "[P] Tự pha 5 ly ở quầy", bấm P +30.000đ, kho trà −1.
 - GĐ433 — ☕ Bậc cửa hàng nước thêm mẻ tự pha: quầy 3 / quán 4 / cà phê 5 mẻ mỗi ngày (`quanHandMax`). Rà test rò rỉ phiên dài: chạy riêng 3 lần đều xanh (object 563 cố định, nhân vật +5..+12 ≤ +20), lần đỏ trong bộ đầy đủ là do máy bận.
 - GĐ434 — 👩‍🍳 Sạp xôi 3D có người nấu đội nón: chủ sạp + mỗi thợ một người (tối đa 3, `setCooks`). QA `?thu=1` 2 thợ → 3 người đứng sau sạp. Bộ test đầy đủ 2577 xanh.
+- GĐ435 — 🍚 Đứng trước sạp xôi bấm [J] mở bảng quán nước (mục tiệm xôi); chưa cấp 40 thì không hiện gợi ý (gợi ý rỗng coi như không có). QA `?thu=1` ok, 2577 test xanh.
