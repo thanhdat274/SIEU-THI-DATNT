@@ -166,11 +166,12 @@ export interface QuanNuocHealth {
  * và có tín hiệu (short / lỗ / cạn kho) để không nhiễu ngày sạch.
  */
 export function quanNuocHealth(
-  q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null, weather?: Weather,
+  q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null, weather?: Weather, day?: number,
 ): QuanNuocHealth {
   const drinkUnits = quanNuocCupSupply(q, level, storage);
-  const tonight = quanNuocProjection(q, level, drinkUnits, weather);
-  const hire = q.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...q, staff: q.staff + 1 }, level, drinkUnits, weather) : null;
+  // GĐ491: có `day` thì dự báo tính cả cuối tuần + đồ nóng tháng rét
+  const tonight = quanNuocProjection(q, level, drinkUnits, weather, day);
+  const hire = q.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...q, staff: q.staff + 1 }, level, drinkUnits, weather, day) : null;
   const hireMarginal = hire ? hire.profit - tonight.profit : null;
   const shortYesterday = !!last && typeof last.wanted === 'number' && typeof last.served === 'number' && last.served < last.wanted;
   const missedRevenue = shortYesterday ? Math.round(((last!.wanted as number) - (last!.served as number)) * quanNuocAvgSell(level, q.menu) * QUAN_PRICE_OPTIONS[q.price].mul) : 0;
@@ -227,9 +228,9 @@ export function quanNuocDayAction(h: QuanNuocHealth | null | undefined): DayActi
 export interface QuanNuocRestockTip { shortfall: number; wanted: number; have: number; missedRevenue: number; verdict: 'danger' | 'warn' }
 
 export function quanNuocRestockTip(
-  q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null, weather?: Weather,
+  q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null, weather?: Weather, day?: number,
 ): QuanNuocRestockTip | null {
-  const h = quanNuocHealth(q, level, storage, last, weather);
+  const h = quanNuocHealth(q, level, storage, last, weather, day);
   const shortfall = Math.max(0, h.tonight.wanted - h.drinkUnitsNow);
   if (h.missedRevenue > 0) {
     return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: h.missedRevenue, verdict: 'danger' };

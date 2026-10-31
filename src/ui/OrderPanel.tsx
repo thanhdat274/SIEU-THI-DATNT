@@ -181,7 +181,7 @@ export function OrderPanel() {
   const itemsSold = useGame((s) => s.totals.itemsSold);
   // GĐ190b: thấy được ngay chỗ nhập — quán nước tối nay cần thêm bao nhiêu ly đồ uống (chỉ khi quán mở + thiếu).
   const restockTip = biz.quanNuoc?.open
-    ? quanNuocRestockTip(biz.quanNuoc, level, storage, biz.quanNuocLast, weather)
+    ? quanNuocRestockTip(biz.quanNuoc, level, storage, biz.quanNuocLast, weather, day)
     : null;
   // GĐ204: nối GĐ191 (quán nước) thành cả mạng lưới — rốn kho chung có điểm bán nào cần nhập/chở
   // hôm nay (supplyRestockManifest, GĐ202). Chỉ hiện khi có nhu cầu NGOÀI phần quán nước đã báo trên

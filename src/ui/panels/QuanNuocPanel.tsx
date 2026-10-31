@@ -44,7 +44,7 @@ export function QuanNuocPanel() {
   // GĐ188: "người thứ N đáng đồng lương?" — chiều xuống (nên giữ bớt ai / sa thải ai). Thuần đọc.
   const staffValues = quan.open ? quanNuocStaffValues(quan.price, level, quan.staff, drinkUnits) : [];
   // GĐ190: thanh nạp kho — thiếu bao nhiêu ly để bán đủ tối nay + nút nhảy sang Nhập hàng.
-  const restockTip = quan.open ? quanNuocRestockTip(quan, level, storage, last, weather) : null;
+  const restockTip = quan.open ? quanNuocRestockTip(quan, level, storage, last, weather, day) : null;
 
   return (
     <div style={{ width: '100%', maxWidth: 560 }}>

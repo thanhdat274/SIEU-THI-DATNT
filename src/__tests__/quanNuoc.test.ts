@@ -333,3 +333,17 @@ describe('GĐ473: kế hoạch nạp đồ uống biết cuối tuần', () => {
     expect(teahouseFillPlan(q, 29, 0, () => 24, sat).topup).toBeGreaterThan(teahouseFillPlan(q, 29, 0, () => 24, mon).topup);
   });
 });
+
+describe('GĐ491: sức khoẻ quán biết cuối tuần', () => {
+  it('quanNuocHealth với day cuối tuần dự báo nhiều khách hơn ngày thường', async () => {
+    const { quanNuocHealth } = await import('../data/quanNuoc');
+    const { isWeekend } = await import('../data/calendar');
+    let we = 1, wd = 1;
+    while (!isWeekend(we)) we++;
+    while (isWeekend(wd)) wd++;
+    const q = { open: true, staff: 1, price: 'vua' as const };
+    const a = quanNuocHealth(q, 35, {}, null, 'cloudy', we).tonight.wanted;
+    const b = quanNuocHealth(q, 35, {}, null, 'cloudy', wd).tonight.wanted;
+    expect(a).toBeGreaterThan(b);
+  });
+});
