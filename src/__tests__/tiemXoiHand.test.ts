@@ -157,3 +157,14 @@ describe('GĐ489: cộng dồn suất ăn + thành tựu', () => {
     expect(a.done({ ...achievementCtx(g()), xoiDine: 500 })).toBe(true);
   });
 });
+
+describe('GĐ496: mưa khách vào tiệm xôi trú mưa', () => {
+  it('mưa/bão ×1.2 suất ăn, nắng giữ nguyên', async () => {
+    const { tiemXoiDinePlan, tiemXoiIds } = await import('../data/tiemXoi');
+    const st = { [tiemXoiIds(TIEM_XOI_UNLOCK)[0]]: 100 };
+    const t = { open: true, staff: 0 } as never;
+    expect(tiemXoiDinePlan(t, TIEM_XOI_UNLOCK, st, 'sunny').portions).toBe(10);
+    expect(tiemXoiDinePlan(t, TIEM_XOI_UNLOCK, st, 'rain').portions).toBe(12);
+    expect(tiemXoiDinePlan(t, TIEM_XOI_UNLOCK, st, 'storm').portions).toBe(12);
+  });
+});
