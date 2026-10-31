@@ -1,7 +1,7 @@
 import { playerPos } from '../../core/playerPos';
 import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
-import { SAP_LOTS } from '../../data/sapRong';
+import { SAP_LOTS, sapKindOf, sapLotIncome } from '../../data/sapRong';
 import { MAP_LANDMARKS, ZONES, zoneMapView } from '../../data/zones';
 import { styles } from './shared';
 
@@ -13,7 +13,7 @@ const Z2 = Math.max(...ZONES.map((z) => z.bounds.z2));
 
 /** Bản đồ thu nhỏ các khu (GĐ504, bước 5 mở rộng bản đồ): khu đã mở / khoá, đường chính, sạp Ngõ 2. */
 export function ZoneMapSection() {
-  const { biz, level, money, openZone } = useGame();
+  const { biz, level, money, openZone, cycleSapKind, weather, day } = useGame();
   const cells = zoneMapView(biz.zones, level, money);
   const sap = biz.sapRong ?? 0;
   return (
@@ -46,6 +46,18 @@ export function ZoneMapSection() {
       ))}
       {cells.some((c) => c.zone.id === 'ngo2' && c.state === 'open') && (
         <div style={{ fontSize: 12, opacity: 0.8 }}>🛒 Sạp hàng rong Ngõ 2: {sap}/{SAP_LOTS} lô (thuê ở lô trống, bấm L)</div>
+      )}
+      {sap > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+          {Array.from({ length: Math.min(sap, SAP_LOTS) }, (_, i) => {
+            const k = sapKindOf(biz.sapKinds, i);
+            return (
+              <button key={i} style={styles.btn} title={`${k.hint} — bấm để đổi món`} onClick={() => cycleSapKind(i)}>
+                Lô {i + 1}: {k.icon} {k.name} · hôm nay {formatMoney(sapLotIncome(k, weather, day))}
+              </button>
+            );
+          })}
+        </div>
       )}
     </div>
   );

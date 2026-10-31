@@ -1166,6 +1166,8 @@ export interface BizState {
   zones?: string[];
   /** GĐ501: số lô sạp hàng rong đã thuê ở Ngõ 2 (0–4). */
   sapRong?: number;
+  /** GĐ507: món từng lô sạp (id SAP_KINDS); thiếu = Tổng hợp. */
+  sapKinds?: string[];
   tiemXoiLast?: { day: number; total: number; cost: number; wages: number; saved: number; /** GĐ486: suất khách ăn tại chỗ. */ dine?: number };
   /** Kết quả ngày vừa rồi của quán nước (để UI hiển thị); chưa từng chạy thì undefined.
    *  wages = tổng lương nhân viên phải trả hôm đó, profit = revenue − wages (lời ròng thật). */

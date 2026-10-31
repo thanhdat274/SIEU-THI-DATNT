@@ -1,13 +1,13 @@
 import { formatMoney, productById } from '../../data/products';
 import { copyStock, putStock } from '../stock';
 import { TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_UNLOCK, TIEM_XOI_COST_MUL, tiemXoiHandQty, tiemXoiHandPick, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL } from '../../data/tiemXoi';
-import { SAP_LOT_COST, SAP_LOTS } from '../../data/sapRong';
+import { SAP_LOT_COST, SAP_LOTS, nextSapKinds, sapKindOf } from '../../data/sapRong';
 import { canOpenZone, openZones, zoneById } from '../../data/zones';
 import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Tiệm xôi (GĐ411): mua mặt bằng, tuyển/cho nghỉ thợ nấu. Mô phỏng nấu chạy trong endDay. */
 
-export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi' | 'openZone' | 'rentSapLot'> => ({
+export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi' | 'openZone' | 'rentSapLot' | 'cycleSapKind'> => ({
   buyTiemXoi: () => {
     const s = get();
     if (s.biz.tiemXoi.open) return false;
@@ -96,6 +96,15 @@ export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState
     if (s.money < SAP_LOT_COST) { s.notify(`Cần ${formatMoney(SAP_LOT_COST)} để thuê lô sạp`); return false; }
     set({ money: s.money - SAP_LOT_COST, biz: { ...s.biz, sapRong: n + 1 } });
     s.notify(`🛒 Thuê lô sạp ${n + 1}/${SAP_LOTS}: sạp bán ngày nắng, mưa thì nghỉ`);
+    return true;
+  },
+  cycleSapKind: (i: number) => {
+    const s = get();
+    if (!Number.isInteger(i) || i < 0 || i >= (s.biz.sapRong ?? 0)) return false;
+    const kinds = nextSapKinds(s.biz.sapKinds, i);
+    set({ biz: { ...s.biz, sapKinds: kinds } });
+    const k = sapKindOf(kinds, i);
+    s.notify(`${k.icon} Lô ${i + 1} bán ${k.name}: ${k.hint}`);
     return true;
   },
 });

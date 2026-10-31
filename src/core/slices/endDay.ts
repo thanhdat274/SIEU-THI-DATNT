@@ -150,7 +150,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   let tiemXoiLast: BizState['tiemXoiLast'];
   // GĐ501: sạp hàng rong Ngõ 2 — nghỉ khi mưa/bão
   if (s.biz.sapRong) {
-    const sap = sapRongIncome(s.biz.sapRong, s.weather, s.day);
+    const sap = sapRongIncome(s.biz.sapRong, s.weather, s.day, s.biz.sapKinds);
     quanRevenue += sap;
     quanNews.push(sap ? `🛒 ${s.biz.sapRong} sạp hàng rong Ngõ 2 · +${formatMoney(sap)}` : '🛒 Trời mưa: sạp hàng rong Ngõ 2 nghỉ bán');
   }

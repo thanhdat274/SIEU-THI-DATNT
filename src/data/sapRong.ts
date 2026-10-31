@@ -9,11 +9,39 @@ export const SAP_LOTS = 4;
 export const SAP_LOT_COST = 5_000_000;
 export const SAP_BASE_INCOME = 300_000;
 
+/**
+ * GĐ507: món mỗi sạp — lựa chọn theo dự báo: nước mía ăn nắng, bánh mì ăn ngày thường (người đi làm),
+ * xôi ăn sáng se lạnh (mây/sương). Save cũ không có món = Tổng hợp.
+ */
+export interface SapKind { id: string; icon: string; name: string; weather: Partial<Record<Weather, number>>; weekday: number; weekend: number; hint: string }
+export const SAP_KINDS: SapKind[] = [
+  { id: 'tonghop', icon: '🛒', name: 'Tổng hợp', weather: {}, weekday: 1, weekend: 1.3, hint: 'Đều đều, cuối tuần ×1,3' },
+  { id: 'nuocmia', icon: '🥤', name: 'Nước mía', weather: { sunny: 1.5, cloudy: 0.9, fog: 0.7 }, weekday: 1, weekend: 1.3, hint: 'Nắng ×1,5, mây ×0,9, sương ×0,7' },
+  { id: 'banhmi', icon: '🥖', name: 'Bánh mì', weather: {}, weekday: 1.2, weekend: 1, hint: 'Ngày thường ×1,2, cuối tuần ×1' },
+  { id: 'xoi', icon: '🍙', name: 'Xôi', weather: { cloudy: 1.2, fog: 1.25, sunny: 0.9 }, weekday: 1, weekend: 1.3, hint: 'Mây ×1,2, sương ×1,25, nắng ×0,9' },
+];
+export const sapKindOf = (kinds: readonly string[] | undefined, i: number) =>
+  SAP_KINDS.find((k) => k.id === kinds?.[i]) ?? SAP_KINDS[0];
+/** Món kế tiếp khi bấm đổi món ở lô i (vòng tròn). */
+export function nextSapKinds(kinds: readonly string[] | undefined, i: number): string[] {
+  const out = Array.from({ length: Math.max(i + 1, kinds?.length ?? 0) }, (_, j) => sapKindOf(kinds, j).id);
+  out[i] = SAP_KINDS[(SAP_KINDS.indexOf(sapKindOf(kinds, i)) + 1) % SAP_KINDS.length].id;
+  return out;
+}
+
+/** Lãi một ngày của sạp lô i theo món (0 khi mưa/bão). */
+export function sapLotIncome(kind: SapKind, weather?: Weather, day?: number): number {
+  if (weather === 'rain' || weather === 'storm') return 0;
+  const wk = day !== undefined && isWeekend(day) ? kind.weekend : kind.weekday;
+  return Math.round(SAP_BASE_INCOME * wk * (weather ? kind.weather[weather] ?? 1 : 1));
+}
+
 /** Lãi ròng một ngày của các sạp đã thuê (0 khi mưa/bão). */
-export function sapRongIncome(lots: number | undefined, weather?: Weather, day?: number): number {
+export function sapRongIncome(lots: number | undefined, weather?: Weather, day?: number, kinds?: readonly string[]): number {
   const n = Math.max(0, Math.min(SAP_LOTS, lots ?? 0));
-  if (!n || weather === 'rain' || weather === 'storm') return 0;
-  return Math.round(n * SAP_BASE_INCOME * (day !== undefined && isWeekend(day) ? 1.3 : 1));
+  let sum = 0;
+  for (let i = 0; i < n; i++) sum += sapLotIncome(sapKindOf(kinds, i), weather, day);
+  return sum;
 }
 
 /** GĐ502: hộp chặn lưới của bàn sạp thứ i (bàn 1,8×0,9 tại x 86+8i, z −0,5). */

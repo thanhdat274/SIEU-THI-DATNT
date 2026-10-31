@@ -66,3 +66,33 @@ describe('sapStrollerCount (GĐ503)', () => {
     expect(sapStrollerCount(undefined, 'sunny', 9 * 60)).toBe(0);
   });
 });
+
+describe('GĐ507: món từng lô sạp', () => {
+  it('save cũ không có món = Tổng hợp, thu như trước', async () => {
+    const { sapKindOf } = await import('../data/sapRong');
+    expect(sapKindOf(undefined, 0).id).toBe('tonghop');
+    expect(sapRongIncome(2, 'sunny', 1, undefined)).toBe(sapRongIncome(2, 'sunny', 1));
+  });
+  it('nước mía thắng ngày nắng, xôi thắng ngày sương; bánh mì thắng ngày thường, thua cuối tuần', async () => {
+    const { SAP_KINDS, sapLotIncome } = await import('../data/sapRong');
+    const k = Object.fromEntries(SAP_KINDS.map((x) => [x.id, x]));
+    const best = (w: 'sunny' | 'fog', day: number) => SAP_KINDS.reduce((a, b) => (sapLotIncome(b, w, day) > sapLotIncome(a, w, day) ? b : a)).id;
+    const weekday = Array.from({ length: 7 }, (_, i) => i + 1).find((d) => sapLotIncome(k.tonghop, 'cloudy', d) === SAP_BASE_INCOME)!;
+    const weekend = Array.from({ length: 7 }, (_, i) => i + 1).find((d) => sapLotIncome(k.tonghop, 'cloudy', d) > SAP_BASE_INCOME)!;
+    expect(best('sunny', weekday)).toBe('nuocmia');
+    expect(best('fog', weekday)).toBe('xoi');
+    expect(sapLotIncome(k.banhmi, 'cloudy', weekday)).toBeGreaterThan(sapLotIncome(k.tonghop, 'cloudy', weekday));
+    expect(sapLotIncome(k.banhmi, 'cloudy', weekend)).toBeLessThan(sapLotIncome(k.tonghop, 'cloudy', weekend));
+    for (const x of SAP_KINDS) expect(sapLotIncome(x, 'rain', weekday)).toBe(0);
+  });
+  it('cycleSapKind: chỉ lô đã thuê, đổi vòng tròn, lưu save, tin ≤90', () => {
+    expect(g().cycleSapKind(0)).toBe(false);
+    g().openZone('ngo2'); g().rentSapLot(); g().rentSapLot();
+    expect(g().cycleSapKind(1)).toBe(true);
+    expect(g().biz.sapKinds).toEqual(['tonghop', 'nuocmia']);
+    for (let i = 0; i < 3; i++) g().cycleSapKind(1);
+    expect(g().biz.sapKinds?.[1]).toBe('tonghop');
+    expect(g().cycleSapKind(2)).toBe(false);
+    expect(msgs.every((x) => [...x].length <= 90)).toBe(true);
+  });
+});
