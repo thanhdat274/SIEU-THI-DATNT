@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
+- **GĐ327:** 🧮 Rà ngân sách (Leader + Game Designer, đợt GĐ316–326). Hiện trạng so mục tiêu: nút HUD **20/20 ✅** · thông báo >90 ký tự **0 ✅** · tỉ số thưởng/lãi bán cấp 5/10/20 **1,07 / 0,98 / 0,67** (cấp 5 còn dư vì ngày 1 không trần) · thông báo ngày 1 **11–12** (mục tiêu ≤10, bot lên 4 cấp/ngày nên cao hơn người thật) · bundle **618 KB** (mục tiêu 600, thực tế sàn) · rò rỉ object +2%/walker +20 ✅ · test toàn bộ **~150s ✅** · PROGRESS.md **29KB ✅**. Siết trần bundle 640/290 → **625/275** (chỉ được hạ). Chưa gộp/bỏ tính năng nào: không tính năng nào đủ ít dùng để loại, nút HUD đã chạm đích. Việc còn: QA lần bán đầu cần người đứng quầy.
 - **GĐ326:** 🔕 Thông báo Sổ tay Tiệm (mốc 10 món) không hiện ở ngày 1 (`count < 25`) — thưởng vẫn cộng; thông báo ngày 1 (sim tất định) 13 → **11**, trần 13 → **12**. 2356 test xanh. Còn ≤10: bot lên 4 cấp trong 1 ngày nên khó hơn người thật.
 - **GĐ325:** 💰 Tinh chỉnh trần thưởng 0,4×/70k → **0,37×/66k** (0,35×/60k làm `economySimL50` đỏ 21<22 nên dừng ở đây). Sim tất định: tỉ số cấp 5 **1,07**, cấp 10 **0,98 (≤1 ✅)**, cấp 20 **0,67**. Trần test 1,15/1,05/0,75; cập nhật `betCore`, mốc `simGolden`. 2356 test xanh. Còn cấp 5 (1,07) do ngày 1 không-trần (luật người mới, cố ý).
 - **GĐ322:** 💰 Trần thưởng nhiệm vụ 0,6×/sàn 110k → **0,4×/sàn 70k** (`QUEST_ECO_*`), đo bằng sim tất định GĐ321 (cùng lãi bán, chỉ đổi trần): tỉ số thưởng/lãi bán cấp 5 **1,53→1,13**, cấp 10 **1,29→1,02**, cấp 20 **0,96→0,71** (mốc trung gian 0,5×/90k: 1,33/1,15/0,83). Luật người mới chưa có lãi = không trần giữ nguyên. Cập nhật: trần test 1,2/1,1/0,8; `questEco` (cấp 1 dùng lãi 2M), `betCore`, mốc `simGolden` cấp 30 (quest ngày 2–3: 160k→92k, 326k→186k). 2356 test xanh. Còn ~1 ở cấp 5/10: gần đạt, theo dõi cảm giác thưởng ở người chơi thật.
@@ -172,6 +173,7 @@
 - GĐ308 — 📦 Firebase nạp động + chunk riêng: tải đầu 646→618 KB, trần 640/290
 - GĐ309 — 🔕 Dời 4 thông báo phụ khỏi ngày đầu: 22→18, trần 20
 - GĐ310 — 🔒 Hạ trần rò rỉ: object +2%, nhân vật +20 (đo 0% / +11)
+- GĐ327 — 🧮 Rà ngân sách đợt GĐ316–326; siết trần bundle 625/275
 - GĐ326 — 🔕 Ẩn thông báo Sổ tay mốc nhỏ ngày 1; thông báo ngày 1 = 11, trần 12
 - GĐ325 — 💰 Trần thưởng 0,37×/66k; tỉ số 1,07/0,98/0,67 (cấp 10 ≤1)
 - GĐ322 — 💰 Trần thưởng 0,4×/sàn 70k; tỉ số 1,13/1,02/0,71 (≈1)

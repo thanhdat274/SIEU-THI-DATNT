@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 /** Mức đo 2026-10-31 + ~10% đệm. Rút gọn được thì HẠ số này — không bao giờ nâng lên. */
-export const BUNDLE_BUDGET_KB = { initialGzip: 640, largestChunkGzip: 290 };
+export const BUNDLE_BUDGET_KB = { initialGzip: 625, largestChunkGzip: 275 };
 
 export function measureBundle() {
   const out = mkdtempSync(join(tmpdir(), 'taphoa-bundle-'));
