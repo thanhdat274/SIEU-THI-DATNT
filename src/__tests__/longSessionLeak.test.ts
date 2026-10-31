@@ -51,12 +51,12 @@ describe('phiên chơi dài không rò rỉ', () => {
     }
     // eslint-disable-next-line no-console
     console.log(`[rò rỉ] object ngoài nhân vật: ${objs0} → ${objs.join(' → ')} · nhân vật sống: ${walkers0} → ${walkers.join(' → ')}`);
-    // Ngoài tiệm và nhân vật thì cảnh gần như cố định: phình quá 10% sau 6 ngày là có thứ không được dọn
-    expect(Math.max(...objs)).toBeLessThanOrEqual(objs0 * 1.1);
+    // Ngoài tiệm và nhân vật thì cảnh gần như cố định: phình quá 2% sau 6 ngày (đo thực tế: 0%) là có thứ không được dọn
+    expect(Math.max(...objs)).toBeLessThanOrEqual(objs0 * 1.02);
     // Toà tiệm cũ khi nâng tier phải được gỡ khỏi scene (chỉ còn đúng một toà)
     expect(world.scene.children.filter((c) => c === world.shop.building.group)).toHaveLength(1);
     // Nhân vật bị dispose đúng khi rời đi: không tích luỹ theo ngày
-    // Số khách đang ở ngoài lúc chốt ngày dao động 13–33; rò rỉ thật (quên dispose) tăng hàng trăm mỗi ngày
-    expect(Math.max(...walkers)).toBeLessThanOrEqual(walkers0 + 40);
+    // Số khách đang ở ngoài lúc chốt ngày dao động 13–33 (đo +9 sau 6 ngày); rò rỉ thật (quên dispose) tăng hàng trăm mỗi ngày
+    expect(Math.max(...walkers)).toBeLessThanOrEqual(walkers0 + 20);
   });
 });

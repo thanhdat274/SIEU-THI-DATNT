@@ -21,6 +21,8 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
+- **GĐ310:** 🔒 Khoá rò rỉ chặt hơn: đo 8 ngày liền object ngoài tiệm đứng yên 563 → 563 (0%), nhân vật sống dao động 13–26 (+11 tối đa). Trần `longSessionLeak` hạ: object +10% → +2%, nhân vật +40 → +20 (hai lần chạy liên tiếp đạt). Full suite GĐ309: 2356 xanh, 157s. Ghi nhận: tải ban đầu 618 KB còn lại chủ yếu `three` (267) + app (247); muốn ≤600 phải lazy-load `world/farm.ts` (chỉ cần từ cấp 8) — đụng khởi tạo thế giới 3D, để dành giai đoạn có QA 3D riêng. Toast ngày đầu 18 còn lại là mốc thật (lên cấp, nhiệm vụ xong do bot chơi nhanh) — không gộp vì mỗi lần bấm nhận cần phản hồi riêng.
+
 - **GĐ309:** 🔕 Ngày đầu chỉ dạy vòng lõi: dời sang ngày 2+ bốn thông báo phụ — Danh hiệu mới (trừ danh hiệu NG+ vì tái sinh đưa ngày về 1), Chốt kèo, Chi phí vận hành, Thay ô hết hàng (thưởng/số liệu vẫn ghi nhận, xem ở Sổ đầu ngày/Tổng kết). Thông báo ngày đầu (bot) 22 → 18; trần `DAY1_TOAST_CEILING` 24 → 20. Test prestigeContent bắt đúng lỗi chặn nhầm toast NG+ → sửa. Phần còn lại là cột mốc thật (4 lần lên cấp, 6 nhiệm vụ xong do bot chơi nhanh gấp nhiều lần người); người thật ngày 1 ít hơn nhiều. Mục tiêu ≤10 cần gộp toast lên cấp/nhiệm vụ thành một.
 
 - **GĐ308:** 📦 Firebase nạp động: `src/net/firebase.ts` dùng `import('firebase/app'|'firebase/auth')` (memo `loadAuth`), `watchUser` trả hàm huỷ an toàn kể cả khi SDK chưa nạp xong; `vite.config.ts` tách `vendor-firebase` (45,6 KB gzip, không còn gộp chung zustand/dexie). **Tải ban đầu 646 → 618 KB gzip**; trần `check-bundle` 680/300 → 640/290. Màn đăng nhập vẫn đủ nút, SDK kéo về sau khi trang hiện; full suite 2356 xanh, 159s. Còn: ≤600 KB (index app 247 KB + three 267 KB là phần lớn).
@@ -385,3 +387,4 @@
 - GĐ307 — 🧹 Hub tab Danh tiếng/Mở rộng: nút HUD 28→20 (đạt mục tiêu)
 - GĐ308 — 📦 Firebase nạp động + chunk riêng: tải đầu 646→618 KB, trần 640/290
 - GĐ309 — 🔕 Dời 4 thông báo phụ khỏi ngày đầu: 22→18, trần 20
+- GĐ310 — 🔒 Hạ trần rò rỉ: object +2%, nhân vật +20 (đo 0% / +11)
