@@ -32,6 +32,16 @@ describe('steamXoiHand', () => {
   });
 });
 
+describe('GĐ529: không có món xôi', () => {
+  it('báo lý do thay vì im lặng', () => {
+    g().buyTiemXoi();
+    useGame.setState({ level: 0 });
+    if (tiemXoiIds(0).length) return;
+    expect(g().steamXoiHand()).toBe(false);
+    expect(msgs.some((m) => m.includes('Chưa có món xôi'))).toBe(true);
+  });
+});
+
 describe('tin cuối ngày', () => {
   it('ghi chủ tự đồ khi đã đồ trong ngày, ≤90 ký tự', () => {
     g().buyTiemXoi();

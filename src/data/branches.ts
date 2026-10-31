@@ -1,3 +1,4 @@
+import { isWeekend } from './calendar';
 import { COOKED_PRODUCT_IDS } from './recipes';
 import { productById } from './products';
 import type { FurnitureType } from './furniture';
@@ -63,6 +64,9 @@ const HOURLY = [2, 1, 1, 1, 1, 2, 4, 5, 4, 4, 4, 5, 5, 4, 4, 4, 4, 5, 6, 6, 5, 5
 export const branchTrafficAt = (minute: number) => HOURLY[Math.floor(((minute % 1440) + 1440) % 1440 / 60)];
 /** Giờ đêm (22h–6h): không có bảo vệ thì dễ mất trộm. */
 export const isBranchNight = (minute: number) => { const m = ((minute % 1440) + 1440) % 1440; return m >= 22 * 60 || m < 6 * 60; };
+/** GĐ532: đêm cuối tuần dân đi chơi khuya ghé tiện lợi đông hơn. */
+export const BRANCH_WEEKEND_NIGHT_MUL = 1.3;
+export const branchWeekendMul = (day: number, minute: number) => (isWeekend(day) && isBranchNight(minute) ? BRANCH_WEEKEND_NIGHT_MUL : 1);
 
 export interface BranchState {
   open: boolean;

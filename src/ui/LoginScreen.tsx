@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { applySnapshot, loadGame, readLocalSave, type SaveData } from '../core/save';
 import { useGame } from '../core/store';
 import { formatMoney } from '../data/products';
@@ -6,8 +6,9 @@ import { fetchCloudSave } from '../net/cloud';
 import { giftOfStreak, giftText, scaledGift } from '../data/gifts';
 import { firebaseReady, loginGoogle, logoutGoogle } from '../net/firebase';
 import { useSession, type SaveSummary } from '../net/session';
-import { AlleyPanel } from './AlleyPanel';
 import './login.css';
+// GĐ521: bảng hẻm online tải lười (bù ngân sách tải đầu)
+const AlleyPanel = lazy(() => import('./AlleyPanel').then((m) => ({ default: m.AlleyPanel })));
 
 /** Vào game: đóng màn đăng nhập, cho thời gian chạy. */
 export function startGame() {
@@ -138,7 +139,7 @@ export function LoginScreen() {
             </>
           )}
 
-          {!choice && <AlleyPanel busy={busy} run={run} onEnter={startGame} />}
+          {!choice && <Suspense fallback={null}><AlleyPanel busy={busy} run={run} onEnter={startGame} /></Suspense>}
           {error && <p className="login-error">{error}</p>}
         </section>
       </div>

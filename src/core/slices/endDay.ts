@@ -1,6 +1,6 @@
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
 import { SHOP_TIERS, rentOf, OPERATING_REVENUE_RATE } from '../../data/shopTiers';
-import { sapRongIncome } from '../../data/sapRong';
+import { sapKindIcons, sapRongIncome } from '../../data/sapRong';
 import { describeDay, forecastFrom, WEATHER } from '../../data/weather';
 import { fitLots, nearestLife } from '../../data/freshness';
 import { regularById } from '../../data/regulars';
@@ -150,9 +150,9 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   let tiemXoiLast: BizState['tiemXoiLast'];
   // GĐ501: sạp hàng rong Ngõ 2 — nghỉ khi mưa/bão
   if (s.biz.sapRong) {
-    const sap = sapRongIncome(s.biz.sapRong, s.weather, s.day);
+    const sap = sapRongIncome(s.biz.sapRong, s.weather, s.day, s.biz.sapKinds, s.biz.sapTiers, s.biz.tiemXoi.open, s.biz.sapHandDay === s.day);
     quanRevenue += sap;
-    quanNews.push(sap ? `🛒 ${s.biz.sapRong} sạp hàng rong Ngõ 2 · +${formatMoney(sap)}` : '🛒 Trời mưa: sạp hàng rong Ngõ 2 nghỉ bán');
+    quanNews.push(sap ? `${sapKindIcons(s.biz.sapRong, s.biz.sapKinds)} sạp hàng rong Ngõ 2 · +${formatMoney(sap)}` : '🛒 Trời mưa: sạp hàng rong Ngõ 2 nghỉ bán');
   }
   if (s.biz.tiemXoi?.open) {
     const t = tiemXoiDay(s.biz.tiemXoi, s.level, k.storage, (id, qty) => putStock(k, id, qty));
@@ -160,7 +160,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       tiemXoiLast = { day: s.day, total: t.total, cost: t.cost, wages: t.wages, saved: tiemXoiSaved(t.made) };
       quanWages += t.cost + t.wages;
       // GĐ484: khách ngồi ăn tại chỗ trong nhà tiệm, lấy xôi từ kho, bán giá lẻ
-      const dine = tiemXoiDinePlan(s.biz.tiemXoi, s.level, k.storage, s.weather);
+      const dine = tiemXoiDinePlan(s.biz.tiemXoi, s.level, k.storage, s.weather, s.day);
       for (const [id, qty] of Object.entries(dine.take)) takeStock(k, id, qty);
       quanRevenue += dine.revenue;
       tiemXoiLast = { ...tiemXoiLast!, dine: dine.portions };

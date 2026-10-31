@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../core/store';
-import { CONVENIENCE, ALCOHOL_BRAWL_CHANCE, coverMul, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, hasAlcohol, hasPower, isHotFood, nightNeed, shelfTotal, uncoveredHours, vendingTotal } from '../data/branches';
+import { CONVENIENCE, ALCOHOL_BRAWL_CHANCE, coverMul, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, hasAlcohol, hasPower, isHotFood, nightNeed, shelfTotal, uncoveredHours, vendingTotal, branchWeekendMul } from '../data/branches';
 import { dailyWage } from '../data/staff';
 import { branchOperatingBalanceToday, branchBuildPayback } from '../data/branchNet';
 import { branchMissSummary } from '../data/venueTrend';
@@ -66,7 +66,7 @@ export function BranchPanel() {
       {tab === 'info' && (
         <div style={{ display: 'grid', gap: 6 }}>
           <div>Hôm nay: <b>{branch.customersToday}</b> khách · thu <b>{formatMoney(branch.revenueToday)}</b>
-            {branch.missedToday > 0 && <> · {branch.missedToday} khách bỏ về</>}{branch.lostToday > 0 && <> · mất trộm {branch.lostToday} món</>}</div>
+            {branch.missedToday > 0 && <> · {branch.missedToday} khách bỏ về</>}{branch.lostToday > 0 && <> · mất trộm {branch.lostToday} món</>}{branchWeekendMul(day, 23 * 60) > 1 && <> · 🌙 đêm cuối tuần khách ×1,3</>}</div>
           <div>Chi phí mỗi ngày: {formatMoney(wages)} lương (mặt bằng đã mua đứt, không thuê)</div>
           {(() => {
             const op = branchOperatingBalanceToday(branch);

@@ -9,11 +9,62 @@ export const SAP_LOTS = 4;
 export const SAP_LOT_COST = 5_000_000;
 export const SAP_BASE_INCOME = 300_000;
 
+/**
+ * GĐ507: món mỗi sạp — lựa chọn theo dự báo: nước mía ăn nắng, bánh mì ăn ngày thường (người đi làm),
+ * xôi ăn sáng se lạnh (mây/sương). Save cũ không có món = Tổng hợp.
+ */
+export interface SapKind { id: string; icon: string; name: string; weather: Partial<Record<Weather, number>>; weekday: number; weekend: number; hint: string; /** GĐ511: màu hàng + ô dù 3D (thiếu = màu riêng từng lô). */ colors?: [goods: number, umbrella: number] }
+export const SAP_KINDS: SapKind[] = [
+  { id: 'tonghop', icon: '🛒', name: 'Tổng hợp', weather: {}, weekday: 1, weekend: 1.3, hint: 'Đều đều, cuối tuần ×1,3' },
+  { id: 'nuocmia', icon: '🥤', name: 'Nước mía', weather: { sunny: 1.5, cloudy: 0.9, fog: 0.7 }, weekday: 1, weekend: 1.3, hint: 'Nắng ×1,5, mây ×0,9, sương ×0,7', colors: [0xa3e048, 0x6ab04c] },
+  { id: 'banhmi', icon: '🥖', name: 'Bánh mì', weather: {}, weekday: 1.2, weekend: 1, hint: 'Ngày thường ×1,2, cuối tuần ×1', colors: [0xf3d29b, 0xc68642] },
+  { id: 'xoi', icon: '🍙', name: 'Xôi', weather: { cloudy: 1.2, fog: 1.25, sunny: 0.9 }, weekday: 1, weekend: 1.3, hint: 'Mây ×1,2, sương ×1,25, nắng ×0,9; có tiệm xôi +20%', colors: [0xffeaa7, 0xfdcb6e] },
+];
+export const sapKindOf = (kinds: readonly string[] | undefined, i: number) =>
+  SAP_KINDS.find((k) => k.id === kinds?.[i]) ?? SAP_KINDS[0];
+/** Món kế tiếp khi bấm đổi món ở lô i (vòng tròn). */
+export function nextSapKinds(kinds: readonly string[] | undefined, i: number): string[] {
+  const out = Array.from({ length: Math.max(i + 1, kinds?.length ?? 0) }, (_, j) => sapKindOf(kinds, j).id);
+  out[i] = SAP_KINDS[(SAP_KINDS.indexOf(sapKindOf(kinds, i)) + 1) % SAP_KINDS.length].id;
+  return out;
+}
+
+/** Lãi một ngày của sạp lô i theo món (0 khi mưa/bão). */
+export function sapLotIncome(kind: SapKind, weather?: Weather, day?: number): number {
+  if (weather === 'rain' || weather === 'storm') return 0;
+  const wk = day !== undefined && isWeekend(day) ? kind.weekend : kind.weekday;
+  return Math.round(SAP_BASE_INCOME * wk * (weather ? kind.weather[weather] ?? 1 : 1));
+}
+
+/** GĐ508: món lãi nhất cho một ngày (để gợi ý theo dự báo ngày mai); hoà thì giữ món đứng trước. */
+export function bestSapKind(weather: Weather | undefined, day?: number): SapKind {
+  return SAP_KINDS.reduce((a, b) => (sapLotIncome(b, weather, day) > sapLotIncome(a, weather, day) ? b : a));
+}
+
+/** GĐ513: bậc sạp từng lô — gánh → xe đẩy → quầy; mỗi bậc nhân thu nhập lô (hoàn vốn ~25/~40 ngày nắng). */
+export const SAP_TIERS = [
+  { name: 'Gánh', icon: '🧺', mul: 1, cost: 0 },
+  { name: 'Xe đẩy', icon: '🛺', mul: 1.4, cost: 3_000_000 },
+  { name: 'Quầy', icon: '🏪', mul: 1.8, cost: 5_000_000 },
+] as const;
+export const sapTierOf = (tiers: readonly number[] | undefined, i: number) =>
+  Math.max(0, Math.min(SAP_TIERS.length - 1, Math.floor(tiers?.[i] ?? 0)));
+
+/** GĐ516: lô bán xôi lấy hàng tiệm xôi nhà mình (đã mở tiệm) thì thêm 20% — chuỗi cung ứng giữa các cơ sở. */
+export const SAP_HOME_XOI_MUL = 1.2;
+
+/** GĐ521: hôm chủ tự đứng sạp (mỗi ngày một lần), mọi lô thu thêm 25%. */
+export const SAP_HAND_MUL = 1.25;
+
 /** Lãi ròng một ngày của các sạp đã thuê (0 khi mưa/bão). */
-export function sapRongIncome(lots: number | undefined, weather?: Weather, day?: number): number {
+export function sapRongIncome(lots: number | undefined, weather?: Weather, day?: number, kinds?: readonly string[], tiers?: readonly number[], homeXoi = false, hand = false): number {
   const n = Math.max(0, Math.min(SAP_LOTS, lots ?? 0));
-  if (!n || weather === 'rain' || weather === 'storm') return 0;
-  return Math.round(n * SAP_BASE_INCOME * (day !== undefined && isWeekend(day) ? 1.3 : 1));
+  let sum = 0;
+  for (let i = 0; i < n; i++) {
+    const k = sapKindOf(kinds, i);
+    sum += Math.round(sapLotIncome(k, weather, day) * SAP_TIERS[sapTierOf(tiers, i)].mul * (homeXoi && k.id === 'xoi' ? SAP_HOME_XOI_MUL : 1));
+  }
+  return hand ? Math.round(sum * SAP_HAND_MUL) : sum;
 }
 
 /** GĐ502: hộp chặn lưới của bàn sạp thứ i (bàn 1,8×0,9 tại x 86+8i, z −0,5). */
@@ -25,3 +76,7 @@ export function sapStrollerCount(lots: number | undefined, weather: Weather | un
   if (!lots || weather === 'rain' || weather === 'storm' || m < 6 * 60 || m >= 20 * 60) return 0;
   return Math.min(6, Math.min(SAP_LOTS, lots) * 2);
 }
+
+/** GĐ509: icon món các lô cho tin cuối ngày, vd "🥤🥤🥖" (thiếu món = 🛒). */
+export const sapKindIcons = (lots: number | undefined, kinds?: readonly string[]) =>
+  Array.from({ length: Math.max(0, Math.min(SAP_LOTS, lots ?? 0)) }, (_, i) => sapKindOf(kinds, i).icon).join('');
