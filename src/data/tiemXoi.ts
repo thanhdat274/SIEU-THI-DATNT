@@ -24,7 +24,7 @@ export const TIEM_XOI_COST_MUL = 0.6;
 /** Chỉ nấu bù đến mức tồn này mỗi món, tránh xôi dồn kho rồi hỏng. */
 export const TIEM_XOI_TARGET = 80;
 
-export interface TiemXoiState { open: boolean; staff: number }
+export interface TiemXoiState { open: boolean; staff: number; /** GĐ439: ngày chủ tự đồ một mẻ ở sạp. */ handDay?: number }
 export const newTiemXoi = (): TiemXoiState => ({ open: false, staff: 0 });
 
 /** Món xôi lẻ (không gồm combo) đã mở ở `level`, giữ thứ tự bảng mẫu hàng. */
@@ -92,3 +92,11 @@ export function tiemXoiMorning(
 /** Trạng thái hình ảnh tiệm xôi 3D (GĐ430). */
 export const tiemXoiStandState = (level: number, open: boolean): 'hidden' | 'lot' | 'open' =>
   open ? 'open' : level >= TIEM_XOI_UNLOCK ? 'lot' : 'hidden';
+
+/** GĐ439 — chủ tự đồ một mẻ ở sạp mỗi ngày: 20 phần món đang thiếu nhiều nhất, vào kho ngay, giá vốn như tiệm. */
+export const TIEM_XOI_HAND = 20;
+export const tiemXoiHandPick = (level: number, storage: Record<string, number>): string | null => {
+  let pick: string | null = null;
+  for (const id of tiemXoiIds(level)) if (pick === null || (storage[id] ?? 0) < (storage[pick] ?? 0)) pick = id;
+  return pick;
+};

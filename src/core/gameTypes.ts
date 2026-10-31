@@ -384,6 +384,7 @@ export interface GameState {
   buyTiemXoi: () => boolean;
   hireTiemXoi: () => boolean;
   fireTiemXoi: () => boolean;
+  steamXoiHand: () => boolean;
   /** Lấy bớt hàng khỏi kho (vd. thức ăn cho thú cưng). */
   consumeStock: (productId: string, qty: number) => void;
   /** Sổ nợ khách quen (theo id khách quen). */
