@@ -156,3 +156,4 @@
 - GĐ370 — 🎊 Test `communitySale` khai trương (4 test, mutation 2/2): tiến độ cộng dồn, thưởng đúng một lần, thiếu chậu cây chưa xong, sai ngày không ghi
 - GĐ371 — 🗄️ Test slice kho `inventory.ts` (10 test, mutation 2/2): bày/dọn kệ giữ nguyên tổng hàng, đổi loại trả hàng cũ về kho, khách lấy hàng (heat, lời kệ), kệ hỏng bỏ qua, tự thay ô trống, consumeStock không âm
 - GĐ372 — 📏 Mốc: 238 file / 2411 test xanh, 129s (dưới mục tiêu ~150s; dao động theo tải máy, chưa đổi gì về tốc độ)
+- GĐ373 — 🏦 Test vay vốn/hụi/thú cưng `biz.ts` (13 test, mutation 3/3): vay đúng gói theo cấp, vay gấp chỉ gói nhỏ nhất, trả nợ không vượt két/dư nợ, hụi một vòng + cấp mở, mua thú trừ một lần, cho ăn mỗi ngày một bữa (mua lẻ gấp đôi)
