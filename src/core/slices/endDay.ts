@@ -9,6 +9,7 @@ import { DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS, WRITE_OFF_FRIEND_LOSS, type Debt }
 import { INSPECTION_EVERY, INSPECTION_FINE, INSPECTION_REWARD, INSPECTION_UNLOCK, activeAds, inspectionResult, type BizState } from '../../data/biz';
 import { sceneFor, surpriseArcById } from '../../data/surpriseArcs';
 import { quanNuocDay } from '../../data/quanNuoc';
+import { quanRecipeById } from '../../data/quanRecipes';
 import { tiemXoiDay, tiemXoiSaved } from '../../data/tiemXoi';
 import { bizEndOfDay, checkAchievements } from '../biz';
 import { PHONE_FRIEND_GAIN } from '../../data/phoneOrders';
@@ -138,7 +139,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       quanWages = q.wages;
       quanNuocLast = { day: s.day, revenue: q.revenue, served: q.served, wanted: q.wanted, wages: q.wages, profit: q.revenue - q.wages };
       quanNews.push(`🧋 Quán nước: ${q.served}/${q.wanted} ly · ${formatMoney(q.revenue)} · lương −${formatMoney(q.wages)}`
-        + (q.short ? ' · kho thiếu đồ uống, nhập thêm' : ''));
+        + (q.brewShort.length ? ` · thiếu ${quanRecipeById(q.brewShort[0])?.name}${q.brewShort.length > 1 ? ` +${q.brewShort.length - 1}` : ''}` : q.short ? ' · kho thiếu đồ uống, nhập thêm' : ''));
     }
   }
   // Tiệm xôi (GĐ410): nấu bù xôi vào kho thật `k` sau quán nước, giá vốn + lương trừ két.

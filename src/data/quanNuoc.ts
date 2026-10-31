@@ -8,6 +8,7 @@
 import { productById, unlockedProducts } from './products';
 import type { DayAction } from './dayPlan';
 import type { Weather } from './weather';
+import { brewMenu, cleanMenu, quanRecipeById, varietyMul } from './quanRecipes';
 
 /** Cấp tối thiểu được mở quán nước. */
 export const QUAN_NUOC_UNLOCK = 29;
@@ -32,7 +33,8 @@ export const QUAN_PRICE_OPTIONS: Record<QuanNuocPrice, { mul: number; traffic: n
 export const QUAN_WEATHER_MUL: Record<Weather, number> = { sunny: 1.25, cloudy: 1, rain: 0.75, storm: 0.45, fog: 0.9 };
 const weatherMul = (w?: Weather) => (w ? QUAN_WEATHER_MUL[w] ?? 1 : 1);
 
-export interface QuanNuocState { open: boolean; staff: number; price: QuanNuocPrice }
+/** `menu` (GĐ415): id công thức pha chế trên thực đơn; trống = chỉ bán nước chai như cũ. Save cũ thiếu = []. */
+export interface QuanNuocState { open: boolean; staff: number; price: QuanNuocPrice; menu?: string[] }
 export const newQuanNuoc = (): QuanNuocState => ({ open: false, staff: 0, price: 'vua' });
 
 /** Trạng thái hình ảnh của quán nước trong thế giới 3D đầu hẻm. */
@@ -44,7 +46,11 @@ export function quanNuocStandState(level: number, open: boolean): QuanNuocStandS
 }
 
 /** Kết quả một ngày bán của quán nước (ghi lại phần phục vụ được để báo tin sáng mai). */
-export interface QuanNuocDay { revenue: number; customers: number; served: number; wanted: number; wages: number; short: boolean }
+export interface QuanNuocDay {
+  revenue: number; customers: number; served: number; wanted: number; wages: number; short: boolean;
+  /** Ly pha chế theo món (GĐ415) và các món thiếu nguyên liệu hôm nay. */
+  brewed: Record<string, number>; brewShort: string[];
+}
 
 /** Món đồ uống (category 'drink' trong data/products.ts) đã mở ở `level`, giữ thứ tự bảng mẫu hàng. */
 export const quanNuocDrinkIds = (level: number): string[] =>
@@ -67,25 +73,30 @@ export function quanNuocDay(
   if (!q.open) return null;
   const drinks = quanNuocDrinkIds(level);
   const opt = QUAN_PRICE_OPTIONS[q.price];
-  // Giá bán trung bình của thực đơn đã mở: tính một lần rồi nhân hệ số mức giá
+  const menu = cleanMenu(q.menu, level);
+  // Giá bán trung bình nước chai đã mở: tính một lần rồi nhân hệ số mức giá
   const avgPrice = drinks.length ? drinks.reduce((n, id) => n + productById(id).sell, 0) / drinks.length : 0;
-  const customers = Math.round(45 * opt.traffic * (1 + 0.15 * q.staff) * weatherMul(weather));
+  const customers = Math.round(45 * opt.traffic * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(menu.length));
   const wanted = Math.ceil(customers * 1.5);
-  // Tổng ly phục vụ được bị chặn bởi tồn kho đồ uống
+  // Món pha chế phục vụ trước; khách còn lại mua nước chai
+  const brew = brewMenu(menu, storage, wanted, opt.mul, take);
+  const rest = wanted - brew.total;
   const have = drinks.reduce((n, id) => n + (storage[id] ?? 0), 0);
-  const served = Math.min(wanted, have);
+  const bottled = Math.min(rest, have);
   // Rút kho: món tồn nhiều nhất trước, đủ số ly phục vụ thì dừng
-  let left = served;
+  let left = bottled;
   for (const id of [...drinks].sort((a, b) => (storage[b] ?? 0) - (storage[a] ?? 0))) {
     if (left <= 0) break;
     const n = Math.min(left, storage[id] ?? 0);
     if (n > 0) { take(id, n); left -= n; }
   }
+  const served = brew.total + bottled;
   return {
-    revenue: Math.round(served * avgPrice * opt.mul),
+    revenue: brew.revenue + Math.round(bottled * avgPrice * opt.mul),
     customers, served, wanted,
     wages: q.staff * QUAN_NUOC_WAGE,
     short: served < wanted,
+    brewed: brew.cups, brewShort: brew.short,
   };
 }
 
@@ -98,10 +109,19 @@ export function quanNuocDay(
  * ————————————————————————————————————————————————————————————————————— */
 
 /** Giá bán trung bình của thực đơn đồ uống đã mở (cùng công thức quanNuocDay). */
-export const quanNuocAvgSell = (level: number): number => {
+export const quanNuocAvgSell = (level: number, menu?: readonly string[]): number => {
+  // GĐ415: có thực đơn pha chế thì lấy giá TB các món pha (khách phục vụ món pha trước)
+  const m = cleanMenu(menu, level);
+  if (m.length) return m.reduce((n, id) => n + quanRecipeById(id)!.price, 0) / m.length;
   const drinks = quanNuocDrinkIds(level);
   return drinks.length ? drinks.reduce((n, id) => n + productById(id).sell, 0) / drinks.length : 0;
 };
+
+/** Tổng ly phục vụ được với kho hiện có: món pha (tới sức nguyên liệu) + nước chai. Thuần. */
+export function quanNuocCupSupply(q: QuanNuocState, level: number, storage: Record<string, number>): number {
+  const brewed = brewMenu(cleanMenu(q.menu, level), storage, 1e9, 1, () => {}).total;
+  return brewed + quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
+}
 
 export interface QuanNuocProjection { customers: number; wanted: number; served: number; revenue: number; wages: number; profit: number }
 
@@ -112,8 +132,8 @@ export interface QuanNuocProjection { customers: number; wanted: number; served:
  */
 export function quanNuocProjection(q: QuanNuocState, level: number, drinkUnits: number, weather?: Weather): QuanNuocProjection {
   const opt = QUAN_PRICE_OPTIONS[q.price];
-  const avgPrice = quanNuocAvgSell(level);
-  const customers = Math.round(45 * opt.traffic * (1 + 0.15 * q.staff) * weatherMul(weather));
+  const avgPrice = quanNuocAvgSell(level, q.menu);
+  const customers = Math.round(45 * opt.traffic * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(cleanMenu(q.menu, level).length));
   const wanted = Math.ceil(customers * 1.5);
   const served = Math.min(wanted, Math.max(0, drinkUnits));
   const revenue = Math.round(served * avgPrice * opt.mul);
@@ -147,12 +167,12 @@ export interface QuanNuocHealth {
 export function quanNuocHealth(
   q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null, weather?: Weather,
 ): QuanNuocHealth {
-  const drinkUnits = quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
+  const drinkUnits = quanNuocCupSupply(q, level, storage);
   const tonight = quanNuocProjection(q, level, drinkUnits, weather);
   const hire = q.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...q, staff: q.staff + 1 }, level, drinkUnits, weather) : null;
   const hireMarginal = hire ? hire.profit - tonight.profit : null;
   const shortYesterday = !!last && typeof last.wanted === 'number' && typeof last.served === 'number' && last.served < last.wanted;
-  const missedRevenue = shortYesterday ? Math.round(((last!.wanted as number) - (last!.served as number)) * quanNuocAvgSell(level) * QUAN_PRICE_OPTIONS[q.price].mul) : 0;
+  const missedRevenue = shortYesterday ? Math.round(((last!.wanted as number) - (last!.served as number)) * quanNuocAvgSell(level, q.menu) * QUAN_PRICE_OPTIONS[q.price].mul) : 0;
   return {
     drinkUnitsNow: drinkUnits,
     consumedYesterday: typeof last?.served === 'number' ? last.served : 0,

@@ -101,7 +101,7 @@
   - Cửa hàng tiện lợi: luật chơi SÂU (ca kíp, mệt mỏi, sự cố đêm, máy bán hàng, điện, nhóm khách đêm). Nợ: BranchPanel 297 dòng gánh hết, cần soát độ rối; chưa có đợt chụp QA 3D.
   - Nông trại: SÂU (mùa vụ, 7 vật nuôi, công trình 3 sao, đơn đặt hàng, phụ trại; world/farm.ts 996 dòng). Nợ: chưa chụp QA 3D gần đây.
   - Quán nước: MỎNG — chỉ 2 nút (số nhân viên, 3 mức giá), thực đơn tự lấy mọi đồ uống, thời tiết không ảnh hưởng, không sự kiện; panel 230 dòng phần lớn là bảng phân tích quanh 2 nút. 3D dựng hộp thủ tục, chưa dùng kit Blender (bang_ghe, chau_cay có sẵn).
-  - Thứ tự sửa: ~~(1) thời tiết~~ xong GĐ414, (2) chọn món chủ lực, (3) 3D quán dùng kit, (4) gọn BranchPanel, (5) chụp QA 3D cả ba. Tiệm xôi phần còn lại để sau.
+  - Thứ tự sửa: ~~(1) thời tiết~~ xong GĐ414, ~~(2) chọn món~~ thành thực đơn pha chế GĐ415, (3) 3D quán dùng kit, (4) gọn BranchPanel, (5) chụp QA 3D cả ba. Tiệm xôi phần còn lại để sau.
   - QA 3D cần save thử riêng: không có chế độ sandbox, không được sửa save thật của người dùng.
 
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
@@ -136,3 +136,4 @@
 - GĐ410–412 — 🍚 Tiệm xôi: `data/tiemXoi.ts` (nấu bù tới 80 phần/món, món thiếu nhiều nhất trước, vốn ×0.6), slice mua/tuyển/cho nghỉ, endDay cất vào kho + trừ vốn/lương, mục trong bảng Quán nước (không thêm nút HUD). Save cũ tự bù mặc định (merge sâu biz). 13 test mới; đã thử trong game.
 - GĐ413 — 🔍 Rà 3 cơ sở theo yêu cầu người dùng: tiện lợi & nông trại sâu, quán nước mỏng → thứ tự sửa ghi ở Backlog; dừng mở rộng tiệm xôi.
 - GĐ414 — 🌦️ Quán nước theo thời tiết: khách ×1.25 nắng / ×0.75 mưa / ×0.45 bão / ×0.9 sương (`QUAN_WEATHER_MUL`), dùng chung cho ngày bán thật, dự phóng, Sổ kinh doanh, nhắc nạp kho; panel nhắc "nạp thêm" / "bớt nhập". supplyChain/teahouseHaul vẫn ước ×1.
+- GĐ415 — 🍹 Pha chế quán nước (người dùng yêu cầu đa dạng đồ uống + công thức): 11 công thức (`data/quanRecipes.ts`, cấp 29–38) pha từ nguyên liệu kho chung (trà, cà phê, sữa đặc/tươi, đá, đường, chanh, cam, chanh dây, mía, ca cao, cốt dừa, trái cây); thực đơn tối đa 4 món, mỗi món thêm +8% khách; món pha phục vụ trước, khách dư mua nước chai; thiếu nguyên liệu báo trong tin cuối ngày. Panel có mục Thực đơn (lời/ly, kho đủ bao nhiêu ly, thiếu gì). Save cũ thiếu `menu` = chỉ bán nước chai. Co-op chặn `toggleQuanRecipe` chung khóa "quan". Bù ngân sách bundle: tách `ChapterDialogue` khỏi Hud, tải lười.

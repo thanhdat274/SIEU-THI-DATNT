@@ -3,12 +3,13 @@ import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import {
   QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE,
-  QUAN_PRICE_OPTIONS, QUAN_WEATHER_MUL, quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, quanNuocBuildPayback, type QuanNuocPrice,
+  QUAN_PRICE_OPTIONS, QUAN_WEATHER_MUL, quanNuocProjection, quanNuocCupSupply, quanNuocRestockTip, quanNuocBuildPayback, type QuanNuocPrice,
 } from '../../data/quanNuoc';
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
 import { teahouseHaulRead } from '../../data/teahouseHaul';
 import { Callout, Footer, styles } from './shared';
 import { TiemXoiSection } from './TiemXoiSection';
+import { QuanMenuSection } from './QuanMenuSection';
 import { WEATHER } from '../../data/weather';
 
 /** Thứ tự hiển thị 3 mức giờ bán: bình dân → vừa phải → đắt hơn. */
@@ -36,7 +37,7 @@ export function QuanNuocPanel() {
   const canBuild = !locked && money >= QUAN_NUOC_PRICE;
   const canHire = quan.staff < QUAN_NUOC_MAX_STAFF && money >= QUAN_NUOC_HIRE_FEE;
   // GĐ127: mồi quyết định — dự phóng ROI thuê thêm (thuần đọc kho hiện tại, chặn bởi tồn đồ uống).
-  const drinkUnits = quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
+  const drinkUnits = quanNuocCupSupply(quan, level, storage);
   const hireProj = quan.open && quan.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...quan, staff: quan.staff + 1 }, level, drinkUnits, weather) : null;
   const tonightProj = quan.open ? quanNuocProjection(quan, level, drinkUnits, weather) : null;
   // GĐ188: "người thứ N đáng đồng lương?" — chiều xuống (nên giữ bớt ai / sa thải ai). Thuần đọc.
@@ -231,6 +232,7 @@ export function QuanNuocPanel() {
           <p style={{ fontSize: 12, opacity: 0.7, margin: '8px 0 0' }}>🧃 Nguyên liệu lấy thẳng từ kho: kho hết nước là quán bán không được.</p>
         </>
       )}
+      {quan.open && <QuanMenuSection />}
       <TiemXoiSection />
       <Footer onClose={closePanel} />
     </div>

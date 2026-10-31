@@ -3,6 +3,7 @@ import {
   QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_PRICE_OPTIONS,
   type QuanNuocPrice,
 } from '../../data/quanNuoc';
+import { cleanMenu, quanRecipeById, QUAN_MENU_SLOTS } from '../../data/quanRecipes';
 import type { GameState, SetState, GetState } from '../gameTypes';
 
 /**
@@ -10,7 +11,7 @@ import type { GameState, SetState, GetState } from '../gameTypes';
  * chung, chạy theo ngày trong endDay (không mô phỏng real-time). Khớp pattern slice branch.ts.
  */
 
-export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameState, 'buyQuanNuoc' | 'hireQuanNuoc' | 'fireQuanNuoc' | 'setQuanNuocPrice'> => ({
+export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameState, 'buyQuanNuoc' | 'hireQuanNuoc' | 'fireQuanNuoc' | 'setQuanNuocPrice' | 'toggleQuanRecipe'> => ({
   /** Mua mặt bằng quán nước: cần đủ cấp và đủ tiền; mua xong là mở bán ngay từ tối nay. */
   buyQuanNuoc: () => {
     const s = get();
@@ -58,5 +59,17 @@ export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameStat
     if (!(p in QUAN_PRICE_OPTIONS) || q.price === p) return;
     set({ biz: { ...s.biz, quanNuoc: { ...q, price: p } } });
     s.notify(`💰 Quán nước chuyển sang mức giá ${QUAN_PRICE_OPTIONS[p].label}.`);
+  },
+  /** GĐ415: thêm/bỏ một món pha chế khỏi thực đơn (tối đa QUAN_MENU_SLOTS, chỉ món đã mở). */
+  toggleQuanRecipe: (id: string) => {
+    const s = get();
+    const q = s.biz.quanNuoc;
+    const r = quanRecipeById(id);
+    if (!r) return;
+    if (s.level < r.unlock) { s.notify(`${r.name} mở ở cấp ${r.unlock}`); return; }
+    const menu = cleanMenu(q.menu, s.level);
+    const on = menu.includes(id);
+    if (!on && menu.length >= QUAN_MENU_SLOTS) { s.notify(`Thực đơn tối đa ${QUAN_MENU_SLOTS} món, bỏ bớt một món trước`); return; }
+    set({ biz: { ...s.biz, quanNuoc: { ...q, menu: on ? menu.filter((m) => m !== id) : [...menu, id] } } });
   },
 });

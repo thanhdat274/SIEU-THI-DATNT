@@ -6,7 +6,7 @@ import { faintMinutes, weeklyChallenge, rivalUndercutAlerts } from '../data/biz'
 import { nearExpiryItems } from '../data/freshness';
 import { pendingUnlockAct } from '../data/unlockActs';
 import { Joystick } from './Joystick';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { formatClock, questContext, useClock, useGame, type GameState } from '../core/store';
 import { claimableCount, dailyQuests, dailySetProgress, storyQuest, STORY_STEPS } from '../data/quests';
 import { idleTip, isSlowHour } from '../data/idle';
@@ -45,14 +45,15 @@ import { wholesaleAdvice } from '../data/wholesaleValue';
 import { spoilRiskValue } from '../data/spoilRisk';
 import { STORIES } from '../data/biz';
 import { findSurprise } from '../data/surpriseArcs';
-import { chooseSurprise, closeChapter, closeStory, dismissTutorial, REGULAR_NAMES } from '../core/biz';
-import { chapterById } from '../data/chapters';
+import { chooseSurprise, closeStory, dismissTutorial, REGULAR_NAMES } from '../core/biz';
 import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
 import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
 import { answerAsk, useCounterAsk, askWallElapsed } from '../core/counterAsk';
 import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice } from '../render/graphicsQuality';
 import './hud.css';
+
+const ChapterDialogue = lazy(() => import('./ChapterDialogue').then((m) => ({ default: m.ChapterDialogue })));
 
 /** Màn hình cảm ứng: không có phím, thay chữ phím [X] bằng biểu tượng chạm. */
 const TOUCH = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
@@ -531,7 +532,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
       </div>
 
       {message && <div className="hud-toast" role="status">{message}</div>}
-      <ChapterDialogue />
+      <Suspense fallback={null}><ChapterDialogue /></Suspense>
 
       {/* Dưới cùng: dải kế hoạch hôm nay (hoặc gợi ý giờ vắng), gợi ý tương tác, rồi thanh công cụ */}
       <div className="hud-bottom">
@@ -832,39 +833,6 @@ function UnlockActBanner() {
         <button className="hud-btn" onClick={() => { openPanel(act.panel()); done(); }}>🚀 Thử ngay</button>
         <button className="hud-btn" onClick={done} title="Bỏ qua (không hiện lại)">✕</button>
       </span>
-    </div>
-  );
-}
-
-/** Hội thoại chương cốt truyện: hiện từng câu, bấm để qua câu kế; game tạm dừng trong lúc đọc.
- *  Khi panel đang mở thì ẩn — chapterPending vẫn giữ trong state, đóng panel là hiện lại
- *  (tránh đè nội dung panel trên màn hẹp, che khuất chức năng). */
-function ChapterDialogue() {
-  const id = useGame((s) => s.biz.chapterPending);
-  const panelOpen = useGame((s) => s.panel !== null);
-  const [line, setLine] = useState(0);
-  useEffect(() => setLine(0), [id]);
-  const ch = id ? chapterById(id) : undefined;
-  if (!ch || panelOpen) return null;
-  const l = ch.lines[Math.min(line, ch.lines.length - 1)];
-  const last = line >= ch.lines.length - 1;
-  const reward = [ch.reward?.money && formatMoney(ch.reward.money), ch.reward?.xp && `${ch.reward.xp} XP`].filter(Boolean).join(', ');
-  return (
-    <div className="hud-dialogue" role="dialog" aria-label={ch.title}>
-      <div className="hud-dialogue-title">📖 {ch.title}</div>
-      <div className="hud-dialogue-line">
-        <span className="hud-dialogue-avatar" aria-hidden="true">{l.icon}</span>
-        <span>
-          <b>{l.speaker}</b>
-          <p>{l.text}</p>
-        </span>
-      </div>
-      <div className="hud-dialogue-foot">
-        <small>{line + 1}/{ch.lines.length}{last && reward ? ` · Thưởng: ${reward}` : ''}</small>
-        <button className="hud-btn primary" onClick={() => (last ? closeChapter() : setLine(line + 1))}>
-          {last ? '✔ Xong' : 'Tiếp ▶'}
-        </button>
-      </div>
     </div>
   );
 }

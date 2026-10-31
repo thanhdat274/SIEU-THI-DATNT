@@ -1,0 +1,116 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import { newGameData, useGame } from '../core/store';
+import { applySnapshot, snapshot } from '../core/save';
+import { productById } from '../data/products';
+import { quanNuocCupSupply, quanNuocDay, quanNuocProjection } from '../data/quanNuoc';
+import {
+  brewMenu, cleanMenu, QUAN_MENU_SLOTS, QUAN_RECIPES, quanRecipeById, recipeCapacity, recipeCupCost, varietyMul,
+} from '../data/quanRecipes';
+
+/** GĐ415 — Pha chế quán nước: công thức từ kho chung, thực đơn đa dạng kéo khách. */
+
+const full = (n = 50) => Object.fromEntries(QUAN_RECIPES.flatMap((r) => r.uses.map((u) => [u.id, n])));
+
+describe('dữ liệu công thức', () => {
+  it('mọi nguyên liệu là sản phẩm có thật, mở trước công thức; món pha lời hơn giá vốn', () => {
+    for (const r of QUAN_RECIPES) {
+      for (const u of r.uses) expect(productById(u.id).unlock, `${r.id}/${u.id}`).toBeLessThanOrEqual(r.unlock);
+      expect(r.price, r.id).toBeGreaterThan(recipeCupCost(r) * 1.5);
+    }
+    expect(new Set(QUAN_RECIPES.map((r) => r.id)).size).toBe(QUAN_RECIPES.length);
+  });
+
+  it('cleanMenu: bỏ id lạ, chưa mở, trùng; cắt theo số ô', () => {
+    expect(cleanMenu(['tra_da', 'tra_da', 'khong_co', 'sinh_to'], 29)).toEqual(['tra_da']);
+    expect(cleanMenu(QUAN_RECIPES.map((r) => r.id), 99)).toHaveLength(QUAN_MENU_SLOTS);
+    expect(cleanMenu(undefined, 40)).toEqual([]);
+  });
+
+  it('thiếu một nguyên liệu: sức pha 0', () => {
+    const r = quanRecipeById('ca_phe_sua')!;
+    expect(recipeCapacity(r, { x_ca_phe_hoa_tan: 5, x_nuoc_da: 5 })).toBe(0);
+    expect(recipeCapacity(r, { x_ca_phe_hoa_tan: 1, x_sua_dac: 1, x_nuoc_da: 9 })).toBe(10);
+  });
+});
+
+describe('brewMenu', () => {
+  it('chia đều cho các món, rút kho làm tròn lên, không đụng storage đầu vào', () => {
+    const storage = full();
+    const before = { ...storage };
+    const took: Record<string, number> = {};
+    const b = brewMenu(['tra_da', 'nuoc_mia'], storage, 21, 1, (id, q) => { took[id] = (took[id] ?? 0) + q; });
+    expect(b.cups).toEqual({ tra_da: 11, nuoc_mia: 10 });
+    expect(took).toEqual({ tra: 1, x_nuoc_da: 3, mia: 3 }); // đá: 2 cho trà (11 ly) + 1 cho mía (10 ly)
+    expect(b.revenue).toBe(11 * 5_000 + 10 * 12_000);
+    expect(storage).toEqual(before);
+  });
+
+  it('đá dùng chung: món sau thấy kho đá đã bị món trước dùng', () => {
+    const b = brewMenu(['tra_da', 'nuoc_mia'], { tra: 10, mia: 10, x_nuoc_da: 2 }, 40, 1, () => {});
+    expect(b.cups.tra_da).toBe(20);
+    expect(b.cups.nuoc_mia).toBeUndefined();
+    expect(b.short).toEqual(['nuoc_mia']);
+  });
+});
+
+describe('ngày bán có thực đơn', () => {
+  const base = { open: true, staff: 1, price: 'vua' as const };
+
+  it('thực đơn đa dạng hơn: đông khách hơn; doanh thu cao hơn chỉ bán nước chai', () => {
+    const storage = { ...full(), nuoc: 500 };
+    const plain = quanNuocDay(base, 35, { ...storage }, () => {}, 'cloudy')!;
+    const one = quanNuocDay({ ...base, menu: ['ca_phe_sua'] }, 35, { ...storage }, () => {}, 'cloudy')!;
+    const four = quanNuocDay({ ...base, menu: ['ca_phe_sua', 'sinh_to', 'bac_xiu', 'cam_vat'] }, 35, { ...storage }, () => {}, 'cloudy')!;
+    expect(one.customers).toBe(plain.customers);
+    expect(four.customers).toBe(Math.round(plain.customers * varietyMul(4)));
+    expect(one.revenue).toBeGreaterThan(plain.revenue);
+    expect(four.brewed.sinh_to).toBeGreaterThan(0);
+  });
+
+  it('món pha hết nguyên liệu: khách còn lại mua nước chai, báo món thiếu', () => {
+    const d = quanNuocDay({ ...base, menu: ['ca_phe_sua'] }, 30, { x_ca_phe_hoa_tan: 1, x_sua_dac: 1, x_nuoc_da: 1, nuoc: 500 }, () => {}, 'cloudy')!;
+    expect(d.brewed.ca_phe_sua).toBe(10);
+    expect(d.brewShort).toEqual(['ca_phe_sua']);
+    expect(d.served).toBe(d.wanted);
+  });
+
+  it('dự phóng khớp ngày bán thật khi có thực đơn', () => {
+    const storage = { ...full(), nuoc: 500 };
+    const q = { ...base, menu: ['tra_da', 'ca_phe_den'] };
+    const d = quanNuocDay(q, 30, { ...storage }, () => {}, 'sunny')!;
+    const p = quanNuocProjection(q, 30, quanNuocCupSupply(q, 30, storage), 'sunny');
+    expect([p.customers, p.wanted, p.served]).toEqual([d.customers, d.wanted, d.served]);
+  });
+});
+
+describe('store + save', () => {
+  const msgs: string[] = [];
+  beforeEach(() => {
+    msgs.length = 0;
+    const d = newGameData();
+    useGame.setState({ ...d, level: 33, notify: (m: string) => { msgs.push(m); }, biz: { ...d.biz, quanNuoc: { ...d.biz.quanNuoc, open: true } } });
+  });
+
+  it('toggleQuanRecipe: thêm/bỏ, chặn món chưa mở và quá số ô', () => {
+    const g = useGame.getState;
+    g().toggleQuanRecipe('tra_da');
+    expect(g().biz.quanNuoc.menu).toEqual(['tra_da']);
+    g().toggleQuanRecipe('tra_da');
+    expect(g().biz.quanNuoc.menu).toEqual([]);
+    g().toggleQuanRecipe('sinh_to');
+    expect(g().biz.quanNuoc.menu).toEqual([]);
+    for (const id of ['tra_da', 'ca_phe_den', 'nuoc_chanh', 'nuoc_mia', 'bac_xiu']) g().toggleQuanRecipe(id);
+    expect(g().biz.quanNuoc.menu).toHaveLength(QUAN_MENU_SLOTS);
+    for (const m of msgs) expect(m.length).toBeLessThanOrEqual(90);
+  });
+
+  it('save cũ thiếu menu vẫn chạy như bán nước chai; snapshot giữ thực đơn', () => {
+    useGame.getState().toggleQuanRecipe('nuoc_mia');
+    const save = snapshot();
+    useGame.setState({ ...newGameData() });
+    applySnapshot(save);
+    expect(useGame.getState().biz.quanNuoc.menu).toEqual(['nuoc_mia']);
+    const old = { open: true, staff: 0, price: 'vua' as const };
+    expect(quanNuocDay(old, 29, { nuoc: 100 }, () => {})!.brewed).toEqual({});
+  });
+});

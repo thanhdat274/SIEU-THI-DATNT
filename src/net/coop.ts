@@ -71,6 +71,7 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   buyTiemXoi: () => 'xoi', hireTiemXoi: () => 'xoi', fireTiemXoi: () => 'xoi',
   fireQuanNuoc: () => 'quan',
   setQuanNuocPrice: () => 'quan',
+  toggleQuanRecipe: () => 'quan',
 };
 const GUARD_MS = 3000;
 /** Thao tác gửi đi chưa có kết quả quá lâu thì thôi chờ (mất gói, máy chạy vừa đổi). */
