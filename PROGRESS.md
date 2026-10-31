@@ -153,3 +153,4 @@
 - GĐ367 — 📒 Test slice khách quen `regulars.ts` (7 test, mutation 2/2): ghi sổ nợ giữ két nguyên + cộng dồn nợ, thu nợ cộng két/repaid, nhắc nợ chỉ trừ thân thiết 1 lần, xoá nợ +thân thiết không cộng tiền, hẹn giữ món cho ngày mai, trần REVIEW_CAP + đếm 5★
 - GĐ368 — 📞 Test slice đơn điện thoại `orders.ts` (7 test, mutation 2/2): nghe máy trừ kho/thiếu hàng chặn, từ chối không mất gì, giao lẹ boa x2, kịp hẹn boa thường, trễ không boa + 3★
 - GĐ369 — 🎉 Test đơn tiệc `orders.ts` (5 test, mutation 2/2): giao đủ hàng nhận giá+thưởng/5★, thiếu hàng hoặc chưa nhận bị chặn, nhập gấp trừ đại lý rồi giao, thiếu tiền không giao; gỡ `console.log("DBG PICKED")` sót trong data/orders.ts
+- GĐ370 — 🎊 Test `communitySale` khai trương (4 test, mutation 2/2): tiến độ cộng dồn, thưởng đúng một lần, thiếu chậu cây chưa xong, sai ngày không ghi
