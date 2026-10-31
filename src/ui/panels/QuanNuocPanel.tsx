@@ -8,6 +8,7 @@ import {
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
 import { teahouseHaulRead } from '../../data/teahouseHaul';
 import { Callout, Footer, styles } from './shared';
+import { ZoneMapSection } from './ZoneMapSection';
 import { TiemXoiSection } from './TiemXoiSection';
 import { QuanMenuSection } from './QuanMenuSection';
 import { WEATHER } from '../../data/weather';
@@ -241,6 +242,7 @@ export function QuanNuocPanel() {
       )}
       {quan.open && <QuanMenuSection />}
       <TiemXoiSection />
+      <ZoneMapSection />
       <Footer onClose={closePanel} />
     </div>
   );

@@ -64,3 +64,13 @@ export function zoneBlockRects(saved: readonly string[] | undefined, extent = 12
   }
   return out;
 }
+
+export interface ZoneMapCell { zone: Zone; state: 'open' | ZoneOpenCheck }
+
+/** GĐ504: dữ liệu bản đồ thu nhỏ — mỗi khu kèm trạng thái (mở / còn thiếu cấp / thiếu tiền / mở được). */
+export function zoneMapView(saved: readonly string[] | undefined, level: number, money: number): ZoneMapCell[] {
+  return ZONES.map((zone) => {
+    const c = canOpenZone(zone.id, saved, level, money);
+    return { zone, state: c === 'opened' ? 'open' : c };
+  });
+}

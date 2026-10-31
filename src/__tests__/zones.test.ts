@@ -63,3 +63,14 @@ describe('zoneBlockRects (GĐ500)', () => {
     expect(inside(open, 100, 60)).toBe(true);
   });
 });
+
+describe('zoneMapView (GĐ504)', () => {
+  it('hẻm luôn mở; Ngõ 2 theo cấp/tiền/đã mở', async () => {
+    const { zoneMapView } = await import('../data/zones');
+    const st = (saved: string[] | undefined, lv: number, m: number) => zoneMapView(saved, lv, m).map((c) => c.state);
+    expect(st(undefined, 1, 0)).toEqual(['open', 'level']);
+    expect(st(undefined, 50, 0)).toEqual(['open', 'money']);
+    expect(st(undefined, 50, 1e9)).toEqual(['open', 'ok']);
+    expect(st(['ngo2'], 50, 0)).toEqual(['open', 'open']);
+  });
+});

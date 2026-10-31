@@ -151,6 +151,7 @@
 - GĐ470: Ghi Cần duyệt nâng tiệm xôi thành cửa hàng nhỏ (chờ người dùng chọn).
 - GĐ471: Bảng quán ghi rõ 'bậc x/3: Quầy nước → Quán nước → Quán cà phê — cùng một cửa hàng' (người dùng tưởng cà phê là tiệm riêng).
 - GĐ472: QA sandbox: bảng quán hiện 'bậc 3/3 … cùng một cửa hàng' và '🎉 Cuối tuần ×1.2' (ngày 6).
+- GĐ504: Mở rộng bản đồ B5: mục "Bản đồ khu phố" trong bảng quán/tiệm (SVG các khu mở/khoá, đường chính, chấm sạp Ngõ 2, nút mở khu) — không thêm nút HUD; zoneMapView + test. Xong kế hoạch B1–B5.
 - GĐ503: Mở rộng bản đồ B4: người dạo phố Ngõ 2 (2/sạp, tối đa 6, 6h–20h, mưa vắng) đi từ đầu ngõ ghé từng sạp rồi quay ra; tải lười cùng Ngõ 2 + test. QA sandbox: vạch đường + khách ghé sạp OK.
 - GĐ502: Đường Ngõ 2 dùng nhựa đường có vạch như đường chính; bàn sạp hàng rong chặn lưới (sapStallBox) + test.
 - GĐ501: Mở rộng bản đồ B3: sạp hàng rong Ngõ 2 — thuê lô 5tr (tối đa 4, [L] ở lô kế tiếp), +300k/lô/ngày, cuối tuần ×1,3, mưa/bão nghỉ bán; ô dù + bàn hàng trên lô; save biz.sapRong? + coop sap + test.
