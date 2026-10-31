@@ -164,3 +164,4 @@
 - GĐ440: Bảng tiệm xôi có nút Tự đồ 20 phần (cùng hành động phím J).
 - GĐ441: Phím J sau khi đã đồ trong ngày thì mở bảng tiệm xôi, gợi ý ghi 'hôm nay đã đồ'.
 - GĐ442: Tin cuối ngày tiệm xôi ghi 'chủ tự đồ 1 mẻ' khi chủ đã đồ trong ngày.
+- GĐ443: QA sandbox ?thu=1: phím J ở sạp xôi (cấp 40, tiệm mở) đặt handDay=1, đồ được mẻ; save thật không đụng.
