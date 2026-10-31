@@ -2,7 +2,7 @@ import type { Staff, StaffRole, Shift } from './staff';
 import { ROLES, SHIFTS } from './staff';
 import type { StaffDayStat } from '../core/slices/staffDay';
 import type { DayAction } from './dayPlan';
-import type { DayStats } from '../core/gameTypes';
+import type { DayStats, MorningShiftNote } from '../core/gameTypes';
 
 // ───── GĐ246: soi nhân viên rảnh bao nhiêu (THUẦN ĐỌC, dữ liệu transient từ staffDay) ─────
 // Các thẻ giá trị lương (GĐ141/142/144/188) ước từ DOANH THU. Bản này bổ sung mảnh thiếu: trong ca,
@@ -207,4 +207,25 @@ export function morningShiftAction(
     danger: false,
     priority: 2,
   };
+}
+
+// ───── GĐ300: tính SẴN việc sáng ở máy chạy (co-op parity) ─────
+// `staffDay` là slice transient NẰM NGOÀI useGame: chỉ máy chạy mô phỏng nên chỉ máy đó có số liệu.
+// Nếu Sổ đầu ngày tự đọc snapshot thì máy khách (không chạy sim) không bao giờ thấy việc 🧍 — sai
+// quy tắc co-op "dữ liệu ngoài useGame mà UI máy khách cần thấy thì phải gửi kèm gói state".
+// Vì vậy chốt ngày ở máy chạy tính sẵn việc này, nhét vào `lastSummary` (đã đồng bộ) → máy nào cũng
+// đọc được CÙNG một kết quả. `morningShiftAction` ở trên vẫn là hàm thuần dùng chung cho cả hai.
+
+/**
+ * Chọn việc sáng 🧍 để hiện: ưu tiên bản máy chạy đã chốt sẵn trong gói state chung; chỉ khi không
+ * có (save cũ / vào giữa ngày) mới tự tính từ snapshot transient của chính máy này.
+ * Nhờ vậy máy khách (không chạy mô phỏng, snapshot rỗng) vẫn thấy đúng việc như máy chạy.
+ */
+export function pickMorningShiftAction(
+  shared: MorningShiftNote | undefined,
+  snapshot: Record<number, StaffDayStat>,
+  staff: Staff[],
+  lastStats: DayStats | undefined,
+): DayAction | null {
+  return shared ?? morningShiftAction(snapshot, staff, lastStats);
 }

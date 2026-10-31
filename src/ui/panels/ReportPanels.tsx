@@ -29,7 +29,7 @@ import { itemHealthList, shelfAttention, shelfCount } from '../../data/analytics
 import { computeRecords, recordFeedToday } from '../../data/records';
 import { comboDaySnapshot, resetComboDay } from '../../core/slices/comboDay';
 import { resetStaffDay, staffDaySnapshot } from '../../core/slices/staffDay';
-import { morningShiftAction, staffDayRecap, staffShiftFix } from '../../data/staffIdle';
+import { pickMorningShiftAction, staffDayRecap, staffShiftFix } from '../../data/staffIdle';
 import { autoOpenNote, cashierOpensMorning } from '../../core/routine';
 import { weekendRecap } from '../../data/weekendRestock';
 import { weekendQuestTarget } from '../../data/quests';
@@ -648,11 +648,14 @@ export function MorningPanel() {
   // xem lô sỉ chiết khấu trong Nhập hàng; lấy lô xong (biz.fairTaken = tháng) tự ẩn.
   const fairAct = fairMerchantAction(day, biz.fairTaken);
   if (fairAct) candidates.push(fairAct);
-  // GĐ295: tổng kết đội hôm qua thành việc sáng — khép vòng GĐ248/253. Snapshot staffDay transient
-  // vẫn còn nguyên ngày hôm qua lúc sáng (reset khi đóng sổ); lastSummary giữ DayStats vừa chốt.
-  // Chỉ nhắc khi staffShiftFix còn cách sửa — đã bấm 🔀 tối qua thì hết gợi ý, không nhắc lại.
+  // GĐ295/300: tổng kết đội hôm qua thành việc sáng. Ưu tiên bản máy chạy đã CHỐT SẴN trong
+  // lastSummary (GĐ300) → máy khách hẻm online thấy y hệt máy chạy; chỉ khi không có (save cũ / vào
+  // giữa ngày) mới tự tính từ snapshot transient của máy này.
   const yStats = lastSummary && lastSummary.day === day - 1 ? lastSummary.stats : undefined;
-  const shiftAct = morningShiftAction(staffDaySnapshot(), staff, yStats);
+  const shiftAct = pickMorningShiftAction(
+    lastSummary && lastSummary.day === day - 1 ? lastSummary.staffIdle : undefined,
+    staffDaySnapshot(), staff, yStats,
+  );
   if (shiftAct) candidates.push(shiftAct);
   const actions = planDay(candidates);
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)

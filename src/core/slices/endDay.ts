@@ -18,6 +18,8 @@ import { hasUpgrade } from '../../data/upgrades';
 import { LATE_WAKE_AT } from '../../data/night';
 import { summarizeReviews } from '../../data/reviews';
 import { dailyWage, generateCandidates } from '../../data/staff';
+import { morningShiftAction } from '../../data/staffIdle';
+import { staffDaySnapshot } from '../slices/staffDay';
 import { eventOn } from '../../data/events';
 import { supplyContractById } from '../../data/contracts';
 import { branchPowerBill, restingOn } from '../../data/branches';
@@ -350,6 +352,11 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     ...(crew.cashLoss || shrinkItems ? { shrinkCash: crew.cashLoss, shrinkItems } : {}),
   };
   if (opCost >= 5000) s.notify(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}${branchPower ? ` — riêng tiện lợi 24/7 ${formatMoney(branchPower)} tiền điện` : ''}`);
+  // GĐ300: chốt sẵn việc sáng 🧍 NGAY TẠI MÁY CHẠY. Snapshot staffDay là transient ngoài useGame
+  // (chỉ máy chạy mô phỏng mới có), nên nếu để Sổ đầu ngày tự đọc thì máy khách hẻm online sẽ không
+  // bao giờ thấy việc này. Tính ở đây rồi gửi kèm lastSummary → hai chế độ ra KẾT QUẢ GIỐNG NHAU.
+  const staffIdleAct = morningShiftAction(staffDaySnapshot(), s.staff, stats);
+  const staffIdleNote = staffIdleAct ? { staffIdle: staffIdleAct } : {};
   const biz = bizEndOfDay(s, stats, (br?.revenueToday ?? 0) + quanRevenue);
   if (biz.news.length) s.notify(biz.news.join(' · '));
   // Kết quả quán nước hôm nay ghi vào biz để UI hiển thị (xem lại "hôm qua bán được bao nhiêu ly")
@@ -395,7 +402,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     buildMode: false,
     placing: null,
     panel: { type: 'summary', day: s.day, stats },
-    lastSummary: { day: s.day, stats },
+    lastSummary: { day: s.day, stats, ...staffIdleNote },
     stats: emptyStats(),
     ...k, furniture, order, phoneOrders: [], phoneSlot: 0, debts, vendorOffer: null, event: nextEvent, contracts, fakeCash: 0, wheelBoost: 1, history: [...s.history, record].slice(-HISTORY_DAYS), venueTrend: [...s.venueTrend, venueDay].slice(-VENUE_TREND_DAYS), riskTrend: [...s.riskTrend, riskDay].slice(-RISK_TREND_DAYS), riskToday: emptyRiskToday(), deliveries: [], demand, demandToday: {}, sales, salesToday: {}, reservations, market,
     garden, analytics,

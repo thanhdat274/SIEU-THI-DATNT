@@ -183,8 +183,17 @@ export interface ItemLine {
 }
 
 /** Một dòng lịch sử để vẽ biểu đồ mấy ngày gần đây. */
-export interface DayRecord {
-  day: number;
+/** Việc sáng 🧍 đã tính sẵn (GĐ300) — hình dạng khớp `DayAction` nhưng khai báo ở đây để
+ *  `gameTypes` không phải import `data/staffIdle` (staffIdle đã import DayStats từ file này). */
+export interface MorningShiftNote {
+  icon: string;
+  text: string;
+  panel: string;
+  danger: boolean;
+  priority: number;
+}
+
+export interface DayRecord {  day: number;
   revenue: number;
   profit: number;
   /** Lãi bán hàng: lãi gộp sổ bán + lời dịch vụ − lương − tiền nhà (không trừ tiền nhập kho/đầu tư).
@@ -256,9 +265,10 @@ export interface GameState {
   /** Thông báo ngắn ở giữa màn hình. */
   message: string | null;
   panel: Panel | null;
-  /** Tổng kết ngày vừa qua (máy chạy hẻm gửi sang để máy khách cũng mở bảng tổng kết). */
-  lastSummary: { day: number; stats: DayStats } | null;
-  /** Đang ở chế độ xây dựng. */
+  /** Tổng kết ngày vừa qua (máy chạy hẻm gửi sang để máy khách cũng mở bảng tổng kết).
+   *  `staffIdle` = việc sáng 🧍 tính SẴN ở máy chạy lúc chốt ngày (GĐ300): snapshot staffDay là
+   *  transient ngoài useGame, chỉ máy chạy có → phải gửi kèm gói state để máy khách thấy y hệt. */
+  lastSummary: { day: number; stats: DayStats; staffIdle?: MorningShiftNote } | null;  /** Đang ở chế độ xây dựng. */
   buildMode: boolean;
   placing: Placing | null;
 

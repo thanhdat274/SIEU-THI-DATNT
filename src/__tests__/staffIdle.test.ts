@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { noteStaffTime, staffDaySnapshot, resetStaffDay } from '../core/slices/staffDay';
-import { staffIdleStats, staffDayRecap, staffShiftFix, morningShiftAction, idleVerdict, IDLE_HEAVY_PCT, IDLE_BUSY_PCT } from '../data/staffIdle';
+import { staffIdleStats, staffDayRecap, staffShiftFix, morningShiftAction, pickMorningShiftAction, idleVerdict, IDLE_HEAVY_PCT, IDLE_BUSY_PCT } from '../data/staffIdle';
+import { useGame, newGameData } from '../core/store';
 import type { Staff } from '../data/staff';
 
 // GĐ246: soi nhân viên rảnh — slice transient (đếm runtime) + helper thuần đọc.
@@ -257,5 +258,58 @@ describe('morningShiftAction — tổng kết đội hôm qua thành việc sán
   it('không có dữ liệu đội hôm qua (snapshot rỗng) → null', () => {
     resetStaffDay();
     expect(morningShiftAction(staffDaySnapshot(), [st(1)], undefined)).toBeNull();
+  });
+});
+
+describe('GĐ300 — việc sáng 🧍 phải GIỐNG NHAU ở chơi đơn và hẻm online', () => {
+  const idleStaff = () => ({ ...st(1), wage: 150000 });
+  const idleYesterday = () => {
+    resetStaffDay();
+    for (let i = 0; i < 7; i++) noteStaffTime(1, 60, true);
+    noteStaffTime(1, 60, false);
+  };
+  const yStats = { missed: { wait: 4 } } as never;
+
+  it('MÁY KHÁCH (snapshot rỗng, không chạy mô phỏng) vẫn thấy việc nhờ bản chốt sẵn trong state chung', () => {
+    resetStaffDay(); // máy khách: không ai gọi noteStaffTime → rỗng
+    const shared = { icon: '🧍', text: 'Hôm qua NV1 rảnh ~88% ca — xem xếp lại ca hôm nay', panel: 'staff', danger: false, priority: 2 };
+    const act = pickMorningShiftAction(shared, staffDaySnapshot(), [idleStaff()], undefined);
+    expect(act).toEqual(shared); // thấy đúng y bản máy chạy gửi sang
+  });
+
+  it('không có bản chốt sẵn (save cũ / vào giữa ngày) → tự tính từ snapshot máy này', () => {
+    idleYesterday();
+    const act = pickMorningShiftAction(undefined, staffDaySnapshot(), [idleStaff()], yStats);
+    expect(act).not.toBeNull();
+    expect(act!.panel).toBe('staff');
+    expect(act!.text).toContain('NV1');
+  });
+
+  it('chốt ngày ở máy chạy LƯU việc vào lastSummary (nguồn chung cho cả hẻm)', () => {
+    useGame.setState({ ...newGameData(), day: 7, level: 20, money: 5_000_000 });
+    useGame.setState({ staff: [{ ...idleStaff(), shift: 'full' }] });
+    idleYesterday();
+    // hôm qua tiệm mất khách vì chờ → verdict shift_mismatch
+    useGame.setState({ stats: { ...useGame.getState().stats, missed: { wait: 4 }, customers: 20 } });
+    useGame.setState({ minutes: 19 * 60 }); // đủ giờ đi ngủ
+    expect(useGame.getState().sleep()).toBe(true);
+
+    const ls = useGame.getState().lastSummary;
+    expect(ls).not.toBeNull();
+    expect(ls!.day).toBe(7);
+    expect(ls!.staffIdle).toBeTruthy();
+    expect(ls!.staffIdle!.panel).toBe('staff');
+    expect(ls!.staffIdle!.text).toContain('mất khách vì chờ');
+  });
+
+  it('đội vừa sức → KHÔNG nhét việc vào lastSummary (không ồn vô cớ)', () => {
+    useGame.setState({ ...newGameData(), day: 7, level: 20, money: 5_000_000 });
+    useGame.setState({ staff: [{ ...idleStaff(), shift: 'full' }] });
+    resetStaffDay();
+    noteStaffTime(1, 80, false);
+    noteStaffTime(1, 20, true);
+    useGame.setState({ minutes: 19 * 60 });
+    useGame.getState().sleep();
+    expect(useGame.getState().lastSummary?.staffIdle).toBeUndefined();
   });
 });
