@@ -24,7 +24,7 @@ export const TIEM_XOI_COST_MUL = 0.6;
 /** Chỉ nấu bù đến mức tồn này mỗi món, tránh xôi dồn kho rồi hỏng. */
 export const TIEM_XOI_TARGET = 80;
 
-export interface TiemXoiState { open: boolean; staff: number; /** GĐ439: ngày chủ tự đồ một mẻ ở sạp. */ handDay?: number; /** GĐ461: đã mở rộng bếp (kho mục tiêu + sức nấu lớn hơn). */ big?: boolean }
+export interface TiemXoiState { open: boolean; staff: number; /** GĐ439: ngày chủ tự đồ một mẻ ở sạp. */ handDay?: number; /** GĐ461: đã mở rộng bếp (kho mục tiêu + sức nấu lớn hơn). */ big?: boolean; /** GĐ489: tổng suất khách ăn tại chỗ. */ dineTotal?: number }
 export const newTiemXoi = (): TiemXoiState => ({ open: false, staff: 0 });
 
 /** Món xôi lẻ (không gồm combo) đã mở ở `level`, giữ thứ tự bảng mẫu hàng. */

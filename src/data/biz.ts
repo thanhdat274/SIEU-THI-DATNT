@@ -937,6 +937,7 @@ export interface AchievementCtx {
   /** GĐ464: bậc cửa hàng nước (0..2) và tiệm xôi đã mở rộng — tuỳ chọn để ctx test cũ vẫn hợp lệ. */
   quanTier?: number;
   xoiBig?: boolean;
+  xoiDine?: number;
 }
 export interface Achievement { id: string; icon: string; name: string; desc: string; reward: number; done: (c: AchievementCtx) => boolean }
 
@@ -976,6 +977,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'impulse_500', icon: '🍭', name: 'Kệ cạnh quầy đắc ý', desc: 'Bán 500 món chớp nhoáng ở kệ bên quầy thu ngân', reward: 300000, done: (c) => c.impulseSold >= 500 },
   { id: 'quan_cafe', icon: '☕', name: 'Quán cà phê', desc: 'Nâng cửa hàng nước lên Quán cà phê', reward: 2000000, done: (c) => (c.quanTier ?? 0) >= 2 },
   { id: 'xoi_big', icon: '🍚', name: 'Bếp xôi lớn', desc: 'Mở rộng bếp tiệm xôi', reward: 1500000, done: (c) => !!c.xoiBig },
+  { id: 'xoi_dine', icon: '🪑', name: 'Quán xôi đông khách', desc: 'Phục vụ 500 suất ăn tại tiệm xôi', reward: 1000000, done: (c) => (c.xoiDine ?? 0) >= 500 },
 ];
 
 // ───────────────────────── Thanh tra thị trường ─────────────────────────

@@ -383,7 +383,11 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   if (biz.news.length) s.notify(biz.news.join(' · '));
   // Kết quả quán nước hôm nay ghi vào biz để UI hiển thị (xem lại "hôm qua bán được bao nhiêu ly")
   if (quanNuocLast) biz.biz = { ...biz.biz, quanNuocLast };
-  if (tiemXoiLast) biz.biz = { ...biz.biz, tiemXoiLast };
+  if (tiemXoiLast) {
+    // GĐ489: cộng dồn suất ăn tại chỗ (thành tựu "Quán xôi đông khách")
+    const tx = biz.biz.tiemXoi;
+    biz.biz = { ...biz.biz, tiemXoiLast, tiemXoi: { ...tx, dineTotal: (tx.dineTotal ?? 0) + (tiemXoiLast.dine ?? 0) } };
+  }
   const todayReviews = s.reviews.filter((r) => r.day === s.day);
   const record: DayRecord = {
     day: s.day, revenue: stats.revenue, profit: stats.revenue - stats.spent - wages - rent,

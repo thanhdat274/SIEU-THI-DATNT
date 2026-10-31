@@ -142,3 +142,18 @@ describe('GĐ486: khách ngồi hiện trong tiệm', () => {
     expect(g().biz.tiemXoiLast?.dine).toBeGreaterThan(0);
   });
 });
+
+describe('GĐ489: cộng dồn suất ăn + thành tựu', () => {
+  it('ngủ qua đêm cộng dineTotal; thành tựu đủ 500', async () => {
+    const { ACHIEVEMENTS } = await import('../data/biz');
+    const { achievementCtx } = await import('../core/biz');
+    g().buyTiemXoi();
+    useGame.setState({ minutes: 20 * 60 });
+    g().sleep();
+    const d = g().biz.tiemXoi.dineTotal ?? 0;
+    expect(d).toBe(g().biz.tiemXoiLast?.dine);
+    const a = ACHIEVEMENTS.find((x) => x.id === 'xoi_dine')!;
+    expect(a.done({ ...achievementCtx(g()), xoiDine: 499 })).toBe(false);
+    expect(a.done({ ...achievementCtx(g()), xoiDine: 500 })).toBe(true);
+  });
+});

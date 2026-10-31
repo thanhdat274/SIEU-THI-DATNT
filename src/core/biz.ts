@@ -230,6 +230,7 @@ export function achievementCtx(s: GameState): AchievementCtx {
     counterKills: s.biz.counterKills,
     quanTier: s.biz.quanNuoc?.tier ?? 0,
     xoiBig: !!s.biz.tiemXoi?.big,
+    xoiDine: s.biz.tiemXoi?.dineTotal ?? 0,
   };
 }
 
